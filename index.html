@@ -1544,8 +1544,7 @@ async function onSongSearch(q) {
     ac.classList.add('open');
 
     try {
-      // Search recordings (= nummers) matching title OR artist
-      const url = `https://musicbrainz.org/ws/2/recording/?query=recording:"${encodeURIComponent(q)}" OR artist:"${encodeURIComponent(q)}"&limit=10&fmt=json`;
+      const url = `https://musicbrainz.org/ws/2/recording/?query=${encodeURIComponent(q)}&limit=10&fmt=json`;
       const res = await fetch(url, {
         headers: { 'User-Agent': 'TheTalentTent/1.0 (hobby project)' }
       });
