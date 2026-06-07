@@ -1138,8 +1138,8 @@
         <input type="text" id="fname" placeholder="Bijv. Sander">
       </div>
       <div class="field">
-        <label>Leeftijd <span class="req">*</span></label>
-        <input type="number" id="age" placeholder="13–25" min="13" max="25">
+        <label>Geboortedatum <span class="req">*</span></label>
+        <input type="text" id="birth_date" placeholder="01-02-2001" maxlength="10" oninput="formatBirthDate(this)">
       </div>
     </div>
 
@@ -1429,7 +1429,7 @@ async function submitProfile() {
       .from('musicians')
       .insert({
         fname:         state.fname,
-        age:           parseInt(state.age),
+        birth_date:    toISODate(state.birth_date),
         city:          state.city,
         zip:           state.zip || null,
         bio:           state.bio || null,
@@ -1499,6 +1499,86 @@ async function submitProfile() {
   }
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function calcAge(ddmmyyyy) {
+  const [dd, mm, yyyy] = ddmmyyyy.split('-').map(Number);
+  const birth = new Date(yyyy, mm - 1, dd);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+// DD-MM-YYYY auto-format while typing
+function formatBirthDate(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 8);
+  if (v.length >= 5) v = v.slice(0,2) + '-' + v.slice(2,4) + '-' + v.slice(4);
+  else if (v.length >= 3) v = v.slice(0,2) + '-' + v.slice(2);
+  input.value = v;
+}
+
+function normalizeCityName(city) {
+  // Capitalize first letter of each word: "den haag" → "Den Haag"
+  return city.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// Convert DD-MM-YYYY to YYYY-MM-DD for database storage
+function toISODate(ddmmyyyy) {
+  const [dd, mm, yyyy] = ddmmyyyy.split('-');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+// ─── MusicBrainz zoekfunctie ──────────────────────────────────────────────────
+
+let mbSearchTimeout = null;
+
+async function onSongSearch(q) {
+  const ac = document.getElementById('acList');
+  if (q.length < 2) { ac.classList.remove('open'); return; }
+
+  // Debounce: wacht 400ms na laatste toetsaanslag (MusicBrainz rate limit = 1 req/sec)
+  clearTimeout(mbSearchTimeout);
+  mbSearchTimeout = setTimeout(async () => {
+    ac.innerHTML = '<div class="ac-item"><span>Zoeken...</span></div>';
+    ac.classList.add('open');
+
+    try {
+      const url = `https://musicbrainz.org/ws/2/recording/?query=${encodeURIComponent(q)}&limit=8&fmt=json`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'TheTalentTent/1.0 (hobby project)' }
+      });
+      const data = await res.json();
+
+      const results = (data.recordings || [])
+        .filter(r => r.releases?.length && r['artist-credit']?.length)
+        .filter(r => !state.songs.find(s => s.title === r.title && s.artist === r['artist-credit'][0]?.name))
+        .slice(0, 7)
+        .map(r => ({
+          title:  r.title,
+          artist: r['artist-credit'][0]?.name || 'Onbekend',
+          genre:  r.tags?.[0]?.name || ''
+        }));
+
+      if (!results.length) {
+        ac.innerHTML = '<div class="ac-item"><span>Geen resultaten gevonden</span></div>';
+        return;
+      }
+
+      ac.innerHTML = results.map(s =>
+        `<div class="ac-item" onmousedown="addSong('${esc(s.title)}','${esc(s.artist)}')">
+          <strong>${highlight(s.title, q)}</strong>
+          <span>${s.artist}${s.genre ? ' · ' + s.genre : ''}</span>
+        </div>`
+      ).join('');
+
+    } catch(e) {
+      ac.innerHTML = '<div class="ac-item"><span style="color:var(--accent2)">Zoekopdracht mislukt — controleer je verbinding</span></div>';
+    }
+  }, 400);
+}
+
 // ─── Data ───────────────────────────────────────────────────────────────────
 
 const INSTRUMENTS = [
@@ -1513,65 +1593,11 @@ const GENRES = [
   'Hip-hop', 'Reggae', 'Klassiek', 'Electronic', 'Country'
 ];
 
-// Simulated song database (in productie: MusicBrainz / Spotify API)
-const SONGS_DB = [
-  { title: "Smells Like Teen Spirit", artist: "Nirvana", genre: "Rock" },
-  { title: "Back in Black", artist: "AC/DC", genre: "Rock" },
-  { title: "Eatin' Dust", artist: "Fu Manchu", genre: "Stoner Rock" },
-  { title: "Purple Haze", artist: "Jimi Hendrix", genre: "Rock" },
-  { title: "Seven Nation Army", artist: "The White Stripes", genre: "Rock" },
-  { title: "Master of Puppets", artist: "Metallica", genre: "Metal" },
-  { title: "Enter Sandman", artist: "Metallica", genre: "Metal" },
-  { title: "Paranoid", artist: "Black Sabbath", genre: "Metal" },
-  { title: "Killing in the Name", artist: "Rage Against the Machine", genre: "Metal" },
-  { title: "Sultans of Swing", artist: "Dire Straits", genre: "Rock" },
-  { title: "Hotel California", artist: "Eagles", genre: "Rock" },
-  { title: "Sweet Home Chicago", artist: "Robert Johnson", genre: "Blues" },
-  { title: "The Thrill Is Gone", artist: "B.B. King", genre: "Blues" },
-  { title: "Superstition", artist: "Stevie Wonder", genre: "Funk/Soul" },
-  { title: "Uptown Funk", artist: "Bruno Mars", genre: "Funk/Pop" },
-  { title: "All of Me", artist: "John Legend", genre: "Pop/Soul" },
-  { title: "Blinding Lights", artist: "The Weeknd", genre: "Pop" },
-  { title: "Shape of You", artist: "Ed Sheeran", genre: "Pop" },
-  { title: "Bohemian Rhapsody", artist: "Queen", genre: "Rock" },
-  { title: "Don't Stop Me Now", artist: "Queen", genre: "Rock" },
-  { title: "Comfortably Numb", artist: "Pink Floyd", genre: "Rock" },
-  { title: "Wish You Were Here", artist: "Pink Floyd", genre: "Rock" },
-  { title: "Stairway to Heaven", artist: "Led Zeppelin", genre: "Rock" },
-  { title: "Whole Lotta Love", artist: "Led Zeppelin", genre: "Rock" },
-  { title: "Come Together", artist: "The Beatles", genre: "Rock" },
-  { title: "Hey Jude", artist: "The Beatles", genre: "Pop/Rock" },
-  { title: "Roxanne", artist: "The Police", genre: "Rock" },
-  { title: "Message in a Bottle", artist: "The Police", genre: "Rock" },
-  { title: "Use Somebody", artist: "Kings of Leon", genre: "Indie Rock" },
-  { title: "Mr. Brightside", artist: "The Killers", genre: "Indie Rock" },
-  { title: "Take Me Out", artist: "Franz Ferdinand", genre: "Indie Rock" },
-  { title: "Wonderwall", artist: "Oasis", genre: "Brit Pop" },
-  { title: "Champagne Supernova", artist: "Oasis", genre: "Brit Pop" },
-  { title: "Common People", artist: "Pulp", genre: "Brit Pop" },
-  { title: "Fake Plastic Trees", artist: "Radiohead", genre: "Alternative" },
-  { title: "Creep", artist: "Radiohead", genre: "Alternative" },
-  { title: "Black", artist: "Pearl Jam", genre: "Grunge" },
-  { title: "Jeremy", artist: "Pearl Jam", genre: "Grunge" },
-  { title: "Black Hole Sun", artist: "Soundgarden", genre: "Grunge" },
-  { title: "Would?", artist: "Alice in Chains", genre: "Grunge" },
-  { title: "Nutshell", artist: "Alice in Chains", genre: "Grunge" },
-  { title: "Interstate Love Song", artist: "Stone Temple Pilots", genre: "Grunge" },
-  { title: "Fly Away", artist: "Lenny Kravitz", genre: "Rock/Funk" },
-  { title: "Are You Gonna Go My Way", artist: "Lenny Kravitz", genre: "Rock" },
-  { title: "Use Me", artist: "Bill Withers", genre: "Soul/Funk" },
-  { title: "Lean on Me", artist: "Bill Withers", genre: "Soul" },
-  { title: "Hit Me With Your Best Shot", artist: "Pat Benatar", genre: "Rock" },
-  { title: "You Shook Me All Night Long", artist: "AC/DC", genre: "Rock" },
-  { title: "Highway to Hell", artist: "AC/DC", genre: "Rock" },
-  { title: "Free Bird", artist: "Lynyrd Skynyrd", genre: "Southern Rock" },
-];
-
 // ─── State ───────────────────────────────────────────────────────────────────
 
 let state = {
   currentStep: 0,
-  fname: '', age: '', city: '', zip: '', bio: '',
+  fname: '', birth_date: '', city: '', zip: '', bio: '',
   instruments: [],
   genres: [],
   songs: [],
@@ -1675,28 +1701,7 @@ function toggleTag(el, value, arr) {
   else { arr.splice(idx,1); el.classList.remove('selected'); }
 }
 
-// ─── Autocomplete ────────────────────────────────────────────────────────────
-
-function onSongSearch(q) {
-  const ac = document.getElementById('acList');
-  if (q.length < 2) { ac.classList.remove('open'); return; }
-
-  const ql = q.toLowerCase();
-  const results = SONGS_DB.filter(s =>
-    (s.title.toLowerCase().includes(ql) || s.artist.toLowerCase().includes(ql)) &&
-    !state.songs.find(x => x.title === s.title && x.artist === s.artist)
-  ).slice(0, 7);
-
-  if (!results.length) { ac.classList.remove('open'); return; }
-
-  ac.innerHTML = results.map(s =>
-    `<div class="ac-item" onmousedown="addSong('${esc(s.title)}','${esc(s.artist)}')">
-      <strong>${highlight(s.title, q)}</strong>
-      <span>${s.artist} · ${s.genre}</span>
-    </div>`
-  ).join('');
-  ac.classList.add('open');
-}
+// ─── Autocomplete helpers ─────────────────────────────────────────────────────
 
 function esc(s) { return s.replace(/'/g, "\\'"); }
 
@@ -1714,7 +1719,7 @@ function addSong(title, artist) {
   document.getElementById('songSearch').value = '';
   closeAC();
   if (state.songs.find(s => s.title===title && s.artist===artist)) return;
-  state.songs.push({ title, artist, level: 'basis' });
+  state.songs.push({ title, artist, level: null });
   renderSongs();
   updateCompleteness();
 }
@@ -1731,6 +1736,7 @@ function renderSongs() {
           <button class="level-btn ${s.level==='bijna'?'active-bijna':''}" onclick="setLevel(${i},'bijna')">Bijna helemaal</button>
           <button class="level-btn ${s.level==='podium'?'active-podium':''}" onclick="setLevel(${i},'podium')">Podiumklaar</button>
         </div>
+        ${!s.level ? '<div style="font-size:11px;color:var(--accent2);margin-top:4px;">⚠ Kies een beheersingsniveau</div>' : ''}
       </div>
       <button class="song-remove" onclick="removeSong(${i})">✕</button>
     </div>
@@ -1760,16 +1766,20 @@ function selectGoal(el, val) {
 
 function nextStep(from) {
   if (from === 0) {
-    state.fname = document.getElementById('fname').value.trim();
-    state.age   = document.getElementById('age').value.trim();
-    state.city  = document.getElementById('city').value.trim();
-    state.zip   = document.getElementById('zip').value.trim();
-    state.bio   = document.getElementById('bio').value.trim();
-    if (!state.fname || !state.age || !state.city) {
-      alert('Vul je voornaam, leeftijd en woonplaats in.'); return;
+    state.fname      = document.getElementById('fname').value.trim();
+    state.birth_date = document.getElementById('birth_date').value.trim();
+    state.city       = normalizeCityName(document.getElementById('city').value.trim());
+    state.zip        = document.getElementById('zip').value.trim();
+    state.bio        = document.getElementById('bio').value.trim();
+
+    if (!state.fname || !state.birth_date || !state.city) {
+      alert('Vul je voornaam, geboortedatum en woonplaats in.'); return;
     }
-    const age = parseInt(state.age);
-    if (age < 13 || age > 25) { alert('Leeftijd moet tussen 13 en 25 zijn.'); return; }
+    // Validate DD-MM-YYYY format
+    const bdMatch = state.birth_date.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+    if (!bdMatch) { alert('Voer je geboortedatum in als DD-MM-JJJJ, bijv. 01-02-2001'); return; }
+    const age = calcAge(state.birth_date);
+    if (age < 13 || age > 25) { alert(`Je leeftijd (${age} jaar) valt buiten de doelgroep van 13–25 jaar.`); return; }
   }
   if (from === 1) {
     if (!state.instruments.length) { alert('Selecteer minimaal één instrument.'); return; }
@@ -1777,6 +1787,7 @@ function nextStep(from) {
   }
   if (from === 2) {
     if (!state.songs.length) { alert('Voeg minimaal één nummer toe.'); return; }
+    if (state.songs.some(s => !s.level)) { alert('Kies voor elk nummer een beheersingsniveau.'); return; }
   }
   if (from === 3) {
     if (!state.goal) { alert('Kies wat je zoekt.'); return; }
@@ -2020,7 +2031,7 @@ function renderProfile() {
     ${avatarHTML}
     ${vibeHTML}
     <div class="profile-name">${state.fname}</div>
-    <div class="profile-meta">${state.age} jaar · ${state.city}${state.zip ? ' · ' + state.zip : ''}</div>
+    <div class="profile-meta">${calcAge(state.birth_date)} jaar · ${state.city}${state.zip ? ' · ' + state.zip : ''}</div>
     <div class="freshness-bar" style="border-color:rgba(76,175,80,0.25);">
       <div class="freshness-dot"></div>
       <span>Profiel bijgewerkt op <strong>${dateStr}</strong></span>
