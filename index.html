@@ -1199,12 +1199,32 @@
   <!-- STEP 3: Nummers -->
   <div class="panel" id="step2">
     <div class="panel-title">Repertoire</div>
-    <div class="panel-sub">Zoek nummers die je speelt en geef aan hoe goed je ze beheerst. Voeg minimaal 1 nummer toe.</div>
+    <div class="panel-sub">Zoek eerst een artiest, kies dan een nummer. Voeg minimaal 1 nummer toe.</div>
 
-    <div class="song-search-wrap">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="songSearch" placeholder="Zoek op nummer of artiest..." autocomplete="off" oninput="onSongSearch(this.value)" onblur="setTimeout(()=>closeAC(),150)">
-      <div class="autocomplete-list" id="acList"></div>
+    <!-- Stap A: Artiest zoeken -->
+    <div class="field" style="margin-bottom:12px;">
+      <label>Artiest</label>
+      <div class="song-search-wrap">
+        <span class="search-icon">🎸</span>
+        <input type="text" id="artistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
+          oninput="onArtistSearch(this.value)"
+          onblur="setTimeout(()=>closeAC('acArtistList'),200)">
+        <div class="autocomplete-list" id="acArtistList"></div>
+      </div>
+    </div>
+
+    <!-- Stap B: Nummer kiezen (verschijnt na artiestenselectie) -->
+    <div id="trackSearchWrap" style="display:none; margin-bottom:12px;">
+      <div class="field">
+        <label id="trackSearchLabel">Nummer</label>
+        <div class="song-search-wrap">
+          <span class="search-icon">🎵</span>
+          <input type="text" id="trackSearch" placeholder="Zoek een nummer..." autocomplete="off"
+            oninput="onTrackSearch(this.value)"
+            onblur="setTimeout(()=>closeAC('acTrackList'),200)">
+          <div class="autocomplete-list" id="acTrackList"></div>
+        </div>
+      </div>
     </div>
 
     <div class="songs-list" id="songsList"></div>
@@ -1530,12 +1550,19 @@ function toISODate(ddmmyyyy) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// ─── MusicBrainz zoekfunctie ──────────────────────────────────────────────────
+// ─── MusicBrainz twee-velden zoekfunctie ─────────────────────────────────────
 
 let mbSearchTimeout = null;
+let selectedArtist  = null; // { id, name }
 
-async function onSongSearch(q) {
-  const ac = document.getElementById('acList');
+function closeAC(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+
+// Stap A: Artiest zoeken
+async function onArtistSearch(q) {
+  const ac = document.getElementById('acArtistList');
   if (q.length < 2) { ac.classList.remove('open'); return; }
 
   clearTimeout(mbSearchTimeout);
@@ -1544,59 +1571,98 @@ async function onSongSearch(q) {
     ac.classList.add('open');
 
     try {
-      const headers = { 'User-Agent': 'TheTalentTent/1.0 (hobby project)' };
-      // Zoek tegelijk op titel én op artiest
-      const [resByTitle, resByArtist] = await Promise.all([
-        fetch(`https://musicbrainz.org/ws/2/recording/?query=recording:${encodeURIComponent(q)}&limit=7&fmt=json`, { headers }),
-        fetch(`https://musicbrainz.org/ws/2/recording/?query=artist:${encodeURIComponent(q)}&limit=7&fmt=json`, { headers })
-      ]);
-      const [dataTitle, dataArtist] = await Promise.all([resByTitle.json(), resByArtist.json()]);
+      const res = await fetch(
+        `https://musicbrainz.org/ws/2/artist/?query=artist:${encodeURIComponent(q)}&limit=7&fmt=json`,
+        { headers: { 'User-Agent': 'TheTalentTent/1.0' } }
+      );
+      const data = await res.json();
+      const artists = (data.artists || []).slice(0, 6);
 
-      const combined = [
-        ...(dataTitle.recordings || []),
-        ...(dataArtist.recordings || [])
-      ];
+      if (!artists.length) {
+        ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Geen artiesten gevonden</span></div>';
+        return;
+      }
+
+      ac.innerHTML = artists.map(a => {
+        const extra = a.disambiguation ? ` <span style="color:var(--muted);font-size:11px;">(${a.disambiguation})</span>` : '';
+        const country = a.country ? ` · ${a.country}` : '';
+        return `<div class="ac-item" onmousedown="selectArtist('${esc(a.id)}','${esc(a.name)}')">
+          <strong>${highlight(a.name, q)}</strong>${extra}
+          <span style="font-size:11px;color:var(--muted);">${a.type || 'Artiest'}${country}</span>
+        </div>`;
+      }).join('');
+
+    } catch(e) {
+      ac.innerHTML = '<div class="ac-item"><span style="color:var(--accent2)">Zoekopdracht mislukt</span></div>';
+    }
+  }, 400);
+}
+
+// Artiest geselecteerd → laad nummers
+async function selectArtist(id, name) {
+  selectedArtist = { id, name };
+  document.getElementById('artistSearch').value = name;
+  closeAC('acArtistList');
+
+  // Toon het nummerveld
+  const wrap = document.getElementById('trackSearchWrap');
+  wrap.style.display = 'block';
+  document.getElementById('trackSearchLabel').textContent = `Nummer van ${name}`;
+  document.getElementById('trackSearch').value = '';
+  document.getElementById('trackSearch').focus();
+  closeAC('acTrackList');
+}
+
+// Stap B: Nummer zoeken binnen geselecteerde artiest
+async function onTrackSearch(q) {
+  const ac = document.getElementById('acTrackList');
+  if (!selectedArtist) return;
+  if (q.length < 1) { ac.classList.remove('open'); return; }
+
+  clearTimeout(mbSearchTimeout);
+  mbSearchTimeout = setTimeout(async () => {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
+    ac.classList.add('open');
+
+    try {
+      // Zoek op artiest-ID + optionele titelfilter
+      const titleFilter = q.length >= 2 ? ` AND recording:${encodeURIComponent(q)}` : '';
+      const url = `https://musicbrainz.org/ws/2/recording/?query=arid:${selectedArtist.id}${titleFilter}&limit=10&fmt=json`;
+      const res = await fetch(url, { headers: { 'User-Agent': 'TheTalentTent/1.0' } });
+      const data = await res.json();
 
       const seen = new Set();
-      const results = combined
+      const results = (data.recordings || [])
         .filter(r => {
-          const artist = r['artist-credit']?.[0]?.artist?.name;
-          const title  = r.title;
-          if (!artist || !title) return false;
-          // Filter covers eruit (hebben originele naam tussen haakjes in de titel)
-          if (/\(.+\)$/.test(title)) return false;
-          const key = `${title.toLowerCase()}||${artist.toLowerCase()}`;
+          const title = r.title;
+          if (!title) return false;
+          const key = title.toLowerCase();
           if (seen.has(key)) return false;
           seen.add(key);
           if (state.songs.find(s =>
             s.title.toLowerCase() === title.toLowerCase() &&
-            s.artist.toLowerCase() === artist.toLowerCase()
+            s.artist.toLowerCase() === selectedArtist.name.toLowerCase()
           )) return false;
           return true;
         })
-        .slice(0, 7)
-        .map(r => ({
-          title:  r.title,
-          artist: r['artist-credit'][0].artist.name,
-          genre:  r.tags?.[0]?.name || ''
-        }));
+        .slice(0, 8);
 
       if (!results.length) {
-        ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Geen nummers gevonden — probeer bijv. "Master of Puppets" of "Metallica"</span></div>';
+        ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Geen nummers gevonden</span></div>';
         return;
       }
 
-      ac.innerHTML = results.map(s =>
-        `<div class="ac-item" onmousedown="addSong('${esc(s.title)}','${esc(s.artist)}')">
-          <strong style="font-size:14px;">${highlight(s.title, q)}</strong>
-          <span style="font-size:12px;color:var(--muted);">🎸 ${s.artist}${s.genre ? ' · ' + s.genre : ''}</span>
+      ac.innerHTML = results.map(r =>
+        `<div class="ac-item" onmousedown="addSong('${esc(r.title)}','${esc(selectedArtist.name)}')">
+          <strong style="font-size:14px;">${highlight(r.title, q)}</strong>
+          <span style="font-size:12px;color:var(--muted);">🎸 ${selectedArtist.name}</span>
         </div>`
       ).join('');
 
     } catch(e) {
-      ac.innerHTML = '<div class="ac-item"><span style="color:var(--accent2)">Zoekopdracht mislukt — controleer je verbinding</span></div>';
+      ac.innerHTML = '<div class="ac-item"><span style="color:var(--accent2)">Zoekopdracht mislukt</span></div>';
     }
-  }, 500);
+  }, 350);
 }
 
 // ─── Data ───────────────────────────────────────────────────────────────────
@@ -1731,13 +1797,10 @@ function highlight(text, q) {
   return text.slice(0,idx) + `<mark style="background:rgba(245,197,24,0.3);color:inherit;border-radius:2px;">${text.slice(idx,idx+q.length)}</mark>` + text.slice(idx+q.length);
 }
 
-function closeAC() {
-  document.getElementById('acList').classList.remove('open');
-}
-
 function addSong(title, artist) {
-  document.getElementById('songSearch').value = '';
-  closeAC();
+  // Reset nummerveld na toevoeging
+  document.getElementById('trackSearch').value = '';
+  closeAC('acTrackList');
   if (state.songs.find(s => s.title===title && s.artist===artist)) return;
   state.songs.push({ title, artist, level: null });
   renderSongs();
