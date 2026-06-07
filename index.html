@@ -1538,38 +1538,47 @@ async function onSongSearch(q) {
   const ac = document.getElementById('acList');
   if (q.length < 2) { ac.classList.remove('open'); return; }
 
-  // Debounce: wacht 400ms na laatste toetsaanslag (MusicBrainz rate limit = 1 req/sec)
   clearTimeout(mbSearchTimeout);
   mbSearchTimeout = setTimeout(async () => {
-    ac.innerHTML = '<div class="ac-item"><span>Zoeken...</span></div>';
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken in MusicBrainz...</span></div>';
     ac.classList.add('open');
 
     try {
-      const url = `https://musicbrainz.org/ws/2/recording/?query=${encodeURIComponent(q)}&limit=8&fmt=json`;
+      // Search recordings (= nummers) matching title OR artist
+      const url = `https://musicbrainz.org/ws/2/recording/?query=recording:"${encodeURIComponent(q)}" OR artist:"${encodeURIComponent(q)}"&limit=10&fmt=json`;
       const res = await fetch(url, {
         headers: { 'User-Agent': 'TheTalentTent/1.0 (hobby project)' }
       });
       const data = await res.json();
 
+      const seen = new Set();
       const results = (data.recordings || [])
-        .filter(r => r.releases?.length && r['artist-credit']?.length)
-        .filter(r => !state.songs.find(s => s.title === r.title && s.artist === r['artist-credit'][0]?.name))
+        .filter(r => {
+          const artist = r['artist-credit']?.[0]?.name;
+          const title  = r.title;
+          if (!artist || !title) return false;
+          const key = `${title}||${artist}`.toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          if (state.songs.find(s => s.title.toLowerCase() === title.toLowerCase() && s.artist.toLowerCase() === artist.toLowerCase())) return false;
+          return true;
+        })
         .slice(0, 7)
         .map(r => ({
           title:  r.title,
-          artist: r['artist-credit'][0]?.name || 'Onbekend',
+          artist: r['artist-credit'][0].name,
           genre:  r.tags?.[0]?.name || ''
         }));
 
       if (!results.length) {
-        ac.innerHTML = '<div class="ac-item"><span>Geen resultaten gevonden</span></div>';
+        ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Geen nummers gevonden — probeer een andere zoekterm</span></div>';
         return;
       }
 
       ac.innerHTML = results.map(s =>
         `<div class="ac-item" onmousedown="addSong('${esc(s.title)}','${esc(s.artist)}')">
-          <strong>${highlight(s.title, q)}</strong>
-          <span>${s.artist}${s.genre ? ' · ' + s.genre : ''}</span>
+          <strong style="font-size:14px;">${highlight(s.title, q)}</strong>
+          <span style="font-size:12px; color:var(--muted);">🎸 ${s.artist}${s.genre ? ' · ' + s.genre : ''}</span>
         </div>`
       ).join('');
 
