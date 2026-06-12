@@ -1462,6 +1462,105 @@
     margin-top: 24px;
   }
 
+  /* ── Band kaarten ────────────────────────── */
+  .band-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .band-card:hover { border-color: #444; }
+
+  .band-card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    cursor: pointer;
+  }
+
+  .band-avatar {
+    width: 56px; height: 56px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    color: #000;
+    flex-shrink: 0;
+  }
+
+  .band-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 0.5px;
+    line-height: 1;
+  }
+
+  .band-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .band-status-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    border: 1px solid;
+    margin-left: auto;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .band-status-zoekend  { border-color: var(--accent); color: var(--accent); }
+  .band-status-compleet { border-color: #4caf50; color: #4caf50; }
+  .band-status-inactief { border-color: var(--muted); color: var(--muted); }
+
+  .band-card-body {
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .band-members-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 14px;
+    margin-bottom: 10px;
+  }
+
+  .band-member-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+
+  .band-member-dot {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    font-family: 'Bebas Neue', sans-serif;
+    color: #000;
+    flex-shrink: 0;
+  }
+
+  .wanted-chip {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    border: 1px dashed var(--accent2);
+    color: var(--accent2);
+  }
+
   @media (max-width: 560px) {
     header { padding: 20px 20px 0; flex-direction: column; align-items: flex-start; }
     main { padding: 32px 16px 60px; }
@@ -1481,6 +1580,7 @@
 <!-- Navigatie -->
 <nav class="app-nav" id="appNav" style="display:none;">
   <button class="nav-btn" id="navMyProfile" onclick="showView('myprofile')" style="display:none;">👤 Mijn profiel</button>
+  <button class="nav-btn" id="navBands" onclick="showView('bands')" style="display:none;">🎵 Mijn bands</button>
   <button class="nav-btn" id="navSearch" onclick="showView('search')">🔍 Zoeken</button>
   <button class="nav-btn" id="navRegister" onclick="showView('register')">✚ Aanmelden</button>
   <div class="nav-spacer"></div>
@@ -1521,10 +1621,6 @@
 
       <!-- Signup -->
       <div id="paneSignup" style="display:none;">
-        <div class="field" style="margin-bottom:16px;">
-          <label>Voornaam <span class="req">*</span></label>
-          <input type="text" id="signupFname" placeholder="Jouw voornaam">
-        </div>
         <div class="field" style="margin-bottom:16px;">
           <label>E-mailadres <span class="req">*</span></label>
           <input type="email" id="signupEmail" placeholder="jouw@email.nl">
@@ -1890,12 +1986,87 @@
 <!-- ═══════════════════════════════════════════ -->
 <!-- VIEW: Mijn profiel                          -->
 <!-- ═══════════════════════════════════════════ -->
+<!-- VIEW: Mijn profiel                          -->
+<!-- ═══════════════════════════════════════════ -->
 <div class="app-view" id="view-myprofile">
   <div class="my-profile-wrap">
     <div id="myProfileContent"></div>
     <div class="profile-actions">
       <button class="btn btn-primary" onclick="showView('register')">✏️ Profiel bewerken</button>
+      <button class="btn btn-ghost" onclick="showView('bands')" id="myBandsBtn" style="display:none;">🎵 Mijn bands</button>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- VIEW: Mijn bands                            -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="app-view" id="view-bands">
+  <div class="search-wrap">
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <div>
+        <div class="filter-title">🎵 Mijn bands</div>
+        <p style="font-size:13px;color:var(--muted);">Bands waar jij oprichter of lid van bent</p>
+      </div>
+      <button class="btn btn-primary" onclick="showCreateBandForm()">+ Nieuwe band</button>
+    </div>
+
+    <!-- Band aanmaken formulier (verborgen by default) -->
+    <div id="createBandForm" style="display:none;">
+      <div class="search-filters" style="margin-bottom:28px;">
+        <div class="filter-title" style="font-size:20px;">Nieuwe band aanmaken</div>
+
+        <div class="filter-row">
+          <div class="field">
+            <label>Bandnaam <span class="req">*</span></label>
+            <input type="text" id="bandName" placeholder="Bijv. The Rusty Strings">
+          </div>
+          <div class="field">
+            <label>Stad</label>
+            <input type="text" id="bandCity" placeholder="Bijv. Delft">
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:16px;">
+          <label>Beschrijving</label>
+          <textarea id="bandDescription" placeholder="Vertel iets over de band — stijl, doel, niveau..." style="min-height:80px;"></textarea>
+        </div>
+
+        <div class="field" style="margin-bottom:16px;">
+          <label>Genre(s)</label>
+          <div class="tag-grid" id="bandGenreGrid"></div>
+        </div>
+
+        <div class="field" style="margin-bottom:16px;">
+          <label>Status</label>
+          <div class="tag-grid" id="bandStatusGrid">
+            <div class="tag" onclick="selectBandStatus(this,'zoekend')">🔍 Zoekend naar leden</div>
+            <div class="tag" onclick="selectBandStatus(this,'compleet')">✅ Band is compleet</div>
+            <div class="tag" onclick="selectBandStatus(this,'inactief')">💤 Inactief</div>
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:16px;">
+          <label>Wij zoeken nog <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;">(welke instrumenten zoekt de band?)</span></label>
+          <div class="tag-grid" id="bandWantedGrid"></div>
+        </div>
+
+        <div class="field" style="margin-bottom:16px;">
+          <label>Profielkleur</label>
+          <div class="color-picker-row" id="bandColorRow"></div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button class="btn btn-primary" onclick="saveBand()">Band aanmaken ✓</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('createBandForm').style.display='none'">Annuleren</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lijst van bands -->
+    <div id="myBandsList"></div>
+
   </div>
 </div>
 
@@ -1904,6 +2075,14 @@
   <div class="modal-box" id="musicianModalBox">
     <button class="modal-close" onclick="document.getElementById('musicianModal').classList.remove('visible')">✕</button>
     <div id="musicianModalContent"></div>
+  </div>
+</div>
+
+<!-- Band detail modal -->
+<div class="modal-overlay" id="bandModal" onclick="closeBandModal(event)">
+  <div class="modal-box" id="bandModalBox">
+    <button class="modal-close" onclick="document.getElementById('bandModal').classList.remove('visible')">✕</button>
+    <div id="bandModalContent"></div>
   </div>
 </div>
 
@@ -1945,20 +2124,20 @@ function onUserLoggedIn(user) {
   document.getElementById('navLogin').style.display = 'none';
   document.getElementById('navUser').style.display = 'flex';
   document.getElementById('navMyProfile').style.display = 'block';
-  // Voornaam uit user_metadata, anders e-mail prefix
-  const fname = user.user_metadata?.fname || user.email.split('@')[0];
-  document.getElementById('navUserName').textContent = fname;
-  document.getElementById('navUserDot').textContent = fname[0].toUpperCase();
+  document.getElementById('navBands').style.display = 'block';
+  const userFname = user.user_metadata?.fname || user.email.split('@')[0];
+  document.getElementById('navUserName').textContent = userFname;
+  document.getElementById('navUserDot').textContent = userFname[0].toUpperCase();
   showView('myprofile');
 
   // Vul voornaam alvast in het aanmeldformulier
-  const userFname = user.user_metadata?.fname;
-  if (userFname) {
+  const userFname2 = user.user_metadata?.fname;
+  if (userFname2) {
     const fnameEl = document.getElementById('fname');
     if (fnameEl && !fnameEl.value) {
-      fnameEl.value = userFname;
-      state.fname = userFname;
-      document.getElementById('avatarInitials').textContent = userFname[0].toUpperCase();
+      fnameEl.value = userFname2;
+      state.fname = userFname2;
+      document.getElementById('avatarInitials').textContent = userFname2[0].toUpperCase();
     }
   }
 }
@@ -1968,6 +2147,8 @@ function onUserLoggedOut() {
   document.getElementById('navLogin').style.display = 'block';
   document.getElementById('navUser').style.display = 'none';
   document.getElementById('navMyProfile').style.display = 'none';
+  document.getElementById('navBands').style.display = 'none';
+  myMusicianId = null;
   showView('search');
 }
 
@@ -1980,7 +2161,13 @@ function showView(view) {
 
   document.getElementById(`view-${view}`).classList.add('active');
 
-  const navMap = { search: 'navSearch', register: 'navRegister', myprofile: 'navMyProfile', auth: 'navLogin' };
+  const navMap = {
+    search:    'navSearch',
+    register:  'navRegister',
+    myprofile: 'navMyProfile',
+    bands:     'navBands',
+    auth:      'navLogin'
+  };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
 
   // Aanmelden alleen voor ingelogde gebruikers
@@ -1991,7 +2178,9 @@ function showView(view) {
   }
 
   if (view === 'myprofile') loadMyProfile();
+  if (view === 'bands') loadMyBands();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+
 }
 
 // ─── Authenticatie ───────────────────────────────────────────────────────────
@@ -2034,20 +2223,15 @@ async function signIn() {
 }
 
 async function signUp() {
-  const fname  = document.getElementById('signupFname').value.trim();
   const email  = document.getElementById('signupEmail').value.trim();
   const pw1    = document.getElementById('signupPassword').value;
   const pw2    = document.getElementById('signupPassword2').value;
 
-  if (!fname || !email || !pw1 || !pw2) { showAuthError('Vul alle velden in.'); return; }
+  if (!email || !pw1 || !pw2) { showAuthError('Vul alle velden in.'); return; }
   if (pw1.length < 8) { showAuthError('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
   if (pw1 !== pw2) { showAuthError('Wachtwoorden komen niet overeen.'); return; }
 
-  const { error } = await db.auth.signUp({
-    email,
-    password: pw1,
-    options: { data: { fname } }
-  });
+  const { error } = await db.auth.signUp({ email, password: pw1 });
   if (error) { showAuthError('Registratie mislukt: ' + error.message); return; }
   showAuthSuccess('✓ Account aangemaakt! Controleer je e-mail voor de bevestigingslink.');
 }
@@ -2333,6 +2517,8 @@ async function loadMyProfile() {
   const content = document.getElementById('musicianModalContent').innerHTML;
   el.innerHTML = content;
   document.getElementById('musicianModal').classList.remove('visible');
+  const bandsBtn = document.getElementById('myBandsBtn');
+  if (bandsBtn) bandsBtn.style.display = 'inline-flex';
 }
 
 // ─── Hulpfuncties ────────────────────────────────────────────────────────────
@@ -3094,6 +3280,283 @@ function renderProfile() {
       ${pct < 100 ? `<p style="font-size:11px;color:var(--muted);margin-top:10px;">💡 Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:11px;color:${col};margin-top:10px;font-weight:700;">🎉 Compleet profiel! Jij valt op.</p>`}
     </div>
   `;
+}
+
+// ─── Bands ───────────────────────────────────────────────────────────────────
+
+let bandState = {
+  genres:   [],
+  status:   'zoekend',
+  wanted:   [],
+  color:    '#3ecfff'
+};
+
+let myMusicianId = null; // huidig ingelogde muzikant-ID
+
+async function getMyMusicianId() {
+  if (myMusicianId) return myMusicianId;
+  if (!currentUser) return null;
+  const { data } = await db.from('musicians').select('id').eq('user_id', currentUser.id).single();
+  myMusicianId = data?.id || null;
+  return myMusicianId;
+}
+
+function showCreateBandForm() {
+  if (!currentUser) { alert('Je moet ingelogd zijn om een band aan te maken.'); return; }
+  const form = document.getElementById('createBandForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  initBandForm();
+}
+
+function initBandForm() {
+  // Genre grid (eenmalig vullen)
+  const gg = document.getElementById('bandGenreGrid');
+  if (!gg.children.length) {
+    GENRES.forEach(g => {
+      const t = document.createElement('div');
+      t.className = 'genre-tag';
+      t.textContent = g;
+      t.onclick = () => {
+        const idx = bandState.genres.indexOf(g);
+        if (idx === -1) { bandState.genres.push(g); t.classList.add('selected'); }
+        else { bandState.genres.splice(idx,1); t.classList.remove('selected'); }
+      };
+      gg.appendChild(t);
+    });
+  }
+
+  // Wanted instrumenten
+  const wg = document.getElementById('bandWantedGrid');
+  if (!wg.children.length) {
+    INSTRUMENTS.forEach(i => {
+      const t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = i;
+      t.style.fontSize = '12px';
+      t.style.padding = '6px 12px';
+      t.onclick = () => {
+        const idx = bandState.wanted.indexOf(i);
+        if (idx === -1) { bandState.wanted.push(i); t.classList.add('selected'); }
+        else { bandState.wanted.splice(idx,1); t.classList.remove('selected'); }
+      };
+      wg.appendChild(t);
+    });
+  }
+
+  // Kleur swatches
+  const cr = document.getElementById('bandColorRow');
+  if (!cr.children.length) {
+    PROFILE_COLORS.forEach(c => {
+      const sw = document.createElement('div');
+      sw.className = 'color-swatch' + (c.hex === bandState.color ? ' selected' : '');
+      sw.style.background = c.hex;
+      sw.title = c.name;
+      sw.onclick = () => {
+        document.querySelectorAll('#bandColorRow .color-swatch').forEach(s => s.classList.remove('selected'));
+        sw.classList.add('selected');
+        bandState.color = c.hex;
+      };
+      cr.appendChild(sw);
+    });
+  }
+}
+
+function selectBandStatus(el, val) {
+  document.querySelectorAll('#bandStatusGrid .tag').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+  bandState.status = val;
+}
+
+async function saveBand() {
+  const name = document.getElementById('bandName').value.trim();
+  const city = document.getElementById('bandCity').value.trim();
+  const desc = document.getElementById('bandDescription').value.trim();
+
+  if (!name) { alert('Vul een bandnaam in.'); return; }
+
+  const mid = await getMyMusicianId();
+  if (!mid) { alert('Je hebt nog geen muzikantprofiel. Maak eerst een profiel aan.'); return; }
+
+  try {
+    // 1. Band aanmaken
+    const { data: band, error: bErr } = await db.from('bands').insert({
+      name,
+      city:          city ? normalizeCityName(city) : null,
+      description:   desc || null,
+      genres:        bandState.genres,
+      status:        bandState.status,
+      profile_color: bandState.color,
+      founder_id:    mid,
+    }).select().single();
+
+    if (bErr) throw bErr;
+
+    // 2. Oprichter als eerste lid toevoegen (bevestigd)
+    await db.from('band_members').insert({
+      band_id:     band.id,
+      musician_id: mid,
+      role:        'Oprichter',
+      status:      'bevestigd'
+    });
+
+    // 3. Gezochte instrumenten opslaan
+    if (bandState.wanted.length) {
+      await db.from('band_wanted').insert(
+        bandState.wanted.map(instrument => ({ band_id: band.id, instrument }))
+      );
+    }
+
+    // Reset form
+    document.getElementById('bandName').value = '';
+    document.getElementById('bandCity').value = '';
+    document.getElementById('bandDescription').value = '';
+    document.querySelectorAll('#bandGenreGrid .genre-tag').forEach(t => t.classList.remove('selected'));
+    document.querySelectorAll('#bandWantedGrid .tag').forEach(t => t.classList.remove('selected'));
+    bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff' };
+    document.getElementById('createBandForm').style.display = 'none';
+
+    // Herlaad lijst
+    loadMyBands();
+
+  } catch(e) {
+    alert('Fout bij aanmaken: ' + e.message);
+  }
+}
+
+async function loadMyBands() {
+  const el = document.getElementById('myBandsList');
+  el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:32px;">Laden...</div>';
+
+  const mid = await getMyMusicianId();
+  if (!mid) {
+    el.innerHTML = `<div style="text-align:center;padding:60px 20px;">
+      <div style="font-size:48px;margin-bottom:16px;">🎵</div>
+      <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Nog geen profiel</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:24px;">Maak eerst een muzikantprofiel aan.</p>
+      <button class="btn btn-primary" onclick="showView('register')">Profiel aanmaken →</button>
+    </div>`;
+    return;
+  }
+
+  // Haal bands op waar muzikant lid van is
+  const { data: memberships } = await db.from('band_members')
+    .select('band_id, role, status')
+    .eq('musician_id', mid)
+    .eq('status', 'bevestigd');
+
+  if (!memberships?.length) {
+    el.innerHTML = `<div style="text-align:center;padding:60px 20px;">
+      <div style="font-size:48px;margin-bottom:16px;">🎵</div>
+      <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Nog geen bands</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:24px;">Maak een nieuwe band aan of word uitgenodigd.</p>
+    </div>`;
+    return;
+  }
+
+  const bandIds = memberships.map(m => m.band_id);
+  const { data: bands } = await db.from('bands')
+    .select(`*, band_members(musician_id, role, status, musicians(fname, profile_color, avatar_url)), band_wanted(instrument)`)
+    .in('id', bandIds)
+    .order('updated_at', { ascending: false });
+
+  el.innerHTML = (bands || []).map(b => bandCardHTML(b, mid)).join('');
+}
+
+function bandCardHTML(band, myMid) {
+  const col = band.profile_color || '#3ecfff';
+  const initials = band.name.slice(0,2).toUpperCase();
+  const confirmedMembers = (band.band_members || []).filter(m => m.status === 'bevestigd');
+  const isFounder = band.founder_id === myMid;
+
+  const statusLabels = { zoekend: '🔍 Zoekend', compleet: '✅ Compleet', inactief: '💤 Inactief' };
+
+  const memberChips = confirmedMembers.map(m => {
+    const c = m.musicians?.profile_color || '#888';
+    const init = (m.musicians?.fname || '?')[0].toUpperCase();
+    return `<div class="band-member-chip">
+      <div class="band-member-dot" style="background:${c};">${init}</div>
+      ${m.musicians?.fname || 'Onbekend'} <span style="color:var(--muted);font-size:10px;">${m.role || ''}</span>
+    </div>`;
+  }).join('');
+
+  const wantedChips = (band.band_wanted || []).map(w =>
+    `<span class="wanted-chip">+ ${w.instrument}</span>`
+  ).join('');
+
+  return `<div class="band-card">
+    <div class="band-card-header" onclick="openBandModal('${band.id}')">
+      <div class="band-avatar" style="background:${col};">${initials}</div>
+      <div style="flex:1;">
+        <div class="band-name">${band.name}</div>
+        <div class="band-meta">${band.city || ''}${band.city && band.genres?.length ? ' · ' : ''}${(band.genres||[]).slice(0,2).join(', ')}</div>
+      </div>
+      <span class="band-status-badge band-status-${band.status}">${statusLabels[band.status]||band.status}</span>
+    </div>
+    <div class="band-card-body">
+      ${band.description ? `<p style="font-size:13px;color:var(--muted);margin-bottom:12px;font-style:italic;">"${band.description}"</p>` : ''}
+      <div class="band-members-row">${memberChips}</div>
+      ${wantedChips ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${wantedChips}</div>` : ''}
+      ${isFounder ? `<div style="margin-top:14px;display:flex;gap:8px;">
+        <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;" onclick="event.stopPropagation();searchMusicianForBand('${band.id}')">+ Muzikant zoeken</button>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+async function openBandModal(id) {
+  const modal = document.getElementById('bandModal');
+  document.getElementById('bandModalContent').innerHTML =
+    '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  modal.classList.add('visible');
+
+  const { data: b } = await db.from('bands')
+    .select(`*, band_members(role, status, musicians(id, fname, profile_color, avatar_url, city, musician_instruments(instrument))), band_wanted(instrument)`)
+    .eq('id', id).single();
+
+  if (!b) { document.getElementById('bandModalContent').innerHTML = '<p style="color:var(--accent2)">Kon band niet laden.</p>'; return; }
+
+  const col = b.profile_color || '#3ecfff';
+  const confirmedMembers = (b.band_members||[]).filter(m => m.status === 'bevestigd');
+  const statusLabels = { zoekend: '🔍 Zoekend naar leden', compleet: '✅ Band is compleet', inactief: '💤 Inactief' };
+
+  const memberRows = confirmedMembers.map(m => {
+    const mc = m.musicians?.profile_color || '#888';
+    const init = (m.musicians?.fname||'?')[0].toUpperCase();
+    const instrs = (m.musicians?.musician_instruments||[]).map(x=>x.instrument).join(', ');
+    return `<div class="band-member-chip" style="margin-bottom:6px;">
+      <div class="band-member-dot" style="background:${mc};">${init}</div>
+      <span><strong>${m.musicians?.fname||'?'}</strong> · ${m.role||'Lid'}</span>
+      ${instrs ? `<span style="color:var(--muted);font-size:11px;">(${instrs})</span>` : ''}
+    </div>`;
+  }).join('');
+
+  const wantedRows = (b.band_wanted||[]).map(w =>
+    `<span class="wanted-chip">${w.instrument}</span>`
+  ).join('');
+
+  document.getElementById('bandModalContent').innerHTML = `
+    <div style="height:8px;background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;"></div>
+    <div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">${b.name.slice(0,2).toUpperCase()}</div>
+    <div class="profile-name">${b.name}</div>
+    <div class="profile-meta">${b.city||''}${b.city&&b.genres?.length?' · ':''}${(b.genres||[]).join(', ')}</div>
+    <div style="margin:10px 0;"><span class="band-status-badge band-status-${b.status}">${statusLabels[b.status]||b.status}</span></div>
+    ${b.description ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${b.description}"</p>` : ''}
+    <div class="profile-songs-title" style="margin-top:16px;">Leden (${confirmedMembers.length})</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">${memberRows}</div>
+    ${wantedRows ? `<div class="profile-songs-title" style="margin-top:16px;">Wij zoeken nog</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${wantedRows}</div>` : ''}
+  `;
+}
+
+function closeBandModal(e) {
+  if (e.target === document.getElementById('bandModal')) {
+    document.getElementById('bandModal').classList.remove('visible');
+  }
+}
+
+function searchMusicianForBand(bandId) {
+  // Ga naar zoekscherm met band-context — uitgebreid in volgende fase
+  showView('search');
 }
 
 // ─── Start ───────────────────────────────────────────────────────────────────
