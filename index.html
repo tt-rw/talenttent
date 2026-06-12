@@ -1498,75 +1498,30 @@
 <div class="app-view" id="view-auth">
   <div class="auth-wrap">
     <div class="auth-panel">
-      <div class="auth-tabs">
-        <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Inloggen</button>
-        <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Nieuw account</button>
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);letter-spacing:1px;">Inloggen</div>
+        <p style="font-size:13px;color:var(--muted);margin-top:4px;">Welkom terug bij The Talent Tent</p>
       </div>
 
       <div id="authError" class="auth-error"></div>
       <div id="authSuccess" class="auth-success"></div>
 
-      <!-- Login -->
-      <div id="paneLogin">
-        <div class="field" style="margin-bottom:16px;">
-          <label>E-mailadres</label>
-          <input type="email" id="loginEmail" placeholder="jouw@email.nl">
-        </div>
-        <div class="field" style="margin-bottom:8px;">
-          <label>Wachtwoord</label>
-          <input type="password" id="loginPassword" placeholder="••••••••">
-        </div>
-        <div style="text-align:right; margin-bottom:20px;">
-          <button onclick="forgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;">Wachtwoord vergeten?</button>
-        </div>
-        <button class="btn btn-primary" style="width:100%;" onclick="signIn()">Inloggen →</button>
-      </div>
-
-      <!-- Signup -->
-      <div id="paneSignup" style="display:none;">
-        <div class="field" style="margin-bottom:16px;">
-          <label>Voornaam <span class="req">*</span></label>
-          <input type="text" id="signupFname" placeholder="Jouw voornaam">
-        </div>
-        <div class="field" style="margin-bottom:16px;">
-          <label>E-mailadres <span class="req">*</span></label>
-          <input type="email" id="signupEmail" placeholder="jouw@email.nl">
-        </div>
-        <div class="field" style="margin-bottom:16px;">
-          <label>Wachtwoord <span class="req">*</span></label>
-          <input type="password" id="signupPassword" placeholder="Minimaal 8 tekens">
-        </div>
-        <div class="field" style="margin-bottom:24px;">
-          <label>Wachtwoord herhalen <span class="req">*</span></label>
-          <input type="password" id="signupPassword2" placeholder="••••••••">
-        </div>
-        <button class="btn btn-primary" style="width:100%;" onclick="signUp()">Account aanmaken →</button>
-        <p style="font-size:11px;color:var(--muted);margin-top:12px;text-align:center;">Na registratie ontvang je een bevestigingsmail.</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Wachtwoord reset scherm -->
-<div class="app-view" id="view-reset">
-  <div class="auth-wrap">
-    <div class="auth-panel">
-      <div style="text-align:center;margin-bottom:24px;">
-        <div style="font-size:48px;margin-bottom:12px;">🔑</div>
-        <div class="panel-title" style="font-size:28px;">Nieuw wachtwoord</div>
-        <p style="font-size:13px;color:var(--muted);margin-top:6px;">Kies een nieuw wachtwoord voor je account.</p>
-      </div>
-      <div id="resetError" class="auth-error"></div>
-      <div id="resetSuccess" class="auth-success"></div>
       <div class="field" style="margin-bottom:16px;">
-        <label>Nieuw wachtwoord <span class="req">*</span></label>
-        <input type="password" id="resetPassword1" placeholder="Minimaal 8 tekens">
+        <label>E-mailadres</label>
+        <input type="email" id="loginEmail" placeholder="jouw@email.nl">
       </div>
-      <div class="field" style="margin-bottom:24px;">
-        <label>Wachtwoord herhalen <span class="req">*</span></label>
-        <input type="password" id="resetPassword2" placeholder="••••••••">
+      <div class="field" style="margin-bottom:8px;">
+        <label>Wachtwoord</label>
+        <input type="password" id="loginPassword" placeholder="••••••••">
       </div>
-      <button class="btn btn-primary" style="width:100%;" onclick="saveNewPassword()">Wachtwoord opslaan →</button>
+      <div style="text-align:right;margin-bottom:20px;">
+        <button onclick="forgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;">Wachtwoord vergeten?</button>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-bottom:16px;" onclick="signIn()">Inloggen →</button>
+      <div style="text-align:center;padding-top:16px;border-top:1px solid var(--border);">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Nog geen profiel?</p>
+        <button class="btn btn-ghost" style="width:100%;" onclick="showView('register')">Profiel aanmaken →</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1592,7 +1547,7 @@
   <!-- STEP 1: Persoonlijke info -->
   <div class="panel active" id="step0">
     <div class="panel-title">Over jou</div>
-    <div class="panel-sub">Vertel wie je bent. Alleen je voornaam is zichtbaar voor andere muzikanten.</div>
+    <div class="panel-sub">Maak je profiel aan. Je voornaam is zichtbaar voor andere muzikanten — je e-mail en wachtwoord nooit.</div>
 
     <div class="field-group">
       <div class="field">
@@ -1620,6 +1575,27 @@
       <div class="field">
         <label>Korte bio <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
         <textarea id="bio" placeholder="Bijv. Ik speel al 3 jaar gitaar en ben op zoek naar een drummer voor een band..."></textarea>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.</p>
+
+    <div class="field-group">
+      <div class="field">
+        <label>E-mailadres <span class="req">*</span></label>
+        <input type="email" id="regEmail" placeholder="jouw@email.nl">
+      </div>
+      <div class="field">
+        <label>Wachtwoord <span class="req">*</span></label>
+        <input type="password" id="regPassword" placeholder="Minimaal 8 tekens">
+      </div>
+    </div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Wachtwoord herhalen <span class="req">*</span></label>
+        <input type="password" id="regPassword2" placeholder="••••••••">
       </div>
     </div>
 
@@ -1957,10 +1933,7 @@ async function appInit() {
 
   // Luister naar auth-wijzigingen
   db.auth.onAuthStateChange((event, session) => {
-    if (event === 'PASSWORD_RECOVERY') {
-      // Gebruiker komt via herstellink — toon reset scherm
-      showView('reset');
-    } else if (event === 'SIGNED_IN' && session?.user) {
+    if (event === 'SIGNED_IN' && session?.user) {
       currentUser = session.user;
       onUserLoggedIn(session.user);
     } else if (event === 'SIGNED_OUT') {
@@ -1973,6 +1946,7 @@ async function appInit() {
 function onUserLoggedIn(user) {
   document.getElementById('appNav').style.display = 'flex';
   document.getElementById('navLogin').style.display = 'none';
+  document.getElementById('navRegister').style.display = 'none';
   document.getElementById('navUser').style.display = 'flex';
   document.getElementById('navMyProfile').style.display = 'block';
   document.getElementById('navBands').style.display = 'block';
@@ -1995,6 +1969,7 @@ function onUserLoggedIn(user) {
 function onUserLoggedOut() {
   document.getElementById('appNav').style.display = 'flex';
   document.getElementById('navLogin').style.display = 'block';
+  document.getElementById('navRegister').style.display = 'block';
   document.getElementById('navUser').style.display = 'none';
   document.getElementById('navMyProfile').style.display = 'none';
   document.getElementById('navBands').style.display = 'none';
@@ -2011,24 +1986,16 @@ function showView(view) {
 
   document.getElementById(`view-${view}`).classList.add('active');
 
-  const navMap = {
-    search:    'navSearch',
-    register:  'navRegister',
-    myprofile: 'navMyProfile',
-    bands:     'navBands',
-    auth:      'navLogin',
-    reset:     null
-  };
+  const navMap = { search: 'navSearch', register: 'navRegister', myprofile: 'navMyProfile', auth: 'navLogin' };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
 
-  if (view === 'register' && !currentUser) {
-    showAuthError('Je moet eerst inloggen om een profiel aan te maken.');
-    showView('auth');
+  // Aanmelden alleen voor niet-ingelogde gebruikers (ingelogden hebben al een profiel)
+  if (view === 'register' && currentUser) {
+    showView('myprofile');
     return;
   }
 
   if (view === 'myprofile') loadMyProfile();
-  if (view === 'bands') loadMyBands();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2071,61 +2038,22 @@ async function signIn() {
   // onAuthStateChange handelt de rest af
 }
 
-async function forgotPassword() {
-  const email = document.getElementById('loginEmail').value.trim();
-  if (!email) {
-    showAuthError('Vul eerst je e-mailadres in, dan sturen we een herstelmail.');
-    return;
-  }
-  const { error } = await db.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://tt-rw.github.io/talenttent/'
-  });
-  if (error) { showAuthError('Fout: ' + error.message); return; }
-  showAuthSuccess('✓ Herstelmail verstuurd! Controleer je inbox en klik op de link.');
-}
-
-async function saveNewPassword() {
-  const pw1 = document.getElementById('resetPassword1').value;
-  const pw2 = document.getElementById('resetPassword2').value;
-
-  const resetError   = document.getElementById('resetError');
-  const resetSuccess = document.getElementById('resetSuccess');
-  resetError.classList.remove('visible');
-  resetSuccess.classList.remove('visible');
-
-  if (!pw1 || !pw2) { resetError.textContent = 'Vul beide velden in.'; resetError.classList.add('visible'); return; }
-  if (pw1.length < 8) { resetError.textContent = 'Wachtwoord moet minimaal 8 tekens zijn.'; resetError.classList.add('visible'); return; }
-  if (pw1 !== pw2) { resetError.textContent = 'Wachtwoorden komen niet overeen.'; resetError.classList.add('visible'); return; }
-
-  const { error } = await db.auth.updateUser({ password: pw1 });
-  if (error) { resetError.textContent = 'Fout: ' + error.message; resetError.classList.add('visible'); return; }
-
-  resetSuccess.textContent = '✓ Wachtwoord opgeslagen! Je wordt ingelogd...';
-  resetSuccess.classList.add('visible');
-  setTimeout(() => showView('myprofile'), 2000);
-}
-
-async function signOut() {
-  await db.auth.signOut();
-}
-
 async function signUp() {
-  const fname  = document.getElementById('signupFname').value.trim();
   const email  = document.getElementById('signupEmail').value.trim();
   const pw1    = document.getElementById('signupPassword').value;
   const pw2    = document.getElementById('signupPassword2').value;
 
-  if (!fname || !email || !pw1 || !pw2) { showAuthError('Vul alle velden in.'); return; }
+  if (!email || !pw1 || !pw2) { showAuthError('Vul alle velden in.'); return; }
   if (pw1.length < 8) { showAuthError('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
   if (pw1 !== pw2) { showAuthError('Wachtwoorden komen niet overeen.'); return; }
 
-  const { error } = await db.auth.signUp({
-    email,
-    password: pw1,
-    options: { data: { fname } }
-  });
+  const { error } = await db.auth.signUp({ email, password: pw1 });
   if (error) { showAuthError('Registratie mislukt: ' + error.message); return; }
   showAuthSuccess('✓ Account aangemaakt! Controleer je e-mail voor de bevestigingslink.');
+}
+
+async function signOut() {
+  await db.auth.signOut();
 }
 
 // ─── Zoekfunctie ─────────────────────────────────────────────────────────────
@@ -2434,15 +2362,16 @@ function showSaving() {
 
 function showSaveSuccess() {
   document.getElementById('saveSpinner').style.display = 'none';
-  document.getElementById('saveTitle').textContent = '🎸 Gelukt!';
-  document.getElementById('saveMsg').textContent = 'Je profiel staat in de database';
+  document.getElementById('saveTitle').textContent = '🎸 Profiel aangemaakt!';
+  document.getElementById('saveMsg').innerHTML =
+    `We hebben een bevestigingsmail gestuurd naar <strong>${state.regEmail || 'jouw e-mailadres'}</strong>.<br>
+     Klik op de link in de mail om je profiel te activeren.<br><br>
+     <span style="font-size:11px;color:var(--muted);">Geen mail ontvangen? Check ook je spam-map.</span>`;
   setTimeout(() => {
     document.getElementById('saveOverlay').classList.remove('visible');
     renderProfile();
     goTo(6);
-    // Na korte pauze naar mijn profiel
-    setTimeout(() => showView('myprofile'), 2000);
-  }, 1400);
+  }, 4000);
 }
 
 function showSaveError(msg) {
@@ -2460,7 +2389,21 @@ async function submitProfile() {
   showSaving();
 
   try {
-    // 1. Hoofdprofiel opslaan
+    // 1. Account aanmaken via Supabase Auth (als nog niet ingelogd)
+    let userId = currentUser?.id || null;
+
+    if (!userId) {
+      const { data: authData, error: authErr } = await db.auth.signUp({
+        email:    state.regEmail,
+        password: state.regPassword,
+        options:  { data: { fname: state.fname } }
+      });
+      if (authErr) throw new Error(authErr.message);
+      userId = authData.user?.id || null;
+      currentUser = authData.user;
+    }
+
+    // 2. Hoofdprofiel opslaan
     const { data: musician, error: mErr } = await db
       .from('musicians')
       .insert({
@@ -2474,7 +2417,7 @@ async function submitProfile() {
         vibe_label:    state.vibe?.label || null,
         vibe_emoji:    state.vibe?.emoji || null,
         avatar_url:    state.avatarUrl || null,
-        user_id:       currentUser?.id || null,
+        user_id:       userId,
       })
       .select()
       .single();
@@ -2482,7 +2425,7 @@ async function submitProfile() {
     if (mErr) throw new Error(mErr.message);
     const mid = musician.id;
 
-    // 2. Instrumenten
+    // 3. Instrumenten
     if (state.instruments.length) {
       const { error: iErr } = await db.from('musician_instruments').insert(
         state.instruments.map(instrument => ({ musician_id: mid, instrument }))
@@ -2490,7 +2433,7 @@ async function submitProfile() {
       if (iErr) throw new Error(iErr.message);
     }
 
-    // 3. Genres
+    // 4. Genres
     if (state.genres.length) {
       const { error: gErr } = await db.from('musician_genres').insert(
         state.genres.map(genre => ({ musician_id: mid, genre }))
@@ -2498,7 +2441,7 @@ async function submitProfile() {
       if (gErr) throw new Error(gErr.message);
     }
 
-    // 4. Repertoire
+    // 5. Repertoire
     if (state.songs.length) {
       const { error: sErr } = await db.from('musician_songs').insert(
         state.songs.map(s => ({
@@ -2511,7 +2454,7 @@ async function submitProfile() {
       if (sErr) throw new Error(sErr.message);
     }
 
-    // 5. Media links (geüploade bestanden slaan we nog niet op — dat vereist Supabase Storage, volgende stap)
+    // 6. Media links
     const linkMedia = state.mediaLinks
       .filter(l => l.url.trim())
       .map(l => ({
@@ -2526,7 +2469,6 @@ async function submitProfile() {
       if (lErr) throw new Error(lErr.message);
     }
 
-    // Opgeslagen muzikant-id bewaren voor later (profiel bewerken, zoekfunctie)
     state.savedId = mid;
     showSaveSuccess();
 
@@ -2701,6 +2643,7 @@ const GENRES = [
 let state = {
   currentStep: 0,
   fname: '', birth_date: '', city: '', zip: '', bio: '',
+  regEmail: '', regPassword: '',
   instruments: [],
   genres: [],
   songs: [],
@@ -2871,15 +2814,20 @@ function nextStep(from) {
     state.city       = normalizeCityName(document.getElementById('city').value.trim());
     state.zip        = document.getElementById('zip').value.trim();
     state.bio        = document.getElementById('bio').value.trim();
+    state.regEmail   = document.getElementById('regEmail').value.trim();
+    state.regPassword = document.getElementById('regPassword').value;
+    const regPassword2 = document.getElementById('regPassword2').value;
 
     if (!state.fname || !state.birth_date || !state.city) {
       alert('Vul je voornaam, geboortedatum en woonplaats in.'); return;
     }
-    // Validate DD-MM-YYYY format
     const bdMatch = state.birth_date.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (!bdMatch) { alert('Voer je geboortedatum in als DD-MM-JJJJ, bijv. 01-02-2001'); return; }
     const age = calcAge(state.birth_date);
     if (age < 13 || age > 25) { alert(`Je leeftijd (${age} jaar) valt buiten de doelgroep van 13–25 jaar.`); return; }
+    if (!state.regEmail) { alert('Vul je e-mailadres in.'); return; }
+    if (!state.regPassword || state.regPassword.length < 8) { alert('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
+    if (state.regPassword !== regPassword2) { alert('Wachtwoorden komen niet overeen.'); return; }
   }
   if (from === 1) {
     if (!state.instruments.length) { alert('Selecteer minimaal één instrument.'); return; }
