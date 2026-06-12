@@ -1480,9 +1480,9 @@
 
 <!-- Navigatie -->
 <nav class="app-nav" id="appNav" style="display:none;">
+  <button class="nav-btn" id="navMyProfile" onclick="showView('myprofile')" style="display:none;">👤 Mijn profiel</button>
   <button class="nav-btn" id="navSearch" onclick="showView('search')">🔍 Zoeken</button>
   <button class="nav-btn" id="navRegister" onclick="showView('register')">✚ Aanmelden</button>
-  <button class="nav-btn" id="navMyProfile" onclick="showView('myprofile')" style="display:none;">👤 Mijn profiel</button>
   <div class="nav-spacer"></div>
   <div class="nav-user" id="navUser" style="display:none;">
     <div class="nav-user-dot" id="navUserDot">?</div>
@@ -1521,6 +1521,10 @@
 
       <!-- Signup -->
       <div id="paneSignup" style="display:none;">
+        <div class="field" style="margin-bottom:16px;">
+          <label>Voornaam <span class="req">*</span></label>
+          <input type="text" id="signupFname" placeholder="Jouw voornaam">
+        </div>
         <div class="field" style="margin-bottom:16px;">
           <label>E-mailadres <span class="req">*</span></label>
           <input type="email" id="signupEmail" placeholder="jouw@email.nl">
@@ -1941,9 +1945,22 @@ function onUserLoggedIn(user) {
   document.getElementById('navLogin').style.display = 'none';
   document.getElementById('navUser').style.display = 'flex';
   document.getElementById('navMyProfile').style.display = 'block';
-  document.getElementById('navUserName').textContent = user.email.split('@')[0];
-  document.getElementById('navUserDot').textContent = user.email[0].toUpperCase();
-  showView('search');
+  // Voornaam uit user_metadata, anders e-mail prefix
+  const fname = user.user_metadata?.fname || user.email.split('@')[0];
+  document.getElementById('navUserName').textContent = fname;
+  document.getElementById('navUserDot').textContent = fname[0].toUpperCase();
+  showView('myprofile');
+
+  // Vul voornaam alvast in het aanmeldformulier
+  const userFname = user.user_metadata?.fname;
+  if (userFname) {
+    const fnameEl = document.getElementById('fname');
+    if (fnameEl && !fnameEl.value) {
+      fnameEl.value = userFname;
+      state.fname = userFname;
+      document.getElementById('avatarInitials').textContent = userFname[0].toUpperCase();
+    }
+  }
 }
 
 function onUserLoggedOut() {
@@ -2017,15 +2034,20 @@ async function signIn() {
 }
 
 async function signUp() {
+  const fname  = document.getElementById('signupFname').value.trim();
   const email  = document.getElementById('signupEmail').value.trim();
   const pw1    = document.getElementById('signupPassword').value;
   const pw2    = document.getElementById('signupPassword2').value;
 
-  if (!email || !pw1 || !pw2) { showAuthError('Vul alle velden in.'); return; }
+  if (!fname || !email || !pw1 || !pw2) { showAuthError('Vul alle velden in.'); return; }
   if (pw1.length < 8) { showAuthError('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
   if (pw1 !== pw2) { showAuthError('Wachtwoorden komen niet overeen.'); return; }
 
-  const { error } = await db.auth.signUp({ email, password: pw1 });
+  const { error } = await db.auth.signUp({
+    email,
+    password: pw1,
+    options: { data: { fname } }
+  });
   if (error) { showAuthError('Registratie mislukt: ' + error.message); return; }
   showAuthSuccess('✓ Account aangemaakt! Controleer je e-mail voor de bevestigingslink.');
 }
