@@ -29,6 +29,10 @@
     overflow-x: hidden;
   }
 
+  /* ── App views ───────────────────────────── */
+  .app-view { display: none; }
+  .app-view.active { display: block; }
+
   /* Background texture */
   body::before {
     content: '';
@@ -1097,6 +1101,367 @@
   .save-error-icon { font-size: 48px; margin-bottom: 16px; }
   .save-error-msg  { color: var(--accent2); font-size: 13px; margin-top: 8px; }
 
+  /* ── Navigatie ───────────────────────────── */
+  .app-nav {
+    position: relative;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 40px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+
+  .nav-btn {
+    padding: 10px 20px;
+    border-radius: 8px 8px 0 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: none;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+    margin-bottom: -1px;
+  }
+
+  .nav-btn:hover { color: var(--text); }
+  .nav-btn.active {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--accent);
+  }
+
+  .nav-spacer { flex: 1; }
+
+  .nav-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .nav-user strong { color: var(--text); }
+
+  .nav-user-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    color: #000;
+    flex-shrink: 0;
+  }
+
+  /* ── Auth scherm ─────────────────────────── */
+  .auth-wrap {
+    max-width: 440px;
+    margin: 60px auto;
+    padding: 0 24px;
+  }
+
+  .auth-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px;
+  }
+
+  .auth-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+
+  .auth-tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--muted);
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .auth-tab.active { background: var(--surface); color: var(--accent); }
+
+  .auth-error {
+    background: rgba(255,77,77,0.1);
+    border: 1px solid rgba(255,77,77,0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--accent2);
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  .auth-error.visible { display: block; }
+
+  .auth-success {
+    background: rgba(76,175,80,0.1);
+    border: 1px solid rgba(76,175,80,0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #4caf50;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  .auth-success.visible { display: block; }
+
+  /* ── Zoekfunctie ─────────────────────────── */
+  .search-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .search-filters {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 28px;
+  }
+
+  .filter-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+  }
+
+  .filter-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .filter-row.single { grid-template-columns: 1fr; }
+  .filter-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+  .search-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+  }
+
+  .search-btn:hover {
+    background: #ffd700;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(245,197,24,0.3);
+  }
+
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .results-count {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  /* Muzikantkaart */
+  .musician-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: pointer;
+    animation: slideIn 0.3s ease;
+  }
+
+  .musician-card:hover {
+    border-color: #444;
+    transform: translateY(-2px);
+  }
+
+  .card-color-band {
+    height: 6px;
+  }
+
+  .card-body {
+    padding: 20px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .card-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: #000;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 2px solid transparent;
+  }
+
+  .card-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .card-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.5px;
+    line-height: 1;
+  }
+
+  .card-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .card-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  .card-songs {
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    margin-top: 4px;
+  }
+
+  .card-song-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    grid-column: 1/-1;
+  }
+
+  .no-results-icon { font-size: 48px; margin-bottom: 16px; }
+
+  /* Muzikant detail modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 32px;
+    position: relative;
+    animation: slideIn 0.3s ease;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .modal-close:hover { color: var(--text); border-color: #555; }
+
+  /* Eigen profiel beheer */
+  .my-profile-wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  .profile-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
   @media (max-width: 560px) {
     header { padding: 20px 20px 0; flex-direction: column; align-items: flex-start; }
     main { padding: 32px 16px 60px; }
@@ -1113,6 +1478,72 @@
   <div class="tagline">Vind je muzikant</div>
 </header>
 
+<!-- Navigatie -->
+<nav class="app-nav" id="appNav" style="display:none;">
+  <button class="nav-btn" id="navSearch" onclick="showView('search')">🔍 Zoeken</button>
+  <button class="nav-btn" id="navRegister" onclick="showView('register')">✚ Aanmelden</button>
+  <button class="nav-btn" id="navMyProfile" onclick="showView('myprofile')" style="display:none;">👤 Mijn profiel</button>
+  <div class="nav-spacer"></div>
+  <div class="nav-user" id="navUser" style="display:none;">
+    <div class="nav-user-dot" id="navUserDot">?</div>
+    <strong id="navUserName"></strong>
+    <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px;" onclick="signOut()">Uitloggen</button>
+  </div>
+  <button class="nav-btn" id="navLogin" onclick="showView('auth')">Inloggen</button>
+</nav>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- VIEW: Auth (inloggen / registreren)         -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="app-view" id="view-auth">
+  <div class="auth-wrap">
+    <div class="auth-panel">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Inloggen</button>
+        <button class="auth-tab" id="tabSignup" onclick="switchAuthTab('signup')">Nieuw account</button>
+      </div>
+
+      <div id="authError" class="auth-error"></div>
+      <div id="authSuccess" class="auth-success"></div>
+
+      <!-- Login -->
+      <div id="paneLogin">
+        <div class="field" style="margin-bottom:16px;">
+          <label>E-mailadres</label>
+          <input type="email" id="loginEmail" placeholder="jouw@email.nl">
+        </div>
+        <div class="field" style="margin-bottom:24px;">
+          <label>Wachtwoord</label>
+          <input type="password" id="loginPassword" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="signIn()">Inloggen →</button>
+      </div>
+
+      <!-- Signup -->
+      <div id="paneSignup" style="display:none;">
+        <div class="field" style="margin-bottom:16px;">
+          <label>E-mailadres <span class="req">*</span></label>
+          <input type="email" id="signupEmail" placeholder="jouw@email.nl">
+        </div>
+        <div class="field" style="margin-bottom:16px;">
+          <label>Wachtwoord <span class="req">*</span></label>
+          <input type="password" id="signupPassword" placeholder="Minimaal 8 tekens">
+        </div>
+        <div class="field" style="margin-bottom:24px;">
+          <label>Wachtwoord herhalen <span class="req">*</span></label>
+          <input type="password" id="signupPassword2" placeholder="••••••••">
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="signUp()">Account aanmaken →</button>
+        <p style="font-size:11px;color:var(--muted);margin-top:12px;text-align:center;">Na registratie ontvang je een bevestigingsmail.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- VIEW: Aanmelden (profiel aanmaken)          -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="app-view" id="view-register">
 <main>
 
   <!-- Step indicator -->
@@ -1399,6 +1830,78 @@
   </div>
 
 </main>
+</div><!-- /view-register -->
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- VIEW: Zoeken                                -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="app-view" id="view-search">
+  <div class="search-wrap">
+    <div class="search-filters">
+      <div class="filter-title">🔍 Vind een muzikant</div>
+
+      <div class="filter-row">
+        <div class="field">
+          <label>Woonplaats</label>
+          <input type="text" id="filterCity" placeholder="Bijv. Delft, Den Haag...">
+        </div>
+        <div class="field">
+          <label>Leeftijd</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="filterAgeMin" placeholder="13" min="13" max="25" style="width:80px;">
+            <span style="color:var(--muted);font-size:13px;">t/m</span>
+            <input type="number" id="filterAgeMax" placeholder="25" min="13" max="25" style="width:80px;">
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-row single" style="margin-bottom:16px;">
+        <div class="field">
+          <label>Instrument</label>
+          <div class="tag-grid" id="filterInstruments"></div>
+        </div>
+      </div>
+
+      <div class="filter-row single" style="margin-bottom:16px;">
+        <div class="field">
+          <label>Genre</label>
+          <div class="tag-grid" id="filterGenres"></div>
+        </div>
+      </div>
+
+      <div class="filter-row single" style="margin-bottom:16px;">
+        <div class="field">
+          <label>Doel</label>
+          <div class="tag-grid" id="filterGoals"></div>
+        </div>
+      </div>
+
+      <button class="search-btn" onclick="runSearch()">🔍 Zoek muzikanten</button>
+    </div>
+
+    <div id="searchResults"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- VIEW: Mijn profiel                          -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="app-view" id="view-myprofile">
+  <div class="my-profile-wrap">
+    <div id="myProfileContent"></div>
+    <div class="profile-actions">
+      <button class="btn btn-primary" onclick="showView('register')">✏️ Profiel bewerken</button>
+    </div>
+  </div>
+</div>
+
+<!-- Muzikant detail modal -->
+<div class="modal-overlay" id="musicianModal" onclick="closeMusicianModal(event)">
+  <div class="modal-box" id="musicianModalBox">
+    <button class="modal-close" onclick="document.getElementById('musicianModal').classList.remove('visible')">✕</button>
+    <div id="musicianModalContent"></div>
+  </div>
+</div>
 
 <script>
 // ─── Supabase ────────────────────────────────────────────────────────────────
@@ -1406,6 +1909,423 @@
 const SUPABASE_URL = 'https://fqtgilwfestzofunupnu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_tnWUVGTBmwnn9fAILeNqqQ_UlCn5AFM';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ─── App initialisatie ───────────────────────────────────────────────────────
+
+let currentUser = null;
+
+async function appInit() {
+  // Check of gebruiker al ingelogd is
+  const { data: { session } } = await db.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
+    onUserLoggedIn(session.user);
+  } else {
+    showView('search');
+  }
+
+  // Luister naar auth-wijzigingen
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      currentUser = session.user;
+      onUserLoggedIn(session.user);
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      onUserLoggedOut();
+    }
+  });
+}
+
+function onUserLoggedIn(user) {
+  document.getElementById('appNav').style.display = 'flex';
+  document.getElementById('navLogin').style.display = 'none';
+  document.getElementById('navUser').style.display = 'flex';
+  document.getElementById('navMyProfile').style.display = 'block';
+  document.getElementById('navUserName').textContent = user.email.split('@')[0];
+  document.getElementById('navUserDot').textContent = user.email[0].toUpperCase();
+  showView('search');
+}
+
+function onUserLoggedOut() {
+  document.getElementById('appNav').style.display = 'flex';
+  document.getElementById('navLogin').style.display = 'block';
+  document.getElementById('navUser').style.display = 'none';
+  document.getElementById('navMyProfile').style.display = 'none';
+  showView('search');
+}
+
+// ─── Navigatie ───────────────────────────────────────────────────────────────
+
+function showView(view) {
+  document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('appNav').style.display = 'flex';
+
+  document.getElementById(`view-${view}`).classList.add('active');
+
+  const navMap = { search: 'navSearch', register: 'navRegister', myprofile: 'navMyProfile', auth: 'navLogin' };
+  if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
+
+  // Aanmelden alleen voor ingelogde gebruikers
+  if (view === 'register' && !currentUser) {
+    showAuthError('Je moet eerst inloggen om een profiel aan te maken.');
+    showView('auth');
+    return;
+  }
+
+  if (view === 'myprofile') loadMyProfile();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── Authenticatie ───────────────────────────────────────────────────────────
+
+function switchAuthTab(tab) {
+  document.getElementById('paneLogin').style.display  = tab === 'login'  ? 'block' : 'none';
+  document.getElementById('paneSignup').style.display = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+  clearAuthMessages();
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg;
+  el.classList.add('visible');
+  document.getElementById('authSuccess').classList.remove('visible');
+}
+
+function showAuthSuccess(msg) {
+  const el = document.getElementById('authSuccess');
+  el.textContent = msg;
+  el.classList.add('visible');
+  document.getElementById('authError').classList.remove('visible');
+}
+
+function clearAuthMessages() {
+  document.getElementById('authError').classList.remove('visible');
+  document.getElementById('authSuccess').classList.remove('visible');
+}
+
+async function signIn() {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!email || !password) { showAuthError('Vul je e-mailadres en wachtwoord in.'); return; }
+
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) { showAuthError('Inloggen mislukt: ' + error.message); return; }
+  // onAuthStateChange handelt de rest af
+}
+
+async function signUp() {
+  const email  = document.getElementById('signupEmail').value.trim();
+  const pw1    = document.getElementById('signupPassword').value;
+  const pw2    = document.getElementById('signupPassword2').value;
+
+  if (!email || !pw1 || !pw2) { showAuthError('Vul alle velden in.'); return; }
+  if (pw1.length < 8) { showAuthError('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
+  if (pw1 !== pw2) { showAuthError('Wachtwoorden komen niet overeen.'); return; }
+
+  const { error } = await db.auth.signUp({ email, password: pw1 });
+  if (error) { showAuthError('Registratie mislukt: ' + error.message); return; }
+  showAuthSuccess('✓ Account aangemaakt! Controleer je e-mail voor de bevestigingslink.');
+}
+
+async function signOut() {
+  await db.auth.signOut();
+}
+
+// ─── Zoekfunctie ─────────────────────────────────────────────────────────────
+
+const GOAL_LABELS = {
+  oefenen: '🎸 Samen oefenen',
+  band:    '🎵 Band starten',
+  optreden:'🎤 Optreden',
+  alles:   '🌟 Alles!'
+};
+
+const LEVEL_LABELS = { basis: 'Basis', bijna: 'Bijna', podium: 'Podiumklaar' };
+
+let filterInstruments = [];
+let filterGenres      = [];
+let filterGoal        = null;
+
+function initSearchFilters() {
+  const ig = document.getElementById('filterInstruments');
+  if (ig.children.length) return; // al ingevuld
+
+  INSTRUMENTS.forEach(i => {
+    const t = document.createElement('div');
+    t.className = 'tag';
+    t.textContent = i;
+    t.style.fontSize = '12px';
+    t.style.padding = '6px 12px';
+    t.onclick = () => {
+      const idx = filterInstruments.indexOf(i);
+      if (idx === -1) { filterInstruments.push(i); t.classList.add('selected'); }
+      else { filterInstruments.splice(idx,1); t.classList.remove('selected'); }
+    };
+    ig.appendChild(t);
+  });
+
+  const gg = document.getElementById('filterGenres');
+  GENRES.forEach(g => {
+    const t = document.createElement('div');
+    t.className = 'genre-tag';
+    t.textContent = g;
+    t.onclick = () => {
+      const idx = filterGenres.indexOf(g);
+      if (idx === -1) { filterGenres.push(g); t.classList.add('selected'); }
+      else { filterGenres.splice(idx,1); t.classList.remove('selected'); }
+    };
+    gg.appendChild(t);
+  });
+
+  const goalWrap = document.getElementById('filterGoals');
+  Object.entries(GOAL_LABELS).forEach(([val, label]) => {
+    const t = document.createElement('div');
+    t.className = 'tag';
+    t.textContent = label;
+    t.style.fontSize = '12px';
+    t.style.padding = '6px 12px';
+    t.onclick = () => {
+      document.querySelectorAll('#filterGoals .tag').forEach(x => x.classList.remove('selected'));
+      if (filterGoal === val) { filterGoal = null; }
+      else { filterGoal = val; t.classList.add('selected'); }
+    };
+    goalWrap.appendChild(t);
+  });
+}
+
+async function runSearch() {
+  const resultsEl = document.getElementById('searchResults');
+  resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
+    <div class="save-spinner" style="margin:0 auto 16px;"></div>Muzikanten zoeken...
+  </div>`;
+
+  try {
+    // Haal muzikanten op met hun instrumenten en genres
+    let query = db.from('musicians').select(`
+      id, fname, birth_date, city, zip, bio, goal,
+      profile_color, vibe_label, vibe_emoji, avatar_url, updated_at,
+      musician_instruments(instrument),
+      musician_genres(genre),
+      musician_songs(song_title, song_artist, mastery_level)
+    `);
+
+    // Filter op stad (hoofdletterongevoelig)
+    const city = document.getElementById('filterCity').value.trim();
+    if (city) query = query.ilike('city', `%${city}%`);
+
+    const { data: musicians, error } = await query.order('updated_at', { ascending: false }).limit(50);
+    if (error) throw error;
+
+    // Client-side filters (leeftijd, instrument, genre, doel)
+    const ageMin = parseInt(document.getElementById('filterAgeMin').value) || 13;
+    const ageMax = parseInt(document.getElementById('filterAgeMax').value) || 25;
+
+    const filtered = musicians.filter(m => {
+      const age = calcAgeFromISO(m.birth_date);
+      if (age < ageMin || age > ageMax) return false;
+      if (filterGoal && m.goal !== filterGoal) return false;
+      if (filterInstruments.length) {
+        const mInstr = m.musician_instruments.map(x => x.instrument);
+        if (!filterInstruments.some(i => mInstr.includes(i))) return false;
+      }
+      if (filterGenres.length) {
+        const mGenres = m.musician_genres.map(x => x.genre);
+        if (!filterGenres.some(g => mGenres.includes(g))) return false;
+      }
+      return true;
+    });
+
+    renderSearchResults(filtered);
+
+  } catch(e) {
+    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--accent2);">Fout bij zoeken: ${e.message}</div>`;
+  }
+}
+
+function renderSearchResults(musicians) {
+  const el = document.getElementById('searchResults');
+
+  if (!musicians.length) {
+    el.innerHTML = `
+      <div class="no-results">
+        <div class="no-results-icon">🎵</div>
+        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen muzikanten gevonden</p>
+        <p style="font-size:13px;">Pas je filters aan en probeer opnieuw</p>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="results-header">
+      <span class="results-count">${musicians.length} muzikant${musicians.length !== 1 ? 'en' : ''} gevonden</span>
+    </div>
+    <div class="results-grid">
+      ${musicians.map(m => musicianCardHTML(m)).join('')}
+    </div>`;
+}
+
+function musicianCardHTML(m) {
+  const col     = m.profile_color || '#f5c518';
+  const age     = calcAgeFromISO(m.birth_date);
+  const initials = m.fname[0].toUpperCase();
+  const instruments = m.musician_instruments.map(x => x.instrument).slice(0,3);
+  const genres      = m.musician_genres.map(x => x.genre).slice(0,2);
+  const songs       = m.musician_songs.slice(0,2);
+
+  const avatarHTML = m.avatar_url
+    ? `<img src="${m.avatar_url}" alt="${m.fname}">`
+    : initials;
+
+  return `
+    <div class="musician-card" onclick="openMusicianModal('${m.id}')">
+      <div class="card-color-band" style="background:${col};"></div>
+      <div class="card-body">
+        <div class="card-header">
+          <div class="card-avatar" style="background:${col}; border-color:${col};">${avatarHTML}</div>
+          <div>
+            <div class="card-name">${m.fname}</div>
+            <div class="card-meta">${age} jaar · ${m.city}</div>
+            ${m.vibe_emoji ? `<div style="font-size:11px;color:var(--muted);">${m.vibe_emoji} ${m.vibe_label}</div>` : ''}
+          </div>
+        </div>
+        <div class="card-badges">
+          ${instruments.map(i => `<span class="card-badge" style="border-color:${col};color:${col};">${i}</span>`).join('')}
+          ${genres.map(g => `<span class="card-badge" style="border-color:var(--accent2);color:var(--accent2);">${g}</span>`).join('')}
+          ${m.goal ? `<span class="card-badge">${GOAL_LABELS[m.goal] || m.goal}</span>` : ''}
+        </div>
+        ${songs.length ? `
+          <div class="card-songs">
+            ${songs.map(s => `
+              <div class="card-song-row">
+                <span>${s.song_title} <span style="color:var(--muted)">— ${s.song_artist}</span></span>
+                <span class="level-pill ${s.mastery_level}" style="font-size:9px;">${LEVEL_LABELS[s.mastery_level]||''}</span>
+              </div>`).join('')}
+          </div>` : ''}
+      </div>
+    </div>`;
+}
+
+// ─── Muzikant detail modal ───────────────────────────────────────────────────
+
+async function openMusicianModal(id) {
+  const modal = document.getElementById('musicianModal');
+  document.getElementById('musicianModalContent').innerHTML =
+    '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  modal.classList.add('visible');
+
+  const { data: m, error } = await db.from('musicians').select(`
+    id, fname, birth_date, city, zip, bio, goal,
+    profile_color, vibe_label, vibe_emoji, avatar_url, updated_at,
+    musician_instruments(instrument),
+    musician_genres(genre),
+    musician_songs(song_title, song_artist, mastery_level),
+    musician_media(media_type, url, platform)
+  `).eq('id', id).single();
+
+  if (error || !m) {
+    document.getElementById('musicianModalContent').innerHTML = '<p style="color:var(--accent2)">Kon profiel niet laden.</p>';
+    return;
+  }
+
+  const col  = m.profile_color || '#f5c518';
+  const age  = calcAgeFromISO(m.birth_date);
+  const date = new Date(m.updated_at).toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
+
+  const avatarHTML = m.avatar_url
+    ? `<img class="profile-avatar-photo" src="${m.avatar_url}" alt="${m.fname}" style="border-color:${col};">`
+    : `<div class="profile-avatar-initials" style="background:${col};border-color:${col};">${m.fname[0].toUpperCase()}</div>`;
+
+  const songRows = m.musician_songs.map(s => `
+    <div class="profile-song-row">
+      <span><strong>${s.song_title}</strong> — <span style="color:var(--muted)">${s.song_artist}</span></span>
+      <span class="level-pill ${s.mastery_level}">${LEVEL_LABELS[s.mastery_level]||''}</span>
+    </div>`).join('');
+
+  const links = m.musician_media.filter(x => x.media_type === 'link');
+
+  document.getElementById('musicianModalContent').innerHTML = `
+    <div class="profile-header-band" style="background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;"></div>
+    ${avatarHTML}
+    ${m.vibe_emoji ? `<div class="profile-vibe-badge" style="color:${col};border-color:${col};background:${col}18;">${m.vibe_emoji} ${m.vibe_label}</div>` : ''}
+    <div class="profile-name">${m.fname}</div>
+    <div class="profile-meta">${age} jaar · ${m.city}${m.zip ? ' · ' + m.zip : ''}</div>
+    <div class="freshness-bar" style="margin-top:12px;margin-bottom:16px;">
+      <div class="freshness-dot"></div>
+      <span>Bijgewerkt op <strong>${date}</strong></span>
+    </div>
+    <div class="profile-badges">
+      ${m.musician_instruments.map(x => `<span class="badge" style="border-color:${col};color:${col};">${x.instrument}</span>`).join('')}
+      ${m.musician_genres.map(x => `<span class="badge genre">${x.genre}</span>`).join('')}
+      ${m.goal ? `<span class="badge">${GOAL_LABELS[m.goal]}</span>` : ''}
+    </div>
+    ${m.bio ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${m.bio}"</p>` : ''}
+    ${m.musician_songs.length ? `
+      <div class="profile-songs">
+        <div class="profile-songs-title">Repertoire (${m.musician_songs.length} nummers)</div>
+        ${songRows}
+      </div>` : ''}
+    ${links.length ? `
+      <div class="profile-media" style="margin-top:16px;">
+        <div class="profile-media-title">Links</div>
+        <div class="profile-media-grid">
+          ${links.map(l => `<a href="${l.url}" target="_blank" class="profile-link-chip">${l.platform || '🔗 Link'}</a>`).join('')}
+        </div>
+      </div>` : ''}`;
+}
+
+function closeMusicianModal(e) {
+  if (e.target === document.getElementById('musicianModal')) {
+    document.getElementById('musicianModal').classList.remove('visible');
+  }
+}
+
+// ─── Mijn profiel laden ──────────────────────────────────────────────────────
+
+async function loadMyProfile() {
+  if (!currentUser) return;
+  const el = document.getElementById('myProfileContent');
+  el.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Laden...</div>';
+
+  const { data: m, error } = await db.from('musicians')
+    .select(`*, musician_instruments(instrument), musician_genres(genre),
+             musician_songs(song_title, song_artist, mastery_level),
+             musician_media(media_type, url, platform)`)
+    .eq('user_id', currentUser.id)
+    .single();
+
+  if (error || !m) {
+    el.innerHTML = `<div style="text-align:center;padding:60px 20px;">
+      <div style="font-size:48px;margin-bottom:16px;">🎸</div>
+      <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Nog geen profiel</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:24px;">Maak je muzikantprofiel aan om gevonden te worden.</p>
+      <button class="btn btn-primary" onclick="showView('register')">Profiel aanmaken →</button>
+    </div>`;
+    return;
+  }
+
+  // Render profiel (hergebruik modal content logica)
+  await openMusicianModal(m.id);
+  const content = document.getElementById('musicianModalContent').innerHTML;
+  el.innerHTML = content;
+  document.getElementById('musicianModal').classList.remove('visible');
+}
+
+// ─── Hulpfuncties ────────────────────────────────────────────────────────────
+
+function calcAgeFromISO(isoDate) {
+  if (!isoDate) return 0;
+  const birth = new Date(isoDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+
 
 // ─── Save overlay helpers ─────────────────────────────────────────────────────
 
@@ -1426,6 +2346,8 @@ function showSaveSuccess() {
     document.getElementById('saveOverlay').classList.remove('visible');
     renderProfile();
     goTo(6);
+    // Na korte pauze naar mijn profiel
+    setTimeout(() => showView('myprofile'), 2000);
   }, 1400);
 }
 
@@ -1458,6 +2380,7 @@ async function submitProfile() {
         vibe_label:    state.vibe?.label || null,
         vibe_emoji:    state.vibe?.emoji || null,
         avatar_url:    state.avatarUrl || null,
+        user_id:       currentUser?.id || null,
       })
       .select()
       .single();
@@ -2153,6 +3076,8 @@ function renderProfile() {
 
 // ─── Start ───────────────────────────────────────────────────────────────────
 init();
+initSearchFilters();
+appInit();
 </script>
 </body>
 </html>
