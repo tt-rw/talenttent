@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Talent Tent — Vind je muzikant</title>
+<title>The Talent Tent — Talent zoekt Talent</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -1101,6 +1101,30 @@
   .save-error-icon { font-size: 48px; margin-bottom: 16px; }
   .save-error-msg  { color: var(--accent2); font-size: 13px; margin-top: 8px; }
 
+  /* ── Landingspagina ─────────────────────── */
+  .landing-wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
+  .landing-hero { padding: 80px 0 60px; text-align: center; }
+  .landing-hero-inner { max-width: 640px; margin: 0 auto; }
+  .landing-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(52px, 10vw, 96px); letter-spacing: 2px; line-height: 1; margin-bottom: 20px; }
+  .landing-title span { color: var(--accent); }
+  .landing-sub { font-size: 16px; color: var(--muted); line-height: 1.7; font-weight: 300; margin-bottom: 36px; max-width: 520px; margin-left: auto; margin-right: auto; }
+  .landing-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .landing-btn { padding: 15px 32px; font-size: 15px; }
+  .landing-steps { padding: 48px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 48px; }
+  .landing-steps-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 1px; color: var(--muted); text-align: center; margin-bottom: 32px; }
+  .landing-steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .landing-step { text-align: center; padding: 28px 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); position: relative; }
+  .landing-step-num { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; background: var(--accent); color: #000; border-radius: 50%; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .landing-step-label { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+  .landing-step-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .landing-paths { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+  .landing-path { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 24px; cursor: pointer; transition: all 0.2s; text-align: center; }
+  .landing-path:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .landing-path-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1px; margin-bottom: 8px; }
+  .landing-path-desc { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
+  .landing-path-btn { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .landing-login { text-align: center; font-size: 14px; color: var(--muted); padding: 24px 0; border-top: 1px solid var(--border); }
+
   /* ── Navigatie ───────────────────────────── */
   .app-nav {
     position: relative;
@@ -1491,23 +1515,64 @@
 <body>
 
 <header>
-  <div class="logo">The <span>Talent</span> Tent</div>
-  <div class="tagline">Vind je muzikant</div>
+  <div class="logo" onclick="showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="font-size:50%;color:var(--accent);">THE </span><span style="color:var(--text);">TALENT</span> TENT</div>
+  <div class="tagline">Talent zoekt talent</div>
 </header>
 
 <!-- Navigatie -->
-<nav class="app-nav" id="appNav" style="display:none;">
-  <button class="nav-btn" id="navSearch" onclick="showView('search')">🔍 Zoeken</button>
-  <button class="nav-btn" id="navRegister" onclick="showView('register')">✚ Aanmelden</button>
-  <button class="nav-btn" id="navMyProfile" onclick="showView('myprofile')" style="display:none;">👤 Mijn profiel</button>
+<nav class="app-nav" id="appNav" style="display:flex;">
+  <button class="nav-btn" id="navMusicians" onclick="showView('search')">Muzikanten</button>
+  <button class="nav-btn" id="navBandsSearch" onclick="showView('bandsearch')">Bands</button>
   <div class="nav-spacer"></div>
+  <button class="nav-btn" id="navLogin" onclick="showView('auth')">Inloggen</button>
+  <button class="nav-btn" id="navMyProfile" onclick="showView('myprofile')" style="display:none;">Mijn profiel</button>
+  <button class="nav-btn" id="navMyBands" onclick="showView('bands')" style="display:none;">Mijn bands</button>
+  <div class="nav-spacer" id="navSpacerLoggedIn" style="display:none;"></div>
   <div class="nav-user" id="navUser" style="display:none;">
     <div class="nav-user-dot" id="navUserDot">?</div>
     <strong id="navUserName"></strong>
     <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px;" onclick="signOut()">Uitloggen</button>
   </div>
-  <button class="nav-btn" id="navLogin" onclick="showView('auth')">Inloggen</button>
 </nav>
+
+<!-- VIEW: Landingspagina -->
+<div class="app-view active" id="view-landing">
+  <div class="landing-wrap">
+    <div class="landing-hero">
+      <div class="landing-hero-inner">
+        <h1 class="landing-title">Vind je <span>muzikant.</span><br>Start je band.</h1>
+        <p class="landing-sub">The Talent Tent brengt muzikanten bij elkaar — voor jam-sessies, repetities en optredens. Vind muzikanten of bands bij jou in de buurt.</p>
+        <div class="landing-cta">
+          <button class="btn btn-primary landing-btn" onclick="showView('register')">Profiel aanmaken →</button>
+          <button class="btn btn-ghost landing-btn" onclick="showView('search')">Muzikanten zoeken</button>
+        </div>
+      </div>
+    </div>
+    <div class="landing-steps">
+      <div class="landing-steps-title">Hoe het werkt</div>
+      <div class="landing-steps-grid">
+        <div class="landing-step"><div class="landing-step-num">1</div><div class="landing-step-label">Maak je profiel</div><div class="landing-step-desc">Voeg je instrument, genres en repertoire toe.</div></div>
+        <div class="landing-step"><div class="landing-step-num">2</div><div class="landing-step-label">Zoek en match</div><div class="landing-step-desc">Zoek muzikanten of bands bij jou in de buurt.</div></div>
+        <div class="landing-step"><div class="landing-step-num">3</div><div class="landing-step-label">Speel samen</div><div class="landing-step-desc">Neem contact op en maak muziek samen.</div></div>
+      </div>
+    </div>
+    <div class="landing-paths">
+      <div class="landing-path" onclick="showView('search')">
+        <div class="landing-path-title">Muzikant zoeken</div>
+        <div class="landing-path-desc">Vind iemand om mee te jammen, repeteren of een band mee te starten.</div>
+        <div class="landing-path-btn">Zoek muzikanten →</div>
+      </div>
+      <div class="landing-path" onclick="showView('bandsearch')">
+        <div class="landing-path-title">Band zoeken</div>
+        <div class="landing-path-desc">Zoek een bestaande band om bij aan te sluiten als nieuw lid.</div>
+        <div class="landing-path-btn">Zoek bands →</div>
+      </div>
+    </div>
+    <div class="landing-login">
+      <p>Al een profiel? <button onclick="showView('auth')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;text-decoration:underline;">Inloggen →</button></p>
+    </div>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════════════════ -->
 <!-- VIEW: Auth (inloggen / registreren)         -->
@@ -1907,6 +1972,24 @@
   </div>
 </div>
 
+<!-- VIEW: Bands zoeken -->
+<div class="app-view" id="view-bandsearch">
+  <div class="search-wrap">
+    <div class="search-filters">
+      <div class="filter-title">Vind een band</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Zoek bands die nog muzikanten zoeken</p>
+      <div class="filter-row">
+        <div class="field"><label>Stad</label><input type="text" id="filterBandCity" placeholder="Bijv. Delft, Den Haag..."></div>
+        <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
+      </div>
+      <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label><div class="tag-grid" id="filterBandGenres"></div></div></div>
+      <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><div class="tag-grid" id="filterBandWanted"></div></div></div>
+      <button class="search-btn" onclick="runBandSearch()">Zoek bands</button>
+    </div>
+    <div id="bandSearchResults"></div>
+  </div>
+</div>
+
 <!-- ═══════════════════════════════════════════ -->
 <!-- VIEW: Mijn profiel                          -->
 <!-- ═══════════════════════════════════════════ -->
@@ -2024,34 +2107,36 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
 
 async function appInit() {
-  // Check of gebruiker al ingelogd is
-  const { data: { session } } = await db.auth.getSession();
-  if (session?.user) {
-    currentUser = session.user;
-    onUserLoggedIn(session.user);
-  } else {
-    showView('search');
-  }
-
-  // Luister naar auth-wijzigingen
-  db.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (session?.user) {
       currentUser = session.user;
       onUserLoggedIn(session.user);
-    } else if (event === 'SIGNED_OUT') {
-      currentUser = null;
-      onUserLoggedOut();
     }
-  });
+    db.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        showView('reset');
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        currentUser = session.user;
+        onUserLoggedIn(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        onUserLoggedOut();
+      }
+    });
+  } catch(e) {
+    console.error('appInit fout:', e);
+  }
 }
 
 function onUserLoggedIn(user) {
-  document.getElementById('appNav').style.display = 'flex';
+  document.getElementById('navMusicians').style.display = 'none';
+  document.getElementById('navBandsSearch').style.display = 'none';
   document.getElementById('navLogin').style.display = 'none';
-  document.getElementById('navRegister').style.display = 'none';
-  document.getElementById('navUser').style.display = 'flex';
   document.getElementById('navMyProfile').style.display = 'block';
-  document.getElementById('navBands').style.display = 'block';
+  document.getElementById('navMyBands').style.display = 'block';
+  document.getElementById('navSpacerLoggedIn').style.display = 'flex';
+  document.getElementById('navUser').style.display = 'flex';
   const userFname = user.user_metadata?.fname || user.email.split('@')[0];
   document.getElementById('navUserName').textContent = userFname;
   document.getElementById('navUserDot').textContent = userFname[0].toUpperCase();
@@ -2069,14 +2154,15 @@ function onUserLoggedIn(user) {
 }
 
 function onUserLoggedOut() {
-  document.getElementById('appNav').style.display = 'flex';
+  document.getElementById('navMusicians').style.display = 'block';
+  document.getElementById('navBandsSearch').style.display = 'block';
   document.getElementById('navLogin').style.display = 'block';
-  document.getElementById('navRegister').style.display = 'block';
-  document.getElementById('navUser').style.display = 'none';
   document.getElementById('navMyProfile').style.display = 'none';
-  document.getElementById('navBands').style.display = 'none';
+  document.getElementById('navMyBands').style.display = 'none';
+  document.getElementById('navSpacerLoggedIn').style.display = 'none';
+  document.getElementById('navUser').style.display = 'none';
   myMusicianId = null;
-  showView('search');
+  showView('landing');
 }
 
 // ─── Navigatie ───────────────────────────────────────────────────────────────
@@ -2084,30 +2170,27 @@ function onUserLoggedOut() {
 function showView(view) {
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('appNav').style.display = 'flex';
 
-  document.getElementById(`view-${view}`).classList.add('active');
+  const el = document.getElementById(`view-${view}`);
+  if (el) el.classList.add('active');
 
-  const navMap = { search: 'navSearch', register: 'navRegister', myprofile: 'navMyProfile', auth: 'navLogin' };
+  const navMap = {
+    landing: null, search: 'navMusicians', bandsearch: 'navBandsSearch',
+    register: null, myprofile: 'navMyProfile', bands: 'navMyBands',
+    auth: 'navLogin', reset: null
+  };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
 
-  // Aanmelden alleen voor niet-ingelogde gebruikers (ingelogden hebben al een profiel)
-  if (view === 'register' && currentUser) {
-    showView('myprofile');
-    return;
-  }
-
+  if (view === 'register' && currentUser) { showView('myprofile'); return; }
   if (view === 'myprofile') loadMyProfile();
+  if (view === 'bands') loadMyBands();
+  if (view === 'bandsearch') initBandSearchFilters();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ─── Authenticatie ───────────────────────────────────────────────────────────
 
 function switchAuthTab(tab) {
-  document.getElementById('paneLogin').style.display  = tab === 'login'  ? 'block' : 'none';
-  document.getElementById('paneSignup').style.display = tab === 'signup' ? 'block' : 'none';
-  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
-  document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
   clearAuthMessages();
 }
 
@@ -2138,20 +2221,6 @@ async function signIn() {
   const { error } = await db.auth.signInWithPassword({ email, password });
   if (error) { showAuthError('Inloggen mislukt: ' + error.message); return; }
   // onAuthStateChange handelt de rest af
-}
-
-async function signUp() {
-  const email  = document.getElementById('signupEmail').value.trim();
-  const pw1    = document.getElementById('signupPassword').value;
-  const pw2    = document.getElementById('signupPassword2').value;
-
-  if (!email || !pw1 || !pw2) { showAuthError('Vul alle velden in.'); return; }
-  if (pw1.length < 8) { showAuthError('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
-  if (pw1 !== pw2) { showAuthError('Wachtwoorden komen niet overeen.'); return; }
-
-  const { error } = await db.auth.signUp({ email, password: pw1 });
-  if (error) { showAuthError('Registratie mislukt: ' + error.message); return; }
-  showAuthSuccess('✓ Account aangemaakt! Controleer je e-mail voor de bevestigingslink.');
 }
 
 async function signOut() {
@@ -3410,4 +3479,135 @@ async function saveBand() {
     document.getElementById('bandCity').value = '';
     document.getElementById('bandDescription').value = '';
     bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff' };
-    d
+    document.getElementById('createBandForm').style.display = 'none';
+    loadMyBands();
+  } catch(e) { alert('Fout: ' + e.message); }
+}
+
+async function loadMyBands() {
+  const el = document.getElementById('myBandsList');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:32px;">Laden...</div>';
+
+  const mid = await getMyMusicianId();
+  if (!mid) {
+    el.innerHTML = `<div style="text-align:center;padding:60px 20px;">
+      <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Nog geen profiel</p>
+      <button class="btn btn-primary" onclick="showView('register')">Profiel aanmaken →</button>
+    </div>`;
+    return;
+  }
+
+  const { data: memberships } = await db.from('band_members').select('band_id').eq('musician_id', mid).eq('status', 'bevestigd');
+  if (!memberships?.length) {
+    el.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--muted);">
+      <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Nog geen bands</p>
+      <p style="font-size:13px;">Maak een nieuwe band aan of word uitgenodigd.</p>
+    </div>`;
+    return;
+  }
+
+  const bandIds = memberships.map(m => m.band_id);
+  const { data: bands } = await db.from('bands')
+    .select(`*, band_members(musician_id, role, status, musicians(fname, profile_color)), band_wanted(instrument)`)
+    .in('id', bandIds).order('updated_at', { ascending: false });
+
+  const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
+  el.innerHTML = (bands || []).map(b => {
+    const col = b.profile_color || '#3ecfff';
+    const confirmed = (b.band_members||[]).filter(m => m.status === 'bevestigd');
+    const wanted = (b.band_wanted||[]);
+    return `<div class="band-card">
+      <div class="band-card-header" onclick="openBandModal('${b.id}')">
+        <div class="band-avatar" style="background:${col};">${b.name.slice(0,2).toUpperCase()}</div>
+        <div style="flex:1;">
+          <div class="band-name">${b.name}</div>
+          <div class="band-meta">${b.city||''}${b.city&&b.genres?.length?' · ':''}${(b.genres||[]).slice(0,2).join(', ')}</div>
+        </div>
+        <span class="band-status-badge band-status-${b.status}">${statusLabels[b.status]||b.status}</span>
+      </div>
+      <div class="band-card-body">
+        ${b.description ? `<p style="font-size:13px;color:var(--muted);margin-bottom:12px;font-style:italic;">"${b.description}"</p>` : ''}
+        <div class="band-members-row">
+          ${confirmed.map(m => `<div class="band-member-chip">
+            <div class="band-member-dot" style="background:${m.musicians?.profile_color||'#888'};">${(m.musicians?.fname||'?')[0].toUpperCase()}</div>
+            ${m.musicians?.fname||'?'} <span style="color:var(--muted);font-size:10px;">${m.role||''}</span>
+          </div>`).join('')}
+        </div>
+        ${wanted.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${wanted.map(w => `<span class="wanted-chip">+ ${w.instrument}</span>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openBandModal(id) {
+  const modal = document.getElementById('bandModal');
+  document.getElementById('bandModalContent').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  modal.classList.add('visible');
+
+  const { data: b } = await db.from('bands')
+    .select(`*, band_members(role, status, musicians(id, fname, profile_color, musician_instruments(instrument))), band_wanted(instrument)`)
+    .eq('id', id).single();
+
+  if (!b) { document.getElementById('bandModalContent').innerHTML = '<p style="color:var(--accent2)">Kon band niet laden.</p>'; return; }
+
+  const col = b.profile_color || '#3ecfff';
+  const confirmed = (b.band_members||[]).filter(m => m.status === 'bevestigd');
+  const statusLabels = { zoekend: 'Zoekend naar leden', compleet: 'Band is compleet', inactief: 'Inactief' };
+
+  document.getElementById('bandModalContent').innerHTML = `
+    <div style="height:8px;background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;"></div>
+    <div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:12px;">${b.name.slice(0,2).toUpperCase()}</div>
+    <div class="profile-name">${b.name}</div>
+    <div class="profile-meta">${b.city||''}${b.city&&b.genres?.length?' · ':''}${(b.genres||[]).join(', ')}</div>
+    <div style="margin:10px 0;"><span class="band-status-badge band-status-${b.status}">${statusLabels[b.status]||b.status}</span></div>
+    ${b.description ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${b.description}"</p>` : ''}
+    <div class="profile-songs-title" style="margin-top:16px;">Leden (${confirmed.length})</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+      ${confirmed.map(m => `<div class="band-member-chip">
+        <div class="band-member-dot" style="background:${m.musicians?.profile_color||'#888'};">${(m.musicians?.fname||'?')[0].toUpperCase()}</div>
+        <span><strong>${m.musicians?.fname||'?'}</strong> · ${m.role||'Lid'}</span>
+      </div>`).join('')}
+    </div>
+    ${(b.band_wanted||[]).length ? `
+      <div class="profile-songs-title" style="margin-top:16px;">Wij zoeken nog</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+        ${(b.band_wanted||[]).map(w => `<span class="wanted-chip">${w.instrument}</span>`).join('')}
+      </div>` : ''}`;
+}
+
+// ─── Auth extras ─────────────────────────────────────────────────────────────
+
+async function forgotPassword() {
+  const email = document.getElementById('loginEmail').value.trim();
+  if (!email) { showAuthError('Vul eerst je e-mailadres in.'); return; }
+  const { error } = await db.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://tt-rw.github.io/talenttent/'
+  });
+  if (error) { showAuthError('Fout: ' + error.message); return; }
+  showAuthSuccess('✓ Herstelmail verstuurd! Controleer je inbox.');
+}
+
+async function saveNewPassword() {
+  const pw1 = document.getElementById('resetPassword1').value;
+  const pw2 = document.getElementById('resetPassword2').value;
+  const err = document.getElementById('resetError');
+  const suc = document.getElementById('resetSuccess');
+  err.classList.remove('visible'); suc.classList.remove('visible');
+  if (!pw1 || !pw2) { err.textContent = 'Vul beide velden in.'; err.classList.add('visible'); return; }
+  if (pw1.length < 8) { err.textContent = 'Minimaal 8 tekens.'; err.classList.add('visible'); return; }
+  if (pw1 !== pw2) { err.textContent = 'Wachtwoorden komen niet overeen.'; err.classList.add('visible'); return; }
+  const { error } = await db.auth.updateUser({ password: pw1 });
+  if (error) { err.textContent = 'Fout: ' + error.message; err.classList.add('visible'); return; }
+  suc.textContent = '✓ Wachtwoord opgeslagen!';
+  suc.classList.add('visible');
+  setTimeout(() => showView('myprofile'), 2000);
+}
+
+// ─── Start ───────────────────────────────────────────────────────────────────
+init();
+initSearchFilters();
+appInit();
+</script>
+</body>
+</html>
