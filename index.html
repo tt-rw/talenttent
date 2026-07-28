@@ -1506,7 +1506,7 @@
 </header>
 
 <!-- Navigatie -->
-<nav class="app-nav" id="appNav" style="display:none;">
+<nav class="app-nav" id="appNav" style="display:flex;">
   <button class="nav-btn" id="navMusicians" onclick="showView('search')">Muzikanten</button>
   <button class="nav-btn" id="navBandsSearch" onclick="showView('bandsearch')">Bands</button>
   <div class="nav-spacer"></div>
@@ -1523,7 +1523,7 @@
 
 <!-- ═══════════════════════════════════════════ -->
 <!-- VIEW: Landingspagina -->
-<div class="app-view" id="view-landing">
+<div class="app-view active" id="view-landing">
   <div class="landing-wrap">
     <div class="landing-hero">
       <div class="landing-hero-inner">
@@ -2038,26 +2038,29 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
 
 async function appInit() {
-  const { data: { session } } = await db.auth.getSession();
-  if (session?.user) {
-    currentUser = session.user;
-    onUserLoggedIn(session.user);
-  } else {
-    document.getElementById('appNav').style.display = 'flex';
-    showView('landing');
-  }
-
-  db.auth.onAuthStateChange((event, session) => {
-    if (event === 'PASSWORD_RECOVERY') {
-      showView('reset');
-    } else if (event === 'SIGNED_IN' && session?.user) {
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (session?.user) {
       currentUser = session.user;
       onUserLoggedIn(session.user);
-    } else if (event === 'SIGNED_OUT') {
-      currentUser = null;
-      onUserLoggedOut();
     }
-  });
+    // Landing page is already visible by default — no else needed
+
+    db.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        showView('reset');
+      } else if (event === 'SIGNED_IN' && session?.user) {
+        currentUser = session.user;
+        onUserLoggedIn(session.user);
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        onUserLoggedOut();
+      }
+    });
+  } catch(e) {
+    console.error('appInit fout:', e);
+    // Landingspagina blijft zichtbaar als fallback
+  }
 }
 
 function onUserLoggedIn(user) {
@@ -3068,4 +3071,324 @@ function updateCompleteness() {
   `).join('');
 }
 
-// ─── Media ───────────────────────────────────
+// ─── Media ───────────────────────────────────────────────────────────────────
+
+function switchMediaTab(tab, el) {
+  document.querySelectorAll('.media-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.media-pane').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('pane-' + tab).classList.add('active');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag-over');
+  handleFileSelect(e.dataTransfer.files);
+}
+
+function handleFileSelect(files) {
+  Array.from(files).forEach(file => {
+    if (state.mediaFiles.length >= 8) { alert('Maximum 8 bestanden.'); return; }
+    const url = URL.createObjectURL(file);
+    const type = file.type.startsWith('video') ? 'video' : 'foto';
+    state.mediaFiles.push({ name: file.name, url, type });
+  });
+  renderMediaGrid();
+}
+
+function renderMediaGrid() {
+  const grid = document.getElementById('mediaGrid');
+  grid.innerHTML = state.mediaFiles.map((m,i) => `
+    <div class="media-thumb">
+      ${m.type === 'foto'
+        ? `<img src="${m.url}" alt="${m.name}">`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:var(--fs-lg);">🎬</div>`
+      }
+      <div class="thumb-type">${m.type}</div>
+      <button class="thumb-remove" onclick="removeMedia(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeMedia(i) {
+  state.mediaFiles.splice(i,1);
+  renderMediaGrid();
+}
+
+function detectPlatform(url) {
+  if (url.includes('youtube') || url.includes('youtu.be')) return '▶ YouTube';
+  if (url.includes('instagram')) return '📷 Instagram';
+  if (url.includes('soundcloud')) return '🎵 SoundCloud';
+  if (url.includes('tiktok')) return '🎵 TikTok';
+  if (url.includes('spotify')) return '🟢 Spotify';
+  return '🔗 Link';
+}
+
+function addLinkRow() {
+  state.mediaLinks.push({ url: '' });
+  renderLinksList();
+}
+
+function renderLinksList() {
+  const list = document.getElementById('linksList');
+  list.innerHTML = state.mediaLinks.map((l,i) => `
+    <div class="link-row">
+      <span class="link-type-badge">${l.url ? detectPlatform(l.url) : '🔗 Link'}</span>
+      <input type="url" value="${l.url}" placeholder="https://youtube.com/watch?v=..."
+        oninput="state.mediaLinks[${i}].url=this.value; renderLinksList()" onblur="renderLinksList()">
+      <button class="song-remove" onclick="removeLink(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeLink(i) {
+  state.mediaLinks.splice(i,1);
+  renderLinksList();
+}
+
+// ─── Profile Render ───────────────────────────────────────────────────────────
+
+function renderProfile() {
+  const col = state.profileColor;
+  const initials = state.fname.slice(0,1).toUpperCase();
+
+  const goalLabels = {
+    oefenen: '🎸 Samen oefenen',
+    band:    '🎵 Band starten',
+    optreden:'🎤 Optreden',
+    alles:   '🌟 Alles!'
+  };
+  const levelLabel = { basis: 'Basis', bijna: 'Bijna helemaal', podium: 'Podiumklaar' };
+
+  const songRows = state.songs.map(s => `
+    <div class="profile-song-row">
+      <span><strong>${s.title}</strong> — <span style="color:var(--muted)">${s.artist}</span></span>
+      <span class="level-pill ${s.level}">${levelLabel[s.level]}</span>
+    </div>
+  `).join('');
+
+  // Avatar HTML
+  const avatarHTML = state.avatarUrl
+    ? `<img class="profile-avatar-photo" src="${state.avatarUrl}" alt="profielfoto" style="border-color:${col};">`
+    : `<div class="profile-avatar-initials" style="background:${col}; border-color:${col};">${initials}</div>`;
+
+  // Vibe badge
+  const vibeHTML = state.vibe
+    ? `<div class="profile-vibe-badge" style="color:${col}; border-color:${col}; background:${col}18;">
+        ${state.vibe.emoji} ${state.vibe.label}
+      </div>`
+    : '';
+
+  // Media
+  const mediaPhotos = state.mediaFiles.filter(m => m.type === 'foto');
+  const mediaVideos = state.mediaFiles.filter(m => m.type === 'video');
+  const validLinks  = state.mediaLinks.filter(l => l.url.trim());
+  const hasMedia    = state.mediaFiles.length || validLinks.length;
+
+  const mediaSectionHTML = hasMedia ? `
+    <div class="profile-media">
+      <div class="profile-media-title">Media (${state.mediaFiles.length + validLinks.length})</div>
+      <div class="profile-media-grid">
+        ${mediaPhotos.map(m => `<div class="profile-media-thumb"><img src="${m.url}" alt="foto"></div>`).join('')}
+        ${mediaVideos.map(() => `<div class="profile-media-thumb" style="display:flex;align-items:center;justify-content:center;font-size:var(--fs-lg);">🎬</div>`).join('')}
+        ${validLinks.map(l => `<span class="profile-link-chip">${detectPlatform(l.url)}</span>`).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // Freshness
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Completeness checks for preview meter
+  const checks = [
+    { done: !!state.fname,                label: 'Naam' },
+    { done: !!state.avatarUrl,            label: 'Profielfoto' },
+    { done: state.bio.length > 20,        label: 'Bio' },
+    { done: state.instruments.length > 0, label: 'Instrument' },
+    { done: state.genres.length > 0,      label: 'Genre' },
+    { done: state.songs.length >= 3,      label: '3+ nummers' },
+    { done: hasMedia,                     label: 'Media' },
+    { done: !!state.vibe,                 label: 'Vibe-tag' },
+  ];
+  const doneCnt = checks.filter(c => c.done).length;
+  const pct = Math.round((doneCnt / checks.length) * 100);
+
+  document.getElementById('profilePreview').innerHTML = `
+    <div class="profile-header-band" style="background:${col};"></div>
+    ${avatarHTML}
+    ${vibeHTML}
+    <div class="profile-name">${state.fname}</div>
+    <div class="profile-meta">${calcAge(state.birth_date)} jaar · ${state.city}${state.zip ? ' · ' + state.zip : ''}</div>
+    <div class="freshness-bar" style="border-color:rgba(76,175,80,0.25);">
+      <div class="freshness-dot"></div>
+      <span>Profiel bijgewerkt op <strong>${dateStr}</strong></span>
+    </div>
+    <div class="profile-badges" style="margin-top:16px;">
+      ${state.instruments.map(i => `<span class="badge" style="border-color:${col};color:${col};">${i}</span>`).join('')}
+      ${state.genres.map(g => `<span class="badge genre">${g}</span>`).join('')}
+      <span class="badge">${goalLabels[state.goal]}</span>
+    </div>
+    ${state.bio ? `<p style="font-size:var(--fs-md);color:var(--muted);margin:12px 0;font-style:italic;">"${state.bio}"</p>` : ''}
+    <div class="profile-songs">
+      <div class="profile-songs-title">Repertoire (${state.songs.length} nummer${state.songs.length!==1?'s':''})</div>
+      ${songRows}
+    </div>
+    ${mediaSectionHTML}
+
+    <div id="completenessMeter" class="completeness-wrap" style="margin-top:24px;">
+      <div class="completeness-header">
+        <span class="completeness-label">Profiel volledigheid</span>
+        <span class="completeness-pct" style="color:${col};">${pct}%</span>
+      </div>
+      <div class="completeness-track">
+        <div class="completeness-fill" style="width:${pct}%; background:${col};"></div>
+      </div>
+      <div class="completeness-items">
+        ${checks.map(c => `
+          <span class="comp-item ${c.done ? 'done' : 'pending'}" style="${c.done ? `border-color:${col};color:${col};` : ''}">
+            ${c.done ? '✓' : '○'} ${c.label}
+          </span>
+        `).join('')}
+      </div>
+      ${pct < 100 ? `<p style="font-size:var(--fs-sm);color:var(--muted);margin-top:10px;">💡 Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:var(--fs-sm);color:${col};margin-top:10px;font-weight:700;">🎉 Compleet profiel! Jij valt op.</p>`}
+    </div>
+  `;
+}
+
+// ─── Band zoekfunctie ────────────────────────────────────────────────────────
+
+let filterBandGenresList = [];
+let filterBandWantedList = [];
+let filterBandStatusVal  = 'zoekend';
+
+function initBandSearchFilters() {
+  const gg = document.getElementById('filterBandGenres');
+  if (gg && !gg.children.length) {
+    GENRES.forEach(g => {
+      const t = document.createElement('div');
+      t.className = 'genre-tag';
+      t.textContent = g;
+      t.onclick = () => {
+        const idx = filterBandGenresList.indexOf(g);
+        if (idx === -1) { filterBandGenresList.push(g); t.classList.add('selected'); }
+        else { filterBandGenresList.splice(idx,1); t.classList.remove('selected'); }
+      };
+      gg.appendChild(t);
+    });
+  }
+
+  const wg = document.getElementById('filterBandWanted');
+  if (wg && !wg.children.length) {
+    INSTRUMENTS.forEach(i => {
+      const t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = i;
+      t.style.fontSize = '12px';
+      t.style.padding = '6px 12px';
+      t.onclick = () => {
+        const idx = filterBandWantedList.indexOf(i);
+        if (idx === -1) { filterBandWantedList.push(i); t.classList.add('selected'); }
+        else { filterBandWantedList.splice(idx,1); t.classList.remove('selected'); }
+      };
+      wg.appendChild(t);
+    });
+  }
+}
+
+function toggleBandStatusFilter(el, val) {
+  el.classList.toggle('selected');
+  filterBandStatusVal = el.classList.contains('selected') ? val : null;
+}
+
+async function runBandSearch() {
+  const resultsEl = document.getElementById('bandSearchResults');
+  resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
+    <div class="save-spinner" style="margin:0 auto 16px;"></div>Bands zoeken...
+  </div>`;
+
+  try {
+    let query = db.from('bands').select(`
+      id, name, city, genres, status, description, profile_color, updated_at,
+      band_members(musician_id, status, musicians(fname, profile_color)),
+      band_wanted(instrument)
+    `);
+
+    const city = document.getElementById('filterBandCity').value.trim();
+    if (city) query = query.ilike('city', `%${city}%`);
+    if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
+
+    const { data: bands, error } = await query.order('updated_at', { ascending: false }).limit(50);
+    if (error) throw error;
+
+    const filtered = (bands || []).filter(b => {
+      if (filterBandGenresList.length && !filterBandGenresList.some(g => (b.genres||[]).includes(g))) return false;
+      if (filterBandWantedList.length) {
+        const wanted = (b.band_wanted||[]).map(w => w.instrument);
+        if (!filterBandWantedList.some(i => wanted.includes(i))) return false;
+      }
+      return true;
+    });
+
+    renderBandSearchResults(filtered);
+  } catch(e) {
+    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--accent2);">Fout: ${e.message}</div>`;
+  }
+}
+
+function renderBandSearchResults(bands) {
+  const el = document.getElementById('bandSearchResults');
+  if (!bands.length) {
+    el.innerHTML = `<div class="no-results">
+      <div class="no-results-icon">🎵</div>
+      <p style="font-size:var(--fs-md);font-weight:600;margin-bottom:8px;">Geen bands gevonden</p>
+      <p style="font-size:var(--fs-md);">Pas je filters aan en probeer opnieuw</p>
+    </div>`;
+    return;
+  }
+
+  const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
+
+  el.innerHTML = `
+    <div class="results-header">
+      <span class="results-count">${bands.length} band${bands.length !== 1 ? 's' : ''} gevonden</span>
+    </div>
+    <div class="results-grid">
+      ${bands.map(b => {
+        const col = b.profile_color || '#3ecfff';
+        const initials = b.name.slice(0,2).toUpperCase();
+        const members = (b.band_members||[]).filter(m => m.status === 'bevestigd');
+        const wanted  = (b.band_wanted||[]).slice(0,3);
+        return `
+          <div class="musician-card" onclick="openBandModal('${b.id}')">
+            <div class="card-color-band" style="background:${col};"></div>
+            <div class="card-body">
+              <div class="card-header">
+                <div class="card-avatar" style="background:${col};border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:var(--fs-lg);">${initials}</div>
+                <div>
+                  <div class="card-name">${b.name}</div>
+                  <div class="card-meta">${b.city||''}${b.city&&b.genres?.length?' · ':''}${(b.genres||[]).slice(0,2).join(', ')}</div>
+                  <span class="band-status-badge band-status-${b.status}">${statusLabels[b.status]||b.status}</span>
+                </div>
+              </div>
+              ${b.description ? `<p style="font-size:var(--fs-sm);color:var(--muted);margin-bottom:10px;font-style:italic;">"${b.description.slice(0,80)}${b.description.length>80?'...':''}"</p>` : ''}
+              <div class="card-badges">
+                ${members.slice(0,3).map(m => `<span class="card-badge">${m.musicians?.fname||'?'}</span>`).join('')}
+                ${members.length > 3 ? `<span class="card-badge">+${members.length-3}</span>` : ''}
+              </div>
+              ${wanted.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+                ${wanted.map(w => `<span class="wanted-chip">+ ${w.instrument}</span>`).join('')}
+              </div>` : ''}
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ─── Start ───────────────────────────────────────────────────────────────────
+init();
+initSearchFilters();
+appInit();
+</script>
+</body>
+</html>
