@@ -1101,7 +1101,162 @@
   .save-error-icon { font-size: 48px; margin-bottom: 16px; }
   .save-error-msg  { color: var(--accent2); font-size: 13px; margin-top: 8px; }
 
-  /* ── Navigatie ───────────────────────────── */
+  /* ── Landingspagina ─────────────────────── */
+  .landing-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  .landing-hero {
+    padding: 80px 0 60px;
+    text-align: center;
+  }
+
+  .landing-hero-inner { max-width: 640px; margin: 0 auto; }
+
+  .landing-tag {
+    display: inline-block;
+    background: rgba(245,197,24,0.1);
+    border: 1px solid rgba(245,197,24,0.3);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+  }
+
+  .landing-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 10vw, 96px);
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+
+  .landing-title span { color: var(--accent); }
+
+  .landing-sub {
+    font-size: 16px;
+    color: var(--muted);
+    line-height: 1.7;
+    font-weight: 300;
+    margin-bottom: 36px;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .landing-cta {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .landing-btn {
+    padding: 15px 32px;
+    font-size: 15px;
+  }
+
+  /* Hoe het werkt */
+  .landing-steps {
+    padding: 48px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .landing-steps-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .landing-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .landing-step {
+    text-align: center;
+    padding: 24px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    position: relative;
+  }
+
+  .landing-step-num {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 24px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .landing-step-icon { font-size: 32px; margin-bottom: 12px; }
+  .landing-step-label { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
+  .landing-step-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  /* Twee paden */
+  .landing-paths {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .landing-path {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .landing-path:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  .landing-path-icon { font-size: 40px; margin-bottom: 12px; }
+  .landing-path-title { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1px; margin-bottom: 8px; }
+  .landing-path-desc { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
+  .landing-path-btn { font-size: 13px; font-weight: 700; color: var(--accent); }
+
+  .landing-login {
+    text-align: center;
+    font-size: 14px;
+    color: var(--muted);
+    padding: 24px 0;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 560px) {
+    .landing-steps-grid { grid-template-columns: 1fr; }
+    .landing-paths { grid-template-columns: 1fr; }
+  }
   .app-nav {
     position: relative;
     z-index: 20;
@@ -1480,20 +1635,86 @@
 
 <!-- Navigatie -->
 <nav class="app-nav" id="appNav" style="display:none;">
-  <button class="nav-btn" id="navSearch" onclick="showView('search')">🔍 Zoeken</button>
-  <button class="nav-btn" id="navRegister" onclick="showView('register')">✚ Aanmelden</button>
-  <button class="nav-btn" id="navMyProfile" onclick="showView('myprofile')" style="display:none;">👤 Mijn profiel</button>
+  <!-- Niet-ingelogd -->
+  <button class="nav-btn" id="navMusicians" onclick="showView('search')">🎸 Muzikanten</button>
+  <button class="nav-btn" id="navBandsSearch" onclick="showView('bandsearch')">🎵 Bands</button>
   <div class="nav-spacer"></div>
+  <button class="nav-btn" id="navLogin" onclick="showView('auth')">Inloggen</button>
+  <!-- Ingelogd -->
+  <button class="nav-btn" id="navMyProfile" onclick="showView('myprofile')" style="display:none;">👤 Mijn profiel</button>
+  <button class="nav-btn" id="navMyBands" onclick="showView('bands')" style="display:none;">🎵 Mijn bands</button>
+  <div class="nav-spacer" id="navSpacerLoggedIn" style="display:none;"></div>
   <div class="nav-user" id="navUser" style="display:none;">
     <div class="nav-user-dot" id="navUserDot">?</div>
     <strong id="navUserName"></strong>
     <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px;" onclick="signOut()">Uitloggen</button>
   </div>
-  <button class="nav-btn" id="navLogin" onclick="showView('auth')">Inloggen</button>
 </nav>
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- VIEW: Auth (inloggen / registreren)         -->
+<!-- VIEW: Landingspagina                        -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="app-view" id="view-landing">
+  <div class="landing-wrap">
+
+    <!-- Hero -->
+    <div class="landing-hero">
+      <div class="landing-hero-inner">
+        <h1 class="landing-title">Vind je <span>muzikant.</span><br>Start je band.</h1>
+        <p class="landing-sub">The Talent Tent brengt jonge muzikanten bij elkaar — voor jam-sessies, repetities en optredens. Sluit je aan bij honderden muzikanten in jouw regio.</p>
+        <div class="landing-cta">
+          <button class="btn btn-primary landing-btn" onclick="showView('register')">Profiel aanmaken →</button>
+          <button class="btn btn-ghost landing-btn" onclick="showView('search')">Muzikanten zoeken</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hoe het werkt -->
+    <div class="landing-steps">
+      <div class="landing-steps-title">Hoe het werkt</div>
+      <div class="landing-steps-grid">
+        <div class="landing-step">
+          <div class="landing-step-num">1</div>
+          <div class="landing-step-label">Maak je profiel</div>
+          <div class="landing-step-desc">Voeg je instrument, genres en repertoire toe. Laat zien wie je bent als muzikant.</div>
+        </div>
+        <div class="landing-step">
+          <div class="landing-step-num">2</div>
+          <div class="landing-step-label">Zoek en match</div>
+          <div class="landing-step-desc">Zoek muzikanten of bands bij jou in de buurt. Filter op instrument, genre en doel.</div>
+        </div>
+        <div class="landing-step">
+          <div class="landing-step-num">3</div>
+          <div class="landing-step-label">Speel samen</div>
+          <div class="landing-step-desc">Neem contact op, plan een repetitie en maak muziek samen. Van je slaapkamer naar het podium.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Twee paden -->
+    <div class="landing-paths">
+      <div class="landing-path" onclick="showView('search')">
+        <div class="landing-path-title">Muzikant zoeken</div>
+        <div class="landing-path-desc">Je wilt iemand vinden om mee te jammen, repeteren of een band mee te starten.</div>
+        <div class="landing-path-btn">Zoek muzikanten →</div>
+      </div>
+      <div class="landing-path" onclick="showView('bandsearch')">
+        <div class="landing-path-title">Band zoeken</div>
+        <div class="landing-path-desc">Je zoekt een bestaande band om bij aan te sluiten als nieuw lid.</div>
+        <div class="landing-path-btn">Zoek bands →</div>
+      </div>
+    </div>
+
+    <!-- Inloggen onderaan -->
+    <div class="landing-login">
+      <p>Al een profiel? <button onclick="showView('auth')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;text-decoration:underline;">Inloggen →</button></p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- VIEW: Auth (inloggen)                       -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="app-view" id="view-auth">
   <div class="auth-wrap">
@@ -1515,7 +1736,11 @@
         <input type="password" id="loginPassword" placeholder="••••••••">
       </div>
       <div style="text-align:right;margin-bottom:20px;">
-        <button onclick="forgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;">Wachtwoord vergeten?</button>
+        <button onclick="forgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:underline;">Nieuw wachtwoord?</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;">
+        <input type="checkbox" id="stayLoggedIn" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent);">
+        <label for="stayLoggedIn" style="font-size:13px;color:var(--muted);cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;">Ingelogd blijven</label>
       </div>
       <button class="btn btn-primary" style="width:100%;margin-bottom:16px;" onclick="signIn()">Inloggen →</button>
       <div style="text-align:center;padding-top:16px;border-top:1px solid var(--border);">
@@ -1555,20 +1780,27 @@
         <input type="text" id="fname" placeholder="Bijv. Sander">
       </div>
       <div class="field">
+        <label>Achternaam <span class="req">*</span></label>
+        <input type="text" id="lname" placeholder="Bijv. de Vries">
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field">
         <label>Geboortedatum <span class="req">*</span></label>
         <input type="text" id="birth_date" placeholder="01-02-2001" maxlength="10" oninput="formatBirthDate(this)">
+      </div>
+      <div class="field">
+        <label>Woonplaats <span class="req">*</span></label>
+        <input type="text" id="city" placeholder="Bijv. Delft">
       </div>
     </div>
 
     <div class="field-group">
       <div class="field">
-        <label>Woonplaats <span class="req">*</span></label>
-        <input type="text" id="city" placeholder="Bijv. Delft">
-      </div>
-      <div class="field">
         <label>Postcode</label>
         <input type="text" id="zip" placeholder="Bijv. 2611" maxlength="6">
       </div>
+      <div class="field"></div>
     </div>
 
     <div class="field-group single">
@@ -1891,8 +2123,47 @@
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- VIEW: Mijn profiel                          -->
+<!-- VIEW: Bands zoeken                          -->
 <!-- ═══════════════════════════════════════════ -->
+<div class="app-view" id="view-bandsearch">
+  <div class="search-wrap">
+    <div class="search-filters">
+      <div class="filter-title">🎵 Vind een band</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Zoek bands die nog muzikanten zoeken</p>
+
+      <div class="filter-row">
+        <div class="field">
+          <label>Stad</label>
+          <input type="text" id="filterBandCity" placeholder="Bijv. Delft, Den Haag...">
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <div class="tag-grid" id="filterBandStatus">
+            <div class="tag" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">🔍 Zoekend</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-row single" style="margin-bottom:16px;">
+        <div class="field">
+          <label>Genre</label>
+          <div class="tag-grid" id="filterBandGenres"></div>
+        </div>
+      </div>
+
+      <div class="filter-row single" style="margin-bottom:16px;">
+        <div class="field">
+          <label>Instrument gezocht</label>
+          <div class="tag-grid" id="filterBandWanted"></div>
+        </div>
+      </div>
+
+      <button class="search-btn" onclick="runBandSearch()">🔍 Zoek bands</button>
+    </div>
+
+    <div id="bandSearchResults"></div>
+  </div>
+</div>
 <div class="app-view" id="view-myprofile">
   <div class="my-profile-wrap">
     <div id="myProfileContent"></div>
@@ -1922,18 +2193,19 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
 
 async function appInit() {
-  // Check of gebruiker al ingelogd is
   const { data: { session } } = await db.auth.getSession();
   if (session?.user) {
     currentUser = session.user;
     onUserLoggedIn(session.user);
   } else {
-    showView('search');
+    document.getElementById('appNav').style.display = 'flex';
+    showView('landing');
   }
 
-  // Luister naar auth-wijzigingen
   db.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
+    if (event === 'PASSWORD_RECOVERY') {
+      showView('reset');
+    } else if (event === 'SIGNED_IN' && session?.user) {
       currentUser = session.user;
       onUserLoggedIn(session.user);
     } else if (event === 'SIGNED_OUT') {
@@ -1944,12 +2216,17 @@ async function appInit() {
 }
 
 function onUserLoggedIn(user) {
-  document.getElementById('appNav').style.display = 'flex';
+  // Verberg niet-ingelogd nav
+  document.getElementById('navMusicians').style.display = 'none';
+  document.getElementById('navBandsSearch').style.display = 'none';
   document.getElementById('navLogin').style.display = 'none';
-  document.getElementById('navRegister').style.display = 'none';
-  document.getElementById('navUser').style.display = 'flex';
+  // Toon ingelogd nav
   document.getElementById('navMyProfile').style.display = 'block';
-  document.getElementById('navBands').style.display = 'block';
+  document.getElementById('navMyBands').style.display = 'block';
+  document.getElementById('navSpacerLoggedIn').style.display = 'flex';
+  document.getElementById('navUser').style.display = 'flex';
+  document.getElementById('appNav').style.display = 'flex';
+
   const userFname = user.user_metadata?.fname || user.email.split('@')[0];
   document.getElementById('navUserName').textContent = userFname;
   document.getElementById('navUserDot').textContent = userFname[0].toUpperCase();
@@ -1967,14 +2244,18 @@ function onUserLoggedIn(user) {
 }
 
 function onUserLoggedOut() {
-  document.getElementById('appNav').style.display = 'flex';
+  // Toon niet-ingelogd nav
+  document.getElementById('navMusicians').style.display = 'block';
+  document.getElementById('navBandsSearch').style.display = 'block';
   document.getElementById('navLogin').style.display = 'block';
-  document.getElementById('navRegister').style.display = 'block';
-  document.getElementById('navUser').style.display = 'none';
+  // Verberg ingelogd nav
   document.getElementById('navMyProfile').style.display = 'none';
-  document.getElementById('navBands').style.display = 'none';
+  document.getElementById('navMyBands').style.display = 'none';
+  document.getElementById('navSpacerLoggedIn').style.display = 'none';
+  document.getElementById('navUser').style.display = 'none';
+  document.getElementById('appNav').style.display = 'flex';
   myMusicianId = null;
-  showView('search');
+  showView('landing');
 }
 
 // ─── Navigatie ───────────────────────────────────────────────────────────────
@@ -1982,31 +2263,170 @@ function onUserLoggedOut() {
 function showView(view) {
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('appNav').style.display = 'flex';
 
-  document.getElementById(`view-${view}`).classList.add('active');
+  const el = document.getElementById(`view-${view}`);
+  if (el) el.classList.add('active');
 
-  const navMap = { search: 'navSearch', register: 'navRegister', myprofile: 'navMyProfile', auth: 'navLogin' };
+  const navMap = {
+    landing:    null,
+    search:     'navMusicians',
+    bandsearch: 'navBandsSearch',
+    register:   null,
+    myprofile:  'navMyProfile',
+    bands:      'navMyBands',
+    auth:       'navLogin',
+    reset:      null
+  };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
 
-  // Aanmelden alleen voor niet-ingelogde gebruikers (ingelogden hebben al een profiel)
+  // Ingelogde gebruiker heeft al een profiel — stuur naar mijn profiel
   if (view === 'register' && currentUser) {
     showView('myprofile');
     return;
   }
 
   if (view === 'myprofile') loadMyProfile();
+  if (view === 'bands') loadMyBands();
+  if (view === 'bandsearch') initBandSearchFilters();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ─── Authenticatie ───────────────────────────────────────────────────────────
 
 function switchAuthTab(tab) {
-  document.getElementById('paneLogin').style.display  = tab === 'login'  ? 'block' : 'none';
-  document.getElementById('paneSignup').style.display = tab === 'signup' ? 'block' : 'none';
-  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
-  document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+  // Geen signup tab meer — registreren via profielformulier
   clearAuthMessages();
+}
+
+// ─── Band zoekfunctie ────────────────────────────────────────────────────────
+
+let filterBandGenres  = [];
+let filterBandWanted  = [];
+let filterBandStatus  = 'zoekend';
+
+function initBandSearchFilters() {
+  const gg = document.getElementById('filterBandGenres');
+  if (gg && !gg.children.length) {
+    GENRES.forEach(g => {
+      const t = document.createElement('div');
+      t.className = 'genre-tag';
+      t.textContent = g;
+      t.onclick = () => {
+        const idx = filterBandGenres.indexOf(g);
+        if (idx === -1) { filterBandGenres.push(g); t.classList.add('selected'); }
+        else { filterBandGenres.splice(idx,1); t.classList.remove('selected'); }
+      };
+      gg.appendChild(t);
+    });
+  }
+
+  const wg = document.getElementById('filterBandWanted');
+  if (wg && !wg.children.length) {
+    INSTRUMENTS.forEach(i => {
+      const t = document.createElement('div');
+      t.className = 'tag';
+      t.textContent = i;
+      t.style.fontSize = '12px';
+      t.style.padding = '6px 12px';
+      t.onclick = () => {
+        const idx = filterBandWanted.indexOf(i);
+        if (idx === -1) { filterBandWanted.push(i); t.classList.add('selected'); }
+        else { filterBandWanted.splice(idx,1); t.classList.remove('selected'); }
+      };
+      wg.appendChild(t);
+    });
+  }
+}
+
+function toggleBandStatusFilter(el, val) {
+  el.classList.toggle('selected');
+  filterBandStatus = el.classList.contains('selected') ? val : null;
+}
+
+async function runBandSearch() {
+  const resultsEl = document.getElementById('bandSearchResults');
+  resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
+    <div class="save-spinner" style="margin:0 auto 16px;"></div>Bands zoeken...
+  </div>`;
+
+  try {
+    let query = db.from('bands').select(`
+      id, name, city, genres, status, description, profile_color, updated_at,
+      band_members(musician_id, status, musicians(fname, profile_color)),
+      band_wanted(instrument)
+    `);
+
+    const city = document.getElementById('filterBandCity').value.trim();
+    if (city) query = query.ilike('city', `%${city}%`);
+    if (filterBandStatus) query = query.eq('status', filterBandStatus);
+
+    const { data: bands, error } = await query.order('updated_at', { ascending: false }).limit(50);
+    if (error) throw error;
+
+    const filtered = (bands || []).filter(b => {
+      if (filterBandGenres.length) {
+        if (!filterBandGenres.some(g => (b.genres||[]).includes(g))) return false;
+      }
+      if (filterBandWanted.length) {
+        const wanted = (b.band_wanted||[]).map(w => w.instrument);
+        if (!filterBandWanted.some(i => wanted.includes(i))) return false;
+      }
+      return true;
+    });
+
+    renderBandSearchResults(filtered);
+  } catch(e) {
+    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--accent2);">Fout: ${e.message}</div>`;
+  }
+}
+
+function renderBandSearchResults(bands) {
+  const el = document.getElementById('bandSearchResults');
+  if (!bands.length) {
+    el.innerHTML = `<div class="no-results">
+      <div class="no-results-icon">🎵</div>
+      <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen bands gevonden</p>
+      <p style="font-size:13px;">Pas je filters aan en probeer opnieuw</p>
+    </div>`;
+    return;
+  }
+
+  const statusLabels = { zoekend: '🔍 Zoekend', compleet: '✅ Compleet', inactief: '💤 Inactief' };
+
+  el.innerHTML = `
+    <div class="results-header">
+      <span class="results-count">${bands.length} band${bands.length !== 1 ? 's' : ''} gevonden</span>
+    </div>
+    <div class="results-grid">
+      ${bands.map(b => {
+        const col = b.profile_color || '#3ecfff';
+        const initials = b.name.slice(0,2).toUpperCase();
+        const members = (b.band_members||[]).filter(m => m.status === 'bevestigd');
+        const wanted  = (b.band_wanted||[]).slice(0,3);
+        return `
+          <div class="musician-card" onclick="openBandModal('${b.id}')">
+            <div class="card-color-band" style="background:${col};"></div>
+            <div class="card-body">
+              <div class="card-header">
+                <div class="band-avatar card-avatar" style="background:${col};border-radius:10px;">${initials}</div>
+                <div>
+                  <div class="card-name">${b.name}</div>
+                  <div class="card-meta">${b.city||''}${b.city&&b.genres?.length?' · ':''}${(b.genres||[]).slice(0,2).join(', ')}</div>
+                  <span class="band-status-badge band-status-${b.status}" style="font-size:10px;">${statusLabels[b.status]||b.status}</span>
+                </div>
+              </div>
+              ${b.description ? `<p style="font-size:12px;color:var(--muted);margin-bottom:10px;font-style:italic;">"${b.description.slice(0,80)}${b.description.length>80?'...':''}"</p>` : ''}
+              <div class="card-badges">
+                ${members.slice(0,3).map(m => `<span class="card-badge">${m.musicians?.fname||'?'}</span>`).join('')}
+                ${members.length > 3 ? `<span class="card-badge">+${members.length-3}</span>` : ''}
+              </div>
+              ${wanted.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+                ${wanted.map(w => `<span class="wanted-chip">+ ${w.instrument}</span>`).join('')}
+              </div>` : ''}
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
 }
 
 function showAuthError(msg) {
@@ -2029,13 +2449,18 @@ function clearAuthMessages() {
 }
 
 async function signIn() {
-  const email    = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
+  const email       = document.getElementById('loginEmail').value.trim();
+  const password    = document.getElementById('loginPassword').value;
+  const stayLoggedIn = document.getElementById('stayLoggedIn')?.checked;
   if (!email || !password) { showAuthError('Vul je e-mailadres en wachtwoord in.'); return; }
 
-  const { error } = await db.auth.signInWithPassword({ email, password });
+  // Supabase beheert sessies automatisch — bij "ingelogd blijven" gebruiken we de standaard persistentie
+  const { error } = await db.auth.signInWithPassword({
+    email,
+    password,
+    options: { persistSession: stayLoggedIn !== false }
+  });
   if (error) { showAuthError('Inloggen mislukt: ' + error.message); return; }
-  // onAuthStateChange handelt de rest af
 }
 
 async function signUp() {
@@ -2408,6 +2833,7 @@ async function submitProfile() {
       .from('musicians')
       .insert({
         fname:         state.fname,
+        lname:         state.lname,
         birth_date:    toISODate(state.birth_date),
         city:          state.city,
         zip:           state.zip || null,
@@ -2642,7 +3068,7 @@ const GENRES = [
 
 let state = {
   currentStep: 0,
-  fname: '', birth_date: '', city: '', zip: '', bio: '',
+  fname: '', lname: '', birth_date: '', city: '', zip: '', bio: '',
   regEmail: '', regPassword: '',
   instruments: [],
   genres: [],
@@ -2758,32 +3184,48 @@ function highlight(text, q) {
 }
 
 function addSong(title, artist) {
-  // Reset nummerveld na toevoeging
-  document.getElementById('trackSearch').value = '';
-  closeAC('acTrackList');
   if (state.songs.find(s => s.title===title && s.artist===artist)) return;
   state.songs.push({ title, artist, level: null });
+
+  // Reset beide velden + verberg nummerveld zodat gebruiker weet dat er opnieuw gezocht kan worden
+  document.getElementById('artistSearch').value = '';
+  document.getElementById('trackSearch').value = '';
+  document.getElementById('trackSearchWrap').style.display = 'none';
+  closeAC('acTrackList');
+  closeAC('acArtistList');
+  selectedArtist = null;
+
   renderSongs();
   updateCompleteness();
 }
 
 function renderSongs() {
   const list = document.getElementById('songsList');
-  list.innerHTML = state.songs.map((s,i) => `
-    <div class="song-card">
-      <div class="song-info">
-        <div class="song-title">${s.title}</div>
-        <div class="song-artist">${s.artist}</div>
-        <div class="level-select" style="margin-top:8px;">
-          <button class="level-btn ${s.level==='basis'?'active-basis':''}" onclick="setLevel(${i},'basis')">Basis</button>
-          <button class="level-btn ${s.level==='bijna'?'active-bijna':''}" onclick="setLevel(${i},'bijna')">Bijna helemaal</button>
-          <button class="level-btn ${s.level==='podium'?'active-podium':''}" onclick="setLevel(${i},'podium')">Podiumklaar</button>
-        </div>
-        ${!s.level ? '<div style="font-size:11px;color:var(--accent2);margin-top:4px;">⚠ Kies een beheersingsniveau</div>' : ''}
+  if (!state.songs.length) { list.innerHTML = ''; return; }
+
+  list.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
+      <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
+        <span>Nummer — Artiest</span>
+        <span style="margin-right:40px;">Niveau</span>
+        <span></span>
       </div>
-      <button class="song-remove" onclick="removeSong(${i})">✕</button>
-    </div>
-  `).join('');
+      ${state.songs.map((s,i) => `
+        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;" class="song-row-${i}">
+          <div>
+            <div style="font-size:14px;font-weight:600;">${s.title}</div>
+            <div style="font-size:12px;color:var(--muted);">${s.artist}</div>
+          </div>
+          <div style="display:flex;gap:4px;">
+            <button class="level-btn ${s.level==='basis'?'active-basis':''}" onclick="setLevel(${i},'basis')" title="Basis">B</button>
+            <button class="level-btn ${s.level==='bijna'?'active-bijna':''}" onclick="setLevel(${i},'bijna')" title="Bijna helemaal">BH</button>
+            <button class="level-btn ${s.level==='podium'?'active-podium':''}" onclick="setLevel(${i},'podium')" title="Podiumklaar">PK</button>
+          </div>
+          <button class="song-remove" onclick="removeSong(${i})" title="Verwijderen">✕</button>
+        </div>
+        ${!s.level ? `<div style="font-size:11px;color:var(--accent2);padding:4px 14px;background:rgba(255,77,77,0.05);">⚠ Kies een niveau: B = Basis · BH = Bijna helemaal · PK = Podiumklaar</div>` : ''}
+      `).join('')}
+    </div>`;
 }
 
 function setLevel(i, level) {
@@ -2810,6 +3252,7 @@ function selectGoal(el, val) {
 function nextStep(from) {
   if (from === 0) {
     state.fname      = document.getElementById('fname').value.trim();
+    state.lname      = document.getElementById('lname').value.trim();
     state.birth_date = document.getElementById('birth_date').value.trim();
     state.city       = normalizeCityName(document.getElementById('city').value.trim());
     state.zip        = document.getElementById('zip').value.trim();
@@ -2818,8 +3261,8 @@ function nextStep(from) {
     state.regPassword = document.getElementById('regPassword').value;
     const regPassword2 = document.getElementById('regPassword2').value;
 
-    if (!state.fname || !state.birth_date || !state.city) {
-      alert('Vul je voornaam, geboortedatum en woonplaats in.'); return;
+    if (!state.fname || !state.lname || !state.birth_date || !state.city) {
+      alert('Vul je voor- en achternaam, geboortedatum en woonplaats in.'); return;
     }
     const bdMatch = state.birth_date.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (!bdMatch) { alert('Voer je geboortedatum in als DD-MM-JJJJ, bijv. 01-02-2001'); return; }
