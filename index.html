@@ -1601,18 +1601,18 @@
     <div class="field-group">
       <div class="field">
         <label>E-mailadres <span class="req">*</span></label>
-        <input type="email" id="regEmail" placeholder="jouw@email.nl">
+        <input type="email" id="regEmail" placeholder="jouw@email.nl" autocomplete="off">
       </div>
       <div class="field">
         <label>Wachtwoord <span class="req">*</span></label>
-        <input type="password" id="regPassword" placeholder="Minimaal 8 tekens">
+        <input type="password" id="regPassword" placeholder="Minimaal 8 tekens" autocomplete="new-password">
       </div>
     </div>
 
     <div class="field-group single">
       <div class="field">
         <label>Wachtwoord herhalen <span class="req">*</span></label>
-        <input type="password" id="regPassword2" placeholder="••••••••">
+        <input type="password" id="regPassword2" placeholder="••••••••" autocomplete="new-password">
       </div>
     </div>
 
@@ -1754,7 +1754,7 @@
           <button class="avatar-remove-btn" id="avatarRemoveBtn" onclick="removeAvatar()">Foto verwijderen</button>
         </div>
       </div>
-      <input type="file" accept="image/*" class="avatar-upload-input" id="avatarInput" onchange="handleAvatarUpload(this.files[0])">
+      <input type="file" accept="image/*" class="avatar-upload-input" id="avatarInput" autocomplete="off" onchange="handleAvatarUpload(this.files[0]); this.value=''">
     </div>
 
     <!-- Profielkleur -->
@@ -1802,7 +1802,7 @@
         ondragover="event.preventDefault(); this.classList.add('drag-over')"
         ondragleave="this.classList.remove('drag-over')"
         ondrop="handleDrop(event)">
-        <input type="file" accept="image/*,video/*" multiple onchange="handleFileSelect(this.files)">
+        <input type="file" accept="image/*,video/*" multiple autocomplete="off" onchange="handleFileSelect(this.files); this.value=''">
         <div class="drop-icon">🎬</div>
         <div class="drop-label"><strong>Sleep bestanden hierheen</strong> of klik om te selecteren</div>
         <div class="drop-hint">Foto's (JPG, PNG) · Video's (MP4, MOV) · Max 50 MB per bestand</div>
@@ -2467,15 +2467,12 @@ function showSaving() {
 function showSaveSuccess() {
   document.getElementById('saveSpinner').style.display = 'none';
   document.getElementById('saveTitle').textContent = '🎸 Profiel aangemaakt!';
-  document.getElementById('saveMsg').innerHTML =
-    `We hebben een bevestigingsmail gestuurd naar <strong>${state.regEmail || 'jouw e-mailadres'}</strong>.<br>
-     Klik op de link in de mail om je profiel te activeren.<br><br>
-     <span style="font-size:11px;color:var(--muted);">Geen mail ontvangen? Check ook je spam-map.</span>`;
+  document.getElementById('saveMsg').textContent = 'Welkom bij The Talent Tent! Je wordt ingelogd...';
   setTimeout(() => {
     document.getElementById('saveOverlay').classList.remove('visible');
     renderProfile();
     goTo(6);
-  }, 4000);
+  }, 2000);
 }
 
 function showSaveError(msg) {
@@ -2493,7 +2490,7 @@ async function submitProfile() {
   showSaving();
 
   try {
-    // 1. Account aanmaken via Supabase Auth (als nog niet ingelogd)
+    // 1. Account aanmaken
     let userId = currentUser?.id || null;
 
     if (!userId) {
@@ -2503,8 +2500,17 @@ async function submitProfile() {
         options:  { data: { fname: state.fname } }
       });
       if (authErr) throw new Error(authErr.message);
-      userId = authData.user?.id || null;
-      currentUser = authData.user;
+
+      // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief
+      const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
+        email:    state.regEmail,
+        password: state.regPassword
+      });
+      if (signInErr) throw new Error(signInErr.message);
+
+      userId = signInData.user?.id || authData.user?.id || null;
+      currentUser = signInData.user || authData.user;
+      if (!userId) throw new Error('Kon geen account aanmaken. Probeer het opnieuw.');
     }
 
     // 2. Hoofdprofiel opslaan
@@ -3404,12 +3410,4 @@ async function saveBand() {
     document.getElementById('bandCity').value = '';
     document.getElementById('bandDescription').value = '';
     bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff' };
-    document.getElementById('createBandForm').style.display = 'none';
-    loadMyBands();
-  } catch(e) { alert('Fout: ' + e.message); }
-}
-
-async function loadMyBands() {
-  const el = document.getElementById('myBandsList');
-  if (!el) return;
-  el.innerHTML = '<div style="color:var(--muted);text-align:center;
+    d
