@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Talent Tent — Talent zoekt Talent</title>
+<title>The Talent Tent — Talent zoekt talent</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -125,6 +125,11 @@
   }
 
   .panel.active { display: block; }
+
+  @keyframes levelPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
 
   @keyframes slideIn {
     from { opacity: 0; transform: translateY(16px); }
@@ -323,9 +328,9 @@
   }
 
   .level-btn:hover { border-color: #555; color: var(--text); }
-  .level-btn.active-basis { background: #1a3a1a; border-color: #4caf50; color: #4caf50; }
-  .level-btn.active-bijna { background: #3a2a00; border-color: var(--accent); color: var(--accent); }
-  .level-btn.active-podium { background: #3a0a0a; border-color: var(--accent2); color: var(--accent2); }
+  .level-btn.active-basis { background: var(--surface2); border-color: var(--text); color: var(--text); font-weight: 700; font-style: italic; }
+  .level-btn.active-bijna { background: var(--surface2); border-color: var(--text); color: var(--text); font-weight: 700; font-style: italic; }
+  .level-btn.active-podium { background: var(--surface2); border-color: var(--text); color: var(--text); font-weight: 700; font-style: italic; }
 
   .song-remove {
     background: none;
@@ -498,9 +503,9 @@
     text-transform: uppercase;
   }
 
-  .level-pill.basis { background: #1a3a1a; color: #4caf50; }
-  .level-pill.bijna { background: #3a2a00; color: var(--accent); }
-  .level-pill.podium { background: #3a0a0a; color: var(--accent2); }
+  .level-pill.basis { background: var(--surface2); color: var(--text); font-weight: 700; font-style: italic; }
+  .level-pill.bijna { background: var(--surface2); color: var(--text); font-weight: 700; font-style: italic; }
+  .level-pill.podium { background: var(--surface2); color: var(--text); font-weight: 700; font-style: italic; }
 
   .success-banner {
     text-align: center;
@@ -1637,20 +1642,28 @@
         <input type="text" id="fname" placeholder="Bijv. Sander">
       </div>
       <div class="field">
-        <label>Geboortedatum <span class="req">*</span></label>
-        <input type="text" id="birth_date" placeholder="01-02-2001" maxlength="10" oninput="formatBirthDate(this)">
+        <label>Achternaam <span class="req">*</span></label>
+        <input type="text" id="lname" placeholder="Bijv. de Vries">
       </div>
     </div>
 
     <div class="field-group">
       <div class="field">
+        <label>Geboortedatum <span class="req">*</span></label>
+        <input type="text" id="birth_date" placeholder="01-02-2001" maxlength="10" oninput="formatBirthDate(this)">
+      </div>
+      <div class="field">
         <label>Woonplaats <span class="req">*</span></label>
         <input type="text" id="city" placeholder="Bijv. Delft">
       </div>
+    </div>
+
+    <div class="field-group">
       <div class="field">
         <label>Postcode</label>
         <input type="text" id="zip" placeholder="Bijv. 2611" maxlength="6">
       </div>
+      <div class="field"></div>
     </div>
 
     <div class="field-group single">
@@ -1721,11 +1734,10 @@
     <div class="panel-title">Repertoire</div>
     <div class="panel-sub">Zoek eerst een artiest, kies dan een nummer. Voeg minimaal 1 nummer toe.</div>
 
-    <!-- Stap A: Artiest zoeken -->
+    <!-- Stap A: Band of artiest zoeken -->
     <div class="field" style="margin-bottom:12px;">
-      <label>Artiest</label>
+      <label>Band of artiest</label>
       <div class="song-search-wrap">
-        <span class="search-icon">🎸</span>
         <input type="text" id="artistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
           oninput="onArtistSearch(this.value)"
           onblur="setTimeout(()=>closeAC('acArtistList'),200)">
@@ -1738,7 +1750,6 @@
       <div class="field">
         <label id="trackSearchLabel">Nummer</label>
         <div class="song-search-wrap">
-          <span class="search-icon">🎵</span>
           <input type="text" id="trackSearch" placeholder="Zoek een nummer..." autocomplete="off"
             oninput="onTrackSearch(this.value)"
             onblur="setTimeout(()=>closeAC('acTrackList'),200)">
@@ -1751,11 +1762,11 @@
 
     <div class="divider"></div>
 
-    <p style="font-size:12px; color:var(--muted);">
-      <strong style="color:var(--text);">Beheersingsniveaus:</strong><br>
-      <span style="color:#4caf50;">Basis</span> — Je kent de structuur, nog wat fouten · 
-      <span style="color:var(--accent);">Bijna helemaal</span> — Soepel, kleine slordigheden · 
-      <span style="color:var(--accent2);">Podiumklaar</span> — Je speelt het live zonder problemen
+    <p style="font-size:12px; color:var(--muted); line-height:2;">
+      <strong style="color:var(--text);">Beheersingsniveaus</strong><br>
+      <em><strong style="color:var(--text);">Basis</strong></em> — Je kent de structuur, nog wat fouten<br>
+      <em><strong style="color:var(--text);">Bijna helemaal</strong></em> — Soepel, kleine slordigheden<br>
+      <em><strong style="color:var(--text);">Podiumklaar</strong></em> — Je speelt het live zonder problemen
     </p>
 
     <div class="nav-buttons">
@@ -2587,6 +2598,7 @@ async function submitProfile() {
       .from('musicians')
       .insert({
         fname:         state.fname,
+        lname:         state.lname || null,
         birth_date:    toISODate(state.birth_date),
         city:          state.city,
         zip:           state.zip || null,
@@ -2821,7 +2833,7 @@ const GENRES = [
 
 let state = {
   currentStep: 0,
-  fname: '', birth_date: '', city: '', zip: '', bio: '',
+  fname: '', lname: '', birth_date: '', city: '', zip: '', bio: '',
   regEmail: '', regPassword: '',
   instruments: [],
   genres: [],
@@ -2937,32 +2949,42 @@ function highlight(text, q) {
 }
 
 function addSong(title, artist) {
-  // Reset nummerveld na toevoeging
-  document.getElementById('trackSearch').value = '';
-  closeAC('acTrackList');
   if (state.songs.find(s => s.title===title && s.artist===artist)) return;
   state.songs.push({ title, artist, level: null });
+  document.getElementById('artistSearch').value = '';
+  document.getElementById('trackSearch').value = '';
+  document.getElementById('trackSearchWrap').style.display = 'none';
+  closeAC('acTrackList');
+  closeAC('acArtistList');
+  selectedArtist = null;
   renderSongs();
   updateCompleteness();
 }
 
 function renderSongs() {
   const list = document.getElementById('songsList');
-  list.innerHTML = state.songs.map((s,i) => `
-    <div class="song-card">
-      <div class="song-info">
-        <div class="song-title">${s.title}</div>
-        <div class="song-artist">${s.artist}</div>
-        <div class="level-select" style="margin-top:8px;">
-          <button class="level-btn ${s.level==='basis'?'active-basis':''}" onclick="setLevel(${i},'basis')">Basis</button>
-          <button class="level-btn ${s.level==='bijna'?'active-bijna':''}" onclick="setLevel(${i},'bijna')">Bijna helemaal</button>
-          <button class="level-btn ${s.level==='podium'?'active-podium':''}" onclick="setLevel(${i},'podium')">Podiumklaar</button>
-        </div>
-        ${!s.level ? '<div style="font-size:11px;color:var(--accent2);margin-top:4px;">⚠ Kies een beheersingsniveau</div>' : ''}
+  if (!state.songs.length) { list.innerHTML = ''; return; }
+  list.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
+      <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
+        <span>Nummer — Band / Artiest</span><span style="margin-right:40px;">Niveau</span><span></span>
       </div>
-      <button class="song-remove" onclick="removeSong(${i})">✕</button>
-    </div>
-  `).join('');
+      ${state.songs.map((s,i) => `
+        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;">
+          <div>
+            <div style="font-size:15px;font-weight:600;">${s.title}</div>
+            <div style="font-size:12px;color:var(--muted);">${s.artist}</div>
+          </div>
+          <div style="display:flex;gap:4px;${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
+            <button class="level-btn ${s.level==='basis'?'active-basis':''}" onclick="setLevel(${i},'basis')">Basis</button>
+            <button class="level-btn ${s.level==='bijna'?'active-bijna':''}" onclick="setLevel(${i},'bijna')">Bijna</button>
+            <button class="level-btn ${s.level==='podium'?'active-podium':''}" onclick="setLevel(${i},'podium')">Podium</button>
+          </div>
+          <button class="song-remove" onclick="removeSong(${i})" title="Verwijderen">✕</button>
+        </div>
+        ${!s.level ? `<div style="font-size:12px;color:var(--accent2);padding:4px 14px;background:rgba(255,77,77,0.05);">Kies een beheersingsniveau om door te gaan</div>` : ''}
+      `).join('')}
+    </div>`;
 }
 
 function setLevel(i, level) {
@@ -2989,6 +3011,7 @@ function selectGoal(el, val) {
 function nextStep(from) {
   if (from === 0) {
     state.fname      = document.getElementById('fname').value.trim();
+    state.lname      = document.getElementById('lname').value.trim();
     state.birth_date = document.getElementById('birth_date').value.trim();
     state.city       = normalizeCityName(document.getElementById('city').value.trim());
     state.zip        = document.getElementById('zip').value.trim();
@@ -2997,13 +3020,11 @@ function nextStep(from) {
     state.regPassword = document.getElementById('regPassword').value;
     const regPassword2 = document.getElementById('regPassword2').value;
 
-    if (!state.fname || !state.birth_date || !state.city) {
-      alert('Vul je voornaam, geboortedatum en woonplaats in.'); return;
+    if (!state.fname || !state.lname || !state.birth_date || !state.city) {
+      alert('Vul je voor- en achternaam, geboortedatum en woonplaats in.'); return;
     }
     const bdMatch = state.birth_date.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (!bdMatch) { alert('Voer je geboortedatum in als DD-MM-JJJJ, bijv. 01-02-2001'); return; }
-    const age = calcAge(state.birth_date);
-    if (age < 13 || age > 25) { alert(`Je leeftijd (${age} jaar) valt buiten de doelgroep van 13–25 jaar.`); return; }
     if (!state.regEmail) { alert('Vul je e-mailadres in.'); return; }
     if (!state.regPassword || state.regPassword.length < 8) { alert('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
     if (state.regPassword !== regPassword2) { alert('Wachtwoorden komen niet overeen.'); return; }
