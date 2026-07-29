@@ -1,0 +1,44 @@
+POSTCODE-BACKUP IMPORTEREN — INSTRUCTIES
+
+Doel: de postcode_cache-tabel in één keer vullen met (bijna) alle Nederlandse
+4-cijferige postcodes, zodat er meteen een volledige backup is — in plaats van
+te wachten tot de cache organisch volloopt via nieuwe registraties.
+
+Bron: gratis, MIT-licentie (vrij te gebruiken), ~4700 postcodes.
+https://github.com/bobdenotter/4pp
+
+STAP 1 — Download het bestand
+------------------------------
+1. Ga naar https://github.com/bobdenotter/4pp
+2. Klik op "4pp.csv"
+3. Klik rechtsboven op "Download raw file"
+4. Je hebt nu een bestand met kolommen: postcode, woonplaats, latitude, longitude
+
+STAP 2 — Kolomnaam aanpassen
+------------------------------
+Open het bestand in Excel of Google Sheets en hernoem de kolom "woonplaats"
+naar "city" (moet exact overeenkomen met de kolomnaam in de database).
+De kolommen postcode, latitude en longitude hoeven niet aangepast te worden.
+Sla het bestand op als .csv.
+
+STAP 3 — Zorg dat de tabel de juiste kolommen heeft
+------------------------------
+Als je de postcode_cache-tabel al eerder had aangemaakt (met
+postcode_cache_setup.sql, vóór deze update), draai dan eerst
+postcode_cache_add_coords.sql in de Supabase SQL Editor. Dit voegt de
+kolommen latitude/longitude toe zonder iets te verwijderen.
+Nieuwe installatie? Dan hoeft dit niet — postcode_cache_setup.sql bevat de
+kolommen al.
+
+STAP 4 — Importeren in Supabase
+------------------------------
+1. Ga naar je Supabase dashboard → Table Editor
+2. Open de tabel "postcode_cache"
+3. Klik op "Insert" → "Import data from CSV"
+4. Upload het aangepaste CSV-bestand
+5. Controleer of de kolommen correct gekoppeld zijn (postcode, city, latitude,
+   longitude) en bevestig de import
+
+Klaar. De cache-tabel bevat nu bijna alle NL postcodes. Zowel bij een PDOK-
+storing als straks bij de postcode-rozen zoekfunctie kan de app hierop
+terugvallen zonder extra externe aanvragen.
