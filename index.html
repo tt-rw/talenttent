@@ -1653,15 +1653,16 @@
         <input type="text" id="birth_date" placeholder="01-02-2001" maxlength="10" oninput="formatBirthDate(this)">
       </div>
       <div class="field">
-        <label>Woonplaats <span class="req">*</span></label>
-        <input type="text" id="city" placeholder="Bijv. Delft">
+        <label>Postcode <span class="req">*</span></label>
+        <input type="text" id="zip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onPostcodeInput(this.value)">
       </div>
     </div>
 
     <div class="field-group">
       <div class="field">
-        <label>Postcode</label>
-        <input type="text" id="zip" placeholder="Bijv. 2611" maxlength="6">
+        <label>Woonplaats <span class="req">*</span></label>
+        <input type="text" id="city" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;">
+        <div id="postcodeStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
       </div>
       <div class="field"></div>
     </div>
@@ -2693,6 +2694,70 @@ function normalizeCityName(city) {
   return city.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }
 
+// ─── Postcode → woonplaats (PDOK Locatieserver, gratis overheidsdienst) ─────
+let postcodeSearchTimeout = null;
+let postcodeResolved = false;
+
+function onPostcodeInput(value) {
+  postcodeResolved = false;
+  document.getElementById('city').value = '';
+  state.city = '';
+  const statusEl = document.getElementById('postcodeStatus');
+  clearTimeout(postcodeSearchTimeout);
+
+  const digits = value.trim().replace(/\D/g, '');
+  document.getElementById('zip').value = digits;
+  const match = digits.match(/^[1-9][0-9]{3}$/);
+  if (!match) {
+    statusEl.textContent = '';
+    return;
+  }
+  const normalized = digits;
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Bezig met opzoeken...';
+
+  postcodeSearchTimeout = setTimeout(async () => {
+    try {
+      const url = `https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?fq=postcode:${normalized}*&fq=type:postcode&fl=woonplaatsnaam,postcode&rows=1`;
+      const res  = await fetch(url);
+      if (!res.ok) throw new Error('PDOK niet bereikbaar');
+      const data = await res.json();
+      const doc  = data?.response?.docs?.[0];
+      if (doc?.woonplaatsnaam) {
+        applyResolvedCity(doc.woonplaatsnaam, normalized, statusEl, `Gevonden: ${doc.woonplaatsnaam}`);
+        db.from('postcode_cache').upsert({ postcode: normalized, city: doc.woonplaatsnaam, updated_at: new Date().toISOString() })
+          .then(() => {}).catch(() => {});
+      } else {
+        statusEl.style.color = 'var(--accent2)';
+        statusEl.textContent = 'Postcode niet gevonden. Controleer je postcode.';
+      }
+    } catch (e) {
+      // PDOK niet bereikbaar (storing) → terugvallen op eigen cache
+      try {
+        const { data: cached } = await db.from('postcode_cache').select('city').eq('postcode', normalized).maybeSingle();
+        if (cached?.city) {
+          applyResolvedCity(cached.city, normalized, statusEl, `Gevonden (via cache): ${cached.city}`);
+        } else {
+          statusEl.style.color = 'var(--accent2)';
+          statusEl.textContent = 'Kon postcode nu niet controleren (storing). Probeer het later opnieuw.';
+        }
+      } catch (e2) {
+        statusEl.style.color = 'var(--accent2)';
+        statusEl.textContent = 'Kon postcode nu niet controleren (storing). Probeer het later opnieuw.';
+      }
+    }
+  }, 500);
+}
+
+function applyResolvedCity(cityName, normalizedZip, statusEl, msg) {
+  document.getElementById('city').value = cityName;
+  state.city = cityName;
+  state.zip  = normalizedZip;
+  postcodeResolved = true;
+  statusEl.style.color = 'var(--accent)';
+  statusEl.textContent = msg;
+}
+
 // Convert DD-MM-YYYY to YYYY-MM-DD for database storage
 function toISODate(ddmmyyyy) {
   const [dd, mm, yyyy] = ddmmyyyy.split('-');
@@ -3012,15 +3077,16 @@ function nextStep(from) {
     state.fname      = document.getElementById('fname').value.trim();
     state.lname      = document.getElementById('lname').value.trim();
     state.birth_date = document.getElementById('birth_date').value.trim();
-    state.city       = normalizeCityName(document.getElementById('city').value.trim());
-    state.zip        = document.getElementById('zip').value.trim();
     state.bio        = document.getElementById('bio').value.trim();
     state.regEmail   = document.getElementById('regEmail').value.trim();
     state.regPassword = document.getElementById('regPassword').value;
     const regPassword2 = document.getElementById('regPassword2').value;
 
-    if (!state.fname || !state.lname || !state.birth_date || !state.city) {
-      alert('Vul je voor- en achternaam, geboortedatum en woonplaats in.'); return;
+    if (!state.fname || !state.lname || !state.birth_date) {
+      alert('Vul je voor- en achternaam en geboortedatum in.'); return;
+    }
+    if (!state.zip || !postcodeResolved || !state.city) {
+      alert('Vul een geldige postcode in. Je woonplaats wordt automatisch bepaald zodra deze klopt.'); return;
     }
     const bdMatch = state.birth_date.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (!bdMatch) { alert('Voer je geboortedatum in als DD-MM-JJJJ, bijv. 01-02-2001'); return; }
