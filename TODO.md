@@ -34,6 +34,7 @@ Laatste update: 29 juli 2026 (postcode-automatisering + cache-backup afgerond)
 
 ## 💡 Ideeën / backlog
 - Zoekfunctie met postcode-rozen (straal rondom postcode) — kan gebouwd worden nu elke gebruiker een correcte, opgezochte postcode heeft, en de cache-tabel al lat/lon-coördinaten per postcode bevat (4077 stuks). Let op: er wordt bij het profiel alleen de 4-cijferige postcode opgeslagen (geen huisletters), dus de nauwkeurigheid is op wijkniveau, niet op straatniveau.
+- App moet altijd logisch en intuitief zijn. alle oplossingen moeten hieraan voldoen. 
 - Maak pagina's automatisch beeldvullend in webversie (scrollen zoveel mogelijk vermijden)
 - E-mail reminder voor niveau update
 - Bandprofiel en band-zoekfunctie scheiden
