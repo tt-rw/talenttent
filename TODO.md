@@ -35,6 +35,7 @@ Laatste update: 29 juli 2026 (bijgewerkt)
 - Ander font-type. Meer gangbaar, standaard
 - Zoekresultaten tonen na gebruik zoekfunctie (tonen naar relevantie: zoekend, meest actief
 - Optie zoekopdracht maken. E-mail sturen zodra een match is ontstaan.
+- Het uiterlijk een fijne look-and-feel geven (lastig concreet te maken)
 - 
 
 ## 🐛 Bekende bugs / aandachtspunten
