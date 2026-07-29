@@ -39,7 +39,8 @@ Laatste update: 29 juli 2026 (postcode-automatisering + cache-backup afgerond)
 - Bandprofiel en band-zoekfunctie scheiden
 - Zoekresultaten tonen na gebruik zoekfunctie (tonen naar relevantie: zoekend, meest actief)
 - Optie zoekopdracht maken. E-mail sturen zodra een match is ontstaan.
-- profiel aanmaken / postcode/plaats: tekst bij postcode: alleen de 4 cijfers invullen
+- profiel aanmaken / postcode: tekst bij postcode: alleen de 4 cijfers invullen
+- profiel aanmaken / woonplaats: vul het veld 'woonplaats' met de Alternatieve Schrijfwijze (Den Haag ipv 's-Gravenhage)
 
 ## 🐛 Bekende bugs / aandachtspunten
 - e-mailbevestiging aanzetten
