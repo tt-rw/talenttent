@@ -2736,7 +2736,7 @@ function onPostcodeInput(value) {
       try {
         const { data: cached } = await db.from('postcode_cache').select('city').eq('postcode', normalized).maybeSingle();
         if (cached?.city) {
-          applyResolvedCity(cached.city, normalized, statusEl, `Gevonden (via cache): ${cached.city}`);
+          applyResolvedCity(cached.city, normalized, statusEl, `Gevonden: ${cached.city}`);
         } else {
           statusEl.style.color = 'var(--accent2)';
           statusEl.textContent = 'Kon postcode nu niet controleren (storing). Probeer het later opnieuw.';
