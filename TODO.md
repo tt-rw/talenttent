@@ -27,6 +27,7 @@ Laatste update: 29 juli 2026 (postcode-automatisering + cache-backup afgerond)
 - [x] Cache onzichtbaar voor gebruiker — het label "(via cache)" is verwijderd. Live PDOK-resultaat en cache-fallback tonen nu allebei gewoon "Gevonden: {stad}", geen zichtbaar verschil meer. Geen gevolgen zodra PDOK weer online is: elke nieuwe postcode-invoer probeert altijd eerst live PDOK, de cache is puur een fallback per moment, niets wordt "onthouden".
 
 ## 🔜 Nu mee bezig / volgende
+- [ ] Logisch, efficient en intuitief proces (en routing door webapp) bedenken voor: aanmaken profiel, matchingproces
 - [ ] Zoekfunctie verfijnen (muzikanten + bands)
 - [ ] Contactfunctie (muzikanten kunnen elkaar benaderen)
 - [ ] Personalisatie (profiel/aanbevelingen)
@@ -45,7 +46,8 @@ Laatste update: 29 juli 2026 (postcode-automatisering + cache-backup afgerond)
 - repertoire / invulvelden band en nummer: selecteer de bovenste optie met een druk op 'enter' knop
 - jouw look / hele tab verwijderen. het uploaden van een profielfoto verplaatsen naar de eerste pagina (bij naam enz)
 - muzikanten toevoegen tot een band. hoe? iemand bandleider maken? Alle leden kunnen wijzigen? verder uitwerken.
-- profiel: door op de inlognaam te klikken kom je bij je profiel. Het aparte tabblad kan vervallen. 
+- profiel: door op de inlognaam te klikken kom je bij je profiel. Het aparte tabblad kan vervallen.
+- UI ontwerp aantrekkelijk en intiuitief maken.
 
 
 ## 🐛 Bekende bugs / aandachtspunten
