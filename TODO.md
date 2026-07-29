@@ -44,7 +44,8 @@ Laatste update: 29 juli 2026 (postcode-automatisering + cache-backup afgerond)
 - profiel aanmaken / woonplaats: vul het veld 'woonplaats' met de Alternatieve Schrijfwijze (Den Haag ipv 's-Gravenhage)
 - repertoire / invulvelden band en nummer: selecteer de bovenste optie met een druk op 'enter' knop
 - jouw look / hele tab verwijderen. het uploaden van een profielfoto verplaatsen naar de eerste pagina (bij naam enz)
-- muzikanten toevoegen tot een band. hoe? iemand bandleider maken? Alle leden kunnen wijzigen? verder uitwerken. 
+- muzikanten toevoegen tot een band. hoe? iemand bandleider maken? Alle leden kunnen wijzigen? verder uitwerken.
+- profiel: door op de inlognaam te klikken kom je bij je profiel. Het aparte tabblad kan vervallen. 
 
 
 ## 🐛 Bekende bugs / aandachtspunten
