@@ -26,10 +26,22 @@ Laatste update: 29 juli 2026
 - [ ] E-mailprovider koppelen (voor als e-mailbevestiging weer aan moet, notificaties, etc.)
 
 ## 💡 Ideeën / backlog
-- (nog leeg — hier komen nieuwe ideeën die niet meteen aan de beurt zijn)
+- Bandprofiel aanmaken
+- Zoekscherm leegmaken na toevoegen nieuw nummer (repertoire)
+- Maak pagina's automatisch beeldvullend in webversie (scrollen zoveel mogelijk vermijden)
+- Achternaam toevoegen
+- Stad/postcode universeel maken (Den Haag en s-Gravenhage is gelijk)
+- E-mail reminder voor niveau update
+- Na profiel aanmaken direct naar homepagina
+- Bandprofiel en band-zoekfunctie scheiden
+- Ander font-type. Meer gangbaar, standaard
+- Zoekresultaten tonen na gebruik zoekfunctie (tonen naar relevantie: zoekend, meest actief
+- Optie zoekopdracht maken. E-mail sturen zodra een match is ontstaan.
+- 
 
 ## 🐛 Bekende bugs / aandachtspunten
-- (nog leeg)
+- e-mailbevestiging aanzetten
+- 
 
 ## 📝 Notities
 - Ronald heeft geen programmeerervaring, uploadt via GitHub web interface.
