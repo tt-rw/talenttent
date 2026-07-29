@@ -48,6 +48,7 @@ Laatste update: 29 juli 2026 (postcode-automatisering + cache-backup afgerond)
 - muzikanten toevoegen tot een band. hoe? iemand bandleider maken? Alle leden kunnen wijzigen? verder uitwerken.
 - profiel: door op de inlognaam te klikken kom je bij je profiel. Het aparte tabblad kan vervallen.
 - UI ontwerp aantrekkelijk en intiuitief maken.
+- Testscenario's bedenken. (bijv. wijzig muzikantprofiel van gitaar naar zang, hoe wordt een match zichtbaar na een profielupdate, enz)
 
 
 ## 🐛 Bekende bugs / aandachtspunten
