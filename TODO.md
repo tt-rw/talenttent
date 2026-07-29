@@ -1,6 +1,6 @@
 # The Talent Tent — TODO
 
-Laatste update: 29 juli 2026
+Laatste update: 29 juli 2026 (bijgewerkt)
 
 ## Hoe te gebruiken
 - Dit bestand staat naast `index.html` in de repo.
@@ -26,10 +26,8 @@ Laatste update: 29 juli 2026
 - [ ] E-mailprovider koppelen (voor als e-mailbevestiging weer aan moet, notificaties, etc.)
 
 ## 💡 Ideeën / backlog
-- Bandprofiel aanmaken
 - Zoekscherm leegmaken na toevoegen nieuw nummer (repertoire)
 - Maak pagina's automatisch beeldvullend in webversie (scrollen zoveel mogelijk vermijden)
-- Achternaam toevoegen
 - Stad/postcode universeel maken (Den Haag en s-Gravenhage is gelijk)
 - E-mail reminder voor niveau update
 - Na profiel aanmaken direct naar homepagina
