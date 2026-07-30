@@ -33,6 +33,15 @@
   .app-view { display: none; }
   .app-view.active { display: block; }
 
+  /* Alleen op desktop/web: pagina's vullen minimaal de schermhoogte,
+     zodat er minder onnodig gescrold hoeft te worden. Op mobiel blijft
+     het gedrag ongewijzigd (natuurlijk scrollen, geen geforceerde hoogte). */
+  @media (min-width: 768px) {
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    .app-nav { flex-shrink: 0; }
+    .app-view.active { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  }
+
   /* Background texture */
   body::before {
     content: '';
@@ -1174,6 +1183,7 @@
     gap: 10px;
     font-size: 13px;
     color: var(--muted);
+    position: relative;
   }
 
   .nav-user strong { color: var(--text); }
@@ -1188,6 +1198,43 @@
     color: #000;
     flex-shrink: 0;
   }
+
+  .nav-user-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .nav-user-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    min-width: 160px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px;
+    z-index: 30;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  .nav-dropdown-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .nav-dropdown-item:hover { background: var(--surface); }
 
   /* ── Auth scherm ─────────────────────────── */
   .auth-wrap {
@@ -1530,13 +1577,17 @@
   <button class="nav-btn" id="navBandsSearch" onclick="showView('bandsearch')">Bands</button>
   <div class="nav-spacer"></div>
   <button class="nav-btn" id="navLogin" onclick="showView('auth')">Inloggen</button>
-  <button class="nav-btn" id="navMyProfile" onclick="showView('myprofile')" style="display:none;">Mijn profiel</button>
   <button class="nav-btn" id="navMyBands" onclick="showView('bands')" style="display:none;">Mijn bands</button>
   <div class="nav-spacer" id="navSpacerLoggedIn" style="display:none;"></div>
   <div class="nav-user" id="navUser" style="display:none;">
-    <div class="nav-user-dot" id="navUserDot">?</div>
-    <strong id="navUserName"></strong>
-    <button class="btn btn-ghost" style="padding:6px 12px;font-size:11px;" onclick="signOut()">Uitloggen</button>
+    <div class="nav-user-trigger" onclick="toggleProfileMenu(event)" title="Menu">
+      <div class="nav-user-dot" id="navUserDot">?</div>
+      <strong id="navUserName"></strong>
+    </div>
+    <div class="nav-user-dropdown" id="navUserDropdown">
+      <button class="nav-dropdown-item" id="navMyProfile" onclick="showView('myprofile'); closeProfileMenu();">Mijn profiel</button>
+      <button class="nav-dropdown-item" style="border-top:1px solid var(--border); margin-top:4px; padding-top:10px;" onclick="signOut(); closeProfileMenu();">Uitloggen</button>
+    </div>
   </div>
 </nav>
 
@@ -1655,6 +1706,7 @@
       <div class="field">
         <label>Postcode <span class="req">*</span></label>
         <input type="text" id="zip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onPostcodeInput(this.value)">
+        <p style="font-size:11px;color:var(--muted);margin-top:4px;">Alleen de 4 cijfers, geen huisletters nodig.</p>
       </div>
     </div>
 
@@ -1741,6 +1793,7 @@
       <div class="song-search-wrap">
         <input type="text" id="artistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
           oninput="onArtistSearch(this.value)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acArtistList');}"
           onblur="setTimeout(()=>closeAC('acArtistList'),200)">
         <div class="autocomplete-list" id="acArtistList"></div>
       </div>
@@ -1753,6 +1806,7 @@
         <div class="song-search-wrap">
           <input type="text" id="trackSearch" placeholder="Zoek een nummer..." autocomplete="off"
             oninput="onTrackSearch(this.value)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acTrackList');}"
             onblur="setTimeout(()=>closeAC('acTrackList'),200)">
           <div class="autocomplete-list" id="acTrackList"></div>
         </div>
@@ -2069,6 +2123,7 @@
           <div class="field">
             <label>Postcode <span class="req">*</span></label>
             <input type="text" id="bandZip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onBandPostcodeInput(this.value)">
+            <p style="font-size:11px;color:var(--muted);margin-top:4px;">Alleen de 4 cijfers, geen huisletters nodig.</p>
           </div>
         </div>
         <div class="field-group">
@@ -2186,7 +2241,6 @@ function onUserLoggedIn(user) {
   document.getElementById('navMusicians').style.display = 'none';
   document.getElementById('navBandsSearch').style.display = 'none';
   document.getElementById('navLogin').style.display = 'none';
-  document.getElementById('navMyProfile').style.display = 'block';
   document.getElementById('navMyBands').style.display = 'block';
   document.getElementById('navSpacerLoggedIn').style.display = 'flex';
   document.getElementById('navUser').style.display = 'flex';
@@ -2210,15 +2264,28 @@ function onUserLoggedOut() {
   document.getElementById('navMusicians').style.display = 'block';
   document.getElementById('navBandsSearch').style.display = 'block';
   document.getElementById('navLogin').style.display = 'block';
-  document.getElementById('navMyProfile').style.display = 'none';
   document.getElementById('navMyBands').style.display = 'none';
   document.getElementById('navSpacerLoggedIn').style.display = 'none';
   document.getElementById('navUser').style.display = 'none';
+  closeProfileMenu();
   myMusicianId = null;
   showView('landing');
 }
 
 // ─── Navigatie ───────────────────────────────────────────────────────────────
+
+function toggleProfileMenu(event) {
+  event.stopPropagation();
+  const dd = document.getElementById('navUserDropdown');
+  dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+}
+
+function closeProfileMenu() {
+  const dd = document.getElementById('navUserDropdown');
+  if (dd) dd.style.display = 'none';
+}
+
+document.addEventListener('click', closeProfileMenu);
 
 function showView(view) {
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
@@ -2786,6 +2853,11 @@ function normalizeCityName(city) {
 let postcodeSearchTimeout = null;
 let postcodeResolved = false;
 
+function pickDisplayCity(officialCity, altField) {
+  if (altField) return altField.split(',')[0].trim();
+  return officialCity;
+}
+
 function onPostcodeInput(value) {
   postcodeResolved = false;
   document.getElementById('city').value = '';
@@ -2812,7 +2884,10 @@ function onPostcodeInput(value) {
       const data = await res.json();
       const doc  = data?.response?.docs?.[0];
       if (doc?.woonplaatsnaam) {
-        applyResolvedCity(doc.woonplaatsnaam, normalized, statusEl, `Gevonden: ${doc.woonplaatsnaam}`);
+        // Alternatieve schrijfwijze (bijv. "Den Haag" i.p.v. "'s-Gravenhage") heeft voorrang op de officiële PDOK-naam
+        const { data: alt } = await db.from('postcode_cache').select('alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
+        const displayCity = pickDisplayCity(doc.woonplaatsnaam, alt?.alternatieve_schrijfwijzen);
+        applyResolvedCity(displayCity, normalized, statusEl, `Gevonden: ${displayCity}`);
         db.from('postcode_cache').upsert({ postcode: normalized, city: doc.woonplaatsnaam, updated_at: new Date().toISOString() })
           .then(() => {}).catch(() => {});
       } else {
@@ -2822,9 +2897,10 @@ function onPostcodeInput(value) {
     } catch (e) {
       // PDOK niet bereikbaar (storing) → terugvallen op eigen cache
       try {
-        const { data: cached } = await db.from('postcode_cache').select('city').eq('postcode', normalized).maybeSingle();
+        const { data: cached } = await db.from('postcode_cache').select('city, alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
         if (cached?.city) {
-          applyResolvedCity(cached.city, normalized, statusEl, `Gevonden: ${cached.city}`);
+          const displayCity = pickDisplayCity(cached.city, cached.alternatieve_schrijfwijzen);
+          applyResolvedCity(displayCity, normalized, statusEl, `Gevonden: ${displayCity}`);
         } else {
           statusEl.style.color = 'var(--accent2)';
           statusEl.textContent = 'Kon postcode nu niet controleren (storing). Probeer het later opnieuw.';
@@ -2883,7 +2959,9 @@ function onBandPostcodeInput(value) {
       const data = await res.json();
       const doc  = data?.response?.docs?.[0];
       if (doc?.woonplaatsnaam) {
-        applyResolvedBandCity(doc.woonplaatsnaam, statusEl, `Gevonden: ${doc.woonplaatsnaam}`);
+        const { data: alt } = await db.from('postcode_cache').select('alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
+        const displayCity = pickDisplayCity(doc.woonplaatsnaam, alt?.alternatieve_schrijfwijzen);
+        applyResolvedBandCity(displayCity, statusEl, `Gevonden: ${displayCity}`);
         db.from('postcode_cache').upsert({ postcode: normalized, city: doc.woonplaatsnaam, updated_at: new Date().toISOString() })
           .then(() => {}).catch(() => {});
       } else {
@@ -2892,9 +2970,10 @@ function onBandPostcodeInput(value) {
       }
     } catch (e) {
       try {
-        const { data: cached } = await db.from('postcode_cache').select('city').eq('postcode', normalized).maybeSingle();
+        const { data: cached } = await db.from('postcode_cache').select('city, alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
         if (cached?.city) {
-          applyResolvedBandCity(cached.city, statusEl, `Gevonden: ${cached.city}`);
+          const displayCity = pickDisplayCity(cached.city, cached.alternatieve_schrijfwijzen);
+          applyResolvedBandCity(displayCity, statusEl, `Gevonden: ${displayCity}`);
         } else {
           statusEl.style.color = 'var(--accent2)';
           statusEl.textContent = 'Kon postcode nu niet controleren (storing). Probeer het later opnieuw.';
@@ -2924,6 +3003,12 @@ function closeAC(id) {
 }
 
 // Stap A: Artiest zoeken
+function selectFirstAC(listId) {
+  const list = document.getElementById(listId);
+  const first = list && list.querySelector('.ac-item[onmousedown]');
+  if (first && first.onmousedown) first.onmousedown();
+}
+
 async function onArtistSearch(q) {
   const ac = document.getElementById('acArtistList');
   if (q.length < 2) { ac.classList.remove('open'); return; }
@@ -3172,6 +3257,7 @@ function addSong(title, artist) {
   selectedArtist = null;
   renderSongs();
   updateCompleteness();
+  document.getElementById('artistSearch').focus();
 }
 
 function renderSongs() {
