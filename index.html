@@ -1977,6 +1977,23 @@
         </div>
       </div>
 
+      <div class="filter-row" style="margin-bottom:16px;">
+        <div class="field">
+          <label>Zoekstraal</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="filterRadius" value="25" min="1" max="500" style="width:80px;">
+            <span style="color:var(--muted);font-size:13px;">km</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Sorteren op</label>
+          <div class="tag-grid" id="filterSortMode">
+            <div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'score')">Beste match</div>
+            <div class="tag" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
+          </div>
+        </div>
+      </div>
+
       <button class="search-btn" onclick="runSearch()">🔍 Zoek muzikanten</button>
     </div>
 
@@ -1996,6 +2013,22 @@
       </div>
       <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label><div class="tag-grid" id="filterBandGenres"></div></div></div>
       <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><div class="tag-grid" id="filterBandWanted"></div></div></div>
+      <div class="filter-row" style="margin-bottom:16px;">
+        <div class="field">
+          <label>Zoekstraal</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="filterBandRadius" value="25" min="1" max="500" style="width:80px;">
+            <span style="color:var(--muted);font-size:13px;">km</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Sorteren op</label>
+          <div class="tag-grid" id="filterBandSortMode">
+            <div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'score')">Beste match</div>
+            <div class="tag" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
+          </div>
+        </div>
+      </div>
       <button class="search-btn" onclick="runBandSearch()">Zoek bands</button>
     </div>
     <div id="bandSearchResults"></div>
@@ -2028,22 +2061,30 @@
     <div id="createBandForm" style="display:none;">
       <div class="search-filters" style="margin-bottom:28px;">
         <div class="filter-title" style="font-size:20px;">Nieuwe band aanmaken</div>
-        <div class="filter-row">
+        <div class="field-group">
           <div class="field">
             <label>Bandnaam <span class="req">*</span></label>
             <input type="text" id="bandName" placeholder="Bijv. The Rusty Strings">
           </div>
           <div class="field">
-            <label>Stad</label>
-            <input type="text" id="bandCity" placeholder="Bijv. Delft">
+            <label>Postcode <span class="req">*</span></label>
+            <input type="text" id="bandZip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onBandPostcodeInput(this.value)">
           </div>
+        </div>
+        <div class="field-group">
+          <div class="field">
+            <label>Woonplaats <span class="req">*</span></label>
+            <input type="text" id="bandCity" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;">
+            <div id="bandPostcodeStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
+          </div>
+          <div class="field"></div>
         </div>
         <div class="field" style="margin-bottom:16px;">
           <label>Beschrijving</label>
           <textarea id="bandDescription" placeholder="Vertel iets over de band..." style="min-height:80px;"></textarea>
         </div>
         <div class="field" style="margin-bottom:16px;">
-          <label>Genre(s)</label>
+          <label>Genre(s) <span class="req">*</span></label>
           <div class="tag-grid" id="bandGenreGrid"></div>
         </div>
         <div class="field" style="margin-bottom:16px;">
@@ -2055,7 +2096,7 @@
           </div>
         </div>
         <div class="field" style="margin-bottom:16px;">
-          <label>Wij zoeken nog</label>
+          <label>Wij zoeken nog <span class="req">*</span></label>
           <div class="tag-grid" id="bandWantedGrid"></div>
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;">
@@ -2253,6 +2294,13 @@ const LEVEL_LABELS = { basis: 'Basis', bijna: 'Bijna', podium: 'Podiumklaar' };
 let filterInstruments = [];
 let filterGenres      = [];
 let filterGoal        = null;
+let searchSortMode    = 'score';
+
+function setSearchSortMode(el, mode) {
+  searchSortMode = mode;
+  document.querySelectorAll('#filterSortMode .tag').forEach(x => x.classList.remove('selected'));
+  el.classList.add('selected');
+}
 
 function initSearchFilters() {
   const ig = document.getElementById('filterInstruments');
@@ -2308,21 +2356,42 @@ async function runSearch() {
   </div>`;
 
   try {
-    // Haal muzikanten op met hun instrumenten en genres
-    let query = db.from('musicians').select(`
+    const mid = await getMyMusicianId();
+    const selectFields = `
       id, fname, birth_date, city, zip, bio, goal,
       profile_color, vibe_label, vibe_emoji, avatar_url, updated_at,
       musician_instruments(instrument),
       musician_genres(genre),
       musician_songs(song_title, song_artist, mastery_level)
-    `);
+    `;
 
-    // Filter op stad (hoofdletterongevoelig)
-    const city = document.getElementById('filterCity').value.trim();
-    if (city) query = query.ilike('city', `%${city}%`);
+    let musicians;
+    let matchInfo = {}; // id -> { distance_km, score, is_stale }
 
-    const { data: musicians, error } = await query.order('updated_at', { ascending: false }).limit(50);
-    if (error) throw error;
+    if (mid) {
+      // Matchscore + afstand ophalen via de centrale SQL-functie
+      const radius = parseFloat(document.getElementById('filterRadius').value) || 25;
+      const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians', {
+        searcher_id: mid, radius_km: radius
+      });
+      if (rpcErr) throw rpcErr;
+
+      if (!matches.length) { renderSearchResults([]); return; }
+      matches.forEach(m => { matchInfo[m.musician_id] = m; });
+
+      const ids = matches.map(m => m.musician_id);
+      const { data, error } = await db.from('musicians').select(selectFields).in('id', ids);
+      if (error) throw error;
+      musicians = data;
+    } else {
+      // Geen eigen profiel (bijv. niet ingelogd) → geen matchscore/afstand mogelijk, terugvallen op lijst
+      const city = document.getElementById('filterCity').value.trim();
+      let query = db.from('musicians').select(selectFields);
+      if (city) query = query.ilike('city', `%${city}%`);
+      const { data, error } = await query.order('updated_at', { ascending: false }).limit(50);
+      if (error) throw error;
+      musicians = data;
+    }
 
     // Client-side filters (leeftijd, instrument, genre, doel)
     const ageMin = parseInt(document.getElementById('filterAgeMin').value) || 13;
@@ -2341,6 +2410,24 @@ async function runSearch() {
         if (!filterGenres.some(g => mGenres.includes(g))) return false;
       }
       return true;
+    });
+
+    // Matchscore/afstand toevoegen (indien beschikbaar) en sorteren:
+    // altijd eerst actieve profielen, verouderde (>6 mnd) profielen onderaan,
+    // en binnen elke groep op de gekozen sorteermodus.
+    filtered.forEach(m => {
+      const info = matchInfo[m.id];
+      m.distance_km = info ? info.distance_km : null;
+      m.matchScore  = info ? info.score : null;
+      m.isStale     = info ? info.is_stale : false;
+    });
+    filtered.sort((a, b) => {
+      if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
+      if (searchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
+        return a.distance_km - b.distance_km;
+      }
+      if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
+      return 0;
     });
 
     renderSearchResults(filtered);
@@ -2394,6 +2481,7 @@ function musicianCardHTML(m) {
             <div class="card-name">${m.fname}</div>
             <div class="card-meta">${age} jaar · ${m.city}</div>
             ${m.vibe_emoji ? `<div style="font-size:11px;color:var(--muted);">${m.vibe_emoji} ${m.vibe_label}</div>` : ''}
+            ${m.matchScore != null ? `<div style="font-size:11px;color:var(--accent);font-weight:700;margin-top:2px;">${Math.round(m.matchScore * 100)}% match${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>` : ''}
           </div>
         </div>
         <div class="card-badges">
@@ -2756,6 +2844,67 @@ function applyResolvedCity(cityName, normalizedZip, statusEl, msg) {
   postcodeResolved = true;
   statusEl.style.color = 'var(--accent)';
   statusEl.textContent = msg;
+}
+
+// ─── Postcode-opzoeking voor bands (zelfde aanpak als bij muzikanten) ────────
+
+let bandPostcodeResolved = false;
+let bandPostcodeSearchTimeout;
+
+function applyResolvedBandCity(cityName, statusEl, msg) {
+  document.getElementById('bandCity').value = cityName;
+  bandPostcodeResolved = true;
+  statusEl.style.color = 'var(--accent)';
+  statusEl.textContent = msg;
+}
+
+function onBandPostcodeInput(value) {
+  bandPostcodeResolved = false;
+  document.getElementById('bandCity').value = '';
+  const statusEl = document.getElementById('bandPostcodeStatus');
+  clearTimeout(bandPostcodeSearchTimeout);
+
+  const digits = value.trim().replace(/\D/g, '');
+  document.getElementById('bandZip').value = digits;
+  const match = digits.match(/^[1-9][0-9]{3}$/);
+  if (!match) {
+    statusEl.textContent = '';
+    return;
+  }
+  const normalized = digits;
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Bezig met opzoeken...';
+
+  bandPostcodeSearchTimeout = setTimeout(async () => {
+    try {
+      const url = `https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?fq=postcode:${normalized}*&fq=type:postcode&fl=woonplaatsnaam,postcode&rows=1`;
+      const res  = await fetch(url);
+      if (!res.ok) throw new Error('PDOK niet bereikbaar');
+      const data = await res.json();
+      const doc  = data?.response?.docs?.[0];
+      if (doc?.woonplaatsnaam) {
+        applyResolvedBandCity(doc.woonplaatsnaam, statusEl, `Gevonden: ${doc.woonplaatsnaam}`);
+        db.from('postcode_cache').upsert({ postcode: normalized, city: doc.woonplaatsnaam, updated_at: new Date().toISOString() })
+          .then(() => {}).catch(() => {});
+      } else {
+        statusEl.style.color = 'var(--accent2)';
+        statusEl.textContent = 'Postcode niet gevonden. Controleer de postcode.';
+      }
+    } catch (e) {
+      try {
+        const { data: cached } = await db.from('postcode_cache').select('city').eq('postcode', normalized).maybeSingle();
+        if (cached?.city) {
+          applyResolvedBandCity(cached.city, statusEl, `Gevonden: ${cached.city}`);
+        } else {
+          statusEl.style.color = 'var(--accent2)';
+          statusEl.textContent = 'Kon postcode nu niet controleren (storing). Probeer het later opnieuw.';
+        }
+      } catch (e2) {
+        statusEl.style.color = 'var(--accent2)';
+        statusEl.textContent = 'Kon postcode nu niet controleren (storing). Probeer het later opnieuw.';
+      }
+    }
+  }, 500);
 }
 
 // Convert DD-MM-YYYY to YYYY-MM-DD for database storage
@@ -3386,7 +3535,14 @@ function renderProfile() {
 let filterBandGenresList = [];
 let filterBandWantedList = [];
 let filterBandStatusVal  = 'zoekend';
+let bandSearchSortMode   = 'score';
 let myMusicianId = null;
+
+function setBandSearchSortMode(el, mode) {
+  bandSearchSortMode = mode;
+  document.querySelectorAll('#filterBandSortMode .tag').forEach(x => x.classList.remove('selected'));
+  el.classList.add('selected');
+}
 
 let bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff' };
 
@@ -3432,12 +3588,39 @@ async function runBandSearch() {
   const resultsEl = document.getElementById('bandSearchResults');
   resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">Bands zoeken...</div>`;
   try {
-    let query = db.from('bands').select(`id, name, city, genres, status, description, profile_color, updated_at, band_members(musician_id, status, musicians(fname, profile_color)), band_wanted(instrument)`);
-    const city = document.getElementById('filterBandCity').value.trim();
-    if (city) query = query.ilike('city', `%${city}%`);
-    if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
-    const { data: bands, error } = await query.order('updated_at', { ascending: false }).limit(50);
-    if (error) throw error;
+    const mid = await getMyMusicianId();
+    const selectFields = `id, name, city, genres, status, description, profile_color, updated_at, band_members(musician_id, status, musicians(fname, profile_color)), band_wanted(instrument)`;
+
+    let bands;
+    let matchInfo = {}; // id -> { distance_km, score, is_stale }
+
+    if (mid) {
+      const radius = parseFloat(document.getElementById('filterBandRadius').value) || 25;
+      const { data: matches, error: rpcErr } = await db.rpc('tt_search_bands_for_musician', {
+        searcher_id: mid, radius_km: radius
+      });
+      if (rpcErr) throw rpcErr;
+
+      if (!matches.length) { renderBandSearchResults([]); return; }
+      matches.forEach(m => { matchInfo[m.band_id] = m; });
+
+      const ids = matches.map(m => m.band_id);
+      let query = db.from('bands').select(selectFields).in('id', ids);
+      if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
+      const { data, error } = await query;
+      if (error) throw error;
+      bands = data;
+    } else {
+      // Geen eigen profiel → geen matchscore/afstand mogelijk, terugvallen op lijst
+      const city = document.getElementById('filterBandCity').value.trim();
+      let query = db.from('bands').select(selectFields);
+      if (city) query = query.ilike('city', `%${city}%`);
+      if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
+      const { data, error } = await query.order('updated_at', { ascending: false }).limit(50);
+      if (error) throw error;
+      bands = data;
+    }
+
     const filtered = (bands || []).filter(b => {
       if (filterBandGenresList.length && !filterBandGenresList.some(g => (b.genres||[]).includes(g))) return false;
       if (filterBandWantedList.length) {
@@ -3446,6 +3629,24 @@ async function runBandSearch() {
       }
       return true;
     });
+
+    // Matchscore/afstand toevoegen en sorteren: actieve profielen eerst,
+    // verouderde (>6 mnd) altijd onderaan, daarbinnen op gekozen sorteermodus.
+    filtered.forEach(b => {
+      const info = matchInfo[b.id];
+      b.distance_km = info ? info.distance_km : null;
+      b.matchScore  = info ? info.score : null;
+      b.isStale     = info ? info.is_stale : false;
+    });
+    filtered.sort((a, b) => {
+      if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
+      if (bandSearchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
+        return a.distance_km - b.distance_km;
+      }
+      if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
+      return 0;
+    });
+
     renderBandSearchResults(filtered);
   } catch(e) {
     resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--accent2);">Fout: ${e.message}</div>`;
@@ -3474,6 +3675,7 @@ function renderBandSearchResults(bands) {
               <div class="card-name">${b.name}</div>
               <div class="card-meta">${b.city||''}${b.city&&b.genres?.length?' · ':''}${(b.genres||[]).slice(0,2).join(', ')}</div>
               <span class="band-status-badge band-status-${b.status}">${statusLabels[b.status]||b.status}</span>
+              ${b.matchScore != null ? `<div style="font-size:11px;color:var(--accent);font-weight:700;margin-top:2px;">${Math.round(b.matchScore * 100)}% match${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}</div>` : ''}
             </div>
           </div>
           <div class="card-badges">${members.slice(0,3).map(m => `<span class="card-badge">${m.musicians?.fname||'?'}</span>`).join('')}</div>
@@ -3540,16 +3742,20 @@ function selectBandStatus(el, val) {
 
 async function saveBand() {
   const name = document.getElementById('bandName').value.trim();
+  const zip  = document.getElementById('bandZip').value.trim();
   const city = document.getElementById('bandCity').value.trim();
   const desc = document.getElementById('bandDescription').value.trim();
   if (!name) { alert('Vul een bandnaam in.'); return; }
+  if (!zip || !bandPostcodeResolved || !city) { alert('Vul een geldige postcode in en wacht tot de woonplaats is gevonden.'); return; }
+  if (!bandState.genres.length) { alert('Selecteer minimaal 1 genre.'); return; }
+  if (!bandState.wanted.length) { alert('Selecteer minimaal 1 instrument dat de band zoekt.'); return; }
 
   const mid = await getMyMusicianId();
   if (!mid) { alert('Maak eerst een muzikantprofiel aan.'); return; }
 
   try {
     const { data: band, error: bErr } = await db.from('bands').insert({
-      name, city: city ? normalizeCityName(city) : null,
+      name, city: normalizeCityName(city), zip,
       description: desc || null, genres: bandState.genres,
       status: bandState.status, founder_id: mid,
     }).select().single();
@@ -3557,12 +3763,13 @@ async function saveBand() {
 
     await db.from('band_members').insert({ band_id: band.id, musician_id: mid, role: 'Oprichter', status: 'bevestigd' });
 
-    if (bandState.wanted.length) {
-      await db.from('band_wanted').insert(bandState.wanted.map(instrument => ({ band_id: band.id, instrument })));
-    }
+    await db.from('band_wanted').insert(bandState.wanted.map(instrument => ({ band_id: band.id, instrument })));
 
     document.getElementById('bandName').value = '';
+    document.getElementById('bandZip').value = '';
     document.getElementById('bandCity').value = '';
+    document.getElementById('bandPostcodeStatus').textContent = '';
+    bandPostcodeResolved = false;
     document.getElementById('bandDescription').value = '';
     bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff' };
     document.getElementById('createBandForm').style.display = 'none';
