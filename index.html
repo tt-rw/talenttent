@@ -2445,7 +2445,7 @@ function renderSearchResults(musicians) {
       <div class="no-results">
         <div class="no-results-icon">🎵</div>
         <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen muzikanten gevonden</p>
-        <p style="font-size:13px;">Pas je filters aan en probeer opnieuw</p>
+        <p style="font-size:13px;">Pas je filters of zoekstraal aan, en controleer of je eigen postcode in je profiel klopt.</p>
       </div>`;
     return;
   }
@@ -3654,7 +3654,7 @@ async function runBandSearch() {
 function renderBandSearchResults(bands) {
   const el = document.getElementById('bandSearchResults');
   if (!bands.length) {
-    el.innerHTML = `<div class="no-results"><div class="no-results-icon">🎵</div><p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen bands gevonden</p><p style="font-size:13px;">Pas je filters aan en probeer opnieuw</p></div>`;
+    el.innerHTML = `<div class="no-results"><div class="no-results-icon">🎵</div><p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen bands gevonden</p><p style="font-size:13px;">Pas je filters of zoekstraal aan, en controleer of je eigen postcode in je profiel klopt.</p></div>`;
     return;
   }
   const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
