@@ -43,6 +43,8 @@ Laatste update: 30 juli 2026 (matchcode-architectuur, zoekfunctie met matchscore
 - [x] Pagina's beeldvullend maken — **alleen op desktop/web** (vanaf 768px breedte), mobiel bewust ongewijzigd. **Akkoord bevestigd door Ronald.** Nog niet visueel geverifieerd door Claude (geen browsertoegang) — graag even controleren of dit er goed uitziet.
 - [x] Woonplaats met Alternatieve Schrijfwijze (Den Haag i.p.v. 's-Gravenhage) — gebruikt nu de kolom `alternatieve_schrijfwijzen` uit `postcode_cache` (voorrang op de officiële PDOK-naam), zowel bij muzikant- als bandprofiel.
 
+- [x] "Muzikanten"/"Bands"-zoektabbladen blijven nu ook zichtbaar na inloggen (voorheen werden ze verborgen en vervangen door "Mijn bands" + profielmenu — dat was onhandig, want zoeken blijft een kernfunctie ook als je bent ingelogd).
+
 ## 🔜 Nu mee bezig / volgende
 - [ ] Logisch, efficient en intuitief proces (en routing door webapp) bedenken voor: aanmaken profiel, matchingproces
 - [ ] Nieuwe zoekcategorie: "Zoeken op setlist" — vraaggedreven (pull): iemand (bijv. een band die op korte termijn een vervanger nodig heeft) plaatst een zoekopdracht met gevraagd instrument + specifieke nummers/repertoire; muzikanten kunnen hierop reageren. Vereist waarschijnlijk een eigen (optioneel) repertoire/setlist per band, gekoppeld aan `band_wanted`. Aanbodgedreven (push, automatisch matchen + notificeren) is een mooi vervolgidee maar voorlopig te complex — zie backlog.
