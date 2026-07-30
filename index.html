@@ -1778,7 +1778,7 @@
 
   <!-- STEP 4: Doel -->
   <div class="panel" id="step3">
-    <div class="panel-title">Wat zoek je?</div>
+    <div class="panel-title">Wat zoek je? <span style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(optioneel, mag ook later)</span></div>
     <div class="panel-sub">Wat is je doel op The Talent Tent?</div>
 
     <div class="goal-options" id="goalOptions">
@@ -3251,9 +3251,7 @@ function nextStep(from) {
     if (!state.songs.length) { alert('Voeg minimaal één nummer toe.'); return; }
     if (state.songs.some(s => !s.level)) { alert('Kies voor elk nummer een beheersingsniveau.'); return; }
   }
-  if (from === 3) {
-    if (!state.goal) { alert('Kies wat je zoekt.'); return; }
-  }
+  // step 3 (doel) is bewust optioneel — mag later nog worden ingevuld
   // step 4 (personalization) has no required fields
   goTo(from + 1);
 }
