@@ -1,6 +1,6 @@
 # The Talent Tent — TODO
 
-Laatste update: 29 juli 2026 (postcode-automatisering + cache-backup afgerond)
+Laatste update: 30 juli 2026 (matchcode-architectuur + zoekfunctie met matchscore afgerond)
 
 ## Hoe te gebruiken
 - Dit bestand staat naast `index.html` in de repo.
@@ -25,10 +25,20 @@ Laatste update: 29 juli 2026 (postcode-automatisering + cache-backup afgerond)
 - [x] Postcode-cache tegen storingen — succesvolle opzoekingen worden bewaard in een eigen Supabase-tabel (`postcode_cache`). Als PDOK tijdelijk niet bereikbaar is, valt de app terug op deze cache i.p.v. de gebruiker vast te laten lopen. **Actie voor Ronald:** draai eenmalig `postcode_cache_setup.sql` in de Supabase SQL Editor (Supabase dashboard → SQL Editor → plak inhoud → Run) om de tabel aan te maken. Zonder deze tabel werkt de postcode-opzoeking nog wel (via PDOK), alleen de storings-fallback dan niet.
 - [x] Volledige backup van alle NL postcodes — de tabel is in één keer gevuld met een gratis, kant-en-klare lijst (bron: MIT-licentie, github.com/bobdenotter/4pp). Pure postbusnummers (622 stuks, geen woonadres) zijn er standaard uitgefilterd. Resultaat: **4077 postcodes geïmporteerd** — vrijwel exact gelijk aan het officiële aantal 4-cijferige postcodegebieden in Nederland (~4071-4072). Tabel bevat ook gemeente, provincie, netnummer en coördinaten (voorbereiding op postcode-rozen).
 - [x] Cache onzichtbaar voor gebruiker — het label "(via cache)" is verwijderd. Live PDOK-resultaat en cache-fallback tonen nu allebei gewoon "Gevonden: {stad}", geen zichtbaar verschil meer. Geen gevolgen zodra PDOK weer online is: elke nieuwe postcode-invoer probeert altijd eerst live PDOK, de cache is puur een fallback per moment, niets wordt "onthouden".
+- [x] **Matchcode-architectuur + zoekfunctie met matchscore (volledig afgerond, incl. database + app):**
+  - **Progressief profiel:** verplicht = naam, e-mail, postcode, instrument, genre, repertoire. Optioneel/achteraf = doel, foto, media.
+  - **Matchcode (bitmask):** elk instrument/genre heeft een vaste bitpositie in een koppeltabel (`instrument_bits`/`genre_bits`). Nieuwe instrumenten/genres krijgen automatisch de eerstvolgende vrije positie (via `tt_add_instrument`/`tt_add_genre`), bestaande posities worden nooit hernummerd. Matchcode wordt door database-triggers automatisch afgeleid uit `musician_instruments`/`musician_genres`/`bands.genres`/`band_wanted` en blijft volledig op de achtergrond.
+  - **Postcode/ID bewust apart van de matchcode** — afstand (coördinaten) en exacte lookup (ID) zijn andere bewerkingen dan instrument/genre-overlap.
+  - **Matchscore-formule:** harde afstandsfilter (postcode + instelbare straal, standaard 25 km, Haversine) → `matchscore = 0,65 × instrumentoverlap + 0,35 × genreoverlap` (Jaccard via bitmasks) → 6-maanden-activiteitsknip (verouderde profielen altijd onderaan, sortering daarbinnen blijft op matchscore) → sortering standaard op matchscore, gebruiker kan wisselen naar "dichtstbijzijnde eerst" → weergave incl. repertoire met mastery-niveau (informatief, telt niet mee) → nooit jezelf of verwijderde profielen tonen.
+  - **Muzikant ↔ band:** instrumentcomponent is een dekkingsscore vanuit de band-vraag (`AND(musicus_mask, band_wanted_mask) / band_wanted_mask`), geen symmetrische Jaccard — extra instrumenten die de band niet zoekt tellen niet mee. Genre blijft gewone Jaccard.
+  - **Bandvereisten:** postcode, minimaal 1 genre en minimaal 1 gezocht instrument nu verplicht bij bandaanmaken (was optioneel, voorkwam lege matchcode/delen-door-nul).
+  - **Database:** vastgelegd in `matching_setup.sql`, eenmalig gedraaid door Ronald in Supabase SQL Editor. Bevat koppeltabellen, kolommen (`latitude`/`longitude`/`instrument_mask`/`genre_mask`/`wanted_mask`, `bands.zip` toegevoegd), triggers die alles automatisch bijhouden, en drie zoekfuncties (`tt_search_musicians`, `tt_search_bands_for_musician`, `tt_search_musicians_for_band`). Getest en werkend bevonden.
+  - **App (`index.html`):** bandformulier met verplichte postcode/genre/instrument; muzikanten- en bandzoekscherm met instelbare straal + sorteertoggle (beste match/dichtstbijzijnde); matchpercentage + afstand zichtbaar op resultaatkaarten; valt terug op de oude lijst-weergave als iemand nog geen eigen profiel heeft (bijv. niet ingelogd).
+  - **Bewust geparkeerd:** setlist-matching zelf en het mechaniek van "Zoeken op setlist" (zie apart punt hieronder) — mastery-niveau wordt al wel getoond, telt alleen niet mee in de score.
 
 ## 🔜 Nu mee bezig / volgende
 - [ ] Logisch, efficient en intuitief proces (en routing door webapp) bedenken voor: aanmaken profiel, matchingproces
-- [ ] Zoekfunctie verfijnen (muzikanten + bands)
+- [ ] Nieuwe zoekcategorie: "Zoeken op setlist" — vraaggedreven (pull): iemand (bijv. een band die op korte termijn een vervanger nodig heeft) plaatst een zoekopdracht met gevraagd instrument + specifieke nummers/repertoire; muzikanten kunnen hierop reageren. Vereist waarschijnlijk een eigen (optioneel) repertoire/setlist per band, gekoppeld aan `band_wanted`. Aanbodgedreven (push, automatisch matchen + notificeren) is een mooi vervolgidee maar voorlopig te complex — zie backlog.
 - [ ] Contactfunctie (muzikanten kunnen elkaar benaderen)
 - [ ] Personalisatie (profiel/aanbevelingen)
 - [ ] E-mailprovider koppelen (voor als e-mailbevestiging weer aan moet, notificaties, etc.)
@@ -41,6 +51,7 @@ Laatste update: 29 juli 2026 (postcode-automatisering + cache-backup afgerond)
 - Bandprofiel en band-zoekfunctie scheiden
 - Zoekresultaten tonen na gebruik zoekfunctie (tonen naar relevantie: zoekend, meest actief)
 - Optie zoekopdracht maken. E-mail sturen zodra een match is ontstaan.
+- Push-variant van "Zoeken op setlist": i.p.v. dat muzikanten actief moeten reageren op een zoekopdracht, automatisch matchende muzikanten notificeren (bijv. via e-mail zodra iemand met het juiste instrument + repertoire binnen de straal een profiel heeft). Vereist e-mailprovider en een matchscore-mechanisme; voorlopig bewust vraaggedreven (pull) gehouden.
 - profiel aanmaken / postcode: tekst bij postcode: alleen de 4 cijfers invullen
 - profiel aanmaken / woonplaats: vul het veld 'woonplaats' met de Alternatieve Schrijfwijze (Den Haag ipv 's-Gravenhage)
 - repertoire / invulvelden band en nummer: selecteer de bovenste optie met een druk op 'enter' knop
