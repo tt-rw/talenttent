@@ -38,13 +38,13 @@ Laatste update: 30 juli 2026 (matchcode-architectuur + zoekfunctie met matchscor
 
 ## 🔜 Nu mee bezig / volgende
 - [ ] Logisch, efficient en intuitief proces (en routing door webapp) bedenken voor: aanmaken profiel, matchingproces
-- [ ] Nieuwe zoekcategorie: "Zoeken op setlist" — vraaggedreven (pull): iemand (bijv. een band die op korte termijn een vervanger nodig heeft) plaatst een zoekopdracht met gevraagd instrument + specifieke nummers/repertoire; muzikanten kunnen hierop reageren. Vereist waarschijnlijk een eigen (optioneel) repertoire/setlist per band, gekoppeld aan `band_wanted`. Aanbodgedreven (push, automatisch matchen + notificeren) is een mooi vervolgidee maar voorlopig te complex — zie backlog.
 - [ ] Contactfunctie (muzikanten kunnen elkaar benaderen)
 - [ ] Personalisatie (profiel/aanbevelingen)
 - [ ] E-mailprovider koppelen (voor als e-mailbevestiging weer aan moet, notificaties, etc.)
 
 ## 💡 Ideeën / backlog
 - Zoekfunctie met postcode-rozen (straal rondom postcode) — kan gebouwd worden nu elke gebruiker een correcte, opgezochte postcode heeft, en de cache-tabel al lat/lon-coördinaten per postcode bevat (4077 stuks). Let op: er wordt bij het profiel alleen de 4-cijferige postcode opgeslagen (geen huisletters), dus de nauwkeurigheid is op wijkniveau, niet op straatniveau.
+- Nieuwe zoekcategorie: "Zoeken op setlist" — vraaggedreven (pull): iemand (bijv. een band die op korte termijn een vervanger nodig heeft) plaatst een zoekopdracht met gevraagd instrument + specifieke nummers/repertoire; muzikanten kunnen hierop reageren. Vereist waarschijnlijk een eigen (optioneel) repertoire/setlist per band, gekoppeld aan `band_wanted`. Aanbodgedreven (push, automatisch matchen + notificeren) is een mooi vervolgidee maar voorlopig te complex — zie backlog.
 - App moet altijd logisch en intuitief zijn. alle oplossingen moeten hieraan voldoen. 
 - Maak pagina's automatisch beeldvullend in webversie (scrollen zoveel mogelijk vermijden)
 - E-mail reminder voor niveau update
