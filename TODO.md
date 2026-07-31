@@ -1,6 +1,14 @@
 # The Talent Tent — TODO
 
-Laatste update: 30 juli 2026 (matchcode-architectuur, zoekfunctie met matchscore, en diverse quick-wins afgerond)
+Laatste update: 31 juli 2026 (PPP-principe vastgelegd: Presentatie, Prestatie, Plezier)
+
+## 🎯 Kernprincipe: het PPP-principe (leidend voor alle keuzes)
+De app rust op drie pijlers:
+- **Presentatie** — het persoonlijke (band)profiel om je voortgang te monitoren en te delen met anderen.
+- **Prestatie** — de zoekfunctie, gebaseerd op dat profiel, met als doel samen te spelen.
+- **Plezier** — het verbindende element: het plezier van het spelen/optreden zelf, en van het gebruik van de app, dat muzikanten steeds terug laat komen naar de Tent.
+
+Elke architectuur- of featurebeslissing moet expliciet aan één of meer van deze drie pijlers bijdragen. Bij twijfel over een nieuwe feature: eerst toetsen welke pijler(s) het dient.
 
 ## Hoe te gebruiken
 - Dit bestand staat naast `index.html` in de repo.
