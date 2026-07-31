@@ -2851,9 +2851,24 @@ function normalizeCityName(city) {
 let postcodeSearchTimeout = null;
 let postcodeResolved = false;
 
+// Bekende gevallen waarbij de officiële (BAG/PDOK-)naam afwijkt van de naam die
+// iedereen gebruikt, en die dus niet in de "alternatieve schrijfwijzen"-data staat
+// (dat veld bevat spellingsvarianten, geen bijnamen). Uitbreidbaar indien nodig.
+const CITY_NAME_EXCEPTIONS = {
+  "'s-gravenhage": 'Den Haag',
+  "s gravenhage": 'Den Haag',
+  "s-gravenhage": 'Den Haag',
+};
+
 function pickDisplayCity(officialCity, altField) {
-  if (altField) return altField.split(',')[0].trim();
-  return officialCity;
+  const key = (officialCity || '').toLowerCase().replace(/[’']/g, "'").trim();
+  if (CITY_NAME_EXCEPTIONS[key]) return CITY_NAME_EXCEPTIONS[key];
+  if (altField) {
+    // Veld is puntkomma-gescheiden, bijv. "S GRAVENHAGE;'s-Gravenhage"
+    const first = altField.split(';')[0].trim();
+    if (first) return normalizeCityName(first);
+  }
+  return normalizeCityName(officialCity || '');
 }
 
 function onPostcodeInput(value) {
