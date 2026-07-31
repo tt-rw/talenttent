@@ -1,6 +1,6 @@
 # The Talent Tent — TODO
 
-Laatste update: 31 juli 2026 (todo-lijst herschikt: lopende onderwerpen bovenaan)
+Laatste update: 31 juli 2026 (inlogknop toegevoegd bij "account bestaat al"-melding)
 
 ## 🎯 Kernprincipe: het PPP-principe (leidend voor alle keuzes)
 De app rust op drie pijlers:
@@ -40,6 +40,7 @@ Elke architectuur- of featurebeslissing moet expliciet aan één of meer van dez
 - e-mailbevestiging aanzetten
 
 ## ✅ Afgerond
+- [x] Foutmelding "User already registered" bij profiel aanmaken toont nu een vriendelijke Nederlandse melding ("Er bestaat al een account met dit e-mailadres") met een "Inloggen →"-knop. Deze knop stuurt naar het inlogscherm en vult automatisch het al ingevoerde e-mailadres in. Gebruiker kan vandaar zelf inloggen of "Wachtwoord vergeten?" gebruiken (bestond al) — geen aparte reset-knop nodig. Nieuwe helper: `goToLoginFromError()`.
 - [x] Prototype
 - [x] Database (Supabase)
 - [x] Authenticatie (signup/signin, e-mailbevestiging uit)
@@ -70,7 +71,7 @@ Elke architectuur- of featurebeslissing moet expliciet aan één of meer van dez
 - [x] Enter-toets bij repertoire (band/nummer): bovenste suggestie wordt geselecteerd, cursor springt daarna meteen naar het volgende invulveld zodat direct doorgetypt kan worden. Na toevoegen van een nummer springt de cursor terug naar het artiestveld voor het volgende nummer.
 - [x] Klik op inlognaam/avatar in de navigatiebalk opent een pulldown-menu met "Mijn profiel" en "Uitloggen" erin (ruimte om later meer aan toe te voegen). Het `navMyProfile`-element (verplichte feature) bestaat nog steeds met dezelfde id/functionaliteit, nu als menu-item i.p.v. los knopje in de hoofdnavigatie — dus geen conflict meer met de projectinstructies-checklist.
 - [x] Pagina's beeldvullend maken — **alleen op desktop/web** (vanaf 768px breedte), mobiel bewust ongewijzigd. **Akkoord bevestigd door Ronald.** Nog niet visueel geverifieerd door Claude (geen browsertoegang) — graag even controleren of dit er goed uitziet.
-- [x] Woonplaats met Alternatieve Schrijfwijze (Den Haag i.p.v. 's-Gravenhage) — gebruikt nu de kolom `alternatieve_schrijfwijzen` uit `postcode_cache` (voorrang op de officiële PDOK-naam), zowel bij muzikant- als bandprofiel.
+- [x] Woonplaats met Alternatieve Schrijfwijze (Den Haag i.p.v. 's-Gravenhage) — gebruikt nu de kolom `alternatieve_schrijfwijzen` uit `postcode_cache` (voorrang op de officiële PDOK-naam), zowel bij muzikant- als bandprofiel. **Bugfix 31-07-2026:** `pickDisplayCity()` splitste ten onrechte op `,` i.p.v. `;` (het echte scheidingsteken in de data) en normaliseerde de hoofdlettering niet, waardoor rauwe tekst als "S GRAVENHAGE;'s-Gravenhage" werd getoond. Bovendien bevat de brondata alleen spellingsvarianten, geen bijnamen — daarom is een kleine, uitbreidbare uitzonderingslijst (`CITY_NAME_EXCEPTIONS`) toegevoegd die 's-Gravenhage → Den Haag afdwingt. **Bevestigd werkend door Ronald** (postcode 2497 → "Den Haag"). Toekomstige vergelijkbare gevallen (bijv. 's-Hertogenbosch/Den Bosch) kunnen aan dezelfde lijst worden toegevoegd indien gewenst.
 - [x] "Muzikanten"/"Bands"-zoektabbladen blijven nu ook zichtbaar na inloggen (voorheen werden ze verborgen en vervangen door "Mijn bands" + profielmenu — dat was onhandig, want zoeken blijft een kernfunctie ook als je bent ingelogd).
 
 ## 📝 Notities

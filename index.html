@@ -2712,9 +2712,27 @@ function showSaveError(msg) {
   document.getElementById('saveSpinner').style.display = 'none';
   document.getElementById('saveTitle').textContent = 'Oeps...';
   document.getElementById('saveTitle').style.color = '#ff4d4d';
+
+  const isAlreadyRegistered = /already registered|already exists/i.test(msg);
+
+  if (isAlreadyRegistered) {
+    document.getElementById('saveMsg').innerHTML =
+      `Er bestaat al een account met dit e-mailadres.<br><br>
+       <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="goToLoginFromError()">Inloggen →</button>
+       <button class="btn btn-ghost" style="width:100%;" onclick="document.getElementById('saveOverlay').classList.remove('visible')">Sluiten</button>`;
+    return;
+  }
+
   document.getElementById('saveMsg').innerHTML =
     `Er ging iets mis:<br><span style="color:#ff4d4d;font-size:12px;">${msg}</span><br><br>
      <button class="btn btn-ghost" style="margin-top:8px;" onclick="document.getElementById('saveOverlay').classList.remove('visible')">Sluiten</button>`;
+}
+
+function goToLoginFromError() {
+  document.getElementById('saveOverlay').classList.remove('visible');
+  showView('auth');
+  const emailField = document.getElementById('loginEmail');
+  if (emailField) emailField.value = state.regEmail || '';
 }
 
 // ─── Submit → opslaan in Supabase ────────────────────────────────────────────
@@ -2851,24 +2869,9 @@ function normalizeCityName(city) {
 let postcodeSearchTimeout = null;
 let postcodeResolved = false;
 
-// Bekende gevallen waarbij de officiële (BAG/PDOK-)naam afwijkt van de naam die
-// iedereen gebruikt, en die dus niet in de "alternatieve schrijfwijzen"-data staat
-// (dat veld bevat spellingsvarianten, geen bijnamen). Uitbreidbaar indien nodig.
-const CITY_NAME_EXCEPTIONS = {
-  "'s-gravenhage": 'Den Haag',
-  "s gravenhage": 'Den Haag',
-  "s-gravenhage": 'Den Haag',
-};
-
 function pickDisplayCity(officialCity, altField) {
-  const key = (officialCity || '').toLowerCase().replace(/[’']/g, "'").trim();
-  if (CITY_NAME_EXCEPTIONS[key]) return CITY_NAME_EXCEPTIONS[key];
-  if (altField) {
-    // Veld is puntkomma-gescheiden, bijv. "S GRAVENHAGE;'s-Gravenhage"
-    const first = altField.split(';')[0].trim();
-    if (first) return normalizeCityName(first);
-  }
-  return normalizeCityName(officialCity || '');
+  if (altField) return altField.split(',')[0].trim();
+  return officialCity;
 }
 
 function onPostcodeInput(value) {
