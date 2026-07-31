@@ -1,6 +1,6 @@
 # The Talent Tent — TODO
 
-Laatste update: 31 juli 2026 (inlogknop toegevoegd bij "account bestaat al"-melding)
+Laatste update: 31 juli 2026 (zoekvelden Naam/Plaats toegevoegd, terminologie gestandaardiseerd naar "Plaats")
 
 ## 🎯 Kernprincipe: het PPP-principe (leidend voor alle keuzes)
 De app rust op drie pijlers:
@@ -26,6 +26,7 @@ Elke architectuur- of featurebeslissing moet expliciet aan één of meer van dez
 - [ ] E-mailprovider koppelen (voor als e-mailbevestiging weer aan moet, notificaties, etc.)
 
 ## 💡 Backlog / ideeën
+- Tekst "Over ons" verbeteren — huidige tekst is een eerste versie, kwaliteit/toon nog verfijnen.
 - App moet altijd logisch en intuitief zijn. alle oplossingen moeten hieraan voldoen. 
 - E-mail reminder voor niveau update
 - Bandprofiel en band-zoekfunctie scheiden
@@ -40,6 +41,9 @@ Elke architectuur- of featurebeslissing moet expliciet aan één of meer van dez
 - e-mailbevestiging aanzetten
 
 ## ✅ Afgerond
+- [x] Zoekvelden **Naam** en **Plaats** toegevoegd aan zowel de Muzikanten- als Bands-zoekfunctie (bandnaam bij Bands). Terminologie gestandaardiseerd naar **"Plaats"** overal in de app (was "Woonplaats"/"Stad"). In het kader van **Presentatie** — muzikanten en bands moeten altijd vindbaar zijn. **Bugfix:** Plaats-filter werkte voorheen niet als je ingelogd was (werd genegeerd door de matchcode-zoekfunctie) — nu werkt Naam/Plaats/Genre altijd, zowel ingelogd (bovenop de bestaande matching op straal/instrument/doel) als niet-ingelogd (als directe zoekopdracht). Zelfde velden hergebruikt in beide gevallen, geen aparte schermen.
+- [x] Nieuwe tab "Over ons" toegevoegd aan de navigatiebalk (zichtbaar zowel ingelogd als niet-ingelogd), met de tekst uit `Talent Tent teksten.docx` (Wat zijn we / Wat doen we / Hoe werkt het). **Let op:** tekst is nog niet definitief — tekstkwaliteit verbeteren staat als apart punt in de backlog.
+- [x] Header + navigatiebalk zijn nu "sticky" (`.app-topbar`, `position: sticky; top: 0;`) — blijven altijd bovenaan zichtbaar tijdens scrollen, incl. alle tabbladen (Muzikanten, Bands, Over ons, Inloggen/gebruikersmenu). Werkt op mobiel en desktop; desktop full-height-instelling hierop aangepast.
 - [x] Foutmelding "User already registered" bij profiel aanmaken toont nu een vriendelijke Nederlandse melding ("Er bestaat al een account met dit e-mailadres") met een "Inloggen →"-knop. Deze knop stuurt naar het inlogscherm en vult automatisch het al ingevoerde e-mailadres in. Gebruiker kan vandaar zelf inloggen of "Wachtwoord vergeten?" gebruiken (bestond al) — geen aparte reset-knop nodig. Nieuwe helper: `goToLoginFromError()`.
 - [x] Prototype
 - [x] Database (Supabase)

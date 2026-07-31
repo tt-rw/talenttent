@@ -38,7 +38,7 @@
      het gedrag ongewijzigd (natuurlijk scrollen, geen geforceerde hoogte). */
   @media (min-width: 768px) {
     body { display: flex; flex-direction: column; min-height: 100vh; }
-    .app-nav { flex-shrink: 0; }
+    .app-topbar { flex-shrink: 0; }
     .app-view.active { flex: 1; display: flex; flex-direction: column; min-height: 0; }
   }
 
@@ -52,6 +52,22 @@
       radial-gradient(ellipse 60% 80% at 85% 90%, rgba(255,77,77,0.05) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
+  }
+
+/* ── Sticky topbar (header + nav blijven altijd zichtbaar) ── */
+  .app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg);
+  }
+
+/* ── Sticky topbar (header + nav blijven altijd zichtbaar) ── */
+  .app-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg);
   }
 
   /* Header */
@@ -1566,6 +1582,7 @@
 </head>
 <body>
 
+<div class="app-topbar">
 <header>
   <div class="logo" onclick="showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="font-size:50%;color:var(--accent);">THE </span><span style="color:var(--text);">TALENT</span> TENT</div>
   <div class="tagline">Talent zoekt talent</div>
@@ -1591,6 +1608,7 @@
     </div>
   </div>
 </nav>
+</div>
 
 <!-- VIEW: Landingspagina -->
 <div class="app-view active" id="view-landing">
@@ -1713,7 +1731,7 @@
 
     <div class="field-group">
       <div class="field">
-        <label>Woonplaats <span class="req">*</span></label>
+        <label>Plaats <span class="req">*</span></label>
         <input type="text" id="city" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;">
         <div id="postcodeStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
       </div>
@@ -1998,9 +2016,16 @@
 
       <div class="filter-row">
         <div class="field">
-          <label>Woonplaats</label>
+          <label>Naam</label>
+          <input type="text" id="filterName" placeholder="Bijv. Ronald">
+        </div>
+        <div class="field">
+          <label>Plaats</label>
           <input type="text" id="filterCity" placeholder="Bijv. Delft, Den Haag...">
         </div>
+      </div>
+
+      <div class="filter-row">
         <div class="field">
           <label>Leeftijd</label>
           <div style="display:flex;gap:8px;align-items:center;">
@@ -2009,6 +2034,7 @@
             <input type="number" id="filterAgeMax" placeholder="25" min="13" max="25" style="width:80px;">
           </div>
         </div>
+        <div class="field"></div>
       </div>
 
       <div class="filter-row single" style="margin-bottom:16px;">
@@ -2063,8 +2089,12 @@
       <div class="filter-title">Vind een band</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Zoek bands die nog muzikanten zoeken</p>
       <div class="filter-row">
-        <div class="field"><label>Stad</label><input type="text" id="filterBandCity" placeholder="Bijv. Delft, Den Haag..."></div>
+        <div class="field"><label>Bandnaam</label><input type="text" id="filterBandName" placeholder="Bijv. The Rusty Strings"></div>
+        <div class="field"><label>Plaats</label><input type="text" id="filterBandCity" placeholder="Bijv. Delft, Den Haag..."></div>
+      </div>
+      <div class="filter-row">
         <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
+        <div class="field"></div>
       </div>
       <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label><div class="tag-grid" id="filterBandGenres"></div></div></div>
       <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><div class="tag-grid" id="filterBandWanted"></div></div></div>
@@ -2129,7 +2159,7 @@
         </div>
         <div class="field-group">
           <div class="field">
-            <label>Woonplaats <span class="req">*</span></label>
+            <label>Plaats <span class="req">*</span></label>
             <input type="text" id="bandCity" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;">
             <div id="bandPostcodeStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
           </div>
@@ -2446,6 +2476,11 @@ async function runSearch() {
       musician_songs(song_title, song_artist, mastery_level)
     `;
 
+    // Naam + Plaats: werken altijd, zowel ingelogd (bovenop de matching-straal)
+    // als niet-ingelogd (als directe zoekopdracht) — vindbaarheid (Presentatie).
+    const nameQuery = document.getElementById('filterName').value.trim().toLowerCase();
+    const cityQuery = document.getElementById('filterCity').value.trim().toLowerCase();
+
     let musicians;
     let matchInfo = {}; // id -> { distance_km, score, is_stale }
 
@@ -2466,15 +2501,15 @@ async function runSearch() {
       musicians = data;
     } else {
       // Geen eigen profiel (bijv. niet ingelogd) → geen matchscore/afstand mogelijk, terugvallen op lijst
-      const city = document.getElementById('filterCity').value.trim();
       let query = db.from('musicians').select(selectFields);
-      if (city) query = query.ilike('city', `%${city}%`);
+      if (cityQuery) query = query.ilike('city', `%${cityQuery}%`);
+      if (nameQuery) query = query.ilike('fname', `%${nameQuery}%`);
       const { data, error } = await query.order('updated_at', { ascending: false }).limit(50);
       if (error) throw error;
       musicians = data;
     }
 
-    // Client-side filters (leeftijd, instrument, genre, doel)
+    // Client-side filters (naam, plaats, leeftijd, instrument, genre, doel)
     const ageMin = parseInt(document.getElementById('filterAgeMin').value) || 13;
     const ageMax = parseInt(document.getElementById('filterAgeMax').value) || 25;
 
@@ -2482,6 +2517,8 @@ async function runSearch() {
       const age = calcAgeFromISO(m.birth_date);
       if (age < ageMin || age > ageMax) return false;
       if (filterGoal && m.goal !== filterGoal) return false;
+      if (nameQuery && !(m.fname || '').toLowerCase().includes(nameQuery)) return false;
+      if (cityQuery && !(m.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterInstruments.length) {
         const mInstr = m.musician_instruments.map(x => x.instrument);
         if (!filterInstruments.some(i => mInstr.includes(i))) return false;
@@ -2728,9 +2765,27 @@ function showSaveError(msg) {
   document.getElementById('saveSpinner').style.display = 'none';
   document.getElementById('saveTitle').textContent = 'Oeps...';
   document.getElementById('saveTitle').style.color = '#ff4d4d';
+
+  const isAlreadyRegistered = /already registered|already exists/i.test(msg);
+
+  if (isAlreadyRegistered) {
+    document.getElementById('saveMsg').innerHTML =
+      `Er bestaat al een account met dit e-mailadres.<br><br>
+       <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="goToLoginFromError()">Inloggen →</button>
+       <button class="btn btn-ghost" style="width:100%;" onclick="document.getElementById('saveOverlay').classList.remove('visible')">Sluiten</button>`;
+    return;
+  }
+
   document.getElementById('saveMsg').innerHTML =
     `Er ging iets mis:<br><span style="color:#ff4d4d;font-size:12px;">${msg}</span><br><br>
      <button class="btn btn-ghost" style="margin-top:8px;" onclick="document.getElementById('saveOverlay').classList.remove('visible')">Sluiten</button>`;
+}
+
+function goToLoginFromError() {
+  document.getElementById('saveOverlay').classList.remove('visible');
+  showView('auth');
+  const emailField = document.getElementById('loginEmail');
+  if (emailField) emailField.value = state.regEmail || '';
 }
 
 // ─── Submit → opslaan in Supabase ────────────────────────────────────────────
@@ -2867,9 +2922,24 @@ function normalizeCityName(city) {
 let postcodeSearchTimeout = null;
 let postcodeResolved = false;
 
+// Bekende gevallen waarbij de officiële (BAG/PDOK-)naam afwijkt van de naam die
+// iedereen gebruikt, en die dus niet in de "alternatieve schrijfwijzen"-data staat
+// (dat veld bevat spellingsvarianten, geen bijnamen). Uitbreidbaar indien nodig.
+const CITY_NAME_EXCEPTIONS = {
+  "'s-gravenhage": 'Den Haag',
+  "s gravenhage": 'Den Haag',
+  "s-gravenhage": 'Den Haag',
+};
+
 function pickDisplayCity(officialCity, altField) {
-  if (altField) return altField.split(',')[0].trim();
-  return officialCity;
+  const key = (officialCity || '').toLowerCase().replace(/[’']/g, "'").trim();
+  if (CITY_NAME_EXCEPTIONS[key]) return CITY_NAME_EXCEPTIONS[key];
+  if (altField) {
+    // Veld is puntkomma-gescheiden, bijv. "S GRAVENHAGE;'s-Gravenhage"
+    const first = altField.split(';')[0].trim();
+    if (first) return normalizeCityName(first);
+  }
+  return normalizeCityName(officialCity || '');
 }
 
 function onPostcodeInput(value) {
@@ -3689,6 +3759,11 @@ async function runBandSearch() {
     const mid = await getMyMusicianId();
     const selectFields = `id, name, city, genres, status, description, profile_color, updated_at, band_members(musician_id, status, musicians(fname, profile_color)), band_wanted(instrument)`;
 
+    // Naam + Plaats: werken altijd, zowel ingelogd (bovenop de matching-straal)
+    // als niet-ingelogd (als directe zoekopdracht) — vindbaarheid (Presentatie).
+    const nameQuery = document.getElementById('filterBandName').value.trim().toLowerCase();
+    const cityQuery = document.getElementById('filterBandCity').value.trim().toLowerCase();
+
     let bands;
     let matchInfo = {}; // id -> { distance_km, score, is_stale }
 
@@ -3710,9 +3785,9 @@ async function runBandSearch() {
       bands = data;
     } else {
       // Geen eigen profiel → geen matchscore/afstand mogelijk, terugvallen op lijst
-      const city = document.getElementById('filterBandCity').value.trim();
       let query = db.from('bands').select(selectFields);
-      if (city) query = query.ilike('city', `%${city}%`);
+      if (cityQuery) query = query.ilike('city', `%${cityQuery}%`);
+      if (nameQuery) query = query.ilike('name', `%${nameQuery}%`);
       if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
       const { data, error } = await query.order('updated_at', { ascending: false }).limit(50);
       if (error) throw error;
@@ -3720,6 +3795,8 @@ async function runBandSearch() {
     }
 
     const filtered = (bands || []).filter(b => {
+      if (nameQuery && !(b.name || '').toLowerCase().includes(nameQuery)) return false;
+      if (cityQuery && !(b.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterBandGenresList.length && !filterBandGenresList.some(g => (b.genres||[]).includes(g))) return false;
       if (filterBandWantedList.length) {
         const wanted = (b.band_wanted||[]).map(w => w.instrument);
