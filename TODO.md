@@ -1,6 +1,6 @@
 # The Talent Tent — TODO
 
-Laatste update: 31 juli 2026 (PPP-principe vastgelegd: Presentatie, Prestatie, Plezier)
+Laatste update: 31 juli 2026 (todo-lijst herschikt: lopende onderwerpen bovenaan)
 
 ## 🎯 Kernprincipe: het PPP-principe (leidend voor alle keuzes)
 De app rust op drie pijlers:
@@ -17,6 +17,27 @@ Elke architectuur- of featurebeslissing moet expliciet aan één of meer van dez
 - Voeg nieuwe punten toe onderaan de juiste sectie.
 
 ---
+
+## 🔜 Lopende onderwerpen
+- [ ] Logisch, efficient en intuitief proces (en routing door webapp) bedenken voor: aanmaken profiel, matchingproces
+- [ ] Nieuwe zoekcategorie: "Zoeken op setlist" — vraaggedreven (pull): iemand (bijv. een band die op korte termijn een vervanger nodig heeft) plaatst een zoekopdracht met gevraagd instrument + specifieke nummers/repertoire; muzikanten kunnen hierop reageren. Vereist waarschijnlijk een eigen (optioneel) repertoire/setlist per band, gekoppeld aan `band_wanted`. Aanbodgedreven (push, automatisch matchen + notificeren) is een mooi vervolgidee maar voorlopig te complex — zie backlog.
+- [ ] Contactfunctie (muzikanten kunnen elkaar benaderen)
+- [ ] Personalisatie (profiel/aanbevelingen)
+- [ ] E-mailprovider koppelen (voor als e-mailbevestiging weer aan moet, notificaties, etc.)
+
+## 💡 Backlog / ideeën
+- App moet altijd logisch en intuitief zijn. alle oplossingen moeten hieraan voldoen. 
+- E-mail reminder voor niveau update
+- Bandprofiel en band-zoekfunctie scheiden
+- Optie zoekopdracht maken. E-mail sturen zodra een match is ontstaan.
+- Push-variant van "Zoeken op setlist": i.p.v. dat muzikanten actief moeten reageren op een zoekopdracht, automatisch matchende muzikanten notificeren (bijv. via e-mail zodra iemand met het juiste instrument + repertoire binnen de straal een profiel heeft). Vereist e-mailprovider en een matchscore-mechanisme; voorlopig bewust vraaggedreven (pull) gehouden.
+- jouw look / hele tab verwijderen. het uploaden van een profielfoto verplaatsen naar de eerste pagina (bij naam enz) — **bewust apart gehouden voor nu, blijft in de backlog staan.**
+- muzikanten toevoegen tot een band. hoe? iemand bandleider maken? Alle leden kunnen wijzigen? verder uitwerken.
+- UI ontwerp aantrekkelijk en intiuitief maken.
+- Testscenario's bedenken — zie `TESTPLAN.md` voor het interne testplan dat Claude gebruikt bij elke wijziging.
+
+## 🐛 Bekende bugs / aandachtspunten
+- e-mailbevestiging aanzetten
 
 ## ✅ Afgerond
 - [x] Prototype
@@ -50,30 +71,7 @@ Elke architectuur- of featurebeslissing moet expliciet aan één of meer van dez
 - [x] Klik op inlognaam/avatar in de navigatiebalk opent een pulldown-menu met "Mijn profiel" en "Uitloggen" erin (ruimte om later meer aan toe te voegen). Het `navMyProfile`-element (verplichte feature) bestaat nog steeds met dezelfde id/functionaliteit, nu als menu-item i.p.v. los knopje in de hoofdnavigatie — dus geen conflict meer met de projectinstructies-checklist.
 - [x] Pagina's beeldvullend maken — **alleen op desktop/web** (vanaf 768px breedte), mobiel bewust ongewijzigd. **Akkoord bevestigd door Ronald.** Nog niet visueel geverifieerd door Claude (geen browsertoegang) — graag even controleren of dit er goed uitziet.
 - [x] Woonplaats met Alternatieve Schrijfwijze (Den Haag i.p.v. 's-Gravenhage) — gebruikt nu de kolom `alternatieve_schrijfwijzen` uit `postcode_cache` (voorrang op de officiële PDOK-naam), zowel bij muzikant- als bandprofiel.
-
 - [x] "Muzikanten"/"Bands"-zoektabbladen blijven nu ook zichtbaar na inloggen (voorheen werden ze verborgen en vervangen door "Mijn bands" + profielmenu — dat was onhandig, want zoeken blijft een kernfunctie ook als je bent ingelogd).
-
-## 🔜 Nu mee bezig / volgende
-- [ ] Logisch, efficient en intuitief proces (en routing door webapp) bedenken voor: aanmaken profiel, matchingproces
-- [ ] Nieuwe zoekcategorie: "Zoeken op setlist" — vraaggedreven (pull): iemand (bijv. een band die op korte termijn een vervanger nodig heeft) plaatst een zoekopdracht met gevraagd instrument + specifieke nummers/repertoire; muzikanten kunnen hierop reageren. Vereist waarschijnlijk een eigen (optioneel) repertoire/setlist per band, gekoppeld aan `band_wanted`. Aanbodgedreven (push, automatisch matchen + notificeren) is een mooi vervolgidee maar voorlopig te complex — zie backlog.
-- [ ] Contactfunctie (muzikanten kunnen elkaar benaderen)
-- [ ] Personalisatie (profiel/aanbevelingen)
-- [ ] E-mailprovider koppelen (voor als e-mailbevestiging weer aan moet, notificaties, etc.)
-
-## 💡 Ideeën / backlog
-- App moet altijd logisch en intuitief zijn. alle oplossingen moeten hieraan voldoen. 
-- E-mail reminder voor niveau update
-- Bandprofiel en band-zoekfunctie scheiden
-- Optie zoekopdracht maken. E-mail sturen zodra een match is ontstaan.
-- Push-variant van "Zoeken op setlist": i.p.v. dat muzikanten actief moeten reageren op een zoekopdracht, automatisch matchende muzikanten notificeren (bijv. via e-mail zodra iemand met het juiste instrument + repertoire binnen de straal een profiel heeft). Vereist e-mailprovider en een matchscore-mechanisme; voorlopig bewust vraaggedreven (pull) gehouden.
-- jouw look / hele tab verwijderen. het uploaden van een profielfoto verplaatsen naar de eerste pagina (bij naam enz) — **bewust apart gehouden voor nu, blijft in de backlog staan.**
-- muzikanten toevoegen tot een band. hoe? iemand bandleider maken? Alle leden kunnen wijzigen? verder uitwerken.
-- UI ontwerp aantrekkelijk en intiuitief maken.
-- Testscenario's bedenken — zie `TESTPLAN.md` voor het interne testplan dat Claude gebruikt bij elke wijziging.
-
-
-## 🐛 Bekende bugs / aandachtspunten
-- e-mailbevestiging aanzetten
 
 ## 📝 Notities
 - Ronald heeft geen programmeerervaring, uploadt via GitHub web interface.
