@@ -1896,7 +1896,7 @@
           <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarInput').click()">
             <span id="avatarInitials">?</span>
           </div>
-          <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()">✏️</div>
+          <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
         </div>
         <div class="avatar-info">
           <strong>Upload een foto van jezelf</strong>
@@ -1942,8 +1942,8 @@
     </div>
 
     <div class="media-tabs">
-      <button class="media-tab active" onclick="switchMediaTab('upload', this)">📁 Upload</button>
-      <button class="media-tab" onclick="switchMediaTab('links', this)">🔗 Links</button>
+      <button class="media-tab active" onclick="switchMediaTab('upload', this)">Upload</button>
+      <button class="media-tab" onclick="switchMediaTab('links', this)">Links</button>
     </div>
 
     <!-- Upload pane -->
@@ -1963,12 +1963,12 @@
     <!-- Links pane -->
     <div class="media-pane" id="pane-links">
       <div id="linksList"></div>
-      <button class="add-link-btn" onclick="addLinkRow()">+ Link toevoegen (YouTube, Instagram, SoundCloud…)</button>
+      <button class="add-link-btn" onclick="addLinkRow()">+ Link toevoegen</button>
     </div>
 
     <div class="nav-buttons">
       <button class="btn btn-ghost" onclick="prevStep(5)">← Terug</button>
-      <button class="btn btn-primary" onclick="submitProfile()">Profiel aanmaken ✓</button>
+      <button class="btn btn-primary" onclick="submitProfile()">Profiel aanmaken</button>
     </div>
   </div>
 
@@ -1989,7 +1989,7 @@
     <div style="margin-top:24px; text-align:center;">
       <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Klaar om muzikanten te vinden?</p>
       <button class="btn btn-primary" style="width:100%; font-size:15px; padding:16px;" onclick="alert('Zoekfunctie — volgende fase!')">
-        🔍 Zoek muzikanten in de buurt
+        Muzikanten zoeken
       </button>
     </div>
   </div>
@@ -2012,7 +2012,7 @@
 <div class="app-view" id="view-search">
   <div class="search-wrap">
     <div class="search-filters">
-      <div class="filter-title">🔍 Vind een muzikant</div>
+      <div class="filter-title">Vind een muzikant</div>
 
       <div class="filter-row">
         <div class="field">
@@ -2029,9 +2029,9 @@
         <div class="field">
           <label>Leeftijd</label>
           <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterAgeMin" placeholder="13" min="13" max="25" style="width:80px;">
+            <input type="number" id="filterAgeMin" placeholder="Min" min="1" style="width:80px;">
             <span style="color:var(--muted);font-size:13px;">t/m</span>
-            <input type="number" id="filterAgeMax" placeholder="25" min="13" max="25" style="width:80px;">
+            <input type="number" id="filterAgeMax" placeholder="Max" min="1" style="width:80px;">
           </div>
         </div>
         <div class="field"></div>
@@ -2075,7 +2075,7 @@
         </div>
       </div>
 
-      <button class="search-btn" onclick="runSearch()">🔍 Zoek muzikanten</button>
+      <button class="search-btn" onclick="runSearch()">Zoek muzikanten</button>
     </div>
 
     <div id="searchResults"></div>
@@ -2127,8 +2127,8 @@
   <div class="my-profile-wrap">
     <div id="myProfileContent"></div>
     <div class="profile-actions">
-      <button class="btn btn-primary" onclick="showView('register')">✏️ Profiel bewerken</button>
-      <button class="btn btn-ghost" onclick="showView('bands')" id="myBandsBtn" style="display:none;">🎵 Mijn bands</button>
+      <button class="btn btn-primary" onclick="showView('register')">Profiel bewerken</button>
+      <button class="btn btn-ghost" onclick="showView('bands')" id="myBandsBtn" style="display:none;">Mijn bands</button>
     </div>
   </div>
 </div>
@@ -2186,7 +2186,7 @@
           <div class="tag-grid" id="bandWantedGrid"></div>
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;">
-          <button class="btn btn-primary" onclick="saveBand()">Band aanmaken ✓</button>
+          <button class="btn btn-primary" onclick="saveBand()">Band aanmaken</button>
           <button class="btn btn-ghost" onclick="document.getElementById('createBandForm').style.display='none'">Annuleren</button>
         </div>
       </div>
@@ -2510,8 +2510,8 @@ async function runSearch() {
     }
 
     // Client-side filters (naam, plaats, leeftijd, instrument, genre, doel)
-    const ageMin = parseInt(document.getElementById('filterAgeMin').value) || 13;
-    const ageMax = parseInt(document.getElementById('filterAgeMax').value) || 25;
+    const ageMin = parseInt(document.getElementById('filterAgeMin').value) || 0;
+    const ageMax = parseInt(document.getElementById('filterAgeMax').value) || 150;
 
     const filtered = musicians.filter(m => {
       const age = calcAgeFromISO(m.birth_date);
