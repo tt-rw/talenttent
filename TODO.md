@@ -2,13 +2,23 @@
 
 Laatste update: 31 juli 2026 (zoekvelden Naam/Plaats toegevoegd, terminologie gestandaardiseerd naar "Plaats")
 
-## 🎯 Kernprincipe: het PPP-principe (leidend voor alle keuzes)
-De app rust op drie pijlers:
-- **Presentatie** — het persoonlijke (band)profiel om je voortgang te monitoren en te delen met anderen.
-- **Prestatie** — de zoekfunctie, gebaseerd op dat profiel, met als doel samen te spelen.
-- **Plezier** — het verbindende element: het plezier van het spelen/optreden zelf, en van het gebruik van de app, dat muzikanten steeds terug laat komen naar de Tent.
+## 🎯 PPP-principe (intern ontwerpprincipe)
 
-Elke architectuur- of featurebeslissing moet expliciet aan één of meer van deze drie pijlers bijdragen. Bij twijfel over een nieuwe feature: eerst toetsen welke pijler(s) het dient.
+**Voorwaarde 0 (weegt zwaarder dan de rest):** app moet consistent betrouwbaar en performant zijn. Bij conflict: stabiliteit/performance wint altijd van functionaliteit.
+
+**Presentatie** — profiel (persoonlijk/band)
+- Functioneel: GUI toegankelijk voor brede doelgroep, niet alleen tech-savvy. Profielstatus (volledig/actueel) direct zichtbaar. Bewerken zonder wrijving.
+- Technisch: opslag/ophalen betrouwbaar en snel, wijzigingen direct zichtbaar, media performant. Privacy by design: minimale dataverzameling, gebruiker bepaalt zichtbaarheid, e-mail/wachtwoord nooit publiek. Labels: max. 2 woorden, zelfstandig naamwoord + werkwoord, tenzij onvermijdelijk.
+
+**Prestatie** — zoekfunctie
+- Functioneel: intuïtief, minimaal aantal klikken/toetsaanslagen tot resultaat. Relevante matches zonder ruis, matchscore/afstand zichtbaar, directe vervolgstap (contact).
+- Technisch: matchscore-berekening correct en snel, robuust bij edge cases, schaalbaar.
+
+**Plezier** — gebruikservaring
+- Functioneel: duidelijke succesmomenten, geen frustrerende fouten, geen overbodige stappen.
+- Technisch: stabiel, snel, foutmeldingen begrijpelijk.
+
+**Toetsingsregel:** nieuwe feature vereist minstens 1 functioneel + het bijbehorende technisch criterium. Stabiliteit/performance heeft voorrang boven functionele waarde.
 
 ## Hoe te gebruiken
 - Dit bestand staat naast `index.html` in de repo.
