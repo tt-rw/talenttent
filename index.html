@@ -389,7 +389,6 @@
 
   .goal-card:hover { border-color: var(--accent); }
   .goal-card.selected { border-color: var(--accent); background: rgba(245,197,24,0.08); }
-  .goal-card .icon { font-size: 28px; margin-bottom: 8px; }
   .goal-card .goal-label { font-size: 13px; font-weight: 600; }
   .goal-card .goal-desc { font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 300; }
 
@@ -719,7 +718,6 @@
 
   .vibe-card:hover { border-color: #555; }
   .vibe-card.selected { border-color: var(--profile-color, var(--accent)); background: rgba(255,255,255,0.04); }
-  .vibe-card .vibe-emoji { font-size: 26px; margin-bottom: 6px; }
   .vibe-card .vibe-label { font-size: 12px; font-weight: 700; }
   .vibe-card .vibe-desc { font-size: 10px; color: var(--muted); margin-top: 3px; }
 
@@ -843,8 +841,6 @@
     line-height: 1.5;
   }
 
-  .media-tip .tip-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
-
   .media-tabs {
     display: flex;
     gap: 0;
@@ -906,7 +902,6 @@
     background: none;
   }
 
-  .drop-icon { font-size: 36px; margin-bottom: 10px; }
   .drop-label { font-size: 14px; color: var(--muted); font-weight: 300; }
   .drop-label strong { color: var(--text); }
   .drop-hint { font-size: 11px; color: var(--muted); margin-top: 6px; letter-spacing: 0.5px; }
@@ -1516,8 +1511,6 @@
     grid-column: 1/-1;
   }
 
-  .no-results-icon { font-size: 48px; margin-bottom: 16px; }
-
   /* Muzikant detail modal */
   .modal-overlay {
     position: fixed;
@@ -1882,22 +1875,18 @@
 
     <div class="goal-options" id="goalOptions">
       <div class="goal-card" onclick="selectGoal(this,'oefenen')">
-        <div class="icon">🎸</div>
         <div class="goal-label">Samen oefenen</div>
         <div class="goal-desc">Jammen, repeteren, skills verbeteren</div>
       </div>
       <div class="goal-card" onclick="selectGoal(this,'band')">
-        <div class="icon">🎵</div>
         <div class="goal-label">Band starten</div>
         <div class="goal-desc">Serieuze band opzetten met vaste leden</div>
       </div>
       <div class="goal-card" onclick="selectGoal(this,'optreden')">
-        <div class="icon">🎤</div>
         <div class="goal-label">Optreden</div>
         <div class="goal-desc">Optreden op festivals, evenementen, enz.</div>
       </div>
       <div class="goal-card" onclick="selectGoal(this,'alles')">
-        <div class="icon">🌟</div>
         <div class="goal-label">Alles!</div>
         <div class="goal-desc">Open voor alles wat muzikaal is</div>
       </div>
@@ -1963,7 +1952,6 @@
     <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Helemaal optioneel — maar een profiel met media valt op.</div>
 
     <div class="media-tip">
-      <span class="tip-icon">💡</span>
       <span><strong>Tip:</strong> Een actueel profiel met recente media trekt meer aandacht. Profielen die langer dan 6 maanden niet zijn bijgewerkt, zakken naar onderaan de zoekresultaten. Voeg toe wat je nu speelt, niet wat je drie jaar geleden speelde.</span>
     </div>
 
@@ -1979,7 +1967,6 @@
         ondragleave="this.classList.remove('drag-over')"
         ondrop="handleDrop(event)">
         <input type="file" accept="image/*,video/*" multiple autocomplete="off" onchange="handleFileSelect(this.files); this.value=''">
-        <div class="drop-icon">🎬</div>
         <div class="drop-label"><strong>Sleep bestanden hierheen</strong> of klik om te selecteren</div>
         <div class="drop-hint">Foto's (JPG, PNG) · Video's (MP4, MOV) · Max 50 MB per bestand</div>
       </div>
@@ -2400,10 +2387,10 @@ async function signOut() {
 // ─── Zoekfunctie ─────────────────────────────────────────────────────────────
 
 const GOAL_LABELS = {
-  oefenen: '🎸 Samen oefenen',
-  band:    '🎵 Band starten',
-  optreden:'🎤 Optreden',
-  alles:   '🌟 Alles!'
+  oefenen: 'Samen oefenen',
+  band:    'Band starten',
+  optreden:'Optreden',
+  alles:   'Alles!'
 };
 
 const LEVEL_LABELS = { basis: 'Basis', bijna: 'Bijna', podium: 'Podiumklaar' };
@@ -2476,7 +2463,7 @@ async function runSearch() {
     const mid = await getMyMusicianId();
     const selectFields = `
       id, fname, birth_date, city, zip, bio, goal,
-      profile_color, vibe_label, vibe_emoji, avatar_url, updated_at,
+      profile_color, vibe_label, avatar_url, updated_at,
       musician_instruments(instrument),
       musician_genres(genre),
       musician_songs(song_title, song_artist, mastery_level)
@@ -2567,7 +2554,6 @@ function renderSearchResults(musicians) {
   if (!musicians.length) {
     el.innerHTML = `
       <div class="no-results">
-        <div class="no-results-icon">🎵</div>
         <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen muzikanten gevonden</p>
         <p style="font-size:13px;">Pas je filters of zoekstraal aan, en controleer of je eigen postcode in je profiel klopt.</p>
       </div>`;
@@ -2604,7 +2590,7 @@ function musicianCardHTML(m) {
           <div>
             <div class="card-name">${m.fname}</div>
             <div class="card-meta">${age} jaar · ${m.city}</div>
-            ${m.vibe_emoji ? `<div style="font-size:11px;color:var(--muted);">${m.vibe_emoji} ${m.vibe_label}</div>` : ''}
+            ${m.vibe_label ? `<div style="font-size:11px;color:var(--muted);">${m.vibe_label}</div>` : ''}
             ${m.matchScore != null ? `<div style="font-size:11px;color:var(--accent);font-weight:700;margin-top:2px;">${Math.round(m.matchScore * 100)}% match${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>` : ''}
           </div>
         </div>
@@ -2635,7 +2621,7 @@ async function openMusicianModal(id) {
 
   const { data: m, error } = await db.from('musicians').select(`
     id, fname, birth_date, city, zip, bio, goal,
-    profile_color, vibe_label, vibe_emoji, avatar_url, updated_at,
+    profile_color, vibe_label, avatar_url, updated_at,
     musician_instruments(instrument),
     musician_genres(genre),
     musician_songs(song_title, song_artist, mastery_level),
@@ -2666,7 +2652,7 @@ async function openMusicianModal(id) {
   document.getElementById('musicianModalContent').innerHTML = `
     <div class="profile-header-band" style="background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;"></div>
     ${avatarHTML}
-    ${m.vibe_emoji ? `<div class="profile-vibe-badge" style="color:${col};border-color:${col};background:${col}18;">${m.vibe_emoji} ${m.vibe_label}</div>` : ''}
+    ${m.vibe_label ? `<div class="profile-vibe-badge" style="color:${col};border-color:${col};background:${col}18;">${m.vibe_label}</div>` : ''}
     <div class="profile-name">${m.fname}</div>
     <div class="profile-meta">${age} jaar · ${m.city}${m.zip ? ' · ' + m.zip : ''}</div>
     <div class="freshness-bar" style="margin-top:12px;margin-bottom:16px;">
@@ -2688,7 +2674,7 @@ async function openMusicianModal(id) {
       <div class="profile-media" style="margin-top:16px;">
         <div class="profile-media-title">Links</div>
         <div class="profile-media-grid">
-          ${links.map(l => `<a href="${l.url}" target="_blank" class="profile-link-chip">${l.platform || '🔗 Link'}</a>`).join('')}
+          ${links.map(l => `<a href="${l.url}" target="_blank" class="profile-link-chip">${l.platform || 'Link'}</a>`).join('')}
         </div>
       </div>` : ''}`;
 }
@@ -2715,7 +2701,6 @@ async function loadMyProfile() {
 
   if (error || !m) {
     el.innerHTML = `<div style="text-align:center;padding:60px 20px;">
-      <div style="font-size:48px;margin-bottom:16px;">🎸</div>
       <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Nog geen profiel</p>
       <p style="font-size:13px;color:var(--muted);margin-bottom:24px;">Maak je muzikantprofiel aan om gevonden te worden.</p>
       <button class="btn btn-primary" onclick="showView('register')">Profiel aanmaken →</button>
@@ -2765,7 +2750,7 @@ function renderCompletenessMeter(m) {
           </span>
         `).join('')}
       </div>
-      ${pct < 100 ? `<p style="font-size:11px;color:var(--muted);margin-top:10px;">💡 Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:11px;color:${col};margin-top:10px;font-weight:700;">🎉 Compleet profiel! Jij valt op.</p>`}
+      ${pct < 100 ? `<p style="font-size:11px;color:var(--muted);margin-top:10px;">Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:11px;color:${col};margin-top:10px;font-weight:700;">Compleet profiel! Jij valt op.</p>`}
     </div>`;
 }
 
@@ -2833,7 +2818,7 @@ function showSaving() {
 
 function showSaveSuccess() {
   document.getElementById('saveSpinner').style.display = 'none';
-  document.getElementById('saveTitle').textContent = '🎸 Profiel aangemaakt!';
+  document.getElementById('saveTitle').textContent = 'Profiel aangemaakt!';
   document.getElementById('saveMsg').textContent = 'Welkom bij The Talent Tent! Je wordt ingelogd...';
   setTimeout(() => {
     document.getElementById('saveOverlay').classList.remove('visible');
@@ -2956,7 +2941,7 @@ async function submitProfile() {
         musician_id: mid,
         media_type:  'link',
         url:         l.url,
-        platform:    detectPlatform(l.url).replace(/[▶📷🎵🟢🔗]\s/, ''),
+        platform:    detectPlatform(l.url),
       }));
 
     if (linkMedia.length) {
@@ -3267,7 +3252,7 @@ async function onTrackSearch(q) {
       ac.innerHTML = results.map(r =>
         `<div class="ac-item" onmousedown="addSong('${esc(r.title)}','${esc(selectedArtist.name)}')">
           <strong style="font-size:14px;">${highlight(r.title, q)}</strong>
-          <span style="font-size:12px;color:var(--muted);">🎸 ${selectedArtist.name}</span>
+          <span style="font-size:12px;color:var(--muted);">${selectedArtist.name}</span>
         </div>`
       ).join('');
 
@@ -3323,14 +3308,14 @@ const PROFILE_COLORS = [
 ];
 
 const VIBES = [
-  { emoji: '🤘', label: 'De Rocker', desc: 'Hard, luid, live' },
-  { emoji: '🎭', label: 'De Performer', desc: 'Born to be on stage' },
-  { emoji: '🎧', label: 'De Producer', desc: 'Beats & studio-vibes' },
-  { emoji: '🎸', label: 'De Jammer', desc: 'Improv & freestyle' },
-  { emoji: '🧠', label: 'De Perfectionist', desc: 'Elke noot moet kloppen' },
-  { emoji: '🌊', label: 'De Relaxte', desc: 'Spelen om te spelen' },
-  { emoji: '✍️', label: 'De Songwriter', desc: 'Eigen nummers schrijven' },
-  { emoji: '🔥', label: 'De Energiebom', desc: 'Altijd aan, altijd vol' },
+  { label: 'De Rocker', desc: 'Hard, luid, live' },
+  { label: 'De Performer', desc: 'Born to be on stage' },
+  { label: 'De Producer', desc: 'Beats & studio-vibes' },
+  { label: 'De Jammer', desc: 'Improv & freestyle' },
+  { label: 'De Perfectionist', desc: 'Elke noot moet kloppen' },
+  { label: 'De Relaxte', desc: 'Spelen om te spelen' },
+  { label: 'De Songwriter', desc: 'Eigen nummers schrijven' },
+  { label: 'De Energiebom', desc: 'Altijd aan, altijd vol' },
 ];
 
 function init() {
@@ -3370,7 +3355,7 @@ function init() {
   VIBES.forEach(v => {
     const card = document.createElement('div');
     card.className = 'vibe-card';
-    card.innerHTML = `<div class="vibe-emoji">${v.emoji}</div><div class="vibe-label">${v.label}</div><div class="vibe-desc">${v.desc}</div>`;
+    card.innerHTML = `<div class="vibe-label">${v.label}</div><div class="vibe-desc">${v.desc}</div>`;
     card.onclick = () => {
       document.querySelectorAll('.vibe-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
@@ -3589,7 +3574,7 @@ function renderMediaGrid() {
     <div class="media-thumb">
       ${m.type === 'foto'
         ? `<img src="${m.url}" alt="${m.name}">`
-        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:28px;">🎬</div>`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Video</div>`
       }
       <div class="thumb-type">${m.type}</div>
       <button class="thumb-remove" onclick="removeMedia(${i})">✕</button>
@@ -3603,12 +3588,12 @@ function removeMedia(i) {
 }
 
 function detectPlatform(url) {
-  if (url.includes('youtube') || url.includes('youtu.be')) return '▶ YouTube';
-  if (url.includes('instagram')) return '📷 Instagram';
-  if (url.includes('soundcloud')) return '🎵 SoundCloud';
-  if (url.includes('tiktok')) return '🎵 TikTok';
-  if (url.includes('spotify')) return '🟢 Spotify';
-  return '🔗 Link';
+  if (url.includes('youtube') || url.includes('youtu.be')) return 'YouTube';
+  if (url.includes('instagram')) return 'Instagram';
+  if (url.includes('soundcloud')) return 'SoundCloud';
+  if (url.includes('tiktok')) return 'TikTok';
+  if (url.includes('spotify')) return 'Spotify';
+  return 'Link';
 }
 
 function addLinkRow() {
@@ -3620,7 +3605,7 @@ function renderLinksList() {
   const list = document.getElementById('linksList');
   list.innerHTML = state.mediaLinks.map((l,i) => `
     <div class="link-row">
-      <span class="link-type-badge">${l.url ? detectPlatform(l.url) : '🔗 Link'}</span>
+      <span class="link-type-badge">${l.url ? detectPlatform(l.url) : 'Link'}</span>
       <input type="url" value="${l.url}" placeholder="https://youtube.com/watch?v=..."
         oninput="state.mediaLinks[${i}].url=this.value; renderLinksList()" onblur="renderLinksList()">
       <button class="song-remove" onclick="removeLink(${i})">✕</button>
@@ -3766,7 +3751,7 @@ async function runBandSearch() {
 function renderBandSearchResults(bands) {
   const el = document.getElementById('bandSearchResults');
   if (!bands.length) {
-    el.innerHTML = `<div class="no-results"><div class="no-results-icon">🎵</div><p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen bands gevonden</p><p style="font-size:13px;">Pas je filters of zoekstraal aan, en controleer of je eigen postcode in je profiel klopt.</p></div>`;
+    el.innerHTML = `<div class="no-results"><p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen bands gevonden</p><p style="font-size:13px;">Pas je filters of zoekstraal aan, en controleer of je eigen postcode in je profiel klopt.</p></div>`;
     return;
   }
   const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
