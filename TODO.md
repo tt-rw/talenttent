@@ -29,8 +29,12 @@ Laatste update: 02 augustus 2026 (diepgaande PPP-scan, restpunten en bredere emo
 ---
 
 ## 🔜 Lopende onderwerpen
-- [ ] **Volgende grote upgrade (later oppakken, niet nu):** na inloggen direct naar "Mijn profiel" navigeren i.p.v. naar de landingspagina, incl. logisch/efficiënt/intuïtief proces (routing door de webapp) voor aanmaken profiel + matchingproces. Raakt navigatiestructuur/onboarding-flow, vereist eigen ontwerpafweging — bewust apart gehouden van de PPP-scan-fixes hierboven.
+- [ ] Volgende grote upgrade: maak onderscheid tussen data invoer (mijn profiel+mijn bands) , data uitvoer (profiel-pagina muzikant en bands) en de zoekfunctie (zoeken en zoekresultaten). 
+- [ ] de app-indeling wordt als volgt: 1. Homepage; 2. tab: Mijn Profiel; 3. tab: Mijn Bands; 4. tab: Zoeken; 5. tab: Over ons; 6. tab: Inloggen.
+- [ ] om gebruik van de zoekfunctie te maken en om profielpagina's te zien moet eerst worden ingelogd (en dus een profiel worden aangemaakt.
+- [ ] na inloggen direct naar "Mijn profiel" navigeren i.p.v. naar de landingspagina, incl. logisch/efficiënt/intuïtief proces (routing door de webapp) voor aanmaken profiel + matchingproces. Raakt navigatiestructuur/onboarding-flow, vereist eigen ontwerpafweging — bewust apart gehouden van de PPP-scan-fixes hierboven.
 - [ ] Nieuwe zoekcategorie: "Zoeken op setlist" — vraaggedreven (pull): iemand (bijv. een band die op korte termijn een vervanger nodig heeft) plaatst een zoekopdracht met gevraagd instrument + specifieke nummers/repertoire; muzikanten kunnen hierop reageren. Vereist waarschijnlijk een eigen (optioneel) repertoire/setlist per band, gekoppeld aan `band_wanted`. Aanbodgedreven (push, automatisch matchen + notificeren) is een mooi vervolgidee maar voorlopig te complex — zie backlog.
+- [ ] Hoe onderscheiden we echte van fake profielen? 
 - [ ] Contactfunctie (muzikanten kunnen elkaar benaderen)
 - [ ] Personalisatie (profiel/aanbevelingen)
 - [ ] E-mailprovider koppelen (voor als e-mailbevestiging weer aan moet, notificaties, etc.)
