@@ -1,6 +1,6 @@
 # The Talent Tent — TODO
 
-Laatste update: 02 augustus 2026 (diepgaande PPP-scan, restpunten en bredere emoji-opschoning afgerond)
+Laatste update: 03 augustus 2026 (profiel- en band-bewerkfunctionaliteit toegevoegd)
 
 ## 🎯 PPP-principe (intern ontwerpprincipe)
 
@@ -29,17 +29,14 @@ Laatste update: 02 augustus 2026 (diepgaande PPP-scan, restpunten en bredere emo
 ---
 
 ## 🔜 Lopende onderwerpen
-- [ ] Volgende grote upgrade: maak onderscheid tussen data invoer (mijn profiel+mijn bands) , data uitvoer (profiel-pagina muzikant en bands) en de zoekfunctie (zoeken en zoekresultaten). 
-- [ ] de app-indeling wordt als volgt: 1. Homepage; 2. tab: Mijn Profiel; 3. tab: Mijn Bands; 4. tab: Zoeken; 5. tab: Over ons; 6. tab: Inloggen.
-- [ ] om gebruik van de zoekfunctie te maken en om profielpagina's te zien moet eerst worden ingelogd (en dus een profiel worden aangemaakt.
-- [ ] na inloggen direct naar "Mijn profiel" navigeren i.p.v. naar de landingspagina, incl. logisch/efficiënt/intuïtief proces (routing door de webapp) voor aanmaken profiel + matchingproces. Raakt navigatiestructuur/onboarding-flow, vereist eigen ontwerpafweging — bewust apart gehouden van de PPP-scan-fixes hierboven.
 - [ ] Nieuwe zoekcategorie: "Zoeken op setlist" — vraaggedreven (pull): iemand (bijv. een band die op korte termijn een vervanger nodig heeft) plaatst een zoekopdracht met gevraagd instrument + specifieke nummers/repertoire; muzikanten kunnen hierop reageren. Vereist waarschijnlijk een eigen (optioneel) repertoire/setlist per band, gekoppeld aan `band_wanted`. Aanbodgedreven (push, automatisch matchen + notificeren) is een mooi vervolgidee maar voorlopig te complex — zie backlog.
-- [ ] Hoe onderscheiden we echte van fake profielen? 
 - [ ] Contactfunctie (muzikanten kunnen elkaar benaderen)
 - [ ] Personalisatie (profiel/aanbevelingen)
 - [ ] E-mailprovider koppelen (voor als e-mailbevestiging weer aan moet, notificaties, etc.)
 
 ## 💡 Backlog / ideeën
+- Hoe onderscheiden we echte van fake profielen? (geparkeerd op verzoek van Ronald, 02-08-2026 — mogelijk relevant i.c.m. e-mailbevestiging aanzetten, hierboven)
+- Per-profiel instelbare zichtbaarheid voor niet-leden (zoals Facebook/Instagram) — alternatief voor de huidige volledige login-verplichting bij zoeken, bewust niet nu gebouwd.
 - Tekst "Over ons" verbeteren — huidige tekst is een eerste versie, kwaliteit/toon nog verfijnen.
 - App moet altijd logisch en intuitief zijn. alle oplossingen moeten hieraan voldoen. 
 - E-mail reminder voor niveau update
@@ -53,8 +50,24 @@ Laatste update: 02 augustus 2026 (diepgaande PPP-scan, restpunten en bredere emo
 
 ## 🐛 Bekende bugs / aandachtspunten
 - e-mailbevestiging aanzetten
+- Geüploade foto's/video's (avatar + media-uploads) worden nergens écht opgeslagen — `URL.createObjectURL()` maakt alleen een tijdelijke, browser-lokale link die na herladen/sluiten van de pagina niet meer werkt. Er is geen Supabase Storage-koppeling. Ontdekt tijdens het bouwen van de profiel-bewerkfunctie (03-08-2026). Vereist een aparte sessie: Storage-bucket aanmaken, upload-policies instellen, `handleAvatarUpload()`/`handleFileSelect()` omzetten naar echte uploads. Media-**links** (YouTube/Instagram/etc.) werken wel gewoon, die zijn niet geraakt.
 
 ## ✅ Afgerond
+- [x] **"Profiel bewerken" en "Band bewerken" werkend gemaakt (03-08-2026):**
+  - **Profiel bewerken:** de knop op Mijn Profiel deed voorheen niets (geen prefill, altijd blokkerend geregeld). Nu: `editMyProfile()` haalt het bestaande profiel op en vult de volledige 6-staps-wizard vooraf in (naam, geboortedatum, postcode/plaats, bio, instrumenten, genres, repertoire+niveaus, doel, vibe-tag, profielkleur, media-links). E-mail/wachtwoord-sectie wordt verborgen in bewerkmodus (niet nodig/niet veilig om hier te wijzigen — wachtwoord wijzigen kan al via "Wachtwoord vergeten"). `submitProfile()` doet nu een UPDATE + ververst de koppeltabellen (instrumenten/genres/repertoire/media-links) i.p.v. altijd een nieuw profiel aan te maken.
+  - **Band bewerken:** nieuwe knop "Band bewerken" op elke bandkaart in Mijn Bands, **alleen zichtbaar voor de oprichter** (`founder_id`). Hergebruikt het bestaande "Nieuwe band"-formulier, nu met prefill + `saveBand()` die UPDATE i.p.v. INSERT doet wanneer er bewerkt wordt. Nieuwe `resetBandForm()` zorgt dat het formulier altijd leeg begint bij "+ Nieuwe band" en na Annuleren/opslaan (loste ook een klein bestaand slordigheidje op: Annuleren maakte de velden voorheen niet leeg).
+  - **Bugfix onderweg gevonden:** dezelfde `register`-guard uit de vorige sessie (currentUser && myMusicianId) blokkeerde ook het bewust binnenkomen om te bewerken. Nu uitgebreid met `&& !editingMusicianId`.
+  - **Bekende beperking (apart genoteerd, zie "Bekende bugs"):** geüploade foto's/video's kunnen niet worden bewerkt/teruggehaald, want die worden sowieso nergens echt opgeslagen (aparte, dieperliggende bug — zie hieronder). Media-**links** werken wel volledig, ook bij bewerken.
+- [x] **Grote upgrade: navigatie-herstructurering + login-verplichting (02-08-2026):**
+  - **Nieuwe navigatiestructuur:** Homepage / Mijn Profiel / Mijn Bands / Zoeken / Over ons / Inloggen — altijd allemaal zichtbaar, ongeacht login-status (was: aparte sets voor ingelogd/niet-ingelogd). "Inloggen" wisselt zelf naar "Uitloggen" na inloggen (direct uitloggen bij klik, geen bevestiging).
+  - **Muzikanten- en Bandenzoeken samengevoegd** tot één "Zoeken"-tab met een keuze-toggle erin (hergebruikt bestaande filters/matchscore-logica ongewijzigd, alleen de buitenkant is samengevoegd).
+  - **Login + profiel verplicht om te zoeken:** niet-ingelogde/profielloze bezoekers die op Zoeken/Mijn Profiel/Mijn Bands klikken krijgen een vriendelijke toast en worden doorgestuurd (naar inloggen, of naar profiel-aanmaken als er wel een account maar nog geen profiel is). Bewuste keuze (advies gegeven, Ronald akkoord): volledig dichtgezet i.p.v. gedeeltelijke previews voor niet-leden — datakwaliteit weegt nu zwaarder dan bereik. Per-profiel-zichtbaarheid (zoals Facebook/Instagram) is een idee voor later, bewust niet nu gebouwd.
+  - **Landingspagina vereenvoudigd:** directe "Muzikanten zoeken"-knop en de "Muzikant zoeken"/"Band zoeken"-kaarten verwijderd (vervallen door de nieuwe Zoeken-tab); "Profiel aanmaken" blijft de hoofd-CTA. Homepage blijft ook voor ingelogde gebruikers bereikbaar (logo + nieuwe "Homepage"-tab).
+  - **Redirect na inloggen/registreren:** in beide gevallen (bestaande gebruiker die inlogt, én net-aangemaakt profiel) direct naar "Mijn Profiel" i.p.v. de landingspagina — nudge om het profiel up-to-date te houden.
+  - **Opgeruimd:** oude avatar/gebruikersmenu (navUser-dropdown) volledig vervangen door de nieuwe platte tabstructuur; anonieme-fallback-zoekpaden in `runSearch()`/`runBandSearch()` verwijderd (kon toch niet meer voorkomen); drie resterende rauwe technische foutmeldingen (`signIn()`, `forgotPassword()`, `saveNewPassword()`) alsnog door `friendlyErrorMessage()` gehaald.
+  - **Bugfix onderweg gevonden:** de guard die het "register"-scherm blokkeerde voor ingelogde gebruikers (`currentUser` check) hield geen rekening met "wel ingelogd, nog geen profiel" — zou de nieuwe verplichte-profiel-flow in een oneindige lus laten belanden. Nu gecorrigeerd naar een check op daadwerkelijk bestaand profiel (`currentUser && myMusicianId`).
+  - **Gevonden, niet opgelost (bestond al vóór deze upgrade, apart genoteerd):** de knop "Profiel bewerken" op Mijn Profiel doet momenteel niets — het bewerk-scherm heeft geen vooraf-invullogica en werd bovendien altijd geblokkeerd door de hierboven genoemde guard. Op zich een apart, groter punt (bestaand profiel laden + updaten i.p.v. aanmaken); zie "Bekende bugs" hieronder.
+  - **Bewust buiten scope gehouden (staat hieronder geparkeerd):** onderscheid data invoer/uitvoer/zoekfunctie als architectuurprincipe (was punt 1 van Ronalds notitie — komt terug zodra concrete features daarom vragen); "echte vs. fake profielen".
 - [x] Bredere emoji-opschoning (02-08-2026, vervolg op quick-fix 01-08-2026): alle resterende decoratieve emoji verwijderd uit `index.html` — Doel-kaarten (🎸🎵🎤🌟), Vibe-tags (🤘🎭🎧🎸🧠🌊✍️🔥), media-platformherkenning (`detectPlatform()`: YouTube/Instagram/SoundCloud/TikTok/Spotify tonen nu alleen platformnaam) en succes-/leegresultaat-illustraties (media-tip, upload-dropzone, video-thumbnail, "geen resultaten"-schermen, lege-profielstatus, save-succesmelding, artiestresultaat, completeness-hint). **Afgesproken aanpak met Ronald:** overal weglaten, ook bij Vibe-tags (alleen label + omschrijving, consistent met Doel-kaarten) i.p.v. vervangen door een alternatief icoon. Bijbehorende ongebruikte CSS-regels (`.icon`, `.vibe-emoji`, `.tip-icon`, `.drop-icon`, `.no-results-icon`) meteen opgeruimd. **Bugfix onderweg gevonden:** vibe-badge werd getoond op basis van `vibe_emoji` i.p.v. `vibe_label` — zonder fix zouden nieuwe profielen (die geen `vibe_emoji` meer krijgen) hun vibe-badge nooit meer tonen. Conditie nu op `vibe_label` gebaseerd; `vibe_emoji`-kolom blijft ongebruikt in de database staan (geen schema-wijziging nodig, altijd `null` vanaf nu).
 - [x] Diepgaande PPP-scan van `index.html` (02-08-2026): elk scherm/elke feature getoetst aan de aangescherpte PPP-principes. Aanleiding: PPP-principe is 01-08-2026 aangescherpt.
   - **(1) Presentatie — "Profielstatus volledig/actueel zichtbaar":** dode code gevonden — STEP 7 "Profiel preview" (`step6`) + `renderProfile()` (incl. completeness-meter) werd nooit aangeroepen sinds "direct naar homepagina na aanmaken" is doorgevoerd. Freshness-bar ("Bijgewerkt op...") zat al wél in "Mijn profiel" (via hergebruik `openMusicianModal()`). Actie: dode code (step6, dot6, `renderProfile()`) verwijderd; completeness-meter (herbouwd op echte Supabase-data i.p.v. registratie-state) toegevoegd aan `loadMyProfile()`, alleen zichtbaar voor de eigenaar.

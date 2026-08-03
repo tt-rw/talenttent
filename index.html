@@ -1169,12 +1169,6 @@
   .landing-step-num { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; background: var(--accent); color: #000; border-radius: 50%; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .landing-step-label { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
   .landing-step-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
-  .landing-paths { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
-  .landing-path { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 24px; cursor: pointer; transition: all 0.2s; text-align: center; }
-  .landing-path:hover { border-color: var(--accent); transform: translateY(-2px); }
-  .landing-path-title { font-family: 'Roboto', sans-serif; font-size: 24px; letter-spacing: 1px; margin-bottom: 8px; }
-  .landing-path-desc { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
-  .landing-path-btn { font-size: 13px; font-weight: 700; color: var(--accent); }
   .landing-login { text-align: center; font-size: 14px; color: var(--muted); padding: 24px 0; border-top: 1px solid var(--border); }
 
   /* ── Navigatie ───────────────────────────── */
@@ -1214,65 +1208,6 @@
   }
 
   .nav-spacer { flex: 1; }
-
-  .nav-user {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13px;
-    color: var(--muted);
-    position: relative;
-  }
-
-  .nav-user strong { color: var(--text); }
-
-  .nav-user-dot {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    background: var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Roboto', sans-serif;
-    font-size: 14px;
-    color: #000;
-    flex-shrink: 0;
-  }
-
-  .nav-user-trigger {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-  }
-
-  .nav-user-dropdown {
-    display: none;
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    min-width: 160px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 6px;
-    z-index: 30;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-  }
-
-  .nav-dropdown-item {
-    display: block;
-    width: 100%;
-    text-align: left;
-    background: none;
-    border: none;
-    color: var(--text);
-    font-family: 'Roboto', sans-serif;
-    font-size: 13px;
-    padding: 8px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-
-  .nav-dropdown-item:hover { background: var(--surface); }
 
   /* ── Auth scherm ─────────────────────────── */
   .auth-wrap {
@@ -1610,23 +1545,13 @@
 
 <!-- Navigatie -->
 <nav class="app-nav" id="appNav" style="display:flex;">
-  <button class="nav-btn" id="navMusicians" onclick="showView('search')">Muzikanten</button>
-  <button class="nav-btn" id="navBandsSearch" onclick="showView('bandsearch')">Bands</button>
+  <button class="nav-btn" id="navHome" onclick="showView('landing')">Homepage</button>
+  <button class="nav-btn" id="navMyProfile" onclick="requireLogin('myprofile')">Mijn Profiel</button>
+  <button class="nav-btn" id="navMyBands" onclick="requireLogin('bands')">Mijn Bands</button>
+  <button class="nav-btn" id="navSearch" onclick="requireProfileForSearch()">Zoeken</button>
   <button class="nav-btn" id="navAbout" onclick="showView('about')">Over ons</button>
   <div class="nav-spacer"></div>
-  <button class="nav-btn" id="navLogin" onclick="showView('auth')">Inloggen</button>
-  <button class="nav-btn" id="navMyBands" onclick="showView('bands')" style="display:none;">Mijn bands</button>
-  <div class="nav-spacer" id="navSpacerLoggedIn" style="display:none;"></div>
-  <div class="nav-user" id="navUser" style="display:none;">
-    <div class="nav-user-trigger" onclick="toggleProfileMenu(event)" title="Menu">
-      <div class="nav-user-dot" id="navUserDot">?</div>
-      <strong id="navUserName"></strong>
-    </div>
-    <div class="nav-user-dropdown" id="navUserDropdown">
-      <button class="nav-dropdown-item" id="navMyProfile" onclick="showView('myprofile'); closeProfileMenu();">Mijn profiel</button>
-      <button class="nav-dropdown-item" style="border-top:1px solid var(--border); margin-top:4px; padding-top:10px;" onclick="signOut(); closeProfileMenu();">Uitloggen</button>
-    </div>
-  </div>
+  <button class="nav-btn" id="navLogin" onclick="navLoginClick()">Inloggen</button>
 </nav>
 </div>
 
@@ -1639,7 +1564,6 @@
         <p class="landing-sub">The Talent Tent brengt muzikanten bij elkaar — voor jam-sessies, repetities en optredens. Vind muzikanten of bands bij jou in de buurt.</p>
         <div class="landing-cta">
           <button class="btn btn-primary landing-btn" onclick="showView('register')">Profiel aanmaken →</button>
-          <button class="btn btn-ghost landing-btn" onclick="showView('search')">Muzikanten zoeken</button>
         </div>
       </div>
     </div>
@@ -1649,18 +1573,6 @@
         <div class="landing-step"><div class="landing-step-num">1</div><div class="landing-step-label">Maak je profiel</div><div class="landing-step-desc">Voeg je instrument, genres en repertoire toe.</div></div>
         <div class="landing-step"><div class="landing-step-num">2</div><div class="landing-step-label">Zoek en match</div><div class="landing-step-desc">Zoek muzikanten of bands bij jou in de buurt.</div></div>
         <div class="landing-step"><div class="landing-step-num">3</div><div class="landing-step-label">Speel samen</div><div class="landing-step-desc">Neem contact op en maak muziek samen.</div></div>
-      </div>
-    </div>
-    <div class="landing-paths">
-      <div class="landing-path" onclick="showView('search')">
-        <div class="landing-path-title">Muzikant zoeken</div>
-        <div class="landing-path-desc">Vind iemand om mee te jammen, repeteren of een band mee te starten.</div>
-        <div class="landing-path-btn">Zoek muzikanten →</div>
-      </div>
-      <div class="landing-path" onclick="showView('bandsearch')">
-        <div class="landing-path-title">Band zoeken</div>
-        <div class="landing-path-desc">Zoek een bestaande band om bij aan te sluiten als nieuw lid.</div>
-        <div class="landing-path-btn">Zoek bands →</div>
       </div>
     </div>
     <div class="landing-login">
@@ -1764,24 +1676,26 @@
       </div>
     </div>
 
-    <div class="divider"></div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.</p>
+    <div id="regAuthSection">
+      <div class="divider"></div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.</p>
 
-    <div class="field-group">
-      <div class="field">
-        <label>E-mailadres <span class="req">*</span></label>
-        <input type="email" id="regEmail" placeholder="jouw@email.nl" autocomplete="off">
+      <div class="field-group">
+        <div class="field">
+          <label>E-mailadres <span class="req">*</span></label>
+          <input type="email" id="regEmail" placeholder="jouw@email.nl" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Wachtwoord <span class="req">*</span></label>
+          <input type="password" id="regPassword" placeholder="Minimaal 8 tekens" autocomplete="new-password">
+        </div>
       </div>
-      <div class="field">
-        <label>Wachtwoord <span class="req">*</span></label>
-        <input type="password" id="regPassword" placeholder="Minimaal 8 tekens" autocomplete="new-password">
-      </div>
-    </div>
 
-    <div class="field-group single">
-      <div class="field">
-        <label>Wachtwoord herhalen <span class="req">*</span></label>
-        <input type="password" id="regPassword2" placeholder="••••••••" autocomplete="new-password">
+      <div class="field-group single">
+        <div class="field">
+          <label>Wachtwoord herhalen <span class="req">*</span></label>
+          <input type="password" id="regPassword2" placeholder="••••••••" autocomplete="new-password">
+        </div>
       </div>
     </div>
 
@@ -1981,7 +1895,7 @@
 
     <div class="nav-buttons">
       <button class="btn btn-ghost" onclick="prevStep(5)">← Terug</button>
-      <button class="btn btn-primary" onclick="submitProfile()">Profiel aanmaken</button>
+      <button class="btn btn-primary" id="submitProfileBtn" onclick="submitProfile()">Profiel aanmaken</button>
     </div>
   </div>
 
@@ -2001,6 +1915,12 @@
 <!-- VIEW: Zoeken                                -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="app-view" id="view-search">
+  <div class="media-tabs" style="max-width:400px;margin:0 auto 24px;">
+    <button class="media-tab active" id="searchModeMusicianBtn" onclick="setSearchMode('musician')">Muzikanten</button>
+    <button class="media-tab" id="searchModeBandBtn" onclick="setSearchMode('band')">Bands</button>
+  </div>
+
+  <div id="searchModeMusician">
   <div class="search-wrap">
     <div class="search-filters">
       <div class="filter-title">Vind een muzikant</div>
@@ -2071,10 +1991,9 @@
 
     <div id="searchResults"></div>
   </div>
-</div>
+  </div>
 
-<!-- VIEW: Bands zoeken -->
-<div class="app-view" id="view-bandsearch">
+  <div id="searchModeBand" style="display:none;">
   <div class="search-wrap">
     <div class="search-filters">
       <div class="filter-title">Vind een band</div>
@@ -2109,6 +2028,7 @@
     </div>
     <div id="bandSearchResults"></div>
   </div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
@@ -2118,7 +2038,7 @@
   <div class="my-profile-wrap">
     <div id="myProfileContent"></div>
     <div class="profile-actions">
-      <button class="btn btn-primary" onclick="showView('register')">Profiel bewerken</button>
+      <button class="btn btn-primary" onclick="editMyProfile()">Profiel bewerken</button>
       <button class="btn btn-ghost" onclick="showView('bands')" id="myBandsBtn" style="display:none;">Mijn bands</button>
     </div>
   </div>
@@ -2136,7 +2056,7 @@
     </div>
     <div id="createBandForm" style="display:none;">
       <div class="search-filters" style="margin-bottom:28px;">
-        <div class="filter-title" style="font-size:20px;">Nieuwe band aanmaken</div>
+        <div class="filter-title" style="font-size:20px;" id="bandFormTitle">Nieuwe band aanmaken</div>
         <div class="field-group">
           <div class="field">
             <label>Bandnaam <span class="req">*</span></label>
@@ -2177,8 +2097,8 @@
           <div class="tag-grid" id="bandWantedGrid"></div>
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;">
-          <button class="btn btn-primary" onclick="saveBand()">Band aanmaken</button>
-          <button class="btn btn-ghost" onclick="document.getElementById('createBandForm').style.display='none'">Annuleren</button>
+          <button class="btn btn-primary" id="saveBandBtn" onclick="saveBand()">Band aanmaken</button>
+          <button class="btn btn-ghost" onclick="resetBandForm(); document.getElementById('createBandForm').style.display='none';">Annuleren</button>
         </div>
       </div>
     </div>
@@ -2277,13 +2197,7 @@ async function appInit() {
 }
 
 function onUserLoggedIn(user) {
-  document.getElementById('navLogin').style.display = 'none';
-  document.getElementById('navMyBands').style.display = 'block';
-  document.getElementById('navSpacerLoggedIn').style.display = 'flex';
-  document.getElementById('navUser').style.display = 'flex';
-  const userFname = user.user_metadata?.fname || user.email.split('@')[0];
-  document.getElementById('navUserName').textContent = userFname;
-  document.getElementById('navUserDot').textContent = userFname[0].toUpperCase();
+  document.getElementById('navLogin').textContent = 'Uitloggen';
   showView('myprofile');
 
   const userFname2 = user.user_metadata?.fname;
@@ -2298,31 +2212,52 @@ function onUserLoggedIn(user) {
 }
 
 function onUserLoggedOut() {
-  document.getElementById('navMusicians').style.display = 'block';
-  document.getElementById('navBandsSearch').style.display = 'block';
-  document.getElementById('navLogin').style.display = 'block';
-  document.getElementById('navMyBands').style.display = 'none';
-  document.getElementById('navSpacerLoggedIn').style.display = 'none';
-  document.getElementById('navUser').style.display = 'none';
-  closeProfileMenu();
+  document.getElementById('navLogin').textContent = 'Inloggen';
   myMusicianId = null;
   showView('landing');
 }
 
 // ─── Navigatie ───────────────────────────────────────────────────────────────
 
-function toggleProfileMenu(event) {
-  event.stopPropagation();
-  const dd = document.getElementById('navUserDropdown');
-  dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+function navLoginClick() {
+  if (currentUser) { signOut(); } else { showView('auth'); }
 }
 
-function closeProfileMenu() {
-  const dd = document.getElementById('navUserDropdown');
-  if (dd) dd.style.display = 'none';
+// Login vereist voor Mijn Profiel / Mijn Bands (pagina's zelf tonen nette
+// lege-staat als er nog geen profiel is — hier hoeft alleen ingelogd te zijn).
+function requireLogin(view) {
+  if (!currentUser) {
+    showToast('Log in of maak een profiel aan om verder te gaan.');
+    showView('auth');
+    return;
+  }
+  showView(view);
 }
 
-document.addEventListener('click', closeProfileMenu);
+// Zoeken vereist een eigen profiel (er moet iets zijn om op te matchen).
+async function requireProfileForSearch() {
+  if (!currentUser) {
+    showToast('Log in of maak een profiel aan om te zoeken.');
+    showView('auth');
+    return;
+  }
+  const mid = await getMyMusicianId();
+  if (!mid) {
+    showToast('Maak eerst je profiel aan om te kunnen zoeken.');
+    showView('register');
+    return;
+  }
+  showView('search');
+}
+
+function setSearchMode(mode) {
+  const isMusician = mode === 'musician';
+  document.getElementById('searchModeMusician').style.display = isMusician ? 'block' : 'none';
+  document.getElementById('searchModeBand').style.display = isMusician ? 'none' : 'block';
+  document.getElementById('searchModeMusicianBtn').classList.toggle('active', isMusician);
+  document.getElementById('searchModeBandBtn').classList.toggle('active', !isMusician);
+  if (!isMusician) initBandSearchFilters();
+}
 
 function showView(view) {
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
@@ -2332,16 +2267,16 @@ function showView(view) {
   if (el) el.classList.add('active');
 
   const navMap = {
-    landing: null, search: 'navMusicians', bandsearch: 'navBandsSearch',
+    landing: 'navHome', search: 'navSearch',
     about: 'navAbout', register: null, myprofile: 'navMyProfile', bands: 'navMyBands',
     auth: 'navLogin', reset: null
   };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
 
-  if (view === 'register' && currentUser) { showView('myprofile'); return; }
+  if (view === 'register' && currentUser && myMusicianId && !editingMusicianId) { showView('myprofile'); return; }
   if (view === 'myprofile') loadMyProfile();
   if (view === 'bands') loadMyBands();
-  if (view === 'bandsearch') initBandSearchFilters();
+  if (view === 'search') initBandSearchFilters();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2376,7 +2311,7 @@ async function signIn() {
   if (!email || !password) { showAuthError('Vul je e-mailadres en wachtwoord in.'); return; }
 
   const { error } = await db.auth.signInWithPassword({ email, password });
-  if (error) { showAuthError('Inloggen mislukt: ' + error.message); return; }
+  if (error) { showAuthError(friendlyErrorMessage(error)); return; }
   // onAuthStateChange handelt de rest af
 }
 
@@ -2477,30 +2412,20 @@ async function runSearch() {
     let musicians;
     let matchInfo = {}; // id -> { distance_km, score, is_stale }
 
-    if (mid) {
-      // Matchscore + afstand ophalen via de centrale SQL-functie
-      const radius = parseFloat(document.getElementById('filterRadius').value) || 25;
-      const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians', {
-        searcher_id: mid, radius_km: radius
-      });
-      if (rpcErr) throw rpcErr;
+    // Zoeken vereist altijd een eigen profiel (afgedwongen vóór deze view getoond wordt).
+    const radius = parseFloat(document.getElementById('filterRadius').value) || 25;
+    const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians', {
+      searcher_id: mid, radius_km: radius
+    });
+    if (rpcErr) throw rpcErr;
 
-      if (!matches.length) { renderSearchResults([]); return; }
-      matches.forEach(m => { matchInfo[m.musician_id] = m; });
+    if (!matches.length) { renderSearchResults([]); return; }
+    matches.forEach(m => { matchInfo[m.musician_id] = m; });
 
-      const ids = matches.map(m => m.musician_id);
-      const { data, error } = await db.from('musicians').select(selectFields).in('id', ids);
-      if (error) throw error;
-      musicians = data;
-    } else {
-      // Geen eigen profiel (bijv. niet ingelogd) → geen matchscore/afstand mogelijk, terugvallen op lijst
-      let query = db.from('musicians').select(selectFields);
-      if (cityQuery) query = query.ilike('city', `%${cityQuery}%`);
-      if (nameQuery) query = query.ilike('fname', `%${nameQuery}%`);
-      const { data, error } = await query.order('updated_at', { ascending: false }).limit(50);
-      if (error) throw error;
-      musicians = data;
-    }
+    const ids = matches.map(m => m.musician_id);
+    const { data, error } = await db.from('musicians').select(selectFields).in('id', ids);
+    if (error) throw error;
+    musicians = data;
 
     // Client-side filters (naam, plaats, leeftijd, instrument, genre, doel)
     const ageMin = parseInt(document.getElementById('filterAgeMin').value) || 0;
@@ -2687,6 +2612,83 @@ function closeMusicianModal(e) {
 
 // ─── Mijn profiel laden ──────────────────────────────────────────────────────
 
+// Bestaand profiel laden in de registratiewizard om te bewerken (i.p.v. aan te maken).
+// Let op: geüploade foto's/video's kunnen niet worden teruggehaald — dit is een
+// aparte, bekende beperking (zie TODO.md), niet iets wat deze functie oplost.
+async function editMyProfile() {
+  const mid = await getMyMusicianId();
+  if (!mid) { showToast('Je hebt nog geen profiel om te bewerken.'); return; }
+
+  const { data: m, error } = await db.from('musicians').select(`
+    *, musician_instruments(instrument), musician_genres(genre),
+    musician_songs(song_title, song_artist, mastery_level),
+    musician_media(media_type, url, platform)
+  `).eq('id', mid).single();
+
+  if (error || !m) { showToast('Kon profiel niet laden.'); return; }
+
+  editingMusicianId = m.id;
+  state.fname         = m.fname || '';
+  state.lname         = m.lname || '';
+  state.birth_date    = fromISODate(m.birth_date);
+  state.zip           = m.zip || '';
+  state.city          = m.city || '';
+  state.bio           = m.bio || '';
+  state.goal          = m.goal || '';
+  state.profileColor  = m.profile_color || '#f5c518';
+  state.avatarUrl     = m.avatar_url || null;
+  state.vibe          = VIBES.find(v => v.label === m.vibe_label) || null;
+  state.instruments   = (m.musician_instruments || []).map(x => x.instrument);
+  state.genres        = (m.musician_genres || []).map(x => x.genre);
+  state.songs         = (m.musician_songs || []).map(s => ({ title: s.song_title, artist: s.song_artist, level: s.mastery_level }));
+  state.mediaFiles    = [];
+  state.mediaLinks    = (m.musician_media || []).filter(x => x.media_type === 'link').map(x => ({ url: x.url }));
+  postcodeResolved    = !!m.zip;
+
+  showView('register');
+  goTo(0);
+  document.getElementById('regAuthSection').style.display = 'none';
+  document.getElementById('submitProfileBtn').textContent = 'Wijzigingen opslaan';
+
+  document.getElementById('fname').value = state.fname;
+  document.getElementById('lname').value = state.lname;
+  document.getElementById('birth_date').value = state.birth_date;
+  document.getElementById('zip').value = state.zip;
+  document.getElementById('city').value = state.city;
+  document.getElementById('postcodeStatus').textContent = state.city ? `Gevonden: ${state.city}` : '';
+  document.getElementById('bio').value = state.bio;
+
+  document.querySelectorAll('#instrumentGrid .tag').forEach(t => {
+    t.classList.toggle('selected', state.instruments.includes(t.textContent));
+  });
+  document.querySelectorAll('#genreGrid .genre-tag').forEach(t => {
+    t.classList.toggle('selected', state.genres.includes(t.textContent));
+  });
+
+  renderSongs();
+  renderLinksList();
+  renderMediaGrid();
+
+  const goalOrder = ['oefenen', 'band', 'optreden', 'alles'];
+  const goalIdx = goalOrder.indexOf(state.goal);
+  document.querySelectorAll('.goal-card').forEach((c, i) => c.classList.toggle('selected', i === goalIdx));
+
+  const avatarPreview = document.getElementById('avatarPreview');
+  avatarPreview.innerHTML = `<span id="avatarInitials">${(state.fname[0] || '?').toUpperCase()}</span>`;
+  avatarPreview.style.borderColor = state.profileColor;
+  document.getElementById('avatarRemoveBtn').classList.remove('visible');
+
+  const swatches = document.querySelectorAll('.color-swatch');
+  PROFILE_COLORS.forEach((pc, i) => {
+    if (swatches[i]) swatches[i].classList.toggle('selected', pc.hex === state.profileColor);
+  });
+  document.getElementById('customColorInput').value = state.profileColor;
+  document.documentElement.style.setProperty('--profile-color', state.profileColor);
+
+  const vibeIdx = state.vibe ? VIBES.indexOf(state.vibe) : -1;
+  document.querySelectorAll('.vibe-card').forEach((c, i) => c.classList.toggle('selected', i === vibeIdx));
+}
+
 async function loadMyProfile() {
   if (!currentUser) return;
   const el = document.getElementById('myProfileContent');
@@ -2816,14 +2818,19 @@ function showSaving() {
   overlay.classList.add('visible');
 }
 
-function showSaveSuccess() {
+function showSaveSuccess(isEdit) {
   document.getElementById('saveSpinner').style.display = 'none';
-  document.getElementById('saveTitle').textContent = 'Profiel aangemaakt!';
-  document.getElementById('saveMsg').textContent = 'Welkom bij The Talent Tent! Je wordt ingelogd...';
+  if (isEdit) {
+    document.getElementById('saveTitle').textContent = 'Profiel bijgewerkt!';
+    document.getElementById('saveMsg').textContent = 'Je wijzigingen zijn opgeslagen.';
+  } else {
+    document.getElementById('saveTitle').textContent = 'Profiel aangemaakt!';
+    document.getElementById('saveMsg').textContent = 'Welkom bij The Talent Tent! Je gaat naar je profiel...';
+  }
   setTimeout(() => {
     document.getElementById('saveOverlay').classList.remove('visible');
-    showView('landing');
-  }, 2000);
+    showView('myprofile');
+  }, isEdit ? 1200 : 2000);
 }
 
 function showSaveError(msg) {
@@ -2857,35 +2864,16 @@ function goToLoginFromError() {
 
 async function submitProfile() {
   showSaving();
+  const wasEditing = !!editingMusicianId;
 
   try {
-    // 1. Account aanmaken
     let userId = currentUser?.id || null;
+    let mid;
 
-    if (!userId) {
-      const { data: authData, error: authErr } = await db.auth.signUp({
-        email:    state.regEmail,
-        password: state.regPassword,
-        options:  { data: { fname: state.fname } }
-      });
-      if (authErr) throw new Error(authErr.message);
-
-      // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief
-      const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
-        email:    state.regEmail,
-        password: state.regPassword
-      });
-      if (signInErr) throw new Error(signInErr.message);
-
-      userId = signInData.user?.id || authData.user?.id || null;
-      currentUser = signInData.user || authData.user;
-      if (!userId) throw new Error('Kon geen account aanmaken. Probeer het opnieuw.');
-    }
-
-    // 2. Hoofdprofiel opslaan
-    const { data: musician, error: mErr } = await db
-      .from('musicians')
-      .insert({
+    if (wasEditing) {
+      // Bewerken van bestaand profiel: update i.p.v. account/profiel aanmaken
+      mid = editingMusicianId;
+      const { error: uErr } = await db.from('musicians').update({
         fname:         state.fname,
         lname:         state.lname || null,
         birth_date:    toISODate(state.birth_date),
@@ -2897,13 +2885,60 @@ async function submitProfile() {
         vibe_label:    state.vibe?.label || null,
         vibe_emoji:    state.vibe?.emoji || null,
         avatar_url:    state.avatarUrl || null,
-        user_id:       userId,
-      })
-      .select()
-      .single();
+      }).eq('id', mid);
+      if (uErr) throw new Error(uErr.message);
 
-    if (mErr) throw new Error(mErr.message);
-    const mid = musician.id;
+      // Bestaande koppeltabellen legen, hieronder opnieuw vullen — eenvoudigste
+      // betrouwbare manier om toevoegingen/verwijderingen te verwerken.
+      await db.from('musician_instruments').delete().eq('musician_id', mid);
+      await db.from('musician_genres').delete().eq('musician_id', mid);
+      await db.from('musician_songs').delete().eq('musician_id', mid);
+      await db.from('musician_media').delete().eq('musician_id', mid).eq('media_type', 'link');
+    } else {
+      // 1. Account aanmaken
+      if (!userId) {
+        const { data: authData, error: authErr } = await db.auth.signUp({
+          email:    state.regEmail,
+          password: state.regPassword,
+          options:  { data: { fname: state.fname } }
+        });
+        if (authErr) throw new Error(authErr.message);
+
+        // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief
+        const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
+          email:    state.regEmail,
+          password: state.regPassword
+        });
+        if (signInErr) throw new Error(signInErr.message);
+
+        userId = signInData.user?.id || authData.user?.id || null;
+        currentUser = signInData.user || authData.user;
+        if (!userId) throw new Error('Kon geen account aanmaken. Probeer het opnieuw.');
+      }
+
+      // 2. Hoofdprofiel opslaan
+      const { data: musician, error: mErr } = await db
+        .from('musicians')
+        .insert({
+          fname:         state.fname,
+          lname:         state.lname || null,
+          birth_date:    toISODate(state.birth_date),
+          city:          state.city,
+          zip:           state.zip || null,
+          bio:           state.bio || null,
+          goal:          state.goal,
+          profile_color: state.profileColor,
+          vibe_label:    state.vibe?.label || null,
+          vibe_emoji:    state.vibe?.emoji || null,
+          avatar_url:    state.avatarUrl || null,
+          user_id:       userId,
+        })
+        .select()
+        .single();
+
+      if (mErr) throw new Error(mErr.message);
+      mid = musician.id;
+    }
 
     // 3. Instrumenten
     if (state.instruments.length) {
@@ -2950,7 +2985,8 @@ async function submitProfile() {
     }
 
     state.savedId = mid;
-    showSaveSuccess();
+    editingMusicianId = null;
+    showSaveSuccess(wasEditing);
 
   } catch (err) {
     console.error('Supabase fout:', err);
@@ -3074,6 +3110,7 @@ function applyResolvedCity(cityName, normalizedZip, statusEl, msg) {
 // ─── Postcode-opzoeking voor bands (zelfde aanpak als bij muzikanten) ────────
 
 let bandPostcodeResolved = false;
+let editingBandId = null;
 let bandPostcodeSearchTimeout;
 
 function applyResolvedBandCity(cityName, statusEl, msg) {
@@ -3140,6 +3177,14 @@ function toISODate(ddmmyyyy) {
   const [dd, mm, yyyy] = ddmmyyyy.split('-');
   return `${yyyy}-${mm}-${dd}`;
 }
+
+function fromISODate(iso) {
+  if (!iso) return '';
+  const [yyyy, mm, dd] = iso.split('-');
+  return `${dd}-${mm}-${yyyy}`;
+}
+
+let editingMusicianId = null;
 
 // ─── MusicBrainz twee-velden zoekfunctie ─────────────────────────────────────
 
@@ -3458,9 +3503,6 @@ function nextStep(from) {
     state.lname      = document.getElementById('lname').value.trim();
     state.birth_date = document.getElementById('birth_date').value.trim();
     state.bio        = document.getElementById('bio').value.trim();
-    state.regEmail   = document.getElementById('regEmail').value.trim();
-    state.regPassword = document.getElementById('regPassword').value;
-    const regPassword2 = document.getElementById('regPassword2').value;
 
     if (!state.fname || !state.lname || !state.birth_date) {
       showToast('Vul je voor- en achternaam en geboortedatum in.'); return;
@@ -3470,9 +3512,15 @@ function nextStep(from) {
     }
     const bdMatch = state.birth_date.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (!bdMatch) { showToast('Voer je geboortedatum in als DD-MM-JJJJ, bijv. 01-02-2001'); return; }
-    if (!state.regEmail) { showToast('Vul je e-mailadres in.'); return; }
-    if (!state.regPassword || state.regPassword.length < 8) { showToast('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
-    if (state.regPassword !== regPassword2) { showToast('Wachtwoorden komen niet overeen.'); return; }
+
+    if (!editingMusicianId) {
+      state.regEmail   = document.getElementById('regEmail').value.trim();
+      state.regPassword = document.getElementById('regPassword').value;
+      const regPassword2 = document.getElementById('regPassword2').value;
+      if (!state.regEmail) { showToast('Vul je e-mailadres in.'); return; }
+      if (!state.regPassword || state.regPassword.length < 8) { showToast('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
+      if (state.regPassword !== regPassword2) { showToast('Wachtwoorden komen niet overeen.'); return; }
+    }
   }
   if (from === 1) {
     if (!state.instruments.length) { showToast('Selecteer minimaal één instrument.'); return; }
@@ -3687,32 +3735,22 @@ async function runBandSearch() {
     let bands;
     let matchInfo = {}; // id -> { distance_km, score, is_stale }
 
-    if (mid) {
-      const radius = parseFloat(document.getElementById('filterBandRadius').value) || 25;
-      const { data: matches, error: rpcErr } = await db.rpc('tt_search_bands_for_musician', {
-        searcher_id: mid, radius_km: radius
-      });
-      if (rpcErr) throw rpcErr;
+    // Zoeken vereist altijd een eigen profiel (afgedwongen vóór deze view getoond wordt).
+    const radius = parseFloat(document.getElementById('filterBandRadius').value) || 25;
+    const { data: matches, error: rpcErr } = await db.rpc('tt_search_bands_for_musician', {
+      searcher_id: mid, radius_km: radius
+    });
+    if (rpcErr) throw rpcErr;
 
-      if (!matches.length) { renderBandSearchResults([]); return; }
-      matches.forEach(m => { matchInfo[m.band_id] = m; });
+    if (!matches.length) { renderBandSearchResults([]); return; }
+    matches.forEach(m => { matchInfo[m.band_id] = m; });
 
-      const ids = matches.map(m => m.band_id);
-      let query = db.from('bands').select(selectFields).in('id', ids);
-      if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
-      const { data, error } = await query;
-      if (error) throw error;
-      bands = data;
-    } else {
-      // Geen eigen profiel → geen matchscore/afstand mogelijk, terugvallen op lijst
-      let query = db.from('bands').select(selectFields);
-      if (cityQuery) query = query.ilike('city', `%${cityQuery}%`);
-      if (nameQuery) query = query.ilike('name', `%${nameQuery}%`);
-      if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
-      const { data, error } = await query.order('updated_at', { ascending: false }).limit(50);
-      if (error) throw error;
-      bands = data;
-    }
+    const ids = matches.map(m => m.band_id);
+    let query = db.from('bands').select(selectFields).in('id', ids);
+    if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
+    const { data, error } = await query;
+    if (error) throw error;
+    bands = data;
 
     const filtered = (bands || []).filter(b => {
       if (nameQuery && !(b.name || '').toLowerCase().includes(nameQuery)) return false;
@@ -3792,8 +3830,75 @@ async function getMyMusicianId() {
 
 function showCreateBandForm() {
   const form = document.getElementById('createBandForm');
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  const wasHidden = form.style.display === 'none' || !form.style.display;
+  if (wasHidden) {
+    resetBandForm();
+    form.style.display = 'block';
+  } else {
+    form.style.display = 'none';
+  }
   initBandForm();
+}
+
+// Zet het bandformulier terug naar lege 'nieuwe band'-staat.
+function resetBandForm() {
+  editingBandId = null;
+  bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff' };
+  bandPostcodeResolved = false;
+  const nameEl = document.getElementById('bandName');
+  const zipEl = document.getElementById('bandZip');
+  const cityEl = document.getElementById('bandCity');
+  const descEl = document.getElementById('bandDescription');
+  if (nameEl) nameEl.value = '';
+  if (zipEl) zipEl.value = '';
+  if (cityEl) cityEl.value = '';
+  if (descEl) descEl.value = '';
+  const statusEl = document.getElementById('bandPostcodeStatus');
+  if (statusEl) statusEl.textContent = '';
+  document.querySelectorAll('#bandGenreGrid .genre-tag, #bandWantedGrid .tag, #bandStatusGrid .tag').forEach(t => t.classList.remove('selected'));
+  const titleEl = document.getElementById('bandFormTitle');
+  const btnEl = document.getElementById('saveBandBtn');
+  if (titleEl) titleEl.textContent = 'Nieuwe band aanmaken';
+  if (btnEl) btnEl.textContent = 'Band aanmaken';
+}
+
+// Bestaande band laden in het formulier om te bewerken (alleen voor de oprichter).
+async function editBand(id) {
+  const { data: b, error } = await db.from('bands').select(`*, band_wanted(instrument)`).eq('id', id).single();
+  if (error || !b) { showToast('Kon band niet laden.'); return; }
+
+  editingBandId = id;
+  bandState = {
+    genres: [...(b.genres || [])],
+    status: b.status || 'zoekend',
+    wanted: (b.band_wanted || []).map(w => w.instrument),
+    color: b.profile_color || '#3ecfff'
+  };
+  bandPostcodeResolved = !!b.zip;
+
+  document.getElementById('createBandForm').style.display = 'block';
+  initBandForm();
+
+  document.getElementById('bandName').value = b.name || '';
+  document.getElementById('bandZip').value = b.zip || '';
+  document.getElementById('bandCity').value = b.city || '';
+  document.getElementById('bandPostcodeStatus').textContent = b.city ? `Gevonden: ${b.city}` : '';
+  document.getElementById('bandDescription').value = b.description || '';
+
+  document.querySelectorAll('#bandGenreGrid .genre-tag').forEach(t => {
+    t.classList.toggle('selected', bandState.genres.includes(t.textContent));
+  });
+  document.querySelectorAll('#bandWantedGrid .tag').forEach(t => {
+    t.classList.toggle('selected', bandState.wanted.includes(t.textContent));
+  });
+  const statusLabelMap = { zoekend: 'Zoekend naar leden', compleet: 'Band is compleet', inactief: 'Inactief' };
+  document.querySelectorAll('#bandStatusGrid .tag').forEach(t => {
+    t.classList.toggle('selected', t.textContent.trim() === statusLabelMap[bandState.status]);
+  });
+
+  document.getElementById('bandFormTitle').textContent = 'Band bewerken';
+  document.getElementById('saveBandBtn').textContent = 'Wijzigingen opslaan';
+  document.getElementById('createBandForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function initBandForm() {
@@ -3849,24 +3954,30 @@ async function saveBand() {
   if (!mid) { showToast('Maak eerst een muzikantprofiel aan.'); return; }
 
   try {
-    const { data: band, error: bErr } = await db.from('bands').insert({
-      name, city: normalizeCityName(city), zip,
-      description: desc || null, genres: bandState.genres,
-      status: bandState.status, founder_id: mid,
-    }).select().single();
-    if (bErr) throw bErr;
+    let bandId;
+    if (editingBandId) {
+      bandId = editingBandId;
+      const { error: uErr } = await db.from('bands').update({
+        name, city: normalizeCityName(city), zip,
+        description: desc || null, genres: bandState.genres,
+        status: bandState.status,
+      }).eq('id', bandId);
+      if (uErr) throw uErr;
+      await db.from('band_wanted').delete().eq('band_id', bandId);
+    } else {
+      const { data: band, error: bErr } = await db.from('bands').insert({
+        name, city: normalizeCityName(city), zip,
+        description: desc || null, genres: bandState.genres,
+        status: bandState.status, founder_id: mid,
+      }).select().single();
+      if (bErr) throw bErr;
+      bandId = band.id;
+      await db.from('band_members').insert({ band_id: bandId, musician_id: mid, role: 'Oprichter', status: 'bevestigd' });
+    }
 
-    await db.from('band_members').insert({ band_id: band.id, musician_id: mid, role: 'Oprichter', status: 'bevestigd' });
+    await db.from('band_wanted').insert(bandState.wanted.map(instrument => ({ band_id: bandId, instrument })));
 
-    await db.from('band_wanted').insert(bandState.wanted.map(instrument => ({ band_id: band.id, instrument })));
-
-    document.getElementById('bandName').value = '';
-    document.getElementById('bandZip').value = '';
-    document.getElementById('bandCity').value = '';
-    document.getElementById('bandPostcodeStatus').textContent = '';
-    bandPostcodeResolved = false;
-    document.getElementById('bandDescription').value = '';
-    bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff' };
+    resetBandForm();
     document.getElementById('createBandForm').style.display = 'none';
     loadMyBands();
   } catch(e) { showToast(friendlyErrorMessage(e)); }
@@ -3905,6 +4016,7 @@ async function loadMyBands() {
     const col = b.profile_color || '#3ecfff';
     const confirmed = (b.band_members||[]).filter(m => m.status === 'bevestigd');
     const wanted = (b.band_wanted||[]);
+    const isFounder = b.founder_id === mid;
     return `<div class="band-card">
       <div class="band-card-header" onclick="openBandModal('${b.id}')">
         <div class="band-avatar" style="background:${col};">${b.name.slice(0,2).toUpperCase()}</div>
@@ -3913,6 +4025,7 @@ async function loadMyBands() {
           <div class="band-meta">${b.city||''}${b.city&&b.genres?.length?' · ':''}${(b.genres||[]).slice(0,2).join(', ')}</div>
         </div>
         <span class="band-status-badge band-status-${b.status}">${statusLabels[b.status]||b.status}</span>
+        ${isFounder ? `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); editBand('${b.id}');">Band bewerken</button>` : ''}
       </div>
       <div class="band-card-body">
         ${b.description ? `<p style="font-size:13px;color:var(--muted);margin-bottom:12px;font-style:italic;">"${b.description}"</p>` : ''}
@@ -3972,7 +4085,7 @@ async function forgotPassword() {
   const { error } = await db.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://tt-rw.github.io/talenttent/'
   });
-  if (error) { showAuthError('Fout: ' + error.message); return; }
+  if (error) { showAuthError(friendlyErrorMessage(error)); return; }
   showAuthSuccess('✓ Herstelmail verstuurd! Controleer je inbox.');
 }
 
@@ -3986,7 +4099,7 @@ async function saveNewPassword() {
   if (pw1.length < 8) { err.textContent = 'Minimaal 8 tekens.'; err.classList.add('visible'); return; }
   if (pw1 !== pw2) { err.textContent = 'Wachtwoorden komen niet overeen.'; err.classList.add('visible'); return; }
   const { error } = await db.auth.updateUser({ password: pw1 });
-  if (error) { err.textContent = 'Fout: ' + error.message; err.classList.add('visible'); return; }
+  if (error) { err.textContent = friendlyErrorMessage(error); err.classList.add('visible'); return; }
   suc.textContent = '✓ Wachtwoord opgeslagen!';
   suc.classList.add('visible');
   setTimeout(() => showView('myprofile'), 2000);
