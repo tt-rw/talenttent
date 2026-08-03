@@ -1094,6 +1094,33 @@
     pointer-events: all;
   }
 
+  /* ── Toast (niet-blokkerende foutmelding, i.p.v. alert()) ─────────────────── */
+
+  .app-toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    z-index: 1100;
+    max-width: 90%;
+    background: var(--surface, #161616);
+    border: 1px solid var(--accent2);
+    color: var(--text);
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+  }
+
+  .app-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   .save-box {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -1697,7 +1724,6 @@
     <div class="step-dot" id="dot3"></div>
     <div class="step-dot" id="dot4"></div>
     <div class="step-dot" id="dot5"></div>
-    <div class="step-dot" id="dot6"></div>
     <span class="step-label" id="stepLabel">Stap 1 van 6</span>
   </div>
 
@@ -1938,7 +1964,7 @@
 
     <div class="media-tip">
       <span class="tip-icon">💡</span>
-      <span><strong>Tip:</strong> Een actueel profiel met recente media trekt meer aandacht. Muzikanten die regelmatig updaten krijgen voorrang in zoekresultaten. Voeg toe wat je nu speelt, niet wat je drie jaar geleden speelde.</span>
+      <span><strong>Tip:</strong> Een actueel profiel met recente media trekt meer aandacht. Profielen die langer dan 6 maanden niet zijn bijgewerkt, zakken naar onderaan de zoekresultaten. Voeg toe wat je nu speelt, niet wat je drie jaar geleden speelde.</span>
     </div>
 
     <div class="media-tabs">
@@ -1969,28 +1995,6 @@
     <div class="nav-buttons">
       <button class="btn btn-ghost" onclick="prevStep(5)">← Terug</button>
       <button class="btn btn-primary" onclick="submitProfile()">Profiel aanmaken</button>
-    </div>
-  </div>
-
-  <!-- STEP 7: Profiel preview -->
-  <div class="panel" id="step6">
-    <div class="success-banner">
-      <span class="success-icon">🎸</span>
-      <div class="success-title">Je staat er op!</div>
-      <div class="success-sub">Zo zien andere muzikanten jouw profiel</div>
-    </div>
-
-    <div class="divider"></div>
-
-    <div class="profile-preview" id="profilePreview">
-      <!-- filled by JS -->
-    </div>
-
-    <div style="margin-top:24px; text-align:center;">
-      <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">Klaar om muzikanten te vinden?</p>
-      <button class="btn btn-primary" style="width:100%; font-size:15px; padding:16px;" onclick="alert('Zoekfunctie — volgende fase!')">
-        Muzikanten zoeken
-      </button>
     </div>
   </div>
 
@@ -2234,6 +2238,8 @@
 </div>
 
 <!-- Muzikant detail modal -->
+<div class="app-toast" id="appToast"></div>
+
 <div class="modal-overlay" id="musicianModal" onclick="closeMusicianModal(event)">
   <div class="modal-box" id="musicianModalBox">
     <button class="modal-close" onclick="document.getElementById('musicianModal').classList.remove('visible')">✕</button>
@@ -2551,7 +2557,7 @@ async function runSearch() {
     renderSearchResults(filtered);
 
   } catch(e) {
-    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--accent2);">Fout bij zoeken: ${e.message}</div>`;
+    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--accent2);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
 }
 
@@ -2720,13 +2726,87 @@ async function loadMyProfile() {
   // Render profiel (hergebruik modal content logica)
   await openMusicianModal(m.id);
   const content = document.getElementById('musicianModalContent').innerHTML;
-  el.innerHTML = content;
+  el.innerHTML = content + renderCompletenessMeter(m);
   document.getElementById('musicianModal').classList.remove('visible');
   const bandsBtn = document.getElementById('myBandsBtn');
   if (bandsBtn) bandsBtn.style.display = 'inline-flex';
 }
 
+// Profielvolledigheid — alleen zichtbaar voor de eigenaar op "Mijn profiel"
+// (Presentatie: profielstatus direct zichtbaar). Gebaseerd op echte opgeslagen
+// data, niet op tijdelijke registratie-state.
+function renderCompletenessMeter(m) {
+  const col = m.profile_color || '#f5c518';
+  const checks = [
+    { done: !!m.avatar_url,                    label: 'Profielfoto' },
+    { done: (m.bio || '').length > 20,         label: 'Bio' },
+    { done: (m.musician_instruments||[]).length > 0, label: 'Instrument' },
+    { done: (m.musician_genres||[]).length > 0,      label: 'Genre' },
+    { done: (m.musician_songs||[]).length >= 3,      label: '3+ nummers' },
+    { done: (m.musician_media||[]).length > 0,       label: 'Media' },
+    { done: !!m.vibe_label,                    label: 'Vibe-tag' },
+  ];
+  const doneCnt = checks.filter(c => c.done).length;
+  const pct = Math.round((doneCnt / checks.length) * 100);
+
+  return `
+    <div id="completenessMeter" class="completeness-wrap" style="margin-top:24px;">
+      <div class="completeness-header">
+        <span class="completeness-label">Profiel volledigheid</span>
+        <span class="completeness-pct" style="color:${col};">${pct}%</span>
+      </div>
+      <div class="completeness-track">
+        <div class="completeness-fill" style="width:${pct}%; background:${col};"></div>
+      </div>
+      <div class="completeness-items">
+        ${checks.map(c => `
+          <span class="comp-item ${c.done ? 'done' : 'pending'}" style="${c.done ? `border-color:${col};color:${col};` : ''}">
+            ${c.done ? '✓' : '○'} ${c.label}
+          </span>
+        `).join('')}
+      </div>
+      ${pct < 100 ? `<p style="font-size:11px;color:var(--muted);margin-top:10px;">💡 Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:11px;color:${col};margin-top:10px;font-weight:700;">🎉 Compleet profiel! Jij valt op.</p>`}
+    </div>`;
+}
+
 // ─── Hulpfuncties ────────────────────────────────────────────────────────────
+
+// Niet-blokkerende melding i.p.v. alert() — Plezier: licht en leuk, geen
+// onderbrekende technische pop-up. Verdwijnt vanzelf na een paar seconden.
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('appToast');
+  if (!el) { console.warn('Toast:', msg); return; }
+  el.textContent = msg;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), 3500);
+}
+
+// Vertaalt technische fouten (Supabase/netwerk) naar begrijpelijke NL-tekst.
+// Plezier-principe: foutmeldingen moeten vriendelijk zijn, geen technisch jargon.
+// De volledige technische fout blijft altijd gelogd voor debugging.
+function friendlyErrorMessage(err) {
+  const msg = (err && err.message) ? err.message : String(err || '');
+  console.error('Technische foutmelding:', msg);
+
+  if (/already registered|already exists/i.test(msg)) {
+    return 'Er bestaat al een account met dit e-mailadres.';
+  }
+  if (/failed to fetch|network|networkerror/i.test(msg)) {
+    return 'Geen verbinding kunnen maken. Controleer je internetverbinding en probeer het opnieuw.';
+  }
+  if (/JWT|token|session|auth/i.test(msg)) {
+    return 'Je sessie is verlopen. Log opnieuw in en probeer het nog eens.';
+  }
+  if (/duplicate key|unique constraint/i.test(msg)) {
+    return 'Dit bestaat al. Kies een andere naam en probeer het opnieuw.';
+  }
+  if (/permission denied|rls/i.test(msg)) {
+    return 'Je hebt geen toestemming voor deze actie.';
+  }
+  return 'Er ging iets mis. Probeer het opnieuw.';
+}
 
 function calcAgeFromISO(isoDate) {
   if (!isoDate) return 0;
@@ -2777,7 +2857,7 @@ function showSaveError(msg) {
   }
 
   document.getElementById('saveMsg').innerHTML =
-    `Er ging iets mis:<br><span style="color:#ff4d4d;font-size:12px;">${msg}</span><br><br>
+    `Er ging iets mis:<br><span style="color:#ff4d4d;font-size:12px;">${friendlyErrorMessage(msg)}</span><br><br>
      <button class="btn btn-ghost" style="margin-top:8px;" onclick="document.getElementById('saveOverlay').classList.remove('visible')">Sluiten</button>`;
 }
 
@@ -3260,7 +3340,7 @@ function init() {
     const t = document.createElement('div');
     t.className = 'tag';
     t.textContent = i;
-    t.onclick = () => { toggleTag(t, i, state.instruments); updateCompleteness(); };
+    t.onclick = () => { toggleTag(t, i, state.instruments); };
     ig.appendChild(t);
   });
 
@@ -3270,7 +3350,7 @@ function init() {
     const t = document.createElement('div');
     t.className = 'genre-tag';
     t.textContent = g;
-    t.onclick = () => { toggleTag(t, g, state.genres); updateCompleteness(); };
+    t.onclick = () => { toggleTag(t, g, state.genres); };
     gg.appendChild(t);
   });
 
@@ -3295,7 +3375,6 @@ function init() {
       document.querySelectorAll('.vibe-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       state.vibe = v;
-      updateCompleteness();
     };
     vg.appendChild(card);
   });
@@ -3305,11 +3384,9 @@ function init() {
     const v = document.getElementById('fname').value.trim();
     document.getElementById('avatarInitials').textContent = v ? v.slice(0,1).toUpperCase() : '?';
     state.fname = v;
-    updateCompleteness();
   });
   document.getElementById('bio').addEventListener('input', () => {
     state.bio = document.getElementById('bio').value.trim();
-    updateCompleteness();
   });
 }
 
@@ -3341,7 +3418,6 @@ function addSong(title, artist) {
   closeAC('acArtistList');
   selectedArtist = null;
   renderSongs();
-  updateCompleteness();
   document.getElementById('artistSearch').focus();
 }
 
@@ -3379,7 +3455,6 @@ function setLevel(i, level) {
 function removeSong(i) {
   state.songs.splice(i,1);
   renderSongs();
-  updateCompleteness();
 }
 
 // ─── Goal ────────────────────────────────────────────────────────────────────
@@ -3403,24 +3478,24 @@ function nextStep(from) {
     const regPassword2 = document.getElementById('regPassword2').value;
 
     if (!state.fname || !state.lname || !state.birth_date) {
-      alert('Vul je voor- en achternaam en geboortedatum in.'); return;
+      showToast('Vul je voor- en achternaam en geboortedatum in.'); return;
     }
     if (!state.zip || !postcodeResolved || !state.city) {
-      alert('Vul een geldige postcode in. Je woonplaats wordt automatisch bepaald zodra deze klopt.'); return;
+      showToast('Vul een geldige postcode in. Je woonplaats wordt automatisch bepaald zodra deze klopt.'); return;
     }
     const bdMatch = state.birth_date.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-    if (!bdMatch) { alert('Voer je geboortedatum in als DD-MM-JJJJ, bijv. 01-02-2001'); return; }
-    if (!state.regEmail) { alert('Vul je e-mailadres in.'); return; }
-    if (!state.regPassword || state.regPassword.length < 8) { alert('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
-    if (state.regPassword !== regPassword2) { alert('Wachtwoorden komen niet overeen.'); return; }
+    if (!bdMatch) { showToast('Voer je geboortedatum in als DD-MM-JJJJ, bijv. 01-02-2001'); return; }
+    if (!state.regEmail) { showToast('Vul je e-mailadres in.'); return; }
+    if (!state.regPassword || state.regPassword.length < 8) { showToast('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
+    if (state.regPassword !== regPassword2) { showToast('Wachtwoorden komen niet overeen.'); return; }
   }
   if (from === 1) {
-    if (!state.instruments.length) { alert('Selecteer minimaal één instrument.'); return; }
-    if (!state.genres.length) { alert('Selecteer minimaal één muziekstijl.'); return; }
+    if (!state.instruments.length) { showToast('Selecteer minimaal één instrument.'); return; }
+    if (!state.genres.length) { showToast('Selecteer minimaal één muziekstijl.'); return; }
   }
   if (from === 2) {
-    if (!state.songs.length) { alert('Voeg minimaal één nummer toe.'); return; }
-    if (state.songs.some(s => !s.level)) { alert('Kies voor elk nummer een beheersingsniveau.'); return; }
+    if (!state.songs.length) { showToast('Voeg minimaal één nummer toe.'); return; }
+    if (state.songs.some(s => !s.level)) { showToast('Kies voor elk nummer een beheersingsniveau.'); return; }
   }
   // step 3 (doel) is bewust optioneel — mag later nog worden ingevuld
   // step 4 (personalization) has no required fields
@@ -3441,7 +3516,7 @@ function goTo(step) {
     else if (i < step) d.classList.add('done');
   });
 
-  const labels = ['Stap 1 van 6','Stap 2 van 6','Stap 3 van 6','Stap 4 van 6','Stap 5 van 6','Stap 6 van 6','Profiel klaar!'];
+  const labels = ['Stap 1 van 6','Stap 2 van 6','Stap 3 van 6','Stap 4 van 6','Stap 5 van 6','Stap 6 van 6'];
   document.getElementById('stepLabel').textContent = labels[step] || '';
 
   state.currentStep = step;
@@ -3458,7 +3533,6 @@ function handleAvatarUpload(file) {
   preview.innerHTML = `<img src="${url}" alt="profielfoto">`;
   preview.style.borderColor = state.profileColor;
   document.getElementById('avatarRemoveBtn').classList.add('visible');
-  updateCompleteness();
 }
 
 function removeAvatar() {
@@ -3468,7 +3542,6 @@ function removeAvatar() {
   preview.innerHTML = `<span id="avatarInitials">${initials}</span>`;
   preview.style.borderColor = '';
   document.getElementById('avatarRemoveBtn').classList.remove('visible');
-  updateCompleteness();
 }
 
 function setProfileColor(hex, swatchEl) {
@@ -3483,35 +3556,6 @@ function setProfileColor(hex, swatchEl) {
   document.documentElement.style.setProperty('--profile-color', hex);
   // Sync custom color input
   document.getElementById('customColorInput').value = hex;
-}
-
-function updateCompleteness() {
-  const checks = [
-    { key: 'naam',       done: !!state.fname,                  label: 'Naam' },
-    { key: 'foto',       done: !!state.avatarUrl,              label: 'Profielfoto' },
-    { key: 'bio',        done: state.bio.length > 20,          label: 'Bio' },
-    { key: 'instrument', done: state.instruments.length > 0,   label: 'Instrument' },
-    { key: 'genre',      done: state.genres.length > 0,        label: 'Genre' },
-    { key: 'nummers',    done: state.songs.length >= 3,        label: '3+ nummers' },
-    { key: 'media',      done: state.mediaFiles.length > 0 || state.mediaLinks.some(l=>l.url), label: 'Media' },
-    { key: 'vibe',       done: !!state.vibe,                   label: 'Vibe-tag' },
-  ];
-
-  const done = checks.filter(c => c.done).length;
-  const pct = Math.round((done / checks.length) * 100);
-
-  const meter = document.getElementById('completenessMeter');
-  if (!meter) return;
-
-  meter.querySelector('.completeness-fill').style.width = pct + '%';
-  meter.querySelector('.completeness-pct').textContent = pct + '%';
-
-  const itemsEl = meter.querySelector('.completeness-items');
-  itemsEl.innerHTML = checks.map(c => `
-    <span class="comp-item ${c.done ? 'done' : 'pending'}">
-      ${c.done ? '✓' : '○'} ${c.label}
-    </span>
-  `).join('');
 }
 
 // ─── Media ───────────────────────────────────────────────────────────────────
@@ -3531,7 +3575,7 @@ function handleDrop(e) {
 
 function handleFileSelect(files) {
   Array.from(files).forEach(file => {
-    if (state.mediaFiles.length >= 8) { alert('Maximum 8 bestanden.'); return; }
+    if (state.mediaFiles.length >= 8) { showToast('Maximum 8 bestanden.'); return; }
     const url = URL.createObjectURL(file);
     const type = file.type.startsWith('video') ? 'video' : 'foto';
     state.mediaFiles.push({ name: file.name, url, type });
@@ -3587,116 +3631,6 @@ function renderLinksList() {
 function removeLink(i) {
   state.mediaLinks.splice(i,1);
   renderLinksList();
-}
-
-// ─── Profile Render ───────────────────────────────────────────────────────────
-
-function renderProfile() {
-  const col = state.profileColor;
-  const initials = state.fname.slice(0,1).toUpperCase();
-
-  const goalLabels = {
-    oefenen: '🎸 Samen oefenen',
-    band:    '🎵 Band starten',
-    optreden:'🎤 Optreden',
-    alles:   '🌟 Alles!'
-  };
-  const levelLabel = { basis: 'Basis', bijna: 'Bijna helemaal', podium: 'Podiumklaar' };
-
-  const songRows = state.songs.map(s => `
-    <div class="profile-song-row">
-      <span><strong>${s.title}</strong> — <span style="color:var(--muted)">${s.artist}</span></span>
-      <span class="level-pill ${s.level}">${levelLabel[s.level]}</span>
-    </div>
-  `).join('');
-
-  // Avatar HTML
-  const avatarHTML = state.avatarUrl
-    ? `<img class="profile-avatar-photo" src="${state.avatarUrl}" alt="profielfoto" style="border-color:${col};">`
-    : `<div class="profile-avatar-initials" style="background:${col}; border-color:${col};">${initials}</div>`;
-
-  // Vibe badge
-  const vibeHTML = state.vibe
-    ? `<div class="profile-vibe-badge" style="color:${col}; border-color:${col}; background:${col}18;">
-        ${state.vibe.emoji} ${state.vibe.label}
-      </div>`
-    : '';
-
-  // Media
-  const mediaPhotos = state.mediaFiles.filter(m => m.type === 'foto');
-  const mediaVideos = state.mediaFiles.filter(m => m.type === 'video');
-  const validLinks  = state.mediaLinks.filter(l => l.url.trim());
-  const hasMedia    = state.mediaFiles.length || validLinks.length;
-
-  const mediaSectionHTML = hasMedia ? `
-    <div class="profile-media">
-      <div class="profile-media-title">Media (${state.mediaFiles.length + validLinks.length})</div>
-      <div class="profile-media-grid">
-        ${mediaPhotos.map(m => `<div class="profile-media-thumb"><img src="${m.url}" alt="foto"></div>`).join('')}
-        ${mediaVideos.map(() => `<div class="profile-media-thumb" style="display:flex;align-items:center;justify-content:center;font-size:24px;">🎬</div>`).join('')}
-        ${validLinks.map(l => `<span class="profile-link-chip">${detectPlatform(l.url)}</span>`).join('')}
-      </div>
-    </div>
-  ` : '';
-
-  // Freshness
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
-
-  // Completeness checks for preview meter
-  const checks = [
-    { done: !!state.fname,                label: 'Naam' },
-    { done: !!state.avatarUrl,            label: 'Profielfoto' },
-    { done: state.bio.length > 20,        label: 'Bio' },
-    { done: state.instruments.length > 0, label: 'Instrument' },
-    { done: state.genres.length > 0,      label: 'Genre' },
-    { done: state.songs.length >= 3,      label: '3+ nummers' },
-    { done: hasMedia,                     label: 'Media' },
-    { done: !!state.vibe,                 label: 'Vibe-tag' },
-  ];
-  const doneCnt = checks.filter(c => c.done).length;
-  const pct = Math.round((doneCnt / checks.length) * 100);
-
-  document.getElementById('profilePreview').innerHTML = `
-    <div class="profile-header-band" style="background:${col};"></div>
-    ${avatarHTML}
-    ${vibeHTML}
-    <div class="profile-name">${state.fname}</div>
-    <div class="profile-meta">${calcAge(state.birth_date)} jaar · ${state.city}${state.zip ? ' · ' + state.zip : ''}</div>
-    <div class="freshness-bar" style="border-color:rgba(76,175,80,0.25);">
-      <div class="freshness-dot"></div>
-      <span>Profiel bijgewerkt op <strong>${dateStr}</strong></span>
-    </div>
-    <div class="profile-badges" style="margin-top:16px;">
-      ${state.instruments.map(i => `<span class="badge" style="border-color:${col};color:${col};">${i}</span>`).join('')}
-      ${state.genres.map(g => `<span class="badge genre">${g}</span>`).join('')}
-      <span class="badge">${goalLabels[state.goal]}</span>
-    </div>
-    ${state.bio ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${state.bio}"</p>` : ''}
-    <div class="profile-songs">
-      <div class="profile-songs-title">Repertoire (${state.songs.length} nummer${state.songs.length!==1?'s':''})</div>
-      ${songRows}
-    </div>
-    ${mediaSectionHTML}
-
-    <div id="completenessMeter" class="completeness-wrap" style="margin-top:24px;">
-      <div class="completeness-header">
-        <span class="completeness-label">Profiel volledigheid</span>
-        <span class="completeness-pct" style="color:${col};">${pct}%</span>
-      </div>
-      <div class="completeness-track">
-        <div class="completeness-fill" style="width:${pct}%; background:${col};"></div>
-      </div>
-      <div class="completeness-items">
-        ${checks.map(c => `
-          <span class="comp-item ${c.done ? 'done' : 'pending'}" style="${c.done ? `border-color:${col};color:${col};` : ''}">
-            ${c.done ? '✓' : '○'} ${c.label}
-          </span>
-        `).join('')}
-      </div>
-      ${pct < 100 ? `<p style="font-size:11px;color:var(--muted);margin-top:10px;">💡 Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:11px;color:${col};margin-top:10px;font-weight:700;">🎉 Compleet profiel! Jij valt op.</p>`}
-    </div>
-  `;
 }
 
 // ─── Band zoekfunctie ────────────────────────────────────────────────────────
@@ -3825,7 +3759,7 @@ async function runBandSearch() {
 
     renderBandSearchResults(filtered);
   } catch(e) {
-    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--accent2);">Fout: ${e.message}</div>`;
+    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--accent2);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
 }
 
@@ -3921,13 +3855,13 @@ async function saveBand() {
   const zip  = document.getElementById('bandZip').value.trim();
   const city = document.getElementById('bandCity').value.trim();
   const desc = document.getElementById('bandDescription').value.trim();
-  if (!name) { alert('Vul een bandnaam in.'); return; }
-  if (!zip || !bandPostcodeResolved || !city) { alert('Vul een geldige postcode in en wacht tot de woonplaats is gevonden.'); return; }
-  if (!bandState.genres.length) { alert('Selecteer minimaal 1 genre.'); return; }
-  if (!bandState.wanted.length) { alert('Selecteer minimaal 1 instrument dat de band zoekt.'); return; }
+  if (!name) { showToast('Vul een bandnaam in.'); return; }
+  if (!zip || !bandPostcodeResolved || !city) { showToast('Vul een geldige postcode in en wacht tot de woonplaats is gevonden.'); return; }
+  if (!bandState.genres.length) { showToast('Selecteer minimaal 1 genre.'); return; }
+  if (!bandState.wanted.length) { showToast('Selecteer minimaal 1 instrument dat de band zoekt.'); return; }
 
   const mid = await getMyMusicianId();
-  if (!mid) { alert('Maak eerst een muzikantprofiel aan.'); return; }
+  if (!mid) { showToast('Maak eerst een muzikantprofiel aan.'); return; }
 
   try {
     const { data: band, error: bErr } = await db.from('bands').insert({
@@ -3950,7 +3884,7 @@ async function saveBand() {
     bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff' };
     document.getElementById('createBandForm').style.display = 'none';
     loadMyBands();
-  } catch(e) { alert('Fout: ' + e.message); }
+  } catch(e) { showToast(friendlyErrorMessage(e)); }
 }
 
 async function loadMyBands() {
