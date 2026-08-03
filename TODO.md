@@ -1,6 +1,6 @@
 # The Talent Tent — TODO
 
-Laatste update: 03 augustus 2026 (profiel- en band-bewerkfunctionaliteit toegevoegd)
+Laatste update: 03 augustus 2026 (testronde-fixes + profiel verwijderen + bandleden toevoegen)
 
 ## 🎯 PPP-principe (intern ontwerpprincipe)
 
@@ -53,6 +53,21 @@ Laatste update: 03 augustus 2026 (profiel- en band-bewerkfunctionaliteit toegevo
 - Geüploade foto's/video's (avatar + media-uploads) worden nergens écht opgeslagen — `URL.createObjectURL()` maakt alleen een tijdelijke, browser-lokale link die na herladen/sluiten van de pagina niet meer werkt. Er is geen Supabase Storage-koppeling. Ontdekt tijdens het bouwen van de profiel-bewerkfunctie (03-08-2026). Vereist een aparte sessie: Storage-bucket aanmaken, upload-policies instellen, `handleAvatarUpload()`/`handleFileSelect()` omzetten naar echte uploads. Media-**links** (YouTube/Instagram/etc.) werken wel gewoon, die zijn niet geraakt.
 
 ## ✅ Afgerond
+- [x] **Zelfcontrole / kwaliteitsronde (03-08-2026)** — extra check op eigen werk na de testronde-fixes:
+  - **Echte bug gevonden en gefixt:** de vergrendeling van voornaam/achternaam/geboortedatum (readonly bij bewerken) bleef in dezelfde sessie ook "aan" staan bij het daarna aanmaken van een gloednieuw profiel — velden waren dan onterecht niet meer in te vullen. Centraal opgelost in `showView()`: bij elk bezoek aan het registratiescherm wordt de vergrendeling opnieuw bepaald op basis van of er daadwerkelijk wordt bewerkt.
+  - Dode code opgeruimd die overbleef na het verwijderen van de "Jouw look"-stap: `PROFILE_COLORS`-array en alle CSS voor de kleurenkiezer/vibe-grid (~15 regels, werden nergens meer gebruikt).
+  - `.band-card-header` mag nu wrappen (`flex-wrap`) zodat de 2 nieuwe knoppen ("Band bewerken", "+ Lid toevoegen") niet overlappen op smalle schermen.
+  - Verouderde code-comment gecorrigeerd (verwees naar de inmiddels verwijderde stap).
+  - Alle overige checks (navigatie, stap-volgorde 0-4, dode-code-scan, verplichte-featurechecklist, brace-/div-balans) kwamen schoon terug — geen verdere problemen gevonden.
+- [x] **Testronde-fixes + nieuwe features (03-08-2026):**
+  - Bugfix: "Anders" ontbrak bij muziekstijlen (stond al wel bij instrumenten) — toegevoegd.
+  - Bugfix: cursor sprong na nummer-selectie niet naar "Band of artiest" — `addSong()` gebruikt nu een micro-vertraagde focus zodat browser-bijwerkingen van het verbergen van het nummer-zoekveld de focus niet meer "stelen".
+  - **"Jouw look"-stap verwijderd** (backlog-item alsnog opgepakt): profielfoto-upload verplaatst naar pagina 1 (bij naam/postcode/plaats). Profielkleur-kiezer en vibe-tag-selectie volledig weggehaald — nieuwe profielen krijgen voortaan de standaardkleur; bestaande vibe-tags van eerdere profielen blijven gewoon zichtbaar. Wizard is nu 5 stappen i.p.v. 6. Completeness-meter aangepast (Vibe-tag-check verwijderd, anders nooit 100% haalbaar).
+  - **Bugfix gevonden tijdens testen:** Mijn Profiel liet bij elk bezoek een halve seconde de (verkeerde) detail-modal flitsen — `loadMyProfile()` opende die intern om content te hergebruiken. Opgelost door de render-logica te splitsen in een gedeelde `buildMusicianDetailHTML()`, zodat Mijn Profiel de modal niet meer aanraakt.
+  - **"Profiel verwijderen"** toegevoegd (met bevestigingsdialoog i.p.v. native browser-confirm) — verwijdert profiel + koppeltabellen + bandlidmaatschappen. Het inlog-account zelf blijft bestaan.
+  - **Basisgegevens vergrendeld:** voornaam, achternaam en geboortedatum zijn na aanmaken niet meer wijzigbaar bij "Profiel bewerken" (read-only, visueel ook zo gestyled).
+  - **Navigatie:** tabblad "Homepage" verwijderd (logo is en blijft de homepage-knop); "Over ons" staat nu naast Inloggen/Uitloggen.
+  - **Bandleden toevoegen:** nieuwe knop "+ Lid toevoegen" op elke bandkaart (alleen voor de oprichter) — zoekt live op naam binnen bestaande muzikantprofielen en voegt direct toe als lid (status "bevestigd"). **Bewuste vereenvoudiging, graag checken:** er is nog geen uitnodig/accepteer-stap — de oprichter kan dus iemand toevoegen zonder diens instemming. Prima om te testen, maar voor een echte lancering is een bevestigingsstap door het toegevoegde lid zelf waarschijnlijk wenselijk (aparte, latere uitbreiding).
 - [x] **"Profiel bewerken" en "Band bewerken" werkend gemaakt (03-08-2026):**
   - **Profiel bewerken:** de knop op Mijn Profiel deed voorheen niets (geen prefill, altijd blokkerend geregeld). Nu: `editMyProfile()` haalt het bestaande profiel op en vult de volledige 6-staps-wizard vooraf in (naam, geboortedatum, postcode/plaats, bio, instrumenten, genres, repertoire+niveaus, doel, vibe-tag, profielkleur, media-links). E-mail/wachtwoord-sectie wordt verborgen in bewerkmodus (niet nodig/niet veilig om hier te wijzigen — wachtwoord wijzigen kan al via "Wachtwoord vergeten"). `submitProfile()` doet nu een UPDATE + ververst de koppeltabellen (instrumenten/genres/repertoire/media-links) i.p.v. altijd een nieuw profiel aan te maken.
   - **Band bewerken:** nieuwe knop "Band bewerken" op elke bandkaart in Mijn Bands, **alleen zichtbaar voor de oprichter** (`founder_id`). Hergebruikt het bestaande "Nieuwe band"-formulier, nu met prefill + `saveBand()` die UPDATE i.p.v. INSERT doet wanneer er bewerkt wordt. Nieuwe `resetBandForm()` zorgt dat het formulier altijd leeg begint bij "+ Nieuwe band" en na Annuleren/opslaan (loste ook een klein bestaand slordigheidje op: Annuleren maakte de velden voorheen niet leeg).

@@ -645,82 +645,6 @@
   .avatar-remove-btn.visible { display: inline-block; }
   .avatar-remove-btn:hover { color: var(--accent2); border-color: var(--accent2); }
 
-  /* Color picker */
-  .color-picker-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 8px;
-  }
-
-  .color-swatch {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 3px solid transparent;
-    transition: transform 0.15s, border-color 0.15s;
-    position: relative;
-  }
-
-  .color-swatch:hover { transform: scale(1.15); }
-  .color-swatch.selected { border-color: #fff; transform: scale(1.15); }
-  .color-swatch.selected::after {
-    content: '✓';
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 700;
-    color: #000;
-  }
-
-  /* custom color input */
-  .color-custom-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-  }
-
-  .color-custom-wrap input[type=color] {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    border: 3px solid var(--border);
-    padding: 0;
-    cursor: pointer;
-    background: none;
-  }
-
-  .color-custom-wrap span {
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  /* Vibe tags */
-  .vibe-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 10px;
-    margin-top: 8px;
-  }
-
-  .vibe-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
-  }
-
-  .vibe-card:hover { border-color: #555; }
-  .vibe-card.selected { border-color: var(--profile-color, var(--accent)); background: rgba(255,255,255,0.04); }
-  .vibe-card .vibe-label { font-size: 12px; font-weight: 700; }
-  .vibe-card .vibe-desc { font-size: 10px; color: var(--muted); margin-top: 3px; }
-
   /* Completeness meter */
   .completeness-wrap {
     margin-top: 20px;
@@ -1512,7 +1436,7 @@
   /* ── Band kaarten ────────────────────────── */
   .band-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;transition:border-color 0.2s; }
   .band-card:hover { border-color:#444; }
-  .band-card-header { display:flex;align-items:center;gap:16px;padding:20px;cursor:pointer; }
+  .band-card-header { display:flex;align-items:center;gap:16px;padding:20px;cursor:pointer;flex-wrap:wrap; }
   .band-avatar { width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Roboto',sans-serif;font-size:24px;color:#000;flex-shrink:0; }
   .band-name { font-family:'Roboto',sans-serif;font-size:24px;letter-spacing:0.5px;line-height:1; }
   .band-meta { font-size:12px;color:var(--muted);margin-top:3px; }
@@ -1545,12 +1469,11 @@
 
 <!-- Navigatie -->
 <nav class="app-nav" id="appNav" style="display:flex;">
-  <button class="nav-btn" id="navHome" onclick="showView('landing')">Homepage</button>
   <button class="nav-btn" id="navMyProfile" onclick="requireLogin('myprofile')">Mijn Profiel</button>
   <button class="nav-btn" id="navMyBands" onclick="requireLogin('bands')">Mijn Bands</button>
   <button class="nav-btn" id="navSearch" onclick="requireProfileForSearch()">Zoeken</button>
-  <button class="nav-btn" id="navAbout" onclick="showView('about')">Over ons</button>
   <div class="nav-spacer"></div>
+  <button class="nav-btn" id="navAbout" onclick="showView('about')">Over ons</button>
   <button class="nav-btn" id="navLogin" onclick="navLoginClick()">Inloggen</button>
 </nav>
 </div>
@@ -1628,8 +1551,7 @@
     <div class="step-dot" id="dot2"></div>
     <div class="step-dot" id="dot3"></div>
     <div class="step-dot" id="dot4"></div>
-    <div class="step-dot" id="dot5"></div>
-    <span class="step-label" id="stepLabel">Stap 1 van 6</span>
+    <span class="step-label" id="stepLabel">Stap 1 van 5</span>
   </div>
 
   <!-- STEP 1: Persoonlijke info -->
@@ -1667,6 +1589,24 @@
         <div id="postcodeStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
       </div>
       <div class="field"></div>
+    </div>
+
+    <div class="field" style="margin-bottom:28px;">
+      <label>Profielfoto <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+      <div class="avatar-upload-area">
+        <div class="avatar-preview-wrap">
+          <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarInput').click()">
+            <span id="avatarInitials">?</span>
+          </div>
+          <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+        </div>
+        <div class="avatar-info">
+          <strong>Upload een foto van jezelf</strong>
+          <p>Een echte foto zorgt voor 3× meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
+          <button class="avatar-remove-btn" id="avatarRemoveBtn" onclick="removeAvatar()">Foto verwijderen</button>
+        </div>
+      </div>
+      <input type="file" accept="image/*" class="avatar-upload-input" id="avatarInput" autocomplete="off" onchange="handleAvatarUpload(this.files[0]); this.value=''">
     </div>
 
     <div class="field-group single">
@@ -1812,55 +1752,7 @@
     </div>
   </div>
 
-  <!-- STEP 5: Jouw look -->
-  <div class="panel" id="step4">
-    <div class="panel-title">Jouw look</div>
-    <div class="panel-sub">Maak je profiel écht van jou. Andere muzikanten zien dit als eerste.</div>
-
-    <!-- Profielfoto -->
-    <div class="field" style="margin-bottom:28px;">
-      <label>Profielfoto</label>
-      <div class="avatar-upload-area">
-        <div class="avatar-preview-wrap">
-          <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarInput').click()">
-            <span id="avatarInitials">?</span>
-          </div>
-          <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
-        </div>
-        <div class="avatar-info">
-          <strong>Upload een foto van jezelf</strong>
-          <p>Een echte foto zorgt voor 3× meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
-          <button class="avatar-remove-btn" id="avatarRemoveBtn" onclick="removeAvatar()">Foto verwijderen</button>
-        </div>
-      </div>
-      <input type="file" accept="image/*" class="avatar-upload-input" id="avatarInput" autocomplete="off" onchange="handleAvatarUpload(this.files[0]); this.value=''">
-    </div>
-
-    <!-- Profielkleur -->
-    <div class="field" style="margin-bottom:28px;">
-      <label>Profielkleur</label>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Kies een kleur die bij jou past. Die zie je overal terug in je profiel.</p>
-      <div class="color-picker-row" id="colorPickerRow"></div>
-      <div class="color-custom-wrap">
-        <input type="color" id="customColorInput" value="#f5c518" oninput="setProfileColor(this.value, null)">
-        <span>Of kies je eigen kleur</span>
-      </div>
-    </div>
-
-    <!-- Vibe tag -->
-    <div class="field">
-      <label>Jouw vibe <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;">(optioneel)</span></label>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Welk type muzikant ben jij?</p>
-      <div class="vibe-grid" id="vibeGrid"></div>
-    </div>
-
-    <div class="nav-buttons">
-      <button class="btn btn-ghost" onclick="prevStep(4)">← Terug</button>
-      <button class="btn btn-primary" onclick="nextStep(4)">Verder →</button>
-    </div>
-  </div>
-
-  <!-- STEP 6: Media -->
+  <!-- STEP 5: Media -->
   <div class="panel" id="step5">
     <div class="panel-title">Laat jezelf horen</div>
     <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Helemaal optioneel — maar een profiel met media valt op.</div>
@@ -1894,7 +1786,7 @@
     </div>
 
     <div class="nav-buttons">
-      <button class="btn btn-ghost" onclick="prevStep(5)">← Terug</button>
+      <button class="btn btn-ghost" onclick="prevStep(4)">← Terug</button>
       <button class="btn btn-primary" id="submitProfileBtn" onclick="submitProfile()">Profiel aanmaken</button>
     </div>
   </div>
@@ -2040,6 +1932,7 @@
     <div class="profile-actions">
       <button class="btn btn-primary" onclick="editMyProfile()">Profiel bewerken</button>
       <button class="btn btn-ghost" onclick="showView('bands')" id="myBandsBtn" style="display:none;">Mijn bands</button>
+      <button class="btn btn-ghost" style="color:var(--accent2);border-color:var(--accent2);" onclick="deleteMyProfile()">Profiel verwijderen</button>
     </div>
   </div>
 </div>
@@ -2162,6 +2055,27 @@
   </div>
 </div>
 
+<!-- Generieke bevestigingsmodal (bijv. profiel verwijderen) -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box" style="max-width:400px;">
+    <p id="confirmMessage" style="margin-bottom:24px;font-size:14px;"></p>
+    <div style="display:flex;gap:12px;">
+      <button class="btn btn-primary" id="confirmYesBtn" onclick="confirmModalYes()" style="background:var(--accent2);border-color:var(--accent2);">Ja, verwijderen</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('confirmModal').classList.remove('visible')">Annuleren</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bandlid toevoegen (alleen bestaande muzikantprofielen) -->
+<div class="modal-overlay" id="addMemberModal" onclick="if(event.target===this)this.classList.remove('visible')">
+  <div class="modal-box">
+    <button class="modal-close" onclick="document.getElementById('addMemberModal').classList.remove('visible')">✕</button>
+    <div class="filter-title" style="margin-bottom:16px;">Lid toevoegen</div>
+    <input type="text" id="memberSearchInput" placeholder="Zoek op naam..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:14px;margin-bottom:16px;">
+    <div id="memberSearchResults"></div>
+  </div>
+</div>
+
 <script>
 // ─── Supabase ────────────────────────────────────────────────────────────────
 
@@ -2267,13 +2181,24 @@ function showView(view) {
   if (el) el.classList.add('active');
 
   const navMap = {
-    landing: 'navHome', search: 'navSearch',
+    landing: null, search: 'navSearch',
     about: 'navAbout', register: null, myprofile: 'navMyProfile', bands: 'navMyBands',
     auth: 'navLogin', reset: null
   };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
 
   if (view === 'register' && currentUser && myMusicianId && !editingMusicianId) { showView('myprofile'); return; }
+  if (view === 'register') {
+    const locked = !!editingMusicianId;
+    ['fname', 'lname', 'birth_date'].forEach(id => {
+      const fld = document.getElementById(id);
+      if (fld) {
+        fld.readOnly = locked;
+        fld.style.cursor = locked ? 'not-allowed' : '';
+        fld.style.opacity = locked ? '0.85' : '';
+      }
+    });
+  }
   if (view === 'myprofile') loadMyProfile();
   if (view === 'bands') loadMyBands();
   if (view === 'search') initBandSearchFilters();
@@ -2538,26 +2463,11 @@ function musicianCardHTML(m) {
 
 // ─── Muzikant detail modal ───────────────────────────────────────────────────
 
-async function openMusicianModal(id) {
-  const modal = document.getElementById('musicianModal');
-  document.getElementById('musicianModalContent').innerHTML =
-    '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
-  modal.classList.add('visible');
-
-  const { data: m, error } = await db.from('musicians').select(`
-    id, fname, birth_date, city, zip, bio, goal,
-    profile_color, vibe_label, avatar_url, updated_at,
-    musician_instruments(instrument),
-    musician_genres(genre),
-    musician_songs(song_title, song_artist, mastery_level),
-    musician_media(media_type, url, platform)
-  `).eq('id', id).single();
-
-  if (error || !m) {
-    document.getElementById('musicianModalContent').innerHTML = '<p style="color:var(--accent2)">Kon profiel niet laden.</p>';
-    return;
-  }
-
+// Bouwt de profiel-detail HTML op basis van een musicians-record. Gedeeld door
+// openMusicianModal() (modal voor andere profielen) én loadMyProfile() (Mijn
+// Profiel) — zodat Mijn Profiel nooit de modal hoeft te openen/sluiten (dat
+// veroorzaakte een korte flits van de modal-overlay bij elk bezoek).
+function buildMusicianDetailHTML(m) {
   const col  = m.profile_color || '#f5c518';
   const age  = calcAgeFromISO(m.birth_date);
   const date = new Date(m.updated_at).toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
@@ -2574,7 +2484,7 @@ async function openMusicianModal(id) {
 
   const links = m.musician_media.filter(x => x.media_type === 'link');
 
-  document.getElementById('musicianModalContent').innerHTML = `
+  return `
     <div class="profile-header-band" style="background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;"></div>
     ${avatarHTML}
     ${m.vibe_label ? `<div class="profile-vibe-badge" style="color:${col};border-color:${col};background:${col}18;">${m.vibe_label}</div>` : ''}
@@ -2604,6 +2514,29 @@ async function openMusicianModal(id) {
       </div>` : ''}`;
 }
 
+async function openMusicianModal(id) {
+  const modal = document.getElementById('musicianModal');
+  document.getElementById('musicianModalContent').innerHTML =
+    '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  modal.classList.add('visible');
+
+  const { data: m, error } = await db.from('musicians').select(`
+    id, fname, birth_date, city, zip, bio, goal,
+    profile_color, vibe_label, avatar_url, updated_at,
+    musician_instruments(instrument),
+    musician_genres(genre),
+    musician_songs(song_title, song_artist, mastery_level),
+    musician_media(media_type, url, platform)
+  `).eq('id', id).single();
+
+  if (error || !m) {
+    document.getElementById('musicianModalContent').innerHTML = '<p style="color:var(--accent2)">Kon profiel niet laden.</p>';
+    return;
+  }
+
+  document.getElementById('musicianModalContent').innerHTML = buildMusicianDetailHTML(m);
+}
+
 function closeMusicianModal(e) {
   if (e.target === document.getElementById('musicianModal')) {
     document.getElementById('musicianModal').classList.remove('visible');
@@ -2615,6 +2548,30 @@ function closeMusicianModal(e) {
 // Bestaand profiel laden in de registratiewizard om te bewerken (i.p.v. aan te maken).
 // Let op: geüploade foto's/video's kunnen niet worden teruggehaald — dit is een
 // aparte, bekende beperking (zie TODO.md), niet iets wat deze functie oplost.
+// Profiel volledig verwijderen (met bevestiging). Het account (login) blijft
+// bestaan — alleen het muzikantprofiel en de koppelingen ernaartoe verdwijnen.
+async function deleteMyProfile() {
+  const mid = await getMyMusicianId();
+  if (!mid) { showToast('Je hebt geen profiel om te verwijderen.'); return; }
+
+  showConfirm('Weet je zeker dat je je profiel wilt verwijderen? Dit kan niet ongedaan worden gemaakt.', async () => {
+    try {
+      await db.from('musician_instruments').delete().eq('musician_id', mid);
+      await db.from('musician_genres').delete().eq('musician_id', mid);
+      await db.from('musician_songs').delete().eq('musician_id', mid);
+      await db.from('musician_media').delete().eq('musician_id', mid);
+      await db.from('band_members').delete().eq('musician_id', mid);
+      const { error } = await db.from('musicians').delete().eq('id', mid);
+      if (error) throw error;
+      myMusicianId = null;
+      showToast('Je profiel is verwijderd.');
+      showView('landing');
+    } catch (e) {
+      showToast(friendlyErrorMessage(e));
+    }
+  });
+}
+
 async function editMyProfile() {
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Je hebt nog geen profiel om te bewerken.'); return; }
@@ -2677,16 +2634,6 @@ async function editMyProfile() {
   avatarPreview.innerHTML = `<span id="avatarInitials">${(state.fname[0] || '?').toUpperCase()}</span>`;
   avatarPreview.style.borderColor = state.profileColor;
   document.getElementById('avatarRemoveBtn').classList.remove('visible');
-
-  const swatches = document.querySelectorAll('.color-swatch');
-  PROFILE_COLORS.forEach((pc, i) => {
-    if (swatches[i]) swatches[i].classList.toggle('selected', pc.hex === state.profileColor);
-  });
-  document.getElementById('customColorInput').value = state.profileColor;
-  document.documentElement.style.setProperty('--profile-color', state.profileColor);
-
-  const vibeIdx = state.vibe ? VIBES.indexOf(state.vibe) : -1;
-  document.querySelectorAll('.vibe-card').forEach((c, i) => c.classList.toggle('selected', i === vibeIdx));
 }
 
 async function loadMyProfile() {
@@ -2710,11 +2657,7 @@ async function loadMyProfile() {
     return;
   }
 
-  // Render profiel (hergebruik modal content logica)
-  await openMusicianModal(m.id);
-  const content = document.getElementById('musicianModalContent').innerHTML;
-  el.innerHTML = content + renderCompletenessMeter(m);
-  document.getElementById('musicianModal').classList.remove('visible');
+  el.innerHTML = buildMusicianDetailHTML(m) + renderCompletenessMeter(m);
   const bandsBtn = document.getElementById('myBandsBtn');
   if (bandsBtn) bandsBtn.style.display = 'inline-flex';
 }
@@ -2731,7 +2674,6 @@ function renderCompletenessMeter(m) {
     { done: (m.musician_genres||[]).length > 0,      label: 'Genre' },
     { done: (m.musician_songs||[]).length >= 3,      label: '3+ nummers' },
     { done: (m.musician_media||[]).length > 0,       label: 'Media' },
-    { done: !!m.vibe_label,                    label: 'Vibe-tag' },
   ];
   const doneCnt = checks.filter(c => c.done).length;
   const pct = Math.round((doneCnt / checks.length) * 100);
@@ -2761,6 +2703,20 @@ function renderCompletenessMeter(m) {
 // Niet-blokkerende melding i.p.v. alert() — Plezier: licht en leuk, geen
 // onderbrekende technische pop-up. Verdwijnt vanzelf na een paar seconden.
 let toastTimer = null;
+// Generieke bevestigingsdialoog voor destructieve acties (i.p.v. native confirm()).
+let confirmCallback = null;
+function showConfirm(message, onConfirm) {
+  document.getElementById('confirmMessage').textContent = message;
+  confirmCallback = onConfirm;
+  document.getElementById('confirmModal').classList.add('visible');
+}
+function confirmModalYes() {
+  document.getElementById('confirmModal').classList.remove('visible');
+  const cb = confirmCallback;
+  confirmCallback = null;
+  if (cb) cb();
+}
+
 function showToast(msg) {
   const el = document.getElementById('appToast');
   if (!el) { console.warn('Toast:', msg); return; }
@@ -3319,7 +3275,7 @@ const INSTRUMENTS = [
 const GENRES = [
   'Rock', 'Metal', 'Blues', 'Jazz', 'Pop', 'Indie',
   'Funk', 'R&B / Soul', 'Punk', 'Folk / Akoestisch',
-  'Hip-hop', 'Reggae', 'Klassiek', 'Electronic', 'Country'
+  'Hip-hop', 'Reggae', 'Klassiek', 'Electronic', 'Country', 'Anders'
 ];
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -3340,17 +3296,6 @@ let state = {
 };
 
 // ─── Init ────────────────────────────────────────────────────────────────────
-
-const PROFILE_COLORS = [
-  { hex: '#f5c518', name: 'Goud' },
-  { hex: '#ff4d4d', name: 'Rood' },
-  { hex: '#3ecfff', name: 'Blauw' },
-  { hex: '#a855f7', name: 'Paars' },
-  { hex: '#22d3a0', name: 'Groen' },
-  { hex: '#ff8c00', name: 'Oranje' },
-  { hex: '#f472b6', name: 'Roze' },
-  { hex: '#e2e8f0', name: 'Wit' },
-];
 
 const VIBES = [
   { label: 'De Rocker', desc: 'Hard, luid, live' },
@@ -3382,31 +3327,6 @@ function init() {
     t.textContent = g;
     t.onclick = () => { toggleTag(t, g, state.genres); };
     gg.appendChild(t);
-  });
-
-  // Color swatches
-  const cr = document.getElementById('colorPickerRow');
-  PROFILE_COLORS.forEach(c => {
-    const sw = document.createElement('div');
-    sw.className = 'color-swatch' + (c.hex === state.profileColor ? ' selected' : '');
-    sw.style.background = c.hex;
-    sw.title = c.name;
-    sw.onclick = () => setProfileColor(c.hex, sw);
-    cr.appendChild(sw);
-  });
-
-  // Vibe grid
-  const vg = document.getElementById('vibeGrid');
-  VIBES.forEach(v => {
-    const card = document.createElement('div');
-    card.className = 'vibe-card';
-    card.innerHTML = `<div class="vibe-label">${v.label}</div><div class="vibe-desc">${v.desc}</div>`;
-    card.onclick = () => {
-      document.querySelectorAll('.vibe-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      state.vibe = v;
-    };
-    vg.appendChild(card);
   });
 
   // Update avatar initials placeholder reactively
@@ -3448,7 +3368,7 @@ function addSong(title, artist) {
   closeAC('acArtistList');
   selectedArtist = null;
   renderSongs();
-  document.getElementById('artistSearch').focus();
+  setTimeout(() => document.getElementById('artistSearch').focus(), 0);
 }
 
 function renderSongs() {
@@ -3531,7 +3451,6 @@ function nextStep(from) {
     if (state.songs.some(s => !s.level)) { showToast('Kies voor elk nummer een beheersingsniveau.'); return; }
   }
   // step 3 (doel) is bewust optioneel — mag later nog worden ingevuld
-  // step 4 (personalization) has no required fields
   goTo(from + 1);
 }
 
@@ -3549,7 +3468,7 @@ function goTo(step) {
     else if (i < step) d.classList.add('done');
   });
 
-  const labels = ['Stap 1 van 6','Stap 2 van 6','Stap 3 van 6','Stap 4 van 6','Stap 5 van 6','Stap 6 van 6'];
+  const labels = ['Stap 1 van 5','Stap 2 van 5','Stap 3 van 5','Stap 4 van 5','Stap 5 van 5'];
   document.getElementById('stepLabel').textContent = labels[step] || '';
 
   state.currentStep = step;
@@ -3575,20 +3494,6 @@ function removeAvatar() {
   preview.innerHTML = `<span id="avatarInitials">${initials}</span>`;
   preview.style.borderColor = '';
   document.getElementById('avatarRemoveBtn').classList.remove('visible');
-}
-
-function setProfileColor(hex, swatchEl) {
-  state.profileColor = hex;
-  // Update swatch selection
-  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-  if (swatchEl) swatchEl.classList.add('selected');
-  // Update avatar border live
-  const preview = document.getElementById('avatarPreview');
-  if (preview) preview.style.borderColor = hex;
-  // Update CSS custom property for vibe cards
-  document.documentElement.style.setProperty('--profile-color', hex);
-  // Sync custom color input
-  document.getElementById('customColorInput').value = hex;
 }
 
 // ─── Media ───────────────────────────────────────────────────────────────────
@@ -3863,6 +3768,69 @@ function resetBandForm() {
 }
 
 // Bestaande band laden in het formulier om te bewerken (alleen voor de oprichter).
+let addMemberBandId = null;
+let memberSearchTimer = null;
+
+function openAddMemberModal(bandId) {
+  addMemberBandId = bandId;
+  document.getElementById('memberSearchInput').value = '';
+  document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens om te zoeken.</p>';
+  document.getElementById('addMemberModal').classList.add('visible');
+}
+
+function searchMembersToAdd(query) {
+  clearTimeout(memberSearchTimer);
+  const q = query.trim();
+  const resEl = document.getElementById('memberSearchResults');
+  if (q.length < 2) {
+    resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens om te zoeken.</p>';
+    return;
+  }
+  resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Zoeken...</p>';
+  memberSearchTimer = setTimeout(async () => {
+    try {
+      const { data: existing } = await db.from('band_members').select('musician_id').eq('band_id', addMemberBandId);
+      const existingIds = (existing||[]).map(x => x.musician_id);
+
+      const { data: musicians, error } = await db.from('musicians')
+        .select('id, fname, city, profile_color, musician_instruments(instrument)')
+        .ilike('fname', `%${q}%`).limit(15);
+      if (error) throw error;
+
+      const filtered = (musicians||[]).filter(m => !existingIds.includes(m.id));
+      if (!filtered.length) {
+        resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Geen (nieuwe) muzikanten gevonden.</p>';
+        return;
+      }
+      resEl.innerHTML = filtered.map(m => `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="width:32px;height:32px;border-radius:50%;background:${m.profile_color||'#888'};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${(m.fname[0]||'?').toUpperCase()}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:14px;">${m.fname}</div>
+            <div style="font-size:12px;color:var(--muted);">${m.city||''}${(m.musician_instruments||[]).length ? ' · ' + m.musician_instruments.map(x=>x.instrument).slice(0,2).join(', ') : ''}</div>
+          </div>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="addBandMember('${m.id}')">+ Toevoegen</button>
+        </div>`).join('');
+    } catch (e) {
+      resEl.innerHTML = `<p style="color:var(--accent2);font-size:13px;">${friendlyErrorMessage(e)}</p>`;
+    }
+  }, 300);
+}
+
+async function addBandMember(musicianId) {
+  try {
+    const { error } = await db.from('band_members').insert({
+      band_id: addMemberBandId, musician_id: musicianId, role: 'Lid', status: 'bevestigd'
+    });
+    if (error) throw error;
+    showToast('Lid toegevoegd.');
+    document.getElementById('addMemberModal').classList.remove('visible');
+    loadMyBands();
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+  }
+}
+
 async function editBand(id) {
   const { data: b, error } = await db.from('bands').select(`*, band_wanted(instrument)`).eq('id', id).single();
   if (error || !b) { showToast('Kon band niet laden.'); return; }
@@ -4025,7 +3993,8 @@ async function loadMyBands() {
           <div class="band-meta">${b.city||''}${b.city&&b.genres?.length?' · ':''}${(b.genres||[]).slice(0,2).join(', ')}</div>
         </div>
         <span class="band-status-badge band-status-${b.status}">${statusLabels[b.status]||b.status}</span>
-        ${isFounder ? `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); editBand('${b.id}');">Band bewerken</button>` : ''}
+        ${isFounder ? `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); editBand('${b.id}');">Band bewerken</button>
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); openAddMemberModal('${b.id}');">+ Lid toevoegen</button>` : ''}
       </div>
       <div class="band-card-body">
         ${b.description ? `<p style="font-size:13px;color:var(--muted);margin-bottom:12px;font-style:italic;">"${b.description}"</p>` : ''}
