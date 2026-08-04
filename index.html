@@ -1257,76 +1257,63 @@
     color: var(--muted);
   }
 
-  .results-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-  }
-
-  /* Muzikantkaart */
-  .musician-card {
-    background: var(--surface);
+  .results-list {
+    display: flex;
+    flex-direction: column;
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 0;
     overflow: hidden;
-    transition: border-color 0.2s, transform 0.2s;
-    cursor: pointer;
-    animation: slideIn 0.3s ease;
   }
 
-  .musician-card:hover {
-    border-color: #444;
-    transform: translateY(-2px);
-  }
-
-  .card-color-band {
-    height: 6px;
-  }
-
-  .card-body {
-    padding: 20px;
-  }
-
-  .card-header {
+  .result-row {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 14px;
+    gap: 16px;
+    padding: 14px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+    animation: slideIn 0.2s ease;
   }
 
-  .card-avatar {
-    width: 52px; height: 52px;
+  .result-row:last-child { border-bottom: none; }
+  .result-row:hover { background: var(--surface2); }
+
+  .result-row-avatar {
+    width: 44px; height: 44px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-family: 'Roboto', sans-serif;
-    font-size: 22px;
+    font-size: 18px;
     color: #000;
     flex-shrink: 0;
     overflow: hidden;
-    border: 2px solid transparent;
   }
 
-  .card-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .result-row-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-  .card-name {
+  .result-row-main { flex: 1; min-width: 0; }
+
+  .result-row-name {
     font-family: 'Roboto', sans-serif;
-    font-size: 22px;
-    letter-spacing: 0.5px;
-    line-height: 1;
+    font-size: 16px;
+    font-weight: 700;
   }
 
-  .card-meta {
+  .result-row-meta {
     font-size: 12px;
     color: var(--muted);
     margin-top: 2px;
   }
 
-  .card-badges {
+  .result-row-badges {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-bottom: 12px;
+    justify-content: flex-end;
+    max-width: 45%;
+    flex-shrink: 0;
   }
 
   .card-badge {
@@ -1337,25 +1324,31 @@
     color: var(--muted);
   }
 
-  .card-songs {
-    font-size: 12px;
-    color: var(--muted);
-    border-top: 1px solid var(--border);
-    padding-top: 10px;
-    margin-top: 4px;
-  }
-
-  .card-song-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 3px 0;
-  }
-
   .no-results {
     text-align: center;
     padding: 60px 20px;
     color: var(--muted);
-    grid-column: 1/-1;
+  }
+
+  /* Duidelijke scheiding tussen zoekcriteria en zoekresultaat (04-08-2026) */
+  .results-section-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 40px 0 20px;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .results-section-divider::before,
+  .results-section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
   }
 
   /* Muzikant detail modal */
@@ -1855,8 +1848,13 @@
         </div>
       </div>
 
-      <button class="search-btn" onclick="runSearch()">Zoek muzikanten</button>
+      <div style="display:flex;gap:12px;">
+        <button class="search-btn" style="flex:1;" onclick="runSearch()">Zoek muzikanten</button>
+        <button class="btn btn-ghost" onclick="resetMusicianSearch()">Filters wissen</button>
+      </div>
     </div>
+
+    <div class="results-section-divider"><span>Resultaat</span></div>
 
     <!-- Sorteren staat bewust bij het resultaat, niet bij de zoekfilters —
          her-sorteert direct zonder opnieuw te hoeven zoeken. -->
@@ -1899,8 +1897,13 @@
       </div>
       <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label><div class="tag-grid" id="filterBandGenres"></div></div></div>
       <div class="filter-row single band-instrument-filter" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><div class="tag-grid" id="filterBandWanted"></div></div></div>
-      <button class="search-btn" onclick="runBandSearch()">Zoek bands</button>
+      <div style="display:flex;gap:12px;">
+        <button class="search-btn" style="flex:1;" onclick="runBandSearch()">Zoek bands</button>
+        <button class="btn btn-ghost" onclick="resetBandSearch()">Filters wissen</button>
+      </div>
     </div>
+
+    <div class="results-section-divider"><span>Resultaat</span></div>
 
     <!-- Sorteren staat bewust bij het resultaat, niet bij de zoekfilters —
          her-sorteert direct zonder opnieuw te hoeven zoeken. -->
@@ -2369,6 +2372,22 @@ function initSearchFilters() {
   });
 }
 
+// Filters wissen — zet zoekscherm terug naar lege staat, leegt ook het resultaat.
+function resetMusicianSearch() {
+  document.getElementById('filterName').value = '';
+  document.getElementById('filterCity').value = '';
+  document.getElementById('filterAgeMin').value = '';
+  document.getElementById('filterAgeMax').value = '';
+  document.getElementById('filterRadius').value = 25;
+  filterInstruments = [];
+  filterGenres = [];
+  filterGoal = null;
+  document.querySelectorAll('#filterInstruments .tag, #filterGenres .genre-tag, #filterGoals .tag').forEach(t => t.classList.remove('selected'));
+  selectSortModeByValue('filterSortMode', hasOwnProfile ? 'score' : 'distance');
+  lastMusicianResults = [];
+  document.getElementById('searchResults').innerHTML = '';
+}
+
 async function runSearch() {
   const resultsEl = document.getElementById('searchResults');
   resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
@@ -2489,15 +2508,16 @@ function renderSearchResults(musicians) {
     <div class="results-header">
       <span class="results-count">${musicians.length} muzikant${musicians.length !== 1 ? 'en' : ''} gevonden</span>
     </div>
-    <div class="results-grid">
-      ${musicians.map(m => musicianCardHTML(m)).join('')}
+    <div class="results-list">
+      ${musicians.map(m => musicianRowHTML(m)).join('')}
     </div>`;
 }
 
 // Extreem overzichtelijk gehouden (04-08-2026): alleen naam, plaats(+afstand)
 // en instrument/genre-badges. Matchscore/vibe/doel/repertoire-preview zijn
-// bewust van de kaart af — die zie je pas in de detailmodal na een klik.
-function musicianCardHTML(m) {
+// bewust van de rij af — die zie je pas in de detailmodal na een klik.
+// Lijstweergave i.p.v. kaarten (04-08-2026) — duidelijker scanbaar bij veel resultaten.
+function musicianRowHTML(m) {
   const col     = m.profile_color || '#f5c518';
   const initials = m.fname[0].toUpperCase();
   const instruments = m.musician_instruments.map(x => x.instrument).slice(0,3);
@@ -2508,25 +2528,21 @@ function musicianCardHTML(m) {
     : initials;
 
   return `
-    <div class="musician-card" onclick="openMusicianModal('${m.id}')">
-      <div class="card-color-band" style="background:${col};"></div>
-      <div class="card-body">
-        <div class="card-header">
-          <div class="card-avatar" style="background:${col}; border-color:${col};">${avatarHTML}</div>
-          <div>
-            <div class="card-name">${m.fname}</div>
-            <div class="card-meta">${m.city || ''}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
-          </div>
-        </div>
-        <div class="card-badges">
-          ${instruments.map(i => `<span class="card-badge" style="border-color:${col};color:${col};">${i}</span>`).join('')}
-          ${genres.map(g => `<span class="card-badge" style="border-color:var(--accent2);color:var(--accent2);">${g}</span>`).join('')}
-        </div>
+    <div class="result-row" onclick="openMusicianModal('${m.id}')">
+      <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
+      <div class="result-row-main">
+        <div class="result-row-name">${m.fname}</div>
+        <div class="result-row-meta">${m.city || ''}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+      </div>
+      <div class="result-row-badges">
+        ${instruments.map(i => `<span class="card-badge" style="border-color:${col};color:${col};">${i}</span>`).join('')}
+        ${genres.map(g => `<span class="card-badge" style="border-color:var(--accent2);color:var(--accent2);">${g}</span>`).join('')}
       </div>
     </div>`;
 }
 
 // ─── Muzikant detail modal ───────────────────────────────────────────────────
+
 
 // Bouwt de profiel-detail HTML op basis van een musicians-record. Gedeeld door
 // openMusicianModal() (modal voor andere profielen) én loadMyProfile() (Mijn
@@ -3760,6 +3776,23 @@ function toggleBandStatusFilter(el, val) {
   filterBandStatusVal = el.classList.contains('selected') ? val : null;
 }
 
+// Filters wissen — zet zoekscherm terug naar lege staat, leegt ook het resultaat.
+function resetBandSearch() {
+  document.getElementById('filterBandName').value = '';
+  document.getElementById('filterBandCity').value = '';
+  document.getElementById('filterBandRadius').value = 25;
+  filterBandGenresList = [];
+  filterBandWantedList = [];
+  filterBandStatusVal = 'zoekend';
+  document.querySelectorAll('#filterBandGenres .genre-tag, #filterBandWanted .tag').forEach(t => t.classList.remove('selected'));
+  document.querySelectorAll('#filterBandStatus .tag').forEach(t => {
+    t.classList.toggle('selected', t.textContent.trim() === 'Zoekend');
+  });
+  selectSortModeByValue('filterBandSortMode', hasOwnProfile ? 'score' : 'distance');
+  lastBandResults = [];
+  document.getElementById('bandSearchResults').innerHTML = '';
+}
+
 async function runBandSearch() {
   const resultsEl = document.getElementById('bandSearchResults');
   resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">Bands zoeken...</div>`;
@@ -3853,28 +3886,28 @@ function renderBandSearchResults(bands) {
   }
   const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
   el.innerHTML = `<div class="results-header"><span class="results-count">${bands.length} band${bands.length !== 1 ? 's' : ''} gevonden</span></div>
-    <div class="results-grid">${bands.map(b => {
-      const col = b.profile_color || '#3ecfff';
-      const initials = b.name.slice(0,2).toUpperCase();
-      const members = (b.band_members||[]).filter(m => m.status === 'bevestigd');
-      const wanted  = (b.band_wanted||[]).slice(0,3);
-      return `<div class="musician-card" onclick="openBandModal('${b.id}')">
-        <div class="card-color-band" style="background:${col};"></div>
-        <div class="card-body">
-          <div class="card-header">
-            <div class="card-avatar" style="background:${col};border-radius:10px;font-family:'Roboto',sans-serif;font-size:20px;">${initials}</div>
-            <div>
-              <div class="card-name">${b.name}</div>
-              <div class="card-meta">${b.city||''}${b.city&&b.genres?.length?' · ':''}${(b.genres||[]).slice(0,2).join(', ')}</div>
-              <span class="band-status-badge band-status-${b.status}">${statusLabels[b.status]||b.status}</span>
-              ${b.distance_km != null ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${b.distance_km.toFixed(1)} km</div>` : ''}
-            </div>
-          </div>
-          <div class="card-badges">${members.slice(0,3).map(m => `<span class="card-badge">${m.musicians?.fname||'?'}</span>`).join('')}</div>
-          ${wanted.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">${wanted.map(w => `<span class="wanted-chip">+ ${w.instrument}</span>`).join('')}</div>` : ''}
+    <div class="results-list">${bands.map(b => bandRowHTML(b, statusLabels)).join('')}</div>`;
+}
+
+// Lijstweergave i.p.v. kaarten (04-08-2026) — duidelijker scanbaar bij veel resultaten.
+function bandRowHTML(b, statusLabels) {
+  const col = b.profile_color || '#3ecfff';
+  const initials = b.name.slice(0,2).toUpperCase();
+  const wanted = (b.band_wanted||[]).slice(0,3);
+  return `
+    <div class="result-row" onclick="openBandModal('${b.id}')">
+      <div class="result-row-avatar" style="background:${col};border-radius:10px;">${initials}</div>
+      <div class="result-row-main">
+        <div class="result-row-name">${b.name}</div>
+        <div class="result-row-meta">
+          ${b.city || ''}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
+          <span class="band-status-badge band-status-${b.status}" style="margin-left:8px;">${statusLabels[b.status]||b.status}</span>
         </div>
-      </div>`;
-    }).join('')}</div>`;
+      </div>
+      <div class="result-row-badges">
+        ${wanted.map(w => `<span class="wanted-chip">+ ${w.instrument}</span>`).join('')}
+      </div>
+    </div>`;
 }
 
 // ─── Mijn bands ───────────────────────────────────────────────────────────────
