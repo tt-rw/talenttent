@@ -738,18 +738,6 @@
     border: 3px solid transparent;
   }
 
-  .profile-vibe-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    margin-bottom: 12px;
-    border: 1px solid;
-  }
-
   /* Media upload section */
   .media-tip {
     background: rgba(245,197,24,0.07);
@@ -1471,7 +1459,7 @@
 <nav class="app-nav" id="appNav" style="display:flex;">
   <button class="nav-btn" id="navMyProfile" onclick="requireLogin('myprofile')">Mijn Profiel</button>
   <button class="nav-btn" id="navMyBands" onclick="requireLogin('bands')">Mijn Bands</button>
-  <button class="nav-btn" id="navSearch" onclick="requireProfileForSearch()">Zoeken</button>
+  <button class="nav-btn" id="navSearch" onclick="showView('search')">Zoeken</button>
   <div class="nav-spacer"></div>
   <button class="nav-btn" id="navAbout" onclick="showView('about')">Over ons</button>
   <button class="nav-btn" id="navLogin" onclick="navLoginClick()">Inloggen</button>
@@ -1812,6 +1800,17 @@
     <button class="media-tab" id="searchModeBandBtn" onclick="setSearchMode('band')">Bands</button>
   </div>
 
+  <div class="search-wrap search-origin-field" id="searchOriginWrap" style="display:none;padding-bottom:0;">
+    <div class="search-filters" style="margin-bottom:20px;">
+      <div class="field">
+        <label>Zoeken vanaf (postcode of plaats)</label>
+        <input type="text" id="searchOrigin" placeholder="Bijv. 2611 of Delft" autocomplete="off" oninput="onSearchOriginInput(this.value)">
+        <div id="searchOriginStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
+        <p style="font-size:11px;color:var(--muted);margin-top:4px;">Nodig om op straal/afstand te kunnen zoeken en sorteren. Zonder dit veld zie je alle resultaten, ongesorteerd op afstand.</p>
+      </div>
+    </div>
+  </div>
+
   <div id="searchModeMusician">
   <div class="search-wrap">
     <div class="search-filters">
@@ -1872,8 +1871,9 @@
         <div class="field">
           <label>Sorteren op</label>
           <div class="tag-grid" id="filterSortMode">
-            <div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'score')">Beste match</div>
-            <div class="tag" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
+            <div class="tag selected sort-score-option" data-mode="score" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'score')">Beste match</div>
+            <div class="tag" data-mode="distance" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
+            <div class="tag" data-mode="city" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'city')">Plaats</div>
           </div>
         </div>
       </div>
@@ -1899,7 +1899,7 @@
         <div class="field"></div>
       </div>
       <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label><div class="tag-grid" id="filterBandGenres"></div></div></div>
-      <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><div class="tag-grid" id="filterBandWanted"></div></div></div>
+      <div class="filter-row single band-instrument-filter" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><div class="tag-grid" id="filterBandWanted"></div></div></div>
       <div class="filter-row" style="margin-bottom:16px;">
         <div class="field">
           <label>Zoekstraal</label>
@@ -1911,8 +1911,9 @@
         <div class="field">
           <label>Sorteren op</label>
           <div class="tag-grid" id="filterBandSortMode">
-            <div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'score')">Beste match</div>
-            <div class="tag" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
+            <div class="tag selected sort-score-option" data-mode="score" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'score')">Beste match</div>
+            <div class="tag" data-mode="distance" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
+            <div class="tag" data-mode="city" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'city')">Plaats</div>
           </div>
         </div>
       </div>
@@ -2148,20 +2149,46 @@ function requireLogin(view) {
   showView(view);
 }
 
-// Zoeken vereist een eigen profiel (er moet iets zijn om op te matchen).
-async function requireProfileForSearch() {
-  if (!currentUser) {
-    showToast('Log in of maak een profiel aan om te zoeken.');
-    showView('auth');
-    return;
-  }
+// Zoeken is altijd toegankelijk (04-08-2026, was eerst login+profiel-verplicht).
+// Met eigen profiel: volledige matching (straal/score/sortering op basis van je
+// eigen postcode/instrument/genre). Zonder profiel: zelfde straal/sortering,
+// maar op basis van een handmatig ingevuld vertrekpunt, en zonder matchscore
+// (die vereist een instrument/genre-referentie die er zonder profiel niet is).
+let hasOwnProfile = false;
+
+async function configureSearchAccess() {
   const mid = await getMyMusicianId();
-  if (!mid) {
-    showToast('Maak eerst je profiel aan om te kunnen zoeken.');
-    showView('register');
-    return;
+  hasOwnProfile = !!mid;
+
+  document.querySelectorAll('.search-origin-field').forEach(el => {
+    el.style.display = hasOwnProfile ? 'none' : '';
+  });
+  document.querySelectorAll('.band-instrument-filter').forEach(el => {
+    el.style.display = hasOwnProfile ? '' : 'none';
+  });
+  document.querySelectorAll('.sort-score-option').forEach(el => {
+    el.style.display = hasOwnProfile ? '' : 'none';
+  });
+
+  if (!hasOwnProfile) {
+    if (searchSortMode === 'score') selectSortModeByValue('filterSortMode', 'distance');
+    if (bandSearchSortMode === 'score') selectSortModeByValue('filterBandSortMode', 'distance');
   }
-  showView('search');
+
+  initBandSearchFilters();
+}
+
+// Zet een sorteertoggle-grid programmatisch op een waarde (zonder klik-event),
+// nodig omdat "Beste match" verborgen wordt zodra er geen eigen profiel is.
+function selectSortModeByValue(gridId, value) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+  const target = Array.from(grid.querySelectorAll('.tag')).find(t => t.getAttribute('data-mode') === value);
+  if (!target) return;
+  grid.querySelectorAll('.tag').forEach(t => t.classList.remove('selected'));
+  target.classList.add('selected');
+  if (gridId === 'filterSortMode') searchSortMode = value;
+  if (gridId === 'filterBandSortMode') bandSearchSortMode = value;
 }
 
 function setSearchMode(mode) {
@@ -2201,7 +2228,7 @@ function showView(view) {
   }
   if (view === 'myprofile') loadMyProfile();
   if (view === 'bands') loadMyBands();
-  if (view === 'search') initBandSearchFilters();
+  if (view === 'search') configureSearchAccess();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2320,37 +2347,58 @@ async function runSearch() {
   </div>`;
 
   try {
-    const mid = await getMyMusicianId();
-    const selectFields = `
-      id, fname, birth_date, city, zip, bio, goal,
-      profile_color, vibe_label, avatar_url, updated_at,
-      musician_instruments(instrument),
-      musician_genres(genre),
-      musician_songs(song_title, song_artist, mastery_level)
-    `;
-
-    // Naam + Plaats: werken altijd, zowel ingelogd (bovenop de matching-straal)
-    // als niet-ingelogd (als directe zoekopdracht) — vindbaarheid (Presentatie).
+    // Naam + Plaats: werken altijd, zowel met matching (bovenop de straal)
+    // als zonder eigen profiel (als directe zoekopdracht) — vindbaarheid (Presentatie).
     const nameQuery = document.getElementById('filterName').value.trim().toLowerCase();
     const cityQuery = document.getElementById('filterCity').value.trim().toLowerCase();
+    const radius = parseFloat(document.getElementById('filterRadius').value) || 25;
 
     let musicians;
     let matchInfo = {}; // id -> { distance_km, score, is_stale }
 
-    // Zoeken vereist altijd een eigen profiel (afgedwongen vóór deze view getoond wordt).
-    const radius = parseFloat(document.getElementById('filterRadius').value) || 25;
-    const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians', {
-      searcher_id: mid, radius_km: radius
-    });
-    if (rpcErr) throw rpcErr;
+    if (hasOwnProfile) {
+      // Met eigen profiel: bestaande matching-RPC (eigen postcode/instrument/genre als referentie).
+      const mid = await getMyMusicianId();
+      const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians', {
+        searcher_id: mid, radius_km: radius
+      });
+      if (rpcErr) throw rpcErr;
+      if (!matches.length) { renderSearchResults([]); return; }
+      matches.forEach(m => { matchInfo[m.musician_id] = m; });
 
-    if (!matches.length) { renderSearchResults([]); return; }
-    matches.forEach(m => { matchInfo[m.musician_id] = m; });
+      const ids = matches.map(m => m.musician_id);
+      const { data, error } = await db.from('musicians').select(`
+        id, fname, birth_date, city, zip, bio, goal,
+        profile_color, avatar_url, updated_at,
+        musician_instruments(instrument),
+        musician_genres(genre),
+        musician_songs(song_title, song_artist, mastery_level)
+      `).in('id', ids);
+      if (error) throw error;
+      musicians = data;
+    } else {
+      // Zonder eigen profiel: anonieme RPC's, vertrekpunt is het handmatig
+      // ingevulde "Zoeken vanaf"-veld (indien leeg: alle muzikanten, geen straal).
+      const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians_anon', {
+        origin_lat: searchOriginLat, origin_lng: searchOriginLng,
+        radius_km: searchOriginLat != null ? radius : null,
+      });
+      if (rpcErr) throw rpcErr;
+      if (!matches.length) { renderSearchResults([]); return; }
+      matches.forEach(m => { matchInfo[m.musician_id] = m; });
 
-    const ids = matches.map(m => m.musician_id);
-    const { data, error } = await db.from('musicians').select(selectFields).in('id', ids);
-    if (error) throw error;
-    musicians = data;
+      const ids = matches.map(m => m.musician_id);
+      const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
+      if (error) throw error;
+      musicians = (data || []).map(m => ({
+        id: m.id, fname: m.fname, birth_date: m.birth_date, city: m.city, zip: m.zip,
+        bio: m.bio, goal: m.goal, profile_color: m.profile_color, avatar_url: m.avatar_url,
+        updated_at: m.updated_at,
+        musician_instruments: (m.instruments || []).map(i => ({ instrument: i })),
+        musician_genres: (m.genres || []).map(g => ({ genre: g })),
+        musician_songs: m.songs || [],
+      }));
+    }
 
     // Client-side filters (naam, plaats, leeftijd, instrument, genre, doel)
     const ageMin = parseInt(document.getElementById('filterAgeMin').value) || 0;
@@ -2387,6 +2435,9 @@ async function runSearch() {
       if (searchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
         return a.distance_km - b.distance_km;
       }
+      if (searchSortMode === 'city') {
+        return (a.city || '').localeCompare(b.city || '', 'nl');
+      }
       if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
       return 0;
     });
@@ -2419,13 +2470,14 @@ function renderSearchResults(musicians) {
     </div>`;
 }
 
+// Extreem overzichtelijk gehouden (04-08-2026): alleen naam, plaats(+afstand)
+// en instrument/genre-badges. Matchscore/vibe/doel/repertoire-preview zijn
+// bewust van de kaart af — die zie je pas in de detailmodal na een klik.
 function musicianCardHTML(m) {
   const col     = m.profile_color || '#f5c518';
-  const age     = calcAgeFromISO(m.birth_date);
   const initials = m.fname[0].toUpperCase();
   const instruments = m.musician_instruments.map(x => x.instrument).slice(0,3);
   const genres      = m.musician_genres.map(x => x.genre).slice(0,2);
-  const songs       = m.musician_songs.slice(0,2);
 
   const avatarHTML = m.avatar_url
     ? `<img src="${m.avatar_url}" alt="${m.fname}">`
@@ -2439,24 +2491,13 @@ function musicianCardHTML(m) {
           <div class="card-avatar" style="background:${col}; border-color:${col};">${avatarHTML}</div>
           <div>
             <div class="card-name">${m.fname}</div>
-            <div class="card-meta">${age} jaar · ${m.city}</div>
-            ${m.vibe_label ? `<div style="font-size:11px;color:var(--muted);">${m.vibe_label}</div>` : ''}
-            ${m.matchScore != null ? `<div style="font-size:11px;color:var(--accent);font-weight:700;margin-top:2px;">${Math.round(m.matchScore * 100)}% match${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>` : ''}
+            <div class="card-meta">${m.city || ''}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
           </div>
         </div>
         <div class="card-badges">
           ${instruments.map(i => `<span class="card-badge" style="border-color:${col};color:${col};">${i}</span>`).join('')}
           ${genres.map(g => `<span class="card-badge" style="border-color:var(--accent2);color:var(--accent2);">${g}</span>`).join('')}
-          ${m.goal ? `<span class="card-badge">${GOAL_LABELS[m.goal] || m.goal}</span>` : ''}
         </div>
-        ${songs.length ? `
-          <div class="card-songs">
-            ${songs.map(s => `
-              <div class="card-song-row">
-                <span>${s.song_title} <span style="color:var(--muted)">— ${s.song_artist}</span></span>
-                <span class="level-pill ${s.mastery_level}" style="font-size:9px;">${LEVEL_LABELS[s.mastery_level]||''}</span>
-              </div>`).join('')}
-          </div>` : ''}
       </div>
     </div>`;
 }
@@ -2487,7 +2528,6 @@ function buildMusicianDetailHTML(m) {
   return `
     <div class="profile-header-band" style="background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;"></div>
     ${avatarHTML}
-    ${m.vibe_label ? `<div class="profile-vibe-badge" style="color:${col};border-color:${col};background:${col}18;">${m.vibe_label}</div>` : ''}
     <div class="profile-name">${m.fname}</div>
     <div class="profile-meta">${age} jaar · ${m.city}${m.zip ? ' · ' + m.zip : ''}</div>
     <div class="freshness-bar" style="margin-top:12px;margin-bottom:16px;">
@@ -2520,14 +2560,35 @@ async function openMusicianModal(id) {
     '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
   modal.classList.add('visible');
 
-  const { data: m, error } = await db.from('musicians').select(`
-    id, fname, birth_date, city, zip, bio, goal,
-    profile_color, vibe_label, avatar_url, updated_at,
-    musician_instruments(instrument),
-    musician_genres(genre),
-    musician_songs(song_title, song_artist, mastery_level),
-    musician_media(media_type, url, platform)
-  `).eq('id', id).single();
+  let m = null, error = null;
+
+  if (hasOwnProfile) {
+    const res = await db.from('musicians').select(`
+      id, fname, birth_date, city, zip, bio, goal,
+      profile_color, avatar_url, updated_at,
+      musician_instruments(instrument),
+      musician_genres(genre),
+      musician_songs(song_title, song_artist, mastery_level),
+      musician_media(media_type, url, platform)
+    `).eq('id', id).single();
+    m = res.data; error = res.error;
+  } else {
+    // Zonder eigen profiel: publieke RPC (tabel zelf blijft op slot voor anon).
+    const res = await db.rpc('tt_get_musicians_public', { ids: [id] });
+    error = res.error;
+    const row = (res.data || [])[0];
+    if (row) {
+      m = {
+        id: row.id, fname: row.fname, birth_date: row.birth_date, city: row.city, zip: row.zip,
+        bio: row.bio, goal: row.goal, profile_color: row.profile_color, avatar_url: row.avatar_url,
+        updated_at: row.updated_at,
+        musician_instruments: (row.instruments || []).map(i => ({ instrument: i })),
+        musician_genres: (row.genres || []).map(g => ({ genre: g })),
+        musician_songs: row.songs || [],
+        musician_media: (row.links || []).map(l => ({ media_type: 'link', url: l.url, platform: l.platform })),
+      };
+    }
+  }
 
   if (error || !m) {
     document.getElementById('musicianModalContent').innerHTML = '<p style="color:var(--accent2)">Kon profiel niet laden.</p>';
@@ -3128,6 +3189,54 @@ function onBandPostcodeInput(value) {
   }, 500);
 }
 
+// ─── Vertrekpunt voor zoeken zonder eigen profiel ───────────────────────────
+// Hergebruikt postcode_cache (bevat al coördinaten, al leesbaar voor
+// niet-ingelogde bezoekers tijdens registratie) — geen nieuwe PDOK-aanroep
+// nodig. Accepteert zowel een 4-cijferige postcode als een plaatsnaam.
+let searchOriginTimeout = null;
+let searchOriginLat = null;
+let searchOriginLng = null;
+
+async function onSearchOriginInput(value) {
+  clearTimeout(searchOriginTimeout);
+  const statusEl = document.getElementById('searchOriginStatus');
+  const raw = value.trim();
+  searchOriginLat = null;
+  searchOriginLng = null;
+  if (!statusEl) return;
+  if (!raw) { statusEl.textContent = ''; return; }
+
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Bezig met opzoeken...';
+
+  searchOriginTimeout = setTimeout(async () => {
+    try {
+      const digits = raw.replace(/\s/g, '');
+      let row = null;
+      if (/^[1-9][0-9]{3}$/.test(digits)) {
+        const { data } = await db.from('postcode_cache').select('city, latitude, longitude').eq('postcode', digits).maybeSingle();
+        row = data;
+      }
+      if (!row) {
+        const { data } = await db.from('postcode_cache').select('city, latitude, longitude').ilike('city', `${raw}%`).limit(1).maybeSingle();
+        row = data;
+      }
+      if (row?.latitude != null && row?.longitude != null) {
+        searchOriginLat = row.latitude;
+        searchOriginLng = row.longitude;
+        statusEl.style.color = 'var(--accent)';
+        statusEl.textContent = `Gevonden: ${row.city}`;
+      } else {
+        statusEl.style.color = 'var(--accent2)';
+        statusEl.textContent = 'Niet gevonden. Probeer een postcode (4 cijfers) of andere plaatsnaam.';
+      }
+    } catch (e) {
+      statusEl.style.color = 'var(--accent2)';
+      statusEl.textContent = 'Opzoeken mislukt. Probeer het opnieuw.';
+    }
+  }, 450);
+}
+
 // Convert DD-MM-YYYY to YYYY-MM-DD for database storage
 function toISODate(ddmmyyyy) {
   const [dd, mm, yyyy] = ddmmyyyy.split('-');
@@ -3629,39 +3738,59 @@ async function runBandSearch() {
   const resultsEl = document.getElementById('bandSearchResults');
   resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">Bands zoeken...</div>`;
   try {
-    const mid = await getMyMusicianId();
-    const selectFields = `id, name, city, genres, status, description, profile_color, updated_at, band_members(musician_id, status, musicians(fname, profile_color)), band_wanted(instrument)`;
-
-    // Naam + Plaats: werken altijd, zowel ingelogd (bovenop de matching-straal)
-    // als niet-ingelogd (als directe zoekopdracht) — vindbaarheid (Presentatie).
+    // Naam + Plaats: werken altijd, zowel met matching (bovenop de straal)
+    // als zonder eigen profiel (als directe zoekopdracht) — vindbaarheid (Presentatie).
     const nameQuery = document.getElementById('filterBandName').value.trim().toLowerCase();
     const cityQuery = document.getElementById('filterBandCity').value.trim().toLowerCase();
+    const radius = parseFloat(document.getElementById('filterBandRadius').value) || 25;
 
     let bands;
     let matchInfo = {}; // id -> { distance_km, score, is_stale }
 
-    // Zoeken vereist altijd een eigen profiel (afgedwongen vóór deze view getoond wordt).
-    const radius = parseFloat(document.getElementById('filterBandRadius').value) || 25;
-    const { data: matches, error: rpcErr } = await db.rpc('tt_search_bands_for_musician', {
-      searcher_id: mid, radius_km: radius
-    });
-    if (rpcErr) throw rpcErr;
+    if (hasOwnProfile) {
+      const mid = await getMyMusicianId();
+      const { data: matches, error: rpcErr } = await db.rpc('tt_search_bands_for_musician', {
+        searcher_id: mid, radius_km: radius
+      });
+      if (rpcErr) throw rpcErr;
+      if (!matches.length) { renderBandSearchResults([]); return; }
+      matches.forEach(m => { matchInfo[m.band_id] = m; });
 
-    if (!matches.length) { renderBandSearchResults([]); return; }
-    matches.forEach(m => { matchInfo[m.band_id] = m; });
+      const ids = matches.map(m => m.band_id);
+      let query = db.from('bands').select(`id, name, city, genres, status, description, profile_color, updated_at, band_members(musician_id, status, musicians(fname, profile_color)), band_wanted(instrument)`).in('id', ids);
+      if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
+      const { data, error } = await query;
+      if (error) throw error;
+      bands = data;
+    } else {
+      // Zonder eigen profiel: anonieme RPC's, vertrekpunt is het handmatig
+      // ingevulde "Zoeken vanaf"-veld (indien leeg: alle bands, geen straal).
+      // Geen instrumentfilter — je zoekt geen band op instrument als bezoeker.
+      const { data: matches, error: rpcErr } = await db.rpc('tt_search_bands_anon', {
+        origin_lat: searchOriginLat, origin_lng: searchOriginLng,
+        radius_km: searchOriginLat != null ? radius : null,
+      });
+      if (rpcErr) throw rpcErr;
+      if (!matches.length) { renderBandSearchResults([]); return; }
+      matches.forEach(m => { matchInfo[m.band_id] = m; });
 
-    const ids = matches.map(m => m.band_id);
-    let query = db.from('bands').select(selectFields).in('id', ids);
-    if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
-    const { data, error } = await query;
-    if (error) throw error;
-    bands = data;
+      const ids = matches.map(m => m.band_id);
+      let { data, error } = await db.rpc('tt_get_bands_public', { ids });
+      if (error) throw error;
+      if (filterBandStatusVal) data = (data || []).filter(b => b.status === filterBandStatusVal);
+      bands = (data || []).map(b => ({
+        id: b.id, name: b.name, city: b.city, genres: b.genres || [], status: b.status,
+        description: b.description, profile_color: b.profile_color, updated_at: b.updated_at,
+        band_members: (b.members || []).map(x => ({ status: 'bevestigd', musicians: { fname: x.fname, profile_color: x.profile_color } })),
+        band_wanted: (b.wanted || []).map(i => ({ instrument: i })),
+      }));
+    }
 
     const filtered = (bands || []).filter(b => {
       if (nameQuery && !(b.name || '').toLowerCase().includes(nameQuery)) return false;
       if (cityQuery && !(b.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterBandGenresList.length && !filterBandGenresList.some(g => (b.genres||[]).includes(g))) return false;
-      if (filterBandWantedList.length) {
+      if (hasOwnProfile && filterBandWantedList.length) {
         const wanted = (b.band_wanted||[]).map(w => w.instrument);
         if (!filterBandWantedList.some(i => wanted.includes(i))) return false;
       }
@@ -3680,6 +3809,9 @@ async function runBandSearch() {
       if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
       if (bandSearchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
         return a.distance_km - b.distance_km;
+      }
+      if (bandSearchSortMode === 'city') {
+        return (a.city || '').localeCompare(b.city || '', 'nl');
       }
       if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
       return 0;
@@ -3713,7 +3845,7 @@ function renderBandSearchResults(bands) {
               <div class="card-name">${b.name}</div>
               <div class="card-meta">${b.city||''}${b.city&&b.genres?.length?' · ':''}${(b.genres||[]).slice(0,2).join(', ')}</div>
               <span class="band-status-badge band-status-${b.status}">${statusLabels[b.status]||b.status}</span>
-              ${b.matchScore != null ? `<div style="font-size:11px;color:var(--accent);font-weight:700;margin-top:2px;">${Math.round(b.matchScore * 100)}% match${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}</div>` : ''}
+              ${b.distance_km != null ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${b.distance_km.toFixed(1)} km</div>` : ''}
             </div>
           </div>
           <div class="card-badges">${members.slice(0,3).map(m => `<span class="card-badge">${m.musicians?.fname||'?'}</span>`).join('')}</div>
@@ -4015,9 +4147,27 @@ async function openBandModal(id) {
   document.getElementById('bandModalContent').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
   modal.classList.add('visible');
 
-  const { data: b } = await db.from('bands')
-    .select(`*, band_members(role, status, musicians(id, fname, profile_color, musician_instruments(instrument))), band_wanted(instrument)`)
-    .eq('id', id).single();
+  let b = null;
+
+  if (hasOwnProfile) {
+    const { data } = await db.from('bands')
+      .select(`*, band_members(role, status, musicians(id, fname, profile_color, musician_instruments(instrument))), band_wanted(instrument)`)
+      .eq('id', id).single();
+    b = data;
+  } else {
+    // Zonder eigen profiel: publieke RPC (tabel zelf blijft op slot voor anon).
+    const { data } = await db.rpc('tt_get_bands_public', { ids: [id] });
+    const row = (data || [])[0];
+    if (row) {
+      b = {
+        id: row.id, name: row.name, city: row.city, zip: row.zip, description: row.description,
+        status: row.status, profile_color: row.profile_color, updated_at: row.updated_at,
+        genres: row.genres || [],
+        band_members: (row.members || []).map(mem => ({ role: 'Lid', status: 'bevestigd', musicians: { fname: mem.fname, profile_color: mem.profile_color } })),
+        band_wanted: (row.wanted || []).map(i => ({ instrument: i })),
+      };
+    }
+  }
 
   if (!b) { document.getElementById('bandModalContent').innerHTML = '<p style="color:var(--accent2)">Kon band niet laden.</p>'; return; }
 
