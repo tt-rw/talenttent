@@ -1807,7 +1807,7 @@
 
       <div class="filter-row">
         <div class="field">
-          <label>Naam</label>
+          <label>Voornaam</label>
           <input type="text" id="filterName" placeholder="Bijv. Ronald">
         </div>
         <div class="field">
@@ -1815,18 +1815,6 @@
           <input type="text" id="filterCity" placeholder="Bijv. Delft, Den Haag...">
         </div>
       </div>
-
-      <div class="filter-row" style="margin-bottom:4px;">
-        <div class="field">
-          <label>Zoekstraal</label>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterRadius" value="25" min="1" max="500" style="width:80px;">
-            <span style="color:var(--muted);font-size:13px;">km</span>
-          </div>
-        </div>
-        <div class="field"></div>
-      </div>
-      <p class="radius-anon-hint" style="display:none;font-size:11px;color:var(--muted);margin-bottom:16px;">Gebruikt de ingevulde Plaats hierboven als vertrekpunt.</p>
 
       <div class="filter-row">
         <div class="field">
@@ -1837,7 +1825,13 @@
             <input type="number" id="filterAgeMax" placeholder="Max" min="1" style="width:80px;">
           </div>
         </div>
-        <div class="field"></div>
+        <div class="field">
+          <label>Zoekstraal</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="filterRadius" value="25" min="1" max="500" style="width:80px;">
+            <span style="color:var(--muted);font-size:13px;">km</span>
+          </div>
+        </div>
       </div>
 
       <div class="filter-row single" style="margin-bottom:16px;">
@@ -1861,21 +1855,23 @@
         </div>
       </div>
 
-      <div class="filter-row single" style="margin-bottom:16px;">
-        <div class="field">
-          <label>Sorteren op</label>
-          <div class="tag-grid" id="filterSortMode">
-            <div class="tag selected sort-score-option" data-mode="score" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'score')">Beste match</div>
-            <div class="tag" data-mode="distance" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
-            <div class="tag" data-mode="city" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'city')">Plaats</div>
-            <div class="tag" data-mode="instrument" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'instrument')">Instrument</div>
-            <div class="tag" data-mode="genre" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'genre')">Genre</div>
-            <div class="tag" data-mode="age" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'age')">Leeftijd</div>
-          </div>
+      <button class="search-btn" onclick="runSearch()">Zoek muzikanten</button>
+    </div>
+
+    <!-- Sorteren staat bewust bij het resultaat, niet bij de zoekfilters —
+         her-sorteert direct zonder opnieuw te hoeven zoeken. -->
+    <div id="sortBarMusician" style="max-width:400px;margin-bottom:16px;">
+      <div class="field">
+        <label>Sorteren op</label>
+        <div class="tag-grid" id="filterSortMode">
+          <div class="tag selected sort-score-option" data-mode="score" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'score')">Beste match</div>
+          <div class="tag" data-mode="distance" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
+          <div class="tag" data-mode="city" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'city')">Plaats</div>
+          <div class="tag" data-mode="instrument" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'instrument')">Instrument</div>
+          <div class="tag" data-mode="genre" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'genre')">Genre</div>
+          <div class="tag" data-mode="age" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'age')">Leeftijd</div>
         </div>
       </div>
-
-      <button class="search-btn" onclick="runSearch()">Zoek muzikanten</button>
     </div>
 
     <div id="searchResults"></div>
@@ -1891,7 +1887,8 @@
         <div class="field"><label>Bandnaam</label><input type="text" id="filterBandName" placeholder="Bijv. The Rusty Strings"></div>
         <div class="field"><label>Plaats</label><input type="text" id="filterBandCity" placeholder="Bijv. Delft, Den Haag..."></div>
       </div>
-      <div class="filter-row" style="margin-bottom:4px;">
+      <div class="filter-row">
+        <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
         <div class="field">
           <label>Zoekstraal</label>
           <div style="display:flex;gap:8px;align-items:center;">
@@ -1899,28 +1896,26 @@
             <span style="color:var(--muted);font-size:13px;">km</span>
           </div>
         </div>
-        <div class="field"></div>
-      </div>
-      <p class="radius-anon-hint" style="display:none;font-size:11px;color:var(--muted);margin-bottom:16px;">Gebruikt de ingevulde Plaats hierboven als vertrekpunt.</p>
-      <div class="filter-row">
-        <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
-        <div class="field"></div>
       </div>
       <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label><div class="tag-grid" id="filterBandGenres"></div></div></div>
       <div class="filter-row single band-instrument-filter" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><div class="tag-grid" id="filterBandWanted"></div></div></div>
-      <div class="filter-row single" style="margin-bottom:16px;">
-        <div class="field">
-          <label>Sorteren op</label>
-          <div class="tag-grid" id="filterBandSortMode">
-            <div class="tag selected sort-score-option" data-mode="score" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'score')">Beste match</div>
-            <div class="tag" data-mode="distance" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
-            <div class="tag" data-mode="city" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'city')">Plaats</div>
-            <div class="tag" data-mode="genre" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'genre')">Genre</div>
-          </div>
-        </div>
-      </div>
       <button class="search-btn" onclick="runBandSearch()">Zoek bands</button>
     </div>
+
+    <!-- Sorteren staat bewust bij het resultaat, niet bij de zoekfilters —
+         her-sorteert direct zonder opnieuw te hoeven zoeken. -->
+    <div id="sortBarBand" style="max-width:400px;margin-bottom:16px;">
+      <div class="field">
+        <label>Sorteren op</label>
+        <div class="tag-grid" id="filterBandSortMode">
+          <div class="tag selected sort-score-option" data-mode="score" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'score')">Beste match</div>
+          <div class="tag" data-mode="distance" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
+          <div class="tag" data-mode="city" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'city')">Plaats</div>
+          <div class="tag" data-mode="genre" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'genre')">Genre</div>
+        </div>
+      </div>
+    </div>
+
     <div id="bandSearchResults"></div>
   </div>
   </div>
@@ -2162,9 +2157,6 @@ async function configureSearchAccess() {
   const mid = await getMyMusicianId();
   hasOwnProfile = !!mid;
 
-  document.querySelectorAll('.radius-anon-hint').forEach(el => {
-    el.style.display = hasOwnProfile ? 'none' : '';
-  });
   document.querySelectorAll('.doel-filter').forEach(el => {
     el.style.display = hasOwnProfile ? '' : 'none';
   });
@@ -2293,11 +2285,41 @@ let filterInstruments = [];
 let filterGenres      = [];
 let filterGoal        = null;
 let searchSortMode    = 'score';
+let lastMusicianResults = [];
 
+function sortMusicianList(list) {
+  list.sort((a, b) => {
+    if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
+    if (searchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
+      return a.distance_km - b.distance_km;
+    }
+    if (searchSortMode === 'city') return (a.city || '').localeCompare(b.city || '', 'nl');
+    if (searchSortMode === 'instrument') {
+      const ai = a.musician_instruments[0]?.instrument || '';
+      const bi = b.musician_instruments[0]?.instrument || '';
+      return ai.localeCompare(bi, 'nl');
+    }
+    if (searchSortMode === 'genre') {
+      const ag = a.musician_genres[0]?.genre || '';
+      const bg = b.musician_genres[0]?.genre || '';
+      return ag.localeCompare(bg, 'nl');
+    }
+    if (searchSortMode === 'age') return calcAgeFromISO(a.birth_date) - calcAgeFromISO(b.birth_date);
+    if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
+    return 0;
+  });
+  return list;
+}
+
+// Sorteren staat bij het resultaat: her-sorteert direct de al opgehaalde
+// resultaten, geen nieuwe zoekopdracht nodig.
 function setSearchSortMode(el, mode) {
   searchSortMode = mode;
   document.querySelectorAll('#filterSortMode .tag').forEach(x => x.classList.remove('selected'));
   el.classList.add('selected');
+  if (lastMusicianResults.length) {
+    renderSearchResults(sortMusicianList(lastMusicianResults));
+  }
 }
 
 function initSearchFilters() {
@@ -2370,7 +2392,7 @@ async function runSearch() {
         searcher_id: mid, radius_km: radius
       });
       if (rpcErr) throw rpcErr;
-      if (!matches.length) { renderSearchResults([]); return; }
+      if (!matches.length) { lastMusicianResults = []; renderSearchResults([]); return; }
       matches.forEach(m => { matchInfo[m.musician_id] = m; });
 
       const ids = matches.map(m => m.musician_id);
@@ -2393,7 +2415,7 @@ async function runSearch() {
         radius_km: origin.lat != null ? radius : null,
       });
       if (rpcErr) throw rpcErr;
-      if (!matches.length) { renderSearchResults([]); return; }
+      if (!matches.length) { lastMusicianResults = []; renderSearchResults([]); return; }
       matches.forEach(m => { matchInfo[m.musician_id] = m; });
 
       const ids = matches.map(m => m.musician_id);
@@ -2442,31 +2464,8 @@ async function runSearch() {
       m.matchScore  = info ? info.score : null;
       m.isStale     = info ? info.is_stale : false;
     });
-    filtered.sort((a, b) => {
-      if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
-      if (searchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
-        return a.distance_km - b.distance_km;
-      }
-      if (searchSortMode === 'city') {
-        return (a.city || '').localeCompare(b.city || '', 'nl');
-      }
-      if (searchSortMode === 'instrument') {
-        const ai = a.musician_instruments[0]?.instrument || '';
-        const bi = b.musician_instruments[0]?.instrument || '';
-        return ai.localeCompare(bi, 'nl');
-      }
-      if (searchSortMode === 'genre') {
-        const ag = a.musician_genres[0]?.genre || '';
-        const bg = b.musician_genres[0]?.genre || '';
-        return ag.localeCompare(bg, 'nl');
-      }
-      if (searchSortMode === 'age') {
-        return calcAgeFromISO(a.birth_date) - calcAgeFromISO(b.birth_date);
-      }
-      if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
-      return 0;
-    });
-
+    sortMusicianList(filtered);
+    lastMusicianResults = filtered;
     renderSearchResults(filtered);
 
   } catch(e) {
@@ -3690,11 +3689,35 @@ let filterBandWantedList = [];
 let filterBandStatusVal  = 'zoekend';
 let bandSearchSortMode   = 'score';
 let myMusicianId = null;
+let lastBandResults = [];
 
+function sortBandList(list) {
+  list.sort((a, b) => {
+    if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
+    if (bandSearchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
+      return a.distance_km - b.distance_km;
+    }
+    if (bandSearchSortMode === 'city') return (a.city || '').localeCompare(b.city || '', 'nl');
+    if (bandSearchSortMode === 'genre') {
+      const ag = (a.genres || [])[0] || '';
+      const bg = (b.genres || [])[0] || '';
+      return ag.localeCompare(bg, 'nl');
+    }
+    if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
+    return 0;
+  });
+  return list;
+}
+
+// Sorteren staat bij het resultaat: her-sorteert direct de al opgehaalde
+// resultaten, geen nieuwe zoekopdracht nodig.
 function setBandSearchSortMode(el, mode) {
   bandSearchSortMode = mode;
   document.querySelectorAll('#filterBandSortMode .tag').forEach(x => x.classList.remove('selected'));
   el.classList.add('selected');
+  if (lastBandResults.length) {
+    renderBandSearchResults(sortBandList(lastBandResults));
+  }
 }
 
 let bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff' };
@@ -3756,7 +3779,7 @@ async function runBandSearch() {
         searcher_id: mid, radius_km: radius
       });
       if (rpcErr) throw rpcErr;
-      if (!matches.length) { renderBandSearchResults([]); return; }
+      if (!matches.length) { lastBandResults = []; renderBandSearchResults([]); return; }
       matches.forEach(m => { matchInfo[m.band_id] = m; });
 
       const ids = matches.map(m => m.band_id);
@@ -3776,7 +3799,7 @@ async function runBandSearch() {
         radius_km: origin.lat != null ? radius : null,
       });
       if (rpcErr) throw rpcErr;
-      if (!matches.length) { renderBandSearchResults([]); return; }
+      if (!matches.length) { lastBandResults = []; renderBandSearchResults([]); return; }
       matches.forEach(m => { matchInfo[m.band_id] = m; });
 
       const ids = matches.map(m => m.band_id);
@@ -3814,23 +3837,8 @@ async function runBandSearch() {
       b.matchScore  = info ? info.score : null;
       b.isStale     = info ? info.is_stale : false;
     });
-    filtered.sort((a, b) => {
-      if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
-      if (bandSearchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
-        return a.distance_km - b.distance_km;
-      }
-      if (bandSearchSortMode === 'city') {
-        return (a.city || '').localeCompare(b.city || '', 'nl');
-      }
-      if (bandSearchSortMode === 'genre') {
-        const ag = (a.genres || [])[0] || '';
-        const bg = (b.genres || [])[0] || '';
-        return ag.localeCompare(bg, 'nl');
-      }
-      if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
-      return 0;
-    });
-
+    sortBandList(filtered);
+    lastBandResults = filtered;
     renderBandSearchResults(filtered);
   } catch(e) {
     resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--accent2);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
