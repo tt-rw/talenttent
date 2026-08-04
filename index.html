@@ -1930,6 +1930,20 @@
       <div class="filter-title">Zoek op setlist</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Stel de setlist samen die je zoekt — muzikanten die deze nummers kennen komen bovenaan in het resultaat.</p>
 
+      <div class="filter-row">
+        <div class="field">
+          <label>Plaats</label>
+          <input type="text" id="filterSetlistCity" placeholder="Bijv. Delft, Den Haag...">
+        </div>
+        <div class="field">
+          <label>Zoekstraal</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="filterSetlistRadius" value="25" min="5" max="500" step="5" style="width:80px;" onchange="snapRadiusToStep(this)">
+            <span style="color:var(--muted);font-size:13px;">km</span>
+          </div>
+        </div>
+      </div>
+
       <div class="field" style="margin-bottom:12px;">
         <label>Band of artiest</label>
         <div class="song-search-wrap">
@@ -4153,6 +4167,8 @@ function resetSetlistSearch() {
   document.getElementById('setlistArtistSearch').value = '';
   document.getElementById('setlistTrackSearch').value = '';
   document.getElementById('setlistTrackSearchWrap').style.display = 'none';
+  document.getElementById('filterSetlistCity').value = '';
+  document.getElementById('filterSetlistRadius').value = 25;
   renderSetlistSongsList();
   document.getElementById('setlistSearchResults').innerHTML = '';
 }
@@ -4168,16 +4184,46 @@ async function runSetlistSearch() {
   try {
     const titles  = setlistWantedSongs.map(s => s.title);
     const artists = setlistWantedSongs.map(s => s.artist);
+    const radius  = parseRadiusInput('filterSetlistRadius');
 
-    // Kandidaten ophalen: RPC werkt voor zowel ingelogd als uitgelogd (tabel
-    // musician_songs blijft op slot voor anon, deze functie geeft alleen id's terug).
-    const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians_by_songlist_anon', { titles, artists });
-    if (rpcErr) throw rpcErr;
-    if (!matches.length) { renderSetlistResults([]); return; }
+    // Kandidaten op repertoire: RPC werkt voor zowel ingelogd als uitgelogd
+    // (tabel musician_songs blijft op slot voor anon, deze functie geeft alleen id's terug).
+    const { data: songMatches, error: songErr } = await db.rpc('tt_search_musicians_by_songlist_anon', { titles, artists });
+    if (songErr) throw songErr;
+    if (!songMatches.length) { renderSetlistResults([]); return; }
+    const songMatchIds = new Set(songMatches.map(m => m.musician_id));
 
-    const ids = matches.map(m => m.musician_id);
+    // Straal toepassen om het zoekgebied te beperken: ingelogd = eigen
+    // postcode als vertrekpunt (bestaande matching-RPC), uitgelogd = het
+    // Plaats-veld hierboven — zelfde aanpak als bij Muzikanten/Bands.
+    let distanceMap = {};
+    let radiusIds = null; // null = geen straalbeperking (geen vertrekpunt bekend)
+
+    if (hasOwnProfile) {
+      const mid = await getMyMusicianId();
+      const { data: radiusMatches, error: radErr } = await db.rpc('tt_search_musicians', {
+        searcher_id: mid, radius_km: radius
+      });
+      if (radErr) throw radErr;
+      radiusIds = new Set(radiusMatches.map(m => m.musician_id));
+      radiusMatches.forEach(m => { distanceMap[m.musician_id] = m.distance_km; });
+    } else {
+      const origin = await resolveSearchOrigin(document.getElementById('filterSetlistCity').value);
+      if (origin.lat != null) {
+        const { data: radiusMatches, error: radErr } = await db.rpc('tt_search_musicians_anon', {
+          origin_lat: origin.lat, origin_lng: origin.lng, radius_km: radius
+        });
+        if (radErr) throw radErr;
+        radiusIds = new Set(radiusMatches.map(m => m.musician_id));
+        radiusMatches.forEach(m => { distanceMap[m.musician_id] = m.distance_km; });
+      }
+    }
+
+    let ids = Array.from(songMatchIds);
+    if (radiusIds) ids = ids.filter(id => radiusIds.has(id));
+    if (!ids.length) { renderSetlistResults([]); return; }
+
     let musicians;
-
     if (hasOwnProfile) {
       const { data, error } = await db.from('musicians').select(`
         id, fname, city, zip, profile_color, avatar_url, updated_at,
@@ -4207,13 +4253,18 @@ async function runSetlistSearch() {
         .filter(n => n !== null);
       m.matchCount = m.matchedNumbers.length;
       m.isStale = m.updated_at ? (new Date(m.updated_at) < sixMonthsAgo) : false;
+      m.distance_km = distanceMap[m.id] != null ? distanceMap[m.id] : null;
     });
 
-    // Hoe meer nummers matchen, hoe hoger in het resultaat.
+    // Hoe meer nummers matchen, hoe hoger in het resultaat; bij gelijke stand
+    // dichtstbijzijnde eerst (indien bekend).
     const filtered = musicians.filter(m => m.matchCount > 0);
     filtered.sort((a, b) => {
       if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
       if (a.matchCount !== b.matchCount) return b.matchCount - a.matchCount;
+      if (a.distance_km != null && b.distance_km != null && a.distance_km !== b.distance_km) {
+        return a.distance_km - b.distance_km;
+      }
       return (a.fname || '').localeCompare(b.fname || '', 'nl');
     });
 
@@ -4230,7 +4281,7 @@ function renderSetlistResults(musicians) {
     el.innerHTML = `
       <div class="no-results">
         <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen muzikanten gevonden</p>
-        <p style="font-size:13px;">Niemand in de Tent heeft (nog) een match met deze setlist.</p>
+        <p style="font-size:13px;">Niemand in de Tent (binnen je zoekgebied) heeft (nog) een match met deze setlist.</p>
       </div>`;
     return;
   }
@@ -4256,7 +4307,7 @@ function musicianSetlistRowHTML(m) {
       <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
       <div class="result-row-main">
         <div class="result-row-name">${m.fname}</div>
-        <div class="result-row-meta">${m.city || ''}</div>
+        <div class="result-row-meta">${m.city || ''}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       </div>
       <div class="result-row-badges">
         <span class="card-badge" style="border-color:${col};color:${col};">${m.matchCount}/${total} match${m.matchCount !== 1 ? 'es' : ''}: ${m.matchedNumbers.map(n => '#'+n).join(', ')}</span>
