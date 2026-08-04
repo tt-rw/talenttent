@@ -1800,17 +1800,6 @@
     <button class="media-tab" id="searchModeBandBtn" onclick="setSearchMode('band')">Bands</button>
   </div>
 
-  <div class="search-wrap search-origin-field" id="searchOriginWrap" style="display:none;padding-bottom:0;">
-    <div class="search-filters" style="margin-bottom:20px;">
-      <div class="field">
-        <label>Zoeken vanaf (postcode of plaats)</label>
-        <input type="text" id="searchOrigin" placeholder="Bijv. 2611 of Delft" autocomplete="off" oninput="onSearchOriginInput(this.value)">
-        <div id="searchOriginStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
-        <p style="font-size:11px;color:var(--muted);margin-top:4px;">Nodig om op straal/afstand te kunnen zoeken en sorteren. Zonder dit veld zie je alle resultaten, ongesorteerd op afstand.</p>
-      </div>
-    </div>
-  </div>
-
   <div id="searchModeMusician">
   <div class="search-wrap">
     <div class="search-filters">
@@ -1826,6 +1815,18 @@
           <input type="text" id="filterCity" placeholder="Bijv. Delft, Den Haag...">
         </div>
       </div>
+
+      <div class="filter-row" style="margin-bottom:4px;">
+        <div class="field">
+          <label>Zoekstraal</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="filterRadius" value="25" min="1" max="500" style="width:80px;">
+            <span style="color:var(--muted);font-size:13px;">km</span>
+          </div>
+        </div>
+        <div class="field"></div>
+      </div>
+      <p class="radius-anon-hint" style="display:none;font-size:11px;color:var(--muted);margin-bottom:16px;">Gebruikt de ingevulde Plaats hierboven als vertrekpunt.</p>
 
       <div class="filter-row">
         <div class="field">
@@ -1853,27 +1854,23 @@
         </div>
       </div>
 
-      <div class="filter-row single" style="margin-bottom:16px;">
+      <div class="filter-row single doel-filter" style="margin-bottom:16px;">
         <div class="field">
           <label>Doel</label>
           <div class="tag-grid" id="filterGoals"></div>
         </div>
       </div>
 
-      <div class="filter-row" style="margin-bottom:16px;">
-        <div class="field">
-          <label>Zoekstraal</label>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterRadius" value="25" min="1" max="500" style="width:80px;">
-            <span style="color:var(--muted);font-size:13px;">km</span>
-          </div>
-        </div>
+      <div class="filter-row single" style="margin-bottom:16px;">
         <div class="field">
           <label>Sorteren op</label>
           <div class="tag-grid" id="filterSortMode">
             <div class="tag selected sort-score-option" data-mode="score" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'score')">Beste match</div>
             <div class="tag" data-mode="distance" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
             <div class="tag" data-mode="city" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'city')">Plaats</div>
+            <div class="tag" data-mode="instrument" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'instrument')">Instrument</div>
+            <div class="tag" data-mode="genre" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'genre')">Genre</div>
+            <div class="tag" data-mode="age" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'age')">Leeftijd</div>
           </div>
         </div>
       </div>
@@ -1894,13 +1891,7 @@
         <div class="field"><label>Bandnaam</label><input type="text" id="filterBandName" placeholder="Bijv. The Rusty Strings"></div>
         <div class="field"><label>Plaats</label><input type="text" id="filterBandCity" placeholder="Bijv. Delft, Den Haag..."></div>
       </div>
-      <div class="filter-row">
-        <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
-        <div class="field"></div>
-      </div>
-      <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label><div class="tag-grid" id="filterBandGenres"></div></div></div>
-      <div class="filter-row single band-instrument-filter" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><div class="tag-grid" id="filterBandWanted"></div></div></div>
-      <div class="filter-row" style="margin-bottom:16px;">
+      <div class="filter-row" style="margin-bottom:4px;">
         <div class="field">
           <label>Zoekstraal</label>
           <div style="display:flex;gap:8px;align-items:center;">
@@ -1908,12 +1899,23 @@
             <span style="color:var(--muted);font-size:13px;">km</span>
           </div>
         </div>
+        <div class="field"></div>
+      </div>
+      <p class="radius-anon-hint" style="display:none;font-size:11px;color:var(--muted);margin-bottom:16px;">Gebruikt de ingevulde Plaats hierboven als vertrekpunt.</p>
+      <div class="filter-row">
+        <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
+        <div class="field"></div>
+      </div>
+      <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label><div class="tag-grid" id="filterBandGenres"></div></div></div>
+      <div class="filter-row single band-instrument-filter" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><div class="tag-grid" id="filterBandWanted"></div></div></div>
+      <div class="filter-row single" style="margin-bottom:16px;">
         <div class="field">
           <label>Sorteren op</label>
           <div class="tag-grid" id="filterBandSortMode">
             <div class="tag selected sort-score-option" data-mode="score" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'score')">Beste match</div>
             <div class="tag" data-mode="distance" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
             <div class="tag" data-mode="city" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'city')">Plaats</div>
+            <div class="tag" data-mode="genre" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'genre')">Genre</div>
           </div>
         </div>
       </div>
@@ -2160,8 +2162,11 @@ async function configureSearchAccess() {
   const mid = await getMyMusicianId();
   hasOwnProfile = !!mid;
 
-  document.querySelectorAll('.search-origin-field').forEach(el => {
+  document.querySelectorAll('.radius-anon-hint').forEach(el => {
     el.style.display = hasOwnProfile ? 'none' : '';
+  });
+  document.querySelectorAll('.doel-filter').forEach(el => {
+    el.style.display = hasOwnProfile ? '' : 'none';
   });
   document.querySelectorAll('.band-instrument-filter').forEach(el => {
     el.style.display = hasOwnProfile ? '' : 'none';
@@ -2171,6 +2176,8 @@ async function configureSearchAccess() {
   });
 
   if (!hasOwnProfile) {
+    filterGoal = null;
+    document.querySelectorAll('#filterGoals .tag').forEach(x => x.classList.remove('selected'));
     if (searchSortMode === 'score') selectSortModeByValue('filterSortMode', 'distance');
     if (bandSearchSortMode === 'score') selectSortModeByValue('filterBandSortMode', 'distance');
   }
@@ -2377,11 +2384,13 @@ async function runSearch() {
       if (error) throw error;
       musicians = data;
     } else {
-      // Zonder eigen profiel: anonieme RPC's, vertrekpunt is het handmatig
-      // ingevulde "Zoeken vanaf"-veld (indien leeg: alle muzikanten, geen straal).
+      // Zonder eigen profiel: anonieme RPC's. Vertrekpunt voor straal/afstand
+      // is het Plaats-veld hierboven (indien leeg of geen match: alle
+      // muzikanten, geen straal/afstand).
+      const origin = await resolveSearchOrigin(document.getElementById('filterCity').value);
       const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians_anon', {
-        origin_lat: searchOriginLat, origin_lng: searchOriginLng,
-        radius_km: searchOriginLat != null ? radius : null,
+        origin_lat: origin.lat, origin_lng: origin.lng,
+        radius_km: origin.lat != null ? radius : null,
       });
       if (rpcErr) throw rpcErr;
       if (!matches.length) { renderSearchResults([]); return; }
@@ -2403,13 +2412,16 @@ async function runSearch() {
     // Client-side filters (naam, plaats, leeftijd, instrument, genre, doel)
     const ageMin = parseInt(document.getElementById('filterAgeMin').value) || 0;
     const ageMax = parseInt(document.getElementById('filterAgeMax').value) || 150;
+    // Als Plaats een postcode is (gebruikt als vertrekpunt), is het geen
+    // tekst om op stad te matchen — dan alleen als vertrekpunt gebruiken.
+    const cityIsPostcode = /^[1-9][0-9]{3}$/.test(cityQuery.replace(/\s/g,''));
 
     const filtered = musicians.filter(m => {
       const age = calcAgeFromISO(m.birth_date);
       if (age < ageMin || age > ageMax) return false;
       if (filterGoal && m.goal !== filterGoal) return false;
       if (nameQuery && !(m.fname || '').toLowerCase().includes(nameQuery)) return false;
-      if (cityQuery && !(m.city || '').toLowerCase().includes(cityQuery)) return false;
+      if (cityQuery && !cityIsPostcode && !(m.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterInstruments.length) {
         const mInstr = m.musician_instruments.map(x => x.instrument);
         if (!filterInstruments.some(i => mInstr.includes(i))) return false;
@@ -2437,6 +2449,19 @@ async function runSearch() {
       }
       if (searchSortMode === 'city') {
         return (a.city || '').localeCompare(b.city || '', 'nl');
+      }
+      if (searchSortMode === 'instrument') {
+        const ai = a.musician_instruments[0]?.instrument || '';
+        const bi = b.musician_instruments[0]?.instrument || '';
+        return ai.localeCompare(bi, 'nl');
+      }
+      if (searchSortMode === 'genre') {
+        const ag = a.musician_genres[0]?.genre || '';
+        const bg = b.musician_genres[0]?.genre || '';
+        return ag.localeCompare(bg, 'nl');
+      }
+      if (searchSortMode === 'age') {
+        return calcAgeFromISO(a.birth_date) - calcAgeFromISO(b.birth_date);
       }
       if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
       return 0;
@@ -3190,51 +3215,29 @@ function onBandPostcodeInput(value) {
 }
 
 // ─── Vertrekpunt voor zoeken zonder eigen profiel ───────────────────────────
-// Hergebruikt postcode_cache (bevat al coördinaten, al leesbaar voor
-// niet-ingelogde bezoekers tijdens registratie) — geen nieuwe PDOK-aanroep
-// nodig. Accepteert zowel een 4-cijferige postcode als een plaatsnaam.
-let searchOriginTimeout = null;
-let searchOriginLat = null;
-let searchOriginLng = null;
-
-async function onSearchOriginInput(value) {
-  clearTimeout(searchOriginTimeout);
-  const statusEl = document.getElementById('searchOriginStatus');
-  const raw = value.trim();
-  searchOriginLat = null;
-  searchOriginLng = null;
-  if (!statusEl) return;
-  if (!raw) { statusEl.textContent = ''; return; }
-
-  statusEl.style.color = 'var(--muted)';
-  statusEl.textContent = 'Bezig met opzoeken...';
-
-  searchOriginTimeout = setTimeout(async () => {
-    try {
-      const digits = raw.replace(/\s/g, '');
-      let row = null;
-      if (/^[1-9][0-9]{3}$/.test(digits)) {
-        const { data } = await db.from('postcode_cache').select('city, latitude, longitude').eq('postcode', digits).maybeSingle();
-        row = data;
-      }
-      if (!row) {
-        const { data } = await db.from('postcode_cache').select('city, latitude, longitude').ilike('city', `${raw}%`).limit(1).maybeSingle();
-        row = data;
-      }
-      if (row?.latitude != null && row?.longitude != null) {
-        searchOriginLat = row.latitude;
-        searchOriginLng = row.longitude;
-        statusEl.style.color = 'var(--accent)';
-        statusEl.textContent = `Gevonden: ${row.city}`;
-      } else {
-        statusEl.style.color = 'var(--accent2)';
-        statusEl.textContent = 'Niet gevonden. Probeer een postcode (4 cijfers) of andere plaatsnaam.';
-      }
-    } catch (e) {
-      statusEl.style.color = 'var(--accent2)';
-      statusEl.textContent = 'Opzoeken mislukt. Probeer het opnieuw.';
+// Het bestaande Plaats-veld (filterCity/filterBandCity) doet zonder eigen
+// profiel dubbele dienst: gewoon tekstfilter, én (via postcode_cache, die al
+// coördinaten bevat en al leesbaar is voor niet-ingelogde bezoekers) het
+// vertrekpunt voor straal/afstand/sortering. Wordt pas bij het zoeken zelf
+// opgezocht (geen apart, live-typend veld meer — dat oogde dubbelop naast Plaats).
+async function resolveSearchOrigin(rawText) {
+  const raw = (rawText || '').trim();
+  if (!raw) return { lat: null, lng: null };
+  try {
+    const digits = raw.replace(/\s/g, '');
+    let row = null;
+    if (/^[1-9][0-9]{3}$/.test(digits)) {
+      const { data } = await db.from('postcode_cache').select('latitude, longitude').eq('postcode', digits).maybeSingle();
+      row = data;
     }
-  }, 450);
+    if (!row) {
+      const { data } = await db.from('postcode_cache').select('latitude, longitude').ilike('city', `${raw}%`).limit(1).maybeSingle();
+      row = data;
+    }
+    return { lat: row?.latitude ?? null, lng: row?.longitude ?? null };
+  } catch (e) {
+    return { lat: null, lng: null };
+  }
 }
 
 // Convert DD-MM-YYYY to YYYY-MM-DD for database storage
@@ -3763,12 +3766,14 @@ async function runBandSearch() {
       if (error) throw error;
       bands = data;
     } else {
-      // Zonder eigen profiel: anonieme RPC's, vertrekpunt is het handmatig
-      // ingevulde "Zoeken vanaf"-veld (indien leeg: alle bands, geen straal).
-      // Geen instrumentfilter — je zoekt geen band op instrument als bezoeker.
+      // Zonder eigen profiel: anonieme RPC's. Vertrekpunt voor straal/afstand
+      // is het Plaats-veld hierboven (indien leeg of geen match: alle bands,
+      // geen straal/afstand). Geen instrumentfilter — je zoekt geen band op
+      // instrument als bezoeker.
+      const origin = await resolveSearchOrigin(document.getElementById('filterBandCity').value);
       const { data: matches, error: rpcErr } = await db.rpc('tt_search_bands_anon', {
-        origin_lat: searchOriginLat, origin_lng: searchOriginLng,
-        radius_km: searchOriginLat != null ? radius : null,
+        origin_lat: origin.lat, origin_lng: origin.lng,
+        radius_km: origin.lat != null ? radius : null,
       });
       if (rpcErr) throw rpcErr;
       if (!matches.length) { renderBandSearchResults([]); return; }
@@ -3786,9 +3791,13 @@ async function runBandSearch() {
       }));
     }
 
+    // Als Plaats een postcode is (gebruikt als vertrekpunt), is het geen
+    // tekst om op stad te matchen — dan alleen als vertrekpunt gebruiken.
+    const cityIsPostcode = /^[1-9][0-9]{3}$/.test(cityQuery.replace(/\s/g,''));
+
     const filtered = (bands || []).filter(b => {
       if (nameQuery && !(b.name || '').toLowerCase().includes(nameQuery)) return false;
-      if (cityQuery && !(b.city || '').toLowerCase().includes(cityQuery)) return false;
+      if (cityQuery && !cityIsPostcode && !(b.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterBandGenresList.length && !filterBandGenresList.some(g => (b.genres||[]).includes(g))) return false;
       if (hasOwnProfile && filterBandWantedList.length) {
         const wanted = (b.band_wanted||[]).map(w => w.instrument);
@@ -3812,6 +3821,11 @@ async function runBandSearch() {
       }
       if (bandSearchSortMode === 'city') {
         return (a.city || '').localeCompare(b.city || '', 'nl');
+      }
+      if (bandSearchSortMode === 'genre') {
+        const ag = (a.genres || [])[0] || '';
+        const bg = (b.genres || [])[0] || '';
+        return ag.localeCompare(bg, 'nl');
       }
       if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
       return 0;
