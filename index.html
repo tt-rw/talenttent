@@ -2403,6 +2403,7 @@ async function runSearch() {
 
     let musicians;
     let matchInfo = {}; // id -> { distance_km, score, is_stale }
+    let originResolved = false; // straal actief? dan Plaats niet ook als tekstfilter toepassen
 
     if (hasOwnProfile) {
       // Met eigen profiel: bestaande matching-RPC (eigen postcode/instrument/genre als referentie).
@@ -2429,6 +2430,7 @@ async function runSearch() {
       // is het Plaats-veld hierboven (indien leeg of geen match: alle
       // muzikanten, geen straal/afstand).
       const origin = await resolveSearchOrigin(document.getElementById('filterCity').value);
+      originResolved = origin.lat != null;
       const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians_anon', {
         origin_lat: origin.lat, origin_lng: origin.lng,
         radius_km: origin.lat != null ? radius : null,
@@ -2453,16 +2455,18 @@ async function runSearch() {
     // Client-side filters (naam, plaats, leeftijd, instrument, genre, doel)
     const ageMin = parseInt(document.getElementById('filterAgeMin').value) || 0;
     const ageMax = parseInt(document.getElementById('filterAgeMax').value) || 150;
-    // Als Plaats een postcode is (gebruikt als vertrekpunt), is het geen
-    // tekst om op stad te matchen — dan alleen als vertrekpunt gebruiken.
+    // Als Plaats als vertrekpunt is herkend (straal actief) of een postcode is,
+    // dan niet óók nog als letterlijk tekstfilter toepassen — anders vallen
+    // buurplaatsen binnen de straal (bijv. Den Haag bij "Delft") er onterecht uit.
     const cityIsPostcode = /^[1-9][0-9]{3}$/.test(cityQuery.replace(/\s/g,''));
+    const skipCityTextFilter = originResolved || cityIsPostcode;
 
     const filtered = musicians.filter(m => {
       const age = calcAgeFromISO(m.birth_date);
       if (age < ageMin || age > ageMax) return false;
       if (filterGoal && m.goal !== filterGoal) return false;
       if (nameQuery && !(m.fname || '').toLowerCase().includes(nameQuery)) return false;
-      if (cityQuery && !cityIsPostcode && !(m.city || '').toLowerCase().includes(cityQuery)) return false;
+      if (cityQuery && !skipCityTextFilter && !(m.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterInstruments.length) {
         const mInstr = m.musician_instruments.map(x => x.instrument);
         if (!filterInstruments.some(i => mInstr.includes(i))) return false;
@@ -3805,6 +3809,7 @@ async function runBandSearch() {
 
     let bands;
     let matchInfo = {}; // id -> { distance_km, score, is_stale }
+    let originResolved = false; // straal actief? dan Plaats niet ook als tekstfilter toepassen
 
     if (hasOwnProfile) {
       const mid = await getMyMusicianId();
@@ -3827,6 +3832,7 @@ async function runBandSearch() {
       // geen straal/afstand). Geen instrumentfilter — je zoekt geen band op
       // instrument als bezoeker.
       const origin = await resolveSearchOrigin(document.getElementById('filterBandCity').value);
+      originResolved = origin.lat != null;
       const { data: matches, error: rpcErr } = await db.rpc('tt_search_bands_anon', {
         origin_lat: origin.lat, origin_lng: origin.lng,
         radius_km: origin.lat != null ? radius : null,
@@ -3847,13 +3853,15 @@ async function runBandSearch() {
       }));
     }
 
-    // Als Plaats een postcode is (gebruikt als vertrekpunt), is het geen
-    // tekst om op stad te matchen — dan alleen als vertrekpunt gebruiken.
+    // Als Plaats als vertrekpunt is herkend (straal actief) of een postcode is,
+    // dan niet óók nog als letterlijk tekstfilter toepassen — anders vallen
+    // buurplaatsen binnen de straal (bijv. Den Haag bij "Delft") er onterecht uit.
     const cityIsPostcode = /^[1-9][0-9]{3}$/.test(cityQuery.replace(/\s/g,''));
+    const skipCityTextFilter = originResolved || cityIsPostcode;
 
     const filtered = (bands || []).filter(b => {
       if (nameQuery && !(b.name || '').toLowerCase().includes(nameQuery)) return false;
-      if (cityQuery && !cityIsPostcode && !(b.city || '').toLowerCase().includes(cityQuery)) return false;
+      if (cityQuery && !skipCityTextFilter && !(b.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterBandGenresList.length && !filterBandGenresList.some(g => (b.genres||[]).includes(g))) return false;
       if (hasOwnProfile && filterBandWantedList.length) {
         const wanted = (b.band_wanted||[]).map(w => w.instrument);
