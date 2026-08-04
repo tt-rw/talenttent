@@ -1821,7 +1821,7 @@
         <div class="field">
           <label>Zoekstraal</label>
           <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterRadius" value="25" min="1" max="500" style="width:80px;">
+            <input type="number" id="filterRadius" value="25" min="5" max="500" step="5" style="width:80px;" onchange="snapRadiusToStep(this)">
             <span style="color:var(--muted);font-size:13px;">km</span>
           </div>
         </div>
@@ -1858,7 +1858,7 @@
 
     <!-- Sorteren staat bewust bij het resultaat, niet bij de zoekfilters —
          her-sorteert direct zonder opnieuw te hoeven zoeken. -->
-    <div id="sortBarMusician" style="max-width:400px;margin-bottom:16px;">
+    <div id="sortBarMusician" style="margin-bottom:16px;">
       <div class="field">
         <label>Sorteren op</label>
         <div class="tag-grid" id="filterSortMode">
@@ -1890,7 +1890,7 @@
         <div class="field">
           <label>Zoekstraal</label>
           <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterBandRadius" value="25" min="1" max="500" style="width:80px;">
+            <input type="number" id="filterBandRadius" value="25" min="5" max="500" step="5" style="width:80px;" onchange="snapRadiusToStep(this)">
             <span style="color:var(--muted);font-size:13px;">km</span>
           </div>
         </div>
@@ -1907,7 +1907,7 @@
 
     <!-- Sorteren staat bewust bij het resultaat, niet bij de zoekfilters —
          her-sorteert direct zonder opnieuw te hoeven zoeken. -->
-    <div id="sortBarBand" style="max-width:400px;margin-bottom:16px;">
+    <div id="sortBarBand" style="margin-bottom:16px;">
       <div class="field">
         <label>Sorteren op</label>
         <div class="tag-grid" id="filterBandSortMode">
@@ -2317,6 +2317,13 @@ function sortMusicianList(list) {
 // Sorteren staat bij het resultaat: her-sorteert direct de al opgehaalde
 // resultaten, geen nieuwe zoekopdracht nodig.
 function setSearchSortMode(el, mode) {
+  // "Dichtstbijzijnde" zonder afstandsgegevens (geen Plaats ingevuld als
+  // vertrekpunt) zou de knop laten oplichten zonder dat er iets verandert —
+  // verwarrend. Geef dan een duidelijke melding i.p.v. stilzwijgend niets doen.
+  if (mode === 'distance' && lastMusicianResults.length && !lastMusicianResults.some(m => m.distance_km != null)) {
+    showToast('Vul een plaats in bij de zoekfilters om op afstand te sorteren.');
+    return;
+  }
   searchSortMode = mode;
   document.querySelectorAll('#filterSortMode .tag').forEach(x => x.classList.remove('selected'));
   el.classList.add('selected');
@@ -2372,6 +2379,25 @@ function initSearchFilters() {
   });
 }
 
+// Straal-invoer strikt uitlezen: 0 km moet ook echt 0 km betekenen (0 is
+// falsy in JS, dus "|| 25" zou 0 onterecht vervangen door de standaardwaarde).
+function parseRadiusInput(id) {
+  const raw = document.getElementById(id).value;
+  if (raw === '' || raw == null) return 25;
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : 25;
+}
+
+// Straal in stappen van 5 km (04-08-2026): voorkomt onbedoeld extreem kleine
+// stralen (bijv. 1 km) waarbinnen zelfs grote steden nauwelijks passen.
+// Rondt ook handmatig getypte waarden af op het dichtstbijzijnde veelvoud van 5.
+function snapRadiusToStep(el) {
+  let v = parseFloat(el.value);
+  if (!Number.isFinite(v)) v = 25;
+  v = Math.max(5, Math.round(v / 5) * 5);
+  el.value = v;
+}
+
 // Filters wissen — zet zoekscherm terug naar lege staat, leegt ook het resultaat.
 function resetMusicianSearch() {
   document.getElementById('filterName').value = '';
@@ -2399,7 +2425,7 @@ async function runSearch() {
     // als zonder eigen profiel (als directe zoekopdracht) — vindbaarheid (Presentatie).
     const nameQuery = document.getElementById('filterName').value.trim().toLowerCase();
     const cityQuery = document.getElementById('filterCity').value.trim().toLowerCase();
-    const radius = parseFloat(document.getElementById('filterRadius').value) || 25;
+    const radius = parseRadiusInput('filterRadius');
 
     let musicians;
     let matchInfo = {}; // id -> { distance_km, score, is_stale }
@@ -3244,16 +3270,21 @@ async function resolveSearchOrigin(rawText) {
   if (!raw) return { lat: null, lng: null };
   try {
     const digits = raw.replace(/\s/g, '');
-    let row = null;
     if (/^[1-9][0-9]{3}$/.test(digits)) {
+      // Exacte postcode: precieze coördinaat, geen middelpunt nodig.
       const { data } = await db.from('postcode_cache').select('latitude, longitude').eq('postcode', digits).maybeSingle();
-      row = data;
+      return { lat: data?.latitude ?? null, lng: data?.longitude ?? null };
     }
-    if (!row) {
-      const { data } = await db.from('postcode_cache').select('latitude, longitude').ilike('city', `${raw}%`).limit(1).maybeSingle();
-      row = data;
-    }
-    return { lat: row?.latitude ?? null, lng: row?.longitude ?? null };
+    // Plaatsnaam: middelpunt (centroid) van alle postcodes in die plaats,
+    // zodat het vertrekpunt representatief is voor de hele plaats i.p.v.
+    // toevallig de eerste postcode die de database teruggeeft — belangrijk
+    // bij grote steden en een kleine zoekstraal.
+    const { data: rows } = await db.from('postcode_cache').select('latitude, longitude').ilike('city', `${raw}%`).limit(300);
+    const valid = (rows || []).filter(r => r.latitude != null && r.longitude != null);
+    if (!valid.length) return { lat: null, lng: null };
+    const lat = valid.reduce((sum, r) => sum + r.latitude, 0) / valid.length;
+    const lng = valid.reduce((sum, r) => sum + r.longitude, 0) / valid.length;
+    return { lat, lng };
   } catch (e) {
     return { lat: null, lng: null };
   }
@@ -3732,6 +3763,10 @@ function sortBandList(list) {
 // Sorteren staat bij het resultaat: her-sorteert direct de al opgehaalde
 // resultaten, geen nieuwe zoekopdracht nodig.
 function setBandSearchSortMode(el, mode) {
+  if (mode === 'distance' && lastBandResults.length && !lastBandResults.some(b => b.distance_km != null)) {
+    showToast('Vul een plaats in bij de zoekfilters om op afstand te sorteren.');
+    return;
+  }
   bandSearchSortMode = mode;
   document.querySelectorAll('#filterBandSortMode .tag').forEach(x => x.classList.remove('selected'));
   el.classList.add('selected');
@@ -3805,7 +3840,7 @@ async function runBandSearch() {
     // als zonder eigen profiel (als directe zoekopdracht) — vindbaarheid (Presentatie).
     const nameQuery = document.getElementById('filterBandName').value.trim().toLowerCase();
     const cityQuery = document.getElementById('filterBandCity').value.trim().toLowerCase();
-    const radius = parseFloat(document.getElementById('filterBandRadius').value) || 25;
+    const radius = parseRadiusInput('filterBandRadius');
 
     let bands;
     let matchInfo = {}; // id -> { distance_km, score, is_stale }
