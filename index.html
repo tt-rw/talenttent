@@ -1788,9 +1788,10 @@
 <!-- VIEW: Zoeken                                -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="app-view" id="view-search">
-  <div class="media-tabs" style="max-width:400px;margin:0 auto 24px;">
+  <div class="media-tabs" style="max-width:500px;margin:0 auto 24px;">
     <button class="media-tab active" id="searchModeMusicianBtn" onclick="setSearchMode('musician')">Muzikanten</button>
     <button class="media-tab" id="searchModeBandBtn" onclick="setSearchMode('band')">Bands</button>
+    <button class="media-tab" id="searchModeSetlistBtn" onclick="setSearchMode('setlist')">Setlist</button>
   </div>
 
   <div id="searchModeMusician">
@@ -1920,6 +1921,52 @@
     </div>
 
     <div id="bandSearchResults"></div>
+  </div>
+  </div>
+
+  <div id="searchModeSetlist" style="display:none;">
+  <div class="search-wrap">
+    <div class="search-filters">
+      <div class="filter-title">Zoek op setlist</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Stel de setlist samen die je zoekt — muzikanten die deze nummers kennen komen bovenaan in het resultaat.</p>
+
+      <div class="field" style="margin-bottom:12px;">
+        <label>Band of artiest</label>
+        <div class="song-search-wrap">
+          <input type="text" id="setlistArtistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
+            oninput="onSetlistArtistSearch(this.value)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acSetlistArtistList');}"
+            onblur="setTimeout(()=>closeAC('acSetlistArtistList'),200)">
+          <div class="autocomplete-list" id="acSetlistArtistList"></div>
+        </div>
+      </div>
+
+      <div id="setlistTrackSearchWrap" style="display:none; margin-bottom:12px;">
+        <div class="field">
+          <label id="setlistTrackSearchLabel">Nummer</label>
+          <div class="song-search-wrap">
+            <input type="text" id="setlistTrackSearch" placeholder="Zoek een nummer..." autocomplete="off"
+              oninput="onSetlistTrackSearch(this.value)"
+              onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acSetlistTrackList');}"
+              onblur="setTimeout(()=>closeAC('acSetlistTrackList'),200)">
+            <div class="autocomplete-list" id="acSetlistTrackList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="songs-list" id="setlistSongsList"></div>
+
+      <div class="divider"></div>
+
+      <div style="display:flex;gap:12px;">
+        <button class="search-btn" style="flex:1;" onclick="runSetlistSearch()">Zoek op setlist</button>
+        <button class="btn btn-ghost" onclick="resetSetlistSearch()">Filters wissen</button>
+      </div>
+    </div>
+
+    <div class="results-section-divider"><span>Resultaat</span></div>
+
+    <div id="setlistSearchResults"></div>
   </div>
   </div>
 </div>
@@ -2195,11 +2242,15 @@ function selectSortModeByValue(gridId, value) {
 
 function setSearchMode(mode) {
   const isMusician = mode === 'musician';
+  const isBand     = mode === 'band';
+  const isSetlist  = mode === 'setlist';
   document.getElementById('searchModeMusician').style.display = isMusician ? 'block' : 'none';
-  document.getElementById('searchModeBand').style.display = isMusician ? 'none' : 'block';
+  document.getElementById('searchModeBand').style.display = isBand ? 'block' : 'none';
+  document.getElementById('searchModeSetlist').style.display = isSetlist ? 'block' : 'none';
   document.getElementById('searchModeMusicianBtn').classList.toggle('active', isMusician);
-  document.getElementById('searchModeBandBtn').classList.toggle('active', !isMusician);
-  if (!isMusician) initBandSearchFilters();
+  document.getElementById('searchModeBandBtn').classList.toggle('active', isBand);
+  document.getElementById('searchModeSetlistBtn').classList.toggle('active', isSetlist);
+  if (isBand) initBandSearchFilters();
 }
 
 function showView(view) {
@@ -3949,6 +4000,266 @@ function bandRowHTML(b, statusLabels) {
       </div>
       <div class="result-row-badges">
         ${wanted.map(w => `<span class="wanted-chip">+ ${w.instrument}</span>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ─── Setlist-zoekfunctie ─────────────────────────────────────────────────────
+// Herzien ontwerp (04-08-2026, Ronald): zelfde Artiest→Nummer-zoekvelden als
+// bij de profiel-repertoirestap i.p.v. los vrij-tekstveld. De zoeker (band)
+// bouwt zo een genummerde setlist op (#1, #2, ...); exacte titel+artiest-match
+// tegen het repertoire van muzikanten. Hoe meer nummers matchen, hoe hoger de
+// muzikant in het resultaat. Geen ingelogd/uitgelogd-verschil in mogelijkheden
+// — alleen de databaseroute verschilt (publieke RPC vs. directe tabeltoegang).
+
+let setlistWantedSongs = [];       // { title, artist }, volgorde = volgnummer
+let selectedSetlistArtist = null;  // { id, name }
+let setlistMbSearchTimeout = null;
+
+function renderSetlistSongsList() {
+  const list = document.getElementById('setlistSongsList');
+  if (!setlistWantedSongs.length) { list.innerHTML = ''; return; }
+  list.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
+      ${setlistWantedSongs.map((s,i) => `
+        <div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;">
+          <span style="font-family:'Roboto',sans-serif;font-size:14px;font-weight:700;color:var(--accent);width:26px;flex-shrink:0;">#${i+1}</span>
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:600;">${s.title}</div>
+            <div style="font-size:12px;color:var(--muted);">${s.artist}</div>
+          </div>
+          <button class="song-remove" onclick="removeSetlistSong(${i})" title="Verwijderen">✕</button>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function addSetlistSong(title, artist) {
+  if (setlistWantedSongs.find(s => s.title === title && s.artist === artist)) return;
+  setlistWantedSongs.push({ title, artist });
+  document.getElementById('setlistArtistSearch').value = '';
+  document.getElementById('setlistTrackSearch').value = '';
+  document.getElementById('setlistTrackSearchWrap').style.display = 'none';
+  closeAC('acSetlistTrackList');
+  closeAC('acSetlistArtistList');
+  selectedSetlistArtist = null;
+  renderSetlistSongsList();
+  setTimeout(() => document.getElementById('setlistArtistSearch').focus(), 0);
+}
+
+function removeSetlistSong(i) {
+  setlistWantedSongs.splice(i, 1);
+  renderSetlistSongsList();
+}
+
+// Stap A: artiest zoeken (zelfde MusicBrainz-aanpak als profiel-repertoire).
+async function onSetlistArtistSearch(q) {
+  const ac = document.getElementById('acSetlistArtistList');
+  if (q.length < 2) { ac.classList.remove('open'); return; }
+
+  clearTimeout(setlistMbSearchTimeout);
+  setlistMbSearchTimeout = setTimeout(async () => {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
+    ac.classList.add('open');
+    try {
+      const res = await fetch(
+        `https://musicbrainz.org/ws/2/artist/?query=artist:${encodeURIComponent(q)}&limit=7&fmt=json`,
+        { headers: { 'User-Agent': 'TheTalentTent/1.0' } }
+      );
+      const data = await res.json();
+      const artists = (data.artists || []).slice(0, 6);
+      if (!artists.length) {
+        ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Geen artiesten gevonden</span></div>';
+        return;
+      }
+      ac.innerHTML = artists.map(a => {
+        const extra = a.disambiguation ? ` <span style="color:var(--muted);font-size:11px;">(${a.disambiguation})</span>` : '';
+        const country = a.country ? ` · ${a.country}` : '';
+        return `<div class="ac-item" onmousedown="selectSetlistArtist('${esc(a.id)}','${esc(a.name)}')">
+          <strong>${highlight(a.name, q)}</strong>${extra}
+          <span style="font-size:11px;color:var(--muted);">${a.type || 'Artiest'}${country}</span>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      ac.innerHTML = '<div class="ac-item"><span style="color:var(--accent2)">Zoekopdracht mislukt</span></div>';
+    }
+  }, 400);
+}
+
+function selectSetlistArtist(id, name) {
+  selectedSetlistArtist = { id, name };
+  document.getElementById('setlistArtistSearch').value = name;
+  closeAC('acSetlistArtistList');
+  const wrap = document.getElementById('setlistTrackSearchWrap');
+  wrap.style.display = 'block';
+  document.getElementById('setlistTrackSearchLabel').textContent = `Nummer van ${name}`;
+  document.getElementById('setlistTrackSearch').value = '';
+  document.getElementById('setlistTrackSearch').focus();
+  closeAC('acSetlistTrackList');
+}
+
+// Stap B: nummer zoeken binnen geselecteerde artiest.
+async function onSetlistTrackSearch(q) {
+  const ac = document.getElementById('acSetlistTrackList');
+  if (!selectedSetlistArtist) return;
+  if (q.length < 1) { ac.classList.remove('open'); return; }
+
+  clearTimeout(setlistMbSearchTimeout);
+  setlistMbSearchTimeout = setTimeout(async () => {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
+    ac.classList.add('open');
+    try {
+      const titleFilter = q.length >= 2 ? ` AND recording:${encodeURIComponent(q)}` : '';
+      const url = `https://musicbrainz.org/ws/2/recording/?query=arid:${selectedSetlistArtist.id}${titleFilter}&limit=10&fmt=json`;
+      const res = await fetch(url, { headers: { 'User-Agent': 'TheTalentTent/1.0' } });
+      const data = await res.json();
+
+      const seen = new Set();
+      const results = (data.recordings || [])
+        .filter(r => {
+          const title = r.title;
+          if (!title) return false;
+          const key = title.toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          if (setlistWantedSongs.find(s =>
+            s.title.toLowerCase() === title.toLowerCase() &&
+            s.artist.toLowerCase() === selectedSetlistArtist.name.toLowerCase()
+          )) return false;
+          return true;
+        })
+        .slice(0, 8);
+
+      if (!results.length) {
+        ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Geen nummers gevonden</span></div>';
+        return;
+      }
+
+      ac.innerHTML = results.map(r =>
+        `<div class="ac-item" onmousedown="addSetlistSong('${esc(r.title)}','${esc(selectedSetlistArtist.name)}')">
+          <strong style="font-size:14px;">${highlight(r.title, q)}</strong>
+          <span style="font-size:12px;color:var(--muted);">${selectedSetlistArtist.name}</span>
+        </div>`
+      ).join('');
+    } catch(e) {
+      ac.innerHTML = '<div class="ac-item"><span style="color:var(--accent2)">Zoekopdracht mislukt</span></div>';
+    }
+  }, 350);
+}
+
+function resetSetlistSearch() {
+  setlistWantedSongs = [];
+  selectedSetlistArtist = null;
+  document.getElementById('setlistArtistSearch').value = '';
+  document.getElementById('setlistTrackSearch').value = '';
+  document.getElementById('setlistTrackSearchWrap').style.display = 'none';
+  renderSetlistSongsList();
+  document.getElementById('setlistSearchResults').innerHTML = '';
+}
+
+async function runSetlistSearch() {
+  const resultsEl = document.getElementById('setlistSearchResults');
+  if (!setlistWantedSongs.length) { showToast('Voeg minimaal één nummer toe aan de setlist.'); return; }
+
+  resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
+    <div class="save-spinner" style="margin:0 auto 16px;"></div>Zoeken...
+  </div>`;
+
+  try {
+    const titles  = setlistWantedSongs.map(s => s.title);
+    const artists = setlistWantedSongs.map(s => s.artist);
+
+    // Kandidaten ophalen: RPC werkt voor zowel ingelogd als uitgelogd (tabel
+    // musician_songs blijft op slot voor anon, deze functie geeft alleen id's terug).
+    const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians_by_songlist_anon', { titles, artists });
+    if (rpcErr) throw rpcErr;
+    if (!matches.length) { renderSetlistResults([]); return; }
+
+    const ids = matches.map(m => m.musician_id);
+    let musicians;
+
+    if (hasOwnProfile) {
+      const { data, error } = await db.from('musicians').select(`
+        id, fname, city, zip, profile_color, avatar_url, updated_at,
+        musician_songs(song_title, song_artist, mastery_level)
+      `).in('id', ids);
+      if (error) throw error;
+      musicians = data;
+    } else {
+      const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
+      if (error) throw error;
+      musicians = (data || []).map(m => ({
+        id: m.id, fname: m.fname, city: m.city, zip: m.zip,
+        profile_color: m.profile_color, avatar_url: m.avatar_url, updated_at: m.updated_at,
+        musician_songs: m.songs || [],
+      }));
+    }
+
+    // Per muzikant bepalen welke volgnummers uit de gezochte setlist matchen
+    // (exacte titel+artiest, case-insensitive) en hoeveel er in totaal matchen.
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    musicians.forEach(m => {
+      const own = (m.musician_songs || []).map(s => `${(s.song_title||'').toLowerCase()}|||${(s.song_artist||'').toLowerCase()}`);
+      m.matchedNumbers = setlistWantedSongs
+        .map((s, i) => own.includes(`${s.title.toLowerCase()}|||${s.artist.toLowerCase()}`) ? i + 1 : null)
+        .filter(n => n !== null);
+      m.matchCount = m.matchedNumbers.length;
+      m.isStale = m.updated_at ? (new Date(m.updated_at) < sixMonthsAgo) : false;
+    });
+
+    // Hoe meer nummers matchen, hoe hoger in het resultaat.
+    const filtered = musicians.filter(m => m.matchCount > 0);
+    filtered.sort((a, b) => {
+      if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
+      if (a.matchCount !== b.matchCount) return b.matchCount - a.matchCount;
+      return (a.fname || '').localeCompare(b.fname || '', 'nl');
+    });
+
+    renderSetlistResults(filtered);
+
+  } catch(e) {
+    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--accent2);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
+  }
+}
+
+function renderSetlistResults(musicians) {
+  const el = document.getElementById('setlistSearchResults');
+  if (!musicians.length) {
+    el.innerHTML = `
+      <div class="no-results">
+        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen muzikanten gevonden</p>
+        <p style="font-size:13px;">Niemand in de Tent heeft (nog) een match met deze setlist.</p>
+      </div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="results-header">
+      <span class="results-count">${musicians.length} muzikant${musicians.length !== 1 ? 'en' : ''} gevonden</span>
+    </div>
+    <div class="results-list">
+      ${musicians.map(m => musicianSetlistRowHTML(m)).join('')}
+    </div>`;
+}
+
+// Compact gehouden: volledige nummertitels zijn te veel info voor één regel
+// (Ronald) — toont i.p.v. daarvan het aantal treffers + de volgnummers.
+function musicianSetlistRowHTML(m) {
+  const col = m.profile_color || '#f5c518';
+  const initials = m.fname[0].toUpperCase();
+  const avatarHTML = m.avatar_url ? `<img src="${m.avatar_url}" alt="${m.fname}">` : initials;
+  const total = setlistWantedSongs.length;
+
+  return `
+    <div class="result-row" onclick="openMusicianModal('${m.id}')">
+      <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
+      <div class="result-row-main">
+        <div class="result-row-name">${m.fname}</div>
+        <div class="result-row-meta">${m.city || ''}</div>
+      </div>
+      <div class="result-row-badges">
+        <span class="card-badge" style="border-color:${col};color:${col};">${m.matchCount}/${total} match${m.matchCount !== 1 ? 'es' : ''}: ${m.matchedNumbers.map(n => '#'+n).join(', ')}</span>
       </div>
     </div>`;
 }
