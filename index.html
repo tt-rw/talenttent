@@ -2723,19 +2723,20 @@ function renderSearchResults(musicians) {
 // Lijstweergave i.p.v. kaarten (04-08-2026) — duidelijker scanbaar bij veel resultaten.
 function musicianRowHTML(m) {
   const col     = m.profile_color || '#f5c518';
-  const initials = m.fname[0].toUpperCase();
+  const showIdentity = !!currentUser;
   const instruments = m.musician_instruments.map(x => x.instrument).slice(0,3);
   const genres      = m.musician_genres.map(x => x.genre).slice(0,2);
 
-  const avatarHTML = m.avatar_url
-    ? `<img src="${m.avatar_url}" alt="${m.fname}">`
-    : initials;
+  const avatarHTML = showIdentity
+    ? (m.avatar_url ? `<img src="${m.avatar_url}" alt="${m.fname}">` : m.fname[0].toUpperCase())
+    : '';
+  const nameHTML = showIdentity ? m.fname : 'Muzikant';
 
   return `
     <div class="result-row" onclick="openMusicianModal('${m.id}')">
       <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
       <div class="result-row-main">
-        <div class="result-row-name">${m.fname}</div>
+        <div class="result-row-name">${nameHTML}</div>
         <div class="result-row-meta">${m.city || ''}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       </div>
       <div class="result-row-badges">
@@ -2800,9 +2801,20 @@ function buildMusicianDetailHTML(m) {
 
 async function openMusicianModal(id) {
   const modal = document.getElementById('musicianModal');
-  document.getElementById('musicianModalContent').innerHTML =
-    '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  const content = document.getElementById('musicianModalContent');
   modal.classList.add('visible');
+
+  if (!currentUser) {
+    content.innerHTML = `
+      <div style="text-align:center;padding:40px 20px;">
+        <p style="color:var(--muted);margin-bottom:20px;">Log in om dit profiel te zien.</p>
+        <button class="btn btn-primary" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Account maken</button>
+      </div>`;
+    return;
+  }
+
+  content.innerHTML =
+    '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
 
   let m = null, error = null;
 
@@ -3993,11 +4005,18 @@ function renderLinksList() {
   list.innerHTML = state.mediaLinks.map((l,i) => `
     <div class="link-row">
       <span class="link-type-badge">${l.url ? detectPlatform(l.url) : 'Link'}</span>
-      <input type="url" value="${l.url}" placeholder="https://youtube.com/watch?v=..."
-        oninput="state.mediaLinks[${i}].url=this.value; renderLinksList()" onblur="renderLinksList()">
+      <input type="url" value="${String(l.url || '').replace(/"/g, '&quot;')}" placeholder="https://youtube.com/watch?v=..."
+        oninput="updateLinkUrl(${i}, this)">
       <button class="song-remove" onclick="removeLink(${i})">✕</button>
     </div>
   `).join('');
+}
+
+function updateLinkUrl(i, el) {
+  if (!state.mediaLinks[i]) return;
+  state.mediaLinks[i].url = el.value;
+  const badge = el.previousElementSibling;
+  if (badge) badge.textContent = el.value ? detectPlatform(el.value) : 'Link';
 }
 
 function removeLink(i) {
