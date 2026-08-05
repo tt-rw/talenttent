@@ -2253,8 +2253,21 @@ async function appInit() {
   }
 }
 
+// Bug gevonden door Ronald (05-08-2026): db.auth.signInWithPassword() binnen
+// createAccountAndProfile() activeert zelf al de bestaande onAuthStateChange-
+// listener (event SIGNED_IN) → die riep onUserLoggedIn() aan → die stuurde
+// meteen door naar Mijn Profiel, nog vóórdat createAccountAndProfile() zelf de
+// kans kreeg om verder te gaan naar stap 2. Gevolg: de wizard werd na stap 1
+// alsnog onderbroken, met een profiel van 0% volledigheid als resultaat —
+// precies wat TT-09 juist wilde voorkomen. Deze vlag zorgt dat onUserLoggedIn()
+// zich stil houdt zolang createAccountAndProfile() nog loopt; die functie
+// bepaalt zelf (via goTo()) wat de volgende stap is.
+let onboardingInFlight = false;
+
 function onUserLoggedIn(user) {
   document.getElementById('navLogin').textContent = 'Uitloggen';
+
+  if (onboardingInFlight) return;
 
   // Route B (TT-09): als er een onafgeronde onboarding lag te wachten (bijv. na
   // een refresh), gaan we daar direct naar terug i.p.v. naar Mijn Profiel —
@@ -2492,8 +2505,22 @@ async function signIn() {
   // onAuthStateChange handelt de rest af
 }
 
+// Verbeterpunt gevonden door Ronald (05-08-2026): uitloggen voelde 2-3
+// seconden traag, want de app wachtte op de volledige netwerkbevestiging van
+// Supabase vóórdat er iets zichtbaar veranderde. Nu werken we de UI meteen
+// bij (optimistisch) en laten we de eigenlijke Supabase-aanroep op de
+// achtergrond doorlopen. Als die achteraf een keer zou mislukken, is de
+// lokale sessie sowieso al opgeruimd — er blijft dan geen halve/verwarrende
+// staat achter (hooguit staat de gebruiker serverside iets langer "ingelogd",
+// zonder dat dat in de app zichtbaar is of iets kan doen).
 async function signOut() {
-  await db.auth.signOut();
+  currentUser = null;
+  onUserLoggedOut();
+  try {
+    await db.auth.signOut();
+  } catch (e) {
+    console.error('Uitloggen bij Supabase (achtergrond) mislukt:', e);
+  }
 }
 
 // ─── Zoekfunctie ─────────────────────────────────────────────────────────────
@@ -4144,6 +4171,7 @@ async function nextStep(from) {
 // blijft het profiel permanent onzichtbaar voor anderen (geen "lege profielen").
 async function createAccountAndProfile() {
   showSaving('Account aanmaken...', 'Heel even geduld, dit duurt maar een paar seconden.');
+  onboardingInFlight = true;
   try {
     const { data: authData, error: authErr } = await db.auth.signUp({
       email:    state.regEmail,
@@ -4152,7 +4180,10 @@ async function createAccountAndProfile() {
     });
     if (authErr) throw new Error(authErr.message);
 
-    // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief
+    // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief.
+    // Let op: dit activeert zelf ook de onAuthStateChange-listener (SIGNED_IN)
+    // — de onboardingInFlight-vlag hierboven voorkomt dat die daardoor de
+    // gebruiker voortijdig naar Mijn Profiel stuurt.
     const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
       email:    state.regEmail,
       password: state.regPassword
@@ -4193,6 +4224,8 @@ async function createAccountAndProfile() {
     document.getElementById('saveOverlay').classList.remove('visible');
     showToast(friendlyErrorMessage(err));
     return false;
+  } finally {
+    onboardingInFlight = false;
   }
 }
 
