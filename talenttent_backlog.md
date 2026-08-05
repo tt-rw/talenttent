@@ -33,11 +33,11 @@ Niet in de audit hierboven, maar tijdens deze sessie gevonden door Ronald en dir
 | TT-02 | Profielfoto's en media echt opslaan | P0 | Middel | Open |
 | TT-03 | Profielen achter login | P0 | Klein | Opgelost (05-08-2026) |
 | TT-04 | Postcode niet publiek tonen | P0 | Klein | Opgelost (05-08-2026) |
-| TT-05 | XSS dichten | P0 | Middel | Open |
+| TT-05 | XSS dichten | P0 | Middel | Opgelost (05-08-2026) |
 | TT-06 | Rapporteren en blokkeren | P0 | Middel | Open |
 | TT-07 | Ouderlijke toestemming onder 16 | P0 | Middel | Open |
 | TT-08 | Link-invoerveld focusbug | P1 | Klein | Opgelost (05-08-2026) |
-| TT-09 | Onboarding herordenen | P1 | Groot | Open |
+| TT-09 | Onboarding herordenen | P1 | Groot | Opgelost (05-08-2026) |
 | TT-10 | Zoeken opent met resultaten | P1 | Klein | Open |
 | TT-11 | "Ik wil meedoen" bij bands | P1 | Middel | Open |
 | TT-12 | Belofte "volgen" uit Over ons | P1 | Triviaal | Open |
@@ -54,6 +54,8 @@ Niet in de audit hierboven, maar tijdens deze sessie gevonden door Ronald en dir
 | TT-23 | Dode code opruimen | P2 | Triviaal | Open |
 | TT-24 | Beheersingsniveaus bij de knoppen | P2 | Triviaal | Opgelost (05-08-2026) |
 | TT-25 | PWA-manifest | P3 | Klein | Open |
+| TT-26 | Zoektekst ongefilterd in Supabase-query | P2 | Klein | Open |
+| TT-27 | Wizard-tussenresultaten incrementeel opslaan | P2 | Middel | Open |
 
 ---
 
@@ -216,6 +218,8 @@ De postcode blijft in de database staan voor de afstandsberekening; hij hoort al
 
 **Acceptatie.** Een bio met de inhoud `<img src=x onerror=alert(1)>` verschijnt als letterlijke tekst op het profiel, en er draait geen script.
 
+**✅ Opgelost 05-08-2026.** Vijf helpers toegevoegd: `escHtml()` (tekst tussen tags), `escAttr()` (hernoemd van `esc()`, nu ook backslashes/regeleindes), `jsAttr()` (tekst in een JS-aanroep ín een attribuut), `safeUrl()` (alleen http/https/blob toegestaan in href/src) en `safeColor()` (kleurwaarde uit de database gevalideerd vóór gebruik in een style-attribuut). Toegepast op 17 plekken — de 5 uit dit ticket plus 12 extra die hetzelfde lek hadden: `musicianRowHTML`, `buildMusicianDetailHTML`, `musicianSetlistRowHTML`, `bandRowHTML`, `openBandModal`, `loadMyBands`, `renderSongs`, `renderSetlistSongsList`, `renderArtistResults`, `renderTrackResults`, `renderCitySuggestions`, `renderLinksList`, `renderMediaGrid`, `searchMembersToAdd`, `renderCompletenessMeter`, en de twee avatar-previews. Media-links met een `javascript:`-URL worden nu weggelaten i.p.v. als lege link getoond; externe links krijgen `rel="noopener noreferrer"`. `mastery_level`/`band.status` (belanden in een class-attribuut) zijn nu ook tegen bekende waarden gevalideerd.
+
 ---
 
 ## TT-06 · Rapporteren en blokkeren
@@ -318,6 +322,19 @@ De `onblur="renderLinksList()"` kan weg, of blijft staan voor opschoning bij ver
 6. **Concept bewaren.** Zolang stap 1 nog loopt: `state` wegschrijven naar `sessionStorage` bij elke `goTo()`, en herstellen bij `init()`. Nooit het wachtwoord opslaan.
 
 **Acceptatie.** Van landingspagina tot bestaand, doorzoekbaar account in onder de 60 seconden en één scherm. Een refresh halverwege kost geen ingevulde gegevens.
+
+**✅ Opgelost 05-08-2026**, met een aantal bewuste aanpassingen op het oorspronkelijke ticket na overleg met Ronald:
+
+- **Account eerder aanmaken:** nieuwe functie `createAccountAndProfile()`, draait aan het eind van stap 1 (Aanmelden). Maakt account + minimaal profiel aan (naam, geboortedatum, postcode, plaats). Vanaf dat moment wordt de rest van de wizard een `UPDATE` op dit bestaande profiel i.p.v. een nieuwe `INSERT` (bestaande edit-logica in `submitProfile()` hergebruikt, geen nieuw mechanisme nodig).
+- **"Lege profielen" bewust uitgesloten (nieuw t.o.v. het ticket, op verzoek van Ronald):** nieuwe kolom `profile_complete` (zie `profile_complete_setup.sql`). Staat op `false` zodra het account/minimaal profiel ontstaat, en wordt **alleen** op `true` gezet bij een geslaagde klik op de allerlaatste knop "Profiel aanmaken". Vijf zoekfuncties tonen alleen nog profielen met `profile_complete = true` — wie de wizard niet afmaakt (tabblad sluit, stopt via "Annuleren"), blijft voor altijd onzichtbaar voor anderen, ongeacht wat er al is ingevuld. Geen backfill uitgevoerd voor bestaande profielen (in overleg met Ronald — dit waren testprofielen).
+- **Geen tussenstop (afwijking t.o.v. het ticket):** het ticket stelde voor om na stap 1 direct naar Mijn Profiel te gaan met de tekst "Je bent binnen, vul je profiel aan". Op advies van Claude en in overleg met Ronald is hiervan afgeweken: de wizard loopt nu **door tot en met de laatste stap**, zonder tussenstop — het risico dat iemand na een korte onderbreking niet meer terugkomt (en dus met een leeg profiel achterblijft) woog zwaarder dan het aanbieden van een vroeg succesmoment. In plaats daarvan verschijnt alleen een korte toast ("Account aangemaakt! Vul nu je profiel verder aan.") en gaat de gebruiker automatisch door naar stap 2.
+- **Refresh halverwege (Route B, ipv het voorgestelde "concept bewaren in stap 1"):** een refresh tijdens stap 2 t/m 5 herstelt automatisch dezelfde stap met alle al ingevulde keuzes (instrument, genre, nummers, doel, links) — bewaard in `sessionStorage` (nooit het wachtwoord), hersteld bij een nieuwe login via `tryResumeOnboarding()`. Geldt alleen binnen hetzelfde tabblad/dezelfde sessie; sluit iemand het tabblad zelf, dan is dat een bewuste onderbreking (blijft `profile_complete = false`, geen dataverlies-risico want er stond toch nog niets definitiefs vast). **Bewust niet gebouwd (nu TT-27 in de backlog):** de tussentijdse keuzes zelf (instrument/genre/nummers) incrementeel naar de database wegschrijven per stap — dat zou ook een tabblad-sluiting overleven, maar is aanzienlijk meer werk en apart gehouden.
+- **Achternaam blijft verplicht** (in overleg met Ronald, geen wijziging t.o.v. bestaand gedrag) — nog steeds nergens getoond aan andere gebruikers, dus lost het "5 keer Ruud uit Delft"-onderscheidingsprobleem niet op. Dat blijft een open vraag voor een latere sessie als het probleem zich in de praktijk voordoet.
+- **Instrument als eerste aanvulling:** ongewijzigd, stond al direct na de accountstap.
+- **Stappenbalk:** "Stap X van 5" vervangen door twee fasen — "Fase 1 van 2 · Aanmelden" (stap 1) en "Fase 2 van 2 · Profiel aanvullen (1/4 t/m 4/4)" (stappen 2-5).
+- **Repertoire optioneel:** blokkade in stap 3 weggehaald (was: minimaal 1 nummer verplicht). Wie wél een nummer toevoegt, moet er nog steeds een niveau bij kiezen.
+- **Nieuwe gedeelde functie `populateWizardFieldsFromState()`:** haalt de veld-invullogica uit `editMyProfile()` los, zodat zowel het bewerken van een bestaand profiel als het hervatten van een onderbroken onboarding dezelfde, geteste code gebruiken.
+- **`profile_complete_setup.sql`** (nieuw bestand, door Ronald te draaien in de Supabase SQL Editor): voegt de kolom toe en past 5 zoekfuncties aan (`tt_get_musicians_public`, `tt_search_musicians`, `tt_search_musicians_anon`, `tt_search_musicians_for_band`, `tt_search_musicians_by_songlist_anon`). Bands ongewijzigd — die vereisen al postcode/genre/instrument bij aanmaken.
 
 ---
 
@@ -581,6 +598,29 @@ Bewaar de MusicBrainz-code als terugval, of vervang hem volledig — beide is ve
 
 ---
 
+## TT-26 · Zoektekst ongefilterd in Supabase-query
+
+**Probleem.** Gevonden tijdens het uitvoeren van TT-05 (geen XSS, dus apart genoteerd). Twee plekken sturen getypte zoektekst ongefilterd door naar een Supabase-query:
+
+- `onCitySearchInput()`: `.or('city.ilike.%${q}%,alternatieve_schrijfwijzen.ilike.%${q}%')` — een komma in `q` breekt de `.or()`-syntax open, want die gebruikt komma's als scheidingsteken tussen voorwaarden.
+- `searchMembersToAdd()`: `.ilike('fname', '%${q}%')` — minder risicovol (één voorwaarde, geen scheidingstekens in het patroon), maar dezelfde soort ongefilterde input.
+
+**Wijziging.** Speciale tekens die de `.or()`-syntax gebruikt (komma, punt-haakjes) escapen of het queryonderdeel opsplitsen in losse `.or()`-voorwaarden i.p.v. één samengestelde string. Voor `searchMembersToAdd()` volstaat een eenvoudige sanitatie van `%`-tekens in `q` zelf (anders kan een gebruiker met een `%` in zijn zoekterm het `ilike`-patroon beïnvloeden).
+
+**Acceptatie.** Een zoekterm met een komma of `%`-teken geeft een normaal (leeg of gefilterd) resultaat, geen querysyntaxfout en geen onbedoeld brede match.
+
+---
+
+## TT-27 · Wizard-tussenresultaten incrementeel opslaan
+
+**Probleem.** Gevonden tijdens het uitvoeren van TT-09 (geen los probleem uit de audit, dus apart genoteerd). Sinds TT-09 bestaat het account/minimaal profiel al na stap 1, maar instrument, genre, repertoire, doel en media-links worden nog steeds pas naar de database geschreven bij de allerlaatste klik op "Profiel aanmaken" (`submitProfile()`). Een refresh binnen hetzelfde tabblad wordt al opgevangen (`sessionStorage`, zie TT-09), maar sluit iemand het tabblad zelf en komt hij pas later terug, dan is alles wat hij bij stap 2 t/m 5 heeft aangeklikt alsnog kwijt — hij moet dan opnieuw beginnen bij het instrument kiezen.
+
+**Wijziging.** Elke stap (instrument/genre kiezen, een nummer toevoegen, een doel kiezen, een link toevoegen) meteen wegschrijven naar de bijbehorende koppeltabel (`musician_instruments`, `musician_genres`, `musician_songs`, `musician_media`) i.p.v. pas te verzamelen in het lokale `state`-object tot de laatste stap. `submitProfile()` wordt dan vooral nog verantwoordelijk voor het zetten van `profile_complete = true` i.p.v. voor het in bulk wegschrijven van alles tegelijk.
+
+**Acceptatie.** Iemand die na stap 3 het tabblad sluit en een dag later opnieuw inlogt, ziet zijn eerder gekozen instrument/genre/nummers nog staan — ook zonder dat het profiel al als "af" telt (blijft dus nog steeds onzichtbaar voor anderen tot de laatste stap).
+
+---
+
 # P3 — Later
 
 ## TT-25 · PWA-manifest
@@ -612,7 +652,7 @@ TT-09 (onboarding) → TT-10 (zoeken met resultaten) → TT-16 (terugknop) → T
 TT-07 (ouderlijke toestemming) → TT-13 (terugkeerredenen) → TT-22 (accountverwijdering)
 
 **Sprint 5 — indruk**
-TT-14, TT-15, TT-18, TT-19, TT-12, TT-20, TT-21, TT-23, TT-24, TT-25
+TT-14, TT-15, TT-18, TT-19, TT-12, TT-20, TT-21, TT-23, TT-24, TT-25, TT-26, TT-27
 
 ---
 
