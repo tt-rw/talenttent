@@ -1503,7 +1503,7 @@
 </nav>
 <div id="editModeBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 24px;background:rgba(245,197,24,0.1);border-top:1px solid var(--border);font-size:13px;">
   <span>Je bent nog bezig met je profiel bewerken.</span>
-  <button class="btn btn-primary" style="padding:6px 16px;font-size:12px;" onclick="showView('register')">Verder bewerken →</button>
+  <button class="btn btn-primary" style="padding:6px 16px;font-size:12px;" onclick="requireLogin('register')">Verder bewerken →</button>
 </div>
 </div>
 
@@ -2272,6 +2272,26 @@ function onUserLoggedOut() {
   document.getElementById('navLogin').textContent = 'Inloggen';
   myMusicianId = null;
   myOwnCity = null;
+  // Beveiligingsfix: een editeer-sessie (via "Profiel bewerken") mag nooit
+  // blijven bestaan na uitloggen — anders kan een uitgelogde bezoeker via de
+  // "Verder bewerken"-balk alsnog bij de laatst bewerkte profielgegevens.
+  editingMusicianId = null;
+  state = {
+    currentStep: 0,
+    fname: '', lname: '', birth_date: '', city: '', zip: '', bio: '',
+    regEmail: '', regPassword: '',
+    instruments: [],
+    genres: [],
+    songs: [],
+    goal: '',
+    avatarUrl: null,
+    profileColor: '#f5c518',
+    vibe: null,
+    mediaFiles: [],
+    mediaLinks: []
+  };
+  const banner = document.getElementById('editModeBanner');
+  if (banner) banner.style.display = 'none';
   showView('landing');
 }
 
@@ -2387,8 +2407,19 @@ function showView(view) {
   };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
 
-  if (view === 'register' && currentUser && myMusicianId && !editingMusicianId) { showView('myprofile'); return; }
   if (view === 'register') {
+    if (editingMusicianId && !currentUser) {
+      // Beveiligingsfix: een leftover editingMusicianId (bijv. na uitloggen
+      // zonder dat deze view actief herlaadt) mag nooit alsnog toegang geven
+      // tot de wizard met bestaande profielgegevens. Een verse registratie
+      // (editingMusicianId leeg) blijft wél altijd toegankelijk zonder login —
+      // dat is immers hoe je een account aanmaakt.
+      editingMusicianId = null;
+      showToast('Log in om je profiel te bewerken.');
+      showView('auth');
+      return;
+    }
+    if (currentUser && myMusicianId && !editingMusicianId) { showView('myprofile'); return; }
     const locked = !!editingMusicianId;
     ['fname', 'lname', 'birth_date'].forEach(id => {
       const fld = document.getElementById(id);
@@ -2407,7 +2438,7 @@ function showView(view) {
   if (view === 'search') configureSearchAccess();
 
   const banner = document.getElementById('editModeBanner');
-  if (banner) banner.style.display = (editingMusicianId && view !== 'register') ? 'flex' : 'none';
+  if (banner) banner.style.display = (currentUser && editingMusicianId && view !== 'register') ? 'flex' : 'none';
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -2896,10 +2927,10 @@ async function deleteMyProfile() {
 }
 
 function cancelEditProfile() {
-  showConfirm('Weet je zeker dat je wilt stoppen met bewerken? Niet-opgeslagen wijzigingen gaan verloren.', () => {
+  showConfirm('Wil je stoppen met bewerken? Wat je hebt aangepast sinds de laatste keer opslaan, gaat dan verloren.', () => {
     editingMusicianId = null;
     showView('myprofile');
-  });
+  }, 'Ja, stoppen');
 }
 
 async function editMyProfile() {
@@ -3040,8 +3071,9 @@ function renderCompletenessMeter(m) {
 let toastTimer = null;
 // Generieke bevestigingsdialoog voor destructieve acties (i.p.v. native confirm()).
 let confirmCallback = null;
-function showConfirm(message, onConfirm) {
+function showConfirm(message, onConfirm, confirmLabel) {
   document.getElementById('confirmMessage').textContent = message;
+  document.getElementById('confirmYesBtn').textContent = confirmLabel || 'Ja, verwijderen';
   confirmCallback = onConfirm;
   document.getElementById('confirmModal').classList.add('visible');
 }
