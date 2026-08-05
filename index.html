@@ -13,7 +13,7 @@
     --surface2: #1e1e1e;
     --border: #2a2a2a;
     --accent: #f5c518;
-    --accent2: #ff4d4d;
+    --accent2: #f5c518;
     --text: #f0f0f0;
     --muted: #888;
     --radius: 12px;
@@ -49,7 +49,7 @@
     inset: 0;
     background:
       radial-gradient(ellipse 80% 60% at 20% 10%, rgba(245,197,24,0.06) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 80% at 85% 90%, rgba(255,77,77,0.05) 0%, transparent 60%);
+      radial-gradient(ellipse 60% 80% at 85% 90%, rgba(245,197,24,0.04) 0%, transparent 60%);
     pointer-events: none;
     z-index: 0;
   }
@@ -259,13 +259,17 @@
     letter-spacing: 0.5px;
   }
 
-  .genre-tag:hover { border-color: var(--accent2); color: var(--accent2); }
-  .genre-tag.selected { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+  .genre-tag:hover { border-color: var(--accent); color: var(--accent); }
+  .genre-tag.selected { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
 
   /* Song search */
   .song-search-wrap {
     position: relative;
     margin-bottom: 12px;
+  }
+
+  .city-search-wrap {
+    position: relative;
   }
 
   .song-search-wrap input { padding-left: 44px; }
@@ -783,15 +787,19 @@
   .media-tab:hover:not(.active) { color: var(--text); }
 
   /* Zoeken: prominente, gecentreerde modus-knoppen (muzikant/band/setlist) */
+  .search-mode-tabs-outer {
+    display: flex;
+    justify-content: center;
+    padding: 32px 24px 28px;
+  }
   .search-mode-tabs {
     display: flex;
     gap: 14px;
-    justify-content: center;
-    max-width: 620px;
-    margin: 0 auto 28px;
+    width: 100%;
+    max-width: 480px;
   }
   .search-mode-tab {
-    flex: 1;
+    flex: 1 1 0;
     padding: 16px 12px;
     text-align: center;
     font-size: 15px;
@@ -1189,8 +1197,8 @@
   .auth-tab.active { background: var(--surface); color: var(--accent); }
 
   .auth-error {
-    background: rgba(255,77,77,0.1);
-    border: 1px solid rgba(255,77,77,0.3);
+    background: rgba(245,197,24,0.1);
+    border: 1px solid rgba(245,197,24,0.3);
     border-radius: 8px;
     padding: 10px 14px;
     font-size: 13px;
@@ -1836,10 +1844,12 @@
 <!-- VIEW: Zoeken                                -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="app-view" id="view-search">
-  <div class="search-mode-tabs">
-    <button class="search-mode-tab active" id="searchModeMusicianBtn" onclick="setSearchMode('musician')">Muzikant</button>
-    <button class="search-mode-tab" id="searchModeBandBtn" onclick="setSearchMode('band')">Band</button>
-    <button class="search-mode-tab" id="searchModeSetlistBtn" onclick="setSearchMode('setlist')">Setlist</button>
+  <div class="search-mode-tabs-outer">
+    <div class="search-mode-tabs">
+      <button class="search-mode-tab active" id="searchModeMusicianBtn" onclick="setSearchMode('musician')">Muzikant</button>
+      <button class="search-mode-tab" id="searchModeBandBtn" onclick="setSearchMode('band')">Band</button>
+      <button class="search-mode-tab" id="searchModeSetlistBtn" onclick="setSearchMode('setlist')">Setlist</button>
+    </div>
   </div>
 
   <div id="searchModeMusician">
@@ -1854,7 +1864,12 @@
         </div>
         <div class="field">
           <label>Plaats</label>
-          <input type="text" id="filterCity" placeholder="Bijv. Delft, Den Haag...">
+          <div class="city-search-wrap">
+            <input type="text" id="filterCity" placeholder="Bijv. Delft, Den Haag..." autocomplete="off"
+              oninput="onCitySearchInput(this.value,'acFilterCityList')"
+              onblur="setTimeout(()=>closeAC('acFilterCityList'),200)">
+            <div class="autocomplete-list" id="acFilterCityList"></div>
+          </div>
         </div>
       </div>
 
@@ -1932,7 +1947,14 @@
       <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Zoek bands die nog muzikanten zoeken</p>
       <div class="filter-row">
         <div class="field"><label>Bandnaam</label><input type="text" id="filterBandName" placeholder="Bijv. The Rusty Strings"></div>
-        <div class="field"><label>Plaats</label><input type="text" id="filterBandCity" placeholder="Bijv. Delft, Den Haag..."></div>
+        <div class="field"><label>Plaats</label>
+          <div class="city-search-wrap">
+            <input type="text" id="filterBandCity" placeholder="Bijv. Delft, Den Haag..." autocomplete="off"
+              oninput="onCitySearchInput(this.value,'acFilterBandCityList')"
+              onblur="setTimeout(()=>closeAC('acFilterBandCityList'),200)">
+            <div class="autocomplete-list" id="acFilterBandCityList"></div>
+          </div>
+        </div>
       </div>
       <div class="filter-row">
         <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
@@ -1981,7 +2003,13 @@
       <div class="filter-row">
         <div class="field">
           <label>Plaats</label>
-          <input type="text" id="filterSetlistCity" placeholder="Bijv. Delft, Den Haag...">
+          <div class="city-search-wrap">
+            <input type="text" id="filterSetlistCity" placeholder="Bijv. Delft, Den Haag..." autocomplete="off"
+              oninput="onCitySearchInput(this.value,'acFilterSetlistCityList')"
+              onblur="setTimeout(()=>closeAC('acFilterSetlistCityList'),200)">
+            <div class="autocomplete-list" id="acFilterSetlistCityList"></div>
+          </div>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Optioneel — vul in om afstand te tonen/sorteren vanaf deze plaats.</p>
         </div>
         <div class="field">
           <label>Zoekstraal</label>
@@ -2238,6 +2266,7 @@ function onUserLoggedIn(user) {
 function onUserLoggedOut() {
   document.getElementById('navLogin').textContent = 'Inloggen';
   myMusicianId = null;
+  myOwnCity = null;
   showView('landing');
 }
 
@@ -2265,6 +2294,16 @@ function requireLogin(view) {
 // (die vereist een instrument/genre-referentie die er zonder profiel niet is).
 let hasOwnProfile = false;
 
+let myOwnCity = null;
+async function getMyCity() {
+  if (myOwnCity) return myOwnCity;
+  const mid = await getMyMusicianId();
+  if (!mid) return null;
+  const { data } = await db.from('musicians').select('city').eq('id', mid).maybeSingle();
+  myOwnCity = data?.city || null;
+  return myOwnCity;
+}
+
 async function configureSearchAccess() {
   const mid = await getMyMusicianId();
   hasOwnProfile = !!mid;
@@ -2284,6 +2323,20 @@ async function configureSearchAccess() {
     document.querySelectorAll('#filterGoals .tag').forEach(x => x.classList.remove('selected'));
     if (searchSortMode === 'score') selectSortModeByValue('filterSortMode', 'distance');
     if (bandSearchSortMode === 'score') selectSortModeByValue('filterBandSortMode', 'distance');
+  }
+
+  // Zoek op setlist gebruikt (sinds de bugfix hierboven) altijd het Plaats-veld
+  // als vertrekpunt, ook als je een eigen profiel hebt. Zonder toelichting zou
+  // dat veld dan gewoon leeg staan, terwijl er zonder Plaats geen straal wordt
+  // toegepast — verwarrend. Daarom hier je eigen plaats alvast invullen (mag
+  // je altijd zelf aanpassen); alleen als het veld nog leeg is, niet overschrijven
+  // als je zelf al iets hebt ingetypt.
+  if (hasOwnProfile) {
+    const setlistCityField = document.getElementById('filterSetlistCity');
+    if (setlistCityField && !setlistCityField.value.trim()) {
+      const city = await getMyCity();
+      if (city) setlistCityField.value = city;
+    }
   }
 
   initBandSearchFilters();
@@ -2815,6 +2868,7 @@ async function deleteMyProfile() {
       const { error } = await db.from('musicians').delete().eq('id', mid);
       if (error) throw error;
       myMusicianId = null;
+      myOwnCity = null;
       showToast('Je profiel is verwijderd.');
       showView('landing');
     } catch (e) {
@@ -3055,7 +3109,7 @@ function showSaveSuccess(isEdit) {
 function showSaveError(msg) {
   document.getElementById('saveSpinner').style.display = 'none';
   document.getElementById('saveTitle').textContent = 'Oeps...';
-  document.getElementById('saveTitle').style.color = '#ff4d4d';
+  document.getElementById('saveTitle').style.color = '#f5c518';
 
   const isAlreadyRegistered = /already registered|already exists/i.test(msg);
 
@@ -3068,7 +3122,7 @@ function showSaveError(msg) {
   }
 
   document.getElementById('saveMsg').innerHTML =
-    `Er ging iets mis:<br><span style="color:#ff4d4d;font-size:12px;">${friendlyErrorMessage(msg)}</span><br><br>
+    `Er ging iets mis:<br><span style="color:#f5c518;font-size:12px;">${friendlyErrorMessage(msg)}</span><br><br>
      <button class="btn btn-ghost" style="margin-top:8px;" onclick="document.getElementById('saveOverlay').classList.remove('visible')">Sluiten</button>`;
 }
 
@@ -3084,6 +3138,7 @@ function goToLoginFromError() {
 async function submitProfile() {
   showSaving();
   const wasEditing = !!editingMusicianId;
+  myOwnCity = null; // eigen plaats kan net gewijzigd zijn — cache opnieuw laten opbouwen
 
   try {
     let userId = currentUser?.id || null;
@@ -3411,6 +3466,71 @@ async function resolveSearchOrigin(rawText) {
   }
 }
 
+// ─── Plaatsnaam-suggesties bij zoeken (Muzikant/Band/Setlist zonder eigen profiel) ─
+// Vult de Plaats-velden aan met de officiële/eenduidige schrijfwijze uit de
+// bestaande postcode_cache-tabel (dezelfde tabel/aanpak als bij postcode-invoer
+// op het profiel) — puur lezend, geen nieuwe tabellen of schema-wijzigingen nodig.
+let citySearchTimeout = null;
+const citySuggestCache = new Map(); // query (lowercase) -> canonical city names[]
+
+function onCitySearchInput(value, listId) {
+  const ac = document.getElementById(listId);
+  const q = (value || '').trim();
+
+  // Een postcode heeft hier geen plaatsnaam-suggesties nodig
+  if (/^\d{4}$/.test(q) || q.length < 2) { ac.classList.remove('open'); return; }
+
+  const cacheKey = q.toLowerCase();
+  if (citySuggestCache.has(cacheKey)) {
+    renderCitySuggestions(ac, citySuggestCache.get(cacheKey), listId);
+    return;
+  }
+
+  clearTimeout(citySearchTimeout);
+  citySearchTimeout = setTimeout(async () => {
+    try {
+      const { data, error } = await db.from('postcode_cache')
+        .select('city, alternatieve_schrijfwijzen')
+        .or(`city.ilike.%${q}%,alternatieve_schrijfwijzen.ilike.%${q}%`)
+        .limit(50);
+      if (error) throw error;
+
+      const seen = new Set();
+      const names = [];
+      (data || []).forEach(row => {
+        const display = pickDisplayCity(row.city, row.alternatieve_schrijfwijzen);
+        const key = display.toLowerCase();
+        if (display && !seen.has(key)) { seen.add(key); names.push(display); }
+      });
+      names.sort((a, b) => a.localeCompare(b, 'nl'));
+      const top = names.slice(0, 8);
+      citySuggestCache.set(cacheKey, top);
+      renderCitySuggestions(ac, top, listId);
+    } catch (e) {
+      ac.classList.remove('open');
+    }
+  }, 300);
+}
+
+function renderCitySuggestions(ac, names, listId) {
+  if (!names.length) { ac.classList.remove('open'); return; }
+  ac.innerHTML = names.map(name =>
+    `<div class="ac-item" onmousedown="selectCitySuggestion('${esc(name)}','${listId}')">${name}</div>`
+  ).join('');
+  ac.classList.add('open');
+}
+
+function selectCitySuggestion(name, listId) {
+  const fieldMap = {
+    acFilterCityList: 'filterCity',
+    acFilterBandCityList: 'filterBandCity',
+    acFilterSetlistCityList: 'filterSetlistCity'
+  };
+  const fieldId = fieldMap[listId];
+  if (fieldId) document.getElementById(fieldId).value = name;
+  closeAC(listId);
+}
+
 // Convert DD-MM-YYYY to YYYY-MM-DD for database storage
 function toISODate(ddmmyyyy) {
   const [dd, mm, yyyy] = ddmmyyyy.split('-');
@@ -3705,7 +3825,7 @@ function renderSongs() {
           </div>
           <button class="song-remove" onclick="removeSong(${i})" title="Verwijderen">✕</button>
         </div>
-        ${!s.level ? `<div style="font-size:12px;color:var(--accent2);padding:4px 14px;background:rgba(255,77,77,0.05);">Kies een beheersingsniveau om door te gaan</div>` : ''}
+        ${!s.level ? `<div style="font-size:12px;color:var(--accent2);padding:4px 14px;background:rgba(245,197,24,0.06);">Kies een beheersingsniveau om door te gaan</div>` : ''}
       `).join('')}
     </div>`;
 }
@@ -4256,15 +4376,26 @@ async function runSetlistSearch() {
     const [songResult, radiusResult] = await Promise.all([
       db.rpc('tt_search_musicians_by_songlist_anon', { titles, artists }),
       (async () => {
+        // Bugfix 05-08-2026 (gevonden door Ronald): het Plaats-veld werd
+        // genegeerd zodra je een eigen profiel had — de straal werd dan
+        // altijd vanaf je eigen postcode berekend, ook als je hier expliciet
+        // een andere plaats had ingetypt (bijv. "Rotterdam" terwijl je eigen
+        // profiel in Delft staat). Dat gaf verwarrende/onjuiste afstanden.
+        // Nu: een ingevulde Plaats heeft altijd voorrang; eigen postcode is
+        // alleen nog de fallback als het veld leeg is.
+        const cityVal = document.getElementById('filterSetlistCity').value.trim();
+        if (cityVal) {
+          const origin = await resolveSearchOrigin(cityVal);
+          if (origin.lat == null) return { data: null, error: null };
+          return db.rpc('tt_search_musicians_anon', {
+            origin_lat: origin.lat, origin_lng: origin.lng, radius_km: radius
+          });
+        }
         if (hasOwnProfile) {
           const mid = await getMyMusicianId();
           return db.rpc('tt_search_musicians', { searcher_id: mid, radius_km: radius });
         }
-        const origin = await resolveSearchOrigin(document.getElementById('filterSetlistCity').value);
-        if (origin.lat == null) return { data: null, error: null };
-        return db.rpc('tt_search_musicians_anon', {
-          origin_lat: origin.lat, origin_lng: origin.lng, radius_km: radius
-        });
+        return { data: null, error: null };
       })(),
     ]);
 
@@ -4273,9 +4404,9 @@ async function runSetlistSearch() {
     if (!songMatches.length) { renderSetlistResults([]); return; }
     const songMatchIds = new Set(songMatches.map(m => m.musician_id));
 
-    // Straal toepassen om het zoekgebied te beperken: ingelogd = eigen
-    // postcode als vertrekpunt (bestaande matching-RPC), uitgelogd = het
-    // Plaats-veld hierboven — zelfde aanpak als bij Muzikanten/Bands.
+    // Straal toepassen om het zoekgebied te beperken: ingevulde Plaats heeft
+    // voorrang (zie hierboven), anders eigen postcode (ingelogd) of geen
+    // straalbeperking (uitgelogd zonder Plaats ingevuld).
     let distanceMap = {};
     let radiusIds = null; // null = geen straalbeperking (geen vertrekpunt bekend)
 
