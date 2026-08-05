@@ -1471,6 +1471,14 @@
     .panel { padding: 24px 20px; }
     .field-group { grid-template-columns: 1fr; }
     .goal-options { grid-template-columns: 1fr; }
+    .filter-row { grid-template-columns: 1fr; }
+    .app-nav { padding: 12px 12px 0; gap: 4px; overflow-x: auto;
+               -webkit-overflow-scrolling: touch; }
+    .app-nav::-webkit-scrollbar { display: none; }
+    .nav-btn { padding: 10px 12px; font-size: 12px; white-space: nowrap; }
+    .nav-spacer { display: none; }
+    .search-wrap, .my-profile-wrap { padding: 24px 16px 60px; }
+    .modal-box { max-height: 100vh; border-radius: 0; }
   }
 </style>
 </head>
@@ -1592,7 +1600,7 @@
     <div class="field-group">
       <div class="field">
         <label>Geboortedatum <span class="req">*</span></label>
-        <input type="text" id="birth_date" placeholder="01-02-2001" maxlength="10" oninput="formatBirthDate(this)">
+        <input type="text" id="birth_date" placeholder="01-02-2001" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)">
       </div>
       <div class="field">
         <label>Postcode <span class="req">*</span></label>
@@ -1732,18 +1740,16 @@
       </div>
     </div>
 
-    <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:8px;">Jouw repertoire</div>
+    <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;">Jouw repertoire</div>
+    <p style="font-size:12px; color:var(--muted); margin:0 0 10px; line-height:1.6;">
+      Niveaus: <strong style="color:var(--text);font-style:italic;">Basis</strong> (kent de structuur, nog fouten) ·
+      <strong style="color:var(--text);font-style:italic;">Bijna</strong> (soepel, kleine slordigheden) ·
+      <strong style="color:var(--text);font-style:italic;">Podium</strong> (speelt het live zonder problemen)
+    </p>
     <div class="songs-list" id="songsList"></div>
     <p id="songsListEmpty" style="font-size:13px; color:var(--muted); margin-top:4px;">Nog geen nummers toegevoegd.</p>
 
     <div class="divider"></div>
-
-    <p style="font-size:12px; color:var(--muted); line-height:2;">
-      <strong style="color:var(--text);">Beheersingsniveaus</strong><br>
-      <em><strong style="color:var(--text);">Basis</strong></em> — Je kent de structuur, nog wat fouten<br>
-      <em><strong style="color:var(--text);">Bijna helemaal</strong></em> — Soepel, kleine slordigheden<br>
-      <em><strong style="color:var(--text);">Podiumklaar</strong></em> — Je speelt het live zonder problemen
-    </p>
 
     <div class="nav-buttons">
       <div style="display:flex;gap:12px;">
@@ -1929,10 +1935,7 @@
         <div class="tag-grid" id="filterSortMode">
           <div class="tag selected sort-score-option" data-mode="score" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'score')">Beste match</div>
           <div class="tag" data-mode="distance" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
-          <div class="tag" data-mode="city" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'city')">Plaats</div>
-          <div class="tag" data-mode="instrument" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'instrument')">Instrument</div>
-          <div class="tag" data-mode="genre" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'genre')">Genre</div>
-          <div class="tag" data-mode="age" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'age')">Leeftijd</div>
+          <div class="tag" data-mode="newest" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'newest')">Nieuwste</div>
         </div>
       </div>
     </div>
@@ -1985,8 +1988,7 @@
         <div class="tag-grid" id="filterBandSortMode">
           <div class="tag selected sort-score-option" data-mode="score" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'score')">Beste match</div>
           <div class="tag" data-mode="distance" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
-          <div class="tag" data-mode="city" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'city')">Plaats</div>
-          <div class="tag" data-mode="genre" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'genre')">Genre</div>
+          <div class="tag" data-mode="newest" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'newest')">Nieuwste</div>
         </div>
       </div>
     </div>
@@ -2474,18 +2476,9 @@ function sortMusicianList(list) {
     if (searchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
       return a.distance_km - b.distance_km;
     }
-    if (searchSortMode === 'city') return (a.city || '').localeCompare(b.city || '', 'nl');
-    if (searchSortMode === 'instrument') {
-      const ai = a.musician_instruments[0]?.instrument || '';
-      const bi = b.musician_instruments[0]?.instrument || '';
-      return ai.localeCompare(bi, 'nl');
+    if (searchSortMode === 'newest') {
+      return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
     }
-    if (searchSortMode === 'genre') {
-      const ag = a.musician_genres[0]?.genre || '';
-      const bg = b.musician_genres[0]?.genre || '';
-      return ag.localeCompare(bg, 'nl');
-    }
-    if (searchSortMode === 'age') return calcAgeFromISO(a.birth_date) - calcAgeFromISO(b.birth_date);
     if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
     return 0;
   });
@@ -3842,9 +3835,9 @@ function renderSongs() {
             <div style="font-size:12px;color:var(--muted);">${s.artist}</div>
           </div>
           <div style="display:flex;gap:4px;${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
-            <button class="level-btn ${s.level==='basis'?'active-basis':''}" onclick="setLevel(${i},'basis')">Basis</button>
-            <button class="level-btn ${s.level==='bijna'?'active-bijna':''}" onclick="setLevel(${i},'bijna')">Bijna</button>
-            <button class="level-btn ${s.level==='podium'?'active-podium':''}" onclick="setLevel(${i},'podium')">Podium</button>
+            <button class="level-btn ${s.level==='basis'?'active-basis':''}" title="Je kent de structuur, nog wat fouten" onclick="setLevel(${i},'basis')">Basis</button>
+            <button class="level-btn ${s.level==='bijna'?'active-bijna':''}" title="Soepel, kleine slordigheden" onclick="setLevel(${i},'bijna')">Bijna</button>
+            <button class="level-btn ${s.level==='podium'?'active-podium':''}" title="Je speelt het live zonder problemen" onclick="setLevel(${i},'podium')">Podium</button>
           </div>
           <button class="song-remove" onclick="removeSong(${i})" title="Verwijderen">✕</button>
         </div>
@@ -3888,6 +3881,15 @@ function nextStep(from) {
     }
     const bdMatch = state.birth_date.match(/^(\d{2})-(\d{2})-(\d{4})$/);
     if (!bdMatch) { showToast('Voer je geboortedatum in als DD-MM-JJJJ, bijv. 01-02-2001'); return; }
+    const bdDay = parseInt(bdMatch[1], 10), bdMonth = parseInt(bdMatch[2], 10);
+    if (bdDay < 1 || bdDay > 31 || bdMonth < 1 || bdMonth > 12) {
+      showToast('Die geboortedatum bestaat niet. Controleer dag en maand.'); return;
+    }
+    const leeftijd = calcAge(state.birth_date);
+    if (isNaN(leeftijd) || leeftijd < 13) {
+      showToast('Je moet minimaal 13 jaar zijn om een profiel aan te maken.'); return;
+    }
+    if (leeftijd > 100) { showToast('Controleer je geboortedatum.'); return; }
 
     if (!editingMusicianId) {
       state.regEmail   = document.getElementById('regEmail').value.trim();
@@ -4049,11 +4051,8 @@ function sortBandList(list) {
     if (bandSearchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
       return a.distance_km - b.distance_km;
     }
-    if (bandSearchSortMode === 'city') return (a.city || '').localeCompare(b.city || '', 'nl');
-    if (bandSearchSortMode === 'genre') {
-      const ag = (a.genres || [])[0] || '';
-      const bg = (b.genres || [])[0] || '';
-      return ag.localeCompare(bg, 'nl');
+    if (bandSearchSortMode === 'newest') {
+      return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
     }
     if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
     return 0;
