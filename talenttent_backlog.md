@@ -38,7 +38,7 @@ Niet in de audit hierboven, maar tijdens deze sessie gevonden door Ronald en dir
 | TT-07 | Ouderlijke toestemming onder 16 | P0 | Middel | Open |
 | TT-08 | Link-invoerveld focusbug | P1 | Klein | Opgelost (05-08-2026) |
 | TT-09 | Onboarding herordenen | P1 | Groot | Opgelost (05-08-2026) |
-| TT-10 | Zoeken opent met resultaten | P1 | Klein | Open |
+| TT-10 | Zoeken opent met resultaten | P1 | Klein | Opgelost (05-08-2026) |
 | TT-11 | "Ik wil meedoen" bij bands | P1 | Middel | Open |
 | TT-12 | Belofte "volgen" uit Over ons | P1 | Triviaal | Open |
 | TT-13 | Terugkeerredenen (notificatie + bekeken) | P1 | Middel | Open |
@@ -56,6 +56,7 @@ Niet in de audit hierboven, maar tijdens deze sessie gevonden door Ronald en dir
 | TT-25 | PWA-manifest | P3 | Klein | Open |
 | TT-26 | Zoektekst ongefilterd in Supabase-query | P2 | Klein | Open |
 | TT-27 | Wizard-tussenresultaten incrementeel opslaan | P2 | Middel | Open |
+| TT-28 | Filtering/paginering echt naar de database verplaatsen | P2 | Groot | Open |
 
 ---
 
@@ -349,6 +350,27 @@ De `onblur="renderLinksList()"` kan weg, of blijft staan voor opschoning bij ver
 3. Bij nul resultaten binnen 25 km automatisch verbreden naar 50 km met de melding *"Niets binnen 25 km — dit is wat er binnen 50 km speelt."* Dat is beter dan de huidige lege staat.
 
 **Acceptatie.** Eén klik op "Zoeken" levert een gevulde resultatenlijst op zonder verdere handelingen.
+
+**✅ Opgelost 05-08-2026**, uitgebreider dan het oorspronkelijke ticket na overleg met Ronald — het idee werd doorontwikkeld naar volledig interactief zoeken in plaats van alleen een eerste vulling:
+
+- **Elke wijziging ververst automatisch** — instrument/genre/doel (muzikant), genre/instrument-gezocht/status (band), en nummers toevoegen/verwijderen (setlist) verversen het resultaat direct bij een klik. Naam/plaats/leeftijd ververst met een korte vertraging (400 ms) na de laatste toetsaanslag, zodat niet bij elke letter een nieuwe zoekopdracht start. De aparte zoekknop blijft gewoon staan als expliciet alternatief.
+- **Geen "Filters ▾" inklap-element gebouwd (afwijking t.o.v. het ticket)** — met automatisch verversen bij elke wijziging bleek een apart open/dicht-mechanisme voor de filters geen toegevoegde waarde te hebben; dat onderdeel van het ticket is komen te vervallen.
+- **Geen automatische verbreding van 25 naar 50 km (afwijking t.o.v. het ticket)** — in plaats daarvan is bewust gekozen (zie hieronder, ontstaan uit een tussenvraag van Ronald over 100.000 profielen) voor een aantal-gebaseerde afkap (max. 50 resultaten tegelijk) i.p.v. een straal-gebaseerde. De reden: het probleem was niet "te weinig resultaten binnen een straal", maar "te veel resultaten zonder straal" — precies het omgekeerde risico.
+- **⚠️ Belangrijke uitbreiding, ontstaan tijdens deze sessie: schaalbaarheid bij grote aantallen.** Ronald vroeg terecht wat er gebeurt bij 100.000 profielen. Antwoord: zonder ingrijpen zou de browser vastlopen en het dataverkeer enorm worden, vooral bij uitgelogd zoeken zonder plaats ingevuld (dan gold tot nu toe geen enkele begrenzing). Opgelost met een harde grens van **maximaal 50 getoonde resultaten tegelijk** (`SEARCH_RESULT_LIMIT`), op alle drie de zoektabbladen, met een duidelijke melding erboven zodra er meer zijn ("Toont de eerste 50 van 340 resultaten — voeg een filter toe..."). Dit lost het acute risico op (de browser krijgt nooit meer dan 50 rijen te renderen), maar **niet** het onderliggende dataverkeer — de eerste (ongefilterde) trefferlijst wordt nog steeds in zijn geheel bij Supabase opgehaald vóórdat er wordt afgekapt. Dat écht oplossen (de database zelf laten stoppen bij 50, i.p.v. alles ophalen en dan pas knippen) is een aparte, grotere ingreep — vastgelegd als nieuw ticket **TT-28**.
+- **Plaats bewust niet verplicht gesteld bij uitgelogd zoeken (expliciete afweging met Ronald).** Zonder plaats blijven de eerste 50 resultaten in de praktijk willekeurig (de database filtert dan niet op afstand) — een aparte hint boven het resultaat maakt dat nu expliciet: *"Dit zijn 50 willekeurige muzikanten uit heel Nederland — vul een plaats in voor resultaten bij jou in de buurt."* Bewust géén harde blokkade, om de drempelvrije toegang (TT-03) niet terug te draaien.
+- **Bij het openen van een zoektabblad (Muzikant/Band/Setlist) verschijnt meteen een resultaat** — met de filters die op dat moment al golden (leeg bij het allereerste bezoek). Setlist vormt bewust een uitzondering: zonder minstens 1 opgegeven nummer is er niets zinvols om te tonen, dus dat tabblad laat in dat geval de bestaande "voeg een nummer toe"-tekst staan i.p.v. een geforceerde "iedereen"-lijst.
+- **Geen knipperende resultatenlijst meer bij automatisch verversen** — de laad-spinner verschijnt alleen nog bij een compleet lege resultatenlijst (de allereerste keer); bij een automatische verversing blijft de oude lijst gewoon staan tot de nieuwe binnen is, dan wisselt het in één keer.
+- **"Filters wissen"** ververst nu ook automatisch (i.p.v. het resultaat leeg achter te laten na het wissen) — bij Setlist blijft dit wél leeg, want songs wissen betekent letterlijk "niets meer om op te matchen".
+
+---
+
+## TT-28 · Filtering/paginering echt naar de database verplaatsen
+
+**Probleem.** Ontstaan uit een vraag van Ronald tijdens TT-10 ("wat gebeurt er bij 100.000 profielen?"). De huidige zoekfuncties (`runSearch()`/`runBandSearch()`/`runSetlistSearch()`) halen eerst *alle* treffers binnen de straal (of, zonder straal, alle profielen in Nederland) op bij Supabase, en filteren/knippen dan pas in de browser zelf op naam/instrument/genre/leeftijd en het aantal (zie TT-10, `SEARCH_RESULT_LIMIT`). Bij een kleine testgroep werkt dat prima; bij duizenden tot tienduizenden profielen betekent dit onnodig veel dataverkeer bij elke zoekopdracht, ook al worden er maar 50 daadwerkelijk getoond.
+
+**Wijziging.** De filters (naam, plaats/straal, instrument, genre, doel, status) + een limiet (bijv. 50) rechtstreeks meegeven aan de Supabase-zoekfuncties, zodat de database zelf al filtert en afkapt vóórdat er iets over het netwerk gaat — in plaats van "haal alles op, filter dan pas" zoals nu. Raakt de RPC's/SQL-functies (`tt_search_musicians`, `tt_search_musicians_anon`, `tt_search_bands_for_musician`, `tt_search_bands_anon`, `tt_search_musicians_by_songlist_anon`, `tt_get_musicians_public`, `tt_get_bands_public`), niet alleen `index.html`.
+
+**Acceptatie.** Bij 100.000 profielen in de database blijft een zoekopdracht snel en licht (geen merkbare vertraging, geen onnodig dataverkeer), ook zonder plaats/straal ingevuld.
 
 ---
 
@@ -652,7 +674,7 @@ TT-09 (onboarding) → TT-10 (zoeken met resultaten) → TT-16 (terugknop) → T
 TT-07 (ouderlijke toestemming) → TT-13 (terugkeerredenen) → TT-22 (accountverwijdering)
 
 **Sprint 5 — indruk**
-TT-14, TT-15, TT-18, TT-19, TT-12, TT-20, TT-21, TT-23, TT-24, TT-25, TT-26, TT-27
+TT-14, TT-15, TT-18, TT-19, TT-12, TT-20, TT-21, TT-23, TT-24, TT-25, TT-26, TT-27, TT-28
 
 ---
 

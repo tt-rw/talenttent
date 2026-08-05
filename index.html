@@ -1869,13 +1869,13 @@
       <div class="filter-row">
         <div class="field">
           <label>Voornaam</label>
-          <input type="text" id="filterName" placeholder="Bijv. Ronald">
+          <input type="text" id="filterName" placeholder="Bijv. Ronald" oninput="scheduleMusicianAutoSearch()">
         </div>
         <div class="field">
           <label>Plaats</label>
           <div class="city-search-wrap">
             <input type="text" id="filterCity" placeholder="Bijv. Delft, Den Haag..." autocomplete="off"
-              oninput="onCitySearchInput(this.value,'acFilterCityList')"
+              oninput="onCitySearchInput(this.value,'acFilterCityList'); scheduleMusicianAutoSearch();"
               onblur="setTimeout(()=>closeAC('acFilterCityList'),200)">
             <div class="autocomplete-list" id="acFilterCityList"></div>
           </div>
@@ -1886,19 +1886,23 @@
         <div class="field">
           <label>Leeftijd</label>
           <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterAgeMin" placeholder="Min" min="1" style="width:80px;">
+            <input type="number" id="filterAgeMin" placeholder="Min" min="1" style="width:80px;" oninput="scheduleMusicianAutoSearch()">
             <span style="color:var(--muted);font-size:13px;">t/m</span>
-            <input type="number" id="filterAgeMax" placeholder="Max" min="1" style="width:80px;">
+            <input type="number" id="filterAgeMax" placeholder="Max" min="1" style="width:80px;" oninput="scheduleMusicianAutoSearch()">
           </div>
         </div>
         <div class="field">
           <label>Zoekstraal</label>
           <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterRadius" value="25" min="5" max="500" step="5" style="width:80px;" onchange="snapRadiusToStep(this)">
+            <input type="number" id="filterRadius" value="25" min="5" max="500" step="5" style="width:80px;" onchange="snapRadiusToStep(this); runSearch();">
             <span style="color:var(--muted);font-size:13px;">km</span>
           </div>
         </div>
       </div>
+
+      <!-- TT-10: filters ververst nu automatisch bij elke klik/wijziging;
+           knop blijft staan als duidelijk, expliciet alternatief (bijv. na
+           het typen van een naam zonder te wachten op de korte vertraging). -->
 
       <div class="filter-row single" style="margin-bottom:16px;">
         <div class="field">
@@ -1952,11 +1956,11 @@
       <div class="filter-title">Vind een band</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Zoek bands die nog muzikanten zoeken</p>
       <div class="filter-row">
-        <div class="field"><label>Bandnaam</label><input type="text" id="filterBandName" placeholder="Bijv. The Rusty Strings"></div>
+        <div class="field"><label>Bandnaam</label><input type="text" id="filterBandName" placeholder="Bijv. The Rusty Strings" oninput="scheduleBandAutoSearch()"></div>
         <div class="field"><label>Plaats</label>
           <div class="city-search-wrap">
             <input type="text" id="filterBandCity" placeholder="Bijv. Delft, Den Haag..." autocomplete="off"
-              oninput="onCitySearchInput(this.value,'acFilterBandCityList')"
+              oninput="onCitySearchInput(this.value,'acFilterBandCityList'); scheduleBandAutoSearch();"
               onblur="setTimeout(()=>closeAC('acFilterBandCityList'),200)">
             <div class="autocomplete-list" id="acFilterBandCityList"></div>
           </div>
@@ -1967,7 +1971,7 @@
         <div class="field">
           <label>Zoekstraal</label>
           <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterBandRadius" value="25" min="5" max="500" step="5" style="width:80px;" onchange="snapRadiusToStep(this)">
+            <input type="number" id="filterBandRadius" value="25" min="5" max="500" step="5" style="width:80px;" onchange="snapRadiusToStep(this); runBandSearch();">
             <span style="color:var(--muted);font-size:13px;">km</span>
           </div>
         </div>
@@ -2010,7 +2014,7 @@
           <label>Plaats</label>
           <div class="city-search-wrap">
             <input type="text" id="filterSetlistCity" placeholder="Bijv. Delft, Den Haag..." autocomplete="off"
-              oninput="onCitySearchInput(this.value,'acFilterSetlistCityList')"
+              oninput="onCitySearchInput(this.value,'acFilterSetlistCityList'); scheduleSetlistAutoSearch();"
               onblur="setTimeout(()=>closeAC('acFilterSetlistCityList'),200)">
             <div class="autocomplete-list" id="acFilterSetlistCityList"></div>
           </div>
@@ -2019,7 +2023,7 @@
         <div class="field">
           <label>Zoekstraal</label>
           <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterSetlistRadius" value="25" min="5" max="500" step="5" style="width:80px;" onchange="snapRadiusToStep(this)">
+            <input type="number" id="filterSetlistRadius" value="25" min="5" max="500" step="5" style="width:80px;" onchange="snapRadiusToStep(this); if(setlistWantedSongs.length) runSetlistSearch();">
             <span style="color:var(--muted);font-size:13px;">km</span>
           </div>
         </div>
@@ -2393,6 +2397,13 @@ async function configureSearchAccess() {
   }
 
   initBandSearchFilters();
+
+  // TT-10 (05-08-2026): bij elk bezoek aan "Zoeken" meteen een resultaat tonen
+  // voor het tabblad dat op dat moment actief is, i.p.v. te wachten tot
+  // iemand zelf op een zoekknop klikt.
+  if (currentSearchMode === 'musician') runSearch();
+  else if (currentSearchMode === 'band') runBandSearch();
+  else if (currentSearchMode === 'setlist' && setlistWantedSongs.length) runSetlistSearch();
 }
 
 // Zet een sorteertoggle-grid programmatisch op een waarde (zonder klik-event),
@@ -2409,6 +2420,7 @@ function selectSortModeByValue(gridId, value) {
 }
 
 function setSearchMode(mode) {
+  currentSearchMode = mode;
   const isMusician = mode === 'musician';
   const isBand     = mode === 'band';
   const isSetlist  = mode === 'setlist';
@@ -2419,6 +2431,14 @@ function setSearchMode(mode) {
   document.getElementById('searchModeBandBtn').classList.toggle('active', isBand);
   document.getElementById('searchModeSetlistBtn').classList.toggle('active', isSetlist);
   if (isBand) initBandSearchFilters();
+
+  // TT-10: bij het wisselen van tabblad meteen een resultaat tonen (met de
+  // filters die op dat tabblad al stonden), i.p.v. een leeg scherm totdat er
+  // zelf gezocht wordt. Setlist heeft geen zinvolle "iedereen"-status zonder
+  // minstens 1 opgegeven nummer — daar laten we de bestaande lege staat staan.
+  if (isMusician) runSearch();
+  else if (isBand) runBandSearch();
+  else if (isSetlist && setlistWantedSongs.length) runSetlistSearch();
 }
 
 function showView(view) {
@@ -2551,6 +2571,35 @@ let lastMusicianResults = [];
 // vanuit een resultatenlijst — zonder de postcode zelf ooit te tonen (TT-04).
 let musicianDistanceCache = {};
 
+// TT-10 (05-08-2026): welk zoektabblad nu actief is, zodat configureSearchAccess()
+// (draait bij elk bezoek aan "Zoeken") weet welke zoekfunctie automatisch
+// opnieuw moet draaien.
+let currentSearchMode = 'musician';
+
+// Debounce-timers voor tekstvelden die automatisch verversen: een klik op een
+// tag mag direct verversen, maar bij typen (naam/plaats/leeftijd) wachten we
+// een fractie van een seconde na de laatste toetsaanslag, anders zoekt de app
+// bij elke letter opnieuw — hakkelig en onnodig zwaar.
+let musicianAutoSearchTimeout = null;
+let bandAutoSearchTimeout = null;
+let setlistAutoSearchTimeout = null;
+
+function scheduleMusicianAutoSearch() {
+  clearTimeout(musicianAutoSearchTimeout);
+  musicianAutoSearchTimeout = setTimeout(() => runSearch(), 400);
+}
+function scheduleBandAutoSearch() {
+  clearTimeout(bandAutoSearchTimeout);
+  bandAutoSearchTimeout = setTimeout(() => runBandSearch(), 400);
+}
+function scheduleSetlistAutoSearch() {
+  clearTimeout(setlistAutoSearchTimeout);
+  // Zonder minstens 1 opgegeven nummer heeft zoeken geen betekenis — dan
+  // stilzwijgend niets doen i.p.v. een foutmelding te tonen terwijl iemand
+  // nog gewoon de plaats/straal aan het intypen is.
+  setlistAutoSearchTimeout = setTimeout(() => { if (setlistWantedSongs.length) runSetlistSearch(); }, 400);
+}
+
 function sortMusicianList(list) {
   list.sort((a, b) => {
     if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
@@ -2580,7 +2629,8 @@ function setSearchSortMode(el, mode) {
   document.querySelectorAll('#filterSortMode .tag').forEach(x => x.classList.remove('selected'));
   el.classList.add('selected');
   if (lastMusicianResults.length) {
-    renderSearchResults(sortMusicianList(lastMusicianResults));
+    sortMusicianList(lastMusicianResults);
+    renderCappedMusicianResults();
   }
 }
 
@@ -2598,6 +2648,7 @@ function initSearchFilters() {
       const idx = filterInstruments.indexOf(i);
       if (idx === -1) { filterInstruments.push(i); t.classList.add('selected'); }
       else { filterInstruments.splice(idx,1); t.classList.remove('selected'); }
+      runSearch();
     };
     ig.appendChild(t);
   });
@@ -2611,6 +2662,7 @@ function initSearchFilters() {
       const idx = filterGenres.indexOf(g);
       if (idx === -1) { filterGenres.push(g); t.classList.add('selected'); }
       else { filterGenres.splice(idx,1); t.classList.remove('selected'); }
+      runSearch();
     };
     gg.appendChild(t);
   });
@@ -2626,6 +2678,7 @@ function initSearchFilters() {
       document.querySelectorAll('#filterGoals .tag').forEach(x => x.classList.remove('selected'));
       if (filterGoal === val) { filterGoal = null; }
       else { filterGoal = val; t.classList.add('selected'); }
+      runSearch();
     };
     goalWrap.appendChild(t);
   });
@@ -2662,15 +2715,22 @@ function resetMusicianSearch() {
   filterGoal = null;
   document.querySelectorAll('#filterInstruments .tag, #filterGenres .genre-tag, #filterGoals .tag').forEach(t => t.classList.remove('selected'));
   selectSortModeByValue('filterSortMode', hasOwnProfile ? 'score' : 'distance');
-  lastMusicianResults = [];
-  document.getElementById('searchResults').innerHTML = '';
+  // TT-10: niet leeg laten staan — meteen opnieuw zoeken zonder filters,
+  // consistent met "bij openen/wisselen van tabblad altijd een resultaat".
+  runSearch();
 }
 
 async function runSearch() {
   const resultsEl = document.getElementById('searchResults');
-  resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
-    <div class="save-spinner" style="margin:0 auto 16px;"></div>Muzikanten zoeken...
-  </div>`;
+  // TT-10: bij automatisch verversen (filter aangeklikt/getypt) blijft het
+  // bestaande resultaat gewoon staan tot het nieuwe binnen is — geen
+  // steeds terugkerende laadanimatie die het scherm laat "knipperen". Alleen
+  // bij de allereerste zoekopdracht (nog niets op het scherm) tonen we 'm.
+  if (!resultsEl.innerHTML.trim()) {
+    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
+      <div class="save-spinner" style="margin:0 auto 16px;"></div>Muzikanten zoeken...
+    </div>`;
+  }
 
   try {
     // Naam + Plaats: werken altijd, zowel met matching (bovenop de straal)
@@ -2778,17 +2838,26 @@ async function runSearch() {
     });
     sortMusicianList(filtered);
     lastMusicianResults = filtered;
-    renderSearchResults(filtered);
+    renderCappedMusicianResults();
 
   } catch(e) {
     resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
 }
 
-function renderSearchResults(musicians) {
-  const el = document.getElementById('searchResults');
+// TT-10 (05-08-2026): nooit meer dan dit aantal tegelijk tonen, ook niet
+// zonder filters — bij duizenden/tienduizenden profielen zou de browser
+// anders vastlopen en het dataverkeer onnodig groot worden. Bij meer treffers
+// dan dit aantal: gewoon de eerste N (op de gekozen sortering) tonen, met een
+// duidelijke melding erboven i.p.v. stilzwijgend afkappen.
+const SEARCH_RESULT_LIMIT = 50;
 
-  if (!musicians.length) {
+function renderSearchResults(musicians, opts) {
+  opts = opts || {};
+  const el = document.getElementById('searchResults');
+  const total = opts.total != null ? opts.total : musicians.length;
+
+  if (!total) {
     el.innerHTML = `
       <div class="no-results">
         <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen muzikanten gevonden</p>
@@ -2797,13 +2866,32 @@ function renderSearchResults(musicians) {
     return;
   }
 
+  const locationHint = opts.showLocationHint
+    ? `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Dit zijn ${musicians.length} willekeurige muzikanten uit heel Nederland — vul een plaats in voor resultaten bij jou in de buurt.</p>`
+    : '';
+  const cappedNotice = total > musicians.length
+    ? `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Toont de eerste ${musicians.length} van ${total} resultaten — voeg een filter toe of verklein je zoekstraal voor een preciezer overzicht.</p>`
+    : '';
+
   el.innerHTML = `
     <div class="results-header">
-      <span class="results-count">${musicians.length} muzikant${musicians.length !== 1 ? 'en' : ''} gevonden</span>
+      <span class="results-count">${total} muzikant${total !== 1 ? 'en' : ''} gevonden</span>
     </div>
+    ${locationHint}${cappedNotice}
     <div class="results-list">
       ${musicians.map(m => musicianRowHTML(m)).join('')}
     </div>`;
+}
+
+// Gedeeld door runSearch() en setSearchSortMode() — zorgt dat afkappen tot
+// SEARCH_RESULT_LIMIT en de bijbehorende meldingen altijd hetzelfde werken,
+// ongeacht of het resultaat net is opgehaald of alleen opnieuw gesorteerd.
+function renderCappedMusicianResults() {
+  const total = lastMusicianResults.length;
+  const shown = lastMusicianResults.slice(0, SEARCH_RESULT_LIMIT);
+  const cityFilled = !!document.getElementById('filterCity').value.trim();
+  const showLocationHint = !hasOwnProfile && !cityFilled && total > 0;
+  renderSearchResults(shown, { total, showLocationHint });
 }
 
 // Extreem overzichtelijk gehouden (04-08-2026): alleen naam, plaats(+afstand)
@@ -4417,7 +4505,8 @@ function setBandSearchSortMode(el, mode) {
   document.querySelectorAll('#filterBandSortMode .tag').forEach(x => x.classList.remove('selected'));
   el.classList.add('selected');
   if (lastBandResults.length) {
-    renderBandSearchResults(sortBandList(lastBandResults));
+    sortBandList(lastBandResults);
+    renderCappedBandResults();
   }
 }
 
@@ -4434,6 +4523,7 @@ function initBandSearchFilters() {
         const idx = filterBandGenresList.indexOf(g);
         if (idx === -1) { filterBandGenresList.push(g); t.classList.add('selected'); }
         else { filterBandGenresList.splice(idx,1); t.classList.remove('selected'); }
+        runBandSearch();
       };
       gg.appendChild(t);
     });
@@ -4450,6 +4540,7 @@ function initBandSearchFilters() {
         const idx = filterBandWantedList.indexOf(i);
         if (idx === -1) { filterBandWantedList.push(i); t.classList.add('selected'); }
         else { filterBandWantedList.splice(idx,1); t.classList.remove('selected'); }
+        runBandSearch();
       };
       wg.appendChild(t);
     });
@@ -4459,9 +4550,11 @@ function initBandSearchFilters() {
 function toggleBandStatusFilter(el, val) {
   el.classList.toggle('selected');
   filterBandStatusVal = el.classList.contains('selected') ? val : null;
+  runBandSearch();
 }
 
-// Filters wissen — zet zoekscherm terug naar lege staat, leegt ook het resultaat.
+// Filters wissen — zet zoekscherm terug naar lege staat, zoekt daarna direct
+// opnieuw (TT-10: nooit een leeg resultaat achterlaten na het wissen).
 function resetBandSearch() {
   document.getElementById('filterBandName').value = '';
   document.getElementById('filterBandCity').value = '';
@@ -4474,13 +4567,14 @@ function resetBandSearch() {
     t.classList.toggle('selected', t.textContent.trim() === 'Zoekend');
   });
   selectSortModeByValue('filterBandSortMode', hasOwnProfile ? 'score' : 'distance');
-  lastBandResults = [];
-  document.getElementById('bandSearchResults').innerHTML = '';
+  runBandSearch();
 }
 
 async function runBandSearch() {
   const resultsEl = document.getElementById('bandSearchResults');
-  resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">Bands zoeken...</div>`;
+  if (!resultsEl.innerHTML.trim()) {
+    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">Bands zoeken...</div>`;
+  }
   try {
     // Naam + Plaats: werken altijd, zowel met matching (bovenop de straal)
     // als zonder eigen profiel (als directe zoekopdracht) — vindbaarheid (Presentatie).
@@ -4568,21 +4662,40 @@ async function runBandSearch() {
     });
     sortBandList(filtered);
     lastBandResults = filtered;
-    renderBandSearchResults(filtered);
+    renderCappedBandResults();
   } catch(e) {
     resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
 }
 
-function renderBandSearchResults(bands) {
+function renderBandSearchResults(bands, opts) {
+  opts = opts || {};
   const el = document.getElementById('bandSearchResults');
-  if (!bands.length) {
+  const total = opts.total != null ? opts.total : bands.length;
+
+  if (!total) {
     el.innerHTML = `<div class="no-results"><p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen bands gevonden</p><p style="font-size:13px;">Pas je filters of zoekstraal aan, en controleer of je eigen postcode in je profiel klopt.</p></div>`;
     return;
   }
+  const locationHint = opts.showLocationHint
+    ? `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Dit zijn ${bands.length} willekeurige bands uit heel Nederland — vul een plaats in voor resultaten bij jou in de buurt.</p>`
+    : '';
+  const cappedNotice = total > bands.length
+    ? `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Toont de eerste ${bands.length} van ${total} resultaten — voeg een filter toe of verklein je zoekstraal voor een preciezer overzicht.</p>`
+    : '';
   const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
-  el.innerHTML = `<div class="results-header"><span class="results-count">${bands.length} band${bands.length !== 1 ? 's' : ''} gevonden</span></div>
+  el.innerHTML = `<div class="results-header"><span class="results-count">${total} band${total !== 1 ? 's' : ''} gevonden</span></div>
+    ${locationHint}${cappedNotice}
     <div class="results-list">${bands.map(b => bandRowHTML(b, statusLabels)).join('')}</div>`;
+}
+
+// Zelfde patroon als renderCappedMusicianResults() hierboven.
+function renderCappedBandResults() {
+  const total = lastBandResults.length;
+  const shown = lastBandResults.slice(0, SEARCH_RESULT_LIMIT);
+  const cityFilled = !!document.getElementById('filterBandCity').value.trim();
+  const showLocationHint = !hasOwnProfile && !cityFilled && total > 0;
+  renderBandSearchResults(shown, { total, showLocationHint });
 }
 
 // Lijstweergave i.p.v. kaarten (04-08-2026) — duidelijker scanbaar bij veel resultaten.
@@ -4648,11 +4761,16 @@ function addSetlistSong(title, artist) {
   selectedSetlistArtist = null;
   renderSetlistSongsList();
   setTimeout(() => document.getElementById('setlistArtistSearch').focus(), 0);
+  runSetlistSearch(); // TT-10: direct verversen, minstens 1 nummer is nu bekend
 }
 
 function removeSetlistSong(i) {
   setlistWantedSongs.splice(i, 1);
   renderSetlistSongsList();
+  // TT-10: bij het laatste nummer weghalen is er niets meer om op te matchen —
+  // resultaat netjes leegmaken i.p.v. het oude resultaat te laten staan.
+  if (setlistWantedSongs.length) runSetlistSearch();
+  else document.getElementById('setlistSearchResults').innerHTML = '';
 }
 
 // Stap A: artiest zoeken (zelfde MusicBrainz-aanpak als profiel-repertoire).
@@ -4745,9 +4863,11 @@ async function runSetlistSearch() {
   const resultsEl = document.getElementById('setlistSearchResults');
   if (!setlistWantedSongs.length) { showToast('Voeg minimaal één nummer toe aan de setlist.'); return; }
 
-  resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
-    <div class="save-spinner" style="margin:0 auto 16px;"></div>Zoeken...
-  </div>`;
+  if (!resultsEl.innerHTML.trim()) {
+    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
+      <div class="save-spinner" style="margin:0 auto 16px;"></div>Zoeken...
+    </div>`;
+  }
 
   try {
     const titles  = setlistWantedSongs.map(s => s.title);
@@ -4849,16 +4969,19 @@ async function runSetlistSearch() {
       return (a.fname || '').localeCompare(b.fname || '', 'nl');
     });
 
-    renderSetlistResults(filtered);
+    renderSetlistResults(filtered.slice(0, SEARCH_RESULT_LIMIT), { total: filtered.length });
 
   } catch(e) {
     resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
 }
 
-function renderSetlistResults(musicians) {
+function renderSetlistResults(musicians, opts) {
+  opts = opts || {};
   const el = document.getElementById('setlistSearchResults');
-  if (!musicians.length) {
+  const total = opts.total != null ? opts.total : musicians.length;
+
+  if (!total) {
     el.innerHTML = `
       <div class="no-results">
         <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen muzikanten gevonden</p>
@@ -4866,10 +4989,14 @@ function renderSetlistResults(musicians) {
       </div>`;
     return;
   }
+  const cappedNotice = total > musicians.length
+    ? `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Toont de eerste ${musicians.length} van ${total} resultaten — voeg meer nummers toe of verklein je zoekstraal voor een preciezer overzicht.</p>`
+    : '';
   el.innerHTML = `
     <div class="results-header">
-      <span class="results-count">${musicians.length} muzikant${musicians.length !== 1 ? 'en' : ''} gevonden</span>
+      <span class="results-count">${total} muzikant${total !== 1 ? 'en' : ''} gevonden</span>
     </div>
+    ${cappedNotice}
     <div class="results-list">
       ${musicians.map(m => musicianSetlistRowHTML(m)).join('')}
     </div>`;
