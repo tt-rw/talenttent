@@ -4515,15 +4515,18 @@ function renderSetlistResults(musicians) {
 // (Ronald) — toont i.p.v. daarvan het aantal treffers + de volgnummers.
 function musicianSetlistRowHTML(m) {
   const col = m.profile_color || '#f5c518';
-  const initials = m.fname[0].toUpperCase();
-  const avatarHTML = m.avatar_url ? `<img src="${m.avatar_url}" alt="${m.fname}">` : initials;
+  const showIdentity = !!currentUser;
+  const avatarHTML = showIdentity
+    ? (m.avatar_url ? `<img src="${m.avatar_url}" alt="${m.fname}">` : m.fname[0].toUpperCase())
+    : '';
+  const nameHTML = showIdentity ? m.fname : 'Muzikant';
   const total = setlistWantedSongs.length;
 
   return `
     <div class="result-row" onclick="openMusicianModal('${m.id}')">
       <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
       <div class="result-row-main">
-        <div class="result-row-name">${m.fname}</div>
+        <div class="result-row-name">${nameHTML}</div>
         <div class="result-row-meta">${m.city || ''}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       </div>
       <div class="result-row-badges">
