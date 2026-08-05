@@ -2807,8 +2807,10 @@ async function openMusicianModal(id) {
   if (!currentUser) {
     content.innerHTML = `
       <div style="text-align:center;padding:40px 20px;">
-        <p style="color:var(--muted);margin-bottom:20px;">Log in om dit profiel te zien.</p>
-        <button class="btn btn-primary" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Account maken</button>
+        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Wil je zien wie dit is?</p>
+        <p style="color:var(--muted);margin-bottom:24px;">Log in of maak een gratis profiel aan — dan zie je meteen wie hier past bij jouw muziek.</p>
+        <button class="btn btn-primary" style="width:100%;margin-bottom:12px;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Account maken</button>
+        <button class="btn btn-ghost" style="width:100%;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('auth')">Ik heb al een profiel — inloggen</button>
       </div>`;
     return;
   }
