@@ -2463,6 +2463,10 @@ let filterGenres      = [];
 let filterGoal        = null;
 let searchSortMode    = 'score';
 let lastMusicianResults = [];
+// Afstand per muzikant-id, gevuld door zoekresultaten (gewoon zoeken en setlist-
+// zoeken). Gebruikt om de afstand ook te tonen als iemand het profiel opent
+// vanuit een resultatenlijst — zonder de postcode zelf ooit te tonen (TT-04).
+let musicianDistanceCache = {};
 
 function sortMusicianList(list) {
   list.sort((a, b) => {
@@ -2686,6 +2690,7 @@ async function runSearch() {
       m.distance_km = info ? info.distance_km : null;
       m.matchScore  = info ? info.score : null;
       m.isStale     = info ? info.is_stale : false;
+      musicianDistanceCache[m.id] = m.distance_km;
     });
     sortMusicianList(filtered);
     lastMusicianResults = filtered;
@@ -2774,7 +2779,7 @@ function buildMusicianDetailHTML(m) {
     <div class="profile-header-band" style="background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;"></div>
     ${avatarHTML}
     <div class="profile-name">${m.fname}</div>
-    <div class="profile-meta">${age} jaar · ${m.city}${m.zip ? ' · ' + m.zip : ''}</div>
+    <div class="profile-meta">${age} jaar · ${m.city}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
     <div class="freshness-bar" style="margin-top:12px;margin-bottom:16px;">
       <div class="freshness-dot"></div>
       <span>Bijgewerkt op <strong>${date}</strong></span>
@@ -2822,7 +2827,7 @@ async function openMusicianModal(id) {
 
   if (hasOwnProfile) {
     const res = await db.from('musicians').select(`
-      id, fname, birth_date, city, zip, bio, goal,
+      id, fname, birth_date, city, bio, goal,
       profile_color, avatar_url, updated_at,
       musician_instruments(instrument),
       musician_genres(genre),
@@ -2837,7 +2842,7 @@ async function openMusicianModal(id) {
     const row = (res.data || [])[0];
     if (row) {
       m = {
-        id: row.id, fname: row.fname, birth_date: row.birth_date, city: row.city, zip: row.zip,
+        id: row.id, fname: row.fname, birth_date: row.birth_date, city: row.city,
         bio: row.bio, goal: row.goal, profile_color: row.profile_color, avatar_url: row.avatar_url,
         updated_at: row.updated_at,
         musician_instruments: (row.instruments || []).map(i => ({ instrument: i })),
@@ -2852,6 +2857,9 @@ async function openMusicianModal(id) {
     document.getElementById('musicianModalContent').innerHTML = '<p style="color:var(--accent2)">Kon profiel niet laden.</p>';
     return;
   }
+
+  // Afstand tonen (indien bekend uit een eerdere zoekopdracht) i.p.v. de postcode.
+  m.distance_km = musicianDistanceCache[m.id] != null ? musicianDistanceCache[m.id] : null;
 
   document.getElementById('musicianModalContent').innerHTML = buildMusicianDetailHTML(m);
 }
@@ -4473,6 +4481,7 @@ async function runSetlistSearch() {
       m.matchCount = m.matchedNumbers.length;
       m.isStale = m.updated_at ? (new Date(m.updated_at) < sixMonthsAgo) : false;
       m.distance_km = distanceMap[m.id] != null ? distanceMap[m.id] : null;
+      musicianDistanceCache[m.id] = m.distance_km;
     });
 
     // Hoe meer nummers matchen, hoe hoger in het resultaat; bij gelijke stand
