@@ -782,6 +782,31 @@
   .media-tab.active { background: var(--surface); color: var(--text); }
   .media-tab:hover:not(.active) { color: var(--text); }
 
+  /* Zoeken: prominente, gecentreerde modus-knoppen (muzikant/band/setlist) */
+  .search-mode-tabs {
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    max-width: 620px;
+    margin: 0 auto 28px;
+  }
+  .search-mode-tab {
+    flex: 1;
+    padding: 16px 12px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--muted);
+    border: 2px solid var(--border);
+    background: var(--surface2);
+    border-radius: 10px;
+    font-family: 'Roboto', sans-serif;
+    transition: all 0.2s;
+  }
+  .search-mode-tab.active { background: rgba(245,197,24,0.1); border-color: var(--accent); color: var(--accent); }
+  .search-mode-tab:hover:not(.active) { border-color: var(--text); color: var(--text); }
+
   .media-pane { display: none; }
   .media-pane.active { display: block; }
 
@@ -1457,6 +1482,10 @@
   <button class="nav-btn" id="navAbout" onclick="showView('about')">Over ons</button>
   <button class="nav-btn" id="navLogin" onclick="navLoginClick()">Inloggen</button>
 </nav>
+<div id="editModeBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 24px;background:rgba(245,197,24,0.1);border-top:1px solid var(--border);font-size:13px;">
+  <span>Je bent nog bezig met je profiel bewerken.</span>
+  <button class="btn btn-primary" style="padding:6px 16px;font-size:12px;" onclick="showView('register')">Verder bewerken →</button>
+</div>
 </div>
 
 <!-- VIEW: Landingspagina -->
@@ -1621,7 +1650,7 @@
     </div>
 
     <div class="nav-buttons">
-      <span></span>
+      <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
       <button class="btn btn-primary" onclick="nextStep(0)">Verder →</button>
     </div>
   </div>
@@ -1650,7 +1679,10 @@
     </div>
 
     <div class="nav-buttons">
-      <button class="btn btn-ghost" onclick="prevStep(1)">← Terug</button>
+      <div style="display:flex;gap:12px;">
+        <button class="btn btn-ghost" onclick="prevStep(1)">← Terug</button>
+        <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+      </div>
       <button class="btn btn-primary" onclick="nextStep(1)">Verder →</button>
     </div>
   </div>
@@ -1660,33 +1692,40 @@
     <div class="panel-title">Repertoire</div>
     <div class="panel-sub">Zoek eerst een artiest, kies dan een nummer. Voeg minimaal 1 nummer toe.</div>
 
-    <!-- Stap A: Band of artiest zoeken -->
-    <div class="field" style="margin-bottom:12px;">
-      <label>Band of artiest</label>
-      <div class="song-search-wrap">
-        <input type="text" id="artistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
-          oninput="onArtistSearch(this.value)"
-          onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acArtistList');}"
-          onblur="setTimeout(()=>closeAC('acArtistList'),200)">
-        <div class="autocomplete-list" id="acArtistList"></div>
-      </div>
-    </div>
+    <!-- Zoekblok: nummer toevoegen -->
+    <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:20px;">
+      <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:12px;">Nummer toevoegen</div>
 
-    <!-- Stap B: Nummer kiezen (verschijnt na artiestenselectie) -->
-    <div id="trackSearchWrap" style="display:none; margin-bottom:12px;">
-      <div class="field">
-        <label id="trackSearchLabel">Nummer</label>
+      <!-- Stap A: Band of artiest zoeken -->
+      <div class="field" style="margin-bottom:12px;">
+        <label>Band of artiest</label>
         <div class="song-search-wrap">
-          <input type="text" id="trackSearch" placeholder="Zoek een nummer..." autocomplete="off"
-            oninput="onTrackSearch(this.value)"
-            onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acTrackList');}"
-            onblur="setTimeout(()=>closeAC('acTrackList'),200)">
-          <div class="autocomplete-list" id="acTrackList"></div>
+          <input type="text" id="artistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
+            oninput="onArtistSearch(this.value)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acArtistList');}"
+            onblur="setTimeout(()=>closeAC('acArtistList'),200)">
+          <div class="autocomplete-list" id="acArtistList"></div>
+        </div>
+      </div>
+
+      <!-- Stap B: Nummer kiezen (verschijnt na artiestenselectie) -->
+      <div id="trackSearchWrap" style="display:none;">
+        <div class="field">
+          <label id="trackSearchLabel">Nummer</label>
+          <div class="song-search-wrap">
+            <input type="text" id="trackSearch" placeholder="Zoek een nummer..." autocomplete="off"
+              oninput="onTrackSearch(this.value)"
+              onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acTrackList');}"
+              onblur="setTimeout(()=>closeAC('acTrackList'),200)">
+            <div class="autocomplete-list" id="acTrackList"></div>
+          </div>
         </div>
       </div>
     </div>
 
+    <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:8px;">Jouw repertoire</div>
     <div class="songs-list" id="songsList"></div>
+    <p id="songsListEmpty" style="font-size:13px; color:var(--muted); margin-top:4px;">Nog geen nummers toegevoegd.</p>
 
     <div class="divider"></div>
 
@@ -1698,7 +1737,10 @@
     </p>
 
     <div class="nav-buttons">
-      <button class="btn btn-ghost" onclick="prevStep(2)">← Terug</button>
+      <div style="display:flex;gap:12px;">
+        <button class="btn btn-ghost" onclick="prevStep(2)">← Terug</button>
+        <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+      </div>
       <button class="btn btn-primary" onclick="nextStep(2)">Verder →</button>
     </div>
   </div>
@@ -1728,7 +1770,10 @@
     </div>
 
     <div class="nav-buttons">
-      <button class="btn btn-ghost" onclick="prevStep(3)">← Terug</button>
+      <div style="display:flex;gap:12px;">
+        <button class="btn btn-ghost" onclick="prevStep(3)">← Terug</button>
+        <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+      </div>
       <button class="btn btn-primary" onclick="nextStep(3)">Verder →</button>
     </div>
   </div>
@@ -1767,7 +1812,10 @@
     </div>
 
     <div class="nav-buttons">
-      <button class="btn btn-ghost" onclick="prevStep(4)">← Terug</button>
+      <div style="display:flex;gap:12px;">
+        <button class="btn btn-ghost" onclick="prevStep(4)">← Terug</button>
+        <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+      </div>
       <button class="btn btn-primary" id="submitProfileBtn" onclick="submitProfile()">Profiel aanmaken</button>
     </div>
   </div>
@@ -1788,10 +1836,10 @@
 <!-- VIEW: Zoeken                                -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="app-view" id="view-search">
-  <div class="media-tabs" style="max-width:500px;margin:0 auto 24px;">
-    <button class="media-tab active" id="searchModeMusicianBtn" onclick="setSearchMode('musician')">Muzikanten</button>
-    <button class="media-tab" id="searchModeBandBtn" onclick="setSearchMode('band')">Bands</button>
-    <button class="media-tab" id="searchModeSetlistBtn" onclick="setSearchMode('setlist')">Setlist</button>
+  <div class="search-mode-tabs">
+    <button class="search-mode-tab active" id="searchModeMusicianBtn" onclick="setSearchMode('musician')">Muzikant</button>
+    <button class="search-mode-tab" id="searchModeBandBtn" onclick="setSearchMode('band')">Band</button>
+    <button class="search-mode-tab" id="searchModeSetlistBtn" onclick="setSearchMode('setlist')">Setlist</button>
   </div>
 
   <div id="searchModeMusician">
@@ -2292,10 +2340,17 @@ function showView(view) {
         fld.style.opacity = locked ? '0.85' : '';
       }
     });
+    document.querySelectorAll('.cancel-edit-btn').forEach(btn => {
+      btn.style.display = locked ? 'inline-block' : 'none';
+    });
   }
   if (view === 'myprofile') loadMyProfile();
   if (view === 'bands') loadMyBands();
   if (view === 'search') configureSearchAccess();
+
+  const banner = document.getElementById('editModeBanner');
+  if (banner) banner.style.display = (editingMusicianId && view !== 'register') ? 'flex' : 'none';
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2750,7 +2805,7 @@ async function deleteMyProfile() {
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Je hebt geen profiel om te verwijderen.'); return; }
 
-  showConfirm('Weet je zeker dat je je profiel wilt verwijderen? Dit kan niet ongedaan worden gemaakt.', async () => {
+  showConfirm('Weet je zeker dat je je profiel wilt verwijderen? Alle gegevens worden permanent verwijderd.', async () => {
     try {
       await db.from('musician_instruments').delete().eq('musician_id', mid);
       await db.from('musician_genres').delete().eq('musician_id', mid);
@@ -2765,6 +2820,13 @@ async function deleteMyProfile() {
     } catch (e) {
       showToast(friendlyErrorMessage(e));
     }
+  });
+}
+
+function cancelEditProfile() {
+  showConfirm('Weet je zeker dat je wilt stoppen met bewerken? Niet-opgeslagen wijzigingen gaan verloren.', () => {
+    editingMusicianId = null;
+    showView('myprofile');
   });
 }
 
@@ -2827,9 +2889,14 @@ async function editMyProfile() {
   document.querySelectorAll('.goal-card').forEach((c, i) => c.classList.toggle('selected', i === goalIdx));
 
   const avatarPreview = document.getElementById('avatarPreview');
-  avatarPreview.innerHTML = `<span id="avatarInitials">${(state.fname[0] || '?').toUpperCase()}</span>`;
+  if (state.avatarUrl) {
+    avatarPreview.innerHTML = `<img src="${state.avatarUrl}" alt="profielfoto">`;
+    document.getElementById('avatarRemoveBtn').classList.add('visible');
+  } else {
+    avatarPreview.innerHTML = `<span id="avatarInitials">${(state.fname[0] || '?').toUpperCase()}</span>`;
+    document.getElementById('avatarRemoveBtn').classList.remove('visible');
+  }
   avatarPreview.style.borderColor = state.profileColor;
-  document.getElementById('avatarRemoveBtn').classList.remove('visible');
 }
 
 async function loadMyProfile() {
@@ -3326,30 +3393,19 @@ function onBandPostcodeInput(value) {
 
 // ─── Vertrekpunt voor zoeken zonder eigen profiel ───────────────────────────
 // Het bestaande Plaats-veld (filterCity/filterBandCity) doet zonder eigen
-// profiel dubbele dienst: gewoon tekstfilter, én (via postcode_cache, die al
-// coördinaten bevat en al leesbaar is voor niet-ingelogde bezoekers) het
-// vertrekpunt voor straal/afstand/sortering. Wordt pas bij het zoeken zelf
-// opgezocht (geen apart, live-typend veld meer — dat oogde dubbelop naast Plaats).
+// profiel dubbele dienst: gewoon tekstfilter, én het vertrekpunt voor
+// straal/afstand/sortering. Opzoeking gebeurt server-side via
+// tt_resolve_search_origin() (04-08-2026, performance) — voorheen werden
+// hiervoor tot 300 rijen uit postcode_cache naar de browser gestuurd en
+// dáár gemiddeld; nu doet de database dat zelf in één lichte aanvraag.
 async function resolveSearchOrigin(rawText) {
   const raw = (rawText || '').trim();
   if (!raw) return { lat: null, lng: null };
   try {
-    const digits = raw.replace(/\s/g, '');
-    if (/^[1-9][0-9]{3}$/.test(digits)) {
-      // Exacte postcode: precieze coördinaat, geen middelpunt nodig.
-      const { data } = await db.from('postcode_cache').select('latitude, longitude').eq('postcode', digits).maybeSingle();
-      return { lat: data?.latitude ?? null, lng: data?.longitude ?? null };
-    }
-    // Plaatsnaam: middelpunt (centroid) van alle postcodes in die plaats,
-    // zodat het vertrekpunt representatief is voor de hele plaats i.p.v.
-    // toevallig de eerste postcode die de database teruggeeft — belangrijk
-    // bij grote steden en een kleine zoekstraal.
-    const { data: rows } = await db.from('postcode_cache').select('latitude, longitude').ilike('city', `${raw}%`).limit(300);
-    const valid = (rows || []).filter(r => r.latitude != null && r.longitude != null);
-    if (!valid.length) return { lat: null, lng: null };
-    const lat = valid.reduce((sum, r) => sum + r.latitude, 0) / valid.length;
-    const lng = valid.reduce((sum, r) => sum + r.longitude, 0) / valid.length;
-    return { lat, lng };
+    const { data, error } = await db.rpc('tt_resolve_search_origin', { query_text: raw });
+    if (error) throw error;
+    const row = (data || [])[0];
+    return { lat: row?.lat ?? null, lng: row?.lng ?? null };
   } catch (e) {
     return { lat: null, lng: null };
   }
@@ -3386,15 +3442,26 @@ function selectFirstAC(listId) {
   if (first && first.onmousedown) first.onmousedown();
 }
 
+const mbArtistCache = new Map(); // query (lowercase) -> artists[]
+const mbTrackCache = new Map();  // "artistId::query" (lowercase) -> recordings[]
+
 async function onArtistSearch(q) {
   const ac = document.getElementById('acArtistList');
   if (q.length < 2) { ac.classList.remove('open'); return; }
 
+  // Direct visuele feedback tonen (i.p.v. pas na de 400ms-vertraging) —
+  // MusicBrainz zelf blijft even traag, maar voelt zo minder "dood" aan.
+  ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
+  ac.classList.add('open');
+
+  const cacheKey = q.toLowerCase();
+  if (mbArtistCache.has(cacheKey)) {
+    renderArtistResults(ac, mbArtistCache.get(cacheKey), q, 'selectArtist');
+    return;
+  }
+
   clearTimeout(mbSearchTimeout);
   mbSearchTimeout = setTimeout(async () => {
-    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
-    ac.classList.add('open');
-
     try {
       const res = await fetch(
         `https://musicbrainz.org/ws/2/artist/?query=artist:${encodeURIComponent(q)}&limit=7&fmt=json`,
@@ -3402,25 +3469,27 @@ async function onArtistSearch(q) {
       );
       const data = await res.json();
       const artists = (data.artists || []).slice(0, 6);
-
-      if (!artists.length) {
-        ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Geen artiesten gevonden</span></div>';
-        return;
-      }
-
-      ac.innerHTML = artists.map(a => {
-        const extra = a.disambiguation ? ` <span style="color:var(--muted);font-size:11px;">(${a.disambiguation})</span>` : '';
-        const country = a.country ? ` · ${a.country}` : '';
-        return `<div class="ac-item" onmousedown="selectArtist('${esc(a.id)}','${esc(a.name)}')">
-          <strong>${highlight(a.name, q)}</strong>${extra}
-          <span style="font-size:11px;color:var(--muted);">${a.type || 'Artiest'}${country}</span>
-        </div>`;
-      }).join('');
-
+      mbArtistCache.set(cacheKey, artists);
+      renderArtistResults(ac, artists, q, 'selectArtist');
     } catch(e) {
       ac.innerHTML = '<div class="ac-item"><span style="color:var(--accent2)">Zoekopdracht mislukt</span></div>';
     }
   }, 400);
+}
+
+function renderArtistResults(ac, artists, q, selectFnName) {
+  if (!artists.length) {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Geen artiesten gevonden</span></div>';
+    return;
+  }
+  ac.innerHTML = artists.map(a => {
+    const extra = a.disambiguation ? ` <span style="color:var(--muted);font-size:11px;">(${a.disambiguation})</span>` : '';
+    const country = a.country ? ` · ${a.country}` : '';
+    return `<div class="ac-item" onmousedown="${selectFnName}('${esc(a.id)}','${esc(a.name)}')">
+      <strong>${highlight(a.name, q)}</strong>${extra}
+      <span style="font-size:11px;color:var(--muted);">${a.type || 'Artiest'}${country}</span>
+    </div>`;
+  }).join('');
 }
 
 // Artiest geselecteerd → laad nummers
@@ -3444,50 +3513,61 @@ async function onTrackSearch(q) {
   if (!selectedArtist) return;
   if (q.length < 1) { ac.classList.remove('open'); return; }
 
+  ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
+  ac.classList.add('open');
+
+  const cacheKey = `${selectedArtist.id}::${q.toLowerCase()}`;
+  if (mbTrackCache.has(cacheKey)) {
+    renderTrackResults(ac, mbTrackCache.get(cacheKey), q, selectedArtist, 'addSong', state.songs);
+    return;
+  }
+
   clearTimeout(mbSearchTimeout);
   mbSearchTimeout = setTimeout(async () => {
-    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
-    ac.classList.add('open');
-
     try {
       // Zoek op artiest-ID + optionele titelfilter
       const titleFilter = q.length >= 2 ? ` AND recording:${encodeURIComponent(q)}` : '';
       const url = `https://musicbrainz.org/ws/2/recording/?query=arid:${selectedArtist.id}${titleFilter}&limit=10&fmt=json`;
       const res = await fetch(url, { headers: { 'User-Agent': 'TheTalentTent/1.0' } });
       const data = await res.json();
-
-      const seen = new Set();
-      const results = (data.recordings || [])
-        .filter(r => {
-          const title = r.title;
-          if (!title) return false;
-          const key = title.toLowerCase();
-          if (seen.has(key)) return false;
-          seen.add(key);
-          if (state.songs.find(s =>
-            s.title.toLowerCase() === title.toLowerCase() &&
-            s.artist.toLowerCase() === selectedArtist.name.toLowerCase()
-          )) return false;
-          return true;
-        })
-        .slice(0, 8);
-
-      if (!results.length) {
-        ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Geen nummers gevonden</span></div>';
-        return;
-      }
-
-      ac.innerHTML = results.map(r =>
-        `<div class="ac-item" onmousedown="addSong('${esc(r.title)}','${esc(selectedArtist.name)}')">
-          <strong style="font-size:14px;">${highlight(r.title, q)}</strong>
-          <span style="font-size:12px;color:var(--muted);">${selectedArtist.name}</span>
-        </div>`
-      ).join('');
+      const recordings = data.recordings || [];
+      mbTrackCache.set(cacheKey, recordings);
+      renderTrackResults(ac, recordings, q, selectedArtist, 'addSong', state.songs);
 
     } catch(e) {
       ac.innerHTML = '<div class="ac-item"><span style="color:var(--accent2)">Zoekopdracht mislukt</span></div>';
     }
   }, 350);
+}
+
+function renderTrackResults(ac, recordings, q, artist, addFnName, existingList) {
+  const seen = new Set();
+  const results = (recordings || [])
+    .filter(r => {
+      const title = r.title;
+      if (!title) return false;
+      const key = title.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      if (existingList.find(s =>
+        s.title.toLowerCase() === title.toLowerCase() &&
+        s.artist.toLowerCase() === artist.name.toLowerCase()
+      )) return false;
+      return true;
+    })
+    .slice(0, 8);
+
+  if (!results.length) {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Geen nummers gevonden</span></div>';
+    return;
+  }
+
+  ac.innerHTML = results.map(r =>
+    `<div class="ac-item" onmousedown="${addFnName}('${esc(r.title)}','${esc(artist.name)}')">
+      <strong style="font-size:14px;">${highlight(r.title, q)}</strong>
+      <span style="font-size:12px;color:var(--muted);">${artist.name}</span>
+    </div>`
+  ).join('');
 }
 
 // ─── Data ───────────────────────────────────────────────────────────────────
@@ -3595,12 +3675,18 @@ function addSong(title, artist) {
   closeAC('acArtistList');
   selectedArtist = null;
   renderSongs();
-  setTimeout(() => document.getElementById('artistSearch').focus(), 0);
+  requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById('artistSearch').focus()));
 }
 
 function renderSongs() {
   const list = document.getElementById('songsList');
-  if (!state.songs.length) { list.innerHTML = ''; return; }
+  const empty = document.getElementById('songsListEmpty');
+  if (!state.songs.length) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
   list.innerHTML = `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
       <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
@@ -4071,10 +4157,17 @@ async function onSetlistArtistSearch(q) {
   const ac = document.getElementById('acSetlistArtistList');
   if (q.length < 2) { ac.classList.remove('open'); return; }
 
+  ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
+  ac.classList.add('open');
+
+  const cacheKey = q.toLowerCase();
+  if (mbArtistCache.has(cacheKey)) {
+    renderArtistResults(ac, mbArtistCache.get(cacheKey), q, 'selectSetlistArtist');
+    return;
+  }
+
   clearTimeout(setlistMbSearchTimeout);
   setlistMbSearchTimeout = setTimeout(async () => {
-    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
-    ac.classList.add('open');
     try {
       const res = await fetch(
         `https://musicbrainz.org/ws/2/artist/?query=artist:${encodeURIComponent(q)}&limit=7&fmt=json`,
@@ -4082,18 +4175,8 @@ async function onSetlistArtistSearch(q) {
       );
       const data = await res.json();
       const artists = (data.artists || []).slice(0, 6);
-      if (!artists.length) {
-        ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Geen artiesten gevonden</span></div>';
-        return;
-      }
-      ac.innerHTML = artists.map(a => {
-        const extra = a.disambiguation ? ` <span style="color:var(--muted);font-size:11px;">(${a.disambiguation})</span>` : '';
-        const country = a.country ? ` · ${a.country}` : '';
-        return `<div class="ac-item" onmousedown="selectSetlistArtist('${esc(a.id)}','${esc(a.name)}')">
-          <strong>${highlight(a.name, q)}</strong>${extra}
-          <span style="font-size:11px;color:var(--muted);">${a.type || 'Artiest'}${country}</span>
-        </div>`;
-      }).join('');
+      mbArtistCache.set(cacheKey, artists);
+      renderArtistResults(ac, artists, q, 'selectSetlistArtist');
     } catch(e) {
       ac.innerHTML = '<div class="ac-item"><span style="color:var(--accent2)">Zoekopdracht mislukt</span></div>';
     }
@@ -4118,43 +4201,25 @@ async function onSetlistTrackSearch(q) {
   if (!selectedSetlistArtist) return;
   if (q.length < 1) { ac.classList.remove('open'); return; }
 
+  ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
+  ac.classList.add('open');
+
+  const cacheKey = `${selectedSetlistArtist.id}::${q.toLowerCase()}`;
+  if (mbTrackCache.has(cacheKey)) {
+    renderTrackResults(ac, mbTrackCache.get(cacheKey), q, selectedSetlistArtist, 'addSetlistSong', setlistWantedSongs);
+    return;
+  }
+
   clearTimeout(setlistMbSearchTimeout);
   setlistMbSearchTimeout = setTimeout(async () => {
-    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
-    ac.classList.add('open');
     try {
       const titleFilter = q.length >= 2 ? ` AND recording:${encodeURIComponent(q)}` : '';
       const url = `https://musicbrainz.org/ws/2/recording/?query=arid:${selectedSetlistArtist.id}${titleFilter}&limit=10&fmt=json`;
       const res = await fetch(url, { headers: { 'User-Agent': 'TheTalentTent/1.0' } });
       const data = await res.json();
-
-      const seen = new Set();
-      const results = (data.recordings || [])
-        .filter(r => {
-          const title = r.title;
-          if (!title) return false;
-          const key = title.toLowerCase();
-          if (seen.has(key)) return false;
-          seen.add(key);
-          if (setlistWantedSongs.find(s =>
-            s.title.toLowerCase() === title.toLowerCase() &&
-            s.artist.toLowerCase() === selectedSetlistArtist.name.toLowerCase()
-          )) return false;
-          return true;
-        })
-        .slice(0, 8);
-
-      if (!results.length) {
-        ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Geen nummers gevonden</span></div>';
-        return;
-      }
-
-      ac.innerHTML = results.map(r =>
-        `<div class="ac-item" onmousedown="addSetlistSong('${esc(r.title)}','${esc(selectedSetlistArtist.name)}')">
-          <strong style="font-size:14px;">${highlight(r.title, q)}</strong>
-          <span style="font-size:12px;color:var(--muted);">${selectedSetlistArtist.name}</span>
-        </div>`
-      ).join('');
+      const recordings = data.recordings || [];
+      mbTrackCache.set(cacheKey, recordings);
+      renderTrackResults(ac, recordings, q, selectedSetlistArtist, 'addSetlistSong', setlistWantedSongs);
     } catch(e) {
       ac.innerHTML = '<div class="ac-item"><span style="color:var(--accent2)">Zoekopdracht mislukt</span></div>';
     }
@@ -4186,10 +4251,25 @@ async function runSetlistSearch() {
     const artists = setlistWantedSongs.map(s => s.artist);
     const radius  = parseRadiusInput('filterSetlistRadius');
 
-    // Kandidaten op repertoire: RPC werkt voor zowel ingelogd als uitgelogd
-    // (tabel musician_songs blijft op slot voor anon, deze functie geeft alleen id's terug).
-    const { data: songMatches, error: songErr } = await db.rpc('tt_search_musicians_by_songlist_anon', { titles, artists });
-    if (songErr) throw songErr;
+    // Repertoire-match en straal-match zijn onafhankelijk van elkaar —
+    // tegelijk opvragen i.p.v. na elkaar (performance, 04-08-2026).
+    const [songResult, radiusResult] = await Promise.all([
+      db.rpc('tt_search_musicians_by_songlist_anon', { titles, artists }),
+      (async () => {
+        if (hasOwnProfile) {
+          const mid = await getMyMusicianId();
+          return db.rpc('tt_search_musicians', { searcher_id: mid, radius_km: radius });
+        }
+        const origin = await resolveSearchOrigin(document.getElementById('filterSetlistCity').value);
+        if (origin.lat == null) return { data: null, error: null };
+        return db.rpc('tt_search_musicians_anon', {
+          origin_lat: origin.lat, origin_lng: origin.lng, radius_km: radius
+        });
+      })(),
+    ]);
+
+    if (songResult.error) throw songResult.error;
+    const songMatches = songResult.data || [];
     if (!songMatches.length) { renderSetlistResults([]); return; }
     const songMatchIds = new Set(songMatches.map(m => m.musician_id));
 
@@ -4199,24 +4279,10 @@ async function runSetlistSearch() {
     let distanceMap = {};
     let radiusIds = null; // null = geen straalbeperking (geen vertrekpunt bekend)
 
-    if (hasOwnProfile) {
-      const mid = await getMyMusicianId();
-      const { data: radiusMatches, error: radErr } = await db.rpc('tt_search_musicians', {
-        searcher_id: mid, radius_km: radius
-      });
-      if (radErr) throw radErr;
-      radiusIds = new Set(radiusMatches.map(m => m.musician_id));
-      radiusMatches.forEach(m => { distanceMap[m.musician_id] = m.distance_km; });
-    } else {
-      const origin = await resolveSearchOrigin(document.getElementById('filterSetlistCity').value);
-      if (origin.lat != null) {
-        const { data: radiusMatches, error: radErr } = await db.rpc('tt_search_musicians_anon', {
-          origin_lat: origin.lat, origin_lng: origin.lng, radius_km: radius
-        });
-        if (radErr) throw radErr;
-        radiusIds = new Set(radiusMatches.map(m => m.musician_id));
-        radiusMatches.forEach(m => { distanceMap[m.musician_id] = m.distance_km; });
-      }
+    if (radiusResult.error) throw radiusResult.error;
+    if (radiusResult.data) {
+      radiusIds = new Set(radiusResult.data.map(m => m.musician_id));
+      radiusResult.data.forEach(m => { distanceMap[m.musician_id] = m.distance_km; });
     }
 
     let ids = Array.from(songMatchIds);

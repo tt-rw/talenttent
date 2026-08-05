@@ -1,6 +1,6 @@
 # The Talent Tent — TODO
 
-Laatste update: 03 augustus 2026 (testronde-fixes + profiel verwijderen + bandleden toevoegen)
+Laatste update: 05 augustus 2026 (testronde-fixes Profiel Bewerken + Zoeken-tabs)
 
 ## 🎯 PPP-principe (intern ontwerpprincipe)
 
@@ -64,6 +64,7 @@ Laatste update: 03 augustus 2026 (testronde-fixes + profiel verwijderen + bandle
 - [ ] E-mailprovider koppelen (voor als e-mailbevestiging weer aan moet, notificaties, etc.)
 
 ## 💡 Backlog / ideeën
+- **Engelstalige versie van de app** (05-08-2026) — taalkeuze NL/EN voor de hele UI (statische teksten + eventueel gebruikersinhoud). Nog te bepalen: taal-toggle vs. automatisch op basis van browser/locatie, en of dit ook databaseteksten (bijv. instrumenten/genres) raakt of alleen de interface-teksten.
 - Hoe onderscheiden we echte van fake profielen? (geparkeerd op verzoek van Ronald, 02-08-2026 — mogelijk relevant i.c.m. e-mailbevestiging aanzetten, hierboven)
 - Per-profiel instelbare zichtbaarheid voor niet-leden (zoals Facebook/Instagram) — alternatief voor de huidige volledige login-verplichting bij zoeken, bewust niet nu gebouwd.
 - Tekst "Over ons" verbeteren — huidige tekst is een eerste versie, kwaliteit/toon nog verfijnen.
@@ -83,6 +84,16 @@ Laatste update: 03 augustus 2026 (testronde-fixes + profiel verwijderen + bandle
 - Geüploade foto's/video's (avatar + media-uploads) worden nergens écht opgeslagen — `URL.createObjectURL()` maakt alleen een tijdelijke, browser-lokale link die na herladen/sluiten van de pagina niet meer werkt. Er is geen Supabase Storage-koppeling. Ontdekt tijdens het bouwen van de profiel-bewerkfunctie (03-08-2026). Vereist een aparte sessie: Storage-bucket aanmaken, upload-policies instellen, `handleAvatarUpload()`/`handleFileSelect()` omzetten naar echte uploads. Media-**links** (YouTube/Instagram/etc.) werken wel gewoon, die zijn niet geraakt.
 
 ## ✅ Afgerond
+- [x] **Testronde-fixes Profiel Bewerken + Zoeken (05-08-2026, gevonden door Ronald):**
+  - **Bugfix:** profielfoto verdween tijdens bewerken (toonde initialen i.p.v. de bestaande foto) — `editMyProfile()` toonde altijd de initialen-placeholder i.p.v. te checken of er al een `avatar_url` was. Nu: bestaande foto blijft zichtbaar bij het openen van "Profiel bewerken".
+  - **"Annuleren"-knop toegevoegd** aan alle 5 stappen van de profielwizard, alleen zichtbaar in bewerkmodus (`editingMusicianId`) — vraagt bevestiging (niet-opgeslagen wijzigingen gaan verloren) en brengt terug naar Mijn Profiel zonder op te slaan. Nieuwe functie `cancelEditProfile()`.
+  - **Terugkeer naar "Profiel bewerken" vanaf elke andere pagina:** als je tijdens het bewerken naar Mijn Bands/Zoeken/Over ons navigeert, verschijnt nu een balk onder de navigatiebalk ("Je bent nog bezig met je profiel bewerken" + "Verder bewerken →") die je terugbrengt naar exact de stap waar je gebleven was. Los van het punt dat Ronald noemde (alleen Mijn Bands) is dit generiek gemaakt voor alle views, want hetzelfde probleem zou ook bij Zoeken/Over ons optreden.
+  - **Tekst "Profiel verwijderen"** aangepast naar: "Weet je zeker dat je je profiel wilt verwijderen? Alle gegevens worden permanent verwijderd."
+  - **Bugfix:** cursor sprong na het toevoegen van een nummer in Repertoire niet terug naar het artiestveld — `setTimeout(...,0)` bleek niet altijd te winnen van de browser's eigen focus-afhandeling bij het verbergen van het nummerveld; vervangen door een dubbele `requestAnimationFrame`, die pas focust nadat de browser de layout-wijziging heeft verwerkt.
+  - **Repertoire-stap visueel opgedeeld:** zoekvelden (artiest/nummer) zitten nu in een apart omkaderd blok "Nummer toevoegen", los van de lijst "Jouw repertoire" eronder (incl. duidelijke lege-staat-tekst "Nog geen nummers toegevoegd.").
+  - **Zoeken-tabbladen:** "Muzikanten"/"Bands"/"Setlist" hernoemd naar enkelvoud ("Muzikant"/"Band"/"Setlist") en omgezet van de kleine media-tab-stijl naar een prominentere, gecentreerde knoppenrij van gelijke grootte (nieuwe `.search-mode-tab`-stijl, losstaand van de bestaande `.media-tab`-stijl elders in de app zodat Upload/Links-tabs ongewijzigd blijven).
+  - **Nog te doen:** browsertest door Ronald van al deze wijzigingen.
+
 - [x] **Performance-verbeteringen (04-08-2026, n.a.v. Ronald: "de app moet op meerdere momenten best lang zoeken")**
   - **Plaats → coördinaten server-side gemaakt:** `resolveSearchOrigin()` haalde voorheen tot 300 rijen uit `postcode_cache` naar de browser en middelde die daar (voor het middelpunt van een plaats). Nieuwe database-functie `tt_resolve_search_origin()` doet dit nu in de database zelf en geeft alleen de uitkomst (2 getallen) terug — veel minder dataverkeer, gebruikt door Muzikanten-, Bands- én Setlist-zoeken (uitgelogd).
   - **Setlist-zoeken geparallelliseerd:** de repertoire-match en de straal-match zijn onafhankelijk van elkaar maar werden na elkaar afgewacht — nu tegelijk verstuurd via `Promise.all()`, scheelt een volledige round-trip.
