@@ -2371,17 +2371,24 @@ async function configureSearchAccess() {
     if (bandSearchSortMode === 'score') selectSortModeByValue('filterBandSortMode', 'distance');
   }
 
-  // Zoek op setlist gebruikt (sinds de bugfix hierboven) altijd het Plaats-veld
-  // als vertrekpunt, ook als je een eigen profiel hebt. Zonder toelichting zou
-  // dat veld dan gewoon leeg staan, terwijl er zonder Plaats geen straal wordt
-  // toegepast — verwarrend. Daarom hier je eigen plaats alvast invullen (mag
-  // je altijd zelf aanpassen); alleen als het veld nog leeg is, niet overschrijven
-  // als je zelf al iets hebt ingetypt.
+  // Eigen plaats alvast invullen bij alle drie de zoektabbladen (Muzikanten,
+  // Bands, Setlist) als je een eigen profiel hebt — anders staat het Plaats-
+  // veld leeg terwijl de app achter de schermen allang je eigen postcode als
+  // vertrekpunt voor de straal gebruikt, wat verwarrend oogt. Alleen invullen
+  // als het veld nog leeg is; heb je zelf al iets getypt, dan blijft dat staan.
+  // Bevinding van Ronald (05-08-2026): dit gebeurde al voor Setlist, maar was
+  // nooit doorgevoerd naar de andere twee tabbladen — nu gelijkgetrokken.
   if (hasOwnProfile) {
-    const setlistCityField = document.getElementById('filterSetlistCity');
-    if (setlistCityField && !setlistCityField.value.trim()) {
-      const city = await getMyCity();
-      if (city) setlistCityField.value = city;
+    const city = await getMyCity();
+    if (city) {
+      const musicianCityField = document.getElementById('filterCity');
+      if (musicianCityField && !musicianCityField.value.trim()) musicianCityField.value = city;
+
+      const bandCityField = document.getElementById('filterBandCity');
+      if (bandCityField && !bandCityField.value.trim()) bandCityField.value = city;
+
+      const setlistCityField = document.getElementById('filterSetlistCity');
+      if (setlistCityField && !setlistCityField.value.trim()) setlistCityField.value = city;
     }
   }
 
@@ -2696,6 +2703,16 @@ async function runSearch() {
       `).in('id', ids);
       if (error) throw error;
       musicians = data;
+
+      // Het Plaats-veld wordt bij een eigen profiel vooraf gevuld met je eigen
+      // plaats (configureSearchAccess()) — de straal (via de RPC hierboven)
+      // dekt die omgeving al. Staat het veld nog op die eigen, ongewijzigde
+      // waarde, dan mag het niet óók nog als letterlijk tekstfilter gelden
+      // (anders vallen matches uit een andere plaats binnen je straal er
+      // onterecht uit). Typ je zelf een andere plaats, dan werkt het weer als
+      // bewust extra filter bovenop de straal.
+      const myCity = await getMyCity();
+      originResolved = !!myCity && cityQuery === myCity.toLowerCase();
     } else {
       // Zonder eigen profiel: anonieme RPC's. Vertrekpunt voor straal/afstand
       // is het Plaats-veld hierboven (indien leeg of geen match: alle
@@ -3508,6 +3525,9 @@ const CITY_NAME_EXCEPTIONS = {
   "'s-gravenhage": 'Den Haag',
   "s gravenhage": 'Den Haag',
   "s-gravenhage": 'Den Haag',
+  "'s-hertogenbosch": 'Den Bosch',
+  "s hertogenbosch": 'Den Bosch',
+  "s-hertogenbosch": 'Den Bosch',
 };
 
 function pickDisplayCity(officialCity, altField) {
@@ -4487,6 +4507,13 @@ async function runBandSearch() {
       const { data, error } = await query;
       if (error) throw error;
       bands = data;
+
+      // Zelfde redenering als in runSearch(): het Plaats-veld staat bij een
+      // eigen profiel vooraf op je eigen plaats — dat mag niet óók nog als
+      // letterlijk tekstfilter gelden bovenop de straal, tenzij je het zelf
+      // hebt gewijzigd.
+      const myCity = await getMyCity();
+      originResolved = !!myCity && cityQuery === myCity.toLowerCase();
     } else {
       // Zonder eigen profiel: anonieme RPC's. Vertrekpunt voor straal/afstand
       // is het Plaats-veld hierboven (indien leeg of geen match: alle bands,
