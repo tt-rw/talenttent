@@ -24,13 +24,14 @@ Niet in de audit hierboven, maar tijdens deze sessie gevonden door Ronald en dir
 
 - **🔒 Beveiligingsbug:** een uitgelogde bezoeker kon via de "Verder bewerken →"-balk alsnog in de profiel-bewerkwizard komen mét de laatst bewerkte profielgegevens vooringevuld. Opgelost — status: **Opgelost (05-08-2026)**.
 - **Bug:** de "stoppen met bewerken"-bevestiging toonde de knoptekst "Ja, verwijderen" (hergebruikt van de verwijder-modal, verkeerd in deze context). Opgelost — status: **Opgelost (05-08-2026)**.
+- **🔒 Bug gevonden door Ronald (06-08-2026, direct na oplevering van TT-16) en hersteld:** `showView()` gebruikte `history.pushState()`/`history.replaceState()` ongeschermd. In een sandbox-preview (`about:srcdoc`-iframe) gooit de browser daar een `SecurityError`, wat `appInit()` liet crashen zodra de pagina laadde. Nieuwe helpers `safeHistoryPush()`/`safeHistoryReplace()` (try/catch, falen stil) vervangen alle vier de directe History-aanroepen. **Bijvangst tijdens het herstellen:** de eerste poging plaatste deze helpers per ongeluk ín `showView()` zelf, waardoor de `popstate`-listener (die daarbuiten staat) ze niet kon aanroepen — gevonden en gecorrigeerd vóór oplevering door de fix daadwerkelijk te draaien in een headless browser (Playwright, srcdoc-sandbox nagebouwd) i.p.v. alleen op syntax te vertrouwen.
 
 ## Overzicht
 
 | ID | Ticket | Prioriteit | Omvang | Status |
 |---|---|---|---|---|
 | TT-01 | Berichten tussen muzikanten | P0 | Groot | Open |
-| TT-02 | Profielfoto's en media echt opslaan | P0 | Middel | Open |
+| TT-02 | Profielfoto's en media echt opslaan | P0 | Middel | Opgelost (06-08-2026) |
 | TT-03 | Profielen achter login | P0 | Klein | Opgelost (05-08-2026) |
 | TT-04 | Postcode niet publiek tonen | P0 | Klein | Opgelost (05-08-2026) |
 | TT-05 | XSS dichten | P0 | Middel | Opgelost (05-08-2026) |
@@ -150,6 +151,15 @@ Extra pijnlijk: `renderCompletenessMeter()` (r. 2989) zet een vinkje bij "Profie
 **Als dit niet meteen lukt:** verwijder de upload-tab (r. 1799–1815) en de avatar-upload uit stap 1, en houd alleen links over. Niets aanbieden is beter dan iets aanbieden dat stilzwijgend weggooit.
 
 **Acceptatie.** Foto uploaden, uitloggen, in een andere browser het profiel openen: de foto is zichtbaar.
+
+**✅ Opgelost 06-08-2026.** Twee nieuwe Storage-buckets (`avatars`, `media`), publiek leesbaar, met een insert/delete-policy die alleen het eigen `auth.uid()`-pad toestaat — vastgelegd in `storage_setup.sql`, nog door Ronald te draaien.
+- **`handleAvatarUpload()`** is nu deels async: bij een bestaand account (bewerken, of een hervatte onboarding) wordt direct naar Storage geüpload met een spinner-overlay op de preview. Bij een gloednieuwe registratie bestaat er op het moment van bestandskeuze (stap 1, vóór accountaanmaak) nog geen `user_id` — het bestand wordt dan bewaard in `state.avatarFile` en pas echt geüpload zodra `createAccountAndProfile()` een account heeft aangemaakt. Zelfde late-upload-logica ook toegevoegd aan de defensieve fallback-branch in `submitProfile()`. Een mislukte upload blokkeert het aanmaken van het account niet — de gebruiker krijgt een toast en kan de foto later via "Profiel bewerken" alsnog toevoegen.
+- **`handleFileSelect()`** (media-stap, komt in de wizard altijd ná de accountstap, dus hier speelt het "nog geen user_id"-probleem niet): elk bestand wordt direct geüpload, met validatie op type (alleen foto/video) en grootte (max 50 MB), en een spinner per thumbnail tijdens het uploaden.
+- **`removeMedia()`** ruimt een al geüpload bestand ook echt op uit Storage (best effort, blokkeert de UI niet).
+- **`editMyProfile()`** laadt nu ook bestaande foto's/video's in de wizard — voorheen bleven die onzichtbaar bij het bewerken van een profiel, ook al stonden ze (met TT-02) inmiddels wel echt in de database.
+- **`submitProfile()`**: de delete-bij-bewerken is verbreed van alleen `media_type='link'` naar alle media-types (consistent met hoe instrumenten/genres/repertoire al werken: legen en opnieuw opbouwen vanuit `state`); nieuwe insert-stap voor foto/video-media, met een filter die een nog niet afgeronde upload (blob-URL) overslaat.
+- **`buildMusicianDetailHTML()`** toont nu een fotoraster en video-tegels naast de bestaande links-sectie (was: alleen `media_type === 'link'`).
+- **Niet meegenomen (kleinere, bewust losstaande gaps):** geen opruiming van een oud avatarbestand bij het uploaden van een vervanger (alleen bestanden die binnen dezelfde sessie zijn geüpload worden bijgehouden voor cleanup); geen wijziging aan `deleteMyProfile()` om achtergebleven Storage-bestanden op te ruimen bij accountverwijdering — dat hoort bij **TT-22**.
 
 ---
 
@@ -460,7 +470,7 @@ Loop daarna langs: foutmeldingen (`resultsEl` in `runSearch()` r. 2695, `showSav
 
 **✅ Opgelost 06-08-2026**, in twee delen:
 - **Mobiele kop (15a, precies zoals voorgesteld, met een verbetering):** logo naar 28px, tagline verborgen. In plaats van de hele kop sticky te houden (het ticket stelde `.app-topbar { position: static; }` voor) is gekozen voor de betere variant die het ticket zelf ook noemde: alleen de navigatiebalk blijft sticky, het logo scrollt gewoon mee. Zo blijft navigeren makkelijk zonder dat het logo blijvend ruimte kost.
-- **Display-font (15b, afwijking t.o.v. het ticket, in overleg met Ronald):** het ticket stelde een kant-en-klaar Google Font voor (Anton/Archivo Black/Bebas Neue). In plaats daarvan is gekozen voor **Alfa Slab One als tijdelijke plaatsvervanger** van Ronalds eigen, nog te vectoriseren letterontwerp (huisstijlblad "PROTO2 – PERFORMANCE") — qua zware schreven en bolling het dichtst bij dat ontwerp. Toegepast via een centrale CSS-variabele `--font-display`, zodat later alleen die ene regel hoeft te wijzigen zodra het eigen font beschikbaar is. Ingezet op logo, `.landing-title`, `.panel-title`, `.filter-title`, `.band-name` — Roboto blijft voor alle lopende tekst, labels en knoppen. Projectinstructie-tekst bijgewerkt (`PROJECTINSTRUCTIE_bijgewerkt.md`), door Ronald zelf te plakken in de Project-instellingen.
+- **Display-font (15b, afwijking t.o.v. het ticket, in overleg met Ronald):** het ticket stelde een kant-en-klaar Google Font voor (Anton/Archivo Black/Bebas Neue). In plaats daarvan is gekozen voor **Alfa Slab One als tijdelijke plaatsvervanger** van Ronalds eigen, nog te vectoriseren letterontwerp (huisstijlblad "PROTO2 – PERFORMANCE") — qua zware schreven en bolling het dichtst bij dat ontwerp. Toegepast via een centrale CSS-variabele `--font-display`, zodat later alleen die ene regel hoeft te wijzigen zodra het eigen font beschikbaar is. **Correctie 06-08-2026 (Ronald):** in eerste opzet ook ingezet op `.landing-title`/`.panel-title`/`.filter-title`/`.band-name`, maar dat bleek op die schaal te zwaar en onleesbaar ("loopt te veel in elkaar"). Nu uitsluitend gebruikt voor het logo/woordmerk; de paneeltitels zijn teruggezet naar Roboto Bold, met de compactere maten/letterafstand behouden ("de app-indeling is op zich goed, compacter"). Projectinstructie-tekst bijgewerkt (`PROJECTINSTRUCTIE_bijgewerkt.md`), door Ronald zelf te plakken in de Project-instellingen.
 
 ---
 
@@ -489,6 +499,8 @@ Bij het opstarten in `appInit()` de hash uitlezen zodat een gedeelde link werkt.
 **Acceptatie.** De terugknop sluit achtereenvolgens de modal, dan de vorige view, en pas als laatste de app.
 
 **✅ Opgelost 06-08-2026.** `showView()` heeft nu een tweede parameter `mode`: `'pop'` (komt van de terugknop zelf, geschiedenis niet nogmaals aanpassen), `'redirect'` (interne omleiding binnen dezelfde gebruikersactie, bijv. "geen profiel → terug naar registratie" — vervangt de huidige stap i.p.v. er een nieuwe aan toe te voegen) of onbenoemd (gewone bewuste navigatie — nieuwe stap). Nieuwe `popstate`-listener sluit eerst een open modal (via de generieke `.modal-overlay.visible`-selector, werkt voor alle vier de modals), en anders pas de vorige view. `appInit()` leest nu ook de URL-hash uit bij het opstarten, zodat een gedeelde link (bijv. `#about`) direct de juiste view opent — Mijn Profiel/Mijn Bands lopen daarbij via de bestaande `requireLogin()`, zodat een uitgelogde bezoeker de gebruikelijke toast + doorverwijzing krijgt in plaats van een lege pagina. De wizardstappen (1 t/m 5) krijgen bewust geen eigen geschiedenis-stap — anders zou de terugknop halverwege een registratie kunnen terugsturen naar een tussenstap met een half aangemaakt account.
+
+**⚠️ Correctie 06-08-2026 (direct na oplevering, door Ronald gemeld):** de eerste versie gebruikte `history.pushState()`/`history.replaceState()` rechtstreeks, zonder afscherming. In een sandbox-preview-omgeving (`about:srcdoc`-iframe) gooit de browser daar een `SecurityError`, wat de hele app bij het opstarten liet crashen — precies zo'n omgeving bleek Ronalds testmethode te zijn. Alle vier de History-aanroepen lopen nu via nieuwe helpers `safeHistoryPush()`/`safeHistoryReplace()` (try/catch, falen stil): browsergeschiedenis werkt gewoon in een normale browsertab, en faalt onopvallend i.p.v. de app te laten crashen in een sandbox. **Werkwijze aangescherpt naar aanleiding hiervan:** deze fix is, in tegenstelling tot eerdere sessies, daadwerkelijk gedraaid in een headless browser (Playwright) met een nagebouwde `srcdoc`-sandbox die exact Ronalds foutmelding reproduceerde, vóór oplevering — niet langer alleen op JS-syntaxcontrole vertrouwd.
 
 ---
 

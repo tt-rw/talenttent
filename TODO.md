@@ -1,6 +1,6 @@
 # The Talent Tent — TODO
 
-Laatste update: 06 augustus 2026 (UX-audit-sessie deel 5: TT-12, TT-15, TT-16, TT-21, TT-23, TT-25, TT-26 afgerond)
+Laatste update: 06 augustus 2026 (bugfix: SecurityError bij opstarten in sandbox-preview + fontcorrectie na feedback Ronald)
 
 ## 🎯 PPP-principe (intern ontwerpprincipe)
 
@@ -84,9 +84,21 @@ Laatste update: 06 augustus 2026 (UX-audit-sessie deel 5: TT-12, TT-15, TT-16, T
 
 ## 🐛 Bekende bugs / aandachtspunten
 - e-mailbevestiging aanzetten
-- Geüploade foto's/video's (avatar + media-uploads) worden nergens écht opgeslagen — `URL.createObjectURL()` maakt alleen een tijdelijke, browser-lokale link die na herladen/sluiten van de pagina niet meer werkt. Er is geen Supabase Storage-koppeling. Ontdekt tijdens het bouwen van de profiel-bewerkfunctie (03-08-2026). Vereist een aparte sessie: Storage-bucket aanmaken, upload-policies instellen, `handleAvatarUpload()`/`handleFileSelect()` omzetten naar echte uploads. Media-**links** (YouTube/Instagram/etc.) werken wel gewoon, die zijn niet geraakt.
 
 ## ✅ Afgerond
+- [x] **🔒 Bugfix: SecurityError bij opstarten in sandbox-preview (06-08-2026, direct na TT-16, gemeld door Ronald met screenshot).** `showView()` gebruikte `history.pushState()`/`history.replaceState()` ongeschermd. In een sandbox-preview-omgeving (`about:srcdoc`-iframe, zoals Ronalds testmethode) gooit de browser daar een `SecurityError`, wat `appInit()` bij elke paginalading liet crashen. Nieuwe helpers `safeHistoryPush()`/`safeHistoryReplace()` (try/catch, falen stil) vervangen alle vier de directe History-aanroepen — browsergeschiedenis (TT-16) werkt gewoon in een normale browsertab, en valt onopvallend terug op "geen geschiedenis" i.p.v. de app te laten crashen in een sandbox.
+  - **Eigen fout gevonden en gecorrigeerd tijdens het herstellen:** de eerste poging plaatste de twee nieuwe helperfuncties per ongeluk ín `showView()` zelf, waardoor de `popstate`-listener (die daarbuiten staat) ze niet kon aanroepen — een `ReferenceError` bij elke druk op de terugknop. Gevonden vóórdat dit werd opgeleverd door de fix daadwerkelijk te draaien, niet alleen te lezen.
+  - **Werkwijze aangescherpt:** deze fix is voor het eerst getest door de app daadwerkelijk te draaien in een headless browser (Playwright, al aanwezig in de omgeving) met een nagebouwde `srcdoc`-sandbox die Ronalds exacte foutmelding reproduceerde — inclusief een controlemeting van de oorspronkelijke (kapotte) code om te bevestigen dat de test de juiste fout ving, gevolgd door de geschermde versie, gevolgd door het volledige `index.html` met een gestubde Supabase-client (navigatie tussen Zoeken/Over ons/Inloggen getest, geen crash). Voorheen werd alleen op JS-syntaxcontrole (haakjesbalans, `node --check`-equivalent) vertrouwd — voldoende om typefouten te vangen, niet om runtime-/browserspecifieke fouten zoals deze te vangen. Dit wordt vanaf nu de standaard-eindcontrole bij wijzigingen die de History API, browser-APIs, of initialisatielogica raken.
+
+- [x] **TT-02 · Profielfoto's en media echt opslaan (06-08-2026)** — de bug uit "Bekende bugs" hierboven structureel opgelost: `URL.createObjectURL()` (tijdelijk, browser-lokaal) vervangen door echte Supabase Storage-uploads.
+  - Twee nieuwe publiek-leesbare buckets (`avatars`, `media`) met een insert/delete-policy die alleen het eigen `auth.uid()`-pad toestaat — `storage_setup.sql`, nog door Ronald te draaien.
+  - **Avatar (stap 1, complicatie: account bestaat op dat moment nog niet):** bij een bestaand account (bewerken/hervatte onboarding) uploadt `handleAvatarUpload()` meteen, met een spinner-overlay. Bij een gloednieuwe registratie wordt het bestand bewaard (`state.avatarFile`) en pas echt geüpload zodra `createAccountAndProfile()` een `user_id` heeft — zelfde late-uploadlogica ook toegevoegd aan de defensieve fallback-branch in `submitProfile()`. Een mislukte upload blokkeert de accountaanmaak niet.
+  - **Media (stap 4, na de accountstap, dus geen "geen user_id nog"-probleem):** elk bestand direct geüpload bij selectie, met validatie op type/grootte (max 50 MB) en een spinner per thumbnail. `removeMedia()` ruimt ook echt op uit Storage.
+  - `editMyProfile()` laadt nu bestaande foto's/video's in de wizard (voorheen onzichtbaar bij bewerken). `submitProfile()` schrijft foto/video-media nu ook echt weg naar `musician_media` (was: alleen links).
+  - `buildMusicianDetailHTML()` toont nu een fotoraster + video-tegels naast de bestaande links-sectie.
+  - **Bewust niet meegenomen:** opruiming van een oud avatarbestand bij het uploaden van een vervanger; opruiming van Storage-bestanden bij accountverwijdering (hoort bij TT-22, nog open).
+  - **Nog te doen:** Ronald moet `storage_setup.sql` draaien vóórdat uploaden werkt; daarna een browsertest (foto uploaden → uitloggen → in een andere browser bekijken).
+
 - [x] **UX-audit-sessie, deel 5 (06-08-2026, vervolg op deel 1-4 — 7 tickets uit `talenttent_backlog.md` afgerond):**
   - **TT-12 · Belofte "volgen" uit Over ons:** twee niet-bestaande beloftes ("volgen", "kiezen welke info je laat zien") vervangen door tekst die overeenkomt met de werkelijke functionaliteit.
   - **TT-26 · Zoektekst ongefilterd in Supabase-query:** nieuwe helpers `likeSafe()`/`orValue()` — jokertekens (%, _, *, \) uit zoektermen gehaald, waarden tussen quotes zodat een komma de `.or()`-syntax niet meer openbreekt. Toegepast op `onCitySearchInput()` en `searchMembersToAdd()`.
@@ -99,6 +111,8 @@ Laatste update: 06 augustus 2026 (UX-audit-sessie deel 5: TT-12, TT-15, TT-16, T
   - **TT-25 · PWA-manifest:** `manifest.json` + `<link rel="manifest">`/`<meta name="theme-color">`. Iconen (192×192, 512×512) door Claude gegenereerd met **antraciet achtergrond (#2A2A2A) i.p.v. zwart** (op verzoek van Ronald) en een gouden "T". Tijdelijk, tot Ronalds eigen logo-ontwerp klaar is. **Nieuw in de repo, door Ronald te uploaden:** `manifest.json`, `icon-192.png`, `icon-512.png`.
   - **Controles uitgevoerd:** brace-/haakjes-/blokhaken-balans, `node --check`-equivalent (Function-constructor parse) op de volledige `<script>`-inhoud, `<div>`-balans (402/402) — alle drie schoon na elke batch wijzigingen.
   - **Nog te doen (volgende sessie):** zie `talenttent_backlog.md` — eerstvolgende open P0's zijn TT-02 (media echt opslaan), TT-01 (berichten), TT-06 (melden/blokkeren), TT-07 (ouderlijke toestemming), gevolgd door TT-11 (band-aanmelden), TT-13 (terugkeerredenen), TT-18 (album-art), TT-22 (accountverwijdering), TT-27/TT-28.
+
+- [x] **Correctie n.a.v. feedback Ronald (06-08-2026, direct na deel 5 hierboven):** Alfa Slab One bleek op paneeltitel-schaal te zwaar/onleesbaar ("loopt te veel in elkaar"). `--font-display` (Alfa Slab One) nu **uitsluitend** toegepast op `.logo`/het woordmerk. `.landing-title`, `.panel-title`, `.filter-title`, `.band-name` teruggezet naar Roboto Bold — de compactere maten/letterafstand uit deel 5 zijn wél behouden ("de app-indeling is op zich goed, compacter" — Ronald). `PROJECTINSTRUCTIE_bijgewerkt.md` en de CSS-comment bij `--font-display` bijgewerkt.
 
 - [x] **TT-10 · Zoeken opent met resultaten (05-08-2026) — flink uitgebreid t.o.v. het oorspronkelijke ticket, na meerdere overlegrondes met Ronald:**
   - **Kernidee (Ronald):** niet zomaar één keer resultaten tonen bij openen, maar *volledig interactief* zoeken — elke wijziging ververst het resultaat direct, zonder aparte zoekknop nodig te hebben. "Dit geeft een interactieve communicatie tussen app en gebruiker" (Ronald).

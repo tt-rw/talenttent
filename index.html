@@ -25,10 +25,12 @@
     --radius: 12px;
   }
 
-  /* TT-15b: tijdelijk display-font (Alfa Slab One) voor logo/titels, in
-     afwachting van het eigen letterontwerp uit het huisstijlblad. Zodra dat
-     als vector/webfont beschikbaar is, hoeft alleen deze regel te wijzigen —
-     alle CSS die --font-display gebruikt blijft verder ongewijzigd. */
+  /* TT-15b: tijdelijk display-font (Alfa Slab One) alleen voor het logo/
+     woordmerk, in afwachting van het eigen letterontwerp uit het huisstijl-
+     blad. Ronald vond het te zwaar/onleesbaar voor paneeltitels (06-08-2026)
+     — die zijn teruggezet naar Roboto Bold. Zodra het eigen font beschikbaar
+     is, hoeft alleen deze regel te wijzigen; .logo blijft de enige gebruiker
+     van --font-display. */
   :root {
     --font-display: 'Alfa Slab One', 'Roboto', sans-serif;
   }
@@ -168,8 +170,9 @@
   }
 
   .panel-title {
-    font-family: var(--font-display);
-    font-size: 28px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    font-size: 26px;
     letter-spacing: 0.5px;
     margin-bottom: 6px;
     color: var(--accent);
@@ -1109,7 +1112,7 @@
   .landing-wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
   .landing-hero { padding: 80px 0 60px; text-align: center; }
   .landing-hero-inner { max-width: 640px; margin: 0 auto; }
-  .landing-title { font-family: var(--font-display); font-size: clamp(40px, 8vw, 76px); letter-spacing: 0.5px; line-height: 1.05; margin-bottom: 20px; }
+  .landing-title { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: clamp(36px, 7vw, 64px); letter-spacing: 0.5px; line-height: 1.1; margin-bottom: 20px; }
   .landing-title span { color: var(--accent); }
   .landing-sub { font-size: 16px; color: var(--muted); line-height: 1.7; font-weight: 300; margin-bottom: 36px; max-width: 520px; margin-left: auto; margin-right: auto; }
   .landing-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
@@ -1245,7 +1248,8 @@
   }
 
   .filter-title {
-    font-family: var(--font-display);
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
     font-size: 19px;
     color: var(--accent);
     letter-spacing: 0.5px;
@@ -1459,7 +1463,7 @@
   .band-card:hover { border-color:#444; }
   .band-card-header { display:flex;align-items:center;gap:16px;padding:20px;cursor:pointer;flex-wrap:wrap; }
   .band-avatar { width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Roboto',sans-serif;font-size:24px;color:#000;flex-shrink:0; }
-  .band-name { font-family: var(--font-display); font-size: 21px; letter-spacing: 0.3px; line-height: 1.1; }
+  .band-name { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.3px; line-height: 1.1; }
   .band-meta { font-size:12px;color:var(--muted);margin-top:3px; }
   .band-status-badge { font-size:11px;padding:3px 10px;border-radius:10px;border:1px solid;margin-left:auto;white-space:nowrap;flex-shrink:0; }
   .band-status-zoekend { border-color:var(--accent);color:var(--accent); }
@@ -2278,7 +2282,7 @@ async function appInit() {
       if (gatedHashViews.includes(hashView)) requireLogin(hashView);
       else showView(hashView);
     } else {
-      history.replaceState({ view: 'landing' }, '', '#landing');
+      safeHistoryReplace({ view: 'landing' }, '#landing');
     }
   } catch(e) {
     console.error('appInit fout:', e);
@@ -2342,6 +2346,8 @@ function onUserLoggedOut() {
     songs: [],
     goal: '',
     avatarUrl: null,
+    avatarFile: null,
+    avatarPath: null,
     mediaFiles: [],
     mediaLinks: [],
     onboarding: false
@@ -2472,6 +2478,17 @@ function setSearchMode(mode) {
   else if (isSetlist && setlistWantedSongs.length) runSetlistSearch();
 }
 
+// De History API (pushState/replaceState) kan een SecurityError gooien in
+// sandbox-achtige omgevingen zonder een "normale" document-URL — bijv. een
+// srcdoc-iframe-preview. De app moet daar nooit op crashen: browsergeschiedenis
+// (TT-16) is dan gewoon niet beschikbaar, maar de rest van de app blijft werken.
+function safeHistoryPush(stateObj, hash) {
+  try { history.pushState(stateObj, '', hash); } catch (e) { /* stil negeren, zie boven */ }
+}
+function safeHistoryReplace(stateObj, hash) {
+  try { history.replaceState(stateObj, '', hash); } catch (e) { /* stil negeren, zie boven */ }
+}
+
 function showView(view, mode) {
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -2518,6 +2535,7 @@ function showView(view, mode) {
     const authSection = document.getElementById('regAuthSection');
     if (authSection) authSection.style.display = locked ? 'none' : '';
   }
+
   if (view === 'myprofile') loadMyProfile();
   if (view === 'bands') loadMyBands();
   if (view === 'search') configureSearchAccess();
@@ -2535,8 +2553,8 @@ function showView(view, mode) {
   //                 de gebruiker heeft deze tussenstap nooit bewust bezocht.
   //  - anders     → een gewone, bewuste navigatie: nieuwe stap toevoegen.
   if (mode !== 'pop') {
-    if (mode === 'redirect') history.replaceState({ view }, '', '#' + view);
-    else history.pushState({ view }, '', '#' + view);
+    if (mode === 'redirect') safeHistoryReplace({ view }, '#' + view);
+    else safeHistoryPush({ view }, '#' + view);
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2549,7 +2567,7 @@ window.addEventListener('popstate', (e) => {
   const openModal = document.querySelector('.modal-overlay.visible');
   if (openModal) {
     openModal.classList.remove('visible');
-    history.pushState(history.state, '', location.hash || '#landing');
+    safeHistoryPush(history.state, location.hash || '#landing');
     return;
   }
   showView(e.state?.view || 'landing', 'pop');
@@ -3014,6 +3032,17 @@ function buildMusicianDetailHTML(m) {
     .map(x => ({ ...x, safeHref: safeUrl(x.url) }))
     .filter(x => x.safeHref);
 
+  // TT-02: geüploade foto's/video's tonen — voorheen liet dit scherm alleen
+  // media_type 'link' zien, terwijl geüploade bestanden nu écht bestaan.
+  const photos = m.musician_media
+    .filter(x => x.media_type === 'foto')
+    .map(x => ({ ...x, safeHref: safeUrl(x.url) }))
+    .filter(x => x.safeHref);
+  const videos = m.musician_media
+    .filter(x => x.media_type === 'video')
+    .map(x => ({ ...x, safeHref: safeUrl(x.url) }))
+    .filter(x => x.safeHref);
+
   return `
     <div class="profile-header-band" style="background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;"></div>
     ${avatarHTML}
@@ -3033,6 +3062,20 @@ function buildMusicianDetailHTML(m) {
       <div class="profile-songs">
         <div class="profile-songs-title">Repertoire (${m.musician_songs.length} nummers)</div>
         ${songRows}
+      </div>` : ''}
+    ${photos.length ? `
+      <div class="profile-media" style="margin-top:16px;">
+        <div class="profile-media-title">Foto's</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
+          ${photos.map(p => `<a href="${p.safeHref}" target="_blank" rel="noopener noreferrer" style="display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);"><img src="${p.safeHref}" alt="Foto" style="width:100%;height:100%;object-fit:cover;"></a>`).join('')}
+        </div>
+      </div>` : ''}
+    ${videos.length ? `
+      <div class="profile-media" style="margin-top:16px;">
+        <div class="profile-media-title">Video's</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
+          ${videos.map(v => `<a href="${v.safeHref}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;aspect-ratio:1;border-radius:8px;border:1px solid var(--border);background:var(--surface2);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Video</a>`).join('')}
+        </div>
       </div>` : ''}
     ${links.length ? `
       <div class="profile-media" style="margin-top:16px;">
@@ -3291,10 +3334,17 @@ async function editMyProfile() {
   state.bio           = m.bio || '';
   state.goal          = m.goal || '';
   state.avatarUrl     = m.avatar_url || null;
+  state.avatarFile    = null;
+  state.avatarPath    = null;
   state.instruments   = (m.musician_instruments || []).map(x => x.instrument);
   state.genres        = (m.musician_genres || []).map(x => x.genre);
   state.songs         = (m.musician_songs || []).map(s => ({ title: s.song_title, artist: s.song_artist, level: s.mastery_level }));
-  state.mediaFiles    = [];
+  // TT-02: al eerder geüploade foto's/video's meenemen, zodat ze zichtbaar
+  // en verwijderbaar zijn bij het bewerken (voorheen bleven deze onzichtbaar
+  // in de wizard, ook al stonden ze al in de database).
+  state.mediaFiles    = (m.musician_media || [])
+    .filter(x => x.media_type === 'foto' || x.media_type === 'video')
+    .map(x => ({ name: '', url: x.url, path: null, type: x.media_type, uploading: false }));
   state.mediaLinks    = (m.musician_media || []).filter(x => x.media_type === 'link').map(x => ({ url: x.url }));
   state.citySource    = m.city_source || 'pdok';
   postcodeResolved    = !!m.zip;
@@ -3521,7 +3571,12 @@ async function submitProfile() {
       await db.from('musician_instruments').delete().eq('musician_id', mid);
       await db.from('musician_genres').delete().eq('musician_id', mid);
       await db.from('musician_songs').delete().eq('musician_id', mid);
-      await db.from('musician_media').delete().eq('musician_id', mid).eq('media_type', 'link');
+      // Alle media legen (links én foto's/video's) — hieronder allebei opnieuw
+      // opgebouwd vanuit state, net als bij instrumenten/genres/repertoire.
+      // Al geüploade Storage-bestanden zelf blijven gewoon staan (alleen de
+      // koppeling in musician_media wordt hier ververst); verwijderde foto's/
+      // video's zijn al apart uit Storage opgeruimd door removeMedia().
+      await db.from('musician_media').delete().eq('musician_id', mid);
     } else {
       // Defensieve terugvaloptie: normaal gesproken bestaat het account/profiel
       // hier al (aangemaakt in createAccountAndProfile() na stap 1, TT-09).
@@ -3546,6 +3601,23 @@ async function submitProfile() {
         userId = signInData.user?.id || authData.user?.id || null;
         currentUser = signInData.user || authData.user;
         if (!userId) throw new Error('Kon geen account aanmaken. Probeer het opnieuw.');
+      }
+
+      // TT-02: zelfde late avatar-upload als in createAccountAndProfile() —
+      // pas nu bestaat er zeker een user_id/sessie om naar Storage te mogen
+      // schrijven. Alleen relevant als er nog een niet-geüploade state.avatarFile
+      // hangt (in de normale flow is dat hier allang gebeurd).
+      if (state.avatarFile) {
+        try {
+          const { url, path } = await uploadAvatarFile(state.avatarFile, userId);
+          state.avatarUrl = url;
+          state.avatarPath = path;
+        } catch (e) {
+          console.error('Avatar-upload mislukt:', e);
+          showToast('Profiel opgeslagen, maar de profielfoto kon niet worden geüpload. Voeg de foto later toe via Profiel bewerken.');
+          state.avatarUrl = null;
+        }
+        state.avatarFile = null;
       }
 
       // 2. Hoofdprofiel opslaan
@@ -3614,6 +3686,21 @@ async function submitProfile() {
     if (linkMedia.length) {
       const { error: lErr } = await db.from('musician_media').insert(linkMedia);
       if (lErr) throw new Error(lErr.message);
+    }
+
+    // 7. Media-bestanden (foto's/video's, TT-02) — alleen bestanden die
+    // daadwerkelijk klaar zijn met uploaden; een blob-URL zou na deze sessie
+    // toch niets meer voorstellen, dus die worden overgeslagen.
+    const fileMedia = state.mediaFiles
+      .filter(m => m.url && !m.uploading && !m.url.startsWith('blob:'))
+      .map(m => ({
+        musician_id: mid,
+        media_type:  m.type,
+        url:         m.url,
+      }));
+    if (fileMedia.length) {
+      const { error: fErr } = await db.from('musician_media').insert(fileMedia);
+      if (fErr) throw new Error(fErr.message);
     }
 
     state.savedId = mid;
@@ -4165,6 +4252,8 @@ let state = {
   songs: [],
   goal: '',
   avatarUrl: null,
+  avatarFile: null,
+  avatarPath: null,
   mediaFiles: [],
   mediaLinks: [],
   onboarding: false // true zolang het account al bestaat maar het profiel nog niet is afgerond (TT-09)
@@ -4442,6 +4531,24 @@ async function createAccountAndProfile() {
     if (!userId) throw new Error('Kon geen account aanmaken. Probeer het opnieuw.');
     currentUser = signInData.user || authData.user;
 
+    // TT-02: pas nu bestaat er een user_id/sessie om naar Storage te mogen
+    // schrijven, dus een bij stap 1 gekozen profielfoto wordt pas hier echt
+    // geüpload — niet bij het selecteren van het bestand zelf. Een mislukte
+    // upload blokkeert het aanmaken van het account niet; de gebruiker kan
+    // de foto later alsnog toevoegen via "Profiel bewerken".
+    if (state.avatarFile) {
+      try {
+        const { url, path } = await uploadAvatarFile(state.avatarFile, userId);
+        state.avatarUrl = url;
+        state.avatarPath = path;
+      } catch (e) {
+        console.error('Avatar-upload mislukt:', e);
+        showToast('Account aangemaakt, maar de profielfoto kon niet worden geüpload. Voeg de foto later toe via Profiel bewerken.');
+        state.avatarUrl = null;
+      }
+      state.avatarFile = null;
+    }
+
     const { data: musician, error: mErr } = await db
       .from('musicians')
       .insert({
@@ -4510,18 +4617,75 @@ function goTo(step) {
 
 // ─── Personalisatie ──────────────────────────────────────────────────────────
 
+// TT-02: bestand echt naar Supabase Storage uploaden i.p.v. alleen een
+// tijdelijke blob-URL. Pad bevat het user_id (nodig voor de insert-policy:
+// iedereen mag alleen naar zijn eigen map schrijven) plus een tijdstempel
+// zodat twee uploads nooit elkaars bestand overschrijven.
+async function uploadToStorage(bucket, userId, file, maxBytes, maxLabel) {
+  if (file.size > maxBytes) throw new Error(`Bestand is te groot. Maximum ${maxLabel}.`);
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
+  const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error: upErr } = await db.storage.from(bucket).upload(path, file, { cacheControl: '3600', upsert: false });
+  if (upErr) throw upErr;
+  const { data } = db.storage.from(bucket).getPublicUrl(path);
+  return { url: data.publicUrl, path };
+}
+
+function uploadAvatarFile(file, userId) {
+  return uploadToStorage('avatars', userId, file, 5 * 1024 * 1024, '5 MB');
+}
+
+function uploadMediaFile(file, userId) {
+  return uploadToStorage('media', userId, file, 50 * 1024 * 1024, '50 MB');
+}
+
 function handleAvatarUpload(file) {
   if (!file) return;
-  const url = URL.createObjectURL(file);
-  state.avatarUrl = url;
+  if (!file.type.startsWith('image/')) { showToast('Kies een afbeelding (JPG, PNG, ...).'); return; }
+  if (file.size > 5 * 1024 * 1024) { showToast('Afbeelding is te groot. Maximum 5 MB.'); return; }
+
+  // Preview direct met de blob-URL, zodat het aanvoelt als een directe
+  // reactie — de echte upload (hieronder) loopt daar los van.
+  const blobUrl = URL.createObjectURL(file);
   const preview = document.getElementById('avatarPreview');
-  preview.innerHTML = `<img src="${url}" alt="profielfoto">`;
+  preview.style.position = 'relative';
+  preview.innerHTML = `<img src="${blobUrl}" alt="profielfoto">`;
   preview.style.borderColor = DEFAULT_PROFILE_COLOR;
   document.getElementById('avatarRemoveBtn').classList.add('visible');
+
+  if (!currentUser) {
+    // Stap 1 ("Aanmelden"): het account/user_id bestaat op dit moment nog
+    // niet, dus er is nog geen sessie om naar Storage te mogen schrijven.
+    // Bewaar het bestand zelf — createAccountAndProfile() uploadt het echt
+    // zodra er een user_id is.
+    state.avatarFile = file;
+    state.avatarUrl = null;
+    return;
+  }
+
+  // Account bestaat al (profiel bewerken, of een hervatte onboarding na
+  // stap 1) — meteen echt uploaden.
+  preview.insertAdjacentHTML('beforeend',
+    `<div class="avatar-uploading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);border-radius:50%;">
+       <div class="save-spinner" style="width:24px;height:24px;border-width:3px;margin:0;"></div>
+     </div>`);
+  uploadAvatarFile(file, currentUser.id).then(({ url, path }) => {
+    state.avatarUrl = url;
+    state.avatarPath = path;
+    state.avatarFile = null;
+    preview.querySelector('.avatar-uploading')?.remove();
+  }).catch(e => {
+    console.error('Avatar-upload mislukt:', e);
+    preview.querySelector('.avatar-uploading')?.remove();
+    showToast(friendlyErrorMessage(e));
+    removeAvatar();
+  });
 }
 
 function removeAvatar() {
   state.avatarUrl = null;
+  state.avatarFile = null;
+  state.avatarPath = null;
   const preview = document.getElementById('avatarPreview');
   const initials = state.fname ? state.fname.slice(0,1).toUpperCase() : '?';
   preview.innerHTML = `<span id="avatarInitials">${escHtml(initials)}</span>`;
@@ -4544,14 +4708,44 @@ function handleDrop(e) {
   handleFileSelect(e.dataTransfer.files);
 }
 
+// TT-02: de media-stap (step4) komt in de wizard altijd ná stap 1
+// ("Aanmelden"), dus het account bestaat op dit punt altijd al — anders dan
+// bij de avatar-upload in stap 1 hoeft hier niet uitgesteld te worden.
 function handleFileSelect(files) {
   Array.from(files).forEach(file => {
     if (state.mediaFiles.length >= 8) { showToast('Maximum 8 bestanden.'); return; }
-    const url = URL.createObjectURL(file);
-    const type = file.type.startsWith('video') ? 'video' : 'foto';
-    state.mediaFiles.push({ name: file.name, url, type });
+    const isVideo = file.type.startsWith('video/');
+    const isImage = file.type.startsWith('image/');
+    if (!isVideo && !isImage) { showToast(`"${file.name}" is geen foto of video.`); return; }
+    if (file.size > 50 * 1024 * 1024) { showToast(`"${file.name}" is te groot. Maximum 50 MB.`); return; }
+
+    const blobUrl = URL.createObjectURL(file);
+    const type = isVideo ? 'video' : 'foto';
+    const entry = { name: file.name, url: blobUrl, path: null, type, uploading: true };
+    state.mediaFiles.push(entry);
+    renderMediaGrid();
+
+    if (!currentUser) {
+      // Zou in de normale flow niet moeten voorkomen; voor de zekerheid geen
+      // upload proberen zonder ingelogde gebruiker (RLS zou 'm toch weigeren).
+      entry.uploading = false;
+      renderMediaGrid();
+      return;
+    }
+
+    uploadMediaFile(file, currentUser.id).then(({ url, path }) => {
+      entry.url = url;
+      entry.path = path;
+      entry.uploading = false;
+      renderMediaGrid();
+    }).catch(e => {
+      console.error('Media-upload mislukt:', e);
+      showToast(`"${file.name}": ${friendlyErrorMessage(e)}`);
+      const idx = state.mediaFiles.indexOf(entry);
+      if (idx !== -1) state.mediaFiles.splice(idx, 1);
+      renderMediaGrid();
+    });
   });
-  renderMediaGrid();
 }
 
 function renderMediaGrid() {
@@ -4562,6 +4756,7 @@ function renderMediaGrid() {
         ? `<img src="${safeUrl(m.url)}" alt="${escHtml(m.name)}">`
         : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Video</div>`
       }
+      ${m.uploading ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);"><div class="save-spinner" style="width:20px;height:20px;border-width:3px;margin:0;"></div></div>` : ''}
       <div class="thumb-type">${escHtml(m.type)}</div>
       <button class="thumb-remove" onclick="removeMedia(${i})">✕</button>
     </div>
@@ -4569,9 +4764,16 @@ function renderMediaGrid() {
 }
 
 function removeMedia(i) {
+  const entry = state.mediaFiles[i];
   state.mediaFiles.splice(i,1);
   renderMediaGrid();
+  // Al geüpload bestand meteen weer opruimen uit Storage — voorkomt dat
+  // verwijderde media als wees achterblijft (best effort, geen blokkerende fout).
+  if (entry?.path) {
+    db.storage.from('media').remove([entry.path]).then(() => {}).catch(() => {});
+  }
 }
+
 
 function detectPlatform(url) {
   if (url.includes('youtube') || url.includes('youtu.be')) return 'YouTube';
