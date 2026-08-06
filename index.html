@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Talent Tent — Talent zoekt talent</title>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400&family=Alfa+Slab+One&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root {
@@ -19,6 +23,14 @@
     --text: #f0f0f0;
     --muted: #888;
     --radius: 12px;
+  }
+
+  /* TT-15b: tijdelijk display-font (Alfa Slab One) voor logo/titels, in
+     afwachting van het eigen letterontwerp uit het huisstijlblad. Zodra dat
+     als vector/webfont beschikbaar is, hoeft alleen deze regel te wijzigen —
+     alle CSS die --font-display gebruikt blijft verder ongewijzigd. */
+  :root {
+    --font-display: 'Alfa Slab One', 'Roboto', sans-serif;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -64,14 +76,6 @@
     background: var(--bg);
   }
 
-/* ── Sticky topbar (header + nav blijven altijd zichtbaar) ── */
-  .app-topbar {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: var(--bg);
-  }
-
   /* Header */
   header {
     position: relative;
@@ -83,12 +87,12 @@
   }
 
   .logo {
-    font-family: 'Roboto', sans-serif;
-    font-size: clamp(48px, 8vw, 80px);
-    letter-spacing: 2px;
+    font-family: var(--font-display);
+    font-size: clamp(40px, 7vw, 72px);
+    letter-spacing: 1px;
     line-height: 1;
     color: var(--accent);
-    text-shadow: 4px 4px 0 rgba(245,197,24,0.2);
+    text-shadow: 3px 3px 0 rgba(245,197,24,0.2);
   }
 
   .logo span {
@@ -164,9 +168,9 @@
   }
 
   .panel-title {
-    font-family: 'Roboto', sans-serif;
-    font-size: 32px;
-    letter-spacing: 1px;
+    font-family: var(--font-display);
+    font-size: 28px;
+    letter-spacing: 0.5px;
     margin-bottom: 6px;
     color: var(--accent);
   }
@@ -1105,7 +1109,7 @@
   .landing-wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
   .landing-hero { padding: 80px 0 60px; text-align: center; }
   .landing-hero-inner { max-width: 640px; margin: 0 auto; }
-  .landing-title { font-family: 'Roboto', sans-serif; font-size: clamp(52px, 10vw, 96px); letter-spacing: 2px; line-height: 1; margin-bottom: 20px; }
+  .landing-title { font-family: var(--font-display); font-size: clamp(40px, 8vw, 76px); letter-spacing: 0.5px; line-height: 1.05; margin-bottom: 20px; }
   .landing-title span { color: var(--accent); }
   .landing-sub { font-size: 16px; color: var(--muted); line-height: 1.7; font-weight: 300; margin-bottom: 36px; max-width: 520px; margin-left: auto; margin-right: auto; }
   .landing-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
@@ -1241,10 +1245,10 @@
   }
 
   .filter-title {
-    font-family: 'Roboto', sans-serif;
-    font-size: 22px;
+    font-family: var(--font-display);
+    font-size: 19px;
     color: var(--accent);
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     margin-bottom: 20px;
   }
 
@@ -1455,7 +1459,7 @@
   .band-card:hover { border-color:#444; }
   .band-card-header { display:flex;align-items:center;gap:16px;padding:20px;cursor:pointer;flex-wrap:wrap; }
   .band-avatar { width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Roboto',sans-serif;font-size:24px;color:#000;flex-shrink:0; }
-  .band-name { font-family:'Roboto',sans-serif;font-size:24px;letter-spacing:0.5px;line-height:1; }
+  .band-name { font-family: var(--font-display); font-size: 21px; letter-spacing: 0.3px; line-height: 1.1; }
   .band-meta { font-size:12px;color:var(--muted);margin-top:3px; }
   .band-status-badge { font-size:11px;padding:3px 10px;border-radius:10px;border:1px solid;margin-left:auto;white-space:nowrap;flex-shrink:0; }
   .band-status-zoekend { border-color:var(--accent);color:var(--accent); }
@@ -1468,13 +1472,21 @@
   .wanted-chip { font-size:11px;padding:3px 10px;border-radius:10px;border:1px dashed var(--accent2);color:var(--accent2); }
 
   @media (max-width: 560px) {
-    header { padding: 20px 20px 0; flex-direction: column; align-items: flex-start; }
+    header { padding: 16px 20px 12px; flex-direction: column; align-items: flex-start; }
     main { padding: 32px 16px 60px; }
     .panel { padding: 24px 20px; }
     .field-group { grid-template-columns: 1fr; }
     .goal-options { grid-template-columns: 1fr; }
     .filter-row { grid-template-columns: 1fr; }
-    .app-nav { padding: 12px 12px 0; gap: 4px; overflow-x: auto;
+    /* TT-15: op mobiel kost een permanent zichtbare kop (logo + tagline +
+       nav) bijna een derde van het scherm. De kop scrollt daarom gewoon mee;
+       alleen de navigatiebalk blijft vastgeplakt, zodat navigeren makkelijk
+       blijft zonder dat het logo blijvend ruimte inneemt. */
+    .app-topbar { position: static; }
+    .logo { font-size: 28px; text-shadow: none; }
+    .tagline { display: none; }
+    .app-nav { position: sticky; top: 0; z-index: 50; background: var(--bg);
+               padding: 12px 12px 0; gap: 4px; overflow-x: auto;
                -webkit-overflow-scrolling: touch; }
     .app-nav::-webkit-scrollbar { display: none; }
     .nav-btn { padding: 10px 12px; font-size: 12px; white-space: nowrap; }
@@ -1614,7 +1626,8 @@
     <div class="field-group">
       <div class="field">
         <label>Plaats <span class="req">*</span></label>
-        <input type="text" id="city" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;">
+        <input type="text" id="city" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acCityManualList')">
+        <div class="autocomplete-list" id="acCityManualList"></div>
         <div id="postcodeStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
       </div>
       <div class="field"></div>
@@ -1796,7 +1809,7 @@
   </div>
 
   <!-- STEP 5: Media -->
-  <div class="panel" id="step5">
+  <div class="panel" id="step4">
     <div class="panel-title">Laat jezelf horen</div>
     <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Helemaal optioneel — maar een profiel met media valt op.</div>
 
@@ -2111,7 +2124,8 @@
         <div class="field-group">
           <div class="field">
             <label>Plaats <span class="req">*</span></label>
-            <input type="text" id="bandCity" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;">
+            <input type="text" id="bandCity" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acBandCityManualList')">
+            <div class="autocomplete-list" id="acBandCityManualList"></div>
             <div id="bandPostcodeStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
           </div>
           <div class="field"></div>
@@ -2153,8 +2167,8 @@
       <div class="panel-title" style="margin-bottom:20px;">Over ons</div>
       <div style="font-size:15px;line-height:1.7;color:var(--text);">
         <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat zijn we?</strong> The Talent Tent is een verzamelplaats voor muzikanten. We zijn gestart voor jonge muzikanten die veel oefenen, maar andere muzikanten niet goed weten te vinden om samen te spelen. Dit willen wij overbruggen. Ondertussen zien we ook meer oudere muzikanten in de Tent.</p>
-        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat doen we?</strong> In de Tent heb je je persoonlijke pagina met setlist, en van je eigen band als je die hebt. Je kunt andere muzikanten volgen en met de uitgebreide zoekfunctie een nieuw of een tijdelijk bandlid vinden. We zien je graag op het podium.</p>
-        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Hoe werkt het?</strong> Je maakt je persoonlijke pagina, en eventueel bandpagina aan. In je persoonlijke omgeving kan je kiezen welke informatie je aan anderen laat zien. Zoals zo vaak geldt dat hoe meer je geeft, hoe meer je krijgt. Wil je alleen applaus of juist gevonden worden? Hou je profiel dan actueel.</p>
+        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat doen we?</strong> In de Tent heb je je persoonlijke pagina met je instrumenten, muziekstijlen en repertoire — en die van je eigen band, als je die hebt. Met de zoekfunctie vind je muzikanten en bands bij jou in de buurt: op instrument, op stijl, op afstand, of op de nummers die je speelt. We zien je graag op het podium.</p>
+        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Hoe werkt het?</strong> Je maakt je persoonlijke pagina aan, en eventueel een bandpagina. Hoe vollediger je pagina, hoe beter anderen je kunnen vinden — de volledigheidsmeter op je profiel laat zien wat er nog ontbreekt. Wil je alleen applaus of juist gevonden worden? Hou je profiel dan actueel: profielen die lang niet zijn bijgewerkt zakken naar onderen in de zoekresultaten.</p>
         <p>Als je er klaar voor bent dan kan je via de Tent muzikanten of bands bij jou in de buurt zoeken om samen muziek te maken. Bands kunnen via de Tent nieuwe bandleden zoeken, of tijdelijke bandleden voor een optreden. We helpen jullie graag het podium op.</p>
       </div>
     </div>
@@ -2252,6 +2266,20 @@ async function appInit() {
         onUserLoggedOut();
       }
     });
+
+    // TT-16: een gedeelde link (bijv. talenttent.org/#about) direct op de
+    // juiste view openen. Alleen bekende views; Mijn Profiel/Mijn Bands lopen
+    // via requireLogin() zodat een uitgelogde bezoeker de gebruikelijke
+    // vriendelijke toast + doorverwijzing krijgt, geen lege pagina.
+    const knownHashViews = ['search', 'about', 'register', 'myprofile', 'bands', 'auth'];
+    const gatedHashViews = ['myprofile', 'bands'];
+    const hashView = location.hash.replace('#', '');
+    if (knownHashViews.includes(hashView)) {
+      if (gatedHashViews.includes(hashView)) requireLogin(hashView);
+      else showView(hashView);
+    } else {
+      history.replaceState({ view: 'landing' }, '', '#landing');
+    }
   } catch(e) {
     console.error('appInit fout:', e);
   }
@@ -2300,17 +2328,20 @@ function onUserLoggedOut() {
   // "Verder bewerken"-balk alsnog bij de laatst bewerkte profielgegevens.
   editingMusicianId = null;
   clearOnboardingProgress();
+  postcodeFailStreak = 0;
+  postcodeManualMode = false;
+  const cityFieldReset = document.getElementById('city');
+  if (cityFieldReset) { cityFieldReset.readOnly = true; cityFieldReset.style.cursor = 'not-allowed'; cityFieldReset.style.opacity = '0.85'; }
   state = {
     currentStep: 0,
     fname: '', lname: '', birth_date: '', city: '', zip: '', bio: '',
+    citySource: 'pdok',
     regEmail: '', regPassword: '',
     instruments: [],
     genres: [],
     songs: [],
     goal: '',
     avatarUrl: null,
-    profileColor: '#f5c518',
-    vibe: null,
     mediaFiles: [],
     mediaLinks: [],
     onboarding: false
@@ -2441,7 +2472,7 @@ function setSearchMode(mode) {
   else if (isSetlist && setlistWantedSongs.length) runSetlistSearch();
 }
 
-function showView(view) {
+function showView(view, mode) {
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
@@ -2464,10 +2495,10 @@ function showView(view) {
       // dat is immers hoe je een account aanmaakt.
       editingMusicianId = null;
       showToast('Log in om je profiel te bewerken.');
-      showView('auth');
+      showView('auth', 'redirect');
       return;
     }
-    if (currentUser && myMusicianId && !editingMusicianId) { showView('myprofile'); return; }
+    if (currentUser && myMusicianId && !editingMusicianId) { showView('myprofile', 'redirect'); return; }
     const locked = !!editingMusicianId;
     ['fname', 'lname', 'birth_date'].forEach(id => {
       const fld = document.getElementById(id);
@@ -2494,14 +2525,37 @@ function showView(view) {
   const banner = document.getElementById('editModeBanner');
   if (banner) banner.style.display = (currentUser && editingMusicianId && view !== 'register') ? 'flex' : 'none';
 
+  // TT-16: browsergeschiedenis bijwerken, zodat de terugknop (Android/browser)
+  // eerst de vorige pagina toont i.p.v. meteen de hele app te sluiten.
+  //  - 'pop'      → deze aanroep komt zelf al van de terugknop, geschiedenis
+  //                 hoeft niet aangepast (anders ontstaat een lus).
+  //  - 'redirect' → interne omleiding binnen dezelfde gebruikersactie (bijv.
+  //                 "nog geen profiel → terug naar registratie"); vervangt de
+  //                 huidige stap i.p.v. er een nieuwe aan toe te voegen, want
+  //                 de gebruiker heeft deze tussenstap nooit bewust bezocht.
+  //  - anders     → een gewone, bewuste navigatie: nieuwe stap toevoegen.
+  if (mode !== 'pop') {
+    if (mode === 'redirect') history.replaceState({ view }, '', '#' + view);
+    else history.pushState({ view }, '', '#' + view);
+  }
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ─── Authenticatie ───────────────────────────────────────────────────────────
+// Sluit, indien open, eerst een modal (telt als één "terug"-stap) vóórdat de
+// terugknop een view terugzet — voorkomt dat een open profiel-/band-detail
+// zomaar verdwijnt samen met de hele pagina eronder.
+window.addEventListener('popstate', (e) => {
+  const openModal = document.querySelector('.modal-overlay.visible');
+  if (openModal) {
+    openModal.classList.remove('visible');
+    history.pushState(history.state, '', location.hash || '#landing');
+    return;
+  }
+  showView(e.state?.view || 'landing', 'pop');
+});
 
-function switchAuthTab(tab) {
-  clearAuthMessages();
-}
+// ─── Authenticatie ───────────────────────────────────────────────────────────
 
 function showAuthError(msg) {
   const el = document.getElementById('authError');
@@ -3114,9 +3168,9 @@ function saveOnboardingProgress() {
       mid: editingMusicianId,
       step: state.currentStep,
       fname: state.fname, lname: state.lname, birth_date: state.birth_date,
-      city: state.city, zip: state.zip, bio: state.bio,
+      city: state.city, zip: state.zip, bio: state.bio, citySource: state.citySource,
       instruments: state.instruments, genres: state.genres, songs: state.songs,
-      goal: state.goal, profileColor: state.profileColor,
+      goal: state.goal,
       mediaLinks: state.mediaLinks
       // Bewust NIET bewaard: regPassword, avatarUrl (blob-url overleeft een
       // refresh toch niet — zie bekende beperking TT-02), mediaFiles.
@@ -3141,7 +3195,13 @@ function populateWizardFieldsFromState() {
   document.getElementById('lname').value = state.lname;
   document.getElementById('birth_date').value = state.birth_date;
   document.getElementById('zip').value = state.zip;
-  document.getElementById('city').value = state.city;
+  const cityFieldPWF = document.getElementById('city');
+  cityFieldPWF.value = state.city;
+  if (state.citySource === 'manual') {
+    cityFieldPWF.readOnly = false; cityFieldPWF.style.cursor = ''; cityFieldPWF.style.opacity = '';
+  } else {
+    cityFieldPWF.readOnly = true; cityFieldPWF.style.cursor = 'not-allowed'; cityFieldPWF.style.opacity = '0.85';
+  }
   document.getElementById('postcodeStatus').textContent = state.city ? `Gevonden: ${state.city}` : '';
   document.getElementById('bio').value = state.bio;
 
@@ -3168,7 +3228,7 @@ function populateWizardFieldsFromState() {
     avatarPreview.innerHTML = `<span id="avatarInitials">${escHtml((String(state.fname || '')[0] || '?').toUpperCase())}</span>`;
     document.getElementById('avatarRemoveBtn').classList.remove('visible');
   }
-  avatarPreview.style.borderColor = state.profileColor;
+  avatarPreview.style.borderColor = DEFAULT_PROFILE_COLOR;
 }
 
 // Wordt aangeroepen bij elke geslaagde login (appInit + auth-state-change).
@@ -3190,11 +3250,11 @@ function tryResumeOnboarding() {
   state.city = saved.city || '';
   state.zip = saved.zip || '';
   state.bio = saved.bio || '';
+  state.citySource = saved.citySource || 'pdok';
   state.instruments = saved.instruments || [];
   state.genres = saved.genres || [];
   state.songs = saved.songs || [];
   state.goal = saved.goal || '';
-  state.profileColor = saved.profileColor || '#f5c518';
   state.mediaLinks = saved.mediaLinks || [];
   postcodeResolved = !!state.zip;
 
@@ -3230,15 +3290,16 @@ async function editMyProfile() {
   state.city          = m.city || '';
   state.bio           = m.bio || '';
   state.goal          = m.goal || '';
-  state.profileColor  = m.profile_color || '#f5c518';
   state.avatarUrl     = m.avatar_url || null;
-  state.vibe          = VIBES.find(v => v.label === m.vibe_label) || null;
   state.instruments   = (m.musician_instruments || []).map(x => x.instrument);
   state.genres        = (m.musician_genres || []).map(x => x.genre);
   state.songs         = (m.musician_songs || []).map(s => ({ title: s.song_title, artist: s.song_artist, level: s.mastery_level }));
   state.mediaFiles    = [];
   state.mediaLinks    = (m.musician_media || []).filter(x => x.media_type === 'link').map(x => ({ url: x.url }));
+  state.citySource    = m.city_source || 'pdok';
   postcodeResolved    = !!m.zip;
+  postcodeFailStreak  = 0;
+  postcodeManualMode  = false;
 
   showView('register');
   goTo(0);
@@ -3449,10 +3510,8 @@ async function submitProfile() {
         zip:              state.zip || null,
         bio:              state.bio || null,
         goal:             state.goal,
-        profile_color:    state.profileColor,
-        vibe_label:       state.vibe?.label || null,
-        vibe_emoji:       state.vibe?.emoji || null,
         avatar_url:       state.avatarUrl || null,
+        city_source:      state.citySource || 'pdok',
         profile_complete: true, // TT-09: dit is de definitieve klik op "Profiel aanmaken"/"Wijzigingen opslaan"
       }).eq('id', mid);
       if (uErr) throw new Error(uErr.message);
@@ -3500,10 +3559,9 @@ async function submitProfile() {
           zip:              state.zip || null,
           bio:              state.bio || null,
           goal:             state.goal,
-          profile_color:    state.profileColor,
-          vibe_label:       state.vibe?.label || null,
-          vibe_emoji:       state.vibe?.emoji || null,
+          profile_color:    DEFAULT_PROFILE_COLOR,
           avatar_url:       state.avatarUrl || null,
+          city_source:      state.citySource || 'pdok',
           user_id:          userId,
           profile_complete: true,
         })
@@ -3629,8 +3687,80 @@ function pickDisplayCity(officialCity, altField) {
   return normalizeCityName(officialCity || '');
 }
 
+function lookupPostcodeCity(normalized) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
+  return (async () => {
+    try {
+      const url = `https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?fq=postcode:${normalized}*&fq=type:postcode&fl=woonplaatsnaam,postcode&rows=1`;
+      const res  = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error('PDOK niet bereikbaar');
+      const data = await res.json();
+      const doc  = data?.response?.docs?.[0];
+      if (doc?.woonplaatsnaam) {
+        const { data: alt } = await db.from('postcode_cache').select('alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
+        const displayCity = pickDisplayCity(doc.woonplaatsnaam, alt?.alternatieve_schrijfwijzen);
+        db.from('postcode_cache').upsert({ postcode: normalized, city: doc.woonplaatsnaam, updated_at: new Date().toISOString() })
+          .then(() => {}).catch(() => {});
+        return { found: true, city: displayCity, source: 'pdok' };
+      }
+      const { data: cachedNF } = await db.from('postcode_cache').select('city, alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
+      if (cachedNF?.city) return { found: true, city: pickDisplayCity(cachedNF.city, cachedNF.alternatieve_schrijfwijzen), source: 'cache' };
+      return { found: false, reason: 'notfound' };
+    } catch (e) {
+      clearTimeout(timer);
+      try {
+        const { data: cached } = await db.from('postcode_cache').select('city, alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
+        if (cached?.city) return { found: true, city: pickDisplayCity(cached.city, cached.alternatieve_schrijfwijzen), source: 'cache' };
+      } catch (e2) { }
+      return { found: false, reason: 'error' };
+    }
+  })();
+}
+
+function enableManualCity(kind) {
+  const isBand   = kind === 'band';
+  const cityId   = isBand ? 'bandCity' : 'city';
+  const statusId = isBand ? 'bandPostcodeStatus' : 'postcodeStatus';
+  const field = document.getElementById(cityId);
+  field.readOnly = false;
+  field.style.cursor = '';
+  field.style.opacity = '';
+  field.value = '';
+  field.placeholder = 'Typ je plaatsnaam en kies uit de lijst';
+  const statusEl = document.getElementById(statusId);
+  statusEl.style.color = 'var(--accent2)';
+  statusEl.textContent = 'We kunnen je plaats even niet automatisch ophalen — vul hem hieronder zelf in.';
+  if (isBand) {
+    bandPostcodeResolved = false;
+    bandCitySource = 'manual';
+    bandPostcodeManualMode = true;
+  } else {
+    state.city = '';
+    postcodeResolved = false;
+    state.citySource = 'manual';
+    postcodeManualMode = true;
+  }
+  field.focus();
+}
+
+function relockCity(kind) {
+  const isBand = kind === 'band';
+  const field = document.getElementById(isBand ? 'bandCity' : 'city');
+  field.readOnly = true;
+  field.style.cursor = 'not-allowed';
+  field.style.opacity = '0.85';
+  if (isBand) bandPostcodeManualMode = false;
+  else postcodeManualMode = false;
+}
+
+let postcodeFailStreak = 0;
+let postcodeManualMode = false;
+
 function onPostcodeInput(value) {
   postcodeResolved = false;
+  state.citySource = 'pdok';
   document.getElementById('city').value = '';
   state.city = '';
   const statusEl = document.getElementById('postcodeStatus');
@@ -3648,37 +3778,21 @@ function onPostcodeInput(value) {
   statusEl.textContent = 'Bezig met opzoeken...';
 
   postcodeSearchTimeout = setTimeout(async () => {
-    try {
-      const url = `https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?fq=postcode:${normalized}*&fq=type:postcode&fl=woonplaatsnaam,postcode&rows=1`;
-      const res  = await fetch(url);
-      if (!res.ok) throw new Error('PDOK niet bereikbaar');
-      const data = await res.json();
-      const doc  = data?.response?.docs?.[0];
-      if (doc?.woonplaatsnaam) {
-        // Alternatieve schrijfwijze (bijv. "Den Haag" i.p.v. "'s-Gravenhage") heeft voorrang op de officiële PDOK-naam
-        const { data: alt } = await db.from('postcode_cache').select('alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
-        const displayCity = pickDisplayCity(doc.woonplaatsnaam, alt?.alternatieve_schrijfwijzen);
-        applyResolvedCity(displayCity, normalized, statusEl, `Gevonden: ${displayCity}`);
-        db.from('postcode_cache').upsert({ postcode: normalized, city: doc.woonplaatsnaam, updated_at: new Date().toISOString() })
-          .then(() => {}).catch(() => {});
+    const outcome = await lookupPostcodeCity(normalized);
+    if (outcome.found) {
+      postcodeFailStreak = 0;
+      if (postcodeManualMode) relockCity('musician');
+      state.citySource = outcome.source;
+      applyResolvedCity(outcome.city, normalized, statusEl, `Gevonden: ${outcome.city}`);
+    } else if (outcome.reason === 'notfound') {
+      enableManualCity('musician');
+    } else {
+      postcodeFailStreak++;
+      if (postcodeFailStreak >= 2) {
+        enableManualCity('musician');
       } else {
         statusEl.style.color = 'var(--danger)';
-        statusEl.textContent = 'Postcode niet gevonden. Controleer je postcode.';
-      }
-    } catch (e) {
-      // PDOK niet bereikbaar (storing) → terugvallen op eigen cache
-      try {
-        const { data: cached } = await db.from('postcode_cache').select('city, alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
-        if (cached?.city) {
-          const displayCity = pickDisplayCity(cached.city, cached.alternatieve_schrijfwijzen);
-          applyResolvedCity(displayCity, normalized, statusEl, `Gevonden: ${displayCity}`);
-        } else {
-          statusEl.style.color = 'var(--danger)';
-          statusEl.textContent = 'Kon postcode nu niet controleren (storing). Probeer het later opnieuw.';
-        }
-      } catch (e2) {
-        statusEl.style.color = 'var(--danger)';
-        statusEl.textContent = 'Kon postcode nu niet controleren (storing). Probeer het later opnieuw.';
+        statusEl.textContent = 'Kon postcode nu niet controleren. Probeer het nog eens.';
       }
     }
   }, 500);
@@ -3693,11 +3807,14 @@ function applyResolvedCity(cityName, normalizedZip, statusEl, msg) {
   statusEl.textContent = msg;
 }
 
-// ─── Postcode-opzoeking voor bands (zelfde aanpak als bij muzikanten) ────────
+// ─── Postcode-opzoeking voor bands (zelfde aanpak als bij muzikanten) ────
 
 let bandPostcodeResolved = false;
 let editingBandId = null;
 let bandPostcodeSearchTimeout;
+let bandPostcodeFailStreak = 0;
+let bandPostcodeManualMode = false;
+let bandCitySource = 'pdok';
 
 function applyResolvedBandCity(cityName, statusEl, msg) {
   document.getElementById('bandCity').value = cityName;
@@ -3708,6 +3825,7 @@ function applyResolvedBandCity(cityName, statusEl, msg) {
 
 function onBandPostcodeInput(value) {
   bandPostcodeResolved = false;
+  bandCitySource = 'pdok';
   document.getElementById('bandCity').value = '';
   const statusEl = document.getElementById('bandPostcodeStatus');
   clearTimeout(bandPostcodeSearchTimeout);
@@ -3724,35 +3842,21 @@ function onBandPostcodeInput(value) {
   statusEl.textContent = 'Bezig met opzoeken...';
 
   bandPostcodeSearchTimeout = setTimeout(async () => {
-    try {
-      const url = `https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?fq=postcode:${normalized}*&fq=type:postcode&fl=woonplaatsnaam,postcode&rows=1`;
-      const res  = await fetch(url);
-      if (!res.ok) throw new Error('PDOK niet bereikbaar');
-      const data = await res.json();
-      const doc  = data?.response?.docs?.[0];
-      if (doc?.woonplaatsnaam) {
-        const { data: alt } = await db.from('postcode_cache').select('alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
-        const displayCity = pickDisplayCity(doc.woonplaatsnaam, alt?.alternatieve_schrijfwijzen);
-        applyResolvedBandCity(displayCity, statusEl, `Gevonden: ${displayCity}`);
-        db.from('postcode_cache').upsert({ postcode: normalized, city: doc.woonplaatsnaam, updated_at: new Date().toISOString() })
-          .then(() => {}).catch(() => {});
+    const outcome = await lookupPostcodeCity(normalized);
+    if (outcome.found) {
+      bandPostcodeFailStreak = 0;
+      if (bandPostcodeManualMode) relockCity('band');
+      bandCitySource = outcome.source;
+      applyResolvedBandCity(outcome.city, statusEl, `Gevonden: ${outcome.city}`);
+    } else if (outcome.reason === 'notfound') {
+      enableManualCity('band');
+    } else {
+      bandPostcodeFailStreak++;
+      if (bandPostcodeFailStreak >= 2) {
+        enableManualCity('band');
       } else {
         statusEl.style.color = 'var(--danger)';
-        statusEl.textContent = 'Postcode niet gevonden. Controleer de postcode.';
-      }
-    } catch (e) {
-      try {
-        const { data: cached } = await db.from('postcode_cache').select('city, alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
-        if (cached?.city) {
-          const displayCity = pickDisplayCity(cached.city, cached.alternatieve_schrijfwijzen);
-          applyResolvedBandCity(displayCity, statusEl, `Gevonden: ${displayCity}`);
-        } else {
-          statusEl.style.color = 'var(--danger)';
-          statusEl.textContent = 'Kon postcode nu niet controleren (storing). Probeer het later opnieuw.';
-        }
-      } catch (e2) {
-        statusEl.style.color = 'var(--danger)';
-        statusEl.textContent = 'Kon postcode nu niet controleren (storing). Probeer het later opnieuw.';
+        statusEl.textContent = 'Kon postcode nu niet controleren. Probeer het nog eens.';
       }
     }
   }, 500);
@@ -3791,6 +3895,9 @@ function onCitySearchInput(value, listId) {
 
   // Een postcode heeft hier geen plaatsnaam-suggesties nodig
   if (/^\d{4}$/.test(q) || q.length < 2) { ac.classList.remove('open'); return; }
+  // TT-26: als er na het weghalen van jokertekens niets bruikbaars overblijft
+  // (bijv. iemand typt alleen "%%"), niets zoeken i.p.v. alles matchen.
+  if (likeSafe(q).length < 2) { ac.classList.remove('open'); return; }
 
   const cacheKey = q.toLowerCase();
   if (citySuggestCache.has(cacheKey)) {
@@ -3801,9 +3908,12 @@ function onCitySearchInput(value, listId) {
   clearTimeout(citySearchTimeout);
   citySearchTimeout = setTimeout(async () => {
     try {
+      // TT-26: jokertekens eruit + waarde tussen quotes, zodat een komma of %
+      // in de zoekterm de .or()-syntax niet openbreekt.
+      const pattern = orValue('%' + likeSafe(q) + '%');
       const { data, error } = await db.from('postcode_cache')
         .select('city, alternatieve_schrijfwijzen')
-        .or(`city.ilike.%${q}%,alternatieve_schrijfwijzen.ilike.%${q}%`)
+        .or(`city.ilike.${pattern},alternatieve_schrijfwijzen.ilike.${pattern}`)
         .limit(50);
       if (error) throw error;
 
@@ -3833,6 +3943,25 @@ function renderCitySuggestions(ac, names, listId) {
 }
 
 function selectCitySuggestion(name, listId) {
+  if (listId === 'acCityManualList') {
+    document.getElementById('city').value = name;
+    state.city = name;
+    state.citySource = 'manual';
+    postcodeResolved = true;
+    document.getElementById('postcodeStatus').textContent = `Gekozen: ${name}`;
+    document.getElementById('postcodeStatus').style.color = 'var(--accent)';
+    closeAC(listId);
+    return;
+  }
+  if (listId === 'acBandCityManualList') {
+    document.getElementById('bandCity').value = name;
+    bandCitySource = 'manual';
+    bandPostcodeResolved = true;
+    document.getElementById('bandPostcodeStatus').textContent = `Gekozen: ${name}`;
+    document.getElementById('bandPostcodeStatus').style.color = 'var(--accent)';
+    closeAC(listId);
+    return;
+  }
   const fieldMap = {
     acFilterCityList: 'filterCity',
     acFilterBandCityList: 'filterBandCity',
@@ -4019,34 +4148,29 @@ const GENRES = [
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
+// TT-23: er is geen kleurkiezer (meer) in de app — de accentkleur van een nieuw
+// profiel is dus altijd de merkkleur. Vroeger stond dit als state.profileColor
+// in de wizard, wat de indruk wekte dat de gebruiker er iets over te zeggen had.
+// Bestaande profielen met een afwijkende kleur in de database blijven ongemoeid:
+// bij het bewerken van een profiel wordt profile_color niet meer overschreven.
+const DEFAULT_PROFILE_COLOR = '#f5c518';
+
 let state = {
   currentStep: 0,
   fname: '', lname: '', birth_date: '', city: '', zip: '', bio: '',
+  citySource: 'pdok',
   regEmail: '', regPassword: '',
   instruments: [],
   genres: [],
   songs: [],
   goal: '',
   avatarUrl: null,
-  profileColor: '#f5c518',
-  vibe: null,
   mediaFiles: [],
   mediaLinks: [],
   onboarding: false // true zolang het account al bestaat maar het profiel nog niet is afgerond (TT-09)
 };
 
 // ─── Init ────────────────────────────────────────────────────────────────────
-
-const VIBES = [
-  { label: 'De Rocker', desc: 'Hard, luid, live' },
-  { label: 'De Performer', desc: 'Born to be on stage' },
-  { label: 'De Producer', desc: 'Beats & studio-vibes' },
-  { label: 'De Jammer', desc: 'Improv & freestyle' },
-  { label: 'De Perfectionist', desc: 'Elke noot moet kloppen' },
-  { label: 'De Relaxte', desc: 'Spelen om te spelen' },
-  { label: 'De Songwriter', desc: 'Eigen nummers schrijven' },
-  { label: 'De Energiebom', desc: 'Altijd aan, altijd vol' },
-];
 
 function init() {
   // Instruments
@@ -4132,6 +4256,22 @@ function safeUrl(u) {
 function safeColor(c, fallback) {
   const s = String(c ?? '').trim();
   return /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%]+\)|[a-z]+)$/i.test(s) ? s : fallback;
+}
+
+// ─── Zoektekst veilig maken voor een Supabase-query (TT-26) ─────────────────
+// Twee verschillende risico's, twee helpers:
+//  1. likeSafe(): %, _, * en \ zijn jokertekens in een ilike-patroon. Iemand
+//     die "a%b" typt zou anders onbedoeld veel te breed matchen. Gebruikers
+//     bedoelen deze tekens hier nooit letterlijk, dus we halen ze eruit.
+//  2. orValue(): binnen .or(...) scheidt PostgREST de voorwaarden met komma's.
+//     Een komma in de zoekterm breekt die syntax open. Door de waarde tussen
+//     dubbele quotes te zetten telt de komma als gewone tekst.
+function likeSafe(s) {
+  return String(s ?? '').replace(/[%_*\\]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function orValue(s) {
+  return '"' + String(s ?? '').replace(/["\\]/g, '') + '"';
 }
 
 function highlight(text, q) {
@@ -4311,10 +4451,11 @@ async function createAccountAndProfile() {
         city:             state.city,
         zip:              state.zip || null,
         bio:              state.bio || null,
-        profile_color:    state.profileColor,
+        profile_color:    DEFAULT_PROFILE_COLOR,
         avatar_url:       state.avatarUrl || null,
         user_id:          userId,
         profile_complete: false,
+        city_source:      state.citySource || 'pdok',
       })
       .select()
       .single();
@@ -4375,7 +4516,7 @@ function handleAvatarUpload(file) {
   state.avatarUrl = url;
   const preview = document.getElementById('avatarPreview');
   preview.innerHTML = `<img src="${url}" alt="profielfoto">`;
-  preview.style.borderColor = state.profileColor;
+  preview.style.borderColor = DEFAULT_PROFILE_COLOR;
   document.getElementById('avatarRemoveBtn').classList.add('visible');
 }
 
@@ -5054,13 +5195,16 @@ function resetBandForm() {
   editingBandId = null;
   bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff' };
   bandPostcodeResolved = false;
+  bandPostcodeFailStreak = 0;
+  bandPostcodeManualMode = false;
+  bandCitySource = 'pdok';
   const nameEl = document.getElementById('bandName');
   const zipEl = document.getElementById('bandZip');
   const cityEl = document.getElementById('bandCity');
   const descEl = document.getElementById('bandDescription');
   if (nameEl) nameEl.value = '';
   if (zipEl) zipEl.value = '';
-  if (cityEl) cityEl.value = '';
+  if (cityEl) { cityEl.value = ''; cityEl.readOnly = true; cityEl.style.cursor = 'not-allowed'; cityEl.style.opacity = '0.85'; }
   if (descEl) descEl.value = '';
   const statusEl = document.getElementById('bandPostcodeStatus');
   if (statusEl) statusEl.textContent = '';
@@ -5086,7 +5230,10 @@ function searchMembersToAdd(query) {
   clearTimeout(memberSearchTimer);
   const q = query.trim();
   const resEl = document.getElementById('memberSearchResults');
-  if (q.length < 2) {
+  // TT-26: jokertekens (%, _, *) uit de zoekterm halen, anders kan een getypt
+  // %-teken het ilike-patroon veel breder maken dan de gebruiker bedoelt.
+  const qSafe = likeSafe(q);
+  if (q.length < 2 || qSafe.length < 2) {
     resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens om te zoeken.</p>';
     return;
   }
@@ -5098,7 +5245,7 @@ function searchMembersToAdd(query) {
 
       const { data: musicians, error } = await db.from('musicians')
         .select('id, fname, city, profile_color, musician_instruments(instrument)')
-        .ilike('fname', `%${q}%`).limit(15);
+        .ilike('fname', `%${qSafe}%`).limit(15);
       if (error) throw error;
 
       const filtered = (musicians||[]).filter(m => !existingIds.includes(m.id));
@@ -5147,6 +5294,9 @@ async function editBand(id) {
     color: b.profile_color || '#3ecfff'
   };
   bandPostcodeResolved = !!b.zip;
+  bandPostcodeFailStreak = 0;
+  bandPostcodeManualMode = false;
+  bandCitySource = b.city_source || 'pdok';
 
   document.getElementById('createBandForm').style.display = 'block';
   initBandForm();
@@ -5232,7 +5382,7 @@ async function saveBand() {
       const { error: uErr } = await db.from('bands').update({
         name, city: normalizeCityName(city), zip,
         description: desc || null, genres: bandState.genres,
-        status: bandState.status,
+        status: bandState.status, city_source: bandCitySource,
       }).eq('id', bandId);
       if (uErr) throw uErr;
       await db.from('band_wanted').delete().eq('band_id', bandId);
@@ -5240,7 +5390,7 @@ async function saveBand() {
       const { data: band, error: bErr } = await db.from('bands').insert({
         name, city: normalizeCityName(city), zip,
         description: desc || null, genres: bandState.genres,
-        status: bandState.status, founder_id: mid,
+        status: bandState.status, founder_id: mid, city_source: bandCitySource,
       }).select().single();
       if (bErr) throw bErr;
       bandId = band.id;
