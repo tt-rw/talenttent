@@ -30,7 +30,7 @@ Niet in de audit hierboven, maar tijdens deze sessie gevonden door Ronald en dir
 
 | ID | Ticket | Prioriteit | Omvang | Status |
 |---|---|---|---|---|
-| TT-01 | Berichten tussen muzikanten | P0 | Groot | Open |
+| TT-01 | Berichten tussen muzikanten | P0 | Groot | Grotendeels opgelost (06-08-2026) — e-mailnotificatie nog open |
 | TT-02 | Profielfoto's en media echt opslaan | P0 | Middel | Opgelost (06-08-2026) |
 | TT-03 | Profielen achter login | P0 | Klein | Opgelost (05-08-2026) |
 | TT-04 | Postcode niet publiek tonen | P0 | Klein | Opgelost (05-08-2026) |
@@ -122,6 +122,14 @@ create policy "eigen berichten bijwerken" on public.messages for update
 5. E-mailnotificatie via een Supabase Edge Function op een database-trigger bij insert in `messages`. Inhoud: *"Je hebt een bericht van [voornaam] op The Talent Tent"* plus een link naar de app — **nooit** de berichttekst of het e-mailadres van de zender in de mail.
 
 **Acceptatie.** Ingelogde gebruiker met profiel kan vanuit een zoekresultaat een bericht sturen; de ontvanger ziet het onder Berichten met een ongelezen-badge en krijgt een e-mail. Zonder eigen profiel is de knop een registratieprikkel. E-mailadressen zijn nergens zichtbaar.
+
+**✅ Grotendeels opgelost 06-08-2026.** Volledige berichtenfunctie gebouwd zoals hierboven beschreven, op één punt na (zie "Nog open").
+- **Database:** `messages`-tabel exact zoals in dit ticket, incl. RLS-policies — vastgelegd in nieuw script `messages_setup.sql`, **nog door Ronald te draaien.**
+- **Contact leggen:** `buildMusicianDetailHTML(m, isOwn)` toont onderaan een profiel nu "Stuur een bericht →" (met eigen profiel) of "Maak een profiel aan om contact te leggen" (zonder eigen profiel, opent registratie) — nooit bij het eigen profiel. `openMusicianModal()` bepaalt `isOwn` via `myMusicianId === m.id`.
+- **Compositor:** nieuwe modal `#messageModal` (`openMessageComposer()`/`closeMessageComposer()`/`sendMessageFromComposer()`), max. 2000 tekens, gedeelde `insertMessage()`-helper i.p.v. losse insert-logica op twee plekken.
+- **Nieuwe tab "Berichten"** in de navigatiebalk (`navMessages`, achter `requireLogin` net als Mijn Profiel/Mijn Bands), met een rode ongelezen-badge (`refreshUnreadBadge()`, aangeroepen bij inloggen en na het lezen/versturen van berichten).
+- **Nieuwe view `#view-messages`:** `loadInbox()` groepeert alle berichten per gesprekspartner (nieuwste bovenaan, ongelezen-aantal per gesprek); `openConversation()` toont de volledige draad chatgewijs (eigen berichten rechts/geel, ontvangen links) en markeert ongelezen berichten meteen als gelezen; `sendReplyInThread()` stuurt een reactie in het open gesprek.
+- **Nog open (buiten het bereik van Ronalds werkwijze — geen Supabase CLI/Edge Function-deployment beschikbaar via de SQL Editor of GitHub web interface):** de e-mailnotificatie bij een nieuw bericht. Bewust geparkeerd, samen met "E-mailprovider koppelen" (zie `TODO.md`, Lopende onderwerpen) — beide vereisen dezelfde infrastructuurstap. Zodra Ronald een e-mailprovider/Edge Function-koppeling opzet, is dit een kleine aanvulling (database-trigger op `insert` in `messages`).
 
 ---
 

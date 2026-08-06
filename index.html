@@ -1164,6 +1164,51 @@
 
   .nav-spacer { flex: 1; }
 
+  /* ── TT-01: Berichten ────────────────────── */
+  .unread-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.4;
+    padding: 1px 6px;
+    border-radius: 999px;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .messages-conv-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .messages-conv-row:hover { border-color: var(--accent); }
+  .messages-conv-row.unread { background: rgba(245,197,24,0.06); border-color: var(--accent); }
+  .messages-conv-name { font-weight: 700; font-size: 14px; }
+  .messages-conv-preview { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .messages-conv-time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .message-bubble {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  .message-bubble.own { background: var(--accent); color: #0d0d0d; margin-left: auto; }
+  .message-bubble.other { background: var(--surface2); border: 1px solid var(--border); }
+  .message-bubble-time { font-size: 10px; opacity: 0.7; margin-top: 4px; }
+
   /* ── Auth scherm ─────────────────────────── */
   .auth-wrap {
     max-width: 440px;
@@ -1513,6 +1558,7 @@
   <button class="nav-btn" id="navMyProfile" onclick="requireLogin('myprofile')">Mijn Profiel</button>
   <button class="nav-btn" id="navMyBands" onclick="requireLogin('bands')">Mijn Bands</button>
   <button class="nav-btn" id="navSearch" onclick="showView('search')">Zoeken</button>
+  <button class="nav-btn" id="navMessages" onclick="requireLogin('messages')" style="position:relative;">Berichten<span id="unreadBadge" class="unread-badge" style="display:none;"></span></button>
   <div class="nav-spacer"></div>
   <button class="nav-btn" id="navAbout" onclick="showView('about')">Over ons</button>
   <button class="nav-btn" id="navLogin" onclick="navLoginClick()">Inloggen</button>
@@ -2164,6 +2210,25 @@
   </div>
 </div>
 
+<!-- VIEW: Berichten (TT-01) -->
+<div class="app-view" id="view-messages">
+  <div class="search-wrap">
+    <div id="messagesInboxPanel">
+      <div class="filter-title" style="margin-bottom:16px;">Berichten</div>
+      <div id="messagesInboxList"><div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div></div>
+    </div>
+    <div id="messagesThreadPanel" style="display:none;">
+      <button class="btn btn-ghost" style="margin-bottom:16px;" onclick="closeConversation()">← Terug naar berichten</button>
+      <div class="filter-title" id="messagesThreadName" style="margin-bottom:16px;"></div>
+      <div id="messagesThreadList" style="display:flex;flex-direction:column;margin-bottom:16px;"></div>
+      <div style="display:flex;gap:8px;">
+        <textarea id="messagesReplyInput" placeholder="Typ een bericht..." maxlength="2000" style="flex:1;min-height:60px;"></textarea>
+        <button class="btn btn-primary" onclick="sendReplyInThread()">Versturen</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- VIEW: Over ons -->
 <div class="app-view" id="view-about">
   <div class="search-wrap">
@@ -2228,6 +2293,17 @@
       <button class="btn btn-primary" id="confirmYesBtn" onclick="confirmModalYes()" style="background:var(--danger);border-color:var(--danger);">Ja, verwijderen</button>
       <button class="btn btn-ghost" onclick="document.getElementById('confirmModal').classList.remove('visible')">Annuleren</button>
     </div>
+  </div>
+</div>
+
+<!-- Bericht sturen (TT-01) -->
+<div class="modal-overlay" id="messageModal" onclick="if(event.target===this)closeMessageComposer()">
+  <div class="modal-box" style="max-width:440px;">
+    <button class="modal-close" onclick="closeMessageComposer()">✕</button>
+    <div class="filter-title" style="margin-bottom:4px;">Bericht sturen</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Aan <strong id="messageComposerRecipientName" style="color:var(--text);"></strong></p>
+    <textarea id="messageComposerBody" placeholder="Schrijf je bericht..." maxlength="2000" style="width:100%;min-height:120px;margin-bottom:16px;"></textarea>
+    <button class="btn btn-primary" style="width:100%;" onclick="sendMessageFromComposer()">Versturen →</button>
   </div>
 </div>
 
@@ -2302,6 +2378,7 @@ let onboardingInFlight = false;
 
 function onUserLoggedIn(user) {
   document.getElementById('navLogin').textContent = 'Uitloggen';
+  refreshUnreadBadge();
 
   if (onboardingInFlight) return;
 
@@ -2354,6 +2431,8 @@ function onUserLoggedOut() {
   };
   const banner = document.getElementById('editModeBanner');
   if (banner) banner.style.display = 'none';
+  const badge = document.getElementById('unreadBadge');
+  if (badge) badge.style.display = 'none';
   showView('landing');
 }
 
@@ -2499,7 +2578,7 @@ function showView(view, mode) {
   const navMap = {
     landing: null, search: 'navSearch',
     about: 'navAbout', register: null, myprofile: 'navMyProfile', bands: 'navMyBands',
-    auth: 'navLogin', reset: null
+    messages: 'navMessages', auth: 'navLogin', reset: null
   };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
 
@@ -2539,6 +2618,7 @@ function showView(view, mode) {
   if (view === 'myprofile') loadMyProfile();
   if (view === 'bands') loadMyBands();
   if (view === 'search') configureSearchAccess();
+  if (view === 'messages') loadInbox();
 
   const banner = document.getElementById('editModeBanner');
   if (banner) banner.style.display = (currentUser && editingMusicianId && view !== 'register') ? 'flex' : 'none';
@@ -3003,7 +3083,7 @@ function musicianRowHTML(m) {
 // openMusicianModal() (modal voor andere profielen) én loadMyProfile() (Mijn
 // Profiel) — zodat Mijn Profiel nooit de modal hoeft te openen/sluiten (dat
 // veroorzaakte een korte flits van de modal-overlay bij elk bezoek).
-function buildMusicianDetailHTML(m) {
+function buildMusicianDetailHTML(m, isOwn) {
   const col  = safeColor(m.profile_color, '#f5c518');
   const age  = calcAgeFromISO(m.birth_date);
   const date = new Date(m.updated_at).toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
@@ -3083,7 +3163,11 @@ function buildMusicianDetailHTML(m) {
         <div class="profile-media-grid">
           ${links.map(l => `<a href="${l.safeHref}" target="_blank" rel="noopener noreferrer" class="profile-link-chip">${escHtml(l.platform || 'Link')}</a>`).join('')}
         </div>
-      </div>` : ''}`;
+      </div>` : ''}
+    ${!isOwn ? (hasOwnProfile
+      ? `<button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(m.fname)}')">Stuur een bericht →</button>`
+      : `<button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`
+    ) : ''}`;
 }
 
 async function openMusicianModal(id) {
@@ -3143,13 +3227,195 @@ async function openMusicianModal(id) {
   // Afstand tonen (indien bekend uit een eerdere zoekopdracht) i.p.v. de postcode.
   m.distance_km = musicianDistanceCache[m.id] != null ? musicianDistanceCache[m.id] : null;
 
-  document.getElementById('musicianModalContent').innerHTML = buildMusicianDetailHTML(m);
+  const isOwn = !!(myMusicianId && myMusicianId === m.id);
+  document.getElementById('musicianModalContent').innerHTML = buildMusicianDetailHTML(m, isOwn);
 }
 
 function closeMusicianModal(e) {
   if (e.target === document.getElementById('musicianModal')) {
     document.getElementById('musicianModal').classList.remove('visible');
   }
+}
+
+// ─── Berichten (TT-01) ───────────────────────────────────────────────────────
+
+let messageComposerRecipientId = null;
+let activeConversationId = null; // musician-id van de open gespreksdraad
+
+function openMessageComposer(recipientId, recipientName) {
+  messageComposerRecipientId = recipientId;
+  document.getElementById('messageComposerRecipientName').textContent = recipientName;
+  document.getElementById('messageComposerBody').value = '';
+  document.getElementById('musicianModal').classList.remove('visible');
+  document.getElementById('messageModal').classList.add('visible');
+}
+
+function closeMessageComposer() {
+  document.getElementById('messageModal').classList.remove('visible');
+  messageComposerRecipientId = null;
+}
+
+// Gedeelde insert, gebruikt door zowel de composer (nieuw contact) als de
+// gespreksdraad (reageren op een bestaand gesprek).
+async function insertMessage(recipientId, body) {
+  const mid = await getMyMusicianId();
+  if (!mid) { showToast('Maak eerst een profiel aan om berichten te sturen.'); return false; }
+  const text = (body || '').trim();
+  if (!text) { showToast('Vul een bericht in.'); return false; }
+  try {
+    const { error } = await db.from('messages').insert({
+      sender_id: mid, recipient_id: recipientId, body: text
+    });
+    if (error) throw error;
+    return true;
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+    return false;
+  }
+}
+
+async function sendMessageFromComposer() {
+  if (!messageComposerRecipientId) return;
+  const body = document.getElementById('messageComposerBody').value;
+  const ok = await insertMessage(messageComposerRecipientId, body);
+  if (ok) {
+    closeMessageComposer();
+    showToast('Bericht verstuurd');
+  }
+}
+
+async function sendReplyInThread() {
+  if (!activeConversationId) return;
+  const input = document.getElementById('messagesReplyInput');
+  const ok = await insertMessage(activeConversationId, input.value);
+  if (ok) {
+    input.value = '';
+    openConversation(activeConversationId, document.getElementById('messagesThreadName').textContent);
+  }
+}
+
+// Ongelezen-badge op de "Berichten"-navigatieknop, bijgewerkt na inloggen,
+// bij het openen van een gesprek (leest dat gesprek), en na versturen.
+async function refreshUnreadBadge() {
+  const badge = document.getElementById('unreadBadge');
+  if (!badge) return;
+  const mid = await getMyMusicianId();
+  if (!mid) { badge.style.display = 'none'; return; }
+  try {
+    const { count, error } = await db.from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('recipient_id', mid)
+      .is('read_at', null);
+    if (error) throw error;
+    if (count > 0) { badge.textContent = count > 99 ? '99+' : String(count); badge.style.display = 'inline-block'; }
+    else { badge.style.display = 'none'; }
+  } catch (e) {
+    // Stil falen: een kapotte badge mag de rest van de app niet blokkeren.
+    console.error('refreshUnreadBadge', e);
+  }
+}
+
+// Inbox: alle berichten van/aan mij ophalen en groeperen per gesprekspartner.
+async function loadInbox() {
+  const listEl = document.getElementById('messagesInboxList');
+  document.getElementById('messagesInboxPanel').style.display = 'block';
+  document.getElementById('messagesThreadPanel').style.display = 'none';
+  listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+
+  const mid = await getMyMusicianId();
+  if (!mid) {
+    listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Maak eerst een profiel aan om berichten te kunnen sturen en ontvangen.</div>';
+    return;
+  }
+
+  try {
+    const { data, error } = await db.from('messages')
+      .select('id, sender_id, recipient_id, body, created_at, read_at')
+      .or(`sender_id.eq.${mid},recipient_id.eq.${mid}`)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    if (!data || !data.length) {
+      listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Nog geen berichten. Stuur iemand een bericht vanuit een zoekresultaat.</div>';
+      return;
+    }
+
+    // Groeperen per gesprekspartner (nieuwste bericht per gesprek bovenaan).
+    const conversations = new Map();
+    data.forEach(msg => {
+      const otherId = msg.sender_id === mid ? msg.recipient_id : msg.sender_id;
+      if (!conversations.has(otherId)) {
+        conversations.set(otherId, { otherId, lastMessage: msg, unreadCount: 0 });
+      }
+      if (msg.recipient_id === mid && !msg.read_at) {
+        conversations.get(otherId).unreadCount++;
+      }
+    });
+
+    const otherIds = Array.from(conversations.keys());
+    const { data: musiciansData } = await db.from('musicians').select('id, fname').in('id', otherIds);
+    const nameById = {};
+    (musiciansData || []).forEach(m => { nameById[m.id] = m.fname; });
+
+    const rows = Array.from(conversations.values()).map(c => {
+      const name = nameById[c.otherId] || 'Muzikant';
+      const preview = c.lastMessage.body.length > 60 ? c.lastMessage.body.slice(0, 60) + '…' : c.lastMessage.body;
+      const time = new Date(c.lastMessage.created_at).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+      return `
+        <div class="messages-conv-row ${c.unreadCount ? 'unread' : ''}" onclick="openConversation('${jsAttr(c.otherId)}','${jsAttr(name)}')">
+          <div>
+            <div class="messages-conv-name">${escHtml(name)}${c.unreadCount ? ` <span class="unread-badge" style="position:static;">${c.unreadCount}</span>` : ''}</div>
+            <div class="messages-conv-preview">${escHtml(preview)}</div>
+          </div>
+          <div class="messages-conv-time">${escHtml(time)}</div>
+        </div>`;
+    }).join('');
+    listEl.innerHTML = rows;
+  } catch (e) {
+    listEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Berichten laden is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
+  }
+}
+
+async function openConversation(otherId, otherName) {
+  activeConversationId = otherId;
+  document.getElementById('messagesThreadName').textContent = otherName;
+  document.getElementById('messagesInboxPanel').style.display = 'none';
+  document.getElementById('messagesThreadPanel').style.display = 'block';
+  const threadEl = document.getElementById('messagesThreadList');
+  threadEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+
+  const mid = await getMyMusicianId();
+  if (!mid) return;
+
+  try {
+    const { data, error } = await db.from('messages')
+      .select('id, sender_id, recipient_id, body, created_at, read_at')
+      .or(`and(sender_id.eq.${mid},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${mid})`)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+
+    threadEl.innerHTML = (data || []).map(msg => {
+      const own = msg.sender_id === mid;
+      const time = new Date(msg.created_at).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      return `<div class="message-bubble ${own ? 'own' : 'other'}">${escHtml(msg.body).replace(/\n/g, '<br>')}<div class="message-bubble-time">${escHtml(time)}</div></div>`;
+    }).join('') || '<div style="text-align:center;padding:20px;color:var(--muted);">Nog geen berichten in dit gesprek.</div>';
+
+    // Ongelezen berichten van deze afzender markeren als gelezen.
+    const unreadIds = (data || []).filter(m => m.recipient_id === mid && !m.read_at).map(m => m.id);
+    if (unreadIds.length) {
+      await db.from('messages').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
+      refreshUnreadBadge();
+    }
+  } catch (e) {
+    threadEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Gesprek laden is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
+  }
+}
+
+function closeConversation() {
+  activeConversationId = null;
+  document.getElementById('messagesInboxPanel').style.display = 'block';
+  document.getElementById('messagesThreadPanel').style.display = 'none';
+  loadInbox();
 }
 
 // ─── Mijn profiel laden ──────────────────────────────────────────────────────
