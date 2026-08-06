@@ -40,21 +40,21 @@ Niet in de audit hierboven, maar tijdens deze sessie gevonden door Ronald en dir
 | TT-09 | Onboarding herordenen | P1 | Groot | Opgelost (05-08-2026) |
 | TT-10 | Zoeken opent met resultaten | P1 | Klein | Opgelost (05-08-2026) |
 | TT-11 | "Ik wil meedoen" bij bands | P1 | Middel | Open |
-| TT-12 | Belofte "volgen" uit Over ons | P1 | Triviaal | Open |
+| TT-12 | Belofte "volgen" uit Over ons | P1 | Triviaal | Opgelost (06-08-2026) |
 | TT-13 | Terugkeerredenen (notificatie + bekeken) | P1 | Middel | Open |
 | TT-14 | Accentkleuren splitsen | P2 | Klein | Opgelost (05-08-2026) |
-| TT-15 | Typografie en logo op mobiel | P2 | Klein | Open |
-| TT-16 | Browsergeschiedenis / terugknop | P2 | Klein | Open |
+| TT-15 | Typografie en logo op mobiel | P2 | Klein | Opgelost (06-08-2026) |
+| TT-16 | Browsergeschiedenis / terugknop | P2 | Klein | Opgelost (06-08-2026) |
 | TT-17 | Mobiele layoutfixes | P2 | Klein | Opgelost (05-08-2026) |
 | TT-18 | Album-art bij repertoire | P2 | Middel | Open |
 | TT-19 | Sorteeropties inperken | P2 | Triviaal | Opgelost (05-08-2026) |
 | TT-20 | Geboortedatum: invoer en validatie | P2 | Klein | Opgelost (05-08-2026) |
-| TT-21 | PDOK-terugval | P2 | Klein | Open |
+| TT-21 | PDOK-terugval | P2 | Klein | Opgelost (06-08-2026) |
 | TT-22 | Accountverwijdering | P2 | Klein | Open |
-| TT-23 | Dode code opruimen | P2 | Triviaal | Open |
+| TT-23 | Dode code opruimen | P2 | Triviaal | Opgelost (06-08-2026) |
 | TT-24 | Beheersingsniveaus bij de knoppen | P2 | Triviaal | Opgelost (05-08-2026) |
-| TT-25 | PWA-manifest | P3 | Klein | Open |
-| TT-26 | Zoektekst ongefilterd in Supabase-query | P2 | Klein | Open |
+| TT-25 | PWA-manifest | P3 | Klein | Opgelost (06-08-2026) |
+| TT-26 | Zoektekst ongefilterd in Supabase-query | P2 | Klein | Opgelost (06-08-2026) |
 | TT-27 | Wizard-tussenresultaten incrementeel opslaan | P2 | Middel | Open |
 | TT-28 | Filtering/paginering echt naar de database verplaatsen | P2 | Groot | Open |
 
@@ -398,6 +398,8 @@ De `onblur="renderLinksList()"` kan weg, of blijft staan voor opschoning bij ver
 
 **Acceptatie.** Elke bewering in Over ons komt overeen met een bestaande functie.
 
+**✅ Opgelost 06-08-2026.** "Je kunt andere muzikanten volgen" en "kan je kiezen welke informatie je aan anderen laat zien" (beide niet-bestaand) vervangen door tekst die overeenkomt met wat er werkelijk is: instrumenten/stijlen/repertoire, zoeken op instrument/stijl/afstand/nummers, de volledigheidsmeter, en de 6-maanden-verouderingsregel.
+
 ---
 
 ## TT-13 · Terugkeerredenen
@@ -456,6 +458,10 @@ Loop daarna langs: foutmeldingen (`resultsEl` in `runSearch()` r. 2695, `showSav
 
 **Acceptatie.** Op een scherm van 375×667 is bij het openen van de zoekpagina minstens één volledig zoekresultaat zichtbaar zonder te scrollen.
 
+**✅ Opgelost 06-08-2026**, in twee delen:
+- **Mobiele kop (15a, precies zoals voorgesteld, met een verbetering):** logo naar 28px, tagline verborgen. In plaats van de hele kop sticky te houden (het ticket stelde `.app-topbar { position: static; }` voor) is gekozen voor de betere variant die het ticket zelf ook noemde: alleen de navigatiebalk blijft sticky, het logo scrollt gewoon mee. Zo blijft navigeren makkelijk zonder dat het logo blijvend ruimte kost.
+- **Display-font (15b, afwijking t.o.v. het ticket, in overleg met Ronald):** het ticket stelde een kant-en-klaar Google Font voor (Anton/Archivo Black/Bebas Neue). In plaats daarvan is gekozen voor **Alfa Slab One als tijdelijke plaatsvervanger** van Ronalds eigen, nog te vectoriseren letterontwerp (huisstijlblad "PROTO2 – PERFORMANCE") — qua zware schreven en bolling het dichtst bij dat ontwerp. Toegepast via een centrale CSS-variabele `--font-display`, zodat later alleen die ene regel hoeft te wijzigen zodra het eigen font beschikbaar is. Ingezet op logo, `.landing-title`, `.panel-title`, `.filter-title`, `.band-name` — Roboto blijft voor alle lopende tekst, labels en knoppen. Projectinstructie-tekst bijgewerkt (`PROJECTINSTRUCTIE_bijgewerkt.md`), door Ronald zelf te plakken in de Project-instellingen.
+
 ---
 
 ## TT-16 · Browsergeschiedenis en terugknop
@@ -481,6 +487,8 @@ window.addEventListener('popstate', e => {
 Bij het opstarten in `appInit()` de hash uitlezen zodat een gedeelde link werkt. Let op de bestaande redirects in `showView()` (r. 2386) — die mogen geen dubbele history-entry maken.
 
 **Acceptatie.** De terugknop sluit achtereenvolgens de modal, dan de vorige view, en pas als laatste de app.
+
+**✅ Opgelost 06-08-2026.** `showView()` heeft nu een tweede parameter `mode`: `'pop'` (komt van de terugknop zelf, geschiedenis niet nogmaals aanpassen), `'redirect'` (interne omleiding binnen dezelfde gebruikersactie, bijv. "geen profiel → terug naar registratie" — vervangt de huidige stap i.p.v. er een nieuwe aan toe te voegen) of onbenoemd (gewone bewuste navigatie — nieuwe stap). Nieuwe `popstate`-listener sluit eerst een open modal (via de generieke `.modal-overlay.visible`-selector, werkt voor alle vier de modals), en anders pas de vorige view. `appInit()` leest nu ook de URL-hash uit bij het opstarten, zodat een gedeelde link (bijv. `#about`) direct de juiste view opent — Mijn Profiel/Mijn Bands lopen daarbij via de bestaande `requireLogin()`, zodat een uitgelogde bezoeker de gebruikelijke toast + doorverwijzing krijgt in plaats van een lege pagina. De wizardstappen (1 t/m 5) krijgen bewust geen eigen geschiedenis-stap — anders zou de terugknop halverwege een registratie kunnen terugsturen naar een tussenstap met een half aangemaakt account.
 
 ---
 
@@ -576,6 +584,13 @@ Bewaar de MusicBrainz-code als terugval, of vervang hem volledig — beide is ve
 
 **Acceptatie.** Met PDOK geblokkeerd in de netwerktab is registreren nog steeds mogelijk.
 
+**✅ Opgelost 06-08-2026**, met één bewuste afwijking t.o.v. het ticket na overleg met Ronald: **geen vrij tekstveld.** Het ticket stelde voor het Plaats-veld gewoon te ontgrendelen voor vrije invoer; in plaats daarvan verschijnt een **keuzelijst uit bestaande plaatsnamen** (dezelfde `postcode_cache`-data als elders in de app) — de gebruiker moet een suggestie aanklikken, typen filtert alleen de lijst. Reden: een vrij tekstveld zou tikfouten/varianten in de database laten belanden; dit voorkomt dat helemaal.
+- **Time-out van 3 sec** op de PDOK-aanroep (`AbortController`) — een hangende aanvraag laat de gebruiker niet langer eindeloos wachten.
+- **Twee mislukte pogingen** (transiënte storing) → handmatige modus. Een **definitief "postcode bestaat niet"** (bijv. een postbusnummer zonder woonadres, zoals 2500 Den Haag) probeert eerst nog de cache en schakelt anders direct door naar handmatig — opnieuw proberen zou daar toch niets aan veranderen.
+- **Nieuwe kolom `city_source`** (`pdok`/`cache`/`manual`) op zowel `musicians` als `bands`, zodat Ronald achteraf kan controleren welke profielen een handmatig gekozen plaats hebben. SQL-script `city_source_setup.sql` (door Ronald te draaien) bevat ook een kant-en-klare controlequery.
+- Zelfde aanpak voor het bandformulier (`onBandPostcodeInput`/`saveBand`).
+- Een handmatig gekozen plaats heeft geen coördinaten (die worden server-side afgeleid uit de postcode via `postcode_cache`) — zo iemand doet dus pas mee in afstand-gebaseerd zoeken zodra de postcode alsnog geocodeerd kan worden. De postcode zelf wordt gewoon opgeslagen, dus dit herstelt zichzelf vanzelf.
+
 ---
 
 ## TT-22 · Accountverwijdering
@@ -606,6 +621,8 @@ Bewaar de MusicBrainz-code als terugval, of vervang hem volledig — beide is ve
 
 **Acceptatie.** Geen gedefinieerde constante of databasekolom zonder pad naar de gebruiker.
 
+**✅ Opgelost 06-08-2026** — gekozen voor "weghalen" bij zowel `VIBES` als `profileColor` (i.p.v. teruggeven aan de gebruiker, zoals het ticket als optie noemde): een kleurkiezer/vibe-keuze toevoegen aan de wizard was een grotere ingreep die niet in deze batch paste. `VIBES`-array en `state.vibe` volledig verwijderd; `state.profileColor` vervangen door één vaste constante `DEFAULT_PROFILE_COLOR` — nieuwe profielen krijgen de merkkleur, en bij het bewerken van een profiel wordt `profile_color` niet meer overschreven (bestaande profielen met een afwijkende kleur blijven dus intact). Dubbele `.app-topbar`-CSS-regel verwijderd. Ongebruikte `switchAuthTab()` verwijderd. Paneel-id `step5` hernoemd naar `step4` (nu aansluitend op `step0`–`step3`, geen valkuil meer bij een volgende stap-toevoeging).
+
 ---
 
 ## TT-24 · Beheersingsniveaus bij de knoppen
@@ -631,6 +648,8 @@ Bewaar de MusicBrainz-code als terugval, of vervang hem volledig — beide is ve
 
 **Acceptatie.** Een zoekterm met een komma of `%`-teken geeft een normaal (leeg of gefilterd) resultaat, geen querysyntaxfout en geen onbedoeld brede match.
 
+**✅ Opgelost 06-08-2026.** Twee nieuwe helpers: `likeSafe()` (haalt `%`, `_`, `*`, `\` uit een zoekterm — jokertekens in een ilike-patroon die de gebruiker hier nooit letterlijk bedoelt) en `orValue()` (zet de waarde tussen dubbele quotes zodat een komma de `.or()`-syntax niet openbreekt). Toegepast op `onCitySearchInput()` (plaatssuggesties bij zoeken) en `searchMembersToAdd()` (lid toevoegen aan een band), met een guard zodat een zoekterm die na opschoning niets overhoudt (bijv. alleen "%%") geen zoekopdracht start.
+
 ---
 
 ## TT-27 · Wizard-tussenresultaten incrementeel opslaan
@@ -652,6 +671,8 @@ Bewaar de MusicBrainz-code als terugval, of vervang hem volledig — beide is ve
 **Wijziging.** `manifest.json` met naam, korte naam, `display: standalone`, themakleur `#0d0d0d` en iconen van 192 en 512 px. Koppelen in de `<head>`. Een service worker is optioneel; zonder is het al voldoende voor "toevoegen aan beginscherm". Voeg ook `<meta name="theme-color" content="#0d0d0d">` toe zodat de browserbalk meekleurt.
 
 **Acceptatie.** In Chrome op Android verschijnt de installatieprompt; het icoon opent de app zonder browserbalk.
+
+**✅ Opgelost 06-08-2026.** `manifest.json` (naam, korte naam, `display: standalone`, `theme_color`/`background_color` `#0d0d0d`) + `<link rel="manifest">` en `<meta name="theme-color">` in de `<head>`. Geen service worker (niet nodig voor "toevoegen aan beginscherm", en wel een bron van cache-problemen). Iconen (192×192, 512×512) door Claude gegenereerd — **antraciet achtergrond (#2A2A2A) i.p.v. zwart, op verzoek van Ronald**, met een gouden "T" in een zware schreefletter. Dit zijn tijdelijke iconen; als Ronalds eigen logo-ontwerp (zie TT-15b) klaar is, vervangen `icon-192.png`/`icon-512.png` eenvoudig. **Nieuw in de repo:** `manifest.json`, `icon-192.png`, `icon-512.png` — Ronald moet deze drie bestanden samen met `index.html` uploaden.
 
 ---
 
