@@ -2421,7 +2421,10 @@
     <div class="filter-title" style="margin-bottom:4px;">Bericht sturen</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Aan <strong id="messageComposerRecipientName" style="color:var(--text);"></strong></p>
     <textarea id="messageComposerBody" placeholder="Schrijf je bericht..." maxlength="2000" style="width:100%;min-height:120px;margin-bottom:16px;"></textarea>
-    <button class="btn btn-primary" style="width:100%;" onclick="sendMessageFromComposer()">Versturen →</button>
+    <div style="display:flex;gap:12px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeMessageComposer()">Annuleren</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="sendMessageFromComposer()">Versturen →</button>
+    </div>
   </div>
 </div>
 
@@ -2564,7 +2567,6 @@ function navLoginClick() {
 // lege-staat als er nog geen profiel is — hier hoeft alleen ingelogd te zijn).
 function requireLogin(view) {
   if (!currentUser) {
-    showToast('Log in of maak een profiel aan om verder te gaan.');
     showView('auth');
     return;
   }
@@ -3221,7 +3223,7 @@ function musicianRowHTML(m) {
         ${instruments.map(i => tagSolid(i, col)).join('')}
         ${genres.map(g => tagSolid(g, '#6ec8d8')).join('')}
       </div>
-      <div class="result-row-msg-btn">${MESSAGE_ICON_SVG}</div>
+      <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(m.fname)}')">${MESSAGE_ICON_SVG}</div>
     </div>`;
 }
 
@@ -3252,7 +3254,7 @@ function musicianCardHTML(m) {
         ${instruments.map(i => tagSolid(i, col)).join('')}
         ${genres.map(g => tagSolid(g, '#6ec8d8')).join('')}
       </div>
-      <div class="result-card-msg-btn">${MESSAGE_ICON_SVG}</div>
+      <div class="result-card-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(m.fname)}')">${MESSAGE_ICON_SVG}</div>
     </div>`;
 }
 
@@ -3428,6 +3430,22 @@ function openMessageComposer(recipientId, recipientName) {
   document.getElementById('messageComposerBody').value = '';
   document.getElementById('musicianModal').classList.remove('visible');
   document.getElementById('messageModal').classList.add('visible');
+}
+
+// TT-31 (07-08-2026): het chat-icoon op de resultatenrij/-kaart moet direct
+// naar de composer gaan — geen tussenstop bij het profiel waar je nogmaals
+// op "Stuur een bericht" moet klikken (Ronald: "niet naar een tussenscherm
+// waar ik nogmaals op een knop moet drukken"). event.stopPropagation()
+// voorkomt dat de klik ook nog de rij/kaart zelf (openMusicianModal) triggert.
+// Zonder eigen profiel is er niks om vanaf te versturen — dan alsnog naar
+// het profiel-tussenscherm, dat vraagt om in te loggen/een profiel te maken.
+function openRowMessageIcon(event, id, fname) {
+  event.stopPropagation();
+  if (hasOwnProfile && currentUser) {
+    openMessageComposer(id, fname);
+  } else {
+    openMusicianModal(id);
+  }
 }
 
 function closeMessageComposer() {
@@ -5862,7 +5880,7 @@ function musicianSetlistRowHTML(m) {
       <div class="result-row-badges">
         ${tagSolid(`${m.matchCount}/${total} match${m.matchCount !== 1 ? 'es' : ''}: ${m.matchedNumbers.map(n => '#' + Number(n)).join(', ')}`, col)}
       </div>
-      <div class="result-row-msg-btn">${MESSAGE_ICON_SVG}</div>
+      <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(m.fname)}')">${MESSAGE_ICON_SVG}</div>
     </div>`;
 }
 
