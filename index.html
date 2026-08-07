@@ -2333,7 +2333,7 @@
 <div class="app-view" id="view-myprofile">
   <div class="my-profile-wrap">
     <div id="myProfileContent"></div>
-    <div class="profile-actions">
+    <div class="profile-actions" id="profileActions" style="display:none;">
       <button class="btn btn-primary" onclick="editMyProfile()">Profiel bewerken</button>
       <button class="btn btn-ghost" onclick="showView('bands')" id="myBandsBtn" style="display:none;">Mijn bands</button>
       <button class="btn btn-ghost" style="color:var(--danger);border-color:var(--danger);" onclick="deleteMyProfile()">Profiel verwijderen</button>
@@ -3983,6 +3983,12 @@ async function loadMyProfile() {
   if (!currentUser) return;
   const el = document.getElementById('myProfileContent');
   el.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Laden...</div>';
+  // TT-36 (07-08-2026): knoppenblok (Profiel bewerken/Mijn bands/Profiel
+  // verwijderen) verbergen tot het profiel echt geladen is — anders zag je
+  // 'm heel kort staan terwijl "Laden..." nog in beeld stond, wat oogde als
+  // een apart flitsend tussenschermpje (Ronald, 07-08-2026).
+  const actionsEl = document.getElementById('profileActions');
+  if (actionsEl) actionsEl.style.display = 'none';
 
   const { data: m, error } = await db.from('musicians')
     .select(`*, musician_instruments(instrument), musician_genres(genre),
@@ -4001,6 +4007,7 @@ async function loadMyProfile() {
   }
 
   el.innerHTML = buildMusicianDetailHTML(m, true) + renderCompletenessMeter(m);
+  if (actionsEl) actionsEl.style.display = 'flex';
   const bandsBtn = document.getElementById('myBandsBtn');
   if (bandsBtn) bandsBtn.style.display = 'inline-flex';
 }
