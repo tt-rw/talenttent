@@ -26,13 +26,23 @@ Niet in de audit hierboven, maar tijdens deze sessie gevonden door Ronald en dir
 - **Bug:** de "stoppen met bewerken"-bevestiging toonde de knoptekst "Ja, verwijderen" (hergebruikt van de verwijder-modal, verkeerd in deze context). Opgelost — status: **Opgelost (05-08-2026)**.
 - **🔒 Bug gevonden door Ronald (06-08-2026, direct na oplevering van TT-16) en hersteld:** `showView()` gebruikte `history.pushState()`/`history.replaceState()` ongeschermd. In een sandbox-preview (`about:srcdoc`-iframe) gooit de browser daar een `SecurityError`, wat `appInit()` liet crashen zodra de pagina laadde. Nieuwe helpers `safeHistoryPush()`/`safeHistoryReplace()` (try/catch, falen stil) vervangen alle vier de directe History-aanroepen. **Bijvangst tijdens het herstellen:** de eerste poging plaatste deze helpers per ongeluk ín `showView()` zelf, waardoor de `popstate`-listener (die daarbuiten staat) ze niet kon aanroepen — gevonden en gecorrigeerd vóór oplevering door de fix daadwerkelijk te draaien in een headless browser (Playwright, srcdoc-sandbox nagebouwd) i.p.v. alleen op syntax te vertrouwen.
 
+## Sessie 07-08-2026 — TT-29 t/m TT-38 + GitHub-storing
+
+Nieuwe tickets, niet uit de oorspronkelijke 25-tickets-audit — ontstaan uit lopend overleg met Ronald deze sessie (chat-icoon, weergave-opties, berichtenscherm-redesign, en het gebruikersnaam-systeem naar aanleiding van een BandMix.com-vergelijking). Zie `TODO.md` ("Sessie 07-08-2026") voor het volledige technische verhaal per ticket.
+
+- **🔴 Niet-code-incident:** een bevestigd GitHub Actions/Pages-incident (6-7 augustus, zie githubstatus.com) hield Ronalds uploads een tijd vast in de deploy-wachtrij. Geen bug in `index.html` — opgelost door de vastzittende workflow-run in GitHub Actions te annuleren. Zie de notitie hierover in `TODO.md` voor het vervolg als dit weer gebeurt.
+- **TT-29 t/m TT-33** (berichten-icoon, weergave-toggle, kaartformaat, chat-icoon-gedrag, berichtenscherm-redesign): stapsgewijze UX-verbetering van de resultatenrijen/-kaarten en het berichtenscherm, op verzoek van Ronald na het bekijken van live screenshots.
+- **TT-34, TT-36:** twee kleine bugs gevonden tijdens deze polish-ronde (contactknop op eigen profiel; kort flitsend knoppenblok bij Mijn Profiel).
+- **TT-35, TT-37:** twee gebruiksvriendelijkheids-verbeteringen (Enter-toets, automatische focus) op verzoek van Ronald.
+- **TT-38 (grootste van de sessie):** gebruikersnaam-systeem i.p.v. de echte naam tonen — direct gevolg van een brainstormgesprek met Ronald over BandMix.com en het ontbreken van een verdienmodel (dus geen reden om identiteit als registratieprikkel achter te houden). Vervangt in de praktijk een groot deel van de eerdere TT-03-beslissing (naam/foto verbergen zonder login) door een aanpak die zowel transparantie (voor gebruikers) als privacy (voor minderjarigen, via de <16-regel) dient.
+
 ## Overzicht
 
 | ID | Ticket | Prioriteit | Omvang | Status |
 |---|---|---|---|---|
 | TT-01 | Berichten tussen muzikanten | P0 | Groot | Grotendeels opgelost (06-08-2026) — e-mailnotificatie nog open |
 | TT-02 | Profielfoto's en media echt opslaan | P0 | Middel | Opgelost (06-08-2026) |
-| TT-03 | Profielen achter login | P0 | Klein | Opgelost (05-08-2026) |
+| TT-03 | Profielen achter login | P0 | Klein | Opgelost (05-08-2026) — deels vervangen door TT-38 (07-08-2026) |
 | TT-04 | Postcode niet publiek tonen | P0 | Klein | Opgelost (05-08-2026) |
 | TT-05 | XSS dichten | P0 | Middel | Opgelost (05-08-2026) |
 | TT-06 | Rapporteren en blokkeren | P0 | Middel | Open |
@@ -58,6 +68,16 @@ Niet in de audit hierboven, maar tijdens deze sessie gevonden door Ronald en dir
 | TT-26 | Zoektekst ongefilterd in Supabase-query | P2 | Klein | Opgelost (06-08-2026) |
 | TT-27 | Wizard-tussenresultaten incrementeel opslaan | P2 | Middel | Open |
 | TT-28 | Filtering/paginering echt naar de database verplaatsen | P2 | Groot | Open |
+| TT-29 | Berichten-icoon op zoekresultaten | P2 | Triviaal | Opgelost (07-08-2026) |
+| TT-30 | Weergave-toggle Lijst/Kaarten + effen tags + segmented control | P2 | Middel | Opgelost (07-08-2026) |
+| TT-31 | Kaartformaat verticaal + "T"-fallback zonder profielfoto | P2 | Klein | Opgelost (07-08-2026) |
+| TT-32 | Chat-icoon direct naar composer + onthoud beoogde ontvanger | P2 | Klein | Opgelost (07-08-2026) |
+| TT-33 | Redesign berichten-scherm (avatars, tijdsaanduiding, chat-bubbels) | P2 | Middel | Opgelost (07-08-2026) |
+| TT-34 | Bugfix: contactknop op eigen profiel | P1 | Triviaal | Opgelost (07-08-2026) |
+| TT-35 | Enter-toets als "verdergaan"/"zoeken" | P2 | Klein | Opgelost (07-08-2026) |
+| TT-36 | Bugfix: flits van knoppenblok op Mijn Profiel | P2 | Triviaal | Opgelost (07-08-2026) |
+| TT-37 | Automatisch focussen van het eerste invoerveld | P2 | Klein | Opgelost (07-08-2026) |
+| TT-38 | Gebruikersnaam i.p.v. echte naam tonen | P0 | Groot | Opgelost (07-08-2026) — browsertest door Ronald nog open |
 
 ---
 

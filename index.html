@@ -1825,7 +1825,7 @@
   <!-- STEP 1: Persoonlijke info -->
   <div class="panel active" id="step0">
     <div class="panel-title">Over jou</div>
-    <div class="panel-sub">Maak je profiel aan. Je voornaam is zichtbaar voor andere muzikanten — je e-mail en wachtwoord nooit.</div>
+    <div class="panel-sub">Maak je profiel aan. Je gebruikersnaam is zichtbaar voor andere muzikanten — je echte naam, e-mail en wachtwoord nooit.</div>
 
     <div class="field-group">
       <div class="field">
@@ -1835,6 +1835,15 @@
       <div class="field">
         <label>Achternaam <span class="req">*</span></label>
         <input type="text" id="lname" placeholder="Bijv. de Vries">
+      </div>
+    </div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Gebruikersnaam <span class="req">*</span></label>
+        <input type="text" id="username" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck()">
+        <p id="usernameStatus" style="font-size:11px;color:var(--muted);margin-top:4px;"></p>
+        <p style="font-size:11px;color:var(--muted);margin-top:2px;">Dit is wat andere muzikanten van je zien — niet je echte naam. Ben je jonger dan 16? Dan moet dit afwijken van je voornaam.</p>
       </div>
     </div>
 
@@ -2108,8 +2117,8 @@
 
       <div class="filter-row">
         <div class="field">
-          <label>Voornaam</label>
-          <input type="text" id="filterName" placeholder="Bijv. Ronald" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
+          <label>Gebruikersnaam</label>
+          <input type="text" id="filterName" placeholder="Bijv. RockDrummer92" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
         </div>
         <div class="field">
           <label>Plaats</label>
@@ -2493,6 +2502,23 @@
   </div>
 </div>
 
+<!-- TT-38 (07-08-2026): verplicht gebruikersnaam kiezen voor bestaande profielen
+     die er nog geen hebben — bewust geen sluitkruisje/Annuleren, dit scherm
+     moet worden afgerond voordat de rest van de app weer bereikbaar is
+     (Ronald: "verplicht invullen bij eerstvolgend bezoek"). -->
+<div class="modal-overlay" id="usernameGateModal">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="filter-title" style="margin-bottom:4px;">Kies een gebruikersnaam</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Nieuw: andere muzikanten zien voortaan een gebruikersnaam in plaats van je echte naam. Kies er eentje om verder te gaan.</p>
+    <div class="field">
+      <input type="text" id="usernameGateInput" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck2()" onkeydown="submitOnEnter(event, saveUsernameGate)">
+      <p id="usernameGateStatus" style="font-size:11px;color:var(--muted);margin-top:4px;"></p>
+      <p style="font-size:11px;color:var(--muted);margin-top:2px;" id="usernameGateAgeHint"></p>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="saveUsernameGate()">Opslaan en verdergaan →</button>
+  </div>
+</div>
+
 <!-- Bericht sturen (TT-01) -->
 <div class="modal-overlay" id="messageModal" onclick="if(event.target===this)closeMessageComposer()">
   <div class="modal-box" style="max-width:440px;">
@@ -2598,12 +2624,15 @@ async function onUserLoggedIn(user) {
       const recipient = pendingMessageRecipient;
       pendingMessageRecipient = null;
       showView('search');
-      openMessageComposer(recipient.id, recipient.fname);
+      openMessageComposer(recipient.id, recipient.displayName);
       return;
     }
   }
 
   showView('myprofile');
+  // TT-38 (07-08-2026): bestaand profiel zonder gebruikersnaam? Verplicht
+  // scherm erbovenop tonen (modal blokkeert de rest tot opgeslagen).
+  checkUsernameGate();
 
   const userFname2 = user.user_metadata?.fname;
   if (userFname2) {
@@ -2633,6 +2662,7 @@ function onUserLoggedOut() {
   state = {
     currentStep: 0,
     fname: '', lname: '', birth_date: '', city: '', zip: '', bio: '',
+    username: '',
     citySource: 'pdok',
     regEmail: '', regPassword: '',
     instruments: [],
@@ -3150,7 +3180,7 @@ async function runSearch() {
 
       const ids = matches.map(m => m.musician_id);
       const { data, error } = await db.from('musicians').select(`
-        id, fname, birth_date, city, zip, bio, goal,
+        id, fname, username, birth_date, city, zip, bio, goal,
         profile_color, avatar_url, updated_at,
         musician_instruments(instrument),
         musician_genres(genre),
@@ -3186,7 +3216,7 @@ async function runSearch() {
       const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
       if (error) throw error;
       musicians = (data || []).map(m => ({
-        id: m.id, fname: m.fname, birth_date: m.birth_date, city: m.city, zip: m.zip,
+        id: m.id, fname: m.fname, username: m.username, birth_date: m.birth_date, city: m.city, zip: m.zip,
         bio: m.bio, goal: m.goal, profile_color: m.profile_color, avatar_url: m.avatar_url,
         updated_at: m.updated_at,
         musician_instruments: (m.instruments || []).map(i => ({ instrument: i })),
@@ -3208,7 +3238,7 @@ async function runSearch() {
       const age = calcAgeFromISO(m.birth_date);
       if (age < ageMin || age > ageMax) return false;
       if (filterGoal && m.goal !== filterGoal) return false;
-      if (nameQuery && !(m.fname || '').toLowerCase().includes(nameQuery)) return false;
+      if (nameQuery && !(m.username || '').toLowerCase().includes(nameQuery)) return false;
       if (cityQuery && !skipCityTextFilter && !(m.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterInstruments.length) {
         const mInstr = m.musician_instruments.map(x => x.instrument);
@@ -3308,13 +3338,17 @@ const AVATAR_T_FALLBACK = `<span style="font-family:'Alfa Slab One','Roboto',san
 // Lijstweergave i.p.v. kaarten (04-08-2026) — duidelijker scanbaar bij veel resultaten.
 function musicianRowHTML(m) {
   const col     = safeColor(m.profile_color, '#f5c518');
-  const showIdentity = !!currentUser;
   const instruments = m.musician_instruments.map(x => x.instrument).slice(0,3);
   const genres      = m.musician_genres.map(x => x.genre).slice(0,2);
 
+  // TT-38 (07-08-2026): gebruikersnaam is de publieke identiteit — altijd
+  // zichtbaar, ook uitgelogd (Ronald, na overleg over BandMix). De echte
+  // voornaam wordt nooit meer aan andere gebruikers getoond. Foto is om
+  // dezelfde reden nu ook altijd zichtbaar (was: alleen ingelogd).
   const avatarSrc = safeUrl(m.avatar_url);
-  const avatarHTML = (showIdentity && avatarSrc) ? `<img src="${avatarSrc}" alt="${escHtml(m.fname)}">` : AVATAR_T_FALLBACK;
-  const nameHTML = showIdentity ? escHtml(m.fname) : 'Muzikant';
+  const displayName = m.username || 'Muzikant';
+  const avatarHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
+  const nameHTML = escHtml(displayName);
 
   return `
     <div class="result-row" style="border-left-color:${col};" onclick="openMusicianModal('${jsAttr(m.id)}')">
@@ -3327,7 +3361,7 @@ function musicianRowHTML(m) {
         ${instruments.map(i => tagSolid(i, col)).join('')}
         ${genres.map(g => tagSolid(g, '#6ec8d8')).join('')}
       </div>
-      <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(m.fname)}')">${MESSAGE_ICON_SVG}</div>
+      <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
     </div>`;
 }
 
@@ -3339,13 +3373,13 @@ function musicianRowHTML(m) {
 // tabblad (localStorage).
 function musicianCardHTML(m) {
   const col = safeColor(m.profile_color, '#f5c518');
-  const showIdentity = !!currentUser;
   const instruments = m.musician_instruments.map(x => x.instrument).slice(0,2);
   const genres = m.musician_genres.map(x => x.genre).slice(0,2);
 
   const avatarSrc = safeUrl(m.avatar_url);
-  const photoHTML = (showIdentity && avatarSrc) ? `<img src="${avatarSrc}" alt="${escHtml(m.fname)}">` : AVATAR_T_FALLBACK;
-  const nameHTML = showIdentity ? escHtml(m.fname) : 'Muzikant';
+  const displayName = m.username || 'Muzikant';
+  const photoHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
+  const nameHTML = escHtml(displayName);
 
   return `
     <div class="result-card" onclick="openMusicianModal('${jsAttr(m.id)}')">
@@ -3356,7 +3390,7 @@ function musicianCardHTML(m) {
         ${instruments.map(i => tagSolid(i, col)).join('')}
         ${genres.map(g => tagSolid(g, '#6ec8d8')).join('')}
       </div>
-      <div class="result-card-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(m.fname)}')">${MESSAGE_ICON_SVG}</div>
+      <div class="result-card-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
     </div>`;
 }
 
@@ -3372,10 +3406,15 @@ function buildMusicianDetailHTML(m, isOwn) {
   const age  = calcAgeFromISO(m.birth_date);
   const date = new Date(m.updated_at).toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
 
+  // TT-38 (07-08-2026): andere gebruikers zien altijd de gebruikersnaam, nooit
+  // de echte voornaam — die is en blijft privé. Alleen op je eigen profiel
+  // (isOwn) zie je je echte voornaam, met de gebruikersnaam erbij zodat
+  // duidelijk is wat anderen van je zien.
+  const displayName = isOwn ? m.fname : (m.username || 'Muzikant');
   const avatarSrc = safeUrl(m.avatar_url);
   const avatarHTML = avatarSrc
-    ? `<img class="profile-avatar-photo" src="${avatarSrc}" alt="${escHtml(m.fname)}" style="border-color:${col};">`
-    : `<div class="profile-avatar-initials" style="background:${col};border-color:${col};">${escHtml(String(m.fname || '?')[0].toUpperCase())}</div>`;
+    ? `<img class="profile-avatar-photo" src="${avatarSrc}" alt="${escHtml(displayName)}" style="border-color:${col};">`
+    : `<div class="profile-avatar-initials" style="background:${col};border-color:${col};">${escHtml(String(displayName || '?')[0].toUpperCase())}</div>`;
 
   const songRows = m.musician_songs.map(s => {
     // mastery_level komt in een class-attribuut terecht — alleen bekende
@@ -3410,7 +3449,8 @@ function buildMusicianDetailHTML(m, isOwn) {
   return `
     <div class="profile-header-band" style="background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;"></div>
     ${avatarHTML}
-    <div class="profile-name">${escHtml(m.fname)}</div>
+    <div class="profile-name">${escHtml(displayName)}</div>
+    ${isOwn ? `<p style="font-size:12px;color:var(--muted);margin-top:2px;">Anderen zien je als <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
     <div class="profile-meta">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
     <div class="freshness-bar" style="margin-top:12px;margin-bottom:16px;">
       <div class="freshness-dot"></div>
@@ -3449,7 +3489,7 @@ function buildMusicianDetailHTML(m, isOwn) {
         </div>
       </div>` : ''}
     ${!isOwn ? (hasOwnProfile
-      ? `<button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(m.fname)}')">Stuur een bericht →</button>`
+      ? `<button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht →</button>`
       : `<button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`
     ) : ''}`;
 }
@@ -3462,8 +3502,8 @@ async function openMusicianModal(id) {
   if (!currentUser) {
     content.innerHTML = `
       <div style="text-align:center;padding:40px 20px;">
-        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Wil je zien wie dit is?</p>
-        <p style="color:var(--muted);margin-bottom:24px;">Log in of maak een gratis profiel aan — dan zie je meteen wie hier past bij jouw muziek.</p>
+        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Bekijk het volledige profiel</p>
+        <p style="color:var(--muted);margin-bottom:24px;">Log in of maak een gratis profiel aan om repertoire, bio en contactgegevens te zien — en zelf gevonden te worden.</p>
         <button class="btn btn-primary" style="width:100%;margin-bottom:12px;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Account maken</button>
         <button class="btn btn-ghost" style="width:100%;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('auth')">Ik heb al een profiel — inloggen</button>
       </div>`;
@@ -3477,7 +3517,7 @@ async function openMusicianModal(id) {
 
   if (hasOwnProfile) {
     const res = await db.from('musicians').select(`
-      id, fname, birth_date, city, bio, goal,
+      id, fname, username, birth_date, city, bio, goal,
       profile_color, avatar_url, updated_at,
       musician_instruments(instrument),
       musician_genres(genre),
@@ -3492,7 +3532,7 @@ async function openMusicianModal(id) {
     const row = (res.data || [])[0];
     if (row) {
       m = {
-        id: row.id, fname: row.fname, birth_date: row.birth_date, city: row.city,
+        id: row.id, fname: row.fname, username: row.username, birth_date: row.birth_date, city: row.city,
         bio: row.bio, goal: row.goal, profile_color: row.profile_color, avatar_url: row.avatar_url,
         updated_at: row.updated_at,
         musician_instruments: (row.instruments || []).map(i => ({ instrument: i })),
@@ -3553,12 +3593,12 @@ function openMessageComposer(recipientId, recipientName) {
 // het profiel-tussenscherm, dat vraagt om in te loggen/een profiel te maken;
 // pendingMessageRecipient (TT-32) zorgt dat we na die stap alsnog hier
 // terechtkomen zonder dat iemand opnieuw hoeft te klikken.
-function openRowMessageIcon(event, id, fname) {
+function openRowMessageIcon(event, id, displayName) {
   event.stopPropagation();
   if (hasOwnProfile && currentUser) {
-    openMessageComposer(id, fname);
+    openMessageComposer(id, displayName);
   } else {
-    pendingMessageRecipient = { id, fname };
+    pendingMessageRecipient = { id, displayName };
     openMusicianModal(id);
   }
 }
@@ -3666,13 +3706,13 @@ async function loadInbox() {
     });
 
     const otherIds = Array.from(conversations.keys());
-    const { data: musiciansData } = await db.from('musicians').select('id, fname, avatar_url, profile_color').in('id', otherIds);
+    const { data: musiciansData } = await db.from('musicians').select('id, username, avatar_url, profile_color').in('id', otherIds);
     const infoById = {};
     (musiciansData || []).forEach(m => { infoById[m.id] = m; });
 
     const rows = Array.from(conversations.values()).map(c => {
       const info = infoById[c.otherId] || {};
-      const name = info.fname || 'Muzikant';
+      const name = info.username || 'Muzikant';
       const col = safeColor(info.profile_color, '#f5c518');
       const avatarSrc = safeUrl(info.avatar_url);
       const avatarHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(name)}">` : AVATAR_T_FALLBACK;
@@ -3838,6 +3878,7 @@ function saveOnboardingProgress() {
       mid: editingMusicianId,
       step: state.currentStep,
       fname: state.fname, lname: state.lname, birth_date: state.birth_date,
+      username: state.username,
       city: state.city, zip: state.zip, bio: state.bio, citySource: state.citySource,
       instruments: state.instruments, genres: state.genres, songs: state.songs,
       goal: state.goal,
@@ -3865,6 +3906,16 @@ function populateWizardFieldsFromState() {
   document.getElementById('lname').value = state.lname;
   document.getElementById('birth_date').value = state.birth_date;
   document.getElementById('zip').value = state.zip;
+  document.getElementById('username').value = state.username || '';
+  // Al een geldige, van jezelf bekende gebruikersnaam — geen "controleren..."
+  // nodig, dat zou hier alleen verwarren (lijkt bezet terwijl het van jezelf is).
+  usernameCheckedValue = state.username || '';
+  usernameAvailable = !!state.username;
+  const usernameStatusEl = document.getElementById('usernameStatus');
+  if (usernameStatusEl) {
+    usernameStatusEl.textContent = state.username ? 'Dit is je huidige gebruikersnaam.' : '';
+    usernameStatusEl.style.color = 'var(--muted)';
+  }
   const cityFieldPWF = document.getElementById('city');
   cityFieldPWF.value = state.city;
   if (state.citySource === 'manual') {
@@ -3916,6 +3967,7 @@ function tryResumeOnboarding() {
   state.onboarding = true;
   state.fname = saved.fname || '';
   state.lname = saved.lname || '';
+  state.username = saved.username || '';
   state.birth_date = saved.birth_date || '';
   state.city = saved.city || '';
   state.zip = saved.zip || '';
@@ -3955,6 +4007,7 @@ async function editMyProfile() {
   editingMusicianId = m.id;
   state.fname         = m.fname || '';
   state.lname         = m.lname || '';
+  state.username      = m.username || '';
   state.birth_date    = fromISODate(m.birth_date);
   state.zip           = m.zip || '';
   state.city          = m.city || '';
@@ -4148,7 +4201,7 @@ function showSaveSuccess(isEdit) {
       const recipient = pendingMessageRecipient;
       pendingMessageRecipient = null;
       showView('search');
-      openMessageComposer(recipient.id, recipient.fname);
+      openMessageComposer(recipient.id, recipient.displayName);
       return;
     }
     showView('myprofile');
@@ -4199,6 +4252,7 @@ async function submitProfile() {
       const { error: uErr } = await db.from('musicians').update({
         fname:            state.fname,
         lname:            state.lname || null,
+        username:         state.username,
         birth_date:       toISODate(state.birth_date),
         city:             state.city,
         zip:              state.zip || null,
@@ -4270,6 +4324,7 @@ async function submitProfile() {
         .insert({
           fname:            state.fname,
           lname:            state.lname || null,
+          username:         state.username,
           birth_date:       toISODate(state.birth_date),
           city:             state.city,
           zip:              state.zip || null,
@@ -4389,6 +4444,126 @@ function formatBirthDate(input) {
 function normalizeCityName(city) {
   // Capitalize first letter of each word: "den haag" → "Den Haag"
   return city.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// ─── Gebruikersnaam (TT-38, 07-08-2026) ──────────────────────────────────────
+// Ronald: gebruikersnaam i.p.v. de echte voornaam tonen in zoekresultaten/
+// berichten — geeft muzikanten weer een echte identiteit (zoals BandMix),
+// maar houdt de echte naam privé. Onder de 16 moet de gebruikersnaam
+// verplicht afwijken van de echte voornaam (privacy-check, geen garantie —
+// een creatieve variant op je eigen naam glipt er nog wel door, dat is een
+// bewuste, geaccepteerde beperking, geen 100%-oplossing bestaat hier).
+let usernameCheckTimeout = null;
+let usernameAvailable = false; // laatst bekende status van de live-check
+let usernameCheckedValue = ''; // welke waarde die status bij hoort
+
+function scheduleUsernameCheck() {
+  clearTimeout(usernameCheckTimeout);
+  usernameCheckTimeout = setTimeout(() => checkUsernameAvailability(), 400);
+}
+
+// Simpel formaat: 3-20 tekens, letters/cijfers/underscore — voorkomt spaties,
+// leestekens die de weergave in zoekresultaten/berichten zouden verstoren.
+function usernameFormatValid(u) {
+  return /^[A-Za-z0-9_]{3,20}$/.test(u);
+}
+
+async function checkUsernameAvailability(statusElId) {
+  const input = document.getElementById('username');
+  const statusEl = document.getElementById(statusElId || 'usernameStatus');
+  const value = (input?.value || '').trim();
+  usernameCheckedValue = value;
+  usernameAvailable = false;
+
+  if (!value) { if (statusEl) statusEl.textContent = ''; return false; }
+  if (!usernameFormatValid(value)) {
+    if (statusEl) { statusEl.textContent = 'Alleen letters, cijfers en underscore, 3-20 tekens.'; statusEl.style.color = 'var(--danger)'; }
+    return false;
+  }
+  if (statusEl) { statusEl.textContent = 'Controleren...'; statusEl.style.color = 'var(--muted)'; }
+
+  try {
+    const { data, error } = await db.rpc('tt_check_username_available', {
+      uname: value,
+      exclude_id: editingMusicianId || null
+    });
+    if (error) throw error;
+    usernameAvailable = !!data;
+    usernameCheckedValue = value;
+    if (statusEl) {
+      statusEl.textContent = usernameAvailable ? 'Beschikbaar' : 'Al in gebruik, kies een andere.';
+      statusEl.style.color = usernameAvailable ? 'var(--success)' : 'var(--danger)';
+    }
+    return usernameAvailable;
+  } catch (e) {
+    if (statusEl) { statusEl.textContent = friendlyErrorMessage(e); statusEl.style.color = 'var(--danger)'; }
+    return false;
+  }
+}
+
+// TT-38: aparte debounce voor het gate-scherm (los van scheduleUsernameCheck()
+// in de wizard, andere input-id/status-id).
+let usernameGateAge = null; // leeftijd van het profiel, opgehaald bij het checken
+let usernameGateFname = ''; // echte voornaam, voor de <16-vergelijking
+
+function scheduleUsernameCheck2() {
+  clearTimeout(usernameCheckTimeout);
+  usernameCheckTimeout = setTimeout(() => checkUsernameAvailability('usernameGateStatus'), 400);
+}
+
+// Aangeroepen vanuit onUserLoggedIn() bij elke login/sessie-herstel. Haalt
+// username + birth_date + fname van het eigen profiel op; ontbreekt de
+// gebruikersnaam, dan verschijnt het verplichte gate-scherm (geen manier om
+// te sluiten zonder op te slaan — bewuste keuze, Ronald 07-08-2026).
+async function checkUsernameGate() {
+  const mid = await getMyMusicianId();
+  if (!mid) return false;
+  const { data, error } = await db.from('musicians').select('username, fname, birth_date').eq('id', mid).single();
+  if (error || !data) return false;
+  if (data.username) return false;
+
+  usernameGateAge = calcAgeFromISO(data.birth_date);
+  usernameGateFname = data.fname || '';
+  const hintEl = document.getElementById('usernameGateAgeHint');
+  if (hintEl) {
+    hintEl.textContent = (usernameGateAge < 16)
+      ? 'Omdat je jonger bent dan 16, moet dit afwijken van je echte voornaam.'
+      : '';
+  }
+  document.getElementById('usernameGateInput').value = '';
+  document.getElementById('usernameGateStatus').textContent = '';
+  document.getElementById('usernameGateModal').classList.add('visible');
+  setTimeout(() => document.getElementById('usernameGateInput')?.focus(), 50);
+  return true;
+}
+
+async function saveUsernameGate() {
+  const input = document.getElementById('usernameGateInput');
+  const statusEl = document.getElementById('usernameGateStatus');
+  const value = input.value.trim();
+
+  if (!value) { statusEl.textContent = 'Vul een gebruikersnaam in.'; statusEl.style.color = 'var(--danger)'; return; }
+  if (!usernameFormatValid(value)) {
+    statusEl.textContent = 'Alleen letters, cijfers en underscore, 3-20 tekens.'; statusEl.style.color = 'var(--danger)'; return;
+  }
+  if (usernameGateAge < 16 && value.toLowerCase() === usernameGateFname.toLowerCase()) {
+    statusEl.textContent = 'Onder de 16 moet dit afwijken van je echte voornaam.'; statusEl.style.color = 'var(--danger)'; return;
+  }
+
+  const available = (usernameCheckedValue === value && usernameAvailable)
+    ? true
+    : await checkUsernameAvailability('usernameGateStatus');
+  if (!available) return;
+
+  const mid = await getMyMusicianId();
+  const { error } = await db.from('musicians').update({ username: value }).eq('id', mid);
+  if (error) { statusEl.textContent = friendlyErrorMessage(error); statusEl.style.color = 'var(--danger)'; return; }
+
+  document.getElementById('usernameGateModal').classList.remove('visible');
+  showToast('Gebruikersnaam opgeslagen!');
+  // Zichtbare schermen die de gebruikersnaam tonen, verversen zodat de
+  // wijziging meteen zichtbaar is zonder handmatige refresh.
+  if (document.getElementById('view-myprofile').classList.contains('active')) loadMyProfile();
 }
 
 // ─── Postcode → woonplaats (PDOK Locatieserver, gratis overheidsdienst) ─────
@@ -4889,6 +5064,7 @@ const DEFAULT_PROFILE_COLOR = '#f5c518';
 let state = {
   currentStep: 0,
   fname: '', lname: '', birth_date: '', city: '', zip: '', bio: '',
+  username: '',
   citySource: 'pdok',
   regEmail: '', regPassword: '',
   instruments: [],
@@ -5138,6 +5314,7 @@ async function nextStep(from) {
     state.lname      = document.getElementById('lname').value.trim();
     state.birth_date = document.getElementById('birth_date').value.trim();
     state.bio        = document.getElementById('bio').value.trim();
+    state.username   = document.getElementById('username').value.trim();
 
     if (!state.fname || !state.lname || !state.birth_date) {
       showToast('Vul je voor- en achternaam en geboortedatum in.'); return;
@@ -5156,6 +5333,22 @@ async function nextStep(from) {
       showToast('Je moet minimaal 13 jaar zijn om een profiel aan te maken.'); return;
     }
     if (leeftijd > 100) { showToast('Controleer je geboortedatum.'); return; }
+
+    // TT-38: gebruikersnaam verplicht, geldig formaat, beschikbaar, en onder
+    // de 16 verplicht afwijkend van de echte voornaam (privacy).
+    if (!state.username) { showToast('Kies een gebruikersnaam.'); return; }
+    if (!usernameFormatValid(state.username)) {
+      showToast('Gebruikersnaam mag alleen letters, cijfers en underscore bevatten (3-20 tekens).'); return;
+    }
+    if (leeftijd < 16 && state.username.toLowerCase() === state.fname.toLowerCase()) {
+      showToast('Onder de 16 moet je gebruikersnaam afwijken van je echte voornaam, voor je eigen privacy.'); return;
+    }
+    // Altijd een verse check vlak vóór het opslaan — de eerder getoonde status
+    // kan verouderd zijn (iemand anders kan de naam intussen hebben gepakt).
+    const available = (usernameCheckedValue === state.username && usernameAvailable)
+      ? true
+      : await checkUsernameAvailability();
+    if (!available) { showToast('Deze gebruikersnaam is niet beschikbaar. Kies een andere.'); return; }
 
     if (!editingMusicianId) {
       state.regEmail   = document.getElementById('regEmail').value.trim();
@@ -5244,6 +5437,7 @@ async function createAccountAndProfile() {
       .insert({
         fname:            state.fname,
         lname:            state.lname || null,
+        username:         state.username,
         birth_date:       toISODate(state.birth_date),
         city:             state.city,
         zip:              state.zip || null,
@@ -5993,7 +6187,7 @@ async function runSetlistSearch() {
     let musicians;
     if (hasOwnProfile) {
       const { data, error } = await db.from('musicians').select(`
-        id, fname, city, zip, profile_color, avatar_url, updated_at,
+        id, fname, username, city, zip, profile_color, avatar_url, updated_at,
         musician_songs(song_title, song_artist, mastery_level)
       `).in('id', ids);
       if (error) throw error;
@@ -6002,7 +6196,7 @@ async function runSetlistSearch() {
       const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
       if (error) throw error;
       musicians = (data || []).map(m => ({
-        id: m.id, fname: m.fname, city: m.city, zip: m.zip,
+        id: m.id, fname: m.fname, username: m.username, city: m.city, zip: m.zip,
         profile_color: m.profile_color, avatar_url: m.avatar_url, updated_at: m.updated_at,
         musician_songs: m.songs || [],
       }));
@@ -6073,10 +6267,10 @@ function renderSetlistResults(musicians, opts) {
 // (Ronald) — toont i.p.v. daarvan het aantal treffers + de volgnummers.
 function musicianSetlistRowHTML(m) {
   const col = safeColor(m.profile_color, '#f5c518');
-  const showIdentity = !!currentUser;
   const avatarSrc = safeUrl(m.avatar_url);
-  const avatarHTML = (showIdentity && avatarSrc) ? `<img src="${avatarSrc}" alt="${escHtml(m.fname)}">` : AVATAR_T_FALLBACK;
-  const nameHTML = showIdentity ? escHtml(m.fname) : 'Muzikant';
+  const displayName = m.username || 'Muzikant';
+  const avatarHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
+  const nameHTML = escHtml(displayName);
   const total = setlistWantedSongs.length;
 
   return `
@@ -6089,7 +6283,7 @@ function musicianSetlistRowHTML(m) {
       <div class="result-row-badges">
         ${tagSolid(`${m.matchCount}/${total} match${m.matchCount !== 1 ? 'es' : ''}: ${m.matchedNumbers.map(n => '#' + Number(n)).join(', ')}`, col)}
       </div>
-      <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(m.fname)}')">${MESSAGE_ICON_SVG}</div>
+      <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
     </div>`;
 }
 
