@@ -2866,6 +2866,9 @@ function showView(view, mode) {
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  // TT-37: kleine vertraging zodat de view echt zichtbaar is (offsetParent-
+  // check in autofocusFirstField hangt daarvan af) voordat we focussen.
+  setTimeout(() => autofocusFirstField(el), 50);
 }
 
 // Sluit, indien open, eerst een modal (telt als één "terug"-stap) vóórdat de
@@ -3538,6 +3541,7 @@ function openMessageComposer(recipientId, recipientName) {
   document.getElementById('messageComposerBody').value = '';
   document.getElementById('musicianModal').classList.remove('visible');
   document.getElementById('messageModal').classList.add('visible');
+  setTimeout(() => document.getElementById('messageComposerBody').focus(), 50);
 }
 
 // TT-31 (07-08-2026): het chat-icoon op de resultatenrij/-kaart moet direct
@@ -3762,6 +3766,7 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc) 
       await db.from('messages').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
       refreshUnreadBadge();
     }
+    document.getElementById('messagesReplyInput').focus();
   } catch (e) {
     threadEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Gesprek laden is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
@@ -4996,6 +5001,23 @@ function safeColor(c, fallback) {
 // actief voor het verdergaan". Shift+Enter blijft gewoon een nieuwe regel
 // toestaan op velden waar dat relevant is (niet hier, alleen textareas
 // zoals de berichten-composer gebruiken die uitzondering al niet nodig).
+// TT-37 (07-08-2026): cursor automatisch in het eerste invoerveld zetten
+// zodra een scherm met tekstvelden opent — Ronald: "maak het gebruiks-
+// vriendelijk". offsetParent!==null is een simpele, betrouwbare check op
+// "daadwerkelijk zichtbaar" (geen display:none-voorouder), zodat dit ook
+// binnen de registratiewizard vanzelf alleen de actieve stap raakt.
+function autofocusFirstField(root) {
+  const el = typeof root === 'string' ? document.getElementById(root) : root;
+  if (!el) return;
+  const candidates = el.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], input[type="number"], input:not([type]), textarea');
+  for (const c of candidates) {
+    if (c.offsetParent !== null && !c.readOnly && !c.disabled) {
+      c.focus();
+      return;
+    }
+  }
+}
+
 function submitOnEnter(event, fn) {
   if (event.key === 'Enter') {
     event.preventDefault();
@@ -5281,6 +5303,7 @@ function goTo(step) {
   state.currentStep = step;
   saveOnboardingProgress(); // no-op tenzij state.onboarding actief is
   window.scrollTo({top:0, behavior:'smooth'});
+  setTimeout(() => autofocusFirstField(document.getElementById('view-register')), 50);
 }
 
 // ─── Personalisatie ──────────────────────────────────────────────────────────
@@ -6086,6 +6109,7 @@ function showCreateBandForm() {
   if (wasHidden) {
     resetBandForm();
     form.style.display = 'block';
+    setTimeout(() => document.getElementById('bandName')?.focus(), 50);
   } else {
     form.style.display = 'none';
   }
@@ -6126,6 +6150,7 @@ function openAddMemberModal(bandId) {
   document.getElementById('memberSearchInput').value = '';
   document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens om te zoeken.</p>';
   document.getElementById('addMemberModal').classList.add('visible');
+  setTimeout(() => document.getElementById('memberSearchInput')?.focus(), 50);
 }
 
 function searchMembersToAdd(query) {
