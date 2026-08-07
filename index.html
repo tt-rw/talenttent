@@ -1788,11 +1788,11 @@
 
       <div class="field" style="margin-bottom:16px;">
         <label>E-mailadres</label>
-        <input type="email" id="loginEmail" placeholder="jouw@email.nl">
+        <input type="email" id="loginEmail" placeholder="jouw@email.nl" onkeydown="submitOnEnter(event, signIn)">
       </div>
       <div class="field" style="margin-bottom:8px;">
         <label>Wachtwoord</label>
-        <input type="password" id="loginPassword" placeholder="••••••••">
+        <input type="password" id="loginPassword" placeholder="••••••••" onkeydown="submitOnEnter(event, signIn)">
       </div>
       <div style="text-align:right;margin-bottom:20px;">
         <button onclick="forgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Roboto',sans-serif;text-decoration:underline;">Wachtwoord vergeten?</button>
@@ -1892,18 +1892,18 @@
       <div class="field-group">
         <div class="field">
           <label>E-mailadres <span class="req">*</span></label>
-          <input type="email" id="regEmail" placeholder="jouw@email.nl" autocomplete="off">
+          <input type="email" id="regEmail" placeholder="jouw@email.nl" autocomplete="off" onkeydown="submitOnEnter(event, () => nextStep(0))">
         </div>
         <div class="field">
           <label>Wachtwoord <span class="req">*</span></label>
-          <input type="password" id="regPassword" placeholder="Minimaal 8 tekens" autocomplete="new-password">
+          <input type="password" id="regPassword" placeholder="Minimaal 8 tekens" autocomplete="new-password" onkeydown="submitOnEnter(event, () => nextStep(0))">
         </div>
       </div>
 
       <div class="field-group single">
         <div class="field">
           <label>Wachtwoord herhalen <span class="req">*</span></label>
-          <input type="password" id="regPassword2" placeholder="••••••••" autocomplete="new-password">
+          <input type="password" id="regPassword2" placeholder="••••••••" autocomplete="new-password" onkeydown="submitOnEnter(event, () => nextStep(0))">
         </div>
       </div>
     </div>
@@ -2109,13 +2109,14 @@
       <div class="filter-row">
         <div class="field">
           <label>Voornaam</label>
-          <input type="text" id="filterName" placeholder="Bijv. Ronald" oninput="scheduleMusicianAutoSearch()">
+          <input type="text" id="filterName" placeholder="Bijv. Ronald" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
         </div>
         <div class="field">
           <label>Plaats</label>
           <div class="city-search-wrap">
             <input type="text" id="filterCity" placeholder="Bijv. Delft, Den Haag..." autocomplete="off"
               oninput="onCitySearchInput(this.value,'acFilterCityList'); scheduleMusicianAutoSearch();"
+              onkeydown="submitOnEnter(event, () => { selectFirstAC('acFilterCityList'); runSearch(); })"
               onblur="setTimeout(()=>closeAC('acFilterCityList'),200)">
             <div class="autocomplete-list" id="acFilterCityList"></div>
           </div>
@@ -2126,9 +2127,9 @@
         <div class="field">
           <label>Leeftijd</label>
           <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterAgeMin" placeholder="Min" min="1" style="width:80px;" oninput="scheduleMusicianAutoSearch()">
+            <input type="number" id="filterAgeMin" placeholder="Min" min="1" style="width:80px;" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
             <span style="color:var(--muted);font-size:13px;">t/m</span>
-            <input type="number" id="filterAgeMax" placeholder="Max" min="1" style="width:80px;" oninput="scheduleMusicianAutoSearch()">
+            <input type="number" id="filterAgeMax" placeholder="Max" min="1" style="width:80px;" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
           </div>
         </div>
         <div class="field">
@@ -2203,11 +2204,12 @@
       <div class="filter-title">Vind een band</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Zoek bands die nog muzikanten zoeken</p>
       <div class="filter-row">
-        <div class="field"><label>Bandnaam</label><input type="text" id="filterBandName" placeholder="Bijv. The Rusty Strings" oninput="scheduleBandAutoSearch()"></div>
+        <div class="field"><label>Bandnaam</label><input type="text" id="filterBandName" placeholder="Bijv. The Rusty Strings" oninput="scheduleBandAutoSearch()" onkeydown="submitOnEnter(event, runBandSearch)"></div>
         <div class="field"><label>Plaats</label>
           <div class="city-search-wrap">
             <input type="text" id="filterBandCity" placeholder="Bijv. Delft, Den Haag..." autocomplete="off"
               oninput="onCitySearchInput(this.value,'acFilterBandCityList'); scheduleBandAutoSearch();"
+              onkeydown="submitOnEnter(event, () => { selectFirstAC('acFilterBandCityList'); runBandSearch(); })"
               onblur="setTimeout(()=>closeAC('acFilterBandCityList'),200)">
             <div class="autocomplete-list" id="acFilterBandCityList"></div>
           </div>
@@ -2269,6 +2271,7 @@
           <div class="city-search-wrap">
             <input type="text" id="filterSetlistCity" placeholder="Bijv. Delft, Den Haag..." autocomplete="off"
               oninput="onCitySearchInput(this.value,'acFilterSetlistCityList'); scheduleSetlistAutoSearch();"
+              onkeydown="submitOnEnter(event, () => { selectFirstAC('acFilterSetlistCityList'); if(setlistWantedSongs.length) runSetlistSearch(); })"
               onblur="setTimeout(()=>closeAC('acFilterSetlistCityList'),200)">
             <div class="autocomplete-list" id="acFilterSetlistCityList"></div>
           </div>
@@ -2450,11 +2453,11 @@
       <div id="resetSuccess" class="auth-success"></div>
       <div class="field" style="margin-bottom:16px;">
         <label>Nieuw wachtwoord <span class="req">*</span></label>
-        <input type="password" id="resetPassword1" placeholder="Minimaal 8 tekens">
+        <input type="password" id="resetPassword1" placeholder="Minimaal 8 tekens" onkeydown="submitOnEnter(event, saveNewPassword)">
       </div>
       <div class="field" style="margin-bottom:24px;">
         <label>Wachtwoord herhalen <span class="req">*</span></label>
-        <input type="password" id="resetPassword2" placeholder="••••••••">
+        <input type="password" id="resetPassword2" placeholder="••••••••" onkeydown="submitOnEnter(event, saveNewPassword)">
       </div>
       <button class="btn btn-primary" style="width:100%;" onclick="saveNewPassword()">Wachtwoord opslaan →</button>
     </div>
@@ -3997,7 +4000,7 @@ async function loadMyProfile() {
     return;
   }
 
-  el.innerHTML = buildMusicianDetailHTML(m) + renderCompletenessMeter(m);
+  el.innerHTML = buildMusicianDetailHTML(m, true) + renderCompletenessMeter(m);
   const bandsBtn = document.getElementById('myBandsBtn');
   if (bandsBtn) bandsBtn.style.display = 'inline-flex';
 }
@@ -4980,6 +4983,19 @@ function safeColor(c, fallback) {
 // badges op de zoekresultaten — alleen bruikbaar op een 3/6-cijferige hex-
 // kleur (wat safeColor() altijd oplevert voor profile_color), vandaar de
 // eenvoudige hex-only implementatie i.p.v. een generieke kleurparser.
+// TT-35 (07-08-2026): Enter-toets laten werken als "verder"/"zoeken" op
+// tekstvelden waar dat intuïtief is (inloggen, registreren, wachtwoord
+// vergeten/opnieuw instellen, zoekvelden) — Ronald: "maak de enter-knop
+// actief voor het verdergaan". Shift+Enter blijft gewoon een nieuwe regel
+// toestaan op velden waar dat relevant is (niet hier, alleen textareas
+// zoals de berichten-composer gebruiken die uitzondering al niet nodig).
+function submitOnEnter(event, fn) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    fn();
+  }
+}
+
 function hexToRgba(hex, alpha) {
   let h = String(hex).replace('#', '');
   if (h.length === 3) h = h.split('').map(c => c + c).join('');
