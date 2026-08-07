@@ -2655,6 +2655,7 @@ function onUserLoggedOut() {
   editingMusicianId = null;
   clearOnboardingProgress();
   pendingMessageRecipient = null;
+  usernameGateMid = null;
   postcodeFailStreak = 0;
   postcodeManualMode = false;
   const cityFieldReset = document.getElementById('city');
@@ -4468,8 +4469,18 @@ function usernameFormatValid(u) {
   return /^[A-Za-z0-9_]{3,20}$/.test(u);
 }
 
-async function checkUsernameAvailability(statusElId) {
-  const input = document.getElementById('username');
+// Bugfix (07-08-2026, gemeld door Ronald: "opslaan lukt niet" op het
+// gebruikersnaam-gate-scherm). Oorzaak: deze functie las altijd het vaste
+// veld #username (het wizard-veld uit de registratiewizard), ook wanneer ze
+// werd aangeroepen vanuit het gate-scherm — dat heeft een ander veld,
+// #usernameGateInput. Het gate-scherm controleerde dus stilzwijgend een leeg
+// veld i.p.v. wat Ronald daadwerkelijk had getypt, en faalde geruisloos.
+// Nu configureerbaar: welk invoerveld, en welke id uitgesloten moet worden
+// van de uniekheidscheck (editingMusicianId voor de wizard, usernameGateMid
+// voor het gate-scherm — bewust twee aparte variabelen, zie toelichting bij
+// usernameGateMid hieronder).
+async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
+  const input = document.getElementById(inputElId || 'username');
   const statusEl = document.getElementById(statusElId || 'usernameStatus');
   const value = (input?.value || '').trim();
   usernameCheckedValue = value;
@@ -4485,7 +4496,7 @@ async function checkUsernameAvailability(statusElId) {
   try {
     const { data, error } = await db.rpc('tt_check_username_available', {
       uname: value,
-      exclude_id: editingMusicianId || null
+      exclude_id: (excludeId !== undefined ? excludeId : editingMusicianId) || null
     });
     if (error) throw error;
     usernameAvailable = !!data;
@@ -4505,10 +4516,15 @@ async function checkUsernameAvailability(statusElId) {
 // in de wizard, andere input-id/status-id).
 let usernameGateAge = null; // leeftijd van het profiel, opgehaald bij het checken
 let usernameGateFname = ''; // echte voornaam, voor de <16-vergelijking
+// Eigen variabele i.p.v. editingMusicianId hergebruiken — die laatste stuurt
+// ook de "Profiel bewerken"-modus/veld-vergrendeling in de wizard aan, en zou
+// als ongewenst neveneffect de wizard in bewerkmodus zetten als iemand na het
+// inloggen per ongeluk naar "Profiel aanmaken" navigeert.
+let usernameGateMid = null;
 
 function scheduleUsernameCheck2() {
   clearTimeout(usernameCheckTimeout);
-  usernameCheckTimeout = setTimeout(() => checkUsernameAvailability('usernameGateStatus'), 400);
+  usernameCheckTimeout = setTimeout(() => checkUsernameAvailability('usernameGateStatus', 'usernameGateInput', usernameGateMid), 400);
 }
 
 // Aangeroepen vanuit onUserLoggedIn() bij elke login/sessie-herstel. Haalt
@@ -4521,6 +4537,12 @@ async function checkUsernameGate() {
   const { data, error } = await db.from('musicians').select('username, fname, birth_date').eq('id', mid).single();
   if (error || !data) return false;
   if (data.username) return false;
+
+  // Bugfix (07-08-2026, gemeld door Ronald: "opslaan lukt niet"): deze functie
+  // gaf de eigen id nooit door aan de beschikbaarheidscheck. Eigen variabele
+  // (usernameGateMid) i.p.v. editingMusicianId — zie toelichting hierboven bij
+  // die declaratie.
+  usernameGateMid = mid;
 
   usernameGateAge = calcAgeFromISO(data.birth_date);
   usernameGateFname = data.fname || '';
@@ -4552,15 +4574,23 @@ async function saveUsernameGate() {
 
   const available = (usernameCheckedValue === value && usernameAvailable)
     ? true
-    : await checkUsernameAvailability('usernameGateStatus');
-  if (!available) return;
+    : await checkUsernameAvailability('usernameGateStatus', 'usernameGateInput', usernameGateMid);
+  if (!available) {
+    // checkUsernameAvailability() zet zelf al een statusmelding (bezet /
+    // ongeldig formaat / technische fout) — dit is puur een extra vangnet
+    // zodat er nooit een lege statustekst overblijft als er iets onverwachts
+    // misging (bijv. lege waarde door een edge case hierboven).
+    if (!statusEl.textContent) { statusEl.textContent = 'Kon niet controleren. Probeer het opnieuw.'; statusEl.style.color = 'var(--danger)'; }
+    return;
+  }
 
-  const mid = await getMyMusicianId();
+  const mid = usernameGateMid || await getMyMusicianId();
   const { error } = await db.from('musicians').update({ username: value }).eq('id', mid);
   if (error) { statusEl.textContent = friendlyErrorMessage(error); statusEl.style.color = 'var(--danger)'; return; }
 
   document.getElementById('usernameGateModal').classList.remove('visible');
   showToast('Gebruikersnaam opgeslagen!');
+  usernameGateMid = null;
   // Zichtbare schermen die de gebruikersnaam tonen, verversen zodat de
   // wijziging meteen zichtbaar is zonder handmatige refresh.
   if (document.getElementById('view-myprofile').classList.contains('active')) loadMyProfile();
