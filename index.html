@@ -2497,7 +2497,7 @@ async function appInit() {
 // bepaalt zelf (via goTo()) wat de volgende stap is.
 let onboardingInFlight = false;
 
-function onUserLoggedIn(user) {
+async function onUserLoggedIn(user) {
   document.getElementById('navLogin').textContent = 'Uitloggen';
   refreshUnreadBadge();
 
@@ -2507,6 +2507,22 @@ function onUserLoggedIn(user) {
   // een refresh), gaan we daar direct naar terug i.p.v. naar Mijn Profiel —
   // anders verliest iemand het overzicht van waar hij was gebleven.
   if (tryResumeOnboarding()) return;
+
+  // TT-32 (07-08-2026): kwam dit inloggen vanuit een klik op het chat-icoon
+  // (bestaand account, dus meteen een profiel beschikbaar)? Dan direct naar
+  // de composer i.p.v. naar Mijn Profiel. Een gloednieuw account heeft hier
+  // nog geen musicians-rij als er nog geen onboarding is doorlopen — dat
+  // geval loopt via showSaveSuccess() na de wizard, niet hier.
+  if (pendingMessageRecipient) {
+    const mid = await getMyMusicianId();
+    if (mid) {
+      const recipient = pendingMessageRecipient;
+      pendingMessageRecipient = null;
+      showView('search');
+      openMessageComposer(recipient.id, recipient.fname);
+      return;
+    }
+  }
 
   showView('myprofile');
 
@@ -2530,6 +2546,7 @@ function onUserLoggedOut() {
   // "Verder bewerken"-balk alsnog bij de laatst bewerkte profielgegevens.
   editingMusicianId = null;
   clearOnboardingProgress();
+  pendingMessageRecipient = null;
   postcodeFailStreak = 0;
   postcodeManualMode = false;
   const cityFieldReset = document.getElementById('city');
@@ -3424,6 +3441,15 @@ function closeMusicianModal(e) {
 let messageComposerRecipientId = null;
 let activeConversationId = null; // musician-id van de open gespreksdraad
 
+// TT-32 (07-08-2026): als iemand op het chat-icoon klikt zonder ingelogd te
+// zijn (of nog geen eigen profiel heeft), onthouden we wie ze wilden
+// berichten — zodat we ze na het inloggen/profiel-aanmaken direct naar de
+// composer kunnen sturen i.p.v. naar Mijn Profiel (Ronald: "kan je de
+// intelligentie toevoegen aan de chat-knop?"). Alleen gebruikt door
+// onUserLoggedIn() (bestaand account, inloggen) en showSaveSuccess() (gloed-
+// nieuw account, na de volledige wizard) — nooit voor een gewone profielklik.
+let pendingMessageRecipient = null;
+
 function openMessageComposer(recipientId, recipientName) {
   messageComposerRecipientId = recipientId;
   document.getElementById('messageComposerRecipientName').textContent = recipientName;
@@ -3438,12 +3464,15 @@ function openMessageComposer(recipientId, recipientName) {
 // waar ik nogmaals op een knop moet drukken"). event.stopPropagation()
 // voorkomt dat de klik ook nog de rij/kaart zelf (openMusicianModal) triggert.
 // Zonder eigen profiel is er niks om vanaf te versturen — dan alsnog naar
-// het profiel-tussenscherm, dat vraagt om in te loggen/een profiel te maken.
+// het profiel-tussenscherm, dat vraagt om in te loggen/een profiel te maken;
+// pendingMessageRecipient (TT-32) zorgt dat we na die stap alsnog hier
+// terechtkomen zonder dat iemand opnieuw hoeft te klikken.
 function openRowMessageIcon(event, id, fname) {
   event.stopPropagation();
   if (hasOwnProfile && currentUser) {
     openMessageComposer(id, fname);
   } else {
+    pendingMessageRecipient = { id, fname };
     openMusicianModal(id);
   }
 }
@@ -3971,6 +4000,16 @@ function showSaveSuccess(isEdit) {
   }
   setTimeout(() => {
     document.getElementById('saveOverlay').classList.remove('visible');
+    // TT-32 (07-08-2026): net als bij onUserLoggedIn() — een gloednieuw
+    // account dat via het chat-icoon in de registratiewizard belandde, gaat
+    // na de laatste stap direct naar de composer i.p.v. naar Mijn Profiel.
+    if (!isEdit && pendingMessageRecipient) {
+      const recipient = pendingMessageRecipient;
+      pendingMessageRecipient = null;
+      showView('search');
+      openMessageComposer(recipient.id, recipient.fname);
+      return;
+    }
     showView('myprofile');
   }, isEdit ? 1200 : 2000);
 }
