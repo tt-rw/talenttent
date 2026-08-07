@@ -1358,9 +1358,10 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 14px 20px;
+    padding: 14px 20px 14px 17px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
     cursor: pointer;
     transition: background 0.15s;
     animation: slideIn 0.2s ease;
@@ -1368,6 +1369,107 @@
 
   .result-row:last-child { border-bottom: none; }
   .result-row:hover { background: var(--surface2); }
+
+  /* TT-30 (07-08-2026): segmented control — vervangt losse ovale pillen bij
+     "Sorteren op" en de nieuwe "Weergave"-toggle door aaneengesloten
+     knoppen in één afgeronde balk (Ronald, 07-08-2026: "ovale knoppen vind
+     ik niet cool"). Losstaand van .tag-grid/.tag, die elders (instrument/
+     genre-filters) ongewijzigd blijven — bewust niet overal toegepast. */
+  .segmented-control {
+    display: inline-flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .segmented-btn {
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    color: var(--muted);
+    transition: all 0.15s;
+    font-family: 'Roboto', sans-serif;
+    white-space: nowrap;
+  }
+  .segmented-btn:hover { color: var(--text); }
+  .segmented-btn.selected { background: var(--accent); color: #000; }
+
+  /* TT-30: effen tags i.p.v. ovale outline-badges op de resultatenrijen/
+     -kaarten. Kleur wordt per tag ingevuld via hexToRgba()/tagSolid(). */
+  .tag-solid {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+
+  /* TT-30: kaartweergave als alternatief voor de rijenlijst — kiesbaar via
+     de "Weergave"-toggle boven het resultaat. */
+  .results-grid-view {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 14px;
+  }
+  .result-card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    animation: slideIn 0.2s ease;
+  }
+  .result-card:hover { border-color: var(--accent); }
+  .result-card-photo {
+    width: 100%;
+    height: 72px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Roboto', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #000;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .result-card-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .result-card-name { font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 700; }
+  .result-card-meta { font-size: 11px; color: var(--muted); margin: 2px 0 8px; }
+  .result-card-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+  .result-card-msg-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .result-card-msg-btn svg { color: #000; }
+
+  /* TT-30: envelop-icoon op rijen zit nu in een klein afgerond knopvlak
+     i.p.v. los aan het eind van de rij te zweven. */
+  .result-row-msg-btn {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
   .result-row-avatar {
     width: 44px; height: 44px;
@@ -1414,14 +1516,6 @@
     color: var(--muted);
   }
   .result-row:hover .result-row-msg-icon { color: var(--accent); }
-
-  .card-badge {
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    color: var(--muted);
-  }
 
   .no-results {
     text-align: center;
@@ -1568,9 +1662,9 @@
   <button class="nav-btn" id="navMyProfile" onclick="requireLogin('myprofile')">Mijn Profiel</button>
   <button class="nav-btn" id="navMyBands" onclick="requireLogin('bands')">Mijn Bands</button>
   <button class="nav-btn" id="navSearch" onclick="showView('search')">Zoeken</button>
-  <button class="nav-btn" id="navMessages" onclick="requireLogin('messages')" style="position:relative;">Berichten<span id="unreadBadge" class="unread-badge" style="display:none;"></span></button>
   <div class="nav-spacer"></div>
   <button class="nav-btn" id="navAbout" onclick="showView('about')">Over ons</button>
+  <button class="nav-btn" id="navMessages" onclick="requireLogin('messages')" style="position:relative;">Berichten<span id="unreadBadge" class="unread-badge" style="display:none;"></span></button>
   <button class="nav-btn" id="navLogin" onclick="navLoginClick()">Inloggen</button>
 </nav>
 <div id="editModeBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 24px;background:rgba(245,197,24,0.1);border-top:1px solid var(--border);font-size:13px;">
@@ -2008,13 +2102,20 @@
 
     <!-- Sorteren staat bewust bij het resultaat, niet bij de zoekfilters —
          her-sorteert direct zonder opnieuw te hoeven zoeken. -->
-    <div id="sortBarMusician" style="margin-bottom:16px;">
+    <div id="sortBarMusician" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;">
       <div class="field">
         <label>Sorteren op</label>
-        <div class="tag-grid" id="filterSortMode">
-          <div class="tag selected sort-score-option" data-mode="score" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'score')">Beste match</div>
-          <div class="tag" data-mode="distance" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
-          <div class="tag" data-mode="newest" style="font-size:12px;padding:6px 12px;" onclick="setSearchSortMode(this,'newest')">Nieuwste</div>
+        <div class="segmented-control" id="filterSortMode">
+          <div class="segmented-btn selected sort-score-option" data-mode="score" onclick="setSearchSortMode(this,'score')">Beste match</div>
+          <div class="segmented-btn" data-mode="distance" onclick="setSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
+          <div class="segmented-btn" data-mode="newest" onclick="setSearchSortMode(this,'newest')">Nieuwste</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Weergave</label>
+        <div class="segmented-control" id="musicianViewToggle">
+          <div class="segmented-btn selected" data-view="list" onclick="setMusicianViewMode('list')">Lijst</div>
+          <div class="segmented-btn" data-view="grid" onclick="setMusicianViewMode('grid')">Kaarten</div>
         </div>
       </div>
     </div>
@@ -2061,13 +2162,20 @@
 
     <!-- Sorteren staat bewust bij het resultaat, niet bij de zoekfilters —
          her-sorteert direct zonder opnieuw te hoeven zoeken. -->
-    <div id="sortBarBand" style="margin-bottom:16px;">
+    <div id="sortBarBand" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;">
       <div class="field">
         <label>Sorteren op</label>
-        <div class="tag-grid" id="filterBandSortMode">
-          <div class="tag selected sort-score-option" data-mode="score" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'score')">Beste match</div>
-          <div class="tag" data-mode="distance" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
-          <div class="tag" data-mode="newest" style="font-size:12px;padding:6px 12px;" onclick="setBandSearchSortMode(this,'newest')">Nieuwste</div>
+        <div class="segmented-control" id="filterBandSortMode">
+          <div class="segmented-btn selected sort-score-option" data-mode="score" onclick="setBandSearchSortMode(this,'score')">Beste match</div>
+          <div class="segmented-btn" data-mode="distance" onclick="setBandSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
+          <div class="segmented-btn" data-mode="newest" onclick="setBandSearchSortMode(this,'newest')">Nieuwste</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Weergave</label>
+        <div class="segmented-control" id="bandViewToggle">
+          <div class="segmented-btn selected" data-view="list" onclick="setBandViewMode('list')">Lijst</div>
+          <div class="segmented-btn" data-view="grid" onclick="setBandViewMode('grid')">Kaarten</div>
         </div>
       </div>
     </div>
@@ -2484,6 +2592,18 @@ async function configureSearchAccess() {
   const mid = await getMyMusicianId();
   hasOwnProfile = !!mid;
 
+  // TT-30: weergave-toggle (Lijst/Kaarten) synchroniseren met de opgeslagen
+  // voorkeur — de HTML start altijd op "Lijst" geselecteerd, dus bij een
+  // afwijkende opgeslagen voorkeur moet de actieve knop hier bijgewerkt.
+  if (musicianViewMode === 'grid') {
+    document.querySelectorAll('#musicianViewToggle .segmented-btn').forEach(x => x.classList.remove('selected'));
+    document.querySelector('#musicianViewToggle [data-view="grid"]').classList.add('selected');
+  }
+  if (bandViewMode === 'grid') {
+    document.querySelectorAll('#bandViewToggle .segmented-btn').forEach(x => x.classList.remove('selected'));
+    document.querySelector('#bandViewToggle [data-view="grid"]').classList.add('selected');
+  }
+
   document.querySelectorAll('.doel-filter').forEach(el => {
     el.style.display = hasOwnProfile ? '' : 'none';
   });
@@ -2537,9 +2657,9 @@ async function configureSearchAccess() {
 function selectSortModeByValue(gridId, value) {
   const grid = document.getElementById(gridId);
   if (!grid) return;
-  const target = Array.from(grid.querySelectorAll('.tag')).find(t => t.getAttribute('data-mode') === value);
+  const target = Array.from(grid.querySelectorAll('.segmented-btn')).find(t => t.getAttribute('data-mode') === value);
   if (!target) return;
-  grid.querySelectorAll('.tag').forEach(t => t.classList.remove('selected'));
+  grid.querySelectorAll('.segmented-btn').forEach(t => t.classList.remove('selected'));
   target.classList.add('selected');
   if (gridId === 'filterSortMode') searchSortMode = value;
   if (gridId === 'filterBandSortMode') bandSearchSortMode = value;
@@ -2728,6 +2848,18 @@ let filterGenres      = [];
 let filterGoal        = null;
 let searchSortMode    = 'score';
 let lastMusicianResults = [];
+// TT-30 (07-08-2026): lijst- of kaartweergave voor de zoekresultaten, per
+// tabblad apart onthouden (localStorage) — Ronald: "bij veel matches neig ik
+// naar regels, maar bij veel profielfoto's is een kaart ook tof", dus geen
+// vaste keuze maar een toggle die de gebruiker zelf zet.
+let musicianViewMode = localStorage.getItem('tt_musicianViewMode') || 'list';
+function setMusicianViewMode(mode) {
+  musicianViewMode = mode;
+  try { localStorage.setItem('tt_musicianViewMode', mode); } catch(e) {}
+  document.querySelectorAll('#musicianViewToggle .segmented-btn').forEach(x => x.classList.remove('selected'));
+  document.querySelector(`#musicianViewToggle [data-view="${mode}"]`).classList.add('selected');
+  if (lastMusicianResults.length) renderCappedMusicianResults();
+}
 // Afstand per muzikant-id, gevuld door zoekresultaten (gewoon zoeken en setlist-
 // zoeken). Gebruikt om de afstand ook te tonen als iemand het profiel opent
 // vanuit een resultatenlijst — zonder de postcode zelf ooit te tonen (TT-04).
@@ -2788,7 +2920,7 @@ function setSearchSortMode(el, mode) {
     return;
   }
   searchSortMode = mode;
-  document.querySelectorAll('#filterSortMode .tag').forEach(x => x.classList.remove('selected'));
+  document.querySelectorAll('#filterSortMode .segmented-btn').forEach(x => x.classList.remove('selected'));
   el.classList.add('selected');
   if (lastMusicianResults.length) {
     sortMusicianList(lastMusicianResults);
@@ -3040,8 +3172,8 @@ function renderSearchResults(musicians, opts) {
       <span class="results-count">${total} muzikant${total !== 1 ? 'en' : ''} gevonden</span>
     </div>
     ${locationHint}${cappedNotice}
-    <div class="results-list">
-      ${musicians.map(m => musicianRowHTML(m)).join('')}
+    <div class="${musicianViewMode === 'grid' ? 'results-grid-view' : 'results-list'}">
+      ${musicians.map(m => musicianViewMode === 'grid' ? musicianCardHTML(m) : musicianRowHTML(m)).join('')}
     </div>`;
 }
 
@@ -3060,7 +3192,7 @@ function renderCappedMusicianResults() {
 // één oogopslag aan dat contact/bericht sturen mogelijk is. Gedeeld door
 // musicianRowHTML() en musicianSetlistRowHTML() — niet gebruikt bij
 // bandRowHTML(), want berichten bestaan alleen muzikant-naar-muzikant.
-const MESSAGE_ICON_SVG = `<svg class="result-row-msg-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><title>Bericht sturen mogelijk</title><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>`;
+const MESSAGE_ICON_SVG = `<svg class="result-row-msg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><title>Bericht sturen mogelijk</title><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>`;
 
 // Extreem overzichtelijk gehouden (04-08-2026): alleen naam, plaats(+afstand)
 // en instrument/genre-badges. Matchscore/vibe/doel/repertoire-preview zijn
@@ -3079,17 +3211,48 @@ function musicianRowHTML(m) {
   const nameHTML = showIdentity ? escHtml(m.fname) : 'Muzikant';
 
   return `
-    <div class="result-row" onclick="openMusicianModal('${jsAttr(m.id)}')">
+    <div class="result-row" style="border-left-color:${col};" onclick="openMusicianModal('${jsAttr(m.id)}')">
       <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
       <div class="result-row-main">
         <div class="result-row-name">${nameHTML}</div>
         <div class="result-row-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       </div>
       <div class="result-row-badges">
-        ${instruments.map(i => `<span class="card-badge" style="border-color:${col};color:${col};">${escHtml(i)}</span>`).join('')}
-        ${genres.map(g => `<span class="card-badge" style="border-color:var(--accent2);color:var(--accent2);">${escHtml(g)}</span>`).join('')}
+        ${instruments.map(i => tagSolid(i, col)).join('')}
+        ${genres.map(g => tagSolid(g, '#6ec8d8')).join('')}
       </div>
-      ${MESSAGE_ICON_SVG}
+      <div class="result-row-msg-btn">${MESSAGE_ICON_SVG}</div>
+    </div>`;
+}
+
+// TT-30 (07-08-2026): kaartweergave als alternatief voor musicianRowHTML()
+// hierboven — zelfde onderliggende data en dezelfde openMusicianModal()-klik,
+// alleen fotogericht in plaats van compact. Kiesbaar via de "Weergave"-
+// toggle (Ronald: "bij veel profielfoto's is een kaart ook tof"), naast
+// (niet i.p.v.) de bestaande rijenlijst — voorkeur wordt onthouden per
+// tabblad (localStorage).
+function musicianCardHTML(m) {
+  const col = safeColor(m.profile_color, '#f5c518');
+  const showIdentity = !!currentUser;
+  const instruments = m.musician_instruments.map(x => x.instrument).slice(0,2);
+  const genres = m.musician_genres.map(x => x.genre).slice(0,2);
+
+  const avatarSrc = safeUrl(m.avatar_url);
+  const photoHTML = showIdentity
+    ? (avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(m.fname)}">` : escHtml(String(m.fname || '?')[0].toUpperCase()))
+    : '';
+  const nameHTML = showIdentity ? escHtml(m.fname) : 'Muzikant';
+
+  return `
+    <div class="result-card" onclick="openMusicianModal('${jsAttr(m.id)}')">
+      <div class="result-card-photo" style="background:${col};">${photoHTML}</div>
+      <div class="result-card-name">${nameHTML}</div>
+      <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+      <div class="result-card-badges">
+        ${instruments.map(i => tagSolid(i, col)).join('')}
+        ${genres.map(g => tagSolid(g, '#6ec8d8')).join('')}
+      </div>
+      <div class="result-card-msg-btn">${MESSAGE_ICON_SVG}</div>
     </div>`;
 }
 
@@ -4630,6 +4793,22 @@ function safeColor(c, fallback) {
   return /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%]+\)|[a-z]+)$/i.test(s) ? s : fallback;
 }
 
+// TT-30 (07-08-2026): effen (gevulde) tags i.p.v. de eerdere ovale outline-
+// badges op de zoekresultaten — alleen bruikbaar op een 3/6-cijferige hex-
+// kleur (wat safeColor() altijd oplevert voor profile_color), vandaar de
+// eenvoudige hex-only implementatie i.p.v. een generieke kleurparser.
+function hexToRgba(hex, alpha) {
+  let h = String(hex).replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const num = parseInt(h, 16);
+  if (isNaN(num)) return `rgba(245,197,24,${alpha})`;
+  const r = (num >> 16) & 255, g = (num >> 8) & 255, b = num & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+function tagSolid(text, hex) {
+  return `<span class="tag-solid" style="background:${hexToRgba(hex, 0.16)};color:${hex};">${escHtml(text)}</span>`;
+}
+
 // ─── Zoektekst veilig maken voor een Supabase-query (TT-26) ─────────────────
 // Twee verschillende risico's, twee helpers:
 //  1. likeSafe(): %, _, * en \ zijn jokertekens in een ilike-patroon. Iemand
@@ -5104,6 +5283,16 @@ let filterBandStatusVal  = 'zoekend';
 let bandSearchSortMode   = 'score';
 let myMusicianId = null;
 let lastBandResults = [];
+// TT-30 (07-08-2026): zie musicianViewMode hierboven — zelfde patroon, apart
+// onthouden per tabblad.
+let bandViewMode = localStorage.getItem('tt_bandViewMode') || 'list';
+function setBandViewMode(mode) {
+  bandViewMode = mode;
+  try { localStorage.setItem('tt_bandViewMode', mode); } catch(e) {}
+  document.querySelectorAll('#bandViewToggle .segmented-btn').forEach(x => x.classList.remove('selected'));
+  document.querySelector(`#bandViewToggle [data-view="${mode}"]`).classList.add('selected');
+  if (lastBandResults.length) renderCappedBandResults();
+}
 
 function sortBandList(list) {
   list.sort((a, b) => {
@@ -5128,7 +5317,7 @@ function setBandSearchSortMode(el, mode) {
     return;
   }
   bandSearchSortMode = mode;
-  document.querySelectorAll('#filterBandSortMode .tag').forEach(x => x.classList.remove('selected'));
+  document.querySelectorAll('#filterBandSortMode .segmented-btn').forEach(x => x.classList.remove('selected'));
   el.classList.add('selected');
   if (lastBandResults.length) {
     sortBandList(lastBandResults);
@@ -5312,7 +5501,7 @@ function renderBandSearchResults(bands, opts) {
   const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
   el.innerHTML = `<div class="results-header"><span class="results-count">${total} band${total !== 1 ? 's' : ''} gevonden</span></div>
     ${locationHint}${cappedNotice}
-    <div class="results-list">${bands.map(b => bandRowHTML(b, statusLabels)).join('')}</div>`;
+    <div class="${bandViewMode === 'grid' ? 'results-grid-view' : 'results-list'}">${bands.map(b => bandViewMode === 'grid' ? bandCardHTML(b, statusLabels) : bandRowHTML(b, statusLabels)).join('')}</div>`;
 }
 
 // Zelfde patroon als renderCappedMusicianResults() hierboven.
@@ -5331,7 +5520,7 @@ function bandRowHTML(b, statusLabels) {
   const wanted = (b.band_wanted||[]).slice(0,3);
   const status = statusLabels[b.status] ? b.status : '';
   return `
-    <div class="result-row" onclick="openBandModal('${jsAttr(b.id)}')">
+    <div class="result-row" style="border-left-color:${col};" onclick="openBandModal('${jsAttr(b.id)}')">
       <div class="result-row-avatar" style="background:${col};border-radius:10px;">${initials}</div>
       <div class="result-row-main">
         <div class="result-row-name">${escHtml(b.name)}</div>
@@ -5341,7 +5530,30 @@ function bandRowHTML(b, statusLabels) {
         </div>
       </div>
       <div class="result-row-badges">
-        ${wanted.map(w => `<span class="wanted-chip">+ ${escHtml(w.instrument)}</span>`).join('')}
+        ${wanted.map(w => tagSolid('+ ' + w.instrument, '#6ec8d8')).join('')}
+      </div>
+    </div>`;
+}
+
+// TT-30 (07-08-2026): kaartweergave voor bands, zelfde patroon als
+// musicianCardHTML() hierboven — kiesbaar via de "Weergave"-toggle. Geen
+// berichten-icoon (in tegenstelling tot de muzikant-varianten): berichten
+// bestaan vooralsnog alleen muzikant-naar-muzikant, niet naar een band.
+function bandCardHTML(b, statusLabels) {
+  const col = safeColor(b.profile_color, '#3ecfff');
+  const initials = escHtml(String(b.name || '').slice(0,2).toUpperCase());
+  const wanted = (b.band_wanted||[]).slice(0,3);
+  const status = statusLabels[b.status] ? b.status : '';
+  return `
+    <div class="result-card" onclick="openBandModal('${jsAttr(b.id)}')">
+      <div class="result-card-photo" style="background:${col};border-radius:8px;">${initials}</div>
+      <div class="result-card-name">${escHtml(b.name)}</div>
+      <div class="result-card-meta">
+        ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
+        <span class="band-status-badge band-status-${status}" style="margin-left:6px;">${escHtml(statusLabels[status] || b.status)}</span>
+      </div>
+      <div class="result-card-badges">
+        ${wanted.map(w => tagSolid('+ ' + w.instrument, '#6ec8d8')).join('')}
       </div>
     </div>`;
 }
@@ -5641,16 +5853,16 @@ function musicianSetlistRowHTML(m) {
   const total = setlistWantedSongs.length;
 
   return `
-    <div class="result-row" onclick="openMusicianModal('${jsAttr(m.id)}')">
+    <div class="result-row" style="border-left-color:${col};" onclick="openMusicianModal('${jsAttr(m.id)}')">
       <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
       <div class="result-row-main">
         <div class="result-row-name">${nameHTML}</div>
         <div class="result-row-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       </div>
       <div class="result-row-badges">
-        <span class="card-badge" style="border-color:${col};color:${col};">${m.matchCount}/${total} match${m.matchCount !== 1 ? 'es' : ''}: ${m.matchedNumbers.map(n => '#' + Number(n)).join(', ')}</span>
+        ${tagSolid(`${m.matchCount}/${total} match${m.matchCount !== 1 ? 'es' : ''}: ${m.matchedNumbers.map(n => '#' + Number(n)).join(', ')}`, col)}
       </div>
-      ${MESSAGE_ICON_SVG}
+      <div class="result-row-msg-btn">${MESSAGE_ICON_SVG}</div>
     </div>`;
 }
 
