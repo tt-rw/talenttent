@@ -2118,7 +2118,7 @@
       <div class="filter-row">
         <div class="field">
           <label>Gebruikersnaam</label>
-          <input type="text" id="filterName" placeholder="Bijv. RockDrummer92" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
+          <input type="text" id="filterName" placeholder="Bijv. Sanne of RockDrummer92" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
         </div>
         <div class="field">
           <label>Plaats</label>
@@ -2341,6 +2341,8 @@
 <!-- ═══════════════════════════════════════════ -->
 <div class="app-view" id="view-myprofile">
   <div class="my-profile-wrap">
+    <!-- TT-41: openstaande banduitnodigingen, alleen zichtbaar als er zijn -->
+    <div id="bandInvitesBanner"></div>
     <div id="myProfileContent"></div>
     <div class="profile-actions" id="profileActions" style="display:none;">
       <button class="btn btn-primary" onclick="editMyProfile()">Profiel bewerken</button>
@@ -2537,7 +2539,8 @@
 <div class="modal-overlay" id="addMemberModal" onclick="if(event.target===this)this.classList.remove('visible')">
   <div class="modal-box">
     <button class="modal-close" onclick="document.getElementById('addMemberModal').classList.remove('visible')">✕</button>
-    <div class="filter-title" style="margin-bottom:16px;">Lid toevoegen</div>
+    <div class="filter-title" style="margin-bottom:6px;">Lid uitnodigen</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">De muzikant staat pas als lid op het bandprofiel zodra hij of zij de uitnodiging zelf bevestigt.</p>
     <input type="text" id="memberSearchInput" placeholder="Zoek op naam..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:14px;margin-bottom:16px;">
     <div id="memberSearchResults"></div>
   </div>
@@ -3214,8 +3217,11 @@ async function runSearch() {
       const ids = matches.map(m => m.musician_id);
       const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
       if (error) throw error;
+      // TT-43: fname wordt hier bewust NIET overgenomen, ook niet als de RPC
+      // het (nog) meestuurt. Zo ziet een bezoeker zonder profiel altijd de
+      // gebruikersnaam, onafhankelijk van wat er server-side is aangepast.
       musicians = (data || []).map(m => ({
-        id: m.id, fname: m.fname, username: m.username, birth_date: m.birth_date, city: m.city, zip: m.zip,
+        id: m.id, username: m.username, birth_date: m.birth_date, city: m.city, zip: m.zip,
         bio: m.bio, goal: m.goal, profile_color: m.profile_color, avatar_url: m.avatar_url,
         updated_at: m.updated_at,
         musician_instruments: (m.instruments || []).map(i => ({ instrument: i })),
@@ -3237,7 +3243,11 @@ async function runSearch() {
       const age = calcAgeFromISO(m.birth_date);
       if (age < ageMin || age > ageMax) return false;
       if (filterGoal && m.goal !== filterGoal) return false;
-      if (nameQuery && !(m.username || '').toLowerCase().includes(nameQuery)) return false;
+      // TT-43: het naamveld doorzoekt precies dát wat je in de lijst ook ziet
+      // — voor een bezoeker is m.fname leeg, dus dan blijft het zoeken op
+      // gebruikersnaam. Anders zou je op een naam kunnen zoeken die je zelf
+      // nergens te zien krijgt.
+      if (nameQuery && !`${m.fname || ''} ${m.username || ''}`.toLowerCase().includes(nameQuery)) return false;
       if (cityQuery && !skipCityTextFilter && !(m.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterInstruments.length) {
         const mInstr = m.musician_instruments.map(x => x.instrument);
@@ -3335,17 +3345,29 @@ const AVATAR_T_FALLBACK = `<span style="font-family:'Alfa Slab One','Roboto',san
 // en instrument/genre-badges. Matchscore/vibe/doel/repertoire-preview zijn
 // bewust van de rij af — die zie je pas in de detailmodal na een klik.
 // Lijstweergave i.p.v. kaarten (04-08-2026) — duidelijker scanbaar bij veel resultaten.
+// TT-43 (08-08-2026): één plek die bepaalt welke naam een ander te zien
+// krijgt. Ronalds besluit: het verbergen van de echte voornaam was bedoeld
+// voor NIET-ingelogd zoeken; wie zelf een profiel heeft, mag de voornaam wél
+// zien (dat maakt de presentatie van de muzikant persoonlijker). Technisch
+// regelt de database dat: de publieke RPC tt_get_musicians_public geeft geen
+// fname meer terug, dus voor een bezoeker zonder profiel is m.fname simpelweg
+// leeg en valt deze functie automatisch terug op de gebruikersnaam. Er is dus
+// geen aparte hasOwnProfile-check nodig op elke weergaveplek.
+function displayNameOf(m) {
+  return (m && (m.fname || m.username)) || 'Muzikant';
+}
+
 function musicianRowHTML(m) {
   const col     = safeColor(m.profile_color, '#f5c518');
   const instruments = m.musician_instruments.map(x => x.instrument).slice(0,3);
   const genres      = m.musician_genres.map(x => x.genre).slice(0,2);
 
-  // TT-38 (07-08-2026): gebruikersnaam is de publieke identiteit — altijd
-  // zichtbaar, ook uitgelogd (Ronald, na overleg over BandMix). De echte
-  // voornaam wordt nooit meer aan andere gebruikers getoond. Foto is om
-  // dezelfde reden nu ook altijd zichtbaar (was: alleen ingelogd).
+  // TT-38 (07-08-2026) / TT-43 (08-08-2026): uitgelogde bezoekers zien de
+  // gebruikersnaam, ingelogde muzikanten de echte voornaam — zie
+  // displayNameOf(). De foto is voor iedereen zichtbaar (Ronald: die is te
+  // belangrijk voor de presentatie om achter een login te zetten).
   const avatarSrc = safeUrl(m.avatar_url);
-  const displayName = m.username || 'Muzikant';
+  const displayName = displayNameOf(m);
   const avatarHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
   const nameHTML = escHtml(displayName);
 
@@ -3376,7 +3398,7 @@ function musicianCardHTML(m) {
   const genres = m.musician_genres.map(x => x.genre).slice(0,2);
 
   const avatarSrc = safeUrl(m.avatar_url);
-  const displayName = m.username || 'Muzikant';
+  const displayName = displayNameOf(m);
   const photoHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
   const nameHTML = escHtml(displayName);
 
@@ -3405,11 +3427,10 @@ function buildMusicianDetailHTML(m, isOwn) {
   const age  = calcAgeFromISO(m.birth_date);
   const date = new Date(m.updated_at).toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
 
-  // TT-38 (07-08-2026): andere gebruikers zien altijd de gebruikersnaam, nooit
-  // de echte voornaam — die is en blijft privé. Alleen op je eigen profiel
-  // (isOwn) zie je je echte voornaam, met de gebruikersnaam erbij zodat
-  // duidelijk is wat anderen van je zien.
-  const displayName = isOwn ? m.fname : (m.username || 'Muzikant');
+  // TT-43 (08-08-2026): op je eigen profiel altijd je eigen voornaam; voor een
+  // ander hangt het af van of die is ingelogd met een eigen profiel — dat
+  // regelt displayNameOf() op basis van wat de database heeft meegegeven.
+  const displayName = isOwn ? m.fname : displayNameOf(m);
   const avatarSrc = safeUrl(m.avatar_url);
   const avatarHTML = avatarSrc
     ? `<img class="profile-avatar-photo" src="${avatarSrc}" alt="${escHtml(displayName)}" style="border-color:${col};">`
@@ -3449,7 +3470,7 @@ function buildMusicianDetailHTML(m, isOwn) {
     <div class="profile-header-band" style="background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;"></div>
     ${avatarHTML}
     <div class="profile-name">${escHtml(displayName)}</div>
-    ${isOwn ? `<p style="font-size:12px;color:var(--muted);margin-top:2px;">Anderen zien je als <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
+    ${isOwn ? `<p style="font-size:12px;color:var(--muted);margin-top:2px;">Bezoekers zonder profiel zien je als <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong> · ingelogde muzikanten zien <strong style="color:${col};">${escHtml(m.fname || '')}</strong></p>` : ''}
     <div class="profile-meta">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
     <div class="freshness-bar" style="margin-top:12px;margin-bottom:16px;">
       <div class="freshness-dot"></div>
@@ -3531,7 +3552,7 @@ async function openMusicianModal(id) {
     const row = (res.data || [])[0];
     if (row) {
       m = {
-        id: row.id, fname: row.fname, username: row.username, birth_date: row.birth_date, city: row.city,
+        id: row.id, username: row.username, birth_date: row.birth_date, city: row.city, // TT-43: geen fname voor bezoekers
         bio: row.bio, goal: row.goal, profile_color: row.profile_color, avatar_url: row.avatar_url,
         updated_at: row.updated_at,
         musician_instruments: (row.instruments || []).map(i => ({ instrument: i })),
@@ -3705,13 +3726,13 @@ async function loadInbox() {
     });
 
     const otherIds = Array.from(conversations.keys());
-    const { data: musiciansData } = await db.from('musicians').select('id, username, avatar_url, profile_color').in('id', otherIds);
+    const { data: musiciansData } = await db.from('musicians').select('id, fname, username, avatar_url, profile_color').in('id', otherIds);
     const infoById = {};
     (musiciansData || []).forEach(m => { infoById[m.id] = m; });
 
     const rows = Array.from(conversations.values()).map(c => {
       const info = infoById[c.otherId] || {};
-      const name = info.username || 'Muzikant';
+      const name = displayNameOf(info);
       const col = safeColor(info.profile_color, '#f5c518');
       const avatarSrc = safeUrl(info.avatar_url);
       const avatarHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(name)}">` : AVATAR_T_FALLBACK;
@@ -4067,6 +4088,57 @@ async function loadMyProfile() {
   if (actionsEl) actionsEl.style.display = 'flex';
   const bandsBtn = document.getElementById('myBandsBtn');
   if (bandsBtn) bandsBtn.style.display = 'inline-flex';
+  loadBandInvites(m.id);
+}
+
+// ─── TT-41: banduitnodigingen bevestigen ─────────────────────────────────────
+// Bewust een banner op Mijn Profiel en niet een bericht in de inbox (besluit
+// Ronald, 08-08-2026): één klik, geen tussenscherm, en het staat op de plek
+// waar iemand na het inloggen sowieso terechtkomt. De banner verschijnt alleen
+// als er daadwerkelijk iets open staat — geen lege plek in het scherm.
+async function loadBandInvites(musicianId) {
+  const el = document.getElementById('bandInvitesBanner');
+  if (!el) return;
+  el.innerHTML = '';
+  try {
+    const { data, error } = await db.from('band_members')
+      .select('band_id, bands(name, city, profile_color)')
+      .eq('musician_id', musicianId).eq('status', 'aangevraagd');
+    if (error || !data || !data.length) return;
+
+    el.innerHTML = data.map(inv => {
+      const col = safeColor(inv.bands?.profile_color, '#f5c518');
+      const naam = inv.bands?.name || 'Een band';
+      const plaats = inv.bands?.city || '';
+      return `
+      <div style="border:1px solid ${col};border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px;">${escHtml(naam)} wil je als lid</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">${escHtml(plaats)}${plaats ? ' · ' : ''}Je staat pas op het bandprofiel als je dit bevestigt.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="respondToBandInvite('${jsAttr(inv.band_id)}', true)">Bevestigen</button>
+          <button class="btn btn-ghost" style="font-size:13px;padding:8px 16px;" onclick="respondToBandInvite('${jsAttr(inv.band_id)}', false)">Weigeren</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    // Een mislukte uitnodigingencheck mag Mijn Profiel nooit blokkeren —
+    // stilzwijgend niets tonen is hier beter dan een foutmelding bovenaan.
+  }
+}
+
+async function respondToBandInvite(bandId, accept) {
+  const mid = await getMyMusicianId();
+  if (!mid) return;
+  try {
+    const { error } = await db.from('band_members')
+      .update({ status: accept ? 'bevestigd' : 'geweigerd' })
+      .eq('band_id', bandId).eq('musician_id', mid);
+    if (error) throw error;
+    showToast(accept ? 'Je staat nu als lid op het bandprofiel.' : 'Uitnodiging geweigerd.');
+    loadBandInvites(mid);
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+  }
 }
 
 // Profielvolledigheid — alleen zichtbaar voor de eigenaar op "Mijn profiel"
@@ -6224,7 +6296,7 @@ async function runSetlistSearch() {
       const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
       if (error) throw error;
       musicians = (data || []).map(m => ({
-        id: m.id, fname: m.fname, username: m.username, city: m.city, zip: m.zip,
+        id: m.id, username: m.username, city: m.city, zip: m.zip, // TT-43: geen fname voor bezoekers
         profile_color: m.profile_color, avatar_url: m.avatar_url, updated_at: m.updated_at,
         musician_songs: m.songs || [],
       }));
@@ -6296,7 +6368,7 @@ function renderSetlistResults(musicians, opts) {
 function musicianSetlistRowHTML(m) {
   const col = safeColor(m.profile_color, '#f5c518');
   const avatarSrc = safeUrl(m.avatar_url);
-  const displayName = m.username || 'Muzikant';
+  const displayName = displayNameOf(m);
   const avatarHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
   const nameHTML = escHtml(displayName);
   const total = setlistWantedSongs.length;
@@ -6392,9 +6464,11 @@ function searchMembersToAdd(query) {
       const { data: existing } = await db.from('band_members').select('musician_id').eq('band_id', addMemberBandId);
       const existingIds = (existing||[]).map(x => x.musician_id);
 
+      // TT-43: zoeken op voornaam óf gebruikersnaam — een oprichter kent zijn
+      // toekomstige bandlid soms alleen van diens profielnaam.
       const { data: musicians, error } = await db.from('musicians')
-        .select('id, fname, city, profile_color, musician_instruments(instrument)')
-        .ilike('fname', `%${qSafe}%`).limit(15);
+        .select('id, fname, username, city, profile_color, musician_instruments(instrument)')
+        .or(`fname.ilike.%${qSafe}%,username.ilike.%${qSafe}%`).limit(15);
       if (error) throw error;
 
       const filtered = (musicians||[]).filter(m => !existingIds.includes(m.id));
@@ -6402,28 +6476,34 @@ function searchMembersToAdd(query) {
         resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Geen (nieuwe) muzikanten gevonden.</p>';
         return;
       }
-      resEl.innerHTML = filtered.map(m => `
+      resEl.innerHTML = filtered.map(m => {
+        const memberName = displayNameOf(m);
+        return `
         <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
-          <div style="width:32px;height:32px;border-radius:50%;background:${safeColor(m.profile_color, '#888')};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${escHtml(String(m.fname || '?')[0].toUpperCase())}</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:${safeColor(m.profile_color, '#888')};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${escHtml(memberName[0].toUpperCase())}</div>
           <div style="flex:1;">
-            <div style="font-weight:600;font-size:14px;">${escHtml(m.fname)}</div>
+            <div style="font-weight:600;font-size:14px;">${escHtml(memberName)}</div>
             <div style="font-size:12px;color:var(--muted);">${escHtml(m.city||'')}${(m.musician_instruments||[]).length ? ' · ' + escHtml(m.musician_instruments.map(x=>x.instrument).slice(0,2).join(', ')) : ''}</div>
           </div>
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="addBandMember('${jsAttr(m.id)}')">+ Toevoegen</button>
-        </div>`).join('');
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="addBandMember('${jsAttr(m.id)}')">Uitnodigen</button>
+        </div>`; }).join('');
     } catch (e) {
       resEl.innerHTML = `<p style="color:var(--danger);font-size:13px;">${friendlyErrorMessage(e)}</p>`;
     }
   }, 300);
 }
 
+// TT-41 (08-08-2026): een oprichter kon iemand voorheen zonder diens medeweten
+// als lid op het bandprofiel zetten. Vanaf nu ontstaat er een uitnodiging
+// (status 'aangevraagd'); pas als de muzikant zelf bevestigt via de banner op
+// Mijn Profiel wordt het 'bevestigd' en is het lidmaatschap zichtbaar.
 async function addBandMember(musicianId) {
   try {
     const { error } = await db.from('band_members').insert({
-      band_id: addMemberBandId, musician_id: musicianId, role: 'Lid', status: 'bevestigd'
+      band_id: addMemberBandId, musician_id: musicianId, role: 'Lid', status: 'aangevraagd'
     });
     if (error) throw error;
-    showToast('Lid toegevoegd.');
+    showToast('Uitnodiging verstuurd.');
     document.getElementById('addMemberModal').classList.remove('visible');
     loadMyBands();
   } catch (e) {
@@ -6579,13 +6659,17 @@ async function loadMyBands() {
 
   const bandIds = memberships.map(m => m.band_id);
   const { data: bands } = await db.from('bands')
-    .select(`*, band_members(musician_id, role, status, musicians(fname, profile_color)), band_wanted(instrument)`)
+    .select(`*, band_members(musician_id, role, status, musicians(fname, username, profile_color)), band_wanted(instrument)`)
     .in('id', bandIds).order('updated_at', { ascending: false });
 
   const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
   el.innerHTML = (bands || []).map(b => {
     const col = safeColor(b.profile_color, '#3ecfff');
     const confirmed = (b.band_members||[]).filter(m => m.status === 'bevestigd');
+    // TT-41 (08-08-2026): uitgenodigde muzikanten staan er wél al, maar tellen
+    // nog niet als lid tot ze zelf bevestigen. Alleen de oprichter ziet dit —
+    // voor de rest van de wereld bestaat een uitnodiging niet.
+    const pending = (b.band_members||[]).filter(m => m.status === 'aangevraagd');
     const wanted = (b.band_wanted||[]);
     const isFounder = b.founder_id === mid;
     const status = statusLabels[b.status] ? b.status : '';
@@ -6603,10 +6687,18 @@ async function loadMyBands() {
       <div class="band-card-body">
         ${b.description ? `<p style="font-size:13px;color:var(--muted);margin-bottom:12px;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
         <div class="band-members-row">
-          ${confirmed.map(m => `<div class="band-member-chip">
-            <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(String(m.musicians?.fname || '?')[0].toUpperCase())}</div>
-            ${escHtml(m.musicians?.fname||'?')} <span style="color:var(--muted);font-size:10px;">${escHtml(m.role||'')}</span>
-          </div>`).join('')}
+          ${confirmed.map(m => {
+            const memberName = displayNameOf(m.musicians);
+            return `<div class="band-member-chip">
+            <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
+            ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">${escHtml(m.role||'')}</span>
+          </div>`; }).join('')}
+          ${isFounder ? pending.map(m => {
+            const memberName = displayNameOf(m.musicians);
+            return `<div class="band-member-chip" style="opacity:.55;border-style:dashed;">
+            <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
+            ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">wacht op bevestiging</span>
+          </div>`; }).join('') : ''}
         </div>
         ${wanted.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${wanted.map(w => `<span class="wanted-chip">+ ${escHtml(w.instrument)}</span>`).join('')}</div>` : ''}
       </div>
@@ -6623,7 +6715,7 @@ async function openBandModal(id) {
 
   if (hasOwnProfile) {
     const { data } = await db.from('bands')
-      .select(`*, band_members(role, status, musicians(id, fname, profile_color, musician_instruments(instrument))), band_wanted(instrument)`)
+      .select(`*, band_members(role, status, musicians(id, fname, username, profile_color, musician_instruments(instrument))), band_wanted(instrument)`)
       .eq('id', id).single();
     b = data;
   } else {
@@ -6635,7 +6727,9 @@ async function openBandModal(id) {
         id: row.id, name: row.name, city: row.city, zip: row.zip, description: row.description,
         status: row.status, profile_color: row.profile_color, updated_at: row.updated_at,
         genres: row.genres || [],
-        band_members: (row.members || []).map(mem => ({ role: 'Lid', status: 'bevestigd', musicians: { fname: mem.fname, profile_color: mem.profile_color } })),
+        // TT-43: de publieke RPC levert voor leden alleen nog de
+        // gebruikersnaam — de echte voornaam blijft weg bij bezoekers.
+        band_members: (row.members || []).map(mem => ({ role: 'Lid', status: 'bevestigd', musicians: { username: mem.username, profile_color: mem.profile_color } })),
         band_wanted: (row.wanted || []).map(i => ({ instrument: i })),
       };
     }
@@ -6657,10 +6751,12 @@ async function openBandModal(id) {
     ${b.description ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
     <div class="profile-songs-title" style="margin-top:16px;">Leden (${confirmed.length})</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-      ${confirmed.map(m => `<div class="band-member-chip">
-        <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(String(m.musicians?.fname || '?')[0].toUpperCase())}</div>
-        <span><strong>${escHtml(m.musicians?.fname||'?')}</strong> · ${escHtml(m.role||'Lid')}</span>
-      </div>`).join('')}
+      ${confirmed.map(m => {
+        const memberName = displayNameOf(m.musicians);
+        return `<div class="band-member-chip">
+        <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
+        <span><strong>${escHtml(memberName)}</strong> · ${escHtml(m.role||'Lid')}</span>
+      </div>`; }).join('')}
     </div>
     ${(b.band_wanted||[]).length ? `
       <div class="profile-songs-title" style="margin-top:16px;">Wij zoeken nog</div>
