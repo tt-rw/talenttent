@@ -2583,8 +2583,6 @@ async function appInit() {
     if (knownHashViews.includes(hashView)) {
       if (gatedHashViews.includes(hashView)) requireLogin(hashView);
       else showView(hashView);
-    } else {
-      safeHistoryReplace({ view: 'landing' }, '#landing');
     }
   } catch(e) {
     console.error('appInit fout:', e);
@@ -6677,7 +6675,7 @@ async function forgotPassword() {
   const email = document.getElementById('loginEmail').value.trim();
   if (!email) { showAuthError('Vul eerst je e-mailadres in.'); return; }
   const { error } = await db.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://tt-rw.github.io/talenttent/'
+    redirectTo: 'https://talenttent.org/'
   });
   if (error) { showAuthError(friendlyErrorMessage(error)); return; }
   showAuthSuccess('✓ Herstelmail verstuurd! Controleer je inbox.');
