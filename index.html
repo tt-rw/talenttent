@@ -3221,7 +3221,7 @@ async function runSearch() {
       // het (nog) meestuurt. Zo ziet een bezoeker zonder profiel altijd de
       // gebruikersnaam, onafhankelijk van wat er server-side is aangepast.
       musicians = (data || []).map(m => ({
-        id: m.id, username: m.username, birth_date: m.birth_date, city: m.city, zip: m.zip,
+        id: m.id, username: m.username, birth_date: m.birth_date, city: m.city,
         bio: m.bio, goal: m.goal, profile_color: m.profile_color, avatar_url: m.avatar_url,
         updated_at: m.updated_at,
         musician_instruments: (m.instruments || []).map(i => ({ instrument: i })),
@@ -6296,7 +6296,7 @@ async function runSetlistSearch() {
       const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
       if (error) throw error;
       musicians = (data || []).map(m => ({
-        id: m.id, username: m.username, city: m.city, zip: m.zip, // TT-43: geen fname voor bezoekers
+        id: m.id, username: m.username, city: m.city, // TT-43/TT-04: geen fname of postcode voor bezoekers
         profile_color: m.profile_color, avatar_url: m.avatar_url, updated_at: m.updated_at,
         musician_songs: m.songs || [],
       }));
@@ -6724,7 +6724,7 @@ async function openBandModal(id) {
     const row = (data || [])[0];
     if (row) {
       b = {
-        id: row.id, name: row.name, city: row.city, zip: row.zip, description: row.description,
+        id: row.id, name: row.name, city: row.city, description: row.description, // TT-04: geen postcode voor bezoekers
         status: row.status, profile_color: row.profile_color, updated_at: row.updated_at,
         genres: row.genres || [],
         // TT-43: de publieke RPC levert voor leden alleen nog de
