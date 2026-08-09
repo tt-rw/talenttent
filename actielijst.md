@@ -1,14 +1,16 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 09-08-2026 (derde sessie)
-**Vervangt:** `TODO.md`, `talenttent_backlog.md`, `stappenplan.md`, `randvoorwaarden_lancering.md` als los te lezen bronnen. Dit is voortaan het ene bestand dat je bij sessiestart meestuurt, samen met `index.html`.
+**Laatste update:** 09-08-2026 (derde sessie, opschoning)
+**Vervangt:** `TODO.md`, `talenttent_backlog.md`, `stappenplan.md`, `randvoorwaarden_lancering.md` als los te lezen bronnen. Dit is het ene bestand dat je bij sessiestart meestuurt, samen met `index.html`.
 
-**Opbouw:**
+**Opbouw — herzien 09-08-2026:** tot nu toe stond een deel van de openstaande ideeën in een aparte, ongenummerde "Toekomstvisie"-sectie naast de genummerde tickets. Dat zorgde voor overlap en verlies van overzicht: hetzelfde onderwerp kon op twee plekken staan, met losse prioriteit. Vanaf nu **één systeem**: elk onderwerp krijgt een TT-nummer zodra het concreet genoeg is om te bouwen, of blijft `—` als het geen bouwwerk is maar een actie van Ronald (bijv. een school benaderen). Elk onderwerp staat in precies één P-tabel (P0 t/m P3) en nergens dubbel.
+
 - **Deel 1 — Openstaand**, geprioriteerd P0 (zonder dit is de app niet af/onveilig) t/m P3 (later)
-- **Deel 2 — Toekomstvisie**, grotere richtingen die nog vorm moeten krijgen — geen ticketnummer totdat ze concreet worden
+- **Deel 1a — Te bevestigen door Ronald**, losse browsertests, geen bouwtickets
+- **Deel 2 — Achtergrond bij richtingen**, de strategische context achter clusters van tickets (geen losse actiepunten meer, alleen duiding + verwijzing naar TT-nummers)
 - **Deel 3 — Afgehandeld**, chronologisch, kort
 
-Ticketnummers TT-01 t/m TT-45 zijn definitief toegekend en niet te wijzigen (ze staan als zodanig in code-comments). Alles daarna is voorstel — pas een vast nummer zodra we het echt oppakken.
+Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodanig in code-comments). Huidige hoogste nummer: **TT-70**.
 
 ---
 
@@ -21,8 +23,13 @@ Ticketnummers TT-01 t/m TT-45 zijn definitief toegekend en niet te wijzigen (ze 
 | **TT-06** | Rapporteren en blokkeren | Meldknop + blokkeren, verplicht voordat er actief geworven wordt. **Geparkeerd 08-08-2026** — ontwerp besproken, drie beslissingen staan nog open (zie onderaan deze tabel) |
 | **TT-07** | Leeftijdsbeleid | **Herzien 08-08-2026: minimumleeftijd blijft 13.** Ticket zelf vraagt geen codewijziging meer; de gevolgen zijn losgetrokken naar TT-45 |
 | **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel |
-| **TT-42** | **Registratie en toestemming voor 13-15-jarigen** | **Apart aandachtsgebied, eigen focus** — zie toelichting onderaan deze tabel |
+| **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus** — zie toelichting onderaan deze tabel |
 | TT-01 (restpunt) | E-mailnotificatie bij nieuw bericht | Geparkeerd op infrastructuur (Edge Function) |
+| **TT-22** | Accountverwijdering | Ook het auth-account zelf, ook Storage-bestanden. **Prioriteit verhoogd 09-08-2026** (was P2): recht op verwijdering is een wettelijke vereiste (AVG), en met minderjarigen in de doelgroep weegt dat zwaarder. Was tot nu toe dubbel vermeld (ook als los punt bij de lanceersporen) — die dubbeling is opgeruimd, dit is de enige plek |
+| **TT-63** | Privacyverklaring, gebruiksvoorwaarden, gedragscode | Alle drie ontbreken nog, los van elkaar op te stellen. Launch-blocking |
+| — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
+| — | E-mailadres `contact@talenttent.org` aanmaken | **Besloten 08-08-2026**, nog niet uitgevoerd. Via Mijndomein: Mijn account → Mijn producten → talenttent.org → bundel wijzigen → E-mail. Onbeperkt aantal adressen, dus `melden@` en `privacy@` kunnen er later gratis bij. MX-records staan los van de GitHub Pages-records, de site blijft draaien. Dit is het vindbare contactpunt uit het juridische spoor — vandaar P0 |
+| **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers |
 
 **TT-07 — herzien besluit van Ronald (08-08-2026, tweede sessie):** het eerdere voorstel van 16 jaar als ondergrens is teruggedraaid. **De minimumleeftijd blijft 13.** De validatie in de wizard blijft dus ongewijzigd. Wat daaruit volgt aan extra maatregelen is niet in dit ticket verwerkt maar losgetrokken naar TT-45, zodat het niet stilletjes een subregel wordt van een ticket dat verder niets meer om het lijf heeft.
 
@@ -39,7 +46,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 - **De toestemming is het lastige deel, niet de techniek.** Vastleggen wie toestemming gaf, wanneer, en hoe — dat auditspoor is de kern, niet een bijzaak.
 - **Overgangsmoment:** als het profiel op de 16e verjaardag automatisch overgaat op de jongere zelf, moet je diens gegevens dus al die jaren bewaren — wat weer onder dezelfde toestemming moet vallen.
 - **Wat er nog niet ligt:** hoe de ouder de aanmelding precies doet, wat er met het profiel gebeurt als de ouder nooit reageert, of een kind zelf al iets kan zien/proberen vóór de ouder heeft bevestigd, en hoe dit zich verhoudt tot TT-06 (melden/blokkeren) — een kind dat gemeld wordt, raakt ook de ouder.
-→ *Advies:* dit als eigen sessie behandelen, niet als bijvangst van TT-07. Mogelijk is ook hier het advies van een deskundige op zijn plek (zie eerdere opmerking hierover) — juist omdat de tijdsinschatting hier het onzekerst is.
+→ *Advies:* dit als eigen sessie behandelen, niet als bijvangst van TT-07. Mogelijk is ook hier het advies van een deskundige op zijn plek — juist omdat de tijdsinschatting hier het onzekerst is.
 
 ---
 
@@ -48,10 +55,14 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | ID | Ticket | Kern |
 |---|---|---|
 | **TT-11** | "Ik wil meedoen" bij bands | **Ontwerprichting bepaald 08-08-2026** — geen ja/nee-mechaniek, zie toelichting onder deze tabel. Eigen sessie, niet samen met TT-06 |
-| **TT-13** | Terugkeerredenen | Profielweergaven, wekelijkse mail, bewaren/favorieten |
-| TT-38 (restpunt) | Gebruikersnaam-systeem | Volledig gebouwd, **browsertest door Ronald nog niet bevestigd** |
-| — | Zoeken zonder profiel — volledige browsertest | Uitgelogd zoeken (met/zonder vertrekpunt), profiel-/bandmodal als bezoeker, band-instrumentfilter zonder profiel — nog niet bevestigd |
-| — | Setlist-zoeken — volledige browsertest | Nog niet bevestigd door Ronald |
+| **TT-13** | Terugkeerredenen | Profielweergaven, wekelijkse mail, volgen/bewaren (favorieten). **Samengevoegd 09-08-2026** met wat eerder los als "Volgen/ontvolgen" bij de Toekomstvisie stond — zelfde onderwerp, stond dubbel |
+| **TT-49** | Optredenlijst (band, datum, plaats) | Belangrijkste onderdeel van het profiel-als-product: levert ervaringsmaat, materiaal voor succesverhalen én later het aanknopingspunt voor podia. De "verleden"-kolom van TT-48 (voortgangspaneel) leunt hierop en toont tot dan een placeholder |
+| **TT-55** | Complementaire matching | Instrument moet complementair worden (wat zoekt de ander), genre blijft gelijkenis. Nu meet de score op instrument-gelijkenis, waardoor twee drummers elkaars beste match zijn — kernprobleem in de Prestatie-pijler. Inclusief: wederzijdse (stabiele) matchscore, met terugval op de huidige berekening als een profiel niets heeft ingevuld |
+| **TT-62** | Nooit nul zoekresultaten tonen | Regionale tellers i.p.v. landelijke. Rechtstreeks verbonden aan de cold-start-strategie: dichtheid in één regio verslaat een dun landelijk bestand |
+| **TT-64** | Foutregistratie/logging | Nog niets van bestaat. Raakt Voorwaarde 0 (betrouwbaarheid): zonder logging weet je pas dat iets stuk is als een gebruiker het meldt |
+| — | Regionale start (Den Haag e.o.) | Actie van Ronald, geen bouwwerk: één poppodium of enkele scholen benaderen — doelgroep heeft geen auto, actieradius is fietsafstand |
+
+**TT-38 (restpunt), "Zoeken zonder profiel" en "Setlist-zoeken" zijn verplaatst naar Deel 1a** — dat zijn bevestigingstaken voor Ronald, geen bouwtickets, en stonden hier tussen de echte tickets in de weg.
 
 ---
 
@@ -60,25 +71,45 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | ID | Ticket | Kern |
 |---|---|---|
 | **TT-18** | Album-art bij repertoire | Overweeg iTunes/Deezer i.p.v. MusicBrainz voor dit doel |
-| **TT-22** | Accountverwijdering | Ook het auth-account zelf, ook Storage-bestanden |
 | **TT-27** | Wizard-tussenresultaten incrementeel opslaan | Tabblad sluiten tijdens onboarding verliest nu nog voortgang |
 | **TT-28** | Filtering/paginering echt naar de database verplaatsen | Nodig zodra het ledenaantal groeit |
+| **TT-50** | Bandhistorie op het profiel | Welke bands iemand heeft (gehad), deels af te leiden uit `band_members` |
+| **TT-51** | Niveau per instrument | Ontwerprichting al bepaald (09-08-2026): schaal 1-5 (sterren), niet het Basis/Bijna/Podium-systeem dat voorbehouden blijft aan losse nummers. Raakt schema van `musician_instruments` en de weergave op zoekresultaten/profiel |
+| **TT-52** | Covers/eigen werk/allebei | Klein, per song of per profiel aan te geven |
+| **TT-53** | Deelbare profiel-URL (deep link) | `#profiel/id` opent direct het juiste profiel — zonder backend te bouwen. Het *rijke* deelvoorbeeld (titel/foto bij delen) is een apart ticket, zie TT-54 |
+| **TT-56** | Statusknop "sta je open voor iets nieuws?" | Open besluit — vorm nog niet vastgesteld |
+| **TT-57** | Rangschikking uitleggen | Volledige profielen staan hoger in zoekresultaten — dat principe zichtbaar/uitgelegd maken |
+| **TT-58** | Applaus-mechanisme | Open besluit: op personen of op prestaties, met of zonder zichtbare teller. Advies blijft: op prestaties, geen publieke teller (risico op populariteitsscore bij minderjarige gebruikers) |
+| **TT-59** | Proefrepetitie-kaart in het gesprek | Verwachtingen bespreken vóór de eerste keer samen spelen. Sluit aan op TT-11 (lagere inzet: "ik wil een keer meespelen") |
+| **TT-61** | Landingspagina herzien | "Ik ben.../Ik zoek..."-raster, nieuwste muzikanten, later succesverhalen |
+| **TT-66** | Service worker toevoegen | Voorwaarde voor een volwaardige PWA en voor de Google Play-route (TT-70) |
+| **TT-67** | Laadstaten, lege staten, foutstaten | Bewust pas na de P0-tickets — anders polijst je schermen die daarna toch weer veranderen |
+| **TT-68** | Toegankelijkheid | Aria-labels, contrast, tikdoelen — nu nul `aria-label`'s in het hele bestand. Ook bewust pas na P0 |
 | — | Tekst "Over ons" verbeteren | Eerste versie, toon/kwaliteit nog te verfijnen |
-| — | E-mailadres `contact@talenttent.org` aanmaken | **Besloten 08-08-2026.** Via Mijndomein: Mijn account → Mijn producten → talenttent.org → bundel wijzigen → E-mail. Onbeperkt aantal adressen, dus `melden@` en `privacy@` kunnen er later gratis bij. MX-records staan los van de GitHub Pages-records, de site blijft draaien. Dit is meteen het vindbare contactpunt uit het juridische spoor |
-| — | Verzendende e-mailprovider koppelen (SMTP) | Apart van het bovenstaande. Voorwaarde voor TT-01-restpunt, e-mailbevestiging bij registratie en de TT-13-mail |
+| — | Verzendende e-mailprovider koppelen (SMTP) | Voorwaarde voor TT-01-restpunt, e-mailbevestiging bij registratie en de TT-13-mail |
 | — | E-mailbevestiging bij registratie weer aanzetten | Nu bewust uit; heractiveren zodra er echt verkeer is |
+| — | Muziekscholen, jeugdorkesten, poppodia benaderen | Actie van Ronald, geen bouwwerk |
 
 ---
 
 ## P3 — Losse ideeën, geen directe prioriteit
 
-- Engelstalige versie van de app (taal-toggle vs. automatisch, raakt ook databaseteksten?)
-- Onderscheid echte vs. nepprofielen — mogelijk relevant zodra e-mailbevestiging weer aan staat
-- Per-profiel instelbare zichtbaarheid voor niet-leden (alternatief voor de huidige aanpak)
-- E-mail-reminder voor niveau-update
-- Bandprofiel en band-zoekfunctie scheiden
-- Zoekopdracht plaatsen + e-mail bij match (uitgebreide setlist-variant, vereist contactfunctie — die is er inmiddels, dus dit kan opnieuw bekeken worden)
-- Push-variant van setlist-zoeken (automatisch matchende muzikanten notificeren)
+| ID | Ticket | Kern |
+|---|---|---|
+| **TT-54** | Rijk deelvoorbeeld bij delen | Eigen titel/foto in WhatsApp/social bij het plakken van een profiellink. Vraagt serverless-infrastructuur — linkvoorvertoningen worden opgehaald door bots zonder JavaScript, die alleen de statische `<meta>`-tags van het ene `index.html`-bestand zien. Geparkeerd, zelfde categorie als TT-01-restpunt |
+| **TT-60** | Rode ring bij bands die leden zoeken | Klein visueel accent op zoekresultaten |
+| **TT-69** | Consistente componenten, iconenset | Algemeen, ongespecificeerd punt; wordt concreet zodra de interfaceslag (TT-67/68) wordt opgepakt |
+| **TT-70** | Google Play-route | Trusted Web Activity. Vereist de service worker (TT-66) + $25 registratie + 12 testers gedurende 14 dagen (bij een persoonlijk account — vervalt bij een organisatie-/KvK-account) |
+| — | Engelstalige versie van de app | Taal-toggle vs. automatisch, raakt ook databaseteksten? |
+| — | Onderscheid echte vs. nepprofielen | Mogelijk relevant zodra e-mailbevestiging weer aan staat |
+| — | Per-profiel instelbare zichtbaarheid voor niet-leden | Alternatief voor de huidige aanpak |
+| — | E-mail-reminder voor niveau-update | |
+| — | Bandprofiel en band-zoekfunctie scheiden | |
+| — | Zoekopdracht plaatsen + e-mail bij match | Uitgebreide setlist-variant, vereist contactfunctie — die is er inmiddels, dus dit kan opnieuw bekeken worden |
+| — | Push-variant van setlist-zoeken | Automatisch matchende muzikanten notificeren |
+| — | App Store (native schil) | De huidige opzet (website in een schil) voldoet niet aan Apple's eisen. **Ronald wil dit op termijn wel** — voorlopig ligt de nadruk op PWA + Play (TT-70), code niet nodeloos monolithischer maken zodat een latere overstap goedkoper blijft. Sinds iOS 16.4 werken pushmeldingen ook in een PWA, wat de druk vermindert |
+| — | Rechtsvorm (KvK) | Ronald: "overweeg ik later" — wél relevant zodra de Play Store (TT-70) een concreet doel wordt (lost de testerseis op) |
+| — | Stickers/plectrums i.p.v. T-shirts | Eerste merchandise-idee |
 
 ---
 
@@ -88,80 +119,55 @@ Ronalds bezwaar tegen de oorspronkelijke opzet: bij TT-41 ligt de keuze bij de p
 
 - **Geen aanvraag maar interesse.** De band krijgt geen ja/nee-dialoog, maar een lijst geïnteresseerde muzikanten met een berichtknop. Er is geen afwijsknop, dus er komt nooit een afwijzing binnen.
 - **Alleen tonen waar het kan kloppen.** De knop verschijnt uitsluitend als het instrument van de muzikant in "Wij zoeken nog" van die band staat. Dat voorkomt de meeste kansloze interesses vóórdat ze bestaan.
-- **Lagere inzet in de knoptekst.** "Ik wil een keer meespelen" in plaats van lid worden — een nee gaat dan over één avond, niet over jou als muzikant. Sluit aan op de proefrepetitie-kaart in spoor C.
+- **Lagere inzet in de knoptekst.** "Ik wil een keer meespelen" in plaats van lid worden — een nee gaat dan over één avond, niet over jou als muzikant. Sluit aan op de proefrepetitie-kaart, TT-59.
 - **Nooit de status "geweigerd" tonen** aan de muzikant, alleen "nog geen reactie"; een interesse vervalt automatisch na dertig dagen, zodat stilte een einde krijgt zonder dat de band iets hoeft af te wijzen.
 
 ---
 
-# Deel 2 — Toekomstvisie
+# Deel 1a — Te bevestigen door Ronald
 
-Grotere richtingen uit eerdere strategiesessies. Geen ticketnummer — worden pas TT-nummers zodra we ze daadwerkelijk oppakken en de vorm vastligt.
+Geen bouwtickets — Ronald test dit zelf op de live site, vaak in privénavigatie voor het uitgelogde gedrag. Zodra bevestigd: hier afvinken/verwijderen.
+
+- **TT-38 (restpunt):** gebruikersnaam-systeem — volledig gebouwd, browsertest nog niet bevestigd
+- **Zoeken zonder profiel:** uitgelogd zoeken (met/zonder vertrekpunt), profiel-/bandmodal als bezoeker, band-instrumentfilter zonder profiel
+- **Setlist-zoeken:** volledige browsertest, nog niet bevestigd
+
+---
+
+# Deel 2 — Achtergrond bij richtingen
+
+Dit is geen actielijst meer (die staat volledig in Deel 1) maar de strategische context achter clusters van tickets — waarom ze zo zijn opgezet. Bedoeld om terug te lezen bij het oppakken van een ticket, niet om apart bij te houden.
 
 ## A. De profielpagina als kern van het product
 
-Besluit uit eerdere sessie: het profiel is niet de invoer voor het matchen, het is zelf het product — de persoonlijke promotiepagina van de muzikant. Indeling volgt Ronalds eigen woorden: *trots op prestaties (verleden) · nu plezier maken (heden) · ambitie voor de toekomst (toekomst)* — dat is het PPP-principe als tijdlijn.
+Besluit uit eerdere sessie: het profiel is niet de invoer voor het matchen, het is zelf het product — de persoonlijke promotiepagina van de muzikant. Indeling volgt Ronalds eigen woorden: *trots op prestaties (verleden) · nu plezier maken (heden) · ambitie voor de toekomst (toekomst)* — dat is het PPP-principe als tijdlijn, uitgewerkt in het voortgangspaneel (TT-48, opgelost).
 
-- **Optredenlijst** (band, datum, plaats) — het belangrijkste onderdeel: levert ervaringsmaat, voortgang, materiaal voor succesverhalen én het latere aanknopingspunt voor podia in het verdienmodel, in één functie. Nog open — de "verleden"-kolom van TT-48 (zie Deel 3) leunt hierop en toont tot dan een placeholder.
-- Bandhistorie op het profiel — nog open
-- ~~Prompts in plaats van het lege bio-veld~~ — **opgelost, zie TT-46**
-- **Niveau per instrument** — ontwerprichting bepaald 09-08-2026: **schaal 1-5 (sterren)**, niet het bestaande Basis/Bijna/Podium-systeem (dat blijft voorbehouden aan losse nummers). Nog niet gebouwd — apart oppakken, raakt schema van `musician_instruments` en de weergave op zoekresultaten/profiel.
-- ~~Voortgangspaneel, alleen zichtbaar voor de eigenaar zelf~~ — **opgelost, zie TT-48**
-- ~~Doelveld uitbreiden met concrete ambitie-vragen (repetitiefrequentie, optreedwens) i.p.v. abstracte zelfbeoordeling~~ — **opgelost, zie TT-47** (herzien 09-08-2026, zie onderstaande sessielog). Besluit Ronald: alleen op het profiel zichtbaar, geen zoekfilter. **Let op:** Ronald geeft aan dat doel en ambitie inhoudelijk nog te dicht bij elkaar liggen — "dit is nog niet goed genoeg", komt terug in een latere sessie.
-- Covers/eigen werk/allebei — klein, hoge opbrengst, nog open
-- **Deelbare profiel-URL + deelvoorbeeld** — nog open. Belangrijke beperking besproken 09-08-2026: een deep link (`#profiel/id`) is zonder backend te bouwen, maar een *rijk* deelvoorbeeld (eigen titel/foto in WhatsApp/social bij het plakken van de link) niet — linkvoorvertoningen worden opgehaald door bots die geen JavaScript uitvoeren en zien dus alleen de statische `<meta>`-tags van het ene `index.html`-bestand. Vraagt serverless-infrastructuur, zelfde categorie als de openstaande Edge Function-behoefte (e-mailnotificaties). Nog niet opgepakt, ook de deep link zelf niet.
+Bijbehorende tickets: TT-46 en TT-47 (opgelost), TT-48 (opgelost), TT-49 (optredenlijst), TT-50 (bandhistorie), TT-51 (niveau per instrument), TT-52 (covers/eigen werk), TT-53 en TT-54 (deelbare profiel-URL).
+
+**Openstaand spanningsveld (Ronald, 09-08-2026):** het doelveld (samen oefenen/band starten/optreden/alles) en de ambitie-vraag uit TT-47 (mezelf verbeteren/nieuwe stijlen/eigen werk/plezier) liggen inhoudelijk nog te dicht bij elkaar. "Dit is nog niet goed genoeg" — komt terug in een latere sessie, geen los ticket totdat de richting scherper is.
 
 ## B. Het matchen laten kloppen
 
-- **Complementaire matching:** instrument moet complementair worden (wat zoekt de ander), genre blijft gelijkenis. Nu meet de score op instrument gelijkenis, waardoor twee drummers elkaars beste match zijn.
-- Wederzijdse (stabiele) matchscore, met terugval op de huidige berekening als een profiel niets heeft ingevuld
-- Statusknop "sta je open voor iets nieuws?" — **openstaand besluit**, vorm nog niet vastgesteld
-- Rangschikking uitleggen: volledige profielen staan hoger
+Bijbehorende tickets: TT-55 (complementaire matching + wederzijdse matchscore), TT-56 (statusknop "open voor iets nieuws"), TT-57 (rangschikking uitleggen).
 
 ## C. Contact en sociale laag
 
-- Applaus-mechanisme — **openstaand besluit:** op personen of op prestaties, met of zonder zichtbare teller. Advies blijft: op prestaties, geen publieke teller (risico op populariteitsscore bij minderjarige gebruikers)
-- Volgen/ontvolgen
-- Proefrepetitie-kaart in het gesprek — verwachtingen bespreken vóór de eerste keer samen spelen
-- Rode ring bij bands die leden zoeken
+Bijbehorende tickets: TT-13 (nu inclusief volgen/ontvolgen), TT-58 (applaus), TT-59 (proefrepetitie-kaart, sluit aan op TT-11), TT-60 (rode ring bij bands die leden zoeken).
 
 ## D. Werving en groei
 
-- Regionale start (Den Haag, of specifieker: één poppodium of enkele scholen — doelgroep heeft geen auto, actieradius is fietsafstand)
-- Landingspagina herzien — "Ik ben.../Ik zoek..."-raster, nieuwste muzikanten, later succesverhalen
-- Nooit nul zoekresultaten tonen; regionale tellers i.p.v. landelijke
-- Muziekscholen, jeugdorkesten, poppodia met jongerenprogrammering benaderen
-- Stickers/plectrums i.p.v. T-shirts als eerste merchandise
+Cold-start-principe: dichtheid in één regio beats een dun landelijk bestand. Bijbehorende tickets: TT-61 (landingspagina), TT-62 (nooit nul resultaten, regionale tellers), plus de niet-technische acties "Regionale start" (P1) en "Muziekscholen/poppodia benaderen" (P2) in Deel 1.
 
-## E. Randvoorwaarden voor lancering (drie sporen)
+## E. Randvoorwaarden voor lancering
 
-**Juridisch**
-- Privacyverklaring, gebruiksvoorwaarden, gedragscode (los van elkaar, alle drie ontbreken)
-- Account verwijderen in de app (valt samen met TT-22)
-- Contactpunt voor meldingen — vindbaar e-mailadres
-- Verwerkersovereenkomst Supabase nagaan
-
-**Techniek**
-- Beveiligingscontrole databaseregels — valt samen met het TT-03/TT-04-restpunt hierboven
-- Foutregistratie/logging
-- Back-up en herstel — status onbekend, nog uit te zoeken
-- Service worker toevoegen — voorwaarde voor een volwaardige PWA en voor de Google Play-route
-
-**Ontwerp/interfaceslag**
-- Laadstaten, lege staten, foutstaten
-- Toegankelijkheid (aria-labels, contrast, tikdoelen) — nu nul `aria-label`'s in het hele bestand
-- Consistente componenten, iconenset
-→ **Advies:** deze slag bewust pas doen ná de veiligheidstickets (P0) — anders polijst je schermen die daarna toch weer veranderen
+Drie sporen die samen "lanceerbaar" bepalen:
+- **Juridisch:** TT-63 (privacyverklaring/voorwaarden/gedragscode), TT-22 (accountverwijdering, nu ook het juridische landingspunt), en de twee `—`-punten in P0 (verwerkersovereenkomst nagaan, contact-e-mailadres)
+- **Techniek:** TT-64 (logging), TT-65 (back-up/herstel), TT-66 (service worker). De beveiligingscontrole op databaseregels die hier eerder stond is **geschrapt** — die was via het TT-03/TT-04-restpunt al opgelost (zie Deel 3, 08-08-2026) en stond hier nog verouderd vermeld.
+- **Ontwerp/interfaceslag:** TT-67 (laad-/lege/foutstaten), TT-68 (toegankelijkheid), TT-69 (consistente componenten). Bewust pas na de P0-tickets.
 
 ## F. App stores
 
-- **Google Play:** haalbaar via een Trusted Web Activity. Vereist de service worker (spoor E) + $25 registratie + 12 testers gedurende 14 dagen (bij een persoonlijk account — vervalt bij een organisatie-/KvK-account)
-- **App Store:** de huidige opzet (website in een schil) voldoet niet aan Apple's eisen. Vereist een native schil of herbouw. **Ronald wil dit op termijn wel** — voorlopig ligt de nadruk op PWA + Play, met de code niet nodeloos monolithischer maken zodat een latere overstap goedkoper blijft
-- Sinds iOS 16.4 werken pushmeldingen ook in een PWA (mits op het beginscherm gezet) — vermindert de druk om per se naar de App Store te moeten
-
-## G. Overig, nog te beslissen
-
-- Rechtsvorm (KvK) — Ronald: "overweeg ik later", maar wél relevant zodra de Play Store een concreet doel wordt (lost de testerseis op)
-- UI algeheel aantrekkelijker en intuïtiever maken — terugkerend, ongespecificeerd punt; wordt concreet zodra spoor E (interfaceslag) wordt opgepakt
+Bijbehorende tickets: TT-70 (Google Play), plus het `—`-punt "App Store (native schil)" in P3.
 
 ---
 
@@ -169,13 +175,14 @@ Besluit uit eerdere sessie: het profiel is niet de invoer voor het matchen, het 
 
 Kort en chronologisch. Voor het volledige technische verhaal per punt: zie de sessie-aantekeningen die aan dit bestand voorafgingen (niet langer los bijgehouden na deze opschoning).
 
-## 09-08-2026 — Muzikantenprofiel als kern (Deel 2-A)
-Sessie bewust beperkt tot het profiel als product, in lijn met Deel 2-A.
+## 09-08-2026 — Muzikantenprofiel als kern (Deel 2-A) + opschoning van de actielijst zelf
+Sessie bewust beperkt tot het profiel als product, in lijn met (het toenmalige) Deel 2-A.
 - **TT-46 (nieuw en opgelost, later dezelfde sessie herzien):** prompts i.p.v. het lege bio-veld. Eerste versie had drie generieke chips; op verzoek van Ronald herschreven naar vier chips die dichter bij muziek maken zelf liggen: "Wat doe je en hoe lang speel je al?", "Op dit moment ben ik vooral bezig met...", "De meeste energie krijg ik van ...", "Vertel eens wat je wil bereiken." Chips vullen `bio` aan via `applyBioPrompt()` i.p.v. overschrijven — meerdere prompts na elkaar blijven zo bruikbaar. Geen schema-wijziging.
-- **TT-47 (nieuw en opgelost, later dezelfde sessie herzien):** doelveld uitgebreid met twee concrete, optionele vragen. **Eerste versie:** repetitiefrequentie (wekelijks/af en toe/alleen voor een project) en optreedwens (graag/liever niet/open). **Herzien op verzoek van Ronald:** de optreedwens-vraag overlapte inhoudelijk met de bestaande doelkaart "Optreden" ("dubbele dingen"), en "af en toe"/"alleen voor een project" waren niet concreet genoeg. Herbouwd naar: repetitiefrequentie met vier concrete opties (Wekelijks / Paar keer per maand / Losse jams, als het uitkomt / Alleen voor een project) en een nieuwe vraag "Wat wil je de komende tijd bereiken?" over muzikale groei (Mezelf verbeteren op mijn instrument / Nieuwe stijlen ontdekken / Samen nummers/eigen werk maken / Gewoon plezier, geen groot plan) — bewust een andere as dan de doelkaart, om overlap te voorkomen. Kolom `performance_wish` hernoemd naar `musical_ambition`. Ronald zelf: **"dit is nog niet goed genoeg"** — doel en ambitie voelen nog te dicht bij elkaar, komt terug in een latere sessie. Besluit blijft: **alleen op het profiel zichtbaar, geen zoekfilter** — dus niet meegenomen in `runSearch()`/`initSearchFilters()`. Opgeslagen via dezelfde route als `goal` (alleen in `submitProfile()`, niet al bij `createAccountAndProfile()`). Zichtbaar als badges naast het doel voor eigenaar én ingelogde bezoekers met eigen profiel. **Bekend restpunt:** nog niet toegevoegd aan `tt_get_musicians_public`, dus onzichtbaar voor ingelogde gebruikers zónder eigen profiel — de JS neemt de velden al defensief over zodra de RPC ze ooit teruggeeft, maar de SQL-kant moet nog. Script: `tt-47-doelveld-uitbreiden-v2.sql` (vervangt het eerdere `tt-47-doelveld-uitbreiden.sql` — veilig te draaien ongeacht of dat al is uitgevoerd).
-- **TT-48 (nieuw en opgelost):** voortgangspaneel als PPP-tijdlijn (verleden/heden/toekomst), los van de bestaande volledigheidsmeter (`renderCompletenessMeter`, die al langer bestond). Alleen op Mijn Profiel. "Verleden" toont bewust een placeholder-tekst ("Optredenlijst volgt binnenkort") i.p.v. verzonnen inhoud, tot de optredenlijst er is. "Heden" toont repertoire-aantal + doel, "Toekomst" toont de nieuwe TT-47-velden.
-- **Niveau per instrument — ontwerprichting bepaald, niet gebouwd** (zoals de actielijst zelf al voorschreef: eerst een apart ontwerpgesprek). Besluit: **schaal 1-5 (sterren)**, nadrukkelijk niet het bestaande Basis/Bijna/Podium-systeem — dat blijft voorbehouden aan losse nummers in het repertoire. Bouwen is een eigen sessie; raakt `musician_instruments`-schema en de weergave op zoekresultaten/profiel/matching.
-- **Deelbare profiel-URL + deelvoorbeeld — besproken, niet gebouwd.** Belangrijke technische beperking vastgesteld: een deep link (`#profiel/id`) is zonder backend te bouwen, maar een rijk deelvoorbeeld (eigen titel/foto bij het plakken van de link in WhatsApp/social) niet — linkvoorvertoningen worden opgehaald door bots zonder JavaScript, die alleen de statische `<meta>`-tags van het ene `index.html`-bestand zien. Vraagt serverless-infrastructuur, zelfde categorie als de al openstaande Edge Function-behoefte (e-mailnotificaties, TT-01-restpunt).
+- **TT-47 (nieuw en opgelost, later dezelfde sessie herzien):** doelveld uitgebreid met twee concrete, optionele vragen. **Eerste versie:** repetitiefrequentie (wekelijks/af en toe/alleen voor een project) en optreedwens (graag/liever niet/open). **Herzien op verzoek van Ronald:** de optreedwens-vraag overlapte inhoudelijk met de bestaande doelkaart "Optreden" ("dubbele dingen"), en "af en toe"/"alleen voor een project" waren niet concreet genoeg. Herbouwd naar: repetitiefrequentie met vier concrete opties (Wekelijks / Paar keer per maand / Losse jams, als het uitkomt / Alleen voor een project) en een nieuwe vraag "Wat wil je de komende tijd bereiken?" over muzikale groei (Mezelf verbeteren op mijn instrument / Nieuwe stijlen ontdekken / Samen nummers/eigen werk maken / Gewoon plezier, geen groot plan). Kolom `performance_wish` hernoemd naar `musical_ambition`. Ronald zelf: **"dit is nog niet goed genoeg"** — doel en ambitie voelen nog te dicht bij elkaar, zie Deel 2-A. Besluit blijft: alleen op het profiel zichtbaar, geen zoekfilter. **Bekend restpunt:** nog niet toegevoegd aan `tt_get_musicians_public`, dus onzichtbaar voor ingelogde gebruikers zónder eigen profiel. Script: `tt-47-doelveld-uitbreiden-v2.sql`.
+- **TT-48 (nieuw en opgelost):** voortgangspaneel als PPP-tijdlijn (verleden/heden/toekomst), los van de bestaande volledigheidsmeter (`renderCompletenessMeter`). Alleen op Mijn Profiel. "Verleden" toont een placeholder tot TT-49 (optredenlijst) er is.
+- **Niveau per instrument — ontwerprichting bepaald, niet gebouwd:** schaal 1-5 (sterren), niet Basis/Bijna/Podium. Nu TT-51.
+- **Deelbare profiel-URL — besproken, niet gebouwd:** deep link (TT-53) kan zonder backend, rijk deelvoorbeeld (TT-54) niet — zie Deel 2-A voor de technische onderbouwing.
+- **Opschoning van de actielijst zelf:** Ronald gaf aan het overzicht kwijt te zijn sinds de concurrentenanalyse. Oorzaak: de toenmalige Deel 2 ("Toekomstvisie") was een ongenummerde, ongeprioriteerde brainstormdump naast het genummerde ticketsysteem; items die eruit gehaald werden moesten op drie plekken tegelijk worden bijgehouden. Alle Deel 2-punten hebben nu een TT-nummer (TT-49 t/m TT-70) of een `—`-plek gekregen, elk in precies één P0-P3-tabel. Twee verouderde dubbele vermeldingen geschrapt: het "beveiligingscontrole databaseregels"-punt (al opgelost via TT-03/TT-04) en de losse "accountverwijdering"-vermelding (nu alleen TT-22). "Volgen/ontvolgen" samengevoegd met TT-13. De drie browsertest-punten (TT-38-restpunt, zoeken zonder profiel, setlist-zoeken) verplaatst naar een nieuw, apart Deel 1a — dat zijn bevestigingstaken voor Ronald, geen bouwtickets, en stonden tussen de P1-tickets in de weg.
 
 ## 08-08-2026 (tweede sessie) — Naamweergave en bandlidmaatschap
 - **TT-43 (nieuw en opgelost):** de echte voornaam lekte nog via bandprofielen. De ledenchips op het bandprofiel en in Mijn Bands, en de "Lid toevoegen"-zoeker, toonden `fname` — ook aan bezoekers zonder account, via `tt_get_bands_public`. Tegelijk is de weergaveregel herzien naar Ronalds besluit: **uitgelogde bezoekers zien de gebruikersnaam, ingelogde muzikanten zien de voornaam** (het verbergen was bedoeld voor niet-ingelogd zoeken, niet daarbuiten). Alles loopt nu via één functie, `displayNameOf()`. De bezoekers-paden nemen `fname` bewust niet meer over uit de RPC-uitvoer, zodat dit niet afhangt van de nog openstaande SQL-fix.
