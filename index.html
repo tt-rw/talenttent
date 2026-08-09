@@ -1201,7 +1201,7 @@
   .landing-login { text-align: center; font-size: 14px; color: var(--muted); padding: 24px 0; border-top: 1px solid var(--border); }
 
   /* ── Navigatie ───────────────────────────── */
-  .app-nav {
+  .app-nav-row {
     position: relative;
     z-index: 20;
     display: flex;
@@ -1209,8 +1209,17 @@
     gap: 8px;
     padding: 16px 40px 0;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 0;
   }
+
+  .app-nav {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+  }
+  .app-nav::-webkit-scrollbar { display: none; }
 
   .nav-btn {
     padding: 10px 20px;
@@ -1227,6 +1236,8 @@
     color: var(--muted);
     transition: all 0.2s;
     margin-bottom: -1px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .nav-btn:hover { color: var(--text); }
@@ -1237,6 +1248,74 @@
   }
 
   .nav-spacer { flex: 1; }
+
+  /* TT-63/nav-herziening (09-08-2026): hamburgermenu — knop + uitklappaneel */
+  .nav-menu-btn {
+    flex-shrink: 0;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+  }
+  .nav-menu-btn:hover, .nav-menu-btn.active {
+    color: var(--accent);
+    border-color: var(--border);
+    background: var(--surface);
+  }
+
+  .nav-menu-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 40px;
+    margin-top: 4px;
+    min-width: 220px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    overflow: hidden;
+    z-index: 60;
+  }
+  .nav-menu-dropdown.visible { display: block; }
+
+  .nav-menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .nav-menu-item:hover { background: var(--surface2); color: var(--accent); }
+  .nav-menu-item + .nav-menu-item { border-top: 1px solid var(--border); }
+
+  /* TT-63 (09-08-2026): documentweergaven (privacy/voorwaarden/gedragscode) */
+  .doc-view h2 {
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 28px 0 10px;
+  }
+  .doc-view h2:first-of-type { margin-top: 4px; }
+  .doc-view p, .doc-view li { font-size: 14px; line-height: 1.7; color: var(--text); }
+  .doc-view p { margin-bottom: 14px; }
+  .doc-view ul { margin: 0 0 14px; padding-left: 20px; }
+  .doc-view li { margin-bottom: 6px; }
+  .doc-view .doc-updated { font-size: 12px; color: var(--muted); margin-bottom: 24px; }
 
   /* ── TT-01: Berichten (TT-34, 07-08-2026: cooler, WhatsApp-achtig
      gegroepeerd op gesprekspartner, met avatars en spraakbel-vormige
@@ -1785,12 +1864,12 @@
     .app-topbar { position: static; }
     .logo { font-size: 28px; text-shadow: none; }
     .tagline { display: none; }
-    .app-nav { position: sticky; top: 0; z-index: 50; background: var(--bg);
-               padding: 12px 12px 0; gap: 4px; overflow-x: auto;
-               -webkit-overflow-scrolling: touch; }
-    .app-nav::-webkit-scrollbar { display: none; }
+    .app-nav-row { position: sticky; top: 0; z-index: 50; background: var(--bg);
+               padding: 12px 12px 0; gap: 4px; }
+    .app-nav { gap: 4px; -webkit-overflow-scrolling: touch; }
     .nav-btn { padding: 10px 12px; font-size: 12px; white-space: nowrap; }
     .nav-spacer { display: none; }
+    .nav-menu-dropdown { right: 12px; }
     .search-wrap, .my-profile-wrap { padding: 24px 16px 60px; }
     .modal-box { max-height: 100vh; border-radius: 0; }
   }
@@ -1805,15 +1884,31 @@
 </header>
 
 <!-- Navigatie -->
-<nav class="app-nav" id="appNav" style="display:flex;">
-  <button class="nav-btn" id="navMyProfile" onclick="requireLogin('myprofile')">Mijn Profiel</button>
-  <button class="nav-btn" id="navMyBands" onclick="requireLogin('bands')">Mijn Bands</button>
-  <button class="nav-btn" id="navSearch" onclick="showView('search')">Zoeken</button>
-  <div class="nav-spacer"></div>
-  <button class="nav-btn" id="navAbout" onclick="showView('about')">Over ons</button>
-  <button class="nav-btn" id="navMessages" onclick="requireLogin('messages')" style="position:relative;">Berichten<span id="unreadBadge" class="unread-badge" style="display:none;"></span></button>
-  <button class="nav-btn" id="navLogin" onclick="navLoginClick()">Inloggen</button>
-</nav>
+<div class="app-nav-row" id="appNavRow">
+  <nav class="app-nav" id="appNav" style="display:flex;">
+    <button class="nav-btn" id="navMyProfile" onclick="requireLogin('myprofile')">Mijn Profiel</button>
+    <button class="nav-btn" id="navMyBands" onclick="requireLogin('bands')">Mijn Bands</button>
+    <button class="nav-btn" id="navSearch" onclick="showView('search')">Zoeken</button>
+    <div class="nav-spacer"></div>
+    <button class="nav-btn" id="navMessages" onclick="requireLogin('messages')" style="position:relative;">Berichten<span id="unreadBadge" class="unread-badge" style="display:none;"></span></button>
+    <button class="nav-btn" id="navLogin" onclick="navLoginClick()">Inloggen</button>
+  </nav>
+  <!-- TT-63/nav-herziening (09-08-2026): hamburgermenu voor minder-frequente
+       links (Ronald: te veel tabbladen, op mobiel al horizontaal scrollen).
+       Bewust BUITEN <nav class="app-nav"> geplaatst — die rij is op mobiel
+       zelf horizontaal scrollbaar (overflow-x:auto), dus een knop daarbinnen
+       zou net zo goed uit beeld kunnen scrollen. Deze knop staat als vaste
+       sibling ernaast, binnen dezelfde sticky rij. -->
+  <button class="nav-menu-btn" id="navMenuBtn" onclick="toggleNavMenu(event)" aria-label="Meer opties" title="Meer">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+  </button>
+  <div class="nav-menu-dropdown" id="navMenuDropdown">
+    <button class="nav-menu-item" id="navAbout" onclick="closeNavMenu();showView('about')">Over ons</button>
+    <button class="nav-menu-item" id="navPrivacy" onclick="closeNavMenu();showView('privacy')">Privacyverklaring</button>
+    <button class="nav-menu-item" id="navTerms" onclick="closeNavMenu();showView('terms')">Gebruiksvoorwaarden</button>
+    <button class="nav-menu-item" id="navGedragscode" onclick="closeNavMenu();showView('gedragscode')">Gedragscode</button>
+  </div>
+</div>
 <div id="editModeBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 24px;background:rgba(245,197,24,0.1);border-top:1px solid var(--border);font-size:13px;">
   <span>Je bent nog bezig met je profiel bewerken.</span>
   <button class="btn btn-primary" style="padding:6px 16px;font-size:12px;" onclick="requireLogin('register')">Verder bewerken →</button>
@@ -2180,6 +2275,18 @@
       <div id="linksList"></div>
       <button class="add-link-btn" onclick="addLinkRow()">+ Link toevoegen</button>
     </div>
+
+    <!-- TT-63 (09-08-2026): expliciet consent-moment vóór de definitieve klik —
+         de privacyverklaring zegt dat toestemming hier gegeven wordt, dus moet
+         hier ook echt een zichtbare/klikbare verwijzing staan. Links openen in
+         een nieuw tabblad (target="_blank" op een gewone hash-link) zodat de
+         wizard-voortgang van dit tabblad niet wordt verstoord. -->
+    <p style="font-size:12px;color:var(--muted);margin-top:16px;text-align:center;">
+      Door een profiel aan te maken ga je akkoord met de
+      <a href="#terms" target="_blank" style="color:var(--accent);">Gebruiksvoorwaarden</a>,
+      <a href="#privacy" target="_blank" style="color:var(--accent);">Privacyverklaring</a> en
+      <a href="#gedragscode" target="_blank" style="color:var(--accent);">Gedragscode</a>.
+    </p>
 
     <div class="nav-buttons">
       <div style="display:flex;gap:12px;">
@@ -2556,6 +2663,170 @@
   </div>
 </div>
 
+<!-- VIEW: Privacyverklaring (TT-63, 09-08-2026) -->
+<div class="app-view" id="view-privacy">
+  <div class="search-wrap">
+    <div class="search-filters doc-view">
+      <div class="panel-title" style="margin-bottom:6px;">Privacyverklaring</div>
+      <div class="doc-updated">Laatst bijgewerkt: 9 augustus 2026</div>
+
+      <h2>1. Wie zijn wij</h2>
+      <p>The Talent Tent (talenttent.org) is een platform dat muzikanten met elkaar in contact brengt voor jams, repetities en optredens. The Talent Tent wordt beheerd door Ronald, als privépersoon.</p>
+      <p>Voor alles wat met privacy te maken heeft, is Ronald bereikbaar via <strong>privacy@talenttent.org</strong>.</p>
+
+      <h2>2. Welke gegevens verzamelen we</h2>
+      <p>Als je een profiel aanmaakt, verzamelen we:</p>
+      <ul>
+        <li>Voor- en achternaam</li>
+        <li>E-mailadres (voor je account)</li>
+        <li>Geboortedatum (om te controleren of je oud genoeg bent, minimaal 13 jaar)</li>
+        <li>Woonplaats en de cijfers van je postcode (dus niet de twee letters erachter) — dit gebruiken we alleen om de afstand tussen de wijk waar je woont en andere muzikanten te berekenen; deze cijfers worden nooit aan andere gebruikers getoond</li>
+        <li>Gebruikersnaam</li>
+        <li>Eventueel: een korte bio, een profielfoto, en foto's/video's/links die je zelf toevoegt</li>
+        <li>De instrumenten die je speelt, je genres, je repertoire (nummers), en je muzikale doel/ambitie</li>
+        <li>Berichten die je verstuurt aan andere muzikanten via de app</li>
+      </ul>
+      <p>Als je een band aanmaakt, verzamelen we vergelijkbare gegevens over die band.</p>
+      <p>We verzamelen geen gegevens via cookies of tracking. De app gebruikt alleen technisch noodzakelijke, functionele opslag in je browser (bijvoorbeeld om te onthouden of je liever een lijst- of kaartweergave ziet, of om je voortgang in het aanmeldproces te bewaren) — dit blijft op jouw eigen apparaat en wordt niet naar ons verstuurd.</p>
+
+      <h2>3. Waarom we deze gegevens gebruiken</h2>
+      <p>We gebruiken je gegevens om je een profiel te geven dat andere muzikanten kunnen vinden, om muzikanten en bands die bij elkaar passen te kunnen tonen in de zoekfunctie, om berichten tussen gebruikers mogelijk te maken, en om je account veilig te houden en misbruik tegen te gaan.</p>
+      <p>We gebruiken je gegevens niet voor advertenties. The Talent Tent toont geen advertenties en verkoopt geen gegevens aan derden.</p>
+
+      <h2>4. Grondslag</h2>
+      <p>We verwerken je gegevens op basis van de toestemming die je geeft bij het aanmaken van een account, en om de overeenkomst die ontstaat door het gebruik van de app (zie de Gebruiksvoorwaarden) te kunnen uitvoeren.</p>
+
+      <h2>5. Minderjarigen</h2>
+      <p>The Talent Tent is bedoeld voor muzikanten vanaf 13 jaar.</p>
+      <p>Ben je tussen de 13 en 16 jaar oud? Dan mag je geen profiel zelfstandig aanmaken. Dat gebeurt samen met een ouder of verzorger, die toestemming geeft voor het gebruik van de app. Ook kies je in die leeftijd niet je eigen (voor)naam als gebruikersnaam — die naam blijft dan onzichtbaar voor bezoekers zonder eigen profiel.</p>
+      <p>Ben je jonger dan 13? Dan mag je geen profiel aanmaken, ook niet met hulp van een ouder.</p>
+
+      <h2>6. Wie kan je gegevens zien</h2>
+      <ul>
+        <li>Je gebruikersnaam, profielfoto, instrumenten, genres en repertoire zijn zichtbaar voor iedereen die de zoekfunctie gebruikt, ook zonder account.</li>
+        <li>Je voornaam is alleen zichtbaar voor andere gebruikers die zelf ook een profiel hebben.</li>
+        <li>Je postcode en achternaam worden nooit aan andere gebruikers getoond.</li>
+        <li>Berichten die je stuurt, zijn alleen zichtbaar voor jou en de ontvanger.</li>
+      </ul>
+
+      <h2>7. Hosting en beveiliging</h2>
+      <p>De gegevens van The Talent Tent worden opgeslagen bij onze hostingpartij Supabase. De verbinding tussen jouw browser en de app verloopt via een beveiligde verbinding (HTTPS). Wachtwoorden worden niet leesbaar opgeslagen.</p>
+
+      <h2>8. Hoe lang we je gegevens bewaren</h2>
+      <p>We bewaren je gegevens zolang je account bestaat. Verwijder je je account via "Account verwijderen"? Dan worden je profiel, repertoire, geüploade bestanden en alle andere gegevens die bij je account horen <strong>permanent verwijderd</strong>. Berichten die je naar anderen hebt gestuurd, blijven zichtbaar bij de ontvanger — net als bij andere berichten-apps verwijderen we niet de kant van het gesprek van iemand anders.</p>
+
+      <h2>9. Jouw rechten</h2>
+      <p>Je hebt het recht om je gegevens in te zien, onjuiste gegevens te laten corrigeren (via "Profiel bewerken"), je account en gegevens permanent te laten verwijderen (via "Account verwijderen" op je profiel, of door contact met ons op te nemen), en bezwaar te maken tegen de verwerking van je gegevens.</p>
+      <p>Ben je het niet eens met hoe we met je gegevens omgaan? Dan kun je een klacht indienen bij de Autoriteit Persoonsgegevens.</p>
+
+      <h2>10. Wijzigingen</h2>
+      <p>We passen deze privacyverklaring aan zodra dat nodig is. De datum bovenaan dit document laat zien wanneer dat voor het laatst is gebeurd.</p>
+
+      <h2>11. Contact</h2>
+      <p>Vragen over deze privacyverklaring? Mail naar <strong>privacy@talenttent.org</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: Gebruiksvoorwaarden (TT-63, 09-08-2026) -->
+<div class="app-view" id="view-terms">
+  <div class="search-wrap">
+    <div class="search-filters doc-view">
+      <div class="panel-title" style="margin-bottom:6px;">Gebruiksvoorwaarden</div>
+      <div class="doc-updated">Laatst bijgewerkt: 9 augustus 2026</div>
+
+      <p>Door een account aan te maken op The Talent Tent (talenttent.org) ga je akkoord met deze gebruiksvoorwaarden.</p>
+
+      <h2>1. Wat is The Talent Tent</h2>
+      <p>The Talent Tent is een platform dat muzikanten met elkaar in contact brengt om samen te oefenen, een band te starten of op te treden. The Talent Tent brengt mensen bij elkaar, maar is zelf geen partij bij afspraken die je met andere gebruikers maakt.</p>
+
+      <h2>2. Wie mag een account aanmaken</h2>
+      <p>Je moet minimaal 13 jaar oud zijn om een profiel aan te maken. Ben je tussen de 13 en 16 jaar oud, dan maak je een profiel samen met een ouder of verzorger. Door een account aan te maken, verklaar je dat de gegevens die je invult (waaronder je geboortedatum) kloppen.</p>
+
+      <h2>3. De sfeer die we willen</h2>
+      <p>The Talent Tent werkt het best als het een beetje aanvoelt als een community van muzikanten, niet als een zoekmachine. We hopen dat je:</p>
+      <ul>
+        <li>Andere muzikanten aanmoedigt — een compliment voor iemands repertoire, applaus voor een mooie stap (daar komt een aparte knop voor), of gewoon een berichtje dat je onder de indruk bent</li>
+        <li>Naar elkaar omkijkt — reageert op een uitnodiging, ook als het antwoord nee is</li>
+        <li>Mensen opzoekt die bij je passen en gewoon een keer voorstelt om samen te spelen</li>
+        <li>Nieuwe, onzekere muzikanten net zo warm ontvangt als ervaren spelers</li>
+        <li>Je voortgang bijhoudt in de app, zodat andere muzikanten je kunnen vinden als dat nodig is — bijvoorbeeld voor een optreden. Dat is meteen ook gewoon leuk: je persoonlijk profiel als muzikant bijhouden, zien hoe dat groeit</li>
+      </ul>
+      <p>Kortom: gebruik The Talent Tent zoals je ook in een muziekschool, oefenruimte of buurtband met elkaar zou omgaan.</p>
+
+      <h2>4. Je account</h2>
+      <p>Je bent zelf verantwoordelijk voor je inloggegevens, en voor de juistheid van je profiel. Je maakt één profiel aan dat echt bij jou hoort. Merk je dat iemand anders toegang heeft tot je account, of zie je een profiel dat zich voordoet als iemand anders? Neem dan contact met ons op.</p>
+
+      <h2>5. Content die je plaatst</h2>
+      <p>Foto's, video's, songs en teksten die je op je profiel of bandprofiel zet, blijven van jou. Door ze te plaatsen, geef je The Talent Tent toestemming om ze te tonen aan andere gebruikers, zoals de functie van de app dat vereist. Zorg dat je het recht hebt om te delen wat je deelt.</p>
+
+      <h2>6. Samen spelen, buiten de app</h2>
+      <p>The Talent Tent brengt muzikanten met elkaar in contact — de mooiste momenten gebeuren daarna, als je elkaar ontmoet en samen speelt. Wat je afspreekt en hoe die ontmoeting verloopt, is jouw eigen verantwoordelijkheid. Zie de Gedragscode voor een paar praktische tips voor een fijne, veilige eerste keer samenspelen.</p>
+
+      <h2>7. Wat niet de bedoeling is</h2>
+      <p>Kort gezegd: behandel andere gebruikers zoals je zelf behandeld zou willen worden. Dat betekent onder meer geen ongepaste, kwetsende of ongewenste content of berichten, geen nepprofielen, geen spam, en de app niet gebruiken om mensen ergens toe te dwingen. De volledige lijst en de reden erachter staan in de Gedragscode.</p>
+      <p>Zie je gedrag dat hier niet bij past? Meld het via <strong>privacy@talenttent.org</strong> (een meldknop binnen de app volgt nog). Afhankelijk van de situatie kunnen we content verwijderen, een waarschuwing geven, of een account blokkeren of verwijderen.</p>
+
+      <h2>8. Geen garanties</h2>
+      <p>We doen ons best om The Talent Tent goed te laten werken, maar kunnen niet garanderen dat de app altijd foutloos of ononderbroken beschikbaar is. We zijn niet aansprakelijk voor schade die ontstaat door het gebruik van de app, door contact met andere gebruikers, of door afspraken die je buiten de app om maakt — voor zover de wet dat toestaat.</p>
+
+      <h2>9. Je account verwijderen</h2>
+      <p>Je kunt je account op elk moment zelf verwijderen via "Account verwijderen" op je profiel. Al je gegevens — je profiel, repertoire, geüploade bestanden en alles wat daarbij hoort — worden dan <strong>permanent verwijderd</strong>. Zie de privacyverklaring voor de details.</p>
+      <p>We kunnen je account ook zelf verwijderen of blokkeren als je deze voorwaarden of de gedragscode overtreedt.</p>
+
+      <h2>10. Wijzigingen</h2>
+      <p>We passen deze voorwaarden aan zodra de app daar aanleiding toe geeft. Belangrijke wijzigingen laten we weten.</p>
+
+      <h2>11. Toepasselijk recht</h2>
+      <p>Op deze voorwaarden is Nederlands recht van toepassing.</p>
+
+      <h2>12. Contact</h2>
+      <p>Vragen over deze voorwaarden? Mail naar <strong>privacy@talenttent.org</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: Gedragscode (TT-63, 09-08-2026) -->
+<div class="app-view" id="view-gedragscode">
+  <div class="search-wrap">
+    <div class="search-filters doc-view">
+      <div class="panel-title" style="margin-bottom:6px;">Gedragscode</div>
+      <div class="doc-updated">Laatst bijgewerkt: 9 augustus 2026</div>
+
+      <p>Muziek maken is het leukst als je het samen doet. Daarom bestaat The Talent Tent: om je te helpen andere muzikanten te vinden om mee te jammen, te repeteren of op te treden. Deze gedragscode gaat over hoe we dat met elkaar willen doen — met plezier, en met respect voor elkaar.</p>
+
+      <h2>Waar we naar streven</h2>
+      <ul>
+        <li><strong>Wees aanmoedigend.</strong> Iedereen begint ooit. Een compliment voor iemands repertoire, enthousiasme voor een nieuw instrument, of gewoon interesse tonen — dat maakt The Talent Tent leuker voor iedereen.</li>
+        <li><strong>Wees eerlijk over wie je bent.</strong> Een kloppend profiel — met je echte niveau, je echte leeftijd, je echte ervaring — is de beste basis voor een goede match.</li>
+        <li><strong>Reageer, ook als het antwoord nee is.</strong> Een korte, vriendelijke afwijzing is beter dan stilte.</li>
+        <li><strong>Denk aan onze jongste muzikanten.</strong> Een deel van onze gebruikers is nog op de middelbare school. Behandel hen zoals je zou willen dat iemand jouw broer, zus, neefje of nichtje behandelt.</li>
+      </ul>
+
+      <h2>Voor de eerste keer samen spelen</h2>
+      <p>De eerste repetitie is vaak een leuk maar ook wel spannend moment — eindelijk samen spelen met iemand die je via de app hebt gevonden. Een paar tips om daar onbezorgd van te genieten:</p>
+      <ul>
+        <li>Spreek af op een plek waar meer mensen zijn (een muziekschool, oefenruimte, of ergens waar ook anderen zijn), in plaats van een volledig afgelegen plek</li>
+        <li>Laat iemand weten waar je heen gaat</li>
+        <li>Ben je nog jong of voelt het prettiger? Neem gerust een ouder mee naar die eerste keer oefenen — dat is heel normaal, en niets om je voor te schamen</li>
+      </ul>
+
+      <h2>Wat we niet willen zien</h2>
+      <p>Zoals overal waar verschillende mensen elkaar ontmoeten, spreken we ook af wat niet kan: pesten, intimideren of stalken, ongepaste of seksueel getinte berichten (zeker richting minderjarige gebruikers), discriminatie, nepprofielen, spam, en iemand onder druk zetten om iets te doen wat diegene niet wil. Bij twijfel: gebruik je gezonde verstand, en behandel anderen zoals je zelf behandeld zou willen worden.</p>
+
+      <h2>Hoe je iets meldt</h2>
+      <p>Loopt iets niet zoals het hoort? Meld het via <strong>privacy@talenttent.org</strong>. Er komt binnenkort ook een meldknop rechtstreeks in de app. Je hoeft nooit te blijven zitten in een gesprek dat niet goed voelt — je mag het altijd stoppen, zonder uitleg.</p>
+      <p>Afhankelijk van de situatie kunnen we een waarschuwing geven, content verwijderen, of een account blokkeren of verwijderen. Bij twijfel kiezen we voor de veiligheid van onze gebruikers, zeker als het om minderjarigen gaat.</p>
+
+      <h2>Wijzigingen</h2>
+      <p>Deze gedragscode groeit mee met de app. De datum bovenaan laat zien wanneer dit voor het laatst is bijgewerkt.</p>
+
+      <h2>Contact</h2>
+      <p>Vragen over deze gedragscode? Mail naar <strong>privacy@talenttent.org</strong>.</p>
+    </div>
+  </div>
+</div>
+
 <!-- VIEW: Wachtwoord reset -->
 <div class="app-view" id="view-reset">
   <div class="auth-wrap">
@@ -2701,7 +2972,7 @@ async function appInit() {
     // juiste view openen. Alleen bekende views; Mijn Profiel/Mijn Bands lopen
     // via requireLogin() zodat een uitgelogde bezoeker de gebruikelijke
     // vriendelijke toast + doorverwijzing krijgt, geen lege pagina.
-    const knownHashViews = ['search', 'about', 'register', 'myprofile', 'bands', 'auth'];
+    const knownHashViews = ['search', 'about', 'register', 'myprofile', 'bands', 'auth', 'privacy', 'terms', 'gedragscode'];
     const gatedHashViews = ['myprofile', 'bands'];
     const hashView = location.hash.replace('#', '');
     if (knownHashViews.includes(hashView)) {
@@ -2809,6 +3080,27 @@ function onUserLoggedOut() {
 }
 
 // ─── Navigatie ───────────────────────────────────────────────────────────────
+
+// TT-63/nav-herziening (09-08-2026): hamburgermenu voor Over ons + de
+// juridische documenten. Sluit bij een klik buiten het menu, bij Escape, en
+// (via de closeNavMenu()-aanroep in showView() hierboven) bij elke navigatie.
+function toggleNavMenu(e) {
+  if (e) e.stopPropagation();
+  const dd = document.getElementById('navMenuDropdown');
+  const btn = document.getElementById('navMenuBtn');
+  const opening = !dd.classList.contains('visible');
+  dd.classList.toggle('visible', opening);
+  btn.classList.toggle('active', opening);
+}
+function closeNavMenu() {
+  document.getElementById('navMenuDropdown')?.classList.remove('visible');
+  document.getElementById('navMenuBtn')?.classList.remove('active');
+}
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('navMenuDropdown');
+  if (dd && dd.classList.contains('visible') && !dd.contains(e.target) && e.target.id !== 'navMenuBtn') closeNavMenu();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNavMenu(); });
 
 function navLoginClick() {
   if (currentUser) { signOut(); } else { showView('auth'); }
@@ -2952,6 +3244,7 @@ function safeHistoryReplace(stateObj, hash) {
 }
 
 function showView(view, mode) {
+  closeNavMenu();
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
 
@@ -2960,8 +3253,9 @@ function showView(view, mode) {
 
   const navMap = {
     landing: null, search: 'navSearch',
-    about: 'navAbout', register: null, myprofile: 'navMyProfile', bands: 'navMyBands',
-    messages: 'navMessages', auth: 'navLogin', reset: null
+    about: null, register: null, myprofile: 'navMyProfile', bands: 'navMyBands',
+    messages: 'navMessages', auth: 'navLogin', reset: null,
+    privacy: null, terms: null, gedragscode: null
   };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
 
