@@ -1,6 +1,6 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 09-08-2026 (derde sessie, opschoning)
+**Laatste update:** 09-08-2026 (TT-22 gebouwd)
 **Vervangt:** `TODO.md`, `talenttent_backlog.md`, `stappenplan.md`, `randvoorwaarden_lancering.md` als los te lezen bronnen. Dit is het ene bestand dat je bij sessiestart meestuurt, samen met `index.html`.
 
 **Opbouw — herzien 09-08-2026:** tot nu toe stond een deel van de openstaande ideeën in een aparte, ongenummerde "Toekomstvisie"-sectie naast de genummerde tickets. Dat zorgde voor overlap en verlies van overzicht: hetzelfde onderwerp kon op twee plekken staan, met losse prioriteit. Vanaf nu **één systeem**: elk onderwerp krijgt een TT-nummer zodra het concreet genoeg is om te bouwen, of blijft `—` als het geen bouwwerk is maar een actie van Ronald (bijv. een school benaderen). Elk onderwerp staat in precies één P-tabel (P0 t/m P3) en nergens dubbel.
@@ -10,7 +10,9 @@
 - **Deel 2 — Achtergrond bij richtingen**, de strategische context achter clusters van tickets (geen losse actiepunten meer, alleen duiding + verwijzing naar TT-nummers)
 - **Deel 3 — Afgehandeld**, chronologisch, kort
 
-Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodanig in code-comments). Huidige hoogste nummer: **TT-70**.
+Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodanig in code-comments). Huidige hoogste nummer: **TT-71**.
+
+**Vaste smoke-test na elke wijziging (toegevoegd 09-08-2026, externe technische review):** `index.html` is gegroeid naar ruim 7.000 regels in één bestand, zonder geautomatiseerde tests. Regressie is daarmee het grootste sluipende risico — en Voorwaarde 0 zegt zelf dat stabiliteit altijd wint. Na elke deploy, tien minuten: inloggen, zoeken (met en zonder profiel), een bericht sturen, een profiel bewerken, uitgelogd zoeken. Geen bouwticket, wel een vaste stap — hoort ook thuis in de projectinstructie zelf.
 
 ---
 
@@ -18,28 +20,34 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 ## P0 — Zonder dit is de app niet af of onveilig
 
+**Direct te doen (externe technische review, 09-08-2026):** twee items hieronder kosten samen minder dan een uur en staan al langer te wachten dan ze zelf duren.
+1. **Back-up veiligstellen (bij TT-65):** vandaag al één handmatige export via het Supabase-dashboard, los van het verdere uitzoekwerk van TT-65. Alles op deze lijst is herstelbaar behalve dataverlies.
+2. **E-mailadres `contact@talenttent.org` aanmaken:** staat sinds 08-08-2026 op "besloten, nog niet uitgevoerd" — een kwartier werk.
+
 | ID | Ticket | Kern |
 |---|---|---|
 | **TT-06** | Rapporteren en blokkeren | Meldknop + blokkeren, verplicht voordat er actief geworven wordt. **Geparkeerd 08-08-2026** — ontwerp besproken, drie beslissingen staan nog open (zie onderaan deze tabel) |
 | **TT-07** | Leeftijdsbeleid | **Herzien 08-08-2026: minimumleeftijd blijft 13.** Ticket zelf vraagt geen codewijziging meer; de gevolgen zijn losgetrokken naar TT-45 |
 | **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel |
-| **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus** — zie toelichting onderaan deze tabel |
+| **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus — mogelijk groter dan gedacht, zie toelichting onderaan deze tabel** |
 | TT-01 (restpunt) | E-mailnotificatie bij nieuw bericht | Geparkeerd op infrastructuur (Edge Function) |
-| **TT-22** | Accountverwijdering | Ook het auth-account zelf, ook Storage-bestanden. **Prioriteit verhoogd 09-08-2026** (was P2): recht op verwijdering is een wettelijke vereiste (AVG), en met minderjarigen in de doelgroep weegt dat zwaarder. Was tot nu toe dubbel vermeld (ook als los punt bij de lanceersporen) — die dubbeling is opgeruimd, dit is de enige plek |
+| TT-22 (restpunt) | Auth-account daadwerkelijk verwijderen | **Data-deel opgelost 09-08-2026** (profiel, kindtabellen, Storage-bestanden, bandoprichterschap — zie Deel 3). Het auth-account (login/wachtwoord) zelf kan niet vanaf de client, dat vraagt de Supabase Admin API met een service-role-sleutel — zelfde categorie beperking als TT-01/TT-54: geen Edge Function-infrastructuur. Tot die er is: her en der handmatig via het Supabase-dashboard (Authentication → Users) een account verwijderen zodra er geen bijbehorend profiel meer is |
 | **TT-63** | Privacyverklaring, gebruiksvoorwaarden, gedragscode | Alle drie ontbreken nog, los van elkaar op te stellen. Launch-blocking |
 | — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
-| — | E-mailadres `contact@talenttent.org` aanmaken | **Besloten 08-08-2026**, nog niet uitgevoerd. Via Mijndomein: Mijn account → Mijn producten → talenttent.org → bundel wijzigen → E-mail. Onbeperkt aantal adressen, dus `melden@` en `privacy@` kunnen er later gratis bij. MX-records staan los van de GitHub Pages-records, de site blijft draaien. Dit is het vindbare contactpunt uit het juridische spoor — vandaar P0 |
-| **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers |
+| — | E-mailadres `contact@talenttent.org` aanmaken | **Besloten 08-08-2026**, nog niet uitgevoerd — zie "Direct te doen" hierboven. Via Mijndomein: Mijn account → Mijn producten → talenttent.org → bundel wijzigen → E-mail. Onbeperkt aantal adressen, dus `melden@` en `privacy@` kunnen er later gratis bij. MX-records staan los van de GitHub Pages-records, de site blijft draaien. Dit is het vindbare contactpunt uit het juridische spoor — vandaar P0 |
+| **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers. Interim-stap: zie "Direct te doen" hierboven |
 
 **TT-07 — herzien besluit van Ronald (08-08-2026, tweede sessie):** het eerdere voorstel van 16 jaar als ondergrens is teruggedraaid. **De minimumleeftijd blijft 13.** De validatie in de wizard blijft dus ongewijzigd. Wat daaruit volgt aan extra maatregelen is niet in dit ticket verwerkt maar losgetrokken naar TT-45, zodat het niet stilletjes een subregel wordt van een ticket dat verder niets meer om het lijf heeft.
 
 **TT-45 — nieuw, losgetrokken uit TT-07 (08-08-2026).** Met 13 als ondergrens registreren 13-, 14- en 15-jarigen zich zelfstandig, zonder tussenkomst van een ouder. Dat vraagt om maatregelen die nu nergens belegd zijn. Ter voorbereiding op een aparte sessie:
-- Hoe verhoudt dit zich tot TT-42 (registratie via een ouder)? Zijn het twee routes naast elkaar, of vervangt de één de ander?
+- Hoe verhoudt dit zich tot TT-42 (registratie via een ouder)? Zijn het twee routes naast elkaar, of vervangt de één de ander? **Externe technische review (09-08-2026) wijst erop dat de UAVG de grens voor zelfstandige digitale toestemming op 16 legt — dat zou betekenen dat de ouderroute (TT-42) voor 13-15-jarigen niet naast zelfregistratie staat, maar die vervángt. Niet geverifieerd door een jurist, alleen een signaal om mee te nemen naar de TT-42-sessie.**
 - De regel in de wizard dat een gebruikersnaam onder de 16 moet afwijken van de echte voornaam is met TT-43 minder effectief geworden: ingelogde muzikanten zien de voornaam nu sowieso. Behouden, aanscherpen of laten vervallen?
 - Zichtbaarheid van profielfoto's van minderjarigen voor bezoekers zonder account — bewust zo gelaten (zie TT-43), maar het besluit hoort hier expliciet vastgelegd.
 - Raakvlak met TT-06 (melden/blokkeren): een melding over een minderjarige vraagt mogelijk een andere afhandeling.
 
 **TT-42 — apart gehouden op verzoek van Ronald (08-08-2026): "ook al is dat de doelgroep, dit vereist extra aandacht en kost mogelijk meer tijd dan ik nu denk."** De groep 13-15 jaar is de kerndoelgroep van The Talent Tent, maar wordt bewust **niet** met TT-07 meegenomen. Dit wordt een eigen aandachtsgebied met eigen tijd, niet een subregel binnen een ander ticket.
+
+**Update 09-08-2026 (externe technische review):** het instinct om dit apart en met ruim tijd te behandelen lijkt bevestigd te worden. Als de UAVG-grens van 16 jaar hier inderdaad van toepassing is (zie signaal bij TT-45 hierboven), wordt TT-42 niet een aanvullende route naast zelfregistratie, maar dé route voor 13-15-jarigen — dat raakt de registratiewizard zelf, niet alleen een los scherm. Advies: deze sessie eerder plannen dan later en met een jurist/deskundige toetsen vóórdat de wizard ervoor wordt aangepast, om te voorkomen dat hij twee keer verbouwd wordt.
 
 Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 - **Route:** registratie via een ouder/verzorger — die vult in, geeft toestemming, en het kind gebruikt het profiel
@@ -47,6 +55,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 - **Overgangsmoment:** als het profiel op de 16e verjaardag automatisch overgaat op de jongere zelf, moet je diens gegevens dus al die jaren bewaren — wat weer onder dezelfde toestemming moet vallen.
 - **Wat er nog niet ligt:** hoe de ouder de aanmelding precies doet, wat er met het profiel gebeurt als de ouder nooit reageert, of een kind zelf al iets kan zien/proberen vóór de ouder heeft bevestigd, en hoe dit zich verhoudt tot TT-06 (melden/blokkeren) — een kind dat gemeld wordt, raakt ook de ouder.
 → *Advies:* dit als eigen sessie behandelen, niet als bijvangst van TT-07. Mogelijk is ook hier het advies van een deskundige op zijn plek — juist omdat de tijdsinschatting hier het onzekerst is.
+
 
 ---
 
@@ -59,7 +68,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-49** | Optredenlijst (band, datum, plaats) | Belangrijkste onderdeel van het profiel-als-product: levert ervaringsmaat, materiaal voor succesverhalen én later het aanknopingspunt voor podia. De "verleden"-kolom van TT-48 (voortgangspaneel) leunt hierop en toont tot dan een placeholder |
 | **TT-55** | Complementaire matching | Instrument moet complementair worden (wat zoekt de ander), genre blijft gelijkenis. Nu meet de score op instrument-gelijkenis, waardoor twee drummers elkaars beste match zijn — kernprobleem in de Prestatie-pijler. Inclusief: wederzijdse (stabiele) matchscore, met terugval op de huidige berekening als een profiel niets heeft ingevuld |
 | **TT-62** | Nooit nul zoekresultaten tonen | Regionale tellers i.p.v. landelijke. Rechtstreeks verbonden aan de cold-start-strategie: dichtheid in één regio verslaat een dun landelijk bestand |
-| **TT-64** | Foutregistratie/logging | Nog niets van bestaat. Raakt Voorwaarde 0 (betrouwbaarheid): zonder logging weet je pas dat iets stuk is als een gebruiker het meldt |
+| **TT-64** | Foutregistratie/logging | Nog niets van bestaat. Raakt Voorwaarde 0 (betrouwbaarheid): zonder logging weet je pas dat iets stuk is als een gebruiker het meldt. **Externe technische review (09-08-2026):** kan in twee stappen — (1) een minimale `window.onerror`-handler die naar een simpele Supabase-tabel schrijft, ruwweg een uur werk, kan naar voren gehaald worden; (2) de volwaardige versie (filtering, dashboard, alerts) blijft op P1 |
 | — | Regionale start (Den Haag e.o.) | Actie van Ronald, geen bouwwerk: één poppodium of enkele scholen benaderen — doelgroep heeft geen auto, actieradius is fietsafstand |
 
 **TT-38 (restpunt), "Zoeken zonder profiel" en "Setlist-zoeken" zijn verplaatst naar Deel 1a** — dat zijn bevestigingstaken voor Ronald, geen bouwtickets, en stonden hier tussen de echte tickets in de weg.
@@ -71,7 +80,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | ID | Ticket | Kern |
 |---|---|---|
 | **TT-18** | Album-art bij repertoire | Overweeg iTunes/Deezer i.p.v. MusicBrainz voor dit doel |
-| **TT-27** | Wizard-tussenresultaten incrementeel opslaan | Tabblad sluiten tijdens onboarding verliest nu nog voortgang |
+| **TT-27** | Wizard-tussenresultaten incrementeel opslaan | Tabblad sluiten tijdens onboarding verliest nu nog voortgang. **Externe technische review (09-08-2026):** twijfelgeval op P2 — voor dertienjarigen op een telefoon is voortgang kwijtraken een conversie-killer. Verdedigbaar zolang het verkeer laag is; **verhoog naar P1 zodra "Regionale start" (P1, hierboven) actief wordt**, vóór er echte nieuwe gebruikers de wizard in gaan |
 | **TT-28** | Filtering/paginering echt naar de database verplaatsen | Nodig zodra het ledenaantal groeit |
 | **TT-50** | Bandhistorie op het profiel | Welke bands iemand heeft (gehad), deels af te leiden uit `band_members` |
 | **TT-51** | Niveau per instrument | Ontwerprichting al bepaald (09-08-2026): schaal 1-5 (sterren), niet het Basis/Bijna/Podium-systeem dat voorbehouden blijft aan losse nummers. Raakt schema van `musician_instruments` en de weergave op zoekresultaten/profiel |
@@ -100,6 +109,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-60** | Rode ring bij bands die leden zoeken | Klein visueel accent op zoekresultaten |
 | **TT-69** | Consistente componenten, iconenset | Algemeen, ongespecificeerd punt; wordt concreet zodra de interfaceslag (TT-67/68) wordt opgepakt |
 | **TT-70** | Google Play-route | Trusted Web Activity. Vereist de service worker (TT-66) + $25 registratie + 12 testers gedurende 14 dagen (bij een persoonlijk account — vervalt bij een organisatie-/KvK-account) |
+| **TT-71** | Injectie-hygiëne berichtenquery | **Nieuw, externe technische review 09-08-2026, geverifieerd in de code.** In `loadConversations()` en `openConversation()` worden `mid`/`otherId` direct in de PostgREST-filterstring geïnterpoleerd (`.or(\`sender_id.eq.${mid},...\`)`) i.p.v. via `.eq()`/`.in()`. Gecontroleerd: beide waarden komen in alle huidige aanroeppaden uit `musicians.id` (database-UUID's via zoekresultaten/profielmodal), nooit uit vrije tekstinvoer — risico dus laag, maar het is het enige plekje waar de TT-26-hygiëne niet is doorgevoerd. Bij een volgende berichten-sessie meenemen |
 | — | Engelstalige versie van de app | Taal-toggle vs. automatisch, raakt ook databaseteksten? |
 | — | Onderscheid echte vs. nepprofielen | Mogelijk relevant zodra e-mailbevestiging weer aan staat |
 | — | Per-profiel instelbare zichtbaarheid voor niet-leden | Alternatief voor de huidige aanpak |
@@ -174,6 +184,26 @@ Bijbehorende tickets: TT-70 (Google Play), plus het `—`-punt "App Store (nativ
 # Deel 3 — Afgehandeld
 
 Kort en chronologisch. Voor het volledige technische verhaal per punt: zie de sessie-aantekeningen die aan dit bestand voorafgingen (niet langer los bijgehouden na deze opschoning).
+
+## 09-08-2026 (vervolg 2) — TT-22: accountverwijdering
+Er bleek al een `deleteMyProfile()` te bestaan die bewust alleen het profiel verwijderde ("het account/login blijft bestaan"), inclusief comment die uitlegde waarom. TT-22 bestond specifiek om dat gat te dichten. Opgelost:
+- **Storage-opschoning:** alle bestanden onder `{userId}/` in zowel de `avatars`- als de `media`-bucket worden verwijderd (`deleteAllStorageForUser()`), niet alleen de databaserijen die ernaar verwezen.
+- **Bandoprichterschap — besluit Ronald:** als de te verwijderen muzikant oprichter is van een band mét andere bevestigde leden, wordt dat in de nieuwe `deleteAccountModal` per band expliciet gevraagd: band ook verwijderen, of overdragen aan een van de overige leden (dropdown). Solo-bands (niemand anders bevestigd) verdwijnen stilzwijgend mee — daar is niemand om iets aan over te dragen. Reden voor deze aanpak: alleen de oprichter kan een band bewerken en aanmeldingen accepteren, dus een band zonder oprichter was een doodlopend weggetje voor de overige leden — en er bestaat nog geen aparte functie om eigenaarschap over te dragen buiten deze flow.
+- **Berichten — besluit Ronald:** blijven staan, niet meeverwijderd (raakt anders ook de geschiedenis van de gesprekspartner). `loadInbox()` toont voortaan "Verwijderde gebruiker" i.p.v. de generieke "Muzikant"-fallback van `displayNameOf()` zodra de gekoppelde muzikant niet meer bestaat.
+- **Auth-account zelf: bekend restpunt, niet opgelost.** Vraagt de Supabase Admin API (service-role-sleutel) — zelfde categorie beperking als TT-01/TT-54 (geen Edge Function-infrastructuur). Zie TT-22 (restpunt) in Deel 1/P0.
+- Knop op Mijn Profiel hernoemd van "Profiel verwijderen" naar "Account verwijderen", roept nu `openDeleteAccountModal()` aan i.p.v. direct `deleteMyProfile()`.
+- **Niet live getest:** netwerktoegang stond uit in de ontwikkelomgeving, dus geen Playwright-smoke-test mogelijk voor deze wijziging. Extra reden om de vaste smoke-test (zie bovenaan dit bestand) dit keer zorgvuldig te doorlopen, mét een aparte controle van het verwijderscenario zelf (test-account met een bandoprichterschap, met en zonder overige leden).
+- **Aangescherpt, zelfde sessie (Ronald):** één waarschuwing bij het openen van de modal bleek niet genoeg voor de meest onomkeerbare actie in de app. Er is nu een verplichte tweede, expliciete bevestiging (`requestFinalDeleteConfirmation()`) vlak vóór de daadwerkelijke verwijdering, los van eventuele bandkeuzes. Bij het bouwen hiervan ontstond eerst een bug — het sluiten van de modal voor de tweede bevestiging wiste per ongeluk ook de al gemaakte bandkeuzes (`pendingSoloBandIds`) die de uitvoerende functie daarna nog nodig had — direct gevonden en gecorrigeerd vóór oplevering.
+
+## 09-08-2026 (vervolg) — Externe technische review verwerkt
+Ronald liet de code en de opgeschoonde actielijst extern tegenlezen. Bevindingen die de code bevestigde (steekproef): `escHtml` (88 aanroepen) en `safeUrl` dekken TT-05 zoals beschreven, media in TT-02 gaat écht naar Storage, `displayNameOf()` (TT-43) wordt consistent op 12 plekken gebruikt, en de zelfkritiek klopt (nul `aria-label`'s, geen service worker — precies TT-68/TT-66). Verwerkt:
+- **P0-lijst kreeg een "Direct te doen"-blok** bovenaan: handmatige back-up-export vandaag (interim voor TT-65) en het e-mailadres aanmaken (staat al sinds 08-08 op "besloten, nog niet uitgevoerd") — samen minder dan een uur, stonden onnodig lang stil.
+- **TT-45/TT-42:** signaal toegevoegd dat de UAVG de grens voor zelfstandige digitale toestemming mogelijk op 16 legt, wat zou betekenen dat de ouderroute (TT-42) voor 13-15-jarigen niet náást zelfregistratie staat maar die vervángt — niet geverifieerd door een jurist, wel meegegeven als reden om die sessie eerder te plannen en eerst te toetsen vóór de wizard wordt aangepast.
+- **TT-64** opgesplitst: een minimale `window.onerror`-handler (ca. een uur) kan naar voren, de volwaardige versie blijft P1.
+- **TT-27** geannoteerd: P2 verdedigbaar bij weinig verkeer, expliciet naar P1 zodra de regionale werving (P1) actief wordt.
+- **Nieuw ticket TT-71 (P3):** directe interpolatie van `mid`/`otherId` in de PostgREST-filterstring van de berichtenquery — zelf geverifieerd in de code (`loadConversations()`, `openConversation()`); in alle huidige aanroeppaden komen die waarden uit `musicians.id`, dus laag risico, maar wel het enige plekje waar de TT-26-hygiëne niet is doorgevoerd.
+- **Vaste smoke-test na elke wijziging** toegevoegd als werkwijze-afspraak (zie bovenaan dit bestand) — geen ticket, wel een terugkerende stap.
+- TT-55 (complementaire matching als P1) en het TT-11-herontwerp werden door de review bevestigd — geen wijziging nodig.
 
 ## 09-08-2026 — Muzikantenprofiel als kern (Deel 2-A) + opschoning van de actielijst zelf
 Sessie bewust beperkt tot het profiel als product, in lijn met (het toenmalige) Deel 2-A.

@@ -2433,7 +2433,7 @@
     <div class="profile-actions" id="profileActions" style="display:none;">
       <button class="btn btn-primary" onclick="editMyProfile()">Profiel bewerken</button>
       <button class="btn btn-ghost" onclick="showView('bands')" id="myBandsBtn" style="display:none;">Mijn bands</button>
-      <button class="btn btn-ghost" style="color:var(--danger);border-color:var(--danger);" onclick="deleteMyProfile()">Profiel verwijderen</button>
+      <button class="btn btn-ghost" style="color:var(--danger);border-color:var(--danger);" onclick="openDeleteAccountModal()">Account verwijderen</button>
     </div>
   </div>
 </div>
@@ -2586,6 +2586,23 @@
     <div style="display:flex;gap:12px;">
       <button class="btn btn-primary" id="confirmYesBtn" onclick="confirmModalYes()" style="background:var(--danger);border-color:var(--danger);">Ja, verwijderen</button>
       <button class="btn btn-ghost" onclick="document.getElementById('confirmModal').classList.remove('visible')">Annuleren</button>
+    </div>
+  </div>
+</div>
+
+<!-- TT-22 (09-08-2026): account (incl. bandoprichterschap) verwijderen. Eigen
+     modal i.p.v. showConfirm() omdat er per band die deze muzikant heeft
+     opgericht een keuze nodig kan zijn (band verwijderen of overdragen),
+     wat meer is dan de generieke ja/nee-dialoog aankan. -->
+<div class="modal-overlay" id="deleteAccountModal" onclick="if(event.target===this)closeDeleteAccountModal()">
+  <div class="modal-box" style="max-width:480px;">
+    <button class="modal-close" onclick="closeDeleteAccountModal()">✕</button>
+    <h3 style="margin-bottom:12px;">Account verwijderen</h3>
+    <p style="margin-bottom:16px;font-size:14px;">Dit account inclusief alle gegevens wordt permanent verwijderd.</p>
+    <div id="deleteAccountBandsArea"></div>
+    <div style="display:flex;gap:12px;margin-top:20px;">
+      <button class="btn btn-primary" id="deleteAccountConfirmBtn" style="background:var(--danger);border-color:var(--danger);" onclick="requestFinalDeleteConfirmation()">Account verwijderen</button>
+      <button class="btn btn-ghost" onclick="closeDeleteAccountModal()">Annuleren</button>
     </div>
   </div>
 </div>
@@ -3843,10 +3860,13 @@ async function loadInbox() {
     (musiciansData || []).forEach(m => { infoById[m.id] = m; });
 
     const rows = Array.from(conversations.values()).map(c => {
-      const info = infoById[c.otherId] || {};
-      const name = displayNameOf(info);
-      const col = safeColor(info.profile_color, '#f5c518');
-      const avatarSrc = safeUrl(info.avatar_url);
+      const info = infoById[c.otherId];
+      // TT-22: de gesprekspartner kan zijn account inmiddels verwijderd
+      // hebben — berichten blijven staan, maar tonen dan een duidelijke
+      // naam i.p.v. de generieke "Muzikant"-fallback van displayNameOf().
+      const name = info ? displayNameOf(info) : 'Verwijderde gebruiker';
+      const col = safeColor(info && info.profile_color, '#f5c518');
+      const avatarSrc = info ? safeUrl(info.avatar_url) : null;
       const avatarHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(name)}">` : AVATAR_T_FALLBACK;
       const isOwn = c.lastMessage.sender_id === mid;
       const previewPrefix = isOwn ? 'Jij: ' : '';
@@ -3953,32 +3973,152 @@ function closeConversation() {
 
 // ─── Mijn profiel laden ──────────────────────────────────────────────────────
 
-// Bestaand profiel laden in de registratiewizard om te bewerken (i.p.v. aan te maken).
-// Let op: geüploade foto's/video's kunnen niet worden teruggehaald — dit is een
-// aparte, bekende beperking (zie TODO.md), niet iets wat deze functie oplost.
-// Profiel volledig verwijderen (met bevestiging). Het account (login) blijft
-// bestaan — alleen het muzikantprofiel en de koppelingen ernaartoe verdwijnen.
-async function deleteMyProfile() {
+// TT-22 (09-08-2026): vervangt de oude deleteMyProfile(), die bewust alleen
+// het profiel verwijderde en het auth-account liet bestaan. Nu: ook Storage-
+// bestanden, en een keuze per band waarvan deze muzikant oprichter is (zie
+// hieronder). Het auth-account zelf blijft een bekend restpunt — zie
+// toelichting bij executeAccountDeletion().
+async function openDeleteAccountModal() {
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Je hebt geen profiel om te verwijderen.'); return; }
 
-  showConfirm('Weet je zeker dat je je profiel wilt verwijderen? Alle gegevens worden permanent verwijderd.', async () => {
-    try {
-      await db.from('musician_instruments').delete().eq('musician_id', mid);
-      await db.from('musician_genres').delete().eq('musician_id', mid);
-      await db.from('musician_songs').delete().eq('musician_id', mid);
-      await db.from('musician_media').delete().eq('musician_id', mid);
-      await db.from('band_members').delete().eq('musician_id', mid);
-      const { error } = await db.from('musicians').delete().eq('id', mid);
-      if (error) throw error;
-      myMusicianId = null;
-      myOwnCity = null;
-      showToast('Je profiel is verwijderd.');
-      showView('landing');
-    } catch (e) {
-      showToast(friendlyErrorMessage(e));
+  const area = document.getElementById('deleteAccountBandsArea');
+  area.innerHTML = '<div style="color:var(--muted);font-size:13px;">Bezig met controleren...</div>';
+  document.getElementById('deleteAccountConfirmBtn').disabled = false;
+  document.getElementById('deleteAccountConfirmBtn').textContent = 'Account verwijderen';
+  document.getElementById('deleteAccountModal').classList.add('visible');
+
+  try {
+    const { data: founded, error } = await db.from('bands')
+      .select('id, name, band_members(musician_id, status, musicians(id, fname, username))')
+      .eq('founder_id', mid);
+    if (error) throw error;
+
+    // Bands met nog andere bevestigde leden: daar moet de oprichter zelf
+    // kiezen (Ronald, 09-08-2026: "de vraag wordt aan de oprichter gesteld").
+    // Solo-bands (niemand anders bevestigd) verdwijnen stilzwijgend mee —
+    // daar is niemand anders om iets aan over te dragen.
+    const decisions = (founded || [])
+      .map(b => ({ id: b.id, name: b.name, others: (b.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid) }))
+      .filter(b => b.others.length > 0);
+    const soloBandIds = (founded || [])
+      .filter(b => !(b.band_members || []).some(m => m.status === 'bevestigd' && m.musician_id !== mid))
+      .map(b => b.id);
+
+    pendingSoloBandIds = soloBandIds;
+
+    area.innerHTML = !decisions.length ? '' : `
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Je bent oprichter van ${decisions.length === 1 ? 'een band' : `${decisions.length} bands`} met andere leden. Kies per band wat er gebeurt:</div>
+      ${decisions.map(b => `
+        <div class="delete-account-band-row" data-band-id="${jsAttr(b.id)}" style="margin:10px 0;padding:12px;border:1px solid var(--border);border-radius:8px;">
+          <div style="font-weight:700;margin-bottom:8px;">${escHtml(b.name)}</div>
+          <select class="delete-band-choice" style="width:100%;padding:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;">
+            <option value="delete">Band ook verwijderen</option>
+            ${b.others.map(o => `<option value="${jsAttr(o.musician_id)}">Overdragen aan ${escHtml(displayNameOf(o.musicians))}</option>`).join('')}
+          </select>
+        </div>`).join('')}`;
+  } catch (e) {
+    area.innerHTML = `<div style="color:var(--danger);font-size:13px;">${escHtml(friendlyErrorMessage(e))}</div>`;
+  }
+}
+
+function closeDeleteAccountModal() {
+  document.getElementById('deleteAccountModal').classList.remove('visible');
+}
+
+// Tussenopslag tussen openDeleteAccountModal() en executeAccountDeletion() —
+// bewust geen onderdeel van de wizard-state, dit hoort daar niet bij.
+let pendingSoloBandIds = [];
+
+// TT-22 (aangescherpt 09-08-2026, Ronald): één waarschuwing bij het openen
+// van de modal is niet genoeg voor de meest onomkeerbare actie in de hele
+// app — zeker niet met 13-jarigen in de doelgroep. Daarom een verplichte
+// tweede, expliciete bevestiging vlak vóór de daadwerkelijke verwijdering,
+// los van de (mogelijke) bandkeuzes die de gebruiker al heeft gemaakt.
+// De onderliggende <select>-elementen blijven in de DOM bestaan zolang de
+// modal alleen verborgen wordt (classList, niet verwijderd) — executeAccount
+// Deletion() kan ze dus gewoon uitlezen, ook nadat deze modal al dicht is.
+function requestFinalDeleteConfirmation() {
+  closeDeleteAccountModal();
+  showConfirm(
+    'Weet je zeker dat je dit account, inclusief alle gegevens, permanent wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+    executeAccountDeletion,
+    'Ja, definitief verwijderen'
+  );
+}
+
+async function executeAccountDeletion() {
+  const mid = await getMyMusicianId();
+  if (!mid) return;
+
+  try {
+    // 1. Bands met overige leden: gekozen actie per band.
+    const rows = document.querySelectorAll('#deleteAccountBandsArea .delete-account-band-row');
+    for (const row of rows) {
+      const bandId = row.getAttribute('data-band-id');
+      const choice = row.querySelector('.delete-band-choice').value;
+      if (choice === 'delete') {
+        await db.from('band_wanted').delete().eq('band_id', bandId);
+        await db.from('band_members').delete().eq('band_id', bandId);
+        await db.from('bands').delete().eq('id', bandId);
+      } else {
+        await db.from('bands').update({ founder_id: choice }).eq('id', bandId);
+        await db.from('band_members').update({ role: 'Oprichter' }).eq('band_id', bandId).eq('musician_id', choice);
+      }
     }
-  });
+
+    // 2. Solo-bands (geen andere bevestigde leden): stilzwijgend mee weg.
+    for (const bandId of pendingSoloBandIds) {
+      await db.from('band_wanted').delete().eq('band_id', bandId);
+      await db.from('band_members').delete().eq('band_id', bandId);
+      await db.from('bands').delete().eq('id', bandId);
+    }
+
+    // 3. Eigen profielgegevens (kindtabellen eerst, dan de musicians-rij zelf).
+    await db.from('musician_instruments').delete().eq('musician_id', mid);
+    await db.from('musician_genres').delete().eq('musician_id', mid);
+    await db.from('musician_songs').delete().eq('musician_id', mid);
+    await db.from('musician_media').delete().eq('musician_id', mid);
+    await db.from('band_members').delete().eq('musician_id', mid);
+    const { error: mErr } = await db.from('musicians').delete().eq('id', mid);
+    if (mErr) throw mErr;
+
+    // 4. Geüploade bestanden in Storage (avatar + media). Berichten blijven
+    // bewust staan — zie displayNameOf-gebruik in loadInbox(): een
+    // gesprekspartner ziet voortaan "Verwijderde gebruiker" i.p.v. een lege
+    // naam (Ronald, 09-08-2026: niet ook de geschiedenis van de ander wissen).
+    const userId = currentUser ? currentUser.id : null;
+
+    pendingSoloBandIds = [];
+    closeDeleteAccountModal();
+    myMusicianId = null;
+    myOwnCity = null;
+    if (userId) await deleteAllStorageForUser(userId);
+    await signOut();
+    // Het auth-account zelf (login/wachtwoord) blijft nog bestaan — dat kan
+    // niet vanaf de client, zie het TT-22-restpunt in actielijst.md.
+    showToast('Je account is verwijderd.');
+    showView('landing');
+  } catch (e) {
+    // De modal is op dit punt al dicht (zie requestFinalDeleteConfirmation);
+    // een mislukking melden we dus via de toast, niet via een knopstatus.
+    showToast(friendlyErrorMessage(e) + ' Je account is niet volledig verwijderd — probeer het opnieuw of neem contact op.');
+  }
+}
+
+// TT-22: alle geüploade bestanden van een gebruiker verwijderen uit Storage
+// (avatars + media). Pad is altijd {userId}/... (zie uploadToStorage), dus de
+// hele map van deze gebruiker kan per bucket in één keer leeggehaald worden.
+async function deleteAllStorageForUser(userId) {
+  for (const bucket of ['avatars', 'media']) {
+    try {
+      const { data: files } = await db.storage.from(bucket).list(userId);
+      if (files && files.length) {
+        const paths = files.map(f => `${userId}/${f.name}`);
+        await db.storage.from(bucket).remove(paths);
+      }
+    } catch (e) { /* bestand kan al weg zijn, niet blokkerend voor de rest */ }
+  }
 }
 
 function cancelEditProfile() {
