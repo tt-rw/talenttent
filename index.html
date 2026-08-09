@@ -255,6 +255,22 @@
   .tag:hover { border-color: var(--accent); color: var(--accent); }
   .tag.selected { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
 
+  /* TT-46: prompts boven het bio-veld — actieknoppen, geen aan/uit-keuze
+     zoals .tag, dus een eigen (lichtere) stijl zonder .selected-status. */
+  .bio-prompts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .bio-prompt-chip {
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .bio-prompt-chip:hover { border-color: var(--accent); color: var(--accent); border-style: solid; }
+
   /* Genre tags */
   .genre-tag {
     background: var(--surface2);
@@ -721,6 +737,46 @@
 
   .comp-item.done { border-color: var(--success); color: var(--success); }
   .comp-item.pending { border-color: var(--border); color: var(--muted); }
+
+  /* TT-48: voortgangspaneel als PPP-tijdlijn (verleden/heden/toekomst),
+     los van de volledigheidsmeter hierboven. Zelfde kaartstijl, drie kolommen
+     die op mobiel onder elkaar vallen. */
+  .progress-timeline {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .progress-timeline-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .progress-timeline-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 560px) {
+    .progress-timeline-grid { grid-template-columns: 1fr; }
+  }
+  .progress-stage-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .progress-stage-body {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .progress-stage-body.empty { color: var(--muted); font-style: italic; }
 
   /* Profile header with personalized color */
   .profile-header-band {
@@ -1890,6 +1946,12 @@
     <div class="field-group single">
       <div class="field">
         <label>Korte bio <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+        <div class="bio-prompts">
+          <button type="button" class="bio-prompt-chip" onclick="applyBioPrompt('Ik speel al ... jaar ')">Wat doe je en hoe lang speel je al?</button>
+          <button type="button" class="bio-prompt-chip" onclick="applyBioPrompt('Op dit moment ben ik vooral bezig met ')">Op dit moment ben ik vooral bezig met...</button>
+          <button type="button" class="bio-prompt-chip" onclick="applyBioPrompt('De meeste energie krijg ik van ')">De meeste energie krijg ik van ...</button>
+          <button type="button" class="bio-prompt-chip" onclick="applyBioPrompt('Wat ik wil bereiken is ')">Vertel eens wat je wil bereiken.</button>
+        </div>
         <textarea id="bio" placeholder="Bijv. Ik speel al 3 jaar gitaar en ben op zoek naar een drummer voor een band..."></textarea>
       </div>
     </div>
@@ -2032,6 +2094,28 @@
       <div class="goal-card" onclick="selectGoal(this,'alles')">
         <div class="goal-label">Alles!</div>
         <div class="goal-desc">Open voor alles wat muzikaal is</div>
+      </div>
+    </div>
+
+    <div class="field-group single" style="margin-top:24px;">
+      <div class="field">
+        <label>Hoe vaak wil je repeteren? <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+        <div class="tag-grid" id="rehearsalFreqGrid">
+          <div class="tag" onclick="selectRehearsalFrequency(this,'wekelijks')">Wekelijks</div>
+          <div class="tag" onclick="selectRehearsalFrequency(this,'af_en_toe')">Af en toe</div>
+          <div class="tag" onclick="selectRehearsalFrequency(this,'per_project')">Alleen voor een project</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group single" style="margin-top:16px;">
+      <div class="field">
+        <label>Wil je optreden? <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+        <div class="tag-grid" id="performanceWishGrid">
+          <div class="tag" onclick="selectPerformanceWish(this,'graag')">Wil graag optreden</div>
+          <div class="tag" onclick="selectPerformanceWish(this,'liever_niet')">Liever alleen oefenen</div>
+          <div class="tag" onclick="selectPerformanceWish(this,'open')">Sta open voor beide</div>
+        </div>
       </div>
     </div>
 
@@ -2671,6 +2755,8 @@ function onUserLoggedOut() {
     genres: [],
     songs: [],
     goal: '',
+    rehearsalFrequency: '',
+    performanceWish: '',
     avatarUrl: null,
     avatarFile: null,
     avatarPath: null,
@@ -2975,6 +3061,19 @@ const GOAL_LABELS = {
 };
 
 const LEVEL_LABELS = { basis: 'Basis', bijna: 'Bijna', podium: 'Podiumklaar' };
+
+// TT-47: concrete ambitie-vragen naast het abstracte doelveld — alleen ter
+// aanvulling van het profiel, bewust geen zoekfilter (besluit Ronald, 09-08-2026).
+const REHEARSAL_LABELS = {
+  wekelijks:   'Wekelijks repeteren',
+  af_en_toe:   'Af en toe',
+  per_project: 'Alleen voor een project'
+};
+const PERFORMANCE_LABELS = {
+  graag:       'Wil graag optreden',
+  liever_niet: 'Liever alleen oefenen',
+  open:        'Sta open voor beide'
+};
 
 let filterInstruments = [];
 let filterGenres      = [];
@@ -3480,6 +3579,8 @@ function buildMusicianDetailHTML(m, isOwn) {
       ${m.musician_instruments.map(x => `<span class="badge" style="border-color:${col};color:${col};">${escHtml(x.instrument)}</span>`).join('')}
       ${m.musician_genres.map(x => `<span class="badge genre">${escHtml(x.genre)}</span>`).join('')}
       ${m.goal && GOAL_LABELS[m.goal] ? `<span class="badge">${escHtml(GOAL_LABELS[m.goal])}</span>` : ''}
+      ${m.rehearsal_frequency && REHEARSAL_LABELS[m.rehearsal_frequency] ? `<span class="badge">${escHtml(REHEARSAL_LABELS[m.rehearsal_frequency])}</span>` : ''}
+      ${m.performance_wish && PERFORMANCE_LABELS[m.performance_wish] ? `<span class="badge">${escHtml(PERFORMANCE_LABELS[m.performance_wish])}</span>` : ''}
     </div>
     ${m.bio ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${escHtml(m.bio)}"</p>` : ''}
     ${m.musician_songs.length ? `
@@ -3538,6 +3639,7 @@ async function openMusicianModal(id) {
   if (hasOwnProfile) {
     const res = await db.from('musicians').select(`
       id, fname, username, birth_date, city, bio, goal,
+      rehearsal_frequency, performance_wish,
       profile_color, avatar_url, updated_at,
       musician_instruments(instrument),
       musician_genres(genre),
@@ -3554,6 +3656,7 @@ async function openMusicianModal(id) {
       m = {
         id: row.id, username: row.username, birth_date: row.birth_date, city: row.city, // TT-43: geen fname voor bezoekers
         bio: row.bio, goal: row.goal, profile_color: row.profile_color, avatar_url: row.avatar_url,
+        rehearsal_frequency: row.rehearsal_frequency, performance_wish: row.performance_wish,
         updated_at: row.updated_at,
         musician_instruments: (row.instruments || []).map(i => ({ instrument: i })),
         musician_genres: (row.genres || []).map(g => ({ genre: g })),
@@ -3902,6 +4005,7 @@ function saveOnboardingProgress() {
       city: state.city, zip: state.zip, bio: state.bio, citySource: state.citySource,
       instruments: state.instruments, genres: state.genres, songs: state.songs,
       goal: state.goal,
+      rehearsalFrequency: state.rehearsalFrequency, performanceWish: state.performanceWish,
       mediaLinks: state.mediaLinks
       // Bewust NIET bewaard: regPassword, avatarUrl (blob-url overleeft een
       // refresh toch niet — zie bekende beperking TT-02), mediaFiles.
@@ -3961,6 +4065,14 @@ function populateWizardFieldsFromState() {
   const goalIdx = goalOrder.indexOf(state.goal);
   document.querySelectorAll('.goal-card').forEach((c, i) => c.classList.toggle('selected', i === goalIdx));
 
+  // TT-47
+  document.querySelectorAll('#rehearsalFreqGrid .tag').forEach(t => {
+    t.classList.toggle('selected', REHEARSAL_LABELS[state.rehearsalFrequency] === t.textContent);
+  });
+  document.querySelectorAll('#performanceWishGrid .tag').forEach(t => {
+    t.classList.toggle('selected', PERFORMANCE_LABELS[state.performanceWish] === t.textContent);
+  });
+
   const avatarPreview = document.getElementById('avatarPreview');
   if (state.avatarUrl) {
     avatarPreview.innerHTML = `<img src="${safeUrl(state.avatarUrl)}" alt="profielfoto">`;
@@ -3997,6 +4109,8 @@ function tryResumeOnboarding() {
   state.genres = saved.genres || [];
   state.songs = saved.songs || [];
   state.goal = saved.goal || '';
+  state.rehearsalFrequency = saved.rehearsalFrequency || '';
+  state.performanceWish = saved.performanceWish || '';
   state.mediaLinks = saved.mediaLinks || [];
   postcodeResolved = !!state.zip;
 
@@ -4033,6 +4147,8 @@ async function editMyProfile() {
   state.city          = m.city || '';
   state.bio           = m.bio || '';
   state.goal          = m.goal || '';
+  state.rehearsalFrequency = m.rehearsal_frequency || '';
+  state.performanceWish    = m.performance_wish || '';
   state.avatarUrl     = m.avatar_url || null;
   state.avatarFile    = null;
   state.avatarPath    = null;
@@ -4084,7 +4200,7 @@ async function loadMyProfile() {
     return;
   }
 
-  el.innerHTML = buildMusicianDetailHTML(m, true) + renderCompletenessMeter(m);
+  el.innerHTML = buildMusicianDetailHTML(m, true) + renderProgressPanel(m) + renderCompletenessMeter(m);
   if (actionsEl) actionsEl.style.display = 'flex';
   const bandsBtn = document.getElementById('myBandsBtn');
   if (bandsBtn) bandsBtn.style.display = 'inline-flex';
@@ -4174,6 +4290,44 @@ function renderCompletenessMeter(m) {
         `).join('')}
       </div>
       ${pct < 100 ? `<p style="font-size:11px;color:var(--muted);margin-top:10px;">Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:11px;color:${col};margin-top:10px;font-weight:700;">Compleet profiel! Jij valt op.</p>`}
+    </div>`;
+}
+
+// TT-48: voortgangspaneel als PPP-tijdlijn — Ronalds eigen indeling van
+// "trots op prestaties (verleden) · nu plezier maken (heden) · ambitie voor
+// de toekomst (toekomst)". Alleen zichtbaar voor de eigenaar (loadMyProfile
+// is sowieso alleen de eigen-profiel-view). "Verleden" is bewust een
+// placeholder tot de optredenlijst er is — geen loze content verzinnen.
+function renderProgressPanel(m) {
+  const songCount = (m.musician_songs || []).length;
+  const heden = songCount > 0
+    ? `${songCount} nummer${songCount === 1 ? '' : 's'} in je repertoire`
+    : '';
+  const hedenExtra = m.goal && GOAL_LABELS[m.goal] ? GOAL_LABELS[m.goal] : '';
+  const hedenText = [heden, hedenExtra].filter(Boolean).join(' · ');
+
+  const toekomstParts = [];
+  if (m.rehearsal_frequency && REHEARSAL_LABELS[m.rehearsal_frequency]) toekomstParts.push(REHEARSAL_LABELS[m.rehearsal_frequency]);
+  if (m.performance_wish && PERFORMANCE_LABELS[m.performance_wish]) toekomstParts.push(PERFORMANCE_LABELS[m.performance_wish]);
+  const toekomstText = toekomstParts.join(' · ');
+
+  return `
+    <div class="progress-timeline">
+      <div class="progress-timeline-label">Jouw pad op The Talent Tent</div>
+      <div class="progress-timeline-grid">
+        <div>
+          <div class="progress-stage-title">Verleden</div>
+          <div class="progress-stage-body empty">Optredenlijst volgt binnenkort — dan zie je hier je opgebouwde ervaring terug.</div>
+        </div>
+        <div>
+          <div class="progress-stage-title">Heden</div>
+          <div class="progress-stage-body ${hedenText ? '' : 'empty'}">${hedenText ? escHtml(hedenText) : 'Vul je repertoire en doel aan om hier iets te zien.'}</div>
+        </div>
+        <div>
+          <div class="progress-stage-title">Toekomst</div>
+          <div class="progress-stage-body ${toekomstText ? '' : 'empty'}">${toekomstText ? escHtml(toekomstText) : 'Geef bij "Profiel bewerken" aan hoe vaak je wilt repeteren en of je wilt optreden.'}</div>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -4329,6 +4483,8 @@ async function submitProfile() {
         zip:              state.zip || null,
         bio:              state.bio || null,
         goal:             state.goal,
+        rehearsal_frequency: state.rehearsalFrequency || null,
+        performance_wish:    state.performanceWish || null,
         avatar_url:       state.avatarUrl || null,
         city_source:      state.citySource || 'pdok',
         profile_complete: true, // TT-09: dit is de definitieve klik op "Profiel aanmaken"/"Wijzigingen opslaan"
@@ -4401,6 +4557,8 @@ async function submitProfile() {
           zip:              state.zip || null,
           bio:              state.bio || null,
           goal:             state.goal,
+          rehearsal_frequency: state.rehearsalFrequency || null,
+          performance_wish:    state.performanceWish || null,
           profile_color:    DEFAULT_PROFILE_COLOR,
           avatar_url:       state.avatarUrl || null,
           city_source:      state.citySource || 'pdok',
@@ -5171,6 +5329,8 @@ let state = {
   genres: [],
   songs: [],
   goal: '',
+  rehearsalFrequency: '',
+  performanceWish: '',
   avatarUrl: null,
   avatarFile: null,
   avatarPath: null,
@@ -5396,10 +5556,44 @@ function removeSong(i) {
 
 // ─── Goal ────────────────────────────────────────────────────────────────────
 
+// TT-46: prompt-chip vult het bio-veld aan i.p.v. te overschrijven, zodat
+// iemand meerdere prompts na elkaar kan gebruiken zonder tekst te verliezen.
+function applyBioPrompt(text) {
+  const el = document.getElementById('bio');
+  const current = el.value;
+  if (!current.trim()) {
+    el.value = text;
+  } else {
+    const sep = /[\s\n]$/.test(current) ? '' : ' ';
+    el.value = current + sep + text;
+  }
+  state.bio = el.value;
+  el.focus();
+  el.setSelectionRange(el.value.length, el.value.length);
+}
+
 function selectGoal(el, val) {
   document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   state.goal = val;
+}
+
+// TT-47: zelfde nogmaals-klikken-om-te-wissen als bij een enkelvoudige
+// keuze — optioneel veld, dus een tweede klik op de al gekozen optie
+// maakt de keuze weer ongedaan i.p.v. gedwongen een keuze te houden.
+function selectRehearsalFrequency(el, val) {
+  const already = el.classList.contains('selected');
+  document.querySelectorAll('#rehearsalFreqGrid .tag').forEach(t => t.classList.remove('selected'));
+  if (already) { state.rehearsalFrequency = ''; return; }
+  el.classList.add('selected');
+  state.rehearsalFrequency = val;
+}
+function selectPerformanceWish(el, val) {
+  const already = el.classList.contains('selected');
+  document.querySelectorAll('#performanceWishGrid .tag').forEach(t => t.classList.remove('selected'));
+  if (already) { state.performanceWish = ''; return; }
+  el.classList.add('selected');
+  state.performanceWish = val;
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
