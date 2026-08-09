@@ -2099,10 +2099,11 @@
 
     <div class="field-group single" style="margin-top:24px;">
       <div class="field">
-        <label>Hoe vaak wil je repeteren? <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+        <label>Hoe vaak wil je oefenen? <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
         <div class="tag-grid" id="rehearsalFreqGrid">
           <div class="tag" onclick="selectRehearsalFrequency(this,'wekelijks')">Wekelijks</div>
-          <div class="tag" onclick="selectRehearsalFrequency(this,'af_en_toe')">Af en toe</div>
+          <div class="tag" onclick="selectRehearsalFrequency(this,'paar_per_maand')">Paar keer per maand</div>
+          <div class="tag" onclick="selectRehearsalFrequency(this,'losse_jams')">Losse jams, als het uitkomt</div>
           <div class="tag" onclick="selectRehearsalFrequency(this,'per_project')">Alleen voor een project</div>
         </div>
       </div>
@@ -2110,11 +2111,12 @@
 
     <div class="field-group single" style="margin-top:16px;">
       <div class="field">
-        <label>Wil je optreden? <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
-        <div class="tag-grid" id="performanceWishGrid">
-          <div class="tag" onclick="selectPerformanceWish(this,'graag')">Wil graag optreden</div>
-          <div class="tag" onclick="selectPerformanceWish(this,'liever_niet')">Liever alleen oefenen</div>
-          <div class="tag" onclick="selectPerformanceWish(this,'open')">Sta open voor beide</div>
+        <label>Wat wil je de komende tijd bereiken? <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+        <div class="tag-grid" id="ambitionGrid">
+          <div class="tag" onclick="selectMusicalAmbition(this,'verbeteren')">Mezelf verbeteren op mijn instrument</div>
+          <div class="tag" onclick="selectMusicalAmbition(this,'stijlen')">Nieuwe stijlen ontdekken</div>
+          <div class="tag" onclick="selectMusicalAmbition(this,'eigen_werk')">Samen nummers/eigen werk maken</div>
+          <div class="tag" onclick="selectMusicalAmbition(this,'plezier')">Gewoon plezier, geen groot plan</div>
         </div>
       </div>
     </div>
@@ -2756,7 +2758,7 @@ function onUserLoggedOut() {
     songs: [],
     goal: '',
     rehearsalFrequency: '',
-    performanceWish: '',
+    musicalAmbition: '',
     avatarUrl: null,
     avatarFile: null,
     avatarPath: null,
@@ -3062,17 +3064,24 @@ const GOAL_LABELS = {
 
 const LEVEL_LABELS = { basis: 'Basis', bijna: 'Bijna', podium: 'Podiumklaar' };
 
-// TT-47: concrete ambitie-vragen naast het abstracte doelveld — alleen ter
-// aanvulling van het profiel, bewust geen zoekfilter (besluit Ronald, 09-08-2026).
+// TT-47 (herzien 09-08-2026): concrete ambitie-vragen naast het abstracte
+// doelveld — alleen ter aanvulling van het profiel, bewust geen zoekfilter
+// (besluit Ronald, 09-08-2026). Eerste versie had een aparte "wil je
+// optreden?"-vraag die dubbel op de doelkaart "Optreden" zat; vervangen door
+// een vraag over muzikale groei, die geen overlap heeft met het doelveld.
+// Nog niet definitief (Ronald, 09-08-2026: "dit is nog niet goed genoeg") —
+// doel en ambitie voelen nog te dicht bij elkaar, komt terug in een latere sessie.
 const REHEARSAL_LABELS = {
-  wekelijks:   'Wekelijks repeteren',
-  af_en_toe:   'Af en toe',
-  per_project: 'Alleen voor een project'
+  wekelijks:       'Wekelijks',
+  paar_per_maand:  'Paar keer per maand',
+  losse_jams:      'Losse jams, als het uitkomt',
+  per_project:     'Alleen voor een project'
 };
-const PERFORMANCE_LABELS = {
-  graag:       'Wil graag optreden',
-  liever_niet: 'Liever alleen oefenen',
-  open:        'Sta open voor beide'
+const AMBITION_LABELS = {
+  verbeteren: 'Mezelf verbeteren op mijn instrument',
+  stijlen:    'Nieuwe stijlen ontdekken',
+  eigen_werk: 'Samen nummers/eigen werk maken',
+  plezier:    'Gewoon plezier, geen groot plan'
 };
 
 let filterInstruments = [];
@@ -3580,7 +3589,7 @@ function buildMusicianDetailHTML(m, isOwn) {
       ${m.musician_genres.map(x => `<span class="badge genre">${escHtml(x.genre)}</span>`).join('')}
       ${m.goal && GOAL_LABELS[m.goal] ? `<span class="badge">${escHtml(GOAL_LABELS[m.goal])}</span>` : ''}
       ${m.rehearsal_frequency && REHEARSAL_LABELS[m.rehearsal_frequency] ? `<span class="badge">${escHtml(REHEARSAL_LABELS[m.rehearsal_frequency])}</span>` : ''}
-      ${m.performance_wish && PERFORMANCE_LABELS[m.performance_wish] ? `<span class="badge">${escHtml(PERFORMANCE_LABELS[m.performance_wish])}</span>` : ''}
+      ${m.musical_ambition && AMBITION_LABELS[m.musical_ambition] ? `<span class="badge">${escHtml(AMBITION_LABELS[m.musical_ambition])}</span>` : ''}
     </div>
     ${m.bio ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${escHtml(m.bio)}"</p>` : ''}
     ${m.musician_songs.length ? `
@@ -3639,7 +3648,7 @@ async function openMusicianModal(id) {
   if (hasOwnProfile) {
     const res = await db.from('musicians').select(`
       id, fname, username, birth_date, city, bio, goal,
-      rehearsal_frequency, performance_wish,
+      rehearsal_frequency, musical_ambition,
       profile_color, avatar_url, updated_at,
       musician_instruments(instrument),
       musician_genres(genre),
@@ -3656,7 +3665,7 @@ async function openMusicianModal(id) {
       m = {
         id: row.id, username: row.username, birth_date: row.birth_date, city: row.city, // TT-43: geen fname voor bezoekers
         bio: row.bio, goal: row.goal, profile_color: row.profile_color, avatar_url: row.avatar_url,
-        rehearsal_frequency: row.rehearsal_frequency, performance_wish: row.performance_wish,
+        rehearsal_frequency: row.rehearsal_frequency, musical_ambition: row.musical_ambition,
         updated_at: row.updated_at,
         musician_instruments: (row.instruments || []).map(i => ({ instrument: i })),
         musician_genres: (row.genres || []).map(g => ({ genre: g })),
@@ -4005,7 +4014,7 @@ function saveOnboardingProgress() {
       city: state.city, zip: state.zip, bio: state.bio, citySource: state.citySource,
       instruments: state.instruments, genres: state.genres, songs: state.songs,
       goal: state.goal,
-      rehearsalFrequency: state.rehearsalFrequency, performanceWish: state.performanceWish,
+      rehearsalFrequency: state.rehearsalFrequency, musicalAmbition: state.musicalAmbition,
       mediaLinks: state.mediaLinks
       // Bewust NIET bewaard: regPassword, avatarUrl (blob-url overleeft een
       // refresh toch niet — zie bekende beperking TT-02), mediaFiles.
@@ -4069,8 +4078,8 @@ function populateWizardFieldsFromState() {
   document.querySelectorAll('#rehearsalFreqGrid .tag').forEach(t => {
     t.classList.toggle('selected', REHEARSAL_LABELS[state.rehearsalFrequency] === t.textContent);
   });
-  document.querySelectorAll('#performanceWishGrid .tag').forEach(t => {
-    t.classList.toggle('selected', PERFORMANCE_LABELS[state.performanceWish] === t.textContent);
+  document.querySelectorAll('#ambitionGrid .tag').forEach(t => {
+    t.classList.toggle('selected', AMBITION_LABELS[state.musicalAmbition] === t.textContent);
   });
 
   const avatarPreview = document.getElementById('avatarPreview');
@@ -4110,7 +4119,7 @@ function tryResumeOnboarding() {
   state.songs = saved.songs || [];
   state.goal = saved.goal || '';
   state.rehearsalFrequency = saved.rehearsalFrequency || '';
-  state.performanceWish = saved.performanceWish || '';
+  state.musicalAmbition = saved.musicalAmbition || '';
   state.mediaLinks = saved.mediaLinks || [];
   postcodeResolved = !!state.zip;
 
@@ -4148,7 +4157,7 @@ async function editMyProfile() {
   state.bio           = m.bio || '';
   state.goal          = m.goal || '';
   state.rehearsalFrequency = m.rehearsal_frequency || '';
-  state.performanceWish    = m.performance_wish || '';
+  state.musicalAmbition    = m.musical_ambition || '';
   state.avatarUrl     = m.avatar_url || null;
   state.avatarFile    = null;
   state.avatarPath    = null;
@@ -4308,7 +4317,7 @@ function renderProgressPanel(m) {
 
   const toekomstParts = [];
   if (m.rehearsal_frequency && REHEARSAL_LABELS[m.rehearsal_frequency]) toekomstParts.push(REHEARSAL_LABELS[m.rehearsal_frequency]);
-  if (m.performance_wish && PERFORMANCE_LABELS[m.performance_wish]) toekomstParts.push(PERFORMANCE_LABELS[m.performance_wish]);
+  if (m.musical_ambition && AMBITION_LABELS[m.musical_ambition]) toekomstParts.push(AMBITION_LABELS[m.musical_ambition]);
   const toekomstText = toekomstParts.join(' · ');
 
   return `
@@ -4484,7 +4493,7 @@ async function submitProfile() {
         bio:              state.bio || null,
         goal:             state.goal,
         rehearsal_frequency: state.rehearsalFrequency || null,
-        performance_wish:    state.performanceWish || null,
+        musical_ambition:    state.musicalAmbition || null,
         avatar_url:       state.avatarUrl || null,
         city_source:      state.citySource || 'pdok',
         profile_complete: true, // TT-09: dit is de definitieve klik op "Profiel aanmaken"/"Wijzigingen opslaan"
@@ -4558,7 +4567,7 @@ async function submitProfile() {
           bio:              state.bio || null,
           goal:             state.goal,
           rehearsal_frequency: state.rehearsalFrequency || null,
-          performance_wish:    state.performanceWish || null,
+          musical_ambition:    state.musicalAmbition || null,
           profile_color:    DEFAULT_PROFILE_COLOR,
           avatar_url:       state.avatarUrl || null,
           city_source:      state.citySource || 'pdok',
@@ -5330,7 +5339,7 @@ let state = {
   songs: [],
   goal: '',
   rehearsalFrequency: '',
-  performanceWish: '',
+  musicalAmbition: '',
   avatarUrl: null,
   avatarFile: null,
   avatarPath: null,
@@ -5588,12 +5597,12 @@ function selectRehearsalFrequency(el, val) {
   el.classList.add('selected');
   state.rehearsalFrequency = val;
 }
-function selectPerformanceWish(el, val) {
+function selectMusicalAmbition(el, val) {
   const already = el.classList.contains('selected');
-  document.querySelectorAll('#performanceWishGrid .tag').forEach(t => t.classList.remove('selected'));
-  if (already) { state.performanceWish = ''; return; }
+  document.querySelectorAll('#ambitionGrid .tag').forEach(t => t.classList.remove('selected'));
+  if (already) { state.musicalAmbition = ''; return; }
   el.classList.add('selected');
-  state.performanceWish = val;
+  state.musicalAmbition = val;
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
