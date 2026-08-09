@@ -230,6 +230,24 @@
 
   select option { background: #1e1e1e; }
 
+  /* TT-22 (09-08-2026): eerste échte <select>-dropdown in de app — de
+     globale "input, select, textarea { -webkit-appearance: none }" hierboven
+     haalt het native pijltje weg, waardoor dit veld op een gewone tekstregel
+     leek i.p.v. een keuzeveld (Ronald, screenshot). Eigen pijltje terug via
+     een SVG-achtergrond, plus duidelijk hover/focus-gedrag. */
+  .delete-band-choice {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    padding-right: 36px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 12px 8px;
+  }
+  .delete-band-choice:hover { border-color: var(--accent); }
+  .delete-band-choice:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245,197,24,0.1); }
+
   textarea { resize: vertical; min-height: 80px; }
 
   /* Instrument tags */
@@ -4012,7 +4030,7 @@ async function openDeleteAccountModal() {
       ${decisions.map(b => `
         <div class="delete-account-band-row" data-band-id="${jsAttr(b.id)}" style="margin:10px 0;padding:12px;border:1px solid var(--border);border-radius:8px;">
           <div style="font-weight:700;margin-bottom:8px;">${escHtml(b.name)}</div>
-          <select class="delete-band-choice" style="width:100%;padding:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;">
+          <select class="delete-band-choice" style="width:100%;padding:8px;background-color:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;">
             <option value="delete">Band ook verwijderen</option>
             ${b.others.map(o => `<option value="${jsAttr(o.musician_id)}">Overdragen aan ${escHtml(displayNameOf(o.musicians))}</option>`).join('')}
           </select>
