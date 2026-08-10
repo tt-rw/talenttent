@@ -5040,6 +5040,16 @@ function friendlyErrorMessage(err) {
   if (/permission denied|rls/i.test(msg)) {
     return 'Je hebt geen toestemming voor deze actie.';
   }
+  // TT-87: weigeringen door Supabase Storage. De client controleert type en
+  // grootte nu zelf, dus dit hoort niet meer voor te komen. Wijkt de lijst in
+  // de bucket ooit af van AVATAR_MIME_TYPES/MEDIA_MIME_TYPES, dan leest de
+  // gebruiker hier alsnog wat er mis is in plaats van "Er ging iets mis".
+  if (/mime type|not supported|invalid_mime/i.test(msg)) {
+    return 'Dit bestandsformaat wordt niet geaccepteerd. Gebruik JPG, PNG, GIF, WEBP, MP4 of MOV.';
+  }
+  if (/payload too large|exceeded the maximum|entity too large|te groot/i.test(msg)) {
+    return 'Het bestand is te groot. Een profielfoto mag maximaal 5 MB zijn, media maximaal 50 MB.';
+  }
   return 'Er ging iets mis. Probeer het opnieuw.';
 }
 
@@ -6583,8 +6593,36 @@ function goTo(step) {
 // tijdelijke blob-URL. Pad bevat het user_id (nodig voor de insert-policy:
 // iedereen mag alleen naar zijn eigen map schrijven) plus een tijdstempel
 // zodat twee uploads nooit elkaars bestand overschrijven.
-async function uploadToStorage(bucket, userId, file, maxBytes, maxLabel) {
+// TT-87 (10-08-2026): één lijst met toegestane bestandstypen, gelijk aan de
+// instelling "Allowed MIME types" op de buckets in Supabase Storage
+// (geverifieerd door Ronald, 10-08-2026). Vroeger keek de app alleen of het
+// type met "image/" of "video/" begon. Een .heic-foto van een iPhone of een
+// .webm-video kwam daar dus doorheen. De upload startte, de server weigerde,
+// en de gebruiker kreeg de nietszeggende melding "Er ging iets mis".
+// Wijzigt de bucketinstelling in Supabase? Wijzig dan ook deze twee lijsten.
+const AVATAR_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const AVATAR_TYPE_LABEL = 'JPG, PNG, GIF of WEBP';
+const MEDIA_MIME_TYPES = AVATAR_MIME_TYPES.concat(['video/mp4', 'video/quicktime']);
+const MEDIA_TYPE_LABEL = 'JPG, PNG, GIF, WEBP, MP4 of MOV';
+
+// Geeft null terug als het bestand mag. Geeft anders een leesbare melding.
+function fileTypeProblem(file, allowedTypes, typeLabel) {
+  const type = (file.type || '').toLowerCase();
+  if (allowedTypes.includes(type)) return null;
+  // Een iPhone levert soms HEIC/HEIF aan. Dat is de meest voorkomende
+  // afwijzing, dus die krijgt een eigen aanwijzing i.p.v. de algemene tekst.
+  if (type === 'image/heic' || type === 'image/heif') {
+    return 'Dit fotoformaat (HEIC) werkt niet. Zet op je iPhone in Instellingen → Camera → Indelingen de optie "Meest compatibel" aan, of sla de foto op als JPG.';
+  }
+  return `Dit bestandsformaat werkt niet. Gebruik ${typeLabel}.`;
+}
+
+async function uploadToStorage(bucket, userId, file, maxBytes, maxLabel, allowedTypes, typeLabel) {
   if (file.size > maxBytes) throw new Error(`Bestand is te groot. Maximum ${maxLabel}.`);
+  if (allowedTypes) {
+    const problem = fileTypeProblem(file, allowedTypes, typeLabel);
+    if (problem) throw new Error(problem);
+  }
   const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
   const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error: upErr } = await db.storage.from(bucket).upload(path, file, { cacheControl: '3600', upsert: false });
@@ -6594,16 +6632,19 @@ async function uploadToStorage(bucket, userId, file, maxBytes, maxLabel) {
 }
 
 function uploadAvatarFile(file, userId) {
-  return uploadToStorage('avatars', userId, file, 5 * 1024 * 1024, '5 MB');
+  return uploadToStorage('avatars', userId, file, 5 * 1024 * 1024, '5 MB', AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
 }
 
 function uploadMediaFile(file, userId) {
-  return uploadToStorage('media', userId, file, 50 * 1024 * 1024, '50 MB');
+  return uploadToStorage('media', userId, file, 50 * 1024 * 1024, '50 MB', MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
 }
 
 function handleAvatarUpload(file) {
   if (!file) return;
-  if (!file.type.startsWith('image/')) { showToast('Kies een afbeelding (JPG, PNG, ...).'); return; }
+  // TT-87: meteen controleren, vóór de preview. Zo ziet niemand een foto
+  // verschijnen die de server daarna alsnog weigert.
+  const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
+  if (typeProblem) { showToast(typeProblem); return; }
   if (file.size > 5 * 1024 * 1024) { showToast('Afbeelding is te groot. Maximum 5 MB.'); return; }
 
   // Preview direct met de blob-URL, zodat het aanvoelt als een directe
@@ -6676,9 +6717,11 @@ function handleDrop(e) {
 function handleFileSelect(files) {
   Array.from(files).forEach(file => {
     if (state.mediaFiles.length >= 8) { showToast('Maximum 8 bestanden.'); return; }
-    const isVideo = file.type.startsWith('video/');
-    const isImage = file.type.startsWith('image/');
-    if (!isVideo && !isImage) { showToast(`"${file.name}" is geen foto of video.`); return; }
+    const isVideo = (file.type || '').toLowerCase().startsWith('video/');
+    // TT-87: controleren tegen dezelfde lijst als de bucket in Supabase,
+    // vóór de preview en vóór de upload.
+    const typeProblem = fileTypeProblem(file, MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
+    if (typeProblem) { showToast(`"${file.name}": ${typeProblem}`); return; }
     if (file.size > 50 * 1024 * 1024) { showToast(`"${file.name}" is te groot. Maximum 50 MB.`); return; }
 
     const blobUrl = URL.createObjectURL(file);
