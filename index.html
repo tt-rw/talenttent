@@ -5399,26 +5399,36 @@ async function saveUsernameGate() {
 let postcodeSearchTimeout = null;
 let postcodeResolved = false;
 
-// Bekende gevallen waarbij de officiële (BAG/PDOK-)naam afwijkt van de naam die
-// iedereen gebruikt, en die dus niet in de "alternatieve schrijfwijzen"-data staat
-// (dat veld bevat spellingsvarianten, geen bijnamen). Uitbreidbaar indien nodig.
+// TT-80 (10-08-2026, zelf gevonden bij het testen van de datafix): na de
+// datamigratie staat postcode_cache.city al gewoon op "Den Haag"/"Den Bosch"
+// — maar pickDisplayCity() herkende alleen de rúwe officiële naam als
+// uitzondering, en viel voor "Den Haag" zelf terug op het eerste item in
+// alternatieve_schrijfwijzen (dat nu net de oude officiële naam bevat, want
+// die is daar door dezelfde migratie ingezet). Resultaat: "Den Haag" typen
+// gaf alsnog "'s Gravenhage" terug. Idempotent gemaakt: de gangbare naam
+// zelf is nu ook een geldige sleutel, wijst naar zichzelf.
 const CITY_NAME_EXCEPTIONS = {
   "'s-gravenhage": 'Den Haag',
   "s gravenhage": 'Den Haag',
   "s-gravenhage": 'Den Haag',
+  "den haag": 'Den Haag',
   "'s-hertogenbosch": 'Den Bosch',
   "s hertogenbosch": 'Den Bosch',
   "s-hertogenbosch": 'Den Bosch',
+  "den bosch": 'Den Bosch',
 };
 
+// TT-80 (10-08-2026, bevinding Ronald: "dit geldt niet alleen voor Den Haag
+// maar ook voor andere steden"). Geverifieerd: deze functie liet ALTIJD het
+// eerste item van alternatieve_schrijfwijzen winnen van de eigenlijk al
+// juiste city-waarde, voor elke stad — niet alleen Den Haag/Den Bosch. Dat
+// veld blijft wél gewoon bruikbaar om op te zoeken (ILIKE-matches elders in
+// de code, ongewijzigd) — alleen niet meer om de weergavenaam mee te kiezen.
+// city (eventueel via CITY_NAME_EXCEPTIONS) is nu altijd de bron van
+// waarheid voor wat er getoond wordt.
 function pickDisplayCity(officialCity, altField) {
   const key = (officialCity || '').toLowerCase().replace(/[’']/g, "'").trim();
   if (CITY_NAME_EXCEPTIONS[key]) return CITY_NAME_EXCEPTIONS[key];
-  if (altField) {
-    // Veld is puntkomma-gescheiden, bijv. "S GRAVENHAGE;'s-Gravenhage"
-    const first = altField.split(';')[0].trim();
-    if (first) return normalizeCityName(first);
-  }
   return normalizeCityName(officialCity || '');
 }
 
