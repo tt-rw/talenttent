@@ -4,12 +4,47 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Talent Tent — Talent zoekt talent</title>
+
+<!-- TT-81 (10-08-2026, externe review 3.2): omschrijving + deelvoorbeeld.
+     Zonder deze regels toont een gedeelde link naar talenttent.org in
+     WhatsApp of op social media alleen de kale URL. Dit is één generieke
+     preview voor de hele site. Een preview per profiel kan niet: dit is een
+     single-page app zonder server, dus elke #hash levert dezelfde HTML. -->
+<meta name="description" content="The Talent Tent brengt muzikanten en bands bij elkaar voor jams, repetities en optredens. Maak een profiel, laat horen wat je speelt en vind muzikanten bij jou in de buurt.">
+<link rel="canonical" href="https://talenttent.org/">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Talent Tent">
+<meta property="og:url" content="https://talenttent.org/">
+<meta property="og:title" content="The Talent Tent — Talent zoekt talent">
+<meta property="og:description" content="Vind muzikanten en bands bij jou in de buurt voor jams, repetities en optredens.">
+<meta property="og:image" content="https://talenttent.org/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:locale" content="nl_NL">
+
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="The Talent Tent — Talent zoekt talent">
+<meta name="twitter:description" content="Vind muzikanten en bands bij jou in de buurt voor jams, repetities en optredens.">
+<meta name="twitter:image" content="https://talenttent.org/icon-512.png">
+
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d0d0d">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400&family=Alfa+Slab+One&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+  /* TT-82 (10-08-2026, externe review 2.1): de hele app hangt aan deze ene
+     externe bibliotheek. Laadt hij niet (CDN onbereikbaar, blokkerende
+     browserextensie, streng schoolnetwerk), dan crashte het hoofdscript
+     vroeger op de eerste regel. De landingspagina bleef staan, maar geen
+     enkele knop deed nog iets — zonder melding voor de gebruiker.
+     Deze regel legt één keer vast of de bibliotheek er is. Het hoofdscript
+     leest de vlag en toont dan een nette melding in plaats van te crashen.
+     Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
+  window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
+</script>
 <style>
   :root {
     --bg: #0d0d0d;
@@ -1873,6 +1908,81 @@
     .search-wrap, .my-profile-wrap { padding: 24px 16px 60px; }
     .modal-box { max-height: 100vh; border-radius: 0; }
   }
+  /* ── Backend niet geladen (TT-82) ────────────────────────────────────────
+     Blokkerende melding als de Supabase-bibliotheek niet is geladen. Blijft
+     verborgen zolang alles normaal werkt. De opmaak staat hier expres los
+     van .modal-overlay: die klasse hoort bij het hoofdscript, en juist dat
+     script draait in dit geval niet volledig. */
+  .backend-error-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(13,13,13,0.96);
+    padding: 24px;
+    align-items: center;
+    justify-content: center;
+  }
+  .backend-error-overlay.visible { display: flex; }
+  .backend-error-box {
+    max-width: 420px;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    text-align: center;
+  }
+  .backend-error-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .backend-error-box p {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+  .backend-error-box p.sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .backend-error-box button {
+    width: 100%;
+    padding: 12px 20px;
+    background: var(--accent);
+    color: #0d0d0d;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ── Bewegingsreductie (TT-83, externe review 4.3) ───────────────────────
+     Sommige mensen zetten in hun besturingssysteem "verminder beweging" aan.
+     Reden: aandachtsproblemen, migraine of bewegingsziekte. Dan blijven alle
+     in- en uitschuifanimaties en de eindeloze pulsanimaties uit.
+     Uitzondering: .save-spinner blijft draaien. Die draaiing is geen
+     versiering maar een statusmelding — hij vertelt dat de app nog bezig is.
+     Zonder beweging lijkt een stilstaande spinner op een vastgelopen app. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .save-spinner {
+      animation: spin 1.6s linear infinite !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -2943,12 +3053,32 @@
   </div>
 </div>
 
+<!-- TT-82: melding als de Supabase-bibliotheek niet is geladen. Dit blok staat
+     bewust vóór het hoofdscript en gebruikt alleen eigen opmaak. Zo blijft de
+     melding werken, ook als het hoofdscript daarna niets kan doen. -->
+<div class="backend-error-overlay" id="backendErrorOverlay">
+  <div class="backend-error-box">
+    <div class="backend-error-title">De app kan nu niet starten</div>
+    <p>Een onderdeel van The Talent Tent is niet geladen. Daardoor werkt inloggen en zoeken op dit moment niet.</p>
+    <p class="sub">Dit komt meestal door een tijdelijke storing of door je internetverbinding. Probeer het opnieuw. Blijft de melding staan? Mail dan naar contact@talenttent.org.</p>
+    <button type="button" onclick="location.reload()">Opnieuw proberen</button>
+  </div>
+</div>
+<script>
+  if (window.ttBackendMissing) {
+    document.getElementById('backendErrorOverlay').classList.add('visible');
+  }
+</script>
+
 <script>
 // ─── Supabase ────────────────────────────────────────────────────────────────
 
 const SUPABASE_URL = 'https://fqtgilwfestzofunupnu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_tnWUVGTBmwnn9fAILeNqqQ_UlCn5AFM';
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// TT-82: alleen een client aanmaken als de bibliotheek er is. De vlag wordt in
+// de <head> gezet. Zonder deze controle stopt het hele script hier met een
+// ReferenceError en wordt geen enkele functie meer gedefinieerd.
+const db = window.ttBackendMissing ? null : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ─── App initialisatie ───────────────────────────────────────────────────────
 
@@ -3469,6 +3599,17 @@ let musicianAutoSearchTimeout = null;
 let bandAutoSearchTimeout = null;
 let setlistAutoSearchTimeout = null;
 
+// TT-84 (10-08-2026, externe review 2.3): volgnummers tegen verouderde
+// resultaten. De debounce hierboven wacht 400 ms na de laatste toetsaanslag,
+// maar stopt een zoekopdracht die al onderweg is niet. Op een traag mobiel
+// netwerk kan zoekopdracht A dus ná zoekopdracht B binnenkomen. Het scherm
+// toont dan het antwoord op filters die de gebruiker net heeft aangepast.
+// Elke zoekopdracht krijgt nu een nummer. Alleen het antwoord met het hoogste
+// nummer mag het scherm en de resultaatlijst nog aanraken.
+let musicianSearchSeq = 0;
+let bandSearchSeq = 0;
+let setlistSearchSeq = 0;
+
 function scheduleMusicianAutoSearch() {
   clearTimeout(musicianAutoSearchTimeout);
   musicianAutoSearchTimeout = setTimeout(() => runSearch(), 400);
@@ -3606,6 +3747,7 @@ function resetMusicianSearch() {
 }
 
 async function runSearch() {
+  const seq = ++musicianSearchSeq; // TT-84: zie toelichting bij musicianSearchSeq
   const resultsEl = document.getElementById('searchResults');
   // TT-10: bij automatisch verversen (filter aangeklikt/getypt) blijft het
   // bestaande resultaat gewoon staan tot het nieuwe binnen is — geen
@@ -3648,6 +3790,7 @@ async function runSearch() {
         origin_lat: origin.lat, origin_lng: origin.lng
       });
       if (rpcErr) throw rpcErr;
+      if (seq !== musicianSearchSeq) return; // TT-84
       if (!matches.length) { lastMusicianResults = []; renderSearchResults([]); return; }
       matches.forEach(m => { matchInfo[m.musician_id] = m; });
 
@@ -3682,6 +3825,7 @@ async function runSearch() {
         radius_km: origin.lat != null ? radius : null,
       });
       if (rpcErr) throw rpcErr;
+      if (seq !== musicianSearchSeq) return; // TT-84
       if (!matches.length) { lastMusicianResults = []; renderSearchResults([]); return; }
       matches.forEach(m => { matchInfo[m.musician_id] = m; });
 
@@ -3741,11 +3885,13 @@ async function runSearch() {
       m.isStale     = info ? info.is_stale : false;
       musicianDistanceCache[m.id] = m.distance_km;
     });
+    if (seq !== musicianSearchSeq) return; // TT-84: nieuwere zoekopdracht loopt al
     sortMusicianList(filtered);
     lastMusicianResults = filtered;
     renderCappedMusicianResults();
 
   } catch(e) {
+    if (seq !== musicianSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
     resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
 }
@@ -5201,9 +5347,33 @@ function formatBirthDate(input) {
   input.value = v;
 }
 
+// TT-80 (10-08-2026, bevinding Ronald: "Alphen aan den Rijn" werd fout
+// "Alphen Aan Den Rijn"). Geverifieerd (Taaladvies.net): Nederlandse
+// aardrijkskundige namen houden voorzetsels/lidwoorden ("aan", "den", "op",
+// "van", ...) met een kleine letter, behalve als zo'n woord het eerste woord
+// van de naam is. "'s"/"'t" (los, bijv. "'s Heerenberg", of met streepje,
+// bijv. "'s-Gravenhage") blijven altíjd met een kleine letter, ook als eerste
+// woord. "IJ" als digraph (IJssel, IJmuiden) krijgt beide letters een
+// hoofdletter — een bekende, algemene Nederlandse schrijfregel; niet apart
+// getest tegen elke afzonderlijke rij in postcode_cache.
 function normalizeCityName(city) {
-  // Capitalize first letter of each word: "den haag" → "Den Haag"
-  return city.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  const ALTIJD_KLEIN = new Set(["'s", "'t", "’s", "’t"]);
+  const KLEIN_TENZIJ_EERSTE_WOORD = new Set(['aan','de','den','der','het','in','onder','op','over','te','ten','ter','van','bij']);
+  return city
+    .toLowerCase()
+    .split(' ')
+    .map((word, i) => {
+      if (ALTIJD_KLEIN.has(word)) return word;
+      if (i > 0 && KLEIN_TENZIJ_EERSTE_WOORD.has(word)) return word;
+      let result;
+      if (/^('s-|’s-|'t-|’t-)/.test(word)) {
+        result = word.slice(0, 3) + word.slice(3).replace(/\b\w/g, c => c.toUpperCase());
+      } else {
+        result = word.replace(/\b\w/g, c => c.toUpperCase());
+      }
+      return result.replace(/\bIj/g, 'IJ');
+    })
+    .join(' ');
 }
 
 // ─── Gebruikersnaam (TT-38, 07-08-2026) ──────────────────────────────────────
@@ -6716,6 +6886,7 @@ function resetBandSearch() {
 }
 
 async function runBandSearch() {
+  const seq = ++bandSearchSeq; // TT-84: zie toelichting bij musicianSearchSeq
   const resultsEl = document.getElementById('bandSearchResults');
   if (!resultsEl.innerHTML.trim()) {
     resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">Bands zoeken...</div>`;
@@ -6744,6 +6915,7 @@ async function runBandSearch() {
         origin_lat: origin.lat, origin_lng: origin.lng
       });
       if (rpcErr) throw rpcErr;
+      if (seq !== bandSearchSeq) return; // TT-84
       if (!matches.length) { lastBandResults = []; renderBandSearchResults([]); return; }
       matches.forEach(m => { matchInfo[m.band_id] = m; });
 
@@ -6771,6 +6943,7 @@ async function runBandSearch() {
         radius_km: origin.lat != null ? radius : null,
       });
       if (rpcErr) throw rpcErr;
+      if (seq !== bandSearchSeq) return; // TT-84
       if (!matches.length) { lastBandResults = []; renderBandSearchResults([]); return; }
       matches.forEach(m => { matchInfo[m.band_id] = m; });
 
@@ -6811,10 +6984,12 @@ async function runBandSearch() {
       b.matchScore  = info ? info.score : null;
       b.isStale     = info ? info.is_stale : false;
     });
+    if (seq !== bandSearchSeq) return; // TT-84: nieuwere zoekopdracht loopt al
     sortBandList(filtered);
     lastBandResults = filtered;
     renderCappedBandResults();
   } catch(e) {
+    if (seq !== bandSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
     resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
 }
@@ -7034,6 +7209,7 @@ function resetSetlistSearch() {
 }
 
 async function runSetlistSearch() {
+  const seq = ++setlistSearchSeq; // TT-84: zie toelichting bij musicianSearchSeq
   const resultsEl = document.getElementById('setlistSearchResults');
   if (!setlistWantedSongs.length) { showToast('Voeg minimaal één nummer toe aan de setlist.'); return; }
 
@@ -7077,6 +7253,7 @@ async function runSetlistSearch() {
     ]);
 
     if (songResult.error) throw songResult.error;
+    if (seq !== setlistSearchSeq) return; // TT-84
     const songMatches = songResult.data || [];
     if (!songMatches.length) { renderSetlistResults([]); return; }
     const songMatchIds = new Set(songMatches.map(m => m.musician_id));
@@ -7143,9 +7320,11 @@ async function runSetlistSearch() {
       return (a.fname || '').localeCompare(b.fname || '', 'nl');
     });
 
+    if (seq !== setlistSearchSeq) return; // TT-84: nieuwere zoekopdracht loopt al
     renderSetlistResults(filtered.slice(0, SEARCH_RESULT_LIMIT), { total: filtered.length });
 
   } catch(e) {
+    if (seq !== setlistSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
     resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
 }
@@ -7607,9 +7786,15 @@ async function saveNewPassword() {
 }
 
 // ─── Start ───────────────────────────────────────────────────────────────────
-init();
-initSearchFilters();
-appInit();
+// TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding
+// hierboven in de HTML is dan al zichtbaar. Zou appInit() toch draaien, dan
+// volgt een reeks onbegrijpelijke fouten in de console en een half gevulde
+// pagina achter de melding.
+if (!window.ttBackendMissing) {
+  init();
+  initSearchFilters();
+  appInit();
+}
 </script>
 </body>
 </html>
