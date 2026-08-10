@@ -2281,19 +2281,22 @@
          hier ook echt een zichtbare/klikbare verwijzing staan. Links openen in
          een nieuw tabblad (target="_blank" op een gewone hash-link) zodat de
          wizard-voortgang van dit tabblad niet wordt verstoord. -->
-    <p style="font-size:12px;color:var(--muted);margin-top:16px;text-align:center;">
-      Door een profiel aan te maken ga je akkoord met de
-      <a href="#terms" target="_blank" style="color:var(--accent);">Gebruiksvoorwaarden</a>,
-      <a href="#privacy" target="_blank" style="color:var(--accent);">Privacyverklaring</a> en
-      <a href="#gedragscode" target="_blank" style="color:var(--accent);">Gedragscode</a>.
-    </p>
+    <label style="display:flex;align-items:flex-start;gap:10px;margin-top:16px;font-size:12px;color:var(--muted);cursor:pointer;">
+      <input type="checkbox" id="consentCheckbox" onchange="updateSubmitProfileState()" style="margin-top:2px;flex-shrink:0;">
+      <span>
+        Ik ga akkoord met de
+        <a href="#terms" target="_blank" style="color:var(--accent);">Gebruiksvoorwaarden</a>,
+        <a href="#privacy" target="_blank" style="color:var(--accent);">Privacyverklaring</a> en
+        <a href="#gedragscode" target="_blank" style="color:var(--accent);">Gedragscode</a>.
+      </span>
+    </label>
 
     <div class="nav-buttons">
       <div style="display:flex;gap:12px;">
         <button class="btn btn-ghost" onclick="prevStep(4)">← Terug</button>
         <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
       </div>
-      <button class="btn btn-primary" id="submitProfileBtn" onclick="submitProfile()">Profiel aanmaken</button>
+      <button class="btn btn-primary" id="submitProfileBtn" onclick="submitProfile()" disabled style="opacity:0.5;cursor:not-allowed;">Profiel aanmaken</button>
     </div>
   </div>
 
@@ -2641,9 +2644,10 @@
       </div>
       <div id="messagesThreadList" style="display:flex;flex-direction:column;margin-bottom:16px;"></div>
       <div class="messages-composer-row">
-        <textarea id="messagesReplyInput" placeholder="Typ een bericht..." maxlength="2000"></textarea>
+        <textarea id="messagesReplyInput" placeholder="Typ een bericht..." maxlength="2000" oninput="updateCharCounter('messagesReplyInput','messagesReplyCounter',2000)"></textarea>
         <button class="messages-send-btn" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
       </div>
+      <div id="messagesReplyCounter" style="text-align:right;font-size:12px;color:var(--muted);margin-top:2px;">0/2000</div>
     </div>
   </div>
 </div>
@@ -2919,7 +2923,8 @@
     <button class="modal-close" onclick="closeMessageComposer()">✕</button>
     <div class="filter-title" style="margin-bottom:4px;">Bericht sturen</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Aan <strong id="messageComposerRecipientName" style="color:var(--text);"></strong></p>
-    <textarea id="messageComposerBody" placeholder="Schrijf je bericht..." maxlength="2000" style="width:100%;min-height:120px;margin-bottom:16px;"></textarea>
+    <textarea id="messageComposerBody" placeholder="Schrijf je bericht..." maxlength="2000" style="width:100%;min-height:120px;" oninput="updateCharCounter('messageComposerBody','messageComposerCounter',2000)"></textarea>
+    <div id="messageComposerCounter" style="text-align:right;font-size:12px;color:var(--muted);margin:4px 0 16px;">0/2000</div>
     <div style="display:flex;gap:12px;">
       <button class="btn btn-ghost" style="flex:1;" onclick="closeMessageComposer()">Annuleren</button>
       <button class="btn btn-primary" style="flex:1;" onclick="sendMessageFromComposer()">Versturen →</button>
@@ -3042,6 +3047,8 @@ function onUserLoggedOut() {
   document.getElementById('navLogin').textContent = 'Inloggen';
   myMusicianId = null;
   myOwnCity = null;
+  const consentBox = document.getElementById('consentCheckbox');
+  if (consentBox) { consentBox.checked = false; updateSubmitProfileState(); }
   // Beveiligingsfix: een editeer-sessie (via "Profiel bewerken") mag nooit
   // blijven bestaan na uitloggen — anders kan een uitgelogde bezoeker via de
   // "Verder bewerken"-balk alsnog bij de laatst bewerkte profielgegevens.
@@ -3290,6 +3297,20 @@ function showView(view, mode) {
     // relevant en zou het bovendien nooit een wachtwoord mogen tonen/vragen.
     const authSection = document.getElementById('regAuthSection');
     if (authSection) authSection.style.display = locked ? 'none' : '';
+
+    // Akkoord-checkbox: alleen verplicht bij een gloednieuw account. Bij het
+    // bewerken van een bestaand profiel is die toestemming al gegeven bij de
+    // registratie zelf — opnieuw laten aanvinken bij elke bewerking levert
+    // alleen wrijving op zonder juridische meerwaarde.
+    const consentRow = document.getElementById('consentCheckbox')?.closest('label');
+    if (consentRow) consentRow.style.display = locked ? 'none' : '';
+    if (locked) {
+      document.getElementById('submitProfileBtn').disabled = false;
+      document.getElementById('submitProfileBtn').style.opacity = '';
+      document.getElementById('submitProfileBtn').style.cursor = '';
+    } else {
+      updateSubmitProfileState();
+    }
   }
 
   if (view === 'myprofile') loadMyProfile();
@@ -3608,10 +3629,23 @@ async function runSearch() {
     let originResolved = false; // straal actief? dan Plaats niet ook als tekstfilter toepassen
 
     if (hasOwnProfile) {
-      // Met eigen profiel: bestaande matching-RPC (eigen postcode/instrument/genre als referentie).
+      // TT-80 (10-08-2026, bevinding Ronald): vroeger gebruikte deze RPC
+      // altijd je eigen locatie als vertrekpunt, wat je ook in Plaats typte
+      // — "Delft, 25 km" gaf dan gewoon je eigen straal terug, met Delft
+      // alleen als (kansloze) extra tekstfilter erbovenop. Afgesproken
+      // gedrag: Plaats wordt automatisch gevuld met je eigen stad voor
+      // gebruiksgemak, maar is altijd overschrijfbaar — en typ je iets
+      // anders, dan wordt dát het nieuwe vertrekpunt voor de straal, net
+      // als bij een bezoeker zonder eigen profiel.
       const mid = await getMyMusicianId();
+      const myCity = await getMyCity();
+      const typedCity = document.getElementById('filterCity').value.trim();
+      const usesOwnCity = !typedCity || (!!myCity && typedCity.toLowerCase() === myCity.toLowerCase());
+      const origin = usesOwnCity ? { lat: null, lng: null } : await resolveSearchOrigin(typedCity);
+
       const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians', {
-        searcher_id: mid, radius_km: radius
+        searcher_id: mid, radius_km: radius,
+        origin_lat: origin.lat, origin_lng: origin.lng
       });
       if (rpcErr) throw rpcErr;
       if (!matches.length) { lastMusicianResults = []; renderSearchResults([]); return; }
@@ -3628,15 +3662,15 @@ async function runSearch() {
       if (error) throw error;
       musicians = data;
 
-      // Het Plaats-veld wordt bij een eigen profiel vooraf gevuld met je eigen
-      // plaats (configureSearchAccess()) — de straal (via de RPC hierboven)
-      // dekt die omgeving al. Staat het veld nog op die eigen, ongewijzigde
-      // waarde, dan mag het niet óók nog als letterlijk tekstfilter gelden
-      // (anders vallen matches uit een andere plaats binnen je straal er
-      // onterecht uit). Typ je zelf een andere plaats, dan werkt het weer als
-      // bewust extra filter bovenop de straal.
-      const myCity = await getMyCity();
-      originResolved = !!myCity && cityQuery === myCity.toLowerCase();
+      // Straal is altijd actief voor een ingelogde gebruiker (eigen stad, of
+      // het getypte alternatief hierboven) — Plaats mag dus nooit óók nog
+      // als letterlijk tekstfilter gelden, anders vallen matches uit een
+      // andere plaats binnen die straal er onterecht uit. Uitzondering: een
+      // getypte plaats die nergens matcht (origin.lat blijft dan leeg) —
+      // dan valt terug op je eigen locatie als straal, maar blijft Plaats
+      // wél als tekstfilter gelden, zodat een tikfout niet stilzwijgend
+      // wordt genegeerd.
+      originResolved = usesOwnCity || origin.lat != null;
     } else {
       // Zonder eigen profiel: anonieme RPC's. Vertrekpunt voor straal/afstand
       // is het Plaats-veld hierboven (indien leeg of geen match: alle
@@ -3873,7 +3907,9 @@ function buildMusicianDetailHTML(m, isOwn) {
     ? `<img class="profile-avatar-photo" src="${avatarSrc}" alt="${escHtml(displayName)}" style="border-color:${col};">`
     : `<div class="profile-avatar-initials" style="background:${col};border-color:${col};">${escHtml(String(displayName || '?')[0].toUpperCase())}</div>`;
 
-  const songRows = m.musician_songs.map(s => {
+  const songRows = [...m.musician_songs].sort((a, b) =>
+    compareArtistTitle(a.song_artist, a.song_title, b.song_artist, b.song_title)
+  ).map(s => {
     // mastery_level komt in een class-attribuut terecht — alleen bekende
     // waarden toelaten, anders kan iemand het attribuut openbreken.
     const lvl = LEVEL_LABELS[s.mastery_level] ? s.mastery_level : '';
@@ -4040,6 +4076,7 @@ function openMessageComposer(recipientId, recipientName) {
   messageComposerRecipientId = recipientId;
   document.getElementById('messageComposerRecipientName').textContent = recipientName;
   document.getElementById('messageComposerBody').value = '';
+  updateCharCounter('messageComposerBody', 'messageComposerCounter', 2000);
   document.getElementById('musicianModal').classList.remove('visible');
   document.getElementById('messageModal').classList.add('visible');
   setTimeout(() => document.getElementById('messageComposerBody').focus(), 50);
@@ -4230,6 +4267,8 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc) 
   }
   document.getElementById('messagesInboxPanel').style.display = 'none';
   document.getElementById('messagesThreadPanel').style.display = 'block';
+  document.getElementById('messagesReplyInput').value = '';
+  updateCharCounter('messagesReplyInput', 'messagesReplyCounter', 2000);
   const threadEl = document.getElementById('messagesThreadList');
   threadEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
 
@@ -4812,6 +4851,18 @@ function confirmModalYes() {
   if (cb) cb();
 }
 
+// Bevinding Ronald (10-08-2026): teller ontbrak bij het schrijven van een
+// bericht ("0/2000 hadden we afgesproken"). Generiek gehouden zodat hij ook
+// bij toekomstige velden met een maxlength hergebruikt kan worden.
+function updateCharCounter(textareaId, counterId, max) {
+  const el = document.getElementById(textareaId);
+  const counter = document.getElementById(counterId);
+  if (!el || !counter) return;
+  const len = el.value.length;
+  counter.textContent = `${len}/${max}`;
+  counter.style.color = len >= max ? 'var(--danger)' : 'var(--muted)';
+}
+
 function showToast(msg) {
   const el = document.getElementById('appToast');
   if (!el) { console.warn('Toast:', msg); return; }
@@ -4923,9 +4974,28 @@ function goToLoginFromError() {
 
 // ─── Submit → opslaan in Supabase ────────────────────────────────────────────
 
+// Bevinding Ronald (10-08-2026): akkoord met Voorwaarden/Privacyverklaring/
+// Gedragscode moet een expliciete handeling zijn, niet impliciet via de klik
+// op "Profiel aanmaken" zelf. Alleen relevant bij een nieuw account (zie
+// showView('register') hierboven, dat de checkbox bij bewerken verbergt).
+function updateSubmitProfileState() {
+  const box = document.getElementById('consentCheckbox');
+  const btn = document.getElementById('submitProfileBtn');
+  if (!box || !btn) return;
+  btn.disabled = !box.checked;
+  btn.style.opacity = box.checked ? '' : '0.5';
+  btn.style.cursor = box.checked ? '' : 'not-allowed';
+}
+
 async function submitProfile() {
-  showSaving();
   const wasEditing = !!editingMusicianId;
+  // Defensieve check naast de disabled-knop: een nieuw account mag nooit
+  // aangemaakt worden zonder aangevinkt akkoord.
+  if (!wasEditing && !document.getElementById('consentCheckbox')?.checked) {
+    showToast('Vink eerst aan dat je akkoord gaat met de voorwaarden.');
+    return;
+  }
+  showSaving();
   myOwnCity = null; // eigen plaats kan net gewijzigd zijn — cache opnieuw laten opbouwen
 
   try {
@@ -5147,6 +5217,42 @@ let usernameCheckTimeout = null;
 let usernameAvailable = false; // laatst bekende status van de live-check
 let usernameCheckedValue = ''; // welke waarde die status bij hoort
 
+// TT-78 (10-08-2026, bevinding Ronald): gebruikersnamen die op een beheerrol
+// lijken, of die zich voordoen als het platform zelf, mogen niet door gewone
+// muzikanten gekozen worden — voorkomt verwarring en misbruik ("Beheerder",
+// "TalentTent_Support" enz.). Bevat/substring-check, niet exact — dus ook
+// varianten als "SuperAdmin92" worden geblokkeerd. Los daarvan: elke naam die
+// zowel "talent" als "tent" bevat wordt sowieso geblokkeerd (Ronalds expliciete
+// regel), ongeacht wat daartussen staat.
+//
+// Deze lijst is aan te vullen zonder verdere codewijzigingen elders.
+const RESERVED_USERNAME_WORDS = [
+  'admin', 'administrator', 'beheer', 'beheerder',
+  'moderator', 'moderatie', 'mod',
+  'support', 'helpdesk', 'klantenservice',
+  'systeem', 'system', 'root', 'owner', 'eigenaar',
+  'official', 'officieel', 'staff', 'medewerker', 'team',
+  'webmaster', 'superuser', 'developer', 'ontwikkelaar',
+];
+
+// Bevinding Ronald: de geblokkeerde namen hierboven zijn wél bedoeld voor
+// hemzelf of andere TTT-medewerkers om te gebruiken. Bewust een aparte lijst
+// i.p.v. een uitzondering middenin RESERVED_USERNAME_WORDS — zo blijft
+// duidelijk welke namen "verboden voor iedereen" zijn en welke "gereserveerd,
+// maar wel intern bruikbaar". Vul aan met de exacte gebruikersnamen (hoofd-/
+// kleine letters maken niet uit) die Ronald/medewerkers daadwerkelijk gaan
+// gebruiken.
+const STAFF_USERNAME_EXCEPTIONS = [
+  // Bijv. 'TalentTentRonald', 'TTT_Support' — nog aan te vullen.
+];
+
+function isReservedUsername(value) {
+  const v = value.toLowerCase();
+  if (STAFF_USERNAME_EXCEPTIONS.some(x => x.toLowerCase() === v)) return false;
+  if (v.includes('talent') && v.includes('tent')) return true;
+  return RESERVED_USERNAME_WORDS.some(w => v.includes(w));
+}
+
 function scheduleUsernameCheck() {
   clearTimeout(usernameCheckTimeout);
   usernameCheckTimeout = setTimeout(() => checkUsernameAvailability(), 400);
@@ -5178,6 +5284,10 @@ async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
   if (!value) { if (statusEl) statusEl.textContent = ''; return false; }
   if (!usernameFormatValid(value)) {
     if (statusEl) { statusEl.textContent = 'Alleen letters, cijfers en underscore, 3-20 tekens.'; statusEl.style.color = 'var(--danger)'; }
+    return false;
+  }
+  if (isReservedUsername(value)) {
+    if (statusEl) { statusEl.textContent = 'Deze gebruikersnaam is niet beschikbaar. Kies een andere.'; statusEl.style.color = 'var(--danger)'; }
     return false;
   }
   if (statusEl) { statusEl.textContent = 'Controleren...'; statusEl.style.color = 'var(--muted)'; }
@@ -5326,8 +5436,25 @@ function lookupPostcodeCity(normalized) {
       if (doc?.woonplaatsnaam) {
         const { data: alt } = await db.from('postcode_cache').select('alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
         const displayCity = pickDisplayCity(doc.woonplaatsnaam, alt?.alternatieve_schrijfwijzen);
-        db.from('postcode_cache').upsert({ postcode: normalized, city: doc.woonplaatsnaam, updated_at: new Date().toISOString() })
-          .then(() => {}).catch(() => {});
+        // TT-80 (10-08-2026, bevinding Ronald): hier stond eerder de rauwe
+        // PDOK-naam (bijv. "'s-Gravenhage") die in de cache belandde, terwijl
+        // displayCity hierboven al de gangbare naam ("Den Haag") berekende —
+        // maar alleen voor dit ene scherm. tt_resolve_search_origin() zoekt
+        // rechtstreeks op postcode_cache.city, dus elke nieuwe postcode-
+        // opzoeking zette de zoekfunctie zo steeds weer stuk. Nu wordt de
+        // gangbare naam zelf opgeslagen; de officiële naam blijft
+        // terugvindbaar via alternatieve_schrijfwijzen.
+        const officialName = doc.woonplaatsnaam;
+        const altList = (alt?.alternatieve_schrijfwijzen || '').split(';').map(s => s.trim()).filter(Boolean);
+        if (officialName.toLowerCase() !== displayCity.toLowerCase()
+            && !altList.some(a => a.toLowerCase() === officialName.toLowerCase())) {
+          altList.push(officialName);
+        }
+        db.from('postcode_cache').upsert({
+          postcode: normalized, city: displayCity,
+          alternatieve_schrijfwijzen: altList.join(';') || null,
+          updated_at: new Date().toISOString()
+        }).then(() => {}).catch(() => {});
         return { found: true, city: displayCity, source: 'pdok' };
       }
       const { data: cachedNF } = await db.from('postcode_cache').select('city, alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
@@ -5842,6 +5969,15 @@ function toggleTag(el, value, arr) {
   else { arr.splice(idx,1); el.classList.remove('selected'); }
 }
 
+// ─── Sortering repertoire ───────────────────────────────────────────────────
+// Bevinding Ronald (10-08-2026): repertoire overal alfabetisch op band/artiest,
+// dan op titel — anders is het lastig zoeken in een lange lijst.
+function compareArtistTitle(artistA, titleA, artistB, titleB) {
+  const byArtist = (artistA || '').localeCompare(artistB || '', 'nl', { sensitivity: 'base' });
+  if (byArtist !== 0) return byArtist;
+  return (titleA || '').localeCompare(titleB || '', 'nl', { sensitivity: 'base' });
+}
+
 // ─── Autocomplete helpers ─────────────────────────────────────────────────────
 
 // ─── Veiligheidshelpers (TT-05) ───────────────────────────────────────────────
@@ -5982,12 +6118,18 @@ function renderSongs() {
     return;
   }
   if (empty) empty.style.display = 'none';
+  // Weergave alfabetisch op band/artiest, dan titel — de onderliggende index
+  // (i) blijft verwijzen naar de echte plek in state.songs, want setLevel()/
+  // removeSong() werken op die array-index, niet op de weergavevolgorde.
+  const displayOrder = state.songs
+    .map((s, i) => i)
+    .sort((ia, ib) => compareArtistTitle(state.songs[ia].artist, state.songs[ia].title, state.songs[ib].artist, state.songs[ib].title));
   list.innerHTML = `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
       <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
         <span>Nummer — Band / Artiest</span><span style="margin-right:40px;">Niveau</span><span></span>
       </div>
-      ${state.songs.map((s,i) => `
+      ${displayOrder.map(i => { const s = state.songs[i]; return `
         <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;">
           <div>
             <div style="font-size:15px;font-weight:600;">${escHtml(s.title)}</div>
@@ -6001,7 +6143,7 @@ function renderSongs() {
           <button class="song-remove" onclick="removeSong(${i})" title="Verwijderen">✕</button>
         </div>
         ${!s.level ? `<div style="font-size:12px;color:var(--danger);padding:4px 14px;background:rgba(229,83,61,0.06);">Kies een beheersingsniveau om door te gaan</div>` : ''}
-      `).join('')}
+      `; }).join('')}
     </div>`;
 }
 
@@ -6580,9 +6722,16 @@ async function runBandSearch() {
     let originResolved = false; // straal actief? dan Plaats niet ook als tekstfilter toepassen
 
     if (hasOwnProfile) {
+      // TT-80: zelfde fix als in runSearch() — zie de toelichting daar.
       const mid = await getMyMusicianId();
+      const myCity = await getMyCity();
+      const typedCity = document.getElementById('filterBandCity').value.trim();
+      const usesOwnCity = !typedCity || (!!myCity && typedCity.toLowerCase() === myCity.toLowerCase());
+      const origin = usesOwnCity ? { lat: null, lng: null } : await resolveSearchOrigin(typedCity);
+
       const { data: matches, error: rpcErr } = await db.rpc('tt_search_bands_for_musician', {
-        searcher_id: mid, radius_km: radius
+        searcher_id: mid, radius_km: radius,
+        origin_lat: origin.lat, origin_lng: origin.lng
       });
       if (rpcErr) throw rpcErr;
       if (!matches.length) { lastBandResults = []; renderBandSearchResults([]); return; }
@@ -6595,12 +6744,11 @@ async function runBandSearch() {
       if (error) throw error;
       bands = data;
 
-      // Zelfde redenering als in runSearch(): het Plaats-veld staat bij een
-      // eigen profiel vooraf op je eigen plaats — dat mag niet óók nog als
-      // letterlijk tekstfilter gelden bovenop de straal, tenzij je het zelf
-      // hebt gewijzigd.
-      const myCity = await getMyCity();
-      originResolved = !!myCity && cityQuery === myCity.toLowerCase();
+      // Zelfde redenering als in runSearch(): straal is altijd actief
+      // (eigen stad, of het getypte alternatief hierboven), dus Plaats mag
+      // niet óók nog als letterlijk tekstfilter gelden — behalve als de
+      // getypte plaats nergens matcht, dan blijft het als tekstfilter tellen.
+      originResolved = usesOwnCity || origin.lat != null;
     } else {
       // Zonder eigen profiel: anonieme RPC's. Vertrekpunt voor straal/afstand
       // is het Plaats-veld hierboven (indien leeg of geen match: alle bands,
