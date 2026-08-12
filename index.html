@@ -1885,6 +1885,18 @@
   .band-member-dot { width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'Roboto',sans-serif;color:#000;flex-shrink:0; }
   .wanted-chip { font-size:11px;padding:3px 10px;border-radius:10px;border:1px dashed var(--accent2);color:var(--accent2); }
 
+  /* TT-51 (12-08-2026): niveau, sterren 1-5. Tekst-only (★/☆, geen emoji/svg),
+     consistent met de rest van de UI. .star-picker is klikbaar (wizard/
+     bandformulier), .star-display is alleen-lezen (profiel/zoekresultaat). */
+  .star-picker { display:flex; gap:4px; }
+  .star-picker .star { font-size:22px; line-height:1; color:var(--border); cursor:pointer; user-select:none; transition:color 0.1s; }
+  .star-picker .star:hover, .star-picker .star.filled { color:var(--accent); }
+  .instrument-level-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); }
+  .instrument-level-row:last-child { border-bottom:none; }
+  .instrument-level-name { font-size:13px; font-weight:600; }
+  .instrument-level-row .star-picker .star { font-size:18px; }
+  .star-display { font-size:12px; letter-spacing:1px; color:var(--accent); white-space:nowrap; }
+
   @media (max-width: 560px) {
     header { padding: 16px 20px 12px; flex-direction: column; align-items: flex-start; }
     main { padding: 32px 16px 60px; }
@@ -2219,6 +2231,8 @@
         <div class="tag-grid" id="instrumentGrid">
           <!-- filled by JS -->
         </div>
+        <!-- TT-51: per gekozen instrument een sterren-niveau (1-5), verplicht -->
+        <div id="instrumentLevelsList" style="margin-top:14px;"></div>
       </div>
     </div>
 
@@ -2485,6 +2499,27 @@
         </div>
       </div>
 
+      <!-- TT-51 (12-08-2026): niveau als filter, geen score — bereik met
+           onder- en bovengrens, aaneengesloten (vastgelegd door Ronald). Geldt
+           voor het/de hierboven gekozen instrument(en); zonder gekozen
+           instrument geldt het bereik tegen élk instrument dat iemand speelt. -->
+      <div class="filter-row single" style="margin-bottom:16px;">
+        <div class="field">
+          <label>Niveau</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="filterNiveauMin" onchange="runSearch()" style="width:90px;">
+              <option value="">Min</option>
+              <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+            </select>
+            <span style="color:var(--muted);font-size:13px;">t/m</span>
+            <select id="filterNiveauMax" onchange="runSearch()" style="width:90px;">
+              <option value="">Max</option>
+              <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div class="filter-row single" style="margin-bottom:16px;">
         <div class="field">
           <label>Genre</label>
@@ -2560,6 +2595,24 @@
       </div>
       <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label><div class="tag-grid" id="filterBandGenres"></div></div></div>
       <div class="filter-row single band-instrument-filter" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><div class="tag-grid" id="filterBandWanted"></div></div></div>
+      <!-- TT-51: niveau van de band zelf (Tabel 1), los van het niveau per
+           instrument bij muzikanten. Bereik, aaneengesloten. -->
+      <div class="filter-row single" style="margin-bottom:16px;">
+        <div class="field">
+          <label>Niveau van de band</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="filterBandNiveauMin" onchange="runBandSearch()" style="width:90px;">
+              <option value="">Min</option>
+              <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+            </select>
+            <span style="color:var(--muted);font-size:13px;">t/m</span>
+            <select id="filterBandNiveauMax" onchange="runBandSearch()" style="width:90px;">
+              <option value="">Max</option>
+              <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+            </select>
+          </div>
+        </div>
+      </div>
       <div style="display:flex;gap:12px;">
         <button class="search-btn" style="flex:1;" onclick="runBandSearch()">Zoek bands</button>
         <button class="btn btn-ghost" onclick="resetBandSearch()">Filters wissen</button>
@@ -2724,6 +2777,14 @@
             <div class="tag" onclick="selectBandStatus(this,'compleet')">Band is compleet</div>
             <div class="tag" onclick="selectBandStatus(this,'inactief')">Inactief</div>
           </div>
+        </div>
+        <!-- TT-51 (12-08-2026): eigen niveau van de band, optioneel. Losstaand
+             van het niveau per instrument bij muzikanten — geen verband
+             ertussen (niveaubepaling-naslagwerk.md, hoofdstuk 2). -->
+        <div class="field" style="margin-bottom:16px;">
+          <label>Niveau van de band</label>
+          <div id="bandLevelPicker" class="star-picker"></div>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Optioneel. Zie de niveau-indeling voor bands in de toelichting.</p>
         </div>
         <div class="field" style="margin-bottom:16px;">
           <label>Wij zoeken nog <span class="req">*</span></label>
@@ -3197,6 +3258,7 @@ function onUserLoggedOut() {
     citySource: 'pdok',
     regEmail: '', regPassword: '',
     instruments: [],
+    instrumentLevels: {},
     genres: [],
     songs: [],
     goal: '',
@@ -3735,6 +3797,8 @@ function resetMusicianSearch() {
   document.getElementById('filterCity').value = '';
   document.getElementById('filterAgeMin').value = '';
   document.getElementById('filterAgeMax').value = '';
+  document.getElementById('filterNiveauMin').value = '';
+  document.getElementById('filterNiveauMax').value = '';
   document.getElementById('filterRadius').value = 25;
   filterInstruments = [];
   filterGenres = [];
@@ -3798,7 +3862,7 @@ async function runSearch() {
       const { data, error } = await db.from('musicians').select(`
         id, fname, username, birth_date, city, zip, bio, goal,
         profile_color, avatar_url, updated_at,
-        musician_instruments(instrument),
+        musician_instruments(instrument, niveau),
         musician_genres(genre),
         musician_songs(song_title, song_artist, mastery_level)
       `).in('id', ids);
@@ -3839,15 +3903,24 @@ async function runSearch() {
         id: m.id, username: m.username, birth_date: m.birth_date, city: m.city,
         bio: m.bio, goal: m.goal, profile_color: m.profile_color, avatar_url: m.avatar_url,
         updated_at: m.updated_at,
-        musician_instruments: (m.instruments || []).map(i => ({ instrument: i })),
+        // TT-51 (12-08-2026, RPC-restpunt gesloten): instrument_levels bevat
+        // instrument + niveau samen — vervangt de eerdere platte instruments-
+        // lijst zodat het niveaufilter ook voor uitgelogde bezoekers werkt.
+        musician_instruments: (m.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
         musician_genres: (m.genres || []).map(g => ({ genre: g })),
         musician_songs: m.songs || [],
       }));
     }
 
-    // Client-side filters (naam, plaats, leeftijd, instrument, genre, doel)
+    // Client-side filters (naam, plaats, leeftijd, instrument, niveau, genre, doel)
     const ageMin = parseInt(document.getElementById('filterAgeMin').value) || 0;
     const ageMax = parseInt(document.getElementById('filterAgeMax').value) || 150;
+    // TT-51: niveau-bereik, aaneengesloten (1-5). Leeg = geen ondergrens/bovengrens.
+    const niveauMinVal = document.getElementById('filterNiveauMin').value;
+    const niveauMaxVal = document.getElementById('filterNiveauMax').value;
+    const niveauMin = niveauMinVal ? parseInt(niveauMinVal) : 1;
+    const niveauMax = niveauMaxVal ? parseInt(niveauMaxVal) : 5;
+    const niveauFilterActive = !!(niveauMinVal || niveauMaxVal);
     // Als Plaats als vertrekpunt is herkend (straal actief) of een postcode is,
     // dan niet óók nog als letterlijk tekstfilter toepassen — anders vallen
     // buurplaatsen binnen de straal (bijv. Den Haag bij "Delft") er onterecht uit.
@@ -3867,6 +3940,18 @@ async function runSearch() {
       if (filterInstruments.length) {
         const mInstr = m.musician_instruments.map(x => x.instrument);
         if (!filterInstruments.some(i => mInstr.includes(i))) return false;
+      }
+      // TT-51: niveau-bereik toepassen op de niveaus van (a) de hierboven
+      // gekozen instrument(en), of (b) alle instrumenten van de muzikant als
+      // er geen instrument is gekozen. Ontbrekende niveaudata (anonieme
+      // bezoeker, of oude rij zonder niveau) sluit een muzikant niet uit —
+      // liever te veel resultaten tonen dan iemand onterecht laten verdwijnen.
+      if (niveauFilterActive) {
+        const relevantInstr = filterInstruments.length
+          ? m.musician_instruments.filter(x => filterInstruments.includes(x.instrument))
+          : m.musician_instruments;
+        const levels = relevantInstr.map(x => x.niveau).filter(n => n != null);
+        if (levels.length && !levels.some(n => n >= niveauMin && n <= niveauMax)) return false;
       }
       if (filterGenres.length) {
         const mGenres = m.musician_genres.map(x => x.genre);
@@ -4096,7 +4181,7 @@ function buildMusicianDetailHTML(m, isOwn) {
       <span>Bijgewerkt op <strong>${escHtml(date)}</strong></span>
     </div>
     <div class="profile-badges">
-      ${m.musician_instruments.map(x => `<span class="badge" style="border-color:${col};color:${col};">${escHtml(x.instrument)}</span>`).join('')}
+      ${m.musician_instruments.map(x => `<span class="badge" style="border-color:${col};color:${col};">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
       ${m.musician_genres.map(x => `<span class="badge genre">${escHtml(x.genre)}</span>`).join('')}
       ${m.goal && GOAL_LABELS[m.goal] ? `<span class="badge">${escHtml(GOAL_LABELS[m.goal])}</span>` : ''}
       ${m.rehearsal_frequency && REHEARSAL_LABELS[m.rehearsal_frequency] ? `<span class="badge">${escHtml(REHEARSAL_LABELS[m.rehearsal_frequency])}</span>` : ''}
@@ -4161,7 +4246,7 @@ async function openMusicianModal(id) {
       id, fname, username, birth_date, city, bio, goal,
       rehearsal_frequency, musical_ambition,
       profile_color, avatar_url, updated_at,
-      musician_instruments(instrument),
+      musician_instruments(instrument, niveau),
       musician_genres(genre),
       musician_songs(song_title, song_artist, mastery_level),
       musician_media(media_type, url, platform)
@@ -4178,7 +4263,10 @@ async function openMusicianModal(id) {
         bio: row.bio, goal: row.goal, profile_color: row.profile_color, avatar_url: row.avatar_url,
         rehearsal_frequency: row.rehearsal_frequency, musical_ambition: row.musical_ambition,
         updated_at: row.updated_at,
-        musician_instruments: (row.instruments || []).map(i => ({ instrument: i })),
+        // TT-51 (12-08-2026, RPC-restpunt gesloten): instrument_levels bevat
+        // instrument + niveau samen, zodat de sterren ook in deze detailmodal
+        // verschijnen voor een bezoeker zonder eigen profiel.
+        musician_instruments: (row.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
         musician_genres: (row.genres || []).map(g => ({ genre: g })),
         musician_songs: row.songs || [],
         musician_media: (row.links || []).map(l => ({ media_type: 'link', url: l.url, platform: l.platform })),
@@ -4649,7 +4737,7 @@ function saveOnboardingProgress() {
       fname: state.fname, lname: state.lname, birth_date: state.birth_date,
       username: state.username,
       city: state.city, zip: state.zip, bio: state.bio, citySource: state.citySource,
-      instruments: state.instruments, genres: state.genres, songs: state.songs,
+      instruments: state.instruments, instrumentLevels: state.instrumentLevels, genres: state.genres, songs: state.songs,
       goal: state.goal,
       rehearsalFrequency: state.rehearsalFrequency, musicalAmbition: state.musicalAmbition,
       mediaLinks: state.mediaLinks
@@ -4699,6 +4787,7 @@ function populateWizardFieldsFromState() {
   document.querySelectorAll('#instrumentGrid .tag').forEach(t => {
     t.classList.toggle('selected', state.instruments.includes(t.textContent));
   });
+  renderInstrumentLevelsList(); // TT-51: sterren tonen bij bewerken/hervatten
   document.querySelectorAll('#genreGrid .genre-tag').forEach(t => {
     t.classList.toggle('selected', state.genres.includes(t.textContent));
   });
@@ -4752,6 +4841,7 @@ function tryResumeOnboarding() {
   state.bio = saved.bio || '';
   state.citySource = saved.citySource || 'pdok';
   state.instruments = saved.instruments || [];
+  state.instrumentLevels = saved.instrumentLevels || {};
   state.genres = saved.genres || [];
   state.songs = saved.songs || [];
   state.goal = saved.goal || '';
@@ -4773,7 +4863,7 @@ async function editMyProfile() {
   if (!mid) { showToast('Je hebt nog geen profiel om te bewerken.'); return; }
 
   const { data: m, error } = await db.from('musicians').select(`
-    *, musician_instruments(instrument), musician_genres(genre),
+    *, musician_instruments(instrument, niveau), musician_genres(genre),
     musician_songs(song_title, song_artist, mastery_level),
     musician_media(media_type, url, platform)
   `).eq('id', mid).single();
@@ -4799,6 +4889,9 @@ async function editMyProfile() {
   state.avatarFile    = null;
   state.avatarPath    = null;
   state.instruments   = (m.musician_instruments || []).map(x => x.instrument);
+  // TT-51: niveau per instrument meenemen bij bewerken van een bestaand profiel.
+  state.instrumentLevels = {};
+  (m.musician_instruments || []).forEach(x => { if (x.niveau) state.instrumentLevels[x.instrument] = x.niveau; });
   state.genres        = (m.musician_genres || []).map(x => x.genre);
   state.songs         = (m.musician_songs || []).map(s => ({ title: s.song_title, artist: s.song_artist, level: s.mastery_level }));
   // TT-02: al eerder geüploade foto's/video's meenemen, zodat ze zichtbaar
@@ -4831,7 +4924,7 @@ async function loadMyProfile() {
   if (actionsEl) actionsEl.style.display = 'none';
 
   const { data: m, error } = await db.from('musicians')
-    .select(`*, musician_instruments(instrument), musician_genres(genre),
+    .select(`*, musician_instruments(instrument, niveau), musician_genres(genre),
              musician_songs(song_title, song_artist, mastery_level),
              musician_media(media_type, url, platform)`)
     .eq('user_id', currentUser.id)
@@ -5259,10 +5352,12 @@ async function submitProfile() {
       mid = musician.id;
     }
 
-    // 3. Instrumenten
+    // 3. Instrumenten (TT-51: niveau 1-5 gaat mee, gevalideerd bij stap 1 —
+    // hier defensief || null voor het geval deze functie ooit buiten de
+    // normale wizard-flow wordt aangeroepen zonder die validatie)
     if (state.instruments.length) {
       const { error: iErr } = await db.from('musician_instruments').insert(
-        state.instruments.map(instrument => ({ musician_id: mid, instrument }))
+        state.instruments.map(instrument => ({ musician_id: mid, instrument, niveau: state.instrumentLevels[instrument] || null }))
       );
       if (iErr) throw new Error(iErr.message);
     }
@@ -6104,6 +6199,7 @@ let state = {
   citySource: 'pdok',
   regEmail: '', regPassword: '',
   instruments: [],
+  instrumentLevels: {}, // TT-51 (12-08-2026): instrument (string) -> niveau 1-5
   genres: [],
   songs: [],
   goal: '',
@@ -6126,7 +6222,7 @@ function init() {
     const t = document.createElement('div');
     t.className = 'tag';
     t.textContent = i;
-    t.onclick = () => { toggleTag(t, i, state.instruments); };
+    t.onclick = () => { toggleInstrumentSelection(t, i); };
     ig.appendChild(t);
   });
 
@@ -6157,6 +6253,77 @@ function toggleTag(el, value, arr) {
   const idx = arr.indexOf(value);
   if (idx === -1) { arr.push(value); el.classList.add('selected'); }
   else { arr.splice(idx,1); el.classList.remove('selected'); }
+}
+
+// TT-51 (12-08-2026): instrument kiezen in de wizard toont direct een
+// sterren-menu voor dat instrument (niveaubepaling-naslagwerk.md, hoofdstuk 2).
+// Losstaand van de generieke toggleTag() hierboven — die kent geen niveau en
+// wordt nog gewoon gebruikt voor genres (die hebben geen niveau).
+function toggleInstrumentSelection(el, instrument) {
+  toggleTag(el, instrument, state.instruments);
+  if (!state.instruments.includes(instrument)) {
+    delete state.instrumentLevels[instrument]; // niet meer geselecteerd: niveau vervalt mee
+  }
+  renderInstrumentLevelsList();
+}
+
+// Bouwt de lijst met sterren-pickers, één rij per gekozen instrument, in
+// dezelfde volgorde als state.instruments (selectievolgorde).
+function renderInstrumentLevelsList() {
+  const wrap = document.getElementById('instrumentLevelsList');
+  if (!wrap) return;
+  if (!state.instruments.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = state.instruments.map(instrument => `
+    <div class="instrument-level-row">
+      <span class="instrument-level-name">${escHtml(instrument)}</span>
+      <div class="star-picker" id="starPicker_${escHtml(cssIdSafe(instrument))}"></div>
+    </div>`).join('');
+  state.instruments.forEach(instrument => {
+    const container = document.getElementById(`starPicker_${cssIdSafe(instrument)}`);
+    if (!container) return;
+    renderStarPicker(container, state.instrumentLevels[instrument] || 0, (n) => {
+      state.instrumentLevels[instrument] = n;
+      renderInstrumentLevelsList();
+    });
+  });
+}
+
+// Instrumentnamen kunnen spaties/leestekens bevatten (bijv. "Zang", "Elektrische
+// gitaar") — id="starPicker_Elektrische gitaar" zou ongeldig zijn als
+// querySelector-doel. Alleen voor het element-id, niet voor de opgeslagen waarde.
+function cssIdSafe(s) {
+  return String(s).replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+// ─── Niveau: sterren 1-5 (TT-51, 12-08-2026) ─────────────────────────────────
+// Twee losse velden, geen verband ertussen (vastgelegd in
+// niveaubepaling-naslagwerk.md): niveau per instrument (musician_instruments)
+// en niveau van de band (bands). Zelfde widget voor beide.
+
+// Alleen-lezen weergave, bijv. op een profiel of in een zoekresultaat.
+// Geen ster als niveau ontbreekt (oude/onvolledige data) — dan liever niets
+// tonen dan een verzonnen niveau suggereren.
+function starDisplayHTML(niveau) {
+  const n = Number(niveau);
+  if (!Number.isInteger(n) || n < 1 || n > 5) return '';
+  return `<span class="star-display">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`;
+}
+
+// Klikbare sterrenkiezer. `getValue`/`setValue` laten deze functie werken voor
+// zowel een los instrument (wizard) als de band zelf (bandformulier) zonder
+// twee bijna-identieke functies te hoeven onderhouden.
+function renderStarPicker(container, currentValue, onSelect) {
+  container.innerHTML = '';
+  container.className = 'star-picker';
+  for (let n = 1; n <= 5; n++) {
+    const s = document.createElement('span');
+    s.className = 'star' + (currentValue && n <= currentValue ? ' filled' : '');
+    s.textContent = '★';
+    s.setAttribute('role', 'button');
+    s.title = `${n} van 5`;
+    s.onclick = () => onSelect(n);
+    container.appendChild(s);
+  }
 }
 
 // ─── Sortering repertoire ───────────────────────────────────────────────────
@@ -6457,6 +6624,10 @@ async function nextStep(from) {
   }
   if (from === 1) {
     if (!state.instruments.length) { showToast('Selecteer minimaal één instrument.'); return; }
+    // TT-51 (12-08-2026): elk gekozen instrument moet een niveau hebben —
+    // anders herhaalt zich precies het probleem dat niveau moest oplossen
+    // (twee instrumenten die niet van elkaar te onderscheiden zijn).
+    if (state.instruments.some(i => !state.instrumentLevels[i])) { showToast('Kies voor elk instrument een niveau (1-5 sterren).'); return; }
     if (!state.genres.length) { showToast('Selecteer minimaal één muziekstijl.'); return; }
   }
   // Repertoire is met TT-09 niet meer verplicht om verder te kunnen — mag ook
@@ -6868,7 +7039,7 @@ function setBandSearchSortMode(el, mode) {
   }
 }
 
-let bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff' };
+let bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff', niveau: null };
 
 function initBandSearchFilters() {
   const gg = document.getElementById('filterBandGenres');
@@ -6917,6 +7088,8 @@ function resetBandSearch() {
   document.getElementById('filterBandName').value = '';
   document.getElementById('filterBandCity').value = '';
   document.getElementById('filterBandRadius').value = 25;
+  document.getElementById('filterBandNiveauMin').value = '';
+  document.getElementById('filterBandNiveauMax').value = '';
   filterBandGenresList = [];
   filterBandWantedList = [];
   filterBandStatusVal = 'zoekend';
@@ -6963,7 +7136,7 @@ async function runBandSearch() {
       matches.forEach(m => { matchInfo[m.band_id] = m; });
 
       const ids = matches.map(m => m.band_id);
-      let query = db.from('bands').select(`id, name, city, genres, status, description, profile_color, updated_at, band_members(musician_id, status, musicians(fname, profile_color)), band_wanted(instrument)`).in('id', ids);
+      let query = db.from('bands').select(`id, name, city, genres, status, description, profile_color, updated_at, niveau, band_members(musician_id, status, musicians(fname, profile_color)), band_wanted(instrument)`).in('id', ids);
       if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
       const { data, error } = await query;
       if (error) throw error;
@@ -6997,6 +7170,7 @@ async function runBandSearch() {
       bands = (data || []).map(b => ({
         id: b.id, name: b.name, city: b.city, genres: b.genres || [], status: b.status,
         description: b.description, profile_color: b.profile_color, updated_at: b.updated_at,
+        niveau: b.niveau, // TT-51 (12-08-2026, RPC-restpunt gesloten)
         band_members: (b.members || []).map(x => ({ status: 'bevestigd', musicians: { fname: x.fname, profile_color: x.profile_color } })),
         band_wanted: (b.wanted || []).map(i => ({ instrument: i })),
       }));
@@ -7008,6 +7182,15 @@ async function runBandSearch() {
     const cityIsPostcode = /^[1-9][0-9]{3}$/.test(cityQuery.replace(/\s/g,''));
     const skipCityTextFilter = originResolved || cityIsPostcode;
 
+    // TT-51: niveau van de band zelf, bereik, aaneengesloten. Ontbrekende
+    // niveaudata (band heeft nog geen niveau gekozen, of anonieme bezoeker)
+    // sluit de band niet uit — zie dezelfde redenering bij runSearch().
+    const bandNiveauMinVal = document.getElementById('filterBandNiveauMin').value;
+    const bandNiveauMaxVal = document.getElementById('filterBandNiveauMax').value;
+    const bandNiveauMin = bandNiveauMinVal ? parseInt(bandNiveauMinVal) : 1;
+    const bandNiveauMax = bandNiveauMaxVal ? parseInt(bandNiveauMaxVal) : 5;
+    const bandNiveauFilterActive = !!(bandNiveauMinVal || bandNiveauMaxVal);
+
     const filtered = (bands || []).filter(b => {
       if (nameQuery && !(b.name || '').toLowerCase().includes(nameQuery)) return false;
       if (cityQuery && !skipCityTextFilter && !(b.city || '').toLowerCase().includes(cityQuery)) return false;
@@ -7016,6 +7199,7 @@ async function runBandSearch() {
         const wanted = (b.band_wanted||[]).map(w => w.instrument);
         if (!filterBandWantedList.some(i => wanted.includes(i))) return false;
       }
+      if (bandNiveauFilterActive && b.niveau != null && (b.niveau < bandNiveauMin || b.niveau > bandNiveauMax)) return false;
       return true;
     });
 
@@ -7077,7 +7261,7 @@ function bandRowHTML(b, statusLabels) {
     <div class="result-row" style="border-left-color:${col};" onclick="openBandModal('${jsAttr(b.id)}')">
       <div class="result-row-avatar" style="background:${col};border-radius:10px;">${initials}</div>
       <div class="result-row-main">
-        <div class="result-row-name">${escHtml(b.name)}</div>
+        <div class="result-row-name">${escHtml(b.name)}${starDisplayHTML(b.niveau) ? ' ' + starDisplayHTML(b.niveau) : ''}</div>
         <div class="result-row-meta">
           ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
           <span class="band-status-badge band-status-${status}" style="margin-left:8px;">${escHtml(statusLabels[status] || b.status)}</span>
@@ -7101,7 +7285,7 @@ function bandCardHTML(b, statusLabels) {
   return `
     <div class="result-card" onclick="openBandModal('${jsAttr(b.id)}')">
       <div class="result-card-photo" style="background:${col};border-radius:8px;">${initials}</div>
-      <div class="result-card-name">${escHtml(b.name)}</div>
+      <div class="result-card-name">${escHtml(b.name)}${starDisplayHTML(b.niveau) ? ' ' + starDisplayHTML(b.niveau) : ''}</div>
       <div class="result-card-meta">
         ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
         <span class="band-status-badge band-status-${status}" style="margin-left:6px;">${escHtml(statusLabels[status] || b.status)}</span>
@@ -7448,7 +7632,7 @@ function showCreateBandForm() {
 // Zet het bandformulier terug naar lege 'nieuwe band'-staat.
 function resetBandForm() {
   editingBandId = null;
-  bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff' };
+  bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff', niveau: null };
   bandPostcodeResolved = false;
   bandPostcodeFailStreak = 0;
   bandPostcodeManualMode = false;
@@ -7464,6 +7648,7 @@ function resetBandForm() {
   const statusEl = document.getElementById('bandPostcodeStatus');
   if (statusEl) statusEl.textContent = '';
   document.querySelectorAll('#bandGenreGrid .genre-tag, #bandWantedGrid .tag, #bandStatusGrid .tag').forEach(t => t.classList.remove('selected'));
+  renderBandLevelPicker(); // TT-51: sterren terug naar leeg
   const titleEl = document.getElementById('bandFormTitle');
   const btnEl = document.getElementById('saveBandBtn');
   if (titleEl) titleEl.textContent = 'Nieuwe band aanmaken';
@@ -7555,7 +7740,8 @@ async function editBand(id) {
     genres: [...(b.genres || [])],
     status: b.status || 'zoekend',
     wanted: (b.band_wanted || []).map(w => w.instrument),
-    color: b.profile_color || '#3ecfff'
+    color: b.profile_color || '#3ecfff',
+    niveau: b.niveau || null // TT-51
   };
   bandPostcodeResolved = !!b.zip;
   bandPostcodeFailStreak = 0;
@@ -7618,6 +7804,19 @@ function initBandForm() {
       wg.appendChild(t);
     });
   }
+  renderBandLevelPicker();
+}
+
+// TT-51: sterrenkiezer voor het eigen niveau van de band. Los aangeroepen
+// (niet alleen bij het eerste opbouwen van het formulier, zoals gg/wg
+// hierboven) omdat de waarde bij elke open/reset kan veranderen.
+function renderBandLevelPicker() {
+  const el = document.getElementById('bandLevelPicker');
+  if (!el) return;
+  renderStarPicker(el, bandState.niveau || 0, (n) => {
+    bandState.niveau = n;
+    renderBandLevelPicker();
+  });
 }
 
 function selectBandStatus(el, val) {
@@ -7647,6 +7846,7 @@ async function saveBand() {
         name, city: normalizeCityName(city), zip,
         description: desc || null, genres: bandState.genres,
         status: bandState.status, city_source: bandCitySource,
+        niveau: bandState.niveau || null, // TT-51, optioneel
       }).eq('id', bandId);
       if (uErr) throw uErr;
       await db.from('band_wanted').delete().eq('band_id', bandId);
@@ -7655,6 +7855,7 @@ async function saveBand() {
         name, city: normalizeCityName(city), zip,
         description: desc || null, genres: bandState.genres,
         status: bandState.status, founder_id: mid, city_source: bandCitySource,
+        niveau: bandState.niveau || null, // TT-51, optioneel
       }).select().single();
       if (bErr) throw bErr;
       bandId = band.id;
@@ -7712,7 +7913,7 @@ async function loadMyBands() {
       <div class="band-card-header" onclick="openBandModal('${jsAttr(b.id)}')">
         <div class="band-avatar" style="background:${col};">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>
         <div style="flex:1;">
-          <div class="band-name">${escHtml(b.name)}</div>
+          <div class="band-name">${escHtml(b.name)}${starDisplayHTML(b.niveau) ? ' ' + starDisplayHTML(b.niveau) : ''}</div>
           <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
         </div>
         <span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span>
@@ -7762,6 +7963,7 @@ async function openBandModal(id) {
         id: row.id, name: row.name, city: row.city, description: row.description, // TT-04: geen postcode voor bezoekers
         status: row.status, profile_color: row.profile_color, updated_at: row.updated_at,
         genres: row.genres || [],
+        niveau: row.niveau, // TT-51 (12-08-2026, RPC-restpunt gesloten)
         // TT-43: de publieke RPC levert voor leden alleen nog de
         // gebruikersnaam — de echte voornaam blijft weg bij bezoekers.
         band_members: (row.members || []).map(mem => ({ role: 'Lid', status: 'bevestigd', musicians: { username: mem.username, profile_color: mem.profile_color } })),
@@ -7780,7 +7982,7 @@ async function openBandModal(id) {
   document.getElementById('bandModalContent').innerHTML = `
     <div style="height:8px;background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;"></div>
     <div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:12px;">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>
-    <div class="profile-name">${escHtml(b.name)}</div>
+    <div class="profile-name">${escHtml(b.name)}${starDisplayHTML(b.niveau) ? ' ' + starDisplayHTML(b.niveau) : ''}</div>
     <div class="profile-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
     <div style="margin:10px 0;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>
     ${b.description ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
