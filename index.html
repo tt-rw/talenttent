@@ -1896,13 +1896,37 @@
   .star-picker { display:flex; gap:4px; }
   .star-picker .star { font-size:22px; line-height:1; color:var(--border); cursor:pointer; user-select:none; transition:color 0.1s; }
   .star-picker .star:hover, .star-picker .star.filled { color:var(--accent); }
-  .instrument-level-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); }
-  .instrument-level-row:last-child { border-bottom:none; }
-  .instrument-level-name { font-size:13px; font-weight:600; }
-  .instrument-level-row .star-picker .star { font-size:18px; }
   .star-display { font-size:12px; letter-spacing:1px; white-space:nowrap; }
   .star-display-filled { color:var(--accent); }
   .star-display-empty { color:var(--border); }
+
+  /* TT-51-uitbreiding (12-08-2026, Ronalds beslissing): niveau is nu
+     integraal onderdeel van de instrumentknop zelf, i.p.v. een losse lijst
+     eronder. Ingedrukt houden + slepen naar een ster (muis of touch) opent
+     hiervoor een sterrenstrip vlak bij de knop. */
+  .instrument-tag { display:flex; flex-direction:column; align-items:center; gap:3px; touch-action:none; }
+  .instrument-tag-label { line-height:1.2; }
+  .instrument-tag-stars { font-size:11px; letter-spacing:1px; color:var(--border); }
+  .instrument-tag.selected .instrument-tag-stars { color:rgba(0,0,0,0.55); }
+  .instrument-tag-stars .filled { color:#000; }
+  .instrument-tag:not(.selected) .instrument-tag-stars { visibility:hidden; }
+
+  .instrument-rating-overlay {
+    position:fixed;
+    display:none;
+    transform:translateX(-50%);
+    background:var(--surface);
+    border:1px solid var(--accent);
+    border-radius:10px;
+    padding:8px 10px;
+    gap:6px;
+    z-index:300;
+    box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  }
+  .instrument-rating-overlay.visible { display:flex; }
+  .instrument-rating-overlay .star { font-size:26px; line-height:1; color:var(--border); user-select:none; }
+  .instrument-rating-overlay .star.filled { color:var(--accent); }
+
   .niveau-info-btn { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; border:1px solid var(--border); background:none; color:var(--muted); font-size:11px; font-weight:700; cursor:pointer; margin-left:6px; vertical-align:middle; padding:0; }
   .niveau-info-btn:hover { color:var(--accent); border-color:var(--accent); }
   .niveau-info-wrap { overflow-x:auto; margin:12px 0 20px; }
@@ -2237,22 +2261,25 @@
   <!-- STEP 2: Instrument & genre -->
   <div class="panel" id="step1">
     <div class="panel-title">Jouw geluid</div>
-    <div class="panel-sub">Selecteer je instrument(en) en de muziekstijlen die je speelt.</div>
+    <div class="panel-sub">Selecteer je instrument(en), het niveau per instrument, en de muziekstijlen die je speelt.</div>
 
     <div class="field-group single" style="margin-bottom:24px;">
       <div class="field">
-        <label>Instrument(en) <span class="req">*</span></label>
+        <label>Mijn Instrumenten <span class="req">*</span> <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></label>
+        <!-- TT-51-uitbreiding (12-08-2026): niveau kiezen zit nu in de knop
+             zelf — kort klikken selecteert/deselecteert, ingedrukt houden en
+             naar een ster slepen zet het niveau (1-5), verplicht per
+             gekozen instrument. -->
+        <p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Tik om te kiezen. Houd ingedrukt en sleep naar een ster voor het niveau.</p>
         <div class="tag-grid" id="instrumentGrid">
           <!-- filled by JS -->
         </div>
-        <!-- TT-51: per gekozen instrument een sterren-niveau (1-5), verplicht -->
-        <div id="instrumentLevelsList" style="margin-top:14px;"></div>
       </div>
     </div>
 
     <div class="field-group single">
       <div class="field">
-        <label>Muziekstijl(en) <span class="req">*</span></label>
+        <label>Mijn Muziekstijl(en) <span class="req">*</span></label>
         <div class="tag-grid" id="genreGrid">
           <!-- filled by JS -->
         </div>
@@ -4219,8 +4246,8 @@ function buildMusicianDetailHTML(m, isOwn) {
   const displayName = isOwn ? m.fname : displayNameOf(m);
   const avatarSrc = safeUrl(m.avatar_url);
   const avatarHTML = avatarSrc
-    ? `<img class="profile-avatar-photo" src="${avatarSrc}" alt="${escHtml(displayName)}" style="border-color:${col};">`
-    : `<div class="profile-avatar-initials" style="background:${col};border-color:${col};">${escHtml(String(displayName || '?')[0].toUpperCase())}</div>`;
+    ? `<img class="profile-avatar-photo" src="${avatarSrc}" alt="${escHtml(displayName)}" style="border-color:${col};margin-bottom:0;flex-shrink:0;">`
+    : `<div class="profile-avatar-initials" style="background:${col};border-color:${col};margin-bottom:0;flex-shrink:0;">${escHtml(String(displayName || '?')[0].toUpperCase())}</div>`;
 
   const songRows = [...m.musician_songs].sort((a, b) =>
     compareArtistTitle(a.song_artist, a.song_title, b.song_artist, b.song_title)
@@ -4256,10 +4283,14 @@ function buildMusicianDetailHTML(m, isOwn) {
 
   return `
     <div class="profile-header-band" style="background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;"></div>
-    ${avatarHTML}
-    <div class="profile-name">${escHtml(displayName)}</div>
-    ${isOwn ? `<p style="font-size:12px;color:var(--muted);margin-top:2px;">Bezoekers zonder profiel zien je als <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong> · ingelogde muzikanten zien <strong style="color:${col};">${escHtml(m.fname || '')}</strong></p>` : ''}
-    <div class="profile-meta">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+      ${avatarHTML}
+      <div style="min-width:0;flex:1;">
+        <div class="profile-name">${escHtml(displayName)}</div>
+        ${isOwn ? `<p style="font-size:12px;color:var(--muted);margin-top:2px;">Bezoekers zonder profiel zien je als <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong> · ingelogde muzikanten zien <strong style="color:${col};">${escHtml(m.fname || '')}</strong></p>` : ''}
+        <div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+      </div>
+    </div>
     <div class="freshness-bar" style="margin-top:12px;margin-bottom:16px;">
       <div class="freshness-dot"></div>
       <span>Bijgewerkt op <strong>${escHtml(date)}</strong></span>
@@ -4267,9 +4298,6 @@ function buildMusicianDetailHTML(m, isOwn) {
     <div class="profile-badges">
       ${m.musician_instruments.map(x => `<span class="badge" style="border-color:${col};color:${col};">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
       ${m.musician_genres.map(x => `<span class="badge genre">${escHtml(x.genre)}</span>`).join('')}
-      ${m.goal && GOAL_LABELS[m.goal] ? `<span class="badge">${escHtml(GOAL_LABELS[m.goal])}</span>` : ''}
-      ${m.rehearsal_frequency && REHEARSAL_LABELS[m.rehearsal_frequency] ? `<span class="badge">${escHtml(REHEARSAL_LABELS[m.rehearsal_frequency])}</span>` : ''}
-      ${m.musical_ambition && AMBITION_LABELS[m.musical_ambition] ? `<span class="badge">${escHtml(AMBITION_LABELS[m.musical_ambition])}</span>` : ''}
     </div>
     ${m.bio ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${escHtml(m.bio)}"</p>` : ''}
     ${m.musician_songs.length ? `
@@ -4869,9 +4897,10 @@ function populateWizardFieldsFromState() {
   document.getElementById('bio').value = state.bio;
 
   document.querySelectorAll('#instrumentGrid .tag').forEach(t => {
-    t.classList.toggle('selected', state.instruments.includes(t.textContent));
+    const isSel = state.instruments.includes(t.dataset.instrument);
+    t.classList.toggle('selected', isSel);
+    renderInstrumentTagStars(t, t.dataset.instrument); // TT-51: sterren tonen bij bewerken/hervatten
   });
-  renderInstrumentLevelsList(); // TT-51: sterren tonen bij bewerken/hervatten
   document.querySelectorAll('#genreGrid .genre-tag').forEach(t => {
     t.classList.toggle('selected', state.genres.includes(t.textContent));
   });
@@ -6300,13 +6329,16 @@ let state = {
 // ─── Init ────────────────────────────────────────────────────────────────────
 
 function init() {
-  // Instruments
+  // Instruments — TT-51-uitbreiding (12-08-2026): elke knop is nu zelf de
+  // niveau-kiezer. Kort tikken = selecteren/deselecteren (ongewijzigd
+  // gedrag). Ingedrukt houden en slepen naar een ster = niveau instellen.
   const ig = document.getElementById('instrumentGrid');
   INSTRUMENTS.forEach(i => {
     const t = document.createElement('div');
-    t.className = 'tag';
-    t.textContent = i;
-    t.onclick = () => { toggleInstrumentSelection(t, i); };
+    t.className = 'tag instrument-tag';
+    t.dataset.instrument = i;
+    t.innerHTML = `<span class="instrument-tag-label">${escHtml(i)}</span><span class="instrument-tag-stars"></span>`;
+    attachInstrumentRatingHandlers(t, i);
     ig.appendChild(t);
   });
 
@@ -6339,44 +6371,150 @@ function toggleTag(el, value, arr) {
   else { arr.splice(idx,1); el.classList.remove('selected'); }
 }
 
-// TT-51 (12-08-2026): instrument kiezen in de wizard toont direct een
-// sterren-menu voor dat instrument (niveaubepaling-naslagwerk.md, hoofdstuk 2).
-// Losstaand van de generieke toggleTag() hierboven — die kent geen niveau en
-// wordt nog gewoon gebruikt voor genres (die hebben geen niveau).
+// TT-51 (12-08-2026): kort tikken op een instrumentknop selecteert of
+// deselecteert 'm — ongewijzigd gedrag t.o.v. de generieke toggleTag()
+// hierboven, alleen met het niveau erbij dat mee vervalt bij deselecteren.
 function toggleInstrumentSelection(el, instrument) {
   toggleTag(el, instrument, state.instruments);
   if (!state.instruments.includes(instrument)) {
     delete state.instrumentLevels[instrument]; // niet meer geselecteerd: niveau vervalt mee
   }
-  renderInstrumentLevelsList();
+  renderInstrumentTagStars(el, instrument);
 }
 
-// Bouwt de lijst met sterren-pickers, één rij per gekozen instrument, in
-// dezelfde volgorde als state.instruments (selectievolgorde).
-function renderInstrumentLevelsList() {
-  const wrap = document.getElementById('instrumentLevelsList');
-  if (!wrap) return;
-  if (!state.instruments.length) { wrap.innerHTML = ''; return; }
-  wrap.innerHTML = state.instruments.map(instrument => `
-    <div class="instrument-level-row">
-      <span class="instrument-level-name">${escHtml(instrument)}</span>
-      <div class="star-picker" id="starPicker_${escHtml(cssIdSafe(instrument))}"></div>
-    </div>`).join('');
-  state.instruments.forEach(instrument => {
-    const container = document.getElementById(`starPicker_${cssIdSafe(instrument)}`);
-    if (!container) return;
-    renderStarPicker(container, state.instrumentLevels[instrument] || 0, (n) => {
-      state.instrumentLevels[instrument] = n;
-      renderInstrumentLevelsList();
-    });
+// Werkt het mini-sterrenrijtje ín een instrumentknop bij, op basis van
+// state.instrumentLevels. Onzichtbaar (CSS) zolang de knop niet .selected is.
+function renderInstrumentTagStars(el, instrument) {
+  const starsEl = el.querySelector('.instrument-tag-stars');
+  if (!starsEl) return;
+  const n = state.instrumentLevels[instrument] || 0;
+  let out = '';
+  for (let i = 1; i <= 5; i++) out += `<span class="${i <= n ? 'filled' : ''}">★</span>`;
+  starsEl.innerHTML = out;
+}
+
+// TT-51-uitbreiding (12-08-2026, Ronalds beslissing): niveau kiezen is nu
+// een druk-en-sleep-gebaar op de instrumentknop zelf, i.p.v. een losse lijst
+// eronder. Pointer Events dekken zowel muis als touch in één implementatie.
+// Onderscheid met een gewone tik: een korte timer (HOLD_MS) of voldoende
+// beweging (MOVE_THRESHOLD) schakelt om naar "sterren kiezen"-modus — wat
+// het eerst gebeurt. Zonder één van beide blijft het een gewone klik
+// (selecteren/deselecteren, zie toggleInstrumentSelection()).
+const INSTRUMENT_RATING_HOLD_MS = 220;
+const INSTRUMENT_RATING_MOVE_PX = 6;
+let instrumentRatingOverlayEl = null;
+let instrumentRatingState = null; // { tag, instrument, active, timer, startX, startY }
+
+function getInstrumentRatingOverlay() {
+  if (instrumentRatingOverlayEl) return instrumentRatingOverlayEl;
+  const el = document.createElement('div');
+  el.className = 'instrument-rating-overlay';
+  el.innerHTML = [1,2,3,4,5].map(n => `<span class="star" data-n="${n}">★</span>`).join('');
+  document.body.appendChild(el);
+  instrumentRatingOverlayEl = el;
+  return el;
+}
+
+function attachInstrumentRatingHandlers(tag, instrument) {
+  tag.addEventListener('pointerdown', (e) => {
+    if (e.button != null && e.button !== 0) return; // alleen hoofdklik/1 vinger
+    // Pointer capture is verplicht: de sterrenstrip verschijnt buiten de
+    // knop (erboven/eronder). Zonder capture verliest de knop de move/up-
+    // events zodra de vinger/muis de knop verlaat en het slepen naar een
+    // ster werkt dan niet meer.
+    tag.setPointerCapture(e.pointerId);
+    instrumentRatingState = { tag, instrument, pointerId: e.pointerId, active: false, timer: null, startX: e.clientX, startY: e.clientY };
+    instrumentRatingState.timer = setTimeout(() => {
+      if (instrumentRatingState) startInstrumentRating(instrumentRatingState, e);
+    }, INSTRUMENT_RATING_HOLD_MS);
+  });
+
+  tag.addEventListener('pointermove', (e) => {
+    if (!instrumentRatingState || instrumentRatingState.tag !== tag) return;
+    if (instrumentRatingState.active) {
+      updateInstrumentRating(instrumentRatingState, e);
+      return;
+    }
+    const dx = Math.abs(e.clientX - instrumentRatingState.startX);
+    const dy = Math.abs(e.clientY - instrumentRatingState.startY);
+    if (dx > INSTRUMENT_RATING_MOVE_PX || dy > INSTRUMENT_RATING_MOVE_PX) {
+      clearTimeout(instrumentRatingState.timer);
+      startInstrumentRating(instrumentRatingState, e);
+      updateInstrumentRating(instrumentRatingState, e);
+    }
+  });
+
+  tag.addEventListener('pointerup', (e) => {
+    if (!instrumentRatingState || instrumentRatingState.tag !== tag) return;
+    clearTimeout(instrumentRatingState.timer);
+    if (tag.hasPointerCapture(e.pointerId)) tag.releasePointerCapture(e.pointerId);
+    if (instrumentRatingState.active) {
+      finishInstrumentRating(instrumentRatingState);
+    } else {
+      toggleInstrumentSelection(tag, instrument); // gewone, korte tik
+    }
+    instrumentRatingState = null;
+  });
+
+  tag.addEventListener('pointercancel', (e) => {
+    if (!instrumentRatingState || instrumentRatingState.tag !== tag) return;
+    clearTimeout(instrumentRatingState.timer);
+    if (tag.hasPointerCapture(e.pointerId)) tag.releasePointerCapture(e.pointerId);
+    if (instrumentRatingState.active) cancelInstrumentRating();
+    instrumentRatingState = null;
   });
 }
 
-// Instrumentnamen kunnen spaties/leestekens bevatten (bijv. "Zang", "Elektrische
-// gitaar") — id="starPicker_Elektrische gitaar" zou ongeldig zijn als
-// querySelector-doel. Alleen voor het element-id, niet voor de opgeslagen waarde.
-function cssIdSafe(s) {
-  return String(s).replace(/[^a-zA-Z0-9]/g, '_');
+function startInstrumentRating(ratingState, e) {
+  ratingState.active = true;
+  const { tag, instrument } = ratingState;
+  // Ingedrukt houden om een niveau te kiezen selecteert het instrument
+  // meteen mee — een niveau instellen zonder het instrument te kiezen is
+  // zinloos, en dit scheelt een aparte tik.
+  if (!state.instruments.includes(instrument)) {
+    state.instruments.push(instrument);
+    tag.classList.add('selected');
+  }
+  const overlay = getInstrumentRatingOverlay();
+  const rect = tag.getBoundingClientRect();
+  const above = rect.top > 70;
+  overlay.style.left = (rect.left + rect.width / 2) + 'px';
+  overlay.style.top = above ? (rect.top - 52) + 'px' : (rect.bottom + 8) + 'px';
+  overlay.classList.add('visible');
+  overlay.dataset.pending = state.instrumentLevels[instrument] || 0;
+  updateInstrumentRatingVisual(overlay, state.instrumentLevels[instrument] || 0);
+}
+
+function updateInstrumentRating(ratingState, e) {
+  const overlay = getInstrumentRatingOverlay();
+  const stars = overlay.querySelectorAll('.star');
+  let n = 0;
+  stars.forEach((s, idx) => {
+    const r = s.getBoundingClientRect();
+    if (e.clientX >= r.left + r.width / 2) n = idx + 1;
+  });
+  overlay.dataset.pending = n;
+  updateInstrumentRatingVisual(overlay, n);
+}
+
+function updateInstrumentRatingVisual(overlay, n) {
+  overlay.querySelectorAll('.star').forEach((s, idx) => {
+    s.classList.toggle('filled', idx < n);
+  });
+}
+
+function finishInstrumentRating(ratingState) {
+  const overlay = getInstrumentRatingOverlay();
+  const n = parseInt(overlay.dataset.pending || '0', 10);
+  const { tag, instrument } = ratingState;
+  if (n >= 1) state.instrumentLevels[instrument] = n;
+  else delete state.instrumentLevels[instrument];
+  overlay.classList.remove('visible');
+  renderInstrumentTagStars(tag, instrument);
+}
+
+function cancelInstrumentRating() {
+  getInstrumentRatingOverlay().classList.remove('visible');
 }
 
 // ─── Niveau: sterren 1-5 (TT-51, 12-08-2026) ─────────────────────────────────
@@ -7997,6 +8135,59 @@ function openBandNiveauInfoModal() {
   document.getElementById('niveauInfoModal').classList.add('visible');
 }
 
+// TT-51-uitbreiding (12-08-2026): Tabel 2 uit niveaubepaling-naslagwerk.md,
+// 1-op-1 overgenomen. Hardcoded (geen build-stap om een .md-bestand in te
+// lezen in deze losse-bestand-app) — bij een tekstwijziging in het naslagwerk
+// moet deze lijst hier ook worden bijgewerkt.
+const NIVEAU_INFO_MUSICIAN_HEADERS = ['Niveau', 'Technische beheersing', 'Gehoor en muziektheorie', 'Voorbereiden en repeteren', 'Live spelen en flexibiliteit'];
+const NIVEAU_INFO_MUSICIAN_ROWS = [
+  ['1. Beginner (Bedroom)',
+    'Je kent de basisakkoorden of een paar toffe drumbeats. Je speelt vooral losse intro\'s of riffjes van TikTok en YouTube. Je timing schommelt.',
+    'Je kunt akkoorden nog niet echt op gehoor naspelen. Je hebt internettabs, YouTube-tutorials of eenvoudige bladmuziek nodig.',
+    'Je hebt echt een leraar of hulp nodig om een nieuw nummer te leren. Je oefent nog een beetje onregelmatig.',
+    'Je speelt eigenlijk altijd op hetzelfde volume. Als de band stopt of iets anders doet dan de opname, ben je de draad kwijt.'],
+  ['2. Gevorderde Beginner (Jammer)',
+    'Je speelt complete nummers vloeiend uit. Je basistechniek (barré-akkoorden, ademsteun, fills) is stabiel en kost steeds minder moeite.',
+    'Je herkent eenvoudige basisschema\'s. Je kunt nummers thuis uitzoeken en naspelen door goed naar de originele track te luisteren.',
+    'Je studeert thuis zelfstandig de nummers in die zijn afgesproken. Je kent je partijen uit je hoofd als je naar de repetitie komt.',
+    'Je luistert naar de rest en past je volume aan. Je kunt een simpele eigen fill of solo verzinnen die past bij de structuur van het nummer.'],
+  ['3. Half-Gevorderd (Gig-Ready)',
+    'Fysieke techniek is een automatisme; constante strakke timing. Je hebt een goede, bewuste controle over je eigen klankkleur en sound.',
+    'Kan makkelijk improviseren en solo\'s construeren over bekende toonsoorten; sterke functionele basiskennis van muziektheorie.',
+    'Bedenkt en schrijft eigen partijen uit. Heeft minimale repetitietijd nodig om een volledige live-set van anderhalf uur te beheersen.',
+    'Herstelt live-fouten onmiddellijk zonder dat het opvalt; speelt moeiteloos met een clicktrack of In-Ear monitor.'],
+  ['4. Gevorderd (Set-Leider)',
+    'Zeer brede technische bagage; lost instrument-technische problemen direct live op; schakelt moeiteloos tussen uiteenlopende genres.',
+    'Kan live on-the-fly transponeren naar een andere toonsoort; pikt complexe harmonieën en akkoordenschema\'s direct op gehoor op.',
+    'Kan fungeren als muzikaal leider (MD); arrangeert efficiënt partijen voor andere bandleden en levert kant-en-klare prestaties aan.',
+    'Volledige controle over dynamiek; levert studio-waardige prestaties onder live-fysieke spanning (zoals intense podiumactie of dans).'],
+  ['5. Professioneel',
+    'Grenzeloze techniek; beschikt over een internationaal onderscheidende, direct herkenbare \'signature sound\' en artistieke identiteit.',
+    'Absoluut gehoor of uitzonderlijk ontwikkeld relatief gehoor; leest direct complexe chord charts of partituren vanaf papier (sight-reading).',
+    'Volledig autonoom en multi-inzetbaar; beheerst een complete setlist binnen 24 uur; de vaste eerste keuze voor high-end studio- en sessiewerk.',
+    'Volledige controle over emotie en klank; anticipeert en adapteert onmiddellijk aan elke onverwachte live-situatie of tempowisseling.'],
+];
+
+function openMusicianNiveauInfoModal() {
+  const rowsHTML = NIVEAU_INFO_MUSICIAN_ROWS.map(r => `<tr>${r.map(c => `<td>${escHtml(c)}</td>`).join('')}</tr>`).join('');
+  document.getElementById('niveauInfoModalContent').innerHTML = `
+    <div class="filter-title" style="margin-bottom:4px;">Niveau-indeling per instrument</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies per instrument het niveau waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
+    <div class="niveau-info-wrap">
+      <table class="niveau-info-table">
+        <thead><tr>${NIVEAU_INFO_MUSICIAN_HEADERS.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    </div>
+    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Belangrijk: gebruik dit systeem als jouw kompas</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Geen enkele muzikant past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Niveau 4), maar nog nooit op een podium hebben gestaan (Niveau 1).</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Zie deze niveaubeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
+    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Hoe kies je jouw niveau?</div>
+    <p style="font-size:13px;color:var(--muted);">Loop de criteria per niveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg het niveau waar jij het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
+  `;
+  document.getElementById('niveauInfoModal').classList.add('visible');
+}
+
 function selectBandStatus(el, val) {
   document.querySelectorAll('#bandStatusGrid .tag').forEach(t => t.classList.remove('selected'));
   el.classList.add('selected');
@@ -8159,9 +8350,13 @@ async function openBandModal(id) {
 
   document.getElementById('bandModalContent').innerHTML = `
     <div style="height:8px;background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;"></div>
-    <div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:12px;">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>
-    <div class="profile-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
-    <div class="profile-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
+      <div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>
+      <div style="min-width:0;flex:1;">
+        <div class="profile-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
+        <div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
+      </div>
+    </div>
     <div style="margin:10px 0;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>
     ${b.description ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
     <div class="profile-songs-title" style="margin-top:16px;">Leden (${confirmed.length})</div>
