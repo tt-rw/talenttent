@@ -124,6 +124,10 @@
   }
 
   .logo {
+    /* TT-U23 (12-08-2026): het logo is de home-knop, dus ook een tikdoel. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     font-family: var(--font-display);
     font-size: clamp(40px, 7vw, 72px);
     letter-spacing: 1px;
@@ -257,7 +261,10 @@
     border-radius: 8px;
     color: var(--text);
     font-family: 'Roboto', sans-serif;
-    font-size: 15px;
+    /* TT-U22 (12-08-2026): 16px is het minimum. Safari op iOS zoomt
+       automatisch in bij focus op een veld onder 16px, en zoomt niet terug
+       uit. Bewust NIET via var(--fs-md) — de huisstijl blijft 15px. */
+    font-size: 16px;
     padding: 12px 16px;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -318,6 +325,10 @@
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 6px;
+    /* TT-U23 (12-08-2026): tikdoel minimaal 44px hoog (Apple 44pt, Google 48dp). */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     padding: 8px 16px;
     font-size: 13px;
     cursor: pointer;
@@ -331,12 +342,29 @@
 
   /* TT-46: prompts boven het bio-veld — actieknoppen, geen aan/uit-keuze
      zoals .tag, dus een eigen (lichtere) stijl zonder .selected-status. */
+  /* TT-U04/TT-U08 (12-08-2026): knop "Toon" in het wachtwoordveld. */
+  .password-wrap { position: relative; }
+  .password-wrap input { padding-right: 76px; }
+  .password-toggle {
+    position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+    min-height: 44px; padding: 0 12px;
+    background: none; border: none; color: var(--muted);
+    font-family: 'Roboto', sans-serif; font-size: 13px; font-weight: 700;
+    cursor: pointer;
+  }
+  .password-toggle:hover { color: var(--accent); }
+
   .bio-prompts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
   .bio-prompt-chip {
     background: transparent;
     border: 1px dashed var(--border);
     border-radius: 6px;
-    padding: 6px 12px;
+    /* TT-U23 (12-08-2026): tikdoel minimaal 44px hoog, randen meegerekend. */
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    min-height: 46px;
+    padding: 6px 14px;
     font-size: 12px;
     font-weight: 700;
     color: var(--muted);
@@ -350,7 +378,11 @@
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 20px;
-    padding: 6px 14px;
+    /* TT-U23 (12-08-2026): tikdoel minimaal 44px hoog. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 6px 16px;
     font-size: 12px;
     cursor: pointer;
     transition: all 0.15s;
@@ -443,9 +475,16 @@
   }
 
   .level-btn {
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 11px;
+    /* TT-U23/V-20 (12-08-2026): was 49x22 pixels, gemeten op 390px.
+       Nu minimaal 44x44, en 13px tekst i.p.v. 11px. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
     border: 1px solid var(--border);
     background: transparent;
     color: var(--muted);
@@ -461,13 +500,20 @@
   .level-btn.active-podium { background: var(--surface2); border-color: var(--text); color: var(--text); font-weight: 700; font-style: italic; }
 
   .song-remove {
+    /* TT-U23 (12-08-2026): was 23x26 pixels. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
     background: none;
     border: none;
     color: var(--muted);
     cursor: pointer;
     font-size: 18px;
     line-height: 1;
-    padding: 4px;
+    padding: 0;
     transition: color 0.15s;
   }
 
@@ -506,6 +552,11 @@
   }
 
   .btn {
+    /* TT-U23 (12-08-2026): elke knop minimaal 44px hoog. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
     padding: 13px 28px;
     border-radius: 8px;
     font-family: 'Roboto', sans-serif;
@@ -714,8 +765,9 @@
 
   .avatar-edit-btn {
     position: absolute;
-    bottom: 2px; right: 2px;
-    width: 28px; height: 28px;
+    bottom: -2px; right: -2px;
+    /* TT-U23 (12-08-2026): was 28x28 pixels. */
+    width: 44px; height: 44px;
     border-radius: 50%;
     background: var(--accent);
     border: 2px solid var(--bg);
@@ -1278,6 +1330,10 @@
   .app-nav::-webkit-scrollbar { display: none; }
 
   .nav-btn {
+    /* TT-U23 (12-08-2026): was 35px hoog. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     padding: 10px 20px;
     border-radius: 8px 8px 0 0;
     font-family: 'Roboto', sans-serif;
@@ -1309,6 +1365,12 @@
   .nav-menu-btn {
     flex-shrink: 0;
     margin-bottom: 8px;
+    /* TT-U23 (12-08-2026): was 42x38 pixels. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
     padding: 8px 10px;
     border-radius: 8px;
     border: 1px solid transparent;
@@ -1744,8 +1806,9 @@
      i.p.v. los aan het eind van de rij te zweven. */
   .result-row-msg-btn {
     flex-shrink: 0;
-    width: 30px;
-    height: 30px;
+    /* TT-U23 (12-08-2026): was 30x30 pixels. */
+    width: 44px;
+    height: 44px;
     border-radius: 6px;
     background: var(--surface2);
     display: flex;
@@ -1871,10 +1934,11 @@
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 50%;
-    width: 32px; height: 32px;
+    /* TT-U23 (12-08-2026): was 32x32 pixels. */
+    width: 44px; height: 44px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 18px;
     color: var(--muted);
     transition: all 0.15s;
   }
@@ -1925,31 +1989,35 @@
      integraal onderdeel van de instrumentknop zelf, i.p.v. een losse lijst
      eronder. Ingedrukt houden + slepen naar een ster (muis of touch) opent
      hiervoor een sterrenstrip vlak bij de knop. */
-  .instrument-tag { display:flex; flex-direction:column; align-items:center; gap:3px; touch-action:none; }
+  /* TT-U21 (12-08-2026): touch-action was 'none'. Daardoor scrollde de pagina
+     niet mee zodra een veeg op een instrumentknop begon. Nu 'manipulation':
+     verticaal scrollen is altijd van de pagina. */
+  .instrument-tag { display:flex; flex-direction:column; align-items:center; gap:3px; touch-action:manipulation; }
   .instrument-tag-label { line-height:1.2; }
   .instrument-tag-stars { font-size:11px; letter-spacing:1px; color:var(--border); }
   .instrument-tag.selected .instrument-tag-stars { color:rgba(0,0,0,0.55); }
   .instrument-tag-stars .filled { color:#000; }
   .instrument-tag:not(.selected) .instrument-tag-stars { visibility:hidden; }
 
-  .instrument-rating-overlay {
-    position:fixed;
-    display:none;
-    transform:translateX(-50%);
-    background:var(--surface);
-    border:1px solid var(--accent);
-    border-radius:10px;
-    padding:8px 10px;
-    gap:6px;
-    z-index:300;
-    box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  /* TT-U21 (12-08-2026): de zwevende sterrenstrip is vervangen door een
+     keuzescherm met vijf knoppen, elk minimaal 44px hoog. */
+  .level-choice {
+    display:flex; align-items:center; gap:12px; width:100%;
+    min-height:56px; padding:10px 14px; margin-bottom:8px;
+    background:var(--surface2); border:1px solid var(--border); border-radius:10px;
+    color:var(--text); font-family:'Roboto',sans-serif; font-size:14px;
+    text-align:left; cursor:pointer; transition:border-color 0.15s, background 0.15s;
   }
-  .instrument-rating-overlay.visible { display:flex; }
-  .instrument-rating-overlay .star { font-size:26px; line-height:1; color:var(--border); user-select:none; }
-  .instrument-rating-overlay .star.filled { color:var(--accent); }
+  .level-choice:hover { border-color:var(--accent); }
+  .level-choice.selected { border-color:var(--accent); background:rgba(245,197,24,0.12); }
+  .level-choice-stars { flex-shrink:0; font-size:18px; letter-spacing:1px; color:var(--border); }
+  .level-choice-stars .filled { color:var(--accent); }
+  .level-choice-label { line-height:1.3; }
 
-  .niveau-info-btn { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; border:1px solid var(--border); background:none; color:var(--muted); font-size:11px; font-weight:700; cursor:pointer; margin-left:6px; vertical-align:middle; padding:0; }
+  .niveau-info-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; border:1px solid var(--border); background:none; color:var(--muted); font-size:11px; font-weight:700; cursor:pointer; margin-left:6px; vertical-align:middle; padding:0; }
   .niveau-info-btn:hover { color:var(--accent); border-color:var(--accent); }
+  /* TT-U23 (12-08-2026): onzichtbaar tikvlak van 44x44 rond de kleine knop. */
+  .niveau-info-btn::after { content:''; position:absolute; top:-10px; right:-10px; bottom:-10px; left:-10px; }
   .niveau-info-wrap { overflow-x:auto; margin:12px 0 20px; }
   .niveau-info-table { border-collapse:collapse; width:100%; min-width:640px; font-size:12px; }
   .niveau-info-table th, .niveau-info-table td { border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top; }
@@ -2136,14 +2204,22 @@
       <div id="authError" class="auth-error"></div>
       <div id="authSuccess" class="auth-success"></div>
 
+      <!-- TT-U08 (12-08-2026): een echt <form> met autocomplete-waarden.
+           Zonder deze twee slaat een wachtwoordmanager niets op en vult
+           iOS/Android niets in. -->
+      <form onsubmit="event.preventDefault(); signIn();">
       <div class="field" style="margin-bottom:16px;">
         <label>E-mailadres</label>
-        <input type="email" id="loginEmail" placeholder="jouw@email.nl" onkeydown="submitOnEnter(event, signIn)">
+        <input type="email" id="loginEmail" placeholder="jouw@email.nl" autocomplete="email" inputmode="email" enterkeyhint="next" onkeydown="submitOnEnter(event, signIn)">
       </div>
       <div class="field" style="margin-bottom:8px;">
         <label>Wachtwoord</label>
-        <input type="password" id="loginPassword" placeholder="••••••••" onkeydown="submitOnEnter(event, signIn)">
+        <div class="password-wrap">
+          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" enterkeyhint="done" onkeydown="submitOnEnter(event, signIn)">
+          <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)" aria-label="Toon wachtwoord">Toon</button>
+        </div>
       </div>
+      </form>
       <div style="text-align:right;margin-bottom:20px;">
         <button onclick="forgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Roboto',sans-serif;text-decoration:underline;">Wachtwoord vergeten?</button>
       </div>
@@ -2180,11 +2256,11 @@
     <div class="field-group">
       <div class="field">
         <label>Voornaam <span class="req">*</span></label>
-        <input type="text" id="fname" placeholder="Bijv. Sander">
+        <input type="text" id="fname" placeholder="Bijv. Sander" autocomplete="given-name">
       </div>
       <div class="field">
-        <label>Achternaam <span class="req">*</span></label>
-        <input type="text" id="lname" placeholder="Bijv. de Vries">
+        <label>Achternaam <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;">(optioneel)</span></label>
+        <input type="text" id="lname" placeholder="Bijv. de Vries" autocomplete="family-name">
       </div>
     </div>
 
@@ -2257,18 +2333,17 @@
       <div class="field-group">
         <div class="field">
           <label>E-mailadres <span class="req">*</span></label>
-          <input type="email" id="regEmail" placeholder="jouw@email.nl" autocomplete="off" onkeydown="submitOnEnter(event, () => nextStep(0))">
+          <input type="email" id="regEmail" placeholder="jouw@email.nl" autocomplete="email" inputmode="email" enterkeyhint="next" onkeydown="submitOnEnter(event, () => nextStep(0))">
         </div>
         <div class="field">
           <label>Wachtwoord <span class="req">*</span></label>
-          <input type="password" id="regPassword" placeholder="Minimaal 8 tekens" autocomplete="new-password" onkeydown="submitOnEnter(event, () => nextStep(0))">
-        </div>
-      </div>
-
-      <div class="field-group single">
-        <div class="field">
-          <label>Wachtwoord herhalen <span class="req">*</span></label>
-          <input type="password" id="regPassword2" placeholder="••••••••" autocomplete="new-password" onkeydown="submitOnEnter(event, () => nextStep(0))">
+          <!-- TT-U04 (12-08-2026): "Wachtwoord herhalen" is vervangen door
+               een knop "Toon". Een herhaalveld verlaagt de conversie en voegt
+               niets toe zodra het wachtwoord zichtbaar te maken is. -->
+          <div class="password-wrap">
+            <input type="password" id="regPassword" placeholder="Minimaal 8 tekens" autocomplete="new-password" enterkeyhint="done" onkeydown="submitOnEnter(event, () => nextStep(0))">
+            <button type="button" class="password-toggle" onclick="togglePassword('regPassword', this)" aria-label="Toon wachtwoord">Toon</button>
+          </div>
         </div>
       </div>
     </div>
@@ -3197,7 +3272,7 @@
     <button class="modal-close" onclick="document.getElementById('addMemberModal').classList.remove('visible')">✕</button>
     <div class="filter-title" style="margin-bottom:6px;">Lid uitnodigen</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">De muzikant staat pas als lid op het bandprofiel zodra hij of zij de uitnodiging zelf bevestigt.</p>
-    <input type="text" id="memberSearchInput" placeholder="Zoek op naam..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:14px;margin-bottom:16px;">
+    <input type="text" id="memberSearchInput" placeholder="Zoek op naam..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:16px;">
     <div id="memberSearchResults"></div>
   </div>
 </div>
@@ -3209,6 +3284,20 @@
   <div class="modal-box" style="max-width:760px;">
     <button class="modal-close" onclick="document.getElementById('niveauInfoModal').classList.remove('visible')">✕</button>
     <div id="niveauInfoModalContent"></div>
+  </div>
+</div>
+
+<!-- TT-U21 (12-08-2026): niveau kiezen per instrument. Vervangt het
+     druk-en-sleep-gebaar. Vijf knoppen, elk minimaal 56px hoog. -->
+<div class="modal-overlay" id="instrumentLevelModal" onclick="if(event.target===this)closeInstrumentLevelSheet()">
+  <div class="modal-box" style="max-width:520px;">
+    <button class="modal-close" onclick="closeInstrumentLevelSheet()" aria-label="Sluiten">✕</button>
+    <div class="filter-title" id="instrumentLevelTitle" style="margin-bottom:4px;padding-right:52px;">Hoe goed speel je dit?</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies het niveau waar je het dichtst bij in de buurt zit. Het is geen examen.
+      <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
+    </p>
+    <div id="instrumentLevelChoices"></div>
+    <button type="button" class="btn btn-ghost" style="width:100%;margin-top:8px;color:var(--danger);border-color:var(--danger);" onclick="removeInstrumentFromSheet()">Dit instrument toch niet</button>
   </div>
 </div>
 
@@ -4032,7 +4121,10 @@ async function runSearch() {
       // het (nog) meestuurt. Zo ziet een bezoeker zonder profiel altijd de
       // gebruikersnaam, onafhankelijk van wat er server-side is aangepast.
       musicians = (data || []).map(m => ({
-        id: m.id, username: m.username, birth_date: m.birth_date, city: m.city,
+        // B-02 (12-08-2026): de publieke functie geeft geen geboortedatum
+        // meer terug, alleen de leeftijd. Een geboortedatum van een
+        // minderjarige hoort niet bij een bezoeker zonder account te komen.
+        id: m.id, username: m.username, age: m.age, city: m.city,
         bio: m.bio, goal: m.goal, profile_color: m.profile_color, avatar_url: m.avatar_url,
         updated_at: m.updated_at,
         // TT-51 (12-08-2026, RPC-restpunt gesloten): instrument_levels bevat
@@ -4060,7 +4152,7 @@ async function runSearch() {
     const skipCityTextFilter = originResolved || cityIsPostcode;
 
     const filtered = musicians.filter(m => {
-      const age = calcAgeFromISO(m.birth_date);
+      const age = ageOf(m);
       if (age < ageMin || age > ageMax) return false;
       if (filterGoal && m.goal !== filterGoal) return false;
       // TT-43: het naamveld doorzoekt precies dát wat je in de lijst ook ziet
@@ -4282,7 +4374,7 @@ function musicianCardHTML(m) {
 // veroorzaakte een korte flits van de modal-overlay bij elk bezoek).
 function buildMusicianDetailHTML(m, isOwn) {
   const col  = safeColor(m.profile_color, '#f5c518');
-  const age  = calcAgeFromISO(m.birth_date);
+  const age  = ageOf(m);
   const date = new Date(m.updated_at).toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
 
   // TT-43 (08-08-2026): op je eigen profiel altijd je eigen voornaam; voor een
@@ -4416,7 +4508,7 @@ async function openMusicianModal(id) {
     const row = (res.data || [])[0];
     if (row) {
       m = {
-        id: row.id, username: row.username, birth_date: row.birth_date, city: row.city, // TT-43: geen fname voor bezoekers
+        id: row.id, username: row.username, age: row.age, city: row.city, // TT-43: geen fname voor bezoekers · B-02: leeftijd i.p.v. geboortedatum
         bio: row.bio, goal: row.goal, profile_color: row.profile_color, avatar_url: row.avatar_url,
         rehearsal_frequency: row.rehearsal_frequency, musical_ambition: row.musical_ambition,
         updated_at: row.updated_at,
@@ -5363,6 +5455,14 @@ function friendlyErrorMessage(err) {
   return 'Er ging iets mis. Probeer het opnieuw.';
 }
 
+// B-02 (12-08-2026): één plek die de leeftijd bepaalt. Een ingelogde
+// gebruiker leest de geboortedatum rechtstreeks; een bezoeker zonder account
+// krijgt alleen `age` uit tt_get_musicians_public. Deze functie dekt beide.
+function ageOf(m) {
+  if (m && m.age != null) return m.age;
+  return calcAgeFromISO(m && m.birth_date);
+}
+
 function calcAgeFromISO(isoDate) {
   if (!isoDate) return 0;
   const birth = new Date(isoDate);
@@ -5954,10 +6054,15 @@ function lookupPostcodeCity(normalized) {
             && !altList.some(a => a.toLowerCase() === officialName.toLowerCase())) {
           altList.push(officialName);
         }
-        db.from('postcode_cache').upsert({
-          postcode: normalized, city: displayCity,
-          alternatieve_schrijfwijzen: altList.join(';') || null,
-          updated_at: new Date().toISOString()
+        // B-03 (12-08-2026): schrijft niet meer rechtstreeks in de tabel.
+        // De open INSERT/UPDATE-regels stonden toe dat iedereen — ook zonder
+        // account — coördinaten kon overschrijven, en daarmee elke afstand in
+        // de app. De functie tt_cache_postcode raakt latitude/longitude nooit
+        // aan en controleert het postcodeformaat.
+        db.rpc('tt_cache_postcode', {
+          p_postcode: normalized,
+          p_city: displayCity,
+          p_alt: altList.join(';') || null
         }).then(() => {}).catch(() => {});
         return { found: true, city: displayCity, source: 'pdok' };
       }
@@ -6500,128 +6605,91 @@ function renderInstrumentTagStars(el, instrument) {
   starsEl.innerHTML = out;
 }
 
-// TT-51-uitbreiding (12-08-2026, Ronalds beslissing): niveau kiezen is nu
-// een druk-en-sleep-gebaar op de instrumentknop zelf, i.p.v. een losse lijst
-// eronder. Pointer Events dekken zowel muis als touch in één implementatie.
-// Onderscheid met een gewone tik: een korte timer (HOLD_MS) of voldoende
-// beweging (MOVE_THRESHOLD) schakelt om naar "sterren kiezen"-modus — wat
-// het eerst gebeurt. Zonder één van beide blijft het een gewone klik
-// (selecteren/deselecteren, zie toggleInstrumentSelection()).
-const INSTRUMENT_RATING_HOLD_MS = 220;
-const INSTRUMENT_RATING_MOVE_PX = 6;
-let instrumentRatingOverlayEl = null;
-let instrumentRatingState = null; // { tag, instrument, active, timer, startX, startY }
+// TT-U21 (12-08-2026) — het druk-en-sleep-gebaar is verwijderd.
+//
+// Wat er mis was (alle drie geverifieerd in de code van 12-08-2026):
+// (1) `touch-action:none` op de instrumentknop maakte de instrumentenlijst
+//     een dode zone voor scrollen, en 6 pixels beweging startte het gebaar.
+//     Een veegpoging vinkte dus een instrument aan en de pagina bewoog niet.
+// (2) Een tik langer dan 220 ms kon niet meer deselecteren.
+// (3) Met een toetsenbord of schermlezer was een niveau instellen onmogelijk.
+//
+// Nu: tikken selecteert het instrument en opent een keuzescherm met vijf
+// grote knoppen. Tikken op een al geselecteerd instrument opent hetzelfde
+// scherm opnieuw. Deselecteren gebeurt in dat scherm, niet op de knop —
+// zo kan één tik nooit per ongeluk een keuze ongedaan maken.
+// Alles is bedienbaar met een toetsenbord.
+let instrumentLevelTarget = null; // { instrument, tagEl }
 
-function getInstrumentRatingOverlay() {
-  if (instrumentRatingOverlayEl) return instrumentRatingOverlayEl;
-  const el = document.createElement('div');
-  el.className = 'instrument-rating-overlay';
-  el.innerHTML = [1,2,3,4,5].map(n => `<span class="star" data-n="${n}">★</span>`).join('');
-  document.body.appendChild(el);
-  instrumentRatingOverlayEl = el;
-  return el;
+// Korte namen, afgeleid van Tabel 2 in niveaubepaling-naslagwerk.md
+// (NIVEAU_INFO_MUSICIAN_ROWS verderop). Eén bron, geen tweede lijst.
+function instrumentLevelLabels() {
+  return NIVEAU_INFO_MUSICIAN_ROWS.map(r => String(r[0]).replace(/^\d+\.\s*/, ''));
 }
 
 function attachInstrumentRatingHandlers(tag, instrument) {
-  tag.addEventListener('pointerdown', (e) => {
-    if (e.button != null && e.button !== 0) return; // alleen hoofdklik/1 vinger
-    // Pointer capture is verplicht: de sterrenstrip verschijnt buiten de
-    // knop (erboven/eronder). Zonder capture verliest de knop de move/up-
-    // events zodra de vinger/muis de knop verlaat en het slepen naar een
-    // ster werkt dan niet meer.
-    tag.setPointerCapture(e.pointerId);
-    instrumentRatingState = { tag, instrument, pointerId: e.pointerId, active: false, timer: null, startX: e.clientX, startY: e.clientY };
-    instrumentRatingState.timer = setTimeout(() => {
-      if (instrumentRatingState) startInstrumentRating(instrumentRatingState, e);
-    }, INSTRUMENT_RATING_HOLD_MS);
-  });
-
-  tag.addEventListener('pointermove', (e) => {
-    if (!instrumentRatingState || instrumentRatingState.tag !== tag) return;
-    if (instrumentRatingState.active) {
-      updateInstrumentRating(instrumentRatingState, e);
-      return;
-    }
-    const dx = Math.abs(e.clientX - instrumentRatingState.startX);
-    const dy = Math.abs(e.clientY - instrumentRatingState.startY);
-    if (dx > INSTRUMENT_RATING_MOVE_PX || dy > INSTRUMENT_RATING_MOVE_PX) {
-      clearTimeout(instrumentRatingState.timer);
-      startInstrumentRating(instrumentRatingState, e);
-      updateInstrumentRating(instrumentRatingState, e);
-    }
-  });
-
-  tag.addEventListener('pointerup', (e) => {
-    if (!instrumentRatingState || instrumentRatingState.tag !== tag) return;
-    clearTimeout(instrumentRatingState.timer);
-    if (tag.hasPointerCapture(e.pointerId)) tag.releasePointerCapture(e.pointerId);
-    if (instrumentRatingState.active) {
-      finishInstrumentRating(instrumentRatingState);
-    } else {
-      toggleInstrumentSelection(tag, instrument); // gewone, korte tik
-    }
-    instrumentRatingState = null;
-  });
-
-  tag.addEventListener('pointercancel', (e) => {
-    if (!instrumentRatingState || instrumentRatingState.tag !== tag) return;
-    clearTimeout(instrumentRatingState.timer);
-    if (tag.hasPointerCapture(e.pointerId)) tag.releasePointerCapture(e.pointerId);
-    if (instrumentRatingState.active) cancelInstrumentRating();
-    instrumentRatingState = null;
+  tag.setAttribute('role', 'button');
+  tag.setAttribute('tabindex', '0');
+  tag.setAttribute('aria-pressed', 'false');
+  tag.addEventListener('click', () => openInstrumentLevelSheet(instrument, tag));
+  tag.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openInstrumentLevelSheet(instrument, tag); }
   });
 }
 
-function startInstrumentRating(ratingState, e) {
-  ratingState.active = true;
-  const { tag, instrument } = ratingState;
-  // Ingedrukt houden om een niveau te kiezen selecteert het instrument
-  // meteen mee — een niveau instellen zonder het instrument te kiezen is
-  // zinloos, en dit scheelt een aparte tik.
+function openInstrumentLevelSheet(instrument, tagEl) {
+  instrumentLevelTarget = { instrument, tagEl };
   if (!state.instruments.includes(instrument)) {
     state.instruments.push(instrument);
-    tag.classList.add('selected');
+    tagEl.classList.add('selected');
+    tagEl.setAttribute('aria-pressed', 'true');
+    renderInstrumentTagStars(tagEl, instrument);
   }
-  const overlay = getInstrumentRatingOverlay();
-  const rect = tag.getBoundingClientRect();
-  const above = rect.top > 70;
-  overlay.style.left = (rect.left + rect.width / 2) + 'px';
-  overlay.style.top = above ? (rect.top - 52) + 'px' : (rect.bottom + 8) + 'px';
-  overlay.classList.add('visible');
-  overlay.dataset.pending = state.instrumentLevels[instrument] || 0;
-  updateInstrumentRatingVisual(overlay, state.instrumentLevels[instrument] || 0);
+  document.getElementById('instrumentLevelTitle').textContent = 'Hoe goed speel je ' + instrument + '?';
+  renderInstrumentLevelChoices();
+  document.getElementById('instrumentLevelModal').classList.add('visible');
 }
 
-function updateInstrumentRating(ratingState, e) {
-  const overlay = getInstrumentRatingOverlay();
-  const stars = overlay.querySelectorAll('.star');
-  let n = 0;
-  stars.forEach((s, idx) => {
-    const r = s.getBoundingClientRect();
-    if (e.clientX >= r.left + r.width / 2) n = idx + 1;
-  });
-  overlay.dataset.pending = n;
-  updateInstrumentRatingVisual(overlay, n);
+function renderInstrumentLevelChoices() {
+  if (!instrumentLevelTarget) return;
+  const huidig = state.instrumentLevels[instrumentLevelTarget.instrument] || 0;
+  const labels = instrumentLevelLabels();
+  const rows = labels.map((label, idx) => {
+    const value = idx + 1;
+    let stars = '';
+    for (let i = 1; i <= 5; i++) stars += '<span class="' + (i <= value ? 'filled' : '') + '">' + (i <= value ? '\u2605' : '\u2606') + '</span>';
+    return '<button type="button" class="level-choice' + (value === huidig ? ' selected' : '') + '"'
+      + ' aria-pressed="' + (value === huidig) + '" onclick="setInstrumentLevel(' + value + ')">'
+      + '<span class="level-choice-stars">' + stars + '</span>'
+      + '<span class="level-choice-label">' + escHtml(label) + '</span>'
+      + '</button>';
+  }).join('');
+  document.getElementById('instrumentLevelChoices').innerHTML = rows;
 }
 
-function updateInstrumentRatingVisual(overlay, n) {
-  overlay.querySelectorAll('.star').forEach((s, idx) => {
-    s.classList.toggle('filled', idx < n);
-  });
+function setInstrumentLevel(value) {
+  if (!instrumentLevelTarget) return;
+  const { instrument, tagEl } = instrumentLevelTarget;
+  state.instrumentLevels[instrument] = value;
+  renderInstrumentTagStars(tagEl, instrument);
+  closeInstrumentLevelSheet();
 }
 
-function finishInstrumentRating(ratingState) {
-  const overlay = getInstrumentRatingOverlay();
-  const n = parseInt(overlay.dataset.pending || '0', 10);
-  const { tag, instrument } = ratingState;
-  if (n >= 1) state.instrumentLevels[instrument] = n;
-  else delete state.instrumentLevels[instrument];
-  overlay.classList.remove('visible');
-  renderInstrumentTagStars(tag, instrument);
+function removeInstrumentFromSheet() {
+  if (!instrumentLevelTarget) return;
+  const { instrument, tagEl } = instrumentLevelTarget;
+  const idx = state.instruments.indexOf(instrument);
+  if (idx !== -1) state.instruments.splice(idx, 1);
+  delete state.instrumentLevels[instrument];
+  tagEl.classList.remove('selected');
+  tagEl.setAttribute('aria-pressed', 'false');
+  renderInstrumentTagStars(tagEl, instrument);
+  closeInstrumentLevelSheet();
 }
 
-function cancelInstrumentRating() {
-  getInstrumentRatingOverlay().classList.remove('visible');
+function closeInstrumentLevelSheet() {
+  document.getElementById('instrumentLevelModal').classList.remove('visible');
+  instrumentLevelTarget = null;
 }
 
 // ─── Niveau: sterren 1-5 (TT-51, 12-08-2026) ─────────────────────────────────
@@ -6755,6 +6823,17 @@ function autofocusFirstField(root) {
   }
 }
 
+// TT-U04 (12-08-2026): maakt een wachtwoord zichtbaar. Vervangt het
+// herhaalveld — je kunt zelf controleren wat je hebt getypt.
+function togglePassword(inputId, btn) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  const toon = el.type === 'password';
+  el.type = toon ? 'text' : 'password';
+  btn.textContent = toon ? 'Verberg' : 'Toon';
+  btn.setAttribute('aria-label', toon ? 'Verberg wachtwoord' : 'Toon wachtwoord');
+}
+
 function submitOnEnter(event, fn) {
   if (event.key === 'Enter') {
     event.preventDefault();
@@ -6846,7 +6925,7 @@ function renderSongs() {
           </div>
           <button class="song-remove" onclick="removeSong(${i})" title="Verwijderen">✕</button>
         </div>
-        ${!s.level ? `<div style="font-size:12px;color:var(--danger);padding:4px 14px;background:rgba(229,83,61,0.06);">Kies een beheersingsniveau om door te gaan</div>` : ''}
+        ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 14px;">Niveau nog niet gekozen — mag ook later</div>` : ''}
       `; }).join('')}
     </div>`;
 }
@@ -6925,8 +7004,12 @@ async function nextStep(from) {
     state.bio        = document.getElementById('bio').value.trim();
     state.username   = document.getElementById('username').value.trim();
 
-    if (!state.fname || !state.lname || !state.birth_date) {
-      showToast('Vul je voor- en achternaam en geboortedatum in.'); return;
+    // TT-U04 (12-08-2026): achternaam is niet langer verplicht. De eigen
+    // privacyverklaring zegt dat de achternaam nooit aan andere gebruikers
+    // wordt getoond — dan levert een verplicht veld alleen drempel op.
+    // De kolom lname blijft bestaan en wordt gevuld als iemand hem invult.
+    if (!state.fname || !state.birth_date) {
+      showToast('Vul je voornaam en geboortedatum in.'); return;
     }
     if (!state.zip || !postcodeResolved || !state.city) {
       showToast('Vul een geldige postcode in. Je woonplaats wordt automatisch bepaald zodra deze klopt.'); return;
@@ -6962,10 +7045,10 @@ async function nextStep(from) {
     if (!editingMusicianId) {
       state.regEmail   = document.getElementById('regEmail').value.trim();
       state.regPassword = document.getElementById('regPassword').value;
-      const regPassword2 = document.getElementById('regPassword2').value;
+
       if (!state.regEmail) { showToast('Vul je e-mailadres in.'); return; }
       if (!state.regPassword || state.regPassword.length < 8) { showToast('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
-      if (state.regPassword !== regPassword2) { showToast('Wachtwoorden komen niet overeen.'); return; }
+
 
       // TT-09: account + minimaal profiel ontstaan al hier, i.p.v. pas bij de
       // laatste stap. De rest van de wizard wordt daardoor een aanvulling op
@@ -6979,18 +7062,17 @@ async function nextStep(from) {
   }
   if (from === 1) {
     if (!state.instruments.length) { showToast('Selecteer minimaal één instrument.'); return; }
-    // TT-51 (12-08-2026): elk gekozen instrument moet een niveau hebben —
-    // anders herhaalt zich precies het probleem dat niveau moest oplossen
-    // (twee instrumenten die niet van elkaar te onderscheiden zijn).
-    if (state.instruments.some(i => !state.instrumentLevels[i])) { showToast('Kies voor elk instrument een niveau (1-5 sterren).'); return; }
+    // TT-U09 (12-08-2026): niveau blokkeert stap 2 niet meer. "Welk niveau
+    // ben ik?" is voor een beginnende dertienjarige een lastige vraag —
+    // precies het type vraag dat mensen laat afhaken of laat liegen.
+    // Het niveau blijft bestaan en telt mee in de volledigheidsmeter; het is
+    // alleen geen slagboom meer. Wie het overslaat, ziet dat daar terug.
     if (!state.genres.length) { showToast('Selecteer minimaal één muziekstijl.'); return; }
   }
-  // Repertoire is met TT-09 niet meer verplicht om verder te kunnen — mag ook
-  // later op Mijn Profiel worden aangevuld. Wie wél nummers toevoegt, moet er
-  // nog steeds voor elk nummer een niveau bij kiezen (dat blijft zinvol).
-  if (from === 2) {
-    if (state.songs.some(s => !s.level)) { showToast('Kies voor elk nummer een beheersingsniveau, of verwijder het nummer.'); return; }
-  }
+  // V-23 (12-08-2026): repertoire is optioneel, maar het beheersingsniveau
+  // per nummer was dat niet. Wie nul nummers invulde mocht door; wie er één
+  // invulde werd geblokkeerd. Dat strafte juist wie iets invulde.
+  // Niveau per nummer is nu ook optioneel.
   // step 3 (doel) is bewust optioneel — mag later nog worden ingevuld
   goTo(from + 1);
 }
