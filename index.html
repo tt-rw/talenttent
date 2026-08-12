@@ -1895,7 +1895,16 @@
   .instrument-level-row:last-child { border-bottom:none; }
   .instrument-level-name { font-size:13px; font-weight:600; }
   .instrument-level-row .star-picker .star { font-size:18px; }
-  .star-display { font-size:12px; letter-spacing:1px; color:var(--accent); white-space:nowrap; }
+  .star-display { font-size:12px; letter-spacing:1px; white-space:nowrap; }
+  .star-display-filled { color:var(--accent); }
+  .star-display-empty { color:var(--border); }
+  .niveau-info-btn { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; border:1px solid var(--border); background:none; color:var(--muted); font-size:11px; font-weight:700; cursor:pointer; margin-left:6px; vertical-align:middle; padding:0; }
+  .niveau-info-btn:hover { color:var(--accent); border-color:var(--accent); }
+  .niveau-info-wrap { overflow-x:auto; margin:12px 0 20px; }
+  .niveau-info-table { border-collapse:collapse; width:100%; min-width:640px; font-size:12px; }
+  .niveau-info-table th, .niveau-info-table td { border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top; }
+  .niveau-info-table th { color:var(--accent); font-weight:700; white-space:nowrap; }
+  .niveau-info-table td:first-child, .niveau-info-table th:first-child { white-space:nowrap; font-weight:600; }
 
   @media (max-width: 560px) {
     header { padding: 16px 20px 12px; flex-direction: column; align-items: flex-start; }
@@ -2753,6 +2762,17 @@
             <p style="font-size:11px;color:var(--muted);margin-top:4px;">Alleen de 4 cijfers, geen huisletters nodig.</p>
           </div>
         </div>
+        <!-- TT-51-uitbreiding (12-08-2026, Ronalds testfeedback): niveau
+             van de band naar boven verplaatst — stond eerst tussen Status en
+             Wij zoeken nog, dat voelde ondergesneeuwd voor een kernattribuut
+             van de band. Optioneel, losstaand van het niveau per instrument
+             bij muzikanten — geen verband ertussen (niveaubepaling-
+             naslagwerk.md, hoofdstuk 2). -->
+        <div class="field" style="margin-bottom:16px;">
+          <label>Niveau van de band <button type="button" class="niveau-info-btn" onclick="openBandNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></label>
+          <div id="bandLevelPicker" class="star-picker"></div>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Optioneel. Klik op de i voor de niveau-indeling en toelichting.</p>
+        </div>
         <div class="field-group">
           <div class="field">
             <label>Plaats <span class="req">*</span></label>
@@ -2777,14 +2797,6 @@
             <div class="tag" onclick="selectBandStatus(this,'compleet')">Band is compleet</div>
             <div class="tag" onclick="selectBandStatus(this,'inactief')">Inactief</div>
           </div>
-        </div>
-        <!-- TT-51 (12-08-2026): eigen niveau van de band, optioneel. Losstaand
-             van het niveau per instrument bij muzikanten — geen verband
-             ertussen (niveaubepaling-naslagwerk.md, hoofdstuk 2). -->
-        <div class="field" style="margin-bottom:16px;">
-          <label>Niveau van de band</label>
-          <div id="bandLevelPicker" class="star-picker"></div>
-          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Optioneel. Zie de niveau-indeling voor bands in de toelichting.</p>
         </div>
         <div class="field" style="margin-bottom:16px;">
           <label>Wij zoeken nog <span class="req">*</span></label>
@@ -3111,6 +3123,16 @@
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">De muzikant staat pas als lid op het bandprofiel zodra hij of zij de uitnodiging zelf bevestigt.</p>
     <input type="text" id="memberSearchInput" placeholder="Zoek op naam..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:14px;margin-bottom:16px;">
     <div id="memberSearchResults"></div>
+  </div>
+</div>
+
+<!-- TT-51-uitbreiding (12-08-2026): toelichting bij het bandniveau, geopend
+     via de i-knop naast "Niveau van de band". Inhoud identiek aan Tabel 1 +
+     de toelichtende tekst in niveaubepaling-naslagwerk.md. -->
+<div class="modal-overlay" id="niveauInfoModal" onclick="if(event.target===this)this.classList.remove('visible')">
+  <div class="modal-box" style="max-width:760px;">
+    <button class="modal-close" onclick="document.getElementById('niveauInfoModal').classList.remove('visible')">✕</button>
+    <div id="niveauInfoModalContent"></div>
   </div>
 </div>
 
@@ -6306,7 +6328,14 @@ function cssIdSafe(s) {
 function starDisplayHTML(niveau) {
   const n = Number(niveau);
   if (!Number.isInteger(n) || n < 1 || n > 5) return '';
-  return `<span class="star-display">${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span>`;
+  // TT-51-fix (12-08-2026): gevulde en lege sterren in aparte spans met een
+  // eigen kleur (goud/grijs), niet alleen op glyphvorm (★ vs ☆) vertrouwen —
+  // op sommige lettertypen/besturingssystemen zijn ★ en ☆ bij 12px nauwelijks
+  // te onderscheiden, waardoor alle 5 sterren als "gevuld" oogden (gemeld
+  // door Ronald: 3 sterren gekozen, na opslaan leken het er 5).
+  const filled = `<span class="star-display-filled">${'★'.repeat(n)}</span>`;
+  const empty = n < 5 ? `<span class="star-display-empty">${'☆'.repeat(5 - n)}</span>` : '';
+  return `<span class="star-display">${filled}${empty}</span>`;
 }
 
 // Klikbare sterrenkiezer. `getValue`/`setValue` laten deze functie werken voor
@@ -7817,6 +7846,59 @@ function renderBandLevelPicker() {
     bandState.niveau = n;
     renderBandLevelPicker();
   });
+}
+
+// TT-51-uitbreiding (12-08-2026): Tabel 1 uit niveaubepaling-naslagwerk.md,
+// 1-op-1 overgenomen. Hardcoded (geen build-stap om een .md-bestand in te
+// lezen in deze losse-bestand-app) — bij een tekstwijziging in het naslagwerk
+// moet deze lijst hier ook worden bijgewerkt.
+const NIVEAU_INFO_BAND_HEADERS = ['Niveau', 'Samenspel en timing', 'Podiumpresentatie', 'Techniek en geluid', 'Optredens en boekingen'];
+const NIVEAU_INFO_BAND_ROWS = [
+  ['1. Beginner (Startend)',
+    'Iedereen speelt een beetje zijn eigen tempo. Samen stoppen of starten is echt lastig. Als er iemand fladdert, stopt het hele nummer.',
+    'Iedereen staat als een standbeeld op zijn eigen vierkante meter. Ongemakkelijke stiltes tussen de nummers door het stemmen.',
+    'Je oefent op kleine versterkers die snel gaan piepen. Je hebt nog geen idee hoe je jezelf goed hoort over een monitor.',
+    'Geen demo of Insta-pagina. Je speelt alleen in de garage of oefenruimte voor jezelf en je ouders.'],
+  ['2. Gevorderde Beginner (Garageband)',
+    'Jullie spelen complete nummers van begin tot eind uit. Het ritme is oké, maar het klinkt nog als één grote muur van geluid zonder dynamiek.',
+    'Er is af en toe oogcontact met het publiek. De setlist heeft een logische volgorde, maar muzikanten kijken nog veel naar hun instrument.',
+    'Je bezit eigen spullen die krachtig genoeg zijn voor een klein optreden en kunt de geluidsman vertellen wat je nodig hebt.',
+    'Je hebt een paar vette live-filmpjes op socials. Je regelt zelf, of via een bandcommunity je optredens in de buurt, zoals in een jongerencentrum of kroeg.'],
+  ['3. Half-Gevorderd (Live-Amateur)',
+    'De band klinkt strak. Jullie beheersen de onderlinge dynamiek (zachter spelen tijdens de zang). Kleine live-fouten worden direct opgevangen.',
+    'Comfortabele podiumpresentatie; praatjes tussendoor lopen natuurlijk. De band heeft een duidelijke, herkenbare visuele stijl die past bij het genre.',
+    'Kan zelfstandig een degelijke monitorsound afstellen; begrijpt het belang van een gecontroleerd en helder podiumvolume.',
+    'Beschikt over een nette digitale perskit (EPK) en demo. De band speelt 10 tot 20 keer per jaar tegen een leuke onkostenvergoeding.'],
+  ['4. Gevorderd (Semi-Pro)',
+    'Extreem strakke timing; de ritmesectie (drums/bas) fungeert als een machine. De band communiceert blindelings via non-verbale cues.',
+    'Professionele uitstraling; sterke frontman/vrouw met publieksregie. De show is een non-stop concept zonder dode momenten.',
+    'Reist met een vaste eigen geluidstechnicus; maakt standaard gebruik van een gecentraliseerd In-Ear systeem en clicktracks.',
+    'Professionele website en actieve marketing. De band boekt 20 tot 40 grote shows per jaar via vaste contracten en marktconforme uitkoopgagen.'],
+  ['5. Professioneel (Top-act / Industry)',
+    'Studio-kwaliteit op het podium. Perfecte muzikale synergie met absolute vrijheid voor feilloze live-improvisatie en unieke arrangementen.',
+    'Volledig geregisseerde en geproduceerde show inclusief custom lichtshow en visuals; consistente top-performance onafhankelijk van zaalgrootte.',
+    'Eigen high-end technische crew (FOH, monitor, systeemtechnici); reproduceerbare, merk-identieke signature sound op elk festival.',
+    'Exclusieve vertegenwoordiging door professionele boekingskantoren en management; live-optredens vormen de hoofdinkomst voor alle leden.'],
+];
+
+function openBandNiveauInfoModal() {
+  const rowsHTML = NIVEAU_INFO_BAND_ROWS.map(r => `<tr>${r.map(c => `<td>${escHtml(c)}</td>`).join('')}</tr>`).join('');
+  document.getElementById('niveauInfoModalContent').innerHTML = `
+    <div class="filter-title" style="margin-bottom:4px;">Niveau-indeling voor bands</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies het niveau waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
+    <div class="niveau-info-wrap">
+      <table class="niveau-info-table">
+        <thead><tr>${NIVEAU_INFO_BAND_HEADERS.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    </div>
+    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Belangrijk: gebruik dit systeem als jouw kompas</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Geen enkele muzikant of band past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Niveau 4), maar nog nooit op een podium hebben gestaan (Niveau 1). Of je band speelt superstrak samen (Niveau 3), maar jullie hebben je zakelijke randzaken nog niet op orde (Niveau 2).</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Zie deze niveaubeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
+    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Hoe kies je jouw niveau?</div>
+    <p style="font-size:13px;color:var(--muted);">Loop de criteria per niveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg het niveau waar jij of je band het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
+  `;
+  document.getElementById('niveauInfoModal').classList.add('visible');
 }
 
 function selectBandStatus(el, val) {
