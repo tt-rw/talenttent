@@ -2506,9 +2506,16 @@
            knop blijft staan als duidelijk, expliciet alternatief (bijv. na
            het typen van een naam zonder te wachten op de korte vertraging). -->
 
+      <!-- TT-55 (12-08-2026, Ronalds richting 4+5): maximaal 1 instrument
+           tegelijk, optioneel + Zang — in de praktijk zoek je instrument voor
+           instrument, niet een hele band ineens. Geen matchformule nodig:
+           dit is nu een harde filter op het bestaande veld
+           musician_instruments, met sortering op de bestaande genre-score
+           daarbinnen. -->
       <div class="filter-row single" style="margin-bottom:16px;">
         <div class="field">
           <label>Instrument</label>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang.</p>
           <div class="tag-grid" id="filterInstruments"></div>
         </div>
       </div>
@@ -2608,7 +2615,9 @@
         </div>
       </div>
       <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label><div class="tag-grid" id="filterBandGenres"></div></div></div>
-      <div class="filter-row single band-instrument-filter" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><div class="tag-grid" id="filterBandWanted"></div></div></div>
+      <!-- TT-55-uitbreiding (12-08-2026): zelfde 1-instrument-beperking als
+           het muzikanten-zoekfilter, nu ook hier doorgevoerd. -->
+      <div class="filter-row single band-instrument-filter" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang.</p><div class="tag-grid" id="filterBandWanted"></div></div></div>
       <!-- TT-51: niveau van de band zelf (Tabel 1), los van het niveau per
            instrument bij muzikanten. Bereik, aaneengesloten. -->
       <div class="filter-row single" style="margin-bottom:16px;">
@@ -3724,8 +3733,18 @@ function sortMusicianList(list) {
     if (searchSortMode === 'newest') {
       return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
     }
-    if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
-    return 0;
+    // TT-55 (12-08-2026): bij een gelijke (of ontbrekende) matchscore besliste
+    // dit voorheen `return 0` — een onvoorspelbare volgorde uit de database.
+    // Vastgelegd gedrag: bij gelijke stand eerst afstand, dan naam.
+    if (a.matchScore != null && b.matchScore != null && a.matchScore !== b.matchScore) {
+      return b.matchScore - a.matchScore;
+    }
+    if (a.distance_km != null && b.distance_km != null && a.distance_km !== b.distance_km) {
+      return a.distance_km - b.distance_km;
+    }
+    const nameA = (displayNameOf(a) || '').toLowerCase();
+    const nameB = (displayNameOf(b) || '').toLowerCase();
+    return nameA.localeCompare(nameB, 'nl');
   });
   return list;
 }
@@ -3760,9 +3779,23 @@ function initSearchFilters() {
     t.style.fontSize = '12px';
     t.style.padding = '6px 12px';
     t.onclick = () => {
-      const idx = filterInstruments.indexOf(i);
-      if (idx === -1) { filterInstruments.push(i); t.classList.add('selected'); }
-      else { filterInstruments.splice(idx,1); t.classList.remove('selected'); }
+      if (i === 'Zang') {
+        // TT-55: Zang is een losse aan/uit-schakelaar, telt niet mee voor de
+        // 1-instrument-limiet hieronder — kan altijd naast een instrument aan.
+        const idx = filterInstruments.indexOf('Zang');
+        if (idx === -1) { filterInstruments.push('Zang'); t.classList.add('selected'); }
+        else { filterInstruments.splice(idx,1); t.classList.remove('selected'); }
+      } else {
+        // TT-55 (12-08-2026, Ronalds richting 4+5): maximaal 1 instrument
+        // tegelijk. Een ander instrument kiezen vervangt de vorige keuze
+        // i.p.v. hem toe te voegen; Zang blijft ongemoeid.
+        const wasSelected = filterInstruments.includes(i);
+        ig.querySelectorAll('.tag').forEach(other => {
+          if (other.textContent !== 'Zang') other.classList.remove('selected');
+        });
+        filterInstruments = filterInstruments.filter(x => x === 'Zang');
+        if (!wasSelected) { filterInstruments.push(i); t.classList.add('selected'); }
+      }
       runSearch();
     };
     ig.appendChild(t);
@@ -4095,7 +4128,13 @@ function displayNameOf(m) {
 // tussenoplossing, geen definitieve matchlogica.
 function musicianResultNiveauHTML(m) {
   if (!filterInstruments.length) return '';
-  const match = (m.musician_instruments || []).find(x => filterInstruments.includes(x.instrument));
+  // TT-55 (12-08-2026): sinds het instrumentfilter maximaal 1 instrument +
+  // optioneel Zang toelaat, is het instrument (niet Zang) het "gezochte
+  // instrument" voor de ster. Speelt de muzikant dat niet maar zingt wel,
+  // dan valt dit terug op het niveau voor Zang.
+  const primary = filterInstruments.find(i => i !== 'Zang') || filterInstruments[0];
+  const match = (m.musician_instruments || []).find(x => x.instrument === primary)
+    || (m.musician_instruments || []).find(x => filterInstruments.includes(x.instrument));
   if (!match || match.niveau == null) return '';
   return starDisplayHTML(match.niveau);
 }
@@ -7080,8 +7119,16 @@ function sortBandList(list) {
     if (bandSearchSortMode === 'newest') {
       return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
     }
-    if (a.matchScore != null && b.matchScore != null) return b.matchScore - a.matchScore;
-    return 0;
+    // TT-55 (12-08-2026): zelfde vastgelegde tie-break als sortMusicianList()
+    // — bij gelijke stand eerst afstand, dan naam, i.p.v. het voormalige
+    // onvoorspelbare `return 0`.
+    if (a.matchScore != null && b.matchScore != null && a.matchScore !== b.matchScore) {
+      return b.matchScore - a.matchScore;
+    }
+    if (a.distance_km != null && b.distance_km != null && a.distance_km !== b.distance_km) {
+      return a.distance_km - b.distance_km;
+    }
+    return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase(), 'nl');
   });
   return list;
 }
@@ -7129,9 +7176,24 @@ function initBandSearchFilters() {
       t.style.fontSize = '12px';
       t.style.padding = '6px 12px';
       t.onclick = () => {
-        const idx = filterBandWantedList.indexOf(i);
-        if (idx === -1) { filterBandWantedList.push(i); t.classList.add('selected'); }
-        else { filterBandWantedList.splice(idx,1); t.classList.remove('selected'); }
+        if (i === 'Zang') {
+          // TT-55-uitbreiding (12-08-2026): zelfde patroon als het
+          // muzikanten-instrumentfilter — Zang is een losse aan/uit-
+          // schakelaar, telt niet mee voor de 1-instrument-limiet.
+          const idx = filterBandWantedList.indexOf('Zang');
+          if (idx === -1) { filterBandWantedList.push('Zang'); t.classList.add('selected'); }
+          else { filterBandWantedList.splice(idx,1); t.classList.remove('selected'); }
+        } else {
+          // Maximaal 1 instrument tegelijk. Een ander instrument kiezen
+          // vervangt de vorige keuze i.p.v. hem toe te voegen; Zang blijft
+          // ongemoeid.
+          const wasSelected = filterBandWantedList.includes(i);
+          wg.querySelectorAll('.tag').forEach(other => {
+            if (other.textContent !== 'Zang') other.classList.remove('selected');
+          });
+          filterBandWantedList = filterBandWantedList.filter(x => x === 'Zang');
+          if (!wasSelected) { filterBandWantedList.push(i); t.classList.add('selected'); }
+        }
         runBandSearch();
       };
       wg.appendChild(t);
