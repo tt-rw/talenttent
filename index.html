@@ -2626,7 +2626,7 @@
          her-sorteert direct zonder opnieuw te hoeven zoeken. -->
     <div id="sortBarMusician" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;">
       <div class="field">
-        <label>Sorteren op</label>
+        <label>Sorteren op <button type="button" class="niveau-info-btn" onclick="openRankingInfoModal()" title="Hoe bepalen we de beste match?">i</button></label>
         <div class="segmented-control" id="filterSortMode">
           <div class="segmented-btn selected sort-score-option" data-mode="score" onclick="setSearchSortMode(this,'score')">Beste match</div>
           <div class="segmented-btn" data-mode="distance" onclick="setSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
@@ -2707,7 +2707,7 @@
          her-sorteert direct zonder opnieuw te hoeven zoeken. -->
     <div id="sortBarBand" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;">
       <div class="field">
-        <label>Sorteren op</label>
+        <label>Sorteren op <button type="button" class="niveau-info-btn" onclick="openRankingInfoModal()" title="Hoe bepalen we de beste match?">i</button></label>
         <div class="segmented-control" id="filterBandSortMode">
           <div class="segmented-btn selected sort-score-option" data-mode="score" onclick="setBandSearchSortMode(this,'score')">Beste match</div>
           <div class="segmented-btn" data-mode="distance" onclick="setBandSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
@@ -8326,6 +8326,28 @@ function openMusicianNiveauInfoModal() {
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Zie deze niveaubeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
     <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Hoe kies je jouw niveau?</div>
     <p style="font-size:13px;color:var(--muted);">Loop de criteria per niveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg het niveau waar jij het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
+  `;
+  document.getElementById('niveauInfoModal').classList.add('visible');
+}
+
+// TT-57 (12-08-2026): uitleg bij "Beste match", zonder een matchscore of
+// percentage te tonen — die blijft intern (zie zoekfunctienaslagwerk.md
+// §4.2). Beschrijft alleen wat de gebruiker zelf kan zien en beïnvloeden:
+// het instrumentfilter (TT-55, harde filter), muziekstijl-overlap, afstand
+// en naam als laatste twee tie-breaks. Zelfde tekst voor muzikanten- en
+// bandzoeken — de volgorde werkt identiek voor beide (sortMusicianList()/
+// sortBandList()).
+function openRankingInfoModal() {
+  document.getElementById('niveauInfoModalContent').innerHTML = `
+    <div class="filter-title" style="margin-bottom:4px;">Hoe bepalen we "Beste match"?</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">We werken in vaste stappen. Elke stap beslist pas als de vorige stap gelijk staat.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;"><strong style="color:var(--text);">1. Instrument.</strong> Je kiest één instrument om op te zoeken, met zang als losse extra keuze. Alleen wie daarbij past, staat in het resultaat.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;"><strong style="color:var(--text);">2. Muziekstijl.</strong> Binnen dat resultaat staan profielen met een overlappende muziekstijl bovenaan.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;"><strong style="color:var(--text);">3. Afstand.</strong> Staat de muziekstijl gelijk, dan staat de dichtstbijzijnde eerst.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;"><strong style="color:var(--text);">4. Naam.</strong> Staat ook de afstand gelijk, dan sorteren we op naam.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;"><strong style="color:var(--text);">Vóór al het bovenstaande:</strong> een profiel dat langer dan zes maanden niet is bijgewerkt, staat altijd onderaan. Update je profiel om weer mee te tellen.</p>
+    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Vul je profiel volledig in</div>
+    <p style="font-size:13px;color:var(--muted);">Een compleet profiel — instrumenten, muziekstijl, bio, repertoire — leidt sneller tot een goede match. Veel velden zijn optioneel. Vul ze toch in als je kunt.</p>
   `;
   document.getElementById('niveauInfoModal').classList.add('visible');
 }
