@@ -2361,6 +2361,17 @@
     <div class="songs-list" id="songsList"></div>
     <p id="songsListEmpty" style="font-size:13px; color:var(--muted); margin-top:4px;">Nog geen nummers toegevoegd.</p>
 
+    <div class="field-group single" style="margin-top:20px;">
+      <div class="field">
+        <label>Wat speel je vooral? <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+        <div class="tag-grid" id="repertoireTypeGrid">
+          <div class="tag" onclick="selectRepertoireType(this,'covers')">Covers</div>
+          <div class="tag" onclick="selectRepertoireType(this,'eigen')">Eigen nummers</div>
+          <div class="tag" onclick="selectRepertoireType(this,'beide')">Allebei</div>
+        </div>
+      </div>
+    </div>
+
     <div class="divider"></div>
 
     <div class="nav-buttons">
@@ -3348,6 +3359,7 @@ function onUserLoggedOut() {
     instrumentLevels: {},
     genres: [],
     songs: [],
+    repertoireType: '', // TT-52 (12-08-2026): covers/eigen/beide, optioneel, per profiel
     goal: '',
     rehearsalFrequency: '',
     musicalAmbition: '',
@@ -3711,6 +3723,15 @@ const AMBITION_LABELS = {
   stijlen:    'Nieuwe stijlen ontdekken',
   eigen_werk: 'Samen nummers/eigen werk maken',
   plezier:    'Gewoon plezier, geen groot plan'
+};
+// TT-52 (12-08-2026): repertoire-type, optioneel, per profiel (niet per nummer).
+// Losse waarden gekozen (niet 'eigen_werk' hergebruikt) omdat musical_ambition.eigen_werk
+// een andere betekenis heeft: dat is een wens ("samen nummers/eigen werk maken"),
+// dit veld is een feit over het huidige repertoire ("covers/eigen nummers/beide").
+const REPERTOIRE_TYPE_LABELS = {
+  covers: 'Covers',
+  eigen:  'Eigen nummers',
+  beide:  'Allebei'
 };
 
 let filterInstruments = [];
@@ -4890,6 +4911,7 @@ function saveOnboardingProgress() {
       username: state.username,
       city: state.city, zip: state.zip, bio: state.bio, citySource: state.citySource,
       instruments: state.instruments, instrumentLevels: state.instrumentLevels, genres: state.genres, songs: state.songs,
+      repertoireType: state.repertoireType,
       goal: state.goal,
       rehearsalFrequency: state.rehearsalFrequency, musicalAmbition: state.musicalAmbition,
       mediaLinks: state.mediaLinks
@@ -4960,6 +4982,10 @@ function populateWizardFieldsFromState() {
   document.querySelectorAll('#ambitionGrid .tag').forEach(t => {
     t.classList.toggle('selected', AMBITION_LABELS[state.musicalAmbition] === t.textContent);
   });
+  // TT-52
+  document.querySelectorAll('#repertoireTypeGrid .tag').forEach(t => {
+    t.classList.toggle('selected', REPERTOIRE_TYPE_LABELS[state.repertoireType] === t.textContent);
+  });
 
   const avatarPreview = document.getElementById('avatarPreview');
   if (state.avatarUrl) {
@@ -4997,6 +5023,7 @@ function tryResumeOnboarding() {
   state.instrumentLevels = saved.instrumentLevels || {};
   state.genres = saved.genres || [];
   state.songs = saved.songs || [];
+  state.repertoireType = saved.repertoireType || '';
   state.goal = saved.goal || '';
   state.rehearsalFrequency = saved.rehearsalFrequency || '';
   state.musicalAmbition = saved.musicalAmbition || '';
@@ -5047,6 +5074,7 @@ async function editMyProfile() {
   (m.musician_instruments || []).forEach(x => { if (x.niveau) state.instrumentLevels[x.instrument] = x.niveau; });
   state.genres        = (m.musician_genres || []).map(x => x.genre);
   state.songs         = (m.musician_songs || []).map(s => ({ title: s.song_title, artist: s.song_artist, level: s.mastery_level }));
+  state.repertoireType = m.repertoire_type || ''; // TT-52
   // TT-02: al eerder geüploade foto's/video's meenemen, zodat ze zichtbaar
   // en verwijderbaar zijn bij het bewerken (voorheen bleven deze onzichtbaar
   // in de wizard, ook al stonden ze al in de database).
@@ -5228,8 +5256,11 @@ function renderProgressPanel(m) {
   const heden = songCount > 0
     ? `${songCount} nummer${songCount === 1 ? '' : 's'} in je repertoire`
     : '';
+  // TT-52: feit over huidig repertoire, dus bij "heden" i.p.v. "toekomst".
+  const hedenRepertoire = m.repertoire_type && REPERTOIRE_TYPE_LABELS[m.repertoire_type]
+    ? REPERTOIRE_TYPE_LABELS[m.repertoire_type] : '';
   const hedenExtra = m.goal && GOAL_LABELS[m.goal] ? GOAL_LABELS[m.goal] : '';
-  const hedenText = [heden, hedenExtra].filter(Boolean).join(' · ');
+  const hedenText = [heden, hedenRepertoire, hedenExtra].filter(Boolean).join(' · ');
 
   const toekomstParts = [];
   if (m.rehearsal_frequency && REHEARSAL_LABELS[m.rehearsal_frequency]) toekomstParts.push(REHEARSAL_LABELS[m.rehearsal_frequency]);
@@ -5451,6 +5482,7 @@ async function submitProfile() {
         goal:             state.goal,
         rehearsal_frequency: state.rehearsalFrequency || null,
         musical_ambition:    state.musicalAmbition || null,
+        repertoire_type:  state.repertoireType || null,
         avatar_url:       state.avatarUrl || null,
         city_source:      state.citySource || 'pdok',
         profile_complete: true, // TT-09: dit is de definitieve klik op "Profiel aanmaken"/"Wijzigingen opslaan"
@@ -5525,6 +5557,7 @@ async function submitProfile() {
           goal:             state.goal,
           rehearsal_frequency: state.rehearsalFrequency || null,
           musical_ambition:    state.musicalAmbition || null,
+          repertoire_type:  state.repertoireType || null,
           profile_color:    DEFAULT_PROFILE_COLOR,
           avatar_url:       state.avatarUrl || null,
           city_source:      state.citySource || 'pdok',
@@ -6388,6 +6421,7 @@ let state = {
   instrumentLevels: {}, // TT-51 (12-08-2026): instrument (string) -> niveau 1-5
   genres: [],
   songs: [],
+  repertoireType: '', // TT-52 (12-08-2026): covers/eigen/beide, optioneel, per profiel
   goal: '',
   rehearsalFrequency: '',
   musicalAmbition: '',
@@ -6867,6 +6901,14 @@ function selectMusicalAmbition(el, val) {
   if (already) { state.musicalAmbition = ''; return; }
   el.classList.add('selected');
   state.musicalAmbition = val;
+}
+// TT-52: zelfde patroon — optioneel, per profiel, nogmaals klikken wist de keuze.
+function selectRepertoireType(el, val) {
+  const already = el.classList.contains('selected');
+  document.querySelectorAll('#repertoireTypeGrid .tag').forEach(t => t.classList.remove('selected'));
+  if (already) { state.repertoireType = ''; return; }
+  el.classList.add('selected');
+  state.repertoireType = val;
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
