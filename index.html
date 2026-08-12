@@ -1759,6 +1759,11 @@
     margin-top: 2px;
   }
 
+  /* TT-51-uitbreiding (12-08-2026): sterren voor het gezochte instrument,
+     onder naam/plaats — links uitgelijnd (standaard blokgedrag), geen extra
+     tekst erbij, alleen zichtbaar als er een instrumentfilter actief is. */
+  .result-row-niveau { margin-top: 4px; text-align: left; }
+
   .result-row-badges {
     display: flex;
     flex-wrap: wrap;
@@ -4081,10 +4086,25 @@ function displayNameOf(m) {
   return (m && (m.fname || m.username)) || 'Muzikant';
 }
 
+// TT-51-uitbreiding (12-08-2026, Ronalds beslissing): sterren in het
+// zoekresultaat voor het gezochte instrument. Een muzikant kan meerdere
+// instrumenten met elk een eigen niveau hebben — zonder een actief
+// instrumentfilter is niet ondubbelzinnig te zeggen welk niveau relevant is,
+// dus dan tonen we niets (geen filter = geen sterren in de rij/kaart).
+// Ronald: "als we TT-55 uitvoeren komt dat er beter uit" — dit is bewust een
+// tussenoplossing, geen definitieve matchlogica.
+function musicianResultNiveauHTML(m) {
+  if (!filterInstruments.length) return '';
+  const match = (m.musician_instruments || []).find(x => filterInstruments.includes(x.instrument));
+  if (!match || match.niveau == null) return '';
+  return starDisplayHTML(match.niveau);
+}
+
 function musicianRowHTML(m) {
   const col     = safeColor(m.profile_color, '#f5c518');
   const instruments = m.musician_instruments.map(x => x.instrument).slice(0,3);
   const genres      = m.musician_genres.map(x => x.genre).slice(0,2);
+  const niveauHTML  = musicianResultNiveauHTML(m);
 
   // TT-38 (07-08-2026) / TT-43 (08-08-2026): uitgelogde bezoekers zien de
   // gebruikersnaam, ingelogde muzikanten de echte voornaam — zie
@@ -4101,6 +4121,7 @@ function musicianRowHTML(m) {
       <div class="result-row-main">
         <div class="result-row-name">${nameHTML}</div>
         <div class="result-row-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+        ${niveauHTML ? `<div class="result-row-niveau">${niveauHTML}</div>` : ''}
       </div>
       <div class="result-row-badges">
         ${instruments.map(i => tagSolid(i, col)).join('')}
@@ -4120,6 +4141,7 @@ function musicianCardHTML(m) {
   const col = safeColor(m.profile_color, '#f5c518');
   const instruments = m.musician_instruments.map(x => x.instrument).slice(0,2);
   const genres = m.musician_genres.map(x => x.genre).slice(0,2);
+  const niveauHTML = musicianResultNiveauHTML(m);
 
   const avatarSrc = safeUrl(m.avatar_url);
   const displayName = displayNameOf(m);
@@ -4131,6 +4153,7 @@ function musicianCardHTML(m) {
       <div class="result-card-photo" style="background:${col};">${photoHTML}</div>
       <div class="result-card-name">${nameHTML}</div>
       <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+      ${niveauHTML ? `<div class="result-row-niveau">${niveauHTML}</div>` : ''}
       <div class="result-card-badges">
         ${instruments.map(i => tagSolid(i, col)).join('')}
         ${genres.map(g => tagSolid(g, '#6ec8d8')).join('')}
@@ -6338,6 +6361,17 @@ function starDisplayHTML(niveau) {
   return `<span class="star-display">${filled}${empty}</span>`;
 }
 
+// TT-51-uitbreiding (12-08-2026, Ronalds beslissing): de bandster toont
+// alleen zolang de band 'Zoekend naar leden' is. Zodra de status naar
+// 'Compleet' of 'Inactief' gaat, verdwijnt de ster overal — het niveau blijft
+// wel gewoon opgeslagen, alleen niet meer zichtbaar. Eén gedeelde helper
+// i.p.v. deze statuscheck op elk van de vier weergaveplekken herhalen.
+function bandStarDisplayHTML(b) {
+  if (b.status !== 'zoekend') return '';
+  const html = starDisplayHTML(b.niveau);
+  return html ? ' ' + html : '';
+}
+
 // Klikbare sterrenkiezer. `getValue`/`setValue` laten deze functie werken voor
 // zowel een los instrument (wizard) als de band zelf (bandformulier) zonder
 // twee bijna-identieke functies te hoeven onderhouden.
@@ -7290,7 +7324,7 @@ function bandRowHTML(b, statusLabels) {
     <div class="result-row" style="border-left-color:${col};" onclick="openBandModal('${jsAttr(b.id)}')">
       <div class="result-row-avatar" style="background:${col};border-radius:10px;">${initials}</div>
       <div class="result-row-main">
-        <div class="result-row-name">${escHtml(b.name)}${starDisplayHTML(b.niveau) ? ' ' + starDisplayHTML(b.niveau) : ''}</div>
+        <div class="result-row-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
         <div class="result-row-meta">
           ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
           <span class="band-status-badge band-status-${status}" style="margin-left:8px;">${escHtml(statusLabels[status] || b.status)}</span>
@@ -7314,7 +7348,7 @@ function bandCardHTML(b, statusLabels) {
   return `
     <div class="result-card" onclick="openBandModal('${jsAttr(b.id)}')">
       <div class="result-card-photo" style="background:${col};border-radius:8px;">${initials}</div>
-      <div class="result-card-name">${escHtml(b.name)}${starDisplayHTML(b.niveau) ? ' ' + starDisplayHTML(b.niveau) : ''}</div>
+      <div class="result-card-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
       <div class="result-card-meta">
         ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
         <span class="band-status-badge band-status-${status}" style="margin-left:6px;">${escHtml(statusLabels[status] || b.status)}</span>
@@ -7995,7 +8029,7 @@ async function loadMyBands() {
       <div class="band-card-header" onclick="openBandModal('${jsAttr(b.id)}')">
         <div class="band-avatar" style="background:${col};">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>
         <div style="flex:1;">
-          <div class="band-name">${escHtml(b.name)}${starDisplayHTML(b.niveau) ? ' ' + starDisplayHTML(b.niveau) : ''}</div>
+          <div class="band-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
           <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
         </div>
         <span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span>
@@ -8064,7 +8098,7 @@ async function openBandModal(id) {
   document.getElementById('bandModalContent').innerHTML = `
     <div style="height:8px;background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;"></div>
     <div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:12px;">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>
-    <div class="profile-name">${escHtml(b.name)}${starDisplayHTML(b.niveau) ? ' ' + starDisplayHTML(b.niveau) : ''}</div>
+    <div class="profile-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
     <div class="profile-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
     <div style="margin:10px 0;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>
     ${b.description ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
