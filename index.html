@@ -244,9 +244,16 @@
     font-weight: 500;
   }
 
-  input, select, textarea {
-    background: var(--surface2);
-    border: 1px solid var(--border);
+  /* Contrastfix 12-08-2026 (melding Ronald): randkleur en achtergrond van
+     invulvelden weken bijna niet af van de paginakleur (#2a2a2a rand op
+     #0d0d0d achtergrond, contrastverhouding ruim onder de WCAG-norm van 3:1
+     voor bedieningselementen). Vaste, sterkere kleuren i.p.v. var(--border)/
+     var(--surface2), bewust niet de gedeelde variabelen zelf gewijzigd —
+     die worden op 82 (--border) en 38 (--surface2) andere plekken gebruikt
+     en een wijziging daar zou ook daar het uiterlijk veranderen. */
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    background: #242424;
+    border: 1px solid #666666;
     border-radius: 8px;
     color: var(--text);
     font-family: 'Roboto', sans-serif;
@@ -261,6 +268,20 @@
   input:focus, select:focus, textarea:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(245,197,24,0.1);
+  }
+
+  /* Bugfix 12-08-2026 (melding Ronald: "breed veld", onduidelijk wat ermee
+     moest bij het akkoord-vinkje op de laatste wizard-stap). Oorzaak: de
+     algemene regel hierboven ("input, select, textarea") gold ook voor
+     input[type=checkbox] — die erfde width:100%, padding en appearance:none,
+     en werd zo een brede lege balk zonder herkenbaar vinkje. Checkbox nu
+     uitgesloten van die regel (zie :not() hierboven) en hier apart, met
+     behoud van het native, herkenbare selectievakje. */
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent);
+    cursor: pointer;
   }
 
   select option { background: #1e1e1e; }
