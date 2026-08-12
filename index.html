@@ -2795,6 +2795,9 @@
     <div class="profile-actions" id="profileActions" style="display:none;">
       <button class="btn btn-primary" onclick="editMyProfile()">Profiel bewerken</button>
       <button class="btn btn-ghost" onclick="showView('bands')" id="myBandsBtn" style="display:none;">Mijn bands</button>
+      <!-- TT-56 (12-08-2026): opt-out band-uitnodigingen. Alleen deze knop,
+           geen zichtbaar label op het profiel zelf voor anderen. -->
+      <button class="btn btn-ghost" id="bandInviteToggleBtn" onclick="toggleBandInviteAvailability()">Open voor band-uitnodigingen</button>
       <button class="btn btn-ghost" style="color:var(--danger);border-color:var(--danger);" onclick="openDeleteAccountModal()">Account verwijderen</button>
     </div>
   </div>
@@ -4547,11 +4550,20 @@ async function loadInbox() {
   }
 
   try {
-    const { data, error } = await db.from('messages')
-      .select('id, sender_id, recipient_id, body, created_at, read_at')
-      .or(`sender_id.eq.${mid},recipient_id.eq.${mid}`)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
+    // TT-71 (12-08-2026): was één .or() met mid rechtstreeks in de filter-
+    // string geplakt. Nu twee losse, geparametriseerde .eq()-vragen i.p.v.
+    // zelf een filterstring bouwen — geen plaktekst meer, ook al kwam mid
+    // hier altijd al uit de database (musicians.id), nooit uit vrije tekst.
+    // Client-side samengevoegd en opnieuw op datum gesorteerd, want elke
+    // vraag levert zijn eigen, los gesorteerde resultaat.
+    const [sentRes, receivedRes] = await Promise.all([
+      db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('sender_id', mid),
+      db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('recipient_id', mid),
+    ]);
+    if (sentRes.error) throw sentRes.error;
+    if (receivedRes.error) throw receivedRes.error;
+    const data = [...(sentRes.data || []), ...(receivedRes.data || [])]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     if (!data || !data.length) {
       listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Nog geen berichten. Stuur iemand een bericht vanuit een zoekresultaat.</div>';
@@ -4643,11 +4655,18 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc) 
   if (!mid) return;
 
   try {
-    const { data, error } = await db.from('messages')
-      .select('id, sender_id, recipient_id, body, created_at, read_at')
-      .or(`and(sender_id.eq.${mid},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${mid})`)
-      .order('created_at', { ascending: true });
-    if (error) throw error;
+    // TT-71 (12-08-2026): zelfde aanpak als loadInbox() hierboven — twee
+    // geparametriseerde .eq()-vragen (heen en terug) i.p.v. mid/otherId in
+    // een and(...)/or(...)-filterstring plakken. Client-side samengevoegd en
+    // op datum gesorteerd (oplopend, dit is het gespreksverloop).
+    const [sentRes, receivedRes] = await Promise.all([
+      db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('sender_id', mid).eq('recipient_id', otherId),
+      db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('sender_id', otherId).eq('recipient_id', mid),
+    ]);
+    if (sentRes.error) throw sentRes.error;
+    if (receivedRes.error) throw receivedRes.error;
+    const data = [...(sentRes.data || []), ...(receivedRes.data || [])]
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
     // TT-34: dag-scheidingen ("Vandaag"/"Gisteren"/datum) tussen berichten
     // van verschillende dagen — herkenbaar chat-patroon, maakt een lang
@@ -5078,6 +5097,39 @@ async function loadMyProfile() {
   const bandsBtn = document.getElementById('myBandsBtn');
   if (bandsBtn) bandsBtn.style.display = 'inline-flex';
   loadBandInvites(m.id);
+
+  // TT-56 (12-08-2026): opt-out band-uitnodigingen — knoptekst weerspiegelt
+  // de huidige stand. m.accepts_band_invites komt gewoon mee via de
+  // '*'-select hierboven, geen aparte kolom nodig in de query.
+  myAcceptsBandInvites = m.accepts_band_invites !== false;
+  updateBandInviteToggleBtn();
+}
+
+function updateBandInviteToggleBtn() {
+  const btn = document.getElementById('bandInviteToggleBtn');
+  if (!btn) return;
+  btn.textContent = myAcceptsBandInvites ? 'Open voor band-uitnodigingen' : 'Niet open voor band-uitnodigingen';
+}
+
+// TT-56 (12-08-2026, op verzoek van Ronald): een muzikant kan hiermee zelf
+// aangeven niet open te staan voor band-uitnodigingen (TT-41). Bewust smal
+// gehouden — blokkeert uitsluitend die uitnodigingen. Los 1-op-1 bericht
+// sturen blijft altijd mogelijk, ongewijzigd, en het profiel blijft gewoon
+// in alle zoekresultaten staan (geen zichtbaar label voor bezoekers).
+async function toggleBandInviteAvailability() {
+  if (!myMusicianId) return;
+  const newVal = !myAcceptsBandInvites;
+  try {
+    const { error } = await db.from('musicians')
+      .update({ accepts_band_invites: newVal })
+      .eq('id', myMusicianId);
+    if (error) throw error;
+    myAcceptsBandInvites = newVal;
+    updateBandInviteToggleBtn();
+    showToast(newVal ? 'Je staat weer open voor band-uitnodigingen.' : 'Je ontvangt geen band-uitnodigingen meer.');
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+  }
 }
 
 // ─── TT-41: banduitnodigingen bevestigen ─────────────────────────────────────
@@ -7257,6 +7309,10 @@ let filterBandWantedList = [];
 let filterBandStatusVal  = 'zoekend';
 let bandSearchSortMode   = 'score';
 let myMusicianId = null;
+// TT-56 (12-08-2026): opt-out voor band-uitnodigingen. Bijgehouden als eigen
+// variabele (net als myMusicianId) zodat de knop op Mijn Profiel zijn tekst
+// kan tonen zonder steeds opnieuw te hoeven laden.
+let myAcceptsBandInvites = true;
 let lastBandResults = [];
 // TT-30 (07-08-2026): zie musicianViewMode hierboven — zelfde patroon, apart
 // onthouden per tabblad.
@@ -7970,8 +8026,10 @@ function searchMembersToAdd(query) {
 
       // TT-43: zoeken op voornaam óf gebruikersnaam — een oprichter kent zijn
       // toekomstige bandlid soms alleen van diens profielnaam.
+      // TT-56 (12-08-2026): accepts_band_invites erbij, om de "Uitnodigen"-
+      // knop hieronder te kunnen verbergen voor wie dat heeft uitgezet.
       const { data: musicians, error } = await db.from('musicians')
-        .select('id, fname, username, city, profile_color, musician_instruments(instrument)')
+        .select('id, fname, username, city, profile_color, accepts_band_invites, musician_instruments(instrument)')
         .or(`fname.ilike.%${qSafe}%,username.ilike.%${qSafe}%`).limit(15);
       if (error) throw error;
 
@@ -7982,6 +8040,13 @@ function searchMembersToAdd(query) {
       }
       resEl.innerHTML = filtered.map(m => {
         const memberName = displayNameOf(m);
+        // TT-56 (12-08-2026): wie accepts_band_invites heeft uitgezet, krijgt
+        // hier geen "Uitnodigen"-knop. Deze tekst is alleen zichtbaar voor de
+        // zoekende oprichter zelf, in dit besloten beheerscherm — geen
+        // zichtbaar label op het publieke profiel van de muzikant zelf.
+        const inviteAction = m.accepts_band_invites === false
+          ? `<span style="font-size:12px;color:var(--muted);">Niet open voor uitnodigingen</span>`
+          : `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="addBandMember('${jsAttr(m.id)}')">Uitnodigen</button>`;
         return `
         <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
           <div style="width:32px;height:32px;border-radius:50%;background:${safeColor(m.profile_color, '#888')};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${escHtml(memberName[0].toUpperCase())}</div>
@@ -7989,7 +8054,7 @@ function searchMembersToAdd(query) {
             <div style="font-weight:600;font-size:14px;">${escHtml(memberName)}</div>
             <div style="font-size:12px;color:var(--muted);">${escHtml(m.city||'')}${(m.musician_instruments||[]).length ? ' · ' + escHtml(m.musician_instruments.map(x=>x.instrument).slice(0,2).join(', ')) : ''}</div>
           </div>
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="addBandMember('${jsAttr(m.id)}')">Uitnodigen</button>
+          ${inviteAction}
         </div>`; }).join('');
     } catch (e) {
       resEl.innerHTML = `<p style="color:var(--danger);font-size:13px;">${friendlyErrorMessage(e)}</p>`;
@@ -8003,6 +8068,20 @@ function searchMembersToAdd(query) {
 // Mijn Profiel wordt het 'bevestigd' en is het lidmaatschap zichtbaar.
 async function addBandMember(musicianId) {
   try {
+    // TT-56 (12-08-2026): defensieve check naast de verborgen knop hierboven
+    // — zelfde patroon als de akkoord-checkbox bij registratie (TT-63): de
+    // UI verbergt de knop, maar een verse controle vlak vóór het schrijven
+    // voorkomt dat een verouderd scherm (bijv. een openstaand zoekresultaat
+    // van vóór iemand net zijn instelling wijzigde) alsnog een uitnodiging
+    // verstuurt.
+    const { data: target, error: checkErr } = await db.from('musicians')
+      .select('accepts_band_invites').eq('id', musicianId).single();
+    if (checkErr) throw checkErr;
+    if (target && target.accepts_band_invites === false) {
+      showToast('Deze muzikant staat niet open voor band-uitnodigingen.');
+      return;
+    }
+
     const { error } = await db.from('band_members').insert({
       band_id: addMemberBandId, musician_id: musicianId, role: 'Lid', status: 'aangevraagd'
     });
