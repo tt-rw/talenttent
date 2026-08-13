@@ -1,6 +1,6 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 12-08-2026 (vervolg 12 — TT-57 gebouwd en afgerond, uitgebreid regressiegetest; vervolg 11 — TT-52 SQL-script gedraaid en geverifieerd, ticket volledig afgerond; vervolg 10 — TT-52 gebouwd, wacht op Ronalds SQL-script vóór productie; vervolg 9 — TT-56 gebouwd, wacht op Ronalds SQL-script vóór productie; vervolg 8 — TT-60 en TT-71 afgerond, klein-punten-opschoning; vervolg 7 — bugfix akkoord-checkbox + contrastfix invulvelden, live gemeld door Ronald bij een testregistratie, zie Deel 3; TT-51 volledig afgerond — client, database en beide publieke RPC's, alles geverifieerd; wizard-stap "Jouw geluid" herontworpen: niveau kiezen zit nu in de instrumentknop zelf; profielweergave (muzikant + band) herzien: foto naast naam, doel/frequentie/ambitie-badges weg (nieuw ticket TT-89); TT-55 gebouwd — harde filter i.p.v. formule, geen databasewijziging nodig; alleen Ronalds eigen smoke-test staat nog open — zie Deel 3; e-mailadressen `contact@`/`privacy@` bevestigd functioneel, van de P0-lijst af; nieuwe naslagwerken `niveaubepaling-naslagwerk.md` en bijgewerkte `zoekfunctienaslagwerk.md` toegevoegd)
+**Laatste update:** 13-08-2026 (vervolg 5 — V-15-restpunt afgerond en functioneel geverifieerd op echte data, bandfoto nu ook zichtbaar zonder profiel; vervolg 4 — V-05/V-06/V-07/V-21 afgerond, V-17-restpunt (TT-102) gebouwd en functioneel geverifieerd; vervolg 3 — V-22 onderzocht, op Ronalds besluit niet gebouwd; vervolg 2 — groep 4 gebouwd: V-04, V-12 (TT-53, afgerond), V-19, V-24; vervolg 1 — groep 1-3 uit de akkoordlijst gebouwd: V-08 t/m V-18 exclusief V-19, tien TT-nummers toegekend; alle details in Deel 3. Voorafgaand, zelfde dag doorlopend vanuit 12-08-2026 (vervolg 14 — Batch B app-vorm; vervolg 13 — Batch A reparaties). **Zes tickets nog niet zelf getest door Ronald, zie Deel 1a.** Ouder: vervolg 12 — TT-57 gebouwd en afgerond, uitgebreid regressiegetest; vervolg 11 — TT-52 SQL-script gedraaid en geverifieerd, ticket volledig afgerond; vervolg 10 — TT-52 gebouwd, wacht op Ronalds SQL-script vóór productie; vervolg 9 — TT-56 gebouwd, wacht op Ronalds SQL-script vóór productie; vervolg 8 — TT-60 en TT-71 afgerond, klein-punten-opschoning; vervolg 7 — bugfix akkoord-checkbox + contrastfix invulvelden, live gemeld door Ronald bij een testregistratie, zie Deel 3; TT-51 volledig afgerond — client, database en beide publieke RPC's, alles geverifieerd; wizard-stap "Jouw geluid" herontworpen: niveau kiezen zit nu in de instrumentknop zelf; profielweergave (muzikant + band) herzien: foto naast naam, doel/frequentie/ambitie-badges weg (nieuw ticket TT-89); TT-55 gebouwd — harde filter i.p.v. formule, geen databasewijziging nodig; alleen Ronalds eigen smoke-test staat nog open — zie Deel 3; e-mailadressen `contact@`/`privacy@` bevestigd functioneel, van de P0-lijst af; nieuwe naslagwerken `niveaubepaling-naslagwerk.md` en bijgewerkte `zoekfunctienaslagwerk.md` toegevoegd)
 **Vervangt:** `TODO.md`, `talenttent_backlog.md`, `stappenplan.md`, `randvoorwaarden_lancering.md` als los te lezen bronnen. Dit is het ene bestand dat je bij sessiestart meestuurt, samen met `index.html`.
 
 **Naast dit bestand bestaan twee blijvende naslagwerken:**
@@ -16,7 +16,7 @@ Geen van beide is een actielijst of een parallel ticketsysteem — puur uitleg.
 - **Deel 2 — Achtergrond bij richtingen**, de strategische context achter clusters van tickets (geen losse actiepunten meer, alleen duiding + verwijzing naar TT-nummers)
 - **Deel 3 — Afgehandeld**, chronologisch, kort
 
-Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodanig in code-comments). Huidige hoogste nummer: **TT-88**.
+Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodanig in code-comments). Huidige hoogste nummer: **TT-107**.
 
 **Vaste smoke-test na elke wijziging (toegevoegd 09-08-2026, externe technische review):** `index.html` is gegroeid naar ruim 7.000 regels in één bestand, zonder geautomatiseerde tests. Regressie is daarmee het grootste sluipende risico — en Voorwaarde 0 zegt zelf dat stabiliteit altijd wint. Na elke deploy, tien minuten: inloggen, zoeken (met en zonder profiel), een bericht sturen, een profiel bewerken, uitgelogd zoeken. Geen bouwticket, wel een vaste stap — hoort ook thuis in de projectinstructie zelf.
 
@@ -34,7 +34,7 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-06** | Rapporteren en blokkeren | Meldknop + blokkeren, verplicht voordat er actief geworven wordt. **Geparkeerd 08-08-2026** — ontwerp besproken, drie beslissingen staan nog open (zie onderaan deze tabel) |
+| **TT-06** | Rapporteren en blokkeren | Meldknop + blokkeren, verplicht voordat er actief geworven wordt. **Prioriteit opgehoogd 13-08-2026 (V-05, Ronalds akkoord):** van "geparkeerd" naar **nodig vóór de eerste storeaanvraag** — beide app-stores eisen dit vermoedelijk bij vrij berichtenverkeer tussen gebruikers (aanname, het beleid zelf is niet gelezen). Ontwerp besproken op 08-08-2026, drie beslissingen staan nog open (zie onderaan deze tabel). Nog geen bouwwerk gestart |
 | **TT-07** | Leeftijdsbeleid | **Herzien 08-08-2026: minimumleeftijd blijft 13.** Ticket zelf vraagt geen codewijziging meer; de gevolgen zijn losgetrokken naar TT-45 |
 | **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel |
 | **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus — mogelijk groter dan gedacht, zie toelichting onderaan deze tabel** |
@@ -107,12 +107,11 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 |---|---|---|
 | **TT-18** | Album-art bij repertoire | Overweeg iTunes/Deezer i.p.v. MusicBrainz voor dit doel |
 | **TT-27** | Wizard-tussenresultaten incrementeel opslaan | Tabblad sluiten tijdens onboarding verliest nu nog voortgang. **Externe technische review (09-08-2026):** twijfelgeval op P2 — voor dertienjarigen op een telefoon is voortgang kwijtraken een conversie-killer. Verdedigbaar zolang het verkeer laag is; **verhoog naar P1 zodra "Regionale start" (P1, hierboven) actief wordt**, vóór er echte nieuwe gebruikers de wizard in gaan |
-| **TT-28** | Filtering/paginering echt naar de database verplaatsen | Nodig zodra het ledenaantal groeit. **Bevestigd 10-08-2026 (tweede externe review):** prioritering klopt, nog niet urgent. Wel opgemerkt: het *tonen* is gelimiteerd op 50, het *ophalen* niet — bij duizenden profielen wordt de tweede query zwaar |
+| **TT-28** | Filtering/paginering echt naar de database verplaatsen | Nodig zodra het ledenaantal groeit. **Bevestigd 10-08-2026 (tweede externe review):** prioritering klopt, nog niet urgent. Wel opgemerkt: het *tonen* is gelimiteerd op 50, het *ophalen* niet — bij duizenden profielen wordt de tweede query zwaar. **Aangevuld 13-08-2026 (V-06, Ronalds akkoord):** hetzelfde probleem geldt voor `loadInbox()` — haalt élk bericht op zonder limiet (bij 7 gebruikers nu geen probleem). Geen apart ticket, valt onder deze wijziging zodra hij wordt opgepakt |
 | **TT-85** | Supabase-client vastzetten of zelf hosten | **Nieuw, 10-08-2026 (tweede externe review).** De script-tag laadt `@supabase/supabase-js@2` zonder vast versienummer en zonder `integrity`. Twee risico's: een nieuwe versie kan gedrag breken zonder dat er iets is gewijzigd, en een gecompromitteerd CDN kan code injecteren. Twee routes: (a) de bibliotheek als bestand naast `index.html` in de repo zetten — verwijdert de afhankelijkheid volledig en past bij GitHub Pages, of (b) pinnen op een exacte versie plus `integrity` + `crossorigin`. **Blokkade:** Claude heeft geen netwerktoegang en kan de exacte versie noch de hash bepalen. Een gegokte hash breekt de app direct. Ronald moet de versie en hash aanleveren, of het bestand zelf downloaden voor route (a). Het *beschikbaarheids*risico is inmiddels afgedekt door TT-82; dit ticket gaat alleen nog over de toeleveringsketen |
 | **TT-50** | Bandhistorie op het profiel | Welke bands iemand heeft (gehad), deels af te leiden uit `band_members` |
 | **TT-89** | Doel/frequentie/ambitie een nieuwe plek geven op het profiel | **Nieuw, 12-08-2026.** Ronald over de badges "Alles!"/"Paar keer per maand"/"Gewoon plezier, geen groot plan" op de profielweergave: "nietszeggende tekstblokken [...] na verloop van tijd weet niemand meer waar dit op sloeg." Op verzoek verwijderd uit `.profile-badges` in `buildMusicianDetailHTML()` (zie Deel 3). Voor de eigenaar zelf blijft dezelfde informatie zichtbaar via `renderProgressPanel()` (PPP-tijdlijn, TT-48) op Mijn Profiel. Voor bezoekers van een ánder profiel is deze informatie nu nergens meer te zien — bewust, in afwachting van het bredere profielherontwerp (zie Deel 2-A). Geen concrete nieuwe plek afgesproken; oppakken zodra het herontwerp aan de beurt is |
 | **TT-51** | Niveausysteem (sterren): muzikant per instrument + band | **Volledig gebouwd en uitgevoerd 12-08-2026, zie Deel 3.** `index.html` af. Database: `musician_instruments.niveau` en `bands.niveau` bestaan, geverifieerd via controlequery (kolommen + constraints). **RPC-restpunt gesloten en uitgevoerd:** `tt_get_musicians_public` (kolom `instrument_levels`) en `tt_get_bands_public` (kolom `niveau`) zijn bijgewerkt in productie — na een eerste foutmelding (42P13, CREATE OR REPLACE kon geen kolom toevoegen) opgelost met DROP + CREATE + herstel van de EXECUTE-rechten. **Geverifieerd door Ronald via controlequery:** beide kolommen bevestigd aanwezig (`musicians_niveau_toegevoegd = true`, `bands_niveau_toegevoegd = true`). **Bugfix uit Ronalds live smoke-test (12-08-2026):** 3 sterren gekozen, na opslaan leken het er 5 — root cause: `.star-display` kleurde alle sterren (gevuld én leeg) hetzelfde goud, de weergave leunde alleen op het glyphverschil ★/☆, dat op sommige lettertypen/besturingssystemen bij 12px nauwelijks zichtbaar is. Opgelost: gevulde en lege sterren in aparte spans met eigen kleur (goud/grijs), zelfde bewezen patroon als de klikbare sterrenkiezer. **UI-verbeteringen uit dezelfde testronde:** (1) "Niveau van de band" staat nu direct na Bandnaam, niet meer verstopt tussen Status en Wij zoeken nog; (2) informatieknop (i) naast het label opent een popup met de volledige niveau-indeling (Tabel 1) en de toelichtende tekst uit `niveaubepaling-naslagwerk.md`; (3) **besluit herzien:** de bandster is niet langer losstaand van status — Ronald besliste na de eerste test alsnog dat de ster moet verdwijnen zodra een band niet meer "Zoekend naar leden" is (Compleet/Inactief); (4) sterren toegevoegd aan de muzikant-zoekresultaten (rij én kaart), voor het gezochte instrument — alleen zichtbaar als er een instrumentfilter actief is (bij meerdere instrumenten per muzikant is zonder filter niet eenduidig welk niveau relevant is; Ronald: "als we TT-55 uitvoeren komt dat er beter uit", dus bewust een tussenoplossing). Getest met Playwright (kleurcontrast filled/empty, veldvolgorde, infomodal-inhoud, bandster-zichtbaarheid per status, muzikant-sterren met/zonder filter) — alle geslaagd. **Wizard-herontwerp "Jouw geluid" (12-08-2026, zie Deel 3):** niveau kiezen is nu integraal onderdeel van de instrumentknop (ingedrukt houden + slepen naar een ster), losse sterrenlijst eronder verwijderd; labels hernoemd naar "Mijn Instrumenten"/"Mijn Muziekstijl(en)"; informatieknop (i) met Tabel 2 toegevoegd, zelfde patroon als bij bands; niveau blijft verplicht (bestaande validatie, ongewijzigd, opnieuw geverifieerd). **Enige nog openstaande stap: Ronalds eigen 10-minuten-smoke-test tegen de echte, live backend** (inloggen, zoeken met/zonder profiel, bericht sturen, profiel bewerken, uitgelogd zoeken — inclusief: sterren zichtbaar op een muzikant- en bandprofiel als uitgelogde bezoeker; en nu ook: niveau instellen via de nieuwe druk-en-sleep-knop in de registratiewizard) |
-| **TT-53** | Deelbare profiel-URL (deep link) | `#profiel/id` opent direct het juiste profiel — zonder backend te bouwen. Het *rijke* deelvoorbeeld (titel/foto bij delen) is een apart ticket, zie TT-54 |
 | **TT-56** | Statusknop "sta je open voor iets nieuws?" | **Deels gebouwd 12-08-2026, zie Deel 3.** Scope teruggebracht tot alleen band-uitnodigingen (TT-41) — geen algemene "open voor van alles"-status, geen zichtbaar label voor bezoekers. Toggle op Mijn Profiel + gate op de "Uitnodigen"-knop, klaar in `index.html`. **Blokkeert productie:** het scriptje in Deel 3 (nieuwe kolom `accepts_band_invites`) moet Ronald nog draaien |
 | **TT-58** | Applaus-mechanisme | Open besluit: op personen of op prestaties, met of zonder zichtbare teller. Advies blijft: op prestaties, geen publieke teller (risico op populariteitsscore bij minderjarige gebruikers) |
 | **TT-59** | Proefrepetitie-kaart in het gesprek | Verwachtingen bespreken vóór de eerste keer samen spelen. Sluit aan op TT-11 (lagere inzet: "ik wil een keer meespelen") |
@@ -169,6 +168,8 @@ Geen bouwtickets — Ronald test dit zelf op de live site, vaak in privénavigat
 - **Zoeken zonder profiel:** uitgelogd zoeken (met/zonder vertrekpunt), profiel-/bandmodal als bezoeker, band-instrumentfilter zonder profiel
 - **Setlist-zoeken:** volledige browsertest, nog niet bevestigd
 - **HEIC-foto vanaf een iPhone (nieuw 10-08-2026, hoort bij TT-87):** upload een foto rechtstreeks vanuit de Foto's-app als profielfoto. Lukt dat? Dan zet Safari HEIC zelf om naar JPG en raakt vrijwel niemand de nieuwe melding. Verschijnt de HEIC-melding wél? Dan is de omzetting geen zekerheid en moet de tekst van die melding scherper — die is nu geschreven vanuit de aanname dat het zelden voorkomt
+- **TT-101 (V-16), nieuw 13-08-2026 — oprichterschap overdragen, belangrijkste openstaande test.** De keten "Ik stop als bandleider" → aanbod-banner bij een ander lid → "Ik neem het over" → nieuwe oprichter, oude oprichter uit de band, is alleen op code gecontroleerd (`db` kon in deze testomgeving niet vervangen worden om dit functioneel door te lopen). Dit is de meest ingrijpende wijziging van 13-08-2026 — loop dit zelf met twee accounts door vóór je erop vertrouwt
+- **TT-100 (V-15) en TT-102 (V-17), restpunten van 13-08-2026 — bewust door Ronald uitgesteld ("het testen doe ik later"):** (1) uitgelogd een band met foto bekijken — staat de foto er? (2) een gedeelde bandlink (`#band/id`) openen zonder in te loggen — laadt de band? (3) in "Lid toevoegen" een zoekstraal invullen — vallen verre resultaten weg en staat de afstand bij elk resultaat?
 
 **Afgevinkt op 10-08-2026, bevestigd door Ronald:** deelvoorbeeld in WhatsApp (TT-81), melding bij een niet-geladen bibliotheek inclusief de knop "Opnieuw proberen" (TT-82), en de volledige smoke-test van tien minuten na de upload van TT-81 t/m TT-84.
 
@@ -182,7 +183,7 @@ Dit is geen actielijst meer (die staat volledig in Deel 1) maar de strategische 
 
 Besluit uit eerdere sessie: het profiel is niet de invoer voor het matchen, het is zelf het product — de persoonlijke promotiepagina van de muzikant. Indeling volgt Ronalds eigen woorden: *trots op prestaties (verleden) · nu plezier maken (heden) · ambitie voor de toekomst (toekomst)* — dat is het PPP-principe als tijdlijn, uitgewerkt in het voortgangspaneel (TT-48, opgelost).
 
-Bijbehorende tickets: TT-46 en TT-47 (opgelost), TT-48 (opgelost), TT-49 (optredenlijst), TT-50 (bandhistorie), TT-51 (niveausysteem: muzikant per instrument + band), TT-52 (covers/eigen werk), TT-53 en TT-54 (deelbare profiel-URL), TT-89 (doel/frequentie/ambitie een nieuwe plek geven, nu weggehaald uit de badge-strip).
+Bijbehorende tickets: TT-46 en TT-47 (opgelost), TT-48 (opgelost), TT-49 (optredenlijst), TT-50 (bandhistorie), TT-51 (niveausysteem: muzikant per instrument + band), TT-52 (covers/eigen werk), TT-53 (deelbare profiel-URL, **afgerond 13-08-2026**, zie Deel 3) en TT-54 (het *rijke* deelvoorbeeld per profiel, nog open), TT-89 (doel/frequentie/ambitie een nieuwe plek geven, nu weggehaald uit de badge-strip).
 
 **Openstaand spanningsveld (Ronald, 09-08-2026):** het doelveld (samen oefenen/band starten/optreden/alles) en de ambitie-vraag uit TT-47 (mezelf verbeteren/nieuwe stijlen/eigen werk/plezier) liggen inhoudelijk nog te dicht bij elkaar. "Dit is nog niet goed genoeg" — komt terug in een latere sessie, geen los ticket totdat de richting scherper is.
 
@@ -216,6 +217,103 @@ Bijbehorende tickets: TT-70 (Google Play), plus het `—`-punt "App Store (nativ
 # Deel 3 — Afgehandeld
 
 Kort en chronologisch. Voor het volledige technische verhaal per punt: zie de sessie-aantekeningen die aan dit bestand voorafgingen (niet langer los bijgehouden na deze opschoning).
+
+**Vanaf hier: 13-08-2026 en de twee 12-08-2026-vervolgen die aan deze update voorafgingen, maar nog niet in dit bestand stonden.** Bron: `akkoordlijst-13-08-2026.md` (voorstellen V-01 t/m V-24) en de opleverdocumenten in het project (`oplevering-batch-A.md`, `oplevering-batch-B.md`, `oplevering-groep1-3-13-08-2026.md`, `oplevering-groep4-13-08-2026.md`, `oplevering-V05-V21-13-08-2026.md`, `oplevering-V15-13-08-2026.md`) — daar staat per punt de volledige technische toelichting en testlijst, hier de samenvatting met TT-nummer.
+
+## 13-08-2026 (vervolg 5) — V-15-restpunt afgerond: bandfoto ook zichtbaar zonder profiel
+
+TT-100 (V-15) was na groep 1-3 (vervolg 1 hieronder) nog niet compleet: de publieke functie `tt_get_bands_public` gaf geen `avatar_url` terug, dus een bezoeker zonder eigen profiel zag nooit de bandfoto — een ingelogde oprichter/lid wel. Ronald leverde de werkelijke functiedefinitie aan (`pg_get_functiondef`), als uitgangspunt gebruikt, niet aangenomen.
+
+**Gebouwd:** `tt_get_bands_public` geeft nu ook `avatar_url` terug; `openBandModal()` neemt dat veld over in het bezoekerspad. Bandkaarten/-rijen in zoekresultaten blijven bewust bij alleen-initialen, voor iedereen — geen onderdeel van dit ticket.
+
+**Foutmelding onderweg (42P13), gecorrigeerd:** de eerste versie van het script gebruikte `create or replace function`, wat Postgres niet toestaat bij een gewijzigd returntype (een kolom erbij). Herschreven naar `drop function` + `create function`, met expliciet herstel van de EXECUTE-rechten voor `anon` én `authenticated` — een `drop` verwijdert bestaande rechten, en deze functie moet ook zonder inloggen werken (een gedeelde bandlink, TT-53, gebruikt hem al anoniem).
+
+**Functioneel geverifieerd op echte data, niet alleen foutloos aangemaakt:** eerste testronde met twee accounts gaf 0,0 km — bleek correct, geen bug: vier van de vijf geteste personen (Colin, Rafaela, Ronald, Dylan) hebben identieke coördinaten (Den Haag), vermoedelijk dezelfde postcode via PDOK. Een test tussen Utrecht (Daniela) en Den Haag gaf 47,1 km — komt overeen met de werkelijke afstand hemelsbreed. TT-100 hiermee volledig afgerond.
+
+**Nog te doen door Ronald, bewust uitgesteld:** de app-test zelf (uitgelogd een band met foto bekijken, én een gedeelde bandlink openen) — zie Deel 1a.
+
+**Checksum geleverd bestand:** `sha256:a2c6a5c50250d475486554cb7550c7f7d9ed6a17cb46b28356e90b222cc7d64a` (9628 regels). Haakjesbalans: `{}` 1894/1894 · `()` 5308/5308 · `[]` 290/290. Volledige regressietest: 0 knelpunten onder 44px, geen paginafouten.
+
+## 13-08-2026 (vervolg 4) — V-05, V-06, V-07 (TT-107), V-21 (TT-105) afgerond; V-17-restpunt (TT-102) functioneel geverifieerd
+
+Ronald pakte zes punten in één keer op: V-05, V-06, V-07, V-21, V-15, V-17 (V-15 apart afgerond in vervolg 5 hierboven, nadat de functiedefinitie beschikbaar kwam).
+
+**V-05 → TT-06 opgehoogd.** Van "geparkeerd" naar "nodig vóór de eerste storeaanvraag" — besluit van Ronald, geen codewijziging. Zie de bijgewerkte TT-06-rij in Deel 1/P0.
+
+**V-06 → gekoppeld aan TT-28.** `loadInbox()` haalt nog steeds elk bericht op zonder limiet — vastgelegd als onderdeel van TT-28, geen apart bouwwerk. Zie de bijgewerkte TT-28-rij in Deel 1/P2.
+
+**V-07 (TT-107) — leesbevestiging, bewust minimaal.** De akkoordlijst adviseerde dit niet te bouwen (sociale druk bij minderjarige gebruikers); Ronald gaf een gerichte tegenopdracht: alleen een vinkje, geen tijdstip. Bij een eigen verzonden, gelezen bericht verschijnt nu een klein ✓ naast het bestaande tijdstip. Een ongelezen eigen bericht toont niets extra's — geen "verzonden, niet gelezen"-teken, dat zou hetzelfde risico in een andere vorm terugbrengen. Getest met Playwright, 3 controles: vinkje bij gelezen, geen vinkje bij ongelezen, geen tijdstip vlak bij het vinkje zelf.
+
+**V-21 (TT-105) — drie niveauschalen, drie woorden.** Voorstel overgenomen: "beheersing" bij een nummer (Basis/Bijna/Podium), "niveau" bij een instrument (ongewijzigd), "ervaring" bij een band. Aangepast: wizard-legende, repertoiretabelkop, bandzoekfilterlabel, bandformulierlabel + helptekst, de volledige toelichtingspopup bij bandsterren. Bewust ongewijzigd: alles rond de instrumentschaal (zoekfilter "Niveau", instrument-infopopup, sterrenkeuze in de wizard). **Niet aangeraakt:** `niveaubepaling-naslagwerk.md` zelf — niet aangeleverd deze sessie, dus niet bijgewerkt; nodig als dat document ook moet meebewegen met deze woordkeuze. Getest met Playwright, 13 controles (elke wijziging plus een expliciete controle dat de instrumentteksten ongemoeid bleven).
+
+**V-17-restpunt (TT-102, tweede helft) — afstand/straal-filter bij "Lid toevoegen".** V-17's hoofdpunt (zoeken op instrument i.p.v. alleen naam) was al klaar in groep 1-3 (vervolg 1 hieronder); dit voegt een optioneel straalveld toe. Nieuwe, bewust smalle databasefunctie `tt_musician_distances(searcher_id, musician_ids[])` — geeft uitsluitend een afstand in km terug, nooit ruwe coördinaten, om het nog openstaande beveiligingsgat B-01 niet erger te maken. Vertrekpunt is altijd de eigen locatie van de zoekende oprichter. Resultaten sorteren nu op afstand; gaat de afstandsfunctie om wat voor reden dan ook mis, dan blijft zoeken gewoon werken, alleen zonder afstand — geen foutmelding, geen kapot scherm.
+
+**Functioneel geverifieerd op echte data** (dezelfde testronde als vervolg 5 hierboven, tegelijk uitgevoerd voor beide functies): Colin/Ronald (beiden Den Haag) 0,0 km — correct; Den Haag–Utrecht 47,1 km — realistisch.
+
+**Bestand `sql/fix/F-V17-restpunt-afstandsfunctie.sql`** gedraaid en functioneel geverifieerd door Ronald. Checksum geleverd bestand (dit punt, vóór V-15-restpunt): `sha256:8372777d44ab675c2711c271efa419ea1d66d5a0e89562c16e02ce8b91d407e7` (9627 regels).
+
+## 13-08-2026 (vervolg 3) — V-22 onderzocht, op Ronalds besluit niet gebouwd
+
+Geverifieerd: MusicBrainz is de songzoek-bron (`onArtistSearch()`/`onTrackSearch()`), met een bewuste tweestapsopzet — eerst artiest zoeken, dan het nummer binnen die ene artiest. Dat filtert covers en gelijknamige artiesten weg. Eén gecombineerd zoekveld zou die filtering verliezen (meer ruis, minder trefzekerheid). Uitgelegd aan Ronald, geen keuze afgedwongen.
+
+**Besluit Ronald: "V-22 open laten staan. die pakken we later op."** Geen code gewijzigd, geen TT-nummer toegekend — blijft bij het V-22-voorstel in `akkoordlijst-13-08-2026.md`.
+
+## 13-08-2026 (vervolg 2) — Groep 4: V-04 (TT-93), V-12 (TT-53, afgerond), V-19 (TT-104), V-24 (bevestigt TT-U17)
+
+**V-04 (TT-93) — bericht naar een verwijderd account geblokkeerd.** Het antwoordveld bleef actief bij een gesprek met een inmiddels verwijderde gebruiker (TT-22). Nu verborgen, met één regel uitleg in plaats daarvan.
+
+**V-12 (TT-53, hiermee afgerond) — deelbare profiel- en bandlink.** Nieuwe functie `shareProfile(kind, id, name)`: bouwt `#profiel/<id>` of `#band/<id>`, gebruikt `navigator.share()` met een klembord-terugval (`showToast`). "Deel dit profiel"/"Deel dit bandprofiel"-knop toegevoegd, ook zichtbaar op je eigen profiel. `appInit()` opent zo'n link direct in de juiste modal, ook zonder in te loggen bij een band.
+
+**Bijvangst-bug gevonden en gefixt (geen onderdeel van de opdracht, wel nodig voor V-12):** een ingelogde gebruiker die een gedeelde link opende kwam altijd op Mijn Profiel terecht in plaats van bij het gedeelde profiel. Oorzaak: `onUserLoggedIn()` herschrijft `location.hash` (via `showView('myprofile')`) vóórdat `appInit()` de oorspronkelijke hash kon lezen — een latent probleem dat in theorie ook oudere links (`#about`) al trof, nu pas zichtbaar omdat V-12 de eerste hashlinks introduceerde die een ingelogde gebruiker realistisch zou gebruiken. Fix: de hash wordt nu vóór elke `await` in `appInit()` gelezen.
+
+**V-19 (TT-104) — bandformulier waarschuwt bij annuleren, alleen als er iets staat.** Ronald koos bewust "alleen als er iets is ingevuld" boven "altijd waarschuwen". Nieuwe `hasUnsavedBandFormInput()`/`cancelBandForm()`, hergebruikt de bestaande bevestigingsmodal.
+
+**V-24 (bevestigt TT-U17 uit de review) — Setlist-tab pas zichtbaar vanaf 3 eigen nummers.** Nieuwe `updateSetlistTabVisibility()`, schakelt ook automatisch terug naar de Muzikant-tab als iemand onder de 3 nummers zakt terwijl Setlist actief staat.
+
+**Getest met Playwright, alle vier apart:** V-04 (verborgen veld + uitlegtekst), V-12 (6 gevallen, incl. de appInit-fix), V-19 (4 gevallen), V-24 (6 gevallen). Geen paginafouten. Checksum geleverd bestand: `sha256:8372777d44ab675c2711c271efa419ea1d66d5a0e89562c16e02ce8b91d407e7` (9627 regels — gedeeld met vervolg 4, geen wijziging aan `index.html` tussen deze twee opleverpunten).
+
+## 13-08-2026 (vervolg 1) — Groep 1-3 uit de akkoordlijst: tien punten (V-08 t/m V-18, exclusief V-19)
+
+**Groep 1, stuk of doodlopend:** V-13 (TT-98) — een band was nergens bereikbaar, nu een knop "Stuur een bericht aan deze band →" naar de oprichter. V-14 (TT-99) — "Wij zoeken nog" is nu alleen verplicht bij status "Zoekend naar leden", een complete band hoeft niet meer te liegen om zichzelf op te slaan.
+
+**Groep 2, het profiel als product (alles in `buildMusicianDetailHTML()`):** V-08 (TT-94) — video speelt af in de app zelf via een echt `<video>`-element, foto's openen in een lightbox i.p.v. een nieuw tabblad. V-09 (TT-95) — contactknop blijft vast onderaan zichtbaar. V-10 (TT-96) — bio leesbaarder: 15px, gewone kleur, niet cursief, geen aanhalingstekens. V-11 (TT-97) — relatieve "bijgewerkt"-tekst i.p.v. een absolute datum.
+
+**Groep 3, bands afmaken:**
+- V-15 (TT-100) — bandfoto: uploadvak zoals bij een profielfoto. `bands.avatar_url` bleek al te bestaan (zie B-06 in `databasebevindingen-12-08-2026.md`), geen SQL nodig voor dit deel. **Restpunt destijds genoteerd, afgerond in vervolg 5 hierboven:** nog niet zichtbaar voor een bezoeker zonder profiel.
+- V-16 (TT-101) — band verlaten / oprichterschap overdragen. Nieuwe kolom `band_members.founder_offer` (script `F-V16-oprichterschap-aanbod.sql`, door Ronald gedraaid en geverifieerd: kolom bestaat, type boolean, standaard false). Een lid krijgt "Band verlaten"; de oprichter krijgt "Ik stop als bandleider" — zonder overige leden direct opheffen, mét overige leden een aanbod-banner (zelfde patroon als een band-uitnodiging) dat één van hen kan overnemen. **Nog niet functioneel getest tegen de echte database — belangrijkste openstaande test, zie Deel 1a.**
+- V-17 (TT-102, eerste helft) — leden zoeken werkt nu ook op instrument, niet alleen op naam. **Restpunt (plaats/afstand) destijds genoteerd, afgerond in vervolg 4 hierboven.**
+- V-18 (TT-103) — een uitnodiging kan nu een korte boodschap meekrijgen, komt aan als gewoon bericht bij de uitgenodigde muzikant.
+
+**Kleine meegenomen correctie:** de nieuwe instrumentkeuze in "Lid toevoegen" was 43px i.p.v. 44px (TT-U23-norm) — rechtgezet.
+
+**Getest met Playwright, elk apart** (volledige testlijst per punt: `oplevering-groep1-3-13-08-2026.md` in het project) — geen paginafouten. Haakjesbalans: `{}` 1846/1846 · `()` 5156/5156 · `[]` 285/285. Checksum geleverd bestand: `sha256:c0ccb315ddecf89e923834f220d40d93085ec303ef971e3f6cb8771c312e3033` (9417 regels).
+
+## 12-08-2026 (vervolg 14) — Batch B: app-vorm (TT-U24, TT-U25, TT-U13, V-01/V-02/V-03)
+
+**TT-U24 — vaste onderbalk op de telefoon.** De navigatiebalk scrolde horizontaal (534px inhoud in 320px, 214px buiten beeld). Vervangen door vier vaste knoppen onderaan (Zoeken · Berichten · Bands · Profiel) op schermen ≤560px; de bovenbalk blijft op bredere schermen. Inloggen/uitloggen en de juridische pagina's staan in het hamburgermenu, op beide breedtes.
+
+**TT-U25 — modals vullen het hele scherm op de telefoon.** `100vh` gaf problemen op iOS door de verschijnende/verdwijnende adresbalk; nu `100dvh`, geen randen, geen afgeronde hoeken. Eén gedeelde scrollvergrendeling voor alle modals tegelijk.
+
+**TT-U13 — kaarten als standaard onder 560px**, met één regel bio (max 60 tekens) zichtbaar vóór de klik. Een eigen keuze (`localStorage`) blijft leidend.
+
+**V-01 (TT-90) — een gesprek opent bij het laatste bericht**, niet bovenaan. **V-02 (TT-91) — eigen bericht staat er direct** (optimistisch), i.p.v. het hele gesprek opnieuw op te halen; mislukt het versturen, dan komt de tekst terug in het invoerveld. **V-03 (TT-92) — de terugknop sluit eerst het gesprek**, dan pas het berichtenscherm — kreeg een eigen stap in de browsergeschiedenis.
+
+**Getest met Playwright:** onderbalk (zichtbaarheid, formaat, markering volgt view, verdwijnt op 1440px), modal-volledig-scherm-gedrag, kaartweergave als standaard, V-01/V-02/V-03-gedrag. Haakjesbalans: `{}` 1733/1733 · `()` 4762/4762 · `[]` 283/283. Checksum geleverd bestand: `sha256:e2738bc7e382434a7f2b497916f793bc980d03c5e35268585f478a4c9ec8477c` (8892 regels).
+
+## 12-08-2026 (vervolg 13) — Batch A: reparaties + twee databasescripts (TT-U21, TT-U22, TT-U23/V-20, TT-U09, TT-106/V-23, TT-U04, TT-U08, B-02, B-03)
+
+Externe technische review van `index.html` (gemeten cijfers in `akkoordlijst-13-08-2026.md`) leidde tot deze reparatieronde, vóór de akkoordlijst-voorstellen zelf zijn opgepakt.
+
+- **TT-U21 — het niveau-gebaar (druk-en-sleep) verwijderd.** Blokkeerde scrollen over instrumentknoppen (`touch-action:none`) en een test toonde dat een gewone veegbeweging per ongeluk een niveau selecteerde. Vervangen door: tikken opent een keuzescherm met vijf knoppen (sterren + naam uit `niveaubepaling-naslagwerk.md`). Geverifieerd: een veegbeweging van 120px selecteert nu niets.
+- **TT-U22 — invoervelden naar 16px** (iOS zoomt niet meer in bij focus). `--fs-md` blijft zelf 15px.
+- **TT-U23 / V-20 — tikdoelen naar 44px.** Van 31/47 en 29/44 knoppen onder de norm naar nog maar 1 (de infoknop, met een onzichtbaar groter tikvlak eromheen).
+- **TT-U09 — niveau blokkeert wizardstap 2 niet meer** (instrument/muziekstijl blijven wel verplicht).
+- **TT-106 (V-23) — beheersingsniveau per nummer optioneel gemaakt.** Rode blokkerende regel vervangen door een grijze opmerking.
+- **TT-U04 — achternaam optioneel, "wachtwoord herhalen" vervangen door een Toon-knop.**
+- **TT-U08 — autofill werkt** (velden in een `<form>` met de juiste `autocomplete`-attributen).
+- **B-02, B-03** (uit `databasebevindingen-12-08-2026.md`): leeftijd wordt gelezen via één functie die zowel `age` als `birth_date` aankan; postcodecache wordt geschreven via `tt_cache_postcode` i.p.v. rechtstreeks.
+
+**Getest met Playwright:** touch-action, tikdoel-tellingen vóór/na, keuzescherm-gedrag, veegtest. Haakjesbalans: `{}` 1691/1691 · `()` 4652/4652 · `[]` 275/275. Checksum geleverd bestand: `sha256:d8de4b62c6e04214daa93ee223d9fce412a9fccf68ff18889066df631931e092` (8664 regels). **Niet getest: tegen de echte backend** — geen netwerktoegang in de ontwikkelomgeving.
 
 ## 12-08-2026 (vervolg 12) — TT-57 gebouwd: uitleg bij "Beste match"
 

@@ -1531,6 +1531,8 @@
   .message-bubble.own { background: var(--accent); color: #0d0d0d; margin-left: auto; border-radius: 16px 16px 4px 16px; }
   .message-bubble.other { background: var(--surface2); border: 1px solid var(--border); border-radius: 16px 16px 16px 4px; }
   .message-bubble-time { font-size: 10px; opacity: 0.7; margin-top: 4px; }
+  /* V-07 (13-08-2026): vinkje bij een eigen bericht dat gelezen is. */
+  .message-bubble-read { margin-left: 4px; font-weight: 700; opacity: 0.85; }
 
   .messages-composer-row {
     display: flex;
@@ -2604,7 +2606,11 @@
 
     <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;">Jouw repertoire</div>
     <p style="font-size:12px; color:var(--muted); margin:0 0 10px; line-height:1.6;">
-      Niveaus: <strong style="color:var(--text);font-style:italic;">Basis</strong> (kent de structuur, nog fouten) ·
+      <!-- V-21 (13-08-2026, in overleg vastgesteld): "niveau" betekende hier
+           iets anders dan bij een instrument (sterren) of een band (sterren,
+           eigen tabel) — drie schalen, één woord. Voor een nummer heet het nu
+           "beheersing". -->
+      Beheersing: <strong style="color:var(--text);font-style:italic;">Basis</strong> (kent de structuur, nog fouten) ·
       <strong style="color:var(--text);font-style:italic;">Bijna</strong> (soepel, kleine slordigheden) ·
       <strong style="color:var(--text);font-style:italic;">Podium</strong> (speelt het live zonder problemen)
     </p>
@@ -2931,7 +2937,9 @@
            instrument bij muzikanten. Bereik, aaneengesloten. -->
       <div class="filter-row single" style="margin-bottom:16px;">
         <div class="field">
-          <label>Niveau van de band</label>
+          <!-- V-21 (13-08-2026): band-schaal heet nu "ervaring", niet meer
+               "niveau" (dat woord blijft voorbehouden aan de instrumentschaal). -->
+          <label>Ervaring van de band</label>
           <div style="display:flex;gap:8px;align-items:center;">
             <select id="filterBandNiveauMin" onchange="runBandSearch()" style="width:90px;">
               <option value="">Min</option>
@@ -3118,9 +3126,10 @@
              bij muzikanten — geen verband ertussen (niveaubepaling-
              naslagwerk.md, hoofdstuk 2). -->
         <div class="field" style="margin-bottom:16px;">
-          <label>Niveau van de band <button type="button" class="niveau-info-btn" onclick="openBandNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></label>
+          <!-- V-21 (13-08-2026): "niveau" → "ervaring" voor de band-schaal. -->
+          <label>Ervaring van de band <button type="button" class="niveau-info-btn" onclick="openBandNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></label>
           <div id="bandLevelPicker" class="star-picker"></div>
-          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Optioneel. Klik op de i voor de niveau-indeling en toelichting.</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Optioneel. Klik op de i voor de ervaringsindeling en toelichting.</p>
         </div>
         <div class="field-group">
           <div class="field">
@@ -3153,7 +3162,7 @@
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;">
           <button class="btn btn-primary" id="saveBandBtn" onclick="saveBand()">Band aanmaken</button>
-          <button class="btn btn-ghost" onclick="resetBandForm(); document.getElementById('createBandForm').style.display='none';">Annuleren</button>
+          <button class="btn btn-ghost" onclick="cancelBandForm()">Annuleren</button>
         </div>
       </div>
     </div>
@@ -3180,6 +3189,9 @@
         <button class="messages-send-btn" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
       </div>
       <div id="messagesReplyCounter" style="text-align:right;font-size:12px;color:var(--muted);margin-top:2px;">0/2000</div>
+      <!-- V-04 (13-08-2026): i.p.v. een actief invoerveld naar een niet meer
+           bestaand account. -->
+      <div id="messagesDeletedNotice" style="display:none;text-align:center;font-size:13px;color:var(--muted);padding:14px;background:var(--surface2);border-radius:8px;">Dit account bestaat niet meer. Je kunt dit gesprek niet voortzetten.</div>
     </div>
   </div>
 </div>
@@ -3487,6 +3499,20 @@
       <option value="">Alle instrumenten</option>
     </select>
     <input type="text" id="memberSearchInput" placeholder="Zoek op naam (optioneel)..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:16px;">
+    <!-- V-17-restpunt (13-08-2026, in overleg vastgesteld): tot nu toe geen
+         plaats/afstand-filter hier — bij een landelijk gebruikte app levert
+         zoeken op instrument alleen dan een onsorteerbare, door elkaar
+         gehusselde landelijke lijst op. Straal is optioneel: leeg = geen
+         afstandsfilter (bijv. als je eigen locatie nog onbekend is). Geen
+         apart "Plaats"-veld — vertrekpunt is altijd je eigen locatie, zoals
+         besproken. -->
+    <div class="field" style="margin-bottom:16px;">
+      <label>Zoekstraal <span style="font-weight:400;color:var(--muted);">(optioneel, vanaf jouw locatie)</span></label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" id="memberSearchRadius" placeholder="bijv. 25" min="5" max="500" step="5" style="width:90px;" onchange="searchMembersToAdd(document.getElementById('memberSearchInput').value)">
+        <span style="color:var(--muted);font-size:13px;">km</span>
+      </div>
+    </div>
     <div id="memberSearchResults"></div>
   </div>
 </div>
@@ -3553,6 +3579,18 @@ let currentUser = null;
 
 async function appInit() {
   try {
+    // V-12 (13-08-2026, bijvangst): de hash moet vastgelegd worden vóórdat
+    // onUserLoggedIn() hieronder draait. Voor een ingelogde gebruiker roept
+    // onUserLoggedIn() namelijk (synchroon, nog vóór de eerste await erin)
+    // showView('myprofile') aan, en dat schrijft de hash zelf al om naar
+    // '#myprofile' — dan is een gedeelde link (#profiel/.., #about, ...) al
+    // overschreven vóórdat de app 'm ooit heeft kunnen lezen. Dit was ook al
+    // een latent probleem voor de bestaande TT-16-links (#about e.d.) bij een
+    // ingelogde gebruiker; nu pas gemerkt omdat V-12 zulke links via #profiel/
+    // en #band/ toevoegt voor precies de doelgroep die vaak al ingelogd is
+    // (een bandlid dat een link van een ander bandlid opent).
+    const hashView = location.hash.replace('#', '');
+
     const { data: { session } } = await db.auth.getSession();
     if (session?.user) {
       currentUser = session.user;
@@ -3576,8 +3614,22 @@ async function appInit() {
     // vriendelijke toast + doorverwijzing krijgt, geen lege pagina.
     const knownHashViews = ['search', 'about', 'register', 'myprofile', 'bands', 'auth', 'privacy', 'terms', 'gedragscode'];
     const gatedHashViews = ['myprofile', 'bands'];
-    const hashView = location.hash.replace('#', '');
-    if (knownHashViews.includes(hashView)) {
+
+    // V-12 (13-08-2026): een gedeelde profiellink (#profiel/<id> of
+    // #band/<id>, zie shareProfile()) opent direct de detailmodal, boven op
+    // het zoekscherm — net als een klik op een zoekresultaat. currentUser
+    // staat hierboven al vast, maar hasOwnProfile/myMusicianId nog niet (die
+    // worden pas gezet zodra het zoekscherm zelf initialiseert); zonder deze
+    // aanroep zou de modal bij een ingelogde gebruiker met eigen profiel toch
+    // het beperkte publieke profiel tonen in plaats van het volledige.
+    const profielMatch = hashView.match(/^profiel\/(.+)$/);
+    const bandMatch = hashView.match(/^band\/(.+)$/);
+    if (profielMatch || bandMatch) {
+      showView('search');
+      if (currentUser) await configureSearchAccess();
+      if (profielMatch) openMusicianModal(decodeURIComponent(profielMatch[1]));
+      else openBandModal(decodeURIComponent(bandMatch[1]));
+    } else if (knownHashViews.includes(hashView)) {
       if (gatedHashViews.includes(hashView)) requireLogin(hashView);
       else showView(hashView);
     }
@@ -3794,12 +3846,44 @@ async function configureSearchAccess() {
 
   initBandSearchFilters();
 
+  // V-24 (13-08-2026, in overleg vastgesteld/TT-U17): kan de Setlist-tab
+  // wisselen (verschijnen/verdwijnen), doe dat vóór de tabbladdispatch
+  // hieronder — anders roepen we runSetlistSearch() nog aan terwijl de tab
+  // net onzichtbaar is geworden (of andersom).
+  await updateSetlistTabVisibility();
+
   // TT-10 (05-08-2026): bij elk bezoek aan "Zoeken" meteen een resultaat tonen
   // voor het tabblad dat op dat moment actief is, i.p.v. te wachten tot
   // iemand zelf op een zoekknop klikt.
   if (currentSearchMode === 'musician') runSearch();
   else if (currentSearchMode === 'band') runBandSearch();
   else if (currentSearchMode === 'setlist' && setlistWantedSongs.length) runSetlistSearch();
+}
+
+// V-24 (13-08-2026, TT-U17): de Setlist-tab was altijd zichtbaar, ook als
+// iemand nog geen enkel eigen nummer had — dan is er niets om als "gezocht"
+// mee te vergelijken. Nu pas zichtbaar vanaf drie eigen nummers, dezelfde
+// grens die het PPP-voortgangspaneel op Mijn Profiel al gebruikt voor
+// "3+ nummers" (renderProgressPanel()). Zonder eigen profiel: altijd
+// verborgen, er is dan sowieso geen eigen repertoire.
+async function updateSetlistTabVisibility() {
+  const btn = document.getElementById('searchModeSetlistBtn');
+  if (!btn) return;
+  let show = false;
+  if (hasOwnProfile) {
+    const mid = await getMyMusicianId();
+    if (mid) {
+      const { count, error } = await db.from('musician_songs')
+        .select('id', { count: 'exact', head: true })
+        .eq('musician_id', mid);
+      show = !error && count >= 3;
+    }
+  }
+  btn.style.display = show ? '' : 'none';
+  // Stond de tab actief maar verdwijnt hij nu (bijv. na een nummer
+  // verwijderen tot onder de drie), dan terug naar het standaardtabblad —
+  // nooit een onzichtbare tab actief laten staan.
+  if (!show && currentSearchMode === 'setlist') setSearchMode('musician');
 }
 
 // Zet een sorteertoggle-grid programmatisch op een waarde (zonder klik-event),
@@ -4749,11 +4833,41 @@ function buildMusicianDetailHTML(m, isOwn) {
 // staan — anders moest je bij een gevuld profiel er lang naartoe scrollen.
 // loadMyProfile() (Mijn Profiel, isOwn altijd waar) roept dit bewust niet
 // aan: daar hoort nooit een contactknop.
+// V-12 (13-08-2026): een gedeelde link naar een specifiek profiel of
+// bandprofiel. navigator.share() geeft op een telefoon het systeem-deelmenu
+// (WhatsApp, sms, mail, ...); is dat er niet (meestal op desktop), dan
+// kopiëren we de link zelf naar het klembord met een duidelijke toast — nooit
+// een stille no-op. De link zelf is een hash-route (#profiel/<id> of
+// #band/<id>) die appInit() bij het openen direct naar de juiste detailmodal
+// stuurt, zie het hash-blok daar.
+async function shareProfile(kind, id, name) {
+  const path = kind === 'band' ? 'band' : 'profiel';
+  const url = `${location.origin}${location.pathname}#${path}/${id}`;
+  const label = kind === 'band' ? 'bandprofiel' : 'profiel';
+  const shareData = {
+    title: `${name} op The Talent Tent`,
+    text: `Bekijk het ${label} van ${name} op The Talent Tent.`,
+    url
+  };
+  if (navigator.share) {
+    try { await navigator.share(shareData); } catch (e) { /* eigen annulering, geen foutmelding nodig */ }
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('Link gekopieerd naar klembord');
+  } catch (e) {
+    showToast('Kopiëren niet gelukt. Probeer het later opnieuw.');
+  }
+}
+
 function musicianContactFooterHTML(m, isOwn, displayName) {
-  if (isOwn) return '';
-  return hasOwnProfile
+  const shareBtn = `<button class="btn btn-ghost" style="width:100%;" onclick="shareProfile('profiel','${jsAttr(m.id)}','${jsAttr(displayName)}')">Deel dit profiel</button>`;
+  if (isOwn) return shareBtn;
+  const contactBtn = hasOwnProfile
     ? `<button class="btn btn-primary" style="width:100%;" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht →</button>`
     : `<button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`;
+  return `<div style="display:flex;flex-direction:column;gap:10px;">${contactBtn}${shareBtn}</div>`;
 }
 
 async function openMusicianModal(id) {
@@ -4933,6 +5047,11 @@ async function sendMessageFromComposer() {
 
 async function sendReplyInThread() {
   if (!activeConversationId) return;
+  // V-04 (13-08-2026): defensieve check naast het verborgen invoerveld — het
+  // veld verdwijnt bij een verwijderd account, maar een verouderd scherm
+  // (bijv. al open vóórdat het account werd verwijderd) mag toch nooit
+  // alsnog een bericht kunnen versturen. Zelfde patroon als TT-56.
+  if (activeConversationDeleted) { showToast('Dit account bestaat niet meer. Je kunt dit gesprek niet voortzetten.'); return; }
   const input = document.getElementById('messagesReplyInput');
   const tekst = input.value;
   if (!tekst.trim()) { showToast('Vul een bericht in.'); return; }
@@ -5066,7 +5185,7 @@ async function loadInbox() {
       const preview = c.lastMessage.body.length > 50 ? c.lastMessage.body.slice(0, 50) + '…' : c.lastMessage.body;
       const time = relativeMessageTime(c.lastMessage.created_at);
       return `
-        <div class="messages-conv-row ${c.unreadCount ? 'unread' : ''}" onclick="openConversation('${jsAttr(c.otherId)}','${jsAttr(name)}','${jsAttr(col)}','${jsAttr(avatarSrc)}')">
+        <div class="messages-conv-row ${c.unreadCount ? 'unread' : ''}" onclick="openConversation('${jsAttr(c.otherId)}','${jsAttr(name)}','${jsAttr(col)}','${jsAttr(avatarSrc)}', false, ${!info})">
           <div class="messages-conv-avatar" style="background:${col};">${avatarHTML}</div>
           <div class="messages-conv-main">
             <div class="messages-conv-name">${escHtml(name)}${c.unreadCount ? ` <span class="unread-badge" style="position:static;">${c.unreadCount}</span>` : ''}</div>
@@ -5116,8 +5235,19 @@ function relativeMessageTime(iso) {
 
 let threadHistoryPushed = false; // V-03: staat er al een geschiedenisstap voor dit gesprek?
 
-async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, stil) {
+// V-04 (13-08-2026): blijft staan tot closeConversation()/een nieuwe
+// openConversation()-aanroep met een expliciete waarde — zo hoeft de
+// stille verversing na het versturen (die dit argument niet meegeeft) het
+// niet opnieuw te bepalen.
+let activeConversationDeleted = false;
+
+async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, stil, deleted) {
   activeConversationId = otherId;
+  if (deleted !== undefined) activeConversationDeleted = deleted;
+  const composerEl = document.querySelector('#messagesThreadPanel .messages-composer-row');
+  const noticeEl = document.getElementById('messagesDeletedNotice');
+  if (composerEl) composerEl.style.display = activeConversationDeleted ? 'none' : 'flex';
+  if (noticeEl) noticeEl.style.display = activeConversationDeleted ? 'block' : 'none';
   document.getElementById('messagesThreadName').textContent = otherName;
   if (otherColor !== undefined) {
     const col = safeColor(otherColor, '#f5c518');
@@ -5179,7 +5309,14 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, 
         divider = `<div class="messages-day-divider">${escHtml(label)}</div>`;
       }
       const time = msgDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-      return `${divider}<div class="message-bubble ${own ? 'own' : 'other'}">${escHtml(msg.body).replace(/\n/g, '<br>')}<div class="message-bubble-time">${escHtml(time)}</div></div>`;
+      // V-07 (13-08-2026, in overleg vastgesteld): alleen een vinkje dat een
+      // eigen verzonden bericht is gelezen — bewust geen tijdstip erbij
+      // ("gelezen om 23:14" kan bij minderjarigen sociale druk geven als er
+      // dan niet snel wordt geantwoord). Alleen zichtbaar bij eigen berichten
+      // die al gelezen zijn; geen apart teken voor "verzonden, nog niet
+      // gelezen" — dat voorkomt hetzelfde druk-risico in een andere vorm.
+      const readCheck = (own && msg.read_at) ? `<span class="message-bubble-read" title="Gelezen">✓</span>` : '';
+      return `${divider}<div class="message-bubble ${own ? 'own' : 'other'}">${escHtml(msg.body).replace(/\n/g, '<br>')}<div class="message-bubble-time">${escHtml(time)}${readCheck}</div></div>`;
     }).join('') : '<div style="text-align:center;padding:20px;color:var(--muted);">Nog geen berichten in dit gesprek.</div>');
 
     // Ongelezen berichten van deze afzender markeren als gelezen.
@@ -5197,6 +5334,7 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, 
 
 function closeConversation() {
   activeConversationId = null;
+  activeConversationDeleted = false; // V-04
   threadHistoryPushed = false;
   document.getElementById('messagesInboxPanel').style.display = 'block';
   document.getElementById('messagesThreadPanel').style.display = 'none';
@@ -7486,7 +7624,7 @@ function renderSongs() {
   list.innerHTML = `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
       <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
-        <span>Band / Artiest — Nummer</span><span style="margin-right:40px;">Niveau</span><span></span>
+        <span>Band / Artiest — Nummer</span><span style="margin-right:40px;">Beheersing</span><span></span>
       </div>
       ${displayOrder.map(i => { const s = state.songs[i]; return `
         <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;">
@@ -7501,7 +7639,7 @@ function renderSongs() {
           </div>
           <button class="song-remove" onclick="removeSong(${i})" title="Verwijderen">✕</button>
         </div>
-        ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 14px;">Niveau nog niet gekozen — mag ook later</div>` : ''}
+        ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 14px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
       `; }).join('')}
     </div>`;
 }
@@ -8670,6 +8808,32 @@ function showCreateBandForm() {
 }
 
 // Zet het bandformulier terug naar lege 'nieuwe band'-staat.
+// V-19 (13-08-2026, in overleg vastgesteld): "Annuleren" gooide tot nu toe
+// alles weg zonder waarschuwing. Bewust smal gehouden zoals afgesproken:
+// alleen deze waarschuwing, geen wizard (dat is een apart, groter ticket).
+// Staat het formulier nog helemaal leeg, dan is er niets te verliezen — dan
+// sluit Annuleren meteen, zonder onnodige extra klik. Zodra er iets is
+// ingevuld (ook bij het bewerken van een bestaande band, waar de velden al
+// gevuld zijn), volgt eerst een bevestigingsvraag.
+function hasUnsavedBandFormInput() {
+  const nameEl = document.getElementById('bandName');
+  const zipEl = document.getElementById('bandZip');
+  const descEl = document.getElementById('bandDescription');
+  if ((nameEl && nameEl.value.trim()) || (zipEl && zipEl.value.trim()) || (descEl && descEl.value.trim())) return true;
+  if (bandState.genres.length || bandState.wanted.length || bandState.avatarUrl || bandState.niveau) return true;
+  if (document.querySelector('#bandStatusGrid .tag.selected')) return true;
+  return false;
+}
+
+function cancelBandForm() {
+  const finish = () => { resetBandForm(); document.getElementById('createBandForm').style.display = 'none'; };
+  if (hasUnsavedBandFormInput()) {
+    showConfirm('Weet je het zeker? Wat je hebt ingevuld gaat verloren.', finish, 'Ja, annuleren');
+  } else {
+    finish();
+  }
+}
+
 function resetBandForm() {
   editingBandId = null;
   bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff', niveau: null, avatarUrl: null, avatarPath: null };
@@ -8782,6 +8946,11 @@ function openAddMemberModal(bandId, bandName) {
     });
   }
   if (instrEl) instrEl.value = '';
+  // V-17-restpunt (13-08-2026): straal terugzetten bij elke opening, net als
+  // instrument en naam hierboven — anders blijft een eerder ingevulde straal
+  // onopgemerkt actief bij de volgende band.
+  const radiusEl = document.getElementById('memberSearchRadius');
+  if (radiusEl) radiusEl.value = '';
   document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens, of kies een instrument, om te zoeken.</p>';
   document.getElementById('addMemberModal').classList.add('visible');
   setTimeout(() => document.getElementById('memberSearchInput')?.focus(), 50);
@@ -8827,9 +8996,47 @@ function searchMembersToAdd(query) {
       const { data: musicians, error } = await qb;
       if (error) throw error;
 
-      const filtered = (musicians||[]).filter(m => !existingIds.includes(m.id));
+      let filtered = (musicians||[]).filter(m => !existingIds.includes(m.id));
       if (!filtered.length) {
         resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Geen (nieuwe) muzikanten gevonden.</p>';
+        return;
+      }
+
+      // V-17-restpunt (13-08-2026, in overleg vastgesteld): afstand ophalen
+      // via een eigen, kleine databasefunctie die alleen een getal (km)
+      // teruggeeft — nooit de ruwe coördinaten van een ander (dat zou het nog
+      // openstaande beveiligingsgat B-01 erger maken). Vertrekpunt is altijd
+      // je eigen muzikant-ID, geen apart plaatsveld. Faalt dit (bijv. je eigen
+      // locatie is nog onbekend), dan valt de zoekopdracht terug op het oude
+      // gedrag — geen afstand, geen filter, geen kapotte zoekopdracht.
+      const radiusVal = document.getElementById('memberSearchRadius')?.value.trim();
+      const radius = radiusVal ? parseInt(radiusVal, 10) : null;
+      try {
+        const { data: distances, error: distErr } = await db.rpc('tt_musician_distances', {
+          searcher_id: await getMyMusicianId(),
+          musician_ids: filtered.map(m => m.id)
+        });
+        if (!distErr && distances) {
+          const distMap = {};
+          distances.forEach(d => { distMap[d.musician_id] = d.distance_km; });
+          filtered.forEach(m => { m.distance_km = distMap[m.id] != null ? distMap[m.id] : null; });
+          if (radius) {
+            filtered = filtered.filter(m => m.distance_km == null || m.distance_km <= radius);
+          }
+          filtered.sort((a, b) => {
+            if (a.distance_km == null && b.distance_km == null) return 0;
+            if (a.distance_km == null) return 1;
+            if (b.distance_km == null) return -1;
+            return a.distance_km - b.distance_km;
+          });
+        }
+      } catch (distE) {
+        console.error('tt_musician_distances', distE);
+        // Stil falen: afstand is een verrijking, geen vereiste voor deze zoekopdracht.
+      }
+
+      if (!filtered.length) {
+        resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Geen (nieuwe) muzikanten binnen deze straal gevonden.</p>';
         return;
       }
       resEl.innerHTML = filtered.map(m => {
@@ -8849,7 +9056,7 @@ function searchMembersToAdd(query) {
           <div style="width:32px;height:32px;border-radius:50%;background:${safeColor(m.profile_color, '#888')};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${escHtml(memberName[0].toUpperCase())}</div>
           <div style="flex:1;">
             <div style="font-weight:600;font-size:14px;">${escHtml(memberName)}</div>
-            <div style="font-size:12px;color:var(--muted);">${escHtml(m.city||'')}${(m.musician_instruments||[]).length ? ' · ' + escHtml(m.musician_instruments.map(x=>x.instrument).slice(0,2).join(', ')) : ''}</div>
+            <div style="font-size:12px;color:var(--muted);">${escHtml(m.city||'')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}${(m.musician_instruments||[]).length ? ' · ' + escHtml(m.musician_instruments.map(x=>x.instrument).slice(0,2).join(', ')) : ''}</div>
           </div>
           <span class="member-invite-action">${inviteAction}</span>
         </div>`; }).join('');
@@ -9019,7 +9226,7 @@ function renderBandLevelPicker() {
 // 1-op-1 overgenomen. Hardcoded (geen build-stap om een .md-bestand in te
 // lezen in deze losse-bestand-app) — bij een tekstwijziging in het naslagwerk
 // moet deze lijst hier ook worden bijgewerkt.
-const NIVEAU_INFO_BAND_HEADERS = ['Niveau', 'Samenspel en timing', 'Podiumpresentatie', 'Techniek en geluid', 'Optredens en boekingen'];
+const NIVEAU_INFO_BAND_HEADERS = ['Ervaring', 'Samenspel en timing', 'Podiumpresentatie', 'Techniek en geluid', 'Optredens en boekingen'];
 const NIVEAU_INFO_BAND_ROWS = [
   ['1. Beginner (Startend)',
     'Iedereen speelt een beetje zijn eigen tempo. Samen stoppen of starten is echt lastig. Als er iemand fladdert, stopt het hele nummer.',
@@ -9051,8 +9258,8 @@ const NIVEAU_INFO_BAND_ROWS = [
 function openBandNiveauInfoModal() {
   const rowsHTML = NIVEAU_INFO_BAND_ROWS.map(r => `<tr>${r.map(c => `<td>${escHtml(c)}</td>`).join('')}</tr>`).join('');
   document.getElementById('niveauInfoModalContent').innerHTML = `
-    <div class="filter-title" style="margin-bottom:4px;">Niveau-indeling voor bands</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies het niveau waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
+    <div class="filter-title" style="margin-bottom:4px;">Ervaringsindeling voor bands</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies de ervaring waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
     <div class="niveau-info-wrap">
       <table class="niveau-info-table">
         <thead><tr>${NIVEAU_INFO_BAND_HEADERS.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead>
@@ -9060,10 +9267,10 @@ function openBandNiveauInfoModal() {
       </table>
     </div>
     <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Belangrijk: gebruik dit systeem als jouw kompas</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Geen enkele muzikant of band past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Niveau 4), maar nog nooit op een podium hebben gestaan (Niveau 1). Of je band speelt superstrak samen (Niveau 3), maar jullie hebben je zakelijke randzaken nog niet op orde (Niveau 2).</p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Zie deze niveaubeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
-    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Hoe kies je jouw niveau?</div>
-    <p style="font-size:13px;color:var(--muted);">Loop de criteria per niveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg het niveau waar jij of je band het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Geen enkele muzikant of band past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Ervaring 4), maar nog nooit op een podium hebben gestaan (Ervaring 1). Of je band speelt superstrak samen (Ervaring 3), maar jullie hebben je zakelijke randzaken nog niet op orde (Ervaring 2).</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Zie deze ervaringsbeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
+    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Hoe kies je jullie ervaring?</div>
+    <p style="font-size:13px;color:var(--muted);">Loop de criteria per ervaringsniveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg de ervaring waar jij of je band het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
   `;
   document.getElementById('niveauInfoModal').classList.add('visible');
 }
@@ -9317,6 +9524,7 @@ async function openBandModal(id) {
       b = {
         id: row.id, name: row.name, city: row.city, description: row.description, // TT-04: geen postcode voor bezoekers
         status: row.status, profile_color: row.profile_color, updated_at: row.updated_at,
+        avatar_url: row.avatar_url || null, // V-15-restpunt (13-08-2026)
         genres: row.genres || [],
         niveau: row.niveau, // TT-51 (12-08-2026, RPC-restpunt gesloten)
         // TT-43: de publieke RPC levert voor leden alleen nog de
@@ -9366,12 +9574,15 @@ async function openBandModal(id) {
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
         ${(b.band_wanted||[]).map(w => `<span class="wanted-chip">${escHtml(w.instrument)}</span>`).join('')}
       </div>` : ''}
-    ${!isOwnBand ? (hasOwnProfile
-      ? (founderMember
-        ? `<button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="openMessageComposer('${jsAttr(founderMember.musicians.id)}','${jsAttr(displayNameOf(founderMember.musicians))}')">Stuur een bericht aan deze band →</button>`
-        : '')
-      : `<button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="document.getElementById('bandModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`
-    ) : ''}`;
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
+      ${!isOwnBand ? (hasOwnProfile
+        ? (founderMember
+          ? `<button class="btn btn-primary" style="width:100%;" onclick="openMessageComposer('${jsAttr(founderMember.musicians.id)}','${jsAttr(displayNameOf(founderMember.musicians))}')">Stuur een bericht aan deze band →</button>`
+          : '')
+        : `<button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('bandModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`
+      ) : ''}
+      <button class="btn btn-ghost" style="width:100%;" onclick="shareProfile('band','${jsAttr(b.id)}','${jsAttr(b.name)}')">Deel dit bandprofiel</button>
+    </div>`;
 }
 
 // ─── Auth extras ─────────────────────────────────────────────────────────────
