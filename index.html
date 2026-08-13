@@ -679,6 +679,13 @@
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
+    /* Feedback Ronald (13-08-2026): BASIS/BIJNA/PODIUMKLAAR waren elk een
+       andere breedte, wat de rij er rommelig uit liet zien. Nu altijd
+       dezelfde breedte, breed genoeg voor het langste woord, gecentreerd. */
+    display: inline-block;
+    width: 100px;
+    text-align: center;
+    box-sizing: border-box;
   }
 
   .level-pill.basis { background: var(--surface2); color: var(--text); font-weight: 700; font-style: italic; }
@@ -1802,6 +1809,15 @@
   }
   .result-card-msg-btn svg { color: #000; }
 
+  /* TT-U13 (12-08-2026): één regel bio op de kaart. */
+  .result-card-bio {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
   /* TT-30: envelop-icoon op rijen zit nu in een klein afgerond knopvlak
      i.p.v. los aan het eind van de rij te zweven. */
   .result-row-msg-btn {
@@ -1915,6 +1931,16 @@
     pointer-events: all;
   }
 
+  /* Bugfix (12-08-2026): "Niveau toelichting" opent niveauInfoModal terwijl
+     instrumentLevelModal al open staat — twee .modal-overlay's tegelijk
+     zichtbaar, gelijke z-index. Bij gelijke z-index wint het element dat
+     later in de broncode staat, en dat was toevallig instrumentLevelModal:
+     de toelichting kwam dus wél open (bevestigd met Playwright), maar bleef
+     onzichtbaar erachter liggen. niveauInfoModal is bedoeld als een laag die
+     bovenop iets anders wordt geopend (ook vanuit het bandformulier en de
+     uitleg bij "Beste match"), dus die krijgt hier bewust altijd voorrang. */
+  #niveauInfoModal { z-index: 210; }
+
   .modal-box {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -1995,7 +2021,12 @@
   .instrument-tag { display:flex; flex-direction:column; align-items:center; gap:3px; touch-action:manipulation; }
   .instrument-tag-label { line-height:1.2; }
   .instrument-tag-stars { font-size:11px; letter-spacing:1px; color:var(--border); }
-  .instrument-tag.selected .instrument-tag-stars { color:rgba(0,0,0,0.55); }
+  /* Feedback Ronald (12-08-2026): een niet-gekozen ster kreeg voorheen ook een
+     volle ster (★) in een lichtere kleur — op de gele achtergrond van een
+     geselecteerd instrument was dat bijna niet te onderscheiden van een wél
+     gekozen ster. Nu een echte holle ster (☆, zie renderInstrumentTagStars),
+     met een dunne, donkere lijn: het geel blijft zichtbaar binnenin. */
+  .instrument-tag.selected .instrument-tag-stars { color:rgba(0,0,0,0.45); }
   .instrument-tag-stars .filled { color:#000; }
   .instrument-tag:not(.selected) .instrument-tag-stars { visibility:hidden; }
 
@@ -2045,8 +2076,79 @@
     .nav-spacer { display: none; }
     .nav-menu-dropdown { right: 12px; }
     .search-wrap, .my-profile-wrap { padding: 24px 16px 60px; }
-    .modal-box { max-height: 100vh; border-radius: 0; }
+    /* TT-U25 (12-08-2026): een modal op een telefoon hoort een volledig
+       scherm te zijn, geen dialoogvenster met een kruisje.
+       100vh klopt niet op iOS zolang de adresbalk verschijnt en verdwijnt —
+       100dvh wel. De regel met 100vh blijft staan als terugval voor oudere
+       browsers die dvh niet kennen. */
+    .modal-overlay { padding: 0; align-items: stretch; }
+    .modal-box {
+      max-height: 100vh;
+      max-height: 100dvh;
+      height: 100dvh;
+      width: 100%;
+      max-width: none;
+      border-radius: 0;
+      border: none;
+      overflow-y: auto;
+      padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    }
+    /* De sluitknop blijft rechtsboven staan, zoals in de rest van de app.
+       Bewust niet verplaatst: veel modals houden rechtsboven al ruimte vrij,
+       en een verplaatsing zou daar tekst overlappen. */
+    .modal-close { top: 12px; right: 12px; }
   }
+  /* ── TT-U24 (12-08-2026): vaste onderbalk op de telefoon ─────────────────
+     Boven 560px onzichtbaar; daar blijft de bestaande bovenbalk staan. */
+  .app-bottom-nav { display: none; }
+
+  @media (max-width: 560px) {
+    .app-bottom-nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 200;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      /* Ruimte voor de streep onderaan een iPhone. */
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .bottom-nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      min-height: 56px;
+      padding: 8px 4px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: 'Roboto', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .bottom-nav-btn svg { width: 22px; height: 22px; }
+    .bottom-nav-btn.active { color: var(--accent); }
+    .bottom-nav-icon-wrap { position: relative; display: inline-flex; }
+    .bottom-nav-icon-wrap .unread-badge { top: -6px; right: -10px; }
+
+    /* De vijf tabbladen van de bovenbalk zijn op mobiel vervangen door de
+       onderbalk. De knoppen blijven in de HTML staan (andere code verwijst
+       ernaar), alleen de rij zelf is verborgen. Het menu rechtsboven blijft
+       wél zichtbaar: daar staan Over ons, de juridische pagina's en
+       inloggen/uitloggen. */
+    .app-nav { display: none !important; }
+    .app-nav-row { justify-content: flex-end; padding: 4px 12px; }
+
+    /* Inhoud mag niet achter de onderbalk verdwijnen. */
+    body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+  }
+
   /* ── Backend niet geladen (TT-82) ────────────────────────────────────────
      Blokkerende melding als de Supabase-bibliotheek niet is geladen. Blijft
      verborgen zolang alles normaal werkt. De opmaak staat hier expres los
@@ -2152,12 +2254,45 @@
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
   </button>
   <div class="nav-menu-dropdown" id="navMenuDropdown">
+    <!-- TT-U24: de onderbalk heeft vier plekken. Inloggen/uitloggen staat
+         daarom hier, altijd bereikbaar via het menu rechtsboven. -->
+    <button class="nav-menu-item" id="navLoginMenu" onclick="closeNavMenu();navLoginClick()">Inloggen</button>
     <button class="nav-menu-item" id="navAbout" onclick="closeNavMenu();showView('about')">Over ons</button>
     <button class="nav-menu-item" id="navPrivacy" onclick="closeNavMenu();showView('privacy')">Privacyverklaring</button>
     <button class="nav-menu-item" id="navTerms" onclick="closeNavMenu();showView('terms')">Gebruiksvoorwaarden</button>
     <button class="nav-menu-item" id="navGedragscode" onclick="closeNavMenu();showView('gedragscode')">Gedragscode</button>
   </div>
 </div>
+<!-- TT-U24 (12-08-2026): vaste onderbalk voor de telefoon.
+     De bovenste navigatierij scrolde op mobiel horizontaal: 534px inhoud in
+     een balk van 320px, dus 214px stond buiten beeld. Geen enkele app die
+     deze doelgroep dagelijks gebruikt doet dat. De bovenkant van een 6,7"-
+     scherm is bovendien met één hand onbereikbaar.
+     De bovenste rij blijft bestaan voor bredere schermen; op mobiel is hij
+     verborgen en neemt deze balk het over. Alle bestaande knop-id's blijven
+     staan, zodat de rest van de code ongewijzigd blijft werken. -->
+<nav class="app-bottom-nav" id="appBottomNav" aria-label="Hoofdnavigatie">
+  <button class="bottom-nav-btn" id="bottomNavSearch" onclick="showView('search')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    <span>Zoeken</span>
+  </button>
+  <button class="bottom-nav-btn" id="bottomNavMessages" onclick="requireLogin('messages')">
+    <span class="bottom-nav-icon-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M22 6l-10 7L2 6"></path></svg>
+      <span id="unreadBadgeBottom" class="unread-badge" style="display:none;"></span>
+    </span>
+    <span>Berichten</span>
+  </button>
+  <button class="bottom-nav-btn" id="bottomNavBands" onclick="requireLogin('bands')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+    <span>Bands</span>
+  </button>
+  <button class="bottom-nav-btn" id="bottomNavProfile" onclick="requireLogin('myprofile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    <span>Profiel</span>
+  </button>
+</nav>
+
 <div id="editModeBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 24px;background:rgba(245,197,24,0.1);border-top:1px solid var(--border);font-size:13px;">
   <span>Je bent nog bezig met je profiel bewerken.</span>
   <button class="btn btn-primary" style="padding:6px 16px;font-size:12px;" onclick="requireLogin('register')">Verder bewerken →</button>
@@ -2361,12 +2496,19 @@
 
     <div class="field-group single" style="margin-bottom:24px;">
       <div class="field">
-        <label>Mijn Instrumenten <span class="req">*</span> <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></label>
+        <label>Mijn Instrumenten <span class="req">*</span></label>
         <!-- TT-51-uitbreiding (12-08-2026): niveau kiezen zit nu in de knop
              zelf — kort klikken selecteert/deselecteert, ingedrukt houden en
              naar een ster slepen zet het niveau (1-5), verplicht per
              gekozen instrument. -->
-        <p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Tik om te kiezen. Houd ingedrukt en sleep naar een ster voor het niveau.</p>
+        <p style="font-size:11px;color:var(--muted);margin:6px 0 8px;">Kies hier je instrument en vervolgens je niveau.</p>
+        <!-- Feedback Ronald (13-08-2026): de infoknop stond direct tegen het
+             label "Mijn Instrumenten" aan gedrukt. Nu een eigen regel, met
+             eigen tekst, en ruimte boven en onder. -->
+        <div style="display:flex;align-items:center;gap:8px;margin:0 0 10px;">
+          <span style="font-size:12px;color:var(--muted);">Toelichting op niveau:</span>
+          <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
+        </div>
         <div class="tag-grid" id="instrumentGrid">
           <!-- filled by JS -->
         </div>
@@ -3292,12 +3434,17 @@
 <div class="modal-overlay" id="instrumentLevelModal" onclick="if(event.target===this)closeInstrumentLevelSheet()">
   <div class="modal-box" style="max-width:520px;">
     <button class="modal-close" onclick="closeInstrumentLevelSheet()" aria-label="Sluiten">✕</button>
-    <div class="filter-title" id="instrumentLevelTitle" style="margin-bottom:4px;padding-right:52px;">Hoe goed speel je dit?</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies het niveau waar je het dichtst bij in de buurt zit. Het is geen examen.
-      <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
-    </p>
+    <div class="filter-title" id="instrumentLevelTitle" style="margin-bottom:4px;padding-right:52px;">Wat is je huidige niveau?</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies het niveau waar je het dichtst bij in de buurt zit.</p>
     <div id="instrumentLevelChoices"></div>
-    <button type="button" class="btn btn-ghost" style="width:100%;margin-top:8px;color:var(--danger);border-color:var(--danger);" onclick="removeInstrumentFromSheet()">Dit instrument toch niet</button>
+    <!-- Feedback Ronald (12-08-2026): titel herschreven naar "Wat is je
+         huidige niveau voor X?" (algemener, minder een prestatievraag),
+         "Het is geen examen" weg, de (i)-knop verhuisd naar hier — naast
+         "Terug" i.p.v. los in de tekst erboven. -->
+    <div style="display:flex;gap:12px;margin-top:8px;">
+      <button type="button" class="btn btn-ghost" style="flex:1;" onclick="removeInstrumentFromSheet()">Terug</button>
+      <button type="button" class="btn btn-ghost" style="flex:1;" onclick="openMusicianNiveauInfoModal()">Niveau toelichting</button>
+    </div>
   </div>
 </div>
 
@@ -3380,6 +3527,8 @@ let onboardingInFlight = false;
 
 async function onUserLoggedIn(user) {
   document.getElementById('navLogin').textContent = 'Uitloggen';
+  const navLoginMenu = document.getElementById('navLoginMenu');
+  if (navLoginMenu) navLoginMenu.textContent = 'Uitloggen';
   refreshUnreadBadge();
 
   if (onboardingInFlight) return;
@@ -3423,6 +3572,8 @@ async function onUserLoggedIn(user) {
 
 function onUserLoggedOut() {
   document.getElementById('navLogin').textContent = 'Inloggen';
+  const navLoginMenuOut = document.getElementById('navLoginMenu');
+  if (navLoginMenuOut) navLoginMenuOut.textContent = 'Inloggen';
   myMusicianId = null;
   myOwnCity = null;
   const consentBox = document.getElementById('consentCheckbox');
@@ -3461,8 +3612,10 @@ function onUserLoggedOut() {
   };
   const banner = document.getElementById('editModeBanner');
   if (banner) banner.style.display = 'none';
-  const badge = document.getElementById('unreadBadge');
-  if (badge) badge.style.display = 'none';
+  ['unreadBadge', 'unreadBadgeBottom'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.style.display = 'none';
+  });
   showView('landing');
 }
 
@@ -3524,17 +3677,10 @@ async function configureSearchAccess() {
   const mid = await getMyMusicianId();
   hasOwnProfile = !!mid;
 
-  // TT-30: weergave-toggle (Lijst/Kaarten) synchroniseren met de opgeslagen
-  // voorkeur — de HTML start altijd op "Lijst" geselecteerd, dus bij een
-  // afwijkende opgeslagen voorkeur moet de actieve knop hier bijgewerkt.
-  if (musicianViewMode === 'grid') {
-    document.querySelectorAll('#musicianViewToggle .segmented-btn').forEach(x => x.classList.remove('selected'));
-    document.querySelector('#musicianViewToggle [data-view="grid"]').classList.add('selected');
-  }
-  if (bandViewMode === 'grid') {
-    document.querySelectorAll('#bandViewToggle .segmented-btn').forEach(x => x.classList.remove('selected'));
-    document.querySelector('#bandViewToggle [data-view="grid"]').classList.add('selected');
-  }
+  // TT-30 / TT-U13: weergave-schakelaars gelijkzetten met de werkelijke
+  // stand. De HTML start altijd op "Lijst"; op een telefoon is de standaard
+  // sinds TT-U13 "Kaarten", en een eigen keuze uit localStorage gaat voor.
+  syncViewToggles();
 
   document.querySelectorAll('.doel-filter').forEach(el => {
     el.style.display = hasOwnProfile ? '' : 'none';
@@ -3634,6 +3780,7 @@ function showView(view, mode) {
   closeNavMenu();
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav-btn').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-current'); });
 
   const el = document.getElementById(`view-${view}`);
   if (el) el.classList.add('active');
@@ -3645,6 +3792,16 @@ function showView(view, mode) {
     privacy: null, terms: null, gedragscode: null
   };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
+
+  // TT-U24: dezelfde markering in de onderbalk.
+  const bottomNavMap = {
+    search: 'bottomNavSearch', messages: 'bottomNavMessages',
+    bands: 'bottomNavBands', myprofile: 'bottomNavProfile'
+  };
+  if (bottomNavMap[view]) {
+    const bEl = document.getElementById(bottomNavMap[view]);
+    if (bEl) { bEl.classList.add('active'); bEl.setAttribute('aria-current', 'page'); }
+  }
 
   if (view === 'register') {
     if (editingMusicianId && !currentUser) {
@@ -3721,14 +3878,39 @@ function showView(view, mode) {
   setTimeout(() => autofocusFirstField(el), 50);
 }
 
-// Sluit, indien open, eerst een modal (telt als één "terug"-stap) vóórdat de
-// terugknop een view terugzet — voorkomt dat een open profiel-/band-detail
-// zomaar verdwijnt samen met de hele pagina eronder.
+// TT-U25 (12-08-2026): zolang een modal open is, mag de pagina eronder niet
+// meescrollen. Eén waarnemer op alle modals is betrouwbaarder dan bij elke
+// open- en sluitplek apart een regel toevoegen — de app opent modals op
+// veertien plekken.
+function syncModalScrollLock() {
+  const open = !!document.querySelector('.modal-overlay.visible');
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+(function bewaakModals() {
+  const waarnemer = new MutationObserver(syncModalScrollLock);
+  document.querySelectorAll('.modal-overlay').forEach(m => {
+    waarnemer.observe(m, { attributes: true, attributeFilter: ['class'] });
+  });
+})();
+
+// Sluit, indien open, eerst een modal (telt als één "terug"-stap), daarna een
+// open gesprek, en pas daarna een view — voorkomt dat een open profiel-,
+// band- of gespreksscherm zomaar verdwijnt samen met de hele pagina eronder.
 window.addEventListener('popstate', (e) => {
   const openModal = document.querySelector('.modal-overlay.visible');
   if (openModal) {
     openModal.classList.remove('visible');
+    syncModalScrollLock();
     safeHistoryPush(history.state, location.hash || '#landing');
+    return;
+  }
+  // V-03 (12-08-2026): een open gesprek was geen view en geen modal, dus de
+  // terugknop van de telefoon verliet het hele berichtenscherm in plaats van
+  // het gesprek te sluiten.
+  const draad = document.getElementById('messagesThreadPanel');
+  if (draad && draad.style.display !== 'none' && activeConversationId) {
+    closeConversation();
+    safeHistoryPush(history.state, location.hash || '#messages');
     return;
   }
   showView(e.state?.view || 'landing', 'pop');
@@ -3832,7 +4014,25 @@ let lastMusicianResults = [];
 // tabblad apart onthouden (localStorage) — Ronald: "bij veel matches neig ik
 // naar regels, maar bij veel profielfoto's is een kaart ook tof", dus geen
 // vaste keuze maar een toggle die de gebruiker zelf zet.
-let musicianViewMode = localStorage.getItem('tt_musicianViewMode') || 'list';
+// TT-U13 (12-08-2026): op een telefoon zijn kaarten de standaard, niet de
+// lijst. Je verkoopt mensen, geen records; op een rij is de foto 44px.
+// Een eigen keuze blijft leidend — die staat in localStorage.
+function standaardWeergave() {
+  try { return window.matchMedia('(max-width: 560px)').matches ? 'grid' : 'list'; }
+  catch (e) { return 'list'; }
+}
+let musicianViewMode = localStorage.getItem('tt_musicianViewMode') || standaardWeergave();
+// TT-U13: zet de markering in beide schakelaars gelijk aan de werkelijke
+// stand. De HTML markeert "Lijst" vast; op een telefoon klopt dat niet meer.
+function syncViewToggles() {
+  [['#musicianViewToggle', musicianViewMode], ['#bandViewToggle', bandViewMode]].forEach(([sel, mode]) => {
+    const wrap = document.querySelector(sel);
+    if (!wrap) return;
+    wrap.querySelectorAll('.segmented-btn').forEach(x => x.classList.remove('selected'));
+    wrap.querySelector(`[data-view="${mode}"]`)?.classList.add('selected');
+  });
+}
+
 function setMusicianViewMode(mode) {
   musicianViewMode = mode;
   try { localStorage.setItem('tt_musicianViewMode', mode); } catch(e) {}
@@ -4121,10 +4321,12 @@ async function runSearch() {
       // het (nog) meestuurt. Zo ziet een bezoeker zonder profiel altijd de
       // gebruikersnaam, onafhankelijk van wat er server-side is aangepast.
       musicians = (data || []).map(m => ({
-        // B-02 (12-08-2026): de publieke functie geeft geen geboortedatum
-        // meer terug, alleen de leeftijd. Een geboortedatum van een
-        // minderjarige hoort niet bij een bezoeker zonder account te komen.
-        id: m.id, username: m.username, age: m.age, city: m.city,
+        // B-02 (12-08-2026): de publieke functie geeft de leeftijd terug in
+        // plaats van de geboortedatum. Een geboortedatum van een minderjarige
+        // hoort niet bij een bezoeker zonder account te komen.
+        // birth_date staat er nog naast als terugval: zolang script C nog niet
+        // is gedraaid, geeft de functie dat veld nog. ageOf() kiest zelf.
+        id: m.id, username: m.username, age: m.age, birth_date: m.birth_date, city: m.city,
         bio: m.bio, goal: m.goal, profile_color: m.profile_color, avatar_url: m.avatar_url,
         updated_at: m.updated_at,
         // TT-51 (12-08-2026, RPC-restpunt gesloten): instrument_levels bevat
@@ -4350,12 +4552,17 @@ function musicianCardHTML(m) {
   const displayName = displayNameOf(m);
   const photoHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
   const nameHTML = escHtml(displayName);
+  // TT-U13 (12-08-2026): één regel uit de bio. Vóór deze wijziging was er
+  // geen enkel woord van de persoon zelf zichtbaar vóór de klik.
+  const bioRuw = (m.bio || '').replace(/\s+/g, ' ').trim();
+  const bioSnippet = bioRuw.length > 60 ? bioRuw.slice(0, 60).trimEnd() + '…' : bioRuw;
 
   return `
     <div class="result-card" onclick="openMusicianModal('${jsAttr(m.id)}')">
       <div class="result-card-photo" style="background:${col};">${photoHTML}</div>
       <div class="result-card-name">${nameHTML}</div>
       <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+      ${bioSnippet ? `<div class="result-card-bio">${escHtml(bioSnippet)}</div>` : ''}
       ${niveauHTML ? `<div class="result-row-niveau">${niveauHTML}</div>` : ''}
       <div class="result-card-badges">
         ${instruments.map(i => tagSolid(i, col)).join('')}
@@ -4394,7 +4601,7 @@ function buildMusicianDetailHTML(m, isOwn) {
     const lvl = LEVEL_LABELS[s.mastery_level] ? s.mastery_level : '';
     return `
     <div class="profile-song-row">
-      <span><strong>${escHtml(s.song_title)}</strong> — <span style="color:var(--muted)">${escHtml(s.song_artist)}</span></span>
+      <span><strong>${escHtml(s.song_artist)}</strong> — <span style="color:var(--muted)">${escHtml(s.song_title)}</span></span>
       <span class="level-pill ${lvl}">${escHtml(LEVEL_LABELS[lvl] || '')}</span>
     </div>`;
   }).join('');
@@ -4508,7 +4715,9 @@ async function openMusicianModal(id) {
     const row = (res.data || [])[0];
     if (row) {
       m = {
-        id: row.id, username: row.username, age: row.age, city: row.city, // TT-43: geen fname voor bezoekers · B-02: leeftijd i.p.v. geboortedatum
+        // B-02: leeftijd i.p.v. geboortedatum; birth_date blijft als terugval
+        // zolang script C nog niet is gedraaid. TT-43: geen fname voor bezoekers.
+        id: row.id, username: row.username, age: row.age, birth_date: row.birth_date, city: row.city,
         bio: row.bio, goal: row.goal, profile_color: row.profile_color, avatar_url: row.avatar_url,
         rehearsal_frequency: row.rehearsal_frequency, musical_ambition: row.musical_ambition,
         updated_at: row.updated_at,
@@ -4621,28 +4830,67 @@ async function sendMessageFromComposer() {
 async function sendReplyInThread() {
   if (!activeConversationId) return;
   const input = document.getElementById('messagesReplyInput');
-  const ok = await insertMessage(activeConversationId, input.value);
+  const tekst = input.value;
+  if (!tekst.trim()) { showToast('Vul een bericht in.'); return; }
+
+  // V-02 (12-08-2026): het eigen bericht verscheen pas nadat het hele gesprek
+  // opnieuw was opgehaald — twee databasevragen, een "Laden..."-melding en
+  // een toetsenbord dat wegviel. Nu staat het bericht er meteen; de
+  // verversing gebeurt daarna, zonder melding.
+  const draad = document.getElementById('messagesThreadList');
+  const tijd = new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  const voorlopig = document.createElement('div');
+  voorlopig.className = 'message-bubble own';
+  voorlopig.innerHTML = escHtml(tekst).replace(/\n/g, '<br>') + `<div class="message-bubble-time">${escHtml(tijd)}</div>`;
+  draad.appendChild(voorlopig);
+  input.value = '';
+  updateCharCounter('messagesReplyInput', 'messagesReplyCounter', 2000);
+  scrollThreadToBottom();
+
+  const ok = await insertMessage(activeConversationId, tekst);
   if (ok) {
-    input.value = '';
-    openConversation(activeConversationId, document.getElementById('messagesThreadName').textContent);
+    openConversation(activeConversationId, document.getElementById('messagesThreadName').textContent, undefined, undefined, true);
+  } else {
+    // Mislukt: het voorlopige bericht weer weghalen en de tekst teruggeven,
+    // zodat niemand denkt dat het verstuurd is.
+    voorlopig.remove();
+    input.value = tekst;
+    updateCharCounter('messagesReplyInput', 'messagesReplyCounter', 2000);
   }
+}
+
+// V-01 (12-08-2026): een gesprek opende bovenaan. Bij twintig berichten zag je
+// het bericht van drie weken geleden. Elke chat-app springt naar het laatste
+// bericht.
+function scrollThreadToBottom() {
+  const draad = document.getElementById('messagesThreadList');
+  if (!draad) return;
+  const laatste = draad.lastElementChild;
+  if (laatste && laatste.scrollIntoView) laatste.scrollIntoView({ block: 'end' });
 }
 
 // Ongelezen-badge op de "Berichten"-navigatieknop, bijgewerkt na inloggen,
 // bij het openen van een gesprek (leest dat gesprek), en na versturen.
 async function refreshUnreadBadge() {
-  const badge = document.getElementById('unreadBadge');
-  if (!badge) return;
+  // TT-U24: de badge staat op twee plekken — de bovenste balk (brede
+  // schermen) en de onderbalk (telefoon). Beide worden hier bijgewerkt.
+  const badges = ['unreadBadge', 'unreadBadgeBottom']
+    .map(id => document.getElementById(id)).filter(Boolean);
+  if (!badges.length) return;
+  const toon = (tekst) => badges.forEach(b => {
+    if (tekst == null) { b.style.display = 'none'; }
+    else { b.textContent = tekst; b.style.display = 'inline-block'; }
+  });
   const mid = await getMyMusicianId();
-  if (!mid) { badge.style.display = 'none'; return; }
+  if (!mid) { toon(null); return; }
   try {
     const { count, error } = await db.from('messages')
       .select('id', { count: 'exact', head: true })
       .eq('recipient_id', mid)
       .is('read_at', null);
     if (error) throw error;
-    if (count > 0) { badge.textContent = count > 99 ? '99+' : String(count); badge.style.display = 'inline-block'; }
-    else { badge.style.display = 'none'; }
+    if (count > 0) { toon(count > 99 ? '99+' : String(count)); }
+    else { toon(null); }
   } catch (e) {
     // Stil falen: een kapotte badge mag de rest van de app niet blokkeren.
     console.error('refreshUnreadBadge', e);
@@ -4748,7 +4996,9 @@ function relativeMessageTime(iso) {
   return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
 }
 
-async function openConversation(otherId, otherName, otherColor, otherAvatarSrc) {
+let threadHistoryPushed = false; // V-03: staat er al een geschiedenisstap voor dit gesprek?
+
+async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, stil) {
   activeConversationId = otherId;
   document.getElementById('messagesThreadName').textContent = otherName;
   if (otherColor !== undefined) {
@@ -4759,10 +5009,22 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc) 
   }
   document.getElementById('messagesInboxPanel').style.display = 'none';
   document.getElementById('messagesThreadPanel').style.display = 'block';
-  document.getElementById('messagesReplyInput').value = '';
-  updateCharCounter('messagesReplyInput', 'messagesReplyCounter', 2000);
+  // V-03 (12-08-2026): eigen stap in de geschiedenis, zodat de terugknop van
+  // de telefoon eerst het gesprek sluit en niet meteen het hele
+  // berichtenscherm verlaat. Alleen bij het openen vanuit de inbox, niet bij
+  // het verversen na het versturen van een bericht (dan staat de stap er al).
+  if (!threadHistoryPushed) {
+    safeHistoryPush({ view: 'messages', thread: true }, '#messages');
+    threadHistoryPushed = true;
+  }
+  if (!stil) {
+    document.getElementById('messagesReplyInput').value = '';
+    updateCharCounter('messagesReplyInput', 'messagesReplyCounter', 2000);
+  }
   const threadEl = document.getElementById('messagesThreadList');
-  threadEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  // V-02: bij een stille verversing (na het versturen van een bericht) geen
+  // "Laden..." tonen — het gesprek staat al op het scherm.
+  if (!stil) threadEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
 
   const mid = await getMyMusicianId();
   if (!mid) return;
@@ -4808,7 +5070,8 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc) 
       await db.from('messages').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
       refreshUnreadBadge();
     }
-    document.getElementById('messagesReplyInput').focus();
+    scrollThreadToBottom(); // V-01
+    if (!stil) document.getElementById('messagesReplyInput').focus();
   } catch (e) {
     threadEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Gesprek laden is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
@@ -4816,6 +5079,7 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc) 
 
 function closeConversation() {
   activeConversationId = null;
+  threadHistoryPushed = false;
   document.getElementById('messagesInboxPanel').style.display = 'block';
   document.getElementById('messagesThreadPanel').style.display = 'none';
   loadInbox();
@@ -6564,6 +6828,8 @@ function init() {
     gg.appendChild(t);
   });
 
+  syncViewToggles(); // TT-U13: schakelaars gelijkzetten met de werkelijke stand
+
   // Update avatar initials placeholder reactively
   document.getElementById('fname').addEventListener('input', () => {
     const v = document.getElementById('fname').value.trim();
@@ -6581,6 +6847,14 @@ function toggleTag(el, value, arr) {
   const idx = arr.indexOf(value);
   if (idx === -1) { arr.push(value); el.classList.add('selected'); }
   else { arr.splice(idx,1); el.classList.remove('selected'); }
+  // Bugfix 13-08-2026 (Ronald: "niveau bij zang is weg na terugkomen"):
+  // saveOnboardingProgress() liep voorheen alleen bij een stapwissel (goTo()).
+  // Een keuze ná de laatste stapwissel stond dus nog nergens in sessionStorage.
+  // Kwam er intussen een nieuwe SIGNED_IN-gebeurtenis (bijv. na een echte
+  // paginaherlading) dan haalde tryResumeOnboarding() die oude, onvolledige
+  // momentopname terug — en overschreef daarmee de nieuwste keuze in het
+  // geheugen. Nu bewaart elke wijziging zichzelf meteen.
+  saveOnboardingProgress(); // no-op tenzij state.onboarding actief is
 }
 
 // TT-51 (12-08-2026): kort tikken op een instrumentknop selecteert of
@@ -6600,8 +6874,13 @@ function renderInstrumentTagStars(el, instrument) {
   const starsEl = el.querySelector('.instrument-tag-stars');
   if (!starsEl) return;
   const n = state.instrumentLevels[instrument] || 0;
+  // Feedback Ronald (12-08-2026): een gevulde ster (rgba(0,0,0,0.55)) en een
+  // "lege" gevulde ster (rgba(0,0,0,0.55)) waren op de gele achtergrond
+  // nauwelijks te onderscheiden. Nu een echte holle ster (☆) voor een niet
+  // gekozen niveau — dat is een lijn waar het geel doorheen blijft schijnen,
+  // in plaats van een tweede volle vorm.
   let out = '';
-  for (let i = 1; i <= 5; i++) out += `<span class="${i <= n ? 'filled' : ''}">★</span>`;
+  for (let i = 1; i <= 5; i++) out += `<span class="${i <= n ? 'filled' : ''}">${i <= n ? '★' : '☆'}</span>`;
   starsEl.innerHTML = out;
 }
 
@@ -6644,8 +6923,9 @@ function openInstrumentLevelSheet(instrument, tagEl) {
     tagEl.classList.add('selected');
     tagEl.setAttribute('aria-pressed', 'true');
     renderInstrumentTagStars(tagEl, instrument);
+    saveOnboardingProgress(); // zie toelichting bij toggleTag() — 13-08-2026
   }
-  document.getElementById('instrumentLevelTitle').textContent = 'Hoe goed speel je ' + instrument + '?';
+  document.getElementById('instrumentLevelTitle').textContent = 'Wat is je huidige niveau voor ' + instrument + '?';
   renderInstrumentLevelChoices();
   document.getElementById('instrumentLevelModal').classList.add('visible');
 }
@@ -6672,6 +6952,7 @@ function setInstrumentLevel(value) {
   const { instrument, tagEl } = instrumentLevelTarget;
   state.instrumentLevels[instrument] = value;
   renderInstrumentTagStars(tagEl, instrument);
+  saveOnboardingProgress(); // zie toelichting bij toggleTag() — 13-08-2026
   closeInstrumentLevelSheet();
 }
 
@@ -6684,6 +6965,7 @@ function removeInstrumentFromSheet() {
   tagEl.classList.remove('selected');
   tagEl.setAttribute('aria-pressed', 'false');
   renderInstrumentTagStars(tagEl, instrument);
+  saveOnboardingProgress(); // zie toelichting bij toggleTag() — 13-08-2026
   closeInstrumentLevelSheet();
 }
 
@@ -6910,13 +7192,13 @@ function renderSongs() {
   list.innerHTML = `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
       <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
-        <span>Nummer — Band / Artiest</span><span style="margin-right:40px;">Niveau</span><span></span>
+        <span>Band / Artiest — Nummer</span><span style="margin-right:40px;">Niveau</span><span></span>
       </div>
       ${displayOrder.map(i => { const s = state.songs[i]; return `
         <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;">
           <div>
-            <div style="font-size:15px;font-weight:600;">${escHtml(s.title)}</div>
-            <div style="font-size:12px;color:var(--muted);">${escHtml(s.artist)}</div>
+            <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
+            <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
           </div>
           <div style="display:flex;gap:4px;${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
             <button class="level-btn ${s.level==='basis'?'active-basis':''}" title="Je kent de structuur, nog wat fouten" onclick="setLevel(${i},'basis')">Basis</button>
@@ -7440,7 +7722,7 @@ let myAcceptsBandInvites = true;
 let lastBandResults = [];
 // TT-30 (07-08-2026): zie musicianViewMode hierboven — zelfde patroon, apart
 // onthouden per tabblad.
-let bandViewMode = localStorage.getItem('tt_bandViewMode') || 'list';
+let bandViewMode = localStorage.getItem('tt_bandViewMode') || standaardWeergave();
 function setBandViewMode(mode) {
   bandViewMode = mode;
   try { localStorage.setItem('tt_bandViewMode', mode); } catch(e) {}
