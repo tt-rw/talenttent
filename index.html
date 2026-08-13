@@ -405,16 +405,6 @@
 
   .song-search-wrap input { padding-left: 44px; }
 
-  .search-icon {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--muted);
-    font-size: 18px;
-    pointer-events: none;
-  }
-
   .autocomplete-list {
     position: absolute;
     top: calc(100% + 4px);
@@ -451,27 +441,6 @@
     flex-direction: column;
     gap: 8px;
     margin-top: 4px;
-  }
-
-  .song-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    animation: slideIn 0.2s ease;
-  }
-
-  .song-info { flex: 1; }
-  .song-title { font-size: 14px; font-weight: 500; }
-  .song-artist { font-size: 12px; color: var(--muted); }
-
-  /* Level selector */
-  .level-select {
-    display: flex;
-    gap: 6px;
   }
 
   .level-btn {
@@ -588,25 +557,6 @@
 
   .btn-ghost:hover { color: var(--text); border-color: #555; }
 
-  /* Profile preview */
-  .profile-preview {
-    background: linear-gradient(135deg, #1a1a1a 0%, #111 100%);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 32px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .profile-preview::before {
-    content: '';
-    position: absolute;
-    top: -40px; right: -40px;
-    width: 160px; height: 160px;
-    background: radial-gradient(circle, rgba(245,197,24,0.15) 0%, transparent 70%);
-    border-radius: 50%;
-  }
-
   .profile-avatar {
     width: 72px; height: 72px;
     background: var(--accent);
@@ -691,38 +641,6 @@
   .level-pill.basis { background: var(--surface2); color: var(--text); font-weight: 700; font-style: italic; }
   .level-pill.bijna { background: var(--surface2); color: var(--text); font-weight: 700; font-style: italic; }
   .level-pill.podium { background: var(--surface2); color: var(--text); font-weight: 700; font-style: italic; }
-
-  .success-banner {
-    text-align: center;
-    padding: 20px 0 12px;
-  }
-
-  .success-icon {
-    font-size: 56px;
-    margin-bottom: 12px;
-    display: block;
-    animation: pop 0.4s ease;
-  }
-
-  @keyframes pop {
-    0% { transform: scale(0.5); opacity: 0; }
-    70% { transform: scale(1.15); }
-    100% { transform: scale(1); opacity: 1; }
-  }
-
-  .success-title {
-    font-family: 'Roboto', sans-serif;
-    font-size: 40px;
-    color: var(--accent);
-    letter-spacing: 2px;
-  }
-
-  .success-sub {
-    font-size: 14px;
-    color: var(--muted);
-    margin-top: 6px;
-    font-weight: 300;
-  }
 
   /* Divider */
   .divider {
@@ -1159,19 +1077,6 @@
     gap: 8px;
   }
 
-  .profile-media-thumb {
-    width: 72px; height: 72px;
-    border-radius: 6px;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    background: var(--surface2);
-  }
-
-  .profile-media-thumb img {
-    width: 100%; height: 100%;
-    object-fit: cover;
-  }
-
   .profile-link-chip {
     display: inline-flex;
     align-items: center;
@@ -1294,9 +1199,6 @@
     font-weight: 300;
   }
 
-  .save-error-icon { font-size: 48px; margin-bottom: 16px; }
-  .save-error-msg  { color: var(--danger); font-size: 13px; margin-top: 8px; }
-
   /* ── Landingspagina ─────────────────────── */
   .landing-wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
   .landing-hero { padding: 80px 0 60px; text-align: center; }
@@ -1373,7 +1275,7 @@
     flex-shrink: 0;
     margin-bottom: 8px;
     /* TT-U23 (12-08-2026): was 42x38 pixels. */
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     min-width: 44px;
@@ -1384,8 +1286,6 @@
     background: transparent;
     color: var(--muted);
     cursor: pointer;
-    display: flex;
-    align-items: center;
     transition: all 0.2s;
   }
   .nav-menu-btn:hover, .nav-menu-btn.active {
@@ -1574,34 +1474,6 @@
     padding: 36px;
   }
 
-  .auth-tabs {
-    display: flex;
-    gap: 0;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    margin-bottom: 28px;
-  }
-
-  .auth-tab {
-    flex: 1;
-    padding: 10px;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    color: var(--muted);
-    border: none;
-    background: transparent;
-    font-family: 'Roboto', sans-serif;
-    transition: all 0.2s;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  .auth-tab.active { background: var(--surface); color: var(--accent); }
-
   .auth-error {
     background: rgba(229,83,61,0.1);
     border: 1px solid rgba(229,83,61,0.3);
@@ -1660,8 +1532,6 @@
   }
 
   .filter-row.single { grid-template-columns: 1fr; }
-  .filter-row.triple { grid-template-columns: 1fr 1fr 1fr; }
-
   .search-btn {
     width: 100%;
     padding: 14px;
@@ -4086,11 +3956,6 @@ function showAuthSuccess(msg) {
   el.textContent = msg;
   el.classList.add('visible');
   document.getElementById('authError').classList.remove('visible');
-}
-
-function clearAuthMessages() {
-  document.getElementById('authError').classList.remove('visible');
-  document.getElementById('authSuccess').classList.remove('visible');
 }
 
 async function signIn() {
@@ -7287,17 +7152,6 @@ function toggleTag(el, value, arr) {
   // momentopname terug — en overschreef daarmee de nieuwste keuze in het
   // geheugen. Nu bewaart elke wijziging zichzelf meteen.
   saveOnboardingProgress(); // no-op tenzij state.onboarding actief is
-}
-
-// TT-51 (12-08-2026): kort tikken op een instrumentknop selecteert of
-// deselecteert 'm — ongewijzigd gedrag t.o.v. de generieke toggleTag()
-// hierboven, alleen met het niveau erbij dat mee vervalt bij deselecteren.
-function toggleInstrumentSelection(el, instrument) {
-  toggleTag(el, instrument, state.instruments);
-  if (!state.instruments.includes(instrument)) {
-    delete state.instrumentLevels[instrument]; // niet meer geselecteerd: niveau vervalt mee
-  }
-  renderInstrumentTagStars(el, instrument);
 }
 
 // Werkt het mini-sterrenrijtje ín een instrumentknop bij, op basis van
