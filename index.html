@@ -1971,6 +1971,31 @@
 
   .modal-close:hover { color: var(--text); border-color: #555; }
 
+  /* V-09 (13-08-2026): de contactknop op een profiel stond onderaan een lang
+     scherm — bij een gevuld profiel moest je er lang naartoe scrollen. Deze
+     twee klassen maken van modal-box een kolom: de inhoud scrolt in het
+     midden, de knop blijft vast onderaan zichtbaar. Alleen de musicianModal
+     gebruikt dit vooralsnog (zie V-09 in de akkoordlijst). */
+  .modal-box-sticky-footer {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+  .modal-box-sticky-footer .modal-scroll-area {
+    overflow-y: auto;
+    padding: 32px;
+    flex: 1;
+    min-height: 0;
+  }
+  .modal-sticky-footer {
+    flex-shrink: 0;
+    padding: 16px 32px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .modal-sticky-footer:empty { display: none; }
+
   /* Eigen profiel beheer */
   .my-profile-wrap {
     max-width: 760px;
@@ -2092,6 +2117,14 @@
       border: none;
       overflow-y: auto;
       padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    }
+    /* V-09: bij de sticky-footerknop hoort de onderste ruimte (incl. de
+       inkeping onderaan het scherm) bij de knop, niet bij de scrollende
+       inhoud — anders staat de knop te hoog of te laag. */
+    .modal-box-sticky-footer { padding-bottom: 0; }
+    .modal-box-sticky-footer .modal-scroll-area { padding-bottom: 24px; }
+    .modal-box-sticky-footer .modal-sticky-footer {
+      padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     }
     /* De sluitknop blijft rechtsboven staan, zoals in de rest van de app.
        Bewust niet verplaatst: veel modals houden rechtsboven al ruimte vrij,
@@ -3019,6 +3052,9 @@
   <div class="my-profile-wrap">
     <!-- TT-41: openstaande banduitnodigingen, alleen zichtbaar als er zijn -->
     <div id="bandInvitesBanner"></div>
+    <!-- V-16 (13-08-2026): een oprichter die stopt vraagt eerst de overige
+         leden of iemand het overneemt — dat aanbod verschijnt hier. -->
+    <div id="founderOfferBanner"></div>
     <div id="myProfileContent"></div>
     <div class="profile-actions" id="profileActions" style="display:none;">
       <button class="btn btn-primary" onclick="editMyProfile()">Profiel bewerken</button>
@@ -3047,13 +3083,33 @@
         <div class="field-group">
           <div class="field">
             <label>Bandnaam <span class="req">*</span></label>
-            <input type="text" id="bandName" placeholder="Bijv. The Rusty Strings">
+            <input type="text" id="bandName" placeholder="Bijv. The Rusty Strings" oninput="onBandNameInput(this.value)">
           </div>
           <div class="field">
             <label>Postcode <span class="req">*</span></label>
             <input type="text" id="bandZip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onBandPostcodeInput(this.value)">
             <p style="font-size:11px;color:var(--muted);margin-top:4px;">Alleen de 4 cijfers, geen huisletters nodig.</p>
           </div>
+        </div>
+        <!-- V-15 (13-08-2026): een band had tot nu toe geen foto — alleen
+             twee letters op een gekleurd vlak. Zelfde uploadpad als de
+             profielfoto van een muzikant (bands.avatar_url bestaat al). -->
+        <div class="field" style="margin-bottom:28px;">
+          <label>Bandfoto <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+          <div class="avatar-upload-area">
+            <div class="avatar-preview-wrap">
+              <div class="avatar-preview" id="bandAvatarPreview" onclick="document.getElementById('bandAvatarInput').click()" style="border-radius:12px;">
+                <span id="bandAvatarInitials">??</span>
+              </div>
+              <div class="avatar-edit-btn" onclick="document.getElementById('bandAvatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+            </div>
+            <div class="avatar-info">
+              <strong>Upload een bandfoto</strong>
+              <p>JPG of PNG, maximaal 5 MB.</p>
+              <button class="avatar-remove-btn" id="bandAvatarRemoveBtn" onclick="removeBandAvatar()">Foto verwijderen</button>
+            </div>
+          </div>
+          <input type="file" accept="image/*" class="avatar-upload-input" id="bandAvatarInput" autocomplete="off" onchange="handleBandAvatarUpload(this.files[0]); this.value=''">
         </div>
         <!-- TT-51-uitbreiding (12-08-2026, Ronalds testfeedback): niveau
              van de band naar boven verplaatst — stond eerst tussen Status en
@@ -3334,9 +3390,10 @@
 <div class="app-toast" id="appToast"></div>
 
 <div class="modal-overlay" id="musicianModal" onclick="closeMusicianModal(event)">
-  <div class="modal-box" id="musicianModalBox">
+  <div class="modal-box modal-box-sticky-footer" id="musicianModalBox">
     <button class="modal-close" onclick="document.getElementById('musicianModal').classList.remove('visible')">✕</button>
-    <div id="musicianModalContent"></div>
+    <div id="musicianModalContent" class="modal-scroll-area"></div>
+    <div id="musicianModalFooter" class="modal-sticky-footer"></div>
   </div>
 </div>
 
@@ -3345,6 +3402,15 @@
   <div class="modal-box">
     <button class="modal-close" onclick="document.getElementById('bandModal').classList.remove('visible')">✕</button>
     <div id="bandModalContent"></div>
+  </div>
+</div>
+
+<!-- V-08 (13-08-2026): foto in een eigen weergave i.p.v. een nieuw tabblad,
+     dat in een app-schil de gebruiker uit de app zou sturen. -->
+<div class="modal-overlay" id="mediaLightbox" onclick="if(event.target===this)closeMediaLightbox()">
+  <div class="modal-box" style="padding:12px;display:flex;align-items:center;justify-content:center;">
+    <button class="modal-close" onclick="closeMediaLightbox()">✕</button>
+    <img id="mediaLightboxImg" src="" alt="Foto" style="max-width:100%;max-height:80vh;width:auto;height:auto;border-radius:8px;display:block;">
   </div>
 </div>
 
@@ -3414,7 +3480,13 @@
     <button class="modal-close" onclick="document.getElementById('addMemberModal').classList.remove('visible')">✕</button>
     <div class="filter-title" style="margin-bottom:6px;">Lid uitnodigen</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">De muzikant staat pas als lid op het bandprofiel zodra hij of zij de uitnodiging zelf bevestigt.</p>
-    <input type="text" id="memberSearchInput" placeholder="Zoek op naam..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:16px;">
+    <!-- V-17 (13-08-2026): zoeken kon alleen op naam of gebruikersnaam — dan
+         moest je al weten wie je zocht. Instrument erbij, en zoeken werkt nu
+         ook zonder getypte naam zolang er een instrument gekozen is. -->
+    <select id="memberSearchInstrument" onchange="searchMembersToAdd(document.getElementById('memberSearchInput').value)" style="width:100%;min-height:44px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:10px;box-sizing:border-box;">
+      <option value="">Alle instrumenten</option>
+    </select>
+    <input type="text" id="memberSearchInput" placeholder="Zoek op naam (optioneel)..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:16px;">
     <div id="memberSearchResults"></div>
   </div>
 </div>
@@ -4582,7 +4654,7 @@ function musicianCardHTML(m) {
 function buildMusicianDetailHTML(m, isOwn) {
   const col  = safeColor(m.profile_color, '#f5c518');
   const age  = ageOf(m);
-  const date = new Date(m.updated_at).toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
+  const updatedLabel = relativeUpdatedLabel(m.updated_at);
 
   // TT-43 (08-08-2026): op je eigen profiel altijd je eigen voornaam; voor een
   // ander hangt het af van of die is ingelogd met een eigen profiel — dat
@@ -4637,13 +4709,13 @@ function buildMusicianDetailHTML(m, isOwn) {
     </div>
     <div class="freshness-bar" style="margin-top:12px;margin-bottom:16px;">
       <div class="freshness-dot"></div>
-      <span>Bijgewerkt op <strong>${escHtml(date)}</strong></span>
+      <span>${escHtml(updatedLabel)}</span>
     </div>
     <div class="profile-badges">
       ${m.musician_instruments.map(x => `<span class="badge" style="border-color:${col};color:${col};">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
       ${m.musician_genres.map(x => `<span class="badge genre">${escHtml(x.genre)}</span>`).join('')}
     </div>
-    ${m.bio ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${escHtml(m.bio)}"</p>` : ''}
+    ${m.bio ? `<p style="font-size:15px;color:var(--text);margin:12px 0;">${escHtml(m.bio)}</p>` : ''}
     ${m.musician_songs.length ? `
       <div class="profile-songs">
         <div class="profile-songs-title">Repertoire (${m.musician_songs.length} nummers)</div>
@@ -4653,14 +4725,14 @@ function buildMusicianDetailHTML(m, isOwn) {
       <div class="profile-media" style="margin-top:16px;">
         <div class="profile-media-title">Foto's</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
-          ${photos.map(p => `<a href="${p.safeHref}" target="_blank" rel="noopener noreferrer" style="display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);"><img src="${p.safeHref}" alt="Foto" style="width:100%;height:100%;object-fit:cover;"></a>`).join('')}
+          ${photos.map(p => `<button type="button" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')" style="display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);padding:0;background:none;cursor:pointer;"><img src="${p.safeHref}" alt="Foto" style="width:100%;height:100%;object-fit:cover;"></button>`).join('')}
         </div>
       </div>` : ''}
     ${videos.length ? `
       <div class="profile-media" style="margin-top:16px;">
         <div class="profile-media-title">Video's</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
-          ${videos.map(v => `<a href="${v.safeHref}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;justify-content:center;aspect-ratio:1;border-radius:8px;border:1px solid var(--border);background:var(--surface2);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Video</a>`).join('')}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;">
+          ${videos.map(v => `<video src="${v.safeHref}" controls playsinline preload="metadata" style="width:100%;border-radius:8px;border:1px solid var(--border);background:#000;display:block;"></video>`).join('')}
         </div>
       </div>` : ''}
     ${links.length ? `
@@ -4669,19 +4741,29 @@ function buildMusicianDetailHTML(m, isOwn) {
         <div class="profile-media-grid">
           ${links.map(l => `<a href="${l.safeHref}" target="_blank" rel="noopener noreferrer" class="profile-link-chip">${escHtml(l.platform || 'Link')}</a>`).join('')}
         </div>
-      </div>` : ''}
-    ${!isOwn ? (hasOwnProfile
-      ? `<button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht →</button>`
-      : `<button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`
-    ) : ''}`;
+      </div>` : ''}`;
+}
+
+// V-09 (13-08-2026): losgetrokken uit buildMusicianDetailHTML() zodat de
+// contactknop apart, buiten de scrollende inhoud, in een vaste voettekst kan
+// staan — anders moest je bij een gevuld profiel er lang naartoe scrollen.
+// loadMyProfile() (Mijn Profiel, isOwn altijd waar) roept dit bewust niet
+// aan: daar hoort nooit een contactknop.
+function musicianContactFooterHTML(m, isOwn, displayName) {
+  if (isOwn) return '';
+  return hasOwnProfile
+    ? `<button class="btn btn-primary" style="width:100%;" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht →</button>`
+    : `<button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`;
 }
 
 async function openMusicianModal(id) {
   const modal = document.getElementById('musicianModal');
   const content = document.getElementById('musicianModalContent');
+  const footer = document.getElementById('musicianModalFooter');
   modal.classList.add('visible');
 
   if (!currentUser) {
+    footer.innerHTML = '';
     content.innerHTML = `
       <div style="text-align:center;padding:40px 20px;">
         <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Bekijk het volledige profiel</p>
@@ -4692,6 +4774,7 @@ async function openMusicianModal(id) {
     return;
   }
 
+  footer.innerHTML = '';
   content.innerHTML =
     '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
 
@@ -4733,6 +4816,7 @@ async function openMusicianModal(id) {
   }
 
   if (error || !m) {
+    footer.innerHTML = '';
     document.getElementById('musicianModalContent').innerHTML = '<p style="color:var(--danger)">Kon profiel niet laden.</p>';
     return;
   }
@@ -4742,12 +4826,28 @@ async function openMusicianModal(id) {
 
   const isOwn = !!(myMusicianId && myMusicianId === m.id);
   document.getElementById('musicianModalContent').innerHTML = buildMusicianDetailHTML(m, isOwn);
+  // V-09: zelfde displayName-logica als binnen buildMusicianDetailHTML()
+  // (TT-43: bezoekers zonder profiel zien alleen de gebruikersnaam).
+  const displayName = isOwn ? m.fname : displayNameOf(m);
+  footer.innerHTML = musicianContactFooterHTML(m, isOwn, displayName);
 }
 
 function closeMusicianModal(e) {
   if (e.target === document.getElementById('musicianModal')) {
     document.getElementById('musicianModal').classList.remove('visible');
   }
+}
+
+// V-08 (13-08-2026): een foto opent nu in een eigen weergave in de app zelf,
+// niet meer in een nieuw browsertabblad (dat zou iemand in een app-schil
+// buiten de app zetten).
+function openMediaLightbox(url) {
+  document.getElementById('mediaLightboxImg').src = url;
+  document.getElementById('mediaLightbox').classList.add('visible');
+}
+function closeMediaLightbox() {
+  document.getElementById('mediaLightbox').classList.remove('visible');
+  document.getElementById('mediaLightboxImg').src = '';
 }
 
 // ─── Berichten (TT-01) ───────────────────────────────────────────────────────
@@ -4770,6 +4870,10 @@ function openMessageComposer(recipientId, recipientName) {
   document.getElementById('messageComposerBody').value = '';
   updateCharCounter('messageComposerBody', 'messageComposerCounter', 2000);
   document.getElementById('musicianModal').classList.remove('visible');
+  // V-13 (13-08-2026): "Stuur een bericht aan deze band" opent dezelfde
+  // composer vanuit het bandprofiel — dat modal moet dan ook dicht.
+  const bandModalEl = document.getElementById('bandModal');
+  if (bandModalEl) bandModalEl.classList.remove('visible');
   document.getElementById('messageModal').classList.add('visible');
   setTimeout(() => document.getElementById('messageComposerBody').focus(), 50);
 }
@@ -4981,6 +5085,20 @@ async function loadInbox() {
 // — voelt directer/vertrouwder aan (Ronald: "een beetje cool, zoals een
 // 21-jarige muzikant zou willen zien"), zoals WhatsApp/Instagram DM's dat
 // ook doen.
+// V-11 (13-08-2026, TT-U30): "Bijgewerkt op 3 juni 2026" leest als een dood
+// profiel. Grove, relatieve tekst i.p.v. een exacte datum — bewust géén
+// dagen/uren-precisie zoals relativeMessageTime(): bij een profiel gaat het
+// om een indruk van activiteit, niet om een exact tijdstip.
+function relativeUpdatedLabel(iso) {
+  const d = new Date(iso);
+  const diffDays = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (diffDays < 7)  return 'Deze week bijgewerkt';
+  if (diffDays < 14) return 'Vorige week bijgewerkt';
+  if (diffDays < 31) return 'Deze maand bijgewerkt';
+  if (diffDays < 61) return 'Vorige maand bijgewerkt';
+  return 'Langer dan 2 maanden geleden bijgewerkt';
+}
+
 function relativeMessageTime(iso) {
   const d = new Date(iso);
   const diffMs = Date.now() - d.getTime();
@@ -5481,6 +5599,7 @@ async function loadMyProfile() {
   const bandsBtn = document.getElementById('myBandsBtn');
   if (bandsBtn) bandsBtn.style.display = 'inline-flex';
   loadBandInvites(m.id);
+  loadFounderOffers(m.id); // V-16
 
   // TT-56 (12-08-2026): opt-out band-uitnodigingen — knoptekst weerspiegelt
   // de huidige stand. m.accepts_band_invites komt gewoon mee via de
@@ -5561,6 +5680,181 @@ async function respondToBandInvite(bandId, accept) {
     if (error) throw error;
     showToast(accept ? 'Je staat nu als lid op het bandprofiel.' : 'Uitnodiging geweigerd.');
     loadBandInvites(mid);
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+  }
+}
+
+// V-16 (13-08-2026): banner op Mijn Profiel voor een bevestigd lid dat is
+// gevraagd het oprichterschap over te nemen (band_members.founder_offer).
+// Vereist het losse script F-V16-oprichterschap-aanbod.sql — zonder die
+// kolom faalt de vraag stil en blijft de banner leeg, net als bij een
+// mislukte loadBandInvites()-aanroep hierboven.
+async function loadFounderOffers(musicianId) {
+  const el = document.getElementById('founderOfferBanner');
+  if (!el) return;
+  el.innerHTML = '';
+  try {
+    const { data, error } = await db.from('band_members')
+      .select('band_id, bands(name, city, profile_color)')
+      .eq('musician_id', musicianId).eq('status', 'bevestigd').eq('founder_offer', true);
+    if (error || !data || !data.length) return;
+
+    el.innerHTML = data.map(off => {
+      const col = safeColor(off.bands?.profile_color, '#f5c518');
+      const naam = off.bands?.name || 'Een band';
+      return `
+      <div style="border:1px solid ${col};border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px;">De oprichter van ${escHtml(naam)} stopt als bandleider</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Wil jij het oprichterschap overnemen? Zeg je nee, dan blijft de huidige oprichter voorlopig aan.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="respondToFounderOffer('${jsAttr(off.band_id)}', true)">Ik neem het over</button>
+          <button class="btn btn-ghost" style="font-size:13px;padding:8px 16px;" onclick="respondToFounderOffer('${jsAttr(off.band_id)}', false)">Nee, liever niet</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    // Zelfde keuze als loadBandInvites(): stilzwijgend niets tonen i.p.v.
+    // Mijn Profiel blokkeren met een foutmelding.
+  }
+}
+
+async function respondToFounderOffer(bandId, accept) {
+  const mid = await getMyMusicianId();
+  if (!mid) return;
+  try {
+    if (accept) {
+      const { data: band, error: bErr } = await db.from('bands').select('founder_id').eq('id', bandId).single();
+      if (bErr) throw bErr;
+      const oldFounderId = band?.founder_id;
+
+      const { error: uErr } = await db.from('bands').update({ founder_id: mid }).eq('id', bandId);
+      if (uErr) throw uErr;
+      await db.from('band_members').update({ role: 'Oprichter', founder_offer: false }).eq('band_id', bandId).eq('musician_id', mid);
+      // De vraag is beantwoord — het aanbod bij eventuele andere gevraagde
+      // leden sluit automatisch mee, zij hoeven niet ook nog te reageren.
+      await db.from('band_members').update({ founder_offer: false }).eq('band_id', bandId).eq('founder_offer', true);
+      // V-16: "zo ja dan volgt een overdracht" — de oude oprichter stapt zelf
+      // uit de band. Diens muzikantprofiel blijft uiteraard gewoon bestaan.
+      if (oldFounderId) await db.from('band_members').delete().eq('band_id', bandId).eq('musician_id', oldFounderId);
+      showToast('Je bent nu oprichter van deze band.');
+    } else {
+      await db.from('band_members').update({ founder_offer: false }).eq('band_id', bandId).eq('musician_id', mid);
+      showToast('Aanbod geweigerd.');
+    }
+    loadFounderOffers(mid);
+    loadMyBands();
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+  }
+}
+
+// V-16: de oprichter geeft aan te willen stoppen. Is er niemand anders
+// bevestigd, dan is overdragen zinloos — direct de keuze voor opheffen.
+// Zijn er wel anderen, dan gaat eerst het aanbod uit; de oprichter blijft
+// oprichter totdat iemand "Ik neem het over" heeft geklikt (of totdat hij
+// het aanbod intrekt en zelf voor opheffen kiest).
+async function askFounderTransfer(bandId) {
+  try {
+    const { data: band, error } = await db.from('bands')
+      .select('name, band_members(musician_id, status)').eq('id', bandId).single();
+    if (error || !band) throw error || new Error('Kon band niet laden.');
+    const mid = await getMyMusicianId();
+    const others = (band.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid);
+
+    if (!others.length) {
+      showConfirm(
+        `Je bent het enige bevestigde lid van "${band.name}". Er is niemand om het oprichterschap aan over te dragen. Stoppen betekent dat de band wordt opgeheven.`,
+        () => dissolveBand(bandId),
+        'Band opheffen'
+      );
+      return;
+    }
+
+    showConfirm(
+      `Je vraagt ${others.length === 1 ? 'het andere bevestigde lid' : `de ${others.length} andere bevestigde leden`} van "${band.name}" of iemand het oprichterschap wil overnemen. Neemt niemand het over, dan blijf jij voorlopig oprichter.`,
+      () => sendFounderOffer(bandId, others.map(m => m.musician_id)),
+      'Vragen'
+    );
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+  }
+}
+
+async function sendFounderOffer(bandId, memberIds) {
+  try {
+    const { error } = await db.from('band_members').update({ founder_offer: true }).eq('band_id', bandId).in('musician_id', memberIds);
+    if (error) throw error;
+    showToast('Gevraagd of iemand het overneemt. Je ziet het hier zodra iemand reageert.');
+    loadMyBands();
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+  }
+}
+
+async function withdrawFounderOffer(bandId) {
+  try {
+    const { error } = await db.from('band_members').update({ founder_offer: false }).eq('band_id', bandId);
+    if (error) throw error;
+    showToast('Aanbod ingetrokken.');
+    loadMyBands();
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+  }
+}
+
+async function dissolveBand(bandId) {
+  try {
+    await db.from('band_wanted').delete().eq('band_id', bandId);
+    await db.from('band_members').delete().eq('band_id', bandId);
+    const { error } = await db.from('bands').delete().eq('id', bandId);
+    if (error) throw error;
+    showToast('Band opgeheven.');
+    loadMyBands();
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+  }
+}
+
+// V-16: een gewoon lid verlaat de band zelf — geen overdracht nodig, de
+// oprichter blijft gewoon oprichter.
+function leaveBand(bandId, bandName) {
+  showConfirm(
+    `Weet je zeker dat je "${bandName}" wilt verlaten?`,
+    () => executeLeaveBand(bandId),
+    'Ja, verlaten'
+  );
+}
+
+async function executeLeaveBand(bandId) {
+  const mid = await getMyMusicianId();
+  if (!mid) return;
+  try {
+    const { error } = await db.from('band_members').delete().eq('band_id', bandId).eq('musician_id', mid);
+    if (error) throw error;
+    showToast('Je hebt de band verlaten.');
+    loadMyBands();
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+  }
+}
+
+// V-16: de oprichter kan zelf ook een lid verwijderen (i.p.v. wachten tot
+// iemand zelf vertrekt).
+function removeMember(bandId, musicianId, memberName) {
+  showConfirm(
+    `Weet je zeker dat je ${memberName} uit de band wilt verwijderen?`,
+    () => executeRemoveMember(bandId, musicianId),
+    'Ja, verwijderen'
+  );
+}
+
+async function executeRemoveMember(bandId, musicianId) {
+  try {
+    const { error } = await db.from('band_members').delete().eq('band_id', bandId).eq('musician_id', musicianId);
+    if (error) throw error;
+    showToast('Lid verwijderd.');
+    loadMyBands();
   } catch (e) {
     showToast(friendlyErrorMessage(e));
   }
@@ -7770,7 +8064,7 @@ function setBandSearchSortMode(el, mode) {
   }
 }
 
-let bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff', niveau: null };
+let bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff', niveau: null, avatarUrl: null, avatarPath: null };
 
 function initBandSearchFilters() {
   const gg = document.getElementById('filterBandGenres');
@@ -8378,7 +8672,7 @@ function showCreateBandForm() {
 // Zet het bandformulier terug naar lege 'nieuwe band'-staat.
 function resetBandForm() {
   editingBandId = null;
-  bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff', niveau: null };
+  bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff', niveau: null, avatarUrl: null, avatarPath: null };
   bandPostcodeResolved = false;
   bandPostcodeFailStreak = 0;
   bandPostcodeManualMode = false;
@@ -8395,20 +8689,100 @@ function resetBandForm() {
   if (statusEl) statusEl.textContent = '';
   document.querySelectorAll('#bandGenreGrid .genre-tag, #bandWantedGrid .tag, #bandStatusGrid .tag').forEach(t => t.classList.remove('selected'));
   renderBandLevelPicker(); // TT-51: sterren terug naar leeg
+  populateBandAvatarPreview(); // V-15: voorbeeld terug naar lege "??"
   const titleEl = document.getElementById('bandFormTitle');
   const btnEl = document.getElementById('saveBandBtn');
   if (titleEl) titleEl.textContent = 'Nieuwe band aanmaken';
   if (btnEl) btnEl.textContent = 'Band aanmaken';
 }
 
+// V-15 (13-08-2026): toont de bandfoto als die er is, anders de eerste twee
+// letters van de bandnaam — precies zoals bandAvatarHTML dat ook al deed op
+// het bandprofiel zelf (openBandModal()).
+function populateBandAvatarPreview() {
+  const preview = document.getElementById('bandAvatarPreview');
+  if (!preview) return;
+  const nameEl = document.getElementById('bandName');
+  const initials = String((nameEl && nameEl.value) || '').slice(0, 2).toUpperCase() || '??';
+  if (bandState.avatarUrl) {
+    preview.innerHTML = `<img src="${safeUrl(bandState.avatarUrl)}" alt="bandfoto">`;
+    document.getElementById('bandAvatarRemoveBtn').classList.add('visible');
+  } else {
+    preview.innerHTML = `<span id="bandAvatarInitials">${escHtml(initials)}</span>`;
+    document.getElementById('bandAvatarRemoveBtn').classList.remove('visible');
+  }
+}
+
+// Alleen de live "??"-plaatshouder bijwerken zolang er geen foto is gekozen.
+function onBandNameInput(value) {
+  if (bandState.avatarUrl) return;
+  const initialsEl = document.getElementById('bandAvatarInitials');
+  if (initialsEl) initialsEl.textContent = String(value || '').slice(0, 2).toUpperCase() || '??';
+}
+
+// Een band bestaat pas na "Band aanmaken" als bevestigd account/profiel —
+// anders dan bij de muzikantwizard is er hier nooit een moment zonder
+// currentUser (saveBand() vraagt zelf al een muzikantprofiel af), dus de
+// foto kan altijd meteen echt geüpload worden. Bucket 'avatars' wordt
+// hergebruikt (uploadAvatarFile bestaat al) — elke upload krijgt sowieso een
+// unieke bestandsnaam, dus dat botst niet met profielfoto's.
+function handleBandAvatarUpload(file) {
+  if (!file) return;
+  const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
+  if (typeProblem) { showToast(typeProblem); return; }
+  if (file.size > 5 * 1024 * 1024) { showToast('Afbeelding is te groot. Maximum 5 MB.'); return; }
+  if (!currentUser) { showToast('Log in om een bandfoto te uploaden.'); return; }
+
+  const blobUrl = URL.createObjectURL(file);
+  const preview = document.getElementById('bandAvatarPreview');
+  preview.style.position = 'relative';
+  preview.innerHTML = `<img src="${blobUrl}" alt="bandfoto">`;
+  preview.insertAdjacentHTML('beforeend',
+    `<div class="avatar-uploading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);border-radius:12px;">
+       <div class="save-spinner" style="width:24px;height:24px;border-width:3px;margin:0;"></div>
+     </div>`);
+  document.getElementById('bandAvatarRemoveBtn').classList.add('visible');
+
+  uploadAvatarFile(file, currentUser.id).then(({ url, path }) => {
+    bandState.avatarUrl = url;
+    bandState.avatarPath = path;
+    preview.querySelector('.avatar-uploading')?.remove();
+  }).catch(e => {
+    console.error('Bandfoto-upload mislukt:', e);
+    preview.querySelector('.avatar-uploading')?.remove();
+    showToast(friendlyErrorMessage(e));
+    removeBandAvatar();
+  });
+}
+
+function removeBandAvatar() {
+  bandState.avatarUrl = null;
+  bandState.avatarPath = null;
+  populateBandAvatarPreview();
+}
+
 // Bestaande band laden in het formulier om te bewerken (alleen voor de oprichter).
 let addMemberBandId = null;
 let memberSearchTimer = null;
 
-function openAddMemberModal(bandId) {
+let addMemberBandName = ''; // V-18: nodig voor de tekst in het uitnodigingsbericht
+
+function openAddMemberModal(bandId, bandName) {
   addMemberBandId = bandId;
+  addMemberBandName = bandName || '';
   document.getElementById('memberSearchInput').value = '';
-  document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens om te zoeken.</p>';
+  // V-17: instrumentlijst opnieuw vullen bij elke opening — zelfde bron
+  // (INSTRUMENTS) als de wizard, één keer opgebouwd, dan hergebruikt.
+  const instrEl = document.getElementById('memberSearchInstrument');
+  if (instrEl && instrEl.options.length <= 1) {
+    INSTRUMENTS.forEach(i => {
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = i;
+      instrEl.appendChild(opt);
+    });
+  }
+  if (instrEl) instrEl.value = '';
+  document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens, of kies een instrument, om te zoeken.</p>';
   document.getElementById('addMemberModal').classList.add('visible');
   setTimeout(() => document.getElementById('memberSearchInput')?.focus(), 50);
 }
@@ -8416,12 +8790,16 @@ function openAddMemberModal(bandId) {
 function searchMembersToAdd(query) {
   clearTimeout(memberSearchTimer);
   const q = query.trim();
+  const instrument = document.getElementById('memberSearchInstrument')?.value || '';
   const resEl = document.getElementById('memberSearchResults');
   // TT-26: jokertekens (%, _, *) uit de zoekterm halen, anders kan een getypt
   // %-teken het ilike-patroon veel breder maken dan de gebruiker bedoelt.
   const qSafe = likeSafe(q);
-  if (q.length < 2 || qSafe.length < 2) {
-    resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens om te zoeken.</p>';
+  // V-17 (13-08-2026): zoeken kan nu ook zónder getypte naam, zolang er een
+  // instrument gekozen is — dat was precies de klacht ("je moet al weten
+  // wie je zoekt").
+  if (!instrument && (q.length < 2 || qSafe.length < 2)) {
+    resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens, of kies een instrument, om te zoeken.</p>';
     return;
   }
   resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Zoeken...</p>';
@@ -8434,9 +8812,19 @@ function searchMembersToAdd(query) {
       // toekomstige bandlid soms alleen van diens profielnaam.
       // TT-56 (12-08-2026): accepts_band_invites erbij, om de "Uitnodigen"-
       // knop hieronder te kunnen verbergen voor wie dat heeft uitgezet.
-      const { data: musicians, error } = await db.from('musicians')
-        .select('id, fname, username, city, profile_color, accepts_band_invites, musician_instruments(instrument)')
-        .or(`fname.ilike.%${qSafe}%,username.ilike.%${qSafe}%`).limit(15);
+      // V-17: bij een gekozen instrument gebruiken we !inner zodat de filter
+      // op musician_instruments.instrument ook echt de resultatenlijst raakt
+      // (zonder !inner filtert een geneste relatie alleen de sub-rijen, niet
+      // welke muzikanten worden teruggegeven).
+      let qb = db.from('musicians').select(
+        instrument
+          ? 'id, fname, username, city, profile_color, accepts_band_invites, musician_instruments!inner(instrument)'
+          : 'id, fname, username, city, profile_color, accepts_band_invites, musician_instruments(instrument)'
+      ).limit(15);
+      if (instrument) qb = qb.eq('musician_instruments.instrument', instrument);
+      if (q.length >= 2 && qSafe.length >= 2) qb = qb.or(`fname.ilike.%${qSafe}%,username.ilike.%${qSafe}%`);
+
+      const { data: musicians, error } = await qb;
       if (error) throw error;
 
       const filtered = (musicians||[]).filter(m => !existingIds.includes(m.id));
@@ -8450,17 +8838,20 @@ function searchMembersToAdd(query) {
         // hier geen "Uitnodigen"-knop. Deze tekst is alleen zichtbaar voor de
         // zoekende oprichter zelf, in dit besloten beheerscherm — geen
         // zichtbaar label op het publieke profiel van de muzikant zelf.
+        // V-18 (13-08-2026): een uitnodiging kwam tot nu toe zonder woorden
+        // aan — alleen een banner op Mijn Profiel, geen uitleg waarom. De
+        // knop opent nu eerst een kort tekstveld i.p.v. meteen uit te nodigen.
         const inviteAction = m.accepts_band_invites === false
           ? `<span style="font-size:12px;color:var(--muted);">Niet open voor uitnodigingen</span>`
-          : `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="addBandMember('${jsAttr(m.id)}')">Uitnodigen</button>`;
+          : `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="openInviteNote(this, '${jsAttr(m.id)}', '${jsAttr(memberName)}')">Uitnodigen</button>`;
         return `
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div class="member-search-row" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
           <div style="width:32px;height:32px;border-radius:50%;background:${safeColor(m.profile_color, '#888')};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${escHtml(memberName[0].toUpperCase())}</div>
           <div style="flex:1;">
             <div style="font-weight:600;font-size:14px;">${escHtml(memberName)}</div>
             <div style="font-size:12px;color:var(--muted);">${escHtml(m.city||'')}${(m.musician_instruments||[]).length ? ' · ' + escHtml(m.musician_instruments.map(x=>x.instrument).slice(0,2).join(', ')) : ''}</div>
           </div>
-          ${inviteAction}
+          <span class="member-invite-action">${inviteAction}</span>
         </div>`; }).join('');
     } catch (e) {
       resEl.innerHTML = `<p style="color:var(--danger);font-size:13px;">${friendlyErrorMessage(e)}</p>`;
@@ -8472,7 +8863,30 @@ function searchMembersToAdd(query) {
 // als lid op het bandprofiel zetten. Vanaf nu ontstaat er een uitnodiging
 // (status 'aangevraagd'); pas als de muzikant zelf bevestigt via de banner op
 // Mijn Profiel wordt het 'bevestigd' en is het lidmaatschap zichtbaar.
-async function addBandMember(musicianId) {
+// V-18 (13-08-2026): opent een kort tekstveld in de resultatenrij i.p.v.
+// meteen uit te nodigen — zo kan de oprichter een reden meegeven.
+function openInviteNote(btnEl, musicianId, memberName) {
+  const row = btnEl.closest('.member-search-row');
+  if (!row) return;
+  row.innerHTML = `
+    <div style="width:100%;">
+      <div style="font-size:13px;margin-bottom:6px;">Uitnodiging aan <strong>${escHtml(memberName)}</strong> — voeg een korte boodschap toe (optioneel):</div>
+      <textarea class="invite-note-input" maxlength="300" placeholder="Bijv. we zoeken een bassist voor onze covers, jouw profiel past goed bij ons!" style="width:100%;min-height:60px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:14px;"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn btn-primary" style="font-size:13px;padding:6px 14px;" onclick="sendInviteWithNote(this, '${jsAttr(musicianId)}')">Uitnodiging versturen</button>
+        <button class="btn btn-ghost" style="font-size:13px;padding:6px 14px;" onclick="searchMembersToAdd(document.getElementById('memberSearchInput').value)">Annuleren</button>
+      </div>
+    </div>`;
+  row.querySelector('.invite-note-input')?.focus();
+}
+
+function sendInviteWithNote(btnEl, musicianId) {
+  const row = btnEl.closest('.member-search-row');
+  const note = row?.querySelector('.invite-note-input')?.value.trim() || '';
+  addBandMember(musicianId, note);
+}
+
+async function addBandMember(musicianId, note) {
   try {
     // TT-56 (12-08-2026): defensieve check naast de verborgen knop hierboven
     // — zelfde patroon als de akkoord-checkbox bij registratie (TT-63): de
@@ -8492,6 +8906,16 @@ async function addBandMember(musicianId) {
       band_id: addMemberBandId, musician_id: musicianId, role: 'Lid', status: 'aangevraagd'
     });
     if (error) throw error;
+
+    // V-18: de boodschap komt binnen als gewoon bericht, zodat de ontvanger
+    // weet waarom hij gevraagd wordt — niet alleen een naam op een banner.
+    const trimmedNote = (note || '').trim();
+    const bandLabel = addMemberBandName ? `"${addMemberBandName}"` : 'onze band';
+    const text = trimmedNote
+      ? `Je bent uitgenodigd voor de band ${bandLabel}. ${trimmedNote}`
+      : `Je bent uitgenodigd voor de band ${bandLabel}. Bekijk de uitnodiging op je profiel.`;
+    await insertMessage(musicianId, text);
+
     showToast('Uitnodiging verstuurd.');
     document.getElementById('addMemberModal').classList.remove('visible');
     loadMyBands();
@@ -8510,7 +8934,9 @@ async function editBand(id) {
     status: b.status || 'zoekend',
     wanted: (b.band_wanted || []).map(w => w.instrument),
     color: b.profile_color || '#3ecfff',
-    niveau: b.niveau || null // TT-51
+    niveau: b.niveau || null, // TT-51
+    avatarUrl: b.avatar_url || null, // V-15
+    avatarPath: null
   };
   bandPostcodeResolved = !!b.zip;
   bandPostcodeFailStreak = 0;
@@ -8525,6 +8951,7 @@ async function editBand(id) {
   document.getElementById('bandCity').value = b.city || '';
   document.getElementById('bandPostcodeStatus').textContent = b.city ? `Gevonden: ${b.city}` : '';
   document.getElementById('bandDescription').value = b.description || '';
+  populateBandAvatarPreview(); // V-15
 
   document.querySelectorAll('#bandGenreGrid .genre-tag').forEach(t => {
     t.classList.toggle('selected', bandState.genres.includes(t.textContent));
@@ -8730,7 +9157,12 @@ async function saveBand() {
   if (!name) { showToast('Vul een bandnaam in.'); return; }
   if (!zip || !bandPostcodeResolved || !city) { showToast('Vul een geldige postcode in en wacht tot de woonplaats is gevonden.'); return; }
   if (!bandState.genres.length) { showToast('Selecteer minimaal 1 genre.'); return; }
-  if (!bandState.wanted.length) { showToast('Selecteer minimaal 1 instrument dat de band zoekt.'); return; }
+  // V-14 (13-08-2026): "Wij zoeken nog" is alleen verplicht bij de status
+  // "Zoekend naar leden". Een complete of inactieve band moet zichzelf
+  // kunnen opslaan zonder een instrument te verzinnen dat niet klopt.
+  if (bandState.status === 'zoekend' && !bandState.wanted.length) {
+    showToast('Selecteer minimaal 1 instrument dat de band zoekt.'); return;
+  }
 
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Maak eerst een muzikantprofiel aan.'); return; }
@@ -8744,6 +9176,7 @@ async function saveBand() {
         description: desc || null, genres: bandState.genres,
         status: bandState.status, city_source: bandCitySource,
         niveau: bandState.niveau || null, // TT-51, optioneel
+        avatar_url: bandState.avatarUrl || null, // V-15
       }).eq('id', bandId);
       if (uErr) throw uErr;
       await db.from('band_wanted').delete().eq('band_id', bandId);
@@ -8753,13 +9186,18 @@ async function saveBand() {
         description: desc || null, genres: bandState.genres,
         status: bandState.status, founder_id: mid, city_source: bandCitySource,
         niveau: bandState.niveau || null, // TT-51, optioneel
+        avatar_url: bandState.avatarUrl || null, // V-15
       }).select().single();
       if (bErr) throw bErr;
       bandId = band.id;
       await db.from('band_members').insert({ band_id: bandId, musician_id: mid, role: 'Oprichter', status: 'bevestigd' });
     }
 
-    await db.from('band_wanted').insert(bandState.wanted.map(instrument => ({ band_id: bandId, instrument })));
+    // V-14: bij een complete/inactieve band kan bandState.wanted leeg zijn —
+    // een insert met een lege lijst is dan gewoon een no-op.
+    if (bandState.wanted.length) {
+      await db.from('band_wanted').insert(bandState.wanted.map(instrument => ({ band_id: bandId, instrument })));
+    }
 
     resetBandForm();
     document.getElementById('createBandForm').style.display = 'none';
@@ -8792,7 +9230,7 @@ async function loadMyBands() {
 
   const bandIds = memberships.map(m => m.band_id);
   const { data: bands } = await db.from('bands')
-    .select(`*, band_members(musician_id, role, status, musicians(fname, username, profile_color)), band_wanted(instrument)`)
+    .select(`*, band_members(musician_id, role, status, founder_offer, musicians(fname, username, profile_color)), band_wanted(instrument)`)
     .in('id', bandIds).order('updated_at', { ascending: false });
 
   const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
@@ -8805,26 +9243,46 @@ async function loadMyBands() {
     const pending = (b.band_members||[]).filter(m => m.status === 'aangevraagd');
     const wanted = (b.band_wanted||[]);
     const isFounder = b.founder_id === mid;
+    // V-16 (13-08-2026): staat er al een lopend overname-aanbod (founder_offer)?
+    // Dan geen nieuwe "Ik stop als bandleider"-knop, maar de wachtstand.
+    const offerPending = isFounder && confirmed.some(m => m.founder_offer);
     const status = statusLabels[b.status] ? b.status : '';
     return `<div class="band-card">
       <div class="band-card-header" onclick="openBandModal('${jsAttr(b.id)}')">
-        <div class="band-avatar" style="background:${col};">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>
+        ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar" style="background:${col};">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>`}
         <div style="flex:1;">
           <div class="band-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
           <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
         </div>
         <span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span>
         ${isFounder ? `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); editBand('${jsAttr(b.id)}');">Band bewerken</button>
-        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); openAddMemberModal('${jsAttr(b.id)}');">+ Lid toevoegen</button>` : ''}
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); openAddMemberModal('${jsAttr(b.id)}','${jsAttr(b.name)}');">+ Lid toevoegen</button>`
+        : `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); leaveBand('${jsAttr(b.id)}','${jsAttr(b.name)}');">Band verlaten</button>`}
       </div>
+      ${isFounder ? `
+      <div style="padding:0 20px;">
+        ${offerPending
+          ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding:10px 0;border-top:1px solid var(--border);">
+              <span>Gevraagd of iemand het oprichterschap overneemt — wachten op reactie.</span>
+              <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="event.stopPropagation(); withdrawFounderOffer('${jsAttr(b.id)}');">Aanbod intrekken</button>
+            </div>`
+          : `<div style="padding:10px 0;border-top:1px solid var(--border);">
+              <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); askFounderTransfer('${jsAttr(b.id)}');">Ik stop als bandleider</button>
+            </div>`}
+      </div>` : ''}
       <div class="band-card-body">
         ${b.description ? `<p style="font-size:13px;color:var(--muted);margin-bottom:12px;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
         <div class="band-members-row">
           ${confirmed.map(m => {
             const memberName = displayNameOf(m.musicians);
+            // V-16: de oprichter kan een ander lid verwijderen — niet zichzelf,
+            // dat gaat via "Ik stop als bandleider" hierboven.
+            const removeBtn = (isFounder && m.musician_id !== mid)
+              ? `<button type="button" onclick="event.stopPropagation(); removeMember('${jsAttr(b.id)}','${jsAttr(m.musician_id)}','${jsAttr(memberName)}');" title="Verwijderen" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 0 0 4px;">✕</button>`
+              : '';
             return `<div class="band-member-chip">
             <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
-            ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">${escHtml(m.role||'')}</span>
+            ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">${escHtml(m.role||'')}</span>${removeBtn}
           </div>`; }).join('')}
           ${isFounder ? pending.map(m => {
             const memberName = displayNameOf(m.musicians);
@@ -8876,10 +9334,17 @@ async function openBandModal(id) {
   const statusLabels = { zoekend: 'Zoekend naar leden', compleet: 'Band is compleet', inactief: 'Inactief' };
   const status = statusLabels[b.status] ? b.status : '';
 
+  // V-13 (13-08-2026): tot nu toe had een bandprofiel geen enkele manier om
+  // contact te leggen. Het bericht gaat naar de oprichter — dat is de enige
+  // die op dit moment reageert op aanmeldingen. De oprichter wordt gezocht
+  // in de al opgehaalde ledenlijst, niet via een aparte databasevraag.
+  const founderMember = hasOwnProfile ? confirmed.find(m => m.role === 'Oprichter') : null;
+  const isOwnBand = !!(founderMember && myMusicianId && founderMember.musicians?.id === myMusicianId);
+
   document.getElementById('bandModalContent').innerHTML = `
     <div style="height:8px;background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;"></div>
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
-      <div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>
+      ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border);margin-bottom:0;flex-shrink:0;">` : `<div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>`}
       <div style="min-width:0;flex:1;">
         <div class="profile-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
         <div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
@@ -8900,7 +9365,13 @@ async function openBandModal(id) {
       <div class="profile-songs-title" style="margin-top:16px;">Wij zoeken nog</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
         ${(b.band_wanted||[]).map(w => `<span class="wanted-chip">${escHtml(w.instrument)}</span>`).join('')}
-      </div>` : ''}`;
+      </div>` : ''}
+    ${!isOwnBand ? (hasOwnProfile
+      ? (founderMember
+        ? `<button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="openMessageComposer('${jsAttr(founderMember.musicians.id)}','${jsAttr(displayNameOf(founderMember.musicians))}')">Stuur een bericht aan deze band →</button>`
+        : '')
+      : `<button class="btn btn-primary" style="width:100%;margin-top:20px;" onclick="document.getElementById('bandModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`
+    ) : ''}`;
 }
 
 // ─── Auth extras ─────────────────────────────────────────────────────────────
