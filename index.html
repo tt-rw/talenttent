@@ -4301,8 +4301,14 @@ async function runSearch() {
       matches.forEach(m => { matchInfo[m.musician_id] = m; });
 
       const ids = matches.map(m => m.musician_id);
+      // B-01 tweede stap (18-08-2026): birth_date staat niet meer in deze
+      // select. Een ingelogde gebruiker mag de kolom niet meer rechtstreeks
+      // lezen (zie tt-b01-tweede-stap-geboortedatum.sql) — ook niet van
+      // zichzelf, dat raakt deze zoekresultatenlijst toch niet. Leeftijd komt
+      // apart binnen via tt_musicians_ages(), zelfde functie als bij het
+      // profiel-modal hieronder.
       const { data, error } = await db.from('musicians').select(`
-        id, fname, username, birth_date, city, zip, bio, goal,
+        id, fname, username, city, zip, bio, goal,
         profile_color, avatar_url, updated_at,
         musician_instruments(instrument, niveau),
         musician_genres(genre),
@@ -4310,6 +4316,19 @@ async function runSearch() {
       `).in('id', ids);
       if (error) throw error;
       musicians = data;
+
+      if (ids.length) {
+        const { data: ages, error: ageErr } = await db.rpc('tt_musicians_ages', { ids });
+        if (!ageErr && ages) {
+          const ageById = {};
+          ages.forEach(a => { ageById[a.id] = a.age; });
+          musicians.forEach(m => { m.age = ageById[m.id]; });
+        }
+        // Gaat tt_musicians_ages om wat voor reden dan ook mis: musicians
+        // blijft gewoon gevuld, alleen zonder leeftijd — geen kapot scherm.
+        // ageOf() valt dan terug op calcAgeFromISO(undefined) = 0, niet ideaal
+        // maar geen crash. Zie ook TT-U31-achtige foutafhandeling elders.
+      }
 
       // Straal is altijd actief voor een ingelogde gebruiker (eigen stad, of
       // het getypte alternatief hierboven) — Plaats mag dus nooit óók nog
@@ -4760,8 +4779,12 @@ async function openMusicianModal(id) {
   let m = null, error = null;
 
   if (hasOwnProfile) {
+    // B-01 tweede stap (18-08-2026): geen birth_date meer in deze select —
+    // deze modal opent ook wanneer je iemand anders' profiel bekijkt, dus
+    // een ingelogde gebruiker mag hier nooit de ruwe geboortedatum van een
+    // ander binnenkrijgen. Leeftijd komt apart via tt_musicians_ages().
     const res = await db.from('musicians').select(`
-      id, fname, username, birth_date, city, bio, goal,
+      id, fname, username, city, bio, goal,
       rehearsal_frequency, musical_ambition,
       profile_color, avatar_url, updated_at,
       musician_instruments(instrument, niveau),
@@ -4770,6 +4793,10 @@ async function openMusicianModal(id) {
       musician_media(media_type, url, platform)
     `).eq('id', id).single();
     m = res.data; error = res.error;
+    if (m) {
+      const { data: ages } = await db.rpc('tt_musicians_ages', { ids: [id] });
+      m.age = (ages && ages[0]) ? ages[0].age : undefined;
+    }
   } else {
     // Zonder eigen profiel: publieke RPC (tabel zelf blijft op slot voor anon).
     const res = await db.rpc('tt_get_musicians_public', { ids: [id] });
@@ -5519,6 +5546,10 @@ async function editMyProfile() {
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Je hebt nog geen profiel om te bewerken.'); return; }
 
+  // B-01 tweede stap (18-08-2026): `*` gaf altijd ook birth_date terug. Die
+  // kolom is nu afgesloten voor authenticated (ook voor de eigen rij), dus
+  // `*` levert 'm niet meer op. Het bewerkformulier heeft de eigen datum wél
+  // nodig — die komt apart binnen via tt_get_my_birth_date().
   const { data: m, error } = await db.from('musicians').select(`
     *, musician_instruments(instrument, niveau), musician_genres(genre),
     musician_songs(song_title, song_artist, mastery_level),
@@ -5526,6 +5557,9 @@ async function editMyProfile() {
   `).eq('id', mid).single();
 
   if (error || !m) { showToast('Kon profiel niet laden.'); return; }
+
+  const { data: myBirthDate } = await db.rpc('tt_get_my_birth_date');
+  m.birth_date = myBirthDate;
 
   // Dit is een bewuste bewerking van een (mogelijk al afgerond) profiel, geen
   // onboarding — state.onboarding blijft dus false, ook als het profiel door
@@ -6488,7 +6522,11 @@ function scheduleUsernameCheck2() {
 async function checkUsernameGate() {
   const mid = await getMyMusicianId();
   if (!mid) return false;
-  const { data, error } = await db.from('musicians').select('username, fname, birth_date').eq('id', mid).single();
+  // B-01 tweede stap (18-08-2026): birth_date staat niet meer in deze
+  // select — die kolom is voor authenticated afgesloten. Dit is weliswaar
+  // altijd de eigen rij (mid = eigen id), maar tt_get_my_birth_date() is de
+  // enige weg die de kolom nog mag lezen, dus ook hier via die functie.
+  const { data, error } = await db.from('musicians').select('username, fname').eq('id', mid).single();
   if (error || !data) return false;
   if (data.username) return false;
 
@@ -6498,7 +6536,8 @@ async function checkUsernameGate() {
   // die declaratie.
   usernameGateMid = mid;
 
-  usernameGateAge = calcAgeFromISO(data.birth_date);
+  const { data: myBirthDate } = await db.rpc('tt_get_my_birth_date');
+  usernameGateAge = calcAgeFromISO(myBirthDate);
   usernameGateFname = data.fname || '';
   const hintEl = document.getElementById('usernameGateAgeHint');
   if (hintEl) {
