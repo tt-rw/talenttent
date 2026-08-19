@@ -1210,7 +1210,12 @@
   .landing-btn { padding: 15px 32px; font-size: 15px; }
   .landing-steps { padding: 48px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 48px; }
   .landing-steps-title { font-family: 'Roboto', sans-serif; font-size: 28px; letter-spacing: 1px; color: var(--muted); text-align: center; margin-bottom: 32px; }
-  .landing-steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  /* Bugfix 19-08-2026: was vast op 3 kolommen naast elkaar, ongeacht
+     schermbreedte — brak (horizontale overflow) onder ~360px. Nu fluïde:
+     zoveel kolommen als passen, elk minimaal 220px. Op een telefoon wordt dat
+     vanzelf 1 kolom, op de brede weergave (main is max. 712px content) precies
+     3 — geen vast omslagpunt nodig, werkt op elke breedte. */
+  .landing-steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
   .landing-step { text-align: center; padding: 28px 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); position: relative; }
   .landing-step-num { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; background: var(--accent); color: #000; border-radius: 50%; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .landing-step-label { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
@@ -2951,7 +2956,7 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
       <div>
         <div class="filter-title">Mijn bands</div>
-        <p style="font-size:13px;color:var(--muted);">Bands waar jij oprichter of lid van bent</p>
+        <p style="font-size:13px;color:var(--muted);">Bands waar jij beheerder of lid van bent</p>
       </div>
       <button class="btn btn-primary" onclick="showCreateBandForm()">+ Nieuwe band</button>
     </div>
@@ -4525,6 +4530,16 @@ function displayNameOf(m) {
   return (m && (m.fname || m.username)) || 'Muzikant';
 }
 
+// Bugfix/rename 19-08-2026 (Ronald): de zichtbare rol heet voortaan
+// "Beheerder" i.p.v. "Oprichter" — één beheerder per band, geen meervoud.
+// De opgeslagen waarde in band_members.role blijft letterlijk 'Oprichter';
+// alleen de weergave verandert. Dat voorkomt een databasescript en risico op
+// bestaande rijen. Elke plek die role aan de gebruiker toont, gaat via deze
+// functie — nooit meer m.role rechtstreeks in de HTML.
+function roleLabel(role) {
+  return role === 'Oprichter' ? 'Beheerder' : (role || 'Lid');
+}
+
 // TT-51-uitbreiding (12-08-2026, Ronalds beslissing): sterren in het
 // zoekresultaat voor het gezochte instrument. Een muzikant kan meerdere
 // instrumenten met elk een eigen niveau hebben — zonder een actief
@@ -5270,7 +5285,7 @@ async function openDeleteAccountModal() {
     pendingSoloBandIds = soloBandIds;
 
     area.innerHTML = !decisions.length ? '' : `
-      <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Je bent oprichter van ${decisions.length === 1 ? 'een band' : `${decisions.length} bands`} met andere leden. Kies per band wat er gebeurt:</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Je bent beheerder van ${decisions.length === 1 ? 'een band' : `${decisions.length} bands`} met andere leden. Kies per band wat er gebeurt:</div>
       ${decisions.map(b => `
         <div class="delete-account-band-row" data-band-id="${jsAttr(b.id)}" style="margin:10px 0;padding:12px;border:1px solid var(--border);border-radius:8px;">
           <div style="font-weight:700;margin-bottom:8px;">${escHtml(b.name)}</div>
@@ -5546,12 +5561,16 @@ async function editMyProfile() {
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Je hebt nog geen profiel om te bewerken.'); return; }
 
-  // B-01 tweede stap (18-08-2026): `*` gaf altijd ook birth_date terug. Die
-  // kolom is nu afgesloten voor authenticated (ook voor de eigen rij), dus
-  // `*` levert 'm niet meer op. Het bewerkformulier heeft de eigen datum wél
-  // nodig — die komt apart binnen via tt_get_my_birth_date().
+  // Bugfix 19-08-2026: het commentaar hierboven klopte niet. Een sterretje-
+  // select faalt in zijn geheel zodra één kolom niet leesbaar is — Postgres
+  // laat 'm niet stilzwijgend weg. Sinds B-01 tweede stap (18-08-2026) is dat
+  // precies wat hier gebeurde: birth_date niet leesbaar → hele vraag faalt →
+  // "Kon profiel niet laden". Nu een vaste kolomlijst, zonder birth_date —
+  // die komt al apart binnen via tt_get_my_birth_date() hieronder.
   const { data: m, error } = await db.from('musicians').select(`
-    *, musician_instruments(instrument, niveau), musician_genres(genre),
+    id, fname, lname, username, zip, city, bio, goal,
+    rehearsal_frequency, musical_ambition, repertoire_type, city_source,
+    avatar_url, musician_instruments(instrument, niveau), musician_genres(genre),
     musician_songs(song_title, song_artist, mastery_level),
     musician_media(media_type, url, platform)
   `).eq('id', mid).single();
@@ -5615,8 +5634,20 @@ async function loadMyProfile() {
   const actionsEl = document.getElementById('profileActions');
   if (actionsEl) actionsEl.style.display = 'none';
 
+  // Bugfix 19-08-2026 (Ronald, live gemeld): dit was tot vandaag een
+  // sterretje-select. Sinds B-01 tweede stap (18-08-2026) mag authenticated
+  // birth_date niet meer lezen, ook niet van zichzelf. Postgres staat een
+  // sterretje-select alleen toe als je écht alle kolommen mag lezen — kan dat
+  // niet, dan faalt de hele vraag (geen gedeeltelijk resultaat). Precies dat
+  // gebeurde hier: elk ingelogd profiel zag zijn eigen profiel niet meer, met
+  // "Nog geen profiel" als gevolg. Zelfde oplossing als eerder al toegepast
+  // bij de zoekresultaten en de profielmodal: vaste kolomlijst, geen
+  // birth_date, leeftijd apart via tt_musicians_ages().
   const { data: m, error } = await db.from('musicians')
-    .select(`*, musician_instruments(instrument, niveau), musician_genres(genre),
+    .select(`id, fname, username, city, bio, goal,
+             rehearsal_frequency, musical_ambition, repertoire_type,
+             profile_color, avatar_url, updated_at, accepts_band_invites,
+             musician_instruments(instrument, niveau), musician_genres(genre),
              musician_songs(song_title, song_artist, mastery_level),
              musician_media(media_type, url, platform)`)
     .eq('user_id', currentUser.id)
@@ -5630,6 +5661,9 @@ async function loadMyProfile() {
     </div>`;
     return;
   }
+
+  const { data: myAges } = await db.rpc('tt_musicians_ages', { ids: [m.id] });
+  m.age = (myAges && myAges[0]) ? myAges[0].age : undefined;
 
   el.innerHTML = buildMusicianDetailHTML(m, true) + renderProgressPanel(m) + renderCompletenessMeter(m);
   if (actionsEl) actionsEl.style.display = 'flex';
@@ -5742,8 +5776,8 @@ async function loadFounderOffers(musicianId) {
       const naam = off.bands?.name || 'Een band';
       return `
       <div style="border:1px solid ${col};border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
-        <div style="font-size:15px;font-weight:700;margin-bottom:4px;">De oprichter van ${escHtml(naam)} stopt als bandleider</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Wil jij het oprichterschap overnemen? Zeg je nee, dan blijft de huidige oprichter voorlopig aan.</div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px;">De beheerder van ${escHtml(naam)} stopt</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Wil jij het beheer overnemen? Zeg je nee, dan blijft de huidige beheerder voorlopig aan.</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="respondToFounderOffer('${jsAttr(off.band_id)}', true)">Ik neem het over</button>
           <button class="btn btn-ghost" style="font-size:13px;padding:8px 16px;" onclick="respondToFounderOffer('${jsAttr(off.band_id)}', false)">Nee, liever niet</button>
@@ -5771,10 +5805,22 @@ async function respondToFounderOffer(bandId, accept) {
       // De vraag is beantwoord — het aanbod bij eventuele andere gevraagde
       // leden sluit automatisch mee, zij hoeven niet ook nog te reageren.
       await db.from('band_members').update({ founder_offer: false }).eq('band_id', bandId).eq('founder_offer', true);
-      // V-16: "zo ja dan volgt een overdracht" — de oude oprichter stapt zelf
+      // V-16: "zo ja dan volgt een overdracht" — de oude beheerder stapt zelf
       // uit de band. Diens muzikantprofiel blijft uiteraard gewoon bestaan.
-      if (oldFounderId) await db.from('band_members').delete().eq('band_id', bandId).eq('musician_id', oldFounderId);
-      showToast('Je bent nu oprichter van deze band.');
+      // Bugfix 19-08-2026 (Ronald, live gemeld): deze verwijdering controleerde
+      // haar eigen foutmelding niet. Mislukte hij stilzwijgend (bijv. door een
+      // rechtenregel die alleen leden hun eigen rij laat verwijderen), dan
+      // bleef de oude beheerder als lid staan — met het label "Oprichter" nog
+      // zichtbaar naast de nieuwe beheerder. Nu een zichtbare melding bij zo'n
+      // mislukking, in plaats van een stille, onopgemerkte fout.
+      let oldFounderRemoveError = null;
+      if (oldFounderId) {
+        const { error: delErr } = await db.from('band_members').delete().eq('band_id', bandId).eq('musician_id', oldFounderId);
+        oldFounderRemoveError = delErr;
+      }
+      showToast(oldFounderRemoveError
+        ? 'Je bent nu beheerder. Let op: de vorige beheerder kon niet automatisch als lid worden verwijderd — vraag diegene om zelf "Band verlaten" te gebruiken.'
+        : 'Je bent nu beheerder van deze band.');
     } else {
       await db.from('band_members').update({ founder_offer: false }).eq('band_id', bandId).eq('musician_id', mid);
       showToast('Aanbod geweigerd.');
@@ -5801,7 +5847,7 @@ async function askFounderTransfer(bandId) {
 
     if (!others.length) {
       showConfirm(
-        `Je bent het enige bevestigde lid van "${band.name}". Er is niemand om het oprichterschap aan over te dragen. Stoppen betekent dat de band wordt opgeheven.`,
+        `Je bent het enige bevestigde lid van "${band.name}". Er is niemand om het beheer aan over te dragen. Stoppen betekent dat de band wordt opgeheven.`,
         () => dissolveBand(bandId),
         'Band opheffen'
       );
@@ -5809,7 +5855,7 @@ async function askFounderTransfer(bandId) {
     }
 
     showConfirm(
-      `Je vraagt ${others.length === 1 ? 'het andere bevestigde lid' : `de ${others.length} andere bevestigde leden`} van "${band.name}" of iemand het oprichterschap wil overnemen. Neemt niemand het over, dan blijf jij voorlopig oprichter.`,
+      `Je vraagt ${others.length === 1 ? 'het andere bevestigde lid' : `de ${others.length} andere bevestigde leden`} van "${band.name}" of iemand het beheer wil overnemen. Neemt niemand het over, dan blijf jij voorlopig beheerder.`,
       () => sendFounderOffer(bandId, others.map(m => m.musician_id)),
       'Vragen'
     );
@@ -9363,11 +9409,11 @@ async function loadMyBands() {
       <div style="padding:0 20px;">
         ${offerPending
           ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding:10px 0;border-top:1px solid var(--border);">
-              <span>Gevraagd of iemand het oprichterschap overneemt — wachten op reactie.</span>
+              <span>Gevraagd of iemand het beheer overneemt — wachten op reactie.</span>
               <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="event.stopPropagation(); withdrawFounderOffer('${jsAttr(b.id)}');">Aanbod intrekken</button>
             </div>`
           : `<div style="padding:10px 0;border-top:1px solid var(--border);">
-              <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); askFounderTransfer('${jsAttr(b.id)}');">Ik stop als bandleider</button>
+              <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); askFounderTransfer('${jsAttr(b.id)}');">Ik stop als beheerder</button>
             </div>`}
       </div>` : ''}
       <div class="band-card-body">
@@ -9382,7 +9428,7 @@ async function loadMyBands() {
               : '';
             return `<div class="band-member-chip">
             <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
-            ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">${escHtml(m.role||'')}</span>${removeBtn}
+            ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">${escHtml(roleLabel(m.role))}</span>${removeBtn}
           </div>`; }).join('')}
           ${isFounder ? pending.map(m => {
             const memberName = displayNameOf(m.musicians);
@@ -9459,7 +9505,7 @@ async function openBandModal(id) {
         const memberName = displayNameOf(m.musicians);
         return `<div class="band-member-chip">
         <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
-        <span><strong>${escHtml(memberName)}</strong> · ${escHtml(m.role||'Lid')}</span>
+        <span><strong>${escHtml(memberName)}</strong> · ${escHtml(roleLabel(m.role))}</span>
       </div>`; }).join('')}
     </div>
     ${(b.band_wanted||[]).length ? `
