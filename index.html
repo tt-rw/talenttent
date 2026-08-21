@@ -1848,6 +1848,25 @@
 
   .modal-close:hover { color: var(--text); border-color: #555; }
 
+  /* TT-116-vervolg (21-08-2026): kleine terugknop, spiegelbeeld van
+     .modal-close, voor de instrumentkeuze-sheet. Alleen zichtbaar als er
+     ook echt een vorige stap is om naar terug te gaan. */
+  .modal-back {
+    position: absolute;
+    top: 16px; left: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+  .modal-back:hover { color: var(--text); border-color: #555; }
+  .modal-back[hidden] { display: none; }
+
   /* V-09 (13-08-2026): de contactknop op een profiel stond onderaan een lang
      scherm — bij een gevuld profiel moest je er lang naartoe scrollen. Deze
      twee klassen maken van modal-box een kolom: de inhoud scrolt in het
@@ -1984,11 +2003,19 @@
   .picker-list-item:first-child { border-top: none; }
   .picker-list-item:hover { color: var(--accent); }
   .picker-list-empty { padding: 14px 4px; font-size: 14px; color: var(--muted); }
-  .picker-list-wrap { max-height: 60vh; overflow-y: auto; }
 
   .picker-level-blurb {
     font-size: 12px; color: var(--muted); line-height: 1.4; margin-top: 4px;
   }
+
+  /* 21-08-2026: basis-minimumhoogte; de werkelijke gelijke hoogte wordt na
+     het renderen door JS bepaald (equalizeLevelChoiceHeights), op basis van
+     de langste tekst op dat moment. Zo blijft dit correct zodra de
+     voorlopige toelichtingstekst wordt vervangen door de definitieve
+     (actielijst TT-117), zonder dat deze waarde met de hand moet worden
+     bijgesteld. */
+  .level-choice { min-height: 56px; align-items: flex-start; }
+  .level-choice .level-choice-stars { margin-top: 2px; }
 
   @media (max-width: 560px) {
     header { padding: 16px 20px 12px; flex-direction: column; align-items: flex-start; }
@@ -2435,25 +2462,19 @@
   <!-- STEP 2: Instrument & genre -->
   <div class="panel" id="step1">
     <div class="panel-title">Jouw geluid</div>
-    <div class="panel-sub">Selecteer je instrument(en), het niveau per instrument, en de muziekstijlen die je speelt.</div>
+    <div class="panel-sub">Selecteer je instrument(en), het niveau per instrument, en de genres die je speelt.</div>
 
     <div class="field-group single" style="margin-bottom:24px;">
       <div class="field">
         <label>Mijn Instrumenten <span class="req">*</span></label>
-        <!-- TT-51-uitbreiding (12-08-2026): niveau kiezen zit nu in de knop
-             zelf — kort klikken selecteert/deselecteert, ingedrukt houden en
-             naar een ster slepen zet het niveau (1-5), verplicht per
-             gekozen instrument. -->
-        <p style="font-size:11px;color:var(--muted);margin:6px 0 8px;">Kies hier je instrument en vervolgens je niveau.</p>
-        <!-- Feedback Ronald (13-08-2026): de infoknop stond direct tegen het
-             label "Mijn Instrumenten" aan gedrukt. Nu een eigen regel, met
-             eigen tekst, en ruimte boven en onder. -->
-        <div style="display:flex;align-items:center;gap:8px;margin:0 0 10px;">
+        <!-- 21-08-2026: de losse zin "Kies hier je instrument en vervolgens
+             je niveau." stond dubbel met de panel-sub hierboven — weggehaald. -->
+        <div style="display:flex;align-items:center;gap:8px;margin:6px 0 10px;">
           <span style="font-size:12px;color:var(--muted);">Toelichting op niveau:</span>
           <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
         </div>
         <div class="picker-field" id="instrumentPickerField" onclick="openInstrumentPicker()">
-          <span class="picker-field-label" id="instrumentPickerFieldLabel">Instrument toevoegen…</span>
+          <span class="picker-field-label" id="instrumentPickerFieldLabel">Kies een instrument</span>
           <span class="picker-field-chevron">▾</span>
         </div>
         <div class="picker-badge-row" id="instrumentBadgeRow"></div>
@@ -2462,9 +2483,9 @@
 
     <div class="field-group single">
       <div class="field">
-        <label>Mijn Muziekstijl(en) <span class="req">*</span></label>
+        <label>Mijn Genre(s) <span class="req">*</span></label>
         <div class="picker-field" id="genrePickerField">
-          <span class="picker-field-label" id="genrePickerFieldLabel">Muziekstijl toevoegen…</span>
+          <span class="picker-field-label" id="genrePickerFieldLabel">Kies een genre</span>
           <span class="picker-field-chevron">▾</span>
         </div>
         <div class="picker-badge-row" id="genreBadgeRow"></div>
@@ -3143,7 +3164,7 @@
       <div class="panel-title" style="margin-bottom:20px;">Over ons</div>
       <div style="font-size:15px;line-height:1.7;color:var(--text);">
         <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat zijn we?</strong> The Talent Tent is een verzamelplaats voor muzikanten. We zijn gestart voor jonge muzikanten die veel oefenen, maar andere muzikanten niet goed weten te vinden om samen te spelen. Dit willen wij overbruggen. Ondertussen zien we ook meer oudere muzikanten in de Tent.</p>
-        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat doen we?</strong> In de Tent heb je je persoonlijke pagina met je instrumenten, muziekstijlen en repertoire — en die van je eigen band, als je die hebt. Met de zoekfunctie vind je muzikanten en bands bij jou in de buurt: op instrument, op stijl, op afstand, of op de nummers die je speelt. We zien je graag op het podium.</p>
+        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat doen we?</strong> In de Tent heb je je persoonlijke pagina met je instrumenten, genres en repertoire — en die van je eigen band, als je die hebt. Met de zoekfunctie vind je muzikanten en bands bij jou in de buurt: op instrument, op stijl, op afstand, of op de nummers die je speelt. We zien je graag op het podium.</p>
         <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Hoe werkt het?</strong> Je maakt je persoonlijke pagina aan, en eventueel een bandpagina. Hoe vollediger je pagina, hoe beter anderen je kunnen vinden — de volledigheidsmeter op je profiel laat zien wat er nog ontbreekt. Wil je alleen applaus of juist gevonden worden? Hou je profiel dan actueel: profielen die lang niet zijn bijgewerkt zakken naar onderen in de zoekresultaten.</p>
         <p>Als je er klaar voor bent dan kan je via de Tent muzikanten of bands bij jou in de buurt zoeken om samen muziek te maken. Bands kunnen via de Tent nieuwe bandleden zoeken, of tijdelijke bandleden voor een optreden. We helpen jullie graag het podium op.</p>
       </div>
@@ -3471,30 +3492,34 @@
      Twee stappen in dezelfde modal-box: eerst de instrumentenlijst
      (#instrumentPickStep), dan de niveaukeuze (#instrumentLevelStep, bestond
      al sinds TT-U21). Tikken op een bestaande badge opent direct de
-     niveaustap, met de huidige keuze aangevinkt (niveau wisselen). -->
+     niveaustap, met de huidige keuze aangevinkt (niveau wisselen).
+     21-08-2026: hergebruikt nu .modal-box-sticky-footer (bestond al voor het
+     muzikantprofiel, V-09) zodat de lijst de volledige beschikbare
+     schermhoogte vult i.p.v. een vaste 60vh — op een lange telefoon liet dat
+     hem eerder onterecht compleet lijken. De knoppen "Instrument
+     verwijderen" en "Volledige toelichting" staan nu samen in de vaste
+     voettekst, gelijke breedte, uitgelijnd met de niveauknoppen erboven. -->
 <div class="modal-overlay" id="instrumentLevelModal" onclick="if(event.target===this)closeInstrumentLevelSheet()">
-  <div class="modal-box" style="max-width:520px;">
+  <div class="modal-box modal-box-sticky-footer" style="max-width:520px;">
+    <button class="modal-back" id="instrumentLevelBackBtn" onclick="backToInstrumentPick()" aria-label="Terug naar de instrumentenlijst" hidden><span aria-hidden="true">←</span></button>
     <button class="modal-close" onclick="closeInstrumentLevelSheet()" aria-label="Sluiten">✕</button>
 
-    <div id="instrumentPickStep">
+    <div id="instrumentPickStep" class="modal-scroll-area">
       <div class="filter-title" style="margin-bottom:14px;padding-right:52px;">Kies een instrument</div>
-      <div class="picker-list-wrap" id="instrumentPickItems"></div>
+      <div id="instrumentPickItems"></div>
     </div>
 
-    <div id="instrumentLevelStep" style="display:none;">
-      <div class="filter-title" id="instrumentLevelTitle" style="margin-bottom:4px;padding-right:52px;">Wat is je huidige niveau?</div>
+    <div id="instrumentLevelStep" class="modal-scroll-area" style="display:none;">
+      <div class="filter-title" id="instrumentLevelTitle" style="margin-bottom:4px;padding-left:52px;padding-right:52px;">Wat is je huidige niveau?</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px;" id="instrumentLevelSubtitle">Kies het niveau waar je het dichtst bij in de buurt zit.</p>
       <div id="instrumentLevelChoices"></div>
-      <!-- Feedback Ronald (12-08-2026): titel herschreven naar "Wat is je
-           huidige niveau voor X?" (algemener, minder een prestatievraag),
-           "Het is geen examen" weg. "Terug" verwijdert nu het instrument
-           niet meer (zie removeInstrumentFromSheet hieronder, nu een losse
-           knop) en is verborgen als je vanaf een badge direct hier kwam. -->
-      <div style="display:flex;gap:12px;margin-top:8px;">
-        <button type="button" class="btn btn-ghost" id="instrumentLevelBackBtn" style="flex:1;" onclick="backToInstrumentPick()">Terug</button>
-        <button type="button" class="btn btn-ghost" style="flex:1;" onclick="openMusicianNiveauInfoModal()">Volledige toelichting op dit niveau</button>
+    </div>
+
+    <div class="modal-sticky-footer" id="instrumentLevelFooter" style="display:none;">
+      <div style="display:flex;gap:12px;">
+        <button type="button" class="btn btn-ghost" style="flex:1;min-width:0;color:var(--danger);" onclick="removeInstrumentFromSheet()">Instrument verwijderen</button>
+        <button type="button" class="btn btn-ghost" style="flex:1;min-width:0;" onclick="openMusicianNiveauInfoModal()">Volledige toelichting op dit niveau</button>
       </div>
-      <button type="button" class="btn btn-ghost" style="width:100%;margin-top:8px;color:var(--danger);" onclick="removeInstrumentFromSheet()">Instrument verwijderen</button>
     </div>
   </div>
 </div>
@@ -3502,12 +3527,15 @@
 <!-- TT-116 (21-08-2026): gedeeld keuzescherm voor de "kies-en-badge"-picker,
      gebruikt door alle instrument/genre-velden zonder niveau (7 van de 8
      plekken — alleen de eigen-instrumentkeuze in de wizard heeft een niveau,
-     zie instrumentLevelModal hierboven). -->
+     zie instrumentLevelModal hierboven). Zelfde sticky-footer-opbouw als
+     hierboven, hier zonder voettekst (die blijft leeg en dus onzichtbaar). -->
 <div class="modal-overlay" id="pickerListModal" onclick="if(event.target===this)closePickerList()">
-  <div class="modal-box" style="max-width:480px;">
+  <div class="modal-box modal-box-sticky-footer" style="max-width:480px;">
     <button class="modal-close" onclick="closePickerList()" aria-label="Sluiten">✕</button>
-    <div class="filter-title" id="pickerListTitle" style="margin-bottom:14px;padding-right:52px;"></div>
-    <div class="picker-list-wrap" id="pickerListItems"></div>
+    <div class="modal-scroll-area">
+      <div class="filter-title" id="pickerListTitle" style="margin-bottom:14px;padding-right:52px;"></div>
+      <div id="pickerListItems"></div>
+    </div>
   </div>
 </div>
 
@@ -4256,7 +4284,7 @@ function initSearchFilters() {
     fieldId: 'filterInstrumentsField', badgeRowId: 'filterInstrumentsBadgeRow',
     options: INSTRUMENTS, getList: () => filterInstruments,
     singleMax: true, exceptionValue: 'Zang',
-    placeholder: 'Instrument kiezen…', noun: 'instrument(en)',
+    placeholder: 'Kies een instrument',
     sheetTitle: 'Kies een instrument',
     onChange: runSearch
   });
@@ -4265,7 +4293,7 @@ function initSearchFilters() {
     id: 'filterGenres',
     fieldId: 'filterGenresField', badgeRowId: 'filterGenresBadgeRow',
     options: GENRES, getList: () => filterGenres,
-    placeholder: 'Genre kiezen…', noun: 'genre(s)',
+    placeholder: 'Kies een genre',
     sheetTitle: 'Kies een genre',
     onChange: runSearch
   });
@@ -7204,11 +7232,16 @@ function renderTrackResults(ac, recordings, q, artist, addFnName, existingList) 
 
 // ─── Data ───────────────────────────────────────────────────────────────────
 
+// 21-08-2026: "Anders" weggehaald. Zonder vrij tekstveld kan iemand toch
+// niet aangeven wélk instrument dat dan is — de optie voegde niets toe en
+// kostte wel eenduidigheid in de matching. Bestaande profielen met "Anders"
+// (indien aanwezig) blijven gewoon werken; zie de toelichting bij
+// PICKER_LABEL_BREAKS hieronder voor hetzelfde principe.
 const INSTRUMENTS = [
   'Zang', 'Gitaar, elektrisch', 'Basgitaar', 'Drums', 'Gitaar, akoestisch',
   'Keyboard', 'Piano', 'Saxofoon', 'Trompet', 'DJ / Electronica',
   'Viool', 'Cello', 'Ukulele', 'Conga / Bongo', 'Harmonica (mondharmonica)',
-  'Tamboerijn', 'Anders'
+  'Tamboerijn'
 ];
 
 const GENRES = [
@@ -7259,8 +7292,8 @@ function init() {
     id: 'genre',
     fieldId: 'genrePickerField', badgeRowId: 'genreBadgeRow',
     options: GENRES, getList: () => state.genres,
-    placeholder: 'Muziekstijl toevoegen…', noun: 'genre(s)',
-    sheetTitle: 'Kies een muziekstijl',
+    placeholder: 'Kies een genre',
+    sheetTitle: 'Kies een genre',
     onChange: saveOnboardingProgress
   });
 
@@ -7325,8 +7358,9 @@ function initPicker(cfg) {
 
 function renderPickerBadges(cfg) {
   const list = cfg.getList();
-  document.getElementById(cfg.fieldId + 'Label').textContent =
-    list.length ? `${list.length} ${cfg.noun} gekozen` : cfg.placeholder;
+  // 21-08-2026 (Ronald): het veld toont altijd dezelfde vaste tekst, geen
+  // teller meer — de badges eronder laten al zien wat er gekozen is.
+  document.getElementById(cfg.fieldId + 'Label').textContent = cfg.placeholder;
   cfg.badgeRowEl.innerHTML = list.map(v => `
     <div class="picker-badge">
       <button type="button" class="picker-badge-remove" aria-label="${escAttr(v)} verwijderen" onclick="removePickerValue('${jsAttr(cfg.id)}','${jsAttr(v)}')"><span aria-hidden="true">✕</span></button>
@@ -7424,8 +7458,9 @@ function instrumentLevelBlurbs() {
 function renderInstrumentBadges() {
   const wrap = document.getElementById('instrumentBadgeRow');
   const list = state.instruments;
-  document.getElementById('instrumentPickerFieldLabel').textContent =
-    list.length ? `${list.length} instrument(en) gekozen` : 'Instrument toevoegen…';
+  // 21-08-2026 (Ronald): vaste tekst, geen teller — zelfde reden als bij
+  // renderPickerBadges() hierboven.
+  document.getElementById('instrumentPickerFieldLabel').textContent = 'Kies een instrument';
   wrap.innerHTML = list.map(i => {
     const n = state.instrumentLevels[i] || 0;
     const stars = n ? '★'.repeat(n) : '';
@@ -7450,6 +7485,8 @@ function openInstrumentPicker() {
   renderInstrumentPickItems();
   document.getElementById('instrumentPickStep').style.display = 'block';
   document.getElementById('instrumentLevelStep').style.display = 'none';
+  document.getElementById('instrumentLevelFooter').style.display = 'none';
+  document.getElementById('instrumentLevelBackBtn').hidden = true;
   document.getElementById('instrumentLevelModal').classList.add('visible');
 }
 
@@ -7481,10 +7518,11 @@ function showInstrumentLevelStep(instrument, cameFromList) {
   instrumentLevelTarget = { instrument, cameFromList };
   document.getElementById('instrumentPickStep').style.display = 'none';
   document.getElementById('instrumentLevelStep').style.display = 'block';
+  document.getElementById('instrumentLevelFooter').style.display = 'block';
   document.getElementById('instrumentLevelTitle').textContent = 'Wat is je huidige niveau voor ' + instrument + '?';
   document.getElementById('instrumentLevelSubtitle').textContent =
     cameFromList ? 'Kies het niveau waar je het dichtst bij in de buurt zit.' : 'Niveau wijzigen.';
-  document.getElementById('instrumentLevelBackBtn').style.visibility = cameFromList ? 'visible' : 'hidden';
+  document.getElementById('instrumentLevelBackBtn').hidden = !cameFromList;
   renderInstrumentLevelChoices();
 }
 
@@ -7511,6 +7549,20 @@ function renderInstrumentLevelChoices() {
       + '</button>';
   }).join('');
   document.getElementById('instrumentLevelChoices').innerHTML = rows;
+  equalizeLevelChoiceHeights();
+}
+
+// 21-08-2026: alle 5 niveauknoppen even hoog maken, ongeacht tekstlengte.
+// Meet ná het renderen de werkelijke hoogte van elke knop en zet ze
+// allemaal op de hoogste waarde. Werkt vanzelf door zodra de definitieve
+// toelichtingstekst (actielijst TT-117) de voorlopige vervangt — geen
+// handmatige CSS-waarde die opnieuw afgesteld moet worden.
+function equalizeLevelChoiceHeights() {
+  const buttons = document.querySelectorAll('#instrumentLevelChoices .level-choice');
+  if (!buttons.length) return;
+  buttons.forEach(b => { b.style.height = 'auto'; });
+  const maxHeight = Math.max(...Array.from(buttons).map(b => b.getBoundingClientRect().height));
+  buttons.forEach(b => { b.style.height = maxHeight + 'px'; });
 }
 
 function setInstrumentLevel(value) {
@@ -7531,6 +7583,8 @@ function closeInstrumentLevelSheet() {
   document.getElementById('instrumentLevelModal').classList.remove('visible');
   document.getElementById('instrumentPickStep').style.display = 'block';
   document.getElementById('instrumentLevelStep').style.display = 'none';
+  document.getElementById('instrumentLevelFooter').style.display = 'none';
+  document.getElementById('instrumentLevelBackBtn').hidden = true;
   instrumentLevelTarget = null;
 }
 
@@ -7909,7 +7963,7 @@ async function nextStep(from) {
     // precies het type vraag dat mensen laat afhaken of laat liegen.
     // Het niveau blijft bestaan en telt mee in de volledigheidsmeter; het is
     // alleen geen slagboom meer. Wie het overslaat, ziet dat daar terug.
-    if (!state.genres.length) { showToast('Selecteer minimaal één muziekstijl.'); return; }
+    if (!state.genres.length) { showToast('Selecteer minimaal één genre.'); return; }
   }
   // V-23 (12-08-2026): repertoire is optioneel, maar het beheersingsniveau
   // per nummer was dat niet. Wie nul nummers invulde mocht door; wie er één
@@ -8338,7 +8392,7 @@ function initBandSearchFilters() {
       id: 'filterBandGenres',
       fieldId: 'filterBandGenresField', badgeRowId: 'filterBandGenresBadgeRow',
       options: GENRES, getList: () => filterBandGenresList,
-      placeholder: 'Genre kiezen…', noun: 'genre(s)',
+      placeholder: 'Kies een genre',
       sheetTitle: 'Kies een genre',
       onChange: runBandSearch
     });
@@ -8351,7 +8405,7 @@ function initBandSearchFilters() {
       fieldId: 'filterBandWantedField', badgeRowId: 'filterBandWantedBadgeRow',
       options: INSTRUMENTS, getList: () => filterBandWantedList,
       singleMax: true, exceptionValue: 'Zang',
-      placeholder: 'Instrument kiezen…', noun: 'instrument(en)',
+      placeholder: 'Kies een instrument',
       sheetTitle: 'Kies een instrument',
       onChange: runBandSearch
     });
@@ -9285,7 +9339,7 @@ function initBandForm() {
       id: 'bandGenre',
       fieldId: 'bandGenreField', badgeRowId: 'bandGenreBadgeRow',
       options: GENRES, getList: () => bandState.genres,
-      placeholder: 'Genre toevoegen…', noun: 'genre(s)',
+      placeholder: 'Kies een genre',
       sheetTitle: 'Kies een genre'
     });
   }
@@ -9294,7 +9348,7 @@ function initBandForm() {
       id: 'bandWanted',
       fieldId: 'bandWantedField', badgeRowId: 'bandWantedBadgeRow',
       options: INSTRUMENTS, getList: () => bandState.wanted,
-      placeholder: 'Instrument toevoegen…', noun: 'instrument(en)',
+      placeholder: 'Kies een instrument',
       sheetTitle: 'Kies een instrument'
     });
   }
@@ -9430,7 +9484,7 @@ function openMusicianNiveauInfoModal() {
 // TT-57 (12-08-2026): uitleg bij "Beste match", zonder een matchscore of
 // percentage te tonen — die blijft intern (zie zoekfunctienaslagwerk.md
 // §4.2). Beschrijft alleen wat de gebruiker zelf kan zien en beïnvloeden:
-// het instrumentfilter (TT-55, harde filter), muziekstijl-overlap, afstand
+// het instrumentfilter (TT-55, harde filter), genre-overlap, afstand
 // en naam als laatste twee tie-breaks. Zelfde tekst voor muzikanten- en
 // bandzoeken — de volgorde werkt identiek voor beide (sortMusicianList()/
 // sortBandList()).
@@ -9439,12 +9493,12 @@ function openRankingInfoModal() {
     <div class="filter-title" style="margin-bottom:4px;">Hoe bepalen we "Beste match"?</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">We werken in vaste stappen. Elke stap beslist pas als de vorige stap gelijk staat.</p>
     <p style="font-size:13px;color:var(--muted);margin-bottom:10px;"><strong style="color:var(--text);">1. Instrument.</strong> Je kiest één instrument om op te zoeken, met zang als losse extra keuze. Alleen wie daarbij past, staat in het resultaat.</p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;"><strong style="color:var(--text);">2. Muziekstijl.</strong> Binnen dat resultaat staan profielen met een overlappende muziekstijl bovenaan.</p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;"><strong style="color:var(--text);">3. Afstand.</strong> Staat de muziekstijl gelijk, dan staat de dichtstbijzijnde eerst.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;"><strong style="color:var(--text);">2. Genre.</strong> Binnen dat resultaat staan profielen met een overlappend genre bovenaan.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;"><strong style="color:var(--text);">3. Afstand.</strong> Staat het genre gelijk, dan staat de dichtstbijzijnde eerst.</p>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;"><strong style="color:var(--text);">4. Naam.</strong> Staat ook de afstand gelijk, dan sorteren we op naam.</p>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;"><strong style="color:var(--text);">Vóór al het bovenstaande:</strong> een profiel dat langer dan zes maanden niet is bijgewerkt, staat altijd onderaan. Update je profiel om weer mee te tellen.</p>
     <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Vul je profiel volledig in</div>
-    <p style="font-size:13px;color:var(--muted);">Een compleet profiel — instrumenten, muziekstijl, bio, repertoire — leidt sneller tot een goede match. Veel velden zijn optioneel. Vul ze toch in als je kunt.</p>
+    <p style="font-size:13px;color:var(--muted);">Een compleet profiel — instrumenten, genre, bio, repertoire — leidt sneller tot een goede match. Veel velden zijn optioneel. Vul ze toch in als je kunt.</p>
   `;
   document.getElementById('niveauInfoModal').classList.add('visible');
 }
