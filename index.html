@@ -1913,25 +1913,6 @@
   .star-display-filled { color:var(--accent); }
   .star-display-empty { color:var(--border); }
 
-  /* TT-51-uitbreiding (12-08-2026, Ronalds beslissing): niveau is nu
-     integraal onderdeel van de instrumentknop zelf, i.p.v. een losse lijst
-     eronder. Ingedrukt houden + slepen naar een ster (muis of touch) opent
-     hiervoor een sterrenstrip vlak bij de knop. */
-  /* TT-U21 (12-08-2026): touch-action was 'none'. Daardoor scrollde de pagina
-     niet mee zodra een veeg op een instrumentknop begon. Nu 'manipulation':
-     verticaal scrollen is altijd van de pagina. */
-  .instrument-tag { display:flex; flex-direction:column; align-items:center; gap:3px; touch-action:manipulation; }
-  .instrument-tag-label { line-height:1.2; }
-  .instrument-tag-stars { font-size:11px; letter-spacing:1px; color:var(--border); }
-  /* Feedback Ronald (12-08-2026): een niet-gekozen ster kreeg voorheen ook een
-     volle ster (★) in een lichtere kleur — op de gele achtergrond van een
-     geselecteerd instrument was dat bijna niet te onderscheiden van een wél
-     gekozen ster. Nu een echte holle ster (☆, zie renderInstrumentTagStars),
-     met een dunne, donkere lijn: het geel blijft zichtbaar binnenin. */
-  .instrument-tag.selected .instrument-tag-stars { color:rgba(0,0,0,0.45); }
-  .instrument-tag-stars .filled { color:#000; }
-  .instrument-tag:not(.selected) .instrument-tag-stars { visibility:hidden; }
-
   /* TT-U21 (12-08-2026): de zwevende sterrenstrip is vervangen door een
      keuzescherm met vijf knoppen, elk minimaal 44px hoog. */
   .level-choice {
@@ -1956,6 +1937,58 @@
   .niveau-info-table th, .niveau-info-table td { border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top; }
   .niveau-info-table th { color:var(--accent); font-weight:700; white-space:nowrap; }
   .niveau-info-table td:first-child, .niveau-info-table th:first-child { white-space:nowrap; font-weight:600; }
+
+  /* ─── Kies-en-badge component (TT-116, 21-08-2026) ──────────────────────
+     Vervangt de altijd-zichtbare knoppenrasters voor instrument/genre door
+     een pulldown-veld: tik erop, een scherm met een lijst opent, kies een
+     item. Gekozen items blijven staan als badge tot verwijderd. Zie
+     PICKER_LABEL_BREAKS en initPicker() verderop in het JS-blok. */
+  .picker-field {
+    width: 100%; box-sizing: border-box; display: flex; align-items: center;
+    justify-content: space-between; gap: 8px;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    min-height: 48px; padding: 10px 14px; margin-top: 4px;
+    font-family: 'Roboto', sans-serif; font-size: 14px; color: var(--text);
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .picker-field:hover { border-color: var(--accent); }
+  .picker-field-chevron { color: var(--muted); font-size: 12px; flex-shrink: 0; }
+
+  .picker-badge-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  /* Vaste breedte én hoogte: elke badge is exact gelijk, ongeacht de
+     tekstlengte van de naam. De sterrenrij staat daardoor bij elke badge
+     op precies dezelfde plek (Ronalds instructie, 21-08-2026). */
+  .picker-badge {
+    position: relative; width: 108px; height: 72px; box-sizing: border-box;
+    display: flex; flex-direction: column; align-items: center;
+    background: var(--accent); color: #000; border-radius: 12px;
+    padding: 10px 6px 8px; font-size: 12px; font-weight: 700; line-height: 1.25;
+    text-align: center;
+  }
+  .picker-badge.has-level { cursor: pointer; }
+  .picker-badge-label { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .picker-badge-stars { font-size: 11px; min-height: 14px; letter-spacing: 1px; }
+  .picker-badge-remove {
+    position: relative; align-self: flex-end; margin: -6px -4px 0 0;
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; color: #000; cursor: pointer; padding: 0; font-size: 13px;
+  }
+  /* TT-U23: onzichtbaar tikvlak van 44x44 rond de kleine knop. */
+  .picker-badge-remove::after { content: ''; position: absolute; inset: -8px; }
+
+  .picker-list-item {
+    padding: 14px 10px; font-size: 15px; border-top: 1px solid var(--border);
+    cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+    min-height: 44px; box-sizing: border-box;
+  }
+  .picker-list-item:first-child { border-top: none; }
+  .picker-list-item:hover { color: var(--accent); }
+  .picker-list-empty { padding: 14px 4px; font-size: 14px; color: var(--muted); }
+  .picker-list-wrap { max-height: 60vh; overflow-y: auto; }
+
+  .picker-level-blurb {
+    font-size: 12px; color: var(--muted); line-height: 1.4; margin-top: 4px;
+  }
 
   @media (max-width: 560px) {
     header { padding: 16px 20px 12px; flex-direction: column; align-items: flex-start; }
@@ -2419,18 +2452,22 @@
           <span style="font-size:12px;color:var(--muted);">Toelichting op niveau:</span>
           <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
         </div>
-        <div class="tag-grid" id="instrumentGrid">
-          <!-- filled by JS -->
+        <div class="picker-field" id="instrumentPickerField" onclick="openInstrumentPicker()">
+          <span class="picker-field-label" id="instrumentPickerFieldLabel">Instrument toevoegen…</span>
+          <span class="picker-field-chevron">▾</span>
         </div>
+        <div class="picker-badge-row" id="instrumentBadgeRow"></div>
       </div>
     </div>
 
     <div class="field-group single">
       <div class="field">
         <label>Mijn Muziekstijl(en) <span class="req">*</span></label>
-        <div class="tag-grid" id="genreGrid">
-          <!-- filled by JS -->
+        <div class="picker-field" id="genrePickerField">
+          <span class="picker-field-label" id="genrePickerFieldLabel">Muziekstijl toevoegen…</span>
+          <span class="picker-field-chevron">▾</span>
         </div>
+        <div class="picker-badge-row" id="genreBadgeRow"></div>
       </div>
     </div>
 
@@ -2706,7 +2743,11 @@
         <div class="field">
           <label>Instrument</label>
           <p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang.</p>
-          <div class="tag-grid" id="filterInstruments"></div>
+          <div class="picker-field" id="filterInstrumentsField">
+            <span class="picker-field-label" id="filterInstrumentsFieldLabel">Instrument kiezen…</span>
+            <span class="picker-field-chevron">▾</span>
+          </div>
+          <div class="picker-badge-row" id="filterInstrumentsBadgeRow"></div>
         </div>
       </div>
 
@@ -2734,7 +2775,11 @@
       <div class="filter-row single" style="margin-bottom:16px;">
         <div class="field">
           <label>Genre</label>
-          <div class="tag-grid" id="filterGenres"></div>
+          <div class="picker-field" id="filterGenresField">
+            <span class="picker-field-label" id="filterGenresFieldLabel">Genre kiezen…</span>
+            <span class="picker-field-chevron">▾</span>
+          </div>
+          <div class="picker-badge-row" id="filterGenresBadgeRow"></div>
         </div>
       </div>
 
@@ -2804,10 +2849,22 @@
           </div>
         </div>
       </div>
-      <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label><div class="tag-grid" id="filterBandGenres"></div></div></div>
+      <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label>
+        <div class="picker-field" id="filterBandGenresField">
+          <span class="picker-field-label" id="filterBandGenresFieldLabel">Genre kiezen…</span>
+          <span class="picker-field-chevron">▾</span>
+        </div>
+        <div class="picker-badge-row" id="filterBandGenresBadgeRow"></div>
+      </div></div>
       <!-- TT-55-uitbreiding (12-08-2026): zelfde 1-instrument-beperking als
            het muzikanten-zoekfilter, nu ook hier doorgevoerd. -->
-      <div class="filter-row single band-instrument-filter" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang.</p><div class="tag-grid" id="filterBandWanted"></div></div></div>
+      <div class="filter-row single band-instrument-filter" style="margin-bottom:16px;"><div class="field"><label>Instrument gezocht</label><p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang.</p>
+        <div class="picker-field" id="filterBandWantedField">
+          <span class="picker-field-label" id="filterBandWantedFieldLabel">Instrument kiezen…</span>
+          <span class="picker-field-chevron">▾</span>
+        </div>
+        <div class="picker-badge-row" id="filterBandWantedBadgeRow"></div>
+      </div></div>
       <!-- TT-51: niveau van de band zelf (Tabel 1), los van het niveau per
            instrument bij muzikanten. Bereik, aaneengesloten. -->
       <div class="filter-row single" style="margin-bottom:16px;">
@@ -3021,7 +3078,11 @@
         </div>
         <div class="field" style="margin-bottom:16px;">
           <label>Genre(s) <span class="req">*</span></label>
-          <div class="tag-grid" id="bandGenreGrid"></div>
+          <div class="picker-field" id="bandGenreField">
+            <span class="picker-field-label" id="bandGenreFieldLabel">Genre toevoegen…</span>
+            <span class="picker-field-chevron">▾</span>
+          </div>
+          <div class="picker-badge-row" id="bandGenreBadgeRow"></div>
         </div>
         <div class="field" style="margin-bottom:16px;">
           <label>Status</label>
@@ -3033,7 +3094,11 @@
         </div>
         <div class="field" style="margin-bottom:16px;">
           <label>Wij zoeken nog <span class="req">*</span></label>
-          <div class="tag-grid" id="bandWantedGrid"></div>
+          <div class="picker-field" id="bandWantedField">
+            <span class="picker-field-label" id="bandWantedFieldLabel">Instrument toevoegen…</span>
+            <span class="picker-field-chevron">▾</span>
+          </div>
+          <div class="picker-badge-row" id="bandWantedBadgeRow"></div>
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;">
           <button class="btn btn-primary" id="saveBandBtn" onclick="saveBand()">Band aanmaken</button>
@@ -3402,22 +3467,47 @@
   </div>
 </div>
 
-<!-- TT-U21 (12-08-2026): niveau kiezen per instrument. Vervangt het
-     druk-en-sleep-gebaar. Vijf knoppen, elk minimaal 56px hoog. -->
+<!-- TT-116 (21-08-2026): instrument kiezen + niveau kiezen in één scherm.
+     Twee stappen in dezelfde modal-box: eerst de instrumentenlijst
+     (#instrumentPickStep), dan de niveaukeuze (#instrumentLevelStep, bestond
+     al sinds TT-U21). Tikken op een bestaande badge opent direct de
+     niveaustap, met de huidige keuze aangevinkt (niveau wisselen). -->
 <div class="modal-overlay" id="instrumentLevelModal" onclick="if(event.target===this)closeInstrumentLevelSheet()">
   <div class="modal-box" style="max-width:520px;">
     <button class="modal-close" onclick="closeInstrumentLevelSheet()" aria-label="Sluiten">✕</button>
-    <div class="filter-title" id="instrumentLevelTitle" style="margin-bottom:4px;padding-right:52px;">Wat is je huidige niveau?</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies het niveau waar je het dichtst bij in de buurt zit.</p>
-    <div id="instrumentLevelChoices"></div>
-    <!-- Feedback Ronald (12-08-2026): titel herschreven naar "Wat is je
-         huidige niveau voor X?" (algemener, minder een prestatievraag),
-         "Het is geen examen" weg, de (i)-knop verhuisd naar hier — naast
-         "Terug" i.p.v. los in de tekst erboven. -->
-    <div style="display:flex;gap:12px;margin-top:8px;">
-      <button type="button" class="btn btn-ghost" style="flex:1;" onclick="removeInstrumentFromSheet()">Terug</button>
-      <button type="button" class="btn btn-ghost" style="flex:1;" onclick="openMusicianNiveauInfoModal()">Niveau toelichting</button>
+
+    <div id="instrumentPickStep">
+      <div class="filter-title" style="margin-bottom:14px;padding-right:52px;">Kies een instrument</div>
+      <div class="picker-list-wrap" id="instrumentPickItems"></div>
     </div>
+
+    <div id="instrumentLevelStep" style="display:none;">
+      <div class="filter-title" id="instrumentLevelTitle" style="margin-bottom:4px;padding-right:52px;">Wat is je huidige niveau?</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;" id="instrumentLevelSubtitle">Kies het niveau waar je het dichtst bij in de buurt zit.</p>
+      <div id="instrumentLevelChoices"></div>
+      <!-- Feedback Ronald (12-08-2026): titel herschreven naar "Wat is je
+           huidige niveau voor X?" (algemener, minder een prestatievraag),
+           "Het is geen examen" weg. "Terug" verwijdert nu het instrument
+           niet meer (zie removeInstrumentFromSheet hieronder, nu een losse
+           knop) en is verborgen als je vanaf een badge direct hier kwam. -->
+      <div style="display:flex;gap:12px;margin-top:8px;">
+        <button type="button" class="btn btn-ghost" id="instrumentLevelBackBtn" style="flex:1;" onclick="backToInstrumentPick()">Terug</button>
+        <button type="button" class="btn btn-ghost" style="flex:1;" onclick="openMusicianNiveauInfoModal()">Volledige toelichting op dit niveau</button>
+      </div>
+      <button type="button" class="btn btn-ghost" style="width:100%;margin-top:8px;color:var(--danger);" onclick="removeInstrumentFromSheet()">Instrument verwijderen</button>
+    </div>
+  </div>
+</div>
+
+<!-- TT-116 (21-08-2026): gedeeld keuzescherm voor de "kies-en-badge"-picker,
+     gebruikt door alle instrument/genre-velden zonder niveau (7 van de 8
+     plekken — alleen de eigen-instrumentkeuze in de wizard heeft een niveau,
+     zie instrumentLevelModal hierboven). -->
+<div class="modal-overlay" id="pickerListModal" onclick="if(event.target===this)closePickerList()">
+  <div class="modal-box" style="max-width:480px;">
+    <button class="modal-close" onclick="closePickerList()" aria-label="Sluiten">✕</button>
+    <div class="filter-title" id="pickerListTitle" style="margin-bottom:14px;padding-right:52px;"></div>
+    <div class="picker-list-wrap" id="pickerListItems"></div>
   </div>
 </div>
 
@@ -4156,50 +4246,28 @@ function setSearchSortMode(el, mode) {
 }
 
 function initSearchFilters() {
-  const ig = document.getElementById('filterInstruments');
-  if (ig.children.length) return; // al ingevuld
+  if (PICKERS.filterInstruments) return; // al ingevuld
 
-  INSTRUMENTS.forEach(i => {
-    const t = document.createElement('div');
-    t.className = 'tag';
-    t.textContent = i;
-    t.style.fontSize = '12px';
-    t.style.padding = '6px 12px';
-    t.onclick = () => {
-      if (i === 'Zang') {
-        // TT-55: Zang is een losse aan/uit-schakelaar, telt niet mee voor de
-        // 1-instrument-limiet hieronder — kan altijd naast een instrument aan.
-        const idx = filterInstruments.indexOf('Zang');
-        if (idx === -1) { filterInstruments.push('Zang'); t.classList.add('selected'); }
-        else { filterInstruments.splice(idx,1); t.classList.remove('selected'); }
-      } else {
-        // TT-55 (12-08-2026, Ronalds richting 4+5): maximaal 1 instrument
-        // tegelijk. Een ander instrument kiezen vervangt de vorige keuze
-        // i.p.v. hem toe te voegen; Zang blijft ongemoeid.
-        const wasSelected = filterInstruments.includes(i);
-        ig.querySelectorAll('.tag').forEach(other => {
-          if (other.textContent !== 'Zang') other.classList.remove('selected');
-        });
-        filterInstruments = filterInstruments.filter(x => x === 'Zang');
-        if (!wasSelected) { filterInstruments.push(i); t.classList.add('selected'); }
-      }
-      runSearch();
-    };
-    ig.appendChild(t);
+  // TT-55: maximaal 1 instrument, Zang als losse uitzondering die niet
+  // meetelt voor die limiet — nu afgehandeld door de generieke picker
+  // (singleMax + exceptionValue), zie choosePickerListValue().
+  initPicker({
+    id: 'filterInstruments',
+    fieldId: 'filterInstrumentsField', badgeRowId: 'filterInstrumentsBadgeRow',
+    options: INSTRUMENTS, getList: () => filterInstruments,
+    singleMax: true, exceptionValue: 'Zang',
+    placeholder: 'Instrument kiezen…', noun: 'instrument(en)',
+    sheetTitle: 'Kies een instrument',
+    onChange: runSearch
   });
 
-  const gg = document.getElementById('filterGenres');
-  GENRES.forEach(g => {
-    const t = document.createElement('div');
-    t.className = 'genre-tag';
-    t.textContent = g;
-    t.onclick = () => {
-      const idx = filterGenres.indexOf(g);
-      if (idx === -1) { filterGenres.push(g); t.classList.add('selected'); }
-      else { filterGenres.splice(idx,1); t.classList.remove('selected'); }
-      runSearch();
-    };
-    gg.appendChild(t);
+  initPicker({
+    id: 'filterGenres',
+    fieldId: 'filterGenresField', badgeRowId: 'filterGenresBadgeRow',
+    options: GENRES, getList: () => filterGenres,
+    placeholder: 'Genre kiezen…', noun: 'genre(s)',
+    sheetTitle: 'Kies een genre',
+    onChange: runSearch
   });
 
   const goalWrap = document.getElementById('filterGoals');
@@ -4250,7 +4318,9 @@ function resetMusicianSearch() {
   filterInstruments = [];
   filterGenres = [];
   filterGoal = null;
-  document.querySelectorAll('#filterInstruments .tag, #filterGenres .genre-tag, #filterGoals .tag').forEach(t => t.classList.remove('selected'));
+  renderPickerBadges(PICKERS.filterInstruments);
+  renderPickerBadges(PICKERS.filterGenres);
+  document.querySelectorAll('#filterGoals .tag').forEach(t => t.classList.remove('selected'));
   selectSortModeByValue('filterSortMode', hasOwnProfile ? 'score' : 'distance');
   // TT-10: niet leeg laten staan — meteen opnieuw zoeken zonder filters,
   // consistent met "bij openen/wisselen van tabblad altijd een resultaat".
@@ -5477,14 +5547,8 @@ function populateWizardFieldsFromState() {
   document.getElementById('postcodeStatus').textContent = state.city ? `Gevonden: ${state.city}` : '';
   document.getElementById('bio').value = state.bio;
 
-  document.querySelectorAll('#instrumentGrid .tag').forEach(t => {
-    const isSel = state.instruments.includes(t.dataset.instrument);
-    t.classList.toggle('selected', isSel);
-    renderInstrumentTagStars(t, t.dataset.instrument); // TT-51: sterren tonen bij bewerken/hervatten
-  });
-  document.querySelectorAll('#genreGrid .genre-tag').forEach(t => {
-    t.classList.toggle('selected', state.genres.includes(t.textContent));
-  });
+  renderInstrumentBadges();
+  if (PICKERS.genre) renderPickerBadges(PICKERS.genre);
 
   renderSongs();
   renderLinksList();
@@ -7187,27 +7251,17 @@ let state = {
 // ─── Init ────────────────────────────────────────────────────────────────────
 
 function init() {
-  // Instruments — TT-51-uitbreiding (12-08-2026): elke knop is nu zelf de
-  // niveau-kiezer. Kort tikken = selecteren/deselecteren (ongewijzigd
-  // gedrag). Ingedrukt houden en slepen naar een ster = niveau instellen.
-  const ig = document.getElementById('instrumentGrid');
-  INSTRUMENTS.forEach(i => {
-    const t = document.createElement('div');
-    t.className = 'tag instrument-tag';
-    t.dataset.instrument = i;
-    t.innerHTML = `<span class="instrument-tag-label">${escHtml(i)}</span><span class="instrument-tag-stars"></span>`;
-    attachInstrumentRatingHandlers(t, i);
-    ig.appendChild(t);
-  });
-
-  // Genres
-  const gg = document.getElementById('genreGrid');
-  GENRES.forEach(g => {
-    const t = document.createElement('div');
-    t.className = 'genre-tag';
-    t.textContent = g;
-    t.onclick = () => { toggleTag(t, g, state.genres); };
-    gg.appendChild(t);
+  // TT-116 (21-08-2026): instrument- en genrekeuze zijn nu een pulldown-veld
+  // met badges, geen altijd-zichtbaar knoppenraster meer. Zie de
+  // "Kies-en-badge component" verderop in dit blok.
+  renderInstrumentBadges();
+  initPicker({
+    id: 'genre',
+    fieldId: 'genrePickerField', badgeRowId: 'genreBadgeRow',
+    options: GENRES, getList: () => state.genres,
+    placeholder: 'Muziekstijl toevoegen…', noun: 'genre(s)',
+    sheetTitle: 'Kies een muziekstijl',
+    onChange: saveOnboardingProgress
   });
 
   syncViewToggles(); // TT-U13: schakelaars gelijkzetten met de werkelijke stand
@@ -7223,88 +7277,227 @@ function init() {
   });
 }
 
-// ─── Tags ────────────────────────────────────────────────────────────────────
+// ─── Kies-en-badge component (TT-116, 21-08-2026) ───────────────────────────
+// Eén herbruikbaar patroon voor het kiezen van instrumenten en genres, dat
+// het altijd-zichtbare knoppenraster vervangt door een pulldown-veld: tik
+// erop, een volledig-scherm lijst opent, kies een item. Gekozen items
+// blijven staan als badge tot verwijderd. Gebruikt op 7 van de 8 plekken in
+// de app (genre × 4, instrument-filter × 2, "wij zoeken nog" bij een band).
+// De achtste plek — de eigen instrumentkeuze in de wizard, mét niveau — is
+// een aparte, iets uitgebreidere versie hieronder (init/renderInstrumentBadges
+// e.v.), omdat die een extra niveaustap nodig heeft.
+//
+// De onderliggende arrays (state.genres, filterInstruments, enz.) blijven
+// ongewijzigd de bron van waarheid — dit component tekent alleen de UI
+// eromheen en muteert die arrays in-place (push/splice), nooit een nieuwe
+// array toewijzen. Zo blijft alle bestaande zoek-/opslaglogica intact.
 
-function toggleTag(el, value, arr) {
-  const idx = arr.indexOf(value);
-  if (idx === -1) { arr.push(value); el.classList.add('selected'); }
-  else { arr.splice(idx,1); el.classList.remove('selected'); }
-  // Bugfix 13-08-2026 (Ronald: "niveau bij zang is weg na terugkomen"):
-  // saveOnboardingProgress() liep voorheen alleen bij een stapwissel (goTo()).
-  // Een keuze ná de laatste stapwissel stond dus nog nergens in sessionStorage.
-  // Kwam er intussen een nieuwe SIGNED_IN-gebeurtenis (bijv. na een echte
-  // paginaherlading) dan haalde tryResumeOnboarding() die oude, onvolledige
-  // momentopname terug — en overschreef daarmee de nieuwste keuze in het
-  // geheugen. Nu bewaart elke wijziging zichzelf meteen.
-  saveOnboardingProgress(); // no-op tenzij state.onboarding actief is
+// Namen die altijd op een vaste plek afbreken, ongeacht schermbreedte —
+// voorkomt een lelijke afbreking midden in een woord zonder spatie.
+// "Harmonica (mondharmonica)" is de opgeslagen waarde (database, matching);
+// alleen de weergave wordt hier verkort — bewust niet hernoemd in
+// INSTRUMENTS zelf, dat zou bestaande profielen loskoppelen van de lijst.
+const PICKER_LABEL_BREAKS = {
+  'Harmonica (mondharmonica)': '(Mond)<br>harmonica',
+  'DJ / Electronica': 'DJ /<br>Electronica'
+};
+function pickerDisplayLabel(value) {
+  return PICKER_LABEL_BREAKS[value] || escHtml(value);
 }
 
-// Werkt het mini-sterrenrijtje ín een instrumentknop bij, op basis van
-// state.instrumentLevels. Onzichtbaar (CSS) zolang de knop niet .selected is.
-function renderInstrumentTagStars(el, instrument) {
-  const starsEl = el.querySelector('.instrument-tag-stars');
-  if (!starsEl) return;
-  const n = state.instrumentLevels[instrument] || 0;
-  // Feedback Ronald (12-08-2026): een gevulde ster (rgba(0,0,0,0.55)) en een
-  // "lege" gevulde ster (rgba(0,0,0,0.55)) waren op de gele achtergrond
-  // nauwelijks te onderscheiden. Nu een echte holle ster (☆) voor een niet
-  // gekozen niveau — dat is een lijn waar het geel doorheen blijft schijnen,
-  // in plaats van een tweede volle vorm.
-  let out = '';
-  for (let i = 1; i <= 5; i++) out += `<span class="${i <= n ? 'filled' : ''}">${i <= n ? '★' : '☆'}</span>`;
-  starsEl.innerHTML = out;
+// Haalt een tekst tussen haakjes aan het eind weg. "1. Beginner (Bedroom)"
+// -> "1. Beginner". Ronalds instructie (21-08-2026): geen haakjes meer bij
+// niveaunamen, overal waar ze getoond worden.
+function stripParenthetical(s) {
+  return String(s).replace(/\s*\([^)]*\)\s*$/, '').trim();
 }
 
-// TT-U21 (12-08-2026) — het druk-en-sleep-gebaar is verwijderd.
-//
-// Wat er mis was (alle drie geverifieerd in de code van 12-08-2026):
-// (1) `touch-action:none` op de instrumentknop maakte de instrumentenlijst
-//     een dode zone voor scrollen, en 6 pixels beweging startte het gebaar.
-//     Een veegpoging vinkte dus een instrument aan en de pagina bewoog niet.
-// (2) Een tik langer dan 220 ms kon niet meer deselecteren.
-// (3) Met een toetsenbord of schermlezer was een niveau instellen onmogelijk.
-//
-// Nu: tikken selecteert het instrument en opent een keuzescherm met vijf
-// grote knoppen. Tikken op een al geselecteerd instrument opent hetzelfde
-// scherm opnieuw. Deselecteren gebeurt in dat scherm, niet op de knop —
-// zo kan één tik nooit per ongeluk een keuze ongedaan maken.
-// Alles is bedienbaar met een toetsenbord.
-let instrumentLevelTarget = null; // { instrument, tagEl }
+const PICKERS = {}; // registry: picker-id -> cfg, voor badges/verwijderen vanuit innerHTML
 
-// Korte namen, afgeleid van Tabel 2 in niveaubepaling-naslagwerk.md
-// (NIVEAU_INFO_MUSICIAN_ROWS verderop). Eén bron, geen tweede lijst.
+function initPicker(cfg) {
+  PICKERS[cfg.id] = cfg;
+  cfg.fieldEl = document.getElementById(cfg.fieldId);
+  cfg.badgeRowEl = document.getElementById(cfg.badgeRowId);
+  cfg.fieldEl.onclick = () => openPickerList(cfg.id);
+  renderPickerBadges(cfg);
+  return cfg;
+}
+
+function renderPickerBadges(cfg) {
+  const list = cfg.getList();
+  document.getElementById(cfg.fieldId + 'Label').textContent =
+    list.length ? `${list.length} ${cfg.noun} gekozen` : cfg.placeholder;
+  cfg.badgeRowEl.innerHTML = list.map(v => `
+    <div class="picker-badge">
+      <button type="button" class="picker-badge-remove" aria-label="${escAttr(v)} verwijderen" onclick="removePickerValue('${jsAttr(cfg.id)}','${jsAttr(v)}')"><span aria-hidden="true">✕</span></button>
+      <div class="picker-badge-label">${pickerDisplayLabel(v)}</div>
+    </div>`).join('');
+}
+
+let activeListPickerId = null;
+
+function openPickerList(id) {
+  activeListPickerId = id;
+  document.getElementById('pickerListTitle').textContent = PICKERS[id].sheetTitle;
+  renderPickerListItems();
+  document.getElementById('pickerListModal').classList.add('visible');
+}
+
+function closePickerList() {
+  document.getElementById('pickerListModal').classList.remove('visible');
+  activeListPickerId = null;
+}
+
+function renderPickerListItems() {
+  const cfg = PICKERS[activeListPickerId];
+  if (!cfg) return;
+  const list = cfg.getList();
+  const remaining = cfg.options.filter(opt => !list.includes(opt));
+  const wrap = document.getElementById('pickerListItems');
+  if (!remaining.length) {
+    wrap.innerHTML = '<div class="picker-list-empty">Alles al gekozen</div>';
+    return;
+  }
+  wrap.innerHTML = remaining.map(opt =>
+    `<div class="picker-list-item" onclick="choosePickerListValue('${jsAttr(opt)}')">${pickerDisplayLabel(opt)}</div>`
+  ).join('');
+}
+
+function choosePickerListValue(value) {
+  const cfg = PICKERS[activeListPickerId];
+  if (!cfg) return;
+  const list = cfg.getList();
+  if (cfg.singleMax) {
+    // TT-55: maximaal 1 instrument, met een losse uitzondering (Zang) die
+    // niet meetelt voor die limiet.
+    if (value === cfg.exceptionValue) {
+      if (!list.includes(value)) list.push(value);
+    } else {
+      const kept = (cfg.exceptionValue && list.includes(cfg.exceptionValue)) ? [cfg.exceptionValue] : [];
+      list.length = 0;
+      kept.forEach(v => list.push(v));
+      list.push(value);
+    }
+  } else {
+    if (!list.includes(value)) list.push(value);
+  }
+  renderPickerBadges(cfg);
+  if (cfg.onChange) cfg.onChange();
+  closePickerList();
+}
+
+function removePickerValue(id, value) {
+  const cfg = PICKERS[id];
+  if (!cfg) return;
+  const list = cfg.getList();
+  const idx = list.indexOf(value);
+  if (idx !== -1) list.splice(idx, 1);
+  renderPickerBadges(cfg);
+  if (cfg.onChange) cfg.onChange();
+}
+
+// ─── Eigen instrumenten (wizard) — instrument + niveau in één scherm ────────
+// TT-U21 (12-08-2026) verving het druk-en-sleep-gebaar door een keuzescherm.
+// TT-116 (21-08-2026) voegt daar een instrumentenlijst aan toe: het
+// keuzeraster is weg, instrument kiezen gebeurt nu ook via de pulldown. Zie
+// instrumentLevelModal in de HTML: stap 1 = lijst, stap 2 = niveau.
+let instrumentLevelTarget = null; // { instrument, cameFromList }
+
+// Korte namen zonder cijfer én zonder haakjes, afgeleid van Tabel 2 in
+// niveaubepaling-naslagwerk.md (NIVEAU_INFO_MUSICIAN_ROWS verderop). Eén
+// bron, geen tweede lijst.
 function instrumentLevelLabels() {
-  return NIVEAU_INFO_MUSICIAN_ROWS.map(r => String(r[0]).replace(/^\d+\.\s*/, ''));
+  return NIVEAU_INFO_MUSICIAN_ROWS.map(r => stripParenthetical(String(r[0]).replace(/^\d+\.\s*/, '')));
 }
 
-function attachInstrumentRatingHandlers(tag, instrument) {
-  tag.setAttribute('role', 'button');
-  tag.setAttribute('tabindex', '0');
-  tag.setAttribute('aria-pressed', 'false');
-  tag.addEventListener('click', () => openInstrumentLevelSheet(instrument, tag));
-  tag.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openInstrumentLevelSheet(instrument, tag); }
+// TT-116: korte toelichting per niveau, onder de sterrenknop. Voorlopige
+// tekst — Ronald schrijft de definitieve versie (sessie 21-08-2026, "optie
+// 1"). Tot dan: eerste zin van de kolom "Technische beheersing" uit dezelfde
+// tabel, zodat er geen tweede bron ontstaat.
+function instrumentLevelBlurbs() {
+  return NIVEAU_INFO_MUSICIAN_ROWS.map(r => {
+    const firstSentence = String(r[1]).split('. ')[0].replace(/\.+$/, '');
+    return firstSentence + '.';
   });
 }
 
-function openInstrumentLevelSheet(instrument, tagEl) {
-  instrumentLevelTarget = { instrument, tagEl };
-  if (!state.instruments.includes(instrument)) {
-    state.instruments.push(instrument);
-    tagEl.classList.add('selected');
-    tagEl.setAttribute('aria-pressed', 'true');
-    renderInstrumentTagStars(tagEl, instrument);
-    saveOnboardingProgress(); // zie toelichting bij toggleTag() — 13-08-2026
-  }
-  document.getElementById('instrumentLevelTitle').textContent = 'Wat is je huidige niveau voor ' + instrument + '?';
-  renderInstrumentLevelChoices();
+function renderInstrumentBadges() {
+  const wrap = document.getElementById('instrumentBadgeRow');
+  const list = state.instruments;
+  document.getElementById('instrumentPickerFieldLabel').textContent =
+    list.length ? `${list.length} instrument(en) gekozen` : 'Instrument toevoegen…';
+  wrap.innerHTML = list.map(i => {
+    const n = state.instrumentLevels[i] || 0;
+    const stars = n ? '★'.repeat(n) : '';
+    return `
+    <div class="picker-badge has-level" onclick="reopenInstrumentBadge('${jsAttr(i)}')">
+      <button type="button" class="picker-badge-remove" aria-label="${escAttr(i)} verwijderen" onclick="event.stopPropagation();quickRemoveInstrument('${jsAttr(i)}')"><span aria-hidden="true">✕</span></button>
+      <div class="picker-badge-label">${pickerDisplayLabel(i)}</div>
+      <div class="picker-badge-stars">${stars}</div>
+    </div>`;
+  }).join('');
+}
+
+function quickRemoveInstrument(instrument) {
+  const idx = state.instruments.indexOf(instrument);
+  if (idx !== -1) state.instruments.splice(idx, 1);
+  delete state.instrumentLevels[instrument];
+  renderInstrumentBadges();
+  saveOnboardingProgress();
+}
+
+function openInstrumentPicker() {
+  renderInstrumentPickItems();
+  document.getElementById('instrumentPickStep').style.display = 'block';
+  document.getElementById('instrumentLevelStep').style.display = 'none';
   document.getElementById('instrumentLevelModal').classList.add('visible');
+}
+
+function renderInstrumentPickItems() {
+  const remaining = INSTRUMENTS.filter(i => !state.instruments.includes(i));
+  const wrap = document.getElementById('instrumentPickItems');
+  if (!remaining.length) {
+    wrap.innerHTML = '<div class="picker-list-empty">Alles al gekozen</div>';
+    return;
+  }
+  wrap.innerHTML = remaining.map(i =>
+    `<div class="picker-list-item" onclick="pickInstrumentFromSheet('${jsAttr(i)}')">${pickerDisplayLabel(i)}</div>`
+  ).join('');
+}
+
+function pickInstrumentFromSheet(instrument) {
+  state.instruments.push(instrument);
+  saveOnboardingProgress(); // zie toelichting bij removePickerValue-patroon, 13-08-2026
+  showInstrumentLevelStep(instrument, /* cameFromList */ true);
+}
+
+// Tikken op een bestaande badge: direct naar de niveaustap, niveau wisselen.
+function reopenInstrumentBadge(instrument) {
+  document.getElementById('instrumentLevelModal').classList.add('visible');
+  showInstrumentLevelStep(instrument, /* cameFromList */ false);
+}
+
+function showInstrumentLevelStep(instrument, cameFromList) {
+  instrumentLevelTarget = { instrument, cameFromList };
+  document.getElementById('instrumentPickStep').style.display = 'none';
+  document.getElementById('instrumentLevelStep').style.display = 'block';
+  document.getElementById('instrumentLevelTitle').textContent = 'Wat is je huidige niveau voor ' + instrument + '?';
+  document.getElementById('instrumentLevelSubtitle').textContent =
+    cameFromList ? 'Kies het niveau waar je het dichtst bij in de buurt zit.' : 'Niveau wijzigen.';
+  document.getElementById('instrumentLevelBackBtn').style.visibility = cameFromList ? 'visible' : 'hidden';
+  renderInstrumentLevelChoices();
+}
+
+function backToInstrumentPick() {
+  if (!instrumentLevelTarget || !instrumentLevelTarget.cameFromList) return;
+  openInstrumentPicker();
 }
 
 function renderInstrumentLevelChoices() {
   if (!instrumentLevelTarget) return;
   const huidig = state.instrumentLevels[instrumentLevelTarget.instrument] || 0;
   const labels = instrumentLevelLabels();
+  const blurbs = instrumentLevelBlurbs();
   const rows = labels.map((label, idx) => {
     const value = idx + 1;
     let stars = '';
@@ -7312,7 +7505,9 @@ function renderInstrumentLevelChoices() {
     return '<button type="button" class="level-choice' + (value === huidig ? ' selected' : '') + '"'
       + ' aria-pressed="' + (value === huidig) + '" onclick="setInstrumentLevel(' + value + ')">'
       + '<span class="level-choice-stars">' + stars + '</span>'
+      + '<span style="display:flex;flex-direction:column;text-align:left;">'
       + '<span class="level-choice-label">' + escHtml(label) + '</span>'
+      + '<span class="picker-level-blurb">' + escHtml(blurbs[idx]) + '</span></span>'
       + '</button>';
   }).join('');
   document.getElementById('instrumentLevelChoices').innerHTML = rows;
@@ -7320,28 +7515,22 @@ function renderInstrumentLevelChoices() {
 
 function setInstrumentLevel(value) {
   if (!instrumentLevelTarget) return;
-  const { instrument, tagEl } = instrumentLevelTarget;
-  state.instrumentLevels[instrument] = value;
-  renderInstrumentTagStars(tagEl, instrument);
-  saveOnboardingProgress(); // zie toelichting bij toggleTag() — 13-08-2026
+  state.instrumentLevels[instrumentLevelTarget.instrument] = value;
+  renderInstrumentBadges();
+  saveOnboardingProgress(); // zie toelichting bij removePickerValue-patroon, 13-08-2026
   closeInstrumentLevelSheet();
 }
 
 function removeInstrumentFromSheet() {
   if (!instrumentLevelTarget) return;
-  const { instrument, tagEl } = instrumentLevelTarget;
-  const idx = state.instruments.indexOf(instrument);
-  if (idx !== -1) state.instruments.splice(idx, 1);
-  delete state.instrumentLevels[instrument];
-  tagEl.classList.remove('selected');
-  tagEl.setAttribute('aria-pressed', 'false');
-  renderInstrumentTagStars(tagEl, instrument);
-  saveOnboardingProgress(); // zie toelichting bij toggleTag() — 13-08-2026
+  quickRemoveInstrument(instrumentLevelTarget.instrument);
   closeInstrumentLevelSheet();
 }
 
 function closeInstrumentLevelSheet() {
   document.getElementById('instrumentLevelModal').classList.remove('visible');
+  document.getElementById('instrumentPickStep').style.display = 'block';
+  document.getElementById('instrumentLevelStep').style.display = 'none';
   instrumentLevelTarget = null;
 }
 
@@ -8144,51 +8333,27 @@ function setBandSearchSortMode(el, mode) {
 let bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff', niveau: null, avatarUrl: null, avatarPath: null };
 
 function initBandSearchFilters() {
-  const gg = document.getElementById('filterBandGenres');
-  if (gg && !gg.children.length) {
-    GENRES.forEach(g => {
-      const t = document.createElement('div');
-      t.className = 'genre-tag';
-      t.textContent = g;
-      t.onclick = () => {
-        const idx = filterBandGenresList.indexOf(g);
-        if (idx === -1) { filterBandGenresList.push(g); t.classList.add('selected'); }
-        else { filterBandGenresList.splice(idx,1); t.classList.remove('selected'); }
-        runBandSearch();
-      };
-      gg.appendChild(t);
+  if (!PICKERS.filterBandGenres) {
+    initPicker({
+      id: 'filterBandGenres',
+      fieldId: 'filterBandGenresField', badgeRowId: 'filterBandGenresBadgeRow',
+      options: GENRES, getList: () => filterBandGenresList,
+      placeholder: 'Genre kiezen…', noun: 'genre(s)',
+      sheetTitle: 'Kies een genre',
+      onChange: runBandSearch
     });
   }
-  const wg = document.getElementById('filterBandWanted');
-  if (wg && !wg.children.length) {
-    INSTRUMENTS.forEach(i => {
-      const t = document.createElement('div');
-      t.className = 'tag';
-      t.textContent = i;
-      t.style.fontSize = '12px';
-      t.style.padding = '6px 12px';
-      t.onclick = () => {
-        if (i === 'Zang') {
-          // TT-55-uitbreiding (12-08-2026): zelfde patroon als het
-          // muzikanten-instrumentfilter — Zang is een losse aan/uit-
-          // schakelaar, telt niet mee voor de 1-instrument-limiet.
-          const idx = filterBandWantedList.indexOf('Zang');
-          if (idx === -1) { filterBandWantedList.push('Zang'); t.classList.add('selected'); }
-          else { filterBandWantedList.splice(idx,1); t.classList.remove('selected'); }
-        } else {
-          // Maximaal 1 instrument tegelijk. Een ander instrument kiezen
-          // vervangt de vorige keuze i.p.v. hem toe te voegen; Zang blijft
-          // ongemoeid.
-          const wasSelected = filterBandWantedList.includes(i);
-          wg.querySelectorAll('.tag').forEach(other => {
-            if (other.textContent !== 'Zang') other.classList.remove('selected');
-          });
-          filterBandWantedList = filterBandWantedList.filter(x => x === 'Zang');
-          if (!wasSelected) { filterBandWantedList.push(i); t.classList.add('selected'); }
-        }
-        runBandSearch();
-      };
-      wg.appendChild(t);
+  if (!PICKERS.filterBandWanted) {
+    // TT-55-uitbreiding: zelfde patroon als het muzikanten-instrumentfilter
+    // — maximaal 1 instrument, Zang als losse uitzondering.
+    initPicker({
+      id: 'filterBandWanted',
+      fieldId: 'filterBandWantedField', badgeRowId: 'filterBandWantedBadgeRow',
+      options: INSTRUMENTS, getList: () => filterBandWantedList,
+      singleMax: true, exceptionValue: 'Zang',
+      placeholder: 'Instrument kiezen…', noun: 'instrument(en)',
+      sheetTitle: 'Kies een instrument',
+      onChange: runBandSearch
     });
   }
 }
@@ -8210,7 +8375,8 @@ function resetBandSearch() {
   filterBandGenresList = [];
   filterBandWantedList = [];
   filterBandStatusVal = 'zoekend';
-  document.querySelectorAll('#filterBandGenres .genre-tag, #filterBandWanted .tag').forEach(t => t.classList.remove('selected'));
+  renderPickerBadges(PICKERS.filterBandGenres);
+  renderPickerBadges(PICKERS.filterBandWanted);
   document.querySelectorAll('#filterBandStatus .tag').forEach(t => {
     t.classList.toggle('selected', t.textContent.trim() === 'Zoekend');
   });
@@ -8790,7 +8956,9 @@ function resetBandForm() {
   if (descEl) descEl.value = '';
   const statusEl = document.getElementById('bandPostcodeStatus');
   if (statusEl) statusEl.textContent = '';
-  document.querySelectorAll('#bandGenreGrid .genre-tag, #bandWantedGrid .tag, #bandStatusGrid .tag').forEach(t => t.classList.remove('selected'));
+  document.querySelectorAll('#bandStatusGrid .tag').forEach(t => t.classList.remove('selected'));
+  if (PICKERS.bandGenre) renderPickerBadges(PICKERS.bandGenre);
+  if (PICKERS.bandWanted) renderPickerBadges(PICKERS.bandWanted);
   renderBandLevelPicker(); // TT-51: sterren terug naar leeg
   populateBandAvatarPreview(); // V-15: voorbeeld terug naar lege "??"
   const titleEl = document.getElementById('bandFormTitle');
@@ -9098,13 +9266,9 @@ async function editBand(id) {
   document.getElementById('bandPostcodeStatus').textContent = b.city ? `Gevonden: ${b.city}` : '';
   document.getElementById('bandDescription').value = b.description || '';
   populateBandAvatarPreview(); // V-15
+  // Badges voor genre/instrument staan al goed: initBandForm() (hierboven)
+  // tekent ze opnieuw op basis van de zojuist ingestelde bandState.
 
-  document.querySelectorAll('#bandGenreGrid .genre-tag').forEach(t => {
-    t.classList.toggle('selected', bandState.genres.includes(t.textContent));
-  });
-  document.querySelectorAll('#bandWantedGrid .tag').forEach(t => {
-    t.classList.toggle('selected', bandState.wanted.includes(t.textContent));
-  });
   const statusLabelMap = { zoekend: 'Zoekend naar leden', compleet: 'Band is compleet', inactief: 'Inactief' };
   document.querySelectorAll('#bandStatusGrid .tag').forEach(t => {
     t.classList.toggle('selected', t.textContent.trim() === statusLabelMap[bandState.status]);
@@ -9116,36 +9280,29 @@ async function editBand(id) {
 }
 
 function initBandForm() {
-  const gg = document.getElementById('bandGenreGrid');
-  if (gg && !gg.children.length) {
-    GENRES.forEach(g => {
-      const t = document.createElement('div');
-      t.className = 'genre-tag';
-      t.textContent = g;
-      t.onclick = () => {
-        const idx = bandState.genres.indexOf(g);
-        if (idx === -1) { bandState.genres.push(g); t.classList.add('selected'); }
-        else { bandState.genres.splice(idx,1); t.classList.remove('selected'); }
-      };
-      gg.appendChild(t);
+  if (!PICKERS.bandGenre) {
+    initPicker({
+      id: 'bandGenre',
+      fieldId: 'bandGenreField', badgeRowId: 'bandGenreBadgeRow',
+      options: GENRES, getList: () => bandState.genres,
+      placeholder: 'Genre toevoegen…', noun: 'genre(s)',
+      sheetTitle: 'Kies een genre'
     });
   }
-  const wg = document.getElementById('bandWantedGrid');
-  if (wg && !wg.children.length) {
-    INSTRUMENTS.forEach(i => {
-      const t = document.createElement('div');
-      t.className = 'tag';
-      t.textContent = i;
-      t.style.fontSize = '12px';
-      t.style.padding = '6px 12px';
-      t.onclick = () => {
-        const idx = bandState.wanted.indexOf(i);
-        if (idx === -1) { bandState.wanted.push(i); t.classList.add('selected'); }
-        else { bandState.wanted.splice(idx,1); t.classList.remove('selected'); }
-      };
-      wg.appendChild(t);
+  if (!PICKERS.bandWanted) {
+    initPicker({
+      id: 'bandWanted',
+      fieldId: 'bandWantedField', badgeRowId: 'bandWantedBadgeRow',
+      options: INSTRUMENTS, getList: () => bandState.wanted,
+      placeholder: 'Instrument toevoegen…', noun: 'instrument(en)',
+      sheetTitle: 'Kies een instrument'
     });
   }
+  // Bij hergebruik van een al bestaande picker (tweede keer dat het
+  // formulier opent) staan de badges nog op de vorige band — opnieuw
+  // tekenen op basis van de huidige bandState.
+  renderPickerBadges(PICKERS.bandGenre);
+  renderPickerBadges(PICKERS.bandWanted);
   renderBandLevelPicker();
 }
 
@@ -9195,7 +9352,9 @@ const NIVEAU_INFO_BAND_ROWS = [
 ];
 
 function openBandNiveauInfoModal() {
-  const rowsHTML = NIVEAU_INFO_BAND_ROWS.map(r => `<tr>${r.map(c => `<td>${escHtml(c)}</td>`).join('')}</tr>`).join('');
+  // V-21 + 21-08-2026: geen tekst tussen haakjes meer bij niveaunamen —
+  // alleen de eerste kolom (de naam), de overige kolommen blijven ongewijzigd.
+  const rowsHTML = NIVEAU_INFO_BAND_ROWS.map(r => `<tr>${r.map((c, i) => `<td>${escHtml(i === 0 ? stripParenthetical(c) : c)}</td>`).join('')}</tr>`).join('');
   document.getElementById('niveauInfoModalContent').innerHTML = `
     <div class="filter-title" style="margin-bottom:4px;">Ervaringsindeling voor bands</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies de ervaring waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
@@ -9248,7 +9407,8 @@ const NIVEAU_INFO_MUSICIAN_ROWS = [
 ];
 
 function openMusicianNiveauInfoModal() {
-  const rowsHTML = NIVEAU_INFO_MUSICIAN_ROWS.map(r => `<tr>${r.map(c => `<td>${escHtml(c)}</td>`).join('')}</tr>`).join('');
+  // V-21 + 21-08-2026: zelfde haakjes-regel als bij de bandtabel hierboven.
+  const rowsHTML = NIVEAU_INFO_MUSICIAN_ROWS.map(r => `<tr>${r.map((c, i) => `<td>${escHtml(i === 0 ? stripParenthetical(c) : c)}</td>`).join('')}</tr>`).join('');
   document.getElementById('niveauInfoModalContent').innerHTML = `
     <div class="filter-title" style="margin-bottom:4px;">Niveau-indeling per instrument</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies per instrument het niveau waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
