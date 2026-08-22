@@ -6309,13 +6309,13 @@ function updateCharCounter(textareaId, counterId, max) {
   counter.style.color = len >= max ? 'var(--danger)' : 'var(--muted)';
 }
 
-function showToast(msg) {
+function showToast(msg, duration) {
   const el = document.getElementById('appToast');
   if (!el) { console.warn('Toast:', msg); return; }
   el.textContent = msg;
   el.classList.add('visible');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('visible'), 3500);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), duration || 3500);
 }
 
 // Vertaalt technische fouten (Supabase/netwerk) naar begrijpelijke NL-tekst.
@@ -6781,6 +6781,8 @@ function normalizeCityName(city) {
 let usernameCheckTimeout = null;
 let usernameAvailable = false; // laatst bekende status van de live-check
 let usernameCheckedValue = ''; // welke waarde die status bij hoort
+let usernameCheckFailed = false; // 22-08-2026 (P0-diagnose): technische fout bij de controle zelf, los van "naam is bezet"
+let lastUsernameCheckError = ''; // 22-08-2026 (P0-diagnose): de echte technische tekst van die fout
 
 // TT-78 (10-08-2026, bevinding Ronald): gebruikersnamen die op een beheerrol
 // lijken, of die zich voordoen als het platform zelf, mogen niet door gewone
@@ -6865,12 +6867,21 @@ async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
     if (error) throw error;
     usernameAvailable = !!data;
     usernameCheckedValue = value;
+    usernameCheckFailed = false;
     if (statusEl) {
       statusEl.textContent = usernameAvailable ? 'Beschikbaar' : 'Al in gebruik, kies een andere.';
       statusEl.style.color = usernameAvailable ? 'var(--success)' : 'var(--danger)';
     }
     return usernameAvailable;
   } catch (e) {
+    // 22-08-2026 (P0-diagnose): dit ving eerder élke fout op dezelfde manier
+    // op als "naam is bezet" — een technische fout bij de controle zelf
+    // (bijv. een rechtenfout op de RPC) zag er voor de gebruiker dan
+    // identiek uit als een simpelweg al bezette naam. usernameCheckFailed
+    // maakt dat onderscheid nu zichtbaar voor de aanroepende code.
+    usernameCheckFailed = true;
+    lastUsernameCheckError = (e && e.message) ? e.message : String(e);
+    console.error('Technische fout bij gebruikersnaam-controle:', e);
     if (statusEl) { statusEl.textContent = friendlyErrorMessage(e); statusEl.style.color = 'var(--danger)'; }
     return false;
   }
@@ -8186,7 +8197,17 @@ async function nextStep(from) {
     const available = (usernameCheckedValue === state.username && usernameAvailable)
       ? true
       : await checkUsernameAvailability();
-    if (!available) { showToast('Deze gebruikersnaam is niet beschikbaar. Kies een andere.'); return; }
+    if (!available) {
+      // 22-08-2026 (P0-diagnose): "niet beschikbaar" was hiervoor de tekst
+      // voor twee heel verschillende situaties — een echt bezette naam, én
+      // een technische fout bij de controle zelf. Nu apart zichtbaar.
+      if (usernameCheckFailed) {
+        showToast('TIJDELIJK — gebruikersnaam-controle faalde: ' + (lastUsernameCheckError || '(onbekende fout)'), 15000);
+      } else {
+        showToast('Deze gebruikersnaam is niet beschikbaar. Kies een andere.');
+      }
+      return;
+    }
 
     if (!editingMusicianId) {
       state.regEmail   = document.getElementById('regEmail').value.trim();
@@ -8308,7 +8329,7 @@ async function createAccountAndProfile() {
     // via friendlyErrorMessage(). Ronald test op een telefoon, geen
     // consolescherm bij de hand — dit is de snelste manier om de exacte
     // Postgres-foutmelding te zien. Terugdraaien zodra de oorzaak bekend is.
-    showToast('TIJDELIJK — technische melding: ' + (err && err.message ? err.message : String(err)));
+    showToast('TIJDELIJK — technische melding: ' + (err && err.message ? err.message : String(err)), 15000);
     return false;
   } finally {
     onboardingInFlight = false;
