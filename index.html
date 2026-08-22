@@ -3662,6 +3662,11 @@ const db = window.ttBackendMissing ? null : supabase.createClient(SUPABASE_URL, 
 
 let currentUser = null;
 
+// Bugfix, opnieuw hersteld 23-08-2026 (was al eens gerepareerd op
+// 13-08-2026, die reparatie was uit dit bestand verdwenen — zie
+// onAuthStateChange hieronder voor de volledige toelichting).
+let lastSignedInUserId = null;
+
 async function appInit() {
   try {
     // V-12 (13-08-2026, bijvangst): de hash moet vastgelegd worden vóórdat
@@ -3679,16 +3684,45 @@ async function appInit() {
     const { data: { session } } = await db.auth.getSession();
     if (session?.user) {
       currentUser = session.user;
+      lastSignedInUserId = session.user.id;
       onUserLoggedIn(session.user);
     }
+    // Bugfix, opnieuw hersteld 23-08-2026 (P0, gemeld door Ronald: "screenshot
+    // maken staat nu ineens uit"). Deze reparatie is al eens eerder gebouwd,
+    // op 13-08-2026 — ergens tussen toen en nu is dat blok teruggevallen naar
+    // de oude versie zonder de gebruikersvergelijking hieronder, waardoor de
+    // oorspronkelijke bug terug was.
+    //
+    // Oorspronkelijke toelichting (13-08-2026): Supabase-js stuurt een
+    // herhaalde SIGNED_IN-gebeurtenis wanneer het tabblad weer zichtbaar
+    // wordt, ook zonder dat iemand opnieuw inlogt — een bekend gedrag van de
+    // bibliotheek bij hertoetsing van een bestaande sessie. Een
+    // schermafbeelding maken doet op een aantal telefoons hetzelfde met de
+    // paginazichtbaarheid als wisselen naar een andere app: even onzichtbaar,
+    // dan weer zichtbaar. Zonder deze vergelijking riep elke zo'n herhaling
+    // opnieuw onUserLoggedIn() aan, en die stuurt altijd door naar Mijn
+    // Profiel — dus een schermafdruk maken (of van app wisselen en
+    // terugkomen) gooide je uit elk ander scherm terug naar je profiel.
+    //
+    // Nu: alleen bij een écht nieuwe inlog (nog geen gebruiker, of een ander
+    // account dan daarvoor) draait onUserLoggedIn() nog volledig, met alle
+    // bestaande logica erin (onboarding hervatten, wachtend bericht,
+    // doorsturen naar Mijn Profiel, gebruikersnaam-check). Bij een herhaalde
+    // melding voor dezelfde gebruiker wordt alleen de sessiereferentie
+    // (currentUser) bijgewerkt, zonder te navigeren.
     db.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         showView('reset');
       } else if (event === 'SIGNED_IN' && session?.user) {
+        const isNewLogin = session.user.id !== lastSignedInUserId;
         currentUser = session.user;
-        onUserLoggedIn(session.user);
+        if (isNewLogin) {
+          lastSignedInUserId = session.user.id;
+          onUserLoggedIn(session.user);
+        }
       } else if (event === 'SIGNED_OUT') {
         currentUser = null;
+        lastSignedInUserId = null;
         onUserLoggedOut();
       }
     });
@@ -6340,6 +6374,24 @@ function friendlyErrorMessage(err) {
   if (/permission denied|rls/i.test(msg)) {
     return 'Je hebt geen toestemming voor deze actie.';
   }
+  // Bugfix 23-08-2026 (P0, gemeld door Ronald: generieke foutmelding bij het
+  // afronden van een nieuw profiel, "killing bij een jongere"). Vermoedelijke
+  // oorzaak (Aanname — database niet zelf gezien): V-23 (12-08-2026) maakte
+  // een beheersingsniveau per nummer optioneel in de UI ("mag ook later"),
+  // maar de kolom musician_songs.mastery_level is destijds mogelijk niet
+  // meebewogen naar nullable. Een null-waarde die tegen een NOT NULL-kolom
+  // aanloopt gaf tot nu toe altijd de onherkenbare standaardmelding
+  // hieronder — precies zo'n moment is voor een jonge gebruiker, na het
+  // volledig doorlopen van de wizard, bijzonder ontmoedigend. Deze regel
+  // zorgt dat zo'n fout voortaan een begrijpelijke, specifieke tekst geeft
+  // in plaats van "Er ging iets mis. Probeer het opnieuw." — ongeacht welke
+  // kolom het exact betreft.
+  if (/null value in column|violates not-null constraint/i.test(msg)) {
+    return 'Eén van de velden mist een verplichte waarde bij het opslaan. Probeer het opnieuw — meld dit aan Ronald als het blijft gebeuren.';
+  }
+  if (/violates check constraint/i.test(msg)) {
+    return 'Eén van de ingevulde waarden wordt niet geaccepteerd. Probeer het opnieuw — meld dit aan Ronald als het blijft gebeuren.';
+  }
   // TT-87: weigeringen door Supabase Storage. De client controleert type en
   // grootte nu zelf, dus dit hoort niet meer voor te komen. Wijkt de lijst in
   // de bucket ooit af van AVATAR_MIME_TYPES/MEDIA_MIME_TYPES, dan leest de
@@ -7793,6 +7845,18 @@ function showInstrumentLevelStep(instrument, cameFromList) {
 
 function backToInstrumentPick() {
   if (!instrumentLevelTarget || !instrumentLevelTarget.cameFromList) return;
+  // Bugfix 23-08-2026: zelfde lek als in closeInstrumentLevelSheet()
+  // hierboven, apart nodig omdat dit pad niet via die functie loopt. Zonder
+  // dit blijft het net gekozen instrument zonder niveau in state.instruments
+  // staan — en wordt het onvindbaar voor de fix hierboven zodra iemand
+  // daarna een ánder instrument kiest (instrumentLevelTarget wijst dan niet
+  // meer naar dit instrument).
+  if (!state.instrumentLevels[instrumentLevelTarget.instrument]) {
+    const idx = state.instruments.indexOf(instrumentLevelTarget.instrument);
+    if (idx !== -1) state.instruments.splice(idx, 1);
+    renderInstrumentBadges();
+    saveOnboardingProgress();
+  }
   openInstrumentPicker();
 }
 
@@ -7845,6 +7909,24 @@ function removeInstrumentFromSheet() {
 }
 
 function closeInstrumentLevelSheet() {
+  // Bugfix 23-08-2026 (gevonden bij bredere code-controle, niet gemeld door
+  // Ronald): pickInstrumentFromSheet() voegt een instrument meteen toe aan
+  // state.instruments, vóórdat er een niveau gekozen is — dat gebeurt pas in
+  // de stap die hierna opent. Sloot iemand dit scherm via het kruisje of een
+  // tik buiten de modal, dan bleef het instrument in de lijst staan zonder
+  // niveau. state.instrumentLevels[instrument] bleef dan ongezet, en bij
+  // opslaan ging niveau als null mee — instrument is verplicht in de wizard,
+  // dus dit pad is voor iedereen bereikbaar, niet een uitzondering.
+  // Alleen relevant bij een NIEUW gekozen instrument (cameFromList) zonder
+  // niveau: sluiten bij het wijzigen van een al bestaand instrument
+  // (cameFromList=false, via reopenInstrumentBadge) verandert niets aan de
+  // eerder gekozen waarde.
+  if (instrumentLevelTarget && instrumentLevelTarget.cameFromList && !state.instrumentLevels[instrumentLevelTarget.instrument]) {
+    const idx = state.instruments.indexOf(instrumentLevelTarget.instrument);
+    if (idx !== -1) state.instruments.splice(idx, 1);
+    renderInstrumentBadges();
+    saveOnboardingProgress();
+  }
   document.getElementById('instrumentLevelModal').classList.remove('visible');
   document.getElementById('instrumentPickStep').style.display = 'block';
   document.getElementById('instrumentLevelStep').style.display = 'none';
