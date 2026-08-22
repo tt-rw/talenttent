@@ -2070,11 +2070,16 @@
     .field-group { grid-template-columns: 1fr; }
     .goal-options { grid-template-columns: 1fr; }
     .filter-row { grid-template-columns: 1fr; }
-    /* TT-15: op mobiel kost een permanent zichtbare kop (logo + tagline +
-       nav) bijna een derde van het scherm. De kop scrollt daarom gewoon mee;
-       alleen de navigatiebalk blijft vastgeplakt, zodat navigeren makkelijk
-       blijft zonder dat het logo blijvend ruimte inneemt. */
-    .app-topbar { position: static; }
+    /* Punt 1 (22-08-2026, Ronald): TT-15 (06-08-2026) liet de kop bewust
+       meescrollen om ruimte te sparen. Nu bewust teruggedraaid — de naam
+       moet altijd zichtbaar blijven. De hele kop (woordmerk + hamburger +
+       gele lijn) is nu samen sticky, niet meer alleen de navigatierij. */
+    .app-topbar { position: sticky; top: 0; z-index: 55; background: var(--bg); }
+    /* Punt 2 (22-08-2026, Ronald): woordmerk en hamburgermenu verticaal
+       centreren t.o.v. elkaar. header stond nog op align-items:flex-end
+       met asymmetrische padding (32px boven, 0 onder) — dat was bedoeld
+       voor de tagline die op mobiel al verborgen is (regel hieronder). */
+    header { align-items: center; padding: 18px 20px; }
     .logo { font-size: 28px; text-shadow: none; }
     .tagline { display: none; }
     .app-nav-row { position: sticky; top: 0; z-index: 50; background: var(--bg);
@@ -2091,8 +2096,14 @@
        mobiel; de knop wordt met een relatieve verschuiving omhoog in de
        koprij getrokken. */
     .app-nav-row { padding: 0; border-bottom: none; min-height: 0; }
-    #navMenuBtn { position: absolute; top: -52px; right: 12px; margin-bottom: 0; }
-    .nav-menu-dropdown { right: 12px; top: -8px; }
+    #navMenuBtn { position: absolute; top: -62px; right: 12px; margin-bottom: 0; }
+    /* Punt 3 (22-08-2026, Ronald): hamburgerpictogram groter, in verhouding
+       met het woordmerk. Het woordmerk heeft op mobiel line-height:1 bij
+       font-size 28px — dus 28px is de visuele hoogte van de tekst zelf.
+       26px icoon past daar dicht bij, binnen de knop van 44px (tikdoel
+       blijft ongewijzigd, alleen het icoon zelf wordt groter getekend). */
+    #navMenuBtn svg { width: 26px; height: 26px; }
+    .nav-menu-dropdown { right: 12px; top: -18px; }
     .search-wrap, .my-profile-wrap { padding: 24px 16px 60px; }
     /* TT-U25 (12-08-2026): een modal op een telefoon hoort een volledig
        scherm te zijn, geen dialoogvenster met een kruisje.
@@ -4845,7 +4856,7 @@ function musicianCardHTML(m) {
 // openMusicianModal() (modal voor andere profielen) én loadMyProfile() (Mijn
 // Profiel) — zodat Mijn Profiel nooit de modal hoeft te openen/sluiten (dat
 // veroorzaakte een korte flits van de modal-overlay bij elk bezoek).
-function buildMusicianDetailHTML(m, isOwn) {
+function buildMusicianDetailHTML(m, isOwn, inModal) {
   const col  = safeColor(m.profile_color, '#f5c518');
   const age  = ageOf(m);
   const updatedLabel = relativeUpdatedLabel(m.updated_at);
@@ -4891,8 +4902,19 @@ function buildMusicianDetailHTML(m, isOwn) {
     .map(x => ({ ...x, safeHref: safeUrl(x.url) }))
     .filter(x => x.safeHref);
 
+  // De -32px bleed-marge laat de balk precies tot de rand van een modal
+  // reiken (.modal-box heeft daar exact 32px opvulling). Mijn Profiel
+  // (.my-profile-wrap) heeft een andere opvulling (24-40px, niet 32px) —
+  // dezelfde vaste -32px trok de balk daar te ver omhoog, tot naast de
+  // koprij (gemeld door Ronald, 22-08-2026: "gele lijn" die met scrollen
+  // meebeweegt). Buiten de modal dus geen bleed, gewoon een balk die past
+  // binnen de bestaande opvulling.
+  const headerBandStyle = inModal
+    ? `background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;`
+    : `background:${col};margin:0 0 24px;border-radius:8px;height:8px;`;
+
   return `
-    <div class="profile-header-band" style="background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;"></div>
+    <div class="profile-header-band" style="${headerBandStyle}"></div>
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
       ${avatarHTML}
       <div style="min-width:0;flex:1;">
@@ -5057,7 +5079,7 @@ async function openMusicianModal(id) {
   m.distance_km = musicianDistanceCache[m.id] != null ? musicianDistanceCache[m.id] : null;
 
   const isOwn = !!(myMusicianId && myMusicianId === m.id);
-  document.getElementById('musicianModalContent').innerHTML = buildMusicianDetailHTML(m, isOwn);
+  document.getElementById('musicianModalContent').innerHTML = buildMusicianDetailHTML(m, isOwn, true);
   // V-09: zelfde displayName-logica als binnen buildMusicianDetailHTML()
   // (TT-43: bezoekers zonder profiel zien alleen de gebruikersnaam).
   const displayName = isOwn ? m.fname : displayNameOf(m);
