@@ -8303,7 +8303,12 @@ async function createAccountAndProfile() {
   } catch (err) {
     console.error('Kon account niet aanmaken:', err);
     document.getElementById('saveOverlay').classList.remove('visible');
-    showToast(friendlyErrorMessage(err));
+    // TIJDELIJK (22-08-2026) — P0-diagnose registratieblokkade: de echte,
+    // technische foutmelding rechtstreeks tonen i.p.v. de vertaalde versie
+    // via friendlyErrorMessage(). Ronald test op een telefoon, geen
+    // consolescherm bij de hand — dit is de snelste manier om de exacte
+    // Postgres-foutmelding te zien. Terugdraaien zodra de oorzaak bekend is.
+    showToast('TIJDELIJK — technische melding: ' + (err && err.message ? err.message : String(err)));
     return false;
   } finally {
     onboardingInFlight = false;
