@@ -3658,6 +3658,45 @@ const SUPABASE_KEY = 'sb_publishable_tnWUVGTBmwnn9fAILeNqqQ_UlCn5AFM';
 // ReferenceError en wordt geen enkele functie meer gedefinieerd.
 const db = window.ttBackendMissing ? null : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ─── Foutregistratie (TT-64, stap 1) ────────────────────────────────────────
+// Minimale versie: alleen de foutmelding zelf wegschrijven, geen dashboard,
+// geen filtering — dat blijft P1. Doel: weten dát er iets stuk is, vóórdat
+// een gebruiker het meldt, niet pas erna.
+//
+// Aandachtspunt (10-08-2026, al eerder vastgelegd): werkt niet in het TT-82-
+// scenario (Supabase-bibliotheek niet geladen, db is dan null) — die ene fout
+// wordt bewust niet gelogd, een clientloze route daarvoor bestaat niet.
+//
+// Twee vangnetten tegen misbruik van de tabel zelf: (1) een simpele teller
+// stopt met loggen na 20 fouten binnen één paginabezoek, zodat een fout die
+// in een lus terechtkomt de tabel niet volspamt; (2) de insert zelf staat in
+// een try/catch die nooit iets teruggooit — een mislukte logpoging mag nooit
+// zelf weer een fout veroorzaken.
+let appErrorLogCount = 0;
+function logAppError(message, source, stack) {
+  if (!db) return; // TT-82: geen bibliotheek, dus ook geen manier om te loggen
+  if (appErrorLogCount >= 20) return;
+  appErrorLogCount++;
+  try {
+    db.from('app_error_log').insert({
+      message: String(message || '').slice(0, 2000),
+      source: source ? String(source).slice(0, 500) : null,
+      stack: stack ? String(stack).slice(0, 4000) : null,
+      user_id: currentUser?.id || null,
+    }).then(() => {}, () => {}); // stil falen, ook bij een netwerkfout
+  } catch (e) {
+    // nooit teruggooien vanuit de foutlogger zelf
+  }
+}
+window.addEventListener('error', (e) => {
+  logAppError(e.message, e.filename ? (e.filename + ':' + e.lineno) : null, e.error?.stack);
+});
+window.addEventListener('unhandledrejection', (e) => {
+  const reason = e.reason;
+  const message = reason?.message || String(reason);
+  logAppError(message, 'unhandledrejection', reason?.stack);
+});
+
 // ─── App initialisatie ───────────────────────────────────────────────────────
 
 let currentUser = null;
@@ -3776,6 +3815,17 @@ async function onUserLoggedIn(user) {
 
   if (onboardingInFlight) return;
 
+  // TT-108 (23-08-2026): hasOwnProfile werd tot nu toe pas gezet zodra
+  // iemand de weergave Zoeken bezocht (configureSearchAccess()). Een
+  // gebruiker die na het inloggen direct naar Mijn Bands ging zonder ooit
+  // Zoeken te hebben bezocht, kreeg een bandprofiel dan via het beperkte/
+  // anonieme pad — klikbare ledenchips en de berichtknop werkten daar dan
+  // niet (gevonden bij het testen van de klikbare bandledenchips, 13-08-2026).
+  // Nu alvast gezet bij elke echte login (niet tijdens createAccountAndProfile
+  // zelf, vandaar ná de onboardingInFlight-check hierboven) — configureSearchAccess()
+  // blijft 'm daarna gewoon opnieuw zetten, dat is onschadelijk.
+  hasOwnProfile = !!(await getMyMusicianId());
+
   // Route B (TT-09): als er een onafgeronde onboarding lag te wachten (bijv. na
   // een refresh), gaan we daar direct naar terug i.p.v. naar Mijn Profiel —
   // anders verliest iemand het overzicht van waar hij was gebleven.
@@ -3819,6 +3869,11 @@ function onUserLoggedOut() {
   if (navLoginMenuOut) navLoginMenuOut.textContent = 'Inloggen';
   myMusicianId = null;
   myOwnCity = null;
+  // TT-108 (23-08-2026): hoort bij dezelfde fix als in onUserLoggedIn() —
+  // zonder dit kan een verouderde 'true' van de vorige sessie blijven staan
+  // voor een net uitgelogde bezoeker, bijv. bij het bekijken van een
+  // gedeelde bandlink zonder eerst Zoeken te bezoeken.
+  hasOwnProfile = false;
   const consentBox = document.getElementById('consentCheckbox');
   if (consentBox) { consentBox.checked = false; updateSubmitProfileState(); }
   // Beveiligingsfix: een editeer-sessie (via "Profiel bewerken") mag nooit
