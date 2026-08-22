@@ -6621,6 +6621,10 @@ async function submitProfile() {
     }
 
     // 2. Hoofdprofiel opslaan
+    // Bugfix 23-08-2026: zelfde reden als in createAccountAndProfile()
+    // hierboven — birth_date zit in deze insert, een kale .select() zou
+    // daardoor falen sinds B-01 tweede stap. Alleen 'id' is nodig (mid
+    // hieronder).
     const { data: musician, error: mErr } = await db
       .from('musicians')
       .insert({
@@ -6641,7 +6645,7 @@ async function submitProfile() {
         user_id:          userId,
         profile_complete: true,
       })
-      .select()
+      .select('id')
       .single();
 
     if (mErr) throw new Error(mErr.message);
@@ -8357,11 +8361,20 @@ async function createAccountAndProfile() {
     // ná een korte pauze, in plaats van de gebruiker terug te sturen naar
     // stap 1 — die had op dat moment allang een geldig, ingelogd account.
     let musician, mErr;
-    ({ data: musician, error: mErr } = await db.from('musicians').insert(musicianRow).select().single());
+    // Bugfix 23-08-2026 (P0, gemeld door Ronald: "inloggen/profiel aanmaken
+    // is stuk"): een kale .select() na insert() vraagt impliciet ALLE
+    // kolommen van de nieuwe rij terug. musicianRow bevat birth_date. Sinds
+    // B-01 tweede stap (18-08-2026) mag authenticated die kolom niet meer
+    // lezen — ook niet van zichzelf. Een sterretje-select faalt dan in zijn
+    // geheel (zelfde Postgres-gedrag als al gerepareerd in editMyProfile()
+    // en loadMyProfile()). Elke nieuwe accountaanmaak liep hierdoor vast, met
+    // twee mislukte pogingen en een foutmelding tot gevolg. Hierna alleen
+    // 'id' terugvragen — verder wordt er niets van musician.* gebruikt.
+    ({ data: musician, error: mErr } = await db.from('musicians').insert(musicianRow).select('id').single());
     if (mErr) {
       console.error('Eerste poging profiel aanmaken mislukt, probeer nog eens:', mErr);
       await new Promise(resolve => setTimeout(resolve, 800));
-      ({ data: musician, error: mErr } = await db.from('musicians').insert(musicianRow).select().single());
+      ({ data: musician, error: mErr } = await db.from('musicians').insert(musicianRow).select('id').single());
     }
     if (mErr) throw new Error(mErr.message);
 
@@ -9896,13 +9909,18 @@ async function saveBand() {
       if (uErr) throw uErr;
       await db.from('band_wanted').delete().eq('band_id', bandId);
     } else {
+      // Zelfde voorzorg als bij createAccountAndProfile() (23-08-2026): alleen
+      // 'id' terugvragen i.p.v. een kale .select(). Niet omdat hier een
+      // bekende kolombeperking is gevonden — geen enkel veld hier is dat
+      // vandaag — maar een kale select() vraagt onnodig alle kolommen op
+      // terwijl alleen band.id verderop wordt gebruikt.
       const { data: band, error: bErr } = await db.from('bands').insert({
         name, city: normalizeCityName(city), zip,
         description: desc || null, genres: bandState.genres,
         status: bandState.status, founder_id: mid, city_source: bandCitySource,
         niveau: bandState.niveau || null, // TT-51, optioneel
         avatar_url: bandState.avatarUrl || null, // V-15
-      }).select().single();
+      }).select('id').single();
       if (bErr) throw bErr;
       bandId = band.id;
       await db.from('band_members').insert({ band_id: bandId, musician_id: mid, role: 'Oprichter', status: 'bevestigd' });
