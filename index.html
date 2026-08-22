@@ -1831,6 +1831,19 @@
     animation: slideIn 0.3s ease;
   }
 
+  /* TT-118 (22-08-2026): vaste breedte per modal, als klasse i.p.v. inline
+     stijl op het element. Een inline stijl wint altijd van een stijlklasse —
+     ook van de mobiele regel hieronder die zegt "volledig scherm, geen
+     max-breedte" (TT-U25). Vijf modals hadden zo'n inline max-width en waren
+     daardoor op een telefoon te breed voor het scherm. Met een klasse i.p.v.
+     inline stijl wint de latere, mobiele regel weer zoals bedoeld, want de
+     bronvolgorde in het bestand beslist bij gelijke specificiteit. */
+  .modal-box-sm { max-width: 400px; }
+  .modal-box-md { max-width: 440px; }
+  .modal-box-lg { max-width: 480px; }
+  .modal-box-slg { max-width: 520px; }
+  .modal-box-xl { max-width: 760px; }
+
   .modal-close {
     position: absolute;
     top: 16px; right: 16px;
@@ -1903,7 +1916,30 @@
     display: flex;
     gap: 12px;
     margin-top: 24px;
+    align-items: flex-start;
   }
+
+  /* TT-119 (22-08-2026): klein menuknopje voor de minder-frequente
+     profielacties. Zelfde opbouw als .nav-menu-btn/.nav-menu-dropdown,
+     maar eigen positionering (relatief aan deze knop, niet aan de
+     bovenste navigatiebalk). */
+  .profile-actions-menu-wrap { position: relative; flex-shrink: 0; }
+
+  .inline-menu-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    min-width: 240px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    overflow: hidden;
+    z-index: 60;
+  }
+  .inline-menu-dropdown.visible { display: block; }
 
   /* ── Band kaarten ────────────────────────── */
   .band-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;transition:border-color 0.2s; }
@@ -1947,8 +1983,12 @@
   .level-choice-stars .filled { color:var(--accent); }
   .level-choice-label { line-height:1.3; }
 
-  .niveau-info-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; border:1px solid var(--border); background:none; color:var(--muted); font-size:11px; font-weight:700; cursor:pointer; margin-left:6px; vertical-align:middle; padding:0; }
-  .niveau-info-btn:hover { color:var(--accent); border-color:var(--accent); }
+  /* TT-123 (22-08-2026): was standaard grijs, pas geel bij hover — op een
+     telefoon bestaat geen hover, dus het icoon leek daar altijd onopvallend
+     grijs. Nu standaard geel, zodat het ook zonder hover als klikbaar
+     opvalt. */
+  .niveau-info-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; border:1px solid var(--accent); background:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; margin-left:6px; vertical-align:middle; padding:0; }
+  .niveau-info-btn:hover { background: rgba(245,197,24,0.15); }
   /* TT-U23 (12-08-2026): onzichtbaar tikvlak van 44x44 rond de kleine knop. */
   .niveau-info-btn::after { content:''; position:absolute; top:-10px; right:-10px; bottom:-10px; left:-10px; }
   .niveau-info-wrap { overflow-x:auto; margin:12px 0 20px; }
@@ -1976,9 +2016,15 @@
   .picker-badge-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
   /* Vaste breedte én hoogte: elke badge is exact gelijk, ongeacht de
      tekstlengte van de naam. De sterrenrij staat daardoor bij elke badge
-     op precies dezelfde plek (Ronalds instructie, 21-08-2026). */
+     op precies dezelfde plek (Ronalds instructie, 21-08-2026).
+     Breedte 108px -> 190px (TT-124, 22-08-2026): bij 108px, en ook nog bij
+     een eerste poging van 168px, paste de langste naam ("Harmonica
+     (mondharmonica)", gemeten 167px tekstbreedte bij dit lettertype/
+     gewicht) niet op één regel. Op 190px past hij wel — gemeten met
+     Playwright (canvas-tekstmeting + gerenderde regelhoogte), zie
+     oplevering. */
   .picker-badge {
-    position: relative; width: 108px; height: 72px; box-sizing: border-box;
+    position: relative; width: 190px; height: 72px; box-sizing: border-box;
     display: flex; flex-direction: column; align-items: center;
     background: var(--accent); color: #000; border-radius: 12px;
     padding: 10px 6px 8px; font-size: 12px; font-weight: 700; line-height: 1.25;
@@ -2036,7 +2082,17 @@
     .app-nav { gap: 4px; -webkit-overflow-scrolling: touch; }
     .nav-btn { padding: 10px 12px; font-size: 12px; white-space: nowrap; }
     .nav-spacer { display: none; }
-    .nav-menu-dropdown { right: 12px; }
+    /* TT-125 (22-08-2026): op mobiel stond onder de kop een sticky balk met
+       daarin alleen het hamburgermenu (de rest, .app-nav, is al verborgen)
+       — een leeg blok van zo'n 50-60px hoogte. Voorstel Ronald: het
+       hamburgermenu naast het woordmerk zetten, het lege blok weg.
+       .app-nav-row zelf blijft bestaan (nodig als ankerpunt voor de
+       uitklaplijst), maar krijgt geen eigen randen/opvulling meer op
+       mobiel; de knop wordt met een relatieve verschuiving omhoog in de
+       koprij getrokken. */
+    .app-nav-row { padding: 0; border-bottom: none; min-height: 0; }
+    #navMenuBtn { position: absolute; top: -52px; right: 12px; margin-bottom: 0; }
+    .nav-menu-dropdown { right: 12px; top: -8px; }
     .search-wrap, .my-profile-wrap { padding: 24px 16px 60px; }
     /* TT-U25 (12-08-2026): een modal op een telefoon hoort een volledig
        scherm te zijn, geen dialoogvenster met een kruisje.
@@ -2113,7 +2169,11 @@
        wél zichtbaar: daar staan Over ons, de juridische pagina's en
        inloggen/uitloggen. */
     .app-nav { display: none !important; }
-    .app-nav-row { justify-content: flex-end; padding: 4px 12px; }
+    /* TT-125 (22-08-2026): padding hier weg — het hamburgermenu staat nu
+       niet meer in deze rij zelf, maar (zie eerder in dit blok) verschoven
+       in de koprij naast het woordmerk. Deze rij hoeft dus geen eigen
+       hoogte meer te reserveren. */
+    .app-nav-row { justify-content: flex-end; padding: 0; }
 
     /* Inhoud mag niet achter de onderbalk verdwijnen. */
     body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
@@ -2455,7 +2515,13 @@
 
     <div class="nav-buttons">
       <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
-      <button class="btn btn-primary" onclick="nextStep(0)">Verder →</button>
+      <div style="display:flex;gap:12px;">
+        <!-- TT-121 (22-08-2026): opslaan per stap, alleen tijdens het
+             bewerken van een bestaand profiel — een nieuw account doorloopt
+             nog gewoon de hele wizard. -->
+        <button class="btn btn-ghost save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
+        <button class="btn btn-primary" onclick="nextStep(0)">Verder →</button>
+      </div>
     </div>
   </div>
 
@@ -2497,6 +2563,7 @@
         <button class="btn btn-ghost" onclick="prevStep(1)">← Terug</button>
         <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
       </div>
+      <button class="btn btn-ghost save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
       <button class="btn btn-primary" onclick="nextStep(1)">Verder →</button>
     </div>
   </div>
@@ -2568,6 +2635,7 @@
         <button class="btn btn-ghost" onclick="prevStep(2)">← Terug</button>
         <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
       </div>
+      <button class="btn btn-ghost save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
       <button class="btn btn-primary" onclick="nextStep(2)">Verder →</button>
     </div>
   </div>
@@ -2625,6 +2693,7 @@
         <button class="btn btn-ghost" onclick="prevStep(3)">← Terug</button>
         <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
       </div>
+      <button class="btn btn-ghost save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
       <button class="btn btn-primary" onclick="nextStep(3)">Verder →</button>
     </div>
   </div>
@@ -3017,13 +3086,26 @@
          leden of iemand het overneemt — dat aanbod verschijnt hier. -->
     <div id="founderOfferBanner"></div>
     <div id="myProfileContent"></div>
+    <!-- TT-119 (22-08-2026, optie B): was vier knoppen naast elkaar, breder
+         dan het scherm op een telefoon. "Mijn bands" is weg — de onderbalk
+         heeft al een vaste knop "Bands" naar precies hetzelfde scherm, dat
+         stond dubbel. De twee minder-frequente acties (band-uitnodigingen
+         aan/uit, account verwijderen) staan nu achter een klein menuknopje,
+         zodat de onomkeerbare "Account verwijderen" niet meer even zwaar
+         oogt als de gewone bewerkknop. -->
     <div class="profile-actions" id="profileActions" style="display:none;">
-      <button class="btn btn-primary" onclick="editMyProfile()">Profiel bewerken</button>
-      <button class="btn btn-ghost" onclick="showView('bands')" id="myBandsBtn" style="display:none;">Mijn bands</button>
-      <!-- TT-56 (12-08-2026): opt-out band-uitnodigingen. Alleen deze knop,
-           geen zichtbaar label op het profiel zelf voor anderen. -->
-      <button class="btn btn-ghost" id="bandInviteToggleBtn" onclick="toggleBandInviteAvailability()">Open voor band-uitnodigingen</button>
-      <button class="btn btn-ghost" style="color:var(--danger);border-color:var(--danger);" onclick="openDeleteAccountModal()">Account verwijderen</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="editMyProfile()">Profiel bewerken</button>
+      <div class="profile-actions-menu-wrap">
+        <button class="nav-menu-btn" id="profileMoreBtn" onclick="toggleProfileMoreMenu(event)" aria-label="Meer opties voor je profiel" title="Meer">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
+        </button>
+        <div class="inline-menu-dropdown" id="profileMoreDropdown">
+          <!-- TT-56 (12-08-2026): opt-out band-uitnodigingen. Alleen deze
+               knop, geen zichtbaar label op het profiel zelf voor anderen. -->
+          <button class="nav-menu-item" id="bandInviteToggleBtn" onclick="closeProfileMoreMenu();toggleBandInviteAvailability()">Open voor band-uitnodigingen</button>
+          <button class="nav-menu-item" style="color:var(--danger);" onclick="closeProfileMoreMenu();openDeleteAccountModal()">Account verwijderen</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -3389,7 +3471,7 @@
 
 <!-- Generieke bevestigingsmodal (bijv. profiel verwijderen) -->
 <div class="modal-overlay" id="confirmModal">
-  <div class="modal-box" style="max-width:400px;">
+  <div class="modal-box modal-box-sm">
     <p id="confirmMessage" style="margin-bottom:24px;font-size:14px;"></p>
     <div style="display:flex;gap:12px;">
       <button class="btn btn-primary" id="confirmYesBtn" onclick="confirmModalYes()" style="background:var(--danger);border-color:var(--danger);">Ja, verwijderen</button>
@@ -3403,7 +3485,7 @@
      opgericht een keuze nodig kan zijn (band verwijderen of overdragen),
      wat meer is dan de generieke ja/nee-dialoog aankan. -->
 <div class="modal-overlay" id="deleteAccountModal" onclick="if(event.target===this)closeDeleteAccountModal()">
-  <div class="modal-box" style="max-width:480px;">
+  <div class="modal-box modal-box-lg">
     <button class="modal-close" onclick="closeDeleteAccountModal()">✕</button>
     <h3 style="margin-bottom:12px;">Account verwijderen</h3>
     <p style="margin-bottom:16px;font-size:14px;">Dit account inclusief alle gegevens wordt permanent verwijderd.</p>
@@ -3420,7 +3502,7 @@
      moet worden afgerond voordat de rest van de app weer bereikbaar is
      (Ronald: "verplicht invullen bij eerstvolgend bezoek"). -->
 <div class="modal-overlay" id="usernameGateModal">
-  <div class="modal-box" style="max-width:440px;">
+  <div class="modal-box modal-box-md">
     <div class="filter-title" style="margin-bottom:4px;">Kies een gebruikersnaam</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Nieuw: andere muzikanten zien voortaan een gebruikersnaam in plaats van je echte naam. Kies er eentje om verder te gaan.</p>
     <div class="field">
@@ -3434,7 +3516,7 @@
 
 <!-- Bericht sturen (TT-01) -->
 <div class="modal-overlay" id="messageModal" onclick="if(event.target===this)closeMessageComposer()">
-  <div class="modal-box" style="max-width:440px;">
+  <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeMessageComposer()">✕</button>
     <div class="filter-title" style="margin-bottom:4px;">Bericht sturen</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Aan <strong id="messageComposerRecipientName" style="color:var(--text);"></strong></p>
@@ -3482,7 +3564,7 @@
      via de i-knop naast "Niveau van de band". Inhoud identiek aan Tabel 1 +
      de toelichtende tekst in niveaubepaling-naslagwerk.md. -->
 <div class="modal-overlay" id="niveauInfoModal" onclick="if(event.target===this)this.classList.remove('visible')">
-  <div class="modal-box" style="max-width:760px;">
+  <div class="modal-box modal-box-xl">
     <button class="modal-close" onclick="document.getElementById('niveauInfoModal').classList.remove('visible')">✕</button>
     <div id="niveauInfoModalContent"></div>
   </div>
@@ -3500,7 +3582,7 @@
      verwijderen" en "Volledige toelichting" staan nu samen in de vaste
      voettekst, gelijke breedte, uitgelijnd met de niveauknoppen erboven. -->
 <div class="modal-overlay" id="instrumentLevelModal" onclick="if(event.target===this)closeInstrumentLevelSheet()">
-  <div class="modal-box modal-box-sticky-footer" style="max-width:520px;">
+  <div class="modal-box modal-box-sticky-footer modal-box-slg">
     <button class="modal-back" id="instrumentLevelBackBtn" onclick="backToInstrumentPick()" aria-label="Terug naar de instrumentenlijst" hidden><span aria-hidden="true">←</span></button>
     <button class="modal-close" onclick="closeInstrumentLevelSheet()" aria-label="Sluiten">✕</button>
 
@@ -3530,7 +3612,7 @@
      zie instrumentLevelModal hierboven). Zelfde sticky-footer-opbouw als
      hierboven, hier zonder voettekst (die blijft leeg en dus onzichtbaar). -->
 <div class="modal-overlay" id="pickerListModal" onclick="if(event.target===this)closePickerList()">
-  <div class="modal-box modal-box-sticky-footer" style="max-width:480px;">
+  <div class="modal-box modal-box-sticky-footer modal-box-lg">
     <button class="modal-close" onclick="closePickerList()" aria-label="Sluiten">✕</button>
     <div class="modal-scroll-area">
       <div class="filter-title" id="pickerListTitle" style="margin-bottom:14px;padding-right:52px;"></div>
@@ -3759,6 +3841,27 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNavMenu(); });
 
+// TT-119 (22-08-2026): zelfde patroon als het hamburgermenu hierboven, voor
+// het kleine menuknopje bij "Profiel bewerken" (band-uitnodigingen aan/uit,
+// account verwijderen).
+function toggleProfileMoreMenu(e) {
+  if (e) e.stopPropagation();
+  const dd = document.getElementById('profileMoreDropdown');
+  const btn = document.getElementById('profileMoreBtn');
+  const opening = !dd.classList.contains('visible');
+  dd.classList.toggle('visible', opening);
+  btn.classList.toggle('active', opening);
+}
+function closeProfileMoreMenu() {
+  document.getElementById('profileMoreDropdown')?.classList.remove('visible');
+  document.getElementById('profileMoreBtn')?.classList.remove('active');
+}
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('profileMoreDropdown');
+  if (dd && dd.classList.contains('visible') && !dd.contains(e.target) && e.target.id !== 'profileMoreBtn' && !e.target.closest('#profileMoreBtn')) closeProfileMoreMenu();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProfileMoreMenu(); });
+
 function navLoginClick() {
   if (currentUser) { signOut(); } else { showView('auth'); }
 }
@@ -3977,6 +4080,12 @@ function showView(view, mode) {
     document.querySelectorAll('.cancel-edit-btn').forEach(btn => {
       btn.style.display = locked ? 'inline-block' : 'none';
     });
+    // TT-121 (22-08-2026): opslaan per stap, zelfde aan/uit-logica als de
+    // Annuleren-knop hierboven — alleen zichtbaar tijdens het bewerken van
+    // een bestaand profiel.
+    document.querySelectorAll('.save-step-btn').forEach(btn => {
+      btn.style.display = locked ? 'inline-flex' : 'none';
+    });
     // Inloggegevens horen alleen bij een gloednieuw account (stap 1, nog geen
     // editingMusicianId) — zodra een account/profiel al bestaat (onboarding
     // die verdergaat, of een bestaand profiel bewerken) is dit blok niet meer
@@ -4088,6 +4197,10 @@ async function signIn() {
 
   const { error } = await db.auth.signInWithPassword({ email, password });
   if (error) { showAuthError(friendlyErrorMessage(error)); return; }
+  // TT-122 (22-08-2026): e-mailadres onthouden op dit toestel, zodat het
+  // veld er bij een volgend bezoek al staat — dan hoeft de eigen
+  // autofill-balk van de browser niet eens te verschijnen.
+  try { localStorage.setItem('tt_lastLoginEmail', email); } catch (e) { /* privénavigatie o.i.d., geen probleem */ }
   // onAuthStateChange handelt de rest af
 }
 
@@ -5757,10 +5870,12 @@ async function loadMyProfile() {
   const { data: myAges } = await db.rpc('tt_musicians_ages', { ids: [m.id] });
   m.age = (myAges && myAges[0]) ? myAges[0].age : undefined;
 
-  el.innerHTML = buildMusicianDetailHTML(m, true) + renderProgressPanel(m) + renderCompletenessMeter(m);
+  // TT-120 (22-08-2026): "Jouw pad op The Talent Tent" (renderProgressPanel,
+  // TT-48) tijdelijk weggehaald op Mijn Profiel — komt later terug in een
+  // herontworpen vorm. De functie zelf blijft bestaan, wordt nu alleen niet
+  // meer aangeroepen op deze pagina.
+  el.innerHTML = buildMusicianDetailHTML(m, true) + renderCompletenessMeter(m);
   if (actionsEl) actionsEl.style.display = 'flex';
-  const bandsBtn = document.getElementById('myBandsBtn');
-  if (bandsBtn) bandsBtn.style.display = 'inline-flex';
   loadBandInvites(m.id);
   loadFounderOffers(m.id); // V-16
 
@@ -6286,11 +6401,123 @@ function updateSubmitProfileState() {
   btn.style.cursor = box.checked ? '' : 'not-allowed';
 }
 
+// TT-121 (22-08-2026): opslaan per stap. Schrijft het VOLLEDIGE profiel,
+// net zoals het einde van de wizard al deed — bij het bewerken staat
+// state altijd vol met alle velden, ook van stappen die deze keer niet
+// zijn bezocht (geladen door editMyProfile() bij het openen). Een save
+// vanaf om het even welke stap is daarom veilig. Dit is letterlijk de
+// oude "wasEditing"-tak van submitProfile(), nu een eigen functie zodat
+// zowel de knoppen op stap 1 t/m 4 als de laatste stap ("Wijzigingen
+// opslaan") 'm kunnen aanroepen.
+async function saveEditedProfile() {
+  if (!editingMusicianId) return; // defensief, hoort niet voor te komen
+  showSaving();
+  myOwnCity = null; // eigen plaats kan net gewijzigd zijn — cache opnieuw laten opbouwen
+
+  try {
+    const mid = editingMusicianId;
+    const { error: uErr } = await db.from('musicians').update({
+      fname:            state.fname,
+      lname:            state.lname || null,
+      username:         state.username,
+      birth_date:       toISODate(state.birth_date),
+      city:             state.city,
+      zip:              state.zip || null,
+      bio:              state.bio || null,
+      goal:             state.goal,
+      rehearsal_frequency: state.rehearsalFrequency || null,
+      musical_ambition:    state.musicalAmbition || null,
+      repertoire_type:  state.repertoireType || null,
+      avatar_url:       state.avatarUrl || null,
+      city_source:      state.citySource || 'pdok',
+      profile_complete: true, // TT-09: dit is de definitieve klik op "Profiel aanmaken"/"Wijzigingen opslaan"/"Opslaan"
+    }).eq('id', mid);
+    if (uErr) throw new Error(uErr.message);
+
+    // Bestaande koppeltabellen legen, hieronder opnieuw vullen — eenvoudigste
+    // betrouwbare manier om toevoegingen/verwijderingen te verwerken.
+    await db.from('musician_instruments').delete().eq('musician_id', mid);
+    await db.from('musician_genres').delete().eq('musician_id', mid);
+    await db.from('musician_songs').delete().eq('musician_id', mid);
+    // Alle media legen (links én foto's/video's) — hieronder allebei opnieuw
+    // opgebouwd vanuit state, net als bij instrumenten/genres/repertoire.
+    // Al geüploade Storage-bestanden zelf blijven gewoon staan (alleen de
+    // koppeling in musician_media wordt hier ververst); verwijderde foto's/
+    // video's zijn al apart uit Storage opgeruimd door removeMedia().
+    await db.from('musician_media').delete().eq('musician_id', mid);
+
+    if (state.instruments.length) {
+      const { error: iErr } = await db.from('musician_instruments').insert(
+        state.instruments.map(instrument => ({ musician_id: mid, instrument, niveau: state.instrumentLevels[instrument] || null }))
+      );
+      if (iErr) throw new Error(iErr.message);
+    }
+
+    if (state.genres.length) {
+      const { error: gErr } = await db.from('musician_genres').insert(
+        state.genres.map(genre => ({ musician_id: mid, genre }))
+      );
+      if (gErr) throw new Error(gErr.message);
+    }
+
+    if (state.songs.length) {
+      const { error: sErr } = await db.from('musician_songs').insert(
+        state.songs.map(s => ({
+          musician_id:   mid,
+          song_title:    s.title,
+          song_artist:   s.artist,
+          mastery_level: s.level,
+        }))
+      );
+      if (sErr) throw new Error(sErr.message);
+    }
+
+    const linkMedia = state.mediaLinks
+      .filter(l => l.url.trim())
+      .map(l => ({
+        musician_id: mid,
+        media_type:  'link',
+        url:         l.url,
+        platform:    detectPlatform(l.url),
+      }));
+    if (linkMedia.length) {
+      const { error: lErr } = await db.from('musician_media').insert(linkMedia);
+      if (lErr) throw new Error(lErr.message);
+    }
+
+    const fileMedia = state.mediaFiles
+      .filter(m => m.url && !m.uploading && !m.url.startsWith('blob:'))
+      .map(m => ({
+        musician_id: mid,
+        media_type:  m.type,
+        url:         m.url,
+      }));
+    if (fileMedia.length) {
+      const { error: fErr } = await db.from('musician_media').insert(fileMedia);
+      if (fErr) throw new Error(fErr.message);
+    }
+
+    state.savedId = mid;
+    editingMusicianId = null;
+    // isEdit=true: toont "Profiel bijgewerkt!" en gaat na 1,2s naar Mijn
+    // Profiel — ongeacht vanaf welke stap er is opgeslagen.
+    showSaveSuccess(true);
+
+  } catch (err) {
+    console.error('Supabase fout:', err);
+    showSaveError(err.message);
+  }
+}
+
 async function submitProfile() {
-  const wasEditing = !!editingMusicianId;
+  // TT-121 (22-08-2026): bewerken van een bestaand profiel loopt voortaan
+  // altijd via saveEditedProfile() — vanaf deze laatste stap ("Wijzigingen
+  // opslaan") net zo goed als vanaf een tussenstap ("Opslaan").
+  if (editingMusicianId) { await saveEditedProfile(); return; }
+
   // Defensieve check naast de disabled-knop: een nieuw account mag nooit
   // aangemaakt worden zonder aangevinkt akkoord.
-  if (!wasEditing && !document.getElementById('consentCheckbox')?.checked) {
+  if (!document.getElementById('consentCheckbox')?.checked) {
     showToast('Vink eerst aan dat je akkoord gaat met de voorwaarden.');
     return;
   }
@@ -6301,10 +6528,52 @@ async function submitProfile() {
     let userId = currentUser?.id || null;
     let mid;
 
-    if (wasEditing) {
-      // Bewerken van bestaand profiel: update i.p.v. account/profiel aanmaken
-      mid = editingMusicianId;
-      const { error: uErr } = await db.from('musicians').update({
+    // Defensieve terugvaloptie: normaal gesproken bestaat het account/profiel
+    // hier al (aangemaakt in createAccountAndProfile() na stap 1, TT-09).
+    // Deze tak wordt in de gewone flow niet meer bereikt, maar blijft staan
+    // voor het geval editingMusicianId onverhoopt ontbreekt.
+    // 1. Account aanmaken
+    if (!userId) {
+      const { data: authData, error: authErr } = await db.auth.signUp({
+        email:    state.regEmail,
+        password: state.regPassword,
+        options:  { data: { fname: state.fname } }
+      });
+      if (authErr) throw new Error(authErr.message);
+
+      // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief
+      const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
+        email:    state.regEmail,
+        password: state.regPassword
+      });
+      if (signInErr) throw new Error(signInErr.message);
+
+      userId = signInData.user?.id || authData.user?.id || null;
+      currentUser = signInData.user || authData.user;
+      if (!userId) throw new Error('Kon geen account aanmaken. Probeer het opnieuw.');
+    }
+
+    // TT-02: zelfde late avatar-upload als in createAccountAndProfile() —
+    // pas nu bestaat er zeker een user_id/sessie om naar Storage te mogen
+    // schrijven. Alleen relevant als er nog een niet-geüploade state.avatarFile
+    // hangt (in de normale flow is dat hier allang gebeurd).
+    if (state.avatarFile) {
+      try {
+        const { url, path } = await uploadAvatarFile(state.avatarFile, userId);
+        state.avatarUrl = url;
+        state.avatarPath = path;
+      } catch (e) {
+        console.error('Avatar-upload mislukt:', e);
+        showToast('Profiel opgeslagen, maar de profielfoto kon niet worden geüpload. Voeg de foto later toe via Profiel bewerken.');
+        state.avatarUrl = null;
+      }
+      state.avatarFile = null;
+    }
+
+    // 2. Hoofdprofiel opslaan
+    const { data: musician, error: mErr } = await db
+      .from('musicians')
+      .insert({
         fname:            state.fname,
         lname:            state.lname || null,
         username:         state.username,
@@ -6316,93 +6585,17 @@ async function submitProfile() {
         rehearsal_frequency: state.rehearsalFrequency || null,
         musical_ambition:    state.musicalAmbition || null,
         repertoire_type:  state.repertoireType || null,
+        profile_color:    DEFAULT_PROFILE_COLOR,
         avatar_url:       state.avatarUrl || null,
         city_source:      state.citySource || 'pdok',
-        profile_complete: true, // TT-09: dit is de definitieve klik op "Profiel aanmaken"/"Wijzigingen opslaan"
-      }).eq('id', mid);
-      if (uErr) throw new Error(uErr.message);
+        user_id:          userId,
+        profile_complete: true,
+      })
+      .select()
+      .single();
 
-      // Bestaande koppeltabellen legen, hieronder opnieuw vullen — eenvoudigste
-      // betrouwbare manier om toevoegingen/verwijderingen te verwerken.
-      await db.from('musician_instruments').delete().eq('musician_id', mid);
-      await db.from('musician_genres').delete().eq('musician_id', mid);
-      await db.from('musician_songs').delete().eq('musician_id', mid);
-      // Alle media legen (links én foto's/video's) — hieronder allebei opnieuw
-      // opgebouwd vanuit state, net als bij instrumenten/genres/repertoire.
-      // Al geüploade Storage-bestanden zelf blijven gewoon staan (alleen de
-      // koppeling in musician_media wordt hier ververst); verwijderde foto's/
-      // video's zijn al apart uit Storage opgeruimd door removeMedia().
-      await db.from('musician_media').delete().eq('musician_id', mid);
-    } else {
-      // Defensieve terugvaloptie: normaal gesproken bestaat het account/profiel
-      // hier al (aangemaakt in createAccountAndProfile() na stap 1, TT-09).
-      // Deze tak wordt in de gewone flow niet meer bereikt, maar blijft staan
-      // voor het geval editingMusicianId onverhoopt ontbreekt.
-      // 1. Account aanmaken
-      if (!userId) {
-        const { data: authData, error: authErr } = await db.auth.signUp({
-          email:    state.regEmail,
-          password: state.regPassword,
-          options:  { data: { fname: state.fname } }
-        });
-        if (authErr) throw new Error(authErr.message);
-
-        // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief
-        const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
-          email:    state.regEmail,
-          password: state.regPassword
-        });
-        if (signInErr) throw new Error(signInErr.message);
-
-        userId = signInData.user?.id || authData.user?.id || null;
-        currentUser = signInData.user || authData.user;
-        if (!userId) throw new Error('Kon geen account aanmaken. Probeer het opnieuw.');
-      }
-
-      // TT-02: zelfde late avatar-upload als in createAccountAndProfile() —
-      // pas nu bestaat er zeker een user_id/sessie om naar Storage te mogen
-      // schrijven. Alleen relevant als er nog een niet-geüploade state.avatarFile
-      // hangt (in de normale flow is dat hier allang gebeurd).
-      if (state.avatarFile) {
-        try {
-          const { url, path } = await uploadAvatarFile(state.avatarFile, userId);
-          state.avatarUrl = url;
-          state.avatarPath = path;
-        } catch (e) {
-          console.error('Avatar-upload mislukt:', e);
-          showToast('Profiel opgeslagen, maar de profielfoto kon niet worden geüpload. Voeg de foto later toe via Profiel bewerken.');
-          state.avatarUrl = null;
-        }
-        state.avatarFile = null;
-      }
-
-      // 2. Hoofdprofiel opslaan
-      const { data: musician, error: mErr } = await db
-        .from('musicians')
-        .insert({
-          fname:            state.fname,
-          lname:            state.lname || null,
-          username:         state.username,
-          birth_date:       toISODate(state.birth_date),
-          city:             state.city,
-          zip:              state.zip || null,
-          bio:              state.bio || null,
-          goal:             state.goal,
-          rehearsal_frequency: state.rehearsalFrequency || null,
-          musical_ambition:    state.musicalAmbition || null,
-          repertoire_type:  state.repertoireType || null,
-          profile_color:    DEFAULT_PROFILE_COLOR,
-          avatar_url:       state.avatarUrl || null,
-          city_source:      state.citySource || 'pdok',
-          user_id:          userId,
-          profile_complete: true,
-        })
-        .select()
-        .single();
-
-      if (mErr) throw new Error(mErr.message);
-      mid = musician.id;
-    }
+    if (mErr) throw new Error(mErr.message);
+    mid = musician.id;
 
     // 3. Instrumenten (TT-51: niveau 1-5 gaat mee, gevalideerd bij stap 1 —
     // hier defensief || null voor het geval deze functie ooit buiten de
@@ -6468,15 +6661,10 @@ async function submitProfile() {
     state.savedId = mid;
 
     // TT-09: "Welkom!" hoort bij het écht afronden van de allereerste keer
-    // (state.onboarding), niet bij het technische onderscheid insert/update —
-    // want vanaf nu is dat bijna altijd een update (het profiel bestond al
-    // sinds stap 1). Een bewuste latere bewerking van een reeds afgerond
-    // profiel (via "Profiel bewerken", state.onboarding=false) blijft gewoon
-    // "Wijzigingen opgeslagen" tonen.
-    const isEdit = wasEditing && !state.onboarding;
+    // (state.onboarding), niet bij het technische onderscheid insert/update.
     if (state.onboarding) { clearOnboardingProgress(); state.onboarding = false; }
     editingMusicianId = null;
-    showSaveSuccess(isEdit);
+    showSaveSuccess(false);
 
   } catch (err) {
     console.error('Supabase fout:', err);
@@ -7237,17 +7425,25 @@ function renderTrackResults(ac, recordings, q, artist, addFnName, existingList) 
 // kostte wel eenduidigheid in de matching. Bestaande profielen met "Anders"
 // (indien aanwezig) blijven gewoon werken; zie de toelichting bij
 // PICKER_LABEL_BREAKS hieronder voor hetzelfde principe.
+// TT-124 (22-08-2026): alfabetisch, op Ronalds verzoek. Alleen de weergave-
+// volgorde wijzigt — instrumenten/genres worden als tekst opgeslagen, niet
+// als locatienummer in deze lijst, dus dit raakt geen bestaande profielen
+// of de matching.
 const INSTRUMENTS = [
-  'Zang', 'Gitaar, elektrisch', 'Basgitaar', 'Drums', 'Gitaar, akoestisch',
-  'Keyboard', 'Piano', 'Saxofoon', 'Trompet', 'DJ / Electronica',
-  'Viool', 'Cello', 'Ukulele', 'Conga / Bongo', 'Harmonica (mondharmonica)',
-  'Tamboerijn'
+  'Basgitaar', 'Cello', 'Conga / Bongo', 'DJ / Electronica', 'Drums',
+  'Gitaar, akoestisch', 'Gitaar, elektrisch', 'Harmonica (mondharmonica)',
+  'Keyboard', 'Piano', 'Saxofoon', 'Tamboerijn', 'Trompet', 'Ukulele',
+  'Viool', 'Zang'
 ];
 
+// "Anders" verwijderd (22-08-2026, Ronald) — zelfde reden als bij
+// INSTRUMENTS op 21-08-2026: zonder vrij tekstveld kan iemand toch niet
+// aangeven wélk genre dat dan is. Bestaande profielen met "Anders" blijven
+// gewoon werken, ze kunnen het alleen niet opnieuw kiezen.
 const GENRES = [
-  'Rock', 'Metal', 'Blues', 'Jazz', 'Pop', 'Indie',
-  'Funk', 'R&B / Soul', 'Punk', 'Folk / Akoestisch',
-  'Hip-hop', 'Reggae', 'Klassiek', 'Electronic', 'Country', 'Anders'
+  'Blues', 'Country', 'Electronic', 'Folk / Akoestisch', 'Funk', 'Hip-hop',
+  'Indie', 'Jazz', 'Klassiek', 'Metal', 'Pop', 'Punk', 'R&B / Soul',
+  'Reggae', 'Rock'
 ];
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -7308,6 +7504,14 @@ function init() {
   document.getElementById('bio').addEventListener('input', () => {
     state.bio = document.getElementById('bio').value.trim();
   });
+
+  // TT-122 (22-08-2026): inlogveld alvast vullen met het laatst gebruikte
+  // e-mailadres op dit toestel.
+  try {
+    const lastEmail = localStorage.getItem('tt_lastLoginEmail');
+    const loginEmailField = document.getElementById('loginEmail');
+    if (lastEmail && loginEmailField && !loginEmailField.value) loginEmailField.value = lastEmail;
+  } catch (e) { /* privénavigatie o.i.d., geen probleem */ }
 }
 
 // ─── Kies-en-badge component (TT-116, 21-08-2026) ───────────────────────────
@@ -7325,17 +7529,13 @@ function init() {
 // eromheen en muteert die arrays in-place (push/splice), nooit een nieuwe
 // array toewijzen. Zo blijft alle bestaande zoek-/opslaglogica intact.
 
-// Namen die altijd op een vaste plek afbreken, ongeacht schermbreedte —
-// voorkomt een lelijke afbreking midden in een woord zonder spatie.
-// "Harmonica (mondharmonica)" is de opgeslagen waarde (database, matching);
-// alleen de weergave wordt hier verkort — bewust niet hernoemd in
-// INSTRUMENTS zelf, dat zou bestaande profielen loskoppelen van de lijst.
-const PICKER_LABEL_BREAKS = {
-  'Harmonica (mondharmonica)': '(Mond)<br>harmonica',
-  'DJ / Electronica': 'DJ /<br>Electronica'
-};
+// TT-124 (22-08-2026): gedwongen regelafbreking weggehaald op Ronalds
+// verzoek — de badge is nu breed genoeg voor de volledige naam op één
+// regel (zie .picker-badge hieronder, was 108px, nu 168px). Was eerder
+// ingevoerd om een lelijke afbreking te voorkomen in de kleine badge; die
+// reden vervalt nu de badge zelf breed genoeg is.
 function pickerDisplayLabel(value) {
-  return PICKER_LABEL_BREAKS[value] || escHtml(value);
+  return escHtml(value);
 }
 
 // Haalt een tekst tussen haakjes aan het eind weg. "1. Beginner (Bedroom)"
