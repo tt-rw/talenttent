@@ -2079,7 +2079,12 @@
        centreren t.o.v. elkaar. header stond nog op align-items:flex-end
        met asymmetrische padding (32px boven, 0 onder) — dat was bedoeld
        voor de tagline die op mobiel al verborgen is (regel hieronder). */
-    header { align-items: center; padding: 18px 20px; }
+    /* 22-08-2026 (Ronald, "12-1"): kop lijnde niet uit met de rest van de
+       pagina. Woordmerk en hamburger krijgen nu dezelfde linker/rechter
+       marge als de pagina-inhoud eronder (16px, zelfde als .my-profile-wrap
+       hieronder) — was 20px, sloot niet aan op de rand van bijv. de
+       profielfoto/naam. */
+    header { flex-direction: row; align-items: center; padding: 18px 16px; }
     .logo { font-size: 28px; text-shadow: none; }
     .tagline { display: none; }
     .app-nav-row { position: sticky; top: 0; z-index: 50; background: var(--bg);
@@ -2096,15 +2101,20 @@
        mobiel; de knop wordt met een relatieve verschuiving omhoog in de
        koprij getrokken. */
     .app-nav-row { padding: 0; border-bottom: none; min-height: 0; }
-    #navMenuBtn { position: absolute; top: -62px; right: 12px; margin-bottom: 0; }
+    #navMenuBtn { position: absolute; top: -62px; right: 16px; margin-bottom: 0; }
     /* Punt 3 (22-08-2026, Ronald): hamburgerpictogram groter, in verhouding
        met het woordmerk. Het woordmerk heeft op mobiel line-height:1 bij
        font-size 28px — dus 28px is de visuele hoogte van de tekst zelf.
        26px icoon past daar dicht bij, binnen de knop van 44px (tikdoel
        blijft ongewijzigd, alleen het icoon zelf wordt groter getekend). */
     #navMenuBtn svg { width: 26px; height: 26px; }
-    .nav-menu-dropdown { right: 12px; top: -18px; }
+    .nav-menu-dropdown { right: 16px; top: -18px; }
     .search-wrap, .my-profile-wrap { padding: 24px 16px 60px; }
+    /* 22-08-2026 (Ronald, "12-1"): de gouden balk bovenaan het profiel
+       (.profile-header-band) moet direct tegen de vaste kop aan sluiten,
+       geen kloof ertussen. Alleen op Mijn Profiel de bovenmarge weg — de
+       balk zelf is al de eerste regel in buildMusicianDetailHTML(). */
+    .my-profile-wrap { padding-top: 0; }
     /* TT-U25 (12-08-2026): een modal op een telefoon hoort een volledig
        scherm te zijn, geen dialoogvenster met een kruisje.
        100vh klopt niet op iOS zolang de adresbalk verschijnt en verdwijnt —
@@ -3097,27 +3107,6 @@
          leden of iemand het overneemt — dat aanbod verschijnt hier. -->
     <div id="founderOfferBanner"></div>
     <div id="myProfileContent"></div>
-    <!-- TT-119 (22-08-2026, optie B): was vier knoppen naast elkaar, breder
-         dan het scherm op een telefoon. "Mijn bands" is weg — de onderbalk
-         heeft al een vaste knop "Bands" naar precies hetzelfde scherm, dat
-         stond dubbel. De twee minder-frequente acties (band-uitnodigingen
-         aan/uit, account verwijderen) staan nu achter een klein menuknopje,
-         zodat de onomkeerbare "Account verwijderen" niet meer even zwaar
-         oogt als de gewone bewerkknop. -->
-    <div class="profile-actions" id="profileActions" style="display:none;">
-      <button class="btn btn-primary" style="flex:1;" onclick="editMyProfile()">Profiel bewerken</button>
-      <div class="profile-actions-menu-wrap">
-        <button class="nav-menu-btn" id="profileMoreBtn" onclick="toggleProfileMoreMenu(event)" aria-label="Meer opties voor je profiel" title="Meer">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
-        </button>
-        <div class="inline-menu-dropdown" id="profileMoreDropdown">
-          <!-- TT-56 (12-08-2026): opt-out band-uitnodigingen. Alleen deze
-               knop, geen zichtbaar label op het profiel zelf voor anderen. -->
-          <button class="nav-menu-item" id="bandInviteToggleBtn" onclick="closeProfileMoreMenu();toggleBandInviteAvailability()">Open voor band-uitnodigingen</button>
-          <button class="nav-menu-item" style="color:var(--danger);" onclick="closeProfileMoreMenu();openDeleteAccountModal()">Account verwijderen</button>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -3127,9 +3116,9 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
       <div>
         <div class="filter-title">Mijn bands</div>
-        <p style="font-size:13px;color:var(--muted);">Bands waar jij beheerder of lid van bent</p>
+        <p style="font-size:13px;color:var(--muted);">Bands waar jij beheerder en/of lid van bent</p>
       </div>
-      <button class="btn btn-primary" onclick="showCreateBandForm()">+ Nieuwe band</button>
+      <button class="btn btn-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap;" onclick="showCreateBandForm()">Band toevoegen</button>
     </div>
     <div id="createBandForm" style="display:none;">
       <div class="search-filters" style="margin-bottom:28px;">
@@ -3544,7 +3533,17 @@
 <div class="modal-overlay" id="addMemberModal" onclick="if(event.target===this)this.classList.remove('visible')">
   <div class="modal-box">
     <button class="modal-close" onclick="document.getElementById('addMemberModal').classList.remove('visible')">✕</button>
-    <div class="filter-title" style="margin-bottom:6px;">Lid uitnodigen</div>
+    <div class="filter-title" style="margin-bottom:6px;">Bandleden wijzigen</div>
+    <!-- 22-08-2026 (Ronald): het kruisje achter een naam op de bandkaart
+         voelde "banaal, alsof je ieder moment kan worden gecancelled".
+         Verwijderen hoort nu bij dit scherm, met een duidelijke knop i.p.v.
+         een los kruisje. -->
+    <div id="currentMembersSection" style="margin-bottom:20px;">
+      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Huidige leden</div>
+      <div id="currentMembersList"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="filter-title" style="margin:16px 0 6px;font-size:16px;">Lid uitnodigen</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">De muzikant staat pas als lid op het bandprofiel zodra hij of zij de uitnodiging zelf bevestigt.</p>
     <!-- V-17 (13-08-2026): zoeken kon alleen op naam of gebruikersnaam — dan
          moest je al weten wie je zocht. Instrument erbij, en zoeken werkt nu
@@ -3872,6 +3871,25 @@ document.addEventListener('click', (e) => {
   if (dd && dd.classList.contains('visible') && !dd.contains(e.target) && e.target.id !== 'profileMoreBtn' && !e.target.closest('#profileMoreBtn')) closeProfileMoreMenu();
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProfileMoreMenu(); });
+
+// 22-08-2026 (Ronald): zelfde ⋯-menupatroon voor elke bandkaart in "Mijn
+// bands" (huisstijl-en-consistentie.md §8). Een vaste id per knop werkt hier
+// niet — er staan meerdere bands tegelijk in de lijst — dus dit werkt met
+// event.currentTarget/closest() in plaats van getElementById().
+function toggleBandMoreMenu(e) {
+  e.stopPropagation();
+  const dd = e.currentTarget.nextElementSibling;
+  const opening = !dd.classList.contains('visible');
+  closeAllBandMoreMenus();
+  dd.classList.toggle('visible', opening);
+}
+function closeAllBandMoreMenus() {
+  document.querySelectorAll('#myBandsList .inline-menu-dropdown.visible').forEach(dd => dd.classList.remove('visible'));
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#myBandsList .profile-actions-menu-wrap')) closeAllBandMoreMenus();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllBandMoreMenus(); });
 
 function navLoginClick() {
   if (currentUser) { signOut(); } else { showView('auth'); }
@@ -4913,6 +4931,27 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     ? `background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;`
     : `background:${col};margin:0 0 24px;border-radius:8px;height:8px;`;
 
+  // 22-08-2026 (Ronald): het onderste actieblok (Profiel bewerken + het
+  // ⋯-menu, TT-119) is weg. Alle drie de acties — wijzigen, band-
+  // uitnodigingen aan/uit, account verwijderen — staan nu in één klein
+  // menu naast de naam. Alleen op de eigen profielpagina (isOwn, niet in
+  // de modal) — bij het bekijken van een ander profiel, of het eigen
+  // profiel via de modal, hoort dit menu niet thuis.
+  const showOwnerMenu = isOwn && !inModal;
+  const ownerMenuHTML = showOwnerMenu ? `
+    <div class="profile-actions-menu-wrap" style="flex-shrink:0;">
+      <button class="nav-menu-btn" id="profileMoreBtn" onclick="toggleProfileMoreMenu(event)" aria-label="Meer opties voor je profiel" title="Meer">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
+      </button>
+      <div class="inline-menu-dropdown" id="profileMoreDropdown">
+        <button class="nav-menu-item" onclick="closeProfileMoreMenu();editMyProfile()">Profiel wijzigen</button>
+        <!-- TT-56 (12-08-2026): opt-out band-uitnodigingen. Alleen deze
+             knop, geen zichtbaar label op het profiel zelf voor anderen. -->
+        <button class="nav-menu-item" id="bandInviteToggleBtn" onclick="closeProfileMoreMenu();toggleBandInviteAvailability()">Open voor band-uitnodigingen</button>
+        <button class="nav-menu-item" style="color:var(--danger);" onclick="closeProfileMoreMenu();openDeleteAccountModal()">Account verwijderen</button>
+      </div>
+    </div>` : '';
+
   return `
     <div class="profile-header-band" style="${headerBandStyle}"></div>
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
@@ -4922,6 +4961,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
         ${isOwn ? `<p style="font-size:12px;color:var(--muted);margin-top:2px;">Bezoekers zonder profiel zien je als <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong> · ingelogde muzikanten zien <strong style="color:${col};">${escHtml(m.fname || '')}</strong></p>` : ''}
         <div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       </div>
+      ${ownerMenuHTML}
     </div>
     <div class="freshness-bar" style="margin-top:12px;margin-bottom:16px;">
       <div class="freshness-dot"></div>
@@ -5854,12 +5894,6 @@ async function loadMyProfile() {
   if (!currentUser) return;
   const el = document.getElementById('myProfileContent');
   el.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Laden...</div>';
-  // TT-36 (07-08-2026): knoppenblok (Profiel bewerken/Mijn bands/Profiel
-  // verwijderen) verbergen tot het profiel echt geladen is — anders zag je
-  // 'm heel kort staan terwijl "Laden..." nog in beeld stond, wat oogde als
-  // een apart flitsend tussenschermpje (Ronald, 07-08-2026).
-  const actionsEl = document.getElementById('profileActions');
-  if (actionsEl) actionsEl.style.display = 'none';
 
   // Bugfix 19-08-2026 (Ronald, live gemeld): dit was tot vandaag een
   // sterretje-select. Sinds B-01 tweede stap (18-08-2026) mag authenticated
@@ -5897,7 +5931,6 @@ async function loadMyProfile() {
   // herontworpen vorm. De functie zelf blijft bestaan, wordt nu alleen niet
   // meer aangeroepen op deze pagina.
   el.innerHTML = buildMusicianDetailHTML(m, true) + renderCompletenessMeter(m);
-  if (actionsEl) actionsEl.style.display = 'flex';
   loadBandInvites(m.id);
   loadFounderOffers(m.id); // V-16
 
@@ -5994,6 +6027,10 @@ async function loadFounderOffers(musicianId) {
   const el = document.getElementById('founderOfferBanner');
   if (!el) return;
   el.innerHTML = '';
+  // 22-08-2026 (Ronald): een overnameverzoek trekt zichzelf na 7 dagen in —
+  // geen cron-taak beschikbaar, dus deze controle draait "lazy" mee bij elke
+  // keer dat de banner wordt opgebouwd. Fouten hier zijn nooit blokkerend.
+  try { await db.rpc('tt_expire_old_founder_offers'); } catch (e) { /* geen probleem, volgende keer opnieuw */ }
   try {
     const { data, error } = await db.from('band_members')
       .select('band_id, bands(name, city, profile_color)')
@@ -6024,34 +6061,18 @@ async function respondToFounderOffer(bandId, accept) {
   if (!mid) return;
   try {
     if (accept) {
-      const { data: band, error: bErr } = await db.from('bands').select('founder_id').eq('id', bandId).single();
-      if (bErr) throw bErr;
-      const oldFounderId = band?.founder_id;
-
-      const { error: uErr } = await db.from('bands').update({ founder_id: mid }).eq('id', bandId);
-      if (uErr) throw uErr;
-      await db.from('band_members').update({ role: 'Oprichter', founder_offer: false }).eq('band_id', bandId).eq('musician_id', mid);
-      // De vraag is beantwoord — het aanbod bij eventuele andere gevraagde
-      // leden sluit automatisch mee, zij hoeven niet ook nog te reageren.
-      await db.from('band_members').update({ founder_offer: false }).eq('band_id', bandId).eq('founder_offer', true);
-      // V-16: "zo ja dan volgt een overdracht" — de oude beheerder stapt zelf
-      // uit de band. Diens muzikantprofiel blijft uiteraard gewoon bestaan.
-      // Bugfix 19-08-2026 (Ronald, live gemeld): deze verwijdering controleerde
-      // haar eigen foutmelding niet. Mislukte hij stilzwijgend (bijv. door een
-      // rechtenregel die alleen leden hun eigen rij laat verwijderen), dan
-      // bleef de oude beheerder als lid staan — met het label "Oprichter" nog
-      // zichtbaar naast de nieuwe beheerder. Nu een zichtbare melding bij zo'n
-      // mislukking, in plaats van een stille, onopgemerkte fout.
-      let oldFounderRemoveError = null;
-      if (oldFounderId) {
-        const { error: delErr } = await db.from('band_members').delete().eq('band_id', bandId).eq('musician_id', oldFounderId);
-        oldFounderRemoveError = delErr;
-      }
-      showToast(oldFounderRemoveError
-        ? 'Je bent nu beheerder. Let op: de vorige beheerder kon niet automatisch als lid worden verwijderd — vraag diegene om zelf "Band verlaten" te gebruiken.'
-        : 'Je bent nu beheerder van deze band.');
+      // 22-08-2026: dit liep eerder via drie losse schrijfacties vanuit de
+      // sessie van de ACCEPTERENDE gebruiker — die had op dat moment nog
+      // geen founder-rechten, dus twee van de drie faalden stil (geen
+      // foutmelding, gewoon 0 rijen geraakt). Gevolg, live aangetroffen: de
+      // oude beheerder bleef naast de nieuwe als "Oprichter" staan. Nu één
+      // databasefunctie die dit met verhoogde rechten in één keer doet, na
+      // een eigen controle dat er echt een openstaand aanbod is.
+      const { error } = await db.rpc('tt_accept_founder_offer', { p_band_id: bandId });
+      if (error) throw error;
+      showToast('Je bent nu beheerder van deze band.');
     } else {
-      await db.from('band_members').update({ founder_offer: false }).eq('band_id', bandId).eq('musician_id', mid);
+      await db.from('band_members').update({ founder_offer: false, founder_offer_at: null }).eq('band_id', bandId).eq('musician_id', mid);
       showToast('Aanbod geweigerd.');
     }
     loadFounderOffers(mid);
@@ -6095,7 +6116,9 @@ async function askFounderTransfer(bandId) {
 
 async function sendFounderOffer(bandId, memberIds) {
   try {
-    const { error } = await db.from('band_members').update({ founder_offer: true }).eq('band_id', bandId).in('musician_id', memberIds);
+    // 22-08-2026 (Ronald): een overnameverzoek trekt zichzelf na 7 dagen in
+    // — founder_offer_at is het moment waarop die klok gaat lopen.
+    const { error } = await db.from('band_members').update({ founder_offer: true, founder_offer_at: new Date().toISOString() }).eq('band_id', bandId).in('musician_id', memberIds);
     if (error) throw error;
     showToast('Gevraagd of iemand het overneemt. Je ziet het hier zodra iemand reageert.');
     loadMyBands();
@@ -6106,7 +6129,7 @@ async function sendFounderOffer(bandId, memberIds) {
 
 async function withdrawFounderOffer(bandId) {
   try {
-    const { error } = await db.from('band_members').update({ founder_offer: false }).eq('band_id', bandId);
+    const { error } = await db.from('band_members').update({ founder_offer: false, founder_offer_at: null }).eq('band_id', bandId);
     if (error) throw error;
     showToast('Aanbod ingetrokken.');
     loadMyBands();
@@ -6167,6 +6190,11 @@ async function executeRemoveMember(bandId, musicianId) {
     if (error) throw error;
     showToast('Lid verwijderd.');
     loadMyBands();
+    // 22-08-2026: verwijderen kan nu ook vanuit "Bandleden wijzigen" zelf —
+    // die lijst moet meteen kloppen, niet pas na het sluiten en heropenen.
+    if (document.getElementById('addMemberModal')?.classList.contains('visible')) {
+      loadCurrentMembersForModal(bandId);
+    }
   } catch (e) {
     showToast(friendlyErrorMessage(e));
   }
@@ -9335,8 +9363,41 @@ function openAddMemberModal(bandId, bandName) {
   const radiusEl = document.getElementById('memberSearchRadius');
   if (radiusEl) radiusEl.value = '';
   document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens, of kies een instrument, om te zoeken.</p>';
+  loadCurrentMembersForModal(bandId);
   document.getElementById('addMemberModal').classList.add('visible');
   setTimeout(() => document.getElementById('memberSearchInput')?.focus(), 50);
+}
+
+// 22-08-2026 (Ronald): verwijderen van een bestaand lid hoort nu bij dit
+// scherm, met een duidelijke knop, i.p.v. het kruisje op de bandkaart zelf
+// ("banaal, alsof je ieder moment kan worden gecancelled"). Haalt de
+// bevestigde leden apart op — de bandkaart geeft ze niet door, en dit
+// scherm moet altijd de actuele stand tonen, ook na eerdere wijzigingen
+// zonder dat de hele pagina opnieuw laadt.
+async function loadCurrentMembersForModal(bandId) {
+  const el = document.getElementById('currentMembersList');
+  if (!el) return;
+  el.innerHTML = '<p style="color:var(--muted);font-size:13px;">Laden...</p>';
+  try {
+    const mid = await getMyMusicianId();
+    const { data, error } = await db.from('band_members')
+      .select('musician_id, role, musicians(id, fname, username, profile_color)')
+      .eq('band_id', bandId).eq('status', 'bevestigd');
+    if (error) throw error;
+    el.innerHTML = (data || []).map(m => {
+      const memberName = displayNameOf(m.musicians);
+      // De oprichter zichzelf verwijderen gaat via "Bandbeheer" (stoppen/
+      // overdragen), niet via deze lijst — vandaar geen knop bij de eigen rij.
+      const isSelf = m.musician_id === mid;
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
+        <div style="flex:1;font-size:14px;">${escHtml(memberName)} <span style="color:var(--muted);font-size:11px;">${escHtml(roleLabel(m.role))}</span></div>
+        ${isSelf ? '' : `<button type="button" class="btn btn-ghost" style="font-size:12px;padding:6px 12px;color:var(--danger);border-color:var(--danger);" onclick="removeMember('${jsAttr(bandId)}','${jsAttr(m.musician_id)}','${jsAttr(memberName)}')">Verwijderen</button>`}
+      </div>`;
+    }).join('') || '<p style="color:var(--muted);font-size:13px;">Geen leden gevonden.</p>';
+  } catch (e) {
+    el.innerHTML = `<p style="color:var(--danger);font-size:13px;">${escHtml(friendlyErrorMessage(e))}</p>`;
+  }
 }
 
 function searchMembersToAdd(query) {
@@ -9791,6 +9852,9 @@ async function loadMyBands() {
   const el = document.getElementById('myBandsList');
   if (!el) return;
   el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:32px;">Laden...</div>';
+  // 22-08-2026: zelfde lazy vervalcontrole als in loadFounderOffers() —
+  // Mijn Bands kan ook los daarvan geopend worden.
+  try { await db.rpc('tt_expire_old_founder_offers'); } catch (e) { /* geen probleem, volgende keer opnieuw */ }
 
   const mid = await getMyMusicianId();
   if (!mid) {
@@ -9823,12 +9887,29 @@ async function loadMyBands() {
     // nog niet als lid tot ze zelf bevestigen. Alleen de oprichter ziet dit —
     // voor de rest van de wereld bestaat een uitnodiging niet.
     const pending = (b.band_members||[]).filter(m => m.status === 'aangevraagd');
-    const wanted = (b.band_wanted||[]);
     const isFounder = b.founder_id === mid;
     // V-16 (13-08-2026): staat er al een lopend overname-aanbod (founder_offer)?
     // Dan geen nieuwe "Ik stop als bandleider"-knop, maar de wachtstand.
     const offerPending = isFounder && confirmed.some(m => m.founder_offer);
     const status = statusLabels[b.status] ? b.status : '';
+    // 22-08-2026 (Ronald): de drie losse knoppen (Band bewerken/+ Lid
+    // toevoegen/Ik stop als beheerder) worden één klein ⋯-menu, zelfde
+    // patroon als het profielmenu (zie huisstijl-en-consistentie.md §8).
+    // Elke band in de lijst heeft zijn eigen knop/menu, dus geen vaste id's
+    // — toggleBandMoreMenu() werkt met event.currentTarget in plaats daarvan.
+    const founderMenuHTML = isFounder ? `
+      <div class="profile-actions-menu-wrap" style="flex-shrink:0;" onclick="event.stopPropagation();">
+        <button class="nav-menu-btn" onclick="toggleBandMoreMenu(event)" aria-label="Meer opties voor ${escAttr(b.name)}" title="Meer">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
+        </button>
+        <div class="inline-menu-dropdown">
+          <button class="nav-menu-item" onclick="closeAllBandMoreMenus();editBand('${jsAttr(b.id)}');">Bandprofiel bewerken</button>
+          <button class="nav-menu-item" onclick="closeAllBandMoreMenus();openAddMemberModal('${jsAttr(b.id)}','${jsAttr(b.name)}');">Bandleden wijzigen</button>
+          ${offerPending
+            ? `<button class="nav-menu-item" onclick="closeAllBandMoreMenus();withdrawFounderOffer('${jsAttr(b.id)}');">Bandbeheer</button>`
+            : `<button class="nav-menu-item" onclick="closeAllBandMoreMenus();askFounderTransfer('${jsAttr(b.id)}');">Bandbeheer</button>`}
+        </div>
+      </div>` : '';
     return `<div class="band-card">
       <div class="band-card-header" onclick="openBandModal('${jsAttr(b.id)}')">
         ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar" style="background:${col};">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>`}
@@ -9836,35 +9917,30 @@ async function loadMyBands() {
           <div class="band-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
           <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
         </div>
-        <span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span>
-        ${isFounder ? `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); editBand('${jsAttr(b.id)}');">Band bewerken</button>
-        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); openAddMemberModal('${jsAttr(b.id)}','${jsAttr(b.name)}');">+ Lid toevoegen</button>`
-        : `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); leaveBand('${jsAttr(b.id)}','${jsAttr(b.name)}');">Band verlaten</button>`}
+        ${isFounder ? founderMenuHTML : `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); leaveBand('${jsAttr(b.id)}','${jsAttr(b.name)}');">Band verlaten</button>`}
       </div>
-      ${isFounder ? `
+      ${offerPending ? `
       <div style="padding:0 20px;">
-        ${offerPending
-          ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);padding:10px 0;border-top:1px solid var(--border);">
-              <span>Gevraagd of iemand het beheer overneemt — wachten op reactie.</span>
-              <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px;" onclick="event.stopPropagation(); withdrawFounderOffer('${jsAttr(b.id)}');">Aanbod intrekken</button>
-            </div>`
-          : `<div style="padding:10px 0;border-top:1px solid var(--border);">
-              <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); askFounderTransfer('${jsAttr(b.id)}');">Ik stop als beheerder</button>
-            </div>`}
+        <div style="font-size:12px;color:var(--muted);padding:10px 0;border-top:1px solid var(--border);">Gevraagd of iemand het beheer overneemt — wachten op reactie.</div>
       </div>` : ''}
       <div class="band-card-body">
+        <!-- 22-08-2026 (Ronald): status minder prominent — de beheerder weet
+             deze zelf al, hoort niet meer bovenaan in het overzicht. -->
+        <div style="margin-bottom:10px;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>
         ${b.description ? `<p style="font-size:13px;color:var(--muted);margin-bottom:12px;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
         <div class="band-members-row">
           ${confirmed.map(m => {
             const memberName = displayNameOf(m.musicians);
-            // V-16: de oprichter kan een ander lid verwijderen — niet zichzelf,
-            // dat gaat via "Ik stop als bandleider" hierboven.
-            const removeBtn = (isFounder && m.musician_id !== mid)
-              ? `<button type="button" onclick="event.stopPropagation(); removeMember('${jsAttr(b.id)}','${jsAttr(m.musician_id)}','${jsAttr(memberName)}');" title="Verwijderen" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 0 0 4px;">✕</button>`
-              : '';
-            return `<div class="band-member-chip">
+            // 22-08-2026 (Ronald): het kruisje hier voelde "banaal, alsof je
+            // ieder moment kan worden gecancelled". Verwijderen zit nu in
+            // "Bandleden wijzigen" (zie openAddMemberModal), met een
+            // duidelijke knop. Deze chip is nu puur informatief + klikbaar
+            // naar het profiel — geen verwijderactie meer op de kaart zelf.
+            // m.musicians.id komt hier altijd mee (dit is de eigen "Mijn
+            // Bands"-lijst, geen publieke/anonieme bron).
+            return `<div class="band-member-chip" style="cursor:pointer;" onclick="event.stopPropagation(); openMusicianModal('${jsAttr(m.musician_id)}');">
             <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
-            ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">${escHtml(roleLabel(m.role))}</span>${removeBtn}
+            ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">${escHtml(roleLabel(m.role))}</span>
           </div>`; }).join('')}
           ${isFounder ? pending.map(m => {
             const memberName = displayNameOf(m.musicians);
@@ -9873,7 +9949,6 @@ async function loadMyBands() {
             ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">wacht op bevestiging</span>
           </div>`; }).join('') : ''}
         </div>
-        ${wanted.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${wanted.map(w => `<span class="wanted-chip">+ ${escHtml(w.instrument)}</span>`).join('')}</div>` : ''}
       </div>
     </div>`;
   }).join('');
