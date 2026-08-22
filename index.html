@@ -8198,11 +8198,12 @@ async function nextStep(from) {
       ? true
       : await checkUsernameAvailability();
     if (!available) {
-      // 22-08-2026 (P0-diagnose): "niet beschikbaar" was hiervoor de tekst
-      // voor twee heel verschillende situaties — een echt bezette naam, én
-      // een technische fout bij de controle zelf. Nu apart zichtbaar.
+      // 22-08-2026: "niet beschikbaar" was hiervoor de tekst voor twee heel
+      // verschillende situaties — een echt bezette naam, én een technische
+      // fout bij de controle zelf. Nu apart, met een tekst die klopt met wat
+      // er echt aan de hand is.
       if (usernameCheckFailed) {
-        showToast('TIJDELIJK — gebruikersnaam-controle faalde: ' + (lastUsernameCheckError || '(onbekende fout)'), 15000);
+        showToast('De gebruikersnaam kon niet gecontroleerd worden. Probeer het over een paar seconden opnieuw.');
       } else {
         showToast('Deze gebruikersnaam is niet beschikbaar. Kies een andere.');
       }
@@ -8260,21 +8261,59 @@ async function createAccountAndProfile() {
       password: state.regPassword,
       options:  { data: { fname: state.fname } }
     });
-    if (authErr) throw new Error(authErr.message);
+    // 22-08-2026 (P0, live gemeld door Ronald): een eerdere poging met
+    // hetzelfde e-mailadres kan het inlogaccount al hebben aangemaakt, ook
+    // als de rest toen niet afrondde (zie hieronder, "bestaat er al een
+    // profiel?"). Zonder dit liep de gebruiker dan vast op "al
+    // geregistreerd", met geen enkele weg vooruit — ook niet bij een nieuwe,
+    // verse poging. Nu: bij precies díe foutmelding gewoon inloggen met de
+    // zojuist ingevulde gegevens, en normaal verdergaan.
+    let authUser = authData?.user || null;
+    if (authErr) {
+      if (/already registered|already exists/i.test(authErr.message)) {
+        const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
+          email: state.regEmail, password: state.regPassword
+        });
+        if (signInErr) {
+          // Écht een ander account, of een ander wachtwoord — dat is dan geen
+          // herstelbare situatie meer, de gebruiker moet zelf kiezen.
+          throw new Error('Er bestaat al een account met dit e-mailadres. Probeer in te loggen, of gebruik een ander e-mailadres.');
+        }
+        authUser = signInData.user;
+      } else {
+        throw new Error(authErr.message);
+      }
+    } else {
+      // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief.
+      // Let op: dit activeert zelf ook de onAuthStateChange-listener
+      // (SIGNED_IN) — de onboardingInFlight-vlag hierboven voorkomt dat die
+      // daardoor de gebruiker voortijdig naar Mijn Profiel stuurt.
+      const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
+        email: state.regEmail, password: state.regPassword
+      });
+      if (signInErr) throw new Error(signInErr.message);
+      authUser = signInData.user || authUser;
+    }
 
-    // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief.
-    // Let op: dit activeert zelf ook de onAuthStateChange-listener (SIGNED_IN)
-    // — de onboardingInFlight-vlag hierboven voorkomt dat die daardoor de
-    // gebruiker voortijdig naar Mijn Profiel stuurt.
-    const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
-      email:    state.regEmail,
-      password: state.regPassword
-    });
-    if (signInErr) throw new Error(signInErr.message);
-
-    const userId = signInData.user?.id || authData.user?.id || null;
+    const userId = authUser?.id || null;
     if (!userId) throw new Error('Kon geen account aanmaken. Probeer het opnieuw.');
-    currentUser = signInData.user || authData.user;
+    currentUser = authUser;
+
+    // Bestaat er al een profiel bij dit account? Dat kan als een eerdere
+    // poging wél het account maakte én het profiel, maar de gebruiker
+    // (bijv. door een trage/onduidelijke reactie op het scherm) daarna
+    // toch nog eens op "Verder" drukte. Dan dat bestaande profiel gewoon
+    // overnemen, in plaats van een tweede rij te proberen aan te maken —
+    // dat zou stuklopen op de unieke regel per account (musicians_user_id_idx).
+    const { data: existingProfile } = await db.from('musicians').select('id').eq('user_id', userId).single();
+    if (existingProfile?.id) {
+      editingMusicianId = existingProfile.id;
+      myMusicianId = existingProfile.id;
+      state.onboarding = true;
+      document.getElementById('saveOverlay').classList.remove('visible');
+      showToast('Je had hier al een profiel — we gaan gewoon verder.');
+      return true;
+    }
 
     // TT-02: pas nu bestaat er een user_id/sessie om naar Storage te mogen
     // schrijven, dus een bij stap 1 gekozen profielfoto wordt pas hier echt
@@ -8294,24 +8333,36 @@ async function createAccountAndProfile() {
       state.avatarFile = null;
     }
 
-    const { data: musician, error: mErr } = await db
-      .from('musicians')
-      .insert({
-        fname:            state.fname,
-        lname:            state.lname || null,
-        username:         state.username,
-        birth_date:       toISODate(state.birth_date),
-        city:             state.city,
-        zip:              state.zip || null,
-        bio:              state.bio || null,
-        profile_color:    DEFAULT_PROFILE_COLOR,
-        avatar_url:       state.avatarUrl || null,
-        user_id:          userId,
-        profile_complete: false,
-        city_source:      state.citySource || 'pdok',
-      })
-      .select()
-      .single();
+    const musicianRow = {
+      fname:            state.fname,
+      lname:            state.lname || null,
+      username:         state.username,
+      birth_date:       toISODate(state.birth_date),
+      city:             state.city,
+      zip:              state.zip || null,
+      bio:              state.bio || null,
+      profile_color:    DEFAULT_PROFILE_COLOR,
+      avatar_url:       state.avatarUrl || null,
+      user_id:          userId,
+      profile_complete: false,
+      city_source:      state.citySource || 'pdok',
+    };
+
+    // 22-08-2026 (P0, live gemeld door Ronald): meermaals leidde precies deze
+    // schrijfactie tot een rechtenfout, direct na signInWithPassword() — maar
+    // niet elke keer (één van de geteste accounts kreeg wél een profiel). Dat
+    // wijst niet op een structureel verkeerde regel (die zou altijd falen),
+    // maar op een moment vlak na het inloggen waarop de nieuwe sessie soms
+    // nog niet overal is doorgekomen. Daarom nu één automatische herkansing
+    // ná een korte pauze, in plaats van de gebruiker terug te sturen naar
+    // stap 1 — die had op dat moment allang een geldig, ingelogd account.
+    let musician, mErr;
+    ({ data: musician, error: mErr } = await db.from('musicians').insert(musicianRow).select().single());
+    if (mErr) {
+      console.error('Eerste poging profiel aanmaken mislukt, probeer nog eens:', mErr);
+      await new Promise(resolve => setTimeout(resolve, 800));
+      ({ data: musician, error: mErr } = await db.from('musicians').insert(musicianRow).select().single());
+    }
     if (mErr) throw new Error(mErr.message);
 
     editingMusicianId = musician.id;
@@ -8324,12 +8375,7 @@ async function createAccountAndProfile() {
   } catch (err) {
     console.error('Kon account niet aanmaken:', err);
     document.getElementById('saveOverlay').classList.remove('visible');
-    // TIJDELIJK (22-08-2026) — P0-diagnose registratieblokkade: de echte,
-    // technische foutmelding rechtstreeks tonen i.p.v. de vertaalde versie
-    // via friendlyErrorMessage(). Ronald test op een telefoon, geen
-    // consolescherm bij de hand — dit is de snelste manier om de exacte
-    // Postgres-foutmelding te zien. Terugdraaien zodra de oorzaak bekend is.
-    showToast('TIJDELIJK — technische melding: ' + (err && err.message ? err.message : String(err)), 15000);
+    showToast(friendlyErrorMessage(err));
     return false;
   } finally {
     onboardingInFlight = false;
