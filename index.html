@@ -2803,16 +2803,20 @@
 
     <!-- TT-63 (09-08-2026): expliciet consent-moment vóór de definitieve klik —
          de privacyverklaring zegt dat toestemming hier gegeven wordt, dus moet
-         hier ook echt een zichtbare/klikbare verwijzing staan. Links openen in
-         een nieuw tabblad (target="_blank" op een gewone hash-link) zodat de
-         wizard-voortgang van dit tabblad niet wordt verstoord. -->
+         hier ook echt een zichtbare/klikbare verwijzing staan.
+         TT-63-fix (23-08-2026): niet langer <a href="#terms" target="_blank">.
+         Dat opende geen nieuw tabblad in een ingebedde mobiele browser (bijv.
+         WhatsApp) maar navigeerde de wizard zelf weg, met verlies van alle
+         voortgang. Nu: gewone knoppen die een modal openen (openLegalModal()),
+         geen navigatie, geen href, dus geen risico meer op het verlaten van
+         de wizard. -->
     <label style="display:flex;align-items:flex-start;gap:10px;margin-top:16px;font-size:12px;color:var(--muted);cursor:pointer;">
       <input type="checkbox" id="consentCheckbox" onchange="updateSubmitProfileState()" style="margin-top:2px;flex-shrink:0;">
       <span>
         Ik ga akkoord met de
-        <a href="#terms" target="_blank" style="color:var(--accent);">Gebruiksvoorwaarden</a>,
-        <a href="#privacy" target="_blank" style="color:var(--accent);">Privacyverklaring</a> en
-        <a href="#gedragscode" target="_blank" style="color:var(--accent);">Gedragscode</a>.
+        <button type="button" onclick="event.preventDefault();openLegalModal('terms')" style="background:none;border:none;padding:0;margin:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer;">Gebruiksvoorwaarden</button>,
+        <button type="button" onclick="event.preventDefault();openLegalModal('privacy')" style="background:none;border:none;padding:0;margin:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer;">Privacyverklaring</button> en
+        <button type="button" onclick="event.preventDefault();openLegalModal('gedragscode')" style="background:none;border:none;padding:0;margin:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer;">Gedragscode</button>.
       </span>
     </label>
 
@@ -3704,6 +3708,25 @@
       <div class="filter-title" id="pickerListTitle" style="margin-bottom:14px;padding-right:52px;"></div>
       <div id="pickerListItems"></div>
     </div>
+  </div>
+</div>
+
+<!-- TT-63-fix (23-08-2026): Gebruiksvoorwaarden/Privacyverklaring/Gedragscode
+     openden voorheen via <a href="#terms" target="_blank">. Op meerdere
+     mobiele browsers/webviews (bevestigd: een WhatsApp-ingebedde browser)
+     wordt target="_blank" bij een fragment-only href genegeerd — de link
+     navigeerde dan het huidige tabblad weg van de wizard, met een volledige
+     paginaherlaad tot gevolg. Alle wizard-voortgang (tot en met stap 5,
+     media/consent) ging daarbij verloren, en de daaropvolgende hash-routing
+     verloor bovendien een race tegen onUserLoggedIn() → showView('myprofile'),
+     dus zelfs de doelpagina zelf kwam niet in beeld.
+     Oplossing: geen navigatie meer, geen nieuw tabblad. De tekst komt in een
+     modal bovenop de wizard (zelfde .modal-box-patroon als niveauInfoModal),
+     zodat view-register nooit wordt verlaten en er dus niets verloren gaat. -->
+<div class="modal-overlay" id="legalModal" onclick="if(event.target===this)closeLegalModal()">
+  <div class="modal-box modal-box-xl">
+    <button class="modal-close" onclick="closeLegalModal()" aria-label="Sluiten">✕</button>
+    <div id="legalModalContent"></div>
   </div>
 </div>
 
@@ -7923,6 +7946,22 @@ function openPickerList(id) {
 function closePickerList() {
   document.getElementById('pickerListModal').classList.remove('visible');
   activeListPickerId = null;
+}
+
+// TT-63-fix (23-08-2026): zie toelichting bij het legalModal-element hierboven.
+// Geen aparte tekst — hergebruikt de inhoud van view-terms/view-privacy/
+// view-gedragscode (dezelfde .doc-view-HTML), zodat de tekst nergens dubbel
+// staat en nooit uit elkaar kan groeien tussen wizard en de losse pagina's.
+const LEGAL_VIEW_IDS = { terms: 'view-terms', privacy: 'view-privacy', gedragscode: 'view-gedragscode' };
+function openLegalModal(type) {
+  const sourceView = document.getElementById(LEGAL_VIEW_IDS[type]);
+  if (!sourceView) return;
+  const docContent = sourceView.querySelector('.doc-view');
+  document.getElementById('legalModalContent').innerHTML = docContent ? docContent.innerHTML : '';
+  document.getElementById('legalModal').classList.add('visible');
+}
+function closeLegalModal() {
+  document.getElementById('legalModal').classList.remove('visible');
 }
 
 function renderPickerListItems() {
