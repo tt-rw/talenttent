@@ -2486,7 +2486,7 @@
   <!-- STEP 1: Persoonlijke info -->
   <div class="panel active" id="step0">
     <div class="panel-title">Over jou</div>
-    <div class="panel-sub">Maak je profiel aan. Je gebruikersnaam is zichtbaar voor andere muzikanten — je echte naam, e-mail en wachtwoord nooit.</div>
+    <div class="panel-sub">Maak je profiel aan. Je gebruikersnaam is voor iedereen zichtbaar. Andere muzikanten met een eigen profiel zien ook je voornaam — bezoekers zonder profiel nooit. Je e-mail en wachtwoord blijven altijd privé.</div>
 
     <div class="field-group">
       <div class="field">
@@ -2871,6 +2871,13 @@
         </div>
       </div>
 
+      <!-- TT-136 (23-08-2026): stond hiervoor allemaal altijd uitgeklapt —
+           acht velden vóór de resultaten. Gebruikersnaam+Plaats blijven
+           direct zichtbaar (de twee snelste filters); de rest staat nu
+           samengevouwen achter een toggle, zodat de resultaten na het
+           openen van dit scherm dichterbij staan. -->
+      <button type="button" class="btn btn-ghost" id="musicianMoreFiltersToggle" onclick="toggleMoreFilters('musician')" style="width:100%;font-size:13px;margin-bottom:16px;">Meer filters ▾</button>
+      <div id="musicianMoreFilters" style="display:none;">
       <div class="filter-row">
         <div class="field">
           <label>Leeftijd</label>
@@ -2949,6 +2956,7 @@
           <div class="tag-grid" id="filterGoals"></div>
         </div>
       </div>
+      </div>
 
       <div style="display:flex;gap:12px;">
         <button class="search-btn" style="flex:1;" onclick="runSearch()">Zoek muzikanten</button>
@@ -2957,6 +2965,7 @@
     </div>
 
     <div class="results-section-divider"><span>Resultaat</span></div>
+
 
     <!-- Sorteren staat bewust bij het resultaat, niet bij de zoekfilters —
          her-sorteert direct zonder opnieuw te hoeven zoeken. -->
@@ -2999,6 +3008,10 @@
           </div>
         </div>
       </div>
+      <!-- TT-136 (23-08-2026): zelfde toggle als bij de muzikant-tab —
+           Bandnaam+Plaats blijven zichtbaar, de rest samengevouwen. -->
+      <button type="button" class="btn btn-ghost" id="bandMoreFiltersToggle" onclick="toggleMoreFilters('band')" style="width:100%;font-size:13px;margin-bottom:16px;">Meer filters ▾</button>
+      <div id="bandMoreFilters" style="display:none;">
       <div class="filter-row">
         <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
         <div class="field">
@@ -3044,6 +3057,7 @@
             </select>
           </div>
         </div>
+      </div>
       </div>
       <div style="display:flex;gap:12px;">
         <button class="search-btn" style="flex:1;" onclick="runBandSearch()">Zoek bands</button>
@@ -3566,6 +3580,13 @@
       <p style="font-size:11px;color:var(--muted);margin-top:2px;" id="usernameGateAgeHint"></p>
     </div>
     <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="saveUsernameGate()">Opslaan en verdergaan →</button>
+    <!-- TT-138 (23-08-2026): dit scherm heeft bewust geen kruisje/Annuleren
+         (TT-38, "verplicht invullen bij eerstvolgend bezoek") — maar had
+         tot nu toe ook geen enkele andere uitweg. Faalt de beschikbaarheids-
+         check herhaaldelijk, of wil iemand nu even niet kiezen, dan zat hij
+         zonder route terug vast. Uitloggen verzwakt de verplichting niet:
+         wie terugkomt en inlogt, krijgt dit scherm gewoon weer. -->
+    <button class="btn btn-ghost" style="width:100%;margin-top:8px;font-size:13px;" onclick="document.getElementById('usernameGateModal').classList.remove('visible');signOut();">Uitloggen</button>
   </div>
 </div>
 
@@ -4625,6 +4646,19 @@ function snapRadiusToStep(el) {
   if (!Number.isFinite(v)) v = 25;
   v = Math.max(5, Math.round(v / 5) * 5);
   el.value = v;
+}
+
+// TT-136 (23-08-2026): Meer filters-toggle, gedeeld door beide zoektabs.
+// Blijft simpel bewust: geen state die het scherm zelf onthoudt tussen
+// bezoeken — alleen binnen dezelfde sessie, zodat een net geopende sectie
+// niet weer dichtklapt zodra iemand terugkomt van een ander scherm.
+function toggleMoreFilters(which) {
+  const el = document.getElementById(which + 'MoreFilters');
+  const btn = document.getElementById(which + 'MoreFiltersToggle');
+  if (!el || !btn) return;
+  const opening = el.style.display === 'none';
+  el.style.display = opening ? 'block' : 'none';
+  btn.textContent = opening ? 'Minder filters ▴' : 'Meer filters ▾';
 }
 
 // Filters wissen — zet zoekscherm terug naar lege staat, leegt ook het resultaat.
@@ -6673,107 +6707,133 @@ function updateSubmitProfileState() {
 // net zoals het einde van de wizard al deed — bij het bewerken staat
 // state altijd vol met alle velden, ook van stappen die deze keer niet
 // zijn bezocht (geladen door editMyProfile() bij het openen). Een save
-// vanaf om het even welke stap is daarom veilig. Dit is letterlijk de
-// oude "wasEditing"-tak van submitProfile(), nu een eigen functie zodat
-// zowel de knoppen op stap 1 t/m 4 als de laatste stap ("Wijzigingen
-// opslaan") 'm kunnen aanroepen.
+// vanaf om het even welke stap is daarom veilig.
+// TT-137 (23-08-2026): opgesplitst in een pure schrijffunctie
+// (persistEditedProfile, geen UI) en twee dunne lagen eromheen —
+// saveEditedProfile() (met spinner/succesmelding, navigeert daarna naar
+// Mijn Profiel — de expliciete "Opslaan"-knop) en silentlySaveEditIfNeeded()
+// (stil, blijft op de huidige stap — aangeroepen vanuit nextStep()/
+// prevStep()). Reden: vóór deze wijziging sloeg "Verder →" tijdens het
+// bewerken van een bestaand profiel helemaal niets op — alleen "Opslaan"
+// deed dat. Een wijziging + "Verder →" + tabblad sluiten was dan stil
+// verlies, zonder enige waarschuwing.
+async function persistEditedProfile() {
+  const mid = editingMusicianId;
+  if (!mid) return;
+  const { error: uErr } = await db.from('musicians').update({
+    fname:            state.fname,
+    lname:            state.lname || null,
+    username:         state.username,
+    birth_date:       toISODate(state.birth_date),
+    city:             state.city,
+    zip:              state.zip || null,
+    bio:              state.bio || null,
+    goal:             state.goal,
+    rehearsal_frequency: state.rehearsalFrequency || null,
+    musical_ambition:    state.musicalAmbition || null,
+    repertoire_type:  state.repertoireType || null,
+    avatar_url:       state.avatarUrl || null,
+    city_source:      state.citySource || 'pdok',
+    profile_complete: true, // TT-09: dit is de definitieve klik op "Profiel aanmaken"/"Wijzigingen opslaan"/"Opslaan"
+  }).eq('id', mid);
+  if (uErr) throw new Error(uErr.message);
+
+  // Bestaande koppeltabellen legen, hieronder opnieuw vullen — eenvoudigste
+  // betrouwbare manier om toevoegingen/verwijderingen te verwerken.
+  await db.from('musician_instruments').delete().eq('musician_id', mid);
+  await db.from('musician_genres').delete().eq('musician_id', mid);
+  await db.from('musician_songs').delete().eq('musician_id', mid);
+  // Alle media legen (links én foto's/video's) — hieronder allebei opnieuw
+  // opgebouwd vanuit state, net als bij instrumenten/genres/repertoire.
+  // Al geüploade Storage-bestanden zelf blijven gewoon staan (alleen de
+  // koppeling in musician_media wordt hier ververst); verwijderde foto's/
+  // video's zijn al apart uit Storage opgeruimd door removeMedia().
+  await db.from('musician_media').delete().eq('musician_id', mid);
+
+  if (state.instruments.length) {
+    const { error: iErr } = await db.from('musician_instruments').insert(
+      state.instruments.map(instrument => ({ musician_id: mid, instrument, niveau: state.instrumentLevels[instrument] || null }))
+    );
+    if (iErr) throw new Error(iErr.message);
+  }
+
+  if (state.genres.length) {
+    const { error: gErr } = await db.from('musician_genres').insert(
+      state.genres.map(genre => ({ musician_id: mid, genre }))
+    );
+    if (gErr) throw new Error(gErr.message);
+  }
+
+  if (state.songs.length) {
+    const { error: sErr } = await db.from('musician_songs').insert(
+      state.songs.map(s => ({
+        musician_id:   mid,
+        song_title:    s.title,
+        song_artist:   s.artist,
+        mastery_level: s.level,
+      }))
+    );
+    if (sErr) throw new Error(sErr.message);
+  }
+
+  const linkMedia = state.mediaLinks
+    .filter(l => l.url.trim())
+    .map(l => ({
+      musician_id: mid,
+      media_type:  'link',
+      url:         l.url,
+      platform:    detectPlatform(l.url),
+    }));
+  if (linkMedia.length) {
+    const { error: lErr } = await db.from('musician_media').insert(linkMedia);
+    if (lErr) throw new Error(lErr.message);
+  }
+
+  const fileMedia = state.mediaFiles
+    .filter(m => m.url && !m.uploading && !m.url.startsWith('blob:'))
+    .map(m => ({
+      musician_id: mid,
+      media_type:  m.type,
+      url:         m.url,
+    }));
+  if (fileMedia.length) {
+    const { error: fErr } = await db.from('musician_media').insert(fileMedia);
+    if (fErr) throw new Error(fErr.message);
+  }
+
+  state.savedId = mid;
+}
+
 async function saveEditedProfile() {
   if (!editingMusicianId) return; // defensief, hoort niet voor te komen
   showSaving();
   myOwnCity = null; // eigen plaats kan net gewijzigd zijn — cache opnieuw laten opbouwen
-
   try {
-    const mid = editingMusicianId;
-    const { error: uErr } = await db.from('musicians').update({
-      fname:            state.fname,
-      lname:            state.lname || null,
-      username:         state.username,
-      birth_date:       toISODate(state.birth_date),
-      city:             state.city,
-      zip:              state.zip || null,
-      bio:              state.bio || null,
-      goal:             state.goal,
-      rehearsal_frequency: state.rehearsalFrequency || null,
-      musical_ambition:    state.musicalAmbition || null,
-      repertoire_type:  state.repertoireType || null,
-      avatar_url:       state.avatarUrl || null,
-      city_source:      state.citySource || 'pdok',
-      profile_complete: true, // TT-09: dit is de definitieve klik op "Profiel aanmaken"/"Wijzigingen opslaan"/"Opslaan"
-    }).eq('id', mid);
-    if (uErr) throw new Error(uErr.message);
-
-    // Bestaande koppeltabellen legen, hieronder opnieuw vullen — eenvoudigste
-    // betrouwbare manier om toevoegingen/verwijderingen te verwerken.
-    await db.from('musician_instruments').delete().eq('musician_id', mid);
-    await db.from('musician_genres').delete().eq('musician_id', mid);
-    await db.from('musician_songs').delete().eq('musician_id', mid);
-    // Alle media legen (links én foto's/video's) — hieronder allebei opnieuw
-    // opgebouwd vanuit state, net als bij instrumenten/genres/repertoire.
-    // Al geüploade Storage-bestanden zelf blijven gewoon staan (alleen de
-    // koppeling in musician_media wordt hier ververst); verwijderde foto's/
-    // video's zijn al apart uit Storage opgeruimd door removeMedia().
-    await db.from('musician_media').delete().eq('musician_id', mid);
-
-    if (state.instruments.length) {
-      const { error: iErr } = await db.from('musician_instruments').insert(
-        state.instruments.map(instrument => ({ musician_id: mid, instrument, niveau: state.instrumentLevels[instrument] || null }))
-      );
-      if (iErr) throw new Error(iErr.message);
-    }
-
-    if (state.genres.length) {
-      const { error: gErr } = await db.from('musician_genres').insert(
-        state.genres.map(genre => ({ musician_id: mid, genre }))
-      );
-      if (gErr) throw new Error(gErr.message);
-    }
-
-    if (state.songs.length) {
-      const { error: sErr } = await db.from('musician_songs').insert(
-        state.songs.map(s => ({
-          musician_id:   mid,
-          song_title:    s.title,
-          song_artist:   s.artist,
-          mastery_level: s.level,
-        }))
-      );
-      if (sErr) throw new Error(sErr.message);
-    }
-
-    const linkMedia = state.mediaLinks
-      .filter(l => l.url.trim())
-      .map(l => ({
-        musician_id: mid,
-        media_type:  'link',
-        url:         l.url,
-        platform:    detectPlatform(l.url),
-      }));
-    if (linkMedia.length) {
-      const { error: lErr } = await db.from('musician_media').insert(linkMedia);
-      if (lErr) throw new Error(lErr.message);
-    }
-
-    const fileMedia = state.mediaFiles
-      .filter(m => m.url && !m.uploading && !m.url.startsWith('blob:'))
-      .map(m => ({
-        musician_id: mid,
-        media_type:  m.type,
-        url:         m.url,
-      }));
-    if (fileMedia.length) {
-      const { error: fErr } = await db.from('musician_media').insert(fileMedia);
-      if (fErr) throw new Error(fErr.message);
-    }
-
-    state.savedId = mid;
+    await persistEditedProfile();
     editingMusicianId = null;
     // isEdit=true: toont "Profiel bijgewerkt!" en gaat na 1,2s naar Mijn
     // Profiel — ongeacht vanaf welke stap er is opgeslagen.
     showSaveSuccess(true);
-
   } catch (err) {
     console.error('Supabase fout:', err);
     showSaveError(err.message);
+  }
+}
+
+// TT-137: stille variant voor "Verder →"/"← Terug" tijdens het bewerken.
+// Geen spinner-overlay (voelt te zwaar voor een simpele stap-navigatie) en
+// blijft op de huidige stap staan — editingMusicianId wordt hier bewust
+// NIET op null gezet, de bewerksessie loopt gewoon door.
+async function silentlySaveEditIfNeeded() {
+  if (!editingMusicianId) return true; // nieuw account: niets op te slaan
+  myOwnCity = null;
+  try {
+    await persistEditedProfile();
+    return true;
+  } catch (err) {
+    console.error('Supabase fout (stil opslaan tijdens bewerken):', err);
+    showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(err.message));
+    return false;
   }
 }
 
@@ -7895,12 +7955,21 @@ function choosePickerListValue(value) {
       kept.forEach(v => list.push(v));
       list.push(value);
     }
-  } else {
-    if (!list.includes(value)) list.push(value);
+    renderPickerBadges(cfg);
+    if (cfg.onChange) cfg.onChange();
+    closePickerList();
+    return;
   }
+  // TT-134 (23-08-2026): een meervoudig veld (bijv. genre, of "Wij zoeken
+  // nog" bij een band) sloot voorheen ook na één keuze — voor drie genres
+  // moest het volledig-scherm-keuzescherm dus drie keer apart geopend
+  // worden. Nu blijft het open; alleen de gekozen waarde verdwijnt uit de
+  // resterende lijst. De gebruiker sluit zelf met het kruisje zodra hij
+  // klaar is.
+  if (!list.includes(value)) list.push(value);
   renderPickerBadges(cfg);
   if (cfg.onChange) cfg.onChange();
-  closePickerList();
+  renderPickerListItems();
 }
 
 function removePickerValue(id, value) {
@@ -8494,6 +8563,13 @@ async function nextStep(from) {
   // invulde werd geblokkeerd. Dat strafte juist wie iets invulde.
   // Niveau per nummer is nu ook optioneel.
   // step 3 (doel) is bewust optioneel — mag later nog worden ingevuld
+  if (editingMusicianId) {
+    // TT-137: bij bewerken van een bestaand profiel slaat "Verder →" nu ook
+    // echt op — blijf op deze stap staan als het opslaan mislukt, anders
+    // denkt de gebruiker onterecht dat de wijziging al veilig staat.
+    const saved = await silentlySaveEditIfNeeded();
+    if (!saved) return;
+  }
   goTo(from + 1);
 }
 
@@ -8643,7 +8719,14 @@ async function createAccountAndProfile() {
   }
 }
 
-function prevStep(from) { goTo(from - 1); }
+// TT-137 (23-08-2026): ook "← Terug" slaat nu op bij bewerken — een
+// wijziging op de huidige stap mag niet verdwijnen omdat iemand terugging
+// i.p.v. verderging. Blokkeert de navigatie niet bij een mislukking (de
+// toast in silentlySaveEditIfNeeded() waarschuwt al); teruggaan mag altijd.
+async function prevStep(from) {
+  if (editingMusicianId) await silentlySaveEditIfNeeded();
+  goTo(from - 1);
+}
 
 function goTo(step) {
   document.querySelectorAll('.panel').forEach((p,i) => {
