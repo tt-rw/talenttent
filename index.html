@@ -2445,12 +2445,12 @@
       <form onsubmit="event.preventDefault(); signIn();">
       <div class="field" style="margin-bottom:16px;">
         <label>E-mailadres</label>
-        <input type="email" id="loginEmail" placeholder="jouw@email.nl" autocomplete="email" inputmode="email" enterkeyhint="next" onkeydown="submitOnEnter(event, signIn)">
+        <input type="email" id="loginEmail" placeholder="jouw@email.nl" autocomplete="email" inputmode="email" enterkeyhint="next" required onkeydown="submitOnEnter(event, signIn)">
       </div>
       <div class="field" style="margin-bottom:8px;">
         <label>Wachtwoord</label>
         <div class="password-wrap">
-          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" enterkeyhint="done" onkeydown="submitOnEnter(event, signIn)">
+          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" enterkeyhint="done" required onkeydown="submitOnEnter(event, signIn)">
           <button type="button" class="password-toggle" onclick="togglePassword('loginPassword', this)" aria-label="Toon wachtwoord">Toon</button>
         </div>
       </div>
@@ -4364,9 +4364,16 @@ function showAuthSuccess(msg) {
 }
 
 async function signIn() {
-  const email    = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  if (!email || !password) { showAuthError('Vul je e-mailadres en wachtwoord in.'); return; }
+  const emailEl    = document.getElementById('loginEmail');
+  const passwordEl = document.getElementById('loginPassword');
+  const email    = emailEl.value.trim();
+  const password = passwordEl.value;
+  // TT-133 (23-08-2026, Ronald: "to much, kan weg"): geen rode banner meer
+  // bij lege velden — reportValidity() toont de standaard, lichte hint van
+  // de browser zelf bij het lege veld (via het nieuwe required-attribuut
+  // op beide velden). Dat is genoeg, de gebruiker snapt dit toch al.
+  if (!email) { emailEl.reportValidity(); return; }
+  if (!password) { passwordEl.reportValidity(); return; }
 
   const { error } = await db.auth.signInWithPassword({ email, password });
   if (error) { showAuthError(friendlyErrorMessage(error)); return; }
@@ -5664,6 +5671,55 @@ function closeConversation() {
   document.getElementById('messagesThreadPanel').style.display = 'none';
   loadInbox();
 }
+
+// TT-130-vervolg (23-08-2026, live gemeld door Ronald): het invoerveld
+// bleef bereikbaar zodra het toetsenbord opkwam, maar de naam van de ander
+// (de sticky kop) verdween toch. Bekende eigenaardigheid: sommige mobiele
+// browsers passen het zichtbare kijkvenster (visualViewport) aan zonder dat
+// position:sticky dat op tijd volgt. Zolang het invoerveld focus heeft,
+// wordt de kop expliciet vastgezet op de bovenkant van het daadwerkelijk
+// zichtbare gebied, bijgewerkt bij elke wijziging daarvan. Alleen op mobiel
+// (≤560px, dezelfde grens als de rest van dit scherm) — op een breder
+// scherm is er geen toetsenbord dat de viewport verkleint.
+// Aanname, niet op een telefoon geverifieerd: dit lost het gemelde gedrag
+// op. Opnieuw testen op dezelfde manier als hierboven (toetsenbord openen
+// in een gesprek, blijft de naam nu wél zichtbaar?).
+function pinMessagesThreadHeader() {
+  if (window.innerWidth > 560 || !window.visualViewport) return;
+  const header = document.querySelector('#messagesThreadPanel .messages-thread-header');
+  if (!header) return;
+  const vv = window.visualViewport;
+  header.style.position = 'fixed';
+  header.style.top = vv.offsetTop + 'px';
+  header.style.left = '16px';
+  header.style.right = '16px';
+  header.style.width = 'auto';
+  header.style.zIndex = '35';
+}
+function unpinMessagesThreadHeader() {
+  const header = document.querySelector('#messagesThreadPanel .messages-thread-header');
+  if (!header) return;
+  header.style.position = '';
+  header.style.top = '';
+  header.style.left = '';
+  header.style.right = '';
+  header.style.width = '';
+  header.style.zIndex = '';
+}
+(function initMessagesKeyboardPin() {
+  const input = document.getElementById('messagesReplyInput');
+  if (!input) return;
+  input.addEventListener('focus', () => {
+    pinMessagesThreadHeader();
+    window.visualViewport?.addEventListener('resize', pinMessagesThreadHeader);
+    window.visualViewport?.addEventListener('scroll', pinMessagesThreadHeader);
+  });
+  input.addEventListener('blur', () => {
+    unpinMessagesThreadHeader();
+    window.visualViewport?.removeEventListener('resize', pinMessagesThreadHeader);
+    window.visualViewport?.removeEventListener('scroll', pinMessagesThreadHeader);
+  });
+})();
 
 // ─── Mijn profiel laden ──────────────────────────────────────────────────────
 
