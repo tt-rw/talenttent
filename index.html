@@ -830,10 +830,17 @@
   .progress-stage-body.empty { color: var(--muted); font-style: italic; }
 
   /* Profile header with personalized color */
+  /* TT-132-bijvangst (23-08-2026): deze margin was dood — sinds de
+     inModal-parameter (huisstijl §10) zet buildMusicianDetailHTML()/
+     openBandModal() altijd een inline style op dit element, en die wint
+     altijd van deze klasse. De -32px-bleed hoort dus hier niet meer als
+     vaste waarde te staan (dat was de "gele-lijn"-valkuil); veilige
+     standaard voor het geval dit element ooit zonder inline style wordt
+     gebruikt. */
   .profile-header-band {
     height: 8px;
-    border-radius: 8px 8px 0 0;
-    margin: -32px -32px 24px -32px;
+    border-radius: 8px;
+    margin: 0 0 24px;
     background: var(--profile-color, var(--accent));
   }
 
@@ -2110,6 +2117,48 @@
     #navMenuBtn svg { width: 26px; height: 26px; }
     .nav-menu-dropdown { right: 16px; top: -18px; }
     .search-wrap, .my-profile-wrap { padding: 24px 16px 60px; }
+    /* TT-130 (23-08-2026): op de telefoon scrolden de gespreksnaam en het
+       invoerveld gewoon mee met de berichtenlijst — bij een langer gesprek,
+       of zodra het toetsenbord opkomt, verdwenen beide. Geen enkele
+       chat-app die deze doelgroep dagelijks gebruikt laat dat gebeuren.
+       80px is de exacte hoogte van de sticky kop hierboven op mobiel:
+       header-opvulling 18px+18px + het logo op zijn vaste min-height van
+       44px (zie .logo) — geen losse meting nodig, wel een gekoppelde
+       waarde. Wijzigt de kophoogte ooit (padding of .logo min-height),
+       dan moet dit getal mee, net als de -32px-bleed-marge in §10 van
+       huisstijl-en-consistentie.md. */
+    #messagesThreadPanel .messages-thread-header {
+      position: sticky;
+      top: 80px;
+      z-index: 30;
+      background: var(--bg);
+      padding-top: 4px;
+    }
+    /* Composer + teller + verwijderd-melding staan sinds TT-130 samen in
+       .messages-thread-footer (zie HTML) — die wrapper wordt sticky, niet
+       alleen de composer-rij zelf. Anders blijft de teller los in de
+       gewone paginastroom achter terwijl het invoerveld al vastzit.
+       Onderafstand gelijk aan wat body al reserveert voor de vaste
+       onderbalk (60px + safe area), zodat de composer daar nooit onder
+       verdwijnt. */
+    #messagesThreadPanel .messages-thread-footer {
+      position: sticky;
+      bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+      z-index: 30;
+      background: var(--bg);
+      padding-top: 8px;
+    }
+    /* TT-131 (23-08-2026): login/wachtwoordherstel volgden de 16px-
+       marge-regel (zie huisstijl §3) niet — enige twee schermen die
+       afweken. Vaste 60px bovenmarge is op een klein scherm ook onnodig
+       groot, er is geen kop-content om vanaf te lopen op dit scherm. */
+    .auth-wrap { padding: 0 16px; margin: 24px auto; }
+    /* TT-132 (23-08-2026): landingspagina had dezelfde marge-afwijking,
+       plus een zware vaste bovenmarge die titel/subtekst/CTA-knop —
+       juist de belangrijkste actie op het eerste scherm — onnodig ver
+       onder de vouw duwde. */
+    .landing-wrap { padding: 0 16px 60px; }
+    .landing-hero { padding: 40px 0 40px; }
     /* 22-08-2026 (Ronald, "12-1"): de gouden balk bovenaan het profiel
        (.profile-header-band) moet direct tegen de vaste kop aan sluiten,
        geen kloof ertussen. Alleen op Mijn Profiel de bovenmarge weg — de
@@ -3227,14 +3276,20 @@
         <div class="filter-title" id="messagesThreadName" style="margin:0;"></div>
       </div>
       <div id="messagesThreadList" style="display:flex;flex-direction:column;margin-bottom:16px;"></div>
-      <div class="messages-composer-row">
-        <textarea id="messagesReplyInput" placeholder="Typ een bericht..." maxlength="2000" oninput="updateCharCounter('messagesReplyInput','messagesReplyCounter',2000)"></textarea>
-        <button class="messages-send-btn" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+      <!-- TT-130 (23-08-2026): composer + teller + verwijderd-melding samen
+           in één voettekst-wrapper, zodat ze op mobiel samen sticky kunnen
+           worden gemaakt (zie CSS) zonder dat de teller/melding achterblijft
+           in de gewone paginastroom terwijl het invoerveld al vastzit. -->
+      <div class="messages-thread-footer">
+        <div class="messages-composer-row">
+          <textarea id="messagesReplyInput" placeholder="Typ een bericht..." maxlength="2000" oninput="updateCharCounter('messagesReplyInput','messagesReplyCounter',2000)"></textarea>
+          <button class="messages-send-btn" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+        </div>
+        <div id="messagesReplyCounter" style="text-align:right;font-size:12px;color:var(--muted);margin-top:2px;">0/2000</div>
+        <!-- V-04 (13-08-2026): i.p.v. een actief invoerveld naar een niet meer
+             bestaand account. -->
+        <div id="messagesDeletedNotice" style="display:none;text-align:center;font-size:13px;color:var(--muted);padding:14px;background:var(--surface2);border-radius:8px;">Dit account bestaat niet meer. Je kunt dit gesprek niet voortzetten.</div>
       </div>
-      <div id="messagesReplyCounter" style="text-align:right;font-size:12px;color:var(--muted);margin-top:2px;">0/2000</div>
-      <!-- V-04 (13-08-2026): i.p.v. een actief invoerveld naar een niet meer
-           bestaand account. -->
-      <div id="messagesDeletedNotice" style="display:none;text-align:center;font-size:13px;color:var(--muted);padding:14px;background:var(--surface2);border-radius:8px;">Dit account bestaat niet meer. Je kunt dit gesprek niet voortzetten.</div>
     </div>
   </div>
 </div>
