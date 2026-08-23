@@ -6751,7 +6751,7 @@ async function persistEditedProfile() {
     city:             state.city,
     zip:              state.zip || null,
     bio:              state.bio || null,
-    goal:             state.goal,
+    goal:             state.goal || null,
     rehearsal_frequency: state.rehearsalFrequency || null,
     musical_ambition:    state.musicalAmbition || null,
     repertoire_type:  state.repertoireType || null,
@@ -6936,7 +6936,7 @@ async function submitProfile() {
         city:             state.city,
         zip:              state.zip || null,
         bio:              state.bio || null,
-        goal:             state.goal,
+        goal:             state.goal || null,
         rehearsal_frequency: state.rehearsalFrequency || null,
         musical_ambition:    state.musicalAmbition || null,
         repertoire_type:  state.repertoireType || null,
@@ -8602,7 +8602,18 @@ async function nextStep(from) {
   // invulde werd geblokkeerd. Dat strafte juist wie iets invulde.
   // Niveau per nummer is nu ook optioneel.
   // step 3 (doel) is bewust optioneel — mag later nog worden ingevuld
-  if (editingMusicianId) {
+  // Bugfix 23-08-2026 (gemeld door Ronald: "Opslaan is niet gelukt" direct na
+  // stap 1). editingMusicianId wordt al bij createAccountAndProfile() gezet,
+  // vlak vóór dit punt, in dezelfde klik. Zonder de state.onboarding-check
+  // hieronder deed élke "Verder →" tijdens een gloednieuwe registratie dus
+  // ook een volledige tussentijdse opslag (persistEditedProfile), met
+  // profile_complete:true en met alle nog niet bezochte velden (o.a.
+  // state.goal) nog op hun lege beginwaarde — dat liep vast op een
+  // check-constraint in de database. Silent-save-per-stap is alleen bedoeld
+  // voor het bewerken van een al bestaand, afgerond profiel (TT-121/TT-137);
+  // state.onboarding is precies het bestaande onderscheid daarvoor (false
+  // zodra een profiel al eerder is afgerond).
+  if (editingMusicianId && !state.onboarding) {
     // TT-137: bij bewerken van een bestaand profiel slaat "Verder →" nu ook
     // echt op — blijf op deze stap staan als het opslaan mislukt, anders
     // denkt de gebruiker onterecht dat de wijziging al veilig staat.
@@ -8763,7 +8774,7 @@ async function createAccountAndProfile() {
 // i.p.v. verderging. Blokkeert de navigatie niet bij een mislukking (de
 // toast in silentlySaveEditIfNeeded() waarschuwt al); teruggaan mag altijd.
 async function prevStep(from) {
-  if (editingMusicianId) await silentlySaveEditIfNeeded();
+  if (editingMusicianId && !state.onboarding) await silentlySaveEditIfNeeded();
   goTo(from - 1);
 }
 
