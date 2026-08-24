@@ -1,6 +1,7 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 23-08-2026 — vierde sessie: TT-63-fix (voorwaarden-links in de wizard braken de aanmeldwizard, nu een in-app modal i.p.v. een `target="_blank"`-link die op mobiel niet betrouwbaar werkt). Geen nieuw TT-nummer, valt onder bestaand TT-63. Zie Deel 3 bovenaan voor het volledige verhaal.
+**Laatste update:** 24-08-2026 — **TT-139 gebouwd:** MusicBrainz vervangen door iTunes als songbron voor repertoire en Setlist-zoeken. Spotify grondig onderzocht maar afgevallen vanwege een blijvende maandelijkse kostenpost plus een nodige server-component; iTunes heeft geen van beide nodig. Checksum en smoke-testpunten in Deel 3 bovenaan. `actielijst.md` en `zoekfunctienaslagwerk.md` in dezelfde sessie bijgewerkt.
+**23-08-2026 (voorgaande update):** vierde sessie: TT-63-fix (voorwaarden-links in de wizard braken de aanmeldwizard, nu een in-app modal i.p.v. een `target="_blank"`-link die op mobiel niet betrouwbaar werkt). Geen nieuw TT-nummer, valt onder bestaand TT-63.
 **Zelfde dag, derde sessie:** vier gevonden en opgeloste bugs (drie live gemeld door Ronald, één gevonden bij een bredere code-controle op Ronalds verzoek), plus een herwogen prioriteit voor drie P0-tickets omdat de site nog niet live is. Zie Deel 3 voor het volledige verhaal. Nieuw ticket: **TT-129**.
 **Zelfde dag, derde sessie:** alle vijf nog openstaande tickets uit de audit gebouwd — **TT-134, TT-135, TT-136, TT-137, TT-138**. Samen met TT-130/131/132/133 (vorige sessie) staat daarmee de hele lijst van deze audit in code. Niets van deze vijf is al door Ronald op de telefoon bevestigd.
 
@@ -8,7 +9,7 @@
 **Vervangt:** `TODO.md`, `talenttent_backlog.md`, `stappenplan.md`, `randvoorwaarden_lancering.md` als los te lezen bronnen. Dit is het ene bestand dat je bij sessiestart meestuurt, samen met `index.html`.
 
 **Naast dit bestand bestaan drie blijvende naslagwerken:**
-- `zoekfunctienaslagwerk.md` (sinds 10-08-2026, bestandsnaam gecorrigeerd 12-08-2026 — was eerder abusievelijk met een koppelteken genoemd) beschrijft de zoek- en matchstructuur: wat de app nú doet (hoofdstuk 2 t/m 4 en 7 t/m 11 — beschrijvend en getoetst), plus het besluit van 12-08-2026 over TT-55 (§5.12: harde filter, geen formule) en de eerder overwogen `2m + j`-formule als historisch naslag (§5.1-5.11, niet gebouwd). **Meesturen bij elke sessie over zoeken of matchen.**
+- `zoekfunctienaslagwerk.md` (sinds 10-08-2026, bestandsnaam gecorrigeerd 12-08-2026 — was eerder abusievelijk met een koppelteken genoemd) beschrijft de zoek- en matchstructuur: wat de app nú doet (hoofdstuk 2 t/m 4 en 7 t/m 11 — beschrijvend en getoetst), plus het besluit van 12-08-2026 over TT-55 (§5.12: harde filter, geen formule) en de eerder overwogen `2m + j`-formule als historisch naslag (§5.1-5.11, niet gebouwd). **Sinds 24-08-2026, hoofdstuk 15:** de songbron voor repertoire (MusicBrainz/iTunes/Spotify, TT-139) — een apart onderwerp binnen hetzelfde document, want ook een vorm van zoeken. **Meesturen bij elke sessie over zoeken, matchen, of TT-139.**
 - `niveaubepaling-naslagwerk.md` (sinds 12-08-2026) bevat de twee niveautabellen (bandniveau, instrumentniveau per muzikant) plus de gebruikerstekst bij het kiezen van een niveau — bron voor TT-51, door Ronald zelf bewerkbaar. **Meesturen bij elke sessie over niveau, TT-51 of TT-55.**
 - `huisstijl-en-consistentie.md` (sinds 22-08-2026) legt visuele en interactieregels vast: kleuren, typografie, de 4px-afstandsschaal (TT-114), tikdoelen, knop-/menupatronen, modalbreedtes (les uit TT-118), en het profielweergave-patroon (muzikant én band delen dezelfde opbouw, inclusief de technische valkuil van de contextafhankelijke bleed-marge). **Meesturen bij elke sessie die het uiterlijk of de interactie van de app raakt.** **Vaste werkafspraak (22-08-2026, Ronald):** raakt een wijziging de huisstijl — een nieuw patroon, een bewuste afwijking, of een correctie op een bestaande regel — dan meldt Claude dat expliciet, zodat `huisstijl-en-consistentie.md` in dezelfde sessie wordt bijgewerkt. Dit gebeurt niet stilzwijgend en niet pas achteraf.
 
@@ -21,7 +22,7 @@ Geen van de drie is een actielijst of een parallel ticketsysteem — puur uitleg
 - **Deel 2 — Achtergrond bij richtingen**, de strategische context achter clusters van tickets (geen losse actiepunten meer, alleen duiding + verwijzing naar TT-nummers)
 - **Deel 3 — Afgehandeld**, chronologisch, kort
 
-Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodanig in code-comments). Huidige hoogste nummer: **TT-138**.
+Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodanig in code-comments). Huidige hoogste nummer: **TT-139**.
 
 **Vaste smoke-test na elke wijziging (toegevoegd 09-08-2026, externe technische review):** `index.html` is gegroeid naar ruim 7.000 regels in één bestand, zonder geautomatiseerde tests. Regressie is daarmee het grootste sluipende risico — en Voorwaarde 0 zegt zelf dat stabiliteit altijd wint. Na elke deploy, tien minuten: inloggen, zoeken (met en zonder profiel), een bericht sturen, een profiel bewerken, uitgelogd zoeken. Geen bouwticket, wel een vaste stap — hoort ook thuis in de projectinstructie zelf.
 
@@ -122,7 +123,8 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | ID | Ticket | Kern |
 |---|---|---|
 | **TT-18** | Album-art bij repertoire | Overweeg iTunes/Deezer i.p.v. MusicBrainz voor dit doel |
-| **TT-109** | Combinatiezoekveld repertoire (V-22, heropend) | **Nieuw, 18-08-2026.** V-22 stond sinds 13-08-2026 bewust open (zie Deel 3, vervolg 3 van die dag) — de toenmalige reden was dat één gecombineerd zoekveld op MusicBrainz de bestaande covers/gelijknamige-artiesten-filtering zou verliezen. Heropend op basis van een gemeten vergelijking (zie Deel 3, 18-08-2026): MusicBrainz faalde op 9 van 30 zoekopdrachten (`503`, drie rondes/twee browsers, willekeurig verdeeld) en miste het gezochte, bekende nummer bij 5 van 10 termen zelfs binnen de eerste 6 resultaten. iTunes faalde nul keer en trof het gezochte nummer bij 8 van 10 termen. **Voorstel:** het nieuwe combinatieveld bouwen op de iTunes Search API (geen sleutel nodig, CORS werkt rechtstreeks vanuit de browser, geverifieerd 18-08-2026) i.p.v. MusicBrainz. **Blijft een open zwak punt bij beide bronnen:** een generieke term of een bandnaam die ook een gewoon woord is (getest: "Kensington", "De Jeugd van Tegenwoordig") geeft bij geen van beide bronnen betrouwbaar de juiste artiest — dat is een zoeklogica-probleem, geen databronprobleem, en lost dit voorstel niet op. **Tweede optie, toegevoegd 18-08-2026 (Ronalds vondst) — artiest-ID-isolatie, lost het zwakke punt hierboven wél op.** Eén zichtbaar zoekveld, twee aanroepen erachter: eerst de artiest vinden en diens uniek ID pakken, dan met dat ID alleen zíjn nummers opvragen — bij MusicBrainz `arid:[ID]`, bij iTunes `lookup?id=<artistId>&entity=song` (**geverifieerd, Apple's eigen documentatie, zelfde principe, ander veldnaam**). Dit is dezelfde uitsluitingsmethode als de huidige, werkende tweestapswizard (artiest bevestigen → nummer binnen die artiest zoeken) — alleen met de twee stappen achter de schermen, zodat de gebruiker maar één veld ziet. **Belangrijk: deze architectuur staat los van de MusicBrainz/iTunes-keuze** — werkt met beide bronnen even goed, dus de keuze tussen de twee (storingspercentage/trefzekerheid, zie hierboven) hoeft niet eerst gemaakt te worden om hiermee te kunnen bouwen. Nog niet uitgewerkt tot een concreet bouwvoorstel. **Aanname, nog niet bevestigd:** Apple's gebruiksvoorwaarden lijken alleen promotioneel gebruik (audiofragmenten, hoezen) te beperken, niet het opvragen van tekstvelden (titel/artiest) — redelijke lezing, geen juridisch oordeel. Snelheidslimiet bevestigd: ~20 verzoeken/minuut. **Nog niet gebouwd, geen van beide opties:** wacht op Ronalds expliciete akkoord (welke optie), op eventuele reactie van Spotify (bepaalt niet déze keuze, wel de bredere afweging), en op het echte `index.html` bij sessiestart |
+| **TT-109** | Combinatiezoekveld repertoire (V-22, heropend) | **De bronkeuze is afgerond via TT-139 (iTunes, 24-08-2026).** Dit ticket zelf — één zichtbaar zoekveld i.p.v. twee losse velden (artiest, dan nummer) — is daarmee nog niet gebouwd. De huidige iTunes-implementatie gebruikt nog steeds twee velden, met de artiest-ID-isolatie-architectuur er al onder (nu al één keer per artiest de volledige nummerlijst ophalen, lokaal filteren). Het samenvoegen tot één zichtbaar veld blijft een aparte, nog niet opgepakte UX-wijziging |
+| **TT-139** | Songbron voor repertoire: MusicBrainz, iTunes of Spotify | **Gebouwd 24-08-2026: MusicBrainz vervangen door iTunes.** Ronalds oorspronkelijke voorkeur was Spotify; grondig onderzocht (zie Deel 3, 24-08-2026), maar Spotify vereist een blijvende maandelijkse kostenpost (Ronalds eigen Premium-abonnement, verplicht ook bij puur zoeken zonder bezoekersinlog) én een nieuwe server-component (Supabase Edge Function, om de `client_secret` te verbergen) — voor een functie die beperkt wordt gebruikt. Ronald: in deze fase niet passend. **Bij iTunes is geen van beide nodig:** geen sleutel, geen server, geen kosten, en titel/artiest bewaren na een zoekopdracht is expliciet toegestaan (Apple beveelt dit zelfs aan). Zie `zoekfunctienaslagwerk.md` hoofdstuk 15 voor het volledige naslag. **Gebouwd:** artiest-zoekstap nu via `/search?entity=musicArtist`; nummer-zoekstap haalt één keer per artiest de volledige nummerlijst op (`/lookup?entity=song`) en filtert daarna lokaal — minder netwerkverkeer dan bij MusicBrainz. Beide plekken (profiel-repertoire, Setlist-zoeken) gewijzigd. **Nog te bevestigen door Ronald op de live site** (geen netwerktoegang tot iTunes in deze omgeving, dus niet met Playwright getest) — zie Deel 3, 24-08-2026, voor de smoke-testpunten. **Spotify blijft in principe mogelijk**, mocht de afweging later anders uitvallen — niets in deze bouw sluit dat af |
 | **TT-27** | Wizard-tussenresultaten incrementeel opslaan | Tabblad sluiten tijdens onboarding verliest nu nog voortgang. **Externe technische review (09-08-2026):** twijfelgeval op P2 — voor dertienjarigen op een telefoon is voortgang kwijtraken een conversie-killer. Verdedigbaar zolang het verkeer laag is; **verhoog naar P1 zodra "Regionale start" (P1, hierboven) actief wordt**, vóór er echte nieuwe gebruikers de wizard in gaan |
 | **TT-28** | Filtering/paginering echt naar de database verplaatsen | Nodig zodra het ledenaantal groeit. **Bevestigd 10-08-2026 (tweede externe review):** prioritering klopt, nog niet urgent. Wel opgemerkt: het *tonen* is gelimiteerd op 50, het *ophalen* niet — bij duizenden profielen wordt de tweede query zwaar. **Aangevuld 13-08-2026 (V-06, Ronalds akkoord):** hetzelfde probleem geldt voor `loadInbox()` — haalt élk bericht op zonder limiet (bij 7 gebruikers nu geen probleem). Geen apart ticket, valt onder deze wijziging zodra hij wordt opgepakt |
 | **TT-85** | Supabase-client vastzetten of zelf hosten | **Nieuw, 10-08-2026 (tweede externe review).** De script-tag laadt `@supabase/supabase-js@2` zonder vast versienummer en zonder `integrity`. Twee risico's: een nieuwe versie kan gedrag breken zonder dat er iets is gewijzigd, en een gecompromitteerd CDN kan code injecteren. Twee routes: (a) de bibliotheek als bestand naast `index.html` in de repo zetten — verwijdert de afhankelijkheid volledig en past bij GitHub Pages, of (b) pinnen op een exacte versie plus `integrity` + `crossorigin`. **Blokkade:** Claude heeft geen netwerktoegang en kan de exacte versie noch de hash bepalen. Een gegokte hash breekt de app direct. Ronald moet de versie en hash aanleveren, of het bestand zelf downloaden voor route (a). Het *beschikbaarheids*risico is inmiddels afgedekt door TT-82; dit ticket gaat alleen nog over de toeleveringsketen |
@@ -256,6 +258,70 @@ Bijbehorende tickets: TT-70 (Google Play), plus het `—`-punt "App Store (nativ
 # Deel 3 — Afgehandeld
 
 Kort en chronologisch (nieuwste bovenaan). Voor het volledige technische verhaal per punt: zie de sessie-aantekeningen die aan dit bestand voorafgingen (niet langer los bijgehouden na deze opschoning).
+
+## 24-08-2026 (vervolg) — TT-139 gebouwd: MusicBrainz vervangen door iTunes
+
+**Bestand:** `index.html`, 10544 regels. **SHA-256:** `2fa3ab171a41885019cb26192935034a2637aa8c87c2b6d43a9fff0b61f503e5`. Geen databasewijziging.
+
+**Wat is aangepast:** de twee plekken die MusicBrainz aanriepen (profiel-repertoire `addSong()`, en Setlist-zoeken `addSetlistSong()`) roepen nu de iTunes Search API aan. Stap A (artiest zoeken) gebruikt `/search?entity=musicArtist`. Stap B (nummer zoeken binnen die artiest) is herzien: in plaats van per toetsaanslag een nieuw verzoek met een titelfilter (zoals bij MusicBrainz), haalt de app nu **één keer per artiest** de volledige nummerlijst op via `/lookup?id=<artistId>&entity=song&limit=200`, en filtert daarna lokaal terwijl je typt. Minder netwerkverkeer, ruim onder de snelheidslimiet van iTunes (~20 verzoeken/minuut), en sluit aan bij Apple's eigen aanbeveling om zoek-/lookupresultaten te bewaren (zie `zoekfunctienaslagwerk.md` §15.5).
+
+Beide plekken (profiel en Setlist) delen dezelfde cache en dezelfde hulpfuncties (`fetchArtistSongs`, `renderArtistResults`, `renderTrackResults`) — geen dubbele code, zoals dat bij MusicBrainz ook al zo was.
+
+**Wat niet is veranderd:** de UI zelf. Nog steeds twee losse velden (artiest, dan nummer) — de "één zichtbaar zoekveld"-richting uit het oorspronkelijke TT-109-voorstel is een aparte UX-wijziging en is hier niet meegenomen. Alleen de bron is vervangen.
+
+**Controles vóór oplevering:**
+
+| Controle | Uitkomst |
+|---|---|
+| Haakjesbalans `{}` `()` `[]` | 1973/1973 · 5796/5797 · 314/314 |
+| JS-syntaxcontrole (`node --check`, geëxtraheerde `<script>`-inhoud) | geen fouten |
+| Resterende verwijzingen naar MusicBrainz (code + comments) | geen, gecontroleerd met een volledige zoekopdracht door het bestand |
+
+**Bekende, onveranderde afwijking in de haakjesbalans:** de ronde haakjes stonden ook vóór deze wijziging op 5797/5798 (één meer sluitend dan openend) — een bestaande situatie, niet door deze wijziging veroorzaakt, waarschijnlijk een haakje in een tekst-/attribuutstring elders in het bestand. Niet onderzocht, want niet nieuw.
+
+**Niet getest: het live gedrag tegen de echte iTunes API.** Deze omgeving heeft geen netwerktoegang tot `itunes.apple.com` (alleen een beperkte lijst toegestane domeinen), dus er kon geen Playwright-test tegen de werkelijke API draaien. Alleen statische controles (syntax, haakjesbalans, functienamen) zijn gedaan. **Onbekend, moet jij bevestigen op de live site:**
+- Een artiest zoeken (bijv. "Metallica") bij het profiel-repertoire — komen er resultaten?
+- Een nummer zoeken binnen die artiest, en toevoegen — staat het nummer in je repertoire?
+- Hetzelfde bij Setlist-zoeken (`addSetlistSong`)
+- Een artiest zonder resultaten (bijv. onzin-tekst) — verschijnt "Geen artiesten gevonden" netjes?
+
+**Nog te doen, later in deze sessie:** `actielijst.md` (dit document) en `zoekfunctienaslagwerk.md` verder bijwerken met de definitieve status van TT-139 — zie de tabelregel hieronder en hoofdstuk 15 van het naslagwerk.
+
+## 24-08-2026 — Spotify-onderzoek vervolgd: Premium-eis herbevestigd, download-idee afgewezen, enige weg is een Edge Function
+
+**Vervolg op de sessie van 18-08-2026 hieronder.** Ronald wil Spotify nog steeds, met absolute voorkeur boven iTunes. Grondig nagezocht, inclusief Spotify's eigen ontwikkelaarsforum.
+
+**Punt 1: Premium-eis nogmaals gecontroleerd, op Ronalds verzoek.** Ronald ging ervan uit dat dit niet nodig zou zijn. **Geverifieerd, drie onafhankelijke bronnen, de eis blijft staan:**
+- Spotify's eigen Quota modes-pagina: "The app owner must have a Spotify Premium account for apps in development mode to function" — zonder uitzondering voor Client Credentials (puur zoeken, geen bezoekersinlog).
+- Een melding op Spotify's eigen forum (juni 2026) van een ontwikkelaar met een app zónder OAuth, zónder Web Playback SDK, **alleen** Client Credentials op `/v1/search` — die kreeg alsnog de foutmelding "Active premium subscription required".
+- Een onafhankelijke technische blog (juni 2026) bevestigt: het is het account waarmee de app is geregistreerd dat Premium moet hebben, niet de bezoekers van de app.
+- **Conclusie:** het gaat om Ronalds eigen Spotify-account, niet om de bezoekers van The Talent Tent. Zolang Ronald zelf Premium heeft en houdt, werkt zoeken voor iedereen. Zegt Ronald zijn Premium op, dan stopt zoeken voor alle gebruikers — een productieafhankelijkheid van een persoonlijk abonnement.
+
+**Punt 2 (permanente opslag van titel/artiest in `musician_songs`):** Ronald: geen issue, expliciet geaccepteerd risico.
+
+**Punt 3 (5-gebruikerslimiet):** al op 18-08-2026 vastgesteld dat dit niet geldt bij pure Client Credentials-zoekopdrachten (zie hieronder). Ronald bevestigt: geen issue.
+
+**Nieuw onderzocht: een eigen download/kopie van de Spotify-catalogus als risicobeperking (Ronalds vraag).** **Niet mogelijk, om twee redenen:**
+1. Spotify biedt zelf geen bulk-export van de catalogus. Een Spotify-medewerker op het eigen forum: "The Web API does not provide full datasets in bulk, for licensing reasons." Alleen los, nummer voor nummer.
+2. Spotify's Developer Terms verbieden het zelf opbouwen van zo'n database expliciet: "you may not store, aggregate or create compilations or databases of Spotify Content, other than as strictly necessary to operate your SDA" en "Do not store Spotify Content indefinitely." Een eigen kopie van de catalogus zou rechtstreeks tegen deze regel ingaan.
+
+De enige bestaande bulk-kopieën van Spotify's catalogus zijn illegale scrapes door derden (bijv. een torrent-archief, eind 2025) — geen bruikbare of legale optie.
+
+**Wat wél een weg is: een Supabase Edge Function als tussenstation, die de `client_secret` vasthoudt.** Dit lost het probleem uit punt 1 van de sessie van 18-08-2026 op (de secret kan niet in `index.html`). Sinds een update kan een Edge Function via de Supabase Dashboard zelf worden geschreven en uitgerold — geen CLI, geen Docker, past bij Ronalds bestaande werkwijze (SQL Editor, GitHub-webinterface).
+
+**Dit doorbreekt bewust een vastgelegde regel:** *"Supabase backend client-side only, no server, no Edge Functions."* Wordt Spotify de keuze, dan wordt die regel aangepast naar: één Edge Function, uitsluitend voor de Spotify-secret, verder blijft alles client-side.
+
+**Nieuw ticket TT-139**, vervangt TT-109 (iTunes-richting).
+
+**Zelfde sessie, vervolg — Ronald geeft aan dat een maandelijkse kostenpost voor beperkt gebruik in deze fase niet passend voelt.** Terecht: dit is geen technisch obstakel maar een vaste kostenpost die rechtstreeks uit Spotify's eigen regels volgt, er is geen constructie die dit omzeilt.
+
+**Vraag: staat iTunes downloaden wel toe?** Twee aparte antwoorden, **Geverifieerd** bij Apple:
+- **Titel/artiest bewaren na een zoekopdracht: expliciet toegestaan, zelfs aanbevolen.** Apple's eigen documentatie: *"Large websites should set up caching logic for the search and lookup requests sent to the Search API."* Het tegenovergestelde van Spotify's regel. Wat nu al gebeurt met MusicBrainz-resultaten (permanent bewaren in `musician_songs`) mag bij iTunes zonder voorbehoud.
+- **De hele catalogus in één keer downloaden: niet meer mogelijk voor muziek, en ook geen goede match.** De bulk-feed die dit ooit deed (Enterprise Partner Feed) bevat sinds enige tijd geen muziekgegevens meer. De vervanger (Apple Music Feed) vereist een betaald Apple Developer Program-account (\$99/jaar) en is qua licentie alleen bedoeld om verkooplinks te genereren — niet voor een repertoire-zoekfunctie.
+
+**Conclusie: bij iTunes is geen download nodig en ook geen bruikbare beschikbaar — het gewone, live zoeken en bewaren (zoals nu al gebeurt) is precies wat toegestaan is, zonder architectuurwijziging en zonder kosten.** Dit verschuift de afweging duidelijk: Spotify kost een server én een blijvende maandelijkse kostenpost, iTunes geen van beide. Zie `zoekfunctienaslagwerk.md` hoofdstuk 15 (§15.4 t/m 15.8) voor het volledige naslag.
+
+**Status TT-139:** nog geen definitieve keuze. Wacht op Ronalds beslissing tussen Spotify (kosten + Edge Function, voorkeur qua ervaring) en iTunes (geen kosten, geen architectuurwijziging, bekende ruis bij generieke termen).
 
 ## 23-08-2026 (vervolg, vierde sessie) — TT-63-fix: voorwaarden-links braken de wizard
 

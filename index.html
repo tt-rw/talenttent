@@ -7639,9 +7639,17 @@ function fromISODate(iso) {
 
 let editingMusicianId = null;
 
-// ─── MusicBrainz twee-velden zoekfunctie ─────────────────────────────────────
+// ─── iTunes Search API — twee-velden zoekfunctie ─────────────────────────────
+// TT-139 (24-08-2026): vervangt MusicBrainz. Zie zoekfunctienaslagwerk.md §15
+// voor de volledige afweging. Artiest zoeken via /search?entity=musicArtist,
+// daarna per artiest ÉÉN keer de volledige nummerlijst ophalen via
+// /lookup?id=<artistId>&entity=song — wat er wordt getypt in het nummerveld
+// filtert daarna lokaal, zonder nieuw netwerkverkeer per toetsaanslag. Dit
+// past bij Apple's eigen aanbeveling om zoek-/lookupresultaten te bewaren
+// (cachen) en houdt het verzoekvolume ruim onder de snelheidslimiet
+// (~20 verzoeken/minuut).
 
-let mbSearchTimeout = null;
+let itunesSearchTimeout = null;
 let selectedArtist  = null; // { id, name }
 
 function closeAC(id) {
@@ -7656,34 +7664,32 @@ function selectFirstAC(listId) {
   if (first && first.onmousedown) first.onmousedown();
 }
 
-const mbArtistCache = new Map(); // query (lowercase) -> artists[]
-const mbTrackCache = new Map();  // "artistId::query" (lowercase) -> recordings[]
+const itunesArtistCache = new Map(); // query (lowercase) -> artists[]
+const itunesTrackCache = new Map();  // artistId -> songs[] (of een lopende Promise), volledige lijst van die artiest
 
 async function onArtistSearch(q) {
   const ac = document.getElementById('acArtistList');
   if (q.length < 2) { ac.classList.remove('open'); return; }
 
-  // Direct visuele feedback tonen (i.p.v. pas na de 400ms-vertraging) —
-  // MusicBrainz zelf blijft even traag, maar voelt zo minder "dood" aan.
+  // Direct visuele feedback tonen (i.p.v. pas na de 400ms-vertraging).
   ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
   ac.classList.add('open');
 
   const cacheKey = q.toLowerCase();
-  if (mbArtistCache.has(cacheKey)) {
-    renderArtistResults(ac, mbArtistCache.get(cacheKey), q, 'selectArtist');
+  if (itunesArtistCache.has(cacheKey)) {
+    renderArtistResults(ac, itunesArtistCache.get(cacheKey), q, 'selectArtist');
     return;
   }
 
-  clearTimeout(mbSearchTimeout);
-  mbSearchTimeout = setTimeout(async () => {
+  clearTimeout(itunesSearchTimeout);
+  itunesSearchTimeout = setTimeout(async () => {
     try {
       const res = await fetch(
-        `https://musicbrainz.org/ws/2/artist/?query=artist:${encodeURIComponent(q)}&limit=7&fmt=json`,
-        { headers: { 'User-Agent': 'TheTalentTent/1.0' } }
+        `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=7`
       );
       const data = await res.json();
-      const artists = (data.artists || []).slice(0, 6);
-      mbArtistCache.set(cacheKey, artists);
+      const artists = (data.results || []).slice(0, 6);
+      itunesArtistCache.set(cacheKey, artists);
       renderArtistResults(ac, artists, q, 'selectArtist');
     } catch(e) {
       ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
@@ -7697,16 +7703,14 @@ function renderArtistResults(ac, artists, q, selectFnName) {
     return;
   }
   ac.innerHTML = artists.map(a => {
-    const extra = a.disambiguation ? ` <span style="color:var(--muted);font-size:11px;">(${escHtml(a.disambiguation)})</span>` : '';
-    const country = a.country ? ` · ${escHtml(a.country)}` : '';
-    return `<div class="ac-item" onmousedown="${selectFnName}('${jsAttr(a.id)}','${jsAttr(a.name)}')">
-      <strong>${highlight(a.name, q)}</strong>${extra}
-      <span style="font-size:11px;color:var(--muted);">${escHtml(a.type || 'Artiest')}${country}</span>
+    const genre = a.primaryGenreName ? ` <span style="color:var(--muted);font-size:11px;">(${escHtml(a.primaryGenreName)})</span>` : '';
+    return `<div class="ac-item" onmousedown="${selectFnName}('${jsAttr(a.artistId)}','${jsAttr(a.artistName)}')">
+      <strong>${highlight(a.artistName, q)}</strong>${genre}
     </div>`;
   }).join('');
 }
 
-// Artiest geselecteerd → laad nummers
+// Artiest geselecteerd → nummerveld tonen
 async function selectArtist(id, name) {
   selectedArtist = { id, name };
   document.getElementById('artistSearch').value = name;
@@ -7721,7 +7725,26 @@ async function selectArtist(id, name) {
   closeAC('acTrackList');
 }
 
-// Stap B: Nummer zoeken binnen geselecteerde artiest
+// Haalt éénmalig per artiest de volledige nummerlijst op (iTunes lookup).
+// De cache houdt ook een lopende Promise vast, zodat twee snelle toets-
+// aanslagen niet allebei een eigen verzoek starten.
+async function fetchArtistSongs(artistId) {
+  if (itunesTrackCache.has(artistId)) return itunesTrackCache.get(artistId);
+  const fetchPromise = (async () => {
+    const url = `https://itunes.apple.com/lookup?id=${encodeURIComponent(artistId)}&entity=song&limit=200`;
+    const res = await fetch(url);
+    const data = await res.json();
+    // Eerste record is de artiest zelf (wrapperType 'artist'); de rest zijn nummers.
+    return (data.results || []).filter(r => r.wrapperType === 'track');
+  })();
+  itunesTrackCache.set(artistId, fetchPromise);
+  const songs = await fetchPromise;
+  itunesTrackCache.set(artistId, songs); // Promise vervangen door het echte resultaat
+  return songs;
+}
+
+// Stap B: Nummer zoeken binnen geselecteerde artiest — lokaal filteren,
+// geen apart netwerkverzoek per toetsaanslag zodra de artiest-nummerlijst er is.
 async function onTrackSearch(q) {
   const ac = document.getElementById('acTrackList');
   if (!selectedArtist) return;
@@ -7730,36 +7753,22 @@ async function onTrackSearch(q) {
   ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
   ac.classList.add('open');
 
-  const cacheKey = `${selectedArtist.id}::${q.toLowerCase()}`;
-  if (mbTrackCache.has(cacheKey)) {
-    renderTrackResults(ac, mbTrackCache.get(cacheKey), q, selectedArtist, 'addSong', state.songs);
-    return;
+  try {
+    const songs = await fetchArtistSongs(selectedArtist.id);
+    renderTrackResults(ac, songs, q, selectedArtist, 'addSong', state.songs);
+  } catch(e) {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
   }
-
-  clearTimeout(mbSearchTimeout);
-  mbSearchTimeout = setTimeout(async () => {
-    try {
-      // Zoek op artiest-ID + optionele titelfilter
-      const titleFilter = q.length >= 2 ? ` AND recording:${encodeURIComponent(q)}` : '';
-      const url = `https://musicbrainz.org/ws/2/recording/?query=arid:${selectedArtist.id}${titleFilter}&limit=10&fmt=json`;
-      const res = await fetch(url, { headers: { 'User-Agent': 'TheTalentTent/1.0' } });
-      const data = await res.json();
-      const recordings = data.recordings || [];
-      mbTrackCache.set(cacheKey, recordings);
-      renderTrackResults(ac, recordings, q, selectedArtist, 'addSong', state.songs);
-
-    } catch(e) {
-      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
-    }
-  }, 350);
 }
 
-function renderTrackResults(ac, recordings, q, artist, addFnName, existingList) {
+function renderTrackResults(ac, songs, q, artist, addFnName, existingList) {
+  const qLower = q.toLowerCase();
   const seen = new Set();
-  const results = (recordings || [])
+  const results = (songs || [])
     .filter(r => {
-      const title = r.title;
+      const title = r.trackName;
       if (!title) return false;
+      if (!title.toLowerCase().includes(qLower)) return false;
       const key = title.toLowerCase();
       if (seen.has(key)) return false;
       seen.add(key);
@@ -7777,8 +7786,8 @@ function renderTrackResults(ac, recordings, q, artist, addFnName, existingList) 
   }
 
   ac.innerHTML = results.map(r =>
-    `<div class="ac-item" onmousedown="${addFnName}('${jsAttr(r.title)}','${jsAttr(artist.name)}')">
-      <strong style="font-size:14px;">${highlight(r.title, q)}</strong>
+    `<div class="ac-item" onmousedown="${addFnName}('${jsAttr(r.trackName)}','${jsAttr(artist.name)}')">
+      <strong style="font-size:14px;">${highlight(r.trackName, q)}</strong>
       <span style="font-size:12px;color:var(--muted);">${escHtml(artist.name)}</span>
     </div>`
   ).join('');
@@ -8270,7 +8279,7 @@ function compareArtistTitle(artistA, titleA, artistB, titleB) {
 // ─── Autocomplete helpers ─────────────────────────────────────────────────────
 
 // ─── Veiligheidshelpers (TT-05) ───────────────────────────────────────────────
-// Alles wat een gebruiker (of een externe bron zoals MusicBrainz) invoert en dat
+// Alles wat een gebruiker (of een externe bron zoals iTunes) invoert en dat
 // via innerHTML op het scherm komt, moet hier eerst doorheen. Anders wordt
 // ingetypte HTML als HTML uitgevoerd i.p.v. als tekst getoond.
 //
@@ -9359,7 +9368,7 @@ function bandCardHTML(b, statusLabels) {
 
 let setlistWantedSongs = [];       // { title, artist }, volgorde = volgnummer
 let selectedSetlistArtist = null;  // { id, name }
-let setlistMbSearchTimeout = null;
+let setlistItunesSearchTimeout = null;
 
 function renderSetlistSongsList() {
   const list = document.getElementById('setlistSongsList');
@@ -9402,7 +9411,7 @@ function removeSetlistSong(i) {
   else document.getElementById('setlistSearchResults').innerHTML = '';
 }
 
-// Stap A: artiest zoeken (zelfde MusicBrainz-aanpak als profiel-repertoire).
+// Stap A: artiest zoeken (zelfde iTunes-aanpak als profiel-repertoire, TT-139).
 async function onSetlistArtistSearch(q) {
   const ac = document.getElementById('acSetlistArtistList');
   if (q.length < 2) { ac.classList.remove('open'); return; }
@@ -9411,21 +9420,20 @@ async function onSetlistArtistSearch(q) {
   ac.classList.add('open');
 
   const cacheKey = q.toLowerCase();
-  if (mbArtistCache.has(cacheKey)) {
-    renderArtistResults(ac, mbArtistCache.get(cacheKey), q, 'selectSetlistArtist');
+  if (itunesArtistCache.has(cacheKey)) {
+    renderArtistResults(ac, itunesArtistCache.get(cacheKey), q, 'selectSetlistArtist');
     return;
   }
 
-  clearTimeout(setlistMbSearchTimeout);
-  setlistMbSearchTimeout = setTimeout(async () => {
+  clearTimeout(setlistItunesSearchTimeout);
+  setlistItunesSearchTimeout = setTimeout(async () => {
     try {
       const res = await fetch(
-        `https://musicbrainz.org/ws/2/artist/?query=artist:${encodeURIComponent(q)}&limit=7&fmt=json`,
-        { headers: { 'User-Agent': 'TheTalentTent/1.0' } }
+        `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=7`
       );
       const data = await res.json();
-      const artists = (data.artists || []).slice(0, 6);
-      mbArtistCache.set(cacheKey, artists);
+      const artists = (data.results || []).slice(0, 6);
+      itunesArtistCache.set(cacheKey, artists);
       renderArtistResults(ac, artists, q, 'selectSetlistArtist');
     } catch(e) {
       ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
@@ -9445,7 +9453,8 @@ function selectSetlistArtist(id, name) {
   closeAC('acSetlistTrackList');
 }
 
-// Stap B: nummer zoeken binnen geselecteerde artiest.
+// Stap B: nummer zoeken binnen geselecteerde artiest — lokaal filteren,
+// zelfde cache (fetchArtistSongs) als bij het profiel-repertoire.
 async function onSetlistTrackSearch(q) {
   const ac = document.getElementById('acSetlistTrackList');
   if (!selectedSetlistArtist) return;
@@ -9454,26 +9463,12 @@ async function onSetlistTrackSearch(q) {
   ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
   ac.classList.add('open');
 
-  const cacheKey = `${selectedSetlistArtist.id}::${q.toLowerCase()}`;
-  if (mbTrackCache.has(cacheKey)) {
-    renderTrackResults(ac, mbTrackCache.get(cacheKey), q, selectedSetlistArtist, 'addSetlistSong', setlistWantedSongs);
-    return;
+  try {
+    const songs = await fetchArtistSongs(selectedSetlistArtist.id);
+    renderTrackResults(ac, songs, q, selectedSetlistArtist, 'addSetlistSong', setlistWantedSongs);
+  } catch(e) {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
   }
-
-  clearTimeout(setlistMbSearchTimeout);
-  setlistMbSearchTimeout = setTimeout(async () => {
-    try {
-      const titleFilter = q.length >= 2 ? ` AND recording:${encodeURIComponent(q)}` : '';
-      const url = `https://musicbrainz.org/ws/2/recording/?query=arid:${selectedSetlistArtist.id}${titleFilter}&limit=10&fmt=json`;
-      const res = await fetch(url, { headers: { 'User-Agent': 'TheTalentTent/1.0' } });
-      const data = await res.json();
-      const recordings = data.recordings || [];
-      mbTrackCache.set(cacheKey, recordings);
-      renderTrackResults(ac, recordings, q, selectedSetlistArtist, 'addSetlistSong', setlistWantedSongs);
-    } catch(e) {
-      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
-    }
-  }, 350);
 }
 
 function resetSetlistSearch() {
