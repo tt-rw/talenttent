@@ -2074,30 +2074,31 @@
   .picker-field:hover { border-color: var(--accent); }
   .picker-field-chevron { color: var(--muted); font-size: 12px; flex-shrink: 0; }
 
-  .picker-badge-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-  /* Vaste breedte én hoogte: elke badge is exact gelijk, ongeacht de
-     tekstlengte van de naam. De sterrenrij staat daardoor bij elke badge
-     op precies dezelfde plek (Ronalds instructie, 21-08-2026).
-     Breedte 108px -> 190px (TT-124, 22-08-2026): bij 108px, en ook nog bij
-     een eerste poging van 168px, paste de langste naam ("Harmonica
-     (mondharmonica)", gemeten 167px tekstbreedte bij dit lettertype/
-     gewicht) niet op één regel. Op 190px past hij wel — gemeten met
-     Playwright (canvas-tekstmeting + gerenderde regelhoogte), zie
-     oplevering. */
+  .picker-badge-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  /* Herzien 25-08-2026 (Ronald, UX-feedback op TT-116): was een solide
+     gouden vlak — precies dezelfde kleur als de primaire knop eronder,
+     waardoor badge en actieknop niet van elkaar te onderscheiden waren.
+     Nu omlijnd: donkere vulling (zelfde vlak als --surface2), gouden rand
+     en tekst — goud blijft "gekozen" betekenen, zonder de primaire knop
+     te concurreren. Vaste hoogte 2x omlaag (72px -> 44px) en 2 kolommen
+     i.p.v. 1, op Ronalds eigen voorstel. Normale letterdikte i.p.v. vet —
+     vet goud op een donkere rand las minder goed. */
   .picker-badge {
-    position: relative; width: 190px; height: 72px; box-sizing: border-box;
-    display: flex; flex-direction: column; align-items: center;
-    background: var(--accent); color: #000; border-radius: 12px;
-    padding: 10px 6px 8px; font-size: 12px; font-weight: 700; line-height: 1.25;
-    text-align: center;
+    position: relative; width: auto; min-height: 44px; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface2); color: var(--accent); border: 1.5px solid var(--accent);
+    border-radius: 8px; padding: 6px 26px 6px 10px; font-size: 13px; font-weight: 400;
+    line-height: 1.25; text-align: center;
   }
-  .picker-badge.has-level { cursor: pointer; }
+  .picker-badge.has-level {
+    cursor: pointer; flex-direction: column; min-height: 56px; padding: 8px 26px 6px 10px;
+  }
   .picker-badge-label { flex: 1; display: flex; align-items: center; justify-content: center; }
   .picker-badge-stars { font-size: 11px; min-height: 14px; letter-spacing: 1px; }
   .picker-badge-remove {
-    position: relative; align-self: flex-end; margin: -6px -4px 0 0;
+    position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
     width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
-    background: transparent; border: none; color: #000; cursor: pointer; padding: 0; font-size: 13px;
+    background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 0; font-size: 14px;
   }
   /* TT-U23: onzichtbaar tikvlak van 44x44 rond de kleine knop. */
   .picker-badge-remove::after { content: ''; position: absolute; inset: -8px; }
@@ -2109,6 +2110,17 @@
   }
   .picker-list-item:first-child { border-top: none; }
   .picker-list-item:hover { color: var(--accent); }
+  /* Herzien 25-08-2026 (Ronald, UX-feedback): een gekozen item verdween
+     eerst volledig uit de lijst — je moest terug naar de badges om te
+     zien wat je al had gekozen. Nu blijft het zichtbaar, herkenbaar aan
+     dezelfde achtergrond als de badge (--surface2, zelfde vlak als
+     hierboven), een gouden streep links en een vinkje rechts. Tekst
+     blijft de gewone tekstkleur en het gewone gewicht — een tint of
+     vetgedrukte gouden tekst op een donkere lijst las minder goed. */
+  .picker-list-item.selected {
+    background: var(--surface2); border-left: 3px solid var(--accent); padding-left: 7px;
+  }
+  .picker-list-item-check { color: var(--accent); font-size: 16px; flex-shrink: 0; margin-left: 8px; }
   .picker-list-empty { padding: 14px 4px; font-size: 14px; color: var(--muted); }
 
   .picker-level-blurb {
@@ -2252,6 +2264,10 @@
        Bewust niet verplaatst: veel modals houden rechtsboven al ruimte vrij,
        en een verplaatsing zou daar tekst overlappen. */
     .modal-close { top: 12px; right: 12px; }
+    /* Punt 2 (25-08-2026, Ronald): op mobiel was één kaart beeldvullend —
+       te breed. Vaste 2 kolommen i.p.v. auto-fill, zodat het altijd 2 naast
+       elkaar zijn, ongeacht de precieze schermbreedte binnen dit bereik. */
+    .results-grid-view { grid-template-columns: 1fr 1fr; }
   }
   /* ── TT-U24 (12-08-2026): vaste onderbalk op de telefoon ─────────────────
      Boven 560px onzichtbaar; daar blijft de bestaande bovenbalk staan. */
@@ -2594,7 +2610,7 @@
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
           <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarInput').click()">
-            <span id="avatarInitials">?</span>
+            <span id="avatarInitials">T</span>
           </div>
           <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
         </div>
@@ -3033,7 +3049,7 @@
          her-sorteert direct zonder opnieuw te hoeven zoeken. -->
     <div id="sortBarMusician" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;">
       <div class="field">
-        <label>Sorteren op <button type="button" class="niveau-info-btn" onclick="openRankingInfoModal()" title="Hoe bepalen we de beste match?">i</button></label>
+        <label>Sorteren op</label>
         <div class="segmented-control" id="filterSortMode">
           <div class="segmented-btn selected sort-score-option" data-mode="score" onclick="setSearchSortMode(this,'score')">Beste match</div>
           <div class="segmented-btn" data-mode="distance" onclick="setSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
@@ -3075,7 +3091,7 @@
       <button type="button" class="btn btn-ghost" id="bandMoreFiltersToggle" onclick="toggleMoreFilters('band')" style="width:100%;font-size:13px;margin-bottom:16px;">Meer filters ▾</button>
       <div id="bandMoreFilters" style="display:none;">
       <div class="filter-row">
-        <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag selected" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
+        <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
         <div class="field">
           <label>Zoekstraal</label>
           <div style="display:flex;gap:8px;align-items:center;">
@@ -3133,7 +3149,7 @@
          her-sorteert direct zonder opnieuw te hoeven zoeken. -->
     <div id="sortBarBand" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;">
       <div class="field">
-        <label>Sorteren op <button type="button" class="niveau-info-btn" onclick="openRankingInfoModal()" title="Hoe bepalen we de beste match?">i</button></label>
+        <label>Sorteren op</label>
         <div class="segmented-control" id="filterBandSortMode">
           <div class="segmented-btn selected sort-score-option" data-mode="score" onclick="setBandSearchSortMode(this,'score')">Beste match</div>
           <div class="segmented-btn" data-mode="distance" onclick="setBandSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
@@ -3264,36 +3280,43 @@
     <div id="createBandForm" style="display:none;">
       <div class="search-filters" style="margin-bottom:28px;">
         <div class="filter-title" style="font-size:20px;" id="bandFormTitle">Nieuwe band aanmaken</div>
-        <div class="field-group">
-          <div class="field">
-            <label>Bandnaam <span class="req">*</span></label>
-            <input type="text" id="bandName" placeholder="Bijv. The Rusty Strings" oninput="onBandNameInput(this.value)">
+        <!-- 25-08-2026 (Ronald, UX-feedback): compacte kop, zelfde opbouw als
+             een profielweergave (foto links, naam ernaast op één regel) i.p.v.
+             gescheiden blokken — zie huisstijl-en-consistentie.md §10. -->
+        <div style="display:flex;gap:16px;align-items:center;margin-bottom:8px;">
+          <div class="avatar-preview-wrap" style="flex-shrink:0;">
+            <div class="avatar-preview" id="bandAvatarPreview" onclick="document.getElementById('bandAvatarInput').click()" style="border-radius:12px;">
+              <span id="bandAvatarInitials">T</span>
+            </div>
+            <div class="avatar-edit-btn" onclick="document.getElementById('bandAvatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
           </div>
+          <div class="field" style="flex:1;margin-bottom:0;">
+            <label>Bandnaam <span class="req">*</span></label>
+            <input type="text" id="bandName" placeholder="Bijv. The Rusty Strings">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
+          <p style="font-size:11px;color:var(--muted);margin:0;">Bandfoto optioneel — JPG of PNG, maximaal 5 MB.</p>
+          <button class="avatar-remove-btn" id="bandAvatarRemoveBtn" onclick="removeBandAvatar()" style="margin:0;flex-shrink:0;">Foto verwijderen</button>
+        </div>
+        <input type="file" accept="image/*" class="avatar-upload-input" id="bandAvatarInput" autocomplete="off" onchange="handleBandAvatarUpload(this.files[0]); this.value=''">
+
+        <div class="field-group single">
           <div class="field">
             <label>Postcode <span class="req">*</span></label>
             <input type="text" id="bandZip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onBandPostcodeInput(this.value)">
             <p style="font-size:11px;color:var(--muted);margin-top:4px;">Alleen de 4 cijfers, geen huisletters nodig.</p>
           </div>
         </div>
-        <!-- V-15 (13-08-2026): een band had tot nu toe geen foto — alleen
-             twee letters op een gekleurd vlak. Zelfde uploadpad als de
-             profielfoto van een muzikant (bands.avatar_url bestaat al). -->
-        <div class="field" style="margin-bottom:28px;">
-          <label>Bandfoto <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
-          <div class="avatar-upload-area">
-            <div class="avatar-preview-wrap">
-              <div class="avatar-preview" id="bandAvatarPreview" onclick="document.getElementById('bandAvatarInput').click()" style="border-radius:12px;">
-                <span id="bandAvatarInitials">??</span>
-              </div>
-              <div class="avatar-edit-btn" onclick="document.getElementById('bandAvatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
-            </div>
-            <div class="avatar-info">
-              <strong>Upload een bandfoto</strong>
-              <p>JPG of PNG, maximaal 5 MB.</p>
-              <button class="avatar-remove-btn" id="bandAvatarRemoveBtn" onclick="removeBandAvatar()">Foto verwijderen</button>
-            </div>
+        <!-- Punt 4 (25-08-2026, Ronald): Plaats direct onder Postcode, zelfde
+             volgorde als het muzikant-registratieformulier. -->
+        <div class="field-group single">
+          <div class="field">
+            <label>Plaats <span class="req">*</span></label>
+            <input type="text" id="bandCity" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acBandCityManualList')">
+            <div class="autocomplete-list" id="acBandCityManualList"></div>
+            <div id="bandPostcodeStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
           </div>
-          <input type="file" accept="image/*" class="avatar-upload-input" id="bandAvatarInput" autocomplete="off" onchange="handleBandAvatarUpload(this.files[0]); this.value=''">
         </div>
         <!-- TT-51-uitbreiding (12-08-2026, Ronalds testfeedback): niveau
              van de band naar boven verplaatst — stond eerst tussen Status en
@@ -3306,15 +3329,6 @@
           <label>Ervaring van de band <button type="button" class="niveau-info-btn" onclick="openBandNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></label>
           <div id="bandLevelPicker" class="star-picker"></div>
           <p style="font-size:11px;color:var(--muted);margin-top:4px;">Optioneel. Klik op de i voor de ervaringsindeling en toelichting.</p>
-        </div>
-        <div class="field-group">
-          <div class="field">
-            <label>Plaats <span class="req">*</span></label>
-            <input type="text" id="bandCity" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acBandCityManualList')">
-            <div class="autocomplete-list" id="acBandCityManualList"></div>
-            <div id="bandPostcodeStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
-          </div>
-          <div class="field"></div>
         </div>
         <div class="field" style="margin-bottom:16px;">
           <label>Beschrijving</label>
@@ -3336,20 +3350,23 @@
             <div class="tag" onclick="selectBandStatus(this,'inactief')">Inactief</div>
           </div>
         </div>
+        <!-- Punt 2 (25-08-2026, Ronald): niet langer verplicht. -->
         <div class="field" style="margin-bottom:16px;">
-          <label>Wij zoeken nog <span class="req">*</span></label>
+          <label>Wij zoeken nog <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
           <div class="picker-field" id="bandWantedField">
             <span class="picker-field-label" id="bandWantedFieldLabel">Instrument toevoegen…</span>
             <span class="picker-field-chevron">▾</span>
           </div>
           <div class="picker-badge-row" id="bandWantedBadgeRow"></div>
         </div>
+        <!-- Punt 5 (25-08-2026, Ronald): knoppen omgewisseld, Band aanmaken rechts. -->
         <div style="display:flex;gap:12px;margin-top:8px;">
-          <button class="btn btn-primary" id="saveBandBtn" onclick="saveBand()">Band aanmaken</button>
           <button class="btn btn-ghost" onclick="cancelBandForm()">Annuleren</button>
+          <button class="btn btn-primary" id="saveBandBtn" onclick="saveBand()">Band aanmaken</button>
         </div>
       </div>
     </div>
+
     <div id="myBandsList"></div>
   </div>
 </div>
@@ -4031,7 +4048,6 @@ async function onUserLoggedIn(user) {
     if (fnameEl && !fnameEl.value) {
       fnameEl.value = userFname2;
       state.fname = userFname2;
-      document.getElementById('avatarInitials').textContent = userFname2[0].toUpperCase();
     }
   }
 }
@@ -5181,7 +5197,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
   const avatarSrc = safeUrl(m.avatar_url);
   const avatarHTML = avatarSrc
     ? `<img class="profile-avatar-photo" src="${avatarSrc}" alt="${escHtml(displayName)}" style="border-color:${col};margin-bottom:0;flex-shrink:0;">`
-    : `<div class="profile-avatar-initials" style="background:${col};border-color:${col};margin-bottom:0;flex-shrink:0;">${escHtml(String(displayName || '?')[0].toUpperCase())}</div>`;
+    : `<div class="profile-avatar-initials" style="background:${col};border-color:${col};margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`;
 
   const songRows = [...m.musician_songs].sort((a, b) =>
     compareArtistTitle(a.song_artist, a.song_title, b.song_artist, b.song_title)
@@ -6113,7 +6129,7 @@ function populateWizardFieldsFromState() {
     avatarPreview.innerHTML = `<img src="${safeUrl(state.avatarUrl)}" alt="profielfoto">`;
     document.getElementById('avatarRemoveBtn').classList.add('visible');
   } else {
-    avatarPreview.innerHTML = `<span id="avatarInitials">${escHtml((String(state.fname || '')[0] || '?').toUpperCase())}</span>`;
+    avatarPreview.innerHTML = `<span id="avatarInitials">T</span>`;
     document.getElementById('avatarRemoveBtn').classList.remove('visible');
   }
   avatarPreview.style.borderColor = DEFAULT_PROFILE_COLOR;
@@ -7543,6 +7559,7 @@ function onPostcodeInput(value) {
   }, 500);
 }
 
+let postcodeStatusHideTimeout;
 function applyResolvedCity(cityName, normalizedZip, statusEl, msg) {
   document.getElementById('city').value = cityName;
   state.city = cityName;
@@ -7550,6 +7567,10 @@ function applyResolvedCity(cityName, normalizedZip, statusEl, msg) {
   postcodeResolved = true;
   statusEl.style.color = 'var(--accent)';
   statusEl.textContent = msg;
+  // Punt 6 (25-08-2026, Ronald): melding verdwijnt na 2 seconden — het
+  // bevestigt alleen het moment zelf, hoeft niet te blijven staan.
+  clearTimeout(postcodeStatusHideTimeout);
+  postcodeStatusHideTimeout = setTimeout(() => { statusEl.textContent = ''; }, 2000);
 }
 
 // ─── Postcode-opzoeking voor bands (zelfde aanpak als bij muzikanten) ────
@@ -7561,11 +7582,14 @@ let bandPostcodeFailStreak = 0;
 let bandPostcodeManualMode = false;
 let bandCitySource = 'pdok';
 
+let bandPostcodeStatusHideTimeout;
 function applyResolvedBandCity(cityName, statusEl, msg) {
   document.getElementById('bandCity').value = cityName;
   bandPostcodeResolved = true;
   statusEl.style.color = 'var(--accent)';
   statusEl.textContent = msg;
+  clearTimeout(bandPostcodeStatusHideTimeout);
+  bandPostcodeStatusHideTimeout = setTimeout(() => { statusEl.textContent = ''; }, 2000);
 }
 
 function onBandPostcodeInput(value) {
@@ -7988,9 +8012,7 @@ function init() {
 
   // Update avatar initials placeholder reactively
   document.getElementById('fname').addEventListener('input', () => {
-    const v = document.getElementById('fname').value.trim();
-    document.getElementById('avatarInitials').textContent = v ? v.slice(0,1).toUpperCase() : '?';
-    state.fname = v;
+    state.fname = document.getElementById('fname').value.trim();
   });
   document.getElementById('bio').addEventListener('input', () => {
     state.bio = document.getElementById('bio').value.trim();
@@ -8093,21 +8115,29 @@ function renderPickerListItems() {
   const cfg = PICKERS[activeListPickerId];
   if (!cfg) return;
   const list = cfg.getList();
-  const remaining = cfg.options.filter(opt => !list.includes(opt));
   const wrap = document.getElementById('pickerListItems');
-  if (!remaining.length) {
-    wrap.innerHTML = '<div class="picker-list-empty">Alles al gekozen</div>';
-    return;
-  }
-  wrap.innerHTML = remaining.map(opt =>
-    `<div class="picker-list-item" onclick="choosePickerListValue('${jsAttr(opt)}')">${pickerDisplayLabel(opt)}</div>`
-  ).join('');
+  wrap.innerHTML = cfg.options.map(opt => {
+    const isSelected = list.includes(opt);
+    return `<div class="picker-list-item${isSelected ? ' selected' : ''}" onclick="choosePickerListValue('${jsAttr(opt)}')">${pickerDisplayLabel(opt)}${isSelected ? '<span class="picker-list-item-check" aria-hidden="true">✓</span>' : ''}</div>`;
+  }).join('');
 }
 
 function choosePickerListValue(value) {
   const cfg = PICKERS[activeListPickerId];
   if (!cfg) return;
   const list = cfg.getList();
+  // Herzien 25-08-2026 (Ronald, UX-feedback): klikken op een al-gekozen item
+  // zet het nu uit (toggle) i.p.v. het opnieuw toe te voegen — logisch nu het
+  // item zichtbaar blijft staan met een vinkje.
+  if (list.includes(value)) {
+    const idx = list.indexOf(value);
+    list.splice(idx, 1);
+    renderPickerBadges(cfg);
+    if (cfg.onChange) cfg.onChange();
+    if (!cfg.singleMax) renderPickerListItems();
+    else closePickerList();
+    return;
+  }
   if (cfg.singleMax) {
     // TT-55: maximaal 1 instrument, met een losse uitzondering (Zang) die
     // niet meetelt voor die limiet.
@@ -9071,8 +9101,7 @@ function removeAvatar() {
   state.avatarFile = null;
   state.avatarPath = null;
   const preview = document.getElementById('avatarPreview');
-  const initials = state.fname ? state.fname.slice(0,1).toUpperCase() : '?';
-  preview.innerHTML = `<span id="avatarInitials">${escHtml(initials)}</span>`;
+  preview.innerHTML = `<span id="avatarInitials">T</span>`;
   preview.style.borderColor = '';
   document.getElementById('avatarRemoveBtn').classList.remove('visible');
 }
@@ -9203,7 +9232,10 @@ function removeLink(i) {
 
 let filterBandGenresList = [];
 let filterBandWantedList = [];
-let filterBandStatusVal  = 'zoekend';
+// 25-08-2026 (Ronald): bands moeten standaard zichtbaar zijn, ook als ze
+// geen leden zoeken. Geen default-filter meer op status — "Zoekend" is nu
+// een filter dat de gebruiker zelf aanzet, geen voorgeselecteerde standaard.
+let filterBandStatusVal  = null;
 let bandSearchSortMode   = 'score';
 let myMusicianId = null;
 // TT-56 (12-08-2026): opt-out voor band-uitnodigingen. Bijgehouden als eigen
@@ -9305,12 +9337,10 @@ function resetBandSearch() {
   document.getElementById('filterBandNiveauMax').value = '';
   filterBandGenresList = [];
   filterBandWantedList = [];
-  filterBandStatusVal = 'zoekend';
+  filterBandStatusVal = null;
   renderPickerBadges(PICKERS.filterBandGenres);
   renderPickerBadges(PICKERS.filterBandWanted);
-  document.querySelectorAll('#filterBandStatus .tag').forEach(t => {
-    t.classList.toggle('selected', t.textContent.trim() === 'Zoekend');
-  });
+  document.querySelectorAll('#filterBandStatus .tag').forEach(t => t.classList.remove('selected'));
   selectSortModeByValue('filterBandSortMode', hasOwnProfile ? 'score' : 'distance');
   runBandSearch();
 }
@@ -9468,12 +9498,11 @@ function renderCappedBandResults() {
 // Lijstweergave i.p.v. kaarten (04-08-2026) — duidelijker scanbaar bij veel resultaten.
 function bandRowHTML(b, statusLabels) {
   const col = safeColor(b.profile_color, '#3ecfff');
-  const initials = escHtml(String(b.name || '').slice(0,2).toUpperCase());
   const wanted = (b.band_wanted||[]).slice(0,3);
   const status = statusLabels[b.status] ? b.status : '';
   return `
     <div class="result-row" style="border-left-color:${col};" onclick="openBandModal('${jsAttr(b.id)}')">
-      <div class="result-row-avatar" style="background:${col};border-radius:10px;">${initials}</div>
+      <div class="result-row-avatar" style="background:${col};border-radius:10px;">${AVATAR_T_FALLBACK}</div>
       <div class="result-row-main">
         <div class="result-row-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
         <div class="result-row-meta">
@@ -9493,12 +9522,11 @@ function bandRowHTML(b, statusLabels) {
 // bestaan vooralsnog alleen muzikant-naar-muzikant, niet naar een band.
 function bandCardHTML(b, statusLabels) {
   const col = safeColor(b.profile_color, '#3ecfff');
-  const initials = escHtml(String(b.name || '').slice(0,2).toUpperCase());
   const wanted = (b.band_wanted||[]).slice(0,3);
   const status = statusLabels[b.status] ? b.status : '';
   return `
     <div class="result-card" onclick="openBandModal('${jsAttr(b.id)}')">
-      <div class="result-card-photo" style="background:${col};border-radius:8px;">${initials}</div>
+      <div class="result-card-photo" style="background:${col};border-radius:8px;">${AVATAR_T_FALLBACK}</div>
       <div class="result-card-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
       <div class="result-card-meta">
         ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
@@ -9915,29 +9943,20 @@ function resetBandForm() {
   if (btnEl) btnEl.textContent = 'Band aanmaken';
 }
 
-// V-15 (13-08-2026): toont de bandfoto als die er is, anders de eerste twee
-// letters van de bandnaam — precies zoals bandAvatarHTML dat ook al deed op
-// het bandprofiel zelf (openBandModal()).
+// V-15 (13-08-2026): toont de bandfoto als die er is, anders de gouden T —
+// zelfde vaste letter als overal elders in de app (25-08-2026, punt 3).
 function populateBandAvatarPreview() {
   const preview = document.getElementById('bandAvatarPreview');
   if (!preview) return;
-  const nameEl = document.getElementById('bandName');
-  const initials = String((nameEl && nameEl.value) || '').slice(0, 2).toUpperCase() || '??';
   if (bandState.avatarUrl) {
     preview.innerHTML = `<img src="${safeUrl(bandState.avatarUrl)}" alt="bandfoto">`;
     document.getElementById('bandAvatarRemoveBtn').classList.add('visible');
   } else {
-    preview.innerHTML = `<span id="bandAvatarInitials">${escHtml(initials)}</span>`;
+    preview.innerHTML = `<span id="bandAvatarInitials">T</span>`;
     document.getElementById('bandAvatarRemoveBtn').classList.remove('visible');
   }
 }
 
-// Alleen de live "??"-plaatshouder bijwerken zolang er geen foto is gekozen.
-function onBandNameInput(value) {
-  if (bandState.avatarUrl) return;
-  const initialsEl = document.getElementById('bandAvatarInitials');
-  if (initialsEl) initialsEl.textContent = String(value || '').slice(0, 2).toUpperCase() || '??';
-}
 
 // Een band bestaat pas na "Band aanmaken" als bevestigd account/profiel —
 // anders dan bij de muzikantwizard is er hier nooit een moment zonder
@@ -10444,12 +10463,6 @@ async function saveBand() {
   if (!name) { showToast('Vul een bandnaam in.'); return; }
   if (!zip || !bandPostcodeResolved || !city) { showToast('Vul een geldige postcode in en wacht tot de woonplaats is gevonden.'); return; }
   if (!bandState.genres.length) { showToast('Selecteer minimaal 1 genre.'); return; }
-  // V-14 (13-08-2026): "Wij zoeken nog" is alleen verplicht bij de status
-  // "Zoekend naar leden". Een complete of inactieve band moet zichzelf
-  // kunnen opslaan zonder een instrument te verzinnen dat niet klopt.
-  if (bandState.status === 'zoekend' && !bandState.wanted.length) {
-    showToast('Selecteer minimaal 1 instrument dat de band zoekt.'); return;
-  }
 
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Maak eerst een muzikantprofiel aan.'); return; }
@@ -10561,7 +10574,7 @@ async function loadMyBands() {
       </div>` : '';
     return `<div class="band-card">
       <div class="band-card-header" onclick="openBandModal('${jsAttr(b.id)}')">
-        ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar" style="background:${col};">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>`}
+        ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar" style="background:${col};">${AVATAR_T_FALLBACK}</div>`}
         <div style="flex:1;">
           <div class="band-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
           <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
@@ -10651,7 +10664,7 @@ async function openBandModal(id) {
   document.getElementById('bandModalContent').innerHTML = `
     <div style="height:8px;background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;"></div>
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
-      ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border);margin-bottom:0;flex-shrink:0;">` : `<div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${escHtml(String(b.name || '').slice(0,2).toUpperCase())}</div>`}
+      ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border);margin-bottom:0;flex-shrink:0;">` : `<div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`}
       <div style="min-width:0;flex:1;">
         <div class="profile-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
         <div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
