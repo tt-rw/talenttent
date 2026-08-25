@@ -3180,6 +3180,22 @@
         </div>
       </div>
 
+      <!-- TT-139: instrumentfilter op Setlist-zoeken, zelfde harde-filter-
+           patroon als bij Muzikanten en Bands (TT-55) — maximaal 1
+           instrument, Zang als losse uitzondering die niet meetelt voor
+           die limiet. -->
+      <div class="filter-row single" style="margin-bottom:16px;">
+        <div class="field">
+          <label>Instrument</label>
+          <p style="font-size:11px;color:var(--muted);margin:0 0 8px;">Kies maximaal 1 instrument, eventueel aangevuld met Zang.</p>
+          <div class="picker-field" id="filterSetlistInstrumentsField">
+            <span class="picker-field-label" id="filterSetlistInstrumentsFieldLabel">Instrument kiezen…</span>
+            <span class="picker-field-chevron">▾</span>
+          </div>
+          <div class="picker-badge-row" id="filterSetlistInstrumentsBadgeRow"></div>
+        </div>
+      </div>
+
       <div class="field" style="margin-bottom:12px;">
         <label>Band of artiest</label>
         <div class="song-search-wrap">
@@ -4216,6 +4232,7 @@ async function configureSearchAccess() {
   }
 
   initBandSearchFilters();
+  initSetlistSearchFilters();
 
   // V-24 (13-08-2026, in overleg vastgesteld/TT-U17): kan de Setlist-tab
   // wisselen (verschijnen/verdwijnen), doe dat vóór de tabbladdispatch
@@ -4282,6 +4299,7 @@ function setSearchMode(mode) {
   document.getElementById('searchModeBandBtn').classList.toggle('active', isBand);
   document.getElementById('searchModeSetlistBtn').classList.toggle('active', isSetlist);
   if (isBand) initBandSearchFilters();
+  if (isSetlist) initSetlistSearchFilters();
 
   // TT-10: bij het wisselen van tabblad meteen een resultaat tonen (met de
   // filters die op dat tabblad al stonden), i.p.v. een leeg scherm totdat er
@@ -9503,6 +9521,23 @@ function bandCardHTML(b, statusLabels) {
 let setlistWantedSongs = [];       // { title, artist }, volgorde = volgnummer
 let selectedSetlistArtist = null;  // { id, name }
 let setlistItunesSearchTimeout = null;
+let filterSetlistInstruments = []; // TT-139: harde instrumentfilter, zelfde patroon als TT-55
+
+// TT-139: instrumentpicker voor Setlist-zoeken, zelfde patroon als
+// initSearchFilters()/initBandSearchFilters() — maximaal 1 instrument,
+// Zang als losse uitzondering (singleMax + exceptionValue).
+function initSetlistSearchFilters() {
+  if (PICKERS.filterSetlistInstruments) return; // al ingevuld
+  initPicker({
+    id: 'filterSetlistInstruments',
+    fieldId: 'filterSetlistInstrumentsField', badgeRowId: 'filterSetlistInstrumentsBadgeRow',
+    options: INSTRUMENTS, getList: () => filterSetlistInstruments,
+    singleMax: true, exceptionValue: 'Zang',
+    placeholder: 'Kies een instrument',
+    sheetTitle: 'Kies een instrument',
+    onChange: () => { if (setlistWantedSongs.length) runSetlistSearch(); }
+  });
+}
 
 function renderSetlistSongsList() {
   const list = document.getElementById('setlistSongsList');
@@ -9613,6 +9648,8 @@ function resetSetlistSearch() {
   document.getElementById('setlistTrackSearchWrap').style.display = 'none';
   document.getElementById('filterSetlistCity').value = '';
   document.getElementById('filterSetlistRadius').value = 25;
+  filterSetlistInstruments = [];
+  if (PICKERS.filterSetlistInstruments) renderPickerBadges(PICKERS.filterSetlistInstruments);
   renderSetlistSongsList();
   document.getElementById('setlistSearchResults').innerHTML = '';
 }
@@ -9687,7 +9724,8 @@ async function runSetlistSearch() {
     if (hasOwnProfile) {
       const { data, error } = await db.from('musicians').select(`
         id, fname, username, city, zip, profile_color, avatar_url, updated_at,
-        musician_songs(song_title, song_artist, mastery_level)
+        musician_songs(song_title, song_artist, mastery_level),
+        musician_instruments(instrument, niveau)
       `).in('id', ids);
       if (error) throw error;
       musicians = data;
@@ -9698,7 +9736,18 @@ async function runSetlistSearch() {
         id: m.id, username: m.username, city: m.city, // TT-43/TT-04: geen fname of postcode voor bezoekers
         profile_color: m.profile_color, avatar_url: m.avatar_url, updated_at: m.updated_at,
         musician_songs: m.songs || [],
+        musician_instruments: (m.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
       }));
+    }
+
+    // TT-139: harde instrumentfilter, zelfde regel als bij Muzikanten/Bands
+    // (TT-55) — maximaal 1 instrument + optioneel Zang, vóór de repertoire-
+    // matching toepassen.
+    if (filterSetlistInstruments.length) {
+      musicians = musicians.filter(m => {
+        const mInstr = (m.musician_instruments || []).map(x => x.instrument);
+        return filterSetlistInstruments.some(i => mInstr.includes(i));
+      });
     }
 
     // Per muzikant bepalen welke volgnummers uit de gezochte setlist matchen
