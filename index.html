@@ -1643,8 +1643,7 @@
 
   .result-row {
     display: flex;
-    align-items: center;
-    gap: 16px;
+    flex-direction: column;
     padding: 14px 20px 14px 17px;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
@@ -1652,6 +1651,15 @@
     cursor: pointer;
     transition: background 0.15s;
     animation: slideIn 0.2s ease;
+  }
+
+  /* TT-153 (25-08-2026): avatar/naam/berichtknop op één regel; badges
+     (instrument+genre samen) staan op een eigen regel eronder, uitgelijnd
+     onder de naam — vervangt de oude rechts-uitgelijnde badge-kolom. */
+  .result-row-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
   }
 
   .result-row:last-child { border-bottom: none; }
@@ -1730,13 +1738,34 @@
     margin-bottom: 10px;
   }
   .result-card-photo img { width: 100%; height: 100%; object-fit: cover; }
+  /* TT-153 (25-08-2026): alleen de naam is vet — de rest van de kaart
+     (plaats/afstand, badges) is normaal lettergewicht, consistent met de
+     rijweergave (Ronald: "alleen de naam vet lettertype, de rest niet"). */
+  .result-card-top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
   .result-card-name { font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 700; }
   .result-card-meta { font-size: 11px; color: var(--muted); margin: 2px 0 8px; }
+  /* TT-153: instrument- en genrebadges elk op een eigen, niet-wrappende
+     regel — overflow wordt afgekapt met een "+N"-badge (overflowBadgeHTML),
+     niet met CSS-afkapping zelf. nowrap is hier alleen een vangnet tegen een
+     toevallig te lange badgetekst. */
+  .result-card-badges-line {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    gap: 5px;
+    margin-bottom: 4px;
+  }
+  .result-card-badges-line:last-child { margin-bottom: 0; }
+  /* Ongewijzigd voor bandCardHTML() — die kreeg geen naam/berichtknop-
+     herindeling (geen berichtenknop bij bands, niet in scope van TT-153). */
   .result-card-badges { display: flex; flex-wrap: wrap; gap: 5px; }
   .result-card-msg-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
+    flex-shrink: 0;
     width: 28px;
     height: 28px;
     border-radius: 50%;
@@ -1797,18 +1826,26 @@
     margin-top: 2px;
   }
 
-  /* TT-51-uitbreiding (12-08-2026): sterren voor het gezochte instrument,
-     onder naam/plaats — links uitgelijnd (standaard blokgedrag), geen extra
-     tekst erbij, alleen zichtbaar als er een instrumentfilter actief is. */
-  .result-row-niveau { margin-top: 4px; text-align: left; }
+  /* TT-153 (25-08-2026): niveau (sterren) staat niet meer in het
+     zoekresultaat — alleen nog als filter (filterNiveauMin/Max), zichtbaar
+     ná het openen van het profiel. Meerdere instrumenten met elk een eigen
+     niveau maakten één "het niveau" onder de naam onmogelijk (Ronalds
+     toetsvraag: drums niveau 2, gitaar niveau 3 — welke toon je?). */
 
   .result-row-badges {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    justify-content: flex-end;
-    max-width: 45%;
-    flex-shrink: 0;
+    margin-top: 8px;
+    padding-left: 60px; /* avatar (44px) + gap (16px), zelfde uitlijning als de naam */
+  }
+
+  /* TT-153: "+N"-badge voor verborgen instrumenten/genres — zelfde vorm als
+     .tag-solid, maar neutrale kleur (geen instrument-/genrekleur toegekend
+     aan een getal). Gedeeld door rij- en kaartweergave. */
+  .tag-solid-muted {
+    background: var(--surface2);
+    color: var(--muted);
   }
 
   /* TT-29: envelop-icoon op muzikant-rijen — geeft in één oogopslag aan dat
@@ -5113,9 +5150,8 @@ function musicianResultNiveauHTML(m) {
 
 function musicianRowHTML(m) {
   const col     = safeColor(m.profile_color, '#f5c518');
-  const instruments = m.musician_instruments.map(x => x.instrument).slice(0,3);
-  const genres      = m.musician_genres.map(x => x.genre).slice(0,2);
-  const niveauHTML  = musicianResultNiveauHTML(m);
+  const instruments = m.musician_instruments.map(x => x.instrument);
+  const genres      = m.musician_genres.map(x => x.genre);
 
   // TT-38 (07-08-2026) / TT-43 (08-08-2026): uitgelogde bezoekers zien de
   // gebruikersnaam, ingelogde muzikanten de echte voornaam — zie
@@ -5128,17 +5164,18 @@ function musicianRowHTML(m) {
 
   return `
     <div class="result-row" style="border-left-color:${col};" onclick="openMusicianModal('${jsAttr(m.id)}')">
-      <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
-      <div class="result-row-main">
-        <div class="result-row-name">${nameHTML}</div>
-        <div class="result-row-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
-        ${niveauHTML ? `<div class="result-row-niveau">${niveauHTML}</div>` : ''}
+      <div class="result-row-top">
+        <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
+        <div class="result-row-main">
+          <div class="result-row-name">${nameHTML}</div>
+          <div class="result-row-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+        </div>
+        <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-row-badges">
-        ${instruments.map(i => tagSolid(i, col)).join('')}
-        ${genres.map(g => tagSolid(g, '#6ec8d8')).join('')}
+        ${overflowBadgeHTML(instruments, col, 2)}
+        ${overflowBadgeHTML(genres, '#6ec8d8', 2)}
       </div>
-      <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
     </div>`;
 }
 
@@ -5150,9 +5187,8 @@ function musicianRowHTML(m) {
 // tabblad (localStorage).
 function musicianCardHTML(m) {
   const col = safeColor(m.profile_color, '#f5c518');
-  const instruments = m.musician_instruments.map(x => x.instrument).slice(0,2);
-  const genres = m.musician_genres.map(x => x.genre).slice(0,2);
-  const niveauHTML = musicianResultNiveauHTML(m);
+  const instruments = m.musician_instruments.map(x => x.instrument);
+  const genres = m.musician_genres.map(x => x.genre);
 
   const avatarSrc = safeUrl(m.avatar_url);
   const displayName = displayNameOf(m);
@@ -5166,15 +5202,14 @@ function musicianCardHTML(m) {
   return `
     <div class="result-card" onclick="openMusicianModal('${jsAttr(m.id)}')">
       <div class="result-card-photo" style="background:${col};">${photoHTML}</div>
-      <div class="result-card-name">${nameHTML}</div>
+      <div class="result-card-top-row">
+        <div class="result-card-name">${nameHTML}</div>
+        <div class="result-card-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
+      </div>
       <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       ${bioSnippet ? `<div class="result-card-bio">${escHtml(bioSnippet)}</div>` : ''}
-      ${niveauHTML ? `<div class="result-row-niveau">${niveauHTML}</div>` : ''}
-      <div class="result-card-badges">
-        ${instruments.map(i => tagSolid(i, col)).join('')}
-        ${genres.map(g => tagSolid(g, '#6ec8d8')).join('')}
-      </div>
-      <div class="result-card-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
+      <div class="result-card-badges-line">${overflowBadgeHTML(instruments, col, 2)}</div>
+      <div class="result-card-badges-line">${overflowBadgeHTML(genres, '#6ec8d8', 2)}</div>
     </div>`;
 }
 
@@ -8525,6 +8560,19 @@ function tagSolid(text, hex) {
   return `<span class="tag-solid" style="background:${hexToRgba(hex, 0.16)};color:${hex};">${escHtml(text)}</span>`;
 }
 
+// TT-153 (25-08-2026): badges op zoekresultaten (muzikant, rij én kaart)
+// beperkt tot een vast aantal, met een "+N"-badge voor de rest — voorkomt dat
+// iemand met veel instrumenten/genres de rij/kaart laat springen. Gedeeld
+// door musicianRowHTML() en musicianCardHTML(), voor instrument- én
+// genrebadges apart (elk hun eigen "+N").
+function overflowBadgeHTML(items, hex, max) {
+  const shown = items.slice(0, max);
+  const extra = items.length - shown.length;
+  let html = shown.map(i => tagSolid(i, hex)).join('');
+  if (extra > 0) html += `<span class="tag-solid tag-solid-muted">+${extra}</span>`;
+  return html;
+}
+
 // ─── Zoektekst veilig maken voor een Supabase-query (TT-26) ─────────────────
 // Twee verschillende risico's, twee helpers:
 //  1. likeSafe(): %, _, * en \ zijn jokertekens in een ilike-patroon. Iemand
@@ -9502,12 +9550,14 @@ function bandRowHTML(b, statusLabels) {
   const status = statusLabels[b.status] ? b.status : '';
   return `
     <div class="result-row" style="border-left-color:${col};" onclick="openBandModal('${jsAttr(b.id)}')">
-      <div class="result-row-avatar" style="background:${col};border-radius:10px;">${AVATAR_T_FALLBACK}</div>
-      <div class="result-row-main">
-        <div class="result-row-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
-        <div class="result-row-meta">
-          ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
-          <span class="band-status-badge band-status-${status}" style="margin-left:8px;">${escHtml(statusLabels[status] || b.status)}</span>
+      <div class="result-row-top">
+        <div class="result-row-avatar" style="background:${col};border-radius:10px;">${AVATAR_T_FALLBACK}</div>
+        <div class="result-row-main">
+          <div class="result-row-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
+          <div class="result-row-meta">
+            ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
+            <span class="band-status-badge band-status-${status}" style="margin-left:8px;">${escHtml(statusLabels[status] || b.status)}</span>
+          </div>
         </div>
       </div>
       <div class="result-row-badges">
@@ -9853,15 +9903,17 @@ function musicianSetlistRowHTML(m) {
 
   return `
     <div class="result-row" style="border-left-color:${col};" onclick="openMusicianModal('${jsAttr(m.id)}')">
-      <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
-      <div class="result-row-main">
-        <div class="result-row-name">${nameHTML}</div>
-        <div class="result-row-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+      <div class="result-row-top">
+        <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
+        <div class="result-row-main">
+          <div class="result-row-name">${nameHTML}</div>
+          <div class="result-row-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+        </div>
+        <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-row-badges">
         ${tagSolid(`${m.matchCount}/${total} match${m.matchCount !== 1 ? 'es' : ''}: ${m.matchedNumbers.map(n => '#' + Number(n)).join(', ')}`, col)}
       </div>
-      <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
     </div>`;
 }
 
