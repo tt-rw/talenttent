@@ -7685,7 +7685,7 @@ async function onArtistSearch(q) {
   itunesSearchTimeout = setTimeout(async () => {
     try {
       const res = await fetch(
-        `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=7`
+        `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=7&country=NL`
       );
       const data = await res.json();
       const artists = (data.results || []).slice(0, 6);
@@ -7731,7 +7731,7 @@ async function selectArtist(id, name) {
 async function fetchArtistSongs(artistId) {
   if (itunesTrackCache.has(artistId)) return itunesTrackCache.get(artistId);
   const fetchPromise = (async () => {
-    const url = `https://itunes.apple.com/lookup?id=${encodeURIComponent(artistId)}&entity=song&limit=200`;
+    const url = `https://itunes.apple.com/lookup?id=${encodeURIComponent(artistId)}&entity=song&limit=200&country=NL`;
     const res = await fetch(url);
     const data = await res.json();
     // Eerste record is de artiest zelf (wrapperType 'artist'); de rest zijn nummers.
@@ -9429,7 +9429,7 @@ async function onSetlistArtistSearch(q) {
   setlistItunesSearchTimeout = setTimeout(async () => {
     try {
       const res = await fetch(
-        `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=7`
+        `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=7&country=NL`
       );
       const data = await res.json();
       const artists = (data.results || []).slice(0, 6);
