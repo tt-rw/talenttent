@@ -521,39 +521,58 @@
     border-top: 1px solid var(--border);
   }
 
-  /* TT-141 (25-08-2026): vaste actiebalk voor de profiel-wizard (nieuwe
-     registratie én "Profiel bewerken"). Vervangt .nav-buttons, die los in
-     de paginastroom stond — op een lange stap moest je eerst naar beneden
-     scrollen om te kunnen opslaan of doorgaan. Twee rijen: boven alleen
-     Annuleren (weg van dit scherm, minder nadruk), onder Terug/Opslaan/
-     Verder (werken door, evenveel nadruk qua omvang).
-     Bewust position:fixed, niet sticky: de stappen (.panel) verschillen in
-     hoogte en een sticky bar zou daardoor per stap ergens anders
-     "vastklikken" i.p.v. altijd op dezelfde plek staan. */
+  /* TT-142/TT-143 (25-08-2026): actiebalk herzien op verzoek van Ronald
+     (telefoonscreenshots). Was twee rijen, veel hoger dan de vaste onderbalk
+     (Zoeken/Berichten/Bands/Profiel) eronder — samen met die onderbalk (die
+     op mobiel altijd blijft staan, ook tijdens de wizard) nam dat te veel
+     scherm in, vooral met het toetsenbord open. Nu: één rij, drie knoppen —
+     Terug · Opslaan · Verder, zelfde hoogte als de onderbalk (~56-60px
+     i.p.v. ~150px). Terug/Verder = gevuld goud met grijze letters; Opslaan =
+     grijs met gele letters. Geen Annuleren meer (TT-143) — Terug gaat altijd
+     terug zonder op te slaan (met een melding als er iets gewijzigd is),
+     Opslaan/Verder slaan altijd op (met een meldingen dat het gelukt is). */
   .wizard-action-bar {
     position: fixed;
     left: 0; right: 0; bottom: 0;
     z-index: 190;
     background: var(--surface);
     border-top: 1px solid var(--border);
-    padding: 16px 24px calc(16px + env(safe-area-inset-bottom, 0px));
+    padding: 8px 24px calc(8px + env(safe-area-inset-bottom, 0px));
   }
   .wizard-action-bar-inner {
     max-width: 760px;
     margin: 0 auto;
     display: flex;
-    flex-direction: column;
-    gap: 14px;
+    gap: 8px;
   }
-  .wizard-action-row-cancel { display: flex; justify-content: flex-end; min-height: 24px; }
-  .wizard-action-row-main { display: flex; gap: 10px; }
-  .wizard-action-row-main .btn { flex: 1; }
+  .wizard-btn {
+    flex: 1;
+    min-width: 0; /* anders wint de minimale tekstbreedte altijd van flex:1 */
+    min-height: 44px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.2;
+    padding: 6px 4px;
+    cursor: pointer;
+    transition: filter 0.15s;
+  }
+  .wizard-btn:hover { filter: brightness(1.08); }
+  .wizard-btn-accent { background: var(--accent); color: #4a4a4a; }
+  .wizard-btn-muted { background: var(--surface2); color: var(--accent); border: 1px solid var(--border); }
 
   /* Ruimte houden voor de vaste balk hierboven, zodat het laatste veld van
-     elke stap er nooit achter verdwijnt. Ruim bemeten (balkhoogte + marge),
-     bewust als losse padding-bottom i.p.v. de "main"-shorthand hierboven —
-     die zou ook de boven-/zijmarge resetten. */
-  #view-register main { padding-bottom: 210px; }
+     elke stap er nooit achter verdwijnt. Bewust als losse padding-bottom
+     i.p.v. de "main"-shorthand hierboven — die zou ook de boven-/zijmarge
+     resetten. */
+  #view-register main { padding-bottom: 130px; }
 
   .btn {
     /* TT-U23 (12-08-2026): elke knop minimaal 44px hoog. */
@@ -591,16 +610,6 @@
   }
 
   .btn-ghost:hover { color: var(--text); border-color: #555; }
-
-  /* TT-141: Opslaan in de nieuwe actiebalk — tussen Terug/Verder (gevuld)
-     en Annuleren (grijze .btn-ghost) in qua nadruk: wel de accentkleur,
-     geen volle vulling. */
-  .btn-accent-outline {
-    background: transparent;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-  }
-  .btn-accent-outline:hover { background: rgba(245,197,24,0.08); }
 
   .profile-avatar {
     width: 72px; height: 72px;
@@ -2119,14 +2128,12 @@
     header { padding: 16px 20px 12px; flex-direction: column; align-items: flex-start; }
     main { padding: 32px 16px 60px; }
     .field-group { grid-template-columns: 1fr; }
-    /* TT-141: de vaste onderbalk (.app-bottom-nav, TT-U24) staat op dit
-       schermformaat altijd, ook tijdens de wizard. De actiebalk komt er dus
-       bóven te staan, niet op bottom:0 — anders overlappen ze. De safe-area
-       zit dan al in de onderbalk verwerkt, hier niet nog eens nodig. */
-    .wizard-action-bar {
-      bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-      padding: 16px 16px;
-    }
+    /* TT-142: de vaste onderbalk (.app-bottom-nav) wordt nu via JS verborgen
+       zolang view-register actief is (zie showView()) — twee vaste balken
+       tegelijk was juist het probleem dat deze wijziging oplost. De
+       actiebalk mag dus gewoon op bottom:0 staan, ook op mobiel. Alleen de
+       zijmarge is hier smaller dan op een breder scherm. */
+    .wizard-action-bar { padding-left: 16px; padding-right: 16px; }
     .goal-options { grid-template-columns: 1fr; }
     .filter-row { grid-template-columns: 1fr; }
     /* Punt 1 (22-08-2026, Ronald): TT-15 (06-08-2026) liet de kop bewust
@@ -2635,20 +2642,17 @@
       </div>
     </div>
 
-    <!-- TT-141 (25-08-2026): vaste actiebalk i.p.v. .nav-buttons in de
-         paginastroom. Eerste stap heeft geen Terug. -->
+    <!-- TT-144 (25-08-2026): Terug op stap 1 gaat naar Mijn Profiel (bij
+         bewerken) of de landingpagina (bij een nieuwe registratie) — er is
+         geen vorige stap. -->
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
-        <div class="wizard-action-row-cancel">
-          <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
-        </div>
-        <div class="wizard-action-row-main">
-          <!-- TT-121 (22-08-2026): opslaan per stap, alleen tijdens het
-               bewerken van een bestaand profiel — een nieuw account doorloopt
-               nog gewoon de hele wizard. -->
-          <button class="btn btn-accent-outline save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
-          <button class="btn btn-primary" onclick="nextStep(0)">Verder →</button>
-        </div>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStepFromStart()">Terug</button>
+        <!-- TT-121 (22-08-2026): opslaan per stap, alleen tijdens het
+             bewerken van een bestaand profiel — een nieuw account doorloopt
+             nog gewoon de hele wizard. -->
+        <button class="btn wizard-btn wizard-btn-muted save-step-btn" style="display:none;" onclick="saveEditedProfileHere()">Opslaan</button>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(0)">Verder</button>
       </div>
     </div>
   </div>
@@ -2688,14 +2692,9 @@
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
-        <div class="wizard-action-row-cancel">
-          <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
-        </div>
-        <div class="wizard-action-row-main">
-          <button class="btn btn-primary" onclick="prevStep(1)">← Terug</button>
-          <button class="btn btn-accent-outline save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
-          <button class="btn btn-primary" onclick="nextStep(1)">Verder →</button>
-        </div>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(1)">Terug</button>
+        <button class="btn wizard-btn wizard-btn-muted save-step-btn" style="display:none;" onclick="saveEditedProfileHere()">Opslaan</button>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(1)">Verder</button>
       </div>
     </div>
   </div>
@@ -2764,14 +2763,9 @@
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
-        <div class="wizard-action-row-cancel">
-          <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
-        </div>
-        <div class="wizard-action-row-main">
-          <button class="btn btn-primary" onclick="prevStep(2)">← Terug</button>
-          <button class="btn btn-accent-outline save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
-          <button class="btn btn-primary" onclick="nextStep(2)">Verder →</button>
-        </div>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(2)">Terug</button>
+        <button class="btn wizard-btn wizard-btn-muted save-step-btn" style="display:none;" onclick="saveEditedProfileHere()">Opslaan</button>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(2)">Verder</button>
       </div>
     </div>
   </div>
@@ -2826,14 +2820,9 @@
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
-        <div class="wizard-action-row-cancel">
-          <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
-        </div>
-        <div class="wizard-action-row-main">
-          <button class="btn btn-primary" onclick="prevStep(3)">← Terug</button>
-          <button class="btn btn-accent-outline save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
-          <button class="btn btn-primary" onclick="nextStep(3)">Verder →</button>
-        </div>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(3)">Terug</button>
+        <button class="btn wizard-btn wizard-btn-muted save-step-btn" style="display:none;" onclick="saveEditedProfileHere()">Opslaan</button>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(3)">Verder</button>
       </div>
     </div>
   </div>
@@ -2892,13 +2881,8 @@
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
-        <div class="wizard-action-row-cancel">
-          <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
-        </div>
-        <div class="wizard-action-row-main">
-          <button class="btn btn-primary" onclick="prevStep(4)">← Terug</button>
-          <button class="btn btn-primary" id="submitProfileBtn" onclick="submitProfile()" disabled style="opacity:0.5;cursor:not-allowed;">Profiel aanmaken</button>
-        </div>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(4)">Terug</button>
+        <button class="btn wizard-btn wizard-btn-accent" id="submitProfileBtn" onclick="submitProfile()" disabled style="opacity:0.5;cursor:not-allowed;">Profiel aanmaken</button>
       </div>
     </div>
   </div>
@@ -4346,6 +4330,18 @@ function showView(view, mode) {
     if (bEl) { bEl.classList.add('active'); bEl.setAttribute('aria-current', 'page'); }
   }
 
+  // TT-142 (25-08-2026): de vaste onderbalk (Zoeken/Berichten/Bands/Profiel)
+  // stond altijd, ook tijdens de wizard — samen met de nieuwe actiebalk
+  // (TT-142) gaf dat twee vaste balken tegelijk, met het toetsenbord erbij
+  // veel te veel scherm. De wizard heeft zijn eigen navigatie (Terug/
+  // Verder/Annuleren/Opslaan), dus de onderbalk mag daar weg. Inline style
+  // i.p.v. een CSS-klasse: moet ook op brede schermen werken (waar de CSS-
+  // regel voor de onderbalk zelf alleen ≤560px geldt) en moet bij het
+  // verlaten van de wizard weer expliciet terug naar de normale (door CSS
+  // bepaalde) weergave.
+  const bottomNavEl = document.getElementById('appBottomNav');
+  if (bottomNavEl) bottomNavEl.style.display = (view === 'register') ? 'none' : '';
+
   if (view === 'register') {
     if (editingMusicianId && !currentUser) {
       // Beveiligingsfix: een leftover editingMusicianId (bijv. na uitloggen
@@ -4368,12 +4364,8 @@ function showView(view, mode) {
         fld.style.opacity = locked ? '0.85' : '';
       }
     });
-    document.querySelectorAll('.cancel-edit-btn').forEach(btn => {
-      btn.style.display = locked ? 'inline-block' : 'none';
-    });
-    // TT-121 (22-08-2026): opslaan per stap, zelfde aan/uit-logica als de
-    // Annuleren-knop hierboven — alleen zichtbaar tijdens het bewerken van
-    // een bestaand profiel.
+    // TT-121 (22-08-2026): opslaan per stap — alleen zichtbaar tijdens het
+    // bewerken van een bestaand profiel.
     document.querySelectorAll('.save-step-btn').forEach(btn => {
       btn.style.display = locked ? 'inline-flex' : 'none';
     });
@@ -4422,9 +4414,12 @@ function showView(view, mode) {
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  // TT-37: kleine vertraging zodat de view echt zichtbaar is (offsetParent-
-  // check in autofocusFirstField hangt daarvan af) voordat we focussen.
-  setTimeout(() => autofocusFirstField(el), 50);
+  // TT-142 (25-08-2026): geen automatische focus meer bij het openen van een
+  // view. Was bedoeld als gemak (TT-37), maar opende ongevraagd het
+  // toetsenbord en verstoorde daarmee de "bovenaan beginnen"-scroll — de
+  // gebruiker moet zelf op een veld tikken voordat het toetsenbord komt.
+  // autofocusFirstField() blijft staan (elders eventueel te gebruiken),
+  // alleen deze automatische aanroep is weg.
 }
 
 // TT-U25 (12-08-2026): zolang een modal open is, mag de pagina eronder niet
@@ -6002,18 +5997,9 @@ async function deleteAllStorageForUser(userId) {
   }
 }
 
-function cancelEditProfile() {
-  showConfirm('Wil je stoppen met bewerken? Wat je hebt aangepast sinds de laatste keer opslaan, gaat dan verloren.', () => {
-    // Bij het expliciet afbreken van een onboarding (nog geen "Profiel
-    // aanmaken" geklikt) blijft het account/profiel bestaan maar telt het
-    // nooit mee in zoekresultaten (profile_complete=false, zie TT-09) — de
-    // lokale voortgangs-snapshot ruimen we hier wél op, zodat een latere
-    // login niet ongevraagd weer de wizard in springt.
-    if (state.onboarding) { clearOnboardingProgress(); state.onboarding = false; }
-    editingMusicianId = null;
-    showView('myprofile');
-  }, 'Ja, stoppen');
-}
+// TT-143 (25-08-2026): cancelEditProfile()/de Annuleren-knop is vervallen.
+// "Terug" en "Verder" dekken de navigatie nu zelf af (zie prevStep()/
+// nextStep() en de nieuwe editSnapshot-vergelijking).
 
 // ─── TT-09: onboarding hervatten na een refresh (Route B) ────────────────────
 // Zolang het profiel nog niet is afgerond (state.onboarding), bewaren we een
@@ -6219,6 +6205,7 @@ async function editMyProfile() {
   goTo(0);
   document.getElementById('submitProfileBtn').textContent = 'Wijzigingen opslaan';
   populateWizardFieldsFromState();
+  editSnapshot = buildEditSnapshot();
 }
 
 async function loadMyProfile() {
@@ -6915,6 +6902,19 @@ async function saveEditedProfile() {
     console.error('Supabase fout:', err);
     showSaveError(err.message);
   }
+}
+
+// TT-143 (25-08-2026): de "Opslaan"-knop in de actiebalk (zichtbaar op elke
+// stap tijdens het bewerken). In tegenstelling tot saveEditedProfile()
+// hierboven (de afrondende opslag, met overlay + navigatie naar Mijn
+// Profiel) blijft dit gewoon op de huidige stap staan — alleen een korte
+// melding, geen overlay, geen navigatie.
+async function saveEditedProfileHere() {
+  if (!editingMusicianId) return;
+  const saved = await silentlySaveEditIfNeeded();
+  if (!saved) return; // silentlySaveEditIfNeeded toont zelf al een foutmelding
+  editSnapshot = buildEditSnapshot();
+  showToast('Wijzigingen opgeslagen.');
 }
 
 // TT-137: stille variant voor "Verder →"/"← Terug" tijdens het bewerken.
@@ -7712,6 +7712,30 @@ function fromISODate(iso) {
 }
 
 let editingMusicianId = null;
+// TT-143 (25-08-2026): momentopname van de laatst opgeslagen staat tijdens
+// het bewerken van een bestaand profiel. Vergeleken met de huidige state om
+// te weten of "Terug" een melding moet tonen ("niet opgeslagen"). Gezet bij
+// het openen van de bewerkwizard (editMyProfile()) en na elke geslaagde
+// opslag (saveEditedProfileHere(), nextStep()).
+let editSnapshot = null;
+function buildEditSnapshot() {
+  return JSON.stringify({
+    fname: state.fname, lname: state.lname, username: state.username,
+    birth_date: state.birth_date, city: state.city, zip: state.zip,
+    bio: state.bio, goal: state.goal,
+    rehearsalFrequency: state.rehearsalFrequency,
+    musicalAmbition: state.musicalAmbition,
+    repertoireType: state.repertoireType,
+    avatarUrl: state.avatarUrl,
+    citySource: state.citySource,
+    instruments: state.instruments,
+    instrumentLevels: state.instrumentLevels,
+    genres: state.genres,
+    songs: state.songs,
+    mediaLinks: state.mediaLinks,
+    mediaFiles: (state.mediaFiles || []).map(m => m.url),
+  });
+}
 
 // ─── iTunes Search API — twee-velden zoekfunctie ─────────────────────────────
 // TT-139 (24-08-2026): vervangt MusicBrainz. Zie zoekfunctienaslagwerk.md §15
@@ -8702,6 +8726,9 @@ async function nextStep(from) {
     // denkt de gebruiker onterecht dat de wijziging al veilig staat.
     const saved = await silentlySaveEditIfNeeded();
     if (!saved) return;
+    // TT-143 (25-08-2026): korte melding, net als bij de losse Opslaan-knop.
+    editSnapshot = buildEditSnapshot();
+    showToast('Wijzigingen opgeslagen.');
   }
   goTo(from + 1);
 }
@@ -8852,13 +8879,32 @@ async function createAccountAndProfile() {
   }
 }
 
-// TT-137 (23-08-2026): ook "← Terug" slaat nu op bij bewerken — een
-// wijziging op de huidige stap mag niet verdwijnen omdat iemand terugging
-// i.p.v. verderging. Blokkeert de navigatie niet bij een mislukking (de
-// toast in silentlySaveEditIfNeeded() waarschuwt al); teruggaan mag altijd.
+// TT-143 (25-08-2026): "Terug" slaat niet meer op (was TT-137: stil
+// opslaan). Gaat altijd meteen terug; is er iets gewijzigd sinds de laatste
+// opslag, dan alleen een korte melding dat dat niet is bewaard — de
+// gebruiker kiest zelf om terug te gaan zonder op te slaan.
 async function prevStep(from) {
-  if (editingMusicianId && !state.onboarding) await silentlySaveEditIfNeeded();
+  if (editingMusicianId && !state.onboarding && buildEditSnapshot() !== editSnapshot) {
+    showToast('Wijzigingen niet opgeslagen.');
+  }
   goTo(from - 1);
+}
+
+// TT-144 (25-08-2026): "Terug" op stap 1 — er is geen vorige stap, dus dit
+// verlaat de wizard zelf. Tijdens het bewerken van een bestaand profiel
+// (editingMusicianId, niet tijdens onboarding) gaat dat terug naar het
+// muzikantenprofiel, met dezelfde "niet opgeslagen"-melding als prevStep()
+// hierboven als er iets is gewijzigd. Tijdens een nieuwe registratie (nog
+// geen profiel om naar terug te gaan) gaat het naar de landingpagina.
+async function prevStepFromStart() {
+  if (editingMusicianId && !state.onboarding) {
+    if (buildEditSnapshot() !== editSnapshot) {
+      showToast('Wijzigingen niet opgeslagen.');
+    }
+    showView('myprofile', 'redirect');
+    return;
+  }
+  showView('landing', 'redirect');
 }
 
 function goTo(step) {
@@ -8900,7 +8946,8 @@ function goTo(step) {
   state.currentStep = step;
   saveOnboardingProgress(); // no-op tenzij state.onboarding actief is
   window.scrollTo({top:0, behavior:'smooth'});
-  setTimeout(() => autofocusFirstField(document.getElementById('view-register')), 50);
+  // TT-142 (25-08-2026): geen automatische focus meer bij een stapwissel —
+  // zie de toelichting bij showView() hierboven.
 }
 
 // ─── Personalisatie ──────────────────────────────────────────────────────────
