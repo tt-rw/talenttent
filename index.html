@@ -186,12 +186,13 @@
     font-weight: 500;
   }
 
-  /* Cards / Panels */
+  /* Wizard-stappen (2025-08-25, punt A uit het mobiel-first-voorstel):
+     geen omkaderde kaart meer binnen "main" — main levert zelf al de
+     paginamarge (24px desktop / 16px mobiel), net als .my-profile-wrap.
+     Was een los kaartje (achtergrond, rand, eigen 40px opvulling) — dat
+     versmalde de bruikbare breedte op een telefoon onnodig t.o.v. de rest
+     van de app. */
   .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 36px;
     display: none;
     animation: slideIn 0.4s ease;
   }
@@ -220,7 +221,7 @@
   .panel-sub {
     font-size: 14px;
     color: var(--muted);
-    margin-bottom: 28px;
+    margin-bottom: 32px;
     font-weight: 300;
   }
 
@@ -228,8 +229,8 @@
   .field-group {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 16px;
+    gap: 20px;
+    margin-bottom: 20px;
   }
 
   .field-group.single { grid-template-columns: 1fr; }
@@ -520,6 +521,40 @@
     border-top: 1px solid var(--border);
   }
 
+  /* TT-141 (25-08-2026): vaste actiebalk voor de profiel-wizard (nieuwe
+     registratie én "Profiel bewerken"). Vervangt .nav-buttons, die los in
+     de paginastroom stond — op een lange stap moest je eerst naar beneden
+     scrollen om te kunnen opslaan of doorgaan. Twee rijen: boven alleen
+     Annuleren (weg van dit scherm, minder nadruk), onder Terug/Opslaan/
+     Verder (werken door, evenveel nadruk qua omvang).
+     Bewust position:fixed, niet sticky: de stappen (.panel) verschillen in
+     hoogte en een sticky bar zou daardoor per stap ergens anders
+     "vastklikken" i.p.v. altijd op dezelfde plek staan. */
+  .wizard-action-bar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 190;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 16px 24px calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+  .wizard-action-bar-inner {
+    max-width: 760px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .wizard-action-row-cancel { display: flex; justify-content: flex-end; min-height: 24px; }
+  .wizard-action-row-main { display: flex; gap: 10px; }
+  .wizard-action-row-main .btn { flex: 1; }
+
+  /* Ruimte houden voor de vaste balk hierboven, zodat het laatste veld van
+     elke stap er nooit achter verdwijnt. Ruim bemeten (balkhoogte + marge),
+     bewust als losse padding-bottom i.p.v. de "main"-shorthand hierboven —
+     die zou ook de boven-/zijmarge resetten. */
+  #view-register main { padding-bottom: 210px; }
+
   .btn {
     /* TT-U23 (12-08-2026): elke knop minimaal 44px hoog. */
     display: inline-flex;
@@ -556,6 +591,16 @@
   }
 
   .btn-ghost:hover { color: var(--text); border-color: #555; }
+
+  /* TT-141: Opslaan in de nieuwe actiebalk — tussen Terug/Verder (gevuld)
+     en Annuleren (grijze .btn-ghost) in qua nadruk: wel de accentkleur,
+     geen volle vulling. */
+  .btn-accent-outline {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-accent-outline:hover { background: rgba(245,197,24,0.08); }
 
   .profile-avatar {
     width: 72px; height: 72px;
@@ -1516,7 +1561,7 @@
   .search-wrap {
     max-width: 900px;
     margin: 0 auto;
-    padding: 40px 24px 80px;
+    padding: 48px 24px 80px;
   }
 
   .search-filters {
@@ -1916,7 +1961,7 @@
   .my-profile-wrap {
     max-width: 760px;
     margin: 0 auto;
-    padding: 40px 24px 80px;
+    padding: 48px 24px 80px;
   }
 
   .profile-actions {
@@ -2073,8 +2118,15 @@
   @media (max-width: 560px) {
     header { padding: 16px 20px 12px; flex-direction: column; align-items: flex-start; }
     main { padding: 32px 16px 60px; }
-    .panel { padding: 24px 20px; }
     .field-group { grid-template-columns: 1fr; }
+    /* TT-141: de vaste onderbalk (.app-bottom-nav, TT-U24) staat op dit
+       schermformaat altijd, ook tijdens de wizard. De actiebalk komt er dus
+       bóven te staan, niet op bottom:0 — anders overlappen ze. De safe-area
+       zit dan al in de onderbalk verwerkt, hier niet nog eens nodig. */
+    .wizard-action-bar {
+      bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+      padding: 16px 16px;
+    }
     .goal-options { grid-template-columns: 1fr; }
     .filter-row { grid-template-columns: 1fr; }
     /* Punt 1 (22-08-2026, Ronald): TT-15 (06-08-2026) liet de kop bewust
@@ -2116,7 +2168,7 @@
        blijft ongewijzigd, alleen het icoon zelf wordt groter getekend). */
     #navMenuBtn svg { width: 26px; height: 26px; }
     .nav-menu-dropdown { right: 16px; top: -18px; }
-    .search-wrap, .my-profile-wrap { padding: 24px 16px 60px; }
+    .search-wrap, .my-profile-wrap { padding: 32px 16px 60px; }
     /* TT-130 (23-08-2026): op de telefoon scrolden de gespreksnaam en het
        invoerveld gewoon mee met de berichtenlijst — bij een langer gesprek,
        of zodra het toetsenbord opkomt, verdwenen beide. Geen enkele
@@ -2583,14 +2635,20 @@
       </div>
     </div>
 
-    <div class="nav-buttons">
-      <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
-      <div style="display:flex;gap:12px;">
-        <!-- TT-121 (22-08-2026): opslaan per stap, alleen tijdens het
-             bewerken van een bestaand profiel — een nieuw account doorloopt
-             nog gewoon de hele wizard. -->
-        <button class="btn btn-ghost save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
-        <button class="btn btn-primary" onclick="nextStep(0)">Verder →</button>
+    <!-- TT-141 (25-08-2026): vaste actiebalk i.p.v. .nav-buttons in de
+         paginastroom. Eerste stap heeft geen Terug. -->
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner">
+        <div class="wizard-action-row-cancel">
+          <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+        </div>
+        <div class="wizard-action-row-main">
+          <!-- TT-121 (22-08-2026): opslaan per stap, alleen tijdens het
+               bewerken van een bestaand profiel — een nieuw account doorloopt
+               nog gewoon de hele wizard. -->
+          <button class="btn btn-accent-outline save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
+          <button class="btn btn-primary" onclick="nextStep(0)">Verder →</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2628,13 +2686,17 @@
       </div>
     </div>
 
-    <div class="nav-buttons">
-      <div style="display:flex;gap:12px;">
-        <button class="btn btn-ghost" onclick="prevStep(1)">← Terug</button>
-        <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner">
+        <div class="wizard-action-row-cancel">
+          <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+        </div>
+        <div class="wizard-action-row-main">
+          <button class="btn btn-primary" onclick="prevStep(1)">← Terug</button>
+          <button class="btn btn-accent-outline save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
+          <button class="btn btn-primary" onclick="nextStep(1)">Verder →</button>
+        </div>
       </div>
-      <button class="btn btn-ghost save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
-      <button class="btn btn-primary" onclick="nextStep(1)">Verder →</button>
     </div>
   </div>
 
@@ -2700,13 +2762,17 @@
 
     <div class="divider"></div>
 
-    <div class="nav-buttons">
-      <div style="display:flex;gap:12px;">
-        <button class="btn btn-ghost" onclick="prevStep(2)">← Terug</button>
-        <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner">
+        <div class="wizard-action-row-cancel">
+          <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+        </div>
+        <div class="wizard-action-row-main">
+          <button class="btn btn-primary" onclick="prevStep(2)">← Terug</button>
+          <button class="btn btn-accent-outline save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
+          <button class="btn btn-primary" onclick="nextStep(2)">Verder →</button>
+        </div>
       </div>
-      <button class="btn btn-ghost save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
-      <button class="btn btn-primary" onclick="nextStep(2)">Verder →</button>
     </div>
   </div>
 
@@ -2758,13 +2824,17 @@
       </div>
     </div>
 
-    <div class="nav-buttons">
-      <div style="display:flex;gap:12px;">
-        <button class="btn btn-ghost" onclick="prevStep(3)">← Terug</button>
-        <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner">
+        <div class="wizard-action-row-cancel">
+          <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+        </div>
+        <div class="wizard-action-row-main">
+          <button class="btn btn-primary" onclick="prevStep(3)">← Terug</button>
+          <button class="btn btn-accent-outline save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
+          <button class="btn btn-primary" onclick="nextStep(3)">Verder →</button>
+        </div>
       </div>
-      <button class="btn btn-ghost save-step-btn" style="display:none;" onclick="saveEditedProfile()">Opslaan</button>
-      <button class="btn btn-primary" onclick="nextStep(3)">Verder →</button>
     </div>
   </div>
 
@@ -2820,12 +2890,16 @@
       </span>
     </label>
 
-    <div class="nav-buttons">
-      <div style="display:flex;gap:12px;">
-        <button class="btn btn-ghost" onclick="prevStep(4)">← Terug</button>
-        <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner">
+        <div class="wizard-action-row-cancel">
+          <button class="btn btn-ghost cancel-edit-btn" style="display:none;" onclick="cancelEditProfile()">Annuleren</button>
+        </div>
+        <div class="wizard-action-row-main">
+          <button class="btn btn-primary" onclick="prevStep(4)">← Terug</button>
+          <button class="btn btn-primary" id="submitProfileBtn" onclick="submitProfile()" disabled style="opacity:0.5;cursor:not-allowed;">Profiel aanmaken</button>
+        </div>
       </div>
-      <button class="btn btn-primary" id="submitProfileBtn" onclick="submitProfile()" disabled style="opacity:0.5;cursor:not-allowed;">Profiel aanmaken</button>
     </div>
   </div>
 
@@ -8801,13 +8875,26 @@ function goTo(step) {
 
   // Twee fasen i.p.v. "Stap X van 5" (TT-09): fase 1 is het account aanmaken
   // (verplicht, 1 stap), fase 2 is het profiel vrij aanvullen (4 stappen).
-  const labels = [
+  // TT-141 (25-08-2026): dit label klopte niet meer tijdens "Profiel
+  // bewerken" — iemand met een compleet profiel zag dan alsnog "Fase 1 van
+  // 2 · Aanmelden". Bewerken van een bestaand profiel krijgt nu een eigen
+  // labelset, zonder de fase-taal die alleen bij een nieuwe registratie
+  // hoort.
+  const labelsNieuw = [
     'Fase 1 van 2 · Aanmelden',
     'Fase 2 van 2 · Profiel aanvullen (1/4)',
     'Fase 2 van 2 · Profiel aanvullen (2/4)',
     'Fase 2 van 2 · Profiel aanvullen (3/4)',
     'Fase 2 van 2 · Profiel aanvullen (4/4)'
   ];
+  const labelsBewerken = [
+    'Profiel bewerken · stap 1 van 5',
+    'Profiel bewerken · stap 2 van 5',
+    'Profiel bewerken · stap 3 van 5',
+    'Profiel bewerken · stap 4 van 5',
+    'Profiel bewerken · stap 5 van 5'
+  ];
+  const labels = editingMusicianId ? labelsBewerken : labelsNieuw;
   document.getElementById('stepLabel').textContent = labels[step] || '';
 
   state.currentStep = step;
