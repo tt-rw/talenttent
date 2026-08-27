@@ -3786,19 +3786,38 @@
       <option value="">Alle instrumenten</option>
     </select>
     <input type="text" id="memberSearchInput" placeholder="Zoek op naam..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:16px;">
-    <!-- V-17-restpunt (13-08-2026, in overleg vastgesteld): tot nu toe geen
-         plaats/afstand-filter hier — bij een landelijk gebruikte app levert
-         zoeken op instrument alleen dan een onsorteerbare, door elkaar
-         gehusselde landelijke lijst op. Straal is optioneel: leeg = geen
-         afstandsfilter (bijv. als je eigen locatie nog onbekend is). Geen
-         apart "Plaats"-veld — vertrekpunt is altijd je eigen locatie, zoals
-         besproken. -->
+    <!-- TT-127-restpunt-vervolg (27-08-2026, Ronalds besluit): V-17-restpunt
+         koos bewust voor "geen apart Plaats-veld, vertrekpunt is altijd je
+         eigen locatie". Dat besluit is nu herzien — Ronald wil ook hier
+         vanaf een andere plaats kunnen zoeken, zoals op de drie
+         zoekpagina's (TT-160). Zelfde patroon: één .field met Plaats en
+         Straal naast elkaar, plus de "Gevonden: ..."-bevestigingsregel
+         (scheduleSearchCityStatus()/updateSearchCityStatus(), hergebruikt,
+         geen nieuwe functie). city-search-wrap/autocomplete hergebruikt
+         onCitySearchInput() met een eigen lijst-id.
+         LET OP — nog niet volledig af: resolveSearchOrigin() geeft veilig
+         een lat/lng terug voor een getypte plaats (bestaande, al gebruikte
+         RPC tt_resolve_search_origin — geeft coördinaten van een postcode/
+         plaatsnaam terug, geen persoonsgegevens). Maar tt_musician_distances
+         accepteert alleen searcher_id, geen eigen vertrekpunt. Tot die
+         databasefunctie is uitgebreid, gebruikt de afstandsberekening
+         hieronder nog steeds je eigen locatie, ongeacht wat hier wordt
+         getypt — zie de toelichting in searchMembersToAdd(). -->
     <div class="field" style="margin-bottom:16px;">
-      <label>Zoekstraal <span style="font-weight:400;color:var(--muted);">(vanaf jouw locatie)</span></label>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input type="number" id="memberSearchRadius" placeholder="bijv. 25" min="5" max="500" step="5" style="width:90px;" onchange="searchMembersToAdd(document.getElementById('memberSearchInput').value)">
-        <span style="color:var(--muted);font-size:13px;">km</span>
+      <label>Plaats</label>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <div class="city-search-wrap" style="flex:1;min-width:0;">
+          <input type="text" id="memberSearchCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
+            oninput="onCitySearchInput(this.value,'acMemberSearchCityList'); searchMembersToAdd(document.getElementById('memberSearchInput').value); scheduleSearchCityStatus('memberSearchCity','memberSearchCityStatus');"
+            onblur="setTimeout(()=>closeAC('acMemberSearchCityList'),200)">
+          <div class="autocomplete-list" id="acMemberSearchCityList"></div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+          <input type="number" id="memberSearchRadius" placeholder="bijv. 25" min="5" max="500" step="5" style="width:110px;" onchange="searchMembersToAdd(document.getElementById('memberSearchInput').value)">
+          <span style="color:var(--muted);font-size:13px;">km</span>
+        </div>
       </div>
+      <div id="memberSearchCityStatus" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;"></div>
     </div>
     <div id="memberSearchResults"></div>
   </div>
@@ -10195,6 +10214,12 @@ function openAddMemberModal(bandId, bandName) {
   // onopgemerkt actief bij de volgende band.
   const radiusEl = document.getElementById('memberSearchRadius');
   if (radiusEl) radiusEl.value = '';
+  // TT-127-restpunt-vervolg (27-08-2026): zelfde terugzet-reden voor het
+  // nieuwe Plaats-veld en zijn bevestigingsregel.
+  const cityEl = document.getElementById('memberSearchCity');
+  if (cityEl) cityEl.value = '';
+  const cityStatusEl = document.getElementById('memberSearchCityStatus');
+  if (cityStatusEl) cityStatusEl.textContent = '';
   document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens, of kies een instrument, om te zoeken.</p>';
   loadCurrentMembersForModal(bandId);
   renderFounderTransferSection(bandId);
@@ -10218,7 +10243,7 @@ async function renderFounderTransferSection(bandId) {
     const offerPending = (data || []).some(m => m.founder_offer);
     el.innerHTML = `
       <div class="divider"></div>
-      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:16px 0 10px;">Beheer</div>
+      <div class="filter-title" style="margin:16px 0 6px;font-size:16px;">Beheer</div>
       <button type="button" class="btn btn-ghost" style="width:100%;" onclick="${offerPending ? `withdrawFounderOffer('${jsAttr(bandId)}')` : `askFounderTransfer('${jsAttr(bandId)}')`}">${offerPending ? 'Aanbod intrekken' : 'Beheer overdragen'}</button>
       ${offerPending ? '<p style="font-size:12px;color:var(--muted);margin-top:8px;">Gevraagd of iemand het overneemt — wachten op reactie.</p>' : ''}
     `;
@@ -10307,19 +10332,27 @@ function searchMembersToAdd(query) {
         return;
       }
 
-      // V-17-restpunt (13-08-2026, in overleg vastgesteld): afstand ophalen
-      // via een eigen, kleine databasefunctie die alleen een getal (km)
-      // teruggeeft — nooit de ruwe coördinaten van een ander (dat zou het nog
-      // openstaande beveiligingsgat B-01 erger maken). Vertrekpunt is altijd
-      // je eigen muzikant-ID, geen apart plaatsveld. Faalt dit (bijv. je eigen
-      // locatie is nog onbekend), dan valt de zoekopdracht terug op het oude
-      // gedrag — geen afstand, geen filter, geen kapotte zoekopdracht.
+      // V-17-restpunt (13-08-2026) + TT-163 (27-08-2026): afstand ophalen via
+      // tt_musician_distances — een eigen, kleine databasefunctie die alleen
+      // een getal (km) teruggeeft, nooit ruwe coördinaten van een ander
+      // (B-01). Sinds TT-163 accepteert de functie ook een eigen
+      // origin_lat/origin_lng: getypt in het Plaats-veld hierboven
+      // (memberSearchCity), via de bestaande resolveSearchOrigin() — dat
+      // zijn coördinaten van een postcode/plaatsnaam uit postcode_cache,
+      // geen persoonsgegevens (dezelfde functie die runSearch() al gebruikt).
+      // Leeg Plaats-veld: origin_lat/origin_lng blijven null, de functie
+      // valt dan vanzelf terug op de eigen locatie van searcher_id — precies
+      // het gedrag van vóór TT-163.
       const radiusVal = document.getElementById('memberSearchRadius')?.value.trim();
       const radius = radiusVal ? parseInt(radiusVal, 10) : null;
+      const cityQuery = document.getElementById('memberSearchCity')?.value.trim();
+      const origin = cityQuery ? await resolveSearchOrigin(cityQuery) : { lat: null, lng: null };
       try {
         const { data: distances, error: distErr } = await db.rpc('tt_musician_distances', {
           searcher_id: await getMyMusicianId(),
-          musician_ids: filtered.map(m => m.id)
+          musician_ids: filtered.map(m => m.id),
+          origin_lat: origin.lat,
+          origin_lng: origin.lng
         });
         if (!distErr && distances) {
           const distMap = {};
