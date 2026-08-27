@@ -4301,30 +4301,18 @@ async function configureSearchAccess() {
   else if (currentSearchMode === 'setlist' && setlistWantedSongs.length) runSetlistSearch();
 }
 
-// V-24 (13-08-2026, TT-U17): de Setlist-tab was altijd zichtbaar, ook als
-// iemand nog geen enkel eigen nummer had — dan is er niets om als "gezocht"
-// mee te vergelijken. Nu pas zichtbaar vanaf drie eigen nummers, dezelfde
-// grens die het PPP-voortgangspaneel op Mijn Profiel al gebruikt voor
-// "3+ nummers" (renderProgressPanel()). Zonder eigen profiel: altijd
-// verborgen, er is dan sowieso geen eigen repertoire.
+// V-24 (13-08-2026, TT-U17): de Setlist-tab werd verborgen tot iemand drie
+// eigen nummers had — de aanname was dat setlist-zoeken op eigen repertoire
+// werkt. TT-158 (27-08-2026, Ronald): die drempel is losgelaten.
+// **Geverifieerd:** runSetlistSearch() zoekt op setlistWantedSongs, een
+// handmatig samengestelde lijst (Artiest → Nummer, zie de toelichting boven
+// runSetlistSearch()) — niet op het eigen repertoire van de zoeker. De
+// eigen-nummers-drempel had dus nooit een functionele grond. De tab is nu
+// voor iedereen altijd zichtbaar, ongeacht login of eigen repertoire.
 async function updateSetlistTabVisibility() {
   const btn = document.getElementById('searchModeSetlistBtn');
   if (!btn) return;
-  let show = false;
-  if (hasOwnProfile) {
-    const mid = await getMyMusicianId();
-    if (mid) {
-      const { count, error } = await db.from('musician_songs')
-        .select('id', { count: 'exact', head: true })
-        .eq('musician_id', mid);
-      show = !error && count >= 3;
-    }
-  }
-  btn.style.display = show ? '' : 'none';
-  // Stond de tab actief maar verdwijnt hij nu (bijv. na een nummer
-  // verwijderen tot onder de drie), dan terug naar het standaardtabblad —
-  // nooit een onzichtbare tab actief laten staan.
-  if (!show && currentSearchMode === 'setlist') setSearchMode('musician');
+  btn.style.display = '';
 }
 
 // Zet een sorteertoggle-grid programmatisch op een waarde (zonder klik-event),
@@ -5341,7 +5329,14 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       <div class="profile-media" style="margin-top:16px;">
         <div class="profile-media-title">Links</div>
         <div class="profile-media-grid">
-          ${links.map(l => `<a href="${l.safeHref}" target="_blank" rel="noopener noreferrer" class="profile-link-chip">${escHtml(l.platform || 'Link')}</a>`).join('')}
+          ${links.map(l => currentUser
+            // TT-158 (27-08-2026, Ronald): social-media-links alleen klikbaar
+            // voor een ingelogde gebruiker. Een uitgelogde bezoeker ziet
+            // dezelfde chip, maar zonder href — geen <a>, dus niets om op te
+            // klikken of te openen in een nieuw tabblad.
+            ? `<a href="${l.safeHref}" target="_blank" rel="noopener noreferrer" class="profile-link-chip">${escHtml(l.platform || 'Link')}</a>`
+            : `<span class="profile-link-chip" style="cursor:default;">${escHtml(l.platform || 'Link')}</span>`
+          ).join('')}
         </div>
       </div>` : ''}`;
 }
@@ -5394,18 +5389,17 @@ async function openMusicianModal(id) {
   const footer = document.getElementById('musicianModalFooter');
   modal.classList.add('visible');
 
-  if (!currentUser) {
-    footer.innerHTML = '';
-    content.innerHTML = `
-      <div style="text-align:center;padding:40px 20px;">
-        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Bekijk het volledige profiel</p>
-        <p style="color:var(--muted);margin-bottom:24px;">Log in of maak een gratis profiel aan om repertoire, bio en contactgegevens te zien — en zelf gevonden te worden.</p>
-        <button class="btn btn-primary" style="width:100%;margin-bottom:12px;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Account maken</button>
-        <button class="btn btn-ghost" style="width:100%;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('auth')">Ik heb al een profiel — inloggen</button>
-      </div>`;
-    return;
-  }
-
+  // TT-158 (27-08-2026): voorheen blokkeerde deze functie hier volledig voor
+  // een uitgelogde bezoeker (!currentUser) — alleen een tekstscherm met
+  // "Account maken"/"Inloggen", geen profiel. Dat is nu weg. hasOwnProfile
+  // staat voor een uitgelogde bezoeker altijd al op false (standaardwaarde
+  // bij de declaratie, en getMyMusicianId() geeft zonder currentUser meteen
+  // null terug) — de bestaande hasOwnProfile-aftakking hieronder bediende dit
+  // pad al voor een ingelogde gebruiker zonder eigen profiel. Diezelfde
+  // aftakking bedient nu ook de volledig uitgelogde bezoeker: de publieke RPC
+  // (geen fname, dus displayNameOf() toont de gebruikersnaam) en
+  // musicianContactFooterHTML() (geen berichtknop, wel "Maak een profiel aan
+  // om contact te leggen").
   footer.innerHTML = '';
   content.innerHTML =
     '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
