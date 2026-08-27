@@ -1376,11 +1376,14 @@
   }
   .nav-menu-dropdown.visible { display: block; }
 
+  /* TT-162 (27-08-2026): was 39-40px, net onder de 44px-tikdoelnorm. */
   .nav-menu-item {
-    display: block;
+    display: flex;
+    align-items: center;
     width: 100%;
+    min-height: 44px;
     text-align: left;
-    padding: 12px 16px;
+    padding: 0 16px;
     background: transparent;
     border: none;
     color: var(--text);
@@ -3759,7 +3762,7 @@
 <div class="modal-overlay" id="addMemberModal" onclick="if(event.target===this)this.classList.remove('visible')">
   <div class="modal-box">
     <button class="modal-close" onclick="document.getElementById('addMemberModal').classList.remove('visible')">✕</button>
-    <div class="filter-title" style="margin-bottom:6px;">Bandleden wijzigen</div>
+    <div class="filter-title" style="margin-bottom:6px;">Bandleden beheren</div>
     <!-- 22-08-2026 (Ronald): het kruisje achter een naam op de bandkaart
          voelde "banaal, alsof je ieder moment kan worden gecancelled".
          Verwijderen hoort nu bij dit scherm, met een duidelijke knop i.p.v.
@@ -3768,6 +3771,11 @@
       <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Huidige leden</div>
       <div id="currentMembersList"></div>
     </div>
+    <!-- TT-127-restpunt (27-08-2026, Ronalds besluit): "Bandbeheer" was een
+         los ⋯-menu-item naast "Bandleden wijzigen" — twee knoppen voor
+         hetzelfde onderwerp (wie hoort bij de band, wie beheert 'm). Nu één
+         scherm: "Bandleden beheren". Zie renderFounderTransferSection(). -->
+    <div id="founderTransferSection" style="margin-bottom:20px;"></div>
     <div class="divider"></div>
     <div class="filter-title" style="margin:16px 0 6px;font-size:16px;">Lid uitnodigen</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">De muzikant staat pas als lid op het bandprofiel zodra hij of zij de uitnodiging zelf bevestigt.</p>
@@ -6531,6 +6539,12 @@ async function sendFounderOffer(bandId, memberIds) {
     if (error) throw error;
     showToast('Gevraagd of iemand het overneemt. Je ziet het hier zodra iemand reageert.');
     loadMyBands();
+    // TT-127-restpunt (27-08-2026): staat "Bandleden beheren" nog open voor
+    // deze band, dan moet de knop meteen "Aanbod intrekken" tonen — niet pas
+    // na sluiten en heropenen. Zelfde patroon als executeRemoveMember().
+    if (document.getElementById('addMemberModal')?.classList.contains('visible')) {
+      renderFounderTransferSection(bandId);
+    }
   } catch (e) {
     showToast(friendlyErrorMessage(e));
   }
@@ -6542,6 +6556,9 @@ async function withdrawFounderOffer(bandId) {
     if (error) throw error;
     showToast('Aanbod ingetrokken.');
     loadMyBands();
+    if (document.getElementById('addMemberModal')?.classList.contains('visible')) {
+      renderFounderTransferSection(bandId);
+    }
   } catch (e) {
     showToast(friendlyErrorMessage(e));
   }
@@ -10180,8 +10197,35 @@ function openAddMemberModal(bandId, bandName) {
   if (radiusEl) radiusEl.value = '';
   document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens, of kies een instrument, om te zoeken.</p>';
   loadCurrentMembersForModal(bandId);
+  renderFounderTransferSection(bandId);
   document.getElementById('addMemberModal').classList.add('visible');
   setTimeout(() => document.getElementById('memberSearchInput')?.focus(), 50);
+}
+
+// TT-127-restpunt (27-08-2026): samengevoegd met het vroegere losse
+// ⋯-menu-item "Bandbeheer". Toont één knop, tekst hangt af van of er al een
+// overnameverzoek loopt (offerPending) — zelfde onderscheid dat het oude
+// ⋯-menu-item ook al maakte. askFounderTransfer()/withdrawFounderOffer()
+// zelf zijn ongewijzigd; alleen waar de knop staat is anders.
+async function renderFounderTransferSection(bandId) {
+  const el = document.getElementById('founderTransferSection');
+  if (!el) return;
+  el.innerHTML = '';
+  try {
+    const { data, error } = await db.from('band_members')
+      .select('founder_offer').eq('band_id', bandId).eq('status', 'bevestigd');
+    if (error) throw error;
+    const offerPending = (data || []).some(m => m.founder_offer);
+    el.innerHTML = `
+      <div class="divider"></div>
+      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:16px 0 10px;">Beheer</div>
+      <button type="button" class="btn btn-ghost" style="width:100%;" onclick="${offerPending ? `withdrawFounderOffer('${jsAttr(bandId)}')` : `askFounderTransfer('${jsAttr(bandId)}')`}">${offerPending ? 'Aanbod intrekken' : 'Beheer overdragen'}</button>
+      ${offerPending ? '<p style="font-size:12px;color:var(--muted);margin-top:8px;">Gevraagd of iemand het overneemt — wachten op reactie.</p>' : ''}
+    `;
+  } catch (e) {
+    // Stil falen: dit is een secundaire sectie, de ledenlijst hierboven
+    // (loadCurrentMembersForModal) blijft ook zonder dit stuk werken.
+  }
 }
 
 // 22-08-2026 (Ronald): verwijderen van een bestaand lid hoort nu bij dit
@@ -10202,8 +10246,9 @@ async function loadCurrentMembersForModal(bandId) {
     if (error) throw error;
     el.innerHTML = (data || []).map(m => {
       const memberName = displayNameOf(m.musicians);
-      // De oprichter zichzelf verwijderen gaat via "Bandbeheer" (stoppen/
-      // overdragen), niet via deze lijst — vandaar geen knop bij de eigen rij.
+      // De oprichter zichzelf verwijderen gaat via de "Beheer"-sectie
+      // hieronder (renderFounderTransferSection), niet via deze lijst —
+      // vandaar geen knop bij de eigen rij.
       const isSelf = m.musician_id === mid;
       return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
         <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
@@ -10719,10 +10764,7 @@ async function loadMyBands() {
         </button>
         <div class="inline-menu-dropdown">
           <button class="nav-menu-item" onclick="closeAllBandMoreMenus();editBand('${jsAttr(b.id)}');">Bandprofiel bewerken</button>
-          <button class="nav-menu-item" onclick="closeAllBandMoreMenus();openAddMemberModal('${jsAttr(b.id)}','${jsAttr(b.name)}');">Bandleden wijzigen</button>
-          ${offerPending
-            ? `<button class="nav-menu-item" onclick="closeAllBandMoreMenus();withdrawFounderOffer('${jsAttr(b.id)}');">Bandbeheer</button>`
-            : `<button class="nav-menu-item" onclick="closeAllBandMoreMenus();askFounderTransfer('${jsAttr(b.id)}');">Bandbeheer</button>`}
+          <button class="nav-menu-item" onclick="closeAllBandMoreMenus();openAddMemberModal('${jsAttr(b.id)}','${jsAttr(b.name)}');">Bandleden beheren</button>
         </div>
       </div>` : '';
     return `<div class="band-card">
