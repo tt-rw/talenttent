@@ -1,10 +1,12 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 27-08-2026 (vervolg 9) — **TT-163 volledig afgerond: SQL-script gedraaid en door Ronald bevestigd ("query = succes"). Klaar voor de smoke-test.**
+**Laatste update:** 27-08-2026 (vervolg 10) — **TT-163-bugfix: alleen een Plaats invullen triggerde nog geen zoekopdracht. Opgelost.**
 
-## Nog te testen door Ronald
+**TT-163-bugfix (27-08-2026, live gemeld door Ronald: "ik zou Colin moeten zien als ik den haag intoets").** Root cause was niet de afstandsberekening zelf, maar de startvoorwaarde ervoor: `searchMembersToAdd()` startte alleen een zoekopdracht bij een naam van ≥2 tekens of een gekozen instrument (bestaande V-17-regel) — een gevuld Plaats-veld telde niet mee. Met alleen een plaats getypt bleef daardoor de melding "Typ minimaal 2 tekens..." staan en werd er nooit gezocht, dus ook nooit een afstand berekend. Plaats telt nu ook als startvoorwaarde; de meldingstekst (zowel bij het openen van het scherm als bij de guard zelf) is aangepast naar "...of vul een plaats in".
 
-Bij "Bandleden beheren" (Mijn Bands → ⋯) een plaats typen bij Lid uitnodigen, straal invullen — staat de afstand nu vanaf die getypte plaats, niet meer vanaf je eigen locatie? Leeg Plaats-veld: afstand moet nog gewoon vanaf je eigen locatie komen, zoals altijd.
+**Bijvangst, in dezelfde fix meegenomen:** bij zoeken op **alleen** Plaats filtert de database zelf nog niets voor (geen naam, geen instrument) — de query haalde tot nu toe standaard 15 rijen op, in willekeurige volgorde, en filterde pas daarna op afstand. Bij meer dan 15 muzikanten kon een profiel binnen de straal zo gemist worden, puur omdat het toevallig niet bij die eerste 15 zat. Limiet nu 200 bij een plaats-only zoekopdracht (15 blijft gelden zodra naam of instrument het al voorfiltert). Een echte serverside geo-filter is groter werk en hoort bij TT-28, niet bij deze bugfix.
+
+**Getest** (geïsoleerd, `searchMembersToAdd()` losgemaakt van de lexicaal-begrensde `db`-constante die in deze omgeving niet vervangbaar is — zelfde technische beperking als bij elke andere db-aanroep hier): met alleen Plaats="den haag" gevuld en een gestubde muzikant "Colin" in Den Haag, doorloopt de functie nu `resolveSearchOrigin('den haag')` → `tt_musician_distances` met de juiste `origin_lat`/`origin_lng` → Colin verschijnt in het resultaat met de juiste afstand. Vaste regressietest (alle views + drie zoekmodi) zonder paginafouten. Haakjesbalans (`{}`/`[]` ongewijzigd, `()` op de bekende onbalans van 1) en `node --check` geslaagd. Geen databasewijziging — deze fix zit volledig in `index.html`.
 
 
 **TT-127-vervolg, drie punten (27-08-2026, na screenshot-feedback van Ronald):**
@@ -286,7 +288,7 @@ Ronalds bezwaar tegen de oorspronkelijke opzet: bij TT-41 ligt de keuze bij de p
 
 Geen bouwtickets — Ronald test dit zelf op de live site, vaak in privénavigatie voor het uitgelogde gedrag. Zodra bevestigd: hier afvinken/verwijderen.
 
-- **TT-163 (27-08-2026) — nog te bevestigen op de live site.** SQL gedraaid ("query = succes"). Test: bij "Bandleden beheren" → Lid uitnodigen, een plaats typen (bijv. een stad ver van je eigen woonplaats) + straal invullen — staat de afstand bij elk resultaat nu vanaf die getypte plaats? Plaats leeg laten: afstand moet nog gewoon vanaf je eigen locatie komen, zoals altijd.
+- **TT-163 (27-08-2026) — nog te bevestigen op de live site.** SQL gedraaid ("query = succes"). Eerste test door Ronald toonde een bug (Plaats alleen invullen startte geen zoekopdracht) — opgelost, zie de laatste update bovenaan. Test opnieuw: bij "Bandleden beheren" → Lid uitnodigen, alleen een plaats typen (geen naam, geen instrument) — verschijnt er nu een resultaat? Straal erbij invullen — klopt de afstand? Plaats leeg laten: afstand moet nog gewoon vanaf je eigen locatie komen, zoals altijd.
 
 - **TT-156 (25-08-2026) — nog te bevestigen op de live site.** De herziene badges (2 kolommen, omlijnd) en de pulldown-lijst (gekozen items blijven zichtbaar, streep+vinkje) — test dit bij "Wij zoeken nog" (band), Genre(s), en de instrumentfilters. **Actiepunt, niet vergeten:** `huisstijl-en-consistentie.md` §1/§4/§6 nog bijwerken met dit nieuwe badge-/lijstpatroon (was solide goud/72px, is nu omlijnd/44px/2 kolommen) — nog niet gedaan deze sessie.
 - **TT-152 (25-08-2026) — nog te bevestigen op de live site.** Bandenzoeken zonder filters aan te raken — staan complete/inactieve bands er nu ook bij (niet alleen "Zoekend naar leden")? Test dit specifiek uitgelogd, met Silver Earring (Hoorn, status compleet) als voorbeeld.

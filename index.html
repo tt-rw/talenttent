@@ -10220,7 +10220,7 @@ function openAddMemberModal(bandId, bandName) {
   if (cityEl) cityEl.value = '';
   const cityStatusEl = document.getElementById('memberSearchCityStatus');
   if (cityStatusEl) cityStatusEl.textContent = '';
-  document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens, of kies een instrument, om te zoeken.</p>';
+  document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens, kies een instrument, of vul een plaats in, om te zoeken.</p>';
   loadCurrentMembersForModal(bandId);
   renderFounderTransferSection(bandId);
   document.getElementById('addMemberModal').classList.add('visible');
@@ -10290,15 +10290,21 @@ function searchMembersToAdd(query) {
   clearTimeout(memberSearchTimer);
   const q = query.trim();
   const instrument = document.getElementById('memberSearchInstrument')?.value || '';
+  // TT-163-bugfix (27-08-2026, live gemeld door Ronald): het nieuwe
+  // Plaats-veld (memberSearchCity) triggerde nog geen zoekopdracht — de
+  // guard hieronder kende alleen naam en instrument als startvoorwaarde,
+  // dus bij alleen een getypte plaats bleef de melding "Typ minimaal 2
+  // tekens..." staan en werd er nooit gezocht. Plaats telt nu ook mee.
+  const cityTyped = (document.getElementById('memberSearchCity')?.value || '').trim();
   const resEl = document.getElementById('memberSearchResults');
   // TT-26: jokertekens (%, _, *) uit de zoekterm halen, anders kan een getypt
   // %-teken het ilike-patroon veel breder maken dan de gebruiker bedoelt.
   const qSafe = likeSafe(q);
   // V-17 (13-08-2026): zoeken kan nu ook zónder getypte naam, zolang er een
   // instrument gekozen is — dat was precies de klacht ("je moet al weten
-  // wie je zoekt").
-  if (!instrument && (q.length < 2 || qSafe.length < 2)) {
-    resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens, of kies een instrument, om te zoeken.</p>';
+  // wie je zoekt"). TT-163: of zolang er een plaats getypt is.
+  if (!instrument && !cityTyped && (q.length < 2 || qSafe.length < 2)) {
+    resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens, kies een instrument, of vul een plaats in, om te zoeken.</p>';
     return;
   }
   resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Zoeken...</p>';
@@ -10315,11 +10321,21 @@ function searchMembersToAdd(query) {
       // op musician_instruments.instrument ook echt de resultatenlijst raakt
       // (zonder !inner filtert een geneste relatie alleen de sub-rijen, niet
       // welke muzikanten worden teruggegeven).
+      // TT-163-bugfix, vervolg: bij naam of instrument filtert de database
+      // zelf al voor (ilike/eq), dus 15 is ruim genoeg. Zoek je alleen op
+      // Plaats, dan filtert de database hier nog niets — de rijen komen in
+      // willekeurige/onbepaalde volgorde binnen, en pas hierna wordt op
+      // afstand gefilterd. Bij 15 zou een muzikant binnen de straal gemist
+      // kunnen worden als hij toevallig niet bij de eerste 15 zit. Ruimer bij
+      // een plaats-only zoekopdracht; een échte serverside geo-filter is
+      // groter werk en hoort bij TT-28 (filtering/paginering naar de
+      // database), niet bij deze bugfix.
+      const fetchLimit = (instrument || (q.length >= 2 && qSafe.length >= 2)) ? 15 : 200;
       let qb = db.from('musicians').select(
         instrument
           ? 'id, fname, username, city, profile_color, accepts_band_invites, musician_instruments!inner(instrument)'
           : 'id, fname, username, city, profile_color, accepts_band_invites, musician_instruments(instrument)'
-      ).limit(15);
+      ).limit(fetchLimit);
       if (instrument) qb = qb.eq('musician_instruments.instrument', instrument);
       if (q.length >= 2 && qSafe.length >= 2) qb = qb.or(`fname.ilike.%${qSafe}%,username.ilike.%${qSafe}%`);
 
