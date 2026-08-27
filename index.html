@@ -2606,7 +2606,7 @@
         <input type="text" id="fname" placeholder="Bijv. Sander" autocomplete="given-name">
       </div>
       <div class="field">
-        <label>Achternaam <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;">(optioneel)</span></label>
+        <label>Achternaam</label>
         <input type="text" id="lname" placeholder="Bijv. de Vries" autocomplete="family-name">
       </div>
     </div>
@@ -2643,7 +2643,7 @@
     </div>
 
     <div class="field" style="margin-bottom:28px;">
-      <label>Profielfoto <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+      <label>Profielfoto</label>
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
           <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarInput').click()">
@@ -2662,7 +2662,7 @@
 
     <div class="field-group single">
       <div class="field">
-        <label>Korte bio <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+        <label>Korte bio</label>
         <div class="bio-prompts">
           <button type="button" class="bio-prompt-chip" onclick="applyBioPrompt('Ik speel al ... jaar ')">Wat doe je en hoe lang speel je al?</button>
           <button type="button" class="bio-prompt-chip" onclick="applyBioPrompt('Op dit moment ben ik vooral bezig met ')">Op dit moment ben ik vooral bezig met...</button>
@@ -2754,8 +2754,8 @@
 
   <!-- STEP 3: Nummers -->
   <div class="panel" id="step2">
-    <div class="panel-title">Repertoire <span style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(optioneel, mag ook later)</span></div>
-    <div class="panel-sub">Zoek eerst een artiest, kies dan een nummer. Optioneel — je kunt dit ook later op je profiel aanvullen.</div>
+    <div class="panel-title">Repertoire <span style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
+    <div class="panel-sub">Zoek eerst een artiest, kies dan een nummer. Je kunt dit ook later op je profiel aanvullen.</div>
 
     <!-- Zoekblok: nummer toevoegen -->
     <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:20px;">
@@ -2803,7 +2803,7 @@
 
     <div class="field-group single" style="margin-top:20px;">
       <div class="field">
-        <label>Wat speel je vooral? <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+        <label>Wat speel je vooral?</label>
         <div class="tag-grid" id="repertoireTypeGrid">
           <div class="tag" onclick="selectRepertoireType(this,'covers')">Covers</div>
           <div class="tag" onclick="selectRepertoireType(this,'eigen')">Eigen nummers</div>
@@ -2825,7 +2825,7 @@
 
   <!-- STEP 4: Doel -->
   <div class="panel" id="step3">
-    <div class="panel-title">Wat zoek je? <span style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(optioneel, mag ook later)</span></div>
+    <div class="panel-title">Wat zoek je? <span style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
     <div class="panel-sub">Wat is je doel op The Talent Tent?</div>
 
     <div class="goal-options" id="goalOptions">
@@ -2849,7 +2849,7 @@
 
     <div class="field-group single" style="margin-top:24px;">
       <div class="field">
-        <label>Hoe vaak wil je oefenen? <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+        <label>Hoe vaak wil je oefenen?</label>
         <div class="tag-grid" id="rehearsalFreqGrid">
           <div class="tag" onclick="selectRehearsalFrequency(this,'wekelijks')">Wekelijks</div>
           <div class="tag" onclick="selectRehearsalFrequency(this,'paar_per_maand')">Paar keer per maand</div>
@@ -2861,7 +2861,7 @@
 
     <div class="field-group single" style="margin-top:16px;">
       <div class="field">
-        <label>Wat wil je de komende tijd bereiken? <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+        <label>Wat wil je de komende tijd bereiken?</label>
         <div class="tag-grid" id="ambitionGrid">
           <div class="tag" onclick="selectMusicalAmbition(this,'verbeteren')">Mezelf verbeteren op mijn instrument</div>
           <div class="tag" onclick="selectMusicalAmbition(this,'stijlen')">Nieuwe stijlen ontdekken</div>
@@ -2882,8 +2882,8 @@
 
   <!-- STEP 5: Media -->
   <div class="panel" id="step4">
-    <div class="panel-title">Laat jezelf horen</div>
-    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Helemaal optioneel — maar een profiel met media valt op.</div>
+    <div class="panel-title">Laat jezelf horen <span style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
+    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Een profiel met media valt op.</div>
 
     <div class="media-tip">
       <span><strong>Tip:</strong> Een actueel profiel met recente media trekt meer aandacht. Profielen die langer dan 6 maanden niet zijn bijgewerkt, zakken naar onderaan de zoekresultaten. Voeg toe wat je nu speelt, niet wat je drie jaar geleden speelde.</span>
@@ -2969,21 +2969,36 @@
     <div class="search-filters">
       <div class="filter-title">Vind een muzikant</div>
 
-      <div class="filter-row">
+      <div class="filter-row single">
         <div class="field">
           <label>Gebruikersnaam</label>
           <input type="text" id="filterName" placeholder="Bijv. Sanne of RockDrummer92" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
         </div>
-        <div class="field">
-          <label>Plaats</label>
-          <div class="city-search-wrap">
-            <input type="text" id="filterCity" placeholder="Bijv. Delft, Den Haag..." autocomplete="off"
-              oninput="onCitySearchInput(this.value,'acFilterCityList'); scheduleMusicianAutoSearch();"
+      </div>
+
+      <!-- TT-160 (27-08-2026, Ronalds voorstel): Plaats/postcode en
+           zoekstraal in één rij i.p.v. twee losse velden — bespaart ruimte.
+           Eén .field met een eigen flex-indeling i.p.v. .filter-row, zodat
+           dit — anders dan de generieke .filter-row — ook op mobiel naast
+           elkaar blijft staan. Straal stond voorheen verstopt achter "Meer
+           filters"; nu altijd zichtbaar naast Plaats, wat logischer is
+           zodra je een vertrekpunt instelt. -->
+      <div class="field" style="margin-bottom:16px;">
+        <label>Plaats</label>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div class="city-search-wrap" style="flex:1;min-width:0;">
+            <input type="text" id="filterCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
+              oninput="onCitySearchInput(this.value,'acFilterCityList'); scheduleMusicianAutoSearch(); scheduleSearchCityStatus('filterCity','filterCityStatus');"
               onkeydown="submitOnEnter(event, () => { selectFirstAC('acFilterCityList'); runSearch(); })"
               onblur="setTimeout(()=>closeAC('acFilterCityList'),200)">
             <div class="autocomplete-list" id="acFilterCityList"></div>
           </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+            <input type="number" id="filterRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); runSearch();">
+            <span style="color:var(--muted);font-size:13px;">km</span>
+          </div>
         </div>
+        <div id="filterCityStatus" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;"></div>
       </div>
 
       <!-- TT-136 (23-08-2026): stond hiervoor allemaal altijd uitgeklapt —
@@ -2993,20 +3008,13 @@
            openen van dit scherm dichterbij staan. -->
       <button type="button" class="btn btn-ghost" id="musicianMoreFiltersToggle" onclick="toggleMoreFilters('musician')" style="width:100%;font-size:13px;margin-bottom:16px;">Meer filters ▾</button>
       <div id="musicianMoreFilters" style="display:none;">
-      <div class="filter-row">
+      <div class="filter-row single">
         <div class="field">
           <label>Leeftijd</label>
           <div style="display:flex;gap:8px;align-items:center;">
             <input type="number" id="filterAgeMin" placeholder="Min" min="1" style="width:80px;" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
             <span style="color:var(--muted);font-size:13px;">t/m</span>
             <input type="number" id="filterAgeMax" placeholder="Max" min="1" style="width:80px;" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
-          </div>
-        </div>
-        <div class="field">
-          <label>Zoekstraal</label>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterRadius" value="25" min="5" max="500" step="5" style="width:80px;" onchange="snapRadiusToStep(this); runSearch();">
-            <span style="color:var(--muted);font-size:13px;">km</span>
           </div>
         </div>
       </div>
@@ -3111,31 +3119,38 @@
     <div class="search-filters">
       <div class="filter-title">Vind een band</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Zoek bands die nog muzikanten zoeken</p>
-      <div class="filter-row">
+      <div class="filter-row single">
         <div class="field"><label>Bandnaam</label><input type="text" id="filterBandName" placeholder="Bijv. The Rusty Strings" oninput="scheduleBandAutoSearch()" onkeydown="submitOnEnter(event, runBandSearch)"></div>
-        <div class="field"><label>Plaats</label>
-          <div class="city-search-wrap">
-            <input type="text" id="filterBandCity" placeholder="Bijv. Delft, Den Haag..." autocomplete="off"
-              oninput="onCitySearchInput(this.value,'acFilterBandCityList'); scheduleBandAutoSearch();"
+      </div>
+
+      <!-- TT-160 (27-08-2026, Ronalds voorstel): zelfde gecombineerde
+           Plaats+Straal-rij als bij Muzikanten-zoeken, zie de toelichting
+           daar. Straal stond hier ook voorheen verstopt achter "Meer
+           filters" — nu altijd zichtbaar naast Plaats. -->
+      <div class="field" style="margin-bottom:16px;">
+        <label>Plaats</label>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div class="city-search-wrap" style="flex:1;min-width:0;">
+            <input type="text" id="filterBandCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
+              oninput="onCitySearchInput(this.value,'acFilterBandCityList'); scheduleBandAutoSearch(); scheduleSearchCityStatus('filterBandCity','filterBandCityStatus');"
               onkeydown="submitOnEnter(event, () => { selectFirstAC('acFilterBandCityList'); runBandSearch(); })"
               onblur="setTimeout(()=>closeAC('acFilterBandCityList'),200)">
             <div class="autocomplete-list" id="acFilterBandCityList"></div>
           </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+            <input type="number" id="filterBandRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); runBandSearch();">
+            <span style="color:var(--muted);font-size:13px;">km</span>
+          </div>
         </div>
+        <div id="filterBandCityStatus" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;"></div>
       </div>
+
       <!-- TT-136 (23-08-2026): zelfde toggle als bij de muzikant-tab —
            Bandnaam+Plaats blijven zichtbaar, de rest samengevouwen. -->
       <button type="button" class="btn btn-ghost" id="bandMoreFiltersToggle" onclick="toggleMoreFilters('band')" style="width:100%;font-size:13px;margin-bottom:16px;">Meer filters ▾</button>
       <div id="bandMoreFilters" style="display:none;">
-      <div class="filter-row">
+      <div class="filter-row single">
         <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
-        <div class="field">
-          <label>Zoekstraal</label>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterBandRadius" value="25" min="5" max="500" step="5" style="width:80px;" onchange="snapRadiusToStep(this); runBandSearch();">
-            <span style="color:var(--muted);font-size:13px;">km</span>
-          </div>
-        </div>
       </div>
       <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label>
         <div class="picker-field" id="filterBandGenresField">
@@ -3212,25 +3227,28 @@
       <div class="filter-title">Zoek op setlist</div>
       <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Stel de setlist samen die je zoekt — muzikanten die deze nummers kennen komen bovenaan in het resultaat.</p>
 
-      <div class="filter-row">
-        <div class="field">
-          <label>Plaats</label>
-          <div class="city-search-wrap">
-            <input type="text" id="filterSetlistCity" placeholder="Bijv. Delft, Den Haag..." autocomplete="off"
-              oninput="onCitySearchInput(this.value,'acFilterSetlistCityList'); scheduleSetlistAutoSearch();"
+      <!-- TT-160 (27-08-2026, Ronalds voorstel): zelfde gecombineerde
+           Plaats+Straal-rij als bij Muzikanten/Bands-zoeken. Hier stonden
+           Plaats en Straal al naast elkaar op een breder scherm (twee
+           velden in dezelfde .filter-row) — alleen de mobiele weergave
+           stapelde ze alsnog onder elkaar. Dat is nu ook op mobiel opgelost. -->
+      <div class="field" style="margin-bottom:16px;">
+        <label>Plaats</label>
+        <div style="display:flex;gap:8px;align-items:flex-start;">
+          <div class="city-search-wrap" style="flex:1;min-width:0;">
+            <input type="text" id="filterSetlistCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
+              oninput="onCitySearchInput(this.value,'acFilterSetlistCityList'); scheduleSetlistAutoSearch(); scheduleSearchCityStatus('filterSetlistCity','filterSetlistCityStatus');"
               onkeydown="submitOnEnter(event, () => { selectFirstAC('acFilterSetlistCityList'); if(setlistWantedSongs.length) runSetlistSearch(); })"
               onblur="setTimeout(()=>closeAC('acFilterSetlistCityList'),200)">
             <div class="autocomplete-list" id="acFilterSetlistCityList"></div>
           </div>
-          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Optioneel — vul in om afstand te tonen/sorteren vanaf deze plaats.</p>
-        </div>
-        <div class="field">
-          <label>Zoekstraal</label>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <input type="number" id="filterSetlistRadius" value="25" min="5" max="500" step="5" style="width:80px;" onchange="snapRadiusToStep(this); if(setlistWantedSongs.length) runSetlistSearch();">
+          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+            <input type="number" id="filterSetlistRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); if(setlistWantedSongs.length) runSetlistSearch();">
             <span style="color:var(--muted);font-size:13px;">km</span>
           </div>
         </div>
+        <div id="filterSetlistCityStatus" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;"></div>
+        <p style="font-size:11px;color:var(--muted);margin-top:2px;">Vul in om afstand te tonen/sorteren vanaf deze plaats.</p>
       </div>
 
       <!-- TT-139: instrumentfilter op Setlist-zoeken, zelfde harde-filter-
@@ -3333,7 +3351,7 @@
           </div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
-          <p style="font-size:11px;color:var(--muted);margin:0;">Bandfoto optioneel — JPG of PNG, maximaal 5 MB.</p>
+          <p style="font-size:11px;color:var(--muted);margin:0;">JPG of PNG, maximaal 5 MB.</p>
           <button class="avatar-remove-btn" id="bandAvatarRemoveBtn" onclick="removeBandAvatar()" style="margin:0;flex-shrink:0;">Foto verwijderen</button>
         </div>
         <input type="file" accept="image/*" class="avatar-upload-input" id="bandAvatarInput" autocomplete="off" onchange="handleBandAvatarUpload(this.files[0]); this.value=''">
@@ -3365,7 +3383,7 @@
           <!-- V-21 (13-08-2026): "niveau" → "ervaring" voor de band-schaal. -->
           <label>Ervaring van de band <button type="button" class="niveau-info-btn" onclick="openBandNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></label>
           <div id="bandLevelPicker" class="star-picker"></div>
-          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Optioneel. Klik op de i voor de ervaringsindeling en toelichting.</p>
+          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Klik op de i voor de ervaringsindeling en toelichting.</p>
         </div>
         <div class="field" style="margin-bottom:16px;">
           <label>Beschrijving</label>
@@ -3389,7 +3407,7 @@
         </div>
         <!-- Punt 2 (25-08-2026, Ronald): niet langer verplicht. -->
         <div class="field" style="margin-bottom:16px;">
-          <label>Wij zoeken nog <span style="color:var(--muted); font-size:10px; text-transform:none; letter-spacing:0;">(optioneel)</span></label>
+          <label>Wij zoeken nog</label>
           <div class="picker-field" id="bandWantedField">
             <span class="picker-field-label" id="bandWantedFieldLabel">Instrument toevoegen…</span>
             <span class="picker-field-chevron">▾</span>
@@ -3759,7 +3777,7 @@
     <select id="memberSearchInstrument" onchange="searchMembersToAdd(document.getElementById('memberSearchInput').value)" style="width:100%;min-height:44px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:10px;box-sizing:border-box;">
       <option value="">Alle instrumenten</option>
     </select>
-    <input type="text" id="memberSearchInput" placeholder="Zoek op naam (optioneel)..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:16px;">
+    <input type="text" id="memberSearchInput" placeholder="Zoek op naam..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:16px;">
     <!-- V-17-restpunt (13-08-2026, in overleg vastgesteld): tot nu toe geen
          plaats/afstand-filter hier — bij een landelijk gebruikte app levert
          zoeken op instrument alleen dan een onsorteerbare, door elkaar
@@ -3768,7 +3786,7 @@
          apart "Plaats"-veld — vertrekpunt is altijd je eigen locatie, zoals
          besproken. -->
     <div class="field" style="margin-bottom:16px;">
-      <label>Zoekstraal <span style="font-weight:400;color:var(--muted);">(optioneel, vanaf jouw locatie)</span></label>
+      <label>Zoekstraal <span style="font-weight:400;color:var(--muted);">(vanaf jouw locatie)</span></label>
       <div style="display:flex;gap:8px;align-items:center;">
         <input type="number" id="memberSearchRadius" placeholder="bijv. 25" min="5" max="500" step="5" style="width:90px;" onchange="searchMembersToAdd(document.getElementById('memberSearchInput').value)">
         <span style="color:var(--muted);font-size:13px;">km</span>
@@ -4274,13 +4292,22 @@ async function configureSearchAccess() {
     const city = await getMyCity();
     if (city) {
       const musicianCityField = document.getElementById('filterCity');
-      if (musicianCityField && !musicianCityField.value.trim()) musicianCityField.value = city;
+      if (musicianCityField && !musicianCityField.value.trim()) {
+        musicianCityField.value = city;
+        updateSearchCityStatus('filterCity', 'filterCityStatus');
+      }
 
       const bandCityField = document.getElementById('filterBandCity');
-      if (bandCityField && !bandCityField.value.trim()) bandCityField.value = city;
+      if (bandCityField && !bandCityField.value.trim()) {
+        bandCityField.value = city;
+        updateSearchCityStatus('filterBandCity', 'filterBandCityStatus');
+      }
 
       const setlistCityField = document.getElementById('filterSetlistCity');
-      if (setlistCityField && !setlistCityField.value.trim()) setlistCityField.value = city;
+      if (setlistCityField && !setlistCityField.value.trim()) {
+        setlistCityField.value = city;
+        updateSearchCityStatus('filterSetlistCity', 'filterSetlistCityStatus');
+      }
     }
   }
 
@@ -4816,6 +4843,7 @@ function toggleMoreFilters(which) {
 function resetMusicianSearch() {
   document.getElementById('filterName').value = '';
   document.getElementById('filterCity').value = '';
+  document.getElementById('filterCityStatus').textContent = '';
   document.getElementById('filterAgeMin').value = '';
   document.getElementById('filterAgeMax').value = '';
   document.getElementById('filterNiveauMin').value = '';
@@ -7680,6 +7708,68 @@ async function resolveSearchOrigin(rawText) {
   }
 }
 
+// TT-160 (27-08-2026, Ronalds voorstel): het Plaats-veld op de drie
+// zoekpagina's (Muzikanten/Bands/Setlist) blijft precies zo werken als
+// eerst — postcode óf plaatsnaam typen mag allebei, zie onCitySearchInput()
+// hieronder. Nieuw is een permanente bevestigingsregel eronder ("Gevonden:
+// 'plaatsnaam'"), zodat altijd zichtbaar is welke plaats de zoekopdracht nu
+// echt gebruikt. Losstaand van de melding op het profiel-/bandformulier
+// (postcodeStatus/bandPostcodeStatus, TT-150) — die verdwijnt bewust nog
+// steeds na 2 seconden tijdens het typen; dat gedrag is hier niet aangeraakt.
+// Hergebruikt dezelfde tabel (postcode_cache) als de plaatsnaam-suggesties
+// verderop — geen nieuwe databasefunctie nodig.
+const searchCityStatusTimeouts = {};
+const searchCityStatusSeq = {};
+
+function scheduleSearchCityStatus(inputId, statusId) {
+  clearTimeout(searchCityStatusTimeouts[statusId]);
+  searchCityStatusTimeouts[statusId] = setTimeout(() => updateSearchCityStatus(inputId, statusId), 300);
+}
+
+async function updateSearchCityStatus(inputId, statusId) {
+  const inputEl = document.getElementById(inputId);
+  const statusEl = document.getElementById(statusId);
+  if (!inputEl || !statusEl) return;
+  const raw = inputEl.value.trim();
+  if (!raw) { statusEl.textContent = ''; return; }
+
+  const seq = (searchCityStatusSeq[statusId] = (searchCityStatusSeq[statusId] || 0) + 1);
+  const display = await resolveCityDisplayName(raw);
+  // Is er intussen alweer getypt (of een ander veld heeft dezelfde statusEl
+  // niet, maar de zoekopdracht kan wel voorbij zijn gestreefd)? Dan is dit
+  // antwoord verouderd — niet meer tonen.
+  if (searchCityStatusSeq[statusId] !== seq) return;
+  statusEl.textContent = display ? `Gevonden: ${display}` : '';
+}
+
+// Zoekt de kanonieke plaatsnaam op bij een getypte postcode (exacte 4
+// cijfers) of een getypte naam (exacte match, ongeacht hoofdletters, tegen
+// de officiële naam of een bekende alternatieve schrijfwijze — dezelfde
+// tabel als de suggesties). Geen brede/gedeeltelijke match: bij een half
+// getypte naam staat er nog niets, tot de naam klopt of iemand een suggestie
+// kiest (die de canonieke naam meteen invult, zie selectCitySuggestion()).
+async function resolveCityDisplayName(raw) {
+  try {
+    if (/^\d{4}$/.test(raw)) {
+      const { data, error } = await db.from('postcode_cache')
+        .select('city, alternatieve_schrijfwijzen')
+        .eq('postcode', raw)
+        .maybeSingle();
+      if (error || !data) return null;
+      return pickDisplayCity(data.city, data.alternatieve_schrijfwijzen);
+    }
+    const pattern = orValue(likeSafe(raw));
+    const { data, error } = await db.from('postcode_cache')
+      .select('city, alternatieve_schrijfwijzen')
+      .or(`city.ilike.${pattern},alternatieve_schrijfwijzen.ilike.${pattern}`)
+      .limit(1);
+    if (error || !data || !data.length) return null;
+    return pickDisplayCity(data[0].city, data[0].alternatieve_schrijfwijzen);
+  } catch (e) {
+    return null;
+  }
+}
+
 // ─── Plaatsnaam-suggesties bij zoeken (Muzikant/Band/Setlist zonder eigen profiel) ─
 // Vult de Plaats-velden aan met de officiële/eenduidige schrijfwijze uit de
 // bestaande postcode_cache-tabel (dezelfde tabel/aanpak als bij postcode-invoer
@@ -7761,12 +7851,17 @@ function selectCitySuggestion(name, listId) {
     return;
   }
   const fieldMap = {
-    acFilterCityList: 'filterCity',
-    acFilterBandCityList: 'filterBandCity',
-    acFilterSetlistCityList: 'filterSetlistCity'
+    acFilterCityList: { field: 'filterCity', status: 'filterCityStatus' },
+    acFilterBandCityList: { field: 'filterBandCity', status: 'filterBandCityStatus' },
+    acFilterSetlistCityList: { field: 'filterSetlistCity', status: 'filterSetlistCityStatus' }
   };
-  const fieldId = fieldMap[listId];
-  if (fieldId) document.getElementById(fieldId).value = name;
+  const target = fieldMap[listId];
+  if (target) {
+    document.getElementById(target.field).value = name;
+    // TT-160: een gekozen suggestie is al de kanonieke naam — meteen tonen,
+    // niet wachten op de getypte-tekst-vertraging.
+    updateSearchCityStatus(target.field, target.status);
+  }
   closeAC(listId);
 }
 
@@ -9374,6 +9469,7 @@ function toggleBandStatusFilter(el, val) {
 function resetBandSearch() {
   document.getElementById('filterBandName').value = '';
   document.getElementById('filterBandCity').value = '';
+  document.getElementById('filterBandCityStatus').textContent = '';
   document.getElementById('filterBandRadius').value = 25;
   document.getElementById('filterBandNiveauMin').value = '';
   document.getElementById('filterBandNiveauMax').value = '';
@@ -9719,6 +9815,7 @@ function resetSetlistSearch() {
   document.getElementById('setlistTrackSearch').value = '';
   document.getElementById('setlistTrackSearchWrap').style.display = 'none';
   document.getElementById('filterSetlistCity').value = '';
+  document.getElementById('filterSetlistCityStatus').textContent = '';
   document.getElementById('filterSetlistRadius').value = 25;
   filterSetlistInstruments = [];
   if (PICKERS.filterSetlistInstruments) renderPickerBadges(PICKERS.filterSetlistInstruments);
@@ -9764,7 +9861,17 @@ async function runSetlistSearch() {
         }
         if (hasOwnProfile) {
           const mid = await getMyMusicianId();
-          return db.rpc('tt_search_musicians', { searcher_id: mid, radius_km: radius });
+          // TT-159 (27-08-2026, bugfix/aanname): deze aanroep miste
+          // origin_lat/origin_lng — dezelfde tt_search_musicians-functie
+          // krijgt die in runSearch() wél altijd mee (zie hierboven). Zonder
+          // een expliciet getypte Plaats hier (cityVal leeg, anders was deze
+          // tak niet bereikt) is er geen ander vertrekpunt dan de eigen
+          // postcode van de zoeker — vandaar null/null, exact zoals
+          // runSearch() dat doet via `usesOwnCity`.
+          return db.rpc('tt_search_musicians', {
+            searcher_id: mid, radius_km: radius,
+            origin_lat: null, origin_lng: null
+          });
         }
         return { data: null, error: null };
       })(),
@@ -10230,7 +10337,7 @@ function openInviteNote(btnEl, musicianId, memberName) {
   if (!row) return;
   row.innerHTML = `
     <div style="width:100%;">
-      <div style="font-size:13px;margin-bottom:6px;">Uitnodiging aan <strong>${escHtml(memberName)}</strong> — voeg een korte boodschap toe (optioneel):</div>
+      <div style="font-size:13px;margin-bottom:6px;">Uitnodiging aan <strong>${escHtml(memberName)}</strong> — voeg eventueel een korte boodschap toe:</div>
       <textarea class="invite-note-input" maxlength="300" placeholder="Bijv. we zoeken een bassist voor onze covers, jouw profiel past goed bij ons!" style="width:100%;min-height:60px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:14px;"></textarea>
       <div style="display:flex;gap:8px;margin-top:8px;">
         <button class="btn btn-primary" style="font-size:13px;padding:6px 14px;" onclick="sendInviteWithNote(this, '${jsAttr(musicianId)}')">Uitnodiging versturen</button>
@@ -10490,7 +10597,7 @@ function openRankingInfoModal() {
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;"><strong style="color:var(--text);">4. Naam.</strong> Staat ook de afstand gelijk, dan sorteren we op naam.</p>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;"><strong style="color:var(--text);">Vóór al het bovenstaande:</strong> een profiel dat langer dan zes maanden niet is bijgewerkt, staat altijd onderaan. Update je profiel om weer mee te tellen.</p>
     <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Vul je profiel volledig in</div>
-    <p style="font-size:13px;color:var(--muted);">Een compleet profiel — instrumenten, genre, bio, repertoire — leidt sneller tot een goede match. Veel velden zijn optioneel. Vul ze toch in als je kunt.</p>
+    <p style="font-size:13px;color:var(--muted);">Een compleet profiel — instrumenten, genre, bio, repertoire — leidt sneller tot een goede match. Vul zoveel mogelijk in.</p>
   `;
   document.getElementById('niveauInfoModal').classList.add('visible');
 }
