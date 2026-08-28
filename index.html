@@ -2970,7 +2970,19 @@
   <div id="searchModeMusician">
   <div class="search-wrap">
     <div class="search-filters">
-      <div class="filter-title">Vind een muzikant</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="filter-title" style="margin-bottom:0;">Vind een muzikant</div>
+        <!-- TT-01 (28-08-2026): Zoekvoorkeuren horen bij het zoeken, niet bij
+             Mijn Profiel (Ronalds besluit) — huisstijl §8-menupatroon. -->
+        <div class="profile-actions-menu-wrap">
+          <button class="nav-menu-btn" id="searchPrefsMoreBtn" onclick="toggleSearchPrefsMenu(event)" aria-label="Meer opties" title="Meer">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
+          </button>
+          <div class="inline-menu-dropdown" id="searchPrefsMoreDropdown">
+            <button class="nav-menu-item" onclick="closeSearchPrefsMenu();openSearchPrefsModal()">Zoekvoorkeuren</button>
+          </div>
+        </div>
+      </div>
 
       <div class="filter-row single">
         <div class="field">
@@ -3758,6 +3770,50 @@
   </div>
 </div>
 
+<!-- Zoekvoorkeuren (TT-01, 28-08-2026): instrumenten die je zoekt in een
+     ander + e-maildigestvoorkeur. Beïnvloedt alleen de achtergronddigest,
+     nooit de live zoekresultaten — vandaar de toelichting bovenaan. -->
+<div class="modal-overlay" id="searchPrefsModal" onclick="if(event.target===this)closeSearchPrefsModal()">
+  <div class="modal-box modal-box-md">
+    <button class="modal-close" onclick="closeSearchPrefsModal()">✕</button>
+    <div class="filter-title" style="margin-bottom:4px;">Zoekvoorkeuren</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Voor de e-maildigest hieronder — je live zoekresultaten veranderen hier niet door.</p>
+
+    <div class="filter-row single" style="margin-bottom:20px;">
+      <div class="field">
+        <label>Instrumenten die je zoekt in een ander</label>
+        <div class="picker-field" id="wantedInstrumentsField">
+          <span class="picker-field-label" id="wantedInstrumentsFieldLabel">Instrument kiezen…</span>
+          <span class="picker-field-chevron">▾</span>
+        </div>
+        <div class="picker-badge-row" id="wantedInstrumentsBadgeRow"></div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:24px;">
+      <label>Nieuwe-matches e-mail</label>
+      <div class="segmented-control" id="digestFrequencyControl">
+        <div class="segmented-btn" data-mode="off" onclick="setDigestFrequency(this,'off')">Geen</div>
+        <div class="segmented-btn" data-mode="daily" onclick="setDigestFrequency(this,'daily')">Dagelijks</div>
+        <div class="segmented-btn" data-mode="weekly" onclick="setDigestFrequency(this,'weekly')">Wekelijks</div>
+      </div>
+    </div>
+
+    <!-- TT-01-vervolg (28-08-2026, Ronalds verzoek): e-mailstijl kiezen —
+         sommige e-mailprogramma's passen zelf een donkere modus toe, dus
+         niet iedereen wil hetzelfde als het app-thema. -->
+    <div class="field" style="margin-bottom:24px;">
+      <label>E-mailstijl</label>
+      <div class="segmented-control" id="emailThemeControl">
+        <div class="segmented-btn" data-mode="light" onclick="setEmailTheme(this,'light')">Licht</div>
+        <div class="segmented-btn" data-mode="dark" onclick="setEmailTheme(this,'dark')">Donker</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;" onclick="saveSearchPrefs()">Opslaan</button>
+  </div>
+</div>
+
 <!-- Bandlid toevoegen (alleen bestaande muzikantprofielen) -->
 <div class="modal-overlay" id="addMemberModal" onclick="if(event.target===this)this.classList.remove('visible')">
   <div class="modal-box">
@@ -4251,6 +4307,101 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllBandMoreMenus(); });
 
+// TT-01 (28-08-2026): zelfde ⋯-menupatroon als toggleProfileMoreMenu, voor
+// het menu naast "Vind een muzikant" op de zoekpagina.
+function toggleSearchPrefsMenu(e) {
+  if (e) e.stopPropagation();
+  const dd = document.getElementById('searchPrefsMoreDropdown');
+  const btn = document.getElementById('searchPrefsMoreBtn');
+  const opening = !dd.classList.contains('visible');
+  dd.classList.toggle('visible', opening);
+  btn.classList.toggle('active', opening);
+}
+function closeSearchPrefsMenu() {
+  document.getElementById('searchPrefsMoreDropdown')?.classList.remove('visible');
+  document.getElementById('searchPrefsMoreBtn')?.classList.remove('active');
+}
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('searchPrefsMoreDropdown');
+  if (dd && dd.classList.contains('visible') && !dd.contains(e.target) && !e.target.closest('#searchPrefsMoreBtn')) closeSearchPrefsMenu();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSearchPrefsMenu(); });
+
+// Haalt de huidige stand op (musician_wanted + email_digest_frequency) en
+// toont het scherm. Vereist een eigen profiel — musician_wanted hangt aan
+// musician_id, net als band_wanted aan band_id hangt.
+async function openSearchPrefsModal() {
+  const mid = await getMyMusicianId();
+  if (!mid) { showToast('Maak eerst een profiel aan om zoekvoorkeuren in te stellen.'); return; }
+  try {
+    const [wantedRes, musicianRes] = await Promise.all([
+      db.from('musician_wanted').select('instrument').eq('musician_id', mid),
+      db.from('musicians').select('email_digest_frequency, email_theme').eq('id', mid).single()
+    ]);
+    if (wantedRes.error) throw wantedRes.error;
+    if (musicianRes.error) throw musicianRes.error;
+    wantedInstruments = (wantedRes.data || []).map(r => r.instrument);
+    renderPickerBadges(PICKERS.wantedInstruments);
+    selectDigestFrequency(musicianRes.data?.email_digest_frequency || 'daily');
+    selectEmailTheme(musicianRes.data?.email_theme || 'light');
+    document.getElementById('searchPrefsModal').classList.add('visible');
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+  }
+}
+function closeSearchPrefsModal() {
+  document.getElementById('searchPrefsModal').classList.remove('visible');
+}
+
+// selectDigestFrequency (zonder klik, bij het openen) vs. setDigestFrequency
+// (bij een klik) — zelfde onderscheid als elders tussen "stand tonen" en
+// "stand wijzigen". Zelfde patroon voor emailTheme hieronder.
+function selectDigestFrequency(value) {
+  digestFrequencyValue = value;
+  document.querySelectorAll('#digestFrequencyControl .segmented-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.mode === value);
+  });
+}
+function setDigestFrequency(el, mode) {
+  digestFrequencyValue = mode;
+  document.querySelectorAll('#digestFrequencyControl .segmented-btn').forEach(btn => btn.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function selectEmailTheme(value) {
+  emailThemeValue = value;
+  document.querySelectorAll('#emailThemeControl .segmented-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.mode === value);
+  });
+}
+function setEmailTheme(el, mode) {
+  emailThemeValue = mode;
+  document.querySelectorAll('#emailThemeControl .segmented-btn').forEach(btn => btn.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// Zelfde delete+insert-patroon als bij band_wanted (saveBand()) — eenvoudiger
+// en minder foutgevoelig dan een verschil berekenen tussen oud en nieuw.
+async function saveSearchPrefs() {
+  const mid = await getMyMusicianId();
+  if (!mid) return;
+  try {
+    await db.from('musician_wanted').delete().eq('musician_id', mid);
+    if (wantedInstruments.length) {
+      await db.from('musician_wanted').insert(wantedInstruments.map(instrument => ({ musician_id: mid, instrument })));
+    }
+    const { error } = await db.from('musicians').update({
+      email_digest_frequency: digestFrequencyValue,
+      email_theme: emailThemeValue
+    }).eq('id', mid);
+    if (error) throw error;
+    closeSearchPrefsModal();
+    showToast('Zoekvoorkeuren opgeslagen');
+  } catch (e) {
+    showToast(friendlyErrorMessage(e));
+  }
+}
+
 function navLoginClick() {
   if (currentUser) { signOut(); } else { showView('auth'); }
 }
@@ -4672,6 +4823,12 @@ let filterInstruments = [];
 let filterGenres      = [];
 let filterGoal        = null;
 let searchSortMode    = 'score';
+// TT-01: Zoekvoorkeuren (⋯-menu op "Vind een muzikant") — instrumenten die
+// je zoekt in een ander (musician_wanted) + e-maildigestvoorkeur. Beïnvloedt
+// alleen de digest op de achtergrond, nooit de live zoekresultaten hierboven.
+let wantedInstruments  = [];
+let digestFrequencyValue = 'daily';
+let emailThemeValue = 'light';
 let lastMusicianResults = [];
 // TT-30 (07-08-2026): lijst- of kaartweergave voor de zoekresultaten, per
 // tabblad apart onthouden (localStorage) — Ronald: "bij veel matches neig ik
@@ -4815,6 +4972,17 @@ function initSearchFilters() {
     placeholder: 'Kies een genre',
     sheetTitle: 'Kies een genre',
     onChange: runSearch
+  });
+
+  // TT-01: geen singleMax — dit is een opgeslagen voorkeur voor de digest,
+  // geen live resultatenlijst. De max-1-regel (TT-55) gold specifiek voor
+  // een overzichtelijke resultatenlijst; die reden geldt hier niet.
+  initPicker({
+    id: 'wantedInstruments',
+    fieldId: 'wantedInstrumentsField', badgeRowId: 'wantedInstrumentsBadgeRow',
+    options: INSTRUMENTS, getList: () => wantedInstruments,
+    placeholder: 'Instrument kiezen',
+    sheetTitle: 'Instrument kiezen'
   });
 
   const goalWrap = document.getElementById('filterGoals');
