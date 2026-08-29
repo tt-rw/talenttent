@@ -1,6 +1,48 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 27-08-2026 (vervolg 10) — **TT-163-bugfix: alleen een Plaats invullen triggerde nog geen zoekopdracht. Opgelost.**
+**Laatste update:** 28-08-2026 (vervolg) — **TT-01: definitief e-mailontwerp doorgevoerd, interactief vastgesteld met Ronald.**
+
+**TT-01-vervolg (28-08-2026) — ontwerp verfijnd via een los, interactief mockup-bestand** (`email-preview.html`, meerdere ronden), daarna 1-op-1 overgezet naar `send-digest`. Wijzigingen t.o.v. de eerste versie:
+
+- Berichten-sectie staat nu bovenaan (urgenter dan matches), matches-sectie eronder met een scheidingslijn.
+- Enkelvoud/meervoud: "Je hebt een nieuw bericht" bij 1, "Je hebt nieuwe berichten" bij meerdere — elke afzender op een eigen, ingesprongen regel.
+- Elke matchkaart is nu volledig klikbaar (`<a>` i.p.v. `<div>`), rechtstreeks naar `#profiel/<id>` of `#band/<id>`. Berichtenknop gaat naar de inbox (`#messages`), niet naar één specifiek gesprek.
+- Plafond van 5 items per lijst ("en nog N andere — bekijk ze allemaal in de app") — voorkomt een eindeloos lange mail bij veel matches.
+- Voettekst met "Zoekvoorkeuren aanpassen", terug naar hetzelfde scherm in de app.
+- **Nieuw: e-mailstijl kiezen (Donker/Licht)** — nieuwe kolom `musicians.email_theme` (standaard `light`), derde keuzeknop in Zoekvoorkeuren naast instrumenten en digestfrequentie. `tt_digest_recipients` uitgebreid met deze kolom (functie moest weggegooid en opnieuw gemaakt worden — zelfde `create or replace`-beperking als eerder bij `tt_get_bands_public`).
+- Woordmerk "The Talent Tent" in Alfa Slab One (zelfde principe als `--font-display`, huisstijl §2) — **geen live koppeling met `index.html`**, de Edge Function draait apart. Verandert het lettertype van de app ooit, dan moet dat in de functie met de hand mee.
+- Kleurcorrectie onderweg: geel als lopende tekst op een lichte achtergrond moest zo donker gemaakt worden voor voldoende contrast dat het naar bruin verschoof ("muf", Ronalds woorden). Opgelost door geel alleen als vlak te gebruiken (accentstreepje boven elke kop, badges, knop) — nooit als tekstkleur, behalve het woordmerk zelf (uitgezonderd van de contrasteis onder WCAG 1.4.3, logo's/merknamen).
+
+**Nog te doen door Ronald:** de code in `send-digest-index.ts` plakken in de Code-tab van de Edge Function (volledige vervanging), Deploy, en een testaanroep (zelfde SQL-patroon als bij de eerste bouw).
+
+**Bevestigd door Ronald (28-08-2026):** `send-digest` gedeployed met de definitieve code, `index.html` geüpload, testaanroep gaf 200 met `{"ok":true,"sent":0,"skipped":0}` — correct, niemand heeft nu al voorkeuren ingesteld of een nieuw bericht. **TT-01 volledig afgerond**, inclusief het herziene ontwerp en de licht/donker-keuze.
+
+**Voorgaande update, 28-08-2026 — TT-01 gebouwd en end-to-end getest: e-maildigest voor nieuwe matches en berichten.**
+
+**TT-01 (28-08-2026) — gebouwd, niet meer "restpunt".** Eerste Edge Function van het project, als praktijktoets zoals afgesproken op 27-08-2026. Geen directe mail per bericht (Ronald: "daar wordt iedereen gek van") — reacties blijven in-app. In plaats daarvan één digest-mail per dag/week, alleen als er iets te melden is:
+
+- **Nieuwe matches** — nieuwe muzikanten en bands die passen bij `musician_wanted` (nieuwe tabel: instrumenten die je zelf zoekt in een ander, ingesteld bij Zoekvoorkeuren). Muzikanten en bands in gescheiden lijsten, zoals de tabs in de app. Hergebruikt de bestaande zoekquery-logica (`tt_search_musicians`/`tt_search_bands_for_musician`, ingezien via `pg_get_functiondef`) — geen nieuwe matchformule, TT-55 blijft dicht.
+- **Eerste bericht in een nieuw gesprek** ("je hebt een bericht") — geen onderscheid muzikant/band-afzender, bewust simpel gehouden.
+- Lege sectie: niet tonen. Beide leeg: geen mail.
+
+**Nieuw, per muzikant instelbaar bij "Zoekvoorkeuren"** (⋯-menu naast "Vind een muzikant" op de zoekpagina — bewust niet bij Mijn Profiel, Ronalds besluit: hoort bij zoeken): instrumenten die je zoekt in een ander (lijst, zelfde patroon als `band_wanted`) + digestfrequentie (Geen/Dagelijks/Wekelijks, standaard Dagelijks). Wijzigt nooit de live zoekresultaten.
+
+**Infrastructuur, nieuw:**
+- Databasetabel `musician_wanted`, kolom `musicians.email_digest_frequency`, kolom `messages.is_new_conversation` (trigger zet 'm bij het allereerste bericht tussen twee mensen).
+- Vier `SECURITY DEFINER`-functies (`tt_digest_new_musicians`, `tt_digest_new_bands`, `tt_digest_new_messages`, `tt_digest_recipients`), alleen aanroepbaar door `service_role`.
+- Edge Function `send-digest` (SMTP via Plesk-mailaccount `noreply@talenttent.org`, niet Resend — cloud86/Plesk bleek al aanwezig). Beveiligd met een losse Supabase secret key ("automations"), niet met een user-JWT — `verify_jwt` staat uit voor deze functie.
+- Twee `pg_cron`-taken (`tt-digest-daily` 06:00 UTC, `tt-digest-weekly` maandag 06:00 UTC — = 08:00 NL-tijd, nu zomertijd) roepen de functie aan via `pg_net`.
+- **Openstaand, klein:** eind oktober (wintertijd-omschakeling) de twee cron-tijden een uur terugzetten naar 07:00 UTC, anders schuift de verzending naar 09:00 NL-tijd. Geen geautomatiseerde tijdzone-ondersteuning in pg_cron.
+
+**Getest:** volledige keten end-to-end getest door Ronald — testaanroep gaf eerst 401 (spatie in SMTP_HOST-secret, hersteld), toen 500 (bug in de functie: `client.close()` crashte als er geen mail werd verstuurd, hersteld), daarna 200. Client-zijde (`index.html`): haakjesbalans en `node --check` geslaagd, patroon 1-op-1 hergebruikt van bestaande schermen (picker-component TT-116, ⋯-menu §8, modal §9) — geen nieuwe UI-patronen.
+
+**Nieuw ticket, niet gebouwd:** **TT-164** — dashboard op de ingelogde homepage met voortgangsoverzicht (Ronalds idee, tijdens dit gesprek geopperd). Nog geen ontwerp.
+
+**Nieuw ticket, niet gebouwd:** **TT-165** — instrumentlabels in persoonsvorm i.p.v. instrumentvorm (bijv. "Gitarist" i.p.v. "Gitaar, akoestisch"/"Gitaar, elektrisch", "Bassist" i.p.v. "Basgitaar", "Drummer" i.p.v. "Drums"). Ontstaan tijdens de TT-01-e-mailmockup: Claude gebruikte per ongeluk persoonsvorm-voorbeeldnamen i.p.v. de echte `INSTRUMENTS`-lijst; Ronald vond dat persoonlijker aanvoelen dan de huidige instrumentvorm. **Geen simpele tekstvervanging:** `INSTRUMENTS` wordt gebruikt in de wizard, alle drie zoekfilters, `musician_instruments`, `band_wanted`, badges en matching — de waarden staan als platte tekst opgeslagen (geen losstaande ID's), dus bestaande profielen hebben nu al bijv. "Gitaar, elektrisch" vastliggen. Een naamswijziging is dus ook een datamigratie. **Open, nog te beslissen:** de exacte mapping — blijft het onderscheid akoestisch/elektrisch bestaan onder de persoonsvorm, of vallen beide samen onder "Gitarist"? Nog geen ontwerpsessie geweest.
+
+**Bijvangst tijdens de bouw:** `tt_search_bands_for_musician` gebruikt voor musicians al `tt_coverage()` — een richtinggevoelige match, geen symmetrische Jaccard. Bevestigt dat het TT-55-principe (zoeklijst beslist, nooit gelijkenis) al eerder correct is toegepast aan de bandkant.
+
+**Voorgaande update, 27-08-2026 (vervolg 10) — TT-163-bugfix: alleen een Plaats invullen triggerde nog geen zoekopdracht. Opgelost.**
 
 **TT-163-bugfix (27-08-2026, live gemeld door Ronald: "ik zou Colin moeten zien als ik den haag intoets").** Root cause was niet de afstandsberekening zelf, maar de startvoorwaarde ervoor: `searchMembersToAdd()` startte alleen een zoekopdracht bij een naam van ≥2 tekens of een gekozen instrument (bestaande V-17-regel) — een gevuld Plaats-veld telde niet mee. Met alleen een plaats getypt bleef daardoor de melding "Typ minimaal 2 tekens..." staan en werd er nooit gezocht, dus ook nooit een afstand berekend. Plaats telt nu ook als startvoorwaarde; de meldingstekst (zowel bij het openen van het scherm als bij de guard zelf) is aangepast naar "...of vul een plaats in".
 
@@ -116,6 +158,8 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 **Werkafspraak (toegevoegd 12-08-2026, na TT-52):** als Claude niet 100% zeker weet wat gebouwd moet worden, altijd eerst vragen — niet zelf een aanname kiezen en doorbouwen. Bij TT-52 koos Claude zelf tussen twee lezingen van "vervang eigen voor eigen werk" (alleen de tekst, of ook de intern opgeslagen waarde) zonder dat helder met Ronald af te stemmen; de eerste vraag daarover was bovendien te technisch geformuleerd. Vanaf nu: bij twijfel vragen, in gewone taal, zonder technische termen als "databasewaarde" of "interne opslag" — Ronald is geen programmeur.
 
+**Werkafspraak (toegevoegd 27-08-2026, na TT-163-bugfix):** vóór het opleveren van een wijziging aan een bestaande functie, leest Claude de hele functie, niet alleen het stuk dat wijzigt. Bij TT-163 werd `origin_lat`/`origin_lng` toegevoegd aan `searchMembersToAdd()` zonder de bestaande zoekdrempel-regel een paar regels verderop in diezelfde functie te lezen — die regel liet de zoekopdracht niet starten bij een leeg naam-/instrumentveld, ook niet met een gevulde Plaats. Gevolg: een aparte bugfix-ronde na een live melding van Ronald, die met één keer goed lezen voorkomen had kunnen worden. Geen nieuwe complexiteit nodig om dit te voorkomen — gewoon de bestaande functie in zijn geheel doorlezen vóór oplevering, niet alleen het net gewijzigde deel.
+
 ---
 
 # Deel 1 — Openstaand
@@ -138,8 +182,8 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 | **TT-07** | Leeftijdsbeleid | **Herzien 08-08-2026: minimumleeftijd blijft 13.** Ticket zelf vraagt geen codewijziging meer; de gevolgen zijn losgetrokken naar TT-45 |
 | **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel. **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
 | **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus — mogelijk groter dan gedacht, zie toelichting onderaan deze tabel.** **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
-| **TT-01 (restpunt)** | E-mailnotificatie bij nieuw bericht | **Infrastructuurblokkade weg (27-08-2026, zie Laatste update bovenaan):** een Edge Function kan geplaatst worden zonder lokale CLI. **Volgende sessie: eerste bouwstap.** Plan: Ronald maakt een gratis Resend-account (mailservice, 3.000 e-mails/maand gratis); Claude bouwt één Edge Function die bij een nieuw bericht een e-mail verstuurt, met de Resend-sleutel veilig bij Supabase (nooit in `index.html`). Nog niet gebouwd |
-| TT-22 (restpunt) | Auth-account daadwerkelijk verwijderen | **Data-deel opgelost 09-08-2026** (profiel, kindtabellen, Storage-bestanden, bandoprichterschap — zie Deel 3). Het auth-account (login/wachtwoord) zelf kan niet vanaf de client, dat vraagt de Supabase Admin API met een service-role-sleutel — zelfde categorie als TT-01/TT-54. **27-08-2026:** de eerdere blokkade ("geen Edge Function-infrastructuur") is weg, zie TT-01 hierboven. Zodra die eerste Edge Function er staat, is dit dezelfde infrastructuur, opnieuw te gebruiken — geen aparte opzet nodig. Nog geen eigen sessie gepland; tot die er is: her en der handmatig via het Supabase-dashboard (Authentication → Users) een account verwijderen zodra er geen bijbehorend profiel meer is |
+| **TT-01** | E-maildigest bij nieuwe matches en berichten | **Gebouwd en end-to-end getest 28-08-2026, zie Laatste update bovenaan.** Eerste Edge Function van het project, SMTP via Plesk (`noreply@talenttent.org`), twee `pg_cron`-taken. Nieuw scherm "Zoekvoorkeuren" bij de zoekpagina |
+| TT-22 (restpunt) | Auth-account daadwerkelijk verwijderen | **Data-deel opgelost 09-08-2026** (profiel, kindtabellen, Storage-bestanden, bandoprichterschap — zie Deel 3). Het auth-account (login/wachtwoord) zelf kan niet vanaf de client, dat vraagt de Supabase Admin API met een service-role-sleutel. **28-08-2026:** de Edge Function-infrastructuur staat nu (zie TT-01) — herbruikbaar, geen aparte opzet meer nodig. Nog geen eigen sessie gepland; tot die er is: her en der handmatig via het Supabase-dashboard (Authentication → Users) een account verwijderen zodra er geen bijbehorend profiel meer is |
 | **TT-63** | Privacyverklaring, gebruiksvoorwaarden, gedragscode | **Gebouwd en gepubliceerd 09-08-2026** — drie nieuwe views (`view-privacy`/`view-terms`/`view-gedragscode`), bereikbaar via het nieuwe hamburgermenu (zie hieronder) en via `#privacy`/`#terms`/`#gedragscode`. Toestemmingsregel met links toegevoegd bij de laatste wizard-stap. Gebruikt `privacy@talenttent.org` in alle drie. **Herzieningsmomenten, vastgelegd zodat ze niet vergeten worden:** privacyverklaring → zodra TT-42/TT-45 zijn opgelost (het hoofdstuk Minderjarigen loopt nu al vooruit op een regel die de wizard nog niet afdwingt — dat gat moet dicht vóór brede publicatie); gebruiksvoorwaarden + gedragscode → zodra TT-06 (meldknop) live gaat (nu nog "volgt binnenkort"); gebruiksvoorwaarden → kleine tekstupdate zodra TT-58 (applaus) of TT-13 (volgen) klaar zijn |
 | — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
 | **TT-129** | Instrument zonder niveau kon in de wizard blijven staan | **Nieuw en opgelost 23-08-2026, zie Deel 3.** Gevonden bij een bredere code-controle, niet live gemeld. Sluiten van het niveau-keuzescherm (kruisje, tik buiten de modal, of "terug") zonder een niveau te kiezen liet een net gekozen instrument zonder niveau in de lijst staan — instrument is verplicht in de wizard, dus dit trof iedereen die dit scherm ooit zo sloot. Bij opslaan ging niveau als `null` mee. Clientfix voorkomt dit nu aan de bron; optioneel SQL-vangnet `I-instrument-niveau-nullable-defensief.sql` nog niet gedraaid |

@@ -2469,9 +2469,6 @@
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
   </button>
   <div class="nav-menu-dropdown" id="navMenuDropdown">
-    <!-- TT-U24: de onderbalk heeft vier plekken. Inloggen/uitloggen staat
-         daarom hier, altijd bereikbaar via het menu rechtsboven. -->
-    <button class="nav-menu-item" id="navLoginMenu" onclick="closeNavMenu();navLoginClick()">Inloggen</button>
     <button class="nav-menu-item" id="navAbout" onclick="closeNavMenu();showView('about')">Over ons</button>
     <button class="nav-menu-item" id="navPrivacy" onclick="closeNavMenu();showView('privacy')">Privacyverklaring</button>
     <button class="nav-menu-item" id="navTerms" onclick="closeNavMenu();showView('terms')">Gebruiksvoorwaarden</button>
@@ -3008,9 +3005,12 @@
               onblur="setTimeout(()=>closeAC('acFilterCityList'),200)">
             <div class="autocomplete-list" id="acFilterCityList"></div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-            <input type="number" id="filterRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); runSearch();">
-            <span style="color:var(--muted);font-size:13px;">km</span>
+          <div style="flex-shrink:0;">
+            <label style="display:block;margin-bottom:4px;">Straal</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="number" id="filterRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); runSearch();">
+              <span style="color:var(--muted);font-size:13px;">km</span>
+            </div>
           </div>
         </div>
         <div id="filterCityStatus" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;"></div>
@@ -3152,9 +3152,12 @@
               onblur="setTimeout(()=>closeAC('acFilterBandCityList'),200)">
             <div class="autocomplete-list" id="acFilterBandCityList"></div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-            <input type="number" id="filterBandRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); runBandSearch();">
-            <span style="color:var(--muted);font-size:13px;">km</span>
+          <div style="flex-shrink:0;">
+            <label style="display:block;margin-bottom:4px;">Straal</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="number" id="filterBandRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); runBandSearch();">
+              <span style="color:var(--muted);font-size:13px;">km</span>
+            </div>
           </div>
         </div>
         <div id="filterBandCityStatus" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;"></div>
@@ -3257,9 +3260,12 @@
               onblur="setTimeout(()=>closeAC('acFilterSetlistCityList'),200)">
             <div class="autocomplete-list" id="acFilterSetlistCityList"></div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-            <input type="number" id="filterSetlistRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); if(setlistWantedSongs.length) runSetlistSearch();">
-            <span style="color:var(--muted);font-size:13px;">km</span>
+          <div style="flex-shrink:0;">
+            <label style="display:block;margin-bottom:4px;">Straal</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="number" id="filterSetlistRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); if(setlistWantedSongs.length) runSetlistSearch();">
+              <span style="color:var(--muted);font-size:13px;">km</span>
+            </div>
           </div>
         </div>
         <div id="filterSetlistCityStatus" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;"></div>
@@ -4136,9 +4142,10 @@ async function appInit() {
 let onboardingInFlight = false;
 
 async function onUserLoggedIn(user) {
-  document.getElementById('navLogin').textContent = 'Uitloggen';
-  const navLoginMenu = document.getElementById('navLoginMenu');
-  if (navLoginMenu) navLoginMenu.textContent = 'Uitloggen';
+  // TT-166 (28-08-2026): Uitloggen hoort bij Mijn Profiel, niet meer hier.
+  // Ingelogd hoeft niemand nog "Inloggen" te zien — de knop verdwijnt, de
+  // ruimte in de tab-regel is dan vrij.
+  document.getElementById('navLogin').style.display = 'none';
   refreshUnreadBadge();
 
   if (onboardingInFlight) return;
@@ -4191,9 +4198,9 @@ async function onUserLoggedIn(user) {
 }
 
 function onUserLoggedOut() {
-  document.getElementById('navLogin').textContent = 'Inloggen';
-  const navLoginMenuOut = document.getElementById('navLoginMenu');
-  if (navLoginMenuOut) navLoginMenuOut.textContent = 'Inloggen';
+  const navLoginBtn = document.getElementById('navLogin');
+  navLoginBtn.textContent = 'Inloggen';
+  navLoginBtn.style.display = '';
   myMusicianId = null;
   myOwnCity = null;
   // TT-108 (23-08-2026): hoort bij dezelfde fix als in onUserLoggedIn() —
@@ -5505,6 +5512,12 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
         <!-- TT-56 (12-08-2026): opt-out band-uitnodigingen. Alleen deze
              knop, geen zichtbaar label op het profiel zelf voor anderen. -->
         <button class="nav-menu-item" id="bandInviteToggleBtn" onclick="closeProfileMoreMenu();toggleBandInviteAvailability()">Open voor band-uitnodigingen</button>
+        <!-- TT-166 (28-08-2026): was dubbel (hamburger + tab-regel). Hamburger
+             moet overal identiek blijven, dus Uitloggen hoort hier — bij de
+             pagina waar het over je account gaat — niet in een menu voor
+             Over ons/juridische pagina's. Alleen deze knop, want dit menu
+             bestaat alleen als je al bent ingelogd (isOwn). -->
+        <button class="nav-menu-item" onclick="closeProfileMoreMenu();navLoginClick()">Uitloggen</button>
         <button class="nav-menu-item" style="color:var(--danger);" onclick="closeProfileMoreMenu();openDeleteAccountModal()">Account verwijderen</button>
       </div>
     </div>` : '';
@@ -5515,7 +5528,14 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       ${avatarHTML}
       <div style="min-width:0;flex:1;">
         <div class="profile-name">${escHtml(displayName)}</div>
-        ${isOwn ? `<p style="font-size:12px;color:var(--muted);margin-top:2px;">Bezoekers zonder profiel zien je als <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong> · ingelogde muzikanten zien <strong style="color:${col};">${escHtml(m.fname || '')}</strong></p>` : ''}
+        <!-- TT-166 (28-08-2026, Ronald: "eenvoud"): een gebruikersnaam-subline
+             hoort er alleen bij als de grote naam de échte voornaam is — laat
+             displayName die keuze maken (isOwn, of een ingelogde kijker met
+             eigen profiel). Ziet iemand toch al de gebruikersnaam als grote
+             naam (uitgelogd/anoniem, geen eigen profiel), dan zou een subline
+             die naam alleen maar herhalen. Geen uitlegzin meer, alleen het
+             label. -->
+        ${(displayName === m.fname && m.fname) ? `<p style="font-size:12px;color:var(--muted);margin-top:2px;">Gebruikersnaam: <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
         <div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       </div>
       ${ownerMenuHTML}
