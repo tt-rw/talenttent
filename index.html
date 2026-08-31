@@ -2754,7 +2754,7 @@
 
   <!-- STEP 3: Nummers -->
   <div class="panel" id="step2">
-    <div class="panel-title">Repertoire <span style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
+    <div class="panel-title">Repertoire <span id="magOokLaterRepertoire" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
     <div class="panel-sub">Zoek eerst een artiest, kies dan een nummer. Je kunt dit ook later op je profiel aanvullen.</div>
 
     <!-- Zoekblok: nummer toevoegen -->
@@ -2825,7 +2825,7 @@
 
   <!-- STEP 4: Doel -->
   <div class="panel" id="step3">
-    <div class="panel-title">Wat zoek je? <span style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
+    <div class="panel-title">Wat zoek je? <span id="magOokLaterWatZoekJe" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
     <div class="panel-sub">Wat is je doel op The Talent Tent?</div>
 
     <div class="goal-options" id="goalOptions">
@@ -2882,7 +2882,7 @@
 
   <!-- STEP 5: Media -->
   <div class="panel" id="step4">
-    <div class="panel-title">Laat jezelf horen <span style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
+    <div class="panel-title">Laat jezelf horen <span id="magOokLaterMedia" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
     <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Een profiel met media valt op.</div>
 
     <div class="media-tip">
@@ -7248,6 +7248,11 @@ async function saveEditedProfile() {
 // melding, geen overlay, geen navigatie.
 async function saveEditedProfileHere() {
   if (!editingMusicianId) return;
+  // TT-173 (31-08-2026): "Wijzigingen opgeslagen" verscheen voorheen bij elke
+  // klik op Opslaan, ook zonder enige wijziging sinds de vorige opslag.
+  // Zelfde vergelijking als bij het verlaten van een stap (prevStep/
+  // prevStepFromStart) — niets gewijzigd, dan ook niets opslaan of melden.
+  if (buildEditSnapshot() === editSnapshot) return;
   const saved = await silentlySaveEditIfNeeded();
   if (!saved) return; // silentlySaveEditIfNeeded toont zelf al een foutmelding
   editSnapshot = buildEditSnapshot();
@@ -8983,6 +8988,7 @@ function renderSongs() {
         ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 14px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
       `; }).join('')}
     </div>`;
+  updateOptionalStepHints();
 }
 
 function setLevel(i, level) {
@@ -9017,6 +9023,7 @@ function selectGoal(el, val) {
   document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   state.goal = val;
+  updateOptionalStepHints();
 }
 
 // TT-47: zelfde nogmaals-klikken-om-te-wissen als bij een enkelvoudige
@@ -9025,16 +9032,18 @@ function selectGoal(el, val) {
 function selectRehearsalFrequency(el, val) {
   const already = el.classList.contains('selected');
   document.querySelectorAll('#rehearsalFreqGrid .tag').forEach(t => t.classList.remove('selected'));
-  if (already) { state.rehearsalFrequency = ''; return; }
+  if (already) { state.rehearsalFrequency = ''; updateOptionalStepHints(); return; }
   el.classList.add('selected');
   state.rehearsalFrequency = val;
+  updateOptionalStepHints();
 }
 function selectMusicalAmbition(el, val) {
   const already = el.classList.contains('selected');
   document.querySelectorAll('#ambitionGrid .tag').forEach(t => t.classList.remove('selected'));
-  if (already) { state.musicalAmbition = ''; return; }
+  if (already) { state.musicalAmbition = ''; updateOptionalStepHints(); return; }
   el.classList.add('selected');
   state.musicalAmbition = val;
+  updateOptionalStepHints();
 }
 // TT-52: zelfde patroon — optioneel, per profiel, nogmaals klikken wist de keuze.
 function selectRepertoireType(el, val) {
@@ -9043,6 +9052,21 @@ function selectRepertoireType(el, val) {
   if (already) { state.repertoireType = ''; return; }
   el.classList.add('selected');
   state.repertoireType = val;
+}
+
+// TT-174 (31-08-2026): "(mag ook later)" naast een paneltitel is bedoeld als
+// geruststelling vóór het invullen — zodra er al iets staat, klopt die tekst
+// niet meer. Eén functie, drie labels, aangeroepen vanuit elke plek die de
+// bijbehorende data wijzigt (songs, doel/frequentie/ambitie, media/links) én
+// vanuit goTo() zelf, zodat een bestaand, al gevuld profiel de tekst meteen
+// bij binnenkomst verborgen toont — niet pas na de eerste nieuwe wijziging.
+function updateOptionalStepHints() {
+  const rep = document.getElementById('magOokLaterRepertoire');
+  if (rep) rep.style.display = state.songs.length ? 'none' : '';
+  const wat = document.getElementById('magOokLaterWatZoekJe');
+  if (wat) wat.style.display = (state.goal || state.rehearsalFrequency || state.musicalAmbition) ? 'none' : '';
+  const med = document.getElementById('magOokLaterMedia');
+  if (med) med.style.display = (state.mediaFiles.length || state.mediaLinks.some(l => l.url)) ? 'none' : '';
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
@@ -9342,6 +9366,7 @@ function goTo(step) {
   document.querySelectorAll('.panel').forEach((p,i) => {
     p.classList.toggle('active', i === step);
   });
+  updateOptionalStepHints();
 
   const dots = document.querySelectorAll('.step-dot');
   dots.forEach((d,i) => {
@@ -9559,6 +9584,7 @@ function renderMediaGrid() {
       <button class="thumb-remove" onclick="removeMedia(${i})">✕</button>
     </div>
   `).join('');
+  updateOptionalStepHints();
 }
 
 function removeMedia(i) {
@@ -9597,6 +9623,7 @@ function renderLinksList() {
       <button class="song-remove" onclick="removeLink(${i})">✕</button>
     </div>
   `).join('');
+  updateOptionalStepHints();
 }
 
 function updateLinkUrl(i, el) {
@@ -9604,6 +9631,7 @@ function updateLinkUrl(i, el) {
   state.mediaLinks[i].url = el.value;
   const badge = el.previousElementSibling;
   if (badge) badge.textContent = el.value ? detectPlatform(el.value) : 'Link';
+  updateOptionalStepHints();
 }
 
 function removeLink(i) {
