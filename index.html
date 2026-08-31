@@ -2675,14 +2675,14 @@
 
     <div id="regAuthSection">
       <div class="divider"></div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.</p>
+      <p id="regAuthIntro" style="font-size:12px;color:var(--muted);margin-bottom:16px;">Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.</p>
 
-      <div class="field-group">
+      <div class="field-group" id="regAuthFieldGroup">
         <div class="field">
-          <label>E-mailadres <span class="req">*</span></label>
+          <label>E-mailadres <span class="req" id="regEmailReq">*</span></label>
           <input type="email" id="regEmail" placeholder="jouw@email.nl" autocomplete="email" inputmode="email" enterkeyhint="next" onkeydown="submitOnEnter(event, () => nextStep(0))">
         </div>
-        <div class="field">
+        <div class="field" id="regPasswordField">
           <label>Wachtwoord <span class="req">*</span></label>
           <!-- TT-U04 (12-08-2026): "Wachtwoord herhalen" is vervangen door
                een knop "Toon". Een herhaalveld verlaagt de conversie en voegt
@@ -4640,12 +4640,34 @@ function showView(view, mode) {
     document.querySelectorAll('.save-step-btn').forEach(btn => {
       btn.style.display = locked ? 'inline-flex' : 'none';
     });
-    // Inloggegevens horen alleen bij een gloednieuw account (stap 1, nog geen
-    // editingMusicianId) — zodra een account/profiel al bestaat (onboarding
-    // die verdergaat, of een bestaand profiel bewerken) is dit blok niet meer
-    // relevant en zou het bovendien nooit een wachtwoord mogen tonen/vragen.
+    // TT-167 (31-08-2026, Ronalds besluit): een gebruiker moet altijd kunnen
+    // zien welk e-mailadres aan zijn account hangt. Bij het bewerken van een
+    // bestaand profiel blijft het e-mailveld daarom zichtbaar, maar
+    // alleen-lezen (zelfde patroon als fname/lname/birth_date hierboven).
+    // Het wachtwoordveld blijft bij bewerken wél volledig verborgen —
+    // wachtwoord wijzigen loopt via een apart scherm (saveNewPassword(),
+    // view-reset), nooit via dit formulier.
     const authSection = document.getElementById('regAuthSection');
-    if (authSection) authSection.style.display = locked ? 'none' : '';
+    const regEmailField = document.getElementById('regEmail');
+    const regPasswordField = document.getElementById('regPasswordField');
+    const regAuthFieldGroup = document.getElementById('regAuthFieldGroup');
+    const regAuthIntro = document.getElementById('regAuthIntro');
+    const regEmailReq = document.getElementById('regEmailReq');
+    if (authSection) authSection.style.display = '';
+    if (regPasswordField) regPasswordField.style.display = locked ? 'none' : '';
+    if (regAuthFieldGroup) regAuthFieldGroup.classList.toggle('single', locked);
+    if (regEmailField) {
+      regEmailField.readOnly = locked;
+      regEmailField.style.cursor = locked ? 'not-allowed' : '';
+      regEmailField.style.opacity = locked ? '0.85' : '';
+      if (locked) regEmailField.value = currentUser?.email || '';
+    }
+    if (regEmailReq) regEmailReq.style.display = locked ? 'none' : '';
+    if (regAuthIntro) {
+      regAuthIntro.textContent = locked
+        ? 'Dit is het e-mailadres waarmee je inlogt. Wijzigen kan hier niet.'
+        : 'Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.';
+    }
 
     // Akkoord-checkbox: alleen verplicht bij een gloednieuw account. Bij het
     // bewerken van een bestaand profiel is die toestemming al gegeven bij de

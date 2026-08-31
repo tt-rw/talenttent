@@ -1,6 +1,24 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 28-08-2026 (vervolg) — **TT-01: definitief e-mailontwerp doorgevoerd, interactief vastgesteld met Ronald.**
+**Laatste update:** 31-08-2026 — **TT-01 heropend (e-maildigest niet aantoonbaar werkend, geen enkele mail ontvangen). TT-167 gebouwd (e-mailveld terug bij Profiel bewerken). TT-168 nieuw, niet gebouwd (fundamenteel herontwerp Profiel bewerken, wireframe ontvangen, bouwaanpak besloten).**
+
+**TT-167 (31-08-2026), gebouwd:** e-mailveld terug op het bewerkscherm (stap 1 "Over jou"), alleen-lezen, gevuld met `currentUser.email`. Wachtwoordveld blijft bij bewerken volledig verborgen — wachtwoord wijzigen loopt via het bestaande resetscherm (`saveNewPassword()`, `view-reset`), nooit via dit formulier. **Reden:** Ronald wil altijd kunnen zien welk e-mailadres aan zijn account hangt; het veld was al sinds de bouw van de wizard bewust verborgen tijdens bewerken (zie `showView()`), maar dat voelde onverwacht aan. Patroon hergebruikt: alleen-lezen styling identiek aan het bestaande Plaats-/fname-veld tijdens bewerken — geen nieuw componentpatroon. **Geverifieerd:** `regEmail` wordt door geen enkele opslagfunctie uitgelezen zolang `editingMusicianId` gezet is (alle voorkomens van `state.regEmail`/`regEmail` nagelopen) — het veld tonen kan dus nooit een wijziging aan het e-mailadres veroorzaken. **Getest:** haakjesbalans (`{}` 2043/2043, `[]` 329/329, `()` 6118/6119 — bekende onbalans van 1) en `node --check` geslaagd. **Niet getest:** Playwright (geen render-omgeving met ingelogde sessie opgezet deze sessie). **Nog niet geüpload naar GitHub — actie bij Ronald**, vóór dit live getest kan worden.
+
+**TT-168 (31-08-2026), nieuw, niet gebouwd — fundamenteel herontwerp "Profiel bewerken".** Ronald leverde een wireframe aan. Startscherm met vijf tegels (Wie ben je · Wat speel je · Wat zoek je · Je setlist · Je mediahoek), elk opent een eigen volledig-scherm-subscherm met eigen Annuleren/Opslaan — vervangt de huidige stap-voor-stap-wizard voor het bewerkpad. Navigatie in de wireframe: "swipe naar links = Terug". Moet samenwerken met de bestaande hardware-terugknop/History API (TT-16) — geen aparte swipe-only oplossing bouwen naast de bestaande terugknoplogica.
+
+**Besluit bouwaanpak (31-08-2026):** los bestand op de `main`-branch (bijv. `profiel-v2.html`), naast de bestaande `index.html`. Geen GitHub-branch of pull request nodig — GitHub Pages serveert elk bestand in de hoofdmap op zijn eigen pad (**geverifieerd**: `manifest.json`/`icon-192.png`/`icon-512.png` staan al zo naast `index.html` op `main`). `talenttent.org/` blijft `index.html` laden; `talenttent.org/profiel-v2.html` wordt het nieuwe scherm, apart bereikbaar, geen risico voor de live site. Zodra Ronald akkoord geeft op de werkende versie: overzetten naar `index.html` met `str_replace`, oude wizard-route voor het bewerkpad eruit.
+
+**Let op, geldt voor elk testbestand op `main`:** praat met dezelfde live Supabase-database. Geen aparte testdatabase — een druk op "Opslaan" tijdens het testen schrijft naar een echt profiel.
+
+**Open vragen vóór bouwen, nog niet beantwoord:**
+1. Blijft dit alleen het bewerkpad, of verandert het aanmaakpad (nieuw account) mee? Nu delen beide dezelfde stappen en hetzelfde `state`-object.
+2. Datamapping van bestaande velden (`musicians`, `musician_instruments`, `musician_songs`, `musician_media`, etc.) naar de vijf tegels — met een check op overlap tussen velden, les uit TT-47 (09-08-2026).
+
+Niets gebouwd. Eerstvolgende stap: bovenstaande twee vragen beantwoorden, dan pas het losse bestand opzetten.
+
+---
+
+**Voorgaande update, 28-08-2026 (vervolg) — TT-01: definitief e-mailontwerp doorgevoerd, interactief vastgesteld met Ronald.**
 
 **TT-01-vervolg (28-08-2026) — ontwerp verfijnd via een los, interactief mockup-bestand** (`email-preview.html`, meerdere ronden), daarna 1-op-1 overgezet naar `send-digest`. Wijzigingen t.o.v. de eerste versie:
 
@@ -15,7 +33,9 @@
 
 **Nog te doen door Ronald:** de code in `send-digest-index.ts` plakken in de Code-tab van de Edge Function (volledige vervanging), Deploy, en een testaanroep (zelfde SQL-patroon als bij de eerste bouw).
 
-**Bevestigd door Ronald (28-08-2026):** `send-digest` gedeployed met de definitieve code, `index.html` geüpload, testaanroep gaf 200 met `{"ok":true,"sent":0,"skipped":0}` — correct, niemand heeft nu al voorkeuren ingesteld of een nieuw bericht. **TT-01 volledig afgerond**, inclusief het herziene ontwerp en de licht/donker-keuze.
+**Bevestigd door Ronald (28-08-2026):** `send-digest` gedeployed met de definitieve code, `index.html` geüpload, testaanroep gaf 200 met `{"ok":true,"sent":0,"skipped":0}` — correct, niemand had toen al voorkeuren ingesteld of een nieuw bericht.
+
+**Heropend 31-08-2026 (Ronald):** een `{"ok":true}`-testaanroep is geen bewijs van een werkende digest. Ronald heeft nog geen enkele echte e-mail ontvangen. **TT-01 is dus niet af.** Vier plekken staan open om te controleren: (1) staat de eigen digestfrequentie op Dagelijks/Wekelijks, niet Geen; (2) draaide de `pg_cron`-taak (`cron.job_run_details`); (3) gaf de Edge Function een fout (Logs-tab, mogelijk gerelateerd aan de rotatie van de automations-sleutel na het screenshot-incident); (4) is er wel nieuwe inhoud (nieuw bericht of nieuwe match) om te melden. Geen van de vier is deze sessie bevestigd of uitgesloten.
 
 **Voorgaande update, 28-08-2026 — TT-01 gebouwd en end-to-end getest: e-maildigest voor nieuwe matches en berichten.**
 
@@ -182,7 +202,7 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 | **TT-07** | Leeftijdsbeleid | **Herzien 08-08-2026: minimumleeftijd blijft 13.** Ticket zelf vraagt geen codewijziging meer; de gevolgen zijn losgetrokken naar TT-45 |
 | **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel. **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
 | **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus — mogelijk groter dan gedacht, zie toelichting onderaan deze tabel.** **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
-| **TT-01** | E-maildigest bij nieuwe matches en berichten | **Gebouwd en end-to-end getest 28-08-2026, zie Laatste update bovenaan.** Eerste Edge Function van het project, SMTP via Plesk (`noreply@talenttent.org`), twee `pg_cron`-taken. Nieuw scherm "Zoekvoorkeuren" bij de zoekpagina |
+| **TT-01** | E-maildigest bij nieuwe matches en berichten | **Heropend 31-08-2026: niet aantoonbaar werkend.** Gebouwd 28-08-2026 (testaanroep gaf 200), maar Ronald heeft nog geen enkele echte digestmail ontvangen. Oorzaak nog niet gevonden — vier mogelijke plekken staan open, zie Laatste update bovenaan. Eerste Edge Function van het project, SMTP via Plesk (`noreply@talenttent.org`), twee `pg_cron`-taken. Nieuw scherm "Zoekvoorkeuren" bij de zoekpagina |
 | TT-22 (restpunt) | Auth-account daadwerkelijk verwijderen | **Data-deel opgelost 09-08-2026** (profiel, kindtabellen, Storage-bestanden, bandoprichterschap — zie Deel 3). Het auth-account (login/wachtwoord) zelf kan niet vanaf de client, dat vraagt de Supabase Admin API met een service-role-sleutel. **28-08-2026:** de Edge Function-infrastructuur staat nu (zie TT-01) — herbruikbaar, geen aparte opzet meer nodig. Nog geen eigen sessie gepland; tot die er is: her en der handmatig via het Supabase-dashboard (Authentication → Users) een account verwijderen zodra er geen bijbehorend profiel meer is |
 | **TT-63** | Privacyverklaring, gebruiksvoorwaarden, gedragscode | **Gebouwd en gepubliceerd 09-08-2026** — drie nieuwe views (`view-privacy`/`view-terms`/`view-gedragscode`), bereikbaar via het nieuwe hamburgermenu (zie hieronder) en via `#privacy`/`#terms`/`#gedragscode`. Toestemmingsregel met links toegevoegd bij de laatste wizard-stap. Gebruikt `privacy@talenttent.org` in alle drie. **Herzieningsmomenten, vastgelegd zodat ze niet vergeten worden:** privacyverklaring → zodra TT-42/TT-45 zijn opgelost (het hoofdstuk Minderjarigen loopt nu al vooruit op een regel die de wizard nog niet afdwingt — dat gat moet dicht vóór brede publicatie); gebruiksvoorwaarden + gedragscode → zodra TT-06 (meldknop) live gaat (nu nog "volgt binnenkort"); gebruiksvoorwaarden → kleine tekstupdate zodra TT-58 (applaus) of TT-13 (volgen) klaar zijn |
 | — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
