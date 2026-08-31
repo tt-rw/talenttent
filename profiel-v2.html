@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Profiel bewerken — The Talent Tent</title>
+<!--
+  TT-168, los testbestand op main, naast index.html (Besluit bouwaanpak,
+  31-08-2026). Praat met dezelfde live Supabase-database als index.html —
+  geen aparte testdatabase. Nog niet gekoppeld aan index.html: nergens
+  vanuit index.html wordt hiernaartoe gelinkt, dit bestand is alleen
+  bereikbaar via het directe adres talenttent.org/profiel-v2.html.
+
+  Status: tegeloverzicht werkt. Tegel "Wie ben je" is volledig gebouwd en
+  opgeslagen wijzigingen raken alleen de kolommen van deze tegel — nooit de
+  andere vier tegels (zie toelichting bij saveWieBenJe() hieronder). De
+  andere vier tegels zijn nog placeholders: ze openen een leeg subscherm met
+  een duidelijke tekst, geen namaak-invoervelden die niets doen.
+-->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="profiel-gedeeld.js"></script>
+<style>
+  :root{
+    --bg:#0d0d0d; --surface:#161616; --surface2:#1e1e1e; --border:#2a2a2a;
+    --accent:#f5c518; --accent2:#6ec8d8; --danger:#e5533d; --success:#4caf50;
+    --text:#f0f0f0; --muted:#888; --radius:12px;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:Roboto,-apple-system,BlinkMacSystemFont,sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .app-shell{ max-width:520px; margin:0 auto; min-height:100dvh; padding:16px; }
+  .eyebrow{ font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin:0 0 12px; }
+
+  .tile{
+    display:flex; align-items:center; gap:12px;
+    min-height:44px; padding:14px; margin-bottom:10px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    cursor:pointer;
+  }
+  .tile:active{ background:var(--surface2); }
+  .tile-title{ font-size:15px; font-weight:500; }
+  .tile-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .tile-hint{ font-size:11px; color:var(--muted); margin:-4px 0 14px 2px; line-height:1.4; }
+
+  .btn{
+    min-height:44px; padding:0 20px; border-radius:8px; font-size:14px; font-weight:600;
+    border:1px solid transparent; cursor:pointer;
+  }
+  .btn-primary{ background:var(--accent); color:#0d0d0d; }
+  .btn-ghost{ background:transparent; color:var(--text); border-color:var(--border); font-weight:500; }
+  .btn-block{ width:100%; margin-top:16px; }
+  .action-row{ display:flex; gap:10px; margin-top:28px; }
+  .action-row .btn{ flex:1; }
+
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:13px; margin-bottom:6px; color:var(--text); }
+  .field .req{ color:var(--accent); }
+  .field input, .field textarea{
+    width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-size:16px; padding:11px 12px; font-family:inherit;
+  }
+  .field input:read-only{ opacity:.7; cursor:not-allowed; }
+  .field textarea{ min-height:90px; resize:vertical; }
+  .field-group{ display:flex; gap:12px; }
+  .field-group .field{ flex:1; }
+  .field-status{ font-size:11px; margin-top:5px; min-height:14px; }
+
+  .bio-prompts{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .bio-chip{
+    font-size:11px; padding:6px 10px; border-radius:999px; border:1px solid var(--border);
+    background:transparent; color:var(--muted); cursor:pointer;
+  }
+
+  .ac-list{ position:relative; }
+  .ac-items{
+    display:none; position:absolute; left:0; right:0; top:calc(100% + 2px); z-index:5;
+    background:var(--surface2); border:1px solid var(--border); border-radius:8px; overflow:hidden;
+    max-height:220px; overflow-y:auto;
+  }
+  .ac-items.open{ display:block; }
+  .ac-item{ padding:10px 12px; font-size:14px; cursor:pointer; }
+  .ac-item:active{ background:var(--surface); }
+
+  .panel-title{ font-size:18px; font-weight:700; margin:0 0 2px; }
+  .panel-sub{ font-size:12px; color:var(--muted); margin:0 0 20px; }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translate(-50%,12px);
+    background:var(--surface2); border:1px solid var(--border); color:var(--text);
+    padding:12px 18px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none;
+    transition:opacity .2s, transform .2s; z-index:50; max-width:90vw;
+  }
+  .toast.visible{ opacity:1; transform:translate(-50%,0); }
+
+  .placeholder-box{
+    border:1px dashed var(--border); border-radius:var(--radius); padding:24px 16px;
+    color:var(--muted); font-size:13px; line-height:1.5; text-align:center; margin-bottom:20px;
+  }
+  .gate-box{ text-align:center; padding:60px 16px; }
+  [hidden]{ display:none !important; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- Niet ingelogd -->
+  <div id="gateScreen" class="gate-box" hidden>
+    <p class="panel-sub">Je bent niet ingelogd. Log in via de hoofdapp om je profiel te bewerken.</p>
+    <a class="btn btn-primary btn-block" href="index.html#auth" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;">Naar inloggen</a>
+  </div>
+
+  <!-- Tegeloverzicht -->
+  <div id="overviewScreen" hidden>
+    <p class="eyebrow">Profiel bewerken</p>
+    <div id="tilesWrap"></div>
+    <button class="btn btn-ghost btn-block" onclick="location.href='index.html#myprofile'">Terug</button>
+  </div>
+
+  <!-- Subscherm: Wie ben je -->
+  <div id="wieBenJeScreen" hidden>
+    <div class="panel-title">Wie ben je (bewerken)</div>
+    <div class="panel-sub">Dit is wat andere muzikanten van je zien.</div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Voornaam <span class="req">*</span></label>
+        <input type="text" id="wbjFname" autocomplete="given-name">
+      </div>
+      <div class="field">
+        <label>Achternaam</label>
+        <input type="text" id="wbjLname" autocomplete="family-name">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Gebruikersnaam <span class="req">*</span></label>
+      <input type="text" id="wbjUsername" maxlength="20" autocomplete="off" oninput="onWbjUsernameInput()">
+      <p id="wbjUsernameStatus" class="field-status" style="color:var(--muted);"></p>
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Geboortedatum <span class="req">*</span></label>
+        <input type="text" id="wbjBirthDate" maxlength="10" inputmode="numeric" placeholder="dd-mm-jjjj" oninput="formatBirthDate(this)">
+      </div>
+      <div class="field">
+        <label>Postcode <span class="req">*</span></label>
+        <input type="text" id="wbjZip" maxlength="4" inputmode="numeric" autocomplete="off" oninput="onWbjPostcodeInput(this.value)">
+      </div>
+    </div>
+
+    <div class="field ac-list">
+      <label>Plaats <span class="req">*</span></label>
+      <input type="text" id="wbjCity" readonly style="cursor:not-allowed;" oninput="onWbjCitySearchInput(this.value)">
+      <div class="ac-items" id="wbjCityAc"></div>
+      <p id="wbjPostcodeStatus" class="field-status" style="color:var(--muted);"></p>
+    </div>
+
+    <div class="field">
+      <label>Korte bio</label>
+      <div class="bio-prompts">
+        <button type="button" class="bio-chip" onclick="wbjBioPrompt('Ik speel al ... jaar ')">Hoe lang speel je al?</button>
+        <button type="button" class="bio-chip" onclick="wbjBioPrompt('Op dit moment ben ik vooral bezig met ')">Waar ben je nu mee bezig?</button>
+        <button type="button" class="bio-chip" onclick="wbjBioPrompt('Wat ik wil bereiken is ')">Wat wil je bereiken?</button>
+      </div>
+      <textarea id="wbjBio" placeholder="Bijv. Ik speel al 3 jaar gitaar..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>E-mailadres</label>
+      <input type="text" id="wbjEmail" readonly style="cursor:not-allowed;">
+      <p class="field-status" style="color:var(--muted);">Dit is het e-mailadres waarmee je inlogt. Wijzigen kan hier niet.</p>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" onclick="cancelWieBenJe()">Annuleren</button>
+      <button class="btn btn-primary" onclick="saveWieBenJe()">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Subscherm: placeholder voor de vier nog niet gebouwde tegels -->
+  <div id="placeholderScreen" hidden>
+    <div class="panel-title" id="placeholderTitle"></div>
+    <div class="placeholder-box" id="placeholderText"></div>
+    <button class="btn btn-ghost btn-block" onclick="goToOverview()">Terug</button>
+  </div>
+
+</div>
+
+<div class="toast" id="appToast"></div>
+
+<script>
+// ─── Supabase ────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://fqtgilwfestzofunupnu.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_tnWUVGTBmwnn9fAILeNqqQ_UlCn5AFM';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let myMusicianId = null;
+
+// ─── Tegels ────────────────────────────────────────────────────────────
+// Volgorde en subtitels per het wireframe van 31-08-2026, met de
+// TT-168-vervolg-besluiten verwerkt: profielfoto bij Mediahoek (niet hier),
+// repertoire_type bij "Wat speel je" (niet bij Je setlist).
+const TILES = [
+  { id: 'wieBenJe',   title: 'Wie ben je',      sub: 'naam - bio',                       hint: null },
+  { id: 'watSpeelJe', title: 'Wat speel je',    sub: 'instrumenten - niveau - genres - eigen nummers/covers', hint: null },
+  { id: 'watZoekJe',  title: 'Wat zoek je',     sub: 'muzikant - band - optreden - ambitie', hint: 'Instrumenten die je zoekt in een ander stel je in bij Zoeken.' },
+  { id: 'jeSetlist',  title: 'Je setlist',      sub: 'setlist - eigen nummers',           hint: null },
+  { id: 'mediahoek',  title: 'Je mediahoek',    sub: "video's - foto's - profielfoto",    hint: null },
+];
+
+function renderTiles() {
+  const wrap = document.getElementById('tilesWrap');
+  wrap.innerHTML = TILES.map(t => `
+    <div class="tile" onclick="location.hash='${t.id}'">
+      <div style="flex:1;">
+        <div class="tile-title">${escHtml(t.title)}</div>
+        <div class="tile-sub">${escHtml(t.sub)}</div>
+      </div>
+    </div>
+    ${t.hint ? `<div class="tile-hint">${escHtml(t.hint)}</div>` : ''}
+  `).join('');
+}
+
+// ─── Schermnavigatie (hash-per-scherm, TT-16-patroon) ─────────────────────
+// Zelfde principe als de rest van de app: elk scherm is een eigen stap in de
+// geschiedenis. Vanuit een subscherm sluit de terugknop dat subscherm en
+// toont het tegeloverzicht — nooit in één klik door naar Mijn Profiel.
+const SCREENS = ['overview', 'wieBenJe', 'watSpeelJe', 'watZoekJe', 'jeSetlist', 'mediahoek'];
+const PLACEHOLDER_TEXT = {
+  watSpeelJe: 'Dit onderdeel is nog niet gebouwd. Instrumenten, niveau, genres en "eigen nummers/covers" komen hier.',
+  watZoekJe:  'Dit onderdeel is nog niet gebouwd. Doel, oefenfrequentie en ambitie komen hier.',
+  jeSetlist:  'Dit onderdeel is nog niet gebouwd. Je repertoire (nummers zoeken en toevoegen) komt hier.',
+  mediahoek:  'Dit onderdeel is nog niet gebouwd. Video\'s, foto\'s en je profielfoto komen hier.',
+};
+
+function showScreen(id) {
+  ['overviewScreen','wieBenJeScreen','placeholderScreen'].forEach(elId => {
+    document.getElementById(elId).hidden = true;
+  });
+  if (id === 'overview') {
+    document.getElementById('overviewScreen').hidden = false;
+  } else if (id === 'wieBenJe') {
+    document.getElementById('wieBenJeScreen').hidden = false;
+    openWieBenJe();
+  } else {
+    document.getElementById('placeholderTitle').textContent = TILES.find(t => t.id === id).title + ' (bewerken)';
+    document.getElementById('placeholderText').textContent = PLACEHOLDER_TEXT[id];
+    document.getElementById('placeholderScreen').hidden = false;
+  }
+}
+function goToOverview() { location.hash = ''; }
+window.addEventListener('hashchange', () => {
+  const id = location.hash.replace('#', '') || 'overview';
+  showScreen(SCREENS.includes(id) ? id : 'overview');
+});
+
+// ─── Opstarten ─────────────────────────────────────────────────────────────
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session?.user) {
+    document.getElementById('gateScreen').hidden = false;
+    return;
+  }
+  currentUser = session.user;
+  const { data, error } = await db.from('musicians').select('id').eq('user_id', currentUser.id).single();
+  if (error || !data?.id) {
+    document.getElementById('gateScreen').hidden = false;
+    showToast('Kon je profiel niet vinden. Maak eerst een profiel aan via de hoofdapp.');
+    return;
+  }
+  myMusicianId = data.id;
+  renderTiles();
+  const id = location.hash.replace('#', '') || 'overview';
+  showScreen(SCREENS.includes(id) ? id : 'overview');
+}
+init();
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tegel: Wie ben je
+// ═══════════════════════════════════════════════════════════════════════
+// BELANGRIJK (zie toelichting in het gesprek, 31-08-2026): saveWieBenJe()
+// hieronder raakt UITSLUITEND de kolommen van deze tegel. Het is bewust GEEN
+// hergebruik van de bestaande persistEditedProfile() uit index.html — die
+// schrijft altijd het hele profiel opnieuw weg (alle kolommen, plus
+// instrumenten/genres/nummers/media verwijderen-en-opnieuw-invullen), en zou
+// hier de andere vier tegels leegmaken.
+
+let wbjSnapshot = null;      // baseline bij het openen, voor de "niets gewijzigd"-check
+let wbjUsernameOk = true;    // true = huidige waarde in het veld mag opgeslagen worden
+let wbjPostcodeTimeout, wbjCitySearchTimeout;
+
+function wbjFieldSnapshot() {
+  return JSON.stringify({
+    fname: document.getElementById('wbjFname').value.trim(),
+    lname: document.getElementById('wbjLname').value.trim(),
+    username: document.getElementById('wbjUsername').value.trim(),
+    birth_date: document.getElementById('wbjBirthDate').value.trim(),
+    zip: document.getElementById('wbjZip').value.trim(),
+    city: document.getElementById('wbjCity').value.trim(),
+    bio: document.getElementById('wbjBio').value.trim(),
+  });
+}
+
+async function openWieBenJe() {
+  document.getElementById('wbjUsernameStatus').textContent = '';
+  document.getElementById('wbjPostcodeStatus').textContent = '';
+  document.getElementById('wbjEmail').value = currentUser?.email || '';
+  const { data, error } = await db.from('musicians')
+    .select('fname, lname, username, birth_date, zip, city, city_source, bio')
+    .eq('id', myMusicianId).single();
+  if (error) {
+    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    return;
+  }
+  document.getElementById('wbjFname').value = data.fname || '';
+  document.getElementById('wbjLname').value = data.lname || '';
+  document.getElementById('wbjUsername').value = data.username || '';
+  document.getElementById('wbjBirthDate').value = fromISODate(data.birth_date);
+  document.getElementById('wbjZip').value = data.zip || '';
+  document.getElementById('wbjCity').value = data.city || '';
+  document.getElementById('wbjBio').value = data.bio || '';
+  wbjUsernameOk = true;
+  wbjSnapshot = wbjFieldSnapshot();
+}
+
+function wbjBioPrompt(text) {
+  applyBioPrompt(document.getElementById('wbjBio'), text);
+}
+
+// Gebruikersnaam: zelfde live-check als index.html (tt_check_username_available).
+let wbjUsernameCheckTimeout;
+function onWbjUsernameInput() {
+  wbjUsernameOk = false;
+  clearTimeout(wbjUsernameCheckTimeout);
+  const statusEl = document.getElementById('wbjUsernameStatus');
+  const value = document.getElementById('wbjUsername').value.trim();
+  if (!value) { statusEl.textContent = ''; return; }
+  statusEl.textContent = 'Controleren...';
+  statusEl.style.color = 'var(--muted)';
+  wbjUsernameCheckTimeout = setTimeout(async () => {
+    const result = await checkUsernameAvailability(value, myMusicianId);
+    wbjUsernameOk = result.ok;
+    statusEl.textContent = result.ok ? 'Beschikbaar' : result.reason;
+    statusEl.style.color = result.ok ? 'var(--success)' : 'var(--danger)';
+  }, 400);
+}
+
+// Postcode → plaats. Zelfde volgorde als index.html: PDOK, dan cache, dan
+// bij herhaalde storing een handmatige zoeklijst i.p.v. een vrij tekstveld.
+let wbjPostcodeFailStreak = 0;
+let wbjPostcodeManualMode = false;
+function onWbjPostcodeInput(rawValue) {
+  const statusEl = document.getElementById('wbjPostcodeStatus');
+  document.getElementById('wbjCity').value = '';
+  clearTimeout(wbjPostcodeTimeout);
+  const digits = rawValue.trim().replace(/\D/g, '');
+  document.getElementById('wbjZip').value = digits;
+  if (!/^[1-9][0-9]{3}$/.test(digits)) { statusEl.textContent = ''; return; }
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Bezig met opzoeken...';
+  wbjPostcodeTimeout = setTimeout(async () => {
+    const outcome = await lookupPostcodeCity(digits);
+    if (outcome.found) {
+      wbjPostcodeFailStreak = 0;
+      if (wbjPostcodeManualMode) wbjRelockCity();
+      document.getElementById('wbjCity').value = outcome.city;
+      statusEl.style.color = 'var(--accent)';
+      statusEl.textContent = `Gevonden: ${outcome.city}`;
+      setTimeout(() => { statusEl.textContent = ''; }, 2000);
+    } else if (outcome.reason === 'notfound') {
+      wbjEnableManualCity();
+    } else {
+      wbjPostcodeFailStreak++;
+      if (wbjPostcodeFailStreak >= 2) {
+        wbjEnableManualCity();
+      } else {
+        statusEl.style.color = 'var(--danger)';
+        statusEl.textContent = 'Kon postcode nu niet controleren. Probeer het nog eens.';
+      }
+    }
+  }, 500);
+}
+function wbjEnableManualCity() {
+  wbjPostcodeManualMode = true;
+  const field = document.getElementById('wbjCity');
+  field.readOnly = false;
+  field.style.cursor = '';
+  field.value = '';
+  field.placeholder = 'Typ je plaatsnaam en kies uit de lijst';
+  const statusEl = document.getElementById('wbjPostcodeStatus');
+  statusEl.style.color = 'var(--accent2)';
+  statusEl.textContent = 'We kunnen je plaats even niet automatisch ophalen — vul hem hieronder zelf in.';
+  field.focus();
+}
+function wbjRelockCity() {
+  wbjPostcodeManualMode = false;
+  const field = document.getElementById('wbjCity');
+  field.readOnly = true;
+  field.style.cursor = 'not-allowed';
+}
+function onWbjCitySearchInput(value) {
+  const ac = document.getElementById('wbjCityAc');
+  const q = value.trim();
+  if (q.length < 2) { ac.classList.remove('open'); return; }
+  clearTimeout(wbjCitySearchTimeout);
+  wbjCitySearchTimeout = setTimeout(async () => {
+    const names = await searchCitySuggestions(q);
+    if (!names.length) { ac.classList.remove('open'); return; }
+    ac.innerHTML = names.map(name =>
+      `<div class="ac-item" onmousedown="selectWbjCity('${jsAttr(name)}')">${escHtml(name)}</div>`
+    ).join('');
+    ac.classList.add('open');
+  }, 300);
+}
+function selectWbjCity(name) {
+  document.getElementById('wbjCity').value = name;
+  document.getElementById('wbjCityAc').classList.remove('open');
+  const statusEl = document.getElementById('wbjPostcodeStatus');
+  statusEl.style.color = 'var(--accent)';
+  statusEl.textContent = `Gekozen: ${name}`;
+}
+
+function cancelWieBenJe() {
+  if (wbjFieldSnapshot() !== wbjSnapshot) {
+    if (!confirm('Weet je het zeker? Wat je hebt gewijzigd gaat verloren.')) return;
+  }
+  goToOverview();
+}
+
+async function saveWieBenJe() {
+  const fname = document.getElementById('wbjFname').value.trim();
+  const username = document.getElementById('wbjUsername').value.trim();
+  const birthDateStr = document.getElementById('wbjBirthDate').value.trim();
+  const zip = document.getElementById('wbjZip').value.trim();
+  const city = document.getElementById('wbjCity').value.trim();
+
+  if (!fname) { showToast('Voornaam is verplicht.'); return; }
+  if (!username || !wbjUsernameOk) { showToast('Kies eerst een beschikbare gebruikersnaam.'); return; }
+  if (birthDateStr.length !== 10) { showToast('Vul een volledige geboortedatum in.'); return; }
+  if (!/^[1-9][0-9]{3}$/.test(zip) || !city) { showToast('Vul een geldige postcode en plaats in.'); return; }
+
+  // TT-173-patroon: niets gewijzigd sinds het openen → niets opslaan, geen melding.
+  if (wbjFieldSnapshot() === wbjSnapshot) return;
+
+  const payload = {
+    fname,
+    lname: document.getElementById('wbjLname').value.trim() || null,
+    username,
+    birth_date: toISODate(birthDateStr),
+    zip,
+    city,
+    bio: document.getElementById('wbjBio').value.trim() || null,
+  };
+  const { error } = await db.from('musicians').update(payload).eq('id', myMusicianId);
+  if (error) {
+    showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(error));
+    return;
+  }
+  wbjSnapshot = wbjFieldSnapshot();
+  showToast('Wijzigingen opgeslagen.');
+}
+</script>
+</body>
+</html>

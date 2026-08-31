@@ -1,6 +1,6 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 31-08-2026 — **TT-01 heropend (e-maildigest niet aantoonbaar werkend, geen enkele mail ontvangen). TT-167 gebouwd (e-mailveld terug bij Profiel bewerken). TT-168 nieuw, niet gebouwd (fundamenteel herontwerp Profiel bewerken, wireframe ontvangen, bouwaanpak besloten).**
+**Laatste update:** 31-08-2026 — **TT-01 heropend (e-maildigest niet aantoonbaar werkend, geen enkele mail ontvangen). TT-167 gebouwd (e-mailveld terug bij Profiel bewerken). TT-168 nog niet gebouwd, plan verder uitgewerkt op basis van het wireframe — twee punten nog open. TT-169, TT-170, TT-171, TT-172 nieuw, niet gebouwd. TT-173 en TT-174 gebouwd (opslaan-melding alleen bij wijziging, "(mag ook later)"-tekst verdwijnt bij een gevuld veld).**
 
 **TT-167 (31-08-2026), gebouwd:** e-mailveld terug op het bewerkscherm (stap 1 "Over jou"), alleen-lezen, gevuld met `currentUser.email`. Wachtwoordveld blijft bij bewerken volledig verborgen — wachtwoord wijzigen loopt via het bestaande resetscherm (`saveNewPassword()`, `view-reset`), nooit via dit formulier. **Reden:** Ronald wil altijd kunnen zien welk e-mailadres aan zijn account hangt; het veld was al sinds de bouw van de wizard bewust verborgen tijdens bewerken (zie `showView()`), maar dat voelde onverwacht aan. Patroon hergebruikt: alleen-lezen styling identiek aan het bestaande Plaats-/fname-veld tijdens bewerken — geen nieuw componentpatroon. **Geverifieerd:** `regEmail` wordt door geen enkele opslagfunctie uitgelezen zolang `editingMusicianId` gezet is (alle voorkomens van `state.regEmail`/`regEmail` nagelopen) — het veld tonen kan dus nooit een wijziging aan het e-mailadres veroorzaken. **Getest:** haakjesbalans (`{}` 2043/2043, `[]` 329/329, `()` 6118/6119 — bekende onbalans van 1) en `node --check` geslaagd. **Niet getest:** Playwright (geen render-omgeving met ingelogde sessie opgezet deze sessie). **Nog niet geüpload naar GitHub — actie bij Ronald**, vóór dit live getest kan worden.
 
@@ -15,6 +15,50 @@
 2. Datamapping van bestaande velden (`musicians`, `musician_instruments`, `musician_songs`, `musician_media`, etc.) naar de vijf tegels — met een check op overlap tussen velden, les uit TT-47 (09-08-2026).
 
 Niets gebouwd. Eerstvolgende stap: bovenstaande twee vragen beantwoorden, dan pas het losse bestand opzetten.
+
+**TT-168-vervolg (31-08-2026) — wireframe verwerkt, open vragen beantwoord, twee losse fixes gebouwd.**
+
+Ronald leverde de tekening van het wireframe aan (vijf tegels, elk met een eigen volledig-scherm-subscherm). Datamapping geverifieerd tegen de bestaande code — akkoord, met één correctie: `repertoire_type` ("Eigen nummer/Covers/beiden") hoort bij de tegel "Wat speel je", niet bij "Je setlist". In de code leeft dit veld nu nog in `step2` (Repertoire) — verhuist bij de bouw van TT-168 naar de tegel "Wat speel je".
+
+**Besloten:**
+- Aanmaakpad (nieuwe registratie) blijft de bestaande wizard — TT-168 raakt alleen het bewerkpad.
+- Opslaan per tegel: direct opslaan bij klikken op Opslaan, zelfde patroon als het bestaande `saveEditedProfileHere()`.
+- Annuleren: bevestigingsvraag bij wijzigingen, geen vraag bij een ongewijzigd subscherm — zelfde patroon als V-19.
+- Geen kleurbalk bovenaan een bewerk-subscherm (§10 huisstijl is voor bekijken, niet bewerken — geschrapt uit de mockup).
+- Geen voortgangsindicatie per tegel (aanvankelijk voorgesteld als subtiele stip, door Ronald geschrapt: "niemand snapt dat").
+- "Wat zoek je": doel ("Ik sta open voor") en ambitie ("Wat wil je bereiken") blijven twee aparte velden, niet samenvoegen — ondanks een keuzemenu in het wireframe met "Band starten" als optie bij ambitie.
+- Eén regel subtekst bij de tegel "Wat zoek je" die verduidelijkt dat instrumentvoorkeuren (Zoekvoorkeuren) apart bij Zoeken staan, niet hier.
+- Technische aanpak (voorstel, nog niet gebouwd): gedeeld bestand `profiel-gedeeld.js`, geladen door zowel `index.html` als `profiel-v2.html`, voor instrumentpicker/genrepicker/PDOK-opzoek/avatarupload — één bron in plaats van twee losse kopieën.
+
+**Nog open, niet beantwoord:**
+1. Profielfoto: bij "Wie ben je" (voorstel, nog niet bevestigd) of ook bij "Je mediahoek" (staat in het wireframe op beide plekken genoemd)?
+2. Elk subscherm een eigen hash/adres (bijv. `#profielbewerken/wieBenJe`) voor de terugknop/History-integratie (TT-16) — nog niet bevestigd.
+
+**TT-169 (31-08-2026), nieuw, niet gebouwd — herontwerp profielpagina.** Op verzoek van Ronald: incl. een profielbanner (LinkedIn-stijl). Bestaat nog nergens — geen kolom, geen upload, geen ontwerp. Los van TT-168.
+
+**TT-170 (31-08-2026), nieuw, niet gebouwd — swipe-navigatie door de hele app.** Het wireframe noemt "swipe naar links = Terug" bij TT-168; Ronald wil dit uiteindelijk in de hele app doorvoeren. Apart ticket, niet in TT-168 (dat blijft bij terugknop/History-integratie, TT-16).
+
+**TT-171 (31-08-2026), nieuw, niet gebouwd — instelbare blokvolgorde, idee.** Breed opgezet: "alle blokken naar inzicht van de gebruiker" aanpasbaar, niet alleen de vijf tegels van TT-168. Nog geen scope, geen prioriteit — vastgelegd als idee.
+
+**TT-172 (31-08-2026), nieuw, niet gebouwd — contrast `.btn-ghost`-rand.** Geverifieerd: de rand van een ghost-knop (Terug/Annuleren) staat op `var(--border)` (#2a2a2a), laag contrast op de achtergrond `--bg` (#0d0d0d) — o.a. zichtbaar bij het rustende (niet-hover) terugknopje op het berichtenscherm. Voorstel: overal naar `var(--muted)` (#888, bestaat al). Klein, geïsoleerd, app-breed. Voorgesteld, nog niet bevestigd door Ronald, nog niet gebouwd.
+
+**TT-173 (31-08-2026), gebouwd.** "Wijzigingen opgeslagen" verscheen voorheen bij elke klik op Opslaan tijdens bewerken, ook zonder wijziging sinds de vorige opslag. `saveEditedProfileHere()` vergelijkt nu eerst `buildEditSnapshot()` met `editSnapshot` (bestaand mechanisme, hergebruikt uit de "niet opgeslagen"-waarschuwing bij het verlaten van een stap) — niets gewijzigd, dan geen databaseschrijving en geen melding. **Getest:** haakjesbalans (`{}` 2043/2043, `[]` 329/329, `()` 6122/6123 — bekende onbalans van 1, ongewijzigd) en JS-syntaxis per scriptblok, geslaagd. **Niet getest:** Playwright, geen ingelogde testomgeving deze sessie.
+
+**TT-174 (31-08-2026), gebouwd.** De tekst "(mag ook later)" naast een paneltitel (Repertoire, Wat zoek je?, Media) verdwijnt zodra het bijbehorende veld al gevuld is — zowel meteen bij het openen van een al ingevuld profiel als live tijdens het invullen. Nieuwe functie `updateOptionalStepHints()`, aangeroepen vanuit `goTo()` (dekt een al gevuld profiel bij binnenkomst) en vanuit elke functie die de betreffende data wijzigt (`renderSongs`, `selectGoal`, `selectRehearsalFrequency`, `selectMusicalAmbition`, `renderMediaGrid`, `renderLinksList`, `updateLinkUrl`). **Getest:** haakjesbalans (`{}` 2044/2044, `[]` 329/329, `()` 6146/6147 — zelfde bekende onbalans van 1) en JS-syntaxis per scriptblok, geslaagd. **Niet getest:** Playwright.
+
+**TT-168, eerste bouwstap (31-08-2026).** `profiel-v2.html` en `profiel-gedeeld.js` opgezet, nog niet gekoppeld aan `index.html` — alleen bereikbaar op het eigen adres, geen link ernaartoe vanuit de live app.
+
+**Kritieke bevinding, vóór het bouwen ontdekt (geverifieerd, `persistEditedProfile()` gelezen):** de bestaande opslaanfunctie tijdens bewerken schrijft altijd het hele profiel in één keer weg — elke kolom van `musicians`, plus een verwijder-en-opnieuw-invullen van `musician_instruments`, `musician_genres`, `musician_songs` en `musician_media`, gebaseerd op het complete `state`-object. Die functie hergebruiken voor een losse tegel zou de andere vier tegels leegmaken, want hun data staat nooit in het (kleinere) `state`-object van een los subscherm. Gevolg: elke tegel van TT-168 krijgt daarom zijn eigen, smalle opslaanfunctie — raakt alleen de kolommen/tabellen van die ene tegel. Dit geldt voor alle vijf tegels, niet alleen "Wie ben je".
+
+**Werkt, getest:** tegeloverzicht (vijf tegels, juiste volgorde/subtitels, subtekst bij "Wat zoek je", geen kleurbalk, geen voortgangsstip — alle besluiten uit TT-168-vervolg verwerkt). Tegel "Wie ben je" volledig: laadt bestaande gegevens, gebruikersnaam-check via `tt_check_username_available`, postcode→plaats via PDOK met terugval op de cache en handmatige zoeklijst, bio-prompts, alleen-lezen e-mailveld. Opslaan raakt uitsluitend `fname/lname/username/birth_date/zip/city/bio` — niets anders. Geen melding/schrijving bij een ongewijzigd formulier (TT-173-patroon, hier per tegel toegepast). Annuleren: geen vraag zonder wijziging, wél een bevestigingsvraag met wijziging (V-19-patroon).
+
+**Nog placeholder, geen namaakvelden:** "Wat speel je", "Wat zoek je", "Je setlist", "Je mediahoek" — elk toont alleen "Dit onderdeel is nog niet gebouwd" en een Terug-knop.
+
+**Getest:** Playwright, 21 controles, tegen een gestubde Supabase-client (geen aanraking van de live database) — alle 21 geslaagd. Screenshots als bewijs geleverd. **Nog niet getest:** de echte PDOK-opzoek en de echte `tt_check_username_available`-RPC tegen de live database — dat kan alleen Ronald zelf, ingelogd, op `talenttent.org/profiel-v2.html`.
+
+**Geleverd deze sessie:** `index.html` (TT-173, TT-174), `profiel-v2.html` en `profiel-gedeeld.js` (eerste bouwstap TT-168, alleen tegel "Wie ben je" werkend), twee screenshots als testbewijs. **Nog niet naar GitHub geüpload — actie bij Ronald.**
+
+Eerstvolgende stap: Ronald test `profiel-v2.html` zelf, ingelogd. Daarna de resterende vier tegels bouwen, elk met zijn eigen smalle opslaanfunctie (zie kritieke bevinding hierboven).
 
 ---
 
