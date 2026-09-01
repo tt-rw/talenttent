@@ -218,3 +218,379 @@ function applyBioPrompt(el, text) {
   el.setSelectionRange(el.value.length, el.value.length);
   return el.value;
 }
+
+// ─── Instrumenten en genres: vaste lijsten (TT-168, 1-op-1 uit index.html) ─
+
+const INSTRUMENTS = [
+  'Basgitaar', 'Cello', 'Conga / Bongo', 'DJ / Electronica', 'Drums',
+  'Gitaar, akoestisch', 'Gitaar, elektrisch', 'Harmonica (mondharmonica)',
+  'Keyboard', 'Piano', 'Saxofoon', 'Tamboerijn', 'Trompet', 'Ukulele',
+  'Viool', 'Zang'
+];
+const GENRES = [
+  'Blues', 'Country', 'Electronic', 'Folk / Akoestisch', 'Funk', 'Hip-hop',
+  'Indie', 'Jazz', 'Klassiek', 'Metal', 'Pop', 'Punk', 'R&B / Soul',
+  'Reggae', 'Rock'
+];
+
+// TT-51-uitbreiding: Tabel 2 uit niveaubepaling-naslagwerk.md, 1-op-1
+// overgenomen uit index.html — zelfde tekst, één inhoudelijke bron. Twee
+// bestanden omdat profiel-v2.html geen build-stap heeft om index.html of
+// een los .md-bestand in te lezen.
+const NIVEAU_INFO_MUSICIAN_HEADERS = ['Niveau', 'Technische beheersing', 'Gehoor en muziektheorie', 'Voorbereiden en repeteren', 'Live spelen en flexibiliteit'];
+const NIVEAU_INFO_MUSICIAN_ROWS = [
+  ['1. Beginner (Bedroom)',
+    'Je kent de basisakkoorden of een paar toffe drumbeats. Je speelt vooral losse intro\'s of riffjes van TikTok en YouTube. Je timing schommelt.',
+    'Je kunt akkoorden nog niet echt op gehoor naspelen. Je hebt internettabs, YouTube-tutorials of eenvoudige bladmuziek nodig.',
+    'Je hebt echt een leraar of hulp nodig om een nieuw nummer te leren. Je oefent nog een beetje onregelmatig.',
+    'Je speelt eigenlijk altijd op hetzelfde volume. Als de band stopt of iets anders doet dan de opname, ben je de draad kwijt.'],
+  ['2. Gevorderde Beginner (Jammer)',
+    'Je speelt complete nummers vloeiend uit. Je basistechniek (barré-akkoorden, ademsteun, fills) is stabiel en kost steeds minder moeite.',
+    'Je herkent eenvoudige basisschema\'s. Je kunt nummers thuis uitzoeken en naspelen door goed naar de originele track te luisteren.',
+    'Je studeert thuis zelfstandig de nummers in die zijn afgesproken. Je kent je partijen uit je hoofd als je naar de repetitie komt.',
+    'Je luistert naar de rest en past je volume aan. Je kunt een simpele eigen fill of solo verzinnen die past bij de structuur van het nummer.'],
+  ['3. Half-Gevorderd (Gig-Ready)',
+    'Fysieke techniek is een automatisme; constante strakke timing. Je hebt een goede, bewuste controle over je eigen klankkleur en sound.',
+    'Kan makkelijk improviseren en solo\'s construeren over bekende toonsoorten; sterke functionele basiskennis van muziektheorie.',
+    'Bedenkt en schrijft eigen partijen uit. Heeft minimale repetitietijd nodig om een volledige live-set van anderhalf uur te beheersen.',
+    'Herstelt live-fouten onmiddellijk zonder dat het opvalt; speelt moeiteloos met een clicktrack of In-Ear monitor.'],
+  ['4. Gevorderd (Set-Leider)',
+    'Zeer brede technische bagage; lost instrument-technische problemen direct live op; schakelt moeiteloos tussen uiteenlopende genres.',
+    'Kan live on-the-fly transponeren naar een andere toonsoort; pikt complexe harmonieën en akkoordenschema\'s direct op gehoor op.',
+    'Kan fungeren als muzikaal leider (MD); arrangeert efficiënt partijen voor andere bandleden en levert kant-en-klare prestaties aan.',
+    'Volledige controle over dynamiek; levert studio-waardige prestaties onder live-fysieke spanning (zoals intense podiumactie of dans).'],
+  ['5. Professioneel',
+    'Grenzeloze techniek; beschikt over een internationaal onderscheidende, direct herkenbare \'signature sound\' en artistieke identiteit.',
+    'Absoluut gehoor of uitzonderlijk ontwikkeld relatief gehoor; leest direct complexe chord charts of partituren vanaf papier (sight-reading).',
+    'Volledig autonoom en multi-inzetbaar; beheerst een complete setlist binnen 24 uur; de vaste eerste keuze voor high-end studio- en sessiewerk.',
+    'Volledige controle over emotie en klank; anticipeert en adapteert onmiddellijk aan elke onverwachte live-situatie of tempowisseling.'],
+];
+
+function stripParenthetical(s) {
+  return String(s).replace(/\s*\([^)]*\)\s*$/, '').trim();
+}
+function pickerDisplayLabel(value) {
+  return escHtml(value);
+}
+function instrumentLevelLabels() {
+  return NIVEAU_INFO_MUSICIAN_ROWS.map(r => stripParenthetical(String(r[0]).replace(/^\d+\.\s*/, '')));
+}
+function instrumentLevelBlurbs() {
+  return NIVEAU_INFO_MUSICIAN_ROWS.map(r => {
+    const firstSentence = String(r[1]).split('. ')[0].replace(/\.+$/, '');
+    return firstSentence + '.';
+  });
+}
+
+// ─── Generieke kies-en-badge-picker (TT-116-patroon, meervoudig, geen niveau)
+// Zelfde cfg-registry-patroon als index.html: initPicker(cfg) registreert,
+// de rest tekent en muteert cfg.getList() in-place. Hier gebruikt voor
+// genre; blijft generiek zodat een volgende tegel (bijv. een toekomstige
+// "Wat zoek je"-koppeling) 'm kan hergebruiken zonder kopie.
+const PICKERS = {};
+let activeListPickerId = null;
+
+function initPicker(cfg) {
+  PICKERS[cfg.id] = cfg;
+  cfg.fieldEl = document.getElementById(cfg.fieldId);
+  cfg.badgeRowEl = document.getElementById(cfg.badgeRowId);
+  cfg.fieldEl.onclick = () => openPickerList(cfg.id);
+  renderPickerBadges(cfg);
+  return cfg;
+}
+function renderPickerBadges(cfg) {
+  const list = cfg.getList();
+  document.getElementById(cfg.fieldId + 'Label').textContent = cfg.placeholder;
+  cfg.badgeRowEl.innerHTML = list.map(v => `
+    <div class="picker-badge">
+      <button type="button" class="picker-badge-remove" aria-label="${escAttr(v)} verwijderen" onclick="removePickerValue('${jsAttr(cfg.id)}','${jsAttr(v)}')"><span aria-hidden="true">✕</span></button>
+      <div class="picker-badge-label">${pickerDisplayLabel(v)}</div>
+    </div>`).join('');
+}
+function openPickerList(id) {
+  activeListPickerId = id;
+  document.getElementById('pickerListTitle').textContent = PICKERS[id].sheetTitle;
+  renderPickerListItems();
+  document.getElementById('pickerListModal').classList.add('visible');
+}
+function closePickerList() {
+  document.getElementById('pickerListModal').classList.remove('visible');
+  activeListPickerId = null;
+}
+function renderPickerListItems() {
+  const cfg = PICKERS[activeListPickerId];
+  if (!cfg) return;
+  const list = cfg.getList();
+  const wrap = document.getElementById('pickerListItems');
+  wrap.innerHTML = cfg.options.map(opt => {
+    const isSelected = list.includes(opt);
+    return `<div class="picker-list-item${isSelected ? ' selected' : ''}" onclick="choosePickerListValue('${jsAttr(opt)}')">${pickerDisplayLabel(opt)}${isSelected ? '<span class="picker-list-item-check" aria-hidden="true">✓</span>' : ''}</div>`;
+  }).join('');
+}
+function choosePickerListValue(value) {
+  const cfg = PICKERS[activeListPickerId];
+  if (!cfg) return;
+  const list = cfg.getList();
+  if (list.includes(value)) {
+    const idx = list.indexOf(value);
+    list.splice(idx, 1);
+    renderPickerBadges(cfg);
+    if (cfg.onChange) cfg.onChange();
+    if (!cfg.singleMax) renderPickerListItems();
+    else closePickerList();
+    return;
+  }
+  if (cfg.singleMax) {
+    if (value === cfg.exceptionValue) {
+      if (!list.includes(value)) list.push(value);
+    } else {
+      const kept = (cfg.exceptionValue && list.includes(cfg.exceptionValue)) ? [cfg.exceptionValue] : [];
+      list.length = 0;
+      kept.forEach(v => list.push(v));
+      list.push(value);
+    }
+    renderPickerBadges(cfg);
+    if (cfg.onChange) cfg.onChange();
+    closePickerList();
+    return;
+  }
+  if (!list.includes(value)) list.push(value);
+  renderPickerBadges(cfg);
+  if (cfg.onChange) cfg.onChange();
+  renderPickerListItems();
+}
+function removePickerValue(id, value) {
+  const cfg = PICKERS[id];
+  if (!cfg) return;
+  const list = cfg.getList();
+  const idx = list.indexOf(value);
+  if (idx !== -1) list.splice(idx, 1);
+  renderPickerBadges(cfg);
+  if (cfg.onChange) cfg.onChange();
+}
+
+// ─── Instrumentpicker mét niveau (TT-51/TT-116) ──────────────────────────
+// Zelfde tweetraps-modal als index.html (eerst instrument kiezen, dan
+// niveau). Daar hardcoded op één globale state.instruments/state.
+// instrumentLevels; hier generiek gemaakt met een cfg-object — nodig omdat
+// profiel-v2.html geen wizard-brede state kent, maar een aparte, smalle
+// state per tegel (zie saveWatSpeelJe() in profiel-v2.html).
+// cfg: { id, fieldId, badgeRowId, getInstruments, getLevels, onChange }
+const INSTRUMENT_PICKERS = {};
+let activeInstrumentPickerId = null;
+let instrumentLevelTarget = null; // { instrument, cameFromList }
+
+function initInstrumentPicker(cfg) {
+  INSTRUMENT_PICKERS[cfg.id] = cfg;
+  document.getElementById(cfg.fieldId).onclick = () => openInstrumentPicker(cfg.id);
+  renderInstrumentBadges(cfg.id);
+  return cfg;
+}
+function renderInstrumentBadges(id) {
+  const cfg = INSTRUMENT_PICKERS[id];
+  const wrap = document.getElementById(cfg.badgeRowId);
+  const list = cfg.getInstruments();
+  const levels = cfg.getLevels();
+  document.getElementById(cfg.fieldId + 'Label').textContent = 'Kies een instrument';
+  wrap.innerHTML = list.map(i => {
+    const n = levels[i] || 0;
+    const stars = n ? '★'.repeat(n) : '';
+    return `
+    <div class="picker-badge has-level" onclick="reopenInstrumentBadge('${jsAttr(id)}','${jsAttr(i)}')">
+      <button type="button" class="picker-badge-remove" aria-label="${escAttr(i)} verwijderen" onclick="event.stopPropagation();quickRemoveInstrument('${jsAttr(id)}','${jsAttr(i)}')"><span aria-hidden="true">✕</span></button>
+      <div class="picker-badge-label">${pickerDisplayLabel(i)}</div>
+      <div class="picker-badge-stars">${stars}</div>
+    </div>`;
+  }).join('');
+}
+function quickRemoveInstrument(id, instrument) {
+  const cfg = INSTRUMENT_PICKERS[id];
+  const list = cfg.getInstruments();
+  const idx = list.indexOf(instrument);
+  if (idx !== -1) list.splice(idx, 1);
+  delete cfg.getLevels()[instrument];
+  renderInstrumentBadges(id);
+  if (cfg.onChange) cfg.onChange();
+}
+function openInstrumentPicker(id) {
+  activeInstrumentPickerId = id;
+  renderInstrumentPickItems();
+  document.getElementById('instrumentPickStep').style.display = 'block';
+  document.getElementById('instrumentLevelStep').style.display = 'none';
+  document.getElementById('instrumentLevelFooter').style.display = 'none';
+  document.getElementById('instrumentLevelBackBtn').hidden = true;
+  document.getElementById('instrumentLevelModal').classList.add('visible');
+}
+function renderInstrumentPickItems() {
+  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  const remaining = INSTRUMENTS.filter(i => !cfg.getInstruments().includes(i));
+  const wrap = document.getElementById('instrumentPickItems');
+  if (!remaining.length) {
+    wrap.innerHTML = '<div class="picker-list-empty">Alles al gekozen</div>';
+    return;
+  }
+  wrap.innerHTML = remaining.map(i =>
+    `<div class="picker-list-item" onclick="pickInstrumentFromSheet('${jsAttr(i)}')">${pickerDisplayLabel(i)}</div>`
+  ).join('');
+}
+function pickInstrumentFromSheet(instrument) {
+  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  cfg.getInstruments().push(instrument);
+  showInstrumentLevelStep(instrument, /* cameFromList */ true);
+}
+function reopenInstrumentBadge(id, instrument) {
+  activeInstrumentPickerId = id;
+  document.getElementById('instrumentLevelModal').classList.add('visible');
+  showInstrumentLevelStep(instrument, /* cameFromList */ false);
+}
+function showInstrumentLevelStep(instrument, cameFromList) {
+  instrumentLevelTarget = { instrument, cameFromList };
+  document.getElementById('instrumentPickStep').style.display = 'none';
+  document.getElementById('instrumentLevelStep').style.display = 'block';
+  document.getElementById('instrumentLevelFooter').style.display = 'block';
+  document.getElementById('instrumentLevelTitle').textContent = 'Wat is je huidige niveau voor ' + instrument + '?';
+  document.getElementById('instrumentLevelSubtitle').textContent =
+    cameFromList ? 'Kies het niveau waar je het dichtst bij in de buurt zit.' : 'Niveau wijzigen.';
+  document.getElementById('instrumentLevelBackBtn').hidden = !cameFromList;
+  renderInstrumentLevelChoices();
+}
+function backToInstrumentPick() {
+  if (!instrumentLevelTarget || !instrumentLevelTarget.cameFromList) return;
+  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  const levels = cfg.getLevels();
+  if (!levels[instrumentLevelTarget.instrument]) {
+    const list = cfg.getInstruments();
+    const idx = list.indexOf(instrumentLevelTarget.instrument);
+    if (idx !== -1) list.splice(idx, 1);
+    renderInstrumentBadges(activeInstrumentPickerId);
+  }
+  openInstrumentPicker(activeInstrumentPickerId);
+}
+function renderInstrumentLevelChoices() {
+  if (!instrumentLevelTarget) return;
+  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  const huidig = cfg.getLevels()[instrumentLevelTarget.instrument] || 0;
+  const labels = instrumentLevelLabels();
+  const blurbs = instrumentLevelBlurbs();
+  const rows = labels.map((label, idx) => {
+    const value = idx + 1;
+    let stars = '';
+    for (let i = 1; i <= 5; i++) stars += '<span class="' + (i <= value ? 'filled' : '') + '">' + (i <= value ? '\u2605' : '\u2606') + '</span>';
+    return '<button type="button" class="level-choice' + (value === huidig ? ' selected' : '') + '"'
+      + ' aria-pressed="' + (value === huidig) + '" onclick="setInstrumentLevel(' + value + ')">'
+      + '<span class="level-choice-stars">' + stars + '</span>'
+      + '<span style="display:flex;flex-direction:column;text-align:left;">'
+      + '<span class="level-choice-label">' + escHtml(label) + '</span>'
+      + '<span class="picker-level-blurb">' + escHtml(blurbs[idx]) + '</span></span>'
+      + '</button>';
+  }).join('');
+  document.getElementById('instrumentLevelChoices').innerHTML = rows;
+  equalizeLevelChoiceHeights();
+}
+function equalizeLevelChoiceHeights() {
+  const buttons = document.querySelectorAll('#instrumentLevelChoices .level-choice');
+  if (!buttons.length) return;
+  buttons.forEach(b => { b.style.height = 'auto'; });
+  const maxHeight = Math.max(...Array.from(buttons).map(b => b.getBoundingClientRect().height));
+  buttons.forEach(b => { b.style.height = maxHeight + 'px'; });
+}
+function setInstrumentLevel(value) {
+  if (!instrumentLevelTarget) return;
+  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  cfg.getLevels()[instrumentLevelTarget.instrument] = value;
+  renderInstrumentBadges(activeInstrumentPickerId);
+  if (cfg.onChange) cfg.onChange();
+  closeInstrumentLevelSheet();
+}
+function removeInstrumentFromSheet() {
+  if (!instrumentLevelTarget) return;
+  quickRemoveInstrument(activeInstrumentPickerId, instrumentLevelTarget.instrument);
+  closeInstrumentLevelSheet();
+}
+function closeInstrumentLevelSheet() {
+  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  if (cfg && instrumentLevelTarget && instrumentLevelTarget.cameFromList && !cfg.getLevels()[instrumentLevelTarget.instrument]) {
+    const list = cfg.getInstruments();
+    const idx = list.indexOf(instrumentLevelTarget.instrument);
+    if (idx !== -1) list.splice(idx, 1);
+    renderInstrumentBadges(activeInstrumentPickerId);
+  }
+  document.getElementById('instrumentLevelModal').classList.remove('visible');
+  document.getElementById('instrumentPickStep').style.display = 'block';
+  document.getElementById('instrumentLevelStep').style.display = 'none';
+  document.getElementById('instrumentLevelFooter').style.display = 'none';
+  document.getElementById('instrumentLevelBackBtn').hidden = true;
+  instrumentLevelTarget = null;
+}
+
+// ─── Niveau-toelichting (volledige tabel, i-knop) ────────────────────────
+function openMusicianNiveauInfoModal() {
+  const rowsHTML = NIVEAU_INFO_MUSICIAN_ROWS.map(r => `<tr>${r.map((c, i) => `<td>${escHtml(i === 0 ? stripParenthetical(c) : c)}</td>`).join('')}</tr>`).join('');
+  document.getElementById('niveauInfoModalContent').innerHTML = `
+    <div class="filter-title" style="margin-bottom:4px;">Niveau-indeling per instrument</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies per instrument het niveau waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
+    <div class="niveau-info-wrap">
+      <table class="niveau-info-table">
+        <thead><tr>${NIVEAU_INFO_MUSICIAN_HEADERS.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    </div>`;
+  document.getElementById('niveauInfoModal').classList.add('visible');
+}
+
+// ─── URL-veiligheid (TT-05, 1-op-1 uit index.html) ────────────────────────
+// javascript:-URL's zijn het echte risico bij een <img src>/<a href> die
+// rechtstreeks uit gebruikersinvoer of de database komt. blob: is
+// toegestaan voor de lokale foto-preview (URL.createObjectURL).
+function safeUrl(u) {
+  const s = String(u ?? '').trim();
+  return /^(https?:\/\/|blob:)/i.test(s) ? escHtml(s) : '';
+}
+
+// ─── Bestandsupload naar Supabase Storage (TT-02/TT-87, 1-op-1 uit index.html)
+// Verwacht dezelfde twee buckets als index.html: 'avatars' en 'media'.
+
+const AVATAR_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const AVATAR_TYPE_LABEL = 'JPG, PNG, GIF of WEBP';
+const MEDIA_MIME_TYPES = AVATAR_MIME_TYPES.concat(['video/mp4', 'video/quicktime']);
+const MEDIA_TYPE_LABEL = 'JPG, PNG, GIF, WEBP, MP4 of MOV';
+
+// Geeft null terug als het bestand mag. Geeft anders een leesbare melding.
+function fileTypeProblem(file, allowedTypes, typeLabel) {
+  const type = (file.type || '').toLowerCase();
+  if (allowedTypes.includes(type)) return null;
+  if (type === 'image/heic' || type === 'image/heif') {
+    return 'Dit fotoformaat (HEIC) werkt niet. Zet op je iPhone in Instellingen → Camera → Indelingen de optie "Meest compatibel" aan, of sla de foto op als JPG.';
+  }
+  return `Dit bestandsformaat werkt niet. Gebruik ${typeLabel}.`;
+}
+
+async function uploadToStorage(bucket, userId, file, maxBytes, maxLabel, allowedTypes, typeLabel) {
+  if (file.size > maxBytes) throw new Error(`Bestand is te groot. Maximum ${maxLabel}.`);
+  if (allowedTypes) {
+    const problem = fileTypeProblem(file, allowedTypes, typeLabel);
+    if (problem) throw new Error(problem);
+  }
+  const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
+  const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error: upErr } = await db.storage.from(bucket).upload(path, file, { cacheControl: '3600', upsert: false });
+  if (upErr) throw upErr;
+  const { data } = db.storage.from(bucket).getPublicUrl(path);
+  return { url: data.publicUrl, path };
+}
+function uploadAvatarFile(file, userId) {
+  return uploadToStorage('avatars', userId, file, 5 * 1024 * 1024, '5 MB', AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
+}
+function uploadMediaFile(file, userId) {
+  return uploadToStorage('media', userId, file, 50 * 1024 * 1024, '50 MB', MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
+}
+
+// ─── Platform herkennen bij een mediakoppeling (1-op-1 uit index.html) ────
+function detectPlatform(url) {
+  if (url.includes('youtube') || url.includes('youtu.be')) return 'YouTube';
+  if (url.includes('instagram')) return 'Instagram';
+  if (url.includes('soundcloud')) return 'SoundCloud';
+  if (url.includes('tiktok')) return 'TikTok';
+  if (url.includes('spotify')) return 'Spotify';
+  return 'Link';
+}

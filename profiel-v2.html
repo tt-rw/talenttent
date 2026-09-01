@@ -11,11 +11,15 @@
   vanuit index.html wordt hiernaartoe gelinkt, dit bestand is alleen
   bereikbaar via het directe adres talenttent.org/profiel-v2.html.
 
-  Status: tegeloverzicht werkt. Tegel "Wie ben je" is volledig gebouwd en
-  opgeslagen wijzigingen raken alleen de kolommen van deze tegel — nooit de
-  andere vier tegels (zie toelichting bij saveWieBenJe() hieronder). De
-  andere vier tegels zijn nog placeholders: ze openen een leeg subscherm met
-  een duidelijke tekst, geen namaak-invoervelden die niets doen.
+  Status: alle vijf tegels zijn gebouwd — tegeloverzicht, "Wie ben je",
+  "Wat speel je", "Wat zoek je", "Je setlist", "Je mediahoek". Opgeslagen
+  wijzigingen raken per tegel alleen de eigen kolommen — nooit de andere
+  (zie saveWieBenJe()/saveWatSpeelJe()/saveWatZoekJe()/saveJeSetlist()/
+  saveJeMediahoek() hieronder). "Je mediahoek" raakt musicians.avatar_url
+  en musician_media (banner/TT-169 hoort hier bewust nog niet bij). De
+  instrument-/genrepicker, de niveau-modals, en de upload-/URL-helpers
+  staan in profiel-gedeeld.js, generiek gemaakt, zodat een volgende pagina
+  ze kan hergebruiken zonder kopie.
 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="profiel-gedeeld.js"></script>
@@ -81,7 +85,11 @@
     max-height:220px; overflow-y:auto;
   }
   .ac-items.open{ display:block; }
-  .ac-item{ padding:10px 12px; font-size:14px; cursor:pointer; }
+  .ac-item{
+    padding:10px 12px; font-size:14px; cursor:pointer; min-height:44px; box-sizing:border-box;
+    display:flex; align-items:center; border-bottom:1px solid var(--border);
+  }
+  .ac-item:last-child{ border-bottom:none; }
   .ac-item:active{ background:var(--surface); }
 
   .panel-title{ font-size:18px; font-weight:700; margin:0 0 2px; }
@@ -101,6 +109,250 @@
   }
   .gate-box{ text-align:center; padding:60px 16px; }
   [hidden]{ display:none !important; }
+
+  /* ─── TT-168, tegel "Wat speel je": instrument-/genrepicker en
+       niveau-modals. 1-op-1 CSS uit index.html (TT-51/TT-116), zodat dit
+       scherm er niet anders uitziet dan de wizard. ─── */
+  .tag-grid{ display:flex; flex-wrap:wrap; gap:10px; margin-top:4px; }
+  .tag{
+    background:var(--surface2); border:1px solid var(--border); border-radius:6px;
+    display:inline-flex; align-items:center; min-height:44px; padding:8px 16px;
+    font-size:13px; cursor:pointer; transition:all .15s; user-select:none; font-weight:500;
+  }
+  .tag:hover{ border-color:var(--accent); color:var(--accent); }
+  .tag.selected{ background:var(--accent); color:#000; border-color:var(--accent); font-weight:700; }
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:200;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    opacity:0; pointer-events:none; transition:opacity .3s; backdrop-filter:blur(4px);
+  }
+  .modal-overlay.visible{ opacity:1; pointer-events:all; }
+  #niveauInfoModal{ z-index:210; }
+  .modal-box{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    max-width:560px; width:100%; max-height:90vh; overflow-y:auto; padding:32px; position:relative;
+  }
+  .modal-box-lg{ max-width:480px; }
+  .modal-box-slg{ max-width:520px; }
+  .modal-box-xl{ max-width:760px; }
+  .modal-close{
+    position:absolute; top:16px; right:16px; background:var(--surface2); border:1px solid var(--border);
+    border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:18px; color:var(--muted);
+  }
+  .modal-close:hover{ color:var(--text); border-color:#555; }
+  .modal-back{
+    position:absolute; top:16px; left:16px; background:var(--surface2); border:1px solid var(--border);
+    border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:18px; color:var(--muted);
+  }
+  .modal-back:hover{ color:var(--text); border-color:#555; }
+  .modal-back[hidden]{ display:none; }
+  .modal-box-sticky-footer{ display:flex; flex-direction:column; padding:0; overflow:hidden; }
+  .modal-box-sticky-footer .modal-scroll-area{ overflow-y:auto; padding:32px; flex:1; min-height:0; }
+  .modal-sticky-footer{ flex-shrink:0; padding:16px 32px; border-top:1px solid var(--border); background:var(--surface); }
+  .modal-sticky-footer:empty{ display:none; }
+
+  .filter-title{ font-family:'Roboto',sans-serif; font-weight:700; font-size:19px; color:var(--accent); letter-spacing:.5px; margin-bottom:20px; }
+
+  .level-choice{
+    display:flex; align-items:flex-start; gap:12px; width:100%; min-height:56px;
+    padding:10px 14px; margin-bottom:8px; background:var(--surface2); border:1px solid var(--border);
+    border-radius:10px; color:var(--text); font-family:'Roboto',sans-serif; font-size:14px;
+    text-align:left; cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  .level-choice:hover{ border-color:var(--accent); }
+  .level-choice.selected{ border-color:var(--accent); background:rgba(245,197,24,0.12); }
+  .level-choice-stars{ flex-shrink:0; font-size:18px; letter-spacing:1px; color:var(--border); margin-top:2px; }
+  .level-choice-stars .filled{ color:var(--accent); }
+  .level-choice-label{ line-height:1.3; }
+  .picker-level-blurb{ font-size:12px; color:var(--muted); line-height:1.4; margin-top:4px; }
+
+  .niveau-info-btn{
+    position:relative; display:inline-flex; align-items:center; justify-content:center;
+    width:24px; height:24px; border-radius:50%; border:1px solid var(--accent); background:none;
+    color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; margin-left:6px;
+    vertical-align:middle; padding:0;
+  }
+  .niveau-info-btn:hover{ background:rgba(245,197,24,0.15); }
+  .niveau-info-btn::after{ content:''; position:absolute; top:-10px; right:-10px; bottom:-10px; left:-10px; }
+  .niveau-info-wrap{ overflow-x:auto; margin:12px 0 20px; }
+  .niveau-info-table{ border-collapse:collapse; width:100%; min-width:640px; font-size:12px; }
+  .niveau-info-table th, .niveau-info-table td{ border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top; }
+  .niveau-info-table th{ color:var(--accent); font-weight:700; white-space:nowrap; }
+  .niveau-info-table td:first-child, .niveau-info-table th:first-child{ white-space:nowrap; font-weight:600; }
+
+  .picker-field{
+    width:100%; box-sizing:border-box; display:flex; align-items:center; justify-content:space-between;
+    gap:8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+    min-height:48px; padding:10px 14px; margin-top:4px; font-family:'Roboto',sans-serif; font-size:14px;
+    color:var(--text); cursor:pointer; transition:border-color .15s;
+  }
+  .picker-field:hover{ border-color:var(--accent); }
+  .picker-field-chevron{ color:var(--muted); font-size:12px; flex-shrink:0; }
+  .picker-badge-row{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .picker-badge{
+    position:relative; width:auto; min-height:44px; box-sizing:border-box; display:flex;
+    align-items:center; justify-content:center; background:var(--surface2); color:var(--accent);
+    border:1.5px solid var(--accent); border-radius:8px; padding:6px 26px 6px 10px; font-size:13px;
+    font-weight:400; line-height:1.25; text-align:center;
+  }
+  .picker-badge.has-level{ cursor:pointer; flex-direction:column; min-height:56px; padding:8px 26px 6px 10px; }
+  .picker-badge-label{ flex:1; display:flex; align-items:center; justify-content:center; }
+  .picker-badge-stars{ font-size:11px; min-height:14px; letter-spacing:1px; }
+  .picker-badge-remove{
+    position:absolute; top:50%; right:6px; transform:translateY(-50%); width:28px; height:28px;
+    display:flex; align-items:center; justify-content:center; background:transparent; border:none;
+    color:var(--muted); cursor:pointer; padding:0; font-size:14px;
+  }
+  .picker-badge-remove::after{ content:''; position:absolute; inset:-8px; }
+  .picker-list-item{
+    padding:14px 10px; font-size:15px; border-top:1px solid var(--border); cursor:pointer;
+    display:flex; justify-content:space-between; align-items:center; min-height:44px; box-sizing:border-box;
+  }
+  .picker-list-item:first-child{ border-top:none; }
+  .picker-list-item:hover{ color:var(--accent); }
+  .picker-list-item.selected{ background:var(--surface2); border-left:3px solid var(--accent); padding-left:7px; }
+  .picker-list-item-check{ color:var(--accent); font-size:16px; flex-shrink:0; margin-left:8px; }
+  .picker-list-empty{ padding:14px 4px; font-size:14px; color:var(--muted); }
+
+  /* TT-168, tegel "Wat zoek je": doel-kaarten, 1-op-1 uit index.html. */
+  .goal-options{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .goal-card{
+    background:var(--surface2); border:1px solid var(--border); border-radius:10px;
+    padding:16px; cursor:pointer; transition:all .2s; text-align:center;
+  }
+  .goal-card:hover{ border-color:var(--accent); }
+  .goal-card.selected{ border-color:var(--accent); background:rgba(245,197,24,0.08); }
+  .goal-card .goal-label{ font-size:13px; font-weight:600; }
+  .goal-card .goal-desc{ font-size:11px; color:var(--muted); margin-top:4px; font-weight:300; }
+
+  @media (max-width: 560px) {
+    .goal-options{ grid-template-columns:1fr; }
+  }
+
+  /* TT-168, tegel "Je setlist": eigen repertoire, 1-op-1 uit index.html. */
+  @keyframes levelPulse { 0%, 100% { opacity:1; } 50% { opacity:.4; } }
+  .songs-list{ display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+  .level-btn{
+    display:inline-flex; align-items:center; justify-content:center; min-height:44px; min-width:44px;
+    padding:8px 14px; border-radius:6px; font-size:13px; border:1px solid var(--border);
+    background:transparent; color:var(--muted); cursor:pointer; transition:all .15s;
+    white-space:nowrap; font-family:'Roboto',sans-serif;
+  }
+  .level-btn:hover{ border-color:#555; color:var(--text); }
+  .level-btn.active-basis, .level-btn.active-bijna, .level-btn.active-podium{
+    background:var(--surface2); border-color:var(--text); color:var(--text); font-weight:700; font-style:italic;
+  }
+  .song-remove{
+    display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; flex-shrink:0;
+    background:none; border:none; color:var(--muted); cursor:pointer; font-size:18px; line-height:1;
+    padding:0; transition:color .15s;
+  }
+  .song-remove:hover{ color:var(--danger); }
+
+  /* TT-168, tegel "Je mediahoek": avatar-upload + media-upload + links,
+     1-op-1 uit index.html (TT-02/TT-87). Banner (TT-169) hoort hier bewust
+     nog niet bij — geen kolom, geen upload, geen ontwerp. */
+  @keyframes mhSpin { to { transform: rotate(360deg); } }
+  .avatar-upload-area{ display:flex; align-items:center; gap:24px; }
+  .avatar-preview-wrap{ position:relative; flex-shrink:0; }
+  .avatar-preview{
+    width:96px; height:96px; border-radius:50%; background:var(--surface2); border:3px solid var(--border);
+    display:flex; align-items:center; justify-content:center; font-family:'Roboto',sans-serif;
+    font-size:34px; color:var(--muted); overflow:hidden; transition:border-color .3s; cursor:pointer;
+  }
+  .avatar-preview img{ width:100%; height:100%; object-fit:cover; }
+  .avatar-edit-btn{
+    position:absolute; bottom:-2px; right:-2px; width:44px; height:44px; border-radius:50%;
+    background:var(--accent); border:2px solid var(--bg); display:flex; align-items:center; justify-content:center;
+    font-size:13px; cursor:pointer;
+  }
+  .avatar-upload-input{ display:none; }
+  .avatar-info{ flex:1; }
+  .avatar-info strong{ font-size:14px; display:block; margin-bottom:6px; }
+  .avatar-info p{ font-size:12px; color:var(--muted); line-height:1.5; }
+  .avatar-remove-btn{
+    margin-top:8px; background:none; border:1px solid var(--border); color:var(--muted); font-size:11px;
+    padding:4px 10px; border-radius:4px; cursor:pointer; font-family:'Roboto',sans-serif; display:none;
+  }
+  .avatar-remove-btn.visible{ display:inline-block; }
+  .avatar-remove-btn:hover{ color:var(--danger); border-color:var(--danger); }
+
+  .media-tip{
+    background:rgba(245,197,24,0.07); border:1px solid rgba(245,197,24,0.2); border-radius:8px;
+    padding:12px 16px; font-size:13px; color:#c8a800; margin:24px 0; display:flex; gap:10px;
+    align-items:flex-start; line-height:1.5;
+  }
+  .media-tabs{
+    display:flex; gap:0; background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+    overflow:hidden; margin-bottom:20px;
+  }
+  .media-tab{
+    flex:1; padding:10px; text-align:center; font-size:13px; font-weight:600; cursor:pointer;
+    color:var(--muted); border:none; background:transparent; font-family:'Roboto',sans-serif;
+    transition:all .2s; border-right:1px solid var(--border);
+  }
+  .media-tab:last-child{ border-right:none; }
+  .media-tab.active{ background:var(--surface); color:var(--text); }
+  .media-tab:hover:not(.active){ color:var(--text); }
+  .media-pane{ display:none; }
+  .media-pane.active{ display:block; }
+
+  .drop-zone{
+    border:2px dashed var(--border); border-radius:10px; padding:36px 20px; text-align:center;
+    cursor:pointer; transition:all .2s; position:relative; margin-bottom:12px;
+  }
+  .drop-zone:hover, .drop-zone.drag-over{ border-color:var(--accent); background:rgba(245,197,24,0.04); }
+  .drop-zone input[type=file]{
+    position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; padding:0;
+    border:none; background:none;
+  }
+  .drop-label{ font-size:14px; color:var(--muted); font-weight:300; }
+  .drop-label strong{ color:var(--text); }
+  .drop-hint{ font-size:11px; color:var(--muted); margin-top:6px; letter-spacing:.5px; }
+
+  .media-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(100px, 1fr)); gap:10px; margin-top:12px; }
+  .media-thumb{
+    position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; background:var(--surface2);
+    border:1px solid var(--border);
+  }
+  .media-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .media-thumb .thumb-remove{
+    position:absolute; top:4px; right:4px; background:rgba(0,0,0,0.7); border:none; color:#fff;
+    border-radius:50%; width:22px; height:22px; font-size:12px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .media-thumb .thumb-type{
+    position:absolute; bottom:4px; left:4px; background:rgba(0,0,0,0.7); font-size:10px; padding:2px 5px;
+    border-radius:3px; color:var(--muted); letter-spacing:.5px;
+  }
+
+  .link-row{ display:flex; gap:10px; margin-bottom:10px; align-items:center; }
+  .link-row input{ flex:1; }
+  .link-type-badge{
+    font-size:11px; padding:4px 8px; border-radius:4px; background:var(--surface2); border:1px solid var(--border);
+    white-space:nowrap; color:var(--muted); min-width:70px; text-align:center;
+  }
+  .link-row .song-remove{ flex-shrink:0; }
+  .add-link-btn{
+    background:transparent; border:1px dashed var(--border); border-radius:8px; color:var(--muted);
+    font-size:13px; padding:10px; width:100%; cursor:pointer; font-family:'Roboto',sans-serif;
+    transition:all .15s; margin-top:4px;
+  }
+  .add-link-btn:hover{ border-color:var(--accent); color:var(--accent); }
+
+  @media (max-width: 560px) {
+    .modal-overlay{ padding:0; align-items:stretch; }
+    .modal-box{
+      max-height:100vh; max-height:100dvh; height:100dvh; width:100%; max-width:none;
+      border-radius:0; border:none; overflow-y:auto; padding-bottom:calc(24px + env(safe-area-inset-bottom, 0px));
+    }
+    .modal-box-sticky-footer{ padding-bottom:0; }
+    .modal-box-sticky-footer .modal-scroll-area{ padding-bottom:24px; }
+    .modal-box-sticky-footer .modal-sticky-footer{ padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px)); }
+  }
 </style>
 </head>
 <body>
@@ -182,13 +434,250 @@
     </div>
   </div>
 
-  <!-- Subscherm: placeholder voor de vier nog niet gebouwde tegels -->
+  <!-- Subscherm: Wat speel je -->
+  <div id="watSpeelJeScreen" hidden>
+    <div class="panel-title">Wat speel je (bewerken)</div>
+    <div class="panel-sub">Je instrument(en), je niveau per instrument, en de genres die je speelt.</div>
+
+    <div class="field">
+      <label>Mijn Instrumenten <span class="req">*</span></label>
+      <div style="display:flex;align-items:center;gap:8px;margin:6px 0 10px;">
+        <span style="font-size:12px;color:var(--muted);">Toelichting op niveau:</span>
+        <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
+      </div>
+      <div class="picker-field" id="wspInstrumentField">
+        <span class="picker-field-label" id="wspInstrumentFieldLabel">Kies een instrument</span>
+        <span class="picker-field-chevron">▾</span>
+      </div>
+      <div class="picker-badge-row" id="wspInstrumentBadgeRow"></div>
+    </div>
+
+    <div class="field">
+      <label>Mijn Genre(s) <span class="req">*</span></label>
+      <div class="picker-field" id="wspGenreField">
+        <span class="picker-field-label" id="wspGenreFieldLabel">Kies een genre</span>
+        <span class="picker-field-chevron">▾</span>
+      </div>
+      <div class="picker-badge-row" id="wspGenreBadgeRow"></div>
+    </div>
+
+    <div class="field">
+      <label>Wat speel je vooral?</label>
+      <div class="tag-grid" id="wspRepertoireTypeGrid">
+        <div class="tag" data-val="covers" onclick="wspSelectRepertoireType(this,'covers')">Covers</div>
+        <div class="tag" data-val="eigen" onclick="wspSelectRepertoireType(this,'eigen')">Eigen nummers</div>
+        <div class="tag" data-val="beide" onclick="wspSelectRepertoireType(this,'beide')">Allebei</div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" onclick="cancelWatSpeelJe()">Annuleren</button>
+      <button class="btn btn-primary" onclick="saveWatSpeelJe()">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Subscherm: Wat zoek je -->
+  <div id="watZoekJeScreen" hidden>
+    <div class="panel-title">Wat zoek je (bewerken)</div>
+    <div class="panel-sub">Je doel op The Talent Tent. Alle drie de velden zijn optioneel.</div>
+
+    <div class="field">
+      <label>Wat is je doel?</label>
+      <div class="goal-options" id="wzjGoalOptions">
+        <div class="goal-card" data-val="oefenen" onclick="wzjSelectGoal(this,'oefenen')">
+          <div class="goal-label">Samen oefenen</div>
+          <div class="goal-desc">Jammen, repeteren, skills verbeteren</div>
+        </div>
+        <div class="goal-card" data-val="band" onclick="wzjSelectGoal(this,'band')">
+          <div class="goal-label">Band starten</div>
+          <div class="goal-desc">Serieuze band opzetten met vaste leden</div>
+        </div>
+        <div class="goal-card" data-val="optreden" onclick="wzjSelectGoal(this,'optreden')">
+          <div class="goal-label">Optreden</div>
+          <div class="goal-desc">Optreden op festivals, evenementen, enz.</div>
+        </div>
+        <div class="goal-card" data-val="alles" onclick="wzjSelectGoal(this,'alles')">
+          <div class="goal-label">Alles!</div>
+          <div class="goal-desc">Open voor alles wat muzikaal is</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Hoe vaak wil je oefenen?</label>
+      <div class="tag-grid" id="wzjRehearsalFreqGrid">
+        <div class="tag" data-val="dagelijks" onclick="wzjSelectRehearsalFrequency(this,'dagelijks')">Dagelijks</div>
+        <div class="tag" data-val="wekelijks" onclick="wzjSelectRehearsalFrequency(this,'wekelijks')">Wekelijks</div>
+        <div class="tag" data-val="paar_per_maand" onclick="wzjSelectRehearsalFrequency(this,'paar_per_maand')">Paar keer per maand</div>
+        <div class="tag" data-val="losse_jams" onclick="wzjSelectRehearsalFrequency(this,'losse_jams')">Losse jams, als het uitkomt</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Wat wil je de komende tijd bereiken?</label>
+      <div class="tag-grid" id="wzjAmbitionGrid">
+        <div class="tag" data-val="verbeteren" onclick="wzjSelectMusicalAmbition(this,'verbeteren')">Mezelf verbeteren op mijn instrument</div>
+        <div class="tag" data-val="stijlen" onclick="wzjSelectMusicalAmbition(this,'stijlen')">Nieuwe stijlen ontdekken</div>
+        <div class="tag" data-val="eigen_werk" onclick="wzjSelectMusicalAmbition(this,'eigen_werk')">Samen nummers/eigen werk maken</div>
+        <div class="tag" data-val="plezier" onclick="wzjSelectMusicalAmbition(this,'plezier')">Gewoon plezier, geen groot plan</div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" onclick="cancelWatZoekJe()">Annuleren</button>
+      <button class="btn btn-primary" onclick="saveWatZoekJe()">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Subscherm: Je setlist -->
+  <div id="jeSetlistScreen" hidden>
+    <div class="panel-title">Je setlist (bewerken)</div>
+    <div class="panel-sub">Zoek eerst een band of artiest, kies dan een nummer.</div>
+
+    <div class="field ac-list">
+      <label>Band of artiest</label>
+      <input type="text" id="jstArtistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
+        oninput="jstOnArtistSearch(this.value)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault(); jstSelectFirstAc('jstArtistAc');}"
+        onblur="setTimeout(()=>jstCloseAc('jstArtistAc'),200)">
+      <div class="ac-items" id="jstArtistAc"></div>
+    </div>
+
+    <div class="field ac-list" id="jstTrackWrap" style="display:none;">
+      <label id="jstTrackLabel">Nummer</label>
+      <input type="text" id="jstTrackSearch" placeholder="Zoek een nummer..." autocomplete="off"
+        oninput="jstOnTrackSearch(this.value)"
+        onkeydown="if(event.key==='Enter'){event.preventDefault(); jstSelectFirstAc('jstTrackAc');}"
+        onblur="setTimeout(()=>jstCloseAc('jstTrackAc'),200)">
+      <div class="ac-items" id="jstTrackAc"></div>
+    </div>
+
+    <div class="field">
+      <label>Jouw repertoire</label>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.6;">
+        Beheersing: <strong style="color:var(--text);font-style:italic;">Basis</strong> (kent de structuur, nog fouten) ·
+        <strong style="color:var(--text);font-style:italic;">Bijna</strong> (soepel, kleine slordigheden) ·
+        <strong style="color:var(--text);font-style:italic;">Podium</strong> (speelt het live zonder problemen)
+      </p>
+      <div class="songs-list" id="jstSongsList"></div>
+      <p id="jstSongsListEmpty" style="font-size:13px;color:var(--muted);margin-top:4px;">Nog geen nummers toegevoegd.</p>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" onclick="cancelJeSetlist()">Annuleren</button>
+      <button class="btn btn-primary" onclick="saveJeSetlist()">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Subscherm: Je mediahoek -->
+  <div id="mediahoekScreen" hidden>
+    <div class="panel-title">Je mediahoek (bewerken)</div>
+    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud.</div>
+
+    <div class="field" style="margin-bottom:0;">
+      <label>Profielfoto</label>
+      <div class="avatar-upload-area">
+        <div class="avatar-preview-wrap">
+          <div class="avatar-preview" id="mhAvatarPreview" onclick="document.getElementById('mhAvatarInput').click()">
+            <span id="mhAvatarInitials">T</span>
+          </div>
+          <div class="avatar-edit-btn" onclick="document.getElementById('mhAvatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+        </div>
+        <div class="avatar-info">
+          <strong>Upload een foto van jezelf</strong>
+          <p>Een echte foto zorgt voor meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
+          <button class="avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhRemoveAvatar()">Foto verwijderen</button>
+        </div>
+      </div>
+      <input type="file" accept="image/*" class="avatar-upload-input" id="mhAvatarInput" autocomplete="off" onchange="mhHandleAvatarUpload(this.files[0]); this.value=''">
+    </div>
+
+    <div class="media-tip">
+      <span><strong>Tip:</strong> een actueel profiel met recente media trekt meer aandacht.</span>
+    </div>
+
+    <div class="media-tabs">
+      <button type="button" class="media-tab active" onclick="switchMhMediaTab('upload', this)">Upload</button>
+      <button type="button" class="media-tab" onclick="switchMhMediaTab('links', this)">Links</button>
+    </div>
+
+    <div class="media-pane active" id="mhPaneUpload">
+      <div class="drop-zone" id="mhDropZone"
+        ondragover="event.preventDefault(); this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="mhHandleDrop(event)">
+        <input type="file" accept="image/*,video/*" multiple autocomplete="off" onchange="mhHandleFileSelect(this.files); this.value=''">
+        <div class="drop-label"><strong>Sleep bestanden hierheen</strong> of klik om te selecteren</div>
+        <div class="drop-hint">Foto's (JPG, PNG) · Video's (MP4, MOV) · Max 50 MB per bestand</div>
+      </div>
+      <div class="media-grid" id="mhMediaGrid"></div>
+    </div>
+
+    <div class="media-pane" id="mhPaneLinks">
+      <div id="mhLinksList"></div>
+      <button type="button" class="add-link-btn" onclick="mhAddLinkRow()">+ Link toevoegen</button>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" onclick="cancelJeMediahoek()">Annuleren</button>
+      <button class="btn btn-primary" onclick="saveJeMediahoek()">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Alle vijf tegels zijn nu gebouwd; geen placeholderScreen meer nodig
+       zolang er geen nieuwe tegel bij komt. Het element blijft leeg in de
+       HTML staan (showScreen() verwacht het), voor het geval dat. -->
   <div id="placeholderScreen" hidden>
     <div class="panel-title" id="placeholderTitle"></div>
     <div class="placeholder-box" id="placeholderText"></div>
     <button class="btn btn-ghost btn-block" onclick="goToOverview()">Terug</button>
   </div>
 
+</div>
+
+<!-- TT-51-uitbreiding: niveau-toelichtingstabel, geopend via de i-knop. -->
+<div class="modal-overlay" id="niveauInfoModal" onclick="if(event.target===this)this.classList.remove('visible')">
+  <div class="modal-box modal-box-xl">
+    <button class="modal-close" onclick="document.getElementById('niveauInfoModal').classList.remove('visible')">✕</button>
+    <div id="niveauInfoModalContent"></div>
+  </div>
+</div>
+
+<!-- TT-116: instrument kiezen + niveau kiezen in één modal. -->
+<div class="modal-overlay" id="instrumentLevelModal" onclick="if(event.target===this)closeInstrumentLevelSheet()">
+  <div class="modal-box modal-box-sticky-footer modal-box-slg">
+    <button class="modal-back" id="instrumentLevelBackBtn" onclick="backToInstrumentPick()" aria-label="Terug naar de instrumentenlijst" hidden><span aria-hidden="true">←</span></button>
+    <button class="modal-close" onclick="closeInstrumentLevelSheet()" aria-label="Sluiten">✕</button>
+
+    <div id="instrumentPickStep" class="modal-scroll-area">
+      <div class="filter-title" style="margin-bottom:14px;padding-right:52px;">Kies een instrument</div>
+      <div id="instrumentPickItems"></div>
+    </div>
+
+    <div id="instrumentLevelStep" class="modal-scroll-area" style="display:none;">
+      <div class="filter-title" id="instrumentLevelTitle" style="margin-bottom:4px;padding-left:52px;padding-right:52px;">Wat is je huidige niveau?</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;" id="instrumentLevelSubtitle">Kies het niveau waar je het dichtst bij in de buurt zit.</p>
+      <div id="instrumentLevelChoices"></div>
+    </div>
+
+    <div class="modal-sticky-footer" id="instrumentLevelFooter" style="display:none;">
+      <div style="display:flex;gap:12px;">
+        <button type="button" class="btn btn-ghost" style="flex:1;min-width:0;color:var(--danger);" onclick="removeInstrumentFromSheet()">Instrument verwijderen</button>
+        <button type="button" class="btn btn-ghost" style="flex:1;min-width:0;" onclick="openMusicianNiveauInfoModal()">Volledige toelichting op dit niveau</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TT-116: gedeeld keuzescherm voor genre (kies-en-badge, geen niveau). -->
+<div class="modal-overlay" id="pickerListModal" onclick="if(event.target===this)closePickerList()">
+  <div class="modal-box modal-box-sticky-footer modal-box-lg">
+    <button class="modal-close" onclick="closePickerList()" aria-label="Sluiten">✕</button>
+    <div class="modal-scroll-area">
+      <div class="filter-title" id="pickerListTitle" style="margin-bottom:14px;padding-right:52px;"></div>
+      <div id="pickerListItems"></div>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="appToast"></div>
@@ -209,7 +698,7 @@ let myMusicianId = null;
 const TILES = [
   { id: 'wieBenJe',   title: 'Wie ben je',      sub: 'naam - bio',                       hint: null },
   { id: 'watSpeelJe', title: 'Wat speel je',    sub: 'instrumenten - niveau - genres - eigen nummers/covers', hint: null },
-  { id: 'watZoekJe',  title: 'Wat zoek je',     sub: 'muzikant - band - optreden - ambitie', hint: 'Instrumenten die je zoekt in een ander stel je in bij Zoeken.' },
+  { id: 'watZoekJe',  title: 'Wat zoek je',     sub: 'muzikant - band - optreden - ambitie', hint: null },
   { id: 'jeSetlist',  title: 'Je setlist',      sub: 'setlist - eigen nummers',           hint: null },
   { id: 'mediahoek',  title: 'Je mediahoek',    sub: "video's - foto's - profielfoto",    hint: null },
 ];
@@ -232,15 +721,10 @@ function renderTiles() {
 // geschiedenis. Vanuit een subscherm sluit de terugknop dat subscherm en
 // toont het tegeloverzicht — nooit in één klik door naar Mijn Profiel.
 const SCREENS = ['overview', 'wieBenJe', 'watSpeelJe', 'watZoekJe', 'jeSetlist', 'mediahoek'];
-const PLACEHOLDER_TEXT = {
-  watSpeelJe: 'Dit onderdeel is nog niet gebouwd. Instrumenten, niveau, genres en "eigen nummers/covers" komen hier.',
-  watZoekJe:  'Dit onderdeel is nog niet gebouwd. Doel, oefenfrequentie en ambitie komen hier.',
-  jeSetlist:  'Dit onderdeel is nog niet gebouwd. Je repertoire (nummers zoeken en toevoegen) komt hier.',
-  mediahoek:  'Dit onderdeel is nog niet gebouwd. Video\'s, foto\'s en je profielfoto komen hier.',
-};
+const PLACEHOLDER_TEXT = {};
 
 function showScreen(id) {
-  ['overviewScreen','wieBenJeScreen','placeholderScreen'].forEach(elId => {
+  ['overviewScreen','wieBenJeScreen','watSpeelJeScreen','watZoekJeScreen','jeSetlistScreen','mediahoekScreen','placeholderScreen'].forEach(elId => {
     document.getElementById(elId).hidden = true;
   });
   if (id === 'overview') {
@@ -248,6 +732,18 @@ function showScreen(id) {
   } else if (id === 'wieBenJe') {
     document.getElementById('wieBenJeScreen').hidden = false;
     openWieBenJe();
+  } else if (id === 'watSpeelJe') {
+    document.getElementById('watSpeelJeScreen').hidden = false;
+    openWatSpeelJe();
+  } else if (id === 'watZoekJe') {
+    document.getElementById('watZoekJeScreen').hidden = false;
+    openWatZoekJe();
+  } else if (id === 'jeSetlist') {
+    document.getElementById('jeSetlistScreen').hidden = false;
+    openJeSetlist();
+  } else if (id === 'mediahoek') {
+    document.getElementById('mediahoekScreen').hidden = false;
+    openJeMediahoek();
   } else {
     document.getElementById('placeholderTitle').textContent = TILES.find(t => t.id === id).title + ' (bewerken)';
     document.getElementById('placeholderText').textContent = PLACEHOLDER_TEXT[id];
@@ -463,6 +959,637 @@ async function saveWieBenJe() {
     return;
   }
   wbjSnapshot = wbjFieldSnapshot();
+  showToast('Wijzigingen opgeslagen.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tegel: Wat speel je
+// ═══════════════════════════════════════════════════════════════════════
+// Zelfde uitgangspunt als saveWieBenJe() hierboven: een eigen, smalle
+// opslaanfunctie. Deze raakt UITSLUITEND musician_instruments,
+// musician_genres en musicians.repertoire_type — niets anders, dus geen
+// risico voor de andere vier tegels. repertoire_type verhuist hierheen
+// vanuit de setlist-stap (TT-168-vervolg-besluit, 31-08-2026).
+
+let wspState = { instruments: [], instrumentLevels: {}, genres: [] };
+let wspRepertoireType = '';
+let wspSnapshot = null;
+
+function wspFieldSnapshot() {
+  return JSON.stringify({
+    instruments: wspState.instruments,
+    instrumentLevels: wspState.instrumentLevels,
+    genres: wspState.genres,
+    repertoireType: wspRepertoireType,
+  });
+}
+
+async function openWatSpeelJe() {
+  const { data, error } = await db.from('musicians')
+    .select('repertoire_type, musician_instruments(instrument, niveau), musician_genres(genre)')
+    .eq('id', myMusicianId).single();
+  if (error) {
+    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    return;
+  }
+  wspState.instruments = (data.musician_instruments || []).map(x => x.instrument);
+  wspState.instrumentLevels = {};
+  (data.musician_instruments || []).forEach(x => { if (x.niveau) wspState.instrumentLevels[x.instrument] = x.niveau; });
+  wspState.genres = (data.musician_genres || []).map(x => x.genre);
+  wspRepertoireType = data.repertoire_type || '';
+
+  initInstrumentPicker({
+    id: 'wspInstrument', fieldId: 'wspInstrumentField', badgeRowId: 'wspInstrumentBadgeRow',
+    getInstruments: () => wspState.instruments, getLevels: () => wspState.instrumentLevels,
+  });
+  initPicker({
+    id: 'wspGenre', fieldId: 'wspGenreField', badgeRowId: 'wspGenreBadgeRow',
+    options: GENRES, getList: () => wspState.genres,
+    placeholder: 'Kies een genre', sheetTitle: 'Kies een genre',
+  });
+  wspRenderRepertoireType();
+  wspSnapshot = wspFieldSnapshot();
+}
+
+// TT-52-patroon (zelfde als index.html): optioneel veld, nogmaals klikken
+// op de al gekozen tegel wist de keuze weer.
+function wspSelectRepertoireType(el, val) {
+  const already = el.classList.contains('selected');
+  document.querySelectorAll('#wspRepertoireTypeGrid .tag').forEach(t => t.classList.remove('selected'));
+  if (already) { wspRepertoireType = ''; return; }
+  el.classList.add('selected');
+  wspRepertoireType = val;
+}
+function wspRenderRepertoireType() {
+  document.querySelectorAll('#wspRepertoireTypeGrid .tag').forEach(t => {
+    t.classList.toggle('selected', t.dataset.val === wspRepertoireType);
+  });
+}
+
+function cancelWatSpeelJe() {
+  if (wspFieldSnapshot() !== wspSnapshot) {
+    if (!confirm('Weet je het zeker? Wat je hebt gewijzigd gaat verloren.')) return;
+  }
+  goToOverview();
+}
+
+async function saveWatSpeelJe() {
+  if (!wspState.instruments.length) { showToast('Selecteer minimaal één instrument.'); return; }
+  if (!wspState.genres.length) { showToast('Selecteer minimaal één genre.'); return; }
+
+  // TT-173-patroon: niets gewijzigd sinds het openen → niets opslaan, geen melding.
+  if (wspFieldSnapshot() === wspSnapshot) return;
+
+  const { error: uErr } = await db.from('musicians')
+    .update({ repertoire_type: wspRepertoireType || null }).eq('id', myMusicianId);
+  if (uErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(uErr)); return; }
+
+  await db.from('musician_instruments').delete().eq('musician_id', myMusicianId);
+  await db.from('musician_genres').delete().eq('musician_id', myMusicianId);
+
+  const { error: iErr } = await db.from('musician_instruments').insert(
+    wspState.instruments.map(instrument => ({ musician_id: myMusicianId, instrument, niveau: wspState.instrumentLevels[instrument] || null }))
+  );
+  if (iErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(iErr)); return; }
+
+  const { error: gErr } = await db.from('musician_genres').insert(
+    wspState.genres.map(genre => ({ musician_id: myMusicianId, genre }))
+  );
+  if (gErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(gErr)); return; }
+
+  wspSnapshot = wspFieldSnapshot();
+  showToast('Wijzigingen opgeslagen.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tegel: Wat zoek je
+// ═══════════════════════════════════════════════════════════════════════
+// Alle drie velden zijn optioneel — zelfde besluit als in de wizard (stap 3
+// blokkeert daar ook nooit de voortgang). Eigen smalle opslaanfunctie:
+// raakt uitsluitend musicians.goal, musicians.rehearsal_frequency,
+// musicians.musical_ambition.
+
+let wzjGoal = '';
+let wzjRehearsalFrequency = '';
+let wzjMusicalAmbition = '';
+let wzjSnapshot = null;
+
+function wzjFieldSnapshot() {
+  return JSON.stringify({ goal: wzjGoal, rehearsalFrequency: wzjRehearsalFrequency, musicalAmbition: wzjMusicalAmbition });
+}
+
+async function openWatZoekJe() {
+  const { data, error } = await db.from('musicians')
+    .select('goal, rehearsal_frequency, musical_ambition')
+    .eq('id', myMusicianId).single();
+  if (error) {
+    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    return;
+  }
+  wzjGoal = data.goal || '';
+  wzjRehearsalFrequency = data.rehearsal_frequency || '';
+  wzjMusicalAmbition = data.musical_ambition || '';
+  wzjRenderAll();
+  wzjSnapshot = wzjFieldSnapshot();
+}
+
+function wzjRenderAll() {
+  document.querySelectorAll('#wzjGoalOptions .goal-card').forEach(c => {
+    c.classList.toggle('selected', c.dataset.val === wzjGoal);
+  });
+  document.querySelectorAll('#wzjRehearsalFreqGrid .tag').forEach(t => {
+    t.classList.toggle('selected', t.dataset.val === wzjRehearsalFrequency);
+  });
+  document.querySelectorAll('#wzjAmbitionGrid .tag').forEach(t => {
+    t.classList.toggle('selected', t.dataset.val === wzjMusicalAmbition);
+  });
+}
+
+// Doel: zelfde patroon als index.html (selectGoal) — eenmaal gekozen, geen
+// nogmaals-klikken-om-te-wissen. Alleen frequentie/ambitie hebben dat.
+function wzjSelectGoal(el, val) {
+  document.querySelectorAll('#wzjGoalOptions .goal-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  wzjGoal = val;
+}
+// TT-47-patroon: optioneel, nogmaals klikken op de gekozen tag wist de keuze.
+function wzjSelectRehearsalFrequency(el, val) {
+  const already = el.classList.contains('selected');
+  document.querySelectorAll('#wzjRehearsalFreqGrid .tag').forEach(t => t.classList.remove('selected'));
+  if (already) { wzjRehearsalFrequency = ''; return; }
+  el.classList.add('selected');
+  wzjRehearsalFrequency = val;
+}
+function wzjSelectMusicalAmbition(el, val) {
+  const already = el.classList.contains('selected');
+  document.querySelectorAll('#wzjAmbitionGrid .tag').forEach(t => t.classList.remove('selected'));
+  if (already) { wzjMusicalAmbition = ''; return; }
+  el.classList.add('selected');
+  wzjMusicalAmbition = val;
+}
+
+function cancelWatZoekJe() {
+  if (wzjFieldSnapshot() !== wzjSnapshot) {
+    if (!confirm('Weet je het zeker? Wat je hebt gewijzigd gaat verloren.')) return;
+  }
+  goToOverview();
+}
+
+async function saveWatZoekJe() {
+  // TT-173-patroon: niets gewijzigd sinds het openen → niets opslaan, geen melding.
+  if (wzjFieldSnapshot() === wzjSnapshot) return;
+
+  const { error } = await db.from('musicians').update({
+    goal: wzjGoal || null,
+    rehearsal_frequency: wzjRehearsalFrequency || null,
+    musical_ambition: wzjMusicalAmbition || null,
+  }).eq('id', myMusicianId);
+  if (error) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(error)); return; }
+
+  wzjSnapshot = wzjFieldSnapshot();
+  showToast('Wijzigingen opgeslagen.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tegel: Je setlist
+// ═══════════════════════════════════════════════════════════════════════
+// Zelfde iTunes-zoekstroom als index.html: eerst artiest zoeken, dan één
+// keer per artiest de volledige nummerlijst ophalen (iTunes lookup) en
+// lokaal filteren op wat er getypt wordt — geen nieuw netwerkverzoek per
+// toetsaanslag. Eigen smalle opslaanfunctie: raakt uitsluitend
+// musician_songs. repertoire_type hoort hier niet meer bij — dat veld
+// verhuisde naar "Wat speel je" (TT-168-vervolg-besluit).
+
+let jstSongs = [];
+let jstSnapshot = null;
+let jstSelectedArtist = null; // { id, name }
+let jstSearchTimeout = null;
+const jstArtistCache = new Map();
+const jstTrackCache = new Map();
+
+function jstFieldSnapshot() {
+  return JSON.stringify(jstSongs);
+}
+
+async function openJeSetlist() {
+  const { data, error } = await db.from('musicians')
+    .select('musician_songs(song_title, song_artist, mastery_level)')
+    .eq('id', myMusicianId).single();
+  if (error) {
+    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    return;
+  }
+  jstSongs = (data.musician_songs || []).map(s => ({ title: s.song_title, artist: s.song_artist, level: s.mastery_level }));
+  jstSelectedArtist = null;
+  document.getElementById('jstArtistSearch').value = '';
+  document.getElementById('jstTrackSearch').value = '';
+  document.getElementById('jstTrackWrap').style.display = 'none';
+  jstRenderSongs();
+  jstSnapshot = jstFieldSnapshot();
+}
+
+function jstCloseAc(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+function jstSelectFirstAc(id) {
+  const list = document.getElementById(id);
+  const first = list && list.querySelector('.ac-item[onmousedown]');
+  if (first && first.onmousedown) first.onmousedown();
+}
+
+async function jstOnArtistSearch(q) {
+  const ac = document.getElementById('jstArtistAc');
+  if (q.trim().length < 2) { ac.classList.remove('open'); return; }
+  ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Zoeken...</span></div>';
+  ac.classList.add('open');
+  const cacheKey = q.trim().toLowerCase();
+  if (jstArtistCache.has(cacheKey)) {
+    jstRenderArtistResults(ac, jstArtistCache.get(cacheKey));
+    return;
+  }
+  clearTimeout(jstSearchTimeout);
+  jstSearchTimeout = setTimeout(async () => {
+    try {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=7&country=NL`);
+      const data = await res.json();
+      const artists = (data.results || []).slice(0, 6);
+      jstArtistCache.set(cacheKey, artists);
+      jstRenderArtistResults(ac, artists);
+    } catch (e) {
+      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoekopdracht mislukt</span></div>';
+    }
+  }, 400);
+}
+function jstRenderArtistResults(ac, artists) {
+  if (!artists.length) {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Geen artiesten gevonden</span></div>';
+    return;
+  }
+  ac.innerHTML = artists.map(a => `
+    <div class="ac-item" onmousedown="jstSelectArtist('${jsAttr(a.artistId)}','${jsAttr(a.artistName)}')">
+      ${escHtml(a.artistName)}${a.primaryGenreName ? ` <span style="color:var(--muted);font-size:11px;">(${escHtml(a.primaryGenreName)})</span>` : ''}
+    </div>`).join('');
+}
+function jstSelectArtist(id, name) {
+  jstSelectedArtist = { id, name };
+  document.getElementById('jstArtistSearch').value = name;
+  jstCloseAc('jstArtistAc');
+  const wrap = document.getElementById('jstTrackWrap');
+  wrap.style.display = '';
+  document.getElementById('jstTrackLabel').textContent = 'Nummer van ' + name;
+  document.getElementById('jstTrackSearch').value = '';
+  document.getElementById('jstTrackSearch').focus();
+  jstCloseAc('jstTrackAc');
+}
+async function jstFetchArtistSongs(artistId) {
+  if (jstTrackCache.has(artistId)) return jstTrackCache.get(artistId);
+  const fetchPromise = (async () => {
+    const url = `https://itunes.apple.com/lookup?id=${encodeURIComponent(artistId)}&entity=song&limit=200&country=NL`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return (data.results || []).filter(r => r.wrapperType === 'track');
+  })();
+  jstTrackCache.set(artistId, fetchPromise);
+  const songs = await fetchPromise;
+  jstTrackCache.set(artistId, songs);
+  return songs;
+}
+async function jstOnTrackSearch(q) {
+  const ac = document.getElementById('jstTrackAc');
+  if (!jstSelectedArtist) return;
+  if (!q.length) { ac.classList.remove('open'); return; }
+  ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Zoeken...</span></div>';
+  ac.classList.add('open');
+  try {
+    const songs = await jstFetchArtistSongs(jstSelectedArtist.id);
+    jstRenderTrackResults(ac, songs, q);
+  } catch (e) {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoekopdracht mislukt</span></div>';
+  }
+}
+function jstRenderTrackResults(ac, songs, q) {
+  const qLower = q.toLowerCase();
+  const seen = new Set();
+  const results = (songs || [])
+    .filter(r => {
+      const title = r.trackName;
+      if (!title) return false;
+      if (!title.toLowerCase().includes(qLower)) return false;
+      const key = title.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      if (jstSongs.find(s => s.title.toLowerCase() === title.toLowerCase() && s.artist.toLowerCase() === jstSelectedArtist.name.toLowerCase())) return false;
+      return true;
+    })
+    .slice(0, 8);
+  if (!results.length) {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Geen nummers gevonden</span></div>';
+    return;
+  }
+  ac.innerHTML = results.map(r => `
+    <div class="ac-item" onmousedown="jstAddSong('${jsAttr(r.trackName)}','${jsAttr(jstSelectedArtist.name)}')">${escHtml(r.trackName)}</div>`).join('');
+}
+function jstAddSong(title, artist) {
+  if (jstSongs.find(s => s.title === title && s.artist === artist)) return;
+  jstSongs.push({ title, artist, level: null });
+  document.getElementById('jstArtistSearch').value = '';
+  document.getElementById('jstTrackSearch').value = '';
+  document.getElementById('jstTrackWrap').style.display = 'none';
+  jstCloseAc('jstTrackAc');
+  jstCloseAc('jstArtistAc');
+  jstSelectedArtist = null;
+  jstRenderSongs();
+}
+function jstCompareArtistTitle(artistA, titleA, artistB, titleB) {
+  const byArtist = (artistA || '').localeCompare(artistB || '', 'nl', { sensitivity: 'base' });
+  if (byArtist !== 0) return byArtist;
+  return (titleA || '').localeCompare(titleB || '', 'nl', { sensitivity: 'base' });
+}
+function jstRenderSongs() {
+  const list = document.getElementById('jstSongsList');
+  const empty = document.getElementById('jstSongsListEmpty');
+  if (!jstSongs.length) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  const displayOrder = jstSongs.map((s, i) => i)
+    .sort((ia, ib) => jstCompareArtistTitle(jstSongs[ia].artist, jstSongs[ia].title, jstSongs[ib].artist, jstSongs[ib].title));
+  list.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
+      <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
+        <span>Band / Artiest — Nummer</span><span style="margin-right:40px;">Beheersing</span><span></span>
+      </div>
+      ${displayOrder.map(i => { const s = jstSongs[i]; return `
+        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;">
+          <div>
+            <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
+            <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
+          </div>
+          <div style="display:flex;gap:4px;${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
+            <button type="button" class="level-btn ${s.level==='basis'?'active-basis':''}" title="Je kent de structuur, nog wat fouten" onclick="jstSetLevel(${i},'basis')">Basis</button>
+            <button type="button" class="level-btn ${s.level==='bijna'?'active-bijna':''}" title="Soepel, kleine slordigheden" onclick="jstSetLevel(${i},'bijna')">Bijna</button>
+            <button type="button" class="level-btn ${s.level==='podium'?'active-podium':''}" title="Je speelt het live zonder problemen" onclick="jstSetLevel(${i},'podium')">Podium</button>
+          </div>
+          <button type="button" class="song-remove" onclick="jstRemoveSong(${i})" title="Verwijderen" aria-label="Verwijder ${escAttr(s.title)}">✕</button>
+        </div>
+        ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 14px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
+      `; }).join('')}
+    </div>`;
+}
+function jstSetLevel(i, level) {
+  jstSongs[i].level = level;
+  jstRenderSongs();
+}
+function jstRemoveSong(i) {
+  jstSongs.splice(i, 1);
+  jstRenderSongs();
+}
+
+function cancelJeSetlist() {
+  if (jstFieldSnapshot() !== jstSnapshot) {
+    if (!confirm('Weet je het zeker? Wat je hebt gewijzigd gaat verloren.')) return;
+  }
+  goToOverview();
+}
+
+async function saveJeSetlist() {
+  // TT-173-patroon: niets gewijzigd sinds het openen → niets opslaan, geen melding.
+  if (jstFieldSnapshot() === jstSnapshot) return;
+
+  await db.from('musician_songs').delete().eq('musician_id', myMusicianId);
+  if (jstSongs.length) {
+    const { error } = await db.from('musician_songs').insert(
+      jstSongs.map(s => ({ musician_id: myMusicianId, song_title: s.title, song_artist: s.artist, mastery_level: s.level }))
+    );
+    if (error) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(error)); return; }
+  }
+  jstSnapshot = jstFieldSnapshot();
+  showToast('Wijzigingen opgeslagen.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tegel: Je mediahoek
+// ═══════════════════════════════════════════════════════════════════════
+// Zelfde upload-/linkspatroon als index.html (TT-02/TT-87): foto's/video's
+// gaan meteen naar de 'media'-bucket, de profielfoto meteen naar de
+// 'avatars'-bucket — beide zodra ze gekozen worden, niet pas bij Opslaan.
+// Opslaan hier raakt uitsluitend musicians.avatar_url en musician_media
+// (verwijderen + opnieuw invullen). Bannerveld (TT-169) hoort hier bewust
+// nog niet bij — geen kolom, geen upload, geen ontwerp.
+
+let mhAvatarUrl = null;
+let mhMediaFiles = [];
+let mhMediaLinks = [];
+let mhSnapshot = null;
+
+function mhFieldSnapshot() {
+  return JSON.stringify({
+    avatarUrl: mhAvatarUrl,
+    mediaFiles: mhMediaFiles.map(m => ({ url: m.url, type: m.type, uploading: m.uploading })),
+    mediaLinks: mhMediaLinks,
+  });
+}
+
+async function openJeMediahoek() {
+  const { data, error } = await db.from('musicians')
+    .select('avatar_url, musician_media(media_type, url, platform)')
+    .eq('id', myMusicianId).single();
+  if (error) {
+    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    return;
+  }
+  mhAvatarUrl = data.avatar_url || null;
+  // TT-02: bestaande, al opgeslagen media meenemen — path blijft null (de
+  // database bewaart alleen de url), dus verwijderen van een reeds bestaand
+  // bestand ruimt Storage niet op. Zelfde bekende, bewuste grens als in
+  // index.html (zie removeMedia() daar).
+  mhMediaFiles = (data.musician_media || [])
+    .filter(x => x.media_type === 'foto' || x.media_type === 'video')
+    .map(x => ({ name: '', url: x.url, path: null, type: x.media_type, uploading: false }));
+  mhMediaLinks = (data.musician_media || []).filter(x => x.media_type === 'link').map(x => ({ url: x.url }));
+
+  mhRenderAvatar();
+  mhRenderMediaGrid();
+  mhRenderLinksList();
+  const mhScreen = document.getElementById('mediahoekScreen');
+  mhScreen.querySelectorAll('.media-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
+  mhScreen.querySelectorAll('.media-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
+  mhSnapshot = mhFieldSnapshot();
+}
+
+function switchMhMediaTab(tab, el) {
+  const mhScreen = document.getElementById('mediahoekScreen');
+  mhScreen.querySelectorAll('.media-tab').forEach(t => t.classList.remove('active'));
+  mhScreen.querySelectorAll('.media-pane').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(tab === 'upload' ? 'mhPaneUpload' : 'mhPaneLinks').classList.add('active');
+}
+
+function mhRenderAvatar() {
+  const preview = document.getElementById('mhAvatarPreview');
+  if (mhAvatarUrl) {
+    preview.innerHTML = `<img src="${safeUrl(mhAvatarUrl)}" alt="profielfoto">`;
+    document.getElementById('mhAvatarRemoveBtn').classList.add('visible');
+  } else {
+    preview.innerHTML = `<span id="mhAvatarInitials">T</span>`;
+    document.getElementById('mhAvatarRemoveBtn').classList.remove('visible');
+  }
+}
+
+function mhHandleAvatarUpload(file) {
+  if (!file) return;
+  const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
+  if (typeProblem) { showToast(typeProblem); return; }
+  if (file.size > 5 * 1024 * 1024) { showToast('Afbeelding is te groot. Maximum 5 MB.'); return; }
+
+  const blobUrl = URL.createObjectURL(file);
+  const preview = document.getElementById('mhAvatarPreview');
+  preview.innerHTML = `<img src="${blobUrl}" alt="profielfoto">
+    <div class="mh-avatar-uploading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);border-radius:50%;">
+      <div style="width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:mhSpin 0.7s linear infinite;"></div>
+    </div>`;
+  preview.style.position = 'relative';
+
+  uploadAvatarFile(file, currentUser.id).then(({ url }) => {
+    mhAvatarUrl = url;
+    mhRenderAvatar();
+  }).catch(e => {
+    showToast(friendlyErrorMessage(e));
+    mhRenderAvatar();
+  });
+}
+
+function mhRemoveAvatar() {
+  mhAvatarUrl = null;
+  mhRenderAvatar();
+}
+
+function mhHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('mhDropZone').classList.remove('drag-over');
+  mhHandleFileSelect(e.dataTransfer.files);
+}
+
+function mhHandleFileSelect(files) {
+  Array.from(files).forEach(file => {
+    if (mhMediaFiles.length >= 8) { showToast('Maximum 8 bestanden.'); return; }
+    const isVideo = (file.type || '').toLowerCase().startsWith('video/');
+    const typeProblem = fileTypeProblem(file, MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
+    if (typeProblem) { showToast(`"${file.name}": ${typeProblem}`); return; }
+    if (file.size > 50 * 1024 * 1024) { showToast(`"${file.name}" is te groot. Maximum 50 MB.`); return; }
+
+    const blobUrl = URL.createObjectURL(file);
+    const type = isVideo ? 'video' : 'foto';
+    const entry = { name: file.name, url: blobUrl, path: null, type, uploading: true };
+    mhMediaFiles.push(entry);
+    mhRenderMediaGrid();
+
+    uploadMediaFile(file, currentUser.id).then(({ url, path }) => {
+      entry.url = url;
+      entry.path = path;
+      entry.uploading = false;
+      mhRenderMediaGrid();
+    }).catch(e => {
+      showToast(`"${file.name}": ${friendlyErrorMessage(e)}`);
+      const idx = mhMediaFiles.indexOf(entry);
+      if (idx !== -1) mhMediaFiles.splice(idx, 1);
+      mhRenderMediaGrid();
+    });
+  });
+}
+
+function mhRenderMediaGrid() {
+  const grid = document.getElementById('mhMediaGrid');
+  grid.innerHTML = mhMediaFiles.map((m, i) => `
+    <div class="media-thumb">
+      ${m.type === 'foto'
+        ? `<img src="${safeUrl(m.url)}" alt="${escHtml(m.name)}">`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Video</div>`
+      }
+      ${m.uploading ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);"><div style="width:20px;height:20px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:mhSpin 0.7s linear infinite;"></div></div>` : ''}
+      <div class="thumb-type">${escHtml(m.type)}</div>
+      <button type="button" class="thumb-remove" onclick="mhRemoveMedia(${i})" aria-label="Verwijderen">✕</button>
+    </div>`).join('');
+}
+
+function mhRemoveMedia(i) {
+  const entry = mhMediaFiles[i];
+  mhMediaFiles.splice(i, 1);
+  mhRenderMediaGrid();
+  // Al geüpload bestand meteen weer opruimen uit Storage — voorkomt dat
+  // verwijderde media als wees achterblijft (best effort, geen blokkerende
+  // fout). Alleen mogelijk voor bestanden die deze sessie zijn geüpload
+  // (entry.path), niet voor al eerder opgeslagen media (path is dan null).
+  if (entry?.path) {
+    db.storage.from('media').remove([entry.path]).then(() => {}).catch(() => {});
+  }
+}
+
+function mhAddLinkRow() {
+  mhMediaLinks.push({ url: '' });
+  mhRenderLinksList();
+}
+
+function mhRenderLinksList() {
+  const list = document.getElementById('mhLinksList');
+  list.innerHTML = mhMediaLinks.map((l, i) => `
+    <div class="link-row">
+      <span class="link-type-badge">${escHtml(l.url ? detectPlatform(l.url) : 'Link')}</span>
+      <input type="url" value="${escHtml(l.url || '')}" placeholder="https://youtube.com/watch?v=..."
+        oninput="mhUpdateLinkUrl(${i}, this)">
+      <button type="button" class="song-remove" onclick="mhRemoveLink(${i})" aria-label="Verwijderen">✕</button>
+    </div>`).join('');
+}
+
+function mhUpdateLinkUrl(i, el) {
+  if (!mhMediaLinks[i]) return;
+  mhMediaLinks[i].url = el.value;
+  const badge = el.previousElementSibling;
+  if (badge) badge.textContent = el.value ? detectPlatform(el.value) : 'Link';
+}
+
+function mhRemoveLink(i) {
+  mhMediaLinks.splice(i, 1);
+  mhRenderLinksList();
+}
+
+function cancelJeMediahoek() {
+  if (mhFieldSnapshot() !== mhSnapshot) {
+    if (!confirm('Weet je het zeker? Wat je hebt gewijzigd gaat verloren.')) return;
+  }
+  goToOverview();
+}
+
+async function saveJeMediahoek() {
+  // TT-173-patroon: niets gewijzigd sinds het openen → niets opslaan, geen melding.
+  if (mhFieldSnapshot() === mhSnapshot) return;
+
+  const { error: uErr } = await db.from('musicians')
+    .update({ avatar_url: mhAvatarUrl || null }).eq('id', myMusicianId);
+  if (uErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(uErr)); return; }
+
+  await db.from('musician_media').delete().eq('musician_id', myMusicianId);
+
+  const linkMedia = mhMediaLinks
+    .filter(l => l.url.trim())
+    .map(l => ({ musician_id: myMusicianId, media_type: 'link', url: l.url, platform: detectPlatform(l.url) }));
+  if (linkMedia.length) {
+    const { error: lErr } = await db.from('musician_media').insert(linkMedia);
+    if (lErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(lErr)); return; }
+  }
+
+  const fileMedia = mhMediaFiles
+    .filter(m => m.url && !m.uploading && !m.url.startsWith('blob:'))
+    .map(m => ({ musician_id: myMusicianId, media_type: m.type, url: m.url }));
+  if (fileMedia.length) {
+    const { error: fErr } = await db.from('musician_media').insert(fileMedia);
+    if (fErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(fErr)); return; }
+  }
+
+  mhSnapshot = mhFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
 }
 </script>

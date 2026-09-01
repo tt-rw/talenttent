@@ -1,6 +1,6 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 31-08-2026 — **TT-01 heropend (e-maildigest niet aantoonbaar werkend, geen enkele mail ontvangen). TT-167 gebouwd (e-mailveld terug bij Profiel bewerken). TT-168 nog niet gebouwd, plan verder uitgewerkt op basis van het wireframe — twee punten nog open. TT-169, TT-170, TT-171, TT-172 nieuw, niet gebouwd. TT-173 en TT-174 gebouwd (opslaan-melding alleen bij wijziging, "(mag ook later)"-tekst verdwijnt bij een gevuld veld).**
+**Laatste update:** 01-09-2026 — **TT-168 inhoudelijk klaar: alle vijf tegels gebouwd en getest (gestubd) — tegeloverzicht, Wie ben je, Wat speel je, Wat zoek je, Je setlist, Je mediahoek. Nog niet naar GitHub geüpload. Wireframe-check gedaan (subtitel/wachtwoord blijven zoals gebouwd, oefenfrequentie aangepast). TT-175 (nieuw, gebouwd): "Dagelijks" erbij, "Alleen voor een project" eruit bij oefenfrequentie, in zowel profiel-v2.html als index.html — SQL-script gedraaid, bevestigd door Ronald. TT-01 heropend (e-maildigest niet aantoonbaar werkend). TT-167 gebouwd (e-mailveld terug bij Profiel bewerken). TT-169, TT-170, TT-171, TT-172 nieuw, niet gebouwd. TT-173 en TT-174 gebouwd.**
 
 **TT-167 (31-08-2026), gebouwd:** e-mailveld terug op het bewerkscherm (stap 1 "Over jou"), alleen-lezen, gevuld met `currentUser.email`. Wachtwoordveld blijft bij bewerken volledig verborgen — wachtwoord wijzigen loopt via het bestaande resetscherm (`saveNewPassword()`, `view-reset`), nooit via dit formulier. **Reden:** Ronald wil altijd kunnen zien welk e-mailadres aan zijn account hangt; het veld was al sinds de bouw van de wizard bewust verborgen tijdens bewerken (zie `showView()`), maar dat voelde onverwacht aan. Patroon hergebruikt: alleen-lezen styling identiek aan het bestaande Plaats-/fname-veld tijdens bewerken — geen nieuw componentpatroon. **Geverifieerd:** `regEmail` wordt door geen enkele opslagfunctie uitgelezen zolang `editingMusicianId` gezet is (alle voorkomens van `state.regEmail`/`regEmail` nagelopen) — het veld tonen kan dus nooit een wijziging aan het e-mailadres veroorzaken. **Getest:** haakjesbalans (`{}` 2043/2043, `[]` 329/329, `()` 6118/6119 — bekende onbalans van 1) en `node --check` geslaagd. **Niet getest:** Playwright (geen render-omgeving met ingelogde sessie opgezet deze sessie). **Nog niet geüpload naar GitHub — actie bij Ronald**, vóór dit live getest kan worden.
 
@@ -58,7 +58,81 @@ Ronald leverde de tekening van het wireframe aan (vijf tegels, elk met een eigen
 
 **Geleverd deze sessie:** `index.html` (TT-173, TT-174), `profiel-v2.html` en `profiel-gedeeld.js` (eerste bouwstap TT-168, alleen tegel "Wie ben je" werkend), twee screenshots als testbewijs. **Nog niet naar GitHub geüpload — actie bij Ronald.**
 
-Eerstvolgende stap: Ronald test `profiel-v2.html` zelf, ingelogd. Daarna de resterende vier tegels bouwen, elk met zijn eigen smalle opslaanfunctie (zie kritieke bevinding hierboven).
+**TT-168, derde bouwstap (01-09-2026) — tegel "Wat speel je" gebouwd.** Eerst de hint-regel bij "Wat zoek je" alsnog weggehaald (zie 01-09-2026-conversatie) — het overbruggen van zoekvoorkeuren en profielvoorkeuren komt later apart terug.
+
+**Gebouwd:** instrumentenkeuze met niveau (TT-51/TT-116-patroon), genrekeuze, en "Wat speel je vooral?" (covers/eigen/allebei). De instrument-/genrepicker en de niveau-toelichtingsmodal zijn overgezet naar `profiel-gedeeld.js` — daar generiek gemaakt (cfg-object i.p.v. de hardcoded globale `state` uit `index.html`), zodat een volgende tegel ze kan hergebruiken zonder kopie. `index.html` is niet aangeraakt.
+
+**Opslaan raakt uitsluitend** `musician_instruments`, `musician_genres` en `musicians.repertoire_type` — dezelfde smalle-opslaanfunctie-aanpak als bij "Wie ben je". `repertoire_type` is hiermee verhuisd uit de setlist-stap, zoals afgesproken in TT-168-vervolg. Zelfde patronen als eerder: geen melding/schrijving bij een ongewijzigd formulier (TT-173), bevestigingsvraag bij Annuleren met wijziging (V-19).
+
+**Getest:** Playwright, 10 controles tegen een gestubde Supabase-client (geen aanraking van de live database) — alle 10 geslaagd, geen JS-fouten. Gecontroleerd: tegel opent met bestaande data (instrument+niveau, genre, repertoire-type al aangevinkt), instrument toevoegen + niveau kiezen, niveau-toelichtingsmodal (i-knop, 5 rijen), genre toevoegen, Annuleren zonder wijziging sluit direct, Annuleren mét wijziging geeft de bevestigingsvraag, Opslaan toont de bevestigingsmelding. Screenshots als bewijs geleverd. Syntaxis (`node --check`) en haakjesbalans van beide bestanden geslaagd. **Nog niet getest:** tegen de echte database — dat kan alleen Ronald zelf, ingelogd, op `talenttent.org/profiel-v2.html`.
+
+**Nog placeholder:** "Wat zoek je", "Je setlist", "Je mediahoek".
+
+**Geleverd deze sessie:** `profiel-v2.html` en `profiel-gedeeld.js` (tegel "Wat speel je" erbij), vijf screenshots als testbewijs. **Nog niet naar GitHub geüpload — actie bij Ronald.**
+
+**TT-168, vierde bouwstap (01-09-2026) — tegel "Wat zoek je" gebouwd.**
+
+**Gebouwd:** doel (4 kaarten, eenmaal gekozen géén toggle-off — zelfde als de wizard), oefenfrequentie en muzikale ambitie (elk 4 tags, optioneel, TT-47-toggle-patroon). Alle drie velden optioneel, zelfde besluit als in de wizard (stap 3 blokkeerde daar ook nooit). Geen instrument-/genrepicker nodig op deze tegel.
+
+**Opslaan raakt uitsluitend** `musicians.goal`, `musicians.rehearsal_frequency`, `musicians.musical_ambition` — zelfde smalle-opslaanfunctie-aanpak als de vorige twee tegels. `index.html` niet aangeraakt.
+
+**Getest:** Playwright, 8 controles tegen een gestubde Supabase-client — alle 8 geslaagd, geen JS-fouten. Gecontroleerd: tegel opent met bestaande data, doel wijzigen (geen toggle-off), frequentie nogmaals aanklikken wist de keuze, ambitie kiezen, Annuleren met wijziging geeft de bevestigingsvraag, Opslaan toont de bevestigingsmelding, Annuleren zonder wijziging sluit direct zonder vraag. Screenshots als bewijs geleverd. Syntaxis (`node --check`) en haakjesbalans geslaagd.
+
+**Nog placeholder:** "Je setlist", "Je mediahoek".
+
+**Geleverd deze sessie:** `profiel-v2.html` (tegel "Wat zoek je" erbij), drie screenshots als testbewijs. **Nog niet naar GitHub geüpload — actie bij Ronald.**
+
+**TT-168, vijfde bouwstap (01-09-2026) — tegel "Je setlist" gebouwd.**
+
+**Gebouwd:** artiest zoeken → nummer zoeken → toevoegen, per nummer een beheersingsniveau (Basis/Bijna/Podium), verwijderen. Zelfde iTunes-zoekstroom als `index.html`: artiest zoeken via `itunes.apple.com/search`, daarna één keer per artiest de volledige nummerlijst ophalen (`/lookup`) en lokaal filteren op wat er getypt wordt — geen nieuw netwerkverzoek per toetsaanslag.
+
+**Opslaan raakt uitsluitend** `musician_songs` (verwijderen + opnieuw invullen) — zelfde smalle-opslaanfunctie-aanpak als de vorige tegels. `repertoire_type` hoort hier bewust niet meer bij (zit al bij "Wat speel je", TT-168-vervolg-besluit). `index.html` niet aangeraakt.
+
+**Bewuste afwijking, gemeld:** voor de artiest-/nummerresultatenlijst is het bestaande `.ac-items`/`.ac-item`-patroon van `profiel-v2.html` zelf hergebruikt (al gebouwd voor de plaatssuggesties bij "Wie ben je") in plaats van de apart gestylede `.autocomplete-list`/`.song-search-wrap` uit `index.html` — voorkomt een CSS-naamconflict tussen twee verschillende `.ac-item`-definities in hetzelfde bestand. Visueel iets soberder dan in de wizard, functioneel identiek. Bijvangst: `.ac-item` kreeg een `min-height:44px` (was ±34px, onder de tikdoel-norm) — dit verbetert ook de al gebouwde plaatssuggesties bij "Wie ben je".
+
+**Getest:** Playwright, 11 controles tegen een gestubde Supabase-client én een gestubde `fetch()` voor iTunes (geen echt netwerkverkeer, alleen de eigen renderlogica getest) — alle 11 geslaagd, geen JS-fouten. Gecontroleerd: bestaand nummer geladen, artiest zoeken/kiezen, nummerveld verschijnt met juiste label, nummer zoeken/toevoegen, pulserende animatie zonder gekozen niveau, niveau instellen, nummer verwijderen, Annuleren met wijziging geeft de bevestigingsvraag én blijft (bij Annuleren van de vraag zelf) op het scherm staan met de wijziging nog intact, Opslaan toont de bevestigingsmelding. Screenshots als bewijs geleverd. Syntaxis (`node --check`) en haakjesbalans geslaagd.
+
+**Nog placeholder:** alleen "Je mediahoek" nog.
+
+**Open aandachtspunt voor later (Ronald, 01-09-2026):** meer visueel onderscheid tussen de verschillende tegels/onderdelen — nu ogen "Wie ben je", "Wat speel je", "Wat zoek je" en "Je setlist" erg gelijk aan elkaar. Nog geen concreet voorstel, geen ticketnummer — oppakken zodra alle vijf tegels klaar zijn en er een totaalbeeld is om op te ontwerpen.
+
+**Geleverd deze sessie:** `profiel-v2.html` (tegel "Je setlist" erbij, plus de `.ac-item`-tikdoelfix), vier screenshots als testbewijs. **Nog niet naar GitHub geüpload — actie bij Ronald.**
+
+**TT-168, wireframe-check (01-09-2026).** Ronald leverde een bijgewerkte tekening aan. Vergeleken met wat gebouwd is: "Wat speel je", "Wat zoek je" (doel/ambitie apart houden — al eerder besloten) en "Je setlist" komen overeen. Drie punten voorgelegd, besluiten:
+
+1. **Subtitel "Wie ben je" (tegeloverzicht):** tekening noemt "foto", maar profielfoto wordt bij Mediahoek bewerkt. **Besluit: subtitel blijft "naam - bio"**, geen wijziging.
+2. **"Email en wachtwoord" bij Wie ben je:** **Besluit: geen wachtwoordveld toevoegen.** TT-167-besluit blijft staan — wachtwoord wijzigen loopt via het reset-scherm, nooit via het bewerkformulier.
+3. **Oefenfrequentie wijkt af van de wizard:** **Besluit: aanpassen naar de tekening, in beide bestanden.**
+
+**TT-175 (01-09-2026), gebouwd — oefenfrequentie: "Dagelijks" erbij, "Alleen voor een project" eruit.** Op verzoek van Ronald doorgevoerd in zowel `profiel-v2.html` (tegel "Wat zoek je") als `index.html` (wizardstap "Wat zoek je?"), inclusief `REHEARSAL_LABELS` in `index.html` (gebruikt voor de weergave op Mijn Profiel en om bij het laden de juiste tag te markeren). Vier opties, nieuwe volgorde: Dagelijks, Wekelijks, Paar keer per maand, Losse jams.
+
+**Database, nog te draaien door Ronald:** `TT-175-rehearsal-frequency-dagelijks.sql`. **Onbekend of er een check-constraint bestaat** op `musicians.rehearsal_frequency` (niet geverifieerd, geen databasetoegang) — het script is veilig ongeacht of die er al is (`drop constraint if exists` + opnieuw aanmaken). Bestaande profielen met `per_project` blijven geldig op databaseniveau, ook al biedt de UI die keuze niet meer aan — zelfde aanpak als eerder bij "Anders" op instrumenten/genres. **Zolang dit script niet gedraaid is, verandert er niets aan bestaande profielen** — het is alleen nodig als er al een constraint bestaat die "dagelijks" zou blokkeren.
+
+**"Je banner (nog maken)" in de tekening bij Mediahoek:** bevestigt TT-169 (profielbanner, nog geen kolom/upload/ontwerp) — geen actie nu, blijft een apart, nog niet opgepakt ticket.
+
+**Getest:** Playwright, profiel-v2.html — 4 controles tegen een gestubde Supabase-client (juiste volgorde, "Dagelijks" correct voorgeladen, "Alleen voor een project" weg, klikgedrag) — alle 4 geslaagd. `index.html` — geïsoleerde test van exact dezelfde `selectRehearsalFrequency()`/`REHEARSAL_LABELS`-logica (los HTML/JS-fragment, geen volledige app) — 3 controles, alle geslaagd. **Niet getest:** de volledige `index.html` end-to-end via Playwright (registratiewizard doorlopen vereist inloggen/PDOK/username-RPC) — dat blijft, zoals gebruikelijk bij elke `index.html`-wijziging, Ronalds eigen live smoke-test. Syntaxis (`node --check`) en haakjesbalans van beide bestanden geslaagd — `index.html` toont dezelfde bekende `()`-onbalans van 1 als vóór deze wijziging (6146/6147), ongewijzigd.
+
+**Signaal:** deze sessie behandelt nu twee onderwerpen — TT-168 (tegels bouwen) en TT-175 (oefenfrequentie-opties, raakt ook `index.html`). Ronald vroeg hier zelf expliciet om.
+
+**Geleverd deze sessie:** `profiel-v2.html`, `index.html`, `TT-175-rehearsal-frequency-dagelijks.sql`. **Nog niet naar GitHub geüpload — actie bij Ronald.** Volgorde bij uploaden: 1) SQL-script draaien (indien nodig, zie hierboven) — kan ook vooraf, is onschadelijk als de kolom al goed staat, 2) `index.html` en `profiel-v2.html` uploaden.
+
+**TT-168, zesde bouwstap (01-09-2026) — tegel "Je mediahoek" gebouwd. Alle vijf tegels nu af.**
+
+**Gebouwd:** profielfoto-upload (bucket `avatars`), foto's/video's-upload via sleep-of-klik-dropzone (bucket `media`, max 8 bestanden, max 50 MB per stuk), mediakoppelingen (YouTube/Instagram/SoundCloud/TikTok/Spotify, platform automatisch herkend). Zelfde upload-/validatiepatroon als `index.html` (TT-02/TT-87): direct uploaden zodra een bestand gekozen wordt, niet pas bij Opslaan. Bannerveld uit de tekening (**"Je banner, nog maken"**) hoort hier bewust nog niet bij — bevestigt TT-169, geen kolom/upload/ontwerp, blijft een apart, nog niet opgepakt ticket.
+
+**Opslaan raakt uitsluitend** `musicians.avatar_url` en `musician_media` (verwijderen + opnieuw invullen) — zelfde smalle-opslaanfunctie-aanpak als de vier vorige tegels.
+
+**Gedeeld gemaakt in `profiel-gedeeld.js`** (nieuw voor deze tegel, generiek, geen kopie): `safeUrl()` (XSS-bescherming bij `<img src>`, TT-05-patroon), `uploadToStorage()`/`uploadAvatarFile()`/`uploadMediaFile()`/`fileTypeProblem()` (bestandsvalidatie + Storage-upload, 1-op-1 uit `index.html`), `detectPlatform()`.
+
+**Bewuste, bekende grens (zelfde als `index.html`):** een al eerder opgeslagen foto/video heeft geen bewaard Storage-pad (`path: null`, de database bewaart alleen de url) — verwijderen tijdens bewerken ruimt Storage dan niet op. Alleen deze-sessie-geüploade bestanden worden bij verwijderen ook echt uit Storage verwijderd. Geen nieuw gedrag, gewoon dezelfde grens overgenomen.
+
+**Getest:** Playwright, 8 controles tegen een gestubde Supabase-client + gestubde `db.storage` (upload/getPublicUrl/remove) — alle 8 geslaagd, geen JS-fouten. Gecontroleerd: bestaande media geladen, profielfoto uploaden en tonen, nieuwe foto via dropzone toevoegen, link toevoegen met automatische platformherkenning, nieuw geüpload bestand verwijderen roept `storage.remove()` aan, Annuleren met wijziging geeft de bevestigingsvraag en blijft bij Annuleren van die vraag op het scherm, Opslaan toont de bevestigingsmelding. Screenshots als bewijs geleverd. Syntaxis (`node --check`) en haakjesbalans van beide bestanden geslaagd.
+
+**Geleverd deze sessie:** `profiel-v2.html`, `profiel-gedeeld.js` (tegel "Je mediahoek" erbij). **Nog niet naar GitHub geüpload — actie bij Ronald.**
+
+**TT-168 is hiermee inhoudelijk klaar:** alle vijf tegels gebouwd en met Playwright getest tegen een gestubde database. Nog niet gedaan: Ronalds eigen livetest, en het overzetten naar `index.html` (oude wizard-route voor het bewerkpad eruit) zodra hij akkoord geeft — zie het besluit "Besluit bouwaanpak" bovenaan dit ticket.
+
+Eerstvolgende stap: Ronald test `profiel-v2.html` zelf, ingelogd, alle vijf tegels. Daarna: (1) akkoord voor het overzetten naar `index.html`, en (2) het aandachtspunt "meer visueel onderscheid tussen de tegels" oppakken (zie hierboven).
 
 ---
 

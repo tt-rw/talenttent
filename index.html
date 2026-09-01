@@ -2851,10 +2851,10 @@
       <div class="field">
         <label>Hoe vaak wil je oefenen?</label>
         <div class="tag-grid" id="rehearsalFreqGrid">
+          <div class="tag" onclick="selectRehearsalFrequency(this,'dagelijks')">Dagelijks</div>
           <div class="tag" onclick="selectRehearsalFrequency(this,'wekelijks')">Wekelijks</div>
           <div class="tag" onclick="selectRehearsalFrequency(this,'paar_per_maand')">Paar keer per maand</div>
           <div class="tag" onclick="selectRehearsalFrequency(this,'losse_jams')">Losse jams, als het uitkomt</div>
-          <div class="tag" onclick="selectRehearsalFrequency(this,'per_project')">Alleen voor een project</div>
         </div>
       </div>
     </div>
@@ -4827,10 +4827,10 @@ const LEVEL_LABELS = { basis: 'Basis', bijna: 'Bijna', podium: 'Podiumklaar' };
 // Nog niet definitief (Ronald, 09-08-2026: "dit is nog niet goed genoeg") —
 // doel en ambitie voelen nog te dicht bij elkaar, komt terug in een latere sessie.
 const REHEARSAL_LABELS = {
+  dagelijks:       'Dagelijks',
   wekelijks:       'Wekelijks',
   paar_per_maand:  'Paar keer per maand',
-  losse_jams:      'Losse jams, als het uitkomt',
-  per_project:     'Alleen voor een project'
+  losse_jams:      'Losse jams, als het uitkomt'
 };
 const AMBITION_LABELS = {
   verbeteren: 'Mezelf verbeteren op mijn instrument',
