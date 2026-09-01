@@ -1,6 +1,6 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 01-09-2026 — **TT-168 inhoudelijk klaar: alle vijf tegels gebouwd en getest (gestubd) — tegeloverzicht, Wie ben je, Wat speel je, Wat zoek je, Je setlist, Je mediahoek. Nog niet naar GitHub geüpload. Wireframe-check gedaan (subtitel/wachtwoord blijven zoals gebouwd, oefenfrequentie aangepast). TT-175 (nieuw, gebouwd): "Dagelijks" erbij, "Alleen voor een project" eruit bij oefenfrequentie, in zowel profiel-v2.html als index.html — SQL-script gedraaid, bevestigd door Ronald. TT-01 heropend (e-maildigest niet aantoonbaar werkend). TT-167 gebouwd (e-mailveld terug bij Profiel bewerken). TT-169, TT-170, TT-171, TT-172 nieuw, niet gebouwd. TT-173 en TT-174 gebouwd.**
+**Laatste update:** 01-09-2026 — **TT-176 afgerond: Uitloggen staat nu alleen in het hamburgermenu, dubbele knop bij Mijn Profiel verwijderd op Ronalds verzoek. TT-168 inhoudelijk klaar: alle vijf tegels gebouwd en getest (gestubd). Nog niet naar GitHub geüpload. TT-175 (gebouwd): oefenfrequentie-opties aangepast, SQL gedraaid en bevestigd. TT-01 heropend. TT-167 gebouwd. TT-169, TT-170, TT-171, TT-172 nieuw, niet gebouwd. TT-173 en TT-174 gebouwd.**
 
 **TT-167 (31-08-2026), gebouwd:** e-mailveld terug op het bewerkscherm (stap 1 "Over jou"), alleen-lezen, gevuld met `currentUser.email`. Wachtwoordveld blijft bij bewerken volledig verborgen — wachtwoord wijzigen loopt via het bestaande resetscherm (`saveNewPassword()`, `view-reset`), nooit via dit formulier. **Reden:** Ronald wil altijd kunnen zien welk e-mailadres aan zijn account hangt; het veld was al sinds de bouw van de wizard bewust verborgen tijdens bewerken (zie `showView()`), maar dat voelde onverwacht aan. Patroon hergebruikt: alleen-lezen styling identiek aan het bestaande Plaats-/fname-veld tijdens bewerken — geen nieuw componentpatroon. **Geverifieerd:** `regEmail` wordt door geen enkele opslagfunctie uitgelezen zolang `editingMusicianId` gezet is (alle voorkomens van `state.regEmail`/`regEmail` nagelopen) — het veld tonen kan dus nooit een wijziging aan het e-mailadres veroorzaken. **Getest:** haakjesbalans (`{}` 2043/2043, `[]` 329/329, `()` 6118/6119 — bekende onbalans van 1) en `node --check` geslaagd. **Niet getest:** Playwright (geen render-omgeving met ingelogde sessie opgezet deze sessie). **Nog niet geüpload naar GitHub — actie bij Ronald**, vóór dit live getest kan worden.
 
@@ -132,7 +132,27 @@ Ronald leverde de tekening van het wireframe aan (vijf tegels, elk met een eigen
 
 **TT-168 is hiermee inhoudelijk klaar:** alle vijf tegels gebouwd en met Playwright getest tegen een gestubde database. Nog niet gedaan: Ronalds eigen livetest, en het overzetten naar `index.html` (oude wizard-route voor het bewerkpad eruit) zodra hij akkoord geeft — zie het besluit "Besluit bouwaanpak" bovenaan dit ticket.
 
-Eerstvolgende stap: Ronald test `profiel-v2.html` zelf, ingelogd, alle vijf tegels. Daarna: (1) akkoord voor het overzetten naar `index.html`, en (2) het aandachtspunt "meer visueel onderscheid tussen de tegels" oppakken (zie hierboven).
+**TT-176 (01-09-2026), gebouwd — Uitloggen terug in het hamburgermenu.**
+
+**Geverifieerd, oorzaak gevonden vóórdat er iets gebouwd is:** de screenshot die Ronald stuurde toonde "Uitloggen" in het ⋯-menu bij Mijn Profiel, niet meer in het hamburgermenu. Dat bleek geen regressie van deze sessie, maar een bewuste eerdere keuze: **TT-166 (28-08-2026)**. Code-commentaar bij `onUserLoggedIn()` en het profiel-⋯-menu (regel 4145 en 5537-5541 vóór deze wijziging): Uitloggen stond voorheen dubbel — in het hamburgermenu én in de tab-regel (de knop `navLogin` wisselde tussen "Inloggen"/"Uitloggen"). TT-166 koos voor één plek: het hamburgermenu moest voor iedereen identiek blijven (wel/niet ingelogd), dus Uitloggen verhuisde naar het profiel-⋯-menu en de tab-regel-knop verdwijnt nu bij inloggen i.p.v. van tekst te wisselen.
+
+**Op Ronalds verzoek teruggedraaid:** Uitloggen staat weer in het hamburgermenu (`navMenuDropdown`), alleen zichtbaar zolang je ingelogd bent — zelfde aan/uit-logica als eerder bij de tab-regel-knop, nu toegepast op deze nieuwe knop (`onUserLoggedIn()`/`onUserLoggedOut()` zetten `display`).
+
+**Nog niet weggehaald, bewust:** de knop bij Mijn Profiel (het ⋯-menu naast de naam) is blijven staan — Ronald vroeg alleen om 'm terug te zetten in het hamburgermenu, niet om 'm ergens weg te halen. **Uitloggen staat nu dus op twee plekken**, exact de situatie die TT-166 destijds probeerde te voorkomen. **Open vraag, nog niet beantwoord:** blijft dat zo, of moet de knop bij Mijn Profiel eraf nu hij weer in het hamburgermenu staat?
+
+**Getest:** `node --check` en haakjesbalans (`()` 6158/6159 — zelfde bekende onbalans van 1, nu 12 hoger door de toegevoegde code, verhouding ongewijzigd) geslaagd. Geïsoleerde test (los HTML/JS-fragment, exact dezelfde aan/uit-logica als in `index.html`) — 4 controles, alle geslaagd: knop verborgen bij uitgelogd, verschijnt bij inloggen (en `navLogin` verdwijnt gelijktijdig), klik roept `signOut()` aan, knop verdwijnt weer na uitloggen. **Niet getest:** de volledige `index.html` end-to-end (vereist een live login) — Ronalds eigen livetest blijft nodig, zoals gebruikelijk.
+
+**Signaal:** derde onderwerp deze sessie, naast TT-168 en TT-175 — op Ronalds eigen verzoek.
+
+**Open vraag beantwoord (Ronald, 01-09-2026): de knop bij Mijn Profiel moet eruit.** Gedaan — het profiel-⋯-menu (Profiel bewerken / Open voor band-uitnodigingen / Account verwijderen) bevat geen Uitloggen meer. Uitloggen staat nu op precies één plek: het hamburgermenu.
+
+**Terugkoppeling van Ronald op de werkwijze, vastgelegd in Claudes geheugen:** vóór het verplaatsen van een UI-element altijd eerst vragen en akkoord krijgen — niet zelf verplaatsen en pas achteraf vragen of het zo moet blijven staan.
+
+**Getest:** `node --check` en haakjesbalans (`()` 6157/6158, zelfde bekende onbalans van 1) geslaagd na het verwijderen van de knop.
+
+**Geleverd:** `index.html` (TT-175 + TT-176 compleet). **Nog niet naar GitHub geüpload — actie bij Ronald.**
+
+Eerstvolgende stap: Ronald test `index.html` (TT-175 + TT-176) en `profiel-v2.html` (alle vijf tegels) zelf, ingelogd — en beantwoordt de open vraag hierboven over de dubbele Uitloggen-knop. Daarna: (1) akkoord voor het overzetten van de TT-168-tegels naar `index.html`, en (2) het aandachtspunt "meer visueel onderscheid tussen de tegels" oppakken.
 
 ---
 

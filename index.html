@@ -2473,6 +2473,12 @@
     <button class="nav-menu-item" id="navPrivacy" onclick="closeNavMenu();showView('privacy')">Privacyverklaring</button>
     <button class="nav-menu-item" id="navTerms" onclick="closeNavMenu();showView('terms')">Gebruiksvoorwaarden</button>
     <button class="nav-menu-item" id="navGedragscode" onclick="closeNavMenu();showView('gedragscode')">Gedragscode</button>
+    <!-- TT-176 (01-09-2026): TT-166 (28-08-2026) haalde Uitloggen hier weg
+         en zette 'm uitsluitend bij Mijn Profiel — Ronald wil 'm op eigen
+         verzoek terug in het hamburgermenu. Alleen zichtbaar ingelogd
+         (onUserLoggedIn()/onUserLoggedOut() zetten display). De knop bij
+         Mijn Profiel is weer verwijderd — één plek, geen dubbele knop. -->
+    <button class="nav-menu-item" id="navLogout" onclick="closeNavMenu();navLoginClick()" style="display:none;">Uitloggen</button>
   </div>
 </div>
 <!-- TT-U24 (12-08-2026): vaste onderbalk voor de telefoon.
@@ -4146,6 +4152,9 @@ async function onUserLoggedIn(user) {
   // Ingelogd hoeft niemand nog "Inloggen" te zien — de knop verdwijnt, de
   // ruimte in de tab-regel is dan vrij.
   document.getElementById('navLogin').style.display = 'none';
+  // TT-176 (01-09-2026): Uitloggen staat weer in het hamburgermenu ook,
+  // naast Mijn Profiel — zie navMenuDropdown hierboven.
+  document.getElementById('navLogout').style.display = '';
   refreshUnreadBadge();
 
   if (onboardingInFlight) return;
@@ -4201,6 +4210,9 @@ function onUserLoggedOut() {
   const navLoginBtn = document.getElementById('navLogin');
   navLoginBtn.textContent = 'Inloggen';
   navLoginBtn.style.display = '';
+  // TT-176 (01-09-2026): hamburgermenu-Uitloggen weer verbergen bij uitloggen.
+  const navLogoutBtn = document.getElementById('navLogout');
+  if (navLogoutBtn) navLogoutBtn.style.display = 'none';
   myMusicianId = null;
   myOwnCity = null;
   // TT-108 (23-08-2026): hoort bij dezelfde fix als in onUserLoggedIn() —
@@ -5534,12 +5546,11 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
         <!-- TT-56 (12-08-2026): opt-out band-uitnodigingen. Alleen deze
              knop, geen zichtbaar label op het profiel zelf voor anderen. -->
         <button class="nav-menu-item" id="bandInviteToggleBtn" onclick="closeProfileMoreMenu();toggleBandInviteAvailability()">Open voor band-uitnodigingen</button>
-        <!-- TT-166 (28-08-2026): was dubbel (hamburger + tab-regel). Hamburger
-             moet overal identiek blijven, dus Uitloggen hoort hier — bij de
-             pagina waar het over je account gaat — niet in een menu voor
-             Over ons/juridische pagina's. Alleen deze knop, want dit menu
-             bestaat alleen als je al bent ingelogd (isOwn). -->
-        <button class="nav-menu-item" onclick="closeProfileMoreMenu();navLoginClick()">Uitloggen</button>
+        <!-- TT-166 (28-08-2026) zette Uitloggen hier neer i.p.v. het
+             hamburgermenu ("moet overal identiek blijven"). TT-176
+             (01-09-2026, Ronald) draaide dat terug: Uitloggen staat weer in
+             het hamburgermenu (navMenuDropdown), en bewust NIET meer hier —
+             één plek, geen tweede kopie. -->
         <button class="nav-menu-item" style="color:var(--danger);" onclick="closeProfileMoreMenu();openDeleteAccountModal()">Account verwijderen</button>
       </div>
     </div>` : '';
