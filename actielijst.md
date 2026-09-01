@@ -1,6 +1,6 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 01-09-2026 — **TT-176 afgerond: Uitloggen staat nu alleen in het hamburgermenu, dubbele knop bij Mijn Profiel verwijderd op Ronalds verzoek. TT-168 inhoudelijk klaar: alle vijf tegels gebouwd en getest (gestubd). Nog niet naar GitHub geüpload. TT-175 (gebouwd): oefenfrequentie-opties aangepast, SQL gedraaid en bevestigd. TT-01 heropend. TT-167 gebouwd. TT-169, TT-170, TT-171, TT-172 nieuw, niet gebouwd. TT-173 en TT-174 gebouwd.**
+**Laatste update:** 01-09-2026 — **TT-180 (nieuw, gebouwd): "Wie ben je"-bug opgelost — birth_date miste SELECT-recht voor authenticated, opgelost door de al bestaande RPC tt_get_my_birth_date() te hergebruiken (zelfde oplossing als B-01 in index.html). Geen nieuwe SQL nodig. TT-179 gebouwd: UX-polishronde na livetest. TT-176 afgerond. TT-168 inhoudelijk klaar. TT-175 gebouwd en bevestigd. TT-01 heropend. TT-167 gebouwd. TT-169, TT-170, TT-171, TT-172 nieuw, niet gebouwd. TT-173 en TT-174 gebouwd.**
 
 **TT-167 (31-08-2026), gebouwd:** e-mailveld terug op het bewerkscherm (stap 1 "Over jou"), alleen-lezen, gevuld met `currentUser.email`. Wachtwoordveld blijft bij bewerken volledig verborgen — wachtwoord wijzigen loopt via het bestaande resetscherm (`saveNewPassword()`, `view-reset`), nooit via dit formulier. **Reden:** Ronald wil altijd kunnen zien welk e-mailadres aan zijn account hangt; het veld was al sinds de bouw van de wizard bewust verborgen tijdens bewerken (zie `showView()`), maar dat voelde onverwacht aan. Patroon hergebruikt: alleen-lezen styling identiek aan het bestaande Plaats-/fname-veld tijdens bewerken — geen nieuw componentpatroon. **Geverifieerd:** `regEmail` wordt door geen enkele opslagfunctie uitgelezen zolang `editingMusicianId` gezet is (alle voorkomens van `state.regEmail`/`regEmail` nagelopen) — het veld tonen kan dus nooit een wijziging aan het e-mailadres veroorzaken. **Getest:** haakjesbalans (`{}` 2043/2043, `[]` 329/329, `()` 6118/6119 — bekende onbalans van 1) en `node --check` geslaagd. **Niet getest:** Playwright (geen render-omgeving met ingelogde sessie opgezet deze sessie). **Nog niet geüpload naar GitHub — actie bij Ronald**, vóór dit live getest kan worden.
 
@@ -152,7 +152,61 @@ Ronald leverde de tekening van het wireframe aan (vijf tegels, elk met een eigen
 
 **Geleverd:** `index.html` (TT-175 + TT-176 compleet). **Nog niet naar GitHub geüpload — actie bij Ronald.**
 
-Eerstvolgende stap: Ronald test `index.html` (TT-175 + TT-176) en `profiel-v2.html` (alle vijf tegels) zelf, ingelogd — en beantwoordt de open vraag hierboven over de dubbele Uitloggen-knop. Daarna: (1) akkoord voor het overzetten van de TT-168-tegels naar `index.html`, en (2) het aandachtspunt "meer visueel onderscheid tussen de tegels" oppakken.
+**TT-179 (01-09-2026), gebouwd — UX-polish na Ronalds livetest op zijn telefoon.**
+
+Ronald testte alle vijf tegels live en stuurde zeven screenshots met puntsgewijze bevindingen. Verwerkt:
+
+**Overal (alle zes schermen):**
+- Hero-kleurbalk toegevoegd boven elk scherm — hergebruik van `.profile-header-band` uit `index.html` (huisstijl §10), hier `.hero-band` genoemd.
+- Titels groter en in het merkgoud (`--accent`) — hergebruik van het bestaande `.filter-title`-patroon.
+- "Profiel bewerken" op het tegeloverzicht is niet langer een kleine muted eyebrow, maar dezelfde `.panel-title`-stijl als de andere schermen.
+- Tegels op het overzicht: meer ruimte ertussen (10px→16px), een gouden accentrand, groter/vetter lettertype.
+- Alle velden: meer ruimte ertussen (16px→28px).
+- `.tag.selected` gecorrigeerd naar dezelfde omlijnde stijl als de instrument-/genre-badges en de doelkaarten (was: volle gouden vlek met zwarte tekst — inconsistent met de rest van het scherm). Lost in één keer zowel de "Wat speel je vooral"-kleur als de "Wat zoek je"-inconsistentie op ("Keuze = zoals bij Alles").
+- Browser-eigen `confirm()`-popup bij Annuleren vervangen door een klein, subtiel waarschuwingsregeltje vlak boven de actieknoppen (`showCancelWarning()`/`hideCancelWarning()`, nieuw in `profiel-gedeeld.js`) — eerste klik toont de waarschuwing, een tweede klik bevestigt. Toegepast op alle vijf tegels.
+
+**Wie ben je:** subline weg. Bio verplaatst naar een eigen modal (makkelijker typen dan in een klein vakje tussen de andere velden) — het hoofdscherm toont nu een korte preview die naar die modal opent; de voorbeeldzinnen en een vetgedrukt-cursieve toelichting staan in de modal zelf.
+
+**Wat speel je:** de (i)-toelichtingsknop staat nu naast het label "Mijn Instrumenten" i.p.v. op een eigen regel eronder.
+
+**Wat zoek je:** "Wat is je doel?" → "Wat wil je nu?". "Serieuze band opzetten" → "Band opzetten met vaste leden". "Projectmatig" terug als 5e oefenfrequentie-optie — **hergebruikt de bestaande waarde `per_project`** (alleen het label hernoemd), dus **geen nieuwe SQL-migratie nodig**: die waarde stond al toegestaan sinds de TT-175-constraint. Zelfde wijziging doorgevoerd in de wizard (`index.html`) — Ronald: "wizard en profiel bewerken moeten exact dezelfde velden hebben."
+
+**Je setlist:** beheersingstekst aangepast ("nog fouten" weg bij Basis, "kleine slordigheden" → "bijna klaar" bij Bijna). Niveau-knoppen iets compacter (padding/lettergrootte omlaag) — **het tikdoel van 44px is niet verlaagd**, dat blijft een harde grens. Nummer verwijderen vraagt nu eerst een korte bevestiging: eerste klik op ✕ verandert 'm in "Zeker?", pas de tweede klik verwijdert echt.
+
+**Je mediahoek:** tip-tekst aangepast naar "toon de energie die jij als muzikant wil laten zien". Meer ruimte tussen profielfoto en de upload-/linkssectie.
+
+**Technisch:** `jstFieldSnapshot()` aangepast — sluit nu bewust het tijdelijke `_confirmDelete`-vlaggetje uit, anders zou het klikken op ✕ zelf al als "iets gewijzigd" tellen.
+
+**Antwoord op Ronalds vraag:** foto's, video's, links en de profielfoto zijn zichtbaar voor iedereen die een profiel bekijkt — via Zoeken, een gedeelde link, of het eigen profiel. Eén functie (`buildMusicianDetailHTML` in `index.html`) tekent dat blok altijd, geen aparte "alleen voor jezelf"-versie.
+
+**Nog open, blokkerend voor de "Wie ben je"-tegel: RLS/kolomrechten-bug (screenshot Ronald).** `openWieBenJe()` faalt met "Je hebt geen toestemming voor deze actie" — de enige van de vijf laadquery's die dat doet. **Aanname, niet bevestigd:** één van de kolommen `fname/lname/username/birth_date/zip/city/city_source/bio` heeft een kolom-specifieke rechtenbeperking; `birth_date` is de meest waarschijnlijke kandidaat (leeftijd is privacygevoelig). Gevraagd aan Ronald: resultaat van
+```sql
+select column_name, privilege_type, grantee
+from information_schema.column_privileges
+where table_name = 'musicians' and table_schema = 'public'
+order by column_name, grantee;
+```
+**Nog niet gebouwd, wacht op dat antwoord — geen gok.**
+
+**Getest:** Playwright, 7 scenario's tegen een gestubde Supabase-client (Hero/titel, bio-modal inclusief live-sync naar het verborgen veld, eigen annuleer-waarschuwing i.p.v. browser-confirm, (i)-knop-plaatsing, tag-kleur (met pixelcontrole op de daadwerkelijke renderkleur, niet alleen de CSS-regel), nieuwe "Wat zoek je"-teksten en Projectmatig, setlist-teksten en de tweeklaps-verwijderbevestiging, mediahoek-tip) — alle scenario's geslaagd, geen JS-fouten. `node --check` en haakjesbalans op alle drie bestanden geslaagd (`index.html`: zelfde bekende `()`-onbalans van 1).
+
+**Geleverd:** `profiel-v2.html`, `profiel-gedeeld.js`, `index.html`. **Nog niet naar GitHub geüpload — actie bij Ronald.** Geen nieuwe SQL nodig deze keer.
+
+**TT-180 (01-09-2026), gebouwd — de "Wie ben je"-bug opgelost.**
+
+**Geverifieerd via Ronalds query-resultaat:** `information_schema.column_privileges` op `musicians` laat voor élke andere gecontroleerde kolom (`accepts_band_invites`, `avatar_url`, `bio`, `city`, `city_source`, `created_at`) gewoon SELECT voor `authenticated` zien. Bij `birth_date` ontbreekt SELECT voor `authenticated` — wel INSERT/UPDATE/REFERENCES. Een kale select met `birth_date` erin faalt daardoor in zijn geheel; Postgres laat een onleesbare kolom niet stilzwijgend weg.
+
+**Dit bleek al eerder opgelost te zijn, alleen niet in `profiel-v2.html`.** In `index.html` staat bij `editMyProfile()` een commentaarblok van 18-08-2026 (B-01, tweede stap) dat exact deze fout beschrijft en oplost: `birth_date` weghalen uit de gewone select, apart ophalen via de bestaande RPC `tt_get_my_birth_date()`. `openWieBenJe()` in `profiel-v2.html` deed dat nog niet — dat is de enige reden dat alleen deze tegel het probleem had.
+
+**Fix:** `birth_date` uit de select gehaald, opgehaald via `db.rpc('tt_get_my_birth_date')`, precies zoals `index.html` al doet. Opslaan (`saveWieBenJe()`) hoefde niet aangepast — UPDATE op `birth_date` staat wél toegestaan voor `authenticated`, alleen lezen liep vast.
+
+**Geen nieuwe SQL nodig** — de RPC bestond al.
+
+**Getest:** Playwright, met een stub die bewust dezelfde "permission denied for column birth_date"-fout teruggeeft zodra `birth_date` per ongeluk weer in de gewone select terechtkomt (vangt regressie op), en een gestubde `tt_get_my_birth_date()`-RPC. 2 controles: scherm laadt zonder foutmelding, geboortedatum correct via de RPC. Beide geslaagd, geen JS-fouten. `node --check` en haakjesbalans geslaagd.
+
+**Geleverd:** `profiel-v2.html`. **Nog niet naar GitHub geüpload — actie bij Ronald.**
+
+Eerstvolgende stap: Ronald test alle vijf tegels, inclusief "Wie ben je", zelf live.
 
 ---
 

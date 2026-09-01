@@ -2832,7 +2832,7 @@
   <!-- STEP 4: Doel -->
   <div class="panel" id="step3">
     <div class="panel-title">Wat zoek je? <span id="magOokLaterWatZoekJe" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
-    <div class="panel-sub">Wat is je doel op The Talent Tent?</div>
+    <div class="panel-sub">Wat wil je nu op The Talent Tent?</div>
 
     <div class="goal-options" id="goalOptions">
       <div class="goal-card" onclick="selectGoal(this,'oefenen')">
@@ -2841,7 +2841,7 @@
       </div>
       <div class="goal-card" onclick="selectGoal(this,'band')">
         <div class="goal-label">Band starten</div>
-        <div class="goal-desc">Serieuze band opzetten met vaste leden</div>
+        <div class="goal-desc">Band opzetten met vaste leden</div>
       </div>
       <div class="goal-card" onclick="selectGoal(this,'optreden')">
         <div class="goal-label">Optreden</div>
@@ -2861,6 +2861,7 @@
           <div class="tag" onclick="selectRehearsalFrequency(this,'wekelijks')">Wekelijks</div>
           <div class="tag" onclick="selectRehearsalFrequency(this,'paar_per_maand')">Paar keer per maand</div>
           <div class="tag" onclick="selectRehearsalFrequency(this,'losse_jams')">Losse jams, als het uitkomt</div>
+          <div class="tag" onclick="selectRehearsalFrequency(this,'per_project')">Projectmatig</div>
         </div>
       </div>
     </div>
@@ -4842,7 +4843,8 @@ const REHEARSAL_LABELS = {
   dagelijks:       'Dagelijks',
   wekelijks:       'Wekelijks',
   paar_per_maand:  'Paar keer per maand',
-  losse_jams:      'Losse jams, als het uitkomt'
+  losse_jams:      'Losse jams, als het uitkomt',
+  per_project:     'Projectmatig'
 };
 const AMBITION_LABELS = {
   verbeteren: 'Mezelf verbeteren op mijn instrument',

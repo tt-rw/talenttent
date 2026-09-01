@@ -594,3 +594,19 @@ function detectPlatform(url) {
   if (url.includes('spotify')) return 'Spotify';
   return 'Link';
 }
+
+// ─── Subtiele annuleer-bevestiging (TT-179, i.p.v. window.confirm) ───────
+// Ronald (01-09-2026): de browser-eigen confirm()-popup is veel te groot en
+// opvallend. Vervangen door een klein waarschuwingsregeltje vlak boven de
+// actieknoppen — dezelfde plek waar de ogen al zijn. Eerste klik op
+// Annuleren toont de waarschuwing, een tweede, aparte klik bevestigt.
+// Zelfde onderliggende patroon als de V-19-bandformulier-bevestiging in
+// index.html, hier generiek gemaakt voor hergebruik door alle vijf tegels.
+function showCancelWarning(warningId) {
+  const el = document.getElementById(warningId);
+  if (el) el.style.display = 'flex';
+}
+function hideCancelWarning(warningId) {
+  const el = document.getElementById(warningId);
+  if (el) el.style.display = 'none';
+}

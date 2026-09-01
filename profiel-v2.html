@@ -38,14 +38,21 @@
   .app-shell{ max-width:520px; margin:0 auto; min-height:100dvh; padding:16px; }
   .eyebrow{ font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin:0 0 12px; }
 
+  /* TT-179 (01-09-2026, Ronald na livetest): Hero-kleurbalk boven elk
+     scherm — zelfde patroon als .profile-header-band in index.html
+     (huisstijl §10), hier hergebruikt zodat dit deel van de app niet
+     losstaat van de rest van de huisstijl. */
+  .hero-band{ height:8px; border-radius:8px; background:var(--accent); margin:0 0 20px; }
+
   .tile{
     display:flex; align-items:center; gap:12px;
-    min-height:44px; padding:14px; margin-bottom:10px;
-    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    min-height:44px; padding:16px; margin-bottom:16px;
+    background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent);
+    border-radius:var(--radius);
     cursor:pointer;
   }
   .tile:active{ background:var(--surface2); }
-  .tile-title{ font-size:15px; font-weight:500; }
+  .tile-title{ font-size:17px; font-weight:700; }
   .tile-sub{ font-size:12px; color:var(--muted); margin-top:2px; }
   .tile-hint{ font-size:11px; color:var(--muted); margin:-4px 0 14px 2px; line-height:1.4; }
 
@@ -59,7 +66,20 @@
   .action-row{ display:flex; gap:10px; margin-top:28px; }
   .action-row .btn{ flex:1; }
 
-  .field{ margin-bottom:16px; }
+  /* TT-179: klein, subtiel waarschuwingsregeltje i.p.v. window.confirm() —
+     zie showCancelWarning()/hideCancelWarning() in profiel-gedeeld.js. */
+  .cancel-warning{
+    display:none; align-items:center; justify-content:space-between; gap:12px;
+    background:rgba(229,83,61,0.08); border:1px solid rgba(229,83,61,0.3); border-radius:8px;
+    padding:10px 14px; margin-top:20px; font-size:12px; color:var(--danger); line-height:1.4;
+  }
+  .cancel-warning button{
+    background:none; border:1px solid var(--danger); color:var(--danger); border-radius:6px;
+    padding:0 10px; min-height:36px; font-size:11px; font-weight:700; cursor:pointer;
+    white-space:nowrap; font-family:'Roboto',sans-serif; flex-shrink:0;
+  }
+
+  .field{ margin-bottom:28px; }
   .field label{ display:block; font-size:13px; margin-bottom:6px; color:var(--text); }
   .field .req{ color:var(--accent); }
   .field input, .field textarea{
@@ -92,7 +112,7 @@
   .ac-item:last-child{ border-bottom:none; }
   .ac-item:active{ background:var(--surface); }
 
-  .panel-title{ font-size:18px; font-weight:700; margin:0 0 2px; }
+  .panel-title{ font-size:23px; font-weight:700; color:var(--accent); margin:0 0 4px; }
   .panel-sub{ font-size:12px; color:var(--muted); margin:0 0 20px; }
 
   .toast{
@@ -120,7 +140,7 @@
     font-size:13px; cursor:pointer; transition:all .15s; user-select:none; font-weight:500;
   }
   .tag:hover{ border-color:var(--accent); color:var(--accent); }
-  .tag.selected{ background:var(--accent); color:#000; border-color:var(--accent); font-weight:700; }
+  .tag.selected{ background:rgba(245,197,24,0.08); color:var(--accent); border-color:var(--accent); font-weight:700; }
 
   .modal-overlay{
     position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:200;
@@ -237,13 +257,13 @@
   .songs-list{ display:flex; flex-direction:column; gap:8px; margin-top:4px; }
   .level-btn{
     display:inline-flex; align-items:center; justify-content:center; min-height:44px; min-width:44px;
-    padding:8px 14px; border-radius:6px; font-size:13px; border:1px solid var(--border);
+    padding:6px 10px; border-radius:6px; font-size:12px; border:1px solid var(--border);
     background:transparent; color:var(--muted); cursor:pointer; transition:all .15s;
     white-space:nowrap; font-family:'Roboto',sans-serif;
   }
   .level-btn:hover{ border-color:#555; color:var(--text); }
   .level-btn.active-basis, .level-btn.active-bijna, .level-btn.active-podium{
-    background:var(--surface2); border-color:var(--text); color:var(--text); font-weight:700; font-style:italic;
+    background:rgba(245,197,24,0.08); border-color:var(--accent); color:var(--accent); font-weight:700; font-style:italic;
   }
   .song-remove{
     display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; flex-shrink:0;
@@ -367,15 +387,16 @@
 
   <!-- Tegeloverzicht -->
   <div id="overviewScreen" hidden>
-    <p class="eyebrow">Profiel bewerken</p>
+    <div class="hero-band"></div>
+    <div class="panel-title">Profiel bewerken</div>
     <div id="tilesWrap"></div>
     <button class="btn btn-ghost btn-block" onclick="location.href='index.html#myprofile'">Terug</button>
   </div>
 
   <!-- Subscherm: Wie ben je -->
   <div id="wieBenJeScreen" hidden>
+    <div class="hero-band"></div>
     <div class="panel-title">Wie ben je (bewerken)</div>
-    <div class="panel-sub">Dit is wat andere muzikanten van je zien.</div>
 
     <div class="field-group">
       <div class="field">
@@ -412,14 +433,18 @@
       <p id="wbjPostcodeStatus" class="field-status" style="color:var(--muted);"></p>
     </div>
 
+    <!-- TT-179 (01-09-2026): bio typ je nu in een eigen scherm — meer
+         ruimte, geen klein tekstvakje tussen de andere velden. Dit veld
+         hier is alleen een voorbeeld/samenvatting die naar dat scherm
+         opent; #wbjBio zelf blijft de echte waarde, voor
+         wbjFieldSnapshot()/saveWieBenJe() ongewijzigd. -->
     <div class="field">
       <label>Korte bio</label>
-      <div class="bio-prompts">
-        <button type="button" class="bio-chip" onclick="wbjBioPrompt('Ik speel al ... jaar ')">Hoe lang speel je al?</button>
-        <button type="button" class="bio-chip" onclick="wbjBioPrompt('Op dit moment ben ik vooral bezig met ')">Waar ben je nu mee bezig?</button>
-        <button type="button" class="bio-chip" onclick="wbjBioPrompt('Wat ik wil bereiken is ')">Wat wil je bereiken?</button>
+      <div class="picker-field" id="wbjBioField" onclick="openWbjBioModal()">
+        <span class="picker-field-label" id="wbjBioPreview">Bijv. Ik speel al 3 jaar gitaar...</span>
+        <span class="picker-field-chevron">✎</span>
       </div>
-      <textarea id="wbjBio" placeholder="Bijv. Ik speel al 3 jaar gitaar..."></textarea>
+      <textarea id="wbjBio" style="display:none;"></textarea>
     </div>
 
     <div class="field">
@@ -428,23 +453,46 @@
       <p class="field-status" style="color:var(--muted);">Dit is het e-mailadres waarmee je inlogt. Wijzigen kan hier niet.</p>
     </div>
 
+    <div class="cancel-warning" id="wbjCancelWarning">
+      <span>Wat je hebt gewijzigd gaat verloren.</span>
+      <button type="button" onclick="confirmCancelWieBenJe()">Toch annuleren</button>
+    </div>
     <div class="action-row">
       <button class="btn btn-ghost" onclick="cancelWieBenJe()">Annuleren</button>
       <button class="btn btn-primary" onclick="saveWieBenJe()">Opslaan</button>
     </div>
   </div>
 
+  <!-- TT-179: bio bewerken in een eigen, volledig-scherm-modal. -->
+  <div class="modal-overlay" id="wbjBioModal" onclick="if(event.target===this)closeWbjBioModal()">
+    <div class="modal-box modal-box-sticky-footer modal-box-slg">
+      <button class="modal-close" onclick="closeWbjBioModal()" aria-label="Sluiten">✕</button>
+      <div class="modal-scroll-area">
+        <div class="filter-title" style="margin-bottom:4px;padding-right:52px;">Korte bio</div>
+        <p style="font-weight:700;font-style:italic;color:var(--text);font-size:13px;margin:0 0 16px;line-height:1.5;">Dit is vaak het eerste wat andere muzikanten van je lezen.</p>
+        <div class="bio-prompts">
+          <button type="button" class="bio-chip" onclick="wbjBioPrompt('Ik speel al ... jaar ')">Hoe lang speel je al?</button>
+          <button type="button" class="bio-chip" onclick="wbjBioPrompt('Op dit moment ben ik vooral bezig met ')">Waar ben je nu mee bezig?</button>
+          <button type="button" class="bio-chip" onclick="wbjBioPrompt('Wat ik wil bereiken is ')">Wat wil je bereiken?</button>
+        </div>
+        <textarea id="wbjBioModalTextarea" placeholder="Bijv. Ik speel al 3 jaar gitaar..." style="min-height:180px;" oninput="wbjSyncBioFromModal()"></textarea>
+      </div>
+      <div class="modal-sticky-footer">
+        <button type="button" class="btn btn-primary btn-block" onclick="closeWbjBioModal()">Klaar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Subscherm: Wat speel je -->
   <div id="watSpeelJeScreen" hidden>
+    <div class="hero-band"></div>
     <div class="panel-title">Wat speel je (bewerken)</div>
     <div class="panel-sub">Je instrument(en), je niveau per instrument, en de genres die je speelt.</div>
 
     <div class="field">
-      <label>Mijn Instrumenten <span class="req">*</span></label>
-      <div style="display:flex;align-items:center;gap:8px;margin:6px 0 10px;">
-        <span style="font-size:12px;color:var(--muted);">Toelichting op niveau:</span>
-        <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
-      </div>
+      <label>Mijn Instrumenten <span class="req">*</span>
+        <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?" style="margin-left:8px;">i</button>
+      </label>
       <div class="picker-field" id="wspInstrumentField">
         <span class="picker-field-label" id="wspInstrumentFieldLabel">Kies een instrument</span>
         <span class="picker-field-chevron">▾</span>
@@ -470,6 +518,10 @@
       </div>
     </div>
 
+    <div class="cancel-warning" id="wspCancelWarning">
+      <span>Wat je hebt gewijzigd gaat verloren.</span>
+      <button type="button" onclick="confirmCancelWatSpeelJe()">Toch annuleren</button>
+    </div>
     <div class="action-row">
       <button class="btn btn-ghost" onclick="cancelWatSpeelJe()">Annuleren</button>
       <button class="btn btn-primary" onclick="saveWatSpeelJe()">Opslaan</button>
@@ -478,11 +530,12 @@
 
   <!-- Subscherm: Wat zoek je -->
   <div id="watZoekJeScreen" hidden>
+    <div class="hero-band"></div>
     <div class="panel-title">Wat zoek je (bewerken)</div>
     <div class="panel-sub">Je doel op The Talent Tent. Alle drie de velden zijn optioneel.</div>
 
     <div class="field">
-      <label>Wat is je doel?</label>
+      <label>Wat wil je nu?</label>
       <div class="goal-options" id="wzjGoalOptions">
         <div class="goal-card" data-val="oefenen" onclick="wzjSelectGoal(this,'oefenen')">
           <div class="goal-label">Samen oefenen</div>
@@ -490,7 +543,7 @@
         </div>
         <div class="goal-card" data-val="band" onclick="wzjSelectGoal(this,'band')">
           <div class="goal-label">Band starten</div>
-          <div class="goal-desc">Serieuze band opzetten met vaste leden</div>
+          <div class="goal-desc">Band opzetten met vaste leden</div>
         </div>
         <div class="goal-card" data-val="optreden" onclick="wzjSelectGoal(this,'optreden')">
           <div class="goal-label">Optreden</div>
@@ -510,6 +563,7 @@
         <div class="tag" data-val="wekelijks" onclick="wzjSelectRehearsalFrequency(this,'wekelijks')">Wekelijks</div>
         <div class="tag" data-val="paar_per_maand" onclick="wzjSelectRehearsalFrequency(this,'paar_per_maand')">Paar keer per maand</div>
         <div class="tag" data-val="losse_jams" onclick="wzjSelectRehearsalFrequency(this,'losse_jams')">Losse jams, als het uitkomt</div>
+        <div class="tag" data-val="per_project" onclick="wzjSelectRehearsalFrequency(this,'per_project')">Projectmatig</div>
       </div>
     </div>
 
@@ -523,6 +577,10 @@
       </div>
     </div>
 
+    <div class="cancel-warning" id="wzjCancelWarning">
+      <span>Wat je hebt gewijzigd gaat verloren.</span>
+      <button type="button" onclick="confirmCancelWatZoekJe()">Toch annuleren</button>
+    </div>
     <div class="action-row">
       <button class="btn btn-ghost" onclick="cancelWatZoekJe()">Annuleren</button>
       <button class="btn btn-primary" onclick="saveWatZoekJe()">Opslaan</button>
@@ -531,6 +589,7 @@
 
   <!-- Subscherm: Je setlist -->
   <div id="jeSetlistScreen" hidden>
+    <div class="hero-band"></div>
     <div class="panel-title">Je setlist (bewerken)</div>
     <div class="panel-sub">Zoek eerst een band of artiest, kies dan een nummer.</div>
 
@@ -554,15 +613,19 @@
 
     <div class="field">
       <label>Jouw repertoire</label>
-      <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.6;">
-        Beheersing: <strong style="color:var(--text);font-style:italic;">Basis</strong> (kent de structuur, nog fouten) ·
-        <strong style="color:var(--text);font-style:italic;">Bijna</strong> (soepel, kleine slordigheden) ·
-        <strong style="color:var(--text);font-style:italic;">Podium</strong> (speelt het live zonder problemen)
+      <p style="font-size:12px;color:var(--accent);margin:0 0 10px;line-height:1.6;">
+        Beheersing: <strong style="font-style:italic;">Basis</strong> (kent de structuur) ·
+        <strong style="font-style:italic;">Bijna</strong> (soepel, bijna klaar) ·
+        <strong style="font-style:italic;">Podium</strong> (speelt het live zonder problemen)
       </p>
       <div class="songs-list" id="jstSongsList"></div>
       <p id="jstSongsListEmpty" style="font-size:13px;color:var(--muted);margin-top:4px;">Nog geen nummers toegevoegd.</p>
     </div>
 
+    <div class="cancel-warning" id="jstCancelWarning">
+      <span>Wat je hebt gewijzigd gaat verloren.</span>
+      <button type="button" onclick="confirmCancelJeSetlist()">Toch annuleren</button>
+    </div>
     <div class="action-row">
       <button class="btn btn-ghost" onclick="cancelJeSetlist()">Annuleren</button>
       <button class="btn btn-primary" onclick="saveJeSetlist()">Opslaan</button>
@@ -571,10 +634,11 @@
 
   <!-- Subscherm: Je mediahoek -->
   <div id="mediahoekScreen" hidden>
+    <div class="hero-band"></div>
     <div class="panel-title">Je mediahoek (bewerken)</div>
     <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud.</div>
 
-    <div class="field" style="margin-bottom:0;">
+    <div class="field" style="margin-bottom:28px;">
       <label>Profielfoto</label>
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
@@ -593,7 +657,7 @@
     </div>
 
     <div class="media-tip">
-      <span><strong>Tip:</strong> een actueel profiel met recente media trekt meer aandacht.</span>
+      <span><strong>Tip:</strong> toon de energie die jij als muzikant wil laten zien.</span>
     </div>
 
     <div class="media-tabs">
@@ -618,6 +682,10 @@
       <button type="button" class="add-link-btn" onclick="mhAddLinkRow()">+ Link toevoegen</button>
     </div>
 
+    <div class="cancel-warning" id="mhCancelWarning">
+      <span>Wat je hebt gewijzigd gaat verloren.</span>
+      <button type="button" onclick="confirmCancelJeMediahoek()">Toch annuleren</button>
+    </div>
     <div class="action-row">
       <button class="btn btn-ghost" onclick="cancelJeMediahoek()">Annuleren</button>
       <button class="btn btn-primary" onclick="saveJeMediahoek()">Opslaan</button>
@@ -804,29 +872,71 @@ function wbjFieldSnapshot() {
 }
 
 async function openWieBenJe() {
+  hideCancelWarning('wbjCancelWarning');
   document.getElementById('wbjUsernameStatus').textContent = '';
   document.getElementById('wbjPostcodeStatus').textContent = '';
   document.getElementById('wbjEmail').value = currentUser?.email || '';
+  // TT-180 (01-09-2026): birth_date hoort niet in deze select. Geverifieerd
+  // via information_schema.column_privileges (Ronald): de rol "authenticated"
+  // heeft geen SELECT op musicians.birth_date — een kale select met deze
+  // kolom erin faalt in zijn geheel ("permission denied"), Postgres laat 'm
+  // niet stilzwijgend weg. Exact hetzelfde probleem als B-01 in index.html
+  // (zie editMyProfile() daar, 18-08-2026), met dezelfde daar al gebouwde
+  // oplossing: birth_date apart ophalen via de bestaande RPC
+  // tt_get_my_birth_date(). UPDATE op birth_date is wél toegestaan (zie
+  // saveWieBenJe() hieronder) — alleen lezen loopt via de RPC.
   const { data, error } = await db.from('musicians')
-    .select('fname, lname, username, birth_date, zip, city, city_source, bio')
+    .select('fname, lname, username, zip, city, city_source, bio')
     .eq('id', myMusicianId).single();
   if (error) {
     showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
     return;
   }
+  const { data: myBirthDate } = await db.rpc('tt_get_my_birth_date');
   document.getElementById('wbjFname').value = data.fname || '';
   document.getElementById('wbjLname').value = data.lname || '';
   document.getElementById('wbjUsername').value = data.username || '';
-  document.getElementById('wbjBirthDate').value = fromISODate(data.birth_date);
+  document.getElementById('wbjBirthDate').value = fromISODate(myBirthDate);
   document.getElementById('wbjZip').value = data.zip || '';
   document.getElementById('wbjCity').value = data.city || '';
   document.getElementById('wbjBio').value = data.bio || '';
+  wbjRenderBioPreview();
   wbjUsernameOk = true;
   wbjSnapshot = wbjFieldSnapshot();
 }
 
+// TT-179 (01-09-2026): bio bewerken in een eigen modal — makkelijker typen
+// dan in een klein tekstvakje tussen de andere velden. #wbjBio (verborgen)
+// blijft de echte waarde voor wbjFieldSnapshot()/saveWieBenJe(); de modal
+// is alleen een prettiger invoerscherm ervoor.
+function openWbjBioModal() {
+  document.getElementById('wbjBioModalTextarea').value = document.getElementById('wbjBio').value;
+  document.getElementById('wbjBioModal').classList.add('visible');
+  document.getElementById('wbjBioModalTextarea').focus();
+}
+function closeWbjBioModal() {
+  document.getElementById('wbjBioModal').classList.remove('visible');
+}
+function wbjSyncBioFromModal() {
+  const value = document.getElementById('wbjBioModalTextarea').value;
+  document.getElementById('wbjBio').value = value;
+  wbjRenderBioPreview();
+}
+function wbjRenderBioPreview() {
+  const value = document.getElementById('wbjBio').value.trim();
+  const preview = document.getElementById('wbjBioPreview');
+  if (value) {
+    preview.textContent = value.length > 70 ? value.slice(0, 70) + '…' : value;
+    preview.style.color = 'var(--text)';
+  } else {
+    preview.textContent = 'Bijv. Ik speel al 3 jaar gitaar...';
+    preview.style.color = 'var(--muted)';
+  }
+}
+
 function wbjBioPrompt(text) {
-  applyBioPrompt(document.getElementById('wbjBio'), text);
+  applyBioPrompt(document.getElementById('wbjBioModalTextarea'), text);
+  wbjSyncBioFromModal();
 }
 
 // Gebruikersnaam: zelfde live-check als index.html (tt_check_username_available).
@@ -924,8 +1034,13 @@ function selectWbjCity(name) {
 
 function cancelWieBenJe() {
   if (wbjFieldSnapshot() !== wbjSnapshot) {
-    if (!confirm('Weet je het zeker? Wat je hebt gewijzigd gaat verloren.')) return;
+    showCancelWarning('wbjCancelWarning');
+    return;
   }
+  goToOverview();
+}
+function confirmCancelWieBenJe() {
+  hideCancelWarning('wbjCancelWarning');
   goToOverview();
 }
 
@@ -985,6 +1100,7 @@ function wspFieldSnapshot() {
 }
 
 async function openWatSpeelJe() {
+  hideCancelWarning('wspCancelWarning');
   const { data, error } = await db.from('musicians')
     .select('repertoire_type, musician_instruments(instrument, niveau), musician_genres(genre)')
     .eq('id', myMusicianId).single();
@@ -1028,8 +1144,13 @@ function wspRenderRepertoireType() {
 
 function cancelWatSpeelJe() {
   if (wspFieldSnapshot() !== wspSnapshot) {
-    if (!confirm('Weet je het zeker? Wat je hebt gewijzigd gaat verloren.')) return;
+    showCancelWarning('wspCancelWarning');
+    return;
   }
+  goToOverview();
+}
+function confirmCancelWatSpeelJe() {
+  hideCancelWarning('wspCancelWarning');
   goToOverview();
 }
 
@@ -1079,6 +1200,7 @@ function wzjFieldSnapshot() {
 }
 
 async function openWatZoekJe() {
+  hideCancelWarning('wzjCancelWarning');
   const { data, error } = await db.from('musicians')
     .select('goal, rehearsal_frequency, musical_ambition')
     .eq('id', myMusicianId).single();
@@ -1130,8 +1252,13 @@ function wzjSelectMusicalAmbition(el, val) {
 
 function cancelWatZoekJe() {
   if (wzjFieldSnapshot() !== wzjSnapshot) {
-    if (!confirm('Weet je het zeker? Wat je hebt gewijzigd gaat verloren.')) return;
+    showCancelWarning('wzjCancelWarning');
+    return;
   }
+  goToOverview();
+}
+function confirmCancelWatZoekJe() {
+  hideCancelWarning('wzjCancelWarning');
   goToOverview();
 }
 
@@ -1167,11 +1294,15 @@ let jstSearchTimeout = null;
 const jstArtistCache = new Map();
 const jstTrackCache = new Map();
 
+// _confirmDelete is bewust NIET meegenomen — dat is tijdelijke UI-status
+// voor de kleine verwijder-bevestiging (zie jstRemoveSong()), geen
+// opgeslagen gegeven, en mag de "iets gewijzigd?"-vergelijking niet raken.
 function jstFieldSnapshot() {
-  return JSON.stringify(jstSongs);
+  return JSON.stringify(jstSongs.map(s => ({ title: s.title, artist: s.artist, level: s.level })));
 }
 
 async function openJeSetlist() {
+  hideCancelWarning('jstCancelWarning');
   const { data, error } = await db.from('musicians')
     .select('musician_songs(song_title, song_artist, mastery_level)')
     .eq('id', myMusicianId).single();
@@ -1329,11 +1460,14 @@ function jstRenderSongs() {
             <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
           </div>
           <div style="display:flex;gap:4px;${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
-            <button type="button" class="level-btn ${s.level==='basis'?'active-basis':''}" title="Je kent de structuur, nog wat fouten" onclick="jstSetLevel(${i},'basis')">Basis</button>
-            <button type="button" class="level-btn ${s.level==='bijna'?'active-bijna':''}" title="Soepel, kleine slordigheden" onclick="jstSetLevel(${i},'bijna')">Bijna</button>
-            <button type="button" class="level-btn ${s.level==='podium'?'active-podium':''}" title="Je speelt het live zonder problemen" onclick="jstSetLevel(${i},'podium')">Podium</button>
+            <button type="button" class="level-btn ${s.level==='basis'?'active-basis':''}" title="Kent de structuur" onclick="jstSetLevel(${i},'basis')">Basis</button>
+            <button type="button" class="level-btn ${s.level==='bijna'?'active-bijna':''}" title="Soepel, bijna klaar" onclick="jstSetLevel(${i},'bijna')">Bijna</button>
+            <button type="button" class="level-btn ${s.level==='podium'?'active-podium':''}" title="Speelt het live zonder problemen" onclick="jstSetLevel(${i},'podium')">Podium</button>
           </div>
-          <button type="button" class="song-remove" onclick="jstRemoveSong(${i})" title="Verwijderen" aria-label="Verwijder ${escAttr(s.title)}">✕</button>
+          ${s._confirmDelete
+            ? `<button type="button" class="song-remove" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:var(--danger);" onclick="jstRemoveSong(${i})" title="Bevestig verwijderen">Zeker?</button>`
+            : `<button type="button" class="song-remove" onclick="jstRemoveSong(${i})" title="Verwijderen" aria-label="Verwijder ${escAttr(s.title)}">✕</button>`
+          }
         </div>
         ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 14px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
       `; }).join('')}
@@ -1343,15 +1477,32 @@ function jstSetLevel(i, level) {
   jstSongs[i].level = level;
   jstRenderSongs();
 }
+// TT-179 (01-09-2026): kleine, subtiele bevestiging vóór verwijderen i.p.v.
+// meteen weg — eerste klik zet _confirmDelete (transient, telt niet mee in
+// jstFieldSnapshot()), de knop wordt dan "Zeker?"; een tweede klik daarop
+// verwijdert pas echt. Klikt iemand ergens anders? Dan blijft de vraag
+// gewoon staan tot de volgende klik — geen aparte wegklik-logica nodig,
+// het is één knop die van functie wisselt.
 function jstRemoveSong(i) {
+  if (!jstSongs[i]) return;
+  if (!jstSongs[i]._confirmDelete) {
+    jstSongs[i]._confirmDelete = true;
+    jstRenderSongs();
+    return;
+  }
   jstSongs.splice(i, 1);
   jstRenderSongs();
 }
 
 function cancelJeSetlist() {
   if (jstFieldSnapshot() !== jstSnapshot) {
-    if (!confirm('Weet je het zeker? Wat je hebt gewijzigd gaat verloren.')) return;
+    showCancelWarning('jstCancelWarning');
+    return;
   }
+  goToOverview();
+}
+function confirmCancelJeSetlist() {
+  hideCancelWarning('jstCancelWarning');
   goToOverview();
 }
 
@@ -1394,6 +1545,7 @@ function mhFieldSnapshot() {
 }
 
 async function openJeMediahoek() {
+  hideCancelWarning('mhCancelWarning');
   const { data, error } = await db.from('musicians')
     .select('avatar_url, musician_media(media_type, url, platform)')
     .eq('id', myMusicianId).single();
@@ -1558,8 +1710,13 @@ function mhRemoveLink(i) {
 
 function cancelJeMediahoek() {
   if (mhFieldSnapshot() !== mhSnapshot) {
-    if (!confirm('Weet je het zeker? Wat je hebt gewijzigd gaat verloren.')) return;
+    showCancelWarning('mhCancelWarning');
+    return;
   }
+  goToOverview();
+}
+function confirmCancelJeMediahoek() {
+  hideCancelWarning('mhCancelWarning');
   goToOverview();
 }
 
