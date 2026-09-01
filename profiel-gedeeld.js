@@ -602,11 +602,48 @@ function detectPlatform(url) {
 // Annuleren toont de waarschuwing, een tweede, aparte klik bevestigt.
 // Zelfde onderliggende patroon als de V-19-bandformulier-bevestiging in
 // index.html, hier generiek gemaakt voor hergebruik door alle vijf tegels.
-function showCancelWarning(warningId) {
-  const el = document.getElementById(warningId);
-  if (el) el.style.display = 'flex';
+// ─── Annuleren-knop die zelf van functie wisselt (TT-181-vervolg,
+// 01-09-2026) ──────────────────────────────────────────────────────────
+// Ronald: een apart waarschuwingsvlak (rood, later amber) voelde te zwaar
+// voor "niet opgeslagen". Vervangen door hetzelfde patroon als een nummer
+// verwijderen bij Je setlist: de knop verandert zelf. Alleen bij een
+// wijziging wordt de knoptekst "Zeker weten? Niet opgeslagen." (geel, niet
+// vetgedrukt). Een tweede klik op diezelfde knop bevestigt. Een klik
+// ergens anders op het scherm zet de knop terug naar gewoon "Annuleren".
+function handleCancelClick(btnId, hasChanges, onConfirm, confirmText) {
+  const text = confirmText || 'Zeker weten? Niet opgeslagen.';
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  if (!hasChanges()) { onConfirm(); return; }
+  if (btn.dataset.armed === '1') {
+    btn.dataset.armed = '';
+    btn.textContent = btn.dataset.originalText;
+    btn.classList.remove('btn-cancel-armed');
+    onConfirm();
+    return;
+  }
+  btn.dataset.armed = '1';
+  btn.dataset.originalText = btn.textContent;
+  btn.textContent = text;
+  btn.classList.add('btn-cancel-armed');
+  // Pas ná deze klik een listener toevoegen — anders vangt hij de huidige,
+  // nog bubbelende klik meteen weer af.
+  setTimeout(() => {
+    document.addEventListener('click', function onOutsideClick(e) {
+      if (btn.dataset.armed !== '1') return;
+      if (e.target === btn) return;
+      btn.dataset.armed = '';
+      btn.textContent = btn.dataset.originalText;
+      btn.classList.remove('btn-cancel-armed');
+    }, { once: true });
+  }, 0);
 }
-function hideCancelWarning(warningId) {
-  const el = document.getElementById(warningId);
-  if (el) el.style.display = 'none';
+// Bij het openen van een tegel eventuele "Zeker?"-status opruimen — dekt
+// browser-terug of een directe hash-wijziging, die geen klik-event geven.
+function resetCancelButton(btnId) {
+  const btn = document.getElementById(btnId);
+  if (!btn || btn.dataset.armed !== '1') return;
+  btn.dataset.armed = '';
+  btn.textContent = btn.dataset.originalText || btn.textContent;
+  btn.classList.remove('btn-cancel-armed');
 }

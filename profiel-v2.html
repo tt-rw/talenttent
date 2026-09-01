@@ -28,6 +28,12 @@
     --bg:#0d0d0d; --surface:#161616; --surface2:#1e1e1e; --border:#2a2a2a;
     --accent:#f5c518; --accent2:#6ec8d8; --danger:#e5533d; --success:#4caf50;
     --text:#f0f0f0; --muted:#888; --radius:12px;
+    /* TT-181 (01-09-2026, Ronald na livetest): twee app-brede standaarden,
+       hier één keer instelbaar. --gap-header: de witruimte tussen de gele
+       balk en de titel, en tussen de titel/subtekst en de eerste inhoud —
+       op elk scherm gelijk. --line: standaard lijndikte voor randen/knoppen,
+       gelijk aan de instrumentbadge ("Drums"). Wijzig hier, werkt overal. */
+    --gap-header:20px; --line:1.5px;
   }
   *{ box-sizing:border-box; }
   body{
@@ -42,7 +48,7 @@
      scherm — zelfde patroon als .profile-header-band in index.html
      (huisstijl §10), hier hergebruikt zodat dit deel van de app niet
      losstaat van de rest van de huisstijl. */
-  .hero-band{ height:8px; border-radius:8px; background:var(--accent); margin:0 0 20px; }
+  .hero-band{ height:8px; border-radius:8px; background:var(--accent); margin:0 0 var(--gap-header); }
 
   .tile{
     display:flex; align-items:center; gap:12px;
@@ -61,23 +67,19 @@
     border:1px solid transparent; cursor:pointer;
   }
   .btn-primary{ background:var(--accent); color:#0d0d0d; }
-  .btn-ghost{ background:transparent; color:var(--text); border-color:var(--border); font-weight:500; }
+  .btn-ghost{ background:transparent; color:var(--text); border:var(--line) solid var(--border); font-weight:500; }
   .btn-block{ width:100%; margin-top:16px; }
   .action-row{ display:flex; gap:10px; margin-top:28px; }
   .action-row .btn{ flex:1; }
 
-  /* TT-179: klein, subtiel waarschuwingsregeltje i.p.v. window.confirm() —
-     zie showCancelWarning()/hideCancelWarning() in profiel-gedeeld.js. */
-  .cancel-warning{
-    display:none; align-items:center; justify-content:space-between; gap:12px;
-    background:rgba(229,83,61,0.08); border:1px solid rgba(229,83,61,0.3); border-radius:8px;
-    padding:10px 14px; margin-top:20px; font-size:12px; color:var(--danger); line-height:1.4;
-  }
-  .cancel-warning button{
-    background:none; border:1px solid var(--danger); color:var(--danger); border-radius:6px;
-    padding:0 10px; min-height:36px; font-size:11px; font-weight:700; cursor:pointer;
-    white-space:nowrap; font-family:'Roboto',sans-serif; flex-shrink:0;
-  }
+  /* TT-181-vervolg (01-09-2026, Ronald): een apart vlak (rood, daarna
+     amber) voelde te zwaar voor "niet opgeslagen" — geen destructieve
+     actie, alleen een gemiste opslag. Vervangen door hetzelfde patroon als
+     een nummer verwijderen bij Je setlist: de knop verandert zelf. Later
+     (TT-181-vervolg2) ook toegepast op foto verwijderen bij Je mediahoek —
+     zelfde mechaniek, eigen bevestigingstekst. Zie handleCancelClick() in
+     profiel-gedeeld.js. */
+  .btn-cancel-armed{ border-color:var(--accent); color:var(--accent); font-weight:400; }
 
   .field{ margin-bottom:28px; }
   .field label{ display:block; font-size:13px; margin-bottom:6px; color:var(--text); }
@@ -113,7 +115,10 @@
   .ac-item:active{ background:var(--surface); }
 
   .panel-title{ font-size:23px; font-weight:700; color:var(--accent); margin:0 0 4px; }
-  .panel-sub{ font-size:12px; color:var(--muted); margin:0 0 20px; }
+  /* TT-181: op een scherm zonder panel-sub direct eronder telt de titel zelf
+     als laatste kop-element — krijgt dan de volle gap-header mee. */
+  .panel-title.standalone{ margin-bottom:var(--gap-header); }
+  .panel-sub{ font-size:12px; color:var(--muted); margin:0 0 var(--gap-header); }
 
   .toast{
     position:fixed; left:50%; bottom:24px; transform:translate(-50%,12px);
@@ -135,12 +140,14 @@
        scherm er niet anders uitziet dan de wizard. ─── */
   .tag-grid{ display:flex; flex-wrap:wrap; gap:10px; margin-top:4px; }
   .tag{
-    background:var(--surface2); border:1px solid var(--border); border-radius:6px;
+    background:var(--surface2); border:var(--line) solid var(--border); border-radius:6px;
     display:inline-flex; align-items:center; min-height:44px; padding:8px 16px;
-    font-size:13px; cursor:pointer; transition:all .15s; user-select:none; font-weight:500;
+    font-size:13px; cursor:pointer; transition:all .15s; user-select:none; font-weight:400;
   }
   .tag:hover{ border-color:var(--accent); color:var(--accent); }
-  .tag.selected{ background:rgba(245,197,24,0.08); color:var(--accent); border-color:var(--accent); font-weight:700; }
+  /* TT-181: Drums-look (picker-badge) is de standaard voor dit type knop —
+     niet vetgedrukt. */
+  .tag.selected{ background:rgba(245,197,24,0.08); color:var(--accent); border-color:var(--accent); font-weight:400; }
 
   .modal-overlay{
     position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:200;
@@ -240,30 +247,29 @@
   /* TT-168, tegel "Wat zoek je": doel-kaarten, 1-op-1 uit index.html. */
   .goal-options{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .goal-card{
-    background:var(--surface2); border:1px solid var(--border); border-radius:10px;
+    background:var(--surface2); border:var(--line) solid var(--border); border-radius:10px;
     padding:16px; cursor:pointer; transition:all .2s; text-align:center;
   }
   .goal-card:hover{ border-color:var(--accent); }
   .goal-card.selected{ border-color:var(--accent); background:rgba(245,197,24,0.08); }
-  .goal-card .goal-label{ font-size:13px; font-weight:600; }
+  .goal-card .goal-label{ font-size:13px; font-weight:400; }
   .goal-card .goal-desc{ font-size:11px; color:var(--muted); margin-top:4px; font-weight:300; }
 
-  @media (max-width: 560px) {
-    .goal-options{ grid-template-columns:1fr; }
-  }
+  /* TT-181 (01-09-2026, Ronald na livetest): 2x2-grid nu ook op mobiel —
+     akkoord na voorbeeld. Geen aparte mobiele 1-koloms-override meer. */
 
   /* TT-168, tegel "Je setlist": eigen repertoire, 1-op-1 uit index.html. */
   @keyframes levelPulse { 0%, 100% { opacity:1; } 50% { opacity:.4; } }
   .songs-list{ display:flex; flex-direction:column; gap:8px; margin-top:4px; }
   .level-btn{
     display:inline-flex; align-items:center; justify-content:center; min-height:44px; min-width:44px;
-    padding:6px 10px; border-radius:6px; font-size:12px; border:1px solid var(--border);
+    padding:6px 10px; border-radius:6px; font-size:12px; border:var(--line) solid var(--border);
     background:transparent; color:var(--muted); cursor:pointer; transition:all .15s;
     white-space:nowrap; font-family:'Roboto',sans-serif;
   }
   .level-btn:hover{ border-color:#555; color:var(--text); }
   .level-btn.active-basis, .level-btn.active-bijna, .level-btn.active-podium{
-    background:rgba(245,197,24,0.08); border-color:var(--accent); color:var(--accent); font-weight:700; font-style:italic;
+    background:rgba(245,197,24,0.08); border-color:var(--accent); color:var(--accent); font-weight:400; font-style:normal;
   }
   .song-remove{
     display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; flex-shrink:0;
@@ -294,11 +300,15 @@
   .avatar-info strong{ font-size:14px; display:block; margin-bottom:6px; }
   .avatar-info p{ font-size:12px; color:var(--muted); line-height:1.5; }
   .avatar-remove-btn{
-    margin-top:8px; background:none; border:1px solid var(--border); color:var(--muted); font-size:11px;
+    margin-top:8px; background:none; border:var(--line) solid var(--border); color:var(--muted); font-size:11px;
     padding:4px 10px; border-radius:4px; cursor:pointer; font-family:'Roboto',sans-serif; display:none;
   }
   .avatar-remove-btn.visible{ display:inline-block; }
   .avatar-remove-btn:hover{ color:var(--danger); border-color:var(--danger); }
+  /* TT-181-vervolg2: de bevestigde staat (geel, via .btn-cancel-armed) moet
+     de rode hover-stijl hierboven verslaan, ook terwijl de muis erop rust. */
+  .avatar-remove-btn.btn-cancel-armed,
+  .avatar-remove-btn.btn-cancel-armed:hover{ color:var(--accent); border-color:var(--accent); }
 
   .media-tip{
     background:rgba(245,197,24,0.07); border:1px solid rgba(245,197,24,0.2); border-radius:8px;
@@ -388,7 +398,7 @@
   <!-- Tegeloverzicht -->
   <div id="overviewScreen" hidden>
     <div class="hero-band"></div>
-    <div class="panel-title">Profiel bewerken</div>
+    <div class="panel-title standalone">Profiel bewerken</div>
     <div id="tilesWrap"></div>
     <button class="btn btn-ghost btn-block" onclick="location.href='index.html#myprofile'">Terug</button>
   </div>
@@ -396,7 +406,7 @@
   <!-- Subscherm: Wie ben je -->
   <div id="wieBenJeScreen" hidden>
     <div class="hero-band"></div>
-    <div class="panel-title">Wie ben je (bewerken)</div>
+    <div class="panel-title standalone">Wie ben je (bewerken)</div>
 
     <div class="field-group">
       <div class="field">
@@ -453,12 +463,8 @@
       <p class="field-status" style="color:var(--muted);">Dit is het e-mailadres waarmee je inlogt. Wijzigen kan hier niet.</p>
     </div>
 
-    <div class="cancel-warning" id="wbjCancelWarning">
-      <span>Wat je hebt gewijzigd gaat verloren.</span>
-      <button type="button" onclick="confirmCancelWieBenJe()">Toch annuleren</button>
-    </div>
     <div class="action-row">
-      <button class="btn btn-ghost" onclick="cancelWieBenJe()">Annuleren</button>
+      <button class="btn btn-ghost" id="wbjCancelBtn" onclick="cancelWieBenJe()">Annuleren</button>
       <button class="btn btn-primary" onclick="saveWieBenJe()">Opslaan</button>
     </div>
   </div>
@@ -490,8 +496,12 @@
     <div class="panel-sub">Je instrument(en), je niveau per instrument, en de genres die je speelt.</div>
 
     <div class="field">
-      <label>Mijn Instrumenten <span class="req">*</span>
-        <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?" style="margin-left:8px;">i</button>
+      <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <span>Mijn Instrumenten <span class="req">*</span></span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:400;">
+          Toelichting op niveau
+          <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
+        </span>
       </label>
       <div class="picker-field" id="wspInstrumentField">
         <span class="picker-field-label" id="wspInstrumentFieldLabel">Kies een instrument</span>
@@ -518,12 +528,8 @@
       </div>
     </div>
 
-    <div class="cancel-warning" id="wspCancelWarning">
-      <span>Wat je hebt gewijzigd gaat verloren.</span>
-      <button type="button" onclick="confirmCancelWatSpeelJe()">Toch annuleren</button>
-    </div>
     <div class="action-row">
-      <button class="btn btn-ghost" onclick="cancelWatSpeelJe()">Annuleren</button>
+      <button class="btn btn-ghost" id="wspCancelBtn" onclick="cancelWatSpeelJe()">Annuleren</button>
       <button class="btn btn-primary" onclick="saveWatSpeelJe()">Opslaan</button>
     </div>
   </div>
@@ -547,7 +553,7 @@
         </div>
         <div class="goal-card" data-val="optreden" onclick="wzjSelectGoal(this,'optreden')">
           <div class="goal-label">Optreden</div>
-          <div class="goal-desc">Optreden op festivals, evenementen, enz.</div>
+          <div class="goal-desc">Festivals, evenementen, open podia, enz.</div>
         </div>
         <div class="goal-card" data-val="alles" onclick="wzjSelectGoal(this,'alles')">
           <div class="goal-label">Alles!</div>
@@ -577,12 +583,8 @@
       </div>
     </div>
 
-    <div class="cancel-warning" id="wzjCancelWarning">
-      <span>Wat je hebt gewijzigd gaat verloren.</span>
-      <button type="button" onclick="confirmCancelWatZoekJe()">Toch annuleren</button>
-    </div>
     <div class="action-row">
-      <button class="btn btn-ghost" onclick="cancelWatZoekJe()">Annuleren</button>
+      <button class="btn btn-ghost" id="wzjCancelBtn" onclick="cancelWatZoekJe()">Annuleren</button>
       <button class="btn btn-primary" onclick="saveWatZoekJe()">Opslaan</button>
     </div>
   </div>
@@ -590,8 +592,9 @@
   <!-- Subscherm: Je setlist -->
   <div id="jeSetlistScreen" hidden>
     <div class="hero-band"></div>
-    <div class="panel-title">Je setlist (bewerken)</div>
-    <div class="panel-sub">Zoek eerst een band of artiest, kies dan een nummer.</div>
+    <div class="panel-title standalone">Je setlist (bewerken)</div>
+    <div class="filter-title" style="font-size:17px;margin-bottom:4px;">Nummers toevoegen</div>
+    <div class="panel-sub">Zoek eerst een band of artiest en daarna het nummer.</div>
 
     <div class="field ac-list">
       <label>Band of artiest</label>
@@ -612,22 +615,18 @@
     </div>
 
     <div class="field">
-      <label>Jouw repertoire</label>
-      <p style="font-size:12px;color:var(--accent);margin:0 0 10px;line-height:1.6;">
-        Beheersing: <strong style="font-style:italic;">Basis</strong> (kent de structuur) ·
-        <strong style="font-style:italic;">Bijna</strong> (soepel, bijna klaar) ·
-        <strong style="font-style:italic;">Podium</strong> (speelt het live zonder problemen)
+      <label>Jouw setlist</label>
+      <p style="font-size:12px;color:var(--text);margin:0 0 10px;line-height:1.6;">
+        Beheersing: <span style="color:var(--accent);">Basis</span> (kent de structuur) ·
+        <span style="color:var(--accent);">Bijna</span> (soepel, bijna klaar) ·
+        <span style="color:var(--accent);">Podium</span> (speelt het live zonder problemen)
       </p>
       <div class="songs-list" id="jstSongsList"></div>
       <p id="jstSongsListEmpty" style="font-size:13px;color:var(--muted);margin-top:4px;">Nog geen nummers toegevoegd.</p>
     </div>
 
-    <div class="cancel-warning" id="jstCancelWarning">
-      <span>Wat je hebt gewijzigd gaat verloren.</span>
-      <button type="button" onclick="confirmCancelJeSetlist()">Toch annuleren</button>
-    </div>
     <div class="action-row">
-      <button class="btn btn-ghost" onclick="cancelJeSetlist()">Annuleren</button>
+      <button class="btn btn-ghost" id="jstCancelBtn" onclick="cancelJeSetlist()">Annuleren</button>
       <button class="btn btn-primary" onclick="saveJeSetlist()">Opslaan</button>
     </div>
   </div>
@@ -635,10 +634,9 @@
   <!-- Subscherm: Je mediahoek -->
   <div id="mediahoekScreen" hidden>
     <div class="hero-band"></div>
-    <div class="panel-title">Je mediahoek (bewerken)</div>
-    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud.</div>
+    <div class="panel-title standalone">Je mediahoek (bewerken)</div>
 
-    <div class="field" style="margin-bottom:28px;">
+    <div class="field" style="margin-bottom:var(--gap-header);">
       <label>Profielfoto</label>
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
@@ -650,14 +648,21 @@
         <div class="avatar-info">
           <strong>Upload een foto van jezelf</strong>
           <p>Een echte foto zorgt voor meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
-          <button class="avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhRemoveAvatar()">Foto verwijderen</button>
+          <!-- TT-181-vervolg2 (01-09-2026): zelfde knop-morph-mechaniek als
+               Annuleren (optie A, akkoord Ronald) — geen apart vlak meer.
+               Eerste klik toont "Foto verwijderen. Zeker weten?" in het
+               geel, tweede klik verwijdert echt. -->
+          <button class="avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhAskRemoveAvatar()">Foto verwijderen</button>
         </div>
       </div>
       <input type="file" accept="image/*" class="avatar-upload-input" id="mhAvatarInput" autocomplete="off" onchange="mhHandleAvatarUpload(this.files[0]); this.value=''">
     </div>
 
-    <div class="media-tip">
-      <span><strong>Tip:</strong> toon de energie die jij als muzikant wil laten zien.</span>
+    <div class="filter-title" style="font-size:17px;margin-bottom:4px;">Foto's, video's en links</div>
+    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud.</div>
+
+    <div class="media-tip" id="mhTipBox">
+      <span id="mhTipText"><strong>Tip:</strong> toon de energie die jij als muzikant wil laten zien.</span>
     </div>
 
     <div class="media-tabs">
@@ -682,12 +687,8 @@
       <button type="button" class="add-link-btn" onclick="mhAddLinkRow()">+ Link toevoegen</button>
     </div>
 
-    <div class="cancel-warning" id="mhCancelWarning">
-      <span>Wat je hebt gewijzigd gaat verloren.</span>
-      <button type="button" onclick="confirmCancelJeMediahoek()">Toch annuleren</button>
-    </div>
     <div class="action-row">
-      <button class="btn btn-ghost" onclick="cancelJeMediahoek()">Annuleren</button>
+      <button class="btn btn-ghost" id="mhCancelBtn" onclick="cancelJeMediahoek()">Annuleren</button>
       <button class="btn btn-primary" onclick="saveJeMediahoek()">Opslaan</button>
     </div>
   </div>
@@ -767,7 +768,7 @@ const TILES = [
   { id: 'wieBenJe',   title: 'Wie ben je',      sub: 'naam - bio',                       hint: null },
   { id: 'watSpeelJe', title: 'Wat speel je',    sub: 'instrumenten - niveau - genres - eigen nummers/covers', hint: null },
   { id: 'watZoekJe',  title: 'Wat zoek je',     sub: 'muzikant - band - optreden - ambitie', hint: null },
-  { id: 'jeSetlist',  title: 'Je setlist',      sub: 'setlist - eigen nummers',           hint: null },
+  { id: 'jeSetlist',  title: 'Je setlist',      sub: 'covers - eigen nummers',            hint: null },
   { id: 'mediahoek',  title: 'Je mediahoek',    sub: "video's - foto's - profielfoto",    hint: null },
 ];
 
@@ -795,6 +796,7 @@ function showScreen(id) {
   ['overviewScreen','wieBenJeScreen','watSpeelJeScreen','watZoekJeScreen','jeSetlistScreen','mediahoekScreen','placeholderScreen'].forEach(elId => {
     document.getElementById(elId).hidden = true;
   });
+  if (id !== 'mediahoek') clearInterval(mhTipTimer);
   if (id === 'overview') {
     document.getElementById('overviewScreen').hidden = false;
   } else if (id === 'wieBenJe') {
@@ -872,7 +874,7 @@ function wbjFieldSnapshot() {
 }
 
 async function openWieBenJe() {
-  hideCancelWarning('wbjCancelWarning');
+  resetCancelButton('wbjCancelBtn');
   document.getElementById('wbjUsernameStatus').textContent = '';
   document.getElementById('wbjPostcodeStatus').textContent = '';
   document.getElementById('wbjEmail').value = currentUser?.email || '';
@@ -1033,15 +1035,7 @@ function selectWbjCity(name) {
 }
 
 function cancelWieBenJe() {
-  if (wbjFieldSnapshot() !== wbjSnapshot) {
-    showCancelWarning('wbjCancelWarning');
-    return;
-  }
-  goToOverview();
-}
-function confirmCancelWieBenJe() {
-  hideCancelWarning('wbjCancelWarning');
-  goToOverview();
+  handleCancelClick('wbjCancelBtn', () => wbjFieldSnapshot() !== wbjSnapshot, goToOverview);
 }
 
 async function saveWieBenJe() {
@@ -1100,7 +1094,7 @@ function wspFieldSnapshot() {
 }
 
 async function openWatSpeelJe() {
-  hideCancelWarning('wspCancelWarning');
+  resetCancelButton('wspCancelBtn');
   const { data, error } = await db.from('musicians')
     .select('repertoire_type, musician_instruments(instrument, niveau), musician_genres(genre)')
     .eq('id', myMusicianId).single();
@@ -1143,15 +1137,7 @@ function wspRenderRepertoireType() {
 }
 
 function cancelWatSpeelJe() {
-  if (wspFieldSnapshot() !== wspSnapshot) {
-    showCancelWarning('wspCancelWarning');
-    return;
-  }
-  goToOverview();
-}
-function confirmCancelWatSpeelJe() {
-  hideCancelWarning('wspCancelWarning');
-  goToOverview();
+  handleCancelClick('wspCancelBtn', () => wspFieldSnapshot() !== wspSnapshot, goToOverview);
 }
 
 async function saveWatSpeelJe() {
@@ -1200,7 +1186,7 @@ function wzjFieldSnapshot() {
 }
 
 async function openWatZoekJe() {
-  hideCancelWarning('wzjCancelWarning');
+  resetCancelButton('wzjCancelBtn');
   const { data, error } = await db.from('musicians')
     .select('goal, rehearsal_frequency, musical_ambition')
     .eq('id', myMusicianId).single();
@@ -1251,15 +1237,7 @@ function wzjSelectMusicalAmbition(el, val) {
 }
 
 function cancelWatZoekJe() {
-  if (wzjFieldSnapshot() !== wzjSnapshot) {
-    showCancelWarning('wzjCancelWarning');
-    return;
-  }
-  goToOverview();
-}
-function confirmCancelWatZoekJe() {
-  hideCancelWarning('wzjCancelWarning');
-  goToOverview();
+  handleCancelClick('wzjCancelBtn', () => wzjFieldSnapshot() !== wzjSnapshot, goToOverview);
 }
 
 async function saveWatZoekJe() {
@@ -1302,7 +1280,7 @@ function jstFieldSnapshot() {
 }
 
 async function openJeSetlist() {
-  hideCancelWarning('jstCancelWarning');
+  resetCancelButton('jstCancelBtn');
   const { data, error } = await db.from('musicians')
     .select('musician_songs(song_title, song_artist, mastery_level)')
     .eq('id', myMusicianId).single();
@@ -1495,15 +1473,7 @@ function jstRemoveSong(i) {
 }
 
 function cancelJeSetlist() {
-  if (jstFieldSnapshot() !== jstSnapshot) {
-    showCancelWarning('jstCancelWarning');
-    return;
-  }
-  goToOverview();
-}
-function confirmCancelJeSetlist() {
-  hideCancelWarning('jstCancelWarning');
-  goToOverview();
+  handleCancelClick('jstCancelBtn', () => jstFieldSnapshot() !== jstSnapshot, goToOverview);
 }
 
 async function saveJeSetlist() {
@@ -1536,6 +1506,32 @@ let mhMediaFiles = [];
 let mhMediaLinks = [];
 let mhSnapshot = null;
 
+// TT-181 (01-09-2026, Ronald na livetest): tip-tekst wisselt om de 2,5
+// seconde tussen twee boodschappen. Timer start bij het openen van dit
+// scherm (openJeMediahoek) en stopt centraal in showScreen() zodra een
+// ander scherm wordt getoond — voorkomt een timer die op de achtergrond
+// blijft doorlopen na het verlaten van deze tegel.
+const MH_TIPS = [
+  'toon de energie die jij als muzikant wil laten zien.',
+  'een compleet profiel krijgt veel meer aandacht.',
+];
+let mhTipIndex = 0;
+let mhTipTimer = null;
+function mhStartTipCycle() {
+  clearInterval(mhTipTimer);
+  mhTipIndex = 0;
+  mhRenderTip();
+  mhTipTimer = setInterval(() => {
+    mhTipIndex = (mhTipIndex + 1) % MH_TIPS.length;
+    mhRenderTip();
+  }, 2500);
+}
+function mhRenderTip() {
+  const el = document.getElementById('mhTipText');
+  if (!el) return;
+  el.innerHTML = `<strong>Tip:</strong> ${escHtml(MH_TIPS[mhTipIndex])}`;
+}
+
 function mhFieldSnapshot() {
   return JSON.stringify({
     avatarUrl: mhAvatarUrl,
@@ -1545,7 +1541,9 @@ function mhFieldSnapshot() {
 }
 
 async function openJeMediahoek() {
-  hideCancelWarning('mhCancelWarning');
+  resetCancelButton('mhCancelBtn');
+  resetCancelButton('mhAvatarRemoveBtn');
+  mhStartTipCycle();
   const { data, error } = await db.from('musicians')
     .select('avatar_url, musician_media(media_type, url, platform)')
     .eq('id', myMusicianId).single();
@@ -1588,6 +1586,7 @@ function mhRenderAvatar() {
   } else {
     preview.innerHTML = `<span id="mhAvatarInitials">T</span>`;
     document.getElementById('mhAvatarRemoveBtn').classList.remove('visible');
+    resetCancelButton('mhAvatarRemoveBtn');
   }
 }
 
@@ -1614,6 +1613,13 @@ function mhHandleAvatarUpload(file) {
   });
 }
 
+// TT-181-vervolg2 (01-09-2026, Ronald): geen rood vlak meer — zelfde
+// knop-morph als Annuleren (handleCancelClick), altijd bevestigen (er is
+// hier geen "ongewijzigd"-geval zoals bij Annuleren, dus hasChanges geeft
+// altijd true terug) en een eigen bevestigingstekst.
+function mhAskRemoveAvatar() {
+  handleCancelClick('mhAvatarRemoveBtn', () => true, mhRemoveAvatar, 'Foto verwijderen. Zeker weten?');
+}
 function mhRemoveAvatar() {
   mhAvatarUrl = null;
   mhRenderAvatar();
@@ -1709,15 +1715,7 @@ function mhRemoveLink(i) {
 }
 
 function cancelJeMediahoek() {
-  if (mhFieldSnapshot() !== mhSnapshot) {
-    showCancelWarning('mhCancelWarning');
-    return;
-  }
-  goToOverview();
-}
-function confirmCancelJeMediahoek() {
-  hideCancelWarning('mhCancelWarning');
-  goToOverview();
+  handleCancelClick('mhCancelBtn', () => mhFieldSnapshot() !== mhSnapshot, goToOverview);
 }
 
 async function saveJeMediahoek() {
