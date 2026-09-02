@@ -58,6 +58,10 @@
     --text: #f0f0f0;
     --muted: #888;
     --radius: 12px;
+    /* TT-168-overgang (02-09-2026): standaard lijndikte voor de omlijnde
+       knop-/badgestijl (rand-alleen, geen vlak) — overgenomen uit
+       profiel-v2.html, hier op één plek instelbaar voor de hele app. */
+    --line: 1.5px;
   }
 
   /* TT-15b: tijdelijk display-font (Alfa Slab One) alleen voor het logo/
@@ -324,7 +328,7 @@
 
   .tag {
     background: var(--surface2);
-    border: 1px solid var(--border);
+    border: var(--line) solid var(--border);
     border-radius: 6px;
     /* TT-U23 (12-08-2026): tikdoel minimaal 44px hoog (Apple 44pt, Google 48dp). */
     display: inline-flex;
@@ -335,11 +339,14 @@
     cursor: pointer;
     transition: all 0.15s;
     user-select: none;
-    font-weight: 500;
+    font-weight: 400;
   }
 
-  .tag:hover { border-color: var(--accent); color: var(--accent); }
-  .tag.selected { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+  /* TT-168-overgang (02-09-2026): rand-alleen-eindstijl uit profiel-v2
+     overgenomen — was een volle gouden vlek met zwarte tekst, inconsistent
+     met de rest van de app. Geldt nu app-breed (ook zoekfilters,
+     bandformulier), niet meer alleen de wizard. */
+  .tag.selected { background: var(--surface2); color: var(--text); border-color: var(--accent); font-weight: 400; }
 
   /* TT-46: prompts boven het bio-veld — actieknoppen, geen aan/uit-keuze
      zoals .tag, dus een eigen (lichtere) stijl zonder .selected-status. */
@@ -433,8 +440,11 @@
   }
 
   .ac-item:last-child { border-bottom: none; }
-  .ac-item:hover { background: var(--surface2); }
   .ac-item span { font-size: 11px; color: var(--muted); }
+  /* TT-168-overgang: min-height 44px (was ±34px, onder de tikdoel-norm) —
+     fix uit profiel-v2 hier ook toegepast, geldt voor elke plek die deze
+     klasse gebruikt (stads-/artiest-/nummersuggesties). */
+  .ac-item { min-height: 44px; box-sizing: border-box; }
 
   /* Added songs list */
   .songs-list {
@@ -464,10 +474,11 @@
     font-family: 'Roboto', sans-serif;
   }
 
-  .level-btn:hover { border-color: #555; color: var(--text); }
-  .level-btn.active-basis { background: var(--surface2); border-color: var(--text); color: var(--text); font-weight: 700; font-style: italic; }
-  .level-btn.active-bijna { background: var(--surface2); border-color: var(--text); color: var(--text); font-weight: 700; font-style: italic; }
-  .level-btn.active-podium { background: var(--surface2); border-color: var(--text); color: var(--text); font-weight: 700; font-style: italic; }
+  /* TT-168-overgang: rand-alleen-eindstijl (was wit/vet/cursief) — zie
+     .tag.selected hierboven voor dezelfde ronde. */
+  .level-btn.active-basis, .level-btn.active-bijna, .level-btn.active-podium {
+    background: transparent; border-color: var(--accent); color: var(--text); font-weight: 400; font-style: normal;
+  }
 
   .song-remove {
     /* TT-U23 (12-08-2026): was 23x26 pixels. */
@@ -487,7 +498,7 @@
     transition: color 0.15s;
   }
 
-  .song-remove:hover { color: var(--danger); }
+  /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
   /* Goal selector */
   .goal-options {
@@ -506,9 +517,10 @@
     text-align: center;
   }
 
-  .goal-card:hover { border-color: var(--accent); }
-  .goal-card.selected { border-color: var(--accent); background: rgba(245,197,24,0.08); }
-  .goal-card .goal-label { font-size: 13px; font-weight: 600; }
+  /* TT-168-overgang: geen achtergrondtint meer bij selected — rand-alleen,
+     zelfde ronde als .tag.selected/.picker-badge. :hover naar de guard. */
+  .goal-card.selected { border-color: var(--accent); }
+  .goal-card .goal-label { font-size: 13px; font-weight: 400; }
   .goal-card .goal-desc { font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 300; }
 
   /* Navigation */
@@ -777,7 +789,16 @@
   }
 
   .avatar-remove-btn.visible { display: inline-block; }
-  .avatar-remove-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+  /* TT-168-overgang (uit profiel-v2, TT-181-vervolg/vervolg2): een knop die
+     zelf van functie wisselt i.p.v. een apart waarschuwingsvlak. Bij een
+     wijziging wordt "Annuleren" bij de eerste klik het bevestigingslabel
+     (geel, niet vetgedrukt); een tweede klik bevestigt. Zie
+     handleCancelClick() in de JS. */
+  .btn-cancel-armed { border-color: var(--accent); color: var(--accent); font-weight: 400; }
+  /* Specificiteitsfix (TT-181-vervolg2): de gewone :hover van
+     .avatar-remove-btn (rood) won anders van deze bevestigde staat. */
+  .avatar-remove-btn.btn-cancel-armed { color: var(--accent); border-color: var(--accent); }
 
   /* Completeness meter */
   .completeness-wrap {
@@ -961,7 +982,7 @@
 
   .media-tab:last-child { border-right: none; }
   .media-tab.active { background: var(--surface); color: var(--text); }
-  .media-tab:hover:not(.active) { color: var(--text); }
+  /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
   /* Zoeken: prominente, gecentreerde modus-knoppen (muzikant/band/setlist) */
   .search-mode-tabs-outer {
@@ -1008,7 +1029,9 @@
     margin-bottom: 12px;
   }
 
-  .drop-zone:hover, .drop-zone.drag-over {
+  /* TT-182: .drag-over is een sleepstatus, geen hover-simulatie — blijft
+     een losse, altijd-actieve regel. De :hover-variant staat in de guard. */
+  .drop-zone.drag-over {
     border-color: var(--accent);
     background: rgba(245,197,24,0.04);
   }
@@ -1115,7 +1138,7 @@
     margin-top: 4px;
   }
 
-  .add-link-btn:hover { border-color: var(--accent); color: var(--accent); }
+  /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
   /* Profile media section */
   .profile-media {
@@ -1960,7 +1983,7 @@
     transition: all 0.15s;
   }
 
-  .modal-close:hover { color: var(--text); border-color: #555; }
+  /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
   /* TT-116-vervolg (21-08-2026): kleine terugknop, spiegelbeeld van
      .modal-close, voor de instrumentkeuze-sheet. Alleen zichtbaar als er
@@ -1978,7 +2001,7 @@
     color: var(--muted);
     transition: all 0.15s;
   }
-  .modal-back:hover { color: var(--text); border-color: #555; }
+  /* :hover verplaatst naar de touch-guard verderop (TT-182). */
   .modal-back[hidden] { display: none; }
 
   /* V-09 (13-08-2026): de contactknop op een profiel stond onderaan een lang
@@ -2078,7 +2101,7 @@
     color:var(--text); font-family:'Roboto',sans-serif; font-size:14px;
     text-align:left; cursor:pointer; transition:border-color 0.15s, background 0.15s;
   }
-  .level-choice:hover { border-color:var(--accent); }
+  /* :hover verplaatst naar de touch-guard verderop (TT-182). */
   .level-choice.selected { border-color:var(--accent); background:rgba(245,197,24,0.12); }
   .level-choice-stars { flex-shrink:0; font-size:18px; letter-spacing:1px; color:var(--border); }
   .level-choice-stars .filled { color:var(--accent); }
@@ -2089,7 +2112,7 @@
      grijs. Nu standaard geel, zodat het ook zonder hover als klikbaar
      opvalt. */
   .niveau-info-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; border:1px solid var(--accent); background:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; margin-left:6px; vertical-align:middle; padding:0; }
-  .niveau-info-btn:hover { background: rgba(245,197,24,0.15); }
+  /* :hover verplaatst naar de touch-guard verderop (TT-182). */
   /* TT-U23 (12-08-2026): onzichtbaar tikvlak van 44x44 rond de kleine knop. */
   .niveau-info-btn::after { content:''; position:absolute; top:-10px; right:-10px; bottom:-10px; left:-10px; }
   .niveau-info-wrap { overflow-x:auto; margin:12px 0 20px; }
@@ -2111,7 +2134,7 @@
     font-family: 'Roboto', sans-serif; font-size: 14px; color: var(--text);
     cursor: pointer; transition: border-color 0.15s;
   }
-  .picker-field:hover { border-color: var(--accent); }
+  /* :hover verplaatst naar de touch-guard verderop (TT-182). */
   .picker-field-chevron { color: var(--muted); font-size: 12px; flex-shrink: 0; }
 
   .picker-badge-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
@@ -2123,10 +2146,13 @@
      te concurreren. Vaste hoogte 2x omlaag (72px -> 44px) en 2 kolommen
      i.p.v. 1, op Ronalds eigen voorstel. Normale letterdikte i.p.v. vet —
      vet goud op een donkere rand las minder goed. */
+  /* TT-168-overgang (02-09-2026, TT-181-vervolg3): definitieve rand-alleen-
+     stijl — geen vlak, tekst wit (was goud). Sterren blijven apart goud,
+     zie .picker-badge-stars hieronder. */
   .picker-badge {
     position: relative; width: auto; min-height: 44px; box-sizing: border-box;
     display: flex; align-items: center; justify-content: center;
-    background: var(--surface2); color: var(--accent); border: 1.5px solid var(--accent);
+    background: var(--surface2); color: var(--text); border: var(--line) solid var(--accent);
     border-radius: 8px; padding: 6px 26px 6px 10px; font-size: 13px; font-weight: 400;
     line-height: 1.25; text-align: center;
   }
@@ -2134,7 +2160,7 @@
     cursor: pointer; flex-direction: column; min-height: 56px; padding: 8px 26px 6px 10px;
   }
   .picker-badge-label { flex: 1; display: flex; align-items: center; justify-content: center; }
-  .picker-badge-stars { font-size: 11px; min-height: 14px; letter-spacing: 1px; }
+  .picker-badge-stars { font-size: 11px; min-height: 14px; letter-spacing: 1px; color: var(--accent); }
   .picker-badge-remove {
     position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
     width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
@@ -2149,7 +2175,7 @@
     min-height: 44px; box-sizing: border-box;
   }
   .picker-list-item:first-child { border-top: none; }
-  .picker-list-item:hover { color: var(--accent); }
+  /* :hover verplaatst naar de touch-guard verderop (TT-182). */
   /* Herzien 25-08-2026 (Ronald, UX-feedback): een gekozen item verdween
      eerst volledig uit de lijst — je moest terug naar de badges om te
      zien wat je al had gekozen. Nu blijft het zichtbaar, herkenbaar aan
@@ -2186,7 +2212,6 @@
        actiebalk mag dus gewoon op bottom:0 staan, ook op mobiel. Alleen de
        zijmarge is hier smaller dan op een breder scherm. */
     .wizard-action-bar { padding-left: 16px; padding-right: 16px; }
-    .goal-options { grid-template-columns: 1fr; }
     .filter-row { grid-template-columns: 1fr; }
     /* Punt 1 (22-08-2026, Ronald): TT-15 (06-08-2026) liet de kop bewust
        meescrollen om ruimte te sparen. Nu bewust teruggedraaid — de naam
@@ -2205,6 +2230,9 @@
     header { flex-direction: row; align-items: center; padding: 18px 16px; }
     .logo { font-size: 28px; text-shadow: none; }
     .tagline { display: none; }
+    /* TT-181 (01-09-2026, Ronald na livetest van profiel-v2): 2x2-grid nu
+       ook op mobiel — de eerdere 1-koloms-override op smalle schermen is
+       vervallen, akkoord na een getoond voorbeeld. */
     .app-nav-row { position: sticky; top: 0; z-index: 50; background: var(--bg);
                padding: 12px 12px 0; gap: 4px; }
     .app-nav { gap: 4px; -webkit-overflow-scrolling: touch; }
@@ -2439,6 +2467,52 @@
       animation: spin 1.6s linear infinite !important;
     }
   }
+
+  /* ── TT-168-overgang (02-09-2026): tegeloverzicht + vijf bewerkschermen,
+     1-op-1 uit profiel-v2.html. Losse klassen (niet .profile-header-band,
+     die is gekoppeld aan profile_color en hoort bij het BEKIJKEN van een
+     profiel — dit is een eigen, simpele accentbalk voor het BEWERKEN). ── */
+  .hero-band { height: 8px; border-radius: 8px; background: var(--accent); margin: 0 0 20px; }
+  .tile {
+    display: flex; align-items: center; gap: 12px;
+    min-height: 44px; padding: 16px; margin-bottom: 16px;
+    background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: var(--radius); cursor: pointer;
+  }
+  .tile:active { background: var(--surface2); }
+  .tile-title { font-size: 17px; font-weight: 700; }
+  .tile-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .field-status { font-size: 11px; margin-top: 5px; min-height: 14px; }
+  .action-row { display: flex; gap: 10px; margin-top: 28px; }
+  .action-row .btn { flex: 1; }
+
+  /* ── Touch-hover-guard (TT-182, 01-09-2026) ──────────────────────────────
+     Telefoons simuleren :hover na een tik en die blijft "plakken" tot een
+     tik ergens anders — in strijd met app-first-toetslijst.md, punt 3 (geen
+     hover-afhankelijke functionaliteit). Alle betrokken :hover-regels staan
+     daarom hier gebundeld, ontoegankelijk voor touch-only apparaten. Was tot
+     nu toe alleen in profiel-v2.html gefixt; hoort hier ook thuis (TT-168-
+     overgang). Uitzondering, bewust hier NIET in: .drop-zone.drag-over is
+     een sleepstatus, geen hover-simulatie — blijft een losse, altijd-actieve
+     regel bij .drop-zone hierboven. */
+  @media (hover: hover) {
+    .tag:hover { border-color: var(--accent); color: var(--accent); }
+    .modal-close:hover { color: var(--text); border-color: #555; }
+    .modal-back:hover { color: var(--text); border-color: #555; }
+    .level-choice:hover { border-color: var(--accent); }
+    .niveau-info-btn:hover { background: rgba(245,197,24,0.15); }
+    .picker-field:hover { border-color: var(--accent); }
+    .picker-list-item:hover { color: var(--accent); }
+    .goal-card:hover { border-color: var(--accent); }
+    .level-btn:hover { border-color: #555; color: var(--text); }
+    .song-remove:hover { color: var(--danger); }
+    .ac-item:hover { background: var(--surface2); }
+    .avatar-remove-btn:hover { color: var(--danger); border-color: var(--danger); }
+    .avatar-remove-btn.btn-cancel-armed:hover { color: var(--accent); border-color: var(--accent); }
+    .media-tab:hover:not(.active) { color: var(--text); }
+    .drop-zone:hover { border-color: var(--accent); background: rgba(245,197,24,0.04); }
+    .add-link-btn:hover { border-color: var(--accent); color: var(--accent); }
+  }
 </style>
 </head>
 <body>
@@ -2603,7 +2677,8 @@
 
   <!-- STEP 1: Persoonlijke info -->
   <div class="panel active" id="step0">
-    <div class="panel-title">Over jou</div>
+    <div class="hero-band"></div>
+    <div class="panel-title">Wie ben je</div>
     <div class="panel-sub">Maak je profiel aan. Je gebruikersnaam is voor iedereen zichtbaar. Andere muzikanten met een eigen profiel zien ook je voornaam — bezoekers zonder profiel nooit. Je e-mail en wachtwoord blijven altijd privé.</div>
 
     <div class="field-group">
@@ -2648,24 +2723,6 @@
       <div class="field"></div>
     </div>
 
-    <div class="field" style="margin-bottom:28px;">
-      <label>Profielfoto</label>
-      <div class="avatar-upload-area">
-        <div class="avatar-preview-wrap">
-          <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarInput').click()">
-            <span id="avatarInitials">T</span>
-          </div>
-          <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
-        </div>
-        <div class="avatar-info">
-          <strong>Upload een foto van jezelf</strong>
-          <p>Een echte foto zorgt voor 3× meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
-          <button class="avatar-remove-btn" id="avatarRemoveBtn" onclick="removeAvatar()">Foto verwijderen</button>
-        </div>
-      </div>
-      <input type="file" accept="image/*" class="avatar-upload-input" id="avatarInput" autocomplete="off" onchange="handleAvatarUpload(this.files[0]); this.value=''">
-    </div>
-
     <div class="field-group single">
       <div class="field">
         <label>Korte bio</label>
@@ -2701,16 +2758,11 @@
       </div>
     </div>
 
-    <!-- TT-144 (25-08-2026): Terug op stap 1 gaat naar Mijn Profiel (bij
-         bewerken) of de landingpagina (bij een nieuwe registratie) — er is
-         geen vorige stap. -->
+    <!-- TT-144 (25-08-2026): Terug op stap 1 gaat naar de landingpagina —
+         er is geen vorige stap. -->
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
         <button class="btn wizard-btn wizard-btn-accent" onclick="prevStepFromStart()">Terug</button>
-        <!-- TT-121 (22-08-2026): opslaan per stap, alleen tijdens het
-             bewerken van een bestaand profiel — een nieuw account doorloopt
-             nog gewoon de hele wizard. -->
-        <button class="btn wizard-btn wizard-btn-muted save-step-btn" style="display:none;" onclick="saveEditedProfileHere()">Opslaan</button>
         <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(0)">Verder</button>
       </div>
     </div>
@@ -2718,19 +2770,20 @@
 
   <!-- STEP 2: Instrument & genre -->
   <div class="panel" id="step1">
-    <div class="panel-title">Jouw geluid</div>
-    <div class="panel-sub">Selecteer je instrument(en), het niveau per instrument, en de genres die je speelt.</div>
+    <div class="hero-band"></div>
+    <div class="panel-title">Wat speel je</div>
+    <div class="panel-sub">Je instrument(en), je niveau per instrument, en de genres die je speelt.</div>
 
     <div class="field-group single" style="margin-bottom:24px;">
       <div class="field">
-        <label>Mijn Instrumenten <span class="req">*</span></label>
-        <!-- 21-08-2026: de losse zin "Kies hier je instrument en vervolgens
-             je niveau." stond dubbel met de panel-sub hierboven — weggehaald. -->
-        <div style="display:flex;align-items:center;gap:8px;margin:6px 0 10px;">
-          <span style="font-size:12px;color:var(--muted);">Toelichting op niveau:</span>
-          <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
-        </div>
-        <div class="picker-field" id="instrumentPickerField" onclick="openInstrumentPicker()">
+        <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span>Mijn Instrumenten <span class="req">*</span></span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:400;">
+            Toelichting op niveau
+            <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
+          </span>
+        </label>
+        <div class="picker-field" id="instrumentPickerField">
           <span class="picker-field-label" id="instrumentPickerFieldLabel">Kies een instrument</span>
           <span class="picker-field-chevron">▾</span>
         </div>
@@ -2749,64 +2802,10 @@
       </div>
     </div>
 
-    <div class="wizard-action-bar">
-      <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(1)">Terug</button>
-        <button class="btn wizard-btn wizard-btn-muted save-step-btn" style="display:none;" onclick="saveEditedProfileHere()">Opslaan</button>
-        <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(1)">Verder</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- STEP 3: Nummers -->
-  <div class="panel" id="step2">
-    <div class="panel-title">Repertoire <span id="magOokLaterRepertoire" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
-    <div class="panel-sub">Zoek eerst een artiest, kies dan een nummer. Je kunt dit ook later op je profiel aanvullen.</div>
-
-    <!-- Zoekblok: nummer toevoegen -->
-    <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:20px;">
-      <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:12px;">Nummer toevoegen</div>
-
-      <!-- Stap A: Band of artiest zoeken -->
-      <div class="field" style="margin-bottom:12px;">
-        <label>Band of artiest</label>
-        <div class="song-search-wrap">
-          <input type="text" id="artistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
-            oninput="onArtistSearch(this.value)"
-            onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acArtistList');}"
-            onblur="setTimeout(()=>closeAC('acArtistList'),200)">
-          <div class="autocomplete-list" id="acArtistList"></div>
-        </div>
-      </div>
-
-      <!-- Stap B: Nummer kiezen (verschijnt na artiestenselectie) -->
-      <div id="trackSearchWrap" style="display:none;">
-        <div class="field">
-          <label id="trackSearchLabel">Nummer</label>
-          <div class="song-search-wrap">
-            <input type="text" id="trackSearch" placeholder="Zoek een nummer..." autocomplete="off"
-              oninput="onTrackSearch(this.value)"
-              onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acTrackList');}"
-              onblur="setTimeout(()=>closeAC('acTrackList'),200)">
-            <div class="autocomplete-list" id="acTrackList"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;">Jouw repertoire</div>
-    <p style="font-size:12px; color:var(--muted); margin:0 0 10px; line-height:1.6;">
-      <!-- V-21 (13-08-2026, in overleg vastgesteld): "niveau" betekende hier
-           iets anders dan bij een instrument (sterren) of een band (sterren,
-           eigen tabel) — drie schalen, één woord. Voor een nummer heet het nu
-           "beheersing". -->
-      Beheersing: <strong style="color:var(--text);font-style:italic;">Basis</strong> (kent de structuur, nog fouten) ·
-      <strong style="color:var(--text);font-style:italic;">Bijna</strong> (soepel, kleine slordigheden) ·
-      <strong style="color:var(--text);font-style:italic;">Podium</strong> (speelt het live zonder problemen)
-    </p>
-    <div class="songs-list" id="songsList"></div>
-    <p id="songsListEmpty" style="font-size:13px; color:var(--muted); margin-top:4px;">Nog geen nummers toegevoegd.</p>
-
+    <!-- TT-168-overgang (02-09-2026): repertoire_type stond hier eerder niet
+         — verhuisd vanuit de oude stap "Repertoire", zelfde besluit als bij
+         het tegeloverzicht (TT-168-vervolg, 31-08-2026): dit is een
+         eigenschap van wat je speelt, geen eigenschap van je setlist. -->
     <div class="field-group single" style="margin-top:20px;">
       <div class="field">
         <label>Wat speel je vooral?</label>
@@ -2818,21 +2817,19 @@
       </div>
     </div>
 
-    <div class="divider"></div>
-
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(2)">Terug</button>
-        <button class="btn wizard-btn wizard-btn-muted save-step-btn" style="display:none;" onclick="saveEditedProfileHere()">Opslaan</button>
-        <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(2)">Verder</button>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(1)">Terug</button>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(1)">Verder</button>
       </div>
     </div>
   </div>
 
-  <!-- STEP 4: Doel -->
-  <div class="panel" id="step3">
-    <div class="panel-title">Wat zoek je? <span id="magOokLaterWatZoekJe" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
-    <div class="panel-sub">Wat wil je nu op The Talent Tent?</div>
+  <!-- STEP 3: Wat zoek je -->
+  <div class="panel" id="step2">
+    <div class="hero-band"></div>
+    <div class="panel-title">Wat wil je nu? <span id="magOokLaterWatZoekJe" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
+    <div class="panel-sub">Je doel op The Talent Tent. Alle drie de velden zijn optioneel.</div>
 
     <div class="goal-options" id="goalOptions">
       <div class="goal-card" onclick="selectGoal(this,'oefenen')">
@@ -2845,7 +2842,7 @@
       </div>
       <div class="goal-card" onclick="selectGoal(this,'optreden')">
         <div class="goal-label">Optreden</div>
-        <div class="goal-desc">Optreden op festivals, evenementen, enz.</div>
+        <div class="goal-desc">Festivals, evenementen, open podia, enz.</div>
       </div>
       <div class="goal-card" onclick="selectGoal(this,'alles')">
         <div class="goal-label">Alles!</div>
@@ -2880,8 +2877,69 @@
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner">
+        <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(2)">Terug</button>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(2)">Verder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Je setlist -->
+  <div class="panel" id="step3">
+    <div class="hero-band"></div>
+    <div class="panel-title">Je setlist <span id="magOokLaterRepertoire" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
+    <div class="panel-sub">Zoek eerst een band of artiest en daarna het nummer. Je kunt dit ook later op je profiel aanvullen.</div>
+
+    <!-- Zoekblok: nummer toevoegen -->
+    <div style="background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:20px;">
+      <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:12px;">Nummers toevoegen</div>
+
+      <!-- Stap A: Band of artiest zoeken -->
+      <div class="field" style="margin-bottom:12px;">
+        <label>Band of artiest</label>
+        <div class="song-search-wrap">
+          <input type="text" id="artistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
+            oninput="onArtistSearch(this.value)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acArtistList');}"
+            onblur="setTimeout(()=>closeAC('acArtistList'),200)">
+          <div class="autocomplete-list" id="acArtistList"></div>
+        </div>
+      </div>
+
+      <!-- Stap B: Nummer kiezen (verschijnt na artiestenselectie) -->
+      <div id="trackSearchWrap" style="display:none;">
+        <div class="field">
+          <label id="trackSearchLabel">Nummer</label>
+          <div class="song-search-wrap">
+            <input type="text" id="trackSearch" placeholder="Zoek een nummer..." autocomplete="off"
+              oninput="onTrackSearch(this.value)"
+              onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acTrackList');}"
+              onblur="setTimeout(()=>closeAC('acTrackList'),200)">
+            <div class="autocomplete-list" id="acTrackList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;">Jouw setlist</div>
+    <p style="font-size:12px; color:var(--text); margin:0 0 10px; line-height:1.6;">
+      <!-- V-21 (13-08-2026, in overleg vastgesteld): "niveau" betekende hier
+           iets anders dan bij een instrument (sterren) of een band (sterren,
+           eigen tabel) — drie schalen, één woord. Voor een nummer heet het nu
+           "beheersing". TT-181 (01-09-2026): tekst verkort ("nog fouten"/
+           "kleine slordigheden" weg), Basis/Bijna/Podium blijven de enige
+           gouden woorden op deze regel. -->
+      Beheersing: <span style="color:var(--accent);">Basis</span> (kent de structuur) ·
+      <span style="color:var(--accent);">Bijna</span> (soepel, bijna klaar) ·
+      <span style="color:var(--accent);">Podium</span> (speelt het live zonder problemen)
+    </p>
+    <div class="songs-list" id="songsList"></div>
+    <p id="songsListEmpty" style="font-size:13px; color:var(--muted); margin-top:4px;">Nog geen nummers toegevoegd.</p>
+
+    <div class="divider"></div>
+
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner">
         <button class="btn wizard-btn wizard-btn-accent" onclick="prevStep(3)">Terug</button>
-        <button class="btn wizard-btn wizard-btn-muted save-step-btn" style="display:none;" onclick="saveEditedProfileHere()">Opslaan</button>
         <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(3)">Verder</button>
       </div>
     </div>
@@ -2889,11 +2947,32 @@
 
   <!-- STEP 5: Media -->
   <div class="panel" id="step4">
-    <div class="panel-title">Laat jezelf horen <span id="magOokLaterMedia" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
+    <div class="hero-band"></div>
+    <div class="panel-title">Je mediahoek <span id="magOokLaterMedia" style="color:var(--muted); font-size:12px; text-transform:none; letter-spacing:0; font-weight:400;">(mag ook later)</span></div>
+
+    <div class="field" style="margin-bottom:28px;">
+      <label>Profielfoto</label>
+      <div class="avatar-upload-area">
+        <div class="avatar-preview-wrap">
+          <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarInput').click()">
+            <span id="avatarInitials">T</span>
+          </div>
+          <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+        </div>
+        <div class="avatar-info">
+          <strong>Upload een foto van jezelf</strong>
+          <p>Een echte foto zorgt voor 3× meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
+          <button class="avatar-remove-btn" id="avatarRemoveBtn" onclick="removeAvatar()">Foto verwijderen</button>
+        </div>
+      </div>
+      <input type="file" accept="image/*" class="avatar-upload-input" id="avatarInput" autocomplete="off" onchange="handleAvatarUpload(this.files[0]); this.value=''">
+    </div>
+
+    <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Foto's, video's en links</div>
     <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Een profiel met media valt op.</div>
 
     <div class="media-tip">
-      <span><strong>Tip:</strong> Een actueel profiel met recente media trekt meer aandacht. Profielen die langer dan 6 maanden niet zijn bijgewerkt, zakken naar onderaan de zoekresultaten. Voeg toe wat je nu speelt, niet wat je drie jaar geleden speelde.</span>
+      <span id="wizardMhTipText"><strong>Tip:</strong> toon de energie die jij als muzikant wil laten zien.</span>
     </div>
 
     <div class="media-tabs">
@@ -2958,6 +3037,297 @@
 
 </main>
 </div><!-- /view-register -->
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- VIEW: Profiel bewerken (tegeloverzicht)      -->
+<!-- TT-168-overgang (02-09-2026): 1-op-1 uit profiel-v2.html overgezet.   -->
+<!-- Elke tegel heeft een eigen, smalle opslaanfunctie die alleen de eigen -->
+<!-- kolommen raakt (zie saveWieBenJe()/saveWatSpeelJe()/saveWatZoekJe()/  -->
+<!-- saveJeSetlist()/saveJeMediahoek() in de JS hieronder) — nooit het      -->
+<!-- hele profiel in één keer, dat was precies het risico van de oude      -->
+<!-- bewerken-via-wizard-aanpak (persistEditedProfile() overschreef altijd -->
+<!-- alles). Instrument-/genrepicker en de niveau-modals worden gedeeld    -->
+<!-- met de wizard (cfg-registry, zie initInstrumentPicker()/initPicker()).-->
+<!-- ═══════════════════════════════════════════ -->
+<div class="app-view" id="view-profieltegels">
+<main>
+
+  <!-- Tegeloverzicht -->
+  <div id="tegelOverviewScreen">
+    <div class="hero-band"></div>
+    <div class="panel-title">Profiel bewerken</div>
+    <div id="tegelsWrap"></div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:8px;" onclick="showView('myprofile')">Terug</button>
+  </div>
+
+  <!-- Subscherm: Wie ben je -->
+  <div id="wieBenJeScreen" style="display:none;">
+    <div class="hero-band"></div>
+    <div class="panel-title">Wie ben je</div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Voornaam <span class="req">*</span></label>
+        <input type="text" id="wbjFname" autocomplete="given-name">
+      </div>
+      <div class="field">
+        <label>Achternaam</label>
+        <input type="text" id="wbjLname" autocomplete="family-name">
+      </div>
+    </div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Gebruikersnaam <span class="req">*</span></label>
+        <input type="text" id="wbjUsername" maxlength="20" autocomplete="off" oninput="onWbjUsernameInput()">
+        <p id="wbjUsernameStatus" class="field-status" style="color:var(--muted);"></p>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field">
+        <label>Geboortedatum <span class="req">*</span></label>
+        <input type="text" id="wbjBirthDate" maxlength="10" inputmode="numeric" placeholder="dd-mm-jjjj" oninput="formatBirthDate(this)">
+      </div>
+      <div class="field">
+        <label>Postcode <span class="req">*</span></label>
+        <input type="text" id="wbjZip" maxlength="4" inputmode="numeric" autocomplete="off" oninput="onWbjPostcodeInput(this.value)">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Plaats <span class="req">*</span></label>
+      <input type="text" id="wbjCity" readonly style="cursor:not-allowed;" oninput="onCitySearchInput(this.value,'wbjCityAc')">
+      <div class="autocomplete-list" id="wbjCityAc"></div>
+      <p id="wbjPostcodeStatus" class="field-status" style="color:var(--muted);"></p>
+    </div>
+
+    <div class="field">
+      <label>Korte bio</label>
+      <div class="picker-field" id="wbjBioField" onclick="openWbjBioModal()">
+        <span class="picker-field-label" id="wbjBioPreview">Bijv. Ik speel al 3 jaar gitaar...</span>
+        <span class="picker-field-chevron">✎</span>
+      </div>
+      <textarea id="wbjBio" style="display:none;"></textarea>
+    </div>
+
+    <div class="field">
+      <label>E-mailadres</label>
+      <input type="text" id="wbjEmail" readonly style="cursor:not-allowed;">
+      <p class="field-status" style="color:var(--muted);">Dit is het e-mailadres waarmee je inlogt. Wijzigen kan hier niet.</p>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" id="wbjCancelBtn" onclick="cancelWieBenJe()">Annuleren</button>
+      <button class="btn btn-primary" onclick="saveWieBenJe()">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Subscherm: Wat speel je -->
+  <div id="watSpeelJeScreen" style="display:none;">
+    <div class="hero-band"></div>
+    <div class="panel-title">Wat speel je</div>
+    <div class="panel-sub">Je instrument(en), je niveau per instrument, en de genres die je speelt.</div>
+
+    <div class="field">
+      <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <span>Mijn Instrumenten <span class="req">*</span></span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:400;">
+          Toelichting op niveau
+          <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
+        </span>
+      </label>
+      <div class="picker-field" id="wspInstrumentField">
+        <span class="picker-field-label" id="wspInstrumentFieldLabel">Kies een instrument</span>
+        <span class="picker-field-chevron">▾</span>
+      </div>
+      <div class="picker-badge-row" id="wspInstrumentBadgeRow"></div>
+    </div>
+
+    <div class="field">
+      <label>Mijn Genre(s) <span class="req">*</span></label>
+      <div class="picker-field" id="wspGenreField">
+        <span class="picker-field-label" id="wspGenreFieldLabel">Kies een genre</span>
+        <span class="picker-field-chevron">▾</span>
+      </div>
+      <div class="picker-badge-row" id="wspGenreBadgeRow"></div>
+    </div>
+
+    <div class="field">
+      <label>Wat speel je vooral?</label>
+      <div class="tag-grid" id="wspRepertoireTypeGrid">
+        <div class="tag" data-val="covers" onclick="wspSelectRepertoireType(this,'covers')">Covers</div>
+        <div class="tag" data-val="eigen" onclick="wspSelectRepertoireType(this,'eigen')">Eigen nummers</div>
+        <div class="tag" data-val="beide" onclick="wspSelectRepertoireType(this,'beide')">Allebei</div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" id="wspCancelBtn" onclick="cancelWatSpeelJe()">Annuleren</button>
+      <button class="btn btn-primary" onclick="saveWatSpeelJe()">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Subscherm: Wat zoek je -->
+  <div id="watZoekJeScreen" style="display:none;">
+    <div class="hero-band"></div>
+    <div class="panel-title">Wat zoek je</div>
+    <div class="panel-sub">Je doel op The Talent Tent. Alle drie de velden zijn optioneel.</div>
+
+    <div class="goal-options" id="wzjGoalOptions">
+      <div class="goal-card" data-val="oefenen" onclick="wzjSelectGoal(this,'oefenen')">
+        <div class="goal-label">Samen oefenen</div>
+        <div class="goal-desc">Jammen, repeteren, skills verbeteren</div>
+      </div>
+      <div class="goal-card" data-val="band" onclick="wzjSelectGoal(this,'band')">
+        <div class="goal-label">Band starten</div>
+        <div class="goal-desc">Band opzetten met vaste leden</div>
+      </div>
+      <div class="goal-card" data-val="optreden" onclick="wzjSelectGoal(this,'optreden')">
+        <div class="goal-label">Optreden</div>
+        <div class="goal-desc">Festivals, evenementen, open podia, enz.</div>
+      </div>
+      <div class="goal-card" data-val="alles" onclick="wzjSelectGoal(this,'alles')">
+        <div class="goal-label">Alles!</div>
+        <div class="goal-desc">Open voor alles wat muzikaal is</div>
+      </div>
+    </div>
+
+    <div class="field-group single" style="margin-top:24px;">
+      <div class="field">
+        <label>Hoe vaak wil je oefenen?</label>
+        <div class="tag-grid" id="wzjRehearsalFreqGrid">
+          <div class="tag" data-val="dagelijks" onclick="wzjSelectRehearsalFrequency(this,'dagelijks')">Dagelijks</div>
+          <div class="tag" data-val="wekelijks" onclick="wzjSelectRehearsalFrequency(this,'wekelijks')">Wekelijks</div>
+          <div class="tag" data-val="paar_per_maand" onclick="wzjSelectRehearsalFrequency(this,'paar_per_maand')">Paar keer per maand</div>
+          <div class="tag" data-val="losse_jams" onclick="wzjSelectRehearsalFrequency(this,'losse_jams')">Losse jams, als het uitkomt</div>
+          <div class="tag" data-val="per_project" onclick="wzjSelectRehearsalFrequency(this,'per_project')">Projectmatig</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group single" style="margin-top:16px;">
+      <div class="field">
+        <label>Wat wil je de komende tijd bereiken?</label>
+        <div class="tag-grid" id="wzjAmbitionGrid">
+          <div class="tag" data-val="verbeteren" onclick="wzjSelectMusicalAmbition(this,'verbeteren')">Mezelf verbeteren op mijn instrument</div>
+          <div class="tag" data-val="stijlen" onclick="wzjSelectMusicalAmbition(this,'stijlen')">Nieuwe stijlen ontdekken</div>
+          <div class="tag" data-val="eigen_werk" onclick="wzjSelectMusicalAmbition(this,'eigen_werk')">Samen nummers/eigen werk maken</div>
+          <div class="tag" data-val="plezier" onclick="wzjSelectMusicalAmbition(this,'plezier')">Gewoon plezier, geen groot plan</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" id="wzjCancelBtn" onclick="cancelWatZoekJe()">Annuleren</button>
+      <button class="btn btn-primary" onclick="saveWatZoekJe()">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Subscherm: Je setlist -->
+  <div id="jeSetlistScreen" style="display:none;">
+    <div class="hero-band"></div>
+    <div class="panel-title">Je setlist</div>
+    <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Nummers toevoegen</div>
+    <div class="panel-sub">Zoek eerst een band of artiest en daarna het nummer.</div>
+
+    <div class="field">
+      <label>Band of artiest</label>
+      <div class="song-search-wrap">
+        <input type="text" id="jstArtistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
+          oninput="jstOnArtistSearch(this.value)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault(); jstSelectFirstAc('jstArtistAc');}"
+          onblur="setTimeout(()=>closeAC('jstArtistAc'),200)">
+        <div class="autocomplete-list" id="jstArtistAc"></div>
+      </div>
+    </div>
+
+    <div class="field" id="jstTrackWrap" style="display:none;">
+      <label id="jstTrackLabel">Nummer</label>
+      <div class="song-search-wrap">
+        <input type="text" id="jstTrackSearch" placeholder="Zoek een nummer..." autocomplete="off"
+          oninput="jstOnTrackSearch(this.value)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault(); jstSelectFirstAc('jstTrackAc');}"
+          onblur="setTimeout(()=>closeAC('jstTrackAc'),200)">
+        <div class="autocomplete-list" id="jstTrackAc"></div>
+      </div>
+    </div>
+
+    <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;">Jouw setlist</div>
+    <p style="font-size:12px;color:var(--text);margin:0 0 10px;line-height:1.6;">
+      Beheersing: <span style="color:var(--accent);">Basis</span> (kent de structuur) ·
+      <span style="color:var(--accent);">Bijna</span> (soepel, bijna klaar) ·
+      <span style="color:var(--accent);">Podium</span> (speelt het live zonder problemen)
+    </p>
+    <div class="songs-list" id="jstSongsList"></div>
+    <p id="jstSongsListEmpty" style="font-size:13px;color:var(--muted);margin-top:4px;">Nog geen nummers toegevoegd.</p>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" id="jstCancelBtn" onclick="cancelJeSetlist()">Annuleren</button>
+      <button class="btn btn-primary" onclick="saveJeSetlist()">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Subscherm: Je mediahoek -->
+  <div id="mediahoekScreen" style="display:none;">
+    <div class="hero-band"></div>
+    <div class="panel-title">Je mediahoek</div>
+
+    <div class="field" style="margin-bottom:28px;">
+      <label>Profielfoto</label>
+      <div class="avatar-upload-area">
+        <div class="avatar-preview-wrap">
+          <div class="avatar-preview" id="mhAvatarPreview" onclick="document.getElementById('mhAvatarInput').click()">
+            <span id="mhAvatarInitials">T</span>
+          </div>
+          <div class="avatar-edit-btn" onclick="document.getElementById('mhAvatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+        </div>
+        <div class="avatar-info">
+          <strong>Upload een foto van jezelf</strong>
+          <p>Een echte foto zorgt voor meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
+          <button class="avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhAskRemoveAvatar()">Foto verwijderen</button>
+        </div>
+      </div>
+      <input type="file" accept="image/*" class="avatar-upload-input" id="mhAvatarInput" autocomplete="off" onchange="mhHandleAvatarUpload(this.files[0]); this.value=''">
+    </div>
+
+    <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Foto's, video's en links</div>
+    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud.</div>
+
+    <div class="media-tip">
+      <span id="mhTipText"><strong>Tip:</strong> toon de energie die jij als muzikant wil laten zien.</span>
+    </div>
+
+    <div class="media-tabs">
+      <button type="button" class="media-tab active" onclick="switchMhMediaTab('upload', this)">Upload</button>
+      <button type="button" class="media-tab" onclick="switchMhMediaTab('links', this)">Links</button>
+    </div>
+
+    <div class="media-pane active" id="mhPaneUpload">
+      <div class="drop-zone" id="mhDropZone"
+        ondragover="event.preventDefault(); this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="mhHandleDrop(event)">
+        <input type="file" accept="image/*,video/*" multiple autocomplete="off" onchange="mhHandleFileSelect(this.files); this.value=''">
+        <div class="drop-label"><strong>Sleep bestanden hierheen</strong> of klik om te selecteren</div>
+        <div class="drop-hint">Foto's (JPG, PNG) · Video's (MP4, MOV) · Max 50 MB per bestand</div>
+      </div>
+      <div class="media-grid" id="mhMediaGrid"></div>
+    </div>
+
+    <div class="media-pane" id="mhPaneLinks">
+      <div id="mhLinksList"></div>
+      <button type="button" class="add-link-btn" onclick="mhAddLinkRow()">+ Link toevoegen</button>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" id="mhCancelBtn" onclick="cancelJeMediahoek()">Annuleren</button>
+      <button class="btn btn-primary" onclick="saveJeMediahoek()">Opslaan</button>
+    </div>
+  </div>
+
+</main>
+</div><!-- /view-profieltegels -->
 
 <!-- ═══════════════════════════════════════════ -->
 <!-- VIEW: Zoeken                                -->
@@ -3892,12 +4262,38 @@
   </div>
 </div>
 
+<!-- TT-168-overgang (02-09-2026): bio bewerken (tegel "Wie ben je"), eigen
+     volledig-scherm-modal (TT-179). Bewust buiten view-profieltegels
+     geplaatst, net als de andere gedeelde modals hieronder — anders wint de
+     sticky .app-topbar (z-index 55) het qua stapelcontext van een modal die
+     wél een hoger z-index heeft maar binnen een geneste .app-view zit
+     (gevonden tijdens testen: de sluitknop was daardoor onbereikbaar). -->
+<div class="modal-overlay" id="wbjBioModal" onclick="if(event.target===this)closeWbjBioModal()">
+  <div class="modal-box modal-box-sticky-footer modal-box-slg">
+    <button class="modal-close" onclick="closeWbjBioModal()" aria-label="Sluiten">✕</button>
+    <div class="modal-scroll-area">
+      <div class="filter-title" style="margin-bottom:4px;padding-right:52px;">Korte bio</div>
+      <p style="font-weight:700;font-style:italic;color:var(--text);font-size:13px;margin:0 0 16px;line-height:1.5;">Dit is vaak het eerste wat andere muzikanten van je lezen.</p>
+      <div class="bio-prompts">
+        <button type="button" class="bio-prompt-chip" onclick="wbjBioPrompt('Ik speel al ... jaar ')">Hoe lang speel je al?</button>
+        <button type="button" class="bio-prompt-chip" onclick="wbjBioPrompt('Op dit moment ben ik vooral bezig met ')">Waar ben je nu mee bezig?</button>
+        <button type="button" class="bio-prompt-chip" onclick="wbjBioPrompt('Wat ik wil bereiken is ')">Wat wil je bereiken?</button>
+      </div>
+      <textarea id="wbjBioModalTextarea" placeholder="Bijv. Ik speel al 3 jaar gitaar..." style="min-height:180px;" oninput="wbjSyncBioFromModal()"></textarea>
+    </div>
+    <div class="modal-sticky-footer">
+      <button type="button" class="btn btn-primary" style="width:100%;" onclick="closeWbjBioModal()">Klaar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TT-51-uitbreiding (12-08-2026): toelichting bij het bandniveau, geopend
      via de i-knop naast "Niveau van de band". Inhoud identiek aan Tabel 1 +
      de toelichtende tekst in niveaubepaling-naslagwerk.md. -->
 <div class="modal-overlay" id="niveauInfoModal" onclick="if(event.target===this)this.classList.remove('visible')">
   <div class="modal-box modal-box-xl">
     <button class="modal-close" onclick="document.getElementById('niveauInfoModal').classList.remove('visible')">✕</button>
+
     <div id="niveauInfoModalContent"></div>
   </div>
 </div>
@@ -4111,8 +4507,8 @@ async function appInit() {
     // juiste view openen. Alleen bekende views; Mijn Profiel/Mijn Bands lopen
     // via requireLogin() zodat een uitgelogde bezoeker de gebruikelijke
     // vriendelijke toast + doorverwijzing krijgt, geen lege pagina.
-    const knownHashViews = ['search', 'about', 'register', 'myprofile', 'bands', 'auth', 'privacy', 'terms', 'gedragscode'];
-    const gatedHashViews = ['myprofile', 'bands'];
+    const knownHashViews = ['search', 'about', 'register', 'myprofile', 'bands', 'auth', 'privacy', 'terms', 'gedragscode', 'profieltegels'];
+    const gatedHashViews = ['myprofile', 'bands', 'profieltegels'];
 
     // V-12 (13-08-2026): een gedeelde profiellink (#profiel/<id> of
     // #band/<id>, zie shareProfile()) opent direct de detailmodal, boven op
@@ -4600,7 +4996,7 @@ function showView(view, mode) {
     landing: null, search: 'navSearch',
     about: null, register: null, myprofile: 'navMyProfile', bands: 'navMyBands',
     messages: 'navMessages', auth: 'navLogin', reset: null,
-    privacy: null, terms: null, gedragscode: null
+    privacy: null, terms: null, gedragscode: null, profieltegels: null
   };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
 
@@ -4624,7 +5020,7 @@ function showView(view, mode) {
   // verlaten van de wizard weer expliciet terug naar de normale (door CSS
   // bepaalde) weergave.
   const bottomNavEl = document.getElementById('appBottomNav');
-  if (bottomNavEl) bottomNavEl.style.display = (view === 'register') ? 'none' : '';
+  if (bottomNavEl) bottomNavEl.style.display = (view === 'register' || view === 'profieltegels') ? 'none' : '';
 
   if (view === 'register') {
     if (editingMusicianId && !currentUser) {
@@ -4639,6 +5035,12 @@ function showView(view, mode) {
       return;
     }
     if (currentUser && myMusicianId && !editingMusicianId) { showView('myprofile', 'redirect'); return; }
+    // TT-168-overgang (02-09-2026): "locked" betekent sinds de overgang naar
+    // het tegeloverzicht nog maar één ding — een onboarding die al voorbij
+    // stap 1 is (account bestaat al, tryResumeOnboarding()). Bewerken van
+    // een al afgerond profiel loopt niet meer via de wizard, dus die
+    // vertakking (en de save-step-btn-knoppen die daarbij hoorden) is
+    // vervallen.
     const locked = !!editingMusicianId;
     ['fname', 'lname', 'birth_date'].forEach(id => {
       const fld = document.getElementById(id);
@@ -4648,18 +5050,9 @@ function showView(view, mode) {
         fld.style.opacity = locked ? '0.85' : '';
       }
     });
-    // TT-121 (22-08-2026): opslaan per stap — alleen zichtbaar tijdens het
-    // bewerken van een bestaand profiel.
-    document.querySelectorAll('.save-step-btn').forEach(btn => {
-      btn.style.display = locked ? 'inline-flex' : 'none';
-    });
-    // TT-167 (31-08-2026, Ronalds besluit): een gebruiker moet altijd kunnen
-    // zien welk e-mailadres aan zijn account hangt. Bij het bewerken van een
-    // bestaand profiel blijft het e-mailveld daarom zichtbaar, maar
-    // alleen-lezen (zelfde patroon als fname/lname/birth_date hierboven).
-    // Het wachtwoordveld blijft bij bewerken wél volledig verborgen —
-    // wachtwoord wijzigen loopt via een apart scherm (saveNewPassword(),
-    // view-reset), nooit via dit formulier.
+    // Zodra het account al bestaat (stap 1 was al gezet), hoeft e-mail/
+    // wachtwoord niet nogmaals ingevuld te worden — alleen-lezen e-mailveld
+    // ter bevestiging, wachtwoordveld helemaal weg.
     const authSection = document.getElementById('regAuthSection');
     const regEmailField = document.getElementById('regEmail');
     const regPasswordField = document.getElementById('regPasswordField');
@@ -4682,10 +5075,10 @@ function showView(view, mode) {
         : 'Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.';
     }
 
-    // Akkoord-checkbox: alleen verplicht bij een gloednieuw account. Bij het
-    // bewerken van een bestaand profiel is die toestemming al gegeven bij de
-    // registratie zelf — opnieuw laten aanvinken bij elke bewerking levert
-    // alleen wrijving op zonder juridische meerwaarde.
+    // Akkoord-checkbox: alleen verplicht bij het allereerste bezoek aan
+    // stap 1. Is het account al aangemaakt (bijv. na een refresh mid-
+    // onboarding), dan is die toestemming al gegeven bij de eerste keer —
+    // opnieuw aanvinken levert dan alleen wrijving op zonder meerwaarde.
     const consentRow = document.getElementById('consentCheckbox')?.closest('label');
     if (consentRow) consentRow.style.display = locked ? 'none' : '';
     if (locked) {
@@ -4701,6 +5094,10 @@ function showView(view, mode) {
   if (view === 'bands') loadMyBands();
   if (view === 'search') configureSearchAccess();
   if (view === 'messages') loadInbox();
+  if (view === 'profieltegels') {
+    if (!myMusicianId) { showToast('Je hebt nog geen profiel om te bewerken.'); showView('myprofile', 'redirect'); return; }
+    openTegelOverview();
+  }
 
   const banner = document.getElementById('editModeBanner');
   if (banner) banner.style.display = (currentUser && editingMusicianId && view !== 'register') ? 'flex' : 'none';
@@ -4761,6 +5158,14 @@ window.addEventListener('popstate', (e) => {
   if (draad && draad.style.display !== 'none' && activeConversationId) {
     closeConversation();
     safeHistoryPush(history.state, location.hash || '#messages');
+    return;
+  }
+  // TT-168-overgang (02-09-2026): zelfde patroon voor een open tegelscherm
+  // (bijv. "Wie ben je") — eerst dit subscherm sluiten, terug naar het
+  // tegeloverzicht, pas bij een tweede terugdruk verder naar Mijn Profiel.
+  if (activeTegelScreen !== 'overview') {
+    openTegelOverview();
+    safeHistoryPush(history.state, location.hash || '#profieltegels');
     return;
   }
   showView(e.state?.view || 'landing', 'pop');
@@ -6340,7 +6745,7 @@ async function deleteAllStorageForUser(userId) {
 
 // TT-143 (25-08-2026): cancelEditProfile()/de Annuleren-knop is vervallen.
 // "Terug" en "Verder" dekken de navigatie nu zelf af (zie prevStep()/
-// nextStep() en de nieuwe editSnapshot-vergelijking).
+// nextStep()).
 
 // ─── TT-09: onboarding hervatten na een refresh (Route B) ────────────────────
 // Zolang het profiel nog niet is afgerond (state.onboarding), bewaren we een
@@ -6408,7 +6813,7 @@ function populateWizardFieldsFromState() {
   document.getElementById('postcodeStatus').textContent = state.city ? `Gevonden: ${state.city}` : '';
   document.getElementById('bio').value = state.bio;
 
-  renderInstrumentBadges();
+  renderInstrumentBadges('wizard');
   if (PICKERS.genre) renderPickerBadges(PICKERS.genre);
 
   renderSongs();
@@ -6482,71 +6887,16 @@ function tryResumeOnboarding() {
   return true;
 }
 
+// TT-168-overgang (02-09-2026): bewerken loopt niet langer via de wizard.
+// "Profiel bewerken" opent nu het tegeloverzicht (openTegelOverview()) —
+// vijf losse subschermen, elk met een eigen smalle opslaanfunctie die
+// alleen de eigen kolommen raakt. De oude aanpak (het hele state-object
+// vullen en de wizard in "bewerkmodus" zetten) is vervallen; de wizard is
+// voortaan uitsluitend voor het aanmaken van een nieuw account.
 async function editMyProfile() {
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Je hebt nog geen profiel om te bewerken.'); return; }
-
-  // Bugfix 19-08-2026: het commentaar hierboven klopte niet. Een sterretje-
-  // select faalt in zijn geheel zodra één kolom niet leesbaar is — Postgres
-  // laat 'm niet stilzwijgend weg. Sinds B-01 tweede stap (18-08-2026) is dat
-  // precies wat hier gebeurde: birth_date niet leesbaar → hele vraag faalt →
-  // "Kon profiel niet laden". Nu een vaste kolomlijst, zonder birth_date —
-  // die komt al apart binnen via tt_get_my_birth_date() hieronder.
-  const { data: m, error } = await db.from('musicians').select(`
-    id, fname, lname, username, zip, city, bio, goal,
-    rehearsal_frequency, musical_ambition, repertoire_type, city_source,
-    avatar_url, musician_instruments(instrument, niveau), musician_genres(genre),
-    musician_songs(song_title, song_artist, mastery_level),
-    musician_media(media_type, url, platform)
-  `).eq('id', mid).single();
-
-  if (error || !m) { showToast('Kon profiel niet laden.'); return; }
-
-  const { data: myBirthDate } = await db.rpc('tt_get_my_birth_date');
-  m.birth_date = myBirthDate;
-
-  // Dit is een bewuste bewerking van een (mogelijk al afgerond) profiel, geen
-  // onboarding — state.onboarding blijft dus false, ook als het profiel door
-  // eerder afhaken nog profile_complete=false had staan.
-  state.onboarding    = false;
-  editingMusicianId = m.id;
-  state.fname         = m.fname || '';
-  state.lname         = m.lname || '';
-  state.username      = m.username || '';
-  state.birth_date    = fromISODate(m.birth_date);
-  state.zip           = m.zip || '';
-  state.city          = m.city || '';
-  state.bio           = m.bio || '';
-  state.goal          = m.goal || '';
-  state.rehearsalFrequency = m.rehearsal_frequency || '';
-  state.musicalAmbition    = m.musical_ambition || '';
-  state.avatarUrl     = m.avatar_url || null;
-  state.avatarFile    = null;
-  state.avatarPath    = null;
-  state.instruments   = (m.musician_instruments || []).map(x => x.instrument);
-  // TT-51: niveau per instrument meenemen bij bewerken van een bestaand profiel.
-  state.instrumentLevels = {};
-  (m.musician_instruments || []).forEach(x => { if (x.niveau) state.instrumentLevels[x.instrument] = x.niveau; });
-  state.genres        = (m.musician_genres || []).map(x => x.genre);
-  state.songs         = (m.musician_songs || []).map(s => ({ title: s.song_title, artist: s.song_artist, level: s.mastery_level }));
-  state.repertoireType = m.repertoire_type || ''; // TT-52
-  // TT-02: al eerder geüploade foto's/video's meenemen, zodat ze zichtbaar
-  // en verwijderbaar zijn bij het bewerken (voorheen bleven deze onzichtbaar
-  // in de wizard, ook al stonden ze al in de database).
-  state.mediaFiles    = (m.musician_media || [])
-    .filter(x => x.media_type === 'foto' || x.media_type === 'video')
-    .map(x => ({ name: '', url: x.url, path: null, type: x.media_type, uploading: false }));
-  state.mediaLinks    = (m.musician_media || []).filter(x => x.media_type === 'link').map(x => ({ url: x.url }));
-  state.citySource    = m.city_source || 'pdok';
-  postcodeResolved    = !!m.zip;
-  postcodeFailStreak  = 0;
-  postcodeManualMode  = false;
-
-  showView('register');
-  goTo(0);
-  document.getElementById('submitProfileBtn').textContent = 'Wijzigingen opslaan';
-  populateWizardFieldsFromState();
-  editSnapshot = buildEditSnapshot();
+  showView('profieltegels');
 }
 
 async function loadMyProfile() {
@@ -7254,40 +7604,14 @@ async function saveEditedProfile() {
   }
 }
 
-// TT-143 (25-08-2026): de "Opslaan"-knop in de actiebalk (zichtbaar op elke
-// stap tijdens het bewerken). In tegenstelling tot saveEditedProfile()
-// hierboven (de afrondende opslag, met overlay + navigatie naar Mijn
-// Profiel) blijft dit gewoon op de huidige stap staan — alleen een korte
-// melding, geen overlay, geen navigatie.
-async function saveEditedProfileHere() {
-  if (!editingMusicianId) return;
-  // TT-173 (31-08-2026): "Wijzigingen opgeslagen" verscheen voorheen bij elke
-  // klik op Opslaan, ook zonder enige wijziging sinds de vorige opslag.
-  // Zelfde vergelijking als bij het verlaten van een stap (prevStep/
-  // prevStepFromStart) — niets gewijzigd, dan ook niets opslaan of melden.
-  if (buildEditSnapshot() === editSnapshot) return;
-  const saved = await silentlySaveEditIfNeeded();
-  if (!saved) return; // silentlySaveEditIfNeeded toont zelf al een foutmelding
-  editSnapshot = buildEditSnapshot();
-  showToast('Wijzigingen opgeslagen.');
-}
-
-// TT-137: stille variant voor "Verder →"/"← Terug" tijdens het bewerken.
-// Geen spinner-overlay (voelt te zwaar voor een simpele stap-navigatie) en
-// blijft op de huidige stap staan — editingMusicianId wordt hier bewust
-// NIET op null gezet, de bewerksessie loopt gewoon door.
-async function silentlySaveEditIfNeeded() {
-  if (!editingMusicianId) return true; // nieuw account: niets op te slaan
-  myOwnCity = null;
-  try {
-    await persistEditedProfile();
-    return true;
-  } catch (err) {
-    console.error('Supabase fout (stil opslaan tijdens bewerken):', err);
-    showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(err.message));
-    return false;
-  }
-}
+// TT-168-overgang (02-09-2026): saveEditedProfileHere() en
+// silentlySaveEditIfNeeded() zijn vervallen — die hoorden bij het
+// tussentijds opslaan tijdens het bewerken van een bestaand profiel via de
+// wizard (TT-121/TT-137). Bewerken loopt nu via het tegeloverzicht, elke
+// tegel met een eigen smalle opslaanfunctie (zie de tegelschermen
+// verderop). saveEditedProfile() hieronder blijft wél bestaan — dat is de
+// afrondende opslag van de wizard zelf (submitProfile()), ook bij een
+// gloednieuwe registratie, zodra editingMusicianId (na stap 1) gezet is.
 
 async function submitProfile() {
   // TT-121 (22-08-2026): bewerken van een bestaand profiel loopt voortaan
@@ -8114,6 +8438,17 @@ function selectCitySuggestion(name, listId) {
     closeAC(listId);
     return;
   }
+  // TT-168-overgang (02-09-2026): tegel "Wie ben je" — eigen, lokale
+  // wbjPostcodeManualMode-variabele i.p.v. de wizard-brede postcodeManualMode.
+  if (listId === 'wbjCityAc') {
+    document.getElementById('wbjCity').value = name;
+    wbjPostcodeManualMode = true;
+    const statusEl = document.getElementById('wbjPostcodeStatus');
+    statusEl.textContent = `Gekozen: ${name}`;
+    statusEl.style.color = 'var(--accent)';
+    closeAC(listId);
+    return;
+  }
   const fieldMap = {
     acFilterCityList: { field: 'filterCity', status: 'filterCityStatus' },
     acFilterBandCityList: { field: 'filterBandCity', status: 'filterBandCityStatus' },
@@ -8142,30 +8477,11 @@ function fromISODate(iso) {
 }
 
 let editingMusicianId = null;
-// TT-143 (25-08-2026): momentopname van de laatst opgeslagen staat tijdens
-// het bewerken van een bestaand profiel. Vergeleken met de huidige state om
-// te weten of "Terug" een melding moet tonen ("niet opgeslagen"). Gezet bij
-// het openen van de bewerkwizard (editMyProfile()) en na elke geslaagde
-// opslag (saveEditedProfileHere(), nextStep()).
-let editSnapshot = null;
-function buildEditSnapshot() {
-  return JSON.stringify({
-    fname: state.fname, lname: state.lname, username: state.username,
-    birth_date: state.birth_date, city: state.city, zip: state.zip,
-    bio: state.bio, goal: state.goal,
-    rehearsalFrequency: state.rehearsalFrequency,
-    musicalAmbition: state.musicalAmbition,
-    repertoireType: state.repertoireType,
-    avatarUrl: state.avatarUrl,
-    citySource: state.citySource,
-    instruments: state.instruments,
-    instrumentLevels: state.instrumentLevels,
-    genres: state.genres,
-    songs: state.songs,
-    mediaLinks: state.mediaLinks,
-    mediaFiles: (state.mediaFiles || []).map(m => m.url),
-  });
-}
+// TT-168-overgang (02-09-2026): editSnapshot/buildEditSnapshot() zijn
+// vervallen — die vergeleken de wizard-state tijdens het bewerken van een
+// bestaand profiel via de wizard (TT-143). Elke tegel heeft nu zijn eigen,
+// vergelijkbare snapshot-functie (bijv. wbjFieldSnapshot()), lokaal bij de
+// tegel zelf.
 
 // ─── iTunes Search API — twee-velden zoekfunctie ─────────────────────────────
 // TT-139 (24-08-2026): vervangt MusicBrainz. Zie zoekfunctienaslagwerk.md §15
@@ -8382,11 +8698,43 @@ let state = {
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 
+// TT-168-overgang (02-09-2026): tip-tekst bij "Je mediahoek" (wizardstap 4),
+// zelfde wisselende tekst en interval als het tegelscherm — eigen, losse
+// timer/element-id (#wizardMhTipText) omdat de wizard een ander scherm is
+// dan het tegeloverzicht, ook al delen ze dezelfde teksten.
+const WIZARD_MH_TIPS = [
+  'toon de energie die jij als muzikant wil laten zien.',
+  'een compleet profiel krijgt veel meer aandacht.',
+];
+let wizardMhTipIndex = 0;
+let wizardMhTipTimer = null;
+function wizardMhStartTipCycle() {
+  clearInterval(wizardMhTipTimer);
+  wizardMhTipIndex = 0;
+  wizardMhRenderTip();
+  wizardMhTipTimer = setInterval(() => {
+    wizardMhTipIndex = (wizardMhTipIndex + 1) % WIZARD_MH_TIPS.length;
+    wizardMhRenderTip();
+  }, 2500);
+}
+function wizardMhRenderTip() {
+  const el = document.getElementById('wizardMhTipText');
+  if (!el) return;
+  el.innerHTML = `<strong>Tip:</strong> ${escHtml(WIZARD_MH_TIPS[wizardMhTipIndex])}`;
+}
+
 function init() {
   // TT-116 (21-08-2026): instrument- en genrekeuze zijn nu een pulldown-veld
   // met badges, geen altijd-zichtbaar knoppenraster meer. Zie de
   // "Kies-en-badge component" verderop in dit blok.
-  renderInstrumentBadges();
+  // TT-168-overgang (02-09-2026): instrumentpicker cfg-based, wizard is één
+  // van de twee registraties (de andere: tegelscherm "Wat speel je").
+  initInstrumentPicker({
+    id: 'wizard',
+    fieldId: 'instrumentPickerField', badgeRowId: 'instrumentBadgeRow',
+    getInstruments: () => state.instruments, getLevels: () => state.instrumentLevels,
+    onChange: saveOnboardingProgress
+  });
   initPicker({
     id: 'genre',
     fieldId: 'genrePickerField', badgeRowId: 'genreBadgeRow',
@@ -8564,12 +8912,24 @@ function removePickerValue(id, value) {
   if (cfg.onChange) cfg.onChange();
 }
 
-// ─── Eigen instrumenten (wizard) — instrument + niveau in één scherm ────────
+// ─── Eigen instrumenten — instrument + niveau in één scherm ─────────────────
 // TT-U21 (12-08-2026) verving het druk-en-sleep-gebaar door een keuzescherm.
-// TT-116 (21-08-2026) voegt daar een instrumentenlijst aan toe: het
-// keuzeraster is weg, instrument kiezen gebeurt nu ook via de pulldown. Zie
-// instrumentLevelModal in de HTML: stap 1 = lijst, stap 2 = niveau.
+// TT-116 (21-08-2026) voegt daar een instrumentenlijst aan toe. TT-168-
+// overgang (02-09-2026): omgezet naar een cfg-registry (zelfde patroon als
+// initPicker() hierboven) — de wizard EN het tegelscherm "Wat speel je"
+// delen nu dezelfde #instrumentLevelModal, elk met een eigen cfg-id i.p.v.
+// twee losse implementaties op hetzelfde element. cfg: { id, fieldId,
+// badgeRowId, getInstruments, getLevels, onChange }.
+const INSTRUMENT_PICKERS = {};
+let activeInstrumentPickerId = null;
 let instrumentLevelTarget = null; // { instrument, cameFromList }
+
+function initInstrumentPicker(cfg) {
+  INSTRUMENT_PICKERS[cfg.id] = cfg;
+  document.getElementById(cfg.fieldId).onclick = () => openInstrumentPicker(cfg.id);
+  renderInstrumentBadges(cfg.id);
+  return cfg;
+}
 
 // Korte namen zonder cijfer én zonder haakjes, afgeleid van Tabel 2 in
 // niveaubepaling-naslagwerk.md (NIVEAU_INFO_MUSICIAN_ROWS verderop). Eén
@@ -8589,33 +8949,38 @@ function instrumentLevelBlurbs() {
   });
 }
 
-function renderInstrumentBadges() {
-  const wrap = document.getElementById('instrumentBadgeRow');
-  const list = state.instruments;
+function renderInstrumentBadges(id) {
+  const cfg = INSTRUMENT_PICKERS[id];
+  const wrap = document.getElementById(cfg.badgeRowId);
+  const list = cfg.getInstruments();
+  const levels = cfg.getLevels();
   // 21-08-2026 (Ronald): vaste tekst, geen teller — zelfde reden als bij
   // renderPickerBadges() hierboven.
-  document.getElementById('instrumentPickerFieldLabel').textContent = 'Kies een instrument';
+  document.getElementById(cfg.fieldId + 'Label').textContent = 'Kies een instrument';
   wrap.innerHTML = list.map(i => {
-    const n = state.instrumentLevels[i] || 0;
+    const n = levels[i] || 0;
     const stars = n ? '★'.repeat(n) : '';
     return `
-    <div class="picker-badge has-level" onclick="reopenInstrumentBadge('${jsAttr(i)}')">
-      <button type="button" class="picker-badge-remove" aria-label="${escAttr(i)} verwijderen" onclick="event.stopPropagation();quickRemoveInstrument('${jsAttr(i)}')"><span aria-hidden="true">✕</span></button>
+    <div class="picker-badge has-level" onclick="reopenInstrumentBadge('${jsAttr(id)}','${jsAttr(i)}')">
+      <button type="button" class="picker-badge-remove" aria-label="${escAttr(i)} verwijderen" onclick="event.stopPropagation();quickRemoveInstrument('${jsAttr(id)}','${jsAttr(i)}')"><span aria-hidden="true">✕</span></button>
       <div class="picker-badge-label">${pickerDisplayLabel(i)}</div>
       <div class="picker-badge-stars">${stars}</div>
     </div>`;
   }).join('');
 }
 
-function quickRemoveInstrument(instrument) {
-  const idx = state.instruments.indexOf(instrument);
-  if (idx !== -1) state.instruments.splice(idx, 1);
-  delete state.instrumentLevels[instrument];
-  renderInstrumentBadges();
-  saveOnboardingProgress();
+function quickRemoveInstrument(id, instrument) {
+  const cfg = INSTRUMENT_PICKERS[id];
+  const list = cfg.getInstruments();
+  const idx = list.indexOf(instrument);
+  if (idx !== -1) list.splice(idx, 1);
+  delete cfg.getLevels()[instrument];
+  renderInstrumentBadges(id);
+  if (cfg.onChange) cfg.onChange();
 }
 
-function openInstrumentPicker() {
+function openInstrumentPicker(id) {
+  activeInstrumentPickerId = id;
   renderInstrumentPickItems();
   document.getElementById('instrumentPickStep').style.display = 'block';
   document.getElementById('instrumentLevelStep').style.display = 'none';
@@ -8625,7 +8990,8 @@ function openInstrumentPicker() {
 }
 
 function renderInstrumentPickItems() {
-  const remaining = INSTRUMENTS.filter(i => !state.instruments.includes(i));
+  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  const remaining = INSTRUMENTS.filter(i => !cfg.getInstruments().includes(i));
   const wrap = document.getElementById('instrumentPickItems');
   if (!remaining.length) {
     wrap.innerHTML = '<div class="picker-list-empty">Alles al gekozen</div>';
@@ -8637,13 +9003,15 @@ function renderInstrumentPickItems() {
 }
 
 function pickInstrumentFromSheet(instrument) {
-  state.instruments.push(instrument);
-  saveOnboardingProgress(); // zie toelichting bij removePickerValue-patroon, 13-08-2026
+  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  cfg.getInstruments().push(instrument);
+  if (cfg.onChange) cfg.onChange(); // zie toelichting bij removePickerValue-patroon, 13-08-2026
   showInstrumentLevelStep(instrument, /* cameFromList */ true);
 }
 
 // Tikken op een bestaande badge: direct naar de niveaustap, niveau wisselen.
-function reopenInstrumentBadge(instrument) {
+function reopenInstrumentBadge(id, instrument) {
+  activeInstrumentPickerId = id;
   document.getElementById('instrumentLevelModal').classList.add('visible');
   showInstrumentLevelStep(instrument, /* cameFromList */ false);
 }
@@ -8664,22 +9032,26 @@ function backToInstrumentPick() {
   if (!instrumentLevelTarget || !instrumentLevelTarget.cameFromList) return;
   // Bugfix 23-08-2026: zelfde lek als in closeInstrumentLevelSheet()
   // hierboven, apart nodig omdat dit pad niet via die functie loopt. Zonder
-  // dit blijft het net gekozen instrument zonder niveau in state.instruments
-  // staan — en wordt het onvindbaar voor de fix hierboven zodra iemand
-  // daarna een ánder instrument kiest (instrumentLevelTarget wijst dan niet
-  // meer naar dit instrument).
-  if (!state.instrumentLevels[instrumentLevelTarget.instrument]) {
-    const idx = state.instruments.indexOf(instrumentLevelTarget.instrument);
-    if (idx !== -1) state.instruments.splice(idx, 1);
-    renderInstrumentBadges();
-    saveOnboardingProgress();
+  // dit blijft het net gekozen instrument zonder niveau in de lijst staan —
+  // en wordt het onvindbaar voor de fix hierboven zodra iemand daarna een
+  // ánder instrument kiest (instrumentLevelTarget wijst dan niet meer naar
+  // dit instrument).
+  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  const levels = cfg.getLevels();
+  if (!levels[instrumentLevelTarget.instrument]) {
+    const list = cfg.getInstruments();
+    const idx = list.indexOf(instrumentLevelTarget.instrument);
+    if (idx !== -1) list.splice(idx, 1);
+    renderInstrumentBadges(activeInstrumentPickerId);
+    if (cfg.onChange) cfg.onChange();
   }
-  openInstrumentPicker();
+  openInstrumentPicker(activeInstrumentPickerId);
 }
 
 function renderInstrumentLevelChoices() {
   if (!instrumentLevelTarget) return;
-  const huidig = state.instrumentLevels[instrumentLevelTarget.instrument] || 0;
+  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  const huidig = cfg.getLevels()[instrumentLevelTarget.instrument] || 0;
   const labels = instrumentLevelLabels();
   const blurbs = instrumentLevelBlurbs();
   const rows = labels.map((label, idx) => {
@@ -8713,36 +9085,38 @@ function equalizeLevelChoiceHeights() {
 
 function setInstrumentLevel(value) {
   if (!instrumentLevelTarget) return;
-  state.instrumentLevels[instrumentLevelTarget.instrument] = value;
-  renderInstrumentBadges();
-  saveOnboardingProgress(); // zie toelichting bij removePickerValue-patroon, 13-08-2026
+  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  cfg.getLevels()[instrumentLevelTarget.instrument] = value;
+  renderInstrumentBadges(activeInstrumentPickerId);
+  if (cfg.onChange) cfg.onChange(); // zie toelichting bij removePickerValue-patroon, 13-08-2026
   closeInstrumentLevelSheet();
 }
 
 function removeInstrumentFromSheet() {
   if (!instrumentLevelTarget) return;
-  quickRemoveInstrument(instrumentLevelTarget.instrument);
+  quickRemoveInstrument(activeInstrumentPickerId, instrumentLevelTarget.instrument);
   closeInstrumentLevelSheet();
 }
 
 function closeInstrumentLevelSheet() {
   // Bugfix 23-08-2026 (gevonden bij bredere code-controle, niet gemeld door
   // Ronald): pickInstrumentFromSheet() voegt een instrument meteen toe aan
-  // state.instruments, vóórdat er een niveau gekozen is — dat gebeurt pas in
-  // de stap die hierna opent. Sloot iemand dit scherm via het kruisje of een
-  // tik buiten de modal, dan bleef het instrument in de lijst staan zonder
-  // niveau. state.instrumentLevels[instrument] bleef dan ongezet, en bij
-  // opslaan ging niveau als null mee — instrument is verplicht in de wizard,
-  // dus dit pad is voor iedereen bereikbaar, niet een uitzondering.
-  // Alleen relevant bij een NIEUW gekozen instrument (cameFromList) zonder
-  // niveau: sluiten bij het wijzigen van een al bestaand instrument
-  // (cameFromList=false, via reopenInstrumentBadge) verandert niets aan de
-  // eerder gekozen waarde.
-  if (instrumentLevelTarget && instrumentLevelTarget.cameFromList && !state.instrumentLevels[instrumentLevelTarget.instrument]) {
-    const idx = state.instruments.indexOf(instrumentLevelTarget.instrument);
-    if (idx !== -1) state.instruments.splice(idx, 1);
-    renderInstrumentBadges();
-    saveOnboardingProgress();
+  // de lijst, vóórdat er een niveau gekozen is — dat gebeurt pas in de stap
+  // die hierna opent. Sloot iemand dit scherm via het kruisje of een tik
+  // buiten de modal, dan bleef het instrument in de lijst staan zonder
+  // niveau. Bij opslaan ging niveau dan als null mee — instrument is
+  // verplicht in de wizard, dus dit pad is voor iedereen bereikbaar, niet
+  // een uitzondering. Alleen relevant bij een NIEUW gekozen instrument
+  // (cameFromList) zonder niveau: sluiten bij het wijzigen van een al
+  // bestaand instrument (cameFromList=false, via reopenInstrumentBadge)
+  // verandert niets aan de eerder gekozen waarde.
+  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  if (cfg && instrumentLevelTarget && instrumentLevelTarget.cameFromList && !cfg.getLevels()[instrumentLevelTarget.instrument]) {
+    const list = cfg.getInstruments();
+    const idx = list.indexOf(instrumentLevelTarget.instrument);
+    if (idx !== -1) list.splice(idx, 1);
+    renderInstrumentBadges(activeInstrumentPickerId);
+    if (cfg.onChange) cfg.onChange();
   }
   document.getElementById('instrumentLevelModal').classList.remove('visible');
   document.getElementById('instrumentPickStep').style.display = 'block';
@@ -8992,11 +9366,14 @@ function renderSongs() {
             <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
           </div>
           <div style="display:flex;gap:4px;${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
-            <button class="level-btn ${s.level==='basis'?'active-basis':''}" title="Je kent de structuur, nog wat fouten" onclick="setLevel(${i},'basis')">Basis</button>
-            <button class="level-btn ${s.level==='bijna'?'active-bijna':''}" title="Soepel, kleine slordigheden" onclick="setLevel(${i},'bijna')">Bijna</button>
+            <button class="level-btn ${s.level==='basis'?'active-basis':''}" title="Kent de structuur" onclick="setLevel(${i},'basis')">Basis</button>
+            <button class="level-btn ${s.level==='bijna'?'active-bijna':''}" title="Soepel, bijna klaar" onclick="setLevel(${i},'bijna')">Bijna</button>
             <button class="level-btn ${s.level==='podium'?'active-podium':''}" title="Je speelt het live zonder problemen" onclick="setLevel(${i},'podium')">Podium</button>
           </div>
-          <button class="song-remove" onclick="removeSong(${i})" title="Verwijderen">✕</button>
+          ${s._confirmDelete
+            ? `<button class="song-remove" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:var(--danger);" onclick="removeSong(${i})" title="Bevestig verwijderen">Zeker?</button>`
+            : `<button class="song-remove" onclick="removeSong(${i})" title="Verwijderen">✕</button>`
+          }
         </div>
         ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 14px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
       `; }).join('')}
@@ -9009,8 +9386,18 @@ function setLevel(i, level) {
   renderSongs();
 }
 
+// TT-179-patroon (uit profiel-v2, TT-168-overgang): eerste klik op ✕ zet
+// een korte bevestiging ("Zeker?"), pas een tweede klik verwijdert echt —
+// zelfde tweeklaps-bevestiging als bij Annuleren (handleCancelClick),
+// hier lokaal op het nummer zelf i.p.v. een aparte knop.
 function removeSong(i) {
-  state.songs.splice(i,1);
+  if (!state.songs[i]) return;
+  if (!state.songs[i]._confirmDelete) {
+    state.songs[i]._confirmDelete = true;
+    renderSongs();
+    return;
+  }
+  state.songs.splice(i, 1);
   renderSongs();
 }
 
@@ -9018,8 +9405,10 @@ function removeSong(i) {
 
 // TT-46: prompt-chip vult het bio-veld aan i.p.v. te overschrijven, zodat
 // iemand meerdere prompts na elkaar kan gebruiken zonder tekst te verliezen.
-function applyBioPrompt(text) {
-  const el = document.getElementById('bio');
+// TT-168-overgang (02-09-2026): kern verplaatst naar de generieke
+// applyBioPromptTo(el, text) — nodig omdat de tegel "Wie ben je" hetzelfde
+// gedrag toepast op een ander element (#wbjBioModalTextarea, geen #bio).
+function applyBioPromptTo(el, text) {
   const current = el.value;
   if (!current.trim()) {
     el.value = text;
@@ -9027,9 +9416,14 @@ function applyBioPrompt(text) {
     const sep = /[\s\n]$/.test(current) ? '' : ' ';
     el.value = current + sep + text;
   }
-  state.bio = el.value;
   el.focus();
   el.setSelectionRange(el.value.length, el.value.length);
+  return el.value;
+}
+function applyBioPrompt(text) {
+  const el = document.getElementById('bio');
+  applyBioPromptTo(el, text);
+  state.bio = el.value;
 }
 
 function selectGoal(el, val) {
@@ -9177,27 +9571,6 @@ async function nextStep(from) {
   // invulde werd geblokkeerd. Dat strafte juist wie iets invulde.
   // Niveau per nummer is nu ook optioneel.
   // step 3 (doel) is bewust optioneel — mag later nog worden ingevuld
-  // Bugfix 23-08-2026 (gemeld door Ronald: "Opslaan is niet gelukt" direct na
-  // stap 1). editingMusicianId wordt al bij createAccountAndProfile() gezet,
-  // vlak vóór dit punt, in dezelfde klik. Zonder de state.onboarding-check
-  // hieronder deed élke "Verder →" tijdens een gloednieuwe registratie dus
-  // ook een volledige tussentijdse opslag (persistEditedProfile), met
-  // profile_complete:true en met alle nog niet bezochte velden (o.a.
-  // state.goal) nog op hun lege beginwaarde — dat liep vast op een
-  // check-constraint in de database. Silent-save-per-stap is alleen bedoeld
-  // voor het bewerken van een al bestaand, afgerond profiel (TT-121/TT-137);
-  // state.onboarding is precies het bestaande onderscheid daarvoor (false
-  // zodra een profiel al eerder is afgerond).
-  if (editingMusicianId && !state.onboarding) {
-    // TT-137: bij bewerken van een bestaand profiel slaat "Verder →" nu ook
-    // echt op — blijf op deze stap staan als het opslaan mislukt, anders
-    // denkt de gebruiker onterecht dat de wijziging al veilig staat.
-    const saved = await silentlySaveEditIfNeeded();
-    if (!saved) return;
-    // TT-143 (25-08-2026): korte melding, net als bij de losse Opslaan-knop.
-    editSnapshot = buildEditSnapshot();
-    showToast('Wijzigingen opgeslagen.');
-  }
   goTo(from + 1);
 }
 
@@ -9347,31 +9720,20 @@ async function createAccountAndProfile() {
   }
 }
 
-// TT-143 (25-08-2026): "Terug" slaat niet meer op (was TT-137: stil
-// opslaan). Gaat altijd meteen terug; is er iets gewijzigd sinds de laatste
-// opslag, dan alleen een korte melding dat dat niet is bewaard — de
-// gebruiker kiest zelf om terug te gaan zonder op te slaan.
+// TT-168-overgang (02-09-2026): "Terug" ging voorheen ook een "niet
+// opgeslagen"-melding tonen tijdens het bewerken van een bestaand profiel
+// via de wizard — dat pad bestaat niet meer (zie editMyProfile()). "Terug"
+// gaat nu altijd gewoon naar de vorige stap, zonder melding.
 async function prevStep(from) {
-  if (editingMusicianId && !state.onboarding && buildEditSnapshot() !== editSnapshot) {
-    showToast('Wijzigingen niet opgeslagen.');
-  }
   goTo(from - 1);
 }
 
 // TT-144 (25-08-2026): "Terug" op stap 1 — er is geen vorige stap, dus dit
-// verlaat de wizard zelf. Tijdens het bewerken van een bestaand profiel
-// (editingMusicianId, niet tijdens onboarding) gaat dat terug naar het
-// muzikantenprofiel, met dezelfde "niet opgeslagen"-melding als prevStep()
-// hierboven als er iets is gewijzigd. Tijdens een nieuwe registratie (nog
-// geen profiel om naar terug te gaan) gaat het naar de landingpagina.
+// verlaat de wizard zelf, naar de landingpagina. TT-168-overgang: ging
+// voorheen ook terug naar Mijn Profiel als je een bestaand profiel via de
+// wizard bewerkte — dat pad bestaat niet meer, dus dit is nu altijd een
+// gloednieuwe registratie die hier terugkomt.
 async function prevStepFromStart() {
-  if (editingMusicianId && !state.onboarding) {
-    if (buildEditSnapshot() !== editSnapshot) {
-      showToast('Wijzigingen niet opgeslagen.');
-    }
-    showView('myprofile', 'redirect');
-    return;
-  }
   showView('landing', 'redirect');
 }
 
@@ -9417,6 +9779,12 @@ function goTo(step) {
   window.scrollTo({top:0, behavior:'smooth'});
   // TT-142 (25-08-2026): geen automatische focus meer bij een stapwissel —
   // zie de toelichting bij showView() hierboven.
+
+  // TT-168-overgang (02-09-2026): tip-tekst bij "Je mediahoek" wisselt om de
+  // 2,5 seconde (zelfde patroon als de mhTipTimer in het tegelscherm) —
+  // alleen actief zolang die stap ook echt getoond wordt.
+  if (step === 4) wizardMhStartTipCycle();
+  else clearInterval(wizardMhTipTimer);
 }
 
 // ─── Personalisatie ──────────────────────────────────────────────────────────
@@ -10923,6 +11291,934 @@ function openMusicianNiveauInfoModal() {
     <p style="font-size:13px;color:var(--muted);">Loop de criteria per niveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg het niveau waar jij het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
   `;
   document.getElementById('niveauInfoModal').classList.add('visible');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TT-168-overgang (02-09-2026): tegeloverzicht + vijf bewerkschermen
+// ═══════════════════════════════════════════════════════════════════════
+
+// 1-op-1 uit profiel-v2.html overgezet, met twee aanpassingen om dubbele
+// code te voorkomen: de stads-suggestielijst hergebruikt de bestaande
+// onCitySearchInput()/closeAC()/.autocomplete-list-patroon (i.p.v. een
+// eigen .ac-items-systeem), en de instrument-/genrepicker + niveau-modals
+// zijn dezelfde cfg-registry als de wizard (zie initInstrumentPicker()/
+// initPicker() hierboven) — één modal, twee registraties.
+
+const TILES = [
+  { id: 'wieBenJe',   title: 'Wie ben je',      sub: 'naam - plaats - bio' },
+  { id: 'watSpeelJe', title: 'Wat speel je',    sub: 'instrumenten - niveau - genres - eigen nummers/covers' },
+  { id: 'watZoekJe',  title: 'Wat zoek je',     sub: 'muzikant - band - optreden - ambitie' },
+  { id: 'jeSetlist',  title: 'Je setlist',      sub: 'covers - eigen nummers' },
+  { id: 'mediahoek',  title: 'Je mediahoek',    sub: "video's - foto's - profielfoto" },
+];
+
+function renderTegels() {
+  const wrap = document.getElementById('tegelsWrap');
+  wrap.innerHTML = TILES.map(t => `
+    <div class="tile" onclick="openTegelScreen('${jsAttr(t.id)}')">
+      <div style="flex:1;">
+        <div class="tile-title">${escHtml(t.title)}</div>
+        <div class="tile-sub">${escHtml(t.sub)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── Schermnavigatie binnen het tegeloverzicht ────────────────────────────
+// Zelfde soort interne stap-switcher als de wizard (goTo()), maar dan met
+// een terugknop-stap in de browsergeschiedenis per subscherm (V-03-patroon,
+// zie de popstate-handler hieronder) — bewerken van een tegel is net zo'n
+// "sluit dit eerst"-scherm als een open modal of een open gesprek.
+const TEGEL_SCREENS = { wieBenJe: 'wieBenJeScreen', watSpeelJe: 'watSpeelJeScreen', watZoekJe: 'watZoekJeScreen', jeSetlist: 'jeSetlistScreen', mediahoek: 'mediahoekScreen' };
+let activeTegelScreen = 'overview';
+let tegelScreenHistoryPushed = false;
+
+function openTegelOverview() {
+  activeTegelScreen = 'overview';
+  tegelScreenHistoryPushed = false;
+  Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
+  document.getElementById('tegelOverviewScreen').style.display = '';
+  clearInterval(mhTipTimer);
+  renderTegels();
+}
+
+function openTegelScreen(id) {
+  if (!TEGEL_SCREENS[id]) return;
+  activeTegelScreen = id;
+  document.getElementById('tegelOverviewScreen').style.display = 'none';
+  Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
+  document.getElementById(TEGEL_SCREENS[id]).style.display = '';
+  if (!tegelScreenHistoryPushed) {
+    safeHistoryPush({ view: 'profieltegels', tegel: true }, '#profieltegels');
+    tegelScreenHistoryPushed = true;
+  }
+  if (id === 'wieBenJe') openWieBenJe();
+  else if (id === 'watSpeelJe') openWatSpeelJe();
+  else if (id === 'watZoekJe') openWatZoekJe();
+  else if (id === 'jeSetlist') openJeSetlist();
+  else if (id === 'mediahoek') openJeMediahoek();
+}
+
+function goToTegelOverview() {
+  tegelScreenHistoryPushed = false;
+  openTegelOverview();
+}
+
+// ─── Annuleer-/bevestigingsknop die zelf van functie wisselt (TT-181-vervolg)
+// Gedeeld door alle vijf tegels: btnId = de knop, hasChanges = functie die
+// true/false teruggeeft, onConfirm = actie bij bevestigen (of meteen als er
+// niets gewijzigd is), confirmText = optionele eigen bevestigingstekst.
+function handleCancelClick(btnId, hasChanges, onConfirm, confirmText) {
+  const text = confirmText || 'Wijzigingen wissen?';
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  if (!hasChanges()) { onConfirm(); return; }
+  if (btn.dataset.armed === '1') {
+    btn.dataset.armed = '';
+    btn.textContent = btn.dataset.originalText;
+    btn.classList.remove('btn-cancel-armed');
+    onConfirm();
+    return;
+  }
+  btn.dataset.armed = '1';
+  btn.dataset.originalText = btn.textContent;
+  btn.textContent = text;
+  btn.classList.add('btn-cancel-armed');
+  // Pas ná deze klik een listener toevoegen — anders vangt hij de huidige,
+  // nog bubbelende klik meteen weer af.
+  setTimeout(() => {
+    document.addEventListener('click', function onOutsideClick(e) {
+      if (btn.dataset.armed !== '1') return;
+      if (e.target === btn) return;
+      btn.dataset.armed = '';
+      btn.textContent = btn.dataset.originalText;
+      btn.classList.remove('btn-cancel-armed');
+    }, { once: true });
+  }, 0);
+}
+// Bij het openen van een tegel eventuele "Zeker?"-status opruimen — dekt
+// browser-terug of een directe hash-wijziging, die geen klik-event geven.
+function resetCancelButton(btnId) {
+  const btn = document.getElementById(btnId);
+  if (!btn || btn.dataset.armed !== '1') return;
+  btn.dataset.armed = '';
+  btn.textContent = btn.dataset.originalText || btn.textContent;
+  btn.classList.remove('btn-cancel-armed');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tegel: Wie ben je
+// ═══════════════════════════════════════════════════════════════════════
+// Opslaan raakt uitsluitend fname/lname/username/birth_date/zip/city/bio —
+// een eigen, smalle opslaanfunctie, geen hergebruik van de wizard-brede
+// persistEditedProfile() (die zou de andere vier tegels leegmaken, want hun
+// data staat nooit in deze kleine, lokale snapshot).
+
+let wbjSnapshot = null;
+let wbjUsernameOk = true;
+let wbjPostcodeTimeout, wbjCitySearchTimeout;
+let wbjPostcodeFailStreak = 0;
+let wbjPostcodeManualMode = false;
+
+function wbjFieldSnapshot() {
+  return JSON.stringify({
+    fname: document.getElementById('wbjFname').value.trim(),
+    lname: document.getElementById('wbjLname').value.trim(),
+    username: document.getElementById('wbjUsername').value.trim(),
+    birth_date: document.getElementById('wbjBirthDate').value.trim(),
+    zip: document.getElementById('wbjZip').value.trim(),
+    city: document.getElementById('wbjCity').value.trim(),
+    bio: document.getElementById('wbjBio').value.trim(),
+  });
+}
+
+async function openWieBenJe() {
+  resetCancelButton('wbjCancelBtn');
+  document.getElementById('wbjUsernameStatus').textContent = '';
+  document.getElementById('wbjPostcodeStatus').textContent = '';
+  document.getElementById('wbjEmail').value = currentUser?.email || '';
+  wbjPostcodeManualMode = false;
+  wbjPostcodeFailStreak = 0;
+  const wbjCityFieldReset = document.getElementById('wbjCity');
+  wbjCityFieldReset.readOnly = true;
+  wbjCityFieldReset.style.cursor = 'not-allowed';
+  // TT-180: birth_date hoort niet in deze select — authenticated heeft geen
+  // SELECT-recht op musicians.birth_date (geverifieerd via
+  // information_schema.column_privileges), een kale select met deze kolom
+  // erin faalt in zijn geheel. Apart ophalen via tt_get_my_birth_date().
+  // Parallel i.p.v. na elkaar — twee onafhankelijke aanvragen.
+  const [{ data, error }, { data: myBirthDate }] = await Promise.all([
+    db.from('musicians')
+      .select('fname, lname, username, zip, city, city_source, bio')
+      .eq('id', myMusicianId).single(),
+    db.rpc('tt_get_my_birth_date'),
+  ]);
+  if (error) {
+    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    return;
+  }
+  document.getElementById('wbjFname').value = data.fname || '';
+  document.getElementById('wbjLname').value = data.lname || '';
+  document.getElementById('wbjUsername').value = data.username || '';
+  document.getElementById('wbjBirthDate').value = fromISODate(myBirthDate);
+  document.getElementById('wbjZip').value = data.zip || '';
+  document.getElementById('wbjCity').value = data.city || '';
+  document.getElementById('wbjBio').value = data.bio || '';
+  wbjRenderBioPreview();
+  wbjUsernameOk = true;
+  wbjSnapshot = wbjFieldSnapshot();
+}
+
+// Bio bewerken in een eigen modal — meer ruimte dan het kleine tekstvakje
+// tussen de andere velden. #wbjBio (verborgen) blijft de echte waarde.
+function openWbjBioModal() {
+  document.getElementById('wbjBioModalTextarea').value = document.getElementById('wbjBio').value;
+  document.getElementById('wbjBioModal').classList.add('visible');
+  document.getElementById('wbjBioModalTextarea').focus();
+}
+function closeWbjBioModal() {
+  document.getElementById('wbjBioModal').classList.remove('visible');
+}
+function wbjSyncBioFromModal() {
+  const value = document.getElementById('wbjBioModalTextarea').value;
+  document.getElementById('wbjBio').value = value;
+  wbjRenderBioPreview();
+}
+function wbjRenderBioPreview() {
+  const value = document.getElementById('wbjBio').value.trim();
+  const preview = document.getElementById('wbjBioPreview');
+  if (value) {
+    preview.textContent = value.length > 70 ? value.slice(0, 70) + '…' : value;
+    preview.style.color = 'var(--text)';
+  } else {
+    preview.textContent = 'Bijv. Ik speel al 3 jaar gitaar...';
+    preview.style.color = 'var(--muted)';
+  }
+}
+function wbjBioPrompt(text) {
+  applyBioPromptTo(document.getElementById('wbjBioModalTextarea'), text);
+  wbjSyncBioFromModal();
+}
+
+// Gebruikersnaam: zelfde live-check als elders in de app.
+function onWbjUsernameInput() {
+  wbjUsernameOk = false;
+  checkUsernameAvailability('wbjUsernameStatus', 'wbjUsername', myMusicianId).then(ok => { wbjUsernameOk = ok; });
+}
+
+// Postcode → plaats, zelfde volgorde als elders: PDOK, dan cache, dan bij
+// herhaalde storing een handmatige zoeklijst i.p.v. een vrij tekstveld.
+// Eigen, lokale variabelen (wbjPostcodeFailStreak/wbjPostcodeManualMode) —
+// niet de gedeelde wizard-variabelen, dit is een aparte context.
+function onWbjPostcodeInput(rawValue) {
+  const statusEl = document.getElementById('wbjPostcodeStatus');
+  document.getElementById('wbjCity').value = '';
+  clearTimeout(wbjPostcodeTimeout);
+  const digits = rawValue.trim().replace(/\D/g, '');
+  document.getElementById('wbjZip').value = digits;
+  if (!/^[1-9][0-9]{3}$/.test(digits)) { statusEl.textContent = ''; return; }
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Bezig met opzoeken...';
+  wbjPostcodeTimeout = setTimeout(async () => {
+    const outcome = await lookupPostcodeCity(digits);
+    if (outcome.found) {
+      wbjPostcodeFailStreak = 0;
+      if (wbjPostcodeManualMode) wbjRelockCity();
+      document.getElementById('wbjCity').value = outcome.city;
+      statusEl.style.color = 'var(--accent)';
+      statusEl.textContent = `Gevonden: ${outcome.city}`;
+      setTimeout(() => { statusEl.textContent = ''; }, 2000);
+    } else if (outcome.reason === 'notfound') {
+      wbjEnableManualCity();
+    } else {
+      wbjPostcodeFailStreak++;
+      if (wbjPostcodeFailStreak >= 2) {
+        wbjEnableManualCity();
+      } else {
+        statusEl.style.color = 'var(--danger)';
+        statusEl.textContent = 'Kon postcode nu niet controleren. Probeer het nog eens.';
+      }
+    }
+  }, 500);
+}
+function wbjEnableManualCity() {
+  wbjPostcodeManualMode = true;
+  const field = document.getElementById('wbjCity');
+  field.readOnly = false;
+  field.style.cursor = '';
+  field.value = '';
+  field.placeholder = 'Typ je plaatsnaam en kies uit de lijst';
+  const statusEl = document.getElementById('wbjPostcodeStatus');
+  statusEl.style.color = 'var(--accent2)';
+  statusEl.textContent = 'We kunnen je plaats even niet automatisch ophalen — vul hem hieronder zelf in.';
+  field.focus();
+}
+function wbjRelockCity() {
+  wbjPostcodeManualMode = false;
+  const field = document.getElementById('wbjCity');
+  field.readOnly = true;
+  field.style.cursor = 'not-allowed';
+}
+
+function cancelWieBenJe() {
+  handleCancelClick('wbjCancelBtn', () => wbjFieldSnapshot() !== wbjSnapshot, goToTegelOverview);
+}
+
+async function saveWieBenJe() {
+  const fname = document.getElementById('wbjFname').value.trim();
+  const username = document.getElementById('wbjUsername').value.trim();
+  const birthDateStr = document.getElementById('wbjBirthDate').value.trim();
+  const zip = document.getElementById('wbjZip').value.trim();
+  const city = document.getElementById('wbjCity').value.trim();
+
+  if (!fname) { showToast('Voornaam is verplicht.'); return; }
+  if (!username || !wbjUsernameOk) { showToast('Kies eerst een beschikbare gebruikersnaam.'); return; }
+  if (birthDateStr.length !== 10) { showToast('Vul een volledige geboortedatum in.'); return; }
+  if (!/^[1-9][0-9]{3}$/.test(zip) || !city) { showToast('Vul een geldige postcode en plaats in.'); return; }
+
+  if (wbjFieldSnapshot() === wbjSnapshot) return;
+
+  const payload = {
+    fname,
+    lname: document.getElementById('wbjLname').value.trim() || null,
+    username,
+    birth_date: toISODate(birthDateStr),
+    zip,
+    city,
+    bio: document.getElementById('wbjBio').value.trim() || null,
+  };
+  const { error } = await db.from('musicians').update(payload).eq('id', myMusicianId);
+  if (error) {
+    showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(error));
+    return;
+  }
+  wbjSnapshot = wbjFieldSnapshot();
+  showToast('Wijzigingen opgeslagen.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tegel: Wat speel je
+// ═══════════════════════════════════════════════════════════════════════
+// Raakt uitsluitend musician_instruments, musician_genres en
+// musicians.repertoire_type.
+
+let wspState = { instruments: [], instrumentLevels: {}, genres: [] };
+let wspRepertoireType = '';
+let wspSnapshot = null;
+
+function wspFieldSnapshot() {
+  return JSON.stringify({
+    instruments: wspState.instruments,
+    instrumentLevels: wspState.instrumentLevels,
+    genres: wspState.genres,
+    repertoireType: wspRepertoireType,
+  });
+}
+
+async function openWatSpeelJe() {
+  resetCancelButton('wspCancelBtn');
+  const { data, error } = await db.from('musicians')
+    .select('repertoire_type, musician_instruments(instrument, niveau), musician_genres(genre)')
+    .eq('id', myMusicianId).single();
+  if (error) {
+    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    return;
+  }
+  wspState.instruments = (data.musician_instruments || []).map(x => x.instrument);
+  wspState.instrumentLevels = {};
+  (data.musician_instruments || []).forEach(x => { if (x.niveau) wspState.instrumentLevels[x.instrument] = x.niveau; });
+  wspState.genres = (data.musician_genres || []).map(x => x.genre);
+  wspRepertoireType = data.repertoire_type || '';
+
+  initInstrumentPicker({
+    id: 'wsp', fieldId: 'wspInstrumentField', badgeRowId: 'wspInstrumentBadgeRow',
+    getInstruments: () => wspState.instruments, getLevels: () => wspState.instrumentLevels,
+  });
+  initPicker({
+    id: 'wspGenre', fieldId: 'wspGenreField', badgeRowId: 'wspGenreBadgeRow',
+    options: GENRES, getList: () => wspState.genres,
+    placeholder: 'Kies een genre', sheetTitle: 'Kies een genre',
+  });
+  wspRenderRepertoireType();
+  wspSnapshot = wspFieldSnapshot();
+}
+
+function wspSelectRepertoireType(el, val) {
+  const already = el.classList.contains('selected');
+  document.querySelectorAll('#wspRepertoireTypeGrid .tag').forEach(t => t.classList.remove('selected'));
+  if (already) { wspRepertoireType = ''; return; }
+  el.classList.add('selected');
+  wspRepertoireType = val;
+}
+function wspRenderRepertoireType() {
+  document.querySelectorAll('#wspRepertoireTypeGrid .tag').forEach(t => {
+    t.classList.toggle('selected', t.dataset.val === wspRepertoireType);
+  });
+}
+
+function cancelWatSpeelJe() {
+  handleCancelClick('wspCancelBtn', () => wspFieldSnapshot() !== wspSnapshot, goToTegelOverview);
+}
+
+async function saveWatSpeelJe() {
+  if (!wspState.instruments.length) { showToast('Selecteer minimaal één instrument.'); return; }
+  if (!wspState.genres.length) { showToast('Selecteer minimaal één genre.'); return; }
+
+  if (wspFieldSnapshot() === wspSnapshot) return;
+
+  const { error: uErr } = await db.from('musicians')
+    .update({ repertoire_type: wspRepertoireType || null }).eq('id', myMusicianId);
+  if (uErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(uErr)); return; }
+
+  await db.from('musician_instruments').delete().eq('musician_id', myMusicianId);
+  await db.from('musician_genres').delete().eq('musician_id', myMusicianId);
+
+  const { error: iErr } = await db.from('musician_instruments').insert(
+    wspState.instruments.map(instrument => ({ musician_id: myMusicianId, instrument, niveau: wspState.instrumentLevels[instrument] || null }))
+  );
+  if (iErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(iErr)); return; }
+
+  const { error: gErr } = await db.from('musician_genres').insert(
+    wspState.genres.map(genre => ({ musician_id: myMusicianId, genre }))
+  );
+  if (gErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(gErr)); return; }
+
+  wspSnapshot = wspFieldSnapshot();
+  showToast('Wijzigingen opgeslagen.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tegel: Wat zoek je
+// ═══════════════════════════════════════════════════════════════════════
+// Alle drie velden optioneel. Raakt uitsluitend musicians.goal,
+// musicians.rehearsal_frequency, musicians.musical_ambition.
+
+let wzjGoal = '';
+let wzjRehearsalFrequency = '';
+let wzjMusicalAmbition = '';
+let wzjSnapshot = null;
+
+function wzjFieldSnapshot() {
+  return JSON.stringify({ goal: wzjGoal, rehearsalFrequency: wzjRehearsalFrequency, musicalAmbition: wzjMusicalAmbition });
+}
+
+async function openWatZoekJe() {
+  resetCancelButton('wzjCancelBtn');
+  const { data, error } = await db.from('musicians')
+    .select('goal, rehearsal_frequency, musical_ambition')
+    .eq('id', myMusicianId).single();
+  if (error) {
+    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    return;
+  }
+  wzjGoal = data.goal || '';
+  wzjRehearsalFrequency = data.rehearsal_frequency || '';
+  wzjMusicalAmbition = data.musical_ambition || '';
+  wzjRenderAll();
+  wzjSnapshot = wzjFieldSnapshot();
+}
+
+function wzjRenderAll() {
+  document.querySelectorAll('#wzjGoalOptions .goal-card').forEach(c => {
+    c.classList.toggle('selected', c.dataset.val === wzjGoal);
+  });
+  document.querySelectorAll('#wzjRehearsalFreqGrid .tag').forEach(t => {
+    t.classList.toggle('selected', t.dataset.val === wzjRehearsalFrequency);
+  });
+  document.querySelectorAll('#wzjAmbitionGrid .tag').forEach(t => {
+    t.classList.toggle('selected', t.dataset.val === wzjMusicalAmbition);
+  });
+}
+
+function wzjSelectGoal(el, val) {
+  document.querySelectorAll('#wzjGoalOptions .goal-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  wzjGoal = val;
+}
+function wzjSelectRehearsalFrequency(el, val) {
+  const already = el.classList.contains('selected');
+  document.querySelectorAll('#wzjRehearsalFreqGrid .tag').forEach(t => t.classList.remove('selected'));
+  if (already) { wzjRehearsalFrequency = ''; return; }
+  el.classList.add('selected');
+  wzjRehearsalFrequency = val;
+}
+function wzjSelectMusicalAmbition(el, val) {
+  const already = el.classList.contains('selected');
+  document.querySelectorAll('#wzjAmbitionGrid .tag').forEach(t => t.classList.remove('selected'));
+  if (already) { wzjMusicalAmbition = ''; return; }
+  el.classList.add('selected');
+  wzjMusicalAmbition = val;
+}
+
+function cancelWatZoekJe() {
+  handleCancelClick('wzjCancelBtn', () => wzjFieldSnapshot() !== wzjSnapshot, goToTegelOverview);
+}
+
+async function saveWatZoekJe() {
+  if (wzjFieldSnapshot() === wzjSnapshot) return;
+
+  const { error } = await db.from('musicians').update({
+    goal: wzjGoal || null,
+    rehearsal_frequency: wzjRehearsalFrequency || null,
+    musical_ambition: wzjMusicalAmbition || null,
+  }).eq('id', myMusicianId);
+  if (error) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(error)); return; }
+
+  wzjSnapshot = wzjFieldSnapshot();
+  showToast('Wijzigingen opgeslagen.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tegel: Je setlist
+// ═══════════════════════════════════════════════════════════════════════
+// Zelfde iTunes-zoekstroom als de wizard: eerst artiest zoeken, dan één
+// keer per artiest de volledige nummerlijst ophalen en lokaal filteren.
+// Raakt uitsluitend musician_songs. repertoire_type hoort hier niet meer
+// bij — dat veld verhuisde naar "Wat speel je".
+
+let jstSongs = [];
+let jstSnapshot = null;
+let jstSelectedArtist = null; // { id, name }
+let jstSearchTimeout = null;
+const jstArtistCache = new Map();
+const jstTrackCache = new Map();
+
+// _confirmDelete is bewust NIET meegenomen — tijdelijke UI-status voor de
+// verwijder-bevestiging (jstRemoveSong()), geen opgeslagen gegeven.
+function jstFieldSnapshot() {
+  return JSON.stringify(jstSongs.map(s => ({ title: s.title, artist: s.artist, level: s.level })));
+}
+
+async function openJeSetlist() {
+  resetCancelButton('jstCancelBtn');
+  const { data, error } = await db.from('musicians')
+    .select('musician_songs(song_title, song_artist, mastery_level)')
+    .eq('id', myMusicianId).single();
+  if (error) {
+    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    return;
+  }
+  jstSongs = (data.musician_songs || []).map(s => ({ title: s.song_title, artist: s.song_artist, level: s.mastery_level }));
+  jstSelectedArtist = null;
+  document.getElementById('jstArtistSearch').value = '';
+  document.getElementById('jstTrackSearch').value = '';
+  document.getElementById('jstTrackWrap').style.display = 'none';
+  jstRenderSongs();
+  jstSnapshot = jstFieldSnapshot();
+}
+
+function jstSelectFirstAc(id) {
+  const list = document.getElementById(id);
+  const first = list && list.querySelector('.ac-item[onmousedown]');
+  if (first && first.onmousedown) first.onmousedown();
+}
+
+async function jstOnArtistSearch(q) {
+  const ac = document.getElementById('jstArtistAc');
+  if (q.trim().length < 2) { ac.classList.remove('open'); return; }
+  ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Zoeken...</span></div>';
+  ac.classList.add('open');
+  const cacheKey = q.trim().toLowerCase();
+  if (jstArtistCache.has(cacheKey)) {
+    jstRenderArtistResults(ac, jstArtistCache.get(cacheKey));
+    return;
+  }
+  clearTimeout(jstSearchTimeout);
+  jstSearchTimeout = setTimeout(async () => {
+    try {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=7&country=NL`);
+      const data = await res.json();
+      const artists = (data.results || []).slice(0, 6);
+      jstArtistCache.set(cacheKey, artists);
+      jstRenderArtistResults(ac, artists);
+    } catch (e) {
+      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoekopdracht mislukt</span></div>';
+    }
+  }, 400);
+}
+function jstRenderArtistResults(ac, artists) {
+  if (!artists.length) {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Geen artiesten gevonden</span></div>';
+    return;
+  }
+  ac.innerHTML = artists.map(a => `
+    <div class="ac-item" onmousedown="jstSelectArtist('${jsAttr(a.artistId)}','${jsAttr(a.artistName)}')">
+      ${escHtml(a.artistName)}${a.primaryGenreName ? ` <span style="color:var(--muted);font-size:11px;">(${escHtml(a.primaryGenreName)})</span>` : ''}
+    </div>`).join('');
+}
+function jstSelectArtist(id, name) {
+  jstSelectedArtist = { id, name };
+  document.getElementById('jstArtistSearch').value = name;
+  closeAC('jstArtistAc');
+  const wrap = document.getElementById('jstTrackWrap');
+  wrap.style.display = '';
+  document.getElementById('jstTrackLabel').textContent = 'Nummer van ' + name;
+  document.getElementById('jstTrackSearch').value = '';
+  document.getElementById('jstTrackSearch').focus();
+  closeAC('jstTrackAc');
+}
+async function jstFetchArtistSongs(artistId) {
+  if (jstTrackCache.has(artistId)) return jstTrackCache.get(artistId);
+  const fetchPromise = (async () => {
+    const url = `https://itunes.apple.com/lookup?id=${encodeURIComponent(artistId)}&entity=song&limit=200&country=NL`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return (data.results || []).filter(r => r.wrapperType === 'track');
+  })();
+  jstTrackCache.set(artistId, fetchPromise);
+  const songs = await fetchPromise;
+  jstTrackCache.set(artistId, songs);
+  return songs;
+}
+async function jstOnTrackSearch(q) {
+  const ac = document.getElementById('jstTrackAc');
+  if (!jstSelectedArtist) return;
+  if (!q.length) { ac.classList.remove('open'); return; }
+  ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Zoeken...</span></div>';
+  ac.classList.add('open');
+  try {
+    const songs = await jstFetchArtistSongs(jstSelectedArtist.id);
+    jstRenderTrackResults(ac, songs, q);
+  } catch (e) {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoekopdracht mislukt</span></div>';
+  }
+}
+function jstRenderTrackResults(ac, songs, q) {
+  const qLower = q.toLowerCase();
+  const seen = new Set();
+  const results = (songs || [])
+    .filter(r => {
+      const title = r.trackName;
+      if (!title) return false;
+      if (!title.toLowerCase().includes(qLower)) return false;
+      const key = title.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      if (jstSongs.find(s => s.title.toLowerCase() === title.toLowerCase() && s.artist.toLowerCase() === jstSelectedArtist.name.toLowerCase())) return false;
+      return true;
+    })
+    .slice(0, 8);
+  if (!results.length) {
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Geen nummers gevonden</span></div>';
+    return;
+  }
+  ac.innerHTML = results.map(r => `
+    <div class="ac-item" onmousedown="jstAddSong('${jsAttr(r.trackName)}','${jsAttr(jstSelectedArtist.name)}')">${escHtml(r.trackName)}</div>`).join('');
+}
+function jstAddSong(title, artist) {
+  if (jstSongs.find(s => s.title === title && s.artist === artist)) return;
+  jstSongs.push({ title, artist, level: null });
+  document.getElementById('jstArtistSearch').value = '';
+  document.getElementById('jstTrackSearch').value = '';
+  document.getElementById('jstTrackWrap').style.display = 'none';
+  closeAC('jstTrackAc');
+  closeAC('jstArtistAc');
+  jstSelectedArtist = null;
+  jstRenderSongs();
+}
+function jstRenderSongs() {
+  const list = document.getElementById('jstSongsList');
+  const empty = document.getElementById('jstSongsListEmpty');
+  if (!jstSongs.length) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = '';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  const displayOrder = jstSongs.map((s, i) => i)
+    .sort((ia, ib) => compareArtistTitle(jstSongs[ia].artist, jstSongs[ia].title, jstSongs[ib].artist, jstSongs[ib].title));
+  list.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
+      <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
+        <span>Band / Artiest — Nummer</span><span style="margin-right:40px;">Beheersing</span><span></span>
+      </div>
+      ${displayOrder.map(i => { const s = jstSongs[i]; return `
+        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;">
+          <div>
+            <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
+            <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
+          </div>
+          <div style="display:flex;gap:4px;${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
+            <button type="button" class="level-btn ${s.level==='basis'?'active-basis':''}" title="Kent de structuur" onclick="jstSetLevel(${i},'basis')">Basis</button>
+            <button type="button" class="level-btn ${s.level==='bijna'?'active-bijna':''}" title="Soepel, bijna klaar" onclick="jstSetLevel(${i},'bijna')">Bijna</button>
+            <button type="button" class="level-btn ${s.level==='podium'?'active-podium':''}" title="Speelt het live zonder problemen" onclick="jstSetLevel(${i},'podium')">Podium</button>
+          </div>
+          ${s._confirmDelete
+            ? `<button type="button" class="song-remove" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:var(--danger);" onclick="jstRemoveSong(${i})" title="Bevestig verwijderen">Zeker?</button>`
+            : `<button type="button" class="song-remove" onclick="jstRemoveSong(${i})" title="Verwijderen" aria-label="Verwijder ${escAttr(s.title)}">✕</button>`
+          }
+        </div>
+        ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 14px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
+      `; }).join('')}
+    </div>`;
+}
+function jstSetLevel(i, level) {
+  jstSongs[i].level = level;
+  jstRenderSongs();
+}
+function jstRemoveSong(i) {
+  if (!jstSongs[i]) return;
+  if (!jstSongs[i]._confirmDelete) {
+    jstSongs[i]._confirmDelete = true;
+    jstRenderSongs();
+    return;
+  }
+  jstSongs.splice(i, 1);
+  jstRenderSongs();
+}
+
+function cancelJeSetlist() {
+  handleCancelClick('jstCancelBtn', () => jstFieldSnapshot() !== jstSnapshot, goToTegelOverview);
+}
+
+async function saveJeSetlist() {
+  if (jstFieldSnapshot() === jstSnapshot) return;
+
+  await db.from('musician_songs').delete().eq('musician_id', myMusicianId);
+  if (jstSongs.length) {
+    const { error } = await db.from('musician_songs').insert(
+      jstSongs.map(s => ({ musician_id: myMusicianId, song_title: s.title, song_artist: s.artist, mastery_level: s.level }))
+    );
+    if (error) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(error)); return; }
+  }
+  jstSnapshot = jstFieldSnapshot();
+  showToast('Wijzigingen opgeslagen.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tegel: Je mediahoek
+// ═══════════════════════════════════════════════════════════════════════
+// Foto's/video's/profielfoto gaan meteen naar Storage zodra ze gekozen
+// worden. Opslaan raakt uitsluitend musicians.avatar_url en musician_media
+// (verwijderen + opnieuw invullen).
+
+let mhAvatarUrl = null;
+let mhMediaFiles = [];
+let mhMediaLinks = [];
+let mhSnapshot = null;
+
+const MH_TIPS = [
+  'toon de energie die jij als muzikant wil laten zien.',
+  'een compleet profiel krijgt veel meer aandacht.',
+];
+let mhTipIndex = 0;
+let mhTipTimer = null;
+function mhStartTipCycle() {
+  clearInterval(mhTipTimer);
+  mhTipIndex = 0;
+  mhRenderTip();
+  mhTipTimer = setInterval(() => {
+    mhTipIndex = (mhTipIndex + 1) % MH_TIPS.length;
+    mhRenderTip();
+  }, 2500);
+}
+function mhRenderTip() {
+  const el = document.getElementById('mhTipText');
+  if (!el) return;
+  el.innerHTML = `<strong>Tip:</strong> ${escHtml(MH_TIPS[mhTipIndex])}`;
+}
+
+function mhFieldSnapshot() {
+  return JSON.stringify({
+    avatarUrl: mhAvatarUrl,
+    mediaFiles: mhMediaFiles.map(m => ({ url: m.url, type: m.type, uploading: m.uploading })),
+    mediaLinks: mhMediaLinks,
+  });
+}
+
+async function openJeMediahoek() {
+  resetCancelButton('mhCancelBtn');
+  resetCancelButton('mhAvatarRemoveBtn');
+  mhStartTipCycle();
+  const { data, error } = await db.from('musicians')
+    .select('avatar_url, musician_media(media_type, url, platform)')
+    .eq('id', myMusicianId).single();
+  if (error) {
+    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    return;
+  }
+  mhAvatarUrl = data.avatar_url || null;
+  mhMediaFiles = (data.musician_media || [])
+    .filter(x => x.media_type === 'foto' || x.media_type === 'video')
+    .map(x => ({ name: '', url: x.url, path: null, type: x.media_type, uploading: false }));
+  mhMediaLinks = (data.musician_media || []).filter(x => x.media_type === 'link').map(x => ({ url: x.url }));
+
+  mhRenderAvatar();
+  mhRenderMediaGrid();
+  mhRenderLinksList();
+  const mhScreen = document.getElementById('mediahoekScreen');
+  mhScreen.querySelectorAll('.media-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
+  mhScreen.querySelectorAll('.media-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
+  mhSnapshot = mhFieldSnapshot();
+}
+
+function switchMhMediaTab(tab, el) {
+  const mhScreen = document.getElementById('mediahoekScreen');
+  mhScreen.querySelectorAll('.media-tab').forEach(t => t.classList.remove('active'));
+  mhScreen.querySelectorAll('.media-pane').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(tab === 'upload' ? 'mhPaneUpload' : 'mhPaneLinks').classList.add('active');
+}
+
+function mhRenderAvatar() {
+  const preview = document.getElementById('mhAvatarPreview');
+  if (mhAvatarUrl) {
+    preview.innerHTML = `<img src="${safeUrl(mhAvatarUrl)}" alt="profielfoto">`;
+    document.getElementById('mhAvatarRemoveBtn').classList.add('visible');
+  } else {
+    preview.innerHTML = `<span id="mhAvatarInitials">T</span>`;
+    document.getElementById('mhAvatarRemoveBtn').classList.remove('visible');
+    resetCancelButton('mhAvatarRemoveBtn');
+  }
+}
+
+function mhHandleAvatarUpload(file) {
+  if (!file) return;
+  const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
+  if (typeProblem) { showToast(typeProblem); return; }
+  if (file.size > 5 * 1024 * 1024) { showToast('Afbeelding is te groot. Maximum 5 MB.'); return; }
+
+  const blobUrl = URL.createObjectURL(file);
+  const preview = document.getElementById('mhAvatarPreview');
+  preview.innerHTML = `<img src="${blobUrl}" alt="profielfoto">
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);border-radius:50%;">
+      <div style="width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;"></div>
+    </div>`;
+  preview.style.position = 'relative';
+
+  uploadAvatarFile(file, currentUser.id).then(({ url }) => {
+    mhAvatarUrl = url;
+    mhRenderAvatar();
+  }).catch(e => {
+    showToast(friendlyErrorMessage(e));
+    mhRenderAvatar();
+  });
+}
+
+function mhAskRemoveAvatar() {
+  handleCancelClick('mhAvatarRemoveBtn', () => true, mhRemoveAvatar, 'Foto verwijderen. Zeker weten?');
+}
+function mhRemoveAvatar() {
+  mhAvatarUrl = null;
+  mhRenderAvatar();
+}
+
+function mhHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('mhDropZone').classList.remove('drag-over');
+  mhHandleFileSelect(e.dataTransfer.files);
+}
+
+function mhHandleFileSelect(files) {
+  Array.from(files).forEach(file => {
+    if (mhMediaFiles.length >= 8) { showToast('Maximum 8 bestanden.'); return; }
+    const isVideo = (file.type || '').toLowerCase().startsWith('video/');
+    const typeProblem = fileTypeProblem(file, MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
+    if (typeProblem) { showToast(`"${file.name}": ${typeProblem}`); return; }
+    if (file.size > 50 * 1024 * 1024) { showToast(`"${file.name}" is te groot. Maximum 50 MB.`); return; }
+
+    const blobUrl = URL.createObjectURL(file);
+    const type = isVideo ? 'video' : 'foto';
+    const entry = { name: file.name, url: blobUrl, path: null, type, uploading: true };
+    mhMediaFiles.push(entry);
+    mhRenderMediaGrid();
+
+    uploadMediaFile(file, currentUser.id).then(({ url, path }) => {
+      entry.url = url;
+      entry.path = path;
+      entry.uploading = false;
+      mhRenderMediaGrid();
+    }).catch(e => {
+      showToast(`"${file.name}": ${friendlyErrorMessage(e)}`);
+      const idx = mhMediaFiles.indexOf(entry);
+      if (idx !== -1) mhMediaFiles.splice(idx, 1);
+      mhRenderMediaGrid();
+    });
+  });
+}
+
+function mhRenderMediaGrid() {
+  const grid = document.getElementById('mhMediaGrid');
+  grid.innerHTML = mhMediaFiles.map((m, i) => `
+    <div class="media-thumb">
+      ${m.type === 'foto'
+        ? `<img src="${safeUrl(m.url)}" alt="${escHtml(m.name)}">`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Video</div>`
+      }
+      ${m.uploading ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);"><div style="width:20px;height:20px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;"></div></div>` : ''}
+      <div class="thumb-type">${escHtml(m.type)}</div>
+      <button class="thumb-remove" onclick="mhRemoveMedia(${i})" aria-label="Verwijderen">✕</button>
+    </div>`).join('');
+}
+
+function mhRemoveMedia(i) {
+  const entry = mhMediaFiles[i];
+  mhMediaFiles.splice(i, 1);
+  mhRenderMediaGrid();
+  if (entry?.path) {
+    db.storage.from('media').remove([entry.path]).then(() => {}).catch(() => {});
+  }
+}
+
+function mhAddLinkRow() {
+  mhMediaLinks.push({ url: '' });
+  mhRenderLinksList();
+}
+
+function mhRenderLinksList() {
+  const list = document.getElementById('mhLinksList');
+  list.innerHTML = mhMediaLinks.map((l, i) => `
+    <div class="link-row">
+      <span class="link-type-badge">${escHtml(l.url ? detectPlatform(l.url) : 'Link')}</span>
+      <input type="url" value="${escHtml(l.url || '')}" placeholder="https://youtube.com/watch?v=..."
+        oninput="mhUpdateLinkUrl(${i}, this)">
+      <button class="song-remove" onclick="mhRemoveLink(${i})" aria-label="Verwijderen">✕</button>
+    </div>`).join('');
+}
+
+function mhUpdateLinkUrl(i, el) {
+  if (!mhMediaLinks[i]) return;
+  mhMediaLinks[i].url = el.value;
+  const badge = el.previousElementSibling;
+  if (badge) badge.textContent = el.value ? detectPlatform(el.value) : 'Link';
+}
+
+function mhRemoveLink(i) {
+  mhMediaLinks.splice(i, 1);
+  mhRenderLinksList();
+}
+
+function cancelJeMediahoek() {
+  handleCancelClick('mhCancelBtn', () => mhFieldSnapshot() !== mhSnapshot, goToTegelOverview);
+}
+
+async function saveJeMediahoek() {
+  if (mhFieldSnapshot() === mhSnapshot) return;
+
+  const { error: uErr } = await db.from('musicians')
+    .update({ avatar_url: mhAvatarUrl || null }).eq('id', myMusicianId);
+  if (uErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(uErr)); return; }
+
+  await db.from('musician_media').delete().eq('musician_id', myMusicianId);
+
+  const linkMedia = mhMediaLinks
+    .filter(l => l.url.trim())
+    .map(l => ({ musician_id: myMusicianId, media_type: 'link', url: l.url, platform: detectPlatform(l.url) }));
+  if (linkMedia.length) {
+    const { error: lErr } = await db.from('musician_media').insert(linkMedia);
+    if (lErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(lErr)); return; }
+  }
+
+  const fileMedia = mhMediaFiles
+    .filter(m => m.url && !m.uploading && !m.url.startsWith('blob:'))
+    .map(m => ({ musician_id: myMusicianId, media_type: m.type, url: m.url }));
+  if (fileMedia.length) {
+    const { error: fErr } = await db.from('musician_media').insert(fileMedia);
+    if (fErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(fErr)); return; }
+  }
+
+  mhSnapshot = mhFieldSnapshot();
+  showToast('Wijzigingen opgeslagen.');
 }
 
 // TT-57 (12-08-2026): uitleg bij "Beste match", zonder een matchscore of
