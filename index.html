@@ -381,26 +381,6 @@
   }
   .bio-prompt-chip:hover { border-color: var(--accent); color: var(--accent); border-style: solid; }
 
-  /* Genre tags */
-  .genre-tag {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    /* TT-U23 (12-08-2026): tikdoel minimaal 44px hoog. */
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 6px 16px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-    user-select: none;
-    letter-spacing: 0.5px;
-  }
-
-  .genre-tag:hover { border-color: var(--accent); color: var(--accent); }
-  .genre-tag.selected { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
-
   /* Song search */
   .song-search-wrap {
     position: relative;
@@ -523,16 +503,6 @@
   .goal-card .goal-label { font-size: 13px; font-weight: 400; }
   .goal-card .goal-desc { font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 300; }
 
-  /* Navigation */
-  .nav-buttons {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
-  }
-
   /* TT-142/TT-143 (25-08-2026): actiebalk herzien op verzoek van Ronald
      (telefoonscreenshots). Was twee rijen, veel hoger dan de vaste onderbalk
      (Zoeken/Berichten/Bands/Profiel) eronder — samen met die onderbalk (die
@@ -578,7 +548,6 @@
   }
   .wizard-btn:hover { filter: brightness(1.08); }
   .wizard-btn-accent { background: var(--accent); color: #4a4a4a; }
-  .wizard-btn-muted { background: var(--surface2); color: var(--accent); border: 1px solid var(--border); }
 
   /* Ruimte houden voor de vaste balk hierboven, zodat het laatste veld van
      elke stap er nooit achter verdwijnt. Bewust als losse padding-bottom
@@ -5768,27 +5737,6 @@ function displayNameOf(m) {
 // functie — nooit meer m.role rechtstreeks in de HTML.
 function roleLabel(role) {
   return role === 'Oprichter' ? 'Beheerder' : (role || 'Lid');
-}
-
-// TT-51-uitbreiding (12-08-2026, Ronalds beslissing): sterren in het
-// zoekresultaat voor het gezochte instrument. Een muzikant kan meerdere
-// instrumenten met elk een eigen niveau hebben — zonder een actief
-// instrumentfilter is niet ondubbelzinnig te zeggen welk niveau relevant is,
-// dus dan tonen we niets (geen filter = geen sterren in de rij/kaart).
-// Ronald: "als we TT-55 uitvoeren komt dat er beter uit" — dit is bewust een
-// tussenoplossing, geen definitieve matchlogica.
-function musicianResultNiveauHTML(m) {
-  if (!filterInstruments.length) return '';
-  // TT-55/TT-183 (12-08-2026, uitgebreid 03-09-2026): sinds het instrument-
-  // filter maximaal 1 instrument + optioneel Zang en/of Songwriting toelaat,
-  // is het instrument (niet Zang, niet Songwriting) het "gezochte
-  // instrument" voor de ster. Is er geen los instrument gekozen, dan valt
-  // dit terug op de eerste gekozen uitzondering.
-  const primary = filterInstruments.find(i => i !== 'Zang' && i !== 'Songwriting') || filterInstruments[0];
-  const match = (m.musician_instruments || []).find(x => x.instrument === primary)
-    || (m.musician_instruments || []).find(x => filterInstruments.includes(x.instrument));
-  if (!match || match.niveau == null) return '';
-  return starDisplayHTML(match.niveau);
 }
 
 function musicianRowHTML(m) {
@@ -12238,28 +12186,6 @@ async function saveJeMediahoek() {
 
   mhSnapshot = mhFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
-}
-
-// TT-57 (12-08-2026): uitleg bij "Beste match", zonder een matchscore of
-// percentage te tonen — die blijft intern (zie zoekfunctienaslagwerk.md
-// §4.2). Beschrijft alleen wat de gebruiker zelf kan zien en beïnvloeden:
-// het instrumentfilter (TT-55, harde filter), genre-overlap, afstand
-// en naam als laatste twee tie-breaks. Zelfde tekst voor muzikanten- en
-// bandzoeken — de volgorde werkt identiek voor beide (sortMusicianList()/
-// sortBandList()).
-function openRankingInfoModal() {
-  document.getElementById('niveauInfoModalContent').innerHTML = `
-    <div class="filter-title" style="margin-bottom:4px;">Hoe bepalen we "Beste match"?</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">We werken in vaste stappen. Elke stap beslist pas als de vorige stap gelijk staat.</p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;"><strong style="color:var(--text);">1. Instrument.</strong> Je kiest één instrument om op te zoeken, met zang als losse extra keuze. Alleen wie daarbij past, staat in het resultaat.</p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;"><strong style="color:var(--text);">2. Genre.</strong> Binnen dat resultaat staan profielen met een overlappend genre bovenaan.</p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:10px;"><strong style="color:var(--text);">3. Afstand.</strong> Staat het genre gelijk, dan staat de dichtstbijzijnde eerst.</p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;"><strong style="color:var(--text);">4. Naam.</strong> Staat ook de afstand gelijk, dan sorteren we op naam.</p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;"><strong style="color:var(--text);">Vóór al het bovenstaande:</strong> een profiel dat langer dan zes maanden niet is bijgewerkt, staat altijd onderaan. Update je profiel om weer mee te tellen.</p>
-    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Vul je profiel volledig in</div>
-    <p style="font-size:13px;color:var(--muted);">Een compleet profiel — instrumenten, genre, bio, repertoire — leidt sneller tot een goede match. Vul zoveel mogelijk in.</p>
-  `;
-  document.getElementById('niveauInfoModal').classList.add('visible');
 }
 
 function selectBandStatus(el, val) {
