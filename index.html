@@ -2497,6 +2497,13 @@
     <button class="nav-menu-item" id="navPrivacy" onclick="closeNavMenu();showView('privacy')">Privacyverklaring</button>
     <button class="nav-menu-item" id="navTerms" onclick="closeNavMenu();showView('terms')">Gebruiksvoorwaarden</button>
     <button class="nav-menu-item" id="navGedragscode" onclick="closeNavMenu();showView('gedragscode')">Gedragscode</button>
+    <!-- TT-186 (03-09-2026): Instellingen, alleen zichtbaar ingelogd (zelfde
+         display-patroon als navLogout hieronder, via onUserLoggedIn/Out).
+         Bevat voorlopig alleen Account verwijderen — kwam uit het
+         profielmenu, want dat is accountbeheer, geen profielinhoud. Bewust
+         niet direct zichtbaar/aanklikbaar: een destructieve actie hoort niet
+         op de eerste laag (huisstijl §8). -->
+    <button class="nav-menu-item" id="navSettings" onclick="closeNavMenu();showView('instellingen')" style="display:none;">Instellingen</button>
     <!-- TT-176 (01-09-2026): TT-166 (28-08-2026) haalde Uitloggen hier weg
          en zette 'm uitsluitend bij Mijn Profiel — Ronald wil 'm op eigen
          verzoek terug in het hamburgermenu. Alleen zichtbaar ingelogd
@@ -3068,7 +3075,7 @@
     </div>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="wbjCancelBtn" onclick="cancelWieBenJe()">Annuleren</button>
+      <button class="btn btn-ghost" id="wbjCancelBtn" onclick="cancelWieBenJe()">Terug</button>
       <button class="btn btn-primary" onclick="saveWieBenJe()">Opslaan</button>
     </div>
   </div>
@@ -3113,7 +3120,7 @@
     </div>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="wspCancelBtn" onclick="cancelWatSpeelJe()">Annuleren</button>
+      <button class="btn btn-ghost" id="wspCancelBtn" onclick="cancelWatSpeelJe()">Terug</button>
       <button class="btn btn-primary" onclick="saveWatSpeelJe()">Opslaan</button>
     </div>
   </div>
@@ -3169,7 +3176,7 @@
     </div>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="wzjCancelBtn" onclick="cancelWatZoekJe()">Annuleren</button>
+      <button class="btn btn-ghost" id="wzjCancelBtn" onclick="cancelWatZoekJe()">Terug</button>
       <button class="btn btn-primary" onclick="saveWatZoekJe()">Opslaan</button>
     </div>
   </div>
@@ -3213,7 +3220,7 @@
     <p id="jstSongsListEmpty" style="font-size:13px;color:var(--muted);margin-top:4px;">Nog geen nummers toegevoegd.</p>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="jstCancelBtn" onclick="cancelJeSetlist()">Annuleren</button>
+      <button class="btn btn-ghost" id="jstCancelBtn" onclick="cancelJeSetlist()">Terug</button>
       <button class="btn btn-primary" onclick="saveJeSetlist()">Opslaan</button>
     </div>
   </div>
@@ -3271,7 +3278,7 @@
     </div>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="mhCancelBtn" onclick="cancelJeMediahoek()">Annuleren</button>
+      <button class="btn btn-ghost" id="mhCancelBtn" onclick="cancelJeMediahoek()">Terug</button>
       <button class="btn btn-primary" onclick="saveJeMediahoek()">Opslaan</button>
     </div>
   </div>
@@ -3765,7 +3772,7 @@
         </div>
         <!-- Punt 5 (25-08-2026, Ronald): knoppen omgewisseld, Band aanmaken rechts. -->
         <div style="display:flex;gap:12px;margin-top:8px;">
-          <button class="btn btn-ghost" onclick="cancelBandForm()">Annuleren</button>
+          <button class="btn btn-ghost" onclick="cancelBandForm()">Terug</button>
           <button class="btn btn-primary" id="saveBandBtn" onclick="saveBand()">Band aanmaken</button>
         </div>
       </div>
@@ -3875,7 +3882,7 @@
       <p>We bewaren je gegevens zolang je account bestaat. Verwijder je je account via "Account verwijderen"? Dan worden je profiel, repertoire, geüploade bestanden en alle andere gegevens die bij je account horen <strong>permanent verwijderd</strong>. Berichten die je naar anderen hebt gestuurd, blijven zichtbaar bij de ontvanger — net als bij andere berichten-apps verwijderen we niet de kant van het gesprek van iemand anders.</p>
 
       <h2>9. Jouw rechten</h2>
-      <p>Je hebt het recht om je gegevens in te zien, onjuiste gegevens te laten corrigeren (via "Profiel bewerken"), je account en gegevens permanent te laten verwijderen (via "Account verwijderen" op je profiel, of door contact met ons op te nemen), en bezwaar te maken tegen de verwerking van je gegevens.</p>
+      <p>Je hebt het recht om je gegevens in te zien, onjuiste gegevens te laten corrigeren (via "Profiel bewerken"), je account en gegevens permanent te laten verwijderen (via "Account verwijderen" in Instellingen, of door contact met ons op te nemen), en bezwaar te maken tegen de verwerking van je gegevens.</p>
       <p>Ben je het niet eens met hoe we met je gegevens omgaan? Dan kun je een klacht indienen bij de Autoriteit Persoonsgegevens.</p>
 
       <h2>10. Wijzigingen</h2>
@@ -3930,7 +3937,7 @@
       <p>We doen ons best om The Talent Tent goed te laten werken, maar kunnen niet garanderen dat de app altijd foutloos of ononderbroken beschikbaar is. We zijn niet aansprakelijk voor schade die ontstaat door het gebruik van de app, door contact met andere gebruikers, of door afspraken die je buiten de app om maakt — voor zover de wet dat toestaat.</p>
 
       <h2>9. Je account verwijderen</h2>
-      <p>Je kunt je account op elk moment zelf verwijderen via "Account verwijderen" op je profiel. Al je gegevens — je profiel, repertoire, geüploade bestanden en alles wat daarbij hoort — worden dan <strong>permanent verwijderd</strong>. Zie de privacyverklaring voor de details.</p>
+      <p>Je kunt je account op elk moment zelf verwijderen via "Account verwijderen" in Instellingen. Al je gegevens — je profiel, repertoire, geüploade bestanden en alles wat daarbij hoort — worden dan <strong>permanent verwijderd</strong>. Zie de privacyverklaring voor de details.</p>
       <p>We kunnen je account ook zelf verwijderen of blokkeren als je deze voorwaarden of de gedragscode overtreedt.</p>
 
       <h2>10. Wijzigingen</h2>
@@ -3982,6 +3989,23 @@
 
       <h2>Contact</h2>
       <p>Vragen over deze gedragscode? Mail naar <strong>privacy@talenttent.org</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: Instellingen (TT-186, 03-09-2026). Bereikbaar via het hamburgermenu,
+     alleen ingelogd. Bevat voorlopig alleen Account verwijderen — kwam uit
+     het profielmenu (TT-186: dat is accountbeheer, geen profielinhoud).
+     Ruimte voor latere onderwerpen: nieuwe onderdelen krijgen een eigen
+     filter-title-kopje hierboven, zelfde opzet als hieronder. -->
+<div class="app-view" id="view-instellingen">
+  <div class="search-wrap">
+    <div class="search-filters doc-view">
+      <div class="panel-title" style="margin-bottom:20px;">Instellingen</div>
+
+      <div class="filter-title" style="margin-bottom:8px;">Account</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Je account verwijderen kan niet ongedaan worden gemaakt.</p>
+      <button type="button" class="btn btn-ghost" style="color:var(--danger);border-color:var(--danger);" onclick="openDeleteAccountModal()">Account verwijderen</button>
     </div>
   </div>
 </div>
@@ -4042,8 +4066,8 @@
   <div class="modal-box modal-box-sm">
     <p id="confirmMessage" style="margin-bottom:24px;font-size:14px;"></p>
     <div style="display:flex;gap:12px;">
-      <button class="btn btn-primary" id="confirmYesBtn" onclick="confirmModalYes()" style="background:var(--danger);border-color:var(--danger);">Ja, verwijderen</button>
-      <button class="btn btn-ghost" onclick="document.getElementById('confirmModal').classList.remove('visible')">Annuleren</button>
+      <button class="btn btn-primary" id="confirmYesBtn" onclick="confirmModalYes()">Ja, verwijderen</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('confirmModal').classList.remove('visible')">Terug</button>
     </div>
   </div>
 </div>
@@ -4060,7 +4084,7 @@
     <div id="deleteAccountBandsArea"></div>
     <div style="display:flex;gap:12px;margin-top:20px;">
       <button class="btn btn-primary" id="deleteAccountConfirmBtn" style="background:var(--danger);border-color:var(--danger);" onclick="requestFinalDeleteConfirmation()">Account verwijderen</button>
-      <button class="btn btn-ghost" onclick="closeDeleteAccountModal()">Annuleren</button>
+      <button class="btn btn-ghost" onclick="closeDeleteAccountModal()">Terug</button>
     </div>
   </div>
 </div>
@@ -4098,7 +4122,7 @@
     <textarea id="messageComposerBody" placeholder="Schrijf je bericht..." maxlength="2000" style="width:100%;min-height:120px;" oninput="updateCharCounter('messageComposerBody','messageComposerCounter',2000)"></textarea>
     <div id="messageComposerCounter" style="text-align:right;font-size:12px;color:var(--muted);margin:4px 0 16px;">0/2000</div>
     <div style="display:flex;gap:12px;">
-      <button class="btn btn-ghost" style="flex:1;" onclick="closeMessageComposer()">Annuleren</button>
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeMessageComposer()">Terug</button>
       <button class="btn btn-primary" style="flex:1;" onclick="sendMessageFromComposer()">Versturen →</button>
     </div>
   </div>
@@ -4503,6 +4527,8 @@ async function onUserLoggedIn(user) {
   // TT-176 (01-09-2026): Uitloggen staat weer in het hamburgermenu ook,
   // naast Mijn Profiel — zie navMenuDropdown hierboven.
   document.getElementById('navLogout').style.display = '';
+  // TT-186 (03-09-2026): Instellingen zelfde zichtbaarheidsregel als Uitloggen.
+  document.getElementById('navSettings').style.display = '';
   refreshUnreadBadge();
 
   if (onboardingInFlight) return;
@@ -4561,6 +4587,9 @@ function onUserLoggedOut() {
   // TT-176 (01-09-2026): hamburgermenu-Uitloggen weer verbergen bij uitloggen.
   const navLogoutBtn = document.getElementById('navLogout');
   if (navLogoutBtn) navLogoutBtn.style.display = 'none';
+  // TT-186 (03-09-2026): Instellingen zelfde zichtbaarheidsregel als Uitloggen.
+  const navSettingsBtn = document.getElementById('navSettings');
+  if (navSettingsBtn) navSettingsBtn.style.display = 'none';
   myMusicianId = null;
   myOwnCity = null;
   // TT-108 (23-08-2026): hoort bij dezelfde fix als in onUserLoggedIn() —
@@ -4947,7 +4976,7 @@ function showView(view, mode) {
     landing: null, search: 'navSearch',
     about: null, register: null, myprofile: 'navMyProfile', bands: 'navMyBands',
     messages: 'navMessages', auth: 'navLogin', reset: null,
-    privacy: null, terms: null, gedragscode: null, profieltegels: null
+    privacy: null, terms: null, gedragscode: null, profieltegels: null, instellingen: null
   };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
 
@@ -5885,12 +5914,6 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
         <!-- TT-56 (12-08-2026): opt-out band-uitnodigingen. Alleen deze
              knop, geen zichtbaar label op het profiel zelf voor anderen. -->
         <button class="nav-menu-item" id="bandInviteToggleBtn" onclick="closeProfileMoreMenu();toggleBandInviteAvailability()">Open voor band-uitnodigingen</button>
-        <!-- TT-166 (28-08-2026) zette Uitloggen hier neer i.p.v. het
-             hamburgermenu ("moet overal identiek blijven"). TT-176
-             (01-09-2026, Ronald) draaide dat terug: Uitloggen staat weer in
-             het hamburgermenu (navMenuDropdown), en bewust NIET meer hier —
-             één plek, geen tweede kopie. -->
-        <button class="nav-menu-item" style="color:var(--danger);" onclick="closeProfileMoreMenu();openDeleteAccountModal()">Account verwijderen</button>
       </div>
     </div>` : '';
 
@@ -6602,7 +6625,8 @@ function requestFinalDeleteConfirmation() {
   showConfirm(
     'Weet je zeker dat je dit account, inclusief alle gegevens, permanent wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
     executeAccountDeletion,
-    'Ja, definitief verwijderen'
+    'Ja, definitief verwijderen',
+    true
   );
 }
 
@@ -7045,7 +7069,8 @@ async function askFounderTransfer(bandId) {
       showConfirm(
         `Je bent het enige bevestigde lid van "${band.name}". Er is niemand om het beheer aan over te dragen. Stoppen betekent dat de band wordt opgeheven.`,
         () => dissolveBand(bandId),
-        'Band opheffen'
+        'Band opheffen',
+        true
       );
       return;
     }
@@ -7239,9 +7264,17 @@ function renderProgressPanel(m) {
 let toastTimer = null;
 // Generieke bevestigingsdialoog voor destructieve acties (i.p.v. native confirm()).
 let confirmCallback = null;
-function showConfirm(message, onConfirm, confirmLabel) {
+// TT-188 (03-09-2026, Ronald): rood was hardcoded op deze knop, dus élke
+// aanroep van showConfirm() kreeg 'm — ook niet-destructieve acties zoals
+// "Vragen" (founder-overdracht). Rood hoort alleen bij het echt verwijderen
+// van een account. Vierde parameter 'danger' (standaard false/leeg) regelt
+// dat nu per aanroep i.p.v. altijd aan te staan.
+function showConfirm(message, onConfirm, confirmLabel, danger) {
   document.getElementById('confirmMessage').textContent = message;
-  document.getElementById('confirmYesBtn').textContent = confirmLabel || 'Ja, verwijderen';
+  const yesBtn = document.getElementById('confirmYesBtn');
+  yesBtn.textContent = confirmLabel || 'Ja, verwijderen';
+  yesBtn.style.background = danger ? 'var(--danger)' : '';
+  yesBtn.style.borderColor = danger ? 'var(--danger)' : '';
   confirmCallback = onConfirm;
   document.getElementById('confirmModal').classList.add('visible');
 }
@@ -10684,7 +10717,7 @@ function hasUnsavedBandFormInput() {
 function cancelBandForm() {
   const finish = () => { resetBandForm(); document.getElementById('createBandForm').style.display = 'none'; };
   if (hasUnsavedBandFormInput()) {
-    showConfirm('Weet je het zeker? Wat je hebt ingevuld gaat verloren.', finish, 'Ja, annuleren');
+    showConfirm('Weet je het zeker? Wat je hebt ingevuld gaat verloren.', finish, 'Ja, terug');
   } else {
     finish();
   }
@@ -11021,7 +11054,7 @@ function openInviteNote(btnEl, musicianId, memberName) {
       <textarea class="invite-note-input" maxlength="300" placeholder="Bijv. we zoeken een bassist voor onze covers, jouw profiel past goed bij ons!" style="width:100%;min-height:60px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:14px;"></textarea>
       <div style="display:flex;gap:8px;margin-top:8px;">
         <button class="btn btn-primary" style="font-size:13px;padding:6px 14px;" onclick="sendInviteWithNote(this, '${jsAttr(musicianId)}')">Uitnodiging versturen</button>
-        <button class="btn btn-ghost" style="font-size:13px;padding:6px 14px;" onclick="searchMembersToAdd(document.getElementById('memberSearchInput').value)">Annuleren</button>
+        <button class="btn btn-ghost" style="font-size:13px;padding:6px 14px;" onclick="searchMembersToAdd(document.getElementById('memberSearchInput').value)">Terug</button>
       </div>
     </div>`;
   row.querySelector('.invite-note-input')?.focus();
@@ -11336,7 +11369,10 @@ function goToTegelOverview() {
 // true/false teruggeeft, onConfirm = actie bij bevestigen (of meteen als er
 // niets gewijzigd is), confirmText = optionele eigen bevestigingstekst.
 function handleCancelClick(btnId, hasChanges, onConfirm, confirmText) {
-  const text = confirmText || 'Wijzigingen wissen?';
+  // Ronald (03-09-2026): moet als twee regels tonen ("Terug zonder" /
+  // "opslaan?"), niet drie. Onbreekbare spatie tussen "Terug" en "zonder"
+  // voorkomt dat de browser daar ook afbreekt.
+  const text = confirmText || 'Terug\u00A0zonder opslaan?';
   const btn = document.getElementById(btnId);
   if (!btn) return;
   if (!hasChanges()) { onConfirm(); return; }
