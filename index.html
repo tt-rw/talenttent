@@ -1155,25 +1155,6 @@
     margin-bottom: 10px;
   }
 
-  .profile-media-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .profile-link-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 12px;
-    font-size: 12px;
-    color: var(--muted);
-    text-decoration: none;
-  }
-
   /* Freshness indicator */
   .freshness-bar {
     display: flex;
@@ -6014,15 +5995,20 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     ${links.length ? `
       <div class="profile-media" style="margin-top:16px;">
         <div class="profile-media-title">Links</div>
-        <div class="profile-media-grid">
-          ${links.map(l => currentUser
-            // TT-158 (27-08-2026, Ronald): social-media-links alleen klikbaar
-            // voor een ingelogde gebruiker. Een uitgelogde bezoeker ziet
-            // dezelfde chip, maar zonder href — geen <a>, dus niets om op te
-            // klikken of te openen in een nieuw tabblad.
-            ? `<a href="${l.safeHref}" target="_blank" rel="noopener noreferrer" class="profile-link-chip">${escHtml(l.platform || 'Link')}</a>`
-            : `<span class="profile-link-chip" style="cursor:default;">${escHtml(l.platform || 'Link')}</span>`
-          ).join('')}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
+          ${links.map(l => {
+            const ytId = extractYouTubeId(l.safeHref);
+            const label = l.platform || 'Link';
+            const inner = ytId
+              ? `<img src="https://img.youtube.com/vi/${jsAttr(ytId)}/hqdefault.jpg" alt="${escAttr(label)}" style="width:100%;height:100%;object-fit:cover;display:block;">`
+              : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface2);text-align:center;padding:4px;"><span style="font-size:12px;font-weight:700;color:var(--text);">${escHtml(label)}</span></div>`;
+            const tileStyle = 'display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);padding:0;background:none;';
+            // TT-158 (27-08-2026): social-media-links alleen klikbaar voor een
+            // ingelogde gebruiker — zelfde regel als voorheen, nu op de tegel.
+            return currentUser
+              ? `<a href="${l.safeHref}" target="_blank" rel="noopener noreferrer" style="${tileStyle}">${inner}</a>`
+              : `<span style="${tileStyle}cursor:default;">${inner}</span>`;
+          }).join('')}
         </div>
       </div>` : ''}`;
 }
@@ -9991,6 +9977,35 @@ function detectPlatform(url) {
   if (url.includes('tiktok')) return 'TikTok';
   if (url.includes('spotify')) return 'Spotify';
   return 'Link';
+}
+
+// TT-184 (03-09-2026, Ronald): links op het profiel tonen als beeldtegel,
+// zelfde formaat als een foto — net als YouTube's eigen videominiaturen.
+// Een YouTube-thumbnail is zonder API-sleutel te bouwen: elke YouTube-URL
+// bevat een video-ID, en img.youtube.com/vi/<ID>/hqdefault.jpg bestaat
+// altijd voor een geldige video. Voor andere platforms (Instagram, TikTok,
+// Spotify, SoundCloud, overig) bestaat geen sleutelloze manier om zonder
+// een aparte netwerkaanvraag per link aan een thumbnail te komen — Ronalds
+// besluit (03-09-2026): die tonen een tegel op hetzelfde formaat, met alleen
+// de platformnaam, geen echte thumbnail. Bestaande huisstijlkleuren
+// hergebruikt (surface2/border), geen nieuwe merkkleuren per platform —
+// dat zou een eigen paragraaf in huisstijl-en-consistentie.md vergen die er
+// nu niet is.
+function extractYouTubeId(url) {
+  let u;
+  try { u = new URL(url); } catch (e) { return null; }
+  const host = u.hostname.replace(/^www\./, '');
+  if (host === 'youtu.be') {
+    return u.pathname.slice(1).split('/')[0] || null;
+  }
+  if (host === 'youtube.com' || host === 'm.youtube.com') {
+    if (u.pathname === '/watch') return u.searchParams.get('v');
+    const shorts = u.pathname.match(/^\/shorts\/([^/]+)/);
+    if (shorts) return shorts[1];
+    const embed = u.pathname.match(/^\/embed\/([^/]+)/);
+    if (embed) return embed[1];
+  }
+  return null;
 }
 
 function addLinkRow() {
