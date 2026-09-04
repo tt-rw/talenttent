@@ -574,6 +574,33 @@
     border: none;
   }
 
+  /* TT-193 (04-09-2026): compacte rij-actie (Verwijderen/Uitnodigen/Terug e.d.).
+     Was 7x apart inline met wisselende waarden (6px/12px/14px/16px, geen
+     patroon) — nu één klasse, 4px-schaal. min-height:44px van .btn blijft
+     gelden, dus het tikdoel verandert niet. */
+  .btn-sm {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  /* TT-193 (04-09-2026): vaste ruimte tussen knoppen die samen in een rij
+     staan (naast .btn-sm). Was al 8px op de enige plek waar dit voorkwam
+     — nu een klasse i.p.v. inline, zodat een volgende knoppenrij niet
+     opnieuw een eigen waarde verzint. */
+  .btn-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* TT-196 (04-09-2026): straal-veld + km-label, was 4x apart inline
+     (gap:6px, geen 4px-veelvoud) — nu één klasse, zelfde 8px-waarde als
+     .picker-badge-row. */
+  .radius-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
   .btn-primary {
     background: var(--accent);
     color: #000;
@@ -2546,9 +2573,9 @@
   </button>
 </nav>
 
-<div id="editModeBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 24px;background:rgba(245,197,24,0.1);border-top:1px solid var(--border);font-size:13px;">
+<div id="editModeBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:8px 24px;background:rgba(245,197,24,0.1);border-top:1px solid var(--border);font-size:13px;">
   <span>Je bent nog bezig met je profiel bewerken.</span>
-  <button class="btn btn-primary" style="padding:6px 16px;font-size:12px;" onclick="requireLogin('register')">Verder bewerken →</button>
+  <button class="btn btn-primary btn-sm" onclick="requireLogin('register')">Verder bewerken →</button>
 </div>
 </div>
 
@@ -2613,7 +2640,7 @@
       </div>
       <button class="btn btn-primary" style="width:100%;margin-bottom:16px;" onclick="signIn()">Inloggen →</button>
       <div style="text-align:center;padding-top:16px;border-top:1px solid var(--border);">
-        <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">Nog geen profiel?</p>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:8px;">Nog geen profiel?</p>
         <button class="btn btn-ghost" style="width:100%;" onclick="showView('register')">Profiel aanmaken →</button>
       </div>
     </div>
@@ -2658,7 +2685,7 @@
         <label>Gebruikersnaam <span class="req">*</span></label>
         <input type="text" id="username" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck()">
         <p id="usernameStatus" style="font-size:11px;color:var(--muted);margin-top:4px;"></p>
-        <p style="font-size:11px;color:var(--muted);margin-top:2px;">Dit is wat andere muzikanten van je zien — niet je echte naam. Ben je jonger dan 16? Dan moet dit afwijken van je voornaam.</p>
+        <p style="font-size:11px;color:var(--muted);margin-top:4px;">Dit is wat andere muzikanten van je zien — niet je echte naam. Ben je jonger dan 16? Dan moet dit afwijken van je voornaam.</p>
       </div>
     </div>
 
@@ -2739,7 +2766,7 @@
       <div class="field">
         <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <span>Mijn Instrumenten <span class="req">*</span></span>
-          <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:400;">
+          <span style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:400;">
             Toelichting op niveau
             <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
           </span>
@@ -2882,7 +2909,7 @@
     </div>
 
     <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;">Jouw setlist</div>
-    <p style="font-size:12px; color:var(--text); margin:0 0 10px; line-height:1.6;">
+    <p style="font-size:12px; color:var(--text); margin:0 0 8px; line-height:1.6;">
       <!-- V-21 (13-08-2026, in overleg vastgesteld): "niveau" betekende hier
            iets anders dan bij een instrument (sterren) of een band (sterren,
            eigen tabel) — drie schalen, één woord. Voor een nummer heet het nu
@@ -2969,8 +2996,8 @@
          voortgang. Nu: gewone knoppen die een modal openen (openLegalModal()),
          geen navigatie, geen href, dus geen risico meer op het verlaten van
          de wizard. -->
-    <label style="display:flex;align-items:flex-start;gap:10px;margin-top:16px;font-size:12px;color:var(--muted);cursor:pointer;">
-      <input type="checkbox" id="consentCheckbox" onchange="updateSubmitProfileState()" style="margin-top:2px;flex-shrink:0;">
+    <label style="display:flex;align-items:flex-start;gap:8px;margin-top:16px;font-size:12px;color:var(--muted);cursor:pointer;">
+      <input type="checkbox" id="consentCheckbox" onchange="updateSubmitProfileState()" style="margin-top:4px;flex-shrink:0;">
       <span>
         Ik ga akkoord met de
         <button type="button" onclick="event.preventDefault();openLegalModal('terms')" style="background:none;border:none;padding:0;margin:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer;">Gebruiksvoorwaarden</button>,
@@ -3093,7 +3120,7 @@
     <div class="field">
       <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <span>Mijn Instrumenten <span class="req">*</span></span>
-        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:400;">
+        <span style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:400;">
           Toelichting op niveau
           <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
         </span>
@@ -3215,7 +3242,7 @@
     </div>
 
     <div style="font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:4px;">Jouw setlist</div>
-    <p style="font-size:12px;color:var(--text);margin:0 0 10px;line-height:1.6;">
+    <p style="font-size:12px;color:var(--text);margin:0 0 8px;line-height:1.6;">
       Beheersing: <span style="color:var(--accent);">Basis</span> (kent de structuur) ·
       <span style="color:var(--accent);">Bijna</span> (soepel, bijna klaar) ·
       <span style="color:var(--accent);">Podium</span> (speelt het live zonder problemen)
@@ -3345,7 +3372,7 @@
           </div>
           <div style="flex-shrink:0;">
             <label style="display:block;margin-bottom:4px;">Straal</label>
-            <div style="display:flex;gap:6px;align-items:center;">
+            <div class="radius-row">
               <input type="number" id="filterRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); runSearch();">
               <span style="color:var(--muted);font-size:13px;">km</span>
             </div>
@@ -3493,7 +3520,7 @@
           </div>
           <div style="flex-shrink:0;">
             <label style="display:block;margin-bottom:4px;">Straal</label>
-            <div style="display:flex;gap:6px;align-items:center;">
+            <div class="radius-row">
               <input type="number" id="filterBandRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); runBandSearch();">
               <span style="color:var(--muted);font-size:13px;">km</span>
             </div>
@@ -3507,7 +3534,7 @@
       <button type="button" class="btn btn-ghost" id="bandMoreFiltersToggle" onclick="toggleMoreFilters('band')" style="width:100%;font-size:13px;margin-bottom:16px;">Meer filters ▾</button>
       <div id="bandMoreFilters" style="display:none;">
       <div class="filter-row single">
-        <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag" style="font-size:12px;padding:6px 12px;" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
+        <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
       </div>
       <div class="filter-row single" style="margin-bottom:16px;"><div class="field"><label>Genre</label>
         <div class="picker-field" id="filterBandGenresField">
@@ -3601,14 +3628,14 @@
           </div>
           <div style="flex-shrink:0;">
             <label style="display:block;margin-bottom:4px;">Straal</label>
-            <div style="display:flex;gap:6px;align-items:center;">
+            <div class="radius-row">
               <input type="number" id="filterSetlistRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); if(setlistWantedSongs.length) runSetlistSearch();">
               <span style="color:var(--muted);font-size:13px;">km</span>
             </div>
           </div>
         </div>
         <div id="filterSetlistCityStatus" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;"></div>
-        <p style="font-size:11px;color:var(--muted);margin-top:2px;">Vul in om afstand te tonen/sorteren vanaf deze plaats.</p>
+        <p style="font-size:11px;color:var(--muted);margin-top:4px;">Vul in om afstand te tonen/sorteren vanaf deze plaats.</p>
       </div>
 
       <!-- TT-139: instrumentfilter op Setlist-zoeken, zelfde harde-filter-
@@ -3690,7 +3717,7 @@
         <div class="filter-title">Mijn bands</div>
         <p style="font-size:13px;color:var(--muted);">Bands waar jij beheerder en/of lid van bent</p>
       </div>
-      <button class="btn btn-primary" style="font-size:12px;padding:6px 14px;white-space:nowrap;" onclick="showCreateBandForm()">Band toevoegen</button>
+      <button class="btn btn-primary btn-sm" style="white-space:nowrap;" onclick="showCreateBandForm()">Band toevoegen</button>
     </div>
     <div id="createBandForm" style="display:none;">
       <div class="search-filters" style="margin-bottom:28px;">
@@ -3809,10 +3836,10 @@
           <textarea id="messagesReplyInput" placeholder="Typ een bericht..." maxlength="2000" oninput="updateCharCounter('messagesReplyInput','messagesReplyCounter',2000)"></textarea>
           <button class="messages-send-btn" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
         </div>
-        <div id="messagesReplyCounter" style="text-align:right;font-size:12px;color:var(--muted);margin-top:2px;">0/2000</div>
+        <div id="messagesReplyCounter" style="text-align:right;font-size:12px;color:var(--muted);margin-top:4px;">0/2000</div>
         <!-- V-04 (13-08-2026): i.p.v. een actief invoerveld naar een niet meer
              bestaand account. -->
-        <div id="messagesDeletedNotice" style="display:none;text-align:center;font-size:13px;color:var(--muted);padding:14px;background:var(--surface2);border-radius:8px;">Dit account bestaat niet meer. Je kunt dit gesprek niet voortzetten.</div>
+        <div id="messagesDeletedNotice" style="display:none;text-align:center;font-size:13px;color:var(--muted);padding:12px;background:var(--surface2);border-radius:8px;">Dit account bestaat niet meer. Je kunt dit gesprek niet voortzetten.</div>
       </div>
     </div>
   </div>
@@ -3824,10 +3851,10 @@
     <div class="search-filters">
       <div class="panel-title" style="margin-bottom:20px;">Over ons</div>
       <div style="font-size:15px;line-height:1.7;color:var(--text);">
-        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat zijn we?</strong> The Talent Tent is een ontmoetingsplaats voor muzikanten. We zijn gestart voor jonge muzikanten die veel oefenen, maar andere muzikanten niet goed weten te vinden om mee samen te spelen. Ondertussen zien we ook meer ervaren en oudere muzikanten terug in de Tent.</p>
-        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat doen we?</strong> In de Tent heb je je persoonlijke pagina met setlist en media, en van de bands waar je aan deelneemt. Met onze uitgebreide zoekfunctie vind je eenvoudig andere muzikanten en bands bij jou in de buurt om mee te spelen. Bands zoeken hier naar een nieuw of tijdelijk bandlid. We helpen jullie graag het podium op.</p>
-        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Hoe werkt het?</strong> Je maakt je eigen profiel en eventueel bandpagina aan. In je persoonlijke omgeving kan je kiezen welke informatie je aan anderen laat zien. Zoals zo vaak geldt dat hoe meer je geeft, hoe meer je krijgt. Wil je meer applaus of juist gevonden worden? Hou je profiel dan actueel.</p>
-        <p>Als je er klaar voor bent dan kan je via de Tent muzikanten of bands bij jou in de buurt zoeken om samen muziek te maken. Bands kunnen nieuwe bandleden zoeken, of tijdelijke bandleden voor een optreden.</p>
+        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat zijn we?</strong> The Talent Tent is een ontmoetingsplaats voor muzikanten. We zijn gestart voor jonge muzikanten die veel oefenen, maar moeilijk andere muzikanten vinden om mee samen te spelen. Inmiddels vinden ook ervaren en oudere muzikanten hun weg naar de Tent.</p>
+        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat doen we?</strong> Je krijgt een eigen pagina met je setlist en media, en een pagina voor elke band waar je deel van uitmaakt. Onze zoekfunctie vindt muzikanten en bands bij jou in de buurt. Bands zoeken hier een nieuw of tijdelijk lid. Wij helpen je op weg naar het podium.</p>
+        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Hoe werkt het?</strong> Je maakt een profiel aan, en eventueel een bandpagina. Jij bepaalt welke informatie je met anderen deelt. Een actueel profiel levert meer op: meer applaus, en sneller gevonden worden.</p>
+        <p>Zoek muzikanten of bands bij jou in de buurt om mee te spelen. Bands kunnen ook nieuwe of tijdelijke leden zoeken.</p>
       </div>
     </div>
   </div>
@@ -3837,7 +3864,7 @@
 <div class="app-view" id="view-privacy">
   <div class="search-wrap">
     <div class="search-filters doc-view">
-      <div class="panel-title" style="margin-bottom:6px;">Privacyverklaring</div>
+      <div class="panel-title">Privacyverklaring</div>
       <div class="doc-updated">Laatst bijgewerkt: 9 augustus 2026</div>
 
       <h2>1. Wie zijn wij</h2>
@@ -3902,7 +3929,7 @@
 <div class="app-view" id="view-terms">
   <div class="search-wrap">
     <div class="search-filters doc-view">
-      <div class="panel-title" style="margin-bottom:6px;">Gebruiksvoorwaarden</div>
+      <div class="panel-title">Gebruiksvoorwaarden</div>
       <div class="doc-updated">Laatst bijgewerkt: 9 augustus 2026</div>
 
       <p>Door een account aan te maken op The Talent Tent (talenttent.org) ga je akkoord met deze gebruiksvoorwaarden.</p>
@@ -3960,7 +3987,7 @@
 <div class="app-view" id="view-gedragscode">
   <div class="search-wrap">
     <div class="search-filters doc-view">
-      <div class="panel-title" style="margin-bottom:6px;">Gedragscode</div>
+      <div class="panel-title">Gedragscode</div>
       <div class="doc-updated">Laatst bijgewerkt: 9 augustus 2026</div>
 
       <p>Muziek maken is het leukst als je het samen doet. Daarom bestaat The Talent Tent: om je te helpen andere muzikanten te vinden om mee te jammen, te repeteren of op te treden. Deze gedragscode gaat over hoe we dat met elkaar willen doen — met plezier, en met respect voor elkaar.</p>
@@ -4111,7 +4138,7 @@
     <div class="field">
       <input type="text" id="usernameGateInput" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck2()" onkeydown="submitOnEnter(event, saveUsernameGate)">
       <p id="usernameGateStatus" style="font-size:11px;color:var(--muted);margin-top:4px;"></p>
-      <p style="font-size:11px;color:var(--muted);margin-top:2px;" id="usernameGateAgeHint"></p>
+      <p style="font-size:11px;color:var(--muted);margin-top:4px;" id="usernameGateAgeHint"></p>
     </div>
     <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="saveUsernameGate()">Opslaan en verdergaan →</button>
     <!-- TT-138 (23-08-2026): dit scherm heeft bewust geen kruisje/Annuleren
@@ -4187,13 +4214,13 @@
 <div class="modal-overlay" id="addMemberModal" onclick="if(event.target===this)this.classList.remove('visible')">
   <div class="modal-box">
     <button class="modal-close" onclick="document.getElementById('addMemberModal').classList.remove('visible')">✕</button>
-    <div class="filter-title" style="margin-bottom:6px;">Bandleden beheren</div>
+    <div class="filter-title" style="margin-bottom:8px;">Bandleden beheren</div>
     <!-- 22-08-2026 (Ronald): het kruisje achter een naam op de bandkaart
          voelde "banaal, alsof je ieder moment kan worden gecancelled".
          Verwijderen hoort nu bij dit scherm, met een duidelijke knop i.p.v.
          een los kruisje. -->
     <div id="currentMembersSection" style="margin-bottom:20px;">
-      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Huidige leden</div>
+      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Huidige leden</div>
       <div id="currentMembersList"></div>
     </div>
     <!-- TT-127-restpunt (27-08-2026, Ronalds besluit): "Bandbeheer" was een
@@ -4207,7 +4234,7 @@
     <!-- V-17 (13-08-2026): zoeken kon alleen op naam of gebruikersnaam — dan
          moest je al weten wie je zocht. Instrument erbij, en zoeken werkt nu
          ook zonder getypte naam zolang er een instrument gekozen is. -->
-    <select id="memberSearchInstrument" onchange="searchMembersToAdd(document.getElementById('memberSearchInput').value)" style="width:100%;min-height:44px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:10px;box-sizing:border-box;">
+    <select id="memberSearchInstrument" onchange="searchMembersToAdd(document.getElementById('memberSearchInput').value)" style="width:100%;min-height:44px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:8px;box-sizing:border-box;">
       <option value="">Alle instrumenten</option>
     </select>
     <input type="text" id="memberSearchInput" placeholder="Zoek op naam..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:16px;">
@@ -4237,7 +4264,7 @@
             onblur="setTimeout(()=>closeAC('acMemberSearchCityList'),200)">
           <div class="autocomplete-list" id="acMemberSearchCityList"></div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+        <div class="radius-row" style="flex-shrink:0;">
           <input type="number" id="memberSearchRadius" placeholder="bijv. 25" min="5" max="500" step="5" style="width:110px;" onchange="searchMembersToAdd(document.getElementById('memberSearchInput').value)">
           <span style="color:var(--muted);font-size:13px;">km</span>
         </div>
@@ -4301,7 +4328,7 @@
     <button class="modal-close" onclick="closeInstrumentLevelSheet()" aria-label="Sluiten">✕</button>
 
     <div id="instrumentPickStep" class="modal-scroll-area">
-      <div class="filter-title" style="margin-bottom:14px;padding-right:52px;">Kies een instrument</div>
+      <div class="filter-title" style="margin-bottom:12px;padding-right:52px;">Kies een instrument</div>
       <div id="instrumentPickItems"></div>
     </div>
 
@@ -4329,7 +4356,7 @@
   <div class="modal-box modal-box-sticky-footer modal-box-lg">
     <button class="modal-close" onclick="closePickerList()" aria-label="Sluiten">✕</button>
     <div class="modal-scroll-area">
-      <div class="filter-title" id="pickerListTitle" style="margin-bottom:14px;padding-right:52px;"></div>
+      <div class="filter-title" id="pickerListTitle" style="margin-bottom:12px;padding-right:52px;"></div>
       <div id="pickerListItems"></div>
     </div>
   </div>
@@ -5941,7 +5968,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
              naam (uitgelogd/anoniem, geen eigen profiel), dan zou een subline
              die naam alleen maar herhalen. Geen uitlegzin meer, alleen het
              label. -->
-        ${(displayName === m.fname && m.fname) ? `<p style="font-size:12px;color:var(--muted);margin-top:2px;">Gebruikersnaam: <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
+        ${(displayName === m.fname && m.fname) ? `<p style="font-size:12px;color:var(--muted);margin-top:4px;">Gebruikersnaam: <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
         <div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       </div>
       ${ownerMenuHTML}
@@ -6034,7 +6061,7 @@ function musicianContactFooterHTML(m, isOwn, displayName) {
   const contactBtn = hasOwnProfile
     ? `<button class="btn btn-primary" style="width:100%;" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht →</button>`
     : `<button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`;
-  return `<div style="display:flex;flex-direction:column;gap:10px;">${contactBtn}${shareBtn}</div>`;
+  return `<div style="display:flex;flex-direction:column;gap:8px;">${contactBtn}${shareBtn}</div>`;
 }
 
 async function openMusicianModal(id) {
@@ -6603,7 +6630,7 @@ async function openDeleteAccountModal() {
     area.innerHTML = !decisions.length ? '' : `
       <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Je bent beheerder van ${decisions.length === 1 ? 'een band' : `${decisions.length} bands`} met andere leden. Kies per band wat er gebeurt:</div>
       ${decisions.map(b => `
-        <div class="delete-account-band-row" data-band-id="${jsAttr(b.id)}" style="margin:10px 0;padding:12px;border:1px solid var(--border);border-radius:8px;">
+        <div class="delete-account-band-row" data-band-id="${jsAttr(b.id)}" style="margin:8px 0;padding:12px;border:1px solid var(--border);border-radius:8px;">
           <div style="font-weight:700;margin-bottom:8px;">${escHtml(b.name)}</div>
           <select class="delete-band-choice" style="width:100%;padding:8px;background-color:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;">
             <option value="delete">Band ook verwijderen</option>
@@ -7223,7 +7250,7 @@ function renderCompletenessMeter(m) {
           </span>
         `).join('')}
       </div>
-      ${pct < 100 ? `<p style="font-size:11px;color:var(--muted);margin-top:10px;">Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:11px;color:${col};margin-top:10px;font-weight:700;">Compleet profiel! Jij valt op.</p>`}
+      ${pct < 100 ? `<p style="font-size:11px;color:var(--muted);margin-top:8px;">Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:11px;color:${col};margin-top:8px;font-weight:700;">Compleet profiel! Jij valt op.</p>`}
     </div>`;
 }
 
@@ -9338,11 +9365,11 @@ function renderSongs() {
     .sort((ia, ib) => compareArtistTitle(state.songs[ia].artist, state.songs[ia].title, state.songs[ib].artist, state.songs[ib].title));
   list.innerHTML = `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
-      <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
+      <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
         <span>Band / Artiest — Nummer</span><span style="margin-right:40px;">Beheersing</span><span></span>
       </div>
       ${displayOrder.map(i => { const s = state.songs[i]; return `
-        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;">
+        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);gap:12px;">
           <div>
             <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
             <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
@@ -9357,7 +9384,7 @@ function renderSongs() {
             : `<button class="song-remove" onclick="removeSong(${i})" title="Verwijderen">✕</button>`
           }
         </div>
-        ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 14px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
+        ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 12px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
       `; }).join('')}
     </div>`;
   updateOptionalStepHints();
@@ -10336,7 +10363,7 @@ function bandCardHTML(b, statusLabels) {
       <div class="result-card-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
       <div class="result-card-meta">
         ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
-        <span class="band-status-badge band-status-${status}" style="margin-left:6px;">${escHtml(statusLabels[status] || b.status)}</span>
+        <span class="band-status-badge band-status-${status}" style="margin-left:8px;">${escHtml(statusLabels[status] || b.status)}</span>
       </div>
       <div class="result-card-badges">
         ${wanted.map(w => tagSolid('+ ' + w.instrument, '#6ec8d8')).join('')}
@@ -10379,7 +10406,7 @@ function renderSetlistSongsList() {
   list.innerHTML = `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
       ${setlistWantedSongs.map((s,i) => `
-        <div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;">
+        <div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);gap:12px;">
           <span style="font-family:'Roboto',sans-serif;font-size:14px;font-weight:700;color:var(--accent);width:26px;flex-shrink:0;">#${i+1}</span>
           <div style="flex:1;">
             <div style="font-size:15px;font-weight:600;">${escHtml(s.title)}</div>
@@ -10905,10 +10932,10 @@ async function loadCurrentMembersForModal(bandId) {
       // hieronder (renderFounderTransferSection), niet via deze lijst —
       // vandaar geen knop bij de eigen rij.
       const isSelf = m.musician_id === mid;
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">
         <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
         <div style="flex:1;font-size:14px;">${escHtml(memberName)} <span style="color:var(--muted);font-size:11px;">${escHtml(roleLabel(m.role))}</span></div>
-        ${isSelf ? '' : `<button type="button" class="btn btn-ghost" style="font-size:12px;padding:6px 12px;color:var(--danger);border-color:var(--danger);" onclick="removeMember('${jsAttr(bandId)}','${jsAttr(m.musician_id)}','${jsAttr(memberName)}')">Verwijderen</button>`}
+        ${isSelf ? '' : `<button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="removeMember('${jsAttr(bandId)}','${jsAttr(m.musician_id)}','${jsAttr(memberName)}')">Verwijderen</button>`}
       </div>`;
     }).join('') || '<p style="color:var(--muted);font-size:13px;">Geen leden gevonden.</p>';
   } catch (e) {
@@ -11034,9 +11061,9 @@ function searchMembersToAdd(query) {
         // knop opent nu eerst een kort tekstveld i.p.v. meteen uit te nodigen.
         const inviteAction = m.accepts_band_invites === false
           ? `<span style="font-size:12px;color:var(--muted);">Niet open voor uitnodigingen</span>`
-          : `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="openInviteNote(this, '${jsAttr(m.id)}', '${jsAttr(memberName)}')">Uitnodigen</button>`;
+          : `<button class="btn btn-ghost btn-sm" onclick="openInviteNote(this, '${jsAttr(m.id)}', '${jsAttr(memberName)}')">Uitnodigen</button>`;
         return `
-        <div class="member-search-row" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div class="member-search-row" style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
           <div style="width:32px;height:32px;border-radius:50%;background:${safeColor(m.profile_color, '#888')};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${escHtml(memberName[0].toUpperCase())}</div>
           <div style="flex:1;">
             <div style="font-weight:600;font-size:14px;">${escHtml(memberName)}</div>
@@ -11061,11 +11088,11 @@ function openInviteNote(btnEl, musicianId, memberName) {
   if (!row) return;
   row.innerHTML = `
     <div style="width:100%;">
-      <div style="font-size:13px;margin-bottom:6px;">Uitnodiging aan <strong>${escHtml(memberName)}</strong> — voeg eventueel een korte boodschap toe:</div>
-      <textarea class="invite-note-input" maxlength="300" placeholder="Bijv. we zoeken een bassist voor onze covers, jouw profiel past goed bij ons!" style="width:100%;min-height:60px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:14px;"></textarea>
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <button class="btn btn-primary" style="font-size:13px;padding:6px 14px;" onclick="sendInviteWithNote(this, '${jsAttr(musicianId)}')">Uitnodiging versturen</button>
-        <button class="btn btn-ghost" style="font-size:13px;padding:6px 14px;" onclick="searchMembersToAdd(document.getElementById('memberSearchInput').value)">Terug</button>
+      <div style="font-size:13px;margin-bottom:8px;">Uitnodiging aan <strong>${escHtml(memberName)}</strong> — voeg eventueel een korte boodschap toe:</div>
+      <textarea class="invite-note-input" maxlength="300" placeholder="Bijv. we zoeken een bassist voor onze covers, jouw profiel past goed bij ons!" style="width:100%;min-height:60px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:14px;"></textarea>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn btn-primary btn-sm" onclick="sendInviteWithNote(this, '${jsAttr(musicianId)}')">Uitnodiging versturen</button>
+        <button class="btn btn-ghost btn-sm" onclick="searchMembersToAdd(document.getElementById('memberSearchInput').value)">Terug</button>
       </div>
     </div>`;
   row.querySelector('.invite-note-input')?.focus();
@@ -11943,11 +11970,11 @@ function jstRenderSongs() {
     .sort((ia, ib) => compareArtistTitle(jstSongs[ia].artist, jstSongs[ia].title, jstSongs[ib].artist, jstSongs[ib].title));
   list.innerHTML = `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
-      <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
+      <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
         <span>Band / Artiest — Nummer</span><span style="margin-right:40px;">Beheersing</span><span></span>
       </div>
       ${displayOrder.map(i => { const s = jstSongs[i]; return `
-        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:12px;">
+        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);gap:12px;">
           <div>
             <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
             <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
@@ -11962,7 +11989,7 @@ function jstRenderSongs() {
             : `<button type="button" class="song-remove" onclick="jstRemoveSong(${i})" title="Verwijderen" aria-label="Verwijder ${escAttr(s.title)}">✕</button>`
           }
         </div>
-        ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 14px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
+        ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 12px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
       `; }).join('')}
     </div>`;
 }
@@ -12362,16 +12389,16 @@ async function loadMyBands() {
           <div class="band-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
           <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
         </div>
-        ${isFounder ? founderMenuHTML : `<button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" onclick="event.stopPropagation(); leaveBand('${jsAttr(b.id)}','${jsAttr(b.name)}');">Band verlaten</button>`}
+        ${isFounder ? founderMenuHTML : `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); leaveBand('${jsAttr(b.id)}','${jsAttr(b.name)}');">Band verlaten</button>`}
       </div>
       ${offerPending ? `
       <div style="padding:0 20px;">
-        <div style="font-size:12px;color:var(--muted);padding:10px 0;border-top:1px solid var(--border);">Gevraagd of iemand het beheer overneemt — wachten op reactie.</div>
+        <div style="font-size:12px;color:var(--muted);padding:8px 0;border-top:1px solid var(--border);">Gevraagd of iemand het beheer overneemt — wachten op reactie.</div>
       </div>` : ''}
       <div class="band-card-body">
         <!-- 22-08-2026 (Ronald): status minder prominent — de beheerder weet
              deze zelf al, hoort niet meer bovenaan in het overzicht. -->
-        <div style="margin-bottom:10px;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>
+        <div style="margin-bottom:8px;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>
         ${b.description ? `<p style="font-size:13px;color:var(--muted);margin-bottom:12px;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
         <div class="band-members-row">
           ${confirmed.map(m => {
@@ -12453,7 +12480,7 @@ async function openBandModal(id) {
         <div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
       </div>
     </div>
-    <div style="margin:10px 0;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>
+    <div style="margin:8px 0;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>
     ${b.description ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
     <div class="profile-songs-title" style="margin-top:16px;">Leden (${confirmed.length})</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
@@ -12466,10 +12493,10 @@ async function openBandModal(id) {
     </div>
     ${(b.band_wanted||[]).length ? `
       <div class="profile-songs-title" style="margin-top:16px;">Wij zoeken nog</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
         ${(b.band_wanted||[]).map(w => `<span class="wanted-chip">${escHtml(w.instrument)}</span>`).join('')}
       </div>` : ''}
-    <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:20px;">
       ${!isOwnBand ? (hasOwnProfile
         ? (founderMember
           ? `<button class="btn btn-primary" style="width:100%;" onclick="openMessageComposer('${jsAttr(founderMember.musicians.id)}','${jsAttr(displayNameOf(founderMember.musicians))}')">Stuur een bericht aan deze band →</button>`
