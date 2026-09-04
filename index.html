@@ -601,6 +601,22 @@
     align-items: center;
   }
 
+  /* TT-203 (04-09-2026, gemeld door Ronald met screenshot): het straal-
+     getal werd afgesneden. Oorzaak: width:64px met de algemene input-
+     opvulling van 12px 16px (32px totaal) liet nog maar ~30px over voor
+     de cijfers zelf — te weinig, ook al bij een tweecijferig getal als
+     "25". Eigen, smallere opvulling + net iets meer breedte, gecentreerd
+     voor de leesbaarheid. Content-breedte nu 76 - 16 (8px+8px opvulling)
+     - 2 (rand) = 58px, ruim genoeg voor "500" (het max-attribuut).
+     Selector met ".field" ervoor: nodig om de algemene regel
+     "input:not([type=checkbox]):not([type=radio])" te verslaan — die heeft
+     dezelfde specificiteit (0-2-1) als een kale ".radius-input" niet haalt. */
+  .field input.radius-input {
+    width: 76px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+
   .btn-primary {
     background: var(--accent);
     color: #000;
@@ -964,6 +980,7 @@
 
   .media-tab {
     flex: 1;
+    min-width: 0;
     padding: 10px;
     text-align: center;
     font-size: 13px;
@@ -1723,6 +1740,16 @@
     cursor: pointer;
     transition: border-color 0.15s;
     animation: slideIn 0.2s ease;
+    /* TT-206 (04-09-2026, gemeld door Ronald met screenshot, met pixels
+       nagemeten: 475px vs 417px breed). Oorzaak: een grid-item krijgt
+       standaard min-width:auto, wat het item nooit smaller laat worden dan
+       de eigen inhoud (bijv. een langere naam of badge-tekst). Bij twee
+       kaarten met verschillende inhoud in dezelfde rij van een "1fr 1fr"-
+       grid geeft dat een ongelijke kolomverdeling, ook al staat er nergens
+       een vaste breedte. min-width:0 zet dat uit — de kaart mag altijd
+       precies de halve breedte innemen, tekst wrapt dan i.p.v. de kolom te
+       verbreden. Geldt voor zowel muzikant- als bandkaarten (zelfde klasse). */
+    min-width: 0;
   }
   .result-card:hover { border-color: var(--accent); }
   /* TT-33 (07-08-2026): profielformaat (verticaal) i.p.v. een korte liggende
@@ -2465,7 +2492,12 @@
   .tile-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .field-status { font-size: 11px; margin-top: 5px; min-height: 14px; }
   .action-row { display: flex; gap: 10px; margin-top: 28px; }
-  .action-row .btn { flex: 1; }
+  /* TT-207 (04-09-2026, zelfde oorzaak/oplossing als TT-206 bij de
+     zoekkaarten): Terug/Opslaan kregen zonder min-width:0 een klein maar
+     meetbaar breedteverschil (175px vs 173px) — de standaard min-width:auto
+     van een flex-item laat de tekstbreedte meewegen. Zelfde patroon als
+     .messages-conv-main/.result-row-main elders in dit bestand. */
+  .action-row .btn { flex: 1; min-width: 0; }
 
   /* ── Touch-hover-guard (TT-182, 01-09-2026) ──────────────────────────────
      Telefoons simuleren :hover na een tik en die blijft "plakken" tot een
@@ -3373,7 +3405,7 @@
           <div style="flex-shrink:0;">
             <label style="display:block;margin-bottom:4px;">Straal</label>
             <div class="radius-row">
-              <input type="number" id="filterRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); runSearch();">
+              <input type="number" id="filterRadius" class="radius-input" value="25" min="5" max="500" step="5" onchange="snapRadiusToStep(this); runSearch();">
               <span style="color:var(--muted);font-size:13px;">km</span>
             </div>
           </div>
@@ -3462,8 +3494,8 @@
       </div>
       </div>
 
-      <div style="display:flex;gap:12px;">
-        <button class="search-btn" style="flex:1;" onclick="runSearch()">Zoek muzikanten</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <button class="search-btn" onclick="runSearch()">Zoek muzikanten</button>
         <button class="btn btn-ghost" onclick="resetMusicianSearch()">Filters wissen</button>
       </div>
     </div>
@@ -3521,7 +3553,7 @@
           <div style="flex-shrink:0;">
             <label style="display:block;margin-bottom:4px;">Straal</label>
             <div class="radius-row">
-              <input type="number" id="filterBandRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); runBandSearch();">
+              <input type="number" id="filterBandRadius" class="radius-input" value="25" min="5" max="500" step="5" onchange="snapRadiusToStep(this); runBandSearch();">
               <span style="color:var(--muted);font-size:13px;">km</span>
             </div>
           </div>
@@ -3573,8 +3605,8 @@
         </div>
       </div>
       </div>
-      <div style="display:flex;gap:12px;">
-        <button class="search-btn" style="flex:1;" onclick="runBandSearch()">Zoek bands</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <button class="search-btn" onclick="runBandSearch()">Zoek bands</button>
         <button class="btn btn-ghost" onclick="resetBandSearch()">Filters wissen</button>
       </div>
     </div>
@@ -3629,7 +3661,7 @@
           <div style="flex-shrink:0;">
             <label style="display:block;margin-bottom:4px;">Straal</label>
             <div class="radius-row">
-              <input type="number" id="filterSetlistRadius" value="25" min="5" max="500" step="5" style="width:64px;" onchange="snapRadiusToStep(this); if(setlistWantedSongs.length) runSetlistSearch();">
+              <input type="number" id="filterSetlistRadius" class="radius-input" value="25" min="5" max="500" step="5" onchange="snapRadiusToStep(this); if(setlistWantedSongs.length) runSetlistSearch();">
               <span style="color:var(--muted);font-size:13px;">km</span>
             </div>
           </div>
@@ -3682,8 +3714,8 @@
 
       <div class="divider"></div>
 
-      <div style="display:flex;gap:12px;">
-        <button class="search-btn" style="flex:1;" onclick="runSetlistSearch()">Zoek op setlist</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <button class="search-btn" onclick="runSetlistSearch()">Zoek op setlist</button>
         <button class="btn btn-ghost" onclick="resetSetlistSearch()">Filters wissen</button>
       </div>
     </div>
@@ -4160,8 +4192,8 @@
     <textarea id="messageComposerBody" placeholder="Schrijf je bericht..." maxlength="2000" style="width:100%;min-height:120px;" oninput="updateCharCounter('messageComposerBody','messageComposerCounter',2000)"></textarea>
     <div id="messageComposerCounter" style="text-align:right;font-size:12px;color:var(--muted);margin:4px 0 16px;">0/2000</div>
     <div style="display:flex;gap:12px;">
-      <button class="btn btn-ghost" style="flex:1;" onclick="closeMessageComposer()">Terug</button>
-      <button class="btn btn-primary" style="flex:1;" onclick="sendMessageFromComposer()">Versturen →</button>
+      <button class="btn btn-ghost" style="flex:1;min-width:0;" onclick="closeMessageComposer()">Terug</button>
+      <button class="btn btn-primary" style="flex:1;min-width:0;" onclick="sendMessageFromComposer()">Versturen →</button>
     </div>
   </div>
 </div>
