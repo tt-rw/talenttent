@@ -485,6 +485,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+    margin-bottom: 20px;
   }
 
   .goal-card {
@@ -1862,6 +1863,9 @@
   }
 
   /* Muzikant detail modal */
+  /* TT-190 (04-09-2026): Ronald wil elk scherm/modal openen onder 0,1s.
+     Was 0,3s fade + 0,3s slide-in (samen, niet na elkaar, maar toch
+     boven de streeftijd). Nu 0,08s voor beide — ruim onder de grens. */
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -1873,7 +1877,7 @@
     padding: 20px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s;
+    transition: opacity 0.08s;
     backdrop-filter: blur(4px);
   }
 
@@ -1902,7 +1906,7 @@
     overflow-y: auto;
     padding: 32px;
     position: relative;
-    animation: slideIn 0.3s ease;
+    animation: slideIn 0.08s ease;
   }
 
   /* TT-118 (22-08-2026): vaste breedte per modal, als klasse i.p.v. inline
@@ -2731,7 +2735,7 @@
     <div class="panel-title">Wat speel je</div>
     <div class="panel-sub">Je instrument(en), je niveau per instrument, en de genres die je speelt.</div>
 
-    <div class="field-group single" style="margin-bottom:24px;">
+    <div class="field-group single">
       <div class="field">
         <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <span>Mijn Instrumenten <span class="req">*</span></span>
@@ -2763,7 +2767,7 @@
          — verhuisd vanuit de oude stap "Repertoire", zelfde besluit als bij
          het tegeloverzicht (TT-168-vervolg, 31-08-2026): dit is een
          eigenschap van wat je speelt, geen eigenschap van je setlist. -->
-    <div class="field-group single" style="margin-top:20px;">
+    <div class="field-group single">
       <div class="field">
         <label>Wat speel je vooral?</label>
         <div class="tag-grid" id="repertoireTypeGrid">
@@ -2807,7 +2811,7 @@
       </div>
     </div>
 
-    <div class="field-group single" style="margin-top:24px;">
+    <div class="field-group single">
       <div class="field">
         <label>Hoe vaak wil je oefenen?</label>
         <div class="tag-grid" id="rehearsalFreqGrid">
@@ -2820,7 +2824,7 @@
       </div>
     </div>
 
-    <div class="field-group single" style="margin-top:16px;">
+    <div class="field-group single">
       <div class="field">
         <label>Wat wil je de komende tijd bereiken?</label>
         <div class="tag-grid" id="ambitionGrid">
@@ -3150,7 +3154,7 @@
       </div>
     </div>
 
-    <div class="field-group single" style="margin-top:24px;">
+    <div class="field-group single">
       <div class="field">
         <label>Hoe vaak wil je oefenen?</label>
         <div class="tag-grid" id="wzjRehearsalFreqGrid">
@@ -3163,7 +3167,7 @@
       </div>
     </div>
 
-    <div class="field-group single" style="margin-top:16px;">
+    <div class="field-group single">
       <div class="field">
         <label>Wat wil je de komende tijd bereiken?</label>
         <div class="tag-grid" id="wzjAmbitionGrid">
@@ -3993,19 +3997,26 @@
   </div>
 </div>
 
-<!-- VIEW: Instellingen (TT-186, 03-09-2026). Bereikbaar via het hamburgermenu,
-     alleen ingelogd. Bevat voorlopig alleen Account verwijderen — kwam uit
-     het profielmenu (TT-186: dat is accountbeheer, geen profielinhoud).
-     Ruimte voor latere onderwerpen: nieuwe onderdelen krijgen een eigen
-     filter-title-kopje hierboven, zelfde opzet als hieronder. -->
+<!-- VIEW: Instellingen (TT-186, 03-09-2026; tegelstijl TT-191, 04-09-2026).
+     Bereikbaar via het hamburgermenu, alleen ingelogd. Bevat voorlopig
+     alleen Account verwijderen — kwam uit het profielmenu (TT-186: dat is
+     accountbeheer, geen profielinhoud). Zelfde .tile-patroon als het
+     tegeloverzicht van "Profiel bewerken" (TT-168), op Ronalds verzoek:
+     geen aparte, rode knop meer, maar een gewone tegel — bewuste
+     uitzondering op huisstijl §5 (destructieve actie krijgt normaal
+     --danger). Ruimte voor latere onderwerpen: elk nieuw onderwerp wordt
+     een eigen tegel hieronder. -->
 <div class="app-view" id="view-instellingen">
   <div class="search-wrap">
-    <div class="search-filters doc-view">
+    <div class="search-filters">
       <div class="panel-title" style="margin-bottom:20px;">Instellingen</div>
 
-      <div class="filter-title" style="margin-bottom:8px;">Account</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Je account verwijderen kan niet ongedaan worden gemaakt.</p>
-      <button type="button" class="btn btn-ghost" style="color:var(--danger);border-color:var(--danger);" onclick="openDeleteAccountModal()">Account verwijderen</button>
+      <div class="tile" onclick="openDeleteAccountModal()">
+        <div style="flex:1;">
+          <div class="tile-title">Account verwijderen</div>
+          <div class="tile-sub">kan niet ongedaan worden gemaakt</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
