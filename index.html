@@ -1299,7 +1299,13 @@
   .landing-step-num { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; background: var(--accent); color: #000; border-radius: 50%; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .landing-step-label { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
   .landing-step-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
-  .landing-login { text-align: center; font-size: 14px; color: var(--muted); padding: 24px 0; border-top: 1px solid var(--border); }
+  /* TT-209 (04-09-2026): stond onderaan de pagina, na de drie stappen —
+     Ronald: "zet de login regel hoger, onder profiel aanmaken, zoals je
+     altijd ziet bij apps." Verplaatst naar direct onder de CTA-knop in de
+     hero (zie HTML). De border-top diende als scheiding tussen twee losse
+     paginasecties; die functie vervalt nu de regel binnen dezelfde
+     .landing-hero-inner staat, vandaar alleen nog padding-top. */
+  .landing-login { text-align: center; font-size: 14px; color: var(--muted); padding-top: 16px; }
 
   /* ── Navigatie ───────────────────────────── */
   .app-nav-row {
@@ -2621,6 +2627,9 @@
         <div class="landing-cta">
           <button class="btn btn-primary landing-btn" onclick="showView('register')">Profiel aanmaken →</button>
         </div>
+        <div class="landing-login">
+          <p>Heb je al een profiel? <button onclick="showView('auth')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:'Roboto',sans-serif;font-size:14px;font-weight:700;text-decoration:underline;">Inloggen →</button></p>
+        </div>
       </div>
     </div>
     <div class="landing-steps">
@@ -2630,9 +2639,6 @@
         <div class="landing-step"><div class="landing-step-num">2</div><div class="landing-step-label">Zoek en match</div><div class="landing-step-desc">Zoek muzikanten of bands bij jou in de buurt.</div></div>
         <div class="landing-step"><div class="landing-step-num">3</div><div class="landing-step-label">Speel samen</div><div class="landing-step-desc">Neem contact op en maak muziek samen.</div></div>
       </div>
-    </div>
-    <div class="landing-login">
-      <p>Al een profiel? <button onclick="showView('auth')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:'Roboto',sans-serif;font-size:14px;font-weight:700;text-decoration:underline;">Inloggen →</button></p>
     </div>
   </div>
 </div>
@@ -6157,7 +6163,12 @@ async function openMusicianModal(id) {
         musician_instruments: (row.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
         musician_genres: (row.genres || []).map(g => ({ genre: g })),
         musician_songs: row.songs || [],
-        musician_media: (row.links || []).map(l => ({ media_type: 'link', url: l.url, platform: l.platform })),
+        // TT-210 (04-09-2026): voorheen gaf de RPC alleen media_type 'link'
+        // terug (kolom 'links') — foto's en video's ontbraken voor een
+        // bezoeker zonder eigen profiel. De RPC geeft nu alle mediatypes in
+        // één kolom 'media', met exact dezelfde vorm als musician_media
+        // (media_type/url/platform) — geen aparte remap meer nodig.
+        musician_media: row.media || [],
       };
     }
   }
