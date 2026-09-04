@@ -3051,7 +3051,7 @@
   <!-- Subscherm: Wie ben je -->
   <div id="wieBenJeScreen" style="display:none;">
     <div class="hero-band"></div>
-    <div class="panel-title">Wie ben je</div>
+    <div class="panel-title" style="margin-bottom:20px;">Wie ben je</div>
 
     <div class="field-group">
       <div class="field">
@@ -3083,14 +3083,14 @@
       </div>
     </div>
 
-    <div class="field">
+    <div class="field" style="margin-bottom:20px;">
       <label>Plaats <span class="req">*</span></label>
       <input type="text" id="wbjCity" readonly style="cursor:not-allowed;" oninput="onCitySearchInput(this.value,'wbjCityAc')">
       <div class="autocomplete-list" id="wbjCityAc"></div>
       <p id="wbjPostcodeStatus" class="field-status" style="color:var(--muted);"></p>
     </div>
 
-    <div class="field">
+    <div class="field" style="margin-bottom:20px;">
       <label>Korte bio</label>
       <div class="picker-field" id="wbjBioField" onclick="openWbjBioModal()">
         <span class="picker-field-label" id="wbjBioPreview">Bijv. Ik speel al 3 jaar gitaar...</span>
@@ -3117,7 +3117,7 @@
     <div class="panel-title">Wat speel je</div>
     <div class="panel-sub">Je instrument(en), je niveau per instrument, en de genres die je speelt.</div>
 
-    <div class="field">
+    <div class="field" style="margin-bottom:20px;">
       <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <span>Mijn Instrumenten <span class="req">*</span></span>
         <span style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:400;">
@@ -3132,7 +3132,7 @@
       <div class="picker-badge-row" id="wspInstrumentBadgeRow"></div>
     </div>
 
-    <div class="field">
+    <div class="field" style="margin-bottom:20px;">
       <label>Mijn Genre(s) <span class="req">*</span></label>
       <div class="picker-field" id="wspGenreField">
         <span class="picker-field-label" id="wspGenreFieldLabel">Kies een genre</span>
@@ -3219,7 +3219,7 @@
     <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Nummers toevoegen</div>
     <div class="panel-sub">Zoek eerst een band of artiest en daarna het nummer.</div>
 
-    <div class="field">
+    <div class="field" style="margin-bottom:20px;">
       <label>Band of artiest</label>
       <div class="song-search-wrap">
         <input type="text" id="jstArtistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
@@ -3230,7 +3230,7 @@
       </div>
     </div>
 
-    <div class="field" id="jstTrackWrap" style="display:none;">
+    <div class="field" id="jstTrackWrap" style="display:none;margin-bottom:20px;">
       <label id="jstTrackLabel">Nummer</label>
       <div class="song-search-wrap">
         <input type="text" id="jstTrackSearch" placeholder="Zoek een nummer..." autocomplete="off"
@@ -3259,7 +3259,7 @@
   <!-- Subscherm: Je mediahoek -->
   <div id="mediahoekScreen" style="display:none;">
     <div class="hero-band"></div>
-    <div class="panel-title">Je mediahoek</div>
+    <div class="panel-title" style="margin-bottom:20px;">Je mediahoek</div>
 
     <div class="field" style="margin-bottom:28px;">
       <label>Profielfoto</label>
@@ -4058,11 +4058,11 @@
       </div>
       <div id="resetError" class="auth-error"></div>
       <div id="resetSuccess" class="auth-success"></div>
-      <div class="field" style="margin-bottom:16px;">
+      <div class="field" style="margin-bottom:20px;">
         <label>Nieuw wachtwoord <span class="req">*</span></label>
         <input type="password" id="resetPassword1" placeholder="Minimaal 8 tekens" onkeydown="submitOnEnter(event, saveNewPassword)">
       </div>
-      <div class="field" style="margin-bottom:24px;">
+      <div class="field" style="margin-bottom:20px;">
         <label>Wachtwoord herhalen <span class="req">*</span></label>
         <input type="password" id="resetPassword2" placeholder="••••••••" onkeydown="submitOnEnter(event, saveNewPassword)">
       </div>
@@ -4186,7 +4186,7 @@
       </div>
     </div>
 
-    <div class="field" style="margin-bottom:24px;">
+    <div class="field" style="margin-bottom:20px;">
       <label>Nieuwe-matches e-mail</label>
       <div class="segmented-control" id="digestFrequencyControl">
         <div class="segmented-btn" data-mode="off" onclick="setDigestFrequency(this,'off')">Geen</div>
@@ -4198,7 +4198,7 @@
     <!-- TT-01-vervolg (28-08-2026, Ronalds verzoek): e-mailstijl kiezen —
          sommige e-mailprogramma's passen zelf een donkere modus toe, dus
          niet iedereen wil hetzelfde als het app-thema. -->
-    <div class="field" style="margin-bottom:24px;">
+    <div class="field" style="margin-bottom:20px;">
       <label>E-mailstijl</label>
       <div class="segmented-control" id="emailThemeControl">
         <div class="segmented-btn" data-mode="light" onclick="setEmailTheme(this,'light')">Licht</div>
