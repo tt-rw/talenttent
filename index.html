@@ -179,7 +179,16 @@
     position: relative;
     z-index: 10;
     width: 100%;
-    max-width: 760px;
+    /* TT-224-vervolg 2 (07-09-2026): 760px was de oude desktopbreedte.
+       Ronald: de inhoud zelf moet zich gedragen als op een telefoon,
+       los van hoe breed het 25-50-25-canvas toevallig is. Alles wat van
+       nature met de beschikbare ruimte meebeweegt (grids, flex-wraps)
+       reageert namelijk op de werkelijke pixelbreedte, niet op een
+       media-query — dus alleen de canvasbreedte aanpassen was niet
+       genoeg. Bij 430px (iets ruimer dan het smalste telefoonformaat)
+       krijgt alle inhoud hier exact zoveel ruimte als op een telefoon,
+       ongeacht hoe breed het canvas zelf is. */
+    max-width: 430px;
     margin: 0 auto;
     padding: 48px 24px 80px;
   }
@@ -1307,7 +1316,7 @@
   }
 
   /* ── Landingspagina ─────────────────────── */
-  .landing-wrap { width: 100%; max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
+  .landing-wrap { width: 100%; max-width: 430px; margin: 0 auto; padding: 0 24px 80px; }
   .landing-hero { padding: 80px 0 60px; text-align: center; }
   .landing-hero-inner { max-width: 640px; margin: 0 auto; }
   .landing-title { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: clamp(36px, 7vw, 64px); letter-spacing: 0.5px; line-height: 1.1; margin-bottom: 20px; }
@@ -1588,7 +1597,7 @@
   /* ── Auth scherm ─────────────────────────── */
   .auth-wrap {
     width: 100%;
-    max-width: 440px;
+    max-width: 430px;
     margin: 60px auto;
     padding: 0 24px;
   }
@@ -1629,7 +1638,7 @@
   /* ── Zoekfunctie ─────────────────────────── */
   .search-wrap {
     width: 100%;
-    max-width: 900px;
+    max-width: 430px;
     margin: 0 auto;
     padding: 48px 24px 80px;
   }
@@ -2134,7 +2143,7 @@
   /* Eigen profiel beheer */
   .my-profile-wrap {
     width: 100%;
-    max-width: 760px;
+    max-width: 430px;
     margin: 0 auto;
     padding: 48px 24px 80px;
   }
