@@ -926,9 +926,9 @@
     grid-template-columns: 1fr 1fr 1fr;
     gap: 14px;
   }
-  @media (max-width: 560px) {
-    .progress-timeline-grid { grid-template-columns: 1fr; }
-  }
+  /* TT-224 (07-09-2026): niet meer alleen ≤560px — geldt nu overal.
+     Telefoon ongewijzigd, laptop/desktop krijgt dezelfde weergave. */
+  .progress-timeline-grid { grid-template-columns: 1fr; }
   .progress-stage-title {
     font-size: 11px;
     font-weight: 700;
@@ -2323,7 +2323,10 @@
   .level-choice { min-height: 56px; align-items: flex-start; }
   .level-choice .level-choice-stars { margin-top: 2px; }
 
-  @media (max-width: 560px) {
+  /* TT-224 (07-09-2026): dit hele blok was ≤560px, geldt nu overal — zelfde
+     navigatie/kop/modal-weergave op laptop/desktop. Telefoon ongewijzigd.
+     De bijbehorende sluitende accolade van het oude media-blok is verderop
+     verwijderd, bij .results-grid-view. */
     header { padding: 16px 20px 12px; flex-direction: column; align-items: flex-start; }
     main { padding: 32px 16px 60px; }
     .field-group { grid-template-columns: 1fr; }
@@ -2457,12 +2460,11 @@
        te breed. Vaste 2 kolommen i.p.v. auto-fill, zodat het altijd 2 naast
        elkaar zijn, ongeacht de precieze schermbreedte binnen dit bereik. */
     .results-grid-view { grid-template-columns: 1fr 1fr; }
-  }
   /* ── TT-U24 (12-08-2026): vaste onderbalk op de telefoon ─────────────────
      Boven 560px onzichtbaar; daar blijft de bestaande bovenbalk staan. */
   .app-bottom-nav { display: none; }
 
-  @media (max-width: 560px) {
+  /* TT-224 (07-09-2026): niet meer alleen ≤560px — overal actief. */
     .app-bottom-nav {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -2511,13 +2513,34 @@
 
     /* Inhoud mag niet achter de onderbalk verdwijnen. */
     body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
-  }
 
   /* ── Backend niet geladen (TT-82) ────────────────────────────────────────
      Blokkerende melding als de Supabase-bibliotheek niet is geladen. Blijft
      verborgen zolang alles normaal werkt. De opmaak staat hier expres los
      van .modal-overlay: die klasse hoort bij het hoofdscript, en juist dat
      script draait in dit geval niet volledig. */
+  /* TT-224 (07-09-2026): laptop/desktop krijgt dezelfde weergave als de
+     telefoon (zie de losgekoppelde blokken hierboven), maar dan binnen een
+     vast canvas i.p.v. de volle vensterbreedte: 25% lucht, 50% app, 25%
+     lucht — op verzoek van Ronald, zelfde verhouding als LinkedIn hanteert.
+     #appRoot is de enige wrapper om header, navigatie, alle views én alle
+     modals (geverifieerd: sluit pas op regel "/#appRoot" vlak vóór het
+     hoofdscript) — dus width/margin hier volstaat voor alles wat in de
+     normale documentstroom staat. Losse position:fixed-elementen negeren
+     hun ouder en volgen de vensterbreedte, dus die krijgen hieronder elk
+     hun eigen left/right-correctie naar dezelfde 25%-grens. .app-toast
+     hoeft niet mee: die gebruikt left:50%+transform, dat valt toevallig al
+     samen met het midden van dit canvas. Telefoon (≤560px) is uitgesloten
+     via deze media-grens en blijft dus volledig ongewijzigd. */
+  @media (min-width: 561px) {
+    #appRoot { width: 50%; margin: 0 auto; }
+    .app-bottom-nav { left: 25%; right: 25%; }
+    .wizard-action-bar { left: 25%; right: 25%; }
+    .modal-overlay { left: 25%; right: 25%; }
+    .save-overlay { left: 25%; right: 25%; }
+    .backend-error-overlay { left: 25%; right: 25%; }
+  }
+
   .backend-error-overlay {
     display: none;
     position: fixed;
