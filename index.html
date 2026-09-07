@@ -2066,25 +2066,31 @@
      tonen. Firefox gebruikt scrollbar-width/-color, andere browsers de
      ::-webkit-scrollbar-regels. */
   .modal-box,
-  .modal-box-sticky-footer .modal-scroll-area {
+  .modal-box-sticky-footer .modal-scroll-area,
+  .niveau-info-wrap {
     scrollbar-width: thin;
     scrollbar-color: var(--border) var(--surface);
   }
   .modal-box::-webkit-scrollbar,
-  .modal-box-sticky-footer .modal-scroll-area::-webkit-scrollbar {
+  .modal-box-sticky-footer .modal-scroll-area::-webkit-scrollbar,
+  .niveau-info-wrap::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
   }
   .modal-box::-webkit-scrollbar-track,
-  .modal-box-sticky-footer .modal-scroll-area::-webkit-scrollbar-track {
+  .modal-box-sticky-footer .modal-scroll-area::-webkit-scrollbar-track,
+  .niveau-info-wrap::-webkit-scrollbar-track {
     background: var(--surface);
   }
   .modal-box::-webkit-scrollbar-thumb,
-  .modal-box-sticky-footer .modal-scroll-area::-webkit-scrollbar-thumb {
+  .modal-box-sticky-footer .modal-scroll-area::-webkit-scrollbar-thumb,
+  .niveau-info-wrap::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 4px;
   }
   .modal-box::-webkit-scrollbar-thumb:hover,
-  .modal-box-sticky-footer .modal-scroll-area::-webkit-scrollbar-thumb:hover {
+  .modal-box-sticky-footer .modal-scroll-area::-webkit-scrollbar-thumb:hover,
+  .niveau-info-wrap::-webkit-scrollbar-thumb:hover {
     background: var(--muted);
   }
 
@@ -2199,11 +2205,25 @@
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
   /* TT-U23 (12-08-2026): onzichtbaar tikvlak van 44x44 rond de kleine knop. */
   .niveau-info-btn::after { content:''; position:absolute; top:-10px; right:-10px; bottom:-10px; left:-10px; }
-  .niveau-info-wrap { overflow-x:auto; margin:12px 0 20px; }
-  .niveau-info-table { border-collapse:collapse; width:100%; min-width:640px; font-size:12px; }
-  .niveau-info-table th, .niveau-info-table td { border:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top; }
-  .niveau-info-table th { color:var(--accent); font-weight:700; white-space:nowrap; }
-  .niveau-info-table td:first-child, .niveau-info-table th:first-child { white-space:nowrap; font-weight:600; }
+  /* TT-222 (07-09-2026): bovenste rij + linkerkolom vast (freeze panes),
+     op verzoek van Ronald — de tabel was te groot voor één scherm en de
+     koppen scrolden mee weg. position:sticky op tabelcellen werkt in Safari
+     niet betrouwbaar bij border-collapse:collapse (bekende WebKit-beperking),
+     daarom hier border-collapse:separate + border-spacing:0, met de rand
+     verdeeld over right/bottom (plus left/top alleen op de buitenrand) i.p.v.
+     dubbele randen op elke celgrens. .niveau-info-wrap is nu zelf de
+     scroll-container in beide richtingen (was alleen overflow-x), met een
+     vaste maximumhoogte zodat er ook binnen de tabel verticaal gescrold kan
+     worden — de tekst erboven/eronder in de modal blijft apart, gewoon
+     scrollbaar via .modal-box. */
+  .niveau-info-wrap { overflow:auto; margin:12px 0 20px; max-height:55vh; -webkit-overflow-scrolling:touch; }
+  .niveau-info-table { border-collapse:separate; border-spacing:0; width:100%; min-width:640px; font-size:12px; }
+  .niveau-info-table th, .niveau-info-table td { border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top; }
+  .niveau-info-table thead th { border-top:1px solid var(--border); }
+  .niveau-info-table th:first-child, .niveau-info-table td:first-child { border-left:1px solid var(--border); }
+  .niveau-info-table th { color:var(--accent); font-weight:700; white-space:nowrap; background:var(--surface); position:sticky; top:0; z-index:2; }
+  .niveau-info-table td:first-child, .niveau-info-table th:first-child { white-space:nowrap; font-weight:600; background:var(--surface); position:sticky; left:0; z-index:1; }
+  .niveau-info-table th:first-child { z-index:3; }
 
   /* ─── Kies-en-badge component (TT-116, 21-08-2026) ──────────────────────
      Vervangt de altijd-zichtbare knoppenrasters voor instrument/genre door
