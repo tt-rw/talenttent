@@ -2020,14 +2020,22 @@
        donkere achtergrond. */
     border: 1px solid var(--accent);
     border-radius: 50%;
-    /* TT-U23 (12-08-2026): was 32x32 pixels. */
-    width: 44px; height: 44px;
+    /* TT-223 (07-09-2026): visuele cirkel 25% kleiner (44px → 33px, op
+       verzoek van Ronald), nu de nieuwe standaard voor alle sluit-/terug-
+       knoppen van dit type (huisstijl §6/§9). Het tikdoel zelf blijft
+       gewoon 44×44 — hetzelfde patroon als .niveau-info-btn::after: een
+       onzichtbaar, groter tikvlak via ::after, i.p.v. de zichtbare cirkel
+       zelf op te rekken. */
+    width: 33px; height: 33px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 14px;
     color: var(--accent);
     transition: all 0.15s;
   }
+  /* TT-223: onzichtbaar tikvlak van 44×44 rond de kleinere zichtbare cirkel
+     (33px + 2×5,5px = 44px), zelfde principe als .niveau-info-btn::after. */
+  .modal-close::after, .modal-back::after { content:''; position:absolute; top:-5.5px; right:-5.5px; bottom:-5.5px; left:-5.5px; }
 
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
@@ -2046,10 +2054,11 @@
        te blijven — zie toelichting daar. */
     border: 1px solid var(--accent);
     border-radius: 50%;
-    width: 44px; height: 44px;
+    /* TT-223: zelfde 25%-verkleining als .modal-close, zie toelichting daar. */
+    width: 33px; height: 33px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    font-size: 18px;
+    font-size: 14px;
     color: var(--accent);
     transition: all 0.15s;
   }
@@ -2201,7 +2210,7 @@
      telefoon bestaat geen hover, dus het icoon leek daar altijd onopvallend
      grijs. Nu standaard geel, zodat het ook zonder hover als klikbaar
      opvalt. */
-  .niveau-info-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; border:1px solid var(--accent); background:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; margin-left:6px; vertical-align:middle; padding:0; }
+  .niveau-info-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; flex-shrink:0; border-radius:50%; border:1px solid var(--accent); background:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; margin-left:6px; vertical-align:middle; padding:0; }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
   /* TT-U23 (12-08-2026): onzichtbaar tikvlak van 44x44 rond de kleine knop. */
   .niveau-info-btn::after { content:''; position:absolute; top:-10px; right:-10px; bottom:-10px; left:-10px; }
@@ -2222,7 +2231,15 @@
   .niveau-info-table thead th { border-top:1px solid var(--border); }
   .niveau-info-table th:first-child, .niveau-info-table td:first-child { border-left:1px solid var(--border); }
   .niveau-info-table th { color:var(--accent); font-weight:700; white-space:nowrap; background:var(--surface); position:sticky; top:0; z-index:2; }
-  .niveau-info-table td:first-child, .niveau-info-table th:first-child { white-space:nowrap; font-weight:600; background:var(--surface); position:sticky; left:0; z-index:1; }
+  /* TT-223 (07-09-2026): geen white-space:nowrap meer op de linkerkolom —
+     op verzoek van Ronald mag "Gevorderde Beginner"/"Half-Gevorderd" nu
+     over 2 regels breken, zodat de kolom smaller is en de overige kolommen
+     meer ruimte krijgen. Vaste breedte dwingt het afbreken af (anders kiest
+     table-layout:auto toch de niet-brekende breedte). word-break voor het
+     ene woord dat op zeer smalle schermen alsnog te lang kan zijn
+     ("Professioneel"). th:first-child (het korte koptekstwoord, "Ervaring"/
+     "Niveau") blijft zelf gewoon op 1 regel via de th-regel hierboven. */
+  .niveau-info-table td:first-child, .niveau-info-table th:first-child { font-weight:600; background:var(--surface); position:sticky; left:0; z-index:1; min-width:110px; word-break:break-word; }
   .niveau-info-table th:first-child { z-index:3; }
 
   /* ─── Kies-en-badge component (TT-116, 21-08-2026) ──────────────────────
@@ -2896,7 +2913,7 @@
       <div class="field">
         <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <span>Mijn Instrumenten <span class="req">*</span></span>
-          <span style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:400;">
+          <span style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:400;text-align:right;">
             Toelichting op niveau
             <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
           </span>
@@ -3250,7 +3267,7 @@
     <div class="field" style="margin-bottom:20px;">
       <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <span>Mijn Instrumenten <span class="req">*</span></span>
-        <span style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:400;">
+        <span style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:400;text-align:right;">
           Toelichting op niveau
           <button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button>
         </span>
