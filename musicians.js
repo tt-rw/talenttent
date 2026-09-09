@@ -181,6 +181,7 @@ async function shareProfile(kind, id, name) {
     await navigator.clipboard.writeText(url);
     showToast('Link gekopieerd naar klembord');
   } catch (e) {
+    logCaught('shareProfile', e);
     showToast('Kopiëren niet gelukt. Probeer het later opnieuw.');
   }
 }
@@ -347,6 +348,7 @@ async function openDeleteAccountModal() {
           </select>
         </div>`).join('')}`;
   } catch (e) {
+    logCaught('openDeleteAccountModal', e);
     area.innerHTML = `<div style="color:var(--danger);font-size:13px;">${escHtml(friendlyErrorMessage(e))}</div>`;
   }
 }
@@ -512,6 +514,7 @@ async function executeAccountDeletion() {
     }
     showView('landing');
   } catch (e) {
+    logCaught('executeAccountDeletion', e);
     // De modal is op dit punt al dicht (zie requestFinalDeleteConfirmation);
     // een mislukking melden we dus via de toast, niet via een knopstatus.
     showToast(friendlyErrorMessage(e) + ' Je account is niet volledig verwijderd — probeer het opnieuw of neem contact op.');
@@ -529,7 +532,10 @@ async function deleteAllStorageForUser(userId) {
         const paths = files.map(f => `${userId}/${f.name}`);
         await db.storage.from(bucket).remove(paths);
       }
-    } catch (e) { /* bestand kan al weg zijn, niet blokkerend voor de rest */ }
+    } catch (e) {
+      // Bestand kan al weg zijn. Niet blokkerend voor de rest, wel loggen.
+      logCaught('deleteAllStorageForUser', e);
+    }
   }
 }
 
@@ -1083,6 +1089,7 @@ async function jstOnArtistSearch(q) {
       jstArtistCache.set(cacheKey, artists);
       jstRenderArtistResults(ac, artists);
     } catch (e) {
+      logCaught('jstOnArtistSearch', e);
       ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoekopdracht mislukt</span></div>';
     }
   }, 400);
@@ -1131,6 +1138,7 @@ async function jstOnTrackSearch(q) {
     const songs = await jstFetchArtistSongs(jstSelectedArtist.id);
     jstRenderTrackResults(ac, songs, q);
   } catch (e) {
+    logCaught('jstOnTrackSearch', e);
     ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoekopdracht mislukt</span></div>';
   }
 }
@@ -1370,6 +1378,7 @@ function mhHandleAvatarUpload(file) {
     mhAvatarUrl = url;
     mhRenderAvatar();
   }).catch(e => {
+    logCaught('mhUploadAvatar', e);
     showToast(friendlyErrorMessage(e));
     mhRenderAvatar();
   });
@@ -1409,6 +1418,7 @@ function mhHandleFileSelect(files) {
       entry.uploading = false;
       mhRenderMediaGrid();
     }).catch(e => {
+      logCaught('mhUploadMedia', e);
       showToast(`"${file.name}": ${friendlyErrorMessage(e)}`);
       const idx = mhMediaFiles.indexOf(entry);
       if (idx !== -1) mhMediaFiles.splice(idx, 1);
@@ -1436,7 +1446,7 @@ function mhRemoveMedia(i) {
   mhMediaFiles.splice(i, 1);
   mhRenderMediaGrid();
   if (entry?.path) {
-    db.storage.from('media').remove([entry.path]).then(() => {}).catch(() => {});
+    db.storage.from('media').remove([entry.path]).then(() => {}, e => logCaught('mhRemoveMedia', e));
   }
 }
 
@@ -1559,7 +1569,10 @@ async function saveBand() {
     resetBandForm();
     document.getElementById('createBandForm').style.display = 'none';
     loadMyBands();
-  } catch(e) { showToast(friendlyErrorMessage(e)); }
+  } catch(e) {
+    logCaught('saveBand', e);
+    showToast(friendlyErrorMessage(e));
+  }
 }
 
 async function loadMyBands() {
@@ -1568,7 +1581,9 @@ async function loadMyBands() {
   el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:32px;">Laden...</div>';
   // 22-08-2026: zelfde lazy vervalcontrole als in loadFounderOffers() —
   // Mijn Bands kan ook los daarvan geopend worden.
-  try { await db.rpc('tt_expire_old_founder_offers'); } catch (e) { /* geen probleem, volgende keer opnieuw */ }
+  // Niet blokkerend voor de lijst, wel loggen (TT-230).
+  try { await db.rpc('tt_expire_old_founder_offers'); }
+  catch (e) { logCaught('loadMyBands/expire', e); }
 
   const mid = await getMyMusicianId();
   if (!mid) {

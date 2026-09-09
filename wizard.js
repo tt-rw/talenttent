@@ -253,6 +253,7 @@ async function toggleBandInviteAvailability() {
     updateBandInviteToggleBtn();
     showToast(newVal ? 'Je staat weer open voor band-uitnodigingen.' : 'Je ontvangt geen band-uitnodigingen meer.');
   } catch (e) {
+    logCaught('toggleBandInviteAvailability', e);
     showToast(friendlyErrorMessage(e));
   }
 }
@@ -384,7 +385,7 @@ async function saveEditedProfile() {
     // Profiel — ongeacht vanaf welke stap er is opgeslagen.
     showSaveSuccess(true);
   } catch (err) {
-    console.error('Supabase fout:', err);
+    logCaught('saveEditedProfile', err);
     showSaveError(err.message);
   }
 }
@@ -452,7 +453,7 @@ async function submitProfile() {
         state.avatarUrl = url;
         state.avatarPath = path;
       } catch (e) {
-        console.error('Avatar-upload mislukt:', e);
+        logCaught('submitProfile', e);
         showToast('Profiel opgeslagen, maar de profielfoto kon niet worden geüpload. Voeg de foto later toe via Profiel bewerken.');
         state.avatarUrl = null;
       }
@@ -560,7 +561,7 @@ async function submitProfile() {
     showSaveSuccess(false);
 
   } catch (err) {
-    console.error('Supabase fout:', err);
+    logCaught('submitProfile', err);
     showSaveError(err.message);
   }
 }
@@ -923,7 +924,7 @@ async function createAccountAndProfile() {
         state.avatarUrl = url;
         state.avatarPath = path;
       } catch (e) {
-        console.error('Avatar-upload mislukt:', e);
+        logCaught('createAccountAndProfile', e);
         showToast('Account aangemaakt, maar de profielfoto kon niet worden geüpload. Voeg de foto later toe via Profiel bewerken.');
         state.avatarUrl = null;
       }
@@ -979,7 +980,7 @@ async function createAccountAndProfile() {
     showToast('Account aangemaakt! Vul nu je profiel verder aan.');
     return true;
   } catch (err) {
-    console.error('Kon account niet aanmaken:', err);
+    logCaught('createAccountAndProfile', err);
     document.getElementById('saveOverlay').classList.remove('visible');
     showToast(friendlyErrorMessage(err));
     return false;
@@ -1146,7 +1147,7 @@ function handleAvatarUpload(file) {
     state.avatarFile = null;
     preview.querySelector('.avatar-uploading')?.remove();
   }).catch(e => {
-    console.error('Avatar-upload mislukt:', e);
+    logCaught('uploadAvatar', e);
     preview.querySelector('.avatar-uploading')?.remove();
     showToast(friendlyErrorMessage(e));
     removeAvatar();
@@ -1211,7 +1212,7 @@ function handleFileSelect(files) {
       entry.uploading = false;
       renderMediaGrid();
     }).catch(e => {
-      console.error('Media-upload mislukt:', e);
+      logCaught('uploadMedia', e);
       showToast(`"${file.name}": ${friendlyErrorMessage(e)}`);
       const idx = state.mediaFiles.indexOf(entry);
       if (idx !== -1) state.mediaFiles.splice(idx, 1);
@@ -1243,7 +1244,7 @@ function removeMedia(i) {
   // Al geüpload bestand meteen weer opruimen uit Storage — voorkomt dat
   // verwijderde media als wees achterblijft (best effort, geen blokkerende fout).
   if (entry?.path) {
-    db.storage.from('media').remove([entry.path]).then(() => {}).catch(() => {});
+    db.storage.from('media').remove([entry.path]).then(() => {}, e => logCaught('removeMedia', e));
   }
 }
 

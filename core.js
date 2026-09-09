@@ -37,6 +37,24 @@ function logAppError(message, source, stack) {
     // nooit teruggooien vanuit de foutlogger zelf
   }
 }
+// TT-230 (09-09-2026): één vaste regel voor elk catch-blok in de app. Vóór dit
+// ticket slikten tientallen catch-blokken de fout volledig op: geen melding,
+// geen console-regel, geen spoor. Zo'n storing kan weken bestaan tot iemand
+// hem toevallig ziet — precies wat er bij de bandomgeving gebeurde (TT-229).
+// logCaught() schrijft altijd naar de console én naar app_error_log. De
+// aanroeper bepaalt zelf of de gebruiker daarnaast nog iets te zien krijgt.
+// Deze functie gooit nooit zelf een fout terug.
+//
+// Bewust géén logCaught in: opslag-vangnetten (localStorage/sessionStorage),
+// JSON.parse, new URL, de History API en logAppError zelf. Die vangen een
+// browserbeperking af, hebben een werkende terugval, en zouden de teller van
+// 20 vullen met ruis.
+function logCaught(source, e) {
+  const message = (e && e.message) ? e.message : String(e);
+  console.error(source + ':', e);
+  logAppError(message, source, (e && e.stack) ? e.stack : null);
+}
+
 window.addEventListener('error', (e) => {
   logAppError(e.message, e.filename ? (e.filename + ':' + e.lineno) : null, e.error?.stack);
 });
@@ -141,7 +159,7 @@ async function appInit() {
       else showView(hashView);
     }
   } catch(e) {
-    console.error('appInit fout:', e);
+    logCaught('appInit', e);
   }
 }
 
@@ -379,6 +397,7 @@ async function openSearchPrefsModal() {
     selectEmailTheme(musicianRes.data?.email_theme || 'light');
     document.getElementById('searchPrefsModal').classList.add('visible');
   } catch (e) {
+    logCaught('openSearchPrefsModal', e);
     showToast(friendlyErrorMessage(e));
   }
 }
@@ -431,6 +450,7 @@ async function saveSearchPrefs() {
     closeSearchPrefsModal();
     showToast('Zoekvoorkeuren opgeslagen');
   } catch (e) {
+    logCaught('saveSearchPrefs', e);
     showToast(friendlyErrorMessage(e));
   }
 }

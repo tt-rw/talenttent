@@ -49,7 +49,7 @@ async function signOut() {
   try {
     await db.auth.signOut();
   } catch (e) {
-    console.error('Uitloggen bij Supabase (achtergrond) mislukt:', e);
+    logCaught('signOut', e);
   }
 }
 
@@ -156,6 +156,7 @@ async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
     }
     return usernameAvailable;
   } catch (e) {
+    logCaught('checkUsernameAvailability', e);
     // 22-08-2026 (P0-diagnose): dit ving eerder élke fout op dezelfde manier
     // op als "naam is bezet" — een technische fout bij de controle zelf
     // (bijv. een rechtenfout op de RPC) zag er voor de gebruiker dan

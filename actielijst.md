@@ -1,6 +1,6 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 09-09-2026 — **Drie nieuwe P0's, in deze volgorde: TT-229 (bandomgeving stuk), TT-230 (stil falen weghalen), TT-231 (Playwright-testset wordt leidend).** Alle drie vóór TT-01. Deze sessie opgeleverd: TT-226, TT-227, TT-228 en het herstel van TT-224/TT-225. Ook gewijzigd: de werkwijze rond sessies en bestandsuitwisseling (zie de twee blokken direct hieronder).
+**Laatste update:** 09-09-2026 — **TT-230 opgelost. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend).** Alle drie vóór TT-01. Deze sessie opgeleverd: TT-226, TT-227, TT-228 en het herstel van TT-224/TT-225. Ook gewijzigd: de werkwijze rond sessies en bestandsuitwisseling (zie de twee blokken direct hieronder).
 
 ---
 
@@ -47,24 +47,81 @@ worden opgeslokt.
 
 ---
 
-**TT-230 (nieuw, NIET opgelost, P0, 09-09-2026) — Stil falen weghalen, app-breed.**
+**TT-230 (OPGELOST, 09-09-2026) — Stil falen weghalen, app-breed.**
 
 **Aanleiding:** drie functies in `bands.js` vangen élke databasefout af en
 tonen niets — geen melding, geen console-fout, een leeg vak. Zo'n storing kan
 weken bestaan tot Ronald hem toevallig ziet. Dat is vermoedelijk precies wat
 er bij TT-229 gebeurt.
 
-**Wat te doen:** de hele app nalopen op `catch`-blokken die een fout
-opslokken. Elk daarvan hoort minstens naar `logAppError()` te schrijven — die
-functie bestaat al sinds TT-64 in `core.js` — en waar de gebruiker iets mist,
-ook een korte melding te tonen.
+**Wat gebouwd is.** Eén nieuwe functie in `core.js`, direct naast
+`logAppError()`:
 
-**Bekend startpunt:** `renderFounderTransferSection()`, `loadFounderOffers()`
-en `loadBandInvites()` in `bands.js`. Er zijn er vrijwel zeker meer; dat is
-onderdeel van het ticket, niet een aanname vooraf.
+```js
+function logCaught(source, e) { ... }   // console.error + logAppError
+```
 
-**Waarom dit vóór TT-231 gaat:** een testset kan een fout die geen signaal
-geeft niet vinden. Niet in laag 1, niet in laag 2.
+Elk `catch`-blok dat een fout opslokte roept nu `logCaught('<functienaam>', e)`
+aan. Dat zijn **57 `catch`-blokken in negen bestanden**, plus twee foutpaden
+buiten een `catch` (zie de tabel hieronder) — 59 aanroepen in totaal. De
+aanroepende functie bepaalt
+zelf of de gebruiker daarnaast nog iets ziet; bestaande toasts en inline
+meldingen zijn ongewijzigd gebleven.
+
+**Drie fouten die hierbij aan het licht kwamen — geen enkele zat in een
+`catch`-blok:**
+
+| Plek | Wat er misging |
+|---|---|
+| `loadBandInvites()` | `if (error \|\| !data \|\| !data.length) return;` — Supabase gooit niets, een mislukte vraag komt terug als `error` naast lege data. Een fout viel dus samen met "geen uitnodigingen". Nu gesplitst: `error` wordt gelogd, leeg blijft leeg |
+| `loadFounderOffers()` | identiek, zelfde splitsing |
+| `respondToFounderOffer()`, tak "weigeren" | het resultaat van de `update` werd niet gelezen. Mislukte de schrijfactie, dan zag de gebruiker tóch "Aanbod geweigerd" en bleef het aanbod staan. Nu `if (error) throw error` |
+
+**Eén zichtbare melding toegevoegd.** `renderFounderTransferSection()` liet bij
+een fout de hele sectie verdwijnen — de beheerder zag geen knop "Beheer
+overdragen" en geen reden. Nu staat er: *"Beheer overdragen is nu niet
+beschikbaar. Probeer het later opnieuw."* De banners van `loadBandInvites()` en
+`loadFounderOffers()` krijgen bewust géén melding: die verschijnen alleen als er
+iets openstaat, dus een gebruiker kan niet weten dat hij iets mist. Daar is de
+logregel het signaal.
+
+**Bewust géén `logCaught` in:** opslag-vangnetten
+(`localStorage`/`sessionStorage`), `JSON.parse`, `new URL`, de History API,
+`logAppError()` zelf, de eigen annulering bij delen, en de PDOK-tijdslimiet die
+terugvalt op de cache. Die vangen een browserbeperking af, hebben een werkende
+terugval, en zouden de teller van 20 vullen met ruis.
+
+**Bewust buiten dit ticket gehouden:** `catch`-blokken die de gebruiker al een
+toast of inline foutmelding tonen, maar niets vastleggen. Dat is geen stil
+falen. Wel een kandidaat voor een eigen ticket als `app_error_log` te dun
+blijkt.
+
+**Getest, geverifieerd (Playwright, sessiestub voor Supabase):**
+
+| Controle | Uitkomst |
+|---|---|
+| `node --check` op tien JS-bestanden | alle tien goed |
+| Haakjesbalans `{}` `()` `[]` | gelijk in negen gewijzigde bestanden |
+| Veertien views openen | geen paginafouten |
+| 37 verplichte functies aanwezig | geen ontbrekend |
+| TT-229 nagebootst (`band_members` geeft "column founder_offer does not exist") | drie console-regels, drie rijen naar `app_error_log` (`loadFounderOffers`, `loadBandInvites`, `renderFounderTransferSection`), plus de melding in de Beheer-sectie |
+| Zelfde scherm zonder fout | nul console-regels, nul logregels |
+
+**Gewijzigde bestanden (9):** `core.js` · `utils.js` · `auth.js` ·
+`postcode.js` · `wizard.js` · `search.js` · `musicians.js` · `bands.js` ·
+`messages.js`. `index.html`, `styles.css` en `modals-shared.js` ongewijzigd.
+
+**Ontwerptoets:** gedaan tegen `app-first-toetslijst.md` en
+`huisstijl-en-consistentie.md`. Eén nieuw zichtbaar element (de regel in de
+Beheer-sectie). Punt 9 (één design system): opmaak overgenomen van de
+bestaande foutregel in `loadCurrentMembersForModal()` —
+`font-size:13px; color:var(--danger)`. Geen nieuwe kleur, geen nieuwe klasse,
+geen emoji. §13 van de huisstijl stelt vast dat er nog geen
+bannercomponent bestaat; dit voegt er geen nieuwe uit.
+
+**Wat dit betekent voor TT-229.** De oorzaak is nu vindbaar zonder gokwerk.
+Ronald opent de bandomgeving, drukt F12 en leest de console — of kijkt in
+`app_error_log`. De echte foutmelding staat er nu.
 
 ---
 

@@ -11,7 +11,11 @@ async function loadBandInvites(musicianId) {
     const { data, error } = await db.from('band_members')
       .select('band_id, bands(name, city, profile_color)')
       .eq('musician_id', musicianId).eq('status', 'aangevraagd');
-    if (error || !data || !data.length) return;
+    // TT-230: Supabase gooit hier niets — een mislukte vraag komt terug als
+    // `error` naast lege data. Zonder deze regel viel dat samen met "geen
+    // uitnodigingen" en verdween de fout spoorloos.
+    if (error) { logCaught('loadBandInvites', error); return; }
+    if (!data || !data.length) return;
 
     el.innerHTML = data.map(inv => {
       const col = safeColor(inv.bands?.profile_color, '#f5c518');
@@ -28,6 +32,7 @@ async function loadBandInvites(musicianId) {
       </div>`;
     }).join('');
   } catch (e) {
+    logCaught('loadBandInvites', e);
     // Een mislukte uitnodigingencheck mag Mijn Profiel nooit blokkeren —
     // stilzwijgend niets tonen is hier beter dan een foutmelding bovenaan.
   }
@@ -44,6 +49,7 @@ async function respondToBandInvite(bandId, accept) {
     showToast(accept ? 'Je staat nu als lid op het bandprofiel.' : 'Uitnodiging geweigerd.');
     loadBandInvites(mid);
   } catch (e) {
+    logCaught('respondToBandInvite', e);
     showToast(friendlyErrorMessage(e));
   }
 }
@@ -60,12 +66,18 @@ async function loadFounderOffers(musicianId) {
   // 22-08-2026 (Ronald): een overnameverzoek trekt zichzelf na 7 dagen in —
   // geen cron-taak beschikbaar, dus deze controle draait "lazy" mee bij elke
   // keer dat de banner wordt opgebouwd. Fouten hier zijn nooit blokkerend.
-  try { await db.rpc('tt_expire_old_founder_offers'); } catch (e) { /* geen probleem, volgende keer opnieuw */ }
+  // Niet blokkerend voor de banner, wel loggen (TT-230).
+  try { await db.rpc('tt_expire_old_founder_offers'); }
+  catch (e) { logCaught('loadFounderOffers/expire', e); }
   try {
     const { data, error } = await db.from('band_members')
       .select('band_id, bands(name, city, profile_color)')
       .eq('musician_id', musicianId).eq('status', 'bevestigd').eq('founder_offer', true);
-    if (error || !data || !data.length) return;
+    // TT-230: zie loadBandInvites() hierboven. Ontbreekt de kolom
+    // `founder_offer`, of blokkeert een RLS-regel de vraag, dan staat dat
+    // vanaf nu in de console en in app_error_log.
+    if (error) { logCaught('loadFounderOffers', error); return; }
+    if (!data || !data.length) return;
 
     el.innerHTML = data.map(off => {
       const col = safeColor(off.bands?.profile_color, '#f5c518');
@@ -81,6 +93,7 @@ async function loadFounderOffers(musicianId) {
       </div>`;
     }).join('');
   } catch (e) {
+    logCaught('loadFounderOffers', e);
     // Zelfde keuze als loadBandInvites(): stilzwijgend niets tonen i.p.v.
     // Mijn Profiel blokkeren met een foutmelding.
   }
@@ -102,12 +115,16 @@ async function respondToFounderOffer(bandId, accept) {
       if (error) throw error;
       showToast('Je bent nu beheerder van deze band.');
     } else {
-      await db.from('band_members').update({ founder_offer: false, founder_offer_at: null }).eq('band_id', bandId).eq('musician_id', mid);
+      // TT-230: het resultaat werd hier niet gelezen. Mislukte de schrijfactie,
+      // dan zag de gebruiker toch "Aanbod geweigerd" en bleef het aanbod staan.
+      const { error } = await db.from('band_members').update({ founder_offer: false, founder_offer_at: null }).eq('band_id', bandId).eq('musician_id', mid);
+      if (error) throw error;
       showToast('Aanbod geweigerd.');
     }
     loadFounderOffers(mid);
     loadMyBands();
   } catch (e) {
+    logCaught('respondToFounderOffer', e);
     showToast(friendlyErrorMessage(e));
   }
 }
@@ -141,6 +158,7 @@ async function askFounderTransfer(bandId) {
       'Vragen'
     );
   } catch (e) {
+    logCaught('askFounderTransfer', e);
     showToast(friendlyErrorMessage(e));
   }
 }
@@ -160,6 +178,7 @@ async function sendFounderOffer(bandId, memberIds) {
       renderFounderTransferSection(bandId);
     }
   } catch (e) {
+    logCaught('sendFounderOffer', e);
     showToast(friendlyErrorMessage(e));
   }
 }
@@ -174,6 +193,7 @@ async function withdrawFounderOffer(bandId) {
       renderFounderTransferSection(bandId);
     }
   } catch (e) {
+    logCaught('withdrawFounderOffer', e);
     showToast(friendlyErrorMessage(e));
   }
 }
@@ -187,6 +207,7 @@ async function dissolveBand(bandId) {
     showToast('Band opgeheven.');
     loadMyBands();
   } catch (e) {
+    logCaught('dissolveBand', e);
     showToast(friendlyErrorMessage(e));
   }
 }
@@ -210,6 +231,7 @@ async function executeLeaveBand(bandId) {
     showToast('Je hebt de band verlaten.');
     loadMyBands();
   } catch (e) {
+    logCaught('executeLeaveBand', e);
     showToast(friendlyErrorMessage(e));
   }
 }
@@ -236,6 +258,7 @@ async function executeRemoveMember(bandId, musicianId) {
       loadCurrentMembersForModal(bandId);
     }
   } catch (e) {
+    logCaught('executeRemoveMember', e);
     showToast(friendlyErrorMessage(e));
   }
 }
@@ -438,7 +461,7 @@ function handleBandAvatarUpload(file) {
     bandState.avatarPath = path;
     preview.querySelector('.avatar-uploading')?.remove();
   }).catch(e => {
-    console.error('Bandfoto-upload mislukt:', e);
+    logCaught('uploadBandAvatar', e);
     preview.querySelector('.avatar-uploading')?.remove();
     showToast(friendlyErrorMessage(e));
     removeBandAvatar();
@@ -511,8 +534,16 @@ async function renderFounderTransferSection(bandId) {
       ${offerPending ? '<p style="font-size:12px;color:var(--muted);margin-top:8px;">Gevraagd of iemand het overneemt — wachten op reactie.</p>' : ''}
     `;
   } catch (e) {
-    // Stil falen: dit is een secundaire sectie, de ledenlijst hierboven
-    // (loadCurrentMembersForModal) blijft ook zonder dit stuk werken.
+    logCaught('renderFounderTransferSection', e);
+    // TT-230: eerder verdween deze sectie volledig bij een fout. De
+    // beheerder zag dan geen knop "Beheer overdragen" en geen reden waarom.
+    // De ledenlijst hierboven (loadCurrentMembersForModal) blijft werken,
+    // dus alleen dit blok toont de melding.
+    el.innerHTML = `
+      <div class="divider"></div>
+      <div class="filter-title" style="margin:16px 0 6px;font-size:16px;">Beheer</div>
+      <p style="font-size:13px;color:var(--danger);">Beheer overdragen is nu niet beschikbaar. Probeer het later opnieuw.</p>
+    `;
   }
 }
 
@@ -545,6 +576,7 @@ async function loadCurrentMembersForModal(bandId) {
       </div>`;
     }).join('') || '<p style="color:var(--muted);font-size:13px;">Geen leden gevonden.</p>';
   } catch (e) {
+    logCaught('loadCurrentMembersForModal', e);
     el.innerHTML = `<p style="color:var(--danger);font-size:13px;">${escHtml(friendlyErrorMessage(e))}</p>`;
   }
 }
@@ -648,7 +680,7 @@ function searchMembersToAdd(query) {
           });
         }
       } catch (distE) {
-        console.error('tt_musician_distances', distE);
+        logCaught('searchMembersToAdd', distE);
         // Stil falen: afstand is een verrijking, geen vereiste voor deze zoekopdracht.
       }
 
@@ -678,6 +710,7 @@ function searchMembersToAdd(query) {
           <span class="member-invite-action">${inviteAction}</span>
         </div>`; }).join('');
     } catch (e) {
+      logCaught('searchMembersToAdd', e);
       resEl.innerHTML = `<p style="color:var(--danger);font-size:13px;">${friendlyErrorMessage(e)}</p>`;
     }
   }, 300);
@@ -744,6 +777,7 @@ async function addBandMember(musicianId, note) {
     document.getElementById('addMemberModal').classList.remove('visible');
     loadMyBands();
   } catch (e) {
+    logCaught('addBandMember', e);
     showToast(friendlyErrorMessage(e));
   }
 }

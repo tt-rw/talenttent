@@ -72,7 +72,7 @@ function lookupPostcodeCity(normalized) {
           p_postcode: normalized,
           p_city: displayCity,
           p_alt: altList.join(';') || null
-        }).then(() => {}).catch(() => {});
+        }).then(() => {}, e => logCaught('lookupPostcodeCity/cache', e));
         return { found: true, city: displayCity, source: 'pdok' };
       }
       const { data: cachedNF } = await db.from('postcode_cache').select('city, alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
@@ -256,6 +256,7 @@ async function resolveSearchOrigin(rawText) {
     const row = (data || [])[0];
     return { lat: row?.lat ?? null, lng: row?.lng ?? null };
   } catch (e) {
+    logCaught('resolveSearchOrigin', e);
     return { lat: null, lng: null };
   }
 }
@@ -318,6 +319,7 @@ async function resolveCityDisplayName(raw) {
     if (error || !data || !data.length) return null;
     return pickDisplayCity(data[0].city, data[0].alternatieve_schrijfwijzen);
   } catch (e) {
+    logCaught('resolveCityDisplayName', e);
     return null;
   }
 }
@@ -369,6 +371,7 @@ function onCitySearchInput(value, listId) {
       citySuggestCache.set(cacheKey, top);
       renderCitySuggestions(ac, top, listId);
     } catch (e) {
+      logCaught('onCitySearchInput', e);
       ac.classList.remove('open');
     }
   }, 300);

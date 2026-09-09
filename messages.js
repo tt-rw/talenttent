@@ -64,6 +64,7 @@ async function insertMessage(recipientId, body) {
     if (error) throw error;
     return true;
   } catch (e) {
+    logCaught('insertMessage', e);
     showToast(friendlyErrorMessage(e));
     return false;
   }
@@ -149,6 +150,7 @@ async function refreshUnreadBadge() {
     if (count > 0) { toon(count > 99 ? '99+' : String(count)); }
     else { toon(null); }
   } catch (e) {
+    logCaught('refreshUnreadBadge', e);
     // Stil falen: een kapotte badge mag de rest van de app niet blokkeren.
     console.error('refreshUnreadBadge', e);
   }
@@ -230,6 +232,7 @@ async function loadInbox() {
     }).join('');
     listEl.innerHTML = rows;
   } catch (e) {
+    logCaught('loadInbox', e);
     listEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Berichten laden is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
 }
@@ -362,6 +365,7 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, 
     scrollThreadToBottom(); // V-01
     if (!stil) document.getElementById('messagesReplyInput').focus();
   } catch (e) {
+    logCaught('openConversation', e);
     threadEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Gesprek laden is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
 }

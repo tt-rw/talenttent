@@ -285,6 +285,7 @@ async function onArtistSearch(q) {
       itunesArtistCache.set(cacheKey, artists);
       renderArtistResults(ac, artists, q, 'selectArtist');
     } catch(e) {
+      logCaught('onArtistSearch', e);
       ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
     }
   }, 400);
@@ -350,6 +351,7 @@ async function onTrackSearch(q) {
     const songs = await fetchArtistSongs(selectedArtist.id);
     renderTrackResults(ac, songs, q, selectedArtist, 'addSong', state.songs);
   } catch(e) {
+    logCaught('onTrackSearch', e);
     ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
   }
 }
