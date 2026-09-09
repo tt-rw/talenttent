@@ -1,6 +1,144 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 09-09-2026 — **TT-224/TT-225 hersteld** (waren verdwenen bij de bestandsopsplitsing), plus TT-226, TT-227 en TT-228. Sessieplanning TT-01 (e-maildigest, diagnose) staat nog steeds als eerstvolgend ticket. Laatst opgeleverde ticket: TT-228.
+**Laatste update:** 09-09-2026 — **TT-229 (bandomgeving stuk) is nu P0 en het eerstvolgende onderwerp**, vóór TT-01. Deze sessie opgeleverd: TT-226, TT-227, TT-228 en het herstel van TT-224/TT-225. Ook gewijzigd: de werkwijze rond sessies en bestandsuitwisseling (zie de twee blokken direct hieronder).
+
+---
+
+**TT-229 (nieuw, NIET opgelost, P0, 09-09-2026) — Bandomgeving werkt niet meer.**
+
+**Wat Ronald meldde:** eerst "beheer overdragen functioneert niet meer",
+daarna "de bandomgeving is helemaal stuk". Besluit: eigen sessie, dit is het
+eerstvolgende onderwerp.
+
+**Geverifieerd — de knopvolgorde-wijziging van TT-228 is niet de oorzaak.**
+In TT-228 zijn de knoppen in `confirmModal` omgedraaid. Dat was een reëel
+risico. `showConfirm()` in `utils.js` zoekt de knop echter op via
+`getElementById('confirmYesBtn')`, niet op positie. De volgorde raakt dat
+dus niet.
+
+**Geverifieerd — de bedrading is compleet.** Alle betrokken functies bestaan
+en staan in `bands.js`: `askFounderTransfer`, `sendFounderOffer`,
+`withdrawFounderOffer`, `renderFounderTransferSection`,
+`respondToFounderOffer`, `loadFounderOffers`, `dissolveBand`. De elementen
+`#founderTransferSection`, `#founderOfferBanner` en `#bandInvitesBanner`
+staan in `index.html`. `openAddMemberModal()` roept
+`renderFounderTransferSection()` aan. Geen dubbele functienamen tussen de
+tien JS-bestanden. De opsplitsing van 08-09-2026 heeft de inhoud van
+`bands.js` niet gewijzigd (destijds byte-voor-byte geverifieerd).
+
+**Aanname, als eerste te toetsen — één oorzaak verklaart drie kapotte
+schermen.** Drie functies in `bands.js` vangen élke databasefout stil af:
+
+| Functie | Vraagt op | Bij een fout |
+|---|---|---|
+| `renderFounderTransferSection()` | `band_members.founder_offer` | leeg vak, geen knop "Beheer overdragen" |
+| `loadFounderOffers()` | `band_members.founder_offer` + RPC `tt_expire_old_founder_offers` | geen banner |
+| `loadBandInvites()` | `band_members` met `bands(...)` | geen banner |
+
+Ontbreekt de kolom `founder_offer`, of blokkeert een RLS-regel de vraag, dan
+verdwijnen die onderdelen zonder melding, zonder console-fout, zonder spoor.
+Dat past bij "helemaal stuk" beter dan een losse bug. `loadFounderOffers()`
+heeft in de code al de kanttekening staan dat het losse script
+`F-V16-oprichterschap-aanbod.sql` nodig is voor die kolom.
+
+**Nodig van Ronald (Claude heeft geen databasetoegang):**
+1. De echte foutmelding — bandomgeving openen, F12, tabbladen Console en
+   Network, kijken welke Supabase-aanroep faalt en met welke tekst. Dit is
+   het snelst en zegt waarschijnlijk meteen genoeg.
+2. Bestaat de kolom `band_members.founder_offer` (en `founder_offer_at`)?
+3. Bestaan de functies `tt_accept_founder_offer` en
+   `tt_expire_old_founder_offers`?
+4. De RLS-regels op `band_members`.
+
+**Eerste punt van die sessie, los van de oorzaak:** het stille falen is een
+eigen defect. Drie schermen die zonder enige melding verdwijnen maken elke
+storing onvindbaar — ook deze. De `catch`-blokken horen minstens naar
+`logAppError()` te schrijven (bestaat al, `core.js`, TT-64).
+
+**Testgereedschap:** in de gedeelde map op Ronalds laptop staat
+`_testgereedschap-niet-uploaden/supabase-stub.js` — een vervanger voor de
+Supabase-bibliotheek met vaste testdata (een band met twee bevestigde leden,
+waarvan één oprichter). Daarmee is de bandomgeving lokaal met Playwright te
+testen zonder databasetoegang. Niet naar de repo uploaden.
+
+---
+
+**Werkwijze (09-09-2026, instructie Ronald):** openstaande onderwerpen,
+bevindingen en overdrachten komen in dit bestand. Geen losse bestanden of
+aparte projectdocumenten ernaast. `actielijst.md` blijft het enige bestand
+met de actuele stand.
+
+---
+
+**Bestandsuitwisseling en repo (09-09-2026) — uitgezocht, met een fout van Claude erin.**
+
+**Aanleiding:** Ronald: "vergeleken met 1 index bestand is het nu 10x meer
+werk om bestanden te downloaden, uitpakken, kopieren, zip verwijderen,
+kopieren naar test." Terechte klacht. Claude leverde die sessie eerst in een
+zip, wat een onnodige stap toevoegde.
+
+**Geverifieerd — lezen is opgelost.** Claude kan de repo zelf klonen
+(`git clone https://github.com/tt-rw/talenttent.org.git` werkt vanuit de
+sessie). **Ronald hoeft bij sessiestart geen bestanden meer te uploaden.**
+Dat haalt meteen het risico weg waar deze sessie twee keer op stukliep:
+bestanden die wel in de uploadlijst stonden maar niet aankwamen
+(`styles.css`, `utils.js`, `wizard.js`).
+
+**Geverifieerd — schrijven kan niet vanuit Claude.** Alle drie de routes zijn
+getest en dicht:
+
+| Route | Uitkomst |
+|---|---|
+| GitHub REST API met een persoonlijk token | 403 van de proxy — repo niet in de toegestane set van de sessie |
+| `git push` over HTTPS met datzelfde token | 403 van de git-proxy, zelfde reden |
+| `git push` vanaf Ronalds laptop | 403 van de proxy na CONNECT; git staat er wel (2.34.1) |
+| GitHub-connector in de MCP-registry | bestaat niet |
+
+Het token zelf werkte (`api.github.com/user` gaf 200 en herkende `tt-rw`).
+Lezen mag, schrijven niet. Dit is een beleidsbeperking van de omgeving, geen
+storing — er omheen werken is expliciet verboden en gebeurt niet.
+
+**Fout van Claude, letterlijk benoemd:** Claude vroeg Ronald om een GitHub-
+token **vóórdat** Claude had gecontroleerd of pushen überhaupt mogelijk was.
+Claude testte alleen het lezen en nam aan dat schrijven dan ook zou werken.
+Het token is daarna direct ingetrokken. Dit is precies de aanname-fout die
+werkregel 1 verbiedt.
+
+**Werkende afspraak, vanaf nu:**
+- Claude kloont de repo zelf bij sessiestart. Ronald uploadt niets meer aan
+  Claude.
+- Claude zet alleen de **gewijzigde** bestanden in de gedeelde map op Ronalds
+  laptop: `Desktop\Projecten\_TalentTent\claude\gedeelde map`. Ronald
+  koppelt die map bij sessiestart in de desktop-app (één klik).
+- Ronald sleept die bestanden in één keer naar GitHub. Geen zip, geen
+  uitpakken, geen downloaden.
+- In die map staat ook `_testgereedschap-niet-uploaden/supabase-stub.js` —
+  niet naar de repo uploaden.
+
+**Repo-naam gewijzigd:** de repo heet nu `tt-rw/talenttent.org`. De oude naam
+`tt-rw/talenttent` werkt nog via een doorverwijzing van GitHub, maar staat
+waarschijnlijk niet meer in keuzelijsten. **De projectinstructies noemen nog
+`github.com/tt-rw/talenttent` — dat mag `talenttent.org` worden.**
+
+**`talenttent-test` loopt achter (nog niet opgelost, geen haast):** daar staat
+`musicians.js` nog zonder TT-226/TT-227, en `bands.js`, `index.html` en
+`styles.css` zijn er niet bijgewerkt. `styles.css` is er wel al bijgewerkt
+met het TT-224/TT-225-herstel.
+
+---
+
+**Bijgewerkte projectdocumenten (09-09-2026).**
+
+Deze staan in het claude.ai-project, niet in de repo. Ze zijn deze sessie
+door Claude bijgewerkt:
+
+| Document | Wijziging |
+|---|---|
+| `huisstijl-en-consistentie.md` §5 | Nieuwe subsectie "Volgorde en formaat in een knoppenrij" (TT-228), inclusief waarom `flex:1` niet werkt |
+| `huisstijl-en-consistentie.md` §8 | Nieuwe regel: een bevestiging in twee stappen is altijd te annuleren (TT-226) |
+| `huisstijl-en-consistentie.md` §3 | Knoppenrij-tussenruimte van 10px naar 8px |
+| `huisstijl-en-consistentie.md` §11 | Herschreven — beschreef nog de bovenbalk met tabs op desktop, wat sinds TT-224 niet meer klopt |
+| `app-first-toetslijst.md` punt 2 | Herschreven naar "Webapp als spiegel van de telefoon-app". Stond open sinds 07-09-2026 |
 
 ---
 
