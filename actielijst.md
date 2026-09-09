@@ -1,6 +1,46 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 09-09-2026 — **TT-230 opgelost. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend).** Alle drie vóór TT-01. Deze sessie opgeleverd: TT-226, TT-227, TT-228 en het herstel van TT-224/TT-225. Ook gewijzigd: de werkwijze rond sessies en bestandsuitwisseling (zie de twee blokken direct hieronder).
+**Laatste update:** 09-09-2026 — **TT-230 opgelost. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-232 (e-mail bij een fout), P1.** Alle drie vóór TT-01. Deze sessie opgeleverd: TT-226, TT-227, TT-228 en het herstel van TT-224/TT-225. Ook gewijzigd: de werkwijze rond sessies en bestandsuitwisseling (zie de twee blokken direct hieronder).
+
+---
+
+**TT-232 (nieuw, NIET opgelost, P1, 09-09-2026) — E-mail bij een fout in `app_error_log`.**
+
+**Wat Ronald vroeg:** "ik wil een email ontvangen zodra dit gebeurt."
+
+**Waarom nu pas.** TT-230 zorgt dat elke fout wordt vastgelegd. Vastleggen is
+niet melden — vandaag moet Ronald zelf in de tabel kijken. Dit ticket sluit
+dat gat.
+
+**Wat er nu is (Geverifieerd):** `logCaught()` en `logAppError()` schrijven
+naar `app_error_log`. Kolommen: `message`, `source`, `stack`, `user_id`.
+Maximaal 20 rijen per paginabezoek. Geen dashboard, geen filtering, geen
+melding.
+
+**Drie routes, nog geen keuze gemaakt:**
+
+| Route | Wat het is | Openstaand |
+|---|---|---|
+| Database-webhook naar een maildienst | Supabase stuurt bij elke nieuwe rij een bericht door | **Onbekend:** of webhooks in dit Supabase-plan zitten. Vraagt een externe maildienst (Resend, Postmark o.i.d.) en een account |
+| Foutenoverzicht in de app | Een scherm dat alleen Ronald ziet. Stond al als P1 in TT-64 | Geen melding, wel direct inzicht. Geen externe dienst nodig |
+| Wekelijkse samenvatting per mail | Eén mail per week i.p.v. per fout | Vraagt een geplande taak. Dit project heeft geen cron beschikbaar — zelfde beperking als bij `tt_expire_old_founder_offers`, die daarom "lazy" meedraait |
+
+**Openstaand punt vóór het bouwen.** Ronald wil een mail bij elke fout. Het
+risico daarvan is bekend uit TT-64: één fout in een lus levert 20 rijen per
+paginabezoek. Dat wordt 20 mails. Nodig vóór de bouw:
+1. ontdubbelen op `message` + `source`, of
+2. een drempel (maximaal één mail per fouttekst per uur), of
+3. eerst een week meten hoeveel er werkelijk binnenkomt.
+
+Besluit hierover nemen aan het begin van die sessie, niet tijdens het bouwen.
+
+**Nodig van Ronald (Claude heeft geen databasetoegang):**
+1. Staat "Database Webhooks" in het Supabase-menu van dit project?
+2. Welk e-mailadres moet de melding ontvangen?
+3. Is er al een maildienst in gebruik, of moet die nieuw worden aangemaakt?
+
+**Volgorde:** na TT-229 en TT-231. Een melding over een app die nog stuk is,
+voegt niets toe aan wat al bekend is.
 
 ---
 
