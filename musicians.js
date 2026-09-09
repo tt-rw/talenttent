@@ -551,8 +551,12 @@ async function deleteAllStorageForUser(userId) {
 const TILES = [
   { id: 'wieBenJe',   title: 'Wie ben je',      sub: 'naam - plaats - bio' },
   { id: 'watSpeelJe', title: 'Wat speel je',    sub: 'instrumenten - niveau - genres - eigen nummers/covers' },
-  { id: 'watZoekJe',  title: 'Wat zoek je',     sub: 'muzikant - band - optreden - ambitie' },
+  // TT-227 (09-09-2026, Ronald): "Je setlist" hoort direct onder "Wat speel
+  // je" — dat zijn allebei vragen over wat je zelf speelt. "Wat zoek je"
+  // schuift een plek naar beneden. Deze volgorde stuurt het tegeloverzicht
+  // volledig aan (renderTegels() leest deze lijst), dus dit is de enige plek.
   { id: 'jeSetlist',  title: 'Je setlist',      sub: 'covers - eigen nummers' },
+  { id: 'watZoekJe',  title: 'Wat zoek je',     sub: 'muzikant - band - optreden - ambitie' },
   { id: 'mediahoek',  title: 'Je mediahoek',    sub: "video's - foto's - profielfoto" },
 ];
 
