@@ -1,6 +1,70 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 09-09-2026 — **TT-229 (bandomgeving stuk) is nu P0 en het eerstvolgende onderwerp**, vóór TT-01. Deze sessie opgeleverd: TT-226, TT-227, TT-228 en het herstel van TT-224/TT-225. Ook gewijzigd: de werkwijze rond sessies en bestandsuitwisseling (zie de twee blokken direct hieronder).
+**Laatste update:** 09-09-2026 — **Drie nieuwe P0's, in deze volgorde: TT-229 (bandomgeving stuk), TT-230 (stil falen weghalen), TT-231 (Playwright-testset wordt leidend).** Alle drie vóór TT-01. Deze sessie opgeleverd: TT-226, TT-227, TT-228 en het herstel van TT-224/TT-225. Ook gewijzigd: de werkwijze rond sessies en bestandsuitwisseling (zie de twee blokken direct hieronder).
+
+---
+
+**TT-231 (nieuw, NIET opgelost, P0, 09-09-2026) — Vaste Playwright-testset wordt leidend.**
+
+**Wat Ronald vroeg:** "ik wil dat de playwright test leidend wordt. ik kan
+dingen vergeten." De handmatige smoke-test vervalt daarmee als Ronalds taak.
+
+**Geverifieerd — de grens van wat automatisch kan.** Vanaf Ronalds laptop is
+er geen netwerktoegang: `https://fqtgilwfestzofunupnu.supabase.co` en
+`https://talenttent.org` geven allebei geen antwoord (curl-code 000). In de
+sessie-sandbox is Supabase ook niet bereikbaar. Een geautomatiseerde test
+tegen de echte database kan dus op geen van beide plekken draaien.
+
+**Opzet in twee lagen. Samen zijn ze leidend.**
+
+*Laag 1 — Playwright met de Supabase-stub, in de sessie.* Volledig
+automatisch, draait bij elke wijziging vóór oplevering. Dekt:
+- alle views openen zonder paginafout;
+- alle functies uit "Functies die aanwezig moeten zijn" bestaan;
+- de verplichte-featurelijst uit de projectinstructies als echte controles,
+  niet als een lijstje dat Claude met de hand naloopt;
+- knoppenrijen (TT-228): volgorde, gelijke breedte, 44px tikdoel;
+- navigatie, hamburgermenu, onderbalk, modals binnen het canvas (TT-224);
+- haakjesbalans en `node --check` op elk gewijzigd JS-bestand.
+
+*Laag 2 — Claude loopt de app door in Ronalds browser, op de echte site.*
+Dekt wat laag 1 niet kan: database, RLS-regels, echt inloggen. Claude voert
+de stappen uit; Ronald hoeft niets te onthouden of af te vinken. Ronald heeft
+alleen zijn browser open en geeft één keer toestemming.
+
+**De stappen van laag 2** (de oude smoke-test, uitgebreid met de bandomgeving
+— die ontbrak, en dat verklaart waarom TT-229 pas laat opviel):
+inloggen · zoeken met profiel · zoeken zonder profiel · uitgelogd zoeken ·
+bericht sturen · profiel bewerken · **een band openen** · **Bandleden beheren
+openen** · **een uitnodiging versturen of intrekken**.
+
+**Waar de testset komt te staan:** in de repo, in een eigen map, zodat Claude
+hem bij elke sessie meekloont en hij versiebeheer heeft. Niet als wegwerptest
+per sessie — dan valt er niets mee te vergelijken.
+
+**Volgorde:** TT-230 eerst. Een test kan niets vinden zolang fouten stil
+worden opgeslokt.
+
+---
+
+**TT-230 (nieuw, NIET opgelost, P0, 09-09-2026) — Stil falen weghalen, app-breed.**
+
+**Aanleiding:** drie functies in `bands.js` vangen élke databasefout af en
+tonen niets — geen melding, geen console-fout, een leeg vak. Zo'n storing kan
+weken bestaan tot Ronald hem toevallig ziet. Dat is vermoedelijk precies wat
+er bij TT-229 gebeurt.
+
+**Wat te doen:** de hele app nalopen op `catch`-blokken die een fout
+opslokken. Elk daarvan hoort minstens naar `logAppError()` te schrijven — die
+functie bestaat al sinds TT-64 in `core.js` — en waar de gebruiker iets mist,
+ook een korte melding te tonen.
+
+**Bekend startpunt:** `renderFounderTransferSection()`, `loadFounderOffers()`
+en `loadBandInvites()` in `bands.js`. Er zijn er vrijwel zeker meer; dat is
+onderdeel van het ticket, niet een aanname vooraf.
+
+**Waarom dit vóór TT-231 gaat:** een testset kan een fout die geen signaal
+geeft niet vinden. Niet in laag 1, niet in laag 2.
 
 ---
 
