@@ -1203,11 +1203,40 @@ function jstSetLevel(i, level) {
   jstSongs[i].level = level;
   jstRenderSongs();
 }
+// TT-226 (09-09-2026, Ronald): een aangezette "Zeker?" was niet meer te
+// annuleren. Wie zich bedacht, moest het hele tegelscherm verlaten en
+// opnieuw openen. Een klik ergens anders in de app zet de knop nu terug op
+// ✕. Zelfde patroon als handleCancelClick() hierboven: de listener wordt
+// pas ná de huidige klik geregistreerd, en verdwijnt vanzelf ({ once: true }).
+function jstCancelConfirmDelete() {
+  let gewijzigd = false;
+  jstSongs.forEach(s => { if (s._confirmDelete) { delete s._confirmDelete; gewijzigd = true; } });
+  if (gewijzigd) jstRenderSongs();
+}
+
+function jstArmOutsideCancel() {
+  // Pas ná deze klik toevoegen — anders vangt de listener de huidige, nog
+  // bubbelende klik meteen weer af en staat "Zeker?" er nooit.
+  setTimeout(() => {
+    document.addEventListener('click', function onOutsideClick(e) {
+      // Een klik op een verwijderknop loopt via jstRemoveSong() zelf: die
+      // bevestigt deze regel, of zet een andere regel aan. Hier niets doen,
+      // anders draait deze listener die actie meteen weer terug.
+      if (e.target.closest && e.target.closest('.song-remove')) return;
+      jstCancelConfirmDelete();
+    }, { once: true });
+  }, 0);
+}
+
 function jstRemoveSong(i) {
   if (!jstSongs[i]) return;
   if (!jstSongs[i]._confirmDelete) {
+    // TT-226: maximaal één regel tegelijk op "Zeker?" — een eerder
+    // aangezette regel mag niet onopgemerkt open blijven staan.
+    jstSongs.forEach(s => delete s._confirmDelete);
     jstSongs[i]._confirmDelete = true;
     jstRenderSongs();
+    jstArmOutsideCancel();
     return;
   }
   jstSongs.splice(i, 1);
