@@ -568,10 +568,22 @@
      staan (naast .btn-sm). Was al 8px op de enige plek waar dit voorkwam
      — nu een klasse i.p.v. inline, zodat een volgende knoppenrij niet
      opnieuw een eigen waarde verzint. */
+  /* TT-228 (09-09-2026, Ronald): knoppen in dezelfde rij zijn altijd exact
+     even breed. Bewust grid met 1fr-kolommen i.p.v. flex:1 — geverifieerd
+     met een meting: met flex:1 bleef "Terug" 2px breder dan "Opslaan"
+     (175 vs 173 op 390px). Oorzaak: flex-basis 0 kan niet kleiner worden dan
+     rand + opvulling, en .btn-ghost heeft een rand van 1px die .btn-primary
+     niet heeft. Die 2px bleef dus staan bij het verdelen van de resterende
+     ruimte. Een 1fr-kolom in een grid is wél altijd exact even breed,
+     ongeacht rand of tekstlengte. Dit vervangt de eerdere poging uit TT-207
+     (.action-row .btn { flex: 1 }), die dit verschil niet wegnam. */
   .btn-row {
-    display: flex;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
     gap: 8px;
   }
+  .btn-row .btn { min-width: 0; }
 
   /* TT-196 (04-09-2026): straal-veld + km-label, was 4x apart inline
      (gap:6px, geen 4px-veelvoud) — nu één klasse, zelfde 8px-waarde als
@@ -2572,13 +2584,18 @@
   .tile-title { font-size: 17px; font-weight: 700; }
   .tile-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .field-status { font-size: 11px; margin-top: 5px; min-height: 14px; }
-  .action-row { display: flex; gap: 10px; margin-top: 28px; }
-  /* TT-207 (04-09-2026, zelfde oorzaak/oplossing als TT-206 bij de
-     zoekkaarten): Terug/Opslaan kregen zonder min-width:0 een klein maar
-     meetbaar breedteverschil (175px vs 173px) — de standaard min-width:auto
-     van een flex-item laat de tekstbreedte meewegen. Zelfde patroon als
-     .messages-conv-main/.result-row-main elders in dit bestand. */
-  .action-row .btn { flex: 1; min-width: 0; }
+  /* TT-228 (09-09-2026): zelfde grid-aanpak als .btn-row hierboven, met
+     dezelfde 8px-tussenruimte (was 10px, geen veelvoud van 4 — huisstijl
+     §3). Vervangt de flex-aanpak van TT-207 (04-09-2026): die noemde het
+     verschil van 175 vs 173px al, maar min-width:0 nam het niet weg. */
+  .action-row {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 8px;
+    margin-top: 28px;
+  }
+  .action-row .btn { min-width: 0; }
 
   /* ── Touch-hover-guard (TT-182, 01-09-2026) ──────────────────────────────
      Telefoons simuleren :hover na een tik en die blijft "plakken" tot een

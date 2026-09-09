@@ -1,6 +1,235 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 08-09-2026 — **Bestandsopsplitsing live op productie (`talenttent.org`), getest en in orde.** Sessieplanning TT-01 (e-maildigest, diagnose) staat nog steeds als eerstvolgend ticket. Laatst opgeleverde ticket blijft TT-225.
+**Laatste update:** 09-09-2026 — **TT-224/TT-225 hersteld** (waren verdwenen bij de bestandsopsplitsing), plus TT-226, TT-227 en TT-228. Sessieplanning TT-01 (e-maildigest, diagnose) staat nog steeds als eerstvolgend ticket. Laatst opgeleverde ticket: TT-228.
+
+---
+
+**TT-228 (nieuw en opgelost, 09-09-2026) — Knopvolgorde en knopformaat app-breed gelijkgetrokken.**
+
+**Wat Ronald vroeg:** primaire actieknop rechts, secundaire links, door de
+hele app. En overal even groot — op sommige plekken waren de knoppen niet
+gelijk.
+
+**Twee keuzes vooraf, expliciet voorgelegd en door Ronald bevestigd:**
+1. Knoppen die ónder elkaar op volle breedte staan blijven zoals ze zijn.
+   De links/rechts-regel geldt alleen voor knoppen die naast elkaar staan.
+2. "Even groot" betekent gelijk binnen elke rij. Het standaardformaat blijft
+   leidend; de afwijkende 13px-knoppen in de banners zijn niet opgetrokken.
+
+**Bestandscontrole (nieuwe werkregel):** `wizard.js` en `utils.js` zaten niet
+in de upload. In plaats van aan te nemen, zijn beide rechtstreeks uit de repo
+gecontroleerd. **Geverifieerd:** de Terug/Verder-balk van de wizard staat
+volledig in `index.html` (`.wizard-btn`, al ghost-links/goud-rechts, al gelijk
+breed via `flex: 1` binnen een eigen container), en `utils.js` heeft één
+knoppenpaar (`showSaveError()`) dat ónder elkaar op volle breedte staat.
+Geen van beide bestanden hoefde gewijzigd.
+
+**Inventarisatie, 15 knoppenrijen doorgemeten. Vijf hadden de primaire knop
+links — allemaal omgedraaid:**
+
+| Plek | Was | Nu |
+|---|---|---|
+| Bevestigingsmodal (`confirmModal`) | Ja, verwijderen \| Terug | Terug \| Ja, verwijderen |
+| Account verwijderen | Account verwijderen \| Terug | Terug \| Account verwijderen |
+| Banduitnodiging (`loadBandInvites`) | Bevestigen \| Weigeren | Weigeren \| Bevestigen |
+| Oprichterschap (`loadFounderOffers`) | Ik neem het over \| Nee, liever niet | Nee, liever niet \| Ik neem het over |
+| Uitnodiging versturen (`openInviteNote`) | Uitnodiging versturen \| Terug | Terug \| Uitnodiging versturen |
+
+**Root cause van de ongelijke breedtes, geverifieerd met een meting — en
+tegelijk de correctie van een eerdere, foute aanname:** `flex: 1` maakt twee
+knoppen niet even breed. `.btn-ghost` heeft een rand van 1px, `.btn-primary`
+niet. `flex-basis: 0` kan niet kleiner worden dan rand plus opvulling, dus de
+twee knoppen beginnen 2px uit elkaar, en die 2px blijft staan bij het verdelen
+van de resterende ruimte. Gemeten: 175px tegen 173px op een scherm van 390px.
+**TT-207 (04-09-2026) noemde exact dat verschil van 175 vs 173 en dacht het op
+te lossen met `min-width: 0` op `.action-row .btn`. Die aanname was fout — het
+verschil stond er daarna nog steeds in.**
+
+**Gebouwd:** `.btn-row` en `.action-row` gebruiken nu `display: grid` met
+`grid-auto-flow: column` en `grid-auto-columns: 1fr`. Een `1fr`-kolom is altijd
+exact even breed, ongeacht rand of tekstlengte. Vijf ad-hoc containers met een
+eigen inline `display:flex;gap:12px` zijn vervangen door `class="btn-row"`;
+de inline `flex:1;min-width:0` op de knoppen zelf is daarmee overbodig en weg.
+
+**Twee bewuste neveneffecten:**
+- Tussenruimte in de vijf Terug/Opslaan-rijen van 10px naar 8px. 10 was geen
+  veelvoud van 4 (huisstijl §3), en 8px is de waarde van elke andere
+  knoppenrij.
+- De knoppen in de banners voor banduitnodiging en oprichterschap groeiden mee
+  met hun tekst; die vullen nu elk de halve breedte.
+
+**Getest met Playwright, 13 knoppenrijen op 390px en 1440px, 104 controles,
+alle geslaagd:** per rij zijn beide knoppen exact even breed, exact even hoog,
+minimaal 44px hoog, en staat de secundaire links. Geen paginafouten.
+`node --check` geslaagd op `bands.js`. Haakjesbalans `styles.css` 460/460,
+`bands.js` 228/228.
+
+**Kanttekening bij de test, niet verzwegen:** de meting draaide met alle app-JS
+geblokkeerd — puur CSS-layout, want dat is wat gewijzigd is. `utils.js` en
+`wizard.js` waren niet beschikbaar en de Supabase-CDN is in de testomgeving
+niet bereikbaar. De drie bannerrijen uit `bands.js` zijn gemeten met exact
+dezelfde opmaak als de code genereert, niet via de echte databaseroute.
+
+**Gewijzigde bestanden:** `index.html`, `styles.css`, `bands.js`.
+
+**Ook bijgewerkt:** `huisstijl-en-consistentie.md` §5 (nieuwe subsectie
+"Volgorde en formaat in een knoppenrij") en §3 (8px-tussenruimte).
+
+---
+
+**TT-227 (nieuw en opgelost, 09-09-2026) — Volgorde van de tegels op "Profiel bewerken".**
+
+**Wat Ronald vroeg:** "Je setlist" onder "Wat speel je"; "Wat zoek je" schuift
+een plek naar beneden. Reden: "Wat speel je" en "Je setlist" gaan allebei over
+wat je zelf speelt.
+
+**Geverifieerd:** de lijst `TILES` in `musicians.js` stuurt het tegeloverzicht
+volledig aan (`renderTegels()` leest die lijst), dus dit is de enige plek.
+`TEGEL_SCREENS` en `openTegelScreen()` werken op id, niet op volgorde — die
+blijven ongewijzigd.
+
+**Nieuwe volgorde:** Wie ben je · Wat speel je · Je setlist · Wat zoek je ·
+Je mediahoek.
+
+**Getest met Playwright:** de vijf tegels staan in de gevraagde volgorde,
+geen paginafouten. `node --check` geslaagd.
+
+**Gewijzigd bestand:** `musicians.js`.
+
+---
+
+**TT-226 (nieuw en opgelost, 09-09-2026) — "Zeker?" bij een setlistnummer was niet te annuleren.**
+
+**Wat Ronald meldde:** na een klik op ✕ bij een nummer verschijnt "Zeker?" in
+het rood. Wie zich bedacht, kon dat niet ongedaan maken — de enige uitweg was
+het hele tegelscherm verlaten en opnieuw openen.
+
+**Geverifieerd, root cause:** `jstRemoveSong()` zette `_confirmDelete` aan en
+tekende de rij opnieuw. Er was geen enkel pad terug: geen klik-buiten, geen
+Escape, geen tweede knop.
+
+**Gebouwd, 29 regels toegevoegd, niets verwijderd:**
+- `jstArmOutsideCancel()` registreert na het aanzetten een `document`-
+  klikluisteraar. Een klik ergens anders in de app zet "Zeker?" terug op ✕.
+- `jstCancelConfirmDelete()` zet alle regels terug en tekent opnieuw.
+- `jstRemoveSong()` zet nu maximaal één regel tegelijk op "Zeker?".
+
+Zelfde patroon als het al bestaande `handleCancelClick()` in dit bestand: de
+luisteraar wordt pas ná de huidige klik geregistreerd (`setTimeout(..., 0)`)
+en verdwijnt vanzelf (`{ once: true }`). Een klik op een `.song-remove`-knop
+wordt overgeslagen — anders zou de luisteraar het aanzetten van een andere
+regel meteen weer terugdraaien.
+
+**Getest met Playwright, 19 controles, alle geslaagd, geen paginafouten:**
+eerste klik toont "Zeker?" en verwijdert niets; een klik op een knop elders,
+op een losse div, of op een niveauknop annuleert; een tweede klik op "Zeker?"
+verwijdert het juiste nummer; ✕ op een andere rij zet die rij aan en de vorige
+uit zonder iets te verwijderen. Haakjesbalans `{}` 508/508, `()` 1396/1396,
+`[]` 84/84. `node --check` geslaagd.
+
+**Kanttekening:** de test draaide op een harnas met de echte
+`jstRenderSongs`/`jstRemoveSong`-code uit dit bestand, met stubs voor
+`escHtml`/`escAttr`/`compareArtistTitle` — `utils.js` zat niet in de upload.
+Die drie helpers raken dit gedrag niet.
+
+**Gewijzigd bestand:** `musicians.js`.
+
+**Ook bijgewerkt:** `huisstijl-en-consistentie.md` §8 (nieuwe regel: een
+bevestiging in twee stappen is altijd te annuleren).
+
+---
+
+**TT-224/TT-225 hersteld (09-09-2026) — het canvas op laptop/desktop was verdwenen bij de bestandsopsplitsing.**
+
+**Wat Ronald meldde:** "we hadden de webapp exact dezelfde layout gegeven als
+de mobiele versie. dit zie ik niet meer terug."
+
+**Geverifieerd, root cause — met de checksums uit dit document zelf:**
+
+| Stap | `index.html` | Checksum |
+|---|---|---|
+| TT-223 (07-09) | 12834 regels | `f7036df2…` |
+| TT-224 | 12857 | `76f33886…` |
+| TT-224-vervolg | 12861 | `073a6b09…` |
+| TT-225 (08-09) | 12872 | `147ba880…` |
+| **Opsplitsing, nulmeting** | **12834** | **`f7036df2…`** |
+
+De bestandsopsplitsing van 08-09-2026 is gestart op de TT-223-versie, niet op
+TT-225. Alle vier de CSS-opleveringen van 07 en 08 september zaten er dus niet
+in en zijn nooit in `styles.css` terechtgekomen. Bevestigd in de repo:
+`styles.css` had geen `@media (min-width: 561px)`, geen `left: 25%`, en
+`.search-wrap`/`.landing-wrap` stonden weer op de oude desktopbreedte van
+900px. Het testrapport van de opsplitsing bevestigt het onbedoeld ook:
+"1440px: bovenbalk met tabs, onderbalk verborgen" — dat is precies de oude
+desktopweergave.
+
+**Hersteld, 11 wijzigingen in `styles.css`, 60 diff-regels:**
+1. De drie `@media (max-width: 560px)`-blokken losgekoppeld — de telefoonschil
+   geldt weer op elke breedte (TT-224).
+2. Nieuw blok `@media (min-width: 561px)`: `#appRoot { width: 50%; margin: 0
+   auto }` plus `left: 25%; right: 25%` op `.app-bottom-nav`,
+   `.wizard-action-bar`, `.modal-overlay`, `.save-overlay` en
+   `.backend-error-overlay`.
+3. `max-width` weg en `width: 100%` erbij op `main`, `.landing-wrap`,
+   `.auth-wrap`, `.search-wrap` en `.my-profile-wrap` (TT-224-vervolg +
+   TT-225).
+4. `max-width: 760px` weg op `.wizard-action-bar-inner` (TT-225-bijvangst).
+
+**Getest met Playwright, 5 breedtes, vóór en ná:**
+
+| Breedte | `#appRoot` na | `#appRoot` vóór |
+|---|---|---|
+| 390 | 390 @0 | 390 @0 |
+| 600 | 300 @150 | 600 @0 |
+| 1024 | 512 @256 | 1024 @0 |
+| 1440 | 720 @360 | 1440 @0 |
+| 2560 | 1280 @640 | 2560 @0 |
+
+Kop, inhoud, onderbalk en modal meten op elke breedte exact dezelfde breedte
+en x-positie als `#appRoot`. Telefoon (390px) identiek aan vóór het herstel.
+De baseline liet ook de oude TT-224-vervolg-bug weer zien: `.my-profile-wrap`
+kromp naar 48px op 1024–2560px; met `width: 100%` is dat weg. Haakjesbalans
+`{}` 458/458, gelijk aan het origineel.
+
+**Les, vastgelegd:** een structurele ingreep (opsplitsen, samenvoegen,
+verplaatsen) begint altijd met een nulmeting tegen de **laatst opgeleverde**
+checksum uit dit document, niet tegen het bestand dat toevallig voorhanden is.
+De opsplitsing verifieerde zichzelf uitvoerig (byte-voor-byte reconstructie,
+haakjesbalans, functielijst) — maar alleen tegen zijn eigen, verkeerde
+startpunt. Al die controles slaagden en misten dit toch volledig.
+
+**Gewijzigd bestand:** `styles.css`.
+
+**Ook bijgewerkt:** `app-first-toetslijst.md` punt 2, dat nog de oude
+"webapp als aparte schil"-tekst bevatte (openstaand sinds 07-09-2026).
+
+---
+
+**Werkwijzewijziging (09-09-2026, besluit Ronald) — meerdere onderwerpen per sessie.**
+
+De regel "één onderwerp per sessie" kwam voort uit het monolithische
+`index.html`: elk onderwerp trok 12.800 regels mee. Sinds de opsplitsing laadt
+een sessie alleen de bestanden die het ticket raakt. Meerdere onderwerpen per
+sessie mag daarom weer.
+
+**Nieuwe tekst voor "Signaal voor een nieuwe sessie" in de projectinstructies:**
+
+> Claude meldt "start een nieuwe sessie" zodra één van deze optreedt:
+> 1. Claude corrigeert een eigen eerdere uitspraak binnen deze sessie.
+> 2. Ronald corrigeert Claude twee keer op dezelfde soort fout.
+> 3. Hetzelfde bestand is binnen deze sessie meermaals volledig herplaatst.
+>
+> Meerdere onderwerpen per sessie mag, sinds de opsplitsing van 08-09-2026.
+> Elk onderwerp raakt maar een paar bestanden.
+>
+> **Bestandscontrole per onderwerp.** Claude noemt bij elk nieuw onderwerp
+> welke bestanden hij nodig heeft, en welke daarvan hij daadwerkelijk heeft
+> gelezen. Ontbreekt er één, dan vraagt Claude erom. Claude werkt nooit op een
+> bestand dat hij deze sessie niet zelf heeft gelezen.
+
+**Aanleiding voor die laatste regel:** deze sessie kwamen `styles.css`,
+`utils.js` en `wizard.js` wel in de uploadlijst voor, maar niet daadwerkelijk
+aan. Bij één groot bestand kon dat niet gebeuren.
 
 ---
 
