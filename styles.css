@@ -127,10 +127,12 @@
   }
 
   /* Main layout */
+/* TT-225 (hersteld 09-09-2026): eigen max-width weg + width:100% (TT-224-vervolg),
+     zodat de inhoud het canvas vult i.p.v. naar zijn eigen inhoud te krimpen. */
   main {
     position: relative;
     z-index: 10;
-    max-width: 760px;
+    width: 100%;
     margin: 0 auto;
     padding: 48px 24px 80px;
   }
@@ -495,8 +497,8 @@
     border-top: 1px solid var(--border);
     padding: 8px 24px calc(8px + env(safe-area-inset-bottom, 0px));
   }
+  /* TT-225 (hersteld 09-09-2026): eigen max-width weg — de balk volgt nu het canvas. */
   .wizard-action-bar-inner {
-    max-width: 760px;
     margin: 0 auto;
     display: flex;
     gap: 8px;
@@ -878,9 +880,11 @@
     grid-template-columns: 1fr 1fr 1fr;
     gap: 14px;
   }
-  @media (max-width: 560px) {
+  /* TT-224 (hersteld 09-09-2026): media-grens (max-width:560px) losgekoppeld.
+     Deze regels gelden nu op elke breedte — de webapp krijgt dezelfde schil
+     als de telefoon-app, binnen het canvas van TT-224 onderaan dit bestand. */
     .progress-timeline-grid { grid-template-columns: 1fr; }
-  }
+  
   .progress-stage-title {
     font-size: 11px;
     font-weight: 700;
@@ -1258,7 +1262,9 @@
   }
 
   /* ── Landingspagina ─────────────────────── */
-  .landing-wrap { max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
+/* TT-225 (hersteld 09-09-2026): eigen max-width weg + width:100% (TT-224-vervolg),
+     zodat de inhoud het canvas vult i.p.v. naar zijn eigen inhoud te krimpen. */
+  .landing-wrap { width: 100%; margin: 0 auto; padding: 0 24px 80px; }
   .landing-hero { padding: 80px 0 60px; text-align: center; }
   .landing-hero-inner { max-width: 640px; margin: 0 auto; }
   .landing-title { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: clamp(36px, 7vw, 64px); letter-spacing: 0.5px; line-height: 1.1; margin-bottom: 20px; }
@@ -1537,8 +1543,10 @@
   .messages-send-btn:active { transform: scale(0.95); }
 
   /* ── Auth scherm ─────────────────────────── */
+/* TT-225 (hersteld 09-09-2026): eigen max-width weg + width:100% (TT-224-vervolg),
+     zodat de inhoud het canvas vult i.p.v. naar zijn eigen inhoud te krimpen. */
   .auth-wrap {
-    max-width: 440px;
+    width: 100%;
     margin: 60px auto;
     padding: 0 24px;
   }
@@ -1577,8 +1585,10 @@
   .auth-success.visible { display: block; }
 
   /* ── Zoekfunctie ─────────────────────────── */
+/* TT-225 (hersteld 09-09-2026): eigen max-width weg + width:100% (TT-224-vervolg),
+     zodat de inhoud het canvas vult i.p.v. naar zijn eigen inhoud te krimpen. */
   .search-wrap {
-    max-width: 900px;
+    width: 100%;
     margin: 0 auto;
     padding: 48px 24px 80px;
   }
@@ -2081,8 +2091,10 @@
   .modal-sticky-footer:empty { display: none; }
 
   /* Eigen profiel beheer */
+/* TT-225 (hersteld 09-09-2026): eigen max-width weg + width:100% (TT-224-vervolg),
+     zodat de inhoud het canvas vult i.p.v. naar zijn eigen inhoud te krimpen. */
   .my-profile-wrap {
-    max-width: 760px;
+    width: 100%;
     margin: 0 auto;
     padding: 48px 24px 80px;
   }
@@ -2275,7 +2287,9 @@
   .level-choice { min-height: 56px; align-items: flex-start; }
   .level-choice .level-choice-stars { margin-top: 2px; }
 
-  @media (max-width: 560px) {
+  /* TT-224 (hersteld 09-09-2026): media-grens (max-width:560px) losgekoppeld.
+     Deze regels gelden nu op elke breedte — de webapp krijgt dezelfde schil
+     als de telefoon-app, binnen het canvas van TT-224 onderaan dit bestand. */
     header { padding: 16px 20px 12px; flex-direction: column; align-items: flex-start; }
     main { padding: 32px 16px 60px; }
     .field-group { grid-template-columns: 1fr; }
@@ -2409,12 +2423,14 @@
        te breed. Vaste 2 kolommen i.p.v. auto-fill, zodat het altijd 2 naast
        elkaar zijn, ongeacht de precieze schermbreedte binnen dit bereik. */
     .results-grid-view { grid-template-columns: 1fr 1fr; }
-  }
+  
   /* ── TT-U24 (12-08-2026): vaste onderbalk op de telefoon ─────────────────
      Boven 560px onzichtbaar; daar blijft de bestaande bovenbalk staan. */
   .app-bottom-nav { display: none; }
 
-  @media (max-width: 560px) {
+  /* TT-224 (hersteld 09-09-2026): media-grens (max-width:560px) losgekoppeld.
+     Deze regels gelden nu op elke breedte — de webapp krijgt dezelfde schil
+     als de telefoon-app, binnen het canvas van TT-224 onderaan dit bestand. */
     .app-bottom-nav {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -2463,7 +2479,7 @@
 
     /* Inhoud mag niet achter de onderbalk verdwijnen. */
     body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
-  }
+  
 
   /* ── Backend niet geladen (TT-82) ────────────────────────────────────────
      Blokkerende melding als de Supabase-bibliotheek niet is geladen. Blijft
@@ -2591,3 +2607,24 @@
     .drop-zone:hover { border-color: var(--accent); background: rgba(245,197,24,0.04); }
     .add-link-btn:hover { border-color: var(--accent); color: var(--accent); }
   }
+
+  /* ── Canvas op laptop/desktop (TT-224, 07-09-2026 — hersteld 09-09-2026) ──
+     25% lucht — 50% app — 25% lucht, gecentreerd. Boven 560px krijgt de
+     webapp dezelfde schil als de telefoon-app (zie de losgekoppelde blokken
+     eerder in dit bestand), binnen dit vaste canvas.
+     Deze regels waren verdwenen bij de bestandsopsplitsing van 08-09-2026:
+     die is gestart op de index.html van TT-223, dus vóór TT-224/TT-225. */
+  @media (min-width: 561px) {
+    /* #appRoot is de enige wrapper om kop, navigatie, alle .app-view's en
+       alle modals — deze ene regel volstaat voor de normale documentstroom. */
+    #appRoot { width: 50%; margin: 0 auto; }
+    /* position:fixed-elementen negeren #appRoot en zouden anders de volle
+       vensterbreedte pakken. .app-toast hoeft niet mee: die staat op
+       left:50% + transform en valt al samen met het midden van dit canvas. */
+    .app-bottom-nav,
+    .wizard-action-bar,
+    .modal-overlay,
+    .save-overlay,
+    .backend-error-overlay { left: 25%; right: 25%; }
+  }
+
