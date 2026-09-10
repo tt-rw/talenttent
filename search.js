@@ -82,15 +82,14 @@ let musicianViewMode = localStorage.getItem('tt_musicianViewMode') || standaardW
 // TT-U13: zet de markering in beide schakelaars gelijk aan de werkelijke
 // stand. De HTML markeert "Lijst" vast; op een telefoon klopt dat niet meer.
 // TT-232 (09-09-2026): de weergavekeuze bij Muzikanten is een keuzelijst
-// geworden; bij Bands staat nog de schakelbalk. Deze functie zet beide.
+// geworden. TT-236 (10-09-2026): bij Bands nu ook. Deze functie zet beide.
 function syncViewToggles() {
   const musicianSel = document.getElementById('musicianViewToggle');
   if (musicianSel) musicianSel.value = musicianViewMode;
-  const wrap = document.querySelector('#bandViewToggle');
-  if (wrap) {
-    wrap.querySelectorAll('.segmented-btn').forEach(x => x.classList.remove('selected'));
-    wrap.querySelector(`[data-view="${bandViewMode}"]`)?.classList.add('selected');
-  }
+  const bandSel = document.getElementById('bandViewToggle');
+  if (bandSel) bandSel.value = bandViewMode;
+  refreshChoiceField('weergave');
+  refreshChoiceField('band-weergave');
 }
 
 function setMusicianViewMode(mode) {
@@ -353,6 +352,25 @@ function niveauBereikTekst(min, max) {
   return `Niveau ${min} t/m ${max} — ${niveauNaam(min)} t/m ${niveauNaam(max)}`;
 }
 
+// TT-236: dezelfde terugleesregel voor de band-schaal. Die heet "ervaring",
+// niet "niveau" (V-21), en heeft een eigen tabel: NIVEAU_INFO_BAND_ROWS in
+// bands.js. Eén bron, geen tweede lijst die uit de pas kan lopen.
+function ervaringNaam(n) {
+  try {
+    return NIVEAU_INFO_BAND_ROWS[n - 1][0].replace(/^\d+\.\s*/, '').replace(/\s*\(.*\)\s*$/, '');
+  } catch (e) {
+    return '';
+  }
+}
+
+function ervaringBereikTekst(min, max) {
+  const naam = (n) => { const t = ervaringNaam(n); return t ? ` — ${t}` : ''; };
+  if (min === '' && max === '') return 'Alle ervaring';
+  if (min !== '' && max === '') return `Ervaring ${min} en hoger${naam(min)}`;
+  if (min === max) return `Alleen ervaring ${min}${naam(min)}`;
+  return `Ervaring ${min} t/m ${max} — ${ervaringNaam(min)} t/m ${ervaringNaam(max)}`;
+}
+
 // Straal-invoer strikt uitlezen: 0 km moet ook echt 0 km betekenen (0 is
 // falsy in JS, dus "|| 25" zou 0 onterecht vervangen door de standaardwaarde).
 function parseRadiusInput(id) {
@@ -372,18 +390,10 @@ function snapRadiusToStep(el) {
   el.value = v;
 }
 
-// TT-136 (23-08-2026): Meer filters-toggle, gedeeld door beide zoektabs.
-// Blijft simpel bewust: geen state die het scherm zelf onthoudt tussen
-// bezoeken — alleen binnen dezelfde sessie, zodat een net geopende sectie
-// niet weer dichtklapt zodra iemand terugkomt van een ander scherm.
-function toggleMoreFilters(which) {
-  const el = document.getElementById(which + 'MoreFilters');
-  const btn = document.getElementById(which + 'MoreFiltersToggle');
-  if (!el || !btn) return;
-  const opening = el.style.display === 'none';
-  el.style.display = opening ? 'block' : 'none';
-  btn.textContent = opening ? 'Minder filters ▴' : 'Meer filters ▾';
-}
+// TT-136 (23-08-2026): hier stond toggleMoreFilters(), de "Meer filters"-knop.
+// TT-232 haalde die weg bij Muzikanten, TT-236 (10-09-2026) bij Bands. Beide
+// zoekschermen tonen nu al hun filters. De functie wordt nergens meer
+// aangeroepen en is daarom verwijderd.
 
 // Filters wissen — zet zoekscherm terug naar lege staat, leegt ook het resultaat.
 function resetMusicianSearch() {
@@ -773,8 +783,9 @@ let bandViewMode = localStorage.getItem('tt_bandViewMode') || standaardWeergave(
 function setBandViewMode(mode) {
   bandViewMode = mode;
   try { localStorage.setItem('tt_bandViewMode', mode); } catch(e) {}
-  document.querySelectorAll('#bandViewToggle .segmented-btn').forEach(x => x.classList.remove('selected'));
-  document.querySelector(`#bandViewToggle [data-view="${mode}"]`).classList.add('selected');
+  const sel = document.getElementById('bandViewToggle');
+  if (sel) sel.value = mode;
+  refreshChoiceField('band-weergave');
   if (lastBandResults.length) renderCappedBandResults();
 }
 
@@ -803,14 +814,21 @@ function sortBandList(list) {
 
 // Sorteren staat bij het resultaat: her-sorteert direct de al opgehaalde
 // resultaten, geen nieuwe zoekopdracht nodig.
-function setBandSearchSortMode(el, mode) {
+// TT-236 (10-09-2026): schakelbalk vervangen door een keuzelijst, zoals bij
+// Muzikanten. De parameter `el` is daarmee vervallen; het verborgen <select>
+// is nu de bron van waarheid.
+function setBandSearchSortMode(mode) {
   if (mode === 'distance' && lastBandResults.length && !lastBandResults.some(b => b.distance_km != null)) {
     showToast('Vul een plaats in bij de zoekfilters om op afstand te sorteren.');
+    const sel = document.getElementById('filterBandSortMode');
+    if (sel) sel.value = bandSearchSortMode;
+    refreshChoiceField('band-sorteren');
     return;
   }
   bandSearchSortMode = mode;
-  document.querySelectorAll('#filterBandSortMode .segmented-btn').forEach(x => x.classList.remove('selected'));
-  el.classList.add('selected');
+  const sel = document.getElementById('filterBandSortMode');
+  if (sel) sel.value = mode;
+  refreshChoiceField('band-sorteren');
   if (lastBandResults.length) {
     sortBandList(lastBandResults);
     renderCappedBandResults();
@@ -843,11 +861,63 @@ function initBandSearchFilters() {
       onChange: runBandSearch
     });
   }
+
+  // TT-236 (10-09-2026): dezelfde wiel- en keuzevelden als bij Muzikanten.
+  // De verborgen invoervelden houden hun bestaande id's, dus runBandSearch()
+  // leest ze ongewijzigd uit. De filterlogica is niet gewijzigd.
+  if (!WHEEL_FIELDS['band-straal']) {
+    initWheelField({
+      id: 'band-straal',
+      fieldId: 'filterBandRadiusField',
+      title: 'Straal',
+      unit: 'km',
+      columns: [{ inputId: 'filterBandRadius', values: WHEEL_RADIUS, ariaLabel: 'Zoekstraal in kilometers' }],
+      value: [STRAAL_STANDAARD],
+      clearTo: [STRAAL_STANDAARD],
+      isActief: (v) => Number(v[0]) !== STRAAL_STANDAARD,
+      format: (v) => `${v[0]} km`,
+      hint:   (v) => `Straal ${v[0]} km`,
+      onChange: runBandSearch
+    });
+
+    initWheelField({
+      id: 'band-ervaring',
+      fieldId: 'filterBandNiveauField',
+      title: 'Ervaring',
+      sep: 't/m',
+      koppelBereik: true,
+      // Zelfde regel als bij Niveau: ervaring begint bij 1, dus een bovengrens
+      // zonder ondergrens bestaat niet.
+      ondergrensVerplicht: true,
+      infoActie: openBandNiveauInfoModal,
+      columns: [
+        { inputId: 'filterBandNiveauMin', values: WHEEL_NIVEAU, ariaLabel: 'Ervaring vanaf' },
+        { inputId: 'filterBandNiveauMax', values: WHEEL_NIVEAU, ariaLabel: 'Ervaring tot en met' }
+      ],
+      value: ['', ''],
+      format: (v) => niveauKort(v[0], v[1]),
+      hint:   (v) => ervaringBereikTekst(v[0], v[1]),
+      onChange: runBandSearch
+    });
+  }
+
+  if (!CHOICE_FIELDS['band-status']) {
+    initChoiceField({ id: 'band-status', fieldId: 'filterBandStatusField',
+                      menuId: 'filterBandStatusMenu', selectId: 'filterBandStatus' });
+    initChoiceField({ id: 'band-sorteren', fieldId: 'filterBandSortModeField',
+                      menuId: 'filterBandSortModeMenu', selectId: 'filterBandSortMode' });
+    initChoiceField({ id: 'band-weergave', fieldId: 'bandViewToggleField',
+                      menuId: 'bandViewToggleMenu', selectId: 'bandViewToggle' });
+    syncViewToggles();
+  }
 }
 
-function toggleBandStatusFilter(el, val) {
-  el.classList.toggle('selected');
-  filterBandStatusVal = el.classList.contains('selected') ? val : null;
+// TT-236: Status was een losse chip die je aan- en uitzette. Het is nu een
+// keuzelijst met twee standen, zoals Weergave (Ronalds schets, 10-09-2026).
+// De lege waarde betekent: geen statusfilter.
+function setBandStatusFilter(val) {
+  filterBandStatusVal = val || null;
+  refreshChoiceField('band-status');
   runBandSearch();
 }
 
@@ -857,16 +927,20 @@ function resetBandSearch() {
   document.getElementById('filterBandName').value = '';
   document.getElementById('filterBandCity').value = '';
   document.getElementById('filterBandCityStatus').textContent = '';
-  document.getElementById('filterBandRadius').value = 25;
-  document.getElementById('filterBandNiveauMin').value = '';
-  document.getElementById('filterBandNiveauMax').value = '';
+  // TT-236: de wielvelden terug naar hun beginstand. false = niet zelf opnieuw
+  // zoeken; deze functie doet dat hieronder één keer.
+  setWheelFieldValues('band-straal',   [STRAAL_STANDAARD], false);
+  setWheelFieldValues('band-ervaring', ['', ''], false);
   filterBandGenresList = [];
   filterBandWantedList = [];
   filterBandStatusVal = null;
   renderPickerBadges(PICKERS.filterBandGenres);
   renderPickerBadges(PICKERS.filterBandWanted);
-  document.querySelectorAll('#filterBandStatus .tag').forEach(t => t.classList.remove('selected'));
+  const statusSel = document.getElementById('filterBandStatus');
+  if (statusSel) statusSel.value = '';
+  refreshChoiceField('band-status');
   selectSortModeByValue('filterBandSortMode', hasOwnProfile ? 'score' : 'distance');
+  refreshChoiceField('band-sorteren');
   runBandSearch();
 }
 

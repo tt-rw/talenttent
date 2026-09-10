@@ -997,7 +997,12 @@ function openChoiceMenu(id) {
   // Anders ruimt zíj dit net geopende menu een tel later alsnog op (TT-234).
   if (menu.ttOpruimen) menu.ttOpruimen();
 
-  menu.innerHTML = [...sel.options].map(o => `
+  // TT-236 (10-09-2026): opties die verborgen zijn gezet horen niet in het
+  // menu. configureSearchAccess() in core.js verbergt "Beste match" bij Bands
+  // zodra er geen eigen profiel is; zonder deze regel tekent het menu die
+  // optie alsnog.
+  const zichtbaar = [...sel.options].filter(o => o.style.display !== 'none');
+  menu.innerHTML = zichtbaar.map(o => `
     <button type="button" class="choice-option${o.value === sel.value ? ' selected' : ''}"
             role="option" aria-selected="${o.value === sel.value ? 'true' : 'false'}"
             data-waarde="${escAttr(o.value)}">

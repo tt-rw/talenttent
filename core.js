@@ -485,6 +485,9 @@ async function configureSearchAccess() {
   if (!hasOwnProfile) {
     if (bandSearchSortMode === 'score') selectSortModeByValue('filterBandSortMode', 'distance');
   }
+  // TT-236: het zichtbare veld de gezette waarde laten tonen. Zonder deze
+  // regel blijft er "Beste match" staan terwijl er op afstand gesorteerd is.
+  refreshChoiceField('band-sorteren');
 
   // Eigen plaats alvast invullen bij alle drie de zoektabbladen (Muzikanten,
   // Bands, Setlist) als je een eigen profiel hebt — anders staat het Plaats-
@@ -552,11 +555,13 @@ async function updateSetlistTabVisibility() {
 function selectSortModeByValue(gridId, value) {
   const grid = document.getElementById(gridId);
   if (!grid) return;
-  // TT-232 (09-09-2026): bij Muzikanten is dit een keuzelijst geworden, bij
-  // Bands nog een schakelbalk. Beide vormen worden hier afgehandeld.
+  // TT-232 (09-09-2026): bij Muzikanten is dit een keuzelijst geworden.
+  // TT-236 (10-09-2026): bij Bands nu ook. De schakelbalk-tak hieronder blijft
+  // staan zolang een ander scherm die vorm nog gebruikt.
   if (grid.tagName === 'SELECT') {
     grid.value = value;
     if (gridId === 'filterSortMode') searchSortMode = value;
+    if (gridId === 'filterBandSortMode') bandSearchSortMode = value;
     return;
   }
   const target = Array.from(grid.querySelectorAll('.segmented-btn')).find(t => t.getAttribute('data-mode') === value);

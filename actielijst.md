@@ -1,6 +1,6 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 10-09-2026 — **TT-232 en TT-233 overgezet van de testrepo naar productie.** Het zoekscherm voor muzikanten werkt nu met draaiwielen en keuzelijsten. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-235 (zes element-id's die niet bestaan), P2. **Werkwijze gewijzigd: één set bestanden gaat voortaan naar beide repo's — zie het blok hieronder.**
+**Laatste update:** 10-09-2026 — **TT-236 opgeleverd: de bandzoekpagina is gelijkgetrokken met de muzikantenpagina.** Zelfde velden, zelfde volgorde, zelfde afstanden, zelfde knopvolgorde. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-237 (Escape sluit de wielbladwijzer niet) en TT-238 (wielveld verliest zijn waarde na een eerdere opening), beide P2 en beide bestaand. **Werkwijze: één set bestanden gaat naar beide repo's — zie het blok hieronder.**
 
 **Let op — ticketnummer TT-232 was twee keer gebruikt.** De testrepo gebruikte TT-232 voor de zoekschermherziening. De actielijst gebruikte hetzelfde nummer voor "e-mail bij een fout". Opgelost op 10-09-2026: de zoekschermherziening houdt TT-232, want dat nummer staat in de code. Het e-mailticket heet vanaf nu **TT-234**. Dat ticket was nog niet gebouwd, dus buiten deze regel bestaat er geen verwijzing naar.
 
@@ -63,6 +63,101 @@ na.
 onder "Werkwijze per sessie".
 
 ---
+
+**TT-236 (OPGELOST, 10-09-2026) — Bandzoekpagina gelijkgetrokken met de muzikantenpagina.**
+
+**Aanleiding.** Ronalds schets van 10-09-2026. Het tabblad Band stond nog in de
+vorm van vóór TT-232 en TT-233. Twee zoekschermen naast elkaar met een
+verschillend inklapgedrag, verschillende invoervormen en een omgekeerde
+knopvolgorde. Dit ticket gaat alleen over consistentie. De filterlogica is
+niet gewijzigd.
+
+**Wat er is gewijzigd.**
+
+| Onderdeel | Vóór | Na |
+|---|---|---|
+| Straal | `<input type="number">`, start 25 km | wielveld, start 5 km, gelijk aan Muzikant |
+| Plaats + Straal | inline `style="display:flex"` | `.filter-row-city` met `.frc-plaats`/`.frc-straal` |
+| Meer filters | knop plus ingeklapt blok | weg, alle filters staan open |
+| Ervaring van de band | twee zichtbare `<select>` | wielveld met twee kolommen, i-knop in het label |
+| Status | losse chip aan/uit | keuzelijst: "Alle bands" / "Zoekt muzikanten" |
+| Volgorde | Genre boven Instrument | Instrument boven Genre |
+| Knoppenrij | inline grid, primair links | `.btn-row`, secundair links, primair rechts |
+| Sorteren / Weergave | `.segmented-control` | `.field-pair-row` met twee keuzelijsten |
+| Ondertitel | "Zoek bands die nog muzikanten zoeken" | weg — het Status-veld draagt die betekenis |
+
+**Besluiten van Ronald bij dit ticket (10-09-2026):** ondertitel weg, Status
+begint op "Alle bands" (geen gedragswijziging), straal begint bij bands
+voortaan ook op 5 km.
+
+**Afwijking van de huisstijl, bewust.** §7.1 zegt: aan/uit hoort een chip te
+zijn. Ronalds schets vraagt voor Status hetzelfde keuzemenu als bij Weergave.
+De schets is gevolgd: één vorm per rij weegt hier zwaarder dan de tabel.
+
+**Gewijzigde bestanden:** `index.html`, `search.js`, `core.js`, `utils.js`.
+`styles.css` is niet gewijzigd — alle benodigde klassen bestonden al.
+
+**Twee kleine reparaties waren nodig om dit te laten werken:**
+
+1. `openChoiceMenu()` in `utils.js` sloeg opties met `display:none` niet over.
+   `configureSearchAccess()` verbergt "Beste match" bij Bands zodra er geen
+   eigen profiel is. Zonder deze regel tekende het menu die optie alsnog.
+2. `selectSortModeByValue()` in `core.js` zette `bandSearchSortMode` alleen in
+   de schakelbalk-tak. In de keuzelijst-tak ontbrak dat.
+
+**Verwijderde code:** `toggleMoreFilters()` en `toggleBandStatusFilter()` in
+`search.js`. Beide werden nergens meer aangeroepen.
+
+**Getest, geverifieerd 10-09-2026.** Playwright tegen de Supabase-stub,
+34 controles, 33 geslaagd. De enige afwijking is TT-237 hieronder, een
+bestaande fout. Gecontroleerd: beginstanden van alle vijf de velden, het
+verdwijnen van de oude vorm, de volgorde Instrument-boven-Genre, de
+knopvolgorde en gelijke knopbreedte (150/150), het statusmenu met twee
+opties, het doorgeven van `filterBandStatusVal`, beide wielbladwijzers, het
+kiezen van ervaring 2 t/m 4 langs de echte tikweg, de gouden rand bij een
+actief filter, "Filters wissen", het omzetten van de weergave, en de afwezigheid
+van JS-fouten. `node --check` op alle drie de gewijzigde JS-bestanden en de
+haakjesbalans zijn gelijk.
+
+---
+
+**TT-237 (nieuw, NIET opgelost, P2, 10-09-2026) — Escape sluit de wielbladwijzer niet.**
+
+**Geverifieerd met Playwright.** Escape indrukken terwijl `#wheelSheetModal`
+open staat doet niets. Er is geen `keydown`-luisteraar voor de bladwijzer.
+`core.js` heeft er drie voor menu's (regel 319, 340, 359) en `utils.js` één
+voor het keuzemenu (regel 1047). Voor de bladwijzer ontbreekt hij.
+
+Huisstijl §7.1 schrijft Escape wel voor: "Een bladwijzer sluit verder altijd
+bij: een tik op de verduistering, een veeg omlaag over de greep, Escape, en de
+terugknop van het toestel."
+
+Bestaande fout uit TT-233. Raakt Muzikant en Band gelijk. Klein: één
+luisteraar die `closeWheelSheet()` aanroept als de bladwijzer open staat.
+
+---
+
+**TT-238 (nieuw, NIET opgelost, P2, 10-09-2026) — Wielveld verliest zijn waarde na een eerdere opening.**
+
+**Geverifieerd met Playwright, in beide tabbladen gelijk.**
+`setWheelFieldValues('niveau', ['2','4'], false)` zet het veld correct op
+"2 - 4" zolang het wiel nog nooit open is geweest. Is de bladwijzer eerder
+geopend en weer gesloten, dan zet dezelfde aanroep het veld op "Geen".
+
+**Oorzaak, aanname.** `openWheelSheet()` vervangt `#wheelSheetGroup.innerHTML`
+bij elke opening, maar `WHEELS[wielId]` blijft verwijzen naar het oude,
+losgekoppelde element. `setWheelFieldValues()` roept `setWheelValue()` aan op
+dat oude element; dat leest scrollpositie 0 terug en schrijft de eerste waarde
+weg. Bij Niveau en Ervaring is die eerste waarde `''` — dus "Geen". Bij Straal
+is de eerste waarde 5, dus daar valt het niet op.
+
+**Nu niet zichtbaar voor de gebruiker.** De enige plek die dit pad gebruikt is
+"Filters wissen", en daar is de doelwaarde toch al leeg. Wel een valkuil voor
+elke volgende wijziging die een wielveld programmatisch zet.
+
+**Voorstel:** in `closeWheelSheet()` de vermeldingen in `WHEELS` opruimen die
+bij het gesloten veld horen. Niet gebouwd — apart ticket.
+
 
 **TT-232 (OPGELOST, overgezet naar productie 10-09-2026) — Zoekscherm muzikanten herzien.**
 

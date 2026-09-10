@@ -1065,19 +1065,26 @@
   <div id="searchModeBand" style="display:none;">
   <div class="search-wrap">
     <div class="search-filters">
+      <!-- TT-236 (10-09-2026, Ronalds schets): dit blok is gelijkgetrokken met
+           het muzikanten-zoekblok hierboven. Zelfde velden, zelfde volgorde,
+           zelfde afstanden. De ondertitel "Zoek bands die nog muzikanten
+           zoeken" is weg: het Status-veld draagt die betekenis nu, en de
+           muzikantentab heeft ook geen ondertitel. -->
       <div class="filter-title">Vind een band</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Zoek bands die nog muzikanten zoeken</p>
+
       <div class="filter-row single">
-        <div class="field"><label>Bandnaam</label><input type="text" id="filterBandName" placeholder="Bijv. The Rusty Strings" oninput="scheduleBandAutoSearch()" onkeydown="submitOnEnter(event, runBandSearch)"></div>
+        <div class="field">
+          <label>Bandnaam</label>
+          <input type="text" id="filterBandName" placeholder="Bijv. The Rusty Strings" oninput="scheduleBandAutoSearch()" onkeydown="submitOnEnter(event, runBandSearch)">
+        </div>
       </div>
 
-      <!-- TT-160 (27-08-2026, Ronalds voorstel): zelfde gecombineerde
-           Plaats+Straal-rij als bij Muzikanten-zoeken, zie de toelichting
-           daar. Straal stond hier ook voorheen verstopt achter "Meer
-           filters" — nu altijd zichtbaar naast Plaats. -->
+      <!-- TT-236: zelfde Plaats+Straal-rij als bij Muzikanten (huisstijl §7.2).
+           Straal is een wielveld met een verborgen invoerveld eronder; dat veld
+           houdt zijn id, dus runBandSearch() leest het ongewijzigd uit. -->
       <div class="field">
-        <div style="display:flex;gap:8px;align-items:flex-start;">
-          <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
+        <div class="filter-row-city">
+          <div class="city-search-wrap frc-plaats">
             <label>Plaats</label>
             <input type="text" id="filterBandCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
               oninput="onCitySearchInput(this.value,'acFilterBandCityList'); scheduleBandAutoSearch(); scheduleSearchCityStatus('filterBandCity','filterBandCityStatus');"
@@ -1085,86 +1092,124 @@
               onblur="setTimeout(()=>closeAC('acFilterBandCityList'),200)">
             <div class="autocomplete-list" id="acFilterBandCityList"></div>
           </div>
-          <div style="flex-shrink:0;">
+          <div class="frc-straal">
             <label>Straal</label>
-            <div class="radius-row">
-              <input type="number" id="filterBandRadius" class="radius-input" value="25" min="5" max="500" step="5" onchange="snapRadiusToStep(this); runBandSearch();">
-              <span style="color:var(--muted);font-size:13px;">km</span>
+            <div class="wheel-field" id="filterBandRadiusField">
+              <span class="wheel-field-label"></span>
+              <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
             </div>
+            <input type="hidden" id="filterBandRadius" value="5">
           </div>
         </div>
         <div id="filterBandCityStatus" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;"></div>
       </div>
 
-      <!-- TT-136 (23-08-2026): zelfde toggle als bij de muzikant-tab —
-           Bandnaam+Plaats blijven zichtbaar, de rest samengevouwen. -->
-      <button type="button" class="btn btn-ghost" id="bandMoreFiltersToggle" onclick="toggleMoreFilters('band')" style="width:100%;font-size:13px;margin-bottom:16px;">Meer filters ▾</button>
-      <div id="bandMoreFilters" style="display:none;">
-      <div class="filter-row single">
-        <div class="field"><label>Status</label><div class="tag-grid" id="filterBandStatus"><div class="tag" onclick="toggleBandStatusFilter(this,'zoekend')">Zoekend</div></div></div>
+      <!-- TT-236: de knop "Meer filters" is hier weg. Bij Muzikanten bestaat
+           die al niet meer sinds TT-232; twee tabbladen met een verschillend
+           inklapgedrag was de grootste breuk tussen de twee schermen.
+           Ervaring en Status staan naast elkaar, op de plek waar bij
+           Muzikanten Leeftijd en Niveau staan. -->
+      <div class="field-pair-row">
+        <div class="field">
+          <!-- V-21 (13-08-2026): de band-schaal heet "ervaring", niet "niveau".
+               Dat woord blijft voorbehouden aan de instrumentschaal. -->
+          <label class="label-with-info">
+            <span>Ervaring</span>
+            <button type="button" class="niveau-info-btn" onclick="openBandNiveauInfoModal()" aria-label="Wat betekent de ervaring 1 tot en met 5?" title="Toelichting op ervaring">i</button>
+          </label>
+          <div class="wheel-field" id="filterBandNiveauField">
+            <span class="wheel-field-label"></span>
+            <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+          </div>
+          <input type="hidden" id="filterBandNiveauMin">
+          <input type="hidden" id="filterBandNiveauMax">
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <div class="menu-anchor">
+            <div class="wheel-field" id="filterBandStatusField" aria-label="Status">
+              <span class="wheel-field-label"></span>
+              <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+            </div>
+            <div class="choice-menu" id="filterBandStatusMenu" role="listbox" aria-label="Status"></div>
+          </div>
+          <!-- Het <select> blijft verborgen staan als bron van waarheid, zoals
+               bij Sorteren en Weergave. Huisstijl §7.1. -->
+          <select id="filterBandStatus" style="display:none;" onchange="setBandStatusFilter(this.value)">
+            <option value="">Alle bands</option>
+            <option value="zoekend">Zoekt muzikanten</option>
+          </select>
+        </div>
       </div>
-      <div class="filter-row single"><div class="field"><label>Genre</label>
-        <div class="picker-field" id="filterBandGenresField">
-          <span class="picker-field-label" id="filterBandGenresFieldLabel">Genre kiezen…</span>
-          <span class="picker-field-chevron">▾</span>
-        </div>
-        <div class="picker-badge-row" id="filterBandGenresBadgeRow"></div>
-      </div></div>
+
       <!-- TT-55-uitbreiding (12-08-2026): zelfde 1-instrument-beperking als
-           het muzikanten-zoekfilter, nu ook hier doorgevoerd. -->
-      <div class="filter-row single band-instrument-filter"><div class="field"><label>Instrument gezocht</label><p>Kies maximaal 1 instrument, eventueel aangevuld met Zang en/of Songwriting.</p>
-        <div class="picker-field" id="filterBandWantedField">
-          <span class="picker-field-label" id="filterBandWantedFieldLabel">Instrument kiezen…</span>
-          <span class="picker-field-chevron">▾</span>
+           het muzikanten-zoekfilter. TT-236: staat nu vóór Genre, zoals bij
+           Muzikanten. -->
+      <div class="filter-row single band-instrument-filter">
+        <div class="field">
+          <label>Instrument gezocht</label>
+          <p>Kies maximaal 1 instrument, eventueel aangevuld met Zang en/of Songwriting.</p>
+          <div class="picker-field" id="filterBandWantedField">
+            <span class="picker-field-label" id="filterBandWantedFieldLabel">Instrument kiezen…</span>
+            <span class="picker-field-chevron">▾</span>
+          </div>
+          <div class="picker-badge-row" id="filterBandWantedBadgeRow"></div>
         </div>
-        <div class="picker-badge-row" id="filterBandWantedBadgeRow"></div>
-      </div></div>
-      <!-- TT-51: niveau van de band zelf (Tabel 1), los van het niveau per
-           instrument bij muzikanten. Bereik, aaneengesloten. -->
+      </div>
+
       <div class="filter-row single">
         <div class="field">
-          <!-- V-21 (13-08-2026): band-schaal heet nu "ervaring", niet meer
-               "niveau" (dat woord blijft voorbehouden aan de instrumentschaal). -->
-          <label>Ervaring van de band</label>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <select id="filterBandNiveauMin" onchange="runBandSearch()" style="width:90px;">
-              <option value="">Min</option>
-              <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
-            </select>
-            <span style="color:var(--muted);font-size:13px;">t/m</span>
-            <select id="filterBandNiveauMax" onchange="runBandSearch()" style="width:90px;">
-              <option value="">Max</option>
-              <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
-            </select>
+          <label>Genre</label>
+          <div class="picker-field" id="filterBandGenresField">
+            <span class="picker-field-label" id="filterBandGenresFieldLabel">Genre kiezen…</span>
+            <span class="picker-field-chevron">▾</span>
           </div>
+          <div class="picker-badge-row" id="filterBandGenresBadgeRow"></div>
         </div>
       </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <button class="search-btn" onclick="runBandSearch()">Zoek bands</button>
+
+      <!-- TT-236: primaire knop rechts, secundaire links — huisstijl §10
+           (TT-228). .btn-row zorgt voor twee exact gelijke knoppen. -->
+      <div class="btn-row">
         <button class="btn btn-ghost" onclick="resetBandSearch()">Filters wissen</button>
+        <button class="search-btn" onclick="runBandSearch()">Zoek bands</button>
       </div>
     </div>
 
     <div class="results-section-divider"><span>Resultaat</span></div>
 
     <!-- Sorteren staat bewust bij het resultaat, niet bij de zoekfilters —
-         her-sorteert direct zonder opnieuw te hoeven zoeken. -->
-    <div id="sortBarBand" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;">
+         her-sorteert direct zonder opnieuw te hoeven zoeken. TT-236: zelfde
+         rij-indeling en hetzelfde uiterlijk als bij Muzikanten. -->
+    <div id="sortBarBand" class="field-pair-row">
       <div class="field">
         <label>Sorteren op</label>
-        <div class="segmented-control" id="filterBandSortMode">
-          <div class="segmented-btn selected sort-score-option" data-mode="score" onclick="setBandSearchSortMode(this,'score')">Beste match</div>
-          <div class="segmented-btn" data-mode="distance" onclick="setBandSearchSortMode(this,'distance')">Dichtstbijzijnde</div>
-          <div class="segmented-btn" data-mode="newest" onclick="setBandSearchSortMode(this,'newest')">Nieuwste</div>
+        <div class="menu-anchor">
+          <div class="wheel-field" id="filterBandSortModeField" aria-label="Sorteren op">
+            <span class="wheel-field-label"></span>
+            <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+          </div>
+          <div class="choice-menu" id="filterBandSortModeMenu" role="listbox" aria-label="Sorteren op"></div>
         </div>
+        <select id="filterBandSortMode" style="display:none;" onchange="setBandSearchSortMode(this.value)">
+          <option value="score" class="sort-score-option">Beste match</option>
+          <option value="distance">Dichtstbijzijnde</option>
+          <option value="newest">Nieuwste</option>
+        </select>
       </div>
       <div class="field">
         <label>Weergave</label>
-        <div class="segmented-control" id="bandViewToggle">
-          <div class="segmented-btn selected" data-view="list" onclick="setBandViewMode('list')">Lijst</div>
-          <div class="segmented-btn" data-view="grid" onclick="setBandViewMode('grid')">Kaarten</div>
+        <div class="menu-anchor">
+          <div class="wheel-field" id="bandViewToggleField" aria-label="Weergave">
+            <span class="wheel-field-label"></span>
+            <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+          </div>
+          <div class="choice-menu" id="bandViewToggleMenu" role="listbox" aria-label="Weergave"></div>
         </div>
+        <select id="bandViewToggle" style="display:none;" onchange="setBandViewMode(this.value)">
+          <option value="list">Lijst</option>
+          <option value="grid">Kaarten</option>
+        </select>
       </div>
     </div>
 
