@@ -83,13 +83,17 @@ let musicianViewMode = localStorage.getItem('tt_musicianViewMode') || standaardW
 // stand. De HTML markeert "Lijst" vast; op een telefoon klopt dat niet meer.
 // TT-232 (09-09-2026): de weergavekeuze bij Muzikanten is een keuzelijst
 // geworden. TT-236 (10-09-2026): bij Bands nu ook. Deze functie zet beide.
+// TT-239 (10-09-2026): bij Setlist nu ook.
 function syncViewToggles() {
   const musicianSel = document.getElementById('musicianViewToggle');
   if (musicianSel) musicianSel.value = musicianViewMode;
   const bandSel = document.getElementById('bandViewToggle');
   if (bandSel) bandSel.value = bandViewMode;
+  const setlistSel = document.getElementById('setlistViewToggle');
+  if (setlistSel) setlistSel.value = setlistViewMode;
   refreshChoiceField('weergave');
   refreshChoiceField('band-weergave');
+  refreshChoiceField('setlist-weergave');
 }
 
 function setMusicianViewMode(mode) {
@@ -378,16 +382,6 @@ function parseRadiusInput(id) {
   if (raw === '' || raw == null) return 25;
   const n = parseFloat(raw);
   return Number.isFinite(n) ? n : 25;
-}
-
-// Straal in stappen van 5 km (04-08-2026): voorkomt onbedoeld extreem kleine
-// stralen (bijv. 1 km) waarbinnen zelfs grote steden nauwelijks passen.
-// Rondt ook handmatig getypte waarden af op het dichtstbijzijnde veelvoud van 5.
-function snapRadiusToStep(el) {
-  let v = parseFloat(el.value);
-  if (!Number.isFinite(v)) v = 25;
-  v = Math.max(5, Math.round(v / 5) * 5);
-  el.value = v;
 }
 
 // TT-136 (23-08-2026): hier stond toggleMoreFilters(), de "Meer filters"-knop.
@@ -1158,35 +1152,143 @@ let selectedSetlistArtist = null;  // { id, name }
 let setlistItunesSearchTimeout = null;
 let filterSetlistInstruments = []; // TT-139: harde instrumentfilter, zelfde patroon als TT-55
 
+// TT-239 (10-09-2026): Sorteren en Weergave, zoals bij Muzikanten en Bands.
+// Eigen stand per tabblad, zelfde patroon als musicianViewMode/bandViewMode.
+let lastSetlistResults   = [];
+let setlistSearchSortMode = 'score';
+let setlistViewMode = localStorage.getItem('tt_setlistViewMode') || standaardWeergave();
+
+function setSetlistViewMode(mode) {
+  setlistViewMode = mode;
+  try { localStorage.setItem('tt_setlistViewMode', mode); } catch(e) {}
+  const sel = document.getElementById('setlistViewToggle');
+  if (sel) sel.value = mode;
+  refreshChoiceField('setlist-weergave');
+  if (lastSetlistResults.length) renderCappedSetlistResults();
+}
+
+// "Beste match" is hier het aantal nummers uit de setlist dat de muzikant
+// speelt. Die telling maakt de app zelf, uit musician_songs — hij komt niet
+// uit de database en werkt dus ook uitgelogd. Verouderde profielen zakken
+// altijd naar onderen, in elke sorteerstand; zelfde regel als bij Muzikanten.
+function sortSetlistList(list) {
+  list.sort((a, b) => {
+    if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
+    if (setlistSearchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
+      return a.distance_km - b.distance_km;
+    }
+    if (setlistSearchSortMode === 'newest') {
+      return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
+    }
+    if (a.matchCount !== b.matchCount) return b.matchCount - a.matchCount;
+    if (a.distance_km != null && b.distance_km != null && a.distance_km !== b.distance_km) {
+      return a.distance_km - b.distance_km;
+    }
+    const nameA = (displayNameOf(a) || '').toLowerCase();
+    const nameB = (displayNameOf(b) || '').toLowerCase();
+    return nameA.localeCompare(nameB, 'nl');
+  });
+  return list;
+}
+
+// Her-sorteert de al opgehaalde resultaten. Geen nieuwe zoekopdracht nodig.
+function setSetlistSearchSortMode(mode) {
+  if (mode === 'distance' && lastSetlistResults.length && !lastSetlistResults.some(m => m.distance_km != null)) {
+    showToast('Vul een plaats in bij de zoekfilters om op afstand te sorteren.');
+    const sel = document.getElementById('filterSetlistSortMode');
+    if (sel) sel.value = setlistSearchSortMode;
+    refreshChoiceField('setlist-sorteren');
+    return;
+  }
+  setlistSearchSortMode = mode;
+  const sel = document.getElementById('filterSetlistSortMode');
+  if (sel) sel.value = mode;
+  refreshChoiceField('setlist-sorteren');
+  if (lastSetlistResults.length) {
+    sortSetlistList(lastSetlistResults);
+    renderCappedSetlistResults();
+  }
+}
+
+function renderCappedSetlistResults() {
+  const total = lastSetlistResults.length;
+  renderSetlistResults(lastSetlistResults.slice(0, SEARCH_RESULT_LIMIT), { total });
+}
+
 // TT-139: instrumentpicker voor Setlist-zoeken, zelfde patroon als
 // initSearchFilters()/initBandSearchFilters() — maximaal 1 instrument,
 // Zang en Songwriting als losse uitzonderingen (singleMax + exceptionValues).
 function initSetlistSearchFilters() {
-  if (PICKERS.filterSetlistInstruments) return; // al ingevuld
-  initPicker({
-    id: 'filterSetlistInstruments',
-    fieldId: 'filterSetlistInstrumentsField', badgeRowId: 'filterSetlistInstrumentsBadgeRow',
-    options: INSTRUMENTS, getList: () => filterSetlistInstruments,
-    singleMax: true, exceptionValues: ['Zang', 'Songwriting'],
-    placeholder: 'Kies een instrument',
-    sheetTitle: 'Kies een instrument',
-    onChange: () => { if (setlistWantedSongs.length) runSetlistSearch(); }
-  });
+  if (!PICKERS.filterSetlistInstruments) {
+    initPicker({
+      id: 'filterSetlistInstruments',
+      fieldId: 'filterSetlistInstrumentsField', badgeRowId: 'filterSetlistInstrumentsBadgeRow',
+      options: INSTRUMENTS, getList: () => filterSetlistInstruments,
+      singleMax: true, exceptionValues: ['Zang', 'Songwriting'],
+      placeholder: 'Kies een instrument',
+      sheetTitle: 'Kies een instrument',
+      onChange: () => { if (setlistWantedSongs.length) runSetlistSearch(); }
+    });
+  }
+
+  // TT-239 (10-09-2026): hetzelfde straalwiel als bij Muzikanten en Bands.
+  // Het verborgen invoerveld houdt zijn id, dus runSetlistSearch() leest het
+  // ongewijzigd uit. De filterlogica is niet gewijzigd.
+  if (!WHEEL_FIELDS['setlist-straal']) {
+    initWheelField({
+      id: 'setlist-straal',
+      fieldId: 'filterSetlistRadiusField',
+      title: 'Straal',
+      unit: 'km',
+      columns: [{ inputId: 'filterSetlistRadius', values: WHEEL_RADIUS, ariaLabel: 'Zoekstraal in kilometers' }],
+      value: [STRAAL_STANDAARD],
+      clearTo: [STRAAL_STANDAARD],
+      isActief: (v) => Number(v[0]) !== STRAAL_STANDAARD,
+      format: (v) => `${v[0]} km`,
+      hint:   (v) => `Straal ${v[0]} km`,
+      onChange: () => { if (setlistWantedSongs.length) runSetlistSearch(); }
+    });
+  }
+
+  if (!CHOICE_FIELDS['setlist-sorteren']) {
+    initChoiceField({ id: 'setlist-sorteren', fieldId: 'filterSetlistSortModeField',
+                      menuId: 'filterSetlistSortModeMenu', selectId: 'filterSetlistSortMode' });
+    initChoiceField({ id: 'setlist-weergave', fieldId: 'setlistViewToggleField',
+                      menuId: 'setlistViewToggleMenu', selectId: 'setlistViewToggle' });
+    syncViewToggles();
+  }
 }
 
+// TT-239 (10-09-2026, Ronald): zelfde opmaak als "Je setlist" op Mijn Profiel
+// — artiest vet boven, nummer eronder in de bijschriftkleur, met een kopregel
+// erboven. Het volgnummer blijft staan: de matchbadge in het resultaat
+// verwijst ernaar ("2/5 matches: #1, #3").
+// Het kruisje blijft hier een kaal ✕, zonder "Zeker?"-stap. Huisstijl §8 gaat
+// over het verwijderen van opgeslagen gegevens; dit is een zoekfilter dat je
+// zelf net hebt toegevoegd.
 function renderSetlistSongsList() {
   const list = document.getElementById('setlistSongsList');
-  if (!setlistWantedSongs.length) { list.innerHTML = ''; return; }
+  const row  = document.getElementById('setlistSongsRow');
+  if (!setlistWantedSongs.length) {
+    list.innerHTML = '';
+    if (row) row.style.display = 'none';
+    return;
+  }
+  if (row) row.style.display = '';
   list.innerHTML = `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-field);overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
+        <span style="width:26px;flex-shrink:0;">#</span>
+        <span style="flex:1;">Band / artiest — nummer</span>
+      </div>
       ${setlistWantedSongs.map((s,i) => `
         <div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);gap:12px;">
           <span style="font-family:'Roboto',sans-serif;font-size:14px;font-weight:700;color:var(--accent);width:26px;flex-shrink:0;">#${i+1}</span>
           <div style="flex:1;">
-            <div style="font-size:15px;font-weight:600;">${escHtml(s.title)}</div>
-            <div style="font-size:12px;color:var(--muted);">${escHtml(s.artist)}</div>
+            <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
+            <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
           </div>
-          <button class="song-remove" onclick="removeSetlistSong(${i})" title="Verwijderen">✕</button>
+          <button type="button" class="song-remove" onclick="removeSetlistSong(${i})" title="Verwijderen" aria-label="Verwijder ${escAttr(s.title)}">✕</button>
         </div>
       `).join('')}
     </div>`;
@@ -1251,7 +1353,8 @@ function selectSetlistArtist(id, name) {
   document.getElementById('setlistArtistSearch').value = name;
   closeAC('acSetlistArtistList');
   const wrap = document.getElementById('setlistTrackSearchWrap');
-  wrap.style.display = 'block';
+  // Leeg, niet 'block': het blok is sinds TT-239 een .filter-row (display:grid).
+  wrap.style.display = '';
   document.getElementById('setlistTrackSearchLabel').textContent = `Nummer van ${name}`;
   document.getElementById('setlistTrackSearch').value = '';
   document.getElementById('setlistTrackSearch').focus();
@@ -1285,9 +1388,16 @@ function resetSetlistSearch() {
   document.getElementById('setlistTrackSearchWrap').style.display = 'none';
   document.getElementById('filterSetlistCity').value = '';
   document.getElementById('filterSetlistCityStatus').textContent = '';
-  document.getElementById('filterSetlistRadius').value = 25;
+  // TT-239: het straalwiel terug naar zijn beginstand. false = niet zelf
+  // opnieuw zoeken; zonder nummers valt er hier toch niets te zoeken.
+  setWheelFieldValues('setlist-straal', [STRAAL_STANDAARD], false);
   filterSetlistInstruments = [];
   if (PICKERS.filterSetlistInstruments) renderPickerBadges(PICKERS.filterSetlistInstruments);
+  setlistSearchSortMode = 'score';
+  const sortSel = document.getElementById('filterSetlistSortMode');
+  if (sortSel) sortSel.value = 'score';
+  refreshChoiceField('setlist-sorteren');
+  lastSetlistResults = [];
   renderSetlistSongsList();
   document.getElementById('setlistSearchResults').innerHTML = '';
 }
@@ -1349,7 +1459,7 @@ async function runSetlistSearch() {
     if (songResult.error) throw songResult.error;
     if (seq !== setlistSearchSeq) return; // TT-84
     const songMatches = songResult.data || [];
-    if (!songMatches.length) { renderSetlistResults([]); return; }
+    if (!songMatches.length) { lastSetlistResults = []; renderSetlistResults([]); return; }
     const songMatchIds = new Set(songMatches.map(m => m.musician_id));
 
     // Straal toepassen om het zoekgebied te beperken: ingevulde Plaats heeft
@@ -1366,7 +1476,7 @@ async function runSetlistSearch() {
 
     let ids = Array.from(songMatchIds);
     if (radiusIds) ids = ids.filter(id => radiusIds.has(id));
-    if (!ids.length) { renderSetlistResults([]); return; }
+    if (!ids.length) { lastSetlistResults = []; renderSetlistResults([]); return; }
 
     let musicians;
     if (hasOwnProfile) {
@@ -1416,18 +1526,14 @@ async function runSetlistSearch() {
 
     // Hoe meer nummers matchen, hoe hoger in het resultaat; bij gelijke stand
     // dichtstbijzijnde eerst (indien bekend).
+    // TT-239: de vaste sortering staat nu in sortSetlistList(), zodat de
+    // keuzelijst "Sorteren op" dezelfde lijst kan herschikken zonder opnieuw
+    // te zoeken. "Beste match" geeft exact de volgorde van hiervoor.
     const filtered = musicians.filter(m => m.matchCount > 0);
-    filtered.sort((a, b) => {
-      if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
-      if (a.matchCount !== b.matchCount) return b.matchCount - a.matchCount;
-      if (a.distance_km != null && b.distance_km != null && a.distance_km !== b.distance_km) {
-        return a.distance_km - b.distance_km;
-      }
-      return (a.fname || '').localeCompare(b.fname || '', 'nl');
-    });
 
     if (seq !== setlistSearchSeq) return; // TT-84: nieuwere zoekopdracht loopt al
-    renderSetlistResults(filtered.slice(0, SEARCH_RESULT_LIMIT), { total: filtered.length });
+    lastSetlistResults = sortSetlistList(filtered);
+    renderCappedSetlistResults();
 
   } catch(e) {
     logCaught('runSetlistSearch', e);
@@ -1457,9 +1563,40 @@ function renderSetlistResults(musicians, opts) {
       <span class="results-count">${total} muzikant${total !== 1 ? 'en' : ''} gevonden</span>
     </div>
     ${cappedNotice}
-    <div class="results-list">
-      ${musicians.map(m => musicianSetlistRowHTML(m)).join('')}
+    <div class="${setlistViewMode === 'grid' ? 'results-grid-view' : 'results-list'}">
+      ${musicians.map(m => setlistViewMode === 'grid' ? musicianSetlistCardHTML(m) : musicianSetlistRowHTML(m)).join('')}
     </div>`;
+}
+
+// TT-239 (10-09-2026, keuze Ronald): de kaartweergave toont dezelfde kop als
+// bij Muzikanten (foto, naam, plaats, afstand), maar op de badge-regel staat
+// de match in plaats van instrumenten en genres. Genres worden bij deze
+// zoekopdracht niet opgehaald; de match is hier het antwoord op de vraag.
+function musicianSetlistCardHTML(m) {
+  const col = safeColor(m.profile_color, '#f5c518');
+  const avatarSrc = safeUrl(m.avatar_url);
+  const displayName = displayNameOf(m);
+  const photoHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
+
+  return `
+    <div class="result-card" onclick="openMusicianModal('${jsAttr(m.id)}')">
+      <div class="result-card-photo" style="background:${col};">${photoHTML}</div>
+      <div class="result-card-top-row">
+        <div class="result-card-name">${escHtml(displayName)}</div>
+        <div class="result-card-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
+      </div>
+      <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+      <div class="result-card-badges-line">${setlistMatchBadge(m, col)}</div>
+    </div>`;
+}
+
+// Eén bron voor de matchbadge, gedeeld door de rij- en de kaartweergave.
+function setlistMatchBadge(m, col) {
+  const total = setlistWantedSongs.length;
+  return tagSolid(
+    `${m.matchCount}/${total} match${m.matchCount !== 1 ? 'es' : ''}: ${m.matchedNumbers.map(n => '#' + Number(n)).join(', ')}`,
+    col
+  );
 }
 
 // Compact gehouden: volledige nummertitels zijn te veel info voor één regel
@@ -1470,7 +1607,6 @@ function musicianSetlistRowHTML(m) {
   const displayName = displayNameOf(m);
   const avatarHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
   const nameHTML = escHtml(displayName);
-  const total = setlistWantedSongs.length;
 
   return `
     <div class="result-row" style="border-left-color:${col};" onclick="openMusicianModal('${jsAttr(m.id)}')">
@@ -1483,7 +1619,7 @@ function musicianSetlistRowHTML(m) {
         <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-row-badges">
-        ${tagSolid(`${m.matchCount}/${total} match${m.matchCount !== 1 ? 'es' : ''}: ${m.matchedNumbers.map(n => '#' + Number(n)).join(', ')}`, col)}
+        ${setlistMatchBadge(m, col)}
       </div>
     </div>`;
 }

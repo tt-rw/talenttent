@@ -1227,17 +1227,22 @@
   <div id="searchModeSetlist" style="display:none;">
   <div class="search-wrap">
     <div class="search-filters">
-      <div class="filter-title">Zoek op setlist</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Stel de setlist samen die je zoekt — muzikanten die deze nummers kennen komen bovenaan in het resultaat.</p>
+      <!-- TT-239 (10-09-2026, Ronalds schets): dit blok is gelijkgetrokken met
+           het muzikanten-zoekblok. Zelfde velden, zelfde volgorde, zelfde
+           afstanden, zelfde knopvolgorde. De zoeklogica is niet gewijzigd. -->
+      <div class="filter-title has-sub">Zoek op setlist</div>
+      <!-- TT-239: de inline stijl is weg (huisstijl §3). Anders dan Muzikant en
+           Band houdt dit tabblad een korte toelichting: een setlist
+           samenstellen spreekt niet vanzelf. -->
+      <p class="filter-sub">Maak een setlist en zoek muzikanten die deze nummers spelen.</p>
 
-      <!-- TT-160 (27-08-2026, Ronalds voorstel): zelfde gecombineerde
-           Plaats+Straal-rij als bij Muzikanten/Bands-zoeken. Hier stonden
-           Plaats en Straal al naast elkaar op een breder scherm (twee
-           velden in dezelfde .filter-row) — alleen de mobiele weergave
-           stapelde ze alsnog onder elkaar. Dat is nu ook op mobiel opgelost. -->
+      <!-- TT-239: zelfde Plaats+Straal-rij als bij Muzikanten en Bands
+           (huisstijl §7.2). Straal is een wielveld met een verborgen
+           invoerveld eronder; dat veld houdt zijn id, dus runSetlistSearch()
+           leest het ongewijzigd uit. -->
       <div class="field">
-        <div style="display:flex;gap:8px;align-items:flex-start;">
-          <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
+        <div class="filter-row-city">
+          <div class="city-search-wrap frc-plaats">
             <label>Plaats</label>
             <input type="text" id="filterSetlistCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
               oninput="onCitySearchInput(this.value,'acFilterSetlistCityList'); scheduleSetlistAutoSearch(); scheduleSearchCityStatus('filterSetlistCity','filterSetlistCityStatus');"
@@ -1245,20 +1250,19 @@
               onblur="setTimeout(()=>closeAC('acFilterSetlistCityList'),200)">
             <div class="autocomplete-list" id="acFilterSetlistCityList"></div>
           </div>
-          <div style="flex-shrink:0;">
+          <div class="frc-straal">
             <label>Straal</label>
-            <div class="radius-row">
-              <input type="number" id="filterSetlistRadius" class="radius-input" value="25" min="5" max="500" step="5" onchange="snapRadiusToStep(this); if(setlistWantedSongs.length) runSetlistSearch();">
-              <span style="color:var(--muted);font-size:13px;">km</span>
+            <div class="wheel-field" id="filterSetlistRadiusField">
+              <span class="wheel-field-label"></span>
+              <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
             </div>
+            <input type="hidden" id="filterSetlistRadius" value="5">
           </div>
         </div>
         <div id="filterSetlistCityStatus" class="city-status"></div>
-        <!-- TT-236: deze toelichtingsregel houdt zijn eigen opmaak. Hij is
-             geen statusregel: hij staat er altijd en reserveert dus geen
-             lege ruimte. .field > p zou .city-status hier bovendien
-             overschrijven (hogere specificiteit). -->
-        <p style="font-size:11px;color:var(--muted);margin-top:4px;">Vul in om afstand te tonen/sorteren vanaf deze plaats.</p>
+        <!-- TT-239: de regel "Vul in om afstand te tonen/sorteren vanaf deze
+             plaats" is hier weg, op verzoek van Ronald. Muzikant en Band
+             hebben die regel ook niet. -->
       </div>
 
       <!-- TT-139: instrumentfilter op Setlist-zoeken, zelfde harde-filter-
@@ -1277,18 +1281,25 @@
         </div>
       </div>
 
-      <div class="field" style="margin-bottom:12px;">
-        <label>Band of artiest</label>
-        <div class="song-search-wrap">
-          <input type="text" id="setlistArtistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
-            oninput="onSetlistArtistSearch(this.value)"
-            onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acSetlistArtistList');}"
-            onblur="setTimeout(()=>closeAC('acSetlistArtistList'),200)">
-          <div class="autocomplete-list" id="acSetlistArtistList"></div>
+      <!-- TT-239: zelfde opbouw als "Je setlist" op Mijn Profiel — eerst de
+           artiest, dan het nummer, met dezelfde hulpregel erboven. De inline
+           marges zijn weg: .search-filters > .filter-row geeft 20px
+           (huisstijl §3). -->
+      <div class="filter-row single">
+        <div class="field">
+          <label>Band of artiest</label>
+          <p>Zoek eerst een band of artiest en daarna het nummer.</p>
+          <div class="song-search-wrap">
+            <input type="text" id="setlistArtistSearch" placeholder="Bijv. Metallica, Nirvana, Adele..." autocomplete="off"
+              oninput="onSetlistArtistSearch(this.value)"
+              onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acSetlistArtistList');}"
+              onblur="setTimeout(()=>closeAC('acSetlistArtistList'),200)">
+            <div class="autocomplete-list" id="acSetlistArtistList"></div>
+          </div>
         </div>
       </div>
 
-      <div id="setlistTrackSearchWrap" style="display:none; margin-bottom:12px;">
+      <div class="filter-row single" id="setlistTrackSearchWrap" style="display:none;">
         <div class="field">
           <label id="setlistTrackSearchLabel">Nummer</label>
           <div class="song-search-wrap">
@@ -1301,17 +1312,62 @@
         </div>
       </div>
 
-      <div class="songs-list" id="setlistSongsList"></div>
+      <!-- Deze rij staat verborgen zolang de setlist leeg is. Anders zou een
+           lege rij toch 20px witruimte innemen. renderSetlistSongsList()
+           schakelt hem. -->
+      <div class="filter-row single" id="setlistSongsRow" style="display:none;">
+        <div class="songs-list" id="setlistSongsList"></div>
+      </div>
 
-      <div class="divider"></div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <button class="search-btn" onclick="runSetlistSearch()">Zoek op setlist</button>
+      <!-- TT-239: primaire knop rechts, secundaire links — huisstijl §10
+           (TT-228). .btn-row zorgt voor twee exact gelijke knoppen. De losse
+           scheidingslijn erboven is weg: Muzikant en Band hebben die ook niet. -->
+      <div class="btn-row">
         <button class="btn btn-ghost" onclick="resetSetlistSearch()">Filters wissen</button>
+        <button class="search-btn" onclick="runSetlistSearch()">Zoek op setlist</button>
       </div>
     </div>
 
     <div class="results-section-divider"><span>Resultaat</span></div>
+
+    <!-- Sorteren staat bewust bij het resultaat, niet bij de zoekfilters —
+         her-sorteert direct zonder opnieuw te hoeven zoeken. TT-239: zelfde
+         rij-indeling en hetzelfde uiterlijk als bij Muzikanten en Bands. -->
+    <div id="sortBarSetlist" class="field-pair-row">
+      <div class="field">
+        <label>Sorteren op</label>
+        <div class="menu-anchor">
+          <div class="wheel-field" id="filterSetlistSortModeField" aria-label="Sorteren op">
+            <span class="wheel-field-label"></span>
+            <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+          </div>
+          <div class="choice-menu" id="filterSetlistSortModeMenu" role="listbox" aria-label="Sorteren op"></div>
+        </div>
+        <!-- Het <select> blijft verborgen staan als bron van waarheid,
+             huisstijl §7.1. "Beste match" betekent hier: de meeste nummers uit
+             de setlist raak. Die telling komt niet uit de database en werkt
+             dus ook uitgelogd — de optie wordt nooit verborgen. -->
+        <select id="filterSetlistSortMode" style="display:none;" onchange="setSetlistSearchSortMode(this.value)">
+          <option value="score">Beste match</option>
+          <option value="distance">Dichtstbijzijnde</option>
+          <option value="newest">Nieuwste</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Weergave</label>
+        <div class="menu-anchor">
+          <div class="wheel-field" id="setlistViewToggleField" aria-label="Weergave">
+            <span class="wheel-field-label"></span>
+            <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+          </div>
+          <div class="choice-menu" id="setlistViewToggleMenu" role="listbox" aria-label="Weergave"></div>
+        </div>
+        <select id="setlistViewToggle" style="display:none;" onchange="setSetlistViewMode(this.value)">
+          <option value="list">Lijst</option>
+          <option value="grid">Kaarten</option>
+        </select>
+      </div>
+    </div>
 
     <div id="setlistSearchResults"></div>
   </div>

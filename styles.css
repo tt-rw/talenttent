@@ -22,6 +22,14 @@
        knop-/badgestijl (rand-alleen, geen vlak) — overgenomen uit
        profiel-v2.html, hier op één plek instelbaar voor de hele app. */
     --line: 1.5px;
+    /* TT-244 (10-09-2026, melding Ronald): één vlak en één randkleur voor élk
+       veld — invoerveld, keuzeveld en wielveld. Deze twee waarden komen uit de
+       contrastfix van 12-08-2026, die toen alleen op invoervelden landde.
+       Het keuzeveld en het wielveld hielden --surface2/--border en zagen er
+       daardoor anders uit dan het veld ernaast. De invoervelden zijn leidend
+       (Ronald, 10-09-2026), dus die waarden staan nu hier, op één plek. */
+    --field-bg: #242424;
+    --field-border: #666666;
   }
 
   /* TT-15b: tijdelijk display-font (Alfa Slab One) alleen voor het logo/
@@ -265,8 +273,8 @@
      die worden op 82 (--border) en 38 (--surface2) andere plekken gebruikt
      en een wijziging daar zou ook daar het uiterlijk veranderen. */
   input:not([type="checkbox"]):not([type="radio"]), select, textarea {
-    background: #242424;
-    border: 1px solid #666666;
+    background: var(--field-bg);
+    border: 1px solid var(--field-border);
     border-radius: var(--radius-field);
     color: var(--text);
     font-family: 'Roboto', sans-serif;
@@ -386,16 +394,18 @@
   .bio-prompt-chip:hover { border-color: var(--accent); color: var(--accent); border-style: solid; }
 
   /* Song search */
+  /* TT-241 (10-09-2026): dit is alleen nog een ankerpunt voor de keuzelijst
+     die eronder uitklapt. Weg: padding-left:44px op het veld (ruimte voor een
+     zoek-icoon dat er niet meer is — de tekst begon 44px in, terwijl elk ander
+     veld op --field-inset begint) en margin-bottom:12px (de afstand tussen
+     blokken komt uit .field/.filter-row, huisstijl §3). */
   .song-search-wrap {
     position: relative;
-    margin-bottom: 12px;
   }
 
   .city-search-wrap {
     position: relative;
   }
-
-  .song-search-wrap input { padding-left: 44px; }
 
   .autocomplete-list {
     position: absolute;
@@ -621,22 +631,6 @@
     display: flex;
     gap: 8px;
     align-items: center;
-  }
-
-  /* TT-203 (04-09-2026, gemeld door Ronald met screenshot): het straal-
-     getal werd afgesneden. Oorzaak: width:64px met de algemene input-
-     opvulling van 12px 16px (32px totaal) liet nog maar ~30px over voor
-     de cijfers zelf — te weinig, ook al bij een tweecijferig getal als
-     "25". Eigen, smallere opvulling + net iets meer breedte, gecentreerd
-     voor de leesbaarheid. Content-breedte nu 76 - 16 (8px+8px opvulling)
-     - 2 (rand) = 58px, ruim genoeg voor "500" (het max-attribuut).
-     Selector met ".field" ervoor: nodig om de algemene regel
-     "input:not([type=checkbox]):not([type=radio])" te verslaan — die heeft
-     dezelfde specificiteit (0-2-1) als een kale ".radius-input" niet haalt. */
-  .field input.radius-input {
-    width: 76px;
-    padding: 12px 8px;
-    text-align: center;
   }
 
   .btn-primary {
@@ -1665,6 +1659,20 @@
     margin-bottom: 20px;
   }
 
+  /* TT-239 (10-09-2026): een korte toelichting onder een filtertitel. Alleen
+     het Setlist-tabblad heeft er een; Muzikant en Band niet. Stond daar als
+     inline stijl — huisstijl §3 verbiedt dat. De titel krijgt .has-sub, zodat
+     de afstand titel → toelichting 8px is en toelichting → eerste veld 20px. */
+  .filter-title.has-sub { margin-bottom: 8px; }
+  .filter-sub {
+    padding-left: var(--field-inset);
+    margin: 0 0 20px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+
+
   .filter-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2269,9 +2277,12 @@
   .picker-field {
     width: 100%; box-sizing: border-box; display: flex; align-items: center;
     justify-content: space-between; gap: 8px;
-    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-field);
-    min-height: 48px; padding: 10px var(--field-inset); margin-top: 0;
-    font-family: 'Roboto', sans-serif; font-size: 14px; color: var(--text);
+    /* TT-244: zelfde vlak, rand, hoogte en lettergrootte als een invoerveld.
+       Was --surface2/--border, 48px en 14px. 44px is ook de tikdoelnorm uit
+       huisstijl §6; 16px voorkomt inzoomen op iOS, zie §7. */
+    background: var(--field-bg); border: 1px solid var(--field-border); border-radius: var(--radius-field);
+    min-height: 44px; padding: 10px var(--field-inset); margin-top: 0;
+    font-family: 'Roboto', sans-serif; font-size: 16px; color: var(--text);
     cursor: pointer; transition: border-color 0.15s;
   }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
@@ -2790,8 +2801,9 @@
        "22 - 40 jaar", heeft er 81 nodig. Het pijltje staat er los overheen en
        kost geen breedte. */
     padding: 0 var(--field-inset);
-    background: var(--surface2);
-    border: var(--line) solid var(--border);
+    /* TT-244: zelfde vlak en rand als een invoerveld. */
+    background: var(--field-bg);
+    border: 1px solid var(--field-border);
     border-radius: var(--radius-field);
     font-size: 16px;
     color: var(--text);

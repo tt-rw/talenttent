@@ -1,6 +1,8 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 10-09-2026 — **TT-236 opgeleverd: de bandzoekpagina is gelijkgetrokken met de muzikantenpagina.** Zelfde velden, zelfde volgorde, zelfde afstanden, zelfde knopvolgorde. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-237, TT-238, TT-239 en TT-240 — vier bevindingen, alle vier bestaand en bewust buiten TT-236 gehouden. **Werkwijze: één set bestanden gaat naar beide repo's — zie het blok hieronder.**
+**Laatste update:** 10-09-2026 — **TT-239 opgeleverd: het Setlist-tabblad is gelijkgetrokken met de muzikantenpagina.** Straalwiel, `.filter-row-city`, `.btn-row` met de primaire knop rechts, en een sorteer-/weergavebalk bij het resultaat. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-241 t/m TT-244 — alle vier opgelost in dezelfde sessie. **Twee nieuwe werkwijzeregels: (1) dode code wordt meteen verwijderd, in dezelfde sessie waarin ze ontstaat; (2) een maat wordt consistent doorgevoerd in de standaard, nooit per scherm omzeild.** **Werkwijze: één set bestanden gaat naar beide repo's — zie het blok hieronder.**
+
+Vorige update, 10-09-2026: TT-236 opgeleverd — de bandzoekpagina gelijkgetrokken met de muzikantenpagina. Nieuw toen: TT-237, TT-238, TT-239 en TT-240.
 
 **Let op — ticketnummer TT-232 was twee keer gebruikt.** De testrepo gebruikte TT-232 voor de zoekschermherziening. De actielijst gebruikte hetzelfde nummer voor "e-mail bij een fout". Opgelost op 10-09-2026: de zoekschermherziening houdt TT-232, want dat nummer staat in de code. Het e-mailticket heet vanaf nu **TT-234**. Dat ticket was nog niet gebouwd, dus buiten deze regel bestaat er geen verwijzing naar.
 
@@ -245,19 +247,166 @@ bij het gesloten veld horen. Niet gebouwd — apart ticket.
 
 ---
 
-**TT-239 (nieuw, NIET opgelost, P2, 10-09-2026) — Setlist-tabblad loopt achter op de andere twee.**
+**TT-239 (OPGELOST, 10-09-2026) — Setlist-tabblad gelijkgetrokken met de muzikantenpagina.**
 
-**Geverifieerd, opgemerkt tijdens TT-236.** Het tabblad Setlist heeft de
-zoekschermherziening van TT-232/TT-233/TT-236 niet gekregen:
+**Aanleiding.** Ronalds schets van 10-09-2026, plus de bevinding uit TT-236.
+Het tabblad Setlist had de zoekschermherziening van TT-232/TT-233/TT-236 niet
+gekregen. Dit ticket gaat alleen over consistentie. De zoeklogica en de
+matchberekening zijn niet gewijzigd.
 
-| Onderdeel | Setlist nu | Muzikant en Band |
+**Wat er is gewijzigd.**
+
+| Onderdeel | Vóór | Na |
 |---|---|---|
-| Straal | getalveld met "km" ernaast | wielveld |
-| Plaats + Straal | inline `style="display:flex"` | `.filter-row-city` |
-| Knoppenrij | primair links, inline grid | `.btn-row`, primair rechts |
+| Toelichting onder de titel | inline stijl, 13px | `.filter-sub`, nieuwe tekst: "Maak een setlist en zoek muzikanten die deze nummers spelen." |
+| Plaats + Straal | inline `style="display:flex"` | `.filter-row-city` met `.frc-plaats`/`.frc-straal` |
+| Straal | `<input type="number">`, start 25 km | wielveld, start 5 km, gelijk aan Muzikant |
+| Regel onder Plaats | "Vul in om afstand te tonen/sorteren…" | weg — Muzikant en Band hebben die ook niet |
+| Band of artiest | los veld, geen uitleg | `.filter-row` met de hulpregel uit "Je setlist" |
+| Nummerlijst | titel vet, artiest eronder | artiest vet, nummer eronder, met kopregel — gelijk aan "Je setlist". Volgnummer blijft |
+| Knoppenrij | inline grid, primair links | `.btn-row`, primair rechts |
+| Sorteren + Weergave | bestond niet | `#sortBarSetlist`, gelijk aan Muzikant en Band |
 
-De statusregel is bij TT-236 wél gelijkgetrokken. De rest niet — dat is een
-eigen ticket, geen restpunt van TT-236.
+**Sorteren.** Drie standen, zelfde labels als bij Muzikant: Beste match ·
+Dichtstbijzijnde · Nieuwste. "Beste match" is hier het aantal nummers uit de
+setlist dat de muzikant speelt. Die telling maakt de app zelf uit
+`musician_songs`; hij komt niet uit de database. De optie wordt daarom nooit
+verborgen, ook niet zonder eigen profiel — anders dan bij Bands.
+
+**Weergave.** Lijst en Kaarten, met een eigen stand in `localStorage`
+(`tt_setlistViewMode`). Een kaart toont foto, naam, plaats, afstand en de
+matchbadge. Instrumenten en genres staan er niet op: genres worden bij deze
+zoekopdracht niet opgehaald, en de match is hier het antwoord op de vraag
+(keuze Ronald, 10-09-2026).
+
+**Gewijzigde bestanden:** `index.html`, `styles.css`, `search.js`,
+`actielijst.md`.
+
+**Geverifieerd met Playwright tegen de stub, 390px:**
+
+| Toets | Uitkomst |
+|---|---|
+| `node --check` op `search.js` en `core.js` | geslaagd |
+| Haakjesbalans `search.js`/`index.html`/`styles.css` | sluitend |
+| Straalveld toont "5 km", verborgen veld staat op 5 | ja |
+| Straalveld even breed als bij Muzikant | 104px tegen 104px |
+| Knoppen even breed, secundair links | 150px tegen 150px, "Filters wissen" links |
+| Inspringing Plaats en Band-of-artiest gelijk | 8px tegen 8px |
+| Hulpregel-opmaak gelijk aan Muzikant | 16px, `#888`, 8px inspringing — identiek |
+| Nummer toevoegen vult de lijst en verbergt het nummerveld | ja |
+| Sorteren op Nieuwste herschikt zonder nieuwe zoekopdracht | ja |
+| Dichtstbijzijnde zonder afstandsgegevens | melding, stand blijft staan |
+| Filters wissen zet straal, sortering, lijst en resultaat terug | ja |
+| Fouten in de console | geen |
+
+---
+
+**TT-241 (OPGELOST, 10-09-2026) — `.song-search-wrap` sprong 44px in.**
+
+**Geverifieerd.** `.song-search-wrap input` had `padding-left: 44px` in
+`styles.css`: ruimte voor een zoek-icoon dat er niet meer is
+(projectinstructies §8, "geen zoek-icoon in het veld"). Huisstijl §3 schrijft
+`--field-inset` (8px) voor. De tekst in "Band of artiest" begon daardoor 36px
+verder dan die in "Plaats" erboven.
+
+**De standaard is aangepast, niet omzeild (besluit Ronald, 10-09-2026).**
+De omweg uit TT-239 (`.ac-anchor`) is weer weg. `.song-search-wrap` is nu
+alleen nog een ankerpunt (`position: relative`). Twee regels verwijderd:
+
+| Verwijderd | Gevolg |
+|---|---|
+| `padding-left: 44px` op het veld | elk zoekveld begint nu op `--field-inset` (8px) |
+| `margin-bottom: 12px` op de wrapper | de afstand tussen blokken komt weer uit `.field`/`.filter-row` (huisstijl §3) |
+
+**Werkt door op vier andere velden**, alle vier gecontroleerd: de
+aanmeldwizard (`artistSearch`, `trackSearch`) en het tegelscherm "Je setlist"
+(`jstArtistSearch`, `jstTrackSearch`). Gemeten na de wijziging:
+`padding-left: 8px`, vlak `#242424`, rand `#666666` — gelijk aan elk ander
+veld.
+
+**Werkwijzeregel (besluit Ronald, 10-09-2026): een maat wordt consistent
+doorgevoerd in de standaard, nooit per scherm omzeild.** Wijkt één scherm af,
+dan is de regel fout of de code fout — niet het scherm bijzonder.
+
+---
+
+**TT-244 (nieuw, OPGELOST, 10-09-2026) — Drie soorten velden zagen er anders uit.**
+
+**Aanleiding.** Ronalds schermafdruk van 10-09-2026: op één scherm stonden
+drie verschillende veldstijlen naast elkaar.
+
+**Geverifieerd, gemeten in de browser op 390px vóór de wijziging:**
+
+| Veldsoort | Vlak | Rand | Hoogte | Letter |
+|---|---|---|---|---|
+| Invoerveld (Plaats, Band of artiest) | `#242424` | `#666666` | 44px | 16px |
+| Wielveld (Straal, Sorteren, Weergave) | `--surface2` `#1e1e1e` | `--border` `#2a2a2a` | 44px | 16px |
+| Keuzeveld (Instrument, Genre) | `--surface2` `#1e1e1e` | `--border` `#2a2a2a` | **48px** | **14px** |
+
+**Oorzaak.** De contrastfix van 12-08-2026 (melding Ronald: rand en vlak van
+invulvelden weken bijna niet af van de paginakleur, ruim onder de WCAG-norm
+van 3:1) verving `--surface2`/`--border` door `#242424`/`#666666`, maar
+alleen in de regel voor `input`/`select`/`textarea`. Het wielveld (TT-233) en
+het keuzeveld bestonden toen nog niet in deze vorm, of erfden die regel niet.
+
+**Opgelost.** Twee nieuwe variabelen in `:root`, en drie regels die ze
+gebruiken:
+
+```
+--field-bg: #242424;
+--field-border: #666666;
+```
+
+`input`/`select`/`textarea`, `.wheel-field` en `.picker-field` verwijzen nu
+alle drie naar die twee variabelen. `.picker-field` ging bovendien van 48px
+naar 44px (de tikdoelnorm uit huisstijl §6) en van 14px naar 16px (voorkomt
+inzoomen op iOS, huisstijl §7).
+
+**Geverifieerd na de wijziging, alle vijf velden op het Setlist-tabblad
+gemeten:** hoogte 44px, vlak `rgb(36,36,36)`, rand `1px solid rgb(102,102,102)`,
+hoekstraal 8px, letter 16px. Vijf van de vijf identiek. Ook gecontroleerd op
+het muzikanten-tabblad.
+
+**Nog te doen door Ronald:** de tegel "Je setlist" en de aanmeldwizard hebben
+dezelfde keuzevelden en krijgen dus dezelfde 44px/16px. Loop die twee schermen
+na op je telefoon bij de volgende smoke-test.
+
+---
+
+**TT-242 (OPGELOST, 10-09-2026) — Dode code rond het straal-getalveld verwijderd.**
+
+**Geverifieerd.** Na TT-233, TT-236 en TT-239 bestaat er geen getalveld voor
+de straal meer op een zoekpagina. Twee stukken hadden geen gebruiker meer en
+zijn weg:
+
+| Verwijderd | Uit |
+|---|---|
+| `snapRadiusToStep()` | `search.js` |
+| `.field input.radius-input` (TT-203) | `styles.css` |
+
+`.radius-row` blijft staan: die wordt nog gebruikt bij Bandleden zoeken
+(`index.html`). Het veld `#memberSearchRadius` daar draagt de klasse
+`radius-input` niet, dus de verwijderde regel raakte het niet.
+Na verwijdering nul treffers op beide namen in `search.js`, `styles.css` en
+`index.html`. Testset opnieuw gedraaid: alle toetsen van TT-239 nog groen.
+
+**Werkwijzeregel (besluit Ronald, 10-09-2026): dode code wordt meteen
+verwijderd, in dezelfde sessie waarin ze ontstaat.** Geen apart
+opschoonticket meer. Nog op te nemen in de projectinstructies, onder
+"Werkwijze per sessie".
+
+---
+
+**TT-243 (OPGELOST, 10-09-2026) — Twee maten voor het straalveld.**
+
+**Geverifieerd, gemeten in de browser op 390px:** het straalveld op de
+muzikanten-zoekpagina is **104px** breed. Dat komt uit
+`.filter-row-city .frc-straal .wheel-field { min-width: 104px }` in
+`styles.css`. Setlist en Band gebruiken dezelfde regel en meten hetzelfde.
+
+**Besluit Ronald:** de muzikanten-zoekpagina is leidend, dus 104px.
+`huisstijl-en-consistentie.md` §7.2 noemde 96px en is aangepast naar 104px.
+De projectinstructies §10 zeiden al 104px en blijven ongewijzigd.
 
 ---
 
