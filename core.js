@@ -37,15 +37,15 @@ function logAppError(message, source, stack) {
     // nooit teruggooien vanuit de foutlogger zelf
   }
 }
-// TT-230 (09-09-2026): één vaste regel voor elk catch-blok in de app. Vóór dit
+// TT-230 (09-09-2026): een vaste regel voor elk catch-blok in de app. Voor dit
 // ticket slikten tientallen catch-blokken de fout volledig op: geen melding,
 // geen console-regel, geen spoor. Zo'n storing kan weken bestaan tot iemand
-// hem toevallig ziet — precies wat er bij de bandomgeving gebeurde (TT-229).
-// logCaught() schrijft altijd naar de console én naar app_error_log. De
+// hem toevallig ziet - precies wat er bij de bandomgeving gebeurde (TT-229).
+// logCaught() schrijft altijd naar de console en naar app_error_log. De
 // aanroeper bepaalt zelf of de gebruiker daarnaast nog iets te zien krijgt.
 // Deze functie gooit nooit zelf een fout terug.
 //
-// Bewust géén logCaught in: opslag-vangnetten (localStorage/sessionStorage),
+// Bewust geen logCaught in: opslag-vangnetten (localStorage/sessionStorage),
 // JSON.parse, new URL, de History API en logAppError zelf. Die vangen een
 // browserbeperking af, hebben een werkende terugval, en zouden de teller van
 // 20 vullen met ruis.
@@ -358,41 +358,22 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllBandMoreMenus(); });
 
-// TT-01 (28-08-2026): zelfde ⋯-menupatroon als toggleProfileMoreMenu, voor
-// het menu naast "Vind een muzikant" op de zoekpagina.
-function toggleSearchPrefsMenu(e) {
-  if (e) e.stopPropagation();
-  const dd = document.getElementById('searchPrefsMoreDropdown');
-  const btn = document.getElementById('searchPrefsMoreBtn');
-  const opening = !dd.classList.contains('visible');
-  dd.classList.toggle('visible', opening);
-  btn.classList.toggle('active', opening);
-}
-function closeSearchPrefsMenu() {
-  document.getElementById('searchPrefsMoreDropdown')?.classList.remove('visible');
-  document.getElementById('searchPrefsMoreBtn')?.classList.remove('active');
-}
-document.addEventListener('click', (e) => {
-  const dd = document.getElementById('searchPrefsMoreDropdown');
-  if (dd && dd.classList.contains('visible') && !dd.contains(e.target) && !e.target.closest('#searchPrefsMoreBtn')) closeSearchPrefsMenu();
-});
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSearchPrefsMenu(); });
+// TT-232 (09-09-2026): het ⋯-menu op de zoekpagina is verwijderd, samen met
+// toggleSearchPrefsMenu() en closeSearchPrefsMenu(). Het scherm hieronder
+// wordt nu geopend vanuit Instellingen → E-mailvoorkeuren.
 
-// Haalt de huidige stand op (musician_wanted + email_digest_frequency) en
-// toont het scherm. Vereist een eigen profiel — musician_wanted hangt aan
-// musician_id, net als band_wanted aan band_id hangt.
+// Haalt de huidige stand op (email_digest_frequency + email_theme) en toont
+// het scherm. Vereist een eigen profiel: de voorkeuren staan op musicians.
 async function openSearchPrefsModal() {
   const mid = await getMyMusicianId();
-  if (!mid) { showToast('Maak eerst een profiel aan om zoekvoorkeuren in te stellen.'); return; }
+  if (!mid) { showToast('Maak eerst een profiel aan om e-mailvoorkeuren in te stellen.'); return; }
   try {
-    const [wantedRes, musicianRes] = await Promise.all([
-      db.from('musician_wanted').select('instrument').eq('musician_id', mid),
-      db.from('musicians').select('email_digest_frequency, email_theme').eq('id', mid).single()
-    ]);
-    if (wantedRes.error) throw wantedRes.error;
+    // TT-232 (09-09-2026): musician_wanted wordt hier niet meer gelezen of
+    // geschreven. De bestaande rijen blijven staan; alleen dit scherm raakt
+    // ze niet meer aan.
+    const musicianRes = await db.from('musicians')
+      .select('email_digest_frequency, email_theme').eq('id', mid).single();
     if (musicianRes.error) throw musicianRes.error;
-    wantedInstruments = (wantedRes.data || []).map(r => r.instrument);
-    renderPickerBadges(PICKERS.wantedInstruments);
     selectDigestFrequency(musicianRes.data?.email_digest_frequency || 'daily');
     selectEmailTheme(musicianRes.data?.email_theme || 'light');
     document.getElementById('searchPrefsModal').classList.add('visible');
@@ -432,23 +413,18 @@ function setEmailTheme(el, mode) {
   el.classList.add('selected');
 }
 
-// Zelfde delete+insert-patroon als bij band_wanted (saveBand()) — eenvoudiger
-// en minder foutgevoelig dan een verschil berekenen tussen oud en nieuw.
+// TT-232 (09-09-2026): schrijft alleen nog de twee e-mailvelden.
 async function saveSearchPrefs() {
   const mid = await getMyMusicianId();
   if (!mid) return;
   try {
-    await db.from('musician_wanted').delete().eq('musician_id', mid);
-    if (wantedInstruments.length) {
-      await db.from('musician_wanted').insert(wantedInstruments.map(instrument => ({ musician_id: mid, instrument })));
-    }
     const { error } = await db.from('musicians').update({
       email_digest_frequency: digestFrequencyValue,
       email_theme: emailThemeValue
     }).eq('id', mid);
     if (error) throw error;
     closeSearchPrefsModal();
-    showToast('Zoekvoorkeuren opgeslagen');
+    showToast('E-mailvoorkeuren opgeslagen');
   } catch (e) {
     logCaught('saveSearchPrefs', e);
     showToast(friendlyErrorMessage(e));
@@ -495,20 +471,18 @@ async function configureSearchAccess() {
   // sinds TT-U13 "Kaarten", en een eigen keuze uit localStorage gaat voor.
   syncViewToggles();
 
-  document.querySelectorAll('.doel-filter').forEach(el => {
-    el.style.display = hasOwnProfile ? '' : 'none';
-  });
   document.querySelectorAll('.band-instrument-filter').forEach(el => {
     el.style.display = hasOwnProfile ? '' : 'none';
   });
+  // TT-232 (09-09-2026): "Beste match" blijft bij Muzikanten altijd staan.
+  // De punten komen nu uit de ingevulde filters, niet uit je eigen profiel,
+  // dus het zoekscherm werkt uitgelogd precies hetzelfde als ingelogd.
+  // Bij Bands geldt dat (nog) niet: die score komt nog uit de database.
   document.querySelectorAll('.sort-score-option').forEach(el => {
     el.style.display = hasOwnProfile ? '' : 'none';
   });
 
   if (!hasOwnProfile) {
-    filterGoal = null;
-    document.querySelectorAll('#filterGoals .tag').forEach(x => x.classList.remove('selected'));
-    if (searchSortMode === 'score') selectSortModeByValue('filterSortMode', 'distance');
     if (bandSearchSortMode === 'score') selectSortModeByValue('filterBandSortMode', 'distance');
   }
 
@@ -578,6 +552,13 @@ async function updateSetlistTabVisibility() {
 function selectSortModeByValue(gridId, value) {
   const grid = document.getElementById(gridId);
   if (!grid) return;
+  // TT-232 (09-09-2026): bij Muzikanten is dit een keuzelijst geworden, bij
+  // Bands nog een schakelbalk. Beide vormen worden hier afgehandeld.
+  if (grid.tagName === 'SELECT') {
+    grid.value = value;
+    if (gridId === 'filterSortMode') searchSortMode = value;
+    return;
+  }
   const target = Array.from(grid.querySelectorAll('.segmented-btn')).find(t => t.getAttribute('data-mode') === value);
   if (!target) return;
   grid.querySelectorAll('.segmented-btn').forEach(t => t.classList.remove('selected'));

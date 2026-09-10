@@ -642,3 +642,461 @@ function removeSong(i) {
   renderSongs();
 }
 
+
+// ─── Draaiwiel (huisstijlcomponent voor getalvelden) ─────────────────────────
+// TT-232 (09-09-2026, Ronalds schets): getalvelden op het zoekscherm worden
+// een verticaal draaiwiel met vaste stappen. Reden: een vrij getalveld laat
+// waarden toe die niets opleveren (leeftijd 37 t/m 38, straal 1 km) en vraagt
+// op een telefoon om het toetsenbord. Een wiel met vaste stappen kan alleen
+// zinnige waarden aannemen.
+//
+// Het wiel schrijft zijn waarde altijd naar een verborgen invoerveld
+// (cfg.inputId). Alle bestaande code die die waarde uitleest, blijft daardoor
+// ongewijzigd werken.
+const WHEEL_ITEM_H = 44;   // moet gelijk zijn aan .wheel-item in styles.css
+const WHEEL_ZICHTBAAR = 5; // aantal zichtbare regels; .wheel-pad = 2 regels
+const WHEELS = {};
+
+// cfg: { id, inputId, values[], value, onChange, onPick, ariaLabel, labels? }
+// values mag '' bevatten; dat is de stand "Geen" (filter uit).
+// onPick wordt alleen aangeroepen bij een tik op een waarde, niet bij scrollen.
+function initWheel(cfg) {
+  const el = document.getElementById(cfg.id);
+  if (!el) return;
+  const labelOf = (v) => (cfg.labels && cfg.labels[v] != null) ? cfg.labels[v]
+                       : (v === '' ? 'Geen' : String(v));
+  el.classList.add('wheel');
+  el.setAttribute('tabindex', '0');
+  el.setAttribute('role', 'listbox');
+  if (cfg.ariaLabel) el.setAttribute('aria-label', cfg.ariaLabel);
+  // Geen eigen rand en geen eigen markeringsbalk: die horen bij de groep
+  // (.picker-group) eromheen, zodat de kolommen samen één picker vormen —
+  // het patroon dat iedereen van zijn telefoon kent.
+  el.innerHTML = `
+    <div class="wheel-scroll">
+      <div class="wheel-pad"></div>
+      ${cfg.values.map((v, i) => `<div class="wheel-item" role="option" data-i="${i}">${escHtml(labelOf(v))}</div>`).join('')}
+      <div class="wheel-pad"></div>
+    </div>`;
+
+  const scroll = el.querySelector('.wheel-scroll');
+  const state = { el, scroll, cfg, values: cfg.values.slice(), index: 0, timer: null };
+  WHEELS[cfg.id] = state;
+
+  // Klikken op een waarde kiest die waarde — sneller dan scrollen bij een
+  // korte lijst (niveau 1 t/m 5).
+  el.querySelectorAll('.wheel-item').forEach(item => {
+    item.addEventListener('click', () => {
+      setWheelIndex(cfg.id, parseInt(item.dataset.i), true);
+      if (typeof cfg.onPick === 'function') cfg.onPick(getWheelValue(cfg.id));
+    });
+  });
+
+  // Tijdens het scrollen leest de app niet elke pixel uit: pas 140 ms na de
+  // laatste beweging staat het wiel stil en telt de waarde. Anders zou elke
+  // tussenliggende waarde een zoekopdracht starten.
+  scroll.addEventListener('scroll', () => {
+    clearTimeout(state.timer);
+    state.timer = setTimeout(() => commitWheelScroll(cfg.id), 140);
+  });
+
+  el.addEventListener('keydown', (e) => {
+    const step = (e.key === 'ArrowUp' || e.key === 'PageUp') ? -1
+               : (e.key === 'ArrowDown' || e.key === 'PageDown') ? 1 : 0;
+    if (step) {
+      e.preventDefault();
+      const jump = (e.key === 'PageUp' || e.key === 'PageDown') ? 3 : 1;
+      setWheelIndex(cfg.id, state.index + step * jump, true);
+    } else if (e.key === 'Home') { e.preventDefault(); setWheelIndex(cfg.id, 0, true); }
+    else if (e.key === 'End')    { e.preventDefault(); setWheelIndex(cfg.id, state.values.length - 1, true); }
+  });
+
+  const start = cfg.values.indexOf(cfg.value);
+  setWheelIndex(cfg.id, start >= 0 ? start : 0, false);
+}
+
+// Leest de stand af nadat het wiel is stilgevallen.
+function commitWheelScroll(id) {
+  const s = WHEELS[id];
+  if (!s) return;
+  let i = Math.round(s.scroll.scrollTop / WHEEL_ITEM_H);
+  i = Math.max(0, Math.min(s.values.length - 1, i));
+  if (i !== s.index) setWheelIndex(id, i, true);
+}
+
+// notify=false zet de stand zonder de zoekopdracht opnieuw te starten —
+// gebruikt bij het opbouwen en bij "Filters wissen" (die zoekt zelf één keer).
+function setWheelIndex(id, i, notify) {
+  const s = WHEELS[id];
+  if (!s) return;
+  i = Math.max(0, Math.min(s.values.length - 1, i));
+  const changed = i !== s.index;
+  s.index = i;
+  // Vloeiend draaien bij een klik of een pijltoets, direct bij het opbouwen.
+  const top = i * WHEEL_ITEM_H;
+  if (notify && typeof s.scroll.scrollTo === 'function') s.scroll.scrollTo({ top, behavior: 'smooth' });
+  else s.scroll.scrollTop = top;
+  s.el.querySelectorAll('.wheel-item').forEach((item, n) => {
+    const on = n === i;
+    item.classList.toggle('selected', on);
+    item.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  const input = s.cfg.inputId && document.getElementById(s.cfg.inputId);
+  if (input) input.value = s.values[i];
+  if (notify && changed && typeof s.cfg.onChange === 'function') s.cfg.onChange(s.values[i]);
+}
+
+function getWheelValue(id) {
+  const s = WHEELS[id];
+  return s ? s.values[s.index] : null;
+}
+
+function setWheelValue(id, value, notify) {
+  const s = WHEELS[id];
+  if (!s) return;
+  const i = s.values.indexOf(value);
+  setWheelIndex(id, i >= 0 ? i : 0, !!notify);
+}
+
+
+// ─── Wielveld + bladwijzer (TT-233, 10-09-2026) ──────────────────────────────
+// Huisstijl §7.1: een wiel staat nooit vast open in een formulier. Het
+// formulier toont een tikveld met de stand in woorden; het wiel komt op in een
+// bladwijzer en verdwijnt zodra de keuze rond is.
+//
+// De verborgen invoervelden blijven de enige bron van waarheid. Het wiel wordt
+// bij elk openen opnieuw opgebouwd. Dat is bewust: een wiel dat wordt
+// opgebouwd terwijl het onzichtbaar is, kan zijn scrollpositie niet zetten —
+// dat was de oorzaak van de straal-fout (wiel startte op de laatste waarde).
+
+const WHEEL_FIELDS = {};
+let actiefWielVeld = null;
+
+// cfg: {
+//   id, fieldId, title,
+//   columns: [{ inputId, values, labels?, ariaLabel }],
+//   sep?: 't/m', unit?: 'km',
+//   value: [beginwaarde per kolom],
+//   clearTo?: [waarde per kolom bij "Wissen"],
+//   koppelBereik?: true        -> kolom 2 mag niet onder kolom 1 zakken
+//   ondergrensVerplicht?: true -> kolom 1 mag niet op "Geen" staan als kolom 2 gevuld is
+//   format(waarden) -> tekst in het gesloten veld
+//   hint(waarden)   -> terugleesregel onder het wiel
+//   onChange()      -> na elke wijziging
+// }
+function initWheelField(cfg) {
+  WHEEL_FIELDS[cfg.id] = cfg;
+  const el = document.getElementById(cfg.fieldId);
+  if (!el) return;
+  el.setAttribute('role', 'button');
+  el.setAttribute('tabindex', '0');
+  el.addEventListener('click', () => openWheelSheet(cfg.id));
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openWheelSheet(cfg.id); }
+  });
+  setWheelFieldValues(cfg.id, cfg.value, false);
+}
+
+function wheelFieldValues(id) {
+  const cfg = WHEEL_FIELDS[id];
+  if (!cfg) return [];
+  return cfg.columns.map(c => {
+    const inp = document.getElementById(c.inputId);
+    return inp ? inp.value : '';
+  });
+}
+
+// Zet de waarden in de verborgen velden, werkt het tikveld bij en draait — als
+// de bladwijzer openstaat — de wielen mee.
+function setWheelFieldValues(id, waarden, notify) {
+  const cfg = WHEEL_FIELDS[id];
+  if (!cfg) return;
+  cfg.columns.forEach((c, i) => {
+    const inp = document.getElementById(c.inputId);
+    if (inp) inp.value = (waarden && waarden[i] != null) ? waarden[i] : '';
+    const wielId = wheelColumnId(id, i);
+    if (WHEELS[wielId]) setWheelValue(wielId, waarden && waarden[i] != null ? waarden[i] : '', false);
+  });
+  refreshWheelField(id);
+  if (notify && typeof cfg.onChange === 'function') cfg.onChange();
+}
+
+function wheelColumnId(id, i) { return 'wheelCol_' + id + '_' + i; }
+
+// Werkt de tekst in het tikveld bij, plus de gouden rand als het filter aanstaat.
+function refreshWheelField(id) {
+  const cfg = WHEEL_FIELDS[id];
+  if (!cfg) return;
+  const el = document.getElementById(cfg.fieldId);
+  if (!el) return;
+  const waarden = wheelFieldValues(id);
+  const labelEl = el.querySelector('.wheel-field-label');
+  if (labelEl) labelEl.textContent = cfg.format(waarden);
+  const aan = typeof cfg.isActief === 'function' ? cfg.isActief(waarden)
+            : waarden.some(v => v !== '' && v != null);
+  el.classList.toggle('is-set', !!aan);
+  const hintEl = document.getElementById('wheelSheetHint');
+  if (hintEl && actiefWielVeld === id && typeof cfg.hint === 'function') {
+    hintEl.textContent = cfg.hint(waarden);
+  }
+}
+
+function openWheelSheet(id) {
+  const cfg = WHEEL_FIELDS[id];
+  if (!cfg) return;
+  actiefWielVeld = id;
+  document.getElementById('wheelSheetTitle').textContent = cfg.title;
+
+  const infoBtn = document.getElementById('wheelSheetInfo');
+  if (infoBtn) {
+    infoBtn.style.display = cfg.infoActie ? '' : 'none';
+    infoBtn.onclick = cfg.infoActie || null;
+  }
+
+  // Eén paneel, kolommen ernaast, één markeringsbalk erover. Het koppelwoord
+  // ("t/m") en de eenheid ("km") zijn vaste kolommen in het paneel, geen losse
+  // woorden ernaast — huisstijl §7.1.
+  const groep = document.getElementById('wheelSheetGroup');
+  let html = '';
+  cfg.columns.forEach((c, i) => {
+    if (i > 0 && cfg.sep) html += `<span class="wheel-sep" aria-hidden="true">${escHtml(cfg.sep)}</span>`;
+    html += `<div id="${wheelColumnId(id, i)}"></div>`;
+  });
+  if (cfg.unit) html += `<span class="wheel-unit" aria-hidden="true">${escHtml(cfg.unit)}</span>`;
+  html += '<div class="picker-band" aria-hidden="true"></div>';
+  groep.innerHTML = html;
+
+  // Eén kolom sluit op de tik die de waarde kiest. Een bereik van twee kolommen
+  // niet: daar is de keuze pas af als beide kolommen staan.
+  const sluitBijTik = cfg.columns.length === 1;
+  const waarden = wheelFieldValues(id);
+
+  document.getElementById('wheelSheetModal').classList.add('visible');
+
+  // Pas opbouwen als de bladwijzer echt zichtbaar is — een verborgen element
+  // heeft geen hoogte en negeert een gezette scrollpositie.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    cfg.columns.forEach((c, i) => {
+      initWheel({
+        id: wheelColumnId(id, i),
+        inputId: c.inputId,
+        values: c.values,
+        labels: c.labels,
+        value: waardeInKolom(c, waarden[i]),
+        ariaLabel: c.ariaLabel,
+        onChange: () => {
+          if (cfg.koppelBereik) koppelWielBereik(id);
+          refreshWheelField(id);
+          if (typeof cfg.onChange === 'function') cfg.onChange();
+        },
+        onPick: () => { if (sluitBijTik) closeWheelSheet(); }
+      });
+    });
+    refreshWheelField(id);
+  }));
+}
+
+// Een verborgen veld levert altijd tekst; het wiel werkt met de oorspronkelijke
+// waarden (getallen). Zoek de bijpassende waarde op, val terug op "Geen".
+function waardeInKolom(kolom, ruw) {
+  if (ruw === '' || ruw == null) return kolom.values.includes('') ? '' : kolom.values[0];
+  const gevonden = kolom.values.find(v => String(v) === String(ruw));
+  return gevonden !== undefined ? gevonden : (kolom.values.includes('') ? '' : kolom.values[0]);
+}
+
+// Een minimum boven het maximum geeft altijd nul resultaten. Het andere wiel
+// schuift mee naar de dichtstbijzijnde waarde die het bereik heel houdt.
+function koppelWielBereik(id) {
+  const cfg = WHEEL_FIELDS[id];
+  if (!cfg || cfg.columns.length < 2) return;
+  const minId = wheelColumnId(id, 0);
+  const maxId = wheelColumnId(id, 1);
+  if (!WHEELS[minId] || !WHEELS[maxId]) return;
+  let min = getWheelValue(minId);
+  const max = getWheelValue(maxId);
+
+  // Een bovengrens zonder ondergrens leest als een halve zin. Bij een schaal
+  // die bij een vaste waarde begint (niveau 1) vult de ondergrens zichzelf.
+  if (cfg.ondergrensVerplicht && max !== '' && min === '') {
+    const eerste = WHEELS[minId].values.find(v => v !== '');
+    if (eerste !== undefined) {
+      setWheelValue(minId, eerste, false);
+      min = eerste;
+    }
+  }
+
+  if (min === '' || max === '' || Number(min) <= Number(max)) return;
+  const nieuw = WHEELS[maxId].values.find(v => v !== '' && Number(v) >= Number(min));
+  setWheelValue(maxId, nieuw === undefined ? '' : nieuw, false);
+}
+
+// ─── Keuzeveld (TT-233, 10-09-2026) ──────────────────────────────────────────
+// Een korte, ongeordende lijst (Sorteren op, Weergave) hoort niet op een wiel —
+// huisstijl §7.1. En een browser-keuzelijst is niet af te ronden en niet te
+// animeren: die lijst tekent het besturingssysteem, niet de pagina.
+//
+// Het menu klapt uit onder de knop waar het bij hoort. Dat is waar de gebruiker
+// net getikt heeft en waar zijn ogen al staan; een laag onder aan het scherm
+// haalt hem daar weg. Zelfde vorm als de bestaande menu's in de app
+// (.inline-menu-dropdown), met een opengaande beweging erbij.
+//
+// Het oorspronkelijke <select> blijft in de HTML staan, verborgen. Het is de
+// bron van waarheid, zodat alle bestaande code die .value leest of zet
+// ongewijzigd blijft werken.
+
+const CHOICE_FIELDS = {};
+let actiefKeuzeMenu = null;
+
+// cfg: { id, fieldId, menuId, selectId }
+function initChoiceField(cfg) {
+  CHOICE_FIELDS[cfg.id] = cfg;
+  const el = document.getElementById(cfg.fieldId);
+  if (!el) return;
+  el.setAttribute('role', 'combobox');
+  el.setAttribute('aria-haspopup', 'listbox');
+  el.setAttribute('aria-expanded', 'false');
+  el.setAttribute('tabindex', '0');
+  el.addEventListener('click', (e) => { e.stopPropagation(); toggleChoiceMenu(cfg.id); });
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault(); e.stopPropagation(); toggleChoiceMenu(cfg.id);
+    }
+  });
+  refreshChoiceField(cfg.id);
+}
+
+// Zet de tekst van het zichtbare veld gelijk aan de gekozen optie. Aanroepen na
+// elke keer dat andere code de waarde van het <select> zelf wijzigt.
+function refreshChoiceField(id) {
+  const cfg = CHOICE_FIELDS[id];
+  if (!cfg) return;
+  const sel = document.getElementById(cfg.selectId);
+  const el = document.getElementById(cfg.fieldId);
+  if (!sel || !el) return;
+  const optie = sel.options[sel.selectedIndex];
+  const labelEl = el.querySelector('.wheel-field-label');
+  if (labelEl) labelEl.textContent = optie ? optie.textContent : '';
+}
+
+function toggleChoiceMenu(id) {
+  if (actiefKeuzeMenu === id) closeChoiceMenu();
+  else openChoiceMenu(id);
+}
+
+function openChoiceMenu(id) {
+  const cfg = CHOICE_FIELDS[id];
+  if (!cfg) return;
+  closeChoiceMenu();
+
+  const sel = document.getElementById(cfg.selectId);
+  const menu = document.getElementById(cfg.menuId);
+  const veld = document.getElementById(cfg.fieldId);
+  if (!sel || !menu || !veld) return;
+
+  // Loopt de sluitbeweging van de vorige keer nog? Breek die dan eerst af.
+  // Anders ruimt zíj dit net geopende menu een tel later alsnog op (TT-234).
+  if (menu.ttOpruimen) menu.ttOpruimen();
+
+  menu.innerHTML = [...sel.options].map(o => `
+    <button type="button" class="choice-option${o.value === sel.value ? ' selected' : ''}"
+            role="option" aria-selected="${o.value === sel.value ? 'true' : 'false'}"
+            data-waarde="${escAttr(o.value)}">
+      <span>${escHtml(o.textContent)}</span>
+      <span class="choice-option-check" aria-hidden="true">${o.value === sel.value ? '✓' : ''}</span>
+    </button>`).join('');
+
+  menu.querySelectorAll('.choice-option').forEach(rij => {
+    rij.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const waarde = rij.dataset.waarde;
+      closeChoiceMenu();
+      if (sel.value !== waarde) {
+        sel.value = waarde;
+        sel.dispatchEvent(new Event('change'));
+      }
+      refreshChoiceField(id);
+    });
+  });
+
+  menu.classList.remove('naar-boven');
+  menu.classList.add('open');
+  veld.setAttribute('aria-expanded', 'true');
+  actiefKeuzeMenu = id;
+
+  // Past het menu niet onder de knop, dan klapt het omhoog uit. De beweging
+  // begint dan aan de onderkant, zodat hij nog steeds uit de knop lijkt te
+  // komen.
+  const ruimteOnder = window.innerHeight - veld.getBoundingClientRect().bottom;
+  if (menu.offsetHeight + 12 > ruimteOnder) menu.classList.add('naar-boven');
+
+  // Sluiten bij een klik ergens anders. De luisteraar gaat er pas ná de huidige
+  // klik op, anders vangt hij zijn eigen openingsklik — zelfde patroon als
+  // handleCancelClick() (huisstijl §8).
+  setTimeout(() => {
+    document.addEventListener('click', sluitKeuzeMenuBijKlik, { once: true });
+  }, 0);
+  document.addEventListener('keydown', sluitKeuzeMenuBijEscape);
+}
+
+function sluitKeuzeMenuBijKlik() { closeChoiceMenu(); }
+function sluitKeuzeMenuBijEscape(e) { if (e.key === 'Escape') closeChoiceMenu(); }
+
+function closeChoiceMenu() {
+  document.removeEventListener('keydown', sluitKeuzeMenuBijEscape);
+  document.removeEventListener('click', sluitKeuzeMenuBijKlik);
+  if (!actiefKeuzeMenu) return;
+  const cfg = CHOICE_FIELDS[actiefKeuzeMenu];
+  const menu = cfg && document.getElementById(cfg.menuId);
+  const veld = cfg && document.getElementById(cfg.fieldId);
+  actiefKeuzeMenu = null;
+  if (veld) veld.setAttribute('aria-expanded', 'false');
+  if (!menu) return;
+
+  // Dichtklappen met dezelfde beweging, andersom. Pas daarna weghalen.
+  //
+  // TT-234 (10-09-2026): hier zat een fout waardoor het menu na één keer
+  // gebruiken niet meer openging. De vangnet-timer stond op 160 ms, korter dan
+  // de sluitbeweging zelf duurt. De timer ruimde dus als eerste op, brak de
+  // beweging af, en 'animationend' kwam daardoor nooit. De luisteraar bleef
+  // liggen en ving de eerstvolgende beweging op dit element: de ópeningsbeweging
+  // van de volgende keer. Het menu klapte open en meteen weer dicht.
+  //
+  // Drie dingen houden dat nu tegen:
+  // 1. De luisteraar gaat er in elk pad weer af, ook als de timer opruimt.
+  // 2. De luisteraar reageert alleen op de sluitbeweging, op naam.
+  // 3. De timer staat ruim boven de duur van de beweging (140 ms).
+  menu.classList.add('sluit');
+  let t = null;
+  const opruimen = () => {
+    clearTimeout(t);
+    menu.removeEventListener('animationend', bijEindeBeweging);
+    menu.ttOpruimen = null;
+    menu.classList.remove('open', 'sluit', 'naar-boven');
+    menu.innerHTML = '';
+  };
+  const bijEindeBeweging = (e) => {
+    if (e.animationName === 'choiceMenuDicht') opruimen();
+  };
+  menu.addEventListener('animationend', bijEindeBeweging);
+  // Staat "minder beweging" aan, dan is er geen sluitbeweging (styles.css) en
+  // komt er dus ook geen 'animationend'. Meteen opruimen, niet 260 ms wachten.
+  const beweegtNiet = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  t = setTimeout(opruimen, beweegtNiet ? 0 : 260);
+  // openChoiceMenu() gebruikt dit om een nog lopende sluiting af te breken.
+  menu.ttOpruimen = opruimen;
+}
+
+function closeWheelSheet() {
+  document.getElementById('wheelSheetModal').classList.remove('visible');
+  if (actiefWielVeld) refreshWheelField(actiefWielVeld);
+  actiefWielVeld = null;
+}
+
+// "Wissen" zet dit ene filter terug naar zijn beginstand en zoekt opnieuw.
+function wheelSheetClear() {
+  const id = actiefWielVeld;
+  if (!id) return;
+  const cfg = WHEEL_FIELDS[id];
+  setWheelFieldValues(id, cfg.clearTo || cfg.columns.map(() => ''), true);
+  closeWheelSheet();
+}

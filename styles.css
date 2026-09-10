@@ -10,6 +10,14 @@
     --text: #f0f0f0;
     --muted: #888;
     --radius: 12px;
+    /* TT-233 (10-09-2026, Ronald): hoekstraal van een invoer-/keuzeveld. Eén
+       waarde voor élk veld — invoerveld, keuzeveld, wielveld, lijstoptie —
+       zodat geen twee velden naast elkaar een andere ronding krijgen. */
+    --radius-field: 8px;
+    /* De tekst in een veld begint waar de ronding ophoudt en de rechte lijn
+       begint. Label en hulptekst erboven springen evenveel in, zodat elke
+       tekstregel in een formulier op dezelfde x staat. */
+    --field-inset: 8px;
     /* TT-168-overgang (02-09-2026): standaard lijndikte voor de omlijnde
        knop-/badgestijl (rand-alleen, geen vlak) — overgenomen uit
        profiel-v2.html, hier op één plek instelbaar voor de hele app. */
@@ -220,12 +228,33 @@
     gap: 8px;
   }
 
+  /* TT-233 (10-09-2026, Ronald): een label stond tegen de rand van de kolom,
+     terwijl de tekst in het veld eronder 12px inspringt — de breedte van de
+     ronde hoek. Daardoor liep geen enkele tekstregel op één lijn. Label en
+     hulptekst springen nu evenveel in als de tekst in het veld.
+     Geldt app-breed. De maat is --field-inset: gelijk aan --radius-field, dus
+     de tekst begint precies waar de ronding overgaat in de rechte rand. */
   label {
     font-size: 11px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--muted);
     font-weight: 500;
+    padding-left: var(--field-inset);
+    /* Vaste regelhoogte, zodat élk label even hoog is — ook een label met een
+       i-knop erin. Anders staat het veld onder dat label lager dan het veld
+       ernaast, en verschilt de witruimte per label. */
+    line-height: 16px;
+  }
+  /* Hulptekst onder een label, binnen dezelfde veldgroep. */
+  /* Hulptekst tussen label en veld: 8px eronder, gelijk aan de afstand
+     label → veld uit §3. Als regel, niet als inline marge. */
+  .field > p {
+    padding-left: var(--field-inset);
+    margin: 0;
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    line-height: 1.35;
   }
 
   /* Contrastfix 12-08-2026 (melding Ronald): randkleur en achtergrond van
@@ -238,14 +267,14 @@
   input:not([type="checkbox"]):not([type="radio"]), select, textarea {
     background: #242424;
     border: 1px solid #666666;
-    border-radius: 8px;
+    border-radius: var(--radius-field);
     color: var(--text);
     font-family: 'Roboto', sans-serif;
     /* TT-U22 (12-08-2026): 16px is het minimum. Safari op iOS zoomt
        automatisch in bij focus op een veld onder 16px, en zoomt niet terug
        uit. Bewust NIET via var(--fs-md) — de huisstijl blijft 15px. */
     font-size: 16px;
-    padding: 12px 16px;
+    padding: 12px var(--field-inset);
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
     width: 100%;
@@ -993,11 +1022,16 @@
   .media-tab.active { background: var(--surface); color: var(--text); }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
-  /* Zoeken: prominente, gecentreerde modus-knoppen (muzikant/band/setlist) */
+  /* Zoeken: prominente, gecentreerde modus-knoppen (muzikant/band/setlist).
+     TT-233 (10-09-2026, Ronald): boven en onder de knoppenrij stond 32px en
+     28px, en de zoekwikkel legde daar nog eens 48px bovenop. Dat gaf een lege
+     band tussen de knoppen en het filterpaneel. Nu boven en onder dezelfde
+     20px — de standaardafstand tussen twee blokken uit §3. Geldt voor alle
+     drie de zoekmodi, want deze rij staat er maar één keer. */
   .search-mode-tabs-outer {
     display: flex;
     justify-content: center;
-    padding: 32px 24px 28px;
+    padding: 20px 24px;
   }
   .search-mode-tabs {
     display: flex;
@@ -1602,8 +1636,17 @@
   .search-wrap {
     width: 100%;
     margin: 0 auto;
-    padding: 48px 24px 80px;
+    /* Geen eigen ruimte bovenaan: de knoppenrij erboven levert die al. Twee
+       blokken die allebei hun eigen marge meebrengen, tellen op. */
+    padding: 0 24px 80px;
   }
+
+  /* Standaard witruimte tussen twee blokken in het filterpaneel: 20px, zoals
+     §3 van de huisstijl voorschrijft. Stond hier als inline marge van 16px op
+     elk blok apart — dat is precies wat §3 verbiedt. */
+  .search-filters > .field,
+  .search-filters > .filter-row,
+  .search-filters > .field-pair-row { margin-bottom: 20px; }
 
   .search-filters {
     background: var(--surface);
@@ -2226,8 +2269,8 @@
   .picker-field {
     width: 100%; box-sizing: border-box; display: flex; align-items: center;
     justify-content: space-between; gap: 8px;
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-    min-height: 48px; padding: 10px 14px; margin-top: 4px;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-field);
+    min-height: 48px; padding: 10px var(--field-inset); margin-top: 0;
     font-family: 'Roboto', sans-serif; font-size: 14px; color: var(--text);
     cursor: pointer; transition: border-color 0.15s;
   }
@@ -2354,7 +2397,11 @@
        blijft ongewijzigd, alleen het icoon zelf wordt groter getekend). */
     #navMenuBtn svg { width: 26px; height: 26px; }
     .nav-menu-dropdown { right: 16px; top: -18px; }
-    .search-wrap, .my-profile-wrap { padding: 32px 16px 60px; }
+    /* TT-233: geen eigen ruimte bovenaan bij Zoeken — de knoppenrij erboven
+       levert die al (20px). Mijn Profiel heeft geen knoppenrij en houdt zijn
+       32px. */
+    .search-wrap { padding: 0 16px 60px; }
+    .my-profile-wrap { padding: 32px 16px 60px; }
     /* TT-130 (23-08-2026): op de telefoon scrolden de gespreksnaam en het
        invoerveld gewoon mee met de berichtenlijst — bij een langer gesprek,
        of zodra het toetsenbord opkomt, verdwenen beide. Geen enkele
@@ -2645,3 +2692,289 @@
     .backend-error-overlay { left: 25%; right: 25%; }
   }
 
+
+  /* ─── Draaiwiel (TT-233, 10-09-2026) ──────────────────────────────────────
+     Huisstijl §7.1. De vorm die iedereen van zijn telefoon kent: één paneel
+     per keuze, de waarden vervagen naar boven en onder, en één balk markeert
+     de gekozen regel. Vijf regels zichtbaar, de middelste is gekozen.
+     Regelhoogte 44px staat ook in utils.js als WHEEL_ITEM_H — die twee moeten
+     gelijk blijven, anders leest het wiel de verkeerde waarde af.
+     Vervangt het TT-232-blok, dat twee keer in dit bestand stond. */
+  .picker-group {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;    /* kolommen als blok in het midden, zie hieronder */
+    gap: 4px;
+    height: 220px;              /* 5 regels van 44px */
+    padding: 0 8px;
+    background: var(--surface2);
+    border: var(--line) solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .picker-group:focus-within { border-color: var(--accent); }
+  /* De markering van de gekozen regel: één balk over de hele groep, geen
+     lijnen per kolom. Scrollt niet mee. De balk loopt wél over de volle
+     breedte — die markeert de regel, niet de kolom. */
+  .picker-band {
+    position: absolute;
+    left: 8px; right: 8px;
+    top: 88px;                  /* 2 regels van 44px */
+    height: 44px;
+    background: rgba(245, 197, 24, 0.10);
+    border-top: 1px solid rgba(245, 197, 24, 0.35);
+    border-bottom: 1px solid rgba(245, 197, 24, 0.35);
+    border-radius: 8px;
+    pointer-events: none;
+  }
+  /* Vaste kolombreedte, geen flex:1. De meeste gebruikers bedienen de app met
+     hun rechterduim; kolommen die de volle breedte uitrekken duwen de eerste
+     kolom tegen de linkerrand, buiten duimbereik. */
+  .wheel { position: relative; height: 100%; width: 72px; flex: 0 0 auto; }
+  .wheel:focus { outline: none; }
+  .wheel:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
+  .wheel-scroll {
+    height: 100%;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    /* Vervagen naar boven en onder — het kenmerk van dit soort wiel. */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 34%, #000 66%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 34%, #000 66%, transparent 100%);
+  }
+  .wheel-scroll::-webkit-scrollbar { display: none; }
+  /* Twee lege regels boven en onder, zodat ook de eerste en de laatste
+     waarde in het midden kunnen staan. */
+  .wheel-pad { height: 88px; }
+  .wheel-item {
+    height: 44px;
+    line-height: 44px;
+    text-align: center;
+    font-size: 17px;
+    color: #6d6d6d;
+    scroll-snap-align: center;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: color 0.15s;
+  }
+  .wheel-item.selected { color: var(--text); font-weight: 700; }
+  /* Koppelwoord en eenheid staan op de hoogte van de gekozen regel, als vaste
+     kolom in het paneel — geen los woord naast het paneel. */
+  .wheel-sep,
+  .wheel-unit {
+    align-self: flex-start;
+    margin-top: 88px;
+    height: 44px;
+    line-height: 44px;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+    text-align: center;
+    flex: 0 0 auto;
+  }
+  .wheel-sep  { width: 44px; }
+  .wheel-unit { width: 52px; font-size: 15px; }
+
+  /* ─── Wielveld: het tikveld dat de bladwijzer opent ──────────────────────── */
+  .wheel-field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;   /* de waarde staat gecentreerd, huisstijl §7.2 */
+    min-height: 44px;
+    /* Zelfde inspringing en hoekstraal als elk ander veld. Op een scherm van
+       360px blijft er 117px over voor de tekst; de langste stand,
+       "22 - 40 jaar", heeft er 81 nodig. Het pijltje staat er los overheen en
+       kost geen breedte. */
+    padding: 0 var(--field-inset);
+    background: var(--surface2);
+    border: var(--line) solid var(--border);
+    border-radius: var(--radius-field);
+    font-size: 16px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .wheel-field:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Gouden rand zodra dit filter aanstaat — in één blik te zien wat er leeft. */
+  .wheel-field.is-set { border-color: var(--accent); }
+  .wheel-field-label { overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 12px); }
+  .wheel-field-chevron {
+    position: absolute;
+    right: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    pointer-events: none;
+  }
+
+  /* ─── Bladwijzer met het wiel ────────────────────────────────────────────── */
+  /* Bewuste uitzondering op §9 (volledig scherm op mobiel): een keuzelaag van
+     circa 300px is geen scherm. Daarom een eigen klasse en niet .modal-box —
+     die krijgt op mobiel 100dvh. */
+  .wheel-overlay {
+    align-items: flex-end;
+    padding: 0;
+    backdrop-filter: none;
+    background: rgba(0, 0, 0, 0.55);
+  }
+  .wheel-sheet {
+    width: 100%;
+    background: var(--surface);
+    border-top: var(--line) solid var(--border);
+    border-radius: 16px 16px 0 0;
+    padding: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    animation: wheelSheetUp 0.18s ease-out;
+  }
+  @keyframes wheelSheetUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wheel-sheet { animation: none; }
+  }
+  .wheel-sheet-grip {
+    width: 36px; height: 4px;
+    border-radius: 999px;
+    background: var(--border);
+    margin: 0 auto 14px;
+  }
+  .wheel-sheet-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+  /* Terugleesregel onder het wiel: "Niveau 3 t/m 5 — Half-Gevorderd t/m
+     Professioneel". Vaste hoogte, zodat de knoppen eronder niet verspringen. */
+  .wheel-hint {
+    font-size: var(--fs-sm);
+    color: var(--accent);
+    text-align: center;
+    margin: 12px 0 0;
+    min-height: 18px;
+  }
+  .wheel-sheet .btn-row { margin-top: 14px; }
+
+  /* ─── Rijen op het zoekscherm (huisstijl §7.2) ───────────────────────────── */
+  /* Plaats en Straal op één regel. Straal is zo breed als "500 km" nodig heeft
+     en groeit niet mee; Plaats krijgt de rest, want plaatsnamen verschillen
+     sterk in lengte. */
+  .filter-row-city { display: flex; gap: 8px; align-items: flex-end; }
+  /* Deze twee staan niet in een .field, dus de 8px tussen label en veld uit §3
+     kwam hier niet vanzelf. */
+  .filter-row-city .frc-plaats,
+  .filter-row-city .frc-straal { display: flex; flex-direction: column; gap: 8px; }
+  .filter-row-city .frc-plaats { flex: 1 1 auto; min-width: 0; }
+  .filter-row-city .frc-straal { flex: 0 0 auto; }
+  .filter-row-city .frc-straal .wheel-field { min-width: 104px; }
+
+  /* Twee velden naast elkaar: exact gelijke kolommen. Zelfde principe als een
+     knoppenrij (§5) — 1fr is altijd even breed. Gebruikt voor Leeftijd/Niveau
+     én voor Sorteren/Weergave. */
+  .field-pair-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .field-pair-row .field { min-width: 0; }
+  /* Onder 360px past de rij niet meer naast elkaar. */
+  @media (max-width: 359px) {
+    .field-pair-row { grid-template-columns: 1fr; }
+  }
+
+  /* ─── Keuzemenu onder zijn eigen knop (TT-233) ───────────────────────────
+     Voor een korte, ongeordende keuze (Sorteren op, Weergave). Het menu klapt
+     uit waar de gebruiker net getikt heeft, niet onder aan het scherm. Zelfde
+     vorm als .inline-menu-dropdown elders in de app, met een opengaande
+     beweging erbij. */
+  .menu-anchor { position: relative; }
+  .choice-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-field);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    z-index: 60;
+    transform-origin: top center;
+  }
+  .choice-menu.open { display: block; animation: choiceMenuOpen 0.16s cubic-bezier(0.2, 0.9, 0.3, 1); }
+  .choice-menu.sluit { animation: choiceMenuDicht 0.14s ease-in forwards; }
+  /* Geen ruimte onder de knop: dan omhoog, met de beweging vanaf de onderkant. */
+  .choice-menu.naar-boven {
+    top: auto;
+    bottom: calc(100% + 6px);
+    transform-origin: bottom center;
+  }
+  @keyframes choiceMenuOpen {
+    from { opacity: 0; transform: scaleY(0.85) translateY(-6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes choiceMenuDicht {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: scaleY(0.9) translateY(-4px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .choice-menu.open, .choice-menu.sluit { animation: none; }
+  }
+  .choice-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 var(--field-inset);
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .choice-option + .choice-option { border-top: 1px solid var(--border); }
+  .choice-option:hover { background: var(--surface2); }
+  .choice-option.selected { color: var(--accent); font-weight: 700; }
+  .choice-option-check { color: var(--accent); font-size: 14px; }
+
+  /* TT-232 (09-09-2026): .search-btn heeft margin-top:8px voor los gebruik.
+     In een knoppenrij maakt die marge de twee knoppen 8px ongelijk hoog —
+     precies het verschil dat TT-228 wegnam. Hier dus terugzetten op 0. */
+  .btn-row .search-btn { margin-top: 0; }
+
+  /* Label met de i-knop ernaast (zelfde patroon als "Mijn Instrumenten"). */
+  /* De i-knop staat rechts in de labelregel, op één lijn met de rechterrand
+     van het veld eronder (Ronald, 10-09-2026). Niet direct achter het woord —
+     dan zweeft hij ergens in het midden van de regel. */
+  .label-with-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-right: var(--field-inset);
+  }
+  /* De i-knop staat óp de labelregel, niet gecentreerd over een hogere regel
+     (Ronald, 10-09-2026). Hij is daarom 16px — de regelhoogte van een label —
+     in plaats van de 24px die hij buiten een label heeft. Het tikvlak blijft
+     44×44px via het ::after-patroon uit §6. */
+  label .niveau-info-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 10px;
+    margin-left: 0;
+  }
+  label .niveau-info-btn::after { top: -14px; right: -14px; bottom: -14px; left: -14px; }

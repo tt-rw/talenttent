@@ -1,10 +1,153 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 09-09-2026 — **TT-230 opgelost. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-232 (e-mail bij een fout), P1.** Alle drie vóór TT-01. Deze sessie opgeleverd: TT-226, TT-227, TT-228 en het herstel van TT-224/TT-225. Ook gewijzigd: de werkwijze rond sessies en bestandsuitwisseling (zie de twee blokken direct hieronder).
+**Laatste update:** 10-09-2026 — **TT-232 en TT-233 overgezet van de testrepo naar productie.** Het zoekscherm voor muzikanten werkt nu met draaiwielen en keuzelijsten. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-235 (zes element-id's die niet bestaan), P2.
+
+**Let op — ticketnummer TT-232 was twee keer gebruikt.** De testrepo gebruikte TT-232 voor de zoekschermherziening. De actielijst gebruikte hetzelfde nummer voor "e-mail bij een fout". Opgelost op 10-09-2026: de zoekschermherziening houdt TT-232, want dat nummer staat in de code. Het e-mailticket heet vanaf nu **TT-234**. Dat ticket was nog niet gebouwd, dus buiten deze regel bestaat er geen verwijzing naar.
+
+Vorige update, 09-09-2026: TT-230 opgelost. Deze sessie opgeleverd: TT-226, TT-227, TT-228 en het herstel van TT-224/TT-225. Ook gewijzigd: de werkwijze rond sessies en bestandsuitwisseling (zie de blokken hieronder).
 
 ---
 
-**TT-232 (nieuw, NIET opgelost, P1, 09-09-2026) — E-mail bij een fout in `app_error_log`.**
+**TT-232 (OPGELOST, overgezet naar productie 10-09-2026) — Zoekscherm muzikanten herzien.**
+
+Gebouwd en getest in de testrepo op 09-09-2026. Op 10-09-2026 overgezet naar
+`talenttent.org`.
+
+**Wat er verandert:**
+
+- Straal, leeftijd en niveau zijn draaiwielen geworden. Elk veld opent een
+  bladwijzer met het wiel erin. Het wiel schrijft naar dezelfde verborgen
+  invoervelden die `runSearch()` al uitlas. De filterlogica is niet gewijzigd.
+- Vaste stappen op de wielen. Leeg betekent: filter staat uit ("Geen" bovenaan).
+  Leeftijd loopt per 3 jaar tot 24, daarna per 5. Bij tieners telt één jaar
+  verschil zwaar. Bij volwassenen niet meer.
+- De weergavekeuze bij Muzikanten is een keuzelijst geworden. Bij Bands staat
+  nog de schakelbalk.
+- **De matchscore komt niet meer uit de database** (besluit Ronald). Hij telt
+  uitsluitend wat je zelf hebt ingevuld: 3 punten per gekozen instrument dat
+  deze muzikant speelt, 2 punten per gekozen genre. Instrument weegt zwaarder
+  dan genre: je zoekt een bassist, geen genre. Straal telt niet mee — die is al
+  een harde grens.
+- Bij "Beste match" beslist eerst de afstand, afgerond op hele kilometers,
+  daarna het aantal punten. Zonder die afronding geeft "Beste match" dezelfde
+  lijst als "Dichtstbijzijnde".
+- Het zoekscherm werkt uitgelogd nu precies hetzelfde als ingelogd. De punten
+  komen immers uit de filters, niet uit je eigen profiel.
+- Het ⋯-menu op de zoekpagina is weg. `toggleSearchPrefsMenu()` en
+  `closeSearchPrefsMenu()` zijn verwijderd. De e-mailvoorkeuren staan nu onder
+  **Instellingen → E-mailvoorkeuren**.
+- `musician_wanted` wordt daar niet meer gelezen of geschreven. De bestaande
+  rijen blijven staan. Alleen dit scherm raakt ze niet meer aan.
+
+**Bewust vervallen: het filter "Doel".** Het blok Doel en de variabele
+`filterGoal` staan niet meer in het zoekscherm. Bevestigd door Ronald op
+10-09-2026. `GOAL_LABELS` blijft bestaan: `bands.js` toont het doel nog op een
+profiel.
+
+---
+
+**TT-233 (OPGELOST, overgezet naar productie 10-09-2026) — Witruimte, labelhoogte en keuzemenu's.**
+
+Gebouwd en getest in de testrepo op 10-09-2026. Zelfde oplevering als TT-232.
+
+**Witruimte in een formulier — één maat per soort:**
+
+- Label → veld: **8px**, overal. Komt uit `.field { gap: 8px }`. Een blok dat
+  geen `.field` is, krijgt die 8px expliciet.
+- Label → hulptekst → veld: ook **8px** per stap.
+- Tussen twee blokken: **20px**.
+- **Elk label is even hoog: `line-height: 16px`.** Een label met een i-knop erin
+  is dat ook. Die knop is binnen een label **16×16px**, niet de 24px die hij
+  daarbuiten heeft. Het tikvlak blijft 44×44px via het `::after`-patroon.
+  Zonder deze regel maakt de knop dat ene label hoger. Dan staat het veld
+  eronder lager dan het veld ernaast.
+- Nooit een inline `style="margin-bottom:..."` op een veld of label.
+
+**Een keuzemenu klapt uit onder de knop waar het bij hoort** (Ronald,
+10-09-2026), niet in een laag onder aan het scherm. Daar heeft de gebruiker net
+getikt en daar staan zijn ogen. Vorm: `.choice-menu` binnen een `.menu-anchor`,
+even breed als de knop, 6px eronder, `--radius-field`, `--surface` met een rand
+en een schaduw, rijen van 44px met de gekozen rij in `--accent` en een `✓`. De
+beweging begint aan de bovenkant van het menu (160 ms open, 140 ms dicht). Het
+`<select>` blijft verborgen in de HTML staan als bron van waarheid, zodat
+bestaande code die `.value` leest of zet ongewijzigd blijft werken.
+
+**Straal terug van 28 naar 10 standen.** 28 standen tot 500 km vroegen een
+lange scrollbeweging voor een keuze die in de praktijk tussen 10 en 50 km ligt.
+Nederland is ongeveer 300 km lang. Beginstand van het straalwiel: 5 km.
+
+---
+
+**Overzetting testrepo → productie, 10-09-2026 — hoe het is gegaan.**
+
+De twee repo's waren twee kanten op gelopen. De testrepo had TT-232 en TT-233.
+De productierepo had TT-230, dat de testrepo miste. Een kopie van alle
+bestanden zou TT-230 hebben gewist.
+
+**Overgezet: vijf bestanden.** `index.html`, `styles.css`, `core.js`,
+`utils.js`, `search.js`.
+
+**Niet overgezet: zes bestanden.** `auth.js`, `bands.js`, `messages.js`,
+`musicians.js`, `postcode.js`, `wizard.js`. De volledige diff van die zes is
+gelezen. Elk verschil was TT-230. Ze bevatten geen enkele wijziging uit de
+testrepo.
+
+**TT-230 teruggezet in drie van de vijf.** `core.js` kreeg `logCaught()` terug,
+plus de aanroepen in `appInit()`, `openSearchPrefsModal()` en
+`saveSearchPrefs()`. `utils.js` kreeg er twee terug, `search.js` vijf.
+
+**Gecontroleerd vóór oplevering (Geverifieerd):**
+
+| Controle | Uitkomst |
+|---|---|
+| `node --check` op alle tien geladen JS-bestanden | schoon |
+| alle 59 `logCaught`-aanroepen uit productie aanwezig | gesorteerde namenlijst identiek |
+| 128 inline `on*`-handlers wijzen naar een bestaande functie | alle 128 gevonden |
+| alle veertien views openen | 14/14 |
+| straalwiel openen en een waarde kiezen | 10 standen, 5 → 50 km |
+| zelfde testset tegen de testrepo én tegen het resultaat | elke regel gelijk, behalve `logCaught` (alleen in het resultaat) |
+| onafgevangen fouten en console-fouten | 0 en 0 |
+
+**Fout die hierbij is gemaakt en hersteld.** De eerste ronde zette `logCaught`
+op zeven plekken terug. Productie had er negen. De twee gemiste zaten in
+`openSearchPrefsModal()` en `saveSearchPrefs()`. Een telling van beide
+namenlijsten ving dat, niet het oog. Les: tel de aanroepen, lees ze niet.
+
+---
+
+**TT-235 (nieuw, NIET opgelost, P2, 10-09-2026) — Zes element-id's die niet bestaan.**
+
+**Wat het is.** Elk vak, elke knop en elk veld op het scherm heeft een naam in
+`index.html`, het `id`. JavaScript zoekt een onderdeel op met
+`document.getElementById('<naam>')`. Bestaat die naam niet, dan komt er niets
+terug en doet de regel erna niets. Er verschijnt geen foutmelding. Het
+onderdeel werkt gewoon niet.
+
+**Zes namen worden opgevraagd en bestaan niet:**
+
+| Naam | Wordt gezocht in |
+|---|---|
+| `profileMoreBtn` | `core.js` |
+| `profileMoreDropdown` | `core.js` |
+| `bandInviteToggleBtn` | `wizard.js` |
+| `magOokLaterMedia` | `wizard.js` |
+| `magOokLaterRepertoire` | `wizard.js` |
+| `magOokLaterWatZoekJe` | `wizard.js` |
+
+**Geverifieerd:** deze zes staan zo in productie én in de testrepo. Ze zijn
+niet door de overzetting van 10-09-2026 ontstaan.
+
+**Onbekend:** of hierdoor iets zichtbaar stuk is. Waarschijnlijk gaat het om
+onderdelen die bij een eerdere herziening zijn hernoemd of verwijderd, waarna
+de JS-regel is blijven staan. Eerst uitzoeken per naam. Daarna pas opruimen.
+
+**Waarom dit wacht.** Het is geen P0. Doe dit na TT-229 en TT-231.
+
+---
+
+**TT-234 (nieuw, NIET opgelost, P1, 09-09-2026) — E-mail bij een fout in `app_error_log`.**
+
+*Heette tot 10-09-2026 TT-232. Hernummerd omdat de testrepo dat nummer al voor de zoekschermherziening gebruikte. Zie de kop van dit bestand.*
 
 **Wat Ronald vroeg:** "ik wil een email ontvangen zodra dit gebeurt."
 
