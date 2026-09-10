@@ -1,10 +1,66 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 10-09-2026 — **TT-232 en TT-233 overgezet van de testrepo naar productie.** Het zoekscherm voor muzikanten werkt nu met draaiwielen en keuzelijsten. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-235 (zes element-id's die niet bestaan), P2.
+**Laatste update:** 10-09-2026 — **TT-232 en TT-233 overgezet van de testrepo naar productie.** Het zoekscherm voor muzikanten werkt nu met draaiwielen en keuzelijsten. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-235 (zes element-id's die niet bestaan), P2. **Werkwijze gewijzigd: één set bestanden gaat voortaan naar beide repo's — zie het blok hieronder.**
 
 **Let op — ticketnummer TT-232 was twee keer gebruikt.** De testrepo gebruikte TT-232 voor de zoekschermherziening. De actielijst gebruikte hetzelfde nummer voor "e-mail bij een fout". Opgelost op 10-09-2026: de zoekschermherziening houdt TT-232, want dat nummer staat in de code. Het e-mailticket heet vanaf nu **TT-234**. Dat ticket was nog niet gebouwd, dus buiten deze regel bestaat er geen verwijzing naar.
 
 Vorige update, 09-09-2026: TT-230 opgelost. Deze sessie opgeleverd: TT-226, TT-227, TT-228 en het herstel van TT-224/TT-225. Ook gewijzigd: de werkwijze rond sessies en bestandsuitwisseling (zie de blokken hieronder).
+
+---
+
+**Werkwijzewijziging (10-09-2026, besluit Ronald) — één set bestanden, twee repo's gelijk.**
+
+**Wat er misging.** De testrepo en de productierepo waren twaalf bestanden uit
+elkaar gelopen. TT-230 is rechtstreeks in de productierepo gebouwd. TT-232 en
+TT-233 zijn in de testrepo gebouwd, op een kopie van vóór TT-230. Twee
+schrijfplekken geven altijd twee versies. Een kopie van alle bestanden in één
+richting had TT-230 gewist.
+
+**De nieuwe regel.** Claude levert per sessie **één set bestanden**. Ronald
+zet diezelfde set in **beide** repo's, in dezelfde sessie. Er komt nooit een
+wijziging in maar één van de twee. Ook geen tikfout, ook geen snelle fix.
+
+**Vaste stap bij sessiestart.** Claude kloont beide repo's en vergelijkt ze
+bestand voor bestand. Wijken ze af, dan meldt Claude dat vóór het ticket
+begint. Commando:
+
+```
+for f in $(ls prod); do cmp -s "prod/$f" "test/$f" || echo "verschilt: $f"; done
+```
+
+**Gelijkgetrokken op 10-09-2026.** Twaalf bestanden in beide repo's gezet:
+`actielijst.md`, `index.html`, `styles.css`, `core.js`, `utils.js`,
+`search.js`, `auth.js`, `bands.js`, `messages.js`, `musicians.js`,
+`postcode.js`, `wizard.js`. Alle overige bestanden waren al gelijk.
+
+**Ontwerpdocumenten horen in het claude.ai-project, niet in een repo.**
+Geverifieerd op 10-09-2026: `huisstijl-en-consistentie.md` staat in de
+testrepo en in het project, en die twee verschillen. De projectversie is
+nieuwer. Drie stukken staan alleen daar: "Witruimte rond een blok dat boven de
+pagina-inhoud staat", "Inspringing van tekst in een formulier
+(`--field-inset`)" en "Een bovengrens zonder ondergrens bestaat niet". Dit is
+dezelfde fout als bij `zoekfunctienaslagwerk.md`, dat ook op twee plekken
+staat.
+
+**Besluit:** de projectversie is leidend. **Ronald verwijdert
+`huisstijl-en-consistentie.md` uit de testrepo.** Het bestand komt niet in de
+productierepo. Datzelfde geldt voor `zoekfunctienaslagwerk.md`: dat openstaande
+conflict is hiermee op dezelfde manier op te lossen — projectversie leidend,
+repokopie weg.
+
+**Twee mappen die niet in de set zitten:**
+
+| Map | Waar | Wat ermee |
+|---|---|---|
+| `.github/workflows/static.yml` | alleen productie | **Blijft zo. Bewuste uitzondering.** Alleen de productierepo publiceert naar GitHub Pages. Deze map hoort nooit in de testrepo, en een sessie die dit verschil ziet moet het laten staan |
+| `Claude outputs` | alleen test | Schermafdrukken uit een testsessie. Hoort in geen van beide repo's: GitHub Pages serveert alles in de productierepo publiek. **Ronald verwijdert deze map uit de testrepo** |
+
+**Geverifieerd, 10-09-2026:** na het plaatsen van de dertien bestanden in beide
+repo's is `diff -rq` tussen de twee volledige mappen leeg, op die twee mappen
+na.
+
+**Nog te doen door Ronald:** deze regel opnemen in de projectinstructies,
+onder "Werkwijze per sessie".
 
 ---
 
