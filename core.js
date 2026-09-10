@@ -573,7 +573,10 @@ function selectSortModeByValue(gridId, value) {
   if (gridId === 'filterBandSortMode') bandSearchSortMode = value;
 }
 
-function setSearchMode(mode) {
+// TT-170 (10-09-2026): de tweede parameter komt alleen van een veeg en stuurt
+// de schuifbeweging van het binnenkomende paneel. Een tik op een tabblad roept
+// setSearchMode() met één argument aan; dat pad is ongewijzigd.
+function setSearchMode(mode, veegRichting) {
   currentSearchMode = mode;
   const isMusician = mode === 'musician';
   const isBand     = mode === 'band';
@@ -584,6 +587,7 @@ function setSearchMode(mode) {
   document.getElementById('searchModeMusicianBtn').classList.toggle('active', isMusician);
   document.getElementById('searchModeBandBtn').classList.toggle('active', isBand);
   document.getElementById('searchModeSetlistBtn').classList.toggle('active', isSetlist);
+  if (veegRichting) animeerZoekPaneel(mode, veegRichting);
   if (isBand) initBandSearchFilters();
   if (isSetlist) initSetlistSearchFilters();
 
@@ -594,6 +598,117 @@ function setSearchMode(mode) {
   if (isMusician) runSearch();
   else if (isBand) runBandSearch();
   else if (isSetlist && setlistWantedSongs.length) runSetlistSearch();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TT-170 — vegen tussen de drie zoektabbladen
+// ═══════════════════════════════════════════════════════════════════════════
+// Besluit Ronald, 10-09-2026: een veeg naar links toont het tabblad rechts,
+// een veeg naar rechts het tabblad links. De inhoud volgt de vinger. De
+// eerdere afspraak "veeg naar links = terug" (TT-168-wireframe) vervalt.
+//
+// Volgorde is die van de knoppenrij: Muzikant · Band · Setlist. Aan de
+// uiteinden gebeurt niets — geen doorlopende cyclus.
+//
+// Les uit TT-U21 (het niveau-gebaar): nooit touch-action:none op een groot
+// vlak. Dat blokkeerde toen het scrollen over de instrumentknoppen. Deze code
+// laat het toestel gewoon scrollen en kiest pas een richting zodra de vinger
+// duidelijk horizontaal beweegt.
+const ZOEK_TABBLADEN = ['musician', 'band', 'setlist'];
+const VEEG_DREMPEL   = 60;   // px die de vinger minimaal horizontaal aflegt
+const VEEG_VERHOUDING = 1.5; // horizontaal moet 1,5x groter zijn dan verticaal
+const VEEG_MAX_MS    = 800;  // een traag sleepje is geen veeg
+
+let veegStartX = 0, veegStartY = 0, veegStartT = 0;
+let veegBezig = false, veegHorizontaal = null;
+
+// Een veeg telt niet als er iets anders overheen ligt, als de vinger in een
+// tekstveld begint, of als het element eronder zelf horizontaal scrolt.
+function veegGeblokkeerd(doel) {
+  if (!doel || !doel.closest) return true;
+  // Een open modal of wiel-bladwijzer ligt boven op het zoekscherm.
+  if (document.querySelector('.modal-overlay.visible')) return true;
+  // In een tekstveld sleept de vinger de cursor, niet het tabblad.
+  if (doel.closest('input, textarea, select, [contenteditable="true"]')) return true;
+  // Een eigen horizontale scroller (bijv. een brede tabel) houdt de veeg.
+  let el = doel;
+  while (el && el !== document.body) {
+    if (el.scrollWidth > el.clientWidth + 1) {
+      const overloop = getComputedStyle(el).overflowX;
+      if (overloop === 'auto' || overloop === 'scroll') return true;
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
+
+function animeerZoekPaneel(mode, richting) {
+  const paneelIds = { musician: 'searchModeMusician', band: 'searchModeBand', setlist: 'searchModeSetlist' };
+  const paneel = document.getElementById(paneelIds[mode]);
+  if (!paneel) return;
+  const klasse = richting === 'links' ? 'search-pane-in-left' : 'search-pane-in-right';
+  paneel.classList.remove('search-pane-in-left', 'search-pane-in-right');
+  // Een geforceerde herberekening, anders start dezelfde animatie niet opnieuw
+  // wanneer twee keer achter elkaar dezelfde kant op wordt geveegd.
+  void paneel.offsetWidth;
+  paneel.classList.add(klasse);
+  paneel.addEventListener('animationend', () => paneel.classList.remove(klasse), { once: true });
+}
+
+function initZoekVeeg() {
+  const view = document.getElementById('view-search');
+  if (!view) return;
+
+  view.addEventListener('touchstart', (e) => {
+    veegBezig = false;
+    veegHorizontaal = null;
+    if (e.touches.length !== 1) return;          // knijpen is geen veeg
+    if (veegGeblokkeerd(e.target)) return;
+    veegStartX = e.touches[0].clientX;
+    veegStartY = e.touches[0].clientY;
+    veegStartT = Date.now();
+    veegBezig = true;
+  }, { passive: true });
+
+  view.addEventListener('touchmove', (e) => {
+    if (!veegBezig) return;
+    if (e.touches.length !== 1) { veegBezig = false; return; }
+    const dx = e.touches[0].clientX - veegStartX;
+    const dy = e.touches[0].clientY - veegStartY;
+    if (veegHorizontaal === null) {
+      // Richting vastzetten zodra de vinger ver genoeg is voor een uitspraak.
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      veegHorizontaal = Math.abs(dx) > Math.abs(dy) * VEEG_VERHOUDING;
+      if (!veegHorizontaal) { veegBezig = false; return; }  // verticaal: laat scrollen
+    }
+    // Alleen een vastgezette horizontale veeg houdt de browser tegen. Verticaal
+    // scrollen is op dat moment al afgehandeld door de tak hierboven.
+    if (veegHorizontaal && e.cancelable) e.preventDefault();
+  }, { passive: false });
+
+  const veegEinde = (e) => {
+    if (!veegBezig || !veegHorizontaal) { veegBezig = false; return; }
+    veegBezig = false;
+    const aanraking = e.changedTouches && e.changedTouches[0];
+    if (!aanraking) return;
+    const dx = aanraking.clientX - veegStartX;
+    if (Math.abs(dx) < VEEG_DREMPEL) return;
+    if (Date.now() - veegStartT > VEEG_MAX_MS) return;
+
+    const nu = ZOEK_TABBLADEN.indexOf(currentSearchMode);
+    if (nu === -1) return;
+    // Vinger naar links (dx < 0) → het tabblad rechts komt in beeld.
+    const doel = dx < 0 ? nu + 1 : nu - 1;
+    if (doel < 0 || doel >= ZOEK_TABBLADEN.length) return;   // geen cyclus
+
+    setSearchMode(ZOEK_TABBLADEN[doel], dx < 0 ? 'rechts' : 'links');
+    // Het nieuwe tabblad begint bovenaan, net als na showView(). Zonder dit
+    // valt de gebruiker midden in een lijst die hij nog nooit heeft gezien.
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  view.addEventListener('touchend', veegEinde, { passive: true });
+  view.addEventListener('touchcancel', () => { veegBezig = false; veegHorizontaal = null; }, { passive: true });
 }
 
 // De History API (pushState/replaceState) kan een SecurityError gooien in

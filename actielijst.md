@@ -1,6 +1,8 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 10-09-2026 — **TT-239 opgeleverd: het Setlist-tabblad is gelijkgetrokken met de muzikantenpagina.** Straalwiel, `.filter-row-city`, `.btn-row` met de primaire knop rechts, en een sorteer-/weergavebalk bij het resultaat. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-241 t/m TT-244 — alle vier opgelost in dezelfde sessie. **Twee nieuwe werkwijzeregels: (1) dode code wordt meteen verwijderd, in dezelfde sessie waarin ze ontstaat; (2) een maat wordt consistent doorgevoerd in de standaard, nooit per scherm omzeild.** **Werkwijze: één set bestanden gaat naar beide repo's — zie het blok hieronder.**
+**Laatste update:** 10-09-2026 — **TT-170 opgeleverd: vegen tussen de drie zoektabbladen.** Veeg naar links = tabblad rechts, veeg naar rechts = tabblad links. De oude afspraak uit het TT-168-wireframe — veeg naar links betekende Terug — is vervallen. Getest met Playwright: 19 van de 19 toetsen geslaagd. Gewijzigde bestanden: `core.js`, `styles.css`, `index.html`, `actielijst.md`.
+
+Vorige update, 10-09-2026: **TT-239 opgeleverd: het Setlist-tabblad is gelijkgetrokken met de muzikantenpagina.** Straalwiel, `.filter-row-city`, `.btn-row` met de primaire knop rechts, en een sorteer-/weergavebalk bij het resultaat. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-241 t/m TT-244 — alle vier opgelost in dezelfde sessie. **Twee nieuwe werkwijzeregels: (1) dode code wordt meteen verwijderd, in dezelfde sessie waarin ze ontstaat; (2) een maat wordt consistent doorgevoerd in de standaard, nooit per scherm omzeild.** **Werkwijze: één set bestanden gaat naar beide repo's — zie het blok hieronder.**
 
 Vorige update, 10-09-2026: TT-236 opgeleverd — de bandzoekpagina gelijkgetrokken met de muzikantenpagina. Nieuw toen: TT-237, TT-238, TT-239 en TT-240.
 
@@ -2137,7 +2139,7 @@ Gebouwd:
 
 **TT-167 (31-08-2026), gebouwd:** e-mailveld terug op het bewerkscherm (stap 1 "Over jou"), alleen-lezen, gevuld met `currentUser.email`. Wachtwoordveld blijft bij bewerken volledig verborgen — wachtwoord wijzigen loopt via het bestaande resetscherm (`saveNewPassword()`, `view-reset`), nooit via dit formulier. **Reden:** Ronald wil altijd kunnen zien welk e-mailadres aan zijn account hangt; het veld was al sinds de bouw van de wizard bewust verborgen tijdens bewerken (zie `showView()`), maar dat voelde onverwacht aan. Patroon hergebruikt: alleen-lezen styling identiek aan het bestaande Plaats-/fname-veld tijdens bewerken — geen nieuw componentpatroon. **Geverifieerd:** `regEmail` wordt door geen enkele opslagfunctie uitgelezen zolang `editingMusicianId` gezet is (alle voorkomens van `state.regEmail`/`regEmail` nagelopen) — het veld tonen kan dus nooit een wijziging aan het e-mailadres veroorzaken. **Getest:** haakjesbalans (`{}` 2043/2043, `[]` 329/329, `()` 6118/6119 — bekende onbalans van 1) en `node --check` geslaagd. **Niet getest:** Playwright (geen render-omgeving met ingelogde sessie opgezet deze sessie). **Nog niet geüpload naar GitHub — actie bij Ronald**, vóór dit live getest kan worden.
 
-**TT-168 (31-08-2026), nieuw, niet gebouwd — fundamenteel herontwerp "Profiel bewerken".** Ronald leverde een wireframe aan. Startscherm met vijf tegels (Wie ben je · Wat speel je · Wat zoek je · Je setlist · Je mediahoek), elk opent een eigen volledig-scherm-subscherm met eigen Annuleren/Opslaan — vervangt de huidige stap-voor-stap-wizard voor het bewerkpad. Navigatie in de wireframe: "swipe naar links = Terug". Moet samenwerken met de bestaande hardware-terugknop/History API (TT-16) — geen aparte swipe-only oplossing bouwen naast de bestaande terugknoplogica.
+**TT-168 (31-08-2026), nieuw, niet gebouwd — fundamenteel herontwerp "Profiel bewerken".** Ronald leverde een wireframe aan. Startscherm met vijf tegels (Wie ben je · Wat speel je · Wat zoek je · Je setlist · Je mediahoek), elk opent een eigen volledig-scherm-subscherm met eigen Annuleren/Opslaan — vervangt de huidige stap-voor-stap-wizard voor het bewerkpad. Navigatie loopt via de bestaande hardware-terugknop/History API (TT-16) — geen aparte navigatie-oplossing ernaast bouwen.
 
 **Besluit bouwaanpak (31-08-2026):** los bestand op de `main`-branch (bijv. `profiel-v2.html`), naast de bestaande `index.html`. Geen GitHub-branch of pull request nodig — GitHub Pages serveert elk bestand in de hoofdmap op zijn eigen pad (**geverifieerd**: `manifest.json`/`icon-192.png`/`icon-512.png` staan al zo naast `index.html` op `main`). `talenttent.org/` blijft `index.html` laden; `talenttent.org/profiel-v2.html` wordt het nieuwe scherm, apart bereikbaar, geen risico voor de live site. Zodra Ronald akkoord geeft op de werkende versie: overzetten naar `index.html` met `str_replace`, oude wizard-route voor het bewerkpad eruit.
 
@@ -2169,7 +2171,32 @@ Ronald leverde de tekening van het wireframe aan (vijf tegels, elk met een eigen
 
 **TT-169 (31-08-2026), nieuw, niet gebouwd — herontwerp profielpagina.** Op verzoek van Ronald: incl. een profielbanner (LinkedIn-stijl). Bestaat nog nergens — geen kolom, geen upload, geen ontwerp. Los van TT-168. **Uitgebreid 06-09-2026 tot een volledig bandpagina-herontwerp — zie bovenaan dit document voor de actuele, volledige scope.**
 
-**TT-170 (31-08-2026), nieuw, niet gebouwd — swipe-navigatie door de hele app.** Het wireframe noemt "swipe naar links = Terug" bij TT-168; Ronald wil dit uiteindelijk in de hele app doorvoeren. Apart ticket, niet in TT-168 (dat blijft bij terugknop/History-integratie, TT-16).
+**TT-170 (31-08-2026), gebouwd 10-09-2026 — vegen tussen de drie zoektabbladen.**
+
+Dit ticket stond eerder als "swipe-navigatie door de hele app". Het TT-168-wireframe liet een veeg naar links Terug betekenen. **Die richting is omgedraaid (besluit Ronald, 10-09-2026)**; de oude betekenis geldt nergens meer in de app. De nieuwe regel:
+
+| Gebaar | Resultaat |
+|---|---|
+| Veeg naar links | volgend tabblad (rechts) |
+| Veeg naar rechts | vorig tabblad (links) |
+
+De inhoud volgt de vinger, zoals op iOS en Android. Volgorde is die van de knoppenrij: Muzikant · Band · Setlist. Aan de uiteinden gebeurt niets — geen doorlopende cyclus (Ronald, 10-09-2026).
+
+**Gebouwd:** `initZoekVeeg()` in `core.js`, aangeroepen in het startblok van `index.html`. `setSearchMode()` heeft een tweede parameter `veegRichting` gekregen; een tik op een tabblad roept de functie nog steeds met één argument aan, dat pad is ongewijzigd. De schuifanimatie (`.search-pane-in-left` / `.search-pane-in-right`, 0,18 s) staat in `styles.css`.
+
+**Bewuste keuzes:**
+
+- Drempel 60px. Horizontaal moet 1,5x groter zijn dan verticaal. Maximaal 800 ms. Een schuine of trage beweging wisselt niets.
+- **Geen `touch-action: none`.** Les uit TT-U21: dat blokkeerde toen het scrollen over de instrumentknoppen. De richting wordt pas vastgezet als de vinger duidelijk horizontaal beweegt; daarvóór scrollt het toestel gewoon.
+- Een veeg telt niet als er een modal of wiel-bladwijzer open staat, als de vinger in een tekstveld begint, of als het element eronder zelf horizontaal scrolt.
+- Na een veeg springt het scherm naar boven (`window.scrollTo`), net als na `showView()`. Zonder dat val je midden in een lijst die je nog nooit hebt gezien. Het tikpad doet dit niet — daar sta je al bovenaan.
+- **Geen sleep-in-realtime van drie panelen naast elkaar.** Die panelen verschillen sterk in hoogte; dat vraagt een herindeling van het hele zoekscherm. Voorwaarde 0 — stabiliteit wint van functionaliteit. Het binnenkomende paneel schuift 24px mee in 180 ms, gelijk aan het tempo van de bladwijzer (`.wheel-sheet`).
+
+**Getest met Playwright**, Chromium, 390×844, echte touch-gebeurtenissen via CDP, tegen een Supabase-stub: **19 van de 19 toetsen geslaagd.** Beide richtingen, beide uiteinden zonder cyclus, verticaal scrollen, een veeg onder de drempel, een schuine veeg van 45°, een open modal, een veeg vanuit een invoerveld, twee vingers tegelijk, de schuifanimatie en het opruimen ervan, en geen JavaScript-fouten. `node --check core.js` geslaagd. Haakjesbalans `core.js`: `{}` 136/136 · `()` 618/618 · `[]` 25/25.
+
+**Niet getest:** tegen de echte database en op een echt toestel. De sessie-sandbox bereikt Supabase niet.
+
+**Nog open — app-brede swipe-navigatie.** Dit ticket dekt alleen de zoekpagina. Vegen op andere schermen is nog niet gebouwd en heeft nog geen afgesproken betekenis. Bij het uitbreiden geldt de richtingsregel hierboven als uitgangspunt.
 
 **TT-171 (31-08-2026), nieuw, niet gebouwd — instelbare blokvolgorde, idee.** Breed opgezet: "alle blokken naar inzicht van de gebruiker" aanpasbaar, niet alleen de vijf tegels van TT-168. Nog geen scope, geen prioriteit — vastgelegd als idee. **Profieldeel opgenomen in TT-220 (06-09-2026) — zie bovenaan dit document. Het bredere, app-brede deel (alle blokken, niet alleen het profiel) staat hier nog genoemd voor het geval TT-220 het niet volledig dekt.**
 
