@@ -471,9 +471,10 @@ async function configureSearchAccess() {
   // sinds TT-U13 "Kaarten", en een eigen keuze uit localStorage gaat voor.
   syncViewToggles();
 
-  document.querySelectorAll('.band-instrument-filter').forEach(el => {
-    el.style.display = hasOwnProfile ? '' : 'none';
-  });
+  // TT-236 (10-09-2026): hier werd het instrumentfilter op de bandtab
+  // verborgen zonder eigen profiel. Dat is vervallen — het blok staat nu
+  // altijd, net als bij Muzikanten. De klasse .band-instrument-filter bestaat
+  // niet meer.
   // TT-232 (09-09-2026): "Beste match" blijft bij Muzikanten altijd staan.
   // De punten komen nu uit de ingevulde filters, niet uit je eigen profiel,
   // dus het zoekscherm werkt uitgelogd precies hetzelfde als ingelogd.

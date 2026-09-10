@@ -2866,6 +2866,15 @@
   /* Plaats en Straal op één regel. Straal is zo breed als "500 km" nodig heeft
      en groeit niet mee; Plaats krijgt de rest, want plaatsnamen verschillen
      sterk in lengte. */
+  /* TT-236 (10-09-2026): de statusregel onder Plaats reserveerde altijd ruimte,
+     ook als hij leeg was. Het gat onder Plaats werd daardoor 46px, terwijl elk
+     ander blok in het filterpaneel 20px aanhoudt: 8px kolom-gap + 4px marge +
+     14px lege regel + 20px blokmarge. De regel neemt nu pas ruimte in zodra er
+     tekst in staat. updateSearchCityStatus() zet `textContent = ''`, dus het
+     element is dan werkelijk leeg en `:empty` grijpt. */
+  .city-status { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .city-status:empty { display: none; }
+
   .filter-row-city { display: flex; gap: 8px; align-items: flex-end; }
   /* Deze twee staan niet in een .field, dus de 8px tussen label en veld uit §3
      kwam hier niet vanzelf. */

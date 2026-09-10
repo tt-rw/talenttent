@@ -993,8 +993,9 @@ async function runBandSearch() {
     } else {
       // Zonder eigen profiel: anonieme RPC's. Vertrekpunt voor straal/afstand
       // is het Plaats-veld hierboven (indien leeg of geen match: alle bands,
-      // geen straal/afstand). Geen instrumentfilter — je zoekt geen band op
-      // instrument als bezoeker.
+      // geen straal/afstand). TT-236 (10-09-2026): het instrumentfilter geldt
+      // hier nu ook. tt_get_bands_public levert `wanted` mee, zie de mapping
+      // onderaan deze tak.
       const origin = await resolveSearchOrigin(document.getElementById('filterBandCity').value);
       originResolved = origin.lat != null;
       const { data: matches, error: rpcErr } = await db.rpc('tt_search_bands_anon', {
@@ -1038,7 +1039,11 @@ async function runBandSearch() {
       if (nameQuery && !(b.name || '').toLowerCase().includes(nameQuery)) return false;
       if (cityQuery && !skipCityTextFilter && !(b.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterBandGenresList.length && !filterBandGenresList.some(g => (b.genres||[]).includes(g))) return false;
-      if (hasOwnProfile && filterBandWantedList.length) {
+      // TT-236 (10-09-2026): het instrumentfilter gold alleen met een eigen
+      // profiel. Nu altijd, net als bij Muzikanten. De anonieme tak levert de
+      // instrumenten al aan: tt_get_bands_public geeft `wanted`, dat hierboven
+      // naar band_wanted wordt gezet.
+      if (filterBandWantedList.length) {
         const wanted = (b.band_wanted||[]).map(w => w.instrument);
         if (!filterBandWantedList.some(i => wanted.includes(i))) return false;
       }

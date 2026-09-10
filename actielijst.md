@@ -1,6 +1,6 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 10-09-2026 — **TT-236 opgeleverd: de bandzoekpagina is gelijkgetrokken met de muzikantenpagina.** Zelfde velden, zelfde volgorde, zelfde afstanden, zelfde knopvolgorde. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-237 (Escape sluit de wielbladwijzer niet) en TT-238 (wielveld verliest zijn waarde na een eerdere opening), beide P2 en beide bestaand. **Werkwijze: één set bestanden gaat naar beide repo's — zie het blok hieronder.**
+**Laatste update:** 10-09-2026 — **TT-236 opgeleverd: de bandzoekpagina is gelijkgetrokken met de muzikantenpagina.** Zelfde velden, zelfde volgorde, zelfde afstanden, zelfde knopvolgorde. Twee P0's over, in deze volgorde: TT-229 (bandomgeving stuk), TT-231 (Playwright-testset wordt leidend). Nieuw: TT-237, TT-238, TT-239 en TT-240 — vier bevindingen, alle vier bestaand en bewust buiten TT-236 gehouden. **Werkwijze: één set bestanden gaat naar beide repo's — zie het blok hieronder.**
 
 **Let op — ticketnummer TT-232 was twee keer gebruikt.** De testrepo gebruikte TT-232 voor de zoekschermherziening. De actielijst gebruikte hetzelfde nummer voor "e-mail bij een fout". Opgelost op 10-09-2026: de zoekschermherziening houdt TT-232, want dat nummer staat in de code. Het e-mailticket heet vanaf nu **TT-234**. Dat ticket was nog niet gebouwd, dus buiten deze regel bestaat er geen verwijzing naar.
 
@@ -81,21 +81,101 @@ niet gewijzigd.
 | Meer filters | knop plus ingeklapt blok | weg, alle filters staan open |
 | Ervaring van de band | twee zichtbare `<select>` | wielveld met twee kolommen, i-knop in het label |
 | Status | losse chip aan/uit | keuzelijst: "Alle bands" / "Zoekt muzikanten" |
-| Volgorde | Genre boven Instrument | Instrument boven Genre |
+| Instrument | label "Instrument gezocht", alleen zichtbaar met eigen profiel | label "Instrument", altijd zichtbaar, filter werkt ook uitgelogd |
+| Volgorde | Bandnaam, Plaats, Genre, Instrument, Ervaring | Bandnaam, Plaats, **Genre**, Ervaring + Status, Instrument |
 | Knoppenrij | inline grid, primair links | `.btn-row`, secundair links, primair rechts |
 | Sorteren / Weergave | `.segmented-control` | `.field-pair-row` met twee keuzelijsten |
 | Ondertitel | "Zoek bands die nog muzikanten zoeken" | weg — het Status-veld draagt die betekenis |
 
 **Besluiten van Ronald bij dit ticket (10-09-2026):** ondertitel weg, Status
 begint op "Alle bands" (geen gedragswijziging), straal begint bij bands
-voortaan ook op 5 km.
+voortaan ook op 5 km, en het instrumentblok wordt **identiek aan de
+muzikanten-zoekpagina**.
+
+**Instrumentblok gelijkgetrokken (Ronald, 10-09-2026, tweede ronde).** Het
+blok heette "Instrument gezocht" en werd verborgen zodra je geen eigen profiel
+had; `runBandSearch()` sloeg het filter dan ook over. Bij Muzikanten staat
+Instrument altijd, ook uitgelogd (TT-232). Drie wijzigingen:
+
+1. `index.html`: label wordt "Instrument", de klasse `.band-instrument-filter`
+   is verwijderd.
+2. `core.js`: de regel die `.band-instrument-filter` verborg is weg.
+3. `search.js`: `if (hasOwnProfile && filterBandWantedList.length)` is
+   `if (filterBandWantedList.length)` geworden.
+
+**Geen databasewijziging nodig.** De anonieme tak haalt `tt_get_bands_public`
+op en mapt `b.wanted` al naar `band_wanted` — die code stond er al.
+
+**Volgorde vastgelegd (Ronald, 10-09-2026, derde schets).** Genre staat tussen
+Plaats en Ervaring. De vaste volgorde van de bandtab is daarmee:
+
+`Bandnaam` · `Plaats + Straal` · `Genre` · `Ervaring + Status` · `Instrument` ·
+knoppenrij.
+
+**Bewuste afwijking van Muzikanten.** Daar staat Genre onderaan, ná Instrument.
+Alle overige onderdelen — vorm, maten, afstanden, knopvolgorde — zijn wel
+gelijk. Ronalds keuze; genoteerd zodat een volgende sessie dit niet
+"terugrepareert".
+
+**Ruimtes geverifieerd, 10-09-2026 — met een correctie.** De eerste meting
+keek naar de doosafstand tussen twee blokken en meldde overal 20px. Ronald zag
+op het scherm dat het gat onder Plaats ruim twee keer zo groot was. Dat klopte:
+de doos was 20px, het **zichtbare** gat 46px.
+
+**Oorzaak, geverifieerd.** Onder Plaats staat een statusregel die meldt welke
+plaatsnaam de app herkende. Die regel had `min-height:14px` en reserveerde dus
+altijd ruimte, ook leeg. Het gat bestond uit vier stukken:
+
+| Stuk | Waarde |
+|---|---|
+| `gap` van `.field` (flexkolom) | 8px |
+| `margin-top` van de statusregel | 4px |
+| `min-height` van de lege regel | 14px |
+| `margin-bottom` van het blok (de bedoelde tussenruimte) | 20px |
+| **Totaal** | **46px** |
+
+De onderste 20px was de bedoeling. De 26px erboven was ruimte voor een melding
+die er niet stond.
+
+**Opgelost.** Nieuwe klasse `.city-status` in `styles.css` vervangt de inline
+stijl. De regel neemt pas ruimte in zodra er tekst in staat:
+`.city-status:empty { display: none; }`. `updateSearchCityStatus()` zet
+`textContent = ''`, dus het element is dan werkelijk leeg en `:empty` grijpt.
+
+**Toegepast op alle drie de zoektabbladen** (Ronald, 10-09-2026): Muzikant,
+Band en Setlist.
+
+**Let op bij Setlist.** Daar staat onder de statusregel nog een vaste
+toelichtingsregel. Die kreeg eerst dezelfde klasse, maar `.field > p`
+(specificiteit 0,1,1) overschrijft `.city-status` (0,1,0) — de regel werd
+daardoor groter. Teruggezet: die `<p>` houdt zijn eigen opmaak. Hij reserveert
+geen lege ruimte, dus hij veroorzaakt het probleem niet.
+
+**Gemeten na de wijziging, 390px breedte:**
+
+| Tabblad | Gat onder Plaats |
+|---|---|
+| Muzikant | 20px |
+| Band | 20px |
+| Setlist | 20px |
+
+Met een gevulde statusregel: de melding staat 8px onder het veld en houdt 20px
+tot het volgende blok. Alles eronder schuift dan 24px omlaag; leeggemaakt keert
+het gat terug naar 20px. Alle zes tussenruimtes in het bandpaneel meten 20px en
+geen enkel blok draagt een inline marge — huisstijl §3 en §7.2.
+
+**Onbekend, door Ronald te bevestigen op de live site:** geeft
+`tt_get_bands_public` het veld `wanted` werkelijk terug? Claude heeft geen
+databasetoegang en kan alleen zien dat de client-code het uitleest. Zo niet,
+dan geeft een instrumentkeuze uitgelogd nul bands. **Smoke-testpunt:** uitgelogd
+zoeken, een instrument kiezen, controleren dat er bands overblijven.
 
 **Afwijking van de huisstijl, bewust.** §7.1 zegt: aan/uit hoort een chip te
 zijn. Ronalds schets vraagt voor Status hetzelfde keuzemenu als bij Weergave.
 De schets is gevolgd: één vorm per rij weegt hier zwaarder dan de tabel.
 
-**Gewijzigde bestanden:** `index.html`, `search.js`, `core.js`, `utils.js`.
-`styles.css` is niet gewijzigd — alle benodigde klassen bestonden al.
+**Gewijzigde bestanden:** `index.html`, `styles.css`, `search.js`, `core.js`,
+`utils.js`.
 
 **Twee kleine reparaties waren nodig om dit te laten werken:**
 
@@ -109,14 +189,19 @@ De schets is gevolgd: één vorm per rij weegt hier zwaarder dan de tabel.
 `search.js`. Beide werden nergens meer aangeroepen.
 
 **Getest, geverifieerd 10-09-2026.** Playwright tegen de Supabase-stub,
-34 controles, 33 geslaagd. De enige afwijking is TT-237 hieronder, een
+51 controles, 50 geslaagd. De enige afwijking is TT-237 hieronder, een
 bestaande fout. Gecontroleerd: beginstanden van alle vijf de velden, het
 verdwijnen van de oude vorm, de volgorde Instrument-boven-Genre, de
 knopvolgorde en gelijke knopbreedte (150/150), het statusmenu met twee
 opties, het doorgeven van `filterBandStatusVal`, beide wielbladwijzers, het
 kiezen van ervaring 2 t/m 4 langs de echte tikweg, de gouden rand bij een
 actief filter, "Filters wissen", het omzetten van de weergave, en de afwezigheid
-van JS-fouten. `node --check` op alle drie de gewijzigde JS-bestanden en de
+van JS-fouten. Voor het instrumentblok apart: het label heet "Instrument", het
+veld blijft staan zonder eigen profiel, de klasse `.band-instrument-filter`
+bestaat niet meer, een instrument kiezen vult `filterBandWantedList` en toont
+een badge, en "Filters wissen" leegt die weer. Voor de indeling apart: de
+volgorde van de zeven labels, alle zes tussenruimtes op 20px, en de afwezigheid
+van inline marges. `node --check` op alle drie de gewijzigde JS-bestanden en de
 haakjesbalans zijn gelijk.
 
 ---
@@ -157,6 +242,32 @@ elke volgende wijziging die een wielveld programmatisch zet.
 
 **Voorstel:** in `closeWheelSheet()` de vermeldingen in `WHEELS` opruimen die
 bij het gesloten veld horen. Niet gebouwd — apart ticket.
+
+---
+
+**TT-239 (nieuw, NIET opgelost, P2, 10-09-2026) — Setlist-tabblad loopt achter op de andere twee.**
+
+**Geverifieerd, opgemerkt tijdens TT-236.** Het tabblad Setlist heeft de
+zoekschermherziening van TT-232/TT-233/TT-236 niet gekregen:
+
+| Onderdeel | Setlist nu | Muzikant en Band |
+|---|---|---|
+| Straal | getalveld met "km" ernaast | wielveld |
+| Plaats + Straal | inline `style="display:flex"` | `.filter-row-city` |
+| Knoppenrij | primair links, inline grid | `.btn-row`, primair rechts |
+
+De statusregel is bij TT-236 wél gelijkgetrokken. De rest niet — dat is een
+eigen ticket, geen restpunt van TT-236.
+
+---
+
+**TT-240 (nieuw, NIET opgelost, P3, 10-09-2026) — Statusregel bij Bandleden zoeken.**
+
+`#memberSearchCityStatus` in `index.html` heeft nog dezelfde inline
+`min-height:14px`-constructie die bij TT-236 op de drie zoektabbladen is
+vervangen door `.city-status`. Staat op een ander scherm (Bandleden beheren),
+dus buiten TT-236 gehouden. Eén regel werk: inline stijl vervangen door de
+klasse, daarna de witruimte meten.
 
 
 **TT-232 (OPGELOST, overgezet naar productie 10-09-2026) — Zoekscherm muzikanten herzien.**
