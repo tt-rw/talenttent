@@ -224,6 +224,9 @@ async function loadMyProfile() {
   // herontworpen vorm. De functie zelf blijft bestaan, wordt nu alleen niet
   // meer aangeroepen op deze pagina.
   el.innerHTML = buildMusicianDetailHTML(m, true) + renderCompletenessMeter(m);
+  // TT-249: naam passend maken zodra hij in de pagina staat. Mijn Profiel is
+  // het krapste scherm — hier staat het ⋯-menu naast de naam.
+  fitProfileName(el);
   loadBandInvites(m.id);
   loadFounderOffers(m.id); // V-16
 
@@ -769,6 +772,12 @@ async function nextStep(from) {
     // De kolom lname blijft bestaan en wordt gevuld als iemand hem invult.
     if (!state.fname || !state.birth_date) {
       showToast('Vul je voornaam en geboortedatum in.'); return;
+    }
+    // TT-249 (11-09-2026): de voornaam is voor een ingelogde bezoeker de grote
+    // naam op je profiel. Die wordt nooit afgekapt en nooit afgebroken, dus
+    // een naam die op de kleinste letter niet past, komt er niet in.
+    if (!naamPastInProfielkop(state.fname)) {
+      showToast('Je voornaam is te lang om op je profiel te tonen. Maak hem korter.'); return;
     }
     if (!state.zip || !postcodeResolved || !state.city) {
       showToast('Vul een geldige postcode in. Je woonplaats wordt automatisch bepaald zodra deze klopt.'); return;

@@ -1132,23 +1132,66 @@ function emptyStateHTML(kop, uitleg, knopLabel, knopActie) {
 }
 
 
-// ─── Naamgrootte in een profielkop (TT-249, 11-09-2026) ──────────────────────
+// ─── Naam in een profielkop (TT-249, herzien 11-09-2026) ─────────────────────
 //
-// .profile-name staat op 36px. Een naam wordt nooit afgekapt met puntjes — een
-// naam hoort heel gelezen te worden — dus schaalt de regelgrootte mee met de
-// lengte. Drie vaste stappen in styles.css, geen inline maat. Geldt voor
-// muzikant én band: de bandmodal gebruikt dezelfde klasse.
+// Een naam wordt nooit afgekapt en nooit afgebroken. Past hij niet, dan wordt
+// de letter kleiner, tot de ondergrens van 16px. Past hij daar nog steeds
+// niet, dan is de naam te lang om te tonen — dat wordt tegengehouden bij het
+// invullen, niet hier (zie naamPastInProfielkop()).
 //
-// Gemeten op 375px breed, in de echte profielmodal: de naam heeft daar 155px.
-// De grootste regelgrootte die op één regel past, per lengte: 7 tekens 35px,
-// 9 tekens 27px, 12 tekens 20px, 19 tekens 12px. Twintig tekens (de maximale
-// gebruikersnaam) past op geen enkele leesbare grootte op één regel. De
-// ondergrens is daarom 20px — gelijk aan .band-name — en een naam vanaf
-// dertien tekens loopt door op een tweede regel. Twee regels van 20px dekken
-// circa 24 tekens, dus elke toegestane naam past volledig.
-function profileNameClass(naam) {
-  const n = (naam || '').length;
-  if (n <= 7) return '';
-  if (n <= 9) return ' name-len-2';
-  return ' name-len-3';
+// Waarom meten en niet tekens tellen: "MMMMMMMMMM" is ruim twee keer zo breed
+// als "iiiiiiiiii". Tellen weet dat niet, meten wel.
+const PROFIELNAAM_LADDER = [36, 32, 28, 24, 20, 18, 16];
+
+// Noodtreden onder de ondergrens. Alleen voor namen die al in de database
+// staan van vóór de invulcontrole, en voor het smalle bureaubladvenster
+// tussen 561px en circa 700px, waar de app-schil smaller is dan een telefoon
+// (zie §11 van de huisstijl: #appRoot is daar 50% van het venster).
+const PROFIELNAAM_NOOD = [14, 12, 10];
+
+// Ondergrens waarop de invulcontrole toetst.
+const PROFIELNAAM_MIN = 16;
+
+// Referentiebreedte voor de invulcontrole: de ruimte voor de naam op Mijn
+// Profiel bij een venster van 375px — avatar 80 + 16 + naam + 16 + ⋯-menu 44.
+// Gemeten 11-09-2026. Dit is het smalste telefoonscherm waar de app op
+// getoetst wordt, en Mijn Profiel is krapper dan de profielmodal (215px).
+const PROFIELNAAM_REFERENTIE = 187;
+
+let naamMeterEl = null;
+
+// Meet hoe breed een naam wordt bij een bepaalde lettergrootte, met dezelfde
+// klasse en dus hetzelfde lettertype en dezelfde letterafstand als de echte
+// kop. Het meetelement staat buiten beeld en wordt hergebruikt.
+function meetNaamBreedte(naam, px) {
+  if (!naamMeterEl) {
+    naamMeterEl = document.createElement('div');
+    naamMeterEl.className = 'profile-name naam-meter';
+    document.body.appendChild(naamMeterEl);
+  }
+  naamMeterEl.style.fontSize = px + 'px';
+  naamMeterEl.textContent = naam || '';
+  return naamMeterEl.scrollWidth;
+}
+
+// Past deze naam op de smalste telefoon, op de ondergrens van 16px?
+// Gebruikt door de invulcontrole van voornaam en gebruikersnaam.
+function naamPastInProfielkop(naam) {
+  return meetNaamBreedte(naam, PROFIELNAAM_MIN) <= PROFIELNAAM_REFERENTIE;
+}
+
+// Zet de lettergrootte van elke .profile-name binnen `root` op de grootste
+// trede die past. Aanroepen ná het plaatsen in de pagina: een element dat er
+// nog niet staat heeft geen breedte, en dan meet deze functie niets.
+function fitProfileName(root) {
+  const scope = root || document;
+  scope.querySelectorAll('.profile-name').forEach(el => {
+    const ruimte = el.clientWidth;
+    if (!ruimte) return; // nog niet zichtbaar — niets te meten
+    el.style.fontSize = '';
+    for (const px of PROFIELNAAM_LADDER.concat(PROFIELNAAM_NOOD)) {
+      el.style.fontSize = px + 'px';
+      if (el.scrollWidth <= ruimte) return;
+    }
+  });
 }

@@ -1,6 +1,8 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 11-09-2026 (vervolg 3) — **Vier UX-tickets gebouwd en getest: TT-248, TT-249, TT-251 en TT-252.** Eén set bestanden: `index.html`, `styles.css`, `utils.js`, `musicians.js`, `messages.js`, `wizard.js`. **TT-252** (dubbele tik maakt twee bands): `saveBand()` staat nu achter een vlag die vóór de eerste `await` aangaat, plus de opslaanlaag die het scherm blokkeert. Gemeten vóór de fix: twee aanroepen achter elkaar gaven twee inserts in `bands`; erna één. **TT-251** (geen bevestiging): toast "<naam> is aangemaakt." bij een nieuwe band, "Wijzigingen opgeslagen." bij bewerken — beide gemeten. **TT-248** (lege staten): één component `emptyStateHTML()` in `utils.js`, toegepast op vier lege staten; de zoekresultaten blijven bij TT-62. **TT-249** (naam loopt uit zijn kader): drie stappen 36/27/20px via `profileNameClass()`, naam breekt af over twee regels, nooit afgekapt. **Onderweg gevonden en meteen opgelost: TT-254** — "Band toevoegen", "Nieuwe band aanmaken" en "Band aanmaken" waren drie namen voor één actie. **Openstaand uit de UX-review:** TT-62 en TT-01 (P0), TT-245, TT-246 en TT-247 (P1), TT-250 en TT-253 (P2). Zie Deel 3, 11-09-2026 (vervolg 3).
+**Laatste update:** 11-09-2026 (vervolg 4) — **TT-249 herzien: de naam wordt nu gemeten in plaats van geteld, en breekt nooit meer af.** Eerst een correctie: de meting van vanochtend (155px) was fout — `buildMusicianDetailHTML()` heeft drie losse parameters en kreeg een object mee, waardoor Mijn Profiel is gemeten en modal genoemd. De juiste maten zijn 187px (Mijn Profiel) en 215px (modal). **Besluit Ronald:** krimpen tot het past, ondergrens 16px, nooit afbreken, en bij een naam die dan nog niet past een melding **bij het invullen**. `profileNameClass()` is vervangen door `fitProfileName()` (ladder 36 · 32 · 28 · 24 · 20 · 18 · 16px, plus noodtreden 14 · 12 · 10 voor bestaande namen en het smalle bureaubladvenster). `naamPastInProfielkop()` blokkeert een te lange voornaam of gebruikersnaam in de wizard, in de tegel "Wie ben je" en op het gate-scherm. Gewijzigd: `index.html`, `styles.css`, `utils.js`, `core.js`, `auth.js`, `wizard.js`, `musicians.js`. Zie Deel 3, 11-09-2026 (vervolg 4).
+
+**Vorige update:** 11-09-2026 (vervolg 3) — **Vier UX-tickets gebouwd en getest: TT-248, TT-249, TT-251 en TT-252.** Eén set bestanden: `index.html`, `styles.css`, `utils.js`, `musicians.js`, `messages.js`, `wizard.js`. **TT-252** (dubbele tik maakt twee bands): `saveBand()` staat nu achter een vlag die vóór de eerste `await` aangaat, plus de opslaanlaag die het scherm blokkeert. Gemeten vóór de fix: twee aanroepen achter elkaar gaven twee inserts in `bands`; erna één. **TT-251** (geen bevestiging): toast "<naam> is aangemaakt." bij een nieuwe band, "Wijzigingen opgeslagen." bij bewerken — beide gemeten. **TT-248** (lege staten): één component `emptyStateHTML()` in `utils.js`, toegepast op vier lege staten; de zoekresultaten blijven bij TT-62. **TT-249** (naam loopt uit zijn kader): drie stappen 36/27/20px via `profileNameClass()`, naam breekt af over twee regels, nooit afgekapt. **Onderweg gevonden en meteen opgelost: TT-254** — "Band toevoegen", "Nieuwe band aanmaken" en "Band aanmaken" waren drie namen voor één actie. **Openstaand uit de UX-review:** TT-62 en TT-01 (P0), TT-245, TT-246 en TT-247 (P1), TT-250 en TT-253 (P2). Zie Deel 3, 11-09-2026 (vervolg 3).
 
 **Vorige update:** 11-09-2026 (vervolg 2) — **De zes UX-tickets doorgetrokken naar de bandkant, en drie patronen vastgelegd als standaard.** Aanleiding: Ronald — "de consistentie is extreem belangrijk." TT-246, TT-247 en TT-248 zijn aangevuld met de bandkant, alle drie geverifieerd in de code: `bandDescription` heeft geen prompt-chips, `saveBand()` heeft vier opeenvolgende toasts, en "Nog geen bands" heeft geen knop terwijl "Nog geen profiel" tien regels hoger er wél een heeft. TT-249 is getoetst en bewust **niet** overgenomen (`.band-name` is 20px, niet 36px); TT-250 is **niet van toepassing** (het bandformulier is één scherm). **Drie nieuwe tickets:** TT-251 (geen bevestiging na het aanmaken van een band, P2), TT-252 (dubbele tik maakt twee bands, P1), TT-253 ("Lid uitnodigen" volgt de zoek-standaard niet, P2). **Vastgelegd in `huisstijl-en-consistentie.md`:** de staande regel dat muzikantkant en bandkant dezelfde regels volgen, §13.1 veldfouten, §15 lege staten. Dat document staat alleen in het claude.ai-project; de verouderde kopie in de testrepo vervalt. Geen code gewijzigd, alleen `actielijst.md`. Zie het blok **UX-review 11-09-2026 (vervolg)** onderaan Deel 1.
 
@@ -2987,6 +2989,91 @@ Bijbehorende tickets: TT-70 (Google Play), plus het `—`-punt "App Store (nativ
 
 Kort en chronologisch (nieuwste bovenaan). Voor het volledige technische verhaal per punt: zie de sessie-aantekeningen die aan dit bestand voorafgingen (niet langer los bijgehouden na deze opschoning).
 
+## 11-09-2026 (vervolg 4) — TT-249 herzien: namen worden gemeten, niet geteld
+
+**Aanleiding:** Ronald — "13 tekens is niets en afbreken is ook niet goed."
+Terecht. De eerste versie van vandaag brak lange namen af over twee regels.
+
+**Eerst de fout in de meting van vanochtend.** `buildMusicianDetailHTML(m,
+isOwn, inModal)` heeft drie losse parameters. De test gaf een object mee als
+tweede argument; dat is waar, dus `isOwn` stond op true en `inModal` op false.
+Er is dus **Mijn Profiel** gemeten en **profielmodal** genoemd. De juiste
+maten, opnieuw gemeten op 375px:
+
+| Scherm | Ruimte voor de naam |
+|---|---|
+| Profielmodal (ander profiel) | 215px |
+| Mijn Profiel (eigen, met ⋯-menu ernaast) | **187px** |
+
+Niet 155px. De stappen 36/27/20px waren daardoor te klein gekozen.
+
+**Het besluit van Ronald.** Krimpen tot de naam past, ondergrens **16px**,
+namen worden **nooit** afgebroken, en past een naam op 16px niet, dan volgt
+een korte melding — **bij het invullen**, niet op het profiel.
+
+**Gebouwd — weergave.** `profileNameClass()` (tellen) is vervangen door
+`fitProfileName()` (meten). De ladder is 36 · 32 · 28 · 24 · 20 · 18 · 16px;
+de functie zet de grootste trede waarop `scrollWidth <= clientWidth`.
+`.profile-name` staat op `white-space: nowrap`, dus afbreken kan niet meer.
+Aangeroepen na het plaatsen in de pagina, op drie plekken: muzikantmodal,
+bandmodal en Mijn Profiel. Een element dat nog niet in de pagina staat heeft
+geen breedte; meten vóór het plaatsen levert niets op.
+
+**Waarom meten en niet tellen.** "MMMMMMMMMMMMMMMMMMMM" is 353px breed bij
+20px, "iiiiiiiiiiiiiiiiiiii" 155px — allebei twintig tekens. Tellen kan dat
+verschil niet zien.
+
+**Gemeten resultaat op Mijn Profiel (187px), geen enkele naam breekt af of
+loopt over:**
+
+| Naam | Tekens | Grootte |
+|---|---|---|
+| Jan | 3 | 36px |
+| Bassist | 7 | 36px |
+| Colindrummer | 12 | 24px |
+| RockDrummer92 | 13 | 20px |
+| Wolfgangamadeus | 15 | 20px |
+| Bassistvanhetnoord | 18 | 18px |
+| Bassistvanhetnoorden | 20 | 16px |
+
+**Gebouwd — invulcontrole.** `naamPastInProfielkop(naam)` meet de naam op 16px
+tegen 187px. Toegepast op:
+
+| Plek | Vorm van de melding |
+|---|---|
+| Gebruikersnaam in de wizard, in de tegel "Wie ben je" en op het gate-scherm | live statusregel onder het veld, in `--danger` |
+| Voornaam, stap 1 van de wizard (`nextStep(0)`) | toast, stap 1 blijft staan |
+| Voornaam in de tegel "Wie ben je" (`saveWieBenJe()`) | toast |
+
+Tekst: *"Deze naam is te lang om op je profiel te tonen. Maak hem korter."*
+Voor de voornaam: *"Je voornaam is te lang..."*. Beide gemeten.
+
+**Noodtreden 14 · 12 · 10px.** Alleen voor namen die al in de database staan
+van vóór deze controle, en voor het bureaubladvenster tussen 561px en circa
+700px — daar is de app-schil 50% van het venster (§11 van de huisstijl) en dus
+**smaller dan een telefoon**: bij 561px heeft de naam nog 93px. Zonder die
+treden zou de naam daar over zijn kader lopen.
+
+**[UX] Nieuwe bevinding, nog geen ticket.** Dat bureaubladvenster tussen 561px
+en 700px geeft élk onderdeel minder ruimte dan een telefoon van 375px. Dat
+raakt meer dan de naam. Hoort een eigen ticket te worden.
+
+**Opnieuw passend maken bij draaien of slepen.** Meten gebeurt op de breedte
+van dat moment. Een `resize`-luisteraar in `core.js`, met 150 ms wachttijd,
+roept `fitProfileName(document)` opnieuw aan.
+
+**Getest.** Playwright op 375px tegen de stub: negen namen van 3 tot 29
+tekens, in beide profielweergaves — nergens twee regels, nergens overloop.
+Invulcontrole op dezelfde negen namen. Beide meldingen letterlijk gecontroleerd.
+Daarna de volledige regressiereeks van vervolg 3 opnieuw: veertien views,
+bandformulier, zoektabbladen, dubbele tik, lege staten — **geen console-fout.**
+
+**Nog open, bewust:** het voornaamveld heeft nog steeds geen `maxlength`. De
+invulcontrole vangt een te lange naam nu af, dus het is geen gat meer — maar
+een limiet op het veld zou de gebruiker eerder waarschuwen dan bij Verder.
+
+---
+
 ## 11-09-2026 (vervolg 3) — TT-248, TT-249, TT-251, TT-252 gebouwd, en TT-254 onderweg gevonden
 
 **Aanleiding:** Ronald — "het zijn vaak kleine punten, pak er een aantal
@@ -3038,6 +3125,13 @@ lege zoekresultaten in `search.js` blijven bewust staan — die horen bij TT-62,
 dat verder gaat dan een knop.
 
 **TT-249 — profielnaam liep uit zijn kader (was P2).**
+**LET OP — de maten in deze alinea zijn fout. Herzien later op dezelfde dag;
+zie 11-09-2026 (vervolg 4) hierboven.** De meting hieronder noemt 155px. Dat
+getal komt uit een verkeerd uitgevoerde test: `buildMusicianDetailHTML(m, isOwn,
+inModal)` is positioneel, en er werd een object als tweede argument
+meegegeven. Daardoor is Mijn Profiel gemeten en de modal genoemd. De juiste
+maten zijn 187px (Mijn Profiel) en 215px (profielmodal).
+
 `profileNameClass()` in `utils.js` kiest een van drie stappen; de maten staan in
 `styles.css`, nooit inline. **Nagemeten in de echte profielmodal op 375px:** de
 naam heeft daar 155px, want de rij is avatar 80 + 16 + naam + 16 + menuknop 44.

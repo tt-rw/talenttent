@@ -890,6 +890,18 @@ function syncModalScrollLock() {
 // Sluit, indien open, eerst een modal (telt als één "terug"-stap), daarna een
 // open gesprek, en pas daarna een view — voorkomt dat een open profiel-,
 // band- of gespreksscherm zomaar verdwijnt samen met de hele pagina eronder.
+// TT-249 (11-09-2026): de naam in een profielkop krijgt zijn lettergrootte
+// door meten, en meten kan alleen op de breedte van dát moment. Draait iemand
+// zijn telefoon, of versleept hij een bureaubladvenster, dan klopt die maat
+// niet meer — en omdat de naam nooit afbreekt, zou hij dan over zijn kader
+// lopen. Opnieuw passend maken, met een korte wachttijd zodat dit niet bij
+// elke tussenstap van het slepen gebeurt.
+let naamHermeetTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(naamHermeetTimer);
+  naamHermeetTimer = setTimeout(() => fitProfileName(document), 150);
+});
+
 window.addEventListener('popstate', (e) => {
   const openModal = document.querySelector('.modal-overlay.visible');
   if (openModal) {

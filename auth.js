@@ -139,6 +139,16 @@ async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
     if (statusEl) { statusEl.textContent = 'Deze gebruikersnaam is niet beschikbaar. Kies een andere.'; statusEl.style.color = 'var(--danger)'; }
     return false;
   }
+  // TT-249 (11-09-2026): een naam wordt op het profiel nooit afgekapt en
+  // nooit afgebroken. Past hij op de ondergrens van 16px niet in de
+  // profielkop van een telefoon, dan is hij te lang om te tonen. Dat wordt
+  // hier tegengehouden, zodat het op het profiel zelf nooit hoeft op te
+  // vallen. 20 tekens mag nog steeds — het hangt van de letters af: "MMMM..."
+  // is ruim twee keer zo breed als "iiii...".
+  if (!naamPastInProfielkop(value)) {
+    if (statusEl) { statusEl.textContent = 'Deze naam is te lang om op je profiel te tonen. Maak hem korter.'; statusEl.style.color = 'var(--danger)'; }
+    return false;
+  }
   if (statusEl) { statusEl.textContent = 'Controleren...'; statusEl.style.color = 'var(--muted)'; }
 
   try {

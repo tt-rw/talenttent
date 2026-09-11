@@ -672,23 +672,25 @@
     line-height: 1;
   }
 
-  /* TT-249 (11-09-2026): een naam wordt nooit afgekapt met puntjes, dus
-     schaalt de regelgrootte mee met de lengte. Drie vaste stappen, gekozen
-     door profileNameClass() in utils.js — nooit een inline maat.
-     Gemeten op 375px in de echte profielmodal: de naam heeft daar 155px, want
-     de rij is avatar 80 + 16 + naam + 16 + menuknop 44. Op één regel past
-     36px tot 7 tekens, 27px tot 9 tekens en 20px tot 12 tekens. Een
-     gebruikersnaam mag twintig tekens zijn en past op geen enkele leesbare
-     grootte op één regel; 20px is daarom de ondergrens, gelijk aan
-     .band-name. Vanaf dertien tekens loopt de naam door op een tweede regel.
-     Alleen de kleinste stap kan twee regels worden, dus alleen die krijgt
-     line-height 1.15 — anders raken de twee regels elkaar. De andere twee
-     stappen houden de bestaande line-height 1, zodat elke kop die vandaag
-     goed staat exact gelijk blijft. overflow-wrap breekt een naam die uit één
-     lang woord bestaat — dat is bewust: afbreken mag, afkappen niet. */
-  .profile-name { overflow-wrap: anywhere; }
-  .profile-name.name-len-2 { font-size: 27px; }
-  .profile-name.name-len-3 { font-size: 20px; line-height: 1.15; }
+  /* TT-249 (11-09-2026, herzien): een naam wordt nooit afgekapt en nooit
+     afgebroken. fitProfileName() in utils.js zet de lettergrootte op de
+     grootste trede die past — 36 · 32 · 28 · 24 · 20 · 18 · 16px, en in
+     noodgevallen 14 · 12 · 10. Er staan hier dus geen vaste stappen meer.
+     nowrap is wat het afbreken tegenhoudt; een naam die op 16px niet past
+     wordt tegengehouden bij het invullen, niet hier. */
+  .profile-name { white-space: nowrap; }
+
+  /* Meetelement voor meetNaamBreedte(). Staat buiten beeld, wordt nooit
+     gelezen door een schermlezer, en heeft geen breedtebeperking — anders
+     meet het de beperking in plaats van de naam. */
+  .naam-meter {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    white-space: nowrap;
+    visibility: hidden;
+    pointer-events: none;
+  }
 
   .profile-meta {
     font-size: 13px;

@@ -90,7 +90,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
       ${avatarHTML}
       <div style="min-width:0;flex:1;">
-        <div class="profile-name${profileNameClass(displayName)}">${escHtml(displayName)}</div>
+        <div class="profile-name">${escHtml(displayName)}</div>
         <!-- TT-166 (28-08-2026, Ronald: "eenvoud"): een gebruikersnaam-subline
              hoort er alleen bij als de grote naam de échte voornaam is — laat
              displayName die keuze maken (isOwn, of een ingelogde kijker met
@@ -277,6 +277,9 @@ async function openMusicianModal(id) {
 
   const isOwn = !!(myMusicianId && myMusicianId === m.id);
   document.getElementById('musicianModalContent').innerHTML = buildMusicianDetailHTML(m, isOwn, true);
+  // TT-249: de naam kan pas passend gemaakt worden als hij in de pagina staat
+  // — een element dat er nog niet is, heeft geen breedte om tegen te meten.
+  fitProfileName(document.getElementById('musicianModalContent'));
   // V-09: zelfde displayName-logica als binnen buildMusicianDetailHTML()
   // (TT-43: bezoekers zonder profiel zien alleen de gebruikersnaam).
   const displayName = isOwn ? m.fname : displayNameOf(m);
@@ -829,6 +832,11 @@ async function saveWieBenJe() {
   const city = document.getElementById('wbjCity').value.trim();
 
   if (!fname) { showToast('Voornaam is verplicht.'); return; }
+  // TT-249: zelfde controle als in de wizard. De gebruikersnaam hiernaast
+  // wordt al live getoetst via checkUsernameAvailability().
+  if (!naamPastInProfielkop(fname)) {
+    showToast('Je voornaam is te lang om op je profiel te tonen. Maak hem korter.'); return;
+  }
   if (!username || !wbjUsernameOk) { showToast('Kies eerst een beschikbare gebruikersnaam.'); return; }
   if (birthDateStr.length !== 10) { showToast('Vul een volledige geboortedatum in.'); return; }
   if (!/^[1-9][0-9]{3}$/.test(zip) || !city) { showToast('Vul een geldige postcode en plaats in.'); return; }
@@ -1777,7 +1785,7 @@ async function openBandModal(id) {
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
       ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border);margin-bottom:0;flex-shrink:0;">` : `<div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`}
       <div style="min-width:0;flex:1;">
-        <div class="profile-name${profileNameClass(b.name)}">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
+        <div class="profile-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
         <div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
       </div>
     </div>
@@ -1806,5 +1814,9 @@ async function openBandModal(id) {
       ) : ''}
       <button class="btn btn-ghost" style="width:100%;" onclick="shareProfile('band','${jsAttr(b.id)}','${jsAttr(b.name)}')">Deel dit bandprofiel</button>
     </div>`;
+
+  // TT-249: pas ná het plaatsen passend maken — zelfde reden als bij de
+  // muzikantmodal. De bandnaam gebruikt dezelfde klasse, dus dezelfde regel.
+  fitProfileName(document.getElementById('bandModalContent'));
 }
 
