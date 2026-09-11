@@ -421,13 +421,17 @@ function straalTekst(km) {
   return km == null ? 'je zoekgebied' : `${km} km`;
 }
 
-// De regel boven het resultaat na automatisch verruimen.
+/* De regel boven het resultaat na automatisch verruimen.
+
+   Tekst vastgesteld door Ronald, 11-09-2026. Twee zinnen. De eerste zegt wat
+   er niet is, de tweede wat er wel staat. Beide getallen blijven erin: zonder
+   de straal weet de lezer niet waarom de lijst verder weg ligt. */
 function verruimdNotice(verruimd, meervoud) {
   if (!verruimd || verruimd.leeg) return '';
   const staart = verruimd.naar >= STRAAL_LANDELIJK
-    ? 'Dit zijn de dichtstbijzijnde uit heel Nederland.'
-    : `Dit zijn de dichtstbijzijnde, tot ${verruimd.naar} km.`;
-  return `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Geen ${meervoud} binnen ${straalTekst(verruimd.van)}. ${staart}</p>`;
+    ? `Dit zijn de dichtstbijzijnde ${meervoud} in heel Nederland.`
+    : `Dit zijn de dichtstbijzijnde ${meervoud}, tot ${verruimd.naar} km.`;
+  return `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Binnen ${straalTekst(verruimd.van)} vonden we nog geen match. ${staart}</p>`;
 }
 
 // TT-136 (23-08-2026): hier stond toggleMoreFilters(), de "Meer filters"-knop.

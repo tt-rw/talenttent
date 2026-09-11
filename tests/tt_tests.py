@@ -353,10 +353,16 @@ def blok_browser():
           return fout;
         }""")
         check("alle modals staan in #appRoot", not buiten, f"buiten: {buiten}")
-        check("#appRoot draagt overflow-x:hidden, body niet (TT-212)",
-              page.evaluate("getComputedStyle(document.getElementById('appRoot'))"
-                            ".overflowX === 'hidden' && "
-                            "getComputedStyle(document.body).overflowX !== 'hidden'"),
+        # TT-256 (11-09-2026): de toets stond op precies 'hidden'. #appRoot
+        # draagt nu 'clip', met 'hidden' als terugval eronder voor oudere
+        # browsers. Beide knippen horizontaal weg; 'clip' doet dat zonder van
+        # #appRoot een scrollbak te maken. De bedoeling van TT-212 — niet op
+        # body — blijft onveranderd getoetst.
+        check("#appRoot knipt horizontaal weg, body niet (TT-212, TT-256)",
+              page.evaluate("['hidden','clip'].includes("
+                            "getComputedStyle(document.getElementById('appRoot')).overflowX) && "
+                            "!['hidden','clip'].includes("
+                            "getComputedStyle(document.body).overflowX)"),
               "overflow-x staat op de verkeerde plek")
 
         print("\nBlok 9 — de laatst geopende modal ligt bovenop (TT-229)")
@@ -430,6 +436,50 @@ def blok_browser():
         check("de oude raad over de zoekstraal staat er dan niet meer",
               "zoekstraal aan" not in leeg, leeg[:200])
         page.evaluate("window.TT_STUB.reset()")
+
+        print("\nBlok 11 — het wiel en vloeiend scrollen (TT-256)")
+        wiel = page.evaluate("""async () => {
+          showView('search');
+          openWheelSheet('radius');
+          await new Promise(r => requestAnimationFrame(
+            () => requestAnimationFrame(() => setTimeout(r, 60))));
+          const groep  = document.getElementById('wheelSheetGroup');
+          const kolom  = groep.querySelector('.wheel');
+          const scroll = groep.querySelector('.wheel-scroll');
+          const band   = groep.querySelector('.picker-band');
+          const sheet  = document.querySelector('#wheelSheetModal .wheel-sheet');
+          const g = groep.getBoundingClientRect();
+          const k = kolom.getBoundingClientRect();
+          const zoek = document.getElementById('view-search');
+          return {
+            afwijkingMidden: Math.abs((k.left + k.width / 2) - (g.left + g.width / 2)),
+            groepBreedte: Math.round(g.width),
+            sheetBreedte: Math.round(sheet.getBoundingClientRect().width),
+            spacers: groep.querySelectorAll('.wheel-unit-spacer').length,
+            fades: groep.querySelectorAll('.picker-fade').length,
+            bandKleur: getComputedStyle(band).backgroundColor,
+            masker: getComputedStyle(scroll).maskImage || 'none',
+            overscroll: getComputedStyle(scroll).overscrollBehaviorY,
+            touchActie: getComputedStyle(zoek).touchAction
+          };
+        }""")
+        check("het getal staat in het midden van het paneel",
+              wiel["afwijkingMidden"] <= 1, f"{wiel['afwijkingMidden']}px naast het midden")
+        check("het paneel is smaller dan de bladwijzer",
+              wiel["groepBreedte"] < wiel["sheetBreedte"],
+              f"paneel {wiel['groepBreedte']}px, bladwijzer {wiel['sheetBreedte']}px")
+        check("de eenheid heeft een tegenhanger links",
+              wiel["spacers"] == 1, str(wiel["spacers"]))
+        check("de vervaging ligt over het paneel, niet op de scroller",
+              wiel["fades"] == 2 and wiel["masker"] == "none",
+              f"fades={wiel['fades']} masker={wiel['masker']}")
+        check("de markeringsbalk is niet goud gewassen",
+              "245, 197, 24" not in wiel["bandKleur"], wiel["bandKleur"])
+        check("het wiel houdt zijn eigen scrollbeweging vast",
+              wiel["overscroll"] == "contain", wiel["overscroll"])
+        check("het zoekscherm laat verticaal scrollen aan de browser",
+              "pan-y" in wiel["touchActie"], wiel["touchActie"])
+        page.evaluate("closeWheelSheet()")
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:

@@ -749,21 +749,28 @@ function commitWheelScroll(id) {
   if (!s) return;
   let i = Math.round(s.scroll.scrollTop / WHEEL_ITEM_H);
   i = Math.max(0, Math.min(s.values.length - 1, i));
-  if (i !== s.index) setWheelIndex(id, i, true);
+  // TT-256: niet vloeiend terugdraaien. Het wiel staat op dit moment al stil op
+  // zijn regel; een tweede, geanimeerde sprong levert alleen nieuwe
+  // scroll-gebeurtenissen op en dat voelt als naschokken.
+  if (i !== s.index) setWheelIndex(id, i, true, false);
 }
 
 // notify=false zet de stand zonder de zoekopdracht opnieuw te starten —
 // gebruikt bij het opbouwen en bij "Filters wissen" (die zoekt zelf één keer).
-function setWheelIndex(id, i, notify) {
+function setWheelIndex(id, i, notify, animeer) {
   const s = WHEELS[id];
   if (!s) return;
   i = Math.max(0, Math.min(s.values.length - 1, i));
   const changed = i !== s.index;
   s.index = i;
-  // Vloeiend draaien bij een klik of een pijltoets, direct bij het opbouwen.
+  // Vloeiend draaien bij een klik of een pijltoets, direct bij het opbouwen en
+  // direct na het scrollen (animeer === false, zie commitWheelScroll).
   const top = i * WHEEL_ITEM_H;
-  if (notify && typeof s.scroll.scrollTo === 'function') s.scroll.scrollTo({ top, behavior: 'smooth' });
-  else s.scroll.scrollTop = top;
+  if (notify && animeer !== false && typeof s.scroll.scrollTo === 'function') {
+    s.scroll.scrollTo({ top, behavior: 'smooth' });
+  } else {
+    s.scroll.scrollTop = top;
+  }
   s.el.querySelectorAll('.wheel-item').forEach((item, n) => {
     const on = n === i;
     item.classList.toggle('selected', on);
@@ -886,12 +893,20 @@ function openWheelSheet(id) {
   // woorden ernaast — huisstijl §7.1.
   const groep = document.getElementById('wheelSheetGroup');
   let html = '';
+  // TT-256: een lege kolom links, even breed als de eenheid rechts. Zonder die
+  // tegenhanger wordt "5 km" als geheel gecentreerd en staat het getal zelf
+  // links van het midden.
+  if (cfg.unit) html += '<span class="wheel-unit-spacer" aria-hidden="true"></span>';
   cfg.columns.forEach((c, i) => {
     if (i > 0 && cfg.sep) html += `<span class="wheel-sep" aria-hidden="true">${escHtml(cfg.sep)}</span>`;
     html += `<div id="${wheelColumnId(id, i)}"></div>`;
   });
   if (cfg.unit) html += `<span class="wheel-unit" aria-hidden="true">${escHtml(cfg.unit)}</span>`;
   html += '<div class="picker-band" aria-hidden="true"></div>';
+  // TT-256: de vervaging als vaste laag over het paneel, niet als masker op de
+  // scrollende inhoud.
+  html += '<div class="picker-fade picker-fade-top" aria-hidden="true"></div>';
+  html += '<div class="picker-fade picker-fade-bottom" aria-hidden="true"></div>';
   groep.innerHTML = html;
 
   // Eén kolom sluit op de tik die de waarde kiest. Een bereik van twee kolommen

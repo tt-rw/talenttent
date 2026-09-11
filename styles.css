@@ -61,7 +61,15 @@
      (niets scrollt nog horizontaal), maar body/html zelf blijven vrij, dus
      de browser mag weer de snelle route gebruiken. */
   #appRoot {
+    /* TT-256 (11-09-2026): `overflow-x: hidden` maakt van #appRoot alsnog een
+       scrollbak — de CSS-regel is dat overflow-y dan van `visible` naar `auto`
+       springt. Daarmee keert precies het probleem terug dat TT-212 van body
+       weghaalde: de browser scrolt via de hoofddraad in plaats van via de
+       compositor. `clip` knipt hetzelfde weg zonder scrollbak. De regel met
+       `hidden` blijft erboven staan als terugval: een browser die `clip` niet
+       kent, negeert de tweede regel en houdt de eerste. */
     overflow-x: hidden;
+    overflow-x: clip;
   }
 
   /* ── App views ───────────────────────────── */
@@ -417,6 +425,7 @@
     z-index: 100;
     max-height: 240px;
     overflow-y: auto;
+    overscroll-behavior: contain;   /* TT-256, zelfde reden als .modal-box */
     display: none;
   }
 
@@ -1091,6 +1100,15 @@
   @media (prefers-reduced-motion: reduce) {
     .search-pane-in-right, .search-pane-in-left { animation: none; }
   }
+  /* TT-256 (11-09-2026) — de hoofdoorzaak van het schokkerige scrollen.
+     De veeg tussen de drie tabbladen (TT-170) luisterde met een niet-passieve
+     `touchmove` op het hele zoekscherm. Daarmee moet de browser bij élke
+     vingerbeweging eerst wachten tot JavaScript klaar is, ook als de gebruiker
+     gewoon verticaal scrolt. Dat is de hapering aan het begin van elke veeg.
+     `touch-action` zegt het vooraf, zonder JavaScript: verticaal scrollen is
+     van de browser, knijpen om te zoomen blijft werken, horizontaal is van de
+     app. De luisteraar in core.js is daardoor passief geworden. */
+  #view-search { touch-action: pan-y pinch-zoom; }
 
   .media-pane { display: none; }
   .media-pane.active { display: block; }
@@ -2072,6 +2090,7 @@
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
+    overscroll-behavior: contain;   /* TT-256: de pagina eronder scrolt niet mee */
     padding: 32px;
     position: relative;
     animation: slideIn 0.08s ease;
@@ -2202,6 +2221,7 @@
   }
   .modal-box-sticky-footer .modal-scroll-area {
     overflow-y: auto;
+    overscroll-behavior: contain;   /* TT-256, zelfde reden als .modal-box */
     padding: 32px;
     flex: 1;
     min-height: 0;
@@ -2313,7 +2333,7 @@
      vaste maximumhoogte zodat er ook binnen de tabel verticaal gescrold kan
      worden — de tekst erboven/eronder in de modal blijft apart, gewoon
      scrollbaar via .modal-box. */
-  .niveau-info-wrap { overflow:auto; margin:12px 0 20px; max-height:55vh; -webkit-overflow-scrolling:touch; }
+  .niveau-info-wrap { overflow:auto; overscroll-behavior:contain; margin:12px 0 20px; max-height:55vh; -webkit-overflow-scrolling:touch; }
   .niveau-info-table { border-collapse:separate; border-spacing:0; width:100%; min-width:640px; font-size:12px; }
   .niveau-info-table th, .niveau-info-table td { border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top; }
   .niveau-info-table thead th { border-top:1px solid var(--border); }
@@ -2526,7 +2546,10 @@
        100vh klopt niet op iOS zolang de adresbalk verschijnt en verdwijnt —
        100dvh wel. De regel met 100vh blijft staan als terugval voor oudere
        browsers die dvh niet kennen. */
-    .modal-overlay { padding: 0; align-items: stretch; }
+    /* TT-256: op mobiel dekt .modal-box het hele scherm en is de vervaging
+       erachter dus niet te zien. De browser rekent hem wél bij elk scrollframe
+       opnieuw uit. Dat is de duurste post bij scrollen in een modal. */
+    .modal-overlay { padding: 0; align-items: stretch; backdrop-filter: none; }
     .modal-box {
       max-height: 100vh;
       max-height: 100dvh;
@@ -2772,6 +2795,10 @@
      Regelhoogte 44px staat ook in utils.js als WHEEL_ITEM_H — die twee moeten
      gelijk blijven, anders leest het wiel de verkeerde waarde af.
      Vervangt het TT-232-blok, dat twee keer in dit bestand stond. */
+  /* TT-256 (11-09-2026): het paneel is zo breed als zijn inhoud, met een
+     ondergrens van 200px — niet zo breed als de bladwijzer. Een vak van de
+     volle breedte met 128px inhoud erin leest als een leeg scherm, niet als
+     een keuze. De bladwijzer eromheen blijft wél volle breedte. */
   .picker-group {
     position: relative;
     display: flex;
@@ -2780,6 +2807,10 @@
     gap: 4px;
     height: 220px;              /* 5 regels van 44px */
     padding: 0 8px;
+    width: fit-content;
+    min-width: 200px;
+    max-width: 100%;
+    margin: 0 auto;
     background: var(--surface2);
     border: var(--line) solid var(--border);
     border-radius: var(--radius);
@@ -2788,22 +2819,44 @@
   .picker-group:focus-within { border-color: var(--accent); }
   /* De markering van de gekozen regel: één balk over de hele groep, geen
      lijnen per kolom. Scrollt niet mee. De balk loopt wél over de volle
-     breedte — die markeert de regel, niet de kolom. */
+     breedte — die markeert de regel, niet de kolom.
+     TT-256: geen goudwas meer. Goud op 10% over --surface2 rekent uit op
+     #332f1d — olijfbruin. Het goud zit nu in de gekozen waarde zelf, waar het
+     goud blijft; de balk is neutraal en markeert alleen de regel. */
   .picker-band {
     position: absolute;
     left: 8px; right: 8px;
     top: 88px;                  /* 2 regels van 44px */
     height: 44px;
-    background: rgba(245, 197, 24, 0.10);
-    border-top: 1px solid rgba(245, 197, 24, 0.35);
-    border-bottom: 1px solid rgba(245, 197, 24, 0.35);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
     border-radius: 8px;
     pointer-events: none;
+  }
+  /* TT-256: de vervaging ligt als vaste laag óver het paneel, niet als masker
+     op de bewegende inhoud. Een mask-image op een scrollende laag dwingt de
+     browser die laag bij elk frame opnieuw te tekenen. */
+  .picker-fade {
+    position: absolute;
+    left: 1px; right: 1px;
+    height: 74px;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .picker-fade-top {
+    top: 1px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: linear-gradient(to bottom, var(--surface2) 0%, rgba(30,30,30,0) 100%);
+  }
+  .picker-fade-bottom {
+    bottom: 1px;
+    border-radius: 0 0 var(--radius) var(--radius);
+    background: linear-gradient(to top, var(--surface2) 0%, rgba(30,30,30,0) 100%);
   }
   /* Vaste kolombreedte, geen flex:1. De meeste gebruikers bedienen de app met
      hun rechterduim; kolommen die de volle breedte uitrekken duwen de eerste
      kolom tegen de linkerrand, buiten duimbereik. */
-  .wheel { position: relative; height: 100%; width: 72px; flex: 0 0 auto; }
+  .wheel { position: relative; height: 100%; width: 72px; flex: 0 0 auto; z-index: 1; }
   .wheel:focus { outline: none; }
   .wheel:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
   .wheel-scroll {
@@ -2813,9 +2866,17 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    /* Vervagen naar boven en onder — het kenmerk van dit soort wiel. */
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 34%, #000 66%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 34%, #000 66%, transparent 100%);
+    /* TT-256: het wiel houdt zijn eigen beweging vast. Zonder deze regel
+       scrolt de bladwijzer of de pagina eronder mee zodra het wiel aan zijn
+       eind is — dat leest als haperen. */
+    overscroll-behavior: contain;
+    /* De vervaging staat nu op .picker-fade, over het paneel heen. */
+  }
+  /* Met een muis trekt `mandatory` het wiel bij elke klik van het muiswiel
+     terug naar de dichtstbijzijnde regel, midden in de beweging. Met een
+     vinger is dat juist het gewenste vastklikken. Vandaar per invoersoort. */
+  @media (pointer: fine) {
+    .wheel-scroll { scroll-snap-type: y proximity; }
   }
   .wheel-scroll::-webkit-scrollbar { display: none; }
   /* Twee lege regels boven en onder, zodat ook de eerste en de laatste
@@ -2833,7 +2894,7 @@
     white-space: nowrap;
     transition: color 0.15s;
   }
-  .wheel-item.selected { color: var(--text); font-weight: 700; }
+  .wheel-item.selected { color: var(--accent); font-weight: 700; }
   /* Koppelwoord en eenheid staan op de hoogte van de gekozen regel, als vaste
      kolom in het paneel — geen los woord naast het paneel. */
   .wheel-sep,
@@ -2849,6 +2910,16 @@
   }
   .wheel-sep  { width: 44px; }
   .wheel-unit { width: 52px; font-size: 15px; }
+  /* TT-256: de eenheid telt niet mee in het centreren. Zonder deze tegenhanger
+     wordt "5 km" als blok gecentreerd en staat de 5 zelf 28px links van het
+     midden — je leest dan een cijfer dat scheef hangt. Deze lege kolom is even
+     breed als .wheel-unit en zet de kolommen terug in het midden. Wordt smaller
+     op een heel smal scherm, in plaats van het paneel te laten uitlopen. */
+  .wheel-unit-spacer {
+    width: 52px;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
 
   /* ─── Wielveld: het tikveld dat de bladwijzer opent ──────────────────────── */
   .wheel-field {
@@ -2913,7 +2984,9 @@
   .wheel-sheet-grip {
     width: 36px; height: 4px;
     border-radius: 999px;
-    background: var(--border);
+    /* TT-256: --border (#2a2a2a) op --surface (#161616) is nauwelijks te zien.
+       De greep moet zeggen "hier kun je omlaag vegen". */
+    background: rgba(255, 255, 255, 0.20);
     margin: 0 auto 14px;
   }
   .wheel-sheet-head {

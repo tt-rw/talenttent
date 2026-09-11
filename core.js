@@ -718,10 +718,14 @@ function initZoekVeeg() {
       veegHorizontaal = Math.abs(dx) > Math.abs(dy) * VEEG_VERHOUDING;
       if (!veegHorizontaal) { veegBezig = false; return; }  // verticaal: laat scrollen
     }
-    // Alleen een vastgezette horizontale veeg houdt de browser tegen. Verticaal
-    // scrollen is op dat moment al afgehandeld door de tak hierboven.
-    if (veegHorizontaal && e.cancelable) e.preventDefault();
-  }, { passive: false });
+    // TT-256 (11-09-2026): hier stond `e.preventDefault()` en daarmee moest
+    // deze luisteraar niet-passief zijn. Een niet-passieve touchmove dwingt de
+    // browser bij elke vingerbeweging te wachten op JavaScript, ook bij gewoon
+    // verticaal scrollen — de oorzaak van het schokkerige scrollen op het
+    // zoekscherm. Het tegenhouden gebeurt nu vooraf in CSS met
+    // `touch-action: pan-y pinch-zoom` op #view-search. Deze luisteraar meet
+    // alleen nog de richting en mag daarom passief zijn.
+  }, { passive: true });
 
   const veegEinde = (e) => {
     if (!veegBezig || !veegHorizontaal) { veegBezig = false; return; }
