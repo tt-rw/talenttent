@@ -1,6 +1,8 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 11-09-2026 (vervolg 2) — **De zes UX-tickets doorgetrokken naar de bandkant, en drie patronen vastgelegd als standaard.** Aanleiding: Ronald — "de consistentie is extreem belangrijk." TT-246, TT-247 en TT-248 zijn aangevuld met de bandkant, alle drie geverifieerd in de code: `bandDescription` heeft geen prompt-chips, `saveBand()` heeft vier opeenvolgende toasts, en "Nog geen bands" heeft geen knop terwijl "Nog geen profiel" tien regels hoger er wél een heeft. TT-249 is getoetst en bewust **niet** overgenomen (`.band-name` is 20px, niet 36px); TT-250 is **niet van toepassing** (het bandformulier is één scherm). **Drie nieuwe tickets:** TT-251 (geen bevestiging na het aanmaken van een band, P2), TT-252 (dubbele tik maakt twee bands, P1), TT-253 ("Lid uitnodigen" volgt de zoek-standaard niet, P2). **Vastgelegd in `huisstijl-en-consistentie.md`:** de staande regel dat muzikantkant en bandkant dezelfde regels volgen, §13.1 veldfouten, §15 lege staten. Dat document staat alleen in het claude.ai-project; de verouderde kopie in de testrepo vervalt. Geen code gewijzigd, alleen `actielijst.md`. Zie het blok **UX-review 11-09-2026 (vervolg)** onderaan Deel 1.
+**Laatste update:** 11-09-2026 (vervolg 3) — **Vier UX-tickets gebouwd en getest: TT-248, TT-249, TT-251 en TT-252.** Eén set bestanden: `index.html`, `styles.css`, `utils.js`, `musicians.js`, `messages.js`, `wizard.js`. **TT-252** (dubbele tik maakt twee bands): `saveBand()` staat nu achter een vlag die vóór de eerste `await` aangaat, plus de opslaanlaag die het scherm blokkeert. Gemeten vóór de fix: twee aanroepen achter elkaar gaven twee inserts in `bands`; erna één. **TT-251** (geen bevestiging): toast "<naam> is aangemaakt." bij een nieuwe band, "Wijzigingen opgeslagen." bij bewerken — beide gemeten. **TT-248** (lege staten): één component `emptyStateHTML()` in `utils.js`, toegepast op vier lege staten; de zoekresultaten blijven bij TT-62. **TT-249** (naam loopt uit zijn kader): drie stappen 36/27/20px via `profileNameClass()`, naam breekt af over twee regels, nooit afgekapt. **Onderweg gevonden en meteen opgelost: TT-254** — "Band toevoegen", "Nieuwe band aanmaken" en "Band aanmaken" waren drie namen voor één actie. **Openstaand uit de UX-review:** TT-62 en TT-01 (P0), TT-245, TT-246 en TT-247 (P1), TT-250 en TT-253 (P2). Zie Deel 3, 11-09-2026 (vervolg 3).
+
+**Vorige update:** 11-09-2026 (vervolg 2) — **De zes UX-tickets doorgetrokken naar de bandkant, en drie patronen vastgelegd als standaard.** Aanleiding: Ronald — "de consistentie is extreem belangrijk." TT-246, TT-247 en TT-248 zijn aangevuld met de bandkant, alle drie geverifieerd in de code: `bandDescription` heeft geen prompt-chips, `saveBand()` heeft vier opeenvolgende toasts, en "Nog geen bands" heeft geen knop terwijl "Nog geen profiel" tien regels hoger er wél een heeft. TT-249 is getoetst en bewust **niet** overgenomen (`.band-name` is 20px, niet 36px); TT-250 is **niet van toepassing** (het bandformulier is één scherm). **Drie nieuwe tickets:** TT-251 (geen bevestiging na het aanmaken van een band, P2), TT-252 (dubbele tik maakt twee bands, P1), TT-253 ("Lid uitnodigen" volgt de zoek-standaard niet, P2). **Vastgelegd in `huisstijl-en-consistentie.md`:** de staande regel dat muzikantkant en bandkant dezelfde regels volgen, §13.1 veldfouten, §15 lege staten. Dat document staat alleen in het claude.ai-project; de verouderde kopie in de testrepo vervalt. Geen code gewijzigd, alleen `actielijst.md`. Zie het blok **UX-review 11-09-2026 (vervolg)** onderaan Deel 1.
 
 **Vorige update:** 11-09-2026 (vervolg) — **P0-tabel hersteld: de stand stond op twee plekken tegelijk.** TT-229 en TT-231 zijn sinds 09-09-2026 P0, maar stonden alleen in het sessieblok hierboven en niet in de P0-tabel van Deel 1; TT-62 kwam er eerder vandaag wél in. Daardoor was niet af te lezen hoeveel P0's openstonden. De P0-tabel is gesplitst: een eerste tabel met **acht openstaande P0-bouwtickets** (TT-229 · TT-231 · TT-62 · TT-01 · TT-06 · TT-65 · TT-45 · TT-42) en een tweede tabel met de afgehandelde en de bij Ronald geblokkeerde rijen (TT-22-restpunt, TT-63, TT-129, TT-110, TT-55, TT-07), die niet meer meetellen in de stand. **Nieuwe vaste regel, bovenaan de P0-sectie vastgelegd:** elk nieuw ticket krijgt een rij in de tabel van zijn niveau in Deel 1, ook als de volledige tekst bovenaan in het sessieblok staat. Het sessieblok is het verslag, Deel 1 is de stand. Geen code gewijzigd, alleen `actielijst.md`. **Nog te doen, zelfde soort fout op de lagere niveaus:** TT-234 (P1), TT-235, TT-237, TT-238 (P2) en TT-240 (P3) staan ook alleen in het sessieblok.
 
@@ -2709,7 +2711,6 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-245** | Zoekresultaten boven de filters | **Nieuw, 11-09-2026, UX-review.** Geverifieerd op 375×812: je moet ruim 600px scrollen langs zeven filtervelden voordat je één persoon ziet. De twijfel van een nieuwe bezoeker is niet "hoe filter ik", maar "zit hier eigenlijk iemand". De pagina laat eerst werk zien en pas daarna bewijs. Voorstel: resultaten bovenaan, filters inklappen achter één knop. Raakt de drie zoektabbladen gelijk — zie TT-232/TT-236/TT-239, die de tabbladen juist gelijkgetrokken hebben, dus deze wijziging moet in één keer voor alle drie |
 | **TT-246** | Prompt-chips bij het eerste bericht | **Nieuw, 11-09-2026, UX-review.** De composer is een leeg tekstvak met "Schrijf je bericht...". Dit is het spannendste moment in de app: een onbekende aanspreken die misschien beter speelt. Precies daar helpt de app niet. Bij de bio in de wizard doet hij het wél, met vier prompt-chips via `applyBioPrompt()`. Voorstel: hetzelfde patroon in `messageComposerBody`, gevuld met wat al bekend is over de ontvanger — "Ik zag dat je ook Metallica speelt", "Zin om een keer te jammen?". Het patroon bestaat al, dus klein werk. **Bandkant toegevoegd 11-09-2026 (geverifieerd):** `bandDescription` in het bandformulier is óók een kaal tekstvak ("Vertel iets over de band..."), terwijl de muzikant-bio de chips op twéé plekken heeft (`applyBioPrompt()` in de wizard, `wbjBioPrompt()` op de tegel "Wie ben je"). Drie tekstvakken, twee met hulp, één zonder. Neem het bandformulier mee in dezelfde wijziging |
 | **TT-247** | Veldfouten aanwijzen in plaats van één toast | **Nieuw, 11-09-2026, UX-review.** Geverifieerd: nergens in de codebase staat een foutklasse, `aria-invalid` of veldmarkering — élke validatiefout is een toast van 3,5 seconde bovenin, één fout tegelijk. Stap 1 van de wizard heeft 9 velden, 7 verplicht, en is 1422px hoog. Je raadt welk veld het is, drukt Verder, en krijgt de volgende toast. Voorstel: markeer het veld, scroll ernaartoe, toon alle fouten tegelijk. **Patroonniveau — één oplossing dekt de hele app.** De toast heeft ook geen `aria-live`/`role="alert"`, dus een schermlezer meldt er nu niets van; meenemen in dezelfde wijziging. **Bandkant toegevoegd 11-09-2026 (geverifieerd):** `saveBand()` heeft exact dezelfde fout — vier opeenvolgende `showToast(...) + return` (bandnaam, postcode, genre, muzikantprofiel), één tegelijk, geen veldmarkering. Het patroon is vastgelegd in `huisstijl-en-consistentie.md` §13.1 en geldt app-breed: wizard, bandformulier, inloggen, wachtwoord opnieuw instellen |
-| **TT-252** | Dubbele tik op "Band aanmaken" maakt twee bands | **Nieuw, 11-09-2026, bandkant-review.** **Geverifieerd:** `saveBandBtn` wordt nergens uitgeschakeld. `saveBand()` is `async`; tussen de tik en het sluiten van het formulier zit een netwerkronde naar Supabase. Twee tikken op een trage verbinding maken twee bands, allebei met de tikker als oprichter. De gebruiker kan er maar één kwijt via "Band opheffen", een pad dat hij nog niet kent. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja — wie zijn eerste band dubbel aanmaakt, denkt dat hij iets fout deed. Voorstel: knop uitschakelen en de tekst op "Bezig..." zetten zolang het verzoek loopt, en dat als vaste regel voor élke opslaanknop. Zelfde controle nog te doen op `submitProfile()` |
 | **TT-62** | Nooit nul zoekresultaten tonen | **Verplaatst naar P0 op 11-09-2026 — zie de P0-tabel hierboven voor de volledige tekst.** Stond hier als "regionale tellers i.p.v. landelijke" |
 | **TT-64** | Foutregistratie/logging | Nog niets van bestaat. Raakt Voorwaarde 0 (betrouwbaarheid): zonder logging weet je pas dat iets stuk is als een gebruiker het meldt. **Externe technische review (09-08-2026):** kan in twee stappen — (1) een minimale `window.onerror`-handler die naar een simpele Supabase-tabel schrijft, ruwweg een uur werk, kan naar voren gehaald worden; (2) de volwaardige versie (filtering, dashboard, alerts) blijft op P1. **Aandachtspunt 10-08-2026:** een `window.onerror`-handler die zelf via de Supabase-client schrijft, werkt niet in precies het scenario van TT-82 (bibliotheek niet geladen). Voor die ene fout is een aparte, clientloze route nodig, of accepteer bewust dat hij niet wordt gelogd |
 | **TT-130** | Berichtenscherm: kop en invoerveld staan niet vast | **Nieuw, 23-08-2026 — UX-auditronde 1** (`ux-audit-ronde1-23-08-2026.md`). **Gebouwd 23-08-2026:** composer+teller+melding samengevoegd in `.messages-thread-footer`, sticky onderin; kop sticky bovenin. **Ronalds telefoontest:** scrollen → naam blijft zichtbaar (bevestigd). Toetsenbord openen → invoerveld bereikbaar (bevestigd), maar de naam verdween toch — bekende mobiele-browser-eigenaardigheid (`position:sticky` + toetsenbord). **Vervolgfix gebouwd, nog niet opnieuw getest:** kop wordt bij focus op het invoerveld expliciet vastgezet via `visualViewport`. Wacht op herbevestiging |
@@ -2725,10 +2726,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-251** | Een band aanmaken geeft geen bevestiging | **Nieuw, 11-09-2026, bandkant-review.** **Geverifieerd:** `saveBand()` sluit het formulier en laadt de lijst opnieuw, zonder melding. Overal elders bevestigt de app wél: `showToast('Wijzigingen opgeslagen.')` staat op vijf plekken in `musicians.js`. Wie zijn eerste band aanmaakt, ziet het formulier verdwijnen en moet zelf in de lijst nagaan of het gelukt is — precies op het moment dat hij het minst zeker is. **Toets P2:** het werkt, maar het kost vertrouwen. Voorstel: dezelfde toast, tekst "Band aangemaakt." respectievelijk "Wijzigingen opgeslagen." |
 | **TT-253** | "Lid uitnodigen" is het vierde zoekscherm en volgt de zoek-standaard niet | **Nieuw, 11-09-2026, bandkant-review.** **Geverifieerd in `index.html`:** het zoekblok in "Lid uitnodigen" gebruikt een zichtbare `<select id="memberSearchInstrument">` en een kaal `<input type="number" id="memberSearchRadius">` voor de straal. `huisstijl-en-consistentie.md` §7.1 legt vast dat een browser-keuzelijst nooit zichtbaar wordt gebruikt, en dat een straal een wielveld van 104px is. TT-232/TT-236/TT-239 hebben de drie zoektabbladen gelijkgetrokken; dit vierde zoekscherm is toen overgeslagen. **Toets P2:** het werkt, maar het oogt als een ander product op het moment dat een beheerder zijn band aan het vullen is. Hoort in dezelfde sessie als TT-245, dat toch alle zoekschermen raakt |
-| **TT-248** | Elke lege staat krijgt een knop | **Nieuw, 11-09-2026, UX-review.** Alle lege staten zijn nu grijze tekst zonder uitweg: "Nog geen berichten. Stuur iemand een bericht vanuit een zoekresultaat" (`messages.js`), "Nog geen profiel", "Nog geen bands" (`musicians.js`), "Geen muzikanten gevonden" (`search.js`). Een lege staat die alleen vertelt wat er niet is, is een afslag naar buiten. Voorstel: één component, vaste vorm — regel tekst plus één primaire knop die de volgende stap dóét. Patroonniveau, niet per scherm. Hangt samen met TT-62, dat de zwaarste van deze lege staten apart oplost. **Bandkant toegevoegd 11-09-2026 (geverifieerd):** in `loadMyBands()` staan de twee lege staten tien regels uit elkaar — "Nog geen profiel" heeft wél een knop ("Profiel aanmaken →"), "Nog geen bands" heeft alleen tekst ("Maak een nieuwe band aan of word uitgenodigd"). Dezelfde functie, twee verschillende vormen. De vaste vorm staat nu in `huisstijl-en-consistentie.md` §15 |
-| **TT-249** | Profielnaam loopt uit zijn kader | **Nieuw, 11-09-2026, UX-review.** Geverifieerd in de profielmodal op 375px: `.profile-name` staat op 36px, `scrollWidth` 240 tegen `clientWidth` 215 bij de naam "Colindrummer" — twaalf tekens is al te lang en de naam wordt zichtbaar afgekapt. Gebruikersnamen mogen 20 tekens zijn. Voorstel: laat de regelgrootte meeschalen met de lengte, of laat de naam afbreken over twee regels. Geen afkapping met puntjes — een naam hoort heel gelezen te worden. **Bandkant getoetst 11-09-2026 (geverifieerd):** `.band-name` staat op 20px, niet op 36px zoals `.profile-name`. Het risico is daar veel kleiner. **Besluit: niet automatisch overnemen** — de meeschalende regelgrootte wordt wel zo gebouwd dat ze op beide klassen toepasbaar is, en de bandnaam wordt op 375px nagemeten zodra de muzikantkant af is |
 | **TT-250** | Voortgangsteller in de wizard spreekt zichzelf tegen | **Nieuw, 11-09-2026, UX-review.** Stap 1 toont vijf bolletjes plus het label "Fase 1 van 2 · Aanmelden". Wie dat leest denkt na stap 1 halverwege te zijn. Stap 2 zegt dan "Fase 2 van 2 · Profiel aanvullen (1/4)" — er komen dus nog vier schermen. De labels zijn elk apart verdedigbaar (zie de toelichting bij `labelsNieuw` in `wizard.js`), maar samen met de bolletjes zijn het drie tellers tegelijk, en de optimistische lezing klopt niet. Voorstel: één teller, die de hele weg dekt. **Bandkant getoetst 11-09-2026: niet van toepassing** — het bandformulier is één scherm zonder stappen en heeft dus geen teller. Vastgelegd zodat dit niet opnieuw wordt uitgezocht |
 | **TT-18** | Album-art bij repertoire | Overweeg iTunes/Deezer i.p.v. MusicBrainz voor dit doel |
 | **TT-109** | Combinatiezoekveld repertoire (V-22, heropend) | **De bronkeuze is afgerond via TT-139 (iTunes, 24-08-2026).** Dit ticket zelf — één zichtbaar zoekveld i.p.v. twee losse velden (artiest, dan nummer) — is daarmee nog niet gebouwd. De huidige iTunes-implementatie gebruikt nog steeds twee velden, met de artiest-ID-isolatie-architectuur er al onder (nu al één keer per artiest de volledige nummerlijst ophalen, lokaal filteren). Het samenvoegen tot één zichtbaar veld blijft een aparte, nog niet opgepakte UX-wijziging |
@@ -2988,6 +2986,103 @@ Bijbehorende tickets: TT-70 (Google Play), plus het `—`-punt "App Store (nativ
 # Deel 3 — Afgehandeld
 
 Kort en chronologisch (nieuwste bovenaan). Voor het volledige technische verhaal per punt: zie de sessie-aantekeningen die aan dit bestand voorafgingen (niet langer los bijgehouden na deze opschoning).
+
+## 11-09-2026 (vervolg 3) — TT-248, TT-249, TT-251, TT-252 gebouwd, en TT-254 onderweg gevonden
+
+**Aanleiding:** Ronald — "het zijn vaak kleine punten, pak er een aantal
+tegelijk op." Vier tickets uit de UX-review van vandaag, gekozen omdat ze
+elkaar niet raken en geen enkel zoekscherm openbreken. Eén set bestanden:
+`index.html`, `styles.css`, `utils.js`, `musicians.js`, `messages.js`,
+`wizard.js`.
+
+**TT-252 — dubbele tik maakte twee bands (was P1).**
+De eerste opzet zette de vlag `bandSaveBusy` ná `await getMyMusicianId()`.
+**Gemeten met Playwright: dat werkt niet** — twee aanroepen direct achter
+elkaar gaven nog steeds twee inserts in `bands`. De tweede aanroep begint
+tijdens het wachten en ziet de vlag dan nog op false staan. De vlag gaat nu aan
+vóór de eerste `await`; het werk is verplaatst naar `saveBandRun()`, zodat geen
+enkele bestaande regel hoefde te verschuiven. **Gemeten na de fix: één insert.**
+Daarnaast blokkeert de opslaanlaag het scherm zolang het verzoek loopt —
+gemeten met een vertraagde database: op de plek van de knop ligt dan
+`save-overlay visible`, dus een tweede tik bereikt de knop ook fysiek niet.
+
+**Verplaatst: de opslaanlaag.** `#saveOverlay` stond binnen `view-register`.
+Een `.app-view` die niet actief is staat op `display:none`, dus de laag was
+alleen bruikbaar in de wizard. Nu staat hij bij de andere modals, direct in
+`#appRoot`. De laag is `position:fixed`, dus de opmaak verandert niet;
+nagemeten in de wizard: 375×812, dekkend, `z-index` 1000 tegen 200 voor een
+modal en 1100 voor de toast. Nieuwe functie `hideSaving()` in `utils.js` — de
+wizard sluit de laag via `showSaveSuccess()`/`showSaveError()`, het
+bandformulier blijft op hetzelfde scherm en heeft een eigen sluiter nodig.
+
+**TT-251 — een band aanmaken gaf geen bevestiging (was P2).**
+Toast na het opslaan, met de bandnaam erin: "De Rusty Strings is aangemaakt."
+Bij bewerken: "Wijzigingen opgeslagen." Beide gemeten. Zelfde vorm als de vijf
+bestaande bevestigingen in `musicians.js`.
+
+**TT-248 — elke lege staat krijgt een knop (was P2).**
+Eén component `emptyStateHTML(kop, uitleg, knopLabel, knopActie)` in `utils.js`,
+met `.empty-state` in `styles.css`. Vorm volgens `huisstijl-en-consistentie.md`
+§15: kop 16px vet, hoogstens één regel uitleg 13px `--muted`, precies één
+`.btn-primary`. Toegepast op vier plekken:
+
+| Plek | Was | Nu |
+|---|---|---|
+| "Nog geen bands" (`musicians.js`) | alleen tekst | knop "Band aanmaken →" |
+| "Nog geen berichten" (`messages.js`) | alleen tekst | knop "Muzikanten zoeken →" |
+| "Nog geen berichten in dit gesprek" (`messages.js`) | alleen tekst | knop "Schrijf het eerste bericht →" |
+| "Nog geen profiel" (`musicians.js`, `wizard.js`) | had al een knop | ongewijzigd van inhoud, nu via dezelfde component |
+
+Gemeten: alle vier precies één knop, 44px hoog, `.btn btn-primary`. De drie
+lege zoekresultaten in `search.js` blijven bewust staan — die horen bij TT-62,
+dat verder gaat dan een knop.
+
+**TT-249 — profielnaam liep uit zijn kader (was P2).**
+`profileNameClass()` in `utils.js` kiest een van drie stappen; de maten staan in
+`styles.css`, nooit inline. **Nagemeten in de echte profielmodal op 375px:** de
+naam heeft daar 155px, want de rij is avatar 80 + 16 + naam + 16 + menuknop 44.
+De grootste regelgrootte die op één regel past: 36px tot 7 tekens, 27px tot 9
+tekens, 20px tot 12 tekens, 12px bij 19 tekens. Een gebruikersnaam mag twintig
+tekens zijn en past op géén enkele leesbare grootte op één regel — meeschalen
+alleen lost dit dus niet op. Daarom: ondergrens 20px (gelijk aan `.band-name`),
+en vanaf dertien tekens loopt de naam door op een tweede regel. Twee regels van
+20px dekken circa 24 tekens, dus elke toegestane naam is volledig leesbaar.
+Gemeten: "Bas" 36px één regel, "Colindrummer" 20px één regel,
+"RonaldWeverMuziek20" 20px twee regels, nergens `scrollWidth > clientWidth`.
+De bandmodal gebruikt dezelfde klasse en profiteert mee; `.band-name` op de
+bandkaart staat al op 20px en blijft ongewijzigd, conform het besluit in
+TT-249.
+
+**Bewuste keuze, graag nalezen:** een naam van één lang woord breekt midden in
+het woord af ("RonaldWeverM / uziek20"). Het ticket staat afbreken over twee
+regels toe en verbiedt afkappen. Het alternatief is 12px, en dat is geen kop
+meer. Wil Ronald liever geen afbreking midden in een woord, dan is de enige
+andere weg de naam smaller maken door de rij anders in te delen — dat is een
+eigen ticket.
+
+**TT-254 — één actie, drie namen (nieuw, P2, meteen opgelost).**
+Gevonden tijdens TT-248: de lege staat zette een tweede gouden knop op het
+bandscherm, en die twee knoppen deden hetzelfde onder een andere naam. De
+kopknop heette "Band toevoegen", de formuliertitel "Nieuwe band aanmaken", de
+opslaanknop "Band aanmaken". **Toets P2:** het werkt, maar het kost
+vertrouwen — de gebruiker vraagt zich af of het twee verschillende dingen zijn.
+Drie van de vier plekken zeggen "aanmaken", dus de kopknop heet nu ook "Band
+aanmaken". Huisstijl §6, regel 5: één betekenis per woord. **Terug te draaien
+in één regel** als Ronald "toevoegen" beter vindt.
+
+**Getest.** Playwright tegen `supabase-stub.js` op 375×812. `node --check` en
+een haakjestelling op elk gewijzigd JS-bestand. Alle veertien views geopend,
+bandformulier openen en annuleren, de drie zoektabbladen wisselen,
+profielmodal, opslaanlaag in de wizard: **geen enkele console-fout.** Ter
+controle is dezelfde reeks ook op de onveranderde productiecode gedraaid — het
+enige afwijkende punt (`showView('register')` leidt door naar Mijn Profiel als
+er al een profiel is) gedraagt zich daar identiek en is dus geen regressie.
+
+**Bekende grens.** De stub kende `insert().select().single()`, `update().eq()`
+en `delete().eq()` niet; die zijn voor deze test toegevoegd aan de lokale kopie.
+`supabase-stub.js` in de gedeelde map is niet gewijzigd. Laag 2 — de echte
+database, RLS en echt inloggen — moet Ronald zelf doorlopen met de vaste
+smoke-test.
 
 ## 25-08-2026 (vervolg 2) — TT-144: Terug op stap 1
 

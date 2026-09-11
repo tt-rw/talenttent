@@ -131,6 +131,14 @@ function showSaving(title, msg) {
   overlay.classList.add('visible');
 }
 
+// TT-252 (11-09-2026): tegenhanger van showSaving() voor formulieren die na
+// het opslaan op hetzelfde scherm blijven (het bandformulier). De wizard
+// gebruikt showSaveSuccess()/showSaveError(), die sluiten de laag zelf.
+function hideSaving() {
+  const overlay = document.getElementById('saveOverlay');
+  if (overlay) overlay.classList.remove('visible');
+}
+
 function showSaveSuccess(isEdit) {
   document.getElementById('saveSpinner').style.display = 'none';
   if (isEdit) {
@@ -1104,4 +1112,43 @@ function wheelSheetClear() {
   const cfg = WHEEL_FIELDS[id];
   setWheelFieldValues(id, cfg.clearTo || cfg.columns.map(() => ''), true);
   closeWheelSheet();
+}
+
+
+// ─── Lege staat (huisstijl §15, TT-248, 11-09-2026) ──────────────────────────
+//
+// Eén component voor elke lege staat in de app: een kop, hoogstens één regel
+// uitleg, en altijd precies één knop die de volgende stap dóét. Tot 11-09-2026
+// had elk scherm zijn eigen vorm; "Nog geen profiel" had een knop en "Nog geen
+// bands" tien regels verderop niet. Nooit een tweede knop toevoegen — kiezen
+// is precies wat in een lege staat niet lukt.
+function emptyStateHTML(kop, uitleg, knopLabel, knopActie) {
+  const uitlegHTML = uitleg ? `<p class="empty-state-text">${escHtml(uitleg)}</p>` : '';
+  return `<div class="empty-state">
+    <p class="empty-state-title">${escHtml(kop)}</p>
+    ${uitlegHTML}
+    <button class="btn btn-primary" onclick="${knopActie}">${escHtml(knopLabel)}</button>
+  </div>`;
+}
+
+
+// ─── Naamgrootte in een profielkop (TT-249, 11-09-2026) ──────────────────────
+//
+// .profile-name staat op 36px. Een naam wordt nooit afgekapt met puntjes — een
+// naam hoort heel gelezen te worden — dus schaalt de regelgrootte mee met de
+// lengte. Drie vaste stappen in styles.css, geen inline maat. Geldt voor
+// muzikant én band: de bandmodal gebruikt dezelfde klasse.
+//
+// Gemeten op 375px breed, in de echte profielmodal: de naam heeft daar 155px.
+// De grootste regelgrootte die op één regel past, per lengte: 7 tekens 35px,
+// 9 tekens 27px, 12 tekens 20px, 19 tekens 12px. Twintig tekens (de maximale
+// gebruikersnaam) past op geen enkele leesbare grootte op één regel. De
+// ondergrens is daarom 20px — gelijk aan .band-name — en een naam vanaf
+// dertien tekens loopt door op een tweede regel. Twee regels van 20px dekken
+// circa 24 tekens, dus elke toegestane naam past volledig.
+function profileNameClass(naam) {
+  const n = (naam || '').length;
+  if (n <= 7) return '';
+  if (n <= 9) return ' name-len-2';
+  return ' name-len-3';
 }

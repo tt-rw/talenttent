@@ -45,7 +45,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260910b">
+<link rel="stylesheet" href="styles.css?v=20260911a">
 </head>
 <body>
 
@@ -567,14 +567,6 @@
     </div>
   </div>
 
-  <!-- Opslaan overlay -->
-  <div class="save-overlay" id="saveOverlay">
-    <div class="save-box" id="saveBox">
-      <div class="save-spinner" id="saveSpinner"></div>
-      <h3 id="saveTitle">Opslaan...</h3>
-      <p id="saveMsg">Je profiel wordt opgeslagen</p>
-    </div>
-  </div>
 
 </main>
 </div><!-- /view-register -->
@@ -1400,7 +1392,13 @@
         <div class="filter-title">Mijn bands</div>
         <p style="font-size:13px;color:var(--muted);">Bands waar jij beheerder en/of lid van bent</p>
       </div>
-      <button class="btn btn-primary btn-sm" style="white-space:nowrap;" onclick="showCreateBandForm()">Band toevoegen</button>
+      <!-- TT-254 (11-09-2026): deze knop heette "Band toevoegen", terwijl de
+           formuliertitel "Nieuwe band aanmaken" zegt en de opslaanknop "Band
+           aanmaken". Eén actie, drie namen. Gevonden bij TT-248: de lege staat
+           zette een tweede gouden knop op hetzelfde scherm, met weer een
+           andere tekst. Drie van de vier plekken zeggen "aanmaken", dus dat is
+           nu de naam. Huisstijl §6, regel 5: één betekenis per woord. -->
+      <button class="btn btn-primary btn-sm" style="white-space:nowrap;" onclick="showCreateBandForm()">Band aanmaken</button>
     </div>
     <div id="createBandForm" style="display:none;">
       <div class="search-filters" style="margin-bottom:28px;">
@@ -2089,6 +2087,21 @@
   </div>
 </div>
 
+<!-- Opslaan overlay.
+     TT-252 (11-09-2026): dit blok stond tot vandaag binnen view-register. Een
+     .app-view die niet actief is staat op display:none, dus de laag was alleen
+     bruikbaar in de wizard; het bandformulier op view-bands kon er niet bij en
+     had daardoor geen enkele aanduiding tijdens het opslaan. Verplaatst naar de
+     algemene modallaag, net als elke andere modal. De laag is position:fixed,
+     dus de opmaak verandert er niet door. -->
+<div class="save-overlay" id="saveOverlay">
+  <div class="save-box" id="saveBox">
+    <div class="save-spinner" id="saveSpinner"></div>
+    <h3 id="saveTitle">Opslaan...</h3>
+    <p id="saveMsg">Je profiel wordt opgeslagen</p>
+  </div>
+</div>
+
 <!-- TT-82: melding als de Supabase-bibliotheek niet is geladen. Dit blok staat
      bewust vóór het hoofdscript en gebruikt alleen eigen opmaak. Zo blijft de
      melding werken, ook als het hoofdscript daarna niets kan doen. -->
@@ -2109,14 +2122,14 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20260910b"></script>
-<script src="utils.js?v=20260910a"></script>
+<script src="utils.js?v=20260911a"></script>
 <script src="auth.js?v=20260910a"></script>
 <script src="postcode.js?v=20260910a"></script>
-<script src="wizard.js?v=20260910a"></script>
+<script src="wizard.js?v=20260911a"></script>
 <script src="search.js?v=20260910a"></script>
-<script src="musicians.js?v=20260910a"></script>
+<script src="musicians.js?v=20260911a"></script>
 <script src="bands.js?v=20260910a"></script>
-<script src="messages.js?v=20260910a"></script>
+<script src="messages.js?v=20260911a"></script>
 <script src="modals-shared.js?v=20260910a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────

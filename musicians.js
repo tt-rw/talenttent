@@ -90,7 +90,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
       ${avatarHTML}
       <div style="min-width:0;flex:1;">
-        <div class="profile-name">${escHtml(displayName)}</div>
+        <div class="profile-name${profileNameClass(displayName)}">${escHtml(displayName)}</div>
         <!-- TT-166 (28-08-2026, Ronald: "eenvoud"): een gebruikersnaam-subline
              hoort er alleen bij als de grote naam de échte voornaam is — laat
              displayName die keuze maken (isOwn, of een ingelogde kijker met
@@ -1517,7 +1517,29 @@ function selectBandStatus(el, val) {
   bandState.status = val;
 }
 
+// TT-252 (11-09-2026): de knop "Band aanmaken" liet zich twee keer indrukken.
+// De tweede tik maakte een echte tweede band met dezelfde oprichter, en
+// opruimen kon alleen via "Band opheffen" — een pad dat een nieuwe gebruiker
+// niet kent. Deze vlag sluit de tweede aanroep buiten zolang de eerste loopt.
+// De opslaanlaag hieronder dekt de tik ook af, maar een vlag werkt ook als die
+// laag ooit ontbreekt.
+let bandSaveBusy = false;
+
+// TT-252: de vlag gaat meteen aan, vóór de eerste `await`. Zat hij pas na
+// getMyMusicianId(), dan glipte de tweede tik er alsnog langs: die aanroep
+// begint tijdens het wachten, ziet de vlag nog op false staan en maakt een
+// tweede band. Gemeten met twee aanroepen direct achter elkaar: twee inserts
+// in `bands`. Het `finally` zet de vlag altijd terug, ook bij een afgekeurd
+// veld. Het echte werk staat in saveBandRun() hieronder — zo blijft de vlag
+// één laag apart en hoeft geen enkele bestaande regel te verschuiven.
 async function saveBand() {
+  if (bandSaveBusy) return;
+  bandSaveBusy = true;
+  try { await saveBandRun(); }
+  finally { bandSaveBusy = false; }
+}
+
+async function saveBandRun() {
   const name = document.getElementById('bandName').value.trim();
   const zip  = document.getElementById('bandZip').value.trim();
   const city = document.getElementById('bandCity').value.trim();
@@ -1528,6 +1550,16 @@ async function saveBand() {
 
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Maak eerst een muzikantprofiel aan.'); return; }
+
+  // TT-252: de laag blokkeert het scherm tijdens het opslaan, zodat een tweede
+  // tik de knop ook fysiek niet meer bereikt. TT-251: zonder die laag was er
+  // ook geen enkele aanduiding dat er iets gebeurde. Zelfde component als de
+  // wizard (showSaving), zodat muzikantkant en bandkant hetzelfde aanvoelen.
+  const isNieuw = !editingBandId;
+  showSaving(
+    isNieuw ? 'Band aanmaken...' : 'Wijzigingen opslaan...',
+    'Heel even geduld, dit duurt maar een paar seconden.'
+  );
 
   try {
     let bandId;
@@ -1569,7 +1601,15 @@ async function saveBand() {
     resetBandForm();
     document.getElementById('createBandForm').style.display = 'none';
     loadMyBands();
+    hideSaving();
+    // TT-251 (11-09-2026): er was geen verschil tussen gelukt en mislukt — het
+    // formulier verdween in beide gevallen. Wie zijn eerste band aanmaakt is
+    // precies op dat moment het onzekerst. Dezelfde bevestiging als elders in
+    // de app: een korte melding, met de bandnaam erin zodat hij ziet wát er is
+    // aangemaakt.
+    showToast(isNieuw ? `${name} is aangemaakt.` : 'Wijzigingen opgeslagen.');
   } catch(e) {
+    hideSaving();
     logCaught('saveBand', e);
     showToast(friendlyErrorMessage(e));
   }
@@ -1587,19 +1627,26 @@ async function loadMyBands() {
 
   const mid = await getMyMusicianId();
   if (!mid) {
-    el.innerHTML = `<div style="text-align:center;padding:60px 20px;">
-      <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Nog geen profiel</p>
-      <button class="btn btn-primary" onclick="showView('register')">Profiel aanmaken →</button>
-    </div>`;
+    // TT-248: via de vaste vorm uit huisstijl §15, net als elke andere lege staat.
+    el.innerHTML = emptyStateHTML(
+      'Nog geen profiel',
+      'Maak je muzikantprofiel aan om een band te kunnen oprichten.',
+      'Profiel aanmaken →',
+      "showView('register')"
+    );
     return;
   }
 
   const { data: memberships } = await db.from('band_members').select('band_id').eq('musician_id', mid).eq('status', 'bevestigd');
   if (!memberships?.length) {
-    el.innerHTML = `<div style="text-align:center;padding:60px 20px;color:var(--muted);">
-      <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Nog geen bands</p>
-      <p style="font-size:13px;">Maak een nieuwe band aan of word uitgenodigd.</p>
-    </div>`;
+    // TT-248: stond hier als grijze tekst zonder uitweg, tien regels onder de
+    // lege staat hierboven die wél een knop had. Nu dezelfde vaste vorm.
+    el.innerHTML = emptyStateHTML(
+      'Nog geen bands',
+      'Richt je eigen band op, of wacht tot iemand je uitnodigt.',
+      'Band aanmaken →',
+      'showCreateBandForm()'
+    );
     return;
   }
 
@@ -1730,7 +1777,7 @@ async function openBandModal(id) {
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
       ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border);margin-bottom:0;flex-shrink:0;">` : `<div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`}
       <div style="min-width:0;flex:1;">
-        <div class="profile-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
+        <div class="profile-name${profileNameClass(b.name)}">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
         <div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
       </div>
     </div>

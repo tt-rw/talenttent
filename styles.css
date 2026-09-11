@@ -672,6 +672,24 @@
     line-height: 1;
   }
 
+  /* TT-249 (11-09-2026): een naam wordt nooit afgekapt met puntjes, dus
+     schaalt de regelgrootte mee met de lengte. Drie vaste stappen, gekozen
+     door profileNameClass() in utils.js — nooit een inline maat.
+     Gemeten op 375px in de echte profielmodal: de naam heeft daar 155px, want
+     de rij is avatar 80 + 16 + naam + 16 + menuknop 44. Op één regel past
+     36px tot 7 tekens, 27px tot 9 tekens en 20px tot 12 tekens. Een
+     gebruikersnaam mag twintig tekens zijn en past op geen enkele leesbare
+     grootte op één regel; 20px is daarom de ondergrens, gelijk aan
+     .band-name. Vanaf dertien tekens loopt de naam door op een tweede regel.
+     Alleen de kleinste stap kan twee regels worden, dus alleen die krijgt
+     line-height 1.15 — anders raken de twee regels elkaar. De andere twee
+     stappen houden de bestaande line-height 1, zodat elke kop die vandaag
+     goed staat exact gelijk blijft. overflow-wrap breekt een naam die uit één
+     lang woord bestaat — dat is bewust: afbreken mag, afkappen niet. */
+  .profile-name { overflow-wrap: anywhere; }
+  .profile-name.name-len-2 { font-size: 27px; }
+  .profile-name.name-len-3 { font-size: 20px; line-height: 1.15; }
+
   .profile-meta {
     font-size: 13px;
     color: var(--muted);
@@ -1968,6 +1986,26 @@
     padding: 60px 20px;
     color: var(--muted);
   }
+
+  /* ── Lege staat (huisstijl §15, TT-248, 11-09-2026) ────────────────────────
+     Eén vorm voor elke lege staat: kop, hoogstens één regel uitleg, en altijd
+     precies één knop. Opgebouwd door emptyStateHTML() in utils.js — nooit een
+     eigen inline variant per scherm. */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+  }
+  .empty-state-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .empty-state-text {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 24px;
+  }
+  .empty-state-title + .btn { margin-top: 16px; }
 
   /* Duidelijke scheiding tussen zoekcriteria en zoekresultaat (04-08-2026) */
   .results-section-divider {

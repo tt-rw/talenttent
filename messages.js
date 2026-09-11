@@ -186,7 +186,14 @@ async function loadInbox() {
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     if (!data || !data.length) {
-      listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Nog geen berichten. Stuur iemand een bericht vanuit een zoekresultaat.</div>';
+      // TT-248 (11-09-2026): was grijze tekst zonder uitweg. Nu de vaste vorm
+      // uit huisstijl §15 — de knop doet de volgende stap, hij legt hem niet uit.
+      listEl.innerHTML = emptyStateHTML(
+        'Nog geen berichten',
+        'Zoek een muzikant en stuur het eerste bericht.',
+        'Muzikanten zoeken →',
+        "showView('search')"
+      );
       return;
     }
 
@@ -354,7 +361,12 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, 
       // gelezen" — dat voorkomt hetzelfde druk-risico in een andere vorm.
       const readCheck = (own && msg.read_at) ? `<span class="message-bubble-read" title="Gelezen">✓</span>` : '';
       return `${divider}<div class="message-bubble ${own ? 'own' : 'other'}">${escHtml(msg.body).replace(/\n/g, '<br>')}<div class="message-bubble-time">${escHtml(time)}${readCheck}</div></div>`;
-    }).join('') : '<div style="text-align:center;padding:20px;color:var(--muted);">Nog geen berichten in dit gesprek.</div>');
+    }).join('') : emptyStateHTML(
+      'Nog geen berichten in dit gesprek',
+      '',
+      'Schrijf het eerste bericht →',
+      "document.getElementById('messagesReplyInput').focus()"
+    ));
 
     // Ongelezen berichten van deze afzender markeren als gelezen.
     const unreadIds = (data || []).filter(m => m.recipient_id === mid && !m.read_at).map(m => m.id);

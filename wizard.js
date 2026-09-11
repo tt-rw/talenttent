@@ -204,11 +204,15 @@ async function loadMyProfile() {
     .single();
 
   if (error || !m) {
-    el.innerHTML = `<div style="text-align:center;padding:60px 20px;">
-      <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Nog geen profiel</p>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:24px;">Maak je muzikantprofiel aan om gevonden te worden.</p>
-      <button class="btn btn-primary" onclick="showView('register')">Profiel aanmaken →</button>
-    </div>`;
+    // TT-248 (11-09-2026): inhoudelijk ongewijzigd, nu via de vaste vorm uit
+    // huisstijl §15. Dit was het voorbeeld waar de andere lege staten naar
+    // toe zijn gebracht.
+    el.innerHTML = emptyStateHTML(
+      'Nog geen profiel',
+      'Maak je muzikantprofiel aan om gevonden te worden.',
+      'Profiel aanmaken →',
+      "showView('register')"
+    );
     return;
   }
 
