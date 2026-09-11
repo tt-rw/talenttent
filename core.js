@@ -73,8 +73,45 @@ let currentUser = null;
 // onAuthStateChange hieronder voor de volledige toelichting).
 let lastSignedInUserId = null;
 
+/* TT-229 (11-09-2026) — de laatst geopende modal ligt altijd bovenop.
+
+   GEVERIFIEERD op de live site: "Beheer overdragen" opende `confirmModal`
+   wél, maar die lag onzichtbaar achter `addMemberModal`. Beide staan op
+   `z-index: 200`; bij gelijke z-index wint het element dat later in
+   `index.html` staat. Voor de gebruiker deed de knop dus niets.
+
+   Dezelfde fout is op 12-08-2026 al eens per scherm gerepareerd
+   (`#niveauInfoModal { z-index: 210 }`). Die uitzondering vervalt hiermee:
+   de regel hoort in de standaard, niet per scherm (werkwijzeregel §2.11).
+
+   Eén regel, overal geldig: wordt een `.modal-overlay` zichtbaar, dan krijgt
+   hij een laag boven alles wat op dat moment al openstaat. Sluit de laatste
+   modal, dan begint de teller opnieuw. De opmaak in `styles.css` blijft
+   ongewijzigd; alleen de laag wordt gezet. */
+let modalLaagTeller = 200;
+
+function initModalStapeling() {
+  const pasAan = (el) => {
+    if (!el.classList.contains('modal-overlay')) return;
+    if (el.classList.contains('visible')) {
+      // Alleen bij het daadwerkelijk openen een nieuwe laag geven. Zonder
+      // deze controle telt elke andere klassewijziging de teller op.
+      if (!el.style.zIndex) el.style.zIndex = String(++modalLaagTeller);
+    } else if (el.style.zIndex) {
+      el.style.zIndex = '';
+      if (!document.querySelector('.modal-overlay.visible')) modalLaagTeller = 200;
+    }
+  };
+  const kijker = new MutationObserver(m => m.forEach(x => pasAan(x.target)));
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    kijker.observe(el, { attributes: true, attributeFilter: ['class'] });
+    pasAan(el); // een modal die bij het opstarten al openstaat
+  });
+}
+
 async function appInit() {
   try {
+    initModalStapeling(); // TT-229, zie hierboven
     // V-12 (13-08-2026, bijvangst): de hash moet vastgelegd worden vóórdat
     // onUserLoggedIn() hieronder draait. Voor een ingelogde gebruiker roept
     // onUserLoggedIn() namelijk (synchroon, nog vóór de eerste await erin)

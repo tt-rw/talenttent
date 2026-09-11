@@ -2054,15 +2054,15 @@
     pointer-events: all;
   }
 
-  /* Bugfix (12-08-2026): "Niveau toelichting" opent niveauInfoModal terwijl
-     instrumentLevelModal al open staat — twee .modal-overlay's tegelijk
-     zichtbaar, gelijke z-index. Bij gelijke z-index wint het element dat
-     later in de broncode staat, en dat was toevallig instrumentLevelModal:
-     de toelichting kwam dus wél open (bevestigd met Playwright), maar bleef
-     onzichtbaar erachter liggen. niveauInfoModal is bedoeld als een laag die
-     bovenop iets anders wordt geopend (ook vanuit het bandformulier en de
-     uitleg bij "Beste match"), dus die krijgt hier bewust altijd voorrang. */
-  #niveauInfoModal { z-index: 210; }
+  /* Hier stond `#niveauInfoModal { z-index: 210 }` (12-08-2026): een losse
+     reparatie voor één scherm, omdat de niveautoelichting achter
+     instrumentLevelModal verdween. TT-229 (11-09-2026) liet zien dat het
+     dezelfde fout was op een andere plek — de bevestigingsvraag bij "Beheer
+     overdragen" verdween achter "Bandleden beheren". De regel staat nu in de
+     standaard: `initModalStapeling()` in `core.js` geeft elke modal bij het
+     openen een laag boven alles wat al openstaat. Deze uitzondering is
+     daarmee vervallen (werkwijzeregel §2.11: een maat wordt consistent
+     doorgevoerd, nooit per scherm omzeild). */
 
   .modal-box {
     background: var(--surface);

@@ -1,8 +1,10 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 11-09-2026 (vervolg 5) — **TT-255: een verkeerd wachtwoord gaf "Er ging iets mis. Probeer het opnieuw."** Oorzaak geverifieerd: Supabase meldt "Invalid login credentials" en die tekst raakte geen enkele regel in `friendlyErrorMessage()`. Twee regels toegevoegd in `utils.js`, dus app-breed: een verkeerd wachtwoord en de snelheidsbegrenzing na een paar mislukte pogingen. Supabase geeft bij een onbekend e-mailadres dezelfde fout als bij een verkeerd wachtwoord — met opzet — dus de tekst benoemt het wachtwoord zonder te beweren dat het e-mailadres bestaat. Gewijzigd: `utils.js`, `index.html` (versieachtervoegsel). Zie Deel 3, 11-09-2026 (vervolg 5).
+**Laatste update:** 11-09-2026 (vervolg 6) — **Drie P0's opgelost: TT-229, TT-231 en TT-62 (deel 1).** Eén sessie, drie onderwerpen — dat is signaal 1 uit §5 van de projectinstructies en is als zodanig gemeld. **TT-229 was geen bandprobleem.** Geverifieerd in Ronalds ingelogde sessie op de live site: `confirmModal` opende wél, maar lag onzichtbaar achter `addMemberModal`. Beide staan op `z-index: 200`, en bij gelijke z-index wint wat later in `index.html` staat. Bewezen door `confirmModal` tijdelijk op 300 te zetten — toen stond de vraag er gewoon. Dit raakt élke bevestigingsvraag die vanuit een modal opent, niet alleen "Beheer overdragen". **Besluit Ronald:** de laatst geopende modal ligt altijd bovenop — één regel in `core.js` (`initModalStapeling()`), geen vaste lagen per soort. De losse reparatie `#niveauInfoModal { z-index: 210 }` van 12-08-2026 is daarmee vervallen (§2.11). **TT-231 laag 1 staat:** `tests/tt_tests.py` plus `tests/stub/supabase-stub.js`, tien blokken, 62 controles, alle geslaagd. **TT-62 deel 1 gebouwd:** bij nul treffers verruimt de app de straal zelf (10 · 25 · 50 · 100 · 250 · 500 km) en toont het dichtstbijzijnde resultaat met één uitleggende regel; in alle drie de zoektabbladen gelijk. **Twee vastgelegde feiten bleken onjuist — zie Deel 3.** Gewijzigd: `index.html`, `styles.css`, `core.js`, `search.js`, plus drie nieuwe bestanden in `tests/`. Zie Deel 3, 11-09-2026 (vervolg 6).
 
-**Vorige update:** 11-09-2026 (vervolg 4) — **TT-249 herzien: de naam wordt nu gemeten in plaats van geteld, en breekt nooit meer af.** Eerst een correctie: de meting van vanochtend (155px) was fout — `buildMusicianDetailHTML()` heeft drie losse parameters en kreeg een object mee, waardoor Mijn Profiel is gemeten en modal genoemd. De juiste maten zijn 187px (Mijn Profiel) en 215px (modal). **Besluit Ronald:** krimpen tot het past, ondergrens 16px, nooit afbreken, en bij een naam die dan nog niet past een melding **bij het invullen**. `profileNameClass()` is vervangen door `fitProfileName()` (ladder 36 · 32 · 28 · 24 · 20 · 18 · 16px, plus noodtreden 14 · 12 · 10 voor bestaande namen en het smalle bureaubladvenster). `naamPastInProfielkop()` blokkeert een te lange voornaam of gebruikersnaam in de wizard, in de tegel "Wie ben je" en op het gate-scherm. Gewijzigd: `index.html`, `styles.css`, `utils.js`, `core.js`, `auth.js`, `wizard.js`, `musicians.js`. Zie Deel 3, 11-09-2026 (vervolg 4).
+**Vorige update:** 11-09-2026 (vervolg 5) — **TT-255: een verkeerd wachtwoord gaf "Er ging iets mis. Probeer het opnieuw."** Oorzaak geverifieerd: Supabase meldt "Invalid login credentials" en die tekst raakte geen enkele regel in `friendlyErrorMessage()`. Twee regels toegevoegd in `utils.js`, dus app-breed: een verkeerd wachtwoord en de snelheidsbegrenzing na een paar mislukte pogingen. Supabase geeft bij een onbekend e-mailadres dezelfde fout als bij een verkeerd wachtwoord — met opzet — dus de tekst benoemt het wachtwoord zonder te beweren dat het e-mailadres bestaat. Gewijzigd: `utils.js`, `index.html` (versieachtervoegsel). Zie Deel 3, 11-09-2026 (vervolg 5).
+
+**Eerdere update:** 11-09-2026 (vervolg 4) — **TT-249 herzien: de naam wordt nu gemeten in plaats van geteld, en breekt nooit meer af.** Eerst een correctie: de meting van vanochtend (155px) was fout — `buildMusicianDetailHTML()` heeft drie losse parameters en kreeg een object mee, waardoor Mijn Profiel is gemeten en modal genoemd. De juiste maten zijn 187px (Mijn Profiel) en 215px (modal). **Besluit Ronald:** krimpen tot het past, ondergrens 16px, nooit afbreken, en bij een naam die dan nog niet past een melding **bij het invullen**. `profileNameClass()` is vervangen door `fitProfileName()` (ladder 36 · 32 · 28 · 24 · 20 · 18 · 16px, plus noodtreden 14 · 12 · 10 voor bestaande namen en het smalle bureaubladvenster). `naamPastInProfielkop()` blokkeert een te lange voornaam of gebruikersnaam in de wizard, in de tegel "Wie ben je" en op het gate-scherm. Gewijzigd: `index.html`, `styles.css`, `utils.js`, `core.js`, `auth.js`, `wizard.js`, `musicians.js`. Zie Deel 3, 11-09-2026 (vervolg 4).
 
 **Vorige update:** 11-09-2026 (vervolg 3) — **Vier UX-tickets gebouwd en getest: TT-248, TT-249, TT-251 en TT-252.** Eén set bestanden: `index.html`, `styles.css`, `utils.js`, `musicians.js`, `messages.js`, `wizard.js`. **TT-252** (dubbele tik maakt twee bands): `saveBand()` staat nu achter een vlag die vóór de eerste `await` aangaat, plus de opslaanlaag die het scherm blokkeert. Gemeten vóór de fix: twee aanroepen achter elkaar gaven twee inserts in `bands`; erna één. **TT-251** (geen bevestiging): toast "<naam> is aangemaakt." bij een nieuwe band, "Wijzigingen opgeslagen." bij bewerken — beide gemeten. **TT-248** (lege staten): één component `emptyStateHTML()` in `utils.js`, toegepast op vier lege staten; de zoekresultaten blijven bij TT-62. **TT-249** (naam loopt uit zijn kader): drie stappen 36/27/20px via `profileNameClass()`, naam breekt af over twee regels, nooit afgekapt. **Onderweg gevonden en meteen opgelost: TT-254** — "Band toevoegen", "Nieuwe band aanmaken" en "Band aanmaken" waren drie namen voor één actie. **Openstaand uit de UX-review:** TT-62 en TT-01 (P0), TT-245, TT-246 en TT-247 (P1), TT-250 en TT-253 (P2). Zie Deel 3, 11-09-2026 (vervolg 3).
 
@@ -2615,8 +2617,11 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 ## P0 — Zonder dit is de app niet af of onveilig
 
-**Stand van de P0's, bijgewerkt 11-09-2026.** **Acht P0-bouwtickets staan open:**
-TT-229 · TT-231 · TT-62 · TT-01 · TT-06 · TT-65 · TT-45 · TT-42. Daarnaast staat
+**Stand van de P0's, bijgewerkt 11-09-2026 (vervolg 6).** **Vijf P0-bouwtickets
+staan open:** TT-01 · TT-06 · TT-65 · TT-45 · TT-42. TT-229, TT-231 (laag 1) en
+TT-62 (deel 1) zijn deze dag opgelost en staan in de tweede tabel. **TT-62 deel 2**
+("geef me een seintje zodra er een drummer bijkomt") staat nog open en leunt op
+TT-01; die staat als eigen rij hieronder. Daarnaast staat
 één juridisch punt open zonder ticketnummer (verwerkersovereenkomst Supabase) en
 wacht TT-22 (restpunt) op een handeling van Ronald bij Supabase, niet op bouwwerk.
 
@@ -2641,14 +2646,12 @@ eerste tabel altijd gelijk is aan de stand.
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-229** | Bandomgeving werkt niet meer | **Nieuw 09-09-2026, NIET opgelost.** Ronald: eerst "beheer overdragen functioneert niet meer", daarna "de bandomgeving is helemaal stuk". **Geverifieerd:** de knopvolgorde van TT-228 is niet de oorzaak, en alle betrokken functies in `bands.js` bestaan. Volledige analyse bovenaan dit document. Eigen sessie |
-| **TT-231** | Vaste Playwright-testset wordt leidend | **Nieuw 09-09-2026, NIET opgelost.** Ronald: "ik wil dat de playwright test leidend wordt. ik kan dingen vergeten." Twee lagen: laag 1 met de Supabase-stub in de sessie, laag 2 handmatig in Ronalds browser tegen de echte database. **Geverifieerd:** een automatische test tegen de echte database kan nergens draaien — noch vanaf Ronalds laptop, noch in de sandbox (curl-code 000). Volledige opzet bovenaan dit document |
-| **TT-62** | Nooit nul zoekresultaten tonen | **Opgehoogd van P1 naar P0 op 11-09-2026, na de UX-review.** Stond hiervoor in P1 als "regionale tellers i.p.v. landelijke", verbonden aan de cold-start-strategie. De meting maakt het zwaarder: geverifieerd op de live site staan er **6 muzikanten in de hele database**, en de standaardstraal is **5 km**. Vrijwel elke echte zoekopdracht eindigt dus in de lege staat. Die tekst luidt nu: *"Geen muzikanten gevonden. Pas je filters of zoekstraal aan, en controleer of je eigen postcode in je profiel klopt."* Dat legt drie keer werk terug bij iemand die net durfde te zoeken. Hij leest niet "de app is nog leeg", hij leest "ik doe het verkeerd". **Twee delen:** (1) verruim automatisch en toon het dichtstbijzijnde resultaat — "Niemand binnen 5 km. Wel deze drie, iets verder weg"; (2) een knop "Geef me een seintje zodra er een drummer bijkomt". Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker — precies wat deze doelgroep nodig heeft, en het leunt op dezelfde verzendweg als TT-01. Bouw deel 1 eerst; deel 1 werkt ook zonder TT-01, deel 2 niet |
 | **TT-01** | E-maildigest bij nieuwe matches en berichten | **Heropend 31-08-2026: niet aantoonbaar werkend.** Gebouwd 28-08-2026 (testaanroep gaf 200), maar Ronald heeft nog geen enkele echte digestmail ontvangen. Oorzaak nog niet gevonden — vier mogelijke plekken staan open, zie Laatste update bovenaan. Eerste Edge Function van het project, SMTP via Plesk (`noreply@talenttent.org`), twee `pg_cron`-taken. Nieuw scherm "Zoekvoorkeuren" bij de zoekpagina. **Bevestigd door de UX-review van 11-09-2026, en zwaarder gewogen dan tot nu toe.** Geverifieerd in de code: geen service worker, geen `Notification`, geen push, geen mailtrigger aan de clientkant. Een muzikant die jou een bericht stuurt, bereikt jou dus alleen als jij uit jezelf de app opent. Deze doelgroep doet dat niet. Daarmee is dit geen "digest die nog niet werkt" maar de ontbrekende schakel in de hele matchlus. Punt 6 van de app-first toetslijst noemt meldingen met zoveel woorden de kern van de terugkeerlus; het is het enige van de negen punten dat niet gebouwd staat. **Onbekend:** of er in Supabase een databasetrigger staat die bij een nieuw bericht mailt — dat is vanuit de code niet te zien en moet Ronald nagaan. Goedkoopste werkende vorm: één e-mail per nieuw bericht, niet pas een digest |
 | **TT-06** | Rapporteren en blokkeren | Meldknop + blokkeren, verplicht voordat er actief geworven wordt. **Prioriteit opgehoogd 13-08-2026 (V-05, Ronalds akkoord):** van "geparkeerd" naar **nodig vóór de eerste storeaanvraag** — beide app-stores eisen dit vermoedelijk bij vrij berichtenverkeer tussen gebruikers (aanname, het beleid zelf is niet gelezen). Ontwerp besproken op 08-08-2026, drie beslissingen staan nog open (zie onderaan deze tabel). Nog geen bouwwerk gestart |
 | **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers, zodra die er zijn. Interim-stap: zie "Direct te doen" hierboven. **Vóór lancering, niet acuut nu (23-08-2026) — de site heeft nog alleen testprofielen, zie afspraak bovenaan deze tabel** |
 | **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel. **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
 | **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus — mogelijk groter dan gedacht, zie toelichting onderaan deze tabel.** **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
+| **TT-62 (deel 2)** | "Geef me een seintje zodra er een drummer bijkomt" | **Deel 1 is gebouwd 11-09-2026** (automatisch verruimen, zie Deel 3). Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker. Leunt op dezelfde verzendweg als TT-01 en kan dus niet eerder |
 | — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
 
 **Afgehandeld of geblokkeerd bij Ronald — telt niet mee in de P0-stand hierboven.**
@@ -2657,6 +2660,9 @@ herzieningsmomenten in TT-63 nog moeten gebeuren.
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-229** | Bandomgeving werkt niet meer | **Opgelost 11-09-2026.** Geen bandprobleem: de bevestigingsvraag lag onzichtbaar achter "Bandleden beheren" door een gelijke `z-index`. Opgelost in de standaard — de laatst geopende modal ligt altijd bovenop (`initModalStapeling()` in `core.js`). Zie Deel 3 |
+| **TT-231** | Vaste Playwright-testset wordt leidend | **Laag 1 opgeleverd 11-09-2026:** `tests/tt_tests.py` + `tests/stub/supabase-stub.js`, tien blokken, 62 controles. Draait bij elke wijziging vóór oplevering. **Laag 2 is verschoven van "kan niet" naar "kan wel"** — zie Deel 3, de bereikbaarheidscorrectie. Dat deel is nog niet als vaste doorloop vastgelegd |
+| **TT-62 (deel 1)** | Nooit nul zoekresultaten tonen | **Opgelost 11-09-2026.** Automatisch verruimen van de straal, in alle drie de zoektabbladen gelijk. Deel 2 staat nog open in de eerste tabel |
 | TT-22 (restpunt) | Auth-account daadwerkelijk verwijderen | **Data-deel opgelost 09-08-2026** (profiel, kindtabellen, Storage-bestanden, bandoprichterschap — zie Deel 3). **Auth-account-deel gebouwd 06-09-2026** (zie Laatste update bovenaan): nieuwe Edge Function `delete-own-account`, `executeAccountDeletion()` roept 'm aan vóór `signOut()`. **Blokkeert nog op:** Ronald moet de Edge Function bij Supabase aanmaken/deployen (stappen bovenaan dit document) vóórdat dit werkt op de live site |
 | **TT-63** | Privacyverklaring, gebruiksvoorwaarden, gedragscode | **Gebouwd en gepubliceerd 09-08-2026** — drie nieuwe views (`view-privacy`/`view-terms`/`view-gedragscode`), bereikbaar via het nieuwe hamburgermenu (zie hieronder) en via `#privacy`/`#terms`/`#gedragscode`. Toestemmingsregel met links toegevoegd bij de laatste wizard-stap. Gebruikt `privacy@talenttent.org` in alle drie. **Herzieningsmomenten, vastgelegd zodat ze niet vergeten worden:** privacyverklaring → zodra TT-42/TT-45 zijn opgelost (het hoofdstuk Minderjarigen loopt nu al vooruit op een regel die de wizard nog niet afdwingt — dat gat moet dicht vóór brede publicatie); gebruiksvoorwaarden + gedragscode → zodra TT-06 (meldknop) live gaat (nu nog "volgt binnenkort"); gebruiksvoorwaarden → kleine tekstupdate zodra TT-58 (applaus) of TT-221 (volgen) klaar zijn |
 | **TT-129** | Instrument zonder niveau kon in de wizard blijven staan | **Nieuw en opgelost 23-08-2026, zie Deel 3.** Gevonden bij een bredere code-controle, niet live gemeld. Sluiten van het niveau-keuzescherm (kruisje, tik buiten de modal, of "terug") zonder een niveau te kiezen liet een net gekozen instrument zonder niveau in de lijst staan — instrument is verplicht in de wizard, dus dit trof iedereen die dit scherm ooit zo sloot. Bij opslaan ging niveau als `null` mee. Clientfix voorkomt dit nu aan de bron; optioneel SQL-vangnet `I-instrument-niveau-nullable-defensief.sql` nog niet gedraaid |
@@ -2990,6 +2996,125 @@ Bijbehorende tickets: TT-70 (Google Play), plus het `—`-punt "App Store (nativ
 # Deel 3 — Afgehandeld
 
 Kort en chronologisch (nieuwste bovenaan). Voor het volledige technische verhaal per punt: zie de sessie-aantekeningen die aan dit bestand voorafgingen (niet langer los bijgehouden na deze opschoning).
+
+## 11-09-2026 (vervolg 6) — TT-229, TT-231 (laag 1) en TT-62 (deel 1)
+
+**Eén sessie, drie onderwerpen.** Dat is signaal 1 uit §5 van de
+projectinstructies. Gemeld bij de start, daarna uitgevoerd op verzoek van
+Ronald. Ronald bepaalt de volgorde.
+
+### Twee vastgelegde feiten bleken onjuist
+
+**1. "Supabase en talenttent.org zijn niet bereikbaar vanuit de sessie" — te
+ruim geformuleerd.** Die meting van 09-09-2026 gold voor `curl`. De
+browserpane van de desktop-app bereikt talenttent.org wél, inclusief het
+uitvoeren van code op de pagina. Daarmee is laag 2 van TT-231 geen
+onmogelijkheid meer. De oude regel staat nog in §12 van de projectinstructies
+en klopt daar niet meer.
+
+**2. De hoofdaanname onder TT-229 was onjuist.** De actielijst vermoedde een
+ontbrekende kolom `band_members.founder_offer`. Geverifieerd tegen de
+productiedatabase: **die kolom bestaat, net als `founder_offer_at`**, en
+`tt_expire_old_founder_offers` antwoordt gewoon. `loadMyBands`,
+`loadBandInvites`, `loadFounderOffers` en `renderFounderTransferSection`
+draaiden alle vier zonder fout, met nul mislukte databaseverzoeken.
+
+### TT-229 — oorzaak en oplossing
+
+**Gereproduceerd** door Ronald: "Beheer overdragen" aanklikken, er gebeurt
+niets. **Gemeten:** `confirmModal` had op dat moment `class="modal-overlay
+visible"` en `opacity: 1`. De dialoog stond dus open. Hij lag alleen achter
+`addMemberModal`: beide `z-index: 200`, en bij gelijke z-index wint het
+element dat later in `index.html` staat — `addMemberModal` staat na
+`confirmModal`. **Bewezen** door `confirmModal` tijdelijk op `z-index: 300`
+te zetten: de vraag "Je bent het enige bevestigde lid van Van Delft..." stond
+er meteen. Daarna teruggezet en de dialoog geannuleerd met "Terug".
+
+**Dit raakt meer dan één knop.** Elke bevestigingsvraag die vanuit een modal
+opent, loopt hier tegenaan. Het is ook dezelfde fout die op 12-08-2026 al per
+scherm was gerepareerd met `#niveauInfoModal { z-index: 210 }`.
+
+**Besluit Ronald:** de laatst geopende modal ligt altijd bovenop. Geen vaste
+lagen per soort, want twee modals uit dezelfde groep botsen dan opnieuw.
+Gebouwd als `initModalStapeling()` in `core.js`: een `MutationObserver` kijkt
+naar de klasse `visible` op elke `.modal-overlay` en geeft een modal bij het
+openen een laag boven alles wat al openstaat. Sluit de laatste modal, dan
+begint de teller opnieuw op 200. De opmaak in `styles.css` is ongewijzigd.
+De uitzondering voor `#niveauInfoModal` is verwijderd (§2.11).
+
+### TT-231 — laag 1
+
+**Waar het staat:** `tests/` in de repo, dus met versiebeheer en elke sessie
+mee te klonen. Draaien met `python3 tests/tt_tests.py`; afsluitcode 0 is goed.
+
+| Blok | Wat het toetst |
+|---|---|
+| 1 | `node --check` en haakjesbalans op tien JS-bestanden, scriptvolgorde, `?v=` per script, dode bestanden niet geladen, geen emoji |
+| 2 | opstarten zonder JS-fout, veertien views aanwezig, landing actief |
+| 3 | elke `onclick` in `index.html` wijst naar een bestaande functie (78 stuks) |
+| 4 | alle navigatie-id's, hamburger buiten de scrollbare balk |
+| 5 | knoppenrijen: grid, gelijke breedte, 8px, tikdoel 44px (TT-228) |
+| 6 | een databasefout komt als fout terug, niet als lege lijst (TT-230) |
+| 7 | modals binnen `#appRoot`, `overflow-x` op `#appRoot` (TT-212) |
+| 8 | elke view opent zonder JS-fout |
+| 9 | de laatst geopende modal ligt bovenop (TT-229) |
+| 10 | straalladder en automatisch verruimen (TT-62) |
+
+**Uitslag: 62 van 62 geslaagd.**
+
+**De stub** (`tests/stub/supabase-stub.js`) vervangt de Supabase-bibliotheek
+tijdens een test; Playwright zet hem in de plaats van het CDN-script.
+`index.html` is hiervoor niet gewijzigd. Een test stuurt de stub aan via
+`window.TT_STUB` — vaste testdata, afgedwongen fouten per tabel of kolom, en
+een sessie aan/uit.
+
+**Vier eigen testfouten onderweg gevonden en gerepareerd**, benoemd omdat een
+test die onterecht alarm slaat net zo schadelijk is als een test die niets
+vindt: de haakjesteller zag reguliere expressies aan voor deling, zag `/` na
+`return` aan voor deling, en liep vast op geneste sjabloonliteralen; de
+`onclick`-toets rekende het sleutelwoord `if` als functienaam.
+
+**Let op:** GitHub Pages publiceert alles in de productierepo, dus `tests/`
+is publiek leesbaar. Er staan geen sleutels of gebruikersgegevens in. Zet
+daar nooit een echte sleutel neer.
+
+### TT-62 — deel 1
+
+**Wat er gebeurt.** Levert een zoekopdracht niets op terwijl er een straal
+actief is, dan zoekt de app zelf opnieuw met de eerstvolgende ruimere straal,
+tot er wél iets is. Boven het resultaat staat één regel: *"Geen muzikanten
+binnen 5 km. Dit zijn de dichtstbijzijnde, tot 25 km."*
+
+**De ladder:** 10 · 25 · 50 · 100 · 250 · 500 km. Eén ladder, één plek,
+gedeeld door alle drie de zoektabbladen.
+
+**Geverifieerd tegen de productiedatabase, en dit wijzigde het ontwerp:**
+`tt_search_musicians` en `tt_search_bands_for_musician` met `radius_km: null`
+geven **nul rijen** terug. Null betekent daar dus niet "geen beperking". Het
+eerste ontwerp eindigde de ladder op `null` en zou daarmee de laatste
+verruimingsstap op nul resultaten hebben gezet. De ladder eindigt nu op 500
+km, een getal dat Nederland ruim overspant.
+
+**Verruimen gebeurt op drie punten per tabblad:** geen treffers uit de
+straal-RPC, en geen treffers na de client-side filters. Bij Setlist geldt het
+alleen als er een vertrekpunt bekend is — zonder vertrekpunt is de straal niet
+de beperking.
+
+**De lege staat is meegegaan.** Is er al tot 500 km gezocht, dan ligt het aan
+de filters en niet aan de straal. De tekst zegt dan *"Ook in heel Nederland
+staat er niemand die aan deze filters voldoet. Haal een filter weg."* — de
+oude raad over de zoekstraal staat er dan niet meer. Ook dat is in alle drie
+de tabbladen gelijk doorgevoerd.
+
+**Gewijzigde bestanden:** `index.html` (versieachtervoegsels), `styles.css`,
+`core.js`, `search.js`. **Nieuw:** `tests/tt_tests.py`,
+`tests/stub/supabase-stub.js`, `tests/README.md`.
+
+**Nog te bevestigen door Ronald op de live site:** klik "Beheer overdragen" —
+verschijnt de vraag nu meteen? En zoek met een kleine straal op een plaats
+zonder muzikanten — verschijnt de verruimingsregel met resultaten?
+
+---
 
 ## 11-09-2026 (vervolg 5) — TT-255: de inlogmelding zegt nu wat er fout ging
 
