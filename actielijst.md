@@ -1,6 +1,8 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 11-09-2026 (vervolg 4) — **TT-249 herzien: de naam wordt nu gemeten in plaats van geteld, en breekt nooit meer af.** Eerst een correctie: de meting van vanochtend (155px) was fout — `buildMusicianDetailHTML()` heeft drie losse parameters en kreeg een object mee, waardoor Mijn Profiel is gemeten en modal genoemd. De juiste maten zijn 187px (Mijn Profiel) en 215px (modal). **Besluit Ronald:** krimpen tot het past, ondergrens 16px, nooit afbreken, en bij een naam die dan nog niet past een melding **bij het invullen**. `profileNameClass()` is vervangen door `fitProfileName()` (ladder 36 · 32 · 28 · 24 · 20 · 18 · 16px, plus noodtreden 14 · 12 · 10 voor bestaande namen en het smalle bureaubladvenster). `naamPastInProfielkop()` blokkeert een te lange voornaam of gebruikersnaam in de wizard, in de tegel "Wie ben je" en op het gate-scherm. Gewijzigd: `index.html`, `styles.css`, `utils.js`, `core.js`, `auth.js`, `wizard.js`, `musicians.js`. Zie Deel 3, 11-09-2026 (vervolg 4).
+**Laatste update:** 11-09-2026 (vervolg 5) — **TT-255: een verkeerd wachtwoord gaf "Er ging iets mis. Probeer het opnieuw."** Oorzaak geverifieerd: Supabase meldt "Invalid login credentials" en die tekst raakte geen enkele regel in `friendlyErrorMessage()`. Twee regels toegevoegd in `utils.js`, dus app-breed: een verkeerd wachtwoord en de snelheidsbegrenzing na een paar mislukte pogingen. Supabase geeft bij een onbekend e-mailadres dezelfde fout als bij een verkeerd wachtwoord — met opzet — dus de tekst benoemt het wachtwoord zonder te beweren dat het e-mailadres bestaat. Gewijzigd: `utils.js`, `index.html` (versieachtervoegsel). Zie Deel 3, 11-09-2026 (vervolg 5).
+
+**Vorige update:** 11-09-2026 (vervolg 4) — **TT-249 herzien: de naam wordt nu gemeten in plaats van geteld, en breekt nooit meer af.** Eerst een correctie: de meting van vanochtend (155px) was fout — `buildMusicianDetailHTML()` heeft drie losse parameters en kreeg een object mee, waardoor Mijn Profiel is gemeten en modal genoemd. De juiste maten zijn 187px (Mijn Profiel) en 215px (modal). **Besluit Ronald:** krimpen tot het past, ondergrens 16px, nooit afbreken, en bij een naam die dan nog niet past een melding **bij het invullen**. `profileNameClass()` is vervangen door `fitProfileName()` (ladder 36 · 32 · 28 · 24 · 20 · 18 · 16px, plus noodtreden 14 · 12 · 10 voor bestaande namen en het smalle bureaubladvenster). `naamPastInProfielkop()` blokkeert een te lange voornaam of gebruikersnaam in de wizard, in de tegel "Wie ben je" en op het gate-scherm. Gewijzigd: `index.html`, `styles.css`, `utils.js`, `core.js`, `auth.js`, `wizard.js`, `musicians.js`. Zie Deel 3, 11-09-2026 (vervolg 4).
 
 **Vorige update:** 11-09-2026 (vervolg 3) — **Vier UX-tickets gebouwd en getest: TT-248, TT-249, TT-251 en TT-252.** Eén set bestanden: `index.html`, `styles.css`, `utils.js`, `musicians.js`, `messages.js`, `wizard.js`. **TT-252** (dubbele tik maakt twee bands): `saveBand()` staat nu achter een vlag die vóór de eerste `await` aangaat, plus de opslaanlaag die het scherm blokkeert. Gemeten vóór de fix: twee aanroepen achter elkaar gaven twee inserts in `bands`; erna één. **TT-251** (geen bevestiging): toast "<naam> is aangemaakt." bij een nieuwe band, "Wijzigingen opgeslagen." bij bewerken — beide gemeten. **TT-248** (lege staten): één component `emptyStateHTML()` in `utils.js`, toegepast op vier lege staten; de zoekresultaten blijven bij TT-62. **TT-249** (naam loopt uit zijn kader): drie stappen 36/27/20px via `profileNameClass()`, naam breekt af over twee regels, nooit afgekapt. **Onderweg gevonden en meteen opgelost: TT-254** — "Band toevoegen", "Nieuwe band aanmaken" en "Band aanmaken" waren drie namen voor één actie. **Openstaand uit de UX-review:** TT-62 en TT-01 (P0), TT-245, TT-246 en TT-247 (P1), TT-250 en TT-253 (P2). Zie Deel 3, 11-09-2026 (vervolg 3).
 
@@ -2988,6 +2990,51 @@ Bijbehorende tickets: TT-70 (Google Play), plus het `—`-punt "App Store (nativ
 # Deel 3 — Afgehandeld
 
 Kort en chronologisch (nieuwste bovenaan). Voor het volledige technische verhaal per punt: zie de sessie-aantekeningen die aan dit bestand voorafgingen (niet langer los bijgehouden na deze opschoning).
+
+## 11-09-2026 (vervolg 5) — TT-255: de inlogmelding zegt nu wat er fout ging
+
+**Aanleiding:** Ronald — een verkeerd wachtwoord gaf "Er ging iets mis. Probeer
+het opnieuw." **Toets P2:** het werkt, maar het kost vertrouwen. Wie zijn
+wachtwoord verkeerd typt, leest daar niet in dat hij een typefout maakte; hij
+leest dat de app stuk is. Precies het verkeerde moment om iemand te laten
+twijfelen of hij hier wel thuishoort.
+
+**Oorzaak, geverifieerd.** `signIn()` geeft de fout door aan
+`friendlyErrorMessage()`. Supabase meldt "Invalid login credentials", en die
+tekst raakte geen enkele regel in die functie — dus viel hij door naar de
+algemene slotzin.
+
+**Wat Supabase wel en niet vertelt.** Bij een onbekend e-mailadres én bij een
+verkeerd wachtwoord komt dezelfde fout terug. Dat is opzet: zo kan niemand
+uitproberen welke e-mailadressen een account hebben. De melding mag dus niet
+beweren dat het e-mailadres bestaat.
+
+**Gewijzigd.** Twee regels in `friendlyErrorMessage()` (`utils.js`), dus
+meteen app-breed:
+
+| Fout van Supabase | Nieuwe tekst |
+|---|---|
+| `Invalid login credentials` / `invalid_credentials` | "Dit wachtwoord hoort niet bij dit e-mailadres." |
+| `rate limit` / `only request this after …` | "Te veel pogingen achter elkaar. Probeer het straks opnieuw." |
+
+De tweede regel zat er niet in maar hoort erbij: Supabase knijpt het inloggen
+af na een paar mislukte pogingen, en juist dán kreeg de gebruiker opnieuw "Er
+ging iets mis".
+
+**Beide teksten zijn ingekort op verzoek van Ronald (11-09-2026).** De eerste
+versie noemde de knop Toon, de tweede noemde een halve minuut. Geen van beide
+aanwijzingen is nodig: "Toon" staat in het wachtwoordveld zelf en "Wachtwoord
+vergeten?" direct onder het meldingsvak. Wie de melding leest, kijkt al naar
+allebei. En hoe lang Supabase het inloggen afknijpt, kan de app niet weten —
+"straks" is daarom eerlijker dan een getal.
+
+**Getest.** Acht foutteksten door `friendlyErrorMessage()` gehaald, waaronder
+de vier bestaande regels — die zijn ongewijzigd. Daarna een echte inlogpoging
+met een stub die de Supabase-fout teruggeeft: het rode vak toont de nieuwe
+tekst, het groene vak blijft verborgen. Daarna de volledige regressiereeks
+opnieuw: geen console-fout.
+
+---
 
 ## 11-09-2026 (vervolg 4) — TT-249 herzien: namen worden gemeten, niet geteld
 

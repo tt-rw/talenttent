@@ -57,6 +57,26 @@ function friendlyErrorMessage(err) {
   if (/already registered|already exists/i.test(msg)) {
     return 'Er bestaat al een account met dit e-mailadres.';
   }
+  // TT-255 (11-09-2026, Ronald): een verkeerd wachtwoord gaf tot nu toe de
+  // algemene tekst onderaan deze functie — "Er ging iets mis. Probeer het
+  // opnieuw." Die zegt niet wat er fout ging en niet wat je eraan doet.
+  // Supabase geeft bij een onbekend e-mailadres én bij een verkeerd
+  // wachtwoord dezelfde fout ("Invalid login credentials"), met opzet: zo kan
+  // niemand uitproberen welke e-mailadressen een account hebben. De tekst
+  // hieronder benoemt daarom het wachtwoord — verreweg het vaakste geval —
+  // zonder te beweren dat het e-mailadres bestaat. Eén zin, geen aanwijzing
+  // erbij (Ronald, 11-09-2026): de knop "Toon" staat in het wachtwoordveld
+  // en "Wachtwoord vergeten?" direct onder dit vak. Wie de melding leest,
+  // kijkt al naar allebei.
+  if (/invalid login credentials|invalid_credentials|invalid grant/i.test(msg)) {
+    return 'Dit wachtwoord hoort niet bij dit e-mailadres.';
+  }
+  // Supabase knijpt het inloggen af na een paar mislukte pogingen. Zonder
+  // deze regel kreeg de gebruiker precies op dat moment weer "Er ging iets
+  // mis" — terwijl hij juist moet weten dat wachten genoeg is.
+  if (/rate limit|too many requests|only request this after/i.test(msg)) {
+    return 'Te veel pogingen achter elkaar. Probeer het straks opnieuw.';
+  }
   if (/failed to fetch|network|networkerror/i.test(msg)) {
     return 'Geen verbinding kunnen maken. Controleer je internetverbinding en probeer het opnieuw.';
   }
