@@ -68,8 +68,11 @@ function friendlyErrorMessage(err) {
   // erbij (Ronald, 11-09-2026): de knop "Toon" staat in het wachtwoordveld
   // en "Wachtwoord vergeten?" direct onder dit vak. Wie de melding leest,
   // kijkt al naar allebei.
+  // Tekst aangepast 12-09-2026 (Ronald): "dit e-mailadres" → "het
+  // e-mailadres". De melding staat sinds TT-247 bij het wachtwoordveld, niet
+  // meer in een banner boven het formulier.
   if (/invalid login credentials|invalid_credentials|invalid grant/i.test(msg)) {
-    return 'Dit wachtwoord hoort niet bij dit e-mailadres.';
+    return 'Dit wachtwoord hoort niet bij het e-mailadres.';
   }
   // Supabase knijpt het inloggen af na een paar mislukte pogingen. Zonder
   // deze regel kreeg de gebruiker precies op dat moment weer "Er ging iets
@@ -118,6 +121,137 @@ function friendlyErrorMessage(err) {
     return 'Het bestand is te groot. Een profielfoto mag maximaal 5 MB zijn, media maximaal 50 MB.';
   }
   return 'Er ging iets mis. Probeer het opnieuw.';
+}
+
+// ─── Veldfouten (TT-247, vorm vastgesteld 12-09-2026) ────────────────────────
+// Zie huisstijl-en-consistentie.md §13.1. Eén component voor de hele app:
+// wizard, bandformulier, inloggen, wachtwoord opnieuw instellen.
+//
+// De vorm: de rand van het veld wordt rood (--danger), de regel eronder is
+// wit (--text), 12px, met een lijn-SVG van 14px ervoor. **Nooit rode tekst**
+// — huisstijl §1.2, besluit Ronald 12-09-2026. De rand wijst het veld aan;
+// dat is het hele signaal. De regel legt rustig uit wat er moet gebeuren.
+//
+// De regel wordt hier in JavaScript aangemaakt en weer opgeruimd. Bewuste
+// keuze: anders had elk van de tientallen velden in index.html een eigen lege
+// <p> nodig, en zou een nieuw veld die stilzwijgend kunnen missen.
+const VELDFOUT_ICOON =
+  '<svg class="field-msg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+  ' stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
+  '<circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16.5v.01"/></svg>';
+
+function veldElement(el) {
+  return (typeof el === 'string') ? document.getElementById(el) : el;
+}
+
+// Het element waarnaast de foutregel komt te staan. Bij een wachtwoordveld
+// zit de knop "Toon" in dezelfde .password-wrap; de regel hoort ónder die
+// wrap, niet ertussen.
+function veldFoutAnker(el) {
+  return (el.closest && el.closest('.password-wrap')) || el;
+}
+
+function setFieldError(el, msg) {
+  el = veldElement(el);
+  if (!el) return;
+  el.classList.add('field-error');
+  el.setAttribute('aria-invalid', 'true');
+
+  const anker = veldFoutAnker(el);
+  let regel = anker.nextElementSibling;
+  if (!regel || !regel.classList || !regel.classList.contains('field-msg')) {
+    regel = document.createElement('p');
+    regel.className = 'field-msg';
+    anker.parentNode.insertBefore(regel, anker.nextSibling);
+  }
+  regel.innerHTML = VELDFOUT_ICOON + '<span></span>';
+  regel.querySelector('span').textContent = msg;
+
+  // Herstel: de markering verdwijnt zodra de gebruiker dit veld wijzigt,
+  // niet pas bij de volgende poging (huisstijl §13.1). Eén keer koppelen per
+  // veld, anders stapelen de luisteraars op bij elke mislukte poging.
+  if (!el.dataset.veldfoutGekoppeld) {
+    el.dataset.veldfoutGekoppeld = '1';
+    const weg = () => clearFieldError(el);
+    el.addEventListener('input', weg);
+    el.addEventListener('change', weg);
+  }
+}
+
+function clearFieldError(el) {
+  el = veldElement(el);
+  if (!el || !el.classList.contains('field-error')) return;
+  el.classList.remove('field-error');
+  el.removeAttribute('aria-invalid');
+  const anker = veldFoutAnker(el);
+  const regel = anker.nextElementSibling;
+  if (regel && regel.classList && regel.classList.contains('field-msg')) regel.remove();
+}
+
+// Ruimt alle veldfouten binnen een scherm of modal op. Aanroepen vóór een
+// nieuwe controleronde, zodat een opgeloste fout niet blijft staan.
+function clearFieldErrors(scope) {
+  const root = veldElement(scope) || document;
+  root.querySelectorAll('.field-error').forEach(clearFieldError);
+}
+
+// Toont alle fouten tegelijk en schuift naar het eerste foute veld.
+// `fouten` is een lijst van [veld, tekst]. Geeft true terug als er fouten
+// waren — dan stopt de aanroepende functie.
+function showFieldErrors(fouten) {
+  fouten = (fouten || []).filter(f => f && veldElement(f[0]));
+  if (!fouten.length) return false;
+  fouten.forEach(f => setFieldError(f[0], f[1]));
+
+  const eerste = veldElement(fouten[0][0]);
+  const beweegtNiet = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  try {
+    eerste.scrollIntoView({ behavior: beweegtNiet ? 'auto' : 'smooth', block: 'center' });
+  } catch (e) {
+    eerste.scrollIntoView();
+  }
+  // Pas focussen als het schuiven klaar is; anders springt de pagina terug.
+  setTimeout(() => {
+    try { eerste.focus({ preventScroll: true }); } catch (e) { /* oud toestel */ }
+  }, beweegtNiet ? 0 : 300);
+  return true;
+}
+
+// TT-258: het formaat van een e-mailadres. De browser accepteert bij
+// type="email" ook "a@b" zonder punt; deze controle is strenger en overal in
+// de app dezelfde.
+function emailFormaatGeldig(v) {
+  return /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test((v || '').trim());
+}
+
+// ─── Zoeken op naam (TT-257, besluit Ronald 12-09-2026) ──────────────────────
+// De algemene webstandaard: zonder aanhalingstekens matcht een deel van de
+// naam, mét aanhalingstekens moet het exact zijn.
+//
+// Waarom dit een eigen functie is: tot 12-09-2026 plakte search.js voornaam en
+// gebruikersnaam aan elkaar tot één tekst en zocht daar een deelreeks in. Een
+// zoekterm met een spatie kon daardoor over de grens tussen de twee velden
+// matchen. Hier wordt elk veld apart getoetst.
+function naamZoekTerm(ruw) {
+  const v = (ruw || '').trim();
+  if (!v) return null;
+  const m = v.match(/^"(.*)"$/) || v.match(/^'(.*)'$/);
+  if (m) {
+    const exact = m[1].trim();
+    return exact ? { tekst: exact.toLowerCase(), exact: true } : null;
+  }
+  return { tekst: v.toLowerCase(), exact: false };
+}
+
+// Toetst een zoekterm tegen één of meer velden. Elk veld apart, nooit aan
+// elkaar geplakt. Geen term = alles voldoet.
+function naamMatcht(term, ...velden) {
+  if (!term || !term.tekst) return true;
+  return velden.some(w => {
+    const s = (w || '').trim().toLowerCase();
+    if (!s) return false;
+    return term.exact ? s === term.tekst : s.includes(term.tekst);
+  });
 }
 
 // B-02 (12-08-2026): één plek die de leeftijd bepaalt. Een ingelogde

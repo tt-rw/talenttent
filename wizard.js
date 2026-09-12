@@ -766,45 +766,85 @@ async function nextStep(from) {
     state.bio        = document.getElementById('bio').value.trim();
     state.username   = document.getElementById('username').value.trim();
 
+    if (!editingMusicianId) {
+      state.regEmail    = document.getElementById('regEmail').value.trim();
+      state.regPassword = document.getElementById('regPassword').value;
+    }
+
+    // TT-247 (12-09-2026): alle fouten van deze stap tegelijk, elk bij zijn
+    // eigen veld. Tot nu toe was het één toast per keer: negen velden, zeven
+    // verplicht, 1422px hoog — je drukte Verder, las een regel die alweer weg
+    // was, en raadde welk veld werd bedoeld. Zie huisstijl §13.1.
+    clearFieldErrors('view-register');
+    const fouten = [];
+
     // TT-U04 (12-08-2026): achternaam is niet langer verplicht. De eigen
     // privacyverklaring zegt dat de achternaam nooit aan andere gebruikers
     // wordt getoond — dan levert een verplicht veld alleen drempel op.
     // De kolom lname blijft bestaan en wordt gevuld als iemand hem invult.
-    if (!state.fname || !state.birth_date) {
-      showToast('Vul je voornaam en geboortedatum in.'); return;
+    if (!state.fname) {
+      fouten.push(['fname', 'Vul je voornaam in']);
+    } else if (!naamPastInProfielkop(state.fname)) {
+      // TT-249 (11-09-2026): de voornaam is voor een ingelogde bezoeker de
+      // grote naam op je profiel. Die wordt nooit afgekapt en nooit
+      // afgebroken, dus een naam die op de kleinste letter niet past, komt
+      // er niet in.
+      fouten.push(['fname', 'Deze naam is te lang om op je profiel te tonen. Maak hem korter']);
     }
-    // TT-249 (11-09-2026): de voornaam is voor een ingelogde bezoeker de grote
-    // naam op je profiel. Die wordt nooit afgekapt en nooit afgebroken, dus
-    // een naam die op de kleinste letter niet past, komt er niet in.
-    if (!naamPastInProfielkop(state.fname)) {
-      showToast('Je voornaam is te lang om op je profiel te tonen. Maak hem korter.'); return;
-    }
-    if (!state.zip || !postcodeResolved || !state.city) {
-      showToast('Vul een geldige postcode in. Je woonplaats wordt automatisch bepaald zodra deze klopt.'); return;
-    }
+
     const bdMatch = state.birth_date.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-    if (!bdMatch) { showToast('Voer je geboortedatum in als DD-MM-JJJJ, bijv. 01-02-2001'); return; }
-    const bdDay = parseInt(bdMatch[1], 10), bdMonth = parseInt(bdMatch[2], 10);
-    if (bdDay < 1 || bdDay > 31 || bdMonth < 1 || bdMonth > 12) {
-      showToast('Die geboortedatum bestaat niet. Controleer dag en maand.'); return;
-    }
+    const bdDay   = bdMatch ? parseInt(bdMatch[1], 10) : 0;
+    const bdMonth = bdMatch ? parseInt(bdMatch[2], 10) : 0;
     const leeftijd = calcAge(state.birth_date);
-    if (isNaN(leeftijd) || leeftijd < 13) {
-      showToast('Je moet minimaal 13 jaar zijn om een profiel aan te maken.'); return;
+    if (!state.birth_date) {
+      fouten.push(['birth_date', 'Vul je geboortedatum in']);
+    } else if (!bdMatch) {
+      fouten.push(['birth_date', 'Voer je geboortedatum in als DD-MM-JJJJ, bijvoorbeeld 01-02-2001']);
+    } else if (bdDay < 1 || bdDay > 31 || bdMonth < 1 || bdMonth > 12) {
+      fouten.push(['birth_date', 'Deze datum bestaat niet. Controleer dag en maand']);
+    } else if (isNaN(leeftijd) || leeftijd < 13) {
+      fouten.push(['birth_date', 'Je moet minimaal 13 jaar zijn om een profiel aan te maken']);
+    } else if (leeftijd > 100) {
+      fouten.push(['birth_date', 'Controleer je geboortedatum']);
     }
-    if (leeftijd > 100) { showToast('Controleer je geboortedatum.'); return; }
+
+    if (!state.zip || !postcodeResolved || !state.city) {
+      fouten.push(['zip', 'Vul een geldige postcode in. Je woonplaats wordt dan automatisch ingevuld']);
+    }
 
     // TT-38: gebruikersnaam verplicht, geldig formaat, beschikbaar, en onder
     // de 16 verplicht afwijkend van de echte voornaam (privacy).
-    if (!state.username) { showToast('Kies een gebruikersnaam.'); return; }
-    if (!usernameFormatValid(state.username)) {
-      showToast('Gebruikersnaam mag alleen letters, cijfers en underscore bevatten (3-20 tekens).'); return;
+    if (!state.username) {
+      fouten.push(['username', 'Kies een gebruikersnaam']);
+    } else if (!usernameFormatValid(state.username)) {
+      fouten.push(['username', 'Alleen letters, cijfers en underscore, 3-20 tekens']);
+    } else if (leeftijd >= 13 && leeftijd < 16 && state.username.toLowerCase() === state.fname.toLowerCase()) {
+      fouten.push(['username', 'Onder de 16 moet dit afwijken van je echte voornaam, voor je eigen privacy']);
     }
-    if (leeftijd < 16 && state.username.toLowerCase() === state.fname.toLowerCase()) {
-      showToast('Onder de 16 moet je gebruikersnaam afwijken van je echte voornaam, voor je eigen privacy.'); return;
+
+    if (!editingMusicianId) {
+      // TT-258 (12-09-2026): het formaat werd hier helemaal niet gecontroleerd
+      // — alleen of het veld leeg was. "testeremail" ging naar Supabase, en
+      // diens antwoord raakte geen enkele regel in friendlyErrorMessage(). De
+      // gebruiker las "Er ging iets mis. Probeer het opnieuw." bovenin het
+      // scherm en wist niet dat het om zijn e-mailadres ging.
+      if (!state.regEmail) {
+        fouten.push(['regEmail', 'Vul je e-mailadres in']);
+      } else if (!emailFormaatGeldig(state.regEmail)) {
+        fouten.push(['regEmail', 'Vul een geldig e-mailadres in, bijvoorbeeld jouw@email.nl']);
+      }
+      if (!state.regPassword) {
+        fouten.push(['regPassword', 'Kies een wachtwoord']);
+      } else if (state.regPassword.length < 8) {
+        fouten.push(['regPassword', 'Kies een wachtwoord van minimaal 8 tekens']);
+      }
     }
+
+    if (showFieldErrors(fouten)) return;
+
     // Altijd een verse check vlak vóór het opslaan — de eerder getoonde status
     // kan verouderd zijn (iemand anders kan de naam intussen hebben gepakt).
+    // Staat apart omdat hij het netwerk op moet; alles hierboven kan zonder.
     const available = (usernameCheckedValue === state.username && usernameAvailable)
       ? true
       : await checkUsernameAvailability();
@@ -814,21 +854,15 @@ async function nextStep(from) {
       // fout bij de controle zelf. Nu apart, met een tekst die klopt met wat
       // er echt aan de hand is.
       if (usernameCheckFailed) {
+        // Gaat niet over de naam die je koos, maar over de app — dus een toast.
         showToast('De gebruikersnaam kon niet gecontroleerd worden. Probeer het over een paar seconden opnieuw.');
       } else {
-        showToast('Deze gebruikersnaam is niet beschikbaar. Kies een andere.');
+        showFieldErrors([['username', 'Deze gebruikersnaam is al bezet. Kies een andere']]);
       }
       return;
     }
 
     if (!editingMusicianId) {
-      state.regEmail   = document.getElementById('regEmail').value.trim();
-      state.regPassword = document.getElementById('regPassword').value;
-
-      if (!state.regEmail) { showToast('Vul je e-mailadres in.'); return; }
-      if (!state.regPassword || state.regPassword.length < 8) { showToast('Wachtwoord moet minimaal 8 tekens zijn.'); return; }
-
-
       // TT-09: account + minimaal profiel ontstaan al hier, i.p.v. pas bij de
       // laatste stap. De rest van de wizard wordt daardoor een aanvulling op
       // een al bestaand (nog niet "af") profiel — zie createAccountAndProfile().

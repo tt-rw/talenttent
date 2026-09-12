@@ -1,17 +1,14 @@
 // ─── Authenticatie ───────────────────────────────────────────────────────────
 
-function showAuthError(msg) {
-  const el = document.getElementById('authError');
-  el.textContent = msg;
-  el.classList.add('visible');
-  document.getElementById('authSuccess').classList.remove('visible');
-}
-
+// showAuthError() en de banners #authError / #resetError zijn op 12-09-2026
+// verwijderd (TT-247, §2.10 dode code meteen weg). Elke foutmelding op deze
+// schermen staat nu bij het veld waar hij over gaat; wat niet over één veld
+// gaat, is een toast. De succesbanner blijft — een geslaagde handeling hoort
+// niet bij één veld.
 function showAuthSuccess(msg) {
   const el = document.getElementById('authSuccess');
   el.textContent = msg;
   el.classList.add('visible');
-  document.getElementById('authError').classList.remove('visible');
 }
 
 async function signIn() {
@@ -19,15 +16,40 @@ async function signIn() {
   const passwordEl = document.getElementById('loginPassword');
   const email    = emailEl.value.trim();
   const password = passwordEl.value;
-  // TT-133 (23-08-2026, Ronald: "to much, kan weg"): geen rode banner meer
-  // bij lege velden — reportValidity() toont de standaard, lichte hint van
-  // de browser zelf bij het lege veld (via het nieuwe required-attribuut
-  // op beide velden). Dat is genoeg, de gebruiker snapt dit toch al.
-  if (!email) { emailEl.reportValidity(); return; }
-  if (!password) { passwordEl.reportValidity(); return; }
+
+  // TT-247 (12-09-2026): de fout staat bij het veld waar hij over gaat.
+  // Vervangt twee eerdere vormen op dit scherm: reportValidity() van de
+  // browser bij een leeg veld (TT-133, 23-08-2026) en de rode banner
+  // #authError bij een verkeerd wachtwoord. Die banner gaf geen enkele
+  // aanwijzing welk van de twee velden het was.
+  clearFieldErrors('view-auth');
+  const fouten = [];
+  if (!email) {
+    fouten.push([emailEl, 'Vul je e-mailadres in']);
+  } else if (!emailFormaatGeldig(email)) {
+    fouten.push([emailEl, 'Vul een geldig e-mailadres in, bijvoorbeeld jouw@email.nl']);
+  }
+  if (!password) fouten.push([passwordEl, 'Vul je wachtwoord in']);
+  if (showFieldErrors(fouten)) return;
 
   const { error } = await db.auth.signInWithPassword({ email, password });
-  if (error) { showAuthError(friendlyErrorMessage(error)); return; }
+  if (error) {
+    // Een serverantwoord dat over één veld gaat, is ook een veldfout
+    // (huisstijl §13.1). Supabase geeft bij een onbekend e-mailadres dezelfde
+    // fout als bij een verkeerd wachtwoord — met opzet, zodat niemand kan
+    // uitproberen welke adressen een account hebben. De tekst benoemt daarom
+    // het wachtwoord zonder te beweren dat het e-mailadres bestaat.
+    const tekst = friendlyErrorMessage(error);
+    const msg = (error && error.message) ? error.message : '';
+    if (/invalid login credentials|invalid_credentials|invalid grant/i.test(msg)) {
+      showFieldErrors([[passwordEl, tekst]]);
+    } else {
+      // Alles wat niet over één veld gaat — geen netwerk, snelheidsbegrenzing,
+      // verlopen sessie — blijft een systeemmelding. Zie huisstijl §13.1.
+      showToast(tekst);
+    }
+    return;
+  }
   // TT-122 (22-08-2026): e-mailadres onthouden op dit toestel, zodat het
   // veld er bij een volgend bezoek al staat — dan hoeft de eigen
   // autofill-balk van de browser niet eens te verschijnen.
@@ -272,26 +294,44 @@ async function saveUsernameGate() {
 // ─── Auth extras ─────────────────────────────────────────────────────────────
 
 async function forgotPassword() {
-  const email = document.getElementById('loginEmail').value.trim();
-  if (!email) { showAuthError('Vul eerst je e-mailadres in.'); return; }
+  const emailEl = document.getElementById('loginEmail');
+  const email = emailEl.value.trim();
+  clearFieldErrors('view-auth');
+  // TT-247: gaat over het e-mailveld, dus staat de melding daar.
+  if (!email) {
+    showFieldErrors([[emailEl, 'Vul eerst je e-mailadres in']]); return;
+  }
+  if (!emailFormaatGeldig(email)) {
+    showFieldErrors([[emailEl, 'Vul een geldig e-mailadres in, bijvoorbeeld jouw@email.nl']]); return;
+  }
   const { error } = await db.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://talenttent.org/'
   });
-  if (error) { showAuthError(friendlyErrorMessage(error)); return; }
+  if (error) { showToast(friendlyErrorMessage(error)); return; }
   showAuthSuccess('✓ Herstelmail verstuurd! Controleer je inbox.');
 }
 
 async function saveNewPassword() {
-  const pw1 = document.getElementById('resetPassword1').value;
-  const pw2 = document.getElementById('resetPassword2').value;
-  const err = document.getElementById('resetError');
+  const pw1El = document.getElementById('resetPassword1');
+  const pw2El = document.getElementById('resetPassword2');
+  const pw1 = pw1El.value;
+  const pw2 = pw2El.value;
   const suc = document.getElementById('resetSuccess');
-  err.classList.remove('visible'); suc.classList.remove('visible');
-  if (!pw1 || !pw2) { err.textContent = 'Vul beide velden in.'; err.classList.add('visible'); return; }
-  if (pw1.length < 8) { err.textContent = 'Minimaal 8 tekens.'; err.classList.add('visible'); return; }
-  if (pw1 !== pw2) { err.textContent = 'Wachtwoorden komen niet overeen.'; err.classList.add('visible'); return; }
+  suc.classList.remove('visible');
+
+  // TT-247 (12-09-2026): ook hier de fout bij het veld. De banner #resetError
+  // toonde één fout tegelijk boven twee identiek ogende wachtwoordvelden;
+  // welk veld het was, stond er niet bij.
+  clearFieldErrors('view-reset');
+  const fouten = [];
+  if (!pw1) fouten.push([pw1El, 'Vul een nieuw wachtwoord in']);
+  else if (pw1.length < 8) fouten.push([pw1El, 'Kies een wachtwoord van minimaal 8 tekens']);
+  if (!pw2) fouten.push([pw2El, 'Herhaal je nieuwe wachtwoord']);
+  else if (pw1 && pw1 !== pw2) fouten.push([pw2El, 'Deze komt niet overeen met het wachtwoord hierboven']);
+  if (showFieldErrors(fouten)) return;
+
   const { error } = await db.auth.updateUser({ password: pw1 });
-  if (error) { err.textContent = friendlyErrorMessage(error); err.classList.add('visible'); return; }
+  if (error) { showToast(friendlyErrorMessage(error)); return; }
   suc.textContent = '✓ Wachtwoord opgeslagen!';
   suc.classList.add('visible');
   setTimeout(() => showView('myprofile'), 2000);

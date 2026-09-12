@@ -1552,11 +1552,24 @@ async function saveBandRun() {
   const zip  = document.getElementById('bandZip').value.trim();
   const city = document.getElementById('bandCity').value.trim();
   const desc = document.getElementById('bandDescription').value.trim();
-  if (!name) { showToast('Vul een bandnaam in.'); return; }
-  if (!zip || !bandPostcodeResolved || !city) { showToast('Vul een geldige postcode in en wacht tot de woonplaats is gevonden.'); return; }
-  if (!bandState.genres.length) { showToast('Selecteer minimaal 1 genre.'); return; }
+  // TT-247 (12-09-2026): alle fouten tegelijk, elk bij zijn eigen veld —
+  // dezelfde vorm als de registratiewizard. Muzikantkant en bandkant volgen
+  // dezelfde regels (huisstijl, besluit Ronald 11-09-2026). Tot nu toe waren
+  // dit drie opeenvolgende toasts, één per keer.
+  // Het bandformulier staat in view-bands, niet in #bandModal — die modal is
+  // de bandweergave. Gemeten 12-09-2026; met 'bandModal' als bereik werd er
+  // niets opgeruimd.
+  clearFieldErrors('view-bands');
+  const fouten = [];
+  if (!name) fouten.push(['bandName', 'Vul een bandnaam in']);
+  if (!zip || !bandPostcodeResolved || !city) {
+    fouten.push(['bandZip', 'Vul een geldige postcode in. De plaats wordt dan automatisch ingevuld']);
+  }
+  if (!bandState.genres.length) fouten.push(['bandGenreField', 'Kies minimaal één genre']);
+  if (showFieldErrors(fouten)) return;
 
   const mid = await getMyMusicianId();
+  // Gaat niet over een veld in dit formulier, maar over je account — toast.
   if (!mid) { showToast('Maak eerst een muzikantprofiel aan.'); return; }
 
   // TT-252: de laag blokkeert het scherm tijdens het opslaan, zodat een tweede

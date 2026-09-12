@@ -45,7 +45,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260911d">
+<link rel="stylesheet" href="styles.css?v=20260912c">
 </head>
 <body>
 
@@ -169,7 +169,6 @@
         <p style="font-size:13px;color:var(--muted);margin-top:4px;">Welkom terug bij The Talent Tent</p>
       </div>
 
-      <div id="authError" class="auth-error"></div>
       <div id="authSuccess" class="auth-success"></div>
 
       <!-- TT-U08 (12-08-2026): een echt <form> met autocomplete-waarden.
@@ -237,8 +236,8 @@
       <div class="field">
         <label>Gebruikersnaam <span class="req">*</span></label>
         <input type="text" id="username" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck()">
-        <p id="usernameStatus" style="font-size:11px;color:var(--muted);margin-top:4px;"></p>
-        <p style="font-size:11px;color:var(--muted);margin-top:4px;">Dit is wat andere muzikanten van je zien — niet je echte naam. Ben je jonger dan 16? Dan moet dit afwijken van je voornaam.</p>
+        <p id="usernameStatus" class="field-status"></p>
+        <p class="field-hint">Dit is wat andere muzikanten van je zien — niet je echte naam. Ben je jonger dan 16? Dan moet dit afwijken van je voornaam.</p>
       </div>
     </div>
 
@@ -250,7 +249,7 @@
       <div class="field">
         <label>Postcode <span class="req">*</span></label>
         <input type="text" id="zip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onPostcodeInput(this.value)">
-        <p style="font-size:11px;color:var(--muted);margin-top:4px;">Alleen de 4 cijfers, geen huisletters nodig.</p>
+        <p class="field-hint">Alleen de 4 cijfers, geen huisletters nodig.</p>
       </div>
     </div>
 
@@ -259,7 +258,7 @@
         <label>Plaats <span class="req">*</span></label>
         <input type="text" id="city" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acCityManualList')">
         <div class="autocomplete-list" id="acCityManualList"></div>
-        <div id="postcodeStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
+        <div id="postcodeStatus" class="field-status"></div>
       </div>
       <div class="field"></div>
     </div>
@@ -886,6 +885,10 @@
         <div class="field">
           <label>Gebruikersnaam</label>
           <input type="text" id="filterName" placeholder="Bijv. Sanne of RockDrummer92" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
+          <!-- TT-257 (12-09-2026): zonder deze regel is het aanhalingsteken
+               niet te ontdekken. 12px, gedempt, zelfde inspringing als het
+               label (huisstijl §3). -->
+          <p class="field-hint">Tussen "aanhalingstekens" zoekt hij op precies die naam.</p>
         </div>
       </div>
 
@@ -1068,6 +1071,7 @@
         <div class="field">
           <label>Bandnaam</label>
           <input type="text" id="filterBandName" placeholder="Bijv. The Rusty Strings" oninput="scheduleBandAutoSearch()" onkeydown="submitOnEnter(event, runBandSearch)">
+          <p class="field-hint">Tussen "aanhalingstekens" zoekt hij op precies die naam.</p>
         </div>
       </div>
 
@@ -1419,7 +1423,7 @@
           </div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
-          <p style="font-size:11px;color:var(--muted);margin:0;">JPG of PNG, maximaal 5 MB.</p>
+          <p class="field-hint">JPG of PNG, maximaal 5 MB.</p>
           <button class="avatar-remove-btn" id="bandAvatarRemoveBtn" onclick="removeBandAvatar()" style="margin:0;flex-shrink:0;">Foto verwijderen</button>
         </div>
         <input type="file" accept="image/*" class="avatar-upload-input" id="bandAvatarInput" autocomplete="off" onchange="handleBandAvatarUpload(this.files[0]); this.value=''">
@@ -1428,7 +1432,7 @@
           <div class="field">
             <label>Postcode <span class="req">*</span></label>
             <input type="text" id="bandZip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onBandPostcodeInput(this.value)">
-            <p style="font-size:11px;color:var(--muted);margin-top:4px;">Alleen de 4 cijfers, geen huisletters nodig.</p>
+            <p class="field-hint">Alleen de 4 cijfers, geen huisletters nodig.</p>
           </div>
         </div>
         <!-- Punt 4 (25-08-2026, Ronald): Plaats direct onder Postcode, zelfde
@@ -1438,7 +1442,7 @@
             <label>Plaats <span class="req">*</span></label>
             <input type="text" id="bandCity" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acBandCityManualList')">
             <div class="autocomplete-list" id="acBandCityManualList"></div>
-            <div id="bandPostcodeStatus" style="font-size:11px;margin-top:4px;min-height:14px;"></div>
+            <div id="bandPostcodeStatus" class="field-status"></div>
           </div>
         </div>
         <!-- TT-51-uitbreiding (12-08-2026, Ronalds testfeedback): niveau
@@ -1451,7 +1455,7 @@
           <!-- V-21 (13-08-2026): "niveau" → "ervaring" voor de band-schaal. -->
           <label>Ervaring van de band <button type="button" class="niveau-info-btn" onclick="openBandNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></label>
           <div id="bandLevelPicker" class="star-picker"></div>
-          <p style="font-size:11px;color:var(--muted);margin-top:4px;">Klik op de i voor de ervaringsindeling en toelichting.</p>
+          <p class="field-hint">Klik op de i voor de ervaringsindeling en toelichting.</p>
         </div>
         <div class="field" style="margin-bottom:16px;">
           <label>Beschrijving</label>
@@ -1747,7 +1751,6 @@
         <div style="font-family:'Roboto',sans-serif;font-size:28px;color:var(--accent);letter-spacing:1px;">Nieuw wachtwoord</div>
         <p style="font-size:13px;color:var(--muted);margin-top:6px;">Kies een nieuw wachtwoord voor je account.</p>
       </div>
-      <div id="resetError" class="auth-error"></div>
       <div id="resetSuccess" class="auth-success"></div>
       <div class="field" style="margin-bottom:20px;">
         <label>Nieuw wachtwoord <span class="req">*</span></label>
@@ -1830,8 +1833,8 @@
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Nieuw: andere muzikanten zien voortaan een gebruikersnaam in plaats van je echte naam. Kies er eentje om verder te gaan.</p>
     <div class="field">
       <input type="text" id="usernameGateInput" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck2()" onkeydown="submitOnEnter(event, saveUsernameGate)">
-      <p id="usernameGateStatus" style="font-size:11px;color:var(--muted);margin-top:4px;"></p>
-      <p style="font-size:11px;color:var(--muted);margin-top:4px;" id="usernameGateAgeHint"></p>
+      <p id="usernameGateStatus" class="field-status"></p>
+      <p id="usernameGateAgeHint" class="field-hint"></p>
     </div>
     <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="saveUsernameGate()">Opslaan en verdergaan →</button>
     <!-- TT-138 (23-08-2026): dit scherm heeft bewust geen kruisje/Annuleren
@@ -1952,7 +1955,7 @@
           <span style="color:var(--muted);font-size:13px;">km</span>
         </div>
       </div>
-      <div id="memberSearchCityStatus" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:14px;"></div>
+      <div id="memberSearchCityStatus" class="field-status"></div>
     </div>
     <div id="memberSearchResults"></div>
   </div>
@@ -2122,12 +2125,12 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20260911d"></script>
-<script src="utils.js?v=20260911e"></script>
-<script src="auth.js?v=20260911b"></script>
+<script src="utils.js?v=20260912a"></script>
+<script src="auth.js?v=20260912a"></script>
 <script src="postcode.js?v=20260910a"></script>
-<script src="wizard.js?v=20260911b"></script>
-<script src="search.js?v=20260911c"></script>
-<script src="musicians.js?v=20260911b"></script>
+<script src="wizard.js?v=20260912a"></script>
+<script src="search.js?v=20260912a"></script>
+<script src="musicians.js?v=20260912a"></script>
 <script src="bands.js?v=20260910a"></script>
 <script src="messages.js?v=20260911a"></script>
 <script src="modals-shared.js?v=20260910a"></script>

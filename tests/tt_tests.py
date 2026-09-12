@@ -419,8 +419,15 @@ def blok_browser():
           await new Promise(r => setTimeout(r, 150));
           return document.getElementById('searchResults').innerText;
         }""")
+        # Gecorrigeerd 12-09-2026: deze controle zocht naar "Geen muzikanten
+        # binnen 5 km". Die tekst staat nergens in de code en heeft er ook
+        # nooit gestaan; verruimdNotice() in search.js schrijft "Binnen 5 km
+        # vonden we nog geen match." Gemeten in de browser, 12-09-2026: de
+        # verruiming zelf werkt wel — musicianVerruimd komt op {van:5, naar:50}
+        # en de uitlegregel verschijnt. De toets was fout, niet de app. De
+        # eindstand "69 van 69" in actielijst.md van 11-09-2026 klopte dus niet.
         check("bij nul treffers wordt de straal verruimd",
-              "Geen muzikanten binnen 5 km" in verruimd, verruimd[:200])
+              "Binnen 5 km vonden we nog geen match" in verruimd, verruimd[:200])
         check("het dichtstbijzijnde resultaat staat er wel",
               "1 muzikant gevonden" in verruimd, verruimd[:200])
 
@@ -480,6 +487,205 @@ def blok_browser():
         check("het zoekscherm laat verticaal scrollen aan de browser",
               "pan-y" in wiel["touchActie"], wiel["touchActie"])
         page.evaluate("closeWheelSheet()")
+
+        print("\nBlok 12 — veldfouten (TT-247) en zoeken op naam (TT-257)")
+
+        # De vorm: rode rand om het veld, witte regel eronder. Nooit rode
+        # tekst — huisstijl §1.2, besluit Ronald 12-09-2026.
+        vorm = page.evaluate("""async () => {
+          showView('auth');
+          document.getElementById('loginEmail').value = 'ronald@talenttent.org';
+          document.getElementById('loginPassword').value = '';
+          await signIn();
+          // 450 ms: styles.css animeert border-color in 0,2 s, en
+          // showFieldErrors() focust na 300 ms. Meten we eerder, dan lezen we
+          // een tussenkleur — gemeten 12-09-2026: rgb(192,89,73) i.p.v.
+          // rgb(229,83,61).
+          await new Promise(r => setTimeout(r, 450));
+          const veld  = document.getElementById('loginPassword');
+          const regel = document.querySelector('#view-auth .field-msg');
+          const cs    = regel ? getComputedStyle(regel) : null;
+          const vs    = getComputedStyle(veld);
+          const icoon = regel ? regel.querySelector('svg.field-msg-icon') : null;
+          return {
+            veldGemarkeerd: veld.classList.contains('field-error'),
+            ariaInvalid: veld.getAttribute('aria-invalid'),
+            randVeld: vs.borderTopColor,
+            regelTekst: regel ? regel.innerText.trim() : '',
+            regelKleur: cs ? cs.color : '',
+            regelGrootte: cs ? cs.fontSize : '',
+            regelInspringing: cs ? cs.paddingLeft : '',
+            heeftIcoon: !!icoon,
+            regelNaWrap: !!(regel && regel.previousElementSibling
+                            && regel.previousElementSibling.classList.contains('password-wrap'))
+          };
+        }""")
+        check("het foute veld krijgt een rode rand",
+              vorm["randVeld"] == "rgb(229, 83, 61)", vorm["randVeld"])
+        check("het foute veld krijgt aria-invalid",
+              vorm["veldGemarkeerd"] and vorm["ariaInvalid"] == "true", json.dumps(vorm))
+        check("de foutregel is wit, niet rood (huisstijl §1.2)",
+              vorm["regelKleur"] == "rgb(240, 240, 240)", vorm["regelKleur"])
+        check("de foutregel is 12px en springt in op --field-inset",
+              vorm["regelGrootte"] == "12px" and vorm["regelInspringing"] == "8px",
+              f"{vorm['regelGrootte']} / {vorm['regelInspringing']}")
+        check("de foutregel heeft een lijn-icoon, geen emoji", vorm["heeftIcoon"], "")
+        check("de foutregel staat onder de wachtwoord-wrap, niet ertussen",
+              vorm["regelNaWrap"], "")
+        check("de tekst zegt wat er moet gebeuren",
+              vorm["regelTekst"] == "Vul je wachtwoord in", vorm["regelTekst"])
+
+        # Alle fouten tegelijk, en weg zodra je dat veld wijzigt.
+        gedrag = page.evaluate("""async () => {
+          showView('auth');
+          clearFieldErrors('view-auth');
+          document.getElementById('loginEmail').value = '';
+          document.getElementById('loginPassword').value = '';
+          await signIn();
+          await new Promise(r => setTimeout(r, 60));
+          const aantal = document.querySelectorAll('#view-auth .field-msg').length;
+          const email = document.getElementById('loginEmail');
+          email.value = 'r@talenttent.org';
+          email.dispatchEvent(new Event('input', { bubbles: true }));
+          await new Promise(r => setTimeout(r, 20));
+          return {
+            aantal,
+            naTypen: document.querySelectorAll('#view-auth .field-msg').length,
+            emailNogFout: email.classList.contains('field-error')
+          };
+        }""")
+        check("alle fouten tegelijk, niet één voor één",
+              gedrag["aantal"] == 2, f"{gedrag['aantal']} foutregels")
+        check("de markering verdwijnt zodra je dat veld wijzigt",
+              gedrag["naTypen"] == 1 and not gedrag["emailNogFout"], json.dumps(gedrag))
+
+        # TT-258: het e-mailformaat wordt gecontroleerd vóór verzenden.
+        formaat = page.evaluate("""async () => {
+          showView('auth');
+          clearFieldErrors('view-auth');
+          document.getElementById('loginEmail').value = 'testeremail';
+          document.getElementById('loginPassword').value = 'watdanook';
+          await signIn();
+          await new Promise(r => setTimeout(r, 60));
+          const regel = document.querySelector('#view-auth .field-msg');
+          return {
+            tekst: regel ? regel.innerText.trim() : '',
+            bijEmail: !!(regel && regel.previousElementSibling
+                         && regel.previousElementSibling.id === 'loginEmail'),
+            helpers: [typeof emailFormaatGeldig, typeof setFieldError,
+                      typeof clearFieldErrors, typeof showFieldErrors].join(','),
+            geldig: [emailFormaatGeldig('testeremail'), emailFormaatGeldig('a@b'),
+                     emailFormaatGeldig('jouw@email.nl')].join(',')
+          };
+        }""")
+        check("een verkeerd e-mailformaat wordt bij het veld gemeld (TT-258)",
+              formaat["bijEmail"] and "geldig e-mailadres" in formaat["tekst"],
+              json.dumps(formaat))
+        check("emailFormaatGeldig wijst af wat geen adres is",
+              formaat["geldig"] == "false,false,true", formaat["geldig"])
+        check("de veldfout-functies bestaan app-breed",
+              formaat["helpers"] == "function,function,function,function",
+              formaat["helpers"])
+        page.evaluate("clearFieldErrors('view-auth')")
+
+        # De oude bannerelementen zijn weg (§2.10, dode code meteen weg).
+        check("de rode bannerbalken zijn verdwenen",
+              page.evaluate("!document.getElementById('authError') "
+                            "&& !document.getElementById('resetError')"),
+              "authError of resetError staat er nog")
+        check("showAuthError() bestaat niet meer",
+              page.evaluate("typeof showAuthError === 'undefined'"),
+              "showAuthError is nog gedefinieerd")
+
+        # De bandkant volgt dezelfde regels (huisstijl, Ronald 11-09-2026).
+        bandkant = page.evaluate("""async () => {
+          showView('bands');
+          clearFieldErrors('view-bands');
+          ['bandName', 'bandZip', 'bandCity'].forEach(
+            i => { document.getElementById(i).value = ''; });
+          bandState.genres = [];
+          await saveBandRun();
+          await new Promise(r => setTimeout(r, 80));
+          return {
+            velden: [...document.querySelectorAll('#view-bands .field-error')].map(e => e.id),
+            regels: [...document.querySelectorAll('#view-bands .field-msg')].map(
+              e => e.innerText.trim())
+          };
+        }""")
+        check("het bandformulier markeert alle drie de velden tegelijk",
+              bandkant["velden"] == ["bandName", "bandZip", "bandGenreField"],
+              json.dumps(bandkant["velden"]))
+        check("ook een keuzeveld (genre) krijgt de markering",
+              len(bandkant["regels"]) == 3
+              and bandkant["regels"][2] == "Kies minimaal \u00e9\u00e9n genre",
+              json.dumps(bandkant["regels"], ensure_ascii=False))
+        page.evaluate("clearFieldErrors('view-bands')")
+
+        # TT-257: zonder aanhalingstekens een deel, mét aanhalingstekens exact.
+        zoek = page.evaluate("""() => ({
+          deel:      naamZoekTerm('Colin'),
+          exact:     naamZoekTerm('"Colin"'),
+          leeg:      naamZoekTerm('   '),
+          legeQuote: naamZoekTerm('""'),
+          m1: naamMatcht(naamZoekTerm('Colin'), 'Colinda', 'drummer12'),
+          m2: naamMatcht(naamZoekTerm('"Colin"'), 'Colinda', 'drummer12'),
+          m3: naamMatcht(naamZoekTerm('"Colin"'), 'Colin', 'drummer12'),
+          m4: naamMatcht(naamZoekTerm('n d'), 'Colin', 'drummer12'),
+          m5: naamMatcht(null, 'Colinda', 'drummer12')
+        })""")
+        check("zonder aanhalingstekens matcht een deel van de naam",
+              zoek["deel"] == {"tekst": "colin", "exact": False}, json.dumps(zoek["deel"]))
+        check("met aanhalingstekens moet het exact zijn",
+              zoek["exact"] == {"tekst": "colin", "exact": True}, json.dumps(zoek["exact"]))
+        check("een lege zoekterm is geen filter",
+              zoek["leeg"] is None and zoek["legeQuote"] is None, json.dumps(zoek))
+        check("'Colin' vindt Colinda nog steeds", zoek["m1"], "")
+        check("'\"Colin\"' vindt Colinda niet meer", not zoek["m2"], "")
+        check("'\"Colin\"' vindt Colin wel", zoek["m3"], "")
+        check("een zoekterm matcht nooit over twee velden heen",
+              not zoek["m4"], "'n d' matchte over de grens tussen fname en username")
+        check("geen zoekterm sluit niemand uit", zoek["m5"], "")
+
+        # TT-257 (besluit Ronald 12-09-2026): zoek je op naam, dan blijft de
+        # straal staan. Bewuste uitzondering op TT-62.
+        straal = page.evaluate("""async () => {
+          showView('search');
+          hasOwnProfile = false;
+          window.TT_STUB.rpcResults.tt_resolve_search_origin = [{ lat: 52.0, lng: 4.3 }];
+          let gevraagd = [];
+          window.TT_STUB.rpcResults.tt_search_musicians_anon = (p) => {
+            gevraagd.push(p.radius_km);
+            return [];
+          };
+          document.getElementById('filterCity').value = 'Delft';
+          document.getElementById('filterRadius').value = '5';
+          document.getElementById('filterName').value = 'Colin';
+          await runSearch();
+          await new Promise(r => setTimeout(r, 200));
+          const metNaam = { stralen: gevraagd.slice(),
+                            tekst: document.getElementById('searchResults').innerText };
+          gevraagd = [];
+          document.getElementById('filterName').value = '';
+          document.getElementById('filterRadius').value = '5';
+          await runSearch();
+          await new Promise(r => setTimeout(r, 300));
+          return { metNaam, zonderNaam: gevraagd.slice() };
+        }""")
+        # Gemeten 12-09-2026: de RPC wordt hier twee keer aangeroepen met
+        # dezelfde straal (een lopende auto-zoekopdracht uit een eerdere
+        # controle in dit blok). Wat telt is dat er nooit een ruimere straal
+        # bij zit — niet hoe vaak dezelfde straal wordt gevraagd.
+        check("bij zoeken op naam blijft het bij de ingestelde straal",
+              set(straal["metNaam"]["stralen"]) == {5},
+              f"gevraagde stralen: {straal['metNaam']['stralen']}")
+        check("zonder naam verruimt de app nog steeds wel (TT-62)",
+              len(straal["zonderNaam"]) > 1, f"{straal['zonderNaam']}")
+        check("de lege staat wijst dan naar de naam, niet naar de filters",
+              "Deze muzikant staat er niet" in straal["metNaam"]["tekst"]
+              and "binnen 5 km" in straal["metNaam"]["tekst"],
+              straal["metNaam"]["tekst"][:200])
+        page.evaluate("document.getElementById('filterName').value = ''")
+        page.evaluate("window.TT_STUB.reset()")
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:

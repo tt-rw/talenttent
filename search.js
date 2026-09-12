@@ -480,7 +480,9 @@ async function runSearch(straalOverride) {
   try {
     // Naam + Plaats: werken altijd, zowel met matching (bovenop de straal)
     // als zonder eigen profiel (als directe zoekopdracht) — vindbaarheid (Presentatie).
-    const nameQuery = document.getElementById('filterName').value.trim().toLowerCase();
+    // TT-257 (12-09-2026): zoekstandaard — zonder aanhalingstekens matcht een
+    // deel van de naam, mét aanhalingstekens moet het exact zijn.
+    const nameTerm = naamZoekTerm(document.getElementById('filterName').value);
     const cityQuery = document.getElementById('filterCity').value.trim().toLowerCase();
     const radius = straalOverride !== undefined ? straalOverride : parseRadiusInput('filterRadius');
 
@@ -488,6 +490,11 @@ async function runSearch(straalOverride) {
        de eerstvolgende ruimere straal. Geeft undefined terug als er niets
        ruimers meer is; dan pas verschijnt de lege staat. */
     const ruimerZoeken = (straalActief) => {
+      // TT-257 (besluit Ronald, 12-09-2026): zoek je op naam, dan verruimt de
+      // app niet. Je zoekt één bepaalde persoon, geen nieuwe muzikant in de
+      // buurt — iemand twee provincies verderop is dan geen beter antwoord
+      // dan geen antwoord. Bewuste uitzondering op TT-62.
+      if (nameTerm) return undefined;
       if (!straalActief) return undefined;
       const volgende = volgendeStraal(radius);
       if (volgende === undefined) return undefined;
@@ -500,7 +507,10 @@ async function runSearch(straalOverride) {
       musicianVerruimd = (straalOverride !== undefined && volgendeStraal(radius) === undefined)
         ? { van: musicianVerruimd ? musicianVerruimd.van : null, naar: radius, leeg: true }
         : null;
-      renderSearchResults([], { verruimd: musicianVerruimd });
+      renderSearchResults([], {
+        verruimd: musicianVerruimd,
+        naamGezocht: !!nameTerm, straal: radius
+      });
     };
 
     let musicians;
@@ -642,7 +652,11 @@ async function runSearch(straalOverride) {
       // — voor een bezoeker is m.fname leeg, dus dan blijft het zoeken op
       // gebruikersnaam. Anders zou je op een naam kunnen zoeken die je zelf
       // nergens te zien krijgt.
-      if (nameQuery && !`${m.fname || ''} ${m.username || ''}`.toLowerCase().includes(nameQuery)) return false;
+      // TT-257 (12-09-2026): voornaam en gebruikersnaam worden elk apart
+      // getoetst. Tot nu toe stonden ze met een spatie aan elkaar geplakt in
+      // één tekst, waardoor een zoekterm mét spatie over de grens tussen de
+      // twee velden kon matchen.
+      if (!naamMatcht(nameTerm, m.fname, m.username)) return false;
       if (cityQuery && !skipCityTextFilter && !(m.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterInstruments.length) {
         const mInstr = m.musician_instruments.map(x => x.instrument);
@@ -714,12 +728,18 @@ function renderSearchResults(musicians, opts) {
   if (!total) {
     // TT-62: is er al automatisch tot heel Nederland verruimd, dan is de
     // straal niet meer het probleem. Dan die raad ook niet geven.
-    const uitleg = opts.verruimd && opts.verruimd.leeg
-      ? 'Ook in heel Nederland staat er niemand die aan deze filters voldoet. Haal een filter weg.'
-      : 'Pas je filters of zoekstraal aan, en controleer of je eigen postcode in je profiel klopt.';
+    // TT-257 (12-09-2026): zocht je op naam, dan is de raad "pas je filters
+    // aan" verkeerd. Er is één filter dat ertoe doet — de naam zelf — en de
+    // straal is bewust blijven staan.
+    const kop = opts.naamGezocht ? 'Deze muzikant staat er niet' : 'Geen muzikanten gevonden';
+    const uitleg = opts.naamGezocht
+      ? `Niemand met deze naam binnen ${straalTekst(opts.straal)}. Controleer de spelling, of vergroot je zoekstraal.`
+      : (opts.verruimd && opts.verruimd.leeg
+        ? 'Ook in heel Nederland staat er niemand die aan deze filters voldoet. Haal een filter weg.'
+        : 'Pas je filters of zoekstraal aan, en controleer of je eigen postcode in je profiel klopt.');
     el.innerHTML = `
       <div class="no-results">
-        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen muzikanten gevonden</p>
+        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">${kop}</p>
         <p style="font-size:13px;">${uitleg}</p>
       </div>`;
     return;
@@ -1046,12 +1066,16 @@ async function runBandSearch(straalOverride) {
   try {
     // Naam + Plaats: werken altijd, zowel met matching (bovenop de straal)
     // als zonder eigen profiel (als directe zoekopdracht) — vindbaarheid (Presentatie).
-    const nameQuery = document.getElementById('filterBandName').value.trim().toLowerCase();
+    // TT-257 (12-09-2026): zelfde zoekstandaard als bij muzikanten.
+    const nameTerm = naamZoekTerm(document.getElementById('filterBandName').value);
     const cityQuery = document.getElementById('filterBandCity').value.trim().toLowerCase();
     const radius = straalOverride !== undefined ? straalOverride : parseRadiusInput('filterBandRadius');
 
     // TT-62: zelfde twee hulpjes als in runSearch().
     const ruimerZoeken = (straalActief) => {
+      // TT-257: zelfde uitzondering als bij muzikanten — zoek je op bandnaam,
+      // dan blijft de straal staan en verruimt de app niet.
+      if (nameTerm) return undefined;
       if (!straalActief) return undefined;
       const volgende = volgendeStraal(radius);
       if (volgende === undefined) return undefined;
@@ -1063,7 +1087,10 @@ async function runBandSearch(straalOverride) {
       bandVerruimd = (straalOverride !== undefined && volgendeStraal(radius) === undefined)
         ? { van: bandVerruimd ? bandVerruimd.van : null, naar: radius, leeg: true }
         : null;
-      renderBandSearchResults([], { verruimd: bandVerruimd });
+      renderBandSearchResults([], {
+        verruimd: bandVerruimd,
+        naamGezocht: !!nameTerm, straal: radius
+      });
     };
 
     let bands;
@@ -1155,7 +1182,7 @@ async function runBandSearch(straalOverride) {
     const bandNiveauFilterActive = !!(bandNiveauMinVal || bandNiveauMaxVal);
 
     const filtered = (bands || []).filter(b => {
-      if (nameQuery && !(b.name || '').toLowerCase().includes(nameQuery)) return false;
+      if (!naamMatcht(nameTerm, b.name)) return false;
       if (cityQuery && !skipCityTextFilter && !(b.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterBandGenresList.length && !filterBandGenresList.some(g => (b.genres||[]).includes(g))) return false;
       // TT-236 (10-09-2026): het instrumentfilter gold alleen met een eigen
@@ -1201,11 +1228,14 @@ function renderBandSearchResults(bands, opts) {
   const total = opts.total != null ? opts.total : bands.length;
 
   if (!total) {
-    // TT-62: zelfde redenering als bij Muzikanten.
-    const uitleg = opts.verruimd && opts.verruimd.leeg
-      ? 'Ook in heel Nederland staat er geen band die aan deze filters voldoet. Haal een filter weg.'
-      : 'Pas je filters of zoekstraal aan, en controleer of je eigen postcode in je profiel klopt.';
-    el.innerHTML = `<div class="no-results"><p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen bands gevonden</p><p style="font-size:13px;">${uitleg}</p></div>`;
+    // TT-62 en TT-257: zelfde redenering als bij Muzikanten.
+    const kop = opts.naamGezocht ? 'Deze band staat er niet' : 'Geen bands gevonden';
+    const uitleg = opts.naamGezocht
+      ? `Geen band met deze naam binnen ${straalTekst(opts.straal)}. Controleer de spelling, of vergroot je zoekstraal.`
+      : (opts.verruimd && opts.verruimd.leeg
+        ? 'Ook in heel Nederland staat er geen band die aan deze filters voldoet. Haal een filter weg.'
+        : 'Pas je filters of zoekstraal aan, en controleer of je eigen postcode in je profiel klopt.');
+    el.innerHTML = `<div class="no-results"><p style="font-size:16px;font-weight:600;margin-bottom:8px;">${kop}</p><p style="font-size:13px;">${uitleg}</p></div>`;
     return;
   }
   const verruimd = verruimdNotice(opts.verruimd, 'bands');

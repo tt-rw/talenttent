@@ -22,6 +22,18 @@
        knop-/badgestijl (rand-alleen, geen vlak) — overgenomen uit
        profiel-v2.html, hier op één plek instelbaar voor de hele app. */
     --line: 1.5px;
+
+    /* Lettermaat voor hulptekst, statusregel en foutregel (TT-260,
+       12-09-2026). Huisstijl §2 beschreef deze variabele al, maar ze stond
+       nergens in :root; de zeven regels die haar gebruiken waren daardoor
+       stilzwijgend ongeldig en erfden 16px van hun ouder.
+
+       --fs-md, --fs-lg en --fs-display hebben hier kort gestaan omdat de
+       huisstijl ze noemde. Ze werden door geen enkele regel gebruikt, dus ze
+       zijn dezelfde dag weer weggehaald (§2.10, dode code meteen weg). Een
+       echte typografische schaal is TT-261, en die komt dan op de 4px-schaal
+       — 15px stond daar niet op, en dat was terecht Ronalds bezwaar. */
+    --fs-sm: 12px;
     /* TT-244 (10-09-2026, melding Ronald): één vlak en één randkleur voor élk
        veld — invoerveld, keuzeveld en wielveld. Deze twee waarden komen uit de
        contrastfix van 12-08-2026, die toen alleen op invoervelden landde.
@@ -288,7 +300,8 @@
     font-family: 'Roboto', sans-serif;
     /* TT-U22 (12-08-2026): 16px is het minimum. Safari op iOS zoomt
        automatisch in bij focus op een veld onder 16px, en zoomt niet terug
-       uit. Bewust NIET via var(--fs-md) — de huisstijl blijft 15px. */
+       uit. Een invoerveld staat daarom altijd op 16px, los van welke
+       typografische schaal er verder komt (TT-261). */
     font-size: 16px;
     padding: 12px var(--field-inset);
     outline: none;
@@ -300,6 +313,58 @@
   input:focus, select:focus, textarea:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(245,197,24,0.1);
+  }
+
+  /* Veldfouten (TT-247, vorm vastgesteld 12-09-2026) — huisstijl §13.1.
+     De rand is rood, de tekst is wit. Nooit rode tekst (huisstijl §1.2).
+
+     De focusregel hierboven staat ook op :focus en zou anders winnen — dan
+     verdween de rode rand juist op het veld waar de app naartoe schuift en
+     dat ze focust. Daarom staat :focus hier expliciet bij.
+
+     De twee :not()-uitsluitingen staan er omdat de basisregel voor velden
+     hieronder ze ook heeft. Zonder die twee is deze regel mínder specifiek
+     dan de basisregel en wint de gewone grijze rand — gemeten 12-09-2026. */
+  .picker-field.field-error,
+  input.field-error:not([type="checkbox"]):not([type="radio"]),
+  select.field-error, textarea.field-error,
+  input.field-error:not([type="checkbox"]):not([type="radio"]):focus,
+  select.field-error:focus, textarea.field-error:focus {
+    border-color: var(--danger);
+  }
+
+  /* Zelfde reden: `.field > p` hierboven is specifieker dan een losse klasse
+     en zou de kleur op --muted en de maat op de geërfde 16px houden. */
+  .field-msg,
+  .field > .field-msg {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    /* Binnen een .field zorgt `gap: 8px` al voor de tussenruimte; een eigen
+       marge zou die verdubbelen tot 16px. Zie huisstijl §3. */
+    margin: 0;
+    padding-left: var(--field-inset);
+    font-size: var(--fs-sm);
+    line-height: 16px;
+    color: var(--text);
+  }
+
+  .field-msg-icon {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 1px;
+  }
+
+  /* Hulptekst onder een zoekveld — 12px, gedempt, zelfde inspringing als het
+     label en de foutregel (huisstijl §3). */
+  .field-hint,
+  .field > .field-hint {
+    margin: 0;
+    padding-left: var(--field-inset);
+    font-size: var(--fs-sm);
+    line-height: 16px;
+    color: var(--muted);
   }
 
   /* Bugfix 12-08-2026 (melding Ronald: "breed veld", onduidelijk wat ermee
@@ -1657,19 +1722,6 @@
     padding: 36px;
   }
 
-  .auth-error {
-    background: rgba(229,83,61,0.1);
-    border: 1px solid rgba(229,83,61,0.3);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 13px;
-    color: var(--danger);
-    margin-bottom: 16px;
-    display: none;
-  }
-
-  .auth-error.visible { display: block; }
-
   .auth-success {
     background: rgba(76,175,80,0.1);
     border: 1px solid rgba(76,175,80,0.3);
@@ -2725,7 +2777,9 @@
   .tile:active { background: var(--surface2); }
   .tile-title { font-size: 17px; font-weight: 700; }
   .tile-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .field-status { font-size: 11px; margin-top: 5px; min-height: 14px; }
+  /* TT-260 (12-09-2026): was 11px met een eigen marge van 5px. Geen van
+     beide is een maat uit de huisstijl (§2: 12px; §3: 4px-schaal). */
+  .field-status { font-size: var(--fs-sm); color: var(--muted); margin-top: 4px; min-height: 16px; }
   /* TT-228 (09-09-2026): zelfde grid-aanpak als .btn-row hierboven, met
      dezelfde 8px-tussenruimte (was 10px, geen veelvoud van 4 — huisstijl
      §3). Vervangt de flex-aanpak van TT-207 (04-09-2026): die noemde het
