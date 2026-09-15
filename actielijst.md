@@ -1,6 +1,109 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 15-09-2026 (vervolg) — **TT-267: de bannerbalk bleef halverwege twee vlakken staan. Opgelost, plus twee bijstellingen van Ronald. Eindstand 166 van 166.**
+**Laatste update:** 15-09-2026 (vervolg 3) — **TT-269: elf gouden balken weg uit Profiel bewerken, het bandprofiel krijgt dezelfde koprij, en de inhoud begint overal direct onder de kop. Eindstand 177 van 177.**
+
+**Aanleiding.** Ronald: *"voer dit door in de hele app. bandprofiel, maar ook
+het profiel bewerken staan veel balken. voer dezelfde afstand door."*
+
+**Wat er stond.** `.hero-band` — een gouden balk van 8px met 20px marge
+eronder — stond **elf keer** in `index.html`: boven het tegeloverzicht en boven
+elk van de vijf bewerkschermen, plus de losgetrokken varianten. Het was een
+eigen klasse naast `.profile-header-band`, met dezelfde vorm en hetzelfde doel.
+Beide zijn nu weg.
+
+**Wat er gebouwd is.**
+1. **Alle elf gouden balken verwijderd**, plus de klasse `.hero-band` zelf
+   (§2.10). De titel van een scherm is nu het eerste dat je ziet.
+2. **`main` begint op mobiel direct onder de kop** (`padding: 0 16px 60px`, was
+   `32px 16px 60px`). Dat is dezelfde afstand die Mijn Profiel al had sinds
+   Ronalds besluit van 22-08-2026 — die stond tot nu toe alleen daar.
+3. **Het bandprofiel krijgt dezelfde koprij als het muzikantprofiel**:
+   woordmerk links, sluiten-kruisje op de plek van de hamburger. De klassen
+   `.modal-kop` en `.modal-box-kop` van TT-268 werden hergebruikt; er is geen
+   tweede variant gemaakt. Ronalds staande regel van 11-09-2026 — muzikantkant
+   en bandkant volgen dezelfde regels — is hiermee ingelost.
+4. **`.modal-box-kop` is een kolom geworden die zelf niet scrolt.** Het
+   bandprofiel heeft geen sticky voettekst; zonder deze regel zou de koprij
+   met de inhoud mee naar boven scrollen en alsnog verdwijnen. De inhoud zit
+   nu in een eigen scrollvlak eronder.
+
+**Testset:** blok 15 uitgebreid met vier controles — geen enkele `.hero-band`
+meer, Profiel bewerken begint op 0px van boven en 16px van opzij, het
+bandprofiel heeft koprij, woordmerk en kruis, en zijn inhoud scrolt onder die
+koprij door. **Eindstand: 177 van 177 geslaagd.**
+
+**Nog niet gedaan, bewust.** De overige elf modals (bericht sturen,
+zoekvoorkeuren, lid uitnodigen, juridische teksten, instrumentkeuze en de
+bevestigingsvragen) hebben nog geen koprij. Dat is geen vergeten werk maar een
+open vraag: een woordmerk boven een korte bevestigingsvraag is waarschijnlijk
+te zwaar. Zie de rij in Deel 1/P2.
+
+Gewijzigd: `index.html`, `styles.css`, `tests/tt_tests.py`, `actielijst.md`.
+
+**Vorige update:** 15-09-2026 (vervolg 2) — **TT-268: kop 12px lucht, gouden balk weg, en het profiel van iemand anders houdt de koprij met het woordmerk. Eindstand 173 van 173.**
+
+**Aanleiding.** Ronald over de bannerbalk: *"het is slechter geworden. het is
+simpel. voeg de hero toe, maar zonder hamburgermenu. in plaats daarvan komt het
+sluiten-kruisje."* Plus, met twee rode kaders op een schermafdruk: de zwarte
+band boven én onder het woordmerk mag kleiner.
+
+**Wat er misging, en waarom het geen bug was.** Het profiel van iemand anders is
+een modal, en die dekte de hele kop af. Je zag alleen een gouden balk met een
+zwevend kruisje erboven — geen woordmerk, geen herkenbaar scherm. Daar kwam bij
+dat het kruisje op 15-09-2026 verplaatst was naar 24/24, wat zonder kop willekeurig
+oogt.
+
+**Besluiten van Ronald, in volgorde.**
+1. **De gouden balk bovenaan het profiel gaat weg.** De hero begint direct onder
+   de kop.
+2. **12px lucht boven en onder het woordmerk**, in plaats van 18px. De kop gaat
+   daarmee van 80px naar 68px. App-breed, niet alleen op het profiel.
+3. **Hamburger en sluiten-kruisje staan op de middellijn van het woordmerk.**
+4. **Het profielscherm van iemand anders krijgt dezelfde koprij** als de rest
+   van de app, met het kruisje op de plek van de hamburger.
+
+**Hoe het gebouwd is.**
+- **`--kop-lucht: 12px` in `:root`.** De hamburgerknop wordt met een negatieve
+  verschuiving uit `.app-nav-row` omhooggetrokken; dat getal was met de hand
+  gezet (-62px) en zou bij elke wijziging van de kop gaan afwijken. Nu is het
+  `calc(-1 * (var(--kop-lucht) + 44px))` — één waarde, twee plekken die vanzelf
+  kloppen (§2.11).
+- **`env(safe-area-inset-top)` staat in de kopopvulling.** In de browser is die
+  nul. Wordt de app ooit echt geïnstalleerd, dan schuift alles even ver mee; de
+  verschuiving van de hamburger blijft kloppen omdat het verschil gelijk blijft.
+- **`.modal-kop`, een koprij binnen een modal die een heel scherm is.** Woordmerk
+  links, kruis rechts, `align-items: center` — zo staat het kruis op de
+  middellijn van het woordmerk zonder los getal dat kan gaan afwijken. Het kruis
+  staat daar in de rij mee (`position: static`), niet los erboven.
+- **`.modal-box-kop`, een klasse en geen uitzondering.** Een modal met een koprij
+  lijnt zijn inhoud uit op 16px en heeft geen lucht meer boven de eerste inhoud.
+  Elke volgende modal met een koprij krijgt dit vanzelf.
+- **Gemeten, niet aangenomen:** `.modal-box-sticky-footer .modal-scroll-area`
+  zet `padding: 32px` en staat verderop in het bestand met dezelfde zwaarte. De
+  nieuwe regel stond er eerst vóór en verloor. Nu staat hij erna. Zonder die
+  meting was de hero 32px ingesprongen blijven staan.
+
+**Dode code meteen weg (§2.10).** `.profile-header-band` in `styles.css` en de
+variabele `headerBandStyle` in `musicians.js` zijn verwijderd; niets gebruikt ze
+nog.
+
+**Testset:** blok 15 uitgebreid met zeven controles — 12px boven en onder het
+woordmerk, kophoogte 68px, de hamburger op de middellijn van het woordmerk, de
+gouden balk weg, de hero als eerste element, de koprij met woordmerk in de
+modal, en het kruis in die rij. De bestaande kruis-toets vergelijkt nu de
+rechterrand in plaats van het midden: de hamburgerknop is 48px breed en het
+kruis 33px, dus hun middens liggen per definitie niet gelijk. **Eindstand: 173
+van 173 geslaagd.**
+
+**Openstaand, de bijpassende kant.** Het bandprofiel (`#bandModal`) is nog een
+modal zonder koprij. Ronalds staande regel is dat muzikantkant en bandkant
+dezelfde regels volgen. Niet meegenomen omdat hij er niet naar gekeken heeft;
+zie de rij in Deel 1/P2.
+
+Gewijzigd: `index.html`, `styles.css`, `musicians.js`, `tests/tt_tests.py`,
+`actielijst.md`.
+
+**Vorige update:** 15-09-2026 (vervolg) — **TT-267: de bannerbalk bleef halverwege twee vlakken staan. Opgelost, plus twee bijstellingen van Ronald. Eindstand 166 van 166.**
 
 **Aanleiding.** Ronald, met een schermafdruk van de uitgelogde
 muzikantenpagina op zijn telefoon: *"de banner staat nog niet helemaal goed"*
@@ -3068,6 +3171,12 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 ---
 
 ## P2 — Verzorging en indruk
+
+| ID | Ticket | Kern |
+|---|---|---|
+| **TT-270** | Krijgen de overige modals ook een koprij? | **Nieuw, 15-09-2026.** TT-268 en TT-269 gaven het muzikant- en het bandprofiel een koprij met woordmerk en sluiten-kruisje. Elf andere modals hebben die niet: bericht sturen, zoekvoorkeuren, lid uitnodigen, juridische teksten, instrumentkeuze, keuzelijst, niveau-uitleg, bio-scherm, account verwijderen, gebruikersnaam en de bevestigingsvraag. Op mobiel vullen die ook het hele scherm, dus dezelfde redenering geldt. **Openstaande vraag aan Ronald, geen aanname:** een woordmerk boven een korte bevestigingsvraag is mogelijk te zwaar. **Toets P2:** het werkt, maar de schermen ogen onderling verschillend. Bouwwerk is klein — `.modal-kop` en `.modal-box-kop` staan er al |
+
+
 
 | ID | Ticket | Kern |
 |---|---|---|

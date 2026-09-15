@@ -45,7 +45,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260915b">
+<link rel="stylesheet" href="styles.css?v=20260915d">
 </head>
 <body>
 
@@ -217,7 +217,6 @@
 
   <!-- STEP 1: Persoonlijke info -->
   <div class="panel active" id="step0">
-    <div class="hero-band"></div>
     <div class="panel-title">Wie ben je</div>
     <div class="panel-sub">Maak je profiel aan. Je gebruikersnaam is voor iedereen zichtbaar. Andere muzikanten met een eigen profiel zien ook je voornaam — bezoekers zonder profiel nooit. Je e-mail en wachtwoord blijven altijd privé.</div>
 
@@ -310,7 +309,6 @@
 
   <!-- STEP 2: Instrument & genre -->
   <div class="panel" id="step1">
-    <div class="hero-band"></div>
     <div class="panel-title">Wat speel je</div>
     <div class="panel-sub">Je instrument(en), je niveau per instrument, en de genres die je speelt.</div>
 
@@ -367,7 +365,6 @@
 
   <!-- STEP 3: Wat zoek je -->
   <div class="panel" id="step2">
-    <div class="hero-band"></div>
     <div class="panel-title">Wat wil je nu?</div>
     <div class="panel-sub">Je doel op The Talent Tent. Alle drie de velden zijn optioneel.</div>
 
@@ -425,7 +422,6 @@
 
   <!-- STEP 4: Je setlist -->
   <div class="panel" id="step3">
-    <div class="hero-band"></div>
     <div class="panel-title">Je setlist</div>
     <div class="panel-sub">Zoek eerst een band of artiest en daarna het nummer. Je kunt dit ook later op je profiel aanvullen.</div>
 
@@ -487,7 +483,6 @@
 
   <!-- STEP 5: Media -->
   <div class="panel" id="step4">
-    <div class="hero-band"></div>
     <div class="panel-title">Je mediahoek</div>
 
     <div class="field">
@@ -591,7 +586,6 @@
 
   <!-- Tegeloverzicht -->
   <div id="tegelOverviewScreen">
-    <div class="hero-band"></div>
     <div class="panel-title">Profiel bewerken</div>
     <div id="tegelsWrap"></div>
     <button class="btn btn-ghost" style="width:100%;margin-top:8px;" onclick="showView('myprofile')">Terug</button>
@@ -599,7 +593,6 @@
 
   <!-- Subscherm: Wie ben je -->
   <div id="wieBenJeScreen" style="display:none;">
-    <div class="hero-band"></div>
     <div class="panel-title" style="margin-bottom:20px;">Wie ben je</div>
 
     <div class="field-group">
@@ -662,7 +655,6 @@
 
   <!-- Subscherm: Wat speel je -->
   <div id="watSpeelJeScreen" style="display:none;">
-    <div class="hero-band"></div>
     <div class="panel-title">Wat speel je</div>
     <div class="panel-sub">Je instrument(en), je niveau per instrument, en de genres die je speelt.</div>
 
@@ -707,7 +699,6 @@
 
   <!-- Subscherm: Wat zoek je -->
   <div id="watZoekJeScreen" style="display:none;">
-    <div class="hero-band"></div>
     <div class="panel-title">Wat zoek je</div>
     <div class="panel-sub">Je doel op The Talent Tent. Alle drie de velden zijn optioneel.</div>
 
@@ -763,7 +754,6 @@
 
   <!-- Subscherm: Je setlist -->
   <div id="jeSetlistScreen" style="display:none;">
-    <div class="hero-band"></div>
     <div class="panel-title">Je setlist</div>
     <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Nummers toevoegen</div>
     <div class="panel-sub">Zoek eerst een band of artiest en daarna het nummer.</div>
@@ -807,7 +797,6 @@
 
   <!-- Subscherm: Je mediahoek -->
   <div id="mediahoekScreen" style="display:none;">
-    <div class="hero-band"></div>
     <div class="panel-title" style="margin-bottom:20px;">Je mediahoek</div>
 
     <div class="field">
@@ -1776,8 +1765,16 @@
 <div class="app-toast" id="appToast"></div>
 
 <div class="modal-overlay" id="musicianModal" onclick="closeMusicianModal(event)">
-  <div class="modal-box modal-box-sticky-footer" id="musicianModalBox">
-    <button class="modal-close" onclick="document.getElementById('musicianModal').classList.remove('visible')">✕</button>
+  <div class="modal-box modal-box-sticky-footer modal-box-kop" id="musicianModalBox">
+    <!-- TT-268 (15-09-2026, Ronald): "voeg de hero toe, maar zonder
+         hamburgermenu. in plaats daarvan komt het sluiten-kruisje." Het
+         profiel van iemand anders dekte tot nu toe de hele kop af; je zag
+         alleen een zwevend kruisje. Nu staat hier dezelfde koprij als op de
+         rest van de app, met het kruisje op de plek van de hamburger. -->
+    <div class="modal-kop">
+      <div class="logo" onclick="closeMusicianModal();showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="font-size:50%;color:var(--accent);">THE </span><span style="color:var(--text);">TALENT</span> TENT</div>
+      <button class="modal-close" onclick="closeMusicianModal()">✕</button>
+    </div>
     <div id="musicianModalContent" class="modal-scroll-area"></div>
     <div id="musicianModalFooter" class="modal-sticky-footer"></div>
   </div>
@@ -1785,9 +1782,16 @@
 
 <!-- Band detail modal -->
 <div class="modal-overlay" id="bandModal" onclick="if(event.target===this)this.classList.remove('visible')">
-  <div class="modal-box">
-    <button class="modal-close" onclick="document.getElementById('bandModal').classList.remove('visible')">✕</button>
-    <div id="bandModalContent"></div>
+  <div class="modal-box modal-box-kop" id="bandModalBox">
+    <!-- TT-269 (15-09-2026, Ronald): "voer dit door in de hele app." Zelfde
+         koprij als het muzikantprofiel — woordmerk links, sluiten-kruisje op
+         de plek van de hamburger. Muzikantkant en bandkant volgen dezelfde
+         regels (besluit Ronald, 11-09-2026). -->
+    <div class="modal-kop">
+      <div class="logo" onclick="document.getElementById('bandModal').classList.remove('visible');showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="font-size:50%;color:var(--accent);">THE </span><span style="color:var(--text);">TALENT</span> TENT</div>
+      <button class="modal-close" onclick="document.getElementById('bandModal').classList.remove('visible')">✕</button>
+    </div>
+    <div id="bandModalContent" class="modal-scroll-area"></div>
   </div>
 </div>
 
@@ -2153,7 +2157,7 @@
 <script src="postcode.js?v=20260910a"></script>
 <script src="wizard.js?v=20260915a"></script>
 <script src="search.js?v=20260912a"></script>
-<script src="musicians.js?v=20260915a"></script>
+<script src="musicians.js?v=20260915c"></script>
 <script src="bands.js?v=20260910a"></script>
 <script src="messages.js?v=20260915a"></script>
 <script src="modals-shared.js?v=20260910a"></script>

@@ -10,6 +10,10 @@
     --text: #f0f0f0;
     --muted: #888;
     --radius: 12px;
+    /* TT-268 (15-09-2026, Ronald): de lucht boven en onder het woordmerk.
+       Was 18px, nu 12px. Eén waarde, want de hamburgerknop wordt met een
+       negatieve verschuiving in de koprij getrokken en moet meebewegen. */
+    --kop-lucht: 12px;
     /* TT-233 (10-09-2026, Ronald): hoekstraal van een invoer-/keuzeveld. Eén
        waarde voor élk veld — invoerveld, keuzeveld, wielveld, lijstoptie —
        zodat geen twee velden naast elkaar een andere ronding krijgen. */
@@ -1195,12 +1199,9 @@
     padding: 2px 6px;
   }
 
-  .profile-header-band {
-    height: 8px;
-    border-radius: 8px;
-    margin: 0 0 24px;
-    background: var(--profile-color, var(--accent));
-  }
+  /* TT-268 (15-09-2026): .profile-header-band is verwijderd — de gouden balk
+     bovenaan het profiel is weg, de hero begint direct onder de kop. Niets
+     gebruikt de klasse nog (§2.10). */
 
   .profile-avatar-photo {
     width: 80px; height: 80px;
@@ -2529,6 +2530,36 @@
   .modal-box-slg { max-width: 520px; }
   .modal-box-xl { max-width: 760px; }
 
+  /* TT-268 (15-09-2026): koprij binnen een modal die een heel scherm is —
+     woordmerk links, sluiten-kruisje rechts op de plek van de hamburger.
+     Dezelfde lucht als de gewone kop (--kop-lucht), zodat het kruisje vanzelf
+     op de middellijn van het woordmerk staat: dat regelt align-items: center,
+     geen los getal dat kan gaan afwijken. */
+  .modal-kop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    /* Zelfde marge als de gewone kop:
+       16px links en rechts, dezelfde marge als de gewone kop (§2.11). Gemeten
+       in de browser: .modal-box heeft op mobiel zelf geen zijmarge, dus die
+       16px staat hier expliciet. */
+    padding: var(--kop-lucht) 16px;
+    flex-shrink: 0;
+  }
+  /* Het woordmerk is hier altijd de mobiele maat: binnen een modal is de
+     grote variant van .logo (tot 72px) veel te zwaar. */
+  .modal-kop .logo {
+    font-size: 28px;
+    text-shadow: none;
+    letter-spacing: 1px;
+  }
+  /* In de koprij staat het kruis gewoon in de rij mee, niet los erboven. */
+  .modal-kop .modal-close {
+    position: static;
+    flex-shrink: 0;
+  }
+
   .modal-close {
     position: absolute;
     /* TT-219 (06-09-2026): right ging van 16px naar 24px. Bij een lange lijst
@@ -2646,6 +2677,35 @@
     flex: 1;
     min-height: 0;
   }
+
+  /* Een modal mét koprij lijnt zijn inhoud uit op diezelfde 16px, en laat
+     geen lucht meer boven de eerste inhoud staan: de hero hoort direct onder
+     de kop te beginnen (TT-268). Een klasse, geen uitzondering op één scherm —
+     elke volgende modal met een koprij krijgt dit vanzelf (§2.11). */
+  /* Een koprij blijft staan; alleen de inhoud eronder scrolt. Zonder deze
+     twee regels zou een modal zonder sticky voet (zoals het bandprofiel) als
+     geheel scrollen en zou de koprij mee naar boven verdwijnen. */
+  .modal-box-kop {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .modal-box-kop .modal-scroll-area {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    flex: 1;
+    min-height: 0;
+  }
+  .modal-box-kop .modal-scroll-area {
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 0;
+  }
+  .modal-box-kop .modal-sticky-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
   .modal-sticky-footer {
     flex-shrink: 0;
     padding: 16px 32px;
@@ -2862,7 +2922,10 @@
      Deze regels gelden nu op elke breedte — de webapp krijgt dezelfde schil
      als de telefoon-app, binnen het canvas van TT-224 onderaan dit bestand. */
     header { padding: 16px 20px 12px; flex-direction: column; align-items: flex-start; }
-    main { padding: 32px 16px 60px; }
+    /* TT-269 (15-09-2026): geen lucht meer boven de eerste inhoud — dezelfde
+       afstand als op Mijn Profiel, waar dat al zo was (besluit Ronald,
+       22-08-2026). De kop levert zijn eigen 12px al. */
+    main { padding: 0 16px 60px; }
     .field-group { grid-template-columns: 1fr; }
     /* TT-142: de vaste onderbalk (.app-bottom-nav) wordt nu via JS verborgen
        zolang view-register actief is (zie showView()) — twee vaste balken
@@ -2885,7 +2948,12 @@
        marge als de pagina-inhoud eronder (16px, zelfde als .my-profile-wrap
        hieronder) — was 20px, sloot niet aan op de rand van bijv. de
        profielfoto/naam. */
-    header { flex-direction: row; align-items: center; padding: 18px 16px; }
+    /* TT-268 (15-09-2026, Ronald): 12px boven en onder het woordmerk in
+       plaats van 18px. env(safe-area-inset-top) staat erbij voor het geval
+       de app ooit als echte app wordt geïnstalleerd; in de browser is die
+       nul. De hamburger verschuift even ver mee, zie hieronder. */
+    header { flex-direction: row; align-items: center;
+             padding: calc(var(--kop-lucht) + env(safe-area-inset-top, 0px)) 16px var(--kop-lucht); }
     .logo { font-size: 28px; text-shadow: none; }
     .tagline { display: none; }
     /* TT-181 (01-09-2026, Ronald na livetest van profiel-v2): 2x2-grid nu
@@ -2905,7 +2973,13 @@
        mobiel; de knop wordt met een relatieve verschuiving omhoog in de
        koprij getrokken. */
     .app-nav-row { padding: 0; border-bottom: none; min-height: 0; }
-    #navMenuBtn { position: absolute; top: -62px; right: 16px; margin-bottom: 0; }
+    /* De knop is 44px hoog en wordt uit .app-nav-row omhooggetrokken tot op
+       de middellijn van het woordmerk. De verschuiving is precies de lucht
+       onder het woordmerk plus de hoogte van de knop zelf; met de variabele
+       klopt hij bij elke waarde, en ook met een veilige marge bovenaan.
+       Was -62px bij 18px lucht; bij 12px is het -56px. */
+    #navMenuBtn { position: absolute; top: calc(-1 * (var(--kop-lucht) + 44px));
+                  right: 16px; margin-bottom: 0; }
     /* Punt 3 (22-08-2026, Ronald): hamburgerpictogram groter, in verhouding
        met het woordmerk. Het woordmerk heeft op mobiel line-height:1 bij
        font-size 28px — dus 28px is de visuele hoogte van de tekst zelf.
@@ -3002,7 +3076,7 @@
        beide randen. Het kruis is 33x33; op 24/24 ligt zijn middelpunt op
        40,5px. Boven 560px blijft 16/24 gelden (TT-219, browser-scrollbar).
        Was tot 15-09-2026: top 12px, right 12px. */
-    .modal-close { top: 24px; right: 24px; }
+    .modal-close { top: 18px; right: 24px; }
     /* Punt 2 (25-08-2026, Ronald): op mobiel was één kaart beeldvullend —
        te breed. Vaste 2 kolommen i.p.v. auto-fill, zodat het altijd 2 naast
        elkaar zijn, ongeacht de precieze schermbreedte binnen dit bereik. */
@@ -3145,7 +3219,10 @@
      1-op-1 uit profiel-v2.html. Losse klassen (niet .profile-header-band,
      die is gekoppeld aan profile_color en hoort bij het BEKIJKEN van een
      profiel — dit is een eigen, simpele accentbalk voor het BEWERKEN). ── */
-  .hero-band { height: 8px; border-radius: 8px; background: var(--accent); margin: 0 0 20px; }
+  /* TT-269 (15-09-2026, Ronald): .hero-band is verwijderd. Die gouden balk
+     stond boven het tegeloverzicht én boven elk van de vijf bewerkschermen —
+     elf keer in totaal. Zelfde besluit als bij .profile-header-band (TT-268):
+     de inhoud begint direct onder de kop (§2.10, §2.11). */
   .tile {
     display: flex; align-items: center; gap: 12px;
     min-height: 44px; padding: 16px; margin-bottom: 16px;
