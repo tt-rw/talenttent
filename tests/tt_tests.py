@@ -1142,16 +1142,103 @@ def blok_browser():
           const k = modal.querySelector('.modal-close').getBoundingClientRect();
           const h = document.getElementById('navMenuBtn').getBoundingClientRect();
           modal.classList.remove('visible');
+          // Horizontaal vergelijken we de rechterrand, niet het midden: de
+          // hamburgerknop is 48px breed en het kruis 33px, dus hun middens
+          // liggen per definitie niet gelijk. Beide staan met hun rechterrand
+          // tegen dezelfde marge, precies zoals in de gewone kop.
           return {
-            kruisMidX: Math.round(window.innerWidth - (k.left + k.width / 2)),
+            kruisRechts: Math.round(window.innerWidth - k.right),
             kruisMidY: Math.round(k.top + k.height / 2),
-            hamMidX: Math.round(window.innerWidth - (h.left + h.width / 2)),
+            hamRechts: Math.round(window.innerWidth - h.right),
             hamMidY: Math.round(h.top + h.height / 2),
           };
         }""")
         check("het kruis staat op de plek van het hamburgermenu",
-              abs(kruis["kruisMidX"] - kruis["hamMidX"]) <= 2 and abs(kruis["kruisMidY"] - kruis["hamMidY"]) <= 2,
+              abs(kruis["kruisRechts"] - kruis["hamRechts"]) <= 2 and abs(kruis["kruisMidY"] - kruis["hamMidY"]) <= 2,
               json.dumps(kruis))
+
+        # TT-268 (15-09-2026, Ronald): 12px lucht boven en onder het woordmerk,
+        # gouden balk weg, en het profiel van iemand anders houdt de koprij.
+        kop = page.evaluate("""() => {
+          const h = document.querySelector('header');
+          const logo = h.querySelector('.logo');
+          const knop = document.getElementById('navMenuBtn');
+          const hb = h.getBoundingClientRect(), lb = logo.getBoundingClientRect(), kb = knop.getBoundingClientRect();
+          return {
+            boven: Math.round(lb.top - hb.top),
+            onder: Math.round(hb.bottom - lb.bottom),
+            kopHoogte: Math.round(hb.height),
+            knopMidY: Math.round(kb.top + kb.height / 2),
+            logoMidY: Math.round(lb.top + lb.height / 2),
+            knopRechts: Math.round(window.innerWidth - kb.right),
+          };
+        }""")
+        check("12px lucht boven en onder het woordmerk",
+              kop["boven"] == 12 and kop["onder"] == 12, json.dumps(kop))
+        check("de kop is daarmee 68px hoog", kop["kopHoogte"] == 68, str(kop["kopHoogte"]))
+        check("de hamburger staat op de middellijn van het woordmerk",
+              abs(kop["knopMidY"] - kop["logoMidY"]) <= 1, json.dumps(kop))
+
+        profielkop = page.evaluate("""() => {
+          const basis = {
+            id: 'm9', fname: 'S', username: 's', city: 'Den Haag', bio: '',
+            profile_color: '#f5c518', avatar_url: null, age: 17,
+            updated_at: new Date().toISOString(),
+            musician_instruments: [], musician_genres: [], musician_songs: [],
+            musician_media: [{ media_type: 'foto', url: 'https://x/a.jpg', platform: null, in_banner: true }]
+          };
+          const vak = document.createElement('div');
+          vak.style.cssText = 'width:375px;position:absolute;left:0;top:0;';
+          document.body.appendChild(vak);
+          vak.innerHTML = buildMusicianDetailHTML(basis, true);
+          const goud = !!vak.querySelector('.profile-header-band');
+          const eerste = vak.firstElementChild.className;
+          vak.remove();
+          const mk = document.querySelector('#musicianModalBox .modal-kop');
+          return {
+            goudenBalk: goud,
+            eersteElement: eerste,
+            koprijInModal: !!mk,
+            woordmerkInModal: !!(mk && mk.querySelector('.logo')),
+            kruisInKoprij: !!(mk && mk.querySelector('.modal-close')),
+            kruisStatisch: mk ? getComputedStyle(mk.querySelector('.modal-close')).position : ''
+          };
+        }""")
+        check("de gouden balk bovenaan het profiel is weg", not profielkop["goudenBalk"], "")
+        check("de hero is nu het eerste element van het profiel",
+              profielkop["eersteElement"] == "profiel-banner", profielkop["eersteElement"])
+        check("het profiel van iemand anders houdt de koprij met het woordmerk",
+              profielkop["koprijInModal"] and profielkop["woordmerkInModal"], json.dumps(profielkop))
+        check("met het sluiten-kruisje in die rij, niet los erboven",
+              profielkop["kruisInKoprij"] and profielkop["kruisStatisch"] == "static",
+              json.dumps(profielkop))
+
+        # TT-269 (15-09-2026, Ronald): "voer dit door in de hele app."
+        appbreed = page.evaluate("""() => {
+          const bm = document.getElementById('bandModalBox');
+          const mk = bm ? bm.querySelector('.modal-kop') : null;
+          showView('profieltegels');
+          const m = document.querySelector('#view-profieltegels main');
+          const sm = getComputedStyle(m);
+          return {
+            gouddenBalkenOver: document.querySelectorAll('.hero-band').length,
+            bandKoprij: !!mk,
+            bandWoordmerk: !!(mk && mk.querySelector('.logo')),
+            bandKruisInRij: !!(mk && mk.querySelector('.modal-close')),
+            bandScrollArea: !!(bm && bm.querySelector('.modal-scroll-area')),
+            mainBoven: sm.paddingTop,
+            mainZij: sm.paddingLeft,
+          };
+        }""")
+        check("geen enkele gouden balk meer in Profiel bewerken",
+              appbreed["gouddenBalkenOver"] == 0, str(appbreed["gouddenBalkenOver"]))
+        check("Profiel bewerken begint direct onder de kop",
+              appbreed["mainBoven"] == "0px" and appbreed["mainZij"] == "16px", json.dumps(appbreed))
+        check("het bandprofiel heeft dezelfde koprij als het muzikantprofiel",
+              appbreed["bandKoprij"] and appbreed["bandWoordmerk"] and appbreed["bandKruisInRij"],
+              json.dumps(appbreed))
+        check("en zijn inhoud scrolt onder die koprij door",
+              appbreed["bandScrollArea"], json.dumps(appbreed))
 
         check("geen paginafouten in blok 15", not page_errors, "; ".join(page_errors)[:200])
 
