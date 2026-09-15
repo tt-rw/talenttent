@@ -38,15 +38,21 @@ Zijn besluiten:
 | Geeft `tt_get_musicians_public` de kolom `in_banner` mee? | **Geverifieerd niet.** De kolom `media` bevat alleen `url`, `platform` en `media_type` |
 | Komt er bij een YouTube-link automatisch een miniatuur mee? | **Geverifieerd ja**, zonder sleutel, voor elke openbare video — de app gebruikt dat adres al |
 
-**De RPC was de enige blokkade, en die staat nog open.** Ingelogd leest de app
-de tabel zelf; daar is `in_banner` aan de query toegevoegd. **Uitgelogd** loopt
-het via `tt_get_musicians_public`, en die geeft de vlag niet terug — een
-uitgelogde bezoeker ziet dus geen banner tot Ronald het script draait. Ronald
-heeft de functiedefinitie aangeleverd (`pg_get_functiondef`); daarop is één
-veld toegevoegd aan de `jsonb_build_object` van de media-kolom. Het RETURN TYPE
-blijft gelijk, dus `CREATE OR REPLACE` werkt zonder `DROP`. Script:
-`_niet-uploaden-tt265-rpc-in-banner.sql` in de gedeelde map. **Zie de rij in
-Deel 1/P1.**
+**De RPC was de enige blokkade, en die is dezelfde dag weggenomen.** Ingelogd
+leest de app de tabel zelf; daar is `in_banner` aan de query toegevoegd.
+**Uitgelogd** loopt het via `tt_get_musicians_public`, en die gaf de vlag niet
+terug. Ronald heeft de functiedefinitie aangeleverd (`pg_get_functiondef`);
+daarop is één veld toegevoegd aan de `jsonb_build_object` van de media-kolom.
+Het RETURN TYPE bleef gelijk, dus `CREATE OR REPLACE` werkte zonder `DROP`.
+Ronald heeft het script gedraaid op 15-09-2026 ("sql = succes").
+**Daarna opnieuw gemeten in de browserpane, tegen de echte site:** de kolom
+`media` geeft nu `url`, `platform`, `in_banner` en `media_type`, en over de
+testprofielen staan drie items op `in_banner: true`. Het ticket TT-266 is
+daarmee gesloten en stond geen dag open.
+
+**Let op bij het testen.** De RPC is bij: de app zelf nog niet. Zolang de acht
+bestanden hieronder niet in de productierepo staan, draait talenttent.org op de
+code van 13-09-2026 en verschijnt er geen bannerbalk.
 
 **Wat er gebouwd is.**
 1. **De bannerbalk** (`profielBannerHTML()`, `profielBannerStarten()`,
@@ -2987,10 +2993,6 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 ---
 
 ## P1 — Bepaalt of mensen terugkomen
-
-| ID | Ticket | Kern |
-|---|---|---|
-| **TT-266** | `tt_get_musicians_public` geeft `in_banner` niet mee | **Nieuw en gemeten 15-09-2026** (browserpane, tegen de echte site): de kolom `media` van deze RPC bevat alleen `url`, `platform` en `media_type`. Ingelogd leest de app de tabel zelf en is het opgelost; **uitgelogd ziet niemand een banner** tot dit script gedraaid is. **Toets P1:** een uitgelogde bezoeker is precies de persoon die overtuigd moet worden om zich aan te melden, en die ziet nu het minst verzorgde profiel. Klaarliggend script: `_niet-uploaden-tt265-rpc-in-banner.sql` in de gedeelde map. **Wacht op een handeling van Ronald bij Supabase, geen bouwwerk.** Claude meet na het draaien zelf of de vlag meekomt |
 
 
 | ID | Ticket | Kern |
