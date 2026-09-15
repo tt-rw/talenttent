@@ -1787,6 +1787,26 @@ function profielBannerStarten(root) {
 
     if (spoor.children.length < 2 || profielBannerRustig()) return;
 
+    // TT-267 (15-09-2026, gemeld door Ronald): de balk bleef halverwege twee
+    // vlakken staan, en bleef daar staan. Gevolg: het eerste beeld was nog
+    // maar een streepje breed en de titel liep door de rechterrand. Vandaar
+    // deze nakijkstap: een halve seconde na elke sprong wordt gemeten of de
+    // balk precies op een vlak staat, en zo niet, dan wordt het zonder
+    // animatie rechtgezet. Dat werkt ongeacht de oorzaak — of de sprong nu
+    // onderweg werd afgebroken of de breedte intussen wijzigde.
+    const rechtzetten = () => {
+      const breedte = spoor.clientWidth;
+      if (!breedte || !spoor.isConnected) return;
+      const doel = Math.round(spoor.scrollLeft / breedte) * breedte;
+      if (Math.abs(spoor.scrollLeft - doel) > 2) spoor.scrollLeft = doel;
+    };
+    // Wijzigt de breedte — schermdraai, of de adresbalk van Android die
+    // verdwijnt — dan klopt de oude scrollstand niet meer.
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => rechtzetten());
+      ro.observe(spoor);
+    }
+
     profielBannerTijden.set(id, setInterval(() => {
       if (!spoor.isConnected || !spoor.offsetParent) { profielBannerStop(id); return; }
       const breedte = spoor.clientWidth;
@@ -1794,6 +1814,7 @@ function profielBannerStarten(root) {
       const nu = Math.round(spoor.scrollLeft / breedte);
       const volgend = (nu + 1) % spoor.children.length;
       spoor.scrollTo({ left: volgend * breedte, behavior: 'smooth' });
+      setTimeout(rechtzetten, 600);
     }, 5000));
   });
 }

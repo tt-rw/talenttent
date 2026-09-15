@@ -1,6 +1,56 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 15-09-2026 — **TT-265 gebouwd en getest: de bannerbalk staat op het muzikantenprofiel, de profielindeling is herschikt. Eindstand 162 van 162.**
+**Laatste update:** 15-09-2026 (vervolg) — **TT-267: de bannerbalk bleef halverwege twee vlakken staan. Opgelost, plus twee bijstellingen van Ronald. Eindstand 166 van 166.**
+
+**Aanleiding.** Ronald, met een schermafdruk van de uitgelogde
+muzikantenpagina op zijn telefoon: *"de banner staat nog niet helemaal goed"*
+en daarna *"hij blijft zo staan. de hero wordt niet getoond."* Op de afdruk
+stond de balk tussen vlak 1 en vlak 2 in: van het eerste beeld was nog een
+streepje over, en de titel van de tweede video liep door de rechterrand.
+
+**Gemeten in de browserpane, op de echte site, uitgelogd, bij 375px breed.**
+Wat er goed stond: vier vlakken, spoor 311px, elk vlak 311px, scroll-snap
+actief, alle vier de beelden geladen (drie YouTube-miniaturen en één foto uit
+Storage, alle vier status 200). Twintig seconden gevolgd: de balk stond steeds
+precies op een vlak, en na een kunstmatige breedtewijziging ook. **De stand van
+Ronalds afdruk is hier niet na te spelen** — zijn Android laat een lopende
+sprong wél halverwege los, deze browser niet.
+
+**Daarom opgelost op een manier die niet van de oorzaak afhangt.**
+1. **`scroll-snap-stop: always` is weggehaald.** Die regel dwingt de browser
+   bij elk vlak te stoppen, ook midden in een lopende sprong. Hij was bedoeld
+   om snel doorvegen te temmen; dat weegt niet op tegen een balk die blijft
+   hangen.
+2. **Een nakijkstap na elke automatische sprong.** Zeshonderd milliseconde na
+   de sprong meet de app of de balk precies op een vlak staat; staat hij meer
+   dan 2px scheef, dan wordt het zonder animatie rechtgezet.
+3. **Een `ResizeObserver` op het spoor** doet hetzelfde zodra de breedte
+   wijzigt — schermdraai, of de adresbalk van Android die wegschuift.
+
+**Twee bijstellingen van Ronald, dezelfde melding.**
+- **De titel staat op één regel** met één beletselteken, niet meer op twee
+  regels over het beeld. *"James Hetfield Show New Riffs | Heaviest…"* vulde
+  het halve vlak. Zelfde vorm als de naam van een video in Je mediahoek
+  (TT-263).
+- **Het kruis van een modal staat op mobiel op de plek van het
+  hamburgermenu.** Ronald: *"je kunt het kruis op de plaats van het
+  hamburgermenu zetten."* Gemeten in de browser: de hamburger is 48x44 op 18px
+  van boven en 16px van rechts, dus zijn middelpunt ligt 40px van beide randen;
+  het kruis is 33x33 en ligt op 24/24 met zijn middelpunt op 40,5px. Was 12/12.
+  **Geldt voor elke modal op mobiel, niet alleen deze** (§2.11): dezelfde duim,
+  dezelfde plek. Boven 560px blijft 16/24 gelden (TT-219, browser-scrollbar).
+
+**Testset:** blok 15 uitgebreid met vier controles — een balk die halverwege
+staat zet zichzelf binnen één cyclus recht, de titel staat op één regel en kapt
+af, er staat geen `scroll-snap-stop` meer, en het kruis valt samen met het
+hamburgermenu. Voor de eerste toets wordt scroll-snap in de toets zelf
+uitgezet; deze browser snapt namelijk meteen terug, en dan zou de toets de
+browser meten in plaats van de app. **Eindstand: 166 van 166 geslaagd.**
+
+Gewijzigd: `utils.js`, `styles.css`, `index.html` (versieachtervoegsels),
+`tests/tt_tests.py`, `actielijst.md`.
+
+**Vorige update:** 15-09-2026 — **TT-265 gebouwd en getest: de bannerbalk staat op het muzikantenprofiel, de profielindeling is herschikt. Eindstand 162 van 162.**
 
 **Aanleiding.** Ronald, met een tekening van het muzikantenprofiel: *"de
 belangrijkste wijziging is de toevoeging van een banner bovenin. de muzikant

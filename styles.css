@@ -1070,7 +1070,9 @@
     width: 100%;
     aspect-ratio: 5 / 2;
     scroll-snap-align: start;
-    scroll-snap-stop: always;
+    /* TT-267: scroll-snap-stop: always is hier weggehaald. Dat dwingt de
+       browser bij elk vlak te stoppen, ook midden in een lopende sprong, en
+       dat is een van de manieren waarop de balk halverwege bleef staan. */
     padding: 0;
     margin: 0;
     border: none;
@@ -1090,6 +1092,10 @@
 
   /* Tekst-only, geen icoon: de app telt tien vaste tekens en een elfde
      erbij is een besluit, geen bijvangst (huisstijl §12). */
+  /* TT-267 (15-09-2026, Ronald): één regel, niet twee. Een lange YouTube-titel
+     vulde twee regels over het beeld heen — dat is een ondertiteling, geen
+     banner. Nu kapt hij af met één beletselteken, net als de naam van een
+     video in Je mediahoek (TT-263). */
   .pb-label {
     position: absolute;
     left: 8px;
@@ -1102,10 +1108,9 @@
     font-size: var(--fs-sm);
     line-height: 1.3;
     text-align: left;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* Een link zonder miniatuur (Spotify, SoundCloud, Instagram, TikTok)
@@ -2989,9 +2994,15 @@
       padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     }
     /* De sluitknop blijft rechtsboven staan, zoals in de rest van de app.
-       Bewust niet verplaatst: veel modals houden rechtsboven al ruimte vrij,
-       en een verplaatsing zou daar tekst overlappen. */
-    .modal-close { top: 12px; right: 12px; }
+       TT-267 (15-09-2026, Ronald): "je kunt het kruis op de plaats van het
+       hamburgermenu zetten." Op mobiel vult een modal het hele scherm, dus
+       het kruis staat daar precies waar de hamburger stond — dezelfde plek
+       voor dezelfde duim. Gemeten in de browser: de hamburger is 48x44 op
+       18px van boven en 16px van rechts, dus zijn middelpunt ligt 40px van
+       beide randen. Het kruis is 33x33; op 24/24 ligt zijn middelpunt op
+       40,5px. Boven 560px blijft 16/24 gelden (TT-219, browser-scrollbar).
+       Was tot 15-09-2026: top 12px, right 12px. */
+    .modal-close { top: 24px; right: 24px; }
     /* Punt 2 (25-08-2026, Ronald): op mobiel was één kaart beeldvullend —
        te breed. Vaste 2 kolommen i.p.v. auto-fill, zodat het altijd 2 naast
        elkaar zijn, ongeacht de precieze schermbreedte binnen dit bereik. */
