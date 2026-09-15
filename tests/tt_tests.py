@@ -914,6 +914,175 @@ def blok_browser():
 
         page.evaluate("window.TT_STUB.reset()")
 
+        # ─────────────────────────────────────────────────────────────
+        # Blok 15 — de bannerbalk op het profiel (TT-265, 15-09-2026)
+        # Blok 14 is gereserveerd voor de huisstijl-check van TT-262.
+        # Besluiten van Ronald: maximaal zes, swipen, stippen eronder,
+        # doorschuiven na vijf seconden, pauze zodra hij zelf iets doet,
+        # geen autoplay, en geen balk als er niets gekozen is.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 15 — de bannerbalk op het profiel")
+        page_errors.clear()
+
+        banner = page.evaluate("""async () => {
+          const basis = (media) => ({
+            id: 'm9', fname: 'Sanne', username: 'sannedrums', city: 'Den Haag',
+            bio: 'Test', profile_color: '#f5c518', avatar_url: null, age: 17,
+            updated_at: new Date().toISOString(),
+            musician_instruments: [{ instrument: 'Drums', niveau: 3 }],
+            musician_genres: [{ genre: 'Rock' }],
+            musician_songs: [], musician_media: media
+          });
+          // In de body, niet in een view: een verborgen view heeft geen
+          // breedte, en dan komt een gezette scrollpositie niet aan — precies
+          // de valkuil die huisstijl §7.1 bij het wiel beschrijft.
+          const vak = document.createElement('div');
+          vak.style.cssText = 'width:375px;position:absolute;left:0;top:0;';
+          document.body.appendChild(vak);
+
+          // 1. Niets gekozen: geen balk.
+          vak.innerHTML = buildMusicianDetailHTML(basis([
+            { media_type: 'foto', url: 'https://x/a.jpg', platform: null, in_banner: false }
+          ]), true);
+          const zonder = !vak.querySelector('.profiel-banner');
+
+          // 2. Vier gekozen items, elk van een ander soort.
+          vak.innerHTML = buildMusicianDetailHTML(basis([
+            { media_type: 'foto',  url: 'https://x/a.jpg',   platform: null, in_banner: true },
+            { media_type: 'video', url: 'https://x/clip.mp4', platform: null, in_banner: true },
+            { media_type: 'link',  url: 'https://youtu.be/tAGnKpE4Nxk', platform: 'YouTube', in_banner: true },
+            { media_type: 'link',  url: 'https://open.spotify.com/track/abc', platform: 'Spotify', in_banner: true },
+            { media_type: 'foto',  url: 'https://x/b.jpg', platform: null, in_banner: false }
+          ]), true);
+          profielBannerStarten(vak);
+          await new Promise(r => setTimeout(r, 60));
+
+          const spoor = vak.querySelector('.pb-spoor');
+          const items = vak.querySelectorAll('.pb-item');
+          const stippen = vak.querySelectorAll('.pb-stip');
+          const sSpoor = getComputedStyle(spoor);
+          const sItem = getComputedStyle(items[0]);
+          const sStip = getComputedStyle(stippen[0]);
+          const tikvlak = getComputedStyle(stippen[0], '::after');
+          const video = vak.querySelector('.pb-item video');
+          const kaart = vak.querySelector('.pb-kaart');
+
+          const uit = {
+            zonderKeuzeGeenBalk: zonder,
+            aantalItems: items.length,
+            aantalStippen: stippen.length,
+            eersteStipAan: stippen[0].classList.contains('aan'),
+            tweedeStipUit: !stippen[1].classList.contains('aan'),
+            snapX: sSpoor.scrollSnapType.indexOf('x') === 0,
+            overscroll: sSpoor.overscrollBehaviorX,
+            itemVolleBreedte: Math.round(items[0].getBoundingClientRect().width) === Math.round(spoor.clientWidth),
+            spoorBreedte: Math.round(spoor.clientWidth),
+            verhouding: sItem.aspectRatio.replace(/\s/g, ''),
+            videoGeenAutoplay: video ? (!video.autoplay && !video.hasAttribute('autoplay')) : null,
+            videoStaatStil: video ? video.paused : null,
+            videoLabel: video ? video.parentElement.querySelector('.pb-label').textContent : null,
+            youtubeMiniatuur: !!vak.querySelector('.pb-item img[src*="img.youtube.com"]'),
+            kaartVoorSpotify: !!kaart,
+            kaartPlatform: kaart ? kaart.querySelector('.pb-kaart-platform').textContent : '',
+            stipTikvlakBreed: tikvlak.width,
+            stipTikvlakHoog: tikvlak.height,
+            stipGoud: sStip.backgroundColor,
+            stipGrijs: getComputedStyle(stippen[1]).backgroundColor,
+          };
+
+          // 3. De stippen volgen het swipen.
+          spoor.scrollLeft = spoor.clientWidth * 2;
+          spoor.dispatchEvent(new Event('scroll'));
+          await new Promise(r => setTimeout(r, 30));
+          uit.stipVolgtSwipe = stippen[2].classList.contains('aan') && !stippen[0].classList.contains('aan');
+
+          // 4. Zodra de gebruiker zelf iets doet, stopt het doorschuiven.
+          uit.liepEerst = profielBannerTijden.has(spoor.id);
+          spoor.dispatchEvent(new Event('pointerdown'));
+          uit.staatDaarnaStil = !profielBannerTijden.has(spoor.id);
+
+          // 5. Boven de zes gekozen items telt alleen de eerste zes.
+          const zeven = [];
+          for (let i = 0; i < 7; i++) zeven.push({ media_type: 'foto', url: 'https://x/' + i + '.jpg', platform: null, in_banner: true });
+          vak.innerHTML = buildMusicianDetailHTML(basis(zeven), true);
+          uit.grensZes = vak.querySelectorAll('.pb-item').length;
+
+          // 6. Foto's en video's staan in één raster, links eronder.
+          vak.innerHTML = buildMusicianDetailHTML(basis([
+            { media_type: 'foto',  url: 'https://x/a.jpg', platform: null, in_banner: false },
+            { media_type: 'video', url: 'https://x/c.mp4', platform: null, in_banner: false },
+            { media_type: 'link',  url: 'https://youtu.be/tAGnKpE4Nxk', platform: 'YouTube', in_banner: false }
+          ]), true);
+          const titels = [...vak.querySelectorAll('.profile-media-title')].map(e => e.textContent);
+          uit.mediaTitels = titels;
+          uit.fotoEnVideoSamen = vak.querySelectorAll('.profile-media')[0].querySelectorAll('.profile-media-tegel').length;
+          uit.videoOpentMediascherm = (vak.querySelector('.profile-media-tegel[onclick*="openMediaSpeler"]') !== null);
+          uit.geenLosseControls = vak.querySelectorAll('.profile-media video[controls]').length;
+
+          // 7. De bijgewerkt-regel: eigen grijze regel, geen groene balk.
+          const vers = vak.querySelector('.profile-fresh');
+          uit.versRegel = vers ? vers.textContent : null;
+          uit.versGrijs = vers ? getComputedStyle(vers).color : '';
+          uit.muted = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+          uit.geenGroeneBalk = !vak.querySelector('.freshness-bar') && !vak.querySelector('.freshness-dot');
+
+          vak.remove();
+          return uit;
+        }""")
+
+        check("zonder gekozen items staat er geen balk", banner["zonderKeuzeGeenBalk"], "")
+        check("elk gekozen item krijgt een vlak", banner["aantalItems"] == 4, str(banner["aantalItems"]))
+        check("en elk vlak een stip", banner["aantalStippen"] == 4, str(banner["aantalStippen"]))
+        check("de eerste stip staat aan, de rest uit",
+              banner["eersteStipAan"] and banner["tweedeStipUit"], "")
+        check("de actieve stip is goud", banner["stipGoud"] == "rgb(245, 197, 24)", banner["stipGoud"])
+        check("de andere stippen zijn grijs", banner["stipGrijs"] == "rgb(85, 85, 85)", banner["stipGrijs"])
+        check("een stip heeft een tikvlak van 44px",
+              banner["stipTikvlakBreed"] == "44px" and banner["stipTikvlakHoog"] == "44px",
+              banner["stipTikvlakBreed"] + " x " + banner["stipTikvlakHoog"])
+        check("swipen gaat via scroll-snap, niet via een eigen touchmove", banner["snapX"], "")
+        check("het spoor houdt het scrollen binnen (huisstijl §16)",
+              banner["overscroll"] == "contain", banner["overscroll"])
+        check("een vlak vult de hele breedte",
+              banner["itemVolleBreedte"] and banner["spoorBreedte"] == 375,
+              "spoor " + str(banner["spoorBreedte"]) + "px")
+        check("de balk is 5:2, niet 16:9", banner["verhouding"] == "5/2", banner["verhouding"])
+        check("een video in de banner speelt niet vanzelf",
+              banner["videoGeenAutoplay"] and banner["videoStaatStil"], json.dumps(banner)[:200])
+        check("en is als video herkenbaar zonder icoon", banner["videoLabel"] == "Video", str(banner["videoLabel"]))
+        check("een YouTube-link toont zijn miniatuur", banner["youtubeMiniatuur"], "")
+        check("een link zonder miniatuur krijgt een kaart met de platformnaam",
+              banner["kaartVoorSpotify"] and banner["kaartPlatform"] == "Spotify", banner["kaartPlatform"])
+        check("de stippen volgen het swipen", banner["stipVolgtSwipe"], "")
+        check("de balk schuift uit zichzelf door", banner["liepEerst"], "")
+        check("en stopt zodra de gebruiker zelf iets doet", banner["staatDaarnaStil"], "")
+        check("boven zes gekozen items telt alleen de eerste zes",
+              banner["grensZes"] == 6, str(banner["grensZes"]))
+        check("foto's en video's staan in één raster",
+              banner["mediaTitels"] == ["Foto's en video's", "Links"], json.dumps(banner["mediaTitels"]))
+        check("met een tegel per foto en per video", banner["fotoEnVideoSamen"] == 2, str(banner["fotoEnVideoSamen"]))
+        check("een video in het raster opent het mediascherm", banner["videoOpentMediascherm"], "")
+        check("en speelt niet meer los in de pagina", banner["geenLosseControls"] == 0, str(banner["geenLosseControls"]))
+        check("bijgewerkt is een eigen grijze regel",
+              banner["versRegel"] == "Deze week bijgewerkt", str(banner["versRegel"]))
+        check("in de grijstint van de huisstijl",
+              banner["versGrijs"] == "rgb(136, 136, 136)", banner["versGrijs"])
+        check("de groene balk met kloppende stip is weg", banner["geenGroeneBalk"], "")
+
+        standen = page.evaluate("""() => {
+          const d = (n) => new Date(Date.now() - n * 86400000).toISOString();
+          return [0, 6, 7, 29, 30, 89, 90, 400].map(n => relativeUpdatedLabel(d(n)));
+        }""")
+        check("vier standen, in de door Ronald vastgelegde bewoording",
+              standen == ["Deze week bijgewerkt", "Deze week bijgewerkt",
+                          "Deze maand bijgewerkt", "Deze maand bijgewerkt",
+                          "Binnen 3 maanden bijgewerkt", "Binnen 3 maanden bijgewerkt",
+                          "+3 maanden geleden bijgewerkt", "+3 maanden geleden bijgewerkt"],
+              json.dumps(standen))
+        check("geen paginafouten in blok 15", not page_errors, "; ".join(page_errors)[:200])
+
+        page.evaluate("window.TT_STUB.reset()")
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
