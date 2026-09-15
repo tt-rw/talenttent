@@ -255,11 +255,16 @@ async function loadInbox() {
 function relativeUpdatedLabel(iso) {
   const d = new Date(iso);
   const diffDays = Math.floor((Date.now() - d.getTime()) / 86400000);
+  // TT-265 (15-09-2026, besluit Ronald): van vijf standen naar vier, en de
+  // regel staat niet meer in een groene balk. Reden voor dat laatste: deze
+  // functie gaf ook "Langer dan 2 maanden geleden bijgewerkt" terug, en dat
+  // stond in groen met een kloppende stip — groen betekent in de app "goed
+  // gegaan". Een profiel waar niemand meer komt, mag niet staan te knipperen
+  // alsof er iemand zit. De regel is nu grijs; de tekst doet het werk.
   if (diffDays < 7)  return 'Deze week bijgewerkt';
-  if (diffDays < 14) return 'Vorige week bijgewerkt';
-  if (diffDays < 31) return 'Deze maand bijgewerkt';
-  if (diffDays < 61) return 'Vorige maand bijgewerkt';
-  return 'Langer dan 2 maanden geleden bijgewerkt';
+  if (diffDays < 30) return 'Deze maand bijgewerkt';
+  if (diffDays < 90) return 'Binnen 3 maanden bijgewerkt';
+  return '+3 maanden geleden bijgewerkt';
 }
 
 function relativeMessageTime(iso) {

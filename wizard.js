@@ -199,7 +199,7 @@ async function loadMyProfile() {
              profile_color, avatar_url, updated_at, accepts_band_invites,
              musician_instruments(instrument, niveau), musician_genres(genre),
              musician_songs(song_title, song_artist, mastery_level),
-             musician_media(media_type, url, platform)`)
+             musician_media(media_type, url, platform, in_banner)`)
     .eq('user_id', currentUser.id)
     .single();
 
@@ -224,6 +224,10 @@ async function loadMyProfile() {
   // herontworpen vorm. De functie zelf blijft bestaan, wordt nu alleen niet
   // meer aangeroepen op deze pagina.
   el.innerHTML = buildMusicianDetailHTML(m, true) + renderCompletenessMeter(m);
+  // TT-265: zie de toelichting in openMusicianModal() — pas starten als de
+  // balk in de pagina staat.
+  profielBannerStarten(el);
+  mediaTitelsBijwerken(el);
   // TT-249: naam passend maken zodra hij in de pagina staat. Mijn Profiel is
   // het krapste scherm — hier staat het ⋯-menu naast de naam.
   fitProfileName(el);

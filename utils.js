@@ -1657,3 +1657,143 @@ function bannerTellerBijwerken(elId, bestanden, links) {
   const el = document.getElementById(elId);
   if (el) el.innerHTML = bannerTellerHTML(bannerAantal(bestanden, links));
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// TT-265 (15-09-2026, Ronald): de bannerbalk op het muzikantenprofiel.
+// De keuze wélke media erin komen bestond al (TT-263, het bannerteken in de
+// wizard en in Je mediahoek). Dit is de plek waar die keuze te zien is.
+//
+// Vastgelegde besluiten van Ronald, 15-09-2026:
+// - Maximaal zes items, over foto's, video's en links samen.
+// - Geen gekozen items: de balk verschijnt helemaal niet.
+// - Swipen, met stippen eronder. Actieve stip goud, de rest grijs.
+// - Doorschuiven na vijf seconden, pauze zodra de gebruiker zelf iets doet.
+// - **Geen autoplay.** Een video toont zijn eerste beeld en staat stil;
+//   geluid en beweging komen pas na een tik, in het mediascherm van TT-263.
+//   Reden (huisstijl §16): een spelend vlak moet bij elk scrollframe opnieuw
+//   getekend worden, en dat laat het scrollen schokken op een goedkoop
+//   toestel.
+
+// Elk profiel dat getekend wordt, krijgt zijn eigen nummer. Mijn Profiel en
+// de profielmodal kunnen tegelijk in de pagina staan — twee keer hetzelfde
+// id zou de verkeerde balk laten bewegen.
+let profielBannerVolgnr = 0;
+
+function profielBannerItems(mediaLijst) {
+  return (mediaLijst || [])
+    .filter(x => x && x.in_banner)
+    .map(x => ({ ...x, veilig: safeUrl(x.url) }))
+    .filter(x => x.veilig)
+    .slice(0, MEDIA_BANNER_MAX);
+}
+
+function profielBannerHTML(mediaLijst) {
+  const items = profielBannerItems(mediaLijst);
+  if (!items.length) return '';
+  const nr = ++profielBannerVolgnr;
+  const spoorId = `pbSpoor${nr}`;
+  const stippenId = `pbStippen${nr}`;
+
+  const vlakken = items.map((it, i) => {
+    const url = it.veilig;
+    const platform = it.platform || detectPlatform(url);
+    let binnen, tik;
+
+    if (it.media_type === 'foto') {
+      binnen = `<img class="pb-beeld" src="${escAttr(url)}" alt="Foto ${i + 1} van ${items.length}" loading="lazy">`;
+      tik = `openMediaLightbox('${jsAttr(url)}')`;
+    } else if (it.media_type === 'video') {
+      // #t=0.1 dwingt het eerste beeld af; zonder dat laat Safari op de
+      // iPhone een zwart vlak zien tot er getikt wordt. muted + playsinline
+      // staan erbij omdat de browser het element anders niet mag uitlezen.
+      binnen = `<video class="pb-beeld" src="${escAttr(url)}#t=0.1" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video>` +
+               `<span class="pb-label">Video</span>`;
+      tik = `openMediaSpeler('${jsAttr(url)}', 'video')`;
+    } else {
+      const ytId = extractYouTubeId(url);
+      binnen = ytId
+        ? `<img class="pb-beeld" src="https://img.youtube.com/vi/${escAttr(ytId)}/hqdefault.jpg" alt="" loading="lazy">` +
+          `<span class="pb-label" data-media-url="${escAttr(url)}">${escHtml(platform)}</span>`
+        : `<span class="pb-kaart">` +
+          `<span class="pb-kaart-platform">${escHtml(platform)}</span>` +
+          `<span class="pb-kaart-titel" data-media-url="${escAttr(url)}">Tik om te openen</span>` +
+          `</span>`;
+      tik = `openMediaSpeler('${jsAttr(url)}', 'link', null, '${jsAttr(platform)}')`;
+    }
+
+    return `<button type="button" class="pb-item" role="group" aria-label="Uitgelicht ${i + 1} van ${items.length}" onclick="${tik}">${binnen}</button>`;
+  }).join('');
+
+  const stippen = items.length > 1
+    ? `<div class="pb-stippen" id="${stippenId}" role="tablist" aria-label="Uitgelichte media">` +
+      items.map((_, i) =>
+        `<button type="button" class="pb-stip${i === 0 ? ' aan' : ''}" role="tab" aria-selected="${i === 0 ? 'true' : 'false'}" aria-label="Toon item ${i + 1} van ${items.length}" onclick="profielBannerNaar('${spoorId}', ${i})"></button>`
+      ).join('') + `</div>`
+    : '';
+
+  return `<div class="profiel-banner">
+    <div class="pb-spoor" id="${spoorId}" data-stippen="${stippenId}">${vlakken}</div>
+    ${stippen}
+  </div>`;
+}
+
+// Eén lopende balk per pagina-opbouw. Bij elke nieuwe opbouw stoppen we de
+// oude tijd; het element eronder bestaat dan niet meer.
+const profielBannerTijden = new Map();
+
+function profielBannerRustig() {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function profielBannerNaar(spoorId, i) {
+  const spoor = document.getElementById(spoorId);
+  if (!spoor) return;
+  profielBannerStop(spoorId); // de gebruiker neemt het over
+  spoor.scrollTo({ left: i * spoor.clientWidth, behavior: profielBannerRustig() ? 'auto' : 'smooth' });
+}
+
+function profielBannerStop(spoorId) {
+  const t = profielBannerTijden.get(spoorId);
+  if (t) { clearInterval(t); profielBannerTijden.delete(spoorId); }
+}
+
+function profielBannerStippenBijwerken(spoor) {
+  const houder = document.getElementById(spoor.dataset.stippen || '');
+  if (!houder || !spoor.clientWidth) return;
+  const nu = Math.round(spoor.scrollLeft / spoor.clientWidth);
+  houder.querySelectorAll('.pb-stip').forEach((s, i) => {
+    s.classList.toggle('aan', i === nu);
+    s.setAttribute('aria-selected', i === nu ? 'true' : 'false');
+  });
+}
+
+// Wordt aangeroepen nadat een profiel in de pagina staat. Zonder element is
+// er niets te starten — net als bij het wiel (huisstijl §7.1): een verborgen
+// element heeft geen breedte, dus een gezette scrollpositie komt niet aan.
+function profielBannerStarten(root) {
+  const scope = root || document;
+  scope.querySelectorAll('.pb-spoor').forEach(spoor => {
+    const id = spoor.id;
+    profielBannerStop(id);
+
+    // Passief: een scroll-luisteraar die de browser niet mag ophouden.
+    // Huisstijl §16 verbiedt een niet-passieve luisteraar op een bewegend
+    // vlak; dit is dezelfde regel.
+    spoor.addEventListener('scroll', () => profielBannerStippenBijwerken(spoor), { passive: true });
+    // Zodra de gebruiker zelf swipet of tikt, stopt het doorschuiven. Het
+    // blijft daarna stil: iets dat wegdraait terwijl je kijkt, is erger dan
+    // iets dat stilstaat.
+    spoor.addEventListener('pointerdown', () => profielBannerStop(id), { passive: true });
+
+    if (spoor.children.length < 2 || profielBannerRustig()) return;
+
+    profielBannerTijden.set(id, setInterval(() => {
+      if (!spoor.isConnected || !spoor.offsetParent) { profielBannerStop(id); return; }
+      const breedte = spoor.clientWidth;
+      if (!breedte) return;
+      const nu = Math.round(spoor.scrollLeft / breedte);
+      const volgend = (nu + 1) % spoor.children.length;
+      spoor.scrollTo({ left: volgend * breedte, behavior: 'smooth' });
+    }, 5000));
+  });
+}

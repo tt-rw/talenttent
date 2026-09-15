@@ -1,6 +1,106 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 13-09-2026 — **TT-263 gebouwd en getest: de mediahoek laat nu zien welke link welke video is, de gebruiker kiest wat in de banner komt, en een video speelt binnen de app. Eindstand 126 van 126.**
+**Laatste update:** 15-09-2026 — **TT-265 gebouwd en getest: de bannerbalk staat op het muzikantenprofiel, de profielindeling is herschikt. Eindstand 162 van 162.**
+
+**Aanleiding.** Ronald, met een tekening van het muzikantenprofiel: *"de
+belangrijkste wijziging is de toevoeging van een banner bovenin. de muzikant
+kiest maximaal 5 geuploade foto's, videos of links uit het eigen profiel."*
+Het kiezen zelf bestond al sinds TT-263; de balk waarin die keuze te zien is,
+niet.
+
+**Eerst een UX-toets en zeven vragen, toen bouwen** (op verzoek van Ronald).
+Zijn besluiten:
+
+1. **Zes items, niet vijf.** De code stond al op zes (`MEDIA_BANNER_MAX`).
+   Ronald: *"maak er 6 uploads van."*
+2. **Geen autoplay.** Een video toont zijn eerste beeld en staat stil; geluid
+   en beweging komen pas na een tik, in het mediascherm van TT-263. De balk
+   schuift wel vanzelf door, om de vijf seconden, en stopt zodra de gebruiker
+   zelf swipet of een stip aantikt.
+3. **Stippen grijs, de actieve goud.** Ronald vroeg eerst om rood; rood is in
+   de app `--danger` en betekent verwijderen.
+4. **Geen blokkade op welk soort media in de banner mag.** Ook een link zonder
+   miniatuur. Die krijgt een kaart in bijna-zwart met gouden rand: platformnaam
+   groot, de titel eronder zodra oEmbed antwoordt.
+5. **"Deze week bijgewerkt" is een eigen grijze regel geworden,** direct onder
+   leeftijd en plaats. Vier standen in plaats van vijf. De groene balk met
+   kader en kloppende stip is weg.
+6. **Foto's en geüploade video's staan in één raster,** de links eronder.
+7. **Badges blijven boven de bio** (tegen de tekening in, op advies: instrument
+   en genre zijn het antwoord op "kan deze persoon wat ik zoek", en een lange
+   bio duwde ze weg).
+
+**Twee metingen op de echte site, vóór er één regel code wijzigde** (browserpane,
+§12 van de projectinstructies):
+
+| Wat | Uitkomst |
+|---|---|
+| Geeft `tt_get_musicians_public` de kolom `in_banner` mee? | **Geverifieerd niet.** De kolom `media` bevat alleen `url`, `platform` en `media_type` |
+| Komt er bij een YouTube-link automatisch een miniatuur mee? | **Geverifieerd ja**, zonder sleutel, voor elke openbare video — de app gebruikt dat adres al |
+
+**De RPC was de enige blokkade, en die staat nog open.** Ingelogd leest de app
+de tabel zelf; daar is `in_banner` aan de query toegevoegd. **Uitgelogd** loopt
+het via `tt_get_musicians_public`, en die geeft de vlag niet terug — een
+uitgelogde bezoeker ziet dus geen banner tot Ronald het script draait. Ronald
+heeft de functiedefinitie aangeleverd (`pg_get_functiondef`); daarop is één
+veld toegevoegd aan de `jsonb_build_object` van de media-kolom. Het RETURN TYPE
+blijft gelijk, dus `CREATE OR REPLACE` werkt zonder `DROP`. Script:
+`_niet-uploaden-tt265-rpc-in-banner.sql` in de gedeelde map. **Zie de rij in
+Deel 1/P1.**
+
+**Wat er gebouwd is.**
+1. **De bannerbalk** (`profielBannerHTML()`, `profielBannerStarten()`,
+   `profielBannerNaar()`, `profielBannerStop()` in `utils.js`). Swipen gaat via
+   CSS scroll-snap, niet via een eigen `touchmove` — huisstijl §16 verbiedt een
+   niet-passieve luisteraar op een bewegend vlak, en de browser doet dit zelf
+   vloeiender. `overscroll-behavior: contain` op het spoor. Bij
+   `prefers-reduced-motion` schuift er niets vanzelf door.
+2. **Vorm 5:2, niet 16:9.** Gemeten: bij 375px breed is 16:9 gelijk aan 211px
+   hoog, en dat duwt de naam tot op de rand van het zichtbare scherm.
+3. **Eén vlak per soort.** Foto: het beeld. Eigen video: het eerste beeld plus
+   het woord "Video" — tekst, geen elfde icoon (huisstijl §12). YouTube: de
+   miniatuur met de titel eroverheen. Ander platform: de kaart met gouden rand.
+4. **Een stip is 6px zichtbaar en 44px aan te tikken,** via hetzelfde
+   `::after`-patroon als het bannerteken van TT-263 (huisstijl §6).
+5. **Twee profielen tegelijk in de pagina kunnen geen last van elkaar hebben.**
+   Mijn Profiel en de profielmodal bestaan allebei; elke balk krijgt daarom een
+   eigen volgnummer in zijn id.
+6. **De bijgewerkt-regel**, vier standen in `relativeUpdatedLabel()`
+   (`messages.js`): <7 dagen "Deze week bijgewerkt", <30 "Deze maand
+   bijgewerkt", <90 "Binnen 3 maanden bijgewerkt", daarna "+3 maanden geleden
+   bijgewerkt".
+7. **De gouden balk staat op een breed scherm 24px onder de kop** in plaats van
+   48px. Op mobiel was die marge al 0 (besluit Ronald 22-08-2026) — daar
+   wijzigt niets. **Correctie op mijn eigen voorstel:** ik schreef "nu 32px
+   eronder op telefoon". Dat klopte niet; `.my-profile-wrap` krijgt op mobiel
+   `padding-top: 0`. Waaruit blijkt dat het oude onjuist was: die regel staat
+   met zoveel woorden in `styles.css`, met Ronalds besluit van 22-08-2026
+   erbij.
+
+**Dode code meteen weg (§2.10).** `.freshness-bar`, `.freshness-dot` en
+`@keyframes pulse` zijn uit `styles.css` verwijderd; niets gebruikt ze nog.
+De losse `<video controls>` in het fotoraster is weg — een video opent nu het
+mediascherm, net als een link en net als de banner. Dat was de laatste plek in
+de app waar media buiten dat scherm om speelde.
+
+**Eén fout in het eigen resultaat gemeten en hersteld.** Mijn eerste voorstel
+zette "deze week bijgewerkt" áchter "4,2 km" op dezelfde regel. Op de eerste
+afdruk brak die regel in tweeën: naast de profielfoto van 80px is op 375px nog
+247px over, en de regel is circa 300px. Het is daarom een eigen regel geworden.
+
+**Testset uitgebreid met blok 15** (blok 14 blijft gereserveerd voor TT-262):
+28 controles over het verbergen bij nul keuzes, het aantal vlakken en stippen,
+de kleuren van de stippen, het tikvlak van 44px, scroll-snap en
+`overscroll-behavior`, de verhouding 5:2, het stilstaan van een video, de
+YouTube-miniatuur, de kaart voor een platform zonder miniatuur, het volgen van
+de stippen bij swipen, het stoppen bij aanraking, de grens van zes, het
+samengevoegde raster, de grijze bijgewerkt-regel en de vier standen.
+**Eindstand: 162 van 162 geslaagd.**
+
+Gewijzigd: `utils.js`, `musicians.js`, `wizard.js`, `messages.js`, `styles.css`,
+`index.html` (versieachtervoegsels), `tests/tt_tests.py`, `actielijst.md`.
+
+**Vorige update:** 13-09-2026 — **TT-263 gebouwd en getest: de mediahoek laat nu zien welke link welke video is, de gebruiker kiest wat in de banner komt, en een video speelt binnen de app. Eindstand 126 van 126.**
 
 **Aanleiding.** Ronald, met twee schermafdrukken van Profiel bewerken → Je
 mediahoek: *"Gebruiker kan niet zien welke link welke video is."* Daarna twee
@@ -2887,6 +2987,11 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 ---
 
 ## P1 — Bepaalt of mensen terugkomen
+
+| ID | Ticket | Kern |
+|---|---|---|
+| **TT-266** | `tt_get_musicians_public` geeft `in_banner` niet mee | **Nieuw en gemeten 15-09-2026** (browserpane, tegen de echte site): de kolom `media` van deze RPC bevat alleen `url`, `platform` en `media_type`. Ingelogd leest de app de tabel zelf en is het opgelost; **uitgelogd ziet niemand een banner** tot dit script gedraaid is. **Toets P1:** een uitgelogde bezoeker is precies de persoon die overtuigd moet worden om zich aan te melden, en die ziet nu het minst verzorgde profiel. Klaarliggend script: `_niet-uploaden-tt265-rpc-in-banner.sql` in de gedeelde map. **Wacht op een handeling van Ronald bij Supabase, geen bouwwerk.** Claude meet na het draaien zelf of de vlag meekomt |
+
 
 | ID | Ticket | Kern |
 |---|---|---|

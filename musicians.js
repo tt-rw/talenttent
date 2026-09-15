@@ -87,6 +87,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
 
   return `
     <div class="profile-header-band" style="${headerBandStyle}"></div>
+    ${profielBannerHTML(m.musician_media)}
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
       ${avatarHTML}
       <div style="min-width:0;flex:1;">
@@ -100,12 +101,14 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
              label. -->
         ${(displayName === m.fname && m.fname) ? `<p style="font-size:12px;color:var(--muted);margin-top:4px;">Gebruikersnaam: <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
         <div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+        <!-- TT-265 (15-09-2026, Ronald): eigen grijze regel, direct onder
+             leeftijd en plaats. De groene balk met kader en kloppende stip is
+             weg. Een eigen regel en niet áchter "4,2 km": gemeten op 375px is
+             naast de foto van 80px nog 247px over, en de langste stand past
+             daar niet op één regel. -->
+        <div class="profile-fresh">${escHtml(updatedLabel)}</div>
       </div>
       ${ownerMenuHTML}
-    </div>
-    <div class="freshness-bar" style="margin-top:12px;margin-bottom:16px;">
-      <div class="freshness-dot"></div>
-      <span>${escHtml(updatedLabel)}</span>
     </div>
     <div class="profile-badges">
       ${m.musician_instruments.map(x => `<span class="badge" style="border-color:${col};color:${col};">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
@@ -117,18 +120,19 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
         <div class="profile-songs-title">Repertoire (${m.musician_songs.length} nummers)</div>
         ${songRows}
       </div>` : ''}
-    ${photos.length ? `
+    <!-- TT-265 (15-09-2026, Ronald): "foto's en geüploade video's staan naast
+         elkaar, de links staan eronder." Eén raster in plaats van twee
+         secties. Een video is daarin een tegel met zijn eerste beeld en het
+         woord "Video"; hij speelt niet ter plekke maar opent het mediascherm
+         van TT-263 — dezelfde weg als een link, en dezelfde weg als de
+         banner. Losse <video controls> in het raster was de enige plek in de
+         app waar media nog buiten dat scherm om speelde. -->
+    ${(photos.length || videos.length) ? `
       <div class="profile-media" style="margin-top:16px;">
-        <div class="profile-media-title">Foto's</div>
+        <div class="profile-media-title">Foto's en video's</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
-          ${photos.map(p => `<button type="button" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')" style="display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);padding:0;background:none;cursor:pointer;"><img src="${p.safeHref}" alt="Foto" style="width:100%;height:100%;object-fit:cover;"></button>`).join('')}
-        </div>
-      </div>` : ''}
-    ${videos.length ? `
-      <div class="profile-media" style="margin-top:16px;">
-        <div class="profile-media-title">Video's</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;">
-          ${videos.map(v => `<video src="${v.safeHref}" controls playsinline preload="metadata" style="width:100%;border-radius:8px;border:1px solid var(--border);background:#000;display:block;"></video>`).join('')}
+          ${photos.map(p => `<button type="button" class="profile-media-tegel" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')"><img src="${p.safeHref}" alt="Foto" style="width:100%;height:100%;object-fit:cover;"></button>`).join('')}
+          ${videos.map(v => `<button type="button" class="profile-media-tegel" onclick="openMediaSpeler('${jsAttr(v.safeHref)}', 'video')"><video src="${v.safeHref}#t=0.1" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true" style="width:100%;height:100%;object-fit:cover;background:#000;"></video><span class="pb-label">Video</span></button>`).join('')}
         </div>
       </div>` : ''}
     ${links.length ? `
@@ -234,7 +238,7 @@ async function openMusicianModal(id) {
       musician_instruments(instrument, niveau),
       musician_genres(genre),
       musician_songs(song_title, song_artist, mastery_level),
-      musician_media(media_type, url, platform)
+      musician_media(media_type, url, platform, in_banner)
     `).eq('id', id).single();
     m = res.data; error = res.error;
     if (m) {
@@ -281,6 +285,11 @@ async function openMusicianModal(id) {
 
   const isOwn = !!(myMusicianId && myMusicianId === m.id);
   document.getElementById('musicianModalContent').innerHTML = buildMusicianDetailHTML(m, isOwn, true);
+  // TT-265: de bannerbalk kan pas gaan schuiven als hij in de pagina staat —
+  // een verborgen element heeft geen breedte, dus een gezette scrollpositie
+  // komt niet aan (zelfde valkuil als bij het wiel, huisstijl §7.1).
+  profielBannerStarten(document.getElementById('musicianModalContent'));
+  mediaTitelsBijwerken(document.getElementById('musicianModalContent'));
   // TT-249: de naam kan pas passend gemaakt worden als hij in de pagina staat
   // — een element dat er nog niet is, heeft geen breedte om tegen te meten.
   fitProfileName(document.getElementById('musicianModalContent'));
