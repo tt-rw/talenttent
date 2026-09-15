@@ -1079,6 +1079,80 @@ def blok_browser():
                           "Binnen 3 maanden bijgewerkt", "Binnen 3 maanden bijgewerkt",
                           "+3 maanden geleden bijgewerkt", "+3 maanden geleden bijgewerkt"],
               json.dumps(standen))
+        # TT-267 (15-09-2026, Ronald): "hij blijft zo staan." De balk bleef
+        # halverwege twee vlakken hangen, waardoor het eerste beeld nog maar
+        # een streepje breed was. De nakijkstap zet dat binnen een cyclus
+        # recht, ongeacht de oorzaak.
+        rechtzet = page.evaluate("""async () => {
+          const basis = {
+            id: 'm9', fname: 'Sanne', username: 'sannedrums', city: 'Den Haag',
+            bio: 'Test', profile_color: '#f5c518', avatar_url: null, age: 17,
+            updated_at: new Date().toISOString(),
+            musician_instruments: [], musician_genres: [], musician_songs: [],
+            musician_media: [1,2,3].map(n => ({ media_type: 'foto', url: 'https://x/' + n + '.jpg', platform: null, in_banner: true }))
+          };
+          const vak = document.createElement('div');
+          vak.style.cssText = 'width:375px;position:absolute;left:0;top:0;';
+          document.body.appendChild(vak);
+          vak.innerHTML = buildMusicianDetailHTML(basis, true);
+          profielBannerStarten(vak);
+          const spoor = vak.querySelector('.pb-spoor');
+          // Halverwege twee vlakken zetten, zoals op Ronalds telefoon. Het
+          // vastzetten van scroll-snap is nodig om dat na te bootsen: deze
+          // browser snapt zelf meteen terug, de zijne deed dat niet. Zo toetst
+          // dit blok de nakijkstap van de app en niet die van de browser.
+          spoor.style.scrollSnapType = 'none';
+          spoor.scrollLeft = Math.round(spoor.clientWidth * 0.5);
+          const scheefVoor = Math.round(spoor.scrollLeft % spoor.clientWidth);
+          await new Promise(r => setTimeout(r, 6200));
+          const breedte = spoor.clientWidth;
+          const rest = Math.round(spoor.scrollLeft % breedte);
+          vak.remove();
+          return { scheefVoor, restNa: rest, breedte };
+        }""")
+        check("een balk die halverwege staat, zet zichzelf recht",
+              rechtzet["scheefVoor"] > 2 and rechtzet["restNa"] <= 2, json.dumps(rechtzet))
+
+        vorm = page.evaluate("""() => {
+          const basis = {
+            id: 'm9', fname: 'S', username: 's', city: 'Den Haag', bio: '',
+            profile_color: '#f5c518', avatar_url: null, age: 17,
+            updated_at: new Date().toISOString(),
+            musician_instruments: [], musician_genres: [], musician_songs: [],
+            musician_media: [{ media_type: 'video', url: 'https://x/c.mp4', platform: null, in_banner: true }]
+          };
+          const vak = document.createElement('div');
+          vak.style.cssText = 'width:375px;position:absolute;left:0;top:0;';
+          document.body.appendChild(vak);
+          vak.innerHTML = buildMusicianDetailHTML(basis, true);
+          const st = getComputedStyle(vak.querySelector('.pb-label'));
+          const item = getComputedStyle(vak.querySelector('.pb-item'));
+          const uit = { wrap: st.whiteSpace, afkap: st.textOverflow, snapStop: item.scrollSnapStop };
+          vak.remove();
+          return uit;
+        }""")
+        check("de titel staat op één regel en kapt af met …",
+              vorm["wrap"] == "nowrap" and vorm["afkap"] == "ellipsis", json.dumps(vorm))
+        check("geen scroll-snap-stop die een lopende sprong afbreekt",
+              vorm["snapStop"] == "normal", vorm["snapStop"])
+
+        kruis = page.evaluate("""() => {
+          const modal = document.getElementById('musicianModal');
+          modal.classList.add('visible');
+          const k = modal.querySelector('.modal-close').getBoundingClientRect();
+          const h = document.getElementById('navMenuBtn').getBoundingClientRect();
+          modal.classList.remove('visible');
+          return {
+            kruisMidX: Math.round(window.innerWidth - (k.left + k.width / 2)),
+            kruisMidY: Math.round(k.top + k.height / 2),
+            hamMidX: Math.round(window.innerWidth - (h.left + h.width / 2)),
+            hamMidY: Math.round(h.top + h.height / 2),
+          };
+        }""")
+        check("het kruis staat op de plek van het hamburgermenu",
+              abs(kruis["kruisMidX"] - kruis["hamMidX"]) <= 2 and abs(kruis["kruisMidY"] - kruis["hamMidY"]) <= 2,
+              json.dumps(kruis))
+
         check("geen paginafouten in blok 15", not page_errors, "; ".join(page_errors)[:200])
 
         page.evaluate("window.TT_STUB.reset()")
