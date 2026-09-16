@@ -1244,6 +1244,110 @@ def blok_browser():
 
         page.evaluate("window.TT_STUB.reset()")
 
+        # ─────────────────────────────────────────────────────────────
+        # Blok 16 — het gesprek op de telefoon (TT-271, 16-09-2026)
+        # Besluiten van Ronald: onderbalk weg tijdens typen, naam bovenin
+        # zichtbaar en tikbaar, geen toetsenbord zonder tik op het veld.
+        # Een aparte context met aanraakscherm: alleen daar geldt de regel.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 16 — het gesprek op de telefoon")
+        tctx = browser.new_context(viewport={"width": 390, "height": 844},
+                                   is_mobile=True, has_touch=True)
+        tp = tctx.new_page()
+        t_errors = []
+        tp.on("pageerror", lambda e: t_errors.append(str(e)))
+        tp.route("**/supabase-js@2/**", lambda r: r.fulfill(
+            status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
+                    "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            tp.route(pat, lambda r: r.abort())
+        tp.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        tp.wait_for_timeout(400)
+
+        gesprek = tp.evaluate("""async () => {
+          window.getMyMusicianId = async () => 'm1';
+          window.openMusicianModal = (id) => { window.__geopend = id; };
+          document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+          document.getElementById('view-messages').classList.add('active');
+          const lijst = [];
+          for (let i = 0; i < 30; i++) lijst.push({ id: 'x' + i, sender_id: i % 2 ? 'm1' : 'm2',
+            recipient_id: i % 2 ? 'm2' : 'm1', body: 'Bericht ' + i,
+            created_at: new Date(Date.now() - (30 - i) * 60000).toISOString(), read_at: null });
+          window.TT_STUB.data.messages = lijst;
+          await openConversation('m2', 'Dylan de Vries', '#f5c518', '', false, false);
+          await new Promise(r => setTimeout(r, 100));
+          const invoer = document.getElementById('messagesReplyInput');
+          const r = { focusNaOpenen: document.activeElement === invoer };
+          const laatste = document.getElementById('messagesThreadList').lastElementChild.getBoundingClientRect();
+          const voetje = document.querySelector('#messagesThreadPanel .messages-thread-footer').getBoundingClientRect();
+          r.laatsteOnder = Math.round(laatste.bottom);
+          r.voetBoven = Math.round(voetje.top);
+          r.voetOnderVoor = Math.round(innerHeight - voetje.bottom);
+          r.bodyOnder = parseFloat(getComputedStyle(document.body).paddingBottom);
+          const nav = document.getElementById('appBottomNav');
+          r.navVoor = getComputedStyle(nav).display;
+          invoer.focus();
+          await new Promise(r => setTimeout(r, 30));
+          r.navTijdens = getComputedStyle(nav).display;
+          const kop = document.querySelector('.app-topbar').getBoundingClientRect();
+          const naam = document.getElementById('messagesThreadName').getBoundingClientRect();
+          r.kopOnder = kop.bottom;
+          r.naamBoven = naam.top;
+          r.naamZichtbaar = naam.top >= kop.bottom - 1 && naam.bottom <= innerHeight;
+          const voet = document.querySelector('#messagesThreadPanel .messages-thread-footer').getBoundingClientRect();
+          r.voetOnder = Math.round(innerHeight - voet.bottom);
+          invoer.blur();
+          await new Promise(r => setTimeout(r, 30));
+          r.navNa = getComputedStyle(nav).display;
+          document.getElementById('messagesThreadName').click();
+          r.naamOpent = window.__geopend;
+          window.__geopend = null;
+          document.getElementById('messagesThreadAvatar').click();
+          r.fotoOpent = window.__geopend;
+          window.__geopend = null;
+          await openConversation('m2', 'Verwijderd', '#f5c518', '', false, true);
+          document.getElementById('messagesThreadName').click();
+          r.verwijderdOpent = window.__geopend;
+          openMessageComposer('m2', 'Dylan');
+          await new Promise(r => setTimeout(r, 120));
+          r.modalFocus = document.activeElement === document.getElementById('messageComposerBody');
+          return r;
+        }""")
+        check("het toetsenbord komt niet op bij het openen van een gesprek",
+              not gesprek["focusNaOpenen"], json.dumps(gesprek))
+        check("ook niet bij het openen van 'Stuur een bericht'",
+              not gesprek["modalFocus"], json.dumps(gesprek))
+        check("het laatste bericht staat helemaal boven het invoerveld (TT-272)",
+              gesprek["laatsteOnder"] <= gesprek["voetBoven"], json.dumps(gesprek))
+        check("het invoerveld sluit aan op de onderbalk (TT-272)",
+              gesprek["voetOnderVoor"] == gesprek["bodyOnder"], json.dumps(gesprek))
+        check("de onderbalk staat er vóór het typen",
+              gesprek["navVoor"] != "none", gesprek["navVoor"])
+        check("de onderbalk is weg tijdens het typen",
+              gesprek["navTijdens"] == "none", gesprek["navTijdens"])
+        check("en komt terug na het typen",
+              gesprek["navNa"] != "none", gesprek["navNa"])
+        check("het invoerveld zakt mee naar de onderrand",
+              gesprek["voetOnder"] == 0, str(gesprek["voetOnder"]))
+        check("de naam staat tijdens het typen direct onder de kop",
+              gesprek["naamZichtbaar"], json.dumps(gesprek))
+        check("tik op de naam opent het profiel",
+              gesprek["naamOpent"] == "m2", str(gesprek["naamOpent"]))
+        check("tik op de foto opent het profiel",
+              gesprek["fotoOpent"] == "m2", str(gesprek["fotoOpent"]))
+        check("bij een verwijderd account opent er niets",
+              gesprek["verwijderdOpent"] is None, str(gesprek["verwijderdOpent"]))
+        muis = page.evaluate("""() => {
+          document.getElementById('messagesReplyInput').focus();
+          const r = document.body.classList.contains('toetsenbord-open');
+          document.getElementById('messagesReplyInput').blur();
+          return r;
+        }""")
+        check("met een muis blijft de onderbalk staan", not muis, str(muis))
+        check("geen paginafouten in blok 16", not t_errors, "; ".join(t_errors)[:200])
+        tp.screenshot(path=os.path.join(os.environ.get("TT_SHOTS", "/tmp"), "blok16-typen.png"))
+        tctx.close()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
