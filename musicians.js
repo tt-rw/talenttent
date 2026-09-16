@@ -105,7 +105,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     ${m.bio ? `<p style="font-size:15px;color:var(--text);margin:12px 0;">${escHtml(m.bio)}</p>` : ''}
     ${m.musician_songs.length ? `
       <div class="profile-songs">
-        <div class="profile-songs-title">Repertoire (${m.musician_songs.length} nummers)</div>
+        <div class="profile-songs-title">Repertoire (${m.musician_songs.length} ${m.musician_songs.length === 1 ? 'nummer' : 'nummers'})</div>
         ${songRows}
       </div>` : ''}
     <!-- TT-265 (15-09-2026, Ronald): "foto's en geüploade video's staan naast

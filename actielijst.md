@@ -1,6 +1,41 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 16-09-2026 — **TT-271 en TT-272: het gesprekscherm op de telefoon. Plus een ontbrekend deel van TT-268 alsnog geleverd. Eindstand 191 van 191.**
+**Laatste update:** 16-09-2026 (vervolg) — **TT-273 en TT-274: "1 nummers" en het sterretje onder "Mijn Instrumenten". Eindstand 196 van 196.**
+
+**Aanleiding.** Ronald, met schermafdrukken van zijn telefoon, vier bevindingen.
+Twee zijn fouten en zijn opgelost. Twee zijn vragen en zijn beantwoord.
+
+**TT-273 (P2), opgelost.** *Toets: werkt, maar oogt slordig en kost vertrouwen.*
+De repertoirekop op een profiel zei "Repertoire (1 nummers)". Oorzaak:
+`buildMusicianDetailHTML()` in `musicians.js` zette het meervoud vast. Nu:
+"1 nummer", "2 nummers". Het voortgangspaneel in `bands.js` deed dit al goed.
+Gezocht naar dezelfde fout elders: de zoekmeldingen "Toont de eerste X van Y
+resultaten" verschijnen alleen bij meer dan de limiet, dus nooit bij één.
+
+**TT-274 (P2), opgelost.** *Toets: werkt, maar oogt slordig.* Het rode
+sterretje bij "Mijn Instrumenten" viel op een smal scherm onder de tekst.
+Oorzaak: de koprij is flex, met "Toelichting op niveau" rechts. Het linkerdeel
+kromp en brak af vóór het sterretje. Nu `white-space: nowrap` op het
+linkerdeel, in de wizard én in Profiel bewerken (§2.11). **Gemeten:** vóór de
+fix stond het sterretje 16px lager dan de tekst, ook op 412px breed.
+
+**Vraag 1 — is de gouden balk boven het profiel weg?** Ja, in de repo sinds de
+upload van 16-09-2026 04:56 (`musicians.js`, zie de correctie bij TT-268
+hieronder). Ronalds afdruk van 21:31 is van vóór die upload.
+
+**Vraag 2 — waarom is de adresbalk bij het eigen profiel zichtbaar en bij een
+ander profiel niet?** **Aanname:** de browser verbergt de adresbalk zodra je de
+pagina omlaag scrolt. Het eigen profiel is een scherm dat bovenaan begint. Het
+profiel van iemand anders is een modal die opent boven een lijst waarin je al
+gescrold hebt; de balk blijft dan verborgen. De app stuurt dit niet aan. Geen
+ticket.
+
+**Testset:** blok 17 nieuw, vijf controles. Vóór de fix zakten er drie, erna
+geen. **Eindstand: 196 van 196.**
+
+Gewijzigd: `index.html`, `musicians.js`, `tests/tt_tests.py`, `actielijst.md`.
+
+**Vorige update:** 16-09-2026 — **TT-271 en TT-272: het gesprekscherm op de telefoon. Plus een ontbrekend deel van TT-268 alsnog geleverd. Eindstand 191 van 191.**
 
 **Aanleiding.** Ronald, met een schermafdruk van een open gesprek op zijn
 telefoon, vier bevindingen: (1) onderbalk weg tijdens typen; (2) naam bovenin
@@ -3231,6 +3266,8 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-273** | "Repertoire (1 nummers)" | **Opgelost 16-09-2026 (vervolg).** Eén nummer heet nu "1 nummer". Zie Laatste update bovenaan |
+| **TT-274** | Sterretje onder "Mijn Instrumenten" op een smal scherm | **Opgelost 16-09-2026 (vervolg).** Wizard én Profiel bewerken. Zie Laatste update bovenaan |
 | **TT-270** | Krijgen de overige modals ook een koprij? | **Nieuw, 15-09-2026.** TT-268 en TT-269 gaven het muzikant- en het bandprofiel een koprij met woordmerk en sluiten-kruisje. Elf andere modals hebben die niet: bericht sturen, zoekvoorkeuren, lid uitnodigen, juridische teksten, instrumentkeuze, keuzelijst, niveau-uitleg, bio-scherm, account verwijderen, gebruikersnaam en de bevestigingsvraag. Op mobiel vullen die ook het hele scherm, dus dezelfde redenering geldt. **Openstaande vraag aan Ronald, geen aanname:** een woordmerk boven een korte bevestigingsvraag is mogelijk te zwaar. **Toets P2:** het werkt, maar de schermen ogen onderling verschillend. Bouwwerk is klein — `.modal-kop` en `.modal-box-kop` staan er al |
 
 
