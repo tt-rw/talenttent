@@ -1201,6 +1201,7 @@ def blok_browser():
             koprijInModal: !!mk,
             woordmerkInModal: !!(mk && mk.querySelector('.logo')),
             kruisInKoprij: !!(mk && mk.querySelector('.modal-close')),
+            // TT-287: relative, niet static — anders dekt het tikvlak het hele venster.
             kruisStatisch: mk ? getComputedStyle(mk.querySelector('.modal-close')).position : ''
           };
         }""")
@@ -1210,7 +1211,7 @@ def blok_browser():
         check("het profiel van iemand anders houdt de koprij met het woordmerk",
               profielkop["koprijInModal"] and profielkop["woordmerkInModal"], json.dumps(profielkop))
         check("met het sluiten-kruisje in die rij, niet los erboven",
-              profielkop["kruisInKoprij"] and profielkop["kruisStatisch"] == "static",
+              profielkop["kruisInKoprij"] and profielkop["kruisStatisch"] == "relative",
               json.dumps(profielkop))
 
         # TT-269 (15-09-2026, Ronald): "voer dit door in de hele app."
@@ -1661,6 +1662,58 @@ def blok_browser():
               st["zelfde"], "")
         check("geen paginafouten bij versturen", not iff, "; ".join(iff)[:200])
         ic.close()
+
+        # ─────────────────────────────────────────────────────────────
+        # Blok 20 — het profielvenster sluit (TT-287), 16-09-2026.
+        # Het kruis en het logo riepen closeMusicianModal() aan zonder
+        # klik-gegeven; dat gaf een TypeError en het venster bleef open.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 20 — het profielvenster sluit")
+        page_errors.clear()
+        def open_profiel():
+            page.evaluate("() => document.getElementById('musicianModal').classList.add('visible')")
+        def is_open():
+            return page.evaluate("() => document.getElementById('musicianModal').classList.contains('visible')")
+        open_profiel()
+        page.click("#musicianModal .modal-close")
+        check("het kruis sluit het profielvenster", not is_open(), "")
+        check("het kruis geeft geen paginafout", not page_errors, "; ".join(page_errors)[:200])
+        page_errors.clear()
+        page.evaluate("() => showView('search')")
+        open_profiel()
+        page.click("#musicianModal .logo")
+        page.wait_for_timeout(60)
+        naar_home = page.evaluate("() => document.getElementById('view-landing').classList.contains('active')")
+        check("het logo sluit het venster en gaat naar de homepagina",
+              not is_open() and naar_home, f"open={is_open()} landing={naar_home}")
+        check("het logo geeft geen paginafout", not page_errors, "; ".join(page_errors)[:200])
+        open_profiel()
+        page.evaluate("() => document.getElementById('musicianModalContent').click()")
+        check("een klik ín het venster laat het open", is_open(), "")
+        page.evaluate("() => document.getElementById('musicianModal').click()")
+        check("een klik naast het venster sluit het", not is_open(), "")
+        tikvlak = page.evaluate("""() => {
+          const uit = {};
+          for (const id of ['musicianModal', 'bandModal']) {
+            const m = document.getElementById(id);
+            m.classList.add('visible');
+            const k = m.querySelector('.modal-close').getBoundingClientRect();
+            const raak = (x, y) => !!document.elementFromPoint(x, y)?.closest('.modal-close');
+            uit[id] = { midden: raak(innerWidth / 2, innerHeight / 2),
+                        logo: raak(40, k.top + k.height / 2),
+                        kruis: raak(k.left + k.width / 2, k.top + k.height / 2),
+                        rand: raak(k.left - 4, k.top + k.height / 2),
+                        breed: Math.round(k.width + 11) };
+            m.classList.remove('visible');
+          }
+          return uit;
+        }""")
+        for mid, t in tikvlak.items():
+            check(f"tikvlak van het kruis blijft bij het kruis ({mid})",
+                  not t["midden"] and not t["logo"], json.dumps(t))
+            check(f"kruis en 5,5px eromheen zijn raak, samen >= 44px ({mid})",
+                  t["kruis"] and t["rand"] and t["breed"] >= 44, json.dumps(t))
+        check("geen paginafouten in blok 20", not page_errors, "; ".join(page_errors)[:200])
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
