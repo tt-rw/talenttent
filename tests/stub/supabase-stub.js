@@ -165,7 +165,9 @@
         return { data: rows, error: null };
       }
       if (this.op === 'insert' || this.op === 'upsert') {
-        const rows = Array.isArray(this.payload) ? this.payload : [this.payload];
+        const rows = (Array.isArray(this.payload) ? this.payload : [this.payload]).map((r) =>
+          // Zoals de database: een nieuwe rij krijgt zelf een tijdstip (TT-277).
+          (r && typeof r === 'object' && !('created_at' in r)) ? Object.assign({ created_at: new Date().toISOString() }, r) : r);
         TT_STUB.data[this.table] = (TT_STUB.data[this.table] || []).concat(clone(rows));
         const out = clone(rows);
         if (this.singleMode) return { data: out[0] || null, error: null };
