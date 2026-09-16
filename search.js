@@ -54,7 +54,7 @@ const WHEEL_NIVEAU  = ['', 1, 2, 3, 4, 5];
 // 500 km vroegen een lange scrollbeweging voor een keuze die in de praktijk
 // tussen 10 en 50 km ligt. Nederland is ongeveer 300 km lang.
 const WHEEL_RADIUS  = [5, 10, 15, 25, 50, 75, 100, 150, 250, 500];
-const STRAAL_STANDAARD = 5;   // beginstand van het straalwiel (Ronald, 10-09-2026)
+const STRAAL_STANDAARD = 10;  // beginstand van elk straalwiel (Ronald, 16-09-2026, TT-276; was 5)
 
 function rangeStep(from, to, step) {
   const out = [];

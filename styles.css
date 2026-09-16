@@ -3399,6 +3399,11 @@
        eind is — dat leest als haperen. */
     overscroll-behavior: contain;
     /* De vervaging staat nu op .picker-fade, over het paneel heen. */
+    /* TT-275: de scroller loopt door tot de buren en de randen van het paneel
+       (maten uit wielTreffervlak() in utils.js). Zo draait het wiel ook naast
+       het getal en over "km". */
+    margin-left: calc(-1 * var(--wiel-l, 0px));
+    margin-right: calc(-1 * var(--wiel-r, 0px));
   }
   /* Met een muis trekt `mandatory` het wiel bij elke klik van het muiswiel
      terug naar de dichtstbijzijnde regel, midden in de beweging. Met een
@@ -3417,6 +3422,9 @@
     font-size: 17px;
     color: #6d6d6d;
     scroll-snap-align: center;
+    /* TT-275: zelfde maat terug als opvulling, zodat het getal midden in zijn
+       kolom blijft staan. */
+    padding: 0 var(--wiel-r, 0px) 0 var(--wiel-l, 0px);
     cursor: pointer;
     user-select: none;
     white-space: nowrap;
@@ -3435,6 +3443,7 @@
     font-size: var(--fs-sm);
     text-align: center;
     flex: 0 0 auto;
+    pointer-events: none;   /* TT-275: het wiel eronder vangt de veeg */
   }
   .wheel-sep  { width: 44px; }
   .wheel-unit { width: 52px; font-size: 15px; }
@@ -3444,6 +3453,7 @@
      breed als .wheel-unit en zet de kolommen terug in het midden. Wordt smaller
      op een heel smal scherm, in plaats van het paneel te laten uitlopen. */
   .wheel-unit-spacer {
+    pointer-events: none;
     width: 52px;
     flex: 0 1 auto;
     min-width: 0;

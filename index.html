@@ -45,7 +45,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260916a">
+<link rel="stylesheet" href="styles.css?v=20260916b">
 </head>
 <body>
 
@@ -914,7 +914,7 @@
               <span class="wheel-field-label"></span>
               <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
             </div>
-            <input type="hidden" id="filterRadius" value="5">
+            <input type="hidden" id="filterRadius" value="10">
           </div>
         </div>
         <div id="filterCityStatus" class="city-status"></div>
@@ -1090,7 +1090,7 @@
               <span class="wheel-field-label"></span>
               <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
             </div>
-            <input type="hidden" id="filterBandRadius" value="5">
+            <input type="hidden" id="filterBandRadius" value="10">
           </div>
         </div>
         <div id="filterBandCityStatus" class="city-status"></div>
@@ -1248,7 +1248,7 @@
               <span class="wheel-field-label"></span>
               <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
             </div>
-            <input type="hidden" id="filterSetlistRadius" value="5">
+            <input type="hidden" id="filterSetlistRadius" value="10">
           </div>
         </div>
         <div id="filterSetlistCityStatus" class="city-status"></div>
@@ -2154,11 +2154,11 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20260916a"></script>
-<script src="utils.js?v=20260915b"></script>
+<script src="utils.js?v=20260916a"></script>
 <script src="auth.js?v=20260912a"></script>
 <script src="postcode.js?v=20260910a"></script>
 <script src="wizard.js?v=20260915a"></script>
-<script src="search.js?v=20260912a"></script>
+<script src="search.js?v=20260916a"></script>
 <script src="musicians.js?v=20260916b"></script>
 <script src="bands.js?v=20260910a"></script>
 <script src="messages.js?v=20260916a"></script>

@@ -1069,9 +1069,33 @@ function openWheelSheet(id) {
         onPick: () => { if (sluitBijTik) closeWheelSheet(); }
       });
     });
+    wielTreffervlak();
     refreshWheelField(id);
   }));
 }
+
+// TT-275 (16-09-2026): het hele paneel draait mee, niet alleen de smalle
+// kolom met de getallen. Anders bedekt de duim het getal dat je kiest.
+// Elke kolom krijgt het vlak tot halverwege zijn buren; de eerste loopt door
+// tot de linkerrand, de laatste tot de rechterrand — dus ook over "km". Het
+// getal zelf blijft op zijn plek: de kolom rekt uit met een negatieve marge,
+// en dezelfde maat komt terug als opvulling in elke regel.
+function wielTreffervlak() {
+  const groep = document.getElementById('wheelSheetGroup');
+  if (!groep) return;
+  const wielen = [...groep.querySelectorAll('.wheel')];
+  if (!wielen.length) return;
+  const g = groep.getBoundingClientRect();
+  const r = wielen.map(w => w.getBoundingClientRect());
+  wielen.forEach((w, i) => {
+    const links  = i === 0 ? g.left : (r[i - 1].right + r[i].left) / 2;
+    const rechts = i === wielen.length - 1 ? g.right : (r[i].right + r[i + 1].left) / 2;
+    const scroll = w.querySelector('.wheel-scroll');
+    scroll.style.setProperty('--wiel-l', Math.max(0, Math.floor(r[i].left - links)) + 'px');
+    scroll.style.setProperty('--wiel-r', Math.max(0, Math.floor(rechts - r[i].right)) + 'px');
+  });
+}
+window.addEventListener('resize', () => { if (actiefWielVeld) wielTreffervlak(); });
 
 // Een verborgen veld levert altijd tekst; het wiel werkt met de oorspronkelijke
 // waarden (getallen). Zoek de bijpassende waarde op, val terug op "Geen".

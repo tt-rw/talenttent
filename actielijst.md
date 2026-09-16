@@ -1,6 +1,35 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 16-09-2026 (vervolg) — **TT-273 en TT-274: "1 nummers" en het sterretje onder "Mijn Instrumenten". Eindstand 196 van 196.**
+**Laatste update:** 16-09-2026 (vervolg 2) — **TT-275 en TT-276: het hele wielpaneel draait mee, en de standaardstraal is 10 km. Eindstand 212 van 212.**
+
+**Aanleiding.** Ronald, met een schermafdruk van het straalwiel op zijn
+telefoon: (1) het wiel draait alleen op de cijfers, dus je duim bedekt wat je
+kiest; ook links en rechts ervan en over "km" moet het draaien, bij alle
+draaiwielen; (2) de zoekstraal overal standaard op 10 km in plaats van 5 km.
+
+**TT-275 (P2), opgelost.** *Toets: werkt, maar kost moeite — je ziet niet wat je
+kiest.* Oorzaak: elke wielkolom was 72px breed; de rest van het paneel ("km",
+"t/m", de randen) ving geen veeg. Nu rekt `wielTreffervlak()` in `utils.js`
+elke kolom uit tot halverwege zijn buur en tot de rand van het paneel. De
+cijfers blijven op hun plek. Geldt voor alle wielen: straal, leeftijd, niveau,
+ook in Band en Setlist — ze lopen allemaal via `openWheelSheet()`.
+**Gemeten** met een echte vingerveeg in de browser: vóór de fix veranderde een
+veeg over "km" of over de linkerrand niets; erna wel.
+
+**TT-276 (P2), opgelost.** *Toets: werkt, maar 5 km levert te vaak niets op.*
+`STRAAL_STANDAARD` in `search.js` en de drie verborgen straalvelden in
+`index.html` staan op 10. "Wissen" zet ook terug naar 10. De gouden rand
+verschijnt nu bij elke straal behalve 10. **Niet gewijzigd:** het straalveld in
+"Lid uitnodigen" (`memberSearchRadius`). Dat is een vrij getalveld en staat
+standaard leeg, dus zonder straal — het stond nooit op 5 km.
+
+**Testset:** blok 18 nieuw, zestien controles. Vóór de fix zakten er elf, erna
+geen. **Eindstand: 212 van 212.**
+
+Gewijzigd: `index.html`, `styles.css`, `utils.js`, `search.js`,
+`tests/tt_tests.py`, `actielijst.md`.
+
+**Vorige update:** 16-09-2026 (vervolg) — **TT-273 en TT-274: "1 nummers" en het sterretje onder "Mijn Instrumenten". Eindstand 196 van 196.**
 
 **Aanleiding.** Ronald, met schermafdrukken van zijn telefoon, vier bevindingen.
 Twee zijn fouten en zijn opgelost. Twee zijn vragen en zijn beantwoord.
@@ -3266,6 +3295,8 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-275** | Wiel draait alleen op de cijfers | **Opgelost 16-09-2026 (vervolg 2).** Het hele paneel draait mee, ook over "km" en "t/m", bij alle wielen. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
+| **TT-276** | Standaardstraal 10 km | **Opgelost 16-09-2026 (vervolg 2).** Was 5 km; geldt voor Muzikant, Band en Setlist. Zie Laatste update bovenaan |
 | **TT-273** | "Repertoire (1 nummers)" | **Opgelost 16-09-2026 (vervolg).** Eén nummer heet nu "1 nummer". Zie Laatste update bovenaan |
 | **TT-274** | Sterretje onder "Mijn Instrumenten" op een smal scherm | **Opgelost 16-09-2026 (vervolg).** Wizard én Profiel bewerken. Zie Laatste update bovenaan |
 | **TT-270** | Krijgen de overige modals ook een koprij? | **Nieuw, 15-09-2026.** TT-268 en TT-269 gaven het muzikant- en het bandprofiel een koprij met woordmerk en sluiten-kruisje. Elf andere modals hebben die niet: bericht sturen, zoekvoorkeuren, lid uitnodigen, juridische teksten, instrumentkeuze, keuzelijst, niveau-uitleg, bio-scherm, account verwijderen, gebruikersnaam en de bevestigingsvraag. Op mobiel vullen die ook het hele scherm, dus dezelfde redenering geldt. **Openstaande vraag aan Ronald, geen aanname:** een woordmerk boven een korte bevestigingsvraag is mogelijk te zwaar. **Toets P2:** het werkt, maar de schermen ogen onderling verschillend. Bouwwerk is klein — `.modal-kop` en `.modal-box-kop` staan er al |
