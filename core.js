@@ -1004,3 +1004,25 @@ window.addEventListener('popstate', (e) => {
   showView(e.state?.view || 'landing', 'pop');
 });
 
+
+// TT-271 (16-09-2026, Ronald): de onderbalk verdwijnt zolang iemand typt.
+// Alleen op een aanraakscherm — met een muis komt er geen toetsenbord op.
+// Geldt app-breed, voor elk veld dat een toetsenbord opent (§2.11).
+function isTypveld(el) {
+  if (!el) return false;
+  if (el.isContentEditable || el.tagName === 'TEXTAREA') return true;
+  if (el.tagName !== 'INPUT') return false;
+  return ['text', 'search', 'email', 'password', 'tel', 'url', 'number', ''].includes(el.type);
+}
+(function initToetsenbordStand() {
+  if (!window.matchMedia || !window.matchMedia('(pointer: coarse)').matches) return;
+  document.addEventListener('focusin', e => {
+    if (isTypveld(e.target)) document.body.classList.add('toetsenbord-open');
+  });
+  document.addEventListener('focusout', () => {
+    // Wacht één tik: springt de focus naar een volgend veld, dan blijft de balk weg.
+    setTimeout(() => {
+      if (!isTypveld(document.activeElement)) document.body.classList.remove('toetsenbord-open');
+    }, 0);
+  });
+})();

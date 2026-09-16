@@ -1,6 +1,61 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 15-09-2026 (vervolg 3) — **TT-269: elf gouden balken weg uit Profiel bewerken, het bandprofiel krijgt dezelfde koprij, en de inhoud begint overal direct onder de kop. Eindstand 177 van 177.**
+**Laatste update:** 16-09-2026 — **TT-271 en TT-272: het gesprekscherm op de telefoon. Plus een ontbrekend deel van TT-268 alsnog geleverd. Eindstand 191 van 191.**
+
+**Aanleiding.** Ronald, met een schermafdruk van een open gesprek op zijn
+telefoon, vier bevindingen: (1) onderbalk weg tijdens typen; (2) naam bovenin
+tonen, zodat je ziet aan wie je schrijft; (3) die naam tikbaar, naar het
+profiel; (4) het toetsenbord pas tonen na een tik op het veld.
+
+**Oorzaak van (2) en (4), gemeten.** `openConversation()` zette de focus
+meteen op het invoerveld. Die focus startte `pinMessagesThreadHeader()`
+(TT-130-vervolg, 23-08-2026, nooit op een telefoon geverifieerd). Die zette de
+naamkop op `position: fixed; top: 0` met `z-index: 35` — onder de vaste kop
+van de app (`z-index: 55`). De naam lag dus onzichtbaar achter het woordmerk,
+zolang het toetsenbord openstond. En dat was altijd, door de automatische
+focus.
+
+**Wat er gebouwd is (TT-271, P1).** *Toets: een gesprek waarin je niet ziet
+met wie je praat, doet twijfelen of je terugschrijft.*
+1. **Onderbalk weg tijdens typen, app-breed.** `initToetsenbordStand()` in
+   `core.js` zet `body.toetsenbord-open` zolang een typveld focus heeft. Alleen
+   op een aanraakscherm. Het invoerveld van een gesprek zakt dan naar de
+   onderrand. App-breed en niet alleen in berichten: §2.11.
+2. **Naam blijft staan.** De vaste-positie-truc is weg (dode code, §2.10). De
+   kop blijft sticky, met `top` uit dezelfde variabele als de app-kop:
+   `calc(2 * var(--kop-lucht) + 44px)`. Stond op 80px; sinds TT-268 is de kop
+   68px.
+3. **Foto en naam openen het profiel** via `openThreadProfile()`. Bij een
+   verwijderd account gebeurt er niets.
+4. **Geen automatische focus meer**, in het gesprek én in "Stuur een bericht"
+   (zelfde reden, §2.11). De knop "Schrijf het eerste bericht" bij een leeg
+   gesprek zet de focus wel: daar tikt de gebruiker zelf.
+
+**Onderweg gevonden en opgelost: TT-272 (P1).** *Toets: wie het laatste
+antwoord niet kan lezen, reageert niet.* Het laatste bericht viel half achter
+het invoerveld — zichtbaar op Ronalds eigen afdruk ("Oi"). `scrollIntoView`
+zette het tegen de onderrand, onder het invoerveld en de onderbalk. Nu scrolt
+het gesprek helemaal naar beneden. Daarbij bleek 60px opvulling van
+`.search-wrap` het invoerveld los boven de onderbalk te laten hangen; die
+vervalt in een open gesprek.
+
+**Correctie (§2.13) — TT-268 was niet volledig in de repo.** Hierboven, bij
+TT-268, staat: "de variabele `headerBandStyle` in `musicians.js` zijn
+verwijderd". Dat klopte niet voor de repo: `musicians.js` daar bevatte de
+variabele en de gouden balk nog. Waaruit blijkt dat: de vaste testset zakte bij
+de nulmeting van deze sessie op twee controles ("de gouden balk bovenaan het
+profiel is weg", "de hero is nu het eerste element") — 175 van 177, niet 177.
+Vermoedelijk is `musicians.js` van TT-268 niet geüpload. Nu alsnog verwijderd.
+
+**Testset:** blok 16 nieuw, veertien controles. **Eindstand: 191 van 191.**
+**Niet getest op een echte telefoon:** het echte toetsenbord kan de testset
+niet nabootsen. Ronald: open een gesprek, tik in het veld, en kijk of naam en
+laatste bericht zichtbaar blijven.
+
+Gewijzigd: `index.html`, `styles.css`, `core.js`, `messages.js`,
+`musicians.js`, `tests/tt_tests.py`, `actielijst.md`.
+
+**Vorige update:** 15-09-2026 (vervolg 3) — **TT-269: elf gouden balken weg uit Profiel bewerken, het bandprofiel krijgt dezelfde koprij, en de inhoud begint overal direct onder de kop. Eindstand 177 van 177.**
 
 **Aanleiding.** Ronald: *"voer dit door in de hele app. bandprofiel, maar ook
 het profiel bewerken staan veel balken. voer dezelfde afstand door."*
@@ -3150,6 +3205,8 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-271** | Gesprekscherm op de telefoon | **Opgelost 16-09-2026.** Onderbalk weg tijdens typen (app-breed), naam blijft zichtbaar, foto en naam openen het profiel, geen automatisch toetsenbord. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
+| **TT-272** | Laatste bericht half achter het invoerveld | **Opgelost 16-09-2026.** Gesprek scrolt nu helemaal naar beneden; de losse 60px onder het invoerveld is weg. Zie Laatste update bovenaan |
 | **TT-264** | Een video speelde door na de terugknop | **Opgelost 13-09-2026.** De terugknop, Escape en een wissel van view haalden alleen de klasse `visible` van een modal af; het kader bleef spelen in een onzichtbaar scherm dat niet meer op te roepen was. Opgelost in de standaard: `data-close` op de overlay plus `sluitModal()` in `core.js`. Zie Deel 3 |
 | **TT-11** | "Ik wil meedoen" bij bands | **Ontwerprichting bepaald 08-08-2026** — geen ja/nee-mechaniek, zie toelichting onder deze tabel. Eigen sessie, niet samen met TT-06 |
 | **TT-13** | Terugkeerredenen | Profielweergaven, wekelijkse mail. **Samengevoegd 09-08-2026** met wat eerder los als "Volgen/ontvolgen" bij de Toekomstvisie stond — zelfde onderwerp, stond dubbel. **Uitgesplitst 06-09-2026: volgen/ontvolgen + het activiteitenoverzicht heeft nu een eigen ticket, TT-221** (zie bovenaan dit document) — was hier alleen als één-regel-richting vastgelegd (25-08-2026, "Connections"-blokje), Ronald leverde de volledige uitwerking aan |

@@ -2024,6 +2024,9 @@
     color: var(--text);
   }
   .messages-thread-back:hover { border-color: var(--accent); color: var(--accent); }
+  /* TT-271: foto en naam zijn tikbaar en openen het profiel. */
+  .messages-thread-link { cursor: pointer; }
+  .thread-verwijderd .messages-thread-link { cursor: default; }
 
   .messages-day-divider {
     text-align: center;
@@ -3002,9 +3005,11 @@
        waarde. Wijzigt de kophoogte ooit (padding of .logo min-height),
        dan moet dit getal mee, net als de -32px-bleed-marge in §10 van
        huisstijl-en-consistentie.md. */
+    /* TT-271 (16-09-2026): top volgt nu de kophoogte uit dezelfde
+       variabele als de kop zelf. Stond op 80px; sinds TT-268 is de kop 68px. */
     #messagesThreadPanel .messages-thread-header {
       position: sticky;
-      top: 80px;
+      top: calc(2 * var(--kop-lucht) + 44px + env(safe-area-inset-top, 0px));
       z-index: 30;
       background: var(--bg);
       padding-top: 4px;
@@ -3022,6 +3027,20 @@
       z-index: 30;
       background: var(--bg);
       padding-top: 8px;
+    }
+    /* TT-271 (16-09-2026, Ronald): tijdens typen is de onderbalk weg (zie
+       initToetsenbordStand() in core.js). Het invoerveld zakt dan mee. */
+    body.toetsenbord-open .app-bottom-nav { display: none !important; }
+    body.toetsenbord-open { padding-bottom: env(safe-area-inset-bottom, 0px); }
+    body.toetsenbord-open #messagesThreadPanel .messages-thread-footer {
+      bottom: env(safe-area-inset-bottom, 0px);
+    }
+    /* TT-272 (16-09-2026): in een open gesprek geen opvulling onder het
+       invoerveld. Die 60px liet het veld bij helemaal naar beneden scrollen
+       los boven de onderbalk hangen, met berichten eronder. De ruimte voor
+       de onderbalk zelf reserveert body al. */
+    #view-messages.active .search-wrap:has(#messagesThreadPanel.gesprek-open) {
+      padding-bottom: 0;
     }
     /* TT-131 (23-08-2026): login/wachtwoordherstel volgden de 16px-
        marge-regel (zie huisstijl §3) niet — enige twee schermen die

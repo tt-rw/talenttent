@@ -54,17 +54,6 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     .map(x => ({ ...x, safeHref: safeUrl(x.url) }))
     .filter(x => x.safeHref);
 
-  // De -32px bleed-marge laat de balk precies tot de rand van een modal
-  // reiken (.modal-box heeft daar exact 32px opvulling). Mijn Profiel
-  // (.my-profile-wrap) heeft een andere opvulling (24-40px, niet 32px) —
-  // dezelfde vaste -32px trok de balk daar te ver omhoog, tot naast de
-  // koprij (gemeld door Ronald, 22-08-2026: "gele lijn" die met scrollen
-  // meebeweegt). Buiten de modal dus geen bleed, gewoon een balk die past
-  // binnen de bestaande opvulling.
-  const headerBandStyle = inModal
-    ? `background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;height:8px;`
-    : `background:${col};margin:0 0 24px;border-radius:8px;height:8px;`;
-
   // 22-08-2026 (Ronald): het onderste actieblok (Profiel bewerken + het
   // ⋯-menu, TT-119) is weg. Alle drie de acties — wijzigen, band-
   // uitnodigingen aan/uit, account verwijderen — staan nu in één klein
@@ -86,7 +75,6 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     </div>` : '';
 
   return `
-    <div class="profile-header-band" style="${headerBandStyle}"></div>
     ${profielBannerHTML(m.musician_media)}
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
       ${avatarHTML}

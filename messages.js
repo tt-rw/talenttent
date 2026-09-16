@@ -23,7 +23,8 @@ function openMessageComposer(recipientId, recipientName) {
   const bandModalEl = document.getElementById('bandModal');
   if (bandModalEl) bandModalEl.classList.remove('visible');
   document.getElementById('messageModal').classList.add('visible');
-  setTimeout(() => document.getElementById('messageComposerBody').focus(), 50);
+  // TT-271 (16-09-2026, Ronald): geen automatische focus meer. Het
+  // toetsenbord komt pas op als de gebruiker zelf op het veld tikt.
 }
 
 // TT-31 (07-08-2026): het chat-icoon op de resultatenrij/-kaart moet direct
@@ -123,8 +124,12 @@ async function sendReplyInThread() {
 function scrollThreadToBottom() {
   const draad = document.getElementById('messagesThreadList');
   if (!draad) return;
-  const laatste = draad.lastElementChild;
-  if (laatste && laatste.scrollIntoView) laatste.scrollIntoView({ block: 'end' });
+  // TT-272 (16-09-2026): scrollIntoView zette het laatste bericht tegen de
+  // onderrand, dus achter het invoerveld en de onderbalk. Het invoerveld
+  // staat onderaan in de paginastroom; helemaal naar beneden scrollen zet
+  // het laatste bericht er dus altijd net boven.
+  if (!draad.lastElementChild) return;
+  window.scrollTo(0, document.documentElement.scrollHeight);
 }
 
 // Ongelezen-badge op de "Berichten"-navigatieknop, bijgewerkt na inloggen,
@@ -296,6 +301,8 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, 
   const composerEl = document.querySelector('#messagesThreadPanel .messages-composer-row');
   const noticeEl = document.getElementById('messagesDeletedNotice');
   if (composerEl) composerEl.style.display = activeConversationDeleted ? 'none' : 'flex';
+  document.getElementById('messagesThreadPanel').classList.toggle('thread-verwijderd', activeConversationDeleted);
+  document.getElementById('messagesThreadPanel').classList.add('gesprek-open');
   if (noticeEl) noticeEl.style.display = activeConversationDeleted ? 'block' : 'none';
   document.getElementById('messagesThreadName').textContent = otherName;
   if (otherColor !== undefined) {
@@ -380,7 +387,7 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, 
       refreshUnreadBadge();
     }
     scrollThreadToBottom(); // V-01
-    if (!stil) document.getElementById('messagesReplyInput').focus();
+    // TT-271: geen automatische focus — zie openMessageComposer().
   } catch (e) {
     logCaught('openConversation', e);
     threadEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Gesprek laden is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
@@ -393,55 +400,13 @@ function closeConversation() {
   threadHistoryPushed = false;
   document.getElementById('messagesInboxPanel').style.display = 'block';
   document.getElementById('messagesThreadPanel').style.display = 'none';
+  document.getElementById('messagesThreadPanel').classList.remove('gesprek-open');
   loadInbox();
 }
 
-// TT-130-vervolg (23-08-2026, live gemeld door Ronald): het invoerveld
-// bleef bereikbaar zodra het toetsenbord opkwam, maar de naam van de ander
-// (de sticky kop) verdween toch. Bekende eigenaardigheid: sommige mobiele
-// browsers passen het zichtbare kijkvenster (visualViewport) aan zonder dat
-// position:sticky dat op tijd volgt. Zolang het invoerveld focus heeft,
-// wordt de kop expliciet vastgezet op de bovenkant van het daadwerkelijk
-// zichtbare gebied, bijgewerkt bij elke wijziging daarvan. Alleen op mobiel
-// (≤560px, dezelfde grens als de rest van dit scherm) — op een breder
-// scherm is er geen toetsenbord dat de viewport verkleint.
-// Aanname, niet op een telefoon geverifieerd: dit lost het gemelde gedrag
-// op. Opnieuw testen op dezelfde manier als hierboven (toetsenbord openen
-// in een gesprek, blijft de naam nu wél zichtbaar?).
-function pinMessagesThreadHeader() {
-  if (window.innerWidth > 560 || !window.visualViewport) return;
-  const header = document.querySelector('#messagesThreadPanel .messages-thread-header');
-  if (!header) return;
-  const vv = window.visualViewport;
-  header.style.position = 'fixed';
-  header.style.top = vv.offsetTop + 'px';
-  header.style.left = '16px';
-  header.style.right = '16px';
-  header.style.width = 'auto';
-  header.style.zIndex = '35';
+// TT-271 (16-09-2026, Ronald): foto en naam bovenin een gesprek openen het
+// profiel van de ander. Een verwijderd account heeft geen profiel meer.
+function openThreadProfile() {
+  if (!activeConversationId || activeConversationDeleted) return;
+  openMusicianModal(activeConversationId);
 }
-function unpinMessagesThreadHeader() {
-  const header = document.querySelector('#messagesThreadPanel .messages-thread-header');
-  if (!header) return;
-  header.style.position = '';
-  header.style.top = '';
-  header.style.left = '';
-  header.style.right = '';
-  header.style.width = '';
-  header.style.zIndex = '';
-}
-(function initMessagesKeyboardPin() {
-  const input = document.getElementById('messagesReplyInput');
-  if (!input) return;
-  input.addEventListener('focus', () => {
-    pinMessagesThreadHeader();
-    window.visualViewport?.addEventListener('resize', pinMessagesThreadHeader);
-    window.visualViewport?.addEventListener('scroll', pinMessagesThreadHeader);
-  });
-  input.addEventListener('blur', () => {
-    unpinMessagesThreadHeader();
-    window.visualViewport?.removeEventListener('resize', pinMessagesThreadHeader);
-    window.visualViewport?.removeEventListener('scroll', pinMessagesThreadHeader);
-  });
-})();
-
