@@ -730,19 +730,6 @@
 
   .btn-ghost:hover { color: var(--text); border-color: #555; }
 
-  .profile-avatar {
-    width: 72px; height: 72px;
-    background: var(--accent);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Roboto', sans-serif;
-    font-size: 28px;
-    color: #000;
-    margin-bottom: 16px;
-  }
-
   .profile-name {
     font-family: 'Roboto', sans-serif;
     font-size: 36px;
@@ -990,48 +977,6 @@
 
   .comp-item.done { border-color: var(--success); color: var(--success); }
   .comp-item.pending { border-color: var(--border); color: var(--muted); }
-
-  /* TT-48: voortgangspaneel als PPP-tijdlijn (verleden/heden/toekomst),
-     los van de volledigheidsmeter hierboven. Zelfde kaartstijl, drie kolommen
-     die op mobiel onder elkaar vallen. */
-  .progress-timeline {
-    margin-top: 16px;
-    padding: 16px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-  }
-  .progress-timeline-label {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 14px;
-  }
-  .progress-timeline-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 14px;
-  }
-  /* TT-224 (hersteld 09-09-2026): media-grens (max-width:560px) losgekoppeld.
-     Deze regels gelden nu op elke breedte — de webapp krijgt dezelfde schil
-     als de telefoon-app, binnen het canvas van TT-224 onderaan dit bestand. */
-    .progress-timeline-grid { grid-template-columns: 1fr; }
-  
-  .progress-stage-title {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 6px;
-  }
-  .progress-stage-body {
-    font-size: 12px;
-    color: var(--text);
-    line-height: 1.5;
-  }
-  .progress-stage-body.empty { color: var(--muted); font-style: italic; }
 
   /* Profile header with personalized color */
   /* TT-132-bijvangst (23-08-2026): deze margin was dood — sinds de
@@ -2728,13 +2673,6 @@
     width: 100%;
     margin: 0 auto;
     padding: 24px 24px 80px;
-  }
-
-  .profile-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 24px;
-    align-items: flex-start;
   }
 
   /* TT-119 (22-08-2026): klein menuknopje voor de minder-frequente

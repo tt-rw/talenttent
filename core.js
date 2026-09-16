@@ -964,8 +964,7 @@ function showView(view, mode) {
   // view. Was bedoeld als gemak (TT-37), maar opende ongevraagd het
   // toetsenbord en verstoorde daarmee de "bovenaan beginnen"-scroll — de
   // gebruiker moet zelf op een veld tikken voordat het toetsenbord komt.
-  // autofocusFirstField() blijft staan (elders eventueel te gebruiken),
-  // alleen deze automatische aanroep is weg.
+  // autofocusFirstField() is op 16-09-2026 verwijderd als dode code.
 }
 
 // TT-U25 (12-08-2026): zolang een modal open is, mag de pagina eronder niet

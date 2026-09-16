@@ -219,10 +219,9 @@ async function loadMyProfile() {
   const { data: myAges } = await db.rpc('tt_musicians_ages', { ids: [m.id] });
   m.age = (myAges && myAges[0]) ? myAges[0].age : undefined;
 
-  // TT-120 (22-08-2026): "Jouw pad op The Talent Tent" (renderProgressPanel,
-  // TT-48) tijdelijk weggehaald op Mijn Profiel — komt later terug in een
-  // herontworpen vorm. De functie zelf blijft bestaan, wordt nu alleen niet
-  // meer aangeroepen op deze pagina.
+  // TT-120 (22-08-2026): "Jouw pad op The Talent Tent" (TT-48) staat niet
+  // meer op Mijn Profiel. De functie renderProgressPanel() is op 16-09-2026
+  // verwijderd als dode code; terug te vinden in commit 05f8ddd.
   el.innerHTML = buildMusicianDetailHTML(m, true) + renderCompletenessMeter(m);
   // TT-265: zie de toelichting in openMusicianModal() — pas starten als de
   // balk in de pagina staat.
@@ -708,7 +707,6 @@ function selectGoal(el, val) {
   document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   state.goal = val;
-  updateOptionalStepHints();
 }
 
 // TT-47: zelfde nogmaals-klikken-om-te-wissen als bij een enkelvoudige
@@ -717,18 +715,16 @@ function selectGoal(el, val) {
 function selectRehearsalFrequency(el, val) {
   const already = el.classList.contains('selected');
   document.querySelectorAll('#rehearsalFreqGrid .tag').forEach(t => t.classList.remove('selected'));
-  if (already) { state.rehearsalFrequency = ''; updateOptionalStepHints(); return; }
+  if (already) { state.rehearsalFrequency = ''; return; }
   el.classList.add('selected');
   state.rehearsalFrequency = val;
-  updateOptionalStepHints();
 }
 function selectMusicalAmbition(el, val) {
   const already = el.classList.contains('selected');
   document.querySelectorAll('#ambitionGrid .tag').forEach(t => t.classList.remove('selected'));
-  if (already) { state.musicalAmbition = ''; updateOptionalStepHints(); return; }
+  if (already) { state.musicalAmbition = ''; return; }
   el.classList.add('selected');
   state.musicalAmbition = val;
-  updateOptionalStepHints();
 }
 // TT-52: zelfde patroon — optioneel, per profiel, nogmaals klikken wist de keuze.
 function selectRepertoireType(el, val) {
@@ -737,27 +733,6 @@ function selectRepertoireType(el, val) {
   if (already) { state.repertoireType = ''; return; }
   el.classList.add('selected');
   state.repertoireType = val;
-}
-
-// TT-174 (31-08-2026): "(mag ook later)" naast een paneltitel is bedoeld als
-// geruststelling vóór het invullen — zodra er al iets staat, klopt die tekst
-// niet meer. Eén functie, drie labels, aangeroepen vanuit elke plek die de
-// bijbehorende data wijzigt (songs, doel/frequentie/ambitie, media/links) én
-// vanuit goTo() zelf, zodat een bestaand, al gevuld profiel de tekst meteen
-// bij binnenkomst verborgen toont — niet pas na de eerste nieuwe wijziging.
-// TT-209 (06-09-2026): Ronald liet de drie teksten zelf overal weghalen. De
-// drie <span>'s bestaan niet meer, dus deze functie en haar acht aanroepen
-// zijn nu een stille no-op (elke getElementById geeft null, elke if(x) vangt
-// dat af — geen foutmelding). Bewust laten staan i.p.v. acht aanroepen
-// mee-opruimen in dezelfde sessie als een tekstwijziging; restpunt voor een
-// eigen opschoningsronde.
-function updateOptionalStepHints() {
-  const rep = document.getElementById('magOokLaterRepertoire');
-  if (rep) rep.style.display = state.songs.length ? 'none' : '';
-  const wat = document.getElementById('magOokLaterWatZoekJe');
-  if (wat) wat.style.display = (state.goal || state.rehearsalFrequency || state.musicalAmbition) ? 'none' : '';
-  const med = document.getElementById('magOokLaterMedia');
-  if (med) med.style.display = (state.mediaFiles.length || state.mediaLinks.some(l => l.url)) ? 'none' : '';
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
@@ -1065,7 +1040,6 @@ function goTo(step) {
   document.querySelectorAll('.panel').forEach((p,i) => {
     p.classList.toggle('active', i === step);
   });
-  updateOptionalStepHints();
 
   const dots = document.querySelectorAll('.step-dot');
   dots.forEach((d,i) => {
@@ -1280,7 +1254,6 @@ function renderMediaGrid() {
   const grid = document.getElementById('mediaGrid');
   grid.innerHTML = state.mediaFiles.map((m, i) => mediaTegelHTML(m, i, '')).join('');
   bannerTellerBijwerken('wizardBannerTeller', state.mediaFiles, state.mediaLinks);
-  updateOptionalStepHints();
 }
 
 // TT-263: welke media in de bannerbalk op het profiel komt, kiest de
@@ -1327,7 +1300,6 @@ function renderLinksList() {
   list.innerHTML = state.mediaLinks.map((l, i) => mediaLinkRijHTML(l, i, '')).join('');
   mediaTitelsBijwerken(list);
   bannerTellerBijwerken('wizardBannerTeller', state.mediaFiles, state.mediaLinks);
-  updateOptionalStepHints();
 }
 
 // Tijdens het typen alleen de waarde bijhouden. De lijst wordt pas opnieuw
@@ -1336,7 +1308,6 @@ function renderLinksList() {
 function updateLinkUrl(i, el) {
   if (!state.mediaLinks[i]) return;
   state.mediaLinks[i].url = el.value;
-  updateOptionalStepHints();
 }
 
 function toggleLinkBanner(i) {

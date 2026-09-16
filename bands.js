@@ -299,47 +299,6 @@ function renderCompletenessMeter(m) {
     </div>`;
 }
 
-// TT-48: voortgangspaneel als PPP-tijdlijn — Ronalds eigen indeling van
-// "trots op prestaties (verleden) · nu plezier maken (heden) · ambitie voor
-// de toekomst (toekomst)". Alleen zichtbaar voor de eigenaar (loadMyProfile
-// is sowieso alleen de eigen-profiel-view). "Verleden" is bewust een
-// placeholder tot de optredenlijst er is — geen loze content verzinnen.
-function renderProgressPanel(m) {
-  const songCount = (m.musician_songs || []).length;
-  const heden = songCount > 0
-    ? `${songCount} nummer${songCount === 1 ? '' : 's'} in je repertoire`
-    : '';
-  // TT-52: feit over huidig repertoire, dus bij "heden" i.p.v. "toekomst".
-  const hedenRepertoire = m.repertoire_type && REPERTOIRE_TYPE_LABELS[m.repertoire_type]
-    ? REPERTOIRE_TYPE_LABELS[m.repertoire_type] : '';
-  const hedenExtra = m.goal && GOAL_LABELS[m.goal] ? GOAL_LABELS[m.goal] : '';
-  const hedenText = [heden, hedenRepertoire, hedenExtra].filter(Boolean).join(' · ');
-
-  const toekomstParts = [];
-  if (m.rehearsal_frequency && REHEARSAL_LABELS[m.rehearsal_frequency]) toekomstParts.push(REHEARSAL_LABELS[m.rehearsal_frequency]);
-  if (m.musical_ambition && AMBITION_LABELS[m.musical_ambition]) toekomstParts.push(AMBITION_LABELS[m.musical_ambition]);
-  const toekomstText = toekomstParts.join(' · ');
-
-  return `
-    <div class="progress-timeline">
-      <div class="progress-timeline-label">Jouw pad op The Talent Tent</div>
-      <div class="progress-timeline-grid">
-        <div>
-          <div class="progress-stage-title">Verleden</div>
-          <div class="progress-stage-body empty">Optredenlijst volgt binnenkort — dan zie je hier je opgebouwde ervaring terug.</div>
-        </div>
-        <div>
-          <div class="progress-stage-title">Heden</div>
-          <div class="progress-stage-body ${hedenText ? '' : 'empty'}">${hedenText ? escHtml(hedenText) : 'Vul je repertoire en doel aan om hier iets te zien.'}</div>
-        </div>
-        <div>
-          <div class="progress-stage-title">Toekomst</div>
-          <div class="progress-stage-body ${toekomstText ? '' : 'empty'}">${toekomstText ? escHtml(toekomstText) : 'Geef bij "Profiel bewerken" aan hoe vaak je wilt repeteren en of je wilt optreden.'}</div>
-        </div>
-      </div>
-    </div>`;
-}
-
 // ─── Mijn bands ───────────────────────────────────────────────────────────────
 
 async function getMyMusicianId() {

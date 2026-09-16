@@ -633,33 +633,6 @@ function safeColor(c, fallback) {
   return /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%]+\)|[a-z]+)$/i.test(s) ? s : fallback;
 }
 
-// TT-30 (07-08-2026): effen (gevulde) tags i.p.v. de eerdere ovale outline-
-// badges op de zoekresultaten — alleen bruikbaar op een 3/6-cijferige hex-
-// kleur (wat safeColor() altijd oplevert voor profile_color), vandaar de
-// eenvoudige hex-only implementatie i.p.v. een generieke kleurparser.
-// TT-35 (07-08-2026): Enter-toets laten werken als "verder"/"zoeken" op
-// tekstvelden waar dat intuïtief is (inloggen, registreren, wachtwoord
-// vergeten/opnieuw instellen, zoekvelden) — Ronald: "maak de enter-knop
-// actief voor het verdergaan". Shift+Enter blijft gewoon een nieuwe regel
-// toestaan op velden waar dat relevant is (niet hier, alleen textareas
-// zoals de berichten-composer gebruiken die uitzondering al niet nodig).
-// TT-37 (07-08-2026): cursor automatisch in het eerste invoerveld zetten
-// zodra een scherm met tekstvelden opent — Ronald: "maak het gebruiks-
-// vriendelijk". offsetParent!==null is een simpele, betrouwbare check op
-// "daadwerkelijk zichtbaar" (geen display:none-voorouder), zodat dit ook
-// binnen de registratiewizard vanzelf alleen de actieve stap raakt.
-function autofocusFirstField(root) {
-  const el = typeof root === 'string' ? document.getElementById(root) : root;
-  if (!el) return;
-  const candidates = el.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], input[type="number"], input:not([type]), textarea');
-  for (const c of candidates) {
-    if (c.offsetParent !== null && !c.readOnly && !c.disabled) {
-      c.focus();
-      return;
-    }
-  }
-}
-
 // TT-U04 (12-08-2026): maakt een wachtwoord zichtbaar. Vervangt het
 // herhaalveld — je kunt zelf controleren wat je hebt getypt.
 function togglePassword(inputId, btn) {
@@ -671,6 +644,12 @@ function togglePassword(inputId, btn) {
   btn.setAttribute('aria-label', toon ? 'Verberg wachtwoord' : 'Toon wachtwoord');
 }
 
+// TT-35 (07-08-2026): Enter-toets laten werken als "verder"/"zoeken" op
+// tekstvelden waar dat intuïtief is (inloggen, registreren, wachtwoord
+// vergeten/opnieuw instellen, zoekvelden) — Ronald: "maak de enter-knop
+// actief voor het verdergaan". Shift+Enter blijft gewoon een nieuwe regel
+// toestaan op velden waar dat relevant is (niet hier, alleen textareas
+// zoals de berichten-composer gebruiken die uitzondering al niet nodig).
 function submitOnEnter(event, fn) {
   if (event.key === 'Enter') {
     event.preventDefault();
@@ -678,6 +657,10 @@ function submitOnEnter(event, fn) {
   }
 }
 
+// TT-30 (07-08-2026): effen (gevulde) tags i.p.v. de eerdere ovale outline-
+// badges op de zoekresultaten — alleen bruikbaar op een 3/6-cijferige hex-
+// kleur (wat safeColor() altijd oplevert voor profile_color), vandaar de
+// eenvoudige hex-only implementatie i.p.v. een generieke kleurparser.
 function hexToRgba(hex, alpha) {
   let h = String(hex).replace('#', '');
   if (h.length === 3) h = h.split('').map(c => c + c).join('');
@@ -781,7 +764,6 @@ function renderSongs() {
         ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 12px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
       `; }).join('')}
     </div>`;
-  updateOptionalStepHints();
 }
 
 function setLevel(i, level) {
@@ -816,7 +798,6 @@ function removeSong(i) {
 // (cfg.inputId). Alle bestaande code die die waarde uitleest, blijft daardoor
 // ongewijzigd werken.
 const WHEEL_ITEM_H = 44;   // moet gelijk zijn aan .wheel-item in styles.css
-const WHEEL_ZICHTBAAR = 5; // aantal zichtbare regels; .wheel-pad = 2 regels
 const WHEELS = {};
 
 // cfg: { id, inputId, values[], value, onChange, onPick, ariaLabel, labels? }

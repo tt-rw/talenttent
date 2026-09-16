@@ -1,12 +1,5 @@
 // ─── Zoekfunctie ─────────────────────────────────────────────────────────────
 
-const GOAL_LABELS = {
-  oefenen: 'Samen oefenen',
-  band:    'Band starten',
-  optreden:'Optreden',
-  alles:   'Alles!'
-};
-
 const LEVEL_LABELS = { basis: 'Basis', bijna: 'Bijna', podium: 'Podiumklaar' };
 
 // TT-47 (herzien 09-08-2026): concrete ambitie-vragen naast het abstracte

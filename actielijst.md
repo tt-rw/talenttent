@@ -1,6 +1,168 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 16-09-2026 (vervolg 3) — **TT-277 t/m TT-280: rustig versturen, Inloggen in het menu, verversen blijft op de pagina, vegen over een veld. Eindstand 235 van 235.**
+**Laatste update:** 16-09-2026 (vervolg 4) — **Onderhoudsronde: dode code verwijderd, acht bevindingen vastgelegd (TT-281 t/m TT-286), vier bestaande tickets aangevuld. Eindstand 235 van 235.**
+
+**Aanleiding.** Onderhoudsronde op verzoek van Ronald: scrollen, vegen,
+knoppen die niets doen, dode code en overig onderhoud. Eén onderwerp:
+opsporen, vastleggen en dode code verwijderen. Verder is geen app-code
+gewijzigd.
+
+**Hoe gemeten.** Statisch met grep en een eigen script over alle tien
+JS-bestanden, `index.html` en `styles.css`. In Playwright tegen de stub:
+scrollen op 390×844 met aanraking en 4× vertraagde processor, zes
+veegbewegingen, elke zichtbare knop per view aangeklikt, en per view
+`elementFromPoint` en het tikdoel gemeten, mobiel en desktop. Laag 2 in de
+browserpane op talenttent.org, ingelogd door Ronald, alleen lezend.
+
+**Verwijderde dode code (Geverifieerd: grep over alle bestanden, ook als tekst
+en als samengestelde naam, geeft geen aanroep).**
+
+| Wat | Bestand | Waaruit bleek dat het dood was |
+|---|---|---|
+| `renderProgressPanel()` | `bands.js` | Nergens aangeroepen sinds TT-120 (22-08-2026). Terug te vinden in commit `05f8ddd` |
+| `GOAL_LABELS` | `search.js` | Alleen gebruikt door `renderProgressPanel()` |
+| `autofocusFirstField()` | `utils.js` | Nergens aangeroepen sinds TT-142 (25-08-2026) |
+| `updateOptionalStepHints()` en tien aanroepen | `wizard.js`, `utils.js` | Zocht drie id's (`magOokLater*`) die sinds TT-209 (06-09-2026) nergens bestaan; deed niets |
+| `WHEEL_ZICHTBAAR` | `utils.js` | Nergens gebruikt |
+| `.profile-avatar`, `.profile-actions` | `styles.css` | Klasse komt in geen HTML of JS voor (alleen langere namen als `.profile-avatar-photo`) |
+| `.progress-timeline*`, `.progress-stage*` | `styles.css` | Alleen gebruikt door `renderProgressPanel()` |
+
+Twee losse commentaarblokken in `utils.js` (TT-30 en TT-35) staan nu boven de
+functie waar ze over gaan. Per soort verwijderd, na elke stap de testset:
+235 van 235, drie keer. Schermafdrukken van alle veertien views en de
+wizardstappen, mobiel en desktop, uit- en ingelogd, vóór en na: geen
+verschil. Twee ongewijzigde voormetingen verschilden onderling op dezelfde
+plekken (knipperende cursor, laadteken); dat is ruis, geen wijziging.
+
+**Niet verwijderd, bewust.** De `mh…`-functies in `musicians.js` lijken
+ongebruikt, maar worden aangeroepen via een samengestelde naam
+(`mediaFnNaam('mh', …)` in `utils.js`). `.band-status-*` wordt ook
+samengesteld. Geen dood bestand gevonden buiten de twee bekende
+(`profiel-v2.html`, `profiel-gedeeld.js`).
+
+**Correcties (§2, regel 13).**
+- Hier en in huisstijl §16 stond "`transition: all` staat op circa tien
+  plekken". Het zijn er **zestien**. Waaruit blijkt:
+  `grep -cE "transition\s*:\s*all" styles.css` geeft 16.
+- Projectinstructies §9 zei "`renderCompletenessMeter()` en
+  `renderProgressPanel()` staan op Mijn Profiel". Sinds TT-120 staat alleen
+  de volledigheidsmeter er; de tweede functie is nu weg. §7 noemde beide in
+  `bands.js`. §2.6a noemde "de acht JS-bestanden"; het zijn er tien. §9
+  noemde de bovenbalk "zichtbaar op desktop"; sinds TT-224 is hij overal
+  verborgen. Het hamburgermenu miste `navMenuLogin` (TT-278). Nieuwe versie
+  van de projectinstructies aangeleverd.
+
+**Laag 2, 16-09-2026, op talenttent.org.** Ingelogd (Ronald) · zoeken met
+profiel (6 muzikanten, 1 band) · muzikantprofiel geopend en met terug
+gesloten · Berichten en een gesprek geopend · Profiel bewerken en de
+tegels geopend, niets opgeslagen · Mijn Bands, een band en "Bandleden
+wijzigen" geopend. Geen JS-fout, geen consolefout, geen kapotte afbeelding.
+**Niet gedaan:** bericht versturen, uitnodiging versturen of intrekken en
+profiel opslaan — dat zijn handelingen namens Ronald. Uitgelogd zoeken en
+zoeken zonder profiel: niet gedaan, dat vraagt uitloggen of een tweede
+account.
+
+**Nieuwe bevindingen.**
+
+**TT-281 (P0) — Opslaan wist eerst en controleert het wissen niet.**
+*Toets: kan een gebruiker data kwijtraken? Ja → P0.* **Geverifieerd (code
+gelezen):** `persistEditedProfile()` in `wizard.js`, `saveWatSpeelJe()`,
+`saveJeSetlist()` en `saveJeMediahoek()` in `musicians.js` wissen eerst
+alle rijen in `musician_instruments`, `musician_genres`, `musician_songs` of
+`musician_media`, zonder `error` te controleren, en voegen daarna de nieuwe
+rijen toe. Mislukt het toevoegen (netwerk weg, RLS, ongeldige waarde), dan
+zijn de oude rijen al weg: de gebruiker verliest zijn instrumenten, genres,
+repertoire of media. Mislukt het wissen stil, dan staan er dubbele rijen.
+Zelfde soort in `executeAccountDeletion()` (`musicians.js`): per band worden
+`delete` en `update` (oprichter overdragen) niet op fouten gecontroleerd; een
+mislukte overdracht gevolgd door het wissen van het lid laat een band zonder
+oprichter achter. **Aanname:** hoe vaak dit gebeurt, is onbekend; het pad is
+voor iedereen bereikbaar. **Richting, niet gebouwd:** één databasefunctie per
+opslag die wissen en toevoegen in één transactie doet, of eerst toevoegen en
+dan pas het oude wissen. Vraagt een SQL-besluit van Ronald.
+
+**TT-282 (P2) — Vegen: een schuine of afbuigende veeg wisselt van tabblad.**
+*Toets: werkt, maar een onbedoelde wissel tijdens scrollen kost vertrouwen.*
+**Geverifieerd (gemeten met aanraakvegen):** links 160px wisselt (goed);
+rechts 160px wisselt (goed); 45° wisselt niet (goed); 20px wisselt niet
+(goed). **Fout:** een veeg van 30° wisselt wél — de grens
+(`VEEG_VERHOUDING` 1,5) ligt op 33,7°. **Fout:** de richting wordt alleen op
+de eerste 10px vastgezet; een veeg die horizontaal begint en steil eindigt
+(dx −75, dy +200) wisselt toch. `veegEinde()` toetst alleen `dx`, niet de
+verhouding. **Aanname:** een veeg vanaf de schermrand wisselt ook van
+tabblad (gemeten: vanaf x=388 naar links wisselt); op een telefoon met
+gebarennavigatie kan dat botsen met het terug-gebaar van het toestel.
+`touchcancel` wordt afgehandeld (goed).
+
+**TT-283 (P3) — Veegcontrole en wiel-luisteraar.** *Toets: geen aanwijsbaar
+gevolg nu.* **Geverifieerd:** `veegGeblokkeerd()` (`core.js`) leest bij elke
+`touchstart` `scrollWidth` en `getComputedStyle` van alle voorouders — 3 ms
+per aanraking bij 4× vertraging. De `scroll`-luisteraar van het wiel
+(`initWheel`-opbouw in `utils.js`) draagt geen `{ passive: true }`. Een
+`scroll`-gebeurtenis is niet te annuleren, dus dit heeft geen effect; wel in
+strijd met de letter van huisstijl §16 ("alle luisteraars passief").
+
+**TT-284 (P3) — Dure animaties en vervaging.** *Toets: geen meetbaar gevolg
+(zie hieronder).* **Geverifieerd:** `transition: all` op zestien plekken
+(huisstijl §16, open punt). `.completeness-fill` animeert `width`.
+`.save-overlay` draagt `backdrop-filter: blur(4px)` en staat op mobiel niet
+uit, in tegenstelling tot `.modal-overlay`. **Gemeten:** bij scrollen op
+zoeken, Berichten (60 berichten) en een modal met 4× vertraging: **geen
+enkele taak langer dan 50 ms**. Mijn Profiel was tegen de stub niet te meten
+(zie TT-286).
+
+**TT-285 (P3) — Bannerbalk: `ResizeObserver` wordt nooit losgekoppeld.**
+*Toets: geen merkbaar gevolg bij normaal gebruik.* **Geverifieerd:**
+`profielBannerStarten()` (`utils.js`) maakt per getekend profiel een nieuwe
+waarnemer en koppelt hem nooit los. Een oude balk die uit de pagina is, blijft
+zo in het geheugen. De tijd (`setInterval`) ruimt zichzelf wel op.
+
+**TT-286 (P3) — Foutafhandeling en testbereik.** *Toets: geen aanwijsbaar
+gevolg nu.* **Geverifieerd:** zestien leesacties op Supabase lezen alleen
+`data` en negeren `error` (o.a. `getMyCity()`, `loadMyBands()`,
+`openBandModal()`, `getMyMusicianId()`); 29 `async`-functies met `await`
+hebben geen `try/catch`. **Aanname:** een deel wordt door de aanroeper
+afgevangen; een fout wordt dan een lege lijst in plaats van een melding —
+hetzelfde soort fout als TT-230. Vier lege `catch`-blokken, alle vier rond
+`localStorage` of een tweede poging; die zijn bewust. **Testbereik:** de stub
+kent geen geneste selecties (`musician_songs` in een `select`), dus Mijn
+Profiel en het muzikantprofiel geven tegen de stub een fout. Beide zijn
+daardoor in laag 1 niet te meten.
+
+**Aangevuld, geen nieuw ticket.**
+- **TT-259:** goud onder 50% als vlak staat niet alleen in de focusrand. Ook:
+  `styles.css` `.search-mode-tab.active` (0,1), `.messages-conv-row.unread`
+  (0,08), `.level-choice.selected` (0,12), twee vlakken op 0,07 en 0,04, de
+  hover van `.modal-close`, `.modal-back`, `.niveau-info-btn` (0,15) en
+  `.drop-zone` (0,04); `utils.js` de zoekmarkering `<mark>` (0,3);
+  `index.html` `#editModeBanner` (0,1).
+- **TT-68:** tikdoel onder 44px: "Inloggen →" op de landing (76×16) en
+  "Wachtwoord vergeten?" op het inlogscherm (123×14). Gemeten, mobiel en
+  desktop. Geen knop ligt onder een andere laag; elke `onclick` wijst naar
+  een bestaande functie; geen knop zonder naam; geen afbeelding zonder `alt`.
+- **TT-114:** geteld 16-09-2026: 122 marges, opvullingen en afstanden in
+  `styles.css` zijn geen veelvoud van 4 (10px 36×, 14px 25×, 6px 24×, 2px
+  12×, 3px 8×, 5px 5×, overige los).
+- **TT-262:** voorbeeld voor controle (a): `var(--profile-color)` in
+  `.profile-avatar-photo` bestaat nergens als variabele. Zonder gevolg: de
+  terugval is `--accent` en het element krijgt de kleur inline.
+
+**Gecontroleerd en in orde.** Geen niet-passieve `touchmove`; elke scrollende
+laag heeft `overscroll-behavior: contain` (`.app-nav` niet, maar die is
+overal verborgen); `backdrop-filter` staat op mobiel uit bij modals; geen
+animatie op `top`/`left`/`height`/`margin`; `body` draagt geen
+`overflow-x`; scriptvolgorde en `?v=` kloppen; geen `console.log`,
+`debugger` of `TODO`; geen uitgecommentarieerde code; geen dubbele
+functienamen; geen emoji; geen `flex: 1` in een knoppenrij; de sleutel in
+`core.js` is de publieke (`sb_publishable_…`).
+
+**Sessieregel.** Onderhoudsronde is één onderwerp. Geen signaal voor een
+nieuwe sessie.
+
+Gewijzigd: `index.html` (alleen `?v=`), `styles.css`, `core.js`, `utils.js`,
+`wizard.js`, `search.js`, `bands.js`, `actielijst.md`, `CHECKSUMS.txt`.
+
+**Vorige update:** 16-09-2026 (vervolg 3) — **TT-277 t/m TT-280: rustig versturen, Inloggen in het menu, verversen blijft op de pagina, vegen over een veld. Eindstand 235 van 235.**
 
 **Aanleiding.** Ronald, vier bevindingen op zijn telefoon: (1) na een tik op
 de verzendknop schiet het gesprek heen en weer; (2) uitgelogd ontbreekt
@@ -600,7 +762,7 @@ Gewijzigd: `utils.js`, `auth.js`, `wizard.js`, `search.js`, `musicians.js`, `sty
 
 **De standaard is bijgewerkt, zelfde sessie (besluit Ronald).** `huisstijl-en-consistentie.md` sprak de code op drie punten tegen: "een bladwijzer toont één wiel **op volle schermbreedte**", de maat "markeringsbalk: goud op 10% dekking" en "vastklikken met `scroll-snap-type: y mandatory`" zonder de muis-uitzondering. Alle drie rechtgezet, plus drie nieuwe vastleggingen: **§1.1** (goud op lage dekking bestaat niet — `rgba(245,197,24,0.10)` over `--surface2` is `#332f1d`, olijfbruin), **§9** (geen `backdrop-filter` op mobiel) en **§16 Scrollen**, een nieuwe sectie met de vier app-brede regels: nooit een niet-passieve `touchmove`, `overflow-x: clip` in plaats van `hidden`, `overscroll-behavior: contain` op elke scrollende laag, en geen dure schilderopdracht over een bewegend vlak. Het volledige document is vervangen in het claude.ai-project, niet als los fragment.
 
-**Nog open, niet in dit ticket aangepakt:** `transition: all` staat op circa tien plekken in `styles.css` en animeert daarmee ook eigenschappen die de indeling herberekenen. Apart uit te zoeken, niet halfslachtig — vastgelegd in §16 van de huisstijl.
+**Nog open, niet in dit ticket aangepakt:** `transition: all` staat op zestien plekken in `styles.css` en animeert daarmee ook eigenschappen die de indeling herberekenen. *(Gecorrigeerd 16-09-2026: hier stond "circa tien"; `grep -cE "transition\s*:\s*all" styles.css` geeft 16.)* Apart uit te zoeken, niet halfslachtig — vastgelegd in §16 van de huisstijl.
 
 Gewijzigd: `styles.css`, `core.js`, `utils.js`, `index.html` (versieachtervoegsels), `tests/tt_tests.py`, `actielijst.md`.
 
@@ -3223,8 +3385,9 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 ## P0 — Zonder dit is de app niet af of onveilig
 
-**Stand van de P0's, bijgewerkt 11-09-2026 (vervolg 6).** **Vijf P0-bouwtickets
-staan open:** TT-01 · TT-06 · TT-65 · TT-45 · TT-42. TT-229, TT-231 (laag 1) en
+**Stand van de P0's, bijgewerkt 16-09-2026 (vervolg 4).** **Zes P0-bouwtickets
+staan open:** TT-281 · TT-01 · TT-06 · TT-65 · TT-45 · TT-42. TT-281 kwam er
+op 16-09-2026 bij (onderhoudsronde). TT-229, TT-231 (laag 1) en
 TT-62 (deel 1) zijn deze dag opgelost en staan in de tweede tabel. **TT-62 deel 2**
 ("geef me een seintje zodra er een drummer bijkomt") staat nog open en leunt op
 TT-01; die staat als eigen rij hieronder. Daarnaast staat
@@ -3258,6 +3421,7 @@ eerste tabel altijd gelijk is aan de stand.
 | **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel. **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
 | **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus — mogelijk groter dan gedacht, zie toelichting onderaan deze tabel.** **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
 | **TT-62 (deel 2)** | "Geef me een seintje zodra er een drummer bijkomt" | **Uitzondering vastgelegd 12-09-2026 (besluit Ronald, TT-257):** het automatisch verruimen van deel 1 geldt **niet** als er een naam in het zoekveld staat. Wie op naam zoekt, zoekt één bepaalde persoon; iemand twee provincies verderop is dan geen beter antwoord dan geen antwoord. Zie huisstijl §17. **Deel 1 is gebouwd 11-09-2026** (automatisch verruimen, zie Deel 3). Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker. Leunt op dezelfde verzendweg als TT-01 en kan dus niet eerder |
+| **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Nieuw, 16-09-2026 (onderhoudsronde).** Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wissen eerst en voegen daarna toe, zonder foutcontrole op het wissen. Mislukt het toevoegen, dan is de oude data weg. Zelfde soort in `executeAccountDeletion()`. Volledige tekst: Laatste update bovenaan |
 | — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
 
 **Afgehandeld of geblokkeerd bij Ronald — telt niet mee in de P0-stand hierboven.**
@@ -3348,6 +3512,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-282** | Vegen: een schuine of afbuigende veeg wisselt van tabblad | **Nieuw, 16-09-2026 (onderhoudsronde).** 30° telt als horizontaal; een veeg die steil eindigt telt ook; een veeg vanaf de schermrand wisselt. Volledige tekst: Laatste update bovenaan |
 | **TT-277** | Gesprek springt bij versturen | **Opgelost 16-09-2026 (vervolg 3).** Toetsenbord blijft open, beeld staat stil. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
 | **TT-278** | Inloggen ontbreekt in het hamburgermenu | **Opgelost 16-09-2026 (vervolg 3).** Uitgelogd staat Inloggen onderaan het menu |
 | **TT-279** | Verversen stuurt naar het profiel | **Opgelost 16-09-2026 (vervolg 3).** Verversen blijft op de huidige pagina, ook in een open gesprek. Open modals en tegelschermen sluiten wel |
@@ -3363,10 +3528,10 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | ID | Ticket | Kern |
 |---|---|---|
 | **TT-263** | Je mediahoek liet niet zien welke link welke video is | **Gebouwd en getest 13-09-2026.** Aanleiding: Ronald — *"gebruiker kan niet zien welke link welke video is."* Een rij toonde alleen een platformbadge en een adres. Nu: miniatuur, naam van de video (via oEmbed, gemeten werkend voor YouTube, Spotify, SoundCloud en TikTok; Instagram laat het niet toe), een bannerteken om te kiezen wat in de bannerbalk op het profiel komt (grens zes, over foto's, video's en links samen), en afspelen binnen de app in plaats van in de browser. `musician_media.in_banner` is op verzoek toegevoegd door Ronald. **De bannerbalk zelf is er nog niet** — die volgt, hier wordt alleen de keuze bewaard. **Toets P2:** het werkte, maar het kostte moeite en vertrouwen — je wist niet welke van vier links je weggooide. Zie Deel 3, 13-09-2026 |
-| **TT-262** | Consistentie-check: de huisstijl wordt automatisch getoetst, niet op goed geluk gevonden | **Nieuw, 12-09-2026, besluit Ronald.** **Aanleiding, drie keer dezelfde soort fout op één dag:** (1) huisstijl §13.1 schreef rode tekst voor, in strijd met §1 van datzelfde document; (2) `--fs-sm` werd op zeven plekken gebruikt maar stond nergens in `:root`, waardoor hulptekst app-breed op 16px stond in plaats van 12px; (3) de eindstand "69 van 69" klopte niet, want één toets zocht naar een tekst die nooit in de code heeft gestaan. **Alle drie zijn per toeval gevonden** — bij het bouwen van iets anders. Dat is het probleem: de huisstijl is een document dat niemand tegen de code houdt, en niets meldt het als de twee uit elkaar lopen. **Wat de check moet doen, als blok 14 van de vaste testset** *(was blok 13; dat nummer is op 13-09-2026 gebruikt voor de mediahoek, TT-263)* (statisch, geen browser nodig, dus snel): **(a)** elke `var(--...)` in `styles.css` verwijst naar een variabele die in `:root` bestaat — dit had TT-260 dezelfde dag gevonden; **(b)** elke variabele in `:root` wordt minstens één keer gebruikt — dit had de drie dode `--fs-*` tegengehouden die ik er vandaag zelf bij zette; **(c)** geen inline `style="font-size:..."`, `margin:` of `padding:` op een veld, label of hulptekst in `index.html` (§3 verbiedt dat al, maar er stonden er elf); **(d)** elke marge, opvulling en afstand in `styles.css` is een veelvoud van 4px (§3, TT-114) — met een lijst benoemde uitzonderingen, niet met een uitzondering per geval; **(e)** de lijst gebruikte lettermaten wordt geteld en afgezet tegen de schaal van TT-261; **(f)** `--danger` komt niet voor als `color:` op een gewone tekstregel (§1.2); **(g)** `--accent` komt niet voor als vlak onder 50% dekking (§1.1) — dit had de gouden focusgloed van TT-259 gevonden; **(h)** geen losse `z-index` op een `.modal-overlay` (§2.11 en TT-229). **Wat de check bewust níét doet:** oordelen over smaak. Hij toetst alleen regels die letterlijk in `huisstijl-en-consistentie.md` staan, en meldt per bevinding welke paragraaf hij aanhaalt. **Een gezakte controle is geen fout in de code maar een vraag:** of de code klopt niet, of de regel klopt niet (§2.11). **Toets P2:** de app werkt zonder deze check. Maar drie vastgelegde feiten die niet klopten in één dag betekent dat de huisstijl vertrouwen verliest, en een standaard die niemand vertrouwt stuurt elke volgende sessie de verkeerde kant op — dezelfde redenering als §2.13. **Hangt samen met TT-261:** punt (e) heeft die schaal nodig. De rest kan los |
+| **TT-262** | Consistentie-check: de huisstijl wordt automatisch getoetst, niet op goed geluk gevonden | **Nieuw, 12-09-2026, besluit Ronald.** **Aanleiding, drie keer dezelfde soort fout op één dag:** (1) huisstijl §13.1 schreef rode tekst voor, in strijd met §1 van datzelfde document; (2) `--fs-sm` werd op zeven plekken gebruikt maar stond nergens in `:root`, waardoor hulptekst app-breed op 16px stond in plaats van 12px; (3) de eindstand "69 van 69" klopte niet, want één toets zocht naar een tekst die nooit in de code heeft gestaan. **Alle drie zijn per toeval gevonden** — bij het bouwen van iets anders. Dat is het probleem: de huisstijl is een document dat niemand tegen de code houdt, en niets meldt het als de twee uit elkaar lopen. **Wat de check moet doen, als blok 14 van de vaste testset** *(was blok 13; dat nummer is op 13-09-2026 gebruikt voor de mediahoek, TT-263)* (statisch, geen browser nodig, dus snel): **(a)** elke `var(--...)` in `styles.css` verwijst naar een variabele die in `:root` bestaat — dit had TT-260 dezelfde dag gevonden; **(b)** elke variabele in `:root` wordt minstens één keer gebruikt — dit had de drie dode `--fs-*` tegengehouden die ik er vandaag zelf bij zette; **(c)** geen inline `style="font-size:..."`, `margin:` of `padding:` op een veld, label of hulptekst in `index.html` (§3 verbiedt dat al, maar er stonden er elf); **(d)** elke marge, opvulling en afstand in `styles.css` is een veelvoud van 4px (§3, TT-114) — met een lijst benoemde uitzonderingen, niet met een uitzondering per geval; **(e)** de lijst gebruikte lettermaten wordt geteld en afgezet tegen de schaal van TT-261; **(f)** `--danger` komt niet voor als `color:` op een gewone tekstregel (§1.2); **(g)** `--accent` komt niet voor als vlak onder 50% dekking (§1.1) — dit had de gouden focusgloed van TT-259 gevonden; **(h)** geen losse `z-index` op een `.modal-overlay` (§2.11 en TT-229). **Wat de check bewust níét doet:** oordelen over smaak. Hij toetst alleen regels die letterlijk in `huisstijl-en-consistentie.md` staan, en meldt per bevinding welke paragraaf hij aanhaalt. **Een gezakte controle is geen fout in de code maar een vraag:** of de code klopt niet, of de regel klopt niet (§2.11). **Toets P2:** de app werkt zonder deze check. Maar drie vastgelegde feiten die niet klopten in één dag betekent dat de huisstijl vertrouwen verliest, en een standaard die niemand vertrouwt stuurt elke volgende sessie de verkeerde kant op — dezelfde redenering als §2.13. **Hangt samen met TT-261:** punt (e) heeft die schaal nodig. De rest kan los **Voorbeeld 16-09-2026 voor (a):** `var(--profile-color)` in `.profile-avatar-photo` bestaat nergens als variabele |
 | **TT-261** | Er is geen typografische schaal — veertien lettermaten door elkaar | **Nieuw, 12-09-2026. Aanleiding: Ronald — *"waarom 15px en niet een veelvoud van 4? de UI specialist gaat hiervan huilen."*** **Geverifieerd, geteld in `styles.css`:** de app gebruikt **veertien** verschillende lettermaten — 10px (6×), 11px (20×), 12px (25×), 13px (22×), 14px (18×), 15px (8×), 16px (9×), 17px (2×), 18px (3×), 20px (3×), 22px (2×), 28px (4×), 36px en 48px. Dat is geen schaal maar een lijst getallen; 11, 13, 14 en 17 zitten er alle vier tussen en verschillen onderling nauwelijks. **Huisstijl §3 (TT-114) legt de 4px-schaal vast voor marge, opvulling en afstand — niet voor letters.** Dat is de reden dat 15px geen regel overtrad, maar het is geen verdediging: een schaal hoort er te zijn, en Ronald wil hem op de 4px-schaal. **Voorstel: 12 · 16 · 20 · 24 · 28 · 36 · 48.** Twee uitzonderingen die benoemd moeten worden: een invoerveld blijft **16px** (onder 16px zoomt iOS Safari in bij focus en zoomt niet terug uit — zie §7), en `.wheel-unit` staat op 15px. **Toets P2:** het werkt en het is leesbaar, maar vier maten die nauwelijks verschillen maken het beeld onrustig zonder dat iemand kan aanwijzen waarom. **Eerst een visueel voorbeeld**, dan pas bouwen — 20 plekken op 11px en 22 op 13px gaan zichtbaar verschuiven. Niet halfslachtig doorvoeren |
 | **TT-260** | `--fs-sm` bestond niet, hulptekst stond op drie maten door elkaar | **OPGELOST 12-09-2026.** Aanleiding: Ronald — *"waarom kan je de standaard niet vasthouden?"* Terecht. Ik had dit als keuze voorgelegd terwijl §2.11 zegt dat een afwijking in de standaard wordt opgelost, niet per scherm omzeild — en ik had die regel zelf óók omzeild door in `.field-msg` en `.field-hint` `12px` voluit te schrijven. **Wat er mis was, geverifieerd:** `styles.css` gebruikte `var(--fs-sm)` op drie plekken, maar geen van de vier `--fs-*`-maten uit huisstijl §2 stond in `:root`. Een verwijzing naar een niet-bestaande variabele maakt de hele regel ongeldig, dus die tekst erfde 16px van zijn ouder. Waar iemand ooit een eigen inline maat had neergezet, was het 11px. **Gemeten vóór de fix:** hulptekst stond op 11px, 12px én 16px door elkaar; geen van de drie was de 12px uit de huisstijl. **Opgelost:** `--fs-sm` (12px) staat nu in `:root`. **Correctie zelfde sessie, na een vraag van Ronald — *"waarom 15px en niet een veelvoud van 4?"*:** ik had er ook `--fs-md` 15px, `--fs-lg` 28px en `--fs-display` bij gezet, puur omdat de huisstijl ze noemde. **Geverifieerd: geen enkele regel in `styles.css` gebruikte die drie** — dat is dode code, en 15px staat bovendien niet op de 4px-schaal. Alle drie dezelfde sessie weer weggehaald (§2.10). Alleen `--fs-sm` blijft; die wordt zeven keer gebruikt en 12px staat wél op de schaal. Elf inline `font-size:11px`-hulpteksten in `index.html` zijn vervangen door de klassen `.field-hint` en `.field-status` (§3: nooit een inline maat op een veld of label). `.field-status` ging van 11px/5px/14px naar `var(--fs-sm)`/4px/16px — 5px en 14px stonden niet op de 4px-schaal. `.field-msg` en `.field-hint` gebruiken nu de variabele in plaats van het losse getal. **Gemeten na de fix:** `.field-hint`, `.field-status`, `.wheel-hint` en `.field > p` staan alle vier op **12px**, één maat. De eenheidkolom in het wiel (`.wheel-unit`) heeft een eigen maat en blijft 15px. **Testset: 96 van 96 geslaagd.** Zie ook `tt260-1-hulptekst.png` en `tt260-2-wiel.png` in de gedeelde map |
-| **TT-259** | De focusrand van elk veld gebruikt goud op 10% dekking | **Nieuw, 12-09-2026, los gevonden bij TT-247.** **Geverifieerd in `styles.css:300`:** `input:focus, select:focus, textarea:focus` krijgt `box-shadow: 0 0 0 3px rgba(245,197,24,0.1)`. Huisstijl §1.1 (TT-256, 11-09-2026) legt vast dat goud onder 50% dekking op een bijna-zwarte ondergrond olijfbruin wordt — precies deze waarde is daar het rekenvoorbeeld. Ook `.delete-band-choice:focus` (`styles.css:337`) gebruikt hem. **Toets P2:** het werkt en het veld krijgt zichtbaar de aandacht, maar de gloed eromheen oogt modderig in plaats van goud. **Oplossing volgens §1.1:** de gouden rand blijft, de gloed wordt wit op 5% of vervalt. Raakt élk veld in de app, dus één wijziging op `:root`-niveau, nooit per scherm (§2.11) |
+| **TT-259** | De focusrand van elk veld gebruikt goud op 10% dekking | **Nieuw, 12-09-2026, los gevonden bij TT-247.** **Geverifieerd in `styles.css:300`:** `input:focus, select:focus, textarea:focus` krijgt `box-shadow: 0 0 0 3px rgba(245,197,24,0.1)`. Huisstijl §1.1 (TT-256, 11-09-2026) legt vast dat goud onder 50% dekking op een bijna-zwarte ondergrond olijfbruin wordt — precies deze waarde is daar het rekenvoorbeeld. Ook `.delete-band-choice:focus` (`styles.css:337`) gebruikt hem. **Toets P2:** het werkt en het veld krijgt zichtbaar de aandacht, maar de gloed eromheen oogt modderig in plaats van goud. **Oplossing volgens §1.1:** de gouden rand blijft, de gloed wordt wit op 5% of vervalt. Raakt élk veld in de app, dus één wijziging op `:root`-niveau, nooit per scherm (§2.11) **Aangevuld 16-09-2026 (onderhoudsronde):** ook `.search-mode-tab.active`, `.messages-conv-row.unread`, `.level-choice.selected`, drie hover-vlakken, `.drop-zone`, de zoekmarkering in `utils.js` en `#editModeBanner` in `index.html` — zie Laatste update bovenaan |
 | **TT-256** | Draaiwiel opnieuw ingedeeld en schokkerig scrollen app-breed | **Opgeleverd 11-09-2026 (vervolg 7) — zie het sessieblok bovenaan dit document.** Vier bevindingen: het getal stond naast het midden, het paneel was zo breed als de bladwijzer, de markeringsbalk was olijfbruin, en het scrollen haperde. De zwaarste oorzaak was app-breed en niet wielspecifiek: een niet-passieve `touchmove` op het hele zoekscherm. **Toets P2:** het werkte, maar het kostte vertrouwen — een app die hapert bij de eerste veeg oogt niet uitnodigend. **De standaard is bijgewerkt in dezelfde sessie:** `huisstijl-en-consistentie.md` §7.1 rechtgezet op drie punten, plus nieuwe §1.1, een regel in §9 en een nieuwe §16 (Scrollen) |
 | **TT-253** | "Lid uitnodigen" is het vierde zoekscherm en volgt de zoek-standaard niet | **Nieuw, 11-09-2026, bandkant-review.** **Geverifieerd in `index.html`:** het zoekblok in "Lid uitnodigen" gebruikt een zichtbare `<select id="memberSearchInstrument">` en een kaal `<input type="number" id="memberSearchRadius">` voor de straal. `huisstijl-en-consistentie.md` §7.1 legt vast dat een browser-keuzelijst nooit zichtbaar wordt gebruikt, en dat een straal een wielveld van 104px is. TT-232/TT-236/TT-239 hebben de drie zoektabbladen gelijkgetrokken; dit vierde zoekscherm is toen overgeslagen. **Toets P2:** het werkt, maar het oogt als een ander product op het moment dat een beheerder zijn band aan het vullen is. Hoort in dezelfde sessie als TT-245, dat toch alle zoekschermen raakt |
 | **TT-250** | Voortgangsteller in de wizard spreekt zichzelf tegen | **Nieuw, 11-09-2026, UX-review.** Stap 1 toont vijf bolletjes plus het label "Fase 1 van 2 · Aanmelden". Wie dat leest denkt na stap 1 halverwege te zijn. Stap 2 zegt dan "Fase 2 van 2 · Profiel aanvullen (1/4)" — er komen dus nog vier schermen. De labels zijn elk apart verdedigbaar (zie de toelichting bij `labelsNieuw` in `wizard.js`), maar samen met de bolletjes zijn het drie tellers tegelijk, en de optimistische lezing klopt niet. Voorstel: één teller, die de hele weg dekt. **Bandkant getoetst 11-09-2026: niet van toepassing** — het bandformulier is één scherm zonder stappen en heeft dus geen teller. Vastgelegd zodat dit niet opnieuw wordt uitgezocht |
@@ -3386,7 +3551,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-61** | Landingspagina herzien | "Ik ben.../Ik zoek..."-raster, nieuwste muzikanten, later succesverhalen |
 | **TT-66** | Service worker toevoegen | Voorwaarde voor een volwaardige PWA en voor de Google Play-route (TT-70). **Raakvlak 10-08-2026:** een service worker kan de Supabase-bibliotheek in de cache houden. Dat maakt de app ook bruikbaar als het CDN wegvalt, in plaats van alleen de nette melding van TT-82. Meenemen bij het ontwerp, samen met TT-85. **Aangevuld 19-08-2026 (Ronald):** expliciete wens om de PWA weer volledig te maken, zodat de latere overstap naar een native app soepeler verloopt — dit ticket dekt dat verzoek al, geen nieuw nummer. **Nog niet opgepakt, bewust:** een verkeerd ontworpen cachestrategie kan bij een app die elke sessie opnieuw wordt gedeployed toekomstige updates laten "vastlopen" voor gebruikers (verouderde `index.html` blijft hangen in de cache). Vraagt eerst een gesprek over de cachestrategie (bijv. network-first met korte cache-tijd, of versiegebonden cache-namen die meebewegen met elke oplevering) vóórdat er gebouwd wordt |
 | **TT-67** | Laadstaten, lege staten, foutstaten | Bewust pas na de P0-tickets — anders polijst je schermen die daarna toch weer veranderen. **Deelresultaten 10-08-2026:** de foutstaat bij een niet-geladen bibliotheek (TT-82) en de meldingen bij een geweigerd bestand (TT-87) zijn al gebouwd. Die twee hoeven hier niet opnieuw |
-| **TT-68** | Toegankelijkheid | Aria-labels, contrast, tikdoelen. Ook bewust pas na P0. **Deelresultaat 10-08-2026:** bewegingsreductie is los opgelost als TT-83, de rest staat nog open. **Gemeten stand 10-08-2026 (tweede externe review):** 1× `aria-`, 0× `role=`, 0× `tabindex`, 133 inline `onclick`-handlers waarvan een deel op niet-focusbare divs/kaarten — met alleen een toetsenbord of een schermlezer is de app grotendeels onbruikbaar. Twee concrete eerste stappen, los uit te voeren: (1) klikbare kaarten `role="button"` + `tabindex="0"` geven, (2) modals `aria-modal="true"` + focus-trap. Geen blokkade voor lancering bij deze doelgroep, wel structurele schuld |
+| **TT-68** | Toegankelijkheid | Aria-labels, contrast, tikdoelen. Ook bewust pas na P0. **Deelresultaat 10-08-2026:** bewegingsreductie is los opgelost als TT-83, de rest staat nog open. **Gemeten stand 10-08-2026 (tweede externe review):** 1× `aria-`, 0× `role=`, 0× `tabindex`, 133 inline `onclick`-handlers waarvan een deel op niet-focusbare divs/kaarten — met alleen een toetsenbord of een schermlezer is de app grotendeels onbruikbaar. Twee concrete eerste stappen, los uit te voeren: (1) klikbare kaarten `role="button"` + `tabindex="0"` geven, (2) modals `aria-modal="true"` + focus-trap. Geen blokkade voor lancering bij deze doelgroep, wel structurele schuld **Aangevuld 16-09-2026 (onderhoudsronde):** "Inloggen →" (landing, 76×16) en "Wachtwoord vergeten?" (inlogscherm, 123×14) zijn te klein als tikdoel |
 | — | Tekst "Over ons" verbeteren | Eerste versie, toon/kwaliteit nog te verfijnen |
 | — | Verzendende mailservice koppelen (Resend, voorgesteld 27-08-2026) | Voorwaarde voor TT-01-restpunt, TT-72 (bevestigingsmail bij registratie én accountverwijdering), en de TT-13-mail. Loopt via de eerste Edge Function (zie TT-01) — geen losse SMTP-opzet, de mailservice wordt vanuit die functie aangeroepen |
 | **TT-72** | Bevestigingsmail met bedankbericht bij registratie én accountverwijdering | **Nieuw, 09-08-2026 (Ronald), aangevuld zelfde dag.** Zodra er een e-mailaccount is: (1) welkomst-/bevestigingsmail na registratie, met bedankbericht, en (2) een bevestigingsmail bij accountverwijdering (TT-22) — ter bevestiging dat de verwijdering is doorgevoerd, met een bedankbericht voor de tijd op het platform. Vraagt uitgaand mailverkeer — dat kan niet via de ImprovMX-route besproken bij het e-mailadres (die is alleen ontvangen/doorsturen); hoort bij hetzelfde SMTP-koppelpunt hierboven. Let op bij (2): de mail moet ná de daadwerkelijke verwijdering nog een geldig adres kunnen bereiken, terwijl het account op dat moment al weg is — waarschijnlijk het e-mailadres apart vasthouden vóór `executeAccountDeletion()` de musicians-rij verwijdert |
@@ -3395,7 +3560,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-112** | Foutcontrole bij beheerderoverdracht | **Gebouwd 19-08-2026, zie Deel 3.** Aanleiding: Ronald zag bij "Van Delft" twee leden met het label "Oprichter" na een overdracht. Gevonden: de verwijdering van de oude beheerder (`respondToFounderOffer()`) controleerde haar eigen foutmelding niet — een mislukking (vermoedelijk een rechtenregel) bleef onopgemerkt. Nu een zichtbare melding bij zo'n mislukking. **Onbekend, nog niet uitgezocht:** de exacte reden waarom de verwijdering faalt — vraagt de RLS-regel op `band_members` (DELETE), die is niet gezien. Ronald kon zijn eigen achtergebleven lidmaatschap zelf opruimen met "Band verlaten" |
 | **TT-113** | `.landing-steps-grid` brak bij smalle schermen | **Gevonden en opgelost 19-08-2026, zie Deel 3.** Vaste 3 kolommen naast elkaar, ongeacht schermbreedte — gaf gemeten horizontale overflow bij 320px (32px) en 340px (12px). Opgelost met `grid-template-columns: repeat(auto-fit, minmax(220px, 1fr))` — geen vast omslagpunt meer nodig, fluïde op elke breedte. Sluit aan bij Ronalds principe (19-08-2026): geen vaste minimumbreedte instellen, elementen moeten zich schikken naar de beschikbare ruimte |
 | **TT-163** | `tt_musician_distances` uitbreiden met een eigen vertrekpunt | **Gebouwd en het script gedraaid, 27-08-2026 (Ronald: "query = succes").** Functiedefinitie aangeleverd door Ronald (`pg_get_functiondef`); daarop `origin_lat`/`origin_lng` toegevoegd als twee nieuwe, optionele parameters (`DEFAULT NULL`) — geldig via `CREATE OR REPLACE` zonder DROP, want het RETURN TYPE blijft ongewijzigd. Zijn ze leeg, dan valt de functie terug op de eigen locatie van `searcher_id` — ongewijzigd gedrag. Client (`searchMembersToAdd()`) stuurt `resolveSearchOrigin(memberSearchCity)` mee zodra het Plaats-veld gevuld is. **Nog te bevestigen door Ronald op de live site, zie Deel 1a** |
-| **TT-114** | Px-schaal (veelvoud van 4/8) als vaste huisstijlregel | **Nieuw, 19-08-2026 (Ronalds besluit).** Nu inconsistent: naast 4/8/12/16/20/24px staan er ook 58× 10px, 44× 6px, 14× 2px, 12× 3px en enkele losse waarden (geteld 19-08-2026). Voorstel vastgelegd: CSS-variabelen `--space-1` (4px) t/m `--space-10` (40px), alle padding/margin/gap/border-radius kiest voortaan uit deze lijst. **Bewust niet nu doorgevoerd** — raakt te veel plekken ineens voor één sessie (Voorwaarde 0: stabiliteit eerst). Bouwen bij de grote update, samen met TT-115 |
+| **TT-114** | Px-schaal (veelvoud van 4/8) als vaste huisstijlregel | **Nieuw, 19-08-2026 (Ronalds besluit).** Nu inconsistent: naast 4/8/12/16/20/24px staan er ook 58× 10px, 44× 6px, 14× 2px, 12× 3px en enkele losse waarden (geteld 19-08-2026). Voorstel vastgelegd: CSS-variabelen `--space-1` (4px) t/m `--space-10` (40px), alle padding/margin/gap/border-radius kiest voortaan uit deze lijst. **Bewust niet nu doorgevoerd** — raakt te veel plekken ineens voor één sessie (Voorwaarde 0: stabiliteit eerst). Bouwen bij de grote update, samen met TT-115 **Geteld 16-09-2026:** 122 waarden in `styles.css` zijn geen veelvoud van 4 (10px 36×, 14px 25×, 6px 24×, 2px 12×, 3px 8×) |
 | **TT-115** | Gestandaardiseerde bannercomponent voor meldingen | **Nieuw, 19-08-2026.** Aanleiding: Ronald vond de band-uitnodiging- en beheerderoverdracht-banners "niet fraai" — nu losse inline-opmaak per functie (`loadBandInvites()`, `loadFounderOffers()`), geen gedeelde stijl. Voorstel: één CSS-klasse met twee varianten ("actie gevraagd" / "informatief"), neutrale accentkleur i.p.v. de huidige bandkleur als linkerrand. **Bewust niet nu gebouwd** — samen met TT-114 bij de grote update |
 | **TT-116** | Instrument/genre: pulldown-veld met badges i.p.v. altijd-zichtbaar knoppenraster | **Gebouwd 21-08-2026, zie Deel 3.** Vervangt het knoppenraster op alle 8 plekken (wizard, muzikant-zoekfilter, band-zoekfilter, bandformulier) door één herbruikbare "kies-en-badge"-component: een pulldown-veld opent een volledig-scherm keuzelijst, gekozen items blijven staan als badge. Instrument in de wizard heeft een extra niveaustap (sterren) in hetzelfde scherm. "Anders" is bij instrument weggehaald (geen vrij tekstveld, dus geen eenduidige waarde) — bij genre staat "Anders" nog wel, open vraag of dat ook weg moet |
 | **TT-117** | Definitieve labeltekst + korte toelichting voor de 2×5 niveauknoppen | **Nieuw, 21-08-2026 (Ronald, "zet dit op de actielijst").** De niveauknoppen (5 voor instrument, 5 voor bandervaring) tonen nu een naam en een korte toelichtingszin per niveau. Voor instrument staat er een automatisch afgeleide, voorlopige tekst (eerste zin van de bestaande kolom "Technische beheersing" uit `niveaubepaling-naslagwerk.md`) — nog geen definitieve tekst. Voor band is dit nog niet eens aangeraakt. Ronald schrijft de definitieve korte teksten zelf (sessie 21-08-2026, "optie 1"), of geeft aan welk bestaand criterium als samenvatting mag dienen. De knoppen zijn al wel gelijke hoogte gemaakt, ongeacht tekstlengte (automatisch herberekend na render, geen vaste pixelwaarde) |
@@ -3414,6 +3579,10 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-283** | Veegcontrole leest lay-out bij elke aanraking; wiel-scrollluisteraar niet passief | **Nieuw, 16-09-2026 (onderhoudsronde).** Zie Laatste update bovenaan |
+| **TT-284** | `transition: all` (16×), `width`-animatie, vervaging op `.save-overlay` op mobiel | **Nieuw, 16-09-2026 (onderhoudsronde).** Geen taak boven 50 ms gemeten. Zie Laatste update bovenaan |
+| **TT-285** | Bannerbalk: `ResizeObserver` nooit losgekoppeld | **Nieuw, 16-09-2026 (onderhoudsronde).** Zie Laatste update bovenaan |
+| **TT-286** | Leesacties zonder foutcontrole; stub kent geen geneste selecties | **Nieuw, 16-09-2026 (onderhoudsronde).** Zie Laatste update bovenaan |
 | **TT-157** | Media-actieknoppen op het profiel (play/geluid-stijl) | **Nieuw, 25-08-2026 (Ronald, tijdens de zoekresultaten-mockupsessie).** Wil later dit soort kleine ronde iconenknoppen (voorbeeld: video-afspelen/geluid, zoals bij een concurrent gezien) toevoegen aan het profiel — vermoedelijk bij de mediasectie (foto's/video's). Geen concrete plek of functie nog vastgelegd, alleen de stijl als richting. Geen bouwwerk |
 | **TT-54** | Rijk deelvoorbeeld bij delen, **per profiel** | Eigen titel/foto in WhatsApp/social bij het plakken van een *profiellink*. Vraagt serverless-infrastructuur — linkvoorvertoningen worden opgehaald door bots zonder JavaScript, die alleen de statische `<meta>`-tags van het ene `index.html`-bestand zien. **27-08-2026:** de eerdere blokkade ("geen Edge Function-infrastructuur") is weg, zie TT-01. Nog geen eigen sessie gepland. **Afgebakend 10-08-2026:** het *generieke* deelvoorbeeld voor de site als geheel is wél gebouwd (TT-81) en werkt — bevestigd door Ronald in WhatsApp. Dit ticket gaat vanaf nu uitsluitend nog over de variant per profiel |
 | **TT-69** | Consistente componenten, iconenset, inline styles opruimen | Algemeen punt; wordt concreet zodra de interfaceslag (TT-67/68) wordt opgepakt. **Aangevuld 10-08-2026 (tweede externe review), bewust hier ondergebracht i.p.v. een eigen ticket — zelfde onderwerp:** 317 inline `style`-attributen geteld, met veel herhaling (bijv. `text-align:center;padding:40px;color:var(--danger)` voor foutmeldingen). Concrete stap: de 5 tot 10 meest herhaalde patronen omzetten naar classes. Verkleint het bestand en voorkomt dat één stijlwijziging op acht plekken moet |
