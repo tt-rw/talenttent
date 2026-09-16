@@ -287,8 +287,10 @@ async function openMusicianModal(id) {
   footer.innerHTML = musicianContactFooterHTML(m, isOwn, displayName);
 }
 
+// TT-287: het kruis en het logo roepen dit aan zonder klik-gegeven; die sluiten
+// altijd. Een klik op de overlay sluit alleen als hij naast het venster valt.
 function closeMusicianModal(e) {
-  if (e.target === document.getElementById('musicianModal')) {
+  if (!e || e.target === document.getElementById('musicianModal')) {
     document.getElementById('musicianModal').classList.remove('visible');
   }
 }

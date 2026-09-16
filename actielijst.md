@@ -1,6 +1,43 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 16-09-2026 (vervolg 4) — **Onderhoudsronde: dode code verwijderd, acht bevindingen vastgelegd (TT-281 t/m TT-286), vier bestaande tickets aangevuld. Eindstand 235 van 235.**
+**Laatste update:** 16-09-2026 (vervolg 5) — **TT-287 (P0) opgelost: op het profiel en de band van een ander deed geen enkele tik iets. Eindstand 246 van 246.**
+
+**Aanleiding.** Foutrapport van de monitor (tt-rw/talenttent-monitor, issue #3):
+20× `Uncaught TypeError: Cannot read properties of undefined (reading 'target')`
+in `musicians.js:291`, alle 20 van niet-ingelogde bezoekers, laatste 16-09-2026 06:58 UTC.
+
+*Toets: loopt een gebruiker vast? Ja — een profiel of band van een ander is niet
+te bedienen → P0.*
+
+**Oorzaak — twee fouten, sinds TT-268/TT-269 (15-09-2026). Geverifieerd in Playwright op 390 en 1280px.**
+
+1. `.modal-kop .modal-close` stond op `position: static`. Het vergrote tikvlak
+   (`.modal-close::after`, absoluut) hing daardoor aan `#musicianModalBox` en
+   `#bandModalBox`: het besloeg het hele venster. Gemeten: `elementFromPoint`
+   gaf op elke hoogte van het profiel het kruis terug. Elke tik — op het logo,
+   een knop, een link, een foto — was een tik op het kruis.
+2. Het kruis en het logo van het profiel roepen `closeMusicianModal()` aan
+   zonder klik-gegeven. De functie las `e.target` en brak af. Het profiel
+   bleef dus open en er gebeurde niets. Dat is de fout uit het rapport.
+   Bij de band gaf het geen fout, maar sloot elke tik het venster.
+
+**Oplossing.** `styles.css`: kruis in de koprij `position: relative` — het
+tikvlak blijft 44px rond het kruis. `musicians.js`: zonder klik-gegeven sluit
+`closeMusicianModal()` altijd. Versies: `styles.css?v=20260916d`,
+`musicians.js?v=20260916c`.
+
+**Test.** Nieuw blok 20 (11 controles): kruis en logo sluiten zonder fout,
+een klik in het venster laat het open, een klik ernaast sluit, en het tikvlak
+blijft bij het kruis op beide vensters. Op de oude code zakken ze. De
+bestaande controle in blok 15 eiste `static` en legde de fout daarmee vast;
+die eist nu `relative`.
+
+**Waarom de onderhoudsronde dit miste.** Die klikte elke zichtbare knop per
+view aan, niet binnen een geopend profielvenster.
+
+---
+
+**Vorige update:** 16-09-2026 (vervolg 4) — **Onderhoudsronde: dode code verwijderd, acht bevindingen vastgelegd (TT-281 t/m TT-286), vier bestaande tickets aangevuld. Eindstand 235 van 235.**
 
 **Aanleiding.** Onderhoudsronde op verzoek van Ronald: scrollen, vegen,
 knoppen die niets doen, dode code en overig onderhoud. Eén onderwerp:
@@ -3432,6 +3469,7 @@ herzieningsmomenten in TT-63 nog moeten gebeuren.
 |---|---|---|
 | **TT-229** | Bandomgeving werkt niet meer | **Opgelost 11-09-2026.** Geen bandprobleem: de bevestigingsvraag lag onzichtbaar achter "Bandleden beheren" door een gelijke `z-index`. Opgelost in de standaard — de laatst geopende modal ligt altijd bovenop (`initModalStapeling()` in `core.js`). Zie Deel 3 |
 | **TT-231** | Vaste Playwright-testset wordt leidend | **Laag 1 opgeleverd 11-09-2026:** `tests/tt_tests.py` + `tests/stub/supabase-stub.js`, tien blokken, 62 controles. Draait bij elke wijziging vóór oplevering. **Laag 2 is verschoven van "kan niet" naar "kan wel"** — zie Deel 3, de bereikbaarheidscorrectie. Dat deel is nog niet als vaste doorloop vastgelegd |
+| **TT-287** | Profiel en band van een ander niet te bedienen | **Nieuw en opgelost 16-09-2026.** Tikvlak van het kruis besloeg het hele venster, en `closeMusicianModal()` brak zonder klik-gegeven. Gemeld door de monitor (20× TypeError). Zie Laatste update |
 | **TT-62 (deel 1)** | Nooit nul zoekresultaten tonen | **Opgelost 11-09-2026.** Automatisch verruimen van de straal, in alle drie de zoektabbladen gelijk. Deel 2 staat nog open in de eerste tabel |
 | TT-22 (restpunt) | Auth-account daadwerkelijk verwijderen | **Data-deel opgelost 09-08-2026** (profiel, kindtabellen, Storage-bestanden, bandoprichterschap — zie Deel 3). **Auth-account-deel gebouwd 06-09-2026** (zie Laatste update bovenaan): nieuwe Edge Function `delete-own-account`, `executeAccountDeletion()` roept 'm aan vóór `signOut()`. **Blokkeert nog op:** Ronald moet de Edge Function bij Supabase aanmaken/deployen (stappen bovenaan dit document) vóórdat dit werkt op de live site |
 | **TT-63** | Privacyverklaring, gebruiksvoorwaarden, gedragscode | **Gebouwd en gepubliceerd 09-08-2026** — drie nieuwe views (`view-privacy`/`view-terms`/`view-gedragscode`), bereikbaar via het nieuwe hamburgermenu (zie hieronder) en via `#privacy`/`#terms`/`#gedragscode`. Toestemmingsregel met links toegevoegd bij de laatste wizard-stap. Gebruikt `privacy@talenttent.org` in alle drie. **Herzieningsmomenten, vastgelegd zodat ze niet vergeten worden:** privacyverklaring → zodra TT-42/TT-45 zijn opgelost (het hoofdstuk Minderjarigen loopt nu al vooruit op een regel die de wizard nog niet afdwingt — dat gat moet dicht vóór brede publicatie); gebruiksvoorwaarden + gedragscode → zodra TT-06 (meldknop) live gaat (nu nog "volgt binnenkort"); gebruiksvoorwaarden → kleine tekstupdate zodra TT-58 (applaus) of TT-221 (volgen) klaar zijn |

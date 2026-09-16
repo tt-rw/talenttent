@@ -2502,9 +2502,13 @@
     text-shadow: none;
     letter-spacing: 1px;
   }
-  /* In de koprij staat het kruis gewoon in de rij mee, niet los erboven. */
+  /* In de koprij staat het kruis gewoon in de rij mee, niet los erboven.
+     TT-287: relative, niet static. Het vergrote tikvlak (::after hieronder)
+     is absoluut en zoekt de dichtstbijzijnde niet-statische ouder. Bij static
+     was dat het hele venster: elke tik op een profiel of band raakte het kruis. */
   .modal-kop .modal-close {
-    position: static;
+    position: relative;
+    top: auto; right: auto;
     flex-shrink: 0;
   }
 
