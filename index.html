@@ -94,6 +94,10 @@
          (onUserLoggedIn()/onUserLoggedOut() zetten display). De knop bij
          Mijn Profiel is weer verwijderd — één plek, geen dubbele knop. -->
     <button class="nav-menu-item" id="navLogout" onclick="closeNavMenu();navLoginClick()" style="display:none;">Uitloggen</button>
+    <!-- TT-278 (16-09-2026, Ronald): uitgelogd staat Inloggen op dezelfde
+         plek als Uitloggen. Precies één van de twee is zichtbaar
+         (onUserLoggedIn/onUserLoggedOut). -->
+    <button class="nav-menu-item" id="navMenuLogin" onclick="closeNavMenu();showView('auth')">Inloggen</button>
   </div>
 </div>
 <!-- TT-U24 (12-08-2026): vaste onderbalk voor de telefoon.
@@ -1516,8 +1520,11 @@
            in de gewone paginastroom terwijl het invoerveld al vastzit. -->
       <div class="messages-thread-footer">
         <div class="messages-composer-row">
+          <!-- TT-277 (16-09-2026): de verzendknop pakt de focus niet van het
+               invoerveld. Anders klapt het toetsenbord weg, komt de onderbalk
+               terug en springt het beeld heen en weer. -->
           <textarea id="messagesReplyInput" placeholder="Typ een bericht..." maxlength="2000" oninput="updateCharCounter('messagesReplyInput','messagesReplyCounter',2000)"></textarea>
-          <button class="messages-send-btn" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+          <button class="messages-send-btn" onmousedown="event.preventDefault()" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
         </div>
         <div id="messagesReplyCounter" style="text-align:right;font-size:12px;color:var(--muted);margin-top:4px;">0/2000</div>
         <!-- V-04 (13-08-2026): i.p.v. een actief invoerveld naar een niet meer
@@ -2153,7 +2160,7 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260916a"></script>
+<script src="core.js?v=20260916c"></script>
 <script src="utils.js?v=20260916a"></script>
 <script src="auth.js?v=20260912a"></script>
 <script src="postcode.js?v=20260910a"></script>
@@ -2161,7 +2168,7 @@
 <script src="search.js?v=20260916a"></script>
 <script src="musicians.js?v=20260916b"></script>
 <script src="bands.js?v=20260910a"></script>
-<script src="messages.js?v=20260916a"></script>
+<script src="messages.js?v=20260916c"></script>
 <script src="modals-shared.js?v=20260910a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────

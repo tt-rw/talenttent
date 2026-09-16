@@ -109,6 +109,20 @@ function initModalStapeling() {
   });
 }
 
+const HERSTELBARE_VIEWS = ['landing', 'search', 'about', 'register', 'myprofile', 'bands', 'auth', 'privacy', 'terms', 'gedragscode', 'profieltegels', 'messages', 'instellingen'];
+
+// TT-279: het zoektabblad overleeft verversen. Alleen voor deze kijker, in
+// dit tabblad van de browser; lukt opslaan niet, dan begint Zoeken bij
+// Muzikant, zoals voorheen.
+function bewaarZoekTabblad(mode) {
+  try { sessionStorage.setItem('tt-zoektabblad', mode); } catch (e) { /* geen opslag: geen herstel */ }
+}
+function herstelZoekTabblad() {
+  let mode = null;
+  try { mode = sessionStorage.getItem('tt-zoektabblad'); } catch (e) { return; }
+  if (mode && mode !== currentSearchMode && ZOEK_TABBLADEN.includes(mode)) setSearchMode(mode);
+}
+
 async function appInit() {
   try {
     initModalStapeling(); // TT-229, zie hierboven
@@ -123,8 +137,17 @@ async function appInit() {
     // en #band/ toevoegt voor precies de doelgroep die vaak al ingelogd is
     // (een bandlid dat een link van een ander bandlid opent).
     const hashView = location.hash.replace('#', '');
+    const gesprekMatch = hashView.match(/^messages\/(.+)$/);
 
     const { data: { session } } = await db.auth.getSession();
+    // TT-279: vóór onUserLoggedIn() bepalen of de adresregel een pagina
+    // aanwijst. Die functie wacht halverwege op de database; het herstel
+    // hieronder is dan al gebeurd en mag niet worden overschreven.
+    // Inloggen en de wizard vallen erbuiten: daar hoort een ingelogde
+    // gebruiker na verversen niet te blijven hangen (gedrag van vóór TT-279).
+    opstartHerstelt = !!session?.user && (!!gesprekMatch ||
+      /^(profiel|band)\//.test(hashView) ||
+      (HERSTELBARE_VIEWS.includes(hashView) && !['auth', 'register'].includes(hashView)));
     if (session?.user) {
       currentUser = session.user;
       lastSignedInUserId = session.user.id;
@@ -174,8 +197,10 @@ async function appInit() {
     // juiste view openen. Alleen bekende views; Mijn Profiel/Mijn Bands lopen
     // via requireLogin() zodat een uitgelogde bezoeker de gebruikelijke
     // vriendelijke toast + doorverwijzing krijgt, geen lege pagina.
-    const knownHashViews = ['search', 'about', 'register', 'myprofile', 'bands', 'auth', 'privacy', 'terms', 'gedragscode', 'profieltegels'];
-    const gatedHashViews = ['myprofile', 'bands', 'profieltegels'];
+    // TT-279: elke view behalve 'reset' (die hoort bij een mail-link) is
+    // herstelbaar, zodat verversen altijd op de huidige pagina blijft.
+    const knownHashViews = HERSTELBARE_VIEWS;
+    const gatedHashViews = ['myprofile', 'bands', 'profieltegels', 'messages', 'instellingen'];
 
     // V-12 (13-08-2026): een gedeelde profiellink (#profiel/<id> of
     // #band/<id>, zie shareProfile()) opent direct de detailmodal, boven op
@@ -191,9 +216,20 @@ async function appInit() {
       if (currentUser) await configureSearchAccess();
       if (profielMatch) openMusicianModal(decodeURIComponent(profielMatch[1]));
       else openBandModal(decodeURIComponent(bandMatch[1]));
+    } else if (gesprekMatch) {
+      // TT-279: een open gesprek blijft open na verversen.
+      // Eerst de inbox als huidige stap, dan het gesprek als stap erbovenop:
+      // de terugknop sluit daarna eerst het gesprek, net als voorheen.
+      if (!currentUser) showView('auth', 'redirect');
+      else {
+        showView('messages', 'redirect');
+        heropenGesprek(decodeURIComponent(gesprekMatch[1]));
+      }
     } else if (knownHashViews.includes(hashView)) {
-      if (gatedHashViews.includes(hashView)) requireLogin(hashView);
-      else showView(hashView);
+      // 'redirect': verversen voegt geen extra stap toe aan de geschiedenis.
+      if (gatedHashViews.includes(hashView) && !currentUser) showView('auth', 'redirect');
+      else showView(hashView, 'redirect');
+      if (hashView === 'search') herstelZoekTabblad();
     }
   } catch(e) {
     logCaught('appInit', e);
@@ -211,7 +247,17 @@ async function appInit() {
 // bepaalt zelf (via goTo()) wat de volgende stap is.
 let onboardingInFlight = false;
 
+// TT-279 (16-09-2026, Ronald): verversen blijft op de huidige pagina. Staat
+// deze vlag aan, dan herstelt appInit() de pagina uit de adresregel en stuurt
+// onUserLoggedIn() niet meer door naar Mijn Profiel. onUserLoggedIn() wacht
+// halverwege op de database; het herstel is dan al gebeurd.
+let opstartHerstelt = false;
+
 async function onUserLoggedIn(user) {
+  // TT-279: de vlag geldt voor precies deze ene aanroep bij het opstarten.
+  // Direct uitlezen, vóór de eerste await hieronder.
+  const paginaHersteld = opstartHerstelt;
+  opstartHerstelt = false;
   // TT-166 (28-08-2026): Uitloggen hoort bij Mijn Profiel, niet meer hier.
   // Ingelogd hoeft niemand nog "Inloggen" te zien — de knop verdwijnt, de
   // ruimte in de tab-regel is dan vrij.
@@ -221,6 +267,8 @@ async function onUserLoggedIn(user) {
   document.getElementById('navLogout').style.display = '';
   // TT-186 (03-09-2026): Instellingen zelfde zichtbaarheidsregel als Uitloggen.
   document.getElementById('navSettings').style.display = '';
+  // TT-278: Inloggen in het hamburgermenu alleen uitgelogd.
+  document.getElementById('navMenuLogin').style.display = 'none';
   refreshUnreadBadge();
 
   if (onboardingInFlight) return;
@@ -257,7 +305,7 @@ async function onUserLoggedIn(user) {
     }
   }
 
-  showView('myprofile');
+  if (!paginaHersteld) showView('myprofile');
   // TT-38 (07-08-2026): bestaand profiel zonder gebruikersnaam? Verplicht
   // scherm erbovenop tonen (modal blokkeert de rest tot opgeslagen).
   checkUsernameGate();
@@ -282,6 +330,8 @@ function onUserLoggedOut() {
   // TT-186 (03-09-2026): Instellingen zelfde zichtbaarheidsregel als Uitloggen.
   const navSettingsBtn = document.getElementById('navSettings');
   if (navSettingsBtn) navSettingsBtn.style.display = 'none';
+  const navMenuLoginBtn = document.getElementById('navMenuLogin');
+  if (navMenuLoginBtn) navMenuLoginBtn.style.display = ''; // TT-278
   myMusicianId = null;
   myOwnCity = null;
   // TT-108 (23-08-2026): hoort bij dezelfde fix als in onUserLoggedIn() —
@@ -615,6 +665,7 @@ function selectSortModeByValue(gridId, value) {
 // setSearchMode() met één argument aan; dat pad is ongewijzigd.
 function setSearchMode(mode, veegRichting) {
   currentSearchMode = mode;
+  bewaarZoekTabblad(mode); // TT-279
   const isMusician = mode === 'musician';
   const isBand     = mode === 'band';
   const isSetlist  = mode === 'setlist';
@@ -660,13 +711,16 @@ let veegStartX = 0, veegStartY = 0, veegStartT = 0;
 let veegBezig = false, veegHorizontaal = null;
 
 // Een veeg telt niet als er iets anders overheen ligt, als de vinger in een
-// tekstveld begint, of als het element eronder zelf horizontaal scrolt.
+// aangetikt tekstveld begint, of als het element eronder zelf horizontaal scrolt.
 function veegGeblokkeerd(doel) {
   if (!doel || !doel.closest) return true;
   // Een open modal of wiel-bladwijzer ligt boven op het zoekscherm.
   if (document.querySelector('.modal-overlay.visible')) return true;
-  // In een tekstveld sleept de vinger de cursor, niet het tabblad.
-  if (doel.closest('input, textarea, select, [contenteditable="true"]')) return true;
+  // TT-280 (16-09-2026, Ronald): alleen in een veld dat al is aangetikt,
+  // sleept de vinger de cursor. Over elk ander veld heen wisselt een veeg
+  // gewoon van tabblad; de tik op het veld is het signaal om te gaan typen.
+  const veld = doel.closest('input, textarea, select, [contenteditable="true"]');
+  if (veld && veld === document.activeElement) return true;
   // Een eigen horizontale scroller (bijv. een brede tabel) houdt de veeg.
   let el = doel;
   while (el && el !== document.body) {

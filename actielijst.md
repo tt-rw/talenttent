@@ -1,6 +1,59 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 16-09-2026 (vervolg 2) — **TT-275 en TT-276: het hele wielpaneel draait mee, en de standaardstraal is 10 km. Eindstand 212 van 212.**
+**Laatste update:** 16-09-2026 (vervolg 3) — **TT-277 t/m TT-280: rustig versturen, Inloggen in het menu, verversen blijft op de pagina, vegen over een veld. Eindstand 235 van 235.**
+
+**Aanleiding.** Ronald, vier bevindingen op zijn telefoon: (1) na een tik op
+de verzendknop schiet het gesprek heen en weer; (2) uitgelogd ontbreekt
+Inloggen in het hamburgermenu; (3) omlaag vegen (verversen) in Berichten
+stuurt je naar het profiel — verversen moet overal op de huidige pagina
+blijven; (4) links/rechts vegen werkt niet over een tekstveld.
+
+**Sessieregel.** Vier tickets in één sessie, op verzoek van Ronald. Dat is
+volgens §5 van de projectinstructies een signaal voor een nieuwe sessie.
+
+**TT-277 (P2), opgelost.** *Toets: werkt, maar het springende beeld kost
+vertrouwen.* **Oorzaak, gemeten:** de tik op de verzendknop haalde de focus
+uit het invoerveld. Het toetsenbord klapte weg, de onderbalk kwam terug en
+het invoerveld sprong 60px omhoog (gemeten: 756 → 696). Daarna werd de hele
+berichtenlijst opnieuw opgebouwd. **Nu:** de verzendknop pakt de focus niet
+(`onmousedown` in `index.html`); het toetsenbord blijft open, zoals in
+WhatsApp. Het voorlopige bericht krijgt dezelfde opbouw als na verversen
+(ook "Vandaag" erboven), en `openConversation()` vervangt de lijst bij een
+stille verversing alleen als er iets veranderde. Gemeten: het invoerveld
+staat stil, de lijst wordt niet opnieuw opgebouwd.
+
+**TT-278 (P2), opgelost.** *Toets: werkt via de bovenbalk, maar kost zoeken.*
+Nieuw: `navMenuLogin` onderaan het hamburgermenu, op de plek van Uitloggen.
+Precies één van de twee is zichtbaar.
+
+**TT-279 (P2), opgelost.** *Toets: werkt, maar je raakt je plek kwijt.*
+**Oorzaak, gemeten:** omlaag vegen laat de browser de pagina herladen.
+`onUserLoggedIn()` stuurde daarna altijd door naar Mijn Profiel — ná het
+herstel uit de adresregel, omdat die functie halverwege op de database
+wacht. Bovendien kende het herstel `messages` en `instellingen` niet.
+**Nu:** verversen blijft op elke pagina behalve `reset`, en voor een
+ingelogde gebruiker ook niet op `auth` en `register` (ongewijzigd gedrag).
+Een open gesprek staat in de adresregel (`#messages/<id>`) en gaat na
+verversen weer open (`heropenGesprek()` in `messages.js`). Het zoektabblad
+blijft bewaard, per browsertabblad. Verversen voegt geen stap toe aan de
+geschiedenis; terug sluit eerst het gesprek.
+**Niet hersteld na verversen:** een open modal en een geopend tegelscherm
+binnen "Profiel bewerken". Die sluiten, net als bij de terugknop.
+
+**TT-280 (P2), opgelost.** *Toets: werkt, maar alleen op een vrije plek.*
+`veegGeblokkeerd()` in `core.js` blokkeert een veeg nu alleen in een veld
+dat al is aangetikt (de focus heeft). Over elk ander veld wisselt een veeg
+van tabblad, zonder dat het veld focus krijgt. Gemeten met een echte
+aanraakveeg.
+
+**Testset:** blok 19 nieuw, 23 controles. Vóór de fix zakten er vijftien van
+de toen 22. De stub geeft een nieuw bericht nu zelf een tijdstip, zoals de
+database. **Eindstand: 235 van 235.** Nog te bevestigen op een echte telefoon.
+
+Gewijzigd: `index.html`, `core.js`, `messages.js`, `tests/tt_tests.py`,
+`tests/stub/supabase-stub.js`, `actielijst.md`, `CHECKSUMS.txt`.
+
+**Vorige update:** 16-09-2026 (vervolg 2) — **TT-275 en TT-276: het hele wielpaneel draait mee, en de standaardstraal is 10 km. Eindstand 212 van 212.**
 
 **Aanleiding.** Ronald, met een schermafdruk van het straalwiel op zijn
 telefoon: (1) het wiel draait alleen op de cijfers, dus je duim bedekt wat je
@@ -3295,6 +3348,10 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-277** | Gesprek springt bij versturen | **Opgelost 16-09-2026 (vervolg 3).** Toetsenbord blijft open, beeld staat stil. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
+| **TT-278** | Inloggen ontbreekt in het hamburgermenu | **Opgelost 16-09-2026 (vervolg 3).** Uitgelogd staat Inloggen onderaan het menu |
+| **TT-279** | Verversen stuurt naar het profiel | **Opgelost 16-09-2026 (vervolg 3).** Verversen blijft op de huidige pagina, ook in een open gesprek. Open modals en tegelschermen sluiten wel |
+| **TT-280** | Vegen werkt niet over een tekstveld | **Opgelost 16-09-2026 (vervolg 3).** Alleen een aangetikt veld houdt de veeg vast |
 | **TT-275** | Wiel draait alleen op de cijfers | **Opgelost 16-09-2026 (vervolg 2).** Het hele paneel draait mee, ook over "km" en "t/m", bij alle wielen. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
 | **TT-276** | Standaardstraal 10 km | **Opgelost 16-09-2026 (vervolg 2).** Was 5 km; geldt voor Muzikant, Band en Setlist. Zie Laatste update bovenaan |
 | **TT-273** | "Repertoire (1 nummers)" | **Opgelost 16-09-2026 (vervolg).** Eén nummer heet nu "1 nummer". Zie Laatste update bovenaan |

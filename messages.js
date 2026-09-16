@@ -98,10 +98,25 @@ async function sendReplyInThread() {
   // verversing gebeurt daarna, zonder melding.
   const draad = document.getElementById('messagesThreadList');
   const tijd = new Date().toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  // TT-277: het voorlopige bericht krijgt dezelfde opbouw als na de
+  // verversing — lege staat weg, "Vandaag" erboven als die nog ontbreekt.
+  // Anders verspringt de lijst zodra het gesprek opnieuw is opgehaald.
+  if (!draad.querySelector('.message-bubble')) draad.innerHTML = '';
+  const scheidingen = draad.querySelectorAll('.messages-day-divider');
+  const laatsteScheiding = scheidingen[scheidingen.length - 1];
+  const nieuw = [];
+  if (!laatsteScheiding || laatsteScheiding.textContent !== 'Vandaag') {
+    const sch = document.createElement('div');
+    sch.className = 'messages-day-divider';
+    sch.textContent = 'Vandaag';
+    draad.appendChild(sch);
+    nieuw.push(sch);
+  }
   const voorlopig = document.createElement('div');
   voorlopig.className = 'message-bubble own';
   voorlopig.innerHTML = escHtml(tekst).replace(/\n/g, '<br>') + `<div class="message-bubble-time">${escHtml(tijd)}</div>`;
   draad.appendChild(voorlopig);
+  nieuw.push(voorlopig);
   input.value = '';
   updateCharCounter('messagesReplyInput', 'messagesReplyCounter', 2000);
   scrollThreadToBottom();
@@ -112,7 +127,7 @@ async function sendReplyInThread() {
   } else {
     // Mislukt: het voorlopige bericht weer weghalen en de tekst teruggeven,
     // zodat niemand denkt dat het verstuurd is.
-    voorlopig.remove();
+    nieuw.forEach(el => el.remove());
     input.value = tekst;
     updateCharCounter('messagesReplyInput', 'messagesReplyCounter', 2000);
   }
@@ -317,8 +332,9 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, 
   // de telefoon eerst het gesprek sluit en niet meteen het hele
   // berichtenscherm verlaat. Alleen bij het openen vanuit de inbox, niet bij
   // het verversen na het versturen van een bericht (dan staat de stap er al).
+  // TT-279: het adres noemt het gesprek, zodat verversen het weer opent.
   if (!threadHistoryPushed) {
-    safeHistoryPush({ view: 'messages', thread: true }, '#messages');
+    safeHistoryPush({ view: 'messages', thread: true }, '#messages/' + encodeURIComponent(otherId));
     threadHistoryPushed = true;
   }
   if (!stil) {
@@ -354,7 +370,7 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, 
     const today = new Date().toDateString();
     const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toDateString();
-    threadEl.innerHTML = (data && data.length ? data.map(msg => {
+    const nieuweInhoud = (data && data.length ? data.map(msg => {
       const own = msg.sender_id === mid;
       const msgDate = new Date(msg.created_at);
       const dayStr = msgDate.toDateString();
@@ -379,6 +395,9 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, 
       'Schrijf het eerste bericht →',
       "document.getElementById('messagesReplyInput').focus()"
     ));
+    // TT-277: een stille verversing vervangt de lijst alleen als er iets
+    // veranderde. Zo blijft het net verstuurde bericht gewoon staan.
+    if (!stil || threadEl.innerHTML !== nieuweInhoud) threadEl.innerHTML = nieuweInhoud;
 
     // Ongelezen berichten van deze afzender markeren als gelezen.
     const unreadIds = (data || []).filter(m => m.recipient_id === mid && !m.read_at).map(m => m.id);
@@ -402,6 +421,23 @@ function closeConversation() {
   document.getElementById('messagesThreadPanel').style.display = 'none';
   document.getElementById('messagesThreadPanel').classList.remove('gesprek-open');
   loadInbox();
+}
+
+// TT-279 (16-09-2026): na verversen het gesprek uit de adresregel weer
+// openen. Naam, kleur en foto komen uit dezelfde vraag als in loadInbox().
+async function heropenGesprek(otherId) {
+  try {
+    const { data, error } = await db.from('musicians')
+      .select('id, fname, username, avatar_url, profile_color').eq('id', otherId);
+    if (error) throw error;
+    const info = (data || [])[0];
+    const name = info ? displayNameOf(info) : 'Verwijderde gebruiker';
+    const col = safeColor(info && info.profile_color, '#f5c518');
+    const avatarSrc = info ? safeUrl(info.avatar_url) : null;
+    openConversation(otherId, name, col, avatarSrc, false, !info);
+  } catch (e) {
+    logCaught('heropenGesprek', e);
+  }
 }
 
 // TT-271 (16-09-2026, Ronald): foto en naam bovenin een gesprek openen het
