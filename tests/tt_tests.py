@@ -1414,6 +1414,97 @@ def blok_browser():
         sctx.close()
         check("geen paginafouten in blok 17", not page_errors, "; ".join(page_errors)[:200])
 
+        # ─────────────────────────────────────────────────────────────
+        # Blok 18 — het hele wielpaneel draait mee (TT-275) en de
+        # standaardstraal is 10 km (TT-276), 16-09-2026.
+        # Naast het getal en over "km" moet het wiel ook reageren; anders
+        # bedekt de duim het getal dat je kiest.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 18 — het hele wielpaneel draait mee, standaardstraal 10 km")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        # De velden lezen uit het HTML-bestand zelf: een verborgen veld neemt
+        # een eerder gezette waarde over als beginwaarde.
+        html_bron = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        std = {
+          "code": page.evaluate("STRAAL_STANDAARD"),
+          "velden": [re.search(r'id="%s" value="([^"]*)"' % i, html_bron).group(1)
+                     for i in ("filterRadius", "filterBandRadius", "filterSetlistRadius")]
+        }
+        check("standaardstraal is 10 km in de code", std["code"] == 10, str(std["code"]))
+        check("de drie straalvelden beginnen op 10 km",
+              std["velden"] == ["10", "10", "10"], str(std["velden"]))
+        sctx = browser.new_context(viewport={"width": 412, "height": 900})
+        sp = sctx.new_page()
+        sp.route("**/supabase-js@2/**", lambda r: r.fulfill(
+            status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**"):
+            sp.route(pat, lambda r: r.abort())
+        sp.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        sp.wait_for_timeout(300)
+        for veld, kolommen in (("radius", 1), ("leeftijd", 2), ("niveau", 2)):
+            vlak = sp.evaluate("""async (id) => {
+              showView('search');
+              openWheelSheet(id);
+              await new Promise(r => requestAnimationFrame(
+                () => requestAnimationFrame(() => setTimeout(r, 80))));
+              const groep = document.getElementById('wheelSheetGroup');
+              const g = groep.getBoundingClientRect();
+              const y = g.top + g.height / 2;
+              const wielOp = (x) => {
+                const el = document.elementFromPoint(x, y);
+                const w = el && el.closest('.wheel');
+                return w ? w.id : null;
+              };
+              const wielen = [...groep.querySelectorAll('.wheel')].map(w => w.id);
+              const uit = { links: wielOp(g.left + 4), rechts: wielOp(g.right - 4),
+                            wielen, midden: [] };
+              const eenheid = groep.querySelector('.wheel-unit');
+              if (eenheid) { const u = eenheid.getBoundingClientRect();
+                             uit.overEenheid = wielOp(u.left + u.width / 2); }
+              const sep = groep.querySelector('.wheel-sep');
+              if (sep) { const s = sep.getBoundingClientRect();
+                         uit.naastSepL = wielOp(s.left + 2);
+                         uit.naastSepR = wielOp(s.right - 2); }
+              // Het getal zelf staat nog op zijn plek.
+              groep.querySelectorAll('.wheel').forEach(w => {
+                const k = w.getBoundingClientRect();
+                const it = w.querySelector('.wheel-item.selected');
+                const r = document.createRange(); r.selectNodeContents(it);
+                const t = r.getBoundingClientRect();
+                uit.midden.push(Math.abs((t.left + t.width / 2) - (k.left + k.width / 2)));
+              });
+              return uit;
+            }""", veld)
+            w = vlak["wielen"]
+            check(f"{veld}: linkerrand van het paneel draait het eerste wiel",
+                  vlak["links"] == w[0], str(vlak))
+            check(f"{veld}: rechterrand van het paneel draait het laatste wiel",
+                  vlak["rechts"] == w[-1], str(vlak))
+            if kolommen == 1:
+                check(f"{veld}: over 'km' draait het wiel",
+                      vlak.get("overEenheid") == w[0], str(vlak))
+            else:
+                check(f"{veld}: 't/m' is links en rechts verdeeld over beide wielen",
+                      vlak.get("naastSepL") == w[0] and vlak.get("naastSepR") == w[1], str(vlak))
+            check(f"{veld}: de getallen staan nog midden in hun kolom",
+                  max(vlak["midden"]) <= 1, str(vlak["midden"]))
+            sp.evaluate("closeWheelSheet()")
+            sp.wait_for_timeout(100)
+        # Echt draaien met het muiswiel boven "km".
+        sp.evaluate("""async () => { openWheelSheet('radius');
+          await new Promise(r => requestAnimationFrame(
+            () => requestAnimationFrame(() => setTimeout(r, 80)))); }""")
+        u = sp.evaluate("""() => { const b = document.querySelector('#wheelSheetGroup .wheel-unit')
+          .getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }""")
+        sp.mouse.move(u["x"], u["y"])
+        sp.mouse.wheel(0, 132)
+        sp.wait_for_timeout(600)
+        na = sp.evaluate("document.getElementById('filterRadius').value")
+        check("scrollen boven 'km' kiest een andere straal", na != "10", f"waarde {na}")
+        sctx.close()
+        check("geen paginafouten in blok 18", not page_errors, "; ".join(page_errors)[:200])
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
