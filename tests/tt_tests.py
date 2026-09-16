@@ -45,7 +45,7 @@ VIEWS = [
 NAV_IDS = [
     "navMyProfile", "navMyBands", "navSearch", "navMessages", "navLogin",
     "navMenuBtn", "navAbout", "navPrivacy", "navTerms", "navGedragscode",
-    "navSettings", "navLogout",
+    "navSettings", "navLogout", "navMenuLogin",
     "bottomNavSearch", "bottomNavMessages", "bottomNavBands", "bottomNavProfile",
     "unreadBadge", "unreadBadgeBottom",
 ]
@@ -1504,6 +1504,163 @@ def blok_browser():
         check("scrollen boven 'km' kiest een andere straal", na != "10", f"waarde {na}")
         sctx.close()
         check("geen paginafouten in blok 18", not page_errors, "; ".join(page_errors)[:200])
+
+        # ─────────────────────────────────────────────────────────────
+        # Blok 19 — rust bij versturen, Inloggen in het menu, verversen
+        # blijft op de pagina, vegen over een veld (TT-277 t/m TT-280),
+        # 16-09-2026. Vier bevindingen van Ronald op zijn telefoon.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 19 — versturen, menu, verversen en vegen")
+
+        def telefoon(ingelogd):
+            c = browser.new_context(viewport={"width": 390, "height": 844},
+                                    is_mobile=True, has_touch=True)
+            body = stub_js
+            if ingelogd:
+                body += "\nwindow.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };\n"
+            fouten = []
+            pg = c.new_page()
+            pg.on("pageerror", lambda e: fouten.append(str(e)))
+            pg.route("**/supabase-js@2/**", lambda r: r.fulfill(
+                status=200, content_type="application/javascript", body=body))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
+                        "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                pg.route(pat, lambda r: r.abort())
+            return c, pg, fouten
+
+        def actieve_view(pg):
+            return pg.evaluate("document.querySelector('.app-view.active')?.id")
+
+        # TT-278 — Inloggen in het hamburgermenu, alleen uitgelogd.
+        uc, up, uf = telefoon(False)
+        up.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        up.wait_for_timeout(400)
+        check("uitgelogd staat Inloggen in het hamburgermenu (TT-278)",
+              up.evaluate("getComputedStyle(document.getElementById('navMenuLogin')).display") != "none"
+              if up.locator("#navMenuLogin").count() else False, "navMenuLogin")
+        if up.locator("#navMenuLogin").count():
+            up.click("#navMenuBtn")
+            up.click("#navMenuLogin")
+            up.wait_for_timeout(100)
+            check("Inloggen in het menu opent het inlogscherm",
+                  actieve_view(up) == "view-auth", str(actieve_view(up)))
+            check("Inloggen staat onderaan, op de plek van Uitloggen",
+                  up.evaluate("""() => { const k = [...document.querySelectorAll('#navMenuDropdown .nav-menu-item')];
+                    return k.indexOf(document.getElementById('navMenuLogin')) === k.length - 1; }"""), "")
+
+        # TT-280 — vegen over een tekstveld wisselt van tabblad.
+        up.evaluate("showView('search')")
+        up.wait_for_timeout(300)
+        veld = up.evaluate("""() => { const v = document.getElementById('filterName')
+            || document.querySelector('#searchModeMusician input[type=text]');
+          v.blur(); const b = v.getBoundingClientRect();
+          return { id: v.id, x: b.left + b.width / 2, y: b.top + b.height / 2, w: b.width }; }""")
+        cdp = up.context.new_cdp_session(up)
+        def veeg(x0, x1, y):
+            cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": x0, "y": y}]})
+            for i in range(1, 7):
+                cdp.send("Input.dispatchTouchEvent", {"type": "touchMove",
+                         "touchPoints": [{"x": x0 + (x1 - x0) * i / 6, "y": y}]})
+            cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+            up.wait_for_timeout(250)
+        veeg(veld["x"] + 80, veld["x"] - 80, veld["y"])
+        check("vegen over een leeg, niet aangetikt veld wisselt van tabblad (TT-280)",
+              up.evaluate("currentSearchMode") == "band",
+              f"tabblad {up.evaluate('currentSearchMode')}, veld {veld['id']}")
+        check("en het veld krijgt daarbij geen focus",
+              up.evaluate("document.activeElement?.tagName") not in ("INPUT", "TEXTAREA"),
+              up.evaluate("document.activeElement?.id || ''"))
+        up.evaluate("setSearchMode('musician')")
+        up.evaluate(f"document.getElementById('{veld['id']}').focus()")
+        veeg(veld["x"] + 80, veld["x"] - 80, veld["y"])
+        check("in een aangetikt veld wisselt vegen niet van tabblad",
+              up.evaluate("currentSearchMode") == "musician", up.evaluate("currentSearchMode"))
+        check("geen paginafouten uitgelogd", not uf, "; ".join(uf)[:200])
+        uc.close()
+
+        # TT-278 (vervolg) en TT-279 — ingelogd, verversen blijft op de pagina.
+        ic, ip, iff = telefoon(True)
+        # Start op #about: de stub kent geen geneste selecties, en Mijn Profiel
+        # vraagt die wel. Dat is een grens van de stub, geen fout in de app.
+        ip.goto(f"http://127.0.0.1:{port}/index.html#about", wait_until="load")
+        ip.wait_for_timeout(500)
+        check("ingelogd staat Inloggen niet in het menu",
+              ip.evaluate("getComputedStyle(document.getElementById('navMenuLogin')).display") == "none"
+              if ip.locator("#navMenuLogin").count() else False, "")
+        for v in ("messages", "search", "bands", "instellingen", "about"):
+            ip.evaluate(f"showView('{v}')")
+            ip.wait_for_timeout(150)
+            ip.reload(wait_until="load")
+            ip.wait_for_timeout(600)
+            check(f"verversen op '{v}' blijft op '{v}' (TT-279)",
+                  actieve_view(ip) == f"view-{v}", str(actieve_view(ip)))
+        # Terug na verversen: de vorige stap is niet ongevraagd Mijn Profiel.
+        ip.evaluate("setSearchMode('band')")
+        ip.evaluate("showView('search')")
+        ip.wait_for_timeout(150)
+        ip.reload(wait_until="load")
+        ip.wait_for_timeout(600)
+        check("verversen houdt het zoektabblad vast",
+              ip.evaluate("currentSearchMode") == "band", ip.evaluate("currentSearchMode"))
+        # Een open gesprek blijft open na verversen.
+        ip.evaluate("""() => { const l = [];
+          for (let i = 0; i < 30; i++) l.push({ id: 'x' + i, sender_id: i % 2 ? 'm1' : 'm2',
+            recipient_id: i % 2 ? 'm2' : 'm1', body: 'Bericht ' + i,
+            created_at: new Date(Date.now() - (30 - i) * 60000).toISOString(), read_at: null });
+          sessionStorage.setItem('tt-test-berichten', JSON.stringify(l)); }""")
+        ip.evaluate("showView('messages')")
+        ip.wait_for_timeout(200)
+        ip.evaluate("openConversation('m2', 'Dylan', '#f5c518', '', false, false)")
+        ip.wait_for_timeout(200)
+        ip.reload(wait_until="load")
+        ip.wait_for_timeout(700)
+        gesp = ip.evaluate("""() => ({ view: document.querySelector('.app-view.active')?.id,
+          open: document.getElementById('messagesThreadPanel').style.display,
+          id: typeof activeConversationId === 'undefined' ? null : activeConversationId })""")
+        check("verversen in een gesprek houdt het gesprek open",
+              gesp["view"] == "view-messages" and gesp["open"] == "block" and gesp["id"] == "m2",
+              json.dumps(gesp))
+        ip.evaluate("history.back()")
+        ip.wait_for_timeout(300)
+        check("terug na verversen sluit eerst het gesprek",
+              ip.evaluate("document.getElementById('messagesInboxPanel').style.display") == "block"
+              and actieve_view(ip) == "view-messages", str(actieve_view(ip)))
+        check("geen paginafouten ingelogd", not iff, "; ".join(iff)[:200])
+
+        # TT-277 — versturen houdt het toetsenbord open en het beeld stil.
+        ip.evaluate("""async () => {
+          window.TT_STUB.data.messages = JSON.parse(sessionStorage.getItem('tt-test-berichten'));
+          await openConversation('m2', 'Dylan', '#f5c518', '', false, false); }""")
+        ip.wait_for_timeout(200)
+        ip.tap("#messagesReplyInput")
+        ip.fill("#messagesReplyInput", "Hoi, zin in een jam?")
+        ip.wait_for_timeout(100)
+        ip.evaluate("""() => { window.__eerste = document.querySelector('#messagesThreadList .message-bubble');
+          window.__voet = []; const t0 = performance.now();
+          const f = () => { const r = document.querySelector('#messagesThreadPanel .messages-thread-footer').getBoundingClientRect();
+            window.__voet.push(Math.round(r.top));
+            if (performance.now() - t0 < 700) requestAnimationFrame(f); };
+          requestAnimationFrame(f); }""")
+        ip.tap("#messagesThreadPanel .messages-send-btn")
+        ip.wait_for_timeout(800)
+        st = ip.evaluate("""() => ({ focus: document.activeElement?.id, voet: window.__voet,
+          open: document.body.classList.contains('toetsenbord-open'),
+          laatste: document.getElementById('messagesThreadList').lastElementChild.textContent,
+          aantal: document.querySelectorAll('#messagesThreadList .message-bubble').length,
+          zelfde: window.__eerste.isConnected })""")
+        check("na versturen blijft het invoerveld actief, zoals in WhatsApp (TT-277)",
+              st["focus"] == "messagesReplyInput", json.dumps(st)[:200])
+        check("de onderbalk komt tijdens versturen niet terug",
+              st["open"], json.dumps(st)[:200])
+        check("het invoerveld staat stil tijdens versturen",
+              st["voet"] and max(st["voet"]) - min(st["voet"]) <= 1, str(st["voet"]))
+        check("het verstuurde bericht staat er precies één keer",
+              st["aantal"] == 31 and "Hoi, zin in een jam?" in st["laatste"],
+              json.dumps({k: st[k] for k in ("aantal", "laatste")}))
+        check("de berichtenlijst wordt na versturen niet opnieuw opgebouwd",
+              st["zelfde"], "")
+        check("geen paginafouten bij versturen", not iff, "; ".join(iff)[:200])
+        ic.close()
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
