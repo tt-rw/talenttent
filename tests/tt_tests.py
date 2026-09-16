@@ -1348,6 +1348,72 @@ def blok_browser():
         tp.screenshot(path=os.path.join(os.environ.get("TT_SHOTS", "/tmp"), "blok16-typen.png"))
         tctx.close()
 
+        # ─────────────────────────────────────────────────────────────
+        # Blok 17 — tellingen en het verplicht-teken (TT-273, TT-274)
+        # "1 nummers" mag niet. Het rode sterretje staat naast
+        # "Mijn Instrumenten", nooit eronder — in de wizard én in
+        # Profiel bewerken, op een smal scherm.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 17 — tellingen en het verplicht-teken")
+        page_errors.clear()
+        telling = page.evaluate("""() => {
+          const basis = (n) => ({
+            id: 'm9', fname: 'Sanne', username: 'sannedrums', city: 'Den Haag',
+            bio: 'Test', profile_color: '#f5c518', avatar_url: null, age: 17,
+            updated_at: new Date().toISOString(),
+            musician_instruments: [{ instrument: 'Drums', niveau: 3 }],
+            musician_genres: [{ genre: 'Rock' }], musician_media: [],
+            musician_songs: Array.from({ length: n }, (_, i) =>
+              ({ artist: 'A', title: 'T' + i, level: 'podiumklaar' }))
+          });
+          const vak = document.createElement('div');
+          document.body.appendChild(vak);
+          const kop = (n) => {
+            vak.innerHTML = buildMusicianDetailHTML(basis(n), false);
+            return vak.querySelector('.profile-songs-title').textContent.trim();
+          };
+          const uit = { een: kop(1), twee: kop(2) };
+          vak.remove();
+          return uit;
+        }""")
+        check("één nummer: 'Repertoire (1 nummer)'",
+              telling["een"] == "Repertoire (1 nummer)", telling["een"])
+        check("twee nummers: 'Repertoire (2 nummers)'",
+              telling["twee"] == "Repertoire (2 nummers)", telling["twee"])
+
+        sctx = browser.new_context(viewport={"width": 344, "height": 700})
+        sp = sctx.new_page()
+        sp.route("**/supabase-js@2/**", lambda r: r.fulfill(
+            status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**"):
+            sp.route(pat, lambda r: r.abort())
+        sp.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        sp.wait_for_timeout(300)
+        sterren = sp.evaluate("""() => {
+          const uit = [];
+          for (const id of ['instrumentPickerField', 'wspInstrumentField']) {
+            const lab = document.getElementById(id).closest('.field').querySelector('label');
+            let n = lab;
+            while (n) { n.style.display = 'block'; n.classList.add('active'); n = n.parentElement; }
+            lab.style.display = 'flex';
+            const tekst = lab.querySelector('span');
+            // De ster moet op dezelfde regel staan als het eerste woord.
+            // Het vak zelf meten zegt niets: dat groeit mee met de ster.
+            const r = document.createRange();
+            r.selectNodeContents(tekst.firstChild);
+            const woord = r.getClientRects()[0];
+            const ster = tekst.querySelector('.req').getBoundingClientRect();
+            uit.push({ id, eenRegel: Math.abs(ster.top - woord.top) <= 4,
+                       sterTop: ster.top, woordTop: woord.top });
+          }
+          return uit;
+        }""")
+        for s in sterren:
+            check(f"sterretje naast 'Mijn Instrumenten' op 344px ({s['id']})",
+                  s["eenRegel"], str(s))
+        sctx.close()
+        check("geen paginafouten in blok 17", not page_errors, "; ".join(page_errors)[:200])
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
