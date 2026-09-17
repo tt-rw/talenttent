@@ -1772,6 +1772,22 @@ def blok_browser():
               sch["tekst"] == ["Zoek muzikanten", "Zoek setlist"], json.dumps(sch))
         check("schakelaar: knoppen minstens 44px hoog en even breed",
               min(sch["hoog"]) >= 44 and sch["breed"][0] == sch["breed"][1], json.dumps(sch))
+        vorm = page.evaluate("""() => {
+          const st = id => { const c = getComputedStyle(document.getElementById(id)); return [c.backgroundColor, c.borderTopColor, c.color]; };
+          const r = id => document.getElementById(id).getBoundingClientRect();
+          const a = r('setlistSoortMuzikantenBtn'), b = r('setlistSoortNummersBtn');
+          const h1 = r('searchModeMusicianBtn'), h3 = r('searchModeSetlistBtn');
+          document.getElementById('searchModeSetlistBtn').style.transition = 'none';
+          return { hoofd: st('searchModeSetlistBtn'), sub: st('setlistSoortMuzikantenBtn'),
+                   tussen: Math.round(b.left - a.right),
+                   randen: [Math.round(a.left - h1.left), Math.round(b.right - h3.right)] };
+        }""")
+        check("standknoppen staan los van elkaar, met 14px ertussen",
+              vorm["tussen"] == 14, json.dumps(vorm))
+        check("actieve standknop heeft dezelfde kleuren als het tabblad Setlist",
+              vorm["hoofd"] == vorm["sub"], json.dumps(vorm))
+        check("standknoppen lijnen uit met de hoofdtabbladen",
+              vorm["randen"] == [0, 0], json.dumps(vorm))
         check("standaard staat de stand Zoek muzikanten aan",
               sch["gekozen"] == ["true", "false"] and sch["muzZichtbaar"] and not sch["numZichtbaar"],
               json.dumps(sch))
