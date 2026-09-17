@@ -604,6 +604,13 @@ async function configureSearchAccess() {
         setlistCityField.value = city;
         updateSearchCityStatus('filterSetlistCity', 'filterSetlistCityStatus');
       }
+
+      // TT-289: "Zoek setlist" heeft een eigen Plaats-veld, zelfde regel.
+      const gedeeldCityField = document.getElementById('filterGedeeldCity');
+      if (gedeeldCityField && !gedeeldCityField.value.trim()) {
+        gedeeldCityField.value = city;
+        updateSearchCityStatus('filterGedeeldCity', 'filterGedeeldCityStatus');
+      }
     }
   }
 
@@ -621,7 +628,7 @@ async function configureSearchAccess() {
   // iemand zelf op een zoekknop klikt.
   if (currentSearchMode === 'musician') runSearch();
   else if (currentSearchMode === 'band') runBandSearch();
-  else if (currentSearchMode === 'setlist' && setlistWantedSongs.length) runSetlistSearch();
+  else if (currentSearchMode === 'setlist') setlistZoekVerversen(); // TT-289
 }
 
 // V-24 (13-08-2026, TT-U17): de Setlist-tab werd verborgen tot iemand drie
@@ -678,14 +685,16 @@ function setSearchMode(mode, veegRichting) {
   if (veegRichting) animeerZoekPaneel(mode, veegRichting);
   if (isBand) initBandSearchFilters();
   if (isSetlist) initSetlistSearchFilters();
+  if (isSetlist && setlistSoort === 'nummers') initGedeeldSearchFilters(); // TT-289
 
   // TT-10: bij het wisselen van tabblad meteen een resultaat tonen (met de
   // filters die op dat tabblad al stonden), i.p.v. een leeg scherm totdat er
   // zelf gezocht wordt. Setlist heeft geen zinvolle "iedereen"-status zonder
-  // minstens 1 opgegeven nummer — daar laten we de bestaande lege staat staan.
+  // minstens 1 opgegeven nummer, en "Zoek setlist" niet zonder 2 gekozen
+  // muzikanten — daar laten we de bestaande lege staat staan.
   if (isMusician) runSearch();
   else if (isBand) runBandSearch();
-  else if (isSetlist && setlistWantedSongs.length) runSetlistSearch();
+  else if (isSetlist) setlistZoekVerversen(); // TT-289: per stand
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

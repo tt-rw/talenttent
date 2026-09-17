@@ -419,7 +419,8 @@ function selectCitySuggestion(name, listId) {
   const fieldMap = {
     acFilterCityList: { field: 'filterCity', status: 'filterCityStatus' },
     acFilterBandCityList: { field: 'filterBandCity', status: 'filterBandCityStatus' },
-    acFilterSetlistCityList: { field: 'filterSetlistCity', status: 'filterSetlistCityStatus' }
+    acFilterSetlistCityList: { field: 'filterSetlistCity', status: 'filterSetlistCityStatus' },
+    acFilterGedeeldCityList: { field: 'filterGedeeldCity', status: 'filterGedeeldCityStatus' }
   };
   const target = fieldMap[listId];
   if (target) {
@@ -427,6 +428,9 @@ function selectCitySuggestion(name, listId) {
     // TT-160: een gekozen suggestie is al de kanonieke naam — meteen tonen,
     // niet wachten op de getypte-tekst-vertraging.
     updateSearchCityStatus(target.field, target.status);
+    // TT-289: een gekozen plaats geeft een ander vertrekpunt voor de
+    // naamsuggesties van "Zoek setlist".
+    if (listId === 'acFilterGedeeldCityList') gedeeldKandidatenVergeten();
   }
   closeAC(listId);
 }

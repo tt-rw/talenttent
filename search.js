@@ -1434,22 +1434,31 @@ function renderSetlistSongsList() {
     return;
   }
   if (row) row.style.display = '';
-  list.innerHTML = `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-field);overflow:hidden;">
-      <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
-        <span style="width:26px;flex-shrink:0;">#</span>
-        <span style="flex:1;">Band / artiest — nummer</span>
-      </div>
-      ${setlistWantedSongs.map((s,i) => `
-        <div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);gap:12px;">
-          <span style="font-family:'Roboto',sans-serif;font-size:14px;font-weight:700;color:var(--accent);width:26px;flex-shrink:0;">#${i+1}</span>
-          <div style="flex:1;">
-            <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
-            <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
+  list.innerHTML = zoekLijstHTML('#', 'Band / artiest — nummer', setlistWantedSongs.map((s, i) => ({
+    voor: `#${i + 1}`, titel: s.artist, sub: s.title,
+    actie: `removeSetlistSong(${i})`, label: `Verwijder ${s.title}`
+  })));
+}
+
+// TT-289 (17-09-2026): één vorm voor een lijst die je zelf in een zoekfilter
+// samenstelt — de setlist in "Zoek muzikanten" en de gekozen muzikanten in
+// "Zoek setlist". Zelfde kopregel, zelfde rij, zelfde ✕. Nooit een eigen
+// variant per stand. `voorKop` leeg = geen voorkolom.
+function zoekLijstHTML(voorKop, kop, rijen) {
+  const voorKol = (t) => voorKop
+    ? `<span class="zoek-lijst-voor">${escHtml(t)}</span>` : '';
+  return `
+    <div class="zoek-lijst">
+      <div class="zoek-lijst-kop">${voorKol(voorKop)}<span class="zoek-lijst-hoofd">${escHtml(kop)}</span></div>
+      ${rijen.map(r => `
+        <div class="zoek-lijst-rij">
+          ${voorKop ? `<span class="zoek-lijst-voor zoek-lijst-nr">${escHtml(r.voor)}</span>` : ''}
+          <div class="zoek-lijst-hoofd">
+            <div class="zoek-lijst-titel">${escHtml(r.titel)}</div>
+            ${r.sub ? `<div class="zoek-lijst-sub">${escHtml(r.sub)}</div>` : ''}
           </div>
-          <button type="button" class="song-remove" onclick="removeSetlistSong(${i})" title="Verwijderen" aria-label="Verwijder ${escAttr(s.title)}">✕</button>
-        </div>
-      `).join('')}
+          <button type="button" class="song-remove" onclick="${r.actie}" title="Verwijderen" aria-label="${escHtml(r.label)}">✕</button>
+        </div>`).join('')}
     </div>`;
 }
 
@@ -1822,3 +1831,424 @@ function musicianSetlistRowHTML(m) {
     </div>`;
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TT-289 — Zoek setlist: van muzikanten naar de nummers die ze delen
+// ═══════════════════════════════════════════════════════════════════════════
+// Besluiten Ronald, 17-09-2026:
+// - Het Setlist-tabblad heeft twee standen: "Zoek muzikanten" (bestaand) en
+//   "Zoek setlist" (deze). Vegen blijft tussen de hoofdtabbladen.
+// - Je kiest 2 tot 20 muzikanten, alleen muzikanten, geen bands. Wie zoekt,
+//   staat er niet vanzelf in.
+// - Plaats en Straal beperken alleen de naamsuggesties ("honderd keer Colin").
+//   Wie gekozen is, blijft staan. Geen verruiming (huisstijl §17.1).
+// - Een nummer telt als het in iemands repertoire staat, ongeacht niveau.
+//   Alleen nummers die minstens 2 gekozen muzikanten spelen.
+// - Eén weergave, de lijst. Een tik klapt een regel open en toont per
+//   muzikant of hij het speelt, met het niveau rechts naast de naam.
+// - De knop "Zoek nummers" blijft, al ververst de lijst ook vanzelf.
+
+const GEDEELD_MIN = 2;
+const GEDEELD_MAX = 20;
+const GEDEELD_SUGGESTIES = 8;
+
+let setlistSoort = 'muzikanten';   // 'muzikanten' | 'nummers'
+let gedeeldGekozen = [];           // { id, naam, city, distance_km }, volgorde van kiezen
+let gedeeldSortMode = 'spelers';
+let gedeeldResultaat = [];         // { sleutel, titel, artiest, spelers: {id: niveau} }
+let gedeeldOpen = new Set();       // sleutels van opengeklapte regels
+let gedeeldSearchSeq = 0;
+let gedeeldNaamSeq = 0;
+let gedeeldNaamTimeout = null;
+let gedeeldKandidaten = null;      // { sleutel, lijst } — cache per vertrekpunt en straal
+
+function setSetlistSoort(soort) {
+  setlistSoort = soort === 'nummers' ? 'nummers' : 'muzikanten';
+  const nummers = setlistSoort === 'nummers';
+  document.getElementById('setlistDeelMuzikanten').style.display = nummers ? 'none' : '';
+  document.getElementById('setlistDeelNummers').style.display = nummers ? '' : 'none';
+  const knoppen = { muzikanten: 'setlistSoortMuzikantenBtn', nummers: 'setlistSoortNummersBtn' };
+  Object.entries(knoppen).forEach(([k, id]) => {
+    const b = document.getElementById(id);
+    b.classList.toggle('selected', k === setlistSoort);
+    b.setAttribute('aria-selected', k === setlistSoort ? 'true' : 'false');
+  });
+  // Het straalwiel wordt pas bijgesteld als het zichtbaar is (huisstijl §7.1).
+  if (nummers) initGedeeldSearchFilters();
+  setlistZoekVerversen();
+}
+
+// Eén plek die bepaalt wat het Setlist-tabblad bij tonen opnieuw zoekt.
+function setlistZoekVerversen() {
+  if (setlistSoort === 'nummers') {
+    if (gedeeldGekozen.length >= GEDEELD_MIN) runGedeeldSearch();
+  } else if (setlistWantedSongs.length) {
+    runSetlistSearch();
+  }
+}
+
+function initGedeeldSearchFilters() {
+  if (!WHEEL_FIELDS['gedeeld-straal']) {
+    initWheelField({
+      id: 'gedeeld-straal',
+      fieldId: 'filterGedeeldRadiusField',
+      title: 'Straal',
+      unit: 'km',
+      columns: [{ inputId: 'filterGedeeldRadius', values: WHEEL_RADIUS, ariaLabel: 'Zoekstraal in kilometers' }],
+      value: [STRAAL_STANDAARD],
+      clearTo: [STRAAL_STANDAARD],
+      isActief: (v) => Number(v[0]) !== STRAAL_STANDAARD,
+      format: (v) => `${v[0]} km`,
+      hint:   (v) => `Straal ${v[0]} km`,
+      onChange: () => gedeeldKandidatenVergeten()
+    });
+  }
+  if (!CHOICE_FIELDS['gedeeld-sorteren']) {
+    initChoiceField({ id: 'gedeeld-sorteren', fieldId: 'gedeeldSortModeField',
+                      menuId: 'gedeeldSortModeMenu', selectId: 'gedeeldSortMode' });
+  }
+}
+
+// Plaats of straal gewijzigd: de suggesties gelden niet meer. De gekozen
+// muzikanten blijven staan.
+function gedeeldKandidatenVergeten() {
+  gedeeldKandidaten = null;
+  const q = document.getElementById('gedeeldNaam');
+  if (q && q.value.trim()) onGedeeldNaamInput(q.value);
+}
+
+function onGedeeldNaamInput(ruw) {
+  clearTimeout(gedeeldNaamTimeout);
+  const ac = document.getElementById('acGedeeldNaamList');
+  const term = naamZoekTerm(ruw);
+  if (!term || term.tekst.length < 2) { ac.classList.remove('open'); return; }
+  gedeeldNaamTimeout = setTimeout(() => gedeeldSuggesties(term), 300);
+}
+
+async function gedeeldSuggesties(term) {
+  const seq = ++gedeeldNaamSeq;
+  const ac = document.getElementById('acGedeeldNaamList');
+  if (gedeeldGekozen.length >= GEDEELD_MAX) {
+    ac.innerHTML = `<div class="ac-item"><span>Je hebt al ${GEDEELD_MAX} muzikanten gekozen.</span></div>`;
+    ac.classList.add('open');
+    return;
+  }
+  if (!gedeeldKandidaten) {
+    ac.innerHTML = '<div class="ac-item"><span>Zoeken...</span></div>';
+    ac.classList.add('open');
+  }
+  try {
+    const lijst = await gedeeldKandidatenLaden();
+    if (seq !== gedeeldNaamSeq) return; // TT-84: er is intussen verder getypt
+    const gekozenIds = new Set(gedeeldGekozen.map(g => g.id));
+    const treffers = lijst
+      .filter(m => !gekozenIds.has(m.id) && naamMatcht(term, m.fname, m.username))
+      .sort((a, b) => {
+        if (a.distance_km != null && b.distance_km != null && a.distance_km !== b.distance_km) {
+          return a.distance_km - b.distance_km;
+        }
+        if ((a.distance_km == null) !== (b.distance_km == null)) return a.distance_km == null ? 1 : -1;
+        return displayNameOf(a).localeCompare(displayNameOf(b), 'nl');
+      })
+      .slice(0, GEDEELD_SUGGESTIES);
+    if (!treffers.length) {
+      const binnen = gedeeldKandidaten && gedeeldKandidaten.straalActief
+        ? ` binnen ${straalTekst(parseRadiusInput('filterGedeeldRadius'))}` : '';
+      ac.innerHTML = `<div class="ac-item"><span>Niemand met deze naam${binnen}.</span></div>`;
+      ac.classList.add('open');
+      return;
+    }
+    ac.innerHTML = treffers.map(m => `
+      <div class="ac-item" onmousedown="addGedeeldMuzikant('${jsAttr(m.id)}')">
+        <strong>${highlight(displayNameOf(m), term.tekst)}</strong>
+        <span>${escHtml(gedeeldMeta(m))}</span>
+      </div>`).join('');
+    ac.classList.add('open');
+  } catch (e) {
+    logCaught('gedeeldSuggesties', e);
+    if (seq !== gedeeldNaamSeq) return;
+    ac.innerHTML = '<div class="ac-item"><span>Zoekopdracht mislukt</span></div>';
+    ac.classList.add('open');
+  }
+}
+
+// "Delft · 8 km". Uitgelogd of zonder vertrekpunt: alleen de plaats.
+function gedeeldMeta(m) {
+  const delen = [];
+  if (m.city) delen.push(m.city);
+  if (m.distance_km != null) delen.push(`${Math.round(m.distance_km)} km`);
+  return delen.join(' · ');
+}
+
+// Alle muzikanten binnen de straal, met naam, plaats en afstand. Zelfde
+// vertrekpunt-regels als runSetlistSearch(): een ingevulde Plaats heeft
+// voorrang, anders de eigen postcode (ingelogd), anders geen straal.
+async function gedeeldKandidatenLaden() {
+  const cityVal = document.getElementById('filterGedeeldCity').value.trim();
+  const radius = parseRadiusInput('filterGedeeldRadius');
+  const sleutel = `${hasOwnProfile ? 1 : 0}|${cityVal.toLowerCase()}|${radius}`;
+  if (gedeeldKandidaten && gedeeldKandidaten.sleutel === sleutel) return gedeeldKandidaten.lijst;
+
+  let rijen = null;
+  let straalActief = true;
+  if (cityVal) {
+    const origin = await resolveSearchOrigin(cityVal);
+    if (origin.lat != null) {
+      const { data, error } = await db.rpc('tt_search_musicians_anon', {
+        origin_lat: origin.lat, origin_lng: origin.lng, radius_km: radius
+      });
+      if (error) throw error;
+      rijen = data || [];
+    }
+  }
+  if (rijen === null && hasOwnProfile) {
+    const mid = await getMyMusicianId();
+    const { data, error } = await db.rpc('tt_search_musicians', {
+      searcher_id: mid, radius_km: radius, origin_lat: null, origin_lng: null
+    });
+    if (error) throw error;
+    rijen = data || [];
+  }
+  if (rijen === null) {
+    // Uitgelogd zonder herkende plaats: geen straal, iedereen komt in aanmerking.
+    straalActief = false;
+    const { data, error } = await db.rpc('tt_search_musicians_anon', {
+      origin_lat: null, origin_lng: null, radius_km: null
+    });
+    if (error) throw error;
+    rijen = data || [];
+  }
+
+  const afstand = {};
+  rijen.forEach(r => { afstand[r.musician_id] = r.distance_km; });
+  const ids = rijen.map(r => r.musician_id);
+  // Wie zoekt, mag zichzelf ook kiezen — alleen niet vanzelf (Ronald).
+  if (hasOwnProfile) {
+    const mid = await getMyMusicianId();
+    if (mid && !ids.includes(mid)) ids.push(mid);
+  }
+  const lijst = ids.length ? await gedeeldMuzikantenLaden(ids, false) : [];
+  lijst.forEach(m => { m.distance_km = afstand[m.id] != null ? afstand[m.id] : null; });
+  gedeeldKandidaten = { sleutel, lijst, straalActief };
+  return lijst;
+}
+
+// Naam en plaats, en desgewenst het repertoire. Uitgelogd via de publieke
+// functie: geen voornaam, alleen de gebruikersnaam (TT-43).
+async function gedeeldMuzikantenLaden(ids, metNummers) {
+  if (hasOwnProfile) {
+    const velden = metNummers
+      ? 'id, fname, username, city, musician_songs(song_title, song_artist, mastery_level)'
+      : 'id, fname, username, city';
+    const { data, error } = await db.from('musicians').select(velden).in('id', ids);
+    if (error) throw error;
+    return (data || []).map(m => ({ ...m, musician_songs: m.musician_songs || [] }));
+  }
+  const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
+  if (error) throw error;
+  return (data || []).map(m => ({
+    id: m.id, username: m.username, city: m.city, musician_songs: m.songs || []
+  }));
+}
+
+function addGedeeldMuzikant(id) {
+  const ac = document.getElementById('acGedeeldNaamList');
+  closeAC('acGedeeldNaamList');
+  if (gedeeldGekozen.some(g => g.id === id)) return;
+  if (gedeeldGekozen.length >= GEDEELD_MAX) {
+    showToast(`Je kunt maximaal ${GEDEELD_MAX} muzikanten kiezen.`);
+    return;
+  }
+  const m = (gedeeldKandidaten ? gedeeldKandidaten.lijst : []).find(x => x.id === id);
+  if (!m) return;
+  gedeeldGekozen.push({ id: m.id, naam: displayNameOf(m), city: m.city || '', distance_km: m.distance_km });
+  const veld = document.getElementById('gedeeldNaam');
+  veld.value = '';
+  if (ac) ac.innerHTML = '';
+  renderGedeeldGekozen();
+  setTimeout(() => veld.focus(), 0);
+  if (gedeeldGekozen.length >= GEDEELD_MIN) runGedeeldSearch();
+}
+
+function removeGedeeldMuzikant(i) {
+  const weg = gedeeldGekozen.splice(i, 1)[0];
+  renderGedeeldGekozen();
+  if (weg) gedeeldResultaat.forEach(n => { delete n.spelers[weg.id]; });
+  if (gedeeldGekozen.length >= GEDEELD_MIN) runGedeeldSearch();
+  else { gedeeldResultaat = []; gedeeldOpen.clear(); renderGedeeldResults(); }
+}
+
+function renderGedeeldGekozen() {
+  const row = document.getElementById('gedeeldGekozenRow');
+  const list = document.getElementById('gedeeldGekozenList');
+  const teller = document.getElementById('gedeeldTeller');
+  if (!gedeeldGekozen.length) {
+    list.innerHTML = '';
+    teller.textContent = '';
+    row.style.display = 'none';
+    return;
+  }
+  row.style.display = '';
+  list.innerHTML = zoekLijstHTML('', 'Gekozen muzikanten', gedeeldGekozen.map((g, i) => ({
+    titel: g.naam, sub: gedeeldMeta(g),
+    actie: `removeGedeeldMuzikant(${i})`, label: `Verwijder ${g.naam}`
+  })));
+  const nogNodig = GEDEELD_MIN - gedeeldGekozen.length;
+  teller.textContent = nogNodig > 0
+    ? `${gedeeldGekozen.length} van ${GEDEELD_MAX} · kies er nog ${nogNodig}`
+    : `${gedeeldGekozen.length} van ${GEDEELD_MAX}`;
+}
+
+function resetGedeeldSearch() {
+  gedeeldGekozen = [];
+  gedeeldResultaat = [];
+  gedeeldOpen.clear();
+  gedeeldKandidaten = null;
+  document.getElementById('gedeeldNaam').value = '';
+  closeAC('acGedeeldNaamList');
+  document.getElementById('filterGedeeldCity').value = '';
+  document.getElementById('filterGedeeldCityStatus').textContent = '';
+  setWheelFieldValues('gedeeld-straal', [STRAAL_STANDAARD], false);
+  gedeeldSortMode = 'spelers';
+  const sel = document.getElementById('gedeeldSortMode');
+  if (sel) sel.value = 'spelers';
+  refreshChoiceField('gedeeld-sorteren');
+  renderGedeeldGekozen();
+  renderGedeeldResults();
+}
+
+function setGedeeldSortMode(mode) {
+  gedeeldSortMode = ['spelers', 'artiest', 'az'].includes(mode) ? mode : 'spelers';
+  const sel = document.getElementById('gedeeldSortMode');
+  if (sel) sel.value = gedeeldSortMode;
+  refreshChoiceField('gedeeld-sorteren');
+  sortGedeeldList(gedeeldResultaat);
+  renderGedeeldResults();
+}
+
+async function runGedeeldSearch() {
+  const seq = ++gedeeldSearchSeq;
+  const el = document.getElementById('gedeeldResults');
+  if (gedeeldGekozen.length < GEDEELD_MIN) {
+    showToast(`Kies minstens ${GEDEELD_MIN} muzikanten.`);
+    return;
+  }
+  if (!el.innerHTML.trim()) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
+      <div class="save-spinner" style="margin:0 auto 16px;"></div>Zoeken...
+    </div>`;
+  }
+  try {
+    const muzikanten = await gedeeldMuzikantenLaden(gedeeldGekozen.map(g => g.id), true);
+    if (seq !== gedeeldSearchSeq) return; // TT-84
+    const nummers = new Map();
+    muzikanten.forEach(m => {
+      (m.musician_songs || []).forEach(s => {
+        const titel = (s.song_title || '').trim();
+        const artiest = (s.song_artist || '').trim();
+        if (!titel) return;
+        // Zelfde vergelijking als runSetlistSearch(): titel en artiest exact,
+        // hoofdletters maken niet uit.
+        const sleutel = `${titel.toLowerCase()}|||${artiest.toLowerCase()}`;
+        if (!nummers.has(sleutel)) nummers.set(sleutel, { sleutel, titel, artiest, spelers: {} });
+        nummers.get(sleutel).spelers[m.id] = LEVEL_LABELS[s.mastery_level] ? s.mastery_level : '';
+      });
+    });
+    gedeeldResultaat = sortGedeeldList(
+      [...nummers.values()].filter(n => Object.keys(n.spelers).length >= GEDEELD_MIN)
+    );
+    const nog = new Set(gedeeldResultaat.map(n => n.sleutel));
+    gedeeldOpen = new Set([...gedeeldOpen].filter(k => nog.has(k)));
+    renderGedeeldResults();
+  } catch (e) {
+    logCaught('runGedeeldSearch', e);
+    if (seq !== gedeeldSearchSeq) return;
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
+  }
+}
+
+function gedeeldAantal(n) { return Object.keys(n.spelers).length; }
+
+// Meeste spelers: aantal, dan artiest, dan titel.
+// Artiest, meeste spelers: artiesten op hun best gedeelde nummer, daarbinnen
+//   het aantal. Zo staan de nummers van één artiest bij elkaar.
+// Artiest A–Z: artiest, dan titel.
+function sortGedeeldList(lijst) {
+  const vgl = (a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' });
+  const opTitel = (a, b) => vgl(a.artiest, b.artiest) || vgl(a.titel, b.titel);
+  if (gedeeldSortMode === 'az') return lijst.sort(opTitel);
+  if (gedeeldSortMode === 'artiest') {
+    const best = {};
+    lijst.forEach(n => {
+      const k = n.artiest.toLowerCase();
+      best[k] = Math.max(best[k] || 0, gedeeldAantal(n));
+    });
+    return lijst.sort((a, b) =>
+      (best[b.artiest.toLowerCase()] - best[a.artiest.toLowerCase()])
+      || vgl(a.artiest, b.artiest)
+      || (gedeeldAantal(b) - gedeeldAantal(a))
+      || vgl(a.titel, b.titel));
+  }
+  return lijst.sort((a, b) => (gedeeldAantal(b) - gedeeldAantal(a)) || opTitel(a, b));
+}
+
+function renderGedeeldResults() {
+  const el = document.getElementById('gedeeldResults');
+  if (!el) return;
+  if (gedeeldGekozen.length < GEDEELD_MIN) { el.innerHTML = ''; return; }
+  const totaal = gedeeldResultaat.length;
+  if (!totaal) {
+    el.innerHTML = `
+      <div class="no-results">
+        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen gedeelde nummers</p>
+        <p style="font-size:13px;">Geen van deze nummers staat bij minstens 2 van deze muzikanten in het repertoire.</p>
+      </div>`;
+    return;
+  }
+  const getoond = gedeeldResultaat.slice(0, SEARCH_RESULT_LIMIT);
+  const cappedNotice = totaal > getoond.length
+    ? `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Toont de eerste ${getoond.length} van ${totaal} nummers.</p>`
+    : '';
+  el.innerHTML = `
+    <div class="results-header">
+      <span class="results-count">${totaal} ${totaal === 1 ? 'nummer' : 'nummers'} die minstens 2 van hen spelen</span>
+    </div>
+    ${cappedNotice}
+    <div class="results-list">
+      ${getoond.map((n, i) => gedeeldRijHTML(n, i)).join('')}
+    </div>`;
+}
+
+function gedeeldRijHTML(n, i) {
+  const open = gedeeldOpen.has(n.sleutel);
+  const paneelId = `gedeeldPaneel${i}`;
+  const spelers = gedeeldGekozen.map(g => {
+    const speelt = Object.prototype.hasOwnProperty.call(n.spelers, g.id);
+    const lvl = speelt ? n.spelers[g.id] : '';
+    return `
+      <div class="gedeeld-speler${speelt ? '' : ' niet'}">
+        <button type="button" class="gedeeld-speler-naam" onclick="openMusicianModal('${jsAttr(g.id)}')">${escHtml(g.naam)}</button>
+        ${speelt
+          ? (lvl ? `<span class="level-pill ${lvl}">${escHtml(LEVEL_LABELS[lvl])}</span>` : '')
+          : '<span class="gedeeld-speler-niet">Speelt dit niet</span>'}
+      </div>`;
+  }).join('');
+  return `
+    <div class="gedeeld-rij${open ? ' open' : ''}">
+      <button type="button" class="gedeeld-rij-kop" aria-expanded="${open}" aria-controls="${paneelId}"
+        onclick="toggleGedeeldRij('${jsAttr(n.sleutel)}')">
+        <span class="gedeeld-rij-tekst">
+          <span class="gedeeld-rij-titel">${escHtml(n.titel)}</span>
+          <span class="gedeeld-rij-artiest">${escHtml(n.artiest)}</span>
+        </span>
+        <span class="gedeeld-rij-telling">${gedeeldAantal(n)} van ${gedeeldGekozen.length}</span>
+      </button>
+      ${open ? `<div class="gedeeld-paneel" id="${paneelId}">${spelers}</div>` : ''}
+    </div>`;
+}
+
+function toggleGedeeldRij(sleutel) {
+  if (gedeeldOpen.has(sleutel)) gedeeldOpen.delete(sleutel);
+  else gedeeldOpen.add(sleutel);
+  renderGedeeldResults();
+}

@@ -1,6 +1,86 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 16-09-2026 (vervolg 6) — **TT-288 (P1) toegevoegd: keuzelijst "Beschikbaar voor" op het profiel, met "(Nu even niet)" als pauzestand. Alleen vastgelegd, niets gebouwd.**
+**Laatste update:** 17-09-2026 — **TT-289 (P1) gebouwd en getest: het Setlist-tabblad heeft een tweede stand, "Zoek setlist" — van muzikanten naar de nummers die ze delen. Eindstand 297 van 297. Nieuwe bevinding TT-290 (P2).**
+
+**Aanleiding.** Schets van Ronald, 17-09-2026: de bestaande setlist-zoekfunctie
+zoekt van nummers naar muzikanten; de nieuwe zoekt andersom.
+
+**Besluiten Ronald, 17-09-2026 (vóór het bouwen doorgesproken).**
+
+| Onderwerp | Besluit |
+|---|---|
+| Schakelaar | knoppenrij onder Muzikant · Band · Setlist, labels "Zoek muzikanten" (bestaand) en "Zoek setlist" (nieuw). Vegen blijft tussen de hoofdtabbladen |
+| Wie je kiest | alleen muzikanten, 2 tot 20. Wie zoekt, staat er niet vanzelf in, maar mag zichzelf kiezen |
+| Plaats en Straal | wel, om tussen veel gelijke namen te kiezen ("honderd keer Colin"). Ze beperken alleen de naamsuggesties; wie gekozen is, blijft staan. Geen verruiming (huisstijl §17.1) |
+| Naamsuggestie | naam · plaats · afstand, bijvoorbeeld "dylan · Delft · 8 km". Uitgelogd alleen gebruikersnaam en plaats. Al gekozen muzikanten staan er niet meer tussen |
+| Wat telt | een nummer telt als het in iemands repertoire staat, ongeacht niveau. Alleen nummers die minstens 2 gekozen muzikanten spelen |
+| Weergave | alleen de lijst (optie A uit het voorstel). Een tik klapt een regel open: per gekozen muzikant of hij het speelt, met het niveau rechts naast de naam. Wie het niet speelt, staat grijs met "Speelt dit niet" |
+| Sorteren | Meeste spelers · Artiest, meeste spelers · Artiest A–Z |
+| Knop "Zoek nummers" | blijft staan, al ververst de lijst vanzelf. Later bekijken (Ronald: "we zien later wel") |
+| Werkt uitgelogd | ja, net als de bestaande stand |
+
+**Wat er gebouwd is.**
+
+- `index.html`: de schakelaar (`.segmented-control.segmented-vol`), het blok
+  `#setlistDeelNummers` met Plaats, Straal, Muzikanten, de gekozen lijst, de
+  knoppenrij en Sorteren. De bestaande stand staat in `#setlistDeelMuzikanten`.
+  Titel en knop van de bestaande stand heten nu "Zoek muzikanten" (was "Zoek
+  op setlist"), gelijk aan het label van de schakelaar en aan de knop op het
+  tabblad Muzikant.
+- `search.js`: nieuw blok onderaan (`setSetlistSoort()`,
+  `setlistZoekVerversen()`, `gedeeldKandidatenLaden()`, `runGedeeldSearch()`,
+  `sortGedeeldList()`, `renderGedeeldResults()` e.a.). De vergelijking is
+  dezelfde als bij de bestaande stand: titel en artiest exact, hoofdletters
+  maken niet uit. Geen nieuwe databasefunctie: de stand gebruikt
+  `tt_search_musicians`, `tt_search_musicians_anon`, `tt_resolve_search_origin`
+  en `tt_get_musicians_public`, of ingelogd `musicians` met `musician_songs`.
+- **Eén lijstvorm voor beide standen.** `zoekLijstHTML()` bouwt nu zowel de
+  setlist van "Zoek muzikanten" als de gekozen muzikanten van "Zoek setlist".
+  De inline stijl van `renderSetlistSongsList()` is daarmee klassen geworden
+  (`.zoek-lijst*` in `styles.css`). Onderweg rechtgezet: het `aria-label` van
+  de ✕ gebruikte `escAttr()`, dat voor JavaScript-tekst is, niet voor een
+  HTML-attribuut. Een nummertitel met een aanhalingsteken brak dat attribuut.
+  Nu `escHtml()`.
+- `core.js`: de eigen plaats wordt ook in het nieuwe Plaats-veld gezet;
+  `setSearchMode()` en `configureSearchAccess()` verversen per stand via
+  `setlistZoekVerversen()`.
+- `postcode.js`: een gekozen plaatssuggestie werkt ook voor het nieuwe veld
+  en vergeet de naamsuggesties van het oude vertrekpunt.
+- Versies: `styles.css?v=20260917a`, `core.js?v=20260917a`,
+  `postcode.js?v=20260917a`, `search.js?v=20260917a`.
+
+**Test.** Nieuw blok 21 (51 controles), uitgelogd tegen de stub: schakelaar
+(labels, 44px, even breed, wisselen), kop en knoppen, geen suggestie bij één
+letter, volgorde en inhoud van de suggesties, geen voornaam uitgelogd, de
+straal gaat mee naar de database, Enter kiest, de teller, geen resultaat onder
+twee, hoofdletters, openklappen met niveau rechts en "Speelt dit niet", de
+drie sorteringen, straal wijzigen laat de keuze staan, weghalen rekent opnieuw,
+grens van 20 met melding, Lijst wissen, zoeken tussen aanhalingstekens, geen
+straal uitgelogd zonder plaats, terugkeren naar het tabblad, en de gedeelde
+lijstvorm. Schermafdrukken bekeken op 390 en 1280px.
+
+**Geverifieerd in de browserpane, talenttent.org, uitgelogd, 17-09-2026:**
+`tt_search_musicians_anon` zonder vertrekpunt en zonder straal geeft alle
+muzikanten terug (9 rijen), en `tt_get_musicians_public` geeft per nummer
+`mastery_level` mee. Het niveau in de opengeklapte regel werkt dus ook
+uitgelogd.
+
+**Niet gemeten — laag 2 ingelogd staat nog open.** **Onbekend:** of
+`tt_search_musicians` de zoeker zelf teruggeeft. De code werkt in beide
+gevallen: ze voegt de eigen id toe als die ontbreekt. Na publicatie doorlopen,
+ingelogd: jezelf kiezen, een tweede muzikant kiezen, een regel openklappen.
+
+**Bandkant: niet van toepassing, met reden.** Een band heeft geen eigen
+repertoire in de database (`band_members` en `bands` hebben geen nummers).
+Ronald koos op 17-09-2026 bewust voor alleen muzikanten.
+
+**Samenhang met TT-288.** Komt de pauzestand "(Nu even niet)" er, dan hoort
+die muzikant ook niet tussen de naamsuggesties van "Zoek setlist". Dat volgt
+vanzelf als de zoekfuncties in de database hem weglaten.
+
+---
+
+**Vorige update:** 16-09-2026 (vervolg 6) — **TT-288 (P1) toegevoegd: keuzelijst "Beschikbaar voor" op het profiel, met "(Nu even niet)" als pauzestand. Alleen vastgelegd, niets gebouwd.**
 
 **Vorige update:** 16-09-2026 (vervolg 5) — **TT-287 (P0) opgelost: op het profiel en de band van een ander deed geen enkele tik iets. Eindstand 246 van 246.**
 
@@ -3526,6 +3606,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-289** | Zoek setlist: van muzikanten naar de nummers die ze delen | **Gebouwd en getest 17-09-2026, zie het sessieblok bovenaan.** Tweede stand op het Setlist-tabblad. 2 tot 20 muzikanten kiezen, met Plaats en Straal voor de naamsuggesties; resultaat is een lijst van nummers die minstens 2 van hen spelen, open te klappen per nummer met het niveau per muzikant. Blok 21 van de testset. **Nog open:** laag 2 ingelogd (zie sessieblok). **Toets P1:** een band of jamgroep ziet in één keer wat ze samen kunnen spelen — een reden om de app opnieuw te openen voor elke repetitie |
 | **TT-288** | "Beschikbaar voor": keuzelijst op het profiel, met een pauzestand | **Nieuw, 16-09-2026, besluit Ronald na UX-bespreking. Nog niet gebouwd.** **Wat:** in Profiel bewerken → "Wat zoek je" vervangt één keuzelijst "Beschikbaar voor" de vier doelkaarten. Opties: Jammen · Optreden · Bands · Alles! · DM me! · (Nu even niet). **Op het profiel:** een blok tussen het naamblok en de instrument- en genrelabels, twee rijen. Links op halve breedte "Beschikbaar voor:" met daaronder de keuze. Rechts op halve breedte een tekstblok met de bestaande regel "Deze week bijgewerkt" enz. **"(Nu even niet)" = niet vindbaar.** Die muzikant verschijnt in geen enkel zoektabblad. Dit vraagt een aanpassing in de zoekfuncties in de database (`tt_search_musicians`, `tt_search_musicians_anon`, `tt_search_musicians_by_songlist_anon`, en mogelijk `tt_get_musicians_public`); de definities levert Ronald aan. **Afspraken uit de bespreking, nog te bevestigen bij het bouwen:** (1) wie op pauze staat en op Zoeken tikt, krijgt de vraag of hij weer zichtbaar wil worden — wie zoekt, is vindbaar; (2) berichten met bestaande contacten blijven werken, een nieuw gesprek met een onbekende niet; (3) de pauze verloopt vanzelf, voorstel na drie maanden; (4) de band van een muzikant op pauze blijft vindbaar; (5) uitgelogd zoeken blijft ongewijzigd, zonder extra drempels. **Geverifieerd in de code, 16-09-2026:** de doelkaarten schrijven naar `musicians.goal` met de waarden `oefenen` · `band` · `optreden` · `alles` (`index.html` subscherm `watZoekJeScreen`, `musicians.js` `wzjSelectGoal`). De regel "Deze week bijgewerkt" bestaat al (`relativeUpdatedLabel()` in `messages.js`). **Besluit Ronald, 16-09-2026 — omzetting bestaande waarden:** `oefenen` (Samen oefenen) → Jammen · `band` (Band starten) → Bands · `optreden` → Optreden · `alles` → Alles!. **Nog te bepalen:** (a) wizardstap 3 ("Wat wil je nu?") gebruikt dezelfde doelkaarten — gaat die mee naar de keuzelijst? Consistentieregel §2.11 zegt ja; (c) de twee nieuwe waarden "DM me!" en "(Nu even niet)" vragen misschien een nieuwe kolom — die maakt Ronald aan; (d) de termijn van de pauze; (e) wat "DM me!" in de zoekresultaten en de matchscore betekent. **Toets P1:** een bericht aan iemand die toch niet wil, blijft onbeantwoord en ontmoedigt de afzender; een pauzestand houdt mensen binnen die anders hun account zouden opzeggen. Dat bepaalt of mensen terugkomen |
 | **TT-271** | Gesprekscherm op de telefoon | **Opgelost 16-09-2026.** Onderbalk weg tijdens typen (app-breed), naam blijft zichtbaar, foto en naam openen het profiel, geen automatisch toetsenbord. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
 | **TT-272** | Laatste bericht half achter het invoerveld | **Opgelost 16-09-2026.** Gesprek scrolt nu helemaal naar beneden; de losse 60px onder het invoerveld is weg. Zie Laatste update bovenaan |
@@ -3553,6 +3634,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-290** | Goud op 10% dekking op het actieve zoektabblad | **Nieuw, 17-09-2026, gevonden bij TT-289. Geverifieerd in de code.** `.search-mode-tab.active` in `styles.css` heeft `background: rgba(245,197,24,0.1)`. Huisstijl §1.1 verbiedt goud als vlak onder 50%: op `--surface2` wordt dat olijfbruin. Voorstel volgens §1.1: wit op 5% met de gouden rand en gouden tekst die er al staan. Zelfde soort: `highlight()` in `utils.js` markeert de getypte letters in een suggestie met goud op 30% (`mark`). Beide in één ronde. Bandkant: niet van toepassing, het zijn gedeelde componenten. **Toets P2:** het werkt, maar het actieve tabblad oogt vlekkerig in plaats van gekozen |
 | **TT-282** | Vegen: een schuine of afbuigende veeg wisselt van tabblad | **Nieuw, 16-09-2026 (onderhoudsronde).** 30° telt als horizontaal; een veeg die steil eindigt telt ook; een veeg vanaf de schermrand wisselt. Volledige tekst: Laatste update bovenaan |
 | **TT-277** | Gesprek springt bij versturen | **Opgelost 16-09-2026 (vervolg 3).** Toetsenbord blijft open, beeld staat stil. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
 | **TT-278** | Inloggen ontbreekt in het hamburgermenu | **Opgelost 16-09-2026 (vervolg 3).** Uitgelogd staat Inloggen onderaan het menu |

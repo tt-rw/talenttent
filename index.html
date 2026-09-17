@@ -45,7 +45,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260916d">
+<link rel="stylesheet" href="styles.css?v=20260917a">
 </head>
 <body>
 
@@ -1222,11 +1222,21 @@
 
   <div id="searchModeSetlist" style="display:none;">
   <div class="search-wrap">
+    <!-- TT-289 (17-09-2026, schets Ronald): het Setlist-tabblad heeft twee
+         standen. "Zoek muzikanten" zoekt van nummers naar muzikanten (de
+         bestaande stand). "Zoek setlist" zoekt van muzikanten naar de nummers
+         die ze delen. Vegen blijft wisselen tussen de drie hoofdtabbladen. -->
+    <div class="segmented-control segmented-vol" role="tablist" aria-label="Soort setlist-zoeken">
+      <button type="button" role="tab" class="segmented-btn selected" id="setlistSoortMuzikantenBtn" aria-selected="true" onclick="setSetlistSoort('muzikanten')">Zoek muzikanten</button>
+      <button type="button" role="tab" class="segmented-btn" id="setlistSoortNummersBtn" aria-selected="false" onclick="setSetlistSoort('nummers')">Zoek setlist</button>
+    </div>
+
+    <div id="setlistDeelMuzikanten">
     <div class="search-filters">
       <!-- TT-239 (10-09-2026, Ronalds schets): dit blok is gelijkgetrokken met
            het muzikanten-zoekblok. Zelfde velden, zelfde volgorde, zelfde
            afstanden, zelfde knopvolgorde. De zoeklogica is niet gewijzigd. -->
-      <div class="filter-title has-sub">Zoek op setlist</div>
+      <div class="filter-title has-sub">Zoek muzikanten</div>
       <!-- TT-239: de inline stijl is weg (huisstijl §3). Anders dan Muzikant en
            Band houdt dit tabblad een korte toelichting: een setlist
            samenstellen spreekt niet vanzelf. -->
@@ -1320,7 +1330,7 @@
            scheidingslijn erboven is weg: Muzikant en Band hebben die ook niet. -->
       <div class="btn-row">
         <button class="btn btn-ghost" onclick="resetSetlistSearch()">Filters wissen</button>
-        <button class="search-btn" onclick="runSetlistSearch()">Zoek op setlist</button>
+        <button class="search-btn" onclick="runSetlistSearch()">Zoek muzikanten</button>
       </div>
     </div>
 
@@ -1366,6 +1376,90 @@
     </div>
 
     <div id="setlistSearchResults"></div>
+    </div>
+
+    <!-- TT-289: de stand "Zoek setlist". Plaats en Straal beperken alleen welke
+         namen je als suggestie krijgt; wie gekozen is, blijft staan. -->
+    <div id="setlistDeelNummers" style="display:none;">
+    <div class="search-filters">
+      <div class="filter-title has-sub">Zoek setlist</div>
+      <p class="filter-sub">Kies 2 tot 20 muzikanten en zie welke nummers ze spelen.</p>
+
+      <div class="field">
+        <div class="filter-row-city">
+          <div class="city-search-wrap frc-plaats">
+            <label>Plaats</label>
+            <input type="text" id="filterGedeeldCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
+              oninput="onCitySearchInput(this.value,'acFilterGedeeldCityList'); gedeeldKandidatenVergeten(); scheduleSearchCityStatus('filterGedeeldCity','filterGedeeldCityStatus');"
+              onkeydown="submitOnEnter(event, () => selectFirstAC('acFilterGedeeldCityList'))"
+              onblur="setTimeout(()=>closeAC('acFilterGedeeldCityList'),200)">
+            <div class="autocomplete-list" id="acFilterGedeeldCityList"></div>
+          </div>
+          <div class="frc-straal">
+            <label>Straal</label>
+            <div class="wheel-field" id="filterGedeeldRadiusField">
+              <span class="wheel-field-label"></span>
+              <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+            </div>
+            <input type="hidden" id="filterGedeeldRadius" value="10">
+          </div>
+        </div>
+        <div id="filterGedeeldCityStatus" class="city-status"></div>
+      </div>
+
+      <div class="filter-row single">
+        <div class="field">
+          <label for="gedeeldNaam">Muzikanten</label>
+          <div class="song-search-wrap">
+            <input type="text" id="gedeeldNaam" placeholder="Zoek op gebruikersnaam" autocomplete="off"
+              oninput="onGedeeldNaamInput(this.value)"
+              onkeydown="if(event.key==='Enter'){event.preventDefault(); selectFirstAC('acGedeeldNaamList');}"
+              onblur="setTimeout(()=>closeAC('acGedeeldNaamList'),200)">
+            <div class="autocomplete-list" id="acGedeeldNaamList"></div>
+          </div>
+          <p class="field-hint">Tussen "aanhalingstekens" zoekt hij op precies die naam.</p>
+        </div>
+      </div>
+
+      <!-- Verborgen zolang er niemand gekozen is; renderGedeeldGekozen() schakelt hem. -->
+      <div class="filter-row single" id="gedeeldGekozenRow" style="display:none;">
+        <div class="field">
+          <div class="songs-list" id="gedeeldGekozenList"></div>
+          <p class="field-status gedeeld-teller" id="gedeeldTeller"></p>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="resetGedeeldSearch()">Lijst wissen</button>
+        <button class="search-btn" onclick="runGedeeldSearch()">Zoek nummers</button>
+      </div>
+    </div>
+
+    <div class="results-section-divider"><span>Resultaat</span></div>
+
+    <!-- Alleen Sorteren: deze stand kent één weergave, de lijst (Ronald,
+         17-09-2026). De tweede kolom blijft leeg, zodat het veld even breed is
+         als op de andere tabbladen. -->
+    <div id="sortBarGedeeld" class="field-pair-row">
+      <div class="field">
+        <label>Sorteren op</label>
+        <div class="menu-anchor">
+          <div class="wheel-field" id="gedeeldSortModeField" aria-label="Sorteren op">
+            <span class="wheel-field-label"></span>
+            <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+          </div>
+          <div class="choice-menu" id="gedeeldSortModeMenu" role="listbox" aria-label="Sorteren op"></div>
+        </div>
+        <select id="gedeeldSortMode" style="display:none;" onchange="setGedeeldSortMode(this.value)">
+          <option value="spelers">Meeste spelers</option>
+          <option value="artiest">Artiest, meeste spelers</option>
+          <option value="az">Artiest A–Z</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="gedeeldResults"></div>
+    </div>
   </div>
   </div>
 </div>
@@ -2160,12 +2254,12 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260916d"></script>
+<script src="core.js?v=20260917a"></script>
 <script src="utils.js?v=20260916b"></script>
 <script src="auth.js?v=20260912a"></script>
-<script src="postcode.js?v=20260910a"></script>
+<script src="postcode.js?v=20260917a"></script>
 <script src="wizard.js?v=20260916a"></script>
-<script src="search.js?v=20260916b"></script>
+<script src="search.js?v=20260917a"></script>
 <script src="musicians.js?v=20260916c"></script>
 <script src="bands.js?v=20260916a"></script>
 <script src="messages.js?v=20260916c"></script>

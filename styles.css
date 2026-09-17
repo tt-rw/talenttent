@@ -2376,6 +2376,147 @@
     color: var(--muted);
   }
 
+  /* ── TT-289 (17-09-2026): Setlist-tabblad in twee standen ────────────────
+     De schakelaar is een .segmented-control over de volle breedte, met
+     knoppen van 44px (huisstijl §6). Gekozen = goud vlak met zwarte tekst,
+     volle dekking (§1.1). Zelfde ruimte eronder als de knoppenrij erboven
+     (20px). */
+  .segmented-control.segmented-vol {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: var(--radius-field);
+  }
+  .segmented-vol .segmented-btn {
+    min-height: 44px;
+    border: none;
+    background: none;
+    font-size: 14px;
+    border-radius: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .segmented-vol .segmented-btn.selected { background: var(--accent); color: #000; }
+
+  /* Eén vorm voor een zelf samengestelde lijst in een zoekfilter: de setlist
+     bij "Zoek muzikanten" en de gekozen muzikanten bij "Zoek setlist".
+     Opgebouwd door zoekLijstHTML() in search.js. Waarden overgenomen uit de
+     inline stijl die renderSetlistSongsList() tot 17-09-2026 had. */
+  .zoek-lijst {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-field);
+    overflow: hidden;
+  }
+  .zoek-lijst-kop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .zoek-lijst-rij {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .zoek-lijst-rij:last-child { border-bottom: none; }
+  .zoek-lijst-voor { width: 26px; flex-shrink: 0; }
+  .zoek-lijst-nr { font-size: 14px; font-weight: 700; color: var(--accent); }
+  .zoek-lijst-hoofd { flex: 1; min-width: 0; }
+  .zoek-lijst-titel { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+  .zoek-lijst-sub { font-size: 12px; color: var(--muted); }
+  .gedeeld-teller { text-align: right; padding-right: var(--field-inset); margin: 0; }
+  .gedeeld-teller:empty { display: none; }
+
+  /* Resultaat van "Zoek setlist": één regel per nummer, een tik klapt hem
+     open (Ronald, 17-09-2026: optie A). */
+  .gedeeld-rij {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .gedeeld-rij:last-child { border-bottom: none; }
+  .gedeeld-rij-kop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 56px;
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .gedeeld-rij-tekst { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .gedeeld-rij-titel {
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gedeeld-rij-artiest {
+    font-size: var(--fs-sm);
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gedeeld-rij-telling {
+    flex-shrink: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .gedeeld-rij.open .gedeeld-rij-kop { border-bottom: 1px solid var(--border); }
+  .gedeeld-paneel {
+    padding: 4px 16px 8px;
+    background: var(--surface2);
+  }
+  .gedeeld-speler {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+  }
+  .gedeeld-speler-naam {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gedeeld-speler.niet .gedeeld-speler-naam { color: var(--muted); }
+  .gedeeld-speler-niet {
+    flex-shrink: 0;
+    width: 100px;
+    text-align: center;
+    font-size: var(--fs-sm);
+    color: var(--muted);
+  }
+
   /* ── Lege staat (huisstijl §15, TT-248, 11-09-2026) ────────────────────────
      Eén vorm voor elke lege staat: kop, hoogstens één regel uitleg, en altijd
      precies één knop. Opgebouwd door emptyStateHTML() in utils.js — nooit een
