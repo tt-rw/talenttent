@@ -1,6 +1,6 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 17-09-2026 — **TT-289 (P1) gebouwd en getest: het Setlist-tabblad heeft een tweede stand, "Zoek setlist" — van muzikanten naar de nummers die ze delen. Eindstand 297 van 297. Nieuwe bevinding TT-290 (P2).**
+**Laatste update:** 17-09-2026 — **TT-289 (P1) gebouwd en getest: het Setlist-tabblad heeft een tweede stand, "Zoek setlist" — van muzikanten naar de nummers die ze delen. Eindstand 300 van 300. Nieuwe bevinding TT-290 (P2).**
 
 **Aanleiding.** Schets van Ronald, 17-09-2026: de bestaande setlist-zoekfunctie
 zoekt van nummers naar muzikanten; de nieuwe zoekt andersom.
@@ -21,7 +21,9 @@ zoekt van nummers naar muzikanten; de nieuwe zoekt andersom.
 
 **Wat er gebouwd is.**
 
-- `index.html`: de schakelaar (`.segmented-control.segmented-vol`), het blok
+- `index.html`: de schakelaar (`.setlist-soort`: twee losse knoppen met de
+  klasse `.search-mode-tab`, dus met de vorm en kleuren van de hoofdtabbladen),
+  het blok
   `#setlistDeelNummers` met Plaats, Straal, Muzikanten, de gekozen lijst, de
   knoppenrij en Sorteren. De bestaande stand staat in `#setlistDeelMuzikanten`.
   Titel en knop van de bestaande stand heten nu "Zoek muzikanten" (was "Zoek
@@ -49,8 +51,17 @@ zoekt van nummers naar muzikanten; de nieuwe zoekt andersom.
 - Versies: `styles.css?v=20260917a`, `core.js?v=20260917a`,
   `postcode.js?v=20260917a`, `search.js?v=20260917a`.
 
-**Test.** Nieuw blok 21 (51 controles), uitgelogd tegen de stub: schakelaar
-(labels, 44px, even breed, wisselen), kop en knoppen, geen suggestie bij één
+**Correctie, zelfde dag, na een schermafdruk van Ronald.** De eerste versie
+was één balk (`.segmented-control.segmented-vol`) met de actieve knop als
+fel goud vlak. Ronald: *"de nieuwe knoppen lopen in elkaar over. de kleur geel
+van de actieve knop moet hetzelfde zijn als setlist."* Nu twee losse knoppen,
+14px ertussen, uitgelijnd met de hoofdtabbladen, actief in dezelfde kleuren als
+"Setlist". De klasse `.segmented-vol` is weg. Nieuwe controles in blok 21:
+tussenruimte 14px, gelijke kleuren, gelijke randen.
+
+**Test.** Nieuw blok 21 (54 controles), uitgelogd tegen de stub: schakelaar
+(labels, 44px, even breed, los van elkaar, kleuren gelijk aan "Setlist",
+uitgelijnd met de hoofdtabbladen, wisselen), kop en knoppen, geen suggestie bij één
 letter, volgorde en inhoud van de suggesties, geen voornaam uitgelogd, de
 straal gaat mee naar de database, Enter kiest, de teller, geen resultaat onder
 twee, hoofdletters, openklappen met niveau rechts en "Speelt dit niet", de
@@ -3634,7 +3645,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-290** | Goud op 10% dekking op het actieve zoektabblad | **Nieuw, 17-09-2026, gevonden bij TT-289. Geverifieerd in de code.** `.search-mode-tab.active` in `styles.css` heeft `background: rgba(245,197,24,0.1)`. Huisstijl §1.1 verbiedt goud als vlak onder 50%: op `--surface2` wordt dat olijfbruin. Voorstel volgens §1.1: wit op 5% met de gouden rand en gouden tekst die er al staan. Zelfde soort: `highlight()` in `utils.js` markeert de getypte letters in een suggestie met goud op 30% (`mark`). Beide in één ronde. Bandkant: niet van toepassing, het zijn gedeelde componenten. **Toets P2:** het werkt, maar het actieve tabblad oogt vlekkerig in plaats van gekozen |
+| **TT-290** | Goud op 10% dekking op het actieve zoektabblad | **Nieuw, 17-09-2026, gevonden bij TT-289. Geverifieerd in de code.** `.search-mode-tab.active` in `styles.css` heeft `background: rgba(245,197,24,0.1)`. Huisstijl §1.1 verbiedt goud als vlak onder 50%: op `--surface2` wordt dat olijfbruin. Voorstel volgens §1.1: wit op 5% met de gouden rand en gouden tekst die er al staan. Zelfde soort: `highlight()` in `utils.js` markeert de getypte letters in een suggestie met goud op 30% (`mark`). Beide in één ronde. **Let op:** de standknoppen van het Setlist-tabblad (TT-289) gebruiken bewust dezelfde klasse als de hoofdtabbladen (besluit Ronald: "hetzelfde als setlist"); ze veranderen dus vanzelf mee. Bandkant: niet van toepassing, het zijn gedeelde componenten. **Toets P2:** het werkt, maar het actieve tabblad oogt vlekkerig in plaats van gekozen |
 | **TT-282** | Vegen: een schuine of afbuigende veeg wisselt van tabblad | **Nieuw, 16-09-2026 (onderhoudsronde).** 30° telt als horizontaal; een veeg die steil eindigt telt ook; een veeg vanaf de schermrand wisselt. Volledige tekst: Laatste update bovenaan |
 | **TT-277** | Gesprek springt bij versturen | **Opgelost 16-09-2026 (vervolg 3).** Toetsenbord blijft open, beeld staat stil. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
 | **TT-278** | Inloggen ontbreekt in het hamburgermenu | **Opgelost 16-09-2026 (vervolg 3).** Uitgelogd staat Inloggen onderaan het menu |

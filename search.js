@@ -1870,7 +1870,7 @@ function setSetlistSoort(soort) {
   const knoppen = { muzikanten: 'setlistSoortMuzikantenBtn', nummers: 'setlistSoortNummersBtn' };
   Object.entries(knoppen).forEach(([k, id]) => {
     const b = document.getElementById(id);
-    b.classList.toggle('selected', k === setlistSoort);
+    b.classList.toggle('active', k === setlistSoort);
     b.setAttribute('aria-selected', k === setlistSoort ? 'true' : 'false');
   });
   // Het straalwiel wordt pas bijgesteld als het zichtbaar is (huisstijl §7.1).

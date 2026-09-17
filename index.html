@@ -45,7 +45,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260917a">
+<link rel="stylesheet" href="styles.css?v=20260917b">
 </head>
 <body>
 
@@ -1226,9 +1226,11 @@
          standen. "Zoek muzikanten" zoekt van nummers naar muzikanten (de
          bestaande stand). "Zoek setlist" zoekt van muzikanten naar de nummers
          die ze delen. Vegen blijft wisselen tussen de drie hoofdtabbladen. -->
-    <div class="segmented-control segmented-vol" role="tablist" aria-label="Soort setlist-zoeken">
-      <button type="button" role="tab" class="segmented-btn selected" id="setlistSoortMuzikantenBtn" aria-selected="true" onclick="setSetlistSoort('muzikanten')">Zoek muzikanten</button>
-      <button type="button" role="tab" class="segmented-btn" id="setlistSoortNummersBtn" aria-selected="false" onclick="setSetlistSoort('nummers')">Zoek setlist</button>
+    <!-- Twee losse knoppen in de vorm van de hoofdtabbladen, met dezelfde
+         actieve kleur als "Setlist" erboven (Ronald, 17-09-2026). -->
+    <div class="setlist-soort" role="tablist" aria-label="Soort setlist-zoeken">
+      <button type="button" role="tab" class="search-mode-tab active" id="setlistSoortMuzikantenBtn" aria-selected="true" onclick="setSetlistSoort('muzikanten')">Zoek muzikanten</button>
+      <button type="button" role="tab" class="search-mode-tab" id="setlistSoortNummersBtn" aria-selected="false" onclick="setSetlistSoort('nummers')">Zoek setlist</button>
     </div>
 
     <div id="setlistDeelMuzikanten">
@@ -2259,7 +2261,7 @@
 <script src="auth.js?v=20260912a"></script>
 <script src="postcode.js?v=20260917a"></script>
 <script src="wizard.js?v=20260916a"></script>
-<script src="search.js?v=20260917a"></script>
+<script src="search.js?v=20260917b"></script>
 <script src="musicians.js?v=20260916c"></script>
 <script src="bands.js?v=20260916a"></script>
 <script src="messages.js?v=20260916c"></script>
