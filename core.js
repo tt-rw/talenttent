@@ -283,6 +283,10 @@ async function onUserLoggedIn(user) {
   // zelf, vandaar ná de onboardingInFlight-check hierboven) — configureSearchAccess()
   // blijft 'm daarna gewoon opnieuw zetten, dat is onschadelijk.
   hasOwnProfile = !!(await getMyMusicianId());
+  // TT-06 (18-09-2026): de blokkadelijst moet er zijn vóórdat er iets gezocht
+  // of geladen wordt — anders staat een geblokkeerde muzikant één keer in het
+  // eerste zoekresultaat.
+  await laadBlokkades();
 
   // TT-210 (06-09-2026): Route B (automatisch naar de wizard bij onafgeronde
   // onboarding) is vervangen door een bewuste knop op Mijn Profiel — zie
@@ -339,6 +343,7 @@ function onUserLoggedOut() {
   // voor een net uitgelogde bezoeker, bijv. bij het bekijken van een
   // gedeelde bandlink zonder eerst Zoeken te bezoeken.
   hasOwnProfile = false;
+  wisBlokkades(); // TT-06: de blokkades van de vorige gebruiker mogen niet blijven staan
   const consentBox = document.getElementById('consentCheckbox');
   if (consentBox) { consentBox.checked = false; updateSubmitProfileState(); }
   // Beveiligingsfix: een editeer-sessie (via "Profiel bewerken") mag nooit
@@ -552,6 +557,7 @@ async function getMyCity() {
 async function configureSearchAccess() {
   const mid = await getMyMusicianId();
   hasOwnProfile = !!mid;
+  await laadBlokkadesIndienNodig(); // TT-06
 
   // TT-30 / TT-U13: weergave-schakelaars gelijkzetten met de werkelijke
   // stand. De HTML start altijd op "Lijst"; op een telefoon is de standaard

@@ -1608,6 +1608,9 @@
              de ander. Niet bij een verwijderd account (zie openThreadProfile). -->
         <div class="messages-conv-avatar messages-thread-link" id="messagesThreadAvatar" style="background:#f5c518;" onclick="openThreadProfile()"></div>
         <div class="filter-title messages-thread-link" id="messagesThreadName" style="margin:0;" role="button" tabindex="0" onclick="openThreadProfile()"></div>
+        <!-- TT-06 (18-09-2026): melden en blokkeren vanuit het gesprek zelf.
+             Rechts in de rij, achter een ⋯-menu (huisstijl §8). -->
+        <span id="messagesThreadActies" style="margin-left:auto;"></span>
       </div>
       <div id="messagesThreadList" style="display:flex;flex-direction:column;margin-bottom:16px;"></div>
       <!-- TT-130 (23-08-2026): composer + teller + verwijderd-melding samen
@@ -1834,6 +1837,15 @@
         </div>
       </div>
 
+      <!-- TT-06 (18-09-2026): de enige plek waar een blokkade terug te draaien
+           is. Blokkeren zelf gebeurt op het profiel of in het gesprek. -->
+      <div class="tile" onclick="openGeblokkeerdModal()">
+        <div style="flex:1;">
+          <div class="tile-title">Geblokkeerde muzikanten</div>
+          <div class="tile-sub">wie je niet meer ziet en niet meer hoort</div>
+        </div>
+      </div>
+
       <div class="tile" onclick="openDeleteAccountModal()">
         <div style="flex:1;">
           <div class="tile-title">Account verwijderen</div>
@@ -1878,7 +1890,13 @@
          rest van de app, met het kruisje op de plek van de hamburger. -->
     <div class="modal-kop">
       <div class="logo" onclick="closeMusicianModal();showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="font-size:50%;color:var(--accent);">THE </span><span style="color:var(--text);">TALENT</span> TENT</div>
-      <button class="modal-close" onclick="closeMusicianModal()">✕</button>
+      <!-- TT-06 (18-09-2026): melden en blokkeren staan achter een ⋯-menu
+           (huisstijl §8). In de koprij, niet naast de naam: een vaste plek die
+           niet meeschuift met de lengte van een naam (§2.1). -->
+      <div class="modal-kop-acties">
+        <span id="musicianModalActies"></span>
+        <button class="modal-close" onclick="closeMusicianModal()">✕</button>
+      </div>
     </div>
     <div id="musicianModalContent" class="modal-scroll-area"></div>
     <div id="musicianModalFooter" class="modal-sticky-footer"></div>
@@ -1894,7 +1912,12 @@
          regels (besluit Ronald, 11-09-2026). -->
     <div class="modal-kop">
       <div class="logo" onclick="document.getElementById('bandModal').classList.remove('visible');showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="font-size:50%;color:var(--accent);">THE </span><span style="color:var(--text);">TALENT</span> TENT</div>
-      <button class="modal-close" onclick="document.getElementById('bandModal').classList.remove('visible')">✕</button>
+      <!-- TT-06: zelfde ⋯-menu als bij het muzikantprofiel. Een band is wel te
+           melden, niet te blokkeren — blokkeren gaat over een persoon. -->
+      <div class="modal-kop-acties">
+        <span id="bandModalActies"></span>
+        <button class="modal-close" onclick="document.getElementById('bandModal').classList.remove('visible')">✕</button>
+      </div>
     </div>
     <div id="bandModalContent" class="modal-scroll-area"></div>
   </div>
@@ -1991,6 +2014,43 @@
       <button class="btn btn-ghost" onclick="closeMessageComposer()">Terug</button>
       <button class="btn btn-primary" onclick="sendMessageFromComposer()">Versturen →</button>
     </div>
+  </div>
+</div>
+
+<!-- Melden (TT-06, 18-09-2026). Eén scherm voor alle drie de doelen: een
+     muzikant, een band en een gesprek. De reden is verplicht, de toelichting
+     niet — anders stopt een gebruiker van vijftien halverwege. -->
+<div class="modal-overlay" id="meldModal" onclick="if(event.target===this)closeMeldModal()">
+  <div class="modal-box modal-box-md">
+    <button class="modal-close" onclick="closeMeldModal()">✕</button>
+    <div class="filter-title" id="meldTitel" style="margin-bottom:4px;">Melden</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Over <strong id="meldDoelNaam" style="color:var(--text);"></strong>. Je melding komt bij ons binnen; de ander krijgt hier geen bericht van.</p>
+
+    <div class="field" style="margin-bottom:20px;">
+      <label>Waar gaat het over?</label>
+      <div class="tag-grid" id="meldRedenen"></div>
+    </div>
+
+    <div class="field" style="margin-bottom:4px;">
+      <label>Toelichting (niet verplicht)</label>
+      <textarea id="meldToelichting" placeholder="Wat is er gebeurd?" maxlength="1000" style="width:100%;min-height:100px;" oninput="updateCharCounter('meldToelichting','meldToelichtingCounter',1000)"></textarea>
+    </div>
+    <div id="meldToelichtingCounter" style="text-align:right;font-size:12px;color:var(--muted);margin:4px 0 20px;">0/1000</div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="closeMeldModal()">Terug</button>
+      <button class="btn btn-primary" onclick="verstuurMelding()">Versturen →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Geblokkeerde muzikanten (TT-06, 18-09-2026) -->
+<div class="modal-overlay" id="geblokkeerdModal" onclick="if(event.target===this)closeGeblokkeerdModal()">
+  <div class="modal-box modal-box-md">
+    <button class="modal-close" onclick="closeGeblokkeerdModal()">✕</button>
+    <div class="filter-title" style="margin-bottom:4px;">Geblokkeerde muzikanten</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Je ziet ze niet in de zoekresultaten, en hun berichten komen niet bij je aan.</p>
+    <div id="geblokkeerdLijst"></div>
   </div>
 </div>
 
@@ -2256,15 +2316,16 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260917a"></script>
+<script src="core.js?v=20260918a"></script>
 <script src="utils.js?v=20260916b"></script>
+<script src="veiligheid.js?v=20260918a"></script>
 <script src="auth.js?v=20260912a"></script>
 <script src="postcode.js?v=20260917a"></script>
 <script src="wizard.js?v=20260916a"></script>
-<script src="search.js?v=20260917b"></script>
-<script src="musicians.js?v=20260916c"></script>
+<script src="search.js?v=20260918a"></script>
+<script src="musicians.js?v=20260918a"></script>
 <script src="bands.js?v=20260916a"></script>
-<script src="messages.js?v=20260916c"></script>
+<script src="messages.js?v=20260918a"></script>
 <script src="modals-shared.js?v=20260910a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────

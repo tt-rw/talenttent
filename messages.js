@@ -162,11 +162,16 @@ async function refreshUnreadBadge() {
   const mid = await getMyMusicianId();
   if (!mid) { toon(null); return; }
   try {
-    const { count, error } = await db.from('messages')
-      .select('id', { count: 'exact', head: true })
+    // TT-06 (18-09-2026): was een kale telling met head:true. Die kan de
+    // afzender niet zien, en een blokkade moet ook de teller stil houden —
+    // anders verraadt een ongelezen-badge dat er toch iets binnenkwam.
+    // Daarom nu de afzenders ophalen en zelf tellen.
+    const { data, error } = await db.from('messages')
+      .select('sender_id')
       .eq('recipient_id', mid)
       .is('read_at', null);
     if (error) throw error;
+    const count = (data || []).filter(r => !blokkeerIkZelf(r.sender_id)).length;
     if (count > 0) { toon(count > 99 ? '99+' : String(count)); }
     else { toon(null); }
   } catch (e) {
@@ -202,7 +207,11 @@ async function loadInbox() {
     ]);
     if (sentRes.error) throw sentRes.error;
     if (receivedRes.error) throw receivedRes.error;
+    // TT-06 (18-09-2026): wie ik blokkeer, verdwijnt uit mijn inbox — heen én
+    // terug, dus ook het gesprek dat ik zelf begon. De blokkade van een ander
+    // op mij laat dit onaangeroerd: die is stil, ik merk er niets van.
     const data = [...(sentRes.data || []), ...(receivedRes.data || [])]
+      .filter(msg => !blokkeerIkZelf(msg.sender_id === mid ? msg.recipient_id : msg.sender_id))
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     if (!data || !data.length) {
@@ -320,6 +329,10 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, 
   document.getElementById('messagesThreadPanel').classList.add('gesprek-open');
   if (noticeEl) noticeEl.style.display = activeConversationDeleted ? 'block' : 'none';
   document.getElementById('messagesThreadName').textContent = otherName;
+  // TT-06 (18-09-2026): melden en blokkeren vanuit het gesprek. Bij een
+  // verwijderd account is er niemand meer om te melden of te blokkeren.
+  zetVeiligheidMenu('messagesThreadActies', 'gesprek',
+    activeConversationDeleted ? null : otherId, otherName);
   if (otherColor !== undefined) {
     const col = safeColor(otherColor, '#f5c518');
     const avatarEl = document.getElementById('messagesThreadAvatar');
@@ -414,6 +427,7 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, 
 }
 
 function closeConversation() {
+  zetVeiligheidMenu('messagesThreadActies', 'gesprek', null, ''); // TT-06
   activeConversationId = null;
   activeConversationDeleted = false; // V-04
   threadHistoryPushed = false;

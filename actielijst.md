@@ -1,6 +1,95 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 17-09-2026 — **TT-289 (P1) gebouwd en getest: het Setlist-tabblad heeft een tweede stand, "Zoek setlist" — van muzikanten naar de nummers die ze delen. Eindstand 300 van 300. Nieuwe bevinding TT-290 (P2).**
+**Laatste update:** 18-09-2026 — **TT-06 (P0) gebouwd en getest: rapporteren en blokkeren. Eindstand 326 van 326. Nieuw bestand `veiligheid.js`, twee nieuwe tabellen die Ronald nog moet aanmaken.**
+
+**De drie beslissingen die sinds 08-08-2026 openstonden, zijn genomen
+(Ronald, 18-09-2026), plus een vierde.**
+
+| Vraag | Besluit |
+|---|---|
+| Wat doet blokkeren? | Geen berichten meer **én** wederzijds onzichtbaar in de zoekresultaten. Het gesprek verdwijnt uit de inbox van wie blokkeert |
+| Waar komt een melding terecht? | In een tabel in de database. Geen e-mail — die weg leunt op TT-01 en die werkt nog niet aantoonbaar |
+| Wat kun je melden? | Een muzikant, een band én een gesprek |
+| Merkt de ander het? | **Nee, stil.** Geen melding, geen foutmelding. Zijn bericht lijkt gewoon te versturen |
+
+**Hoe "stil" technisch werkt.** Het bericht wordt gewoon weggeschreven; de
+ontvanger filtert het eruit. Een weigering bij het versturen zou de blokkade
+juist verraden. De verzender ziet zijn eigen gesprek dus ongewijzigd.
+
+**Wat er gebouwd is.**
+
+- **`veiligheid.js` — nieuw, elfde JS-bestand**, direct na `utils.js` in de
+  scriptvolgorde. Melden en blokkeren delen hetzelfde menu, dezelfde drie
+  doelen en dezelfde twee tabellen; verdeeld over `messages.js`,
+  `musicians.js` en `search.js` zou dezelfde regel op drie plekken staan —
+  precies wat huisstijl §15 en §18.2 verbieden. Inhoud: `laadBlokkades()`,
+  `isGeblokkeerd()`, `blokkeerIkZelf()`, `blokkeerMuzikant()`,
+  `deblokkeerMuzikant()`, `veiligheidMenuHTML()`, `zetVeiligheidMenu()`,
+  `openMeldModal()`, `verstuurMelding()` en `openGeblokkeerdModal()`.
+- **Het ⋯-menu staat in de koprij van de modal**, links van het kruis, en
+  rechts in de kop van een gesprek. Niet naast de naam: dat is de plek die
+  `naamPastInProfielkop()` op 187px meet (huisstijl §2.1), en een extra knop
+  van 44px daar zou elke bestaande naam opnieuw ter discussie stellen. Melden
+  en blokkeren horen sowieso achter een ⋯-knop (§8).
+- **`index.html`**: `.modal-kop-acties` in beide profielmodals, het menu in de
+  gesprekskop, de meldmodal, de modal "Geblokkeerde muzikanten", en een tegel
+  daarvoor in Instellingen — de enige plek waar een blokkade terug te draaien is.
+- **`search.js`**: één regel per zoekstand, telkens **vóór** de TT-62-controle
+  op een leeg resultaat, zodat de app ook bij een blokkade eerst ruimer zoekt
+  in plaats van meteen een lege staat te tonen. Muzikanten, Setlist en de
+  naamsuggesties van "Zoek setlist".
+- **`messages.js`**: de inbox laat een gesprek met een geblokkeerde weg, heen
+  én terug. `refreshUnreadBadge()` telt niet meer met `head: true` maar haalt
+  de afzenders op en telt zelf — anders verraadt de ongelezen-badge dat er
+  tóch iets binnenkwam.
+- **`core.js`**: de blokkadelijst wordt geladen bij het inloggen (vóór het
+  eerste zoekresultaat) en gewist bij het uitloggen.
+- **`musicians.js`**: het menu bij beide modals, en een profiel dat jij hebt
+  geblokkeerd toont geen berichtknop maar "Blokkade opheffen".
+- **Blok 22 van de testset** (24 controles): het menu en zijn tikdoel, geen
+  menu op je eigen profiel of zonder profiel, band wel melden en niet
+  blokkeren, de rij in `musician_blocks`, beide richtingen, het zoekresultaat,
+  de inbox, de ongelezen-teller, de meldmodal met en zonder reden, de
+  weggeschreven melding, en de lijst in Instellingen inclusief de lege staat.
+
+**Getest.** `python3 tests/tt_tests.py` → **326 van 326 geslaagd** (was 300 van
+300 vóór deze sessie). `node --check` op alle elf JS-bestanden, haakjesbalans
+in blok 1. Vijf schermafdrukken op 390×844 zelf bekeken: het menu in de
+profielkop, de meldmodal, de lijst in Instellingen, de tegel in Instellingen en
+het gesprek.
+
+**Nog te doen door Ronald — zonder dit werkt er niets op de live site.**
+Het script `_niet-uploaden-tt-06-melden-blokkeren.sql` in de gedeelde map
+draaien in Supabase. Het maakt `musician_blocks` en `musician_reports` aan met
+hun RLS-regels. **Bovenaan dat script staat één controleregel**: hij drukt af
+welk type `musicians.id` heeft. Staat daar niet `uuid`, dan stoppen en het
+melden — de rest van het script gaat van `uuid` uit (**Aanname**, niet
+geverifieerd: Claude heeft geen databasetoegang).
+
+**Bewuste grenzen van deze bouw, zodat ze niet als bug terugkomen.**
+
+- **Blokkeren gaat over een persoon, niet over een band.** Een band is wel te
+  melden. De bandkant is dus niet "vergeten" — huisstijl vraagt dat dit
+  expliciet staat: bands hebben geen berichtenverkeer en geen persoon om te
+  blokkeren, dus het bandzoekresultaat wordt niet gefilterd.
+- **Een geblokkeerde die jou blokkeerde kan dat uitlezen via de API.** De
+  RLS-regel laat beide partijen de rij zien, en dat moet ook: zonder die
+  regel kan de app de blokkade niet in béide richtingen onzichtbaar maken.
+  Stil is de app, niet de database. Vastgelegd als TT-291 (P3).
+- **Er is geen beheerscherm voor meldingen.** Ronald leest ze in de
+  tabelweergave van Supabase. Een scherm in de app is TT-292 (P2).
+
+**Correctie van een onjuist vastgelegd feit (§2.13).** In de TT-06-rij stond:
+*"Ontwerp besproken op 08-08-2026, drie beslissingen staan nog open (zie
+onderaan deze tabel)."* Onder die tabel stond niets over TT-06. Waaruit blijkt
+dat het oude onjuist was: `grep -n "TT-06" actielijst.md` geeft elf treffers,
+en geen daarvan is een toelichting onder de P0-tabel — anders dan bij TT-45,
+TT-42 en TT-07, die er wél een hebben. De drie vragen zijn deze sessie opnieuw
+gesteld en beantwoord; ze staan nu in de tabel bovenaan dit blok.
+
+---
+
+**Vorige update:** 17-09-2026 — **TT-289 (P1) gebouwd en getest: het Setlist-tabblad heeft een tweede stand, "Zoek setlist" — van muzikanten naar de nummers die ze delen. Eindstand 300 van 300. Nieuwe bevinding TT-290 (P2).**
 
 **Aanleiding.** Schets van Ronald, 17-09-2026: de bestaande setlist-zoekfunctie
 zoekt van nummers naar muzikanten; de nieuwe zoekt andersom.
@@ -3515,8 +3604,10 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 ## P0 — Zonder dit is de app niet af of onveilig
 
-**Stand van de P0's, bijgewerkt 16-09-2026 (vervolg 4).** **Zes P0-bouwtickets
-staan open:** TT-281 · TT-01 · TT-06 · TT-65 · TT-45 · TT-42. TT-281 kwam er
+**Stand van de P0's, bijgewerkt 18-09-2026.** **Vijf P0-bouwtickets staan
+open:** TT-281 · TT-01 · TT-65 · TT-45 · TT-42. TT-06 is op 18-09-2026 gebouwd
+en getest en staat in de tweede tabel; hij wacht nog wel op één handeling van
+Ronald (het SQL-script), net als TT-22. TT-281 kwam er
 op 16-09-2026 bij (onderhoudsronde). TT-229, TT-231 (laag 1) en
 TT-62 (deel 1) zijn deze dag opgelost en staan in de tweede tabel. **TT-62 deel 2**
 ("geef me een seintje zodra er een drummer bijkomt") staat nog open en leunt op
@@ -3546,7 +3637,6 @@ eerste tabel altijd gelijk is aan de stand.
 | ID | Ticket | Kern |
 |---|---|---|
 | **TT-01** | E-maildigest bij nieuwe matches en berichten | **Heropend 31-08-2026: niet aantoonbaar werkend.** Gebouwd 28-08-2026 (testaanroep gaf 200), maar Ronald heeft nog geen enkele echte digestmail ontvangen. Oorzaak nog niet gevonden — vier mogelijke plekken staan open, zie Laatste update bovenaan. Eerste Edge Function van het project, SMTP via Plesk (`noreply@talenttent.org`), twee `pg_cron`-taken. Nieuw scherm "Zoekvoorkeuren" bij de zoekpagina. **Bevestigd door de UX-review van 11-09-2026, en zwaarder gewogen dan tot nu toe.** Geverifieerd in de code: geen service worker, geen `Notification`, geen push, geen mailtrigger aan de clientkant. Een muzikant die jou een bericht stuurt, bereikt jou dus alleen als jij uit jezelf de app opent. Deze doelgroep doet dat niet. Daarmee is dit geen "digest die nog niet werkt" maar de ontbrekende schakel in de hele matchlus. Punt 6 van de app-first toetslijst noemt meldingen met zoveel woorden de kern van de terugkeerlus; het is het enige van de negen punten dat niet gebouwd staat. **Onbekend:** of er in Supabase een databasetrigger staat die bij een nieuw bericht mailt — dat is vanuit de code niet te zien en moet Ronald nagaan. Goedkoopste werkende vorm: één e-mail per nieuw bericht, niet pas een digest |
-| **TT-06** | Rapporteren en blokkeren | Meldknop + blokkeren, verplicht voordat er actief geworven wordt. **Prioriteit opgehoogd 13-08-2026 (V-05, Ronalds akkoord):** van "geparkeerd" naar **nodig vóór de eerste storeaanvraag** — beide app-stores eisen dit vermoedelijk bij vrij berichtenverkeer tussen gebruikers (aanname, het beleid zelf is niet gelezen). Ontwerp besproken op 08-08-2026, drie beslissingen staan nog open (zie onderaan deze tabel). Nog geen bouwwerk gestart |
 | **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers, zodra die er zijn. Interim-stap: zie "Direct te doen" hierboven. **Vóór lancering, niet acuut nu (23-08-2026) — de site heeft nog alleen testprofielen, zie afspraak bovenaan deze tabel** |
 | **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel. **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
 | **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus — mogelijk groter dan gedacht, zie toelichting onderaan deze tabel.** **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
@@ -3560,6 +3650,7 @@ herzieningsmomenten in TT-63 nog moeten gebeuren.
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-06** | Rapporteren en blokkeren | **Gebouwd en getest 18-09-2026, zie Laatste update bovenaan.** Meldknop + blokkeren, verplicht voordat er actief geworven wordt. **Prioriteit opgehoogd 13-08-2026 (V-05, Ronalds akkoord):** van "geparkeerd" naar **nodig vóór de eerste storeaanvraag** — beide app-stores eisen dit vermoedelijk bij vrij berichtenverkeer tussen gebruikers (aanname, het beleid zelf is niet gelezen). De drie beslissingen van 08-08-2026 zijn op 18-09-2026 genomen. **Blokkeert nog op:** Ronald moet `_niet-uploaden-tt-06-melden-blokkeren.sql` in Supabase draaien vóórdat dit werkt op de live site. Gevolg voor TT-63: de herzieningsmomenten voor gebruiksvoorwaarden en gedragscode ("volgt binnenkort") komen daarmee in beeld |
 | **TT-229** | Bandomgeving werkt niet meer | **Opgelost 11-09-2026.** Geen bandprobleem: de bevestigingsvraag lag onzichtbaar achter "Bandleden beheren" door een gelijke `z-index`. Opgelost in de standaard — de laatst geopende modal ligt altijd bovenop (`initModalStapeling()` in `core.js`). Zie Deel 3 |
 | **TT-231** | Vaste Playwright-testset wordt leidend | **Laag 1 opgeleverd 11-09-2026:** `tests/tt_tests.py` + `tests/stub/supabase-stub.js`, tien blokken, 62 controles. Draait bij elke wijziging vóór oplevering. **Laag 2 is verschoven van "kan niet" naar "kan wel"** — zie Deel 3, de bereikbaarheidscorrectie. Dat deel is nog niet als vaste doorloop vastgelegd |
 | **TT-287** | Profiel en band van een ander niet te bedienen | **Nieuw en opgelost 16-09-2026.** Tikvlak van het kruis besloeg het hele venster, en `closeMusicianModal()` brak zonder klik-gegeven. Gemeld door de monitor (20× TypeError). Zie Laatste update |
@@ -3645,6 +3736,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-292** | Beheerscherm voor meldingen | **Nieuw, 18-09-2026 (TT-06).** Meldingen komen in `musician_reports` terecht en Ronald leest ze in de tabelweergave van Supabase. Er is geen scherm in de app om ze af te handelen (bekijken, status zetten, de gemelde muzikant tijdelijk onzichtbaar maken). Bewust buiten TT-06 gehouden: die moest eerst een meldknop opleveren, niet een moderatieomgeving. Bandkant: niet van toepassing, hetzelfde scherm toont beide soorten meldingen. **Toets P2:** melden werkt, maar afhandelen kost nu een omweg buiten de app |
 | **TT-290** | Goud op 10% dekking op het actieve zoektabblad | **Nieuw, 17-09-2026, gevonden bij TT-289. Geverifieerd in de code.** `.search-mode-tab.active` in `styles.css` heeft `background: rgba(245,197,24,0.1)`. Huisstijl §1.1 verbiedt goud als vlak onder 50%: op `--surface2` wordt dat olijfbruin. Voorstel volgens §1.1: wit op 5% met de gouden rand en gouden tekst die er al staan. Zelfde soort: `highlight()` in `utils.js` markeert de getypte letters in een suggestie met goud op 30% (`mark`). Beide in één ronde. **Let op:** de standknoppen van het Setlist-tabblad (TT-289) gebruiken bewust dezelfde klasse als de hoofdtabbladen (besluit Ronald: "hetzelfde als setlist"); ze veranderen dus vanzelf mee. Bandkant: niet van toepassing, het zijn gedeelde componenten. **Toets P2:** het werkt, maar het actieve tabblad oogt vlekkerig in plaats van gekozen |
 | **TT-282** | Vegen: een schuine of afbuigende veeg wisselt van tabblad | **Nieuw, 16-09-2026 (onderhoudsronde).** 30° telt als horizontaal; een veeg die steil eindigt telt ook; een veeg vanaf de schermrand wisselt. Volledige tekst: Laatste update bovenaan |
 | **TT-277** | Gesprek springt bij versturen | **Opgelost 16-09-2026 (vervolg 3).** Toetsenbord blijft open, beeld staat stil. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
@@ -3713,6 +3805,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-291** | Een geblokkeerde kan zijn blokkade uitlezen via de API | **Nieuw, 18-09-2026 (TT-06), bewuste afweging, geen bug.** De RLS-regel op `musician_blocks` laat beide partijen de rij zien. Dat moet ook: zonder die regel kan de app een blokkade niet in béide richtingen onzichtbaar maken, en dat was Ronalds besluit. Gevolg: wie de API rechtstreeks bevraagt, kan zien dat hij geblokkeerd is. De app zelf zegt niets. Alternatief voor later: de wederzijdse onzichtbaarheid in een databasefunctie regelen in plaats van in de app, zodat de rij helemaal niet leesbaar hoeft te zijn. Vraagt een wijziging aan de zoek-RPC's, dus geen bijvangst van een andere sessie |
 | **TT-283** | Veegcontrole leest lay-out bij elke aanraking; wiel-scrollluisteraar niet passief | **Nieuw, 16-09-2026 (onderhoudsronde).** Zie Laatste update bovenaan |
 | **TT-284** | `transition: all` (16×), `width`-animatie, vervaging op `.save-overlay` op mobiel | **Nieuw, 16-09-2026 (onderhoudsronde).** Geen taak boven 50 ms gemeten. Zie Laatste update bovenaan |
 | **TT-285** | Bannerbalk: `ResizeObserver` nooit losgekoppeld | **Nieuw, 16-09-2026 (onderhoudsronde).** Zie Laatste update bovenaan |

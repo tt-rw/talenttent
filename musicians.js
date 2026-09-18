@@ -185,6 +185,17 @@ async function shareProfile(kind, id, name) {
 function musicianContactFooterHTML(m, isOwn, displayName) {
   const shareBtn = `<button class="btn btn-ghost" style="width:100%;" onclick="shareProfile('profiel','${jsAttr(m.id)}','${jsAttr(displayName)}')">Deel dit profiel</button>`;
   if (isOwn) return shareBtn;
+  // TT-06 (18-09-2026): heb je deze muzikant zelf geblokkeerd, dan is een
+  // berichtknop misleidend — het bericht zou nergens aankomen. In plaats
+  // daarvan de enige zinnige volgende stap: de blokkade opheffen. De
+  // omgekeerde richting (hij blokkeert jou) laat dit scherm bewust
+  // ongewijzigd: die blokkade is stil, zie veiligheid.js.
+  if (blokkeerIkZelf(m.id)) {
+    return `<div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="profile-fresh" style="text-align:center;">Je hebt ${escHtml(displayName)} geblokkeerd.</div>
+      <button class="btn btn-ghost" style="width:100%;" onclick="deblokkeerMuzikant('${jsAttr(m.id)}','${jsAttr(displayName)}')">Blokkade opheffen</button>
+      ${shareBtn}</div>`;
+  }
   const contactBtn = hasOwnProfile
     ? `<button class="btn btn-primary" style="width:100%;" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht →</button>`
     : `<button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`;
@@ -209,6 +220,9 @@ async function openMusicianModal(id) {
   // musicianContactFooterHTML() (geen berichtknop, wel "Maak een profiel aan
   // om contact te leggen").
   footer.innerHTML = '';
+  // TT-06: het ⋯-menu hoort bij het profiel dat straks verschijnt, niet bij
+  // het vorige. Tijdens het laden staat er dus niets.
+  zetVeiligheidMenu('musicianModalActies', 'muzikant', null, '');
   content.innerHTML =
     '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
 
@@ -285,6 +299,8 @@ async function openMusicianModal(id) {
   // (TT-43: bezoekers zonder profiel zien alleen de gebruikersnaam).
   const displayName = isOwn ? m.fname : displayNameOf(m);
   footer.innerHTML = musicianContactFooterHTML(m, isOwn, displayName);
+  // TT-06: melden en blokkeren in de koprij. Op je eigen profiel niet.
+  zetVeiligheidMenu('musicianModalActies', 'muzikant', isOwn ? null : m.id, displayName);
 }
 
 // TT-287: het kruis en het logo roepen dit aan zonder klik-gegeven; die sluiten
@@ -1777,6 +1793,7 @@ async function loadMyBands() {
 async function openBandModal(id) {
   const modal = document.getElementById('bandModal');
   document.getElementById('bandModalContent').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  zetVeiligheidMenu('bandModalActies', 'band', null, ''); // TT-06, zie openMusicianModal()
   modal.classList.add('visible');
 
   let b = null;
@@ -1806,6 +1823,11 @@ async function openBandModal(id) {
   }
 
   if (!b) { document.getElementById('bandModalContent').innerHTML = '<p style="color:var(--danger)">Kon band niet laden.</p>'; return; }
+
+  // TT-06: een band is te melden, niet te blokkeren — blokkeren gaat over een
+  // persoon, en een band is er geen. Eigen band: geen meldknop (zie hieronder
+  // isOwnBand, die pas na de ledenlijst bekend is; daarom staat de aanroep
+  // verderop).
 
   const col = safeColor(b.profile_color, '#3ecfff');
   const confirmed = (b.band_members||[]).filter(m => m.status === 'bevestigd');
@@ -1857,5 +1879,7 @@ async function openBandModal(id) {
   // TT-249: pas ná het plaatsen passend maken — zelfde reden als bij de
   // muzikantmodal. De bandnaam gebruikt dezelfde klasse, dus dezelfde regel.
   fitProfileName(document.getElementById('bandModalContent'));
+  // TT-06: je eigen band meld je niet.
+  zetVeiligheidMenu('bandModalActies', 'band', isOwnBand ? null : b.id, b.name);
 }
 

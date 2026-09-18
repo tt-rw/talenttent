@@ -639,6 +639,10 @@ async function runSearch(straalOverride) {
     const skipCityTextFilter = originResolved || cityIsPostcode;
 
     const filtered = musicians.filter(m => {
+      // TT-06 (18-09-2026): een blokkade werkt beide kanten op. Hier, vóór de
+      // TT-62-controle op een leeg resultaat, zodat de app ook dán eerst
+      // ruimer zoekt in plaats van meteen een lege staat te tonen.
+      if (isGeblokkeerd(m.id)) return false;
       const age = ageOf(m);
       if (age < ageMin || age > ageMax) return false;
       // TT-43: het naamveld doorzoekt precies dát wat je in de lijst ook ziet
@@ -1724,7 +1728,8 @@ async function runSetlistSearch(straalOverride) {
     // TT-239: de vaste sortering staat nu in sortSetlistList(), zodat de
     // keuzelijst "Sorteren op" dezelfde lijst kan herschikken zonder opnieuw
     // te zoeken. "Beste match" geeft exact de volgorde van hiervoor.
-    const filtered = musicians.filter(m => m.matchCount > 0);
+    // TT-06: zelfde regel als bij Muzikanten, vóór de TT-62-controle.
+    const filtered = musicians.filter(m => m.matchCount > 0 && !isGeblokkeerd(m.id));
 
     if (seq !== setlistSearchSeq) return; // TT-84: nieuwere zoekopdracht loopt al
     // TT-62: zelfde regel als bij Muzikanten en Bands.
@@ -1942,7 +1947,8 @@ async function gedeeldSuggesties(term) {
     if (seq !== gedeeldNaamSeq) return; // TT-84: er is intussen verder getypt
     const gekozenIds = new Set(gedeeldGekozen.map(g => g.id));
     const treffers = lijst
-      .filter(m => !gekozenIds.has(m.id) && naamMatcht(term, m.fname, m.username))
+      // TT-06: een geblokkeerde muzikant is ook hier niet te vinden.
+      .filter(m => !gekozenIds.has(m.id) && !isGeblokkeerd(m.id) && naamMatcht(term, m.fname, m.username))
       .sort((a, b) => {
         if (a.distance_km != null && b.distance_km != null && a.distance_km !== b.distance_km) {
           return a.distance_km - b.distance_km;

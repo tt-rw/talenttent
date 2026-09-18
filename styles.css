@@ -2649,6 +2649,19 @@
     flex-shrink: 0;
   }
 
+  /* TT-06 (18-09-2026): het ⋯-menu en het kruis staan als één blok rechts in
+     de koprij. Zonder deze wikkel verdeelt space-between de rij in drieën en
+     komt het woordmerk niet meer tegen de linkerrand. */
+  .modal-kop-acties {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  /* Het menuknopje draagt in de gewone kop een marge voor de tab-regel
+     eronder; in een koprij staat het op de middellijn van het woordmerk. */
+  .modal-kop-acties .nav-menu-btn { margin-bottom: 0; }
+
   .modal-close {
     position: absolute;
     /* TT-219 (06-09-2026): right ging van 16px naar 24px. Bij een lange lijst
@@ -2837,6 +2850,22 @@
     z-index: 60;
   }
   .inline-menu-dropdown.visible { display: block; }
+
+  /* TT-06 (18-09-2026): een rij in "Geblokkeerde muzikanten". Zelfde opbouw
+     als een gespreksrij: naam vet, plaats eronder, actie rechts. */
+  .geblokkeerd-rij {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .geblokkeerd-rij:last-child { border-bottom: none; }
+  .geblokkeerd-naam { font-size: 15px; font-weight: 700; color: var(--text); }
+  .geblokkeerd-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  /* Geen volle-breedte knop: hij hoort bij de rij ernaast, niet bij het
+     scherm. Hoogte blijft 44px via .btn (huisstijl §5/§6). */
+  .geblokkeerd-knop { flex-shrink: 0; padding-left: 16px; padding-right: 16px; }
 
   /* ── Band kaarten ────────────────────────── */
   .band-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;transition:border-color 0.2s; }
