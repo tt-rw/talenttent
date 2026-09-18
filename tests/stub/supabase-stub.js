@@ -59,7 +59,9 @@
       ],
       musician_songs: [], musician_media: [], musician_wanted: [],
       band_wanted: [{ band_id: 'b1', instrument: 'Bas' }],
-      messages: [], postcode_cache: [], media: [], app_error_log: []
+      messages: [], postcode_cache: [], media: [], app_error_log: [],
+      // TT-06 (18-09-2026): melden en blokkeren.
+      musician_blocks: [], musician_reports: []
     },
     rpcResults: {
       tt_search_musicians: [], tt_search_musicians_anon: [],
