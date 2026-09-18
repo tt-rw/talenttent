@@ -295,6 +295,8 @@ async function openMusicianModal(id) {
   // TT-249: de naam kan pas passend gemaakt worden als hij in de pagina staat
   // — een element dat er nog niet is, heeft geen breedte om tegen te meten.
   fitProfileName(document.getElementById('musicianModalContent'));
+  // TT-293: zelfde reden, voor het woordmerk in de koprij van deze modal.
+  fitModalLogo(document.getElementById('musicianModalBox'));
   // V-09: zelfde displayName-logica als binnen buildMusicianDetailHTML()
   // (TT-43: bezoekers zonder profiel zien alleen de gebruikersnaam).
   const displayName = isOwn ? m.fname : displayNameOf(m);
@@ -1879,6 +1881,8 @@ async function openBandModal(id) {
   // TT-249: pas ná het plaatsen passend maken — zelfde reden als bij de
   // muzikantmodal. De bandnaam gebruikt dezelfde klasse, dus dezelfde regel.
   fitProfileName(document.getElementById('bandModalContent'));
+  // TT-293: zelfde reden, voor het woordmerk in de koprij van deze modal.
+  fitModalLogo(document.getElementById('bandModalBox'));
   // TT-06: je eigen band meld je niet.
   zetVeiligheidMenu('bandModalActies', 'band', isOwnBand ? null : b.id, b.name);
 }

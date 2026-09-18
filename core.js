@@ -1009,7 +1009,7 @@ function syncModalScrollLock() {
 let naamHermeetTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(naamHermeetTimer);
-  naamHermeetTimer = setTimeout(() => fitProfileName(document), 150);
+  naamHermeetTimer = setTimeout(() => { fitProfileName(document); fitModalLogo(document); }, 150);
 });
 
 // TT-264 (13-09-2026, Ronald): "als ik een video inline afspeel en ik druk op

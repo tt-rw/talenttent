@@ -2638,6 +2638,16 @@
     font-size: 28px;
     text-shadow: none;
     letter-spacing: 1px;
+    /* TT-293 (18-09-2026): zonder min-width:0 kan een flex-item nooit
+       kleiner worden dan zijn eigen tekst (het browserdefault is
+       min-width:auto). Bij het bureaubladvenster tussen 561 en circa 780px
+       is #appRoot 50% van het venster (§11) en dus smaller dan een telefoon
+       — precies de noodtreden-situatie uit huisstijl §2.1. Zonder krimp
+       loopt de koprij buiten het canvas en knipt .modal-box-kop het
+       ⋯-menu en het sluiten-kruisje weg. fitModalLogo() in utils.js zet de
+       lettergrootte op de grootste trede die past. */
+    min-width: 0;
+    white-space: nowrap;
   }
   /* In de koprij staat het kruis gewoon in de rij mee, niet los erboven.
      TT-287: relative, niet static. Het vergrote tikvlak (::after hieronder)

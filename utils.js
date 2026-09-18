@@ -1370,6 +1370,28 @@ function fitProfileName(root) {
   });
 }
 
+// TT-293 (18-09-2026): het woordmerk in een modal-koprij (.modal-kop .logo)
+// liep buiten het canvas bij een bureaubladvenster tussen circa 561 en
+// 780px breed — daar is #appRoot 50% van het venster (§11) en dus smaller
+// dan een telefoon, zelfde oorzaak als de noodtreden bij fitProfileName
+// (huisstijl §2.1). `.modal-box-kop { overflow: hidden }` knipte het
+// ⋯-menu en het sluiten-kruisje daardoor onzichtbaar weg. Zelfde aanpak
+// als fitProfileName: krimpen tot het past, geen vaste maat per scherm.
+const MODALLOGO_LADDER = [28, 24, 20, 18, 16];
+
+function fitModalLogo(root) {
+  const scope = root || document;
+  scope.querySelectorAll('.modal-kop .logo').forEach(el => {
+    const ruimte = el.clientWidth;
+    if (!ruimte) return; // nog niet zichtbaar — niets te meten
+    el.style.fontSize = '';
+    for (const px of MODALLOGO_LADDER) {
+      el.style.fontSize = px + 'px';
+      if (el.scrollWidth <= ruimte) return;
+    }
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // Media — gedeeld door de wizard (stap 4), Je mediahoek en het profiel
 // ═══════════════════════════════════════════════════════════════════════
