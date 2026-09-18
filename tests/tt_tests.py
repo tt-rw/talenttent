@@ -28,7 +28,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STUB = os.path.join(ROOT, "tests", "stub", "supabase-stub.js")
 
 JS_FILES = [
-    "core.js", "utils.js", "auth.js", "postcode.js", "wizard.js",
+    "core.js", "utils.js", "veiligheid.js", "auth.js", "postcode.js", "wizard.js",
     "search.js", "musicians.js", "bands.js", "messages.js", "modals-shared.js",
 ]
 
@@ -2031,6 +2031,197 @@ def blok_browser():
                 setlistWantedSongs = []; renderSetlistSongsList(); return ok; }"""), "")
         check("geen paginafouten in blok 21", not page_errors, "; ".join(page_errors)[:300])
         page.evaluate("window.TT_STUB.reset()")
+
+        # ─────────────────────────────────────────────────────────────
+        # Blok 22 — melden en blokkeren (TT-06, 18-09-2026)
+        # De vier besluiten van Ronald: blokkeren = geen berichten én
+        # wederzijds onzichtbaar; een melding gaat naar een tabel; melden
+        # kan over muzikant, band en gesprek; de ander merkt er niets van.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 22 — melden en blokkeren (TT-06)")
+        page_errors.clear()
+        menu = page.evaluate("""async () => {
+          window.getMyMusicianId = async () => 'm1';
+          hasOwnProfile = true; myMusicianId = 'm1';
+          window.TT_STUB.data.musician_blocks = [];
+          window.TT_STUB.data.musician_reports = [];
+          await laadBlokkades();
+          const r = {};
+          const labels = (id) => Array.from(
+            document.querySelectorAll('#' + id + ' .nav-menu-item')).map(b => b.textContent);
+
+          zetVeiligheidMenu('musicianModalActies', 'muzikant', 'm2', 'Dylan');
+          r.menuBijAnder = !!document.querySelector('#musicianModalActies .veiligheid-menu-wrap');
+          r.items = labels('musicianModalActies');
+          const knop = document.querySelector('#musicianModalActies .nav-menu-btn');
+          const kr = knop.getBoundingClientRect();
+          r.tikdoel = [Math.round(kr.width), Math.round(kr.height)];
+          knop.click();
+          r.opentNaKlik = document.querySelector('#musicianModalActies .inline-menu-dropdown').classList.contains('visible');
+          document.body.click();
+          r.sluitBuitenKlik = !document.querySelector('#musicianModalActies .inline-menu-dropdown').classList.contains('visible');
+
+          zetVeiligheidMenu('musicianModalActies', 'muzikant', null, '');
+          r.menuBijEigen = !!document.querySelector('#musicianModalActies .veiligheid-menu-wrap');
+
+          zetVeiligheidMenu('bandModalActies', 'band', 'b1', 'Van Delft');
+          r.bandItems = labels('bandModalActies');
+
+          hasOwnProfile = false;
+          zetVeiligheidMenu('musicianModalActies', 'muzikant', 'm2', 'Dylan');
+          r.menuZonderProfiel = !!document.querySelector('#musicianModalActies .veiligheid-menu-wrap');
+          hasOwnProfile = true;
+          return r;
+        }""")
+        check("het ⋯-menu staat in de koprij van andermans profiel",
+              menu["menuBijAnder"], json.dumps(menu))
+        check("met precies twee acties: melden en blokkeren",
+              menu["items"] == ["Muzikant melden", "Blokkeren"], json.dumps(menu["items"]))
+        check("het tikdoel van het menuknopje is minstens 44px",
+              menu["tikdoel"][0] >= 44 and menu["tikdoel"][1] >= 44, json.dumps(menu["tikdoel"]))
+        check("het menu opent bij een klik en sluit bij een klik ernaast",
+              menu["opentNaKlik"] and menu["sluitBuitenKlik"], json.dumps(menu))
+        check("op je eigen profiel staat er geen menu", not menu["menuBijEigen"], "")
+        check("een band is wel te melden, niet te blokkeren",
+              menu["bandItems"] == ["Band melden"], json.dumps(menu["bandItems"]))
+        check("zonder eigen profiel staat er geen menu",
+              not menu["menuZonderProfiel"], "")
+
+        blok = page.evaluate("""async () => {
+          const r = {};
+          await blokkeerMuzikantUitvoeren('m2', 'Dylan');
+          r.rijen = window.TT_STUB.data.musician_blocks.map(b => b.blocker_id + '>' + b.blocked_id);
+          r.geblokkeerd = isGeblokkeerd('m2');
+          r.ikZelf = blokkeerIkZelf('m2');
+          zetVeiligheidMenu('musicianModalActies', 'muzikant', 'm2', 'Dylan');
+          r.itemsNa = Array.from(document.querySelectorAll('#musicianModalActies .nav-menu-item')).map(b => b.textContent);
+          // De omgekeerde richting: een ander blokkeert mij. Ik zie hem niet
+          // meer in de zoekresultaten, maar ik kan die blokkade niet opheffen.
+          blokkadeOpMij.add('m3');
+          r.andersom = isGeblokkeerd('m3');
+          r.andersomIkZelf = blokkeerIkZelf('m3');
+          return r;
+        }""")
+        check("blokkeren schrijft precies één rij weg",
+              blok["rijen"] == ["m1>m2"], json.dumps(blok["rijen"]))
+        check("de geblokkeerde telt daarna als geblokkeerd",
+              blok["geblokkeerd"] and blok["ikZelf"], json.dumps(blok))
+        check("het menu biedt daarna 'Blokkade opheffen'",
+              blok["itemsNa"] == ["Muzikant melden", "Blokkade opheffen"], json.dumps(blok["itemsNa"]))
+        check("een blokkade van een ander werkt ook, maar is niet op te heffen",
+              blok["andersom"] and not blok["andersomIkZelf"], json.dumps(blok))
+
+        zoek = page.evaluate("""async () => {
+          hasOwnProfile = false;
+          window.TT_STUB.rpcResults.tt_resolve_search_origin = [{ lat: 52.0, lng: 4.3 }];
+          window.TT_STUB.rpcResults.tt_search_musicians_anon = () => ([
+            { musician_id: 'm2', distance_km: 3, is_stale: false },
+            { musician_id: 'm3', distance_km: 4, is_stale: false },
+            { musician_id: 'm4', distance_km: 5, is_stale: false }
+          ]);
+          const publiek = (id, naam) => ({
+            id, username: naam, age: 30, city: 'Delft', bio: '', goal: null,
+            profile_color: '#f5c518', avatar_url: null, updated_at: new Date().toISOString(),
+            instrument_levels: [{ instrument: 'Drums', niveau: 3 }], genres: ['Rock'], songs: []
+          });
+          window.TT_STUB.rpcResults.tt_get_musicians_public =
+            [publiek('m2', 'dylan'), publiek('m3', 'sanne'), publiek('m4', 'kim')];
+          document.getElementById('filterCity').value = 'Delft';
+          document.getElementById('filterRadius').value = '50';
+          await runSearch();
+          await new Promise(r => setTimeout(r, 200));
+          return { tekst: document.getElementById('searchResults').innerText,
+                   ids: lastMusicianResults.map(m => m.id) };
+        }""")
+        check("een geblokkeerde muzikant valt uit het zoekresultaat",
+              zoek["ids"] == ["m4"], json.dumps(zoek["ids"]))
+        check("en de teller telt hem ook niet mee",
+              "1 muzikant gevonden" in zoek["tekst"], zoek["tekst"][:200])
+
+        inbox = page.evaluate("""async () => {
+          hasOwnProfile = true;
+          const nu = new Date().toISOString();
+          window.TT_STUB.data.messages = [
+            { id: 'x1', sender_id: 'm2', recipient_id: 'm1', body: 'Van de geblokkeerde', created_at: nu, read_at: null },
+            { id: 'x2', sender_id: 'm1', recipient_id: 'm2', body: 'Mijn eigen bericht', created_at: nu, read_at: nu },
+            { id: 'x3', sender_id: 'm5', recipient_id: 'm1', body: 'Van iemand anders', created_at: nu, read_at: null }
+          ];
+          document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+          document.getElementById('view-messages').classList.add('active');
+          await loadInbox();
+          await new Promise(r => setTimeout(r, 120));
+          await refreshUnreadBadge();
+          await new Promise(r => setTimeout(r, 60));
+          return {
+            tekst: document.getElementById('messagesInboxList').innerText,
+            rijen: document.querySelectorAll('#messagesInboxList .messages-conv-row').length,
+            badge: document.getElementById('unreadBadge').textContent
+          };
+        }""")
+        check("het gesprek met een geblokkeerde verdwijnt uit de inbox",
+              inbox["rijen"] == 1 and "Van de geblokkeerde" not in inbox["tekst"],
+              json.dumps(inbox))
+        check("de ongelezen-teller telt zijn bericht niet mee",
+              inbox["badge"] == "1", inbox["badge"])
+
+        melden = page.evaluate("""async () => {
+          const r = {};
+          openMeldModal('gesprek', 'm5', 'Kim');
+          r.titel = document.getElementById('meldTitel').textContent;
+          r.naam = document.getElementById('meldDoelNaam').textContent;
+          r.redenen = document.querySelectorAll('#meldRedenen .tag').length;
+          await verstuurMelding();
+          r.zonderReden = window.TT_STUB.data.musician_reports.length;
+          document.querySelectorAll('#meldRedenen .tag')[0].click();
+          r.gekozen = document.querySelectorAll('#meldRedenen .tag.selected').length;
+          document.getElementById('meldToelichting').value = 'Toelichting';
+          await verstuurMelding();
+          await new Promise(r => setTimeout(r, 80));
+          r.rijen = window.TT_STUB.data.musician_reports.map(x =>
+            [x.reporter_id, x.target_type, x.target_id, x.reason, x.note].join('|'));
+          r.dicht = !document.getElementById('meldModal').classList.contains('visible');
+          return r;
+        }""")
+        check("de meldmodal noemt het doel en biedt vijf redenen",
+              melden["titel"] == "Gesprek melden" and melden["naam"] == "Kim"
+              and melden["redenen"] == 5, json.dumps(melden))
+        check("zonder reden wordt er niets weggeschreven",
+              melden["zonderReden"] == 0, str(melden["zonderReden"]))
+        check("één gekozen reden tegelijk", melden["gekozen"] == 1, str(melden["gekozen"]))
+        check("de melding komt volledig in de tabel",
+              melden["rijen"] == ["m1|gesprek|m5|Ongepast gedrag|Toelichting"],
+              json.dumps(melden["rijen"]))
+        check("en het scherm sluit na het versturen", melden["dicht"], "")
+
+        lijst = page.evaluate("""async () => {
+          const r = {};
+          await openGeblokkeerdModal();
+          await new Promise(r => setTimeout(r, 120));
+          r.tekst = document.getElementById('geblokkeerdLijst').innerText;
+          r.rijen = document.querySelectorAll('#geblokkeerdLijst .geblokkeerd-rij').length;
+          await deblokkeerMuzikant('m2', 'Dylan');
+          await new Promise(r => setTimeout(r, 120));
+          r.naOpheffen = window.TT_STUB.data.musician_blocks.length;
+          r.nogGeblokkeerd = isGeblokkeerd('m2');
+          r.legeStaatKnoppen = document.querySelectorAll('#geblokkeerdLijst .empty-state .btn').length;
+          closeGeblokkeerdModal();
+          return r;
+        }""")
+        check("Instellingen toont de geblokkeerde muzikant met een naam",
+              lijst["rijen"] == 1 and "dylan" in lijst["tekst"].lower(), json.dumps(lijst))
+        check("opheffen verwijdert de rij uit de database",
+              lijst["naOpheffen"] == 0 and not lijst["nogGeblokkeerd"], json.dumps(lijst))
+        check("de lege lijst is een lege staat met precies één knop (§15)",
+              lijst["legeStaatKnoppen"] == 1, str(lijst["legeStaatKnoppen"]))
+
+        check("geen paginafouten in blok 22", not page_errors, "; ".join(page_errors)[:300])
+        page.evaluate("""() => {
+          blokkadeOpMij.clear(); blokkadeDoorMij.clear();
+          window.TT_STUB.data.musician_blocks = [];
+          window.TT_STUB.data.musician_reports = [];
+          window.TT_STUB.data.messages = [];
+          window.TT_STUB.reset();
+        }""")
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
