@@ -58,13 +58,37 @@ in blok 1. Vijf schermafdrukken op 390×844 zelf bekeken: het menu in de
 profielkop, de meldmodal, de lijst in Instellingen, de tegel in Instellingen en
 het gesprek.
 
-**Nog te doen door Ronald — zonder dit werkt er niets op de live site.**
-Het script `_niet-uploaden-tt-06-melden-blokkeren.sql` in de gedeelde map
-draaien in Supabase. Het maakt `musician_blocks` en `musician_reports` aan met
-hun RLS-regels. **Bovenaan dat script staat één controleregel**: hij drukt af
-welk type `musicians.id` heeft. Staat daar niet `uuid`, dan stoppen en het
-melden — de rest van het script gaat van `uuid` uit (**Aanname**, niet
-geverifieerd: Claude heeft geen databasetoegang).
+**Database: gedaan en geverifieerd, 18-09-2026.** Ronald heeft
+`_niet-uploaden-tt-06-melden-blokkeren.sql` gedraaid. **Geverifieerd** via de
+browserpane op talenttent.org: `musician_blocks` en `musician_reports` bestaan
+en zijn bereikbaar, met een niet-bestaande tabelnaam als controle (die geeft
+PGRST205, de twee nieuwe niet). De aanname dat `musicians.id` van het type
+`uuid` is, is daarmee ook bevestigd — anders was het script gezakt op de
+refererende sleutel.
+
+**Valkuil, vastgelegd zodat hij geen tweede keer een sessie kost.** Direct na
+het draaien van het tweede blok gaf `musician_reports` nog **PGRST205 — "Could
+not find the table in the schema cache"**, twee metingen lang, met twaalf
+seconden ertussen. Claude concludeerde daaruit dat het blok niet was
+aangekomen. Dat was onjuist: de tabel stond er wel, maar PostgREST had zijn
+schemacache nog niet herladen. Een paar minuten later loste het vanzelf op.
+**Regel voor een volgende keer:** PGRST205 op een zojuist aangemaakte tabel is
+geen bewijs dat de tabel ontbreekt. Meet opnieuw na enkele minuten, of laat
+Ronald `select to_regclass('public.<tabel>');` draaien — die kijkt in de
+database zelf en niet in de cache.
+
+**Nog wel te doen door Ronald — bestandsplek in beide repo's.** De nieuwe
+teststub staat op `tests/supabase-stub.js`; hij hoort op
+`tests/stub/supabase-stub.js`, waar nu nog de oude versie staat. Oorzaak: de
+oplevering noemde de doelmap alleen tussen haakjes achter een platte
+bestandsnaam. Te herstellen: `supabase-stub.js` opnieuw uploaden ín `tests/stub/`,
+daarna `tests/supabase-stub.js` verwijderen.
+
+**Laag 2 staat nog open.** Laag 1 draait tegen de stub en toetst dus geen enkele
+RLS-regel. Blokkeren, deblokkeren en melden op de echte site zijn nog niet
+doorlopen; dat vraagt dat Ronald zelf in de browserpane inlogt (§12 van de
+projectinstructies). Gemeten 18-09-2026: er was op dat moment geen sessie actief
+in de pane.
 
 **Bewuste grenzen van deze bouw, zodat ze niet als bug terugkomen.**
 
@@ -3650,7 +3674,7 @@ herzieningsmomenten in TT-63 nog moeten gebeuren.
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-06** | Rapporteren en blokkeren | **Gebouwd en getest 18-09-2026, zie Laatste update bovenaan.** Meldknop + blokkeren, verplicht voordat er actief geworven wordt. **Prioriteit opgehoogd 13-08-2026 (V-05, Ronalds akkoord):** van "geparkeerd" naar **nodig vóór de eerste storeaanvraag** — beide app-stores eisen dit vermoedelijk bij vrij berichtenverkeer tussen gebruikers (aanname, het beleid zelf is niet gelezen). De drie beslissingen van 08-08-2026 zijn op 18-09-2026 genomen. **Blokkeert nog op:** Ronald moet `_niet-uploaden-tt-06-melden-blokkeren.sql` in Supabase draaien vóórdat dit werkt op de live site. Gevolg voor TT-63: de herzieningsmomenten voor gebruiksvoorwaarden en gedragscode ("volgt binnenkort") komen daarmee in beeld |
+| **TT-06** | Rapporteren en blokkeren | **Gebouwd en getest 18-09-2026, zie Laatste update bovenaan.** Meldknop + blokkeren, verplicht voordat er actief geworven wordt. **Prioriteit opgehoogd 13-08-2026 (V-05, Ronalds akkoord):** van "geparkeerd" naar **nodig vóór de eerste storeaanvraag** — beide app-stores eisen dit vermoedelijk bij vrij berichtenverkeer tussen gebruikers (aanname, het beleid zelf is niet gelezen). De drie beslissingen van 08-08-2026 zijn op 18-09-2026 genomen. **De twee tabellen staan in productie, geverifieerd via de browserpane op 18-09-2026.** **Nog open:** laag 2 (blokkeren, deblokkeren en melden op de echte site, met een echte login) — laag 1 draait tegen de stub en toetst geen RLS. Gevolg voor TT-63: de herzieningsmomenten voor gebruiksvoorwaarden en gedragscode ("volgt binnenkort") komen daarmee in beeld |
 | **TT-229** | Bandomgeving werkt niet meer | **Opgelost 11-09-2026.** Geen bandprobleem: de bevestigingsvraag lag onzichtbaar achter "Bandleden beheren" door een gelijke `z-index`. Opgelost in de standaard — de laatst geopende modal ligt altijd bovenop (`initModalStapeling()` in `core.js`). Zie Deel 3 |
 | **TT-231** | Vaste Playwright-testset wordt leidend | **Laag 1 opgeleverd 11-09-2026:** `tests/tt_tests.py` + `tests/stub/supabase-stub.js`, tien blokken, 62 controles. Draait bij elke wijziging vóór oplevering. **Laag 2 is verschoven van "kan niet" naar "kan wel"** — zie Deel 3, de bereikbaarheidscorrectie. Dat deel is nog niet als vaste doorloop vastgelegd |
 | **TT-287** | Profiel en band van een ander niet te bedienen | **Nieuw en opgelost 16-09-2026.** Tikvlak van het kruis besloeg het hele venster, en `closeMusicianModal()` brak zonder klik-gegeven. Gemeld door de monitor (20× TypeError). Zie Laatste update |
