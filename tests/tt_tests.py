@@ -2533,6 +2533,159 @@ def blok_browser():
           document.getElementById('wbjEmail').value = '';
         }""")
 
+        # ------------------------------------------------------------------
+        # Blok 25 — TT-301: gecentreerd woordmerk en terugknop linksboven
+        # ------------------------------------------------------------------
+        print("\nBlok 25 — de kop: gecentreerd woordmerk en terugknop (TT-301)")
+
+        html_bron = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        check("'THE' staat nergens meer in het woordmerk",
+              "THE </span>" not in html_bron, "woordmerk bevat nog THE")
+
+        kop301 = page.evaluate("""() => {
+          const h = document.querySelector('header');
+          const logo = h.querySelector('.logo');
+          const terug = document.getElementById('navTerugBtn');
+          const ham = document.getElementById('navMenuBtn');
+          const hb = h.getBoundingClientRect();
+          const lb = logo.getBoundingClientRect();
+          const tb = terug.getBoundingClientRect();
+          const kb = ham.getBoundingClientRect();
+          return {
+            kopMid: Math.round(hb.left + hb.width / 2),
+            logoMid: Math.round(lb.left + lb.width / 2),
+            terugLinks: Math.round(tb.left - hb.left),
+            hamRechts: Math.round(hb.right - kb.right),
+            terugB: Math.round(tb.width), terugH: Math.round(tb.height),
+            terugMidY: Math.round(tb.top + tb.height / 2),
+            hamMidY: Math.round(kb.top + kb.height / 2),
+            logoPx: Math.round(parseFloat(getComputedStyle(logo).fontSize)),
+            terugInHeader: h.contains(terug), hamInHeader: h.contains(ham)
+          };
+        }""")
+        check("het woordmerk staat midden in de kop",
+              abs(kop301["kopMid"] - kop301["logoMid"]) <= 2, json.dumps(kop301))
+        check("terugknop en hamburger staan allebei in de koprij zelf",
+              kop301["terugInHeader"] and kop301["hamInHeader"], json.dumps(kop301))
+        check("beide knoppen staan even ver van hun eigen rand (16px)",
+              kop301["terugLinks"] == 16 and kop301["hamRechts"] == 16, json.dumps(kop301))
+        check("de terugknop haalt het tikdoel van 44x44px",
+              kop301["terugB"] >= 44 and kop301["terugH"] >= 44, json.dumps(kop301))
+        check("terugknop en hamburger staan op dezelfde middellijn",
+              abs(kop301["terugMidY"] - kop301["hamMidY"]) <= 2, json.dumps(kop301))
+        check("op een telefoon hoeft het woordmerk niet te krimpen (28px)",
+              kop301["logoPx"] == 28, json.dumps(kop301))
+
+        teken = page.evaluate("""() => {
+          const t = document.querySelector('#navTerugBtn svg');
+          const h = document.querySelector('#navMenuBtn svg');
+          return {
+            dikte: t.getAttribute('stroke-width'), hamDikte: h.getAttribute('stroke-width'),
+            vulling: t.getAttribute('fill'),
+            lijn: !!t.querySelector('polyline')
+          };
+        }""")
+        check("het terugteken is een lijn-teken met dezelfde dikte als de hamburger (huisstijl §12)",
+              teken["dikte"] == teken["hamDikte"] == "2" and teken["vulling"] == "none"
+              and teken["lijn"], json.dumps(teken))
+
+        zicht = page.evaluate("""() => {
+          const btn = document.getElementById('navTerugBtn');
+          const zichtbaar = () => getComputedStyle(btn).visibility === 'visible';
+          const uit = {};
+          // Opstartstand nabootsen: geen eigen stappen, niets open.
+          terugDiepte = 0; werkTerugKnopBij();
+          uit.bijStart = zichtbaar();
+          uit.magBijStart = magTerug();
+          const hashVoor = location.hash;
+          terugKnop();
+          uit.hashNaLozeKlik = location.hash === hashVoor;
+          showView('search');
+          uit.naEenStap = zichtbaar();
+          const modal = document.getElementById('musicianModal');
+          terugDiepte = 0; modal.classList.add('visible');
+          uit.metOpenVenster = magTerug();
+          modal.classList.remove('visible');
+          return uit;
+        }""")
+        check("op het openingsscherm is er niets om naar terug te gaan en is de knop onzichtbaar",
+              not zicht["bijStart"] and not zicht["magBijStart"], json.dumps(zicht))
+        check("een klik doet dan ook niets — de knop verlaat de app nooit",
+              zicht["hashNaLozeKlik"], json.dumps(zicht))
+        check("na één stap is de knop zichtbaar",
+              zicht["naEenStap"], json.dumps(zicht))
+        check("een open venster telt zelf als stap terug, ook zonder eigen stappen",
+              zicht["metOpenVenster"], json.dumps(zicht))
+
+        vensterkop = page.evaluate("""() => {
+          const uit = [];
+          document.querySelectorAll('.modal-kop').forEach(k => {
+            const box = k.closest('.modal-box');
+            const terug = k.querySelector('.kop-terug');
+            uit.push({ id: box ? box.id : '?', terug: !!terug,
+                       klik: terug ? (terug.getAttribute('onclick') || '') : '' });
+          });
+          return uit;
+        }""")
+        check("beide koprijen in een venster hebben dezelfde terugknop",
+              len(vensterkop) == 2 and all(v["terug"] and "terugKnop()" in v["klik"]
+                                           for v in vensterkop), json.dumps(vensterkop))
+
+        # Het smalste canvas dat bestaat: tussen 561 en circa 780px venster is
+        # #appRoot 50% breed (TT-224), dus smaller dan een telefoon. Daar moet
+        # het woordmerk een trede kleiner, anders loopt het over de knoppen.
+        page.set_viewport_size({"width": 561, "height": 844})
+        page.wait_for_timeout(80)
+        smal = page.evaluate("""() => {
+          fitKopLogo(document);
+          const h = document.querySelector('header');
+          const logo = h.querySelector('.logo');
+          const terug = document.getElementById('navTerugBtn').getBoundingClientRect();
+          const ham = document.getElementById('navMenuBtn').getBoundingClientRect();
+          const lb = logo.getBoundingClientRect();
+          return {
+            px: Math.round(parseFloat(getComputedStyle(logo).fontSize)),
+            overlapLinks: Math.round(terug.right - lb.left),
+            overlapRechts: Math.round(lb.right - ham.left)
+          };
+        }""")
+        check("op het smalste canvas krimpt het woordmerk mee",
+              smal["px"] < 28, json.dumps(smal))
+        check("en het loopt daar niet over de knoppen heen",
+              smal["overlapLinks"] <= 0 and smal["overlapRechts"] <= 0, json.dumps(smal))
+
+        # De krapste stand die bestaat: het smalste canvas én een koprij met
+        # drie knoppen (terug, ⋯, kruis). Daar zijn de noodtreden voor.
+        drie = page.evaluate("""() => {
+          const acties = document.getElementById('musicianModalActies');
+          acties.innerHTML = '<button class="nav-menu-btn">x</button>';
+          const m = document.getElementById('musicianModal');
+          m.classList.add('visible');
+          fitKopLogo(document);
+          const kop = m.querySelector('.modal-kop');
+          const logo = kop.querySelector('.logo');
+          const lb = logo.getBoundingClientRect();
+          const ab = kop.querySelector('.kop-links').getBoundingClientRect();
+          const rb = kop.querySelector('.modal-kop-acties').getBoundingClientRect();
+          const kb = kop.getBoundingClientRect();
+          m.classList.remove('visible'); acties.innerHTML = '';
+          return {
+            px: Math.round(parseFloat(getComputedStyle(logo).fontSize)),
+            links: Math.round(ab.right - lb.left), rechts: Math.round(lb.right - rb.left),
+            mid: Math.round(kb.left + kb.width / 2) - Math.round(lb.left + lb.width / 2)
+          };
+        }""")
+        check("met drie knoppen in een koprij blijft het woordmerk vrij van de knoppen",
+              drie["links"] <= 0 and drie["rechts"] <= 0, json.dumps(drie))
+        check("en het staat daar nog steeds in het midden",
+              abs(drie["mid"]) <= 2, json.dumps(drie))
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.wait_for_timeout(80)
+        page.evaluate("() => { fitKopLogo(document); showView('landing'); }")
+
+        check("geen paginafouten in blok 25", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
