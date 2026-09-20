@@ -64,7 +64,7 @@
       <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
     </button>
   </div>
-  <div class="logo" onclick="showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="color:var(--text);">TALENT</span> TENT</div>
+  <div class="logo" onclick="naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span style="color:var(--text);">TALENT</span> TENT</div>
   <div class="kop-vak kop-rechts">
     <!-- TT-63/nav-herziening (09-08-2026): hamburgermenu voor minder-frequente
          links (Ronald: te veel tabbladen, op mobiel al horizontaal scrollen).
@@ -138,6 +138,14 @@
      verborgen en neemt deze balk het over. Alle bestaande knop-id's blijven
      staan, zodat de rest van de code ongewijzigd blijft werken. -->
 <nav class="app-bottom-nav" id="appBottomNav" aria-label="Hoofdnavigatie">
+  <!-- TT-303 (20-09-2026, Ronald): volgorde Profiel · Zoeken · Berichten ·
+       Bands. Mijn Profiel is het hoogste scherm en staat daarom links, op de
+       plek waar een gebruiker "begin hier" leest. Was Zoeken · Berichten ·
+       Bands · Profiel. Alle knop-id's blijven ongewijzigd. -->
+  <button class="bottom-nav-btn" id="bottomNavProfile" onclick="requireLogin('myprofile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    <span>Profiel</span>
+  </button>
   <button class="bottom-nav-btn" id="bottomNavSearch" onclick="showView('search')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
     <span>Zoeken</span>
@@ -152,10 +160,6 @@
   <button class="bottom-nav-btn" id="bottomNavBands" onclick="requireLogin('bands')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
     <span>Bands</span>
-  </button>
-  <button class="bottom-nav-btn" id="bottomNavProfile" onclick="requireLogin('myprofile')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-    <span>Profiel</span>
   </button>
 </nav>
 
@@ -1942,7 +1946,7 @@
           <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
         </button>
       </div>
-      <div class="logo" onclick="closeMusicianModal();showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="color:var(--text);">TALENT</span> TENT</div>
+      <div class="logo" onclick="closeMusicianModal();naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span style="color:var(--text);">TALENT</span> TENT</div>
       <!-- TT-06 (18-09-2026): melden en blokkeren staan achter een ⋯-menu
            (huisstijl §8). In de koprij, niet naast de naam: een vaste plek die
            niet meeschuift met de lengte van een naam (§2.1). -->
@@ -1972,7 +1976,7 @@
           <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
         </button>
       </div>
-      <div class="logo" onclick="document.getElementById('bandModal').classList.remove('visible');showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="color:var(--text);">TALENT</span> TENT</div>
+      <div class="logo" onclick="document.getElementById('bandModal').classList.remove('visible');naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span style="color:var(--text);">TALENT</span> TENT</div>
       <!-- TT-06: zelfde ⋯-menu als bij het muzikantprofiel. Een band is wel te
            melden, niet te blokkeren — blokkeren gaat over een persoon. -->
       <div class="kop-vak modal-kop-acties">
@@ -2429,7 +2433,7 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260920b"></script>
+<script src="core.js?v=20260920c"></script>
 <script src="utils.js?v=20260920b"></script>
 <script src="veiligheid.js?v=20260918a"></script>
 <script src="auth.js?v=20260920a"></script>

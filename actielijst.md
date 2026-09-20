@@ -1,6 +1,57 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 20-09-2026 (vervolg 3) — **TT-302 (P1) gebouwd en
+**Laatste update:** 20-09-2026 (vervolg 4) — **TT-303 (P2) gebouwd en getest:
+Mijn Profiel is het hoogste scherm, het woordmerk gaat daarheen, de terugknop
+gaat op een hoofdtabblad omhoog in plaats van terug, en de onderbalk staat op
+Profiel · Zoeken · Berichten · Bands. Eindstand 387 van 387.**
+
+**Aanleiding.** Een punt uit de UX-beoordeling van TT-302: op de vier
+hoofdtabbladen liep de terugknop door je eigen klikpad. Gemeten op de live
+site: Zoeken → Berichten → Bands, dan terug, bracht je op Berichten. Boven een
+tabblad ligt niets, dus dat voelt willekeurig. Ronald, 20-09-2026: *"we kunnen
+het muzikantenprofiel als hoogste scherm aanhouden? ingelogd klikken op het
+woordmerk gaat dan ook naar het profiel. als je eenmaal bent ingelogd, dan heb
+je niets meer te zoeken op de landingspagina."*
+
+**Toets P2:** werkt het, maar kost het moeite of vertrouwen? Ja — een knop die
+op de ene plek omhoog gaat en op de andere door je geschiedenis loopt, leert de
+gebruiker niets.
+
+**De drie besluiten van Ronald (20-09-2026).**
+
+| Vraag | Besluit |
+|---|---|
+| Wat is het hoogste scherm? | Mijn Profiel als je bent ingelogd, de landingspagina als je bent uitgelogd |
+| Wat doet de terugknop op Zoeken, Berichten en Bands? | Naar Mijn Profiel. Op Mijn Profiel zelf staat hij niet |
+| Volgorde onderin? | Profiel · Zoeken · Berichten · Bands |
+
+**Wat er gebouwd is.**
+
+- **`core.js`** — `hoogsteScherm()`, `naarHoogsteScherm()`, `TAB_VIEWS`,
+  `terugGaatOmhoog()`, en `huidigeView` die `showView()` bijhoudt.
+- **`index.html`** — alle drie de woordmerken (kop, muzikantvenster,
+  bandvenster) roepen `naarHoogsteScherm()` aan. De vier knoppen van de
+  onderbalk staan in de nieuwe volgorde; alle id's zijn ongewijzigd, dus de
+  rest van de code merkt er niets van.
+
+**Wat opzettelijk niet is gewijzigd.** Dieper in de app blijft de terugknop
+gewoon `history.back()` doen — daar ligt er wél iets boven je, en daar klopte
+hij al.
+
+**Kanttekening, genoemd maar niet opgelost.** Onderin staat Zoeken nog steeds
+prominent, en Mijn Profiel staat nu links op de plek die als "begin hier"
+leest. Twee schermen die zich als begin gedragen. Bewuste keuze van Ronald,
+geen bevinding.
+
+**Nieuw in de vaste testset: blok 27** (7 controles) — de volgorde onderin, alle
+woordmerken, het hoogste scherm ingelogd en uitgelogd, geen terugknop op het
+hoogste scherm, wél op een tabblad, en dat een druk daar naar Mijn Profiel gaat
+in plaats van naar het vorige tabblad. **Blok 25 is aangepast:** de
+opstartstand wordt nu op het hoogste scherm gemeten.
+
+---
+
+**Vorige update:** 20-09-2026 (vervolg 3) — **TT-302 (P1) gebouwd en
 getest: de terugknop vraagt nu "terug zonder opslaan?" als er wijzigingen
 openstaan. Nog een druk op diezelfde knop bevestigt. Eindstand 380 van 380.**
 
@@ -4253,6 +4304,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-303** | Terugknop liep op een tabblad door het klikpad | **Gebouwd en getest 20-09-2026 (vervolg 4).** Mijn Profiel is het hoogste scherm (uitgelogd de landingspagina); het woordmerk gaat daarheen en de terugknop op Zoeken, Berichten en Bands ook. Onderbalk nu Profiel · Zoeken · Berichten · Bands. Volledige tekst: Laatste update bovenaan |
 | **TT-301** | Woordmerk gecentreerd en terugknop linksboven | **Gebouwd en getest 20-09-2026 (vervolg 2).** Woordmerk in het midden in de hele app, zonder "THE"; terugknop linksboven als lijn-teken, die `history.back()` doet. Ook in de koprij van het muzikant- en bandprofiel. Volledige tekst: Laatste update bovenaan. **Nog open:** laag 2 op een echte telefoon, vooral iOS |
 | **TT-297** | De SMTP-verbinding heeft geen eigen time-out | **Nieuw, 20-09-2026.** Gemeten die dag met een verkeerde `SMTP_HOST`: de Edge Function bleef hangen tot `pg_net` er na 30 seconden zelf mee stopte, zonder één regel in het functielog. **Toets:** werkt het, maar kost het moeite of vertrouwen? Ja — een storing bij de mailserver levert nu geen bruikbare foutmelding op, alleen stilte, en dat is precies wat TT-01 drie weken heeft opgehouden |
 | **TT-292** | Beheerscherm voor meldingen | **Nieuw, 18-09-2026 (TT-06).** Meldingen komen in `musician_reports` terecht en Ronald leest ze in de tabelweergave van Supabase. Er is geen scherm in de app om ze af te handelen (bekijken, status zetten, de gemelde muzikant tijdelijk onzichtbaar maken). Bewust buiten TT-06 gehouden: die moest eerst een meldknop opleveren, niet een moderatieomgeving. Bandkant: niet van toepassing, hetzelfde scherm toont beide soorten meldingen. **Toets P2:** melden werkt, maar afhandelen kost nu een omweg buiten de app |

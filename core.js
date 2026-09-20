@@ -859,6 +859,28 @@ function safeHistoryReplace(stateObj, hash) {
 // heeft gezet.
 let terugDiepte = 0;
 
+// De view die nu actief is. showView() houdt hem bij; de terugknop heeft hem
+// nodig om te weten of hij omhoog moet of terug.
+let huidigeView = 'landing';
+
+// ─── Het hoogste scherm (TT-303, 20-09-2026, Ronald) ─────────────────────
+// Ingelogd is dat Mijn Profiel: daar komt iedereen na het inloggen toch al
+// uit, en op de landingspagina heeft een ingelogde gebruiker niets meer te
+// zoeken. Uitgelogd blijft het de landingspagina. Het woordmerk gaat hierheen,
+// en de terugknop op een hoofdtabblad ook.
+function hoogsteScherm() {
+  return currentUser ? 'myprofile' : 'landing';
+}
+function naarHoogsteScherm() {
+  showView(hoogsteScherm());
+}
+
+// De drie hoofdtabbladen onder het hoogste scherm. Daar betekent de terugknop
+// "een niveau omhoog", niet "de vorige pagina": boven een tabblad ligt niets,
+// dus teruglopen door je eigen klikpad voelt willekeurig (UX-beoordeling
+// 20-09-2026).
+const TAB_VIEWS = ['search', 'messages', 'bands'];
+
 // Een open venster, gesprek of tegelscherm is óók een stap terug, ook als de
 // teller nul is (bijv. na verversen op een gedeelde profiellink). Dezelfde
 // drie lagen, in dezelfde volgorde, als de popstate-afhandeling hieronder.
@@ -867,7 +889,21 @@ function magTerug() {
   const draad = document.getElementById('messagesThreadPanel');
   if (draad && draad.style.display !== 'none' && activeConversationId) return true;
   if (activeTegelScreen !== 'overview') return true;
+  // Op het hoogste scherm is er niets boven je en niets om naar terug te gaan.
+  if (huidigeView === hoogsteScherm()) return false;
+  // Op een hoofdtabblad wijst de knop naar het hoogste scherm.
+  if (TAB_VIEWS.includes(huidigeView)) return true;
   return terugDiepte > 0;
+}
+
+// Staat er niets open en sta je op een hoofdtabblad? Dan gaat de knop omhoog
+// in plaats van terug.
+function terugGaatOmhoog() {
+  if (document.querySelector('.modal-overlay.visible')) return false;
+  const draad = document.getElementById('messagesThreadPanel');
+  if (draad && draad.style.display !== 'none' && activeConversationId) return false;
+  if (activeTegelScreen !== 'overview') return false;
+  return TAB_VIEWS.includes(huidigeView);
 }
 
 // De knop verdwijnt als er niets is om naar terug te gaan, maar zijn vak
@@ -880,6 +916,7 @@ function werkTerugKnopBij() {
 
 function terugKnop() {
   if (!magTerug()) return; // nooit de app uit via deze knop
+  if (terugGaatOmhoog()) { naarHoogsteScherm(); return; } // TT-303
   history.back();
 }
 
@@ -918,6 +955,7 @@ function ontwapenTerug() {
 }
 
 function showView(view, mode) {
+  huidigeView = view; // TT-303: de terugknop leest dit
   closeNavMenu();
   sluitOpruimModals(); // TT-264: een view-wissel laat nooit een spelende video achter
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
