@@ -1,6 +1,89 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 20-09-2026 (vervolg 2) — **TT-301 (P2) gebouwd en
+**Laatste update:** 20-09-2026 (vervolg 3) — **TT-302 (P1) gebouwd en
+getest: de terugknop vraagt nu "terug zonder opslaan?" als er wijzigingen
+openstaan. Nog een druk op diezelfde knop bevestigt. Eindstand 380 van 380.**
+
+**Aanleiding.** Ronald, 20-09-2026, na de oplevering van TT-301: *"wat ik mis
+is de opmerking bij niet opgeslagen wijzigingen."*
+
+**Wat er misging.** De Terug-knop ónder in een tegelscherm (Wie ben je, Wat
+speel je, Wat zoek je, Je setlist, Je mediahoek) vroeg al "Terug zonder
+opslaan?" zodra er iets gewijzigd was — `handleCancelClick()`, huisstijl §8.
+De afhandeling van "terug" deed dat niet: die sloot het tegelscherm meteen.
+**Dit gat bestond al vóór TT-301**, voor de terugknop van Android; de nieuwe
+knop in de kop maakte het op elk toestel bereikbaar.
+
+**Toets P1:** verandert dit of iemand een tweede keer opent? Ja — wie zijn
+ingetypte wijzigingen kwijtraakt door één tik op een nieuwe knop, komt met
+minder vertrouwen terug. Het grenst aan P0 ("raakt data kwijt"), maar het gaat
+om niet-opgeslagen invoer, niet om gegevens in de database. Zelfde soort als
+TT-281, dat wél P0 is omdat daar opgeslagen data verdwijnt.
+
+**Wat er gebouwd is.**
+
+- **`musicians.js`** — `TEGEL_WIJZIGINGEN` en `tegelHeeftWijzigingen()`. De
+  vergelijking stond in elk van de vijf cancel-functies apart; die staat nu
+  één keer, en alle vijf gebruiken hem (§2, regel 11). Zo kan één weg terug
+  nooit achterlopen op de andere.
+- **`core.js`** — `wapenTerug()` en `ontwapenTerug()`. De afhandeling van
+  "terug" stelt dezelfde vraag vóórdat een tegelscherm sluit. De stap gaat
+  eerst terug in de geschiedenis, zodat de gebruiker precies blijft staan
+  waar hij stond.
+- **`index.html` en `styles.css`** — `#terugLabel`, een tekstregel binnen
+  `.app-topbar`, en de stand `.kop-terug.gewapend`.
+
+**De vorm, na een UX-beoordeling en drie besluiten van Ronald.**
+
+| Vraag | Besluit |
+|---|---|
+| Waar staat de vraag? | Eén plek: als tekstregel onder de kop, voor béide wegen terug |
+| Wat bevestigt? | De terugknop zelf — nog een keer drukken. Niet de regel |
+| Welke vorm heeft de regel? | Een tekstregel. Geen rand, geen vlak, geen knopvorm |
+
+**Waarom niet rechtsonder, bij de terugknop van de telefoon.** Die knop staat
+op een Pixel linksonder en op een Samsung rechtsonder, en bij gebaren veeg je
+vanaf beide randen. Android 16 QPR3 voegt bovendien een instelling toe waarmee
+de gebruiker die volgorde zelf omdraait. Er valt dus niets aan te wijzen. Een
+tweede plek zou ook onder de vouw kunnen vallen, en juist dát was Ronalds reden
+voor een terugknop in de kop: *"mijn probleem is dat de terugknop vaak na de
+vouw staat."*
+
+**Waarom geen venster.** Eerste versie gebruikte `showConfirm()`. Dat venster
+is op een telefoon volledig scherm (TT-U25), en dat is te zwaar voor één vraag
+achter een knop van 44px — Ronald: *"we introduceren een subtiele terugknop en
+voegen daar een schermvullende bevestiging aan toe."* Het venster is weer
+verwijderd; ook de extra parameter in `showConfirm()` die daarvoor nodig was,
+is weg (§2, regel 10).
+
+**Twee punten uit de UX-beoordeling, allebei verwerkt.**
+
+1. **De tweede tik moet landen waar de eerste was.** Een los label als doel
+   betekent dat je vinger op de terugknop staat en er niets gebeurt als je
+   daar nog eens drukt — precies wat een mens dan doet. De terugknop is nu
+   zelf het antwoord, net als de Terug-knop onderin (TT-226).
+2. **De regel mag niet op een toast lijken.** `.app-toast` is een donkere pil
+   met gouden rand, 13px vet, boven in beeld, en met `pointer-events: none`:
+   de gebruiker heeft geleerd dat zoiets vanzelf weggaat. Een omlijnde pil op
+   bijna dezelfde plek zou hij dus afwachten. Daarom een kale tekstregel.
+
+**Nooit twee vragen tegelijk.** Verschijnt de regel, dan valt de Terug-knop
+onderin terug naar zijn gewone tekst, en andersom. De Terug-knop onderin
+reageert op een klik ergens anders, maar de terugknop van een telefoon geeft
+geen klik — zonder deze koppeling zouden die twee samen in beeld kunnen staan.
+
+**Nieuw in de vaste testset: blok 26** (9 controles) — de vorm en de plek van
+de regel, eerste druk toont de vraag, tweede druk gaat terug, een tik ergens
+anders haalt hem weg, geen vraag zonder wijzigingen, nooit twee vragen
+tegelijk, en dat alle vijf de Terug-knoppen langs dezelfde controle lopen.
+
+**Wat nog open staat.** De wizard (`view-register`) en het bandformulier
+hebben hun eigen Terug/Annuleren-knoppen en vallen buiten deze ronde. Of de
+terugknop daar dezelfde vraag moet stellen, is een vraag aan Ronald.
+
+---
+
+**Vorige update:** 20-09-2026 (vervolg 2) — **TT-301 (P2) gebouwd en
 getest: het woordmerk staat in de hele app in het midden, met een terugknop
 linksboven. "THE" is uit het woordmerk gehaald. Eindstand 371 van 371.**
 
@@ -4138,6 +4221,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-302** | Terugknop sloot een bewerkscherm zonder te vragen | **Gebouwd en getest 20-09-2026 (vervolg 3).** De Terug-knop onder in een tegelscherm vroeg al "Terug zonder opslaan?"; de terugknop in de kop en die van het toestel niet. Één controle voor beide wegen (`tegelHeeftWijzigingen()`). Volledige tekst: Laatste update bovenaan. **Nog open:** de wizard en het bandformulier |
 | **TT-296** | Het digestvenster is een vaste 24 uur, niet "sinds de vorige verzending" | **Nieuw, 20-09-2026.** `send-digest` rekent het terugkijkvenster uit vanaf het moment van aanroepen: 1 dag bij dagelijks, 7 bij wekelijks. Er wordt nergens bijgehouden wat verstuurd is. Valt een run uit, of komt er iets binnen dat net buiten het raam valt, dan is die melding definitief weg. Achteraf is ook niet vast te stellen of iemand een bepaalde mail heeft gehad. **Toets:** verandert dit of iemand een tweede keer opent? Ja — een gemiste melding is een gemist bericht, precies de lus die TT-01 moet sluiten |
 | **TT-298** | Bounces komen nergens terecht, en registratie controleert het e-mailadres niet | **Nieuw, 20-09-2026.** Mailbevestiging staat uit in Supabase, dus een verzonnen adres komt ongehinderd de app in. Aangetoond dezelfde dag: het profiel van Ronald draagt `ronald@email.com`, dat bestaat niet, en de digest stuiterde terug met `550 mailbox unavailable`. Die bounce komt aan op `noreply@talenttent.org`, waar niemand en niets ernaar kijkt. **Nog niet gecontroleerd:** of SPF en DKIM voor `talenttent.org` goed staan. **Toets:** verandert dit of iemand een tweede keer opent? Ja, indirect maar hard — te veel bounces vanaf één domein kost de bezorgbaarheid van al het verkeer van dat domein. Bij negen testprofielen onschuldig, bij honderd echte gebruikers niet. **Vóór lancering**. *Deels ingehaald door TT-299 (20-09-2026): het verkeerde adres op Ronalds eigen profiel is vanaf de volgende upload in de app zelf te herstellen. De bounce-afhandeling en de SPF/DKIM-controle staan nog open.* |
 | **TT-293** | Modal-koprij loopt buiten het canvas op een smal bureaubladvenster | **GEBOUWD EN GETEST 18-09-2026.** **Melding Ronald:** bij een venster tussen circa 561 en 780px breed is `#appRoot` 50% van het venster (§11) en dus smaller dan een telefoon. Het woordmerk (28px, 263px breed) kromp niet mee; `.modal-box-kop { overflow: hidden }` knipte daardoor het ⋯-menu en het sluiten-kruisje weg — onzichtbaar en niet te bedienen. Gemeten door Ronald: 615px → 69px buiten beeld, 640px → 56px, 1280px → ruim binnen, 375px → 1px (net aan). Bestond al vóór TT-06, die maakte het 44px erger (het ⋯-menu staat in dezelfde rij). **Oorzaak, geverifieerd in de code:** `.modal-kop .logo` had geen `min-width: 0`, het browserdefault is `min-width: auto` — een flex-item kan dan nooit kleiner worden dan zijn eigen tekst. **Oplossing, zelfde aanpak als TT-249 (fitProfileName):** `min-width: 0` op `.modal-kop .logo`, en een nieuwe functie `fitModalLogo()` in `utils.js` (ladder 28·24·20·18·16px) die de lettergrootte op de grootste passende trede zet. Aangeroepen bij het openen van de muzikant- en de bandmodal, en op resize. Gewijzigd: `index.html`, `styles.css`, `utils.js`, `musicians.js`, `core.js`. **Geverifieerd:** blok 1 van de testset (326/326), haakjesbalans en `node --check` op alle vier gewijzigde JS-bestanden. **Geverifieerd, lokaal met Playwright:** het mechanisme werkt — het sluiten-kruisje blijft binnen de modal-box op 375/615/640/780/1280px, geen enkel geval geklemd. **Aanname:** de sandbox heeft geen netwerktoegang tot Google Fonts, dus deze test gebruikte een vervangend lettertype in plaats van Alfa Slab One — de exacte pixelwaarden uit Ronalds meting zijn dus niet met het echte lettertype herhaald. **Nog te bevestigen door Ronald:** met de browserpane op talenttent.org, bij 615 en 640px, of het ⋯-menu en het kruisje nu zichtbaar en bruikbaar zijn |

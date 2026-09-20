@@ -883,6 +883,40 @@ function terugKnop() {
   history.back();
 }
 
+// ─── Terug zonder opslaan (TT-302, 20-09-2026, Ronald) ───────────────────
+// Staan er wijzigingen open, dan gebeurt er bij de eerste druk niets, en
+// verschijnt de regel "Terug zonder opslaan?" onder de kop. De tweede druk
+// gaat wél terug. Bevestigen doe je dus op de knop waar je net op drukte —
+// niet op de regel zelf. Zelfde gedachte als de Terug-knop onder in het
+// scherm (TT-226), maar op een plek die altijd in beeld staat.
+let terugGewapend = false;
+
+function wapenTerug() {
+  terugGewapend = true;
+  const label = document.getElementById('terugLabel');
+  if (label) label.style.display = '';
+  document.getElementById('navTerugBtn')?.classList.add('gewapend');
+  // Nooit twee keer dezelfde vraag op één scherm: de Terug-knop onderin
+  // valt terug zodra deze regel verschijnt.
+  resetCancelButtonVanTegel();
+  // Pas ná de huidige klik luisteren, anders vangt hij die meteen zelf af.
+  // Zelfde patroon als handleCancelClick() in musicians.js (huisstijl §8).
+  setTimeout(() => {
+    document.addEventListener('click', function buitenKlik(e) {
+      if (!terugGewapend) return;
+      if (e.target.closest && e.target.closest('#navTerugBtn')) return;
+      ontwapenTerug();
+    }, { once: true });
+  }, 0);
+}
+
+function ontwapenTerug() {
+  terugGewapend = false;
+  const label = document.getElementById('terugLabel');
+  if (label) label.style.display = 'none';
+  document.getElementById('navTerugBtn')?.classList.remove('gewapend');
+}
+
 function showView(view, mode) {
   closeNavMenu();
   sluitOpruimModals(); // TT-264: een view-wissel laat nooit een spelende video achter
@@ -1122,8 +1156,18 @@ window.addEventListener('popstate', (e) => {
   // (bijv. "Wie ben je") — eerst dit subscherm sluiten, terug naar het
   // tegeloverzicht, pas bij een tweede terugdruk verder naar Mijn Profiel.
   if (activeTegelScreen !== 'overview') {
-    openTegelOverview();
+    // TT-302 (20-09-2026, Ronald): staan er wijzigingen open, dan gebeurt er
+    // bij de eerste druk niets en verschijnt de regel onder de kop. De stap
+    // gaat terug in de geschiedenis, zodat de gebruiker precies blijft staan
+    // waar hij stond. Geldt voor beide wegen terug — de pijl in de kop en de
+    // terugknop van het toestel lopen allebei hierlangs.
     safeHistoryPush(history.state, location.hash || '#profieltegels');
+    if (tegelHeeftWijzigingen() && !terugGewapend) {
+      wapenTerug();
+      return;
+    }
+    ontwapenTerug();
+    openTegelOverview();
     werkTerugKnopBij(); // TT-301
     return;
   }

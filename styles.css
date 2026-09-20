@@ -162,6 +162,21 @@
      huisstijl §12. Geen los ontwerp: één knopklasse, twee tekens. */
   .kop-terug svg { display: block; }
 
+  /* TT-302: de regel onder de kop bij onopgeslagen wijzigingen. Bewust géén
+     rand, géén vlak en géén hoeken: dat zou een knop of een toast nabootsen,
+     en allebei zijn het niet. Het is een tekstregel die uitlegt waarom er
+     niets gebeurde; bevestigen doe je op de terugknop zelf. Links uitgelijnd
+     met de terugknop erboven, zodat je ziet waar hij bij hoort. */
+  .terug-label {
+    padding: 0 16px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.2;
+  }
+  /* Zolang de vraag openstaat, laat de terugknop zien dat hij het antwoord is. */
+  .kop-terug.gewapend { background: var(--surface); border-color: var(--accent); }
+
   .logo {
     /* TT-U23 (12-08-2026): het logo is de home-knop, dus ook een tikdoel. */
     display: inline-flex;

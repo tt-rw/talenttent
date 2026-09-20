@@ -611,8 +611,47 @@ const TEGEL_SCREENS = { wieBenJe: 'wieBenJeScreen', watSpeelJe: 'watSpeelJeScree
 let activeTegelScreen = 'overview';
 let tegelScreenHistoryPushed = false;
 
+// TT-302 (20-09-2026, Ronald): "voeg de vraag 'terug zonder opslaan?' toe aan
+// beide terugknoppen." De Terug-knop ónder in een tegelscherm vroeg dat al
+// (handleCancelClick, huisstijl §8); de terugknop in de kop en de terugknop
+// van het toestel niet — die sloten het scherm meteen, met de ingetypte
+// wijzigingen erbij.
+//
+// De vergelijking per scherm stond tot nu toe in elk van de vijf
+// cancel-functies apart. Ze staat nu één keer hier, zodat beide wegen terug
+// dezelfde vraag stellen en er nooit één achterloopt (§2, regel 11).
+const TEGEL_WIJZIGINGEN = {
+  wieBenJe:   () => wbjFieldSnapshot() !== wbjSnapshot,
+  watSpeelJe: () => wspFieldSnapshot() !== wspSnapshot,
+  watZoekJe:  () => wzjFieldSnapshot() !== wzjSnapshot,
+  jeSetlist:  () => jstFieldSnapshot() !== jstSnapshot,
+  mediahoek:  () => mhFieldSnapshot() !== mhSnapshot
+};
+
+// TT-302: welke Terug-knop hoort bij welk tegelscherm. Nodig om die knop
+// terug te zetten zodra de regel onder de kop verschijnt — twee keer dezelfde
+// vraag op één scherm is er één te veel.
+const TEGEL_CANCEL_BTN = {
+  wieBenJe: 'wbjCancelBtn', watSpeelJe: 'wspCancelBtn', watZoekJe: 'wzjCancelBtn',
+  jeSetlist: 'jstCancelBtn', mediahoek: 'mhCancelBtn'
+};
+function resetCancelButtonVanTegel() {
+  const id = TEGEL_CANCEL_BTN[activeTegelScreen];
+  if (id) resetCancelButton(id);
+}
+
+// Staat er een tegelscherm open met wijzigingen die nog niet zijn opgeslagen?
+// Een scherm dat nog niet is geopend heeft geen momentopname; dat telt als
+// "geen wijzigingen", nooit als een fout die de terugknop blokkeert.
+function tegelHeeftWijzigingen() {
+  const meet = TEGEL_WIJZIGINGEN[activeTegelScreen];
+  if (!meet) return false;
+  try { return !!meet(); } catch (e) { return false; }
+}
+
 function openTegelOverview() {
   activeTegelScreen = 'overview';
+  ontwapenTerug();    // TT-302: de vraag hoort bij het scherm dat je verlaat
   werkTerugKnopBij(); // TT-301
   tegelScreenHistoryPushed = false;
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
@@ -624,6 +663,7 @@ function openTegelOverview() {
 function openTegelScreen(id) {
   if (!TEGEL_SCREENS[id]) return;
   activeTegelScreen = id;
+  ontwapenTerug();    // TT-302
   werkTerugKnopBij(); // TT-301: een open tegelscherm is een stap terug
   document.getElementById('tegelOverviewScreen').style.display = 'none';
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
@@ -663,6 +703,9 @@ function handleCancelClick(btnId, hasChanges, onConfirm, confirmText) {
     onConfirm();
     return;
   }
+  // TT-302: één vraag tegelijk. Armeert de knop onderin, dan gaat de regel
+  // onder de kop weg.
+  ontwapenTerug();
   btn.dataset.armed = '1';
   btn.dataset.originalText = btn.textContent;
   btn.textContent = text;
@@ -844,7 +887,7 @@ function wbjRelockCity() {
 }
 
 function cancelWieBenJe() {
-  handleCancelClick('wbjCancelBtn', () => wbjFieldSnapshot() !== wbjSnapshot, goToTegelOverview);
+  handleCancelClick('wbjCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
 }
 
 async function saveWieBenJe() {
@@ -945,7 +988,7 @@ function wspRenderRepertoireType() {
 }
 
 function cancelWatSpeelJe() {
-  handleCancelClick('wspCancelBtn', () => wspFieldSnapshot() !== wspSnapshot, goToTegelOverview);
+  handleCancelClick('wspCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
 }
 
 async function saveWatSpeelJe() {
@@ -1039,7 +1082,7 @@ function wzjSelectMusicalAmbition(el, val) {
 }
 
 function cancelWatZoekJe() {
-  handleCancelClick('wzjCancelBtn', () => wzjFieldSnapshot() !== wzjSnapshot, goToTegelOverview);
+  handleCancelClick('wzjCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
 }
 
 async function saveWatZoekJe() {
@@ -1287,7 +1330,7 @@ function jstRemoveSong(i) {
 }
 
 function cancelJeSetlist() {
-  handleCancelClick('jstCancelBtn', () => jstFieldSnapshot() !== jstSnapshot, goToTegelOverview);
+  handleCancelClick('jstCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
 }
 
 async function saveJeSetlist() {
@@ -1533,7 +1576,7 @@ function mhRemoveLink(i) {
 }
 
 function cancelJeMediahoek() {
-  handleCancelClick('mhCancelBtn', () => mhFieldSnapshot() !== mhSnapshot, goToTegelOverview);
+  handleCancelClick('mhCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
 }
 
 async function saveJeMediahoek() {

@@ -119,6 +119,16 @@
     <button class="nav-menu-item" id="navMenuLogin" onclick="closeNavMenu();showView('auth')">Inloggen</button>
   </div>
 </div>
+<!-- TT-302 (20-09-2026, Ronald): de vraag bij onopgeslagen wijzigingen staat
+     hier, direct onder de kop. Het is een tekstregel, geen knop: bevestigen
+     doe je door nog een keer op de terugknop te drukken — dezelfde plek waar
+     je net drukte. Eén plek voor beide wegen terug (de pijl in de kop en de
+     terugknop van het toestel), want de terugknop van een telefoon staat bij
+     de één linksonder en bij de ander rechtsonder, en bij gebaren aan beide
+     randen. De regel staat binnen .app-topbar en blijft dus in beeld, ook
+     als de Terug-knop onder in het scherm weggescrold is — dat was de reden
+     voor de knop in de kop (Ronald, 20-09-2026). -->
+<div class="terug-label" id="terugLabel" role="status" style="display:none;">Terug zonder opslaan?</div>
 <!-- TT-U24 (12-08-2026): vaste onderbalk voor de telefoon.
      De bovenste navigatierij scrolde op mobiel horizontaal: 534px inhoud in
      een balk van 320px, dus 214px stond buiten beeld. Geen enkele app die
@@ -2419,14 +2429,14 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260920a"></script>
-<script src="utils.js?v=20260920a"></script>
+<script src="core.js?v=20260920b"></script>
+<script src="utils.js?v=20260920b"></script>
 <script src="veiligheid.js?v=20260918a"></script>
 <script src="auth.js?v=20260920a"></script>
 <script src="postcode.js?v=20260917a"></script>
 <script src="wizard.js?v=20260916a"></script>
 <script src="search.js?v=20260918a"></script>
-<script src="musicians.js?v=20260920a"></script>
+<script src="musicians.js?v=20260920b"></script>
 <script src="bands.js?v=20260916a"></script>
 <script src="messages.js?v=20260920a"></script>
 <script src="modals-shared.js?v=20260910a"></script>
