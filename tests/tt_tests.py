@@ -2312,6 +2312,227 @@ def blok_browser():
           state.instruments = []; state.instrumentLevels = {};
         }""")
 
+        # ─────────────────────────────────────────────────────────────
+        # Blok 24 — e-mailadres en wachtwoord wijzigen (TT-299, 20-09-2026)
+        # Ronald, 20-09-2026: "ik kan geen email aanpassen in de app. een
+        # emailadres kan wijzigen." Het veld bestond al in "Wie ben je", maar
+        # stond op readonly. Wijzigen gebeurt nu in één venster bij
+        # Instellingen, samen met het wachtwoord.
+        #
+        # Het zwaarste punt zit in de twee uitkomsten: Supabase stuurt óf een
+        # bevestigingsmail (`new_email` gevuld), óf hij wijzigt meteen. Welke
+        # van de twee hangt af van een dashboard-instelling, niet van de code.
+        # Beide worden hier nagebootst; de app moet per geval het juiste
+        # zeggen, want "controleer je mail" bij een adres dat al gewijzigd is,
+        # laat iemand wachten op een mail die nooit komt.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 24 — e-mailadres en wachtwoord wijzigen (TT-299)")
+        page_errors.clear()
+
+        opening = page.evaluate("""async () => {
+          window.TT_STUB.reset();
+          currentUser = { id: 'u1', email: 'oud@talenttent.org' };
+          openInloggegevens();
+          return {
+            open: document.getElementById('inloggegevensModal').classList.contains('visible'),
+            huidig: document.getElementById('igHuidigEmail').textContent,
+            kruisje: !!document.querySelector('#inloggegevensModal .modal-close'),
+            dataClose: document.getElementById('inloggegevensModal').getAttribute('data-close')
+          };
+        }""")
+        check("Instellingen opent het venster met het huidige adres erin",
+              opening["open"] and opening["huidig"] == "oud@talenttent.org",
+              json.dumps(opening))
+        check("het venster houdt zijn kruisje én data-close (TT-294)",
+              opening["kruisje"] and opening["dataClose"] == "closeInloggegevens",
+              json.dumps(opening))
+
+        controles = page.evaluate("""async () => {
+          const veld = document.getElementById('igNieuwEmail');
+          const fout = () => { const p = veld.parentNode.querySelector('.field-msg');
+            return p ? p.textContent : null; };
+          const r = {};
+          const tel = () => window.TT_STUB.calls.filter(c => c.name === 'updateUser').length;
+
+          veld.value = '';
+          await wijzigEmail();
+          r.leeg = fout();
+
+          veld.value = 'geenadres';
+          await wijzigEmail();
+          r.vorm = fout();
+
+          veld.value = 'OUD@talenttent.org';
+          await wijzigEmail();
+          r.zelfde = fout();
+
+          r.aanroepen = tel();
+          r.confirmDicht = !document.getElementById('confirmModal').classList.contains('visible');
+          return r;
+        }""")
+        check("leeg adres geeft een veldfout, geen toast",
+              controles["leeg"] and "Vul je e-mailadres in" in controles["leeg"],
+              json.dumps(controles))
+        check("verkeerde vorm geeft de vaste tekst",
+              controles["vorm"] and "bijvoorbeeld jouw@email.nl" in controles["vorm"],
+              json.dumps(controles))
+        check("het eigen adres opnieuw invullen wordt tegengehouden",
+              controles["zelfde"] and "nu al gebruikt" in controles["zelfde"],
+              json.dumps(controles))
+        check("geen enkele afgekeurde poging bereikt Supabase",
+              controles["aanroepen"] == 0 and controles["confirmDicht"],
+              json.dumps(controles))
+
+        vraag = page.evaluate("""async () => {
+          document.getElementById('igNieuwEmail').value = 'nieuw@talenttent.org';
+          await wijzigEmail();
+          return {
+            open: document.getElementById('confirmModal').classList.contains('visible'),
+            tekst: document.getElementById('confirmMessage').textContent,
+            knop: document.getElementById('confirmYesBtn').textContent,
+            aanroepen: window.TT_STUB.calls.filter(c => c.name === 'updateUser').length
+          };
+        }""")
+        check("een geldig adres vraagt eerst om bevestiging",
+              vraag["open"] and vraag["aanroepen"] == 0, json.dumps(vraag))
+        check("de vraag noemt het nieuwe adres en de mailbox, niet 'weet je het zeker'",
+              "nieuw@talenttent.org" in vraag["tekst"]
+              and "Kun je bij die mailbox?" in vraag["tekst"]
+              and "zeker" not in vraag["tekst"].lower()
+              and vraag["knop"] == "Ja, dat klopt",
+              json.dumps(vraag))
+
+        wacht = page.evaluate("""async () => {
+          window.TT_STUB.updateUserResult = (a) => ({
+            id: 'u1', email: 'oud@talenttent.org', new_email: a.email
+          });
+          confirmModalYes();
+          await new Promise(res => setTimeout(res, 60));
+          const m = document.getElementById('igMelding');
+          return {
+            zichtbaar: m.classList.contains('visible'),
+            tekst: m.textContent,
+            huidig: document.getElementById('igHuidigEmail').textContent,
+            veldLeeg: document.getElementById('igNieuwEmail').value === ''
+          };
+        }""")
+        check("wacht Supabase op een bevestiging, dan zegt de app dat er een mail onderweg is",
+              wacht["zichtbaar"] and "mail gestuurd naar nieuw@talenttent.org" in wacht["tekst"]
+              and "oud@talenttent.org" in wacht["tekst"], json.dumps(wacht))
+        check("en het adres in beeld blijft tot die tijd het oude",
+              wacht["huidig"] == "oud@talenttent.org" and wacht["veldLeeg"],
+              json.dumps(wacht))
+
+        direct = page.evaluate("""async () => {
+          window.TT_STUB.updateUserResult = (a) => ({ id: 'u1', email: a.email });
+          document.getElementById('igNieuwEmail').value = 'direct@talenttent.org';
+          await wijzigEmail();
+          confirmModalYes();
+          await new Promise(res => setTimeout(res, 60));
+          return {
+            tekst: document.getElementById('igMelding').textContent,
+            huidig: document.getElementById('igHuidigEmail').textContent,
+            wbj: document.getElementById('wbjEmail').value,
+            user: currentUser.email
+          };
+        }""")
+        check("wijzigt Supabase meteen, dan zegt de app dát, niet 'controleer je mail'",
+              "is gewijzigd" in direct["tekst"] and "mail gestuurd" not in direct["tekst"],
+              json.dumps(direct))
+        check("en het nieuwe adres staat meteen in het venster, in Wie ben je en in currentUser",
+              direct["huidig"] == "direct@talenttent.org"
+              and direct["wbj"] == "direct@talenttent.org"
+              and direct["user"] == "direct@talenttent.org", json.dumps(direct))
+
+        bezet = page.evaluate("""async () => {
+          window.TT_STUB.updateUserResult = null;
+          window.TT_STUB.updateUserError = { message: 'Email address already registered by another user' };
+          // Een toast uit een eerder blok kan nog in beeld staan (3,5 seconde);
+          // zonder deze regel meet de controle hieronder die oude melding.
+          document.getElementById('appToast').classList.remove('visible');
+          document.getElementById('igNieuwEmail').value = 'bezet@talenttent.org';
+          await wijzigEmail();
+          confirmModalYes();
+          await new Promise(res => setTimeout(res, 60));
+          const veld = document.getElementById('igNieuwEmail');
+          const p = veld.parentNode.querySelector('.field-msg');
+          window.TT_STUB.updateUserError = null;
+          return {
+            fout: p ? p.textContent : null,
+            toast: document.getElementById('appToast').classList.contains('visible')
+          };
+        }""")
+        check("'adres al in gebruik' komt bij het veld te staan, niet in een toast (huisstijl §13.1)",
+              bezet["fout"] and "al in gebruik" in bezet["fout"] and not bezet["toast"],
+              json.dumps(bezet))
+
+        wachtwoord = page.evaluate("""async () => {
+          const h = document.getElementById('igHuidigWachtwoord');
+          const p1 = document.getElementById('igNieuwWachtwoord1');
+          const p2 = document.getElementById('igNieuwWachtwoord2');
+          const fout = (el) => { const p = el.parentNode.querySelector('.field-msg');
+            return p ? p.textContent : null; };
+          const wachtwoordCalls = () => window.TT_STUB.calls
+            .filter(c => c.name === 'updateUser' && c.attrs && c.attrs.password).length;
+          const r = {};
+
+          h.value = ''; p1.value = 'kort'; p2.value = 'anders';
+          await wijzigWachtwoord();
+          r.huidigLeeg = fout(h);
+          r.teKort = fout(p1);
+          r.ongelijk = fout(p2);
+          r.naControles = wachtwoordCalls();
+
+          window.TT_STUB.authError = { message: 'Invalid login credentials' };
+          h.value = 'verkeerd'; p1.value = 'nieuwgeheim1'; p2.value = 'nieuwgeheim1';
+          await wijzigWachtwoord();
+          r.verkeerdHuidig = fout(h);
+          r.naVerkeerd = wachtwoordCalls();
+          window.TT_STUB.authError = null;
+
+          h.value = 'goedgeheim'; p1.value = 'nieuwgeheim1'; p2.value = 'nieuwgeheim1';
+          await wijzigWachtwoord();
+          r.naGoed = wachtwoordCalls();
+          r.melding = document.getElementById('igMelding').textContent;
+          r.veldenLeeg = !h.value && !p1.value && !p2.value;
+          return r;
+        }""")
+        check("de drie wachtwoordfouten staan elk bij hun eigen veld",
+              wachtwoord["huidigLeeg"] and "huidige wachtwoord" in wachtwoord["huidigLeeg"]
+              and wachtwoord["teKort"] and "minimaal 8 tekens" in wachtwoord["teKort"]
+              and wachtwoord["ongelijk"] and "komt niet overeen" in wachtwoord["ongelijk"]
+              and wachtwoord["naControles"] == 0, json.dumps(wachtwoord))
+        check("een verkeerd huidig wachtwoord houdt de wijziging tegen (TT-299)",
+              wachtwoord["verkeerdHuidig"]
+              and "hoort niet bij het e-mailadres" in wachtwoord["verkeerdHuidig"]
+              and wachtwoord["naVerkeerd"] == 0, json.dumps(wachtwoord))
+        check("met het juiste huidige wachtwoord gaat de wijziging door en blijf je ingelogd",
+              wachtwoord["naGoed"] == 1 and "wachtwoord is gewijzigd" in wachtwoord["melding"]
+              and "ingelogd" in wachtwoord["melding"] and wachtwoord["veldenLeeg"],
+              json.dumps(wachtwoord))
+
+        terug = page.evaluate("""async () => {
+          openInloggegevens();
+          document.getElementById('igNieuwEmail').value = 'blijft@talenttent.org';
+          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'instellingen' } }));
+          await new Promise(res => setTimeout(res, 50));
+          return {
+            dicht: !document.getElementById('inloggegevensModal').classList.contains('visible'),
+            veld: document.getElementById('igNieuwEmail').value,
+            melding: document.getElementById('igMelding').classList.contains('visible')
+          };
+        }""")
+        check("de terugknop sluit het venster en laat geen ingetypt adres achter",
+              terug["dicht"] and terug["veld"] == "" and not terug["melding"],
+              json.dumps(terug))
+
+        check("geen paginafouten in blok 24", not page_errors, "; ".join(page_errors)[:300])
+        page.evaluate("""() => {
+          window.TT_STUB.reset();
+          currentUser = null;
+          document.getElementById('wbjEmail').value = '';
+        }""")
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
