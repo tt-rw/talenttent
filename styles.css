@@ -131,14 +131,36 @@
   }
 
   /* Header */
+  /* TT-301 (20-09-2026): drie vakken naast elkaar. De twee buitenste kolommen
+     zijn allebei 1fr en dus altijd even breed; daardoor staat het woordmerk
+     (de auto-kolom ertussen) exact in het midden, ongeacht wat er links of
+     rechts in staat — ook als de terugknop onzichtbaar is. Was flex met het
+     woordmerk links. */
   header {
     position: relative;
     z-index: 10;
     padding: 32px 40px 0;
-    display: flex;
-    align-items: flex-end;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
     gap: 16px;
   }
+
+  /* De twee buitenvakken. Elk vak duwt zijn knop naar de buitenrand, zodat de
+     ruimte tussen knop en woordmerk links en rechts gelijk is. */
+  .kop-vak { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .kop-links { justify-self: start; }
+  .kop-rechts { justify-self: end; }
+  /* De marge onder .nav-menu-btn hoort bij de tab-regel eronder. In een koprij
+     is er geen tab-regel; laat je die marge staan, dan wordt het vak 52px hoog
+     in plaats van 44px en zakt de hele rij 4px uit het midden. Eén regel voor
+     elke koprij — gewone kop én venster (was: alleen .modal-kop-acties). */
+  .kop-vak .nav-menu-btn { margin-bottom: 0; }
+
+  /* TT-301: de terugknop. Zelfde knop als de hamburger (44x44px tikdoel,
+     accentkleur, zelfde hoekstraal) met een lijn-teken van dezelfde dikte —
+     huisstijl §12. Geen los ontwerp: één knopklasse, twee tekens. */
+  .kop-terug svg { display: block; }
 
   .logo {
     /* TT-U23 (12-08-2026): het logo is de home-knop, dus ook een tikdoel. */
@@ -151,6 +173,17 @@
     line-height: 1;
     color: var(--accent);
     text-shadow: 3px 3px 0 rgba(245,197,24,0.2);
+  }
+
+  /* TT-301: het woordmerk in de gewone kop. justify-self houdt het in het
+     midden van zijn eigen kolom; min-width:0 en nowrap zijn wat fitKopLogo()
+     nodig heeft om te kunnen meten en krimpen — zelfde patroon als in een
+     koprij van een venster (§9, TT-293). Zonder min-width:0 kan een
+     rasteritem nooit kleiner worden dan zijn eigen tekst. */
+  header .logo {
+    justify-self: center;
+    min-width: 0;
+    white-space: nowrap;
   }
 
   .logo span {
@@ -745,9 +778,10 @@
      wordt tegengehouden bij het invullen, niet hier. */
   .profile-name { white-space: nowrap; }
 
-  /* Meetelement voor meetNaamBreedte(). Staat buiten beeld, wordt nooit
-     gelezen door een schermlezer, en heeft geen breedtebeperking — anders
-     meet het de beperking in plaats van de naam. */
+  /* Meetelement voor meetNaamBreedte() en, sinds TT-301, ook voor
+     meetLogoBreedte(). Staat buiten beeld, wordt nooit gelezen door een
+     schermlezer, en heeft geen breedtebeperking — anders meet het de
+     beperking in plaats van de tekst. */
   .naam-meter {
     position: absolute;
     left: -9999px;
@@ -1844,7 +1878,13 @@
        profiel-meer, band-meer) — één klasse, één keer gerepareerd. */
     color: var(--accent);
     cursor: pointer;
-    transition: all 0.2s;
+    /* TT-301 (20-09-2026): was een overgang op `all`, 0,2 seconde. `all`
+       neemt ook visibility mee, en die schakelt pas aan het eind van de
+       overgang om.
+       De terugknop bleef daardoor 0,2 seconde staan nadat hij verborgen was —
+       gemeten: direct na het verbergen gaf de browser nog 'visible' terug.
+       Alleen de drie eigenschappen die echt veranderen bij hover. */
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
   }
   .nav-menu-btn:hover, .nav-menu-btn.active {
     border-color: var(--border);
@@ -2631,10 +2671,13 @@
      Dezelfde lucht als de gewone kop (--kop-lucht), zodat het kruisje vanzelf
      op de middellijn van het woordmerk staat: dat regelt align-items: center,
      geen los getal dat kan gaan afwijken. */
+  /* TT-301 (20-09-2026): dezelfde drie vakken als de gewone kop — terugknop
+     links, woordmerk in het midden, ⋯-menu en kruis rechts. Was flex met
+     space-between en het woordmerk tegen de linkerrand. */
   .modal-kop {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
     gap: 16px;
     /* Zelfde marge als de gewone kop:
        16px links en rechts, dezelfde marge als de gewone kop (§2.11). Gemeten
@@ -2646,6 +2689,7 @@
   /* Het woordmerk is hier altijd de mobiele maat: binnen een modal is de
      grote variant van .logo (tot 72px) veel te zwaar. */
   .modal-kop .logo {
+    justify-self: center;
     font-size: 28px;
     text-shadow: none;
     letter-spacing: 1px;
@@ -2678,10 +2722,9 @@
     align-items: center;
     gap: 4px;
     flex-shrink: 0;
+    /* TT-301: als rechtervak van het raster tegen de rechterrand. */
+    justify-self: end;
   }
-  /* Het menuknopje draagt in de gewone kop een marge voor de tab-regel
-     eronder; in een koprij staat het op de middellijn van het woordmerk. */
-  .modal-kop-acties .nav-menu-btn { margin-bottom: 0; }
 
   .modal-close {
     position: absolute;
@@ -3053,7 +3096,11 @@
   /* TT-224 (hersteld 09-09-2026): media-grens (max-width:560px) losgekoppeld.
      Deze regels gelden nu op elke breedte — de webapp krijgt dezelfde schil
      als de telefoon-app, binnen het canvas van TT-224 onderaan dit bestand. */
-    header { padding: 16px 20px 12px; flex-direction: column; align-items: flex-start; }
+    /* TT-301 (20-09-2026): hier stonden ook `flex-direction: column` en
+       `align-items: flex-start`. De kop is sinds TT-301 een raster van drie
+       vakken (zie het header-blok bovenin dit bestand); flex-direction doet
+       daar niets meer, en de uitlijning staat in dat blok zelf op center. */
+    header { padding: 16px 20px 12px; }
     /* TT-269 (15-09-2026): geen lucht meer boven de eerste inhoud — dezelfde
        afstand als op Mijn Profiel, waar dat al zo was (besluit Ronald,
        22-08-2026). De kop levert zijn eigen 12px al. */
@@ -3084,8 +3131,11 @@
        plaats van 18px. env(safe-area-inset-top) staat erbij voor het geval
        de app ooit als echte app wordt geïnstalleerd; in de browser is die
        nul. De hamburger verschuift even ver mee, zie hieronder. */
-    header { flex-direction: row; align-items: center;
-             padding: calc(var(--kop-lucht) + env(safe-area-inset-top, 0px)) 16px var(--kop-lucht); }
+    /* TT-301 (20-09-2026): `flex-direction: row` stond hier; de kop is nu een
+       raster (zie het header-blok bovenin dit bestand). De opvulling blijft
+       ongewijzigd, dus de kop blijft 68px hoog en #messagesThreadPanel hoeft
+       niets te herrekenen. */
+    header { padding: calc(var(--kop-lucht) + env(safe-area-inset-top, 0px)) 16px var(--kop-lucht); }
     .logo { font-size: 28px; text-shadow: none; }
     .tagline { display: none; }
     /* TT-181 (01-09-2026, Ronald na livetest van profiel-v2): 2x2-grid nu
@@ -3105,13 +3155,12 @@
        mobiel; de knop wordt met een relatieve verschuiving omhoog in de
        koprij getrokken. */
     .app-nav-row { padding: 0; border-bottom: none; min-height: 0; }
-    /* De knop is 44px hoog en wordt uit .app-nav-row omhooggetrokken tot op
-       de middellijn van het woordmerk. De verschuiving is precies de lucht
-       onder het woordmerk plus de hoogte van de knop zelf; met de variabele
-       klopt hij bij elke waarde, en ook met een veilige marge bovenaan.
-       Was -62px bij 18px lucht; bij 12px is het -56px. */
-    #navMenuBtn { position: absolute; top: calc(-1 * (var(--kop-lucht) + 44px));
-                  right: 16px; margin-bottom: 0; }
+    /* TT-301 (20-09-2026): hier stond de negatieve verschuiving die de
+       hamburger vanuit .app-nav-row omhoog in de koprij trok
+       (`position: absolute; top: calc(-1 * (var(--kop-lucht) + 44px))`).
+       De knop staat nu als eigen vak ín de koprij, dus die truc is weg. De
+       marge onder de knop staat op nul via .kop-vak .nav-menu-btn, bovenin
+       dit bestand — dezelfde regel voor de gewone kop en voor een venster. */
     /* Punt 3 (22-08-2026, Ronald): hamburgerpictogram groter, in verhouding
        met het woordmerk. Het woordmerk heeft op mobiel line-height:1 bij
        font-size 28px — dus 28px is de visuele hoogte van de tekst zelf.

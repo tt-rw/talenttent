@@ -296,7 +296,7 @@ async function openMusicianModal(id) {
   // — een element dat er nog niet is, heeft geen breedte om tegen te meten.
   fitProfileName(document.getElementById('musicianModalContent'));
   // TT-293: zelfde reden, voor het woordmerk in de koprij van deze modal.
-  fitModalLogo(document.getElementById('musicianModalBox'));
+  fitKopLogo(document.getElementById('musicianModalBox'));
   // V-09: zelfde displayName-logica als binnen buildMusicianDetailHTML()
   // (TT-43: bezoekers zonder profiel zien alleen de gebruikersnaam).
   const displayName = isOwn ? m.fname : displayNameOf(m);
@@ -613,6 +613,7 @@ let tegelScreenHistoryPushed = false;
 
 function openTegelOverview() {
   activeTegelScreen = 'overview';
+  werkTerugKnopBij(); // TT-301
   tegelScreenHistoryPushed = false;
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
   document.getElementById('tegelOverviewScreen').style.display = '';
@@ -623,6 +624,7 @@ function openTegelOverview() {
 function openTegelScreen(id) {
   if (!TEGEL_SCREENS[id]) return;
   activeTegelScreen = id;
+  werkTerugKnopBij(); // TT-301: een open tegelscherm is een stap terug
   document.getElementById('tegelOverviewScreen').style.display = 'none';
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
   document.getElementById(TEGEL_SCREENS[id]).style.display = '';
@@ -1882,7 +1884,7 @@ async function openBandModal(id) {
   // muzikantmodal. De bandnaam gebruikt dezelfde klasse, dus dezelfde regel.
   fitProfileName(document.getElementById('bandModalContent'));
   // TT-293: zelfde reden, voor het woordmerk in de koprij van deze modal.
-  fitModalLogo(document.getElementById('bandModalBox'));
+  fitKopLogo(document.getElementById('bandModalBox'));
   // TT-06: je eigen band meld je niet.
   zetVeiligheidMenu('bandModalActies', 'band', isOwnBand ? null : b.id, b.name);
 }

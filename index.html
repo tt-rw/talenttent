@@ -45,15 +45,39 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260920a">
+<link rel="stylesheet" href="styles.css?v=20260920b">
 </head>
 <body>
 
 <div id="appRoot">
 
 <div class="app-topbar">
+<!-- TT-301 (20-09-2026, Ronald): de kop is één rij met drie vakken —
+     terugknop links, woordmerk in het midden, hamburger rechts. De twee
+     buitenvakken zijn even breed (1fr auto 1fr), dus het woordmerk staat
+     exact in het midden, ook als de terugknop onzichtbaar is. "THE" is uit
+     het woordmerk gehaald: dat maakt 30px ruimte vrij, precies wat de
+     terugknop erbij vraagt (gemeten 20-09-2026). -->
 <header>
-  <div class="logo" onclick="showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="font-size:50%;color:var(--accent);">THE </span><span style="color:var(--text);">TALENT</span> TENT</div>
+  <div class="kop-vak kop-links">
+    <button class="nav-menu-btn kop-terug" id="navTerugBtn" onclick="terugKnop()" aria-label="Terug" title="Terug">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
+    </button>
+  </div>
+  <div class="logo" onclick="showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="color:var(--text);">TALENT</span> TENT</div>
+  <div class="kop-vak kop-rechts">
+    <!-- TT-63/nav-herziening (09-08-2026): hamburgermenu voor minder-frequente
+         links (Ronald: te veel tabbladen, op mobiel al horizontaal scrollen).
+         TT-301 (20-09-2026): de knop staat nu in de koprij zelf. Tot dan stond
+         hij in .app-nav-row eronder en werd hij met een negatieve verschuiving
+         van 56px omhooggetrokken; met een gecentreerd woordmerk moet hij een
+         echt vak in de rij zijn, anders is er niets om het midden tussen te
+         bepalen. Het uitklappaneel blijft wél in .app-nav-row staan: dat is
+         het ankerpunt waaronder het openklapt, en dat verandert niet. -->
+    <button class="nav-menu-btn" id="navMenuBtn" onclick="toggleNavMenu(event)" aria-label="Meer opties" title="Meer">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    </button>
+  </div>
   <div class="tagline">Talent zoekt talent</div>
 </header>
 
@@ -67,15 +91,10 @@
     <button class="nav-btn" id="navMessages" onclick="requireLogin('messages')" style="position:relative;">Berichten<span id="unreadBadge" class="unread-badge" style="display:none;"></span></button>
     <button class="nav-btn" id="navLogin" onclick="navLoginClick()">Inloggen</button>
   </nav>
-  <!-- TT-63/nav-herziening (09-08-2026): hamburgermenu voor minder-frequente
-       links (Ronald: te veel tabbladen, op mobiel al horizontaal scrollen).
-       Bewust BUITEN <nav class="app-nav"> geplaatst — die rij is op mobiel
-       zelf horizontaal scrollbaar (overflow-x:auto), dus een knop daarbinnen
-       zou net zo goed uit beeld kunnen scrollen. Deze knop staat als vaste
-       sibling ernaast, binnen dezelfde sticky rij. -->
-  <button class="nav-menu-btn" id="navMenuBtn" onclick="toggleNavMenu(event)" aria-label="Meer opties" title="Meer">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-  </button>
+  <!-- TT-301 (20-09-2026): de knop #navMenuBtn stond hier; hij staat nu in de
+       koprij zelf (zie <header> hierboven). Alleen het uitklappaneel blijft
+       hier: .app-nav-row is zijn ankerpunt (position: relative) en klapt
+       direct onder de kop open. -->
   <div class="nav-menu-dropdown" id="navMenuDropdown">
     <button class="nav-menu-item" id="navAbout" onclick="closeNavMenu();showView('about')">Over ons</button>
     <button class="nav-menu-item" id="navPrivacy" onclick="closeNavMenu();showView('privacy')">Privacyverklaring</button>
@@ -1904,11 +1923,20 @@
          alleen een zwevend kruisje. Nu staat hier dezelfde koprij als op de
          rest van de app, met het kruisje op de plek van de hamburger. -->
     <div class="modal-kop">
-      <div class="logo" onclick="closeMusicianModal();showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="font-size:50%;color:var(--accent);">THE </span><span style="color:var(--text);">TALENT</span> TENT</div>
+      <!-- TT-301 (20-09-2026): terugknop links, zodat de koprij van een venster
+           dezelfde drie vakken heeft als de gewone kop. De knop doet hetzelfde
+           als de terugknop van Android: history.back(), en die sluit via de
+           popstate-afhandeling in core.js eerst dit venster. -->
+      <div class="kop-vak kop-links">
+        <button class="nav-menu-btn kop-terug" onclick="terugKnop()" aria-label="Terug" title="Terug">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
+        </button>
+      </div>
+      <div class="logo" onclick="closeMusicianModal();showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="color:var(--text);">TALENT</span> TENT</div>
       <!-- TT-06 (18-09-2026): melden en blokkeren staan achter een ⋯-menu
            (huisstijl §8). In de koprij, niet naast de naam: een vaste plek die
            niet meeschuift met de lengte van een naam (§2.1). -->
-      <div class="modal-kop-acties">
+      <div class="kop-vak modal-kop-acties">
         <span id="musicianModalActies"></span>
         <button class="modal-close" onclick="closeMusicianModal()">✕</button>
       </div>
@@ -1926,10 +1954,18 @@
          de plek van de hamburger. Muzikantkant en bandkant volgen dezelfde
          regels (besluit Ronald, 11-09-2026). -->
     <div class="modal-kop">
-      <div class="logo" onclick="document.getElementById('bandModal').classList.remove('visible');showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="font-size:50%;color:var(--accent);">THE </span><span style="color:var(--text);">TALENT</span> TENT</div>
+      <!-- TT-301 (20-09-2026): zelfde terugknop als bij het muzikantprofiel.
+           Muzikantkant en bandkant volgen dezelfde regels (besluit Ronald,
+           11-09-2026). -->
+      <div class="kop-vak kop-links">
+        <button class="nav-menu-btn kop-terug" onclick="terugKnop()" aria-label="Terug" title="Terug">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
+        </button>
+      </div>
+      <div class="logo" onclick="document.getElementById('bandModal').classList.remove('visible');showView('landing')" style="cursor:pointer;" title="Naar de homepagina"><span style="color:var(--text);">TALENT</span> TENT</div>
       <!-- TT-06: zelfde ⋯-menu als bij het muzikantprofiel. Een band is wel te
            melden, niet te blokkeren — blokkeren gaat over een persoon. -->
-      <div class="modal-kop-acties">
+      <div class="kop-vak modal-kop-acties">
         <span id="bandModalActies"></span>
         <button class="modal-close" onclick="document.getElementById('bandModal').classList.remove('visible')">✕</button>
       </div>
@@ -2383,16 +2419,16 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260918b"></script>
-<script src="utils.js?v=20260918a"></script>
+<script src="core.js?v=20260920a"></script>
+<script src="utils.js?v=20260920a"></script>
 <script src="veiligheid.js?v=20260918a"></script>
 <script src="auth.js?v=20260920a"></script>
 <script src="postcode.js?v=20260917a"></script>
 <script src="wizard.js?v=20260916a"></script>
 <script src="search.js?v=20260918a"></script>
-<script src="musicians.js?v=20260918b"></script>
+<script src="musicians.js?v=20260920a"></script>
 <script src="bands.js?v=20260916a"></script>
-<script src="messages.js?v=20260918a"></script>
+<script src="messages.js?v=20260920a"></script>
 <script src="modals-shared.js?v=20260910a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────

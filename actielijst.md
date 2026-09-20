@@ -1,6 +1,98 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 20-09-2026 (vervolg) — **TT-299 (P0) gebouwd en getest: je
+**Laatste update:** 20-09-2026 (vervolg 2) — **TT-301 (P2) gebouwd en
+getest: het woordmerk staat in de hele app in het midden, met een terugknop
+linksboven. "THE" is uit het woordmerk gehaald. Eindstand 371 van 371.**
+
+**Aanleiding.** Ronald, 20-09-2026: *"ik wil het woordmerk in de hele app
+gecentreerd hebben. Tevens wil ik een 'terugknop' linksboven hebben. het wordt
+een simpele maar de meestgebruikte uitvoering: '<'."* Dit is voorbereiding op
+het weghalen van de sluitkruisjes voor iOS; dat blijft een aparte sessie.
+
+**Toets P2:** werkt het, maar kost het moeite of vertrouwen? Ja. iOS heeft geen
+systeem-terugknop, en een app die op het beginscherm staat heeft ook geen
+browserbalk (TT-294, 18-09-2026). Wie daar in een scherm zit, heeft alleen de
+knoppen die de app zelf toont.
+
+**De besluiten van Ronald (20-09-2026).**
+
+| Vraag | Besluit |
+|---|---|
+| "THE" in het woordmerk? | Weg. Dat scheelt 30px, precies wat de terugknop erbij vraagt |
+| Welk teken? | Lijn-teken, zelfde dikte als de hamburger — niet de letter `<` |
+| Wat doet de knop? | `history.back()`, exact dezelfde route als de terugknop van Android |
+| Ook in het muzikant- en bandprofiel? | Ja, nu al |
+| De sluitkruisjes? | Blijven staan. Weghalen is een aparte sessie |
+| De bestaande "Terug"-knoppen? | Blijven staan |
+
+**Wat er gebouwd is.**
+
+- **`index.html`** — de kop is één rij met drie vakken: terugknop, woordmerk,
+  hamburger. De hamburgerknop staat nu in die rij zelf; hij stond in
+  `.app-nav-row` eronder en werd met `-56px` omhooggetrokken. Het uitklappaneel
+  blijft wél in `.app-nav-row`: dat is zijn ankerpunt. Dezelfde drie vakken in
+  de koprij van het muzikant- en het bandprofiel. Woordmerk zonder "THE", op
+  alle drie de plekken.
+- **`styles.css`** — `header` en `.modal-kop` zijn `grid` met
+  `grid-template-columns: 1fr auto 1fr`. De twee buitenkolommen zijn altijd
+  even breed, dus het woordmerk staat exact in het midden, ook als de
+  terugknop onzichtbaar is. Nieuwe klasse `.kop-vak` voor beide buitenvakken.
+- **`core.js`** — `terugKnop()`, `magTerug()`, `werkTerugKnopBij()` en de
+  teller `terugDiepte`. De knop verdwijnt (`visibility`, niet `display`) als er
+  niets is om naar terug te gaan; zijn vak blijft staan, zodat het woordmerk
+  niet verspringt.
+- **`utils.js`** — `fitModalLogo()` heet nu `fitKopLogo()` en geldt ook voor de
+  gewone kop. Nieuw: `meetLogoBreedte()`, dat buiten beeld meet.
+- **`messages.js`, `musicians.js`** — een open gesprek en een open tegelscherm
+  werken de knop bij.
+
+**Gemeten (Playwright, echte fonts).**
+
+| Stand | Woordmerk | Uitkomst |
+|---|---|---|
+| 390px (telefoon) | 188px op 28px | past, 33px lucht aan weerszijden |
+| 280px, twee knoppen | krimpt naar 18px | past |
+| 280px, drie knoppen (terug, ⋯, kruis) | krimpt naar 12px | past precies |
+
+280px is het smalste canvas dat bestaat: tussen 561 en circa 780px venster is
+`#appRoot` 50% van het venster (TT-224).
+
+**Drie fouten die de testset ving vóór oplevering.** Alle drie zaten in de
+eerste versie en zouden zonder blok 25 zijn opgeleverd.
+
+1. **De koprij van een venster zakte 4px uit het midden.** `.nav-menu-btn`
+   draagt een marge van 8px onder de knop voor de tab-regel eronder. In een
+   koprij is er geen tab-regel. De terugknop maakte het vak daardoor 52px hoog
+   in plaats van 44px. Er stond al een uitzondering voor `.modal-kop-acties`;
+   die is vervangen door één regel voor elke koprij (`.kop-vak .nav-menu-btn`).
+2. **De krimptrap mat de verkeerde breedte.** Een gecentreerd woordmerk loopt
+   bij overschrijding aan béíde kanten uit zijn vak, en `scrollWidth` telt
+   alleen wat er rechts uitsteekt. De meting meldde "past" terwijl het
+   woordmerk 18px over de knoppen heen lag. Nu wordt buiten beeld gemeten,
+   zelfde aanpak als `meetNaamBreedte()`.
+3. **De terugknop bleef 0,2 seconde staan nadat hij verborgen was.**
+   `.nav-menu-btn` had `transition: all 0.2s`. `all` neemt `visibility` mee, en
+   die schakelt pas aan het eind van de overgang om. Nu staan alleen de drie
+   eigenschappen in de overgang die bij hover echt veranderen.
+
+**Nieuw in de vaste testset: blok 25** (18 controles) — middenstand van het
+woordmerk, beide knoppen op 16px van hun rand, tikdoel 44×44px, gelijke
+middellijn, het lijn-teken, de zichtbaarheid van de knop bij nul stappen, de
+knop in beide koprijen, en de twee krappe standen.
+
+**Wat nog open staat.** Laag 2: de terugknop op een echte telefoon, vooral op
+iOS. Laag 1 draait tegen de stub en kan niet toetsen hoe een echt apparaat met
+de geschiedenis omgaat.
+
+**Twee vastgelegde feiten rechtgezet in dezelfde sessie (§2, regel 13).** De
+projectinstructies (§9, "Kop en navigatie") en
+`huisstijl-en-consistentie` (§9, §11 en §12) beschreven allebei nog de oude
+kop: woordmerk links, "THE" op 50% in `var(--accent)`, kruis rechts, tien
+vaste lijn-tekens. Beide documenten zijn in deze sessie vervangen.
+
+---
+
+**Vorige update:** 20-09-2026 (vervolg) — **TT-299 (P0) gebouwd en getest: je
 e-mailadres en je wachtwoord zijn nu in de app te wijzigen. Eindstand 353 van
 353. Onderweg bleek dat álle auth-mail van Supabase door een testmailer ging,
 met twee mails per uur voor het hele project — TT-300, opgelost door Ronald in
@@ -4077,6 +4169,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-301** | Woordmerk gecentreerd en terugknop linksboven | **Gebouwd en getest 20-09-2026 (vervolg 2).** Woordmerk in het midden in de hele app, zonder "THE"; terugknop linksboven als lijn-teken, die `history.back()` doet. Ook in de koprij van het muzikant- en bandprofiel. Volledige tekst: Laatste update bovenaan. **Nog open:** laag 2 op een echte telefoon, vooral iOS |
 | **TT-297** | De SMTP-verbinding heeft geen eigen time-out | **Nieuw, 20-09-2026.** Gemeten die dag met een verkeerde `SMTP_HOST`: de Edge Function bleef hangen tot `pg_net` er na 30 seconden zelf mee stopte, zonder één regel in het functielog. **Toets:** werkt het, maar kost het moeite of vertrouwen? Ja — een storing bij de mailserver levert nu geen bruikbare foutmelding op, alleen stilte, en dat is precies wat TT-01 drie weken heeft opgehouden |
 | **TT-292** | Beheerscherm voor meldingen | **Nieuw, 18-09-2026 (TT-06).** Meldingen komen in `musician_reports` terecht en Ronald leest ze in de tabelweergave van Supabase. Er is geen scherm in de app om ze af te handelen (bekijken, status zetten, de gemelde muzikant tijdelijk onzichtbaar maken). Bewust buiten TT-06 gehouden: die moest eerst een meldknop opleveren, niet een moderatieomgeving. Bandkant: niet van toepassing, hetzelfde scherm toont beide soorten meldingen. **Toets P2:** melden werkt, maar afhandelen kost nu een omweg buiten de app |
 | **TT-290** | Goud op 10% dekking op het actieve zoektabblad | **Nieuw, 17-09-2026, gevonden bij TT-289. Geverifieerd in de code.** `.search-mode-tab.active` in `styles.css` heeft `background: rgba(245,197,24,0.1)`. Huisstijl §1.1 verbiedt goud als vlak onder 50%: op `--surface2` wordt dat olijfbruin. Voorstel volgens §1.1: wit op 5% met de gouden rand en gouden tekst die er al staan. Zelfde soort: `highlight()` in `utils.js` markeert de getypte letters in een suggestie met goud op 30% (`mark`). Beide in één ronde. **Let op:** de standknoppen van het Setlist-tabblad (TT-289) gebruiken bewust dezelfde klasse als de hoofdtabbladen (besluit Ronald: "hetzelfde als setlist"); ze veranderen dus vanzelf mee. Bandkant: niet van toepassing, het zijn gedeelde componenten. **Toets P2:** het werkt, maar het actieve tabblad oogt vlekkerig in plaats van gekozen |

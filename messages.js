@@ -321,6 +321,7 @@ let activeConversationDeleted = false;
 
 async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, stil, deleted) {
   activeConversationId = otherId;
+  werkTerugKnopBij(); // TT-301: een open gesprek is een stap terug
   if (deleted !== undefined) activeConversationDeleted = deleted;
   const composerEl = document.querySelector('#messagesThreadPanel .messages-composer-row');
   const noticeEl = document.getElementById('messagesDeletedNotice');
@@ -434,6 +435,7 @@ function closeConversation() {
   document.getElementById('messagesInboxPanel').style.display = 'block';
   document.getElementById('messagesThreadPanel').style.display = 'none';
   document.getElementById('messagesThreadPanel').classList.remove('gesprek-open');
+  werkTerugKnopBij(); // TT-301
   loadInbox();
 }
 

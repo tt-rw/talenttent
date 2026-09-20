@@ -234,6 +234,16 @@ async function appInit() {
   } catch(e) {
     logCaught('appInit', e);
   }
+  // TT-301 (20-09-2026): alles hierboven hoort bij het opstarten, niet bij een
+  // stap die iemand zelf heeft gezet. De teller begint dus hier op nul; op het
+  // scherm waarmee de app opent, is er niets om naar terug te gaan.
+  terugDiepte = 0;
+  werkTerugKnopBij();
+  // Het woordmerk past zich aan de breedte aan (fitKopLogo). Meten kan pas als
+  // Alfa Slab One geladen is — met een terugvalletter is het woordmerk smaller
+  // en zou de eerste meting een te grote letter goedkeuren.
+  fitKopLogo(document);
+  if (document.fonts?.ready) document.fonts.ready.then(() => fitKopLogo(document));
 }
 
 // Bug gevonden door Ronald (05-08-2026): db.auth.signInWithPassword() binnen
@@ -832,6 +842,47 @@ function safeHistoryReplace(stateObj, hash) {
   try { history.replaceState(stateObj, '', hash); } catch (e) { /* stil negeren, zie boven */ }
 }
 
+// ─── Terugknop linksboven (TT-301, 20-09-2026, Ronald) ───────────────────
+// De knop doet precies hetzelfde als de terugknop van Android: history.back().
+// Daarmee loopt hij door dezelfde popstate-afhandeling onderaan dit bestand —
+// eerst een open venster, dan een open gesprek, dan een open tegelscherm, pas
+// daarna de vorige view. Eén pad, geen tweede logica ernaast.
+//
+// Waarom de knop er moet zijn: iOS heeft geen systeem-terugknop, en een app
+// die op het beginscherm staat heeft ook geen browserbalk (projectinstructies
+// §9, TT-294). Daar is dit de enige weg terug.
+
+// Hoeveel stappen de app zelf aan de geschiedenis heeft toegevoegd. Nul
+// betekent: dit is het scherm waarmee deze sessie begon, en history.back()
+// zou de app verlaten. appInit() zet de teller aan het eind op nul — die
+// eerste showView() hoort bij het opstarten en is geen stap die iemand zelf
+// heeft gezet.
+let terugDiepte = 0;
+
+// Een open venster, gesprek of tegelscherm is óók een stap terug, ook als de
+// teller nul is (bijv. na verversen op een gedeelde profiellink). Dezelfde
+// drie lagen, in dezelfde volgorde, als de popstate-afhandeling hieronder.
+function magTerug() {
+  if (document.querySelector('.modal-overlay.visible')) return true;
+  const draad = document.getElementById('messagesThreadPanel');
+  if (draad && draad.style.display !== 'none' && activeConversationId) return true;
+  if (activeTegelScreen !== 'overview') return true;
+  return terugDiepte > 0;
+}
+
+// De knop verdwijnt als er niets is om naar terug te gaan, maar zijn vak
+// blijft staan (visibility, niet display). Zo verspringt het woordmerk niet
+// zodra je een scherm dieper gaat.
+function werkTerugKnopBij() {
+  const btn = document.getElementById('navTerugBtn');
+  if (btn) btn.style.visibility = magTerug() ? '' : 'hidden';
+}
+
+function terugKnop() {
+  if (!magTerug()) return; // nooit de app uit via deze knop
+  history.back();
+}
+
 function showView(view, mode) {
   closeNavMenu();
   sluitOpruimModals(); // TT-264: een view-wissel laat nooit een spelende video achter
@@ -971,8 +1022,9 @@ function showView(view, mode) {
   //  - anders     → een gewone, bewuste navigatie: nieuwe stap toevoegen.
   if (mode !== 'pop') {
     if (mode === 'redirect') safeHistoryReplace({ view }, '#' + view);
-    else safeHistoryPush({ view }, '#' + view);
+    else { safeHistoryPush({ view }, '#' + view); terugDiepte++; } // TT-301
   }
+  werkTerugKnopBij(); // TT-301
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
   // TT-142 (25-08-2026): geen automatische focus meer bij het openen van een
@@ -991,7 +1043,10 @@ function syncModalScrollLock() {
   document.body.style.overflow = open ? 'hidden' : '';
 }
 (function bewaakModals() {
-  const waarnemer = new MutationObserver(syncModalScrollLock);
+  // TT-301: dezelfde waarnemer werkt ook de terugknop bij. Een modal openen
+  // of sluiten gebeurt op veertien plekken; één waarnemer is betrouwbaarder
+  // dan veertien losse aanroepen — zelfde afweging als bij de scrollvergrendeling.
+  const waarnemer = new MutationObserver(() => { syncModalScrollLock(); werkTerugKnopBij(); });
   document.querySelectorAll('.modal-overlay').forEach(m => {
     waarnemer.observe(m, { attributes: true, attributeFilter: ['class'] });
   });
@@ -1009,7 +1064,7 @@ function syncModalScrollLock() {
 let naamHermeetTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(naamHermeetTimer);
-  naamHermeetTimer = setTimeout(() => { fitProfileName(document); fitModalLogo(document); }, 150);
+  naamHermeetTimer = setTimeout(() => { fitProfileName(document); fitKopLogo(document); }, 150);
 });
 
 // TT-264 (13-09-2026, Ronald): "als ik een video inline afspeel en ik druk op
@@ -1050,6 +1105,7 @@ window.addEventListener('popstate', (e) => {
     sluitModal(openModal);
     syncModalScrollLock();
     safeHistoryPush(history.state, location.hash || '#landing');
+    werkTerugKnopBij(); // TT-301
     return;
   }
   // V-03 (12-08-2026): een open gesprek was geen view en geen modal, dus de
@@ -1059,6 +1115,7 @@ window.addEventListener('popstate', (e) => {
   if (draad && draad.style.display !== 'none' && activeConversationId) {
     closeConversation();
     safeHistoryPush(history.state, location.hash || '#messages');
+    werkTerugKnopBij(); // TT-301
     return;
   }
   // TT-168-overgang (02-09-2026): zelfde patroon voor een open tegelscherm
@@ -1067,8 +1124,11 @@ window.addEventListener('popstate', (e) => {
   if (activeTegelScreen !== 'overview') {
     openTegelOverview();
     safeHistoryPush(history.state, location.hash || '#profieltegels');
+    werkTerugKnopBij(); // TT-301
     return;
   }
+  // TT-301: pas hier gaat er echt een stap van de app af.
+  terugDiepte = Math.max(0, terugDiepte - 1);
   showView(e.state?.view || 'landing', 'pop');
 });
 

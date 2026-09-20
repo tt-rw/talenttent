@@ -1377,17 +1377,57 @@ function fitProfileName(root) {
 // (huisstijl §2.1). `.modal-box-kop { overflow: hidden }` knipte het
 // ⋯-menu en het sluiten-kruisje daardoor onzichtbaar weg. Zelfde aanpak
 // als fitProfileName: krimpen tot het past, geen vaste maat per scherm.
-const MODALLOGO_LADDER = [28, 24, 20, 18, 16];
+// TT-301 (20-09-2026): dit gold tot nu toe alleen voor een koprij in een
+// venster. Sinds de terugknop erbij staat, is de gewone kop net zo krap: op
+// 280px (het smalste canvas) is er na twee knoppen van 44px nog 144px over,
+// en het woordmerk is op 28px 188px breed — gemeten 20-09-2026. Dezelfde
+// krimptrap geldt daarom nu voor allebei. Eén regel, niet per scherm
+// omzeild (§2, regel 11). De functie heette fitModalLogo(); die naam dekte
+// de inhoud niet meer.
+const KOPLOGO_LADDER = [28, 24, 22, 20, 18, 16];
+// Noodtreden, zelfde gedachte als PROFIELNAAM_NOOD hierboven. Ze zijn nodig
+// in één stand: een koprij in een venster met zowel de terugknop als het
+// ⋯-menu en het kruis, op het smalste canvas van 280px. Daar is na de drie
+// knoppen nog 91px over en het woordmerk is op 16px al 107px breed (gemeten
+// 20-09-2026). Liever een klein woordmerk dan een woordmerk over de knoppen.
+const KOPLOGO_NOOD = [14, 12];
 
-function fitModalLogo(root) {
+// Het woordmerk wordt buiten beeld gemeten, niet op zijn eigen plek in de
+// kop. Reden (TT-301, gemeten 20-09-2026): het woordmerk staat gecentreerd
+// in zijn kolom, dus loopt het bij overschrijding aan beide kanten uit zijn
+// vak. scrollWidth telt alleen wat er rechts uitsteekt en meldde daardoor
+// "past" terwijl het woordmerk 18px over de knoppen heen lag. Buiten beeld
+// is er geen kolom die het indrukt, dus daar is de meting de echte breedte.
+// Zelfde aanpak als meetNaamBreedte() hierboven.
+let kopLogoMeterEl = null;
+
+function meetLogoBreedte(logo, px) {
+  if (!kopLogoMeterEl) {
+    kopLogoMeterEl = document.createElement('div');
+    kopLogoMeterEl.className = 'logo naam-meter';
+    document.body.appendChild(kopLogoMeterEl);
+  }
+  if (kopLogoMeterEl.innerHTML !== logo.innerHTML) kopLogoMeterEl.innerHTML = logo.innerHTML;
+  kopLogoMeterEl.style.fontSize = px + 'px';
+  return kopLogoMeterEl.scrollWidth;
+}
+
+function fitKopLogo(root) {
   const scope = root || document;
-  scope.querySelectorAll('.modal-kop .logo').forEach(el => {
-    const ruimte = el.clientWidth;
-    if (!ruimte) return; // nog niet zichtbaar — niets te meten
-    el.style.fontSize = '';
-    for (const px of MODALLOGO_LADDER) {
-      el.style.fontSize = px + 'px';
-      if (el.scrollWidth <= ruimte) return;
+  scope.querySelectorAll('.modal-kop, header').forEach(rij => {
+    const logo = rij.querySelector(':scope > .logo');
+    if (!logo || !rij.clientWidth) return; // nog niet zichtbaar — niets te meten
+    const st = getComputedStyle(rij);
+    const gap = parseFloat(st.columnGap) || 0;
+    // De ruimte tussen de twee buitenvakken. Die vakken zijn zo breed als hun
+    // knoppen; de rest van de rij is voor het woordmerk. Zo gerekend in plaats
+    // van gemeten, want de kolom zelf krimpt mee met de letter.
+    const vakken = [...rij.querySelectorAll(':scope > .kop-vak')];
+    const bezet = vakken.reduce((s, v) => s + v.offsetWidth, 0) + gap * vakken.length;
+    const ruimte = rij.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight) - bezet;
+    for (const px of KOPLOGO_LADDER.concat(KOPLOGO_NOOD)) {
+      logo.style.fontSize = px + 'px';
+      if (meetLogoBreedte(logo, px) <= ruimte) return;
     }
   });
 }
