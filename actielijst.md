@@ -1,6 +1,203 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 18-09-2026 — **TT-06 (P0) gebouwd en getest: rapporteren en blokkeren. Eindstand 326 van 326. Nieuw bestand `veiligheid.js`, twee nieuwe tabellen die Ronald nog moet aanmaken.**
+**Laatste update:** 20-09-2026 — **TT-01 werkt. Voor het eerst is er een echte
+e-mail aangekomen, met de opmaak intact. De oorzaak lag niet in de code maar in
+drie verkeerd ingevulde secrets.**
+
+**Hoe de diagnose verliep.** Sinds 31-08-2026 stonden er vier controlepunten
+open waarvan er geen enkele was bevestigd of uitgesloten. Alle vier zijn deze
+sessie gemeten, via de browserpane tegen de echte database (§12, laag 2).
+
+| Controlepunt | Uitkomst |
+|---|---|
+| Staat de digestfrequentie goed? | **Ja.** Negen muzikanten, allemaal `profile_complete`, allemaal op Dagelijks |
+| Draaide de `pg_cron`-taak? | **Ja, elke dag.** `cron.job_run_details` toont "succeeded" tot 20-09 06:00 UTC aan toe, zonder onderbreking |
+| Gaf de Edge Function een fout? | **Nee.** Statuscode 200, elke keer |
+| Was er inhoud te melden? | **Ja**, op meerdere dagen |
+
+Alle vier dus goed — en toch nooit een mail. De reden dat dit drie weken
+onvindbaar bleef, staat in het antwoord zelf: de functie antwoordde altijd
+`{"ok":true,"sent":0,"skipped":0}`. De lus sloeg een ontvanger zonder inhoud
+over **zonder die te tellen**, en ving elke verzendfout op in een `catch` die
+alleen `skipped` ophoogde. Nul en nul was dus niet te onderscheiden van "er
+waren geen ontvangers", van "er was niets te melden" en van "elke verzending
+mislukte".
+
+**Wat er gewijzigd is aan `send-digest` (v2, gedeployed door Ronald).** Drie
+dingen; de rest van het bestand is letterlijk ongewijzigd.
+
+1. Optioneel veld `since_days` in de aanroep. Zonder dit veld gedraagt de
+   functie zich exact als v1 (1 dag bij daily, 7 bij weekly). Een waarde
+   buiten 1–365 wordt genegeerd. Dit is de testingang: zonder deze ingang is
+   een verzending alleen aan te tonen door te wachten tot er toevallig iets
+   binnen 24 uur gebeurt.
+2. Optioneel veld `only_musician_id`. Beperkt een testverzending tot één
+   ontvanger, zodat een ruim terugkijkvenster niet naar alle negen profielen
+   mailt.
+3. Het antwoord bevat nu per ontvanger wat er gevonden is en wat ermee is
+   gebeurd (`details`), plus `nothing_to_report` als eigen teller.
+
+**De oorzaak — drie fouten, alle drie ontstaan op 28-08-2026 bij het invullen
+van de secrets.** Geen daarvan zat in de code.
+
+| Secret | Stond op | Moest zijn |
+|---|---|---|
+| `SMTP_USER` | `465` (het poortnummer) | `noreply@talenttent.org` |
+| `SMTP-USER` (met streepje) | `noreply@talenttent.org` | bestaat niet meer, verwijderd |
+| `SMTP_PORT` | **ontbrak volledig** | `465` |
+| `SMTP_HOST` | `talenttent.org` | `mail.talenttent.org` |
+
+Eén streepje in plaats van een liggend streepje, en drie waarden over de
+verkeerde namen verdeeld. `SMTP_USER` wordt in de functie voor twee dingen
+tegelijk gebruikt — inlognaam én afzenderadres — dus kwam `465` als afzender in
+de mail terecht. Denomailer weigerde die vóór het verbinden: *"The specified
+from adress is not a valid email adress."* Daarna bleek `SMTP_HOST` naar
+`talenttent.org` te wijzen, en dat adres (185.199.109.153) is **GitHub Pages**,
+niet de mailserver. De mailserver is `mail.talenttent.org` (45.82.191.150).
+Geverifieerd met een DNS-opzoeking.
+
+**Hoe de waarden zijn achterhaald zonder ze uit te lezen.** Supabase toont van
+elke secret alleen een SHA256-vingerafdruk. Die vingerafdrukken zijn vergeleken
+met de vingerafdruk van een reeks voor de hand liggende waarden; drie kwamen
+exact overeen. Het wachtwoord is niet getest en wordt nooit getest.
+
+**Aangetoond werkend, 20-09-2026 11:09.** Verzonden naar
+`contact@talenttent.org` (profiel "Tester3"), aangekomen en gelezen. Eén nieuw
+bericht van Rafaela plus drie bandmatches (Van Delft 0 km, Testband 2,9 km,
+Silver Earring 2,9 km), opmaak intact: woordmerk, gouden accentstreepjes,
+badges, knop. Antwoord van de functie:
+`{"sent":1,"skipped":0,"nothing_to_report":0,...,"uitkomst":"verstuurd"}`.
+
+Een eerdere poging naar Ronalds eigen profiel bounceerde met `550 mailbox
+unavailable` — het adres in dat account is `ronald@email.com` en dat bestaat
+niet. Dat is geen fout in de keten: de mail was correct verzonden en werd door
+de ontvangende mailserver geweigerd. Zie TT-298 hieronder.
+
+**Broncode veiliggesteld.** `send-digest-index.ts` bestond nergens anders dan in
+de Code-tab van het Supabase-dashboard — niet in beide repo's, niet in de
+gedeelde map, niet in de git-geschiedenis. Zowel v1 als v2 staat nu in de
+gedeelde map als `_niet-uploaden-send-digest-index-20-09-2026.ts` en
+`-v2.ts`. Deze bestanden gaan nooit naar een repo: GitHub Pages publiceert
+alles in de productierepo.
+
+**Werkwijze deze sessie (besluit Ronald).** Eerst aantonen dat er een mail
+aankomt, pas daarna bouwen op die verzendweg. Reden: bouwen op infrastructuur
+die zelf niet aantoonbaar werkt, stapelt twee onbewezen dingen op elkaar.
+
+**Gewijzigd:** `actielijst.md`. Verder geen repobestand. De wijziging aan
+`send-digest` zit in Supabase, niet in een repo.
+
+---
+
+**Vier nieuwe bevindingen, elk met niveau en toets.**
+
+| ID | Bevinding | Niveau en toets |
+|---|---|---|
+| **TT-295** | **De matchhelft van de digest kan structureel nooit iets opleveren.** `tt_digest_new_musicians` doet een inner join op `musician_wanted`. Die tabel bevat **0 rijen**, geverifieerd 20-09-2026. TT-232 (09-09-2026) haalde het enige invulveld ervoor — "instrumenten die je zoekt in een ander" — uit Zoekvoorkeuren, met als reden "dat staat al in de zoekfilters". Sindsdien kan niemand de tabel nog vullen. De bandhelft werkt wel: die gebruikt `band_wanted` tegen de instrumenten in je eigen profiel | **P0.** Toets: kan de app hiermee live zonder dat een gebruiker iets misloopt? Nee — de app belooft een mail over nieuwe matches en levert die helft niet. Zelfde grond waarop TT-01 P0 is: punt 6 van de app-first toetslijst noemt meldingen de kern van de terugkeerlus |
+| **TT-296** | **Het digestvenster is een vaste 24 uur (of 7 dagen), niet "sinds de vorige verzending".** Er wordt nergens bijgehouden wat verstuurd is. Valt een run uit, of komt er iets binnen dat net buiten het raam valt, dan is die melding definitief weg. Achteraf is ook niet vast te stellen of iemand een bepaalde mail heeft gehad | **P1.** Toets: verandert dit of iemand een tweede keer opent? Ja — een gemiste melding is een gemist bericht, en dat is precies de lus die TT-01 moet sluiten |
+| **TT-297** | **De SMTP-verbinding heeft geen eigen time-out.** Bij een onbereikbare mailserver bleef de functie hangen tot `pg_net` er na 30 seconden zelf mee stopte, zonder één regel in het log. Gemeten 20-09-2026 met de verkeerde `SMTP_HOST` | **P2.** Toets: werkt het, maar kost het moeite of vertrouwen? Ja — een storing bij de mailserver levert nu geen bruikbare foutmelding op, alleen stilte |
+| **TT-298** | **Bounces komen aan op `noreply@talenttent.org` en niemand doet er iets mee, en de app controleert bij registratie niet of een e-mailadres bestaat** (mailbevestiging staat uit in Supabase). Aangetoond 20-09-2026: `ronald@email.com` bestaat niet, de mail stuiterde terug. **Nog niet gecontroleerd:** of SPF en DKIM voor `talenttent.org` goed staan | **P1, vóór lancering.** Toets: verandert dit of iemand een tweede keer opent? Ja, indirect maar hard — te veel bounces vanaf één domein kost de bezorgbaarheid van al het verkeer van dat domein. Bij negen testprofielen onschuldig, bij honderd echte gebruikers niet |
+
+**Voorstel van Ronald, nog geen besluit over de uitvoering (20-09-2026).** De
+oplossing voor TT-295 zou een **bewaarde zoekopdracht** kunnen zijn: een vinkje
+op het zoekformulier — "wil je hierover voortaan e-mail ontvangen?" — dat de
+hele zoekopdracht opslaat, dus instrument, genre, straal en plaats, en niet
+alleen een lijstje instrumenten zoals `musician_wanted` deed. Dat zou TT-295 en
+**TT-62 deel 2** ("geef me een seintje zodra er een drummer bijkomt") in één
+keer afhandelen. Het alternatief is het oude veld terugzetten in
+E-mailvoorkeuren: kleiner werk, armere mail, en TT-62 deel 2 blijft dan open.
+Nog geen ontwerpsessie geweest, geen keuze gemaakt.
+
+**Signaal 5.2 gemeld:** Claude heeft zichzelf in deze sessie drie keer
+gecorrigeerd over waar iets in de Supabase-interface staat. Volgende onderwerp
+in een nieuwe sessie.
+
+**Vorige update:** 18-09-2026 — **TT-294 (P0) gevonden en opgelost: de telefoon-terugknop sloeg bij vier modals de eigen opruimfunctie over. Eindstand 335 van 335. Vervolgvraag van Ronald: heeft iOS een terugknop? Nee — zie onderaan dit blok. Advies van Claude (geen besluit): het sluiten-kruisje blijft overal staan; §2 kreeg een nieuwe regel 16 (besluiten neemt Ronald, niet Claude), na een verkeerd toegeschreven "besluit" hierin.**
+
+**Aanleiding.** Ronald viel op dat een kruisje rechtsboven door de terugknop van
+de telefoon kan worden overgenomen. Vraag: in welke gevallen is dat zo, en kan
+het kruisje dan weg? Afspraak: eerst onderzoeken, pas bouwen na bevestiging.
+
+**Bevinding.** De popstate-listener in `core.js` (`initModalStapeling`,
+TT-229) sluit elke zichtbare modal, ongeacht welke — maar roept de eigen
+sluitfunctie van een modal alleen aan via het `data-close`-attribuut. Dat
+hadden maar 2 van de 15 modals met een kruisje (`mediaLightbox`,
+`mediaSpelerModal`). Bij 11 van de overige 13 maakt dat niets uit: hun eigen
+sluitfunctie (of het kruisje zelf) doet toch niet meer dan de modal verbergen,
+dus de terugknop doet daar al precies hetzelfde. Bij 4 modals wél verschil:
+
+- `messageModal` en `meldModal` — hun sluitfunctie maakt eigen state leeg
+  (`messageComposerRecipientId`, `meldDoel`/`meldReden`). De terugknop sloeg
+  dat over.
+- `pickerListModal` — sluitfunctie maakt `activeListPickerId` leeg, de
+  terugknop deed dat niet.
+- `instrumentLevelModal` — **P0.** De sluitfunctie verwijdert normaal een net
+  gekozen instrument zonder niveau weer uit de lijst (zie TT-129, 23-08-2026).
+  Via de terugknop gebeurde dat niet: het instrument bleef staan, en zou bij
+  opslaan met niveau `null` zijn meegegaan — dezelfde bugklasse als TT-129, nu
+  bereikbaar via een pad dat die fix niet meenam.
+
+**Toets:** kon een gebruiker hierdoor data kwijtraken of verkeerd opslaan? Bij
+`instrumentLevelModal` ja → **P0**. Bij de andere drie: nee, de eigen
+open-functie zet hun state bij een volgend gebruik toch weer vers — laag
+risico, meegenomen in dezelfde fix.
+
+**Fix.** `data-close` toegevoegd aan alle vier in `index.html`, wijzend naar
+hun bestaande sluitfunctie (`closeMessageComposer`, `closeMeldModal`,
+`closePickerList`, `closeInstrumentLevelSheet`). Geen JS gewijzigd.
+
+**Getest.** Blok 23 (nieuw, 9 controles) simuleert de terugknop (`popstate`)
+voor alle vier en controleert dat de eigen sluitfunctie echt draait.
+**Geverifieerd: de vier nieuwe controles zakten vóór de fix (state bleef
+hangen, instrument bleef in de lijst) en slaagden erna.** `python3
+tests/tt_tests.py` → 335 van 335 (was 326 van 326). `node --check` en
+haakjesbalans ongewijzigd: er is geen JS-bestand aangeraakt, alleen
+`index.html` en `tests/tt_tests.py`. Geen schermafdruk nodig — de wijziging
+raakt het uiterlijk niet.
+
+**Correctie (§2, regel 16).** Hier stond "besluit Ronald, 18-09-2026" en
+verderop "Besluit: het kruisje rechtsboven blijft overal staan" — Ronald had dat
+besluit op dat moment niet genomen, Claude had zijn eigen conclusie zo
+vastgelegd. Rechtgezet: dit is een **voorstel van Claude**, met de meting
+erbij; het besluit is aan Ronald.
+
+**Stap 2 (kruisje verwijderen) — voorstel Claude: niet doen. Wacht op
+bevestiging van Ronald.**
+Eerst gemeten of "tik buiten de modal" overal een echte tweede sluitweg is:
+op mobiel niet. `styles.css` laat een modal daar het hele scherm vullen
+(`padding:0`, `width:100%`, `height:100dvh`, geen rand) — er is geen "buiten"
+om op te tikken. Op mobiel is de terugknop dus geen aanvulling op een
+bestaande tweede weg, maar de **enige** andere weg naast het kruisje.
+
+**Ronalds vraag: hebben Android en iOS een terugknop?** Verschillend, en dat
+is beslissend:
+- **Android:** ja. Fysieke knop of veeggebaar, en dat werkt ook in een
+  geïnstalleerde PWA — Chrome vertaalt de systeeknop naar de paginageschiedenis
+  (`popstate`), precies zoals hierboven gemeten.
+- **iOS: nee, geen systeemknop.** Safari zelf heeft wél een veeg-vanaf-de-
+  rand-terug-gebaar, maar dat is chrome van de Safari-app zelf. Zodra iemand
+  The Talent Tent op het beginscherm zet — wat `manifest.json` van dit project
+  met `"display": "standalone"` juist mogelijk maakt — verdwijnt alle
+  Safari-chrome, inclusief dat gebaar. Bevestigd door meerdere onafhankelijke
+  meldingen dat het terugveeggebaar in een iOS-PWA in standalone-modus niet
+  werkt (zie bronnen onderaan dit blok).
+
+**Gevolg als het kruisje weg zou gaan:** een iPhone-gebruiker die de app op
+zijn beginscherm heeft gezet, zou in een modal vast kunnen komen te zitten
+zonder enige manier om te sluiten — geen kruisje, geen "buiten" om op te
+tikken, geen terugknop. Dat is een groter probleem dan de gevonden bugs in
+TT-294 zelf. **Advies van Claude: het kruisje rechtsboven overal laten staan**,
+bij alle 15 modals — de terugknop blijft een extra, geen vervanging. **Besluit
+aan Ronald.**
+
+**Bronnen (bevestiging iOS-gedrag):**
+- [Ionic Framework — bug: iOS PWA swipe back broken](https://github.com/ionic-team/ionic-framework/issues/29733)
+- [Ionic Framework — bug: iOS, cannot disable Safari swipe to go back when running as PWA](https://github.com/ionic-team/ionic-framework/issues/22299)
+- [PWAs Power Tips — firt.dev](https://firt.dev/pwa-design-tips/)
+
+---
+
+**Vorige update:** 18-09-2026 — **TT-06 (P0) gebouwd en getest: rapporteren en blokkeren. Eindstand 326 van 326. Nieuw bestand `veiligheid.js`, twee nieuwe tabellen die Ronald nog moet aanmaken.**
 
 **De drie beslissingen die sinds 08-08-2026 openstonden, zijn genomen
 (Ronald, 18-09-2026), plus een vierde.**
@@ -3628,12 +3825,17 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 ## P0 — Zonder dit is de app niet af of onveilig
 
-**Stand van de P0's, bijgewerkt 18-09-2026.** **Vijf P0-bouwtickets staan
-open:** TT-281 · TT-01 · TT-65 · TT-45 · TT-42. TT-06 is op 18-09-2026 gebouwd
+**Stand van de P0's, bijgewerkt 20-09-2026.** **Vijf P0-bouwtickets staan
+open:** TT-281 · TT-295 · TT-65 · TT-45 · TT-42. **TT-01 is op 20-09-2026
+aantoonbaar werkend** en staat in de tweede tabel. In zijn plaats komt
+**TT-295**, de helft van TT-01 die structureel niets kan opleveren zolang
+`musician_wanted` leeg blijft — zie de rij hieronder en de Laatste update
+bovenaan. TT-06 is op 18-09-2026 gebouwd
 en getest en staat in de tweede tabel; hij wacht nog wel op één handeling van
 Ronald (het SQL-script), net als TT-22. TT-281 kwam er
-op 16-09-2026 bij (onderhoudsronde). TT-229, TT-231 (laag 1) en
-TT-62 (deel 1) zijn deze dag opgelost en staan in de tweede tabel. **TT-62 deel 2**
+op 16-09-2026 bij (onderhoudsronde). TT-229, TT-231 (laag 1),
+TT-62 (deel 1) en TT-294 zijn deze dag opgelost en staan in de tweede tabel.
+**TT-62 deel 2**
 ("geef me een seintje zodra er een drummer bijkomt") staat nog open en leunt op
 TT-01; die staat als eigen rij hieronder. Daarnaast staat
 één juridisch punt open zonder ticketnummer (verwerkersovereenkomst Supabase) en
@@ -3660,7 +3862,7 @@ eerste tabel altijd gelijk is aan de stand.
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-01** | E-maildigest bij nieuwe matches en berichten | **Heropend 31-08-2026: niet aantoonbaar werkend.** Gebouwd 28-08-2026 (testaanroep gaf 200), maar Ronald heeft nog geen enkele echte digestmail ontvangen. Oorzaak nog niet gevonden — vier mogelijke plekken staan open, zie Laatste update bovenaan. Eerste Edge Function van het project, SMTP via Plesk (`noreply@talenttent.org`), twee `pg_cron`-taken. Nieuw scherm "Zoekvoorkeuren" bij de zoekpagina. **Bevestigd door de UX-review van 11-09-2026, en zwaarder gewogen dan tot nu toe.** Geverifieerd in de code: geen service worker, geen `Notification`, geen push, geen mailtrigger aan de clientkant. Een muzikant die jou een bericht stuurt, bereikt jou dus alleen als jij uit jezelf de app opent. Deze doelgroep doet dat niet. Daarmee is dit geen "digest die nog niet werkt" maar de ontbrekende schakel in de hele matchlus. Punt 6 van de app-first toetslijst noemt meldingen met zoveel woorden de kern van de terugkeerlus; het is het enige van de negen punten dat niet gebouwd staat. **Onbekend:** of er in Supabase een databasetrigger staat die bij een nieuw bericht mailt — dat is vanuit de code niet te zien en moet Ronald nagaan. Goedkoopste werkende vorm: één e-mail per nieuw bericht, niet pas een digest |
+| **TT-295** | De matchhelft van de digest levert structureel niets op | **Nieuw, 20-09-2026.** `tt_digest_new_musicians` doet een inner join op `musician_wanted`. Die tabel bevat **0 rijen**, geverifieerd 20-09-2026 tegen productie. TT-232 (09-09-2026) haalde het enige invulveld ervoor — "instrumenten die je zoekt in een ander" — uit Zoekvoorkeuren, met als reden "dat staat al in de zoekfilters". Sindsdien kan niemand die tabel nog vullen, en dus vindt de nachtelijke query per definitie niemand. De bandhelft werkt wel: die gebruikt `band_wanted` tegen de instrumenten in je eigen profiel, en is op 20-09-2026 aantoonbaar in een echte mail terechtgekomen (drie bands). **Toets:** kan de app hiermee live zonder dat een gebruiker iets misloopt? Nee — de app belooft een mail over nieuwe matches en levert die helft niet. Zelfde grond waarop TT-01 P0 was. **Voorstel Ronald, geen besluit (20-09-2026):** een bewaarde zoekopdracht — een vinkje op het zoekformulier dat de héle zoekopdracht opslaat (instrument, genre, straal, plaats), niet alleen een lijstje instrumenten. Dat zou TT-295 en TT-62 deel 2 in één keer afhandelen. Alternatief: het oude veld terugzetten in E-mailvoorkeuren — kleiner werk, armere mail, TT-62 deel 2 blijft open. Nog geen ontwerpsessie |
 | **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers, zodra die er zijn. Interim-stap: zie "Direct te doen" hierboven. **Vóór lancering, niet acuut nu (23-08-2026) — de site heeft nog alleen testprofielen, zie afspraak bovenaan deze tabel** |
 | **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel. **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
 | **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus — mogelijk groter dan gedacht, zie toelichting onderaan deze tabel.** **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
@@ -3674,6 +3876,7 @@ herzieningsmomenten in TT-63 nog moeten gebeuren.
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-01** | E-maildigest bij nieuwe matches en berichten | **Aantoonbaar werkend 20-09-2026, na heropening op 31-08-2026.** Er is een echte mail aangekomen bij `contact@talenttent.org` met de opmaak intact: één nieuw bericht plus drie bandmatches. **De oorzaak zat niet in de code maar in drie verkeerd ingevulde secrets van 28-08-2026:** `SMTP_USER` bevatte `465` (het poortnummer), het echte afzenderadres stond onder `SMTP-USER` met een koppelteken in plaats van een liggend streepje, `SMTP_PORT` ontbrak, en `SMTP_HOST` wees naar `talenttent.org` — dat is GitHub Pages, niet de mailserver (`mail.talenttent.org`). **Waarom het drie weken onzichtbaar bleef:** de functie antwoordde altijd `{"ok":true,"sent":0,"skipped":0}`; verzendfouten werden weggevangen en ontvangers zonder inhoud werden niet geteld. `send-digest` v2 lost dat op met een uitsplitsing per ontvanger, plus `since_days` en `only_musician_id` als testingang. Broncode van de functie staat nu in de gedeelde map — hij bestond nergens buiten het Supabase-dashboard. **Vervolg: TT-295** (de matchhelft), **TT-296**, **TT-297** en **TT-298** |
 | **TT-06** | Rapporteren en blokkeren | **Gebouwd en getest 18-09-2026, zie Laatste update bovenaan.** Meldknop + blokkeren, verplicht voordat er actief geworven wordt. **Prioriteit opgehoogd 13-08-2026 (V-05, Ronalds akkoord):** van "geparkeerd" naar **nodig vóór de eerste storeaanvraag** — beide app-stores eisen dit vermoedelijk bij vrij berichtenverkeer tussen gebruikers (aanname, het beleid zelf is niet gelezen). De drie beslissingen van 08-08-2026 zijn op 18-09-2026 genomen. **De twee tabellen staan in productie, geverifieerd via de browserpane op 18-09-2026.** **Nog open:** laag 2 (blokkeren, deblokkeren en melden op de echte site, met een echte login) — laag 1 draait tegen de stub en toetst geen RLS. Gevolg voor TT-63: de herzieningsmomenten voor gebruiksvoorwaarden en gedragscode ("volgt binnenkort") komen daarmee in beeld |
 | **TT-229** | Bandomgeving werkt niet meer | **Opgelost 11-09-2026.** Geen bandprobleem: de bevestigingsvraag lag onzichtbaar achter "Bandleden beheren" door een gelijke `z-index`. Opgelost in de standaard — de laatst geopende modal ligt altijd bovenop (`initModalStapeling()` in `core.js`). Zie Deel 3 |
 | **TT-231** | Vaste Playwright-testset wordt leidend | **Laag 1 opgeleverd 11-09-2026:** `tests/tt_tests.py` + `tests/stub/supabase-stub.js`, tien blokken, 62 controles. Draait bij elke wijziging vóór oplevering. **Laag 2 is verschoven van "kan niet" naar "kan wel"** — zie Deel 3, de bereikbaarheidscorrectie. Dat deel is nog niet als vaste doorloop vastgelegd |
@@ -3682,6 +3885,7 @@ herzieningsmomenten in TT-63 nog moeten gebeuren.
 | TT-22 (restpunt) | Auth-account daadwerkelijk verwijderen | **Data-deel opgelost 09-08-2026** (profiel, kindtabellen, Storage-bestanden, bandoprichterschap — zie Deel 3). **Auth-account-deel gebouwd 06-09-2026** (zie Laatste update bovenaan): nieuwe Edge Function `delete-own-account`, `executeAccountDeletion()` roept 'm aan vóór `signOut()`. **Blokkeert nog op:** Ronald moet de Edge Function bij Supabase aanmaken/deployen (stappen bovenaan dit document) vóórdat dit werkt op de live site |
 | **TT-63** | Privacyverklaring, gebruiksvoorwaarden, gedragscode | **Gebouwd en gepubliceerd 09-08-2026** — drie nieuwe views (`view-privacy`/`view-terms`/`view-gedragscode`), bereikbaar via het nieuwe hamburgermenu (zie hieronder) en via `#privacy`/`#terms`/`#gedragscode`. Toestemmingsregel met links toegevoegd bij de laatste wizard-stap. Gebruikt `privacy@talenttent.org` in alle drie. **Herzieningsmomenten, vastgelegd zodat ze niet vergeten worden:** privacyverklaring → zodra TT-42/TT-45 zijn opgelost (het hoofdstuk Minderjarigen loopt nu al vooruit op een regel die de wizard nog niet afdwingt — dat gat moet dicht vóór brede publicatie); gebruiksvoorwaarden + gedragscode → zodra TT-06 (meldknop) live gaat (nu nog "volgt binnenkort"); gebruiksvoorwaarden → kleine tekstupdate zodra TT-58 (applaus) of TT-221 (volgen) klaar zijn |
 | **TT-129** | Instrument zonder niveau kon in de wizard blijven staan | **Nieuw en opgelost 23-08-2026, zie Deel 3.** Gevonden bij een bredere code-controle, niet live gemeld. Sluiten van het niveau-keuzescherm (kruisje, tik buiten de modal, of "terug") zonder een niveau te kiezen liet een net gekozen instrument zonder niveau in de lijst staan — instrument is verplicht in de wizard, dus dit trof iedereen die dit scherm ooit zo sloot. Bij opslaan ging niveau als `null` mee. Clientfix voorkomt dit nu aan de bron; optioneel SQL-vangnet `I-instrument-niveau-nullable-defensief.sql` nog niet gedraaid |
+| **TT-294** | Terugknop sloeg opruimwerk over bij vier modals | **Nieuw en opgelost 18-09-2026.** Bevinding van Ronald: een kruisje rechtsboven kan door de telefoon-terugknop worden overgenomen. Onderzocht: de popstate-listener (`core.js`, TT-229) sluit elke modal, maar roept de eigen sluitfunctie alleen aan via `data-close` — dat hadden maar 2 van de 15. Bij `messageModal`, `meldModal` en `pickerListModal` bleef eigen state hangen (laag risico, wordt bij heropenen overschreven). Bij `instrumentLevelModal` bleef een net gekozen instrument zonder niveau staan — **zelfde bugklasse als TT-129**, nu bereikbaar via de terugknop in plaats van via kruisje/tik-buiten/"terug". **Toets P0:** kon een gebruiker hierdoor data verkeerd opslaan? Bij instrumentLevelModal ja → P0. Fix: `data-close` toegevoegd aan alle vier in `index.html`, geen JS gewijzigd. Blok 23 (nieuw, 9 controles) bewijst het: zakt vóór de fix, slaagt erna. **Stap 2 (kruisje rechtsboven verwijderen) — advies Claude: niet doen, besluit aan Ronald.** Reden: op mobiel vult een modal het hele scherm (geen "buiten" om op te tikken), en iOS heeft geen systeem-terugknop — een geïnstalleerde PWA op de iPhone (`manifest.json`, `"display": "standalone"`) verliest daarmee alle Safari-chrome inclusief het terugveeggebaar. Zonder kruisje zou zo iemand vast kunnen komen te zitten |
 | **TT-110** | Regressie: eigen profiel niet meer zichtbaar/bewerkbaar | **Gevonden en opgelost 19-08-2026, zie Deel 3.** Live gemeld door Ronald: na inloggen verscheen "Maak profiel", terwijl Berichten en Bands wel gewoon werkten. Oorzaak: `loadMyProfile()` en `editMyProfile()` gebruikten nog `select('*', ...)` op `musicians` — sinds B-01 tweede stap (18-08-2026, hieronder) mag `authenticated` de kolom `birth_date` niet meer lezen, en Postgres laat een sterretje-select dan in zijn geheel falen, niet gedeeltelijk. Trof **elk** ingelogd profiel sinds 18-08-2026. Opgelost met dezelfde, al beproefde aanpak als bij de twee eerder gefixte plekken (zoekresultaten, profielmodal): vaste kolomlijst, geen `birth_date`, leeftijd apart via `tt_musicians_ages()` |
 | **TT-55** | Zoekoptimalisatie (matching muzikant/band) | **Gebouwd en getest 12-08-2026, zie Deel 3.** Was P0 sinds 10-08-2026 (instrument matchte op gelijkenis, waardoor twee drummers elkaars beste match waren). **Besluit:** geen nieuwe formule (`2m + j`, ooit overwogen, zie `zoekfunctienaslagwerk.md` §5, historisch), maar een harde filter — zowel het instrumentfilter op de muzikanten-zoekpagina (`filterInstruments`) als het "instrument gezocht"-filter op de bands-zoekpagina (`filterBandWanted`) zijn nu maximaal 1 instrument + optioneel Zang, i.p.v. een meervoudig OF-filter. Binnen dat resultaat sorteert de bestaande genre-Jaccard-score (ongewijzigd), met een nieuwe tie-break (afstand, dan naam) bij gelijke stand — loste tegelijk een sluimerende bug op (`sortMusicianList`/`sortBandList` gaven bij een gelijke score voorheen een onvoorspelbare volgorde terug). Geen databasefunctie aangeraakt. **Nog open:** TT-56 (wederkerigheid, "sta je open voor iets nieuws?") blijft een apart ticket |
 | **TT-07** | Leeftijdsbeleid | **Herzien 08-08-2026: minimumleeftijd blijft 13.** Ticket zelf vraagt geen codewijziging meer; de gevolgen zijn losgetrokken naar TT-45 |
@@ -3732,6 +3936,8 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-296** | Het digestvenster is een vaste 24 uur, niet "sinds de vorige verzending" | **Nieuw, 20-09-2026.** `send-digest` rekent het terugkijkvenster uit vanaf het moment van aanroepen: 1 dag bij dagelijks, 7 bij wekelijks. Er wordt nergens bijgehouden wat verstuurd is. Valt een run uit, of komt er iets binnen dat net buiten het raam valt, dan is die melding definitief weg. Achteraf is ook niet vast te stellen of iemand een bepaalde mail heeft gehad. **Toets:** verandert dit of iemand een tweede keer opent? Ja — een gemiste melding is een gemist bericht, precies de lus die TT-01 moet sluiten |
+| **TT-298** | Bounces komen nergens terecht, en registratie controleert het e-mailadres niet | **Nieuw, 20-09-2026.** Mailbevestiging staat uit in Supabase, dus een verzonnen adres komt ongehinderd de app in. Aangetoond dezelfde dag: het profiel van Ronald draagt `ronald@email.com`, dat bestaat niet, en de digest stuiterde terug met `550 mailbox unavailable`. Die bounce komt aan op `noreply@talenttent.org`, waar niemand en niets ernaar kijkt. **Nog niet gecontroleerd:** of SPF en DKIM voor `talenttent.org` goed staan. **Toets:** verandert dit of iemand een tweede keer opent? Ja, indirect maar hard — te veel bounces vanaf één domein kost de bezorgbaarheid van al het verkeer van dat domein. Bij negen testprofielen onschuldig, bij honderd echte gebruikers niet. **Vóór lancering** |
 | **TT-293** | Modal-koprij loopt buiten het canvas op een smal bureaubladvenster | **GEBOUWD EN GETEST 18-09-2026.** **Melding Ronald:** bij een venster tussen circa 561 en 780px breed is `#appRoot` 50% van het venster (§11) en dus smaller dan een telefoon. Het woordmerk (28px, 263px breed) kromp niet mee; `.modal-box-kop { overflow: hidden }` knipte daardoor het ⋯-menu en het sluiten-kruisje weg — onzichtbaar en niet te bedienen. Gemeten door Ronald: 615px → 69px buiten beeld, 640px → 56px, 1280px → ruim binnen, 375px → 1px (net aan). Bestond al vóór TT-06, die maakte het 44px erger (het ⋯-menu staat in dezelfde rij). **Oorzaak, geverifieerd in de code:** `.modal-kop .logo` had geen `min-width: 0`, het browserdefault is `min-width: auto` — een flex-item kan dan nooit kleiner worden dan zijn eigen tekst. **Oplossing, zelfde aanpak als TT-249 (fitProfileName):** `min-width: 0` op `.modal-kop .logo`, en een nieuwe functie `fitModalLogo()` in `utils.js` (ladder 28·24·20·18·16px) die de lettergrootte op de grootste passende trede zet. Aangeroepen bij het openen van de muzikant- en de bandmodal, en op resize. Gewijzigd: `index.html`, `styles.css`, `utils.js`, `musicians.js`, `core.js`. **Geverifieerd:** blok 1 van de testset (326/326), haakjesbalans en `node --check` op alle vier gewijzigde JS-bestanden. **Geverifieerd, lokaal met Playwright:** het mechanisme werkt — het sluiten-kruisje blijft binnen de modal-box op 375/615/640/780/1280px, geen enkel geval geklemd. **Aanname:** de sandbox heeft geen netwerktoegang tot Google Fonts, dus deze test gebruikte een vervangend lettertype in plaats van Alfa Slab One — de exacte pixelwaarden uit Ronalds meting zijn dus niet met het echte lettertype herhaald. **Nog te bevestigen door Ronald:** met de browserpane op talenttent.org, bij 615 en 640px, of het ⋯-menu en het kruisje nu zichtbaar en bruikbaar zijn |
 | **TT-289** | Zoek setlist: van muzikanten naar de nummers die ze delen | **Gebouwd en getest 17-09-2026, zie het sessieblok bovenaan.** Tweede stand op het Setlist-tabblad. 2 tot 20 muzikanten kiezen, met Plaats en Straal voor de naamsuggesties; resultaat is een lijst van nummers die minstens 2 van hen spelen, open te klappen per nummer met het niveau per muzikant. Blok 21 van de testset. **Nog open:** laag 2 ingelogd (zie sessieblok). **Toets P1:** een band of jamgroep ziet in één keer wat ze samen kunnen spelen — een reden om de app opnieuw te openen voor elke repetitie |
 | **TT-288** | "Beschikbaar voor": keuzelijst op het profiel, met een pauzestand | **Nieuw, 16-09-2026, besluit Ronald na UX-bespreking. Nog niet gebouwd.** **Wat:** in Profiel bewerken → "Wat zoek je" vervangt één keuzelijst "Beschikbaar voor" de vier doelkaarten. Opties: Jammen · Optreden · Bands · Alles! · DM me! · (Nu even niet). **Op het profiel:** een blok tussen het naamblok en de instrument- en genrelabels, twee rijen. Links op halve breedte "Beschikbaar voor:" met daaronder de keuze. Rechts op halve breedte een tekstblok met de bestaande regel "Deze week bijgewerkt" enz. **"(Nu even niet)" = niet vindbaar.** Die muzikant verschijnt in geen enkel zoektabblad. Dit vraagt een aanpassing in de zoekfuncties in de database (`tt_search_musicians`, `tt_search_musicians_anon`, `tt_search_musicians_by_songlist_anon`, en mogelijk `tt_get_musicians_public`); de definities levert Ronald aan. **Afspraken uit de bespreking, nog te bevestigen bij het bouwen:** (1) wie op pauze staat en op Zoeken tikt, krijgt de vraag of hij weer zichtbaar wil worden — wie zoekt, is vindbaar; (2) berichten met bestaande contacten blijven werken, een nieuw gesprek met een onbekende niet; (3) de pauze verloopt vanzelf, voorstel na drie maanden; (4) de band van een muzikant op pauze blijft vindbaar; (5) uitgelogd zoeken blijft ongewijzigd, zonder extra drempels. **Geverifieerd in de code, 16-09-2026:** de doelkaarten schrijven naar `musicians.goal` met de waarden `oefenen` · `band` · `optreden` · `alles` (`index.html` subscherm `watZoekJeScreen`, `musicians.js` `wzjSelectGoal`). De regel "Deze week bijgewerkt" bestaat al (`relativeUpdatedLabel()` in `messages.js`). **Besluit Ronald, 16-09-2026 — omzetting bestaande waarden:** `oefenen` (Samen oefenen) → Jammen · `band` (Band starten) → Bands · `optreden` → Optreden · `alles` → Alles!. **Nog te bepalen:** (a) wizardstap 3 ("Wat wil je nu?") gebruikt dezelfde doelkaarten — gaat die mee naar de keuzelijst? Consistentieregel §2.11 zegt ja; (c) de twee nieuwe waarden "DM me!" en "(Nu even niet)" vragen misschien een nieuwe kolom — die maakt Ronald aan; (d) de termijn van de pauze; (e) wat "DM me!" in de zoekresultaten en de matchscore betekent. **Toets P1:** een bericht aan iemand die toch niet wil, blijft onbeantwoord en ontmoedigt de afzender; een pauzestand houdt mensen binnen die anders hun account zouden opzeggen. Dat bepaalt of mensen terugkomen |
@@ -3761,6 +3967,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-297** | De SMTP-verbinding heeft geen eigen time-out | **Nieuw, 20-09-2026.** Gemeten die dag met een verkeerde `SMTP_HOST`: de Edge Function bleef hangen tot `pg_net` er na 30 seconden zelf mee stopte, zonder één regel in het functielog. **Toets:** werkt het, maar kost het moeite of vertrouwen? Ja — een storing bij de mailserver levert nu geen bruikbare foutmelding op, alleen stilte, en dat is precies wat TT-01 drie weken heeft opgehouden |
 | **TT-292** | Beheerscherm voor meldingen | **Nieuw, 18-09-2026 (TT-06).** Meldingen komen in `musician_reports` terecht en Ronald leest ze in de tabelweergave van Supabase. Er is geen scherm in de app om ze af te handelen (bekijken, status zetten, de gemelde muzikant tijdelijk onzichtbaar maken). Bewust buiten TT-06 gehouden: die moest eerst een meldknop opleveren, niet een moderatieomgeving. Bandkant: niet van toepassing, hetzelfde scherm toont beide soorten meldingen. **Toets P2:** melden werkt, maar afhandelen kost nu een omweg buiten de app |
 | **TT-290** | Goud op 10% dekking op het actieve zoektabblad | **Nieuw, 17-09-2026, gevonden bij TT-289. Geverifieerd in de code.** `.search-mode-tab.active` in `styles.css` heeft `background: rgba(245,197,24,0.1)`. Huisstijl §1.1 verbiedt goud als vlak onder 50%: op `--surface2` wordt dat olijfbruin. Voorstel volgens §1.1: wit op 5% met de gouden rand en gouden tekst die er al staan. Zelfde soort: `highlight()` in `utils.js` markeert de getypte letters in een suggestie met goud op 30% (`mark`). Beide in één ronde. **Let op:** de standknoppen van het Setlist-tabblad (TT-289) gebruiken bewust dezelfde klasse als de hoofdtabbladen (besluit Ronald: "hetzelfde als setlist"); ze veranderen dus vanzelf mee. Bandkant: niet van toepassing, het zijn gedeelde componenten. **Toets P2:** het werkt, maar het actieve tabblad oogt vlekkerig in plaats van gekozen |
 | **TT-282** | Vegen: een schuine of afbuigende veeg wisselt van tabblad | **Nieuw, 16-09-2026 (onderhoudsronde).** 30° telt als horizontaal; een veeg die steil eindigt telt ook; een veeg vanaf de schermrand wisselt. Volledige tekst: Laatste update bovenaan |

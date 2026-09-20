@@ -2003,7 +2003,7 @@
 </div>
 
 <!-- Bericht sturen (TT-01) -->
-<div class="modal-overlay" id="messageModal" onclick="if(event.target===this)closeMessageComposer()">
+<div class="modal-overlay" id="messageModal" data-close="closeMessageComposer" onclick="if(event.target===this)closeMessageComposer()">
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeMessageComposer()">✕</button>
     <div class="filter-title" style="margin-bottom:4px;">Bericht sturen</div>
@@ -2020,7 +2020,7 @@
 <!-- Melden (TT-06, 18-09-2026). Eén scherm voor alle drie de doelen: een
      muzikant, een band en een gesprek. De reden is verplicht, de toelichting
      niet — anders stopt een gebruiker van vijftien halverwege. -->
-<div class="modal-overlay" id="meldModal" onclick="if(event.target===this)closeMeldModal()">
+<div class="modal-overlay" id="meldModal" data-close="closeMeldModal" onclick="if(event.target===this)closeMeldModal()">
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeMeldModal()">✕</button>
     <div class="filter-title" id="meldTitel" style="margin-bottom:4px;">Melden</div>
@@ -2200,7 +2200,7 @@
      hem eerder onterecht compleet lijken. De knoppen "Instrument
      verwijderen" en "Volledige toelichting" staan nu samen in de vaste
      voettekst, gelijke breedte, uitgelijnd met de niveauknoppen erboven. -->
-<div class="modal-overlay" id="instrumentLevelModal" onclick="if(event.target===this)closeInstrumentLevelSheet()">
+<div class="modal-overlay" id="instrumentLevelModal" data-close="closeInstrumentLevelSheet" onclick="if(event.target===this)closeInstrumentLevelSheet()">
   <div class="modal-box modal-box-sticky-footer modal-box-slg">
     <button class="modal-back" id="instrumentLevelBackBtn" onclick="backToInstrumentPick()" aria-label="Terug naar de instrumentenlijst" hidden><span aria-hidden="true">←</span></button>
     <button class="modal-close" onclick="closeInstrumentLevelSheet()" aria-label="Sluiten">✕</button>
@@ -2230,7 +2230,7 @@
      plekken — alleen de eigen-instrumentkeuze in de wizard heeft een niveau,
      zie instrumentLevelModal hierboven). Zelfde sticky-footer-opbouw als
      hierboven, hier zonder voettekst (die blijft leeg en dus onzichtbaar). -->
-<div class="modal-overlay" id="pickerListModal" onclick="if(event.target===this)closePickerList()">
+<div class="modal-overlay" id="pickerListModal" data-close="closePickerList" onclick="if(event.target===this)closePickerList()">
   <div class="modal-box modal-box-sticky-footer modal-box-lg">
     <button class="modal-close" onclick="closePickerList()" aria-label="Sluiten">✕</button>
     <div class="modal-scroll-area">
