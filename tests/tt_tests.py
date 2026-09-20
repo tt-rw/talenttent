@@ -2593,7 +2593,9 @@ def blok_browser():
           const btn = document.getElementById('navTerugBtn');
           const zichtbaar = () => getComputedStyle(btn).visibility === 'visible';
           const uit = {};
-          // Opstartstand nabootsen: geen eigen stappen, niets open.
+          // Opstartstand nabootsen: op het hoogste scherm, geen eigen stappen,
+          // niets open (TT-303: het hoogste scherm is het openingsscherm).
+          showView(hoogsteScherm());
           terugDiepte = 0; werkTerugKnopBij();
           uit.bijStart = zichtbaar();
           uit.magBijStart = magTerug();
@@ -2775,6 +2777,67 @@ def blok_browser():
               knoppen["viaEenControle"] == knoppen["totaal"] == 5, json.dumps(knoppen))
 
         check("geen paginafouten in blok 26", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ------------------------------------------------------------------
+        # Blok 27 — TT-303: hoogste scherm, terugknop omhoog, volgorde onderin
+        # ------------------------------------------------------------------
+        print("\nBlok 27 — hoogste scherm en volgorde onderin (TT-303)")
+
+        volgorde = page.evaluate("""() => [...document.querySelectorAll('.app-bottom-nav .bottom-nav-btn')]
+          .map(b => b.id)""")
+        check("de onderbalk staat op Profiel · Zoeken · Berichten · Bands",
+              volgorde == ["bottomNavProfile", "bottomNavSearch", "bottomNavMessages", "bottomNavBands"],
+              json.dumps(volgorde))
+
+        # .naam-meter is het onzichtbare meetelement van fitKopLogo(), geen woordmerk.
+        merk = page.evaluate("""() => [...document.querySelectorAll('.logo:not(.naam-meter)')]
+          .map(el => el.getAttribute('onclick') || '')""")
+        check("elk woordmerk gaat naar het hoogste scherm, niet vast naar de landingspagina",
+              len(merk) >= 3 and all("naarHoogsteScherm()" in o for o in merk)
+              and not any("showView('landing')" in o for o in merk), json.dumps(merk))
+
+        hoogste = page.evaluate("""async () => {
+          const btn = document.getElementById('navTerugBtn');
+          const zichtbaar = () => getComputedStyle(btn).visibility === 'visible';
+          const uit = {};
+          const bewaard = currentUser;
+
+          currentUser = null;
+          uit.uitgelogd = hoogsteScherm();
+          showView('landing'); terugDiepte = 0; werkTerugKnopBij();
+          uit.opLanding = zichtbaar();
+
+          currentUser = { id: 'test' };
+          uit.ingelogd = hoogsteScherm();
+          showView('myprofile'); terugDiepte = 0; werkTerugKnopBij();
+          uit.opProfiel = zichtbaar();
+
+          // Op een hoofdtabblad wijst de knop omhoog, niet door het klikpad.
+          showView('search'); showView('messages'); showView('bands');
+          uit.opTabblad = zichtbaar();
+          uit.gaatOmhoog = terugGaatOmhoog();
+          const stappenVoor = terugDiepte;
+          terugKnop();
+          await new Promise(res => setTimeout(res, 60));
+          uit.naDruk = [...document.querySelectorAll('.app-view.active')].map(v => v.id);
+          uit.geenStapTerug = terugDiepte > stappenVoor; // omhoog is een nieuwe stap
+
+          currentUser = bewaard;
+          showView('landing'); terugDiepte = 0; werkTerugKnopBij();
+          return uit;
+        }""")
+        check("het hoogste scherm is Mijn Profiel ingelogd, de landingspagina uitgelogd",
+              hoogste["ingelogd"] == "myprofile" and hoogste["uitgelogd"] == "landing",
+              json.dumps(hoogste))
+        check("op het hoogste scherm staat geen terugknop",
+              not hoogste["opLanding"] and not hoogste["opProfiel"], json.dumps(hoogste))
+        check("op een hoofdtabblad staat hij wel, en wijst hij omhoog",
+              hoogste["opTabblad"] and hoogste["gaatOmhoog"], json.dumps(hoogste))
+        check("een druk daar brengt je naar Mijn Profiel, niet naar het vorige tabblad",
+              hoogste["naDruk"] == ["view-myprofile"], json.dumps(hoogste))
+
+        check("geen paginafouten in blok 27", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
