@@ -337,3 +337,158 @@ async function saveNewPassword() {
   setTimeout(() => showView('myprofile'), 2000);
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// Inloggegevens wijzigen (TT-299, 20-09-2026)
+// ═══════════════════════════════════════════════════════════════════════
+// Eén venster vanuit Instellingen, met twee blokken: e-mailadres en
+// wachtwoord. Beide raken het inlogaccount bij Supabase, niet de tabel
+// `musicians` — daarom staan ze hier en niet in "Wie ben je", dat alleen
+// profielgegevens opslaat.
+//
+// Twee uitkomsten bij een adreswijziging, allebei afgevangen. Supabase
+// stuurt óf een bevestigingsmail naar het nieuwe adres (dan staat dat adres
+// in `new_email` en is `email` nog het oude), óf hij wijzigt het meteen (dan
+// staat het nieuwe adres direct in `email`). Welke van de twee hangt af van
+// een instelling in het Supabase-dashboard, niet van deze code. De app leest
+// daarom het antwoord en meldt wat er werkelijk is gebeurd, in plaats van
+// een van de twee aan te nemen.
+
+const IG_VELDEN = ['igNieuwEmail', 'igHuidigWachtwoord', 'igNieuwWachtwoord1', 'igNieuwWachtwoord2'];
+
+function igVeldenLeeg() {
+  IG_VELDEN.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+}
+
+function igMelding(tekst) {
+  const el = document.getElementById('igMelding');
+  if (!el) return;
+  el.textContent = tekst;
+  el.classList.add('visible');
+}
+
+function igMeldingWeg() {
+  const el = document.getElementById('igMelding');
+  if (!el) return;
+  el.textContent = '';
+  el.classList.remove('visible');
+}
+
+function openInloggegevens() {
+  const modal = document.getElementById('inloggegevensModal');
+  igMeldingWeg();
+  clearFieldErrors(modal);
+  igVeldenLeeg();
+  document.getElementById('igHuidigEmail').textContent = currentUser?.email || '';
+  modal.classList.add('visible');
+}
+
+function closeInloggegevens() {
+  document.getElementById('inloggegevensModal').classList.remove('visible');
+  igMeldingWeg();
+  clearFieldErrors(document.getElementById('inloggegevensModal'));
+  igVeldenLeeg();
+}
+
+async function wijzigEmail() {
+  const modal = document.getElementById('inloggegevensModal');
+  const el = document.getElementById('igNieuwEmail');
+  const nieuw = el.value.trim();
+  const huidig = currentUser?.email || '';
+
+  igMeldingWeg();
+  clearFieldErrors(modal);
+  const fouten = [];
+  if (!nieuw) fouten.push([el, 'Vul je e-mailadres in']);
+  else if (!emailFormaatGeldig(nieuw)) fouten.push([el, 'Vul een geldig e-mailadres in, bijvoorbeeld jouw@email.nl']);
+  else if (nieuw.toLowerCase() === huidig.toLowerCase()) fouten.push([el, 'Dit is het adres dat je nu al gebruikt']);
+  if (showFieldErrors(fouten)) return;
+
+  // De controlevraag noemt het gevolg, niet de handeling (besluit Ronald,
+  // 20-09-2026): "weet je het zeker?" wordt weggeklikt, een vraag over de
+  // mailbox waar je straks in moet kunnen, wordt gelezen.
+  showConfirm(
+    `Je logt vanaf nu in met ${nieuw}, en je oude adres werkt dan niet meer. Kun je bij die mailbox?`,
+    () => wijzigEmailUitvoeren(nieuw),
+    'Ja, dat klopt'
+  );
+}
+
+async function wijzigEmailUitvoeren(nieuw) {
+  const el = document.getElementById('igNieuwEmail');
+  const { data, error } = await db.auth.updateUser({ email: nieuw });
+  if (error) {
+    // Huisstijl §13.1: een serverantwoord dat over één veld gaat, hoort bij
+    // dat veld te staan, niet in een toast.
+    if (/already|in use|in gebruik|registered|exists|taken/i.test(error.message || '')) {
+      showFieldErrors([[el, 'Dit e-mailadres is al in gebruik']]);
+    } else {
+      logCaught('wijzigEmailUitvoeren', error);
+      showToast('Wijzigen is niet gelukt: ' + friendlyErrorMessage(error));
+    }
+    return;
+  }
+
+  const gebruiker = data?.user || null;
+  const wacht = gebruiker?.new_email || null;
+  if (wacht) {
+    igMelding(`✓ We hebben een mail gestuurd naar ${wacht}. Klik op de link erin, dan is je adres gewijzigd. Tot die tijd log je in met ${gebruiker.email}.`);
+  } else {
+    const nu = gebruiker?.email || nieuw;
+    if (gebruiker) currentUser = gebruiker;
+    document.getElementById('igHuidigEmail').textContent = nu;
+    // Hetzelfde adres staat leesbaar in "Wie ben je". Staat dat scherm open,
+    // dan hoort het meteen te kloppen.
+    const wbj = document.getElementById('wbjEmail');
+    if (wbj) wbj.value = nu;
+    igMelding(`✓ Je e-mailadres is gewijzigd. Je logt vanaf nu in met ${nu}.`);
+  }
+  el.value = '';
+}
+
+async function wijzigWachtwoord() {
+  const modal = document.getElementById('inloggegevensModal');
+  const huidigEl = document.getElementById('igHuidigWachtwoord');
+  const pw1El = document.getElementById('igNieuwWachtwoord1');
+  const pw2El = document.getElementById('igNieuwWachtwoord2');
+  const huidig = huidigEl.value;
+  const pw1 = pw1El.value;
+  const pw2 = pw2El.value;
+
+  igMeldingWeg();
+  clearFieldErrors(modal);
+  const fouten = [];
+  if (!huidig) fouten.push([huidigEl, 'Vul je huidige wachtwoord in']);
+  if (!pw1) fouten.push([pw1El, 'Vul een nieuw wachtwoord in']);
+  else if (pw1.length < 8) fouten.push([pw1El, 'Kies een wachtwoord van minimaal 8 tekens']);
+  if (!pw2) fouten.push([pw2El, 'Herhaal je nieuwe wachtwoord']);
+  else if (pw1 && pw1 !== pw2) fouten.push([pw2El, 'Deze komt niet overeen met het wachtwoord hierboven']);
+  if (showFieldErrors(fouten)) return;
+
+  // Controle op het huidige wachtwoord (besluit Ronald, 20-09-2026: wel bij
+  // het wachtwoord, niet bij het e-mailadres). Supabase laat een wachtwoord
+  // met een geldige sessie zonder meer wijzigen; een geleende, ingelogde
+  // telefoon is dan genoeg om iemand buiten te sluiten. Opnieuw inloggen met
+  // dezelfde gebruiker is de enige controle die de app zelf kan doen, en hij
+  // verstoort de sessie niet: `onAuthStateChange` in core.js slaat een
+  // SIGNED_IN van dezelfde gebruiker over (`lastSignedInUserId`).
+  const { error: inlogFout } = await db.auth.signInWithPassword({
+    email: currentUser?.email || '',
+    password: huidig
+  });
+  if (inlogFout) {
+    showFieldErrors([[huidigEl, 'Dit wachtwoord hoort niet bij het e-mailadres.']]);
+    return;
+  }
+
+  const { error } = await db.auth.updateUser({ password: pw1 });
+  if (error) {
+    logCaught('wijzigWachtwoord', error);
+    showToast('Wijzigen is niet gelukt: ' + friendlyErrorMessage(error));
+    return;
+  }
+  huidigEl.value = '';
+  pw1El.value = '';
+  pw2El.value = '';
+  igMelding('✓ Je wachtwoord is gewijzigd. Je blijft gewoon ingelogd.');
+}
+

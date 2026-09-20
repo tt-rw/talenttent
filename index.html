@@ -45,7 +45,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260918a">
+<link rel="stylesheet" href="styles.css?v=20260920a">
 </head>
 <body>
 
@@ -648,7 +648,10 @@
     <div class="field">
       <label>E-mailadres</label>
       <input type="text" id="wbjEmail" readonly style="cursor:not-allowed;">
-      <p class="field-status" style="color:var(--muted);">Dit is het e-mailadres waarmee je inlogt. Wijzigen kan hier niet.</p>
+      <!-- TT-299 (20-09-2026): het adres blijft hier leesbaar staan, want
+           hier zoekt iemand het. Wijzigen gebeurt bij Instellingen, samen
+           met het wachtwoord. -->
+      <p class="field-status" style="color:var(--muted);">Dit is het e-mailadres waarmee je inlogt. Wijzigen doe je bij Instellingen.</p>
     </div>
 
     <div class="action-row">
@@ -1827,6 +1830,18 @@
     <div class="search-filters">
       <div class="panel-title" style="margin-bottom:20px;">Instellingen</div>
 
+      <!-- TT-299 (20-09-2026, besluit Ronald): e-mailadres en wachtwoord
+           horen bij het inlogaccount, niet bij het profiel. Ze staan daarom
+           hier en niet bij "Wie ben je" — dat scherm schrijft alleen naar
+           `musicians`. Eén venster met beide, zodat er één plek is voor
+           "waarmee log ik in". -->
+      <div class="tile" onclick="openInloggegevens()">
+        <div style="flex:1;">
+          <div class="tile-title">E-mailadres en wachtwoord</div>
+          <div class="tile-sub">waarmee je inlogt</div>
+        </div>
+      </div>
+
       <!-- TT-232 (09-09-2026): stond eerder achter het ⋯-menu op het
            zoekscherm als "Zoekvoorkeuren". De inhoud gaat over e-mail, niet
            over zoeken, dus hoort het hier. -->
@@ -2051,6 +2066,58 @@
     <div class="filter-title" style="margin-bottom:4px;">Geblokkeerde muzikanten</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Je ziet ze niet in de zoekresultaten, en hun berichten komen niet bij je aan.</p>
     <div id="geblokkeerdLijst"></div>
+  </div>
+</div>
+
+<!-- Inloggegevens wijzigen (TT-299, 20-09-2026).
+     Eén venster met twee blokken (besluit Ronald): het e-mailadres en het
+     wachtwoord. Beide raken het inlogaccount bij Supabase, niet de tabel
+     `musicians`. `data-close` zodat de telefoon-terugknop dezelfde
+     opruimfunctie draait als het kruisje (TT-294); het kruisje blijft staan. -->
+<div class="modal-overlay" id="inloggegevensModal" data-close="closeInloggegevens" onclick="if(event.target===this)closeInloggegevens()">
+  <div class="modal-box modal-box-md">
+    <button class="modal-close" onclick="closeInloggegevens()">✕</button>
+    <div class="filter-title" style="margin-bottom:4px;">E-mailadres en wachtwoord</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Hiermee log je in.</p>
+
+    <div id="igMelding" class="auth-success"></div>
+
+    <div class="modal-blok">
+      <div class="field-group single">
+        <div class="field">
+          <label>E-mailadres</label>
+          <p class="field-status" style="color:var(--muted);">Nu: <strong id="igHuidigEmail" style="color:var(--text);"></strong></p>
+          <input type="email" id="igNieuwEmail" placeholder="Nieuw e-mailadres" autocomplete="email" onkeydown="submitOnEnter(event, wijzigEmail)">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="wijzigEmail()">E-mailadres wijzigen</button>
+      </div>
+    </div>
+
+    <div class="modal-blok">
+      <div class="field-group single">
+        <div class="field">
+          <label>Huidig wachtwoord</label>
+          <input type="password" id="igHuidigWachtwoord" autocomplete="current-password" placeholder="••••••••">
+        </div>
+      </div>
+      <div class="field-group single">
+        <div class="field">
+          <label>Nieuw wachtwoord</label>
+          <input type="password" id="igNieuwWachtwoord1" autocomplete="new-password" placeholder="Minimaal 8 tekens">
+        </div>
+      </div>
+      <div class="field-group single">
+        <div class="field">
+          <label>Wachtwoord herhalen</label>
+          <input type="password" id="igNieuwWachtwoord2" autocomplete="new-password" placeholder="••••••••" onkeydown="submitOnEnter(event, wijzigWachtwoord)">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="wijzigWachtwoord()">Wachtwoord wijzigen</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2319,7 +2386,7 @@
 <script src="core.js?v=20260918b"></script>
 <script src="utils.js?v=20260918a"></script>
 <script src="veiligheid.js?v=20260918a"></script>
-<script src="auth.js?v=20260912a"></script>
+<script src="auth.js?v=20260920a"></script>
 <script src="postcode.js?v=20260917a"></script>
 <script src="wizard.js?v=20260916a"></script>
 <script src="search.js?v=20260918a"></script>

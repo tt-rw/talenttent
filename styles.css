@@ -2611,6 +2611,17 @@
      bronvolgorde in het bestand beslist bij gelijke specificiteit. */
   .modal-box-sm { max-width: 400px; }
   .modal-box-md { max-width: 440px; }
+
+  /* TT-299 (20-09-2026): twee blokken onder elkaar in één modal, met een
+     scheiding ertussen. Eén klasse in plaats van een inline marge op dat ene
+     venster (huisstijl §3). 28px is dezelfde afstand als .action-row boven
+     een knoppenrij gebruikt. */
+  .modal-blok + .modal-blok {
+    border-top: 1px solid var(--border);
+    margin-top: 28px;
+    padding-top: 28px;
+  }
+
   .modal-box-lg { max-width: 480px; }
   .modal-box-slg { max-width: 520px; }
   .modal-box-xl { max-width: 760px; }

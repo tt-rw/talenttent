@@ -1,6 +1,112 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 20-09-2026 — **TT-01 werkt. Voor het eerst is er een echte
+**Laatste update:** 20-09-2026 (vervolg) — **TT-299 (P0) gebouwd en getest: je
+e-mailadres en je wachtwoord zijn nu in de app te wijzigen. Eindstand 353 van
+353. Onderweg bleek dat álle auth-mail van Supabase door een testmailer ging,
+met twee mails per uur voor het hele project — TT-300, opgelost door Ronald in
+dezelfde sessie.**
+
+**Aanleiding.** Ronald, 20-09-2026: "ik kan geen email aanpassen in de app. dat
+moeten we veranderen. een emailadres kan wijzigen." Terecht, en ernstiger dan
+het klinkt: het e-mailadres is tegelijk de inlognaam. Wie zijn adres kwijtraakt
+— baanwissel, provider stopt — kan daarna nooit meer een wachtwoord resetten en
+is zijn account kwijt. **Toets P0:** kan de app live zonder dat een gebruiker
+vastloopt of data kwijtraakt? Nee.
+
+**Wat er al stond.** Het veld bestond: `wbjEmail` in "Profiel bewerken → Wie ben
+je", op `readonly`, met eronder "Wijzigen kan hier niet." Het adres staat alleen
+in het inlogaccount bij Supabase, niet in `musicians` — `musicianRow` in
+`wizard.js` heeft geen e-mailkolom. Wijzigen gaat dus via
+`db.auth.updateUser()`, dezelfde functie die `saveNewPassword()` al voor het
+wachtwoord gebruikt.
+
+**TT-300 — gevonden onderweg, en groter dan TT-299 zelf.** Gemeten in het
+Supabase-dashboard via de browserpane (§12, laag 2):
+
+| Instelling | Stond op | Staat nu op |
+|---|---|---|
+| Enable custom SMTP | **uit** | aan — `mail.talenttent.org`, 465, `noreply@talenttent.org` |
+| Rate limit auth-mail | **2 per uur**, veld grijs | 30 per uur, door Supabase zelf gezet |
+| Confirm email (registratie) | uit | uit, ongewijzigd |
+| Secure email change (oud én nieuw adres) | aan | **uit** (besluit Ronald) |
+
+Alle auth-mail van Supabase — óók "wachtwoord vergeten", dat al maanden in de
+app zit — liep door Supabase' eigen testmailer, met twee mails per uur voor het
+hele project. De digest van TT-01 loopt langs een eigen Edge Function en merkte
+daar niets van; daardoor bleef dit onzichtbaar. **Toets P0:** kan de app live
+zonder dat een gebruiker vastloopt? Nee — bij drie mensen die binnen een uur
+hun wachtwoord vergeten, krijgt de derde niets. **Opgelost dezelfde sessie**
+door Ronald, met de SMTP-waarden die op 20-09-2026 bij TT-01 boven water kwamen.
+Geen regel code voor nodig.
+
+*"Secure email change" staat op verzoek van Ronald uit: die stand eist een klik
+in het oude én het nieuwe postvak, en juist wie zijn oude postvak niet meer kan
+lezen, heeft de wijziging nodig.*
+
+**De vier besluiten van Ronald (20-09-2026).**
+
+| Vraag | Besluit |
+|---|---|
+| Waar? | Bij **Instellingen**, niet bij "Wie ben je". Eén venster met e-mailadres én wachtwoord |
+| Hoe vangen we een typefout? | Een controlevraag die het gevolg noemt, geen tweede invulveld |
+| Huidig wachtwoord vragen? | **Alleen bij het wachtwoord**, niet bij het e-mailadres |
+| Bevestiging op het oude adres? | Uit |
+
+**Wat er gebouwd is.**
+
+- **`index.html`** — tegel "E-mailadres en wachtwoord" bovenaan Instellingen, en
+  het venster `inloggegevensModal` met twee blokken. Het veld in "Wie ben je"
+  blijft leesbaar staan; de regel eronder wijst nu naar Instellingen.
+- **`auth.js`** — `openInloggegevens()`, `closeInloggegevens()`, `wijzigEmail()`,
+  `wijzigEmailUitvoeren()`, `wijzigWachtwoord()` plus drie kleine hulpfuncties.
+  Veldfouten via `showFieldErrors()`, met de vaste teksten uit huisstijl §13.1.
+- **`styles.css`** — één klasse `.modal-blok + .modal-blok` voor de scheiding
+  tussen twee blokken in één venster. Geen inline marge (huisstijl §3).
+
+**De controlevraag.** Niet "weet je het zeker?" — dat wordt weggeklikt — maar:
+
+> Je logt vanaf nu in met **jouw@nieuw.nl**, en je oude adres werkt dan niet
+> meer. Kun je bij die mailbox?
+
+*(Besluit Ronald: "een vraag waar je over na moet denken", zonder rood.)*
+
+**Twee uitkomsten, allebei afgevangen.** Supabase stuurt óf een bevestigingsmail
+naar het nieuwe adres (dan staat dat in `new_email` en is `email` nog het oude),
+óf hij wijzigt meteen (dan staat het nieuwe adres direct in `email`). Welke van
+de twee, hangt af van een dashboard-instelling, niet van de code. **Dit is niet
+gemeten:** de sessiebeveiliging weigerde een echte adreswijziging op een live
+account, en daar is niet omheen gewerkt. De app leest daarom het antwoord van
+Supabase en meldt wat er werkelijk gebeurde — "we hebben een mail gestuurd naar
+…" of "je adres is gewijzigd". Bij de eerste echte wijziging blijkt vanzelf
+welke van de twee het is. *(Werkwijze gekozen door Ronald: "ga voor optie 3".)*
+
+**Getest.** Blok 24 (nieuw, 18 controles): de drie afgekeurde adressen bereiken
+Supabase niet, de controlevraag noemt het adres en de mailbox, beide uitkomsten
+geven de juiste melding, "adres al in gebruik" komt bij het veld en niet in een
+toast, een verkeerd huidig wachtwoord houdt de wijziging tegen, en de
+terugknop ruimt het venster op. **Geverifieerd dat het blok vóór de fix zakt:**
+tegen de onveranderde repo stopt het met `ReferenceError: openInloggegevens is
+not defined`. `python3 tests/tt_tests.py` → **353 van 353** (was 335 van 335).
+`node --check` en haakjesbalans op alle bestanden: goed. Schermafdrukken van het
+venster op 390px en 1280px zelf bekeken en vergeleken met `geblokkeerdModal` —
+zelfde kader, zelfde koprij.
+
+**De stub is uitgebreid.** `tests/stub/supabase-stub.js` gaf bij `updateUser()`
+altijd een lege gebruiker terug en legde de aanroep niet vast. Nu wel, met
+`TT_STUB.updateUserResult` en `TT_STUB.updateUserError`, zodat beide uitkomsten
+na te bootsen zijn.
+
+**Gewijzigd:** `index.html`, `styles.css`, `auth.js`, `tests/tt_tests.py`,
+`tests/stub/supabase-stub.js`, `actielijst.md`, `CHECKSUMS.txt`.
+
+**Eén punt zonder besluit.** In Instellingen staan nu twee tegels die allebei
+met "E-mail" beginnen: "E-mailadres en wachtwoord" en "E-mailvoorkeuren". Dat
+leest rommelig. Voorstel van Claude, geen besluit: de eerste hernoemen naar
+"Inloggegevens", met eronder "je e-mailadres en wachtwoord".
+
+---
+
+**Vorige update:** 20-09-2026 — **TT-01 werkt. Voor het eerst is er een echte
 e-mail aangekomen, met de opmaak intact. De oorzaak lag niet in de code maar in
 drie verkeerd ingevulde secrets.**
 
@@ -3825,8 +3931,10 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 ## P0 — Zonder dit is de app niet af of onveilig
 
-**Stand van de P0's, bijgewerkt 20-09-2026.** **Vijf P0-bouwtickets staan
-open:** TT-281 · TT-295 · TT-65 · TT-45 · TT-42. **TT-01 is op 20-09-2026
+**Stand van de P0's, bijgewerkt 20-09-2026 (vervolg).** **Vijf P0-bouwtickets
+staan open:** TT-281 · TT-295 · TT-65 · TT-45 · TT-42. **TT-299 en TT-300 zijn
+op 20-09-2026 gevonden én afgehandeld** en staan in de tweede tabel; ze
+veranderen de stand hierboven dus niet. **TT-01 is op 20-09-2026
 aantoonbaar werkend** en staat in de tweede tabel. In zijn plaats komt
 **TT-295**, de helft van TT-01 die structureel niets kan opleveren zolang
 `musician_wanted` leeg blijft — zie de rij hieronder en de Laatste update
@@ -3877,6 +3985,8 @@ herzieningsmomenten in TT-63 nog moeten gebeuren.
 | ID | Ticket | Kern |
 |---|---|---|
 | **TT-01** | E-maildigest bij nieuwe matches en berichten | **Aantoonbaar werkend 20-09-2026, na heropening op 31-08-2026.** Er is een echte mail aangekomen bij `contact@talenttent.org` met de opmaak intact: één nieuw bericht plus drie bandmatches. **De oorzaak zat niet in de code maar in drie verkeerd ingevulde secrets van 28-08-2026:** `SMTP_USER` bevatte `465` (het poortnummer), het echte afzenderadres stond onder `SMTP-USER` met een koppelteken in plaats van een liggend streepje, `SMTP_PORT` ontbrak, en `SMTP_HOST` wees naar `talenttent.org` — dat is GitHub Pages, niet de mailserver (`mail.talenttent.org`). **Waarom het drie weken onzichtbaar bleef:** de functie antwoordde altijd `{"ok":true,"sent":0,"skipped":0}`; verzendfouten werden weggevangen en ontvangers zonder inhoud werden niet geteld. `send-digest` v2 lost dat op met een uitsplitsing per ontvanger, plus `since_days` en `only_musician_id` als testingang. Broncode van de functie staat nu in de gedeelde map — hij bestond nergens buiten het Supabase-dashboard. **Vervolg: TT-295** (de matchhelft), **TT-296**, **TT-297** en **TT-298** |
+| **TT-299** | E-mailadres en wachtwoord niet te wijzigen in de app | **Nieuw en opgelost 20-09-2026.** Gemeld door Ronald. Het e-mailadres is tegelijk de inlognaam; wie het kwijtraakt, kan nooit meer een wachtwoord resetten en is zijn account kwijt. Het veld bestond al in "Wie ben je" maar stond op `readonly`; het adres zit alleen in het inlogaccount bij Supabase, niet in `musicians`. **Toets P0:** loopt een gebruiker hiermee vast of raakt hij data kwijt? Ja. Gebouwd als één venster bij Instellingen, met e-mailadres én wachtwoord (besluit Ronald). Controlevraag in plaats van een tweede invulveld; huidig wachtwoord alleen bij een wachtwoordwijziging. Beide antwoorden van Supabase worden afgevangen — bevestigingsmail onderweg of meteen gewijzigd. Blok 24 (18 controles), eindstand 353 van 353. Volledige tekst: Laatste update bovenaan |
+| **TT-300** | Alle auth-mail liep door Supabase' testmailer, 2 per uur | **Nieuw en opgelost 20-09-2026, geen code.** Gevonden bij TT-299, gemeten via de browserpane: "Enable custom SMTP" stond uit, waardoor het veld voor het aantal auth-mails per uur op **2** stond en grijs was. Dat raakt ook "wachtwoord vergeten", dat al maanden in de app zit. De digest van TT-01 loopt langs een eigen Edge Function en merkte er niets van — daardoor bleef het onzichtbaar. **Toets P0:** kan de app live zonder dat een gebruiker vastloopt? Nee: de derde die binnen een uur zijn wachtwoord vergeet, krijgt niets. **Opgelost door Ronald in dezelfde sessie**, met de SMTP-waarden die bij TT-01 boven water kwamen; Supabase zette de grens daarna zelf op 30 per uur. Tegelijk is "Secure email change" uitgezet (besluit Ronald): die stand eiste een klik in het oude én het nieuwe postvak, terwijl juist wie zijn oude postvak niet meer kan lezen de wijziging nodig heeft |
 | **TT-06** | Rapporteren en blokkeren | **Gebouwd en getest 18-09-2026, zie Laatste update bovenaan.** Meldknop + blokkeren, verplicht voordat er actief geworven wordt. **Prioriteit opgehoogd 13-08-2026 (V-05, Ronalds akkoord):** van "geparkeerd" naar **nodig vóór de eerste storeaanvraag** — beide app-stores eisen dit vermoedelijk bij vrij berichtenverkeer tussen gebruikers (aanname, het beleid zelf is niet gelezen). De drie beslissingen van 08-08-2026 zijn op 18-09-2026 genomen. **De twee tabellen staan in productie, geverifieerd via de browserpane op 18-09-2026.** **Nog open:** laag 2 (blokkeren, deblokkeren en melden op de echte site, met een echte login) — laag 1 draait tegen de stub en toetst geen RLS. Gevolg voor TT-63: de herzieningsmomenten voor gebruiksvoorwaarden en gedragscode ("volgt binnenkort") komen daarmee in beeld |
 | **TT-229** | Bandomgeving werkt niet meer | **Opgelost 11-09-2026.** Geen bandprobleem: de bevestigingsvraag lag onzichtbaar achter "Bandleden beheren" door een gelijke `z-index`. Opgelost in de standaard — de laatst geopende modal ligt altijd bovenop (`initModalStapeling()` in `core.js`). Zie Deel 3 |
 | **TT-231** | Vaste Playwright-testset wordt leidend | **Laag 1 opgeleverd 11-09-2026:** `tests/tt_tests.py` + `tests/stub/supabase-stub.js`, tien blokken, 62 controles. Draait bij elke wijziging vóór oplevering. **Laag 2 is verschoven van "kan niet" naar "kan wel"** — zie Deel 3, de bereikbaarheidscorrectie. Dat deel is nog niet als vaste doorloop vastgelegd |
@@ -3937,7 +4047,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | ID | Ticket | Kern |
 |---|---|---|
 | **TT-296** | Het digestvenster is een vaste 24 uur, niet "sinds de vorige verzending" | **Nieuw, 20-09-2026.** `send-digest` rekent het terugkijkvenster uit vanaf het moment van aanroepen: 1 dag bij dagelijks, 7 bij wekelijks. Er wordt nergens bijgehouden wat verstuurd is. Valt een run uit, of komt er iets binnen dat net buiten het raam valt, dan is die melding definitief weg. Achteraf is ook niet vast te stellen of iemand een bepaalde mail heeft gehad. **Toets:** verandert dit of iemand een tweede keer opent? Ja — een gemiste melding is een gemist bericht, precies de lus die TT-01 moet sluiten |
-| **TT-298** | Bounces komen nergens terecht, en registratie controleert het e-mailadres niet | **Nieuw, 20-09-2026.** Mailbevestiging staat uit in Supabase, dus een verzonnen adres komt ongehinderd de app in. Aangetoond dezelfde dag: het profiel van Ronald draagt `ronald@email.com`, dat bestaat niet, en de digest stuiterde terug met `550 mailbox unavailable`. Die bounce komt aan op `noreply@talenttent.org`, waar niemand en niets ernaar kijkt. **Nog niet gecontroleerd:** of SPF en DKIM voor `talenttent.org` goed staan. **Toets:** verandert dit of iemand een tweede keer opent? Ja, indirect maar hard — te veel bounces vanaf één domein kost de bezorgbaarheid van al het verkeer van dat domein. Bij negen testprofielen onschuldig, bij honderd echte gebruikers niet. **Vóór lancering** |
+| **TT-298** | Bounces komen nergens terecht, en registratie controleert het e-mailadres niet | **Nieuw, 20-09-2026.** Mailbevestiging staat uit in Supabase, dus een verzonnen adres komt ongehinderd de app in. Aangetoond dezelfde dag: het profiel van Ronald draagt `ronald@email.com`, dat bestaat niet, en de digest stuiterde terug met `550 mailbox unavailable`. Die bounce komt aan op `noreply@talenttent.org`, waar niemand en niets ernaar kijkt. **Nog niet gecontroleerd:** of SPF en DKIM voor `talenttent.org` goed staan. **Toets:** verandert dit of iemand een tweede keer opent? Ja, indirect maar hard — te veel bounces vanaf één domein kost de bezorgbaarheid van al het verkeer van dat domein. Bij negen testprofielen onschuldig, bij honderd echte gebruikers niet. **Vóór lancering**. *Deels ingehaald door TT-299 (20-09-2026): het verkeerde adres op Ronalds eigen profiel is vanaf de volgende upload in de app zelf te herstellen. De bounce-afhandeling en de SPF/DKIM-controle staan nog open.* |
 | **TT-293** | Modal-koprij loopt buiten het canvas op een smal bureaubladvenster | **GEBOUWD EN GETEST 18-09-2026.** **Melding Ronald:** bij een venster tussen circa 561 en 780px breed is `#appRoot` 50% van het venster (§11) en dus smaller dan een telefoon. Het woordmerk (28px, 263px breed) kromp niet mee; `.modal-box-kop { overflow: hidden }` knipte daardoor het ⋯-menu en het sluiten-kruisje weg — onzichtbaar en niet te bedienen. Gemeten door Ronald: 615px → 69px buiten beeld, 640px → 56px, 1280px → ruim binnen, 375px → 1px (net aan). Bestond al vóór TT-06, die maakte het 44px erger (het ⋯-menu staat in dezelfde rij). **Oorzaak, geverifieerd in de code:** `.modal-kop .logo` had geen `min-width: 0`, het browserdefault is `min-width: auto` — een flex-item kan dan nooit kleiner worden dan zijn eigen tekst. **Oplossing, zelfde aanpak als TT-249 (fitProfileName):** `min-width: 0` op `.modal-kop .logo`, en een nieuwe functie `fitModalLogo()` in `utils.js` (ladder 28·24·20·18·16px) die de lettergrootte op de grootste passende trede zet. Aangeroepen bij het openen van de muzikant- en de bandmodal, en op resize. Gewijzigd: `index.html`, `styles.css`, `utils.js`, `musicians.js`, `core.js`. **Geverifieerd:** blok 1 van de testset (326/326), haakjesbalans en `node --check` op alle vier gewijzigde JS-bestanden. **Geverifieerd, lokaal met Playwright:** het mechanisme werkt — het sluiten-kruisje blijft binnen de modal-box op 375/615/640/780/1280px, geen enkel geval geklemd. **Aanname:** de sandbox heeft geen netwerktoegang tot Google Fonts, dus deze test gebruikte een vervangend lettertype in plaats van Alfa Slab One — de exacte pixelwaarden uit Ronalds meting zijn dus niet met het echte lettertype herhaald. **Nog te bevestigen door Ronald:** met de browserpane op talenttent.org, bij 615 en 640px, of het ⋯-menu en het kruisje nu zichtbaar en bruikbaar zijn |
 | **TT-289** | Zoek setlist: van muzikanten naar de nummers die ze delen | **Gebouwd en getest 17-09-2026, zie het sessieblok bovenaan.** Tweede stand op het Setlist-tabblad. 2 tot 20 muzikanten kiezen, met Plaats en Straal voor de naamsuggesties; resultaat is een lijst van nummers die minstens 2 van hen spelen, open te klappen per nummer met het niveau per muzikant. Blok 21 van de testset. **Nog open:** laag 2 ingelogd (zie sessieblok). **Toets P1:** een band of jamgroep ziet in één keer wat ze samen kunnen spelen — een reden om de app opnieuw te openen voor elke repetitie |
 | **TT-288** | "Beschikbaar voor": keuzelijst op het profiel, met een pauzestand | **Nieuw, 16-09-2026, besluit Ronald na UX-bespreking. Nog niet gebouwd.** **Wat:** in Profiel bewerken → "Wat zoek je" vervangt één keuzelijst "Beschikbaar voor" de vier doelkaarten. Opties: Jammen · Optreden · Bands · Alles! · DM me! · (Nu even niet). **Op het profiel:** een blok tussen het naamblok en de instrument- en genrelabels, twee rijen. Links op halve breedte "Beschikbaar voor:" met daaronder de keuze. Rechts op halve breedte een tekstblok met de bestaande regel "Deze week bijgewerkt" enz. **"(Nu even niet)" = niet vindbaar.** Die muzikant verschijnt in geen enkel zoektabblad. Dit vraagt een aanpassing in de zoekfuncties in de database (`tt_search_musicians`, `tt_search_musicians_anon`, `tt_search_musicians_by_songlist_anon`, en mogelijk `tt_get_musicians_public`); de definities levert Ronald aan. **Afspraken uit de bespreking, nog te bevestigen bij het bouwen:** (1) wie op pauze staat en op Zoeken tikt, krijgt de vraag of hij weer zichtbaar wil worden — wie zoekt, is vindbaar; (2) berichten met bestaande contacten blijven werken, een nieuw gesprek met een onbekende niet; (3) de pauze verloopt vanzelf, voorstel na drie maanden; (4) de band van een muzikant op pauze blijft vindbaar; (5) uitgelogd zoeken blijft ongewijzigd, zonder extra drempels. **Geverifieerd in de code, 16-09-2026:** de doelkaarten schrijven naar `musicians.goal` met de waarden `oefenen` · `band` · `optreden` · `alles` (`index.html` subscherm `watZoekJeScreen`, `musicians.js` `wzjSelectGoal`). De regel "Deze week bijgewerkt" bestaat al (`relativeUpdatedLabel()` in `messages.js`). **Besluit Ronald, 16-09-2026 — omzetting bestaande waarden:** `oefenen` (Samen oefenen) → Jammen · `band` (Band starten) → Bands · `optreden` → Optreden · `alles` → Alles!. **Nog te bepalen:** (a) wizardstap 3 ("Wat wil je nu?") gebruikt dezelfde doelkaarten — gaat die mee naar de keuzelijst? Consistentieregel §2.11 zegt ja; (c) de twee nieuwe waarden "DM me!" en "(Nu even niet)" vragen misschien een nieuwe kolom — die maakt Ronald aan; (d) de termijn van de pauze; (e) wat "DM me!" in de zoekresultaten en de matchscore betekent. **Toets P1:** een bericht aan iemand die toch niet wil, blijft onbeantwoord en ontmoedigt de afzender; een pauzestand houdt mensen binnen die anders hun account zouden opzeggen. Dat bepaalt of mensen terugkomen |
