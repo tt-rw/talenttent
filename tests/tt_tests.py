@@ -2223,6 +2223,95 @@ def blok_browser():
           window.TT_STUB.reset();
         }""")
 
+        # ─────────────────────────────────────────────────────────────
+        # Blok 23 — terugknop sluit modals via hun eigen opruimfunctie (TT-294)
+        # Bevinding Ronald, 18-09-2026: een kruisje rechtsboven kan door de
+        # telefoon-terugknop worden overgenomen. Onderzoek: de generieke
+        # popstate-listener in core.js sluit élke zichtbare modal, maar roept
+        # de eigen sluitfunctie van een modal alleen aan via het
+        # data-close-attribuut. Dat hadden er maar 2 van de 15 met een
+        # kruisje. Bij vier modals doet de eigen sluitfunctie meer dan alleen
+        # verbergen: messageModal en meldModal resetten eigen state,
+        # pickerListModal reset welke lijst openstond, en instrumentLevelModal
+        # verwijdert een net gekozen instrument zonder niveau weer — dezelfde
+        # bugklasse als de P0-fix van 23-08-2026 (TT-129), nu bereikbaar via de
+        # terugknop. Fix: data-close toegevoegd aan alle vier in index.html.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 23 — terugknop sluit modals via hun eigen opruimfunctie (TT-294)")
+        page_errors.clear()
+
+        bericht = page.evaluate("""async () => {
+          const r = {};
+          openMessageComposer('m9', 'Test');
+          r.voorRecipient = messageComposerRecipientId;
+          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'messages' } }));
+          await new Promise(res => setTimeout(res, 50));
+          r.dicht = !document.getElementById('messageModal').classList.contains('visible');
+          r.naRecipient = messageComposerRecipientId;
+          return r;
+        }""")
+        check("terugknop sluit het berichtenscherm", bericht["dicht"], "")
+        check("en maakt messageComposerRecipientId leeg",
+              bericht["voorRecipient"] == "m9" and bericht["naRecipient"] is None,
+              json.dumps(bericht))
+
+        melden2 = page.evaluate("""async () => {
+          const r = {};
+          openMeldModal('muzikant', 'm9', 'Test');
+          kiesMeldReden(document.querySelector('#meldRedenen .tag'), 'Ongepast gedrag');
+          r.voorDoel = !!meldDoel;
+          r.voorReden = meldReden;
+          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'search' } }));
+          await new Promise(res => setTimeout(res, 50));
+          r.dicht = !document.getElementById('meldModal').classList.contains('visible');
+          r.naDoel = meldDoel;
+          r.naReden = meldReden;
+          return r;
+        }""")
+        check("terugknop sluit de meldmodal", melden2["dicht"], "")
+        check("en maakt meldDoel en meldReden leeg",
+              melden2["voorDoel"] and melden2["voorReden"] == "Ongepast gedrag"
+              and melden2["naDoel"] is None and melden2["naReden"] is None,
+              json.dumps(melden2))
+
+        picker = page.evaluate("""async () => {
+          const r = {};
+          openPickerList('genre');
+          r.voorActief = activeListPickerId;
+          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'register' } }));
+          await new Promise(res => setTimeout(res, 50));
+          r.dicht = !document.getElementById('pickerListModal').classList.contains('visible');
+          r.naActief = activeListPickerId;
+          return r;
+        }""")
+        check("terugknop sluit de kies-uit-lijst", picker["dicht"], "")
+        check("en maakt activeListPickerId leeg", picker["voorActief"] == "genre"
+              and picker["naActief"] is None, json.dumps(picker))
+
+        instrument = page.evaluate("""async () => {
+          const r = {};
+          state.instruments = [];
+          state.instrumentLevels = {};
+          openInstrumentPicker('wizard');
+          pickInstrumentFromSheet('Gitaar');
+          r.voorLijst = state.instruments.slice();
+          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'register' } }));
+          await new Promise(res => setTimeout(res, 50));
+          r.dicht = !document.getElementById('instrumentLevelModal').classList.contains('visible');
+          r.naLijst = state.instruments.slice();
+          r.naTarget = instrumentLevelTarget;
+          return r;
+        }""")
+        check("terugknop sluit het instrumentniveau-scherm", instrument["dicht"], "")
+        check("en verwijdert een net gekozen instrument zonder niveau (TT-294, zelfde bugklasse als TT-129)",
+              instrument["voorLijst"] == ["Gitaar"] and instrument["naLijst"] == []
+              and instrument["naTarget"] is None, json.dumps(instrument))
+
+        check("geen paginafouten in blok 23", not page_errors, "; ".join(page_errors)[:300])
+        page.evaluate("""() => {
+          state.instruments = []; state.instrumentLevels = {};
+        }""")
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
