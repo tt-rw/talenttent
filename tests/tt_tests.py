@@ -2686,6 +2686,97 @@ def blok_browser():
         check("geen paginafouten in blok 25", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ------------------------------------------------------------------
+        # Blok 26 — TT-302: terug zonder opslaan
+        # ------------------------------------------------------------------
+        print("\nBlok 26 — terug zonder opslaan (TT-302)")
+
+        terug = page.evaluate("""async () => {
+          const label = document.getElementById('terugLabel');
+          const pijl = document.getElementById('navTerugBtn');
+          const zichtbaar = () => getComputedStyle(label).display !== 'none';
+          const stap = () => window.dispatchEvent(
+            new PopStateEvent('popstate', { state: { view: 'profieltegels' } }));
+          const wacht = () => new Promise(res => setTimeout(res, 60));
+          const uit = {};
+
+          uit.tekst = label.textContent.trim();
+          uit.isTekstregel = !!label && label.tagName !== 'BUTTON'
+            && getComputedStyle(label).borderStyle === 'none';
+          uit.inKop = !!label.closest('.app-topbar');
+
+          // Tegelscherm met wijzigingen nabootsen.
+          activeTegelScreen = 'wieBenJe';
+          wbjSnapshot = '__andere_momentopname__';
+
+          stap(); await wacht();
+          uit.eersteDruk = { label: zichtbaar(), scherm: activeTegelScreen,
+                             pijlGewapend: pijl.classList.contains('gewapend') };
+
+          stap(); await wacht();
+          uit.tweedeDruk = { label: zichtbaar(), scherm: activeTegelScreen };
+
+          // Een tik ergens anders haalt de vraag weg.
+          activeTegelScreen = 'wieBenJe';
+          wbjSnapshot = '__andere_momentopname__';
+          stap(); await wacht();
+          const voorKlik = zichtbaar();
+          document.body.click(); await wacht();
+          uit.naKlikErnaast = { was: voorKlik, nu: zichtbaar(), scherm: activeTegelScreen };
+
+          // Zonder wijzigingen geen vraag.
+          activeTegelScreen = 'wieBenJe';
+          wbjSnapshot = wbjFieldSnapshot();
+          stap(); await wacht();
+          uit.zonderWijziging = { label: zichtbaar(), scherm: activeTegelScreen };
+
+          // Nooit twee vragen tegelijk: de knop onderin valt terug.
+          activeTegelScreen = 'wieBenJe';
+          wbjSnapshot = '__andere_momentopname__';
+          const knop = document.getElementById('wbjCancelBtn');
+          cancelWieBenJe();                 // knop onderin armeert
+          const knopGewapend = knop.dataset.armed === '1';
+          stap(); await wacht();            // nu de terugknop
+          uit.eenVraag = { knopWasGewapend: knopGewapend,
+                           knopNu: knop.dataset.armed === '1', label: zichtbaar() };
+
+          ontwapenTerug();
+          activeTegelScreen = 'overview';
+          return uit;
+        }""")
+        check("de regel staat in de kop en is een tekstregel, geen knop",
+              terug["inKop"] and terug["isTekstregel"]
+              and terug["tekst"] == "Terug zonder opslaan?", json.dumps(terug))
+        check("de eerste druk gaat niet terug, maar toont de vraag",
+              terug["eersteDruk"]["label"] and terug["eersteDruk"]["scherm"] == "wieBenJe",
+              json.dumps(terug))
+        check("de terugknop laat zien dat hij het antwoord is",
+              terug["eersteDruk"]["pijlGewapend"], json.dumps(terug))
+        check("de tweede druk gaat wel terug en haalt de vraag weg",
+              terug["tweedeDruk"]["scherm"] == "overview"
+              and not terug["tweedeDruk"]["label"], json.dumps(terug))
+        check("een tik ergens anders haalt de vraag weg en laat je staan",
+              terug["naKlikErnaast"]["was"] and not terug["naKlikErnaast"]["nu"]
+              and terug["naKlikErnaast"]["scherm"] == "wieBenJe", json.dumps(terug))
+        check("zonder wijzigingen komt er geen vraag",
+              not terug["zonderWijziging"]["label"]
+              and terug["zonderWijziging"]["scherm"] == "overview", json.dumps(terug))
+        check("er staat nooit meer dan één vraag op het scherm",
+              terug["eenVraag"]["knopWasGewapend"] and not terug["eenVraag"]["knopNu"]
+              and terug["eenVraag"]["label"], json.dumps(terug))
+
+        knoppen = page.evaluate("""() => {
+          const bron = [cancelWieBenJe, cancelWatSpeelJe, cancelWatZoekJe,
+                        cancelJeSetlist, cancelJeMediahoek].map(f => f.toString());
+          return { viaEenControle: bron.filter(t => t.includes('tegelHeeftWijzigingen')).length,
+                   totaal: bron.length };
+        }""")
+        check("beide wegen terug gebruiken dezelfde controle, geen variant per scherm",
+              knoppen["viaEenControle"] == knoppen["totaal"] == 5, json.dumps(knoppen))
+
+        check("geen paginafouten in blok 26", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
