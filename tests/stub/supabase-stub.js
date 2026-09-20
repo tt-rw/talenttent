@@ -72,7 +72,14 @@
       tt_cache_postcode: null, tt_accept_founder_offer: null,
       tt_expire_old_founder_offers: null
     },
-    reset() { this.calls = []; this.errors = {}; this.rpcErrors = {}; }
+    // TT-299: de twee nieuwe knoppen van updateUser horen ook leeg bij een
+    // reset, anders lekt een ingesteld antwoord door naar het volgende blok.
+    updateUserResult: null,
+    updateUserError: null,
+    reset() {
+      this.calls = []; this.errors = {}; this.rpcErrors = {};
+      this.updateUserResult = null; this.updateUserError = null;
+    }
   };
   window.TT_STUB = TT_STUB;
 
@@ -243,7 +250,25 @@
           return Promise.resolve({ data: { session: clone(TT_STUB.session), user: clone(TT_STUB.session.user) }, error: null });
         },
         signOut() { TT_STUB.session = null; TT_STUB.calls.push({ kind: 'auth', name: 'signOut' }); return Promise.resolve({ error: null }); },
-        updateUser() { return Promise.resolve({ data: { user: null }, error: null }); },
+        // TT-299 (20-09-2026): gaf eerder altijd een lege gebruiker terug en
+        // legde de aanroep niet vast. De app moet twee uitkomsten kunnen
+        // onderscheiden — een adreswijziging die op een bevestigingsmail
+        // wacht (`new_email` gevuld) en een die meteen doorgaat (`email`
+        // gewijzigd) — dus is het antwoord nu instelbaar.
+        //   TT_STUB.updateUserResult  object of functie(attrs) → user
+        //   TT_STUB.updateUserError   {code,message} dwingt een fout af
+        updateUser(attrs) {
+          TT_STUB.calls.push({ kind: 'auth', name: 'updateUser', attrs: clone(attrs || null) });
+          if (TT_STUB.updateUserError) {
+            return Promise.resolve({ data: { user: null }, error: clone(TT_STUB.updateUserError) });
+          }
+          const maker = TT_STUB.updateUserResult;
+          if (typeof maker === 'function') {
+            return Promise.resolve({ data: { user: clone(maker(attrs || {})) }, error: null });
+          }
+          if (maker) return Promise.resolve({ data: { user: clone(maker) }, error: null });
+          return Promise.resolve({ data: { user: null }, error: null });
+        },
         resetPasswordForEmail() { return Promise.resolve({ data: {}, error: null }); }
       },
       storage: {
