@@ -11,6 +11,21 @@
 #
 # Let op: GitHub zet een `schedule` in een publieke repo uit na 60 dagen
 # zonder activiteit. Een push of een handmatige start zet hem weer aan.
+#
+# `tests/tt_tests.py` draait hier BEWUST niet (besluit Ronald, 21-09-2026, na
+# de eerste rode run). Drie gronden:
+#   1. Blok D van de monitor toetst `CHECKSUMS.txt` tegen de bestanden. Klopt
+#      dat, dan zijn de bestanden in de repo dezelfde als die Claude in de
+#      sessie al met `tt_tests.py` heeft getoetst. De CI-run levert dan geen
+#      nieuwe informatie op.
+#   2. `tt_tests.py` heeft Playwright nodig: een pip-installatie, een
+#      chromium-download en apt-pakketten. Dat is de enige zware
+#      afhankelijkheid van de hele workflow, en de runner-image schuift
+#      (ubuntu-latest wordt Ubuntu 26 op 19-10-2026).
+#   3. Een rode run om een kapotte installatie kost meer vertrouwen dan hij
+#      oplevert - dezelfde regel als bovenin `tests/tt_monitor.py`.
+# Komt er later toch gedragstoetsing in CI, dan hoort die in een APARTE
+# workflow, zodat een Playwright-storing de monitor nooit rood kleurt.
 
 name: Monitor
 
@@ -45,7 +60,3 @@ jobs:
 
       - name: Monitorronde
         run: python3 tests/tt_monitor.py
-
-      - name: Vaste testset
-        # Draait tegen de stub, geen database nodig.
-        run: python3 tests/tt_tests.py
