@@ -1,0 +1,51 @@
+# Vaste monitorronde van The Talent Tent (TT-304).
+#
+# Waarom hier en niet in een sessie: `tests/tt_monitor.py` draait alleen als
+# iemand hem start. Deze workflow is de loper die dat vanzelf doet - elke drie
+# dagen, en bij elke push naar main. Zakt de monitor, dan eindigt de run rood
+# en stuurt GitHub daar een mail over naar de eigenaar van de repo.
+#
+# Deze workflow staat BEWUST alleen in de productierepo, naast `static.yml`.
+# Tweede bewuste uitzondering op §2 regel 2 van de projectinstructies
+# (besluit Ronald, 21-09-2026).
+#
+# Let op: GitHub zet een `schedule` in een publieke repo uit na 60 dagen
+# zonder activiteit. Een push of een handmatige start zet hem weer aan.
+
+name: Monitor
+
+on:
+  schedule:
+    # Elke drie dagen om 06:00 UTC (08:00 Nederlandse zomertijd).
+    - cron: "0 6 */3 * *"
+  push:
+    branches: ["main"]
+  # Zelf starten kan via de Actions-tab.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "monitor"
+  cancel-in-progress: true
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repo ophalen
+        uses: actions/checkout@v4
+
+      - name: Node klaarzetten
+        # tt_monitor.py gebruikt `node --check` per JS-bestand.
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Monitorronde
+        run: python3 tests/tt_monitor.py
+
+      - name: Vaste testset
+        # Draait tegen de stub, geen database nodig.
+        run: python3 tests/tt_tests.py
