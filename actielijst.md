@@ -6,6 +6,20 @@ elke push. Zakt hij, dan mailt GitHub. Nieuw bestand
 `.github/workflows/monitor.yml`, alleen in productie. Punt B2 is opgelost.
 Monitor 18 van 19, testset 387 van 387.**
 
+**Gecorrigeerd 21-09-2026 (vervolg 2) — de loper liep rood.** Alle drie de
+eerste runs van `monitor.yml` zakten, binnen veertien seconden. Niet op de
+monitor: die stap slaagde. De stap erna, `python3 tests/tt_tests.py`, brak af
+met `ModuleNotFoundError: No module named 'playwright'`. De runner heeft
+Playwright niet, en de workflow installeerde het niet. **Besluit Ronald,
+21-09-2026:** de vaste testset gaat uit `monitor.yml`; de workflow draait
+alleen nog de monitorronde. Gronden: (1) blok D toetst `CHECKSUMS.txt`, dus de
+bestanden in de repo zijn dezelfde die Claude in de sessie al met `tt_tests.py`
+toetste - de CI-run voegt niets toe; (2) Playwright is de enige zware
+afhankelijkheid van de workflow en de runner-image schuift naar Ubuntu 26 op
+19-10-2026; (3) een rode run om een kapotte installatie kost meer vertrouwen
+dan hij oplevert, dezelfde regel als bovenin `tt_monitor.py`. Komt er later
+toch gedragstoetsing in CI, dan in een aparte workflow.
+
 **Aanleiding.** Ronald, 21-09-2026: *"is het nodig om de monitor elke sessie te
 draaien? dat kost veel credits. kunnen we starten met iedere 3 dagen, net als
 de emailmonitor vanuit supabase?"* En daarna: *"zet alleen in productie. kan je
@@ -4447,7 +4461,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-304** | Vaste monitorronde — permanent ticket, sluit nooit | **Nieuw, 21-09-2026, op verzoek van Ronald.** `tests/tt_monitor.py`: negentien controles over vier blokken (repo-integriteit, huisstijl, dode code, stand), één commando, afsluitcode 0 bij nul punten. **Loper sinds 21-09-2026 (vervolg):** `.github/workflows/monitor.yml` draait hem elke drie dagen, bij elke push en handmatig; GitHub mailt als een run rood wordt. **Besluit Ronald: alleen in productie** — tweede bewuste uitzondering op §2 regel 2. In de sessie draait de monitor vóór elke oplevering, niet meer bij sessiestart. **Stand 18 van 19:** B2 opgelost, A7 wacht op een handeling van Ronald (`zoekfunctienaslagwerk.md` staat publiek in de repo). **Groeipad per gebruikersaantal en de volledige tekst:** zie de twee blokken van 21-09-2026 bovenaan. **Toets P2:** de app werkt zonder, maar een standaard die niemand tegen de code houdt stuurt elke volgende sessie de verkeerde kant op — zelfde grond als TT-262 |
+| **TT-304** | Vaste monitorronde — permanent ticket, sluit nooit | **Nieuw, 21-09-2026, op verzoek van Ronald.** `tests/tt_monitor.py`: negentien controles over vier blokken (repo-integriteit, huisstijl, dode code, stand), één commando, afsluitcode 0 bij nul punten. **Loper sinds 21-09-2026 (vervolg):** `.github/workflows/monitor.yml` draait hem elke drie dagen, bij elke push en handmatig; GitHub mailt als een run rood wordt. **De workflow draait alleen de monitorronde** — de vaste testset is er op 21-09-2026 uitgehaald nadat de eerste drie runs zakten op een ontbrekende Playwright-installatie (besluit Ronald; zie het blok bovenaan). **Besluit Ronald: alleen in productie** — tweede bewuste uitzondering op §2 regel 2. In de sessie draait de monitor vóór elke oplevering, niet meer bij sessiestart. **Stand 18 van 19:** B2 opgelost, A7 wacht op een handeling van Ronald (`zoekfunctienaslagwerk.md` staat publiek in de repo). **Groeipad per gebruikersaantal en de volledige tekst:** zie de twee blokken van 21-09-2026 bovenaan. **Toets P2:** de app werkt zonder, maar een standaard die niemand tegen de code houdt stuurt elke volgende sessie de verkeerde kant op — zelfde grond als TT-262 |
 | **TT-303** | Terugknop liep op een tabblad door het klikpad | **Gebouwd en getest 20-09-2026 (vervolg 4).** Mijn Profiel is het hoogste scherm (uitgelogd de landingspagina); het woordmerk gaat daarheen en de terugknop op Zoeken, Berichten en Bands ook. Onderbalk nu Profiel · Zoeken · Berichten · Bands. Volledige tekst: Laatste update bovenaan |
 | **TT-301** | Woordmerk gecentreerd en terugknop linksboven | **Gebouwd en getest 20-09-2026 (vervolg 2).** Woordmerk in het midden in de hele app, zonder "THE"; terugknop linksboven als lijn-teken, die `history.back()` doet. Ook in de koprij van het muzikant- en bandprofiel. Volledige tekst: Laatste update bovenaan. **Nog open:** laag 2 op een echte telefoon, vooral iOS |
 | **TT-297** | De SMTP-verbinding heeft geen eigen time-out | **Nieuw, 20-09-2026.** Gemeten die dag met een verkeerde `SMTP_HOST`: de Edge Function bleef hangen tot `pg_net` er na 30 seconden zelf mee stopte, zonder één regel in het functielog. **Toets:** werkt het, maar kost het moeite of vertrouwen? Ja — een storing bij de mailserver levert nu geen bruikbare foutmelding op, alleen stilte, en dat is precies wat TT-01 drie weken heeft opgehouden |
