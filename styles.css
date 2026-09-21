@@ -1201,7 +1201,7 @@
     width: 80px; height: 80px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid var(--profile-color, var(--accent));
+    border: 3px solid var(--accent);
     margin-bottom: 12px;
   }
 

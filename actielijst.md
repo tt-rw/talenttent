@@ -1,6 +1,149 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 20-09-2026 (vervolg 4) — **TT-303 (P2) gebouwd en getest:
+**Laatste update:** 21-09-2026 (vervolg) — **TT-304 krijgt een loper: de
+monitorronde draait vanaf nu vanzelf in GitHub Actions, elke drie dagen en bij
+elke push. Zakt hij, dan mailt GitHub. Nieuw bestand
+`.github/workflows/monitor.yml`, alleen in productie. Punt B2 is opgelost.
+Monitor 18 van 19, testset 387 van 387.**
+
+**Aanleiding.** Ronald, 21-09-2026: *"is het nodig om de monitor elke sessie te
+draaien? dat kost veel credits. kunnen we starten met iedere 3 dagen, net als
+de emailmonitor vanuit supabase?"* En daarna: *"zet alleen in productie. kan je
+een email sturen ipv een overzicht per sessie?"*
+
+**Wat er aan de aanname niet klopte.** Het draaien zelf kost vrijwel niets:
+één commando, twintig regels uitvoer. De kosten zitten in het herstellen van
+wat hij vindt, en die maak je hoe dan ook. Het echte bezwaar was een ander:
+`tt_monitor.py` draait alleen als iemand hem start. Anders dan de
+mailmonitor van TT-01 — die loopt op `pg_cron` in de database — had dit
+script geen loper. Een klok van drie dagen bestond dus niet zolang hij in de
+sessie bleef zitten.
+
+**Wat er nu staat.** `.github/workflows/monitor.yml` draait `tt_monitor.py` en
+`tt_tests.py` op drie momenten: elke drie dagen om 06:00 UTC, bij elke push
+naar `main`, en handmatig vanaf de Actions-tab. Beide scripts geven afsluitcode
+1 als er iets openstaat; de run wordt dan rood en GitHub mailt de eigenaar van
+de repo. Geen SMTP-instelling nodig, geen sleutel in de repo.
+
+**Besluit Ronald, 21-09-2026: alleen in de productierepo.** Dit is de tweede
+bewuste uitzondering op §2 regel 2, naast `static.yml`. De vergelijking van
+beide repo's bij sessiestart moet daar voortaan op rekenen.
+
+**Let op — GitHub zet een `schedule` in een publieke repo uit na 60 dagen
+zonder activiteit.** Een push of een handmatige start zet hem weer aan. Bij een
+project dat stilligt is dat precies verkeerd om, dus dit is een punt om in de
+gaten te houden, geen opgelost probleem.
+
+**Punt B2 opgelost.** `styles.css` gebruikte `var(--profile-color,
+var(--accent))` op `.profile-avatar-photo`; `--profile-color` bestond nergens.
+Nu `var(--accent)`, de waarde die de terugval toch al gaf — dus niets verandert
+zichtbaar. **Dit was een voorstel van Claude, geen besluit van Ronald:** het is
+meegenomen omdat een monitor die altijd rood staat niemand iets leert, en de
+mail dan waardeloos is. `styles.css` kreeg daarom een nieuw `?v=`-achtervoegsel
+(`20260921a`) in `index.html`.
+
+**Punt A7 staat nog open en is een handeling van Ronald.**
+`zoekfunctienaslagwerk.md` staat in de productierepo en daarmee publiek op
+talenttent.org, terwijl hij ook in het claude.ai-project staat. Zolang dat
+bestand er staat, blijft de monitor op 18 van 19 en mailt elke run. Verwijderen
+zet hem op 19 van 19.
+
+**Wat Claude in de sessie nog doet.** De monitor draait niet meer standaard bij
+sessiestart, maar **vóór elke oplevering** — dan meet hij iets dat net
+gewijzigd is. Bij sessiestart blijft alleen de vergelijking van beide repo's en
+de P0-stand uit Deel 1.
+
+---
+
+**Vorige update:** 21-09-2026 — **TT-304 (P2) opgezet: een vaste
+monitorronde. Nieuw bestand `tests/tt_monitor.py`, negentien controles over
+vier blokken, één commando, één overzicht. Eerste ronde: 17 van 19 goed, twee
+echte punten (zie hieronder). Testset onveranderd op 387 van 387; beide repo's
+gelijk; vijf P0's open.**
+
+**Aanleiding.** Ronald, 21-09-2026: *"ik wil een solide webapp neerzetten.
+welke onderwerpen moeten we dan gaan monitoren bij welke aantallen gebruikers?
+of kunnen we het beter nu al inregelen?"* En: *"maak dit een permanente
+ticket."*
+
+**Het uitgangspunt.** Meten leg je nu vast, alarmeren pas bij volume. Wat niet
+gelogd wordt, is achteraf niet te reconstrueren; een dashboard is later te
+bouwen. Daarom staat de helft van dit ticket op "nu", en de andere helft achter
+een drempel in gebruikersaantal.
+
+**Toets P2:** werkt het, maar kost het moeite of vertrouwen? Ja. De app werkt
+zonder deze ronde. Maar de afspraken in de projectinstructies worden nu door
+een mens bewaakt, en drie keer eerder is een vastgelegd feit per toeval
+achterhaald gebleken (TT-260, TT-262, de regelaantallen in §12). Een standaard
+die niemand tegen de code houdt, stuurt elke volgende sessie de verkeerde kant
+op. Zelfde grond waarop TT-262 P2 is.
+
+**Dit ticket sluit nooit.** Het is de plek waar de monitorronde groeit. Een
+controle die erbij komt, komt hier te staan; een controle die vervalt, wordt
+hier doorgehaald met de reden erbij.
+
+## Wat er nu draait — `tests/tt_monitor.py`
+
+Eén commando vanuit de hoofdmap: `python3 tests/tt_monitor.py`. Afsluitcode 0
+betekent geen enkel punt. Negentien controles, vier blokken:
+
+| Blok | Wat het bewaakt | Controles |
+|---|---|---|
+| **A — repo-integriteit** | de bindende scriptvolgorde, een `?v=` op elk script, `node --check` per JS-bestand, veertien views en geen onbekende, geen wees-JS in de hoofdmap, geen `_niet-uploaden-`-bestand, geen projectdocument, geen geheime sleutel | 8 |
+| **B — huisstijl** | alleen `--fs-sm` als lettermaat, elke gebruikte CSS-variabele bestaat, geen ongebruikte variabele, geen losse `z-index` per modal, geen emoji in de UI | 5 |
+| **C — dode code** | elke knop roept een bestaande functie aan, geen functie zonder aanroep, geen achtergebleven `console.log` | 3 |
+| **D — stand** | de actielijst heeft Deel 1, 2 en 3, elk niveau heeft een tabel in Deel 1, `CHECKSUMS.txt` klopt met de bestanden | 3 |
+
+**Vaste regel voor dit bestand: een controle die valse meldingen geeft, hoort
+er niet in.** Die kost meer vertrouwen dan hij oplevert. Vier eerste opzetten
+zijn er in deze sessie om die reden uitgehaald of herschreven: een eigen
+haakjesteller (die struikelde over regex-literals; `node --check` doet het
+goed), het woord `service_role` in gewone tekst, functies die als
+`(function naam(){})()` draaien, en functienamen die `utils.js` uit een
+voorvoegsel samenstelt (`fn('speelMedia')` → `mhSpeelMedia`).
+
+**Blok B overlapt bewust met TT-262.** De punten (a), (b) en (h) van dat
+ticket staan hier al; (c) tot en met (g) horen in blok 14 van de vaste testset
+en blijven daar openstaan. Geen tweede plek voor dezelfde regel: komt blok 14
+er, dan verhuizen B1 tot en met B4 daarheen en verwijst dit ticket ernaar.
+
+## Eerste ronde, 21-09-2026 — twee punten
+
+| Punt | Bevinding | Wat eraan moet |
+|---|---|---|
+| **A7** | `zoekfunctienaslagwerk.md` staat in de productierepo. §8 zegt dat projectdocumenten in het claude.ai-project horen, en het staat daar ook al als `claude/zoekfunctienaslagwerk-17-09-2026.md`. GitHub Pages publiceert alles, dus deze kopie staat publiek op talenttent.org. Dezelfde soort fout waartegen de naamgevingsregel van §2.6a is gemaakt | **Handeling van Ronald:** verwijder `zoekfunctienaslagwerk.md` uit beide repo's. Claude kan niet naar GitHub schrijven (§2, regel 5) |
+| **B2** | `styles.css` regel 1204 gebruikt `var(--profile-color, var(--accent))`. De variabele `--profile-color` bestaat nergens — niet in `:root`, niet via `setProperty()` in JS. De terugval `var(--accent)` vangt het op, dus er is niets zichtbaar mis | Eén regel: `var(--accent)` rechtstreeks, of de variabele alsnog definiëren. **Voorstel van Claude, geen besluit:** meenemen in de ronde van TT-290, dat hetzelfde bestand raakt. Dit was al het voorbeeld bij punt (a) van TT-262 |
+
+## Wat erbij komt, en wanneer
+
+De drempels gaan over **echte** gebruikers, niet over testprofielen.
+
+| Fase | Erbij | Waarom dan pas |
+|---|---|---|
+| **Nu** | `app_error_log`: elke `catch` schrijft weg met view, functie en gebruiker-id. Trechtertelling van de registratiewizard, stap voor stap. Mislukte inlogpogingen en wachtwoordresets tellen. Zoekopdrachten die ook na de 500 km-ladder niets opleveren | Dit is de laag die achteraf niet te reconstrueren is. De tellingen zelf kosten niets; wie ze later pas aanzet, mist de enige periode waarin het product nog vormbaar was |
+| **Vanaf ~10** | Wekelijks `app_error_log` doornemen op nieuwe fouttypes. Supabase-verbruik tegen de planlimiet. Open meldingen in `musician_reports` | Onder tien gebruikers zegt een foutentelling niets; boven tien is een nieuw fouttype een signaal |
+| **Vanaf ~100** | Uptime-controle van buitenaf, elke vijf minuten. Looptijd van `tt_search_musicians` meten. Terugkeer meten: hoeveel mensen openen de app een tweede keer | Terugkeer is de P1-toets uit §3. Onder honderd gebruikers is dat getal ruis |
+| **Vanaf ~1000** | Alarmering per mail bij een foutpiek. Spamherkenning op berichten en registraties. Controle dat de back-up van Supabase werkelijk draait (raakt TT-65) | Alarmering zonder volume is onderhoud zonder lezers |
+
+**Wat bewust níét op de lijst staat:** dashboards, uitgebreide analytics en
+alarmering vóór de drempel hierboven. Die kosten onderhoud en hebben nog geen
+lezer.
+
+## Wat Claude elke sessie doet
+
+Bij sessiestart, na het klonen en vergelijken van de repo's, draait Claude
+`tests/tt_monitor.py` en `tests/tt_tests.py`, en meldt **één regel**:
+
+> *Monitor 19/19 · testset 387/387 · repo's gelijk · vijf P0's open.*
+
+Staat er een punt, dan volgt alleen dat punt, met bestand en regel. Geen
+tabel, geen verantwoording — die staan hier. Zakt een controle, dan is dat
+een vraag en geen fout: of de code klopt niet, of de regel klopt niet
+(§2, regel 11).
+
+---
+
+**Vorige update:** 20-09-2026 (vervolg 4) — **TT-303 (P2) gebouwd en getest:
 Mijn Profiel is het hoogste scherm, het woordmerk gaat daarheen, de terugknop
 gaat op een hoofdtabblad omhoog in plaats van terug, en de onderbalk staat op
 Profiel · Zoeken · Berichten · Bands. Eindstand 387 van 387.**
@@ -4304,6 +4447,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-304** | Vaste monitorronde — permanent ticket, sluit nooit | **Nieuw, 21-09-2026, op verzoek van Ronald.** `tests/tt_monitor.py`: negentien controles over vier blokken (repo-integriteit, huisstijl, dode code, stand), één commando, afsluitcode 0 bij nul punten. **Loper sinds 21-09-2026 (vervolg):** `.github/workflows/monitor.yml` draait hem elke drie dagen, bij elke push en handmatig; GitHub mailt als een run rood wordt. **Besluit Ronald: alleen in productie** — tweede bewuste uitzondering op §2 regel 2. In de sessie draait de monitor vóór elke oplevering, niet meer bij sessiestart. **Stand 18 van 19:** B2 opgelost, A7 wacht op een handeling van Ronald (`zoekfunctienaslagwerk.md` staat publiek in de repo). **Groeipad per gebruikersaantal en de volledige tekst:** zie de twee blokken van 21-09-2026 bovenaan. **Toets P2:** de app werkt zonder, maar een standaard die niemand tegen de code houdt stuurt elke volgende sessie de verkeerde kant op — zelfde grond als TT-262 |
 | **TT-303** | Terugknop liep op een tabblad door het klikpad | **Gebouwd en getest 20-09-2026 (vervolg 4).** Mijn Profiel is het hoogste scherm (uitgelogd de landingspagina); het woordmerk gaat daarheen en de terugknop op Zoeken, Berichten en Bands ook. Onderbalk nu Profiel · Zoeken · Berichten · Bands. Volledige tekst: Laatste update bovenaan |
 | **TT-301** | Woordmerk gecentreerd en terugknop linksboven | **Gebouwd en getest 20-09-2026 (vervolg 2).** Woordmerk in het midden in de hele app, zonder "THE"; terugknop linksboven als lijn-teken, die `history.back()` doet. Ook in de koprij van het muzikant- en bandprofiel. Volledige tekst: Laatste update bovenaan. **Nog open:** laag 2 op een echte telefoon, vooral iOS |
 | **TT-297** | De SMTP-verbinding heeft geen eigen time-out | **Nieuw, 20-09-2026.** Gemeten die dag met een verkeerde `SMTP_HOST`: de Edge Function bleef hangen tot `pg_net` er na 30 seconden zelf mee stopte, zonder één regel in het functielog. **Toets:** werkt het, maar kost het moeite of vertrouwen? Ja — een storing bij de mailserver levert nu geen bruikbare foutmelding op, alleen stilte, en dat is precies wat TT-01 drie weken heeft opgehouden |
