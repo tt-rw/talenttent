@@ -1313,6 +1313,16 @@ def blok_browser():
           openMessageComposer('m2', 'Dylan');
           await new Promise(r => setTimeout(r, 120));
           r.modalFocus = document.activeElement === document.getElementById('messageComposerBody');
+          // TT-305 (22-09-2026): openConversation() zonder gesprekspartner
+          // mag niets doen. Deed hij dat wel, dan vroeg hij de database om
+          // recipient_id=eq.null en toonde hij "Gesprek laden is niet gelukt".
+          await openConversation('m2', 'Dylan de Vries', '#f5c518', '', false, false);
+          await new Promise(r => setTimeout(r, 80));
+          await openConversation(null, 'Niemand');
+          await new Promise(r => setTimeout(r, 80));
+          r.leegId = activeConversationId;
+          r.leegNaam = document.getElementById('messagesThreadName').textContent;
+          r.leegFout = document.getElementById('messagesThreadList').innerHTML.includes('niet gelukt');
           return r;
         }""")
         check("het toetsenbord komt niet op bij het openen van een gesprek",
@@ -1339,6 +1349,9 @@ def blok_browser():
               gesprek["fotoOpent"] == "m2", str(gesprek["fotoOpent"]))
         check("bij een verwijderd account opent er niets",
               gesprek["verwijderdOpent"] is None, str(gesprek["verwijderdOpent"]))
+        check("een gesprek zonder gesprekspartner doet niets (TT-305)",
+              gesprek["leegId"] == "m2" and gesprek["leegNaam"] == "Dylan de Vries"
+              and not gesprek["leegFout"], json.dumps(gesprek))
         muis = page.evaluate("""() => {
           document.getElementById('messagesReplyInput').focus();
           const r = document.body.classList.contains('toetsenbord-open');
