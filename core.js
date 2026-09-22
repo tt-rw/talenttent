@@ -211,7 +211,14 @@ async function appInit() {
     // het beperkte publieke profiel tonen in plaats van het volledige.
     const profielMatch = hashView.match(/^profiel\/(.+)$/);
     const bandMatch = hashView.match(/^band\/(.+)$/);
-    if (profielMatch || bandMatch) {
+    // TT-42: de goedkeuringspagina van een ouder. Zelfde vorm als
+    // #profiel/<id>, maar zonder inlog en zonder ingang elders in de app —
+    // de code komt alleen uit de mail. Staat vóór de rest omdat een ouder
+    // geen gebruiker is en nergens anders heen hoeft.
+    const toestemmingMatch = hashView.match(/^toestemming\/(.+)$/);
+    if (toestemmingMatch) {
+      await toestemmingPaginaOpenen(decodeURIComponent(toestemmingMatch[1]));
+    } else if (profielMatch || bandMatch) {
       showView('search');
       if (currentUser) await configureSearchAccess();
       if (profielMatch) openMusicianModal(decodeURIComponent(profielMatch[1]));
@@ -911,7 +918,9 @@ function terugGaatOmhoog() {
 // zodra je een scherm dieper gaat.
 function werkTerugKnopBij() {
   const btn = document.getElementById('navTerugBtn');
-  if (btn) btn.style.visibility = magTerug() ? '' : 'hidden';
+  // TT-42: op de goedkeuringspagina is er niets om naar terug te gaan — die
+  // pagina is de hele bezoek van een ouder.
+  if (btn) btn.style.visibility = (magTerug() && huidigeView !== 'toestemming') ? '' : 'hidden';
 }
 
 function terugKnop() {
@@ -992,8 +1001,15 @@ function showView(view, mode) {
   // regel voor de onderbalk zelf alleen ≤560px geldt) en moet bij het
   // verlaten van de wizard weer expliciet terug naar de normale (door CSS
   // bepaalde) weergave.
+  // TT-42: op de goedkeuringspagina staat de onderbalk ook niet. Dat is de
+  // eerste uitzondering op TT-224 (onderbalk op elk scherm, elke breedte) en
+  // is als zodanig besloten door Ronald, 22-09-2026: wie via de mail binnen-
+  // komt is geen gebruiker — Zoeken, Berichten, Bands en Profiel doen voor
+  // hem niets. Om dezelfde reden verdwijnen de hamburger en de terugknop.
   const bottomNavEl = document.getElementById('appBottomNav');
-  if (bottomNavEl) bottomNavEl.style.display = (view === 'register' || view === 'profieltegels') ? 'none' : '';
+  if (bottomNavEl) bottomNavEl.style.display = (view === 'register' || view === 'profieltegels' || view === 'toestemming') ? 'none' : '';
+  const menuKnop = document.getElementById('navMenuBtn');
+  if (menuKnop) menuKnop.style.display = (view === 'toestemming') ? 'none' : '';
 
   if (view === 'register') {
     if (editingMusicianId && !currentUser) {
@@ -1069,6 +1085,16 @@ function showView(view, mode) {
     } else {
       updateSubmitProfileState();
     }
+
+    // TT-42 (route A): staat er een halve registratie van een 13-15-jarige in
+    // deze browser, dan pakt de wizard die op waar hij gebleven was — ook na
+    // dagen. Het kind komt hier terug via de link in de mail van ons aan hem.
+    // Alleen zonder ingelogde gebruiker: wie al een account heeft, hoort hier
+    // nooit meer in route A te belanden.
+    // Staat bewust ónderaan dit blok: de regels hierboven zetten het
+    // wachtwoordveld weer zichtbaar, en ouderLeeftijdsregel() hoort daar
+    // overheen te gaan, niet andersom.
+    if (!currentUser && !editingMusicianId && typeof hervatOuderRoute === 'function') hervatOuderRoute();
   }
 
   if (view === 'myprofile') loadMyProfile();
@@ -1093,8 +1119,13 @@ function showView(view, mode) {
   //                 de gebruiker heeft deze tussenstap nooit bewust bezocht.
   //  - anders     → een gewone, bewuste navigatie: nieuwe stap toevoegen.
   if (mode !== 'pop') {
-    if (mode === 'redirect') safeHistoryReplace({ view }, '#' + view);
-    else { safeHistoryPush({ view }, '#' + view); terugDiepte++; } // TT-301
+    // TT-42: de goedkeuringspagina houdt de code in de adresregel. Zou
+    // showView() er '#toestemming' van maken, dan werkt verversen niet meer.
+    const hash = (view === 'toestemming' && /^#toestemming\//.test(location.hash))
+      ? location.hash
+      : '#' + view;
+    if (mode === 'redirect') safeHistoryReplace({ view }, hash);
+    else { safeHistoryPush({ view }, hash); terugDiepte++; } // TT-301
   }
   werkTerugKnopBij(); // TT-301
 

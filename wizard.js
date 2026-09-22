@@ -1,17 +1,29 @@
-// ─── TT-09: onboarding hervatten na een refresh (Route B) ────────────────────
-// Zolang het profiel nog niet is afgerond (state.onboarding), bewaren we een
-// kleine momentopname in sessionStorage — alleen geldig binnen hetzelfde
-// tabblad/dezelfde sessie, nooit het wachtwoord. Bij het sluiten van het
-// tabblad vervalt dit bewust (dat telt niet als "per ongeluk", zie overleg
-// met Ronald); bij een refresh (F5) blijft alles staan zoals het was.
+// ─── TT-09: onboarding hervatten na een refresh ──────────────────────────────
+// Zolang het profiel nog niet is afgerond, bewaren we een kleine momentopname
+// in de browser — nooit het wachtwoord.
+//
+// Gewijzigd 22-09-2026 (TT-42, besluit Ronald): dit stond in sessionStorage en
+// staat nu in localStorage. Het oude besluit — "bij het sluiten van het
+// tabblad vervalt dit bewust" — kan niet blijven staan naast route A: een
+// 13-jarige wacht tot veertien dagen op de klik van zijn ouder, en al zijn
+// antwoorden staan zolang alleen in zijn eigen browser. Sluit hij het tabblad,
+// dan zou hij alles kwijt zijn. De omzetting geldt voor iedereen, niet alleen
+// voor 13-15-jarigen: een maat wordt in de standaard doorgevoerd, nooit per
+// scherm omzeild (projectinstructies §2 regel 11). Bijvangst: ook een
+// dertigjarige die halverwege stopt, vindt zijn werk terug.
 const ONBOARDING_STORAGE_KEY = 'tt_onboarding_v1';
 
 function saveOnboardingProgress() {
-  if (!state.onboarding) return;
+  // TT-42: bij route A bestaat er nog geen account, dus state.onboarding staat
+  // nog uit. Dan is state.ouderRoute de reden om wél te bewaren.
+  if (!state.onboarding && !state.ouderRoute) return;
   try {
-    sessionStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({
       userId: currentUser?.id || null,
       mid: editingMusicianId,
+      ouderRoute: !!state.ouderRoute,
+      regEmail: state.regEmail || '',
+      akkoord: !!document.getElementById('consentCheckbox')?.checked,
       step: state.currentStep,
       fname: state.fname, lname: state.lname, birth_date: state.birth_date,
       username: state.username,
@@ -25,7 +37,7 @@ function saveOnboardingProgress() {
       // refresh toch niet — zie bekende beperking TT-02), mediaFiles.
     }));
   } catch (e) {
-    // sessionStorage kan vol of uitgeschakeld zijn (bijv. privénavigatie in
+    // localStorage kan vol of uitgeschakeld zijn (bijv. privénavigatie in
     // sommige browsers) — dan negeren we dit stil, de rest van de app blijft
     // gewoon werken, alleen de refresh-bescherming valt dan weg.
     console.error('Kon onboarding-voortgang niet bewaren:', e);
@@ -33,7 +45,7 @@ function saveOnboardingProgress() {
 }
 
 function clearOnboardingProgress() {
-  try { sessionStorage.removeItem(ONBOARDING_STORAGE_KEY); } catch (e) { /* zie boven */ }
+  try { localStorage.removeItem(ONBOARDING_STORAGE_KEY); } catch (e) { /* zie boven */ }
 }
 
 // Vult de wizard-velden op basis van de huidige `state` — gedeeld door
@@ -109,10 +121,22 @@ function populateWizardFieldsFromState() {
 // Pure check, geen neveneffecten — leest alleen, verandert niets. Gebruikt
 // door zowel de banner-render (loadMyProfile) als resumeOnboarding() zelf.
 function readSavedOnboarding() {
-  let saved;
-  try { saved = JSON.parse(sessionStorage.getItem(ONBOARDING_STORAGE_KEY) || 'null'); }
-  catch (e) { saved = null; }
+  const saved = leesOpgeslagenVoortgang();
   if (!saved || !saved.mid || !currentUser || saved.userId !== currentUser.id) return null;
+  return saved;
+}
+
+// Kale lezer, gedeeld door beide routes.
+function leesOpgeslagenVoortgang() {
+  try { return JSON.parse(localStorage.getItem(ONBOARDING_STORAGE_KEY) || 'null'); }
+  catch (e) { return null; }
+}
+
+// TT-42: hetzelfde, maar voor route A — er is dan nog geen account en dus
+// geen mid en geen ingelogde gebruiker.
+function leesOuderVoortgang() {
+  const saved = leesOpgeslagenVoortgang();
+  if (!saved || !saved.ouderRoute || saved.mid || currentUser) return null;
   return saved;
 }
 
@@ -141,6 +165,47 @@ function resumeOnboarding() {
   editingMusicianId = saved.mid;
   myMusicianId = saved.mid;
   state.onboarding = true;
+  vulStateUitVoortgang(saved);
+
+  showView('register');
+  goTo(saved.step || 1);
+  populateWizardFieldsFromState();
+  document.getElementById('submitProfileBtn').textContent = 'Profiel aanmaken';
+}
+
+// TT-42 — route A hervatten. Draait bij het openen van de wizard zonder
+// ingelogde gebruiker. Het kind komt hier terug na de mail van zijn ouder, of
+// gewoon omdat hij de app weer opent terwijl hij nog wacht.
+// Geeft true als er iets is hervat.
+function hervatOuderRoute() {
+  const saved = leesOuderVoortgang();
+  if (!saved) return false;
+
+  state.ouderRoute = true;
+  state.regEmail = saved.regEmail || '';
+  vulStateUitVoortgang(saved);
+  populateWizardFieldsFromState();
+  const emailVeld = document.getElementById('regEmail');
+  if (emailVeld) emailVeld.value = state.regEmail;
+  const vinkje = document.getElementById('consentCheckbox');
+  if (vinkje && saved.akkoord) { vinkje.checked = true; updateSubmitProfileState(); }
+
+  const aanvraag = ouderAanvraagLezen();
+  if (!aanvraag) { goTo(saved.step || 0); ouderLeeftijdsregel(); return true; }
+
+  // Wacht hij nog, dan het wachtscherm; is de ouder akkoord, dan het
+  // wachtwoordscherm. ouderStandVerversen() binnen ouderWachtTonen() haalt de
+  // actuele stand op en schuift zo nodig zelf door.
+  goTo(saved.step || 0);
+  ouderLeeftijdsregel();
+  if (aanvraag.stand === 'goedgekeurd') ouderWachtwoordTonen();
+  else ouderWachtTonen();
+  return true;
+}
+
+// Zet één opgeslagen momentopname terug in `state`. Gedeeld door beide
+// hervatroutes, zodat ze nooit uit elkaar kunnen lopen.
+function vulStateUitVoortgang(saved) {
   state.fname = saved.fname || '';
   state.lname = saved.lname || '';
   state.username = saved.username || '';
@@ -159,11 +224,6 @@ function resumeOnboarding() {
   state.musicalAmbition = saved.musicalAmbition || '';
   state.mediaLinks = saved.mediaLinks || [];
   postcodeResolved = !!state.zip;
-
-  showView('register');
-  goTo(saved.step || 1);
-  populateWizardFieldsFromState();
-  document.getElementById('submitProfileBtn').textContent = 'Profiel aanmaken';
 }
 
 // TT-168-overgang (02-09-2026): bewerken loopt niet langer via de wizard.
@@ -281,6 +341,10 @@ function updateSubmitProfileState() {
   btn.disabled = !box.checked;
   btn.style.opacity = box.checked ? '' : '0.5';
   btn.style.cursor = box.checked ? '' : 'not-allowed';
+  // TT-42: bij route A kan er een lange onderbreking tussen dit vinkje en het
+  // aanmaken van het account zitten. Het vinkje gaat daarom mee in de
+  // momentopname, anders staat het na terugkomst weer uit.
+  saveOnboardingProgress();
 }
 
 // TT-121 (22-08-2026): opslaan per stap. Schrijft het VOLLEDIGE profiel,
@@ -423,6 +487,21 @@ async function submitProfile() {
     showToast('Vink eerst aan dat je akkoord gaat met de voorwaarden.');
     return;
   }
+
+  // TT-42 (route A): is de gebruiker 13, 14 of 15, dan ontstaat het account
+  // pas na de goedkeuring van zijn ouder én nadat hij zelf een wachtwoord
+  // heeft gekozen. Zolang state.regPassword leeg is, is dat nog niet gebeurd:
+  // deze knop brengt hem dan naar het wachtscherm of het wachtwoordscherm.
+  // ouderProfielAanmaken() zet het wachtwoord en roept deze functie daarna
+  // opnieuw aan — die tweede keer loopt hij gewoon door.
+  if (state.ouderRoute && !state.regPassword) {
+    const aanvraag = ouderAanvraagLezen();
+    if (!aanvraag) { ouderStapTonen(); return; }
+    if (aanvraag.stand === 'goedgekeurd') ouderWachtwoordTonen();
+    else ouderWachtTonen();
+    return;
+  }
+
   showSaving();
   myOwnCity = null; // eigen plaats kan net gewijzigd zijn — cache opnieuw laten opbouwen
 
@@ -470,6 +549,23 @@ async function submitProfile() {
         state.avatarUrl = null;
       }
       state.avatarFile = null;
+    }
+
+    // TT-42 (route A): media die tijdens het wachten is uitgekozen, kon toen
+    // nergens heen — er was nog geen account. Nu wel. Mislukt een upload, dan
+    // blokkeert dat het profiel niet; dat bestand valt eruit en de gebruiker
+    // kan het later alsnog toevoegen via Profiel bewerken.
+    const wachtendeBestanden = state.mediaFiles.filter(m => m.bestand);
+    for (const m of wachtendeBestanden) {
+      try {
+        const { url, path } = await uploadMediaFile(m.bestand, userId);
+        m.url = url;
+        m.path = path;
+        m.bestand = null;
+      } catch (e) {
+        logCaught('submitProfile-media', e);
+        m.url = '';
+      }
     }
 
     // 2. Hoofdprofiel opslaan
@@ -571,6 +667,9 @@ async function submitProfile() {
     // TT-09: "Welkom!" hoort bij het écht afronden van de allereerste keer
     // (state.onboarding), niet bij het technische onderscheid insert/update.
     if (state.onboarding) { clearOnboardingProgress(); state.onboarding = false; }
+    // TT-42: bij route A stond de hele wizard lokaal. Nu het profiel er staat,
+    // hoort daar niets meer van in de browser achter te blijven.
+    if (state.ouderRoute) { clearOnboardingProgress(); state.ouderRoute = false; }
     editingMusicianId = null;
     showSaveSuccess(false);
 
@@ -606,6 +705,7 @@ let state = {
   avatarUrl: null,
   avatarFile: null,
   avatarPath: null,
+  ouderRoute: false, // TT-42: true zolang 13-15 wacht op de klik van zijn ouder
   mediaFiles: [],
   mediaLinks: [],
   onboarding: false // true zolang het account al bestaat maar het profiel nog niet is afgerond (TT-09)
@@ -816,10 +916,15 @@ async function nextStep(from) {
       } else if (!emailFormaatGeldig(state.regEmail)) {
         fouten.push(['regEmail', 'Vul een geldig e-mailadres in, bijvoorbeeld jouw@email.nl']);
       }
-      if (!state.regPassword) {
-        fouten.push(['regPassword', 'Kies een wachtwoord']);
-      } else if (state.regPassword.length < 8) {
-        fouten.push(['regPassword', 'Kies een wachtwoord van minimaal 8 tekens']);
+      // TT-42: onder de 16 staat het wachtwoordveld hier niet. Er bestaat op
+      // dit moment nog geen account om het bij te bewaren; het wachtwoord
+      // wordt gevraagd op het laatste scherm, ná de goedkeuring van de ouder.
+      if (!ouderToestemmingNodig(leeftijd)) {
+        if (!state.regPassword) {
+          fouten.push(['regPassword', 'Kies een wachtwoord']);
+        } else if (state.regPassword.length < 8) {
+          fouten.push(['regPassword', 'Kies een wachtwoord van minimaal 8 tekens']);
+        }
       }
     }
 
@@ -846,6 +951,22 @@ async function nextStep(from) {
     }
 
     if (!editingMusicianId) {
+      // TT-42 (route A, besluit Ronald 22-09-2026): is de gebruiker 13, 14 of
+      // 15, dan ontstaat hier géén account en géén profielregel. Er gaat eerst
+      // een mailtje naar zijn ouder; alles wat hij invult blijft zolang in zijn
+      // eigen browser staan. Het account ontstaat pas op het laatste scherm,
+      // na de goedkeuring (zie ouder.js en submitProfile()).
+      if (ouderToestemmingNodig(leeftijd)) {
+        state.ouderRoute = true;
+        saveOnboardingProgress();
+        // Loopt er al een goedgekeurde aanvraag? Dan hoeft hij niets meer te
+        // vragen en gaat hij gewoon verder met zijn profiel.
+        const lopend = ouderAanvraagLezen();
+        if (lopend && lopend.stand !== 'geweigerd' && lopend.stand !== 'verlopen') { goTo(1); return; }
+        ouderStapTonen();
+        return;
+      }
+      state.ouderRoute = false;
       // TT-09: account + minimaal profiel ontstaan al hier, i.p.v. pas bij de
       // laatste stap. De rest van de wizard wordt daardoor een aanvulling op
       // een al bestaand (nog niet "af") profiel — zie createAccountAndProfile().
@@ -1228,9 +1349,14 @@ function handleFileSelect(files) {
     renderMediaGrid();
 
     if (!currentUser) {
-      // Zou in de normale flow niet moeten voorkomen; voor de zekerheid geen
-      // upload proberen zonder ingelogde gebruiker (RLS zou 'm toch weigeren).
+      // TT-42 (route A): bij 13-15 bestaat er tijdens de wizard nog geen
+      // account, dus ook geen map om naar te schrijven. Het bestand blijft
+      // hier in het geheugen hangen en gaat mee in submitProfile(), zodra het
+      // account er is — zelfde uitstel als de profielfoto bij TT-02.
+      // Bekende beperking, gelijk aan die van de profielfoto: sluit hij de
+      // browser, dan is het bestand weg. Zijn antwoorden en zijn links niet.
       entry.uploading = false;
+      entry.bestand = file;
       renderMediaGrid();
       return;
     }
