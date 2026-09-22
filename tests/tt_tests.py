@@ -29,7 +29,8 @@ STUB = os.path.join(ROOT, "tests", "stub", "supabase-stub.js")
 
 JS_FILES = [
     "core.js", "utils.js", "veiligheid.js", "auth.js", "postcode.js", "wizard.js",
-    "search.js", "musicians.js", "bands.js", "messages.js", "modals-shared.js",
+    "ouder.js", "search.js", "musicians.js", "bands.js", "messages.js",
+    "modals-shared.js",
 ]
 
 # Scriptvolgorde uit de projectinstructies. Bindend.
@@ -39,7 +40,7 @@ VIEWS = [
     "view-landing", "view-auth", "view-register", "view-profieltegels",
     "view-search", "view-myprofile", "view-bands", "view-messages",
     "view-about", "view-privacy", "view-terms", "view-gedragscode",
-    "view-instellingen", "view-reset",
+    "view-instellingen", "view-reset", "view-toestemming",
 ]
 
 NAV_IDS = [
@@ -2838,6 +2839,134 @@ def blok_browser():
               hoogste["naDruk"] == ["view-myprofile"], json.dumps(hoogste))
 
         check("geen paginafouten in blok 27", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ------------------------------------------------------------------
+        # Blok 28 — TT-42: registratie met toestemming van een ouder (route A)
+        # ------------------------------------------------------------------
+        print("\nBlok 28 — toestemming van een ouder (TT-42)")
+
+        leeftijd = page.evaluate("""() => {
+          const uit = {};
+          const veld = document.getElementById('birth_date');
+          const hint = document.getElementById('ouderLeeftijdHint');
+          const ww   = document.getElementById('regPasswordField');
+          const zichtbaar = el => el && getComputedStyle(el).display !== 'none';
+
+          const meet = (datum) => {
+            veld.value = datum;
+            ouderLeeftijdsregel();
+            return { hint: zichtbaar(hint), ww: zichtbaar(ww) };
+          };
+          const nu = new Date();
+          const jaarGeleden = (n) => `01-01-${nu.getFullYear() - n}`;
+
+          uit.veertien = meet(jaarGeleden(14));
+          uit.twintig  = meet(jaarGeleden(20));
+          uit.dertien  = meet(jaarGeleden(13));
+          uit.zestien  = meet(jaarGeleden(16));
+          uit.leeg     = meet('');
+          return uit;
+        }""")
+        check("de regel verschijnt bij 13, 14 en 15 en niet daarbuiten",
+              leeftijd["veertien"]["hint"] and leeftijd["dertien"]["hint"]
+              and not leeftijd["zestien"]["hint"] and not leeftijd["twintig"]["hint"]
+              and not leeftijd["leeg"]["hint"], json.dumps(leeftijd))
+        check("het wachtwoordveld verdwijnt precies bij die leeftijden",
+              not leeftijd["veertien"]["ww"] and not leeftijd["dertien"]["ww"]
+              and leeftijd["zestien"]["ww"] and leeftijd["twintig"]["ww"],
+              json.dumps(leeftijd))
+
+        # De koppeling in goTo() loopt op volgorde over `.panel`. Een zesde
+        # `.panel` zou elke wizardstap één plek opschuiven.
+        panelen = page.evaluate("""() => ({
+          panel: [...document.querySelectorAll('.panel')].map(p => p.id),
+          ouder: [...document.querySelectorAll('.panel-ouder')].map(p => p.id)
+        })""")
+        check("er zijn precies vijf .panel-elementen, de vijf wizardstappen",
+              panelen["panel"] == ["step0", "step1", "step2", "step3", "step4"],
+              json.dumps(panelen))
+        check("de drie ouder-schermen dragen panel-ouder",
+              panelen["ouder"] == ["ouderStap", "ouderWacht", "ouderWachtwoord"],
+              json.dumps(panelen))
+
+        tonen = page.evaluate("""() => {
+          ouderPaneelTonen('ouderStap');
+          const uit = {
+            actief: [...document.querySelectorAll('.panel-ouder.active')].map(p => p.id),
+            stappen: [...document.querySelectorAll('.panel.active')].map(p => p.id),
+            balk: document.getElementById('stepsBar').style.display
+          };
+          ouderPaneelSluiten();
+          uit.naSluiten = [...document.querySelectorAll('.panel-ouder.active')].length;
+          uit.balkTerug = document.getElementById('stepsBar').style.display;
+          return uit;
+        }""")
+        check("één ouder-scherm tegelijk, geen wizardstap ernaast, stappenbalk weg",
+              tonen["actief"] == ["ouderStap"] and tonen["stappen"] == []
+              and tonen["balk"] == "none" and tonen["naSluiten"] == 0
+              and tonen["balkTerug"] == "", json.dumps(tonen))
+
+        # Route A leunt erop dat het werk dagen blijft staan. sessionStorage
+        # verdwijnt bij het sluiten van het tabblad; dat mag hier niet meer.
+        opslag = page.evaluate("""() => {
+          const uit = {};
+          state.ouderRoute = true;
+          state.fname = 'Testkind';
+          state.currentStep = 2;
+          saveOnboardingProgress();
+          uit.lokaal = !!localStorage.getItem('tt_onboarding_v1');
+          uit.sessie = !!sessionStorage.getItem('tt_onboarding_v1');
+          const terug = leesOuderVoortgang();
+          uit.naam = terug && terug.fname;
+          clearOnboardingProgress();
+          uit.naWissen = !!localStorage.getItem('tt_onboarding_v1');
+          state.ouderRoute = false;
+          return uit;
+        }""")
+        check("de voortgang staat in localStorage, niet in sessionStorage",
+              opslag["lokaal"] and not opslag["sessie"], json.dumps(opslag))
+        check("route A leest zijn eigen voortgang terug en wist hem weer",
+              opslag["naam"] == "Testkind" and not opslag["naWissen"], json.dumps(opslag))
+
+        kaal = page.evaluate("""() => {
+          const zichtbaar = id => {
+            const el = document.getElementById(id);
+            if (!el) return false;
+            const s = getComputedStyle(el);
+            return s.display !== 'none' && s.visibility !== 'hidden';
+          };
+          showView('toestemming');
+          const uit = {
+            onderbalk: zichtbaar('appBottomNav'),
+            hamburger: zichtbaar('navMenuBtn'),
+            terug:     zichtbaar('navTerugBtn'),
+            actief:    [...document.querySelectorAll('.app-view.active')].map(v => v.id)
+          };
+          showView('landing');
+          uit.onderbalkTerug = zichtbaar('appBottomNav');
+          uit.hamburgerTerug = zichtbaar('navMenuBtn');
+          return uit;
+        }""")
+        check("de goedkeuringspagina staat er, zonder onderbalk, hamburger of terugknop",
+              kaal["actief"] == ["view-toestemming"] and not kaal["onderbalk"]
+              and not kaal["hamburger"] and not kaal["terug"], json.dumps(kaal))
+        check("beide komen terug zodra je die pagina verlaat",
+              kaal["onderbalkTerug"] and kaal["hamburgerTerug"], json.dumps(kaal))
+
+        # De code moet in de adresregel blijven staan, anders werkt verversen
+        # van de goedkeuringspagina niet meer.
+        adres = page.evaluate("""() => {
+          history.replaceState({}, '', '#toestemming/abc123');
+          showView('toestemming');
+          const uit = { hash: location.hash };
+          showView('landing');
+          return uit;
+        }""")
+        check("showView() laat de code in de adresregel staan",
+              adres["hash"] == "#toestemming/abc123", json.dumps(adres))
+
+        check("geen paginafouten in blok 28", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
