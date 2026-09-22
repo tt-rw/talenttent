@@ -259,12 +259,143 @@
      Was een los kaartje (achtergrond, rand, eigen 40px opvulling) — dat
      versmalde de bruikbare breedte op een telefoon onnodig t.o.v. de rest
      van de app. */
-  .panel {
+  /* TT-42: de drie ouder-schermen delen de opmaak van een wizardstap, maar
+     dragen een eigen klasse. goTo() koppelt `.panel` op volgorde aan het
+     stapnummer; een zesde `.panel` zou die koppeling verschuiven. */
+  .panel,
+  .panel-ouder {
     display: none;
     animation: slideIn 0.4s ease;
   }
 
-  .panel.active { display: block; }
+  .panel.active,
+  .panel-ouder.active { display: block; }
+
+  /* De ouder-schermen tonen de stappenbalk niet — ze zijn geen genummerde
+     stap. Die balk levert wel de 40px lucht onder de kop (.steps
+     margin-bottom); zonder deze regel plakt de titel tegen de kop aan. */
+  .panel-ouder { padding-top: 40px; }
+
+  /* TT-42: het blok dat het kind aan zijn ouder kan laten zien. */
+  .ouder-kaart {
+    background: var(--surface2);
+    border: var(--line) solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+
+  .ouder-kaart p {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.5;
+  }
+  .ouder-kaart p:last-child { margin-bottom: 0; }
+  .ouder-kaart-kop { font-weight: 700; color: var(--accent); }
+  .ouder-kaart p.ouder-kaart-kop { font-weight: 700; }
+
+  /* Zelfde maat en regelafstand als .field-hint, alleen zonder de inspringing
+     die bij een invulveld hoort. */
+  /* Het adres van de ouder en het eigen adres moeten opvallen: hier merkt
+     iemand een typefout, en alleen hier. Bij de gedempte kleur van de
+     omringende tekst valt dat weg. */
+  .ouder-adres { color: var(--text); font-weight: 500; }
+
+  .ouder-melding {
+    font-size: var(--fs-sm);
+    line-height: 16px;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+
+  .ouder-uitleg { margin: 24px 0 8px; }
+  /* Zelfde maat en regelafstand als .ouder-melding en .field-hint — anders
+     staat dezelfde soort tekst op het ene scherm ruimer dan op het andere. */
+  .ouder-uitleg p {
+    font-size: var(--fs-sm);
+    line-height: 16px;
+    color: var(--muted);
+    margin: 0 0 8px;
+  }
+
+  /* Stille uitweg: een link, geen knop — dit is geen aangeboden actie. */
+  .ouder-stille-link {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: underline;
+    cursor: pointer;
+    min-height: 44px;
+  }
+
+  /* TT-42: de goedkeuringspagina van de ouder. */
+  .toestemming-wrap { max-width: 560px; margin: 0 auto; padding-top: 40px; }
+
+  .toestemming-blok a,
+  .toestemming-melding a,
+  .toestemming-akkoord a { color: var(--accent); }
+
+  .toestemming-blok { margin-bottom: 24px; }
+
+  .toestemming-blok h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 6px;
+  }
+
+  /* Gelijk aan .panel-sub op de andere schermen: zelfde maat, gewicht en
+     regelafstand. Stond op 1.6 en 400, waardoor deze pagina er anders uitzag
+     dan de rest van de flow. */
+  .toestemming-blok p,
+  .toestemming-melding {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.5;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+
+  /* Dit is een <label>, en de algemene labelregel hierboven maakt daar
+     hoofdletters met 2px letterafstand van. Dat is de stijl voor een
+     veldnaam van twee woorden, niet voor een zin die iemand moet lezen
+     vóór hij ergens mee akkoord gaat. Hier dus expliciet terug naar
+     gewone lopende tekst. */
+  .toestemming-akkoord {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: normal;
+    text-transform: none;
+    font-weight: 400;
+    color: var(--text);
+    padding-left: 0;
+    margin: 24px 0;
+  }
+
+  .toestemming-akkoord input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
+
+  /* TT-42: twee knoppen onder elkaar, op volle breedte. Nodig waar het
+     opschrift niet in een halve breedte past — "Toestemming geven",
+     "Opnieuw versturen" — en tegelijk de rustigste vorm voor een keuze
+     waarin geen van beide knoppen "de volgende stap" is. TT-228 laat
+     knoppen onder elkaar op volle breedte ongemoeid. Eén klasse voor beide
+     schermen: een tweede variant zou meteen uit elkaar lopen. */
+  .knoppen-stapel {
+    display: grid;
+    grid-auto-flow: row;
+    gap: 8px;
+  }
+
+  .knoppen-stapel .btn { width: 100%; }
+
+  .toestemming-knoppen { margin-top: 24px; }
 
   @keyframes levelPulse {
     0%, 100% { opacity: 1; }
@@ -290,6 +421,13 @@
     color: var(--muted);
     margin-bottom: 32px;
     font-weight: 300;
+    /* 22-09-2026 (TT-42): stond er niet, dus viel dit terug op de standaard
+       van de browser — ongeveer 1,2. Op één regel valt dat niet op; op drie
+       regels plakken ze aan elkaar. Elke andere lopende tekst in de app die
+       wél een regelafstand heeft staat op 1,5, en dat is ook de ondergrens
+       die de toegankelijkheidsrichtlijn voor lopende tekst aanhoudt. Hier
+       in de standaard gezet, niet per scherm (§2 regel 11). */
+    line-height: 1.5;
   }
 
   /* Form fields */

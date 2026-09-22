@@ -45,7 +45,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260921a">
+<link rel="stylesheet" href="styles.css?v=20260922a">
 </head>
 <body>
 
@@ -280,7 +280,9 @@
     <div class="field-group">
       <div class="field">
         <label>Geboortedatum <span class="req">*</span></label>
-        <input type="text" id="birth_date" placeholder="01-02-2001" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this)">
+        <input type="text" id="birth_date" placeholder="01-02-2001" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this); ouderLeeftijdsregel()">
+        <!-- TT-42: verschijnt alleen bij 13, 14 of 15. Mededeling, geen fout. -->
+        <p class="field-hint" id="ouderLeeftijdHint" style="display:none;">Onder de 16 vragen we straks toestemming aan je ouder of verzorger. Voor hen is het één klik. Je kunt gewoon doorgaan.</p>
       </div>
       <div class="field">
         <label>Postcode <span class="req">*</span></label>
@@ -603,9 +605,111 @@
     </div>
   </div>
 
+  <!-- ─────────────────────────────────────────────────────────────────────
+       TT-42 — de drie schermen voor wie 13, 14 of 15 is.
+       Klasse `panel-ouder`, niet `panel`: goTo() koppelt `.panel` op
+       volgorde aan het stapnummer, en een zesde `.panel` zou die koppeling
+       stilzwijgend verschuiven.
+       ───────────────────────────────────────────────────────────────────── -->
+
+  <!-- Onderdeel 2: het tussenscherm -->
+  <div class="panel-ouder" id="ouderStap">
+    <div class="panel-title">Je hebt toestemming van thuis nodig</div>
+    <div class="panel-sub">Onder de 16 mag je profiel pas online met toestemming van je ouder of verzorger. Wij sturen één mail met één knop. Meer hoeven ze niet te doen.</div>
+
+    <div class="ouder-kaart">
+      <p class="ouder-kaart-kop">Dit kun je ze laten lezen:</p>
+      <p>The Talent Tent is een Nederlands platform waar muzikanten elkaar vinden om samen te spelen: jammen, repeteren, optreden.</p>
+      <p>Ik heb er een profiel gemaakt. Onder de 16 mag dat alleen met toestemming van een ouder.</p>
+      <p>Je krijgt één mail met één knop. Daarin staat precies wat er gebeurt.</p>
+    </div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>E-mailadres van je ouder of verzorger <span class="req">*</span></label>
+        <input type="email" id="ouderEmail" placeholder="bijv. papa@email.nl" autocomplete="off" inputmode="email" enterkeyhint="send" onkeydown="submitOnEnter(event, ouderVerzoekVersturen)">
+        <p class="field-hint">Controleer het adres. Hier gaat de mail naartoe.</p>
+      </div>
+    </div>
+
+    <p class="ouder-melding">Je ouder kan je profiel en je berichten niet meelezen.</p>
+    <p class="ouder-melding">Geen haast. Vul het adres in wanneer je het gevraagd hebt; je profiel blijft bewaard.</p>
+
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner">
+        <!-- Korte opschriften: de knoppen in deze balk zijn 12px vet met
+             letterafstand en delen de breedte in tweeën. "Stuur het mailtje"
+             breekt daar over twee regels; elke andere knop in de wizard is
+             één woord. -->
+        <button class="btn wizard-btn wizard-btn-ghost" onclick="ouderStapOverslaan()">Later</button>
+        <button class="btn wizard-btn wizard-btn-accent" onclick="ouderVerzoekVersturen()">Versturen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onderdeel 3: het wachtscherm -->
+  <div class="panel-ouder" id="ouderWacht">
+    <div class="panel-title" id="ouderWachtKop">Je verzoek is verstuurd</div>
+    <div class="panel-sub" id="ouderWachtBody">De mail staat klaar bij <strong class="ouder-adres" id="ouderWachtAdres"></strong>.
+      Zodra je ouder toestemming geeft, krijg je bericht van ons. Daarna kies je een wachtwoord en staat je profiel online.</div>
+
+    <!-- Deze twee horen niet in de vaste wizardbalk onderin: dit is geen
+         Terug/Verder. Onder elkaar op volle breedte, zelfde vorm als de twee
+         knoppen op de goedkeuringspagina: alleen zo passen de volledige
+         opschriften, en geen van beide is hier "de volgende stap". -->
+    <p class="ouder-melding">Adres verkeerd, of is de mail niet aangekomen?</p>
+    <div class="knoppen-stapel" id="ouderWachtActies">
+      <button class="btn" id="ouderOpnieuwKnop" onclick="ouderOpnieuwSturen()">Opnieuw versturen</button>
+      <button class="btn btn-ghost" onclick="ouderAdresWijzigen()">Adres wijzigen</button>
+    </div>
+
+    <p class="ouder-melding" id="ouderHerstuurRegel"></p>
+
+    <div class="ouder-uitleg">
+      <p>Je kunt de app sluiten. Je profiel staat klaar op dit toestel.</p>
+      <p>Het verzoek is veertien dagen geldig.</p>
+      <p><button type="button" class="ouder-stille-link" onclick="ouderStoppenEnWissen()">Stoppen en mijn gegevens wissen</button></p>
+    </div>
+  </div>
+
+  <!-- Onderdeel 7: het wachtwoordscherm -->
+  <div class="panel-ouder" id="ouderWachtwoord">
+    <div class="panel-title">Kies je wachtwoord</div>
+    <div class="panel-sub">Je ouder heeft toestemming gegeven. Hierna staat je profiel online.</div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Wachtwoord <span class="req">*</span></label>
+        <div class="password-wrap">
+          <input type="password" id="ouderWachtwoordVeld" placeholder="Minimaal 8 tekens" autocomplete="new-password" enterkeyhint="done" onkeydown="submitOnEnter(event, ouderProfielAanmaken)">
+          <button type="button" class="password-toggle" onclick="togglePassword('ouderWachtwoordVeld', this)" aria-label="Toon wachtwoord">Toon</button>
+        </div>
+        <p class="field-hint">Je logt in met <strong class="ouder-adres" id="ouderWwAdres"></strong> en dit wachtwoord.</p>
+      </div>
+    </div>
+
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner">
+        <button class="btn wizard-btn wizard-btn-accent" onclick="ouderProfielAanmaken()">Profiel aanmaken</button>
+      </div>
+    </div>
+  </div>
 
 </main>
 </div><!-- /view-register -->
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- VIEW: Goedkeuring door een ouder (TT-42)     -->
+<!-- Het vijftiende scherm. Alleen bereikbaar via #toestemming/<code> uit   -->
+<!-- de mail; wie het adres zonder geldige code opent, komt op de landing.  -->
+<!-- Geen hamburger, geen onderbalk, geen terugknop: de bezoeker is geen    -->
+<!-- gebruiker van de app en heeft aan die knoppen niets.                   -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="app-view" id="view-toestemming">
+<main>
+  <div class="toestemming-wrap" id="toestemmingInhoud"></div>
+</main>
+</div><!-- /view-toestemming -->
 
 <!-- ═══════════════════════════════════════════ -->
 <!-- VIEW: Profiel bewerken (tegeloverzicht)      -->
@@ -2433,12 +2537,13 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260920c"></script>
+<script src="core.js?v=20260922a"></script>
 <script src="utils.js?v=20260920b"></script>
 <script src="veiligheid.js?v=20260918a"></script>
 <script src="auth.js?v=20260920a"></script>
 <script src="postcode.js?v=20260917a"></script>
-<script src="wizard.js?v=20260916a"></script>
+<script src="wizard.js?v=20260922a"></script>
+<script src="ouder.js?v=20260922a"></script>
 <script src="search.js?v=20260918a"></script>
 <script src="musicians.js?v=20260920b"></script>
 <script src="bands.js?v=20260916a"></script>

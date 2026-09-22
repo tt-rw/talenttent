@@ -1,6 +1,150 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 22-09-2026 — **TT-42/TT-45 verkend, niet gebouwd. Nieuw
+**Laatste update:** 22-09-2026 (vervolg) — **TT-42 gebouwd: registratie met
+toestemming van een ouder, route A. Zeven onderdelen, één nieuw JS-bestand
+(`ouder.js`), één nieuwe view (`view-toestemming`, de vijftiende), één nieuwe
+tabel en één nieuwe Edge Function. Testset 401 van 401, monitor 19 van 19.
+Twee handelingen van Ronald staan nog open: het SQL-script draaien en de Edge
+Function plaatsen.**
+
+**Aanleiding.** Ronald, 22-09-2026: *"ja, start met bouwen"*, op het ontwerp in
+`_niet-uploaden-tt42-ontwerp-22-09-2026.md`. Dat "ja" is gelezen als ja op alle
+zes de punten uit §8 van dat document, inclusief de twee met gevolgen buiten
+dit ticket (localStorage voor iedereen, en geen onderbalk op de
+goedkeuringspagina).
+
+**Wat er nu staat, in de volgorde waarin een kind het tegenkomt.**
+
+1. Een regel onder de geboortedatum, alleen bij 13, 14 of 15: *"Onder de 16
+   vragen we straks even je vader of moeder om akkoord."* Geen blokkade.
+2. Een tussenscherm direct na stap 1, met de drie regels die het kind aan zijn
+   ouder kan laten zien en één veld: het e-mailadres van de ouder.
+3. Een wachtscherm na stap 5, met het adres in beeld, wijzigen, opnieuw sturen
+   (rem van vijftien minuten, hoogstens drie keer) en een stille uitweg.
+4. De mail aan de ouder, met een knop die naar een pagina gaat — niet naar de
+   toestemming zelf.
+5. De goedkeuringspagina `view-toestemming`, bereikbaar via
+   `#toestemming/<code>`, zonder inlog, zonder onderbalk, zonder hamburger en
+   zonder terugknop.
+6. De mail aan het kind na de goedkeuring.
+7. Het scherm waar het kind zijn wachtwoord kiest; pas daar ontstaan het
+   account en de profielregel.
+
+**Route A werkte al half in de code, en dat scheelde veel.** `submitProfile()`
+had nog een terugvaltak voor "er is nog geen account": signup, inloggen, en
+daarna het hele profiel in één keer wegschrijven. Die tak was sinds TT-09 dode
+letter in de gewone flow; nu is hij precies het pad van route A. Er hoefde dus
+geen tweede manier van aanmaken bij.
+
+**Drie keuzes die tijdens het bouwen bleken, geen van drieën zichtbaar in het
+ontwerp:**
+
+- **De code uit de link mag niet langs de browser van het kind.** Het ontwerp
+  (§5) sprak van twee `_anon`-databasefuncties. Zou de app de aanvraag zelf
+  aanmaken, dan krijgt het kind de code terug en kan hij zichzelf goedkeuren.
+  Alles loopt daarom via de Edge Function `ouder-toestemming` met de
+  service-role-sleutel; de tabel is voor anon en authenticated volledig dicht.
+  In de tabel staat alleen de versleutelde vorm (sha-256) van de code.
+- **Opnieuw sturen geeft een nieuwe code.** De oude is niet terug te lezen —
+  dat is precies de bedoeling van het vorige punt. Bijvangst: de vorige link
+  werkt daarna niet meer.
+- **Media van een 13-15-jarige kan pas na de goedkeuring geüpload worden.**
+  Er is tot dat moment geen map om naar te schrijven. Het bestand blijft in het
+  geheugen hangen en gaat mee in `submitProfile()`, net als de profielfoto bij
+  TT-02. Bekende beperking, gelijk aan die van de profielfoto: sluit hij de
+  browser, dan is het bestand weg. Zijn antwoorden en zijn links niet — die
+  staan in `localStorage`.
+
+**Alle teksten zijn na de eerste oplevering herschreven** *(Ronald,
+22-09-2026: "dit is een beetje knullige tekst. maak dit professioneler, nog
+steeds gericht op de doelgroep")*. Weg zijn de verkleinwoorden ("mailtje"),
+het wachten als kop ("We wachten op je vader of moeder" werd "Je verzoek is
+verstuurd") en de kindertoon ("Even iemand van thuis erbij" werd "Je hebt
+akkoord van thuis nodig"). De ouderpagina heet nu "<naam> vraagt je
+toestemming" en heeft "Weigeren" en "Akkoord" als knoppen. Dezelfde ronde is
+over de twee mails in de Edge Function gegaan.
+
+**Regelafstand en woordgebruik gelijkgetrokken** *(Ronald, 22-09-2026:
+"scherm 1, 3 en 4 hebben een andere regelafstand en woordgebruik. maak dit
+gelijk")*. Drie dingen:
+
+- **`.panel-sub` had helemaal geen regelafstand** en viel daarmee terug op de
+  standaard van de browser, ongeveer 1,2. Op één regel valt dat niet op, op
+  drie regels plakken ze aan elkaar. Nu 1,5, **in de standaard en dus
+  app-breed** (§2 regel 11) — elke wizardstap krijgt daardoor iets meer lucht
+  in zijn ondertitel. 1,5 is ook de ondergrens die de
+  toegankelijkheidsrichtlijn voor lopende tekst aanhoudt.
+- **De nieuwe tekstklassen stonden op eigen waarden** (1,5 en 1,6, gewicht
+  400). Alle lopende tekst van 14px in deze flow staat nu op 14px / 1,5 /
+  gewicht 300, gelijk aan `.panel-sub`; alle kleine tekst op 12px / 16px,
+  gelijk aan `.field-hint`. Gemeten in de browser, niet geschat.
+- **Eén woord voor één ding** (huisstijl §6.5): het heet overal
+  **toestemming**, nooit meer "akkoord". "Akkoord gaan met de voorwaarden"
+  blijft wel staan — dat is een andere handeling, en zo staat het ook op de
+  laatste wizardstap.
+
+**Twee knoppen onder elkaar, op volle breedte, op de goedkeuringspagina én op
+het wachtscherm** — één klasse `.knoppen-stapel` voor allebei. Nodig waar het
+opschrift niet in een halve breedte past ("Toestemming geven", "Opnieuw
+versturen"), en tegelijk de rustigste vorm voor een keuze waarin geen van beide
+knoppen de volgende stap is. TT-228 laat knoppen onder elkaar op volle breedte
+ongemoeid.
+
+**Het wachtscherm is daarnaast op drie punten bijgewerkt** *(Ronald,
+22-09-2026: "en scherm 2? verbeter die ook")*: de afgebroken regel met `<br>`
+is weg, het adres van de ouder staat nu in de tekstkleur in plaats van gedempt
+(daar en nergens anders merkt iemand een typefout), en er staat bij hoe lang
+het verzoek geldig is. `.ouder-uitleg p` stond nog zonder regelafstand en loopt
+nu gelijk met de rest.
+
+**Opschriften korter dan in het ontwerp.** "Stuur het mailtje" werd
+"Versturen"; "Ja, dat is goed" werd "Akkoord". Reden: de knoppen in de
+wizardbalk en in een `.btn-row` delen de breedte in tweeën en zetten hun tekst
+in hoofdletters met letterafstand; de oorspronkelijke opschriften braken over
+twee regels. Gemeten op 390px breed, met schermafdruk.
+
+**`sessionStorage` is `localStorage` geworden, voor iedereen.** Dat draait een
+eerder besluit terug (TT-09: "bij het sluiten van het tabblad vervalt dit
+bewust"). Het kan niet blijven staan naast route A: een kind wacht tot veertien
+dagen en al zijn antwoorden staan zolang alleen in zijn eigen browser.
+Doorgevoerd in de standaard, niet per scherm (§2 regel 11), dus ook een
+dertigjarige die halverwege stopt vindt zijn werk terug.
+
+**Wat er nog moet gebeuren voordat dit werkt — twee handelingen van Ronald:**
+
+1. `_niet-uploaden-tt42-tabel-ouder-toestemming.sql` draaien in Supabase. Maakt
+   de tabel `ouder_toestemming`, zet RLS aan zonder enkele policy, en maakt
+   `tt_ouder_verlopen()`, `tt_ouder_herinneringen()` en
+   `tt_email_in_gebruik()`. Daarna meet Claude via de browserpane of de tabel
+   er staat — let op PGRST205 bij een verse tabel (zie §10 van de
+   projectinstructies).
+2. `_niet-uploaden-tt42-edge-function-ouder-toestemming.ts` plaatsen als Edge
+   Function `ouder-toestemming`, met **"Verify JWT" uit** — de
+   goedkeuringspagina heeft geen account. De SMTP-geheimen van TT-01 worden
+   hergebruikt; er komt niets bij. Daarna een taak op `pg_cron` die die functie
+   één keer per dag aanroept met `{"actie":"onderhoud"}`, voor de herinnering
+   na zeven dagen en het verlopen na veertien.
+
+**Laag 2 kan pas daarna.** De hele keten — mail eruit, ouder klikt, kind komt
+terug — raakt de database en de mailserver en is dus niet te toetsen tegen de
+stub. Dit hoort in een eigen sessie, in de browserpane, met Ronald erbij.
+
+**De projectinstructies moeten mee.** Vier plaatsen: §2.6a en §7 tellen elf
+JS-bestanden, het zijn er twaalf (`ouder.js`, direct na `wizard.js`); §9 noemt
+veertien views, het zijn er vijftien; §10 mist de tabel `ouder_toestemming` en
+de drie nieuwe functies; §12 noemt de nieuwe stappen in laag 2 nog niet. Claude
+levert dat document in een volgende sessie, in zijn geheel (§2 regel 14).
+
+**Testset en monitor.** Blok 28 is nieuw: de leeftijdsregel en het verdwijnende
+wachtwoordveld, precies vijf `.panel`-elementen (een zesde zou elke wizardstap
+één plek opschuiven), één ouder-scherm tegelijk, de opslag in `localStorage`,
+de kale goedkeuringspagina, en de code die in de adresregel blijft staan.
+Eindstand 401 van 401. De monitor telt nu vijftien views en twaalf
+JS-bestanden: 19 van 19.
+
+---
+
+**Vorige update:** 22-09-2026 — **TT-42/TT-45 verkend, niet gebouwd. Nieuw
 projectdocument `minderjarigen-toestemming-22-09-2026.md` met het volledige
 beeld rond registratie van 13-15-jarigen. Elf besluiten van Ronald vastgelegd;
 vijf vragen staan nog open. Geen app-code gewijzigd. Monitor 19 van 19; punt A7
@@ -4442,6 +4586,8 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 ## P0 — Zonder dit is de app niet af of onveilig
 
+**Bijgewerkt 22-09-2026 (vervolg).** TT-42 is gebouwd, maar blijft in deze stand meetellen tot laag 2 is gedraaid: de keten mail → klik van de ouder → terugkomst van het kind raakt de database en de mailserver en is niet tegen de stub te toetsen. Hij wacht bovendien op twee handelingen van Ronald (het SQL-script en de Edge Function). Zolang blijven het er vijf.
+
 **Stand van de P0's, bijgewerkt 20-09-2026 (vervolg).** **Vijf P0-bouwtickets
 staan open:** TT-281 · TT-295 · TT-65 · TT-45 · TT-42. **TT-299 en TT-300 zijn
 op 20-09-2026 gevonden én afgehandeld** en staan in de tweede tabel; ze
@@ -4484,7 +4630,7 @@ eerste tabel altijd gelijk is aan de stand.
 | **TT-295** | De matchhelft van de digest levert structureel niets op | **Nieuw, 20-09-2026.** `tt_digest_new_musicians` doet een inner join op `musician_wanted`. Die tabel bevat **0 rijen**, geverifieerd 20-09-2026 tegen productie. TT-232 (09-09-2026) haalde het enige invulveld ervoor — "instrumenten die je zoekt in een ander" — uit Zoekvoorkeuren, met als reden "dat staat al in de zoekfilters". Sindsdien kan niemand die tabel nog vullen, en dus vindt de nachtelijke query per definitie niemand. De bandhelft werkt wel: die gebruikt `band_wanted` tegen de instrumenten in je eigen profiel, en is op 20-09-2026 aantoonbaar in een echte mail terechtgekomen (drie bands). **Toets:** kan de app hiermee live zonder dat een gebruiker iets misloopt? Nee — de app belooft een mail over nieuwe matches en levert die helft niet. Zelfde grond waarop TT-01 P0 was. **Voorstel Ronald, geen besluit (20-09-2026):** een bewaarde zoekopdracht — een vinkje op het zoekformulier dat de héle zoekopdracht opslaat (instrument, genre, straal, plaats), niet alleen een lijstje instrumenten. Dat zou TT-295 en TT-62 deel 2 in één keer afhandelen. Alternatief: het oude veld terugzetten in E-mailvoorkeuren — kleiner werk, armere mail, TT-62 deel 2 blijft open. Nog geen ontwerpsessie |
 | **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers, zodra die er zijn. Interim-stap: zie "Direct te doen" hierboven. **Vóór lancering, niet acuut nu (23-08-2026) — de site heeft nog alleen testprofielen, zie afspraak bovenaan deze tabel** |
 | **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel. **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel.** **Verkend 22-09-2026**, samen met TT-42: zie `minderjarigen-toestemming-22-09-2026.md` in het claude.ai-project. Nog open uit dit ticket: zichtbaarheid van profielfoto's van minderjarigen voor bezoekers zonder account, en de afhandeling van een melding waar een minderjarige bij betrokken is |
-| **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus.** **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel.** **Verkend en uitontworpen op hoofdlijnen 22-09-2026, niet gebouwd.** Route A gekozen: het account ontstaat pas na de goedkeuring van de ouder, het kind loopt de wizard intussen lokaal door. Alle besluiten, de ouder-flow stap voor stap, en de vragen mét antwoord staan in `minderjarigen-toestemming-22-09-2026.md` in het claude.ai-project (vierde versie). **Niets blokkeert dit ticket meer.** De volgende stap is het ontwerp in zeven onderdelen — zie de Laatste update bovenaan. Claude laat dat eerst zien; Ronald zegt ja of nee; pas daarna bouwen. De juridische toetsing gebeurt ná het ontwerp |
+| **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Gebouwd 22-09-2026, route A — wacht op twee handelingen van Ronald.** Zeven onderdelen: de regel bij de geboortedatum, het tussenscherm, het wachtscherm, de mail aan de ouder, de goedkeuringspagina (`view-toestemming`, de vijftiende view), de mail aan het kind en het wachtwoordscherm. Nieuw bestand `ouder.js`, direct na `wizard.js` in de scriptvolgorde. Het account ontstaat pas na de goedkeuring; tot die tijd staat alles in `localStorage` bij het kind. **Open bij Ronald:** het SQL-script draaien en de Edge Function `ouder-toestemming` plaatsen met Verify JWT uit — zie de Laatste update bovenaan. **Daarna:** laag 2 in de browserpane, en de projectinstructies bijwerken (twaalf JS-bestanden, vijftien views, de nieuwe tabel). Het ontwerp en de besluiten staan in `_niet-uploaden-tt42-ontwerp-22-09-2026.md` en `minderjarigen-toestemming-22-09-2026.md`. De juridische toetsing gebeurt ná het ontwerp |
 | **TT-62 (deel 2)** | "Geef me een seintje zodra er een drummer bijkomt" | **Uitzondering vastgelegd 12-09-2026 (besluit Ronald, TT-257):** het automatisch verruimen van deel 1 geldt **niet** als er een naam in het zoekveld staat. Wie op naam zoekt, zoekt één bepaalde persoon; iemand twee provincies verderop is dan geen beter antwoord dan geen antwoord. Zie huisstijl §17. **Deel 1 is gebouwd 11-09-2026** (automatisch verruimen, zie Deel 3). Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker. Leunt op dezelfde verzendweg als TT-01 en kan dus niet eerder |
 | **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Nieuw, 16-09-2026 (onderhoudsronde).** Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wissen eerst en voegen daarna toe, zonder foutcontrole op het wissen. Mislukt het toevoegen, dan is de oude data weg. Zelfde soort in `executeAccountDeletion()`. Volledige tekst: Laatste update bovenaan |
 | — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
