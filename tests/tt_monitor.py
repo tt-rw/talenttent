@@ -32,14 +32,14 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 BINDENDE_SCRIPTVOLGORDE = [
     "core.js", "utils.js", "veiligheid.js", "auth.js", "postcode.js",
-    "wizard.js", "search.js", "musicians.js", "bands.js", "messages.js",
-    "modals-shared.js",
+    "wizard.js", "ouder.js", "search.js", "musicians.js", "bands.js",
+    "messages.js", "modals-shared.js",
 ]
 
 VERWACHTE_VIEWS = [
     "landing", "auth", "register", "profieltegels", "search", "myprofile",
     "bands", "messages", "about", "privacy", "terms", "gedragscode",
-    "instellingen", "reset",
+    "instellingen", "reset", "toestemming",
 ]
 
 # Bewust in de repo, bewust niet geladen door index.html (projectinstructies §7).
@@ -124,11 +124,13 @@ def blok_a():
     else:
         toets("A", "elk JS-bestand doorstaat node --check (node ontbreekt)", True)
 
-    # A4 - alle veertien views staan er, geen onbekende (§9)
+    # A4 - alle vijftien views staan er, geen onbekende (§9)
+    # 22-09-2026 (TT-42): veertien werd vijftien met view-toestemming, de
+    # goedkeuringspagina van een ouder.
     aanwezig = set(re.findall(r'id="view-([a-z]+)"', html))
     mist = [v for v in VERWACHTE_VIEWS if v not in aanwezig]
     extra = sorted(aanwezig - set(VERWACHTE_VIEWS))
-    toets("A", "alle veertien views aanwezig, geen onbekende",
+    toets("A", "alle vijftien views aanwezig, geen onbekende",
           not mist and not extra, "A4",
           "views missen: %s; onbekend: %s" % (mist or "-", extra or "-"))
 
