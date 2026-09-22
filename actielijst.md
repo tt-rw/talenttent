@@ -1,6 +1,134 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 21-09-2026 (vervolg) — **TT-304 krijgt een loper: de
+**Laatste update:** 22-09-2026 — **TT-42/TT-45 verkend, niet gebouwd. Nieuw
+projectdocument `minderjarigen-toestemming-22-09-2026.md` met het volledige
+beeld rond registratie van 13-15-jarigen. Elf besluiten van Ronald vastgelegd;
+vijf vragen staan nog open. Geen app-code gewijzigd. Monitor 19 van 19; punt A7
+van TT-304 is opgelost.**
+
+**Aanleiding.** Ronald, 22-09-2026: *"er overleggen eerst totdat het
+kristalhelder is wat er moet komen. we gaan pas bouwen na het startschot."*
+Daarna een aangeleverde functionele specificatie, en de vraag: *"hoe leg je
+tijdens de aanmelding uit aan een kind hoe dit werkt?"*
+
+**Waar het document over gaat.** Drie betrokkenen in plaats van één (het kind,
+de ouder, Ronald), de timingregel dat niemand tien minuten mag invullen om
+daarna pas over zijn ouder te horen, wat je wel en niet uitlegt, de wachttoestand
+na het versturen, en de vragen die Ronald later gaat krijgen mét het antwoord
+erbij.
+
+**Drie punten uit de aangeleverde specificatie vallen weg.** "Lokale opslag
+eerst" kan niet — dit is een matchingplatform, muzikanten moeten elkáár vinden.
+"Geen achternamen, locaties of profielfoto's" haalt de dienst zelf weg. "Sla de
+geboortedatum niet op" maakt het vervallen van de toestemming op de zestiende
+verjaardag onmogelijk, en is bovendien al beter opgelost: `birth_date` staat er
+wel, maar `authenticated` mag hem niet lezen (B-01, TT-110). Het vierde punt,
+tracking-SDK's uitschakelen, vraagt niets — die zitten er niet in
+(geverifieerd 22-09-2026).
+
+**De aanname onder het hele ticket is nog steeds niet getoetst.** Dat
+toestemming de grondslag is, en dat de grens daarmee op 16 ligt, komt uit de
+externe review van 09-08-2026 als *signaal*, niet als antwoord. Ronald heeft
+het op 22-09-2026 als uitgangspunt genomen. **Een jurist heeft er niet naar
+gekeken.** Valt dit anders uit, dan vervalt een groot deel van het document en
+wordt TT-45 het echte ticket. Dit staat als open vraag 1 in het document.
+
+**Besluiten van Ronald, 22-09-2026** (volledig in het document, §9): de ouder
+krijgt vooralsnog geen inzage in het account; de ouder gaat op de
+goedkeuringspagina akkoord met de voorwaarden, de privacyverklaring en de
+gedragscode uit naam van zijn kind, en het kind gaat daarnáást zelf ook akkoord
+op de laatste wizard-stap; die goedkeuringspagina is op geen enkele andere
+manier te benaderen dan via de link uit de mail; **de knop in de mail legt de
+toestemming niet vast** — die brengt de ouder naar een pagina, en de knop dáár
+is de toestemming, anders klikken mailscanners namens de ouder; de mailtekst
+maakt meteen duidelijk dat dit bij de aanmelding van hun kind hoort, want
+*"mensen worden tegenwoordig bang gemaakt om op een link te klikken"*;
+toestemming intrekken gaat per mail naar `privacy@talenttent.org` en wordt
+handmatig afgehandeld, zonder knop in de app; de toestemming is maximaal drie
+jaar geldig en vervalt bij 16; een verzoek is veertien dagen geldig met één
+vriendelijke herinnering na zeven dagen; **klikt de ouder op "Nee", dan gebeurt
+er niets** — de aanvraag op de server vervalt, en verder staan de gegevens op de
+telefoon van het kind waar het platform niet bij kan; het kind krijgt daar geen
+bericht over en hoort het van zijn ouder; de mail aan de ouder noemt categorieën en niet de
+inhoud van het profiel, en verwijst naar de voorwaarden in de app in plaats van
+ze als PDF mee te sturen; de goedkeuringsmail wordt meegenomen in de
+e-mailopties als wervingskanaal; een ouder die iets wil melden gebruikt
+`contact@talenttent.org`, niet `privacy@`; in- en uitschrijvingen worden
+gemeten, maar **niet in `tt_monitor.py`** — dat is een repo-controle, geen
+databasemeting, en zou daar valse meldingen geven; bestaande testprofielen van
+onder de 16 blijven staan, want de ouders weten ervan en zijn akkoord; Ronald
+richt de afhandeling van meldingen zelf in; app-storebeleid voor minderjarigen
+komt pas in beeld als de Play Store aan de orde is, en dat is nog niet zeker;
+een kind zonder bereikbare ouder kan niet meedoen — *"dat is triest, maar een
+gevolg van de wetgeving."*
+
+**De juridische toetsing gebeurt ná het ontwerp** *(besluit Ronald)*, en het is
+niet zeker dat die toetsing juridisch van aard wordt. Zijn onderbouwing: *"de
+app is onschuldig van aard, helpt jongeren van hun scherm af en is niet
+verslavend. we moeten de jongeren goed beschermen, maar ik kan dat niet alleen
+via deze app. dat is een utopie. we doen wat we in redelijke mate kunnen."*
+
+**Twee harde afspraken over het vervolg** *(besluit Ronald)*: er wordt niet
+gebouwd voordat Ronald het startschot geeft, en **Claude laat eerst zien wat hij
+gaat maken** — Ronald zegt daarop ja of nee, en pas daarna begint het bouwen.
+
+**De route is gekozen: route A** *(besluit Ronald, 22-09-2026)*. Het account
+ontstaat pas na de goedkeuring van de ouder. Het kind vult scherm 1 in, krijgt
+daarna het tussenscherm met het e-mailadres van zijn ouder, en **loopt dan
+gewoon door naar scherm 2 tot en met 5** — alles staat lokaal op zijn telefoon.
+Klikt de ouder, dan komt het kind terug, kiest zijn wachtwoord, en pas dán
+ontstaan account en profielregel met alles wat klaarstond.
+
+Ronald erbij: *"Route A, al verschilt die voor het kind niet met B."* Dat klopt
+— de keuze is gemaakt op het risico erachter. De afgevallen route B liet het
+account zoals nu na scherm 1 ontstaan, geblokkeerd tot de ouder klikt, en vroeg
+daarom een filter op zes losse plaatsen (drie zoektabbladen, de zoekopdrachten
+in de database, berichten heen en terug, de digest, bandledenlijsten). Een
+vergeten filter daar valt pas op als er een kind in de zoekresultaten staat dat
+er niet mag staan — hetzelfde soort stille fout als bij TT-01.
+
+*Geverifieerd 22-09-2026:* nu ontstaan account en profielregel al na scherm 1
+van de wizard (`createAccountAndProfile()`, TT-09). Route A draait dat om voor
+13- tot 15-jarigen; voor 16-plussers verandert er niets.
+
+**Twee gevolgen voor het testwerk.** De goedkeuringspagina wordt het
+**vijftiende scherm**; blok A van de monitorronde telt er veertien en meldt elke
+onbekende, dus die controle moet in hetzelfde ticket meebewegen. En die pagina
+moet werken zonder inlog, dus er is een aparte databasefunctie nodig, zoals de
+bestaande `tt_*_anon`-functies.
+
+**Wat de volgende sessie doet — hier beginnen, niets opnieuw bespreken.**
+Claude laat eerst het ontwerp zien; Ronald zegt ja of nee; pas daarna bouwen.
+Het ontwerp omvat zeven onderdelen:
+
+1. De regel bij de geboortedatum op scherm 1 — de tekst zelf.
+2. Het tussenscherm met het e-mailadres van de ouder, inclusief de drie regels
+   die het kind aan zijn ouder kan laten zien.
+3. Het wachtscherm: adres corrigeren, opnieuw sturen, en de weg eruit.
+4. De mail aan de ouder — de moeilijkste tekst van dit ticket. Moet de
+   klik-angst wegnemen en meteen duidelijk maken dat het kind zelf begonnen is.
+5. De goedkeuringspagina: het vijftiende scherm, twee knoppen, akkoord met de
+   drie documenten uit naam van het kind.
+6. De mail aan het kind na de goedkeuring.
+7. Het scherm waar het kind zijn wachtwoord kiest.
+
+**Nog te ontwerpen binnen dit ticket:** de naam en vorm van de tabel die de
+aanvraag vasthoudt (adres van de ouder, de link, de vervaldatum, het bewijs van
+toestemming); waar de veertien dagen en de herinnering na zeven dagen vandaan
+komen — `tt_expire_old_founder_offers` doet iets vergelijkbaars voor
+bandoprichterschap en is een bruikbaar voorbeeld; en of het vinkje op de
+laatste wizard-stap verder wijzigt.
+
+**Het volledige beeld staat in `minderjarigen-toestemming-22-09-2026.md` in het
+claude.ai-project, vierde versie.** Dat document plus deze alinea's zijn genoeg
+om zonder verlies verder te gaan.
+
+**Punt A7 van TT-304 is opgelost.** `zoekfunctienaslagwerk.md` is uit de
+productierepo verwijderd. De monitor staat op 19 van 19.
+
+---
+
+**Vorige update:** 21-09-2026 (vervolg) — **TT-304 krijgt een loper: de
 monitorronde draait vanaf nu vanzelf in GitHub Actions, elke drie dagen en bij
 elke push. Zakt hij, dan mailt GitHub. Nieuw bestand
 `.github/workflows/monitor.yml`, alleen in productie. Punt B2 is opgelost.
@@ -4355,8 +4483,8 @@ eerste tabel altijd gelijk is aan de stand.
 |---|---|---|
 | **TT-295** | De matchhelft van de digest levert structureel niets op | **Nieuw, 20-09-2026.** `tt_digest_new_musicians` doet een inner join op `musician_wanted`. Die tabel bevat **0 rijen**, geverifieerd 20-09-2026 tegen productie. TT-232 (09-09-2026) haalde het enige invulveld ervoor — "instrumenten die je zoekt in een ander" — uit Zoekvoorkeuren, met als reden "dat staat al in de zoekfilters". Sindsdien kan niemand die tabel nog vullen, en dus vindt de nachtelijke query per definitie niemand. De bandhelft werkt wel: die gebruikt `band_wanted` tegen de instrumenten in je eigen profiel, en is op 20-09-2026 aantoonbaar in een echte mail terechtgekomen (drie bands). **Toets:** kan de app hiermee live zonder dat een gebruiker iets misloopt? Nee — de app belooft een mail over nieuwe matches en levert die helft niet. Zelfde grond waarop TT-01 P0 was. **Voorstel Ronald, geen besluit (20-09-2026):** een bewaarde zoekopdracht — een vinkje op het zoekformulier dat de héle zoekopdracht opslaat (instrument, genre, straal, plaats), niet alleen een lijstje instrumenten. Dat zou TT-295 en TT-62 deel 2 in één keer afhandelen. Alternatief: het oude veld terugzetten in E-mailvoorkeuren — kleiner werk, armere mail, TT-62 deel 2 blijft open. Nog geen ontwerpsessie |
 | **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers, zodra die er zijn. Interim-stap: zie "Direct te doen" hierboven. **Vóór lancering, niet acuut nu (23-08-2026) — de site heeft nog alleen testprofielen, zie afspraak bovenaan deze tabel** |
-| **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel. **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
-| **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus — mogelijk groter dan gedacht, zie toelichting onderaan deze tabel.** **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel** |
+| **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel. **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel.** **Verkend 22-09-2026**, samen met TT-42: zie `minderjarigen-toestemming-22-09-2026.md` in het claude.ai-project. Nog open uit dit ticket: zichtbaarheid van profielfoto's van minderjarigen voor bezoekers zonder account, en de afhandeling van een melding waar een minderjarige bij betrokken is |
+| **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Apart aandachtsgebied, eigen focus.** **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel.** **Verkend en uitontworpen op hoofdlijnen 22-09-2026, niet gebouwd.** Route A gekozen: het account ontstaat pas na de goedkeuring van de ouder, het kind loopt de wizard intussen lokaal door. Alle besluiten, de ouder-flow stap voor stap, en de vragen mét antwoord staan in `minderjarigen-toestemming-22-09-2026.md` in het claude.ai-project (vierde versie). **Niets blokkeert dit ticket meer.** De volgende stap is het ontwerp in zeven onderdelen — zie de Laatste update bovenaan. Claude laat dat eerst zien; Ronald zegt ja of nee; pas daarna bouwen. De juridische toetsing gebeurt ná het ontwerp |
 | **TT-62 (deel 2)** | "Geef me een seintje zodra er een drummer bijkomt" | **Uitzondering vastgelegd 12-09-2026 (besluit Ronald, TT-257):** het automatisch verruimen van deel 1 geldt **niet** als er een naam in het zoekveld staat. Wie op naam zoekt, zoekt één bepaalde persoon; iemand twee provincies verderop is dan geen beter antwoord dan geen antwoord. Zie huisstijl §17. **Deel 1 is gebouwd 11-09-2026** (automatisch verruimen, zie Deel 3). Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker. Leunt op dezelfde verzendweg als TT-01 en kan dus niet eerder |
 | **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Nieuw, 16-09-2026 (onderhoudsronde).** Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wissen eerst en voegen daarna toe, zonder foutcontrole op het wissen. Mislukt het toevoegen, dan is de oude data weg. Zelfde soort in `executeAccountDeletion()`. Volledige tekst: Laatste update bovenaan |
 | — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
