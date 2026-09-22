@@ -30,6 +30,23 @@ app-code. Staat als TT-306 in P3.
 **Gewijzigd:** `messages.js`, `index.html` (versie-achtervoegsel),
 `actielijst.md`, `CHECKSUMS.txt`.
 
+**Tweede rechtzetting in deze sessie — de twee Supabase-handelingen van TT-42
+zijn al gedaan.** Ronald, 22-09-2026: *"volgens mij heb ik dit al gedraaid"*.
+**Geverifieerd in de browserpane op de live site, 22-09-2026:**
+
+- `ouder_toestemming` bestaat. Een leesvraag geeft `42501 permission denied for
+  table ouder_toestemming` — geen PGRST205. De tabel staat er dus, met RLS
+  dicht voor anon en authenticated, precies zoals bedoeld.
+- `tt_ouder_verlopen()` gaf `0`, `tt_ouder_herinneringen()` gaf een lege lijst,
+  `tt_email_in_gebruik()` gaf `false`. Alle drie bestaan en draaien.
+- De Edge Function `ouder-toestemming` staat er: een aanroep met een lege body
+  gaf `400 {"error":"Onbekende actie."}`, niet 404. **Verify JWT staat uit** —
+  dezelfde aanroep zonder token gaf hetzelfde antwoord, geen 401.
+
+**Wat daarmee nog open staat, is alleen de `pg_cron`-taak.** Die kan Claude niet
+meten: het schema `cron` is niet via PostgREST bereikbaar. Ronald controleert
+dat zelf met `select * from cron.job;`. **Onbekend** tot die meting er is.
+
 ---
 
 **Vorige update:** 22-09-2026 (vervolg) — **TT-42 gebouwd: registratie met
@@ -37,7 +54,9 @@ toestemming van een ouder, route A. Zeven onderdelen, één nieuw JS-bestand
 (`ouder.js`), één nieuwe view (`view-toestemming`, de vijftiende), één nieuwe
 tabel en één nieuwe Edge Function. Testset 401 van 401, monitor 19 van 19.
 Twee handelingen van Ronald staan nog open: het SQL-script draaien en de Edge
-Function plaatsen.**
+Function plaatsen.** *(Rechtgezet 22-09-2026 (vervolg 2): beide zijn inmiddels
+gedaan en gemeten — zie de Laatste update bovenaan. Alleen de `pg_cron`-taak is
+nog onbekend.)*
 
 **Aanleiding.** Ronald, 22-09-2026: *"ja, start met bouwen"*, op het ontwerp in
 `_niet-uploaden-tt42-ontwerp-22-09-2026.md`. Dat "ja" is gelezen als ja op alle
@@ -142,7 +161,9 @@ dagen en al zijn antwoorden staan zolang alleen in zijn eigen browser.
 Doorgevoerd in de standaard, niet per scherm (§2 regel 11), dus ook een
 dertigjarige die halverwege stopt vindt zijn werk terug.
 
-**Wat er nog moet gebeuren voordat dit werkt — twee handelingen van Ronald:**
+**Wat er nog moest gebeuren voordat dit werkt — twee handelingen van Ronald.**
+*Rechtgezet 22-09-2026 (vervolg 2): punt 1 en punt 2 zijn gedaan en gemeten.
+Alleen de `pg_cron`-taak uit punt 2 is nog niet vastgesteld.*
 
 1. `_niet-uploaden-tt42-tabel-ouder-toestemming.sql` draaien in Supabase. Maakt
    de tabel `ouder_toestemming`, zet RLS aan zonder enkele policy, en maakt
