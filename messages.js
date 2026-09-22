@@ -319,7 +319,13 @@ let threadHistoryPushed = false; // V-03: staat er al een geschiedenisstap voor 
 // niet opnieuw te bepalen.
 let activeConversationDeleted = false;
 
+// TT-305 (22-09-2026): zonder gesprekspartner valt er niets te openen.
+// supabase-js maakt van .eq('recipient_id', null) de tekst "null", en de
+// database leest die niet als uuid. De gebruiker zag dan "Gesprek laden is
+// niet gelukt". Eén controle hier, niet per aanroep — zelfde regel als §2.11
+// van de projectinstructies.
 async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, stil, deleted) {
+  if (!otherId) return;
   activeConversationId = otherId;
   werkTerugKnopBij(); // TT-301: een open gesprek is een stap terug
   if (deleted !== undefined) activeConversationDeleted = deleted;

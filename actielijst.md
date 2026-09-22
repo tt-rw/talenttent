@@ -1,6 +1,38 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 22-09-2026 (vervolg) — **TT-42 gebouwd: registratie met
+**Laatste update:** 22-09-2026 (vervolg 2) — **TT-305 opgelost: een gesprek
+openen zonder gesprekspartner gaf een databasefout. Eén regel in
+`messages.js`.**
+
+**Aanleiding.** Het foutrapport van de monitorrepo, 22-09-2026, issue #5:
+`invalid input syntax for type uuid: "null"`, bron `openConversation`, 1x, bij
+één gebruiker.
+
+**Oorzaak, geverifieerd in de code.** `openConversation()` controleerde
+`otherId` niet. Is die leeg, dan maakt supabase-js van `.eq('recipient_id',
+null)` de tekst `recipient_id=eq.null`, en Postgres kan "null" niet als uuid
+lezen. De gebruiker zag "Gesprek laden is niet gelukt".
+
+**Hoe `otherId` leeg kan zijn — aanname, niet nagespeeld.** Regel 126 opent na
+het versturen het gesprek opnieuw met `activeConversationId`. Sluit iemand het
+gesprek terwijl het versturen nog loopt, dan heeft `closeConversation()` die
+variabele intussen op null gezet. Dat past bij één voorval bij één gebruiker.
+
+**De oplossing.** `if (!otherId) return;` bovenin `openConversation()`. Eén
+controle op één plek, niet per aanroep — §2.11. `heropenGesprek()` loopt via
+dezelfde functie en is daarmee ook gedekt.
+
+**Het tweede punt uit hetzelfde rapport is geen fout in de app.** `JWT issued
+at future`, bron `loadInbox`, 1x: de klok van dat apparaat loopt voor op die
+van Supabase, dus het token is nog niet geldig. Niet op te lossen in de
+app-code. Staat als TT-306 in P3.
+
+**Gewijzigd:** `messages.js`, `index.html` (versie-achtervoegsel),
+`actielijst.md`, `CHECKSUMS.txt`.
+
+---
+
+**Vorige update:** 22-09-2026 (vervolg) — **TT-42 gebouwd: registratie met
 toestemming van een ouder, route A. Zeven onderdelen, één nieuw JS-bestand
 (`ouder.js`), één nieuwe view (`view-toestemming`, de vijftiende), één nieuwe
 tabel en één nieuwe Edge Function. Testset 401 van 401, monitor 19 van 19.
@@ -4735,6 +4767,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-305** | Gesprek openen zonder gesprekspartner gaf een databasefout | **Opgelost 22-09-2026 (vervolg 2).** `openConversation()` controleerde `otherId` niet; supabase-js maakt van `.eq('recipient_id', null)` de tekst "null", die de database niet als uuid leest. Gevonden in het foutrapport van de monitorrepo, issue #5. Nu `if (!otherId) return;` bovenin die ene functie. **Toets P2:** werkt het, maar kost het vertrouwen? Ja — de gebruiker zag "Gesprek laden is niet gelukt" zonder iets fout te doen. Zie Laatste update bovenaan |
 | **TT-304** | Vaste monitorronde — permanent ticket, sluit nooit | **Nieuw, 21-09-2026, op verzoek van Ronald.** `tests/tt_monitor.py`: negentien controles over vier blokken (repo-integriteit, huisstijl, dode code, stand), één commando, afsluitcode 0 bij nul punten. **Loper sinds 21-09-2026 (vervolg):** `.github/workflows/monitor.yml` draait hem elke drie dagen, bij elke push en handmatig; GitHub mailt als een run rood wordt. **De workflow draait alleen de monitorronde** — de vaste testset is er op 21-09-2026 uitgehaald nadat de eerste drie runs zakten op een ontbrekende Playwright-installatie (besluit Ronald; zie het blok bovenaan). **Besluit Ronald: alleen in productie** — tweede bewuste uitzondering op §2 regel 2. In de sessie draait de monitor vóór elke oplevering, niet meer bij sessiestart. **Stand 18 van 19:** B2 opgelost, A7 wacht op een handeling van Ronald (`zoekfunctienaslagwerk.md` staat publiek in de repo). **Groeipad per gebruikersaantal en de volledige tekst:** zie de twee blokken van 21-09-2026 bovenaan. **Toets P2:** de app werkt zonder, maar een standaard die niemand tegen de code houdt stuurt elke volgende sessie de verkeerde kant op — zelfde grond als TT-262 |
 | **TT-303** | Terugknop liep op een tabblad door het klikpad | **Gebouwd en getest 20-09-2026 (vervolg 4).** Mijn Profiel is het hoogste scherm (uitgelogd de landingspagina); het woordmerk gaat daarheen en de terugknop op Zoeken, Berichten en Bands ook. Onderbalk nu Profiel · Zoeken · Berichten · Bands. Volledige tekst: Laatste update bovenaan |
 | **TT-301** | Woordmerk gecentreerd en terugknop linksboven | **Gebouwd en getest 20-09-2026 (vervolg 2).** Woordmerk in het midden in de hele app, zonder "THE"; terugknop linksboven als lijn-teken, die `history.back()` doet. Ook in de koprij van het muzikant- en bandprofiel. Volledige tekst: Laatste update bovenaan. **Nog open:** laag 2 op een echte telefoon, vooral iOS |
@@ -4808,6 +4841,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-306** | `JWT issued at future` bij het laden van de inbox | **Nieuw, 22-09-2026 (vervolg 2), uit het foutrapport van de monitorrepo, issue #5.** 1x, bij één gebruiker, bron `loadInbox`. De klok van dat apparaat loopt voor op die van Supabase, dus het token is nog niet geldig. **Toets P3:** geen aanwijsbaar gevolg voor een gebruiker nu, en niet op te lossen in de app-code. Hooguit een begrijpelijker melding via `friendlyErrorMessage()` |
 | **TT-291** | Een geblokkeerde kan zijn blokkade uitlezen via de API | **Nieuw, 18-09-2026 (TT-06), bewuste afweging, geen bug.** De RLS-regel op `musician_blocks` laat beide partijen de rij zien. Dat moet ook: zonder die regel kan de app een blokkade niet in béide richtingen onzichtbaar maken, en dat was Ronalds besluit. Gevolg: wie de API rechtstreeks bevraagt, kan zien dat hij geblokkeerd is. De app zelf zegt niets. Alternatief voor later: de wederzijdse onzichtbaarheid in een databasefunctie regelen in plaats van in de app, zodat de rij helemaal niet leesbaar hoeft te zijn. Vraagt een wijziging aan de zoek-RPC's, dus geen bijvangst van een andere sessie |
 | **TT-283** | Veegcontrole leest lay-out bij elke aanraking; wiel-scrollluisteraar niet passief | **Nieuw, 16-09-2026 (onderhoudsronde).** Zie Laatste update bovenaan |
 | **TT-284** | `transition: all` (16×), `width`-animatie, vervaging op `.save-overlay` op mobiel | **Nieuw, 16-09-2026 (onderhoudsronde).** Geen taak boven 50 ms gemeten. Zie Laatste update bovenaan |
