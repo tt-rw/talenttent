@@ -2599,6 +2599,10 @@ def blok_browser():
             lijn: !!t.querySelector('polyline')
           };
         }""")
+        maten = page.evaluate("""() => [...document.querySelectorAll('.kop-terug svg, #navMenuBtn svg')]
+          .map(s => s.getAttribute('width') + 'x' + s.getAttribute('height'))""")
+        check("elk terugteken en de hamburger zijn 24px, in de kop én in elk venster (TT-307, TT-311)",
+              len(maten) >= 4 and all(m == "24x24" for m in maten), json.dumps(maten))
         check("het terugteken is een lijn-teken met dezelfde dikte als de hamburger (huisstijl §12)",
               teken["dikte"] == teken["hamDikte"] == "2" and teken["vulling"] == "none"
               and teken["lijn"], json.dumps(teken))
@@ -2624,8 +2628,8 @@ def blok_browser():
           modal.classList.remove('visible');
           return uit;
         }""")
-        check("op het openingsscherm is er niets om naar terug te gaan en is de knop onzichtbaar",
-              not zicht["bijStart"] and not zicht["magBijStart"], json.dumps(zicht))
+        check("op het openingsscherm is er niets om naar terug te gaan, maar de knop staat er wel (TT-310)",
+              zicht["bijStart"] and not zicht["magBijStart"], json.dumps(zicht))
         check("een klik doet dan ook niets — de knop verlaat de app nooit",
               zicht["hashNaLozeKlik"], json.dumps(zicht))
         check("na één stap is de knop zichtbaar",
@@ -2821,11 +2825,17 @@ def blok_browser():
           uit.uitgelogd = hoogsteScherm();
           showView('landing'); terugDiepte = 0; werkTerugKnopBij();
           uit.opLanding = zichtbaar();
+          uit.magOpLanding = magTerug();
 
           currentUser = { id: 'test' };
           uit.ingelogd = hoogsteScherm();
           showView('myprofile'); terugDiepte = 0; werkTerugKnopBij();
           uit.opProfiel = zichtbaar();
+          uit.magOpProfiel = magTerug();
+          // Een druk op het hoogste scherm doet niets: je blijft waar je bent.
+          terugKnop();
+          await new Promise(res => setTimeout(res, 60));
+          uit.naLozeDruk = [...document.querySelectorAll('.app-view.active')].map(v => v.id);
 
           // Op een hoofdtabblad wijst de knop omhoog, niet door het klikpad.
           showView('search'); showView('messages'); showView('bands');
@@ -2844,8 +2854,11 @@ def blok_browser():
         check("het hoogste scherm is Mijn Profiel ingelogd, de landingspagina uitgelogd",
               hoogste["ingelogd"] == "myprofile" and hoogste["uitgelogd"] == "landing",
               json.dumps(hoogste))
-        check("op het hoogste scherm staat geen terugknop",
-              not hoogste["opLanding"] and not hoogste["opProfiel"], json.dumps(hoogste))
+        check("op het hoogste scherm staat de terugknop er ook, uitgelogd én ingelogd (TT-310)",
+              hoogste["opLanding"] and hoogste["opProfiel"], json.dumps(hoogste))
+        check("maar daar is niets om naar terug te gaan, en een druk laat je op Mijn Profiel",
+              not hoogste["magOpLanding"] and not hoogste["magOpProfiel"]
+              and hoogste["naLozeDruk"] == ["view-myprofile"], json.dumps(hoogste))
         check("op een hoofdtabblad staat hij wel, en wijst hij omhoog",
               hoogste["opTabblad"] and hoogste["gaatOmhoog"], json.dumps(hoogste))
         check("een druk daar brengt je naar Mijn Profiel, niet naar het vorige tabblad",
