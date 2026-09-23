@@ -70,7 +70,34 @@
       tt_musician_distances: [], tt_musicians_ages: [], tt_get_my_birth_date: null,
       tt_resolve_search_origin: null, tt_check_username_available: true,
       tt_cache_postcode: null, tt_accept_founder_offer: null,
-      tt_expire_old_founder_offers: null
+      tt_expire_old_founder_offers: null,
+      // TT-281: de drie opslagfuncties bootsen de transactie na. Een fout via
+      // rpcErrors komt eerder in rpc() terug, dus dan verandert er niets —
+      // precies zoals de echte database alles terugdraait.
+      tt_save_musician_koppelingen(p) {
+        const tabellen = { p_instruments: 'musician_instruments', p_genres: 'musician_genres',
+                           p_songs: 'musician_songs', p_media: 'musician_media' };
+        for (const sleutel of Object.keys(tabellen)) {
+          if (p[sleutel] == null) continue;
+          const t = tabellen[sleutel];
+          TT_STUB.data[t] = (TT_STUB.data[t] || []).filter(r => r.musician_id !== p.p_musician_id)
+            .concat(p[sleutel].map(r => Object.assign({ musician_id: p.p_musician_id }, r)));
+        }
+        return null;
+      },
+      tt_save_band_wanted(p) {
+        TT_STUB.data.band_wanted = (TT_STUB.data.band_wanted || []).filter(r => r.band_id !== p.p_band_id)
+          .concat((p.p_instruments || []).map(instrument => ({ band_id: p.p_band_id, instrument })));
+        return null;
+      },
+      tt_delete_own_profile(p) {
+        const mid = p.p_musician_id;
+        for (const t of ['musician_instruments', 'musician_genres', 'musician_songs', 'musician_media', 'band_members']) {
+          TT_STUB.data[t] = (TT_STUB.data[t] || []).filter(r => r.musician_id !== mid);
+        }
+        TT_STUB.data.musicians = (TT_STUB.data.musicians || []).filter(r => r.id !== mid);
+        return null;
+      }
     },
     // TT-299: de twee nieuwe knoppen van updateUser horen ook leeg bij een
     // reset, anders lekt een ingesteld antwoord door naar het volgende blok.
