@@ -806,8 +806,12 @@ const WHEELS = {};
 function initWheel(cfg) {
   const el = document.getElementById(cfg.id);
   if (!el) return;
+  // TT-308 (23-09-2026): was 'Geen'. Bij Ervaring las dat als "zoekt bandleden
+  // zonder ervaring" — precies het omgekeerde van de bedoeling (filter uit).
+  // Status gebruikt al "Alle bands" voor dezelfde lege stand; "Alle" trekt dat
+  // gelijk, in het wiel zelf en in elk gesloten veld dat op dit wiel bouwt.
   const labelOf = (v) => (cfg.labels && cfg.labels[v] != null) ? cfg.labels[v]
-                       : (v === '' ? 'Geen' : String(v));
+                       : (v === '' ? 'Alle' : String(v));
   el.classList.add('wheel');
   el.setAttribute('tabindex', '0');
   el.setAttribute('role', 'listbox');

@@ -324,7 +324,7 @@ function niveauNaam(n) {
 // breed. In het wiel en op de terugleesregel blijft "t/m" staan — daar is
 // ruimte en leest het woord duidelijker.
 function leeftijdKort(min, max) {
-  if (min === '' && max === '') return 'Geen';
+  if (min === '' && max === '') return 'Alle'; // TT-308, zie utils.js/initWheel
   if (min !== '' && max === '') return `${min}+ jaar`;
   if (min === '' && max !== '') return `t/m ${max} jaar`;
   if (min === max) return `${min} jaar`;
@@ -340,7 +340,7 @@ function leeftijdBereikTekst(min, max) {
 }
 
 function niveauKort(min, max) {
-  if (min === '' && max === '') return 'Geen';
+  if (min === '' && max === '') return 'Alle'; // TT-308, zie utils.js/initWheel
   if (min !== '' && max === '') return `${min}+`;
   if (min === max) return `Alleen ${min}`;
   return `${min} - ${max}`;

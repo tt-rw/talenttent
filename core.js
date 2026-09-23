@@ -190,6 +190,13 @@ async function appInit() {
         currentUser = null;
         lastSignedInUserId = null;
         onUserLoggedOut();
+      } else if (event === 'USER_UPDATED' && session?.user) {
+        // TT-309 (23-09-2026, gemeld door Ronald): een e-mailwijziging met
+        // bevestigingsmail voltrekt zich pas als de link is aangeklikt. Zonder
+        // deze tak bleef currentUser.email op het oude adres staan, en
+        // ververste het scherm "E-mailadres en wachtwoord" niet vanzelf.
+        currentUser = session.user;
+        verversEmailWeergave(currentUser.email || '');
       }
     });
 

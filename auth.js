@@ -373,6 +373,17 @@ function igMeldingWeg() {
   el.classList.remove('visible');
 }
 
+// TT-309 (23-09-2026): één plek die de getoonde e-mail bijwerkt. Gebruikt door
+// wijzigEmailUitvoeren() (adres verandert meteen) én door onAuthStateChange()
+// in core.js bij USER_UPDATED (adres verandert pas na de bevestigingsmail,
+// mogelijk in dezelfde sessie terwijl dit scherm nog open staat).
+function verversEmailWeergave(email) {
+  const igEl = document.getElementById('igHuidigEmail');
+  if (igEl) igEl.textContent = email;
+  const wbjEl = document.getElementById('wbjEmail');
+  if (wbjEl) wbjEl.value = email;
+}
+
 function openInloggegevens() {
   const modal = document.getElementById('inloggegevensModal');
   igMeldingWeg();
@@ -435,11 +446,7 @@ async function wijzigEmailUitvoeren(nieuw) {
   } else {
     const nu = gebruiker?.email || nieuw;
     if (gebruiker) currentUser = gebruiker;
-    document.getElementById('igHuidigEmail').textContent = nu;
-    // Hetzelfde adres staat leesbaar in "Wie ben je". Staat dat scherm open,
-    // dan hoort het meteen te kloppen.
-    const wbj = document.getElementById('wbjEmail');
-    if (wbj) wbj.value = nu;
+    verversEmailWeergave(nu);
     igMelding(`✓ Je e-mailadres is gewijzigd. Je logt vanaf nu in met ${nu}.`);
   }
   el.value = '';

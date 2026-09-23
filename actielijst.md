@@ -1,6 +1,53 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 22-09-2026 (vervolg 2) — **TT-305 opgelost: een gesprek
+**Laatste update:** 23-09-2026 — **Drie kleine bevindingen gemeld en alle drie
+opgelost: TT-307, TT-308, TT-309. Testset 402 van 402. Repo's gelijk.**
+
+**Aanleiding.** Drie schermafdrukken van Ronald, met bijschrift.
+
+| ID | Bevinding | Niveau en toets |
+|---|---|---|
+| **TT-307** | Kop: terugknop, woordmerk en hamburger staan wiskundig gecentreerd (`1fr auto 1fr`, TT-301), maar oogden niet in balans. Oorzaak: de twee tekens waren ongelijk groot — pijl 26px, hamburger 20px, in dezelfde 44px-knop | **P2.** Werkt, kost vertrouwen in de indruk |
+| **TT-308** | "Geen" als stand voor een leeg filter (Ervaring, Niveau, Leeftijd) leest als "zoekt naar nul ervaring/leeftijd" — het omgekeerde van de bedoeling | **P2.** Werkt, kost begrip |
+| **TT-309** | Na een e-mailwijziging mét bevestigingsmail luisterde de app niet naar `USER_UPDATED`. `currentUser.email` en het scherm "E-mailadres en wachtwoord" bleven op het oude adres staan nadat de link was aangeklikt | **P1.** Verandert dit of iemand een tweede keer opent? Ja — gebruiker denkt dat de wijziging niet werkte |
+
+**TT-307, opgelost.** Beide iconen naar 24px (was 26/20). `.nav-menu-btn`
+centreert zijn icoon zelf (`display:flex; align-items:center;
+justify-content:center`), dus alleen de icoongrootte hoefde te veranderen —
+knop en tussenruimte blijven ongewijzigd. **Geverifieerd:** code gelezen,
+`.kop-terug svg` en `#navMenuBtn svg` hebben nu allebei `width="24"
+height="24"`.
+
+**TT-308, opgelost.** Eén bron voor de tekst "Alle": de fallback in
+`initWheel()` (`utils.js`) en de twee samenvattende functies `niveauKort()` en
+`leeftijdKort()` (`search.js`) gaven alle drie "Geen" bij een lege keuze. Alle
+drie nu "Alle" — zelfde patroon als Status, dat al "Alle bands" toont.
+**Geverifieerd:** code gelezen en aangepast, testset ongewijzigd op 402 van
+402 (geen test controleerde de oude tekst).
+
+**TT-309, opgelost.** `onAuthStateChange()` in `core.js` had geen tak voor
+`USER_UPDATED` — alleen `SIGNED_IN`, `SIGNED_OUT`, `PASSWORD_RECOVERY`. Bij een
+e-mailwijziging met bevestigingsmail verandert het adres pas ná de klik op de
+link, in een los `USER_UPDATED`-moment; zonder die tak bleef `currentUser` en
+het scherm op het oude adres staan. Nieuwe gedeelde functie
+`verversEmailWeergave()` in `auth.js`, gebruikt door zowel de directe wijziging
+(`wijzigEmailUitvoeren()`, was twee losse regels op dezelfde plek) als de
+nieuwe `USER_UPDATED`-tak. **Geverifieerd:** code gelezen en aangepast.
+**Onbekend, niet in deze sessie getest:** het daadwerkelijke doorlopen van een
+bevestigingslink — dat vraagt laag 2 (browserpane, Ronald ingelogd) en een
+echte mail. Aanname: `onAuthStateChange` vuurt `USER_UPDATED` na de klik, op
+basis van de Supabase-documentatie over e-mailwijziging.
+
+**Gewijzigd:** `index.html`, `core.js`, `utils.js`, `auth.js`, `search.js`
+(versie-achtervoegsels), `actielijst.md`, `CHECKSUMS.txt`.
+
+**Signaal 5.1 gemeld en door Ronald bevestigd:** drie afzonderlijke
+bevindingen in één sessie. Ronald, 23-09-2026: "het zijn kleine aanpassingen,
+dat moet kunnen" — met die bevestiging gebouwd, geen aparte sessie per ticket.
+
+---
+
+**Vorige update:** 22-09-2026 (vervolg 2) — **TT-305 opgelost: een gesprek
 openen zonder gesprekspartner gaf een databasefout. Eén regel in
 `messages.js`.**
 

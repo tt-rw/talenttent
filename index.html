@@ -57,11 +57,16 @@
      buitenvakken zijn even breed (1fr auto 1fr), dus het woordmerk staat
      exact in het midden, ook als de terugknop onzichtbaar is. "THE" is uit
      het woordmerk gehaald: dat maakt 30px ruimte vrij, precies wat de
-     terugknop erbij vraagt (gemeten 20-09-2026). -->
+     terugknop erbij vraagt (gemeten 20-09-2026).
+     TT-307 (23-09-2026, Ronald: "op het oog niet in balans"): wiskundig
+     stond het midden al goed, maar de twee tekens waren ongelijk groot —
+     de pijl 26px, de hamburger 20px, in dezelfde 44px-knop. Beide op 24px
+     gezet: dat is optisch in evenwicht, de knop en de tussenruimte blijven
+     ongewijzigd. -->
 <header>
   <div class="kop-vak kop-links">
     <button class="nav-menu-btn kop-terug" id="navTerugBtn" onclick="terugKnop()" aria-label="Terug" title="Terug">
-      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
     </button>
   </div>
   <div class="logo" onclick="naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span style="color:var(--text);">TALENT</span> TENT</div>
@@ -75,7 +80,7 @@
          bepalen. Het uitklappaneel blijft wél in .app-nav-row staan: dat is
          het ankerpunt waaronder het openklapt, en dat verandert niet. -->
     <button class="nav-menu-btn" id="navMenuBtn" onclick="toggleNavMenu(event)" aria-label="Meer opties" title="Meer">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
     </button>
   </div>
   <div class="tagline">Talent zoekt talent</div>
@@ -2536,14 +2541,14 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260922a"></script>
-<script src="utils.js?v=20260920b"></script>
+<script src="core.js?v=20260923a"></script>
+<script src="utils.js?v=20260923a"></script>
 <script src="veiligheid.js?v=20260918a"></script>
-<script src="auth.js?v=20260920a"></script>
+<script src="auth.js?v=20260923a"></script>
 <script src="postcode.js?v=20260917a"></script>
 <script src="wizard.js?v=20260922a"></script>
 <script src="ouder.js?v=20260922a"></script>
-<script src="search.js?v=20260918a"></script>
+<script src="search.js?v=20260923a"></script>
 <script src="musicians.js?v=20260920b"></script>
 <script src="bands.js?v=20260916a"></script>
 <script src="messages.js?v=20260922b"></script>
