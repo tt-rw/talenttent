@@ -25,6 +25,18 @@ drie nu "Alle" — zelfde patroon als Status, dat al "Alle bands" toont.
 **Geverifieerd:** code gelezen en aangepast, testset ongewijzigd op 402 van
 402 (geen test controleerde de oude tekst).
 
+**Andere schermen nagelopen op dezelfde fout, op verzoek van Ronald.**
+Doorzocht: alle dertien JS-bestanden en `index.html` op elk voorkomen van
+"Geen". Gevonden: `leeftijdBereikTekst()` en `niveauBereikTekst()` (de lange
+terugleesregel onder het wiel) zeiden al "Alle leeftijden" / "Alle niveaus" —
+de inconsistentie zat dus alleen tussen de korte en de lange vorm van
+dezelfde stand, niet in een derde scherm. Eén ander scherm gebruikt "Geen"
+wél terecht: de digestfrequentie in Instellingen (`Dagelijks / Wekelijks /
+Geen`, `setDigestFrequency`) — dat is een echte keuze ("geen e-mail"), geen
+lege-filterstand, en blijft ongewijzigd. Drie codecommentaren die nog "Geen"
+noemden zijn tegelijk rechtgezet (`utils.js`, `search.js`) zodat ze weer
+kloppen met de code.
+
 **TT-309, opgelost.** `onAuthStateChange()` in `core.js` had geen tak voor
 `USER_UPDATED` — alleen `SIGNED_IN`, `SIGNED_OUT`, `PASSWORD_RECOVERY`. Bij een
 e-mailwijziging met bevestigingsmail verandert het adres pas ná de klik op de
@@ -4696,15 +4708,15 @@ aantoonbaar werkend** en staat in de tweede tabel. In zijn plaats komt
 **TT-295**, de helft van TT-01 die structureel niets kan opleveren zolang
 `musician_wanted` leeg blijft — zie de rij hieronder en de Laatste update
 bovenaan. TT-06 is op 18-09-2026 gebouwd
-en getest en staat in de tweede tabel; hij wacht nog wel op één handeling van
-Ronald (het SQL-script), net als TT-22. TT-281 kwam er
+en getest en staat in de tweede tabel; zijn twee tabellen staan sinds
+18-09-2026 in productie, alleen laag 2 staat nog open. TT-281 kwam er
 op 16-09-2026 bij (onderhoudsronde). TT-229, TT-231 (laag 1),
 TT-62 (deel 1) en TT-294 zijn deze dag opgelost en staan in de tweede tabel.
 **TT-62 deel 2**
 ("geef me een seintje zodra er een drummer bijkomt") staat nog open en leunt op
 TT-01; die staat als eigen rij hieronder. Daarnaast staat
-één juridisch punt open zonder ticketnummer (verwerkersovereenkomst Supabase) en
-wacht TT-22 (restpunt) op een handeling van Ronald bij Supabase, niet op bouwwerk.
+één juridisch punt open zonder ticketnummer (verwerkersovereenkomst Supabase).
+TT-22 (restpunt) is dicht sinds 06-09-2026 — zie de correctie in zijn rij.
 
 **Regel vanaf 11-09-2026 — waarom deze tabel is herzien.** TT-229 en TT-231 zijn
 sinds 09-09-2026 P0 en stonden alleen in het sessieblok bovenaan dit document,
@@ -4749,7 +4761,7 @@ herzieningsmomenten in TT-63 nog moeten gebeuren.
 | **TT-231** | Vaste Playwright-testset wordt leidend | **Laag 1 opgeleverd 11-09-2026:** `tests/tt_tests.py` + `tests/stub/supabase-stub.js`, tien blokken, 62 controles. Draait bij elke wijziging vóór oplevering. **Laag 2 is verschoven van "kan niet" naar "kan wel"** — zie Deel 3, de bereikbaarheidscorrectie. Dat deel is nog niet als vaste doorloop vastgelegd |
 | **TT-287** | Profiel en band van een ander niet te bedienen | **Nieuw en opgelost 16-09-2026.** Tikvlak van het kruis besloeg het hele venster, en `closeMusicianModal()` brak zonder klik-gegeven. Gemeld door de monitor (20× TypeError). Zie Laatste update |
 | **TT-62 (deel 1)** | Nooit nul zoekresultaten tonen | **Opgelost 11-09-2026.** Automatisch verruimen van de straal, in alle drie de zoektabbladen gelijk. Deel 2 staat nog open in de eerste tabel |
-| TT-22 (restpunt) | Auth-account daadwerkelijk verwijderen | **Data-deel opgelost 09-08-2026** (profiel, kindtabellen, Storage-bestanden, bandoprichterschap — zie Deel 3). **Auth-account-deel gebouwd 06-09-2026** (zie Laatste update bovenaan): nieuwe Edge Function `delete-own-account`, `executeAccountDeletion()` roept 'm aan vóór `signOut()`. **Blokkeert nog op:** Ronald moet de Edge Function bij Supabase aanmaken/deployen (stappen bovenaan dit document) vóórdat dit werkt op de live site |
+| TT-22 (restpunt) | Auth-account daadwerkelijk verwijderen | **Data-deel opgelost 09-08-2026** (profiel, kindtabellen, Storage-bestanden, bandoprichterschap — zie Deel 3). **Auth-account-deel gebouwd 06-09-2026** (zie Laatste update bovenaan): nieuwe Edge Function `delete-own-account`, `executeAccountDeletion()` roept 'm aan vóór `signOut()`. **Dicht sinds 06-09-2026.** De functie staat onder de juiste naam bij Supabase en is live bevestigd door Ronald: "Je account is verwijderd." — zie Deel 3, de Eindstand van TT-22. *Gecorrigeerd 23-09-2026: hier stond "Blokkeert nog op: Ronald moet de Edge Function bij Supabase aanmaken/deployen". Dat was sinds 06-09-2026 onjuist. Waaruit blijkt: de Eindstand in dit document ("Live bevestigd door Ronald … TT-22 is dicht") en het Supabase-dashboard, dat `delete-own-account` op `.../functions/v1/delete-own-account` toont, 17 dagen oud (schermafdruk Ronald, 23-09-2026). Ook de alinea boven de eerste tabel noemde TT-22 en TT-06 nog als wachtend op Ronald; die is in dezelfde correctie bijgewerkt.* |
 | **TT-63** | Privacyverklaring, gebruiksvoorwaarden, gedragscode | **Gebouwd en gepubliceerd 09-08-2026** — drie nieuwe views (`view-privacy`/`view-terms`/`view-gedragscode`), bereikbaar via het nieuwe hamburgermenu (zie hieronder) en via `#privacy`/`#terms`/`#gedragscode`. Toestemmingsregel met links toegevoegd bij de laatste wizard-stap. Gebruikt `privacy@talenttent.org` in alle drie. **Herzieningsmomenten, vastgelegd zodat ze niet vergeten worden:** privacyverklaring → zodra TT-42/TT-45 zijn opgelost (het hoofdstuk Minderjarigen loopt nu al vooruit op een regel die de wizard nog niet afdwingt — dat gat moet dicht vóór brede publicatie); gebruiksvoorwaarden + gedragscode → zodra TT-06 (meldknop) live gaat (nu nog "volgt binnenkort"); gebruiksvoorwaarden → kleine tekstupdate zodra TT-58 (applaus) of TT-221 (volgen) klaar zijn |
 | **TT-129** | Instrument zonder niveau kon in de wizard blijven staan | **Nieuw en opgelost 23-08-2026, zie Deel 3.** Gevonden bij een bredere code-controle, niet live gemeld. Sluiten van het niveau-keuzescherm (kruisje, tik buiten de modal, of "terug") zonder een niveau te kiezen liet een net gekozen instrument zonder niveau in de lijst staan — instrument is verplicht in de wizard, dus dit trof iedereen die dit scherm ooit zo sloot. Bij opslaan ging niveau als `null` mee. Clientfix voorkomt dit nu aan de bron; optioneel SQL-vangnet `I-instrument-niveau-nullable-defensief.sql` nog niet gedraaid |
 | **TT-294** | Terugknop sloeg opruimwerk over bij vier modals | **Nieuw en opgelost 18-09-2026.** Bevinding van Ronald: een kruisje rechtsboven kan door de telefoon-terugknop worden overgenomen. Onderzocht: de popstate-listener (`core.js`, TT-229) sluit elke modal, maar roept de eigen sluitfunctie alleen aan via `data-close` — dat hadden maar 2 van de 15. Bij `messageModal`, `meldModal` en `pickerListModal` bleef eigen state hangen (laag risico, wordt bij heropenen overschreven). Bij `instrumentLevelModal` bleef een net gekozen instrument zonder niveau staan — **zelfde bugklasse als TT-129**, nu bereikbaar via de terugknop in plaats van via kruisje/tik-buiten/"terug". **Toets P0:** kon een gebruiker hierdoor data verkeerd opslaan? Bij instrumentLevelModal ja → P0. Fix: `data-close` toegevoegd aan alle vier in `index.html`, geen JS gewijzigd. Blok 23 (nieuw, 9 controles) bewijst het: zakt vóór de fix, slaagt erna. **Stap 2 (kruisje rechtsboven verwijderen) — advies Claude: niet doen, besluit aan Ronald.** Reden: op mobiel vult een modal het hele scherm (geen "buiten" om op te tikken), en iOS heeft geen systeem-terugknop — een geïnstalleerde PWA op de iPhone (`manifest.json`, `"display": "standalone"`) verliest daarmee alle Safari-chrome inclusief het terugveeggebaar. Zonder kruisje zou zo iemand vast kunnen komen te zitten |

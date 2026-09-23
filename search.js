@@ -37,7 +37,7 @@ let filterGenres      = [];
 let searchSortMode    = 'score';
 
 // TT-232 (09-09-2026): vaste stappen voor de draaiwielen. Lege waarde = het
-// filter staat uit ("Geen" bovenaan het wiel).
+// filter staat uit ("Alle" bovenaan het wiel, TT-308, was "Geen").
 // Leeftijd: per 3 jaar tot 24, daarna per 5 — bij tieners telt één jaar
 // verschil zwaar, bij volwassenen niet meer.
 const WHEEL_AGE_MIN = [''].concat([13,16,19,22], rangeStep(25, 95, 5));
