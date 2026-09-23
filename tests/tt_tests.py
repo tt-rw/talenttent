@@ -225,6 +225,19 @@ def blok1_statisch():
     check("geen emoji in de UI", not re.search(
         r"[\U0001F300-\U0001FAFF❤⭐]", html), "emoji gevonden in index.html")
 
+    # TT-281: wissen en opnieuw vullen gebeurt alleen nog in een
+    # databasefunctie, in één transactie. Een los .delete() op deze tabellen
+    # in de opslagpaden is precies de fout die TT-281 wegnam.
+    los = []
+    for f in ("wizard.js", "musicians.js"):
+        src = open(os.path.join(ROOT, f), encoding="utf-8").read()
+        for t in ("musician_instruments", "musician_genres", "musician_songs",
+                  "musician_media", "band_wanted"):
+            if re.search(r"from\('" + t + r"'\)\s*\.delete\(", src):
+                los.append(f"{f}: {t}")
+    check("geen los wissen van koppeltabellen in de opslagpaden (TT-281)", not los,
+          f"gevonden: {los}")
+
 
 # --------------------------------------------------------------------------
 # Blok 2 t/m 5 — in de browser, tegen de stub
@@ -822,8 +835,8 @@ def blok_browser():
           mhAvatarUrl = null;
           mhSnapshot = '';
           await saveJeMediahoek();
-          // De stub legt een insert vast in TT_STUB.data; saveJeMediahoek wist
-          // de tabel eerst, dus wat er staat is precies wat er is weggeschreven.
+          // De stub bootst tt_save_musician_koppelingen na (TT-281): de oude
+          // rijen gaan weg, dus wat er staat is precies wat er is weggeschreven.
           const rijen = window.TT_STUB.data.musician_media || [];
           return {
             aantal: rijen.length,
@@ -2993,6 +3006,78 @@ def blok_browser():
               adres["hash"] == "#toestemming/abc123", json.dumps(adres))
 
         check("geen paginafouten in blok 28", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ------------------------------------------------------------------
+        # Blok 29 — TT-281: opslaan is alles of niets
+        # ------------------------------------------------------------------
+        print("\nBlok 29 — opslaan is alles of niets (TT-281)")
+
+        ato = page.evaluate("""async () => {
+          const S = window.TT_STUB;
+          const uit = {};
+          const zet = () => {
+            S.data.musician_songs = [{ musician_id: 'm1', song_title: 'Oud', song_artist: 'A', mastery_level: 3 }];
+            S.data.musician_instruments = [{ musician_id: 'm1', instrument: 'Drums', niveau: 3 }];
+            S.data.musician_genres = [{ musician_id: 'm1', genre: 'Rock' }];
+          };
+          const titels = () => S.data.musician_songs.filter(r => r.musician_id === 'm1').map(r => r.song_title);
+          const losGewist = () => S.calls.some(c => c.kind === 'table' && c.op === 'delete');
+          myMusicianId = 'm1';
+
+          // Je setlist — mislukt
+          zet(); S.calls = [];
+          S.rpcErrors.tt_save_musician_koppelingen = { code: '23514', message: 'check' };
+          jstSongs = [{ title: 'Nieuw', artist: 'B', level: 2 }]; jstSnapshot = '';
+          await saveJeSetlist();
+          uit.setlistFout = titels();
+          uit.setlistFoutLos = losGewist();
+          uit.setlistToast = (document.getElementById('appToast') || {}).textContent || '';
+          delete S.rpcErrors.tt_save_musician_koppelingen;
+
+          // Je setlist — lukt
+          zet(); S.calls = [];
+          jstSongs = [{ title: 'Nieuw', artist: 'B', level: 2 }]; jstSnapshot = '';
+          await saveJeSetlist();
+          uit.setlistGoed = titels();
+          const rpc = S.calls.find(c => c.kind === 'rpc' && c.name === 'tt_save_musician_koppelingen');
+          uit.setlistAlleenSongs = !!rpc && Object.keys(rpc.params).sort().join(',') === 'p_musician_id,p_songs';
+
+          // Wat speel je — mislukt: instrumenten en genres blijven staan
+          zet(); S.calls = [];
+          S.rpcErrors.tt_save_musician_koppelingen = { code: '23514', message: 'check' };
+          wspState = { instruments: ['Bas'], instrumentLevels: {}, genres: ['Jazz'] }; wspSnapshot = '';
+          await saveWatSpeelJe();
+          uit.wspFout = S.data.musician_instruments.map(r => r.instrument).concat(S.data.musician_genres.map(r => r.genre));
+          uit.wspFoutLos = losGewist();
+          delete S.rpcErrors.tt_save_musician_koppelingen;
+
+          // Profiel verwijderen — mislukt: het profiel blijft staan
+          zet(); S.calls = [];
+          S.rpcErrors.tt_delete_own_profile = { code: 'P0001', message: 'Band kon niet worden overgedragen' };
+          const voor = S.data.musicians.length;
+          try { await executeAccountDeletion(); } catch (e) {}
+          uit.verwijderFoutProfiel = S.data.musicians.length === voor;
+          uit.verwijderFoutLos = losGewist();
+          uit.verwijderFoutUit = S.calls.some(c => c.kind === 'auth' && c.name === 'signOut');
+          delete S.rpcErrors.tt_delete_own_profile;
+          myMusicianId = null;
+          return uit;
+        }""")
+        check("mislukt opslaan van Je setlist laat het oude repertoire staan",
+              ato["setlistFout"] == ["Oud"], json.dumps(ato))
+        check("en meldt dat het niet gelukt is", "niet gelukt" in ato["setlistToast"], ato["setlistToast"])
+        check("Je setlist wist niet meer los vooraf", not ato["setlistFoutLos"], "")
+        check("gelukt opslaan vervangt het repertoire", ato["setlistGoed"] == ["Nieuw"], json.dumps(ato))
+        check("Je setlist raakt alleen het repertoire",
+              ato["setlistAlleenSongs"], json.dumps(ato))
+        check("mislukt opslaan van Wat speel je laat instrumenten en genres staan",
+              ato["wspFout"] == ["Drums", "Rock"] and not ato["wspFoutLos"], json.dumps(ato))
+        check("mislukt verwijderen laat het profiel staan en logt niet uit",
+              ato["verwijderFoutProfiel"] and not ato["verwijderFoutLos"]
+              and not ato["verwijderFoutUit"], json.dumps(ato))
+
+        check("geen paginafouten in blok 29", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
