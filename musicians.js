@@ -453,35 +453,21 @@ async function executeAccountDeletion() {
   if (!mid) return;
 
   try {
-    // 1. Bands met overige leden: gekozen actie per band.
-    const rows = document.querySelectorAll('#deleteAccountBandsArea .delete-account-band-row');
-    for (const row of rows) {
-      const bandId = row.getAttribute('data-band-id');
-      const choice = row.querySelector('.delete-band-choice').value;
-      if (choice === 'delete') {
-        await db.from('band_wanted').delete().eq('band_id', bandId);
-        await db.from('band_members').delete().eq('band_id', bandId);
-        await db.from('bands').delete().eq('id', bandId);
-      } else {
-        await db.from('bands').update({ founder_id: choice }).eq('id', bandId);
-        await db.from('band_members').update({ role: 'Oprichter' }).eq('band_id', bandId).eq('musician_id', choice);
-      }
-    }
-
-    // 2. Solo-bands (geen andere bevestigde leden): stilzwijgend mee weg.
-    for (const bandId of pendingSoloBandIds) {
-      await db.from('band_wanted').delete().eq('band_id', bandId);
-      await db.from('band_members').delete().eq('band_id', bandId);
-      await db.from('bands').delete().eq('id', bandId);
-    }
-
-    // 3. Eigen profielgegevens (kindtabellen eerst, dan de musicians-rij zelf).
-    await db.from('musician_instruments').delete().eq('musician_id', mid);
-    await db.from('musician_genres').delete().eq('musician_id', mid);
-    await db.from('musician_songs').delete().eq('musician_id', mid);
-    await db.from('musician_media').delete().eq('musician_id', mid);
-    await db.from('band_members').delete().eq('musician_id', mid);
-    const { error: mErr } = await db.from('musicians').delete().eq('id', mid);
+    // 1-3. Bands (overdragen of opheffen), solo-bands en de eigen
+    // profielgegevens — TT-281 (23-09-2026): in één databasefunctie, in één
+    // transactie. Lukt één stap niet (bijvoorbeeld het overdragen van een
+    // band), dan blijft alles staan. Vroeger ging de app door na een
+    // mislukte overdracht, en bleef er een band zonder oprichter achter.
+    const bandKeuzes = Array.from(document.querySelectorAll('#deleteAccountBandsArea .delete-account-band-row'))
+      .map(row => ({
+        band_id: row.getAttribute('data-band-id'),
+        keuze:   row.querySelector('.delete-band-choice').value,
+      }));
+    const { error: mErr } = await db.rpc('tt_delete_own_profile', {
+      p_musician_id: mid,
+      p_band_keuzes: bandKeuzes,
+      p_solo_bands:  pendingSoloBandIds,
+    });
     if (mErr) throw mErr;
 
     // 4. Geüploade bestanden in Storage (avatar + media). Berichten blijven
@@ -1001,18 +987,13 @@ async function saveWatSpeelJe() {
     .update({ repertoire_type: wspRepertoireType || null }).eq('id', myMusicianId);
   if (uErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(uErr)); return; }
 
-  await db.from('musician_instruments').delete().eq('musician_id', myMusicianId);
-  await db.from('musician_genres').delete().eq('musician_id', myMusicianId);
-
-  const { error: iErr } = await db.from('musician_instruments').insert(
-    wspState.instruments.map(instrument => ({ musician_id: myMusicianId, instrument, niveau: wspState.instrumentLevels[instrument] || null }))
-  );
-  if (iErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(iErr)); return; }
-
-  const { error: gErr } = await db.from('musician_genres').insert(
-    wspState.genres.map(genre => ({ musician_id: myMusicianId, genre }))
-  );
-  if (gErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(gErr)); return; }
+  // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
+  const { error: kErr } = await db.rpc('tt_save_musician_koppelingen', {
+    p_musician_id: myMusicianId,
+    p_instruments: wspState.instruments.map(instrument => ({ instrument, niveau: wspState.instrumentLevels[instrument] || null })),
+    p_genres:      wspState.genres.map(genre => ({ genre })),
+  });
+  if (kErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(kErr)); return; }
 
   wspSnapshot = wspFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
@@ -1336,13 +1317,12 @@ function cancelJeSetlist() {
 async function saveJeSetlist() {
   if (jstFieldSnapshot() === jstSnapshot) return;
 
-  await db.from('musician_songs').delete().eq('musician_id', myMusicianId);
-  if (jstSongs.length) {
-    const { error } = await db.from('musician_songs').insert(
-      jstSongs.map(s => ({ musician_id: myMusicianId, song_title: s.title, song_artist: s.artist, mastery_level: s.level }))
-    );
-    if (error) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(error)); return; }
-  }
+  // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
+  const { error } = await db.rpc('tt_save_musician_koppelingen', {
+    p_musician_id: myMusicianId,
+    p_songs: jstSongs.map(s => ({ song_title: s.title, song_artist: s.artist, mastery_level: s.level })),
+  });
+  if (error) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(error)); return; }
   jstSnapshot = jstFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
 }
@@ -1586,23 +1566,18 @@ async function saveJeMediahoek() {
     .update({ avatar_url: mhAvatarUrl || null }).eq('id', myMusicianId);
   if (uErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(uErr)); return; }
 
-  await db.from('musician_media').delete().eq('musician_id', myMusicianId);
-
+  // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
   const linkMedia = mhMediaLinks
     .filter(l => l.url.trim())
-    .map(l => ({ musician_id: myMusicianId, media_type: 'link', url: l.url, platform: detectPlatform(l.url), in_banner: !!l.inBanner }));
-  if (linkMedia.length) {
-    const { error: lErr } = await db.from('musician_media').insert(linkMedia);
-    if (lErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(lErr)); return; }
-  }
-
+    .map(l => ({ media_type: 'link', url: l.url, platform: detectPlatform(l.url), in_banner: !!l.inBanner }));
   const fileMedia = mhMediaFiles
     .filter(m => m.url && !m.uploading && !m.url.startsWith('blob:'))
-    .map(m => ({ musician_id: myMusicianId, media_type: m.type, url: m.url, in_banner: !!m.inBanner }));
-  if (fileMedia.length) {
-    const { error: fErr } = await db.from('musician_media').insert(fileMedia);
-    if (fErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(fErr)); return; }
-  }
+    .map(m => ({ media_type: m.type, url: m.url, in_banner: !!m.inBanner }));
+  const { error: kErr } = await db.rpc('tt_save_musician_koppelingen', {
+    p_musician_id: myMusicianId,
+    p_media: linkMedia.concat(fileMedia),
+  });
+  if (kErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(kErr)); return; }
 
   mhSnapshot = mhFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
@@ -1683,7 +1658,6 @@ async function saveBandRun() {
         avatar_url: bandState.avatarUrl || null, // V-15
       }).eq('id', bandId);
       if (uErr) throw uErr;
-      await db.from('band_wanted').delete().eq('band_id', bandId);
     } else {
       // Zelfde voorzorg als bij createAccountAndProfile() (23-08-2026): alleen
       // 'id' terugvragen i.p.v. een kale .select(). Niet omdat hier een
@@ -1702,11 +1676,15 @@ async function saveBandRun() {
       await db.from('band_members').insert({ band_id: bandId, musician_id: mid, role: 'Oprichter', status: 'bevestigd' });
     }
 
-    // V-14: bij een complete/inactieve band kan bandState.wanted leeg zijn —
-    // een insert met een lege lijst is dan gewoon een no-op.
-    if (bandState.wanted.length) {
-      await db.from('band_wanted').insert(bandState.wanted.map(instrument => ({ band_id: bandId, instrument })));
-    }
+    // TT-281 (23-09-2026): "Gezocht" wissen en opnieuw vullen in één
+    // transactie — zelfde fout en zelfde oplossing als op de profielkant.
+    // V-14: bij een complete/inactieve band kan bandState.wanted leeg zijn;
+    // dan blijft er na afloop gewoon niets gezocht staan.
+    const { error: wErr } = await db.rpc('tt_save_band_wanted', {
+      p_band_id: bandId,
+      p_instruments: bandState.wanted,
+    });
+    if (wErr) throw wErr;
 
     resetBandForm();
     document.getElementById('createBandForm').style.display = 'none';

@@ -1,6 +1,53 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 23-09-2026 (vervolg 2) — **TT-42: de dagelijkse taak
+**Laatste update:** 23-09-2026 (vervolg 3) — **TT-281 gebouwd: opslaan is
+alles of niets. Wacht op Ronald: SQL-script draaien, daarna meet Claude het na
+in de browserpane. Pas dán de app-bestanden uploaden. Testset 413 van 413.**
+
+**Besluiten Ronald, 23-09-2026.** (1) Alles-of-niets via databasefuncties, niet
+"eerst toevoegen, dan wissen". (2) Het wissen van "Gezocht" bij band opslaan
+hoort erbij — zelfde fout, bandkant gelijk aan de profielkant.
+
+**Wat er gebouwd is.** Drie databasefuncties, elk één transactie, `security
+invoker` (de bestaande RLS-regels blijven gelden):
+- `tt_save_musician_koppelingen` — `persistEditedProfile()` (`wizard.js`),
+  `saveWatSpeelJe()`, `saveJeSetlist()`, `saveJeMediahoek()` (`musicians.js`).
+  Een lege parameter laat die tabel onaangeroerd.
+- `tt_save_band_wanted` — band opslaan (`musicians.js`), nieuw en bewerken.
+  Vroeger werd ook het toevoegen van "Gezocht" niet op fouten gecontroleerd.
+- `tt_delete_own_profile` — stap 1 t/m 3 van `executeAccountDeletion()`. Een
+  mislukte overdracht stopt alles; er ontstaat geen band zonder oprichter meer.
+  Eerst het lid tot oprichter, dan de band: andersom kan de tweede stap
+  stranden op RLS.
+
+**Geverifieerd.** Het SQL-script is gedraaid op een lokale Postgres 16 met
+nagebouwde tabellen en RLS: goed pad, fout halverwege (oude data blijft),
+andermans profiel (geweigerd), anoniem (geweigerd), mislukte overdracht
+(profiel blijft), geslaagde overdracht. Testset: blok 29 plus één statische
+controle; alle zeven nieuwe controles zakken tegen de oude code en slagen
+tegen de nieuwe. **Onbekend:** de werkelijke kolomtypes en RLS-regels in
+productie. De functies nemen de types over uit de tabellen zelf (`%type`,
+`jsonb_populate_recordset`); laag 2 moet het bevestigen.
+
+**Volgorde is bindend.** Eerst het SQL-script, dan de app-bestanden. Andersom
+faalt elke opslag met PGRST202 (functie niet gevonden).
+
+**Nog open voor TT-281:** SQL draaien (Ronald) · nameten in de browserpane
+(Claude) · laag 2: profiel opslaan, een tegel opslaan, band opslaan.
+
+**Nieuwe bevinding.**
+
+| ID | Bevinding | Niveau en toets |
+|---|---|---|
+| **TT-312** | `dissolveBand()` (`bands.js`) wist "Gezocht" en de leden zonder foutcontrole, en pas daarna de band. Mislukt dat laatste, dan staat er een band zonder leden en zonder oprichter | **P0.** Kan een gebruiker data kwijtraken? Ja. Zelfde soort als TT-281, niet meegenomen: buiten het besluit van vandaag |
+
+**Gewijzigd:** `wizard.js`, `musicians.js`, `index.html` (`?v=`),
+`tests/tt_tests.py`, `tests/stub/supabase-stub.js`, `actielijst.md`,
+`CHECKSUMS.txt`.
+
+---
+
+**Vorige update:** 23-09-2026 (vervolg 2) — **TT-42: de dagelijkse taak
 staat er, alleen laag 2 is nog open. TT-45: twee besluiten van Ronald
 vastgelegd, nog niet gebouwd. Geen app-code gewijzigd.**
 
@@ -4793,8 +4840,8 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 **Bijgewerkt 22-09-2026 (vervolg).** TT-42 is gebouwd, maar blijft in deze stand meetellen tot laag 2 is gedraaid: de keten mail → klik van de ouder → terugkomst van het kind raakt de database en de mailserver en is niet tegen de stub te toetsen. *(Rechtgezet 23-09-2026: hier stond ook "Hij wacht bovendien op twee handelingen van Ronald (het SQL-script en de Edge Function)." Beide zijn op 22-09-2026 gemeten, de dagelijkse taak op 23-09-2026.)* Zolang blijven het er vijf.
 
-**Stand van de P0's, bijgewerkt 20-09-2026 (vervolg).** **Vijf P0-bouwtickets
-staan open:** TT-281 · TT-295 · TT-65 · TT-45 · TT-42. **TT-299 en TT-300 zijn
+**Stand van de P0's, bijgewerkt 23-09-2026.** **Zes P0-bouwtickets
+staan open:** TT-281 · TT-312 · TT-295 · TT-65 · TT-45 · TT-42. *(TT-312 kwam er op 23-09-2026 bij; daarvóór waren het er vijf.)* **TT-299 en TT-300 zijn
 op 20-09-2026 gevonden én afgehandeld** en staan in de tweede tabel; ze
 veranderen de stand hierboven dus niet. **TT-01 is op 20-09-2026
 aantoonbaar werkend** en staat in de tweede tabel. In zijn plaats komt
@@ -4837,7 +4884,8 @@ eerste tabel altijd gelijk is aan de stand.
 | **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07. **Besloten 23-09-2026 (Ronald), nog niet gebouwd:** (1) twee leeftijdsgroepen, 13 t/m 15 en 16+; (2) alle media van 13- tot 15-jarigen verschijnt voor bezoekers zonder account als de T van The Talent Tent, video's niet af te spelen; (3) alles wat met privacy te maken heeft gaat naar `privacy@talenttent.org`, ook een melding via de knop in de app — die gaat nu alleen de tabel `musician_reports` in en niemand krijgt bericht. **Bouwwerk:** media afschermen (advies Claude: in de `_anon`-functies, niet alleen in de app), een mail naar privacy@ bij elke melding, en de zin "meldknop volgt nog" uit de gedragscode en de voorwaarden. Vraagt SQL van Ronald. Zie `minderjarigen-toestemming-23-09-2026.md` |
 | **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Gebouwd 22-09-2026, route A. Alleen laag 2 staat nog open** *(rechtgezet 23-09-2026: hier stond "wacht op twee handelingen van Ronald"; beide zijn op 22-09-2026 gemeten)*. In productie en geverifieerd: de tabel `ouder_toestemming`, de drie functies, de Edge Function `ouder-toestemming` (Verify JWT uit), en de dagelijkse taak `tt-ouder-onderhoud` (23-09-2026, uitslag van Ronald). Zeven onderdelen in `ouder.js` en `view-toestemming`. **Laag 2:** de keten mail aan de ouder → klik → mail aan het kind → wachtwoord, op de echte site, met een mailadres waar Ronald bij kan. Ontwerp en besluiten: `_niet-uploaden-tt42-ontwerp-22-09-2026.md` en `minderjarigen-toestemming-23-09-2026.md` |
 | **TT-62 (deel 2)** | "Geef me een seintje zodra er een drummer bijkomt" | **Uitzondering vastgelegd 12-09-2026 (besluit Ronald, TT-257):** het automatisch verruimen van deel 1 geldt **niet** als er een naam in het zoekveld staat. Wie op naam zoekt, zoekt één bepaalde persoon; iemand twee provincies verderop is dan geen beter antwoord dan geen antwoord. Zie huisstijl §17. **Deel 1 is gebouwd 11-09-2026** (automatisch verruimen, zie Deel 3). Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker. Leunt op dezelfde verzendweg als TT-01 en kan dus niet eerder |
-| **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Nieuw, 16-09-2026 (onderhoudsronde).** Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wissen eerst en voegen daarna toe, zonder foutcontrole op het wissen. Mislukt het toevoegen, dan is de oude data weg. Zelfde soort in `executeAccountDeletion()`. Volledige tekst: Laatste update bovenaan |
+| **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Gebouwd 23-09-2026; wacht op het SQL-script van Ronald en laag 2 — zie Laatste update.** Nieuw, 16-09-2026 (onderhoudsronde). Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wissen eerst en voegen daarna toe, zonder foutcontrole op het wissen. Mislukt het toevoegen, dan is de oude data weg. Zelfde soort in `executeAccountDeletion()`. Volledige tekst: Laatste update bovenaan |
+| **TT-312** | Band opheffen wist leden zonder foutcontrole | **Nieuw, 23-09-2026.** `dissolveBand()` (`bands.js`) wist "Gezocht" en de leden zonder controle, daarna pas de band. Mislukt dat laatste, dan blijft een band zonder leden en oprichter over. Oplossing als TT-281: één transactie. Vraagt een besluit van Ronald |
 | — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
 
 **Afgehandeld of geblokkeerd bij Ronald — telt niet mee in de P0-stand hierboven.**

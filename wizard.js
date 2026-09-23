@@ -382,70 +382,28 @@ async function persistEditedProfile() {
   }).eq('id', mid);
   if (uErr) throw new Error(uErr.message);
 
-  // Bestaande koppeltabellen legen, hieronder opnieuw vullen — eenvoudigste
-  // betrouwbare manier om toevoegingen/verwijderingen te verwerken.
-  await db.from('musician_instruments').delete().eq('musician_id', mid);
-  await db.from('musician_genres').delete().eq('musician_id', mid);
-  await db.from('musician_songs').delete().eq('musician_id', mid);
-  // Alle media legen (links én foto's/video's) — hieronder allebei opnieuw
-  // opgebouwd vanuit state, net als bij instrumenten/genres/repertoire.
+  // TT-281 (23-09-2026): wissen en opnieuw vullen gebeurt in één
+  // databasefunctie, in één transactie. Mislukt één stap, dan blijft alles
+  // zoals het was. Vroeger wiste de app eerst zonder controle en vulde daarna
+  // aan; mislukte het aanvullen, dan was de oude data weg.
   // Al geüploade Storage-bestanden zelf blijven gewoon staan (alleen de
   // koppeling in musician_media wordt hier ververst); verwijderde foto's/
   // video's zijn al apart uit Storage opgeruimd door removeMedia().
-  await db.from('musician_media').delete().eq('musician_id', mid);
-
-  if (state.instruments.length) {
-    const { error: iErr } = await db.from('musician_instruments').insert(
-      state.instruments.map(instrument => ({ musician_id: mid, instrument, niveau: state.instrumentLevels[instrument] || null }))
-    );
-    if (iErr) throw new Error(iErr.message);
-  }
-
-  if (state.genres.length) {
-    const { error: gErr } = await db.from('musician_genres').insert(
-      state.genres.map(genre => ({ musician_id: mid, genre }))
-    );
-    if (gErr) throw new Error(gErr.message);
-  }
-
-  if (state.songs.length) {
-    const { error: sErr } = await db.from('musician_songs').insert(
-      state.songs.map(s => ({
-        musician_id:   mid,
-        song_title:    s.title,
-        song_artist:   s.artist,
-        mastery_level: s.level,
-      }))
-    );
-    if (sErr) throw new Error(sErr.message);
-  }
-
   const linkMedia = state.mediaLinks
     .filter(l => l.url.trim())
-    .map(l => ({
-      musician_id: mid,
-      media_type:  'link',
-      url:         l.url,
-      platform:    detectPlatform(l.url),
-      in_banner:   !!l.inBanner,
-    }));
-  if (linkMedia.length) {
-    const { error: lErr } = await db.from('musician_media').insert(linkMedia);
-    if (lErr) throw new Error(lErr.message);
-  }
-
+    .map(l => ({ media_type: 'link', url: l.url, platform: detectPlatform(l.url), in_banner: !!l.inBanner }));
   const fileMedia = state.mediaFiles
     .filter(m => m.url && !m.uploading && !m.url.startsWith('blob:'))
-    .map(m => ({
-      musician_id: mid,
-      media_type:  m.type,
-      url:         m.url,
-      in_banner:   !!m.inBanner,
-    }));
-  if (fileMedia.length) {
-    const { error: fErr } = await db.from('musician_media').insert(fileMedia);
-    if (fErr) throw new Error(fErr.message);
-  }
+    .map(m => ({ media_type: m.type, url: m.url, in_banner: !!m.inBanner }));
+
+  const { error: kErr } = await db.rpc('tt_save_musician_koppelingen', {
+    p_musician_id: mid,
+    p_instruments: state.instruments.map(instrument => ({ instrument, niveau: state.instrumentLevels[instrument] || null })),
+    p_genres:      state.genres.map(genre => ({ genre })),
+    p_songs:       state.songs.map(s => ({ song_title: s.title, song_artist: s.artist, mastery_level: s.level })),
+    p_media:       linkMedia.concat(fileMedia),
+  });
+  if (kErr) throw new Error(kErr.message);
 
   state.savedId = mid;
 }
