@@ -1,6 +1,59 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 23-09-2026 (vervolg) — **TT-310 opgelost: de terugknop
+**Laatste update:** 23-09-2026 (vervolg 2) — **TT-42: de dagelijkse taak
+staat er, alleen laag 2 is nog open. TT-45: twee besluiten van Ronald
+vastgelegd, nog niet gebouwd. Geen app-code gewijzigd.**
+
+**TT-42 — de `pg_cron`-taak bestaat.** Ronald draaide `select * from
+cron.job;`. De taak `tt-ouder-onderhoud` staat er, elke dag om 06:00 UTC
+(`0 6 * * *`), en roept de Edge Function `ouder-toestemming` aan met
+`{"actie": "onderhoud"}`. **Geverifieerd (uitslag van Ronald).** Daarmee staan
+alle vier de databasestukken van TT-42 in productie. **Nog open: laag 2**, de
+hele keten op de echte site.
+
+**Rechtgezet: de P0-rij van TT-42.** Daar stond "wacht op twee handelingen van
+Ronald: het SQL-script draaien en de Edge Function plaatsen". Ervoor in de
+plaats: "alleen laag 2 staat nog open". Waaruit blijkt dat het oude onjuist
+was: beide handelingen zijn op 22-09-2026 gemeten (zie Vorige update,
+22-09-2026 (vervolg 2)), en de taak op 23-09-2026.
+
+**TT-45 — besluiten Ronald, 23-09-2026.**
+
+1. **Twee leeftijdsgroepen:** 13 tot en met 15, en 16 en ouder. Onder de 13
+   doet niemand mee.
+2. **Media van 13- tot 15-jarigen is afgeschermd voor bezoekers zonder
+   account.** Elk medium verschijnt als de T van The Talent Tent; een video is
+   niet af te spelen. Met een account is alles zichtbaar.
+3. **Alles wat met privacy te maken heeft, gaat naar
+   `privacy@talenttent.org`** — ook een melding via de knop in de app, en een
+   ouder die iets meldt. Dat laatste vervangt het besluit van 22-09-2026
+   (ouder meldt op `contact@`).
+
+**Waarom punt 3 bouwwerk is.** **Geverifieerd in de code:** `veiligheid.js`
+schrijft een melding alleen weg in `musician_reports`. Er gaat geen mail uit.
+Een melding ziet dus niemand, tenzij Ronald zelf in Supabase kijkt.
+
+**Gevonden bij het nalezen, hoort bij hetzelfde bouwwerk:** de gedragscode en
+de gebruiksvoorwaarden (`index.html`) zeggen nog "een meldknop binnen de app
+volgt nog". Die knop bestaat sinds TT-06 (18-09-2026).
+
+*Advies Claude, geen besluit:* punt 2 hoort in de database te gebeuren, niet
+alleen in de app. Anders staat het adres van de foto in het netwerkverkeer.
+**Onbekend:** of de opslag voor foto's zonder account leesbaar is.
+
+**Rechtgezet in de projectinstructies:** §9 noemde veertien views, het zijn er
+vijftien (`view-toestemming`, TT-42). Waaruit blijkt: `index.html` bevat
+vijftien `id="view-..."` en `tt_monitor.py` toetst in A4 op vijftien. §10 mist
+niet langer de tabel `ouder_toestemming`, de drie functies en de taak.
+
+**Gewijzigd:** `actielijst.md`. In het project: `projectinstructies.md` en
+`minderjarigen-toestemming-23-09-2026.md`.
+
+**Signaal 5.1:** deze sessie behandelde TT-42, TT-45 en TT-281.
+
+---
+
+**Vorige update:** 23-09-2026 (vervolg) — **TT-310 opgelost: de terugknop
 staat er altijd. TT-311 (restpunt van TT-307) meteen rechtgezet. Testset 404
 van 404. Monitor 19 van 19.**
 
@@ -4738,7 +4791,7 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 ## P0 — Zonder dit is de app niet af of onveilig
 
-**Bijgewerkt 22-09-2026 (vervolg).** TT-42 is gebouwd, maar blijft in deze stand meetellen tot laag 2 is gedraaid: de keten mail → klik van de ouder → terugkomst van het kind raakt de database en de mailserver en is niet tegen de stub te toetsen. Hij wacht bovendien op twee handelingen van Ronald (het SQL-script en de Edge Function). Zolang blijven het er vijf.
+**Bijgewerkt 22-09-2026 (vervolg).** TT-42 is gebouwd, maar blijft in deze stand meetellen tot laag 2 is gedraaid: de keten mail → klik van de ouder → terugkomst van het kind raakt de database en de mailserver en is niet tegen de stub te toetsen. *(Rechtgezet 23-09-2026: hier stond ook "Hij wacht bovendien op twee handelingen van Ronald (het SQL-script en de Edge Function)." Beide zijn op 22-09-2026 gemeten, de dagelijkse taak op 23-09-2026.)* Zolang blijven het er vijf.
 
 **Stand van de P0's, bijgewerkt 20-09-2026 (vervolg).** **Vijf P0-bouwtickets
 staan open:** TT-281 · TT-295 · TT-65 · TT-45 · TT-42. **TT-299 en TT-300 zijn
@@ -4781,8 +4834,8 @@ eerste tabel altijd gelijk is aan de stand.
 |---|---|---|
 | **TT-295** | De matchhelft van de digest levert structureel niets op | **Nieuw, 20-09-2026.** `tt_digest_new_musicians` doet een inner join op `musician_wanted`. Die tabel bevat **0 rijen**, geverifieerd 20-09-2026 tegen productie. TT-232 (09-09-2026) haalde het enige invulveld ervoor — "instrumenten die je zoekt in een ander" — uit Zoekvoorkeuren, met als reden "dat staat al in de zoekfilters". Sindsdien kan niemand die tabel nog vullen, en dus vindt de nachtelijke query per definitie niemand. De bandhelft werkt wel: die gebruikt `band_wanted` tegen de instrumenten in je eigen profiel, en is op 20-09-2026 aantoonbaar in een echte mail terechtgekomen (drie bands). **Toets:** kan de app hiermee live zonder dat een gebruiker iets misloopt? Nee — de app belooft een mail over nieuwe matches en levert die helft niet. Zelfde grond waarop TT-01 P0 was. **Voorstel Ronald, geen besluit (20-09-2026):** een bewaarde zoekopdracht — een vinkje op het zoekformulier dat de héle zoekopdracht opslaat (instrument, genre, straal, plaats), niet alleen een lijstje instrumenten. Dat zou TT-295 en TT-62 deel 2 in één keer afhandelen. Alternatief: het oude veld terugzetten in E-mailvoorkeuren — kleiner werk, armere mail, TT-62 deel 2 blijft open. Nog geen ontwerpsessie |
 | **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers, zodra die er zijn. Interim-stap: zie "Direct te doen" hierboven. **Vóór lancering, niet acuut nu (23-08-2026) — de site heeft nog alleen testprofielen, zie afspraak bovenaan deze tabel** |
-| **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07, zie toelichting onderaan deze tabel. **Vóór lancering, niet acuut nu (23-08-2026) — zie afspraak bovenaan deze tabel.** **Verkend 22-09-2026**, samen met TT-42: zie `minderjarigen-toestemming-22-09-2026.md` in het claude.ai-project. Nog open uit dit ticket: zichtbaarheid van profielfoto's van minderjarigen voor bezoekers zonder account, en de afhandeling van een melding waar een minderjarige bij betrokken is |
-| **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Gebouwd 22-09-2026, route A — wacht op twee handelingen van Ronald.** Zeven onderdelen: de regel bij de geboortedatum, het tussenscherm, het wachtscherm, de mail aan de ouder, de goedkeuringspagina (`view-toestemming`, de vijftiende view), de mail aan het kind en het wachtwoordscherm. Nieuw bestand `ouder.js`, direct na `wizard.js` in de scriptvolgorde. Het account ontstaat pas na de goedkeuring; tot die tijd staat alles in `localStorage` bij het kind. **Open bij Ronald:** het SQL-script draaien en de Edge Function `ouder-toestemming` plaatsen met Verify JWT uit — zie de Laatste update bovenaan. **Daarna:** laag 2 in de browserpane, en de projectinstructies bijwerken (twaalf JS-bestanden, vijftien views, de nieuwe tabel). Het ontwerp en de besluiten staan in `_niet-uploaden-tt42-ontwerp-22-09-2026.md` en `minderjarigen-toestemming-22-09-2026.md`. De juridische toetsing gebeurt ná het ontwerp |
+| **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07. **Besloten 23-09-2026 (Ronald), nog niet gebouwd:** (1) twee leeftijdsgroepen, 13 t/m 15 en 16+; (2) alle media van 13- tot 15-jarigen verschijnt voor bezoekers zonder account als de T van The Talent Tent, video's niet af te spelen; (3) alles wat met privacy te maken heeft gaat naar `privacy@talenttent.org`, ook een melding via de knop in de app — die gaat nu alleen de tabel `musician_reports` in en niemand krijgt bericht. **Bouwwerk:** media afschermen (advies Claude: in de `_anon`-functies, niet alleen in de app), een mail naar privacy@ bij elke melding, en de zin "meldknop volgt nog" uit de gedragscode en de voorwaarden. Vraagt SQL van Ronald. Zie `minderjarigen-toestemming-23-09-2026.md` |
+| **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Gebouwd 22-09-2026, route A. Alleen laag 2 staat nog open** *(rechtgezet 23-09-2026: hier stond "wacht op twee handelingen van Ronald"; beide zijn op 22-09-2026 gemeten)*. In productie en geverifieerd: de tabel `ouder_toestemming`, de drie functies, de Edge Function `ouder-toestemming` (Verify JWT uit), en de dagelijkse taak `tt-ouder-onderhoud` (23-09-2026, uitslag van Ronald). Zeven onderdelen in `ouder.js` en `view-toestemming`. **Laag 2:** de keten mail aan de ouder → klik → mail aan het kind → wachtwoord, op de echte site, met een mailadres waar Ronald bij kan. Ontwerp en besluiten: `_niet-uploaden-tt42-ontwerp-22-09-2026.md` en `minderjarigen-toestemming-23-09-2026.md` |
 | **TT-62 (deel 2)** | "Geef me een seintje zodra er een drummer bijkomt" | **Uitzondering vastgelegd 12-09-2026 (besluit Ronald, TT-257):** het automatisch verruimen van deel 1 geldt **niet** als er een naam in het zoekveld staat. Wie op naam zoekt, zoekt één bepaalde persoon; iemand twee provincies verderop is dan geen beter antwoord dan geen antwoord. Zie huisstijl §17. **Deel 1 is gebouwd 11-09-2026** (automatisch verruimen, zie Deel 3). Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker. Leunt op dezelfde verzendweg als TT-01 en kan dus niet eerder |
 | **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Nieuw, 16-09-2026 (onderhoudsronde).** Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wissen eerst en voegen daarna toe, zonder foutcontrole op het wissen. Mislukt het toevoegen, dan is de oude data weg. Zelfde soort in `executeAccountDeletion()`. Volledige tekst: Laatste update bovenaan |
 | — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
