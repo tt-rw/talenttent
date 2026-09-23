@@ -1,6 +1,46 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 23-09-2026 — **Drie kleine bevindingen gemeld en alle drie
+**Laatste update:** 23-09-2026 (vervolg) — **TT-310 opgelost: de terugknop
+staat er altijd. TT-311 (restpunt van TT-307) meteen rechtgezet. Testset 404
+van 404. Monitor 19 van 19.**
+
+| ID | Bevinding | Niveau en toets |
+|---|---|---|
+| **TT-310** | De terugknop linksboven verdween op het hoogste scherm (Mijn Profiel ingelogd, de landingspagina uitgelogd). De kop was daardoor niet overal gelijk. Ronald, 23-09-2026: *"toon de terugknop linksboven altijd. ook als er geen scherm meer 'boven' zit. [...] steeds dezelfde kop (terug - woordmerk - hamburgermenu)."* | **P2.** Werkt, maar kost vertrouwen in de indruk: de kop verandert van vorm per scherm |
+| **TT-311** | TT-307 zette het terugteken in de kop op 24px, maar het terugteken in de koprij van het muzikant- en bandvenster bleef op 26px. Openen van een venster liet de pijl dus van maat verspringen | **P2.** Zelfde toets als TT-307 |
+
+**TT-310, opgelost. Besluit Ronald, 23-09-2026.** `werkTerugKnopBij()` in
+`core.js` verbergt de knop niet meer als er niets is om naar terug te gaan.
+Een druk doet dan niets: `terugKnop()` stopt nog steeds zolang `magTerug()`
+onwaar is, dus de knop verlaat de app nooit. **Eén uitzondering, besluit
+Ronald dezelfde dag:** de goedkeuringspagina voor ouders (TT-42). Daar staan
+ook de hamburger en de onderbalk niet; die pagina is het hele bezoek van een
+ouder. **Vervalt hiermee:** de regel uit TT-301 "is er niets om naar terug te
+gaan, dan is de knop onzichtbaar" en uit TT-303 "op het hoogste scherm staat
+hij er niet". Beide rechtgezet in de projectinstructies (§9) en in huisstijl
+§11. **Modalkant:** niet van toepassing — in een venster is er altijd iets om
+te sluiten, dus daar stond de knop al altijd. **Geverifieerd:** testset,
+blok 25 en blok 27 aangepast; de drie nieuwe controles zakken tegen de oude
+code en slagen tegen de nieuwe. Schermafdruk op 390px bekeken: Mijn Profiel
+en de landingspagina tonen terug · woordmerk · hamburger.
+
+**TT-311, opgelost.** Beide terugtekens in `.modal-kop` (`musicianModal`,
+`bandModal`) van 26 naar 24px. Nieuwe controle in blok 25: élk terugteken en
+de hamburger zijn 24px; zakte tegen de oude code. **Rechtgezet in de
+projectinstructies (§11) en huisstijl §11 en §12:** daar stond nog "26px" voor
+het terugteken en het hamburgericoon. Waaruit blijkt dat het oude onjuist was:
+TT-307 zette beide op 24px, en `grep 'width="26"' index.html` geeft nu niets.
+
+**Gewijzigd:** `index.html`, `core.js` (versie-achtervoegsel),
+`tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
+
+**Signaal 5.1:** twee tickets in één sessie. TT-311 hoort bij hetzelfde
+onderwerp (één kop overal) en is een onvolledig doorgevoerde TT-307, daarom
+in deze sessie meegenomen.
+
+---
+
+**Vorige update:** 23-09-2026 — **Drie kleine bevindingen gemeld en alle drie
 opgelost: TT-307, TT-308, TT-309. Testset 402 van 402. Repo's gelijk.**
 
 **Aanleiding.** Drie schermafdrukken van Ronald, met bijschrift.

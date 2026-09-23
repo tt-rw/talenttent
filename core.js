@@ -920,14 +920,15 @@ function terugGaatOmhoog() {
   return TAB_VIEWS.includes(huidigeView);
 }
 
-// De knop verdwijnt als er niets is om naar terug te gaan, maar zijn vak
-// blijft staan (visibility, niet display). Zo verspringt het woordmerk niet
-// zodra je een scherm dieper gaat.
+// TT-310 (23-09-2026, Ronald): de knop staat er altijd, ook als er niets is
+// om naar terug te gaan — overal dezelfde kop: terug, woordmerk, hamburger.
+// Een druk doet dan niets (zie terugKnop()). Was sinds TT-301: onzichtbaar
+// zolang magTerug() onwaar was.
+// Enige uitzondering: de goedkeuringspagina (TT-42). Die is het hele bezoek
+// van een ouder, en ook de hamburger en de onderbalk staan daar niet.
 function werkTerugKnopBij() {
   const btn = document.getElementById('navTerugBtn');
-  // TT-42: op de goedkeuringspagina is er niets om naar terug te gaan — die
-  // pagina is de hele bezoek van een ouder.
-  if (btn) btn.style.visibility = (magTerug() && huidigeView !== 'toestemming') ? '' : 'hidden';
+  if (btn) btn.style.visibility = (huidigeView !== 'toestemming') ? '' : 'hidden';
 }
 
 function terugKnop() {
