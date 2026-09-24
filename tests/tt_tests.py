@@ -2085,7 +2085,9 @@ def blok_browser():
           r.tikdoel = [Math.round(kr.width), Math.round(kr.height)];
           knop.click();
           r.opentNaKlik = document.querySelector('#musicianModalActies .inline-menu-dropdown').classList.contains('visible');
-          document.body.click();
+          // Sinds 24-09-2026 ligt er een donkere laag achter elk open menu; een
+          // tik ernaast landt op die laag.
+          document.querySelector('#musicianModalActies .menu-laag')?.click();
           r.sluitBuitenKlik = !document.querySelector('#musicianModalActies .inline-menu-dropdown').classList.contains('visible');
 
           zetVeiligheidMenu('musicianModalActies', 'muzikant', null, '');
@@ -3079,6 +3081,131 @@ def blok_browser():
 
         check("geen paginafouten in blok 29", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
+
+        # ------------------------------------------------------------------
+        # Blok 30 — menu's en goud (24-09-2026, Ronald)
+        # Eén menu tegelijk; een donkere laag achter elk open menu; een menu
+        # is lichter dan de pagina; nergens goud als doorschijnend vlak; de
+        # wizard telt met één teller (TT-250).
+        # ------------------------------------------------------------------
+        print("\nBlok 30 — menu's en goud (TT-290, TT-259, TT-250)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        # Het eigen profiel wordt in een gewone view gezet. loadMyProfile() zelf
+        # laden kan tegen de stub niet volledig.
+        page.evaluate("showView('about')")
+        page.wait_for_timeout(100)
+        page.evaluate("""() => {
+          hasOwnProfile = true; myMusicianId = 'm1';
+          const plek = document.createElement('div'); plek.id = 'testProfiel';
+          document.getElementById('view-about').prepend(plek);
+          plek.innerHTML = buildMusicianDetailHTML({
+            id: 'm1', fname: 'Ronald', lname: 'W', username: 'ronald', bio: 'test',
+            musician_songs: [], musician_media: [], musician_instruments: [],
+            musician_genres: [], musician_wanted: [] }, true, false);
+        }""")
+
+        check("het eigen profiel staat in beeld, met het ⋯-menu",
+              page.evaluate("document.getElementById('profileMoreBtn').getBoundingClientRect().width > 0"), "")
+
+        def midden(sel):
+            return page.evaluate("""s => { const r = document.querySelector(s).getBoundingClientRect();
+              return [r.left + r.width / 2, r.top + r.height / 2]; }""", sel)
+
+        def bovenste(x, y):
+            return page.evaluate("""([x, y]) => { const e = document.elementFromPoint(x, y);
+              return e ? (e.closest('.menu-laag') ? 'laag' : e.closest('.nav-menu-dropdown,.inline-menu-dropdown,.choice-menu') ? 'menu' : e.outerHTML.slice(0, 120)) : null; }""", [x, y])
+
+        open_menus = "document.querySelectorAll('.nav-menu-dropdown.visible,.inline-menu-dropdown.visible,.choice-menu.open').length"
+        lagen = "document.querySelectorAll('.menu-laag').length"
+
+        # Hamburger open, dan het ⋯ op het profiel: één menu, één laag.
+        x, y = midden("#navMenuBtn"); page.mouse.click(x, y); page.wait_for_timeout(50)
+        check("hamburger open: één laag erachter", page.evaluate(lagen) == 1, str(page.evaluate(lagen)))
+        onderbalk = midden("#bottomNavSearch")
+        check("de laag dekt de onderbalk af", bovenste(*onderbalk) == "laag", bovenste(*onderbalk))
+        check("het menu ligt boven de laag", bovenste(*midden("#navAbout")) == "menu", bovenste(*midden("#navAbout")))
+        # Een tik naast het menu (links, midden in beeld) landt op de laag.
+        page.mouse.click(20, 420); page.wait_for_timeout(50)
+        check("een tik naast het hamburgermenu sluit het, zonder van scherm te wisselen",
+              page.evaluate(open_menus) == 0 and page.evaluate("huidigeView") == "about",
+              f"{page.evaluate(open_menus)} menu's open, view {page.evaluate('huidigeView')}")
+        page.evaluate("toggleNavMenu()")
+        page.evaluate("toggleProfileMoreMenu()")
+        check("twee menu's na elkaar openen: er staat er één open",
+              page.evaluate(open_menus) == 1 and page.evaluate(lagen) == 1,
+              f"{page.evaluate(open_menus)} menu's, {page.evaluate(lagen)} lagen")
+        check("het tweede menu is het open menu",
+              page.evaluate("document.getElementById('profileMoreDropdown').classList.contains('visible')"), "")
+        check("de laag dekt de kop af", bovenste(*midden(".logo")) == "laag", bovenste(*midden(".logo")))
+        check("de laag dekt de onderbalk af (menu in de pagina)", bovenste(*onderbalk) == "laag", bovenste(*onderbalk))
+
+        # Een tik op de laag sluit het menu en bereikt niets eronder.
+        page.evaluate("window.__zoekGetikt = false; document.getElementById('bottomNavSearch').addEventListener('click', () => { window.__zoekGetikt = true; }, { once: true })")
+        page.mouse.click(*onderbalk); page.wait_for_timeout(50)
+        check("een tik op de laag sluit het menu en haalt de laag weg",
+              page.evaluate(open_menus) == 0 and page.evaluate(lagen) == 0, "")
+        check("die tik bereikt de onderbalk niet", not page.evaluate("window.__zoekGetikt"), "")
+
+        # Escape en een view-wissel sluiten ook.
+        page.evaluate("toggleProfileMoreMenu()"); page.keyboard.press("Escape")
+        check("Escape sluit het menu en de laag",
+              page.evaluate(open_menus) == 0 and page.evaluate(lagen) == 0, "")
+        page.evaluate("document.getElementById('testProfiel').remove()")
+        page.evaluate("toggleNavMenu()"); page.evaluate("showView('privacy')")
+        check("een view-wissel sluit het menu en de laag",
+              page.evaluate(open_menus) == 0 and page.evaluate(lagen) == 0
+              and page.evaluate("document.querySelectorAll('.menu-drager').length") == 0, "")
+
+        # Keuzemenu (Sorteren op) doet mee in dezelfde regel.
+        page.evaluate("showView('search')"); page.wait_for_timeout(100)
+        page.evaluate("toggleNavMenu()")
+        page.evaluate("toggleChoiceMenu('sorteren')")
+        check("keuzemenu openen sluit het hamburgermenu",
+              page.evaluate(open_menus) == 1 and page.evaluate(lagen) == 1
+              and page.evaluate("actiefKeuzeMenu") == "sorteren", "")
+        page.evaluate("toggleNavMenu()")
+        page.wait_for_timeout(300)
+        check("hamburger openen sluit het keuzemenu",
+              page.evaluate("actiefKeuzeMenu") is None and page.evaluate(lagen) == 1, "")
+        page.evaluate("sluitAlleMenus()")
+
+        # Het menu is lichter dan de pagina.
+        kleuren = page.evaluate("""() => ['navMenuDropdown', 'profileMoreDropdown'].map(id => {
+            const el = document.getElementById(id); return el ? getComputedStyle(el).backgroundColor : null; })
+            .concat([getComputedStyle(document.querySelector('.choice-menu')).backgroundColor])""")
+        check("elk menu heeft het vlak --surface2", all(k == "rgb(30, 30, 30)" for k in kleuren if k), json.dumps(kleuren))
+
+        # Goud nooit als doorschijnend vlak (huisstijl §1.1).
+        css = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+        html_src = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        goud = re.compile(r"rgba\(\s*245\s*,\s*197\s*,\s*24\s*,")
+        check("styles.css en index.html gebruiken nergens doorschijnend goud",
+              not goud.search(css) and not goud.search(html_src),
+              "; ".join(m.group(0) for m in goud.finditer(css + html_src))[:200])
+        tab = page.evaluate("""() => { const t = document.querySelector('.search-mode-tab.active');
+            return t ? getComputedStyle(t).backgroundColor : null; }""")
+        check("het actieve zoektabblad heeft wit op 5% (TT-290)", tab == "rgba(255, 255, 255, 0.05)", str(tab))
+        focus = page.evaluate("""() => { const i = document.createElement('input'); document.getElementById('appRoot').appendChild(i);
+            i.style.transition = 'none'; i.focus();
+            const cs = getComputedStyle(i); const b = [cs.boxShadow, cs.borderTopColor]; i.remove(); return b; }""")
+        check("de focusrand van een veld is 2px vol goud, zonder gloed (TT-259)",
+              focus[0] == "rgb(245, 197, 24) 0px 0px 0px 1px" and focus[1] == "rgb(245, 197, 24)", json.dumps(focus))
+
+        # De wizard telt met één teller (TT-250).
+        page.evaluate("showView('register')"); page.wait_for_timeout(50)
+        page.evaluate("goTo(1)")
+        label = page.evaluate("document.getElementById('stepLabel').textContent")
+        check("de wizard toont 'Stap 2 van 5' (TT-250)", label == "Stap 2 van 5", label)
+        doorzicht = page.evaluate("getComputedStyle(document.querySelector('.step-dot.done')).opacity")
+        check("een afgeronde stap is vol goud", doorzicht == "1", doorzicht)
+        page.evaluate("goTo(0)")
+        check("en begint op 'Stap 1 van 5'",
+              page.evaluate("document.getElementById('stepLabel').textContent") == "Stap 1 van 5", "")
+
+        check("geen paginafouten in blok 30", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+        page.evaluate("hasOwnProfile = false; myMusicianId = null; window.TT_STUB.reset()")
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
