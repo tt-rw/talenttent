@@ -3088,7 +3088,7 @@ def blok_browser():
         # is lichter dan de pagina; nergens goud als doorschijnend vlak; de
         # wizard telt met één teller (TT-250).
         # ------------------------------------------------------------------
-        print("\nBlok 30 — menu's en goud (TT-290, TT-259, TT-250)")
+        print("\nBlok 30 — menu's en goud (TT-290, TT-259, TT-250, TT-315)")
         page_errors.clear()
         page.evaluate("window.TT_STUB.reset()")
         # Het eigen profiel wordt in een gewone view gezet. loadMyProfile() zelf
@@ -3191,6 +3191,22 @@ def blok_browser():
             const cs = getComputedStyle(i); const b = [cs.boxShadow, cs.borderTopColor]; i.remove(); return b; }""")
         check("de focusrand van een veld is 2px vol goud, zonder gloed (TT-259)",
               focus[0] == "rgb(245, 197, 24) 0px 0px 0px 1px" and focus[1] == "rgb(245, 197, 24)", json.dumps(focus))
+
+        # Eén tagvorm in de hele app (TT-315): wit op 5%, geen rand, kleur in de tekst.
+        tags = page.evaluate("""() => {
+          const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
+          plek.innerHTML = tagSolid('Drums', '#f5c518') + tagSolid('Rock', '#6ec8d8')
+            + '<span class="tag-solid tag-genre">Bas</span><span class="band-status-badge band-status-zoekend">Zoekend</span>';
+          const uit = [...plek.children].map(e => { const cs = getComputedStyle(e);
+            return [cs.backgroundColor, cs.borderTopStyle === 'none' || cs.borderTopWidth === '0px', cs.color]; });
+          plek.remove(); return uit; }""")
+        check("elke tag heeft het vlak wit op 5% en geen rand (TT-315)",
+              all(t[0] == "rgba(255, 255, 255, 0.05)" and t[1] for t in tags), json.dumps(tags))
+        check("de kleur zit in de tekst: goud, cyaan, cyaan, goud",
+              [t[2] for t in tags] == ["rgb(245, 197, 24)", "rgb(110, 200, 216)", "rgb(110, 200, 216)", "rgb(245, 197, 24)"],
+              json.dumps(tags))
+        check("tagSolid() zet geen doorschijnende kleur meer",
+              "rgba" not in page.evaluate("tagSolid('x', '#f5c518')"), page.evaluate("tagSolid('x', '#f5c518')"))
 
         # De wizard telt met één teller (TT-250).
         page.evaluate("showView('register')"); page.wait_for_timeout(50)
