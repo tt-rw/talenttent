@@ -237,6 +237,49 @@ def blok_b():
           not emoji, "B5", "emoji gevonden: %s" % " ".join(sorted(emoji)))
 
 
+    # B6 - één vorm per knopsoort (TT-316, besluit Ronald 24-09-2026). Een knop
+    # is .btn plus .btn-primary, .btn-ghost of .btn-danger. De oude eigen
+    # klassen komen niet terug, en een knop krijgt geen eigen letter, opvulling,
+    # vlak, rand of kleur via een style-attribuut.
+    oude = ["search-btn", "landing-btn", "wizard-btn", "btn-sm",
+            "media-speler-knop", "media-speler-sluit", "media-rij-weg",
+            "result-card-msg-btn"]
+    bron = css + html + alle_js
+    terug = [k for k in oude
+             if re.search(r"(?<![\w-])" + re.escape(k) + r"(?![\w-])", bron)]
+    eigen = set()
+    for tekst in [html, alle_js]:
+        for m in re.finditer(r'<(?:button|a)\b[^>]*class="btn\b[^"]*"[^>]*>', tekst):
+            stijl = re.search(r'style="([^"]*)"', m.group(0))
+            if stijl and re.search(r"(?<![\w-])(font-size|padding|background|border|color)\s*:",
+                                   stijl.group(1)):
+                eigen.add(re.sub(r"\s+", " ", m.group(0))[:80])
+    toets("B", "één vorm per knopsoort, geen afwijkende knop",
+          not terug and not eigen, "B6",
+          "oude knopklasse: %s; knop met eigen vorm: %s" % (kort(terug), kort(eigen)))
+
+    # B7 - één vorm voor elke keuze uit meerdere (TT-316). Vlak, rand, hoek en
+    # kleur van de zeven keuzesoorten staan alleen in de gezamenlijke regels.
+    # Een losse regel die dat voor één soort toch zet, is een afwijkende vorm.
+    # border-color mag wel: dat is de stand bij aanwijzen (:hover).
+    keuzes = ["tag", "level-btn", "segmented-btn", "search-mode-tab",
+              "media-tab", "goal-card", "level-choice"]
+    verboden = re.compile(r"(?<![\w-])(background(?:-color)?|border|border-width|"
+                          r"border-style|border-radius|color)\s*:")
+    afwijkend = set()
+    for selector, inhoud in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        delen = [" ".join(d.split()) for d in selector.split(",")]
+        geraakt = [k for k in keuzes if any(
+            re.search(r"\." + re.escape(k) + r"(?![\w-])", d.split(" ")[-1])
+            for d in delen)]
+        if not geraakt or len(geraakt) == len(keuzes):
+            continue   # geen keuzesoort, of de gezamenlijke regel zelf
+        if verboden.search(inhoud):
+            afwijkend.add(delen[0][:60])
+    toets("B", "één vorm voor elke keuzeknop, geen eigen vlak of rand",
+          not afwijkend, "B7",
+          "eigen vorm voor een keuzesoort in: %s" % kort(afwijkend))
+
 # ============================================================ C - dode code
 
 def _voorvoegselvarianten(naam):

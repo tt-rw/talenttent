@@ -866,7 +866,7 @@ def blok_browser():
           // een platform zonder speler
           openMediaSpeler('https://www.instagram.com/p/abc/', 'link', null, 'Instagram');
           uit.uitleg = !!modal.querySelector('.media-speler-uitleg');
-          uit.knop = (modal.querySelector('.media-speler-knop') || {}).textContent || '';
+          uit.knop = (modal.querySelector('#mediaSpelerVoet .btn') || {}).textContent || '';
           uit.geenFrame = !modal.querySelector('iframe');
           closeMediaSpeler();
           // eigen video
@@ -1792,7 +1792,7 @@ def blok_browser():
                    gekozen: b.map(x => x.getAttribute('aria-selected')),
                    muzZichtbaar: getComputedStyle(document.getElementById('setlistDeelMuzikanten')).display !== 'none',
                    numZichtbaar: getComputedStyle(document.getElementById('setlistDeelNummers')).display !== 'none',
-                   knop: [...document.querySelectorAll('#setlistDeelMuzikanten .search-btn')].map(x => x.textContent.trim()),
+                   knop: [...document.querySelectorAll('#setlistDeelMuzikanten .btn-row .btn-primary')].map(x => x.textContent.trim()),
                    titel: document.querySelector('#setlistDeelMuzikanten .filter-title').textContent.trim() };
         }""")
         check("schakelaar heeft de labels Zoek muzikanten en Zoek setlist",
@@ -3222,6 +3222,173 @@ def blok_browser():
         check("geen paginafouten in blok 30", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
         page.evaluate("hasOwnProfile = false; myMusicianId = null; window.TT_STUB.reset()")
+
+        # ------------------------------------------------------------------
+        # Blok 31 — TT-316: knoppen en badges, één vorm per soort
+        # Besluiten Ronald 24-09-2026: K1 t/m K12 akkoord, bandsterren weg uit
+        # de lijsten. Alles gemeten op 390px breed.
+        # ------------------------------------------------------------------
+        print("\nBlok 31 — knoppen en badges, één vorm per soort (TT-316)")
+        page.evaluate("window.TT_STUB.reset()")
+        page_errors.clear()
+        # De rand wordt gelezen uit de CSS-regel zelf. Een gemeten rand zegt
+        # niets: Chromium rondt 1,5px af op 1px, ook bij pixeldichtheid 2 en 3
+        # (gemeten 24-09-2026, Chromium 141).
+        def rand(sel):
+            return page.evaluate("""s => { for (const sh of document.styleSheets) { let rs; try { rs = sh.cssRules; } catch (e) { continue; }
+                for (const r of rs) { if (!r.selectorText) continue;
+                  const b = r.style.getPropertyValue('border') || r.style.getPropertyValue('border-top');
+                  if (r.selectorText.split(',').map(x => x.trim()).includes(s) && b) return b.split(' ')[0]; } }
+                return null; }""", sel)
+        css316 = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+        js316 = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in JS_FILES)
+        html316 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        bron316 = css316 + js316 + html316
+        oude = ["search-btn", "landing-btn", "wizard-btn", "btn-sm", "media-speler-knop",
+                "media-speler-sluit", "media-rij-weg", "result-card-msg-btn"]
+        over = [k for k in oude if re.search(r"(?<![\w-])" + re.escape(k) + r"(?![\w-])",
+                                             re.sub(r"/\*.*?\*/", "", bron316, flags=re.S))]
+        check("K1: de afwijkende knopklassen zijn weg uit CSS, JS en HTML", not over, ", ".join(over))
+
+        # K1 — elke hoofdknop één vorm. Zoekpagina, landing en wizard.
+        def vorm(sel):
+            return page.evaluate("""s => [...document.querySelectorAll(s)].filter(e => e.offsetParent).map(e => {
+              const cs = getComputedStyle(e); const r = e.getBoundingClientRect();
+              return [cs.fontSize, cs.fontWeight, cs.textTransform, cs.color, cs.backgroundColor,
+                      Math.round(r.height), e.textContent.trim()]; })""", sel)
+        page.evaluate("showView('landing')"); page.wait_for_timeout(450)
+        hoofd = vorm("#view-landing .btn-primary")
+        page.evaluate("showView('search')"); page.wait_for_timeout(450)
+        hoofd += vorm("#view-search .btn-row .btn-primary")
+        page.evaluate("showView('register')"); page.wait_for_timeout(450)
+        hoofd += vorm("#view-register .wizard-action-bar .btn-primary")
+        check("K1: er staan hoofdknoppen in beeld op landing, zoeken en wizard", len(hoofd) >= 3, json.dumps(hoofd)[:200])
+        check("K1: elke hoofdknop 14px, vet, hoofdletters, zwart op goud",
+              all(h[:5] == ["14px", "700", "uppercase", "rgb(0, 0, 0)", "rgb(245, 197, 24)"] for h in hoofd),
+              json.dumps([h for h in hoofd if h[:5] != ["14px", "700", "uppercase", "rgb(0, 0, 0)", "rgb(245, 197, 24)"]])[:300])
+
+        # K3 — twee knoppen naast elkaar blijven 44px hoog, op één regel.
+        rij = page.evaluate("""() => { showConfirm('Test', () => {}); const r = document.querySelector('#confirmModal .btn-row');
+            const u = [...r.children].map(b => Math.round(b.getBoundingClientRect().height));
+            document.getElementById('confirmModal').classList.remove('visible'); return u; }""")
+        # Besluit Ronald 24-09-2026: een tekst die niet past, loopt over twee
+        # regels. Geen kortere teksten. De knoppen blijven wel even hoog.
+        check("K3: twee knoppen naast elkaar zijn even hoog en minstens 44px", len(set(rij)) == 1 and rij[0] >= 44, json.dumps(rij))
+        opv = page.evaluate("""() => { const b = document.querySelector('#confirmModal .btn-row .btn'); return getComputedStyle(b).paddingLeft; }""")
+        check("K3: in een knoppenrij 12px opvulling links en rechts", opv == "12px", opv)
+        lijst = page.evaluate("""() => { const d = document.createElement('div'); d.className = 'lijst-rij';
+            d.innerHTML = '<button class="btn btn-danger">Verwijderen</button>'; document.getElementById('appRoot').appendChild(d);
+            const w = getComputedStyle(d.firstChild).paddingLeft; d.remove(); return w; }""")
+        check("K3: een knop naast een naam in een ledenlijst ook 12px", lijst == "12px", lijst)
+        check("K3: beide ledenlijsten dragen de klasse lijst-rij",
+              len(re.findall(r'class="(?:member-search-row )?lijst-rij"', js316)) == 2, "")
+        page.evaluate("showView('register')"); page.wait_for_timeout(450)
+        wiz = page.evaluate("""() => { const r = document.querySelector('#view-register .wizard-action-bar-inner');
+            const b = [...r.children].filter(x => x.offsetParent).map(x => x.getBoundingClientRect());
+            return { grid: getComputedStyle(r).display, breed: b.map(x => Math.round(x.width)), hoog: b.map(x => Math.round(x.height)) }; }""")
+        check("K3: de wizardbalk is een knoppenrij met gelijke breedte (TT-228)",
+              wiz["grid"] == "grid" and len(set(wiz["breed"])) == 1, json.dumps(wiz))
+
+        # K5 — tweede knop: wit, rand --line. Ook Terug in de wizard.
+        terug = page.evaluate("""() => { const b = [...document.querySelectorAll('#view-register .wizard-action-bar .btn-ghost')].find(x => x.offsetParent);
+            const cs = getComputedStyle(b); return [cs.color, cs.borderTopStyle, cs.fontSize, cs.textTransform, b.className]; }""")
+        check("K5: Terug in de wizard is een tweede knop: wit, 14px, hoofdletters",
+              terug[:4] == ["rgb(240, 240, 240)", "solid", "14px", "uppercase"] and "btn-ghost" in terug[4], json.dumps(terug))
+        check("K5: de tweede knop heeft een rand van --line", rand(".btn-ghost") == "var(--line)", str(rand(".btn-ghost")))
+        page.evaluate("goTo(4)"); page.wait_for_timeout(450)
+        foto = page.evaluate("""() => { const b = document.getElementById('avatarRemoveBtn'); b.classList.add('visible');
+            const h = Math.round(b.getBoundingClientRect().height); const c = b.className; b.classList.remove('visible'); return [h, c]; }""")
+        check("K5: Foto verwijderen is een tweede knop van 44px (§6)",
+              foto[0] >= 44 and "btn-ghost" in foto[1], json.dumps(foto))
+
+        # K2 — Account verwijderen omlijnd in rood.
+        rood = page.evaluate("""() => { const b = document.getElementById('deleteAccountConfirmBtn'); const cs = getComputedStyle(b);
+            return [cs.backgroundColor, cs.color, cs.borderTopColor, cs.borderTopStyle]; }""")
+        check("K2: Account verwijderen is omlijnd in rood, geen vlak (§5)",
+              rood == ["rgba(0, 0, 0, 0)", "rgb(229, 83, 61)", "rgb(229, 83, 61)", "solid"], json.dumps(rood))
+
+        # K6 — één gestippelde vorm.
+        stip = page.evaluate("""() => ['.add-link-btn', '.bio-prompt-chip'].map(s => { const e = document.querySelector(s);
+            const cs = getComputedStyle(e); return [cs.borderTopStyle, cs.borderTopWidth, cs.borderTopLeftRadius, cs.fontSize, cs.fontWeight, cs.color, cs.minHeight]; })""")
+        check("K6: + Link toevoegen en de bio-voorzet hebben dezelfde vorm",
+              stip[0] == stip[1] and stip[0][0] == "dashed" and stip[0][2] == "8px" and stip[0][6] == "44px"
+              and rand(".bio-prompt-chip") == "var(--line)", json.dumps(stip) + " " + str(rand(".bio-prompt-chip")))
+
+        # K7/K8/K12 — zeven keuzesoorten, één stand voor gekozen en niet-gekozen.
+        keuze = page.evaluate("""() => {
+          const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
+          const soorten = [['div','tag','selected'], ['button','level-btn','active-bijna'], ['div','segmented-btn','selected'],
+                           ['button','search-mode-tab','active'], ['button','media-tab','active'], ['div','goal-card','selected'],
+                           ['button','level-choice','selected']];
+          const meet = e => { const cs = getComputedStyle(e);
+            return [cs.backgroundColor, cs.borderTopWidth, cs.borderTopColor, cs.borderTopLeftRadius, cs.color, cs.fontWeight, cs.fontStyle].join(' | '); };
+          const uit = soorten.map(([tag, k, aan]) => {
+            const a = document.createElement(tag); a.className = k; a.textContent = 'x'; a.style.transition = 'none';
+            const b = document.createElement(tag); b.className = k + ' ' + aan; b.textContent = 'x'; b.style.transition = 'none';
+            plek.append(a, b); return [k, meet(a), meet(b)]; });
+          plek.remove(); return uit; }""")
+        los = {k[1] for k in keuze}
+        aan = {k[2] for k in keuze}
+        check("K7: niet-gekozen is bij alle zeven soorten gelijk (--surface2, rand 1,5px, hoek 8px, wit)",
+              len(los) == 1 and los.pop().replace(" | 1px", "").replace(" | 1.5px", "") == "rgb(30, 30, 30) | rgb(42, 42, 42) | 8px | rgb(240, 240, 240) | 400 | normal"
+              and all(rand(k) == "var(--line)" for k in (".tag", ".level-btn", ".segmented-btn", ".search-mode-tab", ".media-tab", ".goal-card", ".level-choice")),
+              json.dumps(keuze)[:400])
+        check("K7/K8/K12: gekozen is bij alle zeven soorten gelijk (wit op 5%, goud, vet, niet cursief)",
+              len(aan) == 1 and aan.pop().replace(" | 1px", "").replace(" | 1.5px", "") == "rgba(255, 255, 255, 0.05) | rgb(245, 197, 24) | 8px | rgb(245, 197, 24) | 700 | normal",
+              json.dumps(keuze)[:400])
+
+        # K9 — het niveaulabel in de tagvorm.
+        pil = page.evaluate("""() => { const s = document.createElement('span'); s.className = 'level-pill'; s.textContent = 'Basis';
+            document.getElementById('appRoot').appendChild(s); const cs = getComputedStyle(s);
+            const u = [cs.backgroundColor, cs.fontSize, cs.borderTopLeftRadius, cs.textTransform, cs.fontWeight, cs.fontStyle, cs.color, cs.width];
+            s.remove(); return u; }""")
+        check("K9: niveaulabel in de tagvorm, wit, vet, cursief, vaste breedte",
+              pil == ["rgba(255, 255, 255, 0.05)", "11px", "6px", "none", "700", "italic", "rgb(240, 240, 240)", "100px"], json.dumps(pil))
+
+        # K10 — kruisjes.
+        kruis = page.evaluate("""() => {
+          const s = document.querySelector('#mediaSpelerModal .media-speler-kop button');
+          const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
+          plek.innerHTML = mediaTegelHTML({ type: 'foto', url: 'https://example.org/a.jpg', name: 'a' }, 0, 'mh')
+                         + mediaLinkRijHTML({ url: 'https://www.youtube.com/watch?v=abc', inBanner: false }, 0, 'mh');
+          const tegel = plek.querySelector('.media-thumb');
+          const na = getComputedStyle(plek.querySelector('.thumb-remove'), '::after');
+          const weg = plek.querySelector('.media-rij button[aria-label="Link verwijderen"]');
+          const u = { sluit: s.className, tegelKnipt: getComputedStyle(tegel).overflow,
+                      fotoTikvlak: na.content !== 'none' ? na.top : null,
+                      wegKlasse: weg ? weg.className : null, wegBreed: weg ? Math.round(weg.getBoundingClientRect().width) : 0 };
+          plek.remove(); return u; }""")
+        check("K10: het mediascherm sluit met het kruis van elk ander venster", kruis["sluit"] == "modal-close", json.dumps(kruis))
+        check("K10: het ✕ op een foto heeft een tikvlak van 44px dat de tegel niet afknipt",
+              kruis["fotoTikvlak"] == "-11px" and kruis["tegelKnipt"] == "visible", json.dumps(kruis))
+        check("K10: een link weghalen is het kale ✕ van 44px", kruis["wegKlasse"] == "song-remove" and kruis["wegBreed"] == 44, json.dumps(kruis))
+
+        # K11 — berichtknop op de kaart gelijk aan de lijst.
+        post = page.evaluate("""() => {
+          const m = { id: 'm9', fname: 'Test', lname: 'X', username: 'test', city: 'Den Haag',
+                      musician_instruments: [], musician_genres: [] };
+          const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
+          plek.innerHTML = musicianRowHTML(m) + musicianCardHTML(m);
+          const k = [...plek.querySelectorAll('[onclick^="openRowMessageIcon"]')].map(e => { const r = e.getBoundingClientRect();
+            return [e.className, Math.round(r.width), Math.round(r.height), getComputedStyle(e).backgroundColor]; });
+          plek.remove(); return k; }""")
+        check("K11: de berichtknop op de kaart is dezelfde als in de lijst (44px)",
+              len(post) == 2 and post[0] == post[1] and post[0][1] == 44 and post[0][2] == 44, json.dumps(post))
+
+        # Bandsterren: alleen op het bandprofiel.
+        ster = page.evaluate("""() => { const b = { id: 'b9', name: 'Testband', status: 'zoekend', niveau: 3, band_wanted: [] };
+            const l = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
+            return [bandRowHTML(b, l).includes('star-display'), bandCardHTML(b, l).includes('star-display'),
+                    bandStarDisplayHTML(b).includes('star-display')]; }""")
+        check("bandster weg uit de zoekresultaten (rij en kaart)", ster[:2] == [False, False], json.dumps(ster))
+        check("de bandster zelf bestaat nog, voor het bandprofiel", ster[2], json.dumps(ster))
+        aanroepen = [r for r in re.findall(r"[^\n]*bandStarDisplayHTML\(b\)[^\n]*", js316) if "function " not in r]
+        check("bandStarDisplayHTML() staat alleen nog op het bandprofiel, niet op Mijn Bands",
+              len(aanroepen) == 1 and "profile-name" in aanroepen[0], str(len(aanroepen)))
+
+        check("geen paginafouten in blok 31", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+        page.evaluate("showView('landing'); window.TT_STUB.reset()")
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
