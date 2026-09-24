@@ -1,6 +1,62 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 24-09-2026 — **TT-313, TT-314, TT-290, TT-259 en TT-250
+**Laatste update:** 24-09-2026 (vervolg) — **TT-316 voorbereid: alle knoppen
+en badges geïnventariseerd, met beelden en een voorstel per soort. Nog niets
+gebouwd.**
+
+**Besluiten Ronald, 24-09-2026 (vervolg).** (1) Alle voorstellen K1 tot en met
+K12 akkoord: *"al je voorstellen hebben meer consistentie in zich dan wat het
+nu is. dus ik ga akkoord met alles."* Dat is de rechterversie in elk beeld.
+Gevolgen: K4 — "Profiel aanmaken" in de wizard mag op twee regels blijven; K5
+— tekst in een tweede knop wit; K12 — een gekozen beheersingsknop wordt goud
+en vet, niet cursief. De regel "`level-btn.active-*` wit, vet, cursief" in de
+projectinstructies (§9) wijzigt daarom mee bij de bouw. Het niveaulabel
+(`.level-pill`) blijft wit, vet en cursief. (2) Niveausterren: **het niveau
+staat op het profiel, niet in een lijst** — voor muzikant en band gelijk.
+Weg: de bandsterren achter de bandnaam in de zoekresultaten (rij en kaart) en
+op Mijn Bands. Blijft: sterren in de instrumenttags op het muzikantprofiel
+(Ronald: *"anders is het gissen hoe goed iemand is"*), de bandster op het
+bandprofiel, en de sterren bij het kiezen van een niveau (muzikant en band).
+Het niveau blijft opgeslagen en het zoekfilter Niveau blijft werken.
+(3) De tagvorm van TT-315 geldt al in de hele app, voor instrumenten én
+genres (geverifieerd). Genres van een band staan als tekst achter de plaats;
+dat blijft zo.
+
+**Volgende stap:** bouwen, in een nieuwe sessie.
+
+**Rechtgezet.** De vorige sessie meldde dat TT-316 in deze actielijst stond.
+Dat was onjuist: de actielijst in de gedeelde map, in beide repo's en in de
+upload van Ronald bevatte geen TT-316 (geverifieerd met `grep`). TT-316 staat
+nu in de P2-tabel, met de tekst uit die melding.
+
+**Wat er gedaan is.** Elke knop en tag in de app is gemeten met Playwright,
+op 390px breed, over alle views, de vijf wizardstappen en de zoekresultaten.
+Acht soorten, elk met een beeld "nu" en "voorstel", getekend met de echte
+`styles.css`. Het voorstel staat in
+`_niet-uploaden-TT-316-knoppen-en-badges-24-09-2026.html` in de gedeelde map.
+
+**Bevindingen, geverifieerd:**
+- Hoofdknop: zes vormen (`.btn-primary`, `.search-btn`, `.landing-btn`,
+  `.wizard-btn-accent`, `.media-speler-knop.primair`, `.btn-sm`). "Verder" in
+  de wizard heeft tekst `#4a4a4a` op goud, de rest zwart.
+- Account verwijderen (`#deleteAccountConfirmBtn`) is een rood vlak. Huisstijl
+  §5: destructief is omlijnd in rood, nooit even zwaar als de hoofdknop.
+- Twee knoppen naast elkaar lopen op 390px over twee regels: 58px hoog, op de
+  zoekpagina 62px. Oorzaak: 28px zij-opvulling in een knop van 175px.
+- Terug in de wizard (`.wizard-btn-ghost`) heeft geen rand (gemeten 0px),
+  terwijl TT-209 hem een rand gaf.
+- Tikdoel onder 44px (§6): "Foto verwijderen" (`.avatar-remove-btn`, 22px),
+  het ✕ op een foto (`.thumb-remove`, 22px, geen `::after`), de berichtknop op
+  een resultaatkaart (`.result-card-msg-btn`, 28px).
+- Keuzeknoppen: zeven soorten, vier manieren om "gekozen" te tonen.
+- Niveaulabel (`.level-pill`): grijs vlak, 10px, hoofdletters, hoek 3px —
+  wijkt af van de tagvorm uit TT-315.
+- Projectinstructies: `.level-btn.active-*` is "wit, vet, cursief". De code
+  toont gewone letter. Welke van de twee klopt, is vraag K12.
+- Huisstijl §4 noemde "Badges/chips/pillen 20px of 999px". Sinds TT-315 is
+  een tag 6px. Rechtgezet in de huisstijl van vandaag.
+
+**Vorige update:** 24-09-2026 — **TT-313, TT-314, TT-290, TT-259 en TT-250
 gebouwd en getest. Testset 436 van 436.**
 
 **Besluiten Ronald, 24-09-2026.** Na een voorstel met beelden: (1) een open
@@ -5044,6 +5100,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-313** | Een open menu valt weg tegen de achtergrond | **Nieuw en gebouwd 24-09-2026, melding Ronald met schermafdruk. Besluit Ronald: optie B.** Achter elk open menu een zwarte laag van 60%; het menu zelf `--surface2` met rand `#444`. Geldt voor alle vijf de menusoorten. **Toets P2:** het werkt, maar je moet zoeken of er iets openstaat. Zie Laatste update bovenaan |
 | **TT-314** | Twee menu's konden tegelijk openstaan | **Nieuw en gebouwd 24-09-2026, melding Ronald met schermafdruk.** Hamburger en ⋯ op het profiel stonden samen open. Nu één gedeelde regel, `sluitAlleMenus()` in `core.js`. **Toets P2:** niets breekt, maar het scherm oogt kapot. Zie Laatste update bovenaan |
 | **TT-315** | Badges in de zoekresultaten: gekleurd vlak op 16% | **Gebouwd en getest 24-09-2026. Besluit Ronald: optie B, "minder rommelig, het meest clean", door de hele app.** Eén tagvorm: wit op 5%, geen rand, kleur alleen in de tekst. Geldt voor zoekresultaten, profiel, "Wij zoeken nog" op het bandprofiel en de bandstatus. `.badge`, `.wanted-chip` en `hexToRgba()` zijn weg. Niet mee: de ledenchip (een aantikbare persoon) en de badge in een keuzeveld (een bedieningselement). Oorspronkelijke tekst: `tagSolid()` in `utils.js` tekent instrument- en genrebadges als vlak in de profielkleur (standaard goud) op 16% dekking. Dat is dezelfde fout als TT-290 (huisstijl §1.1). Maar die vorm is op 07-08-2026 bewust gekozen (TT-30: effen tags in plaats van omlijnde). Niet aangepast zonder besluit. **Toets P2:** het werkt, maar goud wordt olijfbruin |
+| **TT-316** | Knoppen en badges: één vorm per soort | **Nieuw 24-09-2026, voorbereid dezelfde dag. Besluiten Ronald dezelfde dag: alle voorstellen akkoord, plus de bandsterren weg uit de lijsten — zie Laatste update bovenaan. Klaar om te bouwen.** Alle knop- en badgesoorten doorlopen en standaardiseren, voor een uniform en rustiger uiterlijk. Overzicht per soort met beelden en een voorstel: `_niet-uploaden-TT-316-knoppen-en-badges-24-09-2026.html`. Het niveaulabel in het repertoire hoort erbij. Bij de bouw krijgt de monitorronde (laag 0) een controle die een afwijkende knop- of tagvorm meldt. Werkwijze: eerst beelden, dan kiest Ronald, daarna bouwt Claude. Bandkant: zelfde klassen, dus vanzelf gelijk. **Toets P2:** het werkt, maar acht soorten in wisselende vormen maken de app onrustig. Zie Laatste update bovenaan |
 | **TT-282** | Vegen: een schuine of afbuigende veeg wisselt van tabblad | **Nieuw, 16-09-2026 (onderhoudsronde).** 30° telt als horizontaal; een veeg die steil eindigt telt ook; een veeg vanaf de schermrand wisselt. Volledige tekst: Laatste update bovenaan |
 | **TT-277** | Gesprek springt bij versturen | **Opgelost 16-09-2026 (vervolg 3).** Toetsenbord blijft open, beeld staat stil. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
 | **TT-278** | Inloggen ontbreekt in het hamburgermenu | **Opgelost 16-09-2026 (vervolg 3).** Uitgelogd staat Inloggen onderaan het menu |
