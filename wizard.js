@@ -1127,29 +1127,13 @@ function goTo(step) {
     else if (i < step) d.classList.add('done');
   });
 
-  // Twee fasen i.p.v. "Stap X van 5" (TT-09): fase 1 is het account aanmaken
-  // (verplicht, 1 stap), fase 2 is het profiel vrij aanvullen (4 stappen).
-  // TT-141 (25-08-2026): dit label klopte niet meer tijdens "Profiel
-  // bewerken" — iemand met een compleet profiel zag dan alsnog "Fase 1 van
-  // 2 · Aanmelden". Bewerken van een bestaand profiel krijgt nu een eigen
-  // labelset, zonder de fase-taal die alleen bij een nieuwe registratie
-  // hoort.
-  const labelsNieuw = [
-    'Fase 1 van 2 · Aanmelden',
-    'Fase 2 van 2 · Profiel aanvullen (1/4)',
-    'Fase 2 van 2 · Profiel aanvullen (2/4)',
-    'Fase 2 van 2 · Profiel aanvullen (3/4)',
-    'Fase 2 van 2 · Profiel aanvullen (4/4)'
-  ];
-  const labelsBewerken = [
-    'Profiel bewerken · stap 1 van 5',
-    'Profiel bewerken · stap 2 van 5',
-    'Profiel bewerken · stap 3 van 5',
-    'Profiel bewerken · stap 4 van 5',
-    'Profiel bewerken · stap 5 van 5'
-  ];
-  const labels = editingMusicianId ? labelsBewerken : labelsNieuw;
-  document.getElementById('stepLabel').textContent = labels[step] || '';
+  // TT-250 (24-09-2026): één teller, "Stap 2 van 5". Tot dan stonden er drie
+  // tellers tegelijk: vijf bolletjes, "Fase 1 van 2" en "(1/4)". Na stap 1
+  // leek je halverwege, terwijl er nog vier schermen kwamen. De titel van elk
+  // scherm zegt al waar je bent. De aparte labels voor bewerkmodus zijn ook
+  // weg: bewerken loopt sinds TT-168 via het tegeloverzicht, en de wizard
+  // telt in beide gevallen dezelfde vijf stappen.
+  document.getElementById('stepLabel').textContent = `Stap ${step + 1} van ${dots.length}`;
 
   state.currentStep = step;
   saveOnboardingProgress(); // no-op tenzij state.onboarding actief is

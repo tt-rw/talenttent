@@ -413,66 +413,110 @@ function onUserLoggedOut() {
 
 // ─── Navigatie ───────────────────────────────────────────────────────────────
 
+// ─── Uitklapmenu's: één tegelijk, met een donkere laag erachter ─────────────
+// 24-09-2026 (Ronald): twee menu's konden tegelijk openstaan, en een open menu
+// viel weg tegen de achtergrond. Oorzaak van het eerste: elk menu had een eigen
+// sluitluisteraar op het document, en elke menuknop hield zijn tik tegen
+// (stopPropagation). Het andere menu hoorde die tik dus nooit.
+// Nu geldt één regel voor alle menusoorten: hamburger, ⋯ op het profiel, ⋯ bij
+// een band, ⋯ melden/blokkeren en de keuzemenu's (Sorteren op, Weergave).
+// - Elk menu roept sluitAlleMenus() aan vóór het opent.
+// - Achter het open menu komt een donkere laag (.menu-laag). Een tik op die
+//   laag sluit het menu en bereikt niets eronder.
+// - Escape sluit elk menu.
+// De laag staat direct vóór het menu, in dezelfde ouder. Zo ligt hij in
+// dezelfde stapelcontext: ook een menu in een modal krijgt zijn laag binnen
+// die modal.
+function menuLaagOpen(dd) {
+  menuLaagWeg();
+  const laag = document.createElement('div');
+  laag.className = 'menu-laag';
+  laag.addEventListener('click', (e) => { e.stopPropagation(); sluitAlleMenus(); });
+  dd.parentNode.insertBefore(laag, dd);
+  // Elke ouder met een eigen z-index (de kop, de navigatierij) gaat mee
+  // omhoog, anders blijft de onderbalk boven de laag liggen. Een modal niet:
+  // die ligt al bovenaan (TT-229). Zie .menu-drager in styles.css.
+  for (let x = dd.parentElement; x && x !== document.body; x = x.parentElement) {
+    if (x.classList.contains('modal-overlay')) break;
+    if (getComputedStyle(x).zIndex !== 'auto') x.classList.add('menu-drager');
+  }
+}
+function menuLaagWeg() {
+  document.querySelectorAll('.menu-laag').forEach(l => l.remove());
+  document.querySelectorAll('.menu-drager').forEach(x => x.classList.remove('menu-drager'));
+}
+function sluitAlleMenus() {
+  closeNavMenu();
+  closeProfileMoreMenu();
+  closeAllBandMoreMenus();
+  if (typeof sluitVeiligheidMenus === 'function') sluitVeiligheidMenus();
+  if (typeof closeChoiceMenu === 'function') closeChoiceMenu();
+  menuLaagWeg();
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') sluitAlleMenus(); });
+
 // TT-63/nav-herziening (09-08-2026): hamburgermenu voor Over ons + de
-// juridische documenten. Sluit bij een klik buiten het menu, bij Escape, en
-// (via de closeNavMenu()-aanroep in showView() hierboven) bij elke navigatie.
+// juridische documenten. showView() sluit het bij elke navigatie.
 function toggleNavMenu(e) {
   if (e) e.stopPropagation();
   const dd = document.getElementById('navMenuDropdown');
-  const btn = document.getElementById('navMenuBtn');
   const opening = !dd.classList.contains('visible');
-  dd.classList.toggle('visible', opening);
-  btn.classList.toggle('active', opening);
+  sluitAlleMenus();
+  if (!opening) return;
+  dd.classList.add('visible');
+  document.getElementById('navMenuBtn').classList.add('active');
+  menuLaagOpen(dd);
 }
 function closeNavMenu() {
-  document.getElementById('navMenuDropdown')?.classList.remove('visible');
-  document.getElementById('navMenuBtn')?.classList.remove('active');
-}
-document.addEventListener('click', (e) => {
   const dd = document.getElementById('navMenuDropdown');
-  if (dd && dd.classList.contains('visible') && !dd.contains(e.target) && e.target.id !== 'navMenuBtn') closeNavMenu();
-});
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNavMenu(); });
+  if (!dd?.classList.contains('visible')) return;
+  dd.classList.remove('visible');
+  document.getElementById('navMenuBtn')?.classList.remove('active');
+  menuLaagWeg();
+}
 
-// TT-119 (22-08-2026): zelfde patroon als het hamburgermenu hierboven, voor
-// het kleine menuknopje bij "Profiel bewerken" (band-uitnodigingen aan/uit,
-// account verwijderen).
+// TT-119 (22-08-2026): het kleine menuknopje bij "Profiel bewerken"
+// (band-uitnodigingen aan/uit).
 function toggleProfileMoreMenu(e) {
   if (e) e.stopPropagation();
   const dd = document.getElementById('profileMoreDropdown');
-  const btn = document.getElementById('profileMoreBtn');
   const opening = !dd.classList.contains('visible');
-  dd.classList.toggle('visible', opening);
-  btn.classList.toggle('active', opening);
+  sluitAlleMenus();
+  if (!opening) return;
+  dd.classList.add('visible');
+  document.getElementById('profileMoreBtn').classList.add('active');
+  menuLaagOpen(dd);
 }
 function closeProfileMoreMenu() {
-  document.getElementById('profileMoreDropdown')?.classList.remove('visible');
-  document.getElementById('profileMoreBtn')?.classList.remove('active');
-}
-document.addEventListener('click', (e) => {
   const dd = document.getElementById('profileMoreDropdown');
-  if (dd && dd.classList.contains('visible') && !dd.contains(e.target) && e.target.id !== 'profileMoreBtn' && !e.target.closest('#profileMoreBtn')) closeProfileMoreMenu();
-});
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeProfileMoreMenu(); });
+  if (!dd?.classList.contains('visible')) return;
+  dd.classList.remove('visible');
+  document.getElementById('profileMoreBtn')?.classList.remove('active');
+  menuLaagWeg();
+}
 
 // 22-08-2026 (Ronald): zelfde ⋯-menupatroon voor elke bandkaart in "Mijn
-// bands" (huisstijl-en-consistentie.md §8). Een vaste id per knop werkt hier
-// niet — er staan meerdere bands tegelijk in de lijst — dus dit werkt met
-// event.currentTarget/closest() in plaats van getElementById().
+// bands" (huisstijl-en-consistentie.md §8). Er staan meerdere bands tegelijk
+// in de lijst, dus dit werkt met event.currentTarget in plaats van een id.
 function toggleBandMoreMenu(e) {
   e.stopPropagation();
-  const dd = e.currentTarget.nextElementSibling;
+  const btn = e.currentTarget;
+  const dd = btn.nextElementSibling;
   const opening = !dd.classList.contains('visible');
-  closeAllBandMoreMenus();
-  dd.classList.toggle('visible', opening);
+  sluitAlleMenus();
+  if (!opening) return;
+  dd.classList.add('visible');
+  btn.classList.add('active');
+  menuLaagOpen(dd);
 }
 function closeAllBandMoreMenus() {
-  document.querySelectorAll('#myBandsList .inline-menu-dropdown.visible').forEach(dd => dd.classList.remove('visible'));
+  const open = document.querySelectorAll('#myBandsList .inline-menu-dropdown.visible');
+  if (!open.length) return;
+  open.forEach(dd => dd.classList.remove('visible'));
+  document.querySelectorAll('#myBandsList .profile-actions-menu-wrap .nav-menu-btn.active')
+    .forEach(b => b.classList.remove('active'));
+  menuLaagWeg();
 }
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('#myBandsList .profile-actions-menu-wrap')) closeAllBandMoreMenus();
-});
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAllBandMoreMenus(); });
 
 // TT-232 (09-09-2026): het ⋯-menu op de zoekpagina is verwijderd, samen met
 // toggleSearchPrefsMenu() en closeSearchPrefsMenu(). Het scherm hieronder
@@ -973,7 +1017,7 @@ function ontwapenTerug() {
 
 function showView(view, mode) {
   huidigeView = view; // TT-303: de terugknop leest dit
-  closeNavMenu();
+  sluitAlleMenus();
   sluitOpruimModals(); // TT-264: een view-wissel laat nooit een spelende video achter
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));

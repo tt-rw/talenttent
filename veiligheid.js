@@ -225,27 +225,28 @@ function veiligheidMenuHTML(soort, id, naam) {
 }
 
 // Zelfde patroon als toggleBandMoreMenu(): geen vaste id, want er kunnen
-// meerdere van deze menu's tegelijk in de pagina staan.
+// meerdere van deze menu's tegelijk in de pagina staan. Eén menu tegelijk en
+// de donkere laag: zie sluitAlleMenus() in core.js.
 function toggleVeiligheidMenu(e) {
   e.stopPropagation();
-  const dd = e.currentTarget.nextElementSibling;
+  const btn = e.currentTarget;
+  const dd = btn.nextElementSibling;
   const opening = !dd.classList.contains('visible');
-  sluitVeiligheidMenus();
-  dd.classList.toggle('visible', opening);
-  e.currentTarget.classList.toggle('active', opening);
+  sluitAlleMenus();
+  if (!opening) return;
+  dd.classList.add('visible');
+  btn.classList.add('active');
+  menuLaagOpen(dd);
 }
 
 function sluitVeiligheidMenus() {
-  document.querySelectorAll('.veiligheid-menu-wrap .inline-menu-dropdown.visible')
-    .forEach(dd => dd.classList.remove('visible'));
+  const open = document.querySelectorAll('.veiligheid-menu-wrap .inline-menu-dropdown.visible');
+  if (!open.length) return;
+  open.forEach(dd => dd.classList.remove('visible'));
   document.querySelectorAll('.veiligheid-menu-wrap .nav-menu-btn.active')
     .forEach(b => b.classList.remove('active'));
+  menuLaagWeg();
 }
-
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.veiligheid-menu-wrap')) sluitVeiligheidMenus();
-});
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') sluitVeiligheidMenus(); });
 
 // Het menu in een vaste koprij zetten. Leeg als er niets te melden valt.
 function zetVeiligheidMenu(plekId, soort, id, naam) {

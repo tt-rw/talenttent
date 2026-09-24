@@ -708,7 +708,9 @@ function highlight(text, q) {
   const idx = query ? t.toLowerCase().indexOf(query.toLowerCase()) : -1;
   if (idx === -1) return escHtml(t);
   return escHtml(t.slice(0, idx))
-    + `<mark style="background:rgba(245,197,24,0.3);color:inherit;border-radius:2px;">${escHtml(t.slice(idx, idx + query.length))}</mark>`
+    // 24-09-2026: de treffer stond op een vlak van goud op 30% — olijfbruin,
+    // huisstijl §1.1. Nu zit het goud in de letters zelf.
+    + `<mark style="background:none;color:var(--accent);">${escHtml(t.slice(idx, idx + query.length))}</mark>`
     + escHtml(t.slice(idx + query.length));
 }
 
@@ -1172,7 +1174,7 @@ function toggleChoiceMenu(id) {
 function openChoiceMenu(id) {
   const cfg = CHOICE_FIELDS[id];
   if (!cfg) return;
-  closeChoiceMenu();
+  sluitAlleMenus(); // één menu tegelijk, zie core.js
 
   const sel = document.getElementById(cfg.selectId);
   const menu = document.getElementById(cfg.menuId);
@@ -1220,22 +1222,14 @@ function openChoiceMenu(id) {
   const ruimteOnder = window.innerHeight - veld.getBoundingClientRect().bottom;
   if (menu.offsetHeight + 12 > ruimteOnder) menu.classList.add('naar-boven');
 
-  // Sluiten bij een klik ergens anders. De luisteraar gaat er pas ná de huidige
-  // klik op, anders vangt hij zijn eigen openingsklik — zelfde patroon als
-  // handleCancelClick() (huisstijl §8).
-  setTimeout(() => {
-    document.addEventListener('click', sluitKeuzeMenuBijKlik, { once: true });
-  }, 0);
-  document.addEventListener('keydown', sluitKeuzeMenuBijEscape);
+  // Sluiten bij een tik ernaast: dat doet de donkere laag (core.js). Escape
+  // sluit via de gedeelde luisteraar daar.
+  menuLaagOpen(menu);
 }
 
-function sluitKeuzeMenuBijKlik() { closeChoiceMenu(); }
-function sluitKeuzeMenuBijEscape(e) { if (e.key === 'Escape') closeChoiceMenu(); }
-
 function closeChoiceMenu() {
-  document.removeEventListener('keydown', sluitKeuzeMenuBijEscape);
-  document.removeEventListener('click', sluitKeuzeMenuBijKlik);
   if (!actiefKeuzeMenu) return;
+  menuLaagWeg();
   const cfg = CHOICE_FIELDS[actiefKeuzeMenu];
   const menu = cfg && document.getElementById(cfg.menuId);
   const veld = cfg && document.getElementById(cfg.fieldId);
