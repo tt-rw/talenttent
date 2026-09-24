@@ -12,7 +12,7 @@ Afsluitcode 0 = alles geslaagd. Claude draait dit vóór elke oplevering.
 
 | Blok | Controle |
 |---|---|
-| 1 | `node --check` en haakjesbalans op alle tien JS-bestanden; scriptvolgorde; `?v=` per script; dode bestanden niet geladen; geen emoji |
+| 1 | `node --check` en haakjesbalans op alle JS-bestanden (twaalf, zie `JS_FILES` in `tt_tests.py`); scriptvolgorde; `?v=` per script; dode bestanden niet geladen; geen emoji |
 | 2 | app start zonder JS-fout; veertien views aanwezig; landing actief |
 | 3 | elke `onclick` in `index.html` wijst naar een bestaande functie |
 | 4 | alle navigatie-id's aanwezig; hamburger buiten de scrollbare balk |
@@ -20,6 +20,12 @@ Afsluitcode 0 = alles geslaagd. Claude draait dit vóór elke oplevering.
 | 6 | een databasefout komt als fout terug, niet als lege lijst (TT-230) |
 | 7 | modals binnen `#appRoot`; `overflow-x` op `#appRoot`, niet op `body` (TT-212) |
 | 8 | elke view opent zonder JS-fout |
+
+De tabel hierboven noemt alleen de eerste acht blokken. Welke blokken er
+nu zijn, drukt de testset zelf af.
+
+*Gecorrigeerd 24-09-2026 (TT-318): blok 1 noemde "alle tien JS-bestanden". Het
+zijn er twaalf. Waaruit blijkt: `JS_FILES` in `tt_tests.py`.*
 
 ## Wat laag 1 niet dekt
 

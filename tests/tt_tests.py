@@ -1155,20 +1155,22 @@ def blok_browser():
           modal.classList.add('visible');
           const k = modal.querySelector('.modal-close').getBoundingClientRect();
           const h = document.getElementById('navMenuBtn').getBoundingClientRect();
+          // TT-318 (24-09-2026): vergeleken wordt wat je ziet, niet de knop:
+          // de rechterrand van het kruisteken en van de lijnen van de
+          // hamburger. Beide 29px van de rand, net als de pijl links.
+          const inkt = (l) => { const b = l.getBBox(), m = l.getScreenCTM(); return m.a * (b.x + b.width + 1) + m.e; };
+          const hamInkt = inkt(document.querySelector('#navMenuBtn line'));
+          const kruisInkt = inkt(modal.querySelector('.modal-close line'));
           modal.classList.remove('visible');
-          // Horizontaal vergelijken we de rechterrand, niet het midden: de
-          // hamburgerknop is 48px breed en het kruis 33px, dus hun middens
-          // liggen per definitie niet gelijk. Beide staan met hun rechterrand
-          // tegen dezelfde marge, precies zoals in de gewone kop.
           return {
-            kruisRechts: Math.round(window.innerWidth - k.right),
+            kruisRechts: +(window.innerWidth - kruisInkt).toFixed(1),
             kruisMidY: Math.round(k.top + k.height / 2),
-            hamRechts: Math.round(window.innerWidth - h.right),
+            hamRechts: +(window.innerWidth - hamInkt).toFixed(1),
             hamMidY: Math.round(h.top + h.height / 2),
           };
         }""")
-        check("het kruis staat op de plek van het hamburgermenu",
-              abs(kruis["kruisRechts"] - kruis["hamRechts"]) <= 2 and abs(kruis["kruisMidY"] - kruis["hamMidY"]) <= 2,
+        check("het kruis staat even ver van de rand als de lijnen van de hamburger, op dezelfde hoogte (TT-318)",
+              abs(kruis["kruisRechts"] - kruis["hamRechts"]) <= 0.5 and abs(kruis["kruisMidY"] - kruis["hamMidY"]) <= 2,
               json.dumps(kruis))
 
         # TT-268 (15-09-2026, Ronald): 12px lucht boven en onder het woordmerk,
@@ -1215,7 +1217,8 @@ def blok_browser():
             koprijInModal: !!mk,
             woordmerkInModal: !!(mk && mk.querySelector('.logo')),
             kruisInKoprij: !!(mk && mk.querySelector('.modal-close')),
-            // TT-287: relative, niet static — anders dekt het tikvlak het hele venster.
+            // TT-287: het tikvlak mag niet het hele venster dekken. Sinds TT-318
+            // is het kruis een gewone knop in de rij, zonder los tikvlak.
             kruisStatisch: mk ? getComputedStyle(mk.querySelector('.modal-close')).position : ''
           };
         }""")
@@ -1225,7 +1228,7 @@ def blok_browser():
         check("het profiel van iemand anders houdt de koprij met het woordmerk",
               profielkop["koprijInModal"] and profielkop["woordmerkInModal"], json.dumps(profielkop))
         check("met het sluiten-kruisje in die rij, niet los erboven",
-              profielkop["kruisInKoprij"] and profielkop["kruisStatisch"] == "relative",
+              profielkop["kruisInKoprij"] and profielkop["kruisStatisch"] != "absolute",
               json.dumps(profielkop))
 
         # TT-269 (15-09-2026, Ronald): "voer dit door in de hele app."
@@ -1730,7 +1733,7 @@ def blok_browser():
                         logo: raak(40, k.top + k.height / 2),
                         kruis: raak(k.left + k.width / 2, k.top + k.height / 2),
                         rand: raak(k.left - 4, k.top + k.height / 2),
-                        breed: Math.round(k.width + 11) };
+                        breed: Math.round(k.width) };
             m.classList.remove('visible');
           }
           return uit;
@@ -1738,8 +1741,10 @@ def blok_browser():
         for mid, t in tikvlak.items():
             check(f"tikvlak van het kruis blijft bij het kruis ({mid})",
                   not t["midden"] and not t["logo"], json.dumps(t))
-            check(f"kruis en 5,5px eromheen zijn raak, samen >= 44px ({mid})",
-                  t["kruis"] and t["rand"] and t["breed"] >= 44, json.dumps(t))
+            # TT-318: het kruis is sinds 24-09-2026 zelf een knop van 44px,
+            # zonder onzichtbaar tikvlak eromheen.
+            check(f"het kruis is raak en minstens 44px breed ({mid})",
+                  t["kruis"] and t["breed"] >= 44, json.dumps(t))
         check("geen paginafouten in blok 20", not page_errors, "; ".join(page_errors)[:200])
 
         # ─────────────────────────────────────────────────────────────
@@ -2076,6 +2081,12 @@ def blok_browser():
           const r = {};
           const labels = (id) => Array.from(
             document.querySelectorAll('#' + id + ' .nav-menu-item')).map(b => b.textContent);
+          // TT-318: de plek voor het menu staat niet meer vast in index.html
+          // maar in het geladen profiel, naast de naam. Deze blok toetst het
+          // menu zelf; de plek toetst blok 33. Daarom hier een kale plek.
+          for (const [box, id] of [['musicianModalContent', 'musicianModalActies'], ['bandModalContent', 'bandModalActies']]) {
+            if (!document.getElementById(id)) document.getElementById(box).insertAdjacentHTML('beforeend', '<span id="' + id + '"></span>');
+          }
 
           zetVeiligheidMenu('musicianModalActies', 'muzikant', 'm2', 'Dylan');
           r.menuBijAnder = !!document.querySelector('#musicianModalActies .veiligheid-menu-wrap');
@@ -2102,7 +2113,7 @@ def blok_browser():
           hasOwnProfile = true;
           return r;
         }""")
-        check("het ⋯-menu staat in de koprij van andermans profiel",
+        check("het ⋯-menu staat bij andermans profiel",
               menu["menuBijAnder"], json.dumps(menu))
         check("met precies twee acties: melden en blokkeren",
               menu["items"] == ["Muzikant melden", "Blokkeren"], json.dumps(menu["items"]))
@@ -2592,12 +2603,28 @@ def blok_browser():
             terugInHeader: h.contains(terug), hamInHeader: h.contains(ham)
           };
         }""")
-        check("het woordmerk staat midden in de kop",
-              abs(kop301["kopMid"] - kop301["logoMid"]) <= 2, json.dumps(kop301))
+        # TT-318 (24-09-2026, besluit Ronald): optisch in het midden, niet
+        # gemeten — 7px links van het midden van de kop.
+        check("het woordmerk staat optisch in het midden: 7px links van het kopmidden (TT-318)",
+              abs((kop301["kopMid"] - 7) - kop301["logoMid"]) <= 1, json.dumps(kop301))
         check("terugknop en hamburger staan allebei in de koprij zelf",
               kop301["terugInHeader"] and kop301["hamInHeader"], json.dumps(kop301))
-        check("beide knoppen staan even ver van hun eigen rand (16px)",
-              kop301["terugLinks"] == 16 and kop301["hamRechts"] == 16, json.dumps(kop301))
+        # TT-318: niet de knoppen maar de tekens staan even ver van de rand.
+        # De pijl is smaller dan de hamburger; zijn knop schuift 5px naar buiten.
+        inkt = page.evaluate("""() => {
+          const h = document.querySelector('header').getBoundingClientRect();
+          const x = (el, kant) => { const b = el.getBBox(), m = el.getScreenCTM();
+            const sw = parseFloat(el.closest('svg').getAttribute('stroke-width')) / 2;
+            return kant === 'l' ? m.a * (b.x - sw) + m.e : m.a * (b.x + b.width + sw) + m.e; };
+          return {
+            pijlLinks: +(x(document.querySelector('#navTerugBtn polyline'), 'l') - h.left).toFixed(1),
+            hamRechts: +(h.right - x(document.querySelector('#navMenuBtn line'), 'r')).toFixed(1)
+          };
+        }""")
+        check("pijl en hamburger staan even ver van hun eigen rand (TT-318)",
+              abs(inkt["pijlLinks"] - inkt["hamRechts"]) <= 0.5, json.dumps(inkt))
+        check("de hamburger staat op 16px van de rand, de terugknop op 11px (TT-318)",
+              kop301["terugLinks"] == 11 and kop301["hamRechts"] == 16, json.dumps(kop301))
         check("de terugknop haalt het tikdoel van 44x44px",
               kop301["terugB"] >= 44 and kop301["terugH"] >= 44, json.dumps(kop301))
         check("terugknop en hamburger staan op dezelfde middellijn",
@@ -2689,11 +2716,10 @@ def blok_browser():
         check("en het loopt daar niet over de knoppen heen",
               smal["overlapLinks"] <= 0 and smal["overlapRechts"] <= 0, json.dumps(smal))
 
-        # De krapste stand die bestaat: het smalste canvas én een koprij met
-        # drie knoppen (terug, ⋯, kruis). Daar zijn de noodtreden voor.
+        # De krapste koprij in een venster: het smalste canvas. Sinds TT-318
+        # staan daar nog maar twee knoppen (pijl en kruisje), net als in de
+        # gewone kop; het ⋯-menu staat naast de naam. De noodtreden blijven.
         drie = page.evaluate("""() => {
-          const acties = document.getElementById('musicianModalActies');
-          acties.innerHTML = '<button class="nav-menu-btn">x</button>';
           const m = document.getElementById('musicianModal');
           m.classList.add('visible');
           fitKopLogo(document);
@@ -2703,17 +2729,21 @@ def blok_browser():
           const ab = kop.querySelector('.kop-links').getBoundingClientRect();
           const rb = kop.querySelector('.modal-kop-acties').getBoundingClientRect();
           const kb = kop.getBoundingClientRect();
-          m.classList.remove('visible'); acties.innerHTML = '';
-          return {
+          const uit = {
             px: Math.round(parseFloat(getComputedStyle(logo).fontSize)),
             links: Math.round(ab.right - lb.left), rechts: Math.round(lb.right - rb.left),
-            mid: Math.round(kb.left + kb.width / 2) - Math.round(lb.left + lb.width / 2)
+            mid: Math.round(kb.left + kb.width / 2) - Math.round(lb.left + lb.width / 2),
+            knoppenRechts: kop.querySelectorAll('.modal-kop-acties button').length
           };
+          m.classList.remove('visible');
+          return uit;
         }""")
-        check("met drie knoppen in een koprij blijft het woordmerk vrij van de knoppen",
+        check("in de koprij van een venster staat rechts alleen het kruisje (TT-318)",
+              drie["knoppenRechts"] == 1, json.dumps(drie))
+        check("op het smalste canvas blijft het woordmerk in een venster vrij van de knoppen",
               drie["links"] <= 0 and drie["rechts"] <= 0, json.dumps(drie))
-        check("en het staat daar nog steeds in het midden",
-              abs(drie["mid"]) <= 2, json.dumps(drie))
+        check("en het staat daar op dezelfde plek als in de kop: 7px links van het midden (TT-318)",
+              abs(drie["mid"] - 7) <= 1, json.dumps(drie))
         page.set_viewport_size({"width": 390, "height": 844})
         page.wait_for_timeout(80)
         page.evaluate("() => { fitKopLogo(document); showView('landing'); }")
@@ -3394,6 +3424,207 @@ def blok_browser():
         check("geen paginafouten in blok 31", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
         page.evaluate("showView('landing'); window.TT_STUB.reset()")
+
+        # ------------------------------------------------------------------
+        # Blok 32 — TT-318: het eigen woordmerk
+        # ------------------------------------------------------------------
+        print("\nBlok 32 — het eigen woordmerk (TT-318)")
+        css318 = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+        html318 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        js318 = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in JS_FILES)
+        check("het lettertype staat in de repo (tt-woordmerk.woff2)",
+              os.path.isfile(os.path.join(ROOT, "tt-woordmerk.woff2")), "bestand ontbreekt")
+        check("styles.css declareert het met @font-face",
+              re.search(r"@font-face\s*\{[^}]*'TT Woordmerk'[^}]*url\('tt-woordmerk\.woff2'\)", css318) is not None,
+              "geen @font-face voor TT Woordmerk")
+        check("index.html laadt het vooraf, met dezelfde URL",
+              re.search(r'<link rel="preload" href="tt-woordmerk\.woff2" as="font" type="font/woff2" crossorigin>', html318) is not None,
+              "geen preload")
+        check("Alfa Slab One wordt nergens meer geladen of gebruikt",
+              "Alfa+Slab" not in html318 and "font-family: 'Alfa Slab" not in css318
+              and "font-family:'Alfa Slab" not in js318, "Alfa Slab One nog in gebruik")
+        check("de T in een lege profielfoto gebruikt --font-display (TT-33)",
+              "const AVATAR_T_FALLBACK = `<span style=\"font-family:var(--font-display);\">T</span>`;" in js318,
+              "AVATAR_T_FALLBACK wijkt af")
+
+        wm = page.evaluate("""async () => {
+          await document.fonts.load("28px 'TT Woordmerk'");
+          const c = document.createElement('canvas').getContext('2d');
+          const heeft = ch => { c.font = "40px 'TT Woordmerk', monospace"; const a = c.measureText(ch).width;
+            c.font = '40px monospace'; const b = c.measureText(ch).width;
+            c.font = "40px 'TT Woordmerk', serif"; const d = c.measureText(ch).width;
+            c.font = '40px serif'; const e = c.measureText(ch).width; return a !== b || d !== e; };
+          const kop = document.querySelector('header .logo');
+          const m = document.getElementById('musicianModal');
+          m.classList.add('visible'); fitKopLogo(document);
+          const vl = m.querySelector('.modal-kop .logo');
+          const uit = {
+            geladen: document.fonts.check("28px 'TT Woordmerk'"),
+            letters: [...new Set(kop.textContent.replace(/\s/g, '') + 'T')].filter(ch => !heeft(ch)),
+            familie: getComputedStyle(kop).fontFamily.split(',')[0],
+            kopPx: getComputedStyle(kop).fontSize, kopAfstand: getComputedStyle(kop).letterSpacing,
+            vensterPx: getComputedStyle(vl).fontSize, vensterAfstand: getComputedStyle(vl).letterSpacing
+          };
+          m.classList.remove('visible');
+          return uit;
+        }""")
+        check("het lettertype laadt in de browser", wm["geladen"], json.dumps(wm))
+        check("elke letter van het woordmerk staat in het lettertype", wm["letters"] == [], json.dumps(wm))
+        check("het woordmerk gebruikt TT Woordmerk", wm["familie"].strip('"\'') == "TT Woordmerk", json.dumps(wm))
+        check("letterafstand 3px bij 28px, in de kop én in een venster (besluit Ronald)",
+              wm["kopPx"] == wm["vensterPx"] == "28px"
+              and abs(float(wm["kopAfstand"][:-2]) - 3) < 0.01
+              and abs(float(wm["vensterAfstand"][:-2]) - 3) < 0.01, json.dumps(wm))
+        check("geen paginafouten in blok 32", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ------------------------------------------------------------------
+        # Blok 33 — TT-318: het ⋯-menu naast de naam, kruisje als de pijl,
+        # bandvenster even breed als het muzikantvenster
+        # ------------------------------------------------------------------
+        print("\nBlok 33 — vensters: ⋯ naast de naam, kruisje en bandvenster (TT-318)")
+        page.set_viewport_size({"width": 375, "height": 812})
+        page.wait_for_timeout(80)
+        venster = page.evaluate("""async () => {
+          const S = window.TT_STUB;
+          const was = { hasOwnProfile, myMusicianId };
+          hasOwnProfile = false; myMusicianId = 'm1';
+          S.rpcResults.tt_get_musicians_public = () => [{ id: 'm2', username: 'dylan', age: 30, city: 'Den Haag',
+            bio: '', goal: null, profile_color: '#f5c518', avatar_url: null, updated_at: new Date().toISOString(),
+            instrument_levels: [{ instrument: 'Drums', niveau: 3 }], genres: ['Rock'], songs: [], media: [] }];
+          S.rpcResults.tt_get_bands_public = () => [{ id: 'b2', name: 'Testband', city: 'Den Haag', description: '',
+            status: 'zoekend', profile_color: '#3ecfff', updated_at: new Date().toISOString(), avatar_url: null,
+            genres: ['Rock'], niveau: 3, members: [{ username: 'dylan', profile_color: '#f5c518' }], wanted: [] }];
+          const inkt = (box) => {
+            const k = box.querySelector('.modal-kop').getBoundingClientRect();
+            const pl = box.querySelector('.kop-terug polyline');
+            const b = pl.getBBox(), m = pl.getScreenCTM();
+            const kl = box.querySelector('.modal-kop .modal-close line');
+            const kb = kl.getBBox(), km = kl.getScreenCTM();
+            const kL = km.a * (kb.x - 1) + km.e, kR = km.a * (kb.x + kb.width + 1) + km.e;
+            const logo = box.querySelector('.modal-kop .logo').getBoundingClientRect();
+            return { pijl: +(m.a * (b.x - 1) + m.e - k.left).toFixed(1), kruis: +(k.right - kR).toFixed(1),
+                     kruisMidden: (kL + kR) / 2, kopL: Math.round(k.left), kopR: Math.round(k.right),
+                     kruisBreed: +(kR - kL).toFixed(1), pijlHoog: +(b.height + 2).toFixed(1),
+                     logoL: +logo.left.toFixed(1) };
+          };
+          const meet = async (soort) => {
+            const boxId = soort === 'muzikant' ? 'musicianModal' : 'bandModal';
+            const plekId = soort === 'muzikant' ? 'musicianModalActies' : 'bandModalActies';
+            if (soort === 'muzikant') await openMusicianModal('m2'); else await openBandModal('b2');
+            // Het menu verschijnt alleen voor wie zelf een profiel heeft.
+            hasOwnProfile = true;
+            zetVeiligheidMenu(plekId, soort, soort === 'muzikant' ? 'm2' : 'b2', 'Test');
+            hasOwnProfile = false;
+            const box = document.getElementById(boxId);
+            const plek = document.getElementById(plekId);
+            const knop = plek && plek.querySelector('.nav-menu-btn');
+            const kb = knop ? knop.getBoundingClientRect() : null;
+            const naam = box.querySelector('.modal-scroll-area .profile-name');
+            const vak = box.querySelector('.modal-scroll-area');
+            const bs = getComputedStyle(box.querySelector('.modal-box'));
+            const i = inkt(box);
+            const uit = Object.assign(i, {
+              inKoprij: !!(plek && plek.closest('.modal-kop')),
+              naastNaam: !!(plek && naam && plek.parentElement === naam.parentElement.parentElement),
+              menuMidden: kb ? (kb.left + kb.right) / 2 : null,
+              naam: naam ? naam.clientWidth : null,
+              logoPx: getComputedStyle(box.querySelector('.modal-kop .logo')).fontSize,
+              opvulling: [bs.paddingTop, bs.paddingLeft, bs.paddingRight].join(' '),
+              inhoudL: getComputedStyle(vak).paddingLeft,
+              overloop: vak.scrollWidth - vak.clientWidth
+            });
+            box.classList.remove('visible');
+            return uit;
+          };
+          const uit = { muzikant: await meet('muzikant'), band: await meet('band') };
+          // Je eigen profiel in het venster: geen plek, dus geen lege tussenruimte.
+          myMusicianId = 'm2';
+          await openMusicianModal('m2');
+          uit.eigenPlek = !!document.getElementById('musicianModalActies');
+          document.getElementById('musicianModal').classList.remove('visible');
+          hasOwnProfile = was.hasOwnProfile; myMusicianId = was.myMusicianId;
+          delete S.rpcResults.tt_get_musicians_public; delete S.rpcResults.tt_get_bands_public;
+          return uit;
+        }""")
+        for soort in ("muzikant", "band"):
+            v = venster[soort]
+            check(f"{soort}: het ⋯-menu staat naast de naam, niet in de koprij",
+                  v["naastNaam"] and not v["inKoprij"], json.dumps(v))
+            check(f"{soort}: het kruisje staat even ver van de rand als de pijl (29px)",
+                  abs(v["kruis"] - v["pijl"]) <= 0.5 and abs(v["kruis"] - 29) <= 0.5, json.dumps(v))
+            check(f"{soort}: het ⋯-menu staat recht onder het kruisje",
+                  v["menuMidden"] is not None and abs(v["menuMidden"] - v["kruisMidden"]) <= 0.5, json.dumps(v))
+            check(f"{soort}: het woordmerk is 28px, even groot als in de kop",
+                  v["logoPx"] == "28px", json.dumps(v))
+            check(f"{soort}: geen eigen opvulling rond het venster, inhoud op 16px",
+                  v["opvulling"] == "0px 0px 0px" and v["inhoudL"] == "16px", json.dumps(v))
+            check(f"{soort}: niets steekt zijwaarts buiten het venster",
+                  v["overloop"] <= 0, json.dumps(v))
+        check("de naam in het muzikantvenster houdt 187px, net als op Mijn Profiel",
+              venster["muzikant"]["naam"] == 187, json.dumps(venster["muzikant"]))
+        check("bandvenster en muzikantvenster hebben dezelfde koprij",
+              venster["band"]["kopL"] == venster["muzikant"]["kopL"]
+              and venster["band"]["kopR"] == venster["muzikant"]["kopR"], json.dumps(venster))
+        kopLogo = page.evaluate("() => +document.querySelector('header .logo').getBoundingClientRect().left.toFixed(1)")
+        for soort in ("muzikant", "band"):
+            v = venster[soort]
+            check(f"{soort}: het woordmerk staat op precies dezelfde plek als in de kop (besluit Ronald)",
+                  abs(v["logoL"] - kopLogo) <= 0.5, json.dumps({"kop": kopLogo, "venster": v["logoL"]}))
+            check(f"{soort}: het kruisje is twee terugpijlen: even hoog als de pijl, 16px breed",
+                  v["kruisBreed"] == 16 and v["pijlHoog"] == 16, json.dumps(v))
+        check("op je eigen profiel in het venster komt er geen plek voor het menu",
+              not venster["eigenPlek"], json.dumps(venster))
+        check("geen paginafouten in blok 33", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.wait_for_timeout(80)
+
+        # ------------------------------------------------------------------
+        # Blok 34 — TT-322: één kruisje in de hele app
+        # ------------------------------------------------------------------
+        print("\nBlok 34 — één kruisje in elk venster (TT-322)")
+        html322 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        knoppen = re.findall(r'<button class="modal-close"[^>]*>(.*?)</button>', html322, re.S)
+        teken = '<line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line>'
+        check("elk kruisje in index.html is het sluitteken, nergens meer de letter ✕",
+              len(knoppen) >= 16 and all(teken in k and "✕" not in k for k in knoppen), str(len(knoppen)))
+        check("elk kruisje heeft een aria-label",
+              all("aria-label" in t for t in re.findall(r'<button class="modal-close"[^>]*>', html322)), "")
+        terug322 = re.findall(r'<button class="modal-back"[^>]*>(.*?)</button>', html322, re.S)
+        check("de terugknop in een venster is het terugteken, niet de letter ←",
+              len(terug322) == 1 and 'points="15 5 8 12 15 19"' in terug322[0] and "←" not in terug322[0], str(terug322)[:120])
+        page.set_viewport_size({"width": 375, "height": 812})
+        page.wait_for_timeout(80)
+        kruis322 = page.evaluate("""() => {
+          const uit = {};
+          for (const id of ['meldModal', 'legalModal', 'inloggegevensModal']) {
+            const ov = document.getElementById(id);
+            if (!ov) { uit[id] = null; continue; }
+            ov.classList.add('visible');
+            const box = ov.querySelector('.modal-box');
+            const k = ov.querySelector('.modal-close');
+            const kb = k.getBoundingClientRect(), bb = box.getBoundingClientRect();
+            const l = k.querySelector('line'); const b = l.getBBox(), m = l.getScreenCTM();
+            const inktR = m.a * (b.x + b.width + 1) + m.e;
+            const na = getComputedStyle(k, '::after').content;
+            uit[id] = { rechts: +(bb.right - inktR).toFixed(1), midY: Math.round((kb.top + kb.bottom) / 2 - bb.top),
+                        b: Math.round(kb.width), h: Math.round(kb.height), cirkel: getComputedStyle(k).borderRadius,
+                        rand: getComputedStyle(k).borderTopColor, na };
+            ov.classList.remove('visible');
+          }
+          return uit;
+        }""")
+        for mid, k in kruis322.items():
+            check(f"{mid}: het kruisje staat 29px van de rand en op de middellijn van de kop (34px)",
+                  k is not None and abs(k["rechts"] - 29) <= 0.5 and abs(k["midY"] - 34) <= 1, json.dumps(k))
+            check(f"{mid}: knop van 44×44px, geen cirkel, geen los tikvlak",
+                  k is not None and k["b"] == 44 and k["h"] == 44 and k["cirkel"] != "50%"
+                  and k["na"] in ("none", "normal"), json.dumps(k))
+        check("geen paginafouten in blok 34", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.wait_for_timeout(80)
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
