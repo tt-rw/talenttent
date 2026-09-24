@@ -37,7 +37,12 @@ zakken er acht en daarna breekt het blok af (`sluitAlleMenus` bestaat niet).
 Schermafdrukken bekeken op 390 en 1280px: hamburger, ⋯ op het profiel, ⋯ in
 het muzikantvenster, Sorteren op, zoektabblad, focusrand, wizard.
 
-**Nog open.** TT-315 (badges in de zoekresultaten) wacht op Ronald. Laag 2:
+**TT-315, dezelfde dag.** Besluit Ronald: optie B door de hele app. Elke tag
+(zoekresultaat, profiel, "Wij zoeken nog", bandstatus) is wit op 5%, zonder
+rand, met de kleur in de tekst. Blok 30 kreeg drie controles; testset 439 van
+439.
+
+**Nog open.** Laag 2:
 op een echte telefoon een menu openen en ernaast tikken.
 
 **Vorige update:** 23-09-2026 (vervolg 3) — **TT-281 gebouwd: opslaan is
@@ -72,8 +77,9 @@ productie. De functies nemen de types over uit de tabellen zelf (`%type`,
 **Volgorde is bindend.** Eerst het SQL-script, dan de app-bestanden. Andersom
 faalt elke opslag met PGRST202 (functie niet gevonden).
 
-**Nog open voor TT-281:** SQL draaien (Ronald) · nameten in de browserpane
-(Claude) · laag 2: profiel opslaan, een tegel opslaan, band opslaan.
+**Nog open voor TT-281:** laag 2: profiel opslaan, een tegel opslaan, band
+opslaan. *(Bijgewerkt 24-09-2026: Ronald heeft het SQL-script gedraaid; de
+controle gaf alle drie de functies, elk met `security_definer` op false.)*
 
 **Nieuwe bevinding.**
 
@@ -5037,7 +5043,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-290** | Goud op 10% dekking op het actieve zoektabblad | **Gebouwd en getest 24-09-2026 — zie Laatste update bovenaan.** Wit op 5%, gouden rand, gouden vette tekst. Samen opgelost met TT-259 en acht andere plekken met dezelfde fout. **Nieuw, 17-09-2026, gevonden bij TT-289. Geverifieerd in de code.** `.search-mode-tab.active` in `styles.css` heeft `background: rgba(245,197,24,0.1)`. Huisstijl §1.1 verbiedt goud als vlak onder 50%: op `--surface2` wordt dat olijfbruin. Voorstel volgens §1.1: wit op 5% met de gouden rand en gouden tekst die er al staan. Zelfde soort: `highlight()` in `utils.js` markeert de getypte letters in een suggestie met goud op 30% (`mark`). Beide in één ronde. **Let op:** de standknoppen van het Setlist-tabblad (TT-289) gebruiken bewust dezelfde klasse als de hoofdtabbladen (besluit Ronald: "hetzelfde als setlist"); ze veranderen dus vanzelf mee. Bandkant: niet van toepassing, het zijn gedeelde componenten. **Toets P2:** het werkt, maar het actieve tabblad oogt vlekkerig in plaats van gekozen |
 | **TT-313** | Een open menu valt weg tegen de achtergrond | **Nieuw en gebouwd 24-09-2026, melding Ronald met schermafdruk. Besluit Ronald: optie B.** Achter elk open menu een zwarte laag van 60%; het menu zelf `--surface2` met rand `#444`. Geldt voor alle vijf de menusoorten. **Toets P2:** het werkt, maar je moet zoeken of er iets openstaat. Zie Laatste update bovenaan |
 | **TT-314** | Twee menu's konden tegelijk openstaan | **Nieuw en gebouwd 24-09-2026, melding Ronald met schermafdruk.** Hamburger en ⋯ op het profiel stonden samen open. Nu één gedeelde regel, `sluitAlleMenus()` in `core.js`. **Toets P2:** niets breekt, maar het scherm oogt kapot. Zie Laatste update bovenaan |
-| **TT-315** | Badges in de zoekresultaten: gekleurd vlak op 16% | **Nieuw 24-09-2026, gevonden bij TT-290. Wacht op Ronald.** `tagSolid()` in `utils.js` tekent instrument- en genrebadges als vlak in de profielkleur (standaard goud) op 16% dekking. Dat is dezelfde fout als TT-290 (huisstijl §1.1). Maar die vorm is op 07-08-2026 bewust gekozen (TT-30: effen tags in plaats van omlijnde). Niet aangepast zonder besluit. **Toets P2:** het werkt, maar goud wordt olijfbruin |
+| **TT-315** | Badges in de zoekresultaten: gekleurd vlak op 16% | **Gebouwd en getest 24-09-2026. Besluit Ronald: optie B, "minder rommelig, het meest clean", door de hele app.** Eén tagvorm: wit op 5%, geen rand, kleur alleen in de tekst. Geldt voor zoekresultaten, profiel, "Wij zoeken nog" op het bandprofiel en de bandstatus. `.badge`, `.wanted-chip` en `hexToRgba()` zijn weg. Niet mee: de ledenchip (een aantikbare persoon) en de badge in een keuzeveld (een bedieningselement). Oorspronkelijke tekst: `tagSolid()` in `utils.js` tekent instrument- en genrebadges als vlak in de profielkleur (standaard goud) op 16% dekking. Dat is dezelfde fout als TT-290 (huisstijl §1.1). Maar die vorm is op 07-08-2026 bewust gekozen (TT-30: effen tags in plaats van omlijnde). Niet aangepast zonder besluit. **Toets P2:** het werkt, maar goud wordt olijfbruin |
 | **TT-282** | Vegen: een schuine of afbuigende veeg wisselt van tabblad | **Nieuw, 16-09-2026 (onderhoudsronde).** 30° telt als horizontaal; een veeg die steil eindigt telt ook; een veeg vanaf de schermrand wisselt. Volledige tekst: Laatste update bovenaan |
 | **TT-277** | Gesprek springt bij versturen | **Opgelost 16-09-2026 (vervolg 3).** Toetsenbord blijft open, beeld staat stil. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
 | **TT-278** | Inloggen ontbreekt in het hamburgermenu | **Opgelost 16-09-2026 (vervolg 3).** Uitgelogd staat Inloggen onderaan het menu |

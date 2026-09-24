@@ -657,20 +657,13 @@ function submitOnEnter(event, fn) {
   }
 }
 
-// TT-30 (07-08-2026): effen (gevulde) tags i.p.v. de eerdere ovale outline-
-// badges op de zoekresultaten — alleen bruikbaar op een 3/6-cijferige hex-
-// kleur (wat safeColor() altijd oplevert voor profile_color), vandaar de
-// eenvoudige hex-only implementatie i.p.v. een generieke kleurparser.
-function hexToRgba(hex, alpha) {
-  let h = String(hex).replace('#', '');
-  if (h.length === 3) h = h.split('').map(c => c + c).join('');
-  const num = parseInt(h, 16);
-  if (isNaN(num)) return `rgba(245,197,24,${alpha})`;
-  const r = (num >> 16) & 255, g = (num >> 8) & 255, b = num & 255;
-  return `rgba(${r},${g},${b},${alpha})`;
-}
+// TT-30 (07-08-2026): effen tags i.p.v. ovale outline-badges op de
+// zoekresultaten. TT-315 (24-09-2026, besluit Ronald: "minder rommelig, het
+// meest clean"): het vlak is voor elke tag hetzelfde, wit op 5%
+// (huisstijl §1.1). De kleur zit alleen in de tekst. Tot die dag was het vlak
+// de tekstkleur op 16% dekking; bij goud gaf dat olijfbruin.
 function tagSolid(text, hex) {
-  return `<span class="tag-solid" style="background:${hexToRgba(hex, 0.16)};color:${hex};">${escHtml(text)}</span>`;
+  return `<span class="tag-solid" style="color:${hex};">${escHtml(text)}</span>`;
 }
 
 // TT-153 (25-08-2026): badges op zoekresultaten (muzikant, rij én kaart)

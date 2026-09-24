@@ -99,8 +99,8 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       ${ownerMenuHTML}
     </div>
     <div class="profile-badges">
-      ${m.musician_instruments.map(x => `<span class="badge" style="border-color:${col};color:${col};">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
-      ${m.musician_genres.map(x => `<span class="badge genre">${escHtml(x.genre)}</span>`).join('')}
+      ${m.musician_instruments.map(x => `<span class="tag-solid" style="color:${col};">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
+      ${m.musician_genres.map(x => `<span class="tag-solid tag-genre">${escHtml(x.genre)}</span>`).join('')}
     </div>
     ${m.bio ? `<p style="font-size:15px;color:var(--text);margin:12px 0;">${escHtml(m.bio)}</p>` : ''}
     ${m.musician_songs.length ? `
@@ -1889,7 +1889,7 @@ async function openBandModal(id) {
     ${(b.band_wanted||[]).length ? `
       <div class="profile-songs-title" style="margin-top:16px;">Wij zoeken nog</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-        ${(b.band_wanted||[]).map(w => `<span class="wanted-chip">${escHtml(w.instrument)}</span>`).join('')}
+        ${(b.band_wanted||[]).map(w => `<span class="tag-solid tag-genre">${escHtml(w.instrument)}</span>`).join('')}
       </div>` : ''}
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:20px;">
       ${!isOwnBand ? (hasOwnProfile
