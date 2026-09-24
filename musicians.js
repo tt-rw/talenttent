@@ -31,7 +31,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     return `
     <div class="profile-song-row">
       <span><strong>${escHtml(s.song_artist)}</strong> — <span style="color:var(--muted)">${escHtml(s.song_title)}</span></span>
-      <span class="level-pill ${lvl}">${escHtml(LEVEL_LABELS[lvl] || '')}</span>
+      <span class="level-pill">${escHtml(LEVEL_LABELS[lvl] || '')}</span>
     </div>`;
   }).join('');
 
@@ -1775,10 +1775,10 @@ async function loadMyBands() {
       <div class="band-card-header" onclick="openBandModal('${jsAttr(b.id)}')">
         ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar" style="background:${col};">${AVATAR_T_FALLBACK}</div>`}
         <div style="flex:1;">
-          <div class="band-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
+          <div class="band-name">${escHtml(b.name)}</div>
           <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
         </div>
-        ${isFounder ? founderMenuHTML : `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); leaveBand('${jsAttr(b.id)}','${jsAttr(b.name)}');">Band verlaten</button>`}
+        ${isFounder ? founderMenuHTML : `<button class="btn btn-ghost" onclick="event.stopPropagation(); leaveBand('${jsAttr(b.id)}','${jsAttr(b.name)}');">Band verlaten</button>`}
       </div>
       ${offerPending ? `
       <div style="padding:0 20px;">

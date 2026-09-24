@@ -862,7 +862,7 @@ function musicianCardHTML(m) {
       <div class="result-card-photo" style="background:${col};">${photoHTML}</div>
       <div class="result-card-top-row">
         <div class="result-card-name">${nameHTML}</div>
-        <div class="result-card-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
+        <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       <div class="result-card-badges-line">${overflowBadgeHTML(instruments, col, 2)}</div>
@@ -1267,7 +1267,7 @@ function bandRowHTML(b, statusLabels) {
       <div class="result-row-top">
         <div class="result-row-avatar" style="background:${col};border-radius:10px;">${AVATAR_T_FALLBACK}</div>
         <div class="result-row-main">
-          <div class="result-row-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
+          <div class="result-row-name">${escHtml(b.name)}</div>
           <div class="result-row-meta">
             ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
             <span class="band-status-badge band-status-${status}" style="margin-left:8px;">${escHtml(statusLabels[status] || b.status)}</span>
@@ -1291,7 +1291,7 @@ function bandCardHTML(b, statusLabels) {
   return `
     <div class="result-card" onclick="openBandModal('${jsAttr(b.id)}')">
       <div class="result-card-photo" style="background:${col};border-radius:8px;">${AVATAR_T_FALLBACK}</div>
-      <div class="result-card-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
+      <div class="result-card-name">${escHtml(b.name)}</div>
       <div class="result-card-meta">
         ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
         <span class="band-status-badge band-status-${status}" style="margin-left:8px;">${escHtml(statusLabels[status] || b.status)}</span>
@@ -1795,7 +1795,7 @@ function musicianSetlistCardHTML(m) {
       <div class="result-card-photo" style="background:${col};">${photoHTML}</div>
       <div class="result-card-top-row">
         <div class="result-card-name">${escHtml(displayName)}</div>
-        <div class="result-card-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
+        <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       <div class="result-card-badges-line">${setlistMatchBadge(m, col)}</div>
@@ -2235,7 +2235,7 @@ function gedeeldRijHTML(n, i) {
       <div class="gedeeld-speler${speelt ? '' : ' niet'}">
         <button type="button" class="gedeeld-speler-naam" onclick="openMusicianModal('${jsAttr(g.id)}')">${escHtml(g.naam)}</button>
         ${speelt
-          ? (lvl ? `<span class="level-pill ${lvl}">${escHtml(LEVEL_LABELS[lvl])}</span>` : '')
+          ? (lvl ? `<span class="level-pill">${escHtml(LEVEL_LABELS[lvl])}</span>` : '')
           : '<span class="gedeeld-speler-niet">Speelt dit niet</span>'}
       </div>`;
   }).join('');

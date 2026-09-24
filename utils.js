@@ -14,8 +14,10 @@ function showConfirm(message, onConfirm, confirmLabel, danger) {
   document.getElementById('confirmMessage').textContent = message;
   const yesBtn = document.getElementById('confirmYesBtn');
   yesBtn.textContent = confirmLabel || 'Ja, verwijderen';
-  yesBtn.style.background = danger ? 'var(--danger)' : '';
-  yesBtn.style.borderColor = danger ? 'var(--danger)' : '';
+  // TT-316 (24-09-2026): destructief is omlijnd in rood (.btn-danger), nooit
+  // een rood vlak — huisstijl §5.
+  yesBtn.classList.toggle('btn-danger', !!danger);
+  yesBtn.classList.toggle('btn-primary', !danger);
   confirmCallback = onConfirm;
   document.getElementById('confirmModal').classList.add('visible');
 }
@@ -1613,13 +1615,13 @@ function openMediaSpeler(url, soort, titel, platform) {
     voet.innerHTML = '';
   } else if (embed) {
     beeld.innerHTML = `<iframe src="${escAttr(embed)}" title="${escAttr(naam)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" style="width:100%;height:100%;border:0;"></iframe>`;
-    voet.innerHTML = `<a class="media-speler-knop" href="${escAttr(veilig)}" target="_blank" rel="noopener noreferrer">Openen op ${escHtml(platform || 'de website')}</a>`;
+    voet.innerHTML = `<a class="btn btn-ghost" href="${escAttr(veilig)}" target="_blank" rel="noopener noreferrer">Openen op ${escHtml(platform || 'de website')}</a>`;
   } else {
     beeld.innerHTML = `<div class="media-speler-uitleg">
       <div class="media-speler-platform">${escHtml(platform || 'Deze link')}</div>
       <p>Dit platform laat afspelen binnen een app niet toe.</p>
     </div>`;
-    voet.innerHTML = `<a class="media-speler-knop primair" href="${escAttr(veilig)}" target="_blank" rel="noopener noreferrer">Openen op ${escHtml(platform || 'de website')}</a>`;
+    voet.innerHTML = `<a class="btn btn-primary" href="${escAttr(veilig)}" target="_blank" rel="noopener noreferrer">Openen op ${escHtml(platform || 'de website')}</a>`;
   }
 
   document.getElementById('mediaSpelerModal').classList.add('visible');
@@ -1684,7 +1686,7 @@ function mediaLinkRijHTML(l, i, voorvoegsel) {
           aria-label="Adres van de link"
           oninput="${fn('updateLinkUrl')}(${i}, this)" onchange="${fn('renderLinksList')}()">
       </div>
-      <button type="button" class="media-rij-weg" onclick="${fn('removeLink')}(${i})" aria-label="Link verwijderen">✕</button>
+      <button type="button" class="song-remove" onclick="${fn('removeLink')}(${i})" aria-label="Link verwijderen">✕</button>
     </div>`;
 }
 

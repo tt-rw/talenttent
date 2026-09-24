@@ -152,7 +152,7 @@ function renderOnboardingResumeBanner() {
     <div style="border:1px solid var(--accent);border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
       <div style="font-size:15px;font-weight:700;margin-bottom:4px;">Je bent nog bezig met je profiel</div>
       <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Je kunt verdergaan waar je was gebleven.</div>
-      <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="resumeOnboarding()">Verdergaan</button>
+      <button class="btn btn-primary" onclick="resumeOnboarding()">Verdergaan</button>
     </div>`;
 }
 

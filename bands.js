@@ -26,8 +26,8 @@ async function loadBandInvites(musicianId) {
         <div style="font-size:15px;font-weight:700;margin-bottom:4px;">${escHtml(naam)} wil je als lid</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">${escHtml(plaats)}${plaats ? ' · ' : ''}Je staat pas op het bandprofiel als je dit bevestigt.</div>
         <div class="btn-row">
-          <button class="btn btn-ghost" style="font-size:13px;padding:8px 16px;" onclick="respondToBandInvite('${jsAttr(inv.band_id)}', false)">Weigeren</button>
-          <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="respondToBandInvite('${jsAttr(inv.band_id)}', true)">Bevestigen</button>
+          <button class="btn btn-ghost" onclick="respondToBandInvite('${jsAttr(inv.band_id)}', false)">Weigeren</button>
+          <button class="btn btn-primary" onclick="respondToBandInvite('${jsAttr(inv.band_id)}', true)">Bevestigen</button>
         </div>
       </div>`;
     }).join('');
@@ -87,8 +87,8 @@ async function loadFounderOffers(musicianId) {
         <div style="font-size:15px;font-weight:700;margin-bottom:4px;">De beheerder van ${escHtml(naam)} stopt</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Wil jij het beheer overnemen? Zeg je nee, dan blijft de huidige beheerder voorlopig aan.</div>
         <div class="btn-row">
-          <button class="btn btn-ghost" style="font-size:13px;padding:8px 16px;" onclick="respondToFounderOffer('${jsAttr(off.band_id)}', false)">Nee, liever niet</button>
-          <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="respondToFounderOffer('${jsAttr(off.band_id)}', true)">Ik neem het over</button>
+          <button class="btn btn-ghost" onclick="respondToFounderOffer('${jsAttr(off.band_id)}', false)">Nee, liever niet</button>
+          <button class="btn btn-primary" onclick="respondToFounderOffer('${jsAttr(off.band_id)}', true)">Ik neem het over</button>
         </div>
       </div>`;
     }).join('');
@@ -528,10 +528,10 @@ async function loadCurrentMembersForModal(bandId) {
       // hieronder (renderFounderTransferSection), niet via deze lijst —
       // vandaar geen knop bij de eigen rij.
       const isSelf = m.musician_id === mid;
-      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">
+      return `<div class="lijst-rij" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">
         <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
         <div style="flex:1;font-size:14px;">${escHtml(memberName)} <span style="color:var(--muted);font-size:11px;">${escHtml(roleLabel(m.role))}</span></div>
-        ${isSelf ? '' : `<button type="button" class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:var(--danger);" onclick="removeMember('${jsAttr(bandId)}','${jsAttr(m.musician_id)}','${jsAttr(memberName)}')">Verwijderen</button>`}
+        ${isSelf ? '' : `<button type="button" class="btn btn-danger" onclick="removeMember('${jsAttr(bandId)}','${jsAttr(m.musician_id)}','${jsAttr(memberName)}')">Verwijderen</button>`}
       </div>`;
     }).join('') || '<p style="color:var(--muted);font-size:13px;">Geen leden gevonden.</p>';
   } catch (e) {
@@ -658,9 +658,9 @@ function searchMembersToAdd(query) {
         // knop opent nu eerst een kort tekstveld i.p.v. meteen uit te nodigen.
         const inviteAction = m.accepts_band_invites === false
           ? `<span style="font-size:12px;color:var(--muted);">Niet open voor uitnodigingen</span>`
-          : `<button class="btn btn-ghost btn-sm" onclick="openInviteNote(this, '${jsAttr(m.id)}', '${jsAttr(memberName)}')">Uitnodigen</button>`;
+          : `<button class="btn btn-ghost" onclick="openInviteNote(this, '${jsAttr(m.id)}', '${jsAttr(memberName)}')">Uitnodigen</button>`;
         return `
-        <div class="member-search-row" style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <div class="member-search-row lijst-rij" style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
           <div style="width:32px;height:32px;border-radius:50%;background:${safeColor(m.profile_color, '#888')};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${escHtml(memberName[0].toUpperCase())}</div>
           <div style="flex:1;">
             <div style="font-weight:600;font-size:14px;">${escHtml(memberName)}</div>
@@ -689,8 +689,8 @@ function openInviteNote(btnEl, musicianId, memberName) {
       <div style="font-size:13px;margin-bottom:8px;">Uitnodiging aan <strong>${escHtml(memberName)}</strong> — voeg eventueel een korte boodschap toe:</div>
       <textarea class="invite-note-input" maxlength="300" placeholder="Bijv. we zoeken een bassist voor onze covers, jouw profiel past goed bij ons!" style="width:100%;min-height:60px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:14px;"></textarea>
       <div class="btn-row" style="margin-top:8px;">
-        <button class="btn btn-ghost btn-sm" onclick="searchMembersToAdd(document.getElementById('memberSearchInput').value)">Terug</button>
-        <button class="btn btn-primary btn-sm" onclick="sendInviteWithNote(this, '${jsAttr(musicianId)}')">Uitnodiging versturen</button>
+        <button class="btn btn-ghost" onclick="searchMembersToAdd(document.getElementById('memberSearchInput').value)">Terug</button>
+        <button class="btn btn-primary" onclick="sendInviteWithNote(this, '${jsAttr(musicianId)}')">Uitnodiging versturen</button>
       </div>
     </div>`;
   row.querySelector('.invite-note-input')?.focus();

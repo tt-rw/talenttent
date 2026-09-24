@@ -45,7 +45,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260924b">
+<link rel="stylesheet" href="styles.css?v=20260924c">
 </head>
 <body>
 
@@ -170,7 +170,7 @@
 
 <div id="editModeBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:8px 24px;background:rgba(255,255,255,0.05);border-top:1px solid var(--border);font-size:13px;">
   <span>Je bent nog bezig met je profiel bewerken.</span>
-  <button class="btn btn-primary btn-sm" onclick="requireLogin('register')">Verder bewerken →</button>
+  <button class="btn btn-primary" onclick="requireLogin('register')">Verder bewerken →</button>
 </div>
 </div>
 
@@ -182,7 +182,7 @@
         <h1 class="landing-title">Vind je <span>muzikant.</span><br>Start je band.</h1>
         <p class="landing-sub">The Talent Tent brengt muzikanten bij elkaar — voor jam-sessies, repetities en optredens. Vind muzikanten of bands bij jou in de buurt.</p>
         <div class="landing-cta">
-          <button class="btn btn-primary landing-btn" onclick="showView('register')">Profiel aanmaken →</button>
+          <button class="btn btn-primary" onclick="showView('register')">Profiel aanmaken →</button>
         </div>
         <div class="landing-login">
           <p>Heb je al een profiel? <button onclick="showView('auth')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:'Roboto',sans-serif;font-size:14px;font-weight:700;text-decoration:underline;">Inloggen →</button></p>
@@ -344,9 +344,9 @@
     <!-- TT-144 (25-08-2026): Terug op stap 1 gaat naar de landingpagina —
          er is geen vorige stap. -->
     <div class="wizard-action-bar">
-      <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-ghost" onclick="prevStepFromStart()">Terug</button>
-        <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(0)">Verder</button>
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-ghost" onclick="prevStepFromStart()">Terug</button>
+        <button class="btn btn-primary" onclick="nextStep(0)">Verder</button>
       </div>
     </div>
   </div>
@@ -400,9 +400,9 @@
     </div>
 
     <div class="wizard-action-bar">
-      <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-ghost" onclick="prevStep(1)">Terug</button>
-        <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(1)">Verder</button>
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-ghost" onclick="prevStep(1)">Terug</button>
+        <button class="btn btn-primary" onclick="nextStep(1)">Verder</button>
       </div>
     </div>
   </div>
@@ -457,9 +457,9 @@
     </div>
 
     <div class="wizard-action-bar">
-      <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-ghost" onclick="prevStep(2)">Terug</button>
-        <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(2)">Verder</button>
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-ghost" onclick="prevStep(2)">Terug</button>
+        <button class="btn btn-primary" onclick="nextStep(2)">Verder</button>
       </div>
     </div>
   </div>
@@ -518,9 +518,9 @@
     <div class="divider"></div>
 
     <div class="wizard-action-bar">
-      <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-ghost" onclick="prevStep(3)">Terug</button>
-        <button class="btn wizard-btn wizard-btn-accent" onclick="nextStep(3)">Verder</button>
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-ghost" onclick="prevStep(3)">Terug</button>
+        <button class="btn btn-primary" onclick="nextStep(3)">Verder</button>
       </div>
     </div>
   </div>
@@ -541,7 +541,7 @@
         <div class="avatar-info">
           <strong>Upload een foto van jezelf</strong>
           <p>Een echte foto zorgt voor 3× meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
-          <button class="avatar-remove-btn" id="avatarRemoveBtn" onclick="removeAvatar()">Foto verwijderen</button>
+          <button class="btn btn-ghost avatar-remove-btn" id="avatarRemoveBtn" onclick="removeAvatar()">Foto verwijderen</button>
         </div>
       </div>
       <input type="file" accept="image/*" class="avatar-upload-input" id="avatarInput" autocomplete="off" onchange="handleAvatarUpload(this.files[0]); this.value=''">
@@ -603,9 +603,9 @@
     </label>
 
     <div class="wizard-action-bar">
-      <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-ghost" onclick="prevStep(4)">Terug</button>
-        <button class="btn wizard-btn wizard-btn-accent" id="submitProfileBtn" onclick="submitProfile()" disabled style="opacity:0.5;cursor:not-allowed;">Profiel aanmaken</button>
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-ghost" onclick="prevStep(4)">Terug</button>
+        <button class="btn btn-primary" id="submitProfileBtn" onclick="submitProfile()" disabled style="opacity:0.5;cursor:not-allowed;">Profiel aanmaken</button>
       </div>
     </div>
   </div>
@@ -640,13 +640,13 @@
     <p class="ouder-melding">Geen haast. Vul het adres in wanneer je het gevraagd hebt; je profiel blijft bewaard.</p>
 
     <div class="wizard-action-bar">
-      <div class="wizard-action-bar-inner">
+      <div class="wizard-action-bar-inner btn-row">
         <!-- Korte opschriften: de knoppen in deze balk zijn 12px vet met
              letterafstand en delen de breedte in tweeën. "Stuur het mailtje"
              breekt daar over twee regels; elke andere knop in de wizard is
              één woord. -->
-        <button class="btn wizard-btn wizard-btn-ghost" onclick="ouderStapOverslaan()">Later</button>
-        <button class="btn wizard-btn wizard-btn-accent" onclick="ouderVerzoekVersturen()">Versturen</button>
+        <button class="btn btn-ghost" onclick="ouderStapOverslaan()">Later</button>
+        <button class="btn btn-primary" onclick="ouderVerzoekVersturen()">Versturen</button>
       </div>
     </div>
   </div>
@@ -693,8 +693,8 @@
     </div>
 
     <div class="wizard-action-bar">
-      <div class="wizard-action-bar-inner">
-        <button class="btn wizard-btn wizard-btn-accent" onclick="ouderProfielAanmaken()">Profiel aanmaken</button>
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-primary" onclick="ouderProfielAanmaken()">Profiel aanmaken</button>
       </div>
     </div>
   </div>
@@ -959,7 +959,7 @@
         <div class="avatar-info">
           <strong>Upload een foto van jezelf</strong>
           <p>Een echte foto zorgt voor meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
-          <button class="avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhAskRemoveAvatar()">Foto verwijderen</button>
+          <button class="btn btn-ghost avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhAskRemoveAvatar()">Foto verwijderen</button>
         </div>
       </div>
       <input type="file" accept="image/*" class="avatar-upload-input" id="mhAvatarInput" autocomplete="off" onchange="mhHandleAvatarUpload(this.files[0]); this.value=''">
@@ -1147,7 +1147,7 @@
            (TT-228). .btn-row zorgt voor twee exact gelijke knoppen. -->
       <div class="btn-row">
         <button class="btn btn-ghost" onclick="resetMusicianSearch()">Filters wissen</button>
-        <button class="search-btn" onclick="runSearch()">Zoek muzikanten</button>
+        <button class="btn btn-primary" onclick="runSearch()">Zoek muzikanten</button>
       </div>
     </div>
 
@@ -1319,7 +1319,7 @@
            (TT-228). .btn-row zorgt voor twee exact gelijke knoppen. -->
       <div class="btn-row">
         <button class="btn btn-ghost" onclick="resetBandSearch()">Filters wissen</button>
-        <button class="search-btn" onclick="runBandSearch()">Zoek bands</button>
+        <button class="btn btn-primary" onclick="runBandSearch()">Zoek bands</button>
       </div>
     </div>
 
@@ -1476,7 +1476,7 @@
            scheidingslijn erboven is weg: Muzikant en Band hebben die ook niet. -->
       <div class="btn-row">
         <button class="btn btn-ghost" onclick="resetSetlistSearch()">Filters wissen</button>
-        <button class="search-btn" onclick="runSetlistSearch()">Zoek muzikanten</button>
+        <button class="btn btn-primary" onclick="runSetlistSearch()">Zoek muzikanten</button>
       </div>
     </div>
 
@@ -1577,7 +1577,7 @@
 
       <div class="btn-row">
         <button class="btn btn-ghost" onclick="resetGedeeldSearch()">Lijst wissen</button>
-        <button class="search-btn" onclick="runGedeeldSearch()">Zoek nummers</button>
+        <button class="btn btn-primary" onclick="runGedeeldSearch()">Zoek nummers</button>
       </div>
     </div>
 
@@ -1642,7 +1642,7 @@
            zette een tweede gouden knop op hetzelfde scherm, met weer een
            andere tekst. Drie van de vier plekken zeggen "aanmaken", dus dat is
            nu de naam. Huisstijl §6, regel 5: één betekenis per woord. -->
-      <button class="btn btn-primary btn-sm" style="white-space:nowrap;" onclick="showCreateBandForm()">Band aanmaken</button>
+      <button class="btn btn-primary" style="white-space:nowrap;" onclick="showCreateBandForm()">Band aanmaken</button>
     </div>
     <div id="createBandForm" style="display:none;">
       <div class="search-filters" style="margin-bottom:28px;">
@@ -1664,7 +1664,7 @@
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
           <p class="field-hint">JPG of PNG, maximaal 5 MB.</p>
-          <button class="avatar-remove-btn" id="bandAvatarRemoveBtn" onclick="removeBandAvatar()" style="margin:0;flex-shrink:0;">Foto verwijderen</button>
+          <button class="btn btn-ghost avatar-remove-btn" id="bandAvatarRemoveBtn" onclick="removeBandAvatar()" style="margin:0;flex-shrink:0;">Foto verwijderen</button>
         </div>
         <input type="file" accept="image/*" class="avatar-upload-input" id="bandAvatarInput" autocomplete="off" onchange="handleBandAvatarUpload(this.files[0]); this.value=''">
 
@@ -2114,7 +2114,7 @@
   <div class="modal-box media-speler-box">
     <div class="media-speler-kop">
       <span class="media-speler-titel" id="mediaSpelerTitel"></span>
-      <button class="media-speler-sluit" onclick="closeMediaSpeler()" aria-label="Sluiten">✕</button>
+      <button class="modal-close" onclick="closeMediaSpeler()" aria-label="Sluiten">✕</button>
     </div>
     <div class="media-speler-beeld" id="mediaSpelerBeeld"></div>
     <div class="media-speler-voet" id="mediaSpelerVoet"></div>
@@ -2146,7 +2146,7 @@
     <!-- TT-228 (09-09-2026): secundaire knop links, primaire rechts. -->
     <div class="btn-row" style="margin-top:20px;">
       <button class="btn btn-ghost" onclick="closeDeleteAccountModal()">Terug</button>
-      <button class="btn btn-primary" id="deleteAccountConfirmBtn" style="background:var(--danger);border-color:var(--danger);" onclick="requestFinalDeleteConfirmation()">Account verwijderen</button>
+      <button class="btn btn-danger" id="deleteAccountConfirmBtn" onclick="requestFinalDeleteConfirmation()">Account verwijderen</button>
     </div>
   </div>
 </div>
@@ -2171,7 +2171,7 @@
          check herhaaldelijk, of wil iemand nu even niet kiezen, dan zat hij
          zonder route terug vast. Uitloggen verzwakt de verplichting niet:
          wie terugkomt en inlogt, krijgt dit scherm gewoon weer. -->
-    <button class="btn btn-ghost" style="width:100%;margin-top:8px;font-size:13px;" onclick="document.getElementById('usernameGateModal').classList.remove('visible');signOut();">Uitloggen</button>
+    <button class="btn btn-ghost" style="width:100%;margin-top:8px;" onclick="document.getElementById('usernameGateModal').classList.remove('visible');signOut();">Uitloggen</button>
   </div>
 </div>
 
@@ -2542,17 +2542,17 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20260924a"></script>
-<script src="utils.js?v=20260924b"></script>
+<script src="utils.js?v=20260924c"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260923a"></script>
 <script src="postcode.js?v=20260917a"></script>
-<script src="wizard.js?v=20260924a"></script>
+<script src="wizard.js?v=20260924b"></script>
 <script src="ouder.js?v=20260922a"></script>
-<script src="search.js?v=20260923a"></script>
-<script src="musicians.js?v=20260924a"></script>
-<script src="bands.js?v=20260916a"></script>
+<script src="search.js?v=20260924a"></script>
+<script src="musicians.js?v=20260924b"></script>
+<script src="bands.js?v=20260924a"></script>
 <script src="messages.js?v=20260922b"></script>
-<script src="modals-shared.js?v=20260910a"></script>
+<script src="modals-shared.js?v=20260924a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding

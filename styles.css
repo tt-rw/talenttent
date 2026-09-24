@@ -597,9 +597,6 @@
   }
 
   .tag {
-    background: var(--surface2);
-    border: var(--line) solid var(--border);
-    border-radius: 6px;
     /* TT-U23 (12-08-2026): tikdoel minimaal 44px hoog (Apple 44pt, Google 48dp). */
     display: inline-flex;
     align-items: center;
@@ -612,11 +609,35 @@
     font-weight: 400;
   }
 
-  /* TT-168-overgang (02-09-2026): rand-alleen-eindstijl uit profiel-v2
-     overgenomen — was een volle gouden vlek met zwarte tekst, inconsistent
-     met de rest van de app. Geldt nu app-breed (ook zoekfilters,
-     bandformulier), niet meer alleen de wizard. */
-  .tag.selected { background: var(--surface2); color: var(--text); border-color: var(--accent); font-weight: 400; }
+  /* ── TT-316 (24-09-2026, besluit Ronald K7/K8): één vorm voor elke keuze
+     uit meerdere ──────────────────────────────────────────────────────────
+     Zeven soorten, één vlak, één rand, één hoek, één gekozen-stand. Was vier
+     manieren om "gekozen" te tonen: gouden rand, gouden vlak (Instellingen),
+     lichter vlak (mediahoek), gouden rand met wit op 5%. Gekozen is nu overal
+     de stand van het zoektabblad sinds TT-290: wit op 5% (huisstijl §1.1),
+     gouden rand, gouden vette tekst. Maat, opvulling en letter staan per
+     soort; kleur, rand en hoek staan alleen hier. Een eigen kleur of rand
+     bij één soort is een fout (projectinstructies §2, regel 11). */
+  .tag, .level-btn, .segmented-btn, .search-mode-tab, .media-tab, .goal-card, .level-choice {
+    background: var(--surface2);
+    border: var(--line) solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-weight: 400;
+    font-style: normal;
+  }
+  .tag.selected,
+  .level-btn.active-basis, .level-btn.active-bijna, .level-btn.active-podium,
+  .segmented-btn.selected,
+  .search-mode-tab.active,
+  .media-tab.active,
+  .goal-card.selected,
+  .level-choice.selected {
+    background: rgba(255,255,255,0.05);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 700;
+  }
 
   /* TT-46: prompts boven het bio-veld — actieknoppen, geen aan/uit-keuze
      zoals .tag, dus een eigen (lichtere) stijl zonder .selected-status. */
@@ -633,23 +654,28 @@
   .password-toggle:hover { color: var(--accent); }
 
   .bio-prompts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .bio-prompt-chip {
+  /* TT-316 (24-09-2026, besluit Ronald K6): één gestippelde vorm voor
+     "iets toevoegen" — de voorzetten voor de bio en "+ Link toevoegen".
+     Was twee vormen, elk met eigen rand, hoek en letter. :hover staat in de
+     touch-guard verderop (TT-182). */
+  .bio-prompt-chip, .add-link-btn {
     background: transparent;
-    border: 1px dashed var(--border);
-    border-radius: 6px;
+    border: var(--line) dashed var(--border);
+    border-radius: 8px;
     /* TT-U23 (12-08-2026): tikdoel minimaal 44px hoog, randen meegerekend. */
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
-    min-height: 46px;
-    padding: 6px 14px;
-    font-size: 12px;
+    justify-content: center;
+    min-height: 44px;
+    padding: 8px 16px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
     font-weight: 700;
     color: var(--muted);
     cursor: pointer;
     transition: all 0.15s;
   }
-  .bio-prompt-chip:hover { border-color: var(--accent); color: var(--accent); border-style: solid; }
 
   /* Song search */
   /* TT-241 (10-09-2026): dit is alleen nog een ankerpunt voor de keuzelijst
@@ -716,22 +742,14 @@
     min-height: 44px;
     min-width: 44px;
     padding: 8px 14px;
-    border-radius: 6px;
     font-size: 13px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
     cursor: pointer;
     transition: all 0.15s;
     white-space: nowrap;
     font-family: 'Roboto', sans-serif;
   }
 
-  /* TT-168-overgang: rand-alleen-eindstijl (was wit/vet/cursief) — zie
-     .tag.selected hierboven voor dezelfde ronde. */
-  .level-btn.active-basis, .level-btn.active-bijna, .level-btn.active-podium {
-    background: transparent; border-color: var(--accent); color: var(--text); font-weight: 400; font-style: normal;
-  }
+  /* Gekozen: zie het TT-316-blok bij .tag — goud en vet (besluit Ronald K12). */
 
   .song-remove {
     /* TT-U23 (12-08-2026): was 23x26 pixels. */
@@ -762,19 +780,14 @@
   }
 
   .goal-card {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
     padding: 16px;
     cursor: pointer;
     transition: all 0.2s;
     text-align: center;
   }
 
-  /* TT-168-overgang: geen achtergrondtint meer bij selected — rand-alleen,
-     zelfde ronde als .tag.selected/.picker-badge. :hover naar de guard. */
-  .goal-card.selected { border-color: var(--accent); }
-  .goal-card .goal-label { font-size: 13px; font-weight: 400; }
+  /* Gekozen: zie het TT-316-blok bij .tag. :hover staat in de guard. */
+  .goal-card .goal-label { font-size: 13px; }
   .goal-card .goal-desc { font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 300; }
 
   /* TT-142/TT-143 (25-08-2026): actiebalk herzien op verzoek van Ronald
@@ -796,38 +809,12 @@
     padding: 8px 24px calc(8px + env(safe-area-inset-bottom, 0px));
   }
   /* TT-225 (hersteld 09-09-2026): eigen max-width weg — de balk volgt nu het canvas. */
+  /* TT-316 (24-09-2026): de knoppen hierin zijn gewone .btn-primary en
+     .btn-ghost in een .btn-row — zelfde vorm en gelijke breedte als elke
+     andere knoppenrij (TT-228). De eigen wizardknoppen zijn weg. */
   .wizard-action-bar-inner {
     margin: 0 auto;
-    display: flex;
-    gap: 8px;
   }
-  .wizard-btn {
-    flex: 1;
-    min-width: 0; /* anders wint de minimale tekstbreedte altijd van flex:1 */
-    min-height: 44px;
-    border-radius: 8px;
-    border: none;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 700;
-    font-size: 12px;
-    letter-spacing: 0.3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    line-height: 1.2;
-    padding: 6px 4px;
-    cursor: pointer;
-    transition: filter 0.15s;
-  }
-  .wizard-btn:hover { filter: brightness(1.08); }
-  .wizard-btn-accent { background: var(--accent); color: #4a4a4a; }
-  /* TT-209 (06-09-2026, gemeld door Ronald): alle vijf Terug-knoppen in de
-     wizard gebruikten wizard-btn-accent — zelfde goud als Verder/Profiel
-     aanmaken, terwijl elke andere Terug-knop in de app (13x) .btn-ghost is.
-     Secundaire variant, zelfde .wizard-btn-layout (flex:1, compacte tekst). */
-  .wizard-btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-  .wizard-btn-ghost:hover { color: var(--text); border-color: #555; }
 
   /* Ruimte houden voor de vaste balk hierboven, zodat het laatste veld van
      elke stap er nooit achter verdwijnt. Bewust als losse padding-bottom
@@ -851,19 +838,11 @@
     cursor: pointer;
     transition: all 0.2s;
     border: none;
-  }
-
-  /* TT-193 (04-09-2026): compacte rij-actie (Verwijderen/Uitnodigen/Terug e.d.).
-     Was 7x apart inline met wisselende waarden (6px/12px/14px/16px, geen
-     patroon) — nu één klasse, 4px-schaal. min-height:44px van .btn blijft
-     gelden, dus het tikdoel verandert niet. */
-  .btn-sm {
-    padding: 8px 12px;
-    font-size: 12px;
+    text-decoration: none;
   }
 
   /* TT-193 (04-09-2026): vaste ruimte tussen knoppen die samen in een rij
-     staan (naast .btn-sm). Was al 8px op de enige plek waar dit voorkwam
+     staan. Was al 8px op de enige plek waar dit voorkwam
      — nu een klasse i.p.v. inline, zodat een volgende knoppenrij niet
      opnieuw een eigen waarde verzint. */
   /* TT-228 (09-09-2026, Ronald): knoppen in dezelfde rij zijn altijd exact
@@ -882,6 +861,13 @@
     gap: 8px;
   }
   .btn-row .btn { min-width: 0; }
+  /* TT-316 (24-09-2026): in een rij is een knop op 390px zo'n 175px breed.
+     Met 28px opvulling links en rechts liep de tekst over twee regels (58px
+     hoog, op de zoekpagina 62px). 12px houdt hem op één regel en op 44px. */
+  .btn-row .btn, .action-row .btn { padding-left: 12px; padding-right: 12px; }
+  /* Zelfde regel voor een knop naast een naam in een ledenlijst (Verwijderen,
+     Uitnodigen). Met 28px drukte de knop de naam naar twee regels. */
+  .lijst-rij .btn { padding-left: 12px; padding-right: 12px; }
 
   /* TT-196 (04-09-2026): straal-veld + km-label, was 4x apart inline
      (gap:6px, geen 4px-veelvoud) — nu één klasse, zelfde 8px-waarde als
@@ -902,13 +888,23 @@
     transform: translateY(-1px);
   }
 
+  /* TT-316 (24-09-2026, besluit Ronald K5): tekst wit, rand --line. Was
+     grijs met een rand van 1px. */
   .btn-ghost {
     background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
+    color: var(--text);
+    border: var(--line) solid var(--border);
   }
 
   .btn-ghost:hover { color: var(--text); border-color: #555; }
+
+  /* TT-316 (24-09-2026, besluit Ronald K2): destructief is omlijnd in rood,
+     nooit een rood vlak — huisstijl §5. Account verwijderen, lid verwijderen. */
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border: var(--line) solid var(--danger);
+  }
 
   .profile-name {
     font-family: 'Roboto', sans-serif;
@@ -973,13 +969,18 @@
 
   .profile-song-row:last-child { border-bottom: none; }
 
+  /* TT-316 (24-09-2026, besluit Ronald K9): de tagvorm van .tag-solid
+     (TT-315) — wit op 5%, 11px, hoek 6px, geen hoofdletters. Wit, vet en
+     cursief blijven (projectinstructies §9). Was een grijs vlak, 10px,
+     hoofdletters, hoek 3px. */
   .level-pill {
-    font-size: 10px;
-    padding: 3px 8px;
-    border-radius: 3px;
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
     font-weight: 700;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
+    font-style: italic;
     /* Feedback Ronald (13-08-2026): BASIS/BIJNA/PODIUMKLAAR waren elk een
        andere breedte, wat de rij er rommelig uit liet zien. Nu altijd
        dezelfde breedte, breed genoeg voor het langste woord, gecentreerd. */
@@ -989,9 +990,6 @@
     box-sizing: border-box;
   }
 
-  .level-pill.basis { background: var(--surface2); color: var(--text); font-weight: 700; font-style: italic; }
-  .level-pill.bijna { background: var(--surface2); color: var(--text); font-weight: 700; font-style: italic; }
-  .level-pill.podium { background: var(--surface2); color: var(--text); font-weight: 700; font-style: italic; }
 
   /* Divider */
   .divider {
@@ -1060,20 +1058,15 @@
   .avatar-info strong { font-size: 14px; display: block; margin-bottom: 6px; }
   .avatar-info p { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
+  /* TT-316 (24-09-2026): de knop is een gewone .btn .btn-ghost. Was 22px
+     hoog, onder het tikdoel van 44px (huisstijl §6). Hier alleen nog de
+     plek en het tonen/verbergen. */
   .avatar-remove-btn {
     margin-top: 8px;
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-family: 'Roboto', sans-serif;
     display: none;
   }
 
-  .avatar-remove-btn.visible { display: inline-block; }
+  .avatar-remove-btn.visible { display: inline-flex; }
 
   /* TT-168-overgang (uit profiel-v2, TT-181-vervolg/vervolg2): een knop die
      zelf van functie wisselt i.p.v. een apart waarschuwingsvlak. Bij een
@@ -1355,34 +1348,25 @@
     line-height: 1.5;
   }
 
+  /* TT-316: twee losse keuzeknoppen, niet meer één aaneengesloten balk.
+     Kleur, rand en gekozen-stand: zie het TT-316-blok bij .tag. */
   .media-tabs {
-    display: flex;
-    gap: 0;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
     margin-bottom: 20px;
   }
 
   .media-tab {
-    flex: 1;
     min-width: 0;
+    min-height: 44px;
     padding: 10px;
     text-align: center;
     font-size: 13px;
-    font-weight: 600;
     cursor: pointer;
-    color: var(--muted);
-    border: none;
-    background: transparent;
     font-family: 'Roboto', sans-serif;
     transition: all 0.2s;
-    border-right: 1px solid var(--border);
   }
-
-  .media-tab:last-child { border-right: none; }
-  .media-tab.active { background: var(--surface); color: var(--text); }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
   /* Zoeken: prominente, gecentreerde modus-knoppen (muzikant/band/setlist).
@@ -1402,25 +1386,19 @@
     width: 100%;
     max-width: 480px;
   }
+  /* TT-316: 44px hoog, rand --line, hoek 8px. Was 53px, rand 2px, hoek 10px.
+     Kleur en gekozen-stand (TT-290): zie het TT-316-blok bij .tag. */
   .search-mode-tab {
     flex: 1 1 0;
     min-width: 0;
-    padding: 16px 12px;
+    min-height: 44px;
+    padding: 10px 12px;
     text-align: center;
     font-size: 15px;
-    font-weight: 700;
     cursor: pointer;
-    color: var(--muted);
-    border: 2px solid var(--border);
-    background: var(--surface2);
-    border-radius: 10px;
     font-family: 'Roboto', sans-serif;
     transition: all 0.2s;
   }
-  /* TT-290 (24-09-2026): het vlak was goud op 10% — olijfbruin. Nu wit op 5%
-     (huisstijl §1.1); het goud zit in de rand en in de vette tekst. */
-  .search-mode-tab.active { background: rgba(255,255,255,0.05); border-color: var(--accent); color: var(--accent); font-weight: 700; }
-  .search-mode-tab:hover:not(.active) { border-color: var(--text); color: var(--text); }
 
   /* TT-170 (10-09-2026): vegen tussen de drie zoektabbladen. Het binnenkomende
      paneel schuift mee met de vinger — een veeg naar links haalt het tabblad
@@ -1498,11 +1476,14 @@
     margin-top: 12px;
   }
 
+  /* TT-316 (24-09-2026): geen overflow:hidden meer op de tegel zelf. Die
+     knipte ook het tikvlak van ✕ en bannerteken af bij de rand van de
+     tegel. Het afronden van het beeld gebeurt nu in .media-thumb-open en
+     .media-thumb-laden. */
   .media-thumb {
     position: relative;
     aspect-ratio: 1;
     border-radius: 8px;
-    overflow: hidden;
     background: var(--surface2);
     border: 1px solid var(--border);
     animation: slideIn 0.2s ease;
@@ -1525,6 +1506,10 @@
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
+  /* TT-316 (24-09-2026, besluit Ronald K10): de donkere schijf blijft — anders
+     is het kruis onzichtbaar op een licht beeld — maar het tikvlak is 44×44
+     (22px + 2×11px), zelfde patroon als .modal-close::after. */
+  .media-thumb .thumb-remove::after { content: ''; position: absolute; inset: -11px; }
 
   .media-thumb .thumb-type {
     position: absolute;
@@ -1668,23 +1653,6 @@
     border: 1px solid var(--border);
     padding: 4px 6px;
   }
-  .media-rij-weg {
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 13px;
-    cursor: pointer;
-    position: relative;
-  }
-  .media-rij-weg::after {
-    content: "";
-    position: absolute;
-    top: -6px; right: -6px; bottom: -6px; left: -6px;
-  }
 
   /* Tegel in het tabblad Upload: bannerteken linksboven, ✕ rechtsboven.
      Geen gouden rand om een gekozen rij of tegel — dat domineerde het scherm
@@ -1695,6 +1663,8 @@
     inset: 0;
     padding: 0;
     border: none;
+    border-radius: 7px;
+    overflow: hidden;
     background: transparent;
     cursor: pointer;
     display: block;
@@ -1710,6 +1680,7 @@
   .media-thumb-laden {
     position: absolute;
     inset: 0;
+    border-radius: 7px;
     display: flex; align-items: center; justify-content: center;
     background: rgba(0,0,0,0.4);
     z-index: 2;
@@ -1739,16 +1710,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .media-speler-sluit {
-    flex-shrink: 0;
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text);
-    font-size: 13px;
-    cursor: pointer;
-  }
   .media-speler-beeld {
     aspect-ratio: 16 / 9;
     background: #000;
@@ -1772,31 +1733,11 @@
   .media-speler-platform { font-size: 14px; font-weight: 700; }
   .media-speler-voet { display: flex; gap: 8px; padding: 12px 14px; background: var(--surface); }
   .media-speler-voet:empty { display: none; }
-  .media-speler-knop {
-    flex: 1;
-    padding: 10px;
-    border-radius: 8px;
-    border: var(--line) solid var(--border);
-    background: transparent;
-    color: var(--text);
-    font-size: 13px;
-    font-weight: 700;
-    text-align: center;
-    text-decoration: none;
-  }
-  .media-speler-knop.primair { background: var(--accent); color: #000; border-color: var(--accent); }
+  .media-speler-voet .btn { flex: 1; }
 
+  /* De vorm staat bij .bio-prompt-chip (TT-316: één gestippelde vorm). */
   .add-link-btn {
-    background: transparent;
-    border: 1px dashed var(--border);
-    border-radius: 8px;
-    color: var(--muted);
-    font-size: 13px;
-    padding: 10px;
     width: 100%;
-    cursor: pointer;
-    font-family: 'Roboto', sans-serif;
-    transition: all 0.15s;
     margin-top: 4px;
   }
 
@@ -1922,7 +1863,6 @@
   .landing-title span { color: var(--accent); }
   .landing-sub { font-size: 16px; color: var(--muted); line-height: 1.7; font-weight: 300; margin-bottom: 36px; max-width: 520px; margin-left: auto; margin-right: auto; }
   .landing-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  .landing-btn { padding: 15px 32px; font-size: 15px; }
   .landing-steps { padding: 48px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 48px; }
   .landing-steps-title { font-family: 'Roboto', sans-serif; font-size: 28px; letter-spacing: 1px; color: var(--muted); text-align: center; margin-bottom: 32px; }
   /* Bugfix 19-08-2026: was vast op 3 kolommen naast elkaar, ongeacht
@@ -2313,27 +2253,6 @@
   }
 
   .filter-row.single { grid-template-columns: 1fr; }
-  .search-btn {
-    width: 100%;
-    padding: 14px;
-    background: var(--accent);
-    color: #000;
-    border: none;
-    border-radius: 8px;
-    font-family: 'Roboto', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    cursor: pointer;
-    margin-top: 8px;
-    transition: all 0.2s;
-  }
-
-  .search-btn:hover {
-    background: #ffd700;
-    transform: translateY(-1px);
-  }
 
   .results-header {
     display: flex;
@@ -2384,28 +2303,27 @@
      knoppen in één afgeronde balk (Ronald, 07-08-2026: "ovale knoppen vind
      ik niet cool"). Losstaand van .tag-grid/.tag, die elders (instrument/
      genre-filters) ongewijzigd blijven — bewust niet overal toegepast. */
+  /* TT-316 (besluit Ronald K8): losse keuzeknoppen, geen gouden vlak meer.
+     Kleur, rand en gekozen-stand: zie het TT-316-blok bij .tag. */
   .segmented-control {
     display: inline-flex;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 3px;
-    gap: 2px;
+    flex-wrap: wrap;
+    gap: 8px;
   }
   .segmented-btn {
-    padding: 6px 14px;
-    font-size: 12px;
-    font-weight: 700;
-    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 8px 16px;
+    font-size: 13px;
     cursor: pointer;
     user-select: none;
-    color: var(--muted);
     transition: all 0.15s;
     font-family: 'Roboto', sans-serif;
     white-space: nowrap;
   }
-  .segmented-btn:hover { color: var(--text); }
-  .segmented-btn.selected { background: var(--accent); color: #000; }
 
   /* TT-30: effen tags i.p.v. ovale outline-badges op de resultatenrijen/
      -kaarten. TT-315 (24-09-2026, besluit Ronald): één tagvorm in de hele app
@@ -2494,20 +2412,10 @@
   /* Ongewijzigd voor bandCardHTML() — die kreeg geen naam/berichtknop-
      herindeling (geen berichtenknop bij bands, niet in scope van TT-153). */
   .result-card-badges { display: flex; flex-wrap: wrap; gap: 5px; }
-  .result-card-msg-btn {
-    flex-shrink: 0;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .result-card-msg-btn svg { color: #000; }
-
   /* TT-30: envelop-icoon op rijen zit nu in een klein afgerond knopvlak
-     i.p.v. los aan het eind van de rij te zweven. */
+     i.p.v. los aan het eind van de rij te zweven. TT-316 (24-09-2026,
+     besluit Ronald K11): ook de kaart gebruikt deze knop. Die had een goud
+     rondje van 28px — onder het tikdoel van 44px (huisstijl §6). */
   .result-row-msg-btn {
     flex-shrink: 0;
     /* TT-U23 (12-08-2026): was 30x30 pixels. */
@@ -2599,8 +2507,6 @@
     margin: 0 auto 20px;
   }
   .setlist-soort .search-mode-tab {
-    min-height: 44px;
-    padding: 10px 12px;
     font-size: 14px;
   }
 
@@ -2876,7 +2782,8 @@
      TT-287: relative, niet static. Het vergrote tikvlak (::after hieronder)
      is absoluut en zoekt de dichtstbijzijnde niet-statische ouder. Bij static
      was dat het hele venster: elke tik op een profiel of band raakte het kruis. */
-  .modal-kop .modal-close {
+  .modal-kop .modal-close,
+  .media-speler-kop .modal-close {
     position: relative;
     top: auto; right: auto;
     flex-shrink: 0;
@@ -3132,13 +3039,11 @@
   .level-choice {
     display:flex; align-items:center; gap:12px; width:100%;
     min-height:56px; padding:10px 14px; margin-bottom:8px;
-    background:var(--surface2); border:1px solid var(--border); border-radius:10px;
-    color:var(--text); font-family:'Roboto',sans-serif; font-size:14px;
+    font-family:'Roboto',sans-serif; font-size:14px;
     text-align:left; cursor:pointer; transition:border-color 0.15s, background 0.15s;
   }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
-  .level-choice.selected { border-color:var(--accent); background:rgba(255,255,255,0.05); } /* §1.1 */
-  .level-choice.selected .level-choice-label { color:var(--accent); font-weight:700; }
+  /* Gekozen: zie het TT-316-blok bij .tag. */
   .level-choice-stars { flex-shrink:0; font-size:18px; letter-spacing:1px; color:var(--border); }
   .level-choice-stars .filled { color:var(--accent); }
   .level-choice-label { line-height:1.3; }
@@ -3628,22 +3533,22 @@
      een sleepstatus, geen hover-simulatie — blijft een losse, altijd-actieve
      regel bij .drop-zone hierboven. */
   @media (hover: hover) {
-    .tag:hover { border-color: var(--accent); color: var(--accent); }
+    /* TT-316: één hover voor alle zeven keuzesoorten, alleen niet-gekozen. */
+    .tag:not(.selected):hover, .level-btn:not([class*="active-"]):hover,
+    .segmented-btn:not(.selected):hover, .search-mode-tab:not(.active):hover,
+    .media-tab:not(.active):hover, .goal-card:not(.selected):hover,
+    .level-choice:not(.selected):hover { border-color: #555; }
     .modal-close:hover { background: rgba(255,255,255,0.08); }
     .modal-back:hover { background: rgba(255,255,255,0.08); }
-    .level-choice:hover { border-color: var(--accent); }
     .niveau-info-btn:hover { background: rgba(255,255,255,0.08); }
     .picker-field:hover { border-color: var(--accent); }
     .picker-list-item:hover { color: var(--accent); }
-    .goal-card:hover { border-color: var(--accent); }
-    .level-btn:hover { border-color: #555; color: var(--text); }
     .song-remove:hover { color: var(--danger); }
     .ac-item:hover { background: var(--surface2); }
     .avatar-remove-btn:hover { color: var(--danger); border-color: var(--danger); }
     .avatar-remove-btn.btn-cancel-armed:hover { color: var(--accent); border-color: var(--accent); }
-    .media-tab:hover:not(.active) { color: var(--text); }
     .drop-zone:hover { border-color: var(--accent); background: rgba(255,255,255,0.05); }
-    .add-link-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .add-link-btn:hover, .bio-prompt-chip:hover { border-color: var(--accent); color: var(--accent); }
   }
 
   /* ── Canvas op laptop/desktop (TT-224, 07-09-2026 — hersteld 09-09-2026) ──
@@ -3996,10 +3901,6 @@
   .choice-option.selected { color: var(--accent); font-weight: 700; }
   .choice-option-check { color: var(--accent); font-size: 14px; }
 
-  /* TT-232 (09-09-2026): .search-btn heeft margin-top:8px voor los gebruik.
-     In een knoppenrij maakt die marge de twee knoppen 8px ongelijk hoog —
-     precies het verschil dat TT-228 wegnam. Hier dus terugzetten op 0. */
-  .btn-row .search-btn { margin-top: 0; }
 
   /* Label met de i-knop ernaast (zelfde patroon als "Mijn Instrumenten"). */
   /* De i-knop staat rechts in de labelregel, op één lijn met de rechterrand

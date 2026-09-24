@@ -389,8 +389,10 @@ function starDisplayHTML(niveau) {
 // TT-51-uitbreiding (12-08-2026, Ronalds beslissing): de bandster toont
 // alleen zolang de band 'Zoekend naar leden' is. Zodra de status naar
 // 'Compleet' of 'Inactief' gaat, verdwijnt de ster overal — het niveau blijft
-// wel gewoon opgeslagen, alleen niet meer zichtbaar. Eén gedeelde helper
-// i.p.v. deze statuscheck op elk van de vier weergaveplekken herhalen.
+// wel gewoon opgeslagen, alleen niet meer zichtbaar.
+// TT-316 (24-09-2026, besluit Ronald): het niveau staat op het profiel, niet
+// in een lijst. De ster staat daarom alleen nog op het bandprofiel — niet meer
+// in de zoekresultaten (rij en kaart) en niet op Mijn Bands.
 function bandStarDisplayHTML(b) {
   if (b.status !== 'zoekend') return '';
   const html = starDisplayHTML(b.niveau);

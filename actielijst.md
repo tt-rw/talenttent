@@ -1,6 +1,66 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 24-09-2026 (vervolg) — **TT-316 voorbereid: alle knoppen
+**Laatste update:** 24-09-2026 (vervolg 2) — **TT-316 gebouwd en getest:
+één vorm per knopsoort en per keuzeknop. Testset 463 van 463, monitorronde 21
+van 21.**
+
+**Besluit Ronald tijdens de bouw.** K3 bleek op de echte schermen niet te
+kloppen. Het voorstel rekende met een knop van 175px in een rij; in de app is
+die 150px (zoekpagina) tot 159px (vensters). "ZOEK MUZIKANTEN" is alleen al
+157px breed. Ook met 12px opvulling lopen die knoppen dus over twee regels
+(58 tot 60px hoog). Claude stelde kortere teksten voor ("Wissen", "Zoeken",
+"Verwijderen"). Ronald: *"het wordt wel heel cryptisch. laat het maar zoals het
+was. dus met twee woorden onder elkaar."* Gebouwd: 12px opvulling in een rij,
+teksten ongewijzigd, twee regels waar het niet past.
+
+**Wat er gebouwd is.**
+- **Knoppen (K1, K2, K4, K5).** Elke knop is `.btn` plus `.btn-primary`,
+  `.btn-ghost` of het nieuwe `.btn-danger`. Weg: `.search-btn`, `.landing-btn`,
+  `.wizard-btn` (met `-accent` en `-ghost`), `.btn-sm`, `.media-speler-knop`.
+  De wizardbalk is een `.btn-row` (gelijke breedte, TT-228); "Verder" heeft
+  zwarte tekst. Tweede knop: wit, rand `--line`. Account verwijderen, lid
+  verwijderen en `showConfirm(..., true)` (Band opheffen, definitief
+  verwijderen): omlijnd rood. Foto verwijderen is een tweede knop van 44px.
+  Zes inline lettermaten en opvullingen op knoppen weg (`bands.js`,
+  `wizard.js`, `index.html`).
+- **Knoppenrij (K3).** 12px opvulling in `.btn-row` en `.action-row`. **Toegepast
+  door Claude, zelfde regel:** ook in de twee ledenlijsten (nieuwe klasse
+  `.lijst-rij`). Zonder die regel drukten Verwijderen en Uitnodigen, nu 14px,
+  de naam naar twee regels (schermafdruk bekeken).
+- **Gestippeld (K6).** `.add-link-btn` en `.bio-prompt-chip` één regel. De
+  hover van de bio-voorzet stond buiten de touch-guard (TT-182); nu erin.
+- **Keuzeknoppen (K7, K8, K12).** Zeven soorten, één gezamenlijke regel voor
+  vlak, rand, hoek en kleur. Zoektabbladen 44px (was 53px), rand `--line`
+  (was 2px). Instellingen en mediahoek: losse knoppen, geen balk. Gekozen
+  beheersingsknop goud en vet.
+- **Niveaulabel (K9).** Tagvorm, wit, vet, cursief. De klassen
+  `.level-pill.basis/.bijna/.podium` zijn weg.
+- **Kruisjes (K10).** Het mediascherm sluit met `.modal-close`. Het ✕ in een
+  media-rij is `.song-remove` (44px, kaal). Het ✕ op een fototegel heeft een
+  tikvlak van 44px. **Bijvangst:** `.media-thumb` had `overflow: hidden`, dat
+  ook het tikvlak van het ✕ én van het bannerteken afknipte. De afronding zit
+  nu in `.media-thumb-open`.
+- **Berichtknop (K11).** De kaart gebruikt `.result-row-msg-btn`, 44px.
+- **Bandsterren.** `bandStarDisplayHTML()` alleen nog op het bandprofiel.
+  Zoekfilter Niveau ongewijzigd.
+
+**Geverifieerd.** Blok 31 van de testset: 24 controles. Tegen de oude code
+zakken er vijf, daarna breekt het blok af (de wizard had geen `.btn-ghost`).
+Monitorronde: B6 (knopvorm) en B7 (keuzeknopvorm) nieuw; op de oude code
+zakken beide. Schermafdrukken bekeken op 390px: landing, zoeken, bevestiging,
+wizard stap 1 t/m 5, Instellingen, Account verwijderen, mediascherm,
+resultaatrij en -kaart, niveaulabels, fototegel, ledenlijsten, bewerkbanner.
+
+**Bandkant.** Zelfde klassen, dus vanzelf gelijk. Bandsterren: zoekresultaat
+en Mijn Bands weg, bandprofiel blijft — gelijk aan de muzikant, wiens niveau
+alleen op het profiel staat.
+
+**Nieuwe bevinding: TT-317 (P3).** Zie de P3-tabel.
+
+**Nog open.** Laag 2 op een echte telefoon: een keuzeknop tikken, en de
+ledenlijst van een band openen.
+
+**Vorige update:** 24-09-2026 (vervolg) — **TT-316 voorbereid: alle knoppen
 en badges geïnventariseerd, met beelden en een voorstel per soort. Nog niets
 gebouwd.**
 
@@ -5100,7 +5160,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-313** | Een open menu valt weg tegen de achtergrond | **Nieuw en gebouwd 24-09-2026, melding Ronald met schermafdruk. Besluit Ronald: optie B.** Achter elk open menu een zwarte laag van 60%; het menu zelf `--surface2` met rand `#444`. Geldt voor alle vijf de menusoorten. **Toets P2:** het werkt, maar je moet zoeken of er iets openstaat. Zie Laatste update bovenaan |
 | **TT-314** | Twee menu's konden tegelijk openstaan | **Nieuw en gebouwd 24-09-2026, melding Ronald met schermafdruk.** Hamburger en ⋯ op het profiel stonden samen open. Nu één gedeelde regel, `sluitAlleMenus()` in `core.js`. **Toets P2:** niets breekt, maar het scherm oogt kapot. Zie Laatste update bovenaan |
 | **TT-315** | Badges in de zoekresultaten: gekleurd vlak op 16% | **Gebouwd en getest 24-09-2026. Besluit Ronald: optie B, "minder rommelig, het meest clean", door de hele app.** Eén tagvorm: wit op 5%, geen rand, kleur alleen in de tekst. Geldt voor zoekresultaten, profiel, "Wij zoeken nog" op het bandprofiel en de bandstatus. `.badge`, `.wanted-chip` en `hexToRgba()` zijn weg. Niet mee: de ledenchip (een aantikbare persoon) en de badge in een keuzeveld (een bedieningselement). Oorspronkelijke tekst: `tagSolid()` in `utils.js` tekent instrument- en genrebadges als vlak in de profielkleur (standaard goud) op 16% dekking. Dat is dezelfde fout als TT-290 (huisstijl §1.1). Maar die vorm is op 07-08-2026 bewust gekozen (TT-30: effen tags in plaats van omlijnde). Niet aangepast zonder besluit. **Toets P2:** het werkt, maar goud wordt olijfbruin |
-| **TT-316** | Knoppen en badges: één vorm per soort | **Nieuw 24-09-2026, voorbereid dezelfde dag. Besluiten Ronald dezelfde dag: alle voorstellen akkoord, plus de bandsterren weg uit de lijsten — zie Laatste update bovenaan. Klaar om te bouwen.** Alle knop- en badgesoorten doorlopen en standaardiseren, voor een uniform en rustiger uiterlijk. Overzicht per soort met beelden en een voorstel: `_niet-uploaden-TT-316-knoppen-en-badges-24-09-2026.html`. Het niveaulabel in het repertoire hoort erbij. Bij de bouw krijgt de monitorronde (laag 0) een controle die een afwijkende knop- of tagvorm meldt. Werkwijze: eerst beelden, dan kiest Ronald, daarna bouwt Claude. Bandkant: zelfde klassen, dus vanzelf gelijk. **Toets P2:** het werkt, maar acht soorten in wisselende vormen maken de app onrustig. Zie Laatste update bovenaan |
+| **TT-316** | Knoppen en badges: één vorm per soort | **Gebouwd en getest 24-09-2026 (vervolg 2), zie Laatste update bovenaan.** Besluiten Ronald: K1 t/m K12 akkoord, bandsterren weg uit de lijsten, en bij K3 geen kortere teksten — wat niet past loopt over twee regels. Testset blok 31, monitorronde B6 en B7. **Open: alleen laag 2** (keuzeknop en ledenlijst op een echte telefoon). Voorstel: `_niet-uploaden-TT-316-knoppen-en-badges-24-09-2026.html`. **Toets P2:** het werkte, maar acht soorten in wisselende vormen maakten de app onrustig |
 | **TT-282** | Vegen: een schuine of afbuigende veeg wisselt van tabblad | **Nieuw, 16-09-2026 (onderhoudsronde).** 30° telt als horizontaal; een veeg die steil eindigt telt ook; een veeg vanaf de schermrand wisselt. Volledige tekst: Laatste update bovenaan |
 | **TT-277** | Gesprek springt bij versturen | **Opgelost 16-09-2026 (vervolg 3).** Toetsenbord blijft open, beeld staat stil. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
 | **TT-278** | Inloggen ontbreekt in het hamburgermenu | **Opgelost 16-09-2026 (vervolg 3).** Uitgelogd staat Inloggen onderaan het menu |
@@ -5168,6 +5228,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-317** | Een rand van `--line` (1,5px) toont Chrome als 1px | **Nieuw, 24-09-2026 (TT-316).** Geverifieerd met Chromium 141 bij pixeldichtheid 1, 2 en 3: `getComputedStyle` en de getekende rand geven 1px. Chrome rondt een rand af op hele pixels; Safari toont 1,5px. Op Android is een rand van `--line` dus even dik als een rand van 1px. **Onbekend:** of 1,5px bewust voor iOS is gekozen. Keuze voor Ronald: `--line` laten, of 1px of 2px maken. **Toets P3:** geen aanwijsbaar gevolg voor een gebruiker; de randen zijn onderling gelijk |
 | **TT-306** | `JWT issued at future` bij het laden van de inbox | **Nieuw, 22-09-2026 (vervolg 2), uit het foutrapport van de monitorrepo, issue #5.** 1x, bij één gebruiker, bron `loadInbox`. De klok van dat apparaat loopt voor op die van Supabase, dus het token is nog niet geldig. **Toets P3:** geen aanwijsbaar gevolg voor een gebruiker nu, en niet op te lossen in de app-code. Hooguit een begrijpelijker melding via `friendlyErrorMessage()` |
 | **TT-291** | Een geblokkeerde kan zijn blokkade uitlezen via de API | **Nieuw, 18-09-2026 (TT-06), bewuste afweging, geen bug.** De RLS-regel op `musician_blocks` laat beide partijen de rij zien. Dat moet ook: zonder die regel kan de app een blokkade niet in béide richtingen onzichtbaar maken, en dat was Ronalds besluit. Gevolg: wie de API rechtstreeks bevraagt, kan zien dat hij geblokkeerd is. De app zelf zegt niets. Alternatief voor later: de wederzijdse onzichtbaarheid in een databasefunctie regelen in plaats van in de app, zodat de rij helemaal niet leesbaar hoeft te zijn. Vraagt een wijziging aan de zoek-RPC's, dus geen bijvangst van een andere sessie |
 | **TT-283** | Veegcontrole leest lay-out bij elke aanraking; wiel-scrollluisteraar niet passief | **Nieuw, 16-09-2026 (onderhoudsronde).** Zie Laatste update bovenaan |
