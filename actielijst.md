@@ -1,6 +1,127 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 24-09-2026 (vervolg 3) — **TT-315 vervolg: tags meer
+**Laatste update:** 24-09-2026 (vervolg 4) — **TT-318: het eigen woordmerk,
+de kop optisch uitgelijnd, het ⋯-menu in het profielvenster naast de naam, en
+een nieuw sluitteken in elk venster (TT-322). Testset 506 van 506.**
+
+**Aanleiding.** Ronald, 24-09-2026: *"kan je de letters in de gedeelde map
+gebruiken voor de talent tent app?"* In de gedeelde map stond het nagetekende
+woordmerk als lettertype (`_niet-uploaden-tt-woordmerk-nagetekend.woff2`).
+Elke stap is eerst in de browserpane op talenttent.org getoond, daarna
+gebouwd.
+
+**Besluiten Ronald, in volgorde:**
+
+| Vraag | Besluit |
+|---|---|
+| Het lettertype voor de app? | Ja, voor het woordmerk |
+| Letterafstand | "iets meer" dan 2px: **3px bij 28px** |
+| Uitlijning kop | "de terugknop heeft links meer ruimte dan het hamburgermenu. maak dat hetzelfde. daarna zet je het woordmerk exact tussen beide knoppen in zodat het optisch gecentreerd is. dus niet meten, maar optisch." |
+| Het ⋯-menu in het venster | "de 3 puntjes rechts uitlijnen. recht onder het hamburgermenu/kruisje. net als het profiel van Ronald" |
+| Het kruisje in het venster | "net zo ver van de rand als de pijl" |
+| Het bandvenster | "hanteer dezelfde afstand en indeling als het muzikantenprofiel. dus maak het bandprofiel breder" |
+| Het woordmerk in het venster | "ik heb eerder gezegd dat dit in de hele app optisch gecentreerd moest." Daarna, toen dat 6px verspringen gaf: "het woordmerk mag nooit verschuiven. dat staat heel onprofessioneel. dan is bij het kruisje maar niet optisch gecentreerd." |
+| Het kruisje | "maak het kruisje even breed als de hamburger", daarna "kleiner. eigenlijk 2x de terugknop." |
+
+**Wat er gebouwd is.**
+
+- **`tt-woordmerk.woff2`** (nieuw, hoofdmap): bevat alleen A, E, H, L, N, T
+  en de spatie. `@font-face` in `styles.css`, vooraf geladen in `index.html`.
+  `--font-display` is `'TT Woordmerk', 'Roboto', sans-serif`. Alfa Slab One is
+  uit de Google Fonts-regel gehaald.
+- **De T in een lege profielfoto** (`AVATAR_T_FALLBACK`, `search.js`) gebruikt
+  `var(--font-display)`. Die T was volgens TT-33 "de T van het logo"; met
+  Alfa Slab One uitgeschreven zou hij dat niet meer zijn. Twee overbodige
+  `font-family`-regels op `.messages-conv-avatar` en `.result-card-photo` zijn
+  weg: de T zet zijn eigen lettertype.
+- **Letterafstand** `calc(3em / 28)` op `.logo`; de aparte 1px op
+  `.modal-kop .logo` is weg.
+- **Kop:** `.kop-terug { margin-left: -5px }` — pijl en hamburgerlijnen staan
+  nu allebei 29px van de rand (was 33,8 tegen 29,0). `header .logo { transform:
+  translateX(-7px) }` — optisch in het midden.
+- **`fitKopLogo()`** (`utils.js`) rekent de ruimte nu vanaf de plek waar het
+  woordmerk werkelijk staat, tot de binnenkant van elk buitenvak, de krapste
+  kant twee keer. Noodtrede **10px** erbij: het nieuwe woordmerk is breder.
+  Op telefoons van 360 tot 414px blijft het 28px in de kop.
+- **Profielvenster (muzikant én band):** het ⋯-menu staat rechts naast de
+  naam, recht onder het kruisje (`.profiel-menu-plek`). De koprij heeft rechts
+  alleen nog het kruisje. Het woordmerk in het venster blijft daardoor 28px.
+  De naam houdt 187px, gelijk aan Mijn Profiel.
+- **Het sluitteken (nieuw, het twaalfde vaste teken):** het kruisje in de
+  koprij is geen cirkel van 33px meer, maar twee terugpijlen tegen elkaar —
+  even hoog, even dik en met dezelfde hoek als de pijl, 16px breed. Zelfde knop
+  als pijl en hamburger, 29px van de rand.
+- **TT-322, meteen meegenomen (Ronald: "tt322 meteen meenemen"):** hetzelfde
+  sluitteken in álle zestien kruisjes van de app — elk venster, elke
+  bladwijzer, de fotoweergave en het mediascherm. `.modal-close` is een knop
+  van 44×44px zonder cirkel en zonder los tikvlak (`::after`), op 12px van
+  boven en 15px van rechts: het teken op 29px van de rand, het midden op
+  dezelfde middellijn als de kop (34px). Op elke breedte gelijk; de aparte
+  maat voor mobiel is weg. Elke knop kreeg `aria-label="Sluiten"`.
+  **Ook meegenomen, eigen keuze van Claude:** de kleine terugknop in de
+  instrumentkeuze (`.modal-back`) was het spiegelbeeld van de cirkel, met de
+  letter ←. Die is nu het terugteken van de kop, zonder cirkel, 29px van de
+  linkerrand. Anders stonden in één venster een nieuw kruisje en een oude
+  cirkel naast elkaar.
+- **Het woordmerk verschuift nooit:** in het venster staat het op precies
+  dezelfde plek als in de kop, 7px links van het midden
+  (`.modal-kop .logo`).
+- **Bandvenster:** `.modal-box-kop` heeft geen eigen opvulling meer aan boven-
+  en zijkanten; het bandvenster is 64px breder en heeft dezelfde koprij en
+  randen als het muzikantvenster. De onzichtbare kleurbalk bovenin het
+  bandprofiel (negatieve marge van 32px) is weg: die zou nu buiten de rand
+  steken.
+
+**Rechtgezet.**
+
+- Claude had de optische centrering alleen in de kop toegepast, niet in het
+  venster. Ronald had "in de hele app" bedoeld; opgelost in dezelfde sessie
+  (TT-319).
+- In het gesprek zei Claude dat de beginletter in een lege profielfoto elke
+  letter kon zijn. Onjuist: het is altijd de T van het logo
+  (`AVATAR_T_FALLBACK`, TT-33). Waaruit blijkt: elke aanroep in `search.js`,
+  `musicians.js` en `messages.js` gebruikt die constante.
+- `utils.js` noemde voor de naam in het profielvenster 215px. Gemeten op
+  talenttent.org bij 375px: 247px. Rechtgezet in `utils.js` en huisstijl §2.1.
+- `tests/README.md` noemde "alle tien JS-bestanden". Het zijn er twaalf.
+- Projectinstructies §9 en huisstijl §6, §9 en §11: "beide knoppen staan 16px
+  van hun eigen rand", "het woordmerk staat exact in het midden" en "het
+  ⋯-menu staat in de koprij, nooit naast de naam". Alle drie vervangen door de
+  besluiten hierboven, met de oude tekst erbij.
+
+**Muzikantkant en bandkant.** Gelijk: beide vensters hebben dezelfde koprij,
+hetzelfde kruisje en het ⋯-menu op dezelfde plek. **Niet gelijk, niet
+aangepast:** de bandfoto is 64px en hoekig, de muzikantfoto 80px en rond —
+zie TT-320.
+
+**Testset.** Blok 25: pijl en hamburger even ver van de rand, woordmerk 7px
+links van het kopmidden, de krapste koprij in een venster. Blok 22: de plek
+van het menu komt uit het profiel. **Blok 32 (nieuw):** het lettertype, de
+preload, geen Alfa Slab One meer, de T, elke letter aanwezig, 3px. **Blok 33
+(nieuw):** voor muzikant én band — ⋯ naast de naam, kruisje op 29px, ⋯ onder
+het kruisje, woordmerk 28px, geen opvulling, niets steekt zijwaarts uit, naam
+187px, gelijke koprij, geen plek op je eigen profiel, het woordmerk op precies
+dezelfde plek als in de kop, het sluitteken even hoog als de pijl. Blok 15 en
+20: het kruisje in de koprij is `.modal-close`, tikdoel 44px. **Blok 34
+(nieuw):** elk kruisje in `index.html` is het sluitteken met een aria-label,
+de terugknop is het terugteken, en in drie vensters staat het kruisje op 29px
+en 34px, 44×44px, zonder cirkel en zonder los tikvlak. Elke nieuwe
+controle zakt op de oude code.
+
+**Geverifieerd.** Testset 506 van 506, monitorronde 21 van 21. Schermafdrukken
+van vier losse vensters bekeken, op 375 en 1280px. Schermafdrukken
+op 375px bekeken: kop, muzikantvenster, bandvenster. **Aanname:** die afdrukken
+gebruiken een vervangende letter voor Roboto (de sessie komt niet bij Google
+Fonts); het woordmerk zelf is het echte lettertype. De stand met Roboto is
+gezien in de browserpane op talenttent.org, als voorbeeld vóór het bouwen.
+
+**Nog open.** Laag 2: Ronald bekijkt kop, muzikantvenster en bandvenster op zijn
+telefoon. Nieuwe bevindingen: TT-320 en TT-321 (P2). TT-319 en TT-322 zijn in
+dezelfde sessie opgelost.
+
+---
+
+**Vorige update:** 24-09-2026 (vervolg 3) — **TT-315 vervolg: tags meer
 contrast. Testset 464 van 464.**
 
 **Aanleiding.** Ronald, met een schermafdruk van zijn profiel op de telefoon:
@@ -5188,6 +5309,11 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-313** | Een open menu valt weg tegen de achtergrond | **Nieuw en gebouwd 24-09-2026, melding Ronald met schermafdruk. Besluit Ronald: optie B.** Achter elk open menu een zwarte laag van 60%; het menu zelf `--surface2` met rand `#444`. Geldt voor alle vijf de menusoorten. **Toets P2:** het werkt, maar je moet zoeken of er iets openstaat. Zie Laatste update bovenaan |
 | **TT-314** | Twee menu's konden tegelijk openstaan | **Nieuw en gebouwd 24-09-2026, melding Ronald met schermafdruk.** Hamburger en ⋯ op het profiel stonden samen open. Nu één gedeelde regel, `sluitAlleMenus()` in `core.js`. **Toets P2:** niets breekt, maar het scherm oogt kapot. Zie Laatste update bovenaan |
 | **TT-315** | Badges in de zoekresultaten: gekleurd vlak op 16% | **Gebouwd en getest 24-09-2026. Besluit Ronald: optie B, "minder rommelig, het meest clean", door de hele app.** Eén tagvorm: wit op 10% (was 5%, vervolg 3 dezelfde dag: op de telefoon viel het vlak weg; besluit Ronald variant A), lege sterren `#555`, geen rand, kleur alleen in de tekst. Geldt voor zoekresultaten, profiel, "Wij zoeken nog" op het bandprofiel en de bandstatus. `.badge`, `.wanted-chip` en `hexToRgba()` zijn weg. Niet mee: de ledenchip (een aantikbare persoon) en de badge in een keuzeveld (een bedieningselement). Oorspronkelijke tekst: `tagSolid()` in `utils.js` tekent instrument- en genrebadges als vlak in de profielkleur (standaard goud) op 16% dekking. Dat is dezelfde fout als TT-290 (huisstijl §1.1). Maar die vorm is op 07-08-2026 bewust gekozen (TT-30: effen tags in plaats van omlijnde). Niet aangepast zonder besluit. **Toets P2:** het werkt, maar goud wordt olijfbruin |
+| **TT-318** | Het eigen woordmerk; kop en profielvenster uitgelijnd | **Gebouwd en getest 24-09-2026 (vervolg 4), zie Laatste update bovenaan.** Besluiten Ronald: eigen lettertype, 3px letterafstand, tekens 29px van de rand, woordmerk optisch in het midden, ⋯ naast de naam onder het kruisje, bandvenster even breed als het muzikantvenster. **Nog open:** laag 2 op de telefoon |
+| **TT-319** | Het woordmerk sprong 7px bij het openen van een venster | **Nieuw en opgelost 24-09-2026 (TT-318). Besluit Ronald:** *"het woordmerk mag nooit verschuiven."* Het woordmerk staat in het venster op dezelfde plek als in de kop, en het kruisje is het nieuwe sluitteken. **Toets P2:** werkte, maar een verspringend woordmerk kostte indruk |
+| **TT-322** | Twee soorten kruisje in de app | **Nieuw en opgelost 24-09-2026 (TT-318). Besluit Ronald: "tt322 meteen meenemen."** Elk kruisje is het sluitteken, elke kleine terugknop het terugteken; zie Laatste update. **Toets P2:** werkte, kostte consistentie |
+| **TT-320** | Bandfoto 64px en hoekig, muzikantfoto 80px en rond | **Nieuw, 24-09-2026 (TT-318).** In het profielvenster verschillen de twee foto's in maat en vorm. Huisstijl: muzikantkant en bandkant volgen dezelfde regels. Vraag aan Ronald: gelijktrekken, of is het verschil bewust (een band is geen persoon). **Toets P2:** werkt, kost consistentie |
+| **TT-321** | Het woordmerk in de e-mails | **Nieuw, 24-09-2026. Wens Ronald:** *"ik wil dit ook gebruiken voor de emails."* `send-digest` en `ouder-toestemming` gebruiken nog Alfa Slab One, als tekst. **Aanname:** Gmail en Outlook tonen geen eigen lettertype in een mail; daarom als afbeelding (PNG). Niet zelf getest. Vraagt een PNG van het woordmerk en een wijziging in beide Edge Functions, die Ronald zelf plaatst. **Toets P2:** de mail werkt, maar het merk klopt niet met de app |
 | **TT-316** | Knoppen en badges: één vorm per soort | **Gebouwd en getest 24-09-2026 (vervolg 2), zie Laatste update bovenaan.** Besluiten Ronald: K1 t/m K12 akkoord, bandsterren weg uit de lijsten, en bij K3 geen kortere teksten — wat niet past loopt over twee regels. Testset blok 31, monitorronde B6 en B7. **Open: alleen laag 2** (keuzeknop en ledenlijst op een echte telefoon). Voorstel: `_niet-uploaden-TT-316-knoppen-en-badges-24-09-2026.html`. **Toets P2:** het werkte, maar acht soorten in wisselende vormen maakten de app onrustig |
 | **TT-282** | Vegen: een schuine of afbuigende veeg wisselt van tabblad | **Nieuw, 16-09-2026 (onderhoudsronde).** 30° telt als horizontaal; een veeg die steil eindigt telt ook; een veeg vanaf de schermrand wisselt. Volledige tekst: Laatste update bovenaan |
 | **TT-277** | Gesprek springt bij versturen | **Opgelost 16-09-2026 (vervolg 3).** Toetsenbord blijft open, beeld staat stil. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |

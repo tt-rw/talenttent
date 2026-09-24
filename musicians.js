@@ -61,6 +61,15 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
   // de modal) — bij het bekijken van een ander profiel, of het eigen
   // profiel via de modal, hoort dit menu niet thuis.
   const showOwnerMenu = isOwn && !inModal;
+  // TT-318 (24-09-2026, besluit Ronald): in het venster van iemand anders
+  // staat het ⋯-menu voor melden en blokkeren op dezelfde plek als het
+  // eigen menu op Mijn Profiel: rechts naast de naam. Tot nu toe stond het in
+  // de koprij, links van het kruisje (TT-06). Alleen de plek komt hier; de
+  // inhoud zet openMusicianModal() erin met zetVeiligheidMenu(), zodra het
+  // profiel geladen is. Op je eigen profiel komt er geen plek: een lege plek
+  // zou in deze rij toch 16px tussenruimte kosten.
+  const veiligheidPlekHTML = (inModal && !isOwn)
+    ? '<span id="musicianModalActies" class="profiel-menu-plek"></span>' : '';
   const ownerMenuHTML = showOwnerMenu ? `
     <div class="profile-actions-menu-wrap" style="flex-shrink:0;">
       <button class="nav-menu-btn" id="profileMoreBtn" onclick="toggleProfileMoreMenu(event)" aria-label="Meer opties voor je profiel" title="Meer">
@@ -96,7 +105,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
              daar niet op één regel. -->
         <div class="profile-fresh">${escHtml(updatedLabel)}</div>
       </div>
-      ${ownerMenuHTML}
+      ${ownerMenuHTML}${veiligheidPlekHTML}
     </div>
     <div class="profile-badges">
       ${m.musician_instruments.map(x => `<span class="tag-solid" style="color:${col};">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
@@ -220,9 +229,9 @@ async function openMusicianModal(id) {
   // musicianContactFooterHTML() (geen berichtknop, wel "Maak een profiel aan
   // om contact te leggen").
   footer.innerHTML = '';
-  // TT-06: het ⋯-menu hoort bij het profiel dat straks verschijnt, niet bij
-  // het vorige. Tijdens het laden staat er dus niets.
-  zetVeiligheidMenu('musicianModalActies', 'muzikant', null, '');
+  // TT-318: hier werd het ⋯-menu van het vorige profiel leeggemaakt (TT-06).
+  // Het menu staat sinds TT-318 in de inhoud zelf, en die wordt hieronder
+  // vervangen door "Laden...". Dat leegmaken is daarmee vanzelf gebeurd.
   content.innerHTML =
     '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
 
@@ -301,7 +310,8 @@ async function openMusicianModal(id) {
   // (TT-43: bezoekers zonder profiel zien alleen de gebruikersnaam).
   const displayName = isOwn ? m.fname : displayNameOf(m);
   footer.innerHTML = musicianContactFooterHTML(m, isOwn, displayName);
-  // TT-06: melden en blokkeren in de koprij. Op je eigen profiel niet.
+  // TT-06: melden en blokkeren, naast de naam (TT-318). Op je eigen profiel
+  // niet — daar maakt buildMusicianDetailHTML() ook geen plek.
   zetVeiligheidMenu('musicianModalActies', 'muzikant', isOwn ? null : m.id, displayName);
 }
 
@@ -1818,7 +1828,6 @@ async function loadMyBands() {
 async function openBandModal(id) {
   const modal = document.getElementById('bandModal');
   document.getElementById('bandModalContent').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
-  zetVeiligheidMenu('bandModalActies', 'band', null, ''); // TT-06, zie openMusicianModal()
   modal.classList.add('visible');
 
   let b = null;
@@ -1866,14 +1875,24 @@ async function openBandModal(id) {
   const founderMember = hasOwnProfile ? confirmed.find(m => m.role === 'Oprichter') : null;
   const isOwnBand = !!(founderMember && myMusicianId && founderMember.musicians?.id === myMusicianId);
 
+  // TT-318 (24-09-2026): hier stond eerst een gekleurde balk van 8px met een
+  // negatieve marge van 32px — die hoorde bij de oude opvulling van 32px rond
+  // dit venster. Sinds de koprij (TT-268) viel hij volledig buiten beeld: niet
+  // te zien, en netto 0px hoog. Nu het venster geen eigen opvulling meer heeft
+  // (zelfde maten als het muzikantvenster), zou hij 16px buiten de rand
+  // steken. Weggehaald. Zelfde valkuil als de gouden balk van TT-126.
+  // Het ⋯-menu staat rechts naast de naam, net als bij een muzikant; op je
+  // eigen band niet.
+  const veiligheidPlekHTML = isOwnBand ? ''
+    : '<span id="bandModalActies" class="profiel-menu-plek"></span>';
   document.getElementById('bandModalContent').innerHTML = `
-    <div style="height:8px;background:${col};margin:-32px -32px 24px;border-radius:8px 8px 0 0;"></div>
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
       ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border);margin-bottom:0;flex-shrink:0;">` : `<div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`}
       <div style="min-width:0;flex:1;">
         <div class="profile-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
         <div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
       </div>
+      ${veiligheidPlekHTML}
     </div>
     <div style="margin:8px 0;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>
     ${b.description ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
@@ -1906,7 +1925,7 @@ async function openBandModal(id) {
   fitProfileName(document.getElementById('bandModalContent'));
   // TT-293: zelfde reden, voor het woordmerk in de koprij van deze modal.
   fitKopLogo(document.getElementById('bandModalBox'));
-  // TT-06: je eigen band meld je niet.
+  // TT-06: je eigen band meld je niet. Het menu staat naast de bandnaam (TT-318).
   zetVeiligheidMenu('bandModalActies', 'band', isOwnBand ? null : b.id, b.name);
 }
 

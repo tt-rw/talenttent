@@ -254,8 +254,9 @@ async function appInit() {
   terugDiepte = 0;
   werkTerugKnopBij();
   // Het woordmerk past zich aan de breedte aan (fitKopLogo). Meten kan pas als
-  // Alfa Slab One geladen is — met een terugvalletter is het woordmerk smaller
-  // en zou de eerste meting een te grote letter goedkeuren.
+  // het woordmerk-lettertype (TT Woordmerk, TT-318) geladen is — met een
+  // terugvalletter heeft het woordmerk een andere breedte en klopt de eerste
+  // meting niet.
   fitKopLogo(document);
   if (document.fonts?.ready) document.fonts.ready.then(() => fitKopLogo(document));
 }

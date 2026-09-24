@@ -782,7 +782,10 @@ const MESSAGE_ICON_SVG = `<svg class="result-row-msg-icon" viewBox="0 0 24 24" w
 // consistente merkherkenning i.p.v. een willekeurige letter per gebruiker
 // (Ronald: "geef iedereen dan een typische T van het logo"). Zelfde lettertype
 // als het woordmerk (--font-display).
-const AVATAR_T_FALLBACK = `<span style="font-family:'Alfa Slab One','Roboto',sans-serif;">T</span>`;
+// TT-318 (24-09-2026): stond hier nog als 'Alfa Slab One' uitgeschreven. Sinds
+// het eigen woordmerk zou de T dan niet meer de T van het logo zijn. Nu de
+// variabele zelf, zodat beide nooit meer uit elkaar kunnen lopen.
+const AVATAR_T_FALLBACK = `<span style="font-family:var(--font-display);">T</span>`;
 
 // Extreem overzichtelijk gehouden (04-08-2026): alleen naam, plaats(+afstand)
 // en instrument/genre-badges. Matchscore/vibe/doel/repertoire-preview zijn

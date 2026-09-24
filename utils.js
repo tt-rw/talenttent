@@ -1322,7 +1322,9 @@ const PROFIELNAAM_MIN = 16;
 // Referentiebreedte voor de invulcontrole: de ruimte voor de naam op Mijn
 // Profiel bij een venster van 375px — avatar 80 + 16 + naam + 16 + ⋯-menu 44.
 // Gemeten 11-09-2026. Dit is het smalste telefoonscherm waar de app op
-// getoetst wordt, en Mijn Profiel is krapper dan de profielmodal (215px).
+// getoetst wordt, en Mijn Profiel is krapper dan de profielmodal.
+// Gecorrigeerd 24-09-2026 (TT-318): hier stond "(215px)" voor de modal.
+// Opnieuw gemeten op talenttent.org bij 375px: 247px.
 const PROFIELNAAM_REFERENTIE = 187;
 
 let naamMeterEl = null;
@@ -1383,7 +1385,10 @@ const KOPLOGO_LADDER = [28, 24, 22, 20, 18, 16];
 // ⋯-menu en het kruis, op het smalste canvas van 280px. Daar is na de drie
 // knoppen nog 91px over en het woordmerk is op 16px al 107px breed (gemeten
 // 20-09-2026). Liever een klein woordmerk dan een woordmerk over de knoppen.
-const KOPLOGO_NOOD = [14, 12];
+// TT-318 (24-09-2026): trede 10 erbij. Het eigen woordmerk met 3px
+// letterafstand is breder dan Alfa Slab One met 1px: op 12px 88px, en in die
+// krapste stand liep het 1px over het ⋯-menu (gemeten, testset blok 25).
+const KOPLOGO_NOOD = [14, 12, 10];
 
 // Het woordmerk wordt buiten beeld gemeten, niet op zijn eigen plek in de
 // kop. Reden (TT-301, gemeten 20-09-2026): het woordmerk staat gecentreerd
@@ -1411,13 +1416,25 @@ function fitKopLogo(root) {
     const logo = rij.querySelector(':scope > .logo');
     if (!logo || !rij.clientWidth) return; // nog niet zichtbaar — niets te meten
     const st = getComputedStyle(rij);
-    const gap = parseFloat(st.columnGap) || 0;
-    // De ruimte tussen de twee buitenvakken. Die vakken zijn zo breed als hun
-    // knoppen; de rest van de rij is voor het woordmerk. Zo gerekend in plaats
-    // van gemeten, want de kolom zelf krimpt mee met de letter.
+    // De ruimte voor het woordmerk. TT-318 (24-09-2026): gerekend vanaf de
+    // plek waar het woordmerk werkelijk staat — het midden van de rij plus
+    // zijn optische verschuiving — tot de binnenkant van elk buitenvak. Het
+    // woordmerk groeit naar twee kanten even ver, dus de krapste kant telt,
+    // twee keer. Was: de rijbreedte min de twee vakken samen. Dat klopte
+    // alleen als beide vakken even breed waren; met het ⋯-menu en het kruis
+    // rechts (drie knoppen) liep het woordmerk daardoor over het ⋯-menu.
+    // De vakken zelf veranderen niet met de lettergrootte: ze staan tegen de
+    // buitenrand van hun kolom (justify-self start en end).
     const vakken = [...rij.querySelectorAll(':scope > .kop-vak')];
-    const bezet = vakken.reduce((s, v) => s + v.offsetWidth, 0) + gap * vakken.length;
-    const ruimte = rij.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight) - bezet;
+    if (vakken.length < 2) return;
+    const rb = rij.getBoundingClientRect();
+    const pl = parseFloat(st.paddingLeft), pr = parseFloat(st.paddingRight);
+    const tf = getComputedStyle(logo).transform;
+    const verschuiving = tf && tf !== 'none' ? new DOMMatrix(tf).m41 : 0;
+    const midden = rb.left + pl + (rij.clientWidth - pl - pr) / 2 + verschuiving;
+    const links = vakken[0].getBoundingClientRect().right;
+    const rechts = vakken[vakken.length - 1].getBoundingClientRect().left;
+    const ruimte = 2 * Math.min(midden - links, rechts - midden);
     for (const px of KOPLOGO_LADDER.concat(KOPLOGO_NOOD)) {
       logo.style.fontSize = px + 'px';
       if (meetLogoBreedte(logo, px) <= ruimte) return;

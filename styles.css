@@ -48,14 +48,26 @@
     --field-border: #666666;
   }
 
-  /* TT-15b: tijdelijk display-font (Alfa Slab One) alleen voor het logo/
-     woordmerk, in afwachting van het eigen letterontwerp uit het huisstijl-
-     blad. Ronald vond het te zwaar/onleesbaar voor paneeltitels (06-08-2026)
-     — die zijn teruggezet naar Roboto Bold. Zodra het eigen font beschikbaar
-     is, hoeft alleen deze regel te wijzigen; .logo blijft de enige gebruiker
-     van --font-display. */
+  /* TT-318 (24-09-2026, besluit Ronald): het eigen woordmerk. Het nagetekende
+     lettertype vervangt Alfa Slab One (TT-15b, tijdelijk sinds 06-08-2026).
+     Het bestand bevat alleen A, E, H, L, N, T en de spatie: genoeg voor
+     "TALENT TENT" en voor de T van het logo in een lege profielfoto
+     (AVATAR_T_FALLBACK, TT-33). Voor lopende tekst is het dus onbruikbaar.
+     Het staat in de repo zelf, niet bij Google Fonts: 1,7 kB, geen extern
+     verzoek. font-display: block — het woordmerk verschijnt meteen in de
+     goede vorm; fitKopLogo() meet pas als het geladen is (core.js).
+     index.html laadt het vooraf (preload), met dezelfde URL als hieronder. */
+  @font-face {
+    font-family: 'TT Woordmerk';
+    src: url('tt-woordmerk.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: block;
+  }
+  /* --font-display heeft twee gebruikers: .logo en AVATAR_T_FALLBACK in
+     search.js. Paneeltitels blijven Roboto Bold (Ronald, 06-08-2026). */
   :root {
-    --font-display: 'Alfa Slab One', 'Roboto', sans-serif;
+    --font-display: 'TT Woordmerk', 'Roboto', sans-serif;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -143,6 +155,14 @@
      accentkleur, zelfde hoekstraal) met een lijn-teken van dezelfde dikte —
      huisstijl §12. Geen los ontwerp: één knopklasse, twee tekens. */
   .kop-terug svg { display: block; }
+  /* TT-318 (24-09-2026, Ronald): "de terugknop heeft links meer ruimte dan
+     het hamburgermenu aan de rechterkant. maak dat hetzelfde." De pijl is
+     9px breed in een vak van 24px, de hamburger 20px: in dezelfde knop van
+     44px stond de pijl daardoor 5px verder van de rand (gemeten: 33,8px
+     tegen 29,0px). De hele knop schuift 5px naar buiten, niet alleen het
+     teken: zo blijft de pijl midden in zijn eigen knopvlak staan, ook als
+     dat vlak zichtbaar wordt (.gewapend, :hover). Het tikdoel blijft 44px. */
+  .kop-terug { margin-left: -5px; }
 
   /* TT-302: de regel onder de kop bij onopgeslagen wijzigingen. Bewust géén
      rand, géén vlak en géén hoeken: dat zou een knop of een toast nabootsen,
@@ -166,7 +186,12 @@
     min-height: 44px;
     font-family: var(--font-display);
     font-size: clamp(40px, 7vw, 72px);
-    letter-spacing: 1px;
+    /* TT-318 (24-09-2026, besluit Ronald): 3px letterafstand bij 28px — zo
+       gekozen in de browser, na 1px en 2px. Als verhouding geschreven, zodat
+       het woordmerk bij elke trede van fitKopLogo() dezelfde vorm houdt.
+       Was 1px, en in .modal-kop .logo nog eens apart 1px; die tweede regel
+       is weg, één maat voor elk woordmerk (§2, regel 11). */
+    letter-spacing: calc(3em / 28);
     line-height: 1;
     color: var(--accent);
   }
@@ -180,7 +205,20 @@
     justify-self: center;
     min-width: 0;
     white-space: nowrap;
+    /* TT-318 (24-09-2026, besluit Ronald): optisch in het midden tussen de
+       pijl en de hamburger, niet gemeten in het midden. De pijl is een open
+       vorm en oogt smaller dan hij is; de hamburger oogt als een blok. Het
+       woordmerk staat daarom 7px links van het rastermidden. Getoond in de
+       browser op 375px en goedgekeurd. transform, geen marge: het raster
+       en de meting van fitKopLogo() blijven zo ongemoeid. */
+    transform: translateX(-7px);
   }
+  /* TT-318 (24-09-2026, besluit Ronald): "het woordmerk mag nooit
+     verschuiven. dat staat heel onprofessioneel." In een venster staat het
+     woordmerk daarom op precies dezelfde plek als in de kop, ook al staat
+     rechts een kruisje in plaats van de hamburger: dezelfde 7px als in
+     header .logo hierboven. Wijzigt de ene, dan wijzigt de andere mee. */
+  .modal-kop .logo { transform: translateX(-7px); }
 
   .logo span {
     color: var(--text);
@@ -1508,7 +1546,7 @@
   }
   /* TT-316 (24-09-2026, besluit Ronald K10): de donkere schijf blijft — anders
      is het kruis onzichtbaar op een licht beeld — maar het tikvlak is 44×44
-     (22px + 2×11px), zelfde patroon als .modal-close::after. */
+     (22px + 2×11px), zelfde patroon als .niveau-info-btn::after. */
   .media-thumb .thumb-remove::after { content: ''; position: absolute; inset: -11px; }
 
   .media-thumb .thumb-type {
@@ -2081,7 +2119,6 @@
     width: 48px; height: 48px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Alfa Slab One', 'Roboto', sans-serif;
     font-size: 20px;
     color: #000;
     flex-shrink: 0;
@@ -2380,7 +2417,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Alfa Slab One', 'Roboto', sans-serif;
     font-size: 48px;
     font-weight: 700;
     color: #000;
@@ -2768,7 +2804,6 @@
     justify-self: center;
     font-size: 28px;
     text-shadow: none;
-    letter-spacing: 1px;
     /* TT-293 (18-09-2026): zonder min-width:0 kan een flex-item nooit
        kleiner worden dan zijn eigen tekst (het browserdefault is
        min-width:auto). Bij het bureaubladvenster tussen 561 en circa 780px
@@ -2780,20 +2815,40 @@
     min-width: 0;
     white-space: nowrap;
   }
-  /* In de koprij staat het kruis gewoon in de rij mee, niet los erboven.
-     TT-287: relative, niet static. Het vergrote tikvlak (::after hieronder)
-     is absoluut en zoekt de dichtstbijzijnde niet-statische ouder. Bij static
-     was dat het hele venster: elke tik op een profiel of band raakte het kruis. */
+  /* In een koprij en in de kop van het mediascherm staat het kruis gewoon in
+     de rij mee, niet los erboven. TT-287: relative, niet static.
+     TT-322 (24-09-2026): het kruis heeft geen los tikvlak (::after) meer; de
+     knop is zelf 44px. relative blijft, zodat een later tikvlak nooit het
+     hele venster kan dekken. */
   .modal-kop .modal-close,
   .media-speler-kop .modal-close {
     position: relative;
     top: auto; right: auto;
     flex-shrink: 0;
   }
+  /* TT-318 (24-09-2026, Ronald): "het kruisje net zo ver van de rand als de
+     pijl." In een koprij staat de knop tegen de opvulling van 16px; het
+     teken begint 14px binnen de knop. 1px naar buiten brengt het teken op
+     29px van de rand, even ver als de pijl links. */
+  .modal-kop .modal-close { margin-right: -1px; }
 
-  /* TT-06 (18-09-2026): het ⋯-menu en het kruis staan als één blok rechts in
-     de koprij. Zonder deze wikkel verdeelt space-between de rij in drieën en
-     komt het woordmerk niet meer tegen de linkerrand. */
+  /* TT-318: het ⋯-menu staat naast de naam, recht onder het kruisje, net als
+     het eigen menu op Mijn Profiel onder de hamburger. Het midden van het
+     kruisje ligt 37px van de rand (29px plus de halve breedte van 8px); het
+     midden van de menuknop tegen de opvulling van 16px ligt op 38px.
+     margin-right schuift de menuknop 1px naar buiten; margin-left neemt die
+     1px weer terug, zodat de naam in het
+     venster dezelfde 187px houdt als op Mijn Profiel — de ruimte waarop
+     naamPastInProfielkop() elke naam controleert. */
+  .profiel-menu-plek {
+    flex-shrink: 0;
+    margin-left: 1px;
+    margin-right: -1px;
+  }
+
+  /* TT-06 (18-09-2026): het rechtervak van de koprij. TT-318: daar staat nu
+     alleen nog het kruisje; het ⋯-menu staat naast de naam. De wikkel blijft:
+     fitKopLogo() en het raster rekenen met de .kop-vak aan elke kant. */
   .modal-kop-acties {
     display: flex;
     align-items: center;
@@ -2803,64 +2858,63 @@
     justify-self: end;
   }
 
+  /* TT-322 (24-09-2026, besluiten Ronald): het sluitteken in elk venster.
+     "eigenlijk 2x de terugknop" (TT-318) — twee terugpijlen tegen elkaar, als
+     lijn-teken van 24px, zonder cirkel. Eén vorm voor elk kruisje in de app
+     ("tt322 meteen meenemen"). Was: een omlijnde cirkel van 33px met de letter
+     ✕ en een onzichtbaar tikvlak van 44px eromheen (TT-223). Nu is de knop
+     zelf 44×44px, net als de hamburger, dus dat tikvlak is weg.
+
+     Plaats: het teken staat 29px van de rechterrand, even ver als de pijl en
+     de hamburger in de kop. Het teken begint 14px binnen de knop (knop 44px,
+     teken 16px, gecentreerd), dus de knop staat 15px van de rand. Hoogte: het
+     midden van de knop op 34px, dezelfde middellijn als de kop (12px lucht +
+     22px). Geldt op elke breedte.
+     TT-219 (06-09-2026) zette het kruis op 24px van de rand, weg van de
+     scrollbalk van de browser (15-17px). Het teken zelf staat nu op 29px en
+     blijft daar dus vrij van; alleen de lege rand van de knop kan erover
+     liggen.
+     TT-217: standaard al in de accentkleur, niet pas bij aanwijzen — op een
+     telefoon bestaat geen aanwijzen. */
   .modal-close {
     position: absolute;
-    /* TT-219 (06-09-2026): right ging van 16px naar 24px. Bij een lange lijst
-       in .modal-scroll-area (bijv. de instrumentkeuze) toont de browser een
-       eigen scrollbar tegen de rechterrand van .modal-box, meestal 15-17px
-       breed. Op 16px zat de knop daar bovenop. 24px geeft echte lucht,
-       ongeacht hoe breed de scrollbar van de browser is. top blijft 16px —
-       daar speelt geen scrollbar. */
-    top: 16px; right: 24px;
-    background: var(--surface2);
-    /* TT-217 (06-09-2026): border en kruis standaard al accentkleur, niet pas
-       bij :hover — zelfde reden als .niveau-info-btn (§6 huisstijl): op een
-       telefoon bestaat geen hover, dus viel de knop altijd weg tegen de
-       donkere achtergrond. */
-    border: 1px solid var(--accent);
-    border-radius: 50%;
-    /* TT-223 (07-09-2026): visuele cirkel 25% kleiner (44px → 33px, op
-       verzoek van Ronald), nu de nieuwe standaard voor alle sluit-/terug-
-       knoppen van dit type (huisstijl §6/§9). Het tikdoel zelf blijft
-       gewoon 44×44 — hetzelfde patroon als .niveau-info-btn::after: een
-       onzichtbaar, groter tikvlak via ::after, i.p.v. de zichtbare cirkel
-       zelf op te rekken. */
-    width: 33px; height: 33px;
+    top: 12px; right: 15px;
+    width: 44px; height: 44px;
+    padding: 0;
     display: flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 14px;
     color: var(--accent);
-    transition: all 0.15s;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
   }
-  /* TT-223: onzichtbaar tikvlak van 44×44 rond de kleinere zichtbare cirkel
-     (33px + 2×5,5px = 44px), zelfde principe als .niveau-info-btn::after. */
-  .modal-close::after, .modal-back::after { content:''; position:absolute; top:-5.5px; right:-5.5px; bottom:-5.5px; left:-5.5px; }
+  .modal-close svg { display: block; }
 
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
   /* TT-116-vervolg (21-08-2026): kleine terugknop, spiegelbeeld van
      .modal-close, voor de instrumentkeuze-sheet. Alleen zichtbaar als er
-     ook echt een vorige stap is om naar terug te gaan. */
+     ook echt een vorige stap is om naar terug te gaan.
+     TT-322 (24-09-2026): spiegelbeeld blijft spiegelbeeld. Naast het nieuwe
+     sluitteken stond hier nog een cirkel met de letter ←; nu het terugteken
+     van de kop (§12 van de huisstijl), zonder cirkel. Het teken begint 17px
+     binnen de knop, dus de knop staat 12px van de linkerrand: het teken op
+     29px, even ver als de pijl in de kop. */
   .modal-back {
     position: absolute;
-    /* TT-219 (06-09-2026): left ging mee van 16px naar 24px, als spiegelbeeld
-       van .modal-close — zie toelichting daar. Links komt zelf geen
-       browser-scrollbar voor, maar de knop blijft zo het spiegelbeeld van
-       .modal-close in plaats van een eigen, afwijkende inspringing. */
-    top: 16px; left: 24px;
-    background: var(--surface2);
-    /* TT-217 (06-09-2026): zelfde accent-fix als .modal-close, om spiegelbeeld
-       te blijven — zie toelichting daar. */
-    border: 1px solid var(--accent);
-    border-radius: 50%;
-    /* TT-223: zelfde 25%-verkleining als .modal-close, zie toelichting daar. */
-    width: 33px; height: 33px;
+    top: 12px; left: 12px;
+    width: 44px; height: 44px;
+    padding: 0;
     display: flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 14px;
     color: var(--accent);
-    transition: all 0.15s;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
   }
+  .modal-back svg { display: block; }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
   .modal-back[hidden] { display: none; }
 
@@ -2932,6 +2986,16 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    /* TT-318 (24-09-2026, Ronald): "hanteer dezelfde afstand en indeling als
+       het muzikantenprofiel. dus maak het bandprofiel breder." Het
+       muzikantvenster had via .modal-box-sticky-footer al geen eigen
+       opvulling; het bandvenster had de 32px van .modal-box nog wel, bovenop
+       de 16px van koprij en inhoud. Nu geldt voor elk venster met een koprij
+       hetzelfde: de koprij en de inhoud regelen hun eigen 16px. De opvulling
+       onderaan blijft staan: die hoort bij de onderrand van het scherm. */
+    padding-top: 0;
+    padding-left: 0;
+    padding-right: 0;
   }
   .modal-box-kop .modal-scroll-area {
     overflow-y: auto;
@@ -3354,8 +3418,9 @@
        18px van boven en 16px van rechts, dus zijn middelpunt ligt 40px van
        beide randen. Het kruis is 33x33; op 24/24 ligt zijn middelpunt op
        40,5px. Boven 560px blijft 16/24 gelden (TT-219, browser-scrollbar).
-       Was tot 15-09-2026: top 12px, right 12px. */
-    .modal-close { top: 18px; right: 24px; }
+       Was tot 15-09-2026: top 12px, right 12px.
+       TT-322 (24-09-2026): die regel voor mobiel is weg. Het kruis staat op
+       elke breedte op dezelfde plek, met het teken op 29px van de rand. */
     /* Punt 2 (25-08-2026, Ronald): op mobiel was één kaart beeldvullend —
        te breed. Vaste 2 kolommen i.p.v. auto-fill, zodat het altijd 2 naast
        elkaar zijn, ongeacht de precieze schermbreedte binnen dit bereik. */

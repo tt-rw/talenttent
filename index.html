@@ -32,7 +32,12 @@
 <meta name="theme-color" content="#0d0d0d">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400&family=Alfa+Slab+One&display=swap" rel="stylesheet">
+<!-- TT-318 (24-09-2026): Alfa Slab One is weg uit deze regel; het woordmerk
+     heeft een eigen lettertype in de repo (styles.css, @font-face). Vooraf
+     laden, zodat het er is voordat de kop getekend wordt. crossorigin is
+     verplicht bij een lettertype, ook op het eigen domein. -->
+<link rel="preload" href="tt-woordmerk.woff2" as="font" type="font/woff2" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
   /* TT-82 (10-08-2026, externe review 2.1): de hele app hangt aan deze ene
@@ -45,7 +50,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260924d">
+<link rel="stylesheet" href="styles.css?v=20260924f">
 </head>
 <body>
 
@@ -2056,11 +2061,18 @@
       </div>
       <div class="logo" onclick="closeMusicianModal();naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span style="color:var(--text);">TALENT</span> TENT</div>
       <!-- TT-06 (18-09-2026): melden en blokkeren staan achter een ⋯-menu
-           (huisstijl §8). In de koprij, niet naast de naam: een vaste plek die
-           niet meeschuift met de lengte van een naam (§2.1). -->
+           (huisstijl §8). TT-318 (24-09-2026, besluit Ronald): dat menu staat
+           niet meer in deze koprij maar rechts naast de naam, recht onder het
+           kruisje — zoals op Mijn Profiel. De koprij heeft zo dezelfde drie
+           vakken als de gewone kop: pijl, woordmerk, kruisje. De plek voor
+           het menu maakt buildMusicianDetailHTML() (#musicianModalActies). -->
+      <!-- TT-318 (24-09-2026, besluit Ronald): het kruisje is een lijn-teken
+           van twee terugpijlen tegen elkaar ("eigenlijk 2x de terugknop"),
+           geen cirkel. TT-322: hetzelfde kruisje in elk venster van de app. -->
       <div class="kop-vak modal-kop-acties">
-        <span id="musicianModalActies"></span>
-        <button class="modal-close" onclick="closeMusicianModal()">✕</button>
+        <button class="modal-close" onclick="closeMusicianModal()" aria-label="Sluiten" title="Sluiten">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>
+        </button>
       </div>
     </div>
     <div id="musicianModalContent" class="modal-scroll-area"></div>
@@ -2086,10 +2098,13 @@
       </div>
       <div class="logo" onclick="document.getElementById('bandModal').classList.remove('visible');naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span style="color:var(--text);">TALENT</span> TENT</div>
       <!-- TT-06: zelfde ⋯-menu als bij het muzikantprofiel. Een band is wel te
-           melden, niet te blokkeren — blokkeren gaat over een persoon. -->
+           melden, niet te blokkeren — blokkeren gaat over een persoon.
+           TT-318: net als bij het muzikantprofiel staat het menu naast de
+           bandnaam (#bandModalActies, gemaakt in openBandModal()). -->
       <div class="kop-vak modal-kop-acties">
-        <span id="bandModalActies"></span>
-        <button class="modal-close" onclick="document.getElementById('bandModal').classList.remove('visible')">✕</button>
+        <button class="modal-close" onclick="document.getElementById('bandModal').classList.remove('visible')" aria-label="Sluiten" title="Sluiten">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>
+        </button>
       </div>
     </div>
     <div id="bandModalContent" class="modal-scroll-area"></div>
@@ -2100,7 +2115,7 @@
      dat in een app-schil de gebruiker uit de app zou sturen. -->
 <div class="modal-overlay" id="mediaLightbox" data-close="closeMediaLightbox" onclick="if(event.target===this)closeMediaLightbox()">
   <div class="modal-box" style="padding:12px;display:flex;align-items:center;justify-content:center;">
-    <button class="modal-close" onclick="closeMediaLightbox()">✕</button>
+    <button class="modal-close" onclick="closeMediaLightbox()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <img id="mediaLightboxImg" src="" alt="Foto" style="max-width:100%;max-height:80vh;width:auto;height:auto;border-radius:8px;display:block;">
   </div>
 </div>
@@ -2114,7 +2129,7 @@
   <div class="modal-box media-speler-box">
     <div class="media-speler-kop">
       <span class="media-speler-titel" id="mediaSpelerTitel"></span>
-      <button class="modal-close" onclick="closeMediaSpeler()" aria-label="Sluiten">✕</button>
+      <button class="modal-close" onclick="closeMediaSpeler()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     </div>
     <div class="media-speler-beeld" id="mediaSpelerBeeld"></div>
     <div class="media-speler-voet" id="mediaSpelerVoet"></div>
@@ -2139,7 +2154,7 @@
      wat meer is dan de generieke ja/nee-dialoog aankan. -->
 <div class="modal-overlay" id="deleteAccountModal" onclick="if(event.target===this)closeDeleteAccountModal()">
   <div class="modal-box modal-box-lg">
-    <button class="modal-close" onclick="closeDeleteAccountModal()">✕</button>
+    <button class="modal-close" onclick="closeDeleteAccountModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <h3 style="margin-bottom:12px;">Account verwijderen</h3>
     <p style="margin-bottom:16px;font-size:14px;">Dit account inclusief alle gegevens wordt permanent verwijderd.</p>
     <div id="deleteAccountBandsArea"></div>
@@ -2178,7 +2193,7 @@
 <!-- Bericht sturen (TT-01) -->
 <div class="modal-overlay" id="messageModal" data-close="closeMessageComposer" onclick="if(event.target===this)closeMessageComposer()">
   <div class="modal-box modal-box-md">
-    <button class="modal-close" onclick="closeMessageComposer()">✕</button>
+    <button class="modal-close" onclick="closeMessageComposer()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">Bericht sturen</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Aan <strong id="messageComposerRecipientName" style="color:var(--text);"></strong></p>
     <textarea id="messageComposerBody" placeholder="Schrijf je bericht..." maxlength="2000" style="width:100%;min-height:120px;" oninput="updateCharCounter('messageComposerBody','messageComposerCounter',2000)"></textarea>
@@ -2195,7 +2210,7 @@
      niet — anders stopt een gebruiker van vijftien halverwege. -->
 <div class="modal-overlay" id="meldModal" data-close="closeMeldModal" onclick="if(event.target===this)closeMeldModal()">
   <div class="modal-box modal-box-md">
-    <button class="modal-close" onclick="closeMeldModal()">✕</button>
+    <button class="modal-close" onclick="closeMeldModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="filter-title" id="meldTitel" style="margin-bottom:4px;">Melden</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Over <strong id="meldDoelNaam" style="color:var(--text);"></strong>. Je melding komt bij ons binnen; de ander krijgt hier geen bericht van.</p>
 
@@ -2220,7 +2235,7 @@
 <!-- Geblokkeerde muzikanten (TT-06, 18-09-2026) -->
 <div class="modal-overlay" id="geblokkeerdModal" onclick="if(event.target===this)closeGeblokkeerdModal()">
   <div class="modal-box modal-box-md">
-    <button class="modal-close" onclick="closeGeblokkeerdModal()">✕</button>
+    <button class="modal-close" onclick="closeGeblokkeerdModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">Geblokkeerde muzikanten</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Je ziet ze niet in de zoekresultaten, en hun berichten komen niet bij je aan.</p>
     <div id="geblokkeerdLijst"></div>
@@ -2234,7 +2249,7 @@
      opruimfunctie draait als het kruisje (TT-294); het kruisje blijft staan. -->
 <div class="modal-overlay" id="inloggegevensModal" data-close="closeInloggegevens" onclick="if(event.target===this)closeInloggegevens()">
   <div class="modal-box modal-box-md">
-    <button class="modal-close" onclick="closeInloggegevens()">✕</button>
+    <button class="modal-close" onclick="closeInloggegevens()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">E-mailadres en wachtwoord</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Hiermee log je in.</p>
 
@@ -2285,7 +2300,7 @@
      eruit (Ronald, 09-09-2026): dat staat al in de zoekfilters. -->
 <div class="modal-overlay" id="searchPrefsModal" onclick="if(event.target===this)closeSearchPrefsModal()">
   <div class="modal-box modal-box-md">
-    <button class="modal-close" onclick="closeSearchPrefsModal()">✕</button>
+    <button class="modal-close" onclick="closeSearchPrefsModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">E-mailvoorkeuren</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Deze instellingen gelden alleen voor e-mail. Je zoekresultaten veranderen hier niet door.</p>
 
@@ -2316,7 +2331,7 @@
 <!-- Bandlid toevoegen (alleen bestaande muzikantprofielen) -->
 <div class="modal-overlay" id="addMemberModal" onclick="if(event.target===this)this.classList.remove('visible')">
   <div class="modal-box">
-    <button class="modal-close" onclick="document.getElementById('addMemberModal').classList.remove('visible')">✕</button>
+    <button class="modal-close" onclick="document.getElementById('addMemberModal').classList.remove('visible')" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="filter-title" style="margin-bottom:8px;">Bandleden beheren</div>
     <!-- 22-08-2026 (Ronald): het kruisje achter een naam op de bandkaart
          voelde "banaal, alsof je ieder moment kan worden gecancelled".
@@ -2386,7 +2401,7 @@
      (gevonden tijdens testen: de sluitknop was daardoor onbereikbaar). -->
 <div class="modal-overlay" id="wbjBioModal" onclick="if(event.target===this)closeWbjBioModal()">
   <div class="modal-box modal-box-sticky-footer modal-box-slg">
-    <button class="modal-close" onclick="closeWbjBioModal()" aria-label="Sluiten">✕</button>
+    <button class="modal-close" onclick="closeWbjBioModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="modal-scroll-area">
       <div class="filter-title" style="margin-bottom:4px;padding-right:52px;">Korte bio</div>
       <p style="font-weight:700;font-style:italic;color:var(--text);font-size:13px;margin:0 0 16px;line-height:1.5;">Dit is vaak het eerste wat andere muzikanten van je lezen.</p>
@@ -2408,7 +2423,7 @@
      de toelichtende tekst in niveaubepaling-naslagwerk.md. -->
 <div class="modal-overlay" id="niveauInfoModal" onclick="if(event.target===this)this.classList.remove('visible')">
   <div class="modal-box modal-box-xl">
-    <button class="modal-close" onclick="document.getElementById('niveauInfoModal').classList.remove('visible')">✕</button>
+    <button class="modal-close" onclick="document.getElementById('niveauInfoModal').classList.remove('visible')" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
 
     <div id="niveauInfoModalContent"></div>
   </div>
@@ -2427,8 +2442,8 @@
      voettekst, gelijke breedte, uitgelijnd met de niveauknoppen erboven. -->
 <div class="modal-overlay" id="instrumentLevelModal" data-close="closeInstrumentLevelSheet" onclick="if(event.target===this)closeInstrumentLevelSheet()">
   <div class="modal-box modal-box-sticky-footer modal-box-slg">
-    <button class="modal-back" id="instrumentLevelBackBtn" onclick="backToInstrumentPick()" aria-label="Terug naar de instrumentenlijst" hidden><span aria-hidden="true">←</span></button>
-    <button class="modal-close" onclick="closeInstrumentLevelSheet()" aria-label="Sluiten">✕</button>
+    <button class="modal-back" id="instrumentLevelBackBtn" onclick="backToInstrumentPick()" aria-label="Terug naar de instrumentenlijst" hidden><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 5 8 12 15 19"></polyline></svg></button>
+    <button class="modal-close" onclick="closeInstrumentLevelSheet()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
 
     <div id="instrumentPickStep" class="modal-scroll-area">
       <div class="filter-title" style="margin-bottom:12px;padding-right:52px;">Kies een instrument</div>
@@ -2457,7 +2472,7 @@
      hierboven, hier zonder voettekst (die blijft leeg en dus onzichtbaar). -->
 <div class="modal-overlay" id="pickerListModal" data-close="closePickerList" onclick="if(event.target===this)closePickerList()">
   <div class="modal-box modal-box-sticky-footer modal-box-lg">
-    <button class="modal-close" onclick="closePickerList()" aria-label="Sluiten">✕</button>
+    <button class="modal-close" onclick="closePickerList()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="modal-scroll-area">
       <div class="filter-title" id="pickerListTitle" style="margin-bottom:12px;padding-right:52px;"></div>
       <div id="pickerListItems"></div>
@@ -2502,7 +2517,7 @@
      zodat view-register nooit wordt verlaten en er dus niets verloren gaat. -->
 <div class="modal-overlay" id="legalModal" onclick="if(event.target===this)closeLegalModal()">
   <div class="modal-box modal-box-xl">
-    <button class="modal-close" onclick="closeLegalModal()" aria-label="Sluiten">✕</button>
+    <button class="modal-close" onclick="closeLegalModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div id="legalModalContent"></div>
   </div>
 </div>
@@ -2541,15 +2556,15 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260924a"></script>
-<script src="utils.js?v=20260924c"></script>
+<script src="core.js?v=20260924b"></script>
+<script src="utils.js?v=20260924d"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260923a"></script>
 <script src="postcode.js?v=20260917a"></script>
 <script src="wizard.js?v=20260924b"></script>
 <script src="ouder.js?v=20260922a"></script>
-<script src="search.js?v=20260924a"></script>
-<script src="musicians.js?v=20260924b"></script>
+<script src="search.js?v=20260924b"></script>
+<script src="musicians.js?v=20260924c"></script>
 <script src="bands.js?v=20260924a"></script>
 <script src="messages.js?v=20260922b"></script>
 <script src="modals-shared.js?v=20260924a"></script>
