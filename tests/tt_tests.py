@@ -3192,7 +3192,7 @@ def blok_browser():
         check("de focusrand van een veld is 2px vol goud, zonder gloed (TT-259)",
               focus[0] == "rgb(245, 197, 24) 0px 0px 0px 1px" and focus[1] == "rgb(245, 197, 24)", json.dumps(focus))
 
-        # Eén tagvorm in de hele app (TT-315): wit op 5%, geen rand, kleur in de tekst.
+        # Eén tagvorm in de hele app (TT-315): wit op 10% (vervolg 24-09-2026), geen rand, kleur in de tekst.
         tags = page.evaluate("""() => {
           const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
           plek.innerHTML = tagSolid('Drums', '#f5c518') + tagSolid('Rock', '#6ec8d8')
@@ -3200,8 +3200,8 @@ def blok_browser():
           const uit = [...plek.children].map(e => { const cs = getComputedStyle(e);
             return [cs.backgroundColor, cs.borderTopStyle === 'none' || cs.borderTopWidth === '0px', cs.color]; });
           plek.remove(); return uit; }""")
-        check("elke tag heeft het vlak wit op 5% en geen rand (TT-315)",
-              all(t[0] == "rgba(255, 255, 255, 0.05)" and t[1] for t in tags), json.dumps(tags))
+        check("elke tag heeft het vlak wit op 10% en geen rand (TT-315)",
+              all(t[0] == "rgba(255, 255, 255, 0.1)" and t[1] for t in tags), json.dumps(tags))
         check("de kleur zit in de tekst: goud, cyaan, cyaan, goud",
               [t[2] for t in tags] == ["rgb(245, 197, 24)", "rgb(110, 200, 216)", "rgb(110, 200, 216)", "rgb(245, 197, 24)"],
               json.dumps(tags))
@@ -3337,13 +3337,18 @@ def blok_browser():
               len(aan) == 1 and aan.pop().replace(" | 1px", "").replace(" | 1.5px", "") == "rgba(255, 255, 255, 0.05) | rgb(245, 197, 24) | 8px | rgb(245, 197, 24) | 700 | normal",
               json.dumps(keuze)[:400])
 
+        # TT-315 vervolg: lege sterren zichtbaar op het tagvlak (#555, niet --border).
+        leeg = page.evaluate("""() => { const s = document.createElement('span'); s.className = 'star-display-empty'; s.textContent = '☆';
+            document.getElementById('appRoot').appendChild(s); const c = getComputedStyle(s).color; s.remove(); return c; }""")
+        check("lege sterren zijn #555, zichtbaar op het tagvlak (TT-315 vervolg)", leeg == "rgb(85, 85, 85)", leeg)
+
         # K9 — het niveaulabel in de tagvorm.
         pil = page.evaluate("""() => { const s = document.createElement('span'); s.className = 'level-pill'; s.textContent = 'Basis';
             document.getElementById('appRoot').appendChild(s); const cs = getComputedStyle(s);
             const u = [cs.backgroundColor, cs.fontSize, cs.borderTopLeftRadius, cs.textTransform, cs.fontWeight, cs.fontStyle, cs.color, cs.width];
             s.remove(); return u; }""")
         check("K9: niveaulabel in de tagvorm, wit, vet, cursief, vaste breedte",
-              pil == ["rgba(255, 255, 255, 0.05)", "11px", "6px", "none", "700", "italic", "rgb(240, 240, 240)", "100px"], json.dumps(pil))
+              pil == ["rgba(255, 255, 255, 0.1)", "11px", "6px", "none", "700", "italic", "rgb(240, 240, 240)", "100px"], json.dumps(pil))
 
         # K10 — kruisjes.
         kruis = page.evaluate("""() => {
