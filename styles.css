@@ -974,7 +974,7 @@
      cursief blijven (projectinstructies §9). Was een grijs vlak, 10px,
      hoofdletters, hoek 3px. */
   .level-pill {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.10); /* TT-315 vervolg: 10%, zie .tag-solid */
     color: var(--text);
     font-size: 11px;
     padding: 4px 10px;
@@ -2332,7 +2332,9 @@
      De tekstkleur komt per tag uit tagSolid(), of uit .tag-genre. */
   .tag-solid {
     display: inline-block;
-    background: rgba(255,255,255,0.05);
+    /* TT-315 vervolg (24-09-2026, besluit Ronald: variant A): 10% i.p.v. 5%.
+       Op 5% viel het vlak op de telefoon weg; de tag leek afgesneden. */
+    background: rgba(255,255,255,0.10);
     font-size: 11px;
     font-weight: 700;
     padding: 4px 10px;
@@ -3015,7 +3017,7 @@
   .band-meta { font-size:12px;color:var(--muted);margin-top:3px; }
   /* TT-315 (24-09-2026): zelfde vorm als .tag-solid — wit op 5%, geen rand,
      de kleur alleen in de tekst. */
-  .band-status-badge { display:inline-block;background:rgba(255,255,255,0.05);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-left:auto;white-space:nowrap;flex-shrink:0; }
+  .band-status-badge { display:inline-block;background:rgba(255,255,255,0.10);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-left:auto;white-space:nowrap;flex-shrink:0; }
   .band-status-zoekend { color:var(--accent); }
   .band-status-compleet { color:var(--success); }
   .band-status-inactief { color:var(--muted); }
@@ -3032,7 +3034,9 @@
   .star-picker .star:hover, .star-picker .star.filled { color:var(--accent); }
   .star-display { font-size:12px; letter-spacing:1px; white-space:nowrap; }
   .star-display-filled { color:var(--accent); }
-  .star-display-empty { color:var(--border); }
+  /* TT-315 vervolg (besluit Ronald, variant A): lege sterren #555. In
+     --border (#2a2a2a) waren ze op het tagvlak onzichtbaar. */
+  .star-display-empty { color:#555; }
 
   /* TT-U21 (12-08-2026): de zwevende sterrenstrip is vervangen door een
      keuzescherm met vijf knoppen, elk minimaal 44px hoog. */

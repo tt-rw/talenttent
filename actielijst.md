@@ -1,6 +1,34 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 24-09-2026 (vervolg 2) — **TT-316 gebouwd en getest:
+**Laatste update:** 24-09-2026 (vervolg 3) — **TT-315 vervolg: tags meer
+contrast. Testset 464 van 464.**
+
+**Aanleiding.** Ronald, met een schermafdruk van zijn profiel op de telefoon:
+*"geef de badges meer contrast zodat de hele knop te zien is. dit is niet zoals
+het voorstel was."* Gemeten op die afdruk: het vlak was `#191919` op
+`#0d0d0d` — precies de 5% uit het voorstel. Maar het voorstel toonde tags
+zónder sterren. Op het profiel staan lege sterren in `--border` (`#2a2a2a`) op
+dat vlak; die waren onzichtbaar, waardoor de tag afgesneden leek.
+
+**Besluit Ronald: variant A.** Vlak wit op 10% in plaats van 5%, lege sterren
+`#555`.
+
+**Wat er gebouwd is.** `.tag-solid`, `.level-pill` en `.band-status-badge`:
+`rgba(255,255,255,0.10)`. `.star-display-empty`: `#555` — dezelfde grijs als
+een niet-actieve stip in de bannerbalk. `styles.css?v=20260924d`. Blok 30:
+de tagcontrole toetst nu 10%; blok 31: het niveaulabel ook, plus een nieuwe
+controle op de kleur van de lege sterren.
+
+**Bandkant.** Zelfde klassen, dus vanzelf gelijk (bandstatus, "Wij zoeken
+nog").
+
+**Geverifieerd.** Testset 464 van 464. Schermafdruk bekeken op 390px:
+instrumenttags met sterren, genretags, niveaulabel en bandstatus; het vlak en
+alle vijf sterren zijn zichtbaar.
+
+**Nog open.** Laag 2: Ronald bekijkt het profiel op zijn telefoon.
+
+**Vorige update:** 24-09-2026 (vervolg 2) — **TT-316 gebouwd en getest:
 één vorm per knopsoort en per keuzeknop. Testset 463 van 463, monitorronde 21
 van 21.**
 
@@ -5159,7 +5187,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-290** | Goud op 10% dekking op het actieve zoektabblad | **Gebouwd en getest 24-09-2026 — zie Laatste update bovenaan.** Wit op 5%, gouden rand, gouden vette tekst. Samen opgelost met TT-259 en acht andere plekken met dezelfde fout. **Nieuw, 17-09-2026, gevonden bij TT-289. Geverifieerd in de code.** `.search-mode-tab.active` in `styles.css` heeft `background: rgba(245,197,24,0.1)`. Huisstijl §1.1 verbiedt goud als vlak onder 50%: op `--surface2` wordt dat olijfbruin. Voorstel volgens §1.1: wit op 5% met de gouden rand en gouden tekst die er al staan. Zelfde soort: `highlight()` in `utils.js` markeert de getypte letters in een suggestie met goud op 30% (`mark`). Beide in één ronde. **Let op:** de standknoppen van het Setlist-tabblad (TT-289) gebruiken bewust dezelfde klasse als de hoofdtabbladen (besluit Ronald: "hetzelfde als setlist"); ze veranderen dus vanzelf mee. Bandkant: niet van toepassing, het zijn gedeelde componenten. **Toets P2:** het werkt, maar het actieve tabblad oogt vlekkerig in plaats van gekozen |
 | **TT-313** | Een open menu valt weg tegen de achtergrond | **Nieuw en gebouwd 24-09-2026, melding Ronald met schermafdruk. Besluit Ronald: optie B.** Achter elk open menu een zwarte laag van 60%; het menu zelf `--surface2` met rand `#444`. Geldt voor alle vijf de menusoorten. **Toets P2:** het werkt, maar je moet zoeken of er iets openstaat. Zie Laatste update bovenaan |
 | **TT-314** | Twee menu's konden tegelijk openstaan | **Nieuw en gebouwd 24-09-2026, melding Ronald met schermafdruk.** Hamburger en ⋯ op het profiel stonden samen open. Nu één gedeelde regel, `sluitAlleMenus()` in `core.js`. **Toets P2:** niets breekt, maar het scherm oogt kapot. Zie Laatste update bovenaan |
-| **TT-315** | Badges in de zoekresultaten: gekleurd vlak op 16% | **Gebouwd en getest 24-09-2026. Besluit Ronald: optie B, "minder rommelig, het meest clean", door de hele app.** Eén tagvorm: wit op 5%, geen rand, kleur alleen in de tekst. Geldt voor zoekresultaten, profiel, "Wij zoeken nog" op het bandprofiel en de bandstatus. `.badge`, `.wanted-chip` en `hexToRgba()` zijn weg. Niet mee: de ledenchip (een aantikbare persoon) en de badge in een keuzeveld (een bedieningselement). Oorspronkelijke tekst: `tagSolid()` in `utils.js` tekent instrument- en genrebadges als vlak in de profielkleur (standaard goud) op 16% dekking. Dat is dezelfde fout als TT-290 (huisstijl §1.1). Maar die vorm is op 07-08-2026 bewust gekozen (TT-30: effen tags in plaats van omlijnde). Niet aangepast zonder besluit. **Toets P2:** het werkt, maar goud wordt olijfbruin |
+| **TT-315** | Badges in de zoekresultaten: gekleurd vlak op 16% | **Gebouwd en getest 24-09-2026. Besluit Ronald: optie B, "minder rommelig, het meest clean", door de hele app.** Eén tagvorm: wit op 10% (was 5%, vervolg 3 dezelfde dag: op de telefoon viel het vlak weg; besluit Ronald variant A), lege sterren `#555`, geen rand, kleur alleen in de tekst. Geldt voor zoekresultaten, profiel, "Wij zoeken nog" op het bandprofiel en de bandstatus. `.badge`, `.wanted-chip` en `hexToRgba()` zijn weg. Niet mee: de ledenchip (een aantikbare persoon) en de badge in een keuzeveld (een bedieningselement). Oorspronkelijke tekst: `tagSolid()` in `utils.js` tekent instrument- en genrebadges als vlak in de profielkleur (standaard goud) op 16% dekking. Dat is dezelfde fout als TT-290 (huisstijl §1.1). Maar die vorm is op 07-08-2026 bewust gekozen (TT-30: effen tags in plaats van omlijnde). Niet aangepast zonder besluit. **Toets P2:** het werkt, maar goud wordt olijfbruin |
 | **TT-316** | Knoppen en badges: één vorm per soort | **Gebouwd en getest 24-09-2026 (vervolg 2), zie Laatste update bovenaan.** Besluiten Ronald: K1 t/m K12 akkoord, bandsterren weg uit de lijsten, en bij K3 geen kortere teksten — wat niet past loopt over twee regels. Testset blok 31, monitorronde B6 en B7. **Open: alleen laag 2** (keuzeknop en ledenlijst op een echte telefoon). Voorstel: `_niet-uploaden-TT-316-knoppen-en-badges-24-09-2026.html`. **Toets P2:** het werkte, maar acht soorten in wisselende vormen maakten de app onrustig |
 | **TT-282** | Vegen: een schuine of afbuigende veeg wisselt van tabblad | **Nieuw, 16-09-2026 (onderhoudsronde).** 30° telt als horizontaal; een veeg die steil eindigt telt ook; een veeg vanaf de schermrand wisselt. Volledige tekst: Laatste update bovenaan |
 | **TT-277** | Gesprek springt bij versturen | **Opgelost 16-09-2026 (vervolg 3).** Toetsenbord blijft open, beeld staat stil. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
