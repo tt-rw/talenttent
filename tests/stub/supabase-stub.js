@@ -97,6 +97,14 @@
         }
         TT_STUB.data.musicians = (TT_STUB.data.musicians || []).filter(r => r.id !== mid);
         return null;
+      },
+      // TT-312: band opheffen in één transactie — "Gezocht", leden en band.
+      tt_dissolve_band(p) {
+        const b = p.p_band_id;
+        TT_STUB.data.band_wanted  = (TT_STUB.data.band_wanted  || []).filter(r => r.band_id !== b);
+        TT_STUB.data.band_members = (TT_STUB.data.band_members || []).filter(r => r.band_id !== b);
+        TT_STUB.data.bands        = (TT_STUB.data.bands        || []).filter(r => r.id !== b);
+        return null;
       }
     },
     // TT-299: de twee nieuwe knoppen van updateUser horen ook leeg bij een
