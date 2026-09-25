@@ -58,7 +58,6 @@ function rangeStep(from, to, step) {
 // TT-01 / TT-232: e-mailvoorkeuren, nu onder Instellingen. Beïnvloedt alleen
 // de e-mail op de achtergrond, nooit de live zoekresultaten.
 let digestFrequencyValue = 'daily';
-let emailThemeValue = 'light';
 let lastMusicianResults = [];
 // TT-62: is de straal automatisch verruimd, dan staat hier {van, naar}.
 // {leeg:true} betekent: ook landelijk niets gevonden. null = niet verruimd.

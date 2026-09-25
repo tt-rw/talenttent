@@ -536,8 +536,10 @@ function closeAllBandMoreMenus() {
 // toggleSearchPrefsMenu() en closeSearchPrefsMenu(). Het scherm hieronder
 // wordt nu geopend vanuit Instellingen → E-mailvoorkeuren.
 
-// Haalt de huidige stand op (email_digest_frequency + email_theme) en toont
-// het scherm. Vereist een eigen profiel: de voorkeuren staan op musicians.
+// Haalt de huidige stand op (email_digest_frequency) en toont het scherm.
+// TT-327 (25-09-2026): de keuze Licht/Donker is weg; elke mail is licht
+// (besluit Ronald bij TT-325). De kolom email_theme blijft in de database.
+// Vereist een eigen profiel: de voorkeuren staan op musicians.
 async function openSearchPrefsModal() {
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Maak eerst een profiel aan om e-mailvoorkeuren in te stellen.'); return; }
@@ -546,10 +548,9 @@ async function openSearchPrefsModal() {
     // geschreven. De bestaande rijen blijven staan; alleen dit scherm raakt
     // ze niet meer aan.
     const musicianRes = await db.from('musicians')
-      .select('email_digest_frequency, email_theme').eq('id', mid).single();
+      .select('email_digest_frequency').eq('id', mid).single();
     if (musicianRes.error) throw musicianRes.error;
     selectDigestFrequency(musicianRes.data?.email_digest_frequency || 'daily');
-    selectEmailTheme(musicianRes.data?.email_theme || 'light');
     document.getElementById('searchPrefsModal').classList.add('visible');
   } catch (e) {
     logCaught('openSearchPrefsModal', e);
@@ -562,7 +563,7 @@ function closeSearchPrefsModal() {
 
 // selectDigestFrequency (zonder klik, bij het openen) vs. setDigestFrequency
 // (bij een klik) — zelfde onderscheid als elders tussen "stand tonen" en
-// "stand wijzigen". Zelfde patroon voor emailTheme hieronder.
+// "stand wijzigen".
 function selectDigestFrequency(value) {
   digestFrequencyValue = value;
   document.querySelectorAll('#digestFrequencyControl .segmented-btn').forEach(btn => {
@@ -575,26 +576,14 @@ function setDigestFrequency(el, mode) {
   el.classList.add('selected');
 }
 
-function selectEmailTheme(value) {
-  emailThemeValue = value;
-  document.querySelectorAll('#emailThemeControl .segmented-btn').forEach(btn => {
-    btn.classList.toggle('selected', btn.dataset.mode === value);
-  });
-}
-function setEmailTheme(el, mode) {
-  emailThemeValue = mode;
-  document.querySelectorAll('#emailThemeControl .segmented-btn').forEach(btn => btn.classList.remove('selected'));
-  el.classList.add('selected');
-}
-
-// TT-232 (09-09-2026): schrijft alleen nog de twee e-mailvelden.
+// TT-232 (09-09-2026): schrijft alleen de e-mailvoorkeur. Sinds TT-327 is dat
+// nog één veld.
 async function saveSearchPrefs() {
   const mid = await getMyMusicianId();
   if (!mid) return;
   try {
     const { error } = await db.from('musicians').update({
-      email_digest_frequency: digestFrequencyValue,
-      email_theme: emailThemeValue
+      email_digest_frequency: digestFrequencyValue
     }).eq('id', mid);
     if (error) throw error;
     closeSearchPrefsModal();
