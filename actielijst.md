@@ -1,6 +1,44 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 24-09-2026 (vervolg 4) — **TT-318: het eigen woordmerk,
+**Laatste update:** 25-09-2026 — **TT-312 gebouwd: band opheffen is alles of
+niets. Wacht op Ronald: SQL-script draaien, daarna meet Claude het na in de
+browserpane. Pas dán de app-bestanden uploaden. Testset 513 van 513.**
+
+**Aanleiding.** Ronald vroeg wat TT-312 was en koos daarna het voorstel van
+Claude: "ja". **Besluit Ronald, 25-09-2026:** band opheffen via één
+databasefunctie in één transactie, zelfde oplossing als TT-281.
+
+**Wat er gebouwd is.**
+- **`tt_dissolve_band`** (nieuw, databasefunctie, `security invoker`): wist
+  "Gezocht", de leden en de band in één transactie. Wist de laatste stap nul
+  rijen, dan geeft de functie een fout en draait de database alles terug. Dat
+  vangt ook de RLS-weigering op: RLS geeft geen fout, maar laat de rij
+  stilletjes staan.
+- **`dissolveBand()`** (`bands.js`) roept alleen nog die functie aan. Mislukt
+  het, dan meldt de app "Opheffen is niet gelukt: …", zoals "Opslaan is niet
+  gelukt: …" bij TT-281.
+
+**Geverifieerd.** Het SQL-script is gedraaid op een lokale Postgres 16 met
+nagebouwde tabellen en RLS: de beheerder heft op (alles weg); een gewoon lid
+probeert het (geweigerd, niets gewist); anoniem (geweigerd); fout halverwege
+(band, leden en "Gezocht" blijven staan). Ter vergelijking de oude volgorde als
+gewoon lid: zijn eigen lidmaatschap verdween, de band bleef — precies de fout.
+Testset: blok 35 plus één statische controle; vijf van de zes nieuwe
+controles zakken tegen de oude code en slagen tegen de nieuwe (de zesde toetst
+de melding "Band opgeheven.", die niet veranderde). **Onbekend:** de
+werkelijke RLS-regels in productie; laag 2 moet het bevestigen.
+
+**Volgorde is bindend.** Eerst het SQL-script, dan de app-bestanden. Andersom
+faalt elk opheffen met PGRST202 (functie niet gevonden).
+
+**Nog open voor TT-312:** laag 2: een proefband aanmaken en opheffen.
+
+**Gewijzigd:** `bands.js`, `index.html` (`?v=`), `tests/tt_tests.py`,
+`tests/stub/supabase-stub.js`, `actielijst.md`, `CHECKSUMS.txt`.
+
+---
+
+**Vorige update:** 24-09-2026 (vervolg 4) — **TT-318: het eigen woordmerk,
 de kop optisch uitgelijnd, het ⋯-menu in het profielvenster naast de naam, en
 een nieuw sluitteken in elk venster (TT-322). Testset 506 van 506.**
 
@@ -5196,7 +5234,7 @@ eerste tabel altijd gelijk is aan de stand.
 | **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Gebouwd 22-09-2026, route A. Alleen laag 2 staat nog open** *(rechtgezet 23-09-2026: hier stond "wacht op twee handelingen van Ronald"; beide zijn op 22-09-2026 gemeten)*. In productie en geverifieerd: de tabel `ouder_toestemming`, de drie functies, de Edge Function `ouder-toestemming` (Verify JWT uit), en de dagelijkse taak `tt-ouder-onderhoud` (23-09-2026, uitslag van Ronald). Zeven onderdelen in `ouder.js` en `view-toestemming`. **Laag 2:** de keten mail aan de ouder → klik → mail aan het kind → wachtwoord, op de echte site, met een mailadres waar Ronald bij kan. Ontwerp en besluiten: `_niet-uploaden-tt42-ontwerp-22-09-2026.md` en `minderjarigen-toestemming-23-09-2026.md` |
 | **TT-62 (deel 2)** | "Geef me een seintje zodra er een drummer bijkomt" | **Uitzondering vastgelegd 12-09-2026 (besluit Ronald, TT-257):** het automatisch verruimen van deel 1 geldt **niet** als er een naam in het zoekveld staat. Wie op naam zoekt, zoekt één bepaalde persoon; iemand twee provincies verderop is dan geen beter antwoord dan geen antwoord. Zie huisstijl §17. **Deel 1 is gebouwd 11-09-2026** (automatisch verruimen, zie Deel 3). Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker. Leunt op dezelfde verzendweg als TT-01 en kan dus niet eerder |
 | **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Gebouwd 23-09-2026; wacht op het SQL-script van Ronald en laag 2 — zie Laatste update.** Nieuw, 16-09-2026 (onderhoudsronde). Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wissen eerst en voegen daarna toe, zonder foutcontrole op het wissen. Mislukt het toevoegen, dan is de oude data weg. Zelfde soort in `executeAccountDeletion()`. Volledige tekst: Laatste update bovenaan |
-| **TT-312** | Band opheffen wist leden zonder foutcontrole | **Nieuw, 23-09-2026.** `dissolveBand()` (`bands.js`) wist "Gezocht" en de leden zonder controle, daarna pas de band. Mislukt dat laatste, dan blijft een band zonder leden en oprichter over. Oplossing als TT-281: één transactie. Vraagt een besluit van Ronald |
+| **TT-312** | Band opheffen wist leden zonder foutcontrole | **Gebouwd 25-09-2026; wacht op het SQL-script van Ronald en laag 2 — zie Laatste update.** Nieuw, 23-09-2026. `dissolveBand()` (`bands.js`) wiste "Gezocht" en de leden zonder controle, daarna pas de band. Mislukte dat laatste, dan bleef een band zonder leden en oprichter over. Besluit Ronald 25-09-2026: één transactie, als TT-281 (`tt_dissolve_band`) |
 | — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
 
 **Afgehandeld of geblokkeerd bij Ronald — telt niet mee in de P0-stand hierboven.**

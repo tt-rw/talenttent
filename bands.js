@@ -198,17 +198,20 @@ async function withdrawFounderOffer(bandId) {
   }
 }
 
+// TT-312 (25-09-2026): "Gezocht", de leden en de band in één
+// databasefunctie, in één transactie. Vroeger wiste de app "Gezocht" en de
+// leden zonder foutcontrole, en pas daarna de band. Mislukte dat laatste,
+// dan bleef een band over zonder leden en zonder beheerder. Zelfde oplossing
+// als TT-281.
 async function dissolveBand(bandId) {
   try {
-    await db.from('band_wanted').delete().eq('band_id', bandId);
-    await db.from('band_members').delete().eq('band_id', bandId);
-    const { error } = await db.from('bands').delete().eq('id', bandId);
+    const { error } = await db.rpc('tt_dissolve_band', { p_band_id: bandId });
     if (error) throw error;
     showToast('Band opgeheven.');
     loadMyBands();
   } catch (e) {
     logCaught('dissolveBand', e);
-    showToast(friendlyErrorMessage(e));
+    showToast('Opheffen is niet gelukt: ' + friendlyErrorMessage(e));
   }
 }
 
