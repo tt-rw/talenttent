@@ -71,6 +71,12 @@
       tt_resolve_search_origin: null, tt_check_username_available: true,
       tt_cache_postcode: null, tt_accept_founder_offer: null,
       tt_expire_old_founder_offers: null,
+      // Laatst actief (25-09-2026): standaard iedereen in groep 0, in de
+      // volgorde van de vraag. Een blok dat groepen wil toetsen, zet hier
+      // zelf een functie neer en herstelt hem daarna.
+      tt_markeer_actief: null,
+      tt_actief_stand(p) { return (p.ids || []).map((id, i) => ({ id, groep: 0, rang: i + 1 })); },
+      tt_band_actief_stand(p) { return (p.ids || []).map((id, i) => ({ id, groep: 0, rang: i + 1 })); },
       // TT-281: de drie opslagfuncties bootsen de transactie na. Een fout via
       // rpcErrors komt eerder in rpc() terug, dus dan verandert er niets —
       // precies zoals de echte database alles terugdraait.
