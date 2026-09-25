@@ -1,8 +1,8 @@
 # The Talent Tent — Actielijst
 
 **Laatste update:** 25-09-2026 — **TT-312 gebouwd: band opheffen is alles of
-niets. Wacht op Ronald: SQL-script draaien, daarna meet Claude het na in de
-browserpane. Pas dán de app-bestanden uploaden. Testset 513 van 513.**
+niets. SQL-script gedraaid en nagemeten; alleen laag 2 staat nog open.
+Testset 513 van 513.**
 
 **Aanleiding.** Ronald vroeg wat TT-312 was en koos daarna het voorstel van
 Claude: "ja". **Besluit Ronald, 25-09-2026:** band opheffen via één
@@ -31,7 +31,16 @@ werkelijke RLS-regels in productie; laag 2 moet het bevestigen.
 **Volgorde is bindend.** Eerst het SQL-script, dan de app-bestanden. Andersom
 faalt elk opheffen met PGRST202 (functie niet gevonden).
 
+**Ook vandaag, op verzoek van Ronald:** TT-323 in de P0-tabel — elke mail
+die de app verstuurt één keer echt ontvangen vóór livegang. Zes mails,
+geverifieerd uit de code. Geen bouwticket, een controle.
+
 **Nog open voor TT-312:** laag 2: een proefband aanmaken en opheffen.
+*(Bijgewerkt 25-09-2026: Ronald heeft het SQL-script gedraaid; de controle gaf
+`tt_dissolve_band` met `security_definer` op false. Gemeten in de browserpane
+op talenttent.org, uitgelogd: de functie antwoordt met 42501 "permission
+denied", niet met PGRST202. Ze bestaat dus en is voor bezoekers zonder account
+dicht. De app-bestanden kunnen nu naar de repo.)*
 
 **Gewijzigd:** `bands.js`, `index.html` (`?v=`), `tests/tt_tests.py`,
 `tests/stub/supabase-stub.js`, `actielijst.md`, `CHECKSUMS.txt`.
@@ -5189,6 +5198,8 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 **Bijgewerkt 22-09-2026 (vervolg).** TT-42 is gebouwd, maar blijft in deze stand meetellen tot laag 2 is gedraaid: de keten mail → klik van de ouder → terugkomst van het kind raakt de database en de mailserver en is niet tegen de stub te toetsen. *(Rechtgezet 23-09-2026: hier stond ook "Hij wacht bovendien op twee handelingen van Ronald (het SQL-script en de Edge Function)." Beide zijn op 22-09-2026 gemeten, de dagelijkse taak op 23-09-2026.)* Zolang blijven het er vijf.
 
+**Aanvulling 25-09-2026:** daarnaast staat TT-323 open, een controle en geen bouwticket: elke mail van de app één keer echt ontvangen vóór livegang.
+
 **Stand van de P0's, bijgewerkt 23-09-2026.** **Zes P0-bouwtickets
 staan open:** TT-281 · TT-312 · TT-295 · TT-65 · TT-45 · TT-42. *(TT-312 kwam er op 23-09-2026 bij; daarvóór waren het er vijf.)* **TT-299 en TT-300 zijn
 op 20-09-2026 gevonden én afgehandeld** en staan in de tweede tabel; ze
@@ -5235,6 +5246,7 @@ eerste tabel altijd gelijk is aan de stand.
 | **TT-62 (deel 2)** | "Geef me een seintje zodra er een drummer bijkomt" | **Uitzondering vastgelegd 12-09-2026 (besluit Ronald, TT-257):** het automatisch verruimen van deel 1 geldt **niet** als er een naam in het zoekveld staat. Wie op naam zoekt, zoekt één bepaalde persoon; iemand twee provincies verderop is dan geen beter antwoord dan geen antwoord. Zie huisstijl §17. **Deel 1 is gebouwd 11-09-2026** (automatisch verruimen, zie Deel 3). Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker. Leunt op dezelfde verzendweg als TT-01 en kan dus niet eerder |
 | **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Gebouwd 23-09-2026; wacht op het SQL-script van Ronald en laag 2 — zie Laatste update.** Nieuw, 16-09-2026 (onderhoudsronde). Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wissen eerst en voegen daarna toe, zonder foutcontrole op het wissen. Mislukt het toevoegen, dan is de oude data weg. Zelfde soort in `executeAccountDeletion()`. Volledige tekst: Laatste update bovenaan |
 | **TT-312** | Band opheffen wist leden zonder foutcontrole | **Gebouwd 25-09-2026; wacht op het SQL-script van Ronald en laag 2 — zie Laatste update.** Nieuw, 23-09-2026. `dissolveBand()` (`bands.js`) wiste "Gezocht" en de leden zonder controle, daarna pas de band. Mislukte dat laatste, dan bleef een band zonder leden en oprichter over. Besluit Ronald 25-09-2026: één transactie, als TT-281 (`tt_dissolve_band`) |
+| **TT-323** | Elke mail die de app verstuurt één keer echt ontvangen, vóór livegang | **Nieuw, 25-09-2026, op verzoek van Ronald.** Geen bouwticket: een controle. **Toets P0:** kan de app live zonder dat een gebruiker vastloopt? Nee — komt de mail van "wachtwoord vergeten" niet aan, dan is iemand zijn account kwijt. **De mails, geverifieerd uit de code:** (1) wachtwoord vergeten (`auth.js`, Supabase); (2) e-mailadres wijzigen (`auth.js`, Supabase, TT-299); (3) de mail aan de ouder (`ouder.js`, Edge Function `ouder-toestemming`, TT-42); (4) de herinnering aan de ouder na zeven dagen (dagelijkse taak `tt-ouder-onderhoud`); (5) de mail aan het kind na goedkeuring (TT-42); (6) de digest met nieuwe berichten en matches (Edge Function `send-digest`, TT-01). Mailbevestiging bij registratie staat uit, dus die hoort er niet bij. **Per mail nalopen:** komt aan, niet in de spambox; afzender en onderwerp kloppen; elke knop en link opent de juiste pagina op talenttent.org; tekst past bij de doelgroep; leesbaar op een telefoon. **Hoort erbij:** SPF en DKIM voor `talenttent.org` controleren — staat bij TT-298 als "nog niet gecontroleerd". Alleen (6) is aantoonbaar aangekomen (20-09-2026, TT-01) |
 | — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
 
 **Afgehandeld of geblokkeerd bij Ronald — telt niet mee in de P0-stand hierboven.**
