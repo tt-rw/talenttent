@@ -186,12 +186,13 @@
     min-height: 44px;
     font-family: var(--font-display);
     font-size: clamp(40px, 7vw, 72px);
-    /* TT-318 (24-09-2026, besluit Ronald): 3px letterafstand bij 28px — zo
-       gekozen in de browser, na 1px en 2px. Als verhouding geschreven, zodat
-       het woordmerk bij elke trede van fitKopLogo() dezelfde vorm houdt.
-       Was 1px, en in .modal-kop .logo nog eens apart 1px; die tweede regel
-       is weg, één maat voor elk woordmerk (§2, regel 11). */
-    letter-spacing: calc(3em / 28);
+    /* TT-328 (25-09-2026, besluit Ronald): 2px letterafstand bij 28px, was
+       3px (TT-318). Als verhouding geschreven, zodat het woordmerk bij elke
+       trede van fitKopLogo() dezelfde vorm houdt. Eén maat voor elk
+       woordmerk (§2, regel 11). Tussen TALENT en TENT staat geen spatie maar
+       dezelfde letterafstand; de spatiëring per letterpaar (T-A, T-T ...)
+       zit in het lettertype zelf. */
+    letter-spacing: calc(2em / 28);
     line-height: 1;
     color: var(--accent);
   }

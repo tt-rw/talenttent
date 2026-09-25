@@ -1,6 +1,54 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 25-09-2026 (vervolg 5) — **TT-312 en TT-42 afgehandeld:
+**Laatste update:** 25-09-2026 (vervolg 7) — **TT-328 gebouwd: het woordmerk
+staat nergens meer met een spatie, met 2px letterafstand en spatiëring in het
+lettertype. TT-325: opmaak van de mails gekozen. Testset 535 van 535.**
+
+**TT-328** (besluit Ronald): `styles.css`, `index.html` en `tt-woordmerk.woff2`.
+Zie de rij in Deel 1.
+
+**TT-325** (besluiten Ronald): opmaak A voor zes mails, opmaak C voor de
+digest, géén kaart per afzender, de berichtenknop onder de donkere kop, en de
+tekst wil Ronald zelf kunnen aanpassen. Zie de rij in Deel 1.
+
+**Rechtgezet in hetzelfde gebaar:** de projectinstructies (§9 Kop, §11 Fonts)
+en de huisstijl (§2) noemden 3px en "TALENT TENT". Beide documenten zijn
+vervangen, in het project en in de gedeelde map.
+
+**Gewijzigd:** `index.html`, `styles.css`, `tt-woordmerk.woff2`,
+`tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
+
+---
+
+**Vorige update:** 25-09-2026 (vervolg 6) — **TT-325 verbreed: welke mails
+de app verstuurt, een voorbeeldtekst per mail en één template. Voorstel, geen
+codewijziging aan de app.**
+
+**Zeven mails, geverifieerd uit de code en de Edge Functions:** wachtwoord
+vergeten · nieuw e-mailadres bevestigen · toestemmingsverzoek aan de ouder ·
+herinnering aan de ouder · toestemming gegeven (aan het kind) · digest ·
+meldmail aan privacy@.
+
+**Besluiten Ronald:** licht thema voor elke mail; woordmerk als afbeelding;
+aanhef "Hoi <voornaam>," en "Beste ouder/verzorger van <voornaam>,".
+
+**Gemaakt, in de gedeelde map (niet naar de repo):** de voorbeeldpagina met
+alle zeven mails, het template-blok voor de Edge Functions, de twee
+sjablonen voor het Supabase-dashboard en de woordmerk-afbeelding.
+**Geverifieerd:** elke mail op 375 en 640 px bekeken; geen horizontale
+overloop; de voorbeeldpagina zonder consolefout.
+
+**Rechtgezet:** TT-323 noemde zes mails en één die aantoonbaar aankwam. Het
+zijn er zeven, en vier kwamen aantoonbaar aan. Zie de rij.
+
+**Nieuw:** TT-327 (P2) — de keuze Licht/Donker weghalen zodra de digest op
+het template draait.
+
+**Gewijzigd:** `actielijst.md`, `CHECKSUMS.txt`.
+
+---
+
+**Vorige update:** 25-09-2026 (vervolg 5) — **TT-312 en TT-42 afgehandeld:
 laag 2 geslaagd op talenttent.org. Geen codewijziging. P0-bouwtickets van vier
 naar twee.**
 
@@ -5518,7 +5566,7 @@ eerste tabel altijd gelijk is aan de stand.
 | **TT-295** | De matchhelft van de digest levert structureel niets op | **Nieuw, 20-09-2026.** `tt_digest_new_musicians` doet een inner join op `musician_wanted`. Die tabel bevat **0 rijen**, geverifieerd 20-09-2026 tegen productie. TT-232 (09-09-2026) haalde het enige invulveld ervoor — "instrumenten die je zoekt in een ander" — uit Zoekvoorkeuren, met als reden "dat staat al in de zoekfilters". Sindsdien kan niemand die tabel nog vullen, en dus vindt de nachtelijke query per definitie niemand. De bandhelft werkt wel: die gebruikt `band_wanted` tegen de instrumenten in je eigen profiel, en is op 20-09-2026 aantoonbaar in een echte mail terechtgekomen (drie bands). **Toets:** kan de app hiermee live zonder dat een gebruiker iets misloopt? Nee — de app belooft een mail over nieuwe matches en levert die helft niet. Zelfde grond waarop TT-01 P0 was. **Voorstel Ronald, geen besluit (20-09-2026):** een bewaarde zoekopdracht — een vinkje op het zoekformulier dat de héle zoekopdracht opslaat (instrument, genre, straal, plaats), niet alleen een lijstje instrumenten. Dat zou TT-295 en TT-62 deel 2 in één keer afhandelen. Alternatief: het oude veld terugzetten in E-mailvoorkeuren — kleiner werk, armere mail, TT-62 deel 2 blijft open. Nog geen ontwerpsessie |
 | **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers, zodra die er zijn. Interim-stap: zie "Direct te doen" hierboven. **Vóór lancering, niet acuut nu (23-08-2026) — de site heeft nog alleen testprofielen, zie afspraak bovenaan deze tabel** |
 | **TT-62 (deel 2)** | "Geef me een seintje zodra er een drummer bijkomt" | **Uitzondering vastgelegd 12-09-2026 (besluit Ronald, TT-257):** het automatisch verruimen van deel 1 geldt **niet** als er een naam in het zoekveld staat. Wie op naam zoekt, zoekt één bepaalde persoon; iemand twee provincies verderop is dan geen beter antwoord dan geen antwoord. Zie huisstijl §17. **Deel 1 is gebouwd 11-09-2026** (automatisch verruimen, zie Deel 3). Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker. Leunt op dezelfde verzendweg als TT-01 en kan dus niet eerder |
-| **TT-323** | Elke mail die de app verstuurt één keer echt ontvangen, vóór livegang | **Nieuw, 25-09-2026, op verzoek van Ronald.** Geen bouwticket: een controle. **Toets P0:** kan de app live zonder dat een gebruiker vastloopt? Nee — komt de mail van "wachtwoord vergeten" niet aan, dan is iemand zijn account kwijt. **De mails, geverifieerd uit de code:** (1) wachtwoord vergeten (`auth.js`, Supabase); (2) e-mailadres wijzigen (`auth.js`, Supabase, TT-299); (3) de mail aan de ouder (`ouder.js`, Edge Function `ouder-toestemming`, TT-42); (4) de herinnering aan de ouder na zeven dagen (dagelijkse taak `tt-ouder-onderhoud`); (5) de mail aan het kind na goedkeuring (TT-42); (6) de digest met nieuwe berichten en matches (Edge Function `send-digest`, TT-01). Mailbevestiging bij registratie staat uit, dus die hoort er niet bij. **Per mail nalopen:** komt aan, niet in de spambox; afzender en onderwerp kloppen; elke knop en link opent de juiste pagina op talenttent.org; tekst past bij de doelgroep; leesbaar op een telefoon. **Hoort erbij:** SPF en DKIM voor `talenttent.org` controleren — staat bij TT-298 als "nog niet gecontroleerd". Alleen (6) is aantoonbaar aangekomen (20-09-2026, TT-01) |
+| **TT-323** | Elke mail die de app verstuurt één keer echt ontvangen, vóór livegang | **Nieuw, 25-09-2026, op verzoek van Ronald.** Geen bouwticket: een controle. **Toets P0:** kan de app live zonder dat een gebruiker vastloopt? Nee — komt de mail van "wachtwoord vergeten" niet aan, dan is iemand zijn account kwijt. **De mails, geverifieerd uit de code:** (1) wachtwoord vergeten (`auth.js`, Supabase); (2) e-mailadres wijzigen (`auth.js`, Supabase, TT-299); (3) de mail aan de ouder (`ouder.js`, Edge Function `ouder-toestemming`, TT-42); (4) de herinnering aan de ouder na zeven dagen (dagelijkse taak `tt-ouder-onderhoud`); (5) de mail aan het kind na goedkeuring (TT-42); (6) de digest met nieuwe berichten en matches (Edge Function `send-digest`, TT-01); (7) de meldmail aan privacy@ (Edge Function `melding-privacy`, TT-45). Mailbevestiging bij registratie staat uit, dus die hoort er niet bij. **Per mail nalopen:** komt aan, niet in de spambox; afzender en onderwerp kloppen; elke knop en link opent de juiste pagina op talenttent.org; tekst past bij de doelgroep; leesbaar op een telefoon. **Hoort erbij:** SPF en DKIM voor `talenttent.org` controleren — staat bij TT-298 als "nog niet gecontroleerd". Aantoonbaar aangekomen: (3) en (5) op 25-09-2026 (laag 2 van TT-42), (6) op 20-09-2026 (TT-01) en (7) op 25-09-2026 (proefmelding TT-45). *Gecorrigeerd 25-09-2026 (vervolg 6): hier stond "zes mails" en "Alleen (6) is aantoonbaar aangekomen". Waaruit blijkt dat dat onjuist was: de meldmail kwam dezelfde dag erbij (TT-45, vervolg), en de laag-2-verslagen van TT-42 en TT-45 hierboven melden dat (3), (5) en (7) aankwamen.* **Let op:** gaan de mails over op het nieuwe template (TT-325), dan telt deze controle opnieuw voor alle zeven |
 
 **Afgehandeld of geblokkeerd bij Ronald — telt niet mee in de P0-stand hierboven.**
 Deze rijen blijven staan omdat de tekst eronder ernaar verwijst en omdat de
@@ -5626,7 +5674,9 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-325** | Tekst en opmaak van de mails van de ouderroute | **Nieuw, 25-09-2026 (vervolg 5), verzoek Ronald.** Ronald wil de tekst en de opmaak van beide mails iets veranderen: de mail aan de ouder en de mail aan het kind. Wat precies, staat nog open — eerst vragen. De mails komen uit de Edge Function `ouder-toestemming`; die code staat niet in de repo (§10 projectinstructies). **Toets P2:** de mails werken en komen aan (geverifieerd 25-09-2026), maar hun indruk bepaalt of een ouder vertrouwen heeft. Eigen sessie |
+| **TT-325** | Eén mailtemplate voor alle zeven mails, met nieuwe teksten | **Nieuw, 25-09-2026 (vervolg 5), verzoek Ronald; verbreed in vervolg 6.** Eerst alleen de twee mails van de ouderroute. Op 25-09-2026 (vervolg 6) vroeg Ronald: welke mails verstuurt de app, een voorbeeldtekst per mail, en één template. **Besluiten Ronald, 25-09-2026:** (a) licht thema voor elke mail, geen donkere variant; (b) het woordmerk als afbeelding; (c) aanhef "Hoi <voornaam>," voor een muzikant en "Beste ouder/verzorger van <voornaam>," voor een ouder. **Besluiten Ronald, 25-09-2026 (vervolg 7):** (d) de zes mails met één handeling of mededeling krijgen opmaak A, "Brief": wit, het woordmerk als klein zwart stempel ("voor de ouder is A de beste; beter een rustig voorkomen"); (e) de digest krijgt opmaak C, "Kernzin": een donkere kop met de samenvatting ("jongeren scannen eerder dan lezen"); (f) in de digest géén kaart per afzender, en de knop "Bekijk je berichten" staat onder de donkere kop, niet erin; (g) de tekst van de mails wil Ronald zelf kunnen aanpassen. Voorstel van Claude daarvoor, nog niet bevestigd: één rij per mail in een tabel in Supabase, met invulplekken als {voornaam}, te wijzigen in de Table Editor; bouwen ná de opmaak, zodat de Edge Functions één keer omgaan. **Nog steeds voorstel van Claude, nog niet bevestigd:** de overige regels van het template (maten, knopvorm, voet, afzender, woordkeus "aanvraag") en alle voorbeeldteksten. Staan in `_niet-uploaden-mails-en-template-25-09-2026.html`; de drie opmaakvoorstellen in `_niet-uploaden-mail-opmaak-drie-voorstellen-25-09-2026.html`; de digest in vorm C (versie 3) in `_niet-uploaden-mail-digest-vorm-c-25-09-2026.html`. Voor de afzenders in de digest bleef "wie je een bericht stuurde, staat niet ook bij de matches" staan (voorstel van Claude). **Nu drie opmaken naast elkaar:** `ouder-toestemming` (licht, tabellen, Georgia-woordmerk), `send-digest` (licht of donker, `flex`, Alfa Slab-woordmerk, geen tekstversie, afzender zonder naam) en `melding-privacy` (kale tekst). Geen enkele gebruikt het woordmerk van TT-318. **Onbekend:** de huidige tekst van mail 1 en 2 in het Supabase-dashboard. **Invoeren, na akkoord:** `mail-woordmerk.png` naar de repo; mail 1 en 2 in het dashboard; het template-blok in de drie Edge Functions; daarna TT-327 en TT-323. **Toets P2:** de mails werken, maar hun indruk bepaalt of een ouder vertrouwen heeft en of een muzikant de digest opent |
+| **TT-327** | Keuze Licht/Donker bij E-mailvoorkeuren weghalen | **Nieuw, 25-09-2026 (vervolg 6), volgt uit besluit Ronald bij TT-325:** elke mail is licht. Zodra `send-digest` op het template draait, doet de keuze in Instellingen → E-mailvoorkeuren niets meer. Een knop die niets doet, is fout. Weg: `#emailThemeControl` in `index.html`, `selectEmailTheme()`, `setEmailTheme()` en `emailThemeValue` in `core.js`, en `email_theme` uit het opslaan. De kolom `musicians.email_theme` en `tt_digest_recipients` pas daarna, apart. **Volgorde is bindend:** eerst de Edge Function, dan de app. **Toets P2:** het werkt, maar een keuze zonder gevolg kost vertrouwen |
+| **TT-328** | Woordmerk: 2px letterafstand, nergens een spatie, spatiëring in het lettertype | **Gebouwd en getest 25-09-2026 (vervolg 7), besluit Ronald:** "het woordmerk mag nergens met spatie. in de app hanteren we standaard 3px tussen de letters. breng dat terug naar 2px, waarbij je daarna rekening houdt met spatiering." **Gewijzigd:** `styles.css` (`letter-spacing: calc(2em / 28)`, was `3em`), `index.html` (drie woordmerken zonder spatie, `styles.css?v=20260925d`), `tt-woordmerk.woff2` (kerning: T-T −16 nieuw, T-E −11→−21, N-T −9→−16, L-E −5→−10; T-A had al −151). **Geverifieerd:** het oog-gewogen gat per letterpaar bij 2px lag tussen 69 en 77 (pixels bij 280px letter) en ligt nu tussen 69 en 73; op 28px is het woordmerk 195px breed (was 206px). Schermafdruk van de kop op 375px bekeken. Blok 32: drie nieuwe controles, alle drie gezakt vóór de fix en geslaagd erna. **Onbekend:** of een schermlezer "TALENTTENT" als één woord voorleest; het woordmerk heeft geen `aria-label`. **Toets P2:** het werkt, maar het woordmerk is de eerste indruk |
 | **TT-305** | Gesprek openen zonder gesprekspartner gaf een databasefout | **Opgelost 22-09-2026 (vervolg 2).** `openConversation()` controleerde `otherId` niet; supabase-js maakt van `.eq('recipient_id', null)` de tekst "null", die de database niet als uuid leest. Gevonden in het foutrapport van de monitorrepo, issue #5. Nu `if (!otherId) return;` bovenin die ene functie. **Toets P2:** werkt het, maar kost het vertrouwen? Ja — de gebruiker zag "Gesprek laden is niet gelukt" zonder iets fout te doen. Zie Laatste update bovenaan |
 | **TT-304** | Vaste monitorronde — permanent ticket, sluit nooit | **Nieuw, 21-09-2026, op verzoek van Ronald.** `tests/tt_monitor.py`: negentien controles over vier blokken (repo-integriteit, huisstijl, dode code, stand), één commando, afsluitcode 0 bij nul punten. **Loper sinds 21-09-2026 (vervolg):** `.github/workflows/monitor.yml` draait hem elke drie dagen, na een upload en handmatig; GitHub mailt als een run rood wordt. **Sinds 25-09-2026 wacht hij na een upload 20 minuten** en controleert hij alleen de nieuwste commit (besluit Ronald; zie het blok bovenaan). **De workflow draait alleen de monitorronde** — de vaste testset is er op 21-09-2026 uitgehaald nadat de eerste drie runs zakten op een ontbrekende Playwright-installatie (besluit Ronald; zie het blok bovenaan). **Besluit Ronald: alleen in productie** — tweede bewuste uitzondering op §2 regel 2. In de sessie draait de monitor vóór elke oplevering, niet meer bij sessiestart. **Stand 18 van 19:** B2 opgelost, A7 wacht op een handeling van Ronald (`zoekfunctienaslagwerk.md` staat publiek in de repo). **Groeipad per gebruikersaantal en de volledige tekst:** zie de twee blokken van 21-09-2026 bovenaan. **Toets P2:** de app werkt zonder, maar een standaard die niemand tegen de code houdt stuurt elke volgende sessie de verkeerde kant op — zelfde grond als TT-262 |
 | **TT-303** | Terugknop liep op een tabblad door het klikpad | **Gebouwd en getest 20-09-2026 (vervolg 4).** Mijn Profiel is het hoogste scherm (uitgelogd de landingspagina); het woordmerk gaat daarheen en de terugknop op Zoeken, Berichten en Bands ook. Onderbalk nu Profiel · Zoeken · Berichten · Bands. Volledige tekst: Laatste update bovenaan |
