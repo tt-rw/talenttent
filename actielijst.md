@@ -1,6 +1,34 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 25-09-2026 (vervolg 3) — **TT-281 afgehandeld: laag 2
+**Laatste update:** 25-09-2026 (vervolg 4) — **TT-304: de monitor wacht
+na een upload 20 minuten. Geen codewijziging aan de app.**
+
+**Wat er misging.** Ronald kreeg om 08:44 een mail "Run failed: Monitor".
+Er was niets kapot. Ronald uploadt een set in stappen (hoofdmap, `tests/`,
+`tests/stub/`); GitHub maakt van elke stap een aparte push, en elke push
+startte de monitor. Commit 2d09663 bevatte alleen de stub; `CHECKSUMS.txt`
+klopte toen nog niet met de rest. **Geverifieerd:** `tests/tt_monitor.py` op
+2d09663 geeft 20 van 21, op 97da79c (twintig seconden later) en op bd6a5d1
+21 van 21.
+
+**Wat er verandert** (besluit Ronald, 25-09-2026):
+- Na een upload wacht de monitor 20 minuten.
+- Daarna kijkt hij of zijn commit nog de nieuwste op main is. Zo niet, dan
+  stopt hij groen; de run van de latere upload controleert de complete set.
+- `cancel-in-progress` is weg. **Aanname:** een afgebroken run kan zelf ook
+  een mail opleveren. Door de run groen te laten stoppen, speelt dat niet.
+- De vaste ronde (elke drie dagen) en handmatig starten wachten niet.
+
+**Getest:** de YAML is geldig; de controlestap geeft op de huidige kop geen
+"overslaan" en op 2d09663 wel. **Onbekend:** de eerste echte run op GitHub.
+Die volgt op deze upload; de mail blijft uit als alles klopt.
+
+**Gewijzigd:** `.github/workflows/monitor.yml` (alleen productie),
+`actielijst.md`, `CHECKSUMS.txt`.
+
+---
+
+**Vorige update:** 25-09-2026 (vervolg 3) — **TT-281 afgehandeld: laag 2
 geslaagd op talenttent.org. Geen codewijziging. P0-bouwtickets van vijf naar
 vier.**
 
@@ -5552,7 +5580,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | ID | Ticket | Kern |
 |---|---|---|
 | **TT-305** | Gesprek openen zonder gesprekspartner gaf een databasefout | **Opgelost 22-09-2026 (vervolg 2).** `openConversation()` controleerde `otherId` niet; supabase-js maakt van `.eq('recipient_id', null)` de tekst "null", die de database niet als uuid leest. Gevonden in het foutrapport van de monitorrepo, issue #5. Nu `if (!otherId) return;` bovenin die ene functie. **Toets P2:** werkt het, maar kost het vertrouwen? Ja — de gebruiker zag "Gesprek laden is niet gelukt" zonder iets fout te doen. Zie Laatste update bovenaan |
-| **TT-304** | Vaste monitorronde — permanent ticket, sluit nooit | **Nieuw, 21-09-2026, op verzoek van Ronald.** `tests/tt_monitor.py`: negentien controles over vier blokken (repo-integriteit, huisstijl, dode code, stand), één commando, afsluitcode 0 bij nul punten. **Loper sinds 21-09-2026 (vervolg):** `.github/workflows/monitor.yml` draait hem elke drie dagen, bij elke push en handmatig; GitHub mailt als een run rood wordt. **De workflow draait alleen de monitorronde** — de vaste testset is er op 21-09-2026 uitgehaald nadat de eerste drie runs zakten op een ontbrekende Playwright-installatie (besluit Ronald; zie het blok bovenaan). **Besluit Ronald: alleen in productie** — tweede bewuste uitzondering op §2 regel 2. In de sessie draait de monitor vóór elke oplevering, niet meer bij sessiestart. **Stand 18 van 19:** B2 opgelost, A7 wacht op een handeling van Ronald (`zoekfunctienaslagwerk.md` staat publiek in de repo). **Groeipad per gebruikersaantal en de volledige tekst:** zie de twee blokken van 21-09-2026 bovenaan. **Toets P2:** de app werkt zonder, maar een standaard die niemand tegen de code houdt stuurt elke volgende sessie de verkeerde kant op — zelfde grond als TT-262 |
+| **TT-304** | Vaste monitorronde — permanent ticket, sluit nooit | **Nieuw, 21-09-2026, op verzoek van Ronald.** `tests/tt_monitor.py`: negentien controles over vier blokken (repo-integriteit, huisstijl, dode code, stand), één commando, afsluitcode 0 bij nul punten. **Loper sinds 21-09-2026 (vervolg):** `.github/workflows/monitor.yml` draait hem elke drie dagen, na een upload en handmatig; GitHub mailt als een run rood wordt. **Sinds 25-09-2026 wacht hij na een upload 20 minuten** en controleert hij alleen de nieuwste commit (besluit Ronald; zie het blok bovenaan). **De workflow draait alleen de monitorronde** — de vaste testset is er op 21-09-2026 uitgehaald nadat de eerste drie runs zakten op een ontbrekende Playwright-installatie (besluit Ronald; zie het blok bovenaan). **Besluit Ronald: alleen in productie** — tweede bewuste uitzondering op §2 regel 2. In de sessie draait de monitor vóór elke oplevering, niet meer bij sessiestart. **Stand 18 van 19:** B2 opgelost, A7 wacht op een handeling van Ronald (`zoekfunctienaslagwerk.md` staat publiek in de repo). **Groeipad per gebruikersaantal en de volledige tekst:** zie de twee blokken van 21-09-2026 bovenaan. **Toets P2:** de app werkt zonder, maar een standaard die niemand tegen de code houdt stuurt elke volgende sessie de verkeerde kant op — zelfde grond als TT-262 |
 | **TT-303** | Terugknop liep op een tabblad door het klikpad | **Gebouwd en getest 20-09-2026 (vervolg 4).** Mijn Profiel is het hoogste scherm (uitgelogd de landingspagina); het woordmerk gaat daarheen en de terugknop op Zoeken, Berichten en Bands ook. Onderbalk nu Profiel · Zoeken · Berichten · Bands. Volledige tekst: Laatste update bovenaan |
 | **TT-301** | Woordmerk gecentreerd en terugknop linksboven | **Gebouwd en getest 20-09-2026 (vervolg 2).** Woordmerk in het midden in de hele app, zonder "THE"; terugknop linksboven als lijn-teken, die `history.back()` doet. Ook in de koprij van het muzikant- en bandprofiel. Volledige tekst: Laatste update bovenaan. **Nog open:** laag 2 op een echte telefoon, vooral iOS |
 | **TT-297** | De SMTP-verbinding heeft geen eigen time-out | **Nieuw, 20-09-2026.** Gemeten die dag met een verkeerde `SMTP_HOST`: de Edge Function bleef hangen tot `pg_net` er na 30 seconden zelf mee stopte, zonder één regel in het functielog. **Toets:** werkt het, maar kost het moeite of vertrouwen? Ja — een storing bij de mailserver levert nu geen bruikbare foutmelding op, alleen stilte, en dat is precies wat TT-01 drie weken heeft opgehouden |
