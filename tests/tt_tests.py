@@ -3696,6 +3696,80 @@ def blok_browser():
         page_errors.clear()
         page.evaluate("window.TT_STUB.reset()")
 
+        # ------------------------------------------------------------------
+        # Blok 36 — TT-45: media van 13- tot 15-jarigen afgeschermd voor
+        # bezoekers zonder account, en de meldknop in de teksten
+        # ------------------------------------------------------------------
+        print("\nBlok 36 — afgeschermde media en de meldknop in de teksten (TT-45)")
+        page.evaluate("window.TT_STUB.reset()")
+        tt45 = page.evaluate("""async () => {
+          const S = window.TT_STUB;
+          const was = { hasOwnProfile, myMusicianId };
+          hasOwnProfile = false; myMusicianId = null;
+          const rij = (media, avatar) => [{ id: 'm2', username: 'kim', age: 14, city: 'Den Haag',
+            bio: '', goal: null, profile_color: '#f5c518', avatar_url: avatar, updated_at: new Date().toISOString(),
+            instrument_levels: [{ instrument: 'Drums', niveau: 3 }], genres: ['Rock'], songs: [], media }];
+          const meet = async () => {
+            await openMusicianModal('m2');
+            const vak = document.querySelector('#musicianModal .modal-scroll-area');
+            const t = [...vak.querySelectorAll('.media-afgeschermd')];
+            const r = {
+              tegels: vak.querySelectorAll('.profile-media-tegel.media-afgeschermd').length,
+              banner: vak.querySelectorAll('.pb-item.media-afgeschermd').length,
+              knoppen: t.filter(e => e.tagName === 'BUTTON' || e.closest('button') || e.hasAttribute('onclick')).length,
+              tekst: t.map(e => e.textContent.trim()),
+              beeld: vak.querySelectorAll('.profile-media img, .profile-media video, .profiel-banner img, .profiel-banner video').length,
+              fotoAvatar: vak.querySelectorAll('.profile-avatar-photo').length,
+              tAvatar: vak.querySelectorAll('.profile-avatar-initials').length,
+              gewoneTegels: vak.querySelectorAll('button.profile-media-tegel').length,
+            };
+            if (t[0]) { const cs = getComputedStyle(t[0]); r.kleur = cs.color; r.cursor = cs.cursor; }
+            closeMusicianModal();
+            return r;
+          };
+          const uit = {};
+          // Afgeschermd: drie items zonder adres, één daarvan in de banner
+          S.rpcResults.tt_get_musicians_public = () => rij([
+            { media_type: 'foto', url: null, platform: null, in_banner: true, afgeschermd: true },
+            { media_type: 'video', url: null, platform: null, in_banner: false, afgeschermd: true },
+            { media_type: 'link', url: null, platform: null, in_banner: false, afgeschermd: true }], null);
+          uit.af = await meet();
+          // Niet afgeschermd (16+): zelfde soorten, met adres — mag niet veranderen
+          S.rpcResults.tt_get_musicians_public = () => rij([
+            { media_type: 'foto', url: 'https://x.test/a.jpg', platform: null, in_banner: false },
+            { media_type: 'video', url: 'https://x.test/b.mp4', platform: null, in_banner: false },
+            { media_type: 'link', url: 'https://open.spotify.com/track/1', platform: 'Spotify', in_banner: false }],
+            'https://x.test/avatar.jpg');
+          uit.open = await meet();
+          hasOwnProfile = was.hasOwnProfile; myMusicianId = was.myMusicianId;
+          return uit;
+        }""")
+        af, op = tt45["af"], tt45["open"]
+        check("afgeschermd: foto, video en link staan er als T-tegel",
+              af["tegels"] == 3 and all(t == "T" for t in af["tekst"]), json.dumps(af))
+        check("afgeschermd: het banneritem staat er als T-vlak", af["banner"] == 1, json.dumps(af))
+        check("afgeschermd: geen enkel beeld of video in de pagina", af["beeld"] == 0, json.dumps(af))
+        check("afgeschermd: de T is geen knop (er valt niets te openen)",
+              af["knoppen"] == 0 and af.get("cursor") == "default", json.dumps(af))
+        check("afgeschermd: de T is goud (--accent)", af.get("kleur") == "rgb(245, 197, 24)", json.dumps(af))
+        check("afgeschermd: profielfoto wordt de T", af["tAvatar"] == 1 and af["fotoAvatar"] == 0, json.dumps(af))
+        check("16+: foto, video en link blijven gewone knoppen",
+              op["gewoneTegels"] == 2 and op["tegels"] == 0 and op["fotoAvatar"] == 1, json.dumps(op))
+
+        html45 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        check("geen 'meldknop volgt nog' meer in de voorwaarden en de gedragscode",
+              "volgt nog" not in html45 and "binnenkort ook een meldknop" not in html45)
+        voorw = html45.split('id="view-terms"')[1].split('id="view-gedragscode"')[0]
+        gedr = html45.split('id="view-gedragscode"')[1].split('<div class="view')[0]
+        priv = html45.split('id="view-privacy"')[1].split('id="view-terms"')[0]
+        check("voorwaarden en gedragscode wijzen naar de knop ⋯",
+              "knop ⋯" in voorw and "knop ⋯" in gedr)
+        check("privacyverklaring noemt het afschermen voor 13, 14 en 15",
+              "Ben je 13, 14 of 15?" in priv and "De T van The Talent Tent" in priv.replace("de T", "De T"))
+        check("geen paginafouten in blok 36", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
