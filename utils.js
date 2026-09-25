@@ -1760,8 +1760,20 @@ function profielBannerItems(mediaLijst) {
   return (mediaLijst || [])
     .filter(x => x && x.in_banner)
     .map(x => ({ ...x, veilig: safeUrl(x.url) }))
-    .filter(x => x.veilig)
+    .filter(x => x.veilig || x.afgeschermd)
     .slice(0, MEDIA_BANNER_MAX);
+}
+
+// ─── TT-45 (25-09-2026, besluit Ronald 23-09-2026): afgeschermde media ──────
+// Een bezoeker zonder account ziet van een 13- tot 15-jarige geen enkel
+// medium. De database geeft zo'n item terug zonder adres en met
+// `afgeschermd: true` (tt_get_musicians_public). Op die plek staat de T van
+// The Talent Tent: goud op antraciet, als het app-icoon. Geen knop — er valt
+// niets te openen, en een knop die niets doet is een fout (onderhoudsronde).
+// Eén functie voor de tegel op het profiel én het vlak in de bannerbalk.
+function mediaAfgeschermdHTML(plek) {
+  const klasse = plek === 'banner' ? 'pb-item media-afgeschermd' : 'profile-media-tegel media-afgeschermd';
+  return `<div class="${klasse}" role="img" aria-label="Alleen zichtbaar met een account">T</div>`;
 }
 
 function profielBannerHTML(mediaLijst) {
@@ -1772,6 +1784,7 @@ function profielBannerHTML(mediaLijst) {
   const stippenId = `pbStippen${nr}`;
 
   const vlakken = items.map((it, i) => {
+    if (it.afgeschermd) return mediaAfgeschermdHTML('banner');
     const url = it.veilig;
     const platform = it.platform || detectPlatform(url);
     let binnen, tik;

@@ -1339,6 +1339,25 @@
     background: none;
     cursor: pointer;
   }
+  /* TT-45 (25-09-2026): een afgeschermd medium van een 13- tot 15-jarige,
+     voor een bezoeker zonder account. De T van het app-icoon: goud op
+     antraciet. Geen knop, dus ook geen handje als cursor. */
+  .media-afgeschermd {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface2);
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-size: 32px;
+    line-height: 1;
+    cursor: default;
+    user-select: none;
+  }
+  .pb-item.media-afgeschermd {
+    font-size: 72px;
+  }
+
   .profile-media-tegel .pb-label {
     left: 4px;
     bottom: 4px;

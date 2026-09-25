@@ -1,6 +1,87 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 25-09-2026 — **TT-312 gebouwd: band opheffen is alles of
+**Laatste update:** 25-09-2026 (vervolg) — **TT-45 gebouwd: media van 13- tot
+15-jarigen afgeschermd voor bezoekers zonder account, elke melding per mail
+naar privacy@, en de meldknop in de teksten. Beide SQL-scripts en de Edge
+Function staan in productie en zijn nagemeten. Testset 524 van 524.**
+
+**Aanleiding.** Ronald: "rond dit maar af." Drie keuzes van Ronald vooraf,
+25-09-2026: afschermen in de database; de database stuurt de meldmail; en
+**vragen gaan naar contact@, melden en intrekken naar privacy@** ("akkoord met
+advies"). Dat laatste vervangt het deel van het besluit van 23-09-2026 dat
+ook een gewone vraag van een ouder naar privacy@ liet gaan. De mail aan de
+ouder houdt dus "Vragen? contact@"; de Edge Function `ouder-toestemming`
+blijft ongewijzigd.
+
+**Wat er gebouwd is.**
+- **`tt_get_musicians_public`** (database): vraagt iemand zonder account
+  (`auth.uid()` leeg) het profiel op van iemand onder de 16, dan is de
+  profielfoto leeg en staat elk medium er zonder adres en platform, met
+  `afgeschermd: true`. Een onbekende leeftijd telt als afgeschermd. Zelfde
+  kolommen, zelfde rechten.
+- **Opslagmappen `avatars` en `media`**: de leesregels "avatars publiek
+  leesbaar" en "media publiek leesbaar" zijn vervangen door "eigen avatars en
+  media lezen" (alleen `authenticated`, alleen de eigen map). Een foto blijft
+  te openen via zijn eigen adres.
+- **`mediaAfgeschermdHTML()`** (`utils.js`, nieuw): de T van het app-icoon,
+  goud op antraciet, geen knop. Gebruikt in het profiel (`musicians.js`) en
+  in de bannerbalk (`profielBannerHTML()`). Eén functie voor beide plekken.
+- **Meldmail**: kolom `musician_reports.gemaild_op`, trigger
+  `tt_melding_mailen` (`net.http_post`, zelfde weg als `tt-ouder-onderhoud`)
+  en de Edge Function `melding-privacy` (Verify JWT uit). De functie mailt
+  alleen voor een bestaande, nog niet gemailde melding. Een melding over of
+  van een 13- tot 15-jarige krijgt "[13 t/m 15]" vooraan in het onderwerp.
+  Meldingen van vóór 25-09-2026 zijn niet alsnog gemaild.
+- **Teksten** (`index.html`): voorwaarden §7 en de gedragscode wijzen naar
+  de knop ⋯; "een meldknop binnen de app volgt nog" en "Er komt binnenkort ook
+  een meldknop" zijn weg. Privacyverklaring §6: twee nieuwe regels, over het
+  afschermen voor 13, 14 en 15 en over wie een melding ziet. De datums van de
+  voorwaarden en de gedragscode staan op 25 september 2026.
+
+**Tweede gat gevonden en in hetzelfde script gedicht.** Geverifieerd in de
+browserpane op talenttent.org, uitgelogd: `storage.from('media').list('')`
+gaf 5 mappen en `avatars` 6, met in elke map de bestanden. Iedereen kon zo
+alle foto's ophalen, buiten de app om. Alleen de functie dichtzetten zou dus
+alleen dicht líjken.
+
+**Geverifieerd in productie, 25-09-2026** (browserpane, na de scripts):
+uitgelogd een profiel van 14 → 0 adressen, 2 media als T; acht profielen van
+16+ → alles zichtbaar; beide mappen doorbladeren → 0; een foto via zijn eigen
+adres → 200. Ingelogd hetzelfde profiel van 14 → alles zichtbaar; de eigen
+map doorbladeren → 3 bestanden. `melding-privacy`: ongeldig id → 400,
+onbekend id → "verstuurd: false". Controle van het meldmail-script:
+`gemaild_op` 1, trigger 1 (uitslag van Ronald). Lokaal (Postgres 16) beide
+scripts twee keer gedraaid; de meldmail-trigger laat een melding staan als
+`net.http_post` faalt. De Edge Function is getest met een nagebootste database
+en mailserver (12 controles). **Aanname:** Deno kon in de sessie niet worden
+geïnstalleerd; de functie is niet op typen gecontroleerd. Het plaatsen bij
+Supabase ging wel zonder fout.
+
+**Testset.** Blok 36 (11 controles). Zeven daarvan zakken tegen de oude code
+en slagen tegen de nieuwe.
+
+**Proefmelding geslaagd, 25-09-2026.** Ronald meldde via de knop ⋯ een
+testprofiel; de mail stond binnen een seconde in privacy@ (uitslag van
+Ronald).
+
+**Nog open voor TT-45: alleen laag 2**, zodra de app-bestanden live staan:
+uitgelogd het profiel van een 13- tot 15-jarige openen op de echte site en de
+T zien staan. Wat de database teruggeeft, is al in productie gemeten (zie
+hierboven).
+
+**Volgorde was bindend en is gevolgd:** eerst de SQL, dan de app-bestanden.
+De privacyverklaring zegt dat de media afgeschermd zijn; dat moest eerst waar
+zijn.
+
+**Gewijzigd:** `index.html`, `utils.js`, `musicians.js`, `styles.css`,
+`tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`. In de gedeelde map, niet
+naar de repo: drie SQL-scripts en de Edge Function. In het project:
+`projectinstructies.md`, `huisstijl-en-consistentie-25-09-2026.md` (§18.7
+nieuw: de T) en `minderjarigen-toestemming-25-09-2026.md`.
+
+---
+
+**Vorige update:** 25-09-2026 — **TT-312 gebouwd: band opheffen is alles of
 niets. SQL-script gedraaid en nagemeten; alleen laag 2 staat nog open.
 Testset 513 van 513.**
 
@@ -5250,7 +5331,7 @@ eerste tabel altijd gelijk is aan de stand.
 |---|---|---|
 | **TT-295** | De matchhelft van de digest levert structureel niets op | **Nieuw, 20-09-2026.** `tt_digest_new_musicians` doet een inner join op `musician_wanted`. Die tabel bevat **0 rijen**, geverifieerd 20-09-2026 tegen productie. TT-232 (09-09-2026) haalde het enige invulveld ervoor — "instrumenten die je zoekt in een ander" — uit Zoekvoorkeuren, met als reden "dat staat al in de zoekfilters". Sindsdien kan niemand die tabel nog vullen, en dus vindt de nachtelijke query per definitie niemand. De bandhelft werkt wel: die gebruikt `band_wanted` tegen de instrumenten in je eigen profiel, en is op 20-09-2026 aantoonbaar in een echte mail terechtgekomen (drie bands). **Toets:** kan de app hiermee live zonder dat een gebruiker iets misloopt? Nee — de app belooft een mail over nieuwe matches en levert die helft niet. Zelfde grond waarop TT-01 P0 was. **Voorstel Ronald, geen besluit (20-09-2026):** een bewaarde zoekopdracht — een vinkje op het zoekformulier dat de héle zoekopdracht opslaat (instrument, genre, straal, plaats), niet alleen een lijstje instrumenten. Dat zou TT-295 en TT-62 deel 2 in één keer afhandelen. Alternatief: het oude veld terugzetten in E-mailvoorkeuren — kleiner werk, armere mail, TT-62 deel 2 blijft open. Nog geen ontwerpsessie |
 | **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers, zodra die er zijn. Interim-stap: zie "Direct te doen" hierboven. **Vóór lancering, niet acuut nu (23-08-2026) — de site heeft nog alleen testprofielen, zie afspraak bovenaan deze tabel** |
-| **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | Nieuw, 08-08-2026 — losgetrokken uit TT-07. **Besloten 23-09-2026 (Ronald), nog niet gebouwd:** (1) twee leeftijdsgroepen, 13 t/m 15 en 16+; (2) alle media van 13- tot 15-jarigen verschijnt voor bezoekers zonder account als de T van The Talent Tent, video's niet af te spelen; (3) alles wat met privacy te maken heeft gaat naar `privacy@talenttent.org`, ook een melding via de knop in de app — die gaat nu alleen de tabel `musician_reports` in en niemand krijgt bericht. **Bouwwerk:** media afschermen (advies Claude: in de `_anon`-functies, niet alleen in de app), een mail naar privacy@ bij elke melding, en de zin "meldknop volgt nog" uit de gedragscode en de voorwaarden. Vraagt SQL van Ronald. Zie `minderjarigen-toestemming-23-09-2026.md` |
+| **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | **Gebouwd 25-09-2026; de proefmelding is geslaagd, alleen laag 2 staat nog open — zie Laatste update.** Nieuw, 08-08-2026 — losgetrokken uit TT-07. Besluiten Ronald 23-09-2026 en 25-09-2026: twee leeftijdsgroepen (13 t/m 15 en 16+); media van onder de 16 afgeschermd voor bezoekers zonder account (de T); elke melding via de knop ⋯ per mail naar `privacy@talenttent.org`; vragen naar contact@, melden en intrekken naar privacy@. In productie en nagemeten: `tt_get_musicians_public` (afgeschermd), de leesregel op de opslagmappen, `musician_reports.gemaild_op`, de trigger `tt_melding_mailen` en de Edge Function `melding-privacy`. Zie `minderjarigen-toestemming-25-09-2026.md` |
 | **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Gebouwd 22-09-2026, route A. Alleen laag 2 staat nog open** *(rechtgezet 23-09-2026: hier stond "wacht op twee handelingen van Ronald"; beide zijn op 22-09-2026 gemeten)*. In productie en geverifieerd: de tabel `ouder_toestemming`, de drie functies, de Edge Function `ouder-toestemming` (Verify JWT uit), en de dagelijkse taak `tt-ouder-onderhoud` (23-09-2026, uitslag van Ronald). Zeven onderdelen in `ouder.js` en `view-toestemming`. **Laag 2:** de keten mail aan de ouder → klik → mail aan het kind → wachtwoord, op de echte site, met een mailadres waar Ronald bij kan. Ontwerp en besluiten: `_niet-uploaden-tt42-ontwerp-22-09-2026.md` en `minderjarigen-toestemming-23-09-2026.md` |
 | **TT-62 (deel 2)** | "Geef me een seintje zodra er een drummer bijkomt" | **Uitzondering vastgelegd 12-09-2026 (besluit Ronald, TT-257):** het automatisch verruimen van deel 1 geldt **niet** als er een naam in het zoekveld staat. Wie op naam zoekt, zoekt één bepaalde persoon; iemand twee provincies verderop is dan geen beter antwoord dan geen antwoord. Zie huisstijl §17. **Deel 1 is gebouwd 11-09-2026** (automatisch verruimen, zie Deel 3). Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker. Leunt op dezelfde verzendweg als TT-01 en kan dus niet eerder |
 | **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Gebouwd 23-09-2026; wacht op het SQL-script van Ronald en laag 2 — zie Laatste update.** Nieuw, 16-09-2026 (onderhoudsronde). Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wissen eerst en voegen daarna toe, zonder foutcontrole op het wissen. Mislukt het toevoegen, dan is de oude data weg. Zelfde soort in `executeAccountDeletion()`. Volledige tekst: Laatste update bovenaan |
@@ -5273,7 +5354,7 @@ herzieningsmomenten in TT-63 nog moeten gebeuren.
 | **TT-287** | Profiel en band van een ander niet te bedienen | **Nieuw en opgelost 16-09-2026.** Tikvlak van het kruis besloeg het hele venster, en `closeMusicianModal()` brak zonder klik-gegeven. Gemeld door de monitor (20× TypeError). Zie Laatste update |
 | **TT-62 (deel 1)** | Nooit nul zoekresultaten tonen | **Opgelost 11-09-2026.** Automatisch verruimen van de straal, in alle drie de zoektabbladen gelijk. Deel 2 staat nog open in de eerste tabel |
 | TT-22 (restpunt) | Auth-account daadwerkelijk verwijderen | **Data-deel opgelost 09-08-2026** (profiel, kindtabellen, Storage-bestanden, bandoprichterschap — zie Deel 3). **Auth-account-deel gebouwd 06-09-2026** (zie Laatste update bovenaan): nieuwe Edge Function `delete-own-account`, `executeAccountDeletion()` roept 'm aan vóór `signOut()`. **Dicht sinds 06-09-2026.** De functie staat onder de juiste naam bij Supabase en is live bevestigd door Ronald: "Je account is verwijderd." — zie Deel 3, de Eindstand van TT-22. *Gecorrigeerd 23-09-2026: hier stond "Blokkeert nog op: Ronald moet de Edge Function bij Supabase aanmaken/deployen". Dat was sinds 06-09-2026 onjuist. Waaruit blijkt: de Eindstand in dit document ("Live bevestigd door Ronald … TT-22 is dicht") en het Supabase-dashboard, dat `delete-own-account` op `.../functions/v1/delete-own-account` toont, 17 dagen oud (schermafdruk Ronald, 23-09-2026). Ook de alinea boven de eerste tabel noemde TT-22 en TT-06 nog als wachtend op Ronald; die is in dezelfde correctie bijgewerkt.* |
-| **TT-63** | Privacyverklaring, gebruiksvoorwaarden, gedragscode | **Gebouwd en gepubliceerd 09-08-2026** — drie nieuwe views (`view-privacy`/`view-terms`/`view-gedragscode`), bereikbaar via het nieuwe hamburgermenu (zie hieronder) en via `#privacy`/`#terms`/`#gedragscode`. Toestemmingsregel met links toegevoegd bij de laatste wizard-stap. Gebruikt `privacy@talenttent.org` in alle drie. **Herzieningsmomenten, vastgelegd zodat ze niet vergeten worden:** privacyverklaring → zodra TT-42/TT-45 zijn opgelost (het hoofdstuk Minderjarigen loopt nu al vooruit op een regel die de wizard nog niet afdwingt — dat gat moet dicht vóór brede publicatie); gebruiksvoorwaarden + gedragscode → zodra TT-06 (meldknop) live gaat (nu nog "volgt binnenkort"); gebruiksvoorwaarden → kleine tekstupdate zodra TT-58 (applaus) of TT-221 (volgen) klaar zijn |
+| **TT-63** | Privacyverklaring, gebruiksvoorwaarden, gedragscode | **Gebouwd en gepubliceerd 09-08-2026** — drie nieuwe views (`view-privacy`/`view-terms`/`view-gedragscode`), bereikbaar via het nieuwe hamburgermenu (zie hieronder) en via `#privacy`/`#terms`/`#gedragscode`. Toestemmingsregel met links toegevoegd bij de laatste wizard-stap. Gebruikt `privacy@talenttent.org` in alle drie. **Herzieningsmomenten, vastgelegd zodat ze niet vergeten worden:** privacyverklaring → zodra TT-42/TT-45 zijn opgelost (het hoofdstuk Minderjarigen loopt nu al vooruit op een regel die de wizard nog niet afdwingt — dat gat moet dicht vóór brede publicatie); gebruiksvoorwaarden + gedragscode → zodra TT-06 (meldknop) live gaat — **gedaan 25-09-2026 (TT-45)**: beide wijzen nu naar de knop ⋯ *(rechtgezet 25-09-2026: hier stond "nu nog 'volgt binnenkort'"; de knop bestaat sinds 18-09-2026 en de teksten zijn in TT-45 aangepast)*; gebruiksvoorwaarden → kleine tekstupdate zodra TT-58 (applaus) of TT-221 (volgen) klaar zijn |
 | **TT-129** | Instrument zonder niveau kon in de wizard blijven staan | **Nieuw en opgelost 23-08-2026, zie Deel 3.** Gevonden bij een bredere code-controle, niet live gemeld. Sluiten van het niveau-keuzescherm (kruisje, tik buiten de modal, of "terug") zonder een niveau te kiezen liet een net gekozen instrument zonder niveau in de lijst staan — instrument is verplicht in de wizard, dus dit trof iedereen die dit scherm ooit zo sloot. Bij opslaan ging niveau als `null` mee. Clientfix voorkomt dit nu aan de bron; optioneel SQL-vangnet `I-instrument-niveau-nullable-defensief.sql` nog niet gedraaid |
 | **TT-294** | Terugknop sloeg opruimwerk over bij vier modals | **Nieuw en opgelost 18-09-2026.** Bevinding van Ronald: een kruisje rechtsboven kan door de telefoon-terugknop worden overgenomen. Onderzocht: de popstate-listener (`core.js`, TT-229) sluit elke modal, maar roept de eigen sluitfunctie alleen aan via `data-close` — dat hadden maar 2 van de 15. Bij `messageModal`, `meldModal` en `pickerListModal` bleef eigen state hangen (laag risico, wordt bij heropenen overschreven). Bij `instrumentLevelModal` bleef een net gekozen instrument zonder niveau staan — **zelfde bugklasse als TT-129**, nu bereikbaar via de terugknop in plaats van via kruisje/tik-buiten/"terug". **Toets P0:** kon een gebruiker hierdoor data verkeerd opslaan? Bij instrumentLevelModal ja → P0. Fix: `data-close` toegevoegd aan alle vier in `index.html`, geen JS gewijzigd. Blok 23 (nieuw, 9 controles) bewijst het: zakt vóór de fix, slaagt erna. **Stap 2 (kruisje rechtsboven verwijderen) — advies Claude: niet doen, besluit aan Ronald.** Reden: op mobiel vult een modal het hele scherm (geen "buiten" om op te tikken), en iOS heeft geen systeem-terugknop — een geïnstalleerde PWA op de iPhone (`manifest.json`, `"display": "standalone"`) verliest daarmee alle Safari-chrome inclusief het terugveeggebaar. Zonder kruisje zou zo iemand vast kunnen komen te zitten |
 | **TT-110** | Regressie: eigen profiel niet meer zichtbaar/bewerkbaar | **Gevonden en opgelost 19-08-2026, zie Deel 3.** Live gemeld door Ronald: na inloggen verscheen "Maak profiel", terwijl Berichten en Bands wel gewoon werkten. Oorzaak: `loadMyProfile()` en `editMyProfile()` gebruikten nog `select('*', ...)` op `musicians` — sinds B-01 tweede stap (18-08-2026, hieronder) mag `authenticated` de kolom `birth_date` niet meer lezen, en Postgres laat een sterretje-select dan in zijn geheel falen, niet gedeeltelijk. Trof **elk** ingelogd profiel sinds 18-08-2026. Opgelost met dezelfde, al beproefde aanpak als bij de twee eerder gefixte plekken (zoekresultaten, profielmodal): vaste kolomlijst, geen `birth_date`, leeftijd apart via `tt_musicians_ages()` |

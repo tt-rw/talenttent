@@ -38,21 +38,23 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
   // Alleen links met een geldige http(s)-URL tonen. Een `javascript:`-URL in
   // een href voert code uit zodra iemand erop klikt — die laten we hier vallen
   // in plaats van hem als lege link te tonen.
+  // TT-45 (25-09-2026): een afgeschermd item heeft geen adres, maar hoort er
+  // wél te staan — als de T, zie mediaAfgeschermdHTML() in utils.js.
   const links = m.musician_media
     .filter(x => x.media_type === 'link')
     .map(x => ({ ...x, safeHref: safeUrl(x.url) }))
-    .filter(x => x.safeHref);
+    .filter(x => x.safeHref || x.afgeschermd);
 
   // TT-02: geüploade foto's/video's tonen — voorheen liet dit scherm alleen
   // media_type 'link' zien, terwijl geüploade bestanden nu écht bestaan.
   const photos = m.musician_media
     .filter(x => x.media_type === 'foto')
     .map(x => ({ ...x, safeHref: safeUrl(x.url) }))
-    .filter(x => x.safeHref);
+    .filter(x => x.safeHref || x.afgeschermd);
   const videos = m.musician_media
     .filter(x => x.media_type === 'video')
     .map(x => ({ ...x, safeHref: safeUrl(x.url) }))
-    .filter(x => x.safeHref);
+    .filter(x => x.safeHref || x.afgeschermd);
 
   // 22-08-2026 (Ronald): het onderste actieblok (Profiel bewerken + het
   // ⋯-menu, TT-119) is weg. Alle drie de acties — wijzigen, band-
@@ -128,8 +130,8 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       <div class="profile-media" style="margin-top:16px;">
         <div class="profile-media-title">Foto's en video's</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
-          ${photos.map(p => `<button type="button" class="profile-media-tegel" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')"><img src="${p.safeHref}" alt="Foto" style="width:100%;height:100%;object-fit:cover;"></button>`).join('')}
-          ${videos.map(v => `<button type="button" class="profile-media-tegel" onclick="openMediaSpeler('${jsAttr(v.safeHref)}', 'video')"><video src="${v.safeHref}#t=0.1" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true" style="width:100%;height:100%;object-fit:cover;background:#000;"></video><span class="pb-label">Video</span></button>`).join('')}
+          ${photos.map(p => p.afgeschermd ? mediaAfgeschermdHTML('tegel') : `<button type="button" class="profile-media-tegel" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')"><img src="${p.safeHref}" alt="Foto" style="width:100%;height:100%;object-fit:cover;"></button>`).join('')}
+          ${videos.map(v => v.afgeschermd ? mediaAfgeschermdHTML('tegel') : `<button type="button" class="profile-media-tegel" onclick="openMediaSpeler('${jsAttr(v.safeHref)}', 'video')"><video src="${v.safeHref}#t=0.1" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true" style="width:100%;height:100%;object-fit:cover;background:#000;"></video><span class="pb-label">Video</span></button>`).join('')}
         </div>
       </div>` : ''}
     ${links.length ? `
@@ -137,6 +139,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
         <div class="profile-media-title">Links</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
           ${links.map(l => {
+            if (l.afgeschermd) return mediaAfgeschermdHTML('tegel');
             const ytId = extractYouTubeId(l.safeHref);
             const label = l.platform || 'Link';
             const inner = ytId
