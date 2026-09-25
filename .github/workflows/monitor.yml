@@ -2,8 +2,18 @@
 #
 # Waarom hier en niet in een sessie: `tests/tt_monitor.py` draait alleen als
 # iemand hem start. Deze workflow is de loper die dat vanzelf doet - elke drie
-# dagen, en bij elke push naar main. Zakt de monitor, dan eindigt de run rood
+# dagen, en na een upload naar main. Zakt de monitor, dan eindigt de run rood
 # en stuurt GitHub daar een mail over naar de eigenaar van de repo.
+#
+# Na een upload wacht de monitor eerst 20 minuten (besluit Ronald,
+# 25-09-2026). Reden: Ronald uploadt een set in stappen - hoofdmap, `tests/`,
+# `tests/stub/` - en GitHub maakt van elke stap een aparte push. Na de eerste
+# stap is de set nog half binnen; `CHECKSUMS.txt` klopt dan nog niet en de run
+# werd rood (commit 2d09663, 25-09-2026: 20 van 21, twintig seconden later 21
+# van 21). Na het wachten kijkt de run of zijn commit nog de nieuwste op main
+# is. Zo niet, dan stopt hij groen: de run van de latere push controleert de
+# set. Er is BEWUST geen `cancel-in-progress`: een afgebroken run kan zelf ook
+# een mail opleveren.
 #
 # Deze workflow staat BEWUST alleen in de productierepo, naast `static.yml`.
 # Tweede bewuste uitzondering op §2 regel 2 van de projectinstructies
@@ -41,22 +51,37 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: "monitor"
-  cancel-in-progress: true
-
 jobs:
   monitor:
     runs-on: ubuntu-latest
     steps:
+      - name: Wachten tot de upload compleet is
+        # Alleen na een upload. De vaste ronde en handmatig starten wachten niet.
+        if: github.event_name == 'push'
+        run: sleep 1200
+
+      - name: Is dit nog de nieuwste upload?
+        id: nieuwste
+        if: github.event_name == 'push'
+        run: |
+          kop=$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}" refs/heads/main | cut -f1)
+          if [ -n "$kop" ] && [ "$kop" != "$GITHUB_SHA" ]; then
+            echo "Er kwam na deze upload nog een upload binnen ($kop)."
+            echo "Die run controleert de complete set. Deze stopt hier."
+            echo "overslaan=ja" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Repo ophalen
+        if: steps.nieuwste.outputs.overslaan != 'ja'
         uses: actions/checkout@v4
 
       - name: Node klaarzetten
         # tt_monitor.py gebruikt `node --check` per JS-bestand.
+        if: steps.nieuwste.outputs.overslaan != 'ja'
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
       - name: Monitorronde
+        if: steps.nieuwste.outputs.overslaan != 'ja'
         run: python3 tests/tt_monitor.py
