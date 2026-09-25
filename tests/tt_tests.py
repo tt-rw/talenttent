@@ -238,6 +238,16 @@ def blok1_statisch():
     check("geen los wissen van koppeltabellen in de opslagpaden (TT-281)", not los,
           f"gevonden: {los}")
 
+    # TT-312: band opheffen gebeurt alleen nog in tt_dissolve_band, in één
+    # transactie. Een los .delete() in dissolveBand() is precies de fout die
+    # TT-312 wegnam: leden weg, band nog wel.
+    bsrc = open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
+    m = re.search(r"async function dissolveBand\(bandId\) \{(.*?)\n\}", bsrc, re.S)
+    body = m.group(1) if m else ""
+    check("band opheffen wist niets los, alleen via tt_dissolve_band (TT-312)",
+          bool(m) and ".delete(" not in body and "tt_dissolve_band" in body,
+          body[:200] if m else "dissolveBand() niet gevonden")
+
 
 # --------------------------------------------------------------------------
 # Blok 2 t/m 5 — in de browser, tegen de stub
@@ -3625,6 +3635,66 @@ def blok_browser():
         page_errors.clear()
         page.set_viewport_size({"width": 390, "height": 844})
         page.wait_for_timeout(80)
+
+        # ------------------------------------------------------------------
+        # Blok 35 — TT-312: band opheffen is alles of niets
+        # ------------------------------------------------------------------
+        print("\nBlok 35 — band opheffen is alles of niets (TT-312)")
+        page.evaluate("window.TT_STUB.reset()")
+        tt312 = page.evaluate("""async () => {
+          const S = window.TT_STUB;
+          const uit = {};
+          const bewaard = JSON.stringify({ bands: S.data.bands, band_members: S.data.band_members,
+                                           band_wanted: S.data.band_wanted });
+          const zet = () => {
+            S.data.bands = [{ id: 'b9', name: 'Proefband', city: 'Delft', postcode: '2611',
+                              status: 'Zoekend naar leden', niveau: 3, description: '',
+                              photo_url: null, city_source: 'pdok' }];
+            S.data.band_members = [
+              { band_id: 'b9', musician_id: 'm1', role: 'Oprichter', status: 'bevestigd', founder_offer: null, founder_offer_at: null },
+              { band_id: 'b9', musician_id: 'm2', role: 'Lid', status: 'bevestigd', founder_offer: null, founder_offer_at: null }];
+            S.data.band_wanted = [{ band_id: 'b9', instrument: 'Bas' }];
+          };
+          const stand = () => ({
+            band: S.data.bands.filter(r => r.id === 'b9').length,
+            leden: S.data.band_members.filter(r => r.band_id === 'b9').length,
+            gezocht: S.data.band_wanted.filter(r => r.band_id === 'b9').length });
+          const losGewist = () => S.calls.some(c => c.kind === 'table' && c.op === 'delete');
+          const toast = () => (document.getElementById('appToast') || {}).textContent || '';
+
+          // Mislukt: band, leden en Gezocht blijven alle drie staan
+          zet(); S.calls = [];
+          S.rpcErrors.tt_dissolve_band = { code: 'P0001', message: 'Band b9 kon niet worden opgeheven' };
+          await dissolveBand('b9');
+          uit.fout = stand();
+          uit.foutLos = losGewist();
+          uit.foutToast = toast();
+          delete S.rpcErrors.tt_dissolve_band;
+
+          // Lukt: alles weg, met één aanroep
+          zet(); S.calls = [];
+          await dissolveBand('b9');
+          uit.goed = stand();
+          uit.goedLos = losGewist();
+          uit.goedRpc = S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_dissolve_band')
+                               .map(c => JSON.stringify(c.params));
+          uit.goedToast = toast();
+          Object.assign(S.data, JSON.parse(bewaard));
+          return uit;
+        }""")
+        check("mislukt opheffen laat band, leden en Gezocht staan",
+              tt312["fout"] == {"band": 1, "leden": 2, "gezocht": 1}, json.dumps(tt312))
+        check("mislukt opheffen wist niets los vooraf", not tt312["foutLos"], json.dumps(tt312))
+        check("mislukt opheffen meldt dat het niet gelukt is",
+              "niet gelukt" in tt312["foutToast"], tt312["foutToast"])
+        check("gelukt opheffen wist band, leden en Gezocht in één aanroep",
+              tt312["goed"] == {"band": 0, "leden": 0, "gezocht": 0} and not tt312["goedLos"]
+              and tt312["goedRpc"] == ['{"p_band_id":"b9"}'], json.dumps(tt312))
+        check("gelukt opheffen meldt 'Band opgeheven.'",
+              "Band opgeheven." in tt312["goedToast"], tt312["goedToast"])
+        check("geen paginafouten in blok 35", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
