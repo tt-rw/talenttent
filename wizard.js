@@ -256,7 +256,7 @@ async function loadMyProfile() {
   const { data: m, error } = await db.from('musicians')
     .select(`id, fname, username, city, bio, goal,
              rehearsal_frequency, musical_ambition, repertoire_type,
-             profile_color, avatar_url, updated_at, accepts_band_invites,
+             profile_color, avatar_url, accepts_band_invites,
              musician_instruments(instrument, niveau), musician_genres(genre),
              musician_songs(song_title, song_artist, mastery_level),
              musician_media(media_type, url, platform, in_banner)`)

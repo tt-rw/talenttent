@@ -1815,17 +1815,14 @@
     margin-bottom: 10px;
   }
 
-  /* TT-265 (15-09-2026, Ronald): "deze week bijgewerkt" is een gewone grijze
-     regel geworden, direct onder leeftijd en plaats. .freshness-bar,
-     .freshness-dot en @keyframes pulse zijn hier verwijderd — niets gebruikt
-     ze nog (§2.10, dode code weg in dezelfde sessie).
-     Waarom het groen weg moest: dezelfde plek toonde ook "+3 maanden geleden
-     bijgewerkt", in groen, met een kloppende stip. Groen betekent in de app
-     "goed gegaan". */
-  .profile-fresh {
+  /* TT-06: de regel "Je hebt ... geblokkeerd." boven de knop Blokkade
+     opheffen. Heette tot 25-09-2026 .profile-fresh, naar de regel "Deze week
+     bijgewerkt" die toen van het profiel verdween. */
+  .blokkade-regel {
     font-size: var(--fs-sm);
     color: var(--muted);
     margin-top: 4px;
+    text-align: center;
   }
 
   /* ── Opslaan feedback ─────────────────── */

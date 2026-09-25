@@ -50,7 +50,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260925a">
+<link rel="stylesheet" href="styles.css?v=20260925c">
 </head>
 <body>
 
@@ -1183,7 +1183,7 @@
         <select id="filterSortMode" style="display:none;" onchange="setSearchSortMode(this.value)">
           <option value="score">Beste match</option>
           <option value="distance">Dichtstbijzijnde</option>
-          <option value="newest">Nieuwste</option>
+          <option value="actief">Laatst actief</option>
         </select>
       </div>
       <div class="field">
@@ -1346,7 +1346,7 @@
         <select id="filterBandSortMode" style="display:none;" onchange="setBandSearchSortMode(this.value)">
           <option value="score" class="sort-score-option">Beste match</option>
           <option value="distance">Dichtstbijzijnde</option>
-          <option value="newest">Nieuwste</option>
+          <option value="actief">Laatst actief</option>
         </select>
       </div>
       <div class="field">
@@ -1507,7 +1507,7 @@
         <select id="filterSetlistSortMode" style="display:none;" onchange="setSetlistSearchSortMode(this.value)">
           <option value="score">Beste match</option>
           <option value="distance">Dichtstbijzijnde</option>
-          <option value="newest">Nieuwste</option>
+          <option value="actief">Laatst actief</option>
         </select>
       </div>
       <div class="field">
@@ -2558,17 +2558,17 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260924b"></script>
+<script src="core.js?v=20260925c"></script>
 <script src="utils.js?v=20260925a"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260923a"></script>
 <script src="postcode.js?v=20260917a"></script>
-<script src="wizard.js?v=20260924b"></script>
+<script src="wizard.js?v=20260925c"></script>
 <script src="ouder.js?v=20260922a"></script>
-<script src="search.js?v=20260924b"></script>
-<script src="musicians.js?v=20260925a"></script>
+<script src="search.js?v=20260925c"></script>
+<script src="musicians.js?v=20260925c"></script>
 <script src="bands.js?v=20260925a"></script>
-<script src="messages.js?v=20260922b"></script>
+<script src="messages.js?v=20260925c"></script>
 <script src="modals-shared.js?v=20260924a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────

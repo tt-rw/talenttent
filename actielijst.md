@@ -1,6 +1,70 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 25-09-2026 (vervolg) — **TT-45 gebouwd en afgehandeld: media van 13- tot
+**Laatste update:** 25-09-2026 (vervolg 2) — **TT-324 gebouwd: "laatst
+actief" vervangt "laatst bijgewerkt". De regel "Deze week bijgewerkt" is weg
+van het profiel; hoe lang iemand de app niet opende, bepaalt nu zijn plek in de
+zoekresultaten. Testset 533 van 533. Wacht op het SQL-script van Ronald.**
+
+**Aanleiding.** Ronald: "ik wil 'deze week/maand/etc bijgewerkt' uit het
+profiel hebben. In plaats daarvan moeten profielen die naarmate er niet is
+ingelogd, lager in de zoekresultaten verschijnen." Vier keuzes van Ronald,
+25-09-2026: (1) de app openen telt, niet alleen inloggen met een wachtwoord;
+(2) drie groepen: actief in de laatste 30 dagen, in de laatste 6 maanden,
+langer geleden; (3) bij een band telt de beheerder — "de oprichter kan uit de
+band zijn"; (4) de sorteeroptie "Nieuwste" wordt "Laatst actief".
+
+**Wat er gebouwd is.**
+- **Database** (script `_niet-uploaden-tt324-laatst-actief.sql`, draait
+  Ronald): tabel `musician_activity` (`musician_id`, `last_seen_at`),
+  niet leesbaar voor `anon` en `authenticated`. Beginstand: de laatste
+  inlogdatum uit Supabase, anders laatst bijgewerkt. Drie functies:
+  `tt_markeer_actief()` (schrijft hooguit één keer per uur),
+  `tt_actief_stand(ids)` en `tt_band_actief_stand(ids)`. Die laatste twee
+  geven per profiel alleen een groep (0, 1, 2) en een rang terug, nooit de
+  datum. Advies van Claude, geen apart besluit van Ronald: de datum zelf
+  blijft geheim, anders is na te gaan wanneer een 13-jarige online was.
+- **`core.js`**: `markeerActief()`, aangeroepen in `onUserLoggedIn()` — dus
+  bij elk inloggen en bij elke opstart met een geldige sessie.
+- **`search.js`**: `zetActiefStand()` en `vergelijkActiefGroep()`. De groep
+  is de eerste sorteersleutel in alle drie de zoektabbladen; daarbinnen de
+  gekozen sortering. "Laatst actief" sorteert op rang. Mislukt de vraag, dan
+  staat iedereen in groep 0 en werkt de gekozen sortering gewoon. De app leest
+  `is_stale` uit de zoekfuncties niet meer; dat veld komt nog wel mee.
+- **Weg (dode code):** `relativeUpdatedLabel()` (`messages.js`), de regel op
+  het profiel (`musicians.js`), `updated_at` uit vijf selecties die het
+  alleen daarvoor ophaalden (`search.js`, `musicians.js`, `wizard.js`). De
+  CSS-klasse `.profile-fresh` heet nu `.blokkade-regel`: de regel "Je hebt …
+  geblokkeerd." gebruikte hem ook.
+- **`index.html`**: drie keer "Nieuwste" → "Laatst actief" (waarde `actief`).
+
+**Geverifieerd.** Testset 533 van 533; blok 37 is nieuw (10 controles), de
+oude controles op "Deze week bijgewerkt" in blok 15 zijn vervangen door
+"geen bijgewerkt-regel". Het SQL-script is lokaal (Postgres 16) twee keer
+gedraaid tegen een nagebootste database: groepen, rang, de beheerder bij een
+band, het markeren, en `anon` krijgt geen toegang tot de tabel. Schermafdruk
+van het profiel voor en na bekeken: alleen de regel is weg.
+
+**Nog open.** (1) Ronald draait het script. (2) Claude meet daarna in de
+browserpane of de drie functies antwoorden. **Volgorde:** eerst het script,
+dan de bestanden uploaden — anders schrijft elke zoekopdracht een fout in
+`app_error_log`.
+
+**Projectdocumenten bijgewerkt:** projectinstructies (§8, §9, §10),
+huisstijl-en-consistentie (§10) en het zoekfunctienaslagwerk (hoofdstuk 7,
+nieuw 7.1, en 5.13, 8.1, 8.2). **Rechtgezet:** het zoekfunctienaslagwerk ging
+eerst niet mee, terwijl hoofdstuk 7 de volgorde beschrijft die TT-324
+verandert. Ronald wees erop. Het document heet nu
+`zoekfunctienaslagwerk-25-09-2026.md`; de versie van 17-09-2026 is uit het
+project gehaald.
+
+**Rechtgezet in hetzelfde gebaar:** TT-288 (P1) beschreef een tekstblok met
+de regel "Deze week bijgewerkt" rechts naast "Beschikbaar voor". Die regel
+bestaat niet meer. Waaruit blijkt: TT-324 hierboven. De rechterhelft van dat
+ontwerp is daarmee een open vraag voor Ronald.
+
+---
+
+**Vorige update:** 25-09-2026 (vervolg) — **TT-45 gebouwd en afgehandeld: media van 13- tot
 15-jarigen afgeschermd voor bezoekers zonder account, elke melding per mail
 naar privacy@, en de meldknop in de teksten. Beide SQL-scripts en de Edge
 Function staan in productie en zijn nagemeten. Testset 524 van 524.**
@@ -5416,12 +5480,13 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-324** | Laatst actief bepaalt de plek in de zoekresultaten; "Deze week bijgewerkt" weg van het profiel | **Gebouwd en getest 25-09-2026, zie Laatste update bovenaan. Wacht op het SQL-script van Ronald, daarna laag 2.** **Toets P1:** een bericht aan iemand die de app niet meer opent, blijft onbeantwoord en ontmoedigt de afzender. Actieve profielen bovenaan bepalen of iemand een tweede keer contact zoekt |
 | **TT-302** | Terugknop sloot een bewerkscherm zonder te vragen | **Gebouwd en getest 20-09-2026 (vervolg 3).** De Terug-knop onder in een tegelscherm vroeg al "Terug zonder opslaan?"; de terugknop in de kop en die van het toestel niet. Één controle voor beide wegen (`tegelHeeftWijzigingen()`). Volledige tekst: Laatste update bovenaan. **Nog open:** de wizard en het bandformulier |
 | **TT-296** | Het digestvenster is een vaste 24 uur, niet "sinds de vorige verzending" | **Nieuw, 20-09-2026.** `send-digest` rekent het terugkijkvenster uit vanaf het moment van aanroepen: 1 dag bij dagelijks, 7 bij wekelijks. Er wordt nergens bijgehouden wat verstuurd is. Valt een run uit, of komt er iets binnen dat net buiten het raam valt, dan is die melding definitief weg. Achteraf is ook niet vast te stellen of iemand een bepaalde mail heeft gehad. **Toets:** verandert dit of iemand een tweede keer opent? Ja — een gemiste melding is een gemist bericht, precies de lus die TT-01 moet sluiten |
 | **TT-298** | Bounces komen nergens terecht, en registratie controleert het e-mailadres niet | **Nieuw, 20-09-2026.** Mailbevestiging staat uit in Supabase, dus een verzonnen adres komt ongehinderd de app in. Aangetoond dezelfde dag: het profiel van Ronald draagt `ronald@email.com`, dat bestaat niet, en de digest stuiterde terug met `550 mailbox unavailable`. Die bounce komt aan op `noreply@talenttent.org`, waar niemand en niets ernaar kijkt. **Nog niet gecontroleerd:** of SPF en DKIM voor `talenttent.org` goed staan. **Toets:** verandert dit of iemand een tweede keer opent? Ja, indirect maar hard — te veel bounces vanaf één domein kost de bezorgbaarheid van al het verkeer van dat domein. Bij negen testprofielen onschuldig, bij honderd echte gebruikers niet. **Vóór lancering**. *Deels ingehaald door TT-299 (20-09-2026): het verkeerde adres op Ronalds eigen profiel is vanaf de volgende upload in de app zelf te herstellen. De bounce-afhandeling en de SPF/DKIM-controle staan nog open.* |
 | **TT-293** | Modal-koprij loopt buiten het canvas op een smal bureaubladvenster | **GEBOUWD EN GETEST 18-09-2026.** **Melding Ronald:** bij een venster tussen circa 561 en 780px breed is `#appRoot` 50% van het venster (§11) en dus smaller dan een telefoon. Het woordmerk (28px, 263px breed) kromp niet mee; `.modal-box-kop { overflow: hidden }` knipte daardoor het ⋯-menu en het sluiten-kruisje weg — onzichtbaar en niet te bedienen. Gemeten door Ronald: 615px → 69px buiten beeld, 640px → 56px, 1280px → ruim binnen, 375px → 1px (net aan). Bestond al vóór TT-06, die maakte het 44px erger (het ⋯-menu staat in dezelfde rij). **Oorzaak, geverifieerd in de code:** `.modal-kop .logo` had geen `min-width: 0`, het browserdefault is `min-width: auto` — een flex-item kan dan nooit kleiner worden dan zijn eigen tekst. **Oplossing, zelfde aanpak als TT-249 (fitProfileName):** `min-width: 0` op `.modal-kop .logo`, en een nieuwe functie `fitModalLogo()` in `utils.js` (ladder 28·24·20·18·16px) die de lettergrootte op de grootste passende trede zet. Aangeroepen bij het openen van de muzikant- en de bandmodal, en op resize. Gewijzigd: `index.html`, `styles.css`, `utils.js`, `musicians.js`, `core.js`. **Geverifieerd:** blok 1 van de testset (326/326), haakjesbalans en `node --check` op alle vier gewijzigde JS-bestanden. **Geverifieerd, lokaal met Playwright:** het mechanisme werkt — het sluiten-kruisje blijft binnen de modal-box op 375/615/640/780/1280px, geen enkel geval geklemd. **Aanname:** de sandbox heeft geen netwerktoegang tot Google Fonts, dus deze test gebruikte een vervangend lettertype in plaats van Alfa Slab One — de exacte pixelwaarden uit Ronalds meting zijn dus niet met het echte lettertype herhaald. **Nog te bevestigen door Ronald:** met de browserpane op talenttent.org, bij 615 en 640px, of het ⋯-menu en het kruisje nu zichtbaar en bruikbaar zijn |
 | **TT-289** | Zoek setlist: van muzikanten naar de nummers die ze delen | **Gebouwd en getest 17-09-2026, zie het sessieblok bovenaan.** Tweede stand op het Setlist-tabblad. 2 tot 20 muzikanten kiezen, met Plaats en Straal voor de naamsuggesties; resultaat is een lijst van nummers die minstens 2 van hen spelen, open te klappen per nummer met het niveau per muzikant. Blok 21 van de testset. **Nog open:** laag 2 ingelogd (zie sessieblok). **Toets P1:** een band of jamgroep ziet in één keer wat ze samen kunnen spelen — een reden om de app opnieuw te openen voor elke repetitie |
-| **TT-288** | "Beschikbaar voor": keuzelijst op het profiel, met een pauzestand | **Nieuw, 16-09-2026, besluit Ronald na UX-bespreking. Nog niet gebouwd.** **Wat:** in Profiel bewerken → "Wat zoek je" vervangt één keuzelijst "Beschikbaar voor" de vier doelkaarten. Opties: Jammen · Optreden · Bands · Alles! · DM me! · (Nu even niet). **Op het profiel:** een blok tussen het naamblok en de instrument- en genrelabels, twee rijen. Links op halve breedte "Beschikbaar voor:" met daaronder de keuze. Rechts op halve breedte een tekstblok met de bestaande regel "Deze week bijgewerkt" enz. **"(Nu even niet)" = niet vindbaar.** Die muzikant verschijnt in geen enkel zoektabblad. Dit vraagt een aanpassing in de zoekfuncties in de database (`tt_search_musicians`, `tt_search_musicians_anon`, `tt_search_musicians_by_songlist_anon`, en mogelijk `tt_get_musicians_public`); de definities levert Ronald aan. **Afspraken uit de bespreking, nog te bevestigen bij het bouwen:** (1) wie op pauze staat en op Zoeken tikt, krijgt de vraag of hij weer zichtbaar wil worden — wie zoekt, is vindbaar; (2) berichten met bestaande contacten blijven werken, een nieuw gesprek met een onbekende niet; (3) de pauze verloopt vanzelf, voorstel na drie maanden; (4) de band van een muzikant op pauze blijft vindbaar; (5) uitgelogd zoeken blijft ongewijzigd, zonder extra drempels. **Geverifieerd in de code, 16-09-2026:** de doelkaarten schrijven naar `musicians.goal` met de waarden `oefenen` · `band` · `optreden` · `alles` (`index.html` subscherm `watZoekJeScreen`, `musicians.js` `wzjSelectGoal`). De regel "Deze week bijgewerkt" bestaat al (`relativeUpdatedLabel()` in `messages.js`). **Besluit Ronald, 16-09-2026 — omzetting bestaande waarden:** `oefenen` (Samen oefenen) → Jammen · `band` (Band starten) → Bands · `optreden` → Optreden · `alles` → Alles!. **Nog te bepalen:** (a) wizardstap 3 ("Wat wil je nu?") gebruikt dezelfde doelkaarten — gaat die mee naar de keuzelijst? Consistentieregel §2.11 zegt ja; (c) de twee nieuwe waarden "DM me!" en "(Nu even niet)" vragen misschien een nieuwe kolom — die maakt Ronald aan; (d) de termijn van de pauze; (e) wat "DM me!" in de zoekresultaten en de matchscore betekent. **Toets P1:** een bericht aan iemand die toch niet wil, blijft onbeantwoord en ontmoedigt de afzender; een pauzestand houdt mensen binnen die anders hun account zouden opzeggen. Dat bepaalt of mensen terugkomen |
+| **TT-288** | "Beschikbaar voor": keuzelijst op het profiel, met een pauzestand | **Nieuw, 16-09-2026, besluit Ronald na UX-bespreking. Nog niet gebouwd.** **Wat:** in Profiel bewerken → "Wat zoek je" vervangt één keuzelijst "Beschikbaar voor" de vier doelkaarten. Opties: Jammen · Optreden · Bands · Alles! · DM me! · (Nu even niet). **Op het profiel:** een blok tussen het naamblok en de instrument- en genrelabels, twee rijen. Links op halve breedte "Beschikbaar voor:" met daaronder de keuze. Rechts op halve breedte een tekstblok met de regel "Deze week bijgewerkt" enz. — *gecorrigeerd 25-09-2026: die regel is weg sinds TT-324; wat hier rechts komt, is een open vraag voor Ronald.* **"(Nu even niet)" = niet vindbaar.** Die muzikant verschijnt in geen enkel zoektabblad. Dit vraagt een aanpassing in de zoekfuncties in de database (`tt_search_musicians`, `tt_search_musicians_anon`, `tt_search_musicians_by_songlist_anon`, en mogelijk `tt_get_musicians_public`); de definities levert Ronald aan. **Afspraken uit de bespreking, nog te bevestigen bij het bouwen:** (1) wie op pauze staat en op Zoeken tikt, krijgt de vraag of hij weer zichtbaar wil worden — wie zoekt, is vindbaar; (2) berichten met bestaande contacten blijven werken, een nieuw gesprek met een onbekende niet; (3) de pauze verloopt vanzelf, voorstel na drie maanden; (4) de band van een muzikant op pauze blijft vindbaar; (5) uitgelogd zoeken blijft ongewijzigd, zonder extra drempels. **Geverifieerd in de code, 16-09-2026:** de doelkaarten schrijven naar `musicians.goal` met de waarden `oefenen` · `band` · `optreden` · `alles` (`index.html` subscherm `watZoekJeScreen`, `musicians.js` `wzjSelectGoal`). **Besluit Ronald, 16-09-2026 — omzetting bestaande waarden:** `oefenen` (Samen oefenen) → Jammen · `band` (Band starten) → Bands · `optreden` → Optreden · `alles` → Alles!. **Nog te bepalen:** (a) wizardstap 3 ("Wat wil je nu?") gebruikt dezelfde doelkaarten — gaat die mee naar de keuzelijst? Consistentieregel §2.11 zegt ja; (c) de twee nieuwe waarden "DM me!" en "(Nu even niet)" vragen misschien een nieuwe kolom — die maakt Ronald aan; (d) de termijn van de pauze; (e) wat "DM me!" in de zoekresultaten en de matchscore betekent. **Toets P1:** een bericht aan iemand die toch niet wil, blijft onbeantwoord en ontmoedigt de afzender; een pauzestand houdt mensen binnen die anders hun account zouden opzeggen. Dat bepaalt of mensen terugkomen |
 | **TT-271** | Gesprekscherm op de telefoon | **Opgelost 16-09-2026.** Onderbalk weg tijdens typen (app-breed), naam blijft zichtbaar, foto en naam openen het profiel, geen automatisch toetsenbord. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
 | **TT-272** | Laatste bericht half achter het invoerveld | **Opgelost 16-09-2026.** Gesprek scrolt nu helemaal naar beneden; de losse 60px onder het invoerveld is weg. Zie Laatste update bovenaan |
 | **TT-264** | Een video speelde door na de terugknop | **Opgelost 13-09-2026.** De terugknop, Escape en een wissel van view haalden alleen de klasse `visible` van een modal af; het kader bleef spelen in een onzichtbaar scherm dat niet meer op te roepen was. Opgelost in de standaard: `data-close` op de overlay plus `sluitModal()` in `core.js`. Zie Deel 3 |

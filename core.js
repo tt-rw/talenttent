@@ -278,6 +278,18 @@ let onboardingInFlight = false;
 // halverwege op de database; het herstel is dan al gebeurd.
 let opstartHerstelt = false;
 
+// Laatst actief (25-09-2026, besluit Ronald): elke opstart met een geldige
+// sessie telt, niet alleen inloggen met een wachtwoord. Wie ingelogd blijft,
+// logt nooit opnieuw in en zou anders onterecht wegzakken in de
+// zoekresultaten. De database schrijft hooguit één keer per uur. Niet
+// wachten: de app hangt hier niet van af, en een fout merkt de gebruiker
+// niet — hij komt alleen in app_error_log.
+function markeerActief() {
+  db.rpc('tt_markeer_actief').then(
+    ({ error }) => { if (error) logCaught('markeerActief', error); },
+    (e) => logCaught('markeerActief', e));
+}
+
 async function onUserLoggedIn(user) {
   // TT-279: de vlag geldt voor precies deze ene aanroep bij het opstarten.
   // Direct uitlezen, vóór de eerste await hieronder.
@@ -295,6 +307,7 @@ async function onUserLoggedIn(user) {
   // TT-278: Inloggen in het hamburgermenu alleen uitgelogd.
   document.getElementById('navMenuLogin').style.display = 'none';
   refreshUnreadBadge();
+  markeerActief();
 
   if (onboardingInFlight) return;
 

@@ -8,7 +8,6 @@
 function buildMusicianDetailHTML(m, isOwn, inModal) {
   const col  = safeColor(m.profile_color, '#f5c518');
   const age  = ageOf(m);
-  const updatedLabel = relativeUpdatedLabel(m.updated_at);
 
   // TT-43 (08-08-2026): op je eigen profiel altijd je eigen voornaam; voor een
   // ander hangt het af van of die is ingelogd met een eigen profiel — dat
@@ -100,12 +99,6 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
              label. -->
         ${(displayName === m.fname && m.fname) ? `<p style="font-size:12px;color:var(--muted);margin-top:4px;">Gebruikersnaam: <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
         <div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
-        <!-- TT-265 (15-09-2026, Ronald): eigen grijze regel, direct onder
-             leeftijd en plaats. De groene balk met kader en kloppende stip is
-             weg. Een eigen regel en niet áchter "4,2 km": gemeten op 375px is
-             naast de foto van 80px nog 247px over, en de langste stand past
-             daar niet op één regel. -->
-        <div class="profile-fresh">${escHtml(updatedLabel)}</div>
       </div>
       ${ownerMenuHTML}${veiligheidPlekHTML}
     </div>
@@ -204,7 +197,7 @@ function musicianContactFooterHTML(m, isOwn, displayName) {
   // ongewijzigd: die blokkade is stil, zie veiligheid.js.
   if (blokkeerIkZelf(m.id)) {
     return `<div style="display:flex;flex-direction:column;gap:8px;">
-      <div class="profile-fresh" style="text-align:center;">Je hebt ${escHtml(displayName)} geblokkeerd.</div>
+      <div class="blokkade-regel">Je hebt ${escHtml(displayName)} geblokkeerd.</div>
       <button class="btn btn-ghost" style="width:100%;" onclick="deblokkeerMuzikant('${jsAttr(m.id)}','${jsAttr(displayName)}')">Blokkade opheffen</button>
       ${shareBtn}</div>`;
   }
@@ -248,7 +241,7 @@ async function openMusicianModal(id) {
     const res = await db.from('musicians').select(`
       id, fname, username, city, bio, goal,
       rehearsal_frequency, musical_ambition,
-      profile_color, avatar_url, updated_at,
+      profile_color, avatar_url,
       musician_instruments(instrument, niveau),
       musician_genres(genre),
       musician_songs(song_title, song_artist, mastery_level),
@@ -271,7 +264,6 @@ async function openMusicianModal(id) {
         id: row.id, username: row.username, age: row.age, birth_date: row.birth_date, city: row.city,
         bio: row.bio, goal: row.goal, profile_color: row.profile_color, avatar_url: row.avatar_url,
         rehearsal_frequency: row.rehearsal_frequency, musical_ambition: row.musical_ambition,
-        updated_at: row.updated_at,
         // TT-51 (12-08-2026, RPC-restpunt gesloten): instrument_levels bevat
         // instrument + niveau samen, zodat de sterren ook in deze detailmodal
         // verschijnen voor een bezoeker zonder eigen profiel.

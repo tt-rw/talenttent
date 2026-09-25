@@ -168,19 +168,54 @@ function musicianFilterScore(m) {
   return score;
 }
 
+// Laatst actief (25-09-2026, besluit Ronald). De plek in de zoekresultaten
+// hangt eerst af van hoe lang iemand de app niet meer heeft geopend. Daarna
+// pas beslist de sortering die de gebruiker koos. Drie groepen:
+//   0 = actief in de laatste 30 dagen
+//   1 = actief in de laatste 6 maanden
+//   2 = langer geleden
+// De database geeft per profiel alleen de groep en een rangnummer terug
+// (1 = het laatst actief), nooit de datum zelf. Bij een band telt de
+// beheerder: de oprichter kan de band al verlaten hebben.
+// Mislukt de vraag, dan staat iedereen in groep 0: de gekozen sortering
+// werkt dan gewoon, zonder dat de gebruiker iets merkt.
+// Vervangt is_stale uit de zoekfuncties (meer dan 6 maanden niet
+// bijgewerkt). Dat veld komt nog wel mee, maar de app leest het niet meer.
+async function zetActiefStand(soort, lijst) {
+  lijst.forEach(x => { x.actiefGroep = 0; x.actiefRang = 0; });
+  if (!lijst.length) return;
+  const functie = soort === 'band' ? 'tt_band_actief_stand' : 'tt_actief_stand';
+  try {
+    const { data, error } = await db.rpc(functie, { ids: lijst.map(x => x.id) });
+    if (error) throw error;
+    const perId = {};
+    (data || []).forEach(r => { perId[r.id] = r; });
+    lijst.forEach(x => {
+      const r = perId[x.id];
+      x.actiefGroep = r ? r.groep : 2;
+      x.actiefRang  = r ? r.rang  : Number.MAX_SAFE_INTEGER;
+    });
+  } catch (e) {
+    logCaught('zetActiefStand', e);
+  }
+}
+
+function vergelijkActiefGroep(a, b) {
+  return (a.actiefGroep || 0) - (b.actiefGroep || 0);
+}
+
 // TT-232: bij "Beste match" beslist eerst de afstand, afgerond op hele
 // kilometers, daarna het aantal punten. Zonder die afronding zou "Beste
 // match" letterlijk dezelfde lijst geven als "Dichtstbijzijnde" — twee
 // gelijke afstanden op de komma komen vrijwel nooit voor.
 function sortMusicianList(list) {
   list.sort((a, b) => {
-    if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
+    const groep = vergelijkActiefGroep(a, b);
+    if (groep) return groep;
     if (searchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
       return a.distance_km - b.distance_km;
     }
-    if (searchSortMode === 'newest') {
-      return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
-    }
+    if (searchSortMode === 'actief') return a.actiefRang - b.actiefRang;
     if (a.distance_km != null && b.distance_km != null) {
       const kmA = Math.round(a.distance_km);
       const kmB = Math.round(b.distance_km);
@@ -507,7 +542,7 @@ async function runSearch(straalOverride) {
     };
 
     let musicians;
-    let matchInfo = {}; // id -> { distance_km, score, is_stale }
+    let matchInfo = {}; // id -> { distance_km, score }
     let originResolved = false; // straal actief? dan Plaats niet ook als tekstfilter toepassen
 
     if (hasOwnProfile) {
@@ -559,7 +594,7 @@ async function runSearch(straalOverride) {
       // profiel-modal hieronder.
       const { data, error } = await db.from('musicians').select(`
         id, fname, username, city, zip, bio, goal,
-        profile_color, avatar_url, updated_at,
+        profile_color, avatar_url,
         musician_instruments(instrument, niveau),
         musician_genres(genre),
         musician_songs(song_title, song_artist, mastery_level)
@@ -613,7 +648,6 @@ async function runSearch(straalOverride) {
         // is gedraaid, geeft de functie dat veld nog. ageOf() kiest zelf.
         id: m.id, username: m.username, age: m.age, birth_date: m.birth_date, city: m.city,
         bio: m.bio, goal: m.goal, profile_color: m.profile_color, avatar_url: m.avatar_url,
-        updated_at: m.updated_at,
         // TT-51 (12-08-2026, RPC-restpunt gesloten): instrument_levels bevat
         // instrument + niveau samen — vervangt de eerdere platte instruments-
         // lijst zodat het niveaufilter ook voor uitgelogde bezoekers werkt.
@@ -679,8 +713,8 @@ async function runSearch(straalOverride) {
     });
 
     // Matchscore/afstand toevoegen (indien beschikbaar) en sorteren:
-    // altijd eerst actieve profielen, verouderde (>6 mnd) profielen onderaan,
-    // en binnen elke groep op de gekozen sorteermodus.
+    // eerst op laatst actief (zetActiefStand), daarbinnen op de gekozen
+    // sorteermodus.
     filtered.forEach(m => {
       const info = matchInfo[m.id];
       m.distance_km = info ? info.distance_km : null;
@@ -688,7 +722,6 @@ async function runSearch(straalOverride) {
       // profiel) wordt niet meer gebruikt. De punten komen nu uit de
       // ingevulde filters — zie musicianFilterScore().
       m.matchScore  = musicianFilterScore(m);
-      m.isStale     = info ? info.is_stale : false;
       musicianDistanceCache[m.id] = m.distance_km;
     });
     if (seq !== musicianSearchSeq) return; // TT-84: nieuwere zoekopdracht loopt al
@@ -699,6 +732,8 @@ async function runSearch(straalOverride) {
       if (v !== undefined) return runSearch(v);
       geenResultaat(); return;
     }
+    await zetActiefStand('muzikant', filtered);
+    if (seq !== musicianSearchSeq) return; // TT-84
     sortMusicianList(filtered);
     lastMusicianResults = filtered;
     renderCappedMusicianResults();
@@ -902,13 +937,12 @@ function setBandViewMode(mode) {
 
 function sortBandList(list) {
   list.sort((a, b) => {
-    if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
+    const groep = vergelijkActiefGroep(a, b);
+    if (groep) return groep;
     if (bandSearchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
       return a.distance_km - b.distance_km;
     }
-    if (bandSearchSortMode === 'newest') {
-      return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
-    }
+    if (bandSearchSortMode === 'actief') return a.actiefRang - b.actiefRang;
     // TT-55 (12-08-2026): zelfde vastgelegde tie-break als sortMusicianList()
     // — bij gelijke stand eerst afstand, dan naam, i.p.v. het voormalige
     // onvoorspelbare `return 0`.
@@ -1094,7 +1128,7 @@ async function runBandSearch(straalOverride) {
     };
 
     let bands;
-    let matchInfo = {}; // id -> { distance_km, score, is_stale }
+    let matchInfo = {}; // id -> { distance_km, score }
     let originResolved = false; // straal actief? dan Plaats niet ook als tekstfilter toepassen
 
     if (hasOwnProfile) {
@@ -1126,7 +1160,7 @@ async function runBandSearch(straalOverride) {
       matches.forEach(m => { matchInfo[m.band_id] = m; });
 
       const ids = matches.map(m => m.band_id);
-      let query = db.from('bands').select(`id, name, city, genres, status, description, profile_color, updated_at, niveau, band_members(musician_id, status, musicians(fname, profile_color)), band_wanted(instrument)`).in('id', ids);
+      let query = db.from('bands').select(`id, name, city, genres, status, description, profile_color, niveau, band_members(musician_id, status, musicians(fname, profile_color)), band_wanted(instrument)`).in('id', ids);
       if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
       const { data, error } = await query;
       if (error) throw error;
@@ -1159,7 +1193,7 @@ async function runBandSearch(straalOverride) {
       if (filterBandStatusVal) data = (data || []).filter(b => b.status === filterBandStatusVal);
       bands = (data || []).map(b => ({
         id: b.id, name: b.name, city: b.city, genres: b.genres || [], status: b.status,
-        description: b.description, profile_color: b.profile_color, updated_at: b.updated_at,
+        description: b.description, profile_color: b.profile_color,
         niveau: b.niveau, // TT-51 (12-08-2026, RPC-restpunt gesloten)
         band_members: (b.members || []).map(x => ({ status: 'bevestigd', musicians: { fname: x.fname, profile_color: x.profile_color } })),
         band_wanted: (b.wanted || []).map(i => ({ instrument: i })),
@@ -1197,13 +1231,12 @@ async function runBandSearch(straalOverride) {
       return true;
     });
 
-    // Matchscore/afstand toevoegen en sorteren: actieve profielen eerst,
-    // verouderde (>6 mnd) altijd onderaan, daarbinnen op gekozen sorteermodus.
+    // Matchscore/afstand toevoegen en sorteren: eerst op laatst actief van de
+    // beheerder (zetActiefStand), daarbinnen op de gekozen sorteermodus.
     filtered.forEach(b => {
       const info = matchInfo[b.id];
       b.distance_km = info ? info.distance_km : null;
       b.matchScore  = info ? info.score : null;
-      b.isStale     = info ? info.is_stale : false;
     });
     if (seq !== bandSearchSeq) return; // TT-84: nieuwere zoekopdracht loopt al
     // TT-62: zelfde regel als bij Muzikanten — eerst ruimer zoeken.
@@ -1212,6 +1245,8 @@ async function runBandSearch(straalOverride) {
       if (v !== undefined) return runBandSearch(v);
       geenResultaat(); return;
     }
+    await zetActiefStand('band', filtered);
+    if (seq !== bandSearchSeq) return; // TT-84
     sortBandList(filtered);
     lastBandResults = filtered;
     renderCappedBandResults();
@@ -1337,15 +1372,16 @@ function setSetlistViewMode(mode) {
 // speelt. Die telling maakt de app zelf, uit musician_songs — hij komt niet
 // uit de database en werkt dus ook uitgelogd. Verouderde profielen zakken
 // altijd naar onderen, in elke sorteerstand; zelfde regel als bij Muzikanten.
+// Sinds 25-09-2026 bepaalt "laatst actief" wat verouderd is, niet meer
+// "laatst bijgewerkt" — zie zetActiefStand().
 function sortSetlistList(list) {
   list.sort((a, b) => {
-    if (a.isStale !== b.isStale) return a.isStale ? 1 : -1;
+    const groep = vergelijkActiefGroep(a, b);
+    if (groep) return groep;
     if (setlistSearchSortMode === 'distance' && a.distance_km != null && b.distance_km != null) {
       return a.distance_km - b.distance_km;
     }
-    if (setlistSearchSortMode === 'newest') {
-      return new Date(b.updated_at || 0) - new Date(a.updated_at || 0);
-    }
+    if (setlistSearchSortMode === 'actief') return a.actiefRang - b.actiefRang;
     if (a.matchCount !== b.matchCount) return b.matchCount - a.matchCount;
     if (a.distance_km != null && b.distance_km != null && a.distance_km !== b.distance_km) {
       return a.distance_km - b.distance_km;
@@ -1683,7 +1719,7 @@ async function runSetlistSearch(straalOverride) {
     let musicians;
     if (hasOwnProfile) {
       const { data, error } = await db.from('musicians').select(`
-        id, fname, username, city, zip, profile_color, avatar_url, updated_at,
+        id, fname, username, city, zip, profile_color, avatar_url,
         musician_songs(song_title, song_artist, mastery_level),
         musician_instruments(instrument, niveau)
       `).in('id', ids);
@@ -1694,7 +1730,7 @@ async function runSetlistSearch(straalOverride) {
       if (error) throw error;
       musicians = (data || []).map(m => ({
         id: m.id, username: m.username, city: m.city, // TT-43/TT-04: geen fname of postcode voor bezoekers
-        profile_color: m.profile_color, avatar_url: m.avatar_url, updated_at: m.updated_at,
+        profile_color: m.profile_color, avatar_url: m.avatar_url,
         musician_songs: m.songs || [],
         musician_instruments: (m.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
       }));
@@ -1712,16 +1748,12 @@ async function runSetlistSearch(straalOverride) {
 
     // Per muzikant bepalen welke volgnummers uit de gezochte setlist matchen
     // (exacte titel+artiest, case-insensitive) en hoeveel er in totaal matchen.
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
     musicians.forEach(m => {
       const own = (m.musician_songs || []).map(s => `${(s.song_title||'').toLowerCase()}|||${(s.song_artist||'').toLowerCase()}`);
       m.matchedNumbers = setlistWantedSongs
         .map((s, i) => own.includes(`${s.title.toLowerCase()}|||${s.artist.toLowerCase()}`) ? i + 1 : null)
         .filter(n => n !== null);
       m.matchCount = m.matchedNumbers.length;
-      m.isStale = m.updated_at ? (new Date(m.updated_at) < sixMonthsAgo) : false;
       m.distance_km = distanceMap[m.id] != null ? distanceMap[m.id] : null;
       musicianDistanceCache[m.id] = m.distance_km;
     });
@@ -1741,6 +1773,8 @@ async function runSetlistSearch(straalOverride) {
       if (v !== undefined) return runSetlistSearch(v);
       geenResultaat(!!radiusIds); return;
     }
+    await zetActiefStand('muzikant', filtered);
+    if (seq !== setlistSearchSeq) return; // TT-84
     lastSetlistResults = sortSetlistList(filtered);
     renderCappedSetlistResults();
 
