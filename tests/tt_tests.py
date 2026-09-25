@@ -1043,11 +1043,9 @@ def blok_browser():
           uit.videoOpentMediascherm = (vak.querySelector('.profile-media-tegel[onclick*="openMediaSpeler"]') !== null);
           uit.geenLosseControls = vak.querySelectorAll('.profile-media video[controls]').length;
 
-          // 7. De bijgewerkt-regel: eigen grijze regel, geen groene balk.
-          const vers = vak.querySelector('.profile-fresh');
-          uit.versRegel = vers ? vers.textContent : null;
-          uit.versGrijs = vers ? getComputedStyle(vers).color : '';
-          uit.muted = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+          // 7. Laatst actief (25-09-2026, Ronald): de regel "Deze week
+          //    bijgewerkt" staat niet meer op het profiel, ook geen groene balk.
+          uit.geenBijgewerkt = !/bijgewerkt/i.test(vak.innerText);
           uit.geenGroeneBalk = !vak.querySelector('.freshness-bar') && !vak.querySelector('.freshness-dot');
 
           vak.remove();
@@ -1087,22 +1085,10 @@ def blok_browser():
         check("met een tegel per foto en per video", banner["fotoEnVideoSamen"] == 2, str(banner["fotoEnVideoSamen"]))
         check("een video in het raster opent het mediascherm", banner["videoOpentMediascherm"], "")
         check("en speelt niet meer los in de pagina", banner["geenLosseControls"] == 0, str(banner["geenLosseControls"]))
-        check("bijgewerkt is een eigen grijze regel",
-              banner["versRegel"] == "Deze week bijgewerkt", str(banner["versRegel"]))
-        check("in de grijstint van de huisstijl",
-              banner["versGrijs"] == "rgb(136, 136, 136)", banner["versGrijs"])
+        check("het profiel toont geen 'bijgewerkt'-regel meer", banner["geenBijgewerkt"], "")
         check("de groene balk met kloppende stip is weg", banner["geenGroeneBalk"], "")
-
-        standen = page.evaluate("""() => {
-          const d = (n) => new Date(Date.now() - n * 86400000).toISOString();
-          return [0, 6, 7, 29, 30, 89, 90, 400].map(n => relativeUpdatedLabel(d(n)));
-        }""")
-        check("vier standen, in de door Ronald vastgelegde bewoording",
-              standen == ["Deze week bijgewerkt", "Deze week bijgewerkt",
-                          "Deze maand bijgewerkt", "Deze maand bijgewerkt",
-                          "Binnen 3 maanden bijgewerkt", "Binnen 3 maanden bijgewerkt",
-                          "+3 maanden geleden bijgewerkt", "+3 maanden geleden bijgewerkt"],
-              json.dumps(standen))
+        check("relativeUpdatedLabel() is weg (dode code)",
+              page.evaluate("typeof relativeUpdatedLabel") == "undefined", "")
         # TT-267 (15-09-2026, Ronald): "hij blijft zo staan." De balk bleef
         # halverwege twee vlakken hangen, waardoor het eerste beeld nog maar
         # een streepje breed was. De nakijkstap zet dat binnen een cyclus
@@ -3767,6 +3753,108 @@ def blok_browser():
         check("privacyverklaring noemt het afschermen voor 13, 14 en 15",
               "Ben je 13, 14 of 15?" in priv and "De T van The Talent Tent" in priv.replace("de T", "De T"))
         check("geen paginafouten in blok 36", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+
+        # ------------------------------------------------------------------
+        # Blok 37 — laatst actief bepaalt de plek in de zoekresultaten
+        # (25-09-2026, besluit Ronald)
+        # ------------------------------------------------------------------
+        print("\nBlok 37 — laatst actief bepaalt de volgorde (25-09-2026)")
+        page.evaluate("window.TT_STUB.reset()")
+        actief = page.evaluate("""async () => {
+          const S = window.TT_STUB;
+          const uit = {};
+          const oud = { m: S.rpcResults.tt_actief_stand, b: S.rpcResults.tt_band_actief_stand,
+                        zoek: S.rpcResults.tt_search_musicians_anon, pub: S.rpcResults.tt_get_musicians_public,
+                        origin: S.rpcResults.tt_resolve_search_origin };
+          const groepen = { m2: [2, 3], m3: [0, 2], m4: [1, 1], m5: [0, 1] };
+          S.rpcResults.tt_actief_stand = (p) => p.ids.map(id => ({ id, groep: groepen[id][0], rang: groepen[id][1] }));
+
+          // Van dichtbij naar ver: m2 (3 km) is het langst niet actief.
+          hasOwnProfile = false;
+          S.rpcResults.tt_resolve_search_origin = [{ lat: 52.0, lng: 4.3 }];
+          S.rpcResults.tt_search_musicians_anon = () => ([
+            { musician_id: 'm2', distance_km: 3, is_stale: false },
+            { musician_id: 'm3', distance_km: 4, is_stale: false },
+            { musician_id: 'm4', distance_km: 5, is_stale: false },
+            { musician_id: 'm5', distance_km: 6, is_stale: false }
+          ]);
+          const publiek = (id) => ({
+            id, username: 'u' + id, age: 30, city: 'Delft', bio: '', goal: null,
+            profile_color: '#f5c518', avatar_url: null,
+            instrument_levels: [{ instrument: 'Drums', niveau: 3 }], genres: ['Rock'], songs: []
+          });
+          S.rpcResults.tt_get_musicians_public = ['m2', 'm3', 'm4', 'm5'].map(publiek);
+          document.getElementById('filterCity').value = 'Delft';
+          document.getElementById('filterRadius').value = '50';
+          S.calls = [];
+          selectSortModeByValue('filterSortMode', 'distance');
+          searchSortMode = 'distance';
+          await runSearch();
+          await new Promise(r => setTimeout(r, 200));
+          uit.afstand = lastMusicianResults.map(m => m.id);
+          uit.vraag = S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_actief_stand').map(c => c.params.ids.slice().sort().join(','));
+          setSearchSortMode('actief');
+          uit.laatstActief = lastMusicianResults.map(m => m.id);
+
+          // Mislukt de vraag, dan geldt gewoon de gekozen sortering.
+          S.rpcErrors.tt_actief_stand = { code: 'PGRST202', message: 'Could not find the function' };
+          setSearchSortMode('distance');
+          await runSearch();
+          await new Promise(r => setTimeout(r, 200));
+          uit.zonderStand = lastMusicianResults.map(m => m.id);
+          delete S.rpcErrors.tt_actief_stand;
+
+          // Bands: de beheerder telt, via een eigen functie.
+          S.rpcResults.tt_band_actief_stand = (p) => p.ids.map(id => ({ id, groep: id === 'b1' ? 2 : 0, rang: id === 'b1' ? 2 : 1 }));
+          const banden = [{ id: 'b1', distance_km: 1, matchScore: 5 }, { id: 'b2', distance_km: 9, matchScore: 1 }];
+          await zetActiefStand('band', banden);
+          bandSearchSortMode = 'score';
+          uit.bands = sortBandList(banden).map(b => b.id);
+
+          // Setlist: zelfde regel, ook bij meer gematchte nummers.
+          const set = [{ id: 'm2', matchCount: 5, distance_km: 1 }, { id: 'm5', matchCount: 1, distance_km: 9 }];
+          await zetActiefStand('muzikant', set);
+          setlistSearchSortMode = 'score';
+          uit.setlist = sortSetlistList(set).map(m => m.id);
+
+          // Elke sorteerkeuzelijst heeft "Laatst actief", geen "Nieuwste".
+          uit.opties = ['filterSortMode', 'filterBandSortMode', 'filterSetlistSortMode'].map(id =>
+            [...document.getElementById(id).options].map(o => o.value + '=' + o.textContent));
+
+          // Inloggen of opstarten met een sessie markeert je als actief.
+          S.calls = [];
+          markeerActief();
+          await new Promise(r => setTimeout(r, 30));
+          uit.markeer = S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_markeer_actief').length;
+          uit.markeerInLogin = onUserLoggedIn.toString().includes('markeerActief()');
+
+          Object.assign(S.rpcResults, { tt_actief_stand: oud.m, tt_band_actief_stand: oud.b,
+            tt_search_musicians_anon: oud.zoek, tt_get_musicians_public: oud.pub,
+            tt_resolve_search_origin: oud.origin });
+          searchSortMode = 'score';
+          return uit;
+        }""")
+        check("de app vraagt de stand op voor precies de gevonden muzikanten",
+              actief["vraag"] == ["m2,m3,m4,m5"], json.dumps(actief["vraag"]))
+        check("eerst op groep, daarbinnen op afstand",
+              actief["afstand"] == ["m3", "m5", "m4", "m2"], json.dumps(actief["afstand"]))
+        check("'Laatst actief' sorteert binnen de groep op rang",
+              actief["laatstActief"] == ["m5", "m3", "m4", "m2"], json.dumps(actief["laatstActief"]))
+        check("mislukt de vraag, dan blijft de gekozen sortering staan",
+              actief["zonderStand"] == ["m2", "m3", "m4", "m5"], json.dumps(actief["zonderStand"]))
+        check("bij bands telt de stand van de beheerder, vóór de matchscore",
+              actief["bands"] == ["b2", "b1"], json.dumps(actief["bands"]))
+        check("bij Setlist gaat de groep vóór het aantal gematchte nummers",
+              actief["setlist"] == ["m5", "m2"], json.dumps(actief["setlist"]))
+        check("alle drie de keuzelijsten tonen 'Laatst actief', niet 'Nieuwste'",
+              all("actief=Laatst actief" in o and not any(x.startswith("newest") for x in o)
+                  for o in actief["opties"]), json.dumps(actief["opties"]))
+        check("markeerActief() roept tt_markeer_actief aan", actief["markeer"] == 1, str(actief["markeer"]))
+        check("en draait bij elk inloggen en elke opstart met sessie",
+              actief["markeerInLogin"], "")
+        check("geen paginafouten in blok 37", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
         page.evaluate("window.TT_STUB.reset()")
 
