@@ -3878,6 +3878,25 @@ def blok_browser():
         page_errors.clear()
         page.evaluate("window.TT_STUB.reset()")
 
+        print("\nBlok 38 — geen keuze Licht/Donker bij E-mailvoorkeuren (TT-327)")
+        mailstijl = page.evaluate("""() => ({
+          veld: !!document.getElementById('emailThemeControl'),
+          label: [...document.querySelectorAll('#searchPrefsModal label')].map(l => l.textContent.trim()),
+          functies: ['selectEmailTheme', 'setEmailTheme'].filter(n => typeof window[n] !== 'undefined'),
+          lezen: openSearchPrefsModal.toString().includes('email_theme'),
+          schrijven: saveSearchPrefs.toString().includes('email_theme'),
+          frequentie: !!document.getElementById('digestFrequencyControl')
+        })""")
+        check("het veld E-mailstijl staat niet meer in het scherm",
+              not mailstijl["veld"] and "E-mailstijl" not in mailstijl["label"], json.dumps(mailstijl["label"]))
+        check("selectEmailTheme() en setEmailTheme() bestaan niet meer",
+              not mailstijl["functies"], json.dumps(mailstijl["functies"]))
+        check("openen leest email_theme niet, opslaan schrijft het niet",
+              not mailstijl["lezen"] and not mailstijl["schrijven"], "")
+        check("de keuze Nieuwe-matches e-mail staat er nog", mailstijl["frequentie"], "")
+        check("geen paginafouten in blok 38", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
