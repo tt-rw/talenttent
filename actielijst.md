@@ -1,6 +1,6 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 25-09-2026 (vervolg) — **TT-45 gebouwd: media van 13- tot
+**Laatste update:** 25-09-2026 (vervolg) — **TT-45 gebouwd en afgehandeld: media van 13- tot
 15-jarigen afgeschermd voor bezoekers zonder account, elke melding per mail
 naar privacy@, en de meldknop in de teksten. Beide SQL-scripts en de Edge
 Function staan in productie en zijn nagemeten. Testset 524 van 524.**
@@ -64,10 +64,19 @@ en slagen tegen de nieuwe.
 testprofiel; de mail stond binnen een seconde in privacy@ (uitslag van
 Ronald).
 
-**Nog open voor TT-45: alleen laag 2**, zodra de app-bestanden live staan:
-uitgelogd het profiel van een 13- tot 15-jarige openen op de echte site en de
-T zien staan. Wat de database teruggeeft, is al in productie gemeten (zie
-hierboven).
+**Laag 2 geslaagd, 25-09-2026 — TT-45 is afgehandeld.** Na Ronalds upload,
+in de browserpane op talenttent.org: de live bestanden dragen
+`?v=20260925a`. Het profiel van de 14-jarige, geopend met de live code tegen
+de echte database zonder account: profielfoto en twee media als T, geen
+enkel beeld in de pagina. Hetzelfde profiel met Ronalds account: echte foto en
+twee gewone tegels. *Werkwijze:* de pane is ingelogd, en Claude logt Ronald
+niet uit. Daarom liep alleen de profielfunctie via een tweede, anonieme
+verbinding; de rest van de pagina bleef ongewijzigd.
+
+**Rechtgezet in hetzelfde gebaar:** deze update zei eerst "Nog open voor
+TT-45: alleen laag 2". Waaruit blijkt dat dat niet meer klopt: laag 2 is
+hierboven gedraaid. De rij TT-45 staat nu in de tweede P0-tabel, en de stand
+gaat van zes naar vijf.
 
 **Volgorde was bindend en is gevolgd:** eerst de SQL, dan de app-bestanden.
 De privacyverklaring zegt dat de media afgeschermd zijn; dat moest eerst waar
@@ -5289,8 +5298,8 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 **Aanvulling 25-09-2026:** daarnaast staat TT-323 open, een controle en geen bouwticket: elke mail van de app één keer echt ontvangen vóór livegang.
 
-**Stand van de P0's, bijgewerkt 23-09-2026.** **Zes P0-bouwtickets
-staan open:** TT-281 · TT-312 · TT-295 · TT-65 · TT-45 · TT-42. *(TT-312 kwam er op 23-09-2026 bij; daarvóór waren het er vijf.)* **TT-299 en TT-300 zijn
+**Stand van de P0's, bijgewerkt 25-09-2026.** **Vijf P0-bouwtickets
+staan open:** TT-281 · TT-312 · TT-295 · TT-65 · TT-42. *(TT-45 is op 25-09-2026 afgehandeld en staat in de tweede tabel. TT-312 kwam er op 23-09-2026 bij.)* **TT-299 en TT-300 zijn
 op 20-09-2026 gevonden én afgehandeld** en staan in de tweede tabel; ze
 veranderen de stand hierboven dus niet. **TT-01 is op 20-09-2026
 aantoonbaar werkend** en staat in de tweede tabel. In zijn plaats komt
@@ -5331,7 +5340,6 @@ eerste tabel altijd gelijk is aan de stand.
 |---|---|---|
 | **TT-295** | De matchhelft van de digest levert structureel niets op | **Nieuw, 20-09-2026.** `tt_digest_new_musicians` doet een inner join op `musician_wanted`. Die tabel bevat **0 rijen**, geverifieerd 20-09-2026 tegen productie. TT-232 (09-09-2026) haalde het enige invulveld ervoor — "instrumenten die je zoekt in een ander" — uit Zoekvoorkeuren, met als reden "dat staat al in de zoekfilters". Sindsdien kan niemand die tabel nog vullen, en dus vindt de nachtelijke query per definitie niemand. De bandhelft werkt wel: die gebruikt `band_wanted` tegen de instrumenten in je eigen profiel, en is op 20-09-2026 aantoonbaar in een echte mail terechtgekomen (drie bands). **Toets:** kan de app hiermee live zonder dat een gebruiker iets misloopt? Nee — de app belooft een mail over nieuwe matches en levert die helft niet. Zelfde grond waarop TT-01 P0 was. **Voorstel Ronald, geen besluit (20-09-2026):** een bewaarde zoekopdracht — een vinkje op het zoekformulier dat de héle zoekopdracht opslaat (instrument, genre, straal, plaats), niet alleen een lijstje instrumenten. Dat zou TT-295 en TT-62 deel 2 in één keer afhandelen. Alternatief: het oude veld terugzetten in E-mailvoorkeuren — kleiner werk, armere mail, TT-62 deel 2 blijft open. Nog geen ontwerpsessie |
 | **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers, zodra die er zijn. Interim-stap: zie "Direct te doen" hierboven. **Vóór lancering, niet acuut nu (23-08-2026) — de site heeft nog alleen testprofielen, zie afspraak bovenaan deze tabel** |
-| **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | **Gebouwd 25-09-2026; de proefmelding is geslaagd, alleen laag 2 staat nog open — zie Laatste update.** Nieuw, 08-08-2026 — losgetrokken uit TT-07. Besluiten Ronald 23-09-2026 en 25-09-2026: twee leeftijdsgroepen (13 t/m 15 en 16+); media van onder de 16 afgeschermd voor bezoekers zonder account (de T); elke melding via de knop ⋯ per mail naar `privacy@talenttent.org`; vragen naar contact@, melden en intrekken naar privacy@. In productie en nagemeten: `tt_get_musicians_public` (afgeschermd), de leesregel op de opslagmappen, `musician_reports.gemaild_op`, de trigger `tt_melding_mailen` en de Edge Function `melding-privacy`. Zie `minderjarigen-toestemming-25-09-2026.md` |
 | **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Gebouwd 22-09-2026, route A. Alleen laag 2 staat nog open** *(rechtgezet 23-09-2026: hier stond "wacht op twee handelingen van Ronald"; beide zijn op 22-09-2026 gemeten)*. In productie en geverifieerd: de tabel `ouder_toestemming`, de drie functies, de Edge Function `ouder-toestemming` (Verify JWT uit), en de dagelijkse taak `tt-ouder-onderhoud` (23-09-2026, uitslag van Ronald). Zeven onderdelen in `ouder.js` en `view-toestemming`. **Laag 2:** de keten mail aan de ouder → klik → mail aan het kind → wachtwoord, op de echte site, met een mailadres waar Ronald bij kan. Ontwerp en besluiten: `_niet-uploaden-tt42-ontwerp-22-09-2026.md` en `minderjarigen-toestemming-23-09-2026.md` |
 | **TT-62 (deel 2)** | "Geef me een seintje zodra er een drummer bijkomt" | **Uitzondering vastgelegd 12-09-2026 (besluit Ronald, TT-257):** het automatisch verruimen van deel 1 geldt **niet** als er een naam in het zoekveld staat. Wie op naam zoekt, zoekt één bepaalde persoon; iemand twee provincies verderop is dan geen beter antwoord dan geen antwoord. Zie huisstijl §17. **Deel 1 is gebouwd 11-09-2026** (automatisch verruimen, zie Deel 3). Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker. Leunt op dezelfde verzendweg als TT-01 en kan dus niet eerder |
 | **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Gebouwd 23-09-2026; wacht op het SQL-script van Ronald en laag 2 — zie Laatste update.** Nieuw, 16-09-2026 (onderhoudsronde). Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wissen eerst en voegen daarna toe, zonder foutcontrole op het wissen. Mislukt het toevoegen, dan is de oude data weg. Zelfde soort in `executeAccountDeletion()`. Volledige tekst: Laatste update bovenaan |
@@ -5344,6 +5352,7 @@ herzieningsmomenten in TT-63 nog moeten gebeuren.
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | **Afgehandeld 25-09-2026: gebouwd, proefmelding geslaagd, laag 2 geslaagd — zie Laatste update.** Nieuw, 08-08-2026 — losgetrokken uit TT-07. Besluiten Ronald 23-09-2026 en 25-09-2026: twee leeftijdsgroepen (13 t/m 15 en 16+); media van onder de 16 afgeschermd voor bezoekers zonder account (de T); elke melding via de knop ⋯ per mail naar `privacy@talenttent.org`; vragen naar contact@, melden en intrekken naar privacy@. In productie en nagemeten: `tt_get_musicians_public` (afgeschermd), de leesregel op de opslagmappen, `musician_reports.gemaild_op`, de trigger `tt_melding_mailen` en de Edge Function `melding-privacy`. Zie `minderjarigen-toestemming-25-09-2026.md` |
 | — | Verwerkersovereenkomst Supabase nagaan | **Afgehandeld 25-09-2026, op verzoek van Ronald.** De verwerkersovereenkomst van Supabase (versie 1, 01-08-2026) geldt automatisch via de gebruiksvoorwaarden; artikel 12.2: acceptatie staat gelijk aan ondertekening. Regio `eu-west-2` = Londen (opgegeven door Ronald uit het dashboard). Het VK valt onder het adequaatheidsbesluit van de Europese Commissie, geldig tot 27-12-2031. Privacyverklaring §7 aangevuld, datum naar 25 september 2026. Zie Deel 3 |
 | **TT-01** | E-maildigest bij nieuwe matches en berichten | **Aantoonbaar werkend 20-09-2026, na heropening op 31-08-2026.** Er is een echte mail aangekomen bij `contact@talenttent.org` met de opmaak intact: één nieuw bericht plus drie bandmatches. **De oorzaak zat niet in de code maar in drie verkeerd ingevulde secrets van 28-08-2026:** `SMTP_USER` bevatte `465` (het poortnummer), het echte afzenderadres stond onder `SMTP-USER` met een koppelteken in plaats van een liggend streepje, `SMTP_PORT` ontbrak, en `SMTP_HOST` wees naar `talenttent.org` — dat is GitHub Pages, niet de mailserver (`mail.talenttent.org`). **Waarom het drie weken onzichtbaar bleef:** de functie antwoordde altijd `{"ok":true,"sent":0,"skipped":0}`; verzendfouten werden weggevangen en ontvangers zonder inhoud werden niet geteld. `send-digest` v2 lost dat op met een uitsplitsing per ontvanger, plus `since_days` en `only_musician_id` als testingang. Broncode van de functie staat nu in de gedeelde map — hij bestond nergens buiten het Supabase-dashboard. **Vervolg: TT-295** (de matchhelft), **TT-296**, **TT-297** en **TT-298** |
 | **TT-299** | E-mailadres en wachtwoord niet te wijzigen in de app | **Nieuw en opgelost 20-09-2026.** Gemeld door Ronald. Het e-mailadres is tegelijk de inlognaam; wie het kwijtraakt, kan nooit meer een wachtwoord resetten en is zijn account kwijt. Het veld bestond al in "Wie ben je" maar stond op `readonly`; het adres zit alleen in het inlogaccount bij Supabase, niet in `musicians`. **Toets P0:** loopt een gebruiker hiermee vast of raakt hij data kwijt? Ja. Gebouwd als één venster bij Instellingen, met e-mailadres én wachtwoord (besluit Ronald). Controlevraag in plaats van een tweede invulveld; huidig wachtwoord alleen bij een wachtwoordwijziging. Beide antwoorden van Supabase worden afgevangen — bevestigingsmail onderweg of meteen gewijzigd. Blok 24 (18 controles), eindstand 353 van 353. Volledige tekst: Laatste update bovenaan |
