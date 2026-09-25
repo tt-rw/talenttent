@@ -3467,10 +3467,30 @@ def blok_browser():
         check("het lettertype laadt in de browser", wm["geladen"], json.dumps(wm))
         check("elke letter van het woordmerk staat in het lettertype", wm["letters"] == [], json.dumps(wm))
         check("het woordmerk gebruikt TT Woordmerk", wm["familie"].strip('"\'') == "TT Woordmerk", json.dumps(wm))
-        check("letterafstand 3px bij 28px, in de kop én in een venster (besluit Ronald)",
+        # TT-328 (25-09-2026, besluit Ronald): 2px bij 28px, was 3px (TT-318).
+        check("letterafstand 2px bij 28px, in de kop én in een venster (TT-328)",
               wm["kopPx"] == wm["vensterPx"] == "28px"
-              and abs(float(wm["kopAfstand"][:-2]) - 3) < 0.01
-              and abs(float(wm["vensterAfstand"][:-2]) - 3) < 0.01, json.dumps(wm))
+              and abs(float(wm["kopAfstand"][:-2]) - 2) < 0.01
+              and abs(float(wm["vensterAfstand"][:-2]) - 2) < 0.01, json.dumps(wm))
+        # TT-328: "het woordmerk mag nergens met spatie." Tussen TALENT en TENT
+        # staat dezelfde letterafstand als tussen de letters, geen spatie.
+        logos328 = re.findall(r'<div class="logo"[^>]*>(.*?)</div>', html318)
+        check("het woordmerk staat nergens met een spatie (TT-328)",
+              len(logos328) == 3 and all(l == '<span style="color:var(--text);">TALENT</span>TENT' for l in logos328),
+              json.dumps(logos328))
+        # TT-328: de spatiëring zit in het lettertype. T-T is sinds het weghalen
+        # van de spatie een nieuw paar; dat moet net als T-A onderschoven zijn.
+        kern328 = page.evaluate("""async () => {
+          await document.fonts.load("100px 'TT Woordmerk'");
+          const s = document.createElement('span');
+          s.style.cssText = "font-family:'TT Woordmerk';font-size:100px;position:absolute;left:-9999px;white-space:nowrap";
+          document.body.appendChild(s);
+          const w = (t, k) => { s.style.fontKerning = k; s.textContent = t; return s.getBoundingClientRect().width; };
+          const uit = { TA: w('TA','none') - w('TA','normal'), TT: w('TT','none') - w('TT','normal') };
+          s.remove(); return uit;
+        }""")
+        check("het lettertype schuift T-A én T-T onder (spatiëring, TT-328)",
+              kern328["TA"] > 10 and kern328["TT"] > 1, json.dumps(kern328))
         check("geen paginafouten in blok 32", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
