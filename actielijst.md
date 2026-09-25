@@ -35,6 +35,14 @@ faalt elk opheffen met PGRST202 (functie niet gevonden).
 die de app verstuurt één keer echt ontvangen vóór livegang. Zes mails,
 geverifieerd uit de code. Geen bouwticket, een controle.
 
+**Ook vandaag, op verzoek van Ronald: het juridische P0-punt
+"Verwerkersovereenkomst Supabase nagaan" is afgehandeld.** De overeenkomst
+geldt automatisch via de gebruiksvoorwaarden van Supabase; tekenen is niet
+nodig. De database staat in `eu-west-2`, Londen — buiten de EU, maar onder het
+adequaatheidsbesluit voor het VK, geldig tot 27-12-2031. De privacyverklaring
+§7 meldt dat nu. **Gewijzigd:** `index.html` (alleen tekst in
+`view-privacy`), `actielijst.md`, `CHECKSUMS.txt`. Zie Deel 3.
+
 **Nog open voor TT-312:** laag 2: een proefband aanmaken en opheffen.
 *(Bijgewerkt 25-09-2026: Ronald heeft het SQL-script gedraaid; de controle gaf
 `tt_dissolve_band` met `security_definer` op false. Gemeten in de browserpane
@@ -5214,8 +5222,9 @@ op 16-09-2026 bij (onderhoudsronde). TT-229, TT-231 (laag 1),
 TT-62 (deel 1) en TT-294 zijn deze dag opgelost en staan in de tweede tabel.
 **TT-62 deel 2**
 ("geef me een seintje zodra er een drummer bijkomt") staat nog open en leunt op
-TT-01; die staat als eigen rij hieronder. Daarnaast staat
-één juridisch punt open zonder ticketnummer (verwerkersovereenkomst Supabase).
+TT-01; die staat als eigen rij hieronder. Het juridische punt zonder ticketnummer
+(verwerkersovereenkomst Supabase) is op 25-09-2026 afgehandeld en staat in de
+tweede tabel.
 TT-22 (restpunt) is dicht sinds 06-09-2026 — zie de correctie in zijn rij.
 
 **Regel vanaf 11-09-2026 — waarom deze tabel is herzien.** TT-229 en TT-231 zijn
@@ -5247,7 +5256,6 @@ eerste tabel altijd gelijk is aan de stand.
 | **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Gebouwd 23-09-2026; wacht op het SQL-script van Ronald en laag 2 — zie Laatste update.** Nieuw, 16-09-2026 (onderhoudsronde). Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wissen eerst en voegen daarna toe, zonder foutcontrole op het wissen. Mislukt het toevoegen, dan is de oude data weg. Zelfde soort in `executeAccountDeletion()`. Volledige tekst: Laatste update bovenaan |
 | **TT-312** | Band opheffen wist leden zonder foutcontrole | **Gebouwd 25-09-2026; wacht op het SQL-script van Ronald en laag 2 — zie Laatste update.** Nieuw, 23-09-2026. `dissolveBand()` (`bands.js`) wiste "Gezocht" en de leden zonder controle, daarna pas de band. Mislukte dat laatste, dan bleef een band zonder leden en oprichter over. Besluit Ronald 25-09-2026: één transactie, als TT-281 (`tt_dissolve_band`) |
 | **TT-323** | Elke mail die de app verstuurt één keer echt ontvangen, vóór livegang | **Nieuw, 25-09-2026, op verzoek van Ronald.** Geen bouwticket: een controle. **Toets P0:** kan de app live zonder dat een gebruiker vastloopt? Nee — komt de mail van "wachtwoord vergeten" niet aan, dan is iemand zijn account kwijt. **De mails, geverifieerd uit de code:** (1) wachtwoord vergeten (`auth.js`, Supabase); (2) e-mailadres wijzigen (`auth.js`, Supabase, TT-299); (3) de mail aan de ouder (`ouder.js`, Edge Function `ouder-toestemming`, TT-42); (4) de herinnering aan de ouder na zeven dagen (dagelijkse taak `tt-ouder-onderhoud`); (5) de mail aan het kind na goedkeuring (TT-42); (6) de digest met nieuwe berichten en matches (Edge Function `send-digest`, TT-01). Mailbevestiging bij registratie staat uit, dus die hoort er niet bij. **Per mail nalopen:** komt aan, niet in de spambox; afzender en onderwerp kloppen; elke knop en link opent de juiste pagina op talenttent.org; tekst past bij de doelgroep; leesbaar op een telefoon. **Hoort erbij:** SPF en DKIM voor `talenttent.org` controleren — staat bij TT-298 als "nog niet gecontroleerd". Alleen (6) is aantoonbaar aangekomen (20-09-2026, TT-01) |
-| — | Verwerkersovereenkomst Supabase nagaan | Juridisch, voorwaarde voor lancering |
 
 **Afgehandeld of geblokkeerd bij Ronald — telt niet mee in de P0-stand hierboven.**
 Deze rijen blijven staan omdat de tekst eronder ernaar verwijst en omdat de
@@ -5255,6 +5263,7 @@ herzieningsmomenten in TT-63 nog moeten gebeuren.
 
 | ID | Ticket | Kern |
 |---|---|---|
+| — | Verwerkersovereenkomst Supabase nagaan | **Afgehandeld 25-09-2026, op verzoek van Ronald.** De verwerkersovereenkomst van Supabase (versie 1, 01-08-2026) geldt automatisch via de gebruiksvoorwaarden; artikel 12.2: acceptatie staat gelijk aan ondertekening. Regio `eu-west-2` = Londen (opgegeven door Ronald uit het dashboard). Het VK valt onder het adequaatheidsbesluit van de Europese Commissie, geldig tot 27-12-2031. Privacyverklaring §7 aangevuld, datum naar 25 september 2026. Zie Deel 3 |
 | **TT-01** | E-maildigest bij nieuwe matches en berichten | **Aantoonbaar werkend 20-09-2026, na heropening op 31-08-2026.** Er is een echte mail aangekomen bij `contact@talenttent.org` met de opmaak intact: één nieuw bericht plus drie bandmatches. **De oorzaak zat niet in de code maar in drie verkeerd ingevulde secrets van 28-08-2026:** `SMTP_USER` bevatte `465` (het poortnummer), het echte afzenderadres stond onder `SMTP-USER` met een koppelteken in plaats van een liggend streepje, `SMTP_PORT` ontbrak, en `SMTP_HOST` wees naar `talenttent.org` — dat is GitHub Pages, niet de mailserver (`mail.talenttent.org`). **Waarom het drie weken onzichtbaar bleef:** de functie antwoordde altijd `{"ok":true,"sent":0,"skipped":0}`; verzendfouten werden weggevangen en ontvangers zonder inhoud werden niet geteld. `send-digest` v2 lost dat op met een uitsplitsing per ontvanger, plus `since_days` en `only_musician_id` als testingang. Broncode van de functie staat nu in de gedeelde map — hij bestond nergens buiten het Supabase-dashboard. **Vervolg: TT-295** (de matchhelft), **TT-296**, **TT-297** en **TT-298** |
 | **TT-299** | E-mailadres en wachtwoord niet te wijzigen in de app | **Nieuw en opgelost 20-09-2026.** Gemeld door Ronald. Het e-mailadres is tegelijk de inlognaam; wie het kwijtraakt, kan nooit meer een wachtwoord resetten en is zijn account kwijt. Het veld bestond al in "Wie ben je" maar stond op `readonly`; het adres zit alleen in het inlogaccount bij Supabase, niet in `musicians`. **Toets P0:** loopt een gebruiker hiermee vast of raakt hij data kwijt? Ja. Gebouwd als één venster bij Instellingen, met e-mailadres én wachtwoord (besluit Ronald). Controlevraag in plaats van een tweede invulveld; huidig wachtwoord alleen bij een wachtwoordwijziging. Beide antwoorden van Supabase worden afgevangen — bevestigingsmail onderweg of meteen gewijzigd. Blok 24 (18 controles), eindstand 353 van 353. Volledige tekst: Laatste update bovenaan |
 | **TT-300** | Alle auth-mail liep door Supabase' testmailer, 2 per uur | **Nieuw en opgelost 20-09-2026, geen code.** Gevonden bij TT-299, gemeten via de browserpane: "Enable custom SMTP" stond uit, waardoor het veld voor het aantal auth-mails per uur op **2** stond en grijs was. Dat raakt ook "wachtwoord vergeten", dat al maanden in de app zit. De digest van TT-01 loopt langs een eigen Edge Function en merkte er niets van — daardoor bleef het onzichtbaar. **Toets P0:** kan de app live zonder dat een gebruiker vastloopt? Nee: de derde die binnen een uur zijn wachtwoord vergeet, krijgt niets. **Opgelost door Ronald in dezelfde sessie**, met de SMTP-waarden die bij TT-01 boven water kwamen; Supabase zette de grens daarna zelf op 30 per uur. Tegelijk is "Secure email change" uitgezet (besluit Ronald): die stand eiste een klik in het oude én het nieuwe postvak, terwijl juist wie zijn oude postvak niet meer kan lezen de wijziging nodig heeft |
@@ -5640,7 +5649,7 @@ Cold-start-principe: dichtheid in één regio beats een dun landelijk bestand. B
 ## E. Randvoorwaarden voor lancering
 
 Drie sporen die samen "lanceerbaar" bepalen:
-- **Juridisch:** TT-63 (privacyverklaring/voorwaarden/gedragscode, gepubliceerd), TT-22 (accountverwijdering, nu ook het juridische landingspunt), en het resterende `—`-punt in P0 (verwerkersovereenkomst nagaan). E-mailadressen `contact@`/`privacy@` zijn op 12-08-2026 bevestigd functioneel, van de lijst af — zie Deel 3
+- **Juridisch:** TT-63 (privacyverklaring/voorwaarden/gedragscode, gepubliceerd), TT-22 (accountverwijdering, nu ook het juridische landingspunt), en de verwerkersovereenkomst met Supabase (afgehandeld 25-09-2026, zie Deel 3). E-mailadressen `contact@`/`privacy@` zijn op 12-08-2026 bevestigd functioneel, van de lijst af — zie Deel 3
 - **Techniek:** TT-64 (logging), TT-65 (back-up/herstel), TT-66 (service worker), TT-85 (Supabase-client vastzetten of zelf hosten). De beveiligingscontrole op databaseregels die hier eerder stond is **geschrapt** — die was via het TT-03/TT-04-restpunt al opgelost (zie Deel 3, 08-08-2026) en stond hier nog verouderd vermeld. **Toegevoegd 10-08-2026:** deze vier hangen samen. TT-66 (service worker) kan de bibliotheek cachen en zo het CDN-risico verder verkleinen; TT-64 (logging) kan de fout van TT-82 juist níet loggen zolang die logging zelf via de Supabase-client loopt.
 - **Ontwerp/interfaceslag:** TT-67 (laad-/lege/foutstaten), TT-68 (toegankelijkheid), TT-69 (consistente componenten). Bewust pas na de P0-tickets.
 
@@ -5653,6 +5662,35 @@ Bijbehorende tickets: TT-70 (Google Play), plus het `—`-punt "App Store (nativ
 # Deel 3 — Afgehandeld
 
 Kort en chronologisch (nieuwste bovenaan). Voor het volledige technische verhaal per punt: zie de sessie-aantekeningen die aan dit bestand voorafgingen (niet langer los bijgehouden na deze opschoning).
+
+## 25-09-2026 — Verwerkersovereenkomst Supabase
+
+**Aanleiding.** Ronald wees op de online verwerkersovereenkomst:
+https://supabase.com/legal/customer-resources/data-processing-addendum
+
+**Gelezen (geverifieerd):**
+- Versie 1, 01-08-2026. Geldt automatisch voor elke klant die de
+  gebruiksvoorwaarden accepteert. Artikel 12.2: acceptatie staat gelijk aan
+  ondertekening van de modelbepalingen (SCC's).
+- Datalek: melding zonder onnodige vertraging, waar haalbaar binnen 48 uur.
+- Na opzegging: gegevens gewist binnen 30 dagen.
+- Nieuwe subverwerker: 30 dagen vooraf aangekondigd.
+
+**Regio.** Ronald gaf `eu-west-2` op, uit het Supabase-dashboard. Volgens de
+regiodocumentatie van Supabase is dat Londen, Verenigd Koninkrijk. Het VK valt
+buiten de EU, maar de Europese Commissie heeft het adequaatheidsbesluit voor
+het VK verlengd tot 27-12-2031. Extra afspraken zijn daarom niet nodig.
+
+**Wat er veranderde.** De privacyverklaring §7 meldde alleen "opgeslagen bij
+Supabase". Artikel 13 van de AVG vraagt ook de doorgifte naar een land buiten
+de EU en het besluit waarop die rust. Toegevoegd, letterlijk zoals Ronald
+goedkeurde: "Supabase slaat de gegevens op in Londen (Verenigd Koninkrijk).
+Volgens de Europese Commissie beschermt het VK persoonsgegevens op hetzelfde
+niveau als de EU (adequaatheidsbesluit)." De datum bovenaan de
+privacyverklaring ging van 9 augustus naar 25 september 2026.
+
+**Herziening.** Het adequaatheidsbesluit loopt af op 27-12-2031. Wordt het niet
+verlengd, dan moet §7 opnieuw worden bekeken.
 
 ## 11-09-2026 (vervolg 6) — TT-229, TT-231 (laag 1) en TT-62 (deel 1)
 
