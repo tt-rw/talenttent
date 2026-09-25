@@ -1,6 +1,44 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 25-09-2026 (vervolg 2) — **TT-324 gebouwd: "laatst
+**Laatste update:** 25-09-2026 (vervolg 3) — **TT-281 afgehandeld: laag 2
+geslaagd op talenttent.org. Geen codewijziging. P0-bouwtickets van vijf naar
+vier.**
+
+**Wat er gemeten is** (browserpane, ingelogd als Ronald, echte database):
+- **Wat speel je:** "Wat speel je vooral" op Eigen nummers gezet en
+  opgeslagen, daarna terug op Covers en opgeslagen. Beide keren
+  `tt_save_musician_koppelingen` met status 204 en de melding "Wijzigingen
+  opgeslagen." Instrumenten, genres, nummers en media daarna gelijk aan de
+  beginstand. Het profiel staat weer op Covers.
+- **Je setlist** en **Je mediahoek:** opgeslagen met ongewijzigde inhoud
+  (9 nummers; 1 bestand en 4 links). Beide 204, alles gelijk aan de
+  beginstand.
+- **Band opslaan:** Van Delft bewerkt en opgeslagen via "Wijzigingen
+  opslaan". `tt_save_band_wanted` 204; band en "Gezocht" (4 instrumenten)
+  gelijk aan de beginstand.
+- **Alles of niets, in productie:** een aanroep met één goed en één kapot
+  nummer faalt met 23502 (`song_title` leeg); daarna staan alle 9 nummers er
+  nog. Hetzelfde voor "Gezocht" bij Van Delft (23502, `instrument` leeg): de 4
+  instrumenten staan er nog. Een aanroep voor een ander profiel geeft 42501
+  (RLS weigert).
+- Geen fouten in de console.
+
+**Niet live getest:** `tt_delete_own_profile` (account verwijderen). Dat kan
+niet zonder een account echt te verwijderen. Het bestaan ervan is op
+24-09-2026 gemeten; het gedrag alleen lokaal (Postgres 16).
+
+**Rechtgezet in hetzelfde gebaar.** De P0-rijen van TT-281 en TT-312 zeiden
+"wacht op het SQL-script van Ronald en laag 2". Dat klopte niet meer. Waaruit
+blijkt: de updates hieronder melden dat Ronald het script van TT-281 op
+24-09-2026 draaide en dat van TT-312 op 25-09-2026, allebei nagemeten. TT-281
+staat nu in de tweede tabel; bij TT-312 staat nu "alleen laag 2 staat nog
+open".
+
+**Gewijzigd:** `actielijst.md`, `CHECKSUMS.txt`.
+
+---
+
+**Vorige update:** 25-09-2026 (vervolg 2) — **TT-324 gebouwd: "laatst
 actief" vervangt "laatst bijgewerkt". De regel "Deze week bijgewerkt" is weg
 van het profiel; hoe lang iemand de app niet opende, bepaalt nu zijn plek in de
 zoekresultaten. Testset 533 van 533. Wacht op het SQL-script van Ronald.**
@@ -5358,12 +5396,12 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 ## P0 — Zonder dit is de app niet af of onveilig
 
-**Bijgewerkt 22-09-2026 (vervolg).** TT-42 is gebouwd, maar blijft in deze stand meetellen tot laag 2 is gedraaid: de keten mail → klik van de ouder → terugkomst van het kind raakt de database en de mailserver en is niet tegen de stub te toetsen. *(Rechtgezet 23-09-2026: hier stond ook "Hij wacht bovendien op twee handelingen van Ronald (het SQL-script en de Edge Function)." Beide zijn op 22-09-2026 gemeten, de dagelijkse taak op 23-09-2026.)* Zolang blijven het er vijf.
+**Bijgewerkt 22-09-2026 (vervolg).** TT-42 is gebouwd, maar blijft in deze stand meetellen tot laag 2 is gedraaid: de keten mail → klik van de ouder → terugkomst van het kind raakt de database en de mailserver en is niet tegen de stub te toetsen. *(Rechtgezet 23-09-2026: hier stond ook "Hij wacht bovendien op twee handelingen van Ronald (het SQL-script en de Edge Function)." Beide zijn op 22-09-2026 gemeten, de dagelijkse taak op 23-09-2026.)* *(Rechtgezet 25-09-2026: hier stond "Zolang blijven het er vijf." Het zijn er nu vier; zie de stand hieronder.)*
 
 **Aanvulling 25-09-2026:** daarnaast staat TT-323 open, een controle en geen bouwticket: elke mail van de app één keer echt ontvangen vóór livegang.
 
-**Stand van de P0's, bijgewerkt 25-09-2026.** **Vijf P0-bouwtickets
-staan open:** TT-281 · TT-312 · TT-295 · TT-65 · TT-42. *(TT-45 is op 25-09-2026 afgehandeld en staat in de tweede tabel. TT-312 kwam er op 23-09-2026 bij.)* **TT-299 en TT-300 zijn
+**Stand van de P0's, bijgewerkt 25-09-2026.** **Vier P0-bouwtickets
+staan open:** TT-312 · TT-295 · TT-65 · TT-42. *(TT-281 is op 25-09-2026 afgehandeld en staat in de tweede tabel. TT-45 is op 25-09-2026 afgehandeld en staat in de tweede tabel. TT-312 kwam er op 23-09-2026 bij.)* **TT-299 en TT-300 zijn
 op 20-09-2026 gevonden én afgehandeld** en staan in de tweede tabel; ze
 veranderen de stand hierboven dus niet. **TT-01 is op 20-09-2026
 aantoonbaar werkend** en staat in de tweede tabel. In zijn plaats komt
@@ -5406,8 +5444,7 @@ eerste tabel altijd gelijk is aan de stand.
 | **TT-65** | Back-up en herstel uitzoeken | Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers, zodra die er zijn. Interim-stap: zie "Direct te doen" hierboven. **Vóór lancering, niet acuut nu (23-08-2026) — de site heeft nog alleen testprofielen, zie afspraak bovenaan deze tabel** |
 | **TT-42** | Registratie en toestemming voor 13-15-jarigen | **Gebouwd 22-09-2026, route A. Alleen laag 2 staat nog open** *(rechtgezet 23-09-2026: hier stond "wacht op twee handelingen van Ronald"; beide zijn op 22-09-2026 gemeten)*. In productie en geverifieerd: de tabel `ouder_toestemming`, de drie functies, de Edge Function `ouder-toestemming` (Verify JWT uit), en de dagelijkse taak `tt-ouder-onderhoud` (23-09-2026, uitslag van Ronald). Zeven onderdelen in `ouder.js` en `view-toestemming`. **Laag 2:** de keten mail aan de ouder → klik → mail aan het kind → wachtwoord, op de echte site, met een mailadres waar Ronald bij kan. Ontwerp en besluiten: `_niet-uploaden-tt42-ontwerp-22-09-2026.md` en `minderjarigen-toestemming-23-09-2026.md` |
 | **TT-62 (deel 2)** | "Geef me een seintje zodra er een drummer bijkomt" | **Uitzondering vastgelegd 12-09-2026 (besluit Ronald, TT-257):** het automatisch verruimen van deel 1 geldt **niet** als er een naam in het zoekveld staat. Wie op naam zoekt, zoekt één bepaalde persoon; iemand twee provincies verderop is dan geen beter antwoord dan geen antwoord. Zie huisstijl §17. **Deel 1 is gebouwd 11-09-2026** (automatisch verruimen, zie Deel 3). Deel 2 maakt van een dood einde een afspraak die het systeem bewaakt in plaats van de gebruiker. Leunt op dezelfde verzendweg als TT-01 en kan dus niet eerder |
-| **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Gebouwd 23-09-2026; wacht op het SQL-script van Ronald en laag 2 — zie Laatste update.** Nieuw, 16-09-2026 (onderhoudsronde). Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wissen eerst en voegen daarna toe, zonder foutcontrole op het wissen. Mislukt het toevoegen, dan is de oude data weg. Zelfde soort in `executeAccountDeletion()`. Volledige tekst: Laatste update bovenaan |
-| **TT-312** | Band opheffen wist leden zonder foutcontrole | **Gebouwd 25-09-2026; wacht op het SQL-script van Ronald en laag 2 — zie Laatste update.** Nieuw, 23-09-2026. `dissolveBand()` (`bands.js`) wiste "Gezocht" en de leden zonder controle, daarna pas de band. Mislukte dat laatste, dan bleef een band zonder leden en oprichter over. Besluit Ronald 25-09-2026: één transactie, als TT-281 (`tt_dissolve_band`) |
+| **TT-312** | Band opheffen wist leden zonder foutcontrole | **Gebouwd 25-09-2026; SQL-script gedraaid en nagemeten 25-09-2026; alleen laag 2 staat nog open.** *(Rechtgezet 25-09-2026: hier stond "wacht op het SQL-script van Ronald en laag 2".)* Nieuw, 23-09-2026. `dissolveBand()` (`bands.js`) wiste "Gezocht" en de leden zonder controle, daarna pas de band. Mislukte dat laatste, dan bleef een band zonder leden en oprichter over. Besluit Ronald 25-09-2026: één transactie, als TT-281 (`tt_dissolve_band`) |
 | **TT-323** | Elke mail die de app verstuurt één keer echt ontvangen, vóór livegang | **Nieuw, 25-09-2026, op verzoek van Ronald.** Geen bouwticket: een controle. **Toets P0:** kan de app live zonder dat een gebruiker vastloopt? Nee — komt de mail van "wachtwoord vergeten" niet aan, dan is iemand zijn account kwijt. **De mails, geverifieerd uit de code:** (1) wachtwoord vergeten (`auth.js`, Supabase); (2) e-mailadres wijzigen (`auth.js`, Supabase, TT-299); (3) de mail aan de ouder (`ouder.js`, Edge Function `ouder-toestemming`, TT-42); (4) de herinnering aan de ouder na zeven dagen (dagelijkse taak `tt-ouder-onderhoud`); (5) de mail aan het kind na goedkeuring (TT-42); (6) de digest met nieuwe berichten en matches (Edge Function `send-digest`, TT-01). Mailbevestiging bij registratie staat uit, dus die hoort er niet bij. **Per mail nalopen:** komt aan, niet in de spambox; afzender en onderwerp kloppen; elke knop en link opent de juiste pagina op talenttent.org; tekst past bij de doelgroep; leesbaar op een telefoon. **Hoort erbij:** SPF en DKIM voor `talenttent.org` controleren — staat bij TT-298 als "nog niet gecontroleerd". Alleen (6) is aantoonbaar aangekomen (20-09-2026, TT-01) |
 
 **Afgehandeld of geblokkeerd bij Ronald — telt niet mee in de P0-stand hierboven.**
@@ -5416,6 +5453,7 @@ herzieningsmomenten in TT-63 nog moeten gebeuren.
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-281** | Opslaan wist eerst en controleert het wissen niet | **Afgehandeld 25-09-2026: gebouwd, SQL-script gedraaid (24-09-2026), laag 2 geslaagd — zie Laatste update.** Nieuw, 16-09-2026 (onderhoudsronde). Profiel opslaan en de tegels Wat speel je, Je setlist en Je mediahoek wisten eerst en voegden daarna toe, zonder foutcontrole op het wissen. Nu één transactie per opslag (`tt_save_musician_koppelingen`, `tt_save_band_wanted`, `tt_delete_own_profile`). Account verwijderen is niet live getest |
 | **TT-45** | Aanvullende maatregelen bij een ondergrens van 13 | **Afgehandeld 25-09-2026: gebouwd, proefmelding geslaagd, laag 2 geslaagd — zie Laatste update.** Nieuw, 08-08-2026 — losgetrokken uit TT-07. Besluiten Ronald 23-09-2026 en 25-09-2026: twee leeftijdsgroepen (13 t/m 15 en 16+); media van onder de 16 afgeschermd voor bezoekers zonder account (de T); elke melding via de knop ⋯ per mail naar `privacy@talenttent.org`; vragen naar contact@, melden en intrekken naar privacy@. In productie en nagemeten: `tt_get_musicians_public` (afgeschermd), de leesregel op de opslagmappen, `musician_reports.gemaild_op`, de trigger `tt_melding_mailen` en de Edge Function `melding-privacy`. Zie `minderjarigen-toestemming-25-09-2026.md` |
 | — | Verwerkersovereenkomst Supabase nagaan | **Afgehandeld 25-09-2026, op verzoek van Ronald.** De verwerkersovereenkomst van Supabase (versie 1, 01-08-2026) geldt automatisch via de gebruiksvoorwaarden; artikel 12.2: acceptatie staat gelijk aan ondertekening. Regio `eu-west-2` = Londen (opgegeven door Ronald uit het dashboard). Het VK valt onder het adequaatheidsbesluit van de Europese Commissie, geldig tot 27-12-2031. Privacyverklaring §7 aangevuld, datum naar 25 september 2026. Zie Deel 3 |
 | **TT-01** | E-maildigest bij nieuwe matches en berichten | **Aantoonbaar werkend 20-09-2026, na heropening op 31-08-2026.** Er is een echte mail aangekomen bij `contact@talenttent.org` met de opmaak intact: één nieuw bericht plus drie bandmatches. **De oorzaak zat niet in de code maar in drie verkeerd ingevulde secrets van 28-08-2026:** `SMTP_USER` bevatte `465` (het poortnummer), het echte afzenderadres stond onder `SMTP-USER` met een koppelteken in plaats van een liggend streepje, `SMTP_PORT` ontbrak, en `SMTP_HOST` wees naar `talenttent.org` — dat is GitHub Pages, niet de mailserver (`mail.talenttent.org`). **Waarom het drie weken onzichtbaar bleef:** de functie antwoordde altijd `{"ok":true,"sent":0,"skipped":0}`; verzendfouten werden weggevangen en ontvangers zonder inhoud werden niet geteld. `send-digest` v2 lost dat op met een uitsplitsing per ontvanger, plus `since_days` en `only_musician_id` als testingang. Broncode van de functie staat nu in de gedeelde map — hij bestond nergens buiten het Supabase-dashboard. **Vervolg: TT-295** (de matchhelft), **TT-296**, **TT-297** en **TT-298** |
