@@ -145,8 +145,11 @@ async function appInit() {
     // hieronder is dan al gebeurd en mag niet worden overschreven.
     // Inloggen en de wizard vallen erbuiten: daar hoort een ingelogde
     // gebruiker na verversen niet te blijven hangen (gedrag van vóór TT-279).
+    // TT-337 (26-09-2026): de goedkeuringspagina van een ouder hoort erbij.
+    // Een ouder die zelf muzikant is en ingelogd blijft, belandde anders na
+    // het laden op zijn eigen profiel en kon niet goedkeuren.
     opstartHerstelt = !!session?.user && (!!gesprekMatch ||
-      /^(profiel|band)\//.test(hashView) ||
+      /^(profiel|band|toestemming)\//.test(hashView) ||
       (HERSTELBARE_VIEWS.includes(hashView) && !['auth', 'register'].includes(hashView)));
     if (session?.user) {
       currentUser = session.user;
@@ -353,7 +356,9 @@ async function onUserLoggedIn(user) {
   if (!paginaHersteld) showView('myprofile');
   // TT-38 (07-08-2026): bestaand profiel zonder gebruikersnaam? Verplicht
   // scherm erbovenop tonen (modal blokkeert de rest tot opgeslagen).
-  checkUsernameGate();
+  // TT-337: niet op de goedkeuringspagina. Daar is iemand ouder, geen
+  // muzikant; het scherm zou de goedkeuring blokkeren.
+  if (huidigeView !== 'toestemming') checkUsernameGate();
 
   const userFname2 = user.user_metadata?.fname;
   if (userFname2) {

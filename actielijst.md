@@ -1,6 +1,50 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 26-09-2026 (vervolg 2) — **TT-330 t/m TT-333 gebouwd:
+**Laatste update:** 26-09-2026 (vervolg 3) — **TT-337 is P0 (besluit Ronald)
+en gebouwd: een ingelogde ouder blijft op de goedkeuringspagina.**
+
+**Niveau.** Was advies P1. **Besluit Ronald, 26-09-2026: P0.** Toets P0: een
+ingelogde ouder kan niet goedkeuren, dus het kind komt er niet in. Dat is
+vastlopen.
+
+**Oorzaak, geverifieerd.** Bij het opstarten opent `appInit()` de
+goedkeuringspagina. Tegelijk loopt `onUserLoggedIn()`; die wacht op de
+database en stuurt daarna door naar Mijn Profiel. `#toestemming/` telde niet
+mee als pagina die bij het opstarten blijft staan (`opstartHerstelt`).
+
+**De fix, in `core.js`.** (1) `#toestemming/<code>` telt nu mee in
+`opstartHerstelt`, net als `#profiel/` en `#band/`. (2) Op de
+goedkeuringspagina komt het verplichte gebruikersnaamscherm (TT-38) niet
+meer tevoorschijn. Dat scherm lag anders over de goedkeuring heen bij een
+ouder met een oud profiel zonder gebruikersnaam — zelfde gevolg, zelfde
+ticket. Het scherm verschijnt weer bij de volgende opstart elders in de app.
+
+**Testset:** blok 28 heeft drie nieuwe controles, met een echte opstart in
+een ingelogde browser. Tegen de oude code zakken ze alle drie (de app stond
+op `#myprofile`). **549 van 549 geslaagd.**
+
+**UX-toets (senior UX-skill):** de ouder ziet nu de pagina uit de mail, met
+vinkje en knoppen; schermafdruk op 390px bekeken. Geen nieuwe blokkerende
+bevinding. Oordeel: opleveren.
+
+**Besluit Ronald, 26-09-2026: UX/UI kijkt altijd mee.** Reden: "ik probeer
+de app live te krijgen maar word steeds teruggetrokken." Een bevinding die
+bij het bouwen al te zien was, hoort dan gemeld te worden, niet in een
+volgende sessie.
+
+**TT-336 wacht**, besluit Ronald: later.
+
+**Volgorde voor Ronald:** (1) `index.html`, `core.js`, `actielijst.md`,
+`CHECKSUMS.txt` naar beide repo's, hoofdmap; `tt_tests.py` naar `tests/`.
+(2) Daarna laag 2 door Claude: ingelogd `#toestemming/<code>` openen op
+talenttent.org.
+
+**Gewijzigd:** `index.html` (alleen `?v=` van `core.js`), `core.js`,
+`tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
+
+---
+
+**Vorige update:** 26-09-2026 (vervolg 2) — **TT-330 t/m TT-333 gebouwd:
 de ouderroute.**
 
 **TT-330 — elke link werkt.** Een herinnering of "opnieuw versturen" maakt nog
@@ -5754,9 +5798,12 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 **Aanvulling 25-09-2026:** daarnaast staat TT-323 open, een controle en geen bouwticket: elke mail van de app één keer echt ontvangen vóór livegang.
 
-**Stand van de P0's, bijgewerkt 26-09-2026 (vervolg 2).** **Vijf P0-bouwtickets
-staan open:** TT-295 · TT-65 · TT-62 (deel 2) · TT-325 · TT-329. Daarnaast de
-controle TT-323 en TT-336 (advies P0, niveau door Ronald te bevestigen).
+**Stand van de P0's, bijgewerkt 26-09-2026 (vervolg 3).** **Zes P0-bouwtickets
+staan open:** TT-295 · TT-65 · TT-62 (deel 2) · TT-325 · TT-329 · TT-337
+(gebouwd, wacht op laag 2). Daarnaast de controle TT-323 en TT-336 (advies
+P0, niveau door Ronald te bevestigen; later, besluit Ronald 26-09-2026).
+*(TT-337 is op 26-09-2026 (vervolg 3) P0 geworden, besluit Ronald. Was
+advies P1.)*
 *(Rechtgezet 26-09-2026 (vervolg 2): hier stond "Vier P0-bouwtickets staan
 open: TT-295 · TT-65 · TT-325 · TT-329". TT-62 (deel 2) ontbrak. Waaruit
 blijkt: hij staat open in de eerste tabel hieronder.)* *(TT-327 is op 25-09-2026 (vervolg 12) afgehandeld: laag 2 geslaagd. Hij staat in de tweede tabel.)* *(TT-325 en TT-329 zijn op 25-09-2026 (vervolg 9) P0 geworden, besluit Ronald: de mails moeten goed zijn vóór livegang.)* *(TT-312 en TT-42 zijn op 25-09-2026 (vervolg 5) afgehandeld: laag 2 geslaagd; ze staan in de tweede tabel. TT-281 is op 25-09-2026 afgehandeld en staat in de tweede tabel. TT-45 is op 25-09-2026 afgehandeld en staat in de tweede tabel. TT-312 kwam er op 23-09-2026 bij.)* **TT-299 en TT-300 zijn
@@ -5805,6 +5852,7 @@ eerste tabel altijd gelijk is aan de stand.
 | **TT-325** | Eén mailtemplate voor alle zeven mails, met nieuwe teksten | **Nieuw, 25-09-2026 (vervolg 5), verzoek Ronald; verbreed in vervolg 6.** Eerst alleen de twee mails van de ouderroute. Op 25-09-2026 (vervolg 6) vroeg Ronald: welke mails verstuurt de app, een voorbeeldtekst per mail, en één template. **Besluiten Ronald, 25-09-2026:** (a) licht thema voor elke mail, geen donkere variant; (b) het woordmerk als afbeelding; (c) aanhef "Hoi <voornaam>," voor een muzikant en "Beste ouder/verzorger van <voornaam>," voor een ouder. **Besluiten Ronald, 25-09-2026 (vervolg 7):** (d) de zes mails met één handeling of mededeling krijgen opmaak A, "Brief": wit, het woordmerk als klein zwart stempel ("voor de ouder is A de beste; beter een rustig voorkomen"); (e) de digest krijgt opmaak C, "Kernzin": een donkere kop met de samenvatting ("jongeren scannen eerder dan lezen"); (f) in de digest géén kaart per afzender, en de knop "Bekijk je berichten" staat onder de donkere kop, niet erin; (g) de tekst van de mails wil Ronald zelf kunnen aanpassen — **afgesplitst naar TT-329** (besluit Ronald, 25-09-2026, vervolg 8). TT-325 gaat alleen nog over de opmaak en de teksten zoals ze nu in de code staan. **Nog steeds voorstel van Claude, nog niet bevestigd:** de overige regels van het template (maten, knopvorm, voet, afzender, woordkeus "aanvraag") en alle voorbeeldteksten. Staan in `_niet-uploaden-mails-en-template-25-09-2026.html`; de drie opmaakvoorstellen in `_niet-uploaden-mail-opmaak-drie-voorstellen-25-09-2026.html`; de digest in vorm C (versie 3) in `_niet-uploaden-mail-digest-vorm-c-25-09-2026.html`. Voor de afzenders in de digest bleef "wie je een bericht stuurde, staat niet ook bij de matches" staan (voorstel van Claude). **Nu drie opmaken naast elkaar:** `ouder-toestemming` (licht, tabellen, Georgia-woordmerk), `send-digest` (licht of donker, `flex`, Alfa Slab-woordmerk, geen tekstversie, afzender zonder naam) en `melding-privacy` (kale tekst). Geen enkele gebruikt het woordmerk van TT-318. **Onbekend:** de huidige tekst van mail 1 en 2 in het Supabase-dashboard. **Invoeren, na akkoord:** `mail-woordmerk.png` naar de repo; mail 1 en 2 in het dashboard; het template-blok in de drie Edge Functions; daarna TT-327 en TT-323. **Niveau gewijzigd 25-09-2026 (vervolg 9), besluit Ronald: "de emails moeten goed zijn voor de livegang. dus voor mij is het P0."** Was P2. **Toets P0:** kan de app live zonder dat een gebruiker vastloopt of onveilig zit? Volgens Ronald niet: een ouder die een mail niet vertrouwt, geeft geen toestemming, en dan komt een 13- tot 15-jarige er niet in **Besluiten Ronald, 25-09-2026 (vervolg 13)**, op het voorbeeld `_niet-uploaden-TT-325-zo-worden-de-mails-25-09-2026.html`: (1) lettergrootte zoals in de app — "prima voor nu"; (2) de gouden knop zoals in de app; (3) de voet wordt "Talent Tent · talenttent.org" — "Talent zoekt talent" gaat eruit; (4) afzender "Talent Tent", en **"The" gaat overal weg** ("gebruik in teksten desnoods 'de Talent Tent'"); (5) overal "aanvraag", nooit "verzoek"; (6) digest: het onderwerp zonder aantallen ("Je hebt nieuwe berichten en matches"), de donkere kop "prima voor nu", in de voet vervalt "Je krijgt deze mail … nieuw is." en komt "E-mailvoorkeuren pas je hier aan: Instellingen"; (7) wie je een bericht stuurde, staat óók in de lijst met matches ("misschien past Jesse iets aan in zijn profiel waar Sanne niets van weet"); (8) geen opmerking. Mail 2 eindigt met "Vroeg je dit niet? Dan hoef je niets te doen. Je e-mailadres blijft hetzelfde." **Teksten:** Ronald past alle teksten zelf aan in `_niet-uploaden-TT-325-mailteksten-25-09-2026.xlsx` (kolom "Nieuw"; besluiten 3 tot en met 6 staan daar al in). Daarna bouwt Claude. **Open vraag:** geldt "The weg" alleen voor de mails, of ook voor de app (titel, teksten, projectinstructies §9)? **Gebouwd 25-09-2026 (vervolg 14)** met de teksten uit het Excel-bestand; besluiten erbij: geen "Vragen? contact@" in de mail aan de ouder, en "hetzelfde toestel en dezelfde browser" in mail 5. **Invoeren, door Ronald:** (1) `mail-woordmerk.png` naar beide repo's, hoofdmap — de mails laden hem van talenttent.org; (2) in Supabase → Edge Functions de code van `ouder-toestemming`, `send-digest` en `melding-privacy` vervangen door de drie bestanden `_niet-uploaden-TT-325-edge-function-*.ts` en telkens Deploy; (3) in Supabase → Authentication → Emails bij "Reset Password" en "Change Email Address" het onderwerp en de HTML vervangen. **Onbekend:** of de drie Edge Functions in Supabase gelijk zijn aan de bestanden in de gedeelde map waarop dit is gebouwd (ouder-toestemming 22-09, send-digest v2 20-09, melding-privacy 25-09). Staat er in Supabase een nieuwere versie, dan eerst melden. **Ingevoerd door Ronald en nagemeten, 25-09-2026 (vervolg 15)**: de code in Supabase is gelijk aan de bestanden. **Daarna:** TT-323 voor alle zeven mails; TT-325 is af als die slaagt |
 | **TT-329** | Mailteksten zelf aanpassen, zonder code | **Nieuw, 25-09-2026 (vervolg 8), afgesplitst uit TT-325 op verzoek van Ronald: "de tekst wil ik zelf kunnen doen."** Geldt voor alle zeven mails. **Voorstel van Claude, nog niet bevestigd:** één rij per mail in een tabel in Supabase (onderwerp, voorbeeldtekst, alinea's, knoptekst), met invulplekken als {voornaam} en {link}; Ronald wijzigt ze in de Table Editor, de volgende mail gebruikt meteen de nieuwe tekst. Mail 1 en 2 komen uit het Supabase-dashboard; die kunnen alleen in dezelfde tabel als Supabase ze via een eigen functie laat versturen (**Aanname:** dat kan in dit project; eerst meten). **Volgorde:** ná TT-325. **Gevolg van het afsplitsen:** de Edge Functions gaan twee keer om in plaats van één keer. Om dat klein te houden, zet TT-325 de teksten per mail al bij elkaar in de code, in dezelfde vorm als de latere tabelrij. **Niveau gewijzigd 25-09-2026 (vervolg 9), besluit Ronald: "de emails moeten goed zijn voor de livegang. dus voor mij is het P0."** Was P3. **Toets P0:** Ronald wil de teksten vóór livegang zelf goed kunnen zetten, zonder een sessie per wijziging |
 | **TT-336** | E-mailadres wordt bij registratie niet bevestigd | *(Rechtgezet 26-09-2026 (vervolg 2): deze rij stond in de tabel "Afgehandeld of geblokkeerd bij Ronald"; het ticket is open.)* **Nieuw, 26-09-2026, wens Ronald. Advies P0, niveau door Ronald te bevestigen.** Mailbevestiging staat uit in Supabase: wie zich aanmeldt, kan elk adres invullen. **Toets P0:** tikt iemand zijn eigen adres verkeerd, dan komt "Wachtwoord vergeten" nooit aan en is hij zijn account kwijt; en iemand kan zich aanmelden met het adres van een ander. **Gemist door Claude:** bij het ontwerp van de welkomstmail (TT-72) zag Claude dit en schreef er de regel "Niet zelf aangemeld?" omheen, in plaats van het als bevinding te melden. **Waarom niet de instelling in Supabase aanzetten:** de app maakt het account aan en logt meteen in (`createAccountAndProfile()` en `submitProfile()` in `wizard.js`); met bevestiging aan weigert Supabase dat inloggen en loopt elke registratie vast. Geldt bovendien voor iedereen. **Wens Ronald:** voor 16+ dezelfde route als voor 13 t/m 15 (route A, `ouder.js`, Edge Function `ouder-toestemming`), alleen gaat de mail naar de gebruiker zelf. Het account ontstaat pas na de klik. Neem TT-331 mee: de link werkt nu alleen in de browser waar iemand begon. **Open vraag aan Ronald:** bevestigen aan het begin van de wizard of aan het eind (advies Claude: aan het eind). Zodra dit werkt, gaat de regel "Niet zelf aangemeld?" uit de welkomstmail. Eigen sessie. |
+| **TT-337** | Een ingelogde ouder komt op zijn eigen profiel uit in plaats van op de goedkeuringspagina | **Gebouwd en getest 26-09-2026 (vervolg 3), zie Laatste update bovenaan. Wacht op laag 2.** **Niveau gewijzigd 26-09-2026, besluit Ronald: P0.** Was advies P1. **Toets P0:** een ingelogde ouder kan niet goedkeuren; het kind komt er niet in. Nieuw 26-09-2026 (vervolg 2), laag 2 van TT-330. Geverifieerd op talenttent.org: met een ingelogd account toont `#toestemming/<code>` eerst de goedkeuringspagina, daarna springt de app naar Mijn Profiel. Oorzaak: `onUserLoggedIn()` in `core.js` gaat na het laden naar Mijn Profiel, omdat `#toestemming/` niet meetelde in `opstartHerstelt`. Bestond al sinds TT-42. **Gebouwd:** `#toestemming/` telt mee in `opstartHerstelt`; op de goedkeuringspagina verschijnt het gebruikersnaamscherm (TT-38) niet. Blok 28: drie controles, zakken tegen de oude code. |
 
 **Afgehandeld of geblokkeerd bij Ronald — telt niet mee in de P0-stand hierboven.**
 Deze rijen blijven staan omdat de tekst eronder ernaar verwijst en omdat de
@@ -5882,7 +5930,6 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 |---|---|---|
 | **TT-330** | Een vervangen ouderlink komt zonder uitleg op de homepage | **Gebouwd en getest 26-09-2026 (vervolg 2), wens Ronald: elke link werkt. Wacht op het SQL-script en de nieuwe functie `ouder-toestemming` van Ronald, daarna laag 2 — zie Laatste update.** Nieuw, 26-09-2026, TT-323. Advies P1, niveau door Ronald te bevestigen.** De herinnering en "opnieuw sturen" maken een nieuwe code; de link uit de eerste mail werkt dan niet meer. Een onbekende code stuurt `toestemmingPaginaOpenen()` (`ouder.js`) met opzet naar de homepage. Geverifieerd: Ronald kwam zo op de homepage uit, en een verzonnen code doet hetzelfde. **Toets P1:** een ouder die niet goedkeurt, betekent een kind dat niet binnenkomt. **Voorstel:** toon "Deze link werkt niet meer. Gebruik de nieuwste mail van Talent Tent." |
 | **TT-331** | De knop in "Je hebt toestemming" werkt alleen in de browser waar het kind begon | **Gebouwd en getest 26-09-2026 (vervolg 2), akkoord Ronald. Wacht op de nieuwe functie `ouder-toestemming`, daarna laag 2 — zie Laatste update.** Nieuw, 26-09-2026, TT-323. Advies P1, niveau door Ronald te bevestigen.** Het profiel wacht in de opslag van die ene browser (route A). Geverifieerd: in een browser met een ander ingelogd account stuurt `#register` door naar Mijn Profiel. **Aanname, niet gemeten:** uitgelogd in een andere browser krijgt het kind een lege wizard, begint opnieuw, en de ouder krijgt een tweede aanvraag. Een mail-app opent links vaak in een eigen browser. **Toets P1:** een kind dat hier strandt, komt niet binnen. **Voorstel:** vindt de app het wachtende profiel niet, dan toont hij "Open Talent Tent in de browser waar je begon." |
-| **TT-337** | Een ingelogde ouder komt op zijn eigen profiel uit in plaats van op de goedkeuringspagina | **Nieuw, 26-09-2026 (vervolg 2), laag 2 van TT-330. Advies P1, niveau door Ronald te bevestigen.** Geverifieerd op talenttent.org: met een ingelogd account toont `#toestemming/<code>` eerst de goedkeuringspagina, daarna springt de app naar Mijn Profiel. Oorzaak: `onUserLoggedIn()` in `core.js` gaat na het laden naar Mijn Profiel, omdat `#toestemming/` niet meetelt als pagina die blijft staan (`opstartHerstelt`). Bestond al sinds TT-42. **Toets P1:** een ouder die zelf muzikant is en ingelogd is, kan niet goedkeuren; het kind komt niet binnen. **Voorstel:** `#toestemming/` laten meetellen in `opstartHerstelt`. |
 | **TT-324** | Laatst actief bepaalt de plek in de zoekresultaten; "Deze week bijgewerkt" weg van het profiel | **Gebouwd en getest 25-09-2026, zie Laatste update bovenaan. Wacht op het SQL-script van Ronald, daarna laag 2.** **Toets P1:** een bericht aan iemand die de app niet meer opent, blijft onbeantwoord en ontmoedigt de afzender. Actieve profielen bovenaan bepalen of iemand een tweede keer contact zoekt |
 | **TT-302** | Terugknop sloot een bewerkscherm zonder te vragen | **Gebouwd en getest 20-09-2026 (vervolg 3).** De Terug-knop onder in een tegelscherm vroeg al "Terug zonder opslaan?"; de terugknop in de kop en die van het toestel niet. Één controle voor beide wegen (`tegelHeeftWijzigingen()`). Volledige tekst: Laatste update bovenaan. **Nog open:** de wizard en het bandformulier |
 | **TT-296** | Het digestvenster is een vaste 24 uur, niet "sinds de vorige verzending" | **Nieuw, 20-09-2026.** `send-digest` rekent het terugkijkvenster uit vanaf het moment van aanroepen: 1 dag bij dagelijks, 7 bij wekelijks. Er wordt nergens bijgehouden wat verstuurd is. Valt een run uit, of komt er iets binnen dat net buiten het raam valt, dan is die melding definitief weg. Achteraf is ook niet vast te stellen of iemand een bepaalde mail heeft gehad. **Toets:** verandert dit of iemand een tweede keer opent? Ja — een gemiste melding is een gemist bericht, precies de lus die TT-01 moet sluiten |
