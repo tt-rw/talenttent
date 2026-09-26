@@ -1,6 +1,54 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 26-09-2026 (TT-341, stap 2) — **Het lichte thema staat in
+**Laatste update:** 26-09-2026 (TT-341, stap 3) — **Licht of donker is te
+kiezen. Zonder eigen keuze volgt de app het toestel.** Na deze upload ziet
+iedereen met een telefoon op licht dus de lichte app. Zeven P0's staan open;
+TT-341 is P2 (advies Claude), dat is één keer gemeld.
+
+**Aanleiding.** Ronald: "ga verder met stap 3 voor de light skin".
+
+**Besluit Ronald, 26-09-2026 ("a"):** zonder eigen keuze volgt de app het
+toestel. Advies UX: wie zijn telefoon op licht zet, heeft die keuze al
+gemaakt; en een bezoeker zonder account komt niet bij Instellingen.
+
+**Wat er veranderde.**
+- `index.html`: een klein blok bovenin, vóór `styles.css`, past de keuze toe
+  (`lichtDonkerKeuze()`, `pasLichtDonkerToe()`). Zo flitst de app niet eerst
+  donker. Het zet `data-theme="licht"` op `<html>` en `theme-color` op crème
+  of zwart. In Instellingen staat bovenaan de tegel **"Licht of donker"** met
+  drie knoppen: Zoals mijn toestel · Licht · Donker. Werkt meteen, zonder
+  Opslaan. `?v=` omhoog voor `styles.css` en `core.js`.
+- `core.js`: `kiesLichtDonker()`, `toonLichtDonkerKeuze()`, en meewisselen
+  als het toestel wisselt.
+- `styles.css`: `.tile-keuze`, een tegel die zelf geen knop is.
+- De keuze staat op het toestel (`localStorage`, `tt_licht_donker`), zoals
+  besloten. De tegel zegt "geldt alleen op dit toestel".
+- **Voorstel Claude, niet apart bevestigd:** de naam "Licht of donker" in
+  plaats van "Weergave". "Weergave" betekent in Zoeken al kaarten of lijst
+  (projectinstructies §6, één betekenis per woord).
+- `tests/tt_tests.py`: blok 41 (13 controles). De andere blokken draaien nu
+  op een toestel dat op donker staat; Playwright doet zich anders voor als
+  een toestel op licht.
+- Huisstijl bijgewerkt naar beide thema's: `huisstijl-en-consistentie-26-09-2026.md`
+  (§1 herschreven, §1.4 nieuw, §1.1, §1.3, §2, §3, §4, §5, §5.1, §7, §7.1,
+  §7.2, §8.2, §11, §18.1, §18.5, §18.7 bijgewerkt). Daarmee is de achterstand
+  uit stap 2 weg. Projectinstructies §8, §11 en §12 bijgewerkt.
+
+**Geverifieerd.** Monitor 21/21 · testset 599/599. Schermafdrukken van
+Instellingen op 344, 375 en 390px (licht) en 390px (donker), en van twaalf
+schermen in licht op 390px: geen losse donkere vlakken of onleesbare tekst.
+**Niet geverifieerd:** op een echt toestel. Na de upload: zet je telefoon op
+licht en open talenttent.org.
+
+**Nieuwe bevinding: TT-343** — het opstartscherm van de geïnstalleerde app
+blijft donker. P3.
+
+**Open uit eerdere stappen:** de gekozen stand is "voorlopig" (licht geel
+vlak, donker gouden rand); TT-342 (de vier donkere lagen).
+
+---
+
+**Vorige update:** 26-09-2026 (TT-341, stap 2) — **Het lichte thema staat in
 `styles.css`, en donker is "rustig" geworden.** Een gebruiker ziet vandaag
 alleen donker: licht is actief met `<html data-theme="licht">`, en de keuze
 daarvoor komt in stap 3. Zeven P0's staan open; TT-341 is P2 (advies Claude),
@@ -6300,7 +6348,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-341** | Licht thema, kiesbaar naast donker | **Nieuw, 26-09-2026, wens Ronald. Besluit Ronald: doorvoeren, op basis van "Licht + geel, huidig woordmerk" uit de designproef. Stap 1 gebouwd, 26-09-2026: kleuren per rol in variabelen, donker ongewijzigd. Stap 2 gebouwd, 26-09-2026: het lichte thema in `styles.css` en donker "rustig"; zie de update van die dag.** Keuze onthouden op het toestel (besluit Ronald). Bouwplan in drie sessies en open vragen: zie de updates van 26-09-2026 (designproef) en (TT-341, stap 1). **Toets P2 (advies Claude):** de app werkt zonder, maar een deel van de gebruikers vindt een lichte weergave prettiger of beter leesbaar, vooral overdag buiten. Geen gebruiker loopt vast zonder |
+| **TT-341** | Licht thema, kiesbaar naast donker | **Nieuw, 26-09-2026, wens Ronald. Besluit Ronald: doorvoeren, op basis van "Licht + geel, huidig woordmerk" uit de designproef. Stap 1 gebouwd, 26-09-2026: kleuren per rol in variabelen, donker ongewijzigd. Stap 2 gebouwd, 26-09-2026: het lichte thema in `styles.css` en donker "rustig"; zie de update van die dag. Stap 3 gebouwd en getest, 26-09-2026: de keuze "Licht of donker" in Instellingen, zonder eigen keuze volgt de app het toestel (besluit Ronald: "a"), `theme-color`, huisstijl bijgewerkt. Wacht op akkoord Ronald na upload. Open: de gekozen stand is "voorlopig"; TT-342.** Keuze onthouden op het toestel (besluit Ronald). Bouwplan in drie sessies en open vragen: zie de updates van 26-09-2026 (designproef) en (TT-341, stap 1). **Toets P2 (advies Claude):** de app werkt zonder, maar een deel van de gebruikers vindt een lichte weergave prettiger of beter leesbaar, vooral overdag buiten. Geen gebruiker loopt vast zonder |
 | **TT-332** | Na de toestemming van de ouder ontbreekt een afsluiter | **Gebouwd en getest 26-09-2026 (vervolg 2), akkoord Ronald — zie Laatste update.** Nieuw, 26-09-2026, wens Ronald (TT-323). Na "Toestemming geven" volgt een bedankscherm zonder einde. Ronald: er moet een afsluiter komen "in de zin van: u kunt dit scherm nu afsluiten". **Toets P2:** het werkt, maar de ouder weet niet dat hij klaar is. **Voorstel voor de tekst:** "Je kunt dit venster nu sluiten." — de pagina spreekt de ouder met "je" aan. |
 | **TT-333** | "Verzoek" in de app, "aanvraag" in de mails | **Gebouwd en getest 26-09-2026 (vervolg 2), wens Ronald: ook in de app "aanvraag" — zie Laatste update.** Nieuw, 26-09-2026, TT-323. Besluit TT-325: in de mails altijd "aanvraag", nooit "verzoek". De app zegt "Je verzoek is verstuurd", "Verzoek versturen…" en op de goedkeuringspagina "Dit verzoek is afgewezen" / "Een verzoek vervalt". **Toets P2:** het werkt, maar dezelfde handeling heeft twee namen. **Open vraag aan Ronald:** geldt "aanvraag" ook in de app? |
 | **TT-334** | De mails tonen de volledige URL onder de knop | **Gebouwd en ingevoerd 26-09-2026 (vervolg 4), akkoord Ronald op het voorstel hieronder; in Supabase nagemeten. Wacht op TT-323.** **Nieuw, 26-09-2026, feedback Ronald (TT-323):** "ik wil niet de hele url tonen. het is te lang en rommelig." Het blok "Werkt de knop niet? Open dan deze link:" staat in het template, dus in alle zeven mails: de drie Edge Functions en de twee Supabase-sjablonen. **Toets P2:** het werkt, maar oogt rommelig. **Voorstel:** "Werkt de knop niet? Tik dan op deze link." met alleen "deze link" klikbaar. De tekstversie houdt de volledige URL. |
@@ -6416,6 +6464,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | — | Rechtsvorm (KvK) | Ronald: "overweeg ik later" — wél relevant zodra de Play Store (TT-70) een concreet doel wordt (lost de testerseis op) |
 | — | Stickers/plectrums i.p.v. T-shirts | Eerste merchandise-idee |
 | **TT-342** | De vier donkere lagen achter venster en menu vereenvoudigen | **Nieuw, 26-09-2026, wens Ronald: later.** Nu vier waarden (55 tot 80% zwart) voor venster, opslaan, menu en wiel. Op licht hebben ze sinds TT-341 stap 2 al één waarde. **Toets P3 (advies Claude):** geen aanwijsbaar gevolg voor een gebruiker nu |
+| **TT-343** | Het opstartscherm van de geïnstalleerde app blijft donker | **Nieuw, 26-09-2026, bevinding Claude (TT-341 stap 3).** `manifest.json` kent één `background_color` (`#0d0d0d`). Wie de app op zijn beginscherm zet en zijn telefoon op licht heeft, ziet bij openen kort een donker vlak, daarna de lichte app. Een manifest kan niet per thema wisselen. Mogelijke keuze: een neutrale kleur die op beide niet stoort. **Toets P3 (advies Claude):** een flits van een fractie van een seconde; geen gebruiker loopt vast of verliest vertrouwen |
 
 ---
 

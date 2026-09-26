@@ -135,7 +135,30 @@ function herstelZoekTabblad() {
   if (mode && mode !== currentSearchMode && ZOEK_TABBLADEN.includes(mode)) setSearchMode(mode);
 }
 
+// TT-341 stap 3 (26-09-2026, besluit Ronald): licht of donker. De keuze zelf
+// en het toepassen staan bovenin index.html (lichtDonkerKeuze(),
+// pasLichtDonkerToe()), omdat ze vóór de eerste tekening moeten draaien.
+// Hier: de keuze in Instellingen, en meewisselen als het toestel wisselt.
+function kiesLichtDonker(stand) {
+  window.ttLichtDonkerBezoek = stand; // privénavigatie: geldt dan alleen dit bezoek
+  try { localStorage.setItem('tt_licht_donker', stand); } catch (e) { /* zie boven */ }
+  pasLichtDonkerToe();
+  toonLichtDonkerKeuze();
+}
+
+function toonLichtDonkerKeuze() {
+  const nu = lichtDonkerKeuze();
+  document.querySelectorAll('#lichtDonkerKeuze .segmented-btn')
+    .forEach(b => b.classList.toggle('selected', b.dataset.stand === nu));
+}
+
+if (window.matchMedia) {
+  const toestelStand = window.matchMedia('(prefers-color-scheme: light)');
+  if (toestelStand.addEventListener) toestelStand.addEventListener('change', pasLichtDonkerToe);
+}
+
 async function appInit() {
+  toonLichtDonkerKeuze();
   try {
     initModalStapeling(); // TT-229, zie hierboven
     // V-12 (13-08-2026, bijvangst): de hash moet vastgelegd worden vóórdat

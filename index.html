@@ -30,6 +30,31 @@
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d0d0d">
+<!-- TT-341 stap 3 (26-09-2026, besluit Ronald: "a"): licht of donker.
+     Standaard volgt de app het toestel. Een eigen keuze uit Instellingen
+     staat op het toestel zelf (localStorage 'tt_licht_donker': 'toestel',
+     'licht' of 'donker'), niet in de database. Dit blok staat vóór
+     styles.css, zodat de eerste tekening al in de goede stand is; anders
+     flitst de app eerst donker. core.js roept pasLichtDonkerToe() opnieuw
+     aan bij een keuze in Instellingen en als het toestel zelf wisselt.
+     theme-color kleurt de balk van de browser of de telefoon mee. -->
+<script>
+  function lichtDonkerKeuze() {
+    var s = window.ttLichtDonkerBezoek || null; /* keuze van dit bezoek gaat voor */
+    if (!s) { try { s = localStorage.getItem('tt_licht_donker'); } catch (e) { /* privénavigatie */ } }
+    return (s === 'licht' || s === 'donker') ? s : 'toestel';
+  }
+  function pasLichtDonkerToe() {
+    var keuze = lichtDonkerKeuze();
+    var licht = keuze === 'licht' || (keuze === 'toestel' && !!window.matchMedia
+      && window.matchMedia('(prefers-color-scheme: light)').matches);
+    if (licht) document.documentElement.setAttribute('data-theme', 'licht');
+    else document.documentElement.removeAttribute('data-theme');
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute('content', licht ? '#F6F3EC' : '#0d0d0d');
+  }
+  pasLichtDonkerToe();
+</script>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <!-- TT-318 (24-09-2026): Alfa Slab One is weg uit deze regel; het woordmerk
@@ -50,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260926v">
+<link rel="stylesheet" href="styles.css?v=20260926w">
 </head>
 <body>
 
@@ -1979,6 +2004,23 @@
     <div class="search-filters">
       <div class="panel-title" style="margin-bottom:20px;">Instellingen</div>
 
+      <!-- TT-341 stap 3 (26-09-2026): licht of donker. Geen venster en geen
+           Opslaan: de keuze werkt meteen, dan zie je direct wat je kiest.
+           "Licht of donker" en niet "Weergave": dat woord betekent in Zoeken
+           al kaarten of lijst (projectinstructies §6, één betekenis per
+           woord). -->
+      <div class="tile tile-keuze">
+        <div style="flex:1;">
+          <div class="tile-title">Licht of donker</div>
+          <div class="tile-sub">geldt alleen op dit toestel</div>
+          <div class="segmented-control" id="lichtDonkerKeuze">
+            <div class="segmented-btn" data-stand="toestel" onclick="kiesLichtDonker('toestel')">Zoals mijn toestel</div>
+            <div class="segmented-btn" data-stand="licht" onclick="kiesLichtDonker('licht')">Licht</div>
+            <div class="segmented-btn" data-stand="donker" onclick="kiesLichtDonker('donker')">Donker</div>
+          </div>
+        </div>
+      </div>
+
       <!-- TT-299 (20-09-2026, besluit Ronald): e-mailadres en wachtwoord
            horen bij het inlogaccount, niet bij het profiel. Ze staan daarom
            hier en niet bij "Wie ben je" — dat scherm schrijft alleen naar
@@ -2560,7 +2602,7 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260926f"></script>
+<script src="core.js?v=20260926g"></script>
 <script src="utils.js?v=20260926u"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260923a"></script>
