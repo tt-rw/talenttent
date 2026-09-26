@@ -273,6 +273,15 @@ def blok_browser():
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
+        # TT-341 stap 3: de app volgt licht of donker van het toestel, en
+        # Playwright doet zich standaard voor als een toestel op licht. De
+        # blokken hieronder zijn voor donker geschreven. Elke context krijgt
+        # daarom donker, tenzij een blok zelf iets anders vraagt (blok 41).
+        _nieuwe_context = browser.new_context
+        def _context_donker(**kw):
+            kw.setdefault("color_scheme", "dark")
+            return _nieuwe_context(**kw)
+        browser.new_context = _context_donker
         ctx = browser.new_context(viewport={"width": 390, "height": 844})
         page = ctx.new_page()
         page.on("pageerror", lambda e: page_errors.append(str(e)))
@@ -4206,12 +4215,82 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("licht: ongelezen blijft hetzelfde rood als donker", l40["ongelezen"] == d40["ongelezen"], l40["ongelezen"])
         check("licht: veldlabel donker, gewone letters",
               l40["label"] == ["none", "rgb(30, 30, 30)"], json.dumps(l40["label"]))
-        check("zonder data-theme is de app donker (stap 3 maakt de keuze)",
+        check("toestel op donker, geen eigen keuze: de app is donker (geen data-theme)",
               page.evaluate("document.documentElement.dataset.theme") is None, "")
         # De profielkleur per persoon bestaat niet meer (Ronald, 26-09-2026): geen
         # enkele weergave leest nog profile_color. Schrijven bij aanmelden blijft.
         leest = [f for f in JS_FILES if re.search(r"\.profile_color|profile_color[,)]", open(os.path.join(ROOT, f)).read())]
         check("geen JS-bestand leest nog profile_color", not leest, ", ".join(leest))
+
+        print("\nBlok 41 — licht of donker kiezen (TT-341 stap 3)")
+        # Besluit Ronald, 26-09-2026 ("a"): zonder eigen keuze volgt de app het
+        # toestel. De keuze in Instellingen staat op het toestel (localStorage).
+        html41 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        check("het blok voor licht of donker staat vóór styles.css (geen flits bij laden)",
+              0 < html41.find("pasLichtDonkerToe();") < html41.find('href="styles.css'), "")
+        def open41(schema, keuze=None):
+            c = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme=schema)
+            if keuze:
+                c.add_init_script(f"try {{ localStorage.setItem('tt_licht_donker', '{keuze}'); }} catch (e) {{}}")
+            pg = c.new_page()
+            fouten = []
+            pg.on("pageerror", lambda e: fouten.append(str(e)))
+            pg.route("**/supabase-js@2/**", lambda r: r.fulfill(
+                status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
+                        "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                pg.route(pat, lambda r: r.abort())
+            pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            pg.wait_for_timeout(300)
+            return c, pg, fouten
+        stand41 = """() => ({ thema: document.documentElement.dataset.theme || 'donker',
+            balk: document.querySelector('meta[name=theme-color]').content,
+            bg: getComputedStyle(document.body).backgroundColor,
+            gekozen: [...document.querySelectorAll('#lichtDonkerKeuze .segmented-btn.selected')].map(b => b.dataset.stand),
+            opslag: localStorage.getItem('tt_licht_donker') })"""
+        c41, p41, f41 = open41("light")
+        s = p41.evaluate(stand41)
+        check("toestel op licht, geen keuze: de app is licht",
+              s["thema"] == "licht" and s["bg"] == "rgb(246, 243, 236)", json.dumps(s))
+        check("en de balk van het toestel is crème (theme-color #F6F3EC)", s["balk"] == "#F6F3EC", s["balk"])
+        check("Instellingen toont 'Zoals mijn toestel' als gekozen", s["gekozen"] == ["toestel"], json.dumps(s["gekozen"]))
+        p41.evaluate("window.showView('instellingen')")
+        p41.wait_for_timeout(150)
+        maat41 = p41.evaluate("""() => [...document.querySelectorAll('#lichtDonkerKeuze .segmented-btn')].map(b => {
+            const r = b.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.height), Math.round(r.right)]; })""")
+        check("drie keuzeknoppen naast elkaar, even hoog, minstens 44px, binnen het scherm",
+              len(maat41) == 3 and len({m[0] for m in maat41}) == 1 and len({m[1] for m in maat41}) == 1
+              and all(m[1] >= 44 and m[2] <= 390 for m in maat41),
+              json.dumps(maat41))
+        p41.click("#lichtDonkerKeuze [data-stand=donker]")
+        s = p41.evaluate(stand41)
+        check("kiezen voor Donker werkt meteen, ook op een toestel op licht",
+              s["thema"] == "donker" and s["balk"] == "#0d0d0d" and s["gekozen"] == ["donker"], json.dumps(s))
+        check("de keuze staat op het toestel", s["opslag"] == "donker", str(s["opslag"]))
+        p41.reload(wait_until="load"); p41.wait_for_timeout(300)
+        s = p41.evaluate(stand41)
+        check("na opnieuw laden blijft Donker staan", s["thema"] == "donker" and s["gekozen"] == ["donker"], json.dumps(s))
+        p41.click("#lichtDonkerKeuze [data-stand=toestel]") if p41.is_visible("#lichtDonkerKeuze") else \
+            p41.evaluate("kiesLichtDonker('toestel')")
+        p41.emulate_media(color_scheme="dark"); p41.wait_for_timeout(100)
+        d = p41.evaluate(stand41)
+        p41.emulate_media(color_scheme="light"); p41.wait_for_timeout(100)
+        l = p41.evaluate(stand41)
+        check("op 'Zoals mijn toestel' wisselt de app mee als het toestel wisselt",
+              d["thema"] == "donker" and l["thema"] == "licht", json.dumps([d["thema"], l["thema"]]))
+        check("geen paginafouten (toestel op licht)", not f41, "; ".join(f41)[:300])
+        c41.close()
+        c41, p41, f41 = open41("dark")
+        s = p41.evaluate(stand41)
+        check("toestel op donker, geen keuze: de app is donker",
+              s["thema"] == "donker" and s["balk"] == "#0d0d0d" and s["bg"] == "rgb(13, 13, 13)", json.dumps(s))
+        c41.close()
+        c41, p41, f41 = open41("dark", "licht")
+        s = p41.evaluate(stand41)
+        check("eigen keuze Licht gaat voor het toestel op donker",
+              s["thema"] == "licht" and s["gekozen"] == ["licht"], json.dumps(s))
+        check("geen paginafouten (eigen keuze)", not f41, "; ".join(f41)[:300])
+        c41.close()
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
