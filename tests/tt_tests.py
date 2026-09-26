@@ -218,10 +218,6 @@ def blok1_statisch():
     zonder_v = [s for s, v in local if not v]
     check("elk lokaal script heeft ?v=", not zonder_v, f"zonder ?v=: {zonder_v}")
 
-    # Dode bestanden mogen niet geladen worden.
-    dood = [s for s in order if s in ("profiel-gedeeld.js", "profiel-v2.html")]
-    check("dode bestanden niet geladen", not dood, f"wel geladen: {dood}")
-
     check("geen emoji in de UI", not re.search(
         r"[\U0001F300-\U0001FAFF❤⭐]", html), "emoji gevonden in index.html")
 
@@ -229,7 +225,9 @@ def blok1_statisch():
     # databasefunctie, in één transactie. Een los .delete() op deze tabellen
     # in de opslagpaden is precies de fout die TT-281 wegnam.
     los = []
-    for f in ("wizard.js", "musicians.js"):
+    # bands.js staat erbij sinds 26-09-2026: saveBand() en saveBandRun()
+    # (band_wanted) zijn toen uit musicians.js verhuisd.
+    for f in ("wizard.js", "musicians.js", "bands.js"):
         src = open(os.path.join(ROOT, f), encoding="utf-8").read()
         for t in ("musician_instruments", "musician_genres", "musician_songs",
                   "musician_media", "band_wanted"):

@@ -42,9 +42,6 @@ VERWACHTE_VIEWS = [
     "instellingen", "reset", "toestemming",
 ]
 
-# Bewust in de repo, bewust niet geladen door index.html (projectinstructies §7).
-DODE_BESTANDEN = {"profiel-v2.html", "profiel-gedeeld.js"}
-
 # Documenten die in het claude.ai-project horen, niet in de repo (§8).
 PROJECTDOCUMENTEN = [
     "huisstijl-en-consistentie", "app-first-toetslijst",
@@ -136,7 +133,7 @@ def blok_a():
 
     # A5 - geen JS-bestand dat niemand laadt
     op_schijf = {f for f in os.listdir(REPO) if f.endswith(".js")}
-    wees = op_schijf - set(BINDENDE_SCRIPTVOLGORDE) - DODE_BESTANDEN
+    wees = op_schijf - set(BINDENDE_SCRIPTVOLGORDE)
     toets("A", "geen onbekend JS-bestand in de hoofdmap",
           not wees, "A5", "wordt door niets geladen: %s" % kort(wees))
 
