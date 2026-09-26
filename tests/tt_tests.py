@@ -4306,6 +4306,75 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("geen paginafouten (eigen keuze)", not f41, "; ".join(f41)[:300])
         c41.close()
 
+        print("\nBlok 42 — de link uit 'Kies een nieuw wachtwoord' (TT-344)")
+        # Gemeten op talenttent.org, 26-09-2026: de herstellink logt in, en de
+        # app stuurde daarna door naar Mijn Profiel. Deze opstart bootst
+        # supabase-js na: het #-deel verdwijnt vóór getSession() antwoordt, de
+        # melding PASSWORD_RECOVERY komt pas daarna (setTimeout 0), en de
+        # database antwoordt trager dan die melding — zoals op de echte site.
+        def herstel_opstart(zonder_gebruikersnaam):
+            body = stub_js + """
+window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+(function () {
+  const maak = window.supabase.createClient;
+  window.supabase.createClient = function () {
+    const c = maak.apply(this, arguments);
+    const vanTabel = c.from.bind(c);
+    c.from = function (t) {
+      const q = vanTabel(t);
+      if (t === 'musicians') {
+        const dan = q.then.bind(q);
+        q.then = (a, b) => new Promise(r => setTimeout(r, 300)).then(() => dan(a, b));
+      }
+      return q;
+    };
+    const sessie = c.auth.getSession.bind(c.auth);
+    let gemeld = false;
+    c.auth.getSession = async function () {
+      const r = await sessie();
+      if (!gemeld) {
+        gemeld = true;
+        location.hash = '';
+        setTimeout(() => { if (window.TT_STUB.authCallback) window.TT_STUB.authCallback('PASSWORD_RECOVERY', r.data.session); }, 0);
+      }
+      return r;
+    };
+    return c;
+  };
+})();
+"""
+            if zonder_gebruikersnaam:
+                body += "\nwindow.TT_STUB.data.musicians[0].username = null;\n"
+            c = browser.new_context(viewport={"width": 390, "height": 844},
+                                    is_mobile=True, has_touch=True)
+            fouten = []
+            pg = c.new_page()
+            pg.on("pageerror", lambda e: fouten.append(str(e)))
+            pg.route("**/supabase-js@2/**", lambda r: r.fulfill(
+                status=200, content_type="application/javascript", body=body))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
+                        "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                pg.route(pat, lambda r: r.abort())
+            pg.goto(f"http://127.0.0.1:{port}/index.html#access_token=x&expires_in=3600"
+                    "&refresh_token=y&token_type=bearer&type=recovery", wait_until="load")
+            pg.wait_for_timeout(1500)
+            uit = pg.evaluate("""() => ({
+              views: [...document.querySelectorAll('.app-view.active')].map(v => v.id),
+              velden: !!document.getElementById('resetPassword1') && !!document.getElementById('resetPassword2'),
+              poort: document.getElementById('usernameGateModal').classList.contains('visible')
+            })""")
+            c.close()
+            return uit, fouten
+
+        herstel, f42 = herstel_opstart(False)
+        check("TT-344: de herstellink blijft op het scherm 'Nieuw wachtwoord'",
+              herstel["views"] == ["view-reset"] and herstel["velden"], json.dumps(herstel))
+        herstel2, f42b = herstel_opstart(True)
+        check("TT-344: ook zonder gebruikersnaam ligt er geen scherm over 'Nieuw wachtwoord'",
+              herstel2["views"] == ["view-reset"] and not herstel2["poort"], json.dumps(herstel2))
+        check("TT-344: geen paginafouten bij de herstellink",
+              not f42 and not f42b, "; ".join(f42 + f42b)[:300])
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
