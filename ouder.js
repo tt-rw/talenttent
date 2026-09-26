@@ -343,12 +343,16 @@ async function toestemmingPaginaOpenen(code) {
 }
 
 // Eén opbouw voor elk eindscherm op deze pagina: kop plus meldingen.
-function toestemmingMeldingTonen(kop, regels) {
+// TT-336: ook de pagina van #bevestig/<code> (wizard.js). Die heeft soms één
+// knop eronder, `knop` = { tekst, actie }. Een ouder krijgt nooit een knop:
+// deze pagina is zijn hele bezoek (besluit Ronald, 23-09-2026).
+function toestemmingMeldingTonen(kop, regels, knop) {
   const vak = document.getElementById('toestemmingInhoud');
   if (!vak) return;
   vak.innerHTML = `
     <h1 class="panel-title">${escHtml(kop)}</h1>
-    ${regels.map(r => `<p class="toestemming-melding">${escHtml(r)}</p>`).join('\n    ')}`;
+    ${regels.map(r => `<p class="toestemming-melding">${escHtml(r)}</p>`).join('\n    ')}` +
+    (knop ? `\n    <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="${knop.actie}">${escHtml(knop.tekst)}</button>` : '');
 }
 
 // TT-332 (26-09-2026): de ouder weet na zijn antwoord niet dat hij klaar is.

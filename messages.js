@@ -56,6 +56,10 @@ function closeMessageComposer() {
 async function insertMessage(recipientId, body) {
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Maak eerst een profiel aan om berichten te sturen.'); return false; }
+  // TT-336: zonder bevestigd e-mailadres geen berichten. Het bericht blijft
+  // in het invoerveld staan.
+  const wacht = await emailWachtOpBevestiging();
+  if (wacht) { showToast(emailBevestigMelding(wacht, 'berichten sturen')); return false; }
   const text = (body || '').trim();
   if (!text) { showToast('Vul een bericht in.'); return false; }
   try {

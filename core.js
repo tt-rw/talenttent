@@ -86,6 +86,31 @@ async function getMyMusicianId() {
   return myMusicianId;
 }
 
+// TT-336 (26-09-2026, besluiten Ronald): wie 16 of ouder is, stuurt pas
+// berichten en richt pas een band op na de klik in de mail "Bevestig je
+// e-mailadres". De database weigert het ook zelf; deze vraag zorgt dat de
+// gebruiker eerst een gewone zin ziet in plaats van een foutmelding.
+// Geeft 'wacht' (op "Profiel aanmaken" gedrukt, mail nog niet aangeklikt),
+// 'onaf' (de wizard nog niet afgemaakt) of null (niets aan de hand).
+// Bij een fout: null. Dan houdt de app niets tegen en beslist de database.
+async function emailWachtOpBevestiging() {
+  if (!currentUser) return null;
+  const { data, error } = await db.from('musicians')
+    .select('profile_complete, email_bevestigd_op, wacht_op_bevestiging')
+    .eq('user_id', currentUser.id).maybeSingle();
+  if (error) { logCaught('emailWachtOpBevestiging', error); return null; }
+  if (!data || data.profile_complete || data.email_bevestigd_op) return null;
+  return data.wacht_op_bevestiging ? 'wacht' : 'onaf';
+}
+
+// De zin bij emailWachtOpBevestiging(). `wat`: "berichten sturen" of "een band
+// oprichten".
+function emailBevestigMelding(stand, wat) {
+  return stand === 'wacht'
+    ? `Bevestig eerst je e-mailadres. Tik op de knop in de mail die we je stuurden. Daarna kun je ${wat}.`
+    : `Maak eerst je profiel af. Daarna kun je ${wat}.`;
+}
+
 // Bugfix, opnieuw hersteld 23-08-2026 (was al eens gerepareerd op
 // 13-08-2026, die reparatie was uit dit bestand verdwenen — zie
 // onAuthStateChange hieronder voor de volledige toelichting).
@@ -199,7 +224,7 @@ async function appInit() {
     // na het laden door naar Mijn Profiel, en kon niemand een nieuw wachtwoord
     // kiezen.
     opstartHerstelt = !!session?.user && (herstelLinkBijStart || !!gesprekMatch ||
-      /^(profiel|band|toestemming)\//.test(hashView) ||
+      /^(profiel|band|toestemming|bevestig)\//.test(hashView) ||
       (HERSTELBARE_VIEWS.includes(hashView) && !['auth', 'register'].includes(hashView)));
     if (session?.user) {
       currentUser = session.user;
@@ -281,7 +306,12 @@ async function appInit() {
     // de code komt alleen uit de mail. Staat vóór de rest omdat een ouder
     // geen gebruiker is en nergens anders heen hoeft.
     const toestemmingMatch = hashView.match(/^toestemming\/(.+)$/);
-    if (toestemmingMatch) {
+    // TT-336: de knop in de mail "Bevestig je e-mailadres". Werkt op elk
+    // toestel, ook zonder inlog; zie bevestigPaginaOpenen() in wizard.js.
+    const bevestigMatch = hashView.match(/^bevestig\/(.+)$/);
+    if (bevestigMatch) {
+      await bevestigPaginaOpenen(decodeURIComponent(bevestigMatch[1]));
+    } else if (toestemmingMatch) {
       await toestemmingPaginaOpenen(decodeURIComponent(toestemmingMatch[1]));
     } else if (hashView === 'toestemming-gegeven') {
       // TT-331: de knop in de mail aan het kind, na de goedkeuring.
@@ -1242,7 +1272,8 @@ function showView(view, mode) {
   if (mode !== 'pop') {
     // TT-42: de goedkeuringspagina houdt de code in de adresregel. Zou
     // showView() er '#toestemming' van maken, dan werkt verversen niet meer.
-    const hash = (view === 'toestemming' && /^#toestemming(\/|-gegeven$)/.test(location.hash))
+    // TT-336: de pagina van #bevestig/<code> ook.
+    const hash = (view === 'toestemming' && /^#(toestemming(\/|-gegeven$)|bevestig\/)/.test(location.hash))
       ? location.hash
       : '#' + view;
     if (mode === 'redirect') safeHistoryReplace({ view }, hash);

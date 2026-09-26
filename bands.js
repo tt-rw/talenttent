@@ -266,9 +266,16 @@ async function executeRemoveMember(bandId, musicianId) {
 
 // ─── Mijn bands ───────────────────────────────────────────────────────────────
 
-function showCreateBandForm() {
+async function showCreateBandForm() {
   const form = document.getElementById('createBandForm');
   const wasHidden = form.style.display === 'none' || !form.style.display;
+  // TT-336 (besluit Ronald, 1a): een band oprichten kan pas na de klik in de
+  // mail. Wie een band opricht, is via die band te vinden. Eerst vragen, dan
+  // pas het formulier: anders vult iemand alles in voor niets.
+  if (wasHidden) {
+    const wacht = await emailWachtOpBevestiging();
+    if (wacht) { showToast(emailBevestigMelding(wacht, 'een band oprichten')); return; }
+  }
   if (wasHidden) {
     resetBandForm();
     form.style.display = 'block';

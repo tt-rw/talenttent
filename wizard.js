@@ -275,6 +275,7 @@ function renderCompletenessMeter(m) {
 async function loadMyProfile() {
   if (!currentUser) return;
   renderOnboardingResumeBanner();
+  renderEmailBevestigBanner(); // TT-336
   const el = document.getElementById('myProfileContent');
   el.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Laden...</div>';
 
@@ -444,17 +445,198 @@ async function persistEditedProfile() {
 
 async function saveEditedProfile() {
   if (!editingMusicianId) return; // defensief, hoort niet voor te komen
+  // TT-336 (26-09-2026): bij 16+ eindigt "Profiel aanmaken" hier, niet in de
+  // rest van submitProfile() — het account en de rij bestaan al sinds stap 1.
+  // state.onboarding zegt dat dit de afronding van een nieuwe registratie is.
+  // Tot TT-336 toonde de app dan "Profiel bijgewerkt!" en bleef de bewaarde
+  // voortgang staan, met "Je bent nog bezig met je profiel" op Mijn Profiel.
+  const nieuw = !!state.onboarding;
   showSaving();
   myOwnCity = null; // eigen plaats kan net gewijzigd zijn — cache opnieuw laten opbouwen
   try {
     await persistEditedProfile();
+    const mid = editingMusicianId;
     editingMusicianId = null;
+    if (nieuw) {
+      clearOnboardingProgress();
+      state.onboarding = false;
+      // De database houdt het profiel onzichtbaar tot de klik in de mail.
+      if (await profielWachtOpBevestiging(mid)) { await bevestigingStarten(); return; }
+      showSaveSuccess(false);
+      return;
+    }
     // isEdit=true: toont "Profiel bijgewerkt!" en gaat na 1,2s naar Mijn
     // Profiel — ongeacht vanaf welke stap er is opgeslagen.
     showSaveSuccess(true);
   } catch (err) {
     logCaught('saveEditedProfile', err);
     showSaveError(err.message);
+  }
+}
+
+// ─── TT-336: het e-mailadres bevestigen (16 jaar en ouder) ──────────────────
+// Besluiten Ronald, 26-09-2026: bevestigen gebeurt na "Profiel aanmaken". Tot
+// de klik in de mail mag iemand rondkijken en zoeken, maar is hij niet te
+// vinden, stuurt hij geen berichten en richt hij geen band op. Een verkeerd
+// getypt e-mailadres is aan te passen (2a). De database bewaakt dit; de Edge
+// Function `email-bevestigen` stuurt de mail en zet het profiel online.
+// Woordkeus: altijd "e-mailadres", nooit "adres" (Ronald, 26-09-2026).
+
+async function bevestigApi(actie, gegevens) {
+  const { data, error } = await db.functions.invoke('email-bevestigen', {
+    body: Object.assign({ actie }, gegevens || {})
+  });
+  if (error) throw new Error(await extractFnErrorDetail(error));
+  if (data && data.error) throw new Error(data.error);
+  return data || {};
+}
+
+// Leest of de database het profiel net heeft laten wachten. Bij een fout:
+// niet wachten — dan toont de app "Profiel aangemaakt!", zoals vóór TT-336.
+async function profielWachtOpBevestiging(mid) {
+  const { data, error } = await db.from('musicians')
+    .select('wacht_op_bevestiging').eq('id', mid).maybeSingle();
+  if (error) { logCaught('profielWachtOpBevestiging', error); return false; }
+  return !!data?.wacht_op_bevestiging;
+}
+
+// Na "Profiel aanmaken": de mail aanvragen en naar Mijn Profiel, waar het
+// blok "Nog één stap" staat. Mislukt de mail, dan staat daar de knop
+// "Mail opnieuw sturen".
+async function bevestigingStarten() {
+  // Kwam iemand via het berichticoon in de wizard (TT-32)? Een bericht kan
+  // pas na de klik in de mail; niet later alsnog het berichtvenster openen.
+  pendingMessageRecipient = null;
+  try { await bevestigApi('start'); }
+  catch (e) {
+    logCaught('bevestigingStarten', e);
+    showToast('De mail kon niet worden verstuurd. Tik op "Mail opnieuw sturen".');
+  }
+  hideSaving();
+  showView('myprofile');
+}
+
+// Het blok bovenaan Mijn Profiel. Alleen zichtbaar zolang het profiel wacht.
+async function renderEmailBevestigBanner() {
+  const el = document.getElementById('emailBevestigBanner');
+  if (!el || !currentUser) return;
+  const { data, error } = await db.from('musicians')
+    .select('wacht_op_bevestiging').eq('user_id', currentUser.id).maybeSingle();
+  if (error) logCaught('renderEmailBevestigBanner', error);
+  if (error || !data?.wacht_op_bevestiging) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div style="border:1px solid var(--accent);border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px;">Nog één stap: bevestig je e-mailadres</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">We hebben een mail gestuurd naar <strong id="bevestigEmailadres" style="color:var(--text);overflow-wrap:anywhere;">${escHtml(currentUser.email || '')}</strong>. Tik op de knop in die mail. Daarna staat je profiel online en kun je berichten sturen.</div>
+      <div id="bevestigKnoppen">
+        <button class="btn btn-ghost" id="bevestigOpnieuwBtn" style="width:100%;" onclick="bevestigMailOpnieuw()">Mail opnieuw sturen</button>
+        <div style="text-align:center;margin-top:12px;">
+          <button onclick="bevestigEmailadresTonen(true)" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Roboto',sans-serif;text-decoration:underline;">E-mailadres klopt niet? Pas het aan</button>
+        </div>
+      </div>
+      <div id="bevestigEmailadresVak" style="display:none;">
+        <div class="field">
+          <label for="bevestigNieuwEmailadres">Je juiste e-mailadres</label>
+          <input type="email" id="bevestigNieuwEmailadres" placeholder="jouw@email.nl" autocomplete="email" inputmode="email" enterkeyhint="send" onkeydown="submitOnEnter(event, bevestigEmailadresOpslaan)">
+        </div>
+        <div class="btn-row" style="margin-top:12px;">
+          <button class="btn btn-ghost" onclick="bevestigEmailadresTonen(false)">Annuleren</button>
+          <button class="btn btn-primary" id="bevestigEmailadresBtn" onclick="bevestigEmailadresOpslaan()">Mail sturen</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function bevestigEmailadresTonen(aan) {
+  const vak = document.getElementById('bevestigEmailadresVak');
+  const knoppen = document.getElementById('bevestigKnoppen');
+  if (!vak || !knoppen) return;
+  vak.style.display = aan ? '' : 'none';
+  knoppen.style.display = aan ? 'none' : '';
+  const veld = document.getElementById('bevestigNieuwEmailadres');
+  clearFieldErrors(vak);
+  if (veld) veld.value = '';
+}
+
+// De uitkomst van `start` of `e-mailadres`: al bevestigd (op een ander
+// toestel), of een nieuwe mail.
+function bevestigUitkomstTonen(uit) {
+  if (uit.bevestigd) {
+    showToast('Je e-mailadres is al bevestigd. Je profiel staat online.');
+    loadMyProfile();
+    return;
+  }
+  if (uit.email && currentUser) currentUser.email = uit.email;
+  showToast(`Mail gestuurd naar ${uit.email || 'je e-mailadres'}.`);
+}
+
+async function bevestigMailOpnieuw() {
+  const knop = document.getElementById('bevestigOpnieuwBtn');
+  if (knop) knop.disabled = true;
+  try { bevestigUitkomstTonen(await bevestigApi('start')); }
+  catch (e) { logCaught('bevestigMailOpnieuw', e); showToast(e.message || friendlyErrorMessage(e)); }
+  finally { if (knop) knop.disabled = false; }
+}
+
+async function bevestigEmailadresOpslaan() {
+  const vak = document.getElementById('bevestigEmailadresVak');
+  const veld = document.getElementById('bevestigNieuwEmailadres');
+  const knop = document.getElementById('bevestigEmailadresBtn');
+  if (!vak || !veld) return;
+  clearFieldErrors(vak);
+  const email = veld.value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setFieldError(veld, 'Vul een geldig e-mailadres in'); return; }
+  if (knop) knop.disabled = true;
+  try {
+    const uit = await bevestigApi('e-mailadres', { email });
+    bevestigUitkomstTonen(uit);
+    if (!uit.bevestigd) await renderEmailBevestigBanner();
+  } catch (e) {
+    logCaught('bevestigEmailadresOpslaan', e);
+    // Een fout over het e-mailadres zelf hoort bij het veld; de rest is een toast.
+    if (/e-mailadres/i.test(e.message || '')) setFieldError(veld, e.message.replace(/\.$/, ''));
+    else showToast(e.message || friendlyErrorMessage(e));
+  } finally { if (knop) knop.disabled = false; }
+}
+
+// De knop in de mail: #bevestig/<code>. Werkt op elk toestel en in elke
+// browser, ook zonder inlog. Dezelfde pagina als die van de ouder
+// (view-toestemming, toestemmingMeldingTonen() in ouder.js), zodat er geen
+// zestiende view bij komt. Is hier hetzelfde account ingelogd, dan gaat het
+// meteen door naar Mijn Profiel.
+async function bevestigPaginaOpenen(code) {
+  showView('toestemming');
+  toestemmingMeldingTonen('E-mailadres bevestigen', ['Even geduld...']);
+  let uit;
+  try { uit = await bevestigApi('bevestig', { code }); }
+  catch (e) {
+    logCaught('bevestigPaginaOpenen', e);
+    toestemmingMeldingTonen('Er ging iets mis', [
+      'We konden je e-mailadres nu niet bevestigen. Tik over een paar minuten opnieuw op de knop in de mail.']);
+    return;
+  }
+  const gelukt = uit.stand === 'bevestigd' || uit.stand === 'al';
+  if (gelukt && currentUser && uit.musician_id && uit.musician_id === await getMyMusicianId()) {
+    showView('myprofile', 'redirect');
+    showToast(uit.stand === 'bevestigd'
+      ? 'Je e-mailadres is bevestigd. Je profiel staat online.'
+      : 'Je e-mailadres was al bevestigd.');
+    return;
+  }
+  const knop = currentUser
+    ? { tekst: 'Naar mijn profiel', actie: 'naarHoogsteScherm()' }
+    : { tekst: 'Inloggen', actie: "showView('auth')" };
+  if (uit.stand === 'bevestigd') {
+    toestemmingMeldingTonen('Je e-mailadres is bevestigd',
+      ['Je profiel staat online. Muzikanten kunnen je nu vinden.'], knop);
+  } else if (uit.stand === 'al') {
+    toestemmingMeldingTonen('Je e-mailadres is al bevestigd', ['Je profiel staat online.'], knop);
+  } else if (uit.stand === 'oud') {
+    toestemmingMeldingTonen('Deze link werkt niet meer',
+      ['Je hebt je e-mailadres daarna nog aangepast. Gebruik de knop in de nieuwste mail.']);
+  } else {
+    toestemmingMeldingTonen('Deze link werkt niet',
+      ['Heb je meer mails van ons gekregen? Gebruik dan de knop in de nieuwste.']);
   }
 }
 
