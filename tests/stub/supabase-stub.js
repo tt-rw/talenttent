@@ -61,7 +61,9 @@
       band_wanted: [{ band_id: 'b1', instrument: 'Bas' }],
       messages: [], postcode_cache: [], media: [], app_error_log: [],
       // TT-06 (18-09-2026): melden en blokkeren.
-      musician_blocks: [], musician_reports: []
+      musician_blocks: [], musician_reports: [],
+      // TT-295 (26-09-2026): de bewaarde zoekopdracht, één rij per muzikant.
+      musician_saved_search: []
     },
     rpcResults: {
       tt_search_musicians: [], tt_search_musicians_anon: [],
@@ -155,7 +157,7 @@
     select(cols) { if (this.op === 'select') this.columns = cols || '*'; else this.columns = cols || '*'; return this; }
     insert(rows) { this.op = 'insert'; this.payload = rows; return this; }
     update(vals) { this.op = 'update'; this.payload = vals; return this; }
-    upsert(rows) { this.op = 'upsert'; this.payload = rows; return this; }
+    upsert(rows, opts) { this.op = 'upsert'; this.payload = rows; this.conflict = opts && opts.onConflict; return this; }
     delete() { this.op = 'delete'; return this; }
     eq(c, v) { this.filters.push({ t: 'eq', c, v }); return this; }
     neq(c, v) { this.filters.push({ t: 'neq', c, v }); return this; }
@@ -218,7 +220,12 @@
         const rows = (Array.isArray(this.payload) ? this.payload : [this.payload]).map((r) =>
           // Zoals de database: een nieuwe rij krijgt zelf een tijdstip (TT-277).
           (r && typeof r === 'object' && !('created_at' in r)) ? Object.assign({ created_at: new Date().toISOString() }, r) : r);
-        TT_STUB.data[this.table] = (TT_STUB.data[this.table] || []).concat(clone(rows));
+        // TT-295: upsert met onConflict vervangt de rij met dezelfde sleutel,
+        // zoals de database. Zonder onConflict blijft het een toevoeging.
+        const sleutel = this.op === 'upsert' ? this.conflict : null;
+        const bestaand = (TT_STUB.data[this.table] || []).filter((r) =>
+          !sleutel || !rows.some((n) => n && n[sleutel] === r[sleutel]));
+        TT_STUB.data[this.table] = bestaand.concat(clone(rows));
         const out = clone(rows);
         if (this.singleMode) return { data: out[0] || null, error: null };
         return { data: out, error: null };
