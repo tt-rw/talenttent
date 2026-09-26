@@ -4246,32 +4246,46 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         stand41 = """() => ({ thema: document.documentElement.dataset.theme || 'donker',
             balk: document.querySelector('meta[name=theme-color]').content,
             bg: getComputedStyle(document.body).backgroundColor,
-            gekozen: [...document.querySelectorAll('#lichtDonkerKeuze .segmented-btn.selected')].map(b => b.dataset.stand),
+            gekozen: document.getElementById('themaKeuze').value,
+            tegel: document.querySelector('#themaTegel .tile-sub').textContent,
             opslag: localStorage.getItem('tt_licht_donker') })"""
+        def kies41(pg, stand):
+            pg.click("#themaTegel"); pg.wait_for_timeout(300)
+            pg.click(f"#themaMenu .choice-option[data-waarde={stand}]"); pg.wait_for_timeout(350)
         c41, p41, f41 = open41("light")
         s = p41.evaluate(stand41)
         check("toestel op licht, geen keuze: de app is licht",
               s["thema"] == "licht" and s["bg"] == "rgb(246, 243, 236)", json.dumps(s))
         check("en de balk van het toestel is crème (theme-color #F6F3EC)", s["balk"] == "#F6F3EC", s["balk"])
-        check("Instellingen toont 'Zoals mijn toestel' als gekozen", s["gekozen"] == ["toestel"], json.dumps(s["gekozen"]))
+        check("de tegel Thema toont 'Zoals mijn toestel'",
+              s["gekozen"] == "toestel" and s["tegel"].startswith("Zoals mijn toestel"), json.dumps(s))
         p41.evaluate("window.showView('instellingen')")
         p41.wait_for_timeout(150)
-        maat41 = p41.evaluate("""() => [...document.querySelectorAll('#lichtDonkerKeuze .segmented-btn')].map(b => {
-            const r = b.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.height), Math.round(r.right)]; })""")
-        check("drie keuzeknoppen naast elkaar, even hoog, minstens 44px, binnen het scherm",
-              len(maat41) == 3 and len({m[0] for m in maat41}) == 1 and len({m[1] for m in maat41}) == 1
-              and all(m[1] >= 44 and m[2] <= 390 for m in maat41),
-              json.dumps(maat41))
-        p41.click("#lichtDonkerKeuze [data-stand=donker]")
+        # Besluit Ronald, 26-09-2026: de tegel is even groot als de andere, en een
+        # tik opent een klein menu waarin je kiest.
+        hoogtes = p41.evaluate("[...document.querySelectorAll('#view-instellingen .tile')].map(t => Math.round(t.getBoundingClientRect().height))")
+        check("de tegel Thema is even hoog als de andere tegels", len(set(hoogtes)) == 1, json.dumps(hoogtes))
+        p41.click("#themaTegel"); p41.wait_for_timeout(300)
+        menu41 = p41.evaluate("""() => { const m = document.getElementById('themaMenu');
+            return { open: m.classList.contains('open'),
+                     rijen: [...m.querySelectorAll('.choice-option')].map(r => [r.dataset.waarde, Math.round(r.getBoundingClientRect().height), r.getAttribute('aria-selected')]),
+                     laag: !!document.querySelector('.menu-laag') }; }""")
+        check("een tik op de tegel opent het keuzemenu met drie regels van 44px, de keuze van nu gemarkeerd",
+              menu41["open"] and [r[0] for r in menu41["rijen"]] == ["toestel", "licht", "donker"]
+              and all(r[1] >= 44 for r in menu41["rijen"]) and menu41["rijen"][0][2] == "true" and menu41["laag"],
+              json.dumps(menu41))
+        p41.click("#themaMenu .choice-option[data-waarde=donker]"); p41.wait_for_timeout(350)
         s = p41.evaluate(stand41)
-        check("kiezen voor Donker werkt meteen, ook op een toestel op licht",
-              s["thema"] == "donker" and s["balk"] == "#0d0d0d" and s["gekozen"] == ["donker"], json.dumps(s))
+        check("kiezen voor Donker werkt meteen en sluit het menu, ook op een toestel op licht",
+              s["thema"] == "donker" and s["balk"] == "#0d0d0d" and s["gekozen"] == "donker"
+              and s["tegel"].startswith("Donker")
+              and not p41.evaluate("document.getElementById('themaMenu').classList.contains('open')"), json.dumps(s))
         check("de keuze staat op het toestel", s["opslag"] == "donker", str(s["opslag"]))
         p41.reload(wait_until="load"); p41.wait_for_timeout(300)
         s = p41.evaluate(stand41)
-        check("na opnieuw laden blijft Donker staan", s["thema"] == "donker" and s["gekozen"] == ["donker"], json.dumps(s))
-        p41.click("#lichtDonkerKeuze [data-stand=toestel]") if p41.is_visible("#lichtDonkerKeuze") else \
-            p41.evaluate("kiesLichtDonker('toestel')")
+        check("na opnieuw laden blijft Donker staan", s["thema"] == "donker" and s["gekozen"] == "donker", json.dumps(s))
+        p41.evaluate("window.showView('instellingen')"); p41.wait_for_timeout(150)
+        kies41(p41, "toestel")
         p41.emulate_media(color_scheme="dark"); p41.wait_for_timeout(100)
         d = p41.evaluate(stand41)
         p41.emulate_media(color_scheme="light"); p41.wait_for_timeout(100)
@@ -4288,7 +4302,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         c41, p41, f41 = open41("dark", "licht")
         s = p41.evaluate(stand41)
         check("eigen keuze Licht gaat voor het toestel op donker",
-              s["thema"] == "licht" and s["gekozen"] == ["licht"], json.dumps(s))
+              s["thema"] == "licht" and s["gekozen"] == "licht", json.dumps(s))
         check("geen paginafouten (eigen keuze)", not f41, "; ".join(f41)[:300])
         c41.close()
 
