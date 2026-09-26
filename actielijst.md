@@ -64,9 +64,20 @@ is klikbaar. In de vier Edge Functions (`ouder-toestemming`, `send-digest`,
 `melding-privacy`, `welkom`) en de twee Supabase-sjablonen. De tekstversie
 houdt de volledige URL.
 
+**TT-334 ingevoerd door Ronald, nagemeten in de browserpane, 26-09-2026.**
+Geverifieerd na herladen: de code van `ouder-toestemming`, `send-digest`,
+`melding-privacy` en `welkom` in Supabase is teken voor teken gelijk aan de
+geteste versie (SHA-256, zonder slotregel); de sjablonen "Reset password" en
+"Change email address" ook. Vóór het invoeren was elke functie gelijk aan de
+basis waarop TT-334 is gebouwd. Claude zette de code klaar in de editor,
+Ronald klikte Deploy of Save. **Nog te doen:** TT-323 — de mails opnieuw echt
+ontvangen.
+
 **Nieuw:** TT-338 (P2), TT-339 (P3).
 
-**Volgorde voor Ronald:** (1) in de SQL Editor
+**Volgorde voor Ronald, stand na afloop:** (1) tot en met (4) hieronder zijn
+gedaan. Alleen `actielijst.md` en `CHECKSUMS.txt` gaan nog een keer naar beide
+repo's. Oorspronkelijke volgorde: (1) in de SQL Editor
 `_niet-uploaden-TT-295-bewaarde-zoekopdracht-26-09-2026.sql` draaien — eerst,
 anders geeft de knop een fout; (2) de repo-bestanden naar beide repo's; (3) de
 vier Edge Functions vervangen door `_niet-uploaden-TT-334-edge-function-*.ts`,
@@ -6047,7 +6058,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 |---|---|---|
 | **TT-332** | Na de toestemming van de ouder ontbreekt een afsluiter | **Gebouwd en getest 26-09-2026 (vervolg 2), akkoord Ronald — zie Laatste update.** Nieuw, 26-09-2026, wens Ronald (TT-323). Na "Toestemming geven" volgt een bedankscherm zonder einde. Ronald: er moet een afsluiter komen "in de zin van: u kunt dit scherm nu afsluiten". **Toets P2:** het werkt, maar de ouder weet niet dat hij klaar is. **Voorstel voor de tekst:** "Je kunt dit venster nu sluiten." — de pagina spreekt de ouder met "je" aan. |
 | **TT-333** | "Verzoek" in de app, "aanvraag" in de mails | **Gebouwd en getest 26-09-2026 (vervolg 2), wens Ronald: ook in de app "aanvraag" — zie Laatste update.** Nieuw, 26-09-2026, TT-323. Besluit TT-325: in de mails altijd "aanvraag", nooit "verzoek". De app zegt "Je verzoek is verstuurd", "Verzoek versturen…" en op de goedkeuringspagina "Dit verzoek is afgewezen" / "Een verzoek vervalt". **Toets P2:** het werkt, maar dezelfde handeling heeft twee namen. **Open vraag aan Ronald:** geldt "aanvraag" ook in de app? |
-| **TT-334** | De mails tonen de volledige URL onder de knop | **Gebouwd 26-09-2026 (vervolg 4), akkoord Ronald op het voorstel hieronder. Wacht op invoeren in Supabase, daarna TT-323.** **Nieuw, 26-09-2026, feedback Ronald (TT-323):** "ik wil niet de hele url tonen. het is te lang en rommelig." Het blok "Werkt de knop niet? Open dan deze link:" staat in het template, dus in alle zeven mails: de drie Edge Functions en de twee Supabase-sjablonen. **Toets P2:** het werkt, maar oogt rommelig. **Voorstel:** "Werkt de knop niet? Tik dan op deze link." met alleen "deze link" klikbaar. De tekstversie houdt de volledige URL. |
+| **TT-334** | De mails tonen de volledige URL onder de knop | **Gebouwd en ingevoerd 26-09-2026 (vervolg 4), akkoord Ronald op het voorstel hieronder; in Supabase nagemeten. Wacht op TT-323.** **Nieuw, 26-09-2026, feedback Ronald (TT-323):** "ik wil niet de hele url tonen. het is te lang en rommelig." Het blok "Werkt de knop niet? Open dan deze link:" staat in het template, dus in alle zeven mails: de drie Edge Functions en de twee Supabase-sjablonen. **Toets P2:** het werkt, maar oogt rommelig. **Voorstel:** "Werkt de knop niet? Tik dan op deze link." met alleen "deze link" klikbaar. De tekstversie houdt de volledige URL. |
 | **TT-338** | De mail over nieuwe bands kijkt niet naar afstand | **Nieuw, 26-09-2026, gevonden bij TT-295.** Geverifieerd (functiedefinitie, gelezen in de SQL Editor): `tt_digest_new_bands` rekent de afstand uit, maar heeft geen grens. Wie Gitaar speelt, krijgt elke nieuwe band die een gitarist zoekt, ook 200 km verderop. **Toets P2:** het werkt, maar een mail met bands aan de andere kant van het land kost vertrouwen. **Voorstel:** dezelfde straal als de bewaarde zoekopdracht, anders 25 km. Nog geen besluit. |
 | **TT-328** | Woordmerk: 2px letterafstand, nergens een spatie, spatiëring in het lettertype | **Gebouwd en getest 25-09-2026 (vervolg 7), besluit Ronald:** "het woordmerk mag nergens met spatie. in de app hanteren we standaard 3px tussen de letters. breng dat terug naar 2px, waarbij je daarna rekening houdt met spatiering." **Gewijzigd:** `styles.css` (`letter-spacing: calc(2em / 28)`, was `3em`), `index.html` (drie woordmerken zonder spatie, `styles.css?v=20260925d`), `tt-woordmerk.woff2` (kerning: T-T −16 nieuw, T-E −11→−21, N-T −9→−16, L-E −5→−10; T-A had al −151). **Geverifieerd:** het oog-gewogen gat per letterpaar bij 2px lag tussen 69 en 77 (pixels bij 280px letter) en ligt nu tussen 69 en 73; op 28px is het woordmerk 195px breed (was 206px). Schermafdruk van de kop op 375px bekeken. Blok 32: drie nieuwe controles, alle drie gezakt vóór de fix en geslaagd erna. **Onbekend:** of een schermlezer "TALENTTENT" als één woord voorleest; het woordmerk heeft geen `aria-label`. **Toets P2:** het werkt, maar het woordmerk is de eerste indruk |
 | **TT-305** | Gesprek openen zonder gesprekspartner gaf een databasefout | **Opgelost 22-09-2026 (vervolg 2).** `openConversation()` controleerde `otherId` niet; supabase-js maakt van `.eq('recipient_id', null)` de tekst "null", die de database niet als uuid leest. Gevonden in het foutrapport van de monitorrepo, issue #5. Nu `if (!otherId) return;` bovenin die ene functie. **Toets P2:** werkt het, maar kost het vertrouwen? Ja — de gebruiker zag "Gesprek laden is niet gelukt" zonder iets fout te doen. Zie Laatste update bovenaan |
