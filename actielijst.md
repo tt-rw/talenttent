@@ -23,13 +23,15 @@ met "Je kunt dit venster nu sluiten."
 de functie. Op 25-09-2026 gebeurde dat alleen in de mails (TT-325); de app zei
 nog "verzoek". Waaruit blijkt: `ouder.js` bevatte tien teksten met "verzoek".
 
+**Laag 2, 26-09-2026 (vervolg 2), deels:** Ronald heeft het SQL-script gedraaid en de functie `ouder-toestemming` vervangen, beide gelukt (melding Ronald). Geverifieerd op talenttent.org: de nieuwe bestanden staan live; een onbekende link toont de melding; `#toestemming-gegeven` zonder wachtend profiel toont de uitleg. Nog niet gemeten: twee echte mails aan de ouder waarvan beide links werken — hoort bij TT-323. Gevonden: TT-337.
+
 **Testset:** blok 28 heeft zes nieuwe controles. 546 van 546 geslaagd. Tegen de
 oude code zakt blok 28.
 
 **Volgorde voor Ronald:** (1) de repo-bestanden naar beide repo's; (2)
-`_niet-uploaden-TT-330-oude-links-26-09-2026.sql` draaien; (3) de functie
+`_niet-uploaden-sql-editor-26-09-2026.sql` draaien; (3) de functie
 `ouder-toestemming` vervangen door
-`_niet-uploaden-TT-330-edge-function-ouder-toestemming-26-09-2026.ts`. Daarna
+`_niet-uploaden-edge-function-ouder-toestemming-26-09-2026.ts`. Daarna
 laag 2 door Claude.
 
 **Rechtgezet:** TT-336 stond in de tabel "Afgehandeld"; de P0-telling miste
@@ -5880,6 +5882,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 |---|---|---|
 | **TT-330** | Een vervangen ouderlink komt zonder uitleg op de homepage | **Gebouwd en getest 26-09-2026 (vervolg 2), wens Ronald: elke link werkt. Wacht op het SQL-script en de nieuwe functie `ouder-toestemming` van Ronald, daarna laag 2 — zie Laatste update.** Nieuw, 26-09-2026, TT-323. Advies P1, niveau door Ronald te bevestigen.** De herinnering en "opnieuw sturen" maken een nieuwe code; de link uit de eerste mail werkt dan niet meer. Een onbekende code stuurt `toestemmingPaginaOpenen()` (`ouder.js`) met opzet naar de homepage. Geverifieerd: Ronald kwam zo op de homepage uit, en een verzonnen code doet hetzelfde. **Toets P1:** een ouder die niet goedkeurt, betekent een kind dat niet binnenkomt. **Voorstel:** toon "Deze link werkt niet meer. Gebruik de nieuwste mail van Talent Tent." |
 | **TT-331** | De knop in "Je hebt toestemming" werkt alleen in de browser waar het kind begon | **Gebouwd en getest 26-09-2026 (vervolg 2), akkoord Ronald. Wacht op de nieuwe functie `ouder-toestemming`, daarna laag 2 — zie Laatste update.** Nieuw, 26-09-2026, TT-323. Advies P1, niveau door Ronald te bevestigen.** Het profiel wacht in de opslag van die ene browser (route A). Geverifieerd: in een browser met een ander ingelogd account stuurt `#register` door naar Mijn Profiel. **Aanname, niet gemeten:** uitgelogd in een andere browser krijgt het kind een lege wizard, begint opnieuw, en de ouder krijgt een tweede aanvraag. Een mail-app opent links vaak in een eigen browser. **Toets P1:** een kind dat hier strandt, komt niet binnen. **Voorstel:** vindt de app het wachtende profiel niet, dan toont hij "Open Talent Tent in de browser waar je begon." |
+| **TT-337** | Een ingelogde ouder komt op zijn eigen profiel uit in plaats van op de goedkeuringspagina | **Nieuw, 26-09-2026 (vervolg 2), laag 2 van TT-330. Advies P1, niveau door Ronald te bevestigen.** Geverifieerd op talenttent.org: met een ingelogd account toont `#toestemming/<code>` eerst de goedkeuringspagina, daarna springt de app naar Mijn Profiel. Oorzaak: `onUserLoggedIn()` in `core.js` gaat na het laden naar Mijn Profiel, omdat `#toestemming/` niet meetelt als pagina die blijft staan (`opstartHerstelt`). Bestond al sinds TT-42. **Toets P1:** een ouder die zelf muzikant is en ingelogd is, kan niet goedkeuren; het kind komt niet binnen. **Voorstel:** `#toestemming/` laten meetellen in `opstartHerstelt`. |
 | **TT-324** | Laatst actief bepaalt de plek in de zoekresultaten; "Deze week bijgewerkt" weg van het profiel | **Gebouwd en getest 25-09-2026, zie Laatste update bovenaan. Wacht op het SQL-script van Ronald, daarna laag 2.** **Toets P1:** een bericht aan iemand die de app niet meer opent, blijft onbeantwoord en ontmoedigt de afzender. Actieve profielen bovenaan bepalen of iemand een tweede keer contact zoekt |
 | **TT-302** | Terugknop sloot een bewerkscherm zonder te vragen | **Gebouwd en getest 20-09-2026 (vervolg 3).** De Terug-knop onder in een tegelscherm vroeg al "Terug zonder opslaan?"; de terugknop in de kop en die van het toestel niet. Één controle voor beide wegen (`tegelHeeftWijzigingen()`). Volledige tekst: Laatste update bovenaan. **Nog open:** de wizard en het bandformulier |
 | **TT-296** | Het digestvenster is een vaste 24 uur, niet "sinds de vorige verzending" | **Nieuw, 20-09-2026.** `send-digest` rekent het terugkijkvenster uit vanaf het moment van aanroepen: 1 dag bij dagelijks, 7 bij wekelijks. Er wordt nergens bijgehouden wat verstuurd is. Valt een run uit, of komt er iets binnen dat net buiten het raam valt, dan is die melding definitief weg. Achteraf is ook niet vast te stellen of iemand een bepaalde mail heeft gehad. **Toets:** verandert dit of iemand een tweede keer opent? Ja — een gemiste melding is een gemist bericht, precies de lus die TT-01 moet sluiten |
