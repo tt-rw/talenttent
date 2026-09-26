@@ -892,7 +892,7 @@ function musicianRowHTML(m) {
       </div>
       <div class="result-row-badges">
         ${overflowBadgeHTML(instruments, col, 2)}
-        ${overflowBadgeHTML(genres, '#6ec8d8', 2)}
+        ${overflowBadgeHTML(genres, 'var(--accent2)', 2)}
       </div>
     </div>`;
 }
@@ -922,7 +922,7 @@ function musicianCardHTML(m) {
       </div>
       <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       <div class="result-card-badges-line">${overflowBadgeHTML(instruments, col, 2)}</div>
-      <div class="result-card-badges-line">${overflowBadgeHTML(genres, '#6ec8d8', 2)}</div>
+      <div class="result-card-badges-line">${overflowBadgeHTML(genres, 'var(--accent2)', 2)}</div>
     </div>`;
 }
 
@@ -1330,7 +1330,7 @@ function bandRowHTML(b, statusLabels) {
         </div>
       </div>
       <div class="result-row-badges">
-        ${wanted.map(w => tagSolid('+ ' + w.instrument, '#6ec8d8')).join('')}
+        ${wanted.map(w => tagSolid('+ ' + w.instrument, 'var(--accent2)')).join('')}
       </div>
     </div>`;
 }
@@ -1352,7 +1352,7 @@ function bandCardHTML(b, statusLabels) {
         <span class="band-status-badge band-status-${status}" style="margin-left:8px;">${escHtml(statusLabels[status] || b.status)}</span>
       </div>
       <div class="result-card-badges">
-        ${wanted.map(w => tagSolid('+ ' + w.instrument, '#6ec8d8')).join('')}
+        ${wanted.map(w => tagSolid('+ ' + w.instrument, 'var(--accent2)')).join('')}
       </div>
     </div>`;
 }

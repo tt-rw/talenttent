@@ -1,6 +1,49 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 26-09-2026 (designproef) — **TT-341 nieuw: een licht
+**Laatste update:** 26-09-2026 (TT-341, stap 1) — **Kleuren per rol in
+variabelen. Donker ziet er hetzelfde uit; het lichte thema is er nog niet.**
+Zeven P0's staan open; TT-341 is P2 (advies Claude), dat is één keer gemeld.
+
+**Aanleiding.** Ronald: "start met het bouwen van de light skin." Claude begon
+met stap 1 van zijn bouwplan (voorstel, zie de update hieronder). Die stap
+hangt niet af van de vier open vragen.
+
+**Wat er veranderde.**
+- `styles.css`: 25 nieuwe variabelen in `:root`, per rol, met de waarden van
+  nu. Elke vaste kleur in de opmaak wijst nu naar zo'n variabele. De twee
+  belangrijkste rollen: `--accent` (goud als tekst, rand, lijn of klein vlak)
+  en `--merk` (goud als vlak dat in elk thema goud blijft: de hoofdknop, de
+  verzendknop, het woordmerk). De gekozen stand van een keuzeknop heeft drie
+  eigen variabelen (`--gekozen-vlak`, `-rand`, `-tekst`); daarmee is de open
+  vraag "gevuld of alleen een rand" later één waarde, geen herbouw.
+- `index.html`: de balk "Bewerkmodus" en de pijl van de verzendknop gebruiken
+  een variabele. `?v=` omhoog voor `styles.css`, `utils.js` en `search.js`.
+- `utils.js`: de titel en de foutregel bij "Oeps..." gebruiken `--accent`.
+- `search.js`: genre- en gezocht-badges gebruiken `--accent2` in plaats van
+  een vaste kleur.
+- `var(--surface, #161616)` werd `var(--surface)`: een terugvalwaarde verbergt
+  een ontbrekende variabele (projectinstructies §11).
+
+**Bewust niet veranderd.** Kleuren die in elk thema gelijk blijven: het
+donkere vlak over een foto of video (label, ✕, bannerteken, laadvlak), zwart
+achter een video, wit op het rode rondje voor ongelezen, het groen van "gelukt".
+
+**Geverifieerd.** Monitor 21/21 · testset 566/566. Schermafdrukken vóór en na
+van 24 schermen uit de designproef, op 390 en 1280px breed, pixel voor pixel
+vergeleken: 46 van de 48 gelijk. De twee afwijkingen zitten in het gesprek:
+de tekst in je eigen bericht en de pijl op de verzendknop zijn nu `#000` in
+plaats van `#0d0d0d`, gelijk aan de hoofdknop. Met het oog niet te zien. De
+tijden in het gesprek wijken ook af; dat is de klok, geen code.
+
+**Volgende sessie: stap 2**, het lichte thema in `styles.css`, plus de
+aanpassingen in donker ("rustig"). Daarvoor eerst de vier open vragen
+hieronder. **Nieuwe vraag voor stap 2:** in de app bestaan vier donkere lagen
+achter een venster of menu, elk net iets anders donker (55 tot 80%). Voor
+licht is één laag genoeg. Gelijktrekken?
+
+---
+
+**Vorige update:** 26-09-2026 (designproef) — **TT-341 nieuw: een licht
 thema naast donker. Besluit Ronald: doorvoeren. Nog niets gebouwd; de repo's en
 talenttent.org zijn niet gewijzigd.** Zeven P0's staan open; TT-341 is P2
 (advies Claude), dat is één keer gemeld.
@@ -6180,7 +6223,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-341** | Licht thema, kiesbaar naast donker | **Nieuw, 26-09-2026, wens Ronald. Besluit Ronald: doorvoeren, op basis van "Licht + geel, huidig woordmerk" uit de designproef. Nog niets gebouwd.** Keuze onthouden op het toestel (besluit Ronald). Bouwplan in drie sessies en open vragen: zie Laatste update. **Toets P2 (advies Claude):** de app werkt zonder, maar een deel van de gebruikers vindt een lichte weergave prettiger of beter leesbaar, vooral overdag buiten. Geen gebruiker loopt vast zonder |
+| **TT-341** | Licht thema, kiesbaar naast donker | **Nieuw, 26-09-2026, wens Ronald. Besluit Ronald: doorvoeren, op basis van "Licht + geel, huidig woordmerk" uit de designproef. Stap 1 gebouwd, 26-09-2026: kleuren per rol in variabelen, donker ongewijzigd.** Keuze onthouden op het toestel (besluit Ronald). Bouwplan in drie sessies en open vragen: zie de updates van 26-09-2026 (designproef) en (TT-341, stap 1). **Toets P2 (advies Claude):** de app werkt zonder, maar een deel van de gebruikers vindt een lichte weergave prettiger of beter leesbaar, vooral overdag buiten. Geen gebruiker loopt vast zonder |
 | **TT-332** | Na de toestemming van de ouder ontbreekt een afsluiter | **Gebouwd en getest 26-09-2026 (vervolg 2), akkoord Ronald — zie Laatste update.** Nieuw, 26-09-2026, wens Ronald (TT-323). Na "Toestemming geven" volgt een bedankscherm zonder einde. Ronald: er moet een afsluiter komen "in de zin van: u kunt dit scherm nu afsluiten". **Toets P2:** het werkt, maar de ouder weet niet dat hij klaar is. **Voorstel voor de tekst:** "Je kunt dit venster nu sluiten." — de pagina spreekt de ouder met "je" aan. |
 | **TT-333** | "Verzoek" in de app, "aanvraag" in de mails | **Gebouwd en getest 26-09-2026 (vervolg 2), wens Ronald: ook in de app "aanvraag" — zie Laatste update.** Nieuw, 26-09-2026, TT-323. Besluit TT-325: in de mails altijd "aanvraag", nooit "verzoek". De app zegt "Je verzoek is verstuurd", "Verzoek versturen…" en op de goedkeuringspagina "Dit verzoek is afgewezen" / "Een verzoek vervalt". **Toets P2:** het werkt, maar dezelfde handeling heeft twee namen. **Open vraag aan Ronald:** geldt "aanvraag" ook in de app? |
 | **TT-334** | De mails tonen de volledige URL onder de knop | **Gebouwd en ingevoerd 26-09-2026 (vervolg 4), akkoord Ronald op het voorstel hieronder; in Supabase nagemeten. Wacht op TT-323.** **Nieuw, 26-09-2026, feedback Ronald (TT-323):** "ik wil niet de hele url tonen. het is te lang en rommelig." Het blok "Werkt de knop niet? Open dan deze link:" staat in het template, dus in alle zeven mails: de drie Edge Functions en de twee Supabase-sjablonen. **Toets P2:** het werkt, maar oogt rommelig. **Voorstel:** "Werkt de knop niet? Tik dan op deze link." met alleen "deze link" klikbaar. De tekstversie houdt de volledige URL. |

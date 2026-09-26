@@ -46,6 +46,42 @@
        (Ronald, 10-09-2026), dus die waarden staan nu hier, op één plek. */
     --field-bg: #242424;
     --field-border: #666666;
+
+    /* TT-341 stap 1 (26-09-2026): elke vaste kleur staat hier, per rol. Het
+       lichte thema (stap 2) geeft deze rollen andere waarden; donker houdt
+       precies de kleuren van voorheen. Een kleur met een eigen rol krijgt een
+       eigen variabele, ook als de waarde in donker gelijk is aan een andere.
+       --accent  = goud als tekst, rand, lijn of klein vlak (stip, balk).
+       --merk    = goud als vlak onder zwarte tekst dat in elk thema goud
+                   blijft: de hoofdknop, de verzendknop en het woordmerk. */
+    --merk: #f5c518;
+    --merk-tekst: #000;
+    --merk-hover: #ffd700;
+    --op-accent: #000;           /* tekst op een vlak in --accent */
+    --op-avatar: #000;           /* de letter op een profielkleur */
+    /* De gekozen stand van elke keuzeknop (huisstijl §5.1). */
+    --gekozen-vlak: rgba(255,255,255,0.05);
+    --gekozen-rand: #f5c518;
+    --gekozen-tekst: #f5c518;
+    /* Een zweem over de ondergrond: aanwijzen, ongelezen, uitgelicht. */
+    --tint: rgba(255,255,255,0.05);
+    --tint-hover: rgba(255,255,255,0.08);   /* aanwijzen op een ronde knop */
+    --tint-vlak: rgba(255,255,255,0.10);    /* tagvlak en statusbadge */
+    --tint-grip: rgba(255,255,255,0.20);    /* greep van het wielvenster */
+    --surface3: #222;                       /* lijst met suggesties */
+    --rand-hover: #555;
+    --rand-menu: #444;                      /* uitklapmenu, bandkaart bij aanwijzen */
+    --leeg: #555;                           /* lege ster, niet-actieve stip */
+    --wiel-tekst: #6d6d6d;                  /* niet-gekozen regel in het wiel */
+    --tip-tekst: #c8a800;
+    /* Lagen boven de pagina en hun schaduw. */
+    --laag-venster: rgba(0,0,0,0.8);
+    --laag-opslaan: rgba(0,0,0,0.7);
+    --laag-menu: rgba(0,0,0,0.6);
+    --laag-wiel: rgba(0,0,0,0.55);
+    --laag-fout: rgba(13,13,13,0.96);
+    --schaduw-menu: 0 12px 32px rgba(0,0,0,0.7);
+    --schaduw-melding: 0 8px 24px rgba(0,0,0,0.4);
   }
 
   /* TT-318 (24-09-2026, besluit Ronald): het eigen woordmerk. Het nagetekende
@@ -194,7 +230,7 @@
        zit in het lettertype zelf. */
     letter-spacing: calc(2em / 28);
     line-height: 1;
-    color: var(--accent);
+    color: var(--merk);
   }
 
   /* TT-301: het woordmerk in de gewone kop. justify-self houdt het in het
@@ -605,7 +641,7 @@
     cursor: pointer;
   }
 
-  select option { background: #1e1e1e; }
+  select option { background: var(--surface2); }
 
   /* TT-22 (09-08-2026): eerste échte <select>-dropdown in de app — de
      globale "input, select, textarea { -webkit-appearance: none }" hierboven
@@ -672,9 +708,9 @@
   .media-tab.active,
   .goal-card.selected,
   .level-choice.selected {
-    background: rgba(255,255,255,0.05);
-    border-color: var(--accent);
-    color: var(--accent);
+    background: var(--gekozen-vlak);
+    border-color: var(--gekozen-rand);
+    color: var(--gekozen-tekst);
     font-weight: 700;
   }
 
@@ -734,7 +770,7 @@
     position: absolute;
     top: calc(100% + 4px);
     left: 0; right: 0;
-    background: #222;
+    background: var(--surface3);
     border: 1px solid var(--border);
     border-radius: 8px;
     z-index: 100;
@@ -918,12 +954,12 @@
   }
 
   .btn-primary {
-    background: var(--accent);
-    color: #000;
+    background: var(--merk);
+    color: var(--merk-tekst);
   }
 
   .btn-primary:hover {
-    background: #ffd700;
+    background: var(--merk-hover);
     transform: translateY(-1px);
   }
 
@@ -935,7 +971,7 @@
     border: var(--line) solid var(--border);
   }
 
-  .btn-ghost:hover { color: var(--text); border-color: #555; }
+  .btn-ghost:hover { color: var(--text); border-color: var(--rand-hover); }
 
   /* TT-316 (24-09-2026, besluit Ronald K2): destructief is omlijnd in rood,
      nooit een rood vlak — huisstijl §5. Account verwijderen, lid verwijderen. */
@@ -1013,7 +1049,7 @@
      cursief blijven (projectinstructies §9). Was een grijs vlak, 10px,
      hoofdletters, hoek 3px. */
   .level-pill {
-    background: rgba(255,255,255,0.10); /* TT-315 vervolg: 10%, zie .tag-solid */
+    background: var(--tint-vlak); /* TT-315 vervolg: 10%, zie .tag-solid */
     color: var(--text);
     font-size: 11px;
     padding: 4px 10px;
@@ -1313,7 +1349,7 @@
     padding: 0;
     border: none;
     border-radius: 50%;
-    background: #555;
+    background: var(--leeg);
     cursor: pointer;
     transition: background .2s ease;
   }
@@ -1386,19 +1422,19 @@
     justify-content: center;
     font-family: 'Roboto', sans-serif;
     font-size: 30px;
-    color: #000;
+    color: var(--op-avatar);
     margin-bottom: 12px;
     border: 3px solid transparent;
   }
 
   /* Media upload section */
   .media-tip {
-    background: rgba(255,255,255,0.05); /* §1.1 */
+    background: var(--tint); /* §1.1 */
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 12px 16px;
     font-size: 13px;
-    color: #c8a800;
+    color: var(--tip-tekst);
     margin-bottom: 20px;
     display: flex;
     gap: 10px;
@@ -1507,7 +1543,7 @@
      een losse, altijd-actieve regel. De :hover-variant staat in de guard. */
   .drop-zone.drag-over {
     border-color: var(--accent);
-    background: rgba(255,255,255,0.05);
+    background: var(--tint);
   }
 
   .drop-zone input[type=file] {
@@ -1831,7 +1867,7 @@
   .save-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.7);
+    background: var(--laag-opslaan);
     z-index: 1000;
     display: flex;
     align-items: center;
@@ -1856,14 +1892,14 @@
     transform: translateX(-50%) translateY(-20px);
     z-index: 1100;
     max-width: 90%;
-    background: var(--surface, #161616);
+    background: var(--surface);
     border: 1px solid var(--accent);
     color: var(--text);
     padding: 14px 20px;
     border-radius: 10px;
     font-size: 13px;
     font-weight: 600;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    box-shadow: var(--schaduw-melding);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s, transform 0.25s;
@@ -1927,7 +1963,7 @@
      3 — geen vast omslagpunt nodig, werkt op elke breedte. */
   .landing-steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
   .landing-step { text-align: center; padding: 28px 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); position: relative; }
-  .landing-step-num { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; background: var(--accent); color: #000; border-radius: 50%; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .landing-step-num { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; background: var(--accent); color: var(--op-accent); border-radius: 50%; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .landing-step-label { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
   .landing-step-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
   /* TT-209 (04-09-2026): stond onderaan de pagina, na de drie stappen —
@@ -2033,9 +2069,9 @@
     margin-top: 4px;
     min-width: 220px;
     background: var(--surface2);
-    border: 1px solid #444;
+    border: 1px solid var(--rand-menu);
     border-radius: 8px;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.7);
+    box-shadow: var(--schaduw-menu);
     overflow: hidden;
     z-index: 241; /* boven .menu-laag, zie hieronder */
   }
@@ -2058,7 +2094,7 @@
     cursor: pointer;
     transition: background 0.15s;
   }
-  .nav-menu-item:hover { background: rgba(255,255,255,0.05); color: var(--accent); }
+  .nav-menu-item:hover { background: var(--tint); color: var(--accent); }
   .nav-menu-item + .nav-menu-item { border-top: 1px solid var(--border); }
 
   /* ── Een open menu ligt zichtbaar bovenop (24-09-2026, Ronald) ──────────
@@ -2075,7 +2111,7 @@
   .menu-laag {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.6);
+    background: var(--laag-menu);
     z-index: 240;
   }
   /* Een menu ligt in de stapellaag van zijn ouders. Staat daar een ouder met
@@ -2131,13 +2167,13 @@
     transition: border-color 0.15s, transform 0.15s;
   }
   .messages-conv-row:hover { border-color: var(--accent); transform: translateY(-1px); }
-  .messages-conv-row.unread { background: rgba(255,255,255,0.05); border-color: var(--accent); } /* §1.1 */
+  .messages-conv-row.unread { background: var(--tint); border-color: var(--accent); } /* §1.1 */
   .messages-conv-avatar {
     width: 48px; height: 48px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 20px;
-    color: #000;
+    color: var(--op-avatar);
     flex-shrink: 0;
     overflow: hidden;
   }
@@ -2189,7 +2225,7 @@
     line-height: 1.5;
     word-break: break-word;
   }
-  .message-bubble.own { background: var(--accent); color: #0d0d0d; margin-left: auto; border-radius: 16px 16px 4px 16px; }
+  .message-bubble.own { background: var(--accent); color: var(--op-accent); margin-left: auto; border-radius: 16px 16px 4px 16px; }
   .message-bubble.other { background: var(--surface2); border: 1px solid var(--border); border-radius: 16px 16px 16px 4px; }
   .message-bubble-time { font-size: 10px; opacity: 0.7; margin-top: 4px; }
   /* V-07 (13-08-2026): vinkje bij een eigen bericht dat gelezen is. */
@@ -2211,7 +2247,8 @@
   .messages-send-btn {
     width: 44px; height: 44px;
     border-radius: 50%;
-    background: var(--accent);
+    background: var(--merk);
+    color: var(--merk-tekst);   /* de pijl: stroke="currentColor" */
     border: none;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
@@ -2388,7 +2425,7 @@
     display: inline-block;
     /* TT-315 vervolg (24-09-2026, besluit Ronald: variant A): 10% i.p.v. 5%.
        Op 5% viel het vlak op de telefoon weg; de tag leek afgesneden. */
-    background: rgba(255,255,255,0.10);
+    background: var(--tint-vlak);
     font-size: 11px;
     font-weight: 700;
     padding: 4px 10px;
@@ -2436,7 +2473,7 @@
     justify-content: center;
     font-size: 48px;
     font-weight: 700;
-    color: #000;
+    color: var(--op-avatar);
     overflow: hidden;
     margin-bottom: 10px;
   }
@@ -2489,7 +2526,7 @@
     display: flex; align-items: center; justify-content: center;
     font-family: 'Roboto', sans-serif;
     font-size: 18px;
-    color: #000;
+    color: var(--op-avatar);
     flex-shrink: 0;
     overflow: hidden;
   }
@@ -2767,7 +2804,7 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.8);
+    background: var(--laag-venster);
     z-index: 200;
     display: flex;
     align-items: center;
@@ -3102,9 +3139,9 @@
     margin-top: 4px;
     min-width: 240px;
     background: var(--surface2);
-    border: 1px solid #444;
+    border: 1px solid var(--rand-menu);
     border-radius: 8px;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.7);
+    box-shadow: var(--schaduw-menu);
     overflow: hidden;
     z-index: 241; /* boven .menu-laag */
   }
@@ -3128,21 +3165,21 @@
 
   /* ── Band kaarten ────────────────────────── */
   .band-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;transition:border-color 0.2s; }
-  .band-card:hover { border-color:#444; }
+  .band-card:hover { border-color:var(--rand-menu); }
   .band-card-header { display:flex;align-items:center;gap:16px;padding:20px;cursor:pointer;flex-wrap:wrap; }
-  .band-avatar { width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Roboto',sans-serif;font-size:24px;color:#000;flex-shrink:0; }
+  .band-avatar { width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Roboto',sans-serif;font-size:24px;color:var(--op-avatar);flex-shrink:0; }
   .band-name { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.3px; line-height: 1.1; }
   .band-meta { font-size:12px;color:var(--muted);margin-top:3px; }
   /* TT-315 (24-09-2026): zelfde vorm als .tag-solid — wit op 5%, geen rand,
      de kleur alleen in de tekst. */
-  .band-status-badge { display:inline-block;background:rgba(255,255,255,0.10);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-left:auto;white-space:nowrap;flex-shrink:0; }
+  .band-status-badge { display:inline-block;background:var(--tint-vlak);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-left:auto;white-space:nowrap;flex-shrink:0; }
   .band-status-zoekend { color:var(--accent); }
   .band-status-compleet { color:var(--success); }
   .band-status-inactief { color:var(--muted); }
   .band-card-body { padding:0 20px 20px;border-top:1px solid var(--border); }
   .band-members-row { display:flex;flex-wrap:wrap;gap:8px;padding-top:14px;margin-bottom:10px; }
   .band-member-chip { display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px; }
-  .band-member-dot { width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'Roboto',sans-serif;color:#000;flex-shrink:0; }
+  .band-member-dot { width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'Roboto',sans-serif;color:var(--op-avatar);flex-shrink:0; }
 
   /* TT-51 (12-08-2026): niveau, sterren 1-5. Tekst-only (★/☆, geen emoji/svg),
      consistent met de rest van de UI. .star-picker is klikbaar (wizard/
@@ -3154,7 +3191,7 @@
   .star-display-filled { color:var(--accent); }
   /* TT-315 vervolg (besluit Ronald, variant A): lege sterren #555. In
      --border (#2a2a2a) waren ze op het tagvlak onzichtbaar. */
-  .star-display-empty { color:#555; }
+  .star-display-empty { color:var(--leeg); }
 
   /* TT-U21 (12-08-2026): de zwevende sterrenstrip is vervangen door een
      keuzescherm met vijf knoppen, elk minimaal 44px hoog. */
@@ -3547,7 +3584,7 @@
     position: fixed;
     inset: 0;
     z-index: 9999;
-    background: rgba(13,13,13,0.96);
+    background: var(--laag-fout);
     padding: 24px;
     align-items: center;
     justify-content: center;
@@ -3582,8 +3619,8 @@
   .backend-error-box button {
     width: 100%;
     padding: 12px 20px;
-    background: var(--accent);
-    color: #0d0d0d;
+    background: var(--merk);
+    color: var(--merk-tekst);
     border: none;
     border-radius: 8px;
     font-family: 'Roboto', sans-serif;
@@ -3660,17 +3697,17 @@
     .tag:not(.selected):hover, .level-btn:not([class*="active-"]):hover,
     .segmented-btn:not(.selected):hover, .search-mode-tab:not(.active):hover,
     .media-tab:not(.active):hover, .goal-card:not(.selected):hover,
-    .level-choice:not(.selected):hover { border-color: #555; }
-    .modal-close:hover { background: rgba(255,255,255,0.08); }
-    .modal-back:hover { background: rgba(255,255,255,0.08); }
-    .niveau-info-btn:hover { background: rgba(255,255,255,0.08); }
+    .level-choice:not(.selected):hover { border-color: var(--rand-hover); }
+    .modal-close:hover { background: var(--tint-hover); }
+    .modal-back:hover { background: var(--tint-hover); }
+    .niveau-info-btn:hover { background: var(--tint-hover); }
     .picker-field:hover { border-color: var(--accent); }
     .picker-list-item:hover { color: var(--accent); }
     .song-remove:hover { color: var(--danger); }
     .ac-item:hover { background: var(--surface2); }
     .avatar-remove-btn:hover { color: var(--danger); border-color: var(--danger); }
     .avatar-remove-btn.btn-cancel-armed:hover { color: var(--accent); border-color: var(--accent); }
-    .drop-zone:hover { border-color: var(--accent); background: rgba(255,255,255,0.05); }
+    .drop-zone:hover { border-color: var(--accent); background: var(--tint); }
     .add-link-btn:hover, .bio-prompt-chip:hover { border-color: var(--accent); color: var(--accent); }
   }
 
@@ -3736,7 +3773,7 @@
     left: 8px; right: 8px;
     top: 88px;                  /* 2 regels van 44px */
     height: 44px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--tint);
     border: 1px solid var(--border);
     border-radius: 8px;
     pointer-events: none;
@@ -3754,12 +3791,12 @@
   .picker-fade-top {
     top: 1px;
     border-radius: var(--radius) var(--radius) 0 0;
-    background: linear-gradient(to bottom, var(--surface2) 0%, rgba(30,30,30,0) 100%);
+    background: linear-gradient(to bottom, var(--surface2) 0%, transparent 100%);
   }
   .picker-fade-bottom {
     bottom: 1px;
     border-radius: 0 0 var(--radius) var(--radius);
-    background: linear-gradient(to top, var(--surface2) 0%, rgba(30,30,30,0) 100%);
+    background: linear-gradient(to top, var(--surface2) 0%, transparent 100%);
   }
   /* Vaste kolombreedte, geen flex:1. De meeste gebruikers bedienen de app met
      hun rechterduim; kolommen die de volle breedte uitrekken duwen de eerste
@@ -3800,7 +3837,7 @@
     line-height: 44px;
     text-align: center;
     font-size: 17px;
-    color: #6d6d6d;
+    color: var(--wiel-tekst);
     scroll-snap-align: center;
     /* TT-275: zelfde maat terug als opvulling, zodat het getal midden in zijn
        kolom blijft staan. */
@@ -3881,7 +3918,7 @@
     align-items: flex-end;
     padding: 0;
     backdrop-filter: none;
-    background: rgba(0, 0, 0, 0.55);
+    background: var(--laag-wiel);
   }
   .wheel-sheet {
     width: 100%;
@@ -3904,7 +3941,7 @@
     border-radius: 999px;
     /* TT-256: --border (#2a2a2a) op --surface (#161616) is nauwelijks te zien.
        De greep moet zeggen "hier kun je omlaag vegen". */
-    background: rgba(255, 255, 255, 0.20);
+    background: var(--tint-grip);
     margin: 0 auto 14px;
   }
   .wheel-sheet-head {
@@ -3976,9 +4013,9 @@
     left: 0;
     right: 0;
     background: var(--surface2);
-    border: 1px solid #444;
+    border: 1px solid var(--rand-menu);
     border-radius: var(--radius-field);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.7);
+    box-shadow: var(--schaduw-menu);
     overflow: hidden;
     z-index: 241; /* boven .menu-laag */
     transform-origin: top center;
@@ -4020,7 +4057,7 @@
     transition: background 0.12s;
   }
   .choice-option + .choice-option { border-top: 1px solid var(--border); }
-  .choice-option:hover { background: rgba(255,255,255,0.05); }
+  .choice-option:hover { background: var(--tint); }
   .choice-option.selected { color: var(--accent); font-weight: 700; }
   .choice-option-check { color: var(--accent); font-size: 14px; }
 

@@ -50,7 +50,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260926e">
+<link rel="stylesheet" href="styles.css?v=20260926t">
 </head>
 <body>
 
@@ -173,7 +173,7 @@
   </button>
 </nav>
 
-<div id="editModeBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:8px 24px;background:rgba(255,255,255,0.05);border-top:1px solid var(--border);font-size:13px;">
+<div id="editModeBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:8px 24px;background:var(--tint);border-top:1px solid var(--border);font-size:13px;">
   <span>Je bent nog bezig met je profiel bewerken.</span>
   <button class="btn btn-primary" onclick="requireLogin('register')">Verder bewerken →</button>
 </div>
@@ -1773,7 +1773,7 @@
                invoerveld. Anders klapt het toetsenbord weg, komt de onderbalk
                terug en springt het beeld heen en weer. -->
           <textarea id="messagesReplyInput" placeholder="Typ een bericht..." maxlength="2000" oninput="updateCharCounter('messagesReplyInput','messagesReplyCounter',2000)"></textarea>
-          <button class="messages-send-btn" onmousedown="event.preventDefault()" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0d0d0d" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+          <button class="messages-send-btn" onmousedown="event.preventDefault()" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
         </div>
         <div id="messagesReplyCounter" style="text-align:right;font-size:12px;color:var(--muted);margin-top:4px;">0/2000</div>
         <!-- V-04 (13-08-2026): i.p.v. een actief invoerveld naar een niet meer
@@ -2561,13 +2561,13 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20260926f"></script>
-<script src="utils.js?v=20260925a"></script>
+<script src="utils.js?v=20260926t"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260923a"></script>
 <script src="postcode.js?v=20260917a"></script>
 <script src="wizard.js?v=20260926f"></script>
 <script src="ouder.js?v=20260926a"></script>
-<script src="search.js?v=20260926f"></script>
+<script src="search.js?v=20260926t"></script>
 <script src="musicians.js?v=20260926f"></script>
 <script src="bands.js?v=20260926f"></script>
 <script src="messages.js?v=20260925c"></script>

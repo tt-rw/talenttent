@@ -323,7 +323,7 @@ function showSaveSuccess(isEdit) {
 function showSaveError(msg) {
   document.getElementById('saveSpinner').style.display = 'none';
   document.getElementById('saveTitle').textContent = 'Oeps...';
-  document.getElementById('saveTitle').style.color = '#f5c518';
+  document.getElementById('saveTitle').style.color = 'var(--accent)';
 
   const isAlreadyRegistered = /already registered|already exists/i.test(msg);
 
@@ -336,7 +336,7 @@ function showSaveError(msg) {
   }
 
   document.getElementById('saveMsg').innerHTML =
-    `Er ging iets mis:<br><span style="color:#f5c518;font-size:12px;">${friendlyErrorMessage(msg)}</span><br><br>
+    `Er ging iets mis:<br><span style="color:var(--accent);font-size:12px;">${friendlyErrorMessage(msg)}</span><br><br>
      <button class="btn btn-ghost" style="margin-top:8px;" onclick="document.getElementById('saveOverlay').classList.remove('visible')">Sluiten</button>`;
 }
 
