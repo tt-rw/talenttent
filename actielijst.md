@@ -46,12 +46,21 @@ vragen van stap 1, 26-09-2026):
 
 **Wat er veranderde — alleen licht:** de waarden uit "Licht + geel, huidig
 woordmerk" (crème `#F6F3EC`, kaarten `#FFFEFA`, tekst `#1E1E1E`, velden in de
-kleur van de ondergrond met rand `#C9C3B6`, TALENT zwart en TENT geel), plus
-drie vormregels: knoppen en veldlabels in gewone letters, voorbeeldtekst
-lichter, kaarten 16px en velden 10px. Op het startscherm staat een gele streep
+kleur van de ondergrond met rand `#C9C3B6`, TALENT zwart en TENT geel), en
+lichtere voorbeeldtekst in een veld. Op het startscherm staat een gele streep
 onder het gekleurde woord, want gele tekst is op crème onleesbaar.
 
-**Geverifieerd.** Monitor 21/21 · testset 585/585 (nieuw: blok 40, 19
+**Vorm, in beide thema's — besluiten Ronald, 26-09-2026, na een voorbeeld
+(`_niet-uploaden-TT-341-vorm-in-donker-26-09-2026.png`):**
+1. Knoppen in gewone letters, "maar maak de tekst groter zodat het meer
+   vullend wordt": 16px, vet. Was 14px in hoofdletters.
+2. Veldlabels 14px, in de tekstkleur, gewone letters, "mits de veldnamen niet
+   vetgedrukt zijn": normaal gewicht. Was 11px, grijs, hoofdletters.
+3. Kaarten 16px en velden 10px rond; de tekst in een veld springt 10px in.
+   Was 12px, 8px en 8px.
+4. De gele streep onder het gekleurde woord: alleen in licht.
+
+**Geverifieerd.** Monitor 21/21 · testset 586/586 (nieuw: blok 40, 20
 controles voor beide thema's). Alle 24 schermen van de designproef naast de
 proef gelegd, op 390px, pixel voor pixel. Donker: 17 gelijk, 7 met kleine
 verschillen, allemaal bewust — tags en niveaulabels omlijnd in plaats van een
@@ -59,14 +68,12 @@ grijs vlak (één tagvorm), en de afgevinkte punten van de volledigheidsmeter
 wit in plaats van goud. Licht: elk verschil onder 6%, vooral 1 tot 2px
 verschuiving door de rand van 1px en de tekstinspringing van 10px.
 
-**Open vraag voor Ronald — vorm in donker.** Knoppen en veldlabels in gewone
-letters, rondere hoeken, en de gele streep onder het gekleurde woord op het
-startscherm staan nu alleen in licht. Ook in donker? Het is per punt één regel
-in `styles.css`.
-
 **Volgende sessie: stap 3** — de keuze Weergave in Instellingen (Zoals mijn
-toestel · Licht · Donker, voorstel Claude), `theme-color`, en de huisstijl en
-projectinstructies §11 bijwerken naar beide thema's.
+toestel · Licht · Donker, voorstel Claude), `theme-color`, en de huisstijl
+bijwerken naar beide thema's. **De huisstijl beschrijft tot dan nog de kleuren
+en vormen van vóór stap 2** (§1, §1.3, §4, §5, §5.1, §7, §11, §18): de
+projectversie was niet als bestand op te halen zonder hem over te typen.
+De projectinstructies zijn wel bijgewerkt.
 
 ---
 

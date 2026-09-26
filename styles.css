@@ -13,7 +13,9 @@
     --success: #4caf50;
     --text: #f0f0f0;
     --muted: #888;
-    --radius: 12px;
+    /* TT-341 stap 2 (besluit Ronald, 26-09-2026: "3 B"): kaarten en velden
+       ronder, in beide thema's. Was 12px en 8px. */
+    --radius: 16px;
     /* TT-268 (15-09-2026, Ronald): de lucht boven en onder het woordmerk.
        Was 18px, nu 12px. Eén waarde, want de hamburgerknop wordt met een
        negatieve verschuiving in de koprij getrokken en moet meebewegen. */
@@ -21,11 +23,11 @@
     /* TT-233 (10-09-2026, Ronald): hoekstraal van een invoer-/keuzeveld. Eén
        waarde voor élk veld — invoerveld, keuzeveld, wielveld, lijstoptie —
        zodat geen twee velden naast elkaar een andere ronding krijgen. */
-    --radius-field: 8px;
+    --radius-field: 10px;
     /* De tekst in een veld begint waar de ronding ophoudt en de rechte lijn
        begint. Label en hulptekst erboven springen evenveel in, zodat elke
        tekstregel in een formulier op dezelfde x staat. */
-    --field-inset: 8px;
+    --field-inset: 10px;
     /* TT-168-overgang (02-09-2026): standaard lijndikte voor de omlijnde
        knop-/badgestijl (rand-alleen, geen vlak) — overgenomen uit
        profiel-v2.html, hier op één plek instelbaar voor de hele app. */
@@ -152,25 +154,11 @@
     --bericht-rand: #B8B4AA;
     --knop-klein-vlak: transparent;
     --titel-streep: #F5C518;
-    /* Vorm, alleen licht zolang Ronald niet anders beslist (open vraag):
-       rondere kaarten en velden, zoals in de designproef. De tekst in een
-       veld begint waar de ronding ophoudt, dus --field-inset gaat mee. */
-    --radius: 16px;
-    --radius-field: 10px;
-    --field-inset: 10px;
   }
-  /* Vorm, alleen licht (open vraag): knoppen en veldlabels in gewone letters.
-     Veldlabels donker en halfvet — advies UX, doorgevoerd in de designproef:
-     label, hulptekst en voorbeeldtekst waren alle drie grijs en klein. */
-  :root[data-theme="licht"] .btn { text-transform: none; letter-spacing: 0; }
   /* Voorbeeldtekst in een veld: de standaard van de browser is op crème te
      donker en lijkt dan ingevuld. Donker houdt de standaard van de browser. */
   :root[data-theme="licht"] input::placeholder,
   :root[data-theme="licht"] textarea::placeholder { color: #B8B4AA; }
-  :root[data-theme="licht"] label {
-    font-size: 14px; line-height: 18px; letter-spacing: 0;
-    text-transform: none; color: var(--text); font-weight: 600;
-  }
 
   /* TT-318 (24-09-2026, besluit Ronald): het eigen woordmerk. Het nagetekende
      lettertype vervangt Alfa Slab One (TT-15b, tijdelijk sinds 06-08-2026).
@@ -599,16 +587,22 @@
      Geldt app-breed. De maat is --field-inset: gelijk aan --radius-field, dus
      de tekst begint precies waar de ronding overgaat in de rechte rand. */
   label {
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    font-weight: 500;
+    /* TT-341 stap 2 (besluit Ronald, 26-09-2026: "2 B, mits de veldnamen
+       niet vetgedrukt zijn"): groter, in de tekstkleur, gewone letters,
+       normaal gewicht — in beide thema's. Was 11px, grijs, hoofdletters met
+       2px letterafstand. Label, hulptekst en voorbeeldtekst waren alle drie
+       grijs en klein en lazen als één brei (advies UX). */
+    font-size: 14px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text);
+    font-weight: 400;
     padding-left: var(--field-inset);
     /* Vaste regelhoogte, zodat élk label even hoog is — ook een label met een
        i-knop erin. Anders staat het veld onder dat label lager dan het veld
-       ernaast, en verschilt de witruimte per label. */
-    line-height: 16px;
+       ernaast, en verschilt de witruimte per label. TT-341 stap 2: 18px,
+       passend bij de letter van 14px (was 16px bij 11px). */
+    line-height: 18px;
   }
   /* Hulptekst onder een label, binnen dezelfde veldgroep. */
   /* Hulptekst tussen label en veld: 8px eronder, gelijk aan de afstand
@@ -996,10 +990,13 @@
     padding: 13px 28px;
     border-radius: 8px;
     font-family: 'Roboto', sans-serif;
-    font-size: 14px;
+    /* TT-341 stap 2 (besluit Ronald, 26-09-2026: "1 B, maar maak de tekst
+       groter zodat het meer vullend wordt"): gewone letters, 16px, in beide
+       thema's. Was 14px in hoofdletters met 1px letterafstand. */
+    font-size: 16px;
     font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+    letter-spacing: 0;
+    text-transform: none;
     cursor: pointer;
     transition: all 0.2s;
     border: none;
@@ -2053,7 +2050,8 @@
   .landing-hero-inner { max-width: 640px; margin: 0 auto; }
   .landing-title { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: clamp(36px, 7vw, 64px); letter-spacing: 0.5px; line-height: 1.1; margin-bottom: 20px; }
   /* TT-341 stap 2: op licht een gele streep onder het woord, want gele tekst
-     is op crème onleesbaar. Op donker is de streep doorzichtig (open vraag). */
+     is op crème onleesbaar. Op donker is de streep doorzichtig (besluit Ronald,
+     26-09-2026: "4 A"). */
   .landing-title span { color: var(--accent); text-decoration: underline; text-decoration-color: var(--titel-streep); text-decoration-thickness: 5px; text-underline-offset: 6px; }
   .landing-sub { font-size: 16px; color: var(--muted); line-height: 1.7; font-weight: 300; margin-bottom: 36px; max-width: 520px; margin-left: auto; margin-right: auto; }
   .landing-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
