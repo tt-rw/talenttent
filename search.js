@@ -62,6 +62,8 @@ let lastMusicianResults = [];
 // TT-62: is de straal automatisch verruimd, dan staat hier {van, naar}.
 // {leeg:true} betekent: ook landelijk niets gevonden. null = niet verruimd.
 let musicianVerruimd = null;
+// TT-295: vertrekpunt van de laatste zoekopdracht met eigen profiel, of null.
+let laatsteZoekVertrek = null;
 let bandVerruimd = null;
 let setlistVerruimd = null;
 // TT-30 (07-08-2026): lijst- of kaartweergave voor de zoekresultaten, per
@@ -570,6 +572,15 @@ async function runSearch(straalOverride) {
       // TT-62: deze regel staat bewust vóór de RPC, want de verruiming
       // hieronder moet weten of er een straal actief is.
       originResolved = usesOwnCity || origin.lat != null;
+      // TT-295: het vertrekpunt van déze zoekopdracht, voor "Bewaar deze
+      // zoekopdracht". De ingestelde straal, niet een verruimde (TT-62).
+      laatsteZoekVertrek = originResolved ? {
+        plaats: usesOwnCity ? null : typedCity,
+        plaatsTekst: usesOwnCity ? (myCity || 'je woonplaats') : typedCity,
+        lat: usesOwnCity ? null : origin.lat,
+        lng: usesOwnCity ? null : origin.lng,
+        straal: parseRadiusInput('filterRadius'),
+      } : null;
 
       const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians', {
         searcher_id: mid, radius_km: radius,
@@ -772,11 +783,17 @@ function renderSearchResults(musicians, opts) {
       <div class="no-results">
         <p style="font-size:16px;font-weight:600;margin-bottom:8px;">${kop}</p>
         <p style="font-size:13px;">${uitleg}</p>
-      </div>`;
+      </div>
+      <div id="seintjePlek"></div>`;
+    vulSeintjeBlok();
     return;
   }
 
   const verruimd = verruimdNotice(opts.verruimd, 'muzikanten');
+  // TT-295: is de straal verruimd (TT-62), dan zit de juiste er dichtbij nog
+  // niet bij. Precies dan hoort het blok bovenaan, direct onder die regel.
+  // Anders staat het onder de lijst.
+  const seintjePlek = '<div id="seintjePlek"></div>';
   const locationHint = opts.showLocationHint
     ? `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Dit zijn ${musicians.length} willekeurige muzikanten uit heel Nederland — vul een plaats in voor resultaten bij jou in de buurt.</p>`
     : '';
@@ -788,10 +805,12 @@ function renderSearchResults(musicians, opts) {
     <div class="results-header">
       <span class="results-count">${total} muzikant${total !== 1 ? 'en' : ''} gevonden</span>
     </div>
-    ${verruimd}${locationHint}${cappedNotice}
+    ${verruimd}${verruimd ? seintjePlek : ''}${locationHint}${cappedNotice}
     <div class="${musicianViewMode === 'grid' ? 'results-grid-view' : 'results-list'}">
       ${musicians.map(m => musicianViewMode === 'grid' ? musicianCardHTML(m) : musicianRowHTML(m)).join('')}
-    </div>`;
+    </div>
+    ${verruimd ? '' : seintjePlek}`;
+  vulSeintjeBlok();
 }
 
 // Gedeeld door runSearch() en setSearchSortMode() — zorgt dat afkappen tot
@@ -2293,4 +2312,181 @@ function toggleGedeeldRij(sleutel) {
   if (gedeeldOpen.has(sleutel)) gedeeldOpen.delete(sleutel);
   else gedeeldOpen.add(sleutel);
   renderGedeeldResults();
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TT-295 (26-09-2026) — de bewaarde zoekopdracht.
+
+   Besluiten Ronald, 26-09-2026: één bewaarde zoekopdracht per muzikant; hij
+   bewaart alle filters behalve de naam; alleen het tabblad Muzikant. De
+   nachtelijke digest (Edge Function send-digest) leest hem via
+   tt_digest_new_musicians en mailt wie er sindsdien bij kwam. Dit vervangt
+   musician_wanted, dat sinds TT-232 niemand meer kon vullen.
+
+   Het blok staat onder het zoekresultaat, ook onder een leeg resultaat: daar
+   zie je dat de juiste er nog niet bij zit (TT-62 deel 2). Alleen met een
+   eigen profiel (anders is er niemand om te mailen) en niet als er een naam
+   in het zoekveld staat (je zoekt dan één persoon, TT-257).
+   ───────────────────────────────────────────────────────────────────────── */
+let bewaardeZoek = undefined; // undefined = nog niet geladen, null = geen
+
+async function laadBewaardeZoek() {
+  const mid = await getMyMusicianId();
+  if (!mid) { bewaardeZoek = null; return null; }
+  const { data, error } = await db.from('musician_saved_search')
+    .select('*').eq('musician_id', mid).maybeSingle();
+  if (error) throw error;
+  bewaardeZoek = data || null;
+  return bewaardeZoek;
+}
+// Bij uitloggen: niets van de vorige gebruiker laten staan.
+function wisBewaardeZoek() { bewaardeZoek = undefined; laatsteZoekVertrek = null; }
+
+// De zoekopdracht zoals hij nu op het scherm staat, in de vorm van de tabel.
+function huidigeZoek() {
+  const v = laatsteZoekVertrek;
+  const getal = (id) => { const x = document.getElementById(id).value; return x ? parseInt(x) : null; };
+  return {
+    instruments: filterInstruments.slice(),
+    genres: filterGenres.slice(),
+    age_min: getal('filterAgeMin'), age_max: getal('filterAgeMax'),
+    niveau_min: getal('filterNiveauMin'), niveau_max: getal('filterNiveauMax'),
+    radius_km: v.straal,
+    plaats: v.plaats, plaats_tekst: v.plaatsTekst,
+    origin_lat: v.lat, origin_lng: v.lng,
+  };
+}
+
+// "Drums, Bas · Rock · 18 t/m 30 jaar · niveau 2 t/m 4 · binnen 10 km van Delft"
+function zoekTekst(z) {
+  const delen = [z.instruments && z.instruments.length ? z.instruments.join(', ') : 'Alle instrumenten'];
+  if (z.genres && z.genres.length) delen.push(z.genres.join(', '));
+  if (z.age_min != null || z.age_max != null) {
+    delen.push(z.age_max == null ? `vanaf ${z.age_min} jaar`
+      : z.age_min == null ? `tot en met ${z.age_max} jaar`
+      : `${z.age_min} t/m ${z.age_max} jaar`);
+  }
+  if (z.niveau_min != null || z.niveau_max != null) {
+    delen.push(z.niveau_max == null ? `niveau ${z.niveau_min} en hoger`
+      : z.niveau_min == null ? `niveau tot en met ${z.niveau_max}`
+      : z.niveau_min === z.niveau_max ? `niveau ${z.niveau_min}`
+      : `niveau ${z.niveau_min} t/m ${z.niveau_max}`);
+  }
+  delen.push(`binnen ${Number(z.radius_km)} km van ${z.plaats_tekst || 'je woonplaats'}`);
+  return delen.join(' · ');
+}
+
+function zelfdeZoek(a, b) {
+  const lijst = (x) => (x || []).slice().sort().join('|');
+  return lijst(a.instruments) === lijst(b.instruments) && lijst(a.genres) === lijst(b.genres)
+    && a.age_min == b.age_min && a.age_max == b.age_max
+    && a.niveau_min == b.niveau_min && a.niveau_max == b.niveau_max
+    && Number(a.radius_km) === Number(b.radius_km)
+    && (a.plaats || '').toLowerCase() === (b.plaats || '').toLowerCase();
+}
+
+async function vulSeintjeBlok() {
+  const plek = document.getElementById('seintjePlek');
+  if (!plek) return;
+  plek.innerHTML = '';
+  if (!hasOwnProfile || !laatsteZoekVertrek) return;
+  if (naamZoekTerm(document.getElementById('filterName').value)) return;
+  try {
+    if (bewaardeZoek === undefined) await laadBewaardeZoek();
+  } catch (e) {
+    logCaught('vulSeintjeBlok', e);
+    return; // geen blok is beter dan een kapot blok
+  }
+  if (!plek.isConnected) return; // intussen opnieuw getekend
+  const nu = huidigeZoek();
+  const bewaard = bewaardeZoek;
+  const dezelfde = !!bewaard && zelfdeZoek(bewaard, nu);
+  plek.innerHTML = `
+    <div class="seintje-blok">
+      <p class="seintje-kop">${dezelfde ? 'Je krijgt een mail als er iemand bijkomt' : 'Mail me als er iemand bijkomt'}</p>
+      <p class="seintje-zoek">${escHtml(zoekTekst(nu))}</p>
+      ${bewaard && !dezelfde
+        ? `<p class="seintje-klein">Je bewaarde zoekopdracht is nu: ${escHtml(zoekTekst(bewaard))}. Je kunt er één bewaren.</p>` : ''}
+      ${dezelfde
+        ? `<p class="seintje-klein">Je hoeft niet zelf terug te komen kijken. Stoppen kan hier of in Instellingen.</p>
+           <button type="button" class="btn btn-ghost seintje-knop" onclick="stopBewaardeZoek()">Stoppen</button>`
+        : `<button type="button" class="btn btn-ghost seintje-knop" onclick="bewaarZoek()">${bewaard ? 'Vervangen door deze' : 'Bewaar deze zoekopdracht'}</button>`}
+    </div>`;
+}
+
+let bewaarBezig = false;
+function bewaarZoek() {
+  if (bewaarBezig || !laatsteZoekVertrek) return;
+  const nu = huidigeZoek();
+  if (bewaardeZoek) {
+    // Controlevraag (huisstijl §19): noem wat er verdwijnt en wat ervoor terugkomt.
+    showConfirm(`Je krijgt dan geen mail meer over ${zoekTekst(bewaardeZoek)}, maar over ${zoekTekst(nu)}. Is dat wat je wilt?`,
+      () => bewaarZoekUitvoeren(nu), 'Ja, vervangen');
+    return;
+  }
+  bewaarZoekUitvoeren(nu);
+}
+
+async function bewaarZoekUitvoeren(nu) {
+  if (bewaarBezig) return;
+  bewaarBezig = true; // TT-252: een dubbele tik schrijft niet twee keer
+  try {
+    const mid = await getMyMusicianId();
+    if (!mid) return;
+    const rij = Object.assign({ musician_id: mid }, nu);
+    const { error } = await db.from('musician_saved_search').upsert(rij, { onConflict: 'musician_id' });
+    if (error) throw error;
+    bewaardeZoek = rij;
+    // Wie de mail had uitgezet, zet hem met deze tik weer aan.
+    const { data: m, error: mErr } = await db.from('musicians')
+      .select('email_digest_frequency').eq('id', mid).single();
+    if (mErr) throw mErr;
+    if (m && m.email_digest_frequency === 'off') {
+      const { error: uErr } = await db.from('musicians')
+        .update({ email_digest_frequency: 'daily' }).eq('id', mid);
+      if (uErr) throw uErr;
+      showToast('Bewaard. Je mail stond uit en staat nu op dagelijks.');
+    } else {
+      showToast('Bewaard. Je krijgt een mail als er iemand bijkomt.');
+    }
+    vulSeintjeBlok();
+  } catch (e) {
+    logCaught('bewaarZoek', e);
+    showToast(friendlyErrorMessage(e));
+  } finally {
+    bewaarBezig = false;
+  }
+}
+
+async function stopBewaardeZoek(vanuitInstellingen) {
+  try {
+    const mid = await getMyMusicianId();
+    if (!mid) return;
+    const { error } = await db.from('musician_saved_search').delete().eq('musician_id', mid);
+    if (error) throw error;
+    bewaardeZoek = null;
+    showToast('Gestopt. Je krijgt hier geen mail meer over.');
+    vulSeintjeBlok();
+    if (vanuitInstellingen) vulBewaardeZoekInInstellingen();
+  } catch (e) {
+    logCaught('stopBewaardeZoek', e);
+    showToast(friendlyErrorMessage(e));
+  }
+}
+
+// Instellingen → E-mailvoorkeuren: de enige andere plek waar je hem ziet.
+async function vulBewaardeZoekInInstellingen() {
+  const plek = document.getElementById('bewaardeZoekInstellingen');
+  if (!plek) return;
+  try {
+    await laadBewaardeZoek();
+  } catch (e) {
+    logCaught('vulBewaardeZoekInInstellingen', e);
+    plek.innerHTML = '';
+    return;
+  }
+  plek.innerHTML = bewaardeZoek
+    ? `<p class="seintje-zoek">${escHtml(zoekTekst(bewaardeZoek))}</p>
+       <button type="button" class="btn btn-ghost seintje-knop" onclick="stopBewaardeZoek(true)">Stoppen</button>`
+    : `<p class="field-hint">Nog geen. Zoek een muzikant en tik onder de resultaten op "Bewaar deze zoekopdracht".</p>`;
 }

@@ -390,6 +390,7 @@ function onUserLoggedOut() {
   // gedeelde bandlink zonder eerst Zoeken te bezoeken.
   hasOwnProfile = false;
   wisBlokkades(); // TT-06: de blokkades van de vorige gebruiker mogen niet blijven staan
+  wisBewaardeZoek(); // TT-295: idem voor de bewaarde zoekopdracht
   const consentBox = document.getElementById('consentCheckbox');
   if (consentBox) { consentBox.checked = false; updateSubmitProfileState(); }
   // Beveiligingsfix: een editeer-sessie (via "Profiel bewerken") mag nooit
@@ -560,6 +561,7 @@ async function openSearchPrefsModal() {
     if (musicianRes.error) throw musicianRes.error;
     selectDigestFrequency(musicianRes.data?.email_digest_frequency || 'daily');
     document.getElementById('searchPrefsModal').classList.add('visible');
+    vulBewaardeZoekInInstellingen(); // TT-295
   } catch (e) {
     logCaught('openSearchPrefsModal', e);
     showToast(friendlyErrorMessage(e));

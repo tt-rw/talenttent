@@ -50,7 +50,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260925d">
+<link rel="stylesheet" href="styles.css?v=20260926e">
 </head>
 <body>
 
@@ -2307,6 +2307,7 @@
     <div class="filter-title" style="margin-bottom:4px;">E-mailvoorkeuren</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Deze instellingen gelden alleen voor e-mail. Je zoekresultaten veranderen hier niet door.</p>
 
+    <div class="modal-blok">
     <div class="field" style="margin-bottom:20px;">
       <label>Nieuwe-matches e-mail</label>
       <div class="segmented-control" id="digestFrequencyControl">
@@ -2317,6 +2318,17 @@
     </div>
 
     <button class="btn btn-primary" style="width:100%;" onclick="saveSearchPrefs()">Opslaan</button>
+    </div>
+
+    <!-- TT-295 (26-09-2026): de bewaarde zoekopdracht. Eigen blok met eigen
+         knop (huisstijl §5, tweede uitzondering): stoppen werkt meteen, los
+         van Opslaan hierboven. -->
+    <div class="modal-blok">
+      <div class="field">
+        <label>Bewaarde zoekopdracht</label>
+        <div id="bewaardeZoekInstellingen"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2548,14 +2560,14 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260926b"></script>
+<script src="core.js?v=20260926e"></script>
 <script src="utils.js?v=20260925a"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260923a"></script>
 <script src="postcode.js?v=20260917a"></script>
 <script src="wizard.js?v=20260925c"></script>
 <script src="ouder.js?v=20260926a"></script>
-<script src="search.js?v=20260925d"></script>
+<script src="search.js?v=20260926e"></script>
 <script src="musicians.js?v=20260925c"></script>
 <script src="bands.js?v=20260925a"></script>
 <script src="messages.js?v=20260925c"></script>

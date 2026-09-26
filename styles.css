@@ -2547,6 +2547,43 @@
     color: var(--muted);
   }
 
+  /* ── TT-295 (26-09-2026): de bewaarde zoekopdracht ──────────────────────
+     Onder het zoekresultaat op het tabblad Muzikant, en in Instellingen →
+     E-mailvoorkeuren. Een paneel zoals .search-filters: --surface, rand
+     --border, hoek --radius. Kop 16px vet (zoals de kop van een lege staat,
+     huisstijl §15), de zoekopdracht in woorden eronder. Eén knop, een
+     tweede knop (.btn-ghost): de zoekresultaten blijven de hoofdzaak. */
+  .seintje-blok {
+    margin-top: 20px;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .seintje-kop {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .seintje-zoek {
+    margin: 0;
+    font-size: 13px;
+    line-height: 20px;
+    color: var(--text);
+  }
+  .seintje-klein {
+    margin: 8px 0 0;
+    font-size: var(--fs-sm);
+    line-height: 16px;
+    color: var(--muted);
+  }
+  .seintje-knop {
+    width: 100%;
+    margin-top: 16px;
+  }
+  #bewaardeZoekInstellingen .seintje-zoek { padding-left: var(--field-inset); }
+
   /* ── TT-289 (17-09-2026): Setlist-tabblad in twee standen ────────────────
      Twee losse knoppen met de vorm en kleuren van de hoofdtabbladen
      (.search-mode-tab), zodat de actieve stand er precies zo uitziet als
