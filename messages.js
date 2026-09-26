@@ -123,7 +123,7 @@ async function sendReplyInThread() {
 
   const ok = await insertMessage(activeConversationId, tekst);
   if (ok) {
-    openConversation(activeConversationId, document.getElementById('messagesThreadName').textContent, undefined, undefined, true);
+    openConversation(activeConversationId, document.getElementById('messagesThreadName').textContent, undefined, true);
   } else {
     // Mislukt: het voorlopige bericht weer weghalen en de tekst teruggeven,
     // zodat niemand denkt dat het verstuurd is.
@@ -239,7 +239,7 @@ async function loadInbox() {
     });
 
     const otherIds = Array.from(conversations.keys());
-    const { data: musiciansData } = await db.from('musicians').select('id, fname, username, avatar_url, profile_color').in('id', otherIds);
+    const { data: musiciansData } = await db.from('musicians').select('id, fname, username, avatar_url').in('id', otherIds);
     const infoById = {};
     (musiciansData || []).forEach(m => { infoById[m.id] = m; });
 
@@ -249,7 +249,6 @@ async function loadInbox() {
       // hebben — berichten blijven staan, maar tonen dan een duidelijke
       // naam i.p.v. de generieke "Muzikant"-fallback van displayNameOf().
       const name = info ? displayNameOf(info) : 'Verwijderde gebruiker';
-      const col = safeColor(info && info.profile_color, '#f5c518');
       const avatarSrc = info ? safeUrl(info.avatar_url) : null;
       const avatarHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(name)}">` : AVATAR_T_FALLBACK;
       const isOwn = c.lastMessage.sender_id === mid;
@@ -257,8 +256,8 @@ async function loadInbox() {
       const preview = c.lastMessage.body.length > 50 ? c.lastMessage.body.slice(0, 50) + '…' : c.lastMessage.body;
       const time = relativeMessageTime(c.lastMessage.created_at);
       return `
-        <div class="messages-conv-row ${c.unreadCount ? 'unread' : ''}" onclick="openConversation('${jsAttr(c.otherId)}','${jsAttr(name)}','${jsAttr(col)}','${jsAttr(avatarSrc)}', false, ${!info})">
-          <div class="messages-conv-avatar" style="background:${col};">${avatarHTML}</div>
+        <div class="messages-conv-row ${c.unreadCount ? 'unread' : ''}" onclick="openConversation('${jsAttr(c.otherId)}','${jsAttr(name)}','${jsAttr(avatarSrc)}', false, ${!info})">
+          <div class="messages-conv-avatar">${avatarHTML}</div>
           <div class="messages-conv-main">
             <div class="messages-conv-name">${escHtml(name)}${c.unreadCount ? ` <span class="unread-badge" style="position:static;">${c.unreadCount}</span>` : ''}</div>
             <div class="messages-conv-preview">${escHtml(previewPrefix + preview)}</div>
@@ -305,7 +304,7 @@ let activeConversationDeleted = false;
 // database leest die niet als uuid. De gebruiker zag dan "Gesprek laden is
 // niet gelukt". Eén controle hier, niet per aanroep — zelfde regel als §2.11
 // van de projectinstructies.
-async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, stil, deleted) {
+async function openConversation(otherId, otherName, otherAvatarSrc, stil, deleted) {
   if (!otherId) return;
   activeConversationId = otherId;
   werkTerugKnopBij(); // TT-301: een open gesprek is een stap terug
@@ -321,10 +320,10 @@ async function openConversation(otherId, otherName, otherColor, otherAvatarSrc, 
   // verwijderd account is er niemand meer om te melden of te blokkeren.
   zetVeiligheidMenu('messagesThreadActies', 'gesprek',
     activeConversationDeleted ? null : otherId, otherName);
-  if (otherColor !== undefined) {
-    const col = safeColor(otherColor, '#f5c518');
+  // Zonder foto-argument is dit de stille verversing na het versturen: de
+  // kop staat er dan al.
+  if (otherAvatarSrc !== undefined) {
     const avatarEl = document.getElementById('messagesThreadAvatar');
-    avatarEl.style.background = col;
     avatarEl.innerHTML = otherAvatarSrc ? `<img src="${safeUrl(otherAvatarSrc)}" alt="${escHtml(otherName)}">` : AVATAR_T_FALLBACK;
   }
   document.getElementById('messagesInboxPanel').style.display = 'none';
@@ -427,17 +426,16 @@ function closeConversation() {
 }
 
 // TT-279 (16-09-2026): na verversen het gesprek uit de adresregel weer
-// openen. Naam, kleur en foto komen uit dezelfde vraag als in loadInbox().
+// openen. Naam en foto komen uit dezelfde vraag als in loadInbox().
 async function heropenGesprek(otherId) {
   try {
     const { data, error } = await db.from('musicians')
-      .select('id, fname, username, avatar_url, profile_color').eq('id', otherId);
+      .select('id, fname, username, avatar_url').eq('id', otherId);
     if (error) throw error;
     const info = (data || [])[0];
     const name = info ? displayNameOf(info) : 'Verwijderde gebruiker';
-    const col = safeColor(info && info.profile_color, '#f5c518');
     const avatarSrc = info ? safeUrl(info.avatar_url) : null;
-    openConversation(otherId, name, col, avatarSrc, false, !info);
+    openConversation(otherId, name, avatarSrc, false, !info);
   } catch (e) {
     logCaught('heropenGesprek', e);
   }

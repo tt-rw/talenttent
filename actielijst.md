@@ -1,6 +1,76 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 26-09-2026 (TT-341, stap 1) — **Kleuren per rol in
+**Laatste update:** 26-09-2026 (TT-341, stap 2) — **Het lichte thema staat in
+`styles.css`, en donker is "rustig" geworden.** Een gebruiker ziet vandaag
+alleen donker: licht is actief met `<html data-theme="licht">`, en de keuze
+daarvoor komt in stap 3. Zeven P0's staan open; TT-341 is P2 (advies Claude),
+dat is één keer gemeld.
+
+**Aanleiding.** Ronald: "ga verder met stap 2 voor de light skin toevoeging."
+
+**Besluiten Ronald die hier zijn doorgevoerd** (antwoorden op de vier open
+vragen van stap 1, 26-09-2026):
+- Een profielkleur per persoon bestaat niet meer ("bestaat allang niet meer").
+  Het profielvlak is overal geel met een zwarte T.
+- Op licht staan knoppen in gewone letters, en hebben kaarten en velden de
+  hoeken uit de designproef (16px en 10px).
+- Gekozen keuze: voorlopig op licht een geel vlak, op donker de gouden rand.
+- De vier donkere lagen achter venster en menu: later vereenvoudigen, TT-342.
+  Op licht hebben alle vier dezelfde waarde uit de designproef.
+
+**Wat er veranderde — beide thema's (donker gaat dus live bij upload):**
+- `--accent` is de tekstkleur (`#f0f0f0`), niet meer goud: koppen, iconen,
+  randen, sterren en de focusrand. Geel blijft alleen voor "doe dit" en "hier
+  ben je": hoofdknop, verzendknop, gekozen keuze, actieve tab onderin, de
+  actieve stip, het bannerteken, TENT in het woordmerk. `--accent2` (cyaan) is
+  weg. Dit volgt "Donker + geel" uit de designproef.
+- Profielvlak met de T overal geel met een zwarte T: resultaten, profiel,
+  gesprekken, bands, bandleden, de foto-keuze in de wizard, en het vlak van
+  een afgeschermd medium (was een gouden T op grijs).
+- Badges (instrument, genre, gezocht, bandstatus, niveaulabel): geen vlak,
+  een dunne neutrale rand, tekst in de tekstkleur. Eén vorm, zoals TT-315.
+- Je eigen bericht grijs met een rand; ongelezen blijft het rode rondje.
+- Actieve tab onderin: een afgerond geel blok met zwarte tekst.
+- Berichticoon op een resultaat: alleen een lijn in de tekstkleur.
+- Volledigheidsmeter: in `--accent`, niet meer in de profielkleur.
+- **Code:** `profile_color` wordt nergens meer gelezen. Weg: `safeColor()`,
+  de kleurparameter van `tagSolid()`, `overflowBadgeHTML()`,
+  `setlistMatchBadge()` en `openConversation()`, `bandState.color`, de klasse
+  `.tag-genre`, en `profile_color` uit elke leesvraag. Het schrijven van
+  `profile_color` bij aanmelden blijft (`DEFAULT_PROFILE_COLOR`): of de kolom
+  leeg mag zijn, is niet gemeten.
+- Nieuwe rollen in `:root`: `--rand-neutraal`, `--ongelezen`,
+  `--bericht-eigen`, `--bericht-rand-eigen`, `--bericht-ander`,
+  `--bericht-rand`, `--knop-klein-vlak`, `--titel-streep`, `--keuze-vlak`,
+  `--gekozen-bijschrift`. Weg: `--accent2`, `--op-avatar`, `--tint-vlak`.
+
+**Wat er veranderde — alleen licht:** de waarden uit "Licht + geel, huidig
+woordmerk" (crème `#F6F3EC`, kaarten `#FFFEFA`, tekst `#1E1E1E`, velden in de
+kleur van de ondergrond met rand `#C9C3B6`, TALENT zwart en TENT geel), plus
+drie vormregels: knoppen en veldlabels in gewone letters, voorbeeldtekst
+lichter, kaarten 16px en velden 10px. Op het startscherm staat een gele streep
+onder het gekleurde woord, want gele tekst is op crème onleesbaar.
+
+**Geverifieerd.** Monitor 21/21 · testset 585/585 (nieuw: blok 40, 19
+controles voor beide thema's). Alle 24 schermen van de designproef naast de
+proef gelegd, op 390px, pixel voor pixel. Donker: 17 gelijk, 7 met kleine
+verschillen, allemaal bewust — tags en niveaulabels omlijnd in plaats van een
+grijs vlak (één tagvorm), en de afgevinkte punten van de volledigheidsmeter
+wit in plaats van goud. Licht: elk verschil onder 6%, vooral 1 tot 2px
+verschuiving door de rand van 1px en de tekstinspringing van 10px.
+
+**Open vraag voor Ronald — vorm in donker.** Knoppen en veldlabels in gewone
+letters, rondere hoeken, en de gele streep onder het gekleurde woord op het
+startscherm staan nu alleen in licht. Ook in donker? Het is per punt één regel
+in `styles.css`.
+
+**Volgende sessie: stap 3** — de keuze Weergave in Instellingen (Zoals mijn
+toestel · Licht · Donker, voorstel Claude), `theme-color`, en de huisstijl en
+projectinstructies §11 bijwerken naar beide thema's.
+
+---
+
+**Vorige update:** 26-09-2026 (TT-341, stap 1) — **Kleuren per rol in
 variabelen. Donker ziet er hetzelfde uit; het lichte thema is er nog niet.**
 Zeven P0's staan open; TT-341 is P2 (advies Claude), dat is één keer gemeld.
 
@@ -6223,7 +6293,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-341** | Licht thema, kiesbaar naast donker | **Nieuw, 26-09-2026, wens Ronald. Besluit Ronald: doorvoeren, op basis van "Licht + geel, huidig woordmerk" uit de designproef. Stap 1 gebouwd, 26-09-2026: kleuren per rol in variabelen, donker ongewijzigd.** Keuze onthouden op het toestel (besluit Ronald). Bouwplan in drie sessies en open vragen: zie de updates van 26-09-2026 (designproef) en (TT-341, stap 1). **Toets P2 (advies Claude):** de app werkt zonder, maar een deel van de gebruikers vindt een lichte weergave prettiger of beter leesbaar, vooral overdag buiten. Geen gebruiker loopt vast zonder |
+| **TT-341** | Licht thema, kiesbaar naast donker | **Nieuw, 26-09-2026, wens Ronald. Besluit Ronald: doorvoeren, op basis van "Licht + geel, huidig woordmerk" uit de designproef. Stap 1 gebouwd, 26-09-2026: kleuren per rol in variabelen, donker ongewijzigd. Stap 2 gebouwd, 26-09-2026: het lichte thema in `styles.css` en donker "rustig"; zie de update van die dag.** Keuze onthouden op het toestel (besluit Ronald). Bouwplan in drie sessies en open vragen: zie de updates van 26-09-2026 (designproef) en (TT-341, stap 1). **Toets P2 (advies Claude):** de app werkt zonder, maar een deel van de gebruikers vindt een lichte weergave prettiger of beter leesbaar, vooral overdag buiten. Geen gebruiker loopt vast zonder |
 | **TT-332** | Na de toestemming van de ouder ontbreekt een afsluiter | **Gebouwd en getest 26-09-2026 (vervolg 2), akkoord Ronald — zie Laatste update.** Nieuw, 26-09-2026, wens Ronald (TT-323). Na "Toestemming geven" volgt een bedankscherm zonder einde. Ronald: er moet een afsluiter komen "in de zin van: u kunt dit scherm nu afsluiten". **Toets P2:** het werkt, maar de ouder weet niet dat hij klaar is. **Voorstel voor de tekst:** "Je kunt dit venster nu sluiten." — de pagina spreekt de ouder met "je" aan. |
 | **TT-333** | "Verzoek" in de app, "aanvraag" in de mails | **Gebouwd en getest 26-09-2026 (vervolg 2), wens Ronald: ook in de app "aanvraag" — zie Laatste update.** Nieuw, 26-09-2026, TT-323. Besluit TT-325: in de mails altijd "aanvraag", nooit "verzoek". De app zegt "Je verzoek is verstuurd", "Verzoek versturen…" en op de goedkeuringspagina "Dit verzoek is afgewezen" / "Een verzoek vervalt". **Toets P2:** het werkt, maar dezelfde handeling heeft twee namen. **Open vraag aan Ronald:** geldt "aanvraag" ook in de app? |
 | **TT-334** | De mails tonen de volledige URL onder de knop | **Gebouwd en ingevoerd 26-09-2026 (vervolg 4), akkoord Ronald op het voorstel hieronder; in Supabase nagemeten. Wacht op TT-323.** **Nieuw, 26-09-2026, feedback Ronald (TT-323):** "ik wil niet de hele url tonen. het is te lang en rommelig." Het blok "Werkt de knop niet? Open dan deze link:" staat in het template, dus in alle zeven mails: de drie Edge Functions en de twee Supabase-sjablonen. **Toets P2:** het werkt, maar oogt rommelig. **Voorstel:** "Werkt de knop niet? Tik dan op deze link." met alleen "deze link" klikbaar. De tekstversie houdt de volledige URL. |
@@ -6338,6 +6408,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | — | App Store (native schil) | De huidige opzet (website in een schil) voldoet niet aan Apple's eisen. **Ronald wil dit op termijn wel** — voorlopig ligt de nadruk op PWA + Play (TT-70), code niet nodeloos monolithischer maken zodat een latere overstap goedkoper blijft. Sinds iOS 16.4 werken pushmeldingen ook in een PWA, wat de druk vermindert |
 | — | Rechtsvorm (KvK) | Ronald: "overweeg ik later" — wél relevant zodra de Play Store (TT-70) een concreet doel wordt (lost de testerseis op) |
 | — | Stickers/plectrums i.p.v. T-shirts | Eerste merchandise-idee |
+| **TT-342** | De vier donkere lagen achter venster en menu vereenvoudigen | **Nieuw, 26-09-2026, wens Ronald: later.** Nu vier waarden (55 tot 80% zwart) voor venster, opslaan, menu en wiel. Op licht hebben ze sinds TT-341 stap 2 al één waarde. **Toets P3 (advies Claude):** geen aanwijsbaar gevolg voor een gebruiker nu |
 
 ---
 

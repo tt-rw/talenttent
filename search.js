@@ -604,7 +604,7 @@ async function runSearch(straalOverride) {
       // profiel-modal hieronder.
       const { data, error } = await db.from('musicians').select(`
         id, fname, username, city, zip, bio, goal,
-        profile_color, avatar_url,
+        avatar_url,
         musician_instruments(instrument, niveau),
         musician_genres(genre),
         musician_songs(song_title, song_artist, mastery_level)
@@ -657,7 +657,7 @@ async function runSearch(straalOverride) {
         // birth_date staat er nog naast als terugval: zolang script C nog niet
         // is gedraaid, geeft de functie dat veld nog. ageOf() kiest zelf.
         id: m.id, username: m.username, age: m.age, birth_date: m.birth_date, city: m.city,
-        bio: m.bio, goal: m.goal, profile_color: m.profile_color, avatar_url: m.avatar_url,
+        bio: m.bio, goal: m.goal, avatar_url: m.avatar_url,
         // TT-51 (12-08-2026, RPC-restpunt gesloten): instrument_levels bevat
         // instrument + niveau samen — vervangt de eerdere platte instruments-
         // lijst zodat het niveaufilter ook voor uitgelogde bezoekers werkt.
@@ -867,7 +867,6 @@ function roleLabel(role) {
 }
 
 function musicianRowHTML(m) {
-  const col     = safeColor(m.profile_color, '#f5c518');
   const instruments = m.musician_instruments.map(x => x.instrument);
   const genres      = m.musician_genres.map(x => x.genre);
 
@@ -881,9 +880,9 @@ function musicianRowHTML(m) {
   const nameHTML = escHtml(displayName);
 
   return `
-    <div class="result-row" style="border-left-color:${col};" onclick="openMusicianModal('${jsAttr(m.id)}')">
+    <div class="result-row" onclick="openMusicianModal('${jsAttr(m.id)}')">
       <div class="result-row-top">
-        <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
+        <div class="result-row-avatar">${avatarHTML}</div>
         <div class="result-row-main">
           <div class="result-row-name">${nameHTML}</div>
           <div class="result-row-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
@@ -891,8 +890,8 @@ function musicianRowHTML(m) {
         <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-row-badges">
-        ${overflowBadgeHTML(instruments, col, 2)}
-        ${overflowBadgeHTML(genres, 'var(--accent2)', 2)}
+        ${overflowBadgeHTML(instruments, 2)}
+        ${overflowBadgeHTML(genres, 2)}
       </div>
     </div>`;
 }
@@ -904,7 +903,6 @@ function musicianRowHTML(m) {
 // (niet i.p.v.) de bestaande rijenlijst — voorkeur wordt onthouden per
 // tabblad (localStorage).
 function musicianCardHTML(m) {
-  const col = safeColor(m.profile_color, '#f5c518');
   const instruments = m.musician_instruments.map(x => x.instrument);
   const genres = m.musician_genres.map(x => x.genre);
 
@@ -915,14 +913,14 @@ function musicianCardHTML(m) {
 
   return `
     <div class="result-card" onclick="openMusicianModal('${jsAttr(m.id)}')">
-      <div class="result-card-photo" style="background:${col};">${photoHTML}</div>
+      <div class="result-card-photo">${photoHTML}</div>
       <div class="result-card-top-row">
         <div class="result-card-name">${nameHTML}</div>
         <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
-      <div class="result-card-badges-line">${overflowBadgeHTML(instruments, col, 2)}</div>
-      <div class="result-card-badges-line">${overflowBadgeHTML(genres, 'var(--accent2)', 2)}</div>
+      <div class="result-card-badges-line">${overflowBadgeHTML(instruments, 2)}</div>
+      <div class="result-card-badges-line">${overflowBadgeHTML(genres, 2)}</div>
     </div>`;
 }
 
@@ -997,7 +995,7 @@ function setBandSearchSortMode(mode) {
   }
 }
 
-let bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff', niveau: null, avatarUrl: null, avatarPath: null };
+let bandState = { genres: [], status: 'zoekend', wanted: [], niveau: null, avatarUrl: null, avatarPath: null };
 
 function initBandSearchFilters() {
   if (!PICKERS.filterBandGenres) {
@@ -1177,7 +1175,7 @@ async function runBandSearch(straalOverride) {
       matches.forEach(m => { matchInfo[m.band_id] = m; });
 
       const ids = matches.map(m => m.band_id);
-      let query = db.from('bands').select(`id, name, city, genres, status, description, profile_color, niveau, band_members(musician_id, status, musicians(fname, profile_color)), band_wanted(instrument)`).in('id', ids);
+      let query = db.from('bands').select(`id, name, city, genres, status, description, niveau, band_members(musician_id, status, musicians(fname)), band_wanted(instrument)`).in('id', ids);
       if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
       const { data, error } = await query;
       if (error) throw error;
@@ -1210,9 +1208,9 @@ async function runBandSearch(straalOverride) {
       if (filterBandStatusVal) data = (data || []).filter(b => b.status === filterBandStatusVal);
       bands = (data || []).map(b => ({
         id: b.id, name: b.name, city: b.city, genres: b.genres || [], status: b.status,
-        description: b.description, profile_color: b.profile_color,
+        description: b.description,
         niveau: b.niveau, // TT-51 (12-08-2026, RPC-restpunt gesloten)
-        band_members: (b.members || []).map(x => ({ status: 'bevestigd', musicians: { fname: x.fname, profile_color: x.profile_color } })),
+        band_members: (b.members || []).map(x => ({ status: 'bevestigd', musicians: { fname: x.fname } })),
         band_wanted: (b.wanted || []).map(i => ({ instrument: i })),
       }));
     }
@@ -1314,13 +1312,12 @@ function renderCappedBandResults() {
 
 // Lijstweergave i.p.v. kaarten (04-08-2026) — duidelijker scanbaar bij veel resultaten.
 function bandRowHTML(b, statusLabels) {
-  const col = safeColor(b.profile_color, '#3ecfff');
   const wanted = (b.band_wanted||[]).slice(0,3);
   const status = statusLabels[b.status] ? b.status : '';
   return `
-    <div class="result-row" style="border-left-color:${col};" onclick="openBandModal('${jsAttr(b.id)}')">
+    <div class="result-row" onclick="openBandModal('${jsAttr(b.id)}')">
       <div class="result-row-top">
-        <div class="result-row-avatar" style="background:${col};border-radius:10px;">${AVATAR_T_FALLBACK}</div>
+        <div class="result-row-avatar" style="border-radius:10px;">${AVATAR_T_FALLBACK}</div>
         <div class="result-row-main">
           <div class="result-row-name">${escHtml(b.name)}</div>
           <div class="result-row-meta">
@@ -1330,7 +1327,7 @@ function bandRowHTML(b, statusLabels) {
         </div>
       </div>
       <div class="result-row-badges">
-        ${wanted.map(w => tagSolid('+ ' + w.instrument, 'var(--accent2)')).join('')}
+        ${wanted.map(w => tagSolid('+ ' + w.instrument)).join('')}
       </div>
     </div>`;
 }
@@ -1340,19 +1337,18 @@ function bandRowHTML(b, statusLabels) {
 // berichten-icoon (in tegenstelling tot de muzikant-varianten): berichten
 // bestaan vooralsnog alleen muzikant-naar-muzikant, niet naar een band.
 function bandCardHTML(b, statusLabels) {
-  const col = safeColor(b.profile_color, '#3ecfff');
   const wanted = (b.band_wanted||[]).slice(0,3);
   const status = statusLabels[b.status] ? b.status : '';
   return `
     <div class="result-card" onclick="openBandModal('${jsAttr(b.id)}')">
-      <div class="result-card-photo" style="background:${col};border-radius:8px;">${AVATAR_T_FALLBACK}</div>
+      <div class="result-card-photo" style="border-radius:8px;">${AVATAR_T_FALLBACK}</div>
       <div class="result-card-name">${escHtml(b.name)}</div>
       <div class="result-card-meta">
         ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
         <span class="band-status-badge band-status-${status}" style="margin-left:8px;">${escHtml(statusLabels[status] || b.status)}</span>
       </div>
       <div class="result-card-badges">
-        ${wanted.map(w => tagSolid('+ ' + w.instrument, 'var(--accent2)')).join('')}
+        ${wanted.map(w => tagSolid('+ ' + w.instrument)).join('')}
       </div>
     </div>`;
 }
@@ -1736,7 +1732,7 @@ async function runSetlistSearch(straalOverride) {
     let musicians;
     if (hasOwnProfile) {
       const { data, error } = await db.from('musicians').select(`
-        id, fname, username, city, zip, profile_color, avatar_url,
+        id, fname, username, city, zip, avatar_url,
         musician_songs(song_title, song_artist, mastery_level),
         musician_instruments(instrument, niveau)
       `).in('id', ids);
@@ -1747,7 +1743,7 @@ async function runSetlistSearch(straalOverride) {
       if (error) throw error;
       musicians = (data || []).map(m => ({
         id: m.id, username: m.username, city: m.city, // TT-43/TT-04: geen fname of postcode voor bezoekers
-        profile_color: m.profile_color, avatar_url: m.avatar_url,
+        avatar_url: m.avatar_url,
         musician_songs: m.songs || [],
         musician_instruments: (m.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
       }));
@@ -1839,45 +1835,42 @@ function renderSetlistResults(musicians, opts) {
 // de match in plaats van instrumenten en genres. Genres worden bij deze
 // zoekopdracht niet opgehaald; de match is hier het antwoord op de vraag.
 function musicianSetlistCardHTML(m) {
-  const col = safeColor(m.profile_color, '#f5c518');
   const avatarSrc = safeUrl(m.avatar_url);
   const displayName = displayNameOf(m);
   const photoHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
 
   return `
     <div class="result-card" onclick="openMusicianModal('${jsAttr(m.id)}')">
-      <div class="result-card-photo" style="background:${col};">${photoHTML}</div>
+      <div class="result-card-photo">${photoHTML}</div>
       <div class="result-card-top-row">
         <div class="result-card-name">${escHtml(displayName)}</div>
         <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
-      <div class="result-card-badges-line">${setlistMatchBadge(m, col)}</div>
+      <div class="result-card-badges-line">${setlistMatchBadge(m)}</div>
     </div>`;
 }
 
 // Eén bron voor de matchbadge, gedeeld door de rij- en de kaartweergave.
-function setlistMatchBadge(m, col) {
+function setlistMatchBadge(m) {
   const total = setlistWantedSongs.length;
   return tagSolid(
-    `${m.matchCount}/${total} match${m.matchCount !== 1 ? 'es' : ''}: ${m.matchedNumbers.map(n => '#' + Number(n)).join(', ')}`,
-    col
+    `${m.matchCount}/${total} match${m.matchCount !== 1 ? 'es' : ''}: ${m.matchedNumbers.map(n => '#' + Number(n)).join(', ')}`
   );
 }
 
 // Compact gehouden: volledige nummertitels zijn te veel info voor één regel
 // (Ronald) — toont i.p.v. daarvan het aantal treffers + de volgnummers.
 function musicianSetlistRowHTML(m) {
-  const col = safeColor(m.profile_color, '#f5c518');
   const avatarSrc = safeUrl(m.avatar_url);
   const displayName = displayNameOf(m);
   const avatarHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
   const nameHTML = escHtml(displayName);
 
   return `
-    <div class="result-row" style="border-left-color:${col};" onclick="openMusicianModal('${jsAttr(m.id)}')">
+    <div class="result-row" onclick="openMusicianModal('${jsAttr(m.id)}')">
       <div class="result-row-top">
-        <div class="result-row-avatar" style="background:${col};">${avatarHTML}</div>
+        <div class="result-row-avatar">${avatarHTML}</div>
         <div class="result-row-main">
           <div class="result-row-name">${nameHTML}</div>
           <div class="result-row-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
@@ -1885,7 +1878,7 @@ function musicianSetlistRowHTML(m) {
         <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-row-badges">
-        ${setlistMatchBadge(m, col)}
+        ${setlistMatchBadge(m)}
       </div>
     </div>`;
 }

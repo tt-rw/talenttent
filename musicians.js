@@ -6,7 +6,6 @@
 // Profiel) — zodat Mijn Profiel nooit de modal hoeft te openen/sluiten (dat
 // veroorzaakte een korte flits van de modal-overlay bij elk bezoek).
 function buildMusicianDetailHTML(m, isOwn, inModal) {
-  const col  = safeColor(m.profile_color, '#f5c518');
   const age  = ageOf(m);
 
   // TT-43 (08-08-2026): op je eigen profiel altijd je eigen voornaam; voor een
@@ -18,8 +17,8 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
   // lightbox als bij de foto's onder "Foto's" (openMediaLightbox()) — geen
   // nieuwe component, hergebruik van het bestaande patroon.
   const avatarHTML = avatarSrc
-    ? `<img class="profile-avatar-photo" src="${avatarSrc}" alt="${escHtml(displayName)}" style="border-color:${col};margin-bottom:0;flex-shrink:0;cursor:pointer;" onclick="openMediaLightbox('${jsAttr(avatarSrc)}')">`
-    : `<div class="profile-avatar-initials" style="background:${col};border-color:${col};margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`;
+    ? `<img class="profile-avatar-photo" src="${avatarSrc}" alt="${escHtml(displayName)}" style="margin-bottom:0;flex-shrink:0;cursor:pointer;" onclick="openMediaLightbox('${jsAttr(avatarSrc)}')">`
+    : `<div class="profile-avatar-initials" style="margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`;
 
   const songRows = [...m.musician_songs].sort((a, b) =>
     compareArtistTitle(a.song_artist, a.song_title, b.song_artist, b.song_title)
@@ -97,14 +96,14 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
              naam (uitgelogd/anoniem, geen eigen profiel), dan zou een subline
              die naam alleen maar herhalen. Geen uitlegzin meer, alleen het
              label. -->
-        ${(displayName === m.fname && m.fname) ? `<p style="font-size:12px;color:var(--muted);margin-top:4px;">Gebruikersnaam: <strong style="color:${col};">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
+        ${(displayName === m.fname && m.fname) ? `<p style="font-size:12px;color:var(--muted);margin-top:4px;">Gebruikersnaam: <strong style="color:var(--text);">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
         <div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       </div>
       ${ownerMenuHTML}${veiligheidPlekHTML}
     </div>
     <div class="profile-badges">
-      ${m.musician_instruments.map(x => `<span class="tag-solid" style="color:${col};">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
-      ${m.musician_genres.map(x => `<span class="tag-solid tag-genre">${escHtml(x.genre)}</span>`).join('')}
+      ${m.musician_instruments.map(x => `<span class="tag-solid">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
+      ${m.musician_genres.map(x => `<span class="tag-solid">${escHtml(x.genre)}</span>`).join('')}
     </div>
     ${m.bio ? `<p style="font-size:15px;color:var(--text);margin:12px 0;">${escHtml(m.bio)}</p>` : ''}
     ${m.musician_songs.length ? `
@@ -241,7 +240,7 @@ async function openMusicianModal(id) {
     const res = await db.from('musicians').select(`
       id, fname, username, city, bio, goal,
       rehearsal_frequency, musical_ambition,
-      profile_color, avatar_url,
+      avatar_url,
       musician_instruments(instrument, niveau),
       musician_genres(genre),
       musician_songs(song_title, song_artist, mastery_level),
@@ -262,7 +261,7 @@ async function openMusicianModal(id) {
         // B-02: leeftijd i.p.v. geboortedatum; birth_date blijft als terugval
         // zolang script C nog niet is gedraaid. TT-43: geen fname voor bezoekers.
         id: row.id, username: row.username, age: row.age, birth_date: row.birth_date, city: row.city,
-        bio: row.bio, goal: row.goal, profile_color: row.profile_color, avatar_url: row.avatar_url,
+        bio: row.bio, goal: row.goal, avatar_url: row.avatar_url,
         rehearsal_frequency: row.rehearsal_frequency, musical_ambition: row.musical_ambition,
         // TT-51 (12-08-2026, RPC-restpunt gesloten): instrument_levels bevat
         // instrument + niveau samen, zodat de sterren ook in deze detailmodal
@@ -866,7 +865,7 @@ function wbjEnableManualCity() {
   field.value = '';
   field.placeholder = 'Typ je plaatsnaam en kies uit de lijst';
   const statusEl = document.getElementById('wbjPostcodeStatus');
-  statusEl.style.color = 'var(--accent2)';
+  statusEl.style.color = 'var(--text)';
   statusEl.textContent = 'We kunnen je plaats even niet automatisch ophalen — vul hem hieronder zelf in.';
   field.focus();
 }

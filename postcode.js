@@ -100,7 +100,7 @@ function enableManualCity(kind) {
   field.value = '';
   field.placeholder = 'Typ je plaatsnaam en kies uit de lijst';
   const statusEl = document.getElementById(statusId);
-  statusEl.style.color = 'var(--accent2)';
+  statusEl.style.color = 'var(--text)';
   statusEl.textContent = 'We kunnen je plaats even niet automatisch ophalen — vul hem hieronder zelf in.';
   if (isBand) {
     bandPostcodeResolved = false;

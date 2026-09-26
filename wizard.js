@@ -107,7 +107,6 @@ function populateWizardFieldsFromState() {
     avatarPreview.innerHTML = `<span id="avatarInitials">T</span>`;
     document.getElementById('avatarRemoveBtn').classList.remove('visible');
   }
-  avatarPreview.style.borderColor = DEFAULT_PROFILE_COLOR;
 }
 
 // TT-210 (06-09-2026): vervangt Route B (TT-09). Was: bij elke login/refresh
@@ -241,7 +240,6 @@ async function editMyProfile() {
 // (Presentatie: profielstatus direct zichtbaar). Gebaseerd op echte opgeslagen
 // data, niet op tijdelijke registratie-state.
 function renderCompletenessMeter(m) {
-  const col = safeColor(m.profile_color, '#f5c518');
   const checks = [
     { done: !!m.avatar_url,                    label: 'Profielfoto' },
     { done: (m.bio || '').length > 20,         label: 'Bio' },
@@ -257,19 +255,19 @@ function renderCompletenessMeter(m) {
     <div id="completenessMeter" class="completeness-wrap" style="margin-top:24px;">
       <div class="completeness-header">
         <span class="completeness-label">Profiel volledigheid</span>
-        <span class="completeness-pct" style="color:${col};">${pct}%</span>
+        <span class="completeness-pct">${pct}%</span>
       </div>
       <div class="completeness-track">
-        <div class="completeness-fill" style="width:${pct}%; background:${col};"></div>
+        <div class="completeness-fill" style="width:${pct}%;"></div>
       </div>
       <div class="completeness-items">
         ${checks.map(c => `
-          <span class="comp-item ${c.done ? 'done' : 'pending'}" style="${c.done ? `border-color:${col};color:${col};` : ''}">
+          <span class="comp-item ${c.done ? 'done' : 'pending'}">
             ${c.done ? '✓' : '○'} ${c.label}
           </span>
         `).join('')}
       </div>
-      ${pct < 100 ? `<p style="font-size:11px;color:var(--muted);margin-top:8px;">Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:11px;color:${col};margin-top:8px;font-weight:700;">Compleet profiel! Jij valt op.</p>`}
+      ${pct < 100 ? `<p style="font-size:11px;color:var(--muted);margin-top:8px;">Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:11px;color:var(--accent);margin-top:8px;font-weight:700;">Compleet profiel! Jij valt op.</p>`}
     </div>`;
 }
 
@@ -292,7 +290,7 @@ async function loadMyProfile() {
   const { data: m, error } = await db.from('musicians')
     .select(`id, fname, username, city, bio, goal,
              rehearsal_frequency, musical_ambition, repertoire_type,
-             profile_color, avatar_url, accepts_band_invites,
+             avatar_url, accepts_band_invites,
              musician_instruments(instrument, niveau), musician_genres(genre),
              musician_songs(song_title, song_artist, mastery_level),
              musician_media(media_type, url, platform, in_banner)`)
@@ -1250,7 +1248,6 @@ function handleAvatarUpload(file) {
   const preview = document.getElementById('avatarPreview');
   preview.style.position = 'relative';
   preview.innerHTML = `<img src="${blobUrl}" alt="profielfoto">`;
-  preview.style.borderColor = DEFAULT_PROFILE_COLOR;
   document.getElementById('avatarRemoveBtn').classList.add('visible');
 
   if (!currentUser) {

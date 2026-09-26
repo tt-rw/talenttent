@@ -3,8 +3,12 @@
     --surface: #161616;
     --surface2: #1e1e1e;
     --border: #2a2a2a;
-    --accent: #f5c518;
-    --accent2: #6ec8d8;
+    /* TT-341 stap 2 (26-09-2026, "rustig", akkoord Ronald): geel betekent
+       alleen "doe dit" of "hier ben je" — dat is --merk en de gekozen stand.
+       --accent is de signaalkleur voor koppen, iconen, randen en sterren, en
+       is daarmee in elk thema de tekstkleur. Was goud (#f5c518). --accent2
+       (cyaan, genre- en gezocht-badges) is weg: badges zijn neutraal. */
+    --accent: #f0f0f0;
     --danger: #e5533d;
     --success: #4caf50;
     --text: #f0f0f0;
@@ -51,22 +55,25 @@
        lichte thema (stap 2) geeft deze rollen andere waarden; donker houdt
        precies de kleuren van voorheen. Een kleur met een eigen rol krijgt een
        eigen variabele, ook als de waarde in donker gelijk is aan een andere.
-       --accent  = goud als tekst, rand, lijn of klein vlak (stip, balk).
-       --merk    = goud als vlak onder zwarte tekst dat in elk thema goud
-                   blijft: de hoofdknop, de verzendknop en het woordmerk. */
+       --accent  = signaalkleur: tekst, rand, lijn of klein vlak (stip,
+                   balk). Sinds stap 2 gelijk aan de tekstkleur (rustig).
+       --merk    = geel als vlak onder zwarte tekst dat in elk thema geel
+                   blijft: de hoofdknop, de verzendknop, de actieve tab
+                   onderin, het profielvlak met de T, de actieve stip en
+                   TENT in het woordmerk. */
     --merk: #f5c518;
     --merk-tekst: #000;
     --merk-hover: #ffd700;
     --op-accent: #000;           /* tekst op een vlak in --accent */
-    --op-avatar: #000;           /* de letter op een profielkleur */
     /* De gekozen stand van elke keuzeknop (huisstijl §5.1). */
     --gekozen-vlak: rgba(255,255,255,0.05);
     --gekozen-rand: #f5c518;
     --gekozen-tekst: #f5c518;
+    --gekozen-bijschrift: var(--muted);     /* toelichting op een gekozen doelkaart */
+    --keuze-vlak: var(--surface2);          /* een keuzeknop die niet gekozen is */
     /* Een zweem over de ondergrond: aanwijzen, ongelezen, uitgelicht. */
     --tint: rgba(255,255,255,0.05);
     --tint-hover: rgba(255,255,255,0.08);   /* aanwijzen op een ronde knop */
-    --tint-vlak: rgba(255,255,255,0.10);    /* tagvlak en statusbadge */
     --tint-grip: rgba(255,255,255,0.20);    /* greep van het wielvenster */
     --surface3: #222;                       /* lijst met suggesties */
     --rand-hover: #555;
@@ -82,6 +89,87 @@
     --laag-fout: rgba(13,13,13,0.96);
     --schaduw-menu: 0 12px 32px rgba(0,0,0,0.7);
     --schaduw-melding: 0 8px 24px rgba(0,0,0,0.4);
+    /* TT-341 stap 2 (26-09-2026): nieuwe rollen uit de designproef. */
+    --rand-neutraal: #3a3a3a;               /* badge, profielfoto, lege ster in een badge */
+    --ongelezen: #e5533d;                   /* rood rondje met het aantal ongelezen berichten */
+    --bericht-eigen: #2a2a2a;               /* je eigen bericht */
+    --bericht-rand-eigen: #3a3a3a;
+    --bericht-ander: var(--surface2);       /* het bericht van de ander */
+    --bericht-rand: var(--border);
+    --knop-klein-vlak: var(--surface2);     /* vlak onder het berichticoon op een resultaat */
+    --titel-streep: transparent;            /* streep onder het gekleurde woord op het startscherm */
+  }
+
+  /* ── TT-341 stap 2 (26-09-2026): het lichte thema ─────────────────────────
+     Besluit Ronald: "Licht + geel, huidig woordmerk" uit de designproef. Alle
+     regels hieronder in dit bestand gelden voor beide thema's; alleen de
+     waarden van de rollen verschillen. Actief als <html data-theme="licht">.
+     De keuze in Instellingen komt in stap 3; tot dan is donker de enige stand
+     die een gebruiker ziet. Geel (#F5C518) is op crème als tekst onleesbaar
+     (1,5:1): daarom is geel hier alleen een vlak, en is --accent zwart. */
+  :root[data-theme="licht"] {
+    --bg: #F6F3EC;
+    --surface: #FFFEFA;
+    --surface2: #EFEBE2;
+    --border: #DED9CF;
+    --accent: #1E1E1E;
+    --danger: #B93A2F;
+    --success: #287A4B;
+    --text: #1E1E1E;
+    --muted: #8A8782;
+    --field-bg: #F6F3EC;           /* keuzevelden in de kleur van de ondergrond (Ronald) */
+    --field-border: #C9C3B6;       /* "iets donkerder, niet veel" (Ronald) */
+    --line: 1px;
+    --merk: #F5C518;
+    --merk-tekst: #1E1E1E;
+    --merk-hover: #FFD23F;
+    --op-accent: #F6F3EC;
+    --gekozen-vlak: #F5C518;       /* licht: geel vlak; donker: gouden rand (Ronald) */
+    --gekozen-rand: #F5C518;
+    --gekozen-tekst: #1E1E1E;
+    --gekozen-bijschrift: rgba(30,30,30,0.8);
+    --keuze-vlak: var(--surface);
+    --tint: rgba(30,30,30,0.04);
+    --tint-hover: rgba(30,30,30,0.06);
+    --tint-grip: #B8B4AA;
+    --surface3: #FFFEFA;
+    --rand-hover: #B8B4AA;
+    --rand-menu: #DED9CF;
+    --leeg: #CFCAC0;
+    --wiel-tekst: #8A8782;
+    --tip-tekst: #1E1E1E;
+    --laag-venster: rgba(30,30,30,0.45);
+    --laag-opslaan: rgba(30,30,30,0.45);
+    --laag-menu: rgba(30,30,30,0.45);
+    --laag-wiel: rgba(30,30,30,0.45);
+    --laag-fout: rgba(246,243,236,0.96);
+    --schaduw-menu: 0 4px 20px rgba(30,30,30,0.06);
+    --schaduw-melding: 0 4px 20px rgba(30,30,30,0.06);
+    --rand-neutraal: #CFC9BC;
+    --bericht-eigen: #EDE8DC;
+    --bericht-rand-eigen: #B8B4AA;
+    --bericht-ander: var(--surface);
+    --bericht-rand: #B8B4AA;
+    --knop-klein-vlak: transparent;
+    --titel-streep: #F5C518;
+    /* Vorm, alleen licht zolang Ronald niet anders beslist (open vraag):
+       rondere kaarten en velden, zoals in de designproef. De tekst in een
+       veld begint waar de ronding ophoudt, dus --field-inset gaat mee. */
+    --radius: 16px;
+    --radius-field: 10px;
+    --field-inset: 10px;
+  }
+  /* Vorm, alleen licht (open vraag): knoppen en veldlabels in gewone letters.
+     Veldlabels donker en halfvet — advies UX, doorgevoerd in de designproef:
+     label, hulptekst en voorbeeldtekst waren alle drie grijs en klein. */
+  :root[data-theme="licht"] .btn { text-transform: none; letter-spacing: 0; }
+  /* Voorbeeldtekst in een veld: de standaard van de browser is op crème te
+     donker en lijkt dan ingevuld. Donker houdt de standaard van de browser. */
+  :root[data-theme="licht"] input::placeholder,
+  :root[data-theme="licht"] textarea::placeholder { color: #B8B4AA; }
+  :root[data-theme="licht"] label {
+    font-size: 14px; line-height: 18px; letter-spacing: 0;
+    text-transform: none; color: var(--text); font-weight: 600;
   }
 
   /* TT-318 (24-09-2026, besluit Ronald): het eigen woordmerk. Het nagetekende
@@ -694,7 +782,7 @@
      soort; kleur, rand en hoek staan alleen hier. Een eigen kleur of rand
      bij één soort is een fout (projectinstructies §2, regel 11). */
   .tag, .level-btn, .segmented-btn, .search-mode-tab, .media-tab, .goal-card, .level-choice {
-    background: var(--surface2);
+    background: var(--keuze-vlak);
     border: var(--line) solid var(--border);
     border-radius: 8px;
     color: var(--text);
@@ -864,6 +952,8 @@
   /* Gekozen: zie het TT-316-blok bij .tag. :hover staat in de guard. */
   .goal-card .goal-label { font-size: 13px; }
   .goal-card .goal-desc { font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 300; }
+  /* TT-341 stap 2: op licht is de gekozen kaart geel; grijs is daarop te zwak. */
+  .goal-card.selected .goal-desc { color: var(--gekozen-bijschrift); }
 
   /* TT-142/TT-143 (25-08-2026): actiebalk herzien op verzoek van Ronald
      (telefoonscreenshots). Was twee rijen, veel hoger dan de vaste onderbalk
@@ -1049,7 +1139,9 @@
      cursief blijven (projectinstructies §9). Was een grijs vlak, 10px,
      hoofdletters, hoek 3px. */
   .level-pill {
-    background: var(--tint-vlak); /* TT-315 vervolg: 10%, zie .tag-solid */
+    /* TT-341 stap 2: de tagvorm van nu — geen vlak, een dunne neutrale rand. */
+    background: transparent;
+    border: 1px solid var(--rand-neutraal);
     color: var(--text);
     font-size: 11px;
     padding: 4px 10px;
@@ -1093,15 +1185,17 @@
 
   .avatar-preview {
     width: 96px; height: 96px;
+    /* TT-341 stap 2: het profielvlak is overal geel met een zwarte T (Ronald,
+       26-09-2026). Er is geen profielkleur per persoon meer. */
     border-radius: 50%;
-    background: var(--surface2);
-    border: 3px solid var(--border);
+    background: var(--merk);
+    border: 3px solid var(--merk);
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Roboto', sans-serif;
     font-size: 34px;
-    color: var(--muted);
+    color: var(--merk-tekst);
     overflow: hidden;
     transition: border-color 0.3s;
     cursor: pointer;
@@ -1214,7 +1308,7 @@
     gap: 4px;
   }
 
-  .comp-item.done { border-color: var(--success); color: var(--success); }
+  .comp-item.done { border-color: var(--accent); color: var(--accent); }
   .comp-item.pending { border-color: var(--border); color: var(--muted); }
 
   /* Profile header with personalized color */
@@ -1362,7 +1456,8 @@
     height: 44px;
     transform: translate(-50%, -50%);
   }
-  .pb-stip.aan { background: var(--accent); }
+  /* Actieve stip geel (Ronald, 15-09-2026): "hier ben je". */
+  .pb-stip.aan { background: var(--merk); }
 
   /* Eén vorm voor een foto- en een videotegel onder het profiel (TT-265). */
   .profile-media-tegel {
@@ -1383,8 +1478,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--surface2);
-    color: var(--accent);
+    /* TT-341 stap 2: zelfde vlak als het profielvlak — geel met een zwarte T,
+       in elk thema. Was een gouden T op --surface2. */
+    background: var(--merk);
+    color: var(--merk-tekst);
     font-family: var(--font-display);
     font-size: 32px;
     line-height: 1;
@@ -1410,7 +1507,7 @@
     width: 80px; height: 80px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid var(--accent);
+    border: 3px solid var(--rand-neutraal); /* TT-341 stap 2: neutraal, was de profielkleur */
     margin-bottom: 12px;
   }
 
@@ -1421,10 +1518,13 @@
     align-items: center;
     justify-content: center;
     font-family: 'Roboto', sans-serif;
+    /* TT-341 stap 2: het profielvlak is overal geel met een zwarte T (Ronald,
+       26-09-2026). Er is geen profielkleur per persoon meer. */
     font-size: 30px;
-    color: var(--op-avatar);
+    background: var(--merk);
+    color: var(--merk-tekst);
     margin-bottom: 12px;
-    border: 3px solid transparent;
+    border: 3px solid var(--merk);
   }
 
   /* Media upload section */
@@ -1638,8 +1738,9 @@
     margin-right: 6px;
   }
   .banner-teller .banner-teken svg { width: 100%; height: 100%; display: block; }
-  .banner-teller .bb-schijf { fill: var(--accent); stroke: var(--accent); stroke-width: var(--line); }
-  .banner-teller .bb-vorm { fill: none; stroke: var(--bg); stroke-width: var(--line); }
+  /* TT-341 stap 2: gekozen is geel ("hier ben je"), met een zwarte vorm erin. */
+  .banner-teller .bb-schijf { fill: var(--merk); stroke: var(--merk); stroke-width: var(--line); }
+  .banner-teller .bb-vorm { fill: none; stroke: var(--merk-tekst); stroke-width: var(--line); }
 
   /* Het bannerteken: een cirkel met de vorm van de banner erin. Gekozen is
      goud gevuld met de vorm in bijna-zwart; niet gekozen is een omtrek zonder
@@ -1660,8 +1761,8 @@
   .banner-btn .bb-schijf { fill: none; stroke: var(--text); stroke-width: var(--line); }
   .banner-btn .bb-vorm   { fill: none; stroke: var(--text); stroke-width: var(--line); }
   .banner-btn.op-beeld .bb-schijf { fill: rgba(0,0,0,0.65); }
-  .banner-btn[aria-pressed="true"] .bb-schijf { fill: var(--accent); stroke: var(--accent); }
-  .banner-btn[aria-pressed="true"] .bb-vorm   { stroke: var(--bg); }
+  .banner-btn[aria-pressed="true"] .bb-schijf { fill: var(--merk); stroke: var(--merk); }
+  .banner-btn[aria-pressed="true"] .bb-vorm   { stroke: var(--merk-tekst); }
   /* Tikvlak van 44px zonder het teken zelf groter te maken — hetzelfde
      ::after-patroon als de i-knop. */
   .banner-btn::after {
@@ -1951,7 +2052,9 @@
   .landing-hero { padding: 80px 0 60px; text-align: center; }
   .landing-hero-inner { max-width: 640px; margin: 0 auto; }
   .landing-title { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: clamp(36px, 7vw, 64px); letter-spacing: 0.5px; line-height: 1.1; margin-bottom: 20px; }
-  .landing-title span { color: var(--accent); }
+  /* TT-341 stap 2: op licht een gele streep onder het woord, want gele tekst
+     is op crème onleesbaar. Op donker is de streep doorzichtig (open vraag). */
+  .landing-title span { color: var(--accent); text-decoration: underline; text-decoration-color: var(--titel-streep); text-decoration-thickness: 5px; text-underline-offset: 6px; }
   .landing-sub { font-size: 16px; color: var(--muted); line-height: 1.7; font-weight: 300; margin-bottom: 36px; max-width: 520px; margin-left: auto; margin-right: auto; }
   .landing-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   .landing-steps { padding: 48px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 48px; }
@@ -2145,7 +2248,7 @@
     position: absolute;
     top: 2px;
     right: 2px;
-    background: var(--danger);
+    background: var(--ongelezen); /* rood in elk thema (Ronald, 26-09-2026) */
     color: #fff;
     font-size: 10px;
     font-weight: 700;
@@ -2172,8 +2275,11 @@
     width: 48px; height: 48px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
+    /* TT-341 stap 2: het profielvlak is overal geel met een zwarte T (Ronald,
+       26-09-2026). Er is geen profielkleur per persoon meer. */
     font-size: 20px;
-    color: var(--op-avatar);
+    background: var(--merk);
+    color: var(--merk-tekst);
     flex-shrink: 0;
     overflow: hidden;
   }
@@ -2225,8 +2331,10 @@
     line-height: 1.5;
     word-break: break-word;
   }
-  .message-bubble.own { background: var(--accent); color: var(--op-accent); margin-left: auto; border-radius: 16px 16px 4px 16px; }
-  .message-bubble.other { background: var(--surface2); border: 1px solid var(--border); border-radius: 16px 16px 16px 4px; }
+  /* TT-341 stap 2 (rustig): je eigen bericht is grijs (licht: grijsbeige),
+     niet meer goud. Beide blokken een rand (Ronald, 26-09-2026). */
+  .message-bubble.own { background: var(--bericht-eigen); color: var(--text); border: 1px solid var(--bericht-rand-eigen); margin-left: auto; border-radius: 16px 16px 4px 16px; }
+  .message-bubble.other { background: var(--bericht-ander); border: 1px solid var(--bericht-rand); border-radius: 16px 16px 16px 4px; }
   .message-bubble-time { font-size: 10px; opacity: 0.7; margin-top: 4px; }
   /* V-07 (13-08-2026): vinkje bij een eigen bericht dat gelezen is. */
   .message-bubble-read { margin-left: 4px; font-weight: 700; opacity: 0.85; }
@@ -2423,16 +2531,20 @@
      De tekstkleur komt per tag uit tagSolid(), of uit .tag-genre. */
   .tag-solid {
     display: inline-block;
-    /* TT-315 vervolg (24-09-2026, besluit Ronald: variant A): 10% i.p.v. 5%.
-       Op 5% viel het vlak op de telefoon weg; de tag leek afgesneden. */
-    background: var(--tint-vlak);
+    /* TT-341 stap 2 (26-09-2026, rustig, akkoord Ronald): geen vlak en geen
+       kleur per instrument of genre meer, maar een dunne neutrale rand en
+       tekst in de tekstkleur. Was wit op 10% met een gekleurde tekst (TT-315). */
+    background: transparent;
+    border: 1px solid var(--rand-neutraal);
+    color: var(--text);
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 500;
     padding: 4px 10px;
     border-radius: 6px;
     white-space: nowrap;
   }
-  .tag-genre { color: var(--accent2); }
+  .tag-solid .star-display-filled { color: var(--text); }
+  .tag-solid .star-display-empty { color: var(--rand-neutraal); }
 
   /* TT-30: kaartweergave als alternatief voor de rijenlijst — kiesbaar via
      de "Weergave"-toggle boven het resultaat. */
@@ -2471,9 +2583,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    /* TT-341 stap 2: het profielvlak is overal geel met een zwarte T (Ronald,
+       26-09-2026). Er is geen profielkleur per persoon meer. */
     font-size: 48px;
     font-weight: 700;
-    color: var(--op-avatar);
+    background: var(--merk);
+    color: var(--merk-tekst);
     overflow: hidden;
     margin-bottom: 10px;
   }
@@ -2514,7 +2629,7 @@
     width: 44px;
     height: 44px;
     border-radius: 6px;
-    background: var(--surface2);
+    background: var(--knop-klein-vlak);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2525,8 +2640,11 @@
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-family: 'Roboto', sans-serif;
+    /* TT-341 stap 2: het profielvlak is overal geel met een zwarte T (Ronald,
+       26-09-2026). Er is geen profielkleur per persoon meer. */
     font-size: 18px;
-    color: var(--op-avatar);
+    background: var(--merk);
+    color: var(--merk-tekst);
     flex-shrink: 0;
     overflow: hidden;
   }
@@ -2572,11 +2690,12 @@
      contact/bericht sturen mogelijk is (zonder de rij zelf vol te zetten met
      een losse knop). Bewuste, beperkte uitzondering op de "geen iconen"-regel
      (Ronald, 07-08-2026) — puur lijn-SVG, geen emoji. */
+  /* TT-341 stap 2 (rustig): alleen een lijn in de signaalkleur. Was grijs,
+     en goud bij aanwijzen. */
   .result-row-msg-icon {
     flex-shrink: 0;
-    color: var(--muted);
+    color: var(--accent);
   }
-  .result-row:hover .result-row-msg-icon { color: var(--accent); }
 
   .no-results {
     text-align: center;
@@ -3167,19 +3286,19 @@
   .band-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;transition:border-color 0.2s; }
   .band-card:hover { border-color:var(--rand-menu); }
   .band-card-header { display:flex;align-items:center;gap:16px;padding:20px;cursor:pointer;flex-wrap:wrap; }
-  .band-avatar { width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Roboto',sans-serif;font-size:24px;color:var(--op-avatar);flex-shrink:0; }
+  .band-avatar { width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Roboto',sans-serif;font-size:24px;background:var(--merk);color:var(--merk-tekst);flex-shrink:0; }
   .band-name { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.3px; line-height: 1.1; }
   .band-meta { font-size:12px;color:var(--muted);margin-top:3px; }
-  /* TT-315 (24-09-2026): zelfde vorm als .tag-solid — wit op 5%, geen rand,
-     de kleur alleen in de tekst. */
-  .band-status-badge { display:inline-block;background:var(--tint-vlak);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-left:auto;white-space:nowrap;flex-shrink:0; }
+  /* TT-315 (24-09-2026): zelfde vorm als .tag-solid. TT-341 stap 2: geen
+     vlak, een dunne neutrale rand; de status houdt zijn kleur in de tekst. */
+  .band-status-badge { display:inline-block;background:transparent;border:1px solid var(--rand-neutraal);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-left:auto;white-space:nowrap;flex-shrink:0; }
   .band-status-zoekend { color:var(--accent); }
   .band-status-compleet { color:var(--success); }
   .band-status-inactief { color:var(--muted); }
   .band-card-body { padding:0 20px 20px;border-top:1px solid var(--border); }
   .band-members-row { display:flex;flex-wrap:wrap;gap:8px;padding-top:14px;margin-bottom:10px; }
   .band-member-chip { display:flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px; }
-  .band-member-dot { width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'Roboto',sans-serif;color:var(--op-avatar);flex-shrink:0; }
+  .band-member-dot { width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'Roboto',sans-serif;background:var(--merk);color:var(--merk-tekst);flex-shrink:0; }
 
   /* TT-51 (12-08-2026): niveau, sterren 1-5. Tekst-only (★/☆, geen emoji/svg),
      consistent met de rest van de UI. .star-picker is klikbaar (wizard/
@@ -3541,7 +3660,10 @@
       align-items: center;
       justify-content: center;
       gap: 3px;
-      min-height: 56px;
+      /* TT-341 stap 2 (Ronald: "te hoekig"): afgerond, los van de rand. */
+      min-height: 48px;
+      margin: 6px 4px;
+      border-radius: 12px;
       padding: 8px 4px;
       background: none;
       border: none;
@@ -3554,7 +3676,7 @@
       -webkit-tap-highlight-color: transparent;
     }
     .bottom-nav-btn svg { width: 22px; height: 22px; }
-    .bottom-nav-btn.active { color: var(--accent); }
+    .bottom-nav-btn.active { background: var(--merk); color: var(--merk-tekst); }
     .bottom-nav-icon-wrap { position: relative; display: inline-flex; }
     .bottom-nav-icon-wrap .unread-badge { top: -6px; right: -10px; }
 

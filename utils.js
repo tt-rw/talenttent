@@ -601,7 +601,6 @@ function compareArtistTitle(artistA, titleA, artistB, titleB) {
 //                (was voorheen esc(); hernoemd zodat het verschil zichtbaar is)
 //   jsAttr()   → combinatie van beide: string ín een JS-aanroep ín een attribuut
 //   safeUrl()  → alleen http/https/blob toestaan in href en src
-//   safeColor() → alleen een echte kleurwaarde toestaan in een style-attribuut
 
 function escHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => (
@@ -626,13 +625,6 @@ function jsAttr(s) { return escHtml(escAttr(s)); }
 function safeUrl(u) {
   const s = String(u ?? '').trim();
   return /^(https?:\/\/|blob:)/i.test(s) ? escHtml(s) : '';
-}
-
-// Kleuren komen uit de database en gaan rechtstreeks een style-attribuut in.
-// Alleen hex/rgb/hsl en losse kleurnamen toelaten, geen puntkomma's.
-function safeColor(c, fallback) {
-  const s = String(c ?? '').trim();
-  return /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%]+\)|[a-z]+)$/i.test(s) ? s : fallback;
 }
 
 // TT-U04 (12-08-2026): maakt een wachtwoord zichtbaar. Vervangt het
@@ -664,8 +656,8 @@ function submitOnEnter(event, fn) {
 // meest clean"): het vlak is voor elke tag hetzelfde, wit op 5%
 // (huisstijl §1.1). De kleur zit alleen in de tekst. Tot die dag was het vlak
 // de tekstkleur op 16% dekking; bij goud gaf dat olijfbruin.
-function tagSolid(text, hex) {
-  return `<span class="tag-solid" style="color:${hex};">${escHtml(text)}</span>`;
+function tagSolid(text) {
+  return `<span class="tag-solid">${escHtml(text)}</span>`;
 }
 
 // TT-153 (25-08-2026): badges op zoekresultaten (muzikant, rij én kaart)
@@ -673,10 +665,10 @@ function tagSolid(text, hex) {
 // iemand met veel instrumenten/genres de rij/kaart laat springen. Gedeeld
 // door musicianRowHTML() en musicianCardHTML(), voor instrument- én
 // genrebadges apart (elk hun eigen "+N").
-function overflowBadgeHTML(items, hex, max) {
+function overflowBadgeHTML(items, max) {
   const shown = items.slice(0, max);
   const extra = items.length - shown.length;
-  let html = shown.map(i => tagSolid(i, hex)).join('');
+  let html = shown.map(i => tagSolid(i)).join('');
   if (extra > 0) html += `<span class="tag-solid tag-solid-muted">+${extra}</span>`;
   return html;
 }

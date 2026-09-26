@@ -9,7 +9,7 @@ async function loadBandInvites(musicianId) {
   el.innerHTML = '';
   try {
     const { data, error } = await db.from('band_members')
-      .select('band_id, bands(name, city, profile_color)')
+      .select('band_id, bands(name, city)')
       .eq('musician_id', musicianId).eq('status', 'aangevraagd');
     // TT-230: Supabase gooit hier niets — een mislukte vraag komt terug als
     // `error` naast lege data. Zonder deze regel viel dat samen met "geen
@@ -18,11 +18,10 @@ async function loadBandInvites(musicianId) {
     if (!data || !data.length) return;
 
     el.innerHTML = data.map(inv => {
-      const col = safeColor(inv.bands?.profile_color, '#f5c518');
       const naam = inv.bands?.name || 'Een band';
       const plaats = inv.bands?.city || '';
       return `
-      <div style="border:1px solid ${col};border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
+      <div style="border:1px solid var(--accent);border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
         <div style="font-size:15px;font-weight:700;margin-bottom:4px;">${escHtml(naam)} wil je als lid</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">${escHtml(plaats)}${plaats ? ' · ' : ''}Je staat pas op het bandprofiel als je dit bevestigt.</div>
         <div class="btn-row">
@@ -71,7 +70,7 @@ async function loadFounderOffers(musicianId) {
   catch (e) { logCaught('loadFounderOffers/expire', e); }
   try {
     const { data, error } = await db.from('band_members')
-      .select('band_id, bands(name, city, profile_color)')
+      .select('band_id, bands(name, city)')
       .eq('musician_id', musicianId).eq('status', 'bevestigd').eq('founder_offer', true);
     // TT-230: zie loadBandInvites() hierboven. Ontbreekt de kolom
     // `founder_offer`, of blokkeert een RLS-regel de vraag, dan staat dat
@@ -80,10 +79,9 @@ async function loadFounderOffers(musicianId) {
     if (!data || !data.length) return;
 
     el.innerHTML = data.map(off => {
-      const col = safeColor(off.bands?.profile_color, '#f5c518');
       const naam = off.bands?.name || 'Een band';
       return `
-      <div style="border:1px solid ${col};border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
+      <div style="border:1px solid var(--accent);border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
         <div style="font-size:15px;font-weight:700;margin-bottom:4px;">De beheerder van ${escHtml(naam)} stopt</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Wil jij het beheer overnemen? Zeg je nee, dan blijft de huidige beheerder voorlopig aan.</div>
         <div class="btn-row">
@@ -310,7 +308,7 @@ function cancelBandForm() {
 
 function resetBandForm() {
   editingBandId = null;
-  bandState = { genres: [], status: 'zoekend', wanted: [], color: '#3ecfff', niveau: null, avatarUrl: null, avatarPath: null };
+  bandState = { genres: [], status: 'zoekend', wanted: [], niveau: null, avatarUrl: null, avatarPath: null };
   bandPostcodeResolved = false;
   bandPostcodeFailStreak = 0;
   bandPostcodeManualMode = false;
@@ -478,7 +476,7 @@ async function loadCurrentMembersForModal(bandId) {
   try {
     const mid = await getMyMusicianId();
     const { data, error } = await db.from('band_members')
-      .select('musician_id, role, musicians(id, fname, username, profile_color)')
+      .select('musician_id, role, musicians(id, fname, username)')
       .eq('band_id', bandId).eq('status', 'bevestigd');
     if (error) throw error;
     el.innerHTML = (data || []).map(m => {
@@ -488,7 +486,7 @@ async function loadCurrentMembersForModal(bandId) {
       // vandaar geen knop bij de eigen rij.
       const isSelf = m.musician_id === mid;
       return `<div class="lijst-rij" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);">
-        <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
+        <div class="band-member-dot">${escHtml(memberName[0].toUpperCase())}</div>
         <div style="flex:1;font-size:14px;">${escHtml(memberName)} <span style="color:var(--muted);font-size:11px;">${escHtml(roleLabel(m.role))}</span></div>
         ${isSelf ? '' : `<button type="button" class="btn btn-danger" onclick="removeMember('${jsAttr(bandId)}','${jsAttr(m.musician_id)}','${jsAttr(memberName)}')">Verwijderen</button>`}
       </div>`;
@@ -546,8 +544,8 @@ function searchMembersToAdd(query) {
       const fetchLimit = (instrument || (q.length >= 2 && qSafe.length >= 2)) ? 15 : 200;
       let qb = db.from('musicians').select(
         instrument
-          ? 'id, fname, username, city, profile_color, accepts_band_invites, musician_instruments!inner(instrument)'
-          : 'id, fname, username, city, profile_color, accepts_band_invites, musician_instruments(instrument)'
+          ? 'id, fname, username, city, accepts_band_invites, musician_instruments!inner(instrument)'
+          : 'id, fname, username, city, accepts_band_invites, musician_instruments(instrument)'
       ).limit(fetchLimit);
       if (instrument) qb = qb.eq('musician_instruments.instrument', instrument);
       if (q.length >= 2 && qSafe.length >= 2) qb = qb.or(`fname.ilike.%${qSafe}%,username.ilike.%${qSafe}%`);
@@ -620,7 +618,7 @@ function searchMembersToAdd(query) {
           : `<button class="btn btn-ghost" onclick="openInviteNote(this, '${jsAttr(m.id)}', '${jsAttr(memberName)}')">Uitnodigen</button>`;
         return `
         <div class="member-search-row lijst-rij" style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
-          <div style="width:32px;height:32px;border-radius:50%;background:${safeColor(m.profile_color, '#888')};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${escHtml(memberName[0].toUpperCase())}</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--merk);color:var(--merk-tekst);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${escHtml(memberName[0].toUpperCase())}</div>
           <div style="flex:1;">
             <div style="font-weight:600;font-size:14px;">${escHtml(memberName)}</div>
             <div style="font-size:12px;color:var(--muted);">${escHtml(m.city||'')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}${(m.musician_instruments||[]).length ? ' · ' + escHtml(m.musician_instruments.map(x=>x.instrument).slice(0,2).join(', ')) : ''}</div>
@@ -709,7 +707,6 @@ async function editBand(id) {
     genres: [...(b.genres || [])],
     status: b.status || 'zoekend',
     wanted: (b.band_wanted || []).map(w => w.instrument),
-    color: b.profile_color || '#3ecfff',
     niveau: b.niveau || null, // TT-51
     avatarUrl: b.avatar_url || null, // V-15
     avatarPath: null
@@ -995,12 +992,11 @@ async function loadMyBands() {
 
   const bandIds = memberships.map(m => m.band_id);
   const { data: bands } = await db.from('bands')
-    .select(`*, band_members(musician_id, role, status, founder_offer, musicians(fname, username, profile_color)), band_wanted(instrument)`)
+    .select(`*, band_members(musician_id, role, status, founder_offer, musicians(fname, username)), band_wanted(instrument)`)
     .in('id', bandIds).order('updated_at', { ascending: false });
 
   const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
   el.innerHTML = (bands || []).map(b => {
-    const col = safeColor(b.profile_color, '#3ecfff');
     const confirmed = (b.band_members||[]).filter(m => m.status === 'bevestigd');
     // TT-41 (08-08-2026): uitgenodigde muzikanten staan er wél al, maar tellen
     // nog niet als lid tot ze zelf bevestigen. Alleen de oprichter ziet dit —
@@ -1028,7 +1024,7 @@ async function loadMyBands() {
       </div>` : '';
     return `<div class="band-card">
       <div class="band-card-header" onclick="openBandModal('${jsAttr(b.id)}')">
-        ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar" style="background:${col};">${AVATAR_T_FALLBACK}</div>`}
+        ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar">${AVATAR_T_FALLBACK}</div>`}
         <div style="flex:1;">
           <div class="band-name">${escHtml(b.name)}</div>
           <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
@@ -1055,13 +1051,13 @@ async function loadMyBands() {
             // m.musicians.id komt hier altijd mee (dit is de eigen "Mijn
             // Bands"-lijst, geen publieke/anonieme bron).
             return `<div class="band-member-chip" style="cursor:pointer;" onclick="event.stopPropagation(); openMusicianModal('${jsAttr(m.musician_id)}');">
-            <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
+            <div class="band-member-dot">${escHtml(memberName[0].toUpperCase())}</div>
             ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">${escHtml(roleLabel(m.role))}</span>
           </div>`; }).join('')}
           ${isFounder ? pending.map(m => {
             const memberName = displayNameOf(m.musicians);
             return `<div class="band-member-chip" style="opacity:.55;border-style:dashed;">
-            <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
+            <div class="band-member-dot">${escHtml(memberName[0].toUpperCase())}</div>
             ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">wacht op bevestiging</span>
           </div>`; }).join('') : ''}
         </div>
@@ -1079,7 +1075,7 @@ async function openBandModal(id) {
 
   if (hasOwnProfile) {
     const { data } = await db.from('bands')
-      .select(`*, band_members(role, status, musicians(id, fname, username, profile_color, musician_instruments(instrument))), band_wanted(instrument)`)
+      .select(`*, band_members(role, status, musicians(id, fname, username, musician_instruments(instrument))), band_wanted(instrument)`)
       .eq('id', id).single();
     b = data;
   } else {
@@ -1089,13 +1085,13 @@ async function openBandModal(id) {
     if (row) {
       b = {
         id: row.id, name: row.name, city: row.city, description: row.description, // TT-04: geen postcode voor bezoekers
-        status: row.status, profile_color: row.profile_color, updated_at: row.updated_at,
+        status: row.status, updated_at: row.updated_at,
         avatar_url: row.avatar_url || null, // V-15-restpunt (13-08-2026)
         genres: row.genres || [],
         niveau: row.niveau, // TT-51 (12-08-2026, RPC-restpunt gesloten)
         // TT-43: de publieke RPC levert voor leden alleen nog de
         // gebruikersnaam — de echte voornaam blijft weg bij bezoekers.
-        band_members: (row.members || []).map(mem => ({ role: 'Lid', status: 'bevestigd', musicians: { username: mem.username, profile_color: mem.profile_color } })),
+        band_members: (row.members || []).map(mem => ({ role: 'Lid', status: 'bevestigd', musicians: { username: mem.username } })),
         band_wanted: (row.wanted || []).map(i => ({ instrument: i })),
       };
     }
@@ -1108,7 +1104,6 @@ async function openBandModal(id) {
   // isOwnBand, die pas na de ledenlijst bekend is; daarom staat de aanroep
   // verderop).
 
-  const col = safeColor(b.profile_color, '#3ecfff');
   const confirmed = (b.band_members||[]).filter(m => m.status === 'bevestigd');
   const statusLabels = { zoekend: 'Zoekend naar leden', compleet: 'Band is compleet', inactief: 'Inactief' };
   const status = statusLabels[b.status] ? b.status : '';
@@ -1132,7 +1127,7 @@ async function openBandModal(id) {
     : '<span id="bandModalActies" class="profiel-menu-plek"></span>';
   document.getElementById('bandModalContent').innerHTML = `
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
-      ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border);margin-bottom:0;flex-shrink:0;">` : `<div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`}
+      ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border);margin-bottom:0;flex-shrink:0;">` : `<div class="band-avatar" style="width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`}
       <div style="min-width:0;flex:1;">
         <div class="profile-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
         <div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
@@ -1146,14 +1141,14 @@ async function openBandModal(id) {
       ${confirmed.map(m => {
         const memberName = displayNameOf(m.musicians);
         return `<div class="band-member-chip">
-        <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
+        <div class="band-member-dot">${escHtml(memberName[0].toUpperCase())}</div>
         <span><strong>${escHtml(memberName)}</strong> · ${escHtml(roleLabel(m.role))}</span>
       </div>`; }).join('')}
     </div>
     ${(b.band_wanted||[]).length ? `
       <div class="profile-songs-title" style="margin-top:16px;">Wij zoeken nog</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-        ${(b.band_wanted||[]).map(w => `<span class="tag-solid tag-genre">${escHtml(w.instrument)}</span>`).join('')}
+        ${(b.band_wanted||[]).map(w => `<span class="tag-solid">${escHtml(w.instrument)}</span>`).join('')}
       </div>` : ''}
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:20px;">
       ${!isOwnBand ? (hasOwnProfile
