@@ -1,6 +1,79 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 26-09-2026 (vervolg 5) — **TT-340 afgehandeld: functies
+**Laatste update:** 26-09-2026 (designproef) — **TT-341 nieuw: een licht
+thema naast donker. Besluit Ronald: doorvoeren. Nog niets gebouwd; de repo's en
+talenttent.org zijn niet gewijzigd.** Zeven P0's staan open; TT-341 is P2
+(advies Claude), dat is één keer gemeld.
+
+**Wat er gebeurde.** Ronald wilde een nieuw design testen zonder de livegang te
+raken. Claude bouwde een designproef: een kopie van de app op de teststub, met
+verzonnen muzikanten, als privé claude.ai-pagina "Designproef Talent Tent".
+Ronald heeft hem vastgepind in zijn zijbalk. De pagina toont elk scherm in
+meerdere ontwerpen naast elkaar; groot geopend kun je erin klikken. De
+testrepo is hier niet voor gebruikt: die publiceert niets, en een
+gepubliceerde testsite zou met de echte database praten.
+
+**Besluiten Ronald, 26-09-2026:**
+1. **Het lichte thema gaat erin, met aanpassingen in donker.** Ronald: "wat mij
+   betreft kunnen we de lichte skin (en wat aanpassingen in donker)
+   doorvoeren."
+2. **Uitgangspunt is de variant "Licht + geel, huidig woordmerk"** op de
+   proefpagina, met "Donker + geel" als tegenhanger.
+3. **Kleuren worden vastgelegd als hex/RGB.** Geen RAL, geen Pantone. Ronald:
+   "de drukker moet er de juiste kleur maar bij verzinnen."
+4. **De app onthoudt de keuze licht of donker op het toestel,** niet in de
+   database. Geen nieuwe kolom.
+5. **In de proef gekozen, elk op verzoek van Ronald:**
+   - ondergrond crème `#F6F3EC`, kaarten `#FFFEFA`, tekst en zwart `#1E1E1E`;
+   - het huidige woordmerk: TALENT zwart, TENT geel `#F5C518`;
+   - Roboto overal, zoals nu; koppen Roboto vet in zwart;
+   - knopvorm zoals nu: knoppen en keuzes 8px, badges 6px, niets ovaal;
+   - gekozen tabbladen en keuzes: geel vlak met zwarte tekst (zwart is
+     teruggedraaid); op donker de gouden rand van nu;
+   - invoer- en keuzevelden: vlak in de kleur van de ondergrond, rand
+     `#C9C3B6`;
+   - aantal ongelezen berichten: rood rondje, zoals nu;
+   - verzendknop geel met zwarte pijl; beide berichtblokken een rand
+     `#B8B4AA`;
+   - actieve tab onderin: afgerond geel blok met donkere tekst, licht én
+     donker;
+   - profielvlak met de T: geel met zwarte T, licht én donker.
+6. **"Rustig", advies Claude, akkoord Ronald ("ja"):** geel betekent "doe dit"
+   of "hier ben je". Badges neutraal omlijnd, je eigen bericht grijsbeige, de
+   i-knop en het berichticoon alleen een lijn. Licht én donker. Aanleiding:
+   Ronald vond de kleuren "net kerstboom".
+
+**Advies UX, doorgevoerd in de proef, niet apart bevestigd:** veldlabels 14px,
+halfvet, zwart, in gewone letters. Label, hulptekst en voorbeeldtekst waren
+alle drie grijs en klein; Ronald noemde dat "een brei".
+
+**Voorstel Claude, nog niet bevestigd:**
+- Standaard volgt de app de stand van het toestel. In Instellingen komt
+  "Weergave" met drie keuzes: Zoals mijn toestel · Licht · Donker.
+- Bouwen in drie sessies, elk naar beide repo's, donker blijft standaard tot
+  stap 3: (1) vaste kleuren naar variabelen, donker pixel voor pixel gelijk;
+  (2) het lichte thema in `styles.css` zelf, plus de donker-aanpassingen;
+  (3) de keuze in Instellingen, `theme-color`, en huisstijl en
+  projectinstructies §11 bijwerken. De css van de proef is referentie, geen
+  code om over te nemen: te veel noodgrepen.
+
+**Open vragen:**
+- Gekozen keuze: op licht een gevuld vlak, op donker alleen een rand.
+  Gelijktrekken?
+- Kaarten (16px) en velden (10px) zijn in de proef ronder dan nu (12px en
+  8px). Gelijk aan nu?
+- Knoppen tonen hun tekst in de proef in gewone letters; nu kapitalen.
+- Het profielvlak is nu altijd geel. Heeft de eigen profielkleur dan nog een
+  functie?
+
+**Bevinding, geen code.** Het vak "Instructies" in de projectinstellingen
+bevatte bij de start van deze sessie nog de volledige tekst van 18-09-2026.
+Claude las daardoor eerst die oude tekst en niet `claude/projectinstructies.md`
+(§2 regel 0). Zelfde bevinding als in vervolg 5.
+
+---
+
+**Vorige update:** 26-09-2026 (vervolg 5) — **TT-340 afgehandeld: functies
 naar het bestand waar ze horen.** Geen gedragswijziging. Zeven P0's staan
 open; deze sessie is onderhoud (P3), dat is één keer gemeld.
 
@@ -6107,6 +6180,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-341** | Licht thema, kiesbaar naast donker | **Nieuw, 26-09-2026, wens Ronald. Besluit Ronald: doorvoeren, op basis van "Licht + geel, huidig woordmerk" uit de designproef. Nog niets gebouwd.** Keuze onthouden op het toestel (besluit Ronald). Bouwplan in drie sessies en open vragen: zie Laatste update. **Toets P2 (advies Claude):** de app werkt zonder, maar een deel van de gebruikers vindt een lichte weergave prettiger of beter leesbaar, vooral overdag buiten. Geen gebruiker loopt vast zonder |
 | **TT-332** | Na de toestemming van de ouder ontbreekt een afsluiter | **Gebouwd en getest 26-09-2026 (vervolg 2), akkoord Ronald — zie Laatste update.** Nieuw, 26-09-2026, wens Ronald (TT-323). Na "Toestemming geven" volgt een bedankscherm zonder einde. Ronald: er moet een afsluiter komen "in de zin van: u kunt dit scherm nu afsluiten". **Toets P2:** het werkt, maar de ouder weet niet dat hij klaar is. **Voorstel voor de tekst:** "Je kunt dit venster nu sluiten." — de pagina spreekt de ouder met "je" aan. |
 | **TT-333** | "Verzoek" in de app, "aanvraag" in de mails | **Gebouwd en getest 26-09-2026 (vervolg 2), wens Ronald: ook in de app "aanvraag" — zie Laatste update.** Nieuw, 26-09-2026, TT-323. Besluit TT-325: in de mails altijd "aanvraag", nooit "verzoek". De app zegt "Je verzoek is verstuurd", "Verzoek versturen…" en op de goedkeuringspagina "Dit verzoek is afgewezen" / "Een verzoek vervalt". **Toets P2:** het werkt, maar dezelfde handeling heeft twee namen. **Open vraag aan Ronald:** geldt "aanvraag" ook in de app? |
 | **TT-334** | De mails tonen de volledige URL onder de knop | **Gebouwd en ingevoerd 26-09-2026 (vervolg 4), akkoord Ronald op het voorstel hieronder; in Supabase nagemeten. Wacht op TT-323.** **Nieuw, 26-09-2026, feedback Ronald (TT-323):** "ik wil niet de hele url tonen. het is te lang en rommelig." Het blok "Werkt de knop niet? Open dan deze link:" staat in het template, dus in alle zeven mails: de drie Edge Functions en de twee Supabase-sjablonen. **Toets P2:** het werkt, maar oogt rommelig. **Voorstel:** "Werkt de knop niet? Tik dan op deze link." met alleen "deze link" klikbaar. De tekstversie houdt de volledige URL. |
