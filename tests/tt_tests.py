@@ -4375,6 +4375,212 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("TT-344: geen paginafouten bij de herstellink",
               not f42 and not f42b, "; ".join(f42 + f42b)[:300])
 
+        print("\nBlok 43 — het e-mailadres bevestigen (TT-336)")
+        # Besluiten Ronald, 26-09-2026: bevestigen na "Profiel aanmaken"; tot
+        # de klik geen berichten en geen band (1a); een verkeerd getypt
+        # e-mailadres is aan te passen (2a). De database zelf staat niet in de
+        # stub: `wacht_op_bevestiging` zetten we hier zoals de trigger dat doet.
+        def bevestig_pagina(hash, extra):
+            body = stub_js + """
+window.TT_STUB.fnCalls = [];
+window.TT_STUB.fnAntwoord = {};
+(function () {
+  const maak = window.supabase.createClient;
+  window.supabase.createClient = function () {
+    const c = maak.apply(this, arguments);
+    c.functions = { invoke: async (naam, o) => {
+      window.TT_STUB.fnCalls.push({ naam, body: o && o.body });
+      const a = window.TT_STUB.fnAntwoord[o && o.body && o.body.actie];
+      return { data: a === undefined ? { ok: true, email: 'sanne@gmail.com' } : a, error: null };
+    } };
+    return c;
+  };
+})();
+""" + extra
+            c = browser.new_context(viewport={"width": 390, "height": 844},
+                                    is_mobile=True, has_touch=True)
+            fouten = []
+            pg = c.new_page()
+            pg.on("pageerror", lambda e: fouten.append(str(e)))
+            pg.route("**/supabase-js@2/**", lambda r: r.fulfill(
+                status=200, content_type="application/javascript", body=body))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
+                        "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                pg.route(pat, lambda r: r.abort())
+            pg.goto(f"http://127.0.0.1:{port}/index.html{hash}", wait_until="load")
+            pg.wait_for_timeout(800)
+            return c, pg, fouten
+
+        # Mijn Profiel leest de koppelingen mee; de stub kent geen ingebedde select.
+        INGELOGD = ("\nwindow.TT_STUB.session = { user: { id: 'u1', email: 'sanne@gmial.com' } };\n"
+                    "Object.assign(window.TT_STUB.data.musicians[0], { musician_instruments: [], musician_genres: [],"
+                    " musician_songs: [], musician_media: [] });\n")
+        WACHT = "\nObject.assign(window.TT_STUB.data.musicians[0], { profile_complete: false, wacht_op_bevestiging: true, email_bevestigd_op: null });\n"
+        ONAF = "\nObject.assign(window.TT_STUB.data.musicians[0], { profile_complete: false, wacht_op_bevestiging: false, email_bevestigd_op: null });\n"
+        alle_fouten = []
+
+        # 1. "Profiel aanmaken" bij 16+: wacht → mail aanvragen, Mijn Profiel met het blok.
+        c, pg, f = bevestig_pagina("", INGELOGD + ONAF)
+        uit = pg.evaluate("""async () => {
+          const S = window.TT_STUB;
+          localStorage.setItem('tt_onboarding_v1', JSON.stringify({ userId: 'u1', mid: 'm1', step: 5 }));
+          // Wat de trigger in de database doet: profile_complete naar waar wordt wachten.
+          const maak = db.from.bind(db);
+          db.from = (t) => { const q = maak(t); if (t === 'musicians') { const u = q.update.bind(q);
+            q.update = (v) => { if (v && v.profile_complete === true) { v = Object.assign({}, v, { profile_complete: false, wacht_op_bevestiging: true }); } return u(v); }; } return q; };
+          state.onboarding = true; editingMusicianId = 'm1'; pendingMessageRecipient = { id: 'm2', displayName: 'Dylan' };
+          await saveEditedProfile();
+          await new Promise(r => setTimeout(r, 600));
+          const blok = document.getElementById('emailBevestigBanner');
+          return {
+            acties: S.fnCalls.map(x => x.naam + ':' + x.body.actie),
+            voortgang: localStorage.getItem('tt_onboarding_v1'),
+            views: [...document.querySelectorAll('.app-view.active')].map(v => v.id),
+            blok: blok ? blok.textContent.replace(/\\s+/g, ' ') : '',
+            overlay: document.getElementById('saveOverlay').classList.contains('visible'),
+            pending: pendingMessageRecipient
+          };
+        }""")
+        check("TT-336: 'Profiel aanmaken' bij 16+ vraagt de mail aan",
+              uit["acties"] == ["email-bevestigen:start"], json.dumps(uit))
+        check("TT-336: de bewaarde voortgang is gewist",
+              uit["voortgang"] is None, json.dumps(uit))
+        check("TT-336: daarna Mijn Profiel met 'Nog één stap' en het e-mailadres",
+              uit["views"] == ["view-myprofile"] and "Nog één stap" in uit["blok"]
+              and "sanne@gmial.com" in uit["blok"] and not uit["overlay"], json.dumps(uit))
+        check("TT-336: geen berichtvenster achteraf (TT-32)", uit["pending"] is None, json.dumps(uit))
+
+        # Het blok: e-mailadres aanpassen.
+        uit = pg.evaluate("""async () => {
+          const S = window.TT_STUB;
+          bevestigEmailadresTonen(true);
+          const vak = document.getElementById('bevestigEmailadresVak');
+          const zichtbaar = getComputedStyle(vak).display !== 'none';
+          document.getElementById('bevestigNieuwEmailadres').value = 'sanne@gmial';
+          await bevestigEmailadresOpslaan();
+          const foutGetoond = !!vak.querySelector('.field-error, .error-msg, [class*="fout"], [class*="error"]');
+          const voor = S.fnCalls.length;
+          document.getElementById('bevestigNieuwEmailadres').value = 'sanne@gmail.com';
+          S.fnAntwoord['e-mailadres'] = { ok: true, email: 'sanne@gmail.com' };
+          await bevestigEmailadresOpslaan();
+          await new Promise(r => setTimeout(r, 300));
+          return { zichtbaar, foutGetoond, geenAanroepBijFout: voor === 1,
+                   laatste: S.fnCalls[S.fnCalls.length - 1].body,
+                   blok: document.getElementById('emailBevestigBanner').textContent.replace(/\\s+/g, ' ') };
+        }""")
+        check("TT-336: 'E-mailadres klopt niet?' opent het veld",
+              uit["zichtbaar"], json.dumps(uit))
+        check("TT-336: een ongeldig e-mailadres geeft een veldfout, geen aanroep",
+              uit["foutGetoond"] and uit["geenAanroepBijFout"], json.dumps(uit))
+        check("TT-336: een geldig e-mailadres gaat naar de functie en staat daarna in het blok",
+              uit["laatste"] == {"actie": "e-mailadres", "email": "sanne@gmail.com"}
+              and "sanne@gmail.com" in uit["blok"], json.dumps(uit))
+        c.close(); alle_fouten += f
+
+        # 2. Zonder wachten (13 t/m 15, of de database nog niet bijgewerkt):
+        #    "Profiel aangemaakt!", niet meer "Profiel bijgewerkt!".
+        c, pg, f = bevestig_pagina("", INGELOGD + ONAF)
+        uit = pg.evaluate("""async () => {
+          localStorage.setItem('tt_onboarding_v1', JSON.stringify({ userId: 'u1', mid: 'm1', step: 5 }));
+          state.onboarding = true; editingMusicianId = 'm1';
+          await saveEditedProfile();
+          const nieuw = document.getElementById('saveTitle').textContent;
+          const voortgang = localStorage.getItem('tt_onboarding_v1');
+          await new Promise(r => setTimeout(r, 2300));
+          editingMusicianId = 'm1';
+          await saveEditedProfile();
+          return { nieuw, voortgang, bewerkt: document.getElementById('saveTitle').textContent,
+                   acties: window.TT_STUB.fnCalls.length };
+        }""")
+        check("TT-336: een nieuwe registratie eindigt op 'Profiel aangemaakt!' en wist de voortgang",
+              uit["nieuw"] == "Profiel aangemaakt!" and uit["voortgang"] is None and uit["acties"] == 0,
+              json.dumps(uit))
+        check("TT-336: bewerken blijft 'Profiel bijgewerkt!'",
+              uit["bewerkt"] == "Profiel bijgewerkt!", json.dumps(uit))
+        c.close(); alle_fouten += f
+
+        # 3. Geen berichten en geen band zolang het profiel wacht (1a).
+        c, pg, f = bevestig_pagina("", INGELOGD + WACHT)
+        uit = pg.evaluate("""async () => {
+          const S = window.TT_STUB;
+          const toasts = [];
+          const oud = window.showToast; window.showToast = (t) => { toasts.push(t); oud(t); };
+          const ok = await insertMessage('m2', 'Hoi!');
+          const berichten = S.data.messages.length;
+          showView('bands');
+          await new Promise(r => setTimeout(r, 200));
+          await showCreateBandForm();
+          const form = document.getElementById('createBandForm').style.display;
+          return { ok, berichten, form, toasts };
+        }""")
+        check("TT-336: een wachtend profiel stuurt geen bericht",
+              uit["ok"] is False and uit["berichten"] == 0
+              and any("Bevestig eerst je e-mailadres" in t for t in uit["toasts"]), json.dumps(uit))
+        check("TT-336: een wachtend profiel opent geen bandformulier",
+              uit["form"] in ("", "none") and any("een band oprichten" in t for t in uit["toasts"]),
+              json.dumps(uit))
+        c.close(); alle_fouten += f
+
+        c, pg, f = bevestig_pagina("", INGELOGD + ONAF)
+        uit = pg.evaluate("""async () => {
+          const toasts = [];
+          const oud = window.showToast; window.showToast = (t) => { toasts.push(t); oud(t); };
+          const ok = await insertMessage('m2', 'Hoi!');
+          return { ok, toasts };
+        }""")
+        check("TT-336: halverwege de wizard ook geen bericht",
+              uit["ok"] is False and any("Maak eerst je profiel af" in t for t in uit["toasts"]),
+              json.dumps(uit))
+        c.close(); alle_fouten += f
+
+        c, pg, f = bevestig_pagina("", INGELOGD)
+        uit = pg.evaluate("""async () => ({ ok: await insertMessage('m2', 'Hoi!'),
+                                            berichten: window.TT_STUB.data.messages.length })""")
+        check("TT-336: een profiel dat online staat, stuurt gewoon berichten",
+              uit["ok"] is True and uit["berichten"] == 1, json.dumps(uit))
+        c.close(); alle_fouten += f
+
+        # 4. De knop in de mail: #bevestig/<code>.
+        def via_link(extra, antwoord):
+            c, pg, f = bevestig_pagina("#bevestig/abc123",
+                extra + "\nwindow.TT_STUB.fnAntwoord.bevestig = " + json.dumps(antwoord) + ";\n")
+            uit = pg.evaluate("""() => ({
+              views: [...document.querySelectorAll('.app-view.active')].map(v => v.id),
+              hash: location.hash,
+              tekst: (document.getElementById('toestemmingInhoud') || {}).textContent || '',
+              knop: [...document.querySelectorAll('#toestemmingInhoud button')].map(b => b.textContent),
+              acties: window.TT_STUB.fnCalls.map(x => x.body)
+            })""")
+            c.close()
+            return uit, f
+
+        uit, f = via_link("", {"stand": "bevestigd", "musician_id": "m1"})
+        alle_fouten += f
+        check("TT-336: de link zonder inlog: 'Je e-mailadres is bevestigd' met de knop Inloggen",
+              uit["views"] == ["view-toestemming"] and "Je e-mailadres is bevestigd" in uit["tekst"]
+              and uit["knop"] == ["Inloggen"] and uit["acties"] == [{"actie": "bevestig", "code": "abc123"}]
+              and uit["hash"] == "#bevestig/abc123", json.dumps(uit))
+        uit, f = via_link(INGELOGD, {"stand": "bevestigd", "musician_id": "m1"})
+        alle_fouten += f
+        check("TT-336: de link, ingelogd met hetzelfde account: meteen Mijn Profiel",
+              uit["views"] == ["view-myprofile"], json.dumps(uit))
+        uit, f = via_link("", {"stand": "oud"})
+        alle_fouten += f
+        check("TT-336: een link naar een aangepast e-mailadres zegt dat hij niet meer werkt",
+              "werkt niet meer" in uit["tekst"] and not uit["knop"], json.dumps(uit))
+        uit, f = via_link("", {"stand": "onbekend"})
+        alle_fouten += f
+        check("TT-336: een onbekende link zegt dat hij niet werkt",
+              "Deze link werkt niet" in uit["tekst"], json.dumps(uit))
+
+        # 5. Woordkeus (Ronald, 26-09-2026): "e-mailadres", nooit los "adres".
+        bron = open(os.path.join(ROOT, "wizard.js"), encoding="utf-8").read()
+        stuk = bron[bron.index("// ─── TT-336"):bron.index("// TT-168-overgang (02-09-2026): saveEditedProfileHere()")]
+        teksten = re.findall(r"'[^'\n]*'|`[^`]*`", stuk)
+        los = [t for t in teksten if re.search(r"(?<![-\w])adres", t, re.I)]
+        check("TT-336: de teksten zeggen 'e-mailadres', nergens los 'adres'", not los, str(los)[:300])
+        check("TT-336: geen paginafouten in blok 43", not alle_fouten, "; ".join(alle_fouten)[:300])
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
