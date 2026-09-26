@@ -3033,6 +3033,73 @@ def blok_browser():
         check("showView() laat de code in de adresregel staan",
               adres["hash"] == "#toestemming/abc123", json.dumps(adres))
 
+        # TT-330 t/m TT-333 (26-09-2026): de goedkeuringspagina en de teksten.
+        ouder2 = page.evaluate("""async () => {
+          const uit = {};
+          const echteApi = ouderApi;
+          const tekst = () => document.getElementById('toestemmingInhoud').innerText;
+          const actief = () => [...document.querySelectorAll('.app-view.active')].map(v => v.id);
+
+          // TT-330: een onbekende code geeft een melding, niet de homepage.
+          ouderApi = async () => { throw new Error('Onbekende link.'); };
+          history.replaceState({}, '', '#toestemming/onbekend');
+          await toestemmingPaginaOpenen('onbekend');
+          uit.onbekendView = actief();
+          uit.onbekendTekst = tekst();
+
+          // TT-332: beide eindschermen sluiten met dezelfde afsluiter.
+          ouderApi = async () => ({ ok: true });
+          document.getElementById('toestemmingInhoud').innerHTML = '<input type="checkbox" id="toestemmingVinkje" checked>';
+          await ouderBesluit(true);
+          uit.ja = tekst();
+          await ouderBesluit(false);
+          uit.nee = tekst();
+
+          // TT-331: de knop uit de mail aan het kind.
+          ouderApi = async () => ({ stand: 'open' });
+          clearOnboardingProgress();
+          history.replaceState({}, '', '#toestemming-gegeven');
+          toestemmingGegevenOpenen();
+          uit.eldersView = actief();
+          uit.eldersTekst = tekst();
+          uit.eldersHash = location.hash;
+          state.ouderRoute = true; state.fname = 'Testkind'; state.currentStep = 1;
+          saveOnboardingProgress();
+          toestemmingGegevenOpenen();
+          uit.hierView = actief();
+          clearOnboardingProgress();
+          state.ouderRoute = false;
+          ouderPaneelSluiten();
+          clearInterval(ouderStandTimer);
+
+          // TT-333: nergens "verzoek" in een zichtbare tekst van de ouderroute.
+          const html = ['ouderStap', 'ouderWacht', 'ouderWachtwoord']
+            .map(id => document.getElementById(id).innerText).join(' ');
+          uit.verzoekInSchermen = /verzoek/i.test(html);
+          ouderApi = echteApi;
+          showView('landing');
+          return uit;
+        }""")
+        check("TT-330: een onbekende link toont een melding op de goedkeuringspagina",
+              ouder2["onbekendView"] == ["view-toestemming"]
+              and "werkt niet" in ouder2["onbekendTekst"], json.dumps(ouder2))
+        check("TT-332: toestemming en weigering sluiten allebei met de afsluiter",
+              ouder2["ja"].strip().endswith("Je kunt dit venster nu sluiten.")
+              and ouder2["nee"].strip().endswith("Je kunt dit venster nu sluiten."), json.dumps(ouder2))
+        check("TT-331: zonder wachtend profiel legt de pagina uit waar het staat",
+              ouder2["eldersView"] == ["view-toestemming"]
+              and "toestel waar je begon" in ouder2["eldersTekst"]
+              and ouder2["eldersHash"] == "#toestemming-gegeven", json.dumps(ouder2))
+        check("TT-331: met wachtend profiel gaat het kind gewoon verder",
+              ouder2["hierView"] == ["view-register"], json.dumps(ouder2))
+        check("TT-333: de ouderschermen zeggen nergens \"verzoek\"",
+              not ouder2["verzoekInSchermen"], json.dumps(ouder2))
+        bron = open(os.path.join(ROOT, "ouder.js"), encoding="utf-8").read()
+        zichtbaar = re.findall(r"'[^'\n]*'|`[^`]*`", bron)
+        check("TT-333: geen \"verzoek\" in de teksten van ouder.js",
+              not [t for t in zichtbaar if re.search(r"\bverzoek", t, re.I)],
+              str([t for t in zichtbaar if re.search(r"\bverzoek", t, re.I)])[:300])
+
         check("geen paginafouten in blok 28", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
