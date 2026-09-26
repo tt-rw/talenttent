@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260926w">
+<link rel="stylesheet" href="styles.css?v=20260926x">
 </head>
 <body>
 
@@ -2004,22 +2004,29 @@
     <div class="search-filters">
       <div class="panel-title" style="margin-bottom:20px;">Instellingen</div>
 
-      <!-- TT-341 stap 3 (26-09-2026): licht of donker. Geen venster en geen
-           Opslaan: de keuze werkt meteen, dan zie je direct wat je kiest.
-           "Thema" (besluit Ronald: "thema is goed"), niet "Weergave": dat
-           woord betekent in Zoeken al kaarten of lijst (projectinstructies §6,
-           één betekenis per woord). -->
-      <div class="tile tile-keuze">
-        <div style="flex:1;">
-          <div class="tile-title">Thema</div>
-          <div class="tile-sub">geldt alleen op dit toestel</div>
-          <div class="segmented-control" id="lichtDonkerKeuze">
-            <div class="segmented-btn" data-stand="toestel" onclick="kiesLichtDonker('toestel')">Zoals mijn toestel</div>
-            <div class="segmented-btn" data-stand="licht" onclick="kiesLichtDonker('licht')">Licht</div>
-            <div class="segmented-btn" data-stand="donker" onclick="kiesLichtDonker('donker')">Donker</div>
+      <!-- TT-341 stap 3 (26-09-2026): licht of donker. "Thema" (besluit
+           Ronald: "thema is goed"), niet "Weergave": dat woord betekent in
+           Zoeken al kaarten of lijst (projectinstructies §6).
+           Besluit Ronald, 26-09-2026: een gewone tegel, even groot als de
+           andere; een tik opent een klein menu waarin je kiest. Dat is het
+           keuzemenu van de app (initChoiceField(), huisstijl §7.1): het klapt
+           uit onder de tegel, de gekozen regel heeft een ✓, een keuze werkt
+           meteen en sluit het menu. De tegel toont de keuze van nu.
+           Het <select> is de bron van waarheid, net als bij Sorteren. -->
+      <div class="menu-anchor">
+        <div class="tile" id="themaTegel" aria-label="Thema">
+          <div style="flex:1;">
+            <div class="tile-title">Thema</div>
+            <div class="tile-sub"><span class="wheel-field-label"></span> · geldt alleen op dit toestel</div>
           </div>
         </div>
+        <div class="choice-menu" id="themaMenu" role="listbox" aria-label="Thema"></div>
       </div>
+      <select id="themaKeuze" style="display:none;" onchange="kiesLichtDonker(this.value)">
+        <option value="toestel">Zoals mijn toestel</option>
+        <option value="licht">Licht</option>
+        <option value="donker">Donker</option>
+      </select>
 
       <!-- TT-299 (20-09-2026, besluit Ronald): e-mailadres en wachtwoord
            horen bij het inlogaccount, niet bij het profiel. Ze staan daarom
@@ -2602,7 +2609,7 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260926g"></script>
+<script src="core.js?v=20260926h"></script>
 <script src="utils.js?v=20260926u"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260923a"></script>

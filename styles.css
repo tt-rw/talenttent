@@ -3785,18 +3785,6 @@
     border-radius: var(--radius); cursor: pointer;
   }
   .tile:active { background: var(--surface2); }
-  /* TT-341 stap 3 (26-09-2026): een tegel met de keuze erin (licht of
-     donker). De tegel zelf is geen knop; alleen de keuzeknoppen erin zijn dat. */
-  .tile-keuze { cursor: default; }
-  .tile-keuze:active { background: var(--surface); }
-  /* Drie knoppen naast elkaar, even hoog. Licht en Donker zijn zo breed als
-     hun woord; "Zoals mijn toestel" krijgt de rest. Past die tekst niet, dan
-     loopt hij over twee regels (besluit Ronald, 24-09-2026), niet over drie. */
-  .tile-keuze .segmented-control {
-    display: grid; grid-template-columns: 1fr auto auto;
-    margin-top: 12px;
-  }
-  .tile-keuze .segmented-btn { white-space: normal; text-align: center; padding: 8px 10px; }
   .tile-title { font-size: 17px; font-weight: 700; }
   .tile-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
   /* TT-260 (12-09-2026): was 11px met een eigen marge van 5px. Geen van

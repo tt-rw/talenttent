@@ -146,10 +146,13 @@ function kiesLichtDonker(stand) {
   toonLichtDonkerKeuze();
 }
 
+// Zet het verborgen <select> van de tegel Thema op de keuze van nu, en de
+// tekst in de tegel mee (refreshChoiceField() in utils.js).
 function toonLichtDonkerKeuze() {
-  const nu = lichtDonkerKeuze();
-  document.querySelectorAll('#lichtDonkerKeuze .segmented-btn')
-    .forEach(b => b.classList.toggle('selected', b.dataset.stand === nu));
+  const sel = document.getElementById('themaKeuze');
+  if (!sel) return;
+  sel.value = lichtDonkerKeuze();
+  refreshChoiceField('thema');
 }
 
 if (window.matchMedia) {
@@ -158,6 +161,8 @@ if (window.matchMedia) {
 }
 
 async function appInit() {
+  // De tegel Thema in Instellingen: het keuzemenu van de app (huisstijl §7.1).
+  initChoiceField({ id: 'thema', fieldId: 'themaTegel', menuId: 'themaMenu', selectId: 'themaKeuze' });
   toonLichtDonkerKeuze();
   try {
     initModalStapeling(); // TT-229, zie hierboven

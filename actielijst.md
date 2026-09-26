@@ -1,6 +1,28 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 26-09-2026 (TT-341, stap 3) — **Licht of donker is te
+**Laatste update:** 26-09-2026 (TT-341, stap 3, vervolg) — **De tegel Thema
+is een gewone tegel met een keuzemenu.** Zeven P0's staan open; TT-341 is P2.
+
+**Aanleiding.** Ronald, met een schermafdruk van zijn telefoon: "thema tegel
+is niet goed. de tegel moet even groot zijn als de andere en na klikken een
+klein popup scherm oid openen. daar maak je je keuze."
+
+**Wat er veranderde.** De tegel Thema is even hoog als de andere tegels (70px
+op 390px). De regel eronder toont de keuze van nu, bijvoorbeeld "Zoals mijn
+toestel · geldt alleen op dit toestel" (voorstel Claude: zo zie je wat er
+staat zonder te tikken). Een tik opent het keuzemenu van de app, zoals bij
+Sorteren op: drie regels van 44px, de keuze van nu met een ✓, een donkere
+laag erachter. Een tik op een regel werkt meteen en sluit het menu.
+`index.html`, `core.js`, `styles.css` (`.tile-keuze` weg), testset blok 41.
+`?v=` omhoog voor `styles.css` en `core.js`. Huisstijl §1.4 en
+projectinstructies §11 bijgewerkt.
+
+**Geverifieerd.** Monitor 21/21 · testset 600/600. Schermafdrukken op 390px in
+licht en donker: tegel dicht, menu open, na een keuze.
+
+---
+
+**Vorige update:** 26-09-2026 (TT-341, stap 3) — **Licht of donker is te
 kiezen. Zonder eigen keuze volgt de app het toestel.** Na deze upload ziet
 iedereen met een telefoon op licht dus de lichte app. Zeven P0's staan open;
 TT-341 is P2 (advies Claude), dat is één keer gemeld.
@@ -6349,7 +6371,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-341** | Licht thema, kiesbaar naast donker | **Nieuw, 26-09-2026, wens Ronald. Besluit Ronald: doorvoeren, op basis van "Licht + geel, huidig woordmerk" uit de designproef. Stap 1 gebouwd, 26-09-2026: kleuren per rol in variabelen, donker ongewijzigd. Stap 2 gebouwd, 26-09-2026: het lichte thema in `styles.css` en donker "rustig"; zie de update van die dag. Stap 3 gebouwd en getest, 26-09-2026: de keuze "Thema" in Instellingen, zonder eigen keuze volgt de app het toestel (besluit Ronald: "a"), `theme-color`, huisstijl bijgewerkt. Wacht op akkoord Ronald na upload. Open: de gekozen stand is "voorlopig"; TT-342.** Keuze onthouden op het toestel (besluit Ronald). Bouwplan in drie sessies en open vragen: zie de updates van 26-09-2026 (designproef) en (TT-341, stap 1). **Toets P2 (advies Claude):** de app werkt zonder, maar een deel van de gebruikers vindt een lichte weergave prettiger of beter leesbaar, vooral overdag buiten. Geen gebruiker loopt vast zonder |
+| **TT-341** | Licht thema, kiesbaar naast donker | **Nieuw, 26-09-2026, wens Ronald. Besluit Ronald: doorvoeren, op basis van "Licht + geel, huidig woordmerk" uit de designproef. Stap 1 gebouwd, 26-09-2026: kleuren per rol in variabelen, donker ongewijzigd. Stap 2 gebouwd, 26-09-2026: het lichte thema in `styles.css` en donker "rustig"; zie de update van die dag. Stap 3 gebouwd en getest, 26-09-2026: de tegel "Thema" in Instellingen met een keuzemenu, zonder eigen keuze volgt de app het toestel (besluit Ronald: "a"), `theme-color`, huisstijl bijgewerkt. Wacht op akkoord Ronald na upload. Open: de gekozen stand is "voorlopig"; TT-342.** Keuze onthouden op het toestel (besluit Ronald). Bouwplan in drie sessies en open vragen: zie de updates van 26-09-2026 (designproef) en (TT-341, stap 1). **Toets P2 (advies Claude):** de app werkt zonder, maar een deel van de gebruikers vindt een lichte weergave prettiger of beter leesbaar, vooral overdag buiten. Geen gebruiker loopt vast zonder |
 | **TT-332** | Na de toestemming van de ouder ontbreekt een afsluiter | **Gebouwd en getest 26-09-2026 (vervolg 2), akkoord Ronald — zie Laatste update.** Nieuw, 26-09-2026, wens Ronald (TT-323). Na "Toestemming geven" volgt een bedankscherm zonder einde. Ronald: er moet een afsluiter komen "in de zin van: u kunt dit scherm nu afsluiten". **Toets P2:** het werkt, maar de ouder weet niet dat hij klaar is. **Voorstel voor de tekst:** "Je kunt dit venster nu sluiten." — de pagina spreekt de ouder met "je" aan. |
 | **TT-333** | "Verzoek" in de app, "aanvraag" in de mails | **Gebouwd en getest 26-09-2026 (vervolg 2), wens Ronald: ook in de app "aanvraag" — zie Laatste update.** Nieuw, 26-09-2026, TT-323. Besluit TT-325: in de mails altijd "aanvraag", nooit "verzoek". De app zegt "Je verzoek is verstuurd", "Verzoek versturen…" en op de goedkeuringspagina "Dit verzoek is afgewezen" / "Een verzoek vervalt". **Toets P2:** het werkt, maar dezelfde handeling heeft twee namen. **Open vraag aan Ronald:** geldt "aanvraag" ook in de app? |
 | **TT-334** | De mails tonen de volledige URL onder de knop | **Gebouwd en ingevoerd 26-09-2026 (vervolg 4), akkoord Ronald op het voorstel hieronder; in Supabase nagemeten. Wacht op TT-323.** **Nieuw, 26-09-2026, feedback Ronald (TT-323):** "ik wil niet de hele url tonen. het is te lang en rommelig." Het blok "Werkt de knop niet? Open dan deze link:" staat in het template, dus in alle zeven mails: de drie Edge Functions en de twee Supabase-sjablonen. **Toets P2:** het werkt, maar oogt rommelig. **Voorstel:** "Werkt de knop niet? Tik dan op deze link." met alleen "deze link" klikbaar. De tekstversie houdt de volledige URL. |
