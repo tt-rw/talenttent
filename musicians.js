@@ -1588,339 +1588,59 @@ async function saveJeMediahoek() {
   showToast('Wijzigingen opgeslagen.');
 }
 
-function selectBandStatus(el, val) {
-  document.querySelectorAll('#bandStatusGrid .tag').forEach(t => t.classList.remove('selected'));
-  el.classList.add('selected');
-  bandState.status = val;
-}
+// ─── Niveautabel voor muzikanten (de i-knop) ─────────────────────────────────
+// Verplaatst uit bands.js (26-09-2026). Inhoud ongewijzigd.
 
-// TT-252 (11-09-2026): de knop "Band aanmaken" liet zich twee keer indrukken.
-// De tweede tik maakte een echte tweede band met dezelfde oprichter, en
-// opruimen kon alleen via "Band opheffen" — een pad dat een nieuwe gebruiker
-// niet kent. Deze vlag sluit de tweede aanroep buiten zolang de eerste loopt.
-// De opslaanlaag hieronder dekt de tik ook af, maar een vlag werkt ook als die
-// laag ooit ontbreekt.
-let bandSaveBusy = false;
+// TT-51-uitbreiding (12-08-2026): Tabel 2 uit niveaubepaling-naslagwerk.md,
+// 1-op-1 overgenomen. Hardcoded (geen build-stap om een .md-bestand in te
+// lezen in deze losse-bestand-app) — bij een tekstwijziging in het naslagwerk
+// moet deze lijst hier ook worden bijgewerkt.
+const NIVEAU_INFO_MUSICIAN_HEADERS = ['Niveau', 'Technische beheersing', 'Gehoor en muziektheorie', 'Voorbereiden en repeteren', 'Live spelen en flexibiliteit'];
+const NIVEAU_INFO_MUSICIAN_ROWS = [
+  ['1. Beginner (Bedroom)',
+    'Je kent de basisakkoorden of een paar toffe drumbeats. Je speelt vooral losse intro\'s of riffjes van TikTok en YouTube. Je timing schommelt.',
+    'Je kunt akkoorden nog niet echt op gehoor naspelen. Je hebt internettabs, YouTube-tutorials of eenvoudige bladmuziek nodig.',
+    'Je hebt echt een leraar of hulp nodig om een nieuw nummer te leren. Je oefent nog een beetje onregelmatig.',
+    'Je speelt eigenlijk altijd op hetzelfde volume. Als de band stopt of iets anders doet dan de opname, ben je de draad kwijt.'],
+  ['2. Gevorderde Beginner (Jammer)',
+    'Je speelt complete nummers vloeiend uit. Je basistechniek (barré-akkoorden, ademsteun, fills) is stabiel en kost steeds minder moeite.',
+    'Je herkent eenvoudige basisschema\'s. Je kunt nummers thuis uitzoeken en naspelen door goed naar de originele track te luisteren.',
+    'Je studeert thuis zelfstandig de nummers in die zijn afgesproken. Je kent je partijen uit je hoofd als je naar de repetitie komt.',
+    'Je luistert naar de rest en past je volume aan. Je kunt een simpele eigen fill of solo verzinnen die past bij de structuur van het nummer.'],
+  ['3. Half-Gevorderd (Gig-Ready)',
+    'Fysieke techniek is een automatisme; constante strakke timing. Je hebt een goede, bewuste controle over je eigen klankkleur en sound.',
+    'Kan makkelijk improviseren en solo\'s construeren over bekende toonsoorten; sterke functionele basiskennis van muziektheorie.',
+    'Bedenkt en schrijft eigen partijen uit. Heeft minimale repetitietijd nodig om een volledige live-set van anderhalf uur te beheersen.',
+    'Herstelt live-fouten onmiddellijk zonder dat het opvalt; speelt moeiteloos met een clicktrack of In-Ear monitor.'],
+  ['4. Gevorderd (Set-Leider)',
+    'Zeer brede technische bagage; lost instrument-technische problemen direct live op; schakelt moeiteloos tussen uiteenlopende genres.',
+    'Kan live on-the-fly transponeren naar een andere toonsoort; pikt complexe harmonieën en akkoordenschema\'s direct op gehoor op.',
+    'Kan fungeren als muzikaal leider (MD); arrangeert efficiënt partijen voor andere bandleden en levert kant-en-klare prestaties aan.',
+    'Volledige controle over dynamiek; levert studio-waardige prestaties onder live-fysieke spanning (zoals intense podiumactie of dans).'],
+  ['5. Professioneel',
+    'Grenzeloze techniek; beschikt over een internationaal onderscheidende, direct herkenbare \'signature sound\' en artistieke identiteit.',
+    'Absoluut gehoor of uitzonderlijk ontwikkeld relatief gehoor; leest direct complexe chord charts of partituren vanaf papier (sight-reading).',
+    'Volledig autonoom en multi-inzetbaar; beheerst een complete setlist binnen 24 uur; de vaste eerste keuze voor high-end studio- en sessiewerk.',
+    'Volledige controle over emotie en klank; anticipeert en adapteert onmiddellijk aan elke onverwachte live-situatie of tempowisseling.'],
+];
 
-// TT-252: de vlag gaat meteen aan, vóór de eerste `await`. Zat hij pas na
-// getMyMusicianId(), dan glipte de tweede tik er alsnog langs: die aanroep
-// begint tijdens het wachten, ziet de vlag nog op false staan en maakt een
-// tweede band. Gemeten met twee aanroepen direct achter elkaar: twee inserts
-// in `bands`. Het `finally` zet de vlag altijd terug, ook bij een afgekeurd
-// veld. Het echte werk staat in saveBandRun() hieronder — zo blijft de vlag
-// één laag apart en hoeft geen enkele bestaande regel te verschuiven.
-async function saveBand() {
-  if (bandSaveBusy) return;
-  bandSaveBusy = true;
-  try { await saveBandRun(); }
-  finally { bandSaveBusy = false; }
-}
-
-async function saveBandRun() {
-  const name = document.getElementById('bandName').value.trim();
-  const zip  = document.getElementById('bandZip').value.trim();
-  const city = document.getElementById('bandCity').value.trim();
-  const desc = document.getElementById('bandDescription').value.trim();
-  // TT-247 (12-09-2026): alle fouten tegelijk, elk bij zijn eigen veld —
-  // dezelfde vorm als de registratiewizard. Muzikantkant en bandkant volgen
-  // dezelfde regels (huisstijl, besluit Ronald 11-09-2026). Tot nu toe waren
-  // dit drie opeenvolgende toasts, één per keer.
-  // Het bandformulier staat in view-bands, niet in #bandModal — die modal is
-  // de bandweergave. Gemeten 12-09-2026; met 'bandModal' als bereik werd er
-  // niets opgeruimd.
-  clearFieldErrors('view-bands');
-  const fouten = [];
-  if (!name) fouten.push(['bandName', 'Vul een bandnaam in']);
-  if (!zip || !bandPostcodeResolved || !city) {
-    fouten.push(['bandZip', 'Vul een geldige postcode in. De plaats wordt dan automatisch ingevuld']);
-  }
-  if (!bandState.genres.length) fouten.push(['bandGenreField', 'Kies minimaal één genre']);
-  if (showFieldErrors(fouten)) return;
-
-  const mid = await getMyMusicianId();
-  // Gaat niet over een veld in dit formulier, maar over je account — toast.
-  if (!mid) { showToast('Maak eerst een muzikantprofiel aan.'); return; }
-
-  // TT-252: de laag blokkeert het scherm tijdens het opslaan, zodat een tweede
-  // tik de knop ook fysiek niet meer bereikt. TT-251: zonder die laag was er
-  // ook geen enkele aanduiding dat er iets gebeurde. Zelfde component als de
-  // wizard (showSaving), zodat muzikantkant en bandkant hetzelfde aanvoelen.
-  const isNieuw = !editingBandId;
-  showSaving(
-    isNieuw ? 'Band aanmaken...' : 'Wijzigingen opslaan...',
-    'Heel even geduld, dit duurt maar een paar seconden.'
-  );
-
-  try {
-    let bandId;
-    if (editingBandId) {
-      bandId = editingBandId;
-      const { error: uErr } = await db.from('bands').update({
-        name, city: normalizeCityName(city), zip,
-        description: desc || null, genres: bandState.genres,
-        status: bandState.status, city_source: bandCitySource,
-        niveau: bandState.niveau || null, // TT-51, optioneel
-        avatar_url: bandState.avatarUrl || null, // V-15
-      }).eq('id', bandId);
-      if (uErr) throw uErr;
-    } else {
-      // Zelfde voorzorg als bij createAccountAndProfile() (23-08-2026): alleen
-      // 'id' terugvragen i.p.v. een kale .select(). Niet omdat hier een
-      // bekende kolombeperking is gevonden — geen enkel veld hier is dat
-      // vandaag — maar een kale select() vraagt onnodig alle kolommen op
-      // terwijl alleen band.id verderop wordt gebruikt.
-      const { data: band, error: bErr } = await db.from('bands').insert({
-        name, city: normalizeCityName(city), zip,
-        description: desc || null, genres: bandState.genres,
-        status: bandState.status, founder_id: mid, city_source: bandCitySource,
-        niveau: bandState.niveau || null, // TT-51, optioneel
-        avatar_url: bandState.avatarUrl || null, // V-15
-      }).select('id').single();
-      if (bErr) throw bErr;
-      bandId = band.id;
-      await db.from('band_members').insert({ band_id: bandId, musician_id: mid, role: 'Oprichter', status: 'bevestigd' });
-    }
-
-    // TT-281 (23-09-2026): "Gezocht" wissen en opnieuw vullen in één
-    // transactie — zelfde fout en zelfde oplossing als op de profielkant.
-    // V-14: bij een complete/inactieve band kan bandState.wanted leeg zijn;
-    // dan blijft er na afloop gewoon niets gezocht staan.
-    const { error: wErr } = await db.rpc('tt_save_band_wanted', {
-      p_band_id: bandId,
-      p_instruments: bandState.wanted,
-    });
-    if (wErr) throw wErr;
-
-    resetBandForm();
-    document.getElementById('createBandForm').style.display = 'none';
-    loadMyBands();
-    hideSaving();
-    // TT-251 (11-09-2026): er was geen verschil tussen gelukt en mislukt — het
-    // formulier verdween in beide gevallen. Wie zijn eerste band aanmaakt is
-    // precies op dat moment het onzekerst. Dezelfde bevestiging als elders in
-    // de app: een korte melding, met de bandnaam erin zodat hij ziet wát er is
-    // aangemaakt.
-    showToast(isNieuw ? `${name} is aangemaakt.` : 'Wijzigingen opgeslagen.');
-  } catch(e) {
-    hideSaving();
-    logCaught('saveBand', e);
-    showToast(friendlyErrorMessage(e));
-  }
-}
-
-async function loadMyBands() {
-  const el = document.getElementById('myBandsList');
-  if (!el) return;
-  el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:32px;">Laden...</div>';
-  // 22-08-2026: zelfde lazy vervalcontrole als in loadFounderOffers() —
-  // Mijn Bands kan ook los daarvan geopend worden.
-  // Niet blokkerend voor de lijst, wel loggen (TT-230).
-  try { await db.rpc('tt_expire_old_founder_offers'); }
-  catch (e) { logCaught('loadMyBands/expire', e); }
-
-  const mid = await getMyMusicianId();
-  if (!mid) {
-    // TT-248: via de vaste vorm uit huisstijl §15, net als elke andere lege staat.
-    el.innerHTML = emptyStateHTML(
-      'Nog geen profiel',
-      'Maak je muzikantprofiel aan om een band te kunnen oprichten.',
-      'Profiel aanmaken →',
-      "showView('register')"
-    );
-    return;
-  }
-
-  const { data: memberships } = await db.from('band_members').select('band_id').eq('musician_id', mid).eq('status', 'bevestigd');
-  if (!memberships?.length) {
-    // TT-248: stond hier als grijze tekst zonder uitweg, tien regels onder de
-    // lege staat hierboven die wél een knop had. Nu dezelfde vaste vorm.
-    el.innerHTML = emptyStateHTML(
-      'Nog geen bands',
-      'Richt je eigen band op, of wacht tot iemand je uitnodigt.',
-      'Band aanmaken →',
-      'showCreateBandForm()'
-    );
-    return;
-  }
-
-  const bandIds = memberships.map(m => m.band_id);
-  const { data: bands } = await db.from('bands')
-    .select(`*, band_members(musician_id, role, status, founder_offer, musicians(fname, username, profile_color)), band_wanted(instrument)`)
-    .in('id', bandIds).order('updated_at', { ascending: false });
-
-  const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
-  el.innerHTML = (bands || []).map(b => {
-    const col = safeColor(b.profile_color, '#3ecfff');
-    const confirmed = (b.band_members||[]).filter(m => m.status === 'bevestigd');
-    // TT-41 (08-08-2026): uitgenodigde muzikanten staan er wél al, maar tellen
-    // nog niet als lid tot ze zelf bevestigen. Alleen de oprichter ziet dit —
-    // voor de rest van de wereld bestaat een uitnodiging niet.
-    const pending = (b.band_members||[]).filter(m => m.status === 'aangevraagd');
-    const isFounder = b.founder_id === mid;
-    // V-16 (13-08-2026): staat er al een lopend overname-aanbod (founder_offer)?
-    // Dan geen nieuwe "Ik stop als bandleider"-knop, maar de wachtstand.
-    const offerPending = isFounder && confirmed.some(m => m.founder_offer);
-    const status = statusLabels[b.status] ? b.status : '';
-    // 22-08-2026 (Ronald): de drie losse knoppen (Band bewerken/+ Lid
-    // toevoegen/Ik stop als beheerder) worden één klein ⋯-menu, zelfde
-    // patroon als het profielmenu (zie huisstijl-en-consistentie.md §8).
-    // Elke band in de lijst heeft zijn eigen knop/menu, dus geen vaste id's
-    // — toggleBandMoreMenu() werkt met event.currentTarget in plaats daarvan.
-    const founderMenuHTML = isFounder ? `
-      <div class="profile-actions-menu-wrap" style="flex-shrink:0;" onclick="event.stopPropagation();">
-        <button class="nav-menu-btn" onclick="toggleBandMoreMenu(event)" aria-label="Meer opties voor ${escAttr(b.name)}" title="Meer">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
-        </button>
-        <div class="inline-menu-dropdown">
-          <button class="nav-menu-item" onclick="closeAllBandMoreMenus();editBand('${jsAttr(b.id)}');">Bandprofiel bewerken</button>
-          <button class="nav-menu-item" onclick="closeAllBandMoreMenus();openAddMemberModal('${jsAttr(b.id)}','${jsAttr(b.name)}');">Bandleden beheren</button>
-        </div>
-      </div>` : '';
-    return `<div class="band-card">
-      <div class="band-card-header" onclick="openBandModal('${jsAttr(b.id)}')">
-        ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar" style="background:${col};">${AVATAR_T_FALLBACK}</div>`}
-        <div style="flex:1;">
-          <div class="band-name">${escHtml(b.name)}</div>
-          <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
-        </div>
-        ${isFounder ? founderMenuHTML : `<button class="btn btn-ghost" onclick="event.stopPropagation(); leaveBand('${jsAttr(b.id)}','${jsAttr(b.name)}');">Band verlaten</button>`}
-      </div>
-      ${offerPending ? `
-      <div style="padding:0 20px;">
-        <div style="font-size:12px;color:var(--muted);padding:8px 0;border-top:1px solid var(--border);">Gevraagd of iemand het beheer overneemt — wachten op reactie.</div>
-      </div>` : ''}
-      <div class="band-card-body">
-        <!-- 22-08-2026 (Ronald): status minder prominent — de beheerder weet
-             deze zelf al, hoort niet meer bovenaan in het overzicht. -->
-        <div style="margin-bottom:8px;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>
-        ${b.description ? `<p style="font-size:13px;color:var(--muted);margin-bottom:12px;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
-        <div class="band-members-row">
-          ${confirmed.map(m => {
-            const memberName = displayNameOf(m.musicians);
-            // 22-08-2026 (Ronald): het kruisje hier voelde "banaal, alsof je
-            // ieder moment kan worden gecancelled". Verwijderen zit nu in
-            // "Bandleden wijzigen" (zie openAddMemberModal), met een
-            // duidelijke knop. Deze chip is nu puur informatief + klikbaar
-            // naar het profiel — geen verwijderactie meer op de kaart zelf.
-            // m.musicians.id komt hier altijd mee (dit is de eigen "Mijn
-            // Bands"-lijst, geen publieke/anonieme bron).
-            return `<div class="band-member-chip" style="cursor:pointer;" onclick="event.stopPropagation(); openMusicianModal('${jsAttr(m.musician_id)}');">
-            <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
-            ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">${escHtml(roleLabel(m.role))}</span>
-          </div>`; }).join('')}
-          ${isFounder ? pending.map(m => {
-            const memberName = displayNameOf(m.musicians);
-            return `<div class="band-member-chip" style="opacity:.55;border-style:dashed;">
-            <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
-            ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">wacht op bevestiging</span>
-          </div>`; }).join('') : ''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-async function openBandModal(id) {
-  const modal = document.getElementById('bandModal');
-  document.getElementById('bandModalContent').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
-  modal.classList.add('visible');
-
-  let b = null;
-
-  if (hasOwnProfile) {
-    const { data } = await db.from('bands')
-      .select(`*, band_members(role, status, musicians(id, fname, username, profile_color, musician_instruments(instrument))), band_wanted(instrument)`)
-      .eq('id', id).single();
-    b = data;
-  } else {
-    // Zonder eigen profiel: publieke RPC (tabel zelf blijft op slot voor anon).
-    const { data } = await db.rpc('tt_get_bands_public', { ids: [id] });
-    const row = (data || [])[0];
-    if (row) {
-      b = {
-        id: row.id, name: row.name, city: row.city, description: row.description, // TT-04: geen postcode voor bezoekers
-        status: row.status, profile_color: row.profile_color, updated_at: row.updated_at,
-        avatar_url: row.avatar_url || null, // V-15-restpunt (13-08-2026)
-        genres: row.genres || [],
-        niveau: row.niveau, // TT-51 (12-08-2026, RPC-restpunt gesloten)
-        // TT-43: de publieke RPC levert voor leden alleen nog de
-        // gebruikersnaam — de echte voornaam blijft weg bij bezoekers.
-        band_members: (row.members || []).map(mem => ({ role: 'Lid', status: 'bevestigd', musicians: { username: mem.username, profile_color: mem.profile_color } })),
-        band_wanted: (row.wanted || []).map(i => ({ instrument: i })),
-      };
-    }
-  }
-
-  if (!b) { document.getElementById('bandModalContent').innerHTML = '<p style="color:var(--danger)">Kon band niet laden.</p>'; return; }
-
-  // TT-06: een band is te melden, niet te blokkeren — blokkeren gaat over een
-  // persoon, en een band is er geen. Eigen band: geen meldknop (zie hieronder
-  // isOwnBand, die pas na de ledenlijst bekend is; daarom staat de aanroep
-  // verderop).
-
-  const col = safeColor(b.profile_color, '#3ecfff');
-  const confirmed = (b.band_members||[]).filter(m => m.status === 'bevestigd');
-  const statusLabels = { zoekend: 'Zoekend naar leden', compleet: 'Band is compleet', inactief: 'Inactief' };
-  const status = statusLabels[b.status] ? b.status : '';
-
-  // V-13 (13-08-2026): tot nu toe had een bandprofiel geen enkele manier om
-  // contact te leggen. Het bericht gaat naar de oprichter — dat is de enige
-  // die op dit moment reageert op aanmeldingen. De oprichter wordt gezocht
-  // in de al opgehaalde ledenlijst, niet via een aparte databasevraag.
-  const founderMember = hasOwnProfile ? confirmed.find(m => m.role === 'Oprichter') : null;
-  const isOwnBand = !!(founderMember && myMusicianId && founderMember.musicians?.id === myMusicianId);
-
-  // TT-318 (24-09-2026): hier stond eerst een gekleurde balk van 8px met een
-  // negatieve marge van 32px — die hoorde bij de oude opvulling van 32px rond
-  // dit venster. Sinds de koprij (TT-268) viel hij volledig buiten beeld: niet
-  // te zien, en netto 0px hoog. Nu het venster geen eigen opvulling meer heeft
-  // (zelfde maten als het muzikantvenster), zou hij 16px buiten de rand
-  // steken. Weggehaald. Zelfde valkuil als de gouden balk van TT-126.
-  // Het ⋯-menu staat rechts naast de naam, net als bij een muzikant; op je
-  // eigen band niet.
-  const veiligheidPlekHTML = isOwnBand ? ''
-    : '<span id="bandModalActies" class="profiel-menu-plek"></span>';
-  document.getElementById('bandModalContent').innerHTML = `
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
-      ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border);margin-bottom:0;flex-shrink:0;">` : `<div class="band-avatar" style="background:${col};width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`}
-      <div style="min-width:0;flex:1;">
-        <div class="profile-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
-        <div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
-      </div>
-      ${veiligheidPlekHTML}
+function openMusicianNiveauInfoModal() {
+  // V-21 + 21-08-2026: zelfde haakjes-regel als bij de bandtabel hierboven.
+  const rowsHTML = NIVEAU_INFO_MUSICIAN_ROWS.map(r => `<tr>${r.map((c, i) => `<td>${escHtml(i === 0 ? stripParenthetical(c) : c)}</td>`).join('')}</tr>`).join('');
+  document.getElementById('niveauInfoModalContent').innerHTML = `
+    <div class="filter-title" style="margin-bottom:4px;">Niveau-indeling per instrument</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies per instrument het niveau waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
+    <div class="niveau-info-wrap">
+      <table class="niveau-info-table">
+        <thead><tr>${NIVEAU_INFO_MUSICIAN_HEADERS.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
     </div>
-    <div style="margin:8px 0;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>
-    ${b.description ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
-    <div class="profile-songs-title" style="margin-top:16px;">Leden (${confirmed.length})</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-      ${confirmed.map(m => {
-        const memberName = displayNameOf(m.musicians);
-        return `<div class="band-member-chip">
-        <div class="band-member-dot" style="background:${safeColor(m.musicians?.profile_color, '#888')};">${escHtml(memberName[0].toUpperCase())}</div>
-        <span><strong>${escHtml(memberName)}</strong> · ${escHtml(roleLabel(m.role))}</span>
-      </div>`; }).join('')}
-    </div>
-    ${(b.band_wanted||[]).length ? `
-      <div class="profile-songs-title" style="margin-top:16px;">Wij zoeken nog</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
-        ${(b.band_wanted||[]).map(w => `<span class="tag-solid tag-genre">${escHtml(w.instrument)}</span>`).join('')}
-      </div>` : ''}
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:20px;">
-      ${!isOwnBand ? (hasOwnProfile
-        ? (founderMember
-          ? `<button class="btn btn-primary" style="width:100%;" onclick="openMessageComposer('${jsAttr(founderMember.musicians.id)}','${jsAttr(displayNameOf(founderMember.musicians))}')">Stuur een bericht aan deze band →</button>`
-          : '')
-        : `<button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('bandModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`
-      ) : ''}
-      <button class="btn btn-ghost" style="width:100%;" onclick="shareProfile('band','${jsAttr(b.id)}','${jsAttr(b.name)}')">Deel dit bandprofiel</button>
-    </div>`;
-
-  // TT-249: pas ná het plaatsen passend maken — zelfde reden als bij de
-  // muzikantmodal. De bandnaam gebruikt dezelfde klasse, dus dezelfde regel.
-  fitProfileName(document.getElementById('bandModalContent'));
-  // TT-293: zelfde reden, voor het woordmerk in de koprij van deze modal.
-  fitKopLogo(document.getElementById('bandModalBox'));
-  // TT-06: je eigen band meld je niet. Het menu staat naast de bandnaam (TT-318).
-  zetVeiligheidMenu('bandModalActies', 'band', isOwnBand ? null : b.id, b.name);
+    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Belangrijk: gebruik dit systeem als jouw kompas</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Geen enkele muzikant past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Niveau 4), maar nog nooit op een podium hebben gestaan (Niveau 1).</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Zie deze niveaubeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
+    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Hoe kies je jouw niveau?</div>
+    <p style="font-size:13px;color:var(--muted);">Loop de criteria per niveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg het niveau waar jij het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
+  `;
+  document.getElementById('niveauInfoModal').classList.add('visible');
 }
-

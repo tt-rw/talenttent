@@ -343,7 +343,7 @@ function initSearchFilters() {
 }
 
 // De naam van een niveau, uit dezelfde tabel als de i-knop toont
-// (NIVEAU_INFO_MUSICIAN_ROWS in bands.js) — één bron, geen tweede lijst die
+// (NIVEAU_INFO_MUSICIAN_ROWS in musicians.js) — één bron, geen tweede lijst die
 // uit de pas kan lopen. "1. Beginner (Bedroom)" wordt "Beginner".
 function niveauNaam(n) {
   try {
@@ -935,7 +935,6 @@ let filterBandWantedList = [];
 // een filter dat de gebruiker zelf aanzet, geen voorgeselecteerde standaard.
 let filterBandStatusVal  = null;
 let bandSearchSortMode   = 'score';
-let myMusicianId = null;
 // TT-56 (12-08-2026): opt-out voor band-uitnodigingen. Bijgehouden als eigen
 // variabele (net als myMusicianId) zodat de knop op Mijn Profiel zijn tekst
 // kan tonen zonder steeds opnieuw te hoeven laden.

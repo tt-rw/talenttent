@@ -1,6 +1,57 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 26-09-2026 (vervolg 4) — **TT-295 gebouwd: de bewaarde
+**Laatste update:** 26-09-2026 (vervolg 5) — **TT-340 afgehandeld: functies
+naar het bestand waar ze horen.** Geen gedragswijziging. Zeven P0's staan
+open; deze sessie is onderhoud (P3), dat is één keer gemeld.
+
+**Aanleiding.** Ronald vroeg of de bestanden gesplitst moeten worden. Advies
+Claude: nee, het grootste JS-bestand (`search.js`) telt 2.492 regels en dat is
+goed leesbaar. Wat wél remde: functies die in een ander bestand stonden dan
+hun naam doet vermoeden. Ronald: "ruim op wat opgeruimd moet worden."
+
+**Verplaatst — inhoud byte voor byte gelijk, geverifieerd met een vergelijking
+van elke functie vóór en na:**
+
+| Wat | Van | Naar |
+|---|---|---|
+| `selectBandStatus`, `saveBand`, `saveBandRun`, `bandSaveBusy`, `loadMyBands`, `openBandModal` | `musicians.js` | `bands.js` |
+| `getMyMusicianId` | `bands.js` | `core.js` |
+| `myMusicianId` (variabele) | `search.js` | `core.js` |
+| `renderCompletenessMeter` | `bands.js` | `wizard.js`, naast `loadMyProfile()` |
+| `openMusicianNiveauInfoModal` en de niveautabel voor muzikanten | `bands.js` | `musicians.js` |
+
+Eén commentaarregel in `search.js` wees nog naar `bands.js` en is bijgewerkt.
+De controle op los wissen van koppeltabellen (TT-281, blok 1) kijkt nu ook in
+`bands.js`, want `saveBand()` staat daar. `?v=` is opgehoogd naar `20260926f`
+voor `core.js`, `search.js`, `musicians.js`, `bands.js` en `wizard.js`.
+
+**Getest.** `node --check` op alle JS-bestanden: geslaagd. Laag 1: 567 van 567
+geslaagd. Los in de browser tegen de stub: alle verplaatste functies bestaan,
+de niveautabel opent met vijf rijen, `niveauNaam(3)` geeft "Half-Gevorderd",
+geen paginafouten.
+
+**Dode code gezocht, niets gevonden.** Zes `mh…`-functies lijken nergens
+aangeroepen, maar `mediaTegelHTML()` en `mediaLinkRijHTML()` roepen ze aan via
+het voorvoegsel `'mh'`. Ze blijven.
+
+**Dode verwijzingen weg.** `profiel-v2.html` en `profiel-gedeeld.js` staan
+niet meer in de repo (gemeten 26-09-2026, beide repo's). De uitzondering
+`DODE_BESTANDEN` in `tests/tt_monitor.py` en de controle "dode bestanden niet
+geladen" in `tests/tt_tests.py` wezen nog naar die twee namen en zijn weg. De
+controle op de bindende scriptvolgorde dekt hetzelfde af.
+
+**Projectinstructies bijgewerkt:** §7, de tabel met bestanden, de alinea "Let
+op — de bestandsnamen dekken de inhoud niet altijd" en de alinea over dode
+bestanden.
+
+**Bevinding, geen code.** Het vak "Instructies" in de projectinstellingen bevat
+nog de volledige tekst van 18-09-2026, niet de ene verwijsregel uit §8. Claude
+las daardoor eerst de oude tekst en meldde ten onrechte dat `ouder.js` in de
+projectinstructies ontbrak. Ronald vervangt de inhoud van dat vak.
+
+---
+
+**Vorige update:** 26-09-2026 (vervolg 4) — **TT-295 gebouwd: de bewaarde
 zoekopdracht. TT-334 gebouwd: geen lange link meer onder de knop. TT-336 is
 P0 (besluit Ronald).** Twee tickets in één sessie, op verzoek van Ronald —
 signaal 1 uit §5 van de projectinstructies, gemeld.
@@ -6368,6 +6419,12 @@ Bijbehorende tickets: TT-70 (Google Play), plus het `—`-punt "App Store (nativ
 # Deel 3 — Afgehandeld
 
 Kort en chronologisch (nieuwste bovenaan). Voor het volledige technische verhaal per punt: zie de sessie-aantekeningen die aan dit bestand voorafgingen (niet langer los bijgehouden na deze opschoning).
+
+## 26-09-2026 (vervolg 5) — TT-340: functies naar het juiste bestand
+
+Onderhoud, P3. **Toets P3:** geen aanwijsbaar gevolg voor een gebruiker; het
+maakt de code sneller te lezen. Geen gedragswijziging. Zie de Laatste update
+van deze datum voor de tabel met verplaatsingen en de testuitslag.
 
 ## 25-09-2026 — Verwerkersovereenkomst Supabase
 

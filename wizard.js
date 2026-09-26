@@ -237,6 +237,42 @@ async function editMyProfile() {
   if (!mid) { showToast('Je hebt nog geen profiel om te bewerken.'); return; }
   showView('profieltegels');
 }
+// Profielvolledigheid — alleen zichtbaar voor de eigenaar op "Mijn profiel"
+// (Presentatie: profielstatus direct zichtbaar). Gebaseerd op echte opgeslagen
+// data, niet op tijdelijke registratie-state.
+function renderCompletenessMeter(m) {
+  const col = safeColor(m.profile_color, '#f5c518');
+  const checks = [
+    { done: !!m.avatar_url,                    label: 'Profielfoto' },
+    { done: (m.bio || '').length > 20,         label: 'Bio' },
+    { done: (m.musician_instruments||[]).length > 0, label: 'Instrument' },
+    { done: (m.musician_genres||[]).length > 0,      label: 'Genre' },
+    { done: (m.musician_songs||[]).length >= 3,      label: '3+ nummers' },
+    { done: (m.musician_media||[]).length > 0,       label: 'Media' },
+  ];
+  const doneCnt = checks.filter(c => c.done).length;
+  const pct = Math.round((doneCnt / checks.length) * 100);
+
+  return `
+    <div id="completenessMeter" class="completeness-wrap" style="margin-top:24px;">
+      <div class="completeness-header">
+        <span class="completeness-label">Profiel volledigheid</span>
+        <span class="completeness-pct" style="color:${col};">${pct}%</span>
+      </div>
+      <div class="completeness-track">
+        <div class="completeness-fill" style="width:${pct}%; background:${col};"></div>
+      </div>
+      <div class="completeness-items">
+        ${checks.map(c => `
+          <span class="comp-item ${c.done ? 'done' : 'pending'}" style="${c.done ? `border-color:${col};color:${col};` : ''}">
+            ${c.done ? '✓' : '○'} ${c.label}
+          </span>
+        `).join('')}
+      </div>
+      ${pct < 100 ? `<p style="font-size:11px;color:var(--muted);margin-top:8px;">Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:11px;color:${col};margin-top:8px;font-weight:700;">Compleet profiel! Jij valt op.</p>`}
+    </div>`;
+}
+
 
 async function loadMyProfile() {
   if (!currentUser) return;

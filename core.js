@@ -67,6 +67,18 @@ window.addEventListener('unhandledrejection', (e) => {
 // ─── App initialisatie ───────────────────────────────────────────────────────
 
 let currentUser = null;
+// Het musicians.id van wie er ingelogd is. Verplaatst uit search.js,
+// samen met getMyMusicianId() uit bands.js (26-09-2026): alle bestanden
+// gebruiken ze, dus ze horen bij het in- en uitloggen.
+let myMusicianId = null;
+
+async function getMyMusicianId() {
+  if (myMusicianId) return myMusicianId;
+  if (!currentUser) return null;
+  const { data } = await db.from('musicians').select('id').eq('user_id', currentUser.id).single();
+  myMusicianId = data?.id || null;
+  return myMusicianId;
+}
 
 // Bugfix, opnieuw hersteld 23-08-2026 (was al eens gerepareerd op
 // 13-08-2026, die reparatie was uit dit bestand verdwenen — zie
