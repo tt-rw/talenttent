@@ -2,6 +2,12 @@
 
 const SUPABASE_URL = 'https://fqtgilwfestzofunupnu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_tnWUVGTBmwnn9fAILeNqqQ_UlCn5AFM';
+// TT-344 (26-09-2026): de link uit de mail "Kies een nieuw wachtwoord" komt
+// binnen als #access_token=…&type=recovery. supabase-js wist dat #-deel zodra
+// het de sessie heeft opgehaald, en dat is vóórdat appInit() het leest. Daarom
+// hier vastleggen, vóór de client bestaat.
+const herstelLinkBijStart = /(^#|&)type=recovery(&|$)/.test(location.hash);
+
 // TT-82: alleen een client aanmaken als de bibliotheek er is. De vlag wordt in
 // de <head> gezet. Zonder deze controle stopt het hele script hier met een
 // ReferenceError en wordt geen enkele functie meer gedefinieerd.
@@ -188,7 +194,11 @@ async function appInit() {
     // TT-337 (26-09-2026): de goedkeuringspagina van een ouder hoort erbij.
     // Een ouder die zelf muzikant is en ingelogd blijft, belandde anders na
     // het laden op zijn eigen profiel en kon niet goedkeuren.
-    opstartHerstelt = !!session?.user && (!!gesprekMatch ||
+    // TT-344 (26-09-2026): de herstellink uit "Kies een nieuw wachtwoord" hoort
+    // erbij. Die link logt ook in; zonder deze regel stuurde onUserLoggedIn()
+    // na het laden door naar Mijn Profiel, en kon niemand een nieuw wachtwoord
+    // kiezen.
+    opstartHerstelt = !!session?.user && (herstelLinkBijStart || !!gesprekMatch ||
       /^(profiel|band|toestemming)\//.test(hashView) ||
       (HERSTELBARE_VIEWS.includes(hashView) && !['auth', 'register'].includes(hashView)));
     if (session?.user) {
@@ -196,6 +206,10 @@ async function appInit() {
       lastSignedInUserId = session.user.id;
       onUserLoggedIn(session.user);
     }
+    // TT-344: meteen het scherm "Nieuw wachtwoord" tonen. De melding
+    // PASSWORD_RECOVERY van supabase-js komt pas later, en de terugknop hoort
+    // hier geen extra stap te krijgen.
+    if (herstelLinkBijStart && session?.user) showView('reset', 'redirect');
     // Bugfix, opnieuw hersteld 23-08-2026 (P0, gemeld door Ronald: "screenshot
     // maken staat nu ineens uit"). Deze reparatie is al eens eerder gebouwd,
     // op 13-08-2026 — ergens tussen toen en nu is dat blok teruggevallen naar
@@ -221,7 +235,8 @@ async function appInit() {
     // (currentUser) bijgewerkt, zonder te navigeren.
     db.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
-        showView('reset');
+        // TT-344: appInit() toont het scherm al; niet nog een keer openen.
+        if (huidigeView !== 'reset') showView('reset');
       } else if (event === 'SIGNED_IN' && session?.user) {
         const isNewLogin = session.user.id !== lastSignedInUserId;
         currentUser = session.user;
@@ -398,7 +413,8 @@ async function onUserLoggedIn(user) {
   // scherm erbovenop tonen (modal blokkeert de rest tot opgeslagen).
   // TT-337: niet op de goedkeuringspagina. Daar is iemand ouder, geen
   // muzikant; het scherm zou de goedkeuring blokkeren.
-  if (huidigeView !== 'toestemming') checkUsernameGate();
+  // TT-344: ook niet op "Nieuw wachtwoord"; eerst het wachtwoord.
+  if (huidigeView !== 'toestemming' && huidigeView !== 'reset') checkUsernameGate();
 
   const userFname2 = user.user_metadata?.fname;
   if (userFname2) {
