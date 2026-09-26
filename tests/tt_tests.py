@@ -549,7 +549,7 @@ def blok_browser():
         check("de foutregel is wit, niet rood (huisstijl §1.2)",
               vorm["regelKleur"] == "rgb(240, 240, 240)", vorm["regelKleur"])
         check("de foutregel is 12px en springt in op --field-inset",
-              vorm["regelGrootte"] == "12px" and vorm["regelInspringing"] == "8px",
+              vorm["regelGrootte"] == "12px" and vorm["regelInspringing"] == "10px",  # --field-inset 10px sinds TT-341 stap 2
               f"{vorm['regelGrootte']} / {vorm['regelInspringing']}")
         check("de foutregel heeft een lijn-icoon, geen emoji", vorm["heeftIcoon"], "")
         check("de foutregel staat onder de wachtwoord-wrap, niet ertussen",
@@ -3404,9 +3404,10 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         page.evaluate("showView('register')"); page.wait_for_timeout(450)
         hoofd += vorm("#view-register .wizard-action-bar .btn-primary")
         check("K1: er staan hoofdknoppen in beeld op landing, zoeken en wizard", len(hoofd) >= 3, json.dumps(hoofd)[:200])
-        check("K1: elke hoofdknop 14px, vet, hoofdletters, zwart op goud",
-              all(h[:5] == ["14px", "700", "uppercase", "rgb(0, 0, 0)", "rgb(245, 197, 24)"] for h in hoofd),
-              json.dumps([h for h in hoofd if h[:5] != ["14px", "700", "uppercase", "rgb(0, 0, 0)", "rgb(245, 197, 24)"]])[:300])
+        # TT-341 stap 2 (besluit Ronald, 26-09-2026): gewone letters, 16px. Was 14px, hoofdletters.
+        check("K1: elke hoofdknop 16px, vet, gewone letters, zwart op goud",
+              all(h[:5] == ["16px", "700", "none", "rgb(0, 0, 0)", "rgb(245, 197, 24)"] for h in hoofd),
+              json.dumps([h for h in hoofd if h[:5] != ["16px", "700", "none", "rgb(0, 0, 0)", "rgb(245, 197, 24)"]])[:300])
 
         # K3 — twee knoppen naast elkaar blijven 44px hoog, op één regel.
         rij = page.evaluate("""() => { showConfirm('Test', () => {}); const r = document.querySelector('#confirmModal .btn-row');
@@ -3433,8 +3434,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         # K5 — tweede knop: wit, rand --line. Ook Terug in de wizard.
         terug = page.evaluate("""() => { const b = [...document.querySelectorAll('#view-register .wizard-action-bar .btn-ghost')].find(x => x.offsetParent);
             const cs = getComputedStyle(b); return [cs.color, cs.borderTopStyle, cs.fontSize, cs.textTransform, b.className]; }""")
-        check("K5: Terug in de wizard is een tweede knop: wit, 14px, hoofdletters",
-              terug[:4] == ["rgb(240, 240, 240)", "solid", "14px", "uppercase"] and "btn-ghost" in terug[4], json.dumps(terug))
+        check("K5: Terug in de wizard is een tweede knop: wit, 16px, gewone letters",
+              terug[:4] == ["rgb(240, 240, 240)", "solid", "16px", "none"] and "btn-ghost" in terug[4], json.dumps(terug))
         check("K5: de tweede knop heeft een rand van --line", rand(".btn-ghost") == "var(--line)", str(rand(".btn-ghost")))
         page.evaluate("goTo(4)"); page.wait_for_timeout(450)
         foto = page.evaluate("""() => { const b = document.getElementById('avatarRemoveBtn'); b.classList.add('visible');
@@ -4181,8 +4182,17 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
               d40["tab"] == ["rgb(245, 197, 24)", "rgb(0, 0, 0)"], json.dumps(d40["tab"]))
         check("donker: ongelezen blijft het rode rondje", d40["ongelezen"] == "rgb(229, 83, 61)", d40["ongelezen"])
         check("donker: gekozen tabblad houdt de gouden stand", d40["gekozen"][1] == "rgb(245, 197, 24)", json.dumps(d40["gekozen"]))
-        check("donker: knoppen en labels houden hoofdletters",
-              d40["knop"][2] == "uppercase" and d40["label"][0] == "uppercase", json.dumps([d40["knop"], d40["label"]]))
+        # Besluit Ronald, 26-09-2026 ("1 B", "2 B mits niet vetgedrukt", "3 B"): vorm in beide thema's gelijk.
+        check("donker: knoppen en veldlabels in gewone letters, labels in de tekstkleur",
+              d40["knop"][2] == "none" and d40["label"] == ["none", "rgb(240, 240, 240)"], json.dumps([d40["knop"], d40["label"]]))
+        vorm40 = page.evaluate("""() => { const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
+          plek.innerHTML = '<button class="btn btn-primary">x</button><label>Plaats</label>';
+          const b = getComputedStyle(plek.children[0]), l = getComputedStyle(plek.children[1]);
+          const r = getComputedStyle(document.documentElement);
+          const u = [b.fontSize, l.fontSize, l.fontWeight, r.getPropertyValue('--radius').trim(), r.getPropertyValue('--radius-field').trim()];
+          plek.remove(); return u; }""")
+        check("knop 16px, label 14px niet vet, kaart 16px en veld 10px rond",
+              vorm40 == ["16px", "14px", "400", "16px", "10px"], json.dumps(vorm40))
         check("licht: ondergrond crème #F6F3EC", l40["bg"] == "rgb(246, 243, 236)", l40["bg"])
         check("licht: --accent is zwart #1E1E1E", l40["accent"] == "#1E1E1E", l40["accent"])
         check("licht: woordmerk TALENT zwart, TENT geel",
