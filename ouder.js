@@ -130,7 +130,7 @@ async function ouderVerzoekVersturen() {
   const leeftijd = ouderLeeftijdUitVeld();
   if (!ouderToestemmingNodig(leeftijd)) { showToast('Er ging iets mis met je geboortedatum. Ga terug naar stap 1.'); return; }
 
-  showSaving('Verzoek versturen...', 'Een ogenblik geduld.');
+  showSaving('Aanvraag versturen...', 'Een ogenblik geduld.');
   try {
     const gegevens = await ouderApi('start', {
       kind_voornaam: state.fname,
@@ -148,7 +148,7 @@ async function ouderVerzoekVersturen() {
       laatstVerstuurd: Date.now()
     });
     ouderPaneelSluiten();
-    showToast('Je verzoek is verstuurd. Je kunt gewoon verder.');
+    showToast('Je aanvraag is verstuurd. Je kunt gewoon verder.');
     goTo(1);
   } catch (e) {
     hideSaving();
@@ -189,7 +189,7 @@ function ouderHerstuurKnopBijwerken() {
     knop.disabled = true;
     knop.style.opacity = '0.5';
     knop.style.cursor = 'not-allowed';
-    if (regel) regel.textContent = 'Je hebt het verzoek drie keer verstuurd. Klopt het adres niet? Wijzig het dan.';
+    if (regel) regel.textContent = 'Je hebt de aanvraag drie keer verstuurd. Klopt het adres niet? Wijzig het dan.';
     return;
   }
 
@@ -212,7 +212,7 @@ function ouderHerstuurKnopBijwerken() {
 async function ouderOpnieuwSturen() {
   const bewaard = ouderAanvraagLezen();
   if (!bewaard?.aanvraagId) return;
-  showSaving('Verzoek versturen...', 'Een ogenblik geduld.');
+  showSaving('Aanvraag versturen...', 'Een ogenblik geduld.');
   try {
     await ouderApi('opnieuw', { aanvraag_id: bewaard.aanvraagId });
     hideSaving();
@@ -220,7 +220,7 @@ async function ouderOpnieuwSturen() {
     bewaard.laatstVerstuurd = Date.now();
     ouderAanvraagBewaren(bewaard);
     ouderHerstuurKnopBijwerken();
-    showToast('Je verzoek is opnieuw verstuurd.');
+    showToast('Je aanvraag is opnieuw verstuurd.');
   } catch (e) {
     hideSaving();
     logCaught('ouderOpnieuwSturen', e);
@@ -262,8 +262,8 @@ function ouderVerlopenTonen() {
   const kop  = document.getElementById('ouderWachtKop');
   const body = document.getElementById('ouderWachtBody');
   const acties = document.getElementById('ouderWachtActies');
-  if (kop)  kop.textContent = 'Je verzoek is verlopen';
-  if (body) body.innerHTML = 'Na veertien dagen vervalt een verzoek vanzelf. Je profiel staat nog klaar op dit toestel; je kunt het opnieuw versturen.';
+  if (kop)  kop.textContent = 'Je aanvraag is verlopen';
+  if (body) body.innerHTML = 'Na veertien dagen vervalt een aanvraag vanzelf. Je profiel staat nog klaar op dit toestel; je kunt het opnieuw versturen.';
   if (acties) {
     acties.innerHTML = '<button class="btn" onclick="ouderAdresWijzigen()">Opnieuw versturen</button>';
   }
@@ -333,9 +333,41 @@ async function toestemmingPaginaOpenen(code) {
     toestemmingVraagTonen(gegevens);
   } catch (e) {
     logCaught('toestemmingPaginaOpenen', e);
-    // Een onbekende of onleesbare code hoort nergens toe te leiden.
-    showView('landing', 'redirect');
+    // TT-330 (26-09-2026): een onbekende code leidt niet meer stil naar de
+    // homepage. De ouder kwam daar zonder uitleg uit en wist niet wat hij
+    // moest doen. Sinds TT-330 blijft elke link uit een eerdere mail werken;
+    // deze melding blijft over voor een link die kapot of vervangen is.
+    toestemmingMeldingTonen('The Talent Tent',
+      ['Deze link werkt niet. Heb je meer mails van ons gekregen? Gebruik dan de knop in de nieuwste.']);
   }
+}
+
+// Eén opbouw voor elk eindscherm op deze pagina: kop plus meldingen.
+function toestemmingMeldingTonen(kop, regels) {
+  const vak = document.getElementById('toestemmingInhoud');
+  if (!vak) return;
+  vak.innerHTML = `
+    <h1 class="panel-title">${escHtml(kop)}</h1>
+    ${regels.map(r => `<p class="toestemming-melding">${escHtml(r)}</p>`).join('\n    ')}`;
+}
+
+// TT-332 (26-09-2026): de ouder weet na zijn antwoord niet dat hij klaar is.
+// Beide eindschermen (toestemming en weigering) sluiten met dezelfde regel.
+const TOESTEMMING_AFSLUITER = 'Je kunt dit venster nu sluiten.';
+
+// TT-331 (26-09-2026): de knop in de mail "Je hebt toestemming" gaat naar
+// #toestemming-gegeven. Het wachtende profiel staat alleen in de browser waar
+// het kind begon (route A). Staat het hier, dan gaat het kind gewoon verder.
+// Zo niet, dan zegt deze pagina waar het wel staat — in plaats van een lege
+// wizard waarin hij opnieuw begint en zijn ouder een tweede aanvraag krijgt.
+function toestemmingGegevenOpenen() {
+  if (currentUser) { showView('myprofile', 'redirect'); return; }
+  if (leesOuderVoortgang()) { showView('register', 'redirect'); return; }
+  showView('toestemming', 'redirect');
+  toestemmingMeldingTonen('Je ouder heeft toestemming gegeven', [
+    'Je profiel staat klaar op het toestel waar je begon, in de browser die je toen gebruikte.',
+    'Open daar talenttent.org en tik op Profiel aanmaken. Je gaat verder waar je was.'
+  ]);
 }
 
 function toestemmingVraagTonen(gegevens) {
@@ -393,12 +425,10 @@ function toestemmingAfgehandeldTonen(stand, beslotenOp) {
   const datum = beslotenOp ? nlDatum(beslotenOp) : '';
   const teksten = {
     goedgekeurd: `Dit is al geregeld${datum ? ' op ' + datum : ''}. Je hoeft niets meer te doen.`,
-    geweigerd:   'Dit verzoek is afgewezen. Er gebeurt verder niets.',
-    verlopen:    'Deze link is verlopen. Een verzoek vervalt na veertien dagen; je hoeft niets te doen.'
+    geweigerd:   'Deze aanvraag is afgewezen. Er gebeurt verder niets.',
+    verlopen:    'Deze link is verlopen. Een aanvraag vervalt na veertien dagen; je hoeft niets te doen.'
   };
-  document.getElementById('toestemmingInhoud').innerHTML = `
-    <h1 class="panel-title">The Talent Tent</h1>
-    <p class="toestemming-melding">${escHtml(teksten[stand] || teksten.verlopen)}</p>`;
+  toestemmingMeldingTonen('The Talent Tent', [teksten[stand] || teksten.verlopen]);
 }
 
 async function ouderBesluit(akkoord) {
@@ -415,13 +445,15 @@ async function ouderBesluit(akkoord) {
            ${escHtml(nlDatum(new Date().toISOString()))}. Je kind krijgt hier bericht over
            en kan het profiel afmaken.</p>
         <p class="toestemming-melding">Wil je de toestemming later intrekken, mail dan naar
-           <a href="mailto:privacy@talenttent.org">privacy@talenttent.org</a>.</p>`;
+           <a href="mailto:privacy@talenttent.org">privacy@talenttent.org</a>.</p>
+        <p class="toestemming-melding">${TOESTEMMING_AFSLUITER}</p>`;
     } else {
       vak.innerHTML = `
         <h1 class="panel-title">Genoteerd</h1>
-        <p class="toestemming-melding">Het verzoek is vervallen. Er wordt geen profiel aangemaakt
+        <p class="toestemming-melding">De aanvraag is vervallen. Er wordt geen profiel aangemaakt
            en er worden geen gegevens bewaard.</p>
-        <p class="toestemming-melding">Je kind krijgt hier geen bericht over.</p>`;
+        <p class="toestemming-melding">Je kind krijgt hier geen bericht over.</p>
+        <p class="toestemming-melding">${TOESTEMMING_AFSLUITER}</p>`;
     }
   } catch (e) {
     hideSaving();

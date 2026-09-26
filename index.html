@@ -658,7 +658,7 @@
 
   <!-- Onderdeel 3: het wachtscherm -->
   <div class="panel-ouder" id="ouderWacht">
-    <div class="panel-title" id="ouderWachtKop">Je verzoek is verstuurd</div>
+    <div class="panel-title" id="ouderWachtKop">Je aanvraag is verstuurd</div>
     <div class="panel-sub" id="ouderWachtBody">De mail staat klaar bij <strong class="ouder-adres" id="ouderWachtAdres"></strong>.
       Zodra je ouder toestemming geeft, krijg je bericht van ons. Daarna kies je een wachtwoord en staat je profiel online.</div>
 
@@ -676,7 +676,7 @@
 
     <div class="ouder-uitleg">
       <p>Je kunt de app sluiten. Je profiel staat klaar op dit toestel.</p>
-      <p>Het verzoek is veertien dagen geldig.</p>
+      <p>De aanvraag is veertien dagen geldig.</p>
       <p><button type="button" class="ouder-stille-link" onclick="ouderStoppenEnWissen()">Stoppen en mijn gegevens wissen</button></p>
     </div>
   </div>
@@ -710,7 +710,8 @@
 <!-- ═══════════════════════════════════════════ -->
 <!-- VIEW: Goedkeuring door een ouder (TT-42)     -->
 <!-- Het vijftiende scherm. Alleen bereikbaar via #toestemming/<code> uit   -->
-<!-- de mail; wie het adres zonder geldige code opent, komt op de landing.  -->
+<!-- de mail. Een onbekende code krijgt een melding (TT-330). Toont ook de  -->
+<!-- uitleg bij #toestemming-gegeven als het profiel elders wacht (TT-331). -->
 <!-- Geen hamburger, geen onderbalk, geen terugknop: de bezoeker is geen    -->
 <!-- gebruiker van de app en heeft aan die knoppen niets.                   -->
 <!-- ═══════════════════════════════════════════ -->
@@ -2547,13 +2548,13 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260925d"></script>
+<script src="core.js?v=20260926a"></script>
 <script src="utils.js?v=20260925a"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260923a"></script>
 <script src="postcode.js?v=20260917a"></script>
 <script src="wizard.js?v=20260925c"></script>
-<script src="ouder.js?v=20260922a"></script>
+<script src="ouder.js?v=20260926a"></script>
 <script src="search.js?v=20260925d"></script>
 <script src="musicians.js?v=20260925c"></script>
 <script src="bands.js?v=20260925a"></script>

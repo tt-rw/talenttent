@@ -225,6 +225,9 @@ async function appInit() {
     const toestemmingMatch = hashView.match(/^toestemming\/(.+)$/);
     if (toestemmingMatch) {
       await toestemmingPaginaOpenen(decodeURIComponent(toestemmingMatch[1]));
+    } else if (hashView === 'toestemming-gegeven') {
+      // TT-331: de knop in de mail aan het kind, na de goedkeuring.
+      toestemmingGegevenOpenen();
     } else if (profielMatch || bandMatch) {
       showView('search');
       if (currentUser) await configureSearchAccess();
@@ -1176,7 +1179,7 @@ function showView(view, mode) {
   if (mode !== 'pop') {
     // TT-42: de goedkeuringspagina houdt de code in de adresregel. Zou
     // showView() er '#toestemming' van maken, dan werkt verversen niet meer.
-    const hash = (view === 'toestemming' && /^#toestemming\//.test(location.hash))
+    const hash = (view === 'toestemming' && /^#toestemming(\/|-gegeven$)/.test(location.hash))
       ? location.hash
       : '#' + view;
     if (mode === 'redirect') safeHistoryReplace({ view }, hash);
