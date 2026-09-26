@@ -3100,6 +3100,55 @@ def blok_browser():
               not [t for t in zichtbaar if re.search(r"\bverzoek", t, re.I)],
               str([t for t in zichtbaar if re.search(r"\bverzoek", t, re.I)])[:300])
 
+        # TT-337 (26-09-2026): een ouder die zelf ingelogd is, opent de link
+        # uit de mail. Een echte opstart, geen losse functie: het ging mis in
+        # de volgorde tussen appInit() en onUserLoggedIn().
+        def ouder_ingelogd(zonder_gebruikersnaam):
+            body = stub_js + """
+window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+(function () {
+  const maak = window.supabase.createClient;
+  window.supabase.createClient = function () {
+    const c = maak.apply(this, arguments);
+    c.functions = { invoke: async () => ({ data: { stand: 'open', kind_voornaam: 'Testkind' }, error: null }) };
+    return c;
+  };
+})();
+"""
+            if zonder_gebruikersnaam:
+                body += "\nwindow.TT_STUB.data.musicians[0].username = null;\n"
+            c = browser.new_context(viewport={"width": 390, "height": 844},
+                                    is_mobile=True, has_touch=True)
+            fouten = []
+            pg = c.new_page()
+            pg.on("pageerror", lambda e: fouten.append(str(e)))
+            pg.route("**/supabase-js@2/**", lambda r: r.fulfill(
+                status=200, content_type="application/javascript", body=body))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
+                        "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                pg.route(pat, lambda r: r.abort())
+            pg.goto(f"http://127.0.0.1:{port}/index.html#toestemming/abc123", wait_until="load")
+            pg.wait_for_timeout(800)
+            uit = pg.evaluate("""() => ({
+              views: [...document.querySelectorAll('.app-view.active')].map(v => v.id),
+              hash: location.hash,
+              vinkje: !!document.getElementById('toestemmingVinkje'),
+              poort: document.getElementById('usernameGateModal').classList.contains('visible')
+            })""")
+            c.close()
+            return uit, fouten
+
+        ingelogd, fouten337 = ouder_ingelogd(False)
+        check("TT-337: een ingelogde ouder blijft op de goedkeuringspagina",
+              ingelogd["views"] == ["view-toestemming"] and ingelogd["vinkje"]
+              and ingelogd["hash"] == "#toestemming/abc123", json.dumps(ingelogd))
+        zonder, fouten337b = ouder_ingelogd(True)
+        check("TT-337: ook zonder gebruikersnaam ligt er geen scherm over de goedkeuring",
+              zonder["views"] == ["view-toestemming"] and not zonder["poort"],
+              json.dumps(zonder))
+        check("TT-337: geen paginafouten bij de ingelogde ouder",
+              not fouten337 and not fouten337b, "; ".join(fouten337 + fouten337b)[:300])
+
         check("geen paginafouten in blok 28", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
