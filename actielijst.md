@@ -8,9 +8,9 @@ is niet goed. de tegel moet even groot zijn als de andere en na klikken een
 klein popup scherm oid openen. daar maak je je keuze."
 
 **Wat er veranderde.** De tegel Thema is even hoog als de andere tegels (70px
-op 390px). De regel eronder toont de keuze van nu, bijvoorbeeld "Zoals mijn
-toestel · geldt alleen op dit toestel" (voorstel Claude: zo zie je wat er
-staat zonder te tikken). Een tik opent het keuzemenu van de app, zoals bij
+op 390px). De regel eronder toont alleen de keuze van nu, bijvoorbeeld "Zoals
+mijn toestel". "geldt alleen op dit toestel" is weg (Ronald: "overbodige
+informatie"). Een tik opent het keuzemenu van de app, zoals bij
 Sorteren op: drie regels van 44px, de keuze van nu met een ✓, een donkere
 laag erachter. Een tik op een regel werkt meteen en sluit het menu.
 `index.html`, `core.js`, `styles.css` (`.tile-keuze` weg), testset blok 41.
@@ -44,7 +44,7 @@ gemaakt; en een bezoeker zonder account komt niet bij Instellingen.
   als het toestel wisselt.
 - `styles.css`: `.tile-keuze`, een tegel die zelf geen knop is.
 - De keuze staat op het toestel (`localStorage`, `tt_licht_donker`), zoals
-  besloten. De tegel zegt "geldt alleen op dit toestel".
+  besloten.
 - **De tegel heet "Thema"** (besluit Ronald: "thema is goed"), niet
   "Weergave": dat woord betekent in Zoeken al kaarten of lijst
   (projectinstructies §6, één betekenis per woord). Eerste voorstel van
