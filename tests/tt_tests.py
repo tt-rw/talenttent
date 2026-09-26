@@ -1286,7 +1286,7 @@ def blok_browser():
             recipient_id: i % 2 ? 'm2' : 'm1', body: 'Bericht ' + i,
             created_at: new Date(Date.now() - (30 - i) * 60000).toISOString(), read_at: null });
           window.TT_STUB.data.messages = lijst;
-          await openConversation('m2', 'Dylan de Vries', '#f5c518', '', false, false);
+          await openConversation('m2', 'Dylan de Vries', '', false, false);
           await new Promise(r => setTimeout(r, 100));
           const invoer = document.getElementById('messagesReplyInput');
           const r = { focusNaOpenen: document.activeElement === invoer };
@@ -1317,7 +1317,7 @@ def blok_browser():
           document.getElementById('messagesThreadAvatar').click();
           r.fotoOpent = window.__geopend;
           window.__geopend = null;
-          await openConversation('m2', 'Verwijderd', '#f5c518', '', false, true);
+          await openConversation('m2', 'Verwijderd', '', false, true);
           document.getElementById('messagesThreadName').click();
           r.verwijderdOpent = window.__geopend;
           openMessageComposer('m2', 'Dylan');
@@ -1326,7 +1326,7 @@ def blok_browser():
           // TT-305 (22-09-2026): openConversation() zonder gesprekspartner
           // mag niets doen. Deed hij dat wel, dan vroeg hij de database om
           // recipient_id=eq.null en toonde hij "Gesprek laden is niet gelukt".
-          await openConversation('m2', 'Dylan de Vries', '#f5c518', '', false, false);
+          await openConversation('m2', 'Dylan de Vries', '', false, false);
           await new Promise(r => setTimeout(r, 80));
           await openConversation(null, 'Niemand');
           await new Promise(r => setTimeout(r, 80));
@@ -1635,7 +1635,7 @@ def blok_browser():
           sessionStorage.setItem('tt-test-berichten', JSON.stringify(l)); }""")
         ip.evaluate("showView('messages')")
         ip.wait_for_timeout(200)
-        ip.evaluate("openConversation('m2', 'Dylan', '#f5c518', '', false, false)")
+        ip.evaluate("openConversation('m2', 'Dylan', '', false, false)")
         ip.wait_for_timeout(200)
         ip.reload(wait_until="load")
         ip.wait_for_timeout(700)
@@ -1655,7 +1655,7 @@ def blok_browser():
         # TT-277 — versturen houdt het toetsenbord open en het beeld stil.
         ip.evaluate("""async () => {
           window.TT_STUB.data.messages = JSON.parse(sessionStorage.getItem('tt-test-berichten'));
-          await openConversation('m2', 'Dylan', '#f5c518', '', false, false); }""")
+          await openConversation('m2', 'Dylan', '', false, false); }""")
         ip.wait_for_timeout(200)
         ip.tap("#messagesReplyInput")
         ip.fill("#messagesReplyInput", "Hoi, zin in een jam?")
@@ -3329,24 +3329,25 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         focus = page.evaluate("""() => { const i = document.createElement('input'); document.getElementById('appRoot').appendChild(i);
             i.style.transition = 'none'; i.focus();
             const cs = getComputedStyle(i); const b = [cs.boxShadow, cs.borderTopColor]; i.remove(); return b; }""")
-        check("de focusrand van een veld is 2px vol goud, zonder gloed (TT-259)",
-              focus[0] == "rgb(245, 197, 24) 0px 0px 0px 1px" and focus[1] == "rgb(245, 197, 24)", json.dumps(focus))
+        # TT-341 stap 2 (rustig): de focusrand is --accent, sinds die dag de tekstkleur.
+        check("de focusrand van een veld is 2px vol --accent, zonder gloed (TT-259, TT-341)",
+              focus[0] == "rgb(240, 240, 240) 0px 0px 0px 1px" and focus[1] == "rgb(240, 240, 240)", json.dumps(focus))
 
-        # Eén tagvorm in de hele app (TT-315): wit op 10% (vervolg 24-09-2026), geen rand, kleur in de tekst.
+        # Eén tagvorm in de hele app (TT-315). TT-341 stap 2 (rustig, akkoord Ronald):
+        # geen vlak, een dunne neutrale rand (--rand-neutraal), tekst in de tekstkleur.
         tags = page.evaluate("""() => {
           const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
-          plek.innerHTML = tagSolid('Drums', '#f5c518') + tagSolid('Rock', '#6ec8d8')
-            + '<span class="tag-solid tag-genre">Bas</span><span class="band-status-badge band-status-zoekend">Zoekend</span>';
+          plek.innerHTML = tagSolid('Drums') + tagSolid('Rock')
+            + '<span class="level-pill">Basis</span><span class="band-status-badge band-status-zoekend">Zoekend</span>';
           const uit = [...plek.children].map(e => { const cs = getComputedStyle(e);
-            return [cs.backgroundColor, cs.borderTopStyle === 'none' || cs.borderTopWidth === '0px', cs.color]; });
+            return [cs.backgroundColor, cs.borderTopWidth + ' ' + cs.borderTopStyle + ' ' + cs.borderTopColor, cs.color]; });
           plek.remove(); return uit; }""")
-        check("elke tag heeft het vlak wit op 10% en geen rand (TT-315)",
-              all(t[0] == "rgba(255, 255, 255, 0.1)" and t[1] for t in tags), json.dumps(tags))
-        check("de kleur zit in de tekst: goud, cyaan, cyaan, goud",
-              [t[2] for t in tags] == ["rgb(245, 197, 24)", "rgb(110, 200, 216)", "rgb(110, 200, 216)", "rgb(245, 197, 24)"],
-              json.dumps(tags))
-        check("tagSolid() zet geen doorschijnende kleur meer",
-              "rgba" not in page.evaluate("tagSolid('x', '#f5c518')"), page.evaluate("tagSolid('x', '#f5c518')"))
+        check("elke tag heeft geen vlak en een rand van 1px #3a3a3a (TT-315, TT-341)",
+              all(t[0] == "rgba(0, 0, 0, 0)" and t[1] == "1px solid rgb(58, 58, 58)" for t in tags), json.dumps(tags))
+        check("de tekst van een tag is de tekstkleur, ook de status 'Zoekend' (--accent)",
+              all(t[2] == "rgb(240, 240, 240)" for t in tags), json.dumps(tags))
+        check("tagSolid() zet geen eigen kleur meer",
+              "style" not in page.evaluate("tagSolid('x')"), page.evaluate("tagSolid('x')"))
 
         # De wizard telt met één teller (TT-250).
         page.evaluate("showView('register')"); page.wait_for_timeout(50)
@@ -3488,7 +3489,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             const u = [cs.backgroundColor, cs.fontSize, cs.borderTopLeftRadius, cs.textTransform, cs.fontWeight, cs.fontStyle, cs.color, cs.width];
             s.remove(); return u; }""")
         check("K9: niveaulabel in de tagvorm, wit, vet, cursief, vaste breedte",
-              pil == ["rgba(255, 255, 255, 0.1)", "11px", "6px", "none", "700", "italic", "rgb(240, 240, 240)", "100px"], json.dumps(pil))
+              pil == ["rgba(0, 0, 0, 0)", "11px", "6px", "none", "700", "italic", "rgb(240, 240, 240)", "100px"], json.dumps(pil))
 
         # K10 — kruisjes.
         kruis = page.evaluate("""() => {
@@ -3871,7 +3872,9 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("afgeschermd: geen enkel beeld of video in de pagina", af["beeld"] == 0, json.dumps(af))
         check("afgeschermd: de T is geen knop (er valt niets te openen)",
               af["knoppen"] == 0 and af.get("cursor") == "default", json.dumps(af))
-        check("afgeschermd: de T is goud (--accent)", af.get("kleur") == "rgb(245, 197, 24)", json.dumps(af))
+        # TT-341 stap 2: het afgeschermde vlak is het profielvlak — geel met een zwarte T.
+        check("afgeschermd: de T is zwart op geel, zoals het profielvlak",
+              af.get("kleur") == "rgb(0, 0, 0)", json.dumps(af))
         check("afgeschermd: profielfoto wordt de T", af["tAvatar"] == 1 and af["fotoAvatar"] == 0, json.dumps(af))
         check("16+: foto, video en link blijven gewone knoppen",
               op["gewoneTegels"] == 2 and op["tegels"] == 0 and op["fotoAvatar"] == 1, json.dumps(op))
@@ -4145,6 +4148,60 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
                   && v.toString().includes('wisBlokkades();') && v.toString().includes('wisBewaardeZoek();'));
                   return !!f; }"""), "")
         check("geen paginafouten in blok 39", not (if39 or uf39), "; ".join(if39 + uf39)[:300])
+
+        print("\nBlok 40 — licht thema en rustig (TT-341 stap 2)")
+        # Meet de rollen in beide thema's. Elk element wordt los gemaakt, zodat de
+        # meting niet afhangt van de stand van de app.
+        meet40 = """(thema) => {
+          const html = document.documentElement;
+          if (thema) html.dataset.theme = thema; else delete html.dataset.theme;
+          const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
+          plek.innerHTML = '<div class="result-row-avatar">T</div><div class="message-bubble own">x</div>'
+            + '<button class="bottom-nav-btn active">Zoeken</button><span class="unread-badge">2</span>'
+            + '<button class="btn btn-primary">Opslaan</button><div class="search-mode-tab active">Band</div>'
+            + '<label>Plaats</label><div class="logo"><span style="color:var(--text);">TALENT</span>TENT</div>';
+          const k = [...plek.children].map(e => getComputedStyle(e));
+          const span = getComputedStyle(plek.querySelector('.logo span'));
+          const uit = {
+            bg: getComputedStyle(document.body).backgroundColor,
+            accent: getComputedStyle(html).getPropertyValue('--accent').trim(),
+            avatar: [k[0].backgroundColor, k[0].color], eigen: k[1].backgroundColor,
+            tab: [k[2].backgroundColor, k[2].color], ongelezen: k[3].backgroundColor,
+            knop: [k[4].backgroundColor, k[4].color, k[4].textTransform],
+            gekozen: [k[5].backgroundColor, k[5].color], label: [k[6].textTransform, k[6].color],
+            woordmerk: [k[7].color, span.color] };
+          plek.remove(); delete html.dataset.theme; return uit; }"""
+        d40 = page.evaluate(meet40, None)
+        l40 = page.evaluate(meet40, "licht")
+        check("donker: --accent is de tekstkleur, niet meer goud (rustig)", d40["accent"] == "#f0f0f0", d40["accent"])
+        check("donker: ondergrond ongewijzigd #0d0d0d", d40["bg"] == "rgb(13, 13, 13)", d40["bg"])
+        check("donker: profielvlak geel met zwarte T", d40["avatar"] == ["rgb(245, 197, 24)", "rgb(0, 0, 0)"], json.dumps(d40["avatar"]))
+        check("donker: je eigen bericht is grijs, niet goud", d40["eigen"] == "rgb(42, 42, 42)", d40["eigen"])
+        check("donker: actieve tab onderin is een geel vlak met zwarte tekst",
+              d40["tab"] == ["rgb(245, 197, 24)", "rgb(0, 0, 0)"], json.dumps(d40["tab"]))
+        check("donker: ongelezen blijft het rode rondje", d40["ongelezen"] == "rgb(229, 83, 61)", d40["ongelezen"])
+        check("donker: gekozen tabblad houdt de gouden stand", d40["gekozen"][1] == "rgb(245, 197, 24)", json.dumps(d40["gekozen"]))
+        check("donker: knoppen en labels houden hoofdletters",
+              d40["knop"][2] == "uppercase" and d40["label"][0] == "uppercase", json.dumps([d40["knop"], d40["label"]]))
+        check("licht: ondergrond crème #F6F3EC", l40["bg"] == "rgb(246, 243, 236)", l40["bg"])
+        check("licht: --accent is zwart #1E1E1E", l40["accent"] == "#1E1E1E", l40["accent"])
+        check("licht: woordmerk TALENT zwart, TENT geel",
+              l40["woordmerk"] == ["rgb(245, 197, 24)", "rgb(30, 30, 30)"], json.dumps(l40["woordmerk"]))
+        check("licht: hoofdknop geel met zwarte tekst, gewone letters",
+              l40["knop"] == ["rgb(245, 197, 24)", "rgb(30, 30, 30)", "none"], json.dumps(l40["knop"]))
+        check("licht: gekozen tabblad is een geel vlak met zwarte tekst",
+              l40["gekozen"] == ["rgb(245, 197, 24)", "rgb(30, 30, 30)"], json.dumps(l40["gekozen"]))
+        check("licht: profielvlak geel met zwarte T", l40["avatar"] == ["rgb(245, 197, 24)", "rgb(30, 30, 30)"], json.dumps(l40["avatar"]))
+        check("licht: je eigen bericht grijsbeige #EDE8DC", l40["eigen"] == "rgb(237, 232, 220)", l40["eigen"])
+        check("licht: ongelezen blijft hetzelfde rood als donker", l40["ongelezen"] == d40["ongelezen"], l40["ongelezen"])
+        check("licht: veldlabel donker, gewone letters",
+              l40["label"] == ["none", "rgb(30, 30, 30)"], json.dumps(l40["label"]))
+        check("zonder data-theme is de app donker (stap 3 maakt de keuze)",
+              page.evaluate("document.documentElement.dataset.theme") is None, "")
+        # De profielkleur per persoon bestaat niet meer (Ronald, 26-09-2026): geen
+        # enkele weergave leest nog profile_color. Schrijven bij aanmelden blijft.
+        leest = [f for f in JS_FILES if re.search(r"\.profile_color|profile_color[,)]", open(os.path.join(ROOT, f)).read())]
+        check("geen JS-bestand leest nog profile_color", not leest, ", ".join(leest))
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
