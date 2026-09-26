@@ -4013,6 +4013,141 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("geen paginafouten in blok 38", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ─────────────────────────────────────────────────────────────
+        # Blok 39 — TT-295 (26-09-2026): de bewaarde zoekopdracht.
+        # Besluiten Ronald: één per muzikant, alle filters behalve de naam,
+        # alleen het tabblad Muzikant. De digest leest hem in de database;
+        # dat toetst laag 2. Hier: het blok onder het resultaat, bewaren,
+        # vervangen, stoppen, en Instellingen.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 39 — de bewaarde zoekopdracht (TT-295)")
+
+        def zoekopzet(pg):
+            pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            pg.wait_for_timeout(500)
+            pg.evaluate("""() => {
+              const d = window.TT_STUB.data;
+              d.musicians.forEach(m => {
+                m.fname = m.first_name; m.musician_songs = []; m.musician_media = [];
+                m.musician_instruments = d.musician_instruments.filter(x => x.musician_id === m.id);
+                m.musician_genres = d.musician_genres.filter(x => x.musician_id === m.id);
+              });
+              d.musicians[1].musician_instruments = [{ instrument: 'Gitaar', niveau: 2 }];
+              // TT-62: binnen 10 km niets, vanaf 25 km Dylan. Zo is ook te zien
+              // dat de ingestelde straal wordt bewaard, niet de verruimde.
+              window.TT_STUB.rpcResults.tt_search_musicians = (p) => p.radius_km < 25 ? []
+                : [{ musician_id: 'm2', distance_km: 19.1, score: 0.5, is_stale: false }];
+              showView('search');
+            }""")
+            pg.wait_for_timeout(200)
+
+        def zoek(pg, straal="10", naam=""):
+            pg.evaluate("""([s, n]) => { filterInstruments = ['Gitaar']; filterGenres = ['Rock'];
+              document.getElementById('filterRadius').value = s;
+              document.getElementById('filterName').value = n; runSearch(); }""", [straal, naam])
+            pg.wait_for_timeout(500)
+
+        def blok(pg):
+            return pg.evaluate("""() => { const b = document.querySelector('#searchResults .seintje-blok');
+              if (!b) return null;
+              const k = b.querySelector('.seintje-knop');
+              return { kop: b.querySelector('.seintje-kop').textContent.trim(),
+                       zoek: b.querySelector('.seintje-zoek').textContent.trim(),
+                       klein: [...b.querySelectorAll('.seintje-klein')].map(x => x.textContent.trim()).join(' '),
+                       knop: k ? k.textContent.trim() : '', hoogte: k ? k.getBoundingClientRect().height : 0 }; }""")
+
+        # Uitgelogd: niemand om te mailen, dus geen blok.
+        uc39, up39, uf39 = telefoon(False)
+        zoekopzet(up39)
+        uf39.clear()
+        up39.evaluate("""() => { window.TT_STUB.rpcResults.tt_search_musicians_anon =
+            [{ musician_id: 'm2', distance_km: 9, score: 0, is_stale: false }]; }""")
+        zoek(up39)
+        check("uitgelogd staat er geen blok onder het resultaat", blok(up39) is None, str(blok(up39)))
+        uc39.close()
+
+        ic39, ip39, if39 = telefoon(True)
+        zoekopzet(ip39)
+        # Bij het opstarten tekent Mijn Profiel met de platte stubrijen; die
+        # fout hoort bij de stub, niet bij dit blok. Pas hierna telt het.
+        if39.clear()
+        ip39.evaluate("window.TT_STUB.data.musicians[0].email_digest_frequency = 'off'")
+        zoek(ip39)
+        b = blok(ip39) or {}
+        check("met profiel staat het blok onder het resultaat", bool(b), "geen .seintje-blok")
+        plek = ip39.evaluate("""() => { const p = document.getElementById('seintjePlek');
+            const l = document.querySelector('#searchResults .results-list, #searchResults .results-grid-view');
+            return !!(p && l && (p.compareDocumentPosition(l) & Node.DOCUMENT_POSITION_FOLLOWING)); }""")
+        check("na verruimen (TT-62) staat het blok bóven de lijst, onder de verruim-regel", plek, "")
+        check("het blok noemt de zoekopdracht in woorden, met de ingestelde straal (TT-62)",
+              b.get("zoek") == "Gitaar · Rock · binnen 10 km van Den Haag", str(b.get("zoek")))
+        check("de knop heet 'Bewaar deze zoekopdracht' en is minstens 44px hoog",
+              b.get("knop") == "Bewaar deze zoekopdracht" and b.get("hoogte", 0) >= 44,
+              f"{b.get('knop')} / {b.get('hoogte')}")
+        # Twee tikken snel achter elkaar schrijven één keer (TT-252).
+        ip39.evaluate("bewaarZoek(); bewaarZoek();")
+        ip39.wait_for_timeout(500)
+        rijen = ip39.evaluate("window.TT_STUB.data.musician_saved_search")
+        schrijf = ip39.evaluate("""window.TT_STUB.calls.filter(c => c.kind === 'table'
+            && c.table === 'musician_saved_search' && c.op === 'upsert').length""")
+        check("bewaren schrijft één rij, ook bij een dubbele tik",
+              len(rijen) == 1 and schrijf == 1, f"rijen {len(rijen)}, upserts {schrijf}")
+        r = rijen[0] if rijen else {}
+        check("de rij bewaart instrument, genre en straal, en geen naam",
+              r.get("instruments") == ["Gitaar"] and r.get("genres") == ["Rock"]
+              and r.get("radius_km") == 10 and r.get("plaats") is None and "naam" not in r, json.dumps(r))
+        check("stond de mail uit, dan staat hij daarna op dagelijks",
+              ip39.evaluate("window.TT_STUB.data.musicians[0].email_digest_frequency") == "daily",
+              str(ip39.evaluate("window.TT_STUB.data.musicians[0].email_digest_frequency")))
+        b = blok(ip39) or {}
+        check("daarna zegt het blok dat je een mail krijgt, met de knop Stoppen",
+              b.get("kop") == "Je krijgt een mail als er iemand bijkomt" and b.get("knop") == "Stoppen", str(b))
+
+        # Een andere zoekopdracht: vervangen, met de controlevraag (huisstijl §19).
+        zoek(ip39, "50")
+        b = blok(ip39) or {}
+        check("bij een andere zoekopdracht staat de bewaarde erbij, met 'Vervangen door deze'",
+              "binnen 10 km" in b.get("klein", "") and b.get("knop") == "Vervangen door deze", str(b))
+        ip39.click("#searchResults .seintje-knop")
+        ip39.wait_for_timeout(200)
+        vraag = ip39.evaluate("""() => ({ open: document.getElementById('confirmModal').classList.contains('visible'),
+            tekst: document.getElementById('confirmMessage').textContent,
+            ja: document.getElementById('confirmYesBtn').textContent.trim() })""")
+        check("vervangen vraagt eerst, en noemt de oude en de nieuwe zoekopdracht",
+              vraag["open"] and "10 km" in vraag["tekst"] and "50 km" in vraag["tekst"] and vraag["ja"] == "Ja, vervangen",
+              json.dumps(vraag))
+        ip39.click("#confirmYesBtn")
+        ip39.wait_for_timeout(400)
+        rijen = ip39.evaluate("window.TT_STUB.data.musician_saved_search")
+        check("na 'Ja, vervangen' staat er één rij, met de nieuwe straal",
+              len(rijen) == 1 and rijen[0].get("radius_km") == 50, json.dumps(rijen))
+
+        # Zoeken op naam: je zoekt één persoon, dus geen blok (TT-257).
+        zoek(ip39, "50", "Dylan")
+        check("met een naam in het zoekveld staat er geen blok", blok(ip39) is None, str(blok(ip39)))
+
+        # Instellingen → E-mailvoorkeuren.
+        ip39.evaluate("openSearchPrefsModal()")
+        ip39.wait_for_timeout(400)
+        inst = ip39.evaluate("""() => { const p = document.getElementById('bewaardeZoekInstellingen');
+            return { tekst: p ? p.textContent.replace(/\\s+/g, ' ').trim() : null,
+                     blokken: document.querySelectorAll('#searchPrefsModal .modal-blok').length }; }""")
+        check("Instellingen toont de bewaarde zoekopdracht in een eigen blok",
+              inst["blokken"] == 2 and "binnen 50 km van Den Haag" in (inst["tekst"] or "")
+              and "Stoppen" in (inst["tekst"] or ""), json.dumps(inst))
+        ip39.click("#bewaardeZoekInstellingen .seintje-knop")
+        ip39.wait_for_timeout(400)
+        check("Stoppen in Instellingen haalt de rij weg",
+              ip39.evaluate("window.TT_STUB.data.musician_saved_search.length") == 0, "")
+        check("en daarna staat er 'Nog geen'",
+              "Nog geen" in ip39.evaluate("document.getElementById('bewaardeZoekInstellingen').textContent"), "")
+        ic39.close()
+        check("uitloggen wist de bewaarde zoekopdracht van de vorige gebruiker",
+              page.evaluate("""() => { const f = Object.values(window).find(v => typeof v === 'function'
+                  && v.toString().includes('wisBlokkades();') && v.toString().includes('wisBewaardeZoek();'));
+                  return !!f; }"""), "")
+        check("geen paginafouten in blok 39", not (if39 or uf39), "; ".join(if39 + uf39)[:300])
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
