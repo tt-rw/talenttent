@@ -148,9 +148,9 @@ function renderOnboardingResumeBanner() {
   const saved = readSavedOnboarding();
   if (!saved) { el.innerHTML = ''; return; }
   el.innerHTML = `
-    <div style="border:1px solid var(--accent);border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px;">Je bent nog bezig met je profiel</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Je kunt verdergaan waar je was gebleven.</div>
+    <div class="melding">
+      <p class="melding-kop">Je bent nog bezig met je profiel</p>
+      <p class="melding-tekst">Je kunt verdergaan waar je was gebleven.</p>
       <button class="btn btn-primary" onclick="resumeOnboarding()">Verdergaan</button>
     </div>`;
 }
@@ -374,8 +374,6 @@ function updateSubmitProfileState() {
   const btn = document.getElementById('submitProfileBtn');
   if (!box || !btn) return;
   btn.disabled = !box.checked;
-  btn.style.opacity = box.checked ? '' : '0.5';
-  btn.style.cursor = box.checked ? '' : 'not-allowed';
   // TT-42: bij route A kan er een lange onderbreking tussen dit vinkje en het
   // aanmaken van het account zitten. Het vinkje gaat daarom mee in de
   // momentopname, anders staat het na terugkomst weer uit.
@@ -525,14 +523,14 @@ async function renderEmailBevestigBanner() {
   if (error) logCaught('renderEmailBevestigBanner', error);
   if (error || !data?.wacht_op_bevestiging) { el.innerHTML = ''; return; }
   el.innerHTML = `
-    <div style="border:1px solid var(--accent);border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
-      <div style="font-size:15px;font-weight:700;margin-bottom:4px;">Nog één stap: bevestig je e-mailadres</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">We hebben een mail gestuurd naar <strong id="bevestigEmailadres" style="color:var(--text);overflow-wrap:anywhere;">${escHtml(currentUser.email || '')}</strong>. Tik op de knop in die mail. Daarna staat je profiel online en kun je berichten sturen.</div>
+    <div class="melding">
+      <p class="melding-kop">Nog één stap: bevestig je e‑mailadres</p>
+      <p class="melding-tekst">We hebben een mail gestuurd naar <strong id="bevestigEmailadres">${escHtml(currentUser.email || '')}</strong>. Tik op de knop in die mail. Daarna staat je profiel online en kun je berichten sturen.</p>
       <div id="bevestigKnoppen">
-        <button class="btn btn-ghost" id="bevestigOpnieuwBtn" style="width:100%;" onclick="bevestigMailOpnieuw()">Mail opnieuw sturen</button>
-        <div style="text-align:center;margin-top:12px;">
-          <button onclick="bevestigEmailadresTonen(true)" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Roboto',sans-serif;text-decoration:underline;">E-mailadres klopt niet? Pas het aan</button>
+        <div class="knoppen-stapel">
+          <button class="btn btn-ghost" id="bevestigOpnieuwBtn" onclick="bevestigMailOpnieuw()">Mail opnieuw sturen</button>
         </div>
+        <p class="stille-link-regel"><button type="button" class="stille-link" onclick="bevestigEmailadresTonen(true)">E-mailadres klopt niet? Pas het aan</button></p>
       </div>
       <div id="bevestigEmailadresVak" style="display:none;">
         <div class="field">
@@ -1102,7 +1100,7 @@ async function nextStep(from) {
     } else if (!usernameFormatValid(state.username)) {
       fouten.push(['username', 'Alleen letters, cijfers en underscore, 3-20 tekens']);
     } else if (leeftijd >= 13 && leeftijd < 16 && state.username.toLowerCase() === state.fname.toLowerCase()) {
-      fouten.push(['username', 'Onder de 16 moet dit afwijken van je echte voornaam, voor je eigen privacy']);
+      fouten.push(['username', 'Onder de 16 jaar moet de gebruikersnaam anders zijn dan je voornaam']);
     }
 
     if (!editingMusicianId) {

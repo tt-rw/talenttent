@@ -3,12 +3,14 @@
     --surface: #161616;
     --surface2: #1e1e1e;
     --border: #2a2a2a;
-    /* TT-341 stap 2 (26-09-2026, "rustig", akkoord Ronald): geel betekent
-       alleen "doe dit" of "hier ben je" — dat is --merk en de gekozen stand.
-       --accent is de signaalkleur voor koppen, iconen, randen en sterren, en
-       is daarmee in elk thema de tekstkleur. Was goud (#f5c518). --accent2
-       (cyaan, genre- en gezocht-badges) is weg: badges zijn neutraal. */
-    --accent: #f0f0f0;
+    /* --accent is de signaalkleur voor koppen, iconen, randen en sterren.
+       In donker is dat goud; in licht zwart (geel op crème is onleesbaar).
+       Besluit Ronald, 27-09-2026: "geen gele accenten, die zijn allemaal uit
+       de donkere versie gesloopt" — donker weer zoals vóór 26-09-2026.
+       TT-341 stap 2 had hier #f0f0f0 gezet ("rustig"). Wat van "rustig"
+       blijft: tags neutraal omlijnd, je eigen bericht grijs, het profielvlak
+       geel met een zwarte T. --accent2 (cyaan) blijft weg. */
+    --accent: #f5c518;
     --danger: #e5533d;
     --success: #4caf50;
     --text: #f0f0f0;
@@ -58,7 +60,7 @@
        precies de kleuren van voorheen. Een kleur met een eigen rol krijgt een
        eigen variabele, ook als de waarde in donker gelijk is aan een andere.
        --accent  = signaalkleur: tekst, rand, lijn of klein vlak (stip,
-                   balk). Sinds stap 2 gelijk aan de tekstkleur (rustig).
+                   balk). Donker goud, licht zwart (27-09-2026).
        --merk    = geel als vlak onder zwarte tekst dat in elk thema geel
                    blijft: de hoofdknop, de verzendknop, de actieve tab
                    onderin, het profielvlak met de T, de actieve stip en
@@ -93,6 +95,7 @@
     --schaduw-melding: 0 8px 24px rgba(0,0,0,0.4);
     /* TT-341 stap 2 (26-09-2026): nieuwe rollen uit de designproef. */
     --rand-neutraal: #3a3a3a;               /* badge, profielfoto, lege ster in een badge */
+    --rand-knop: #888;                      /* rand van de tweede knop (.btn-ghost): 3:1 of meer op elk vlak, besluit Ronald 27-09-2026 */
     --ongelezen: #e5533d;                   /* rood rondje met het aantal ongelezen berichten */
     --bericht-eigen: #2a2a2a;               /* je eigen bericht */
     --bericht-rand-eigen: #3a3a3a;
@@ -148,6 +151,7 @@
     --schaduw-menu: 0 4px 20px rgba(30,30,30,0.06);
     --schaduw-melding: 0 4px 20px rgba(30,30,30,0.06);
     --rand-neutraal: #CFC9BC;
+    --rand-knop: #8A8782;          /* tweede knop: 3:1 of meer op crème en wit (Ronald, 27-09-2026) */
     --bericht-eigen: #EDE8DC;
     --bericht-rand-eigen: #B8B4AA;
     --bericht-ander: var(--surface);
@@ -443,28 +447,75 @@
     margin: 0 0 8px;
   }
 
-  .ouder-uitleg { margin: 24px 0 8px; }
-  /* Zelfde maat en regelafstand als .ouder-melding en .field-hint — anders
-     staat dezelfde soort tekst op het ene scherm ruimer dan op het andere. */
-  .ouder-uitleg p {
+  /* De vraag boven de twee knoppen van het wachtscherm: gewone tekst, geen
+     bijschrift — hij leidt de knoppen in (27-09-2026). */
+  .ouder-vraag {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text);
+    margin: 24px 0 8px;
+  }
+
+  /* Een regel die bij één knop hoort (wachttijd, grens): direct eronder,
+     gecentreerd, in de maat van een hulptekst. Leeg = geen ruimte. */
+  .knop-toelichting {
     font-size: var(--fs-sm);
     line-height: 16px;
     color: var(--muted);
-    margin: 0 0 8px;
+    text-align: center;
+    margin: 0;
   }
+  .knop-toelichting:empty { display: none; }
 
-  /* Stille uitweg: een link, geen knop — dit is geen aangeboden actie. */
-  .ouder-stille-link {
+  /* Stille uitweg: een link, geen knop — dit is geen aangeboden actie.
+     Eén vorm voor elke stille uitweg (was .ouder-stille-link en een inline
+     stijl in het blok "Nog één stap", 27-09-2026). */
+  .stille-link-regel { margin: 16px 0 0; text-align: center; }
+  .stille-link {
     background: none;
     border: 0;
     padding: 0;
     font: inherit;
-    font-size: 12px;
+    font-family: 'Roboto', sans-serif;
+    font-size: var(--fs-sm);
     color: var(--muted);
     text-decoration: underline;
     cursor: pointer;
     min-height: 44px;
   }
+  .stille-link:hover { color: var(--text); }
+
+  /* ── Melding (huisstijl §13, vastgelegd en gebouwd 27-09-2026) ──────────
+     Eén vorm voor elke melding bovenaan een scherm: "Nog één stap", "Je bent
+     nog bezig met je profiel", een banduitnodiging, een beheeroverdracht,
+     het wachtscherm van de ouderaanvraag. Tot 27-09-2026 stond dezelfde
+     opmaak vier keer als inline stijl in de JavaScript, met 15px en 13px
+     grijs. Rand in --accent (donker goud, licht zwart), links 4px. */
+  .melding {
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    border-left-width: 4px;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .melding-kop {
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 4px;
+  }
+  .melding-tekst {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text);
+    margin: 0 0 12px;
+    overflow-wrap: anywhere;
+  }
+  .melding-tekst strong { font-weight: 700; }
+  .melding > :last-child { margin-bottom: 0; }
+  .melding .stille-link-regel { margin-top: 4px; }
 
   /* TT-42: de goedkeuringspagina van de ouder. */
   .toestemming-wrap { max-width: 560px; margin: 0 auto; padding-top: 40px; }
@@ -1051,14 +1102,27 @@
   }
 
   /* TT-316 (24-09-2026, besluit Ronald K5): tekst wit, rand --line. Was
-     grijs met een rand van 1px. */
+     grijs met een rand van 1px.
+     Besluit Ronald, 27-09-2026 ("meer accenten rondom knoppen, zodat het
+     zichtbaar knoppen zijn"): de rand is --rand-knop, niet --border. In
+     --border (donker #2a2a2a, 1,4:1; licht #DED9CF, 1,3:1) viel de knop weg
+     tegen de ondergrond. --rand-knop haalt 3:1 of meer, de norm voor de
+     rand van een bedieningselement (WCAG 1.4.11). Bij aanwijzen wordt de
+     rand de tekstkleur. */
   .btn-ghost {
     background: transparent;
     color: var(--text);
-    border: var(--line) solid var(--border);
+    border: var(--line) solid var(--rand-knop);
   }
 
-  .btn-ghost:hover { color: var(--text); border-color: var(--rand-hover); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text); }
+
+  /* Een knop die nog niet kan (vinkje niet gezet, wachttijd loopt): half
+     zichtbaar, geen handje, geen verschuiving bij aanwijzen. Eén regel voor
+     elke knopsoort, geen inline stijl per knop (27-09-2026). */
+  .btn:disabled,
+  .btn:disabled:hover { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-primary:disabled:hover { background: var(--merk); }
 
   /* TT-316 (24-09-2026, besluit Ronald K2): destructief is omlijnd in rood,
      nooit een rood vlak — huisstijl §5. Account verwijderen, lid verwijderen. */
@@ -3289,8 +3353,9 @@
   .band-meta { font-size:12px;color:var(--muted);margin-top:3px; }
   /* TT-315 (24-09-2026): zelfde vorm als .tag-solid. TT-341 stap 2: geen
      vlak, een dunne neutrale rand; de status houdt zijn kleur in de tekst. */
-  .band-status-badge { display:inline-block;background:transparent;border:1px solid var(--rand-neutraal);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-left:auto;white-space:nowrap;flex-shrink:0; }
-  .band-status-zoekend { color:var(--accent); }
+  /* Een status is een tag (huisstijl §1.3): tekst in --text, ook "Zoekend".
+     27-09-2026: --accent is in donker weer goud; tags blijven neutraal. */
+  .band-status-badge { display:inline-block;background:transparent;border:1px solid var(--rand-neutraal);color:var(--text);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-left:auto;white-space:nowrap;flex-shrink:0; }
   .band-status-compleet { color:var(--success); }
   .band-status-inactief { color:var(--muted); }
   .band-card-body { padding:0 20px 20px;border-top:1px solid var(--border); }

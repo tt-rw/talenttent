@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260926x">
+<link rel="stylesheet" href="styles.css?v=20260927b">
 </head>
 <body>
 
@@ -308,7 +308,7 @@
         <label>Gebruikersnaam <span class="req">*</span></label>
         <input type="text" id="username" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck()">
         <p id="usernameStatus" class="field-status"></p>
-        <p class="field-hint">Dit is wat andere muzikanten van je zien — niet je echte naam. Ben je jonger dan 16? Dan moet dit afwijken van je voornaam.</p>
+        <p class="field-hint">Dit is wat andere muzikanten van je zien — niet je echte naam. Ben je jonger dan 16 jaar? Dan moet de gebruikersnaam anders zijn dan je voornaam.</p>
       </div>
     </div>
 
@@ -635,7 +635,7 @@
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner btn-row">
         <button class="btn btn-ghost" onclick="prevStep(4)">Terug</button>
-        <button class="btn btn-primary" id="submitProfileBtn" onclick="submitProfile()" disabled style="opacity:0.5;cursor:not-allowed;">Profiel aanmaken</button>
+        <button class="btn btn-primary" id="submitProfileBtn" onclick="submitProfile()" disabled>Profiel aanmaken</button>
       </div>
     </div>
   </div>
@@ -684,26 +684,27 @@
   <!-- Onderdeel 3: het wachtscherm -->
   <div class="panel-ouder" id="ouderWacht">
     <div class="panel-title" id="ouderWachtKop">Je aanvraag is verstuurd</div>
-    <div class="panel-sub" id="ouderWachtBody">De mail staat klaar bij <strong class="ouder-adres" id="ouderWachtAdres"></strong>.
-      Zodra je ouder toestemming geeft, krijg je bericht van ons. Daarna kies je een wachtwoord en staat je profiel online.</div>
+    <div class="panel-sub" id="ouderWachtBody">We hebben je ouder een mail gestuurd op <strong class="ouder-adres" id="ouderWachtAdres"></strong>.
+      Geeft je ouder toestemming, dan laten we het je weten. Daarna kies je een wachtwoord en staat je profiel online.</div>
 
-    <!-- Deze twee horen niet in de vaste wizardbalk onderin: dit is geen
-         Terug/Verder. Onder elkaar op volle breedte, zelfde vorm als de twee
-         knoppen op de goedkeuringspagina: alleen zo passen de volledige
-         opschriften, en geen van beide is hier "de volgende stap". -->
-    <p class="ouder-melding">Adres verkeerd, of is de mail niet aangekomen?</p>
+    <!-- 27-09-2026 (bevindingen Ronald): de losse grijze regels zijn één
+         melding geworden, in de vaste vorm (.melding, huisstijl §13). -->
+    <div class="melding" id="ouderWachtMelding">
+      <p class="melding-kop">Je kunt de app nu sluiten</p>
+      <p class="melding-tekst">Je profiel blijft op dit toestel bewaard. Je ouder heeft veertien dagen om toestemming te geven.</p>
+    </div>
+
+    <!-- Geen van beide knoppen is hier "de volgende stap": dat is de klik
+         van de ouder. Daarom twee tweede knoppen, onder elkaar op volle
+         breedte. De wachttijd staat direct onder de knop waar hij over gaat. -->
+    <p class="ouder-vraag" id="ouderWachtVraag">Geen mail ontvangen, of een fout in het adres?</p>
     <div class="knoppen-stapel" id="ouderWachtActies">
-      <button class="btn" id="ouderOpnieuwKnop" onclick="ouderOpnieuwSturen()">Opnieuw versturen</button>
-      <button class="btn btn-ghost" onclick="ouderAdresWijzigen()">Adres wijzigen</button>
+      <button class="btn btn-ghost" id="ouderOpnieuwKnop" onclick="ouderOpnieuwSturen()">Mail opnieuw sturen</button>
+      <p class="knop-toelichting" id="ouderHerstuurRegel"></p>
+      <button class="btn btn-ghost" onclick="ouderAdresWijzigen()">Ander e-mailadres invullen</button>
     </div>
 
-    <p class="ouder-melding" id="ouderHerstuurRegel"></p>
-
-    <div class="ouder-uitleg">
-      <p>Je kunt de app sluiten. Je profiel staat klaar op dit toestel.</p>
-      <p>De aanvraag is veertien dagen geldig.</p>
-      <p><button type="button" class="ouder-stille-link" onclick="ouderStoppenEnWissen()">Stoppen en mijn gegevens wissen</button></p>
-    </div>
+    <p class="stille-link-regel"><button type="button" class="stille-link" onclick="ouderStoppenEnWissen()">Stoppen en mijn gegevens wissen</button></p>
   </div>
 
   <!-- Onderdeel 7: het wachtwoordscherm -->
@@ -2627,16 +2628,16 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260927a"></script>
+<script src="core.js?v=20260927b"></script>
 <script src="utils.js?v=20260927a"></script>
 <script src="veiligheid.js?v=20260924a"></script>
-<script src="auth.js?v=20260927a"></script>
+<script src="auth.js?v=20260927b"></script>
 <script src="postcode.js?v=20260926u"></script>
-<script src="wizard.js?v=20260927a"></script>
-<script src="ouder.js?v=20260926b"></script>
+<script src="wizard.js?v=20260927b"></script>
+<script src="ouder.js?v=20260927b"></script>
 <script src="search.js?v=20260926u"></script>
 <script src="musicians.js?v=20260926u"></script>
-<script src="bands.js?v=20260926v"></script>
+<script src="bands.js?v=20260927b"></script>
 <script src="messages.js?v=20260926v"></script>
 <script src="modals-shared.js?v=20260924a"></script>
 <script>

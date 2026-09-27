@@ -21,9 +21,9 @@ async function loadBandInvites(musicianId) {
       const naam = inv.bands?.name || 'Een band';
       const plaats = inv.bands?.city || '';
       return `
-      <div style="border:1px solid var(--accent);border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
-        <div style="font-size:15px;font-weight:700;margin-bottom:4px;">${escHtml(naam)} wil je als lid</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">${escHtml(plaats)}${plaats ? ' · ' : ''}Je staat pas op het bandprofiel als je dit bevestigt.</div>
+      <div class="melding">
+        <p class="melding-kop">${escHtml(naam)} wil je als lid</p>
+        <p class="melding-tekst">${escHtml(plaats)}${plaats ? ' · ' : ''}Je staat pas op het bandprofiel als je dit bevestigt.</p>
         <div class="btn-row">
           <button class="btn btn-ghost" onclick="respondToBandInvite('${jsAttr(inv.band_id)}', false)">Weigeren</button>
           <button class="btn btn-primary" onclick="respondToBandInvite('${jsAttr(inv.band_id)}', true)">Bevestigen</button>
@@ -81,9 +81,9 @@ async function loadFounderOffers(musicianId) {
     el.innerHTML = data.map(off => {
       const naam = off.bands?.name || 'Een band';
       return `
-      <div style="border:1px solid var(--accent);border-left-width:4px;border-radius:10px;padding:16px;margin-bottom:16px;background:var(--surface2);">
-        <div style="font-size:15px;font-weight:700;margin-bottom:4px;">De beheerder van ${escHtml(naam)} stopt</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Wil jij het beheer overnemen? Zeg je nee, dan blijft de huidige beheerder voorlopig aan.</div>
+      <div class="melding">
+        <p class="melding-kop">De beheerder van ${escHtml(naam)} stopt</p>
+        <p class="melding-tekst">Wil jij het beheer overnemen? Zeg je nee, dan blijft de huidige beheerder voorlopig aan.</p>
         <div class="btn-row">
           <button class="btn btn-ghost" onclick="respondToFounderOffer('${jsAttr(off.band_id)}', false)">Nee, liever niet</button>
           <button class="btn btn-primary" onclick="respondToFounderOffer('${jsAttr(off.band_id)}', true)">Ik neem het over</button>

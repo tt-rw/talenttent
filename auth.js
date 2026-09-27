@@ -244,7 +244,7 @@ async function checkUsernameGate() {
   const hintEl = document.getElementById('usernameGateAgeHint');
   if (hintEl) {
     hintEl.textContent = (usernameGateAge < 16)
-      ? 'Omdat je jonger bent dan 16, moet dit afwijken van je echte voornaam.'
+      ? 'Je bent jonger dan 16 jaar. Daarom moet de gebruikersnaam anders zijn dan je voornaam.'
       : '';
   }
   document.getElementById('usernameGateInput').value = '';
@@ -264,7 +264,7 @@ async function saveUsernameGate() {
     statusEl.textContent = 'Alleen letters, cijfers en underscore, 3-20 tekens.'; statusEl.style.color = 'var(--danger)'; return;
   }
   if (usernameGateAge < 16 && value.toLowerCase() === usernameGateFname.toLowerCase()) {
-    statusEl.textContent = 'Onder de 16 moet dit afwijken van je echte voornaam.'; statusEl.style.color = 'var(--danger)'; return;
+    statusEl.textContent = 'Onder de 16 jaar moet de gebruikersnaam anders zijn dan je voornaam.'; statusEl.style.color = 'var(--danger)'; return;
   }
 
   const available = (usernameCheckedValue === value && usernameAvailable)

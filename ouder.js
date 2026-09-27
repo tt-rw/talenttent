@@ -23,6 +23,10 @@ const OUDER_HERSTUUR_MS      = 15 * 60 * 1000;
 const OUDER_MAX_VERSTUURD    = 3;
 
 let ouderStandTimer = null;
+// ouderVerlopenTonen() past het wachtscherm aan (kop, tekst, knoppen).
+// Wordt daarna een nieuwe aanvraag verstuurd, dan hoort het wachtscherm weer
+// in zijn oorspronkelijke vorm te staan: de opmaak uit index.html.
+let ouderWachtOrigineel = null;
 
 // ─── Wie heeft een ouder nodig ───────────────────────────────────────────────
 
@@ -168,6 +172,11 @@ async function ouderVerzoekVersturen() {
 // ─── Onderdeel 3: het wachtscherm ────────────────────────────────────────────
 
 function ouderWachtTonen() {
+  const paneel = document.getElementById('ouderWacht');
+  if (paneel) {
+    if (ouderWachtOrigineel === null) ouderWachtOrigineel = paneel.innerHTML;
+    else paneel.innerHTML = ouderWachtOrigineel;
+  }
   const bewaard = ouderAanvraagLezen();
   const adresEl = document.getElementById('ouderWachtAdres');
   if (adresEl) adresEl.textContent = bewaard?.ouderEmail || '';
@@ -187,9 +196,7 @@ function ouderHerstuurKnopBijwerken() {
 
   if ((bewaard.verstuurd || 0) >= OUDER_MAX_VERSTUURD) {
     knop.disabled = true;
-    knop.style.opacity = '0.5';
-    knop.style.cursor = 'not-allowed';
-    if (regel) regel.textContent = 'Je hebt de aanvraag drie keer verstuurd. Klopt het adres niet? Wijzig het dan.';
+    if (regel) regel.textContent = 'Je hebt de mail drie keer gestuurd. Klopt het adres niet? Vul dan een ander in.';
     return;
   }
 
@@ -197,14 +204,10 @@ function ouderHerstuurKnopBijwerken() {
   if (over > 0) {
     const minuten = Math.max(1, Math.ceil(over / 60000));
     knop.disabled = true;
-    knop.style.opacity = '0.5';
-    knop.style.cursor = 'not-allowed';
-    if (regel) regel.textContent = `Je kunt over ${minuten} ${minuten === 1 ? 'minuut' : 'minuten'} opnieuw sturen.`;
+    if (regel) regel.textContent = `Opnieuw sturen kan over ${minuten} ${minuten === 1 ? 'minuut' : 'minuten'}.`;
     setTimeout(ouderHerstuurKnopBijwerken, Math.min(over, 30000));
   } else {
     knop.disabled = false;
-    knop.style.opacity = '';
-    knop.style.cursor = '';
     if (regel) regel.textContent = '';
   }
 }
@@ -220,7 +223,7 @@ async function ouderOpnieuwSturen() {
     bewaard.laatstVerstuurd = Date.now();
     ouderAanvraagBewaren(bewaard);
     ouderHerstuurKnopBijwerken();
-    showToast('Je aanvraag is opnieuw verstuurd.');
+    showToast('De mail is opnieuw verstuurd.');
   } catch (e) {
     hideSaving();
     logCaught('ouderOpnieuwSturen', e);
@@ -263,12 +266,17 @@ function ouderVerlopenTonen() {
   const body = document.getElementById('ouderWachtBody');
   const acties = document.getElementById('ouderWachtActies');
   if (kop)  kop.textContent = 'Je aanvraag is verlopen';
-  if (body) body.innerHTML = 'Na veertien dagen vervalt een aanvraag vanzelf. Je profiel staat nog klaar op dit toestel; je kunt het opnieuw versturen.';
+  if (body) body.textContent = 'Na veertien dagen vervalt een aanvraag vanzelf. Je profiel staat nog klaar op dit toestel. Stuur de aanvraag opnieuw.';
+  // De melding ("veertien dagen geldig") en de vraag boven de knoppen gaan
+  // over een lopende aanvraag; bij een verlopen aanvraag kloppen ze niet.
+  ['ouderWachtMelding', 'ouderWachtVraag'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  // Hier is opnieuw versturen wél de volgende stap: de hoofdknop.
   if (acties) {
-    acties.innerHTML = '<button class="btn" onclick="ouderAdresWijzigen()">Opnieuw versturen</button>';
+    acties.innerHTML = '<button class="btn btn-primary" onclick="ouderAdresWijzigen()">Aanvraag opnieuw versturen</button>';
   }
-  const rem = document.getElementById('ouderHerstuurRegel');
-  if (rem) rem.textContent = '';
 }
 
 function ouderStoppenEnWissen() {
@@ -410,7 +418,7 @@ function toestemmingVraagTonen(gegevens) {
     </label>
 
     <div class="knoppen-stapel toestemming-knoppen">
-      <button class="btn" id="toestemmingJaKnop" onclick="ouderBesluit(true)" disabled>Toestemming geven</button>
+      <button class="btn btn-primary" id="toestemmingJaKnop" onclick="ouderBesluit(true)" disabled>Toestemming geven</button>
       <button class="btn btn-ghost" onclick="ouderBesluit(false)">Weigeren</button>
     </div>`;
   toestemmingKnopBijwerken();
@@ -421,8 +429,6 @@ function toestemmingKnopBijwerken() {
   const knop = document.getElementById('toestemmingJaKnop');
   if (!vinkje || !knop) return;
   knop.disabled = !vinkje.checked;
-  knop.style.opacity = vinkje.checked ? '' : '0.5';
-  knop.style.cursor = vinkje.checked ? '' : 'not-allowed';
 }
 
 function toestemmingAfgehandeldTonen(stand, beslotenOp) {
@@ -444,7 +450,7 @@ async function ouderBesluit(akkoord) {
     const vak = document.getElementById('toestemmingInhoud');
     if (akkoord) {
       vak.innerHTML = `
-        <h1 class="panel-title">Bedankt</h1>
+        <h1 class="panel-title">Bedankt!</h1>
         <p class="toestemming-melding">Je toestemming is vastgelegd op
            ${escHtml(nlDatum(new Date().toISOString()))}. Je kind krijgt hier bericht over
            en kan het profiel afmaken.</p>
@@ -459,6 +465,10 @@ async function ouderBesluit(akkoord) {
         <p class="toestemming-melding">Je kind krijgt hier geen bericht over.</p>
         <p class="toestemming-melding">${TOESTEMMING_AFSLUITER}</p>`;
     }
+    // De knoppen staan onderaan een lange pagina. Zonder dit blijft de
+    // pagina op die hoogte staan en valt de kop van het antwoord achter de
+    // vaste kop weg (bevinding Ronald, 27-09-2026: "Bedankt" viel weg).
+    window.scrollTo(0, 0);
   } catch (e) {
     hideSaving();
     logCaught('ouderBesluit', e);

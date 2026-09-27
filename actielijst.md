@@ -1,6 +1,94 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 27-09-2026 (TT-65, proefherstel) — **Proefherstel
+**Laatste update:** 27-09-2026 (TT-361, bevindingen van Ronald) — **Acht
+bevindingen uit `Bevindingen_27092026.docx` gebouwd en getest. De oorzaak van
+TT-356 is gevonden en opgelost: een punt aan het begin van een verzendregel
+viel weg, in drie van de zeven mails. Nog open: invoeren in Supabase, daarna
+elke gewijzigde mail één keer echt ontvangen (TT-323).**
+
+- **Besluiten Ronald, 27-09-2026 (TT-361):** (a) de gele accenten terug in
+  donker, "alles zoals vóór 26-09" — `--accent` is in donker weer `#f5c518`,
+  licht blijft zwart; tags, je eigen bericht en het profielvlak blijven rustig;
+  (b) de tweede knop krijgt voor de hele app een grijze rand die 3:1 haalt;
+  (c) het wachtscherm en het blok "Nog één stap" direct bouwen, Ronald kijkt
+  mee op schermafdrukken. De teksten van bevinding 2, 6 en 8 zijn van Ronald.
+- **Gebouwd, per bevinding:**
+  1. **Wachtscherm na de ouderaanvraag.** De losse grijze regels zijn één
+     melding ("Je kunt de app nu sluiten"). Twee tweede knoppen onder elkaar,
+     de wachttijd direct onder "Mail opnieuw sturen". Bij een verlopen
+     aanvraag verdwijnen melding en vraag, en is "Aanvraag opnieuw versturen"
+     de hoofdknop. **Rechtgezet onderweg:** na een verlopen aanvraag bleef het
+     wachtscherm in die vorm staan, ook bij een nieuwe aanvraag; nu staat het
+     weer zoals in `index.html` (`ouderWachtTonen()`). **Voorstel van Claude,
+     nog niet bevestigd:** alle nieuwe teksten op dit scherm.
+  2. **Mail "Bevestig je nieuwe e-mailadres"** (Supabase-sjabloon): "Tot je
+     het nieuwe e-mailadres hebt bevestigd, log je in met je oude
+     e-mailadres: …" en "Je e-mailadres wijzigt niet." Ronald schreef
+     "bevestigt"; het is "bevestigd". **Voorstel van Claude, nog niet
+     bevestigd:** "Kies een nieuw wachtwoord" eindigt voor dezelfde vorm op
+     "Je wachtwoord wijzigt niet." (was "blijft hetzelfde").
+  3. **Het blok "Nog één stap"** en de drie andere meldingen bovenaan Mijn
+     Profiel (verder met je profiel, banduitnodiging, beheeroverdracht) hebben
+     één vorm: `.melding` in `styles.css`. Rand in `--accent` (donker goud),
+     links 4px, kop 16px, tekst 14px in de tekstkleur. Tot vandaag stond
+     dezelfde opmaak vier keer als inline stijl in de JavaScript, met 15px en
+     13px grijs. Dit is TT-115. "e-mailadres" in de kop breekt niet meer af
+     op het streepje.
+  4. **"De knop werkt op elk toestel en in elke browser."** **Geverifieerd:**
+     de code van `email-bevestigen` in Supabase bevat die zin niet meer
+     (gelezen in het dashboard, SHA-256 gelijk aan
+     `_niet-uploaden-edge-function-email-bevestigen-27-09-2026-v2.ts`). De
+     schermafdruk van Ronald is van vóór die Deploy. Geen andere mail bevat
+     die zin. De regel "Belangrijk: doe dit op hetzelfde toestel…" in "Je
+     hebt toestemming" is een andere zin; die bleef op besluit van Ronald
+     (27-09-2026, derde ronde) en is ongewijzigd.
+  5. **Ontbrekende punten.** Zie TT-356 hieronder. Daarnaast drie zinnen in de
+     tekst zelf zonder punt, aangevuld: "…kom samen naar de Tent:
+     talenttent.org." en "Je logt in met dit e-mailadres: …." (welkom), "en
+     nog 3 andere — bekijk ze allemaal in de app." (digest).
+  6. **Hint bij Gebruikersnaam:** "Ben je jonger dan 16 jaar? Dan moet de
+     gebruikersnaam anders zijn dan je voornaam." **Voorstel van Claude, nog
+     niet bevestigd:** de drie foutmeldingen over dezelfde regel (wizard en
+     het venster voor een gebruikersnaam achteraf) zeggen het in dezelfde
+     woorden.
+  7. **Knoppen.** Drie knoppen hadden geen soort en toonden het grijze vlak
+     van de browser: "Toestemming geven", "Opnieuw versturen" en "Opnieuw
+     versturen" bij een verlopen aanvraag. "Toestemming geven" is nu de
+     hoofdknop, "Weigeren" de tweede knop. De tweede knop heeft app-breed een
+     rand in de nieuwe rol `--rand-knop`: donker `#888` (5,5:1 op de
+     ondergrond), licht `#8A8782` (3,2:1). Was `--border` (1,4:1 en 1,3:1).
+     Een uitgeschakelde knop krijgt zijn vorm uit één CSS-regel
+     (`.btn:disabled`), niet meer uit een inline stijl op drie plekken.
+  8. **"Bedankt!"** met uitroepteken. **Oorzaak van het wegvallen,
+     geverifieerd:** de knop staat onderaan een lange pagina; na de klik bleef
+     de pagina op die hoogte staan en viel de kop achter de vaste kop
+     (gemeten bij 1100×420: kop op 48px, onderkant van de vaste kop op 68px).
+     Nu gaat de pagina naar boven, bij toestemming én bij weigeren.
+- **Met goud terug in donker** zijn ook weer goud: paneeltitels, de
+  focusrand van een veld, sterren, iconen in de kop, de gekozen waarde in het
+  wiel, de links op de goedkeuringspagina. De status "Zoekend" op een band
+  blijft in de tekstkleur: een tag is neutraal (huisstijl §1.3).
+- **Getest:** vaste testset 653/653. Blok 46 is nieuw: zestien controles, en
+  veertien daarvan zakken op de code van vóór deze sessie. De andere twee
+  (geen paginafouten; de status-tag in de tekstkleur) bewaken dat het zo
+  blijft. Twee bestaande controles gingen uit van wit in donker: de focusrand
+  (blok 30) en `--accent` (blok 40); die toetsen nu goud. Schermafdrukken in
+  donker en licht bekeken: wachtscherm, verlopen, "Nog één stap", goedkeuringspagina,
+  "Bedankt!", gebruikersnaam. Monitorronde: zie de oplevering.
+- **Gewijzigd:** `index.html`, `styles.css`, `core.js`, `auth.js`,
+  `wizard.js`, `ouder.js`, `bands.js`, `tests/tt_tests.py`, `actielijst.md`,
+  `CHECKSUMS.txt`. Buiten de repo: vijf Edge Functions en twee
+  Supabase-sjablonen (zie TT-356 en de oplevering).
+- **Nieuw:** TT-362, TT-363 en TT-364 (alle drie advies P2).
+
+**Stand van de P0's.** Drie P0-bouwtickets staan open: TT-325 (teksten
+ingevoerd; de gewijzigde mails van vandaag nog in te voeren en te ontvangen) ·
+TT-329 · TT-352 (wacht op laag 2). Daarnaast de controle TT-323, en TT-358 als
+advies P0. TT-361 zelf is advies P2; de mails erin horen bij TT-325 (P0).
+
+---
+
+**Vorige update:** 27-09-2026 (TT-65, proefherstel) — **Proefherstel
 geslaagd. De back-up van vannacht staat volledig terug in een tijdelijk
 Supabase-project. TT-65 is af; drie opruimhandelingen staan nog bij Ronald.**
 
@@ -6978,7 +7066,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | ID | Ticket | Kern |
 |---|---|---|
 | **TT-357** | Testaccounts opschonen vóór de lancering | **Nieuw, 27-09-2026 (TT-65). Besluit Ronald: later opschonen, vlak vóór de lancering. Niveau: advies P1, door Ronald te bevestigen.** Alle bestaande accounts zijn testaccounts. Nu niet wissen: TT-352 en TT-323 hebben ze nog nodig, en het proefherstel van TT-65 heeft gegevens nodig. Gewiste testaccounts verdwijnen na 30 dagen vanzelf uit de back-up. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: nepprofielen in de zoekresultaten kosten vertrouwen. **Vóór lancering** |
-| **TT-356** | In de welkomstmail valt een punt weg bij het versturen | **Nieuw, 27-09-2026 (TT-323). Advies P1, niveau door Ronald te bevestigen.** Ronald ontving "Je bent binnen Zestien. Welkom in de Tent!" met "…kunnen je nu vinden" zonder punt. **Geverifieerd:** de code van `welkom` in Supabase heeft de punt (gelezen in het dashboard), en de mail die Claude uit die code opbouwt ook, in HTML en tekstversie. **Aanname:** de punt verdwijnt bij het versturen (denomailer): een punt aan het begin van een verzendregel valt weg. Niet gemeten; de bron van denomailer is vanuit de sessie niet bereikbaar. **Onbekend:** of het in de andere vier functies ook gebeurt. **Toets P1:** valt zo'n punt in een link (".org"), dan werkt de knop niet en komt iemand niet binnen. **Eerste meting:** de bron van de ontvangen mail bekijken in Proton. **Voorstel van Claude:** eigen sessie; raakt alle vijf de mailfuncties. |
+| **TT-356** | In de welkomstmail valt een punt weg bij het versturen | **Oorzaak gevonden en opgelost, 27-09-2026 (TT-361). Wacht op invoeren in Supabase (vijf Edge Functions) en daarna op ontvangst in TT-323.** **Oorzaak, geverifieerd in de broncode van denomailer 1.6.0** (gelezen op deno.land via de browserpane): de mail gaat als quoted-printable, afgeknipt op 74 tekens, en denomailer zet een punt aan het begin van een regel niet dubbel. De SMTP-server haalt zo'n punt weg (RFC 5321, 4.5.2). **Nagebootst** met dezelfde code en een server die dat doet: welkom verloor "vinden." én de punt in "proton.me" en "talenttent.org"; "Je hebt toestemming" verloor "online."; de andere vijf niets — dat hangt af van waar de regel afbreekt, en die plek verschuift met de wisselende naam in de afsluiter. **Oplossing:** alle vijf de functies sturen de mail als base64 (`base64Regels()` in het template). Base64 bevat geen punt. Na de wijziging komen alle acht nagebootste mails byte voor byte gelijk aan. Bestanden: `_niet-uploaden-edge-function-<naam>-27-09-2026-TT-356.ts`. **Geverifieerd:** de vijf functies in Supabase waren vóór deze wijziging gelijk aan de bestanden waarop die is gebouwd (SHA-256). *(Rechtgezet: hier stond "Aanname: de punt verdwijnt bij het versturen (denomailer)" en "Onbekend: of het in de andere vier functies ook gebeurt". Waaruit blijkt: de broncode en de nabootsing hierboven.)* **Oorspronkelijk, 27-09-2026 (TT-323). Advies P1, niveau door Ronald te bevestigen.** Ronald ontving "Je bent binnen Zestien. Welkom in de Tent!" met "…kunnen je nu vinden" zonder punt. **Geverifieerd:** de code van `welkom` in Supabase heeft de punt (gelezen in het dashboard), en de mail die Claude uit die code opbouwt ook, in HTML en tekstversie. **Aanname:** de punt verdwijnt bij het versturen (denomailer): een punt aan het begin van een verzendregel valt weg. Niet gemeten; de bron van denomailer is vanuit de sessie niet bereikbaar. **Onbekend:** of het in de andere vier functies ook gebeurt. **Toets P1:** valt zo'n punt in een link (".org"), dan werkt de knop niet en komt iemand niet binnen. **Eerste meting:** de bron van de ontvangen mail bekijken in Proton. **Voorstel van Claude:** eigen sessie; raakt alle vijf de mailfuncties. |
 | **TT-353** | "Er ging iets mis" als het nieuwe wachtwoord gelijk is aan het oude | **Gebouwd en getest 27-09-2026 (blok 45), wacht op laag 2 — zie Laatste update.** Tekst: "Kies een ander wachtwoord dan je huidige.", bij het veld, ook in Instellingen. **Nieuw, 27-09-2026 (TT-344, laag 2), gezien door Ronald: "een neutrale melding: er ging iets mis. wat ging er mis?" Advies P1, niveau door Ronald te bevestigen.** **Toets P1:** wie zijn wachtwoord vergeten is, typt vaak hetzelfde opnieuw. Hij krijgt dan steeds dezelfde lege melding en weet niet wat hij moet veranderen; dat bepaalt of hij terugkomt. **Geverifieerd** in de console op talenttent.org: `updateUser` geeft 422, "New password should be different from the old password." `friendlyErrorMessage()` in `utils.js` kent die tekst niet en valt terug op "Er ging iets mis. Probeer het opnieuw." **Voorstel van Claude:** de melding bij het veld "Nieuw wachtwoord" zetten, met een tekst als "Kies een ander wachtwoord dan je vorige." Dezelfde vertaling geldt dan ook voor "Wachtwoord wijzigen" in Instellingen (TT-299), als Supabase daar dezelfde fout geeft (**Onbekend**, niet gemeten). |
 | **TT-330** | Een vervangen ouderlink komt zonder uitleg op de homepage | **Afgehandeld 26-09-2026 (TT-323, vervolg): beide links werken — zie Laatste update.** **Gebouwd en getest 26-09-2026 (vervolg 2), wens Ronald: elke link werkt. Wacht op het SQL-script en de nieuwe functie `ouder-toestemming` van Ronald, daarna laag 2 — zie Laatste update.** Nieuw, 26-09-2026, TT-323. Advies P1, niveau door Ronald te bevestigen.** De herinnering en "opnieuw sturen" maken een nieuwe code; de link uit de eerste mail werkt dan niet meer. Een onbekende code stuurt `toestemmingPaginaOpenen()` (`ouder.js`) met opzet naar de homepage. Geverifieerd: Ronald kwam zo op de homepage uit, en een verzonnen code doet hetzelfde. **Toets P1:** een ouder die niet goedkeurt, betekent een kind dat niet binnenkomt. **Voorstel:** toon "Deze link werkt niet meer. Gebruik de nieuwste mail van Talent Tent." |
 | **TT-331** | De knop in "Je hebt toestemming" werkt alleen in de browser waar het kind begon | **Niet getoetst in TT-323 (vervolg):** het kind rondde af in het scherm rechts, zonder de knop in de mail. **Gebouwd en getest 26-09-2026 (vervolg 2), akkoord Ronald. Wacht op de nieuwe functie `ouder-toestemming`, daarna laag 2 — zie Laatste update.** Nieuw, 26-09-2026, TT-323. Advies P1, niveau door Ronald te bevestigen.** Het profiel wacht in de opslag van die ene browser (route A). Geverifieerd: in een browser met een ander ingelogd account stuurt `#register` door naar Mijn Profiel. **Aanname, niet gemeten:** uitgelogd in een andere browser krijgt het kind een lege wizard, begint opnieuw, en de ouder krijgt een tweede aanvraag. Een mail-app opent links vaak in een eigen browser. **Toets P1:** een kind dat hier strandt, komt niet binnen. **Voorstel:** vindt de app het wachtende profiel niet, dan toont hij "Open Talent Tent in de browser waar je begon." |
@@ -7016,6 +7104,10 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-361** | Bevindingen 27-09-2026: goud in donker, knoppen, meldingen, ouderroute | **Gebouwd en getest 27-09-2026 — zie Laatste update.** Acht bevindingen van Ronald. **Wacht op:** upload naar beide repo's; de mails in Supabase (TT-356, TT-325); laag 2 op talenttent.org: het wachtscherm en de goedkeuringspagina op een telefoon. **Toets P2 (advies Claude):** het werkte, maar grijze knoppen zonder rand en een onleesbaar wachtscherm kosten vertrouwen — juist bij een ouder die moet beslissen |
+| **TT-362** | Rode tekst in het venster "Kies een gebruikersnaam" | **Nieuw, 27-09-2026 (TT-361). Advies P2.** `saveUsernameGate()` in `auth.js` zet de foutregel op `color: var(--danger)`. Dat is rode tekst (huisstijl §1.2) en geen veldfout (§13.1). **Toets P2:** het werkt, maar leest als een standje. Voorstel: `setFieldError()` gebruiken, zoals de wizard |
+| **TT-363** | "Weet je het zeker?" bij "Stoppen en mijn gegevens wissen" | **Nieuw, 27-09-2026 (TT-361). Advies P2.** `ouderStoppenEnWissen()` vraagt naar de zekerheid, niet naar het gevolg (huisstijl §19). **Toets P2:** de stap is onomkeerbaar, en "weet je het zeker?" wordt weggeklikt. Voorstel: een vraag die het gevolg noemt, bijvoorbeeld "Alles wat je invulde, ook de aanvraag aan je ouder, wordt gewist. Wil je opnieuw beginnen als je later verdergaat?" |
+| **TT-364** | Kernzin van de digest leest alsof de afzenders de matches stuurden | **Nieuw, 27-09-2026 (TT-361). Advies P2.** "Jesse en Mila stuurden je een bericht en 5 nieuwe matches bij jou in de buurt." De tweede helft hoort niet bij "stuurden". **Toets P2:** het werkt, maar kost de lezer een tweede keer lezen. Tekst is aan Ronald (TT-329) |
 | **TT-359** | Rekenkracht van Supabase van Nano naar Micro | **Nieuw, 27-09-2026 (TT-65). Advies P2, niveau door Ronald te bevestigen.** Sinds Pro draait het project nog op Nano (0,5 GB geheugen, 52-54% in gebruik, gemeten 27-09-2026). Micro (1 GB) kost hetzelfde en valt binnen het tegoed van Pro; Supabase toont er de knop "Free Upgrade" bij. **Aanname:** omschakelen legt de app enkele minuten plat. **Toets P2:** het werkt, maar krap geheugen kost bij drukte snelheid en vertrouwen |
 | **TT-360** | De nachtsleutel van B2 kan de wisbeveiliging omzeilen | **Nieuw, 27-09-2026 (TT-65, proefherstel). Advies P2, niveau door Ronald te bevestigen.** De sleutel `nachtelijke-backup-rw` heeft onder meer `bypassGovernance` en `deleteFiles` (schermafdruk Ronald). Staat Object Lock op de map in de stand "Governance", dan kan wie deze sleutel heeft een kopie tóch binnen 30 dagen wissen. In de stand "Compliance" niet. **Onbekend:** welke stand aanstaat; niet gemeten. Als het Governance is, klopt de zin in het draaiboek "onwisbaar, ook voor wie de sleutels heeft" niet, en moet die worden rechtgezet. **Toets P2:** het werkt, maar de belofte van de back-up is mogelijk zwakker dan beschreven. Geen gebruiker merkt het zolang de sleutel niet uitlekt |
 | **TT-341** | Licht thema, kiesbaar naast donker | **Nieuw, 26-09-2026, wens Ronald. Besluit Ronald: doorvoeren, op basis van "Licht + geel, huidig woordmerk" uit de designproef. Stap 1 gebouwd, 26-09-2026: kleuren per rol in variabelen, donker ongewijzigd. Stap 2 gebouwd, 26-09-2026: het lichte thema in `styles.css` en donker "rustig"; zie de update van die dag. Stap 3 gebouwd en getest, 26-09-2026: de tegel "Thema" in Instellingen met een keuzemenu, zonder eigen keuze volgt de app het toestel (besluit Ronald: "a"), `theme-color`, huisstijl bijgewerkt. Wacht op akkoord Ronald na upload. Open: de gekozen stand is "voorlopig"; TT-342.** Keuze onthouden op het toestel (besluit Ronald). Bouwplan in drie sessies en open vragen: zie de updates van 26-09-2026 (designproef) en (TT-341, stap 1). **Toets P2 (advies Claude):** de app werkt zonder, maar een deel van de gebruikers vindt een lichte weergave prettiger of beter leesbaar, vooral overdag buiten. Geen gebruiker loopt vast zonder |
@@ -7095,7 +7187,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-113** | `.landing-steps-grid` brak bij smalle schermen | **Gevonden en opgelost 19-08-2026, zie Deel 3.** Vaste 3 kolommen naast elkaar, ongeacht schermbreedte — gaf gemeten horizontale overflow bij 320px (32px) en 340px (12px). Opgelost met `grid-template-columns: repeat(auto-fit, minmax(220px, 1fr))` — geen vast omslagpunt meer nodig, fluïde op elke breedte. Sluit aan bij Ronalds principe (19-08-2026): geen vaste minimumbreedte instellen, elementen moeten zich schikken naar de beschikbare ruimte |
 | **TT-163** | `tt_musician_distances` uitbreiden met een eigen vertrekpunt | **Gebouwd en het script gedraaid, 27-08-2026 (Ronald: "query = succes").** Functiedefinitie aangeleverd door Ronald (`pg_get_functiondef`); daarop `origin_lat`/`origin_lng` toegevoegd als twee nieuwe, optionele parameters (`DEFAULT NULL`) — geldig via `CREATE OR REPLACE` zonder DROP, want het RETURN TYPE blijft ongewijzigd. Zijn ze leeg, dan valt de functie terug op de eigen locatie van `searcher_id` — ongewijzigd gedrag. Client (`searchMembersToAdd()`) stuurt `resolveSearchOrigin(memberSearchCity)` mee zodra het Plaats-veld gevuld is. **Nog te bevestigen door Ronald op de live site, zie Deel 1a** |
 | **TT-114** | Px-schaal (veelvoud van 4/8) als vaste huisstijlregel | **Nieuw, 19-08-2026 (Ronalds besluit).** Nu inconsistent: naast 4/8/12/16/20/24px staan er ook 58× 10px, 44× 6px, 14× 2px, 12× 3px en enkele losse waarden (geteld 19-08-2026). Voorstel vastgelegd: CSS-variabelen `--space-1` (4px) t/m `--space-10` (40px), alle padding/margin/gap/border-radius kiest voortaan uit deze lijst. **Bewust niet nu doorgevoerd** — raakt te veel plekken ineens voor één sessie (Voorwaarde 0: stabiliteit eerst). Bouwen bij de grote update, samen met TT-115 **Geteld 16-09-2026:** 122 waarden in `styles.css` zijn geen veelvoud van 4 (10px 36×, 14px 25×, 6px 24×, 2px 12×, 3px 8×) |
-| **TT-115** | Gestandaardiseerde bannercomponent voor meldingen | **Nieuw, 19-08-2026.** Aanleiding: Ronald vond de band-uitnodiging- en beheerderoverdracht-banners "niet fraai" — nu losse inline-opmaak per functie (`loadBandInvites()`, `loadFounderOffers()`), geen gedeelde stijl. Voorstel: één CSS-klasse met twee varianten ("actie gevraagd" / "informatief"), neutrale accentkleur i.p.v. de huidige bandkleur als linkerrand. **Bewust niet nu gebouwd** — samen met TT-114 bij de grote update |
+| **TT-115** | Gestandaardiseerde bannercomponent voor meldingen | **Gebouwd 27-09-2026 (TT-361): `.melding` in `styles.css`, voor alle vier de meldingen op Mijn Profiel en het wachtscherm van de ouderaanvraag. Eén variant; de rand is `--accent`, geen bandkleur. De tweede variant ("informatief") is niet gebouwd: geen plek vraagt erom.** **Nieuw, 19-08-2026.** Aanleiding: Ronald vond de band-uitnodiging- en beheerderoverdracht-banners "niet fraai" — nu losse inline-opmaak per functie (`loadBandInvites()`, `loadFounderOffers()`), geen gedeelde stijl. Voorstel: één CSS-klasse met twee varianten ("actie gevraagd" / "informatief"), neutrale accentkleur i.p.v. de huidige bandkleur als linkerrand. **Bewust niet nu gebouwd** — samen met TT-114 bij de grote update |
 | **TT-116** | Instrument/genre: pulldown-veld met badges i.p.v. altijd-zichtbaar knoppenraster | **Gebouwd 21-08-2026, zie Deel 3.** Vervangt het knoppenraster op alle 8 plekken (wizard, muzikant-zoekfilter, band-zoekfilter, bandformulier) door één herbruikbare "kies-en-badge"-component: een pulldown-veld opent een volledig-scherm keuzelijst, gekozen items blijven staan als badge. Instrument in de wizard heeft een extra niveaustap (sterren) in hetzelfde scherm. "Anders" is bij instrument weggehaald (geen vrij tekstveld, dus geen eenduidige waarde) — bij genre staat "Anders" nog wel, open vraag of dat ook weg moet |
 | **TT-117** | Definitieve labeltekst + korte toelichting voor de 2×5 niveauknoppen | **Nieuw, 21-08-2026 (Ronald, "zet dit op de actielijst").** De niveauknoppen (5 voor instrument, 5 voor bandervaring) tonen nu een naam en een korte toelichtingszin per niveau. Voor instrument staat er een automatisch afgeleide, voorlopige tekst (eerste zin van de bestaande kolom "Technische beheersing" uit `niveaubepaling-naslagwerk.md`) — nog geen definitieve tekst. Voor band is dit nog niet eens aangeraakt. Ronald schrijft de definitieve korte teksten zelf (sessie 21-08-2026, "optie 1"), of geeft aan welk bestaand criterium als samenvatting mag dienen. De knoppen zijn al wel gelijke hoogte gemaakt, ongeacht tekstlengte (automatisch herberekend na render, geen vaste pixelwaarde) |
 | **TT-131** | Login-/wachtwoordherstelscherm volgt de 16px-marge-regel niet | **Gebouwd en door Ronald bevestigd, 23-08-2026** (telefoontest: marge lijnt nu uit) |

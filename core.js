@@ -1209,8 +1209,6 @@ function showView(view, mode) {
     if (consentRow) consentRow.style.display = locked ? 'none' : 'flex';
     if (locked) {
       document.getElementById('submitProfileBtn').disabled = false;
-      document.getElementById('submitProfileBtn').style.opacity = '';
-      document.getElementById('submitProfileBtn').style.cursor = '';
     } else {
       updateSubmitProfileState();
     }
