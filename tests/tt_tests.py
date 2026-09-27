@@ -13,6 +13,7 @@ Wat laag 1 NIET dekt: database, RLS-regels, echt inloggen. Dat is laag 2,
 die Claude in de browser doorloopt. Zie actielijst.md, TT-231.
 """
 
+import glob
 import http.server
 import json
 import os
@@ -3338,9 +3339,10 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         focus = page.evaluate("""() => { const i = document.createElement('input'); document.getElementById('appRoot').appendChild(i);
             i.style.transition = 'none'; i.focus();
             const cs = getComputedStyle(i); const b = [cs.boxShadow, cs.borderTopColor]; i.remove(); return b; }""")
-        # TT-341 stap 2 (rustig): de focusrand is --accent, sinds die dag de tekstkleur.
-        check("de focusrand van een veld is 2px vol --accent, zonder gloed (TT-259, TT-341)",
-              focus[0] == "rgb(240, 240, 240) 0px 0px 0px 1px" and focus[1] == "rgb(240, 240, 240)", json.dumps(focus))
+        # De focusrand is --accent: in donker goud (weer sinds 27-09-2026,
+        # besluit Ronald), in licht zwart. Deze meting draait in donker.
+        check("de focusrand van een veld is 2px vol --accent, zonder gloed (TT-259, 27-09-2026)",
+              focus[0] == "rgb(245, 197, 24) 0px 0px 0px 1px" and focus[1] == "rgb(245, 197, 24)", json.dumps(focus))
 
         # Eén tagvorm in de hele app (TT-315). TT-341 stap 2 (rustig, akkoord Ronald):
         # geen vlak, een dunne neutrale rand (--rand-neutraal), tekst in de tekstkleur.
@@ -4183,7 +4185,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
           plek.remove(); delete html.dataset.theme; return uit; }"""
         d40 = page.evaluate(meet40, None)
         l40 = page.evaluate(meet40, "licht")
-        check("donker: --accent is de tekstkleur, niet meer goud (rustig)", d40["accent"] == "#f0f0f0", d40["accent"])
+        # Besluit Ronald, 27-09-2026: de gele accenten terug in donker.
+        check("donker: --accent is goud, zoals vóór 26-09-2026", d40["accent"] == "#f5c518", d40["accent"])
         check("donker: ondergrond ongewijzigd #0d0d0d", d40["bg"] == "rgb(13, 13, 13)", d40["bg"])
         check("donker: profielvlak geel met zwarte T", d40["avatar"] == ["rgb(245, 197, 24)", "rgb(0, 0, 0)"], json.dumps(d40["avatar"]))
         check("donker: je eigen bericht is grijs, niet goud", d40["eigen"] == "rgb(42, 42, 42)", d40["eigen"])
@@ -4719,6 +4722,125 @@ window.TT_STUB.fnAntwoord = {};
               "ander wachtwoord" in uit["vertaling"], uit["vertaling"])
         check("TT-353/354/355: geen paginafouten in blok 45", not f, "; ".join(f)[:300])
         c.close()
+
+        print("\nBlok 46 — bevindingen 27-09-2026: goud in donker, knoppen, meldingen, ouderroute")
+        # Besluiten Ronald, 27-09-2026: (a) de gele accenten terug in donker;
+        # (b) de tweede knop een grijze rand die 3:1 haalt, voor de hele app;
+        # (c) wachtscherm en "Nog één stap" binnen de standaard.
+        # 1. Statisch: elke .btn heeft precies één soort, en geen knop krijgt
+        #    zijn uitgeschakelde stand als inline stijl.
+        zonder_soort = []
+        for f in ["index.html"] + sorted(glob.glob(os.path.join(ROOT, "*.js"))):
+            f = os.path.basename(f)
+            if f in ("profiel-gedeeld.js",):
+                continue
+            src = open(os.path.join(ROOT, f), encoding="utf-8").read()
+            for m in re.finditer(r'class=\\?["\']([^"\']*)\\?["\']', src):
+                cl = m.group(1).split()
+                if "btn" in cl and not any(k in cl for k in ("btn-primary", "btn-ghost", "btn-danger")):
+                    zonder_soort.append(f"{f}:{src.count(chr(10), 0, m.start()) + 1}")
+        check("elke .btn heeft een soort (hoofdknop, tweede knop of destructief)",
+              not zonder_soort, ", ".join(zonder_soort))
+        inline_uit = []
+        for f in ("ouder.js", "wizard.js", "core.js", "index.html"):
+            src = open(os.path.join(ROOT, f), encoding="utf-8").read()
+            if re.search(r"(knop|btn|submitProfileBtn'\))\.style\.(opacity|cursor)", src) \
+                    or 'submitProfile()" disabled style=' in src:
+                inline_uit.append(f)
+        check("een uitgeschakelde knop krijgt zijn vorm uit CSS, niet uit een inline stijl",
+              not inline_uit, ", ".join(inline_uit))
+        melding_inline = [f for f in ("wizard.js", "bands.js")
+                          if "border-left-width:4px" in open(os.path.join(ROOT, f), encoding="utf-8").read()]
+        check("de vier meldingen gebruiken .melding, geen eigen inline opmaak",
+              not melding_inline, ", ".join(melding_inline))
+
+        # 2. Kleuren in beide thema's.
+        c, pg, f = bevestig_pagina("", "")
+        kl = pg.evaluate("""() => {
+          const meet = (thema) => {
+            if (thema) document.documentElement.dataset.theme = thema; else delete document.documentElement.dataset.theme;
+            const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
+            plek.innerHTML = '<button class="btn btn-ghost">A</button><button class="btn btn-primary" disabled>B</button>'
+              + '<div class="melding"><p class="melding-kop">K</p><p class="melding-tekst">T</p></div>'
+              + '<span class="band-status-badge band-status-zoekend">Zoekend</span>';
+            const [g, pr, m, st] = plek.children; const cs = x => getComputedStyle(x);
+            const uit = { accent: cs(document.documentElement).getPropertyValue('--accent').trim(),
+              ghost: cs(g).borderTopColor, uitgeschakeld: [cs(pr).opacity, cs(pr).cursor],
+              melding: [cs(m).borderTopColor, cs(m).borderLeftWidth, cs(m).backgroundColor],
+              meldingTekst: [cs(m.children[0]).fontSize, cs(m.children[1]).fontSize, cs(m.children[1]).color],
+              status: cs(st).color, tekst: cs(document.body).color };
+            plek.remove(); return uit; };
+          const d = meet(null), l = meet('licht'); delete document.documentElement.dataset.theme; return { d, l }; }""")
+        check("donker: --accent is weer goud; licht blijft zwart",
+              kl["d"]["accent"] == "#f5c518" and kl["l"]["accent"].lower() == "#1e1e1e", json.dumps(kl))
+        check("tweede knop: rand #888 in donker, #8A8782 in licht (3:1 of meer)",
+              kl["d"]["ghost"] == "rgb(136, 136, 136)" and kl["l"]["ghost"] == "rgb(138, 135, 130)", json.dumps(kl))
+        check("een uitgeschakelde knop is half zichtbaar zonder handje",
+              kl["d"]["uitgeschakeld"] == ["0.5", "not-allowed"], json.dumps(kl["d"]["uitgeschakeld"]))
+        check("melding: rand in --accent, links 4px, vlak --surface2, kop 16px en tekst 14px in de tekstkleur",
+              kl["d"]["melding"] == ["rgb(245, 197, 24)", "4px", "rgb(30, 30, 30)"]
+              and kl["d"]["meldingTekst"] == ["16px", "14px", "rgb(240, 240, 240)"], json.dumps(kl["d"]))
+        check("een status-tag blijft in de tekstkleur, ook 'Zoekend'",
+              kl["d"]["status"] == kl["d"]["tekst"] and kl["l"]["status"] == kl["l"]["tekst"], json.dumps(kl))
+        c.close()
+
+        # 3. Het wachtscherm van de ouderaanvraag.
+        c, pg, f = bevestig_pagina("", "\nwindow.TT_STUB.fnAntwoord = { stand: { stand: 'open' } };\n")
+        w = pg.evaluate("""async () => {
+          localStorage.setItem('tt_ouder_v1', JSON.stringify({ ouderEmail: 'ouder@mail.nl', aanvraagId: 'a1', verstuurd: 1, laatstVerstuurd: Date.now() - 60000 }));
+          showView('register'); ouderWachtTonen(); await new Promise(r => setTimeout(r, 300));
+          const acties = document.getElementById('ouderWachtActies');
+          const r = { knoppen: [...acties.querySelectorAll('button')].map(b => b.className),
+            volgorde: [...acties.children].map(e => e.id || e.tagName),
+            regel: document.getElementById('ouderHerstuurRegel').textContent,
+            melding: !!document.querySelector('#ouderWacht .melding'),
+            adres: document.getElementById('ouderWachtAdres').textContent };
+          ouderVerlopenTonen();
+          const zichtbaar = id => { const e = document.getElementById(id); return e ? getComputedStyle(e).display !== 'none' : null; };
+          r.verlopen = { melding: zichtbaar('ouderWachtMelding'), vraag: zichtbaar('ouderWachtVraag'),
+            knoppen: [...document.querySelectorAll('#ouderWachtActies button')].map(b => b.className) };
+          ouderWachtTonen(); await new Promise(r => setTimeout(r, 200));
+          r.hersteld = { kop: document.getElementById('ouderWachtKop').textContent, melding: zichtbaar('ouderWachtMelding'),
+            opnieuw: !!document.getElementById('ouderOpnieuwKnop') };
+          clearInterval(ouderStandTimer);
+          return r; }""")
+        check("wachtscherm: twee tweede knoppen, de wachttijd direct onder 'Mail opnieuw sturen'",
+              w["knoppen"] == ["btn btn-ghost", "btn btn-ghost"]
+              and w["volgorde"] == ["ouderOpnieuwKnop", "ouderHerstuurRegel", "BUTTON"]
+              and w["regel"].startswith("Opnieuw sturen kan over"), json.dumps(w))
+        check("wachtscherm: de losse regels zijn één melding", w["melding"] and w["adres"] == "ouder@mail.nl", json.dumps(w))
+        check("verlopen: melding en vraag weg, 'Aanvraag opnieuw versturen' is de hoofdknop",
+              not w["verlopen"]["melding"] and not w["verlopen"]["vraag"]
+              and w["verlopen"]["knoppen"] == ["btn btn-primary"], json.dumps(w["verlopen"]))
+        check("na een verlopen aanvraag staat het wachtscherm weer in zijn oorspronkelijke vorm",
+              w["hersteld"] == {"kop": "Je aanvraag is verstuurd", "melding": True, "opnieuw": True}, json.dumps(w["hersteld"]))
+        check("de gebruikersnaam-hint zegt het zoals Ronald het schreef",
+              "Ben je jonger dan 16 jaar? Dan moet de gebruikersnaam anders zijn dan je voornaam."
+              in pg.evaluate("document.querySelector('#username').closest('.field').textContent"))
+        c.close()
+
+        # 4. De goedkeuringspagina: hoofdknop, en "Bedankt!" staat in beeld.
+        c2 = browser.new_context(viewport={"width": 1100, "height": 420}, color_scheme="light")
+        pg = c2.new_page(); f4 = []; pg.on("pageerror", lambda e: f4.append(str(e)))
+        pg.route("**/supabase-js@2/**", lambda r: r.fulfill(status=200, content_type="application/javascript",
+            body=stub_js + "\n(function(){ const m = window.supabase.createClient; window.supabase.createClient = function(){ const c = m.apply(this, arguments); c.functions = { invoke: async () => ({ data: { ok: true }, error: null }) }; return c; }; })();\n"))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**"):
+            pg.route(pat, lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load"); pg.wait_for_timeout(500)
+        pg.evaluate("() => { showView('toestemming'); toestemmingCode = 'x'; toestemmingVraagTonen({ kind_voornaam: 'Veertien' }); }")
+        soorten = pg.evaluate("() => [...document.querySelectorAll('.toestemming-knoppen button')].map(b => b.className)")
+        pg.check("#toestemmingVinkje")
+        pg.evaluate("() => window.scrollTo(0, document.body.scrollHeight)"); pg.wait_for_timeout(150)
+        pg.click("#toestemmingJaKnop"); pg.wait_for_timeout(600)
+        bd = pg.evaluate("""() => { const h = document.querySelector('#toestemmingInhoud h1');
+          return { tekst: h.textContent, boven: Math.round(h.getBoundingClientRect().top),
+                   kop: Math.round(document.querySelector('header').getBoundingClientRect().bottom) }; }""")
+        check("goedkeuringspagina: 'Toestemming geven' is de hoofdknop, 'Weigeren' de tweede knop",
+              soorten == ["btn btn-primary", "btn btn-ghost"], json.dumps(soorten))
+        check("na 'Toestemming geven' staat 'Bedankt!' onder de kop in beeld, niet erachter",
+              bd["tekst"] == "Bedankt!" and bd["boven"] >= bd["kop"], json.dumps(bd))
+        check("bevindingen 27-09-2026: geen paginafouten", not f4, "; ".join(f4)[:300])
+        c2.close()
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
