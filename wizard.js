@@ -862,28 +862,54 @@ async function submitProfile() {
 // bij het bewerken van een profiel wordt profile_color niet meer overschreven.
 const DEFAULT_PROFILE_COLOR = '#f5c518';
 
-let state = {
-  currentStep: 0,
-  fname: '', lname: '', birth_date: '', city: '', zip: '', bio: '',
-  username: '',
-  citySource: 'pdok',
-  regEmail: '', regPassword: '',
-  instruments: [],
-  instrumentLevels: {}, // TT-51 (12-08-2026): instrument (string) -> niveau 1-5
-  genres: [],
-  songs: [],
-  repertoireType: '', // TT-52 (12-08-2026): covers/eigen/beide, optioneel, per profiel
-  goal: '',
-  rehearsalFrequency: '',
-  musicalAmbition: '',
-  avatarUrl: null,
-  avatarFile: null,
-  avatarPath: null,
-  ouderRoute: false, // TT-42: true zolang 13-15 wacht op de klik van zijn ouder
-  mediaFiles: [],
-  mediaLinks: [],
-  onboarding: false // true zolang het account al bestaat maar het profiel nog niet is afgerond (TT-09)
-};
+// TT-352 (27-09-2026): één bron voor een lege wizard, bij het laden én bij
+// uitloggen. Tot die dag stond een tweede kopie van dit object in
+// onUserLoggedOut() (core.js); die liep al achter (ouderRoute ontbrak).
+function legeWizardState() {
+  return {
+    currentStep: 0,
+    fname: '', lname: '', birth_date: '', city: '', zip: '', bio: '',
+    username: '',
+    citySource: 'pdok',
+    regEmail: '', regPassword: '',
+    instruments: [],
+    instrumentLevels: {}, // TT-51 (12-08-2026): instrument (string) -> niveau 1-5
+    genres: [],
+    songs: [],
+    repertoireType: '', // TT-52 (12-08-2026): covers/eigen/beide, optioneel, per profiel
+    goal: '',
+    rehearsalFrequency: '',
+    musicalAmbition: '',
+    avatarUrl: null,
+    avatarFile: null,
+    avatarPath: null,
+    ouderRoute: false, // TT-42: true zolang 13-15 wacht op de klik van zijn ouder
+    mediaFiles: [],
+    mediaLinks: [],
+    onboarding: false // true zolang het account al bestaat maar het profiel nog niet is afgerond (TT-09)
+  };
+}
+let state = legeWizardState();
+
+// TT-352 (27-09-2026): na uitloggen stonden het e-mailadres en het wachtwoord
+// van de vorige registratie nog in de wizard. nextStep() leest de velden, niet
+// state. Zo kwam de volgende persoon op een gedeeld toestel met "Verder" in
+// het account van de vorige, zonder wachtwoord. Deze functie maakt state én
+// elk veld leeg, en zet de wizard terug op stap 1.
+function wizardLeegmaken() {
+  state = legeWizardState();
+  postcodeResolved = false;
+  const view = document.getElementById('view-register');
+  if (!view) return;
+  view.querySelectorAll('input, textarea').forEach(el => {
+    if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+    else if (!['button', 'submit', 'hidden'].includes(el.type)) el.value = '';
+  });
+  clearFieldErrors(view);
+  populateWizardFieldsFromState();
+  updateSubmitProfileState();
+  goTo(0);
+}
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 

@@ -477,8 +477,6 @@ function onUserLoggedOut() {
   hasOwnProfile = false;
   wisBlokkades(); // TT-06: de blokkades van de vorige gebruiker mogen niet blijven staan
   wisBewaardeZoek(); // TT-295: idem voor de bewaarde zoekopdracht
-  const consentBox = document.getElementById('consentCheckbox');
-  if (consentBox) { consentBox.checked = false; updateSubmitProfileState(); }
   // Beveiligingsfix: een editeer-sessie (via "Profiel bewerken") mag nooit
   // blijven bestaan na uitloggen — anders kan een uitgelogde bezoeker via de
   // "Verder bewerken"-balk alsnog bij de laatst bewerkte profielgegevens.
@@ -488,29 +486,9 @@ function onUserLoggedOut() {
   usernameGateMid = null;
   postcodeFailStreak = 0;
   postcodeManualMode = false;
-  const cityFieldReset = document.getElementById('city');
-  if (cityFieldReset) { cityFieldReset.readOnly = true; cityFieldReset.style.cursor = 'not-allowed'; cityFieldReset.style.opacity = '0.85'; }
-  state = {
-    currentStep: 0,
-    fname: '', lname: '', birth_date: '', city: '', zip: '', bio: '',
-    username: '',
-    citySource: 'pdok',
-    regEmail: '', regPassword: '',
-    instruments: [],
-    instrumentLevels: {},
-    genres: [],
-    songs: [],
-    repertoireType: '', // TT-52 (12-08-2026): covers/eigen/beide, optioneel, per profiel
-    goal: '',
-    rehearsalFrequency: '',
-    musicalAmbition: '',
-    avatarUrl: null,
-    avatarFile: null,
-    avatarPath: null,
-    mediaFiles: [],
-    mediaLinks: [],
-    onboarding: false
-  };
+  // TT-352: state én elk veld van de wizard leeg, ook het vinkje, de
+  // plaats en het wachtwoord.
+  wizardLeegmaken();
   const banner = document.getElementById('editModeBanner');
   if (banner) banner.style.display = 'none';
   ['unreadBadge', 'unreadBadgeBottom'].forEach(id => {
