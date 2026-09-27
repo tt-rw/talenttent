@@ -4581,6 +4581,65 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-336: de teksten zeggen 'e-mailadres', nergens los 'adres'", not los, str(los)[:300])
         check("TT-336: geen paginafouten in blok 43", not alle_fouten, "; ".join(alle_fouten)[:300])
 
+        print("\nBlok 44 — na uitloggen is de wizard leeg (TT-352)")
+        # Ronald, 27-09-2026: "als ik op nieuw profiel aanmaken klik dan kom ik
+        # terug in het profiel van uke." nextStep() leest de velden, niet state.
+        # Bleven e-mailadres en wachtwoord staan, dan logde "Verder" de volgende
+        # persoon in op het account van de vorige.
+        c, pg, f = bevestig_pagina("", "")
+        uit = pg.evaluate("""async () => {
+          showView('register');
+          const zet = (id, w) => { document.getElementById(id).value = w; };
+          zet('fname', 'Uke'); zet('lname', 'Proef'); zet('birth_date', '01-01-2000');
+          zet('zip', '2497AB'); zet('city', 'Den Haag'); zet('bio', 'Ik speel ukelele.');
+          zet('username', 'uke'); zet('regEmail', 'uke@proton.me'); zet('regPassword', 'geheim123');
+          zet('artistSearch', 'Queen'); zet('trackSearch', 'Bohemian');
+          document.getElementById('consentCheckbox').checked = true;
+          Object.assign(state, { fname: 'Uke', regEmail: 'uke@proton.me', regPassword: 'geheim123',
+            instruments: ['Ukelele'], genres: ['Pop'], goal: 'band',
+            songs: [{ title: 'Bohemian Rhapsody', artist: 'Queen', level: 2 }],
+            mediaLinks: [{ url: 'https://youtu.be/x' }] });
+          populateWizardFieldsFromState();
+          setFieldError(document.getElementById('zip'), 'Proef');
+          goTo(2);
+          onUserLoggedOut();
+          showView('register');
+          await new Promise(r => setTimeout(r, 200));
+          const v = document.getElementById('view-register');
+          const gevuld = [...v.querySelectorAll('input, textarea')]
+            .filter(el => el.type === 'checkbox' ? el.checked : el.value !== '')
+            .map(el => el.id || el.type);
+          const panelen = [...v.querySelectorAll('.panel')];
+          return {
+            gevuld,
+            stateGevuld: ['fname', 'regEmail', 'regPassword', 'goal'].filter(k => state[k]),
+            lijsten: ['instruments', 'genres', 'songs', 'mediaLinks', 'mediaFiles'].filter(k => state[k].length),
+            stap: panelen.findIndex(p => p.classList.contains('active')),
+            veldfouten: v.querySelectorAll('.field-error').length,
+            songs: document.getElementById('songsList').children.length,
+            instrumentBadges: document.getElementById('instrumentBadgeRow').children.length,
+            knop: document.getElementById('submitProfileBtn').disabled
+          };
+        }""")
+        check("TT-352: na uitloggen staat er niets meer in de velden van de wizard",
+              uit["gevuld"] == [], json.dumps(uit))
+        check("TT-352: na uitloggen is state leeg",
+              uit["stateGevuld"] == [] and uit["lijsten"] == [], json.dumps(uit))
+        check("TT-352: na uitloggen begint de wizard weer bij stap 1, zonder veldfouten",
+              uit["stap"] == 0 and uit["veldfouten"] == 0, json.dumps(uit))
+        check("TT-352: na uitloggen geen nummers of instrumenten van de vorige, vinkje uit",
+              uit["songs"] == 0 and uit["instrumentBadges"] == 0 and uit["knop"] is True,
+              json.dumps(uit))
+        check("TT-352: geen paginafouten in blok 44", not f, "; ".join(f)[:300])
+        c.close()
+        # Eén bron voor een lege wizard: state staat niet meer los uitgeschreven
+        # in core.js. Die kopie liep al achter (ouderRoute ontbrak).
+        js = "".join(open(os.path.join(ROOT, n), encoding="utf-8").read()
+                     for n in ("core.js", "wizard.js"))
+        check("TT-352: een lege wizard staat op één plek in de code",
+              js.count("regEmail: '', regPassword: ''") == 1,
+              str(js.count("regEmail: '', regPassword: ''")))
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
