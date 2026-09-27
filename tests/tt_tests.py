@@ -2513,7 +2513,7 @@ def blok_browser():
           const h = document.getElementById('igHuidigWachtwoord');
           const p1 = document.getElementById('igNieuwWachtwoord1');
           const p2 = document.getElementById('igNieuwWachtwoord2');
-          const fout = (el) => { const p = el.parentNode.querySelector('.field-msg');
+          const fout = (el) => { const p = el.closest('.field').querySelector('.field-msg');
             return p ? p.textContent : null; };
           const wachtwoordCalls = () => window.TT_STUB.calls
             .filter(c => c.name === 'updateUser' && c.attrs && c.attrs.password).length;
@@ -4639,6 +4639,86 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-352: een lege wizard staat op één plek in de code",
               js.count("regEmail: '', regPassword: ''") == 1,
               str(js.count("regEmail: '', regPassword: ''")))
+
+        print("\nBlok 45 — wachtwoordvelden: Toon, autocomplete, oud wachtwoord (TT-353/354/355)")
+        # Ronald, 27-09-2026 (TT-344, laag 2): zijn oude wachtwoord gaf "Er ging
+        # iets mis"; "Nieuw wachtwoord" had geen knop Toon; de browser vulde een
+        # bewaard wachtwoord in bij "Wachtwoord herhalen". Supabase antwoordt
+        # 422, code same_password — gemeten in de console op talenttent.org.
+        html45 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        wwvelden = re.findall(r'<input[^>]*type="password"[^>]*>', html45)
+        zonder_toon, zonder_ac = [], []
+        for veld in wwvelden:
+            vid = re.search(r'id="([^"]+)"', veld).group(1)
+            if not re.search(r"togglePassword\('" + re.escape(vid) + r"', this\)", html45):
+                zonder_toon.append(vid)
+            if not re.search(r'autocomplete="(new|current)-password"', veld):
+                zonder_ac.append(vid)
+        check("TT-354: elk wachtwoordveld heeft een knop Toon", wwvelden and not zonder_toon,
+              str(zonder_toon))
+        check("TT-355: elk wachtwoordveld zegt de browser of het nieuw of huidig is",
+              wwvelden and not zonder_ac, str(zonder_ac))
+        check("TT-355: de twee velden van 'Nieuw wachtwoord' zijn new-password",
+              all(re.search(r'id="' + i + r'"[^>]*autocomplete="new-password"', html45)
+                  for i in ("resetPassword1", "resetPassword2")), "")
+
+        c, pg, f = bevestig_pagina("", INGELOGD)
+        uit = pg.evaluate("""async () => {
+          const fout = (el) => { const p = el.closest('.field').querySelector('.field-msg');
+            return p ? p.textContent : null; };
+          const toast = () => document.getElementById('appToast').classList.contains('visible');
+          const wwCalls = () => window.TT_STUB.calls
+            .filter(c => c.name === 'updateUser' && c.attrs && c.attrs.password).length;
+          const OUD = { code: 'same_password', status: 422,
+                        message: 'New password should be different from the old password.' };
+          const r = {};
+
+          showView('reset');
+          const r1 = document.getElementById('resetPassword1');
+          const r2 = document.getElementById('resetPassword2');
+          const knop = r1.closest('.password-wrap')?.querySelector('.password-toggle');
+          if (knop) { knop.click(); r.toonType = r1.type; r.toonTekst = knop.textContent;
+                      knop.click(); r.terugType = r1.type; }
+          window.TT_STUB.updateUserError = OUD;
+          r1.value = 'oudgeheim1'; r2.value = 'oudgeheim1';
+          await saveNewPassword();
+          r.reset = fout(r1); r.resetToast = toast(); r.resetRij2 = fout(r2);
+          window.TT_STUB.updateUserError = null;
+          document.getElementById('appToast').classList.remove('visible');
+
+          openInloggegevens();
+          const h = document.getElementById('igHuidigWachtwoord');
+          const p1 = document.getElementById('igNieuwWachtwoord1');
+          const p2 = document.getElementById('igNieuwWachtwoord2');
+          const voor = wwCalls();
+          h.value = 'zelfde123'; p1.value = 'zelfde123'; p2.value = 'zelfde123';
+          await wijzigWachtwoord();
+          r.igGelijk = fout(p1); r.igGelijkCalls = wwCalls() - voor;
+
+          window.TT_STUB.updateUserError = OUD;
+          h.value = 'anders123'; p1.value = 'nieuwgeheim1'; p2.value = 'nieuwgeheim1';
+          await wijzigWachtwoord();
+          r.igServer = fout(p1); r.igToast = toast();
+          window.TT_STUB.updateUserError = null;
+          r.vertaling = friendlyErrorMessage(OUD);
+          return r;
+        }""")
+        check("TT-354: Toon maakt 'Nieuw wachtwoord' leesbaar en weer verborgen",
+              uit.get("toonType") == "text" and uit.get("toonTekst") == "Verberg"
+              and uit.get("terugType") == "password", json.dumps(uit))
+        check("TT-353: het oude wachtwoord kiezen geeft een melding bij 'Nieuw wachtwoord', geen toast",
+              uit["reset"] and "ander wachtwoord" in uit["reset"] and not uit["resetToast"]
+              and not uit["resetRij2"], json.dumps(uit))
+        check("TT-353: in Instellingen houdt nieuw = huidig de wijziging tegen, bij het nieuwe veld",
+              uit["igGelijk"] and "ander wachtwoord" in uit["igGelijk"] and uit["igGelijkCalls"] == 0,
+              json.dumps(uit))
+        check("TT-353: weigert Supabase het oude wachtwoord in Instellingen, dan ook bij het veld",
+              uit["igServer"] and "ander wachtwoord" in uit["igServer"] and not uit["igToast"],
+              json.dumps(uit))
+        check("TT-353: friendlyErrorMessage zegt nooit meer 'Er ging iets mis' bij same_password",
+              "ander wachtwoord" in uit["vertaling"], uit["vertaling"])
+        check("TT-353/354/355: geen paginafouten in blok 45", not f, "; ".join(f)[:300])
+        c.close()
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
