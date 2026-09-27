@@ -1,6 +1,67 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 27-09-2026 (TT-65) — **Automatische back-up gebouwd en
+**Laatste update:** 27-09-2026 (TT-65, proefherstel) — **Proefherstel
+geslaagd. De back-up van vannacht staat volledig terug in een tijdelijk
+Supabase-project. TT-65 is af; drie opruimhandelingen staan nog bij Ronald.**
+
+- **Werkwijze.** Tijdelijk project `herstelproef` (Pro-organisatie, Micro,
+  London). Zes `HERSTEL_`-geheimen in GitHub, een B2-sleutel "Read Only".
+  Daarna de workflow "Herstel": eerst `database`, dan `bestanden`.
+- **Geverifieerd, live database en herstelproef naast elkaar gemeten** (één
+  leesvraag in de SQL-editor van beide): muzikanten 15, accounts 33, bands 3,
+  bandleden 4, berichten 36, media 16, nummers 23, bestanden in de opslag 23,
+  functies in `public` 59, RLS-regels 47, triggers 14. Alles gelijk. Een
+  profielfoto laadt vanuit de opslag van herstelproef.
+- **Aanname:** inloggen werkt na herstel, want `auth.users` komt mee,
+  inclusief de wachtwoorden. Niet echt getest: de app praat alleen met de live
+  database.
+- **Drie fouten gevonden en opgelost** — precies waarvoor een proefherstel
+  dient:
+  1. Het eerste wachtwoord in `HERSTEL_DB_URL` klopte niet ("password
+     authentication failed"). Wachtwoord van herstelproef opnieuw gezet; de
+     regel opnieuw opgebouwd.
+  2. **Fout in `herstel.py`.** De export bevat
+     `ALTER ROLE "supabase_admin" SET "statement_timeout" TO '0';` en drie
+     zulke regels voor `anon`, `authenticated` en `authenticator`. In een nieuw
+     project mag postgres die vaste rollen niet wijzigen: "supabase_admin is a
+     reserved role, only superusers can modify it". `herstel.py` slaat zulke
+     regels nu over en zet ze in het verslag. **Geverifieerd:** herstelproef
+     had voor alle vier al dezelfde waarden (3s, 8s, 8s).
+     *Rechtgezet in dezelfde sessie:* de eerste verbetering haalde alleen
+     `GRANTED BY "..."` weg. Dat was een aanname van Claude over de foute
+     regel, en die klopte niet. Waaruit blijkt: de tweede run stopte op
+     dezelfde regel 18, nu met de regel erbij in het verslag. Het weghalen van
+     `GRANTED BY` is gebleven: de export bevat er één.
+  3. **`herstel.py` toont nu de regel waarop psql stopt**, alleen uit
+     `roles.sql` of `schema.sql`. Nooit uit `data.sql`: daar staan gegevens
+     van gebruikers.
+- **Waarom de toetsen dit niet vingen:** de toetsdatabase draait als
+  beheerder en kent de vaste rollen van Supabase niet. Nieuwe toets 19 bootst
+  de echte regels na en zakt zonder de verbetering. **26 van 26 toetsen
+  geslaagd.**
+- **Opgeruimd en geverifieerd:** de zes `HERSTEL_`-geheimen zijn weg uit
+  GitHub; het project herstelproef is gewist. Door Ronald gedaan, niet door
+  Claude te meten: de B2-sleutel `herstelproef-lezen` gewist.
+- **Nog open, bij Ronald (uit de vorige update):** (1) de sleutel in Proton
+  Pass zetten; daarna wist Claude
+  `_niet-uploaden-GEHEIM-back-upsleutel-27-09-2026.txt`; (2) in Backblaze de
+  oude sleutel `nachtelijke-backup` (Write Only) wissen; (3) in de SQL-editor
+  van Supabase de opgeslagen query met het wachtwoord wissen. Plus: het
+  wachtwoord van herstelproef uit Proton Pass wissen.
+- **Gewijzigd in `tt-rw/talenttent-backup`:** `herstel.py`,
+  `tests/test_backup.py`, `CHECKSUMS.txt` (door Ronald geüpload en
+  nagemeten), en `README.md` (draaiboek: de vaste rollen, en de uitkomst van
+  dit proefherstel).
+
+**Stand van de P0's.** Drie P0-bouwtickets staan open: TT-325 (ingevoerd;
+wacht op TT-323) · TT-329 · TT-352 (wacht op laag 2). Daarnaast de controle
+TT-323, en TT-358 als advies P0.
+
+**Gewijzigd:** `actielijst.md`, `CHECKSUMS.txt`. Geen app-code.
+
+---
+
+**Vorige update:** 27-09-2026 (TT-65) — **Automatische back-up gebouwd en
 live. Eerste run geslaagd: database en 23 bestanden (202 MB) versleuteld in
 Backblaze B2. Nog open: proefherstel, sleutel in Proton Pass, opruimen.**
 
@@ -6716,6 +6777,13 @@ Ticketnummers zijn definitief toegekend en niet te wijzigen (ze staan als zodani
 
 **Aanvulling 25-09-2026:** daarnaast staat TT-323 open, een controle en geen bouwticket: elke mail van de app één keer echt ontvangen vóór livegang.
 
+**Stand van de P0's, bijgewerkt 27-09-2026 (TT-65, proefherstel).** **Drie
+P0-bouwtickets staan open:** TT-325 (teksten ingevoerd; wacht op ontvangst in
+TT-323) · TT-329 · TT-352 (gebouwd en ingevoerd; wacht op laag 2). Daarnaast
+de controle TT-323, en TT-358 als advies P0.
+
+*(Achterhaald 27-09-2026 (TT-65, proefherstel): TT-65 is af. Zie de stand
+hierboven.)*
 **Stand van de P0's, bijgewerkt 27-09-2026 (TT-65).** **Vier
 P0-bouwtickets staan open:** TT-65 (draait elke nacht; wacht op het
 proefherstel) · TT-325 (teksten ingevoerd; wacht op ontvangst in TT-323) ·
@@ -6815,7 +6883,7 @@ eerste tabel altijd gelijk is aan de stand.
 |---|---|---|
 | **TT-358** | De privacyverklaring noemt de back-up niet | **Nieuw, 27-09-2026 (TT-65). Advies P0, niveau door Ronald te bevestigen.** Sinds TT-65 staan gegevens van gebruikers ook in back-ups: 7 dagen bij Supabase, 30 dagen versleuteld bij Backblaze (EU Central, Amsterdam). Wie zijn account wist, staat dus nog tot 30 dagen in een back-up; Object Lock maakt eerder wissen onmogelijk. De privacyverklaring moet de bewaartermijn en Backblaze als opslag noemen. **Aanname:** een verwerkersovereenkomst met Backblaze is nodig, ook al kan Backblaze de inhoud niet lezen — versleutelde persoonsgegevens blijven persoonsgegevens. Claude is geen jurist. **Toets P0:** kan de app live zonder dat een gebruiker onveilig zit? Juridisch niet: de verklaring zou een bewaartermijn verzwijgen. **Vóór lancering** |
 | **TT-352** | Na uitloggen staan e-mailadres en wachtwoord van de vorige registratie nog in de wizard | **Gebouwd en getest 27-09-2026 (TT-352): `wizardLeegmaken()` bij uitloggen, testset blok 44 — zie Laatste update. Ingevoerd in beide repo's 27-09-2026 (geverifieerd: `core.js`, `wizard.js`, `index.html` en `tests/tt_tests.py` gelijk aan de levering). Wacht op laag 2. Niveau P0, besluit Ronald 27-09-2026.** **Nieuw, 27-09-2026 (TT-336, laag 2), gezien door Ronald: "als ik op nieuw profiel aanmaken klik dan kom ik terug in het profiel van uke." Advies P0, niveau door Ronald te bevestigen.** **Toets P0:** onveilig. Op een gedeeld toestel kan de volgende persoon zonder wachtwoord in het account van de vorige: hij tikt "Profiel aanmaken", ziet de velden al gevuld, drukt "Verder", en `createAccountAndProfile()` logt in met het bewaarde wachtwoord ("Je had hier al een profiel — we gaan gewoon verder"). **Geverifieerd op talenttent.org:** na uitloggen bevatten `regEmail`, `regPassword`, `fname` en `state` nog de gegevens van de vorige registratie; pas na het herladen van de pagina zijn ze leeg. `grep` vindt nergens een functie die de wizard leegmaakt bij uitloggen of na afronden. Bestond al vóór TT-336. **Voorstel:** bij uitloggen én na het afronden van de wizard `state` terugzetten en alle wizardvelden leegmaken, met een controle in de testset die eerst zakt. Eigen sessie. |
-| **TT-65** | Back-up en herstel uitzoeken | **Gebouwd en live 27-09-2026 — zie Laatste update.** Pro-abonnement (7 dagen bij Supabase) plus elke nacht een versleutelde kopie van database en bestanden in Backblaze B2 (30 dagen, Object Lock), via de privé-repo `tt-rw/talenttent-backup`. Eerste run geslaagd. **Open:** proefherstel, sleutel in Proton Pass, opruimen. *Oude stand:* Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers, zodra die er zijn. Interim-stap: zie "Direct te doen" hierboven. **Vóór lancering, niet acuut nu (23-08-2026) — de site heeft nog alleen testprofielen, zie afspraak bovenaan deze tabel** |
+| **TT-65** | Back-up en herstel uitzoeken | **Af 27-09-2026: proefherstel geslaagd — zie de update "27-09-2026 (TT-65, proefherstel)".** Telt niet meer mee in de stand. **Rest bij Ronald:** sleutel in Proton Pass, oude B2-sleutel `nachtelijke-backup` wissen, opgeslagen query met het wachtwoord wissen. *Stand daarvoor:* Gebouwd en live 27-09-2026. Pro-abonnement (7 dagen bij Supabase) plus elke nacht een versleutelde kopie van database en bestanden in Backblaze B2 (30 dagen, Object Lock), via de privé-repo `tt-rw/talenttent-backup`. Eerste run geslaagd. *Oude stand:* Status nu onbekend. Raakt Voorwaarde 0 (consistente betrouwbaarheid) rechtstreeks — geen back-upstrategie is een bestaansrisico voor de data van alle gebruikers, zodra die er zijn. Interim-stap: zie "Direct te doen" hierboven. **Vóór lancering, niet acuut nu (23-08-2026) — de site heeft nog alleen testprofielen, zie afspraak bovenaan deze tabel** |
 | **TT-323** | Elke mail die de app verstuurt één keer echt ontvangen, vóór livegang | **Derde ronde 27-09-2026:** alle zeven mails met de nieuwe afsluiter ontvangen en door Ronald goedgekeurd, op twee punten na: de kleine regel in "Bevestig je e-mailadres" (weg, ingevoerd en nagemeten) en een ontbrekende punt in de welkomstmail (TT-356). Open tot TT-356 is opgelost en die twee mails opnieuw zijn ontvangen — zie Laatste update. **Tussenstand 26-09-2026 (vervolg):** alle acht mails aangekomen; DKIM, SPF en DMARC slagen. De knop in "Kies een nieuw wachtwoord" kwam verkeerd uit (TT-344). *(Bijgewerkt 27-09-2026: TT-344 is afgehandeld; de knop opent nu het scherm "Nieuw wachtwoord".)* Open tot de bevindingen zijn opgelost en de gewijzigde mails opnieuw zijn ontvangen — zie Laatste update. **Nieuw, 25-09-2026, op verzoek van Ronald.** Geen bouwticket: een controle. **Toets P0:** kan de app live zonder dat een gebruiker vastloopt? Nee — komt de mail van "wachtwoord vergeten" niet aan, dan is iemand zijn account kwijt. **De mails, geverifieerd uit de code:** (1) wachtwoord vergeten (`auth.js`, Supabase); (2) e-mailadres wijzigen (`auth.js`, Supabase, TT-299); (3) de mail aan de ouder (`ouder.js`, Edge Function `ouder-toestemming`, TT-42); (4) de herinnering aan de ouder na zeven dagen (dagelijkse taak `tt-ouder-onderhoud`); (5) de mail aan het kind na goedkeuring (TT-42); (6) de digest met nieuwe berichten en matches (Edge Function `send-digest`, TT-01); (7) de meldmail aan privacy@ (Edge Function `melding-privacy`, TT-45). Mailbevestiging bij registratie staat uit, dus die hoort er niet bij. **Per mail nalopen:** komt aan, niet in de spambox; afzender en onderwerp kloppen; elke knop en link opent de juiste pagina op talenttent.org; tekst past bij de doelgroep; leesbaar op een telefoon. **Hoort erbij:** SPF en DKIM voor `talenttent.org` controleren — staat bij TT-298 als "nog niet gecontroleerd". Aantoonbaar aangekomen: (3) en (5) op 25-09-2026 (laag 2 van TT-42), (6) op 20-09-2026 (TT-01) en (7) op 25-09-2026 (proefmelding TT-45). *Gecorrigeerd 25-09-2026 (vervolg 6): hier stond "zes mails" en "Alleen (6) is aantoonbaar aangekomen". Waaruit blijkt dat dat onjuist was: de meldmail kwam dezelfde dag erbij (TT-45, vervolg), en de laag-2-verslagen van TT-42 en TT-45 hierboven melden dat (3), (5) en (7) aankwamen.* **Let op:** gaan de mails over op het nieuwe template (TT-325), dan telt deze controle opnieuw voor alle zeven **Tussenstand 26-09-2026:** gestart en door Ronald gestopt; zie Laatste update bovenaan. Aangekomen met het nieuwe template: bevestiging e-mailadres, aanvraag aan de ouder, herinnering, toestemming aan het kind. Nog open: wachtwoord vergeten (verstuurd, niet beoordeeld), digest, meldmail, DKIM. **Aanvulling 26-09-2026:** mail 8, de welkomstmail (TT-72, onderwerp "Je bent binnen, {voornaam}! Welkom in de Tent"), hoort erbij zodra hij in Supabase staat. |
 | **TT-325** | Eén mailtemplate voor alle zeven mails, met nieuwe teksten | **Gebouwd 25-09-2026 (vervolg 14), ingevoerd door Ronald (vervolg 15). Op 26-09-2026 (TT-323, vervolg) kwamen alle acht mails aan op het nieuwe template. Teksten van Ronald ingevoerd en nagemeten 27-09-2026 (TT-325, teksten); wacht op ontvangst per mail in TT-323.** *(Rechtgezet 27-09-2026 (TT-65): hier stond "Wacht op de lijst van Ronald met teksten die anders moeten". Waaruit blijkt: de update "27-09-2026 (TT-325, teksten)".)* *(Rechtgezet 26-09-2026 (TT-323, vervolg): hier stond als status alleen "Nieuw"; zie de updates van 25-09-2026, vervolg 14 en 15.)* **Nieuw, 25-09-2026 (vervolg 5), verzoek Ronald; verbreed in vervolg 6.** Eerst alleen de twee mails van de ouderroute. Op 25-09-2026 (vervolg 6) vroeg Ronald: welke mails verstuurt de app, een voorbeeldtekst per mail, en één template. **Besluiten Ronald, 25-09-2026:** (a) licht thema voor elke mail, geen donkere variant; (b) het woordmerk als afbeelding; (c) aanhef "Hoi <voornaam>," voor een muzikant en "Beste ouder/verzorger van <voornaam>," voor een ouder. **Besluiten Ronald, 25-09-2026 (vervolg 7):** (d) de zes mails met één handeling of mededeling krijgen opmaak A, "Brief": wit, het woordmerk als klein zwart stempel ("voor de ouder is A de beste; beter een rustig voorkomen"); (e) de digest krijgt opmaak C, "Kernzin": een donkere kop met de samenvatting ("jongeren scannen eerder dan lezen"); (f) in de digest géén kaart per afzender, en de knop "Bekijk je berichten" staat onder de donkere kop, niet erin; (g) de tekst van de mails wil Ronald zelf kunnen aanpassen — **afgesplitst naar TT-329** (besluit Ronald, 25-09-2026, vervolg 8). TT-325 gaat alleen nog over de opmaak en de teksten zoals ze nu in de code staan. **Nog steeds voorstel van Claude, nog niet bevestigd:** de overige regels van het template (maten, knopvorm, voet, afzender, woordkeus "aanvraag") en alle voorbeeldteksten. Staan in `_niet-uploaden-mails-en-template-25-09-2026.html`; de drie opmaakvoorstellen in `_niet-uploaden-mail-opmaak-drie-voorstellen-25-09-2026.html`; de digest in vorm C (versie 3) in `_niet-uploaden-mail-digest-vorm-c-25-09-2026.html`. Voor de afzenders in de digest bleef "wie je een bericht stuurde, staat niet ook bij de matches" staan (voorstel van Claude). **Nu drie opmaken naast elkaar:** `ouder-toestemming` (licht, tabellen, Georgia-woordmerk), `send-digest` (licht of donker, `flex`, Alfa Slab-woordmerk, geen tekstversie, afzender zonder naam) en `melding-privacy` (kale tekst). Geen enkele gebruikt het woordmerk van TT-318. **Onbekend:** de huidige tekst van mail 1 en 2 in het Supabase-dashboard. **Invoeren, na akkoord:** `mail-woordmerk.png` naar de repo; mail 1 en 2 in het dashboard; het template-blok in de drie Edge Functions; daarna TT-327 en TT-323. **Niveau gewijzigd 25-09-2026 (vervolg 9), besluit Ronald: "de emails moeten goed zijn voor de livegang. dus voor mij is het P0."** Was P2. **Toets P0:** kan de app live zonder dat een gebruiker vastloopt of onveilig zit? Volgens Ronald niet: een ouder die een mail niet vertrouwt, geeft geen toestemming, en dan komt een 13- tot 15-jarige er niet in **Besluiten Ronald, 25-09-2026 (vervolg 13)**, op het voorbeeld `_niet-uploaden-TT-325-zo-worden-de-mails-25-09-2026.html`: (1) lettergrootte zoals in de app — "prima voor nu"; (2) de gouden knop zoals in de app; (3) de voet wordt "Talent Tent · talenttent.org" — "Talent zoekt talent" gaat eruit; (4) afzender "Talent Tent", en **"The" gaat overal weg** ("gebruik in teksten desnoods 'de Talent Tent'"); (5) overal "aanvraag", nooit "verzoek"; (6) digest: het onderwerp zonder aantallen ("Je hebt nieuwe berichten en matches"), de donkere kop "prima voor nu", in de voet vervalt "Je krijgt deze mail … nieuw is." en komt "E-mailvoorkeuren pas je hier aan: Instellingen"; (7) wie je een bericht stuurde, staat óók in de lijst met matches ("misschien past Jesse iets aan in zijn profiel waar Sanne niets van weet"); (8) geen opmerking. Mail 2 eindigt met "Vroeg je dit niet? Dan hoef je niets te doen. Je e-mailadres blijft hetzelfde." **Teksten:** Ronald past alle teksten zelf aan in `_niet-uploaden-TT-325-mailteksten-25-09-2026.xlsx` (kolom "Nieuw"; besluiten 3 tot en met 6 staan daar al in). Daarna bouwt Claude. **Open vraag:** geldt "The weg" alleen voor de mails, of ook voor de app (titel, teksten, projectinstructies §9)? **Gebouwd 25-09-2026 (vervolg 14)** met de teksten uit het Excel-bestand; besluiten erbij: geen "Vragen? contact@" in de mail aan de ouder, en "hetzelfde toestel en dezelfde browser" in mail 5. **Invoeren, door Ronald:** (1) `mail-woordmerk.png` naar beide repo's, hoofdmap — de mails laden hem van talenttent.org; (2) in Supabase → Edge Functions de code van `ouder-toestemming`, `send-digest` en `melding-privacy` vervangen door de drie bestanden `_niet-uploaden-TT-325-edge-function-*.ts` en telkens Deploy; (3) in Supabase → Authentication → Emails bij "Reset Password" en "Change Email Address" het onderwerp en de HTML vervangen. **Onbekend:** of de drie Edge Functions in Supabase gelijk zijn aan de bestanden in de gedeelde map waarop dit is gebouwd (ouder-toestemming 22-09, send-digest v2 20-09, melding-privacy 25-09). Staat er in Supabase een nieuwere versie, dan eerst melden. **Ingevoerd door Ronald en nagemeten, 25-09-2026 (vervolg 15)**: de code in Supabase is gelijk aan de bestanden. **Daarna:** TT-323 voor alle zeven mails; TT-325 is af als die slaagt |
 | **TT-329** | Mailteksten zelf aanpassen, zonder code | **Nieuw, 25-09-2026 (vervolg 8), afgesplitst uit TT-325 op verzoek van Ronald: "de tekst wil ik zelf kunnen doen."** Geldt voor alle zeven mails. **Voorstel van Claude, nog niet bevestigd:** één rij per mail in een tabel in Supabase (onderwerp, voorbeeldtekst, alinea's, knoptekst), met invulplekken als {voornaam} en {link}; Ronald wijzigt ze in de Table Editor, de volgende mail gebruikt meteen de nieuwe tekst. Mail 1 en 2 komen uit het Supabase-dashboard; die kunnen alleen in dezelfde tabel als Supabase ze via een eigen functie laat versturen (**Aanname:** dat kan in dit project; eerst meten). **Volgorde:** ná TT-325. **Gevolg van het afsplitsen:** de Edge Functions gaan twee keer om in plaats van één keer. Om dat klein te houden, zet TT-325 de teksten per mail al bij elkaar in de code, in dezelfde vorm als de latere tabelrij. **Niveau gewijzigd 25-09-2026 (vervolg 9), besluit Ronald: "de emails moeten goed zijn voor de livegang. dus voor mij is het P0."** Was P3. **Toets P0:** Ronald wil de teksten vóór livegang zelf goed kunnen zetten, zonder een sessie per wijziging |
