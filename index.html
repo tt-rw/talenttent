@@ -2083,11 +2083,17 @@
       <div id="resetSuccess" class="auth-success"></div>
       <div class="field" style="margin-bottom:20px;">
         <label>Nieuw wachtwoord <span class="req">*</span></label>
-        <input type="password" id="resetPassword1" placeholder="Minimaal 8 tekens" onkeydown="submitOnEnter(event, saveNewPassword)">
+        <div class="password-wrap">
+          <input type="password" id="resetPassword1" placeholder="Minimaal 8 tekens" autocomplete="new-password" onkeydown="submitOnEnter(event, saveNewPassword)">
+          <button type="button" class="password-toggle" onclick="togglePassword('resetPassword1', this)" aria-label="Toon wachtwoord">Toon</button>
+        </div>
       </div>
       <div class="field" style="margin-bottom:20px;">
         <label>Wachtwoord herhalen <span class="req">*</span></label>
-        <input type="password" id="resetPassword2" placeholder="••••••••" onkeydown="submitOnEnter(event, saveNewPassword)">
+        <div class="password-wrap">
+          <input type="password" id="resetPassword2" placeholder="••••••••" autocomplete="new-password" onkeydown="submitOnEnter(event, saveNewPassword)">
+          <button type="button" class="password-toggle" onclick="togglePassword('resetPassword2', this)" aria-label="Toon wachtwoord">Toon</button>
+        </div>
       </div>
       <button class="btn btn-primary" style="width:100%;" onclick="saveNewPassword()">Wachtwoord opslaan →</button>
     </div>
@@ -2327,19 +2333,28 @@
       <div class="field-group single">
         <div class="field">
           <label>Huidig wachtwoord</label>
-          <input type="password" id="igHuidigWachtwoord" autocomplete="current-password" placeholder="••••••••">
+          <div class="password-wrap">
+            <input type="password" id="igHuidigWachtwoord" autocomplete="current-password" placeholder="••••••••">
+            <button type="button" class="password-toggle" onclick="togglePassword('igHuidigWachtwoord', this)" aria-label="Toon wachtwoord">Toon</button>
+          </div>
         </div>
       </div>
       <div class="field-group single">
         <div class="field">
           <label>Nieuw wachtwoord</label>
-          <input type="password" id="igNieuwWachtwoord1" autocomplete="new-password" placeholder="Minimaal 8 tekens">
+          <div class="password-wrap">
+            <input type="password" id="igNieuwWachtwoord1" autocomplete="new-password" placeholder="Minimaal 8 tekens">
+            <button type="button" class="password-toggle" onclick="togglePassword('igNieuwWachtwoord1', this)" aria-label="Toon wachtwoord">Toon</button>
+          </div>
         </div>
       </div>
       <div class="field-group single">
         <div class="field">
           <label>Wachtwoord herhalen</label>
-          <input type="password" id="igNieuwWachtwoord2" autocomplete="new-password" placeholder="••••••••" onkeydown="submitOnEnter(event, wijzigWachtwoord)">
+          <div class="password-wrap">
+            <input type="password" id="igNieuwWachtwoord2" autocomplete="new-password" placeholder="••••••••" onkeydown="submitOnEnter(event, wijzigWachtwoord)">
+            <button type="button" class="password-toggle" onclick="togglePassword('igNieuwWachtwoord2', this)" aria-label="Toon wachtwoord">Toon</button>
+          </div>
         </div>
       </div>
       <div class="btn-row">
@@ -2613,9 +2628,9 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20260927a"></script>
-<script src="utils.js?v=20260926u"></script>
+<script src="utils.js?v=20260927a"></script>
 <script src="veiligheid.js?v=20260924a"></script>
-<script src="auth.js?v=20260923a"></script>
+<script src="auth.js?v=20260927a"></script>
 <script src="postcode.js?v=20260926u"></script>
 <script src="wizard.js?v=20260927a"></script>
 <script src="ouder.js?v=20260926b"></script>

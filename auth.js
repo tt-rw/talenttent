@@ -331,7 +331,12 @@ async function saveNewPassword() {
   if (showFieldErrors(fouten)) return;
 
   const { error } = await db.auth.updateUser({ password: pw1 });
-  if (error) { showToast(friendlyErrorMessage(error)); return; }
+  if (error) {
+    // TT-353: het huidige wachtwoord opnieuw gekozen — dat hoort bij het veld.
+    if (isZelfdeWachtwoordFout(error)) showFieldErrors([[pw1El, friendlyErrorMessage(error)]]);
+    else showToast(friendlyErrorMessage(error));
+    return;
+  }
   suc.textContent = '✓ Wachtwoord opgeslagen!';
   suc.classList.add('visible');
   setTimeout(() => showView('myprofile'), 2000);
@@ -467,6 +472,9 @@ async function wijzigWachtwoord() {
   if (!huidig) fouten.push([huidigEl, 'Vul je huidige wachtwoord in']);
   if (!pw1) fouten.push([pw1El, 'Vul een nieuw wachtwoord in']);
   else if (pw1.length < 8) fouten.push([pw1El, 'Kies een wachtwoord van minimaal 8 tekens']);
+  // TT-353: het huidige wachtwoord staat in het veld erboven; dan hoeft
+  // Supabase het niet eerst te weigeren.
+  else if (huidig && pw1 === huidig) fouten.push([pw1El, TEKST_ZELFDE_WACHTWOORD]);
   if (!pw2) fouten.push([pw2El, 'Herhaal je nieuwe wachtwoord']);
   else if (pw1 && pw1 !== pw2) fouten.push([pw2El, 'Deze komt niet overeen met het wachtwoord hierboven']);
   if (showFieldErrors(fouten)) return;
@@ -489,6 +497,10 @@ async function wijzigWachtwoord() {
 
   const { error } = await db.auth.updateUser({ password: pw1 });
   if (error) {
+    if (isZelfdeWachtwoordFout(error)) {
+      showFieldErrors([[pw1El, friendlyErrorMessage(error)]]);
+      return;
+    }
     logCaught('wijzigWachtwoord', error);
     showToast('Wijzigen is niet gelukt: ' + friendlyErrorMessage(error));
     return;

@@ -52,9 +52,23 @@ function showToast(msg, duration) {
 // Vertaalt technische fouten (Supabase/netwerk) naar begrijpelijke NL-tekst.
 // Plezier-principe: foutmeldingen moeten vriendelijk zijn, geen technisch jargon.
 // De volledige technische fout blijft altijd gelogd voor debugging.
+// TT-353 (27-09-2026, Ronald): een nieuw wachtwoord gelijk aan het huidige gaf
+// "Er ging iets mis". Supabase antwoordt 422, code `same_password`, "New
+// password should be different from the old password" (gemeten in de console
+// op talenttent.org). Eén tekst voor "Nieuw wachtwoord" en voor Instellingen;
+// beide zetten hem bij het veld "Nieuw wachtwoord" (huisstijl §13.1).
+const TEKST_ZELFDE_WACHTWOORD = 'Kies een ander wachtwoord dan je huidige.';
+
+function isZelfdeWachtwoordFout(err) {
+  return !!err && (err.code === 'same_password'
+    || /different from the old password/i.test(err.message || ''));
+}
+
 function friendlyErrorMessage(err) {
   const msg = (err && err.message) ? err.message : String(err || '');
   console.error('Technische foutmelding:', msg);
+
+  if (isZelfdeWachtwoordFout(err)) return TEKST_ZELFDE_WACHTWOORD;
 
   if (/already registered|already exists/i.test(msg)) {
     return 'Er bestaat al een account met dit e-mailadres.';
