@@ -1,6 +1,47 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 27-09-2026 (TT-353/354/355) — **Gebouwd en getest: de
+**Laatste update:** 27-09-2026 (TT-325, teksten) — **Nieuwe mailteksten en een
+persoonlijke afsluiter gebouwd en getest. Wacht op Ronald: invoeren in
+Supabase, daarna nameten en een testmail.**
+
+- **Bron:** `_niet-uploaden-mailteksten-27-09-2026.xlsx`, kolom "Nieuw"
+  (Ronald). De kolom "Nu" is vooraf gemeten in Supabase zelf, via de
+  browserpane: de vijf Edge Functions en de twee e-mailsjablonen waren byte
+  voor byte gelijk aan de bestanden in de gedeelde map. Dat enkele wijzigingen
+  uit het vorige Excel-bestand niet in de mails stonden (melding Ronald), kwam
+  dus niet door een ander bestand in Supabase. **Onbekend:** de oorzaak.
+- **Gewijzigd:** mail 3, 4 en 5 (`ouder-toestemming`), mail 8 (`welkom`).
+  Elke regel uit "Nieuw" is nagelopen in de gebouwde mail: 0 fouten.
+  "muzkanten" is gecorrigeerd naar "muzikanten".
+- **Persoonlijke afsluiter — besluiten Ronald, 27-09-2026:** persoonlijke en
+  informatieve mails sluiten af met een groet en een fictieve naam: mail 1,
+  2, 3, 4, 5, 8 en 9. De digest (een eenvoudige update) en de interne meldmail
+  niet. Aan een ouder "Met vriendelijke groet,", aan een muzikant "Groetjes,";
+  daaronder "<naam> — Talent Tent". De naam wisselt bij elke verzending,
+  willekeurig uit Sara, Lucas, Tim en Lua (gemeten over 4.000 trekkingen:
+  alle vier rond 1.000). Mail 1 en 2 staan in Supabase zelf; daar kan de naam
+  niet wisselen. **Voorstel van Claude, nog niet bevestigd:** mail 1 Sara,
+  mail 2 Lucas.
+- **Invoeren, door Ronald:** in Supabase → Edge Functions de code van
+  `ouder-toestemming`, `welkom` en `email-bevestigen` vervangen door de drie
+  bestanden `_niet-uploaden-edge-function-*-27-09-2026.ts`, telkens Deploy; in
+  Authentication → Emails bij "Reset password" en "Change email address" de
+  HTML vervangen door de twee `_niet-uploaden-supabase-*-27-09-2026.html`.
+  Daarna meet Claude in Supabase na of de code gelijk is.
+- **Welkomstmail naar opmaak A — besluit Ronald, 27-09-2026:** "haal de
+  donkere kop weg en maak deze email consistent met de andere emails." De
+  kernzin "Je bent binnen! Welkom in de Tent!" vervalt: het onderwerp zegt
+  hetzelfde. De mail begint nu met "Hoi {voornaam}," zoals de andere brieven.
+  De donkere kop (opmaak C) blijft alleen voor de digest.
+  *(Rechtgezet: bij TT-72 stond "Besluiten Ronald 26-09-2026: opmaak C". De
+  opmaak kwam uit de kolom "Voorstel" van het Excel-bestand van 26-09; de
+  kolom "Nieuw" bleef leeg. Of Ronald dit toen zelf besloot, is onbekend.)*
+
+**Gewijzigd:** `actielijst.md`, `CHECKSUMS.txt`.
+
+---
+
+**Vorige update:** 27-09-2026 (TT-353/354/355) — **Gebouwd en getest: de
 wachtwoordvelden.** Wacht op de repo-bestanden in beide repo's en daarna laag 2.
 
 - **TT-353:** kies je je huidige wachtwoord opnieuw, dan staat bij "Nieuw
@@ -6853,7 +6894,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-68** | Toegankelijkheid | Aria-labels, contrast, tikdoelen. Ook bewust pas na P0. **Deelresultaat 10-08-2026:** bewegingsreductie is los opgelost als TT-83, de rest staat nog open. **Gemeten stand 10-08-2026 (tweede externe review):** 1× `aria-`, 0× `role=`, 0× `tabindex`, 133 inline `onclick`-handlers waarvan een deel op niet-focusbare divs/kaarten — met alleen een toetsenbord of een schermlezer is de app grotendeels onbruikbaar. Twee concrete eerste stappen, los uit te voeren: (1) klikbare kaarten `role="button"` + `tabindex="0"` geven, (2) modals `aria-modal="true"` + focus-trap. Geen blokkade voor lancering bij deze doelgroep, wel structurele schuld **Aangevuld 16-09-2026 (onderhoudsronde):** "Inloggen →" (landing, 76×16) en "Wachtwoord vergeten?" (inlogscherm, 123×14) zijn te klein als tikdoel |
 | — | Tekst "Over ons" verbeteren | Eerste versie, toon/kwaliteit nog te verfijnen |
 | — | Verzendende mailservice koppelen (Resend, voorgesteld 27-08-2026) | Voorwaarde voor TT-01-restpunt, TT-72 (bevestigingsmail bij registratie én accountverwijdering), en de TT-13-mail. Loopt via de eerste Edge Function (zie TT-01) — geen losse SMTP-opzet, de mailservice wordt vanuit die functie aangeroepen |
-| **TT-72** | Bevestigingsmail met bedankbericht bij registratie én accountverwijdering | **26-09-2026 (TT-323, vervolg):** de welkomstmail kwam aan bij een 14-jarige, na de goedkeuring en het kiezen van het wachtwoord (schermafdruk Ronald). **Nieuw, 09-08-2026 (Ronald), aangevuld zelfde dag.** Zodra er een e-mailaccount is: (1) welkomst-/bevestigingsmail na registratie, met bedankbericht, en (2) een bevestigingsmail bij accountverwijdering (TT-22) — ter bevestiging dat de verwijdering is doorgevoerd, met een bedankbericht voor de tijd op het platform. Vraagt uitgaand mailverkeer — dat kan niet via de ImprovMX-route besproken bij het e-mailadres (die is alleen ontvangen/doorsturen); hoort bij hetzelfde SMTP-koppelpunt hierboven. Let op bij (2): de mail moet ná de daadwerkelijke verwijdering nog een geldig adres kunnen bereiken, terwijl het account op dat moment al weg is — waarschijnlijk het e-mailadres apart vasthouden vóór `executeAccountDeletion()` de musicians-rij verwijdert **Deel 1 gebouwd 26-09-2026: de welkomstmail.** Edge Function `welkom` (bron `_niet-uploaden-TT-72-edge-function-welkom.ts`), aangeroepen door de trigger `tt_welkom_mailen` zodra `musicians.profile_complete` waar wordt; kolom `musicians.welkom_gemaild_op` voorkomt een tweede mail. Script `_niet-uploaden-TT-72-welkomstmail-26-09-2026.sql`, door Ronald te draaien. Teksten: `_niet-uploaden-welkomstmail-voorstel-26-09-2026.xlsx`. Besluiten Ronald 26-09-2026: opmaak C, knop naar Mijn profiel, ook voor 13 t/m 15, regel "Niet zelf aangemeld?" blijft tot TT-336 werkt. **Functie en script door Ronald in Supabase gezet, 26-09-2026.** **Nog open:** één keer echt ontvangen (TT-323), en deel 2 (mail bij accountverwijdering). |
+| **TT-72** | Bevestigingsmail met bedankbericht bij registratie én accountverwijdering | **26-09-2026 (TT-323, vervolg):** de welkomstmail kwam aan bij een 14-jarige, na de goedkeuring en het kiezen van het wachtwoord (schermafdruk Ronald). **Nieuw, 09-08-2026 (Ronald), aangevuld zelfde dag.** Zodra er een e-mailaccount is: (1) welkomst-/bevestigingsmail na registratie, met bedankbericht, en (2) een bevestigingsmail bij accountverwijdering (TT-22) — ter bevestiging dat de verwijdering is doorgevoerd, met een bedankbericht voor de tijd op het platform. Vraagt uitgaand mailverkeer — dat kan niet via de ImprovMX-route besproken bij het e-mailadres (die is alleen ontvangen/doorsturen); hoort bij hetzelfde SMTP-koppelpunt hierboven. Let op bij (2): de mail moet ná de daadwerkelijke verwijdering nog een geldig adres kunnen bereiken, terwijl het account op dat moment al weg is — waarschijnlijk het e-mailadres apart vasthouden vóór `executeAccountDeletion()` de musicians-rij verwijdert **Deel 1 gebouwd 26-09-2026: de welkomstmail.** Edge Function `welkom` (bron `_niet-uploaden-TT-72-edge-function-welkom.ts`), aangeroepen door de trigger `tt_welkom_mailen` zodra `musicians.profile_complete` waar wordt; kolom `musicians.welkom_gemaild_op` voorkomt een tweede mail. Script `_niet-uploaden-TT-72-welkomstmail-26-09-2026.sql`, door Ronald te draaien. Teksten: `_niet-uploaden-welkomstmail-voorstel-26-09-2026.xlsx`. **Opmaak A sinds 27-09-2026 (besluit Ronald); was opmaak C, voorstel van Claude — zie de update van 27-09-2026 (TT-325, teksten).** Besluiten Ronald 26-09-2026: knop naar Mijn profiel, ook voor 13 t/m 15, regel "Niet zelf aangemeld?" blijft tot TT-336 werkt. **Functie en script door Ronald in Supabase gezet, 26-09-2026.** **Nog open:** één keer echt ontvangen (TT-323), en deel 2 (mail bij accountverwijdering). |
 | **TT-108** | `hasOwnProfile` pas gezet ná een bezoek aan Zoeken | **Bleek al opgelost te zijn — actielijst was niet bijgewerkt.** Geverifieerd 27-08-2026: `onUserLoggedIn()` zet `hasOwnProfile` sinds 23-08-2026 al bij elke login, met een code-comment die de fix toelicht (dezelfde sessie als TT-133 t/m TT-137). Deze rij bleef abusievelijk als open staan. Zie Deel 3 |
 | **TT-111** | "Oprichter" → "Beheerder" | **Gebouwd 19-08-2026, zie Deel 3.** Ronalds besluit: één beheerder per band, geen meervoud — "anders wordt het rommelig". Alle zichtbare tekst aangepast via een nieuwe helper `roleLabel()`. Interne opslag (`band_members.role = 'Oprichter'`) bewust ongewijzigd — voorkomt een databasescript, niet zichtbaar voor Ronald of gebruikers |
 | **TT-112** | Foutcontrole bij beheerderoverdracht | **Gebouwd 19-08-2026, zie Deel 3.** Aanleiding: Ronald zag bij "Van Delft" twee leden met het label "Oprichter" na een overdracht. Gevonden: de verwijdering van de oude beheerder (`respondToFounderOffer()`) controleerde haar eigen foutmelding niet — een mislukking (vermoedelijk een rechtenregel) bleef onopgemerkt. Nu een zichtbare melding bij zo'n mislukking. **Onbekend, nog niet uitgezocht:** de exacte reden waarom de verwijdering faalt — vraagt de RLS-regel op `band_members` (DELETE), die is niet gezien. Ronald kon zijn eigen achtergebleven lidmaatschap zelf opruimen met "Band verlaten" |
