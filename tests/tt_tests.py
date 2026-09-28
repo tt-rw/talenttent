@@ -3628,6 +3628,16 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("het lettertype is Tentype: L 59,4px bij 100px, T-A 7,7px onder, T-T niet (TT-365)",
               abs(kern365["L"] - 59.4) <= 0.5 and abs(kern365["TA"] - 7.7) <= 0.5 and abs(kern365["TT"]) < 0.01,
               json.dumps(kern365))
+        # TT-365 (28-09-2026): het app-icoon is een plaatje, geen tekst. Het nieuwe
+        # icoon (de T van Tentype) komt alleen bij wie het al had, als elke
+        # verwijzing een ?v= draagt: index.html, manifest.json en de manifest-link.
+        man365 = json.load(open(os.path.join(ROOT, "manifest.json"), encoding="utf-8"))
+        ico365 = re.findall(r'(?:href|content)="(?:https://talenttent\.org/)?(icon-(?:192|512)\.png[^"]*)"', html318)
+        check("elke verwijzing naar het app-icoon draagt een ?v= (TT-365)",
+              len(ico365) == 4 and all("?v=" in i for i in ico365)
+              and all("?v=" in ic["src"] for ic in man365["icons"])
+              and re.search(r'<link rel="manifest" href="manifest\.json\?v=', html318) is not None,
+              json.dumps([ico365, [ic["src"] for ic in man365["icons"]]]))
         check("geen paginafouten in blok 32", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
