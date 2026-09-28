@@ -164,13 +164,15 @@
   :root[data-theme="licht"] input::placeholder,
   :root[data-theme="licht"] textarea::placeholder { color: #B8B4AA; }
 
-  /* TT-318 (24-09-2026, besluit Ronald): het eigen woordmerk. Het nagetekende
-     lettertype vervangt Alfa Slab One (TT-15b, tijdelijk sinds 06-08-2026).
-     Het bestand bevat alleen A, E, H, L, N, T en de spatie: genoeg voor
-     "TALENT TENT" en voor de T van het logo in een lege profielfoto
-     (AVATAR_T_FALLBACK, TT-33). Voor lopende tekst is het dus onbruikbaar.
-     Het staat in de repo zelf, niet bij Google Fonts: 1,7 kB, geen extern
-     verzoek. font-display: block — het woordmerk verschijnt meteen in de
+  /* TT-318 (24-09-2026, besluit Ronald): het eigen woordmerk. Vervangt
+     Alfa Slab One (TT-15b, tijdelijk sinds 06-08-2026).
+     TT-365 (28-09-2026, besluit Ronald): het bestand is nu Tentype, het
+     lettertype dat Ronald liet ontwerpen. Het verving het nagetekende
+     woordmerk van TT-318. Het bestand bevat alleen A, E, H, L, N, T en de
+     spatie: genoeg voor "TALENTTENT" en voor de T van het logo in een lege
+     profielfoto (AVATAR_T_FALLBACK, TT-33). Voor lopende tekst is het dus
+     onbruikbaar. Het staat in de repo zelf, niet bij Google Fonts: 1,4 kB,
+     geen extern verzoek. font-display: block — het woordmerk verschijnt meteen in de
      goede vorm; fitKopLogo() meet pas als het geladen is (core.js).
      index.html laadt het vooraf (preload), met dezelfde URL als hieronder. */
   @font-face {
@@ -302,13 +304,9 @@
     min-height: 44px;
     font-family: var(--font-display);
     font-size: clamp(40px, 7vw, 72px);
-    /* TT-328 (25-09-2026, besluit Ronald): 2px letterafstand bij 28px, was
-       3px (TT-318). Als verhouding geschreven, zodat het woordmerk bij elke
-       trede van fitKopLogo() dezelfde vorm houdt. Eén maat voor elk
-       woordmerk (§2, regel 11). Tussen TALENT en TENT staat geen spatie maar
-       dezelfde letterafstand; de spatiëring per letterpaar (T-A, T-T ...)
-       zit in het lettertype zelf. */
-    letter-spacing: calc(2em / 28);
+    /* TT-365 (28-09-2026, besluit Ronald): geen letterafstand. De spatiëring
+       is die van het lettertype Tentype zelf. Was 2px bij 28px (TT-328). De
+       enige extra ruimte staat tussen TALENT en TENT: zie .logo span. */
     line-height: 1;
     color: var(--merk);
   }
@@ -339,6 +337,11 @@
 
   .logo span {
     color: var(--text);
+    /* TT-365 (28-09-2026, besluit Ronald): tussen TALENT en TENT 2px bij
+       28px, bovenop de spatiëring van het lettertype. Geen spatie (TT-328).
+       Als verhouding geschreven, zodat het woordmerk bij elke trede van
+       fitKopLogo() dezelfde vorm houdt. Eén maat voor elk woordmerk. */
+    margin-right: calc(2em / 28);
   }
 
   .tagline {
