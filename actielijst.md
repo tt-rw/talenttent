@@ -2,8 +2,8 @@
 
 **Laatste update:** 28-09-2026 (TT-365) — **Het woordmerk staat in Tentype,
 het lettertype dat Ronald liet ontwerpen. Geen letterafstand meer; tussen
-TALENT en TENT 2px bij 28px. Ook het woordmerk in de mails is vernieuwd.
-Testset 654 van 654. Nog open: upload naar beide repo's en laag 2.**
+TALENT en TENT 2px bij 28px. Ook het woordmerk in de mails en de T in het
+app-icoon zijn vernieuwd. Testset 655 van 655. Nog open: upload naar beide repo's en laag 2.**
 
 - **Besluiten Ronald, 28-09-2026:** (1) Tentype voor het woordmerk, getoond in
   de browserpane op talenttent.org ("sample 1"); (2) de twee middelste T's
@@ -18,20 +18,30 @@ Testset 654 van 654. Nog open: upload naar beide repo's en laag 2.**
   `mail-woordmerk.png`: opnieuw gemaakt in Tentype, zelfde maat (440×46) en
   kleuren; het woordmerk is smaller, dus links en rechts 18px lucht. De mails
   hoeven daardoor niet te wijzigen.
-- **Geverifieerd:** testset 654 van 654. Blok 32: drie controles vervangen
-  (Tentype, geen letterafstand, 2px tussen de woorden); alle drie zakken op
-  de oude code. Blok 25 en 33: het woordmerk staat nog 7px links van het
+- **Ook gebouwd, op verzoek van Ronald ("hoe kan ik de nieuwe T overal te
+  zien krijgen?"):** `icon-192.png` en `icon-512.png` tonen de T van Tentype,
+  even hoog en op dezelfde plek als de oude T, zelfde kleuren en hoeken. Elke
+  verwijzing naar de iconen en naar `manifest.json` draagt nu
+  `?v=20260928a`, in `index.html` en in `manifest.json`. **Aanname:** een
+  icoon op het beginscherm van Android of iOS ververst niet vanzelf. Wie de
+  app al op zijn beginscherm heeft, haalt de snelkoppeling weg en zet hem
+  opnieuw.
+- **Geverifieerd:** testset 655 van 655. Blok 32: drie controles vervangen
+  (Tentype, geen letterafstand, 2px tussen de woorden) en één nieuw (`?v=` op
+  elke verwijzing naar een icoon); alle vier zakken op de oude code. Het
+  nieuwe icoon naast het oude bekeken, op 512px. Blok 25 en 33: het woordmerk staat nog 7px links van het
   midden, in de kop en in het venster. In de browserpane op talenttent.org,
   375px: 28px, 176px breed (was 195px). Schermafdruk bekeken.
 - **Aanname:** browsers die het oude lettertype in de cache hebben, tonen het
   nieuwe binnen tien minuten; GitHub Pages bewaart een bestand zo lang. De
   bestandsnaam is gelijk gebleven, net als bij TT-328.
 - **Rechtgezet in hetzelfde gebaar:** de projectinstructies (§7, §8, §9 Kop,
-  §11 Fonts) en de huisstijl (§2) noemden het nagetekende woordmerk, 2px
+  §11 Fonts, §11 PWA) en de huisstijl (§2) noemden het nagetekende woordmerk, 2px
   letterafstand en de kerninglijst van TT-328. Beide documenten zijn vervangen,
   in het project en in de gedeelde map.
 - **Gewijzigd:** `tt-woordmerk.woff2`, `styles.css`, `index.html`,
-  `mail-woordmerk.png`, `tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
+  `mail-woordmerk.png`, `icon-192.png`, `icon-512.png`, `manifest.json`,
+  `tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
 
 **Stand van de P0's.** Ongewijzigd: TT-325 · TT-329 · TT-352, de controle
 TT-323, en TT-358 als advies P0. TT-365 is P2.
@@ -7158,7 +7168,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-365** | Het woordmerk in Tentype, het lettertype van Ronald | **Gebouwd en getest 28-09-2026 — zie Laatste update. Besluit Ronald.** Tentype vervangt het nagetekende woordmerk van TT-318; geen letterafstand, 2px bij 28px tussen TALENT en TENT; `mail-woordmerk.png` opnieuw gemaakt. **Wacht op:** upload naar beide repo's, en laag 2: Ronald bekijkt kop, muzikantvenster, bandvenster en één mail op zijn telefoon. **Toets P2:** het werkt, maar het woordmerk is de eerste indruk |
+| **TT-365** | Het woordmerk in Tentype, het lettertype van Ronald | **Gebouwd en getest 28-09-2026 — zie Laatste update. Besluit Ronald.** Tentype vervangt het nagetekende woordmerk van TT-318; geen letterafstand, 2px bij 28px tussen TALENT en TENT; `mail-woordmerk.png` en de app-iconen opnieuw gemaakt. **Wacht op:** upload naar beide repo's, en laag 2: Ronald bekijkt kop, muzikantvenster, bandvenster, één mail en het icoon op zijn beginscherm op zijn telefoon. **Toets P2:** het werkt, maar het woordmerk is de eerste indruk |
 | **TT-361** | Bevindingen 27-09-2026: goud in donker, knoppen, meldingen, ouderroute | **Gebouwd en getest 27-09-2026 — zie Laatste update.** Acht bevindingen van Ronald. **Wacht op:** upload naar beide repo's; de mails in Supabase (TT-356, TT-325); laag 2 op talenttent.org: het wachtscherm en de goedkeuringspagina op een telefoon. **Toets P2 (advies Claude):** het werkte, maar grijze knoppen zonder rand en een onleesbaar wachtscherm kosten vertrouwen — juist bij een ouder die moet beslissen |
 | **TT-362** | Rode tekst in het venster "Kies een gebruikersnaam" | **Nieuw, 27-09-2026 (TT-361). Advies P2.** `saveUsernameGate()` in `auth.js` zet de foutregel op `color: var(--danger)`. Dat is rode tekst (huisstijl §1.2) en geen veldfout (§13.1). **Toets P2:** het werkt, maar leest als een standje. Voorstel: `setFieldError()` gebruiken, zoals de wizard |
 | **TT-363** | "Weet je het zeker?" bij "Stoppen en mijn gegevens wissen" | **Nieuw, 27-09-2026 (TT-361). Advies P2.** `ouderStoppenEnWissen()` vraagt naar de zekerheid, niet naar het gevolg (huisstijl §19). **Toets P2:** de stap is onomkeerbaar, en "weet je het zeker?" wordt weggeklikt. Voorstel: een vraag die het gevolg noemt, bijvoorbeeld "Alles wat je invulde, ook de aanvraag aan je ouder, wordt gewist. Wil je opnieuw beginnen als je later verdergaat?" |
