@@ -3586,7 +3586,9 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             letters: [...new Set(kop.textContent.replace(/\s/g, '') + 'T')].filter(ch => !heeft(ch)),
             familie: getComputedStyle(kop).fontFamily.split(',')[0],
             kopPx: getComputedStyle(kop).fontSize, kopAfstand: getComputedStyle(kop).letterSpacing,
-            vensterPx: getComputedStyle(vl).fontSize, vensterAfstand: getComputedStyle(vl).letterSpacing
+            vensterPx: getComputedStyle(vl).fontSize, vensterAfstand: getComputedStyle(vl).letterSpacing,
+            kopTussen: getComputedStyle(kop.querySelector('span')).marginRight,
+            vensterTussen: getComputedStyle(vl.querySelector('span')).marginRight
           };
           m.classList.remove('visible');
           return uit;
@@ -3594,30 +3596,38 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("het lettertype laadt in de browser", wm["geladen"], json.dumps(wm))
         check("elke letter van het woordmerk staat in het lettertype", wm["letters"] == [], json.dumps(wm))
         check("het woordmerk gebruikt TT Woordmerk", wm["familie"].strip('"\'') == "TT Woordmerk", json.dumps(wm))
-        # TT-328 (25-09-2026, besluit Ronald): 2px bij 28px, was 3px (TT-318).
-        check("letterafstand 2px bij 28px, in de kop én in een venster (TT-328)",
+        # TT-365 (28-09-2026, besluit Ronald): geen letterafstand meer; de
+        # spatiëring is die van Tentype zelf. Was 2px bij 28px (TT-328).
+        geenAfstand = lambda v: v in ("normal", "0px")
+        check("geen letterafstand, in de kop én in een venster (TT-365)",
               wm["kopPx"] == wm["vensterPx"] == "28px"
-              and abs(float(wm["kopAfstand"][:-2]) - 2) < 0.01
-              and abs(float(wm["vensterAfstand"][:-2]) - 2) < 0.01, json.dumps(wm))
+              and geenAfstand(wm["kopAfstand"]) and geenAfstand(wm["vensterAfstand"]), json.dumps(wm))
+        # TT-365: tussen TALENT en TENT 2px bij 28px, in de kop én in een venster.
+        check("tussen TALENT en TENT 2px bij 28px, in de kop én in een venster (TT-365)",
+              abs(float(wm["kopTussen"][:-2]) - 2) < 0.01
+              and abs(float(wm["vensterTussen"][:-2]) - 2) < 0.01, json.dumps(wm))
         # TT-328: "het woordmerk mag nergens met spatie." Tussen TALENT en TENT
-        # staat dezelfde letterafstand als tussen de letters, geen spatie.
+        # staat geen spatie, alleen de 2px van TT-365.
         logos328 = re.findall(r'<div class="logo"[^>]*>(.*?)</div>', html318)
         check("het woordmerk staat nergens met een spatie (TT-328)",
               len(logos328) == 3 and all(l == '<span style="color:var(--text);">TALENT</span>TENT' for l in logos328),
               json.dumps(logos328))
-        # TT-328: de spatiëring zit in het lettertype. T-T is sinds het weghalen
-        # van de spatie een nieuw paar; dat moet net als T-A onderschoven zijn.
-        kern328 = page.evaluate("""async () => {
+        # TT-365 (28-09-2026): het lettertype is Tentype, niet meer het
+        # nagetekende woordmerk van TT-318. Herkenbaar aan de L (594 van 1000,
+        # was 540) en aan de kerning: alleen T-A schuift onder (77 van 1000).
+        # Marge 0,5px: Chromium zonder scherm rondt de letterbreedte af op hele pixels.
+        kern365 = page.evaluate("""async () => {
           await document.fonts.load("100px 'TT Woordmerk'");
           const s = document.createElement('span');
           s.style.cssText = "font-family:'TT Woordmerk';font-size:100px;position:absolute;left:-9999px;white-space:nowrap";
           document.body.appendChild(s);
           const w = (t, k) => { s.style.fontKerning = k; s.textContent = t; return s.getBoundingClientRect().width; };
-          const uit = { TA: w('TA','none') - w('TA','normal'), TT: w('TT','none') - w('TT','normal') };
+          const uit = { L: w('L','normal'), TA: w('TA','none') - w('TA','normal'), TT: w('TT','none') - w('TT','normal') };
           s.remove(); return uit;
         }""")
-        check("het lettertype schuift T-A én T-T onder (spatiëring, TT-328)",
-              kern328["TA"] > 10 and kern328["TT"] > 1, json.dumps(kern328))
+        check("het lettertype is Tentype: L 59,4px bij 100px, T-A 7,7px onder, T-T niet (TT-365)",
+              abs(kern365["L"] - 59.4) <= 0.5 and abs(kern365["TA"] - 7.7) <= 0.5 and abs(kern365["TT"]) < 0.01,
+              json.dumps(kern365))
         check("geen paginafouten in blok 32", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
