@@ -104,7 +104,7 @@ function populateWizardFieldsFromState() {
     avatarPreview.innerHTML = `<img src="${safeUrl(state.avatarUrl)}" alt="profielfoto">`;
     document.getElementById('avatarRemoveBtn').classList.add('visible');
   } else {
-    avatarPreview.innerHTML = `<span id="avatarInitials">T</span>`;
+    avatarPreview.innerHTML = `<span id="avatarInitials" class="avatar-t">T</span>`;
     document.getElementById('avatarRemoveBtn').classList.remove('visible');
   }
 }
@@ -1490,7 +1490,7 @@ function removeAvatar() {
   state.avatarFile = null;
   state.avatarPath = null;
   const preview = document.getElementById('avatarPreview');
-  preview.innerHTML = `<span id="avatarInitials">T</span>`;
+  preview.innerHTML = `<span id="avatarInitials" class="avatar-t">T</span>`;
   preview.style.borderColor = '';
   document.getElementById('avatarRemoveBtn').classList.remove('visible');
 }

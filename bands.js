@@ -350,7 +350,7 @@ function populateBandAvatarPreview() {
     preview.innerHTML = `<img src="${safeUrl(bandState.avatarUrl)}" alt="bandfoto">`;
     document.getElementById('bandAvatarRemoveBtn').classList.add('visible');
   } else {
-    preview.innerHTML = `<span id="bandAvatarInitials">T</span>`;
+    preview.innerHTML = `<span id="bandAvatarInitials" class="avatar-t">T</span>`;
     document.getElementById('bandAvatarRemoveBtn').classList.remove('visible');
   }
 }

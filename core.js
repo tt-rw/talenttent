@@ -756,7 +756,7 @@ async function configureSearchAccess() {
         updateSearchCityStatus('filterSetlistCity', 'filterSetlistCityStatus');
       }
 
-      // TT-289: "Zoek setlist" heeft een eigen Plaats-veld, zelfde regel.
+      // TT-289: "Maak setlist" heeft een eigen Plaats-veld, zelfde regel.
       const gedeeldCityField = document.getElementById('filterGedeeldCity');
       if (gedeeldCityField && !gedeeldCityField.value.trim()) {
         gedeeldCityField.value = city;
@@ -841,7 +841,7 @@ function setSearchMode(mode, veegRichting) {
   // TT-10: bij het wisselen van tabblad meteen een resultaat tonen (met de
   // filters die op dat tabblad al stonden), i.p.v. een leeg scherm totdat er
   // zelf gezocht wordt. Setlist heeft geen zinvolle "iedereen"-status zonder
-  // minstens 1 opgegeven nummer, en "Zoek setlist" niet zonder 2 gekozen
+  // minstens 1 opgegeven nummer, en "Maak setlist" niet zonder 2 gekozen
   // muzikanten — daar laten we de bestaande lege staat staan.
   if (isMusician) runSearch();
   else if (isBand) runBandSearch();

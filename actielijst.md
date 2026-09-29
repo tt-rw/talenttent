@@ -1,6 +1,77 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 28-09-2026 (TT-365) — **Het woordmerk staat in Tentype,
+**Laatste update:** 29-09-2026 (bevindingen Ronald, 28-09-2026) — **Negen
+bevindingen uit `2026_09_28 Bevindingen.pdf` vastgelegd als TT-366 t/m TT-374.
+Vijf gebouwd en getest: sterren overal in `--accent` (TT-369), namen in een
+lijst 16px (TT-370), de T 25% groter (TT-372), geen vlak meer achter de
+terugknop na een tik (TT-373), "Zoek setlist" heet "Maak setlist" (TT-374).
+Voor TT-371 (kleur van je eigen bericht) staan vier ideeën klaar. Testset 664
+van 664. Nog open: upload naar beide repo's.**
+
+- **Werkwijze, besluit Ronald 29-09-2026:** vijf bevindingen in één sessie
+  ("het zijn allemaal kleine aanpassingen … ik geef toestemming om die regel
+  te negeren" — projectinstructies §2 regel 9). Indeling op voorstel van
+  Claude, akkoord Ronald: deze sessie 4, 5, 7, 8 en 9 bouwen plus ideeën voor
+  6; de volgende sessie 2 en 3 samen (TT-367, TT-368); 1 pas na een controle
+  door Ronald (TT-366).
+- **Gebouwd, per bevinding:**
+  - **TT-369 — sterren.** Een gevulde ster in een instrumenttag was `--text`
+    (wit); overal elders al `--accent`. De uitzondering is weg: elke gevulde
+    ster is `--accent`, in donker goud, in licht zwart. Muzikant- en bandkant
+    gelijk: beide gebruiken `starDisplayHTML()`.
+  - **TT-370 — namen.** Een naam in een lijst is 16px: berichtenlijst (was
+    14px), zoekresultaat als kaart (was 14px), blokkadelijst (was 15px); de
+    rij stond al op 16px. Geldt voor muzikant en band: zelfde klassen.
+  - **TT-372 — de T.** Eén klasse, `.avatar-t`, voor elke T zonder foto: de
+    lege profielfoto (`AVATAR_T_FALLBACK`), de voorbeeldfoto bij het uploaden
+    (wizard, mediahoek, band) en een afgeschermd medium. `font-size: 1.25em`:
+    25% groter dan de letter van zijn vak, de vakken zelf gelijk. **Rechtgezet
+    onderweg:** de T bij het uploaden stond in Roboto, niet in het lettertype
+    van het logo. Bandkant: de bandfoto doet mee (`.band-avatar`).
+  - **TT-373 — terugknop.** **Oorzaak, geverifieerd** (nagebootst op een
+    telefoon in Playwright): `.nav-menu-btn:hover` stond buiten de
+    touch-guard van TT-182. Een telefoon houdt de aanwijsstand na een tik
+    vast; op de startpagina en op Mijn Profiel doet een tik niets, dus bleef
+    het vlak (`--surface`) met rand staan. De regel staat nu in de guard.
+    Geldt ook voor de hamburger en de ⋯-menu's (zelfde klasse).
+  - **TT-374 — Maak setlist.** Knop en paneeltitel. Commentaar in `core.js`,
+    `postcode.js` en `search.js` meegenomen. Bandkant: n.v.t., Setlist kent
+    alleen muzikanten.
+- **TT-371 — ideeën, niet gebouwd:**
+  `_niet-uploaden-voorstel-berichtkleur-29-09-2026.html`. Vier varianten voor
+  je eigen bericht, in donker en licht: A gouden rand, B gouden streep, C
+  gedempt goud met zwarte tekst, D brons. **Advies van Claude: C.** Wacht op
+  de keuze van Ronald.
+- **Getest:** vaste testset 664/664. Blok 47 is nieuw: negen controles, zeven
+  zakken op de code van vóór deze sessie. De andere twee (sterren in licht,
+  geen paginafouten) bewaken dat het zo blijft. Blok 21 en de T-controle van
+  TT-318 toetsen nu de nieuwe naam en `.avatar-t`. Schermafdrukken vóór en na
+  bekeken, in donker en licht: berichtenlijst, zoekresultaat als rij en kaart,
+  tags met sterren, de T in vijf vakken, de startpagina na een tik op de
+  terugknop, de Setlist-schakelaar. Monitorronde 21/21.
+- **Rechtgezet: `CHECKSUMS.txt`.** Er stond voor `icon-192.png`,
+  `icon-512.png` en `mail-woordmerk.png` een andere SHA-256 dan die van de
+  bestanden in beide repo's (monitor D3, al vóór deze sessie). **Geverifieerd:**
+  de bestanden in de repo's zijn de nieuwe van TT-365 — ze wijken af van de
+  vorige versie in git, en tonen de T en het woordmerk van Tentype
+  (bekeken). **Onbekend:** waarom de sommen niet klopten. `CHECKSUMS.txt` is
+  opnieuw berekend over de bestanden zoals ze nu zijn.
+- **Rechtgezet: TT-365 staat in beide repo's.** Hier stond "Nog open: upload
+  naar beide repo's". Waaruit blijkt dat dat niet meer klopt: de uploads van
+  28-09-2026, 05:46 tot 05:57, in de git-geschiedenis. Laag 2 staat nog open.
+- **Nieuw:** TT-375 (advies P2) en TT-376 (advies P3), gevonden onderweg.
+- **Documenten:** huisstijl en zoekfunctienaslagwerk van 29-09-2026,
+  projectinstructies bijgewerkt; in het project en in `_niet-uploaden`.
+- **Gewijzigd:** `index.html`, `styles.css`, `core.js`, `utils.js`,
+  `postcode.js`, `wizard.js`, `search.js`, `musicians.js`, `bands.js`,
+  `tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
+
+**Stand van de P0's.** Ongewijzigd: TT-325 · TT-329 · TT-352, de controle
+TT-323, en TT-358 als advies P0. TT-366 t/m TT-376 zijn P1, P2 of P3.
+
+---
+
+**Vorige update:** 28-09-2026 (TT-365) — **Het woordmerk staat in Tentype,
 het lettertype dat Ronald liet ontwerpen. Geen letterafstand meer; tussen
 TALENT en TENT 2px bij 28px. Ook het woordmerk in de mails en de T in het
 app-icoon zijn vernieuwd. Testset 655 van 655. Nog open: upload naar beide repo's en laag 2.**
@@ -7129,6 +7200,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-367** | De onderbalk laadt traag op Android | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): "het laden duurt vrij lang van de ene knop naar de andere … maakt niet uit van welke knop naar welke. Dit is op een android telefoon." Advies P1.** Nog niet onderzocht. Volgende sessie, samen met TT-368: eerst meten op zijn telefoon, dan pas iets wijzigen. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: een app die bij elke tik hapert, voelt kapot en wordt weggelegd |
 | **TT-357** | Testaccounts opschonen vóór de lancering | **Nieuw, 27-09-2026 (TT-65). Besluit Ronald: later opschonen, vlak vóór de lancering. Niveau: advies P1, door Ronald te bevestigen.** Alle bestaande accounts zijn testaccounts. Nu niet wissen: TT-352 en TT-323 hebben ze nog nodig, en het proefherstel van TT-65 heeft gegevens nodig. Gewiste testaccounts verdwijnen na 30 dagen vanzelf uit de back-up. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: nepprofielen in de zoekresultaten kosten vertrouwen. **Vóór lancering** |
 | **TT-356** | In de welkomstmail valt een punt weg bij het versturen | **Oorzaak gevonden en opgelost, 27-09-2026 (TT-361). Ingevoerd in Supabase en nagemeten (SHA-256), dezelfde dag. Wacht op ontvangst in TT-323.** **Oorzaak, geverifieerd in de broncode van denomailer 1.6.0** (gelezen op deno.land via de browserpane): de mail gaat als quoted-printable, afgeknipt op 74 tekens, en denomailer zet een punt aan het begin van een regel niet dubbel. De SMTP-server haalt zo'n punt weg (RFC 5321, 4.5.2). **Nagebootst** met dezelfde code en een server die dat doet: welkom verloor "vinden." én de punt in "proton.me" en "talenttent.org"; "Je hebt toestemming" verloor "online."; de andere vijf niets — dat hangt af van waar de regel afbreekt, en die plek verschuift met de wisselende naam in de afsluiter. **Oplossing:** alle vijf de functies sturen de mail als base64 (`base64Regels()` in het template). Base64 bevat geen punt. Na de wijziging komen alle acht nagebootste mails byte voor byte gelijk aan. Bestanden: `_niet-uploaden-edge-function-<naam>-27-09-2026-TT-356.ts`. **Geverifieerd:** de vijf functies in Supabase waren vóór deze wijziging gelijk aan de bestanden waarop die is gebouwd (SHA-256). *(Rechtgezet: hier stond "Aanname: de punt verdwijnt bij het versturen (denomailer)" en "Onbekend: of het in de andere vier functies ook gebeurt". Waaruit blijkt: de broncode en de nabootsing hierboven.)* **Oorspronkelijk, 27-09-2026 (TT-323). Advies P1, niveau door Ronald te bevestigen.** Ronald ontving "Je bent binnen Zestien. Welkom in de Tent!" met "…kunnen je nu vinden" zonder punt. **Geverifieerd:** de code van `welkom` in Supabase heeft de punt (gelezen in het dashboard), en de mail die Claude uit die code opbouwt ook, in HTML en tekstversie. **Aanname:** de punt verdwijnt bij het versturen (denomailer): een punt aan het begin van een verzendregel valt weg. Niet gemeten; de bron van denomailer is vanuit de sessie niet bereikbaar. **Onbekend:** of het in de andere vier functies ook gebeurt. **Toets P1:** valt zo'n punt in een link (".org"), dan werkt de knop niet en komt iemand niet binnen. **Eerste meting:** de bron van de ontvangen mail bekijken in Proton. **Voorstel van Claude:** eigen sessie; raakt alle vijf de mailfuncties. |
 | **TT-353** | "Er ging iets mis" als het nieuwe wachtwoord gelijk is aan het oude | **Gebouwd en getest 27-09-2026 (blok 45), wacht op laag 2 — zie Laatste update.** Tekst: "Kies een ander wachtwoord dan je huidige.", bij het veld, ook in Instellingen. **Nieuw, 27-09-2026 (TT-344, laag 2), gezien door Ronald: "een neutrale melding: er ging iets mis. wat ging er mis?" Advies P1, niveau door Ronald te bevestigen.** **Toets P1:** wie zijn wachtwoord vergeten is, typt vaak hetzelfde opnieuw. Hij krijgt dan steeds dezelfde lege melding en weet niet wat hij moet veranderen; dat bepaalt of hij terugkomt. **Geverifieerd** in de console op talenttent.org: `updateUser` geeft 422, "New password should be different from the old password." `friendlyErrorMessage()` in `utils.js` kent die tekst niet en valt terug op "Er ging iets mis. Probeer het opnieuw." **Voorstel van Claude:** de melding bij het veld "Nieuw wachtwoord" zetten, met een tekst als "Kies een ander wachtwoord dan je vorige." Dezelfde vertaling geldt dan ook voor "Wachtwoord wijzigen" in Instellingen (TT-299), als Supabase daar dezelfde fout geeft (**Onbekend**, niet gemeten). |
@@ -7168,7 +7240,16 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-365** | Het woordmerk in Tentype, het lettertype van Ronald | **Gebouwd en getest 28-09-2026 — zie Laatste update. Besluit Ronald.** Tentype vervangt het nagetekende woordmerk van TT-318; geen letterafstand, 2px bij 28px tussen TALENT en TENT; `mail-woordmerk.png` en de app-iconen opnieuw gemaakt. **Wacht op:** upload naar beide repo's, en laag 2: Ronald bekijkt kop, muzikantvenster, bandvenster, één mail en het icoon op zijn beginscherm op zijn telefoon. **Toets P2:** het werkt, maar het woordmerk is de eerste indruk |
+| **TT-366** | Thema volgt het toestel niet | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): toestel op donker, in de app "Zoals mijn toestel", en toch licht. Advies P2.** **Aanname:** Chrome op Android heeft een eigen thema-instelling (⋮ › Instellingen › Thema). Staat die op "Licht", dan meldt Chrome licht aan de app, wat het toestel ook zegt. **Wacht op:** Ronald controleert die instelling. Staat hij op "Systeemstandaard", dan is het een fout in de app en volgt een sessie. **Toets P2:** het werkt, maar de app doet niet wat de keuze belooft |
+| **TT-368** | Links-rechts vegen in Zoeken gaat stroef | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): "dat moet lekker soepel gaan, net als naar boven-beneden." Advies P2.** Nog niet onderzocht. Volgende sessie, samen met TT-367. Raakt TT-170 (vegen tussen tabbladen), TT-256 (`touch-action: pan-y`) en TT-282. **Toets P2:** het werkt, maar het kost moeite |
+| **TT-369** | Sterren overal in de accentkleur | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026): "sterren in accentkleur geel. overal in de app." Een gevulde ster in een tag was wit. **Open vraag aan Ronald:** in licht is `--accent` zwart, dus zijn de sterren daar zwart (huisstijl §1: geel is op crème onleesbaar, 1,5:1). Geel ook in licht? **Toets P2:** werkte, maar het niveau viel weg |
+| **TT-370** | Namen van contactpersonen groter | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026): "nu vallen ze weg in de app." Een naam in een lijst is 16px (huisstijl §2). **Toets P2:** werkte, maar de naam is waar je op zoekt |
+| **TT-371** | Je eigen bericht in een variant van de accentkleur | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): "maar niet te hard contrast … geef eerst enkele ideeën voordat je gaat bouwen." Advies P2.** Vier ideeën in `_niet-uploaden-voorstel-berichtkleur-29-09-2026.html`. Advies van Claude: C, gedempt goud met zwarte tekst. **Wacht op:** de keuze van Ronald. Vervangt het huisstijlbesluit "je eigen bericht is grijs" (26-09-2026). **Toets P2:** het werkt, maar in een lang gesprek zie je niet in één blik wat je zelf zei |
+| **TT-372** | De T 25% groter, in de hele app | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026). Eén klasse `.avatar-t` (huisstijl §2). **Toets P2:** werkte, maar de T oogde verloren in zijn vak |
+| **TT-373** | Vlak achter de terugknop waar je niet terug kunt | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026), startpagina en profielpagina. Oorzaak: aanwijsstand buiten de touch-guard (huisstijl §6). **Wacht op:** laag 2 op een echte telefoon. **Toets P2:** werkte, maar zag eruit als een fout |
+| **TT-374** | "Zoek setlist" heet "Maak setlist" | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026). **Open vraag aan Ronald:** de knop onderin het paneel heet nog "Zoek nummers". In de andere stand is de knop gelijk aan de titel ("Zoek muzikanten"). Ook "Maak setlist"? **Toets P2:** werkte, maar het woord zei niet wat je doet |
+| **TT-375** | Nog vijftien aanwijsregels buiten de touch-guard | **Nieuw, 29-09-2026, gevonden bij TT-373. Advies P2.** Onder meer `.btn-primary:hover`, `.btn-ghost:hover`, `.result-row:hover`, `.result-card:hover`, `.messages-conv-row:hover`, `.band-card:hover` en `.messages-thread-back:hover` staan buiten `@media (hover: hover)`. Op een telefoon blijft hun aanwijsstand na een tik staan, net als bij TT-373. Geteld in `styles.css` op 29-09-2026: vijftien regels, zonder de twee voor een uitgeschakelde knop en die voor de schuifbalk. **Toets P2:** het werkt, maar een knop die na een tik anders blijft, oogt als een fout |
+| **TT-365** | Het woordmerk in Tentype, het lettertype van Ronald | **Gebouwd en getest 28-09-2026 — zie Laatste update. Besluit Ronald.** Tentype vervangt het nagetekende woordmerk van TT-318; geen letterafstand, 2px bij 28px tussen TALENT en TENT; `mail-woordmerk.png` en de app-iconen opnieuw gemaakt. **In beide repo's sinds 28-09-2026** (rechtgezet 29-09-2026: hier stond "Wacht op: upload naar beide repo's"). **Wacht op:** laag 2: Ronald bekijkt kop, muzikantvenster, bandvenster, één mail en het icoon op zijn beginscherm op zijn telefoon. **Toets P2:** het werkt, maar het woordmerk is de eerste indruk |
 | **TT-361** | Bevindingen 27-09-2026: goud in donker, knoppen, meldingen, ouderroute | **Gebouwd en getest 27-09-2026 — zie Laatste update.** Acht bevindingen van Ronald. **Wacht op:** upload naar beide repo's; de mails in Supabase (TT-356, TT-325); laag 2 op talenttent.org: het wachtscherm en de goedkeuringspagina op een telefoon. **Toets P2 (advies Claude):** het werkte, maar grijze knoppen zonder rand en een onleesbaar wachtscherm kosten vertrouwen — juist bij een ouder die moet beslissen |
 | **TT-362** | Rode tekst in het venster "Kies een gebruikersnaam" | **Nieuw, 27-09-2026 (TT-361). Advies P2.** `saveUsernameGate()` in `auth.js` zet de foutregel op `color: var(--danger)`. Dat is rode tekst (huisstijl §1.2) en geen veldfout (§13.1). **Toets P2:** het werkt, maar leest als een standje. Voorstel: `setFieldError()` gebruiken, zoals de wizard |
 | **TT-363** | "Weet je het zeker?" bij "Stoppen en mijn gegevens wissen" | **Nieuw, 27-09-2026 (TT-361). Advies P2.** `ouderStoppenEnWissen()` vraagt naar de zekerheid, niet naar het gevolg (huisstijl §19). **Toets P2:** de stap is onomkeerbaar, en "weet je het zeker?" wordt weggeklikt. Voorstel: een vraag die het gevolg noemt, bijvoorbeeld "Alles wat je invulde, ook de aanvraag aan je ouder, wordt gewist. Wil je opnieuw beginnen als je later verdergaat?" |
@@ -7270,6 +7351,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-376** | De stip van een bandlid toont de eerste letter, niet de T | **Nieuw, 29-09-2026, gevonden bij TT-372. Advies P3.** `.band-member-dot` in `bands.js` (vier plekken) toont de eerste letter van de naam. Overal elders staat zonder foto de T van het logo (TT-33: "geef iedereen dan een typische T van het logo"). Vraag aan Ronald: ook hier de T? **Toets P3:** geen aanwijsbaar gevolg voor een gebruiker nu |
 | **TT-348** | Een adres met # intypen terwijl de app openstaat, toont de homepage | **Nieuw, 26-09-2026, TT-323. Advies P3.** Geverifieerd in het scherm rechts: naar `talenttent.org/#search` gaan terwijl de app al openstond, gaf de homepage; na verversen klopt het. Oorzaak: een wissel van alleen het #-deel geeft `popstate` met een lege `e.state`; de afhandeling onderaan `core.js` valt dan terug op `landing`. **Toets P3:** een gewone gebruiker typt vrijwel nooit een adres in een app die al openstaat. |
 | **TT-349** | Het zoekfilter van het vorige account blijft staan | **Nieuw, 26-09-2026, TT-323. Advies P3.** Geverifieerd in het scherm rechts: Proef zette Ukulele als filter en logde uit; daarna stond Ukulele nog in het zoekscherm van Uke. `onUserLoggedOut()` wist de bewaarde zoekopdracht (`wisBewaardeZoek()`), niet de velden van het formulier. **Toets P3:** speelt alleen op een gedeeld toestel, en een filter zegt weinig over iemand. |
 | **TT-335** | `ouder-toestemming` voert "onderhoud" uit voor iedere aanroeper | **Nieuw, 26-09-2026, TT-323.** Geverifieerd uit de bron: de actie `onderhoud` vraagt geen sleutel. Claude startte de herinnering zo zelf vanuit de pagina. Gevolg nu: iemand kan de dagelijkse ronde eerder laten draaien. Een ouder krijgt per aanvraag hooguit één herinnering. **Toets P3:** geen aanwijsbaar gevolg voor een gebruiker nu. |

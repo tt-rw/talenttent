@@ -429,7 +429,7 @@ function selectCitySuggestion(name, listId) {
     // niet wachten op de getypte-tekst-vertraging.
     updateSearchCityStatus(target.field, target.status);
     // TT-289: een gekozen plaats geeft een ander vertrekpunt voor de
-    // naamsuggesties van "Zoek setlist".
+    // naamsuggesties van "Maak setlist".
     if (listId === 'acFilterGedeeldCityList') gedeeldKandidatenVergeten();
   }
   closeAC(listId);

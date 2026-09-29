@@ -838,7 +838,9 @@ const MESSAGE_ICON_SVG = `<svg class="result-row-msg-icon" viewBox="0 0 24 24" w
 // TT-318 (24-09-2026): stond hier nog als 'Alfa Slab One' uitgeschreven. Sinds
 // het eigen woordmerk zou de T dan niet meer de T van het logo zijn. Nu de
 // variabele zelf, zodat beide nooit meer uit elkaar kunnen lopen.
-const AVATAR_T_FALLBACK = `<span style="font-family:var(--font-display);">T</span>`;
+// Bevinding Ronald 28-09-2026: de vorm staat in .avatar-t (styles.css), één
+// klasse voor elke T in de app, 25% groter dan de letter van zijn vak.
+const AVATAR_T_FALLBACK = `<span class="avatar-t">T</span>`;
 
 // Extreem overzichtelijk gehouden (04-08-2026): alleen naam, plaats(+afstand)
 // en instrument/genre-badges. Matchscore/vibe/doel/repertoire-preview zijn
@@ -1498,7 +1500,7 @@ function renderSetlistSongsList() {
 
 // TT-289 (17-09-2026): één vorm voor een lijst die je zelf in een zoekfilter
 // samenstelt — de setlist in "Zoek muzikanten" en de gekozen muzikanten in
-// "Zoek setlist". Zelfde kopregel, zelfde rij, zelfde ✕. Nooit een eigen
+// "Maak setlist". Zelfde kopregel, zelfde rij, zelfde ✕. Nooit een eigen
 // variant per stand. `voorKop` leeg = geen voorkolom.
 function zoekLijstHTML(voorKop, kop, rijen) {
   const voorKol = (t) => voorKop
@@ -1885,11 +1887,11 @@ function musicianSetlistRowHTML(m) {
 
 
 // ═══════════════════════════════════════════════════════════════════════════
-// TT-289 — Zoek setlist: van muzikanten naar de nummers die ze delen
+// TT-289 — Maak setlist (tot 29-09-2026 "Zoek setlist"): van muzikanten naar de nummers die ze delen
 // ═══════════════════════════════════════════════════════════════════════════
 // Besluiten Ronald, 17-09-2026:
 // - Het Setlist-tabblad heeft twee standen: "Zoek muzikanten" (bestaand) en
-//   "Zoek setlist" (deze). Vegen blijft tussen de hoofdtabbladen.
+//   "Maak setlist" (deze). Vegen blijft tussen de hoofdtabbladen.
 // - Je kiest 2 tot 20 muzikanten, alleen muzikanten, geen bands. Wie zoekt,
 //   staat er niet vanzelf in.
 // - Plaats en Straal beperken alleen de naamsuggesties ("honderd keer Colin").

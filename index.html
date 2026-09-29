@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260928a">
+<link rel="stylesheet" href="styles.css?v=20260929a">
 </head>
 <body>
 
@@ -564,7 +564,7 @@
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
           <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarInput').click()">
-            <span id="avatarInitials">T</span>
+            <span id="avatarInitials" class="avatar-t">T</span>
           </div>
           <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
         </div>
@@ -984,7 +984,7 @@
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
           <div class="avatar-preview" id="mhAvatarPreview" onclick="document.getElementById('mhAvatarInput').click()">
-            <span id="mhAvatarInitials">T</span>
+            <span id="mhAvatarInitials" class="avatar-t">T</span>
           </div>
           <div class="avatar-edit-btn" onclick="document.getElementById('mhAvatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
         </div>
@@ -1400,13 +1400,13 @@
   <div class="search-wrap">
     <!-- TT-289 (17-09-2026, schets Ronald): het Setlist-tabblad heeft twee
          standen. "Zoek muzikanten" zoekt van nummers naar muzikanten (de
-         bestaande stand). "Zoek setlist" zoekt van muzikanten naar de nummers
+         bestaande stand). "Maak setlist" zoekt van muzikanten naar de nummers
          die ze delen. Vegen blijft wisselen tussen de drie hoofdtabbladen. -->
     <!-- Twee losse knoppen in de vorm van de hoofdtabbladen, met dezelfde
          actieve kleur als "Setlist" erboven (Ronald, 17-09-2026). -->
     <div class="setlist-soort" role="tablist" aria-label="Soort setlist-zoeken">
       <button type="button" role="tab" class="search-mode-tab active" id="setlistSoortMuzikantenBtn" aria-selected="true" onclick="setSetlistSoort('muzikanten')">Zoek muzikanten</button>
-      <button type="button" role="tab" class="search-mode-tab" id="setlistSoortNummersBtn" aria-selected="false" onclick="setSetlistSoort('nummers')">Zoek setlist</button>
+      <button type="button" role="tab" class="search-mode-tab" id="setlistSoortNummersBtn" aria-selected="false" onclick="setSetlistSoort('nummers')">Maak setlist</button>
     </div>
 
     <div id="setlistDeelMuzikanten">
@@ -1556,11 +1556,11 @@
     <div id="setlistSearchResults"></div>
     </div>
 
-    <!-- TT-289: de stand "Zoek setlist". Plaats en Straal beperken alleen welke
+    <!-- TT-289: de stand "Maak setlist". Plaats en Straal beperken alleen welke
          namen je als suggestie krijgt; wie gekozen is, blijft staan. -->
     <div id="setlistDeelNummers" style="display:none;">
     <div class="search-filters">
-      <div class="filter-title has-sub">Zoek setlist</div>
+      <div class="filter-title has-sub">Maak setlist</div>
       <p class="filter-sub">Kies 2 tot 20 muzikanten en zie welke nummers ze spelen.</p>
 
       <div class="field">
@@ -1688,7 +1688,7 @@
         <div style="display:flex;gap:16px;align-items:center;margin-bottom:8px;">
           <div class="avatar-preview-wrap" style="flex-shrink:0;">
             <div class="avatar-preview" id="bandAvatarPreview" onclick="document.getElementById('bandAvatarInput').click()" style="border-radius:12px;">
-              <span id="bandAvatarInitials">T</span>
+              <span id="bandAvatarInitials" class="avatar-t">T</span>
             </div>
             <div class="avatar-edit-btn" onclick="document.getElementById('bandAvatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
           </div>
@@ -2628,16 +2628,16 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260927b"></script>
-<script src="utils.js?v=20260927a"></script>
+<script src="core.js?v=20260929a"></script>
+<script src="utils.js?v=20260929a"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260927b"></script>
-<script src="postcode.js?v=20260926u"></script>
-<script src="wizard.js?v=20260927b"></script>
+<script src="postcode.js?v=20260929a"></script>
+<script src="wizard.js?v=20260929a"></script>
 <script src="ouder.js?v=20260927b"></script>
-<script src="search.js?v=20260926u"></script>
-<script src="musicians.js?v=20260926u"></script>
-<script src="bands.js?v=20260927b"></script>
+<script src="search.js?v=20260929a"></script>
+<script src="musicians.js?v=20260929a"></script>
+<script src="bands.js?v=20260929a"></script>
 <script src="messages.js?v=20260926v"></script>
 <script src="modals-shared.js?v=20260924a"></script>
 <script>

@@ -1413,7 +1413,7 @@ function mhRenderAvatar() {
     preview.innerHTML = `<img src="${safeUrl(mhAvatarUrl)}" alt="profielfoto">`;
     document.getElementById('mhAvatarRemoveBtn').classList.add('visible');
   } else {
-    preview.innerHTML = `<span id="mhAvatarInitials">T</span>`;
+    preview.innerHTML = `<span id="mhAvatarInitials" class="avatar-t">T</span>`;
     document.getElementById('mhAvatarRemoveBtn').classList.remove('visible');
     resetCancelButton('mhAvatarRemoveBtn');
   }

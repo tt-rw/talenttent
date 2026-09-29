@@ -1774,12 +1774,12 @@ function profielBannerItems(mediaLijst) {
 // Een bezoeker zonder account ziet van een 13- tot 15-jarige geen enkel
 // medium. De database geeft zo'n item terug zonder adres en met
 // `afgeschermd: true` (tt_get_musicians_public). Op die plek staat de T van
-// The Talent Tent: goud op antraciet, als het app-icoon. Geen knop — er valt
+// The Talent Tent: een zwarte T op geel, als het profielvlak (TT-341). Geen knop — er valt
 // niets te openen, en een knop die niets doet is een fout (onderhoudsronde).
 // Eén functie voor de tegel op het profiel én het vlak in de bannerbalk.
 function mediaAfgeschermdHTML(plek) {
   const klasse = plek === 'banner' ? 'pb-item media-afgeschermd' : 'profile-media-tegel media-afgeschermd';
-  return `<div class="${klasse}" role="img" aria-label="Alleen zichtbaar met een account">T</div>`;
+  return `<div class="${klasse}" role="img" aria-label="Alleen zichtbaar met een account"><span class="avatar-t">T</span></div>`;
 }
 
 function profielBannerHTML(mediaLijst) {

@@ -182,10 +182,20 @@
     font-style: normal;
     font-display: block;
   }
-  /* --font-display heeft twee gebruikers: .logo en AVATAR_T_FALLBACK in
-     search.js. Paneeltitels blijven Roboto Bold (Ronald, 06-08-2026). */
+  /* --font-display heeft twee gebruikers: .logo en .avatar-t. Paneeltitels
+     blijven Roboto Bold (Ronald, 06-08-2026). */
   :root {
     --font-display: 'TT Woordmerk', 'Roboto', sans-serif;
+  }
+  /* De T van het logo op een plek zonder foto of zonder toegang: een lege
+     profielfoto (AVATAR_T_FALLBACK in search.js), de voorbeeldfoto bij het
+     uploaden, en een afgeschermd medium (TT-45). Eén klasse voor elke T.
+     Bevinding Ronald 28-09-2026: de T is 25% groter dan de letter van zijn
+     vak ("voer dat door in de hele app"). De maat van elk vak blijft staan. */
+  .avatar-t {
+    font-family: var(--font-display);
+    font-size: 1.25em;
+    line-height: 1;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1546,7 +1556,6 @@
        in elk thema. Was een gouden T op --surface2. */
     background: var(--merk);
     color: var(--merk-tekst);
-    font-family: var(--font-display);
     font-size: 32px;
     line-height: 1;
     cursor: default;
@@ -2224,7 +2233,10 @@
        Alleen de drie eigenschappen die echt veranderen bij hover. */
     transition: border-color 0.2s, background 0.2s, color 0.2s;
   }
-  .nav-menu-btn:hover, .nav-menu-btn.active {
+  /* Bevinding Ronald 28-09-2026: de aanwijsstand staat in de hover-guard
+     onderaan (TT-182). Op een telefoon bleef hij na een tik staan, en was het
+     vlak van de terugknop te zien waar een tik niets doet. */
+  .nav-menu-btn.active {
     border-color: var(--border);
     background: var(--surface);
   }
@@ -2350,7 +2362,7 @@
   }
   .messages-conv-avatar img { width: 100%; height: 100%; object-fit: cover; }
   .messages-conv-main { flex: 1; min-width: 0; }
-  .messages-conv-name { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  .messages-conv-name { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
   .messages-conv-row.unread .messages-conv-name { color: var(--accent); }
   .messages-conv-preview { font-size: 13px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .messages-conv-time { font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
@@ -2608,7 +2620,8 @@
     border-radius: 6px;
     white-space: nowrap;
   }
-  .tag-solid .star-display-filled { color: var(--text); }
+  /* Bevinding Ronald 28-09-2026: gevulde sterren overal in --accent, ook in
+     een tag (was --text). Donker goud, licht zwart (huisstijl §1). */
   .tag-solid .star-display-empty { color: var(--rand-neutraal); }
 
   /* TT-30: kaartweergave als alternatief voor de rijenlijst — kiesbaar via
@@ -2667,7 +2680,7 @@
     justify-content: space-between;
     gap: 8px;
   }
-  .result-card-name { font-family: 'Roboto', sans-serif; font-size: 14px; font-weight: 700; }
+  .result-card-name { font-family: 'Roboto', sans-serif; font-size: 16px; font-weight: 700; }
   .result-card-meta { font-size: 11px; color: var(--muted); margin: 2px 0 8px; }
   /* TT-153: instrument- en genrebadges elk op een eigen, niet-wrappende
      regel — overflow wordt afgekapt met een "+N"-badge (overflowBadgeHTML),
@@ -3341,7 +3354,7 @@
     border-bottom: 1px solid var(--border);
   }
   .geblokkeerd-rij:last-child { border-bottom: none; }
-  .geblokkeerd-naam { font-size: 15px; font-weight: 700; color: var(--text); }
+  .geblokkeerd-naam { font-size: 16px; font-weight: 700; color: var(--text); }
   .geblokkeerd-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
   /* Geen volle-breedte knop: hij hoort bij de rij ernaast, niet bij het
      scherm. Hoogte blijft 44px via .btn (huisstijl §5/§6). */
@@ -3886,6 +3899,7 @@
     .segmented-btn:not(.selected):hover, .search-mode-tab:not(.active):hover,
     .media-tab:not(.active):hover, .goal-card:not(.selected):hover,
     .level-choice:not(.selected):hover { border-color: var(--rand-hover); }
+    .nav-menu-btn:hover { border-color: var(--border); background: var(--surface); }
     .modal-close:hover { background: var(--tint-hover); }
     .modal-back:hover { background: var(--tint-hover); }
     .niveau-info-btn:hover { background: var(--tint-hover); }
