@@ -1752,10 +1752,10 @@ def blok_browser():
         check("geen paginafouten in blok 20", not page_errors, "; ".join(page_errors)[:200])
 
         # ─────────────────────────────────────────────────────────────
-        # Blok 21 — Zoek setlist: van muzikanten naar gedeelde nummers
+        # Blok 21 — Maak setlist (tot 29-09-2026 "Zoek setlist"): van muzikanten naar gedeelde nummers
         # (TT-289, 17-09-2026). Tegen de stub, uitgelogd.
         # ─────────────────────────────────────────────────────────────
-        print("\nBlok 21 — Zoek setlist: muzikanten kiezen, gedeelde nummers")
+        print("\nBlok 21 — Maak setlist: muzikanten kiezen, gedeelde nummers")
         page_errors.clear()
         page.evaluate("window.TT_STUB.reset()")
         # Uitgelogd: eerdere blokken loggen in. Zonder sessie zet het
@@ -1804,8 +1804,8 @@ def blok_browser():
                    knop: [...document.querySelectorAll('#setlistDeelMuzikanten .btn-row .btn-primary')].map(x => x.textContent.trim()),
                    titel: document.querySelector('#setlistDeelMuzikanten .filter-title').textContent.trim() };
         }""")
-        check("schakelaar heeft de labels Zoek muzikanten en Zoek setlist",
-              sch["tekst"] == ["Zoek muzikanten", "Zoek setlist"], json.dumps(sch))
+        check("schakelaar heeft de labels Zoek muzikanten en Maak setlist",
+              sch["tekst"] == ["Zoek muzikanten", "Maak setlist"], json.dumps(sch))
         check("schakelaar: knoppen minstens 44px hoog en even breed",
               min(sch["hoog"]) >= 44 and sch["breed"][0] == sch["breed"][1], json.dumps(sch))
         vorm = page.evaluate("""() => {
@@ -1843,10 +1843,10 @@ def blok_browser():
           knoppen: [...document.querySelectorAll('#setlistDeelNummers .btn-row button')].map(x => x.textContent.trim()),
           resultaat: document.getElementById('gedeeldResults').innerHTML.trim()
         })""")
-        check("tik op Zoek setlist wisselt de stand",
+        check("tik op Maak setlist wisselt de stand",
               st["gekozen"] == ["false", "true"] and st["muz"] == "none" and st["num"] != "none", json.dumps(st))
-        check("kop en uitleg van Zoek setlist",
-              st["titel"] == "Zoek setlist" and "2 tot 20 muzikanten" in st["sub"], json.dumps(st))
+        check("kop en uitleg van Maak setlist",
+              st["titel"] == "Maak setlist" and "2 tot 20 muzikanten" in st["sub"], json.dumps(st))
         check("straalwiel staat op 10 km, sorteren op Meeste spelers",
               st["straal"] == "10 km" and st["sorteer"] == "Meeste spelers", json.dumps(st))
         check("knoppenrij: Lijst wissen links, Zoek nummers rechts",
@@ -3566,9 +3566,12 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("Alfa Slab One wordt nergens meer geladen of gebruikt",
               "Alfa+Slab" not in html318 and "font-family: 'Alfa Slab" not in css318
               and "font-family:'Alfa Slab" not in js318, "Alfa Slab One nog in gebruik")
-        check("de T in een lege profielfoto gebruikt --font-display (TT-33)",
-              "const AVATAR_T_FALLBACK = `<span style=\"font-family:var(--font-display);\">T</span>`;" in js318,
-              "AVATAR_T_FALLBACK wijkt af")
+        # Bevinding Ronald 28-09-2026: de vorm van de T staat sinds die dag in
+        # .avatar-t, met --font-display. Blok 47 meet het lettertype in de browser.
+        check("de T in een lege profielfoto gebruikt --font-display (TT-33), via .avatar-t",
+              "const AVATAR_T_FALLBACK = `<span class=\"avatar-t\">T</span>`;" in js318
+              and re.search(r"\.avatar-t\s*\{[^}]*font-family:\s*var\(--font-display\)", css318) is not None,
+              "AVATAR_T_FALLBACK of .avatar-t wijkt af")
 
         wm = page.evaluate("""async () => {
           await document.fonts.load("28px 'TT Woordmerk'");
@@ -4861,6 +4864,92 @@ window.TT_STUB.fnAntwoord = {};
               bd["tekst"] == "Bedankt!" and bd["boven"] >= bd["kop"], json.dumps(bd))
         check("bevindingen 27-09-2026: geen paginafouten", not f4, "; ".join(f4)[:300])
         c2.close()
+
+        print("\nBlok 47 — bevindingen 28-09-2026: sterren, namen, de T, terugknop, Maak setlist")
+        # Bevindingen Ronald, 28-09-2026 (4, 5, 7, 8 en 9).
+        c47 = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+        p47 = c47.new_page(); f47 = []; p47.on("pageerror", lambda e: f47.append(str(e)))
+        p47.route("**/supabase-js@2/**", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            p47.route(pat, lambda r: r.abort())
+        p47.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load"); p47.wait_for_timeout(500)
+
+        # 4. Elke gevulde ster is --accent, ook in een tag. Donker goud, licht zwart.
+        st47 = p47.evaluate("""() => {
+          const meet = (thema) => {
+            if (thema) document.documentElement.dataset.theme = thema; else delete document.documentElement.dataset.theme;
+            const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
+            plek.innerHTML = '<span class="tag-solid">Drums ' + starDisplayHTML(3) + '</span>'
+              + starDisplayHTML(2)
+              + '<div class="picker-badge-stars">★★</div>'
+              + '<div class="level-choice-stars"><span class="filled">★</span></div>'
+              + '<div class="star-picker"><span class="star filled">★</span></div>';
+            const c = x => getComputedStyle(x).color;
+            const uit = { accent: getComputedStyle(document.body).getPropertyValue('--accent').trim(),
+              tag: c(plek.querySelector('.tag-solid .star-display-filled')),
+              los: c(plek.children[1].querySelector('.star-display-filled')),
+              badge: c(plek.querySelector('.picker-badge-stars')),
+              keuze: c(plek.querySelector('.level-choice-stars .filled')),
+              kiezer: c(plek.querySelector('.star-picker .star.filled')) };
+            plek.remove(); return uit; };
+          const d = meet(null), l = meet('licht'); delete document.documentElement.dataset.theme; return { d, l }; }""")
+        goud, zwart = "rgb(245, 197, 24)", "rgb(30, 30, 30)"
+        check("donker: elke gevulde ster is goud, ook in een instrumenttag",
+              all(st47["d"][k] == goud for k in ("tag", "los", "badge", "keuze", "kiezer")), json.dumps(st47["d"]))
+        check("licht: elke gevulde ster is --accent (zwart), ook in een tag",
+              all(st47["l"][k] == zwart for k in ("tag", "los", "badge", "keuze", "kiezer")), json.dumps(st47["l"]))
+
+        # 5. Een naam in een lijst is 16px, overal gelijk.
+        nm = p47.evaluate("""() => {
+          const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
+          plek.innerHTML = '<div class="messages-conv-name">A</div><div class="result-row-name">B</div>'
+            + '<div class="result-card-name">C</div><div class="geblokkeerd-naam">D</div>';
+          const uit = [...plek.children].map(x => getComputedStyle(x).fontSize); plek.remove(); return uit; }""")
+        check("naam in berichtenlijst, zoekresultaat (rij en kaart) en blokkadelijst: 16px",
+              nm == ["16px"] * 4, json.dumps(nm))
+
+        # 7. De T: één klasse, in het lettertype van het logo, 25% groter dan zijn vak.
+        t47 = p47.evaluate("""() => {
+          const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
+          plek.innerHTML = '<div class="result-row-avatar">' + AVATAR_T_FALLBACK + '</div>'
+            + '<div class="messages-conv-avatar">' + AVATAR_T_FALLBACK + '</div>'
+            + '<div class="profile-avatar-initials">' + AVATAR_T_FALLBACK + '</div>'
+            + '<div class="band-avatar">' + AVATAR_T_FALLBACK + '</div>'
+            + mediaAfgeschermdHTML('tegel') + mediaAfgeschermdHTML('banner');
+          const r = [...plek.children].map(v => { const t = v.querySelector('span');
+            return t ? [t.className, Math.round(parseFloat(getComputedStyle(t).fontSize) / parseFloat(getComputedStyle(v).fontSize) * 100),
+                        getComputedStyle(t).fontFamily.includes('TT Woordmerk')] : null; });
+          const voorbeeld = ['avatarInitials', 'mhAvatarInitials', 'bandAvatarInitials'].map(id => {
+            const e = document.getElementById(id); return e ? e.className : 'ontbreekt'; });
+          plek.remove(); return { r, voorbeeld }; }""")
+        check("elke T zonder foto is .avatar-t, in het lettertype van het logo, 125% van zijn vak",
+              all(x and x[0] == "avatar-t" and x[1] == 125 and x[2] for x in t47["r"]), json.dumps(t47["r"]))
+        check("de T bij het uploaden van een foto is ook .avatar-t (wizard, mediahoek, band)",
+              t47["voorbeeld"] == ["avatar-t"] * 3, json.dumps(t47["voorbeeld"]))
+
+        # 8. Op een telefoon blijft na een tik geen vlak achter de terugknop staan.
+        css47 = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+        guard = css47.find("@media (hover: hover)")
+        los_hover = [m.start() for m in re.finditer(r"\.nav-menu-btn:hover", css47)
+                     if not (guard != -1 and guard < m.start() < css47.find("\n  }\n", guard))]
+        check("de aanwijsstand van .nav-menu-btn staat alleen in de hover-guard (TT-182)",
+              not los_hover, f"los op positie {los_hover}")
+        p47.evaluate("() => showView('landing')"); p47.wait_for_timeout(150)
+        p47.tap("#navTerugBtn"); p47.wait_for_timeout(350)
+        tb = p47.evaluate("""() => { const b = document.getElementById('navTerugBtn'); const c = getComputedStyle(b);
+          return { vlak: c.backgroundColor, rand: c.borderTopColor, zichtbaar: c.visibility, view: document.querySelector('.app-view.active')?.id }; }""")
+        check("na een tik op de terugknop op de startpagina: geen vlak, geen rand, knop wel zichtbaar",
+              tb["vlak"] == "rgba(0, 0, 0, 0)" and tb["rand"] == "rgba(0, 0, 0, 0)" and tb["zichtbaar"] == "visible"
+              and tb["view"] == "view-landing", json.dumps(tb))
+
+        # 9. "Zoek setlist" heet "Maak setlist": knop en paneeltitel.
+        ms = p47.evaluate("""() => ({ knop: document.getElementById('setlistSoortNummersBtn').textContent.trim(),
+          titel: document.querySelector('#setlistDeelNummers .filter-title').textContent.trim(),
+          oud: document.getElementById('appRoot').innerText.includes('Zoek setlist') })""")
+        check("de tweede stand van Setlist heet Maak setlist, op de knop en in de titel",
+              ms["knop"] == "Maak setlist" and ms["titel"] == "Maak setlist" and not ms["oud"], json.dumps(ms))
+        check("bevindingen 28-09-2026: geen paginafouten", not f47, "; ".join(f47)[:300])
+        c47.close()
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
