@@ -1597,7 +1597,7 @@ def blok_browser():
                 cdp.send("Input.dispatchTouchEvent", {"type": "touchMove",
                          "touchPoints": [{"x": x0 + (x1 - x0) * i / 6, "y": y}]})
             cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
-            up.wait_for_timeout(250)
+            up.wait_for_timeout(450)  # TT-368: het paneel glijdt eerst uit, hooguit 300 ms
         veeg(veld["x"] + 80, veld["x"] - 80, veld["y"])
         check("vegen over een leeg, niet aangetikt veld wisselt van tabblad (TT-280)",
               up.evaluate("currentSearchMode") == "band",
@@ -4988,6 +4988,94 @@ window.TT_STUB.fnAntwoord = {};
         check("een dagscheiding neemt hooguit 34px in", bb["d"]["dag"] <= 34, json.dumps(bb["d"]))
         check("bevindingen 28-09-2026: geen paginafouten", not f47, "; ".join(f47)[:300])
         c47.close()
+
+        print("\nBlok 48 — vegen tussen de zoektabbladen volgt de vinger (TT-368)")
+        # Bevinding Ronald, 28-09-2026: "dat moet lekker soepel gaan, net als
+        # naar boven-beneden." Besluit Ronald, 29-09-2026: "doe wat gebruikelijk is."
+        c48 = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+        p48 = c48.new_page(); f48 = []; p48.on("pageerror", lambda e: f48.append(str(e)))
+        p48.route("**/supabase-js@2/**", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            p48.route(pat, lambda r: r.abort())
+        p48.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load"); p48.wait_for_timeout(500)
+        p48.evaluate("showView('search'); setSearchMode('musician'); document.activeElement && document.activeElement.blur()")
+        p48.wait_for_timeout(300)
+        cdp48 = c48.new_cdp_session(p48)
+        Y48 = p48.evaluate("Math.round(document.querySelector('.search-mode-tabs-outer').getBoundingClientRect().bottom + 12)")
+        def raak(soort, x, y=None):
+            y = Y48 if y is None else y
+            pts = [] if soort in ("touchEnd", "touchCancel") else [{"x": x, "y": y}]
+            cdp48.send("Input.dispatchTouchEvent", {"type": soort, "touchPoints": pts})
+        def sleep(x0, x1, stappen=8, y1=None):
+            raak("touchStart", x0)
+            for i in range(1, stappen + 1):
+                yy = None if y1 is None else round(Y48 + (y1 - Y48) * i / stappen)
+                raak("touchMove", round(x0 + (x1 - x0) * i / stappen), yy)
+                p48.wait_for_timeout(16)
+            p48.wait_for_timeout(50)
+        stand48 = """() => { const x = el => { const m = getComputedStyle(el).transform;
+            return m === 'none' ? 0 : Math.round(new DOMMatrix(m).m41); };
+          const p = id => document.getElementById(id);
+          return { tab: currentSearchMode,
+            muz: x(p('searchModeMusician')), band: x(p('searchModeBand')), set: x(p('searchModeSetlist')),
+            bandZicht: getComputedStyle(p('searchModeBand')).display, muzZicht: getComputedStyle(p('searchModeMusician')).display,
+            setZicht: getComputedStyle(p('searchModeSetlist')).display,
+            view: p('view-search').style.position }; }"""
+
+        # 1. Tijdens het slepen volgt het paneel de vinger, het buurtabblad schuift ernaast mee.
+        # De browser meldt de eerste millimeters niet (de "slop"); vanaf de eerste
+        # gemelde beweging volgt het paneel de vinger precies.
+        sleep(300, 200)
+        s1a = p48.evaluate(stand48)
+        raak("touchMove", 150); p48.wait_for_timeout(50)
+        s1 = p48.evaluate(stand48)
+        check("tijdens het slepen schuift het paneel precies mee met de vinger",
+              s1a["muz"] < -50 and s1["muz"] - s1a["muz"] == -50, json.dumps([s1a, s1]))
+        check("en het buurtabblad staat er direct naast, zichtbaar",
+              s1["bandZicht"] == "block" and s1["band"] == 390 + s1["muz"], json.dumps(s1))
+        # 2. Stilhouden en loslaten na een kort stuk: terugveren.
+        p48.wait_for_timeout(200); raak("touchEnd", 150); p48.wait_for_timeout(450)
+        s2 = p48.evaluate(stand48)
+        check("kort stuk, stilgehouden, losgelaten: het paneel veert terug",
+              s2["tab"] == "musician" and s2["muz"] == 0 and s2["bandZicht"] == "none" and s2["view"] == "", json.dumps(s2))
+        # 3. Een flink stuk (meer dan een derde): doorglijden.
+        sleep(330, 110); p48.wait_for_timeout(200); raak("touchEnd", 110); p48.wait_for_timeout(450)
+        s3 = p48.evaluate(stand48)
+        check("meer dan een derde gesleept en losgelaten: het volgende tabblad staat er",
+              s3["tab"] == "band" and s3["muzZicht"] == "none" and s3["bandZicht"] == "block"
+              and s3["band"] == 0 and s3["muz"] == 0 and s3["view"] == "", json.dumps(s3))
+        # 4. Een snelle, korte veeg glijdt ook door.
+        # (Elke stap via CDP kost zo'n 30 ms; daarom grote stappen, zonder wachten.)
+        raak("touchStart", 260)
+        for x in (230, 190, 150): raak("touchMove", x)
+        raak("touchEnd", 150); p48.wait_for_timeout(450)
+        s4 = p48.evaluate(stand48)
+        check("een snelle veeg van minder dan een derde (110px) glijdt ook door", s4["tab"] == "setlist", json.dumps(s4))
+        # 5. Aan het uiteinde beweegt er niets.
+        sleep(300, 150)
+        s5 = p48.evaluate(stand48)
+        raak("touchEnd", 150); p48.wait_for_timeout(450)
+        s5b = p48.evaluate(stand48)
+        check("aan het uiteinde (Setlist) beweegt niets en blijft het tabblad staan",
+              s5["set"] == 0 and s5b["tab"] == "setlist" and s5b["muzZicht"] == "none", json.dumps([s5, s5b]))
+        # 6. Neemt het toestel de veeg over (terugveeg van Android): terugveren.
+        sleep(100, 250)
+        s6a = p48.evaluate(stand48)
+        raak("touchCancel", 250); p48.wait_for_timeout(450)
+        s6 = p48.evaluate(stand48)
+        check("veeg overgenomen door het toestel (touchcancel): het paneel veert terug",
+              s6a["set"] > 100 and s6["tab"] == "setlist" and s6["set"] == 0 and s6["bandZicht"] == "none", json.dumps([s6a, s6]))
+        # 7. Een verticale beweging schuift niets opzij.
+        sleep(200, 205, y1=Y48 + 150)
+        s7 = p48.evaluate(stand48)
+        raak("touchEnd", 205, Y48 + 150); p48.wait_for_timeout(300)
+        check("een verticale veeg schuift het paneel niet opzij", s7["set"] == 0 and s7["bandZicht"] == "none", json.dumps(s7))
+        # 8. De oude sprong-animatie is weg (dode code, TT-368).
+        oud48 = p48.evaluate("""() => typeof animeerZoekPaneel === 'undefined'
+          && ![...document.styleSheets].some(sh => { try { return [...sh.cssRules].some(r => r.name === 'searchPaneVanRechts'); } catch (e) { return false; } })""")
+        check("de oude sprong van 24px na het loslaten bestaat niet meer", oud48, "")
+        check("vegen (TT-368): geen paginafouten", not f48, "; ".join(f48)[:300])
+        c48.close()
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
