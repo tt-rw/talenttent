@@ -818,10 +818,10 @@ function selectSortModeByValue(gridId, value) {
   if (gridId === 'filterBandSortMode') bandSearchSortMode = value;
 }
 
-// TT-170 (10-09-2026): de tweede parameter komt alleen van een veeg en stuurt
-// de schuifbeweging van het binnenkomende paneel. Een tik op een tabblad roept
-// setSearchMode() met één argument aan; dat pad is ongewijzigd.
-function setSearchMode(mode, veegRichting) {
+// TT-368 (29-09-2026): de tweede parameter (de richting van een veeg) is weg.
+// Een veeg schuift de panelen nu zelf mee met de vinger en roept deze functie
+// pas aan als het nieuwe paneel al op zijn plek staat. Zie initZoekVeeg().
+function setSearchMode(mode) {
   currentSearchMode = mode;
   bewaarZoekTabblad(mode); // TT-279
   const isMusician = mode === 'musician';
@@ -833,7 +833,6 @@ function setSearchMode(mode, veegRichting) {
   document.getElementById('searchModeMusicianBtn').classList.toggle('active', isMusician);
   document.getElementById('searchModeBandBtn').classList.toggle('active', isBand);
   document.getElementById('searchModeSetlistBtn').classList.toggle('active', isSetlist);
-  if (veegRichting) animeerZoekPaneel(mode, veegRichting);
   if (isBand) initBandSearchFilters();
   if (isSetlist) initSetlistSearchFilters();
   if (isSetlist && setlistSoort === 'nummers') initGedeeldSearchFilters(); // TT-289
@@ -855,20 +854,39 @@ function setSearchMode(mode, veegRichting) {
 // een veeg naar rechts het tabblad links. De inhoud volgt de vinger. De
 // eerdere afspraak "veeg naar links = terug" (TT-168-wireframe) vervalt.
 //
-// Volgorde is die van de knoppenrij: Muzikant · Band · Setlist. Aan de
-// uiteinden gebeurt niets — geen doorlopende cyclus.
+// TT-368 (29-09-2026, Ronald: "doe wat gebruikelijk is"): tot vandaag volgde
+// de inhoud de vinger níét. Er bewoog niets tot de vinger losliet, en dan
+// schoof het nieuwe paneel 24px in. Nu werkt het zoals de tabbladen in een
+// Android-app:
+//  - Het paneel schuift mee met de vinger. Het buurtabblad schuift er direct
+//    naast mee, zodat je ziet wat er komt.
+//  - Loslaten na meer dan een derde van de breedte, of met een snelle veeg,
+//    laat het doorglijden naar het buurtabblad. Anders veert het terug.
+//  - Aan de uiteinden beweegt er niets — geen doorlopende cyclus (TT-170).
+//  - Neemt het toestel de veeg over (de terugveeg van Android vanaf de rand
+//    geeft `touchcancel`), dan veert het paneel terug.
+//
+// Het buurpaneel staat tijdens het slepen los boven de pagina
+// (`position: absolute`), op de hoogte waar je nu kijkt, en is nooit hoger
+// dan het scherm. De pagina zelf deelt niets opnieuw in; dat was in TT-170 de
+// reden om dit niet te bouwen (panelen van verschillende hoogte).
+//
+// Alles loopt via `transform`, dus via de grafische kaart, en de luisteraars
+// blijven passief (TT-256). Het tegenhouden van horizontaal pannen doet CSS
+// met `touch-action: pan-y pinch-zoom` op #view-search.
 //
 // Les uit TT-U21 (het niveau-gebaar): nooit touch-action:none op een groot
-// vlak. Dat blokkeerde toen het scrollen over de instrumentknoppen. Deze code
-// laat het toestel gewoon scrollen en kiest pas een richting zodra de vinger
-// duidelijk horizontaal beweegt.
+// vlak. Deze code laat het toestel gewoon scrollen en kiest pas een richting
+// zodra de vinger duidelijk horizontaal beweegt.
 const ZOEK_TABBLADEN = ['musician', 'band', 'setlist'];
-const VEEG_DREMPEL   = 60;   // px die de vinger minimaal horizontaal aflegt
-const VEEG_VERHOUDING = 1.5; // horizontaal moet 1,5x groter zijn dan verticaal
-const VEEG_MAX_MS    = 800;  // een traag sleepje is geen veeg
+const ZOEK_PANEEL_IDS = { musician: 'searchModeMusician', band: 'searchModeBand', setlist: 'searchModeSetlist' };
+const VEEG_VERHOUDING  = 1.5;  // horizontaal moet 1,5x groter zijn dan verticaal
+const VEEG_AANDEEL     = 0.35; // loslaten voorbij dit deel van de breedte = doorglijden
+const VEEG_SNELHEID    = 0.4;  // px per ms; een snelle veeg glijdt ook door
+const VEEG_SNEL_MIN_PX = 30;   // ... mits de vinger minstens zo ver ging, vanaf het neerzetten
+const VEEG_GLIJ_MS     = 260;  // hele breedte; een kortere rest glijdt sneller
 
-let veegStartX = 0, veegStartY = 0, veegStartT = 0;
-let veegBezig = false, veegHorizontaal = null;
+let veeg = null; // de lopende veeg, of null
 
 // Een veeg telt niet als er iets anders overheen ligt, als de vinger in een
 // aangetikt tekstveld begint, of als het element eronder zelf horizontaal scrolt.
@@ -893,17 +911,87 @@ function veegGeblokkeerd(doel) {
   return false;
 }
 
-function animeerZoekPaneel(mode, richting) {
-  const paneelIds = { musician: 'searchModeMusician', band: 'searchModeBand', setlist: 'searchModeSetlist' };
-  const paneel = document.getElementById(paneelIds[mode]);
-  if (!paneel) return;
-  const klasse = richting === 'links' ? 'search-pane-in-left' : 'search-pane-in-right';
-  paneel.classList.remove('search-pane-in-left', 'search-pane-in-right');
-  // Een geforceerde herberekening, anders start dezelfde animatie niet opnieuw
-  // wanneer twee keer achter elkaar dezelfde kant op wordt geveegd.
-  void paneel.offsetWidth;
-  paneel.classList.add(klasse);
-  paneel.addEventListener('animationend', () => paneel.classList.remove(klasse), { once: true });
+function veegMagBewegen() {
+  return !window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+// Zet het buurpaneel klaar naast het huidige: zichtbaar, los van de pagina,
+// op de hoogte waar de gebruiker nu kijkt.
+function veegBuurKlaarzetten(v, richting) {
+  if (v.buur && v.buurRichting === richting) return;
+  veegBuurOpruimen(v);
+  const nu = ZOEK_TABBLADEN.indexOf(currentSearchMode);
+  const doelIndex = richting < 0 ? nu + 1 : nu - 1; // vinger naar links → tabblad rechts
+  if (nu === -1 || doelIndex < 0 || doelIndex >= ZOEK_TABBLADEN.length) {
+    v.buur = null; v.buurRichting = richting; v.doel = null;
+    return;
+  }
+  const buur = document.getElementById(ZOEK_PANEEL_IDS[ZOEK_TABBLADEN[doelIndex]]);
+  if (!buur) { v.buur = null; v.buurRichting = richting; v.doel = null; return; }
+  const viewRect = v.view.getBoundingClientRect();
+  const paneelRect = v.paneel.getBoundingClientRect();
+  const kopOnder = document.querySelector('.app-topbar')?.getBoundingClientRect().bottom || 0;
+  const zichtTop = Math.max(paneelRect.top, kopOnder);
+  v.view.style.position = 'relative'; // alleen tijdens het slepen, zie veegBuurOpruimen()
+  const s = buur.style;
+  s.display = 'block';
+  s.position = 'absolute';
+  s.left = '0';
+  s.right = '0';
+  s.top = (zichtTop - viewRect.top) + 'px';
+  s.height = Math.max(0, window.innerHeight - zichtTop) + 'px';
+  s.overflow = 'hidden';
+  s.willChange = 'transform';
+  s.pointerEvents = 'none';
+  v.buur = buur;
+  v.buurRichting = richting;
+  v.doel = ZOEK_TABBLADEN[doelIndex];
+  v.verschuiving = Math.max(0, kopOnder - paneelRect.top); // hoe ver de gebruiker het paneel in is
+}
+
+function veegBuurOpruimen(v) {
+  if (!v.buur) return;
+  const s = v.buur.style;
+  s.display = 'none';
+  ['position', 'left', 'right', 'top', 'height', 'overflow', 'willChange',
+   'pointerEvents', 'transform', 'transition'].forEach(k => { s[k] = ''; });
+  v.view.style.position = '';
+  v.buur = null;
+}
+
+function veegTekenen(v) {
+  v.frame = 0;
+  if (!v.buur) { v.paneel.style.transform = ''; return; } // uiteinde: niets beweegt
+  const w = v.breedte;
+  v.paneel.style.transform = `translate3d(${v.dx}px,0,0)`;
+  v.buur.style.transform = `translate3d(${v.dx + (v.buurRichting < 0 ? w : -w)}px,0,0)`;
+}
+
+// Laat beide panelen naar hun eindplek glijden en roept daarna klaar() aan.
+function veegGlijden(v, doorglijden, klaar) {
+  const w = v.breedte;
+  const eindPaneel = doorglijden ? (v.buurRichting < 0 ? -w : w) : 0;
+  const eindBuur   = doorglijden ? 0 : (v.buurRichting < 0 ? w : -w);
+  const rest = Math.abs(eindPaneel - v.dx);
+  const ms = veegMagBewegen() ? Math.round(Math.max(120, Math.min(VEEG_GLIJ_MS, (rest / w) * VEEG_GLIJ_MS))) : 0;
+  if (ms === 0) { klaar(); return; }
+  const overgang = `transform ${ms}ms cubic-bezier(0.2, 0, 0, 1)`;
+  v.paneel.style.transition = overgang;
+  v.paneel.style.transform = `translate3d(${eindPaneel}px,0,0)`;
+  if (v.buur) {
+    v.buur.style.transition = overgang;
+    v.buur.style.transform = `translate3d(${eindBuur}px,0,0)`;
+  }
+  let gedaan = false;
+  const afronden = () => { if (gedaan) return; gedaan = true; klaar(); };
+  v.paneel.addEventListener('transitionend', afronden, { once: true });
+  setTimeout(afronden, ms + 40); // vangnet: transitionend blijft soms uit
+}
+
+function veegPaneelHerstellen(paneel) {
+  paneel.style.transform = '';
+  paneel.style.transition = '';
+  paneel.style.willChange = '';
 }
 
 function initZoekVeeg() {
@@ -911,59 +999,97 @@ function initZoekVeeg() {
   if (!view) return;
 
   view.addEventListener('touchstart', (e) => {
-    veegBezig = false;
-    veegHorizontaal = null;
+    if (veeg && veeg.glijdt) return;               // de vorige veeg glijdt nog uit
+    veeg = null;
     if (e.touches.length !== 1) return;          // knijpen is geen veeg
     if (veegGeblokkeerd(e.target)) return;
-    veegStartX = e.touches[0].clientX;
-    veegStartY = e.touches[0].clientY;
-    veegStartT = Date.now();
-    veegBezig = true;
+    const paneel = document.getElementById(ZOEK_PANEEL_IDS[currentSearchMode]);
+    if (!paneel) return;
+    const t = e.touches[0];
+    veeg = {
+      view, paneel, x0: t.clientX, startX: t.clientX, startY: t.clientY, dx: 0,
+      horizontaal: null, breedte: view.clientWidth || window.innerWidth,
+      buur: null, buurRichting: 0, doel: null, frame: 0, glijdt: false,
+      sporen: [{ x: t.clientX, t: performance.now() }]
+    };
   }, { passive: true });
 
   view.addEventListener('touchmove', (e) => {
-    if (!veegBezig) return;
-    if (e.touches.length !== 1) { veegBezig = false; return; }
-    const dx = e.touches[0].clientX - veegStartX;
-    const dy = e.touches[0].clientY - veegStartY;
-    if (veegHorizontaal === null) {
+    const v = veeg;
+    if (!v || v.glijdt) return;
+    if (e.touches.length !== 1) { veegAfbreken(); return; }
+    const t = e.touches[0];
+    const dx = t.clientX - v.startX;
+    const dy = t.clientY - v.startY;
+    if (v.horizontaal === null) {
       // Richting vastzetten zodra de vinger ver genoeg is voor een uitspraak.
       if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-      veegHorizontaal = Math.abs(dx) > Math.abs(dy) * VEEG_VERHOUDING;
-      if (!veegHorizontaal) { veegBezig = false; return; }  // verticaal: laat scrollen
+      v.horizontaal = Math.abs(dx) > Math.abs(dy) * VEEG_VERHOUDING;
+      if (!v.horizontaal) { veeg = null; return; }  // verticaal: laat scrollen
+      v.startX = t.clientX;                        // geen sprong van 10px bij de start
+      v.paneel.style.willChange = 'transform';
     }
-    // TT-256 (11-09-2026): hier stond `e.preventDefault()` en daarmee moest
-    // deze luisteraar niet-passief zijn. Een niet-passieve touchmove dwingt de
-    // browser bij elke vingerbeweging te wachten op JavaScript, ook bij gewoon
-    // verticaal scrollen — de oorzaak van het schokkerige scrollen op het
-    // zoekscherm. Het tegenhouden gebeurt nu vooraf in CSS met
-    // `touch-action: pan-y pinch-zoom` op #view-search. Deze luisteraar meet
-    // alleen nog de richting en mag daarom passief zijn.
+    v.dx = t.clientX - v.startX;
+    const nu = performance.now();
+    v.sporen.push({ x: t.clientX, t: nu });
+    while (v.sporen.length > 2 && nu - v.sporen[0].t > 100) v.sporen.shift();
+    if (v.dx !== 0) veegBuurKlaarzetten(v, v.dx < 0 ? -1 : 1);
+    if (!v.frame) v.frame = requestAnimationFrame(() => veegTekenen(v));
+    // TT-256 (11-09-2026): geen `e.preventDefault()` hier. Een niet-passieve
+    // touchmove dwingt de browser bij elke vingerbeweging te wachten op
+    // JavaScript, ook bij gewoon verticaal scrollen. Het tegenhouden gebeurt
+    // vooraf in CSS met `touch-action: pan-y pinch-zoom` op #view-search.
   }, { passive: true });
 
-  const veegEinde = (e) => {
-    if (!veegBezig || !veegHorizontaal) { veegBezig = false; return; }
-    veegBezig = false;
-    const aanraking = e.changedTouches && e.changedTouches[0];
-    if (!aanraking) return;
-    const dx = aanraking.clientX - veegStartX;
-    if (Math.abs(dx) < VEEG_DREMPEL) return;
-    if (Date.now() - veegStartT > VEEG_MAX_MS) return;
+  view.addEventListener('touchend', (e) => {
+    const v = veeg;
+    if (!v || v.glijdt) return;
+    if (!v.horizontaal) { veeg = null; return; }
+    if (v.frame) { cancelAnimationFrame(v.frame); veegTekenen(v); }
+    // Het loslaatpunt telt mee: wie stilhield en dan losliet, veegde niet snel.
+    const los = e.changedTouches && e.changedTouches[0];
+    const nuT = performance.now();
+    v.sporen.push({ x: los ? los.clientX : v.startX + v.dx, t: nuT });
+    while (v.sporen.length > 2 && nuT - v.sporen[0].t > 100) v.sporen.shift();
+    const eerste = v.sporen[0], laatste = v.sporen[v.sporen.length - 1];
+    const tijd = laatste.t - eerste.t;
+    const snelheid = tijd > 0 ? (laatste.x - eerste.x) / tijd : 0;
+    const zelfdeKant = Math.sign(snelheid) === Math.sign(v.dx);
+    const doorglijden = !!v.buur && v.doel && (
+      Math.abs(v.dx) > v.breedte * VEEG_AANDEEL ||
+      (zelfdeKant && Math.abs(snelheid) > VEEG_SNELHEID && Math.abs(laatste.x - v.x0) > VEEG_SNEL_MIN_PX));
+    v.glijdt = true;
+    veegGlijden(v, doorglijden, () => {
+      const doel = v.doel, buur = v.buur, verschuiving = v.verschuiving || 0;
+      veegPaneelHerstellen(v.paneel);
+      veegBuurOpruimen(v);
+      veeg = null;
+      if (!doorglijden) return;
+      setSearchMode(doel);
+      // Het nieuwe paneel staat nu op de plek van het oude. Kijkt de gebruiker
+      // al een stuk het paneel in, dan scrollen we zo ver dat zijn bovenkant
+      // precies onder de kop staat — daar stond hij tijdens het slepen ook.
+      // Zo springt er niets. Stond de bovenkant nog in beeld, dan blijft alles
+      // staan.
+      if (verschuiving > 0 && buur) {
+        const kopOnder = document.querySelector('.app-topbar')?.getBoundingClientRect().bottom || 0;
+        const y = window.scrollY + buur.getBoundingClientRect().top - kopOnder;
+        window.scrollTo({ top: Math.max(0, y), behavior: 'instant' });
+      }
+    });
+  }, { passive: true });
 
-    const nu = ZOEK_TABBLADEN.indexOf(currentSearchMode);
-    if (nu === -1) return;
-    // Vinger naar links (dx < 0) → het tabblad rechts komt in beeld.
-    const doel = dx < 0 ? nu + 1 : nu - 1;
-    if (doel < 0 || doel >= ZOEK_TABBLADEN.length) return;   // geen cyclus
+  view.addEventListener('touchcancel', veegAfbreken, { passive: true });
+}
 
-    setSearchMode(ZOEK_TABBLADEN[doel], dx < 0 ? 'rechts' : 'links');
-    // Het nieuwe tabblad begint bovenaan, net als na showView(). Zonder dit
-    // valt de gebruiker midden in een lijst die hij nog nooit heeft gezien.
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  view.addEventListener('touchend', veegEinde, { passive: true });
-  view.addEventListener('touchcancel', () => { veegBezig = false; veegHorizontaal = null; }, { passive: true });
+// Het toestel nam de veeg over, of er kwam een tweede vinger bij: terugveren.
+function veegAfbreken() {
+  const v = veeg;
+  if (!v || v.glijdt) return;
+  if (v.frame) cancelAnimationFrame(v.frame);
+  if (!v.horizontaal || v.dx === 0) { veegPaneelHerstellen(v.paneel); veegBuurOpruimen(v); veeg = null; return; }
+  v.glijdt = true;
+  veegGlijden(v, false, () => { veegPaneelHerstellen(v.paneel); veegBuurOpruimen(v); veeg = null; });
 }
 
 // De History API (pushState/replaceState) kan een SecurityError gooien in

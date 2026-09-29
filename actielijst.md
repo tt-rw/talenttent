@@ -1,6 +1,65 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 29-09-2026 (vervolg) — **Besluiten Ronald over TT-369,
+**Laatste update:** 29-09-2026 (TT-367, TT-368) — **TT-368 gebouwd en
+getest: vegen tussen de zoektabbladen volgt nu de vinger. TT-367 gemeten; het
+advies "oude inhoud laten staan" is door Ronald afgewezen. Testset 679 van
+679. Nog open: upload naar beide repo's; één vraag over TT-367; laag 2 op de
+telefoon.**
+
+- **Upload van 29-09-2026 (vervolg) gecontroleerd.** Ronald moest twee keer
+  uploaden. **Oorzaak, geverifieerd:** Ronald uploadde om 18:02; de vorige
+  sessie schreef de bestanden daarna opnieuw in de gedeelde map, om 18:18.
+  De eerste upload was dus de oude set. Daarna stonden alle twaalf bestanden
+  gelijk aan de gedeelde map, in beide repo's.
+- **Besluiten Ronald, 29-09-2026:** (1) TT-367: geen oude inhoud laten staan
+  tijdens het verversen — "dan lijkt het alsof de app niet werkt. terwijl het
+  andere zijn die falen." (2) TT-368: "doe wat gebruikelijk is."
+- **TT-367 — gemeten, niet gebouwd.** Browserpane, ingelogd als Ronald, wifi
+  op de laptop. **Geverifieerd:** een wissel via de onderbalk kost 120 tot
+  515 ms; nul trage taken, dus de tijd zit helemaal in wachten op de
+  database. Profiel, Berichten en Bands wissen bij elke tik hun inhoud naar
+  "Laden..." en halen alles opnieuw op, in twee tot vier stappen na elkaar
+  (Profiel: `musicians` → `tt_musicians_ages` → `band_members`; Bands:
+  `tt_expire_old_founder_offers` → `band_members` → `bands`). Zoeken houdt
+  de oude uitkomst staan. **Aanname:** op een telefoonnetwerk duurt elke stap
+  langer, dus het wachten groeit met het aantal stappen na elkaar. Ronalds
+  telefoon zelf is niet gemeten. **Open vraag aan Ronald:** de stappen
+  tegelijk laten lopen in plaats van na elkaar, met "Laden..." zoals nu?
+- **TT-368 — gebouwd.** Tot vandaag bewoog er tijdens een veeg niets: bij een
+  vinger van 200px opzij bleef het paneel op 0px staan (**geverifieerd** in de
+  browserpane). Pas na het loslaten wisselde het tabblad met een sprong van
+  24px. Nu, zoals de tabbladen in een Android-app:
+  - het paneel schuift mee met de vinger, het buurtabblad schuift er direct
+    naast mee;
+  - loslaten na meer dan een derde van de breedte, of met een snelle veeg,
+    laat het doorglijden (hooguit 260 ms); anders veert het terug;
+  - aan de uiteinden beweegt niets (TT-170);
+  - neemt het toestel de veeg over (`touchcancel`, zoals bij de terugveeg van
+    Android vanaf de rand), dan veert het terug;
+  - kijkt de gebruiker al een stuk het paneel in, dan staat het nieuwe
+    paneel op dezelfde hoogte als tijdens het slepen. Er springt niets; het
+    scherm scrolt niet meer naar boven.
+  Alles via `transform`, luisteraars passief (TT-256), `touch-action` blijft.
+  De keyframes `searchPaneVanRechts`/`-Links`, `animeerZoekPaneel()` en de
+  tweede parameter van `setSearchMode()` zijn weg (dode code).
+- **Rechtgezet:** bij TT-170 stond "De inhoud volgt de vinger, zoals op iOS
+  en Android." Dat klopte niet: de code deed dat nooit, en `styles.css` noemde
+  het zelf een bewuste keuze ("Bewust geen sleep-in-realtime"). Waaruit blijkt:
+  de meting hierboven. Nu klopt het wel.
+- **Getest:** 679/679. Nieuw blok 48, tien controles: het paneel volgt de
+  vinger precies, het buurtabblad staat ernaast, terugveren, doorglijden,
+  snelle veeg, uiteinde, `touchcancel`, verticaal, oude animatie weg, geen
+  paginafouten. Tegen de oude code zakken er vijf. Blok 19 wacht na een veeg
+  450 ms in plaats van 250 (het paneel glijdt eerst uit). Schermafdrukken
+  bekeken op 390px: bovenaan, een stuk gescrold, en na het loslaten.
+- **Wacht op laag 2:** vegen op Ronalds Samsung-telefoon. Vooral de terugveeg
+  vanaf de rand: veert het paneel netjes terug? Zie ook TT-282.
+- **Gewijzigd:** `core.js`, `styles.css`, `index.html` (`?v=`),
+  `tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
+
+---
+
+**Vorige update:** 29-09-2026 (vervolg) — **Besluiten Ronald over TT-369,
 TT-371 en TT-374 gebouwd, en een gesprek is compacter (TT-377, nieuw). Testset
 669 van 669. Nog open: upload naar beide repo's; TT-366 wacht op één antwoord
 van Ronald.**
@@ -6625,6 +6684,8 @@ Dit ticket stond eerder als "swipe-navigatie door de hele app". Het TT-168-wiref
 
 De inhoud volgt de vinger, zoals op iOS en Android. Volgorde is die van de knoppenrij: Muzikant · Band · Setlist. Aan de uiteinden gebeurt niets — geen doorlopende cyclus (Ronald, 10-09-2026).
 
+*Gecorrigeerd 29-09-2026 (TT-368): de inhoud volgde de vinger níét. Het paneel bleef tijdens de veeg staan en sprong pas na het loslaten 24px in; `styles.css` noemde dat zelf "bewust geen sleep-in-realtime". Waaruit blijkt: gemeten in de browserpane, vinger 200px opzij, paneel 0px. Sinds TT-368 volgt het paneel de vinger wel. De drempel van 60px, de grens van 800 ms, `veegRichting`, de schuifanimatie en het naar boven springen hieronder gelden daarom niet meer.*
+
 **Gebouwd:** `initZoekVeeg()` in `core.js`, aangeroepen in het startblok van `index.html`. `setSearchMode()` heeft een tweede parameter `veegRichting` gekregen; een tik op een tabblad roept de functie nog steeds met één argument aan, dat pad is ongewijzigd. De schuifanimatie (`.search-pane-in-left` / `.search-pane-in-right`, 0,18 s) staat in `styles.css`.
 
 **Bewuste keuzes:**
@@ -7240,7 +7301,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-367** | De onderbalk laadt traag op Android | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): "het laden duurt vrij lang van de ene knop naar de andere … maakt niet uit van welke knop naar welke. Dit is op een android telefoon." Advies P1.** Nog niet onderzocht. Volgende sessie, samen met TT-368: eerst meten op zijn telefoon, dan pas iets wijzigen. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: een app die bij elke tik hapert, voelt kapot en wordt weggelegd |
+| **TT-367** | De onderbalk laadt traag op Android | **Gemeten 29-09-2026, niet gebouwd — zie Laatste update.** Elke tik op Profiel, Berichten of Bands wist de inhoud naar "Laden..." en haalt alles opnieuw op, in twee tot vier stappen na elkaar (120–515 ms op wifi). **Besluit Ronald, 29-09-2026:** geen oude inhoud laten staan tijdens het verversen. **Open vraag aan Ronald:** de stappen tegelijk laten lopen? Bevinding Ronald (28-09-2026): "het laden duurt vrij lang van de ene knop naar de andere … Dit is op een android telefoon." Advies P1. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: een app die bij elke tik hapert, voelt kapot en wordt weggelegd |
 | **TT-357** | Testaccounts opschonen vóór de lancering | **Nieuw, 27-09-2026 (TT-65). Besluit Ronald: later opschonen, vlak vóór de lancering. Niveau: advies P1, door Ronald te bevestigen.** Alle bestaande accounts zijn testaccounts. Nu niet wissen: TT-352 en TT-323 hebben ze nog nodig, en het proefherstel van TT-65 heeft gegevens nodig. Gewiste testaccounts verdwijnen na 30 dagen vanzelf uit de back-up. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: nepprofielen in de zoekresultaten kosten vertrouwen. **Vóór lancering** |
 | **TT-356** | In de welkomstmail valt een punt weg bij het versturen | **Oorzaak gevonden en opgelost, 27-09-2026 (TT-361). Ingevoerd in Supabase en nagemeten (SHA-256), dezelfde dag. Wacht op ontvangst in TT-323.** **Oorzaak, geverifieerd in de broncode van denomailer 1.6.0** (gelezen op deno.land via de browserpane): de mail gaat als quoted-printable, afgeknipt op 74 tekens, en denomailer zet een punt aan het begin van een regel niet dubbel. De SMTP-server haalt zo'n punt weg (RFC 5321, 4.5.2). **Nagebootst** met dezelfde code en een server die dat doet: welkom verloor "vinden." én de punt in "proton.me" en "talenttent.org"; "Je hebt toestemming" verloor "online."; de andere vijf niets — dat hangt af van waar de regel afbreekt, en die plek verschuift met de wisselende naam in de afsluiter. **Oplossing:** alle vijf de functies sturen de mail als base64 (`base64Regels()` in het template). Base64 bevat geen punt. Na de wijziging komen alle acht nagebootste mails byte voor byte gelijk aan. Bestanden: `_niet-uploaden-edge-function-<naam>-27-09-2026-TT-356.ts`. **Geverifieerd:** de vijf functies in Supabase waren vóór deze wijziging gelijk aan de bestanden waarop die is gebouwd (SHA-256). *(Rechtgezet: hier stond "Aanname: de punt verdwijnt bij het versturen (denomailer)" en "Onbekend: of het in de andere vier functies ook gebeurt". Waaruit blijkt: de broncode en de nabootsing hierboven.)* **Oorspronkelijk, 27-09-2026 (TT-323). Advies P1, niveau door Ronald te bevestigen.** Ronald ontving "Je bent binnen Zestien. Welkom in de Tent!" met "…kunnen je nu vinden" zonder punt. **Geverifieerd:** de code van `welkom` in Supabase heeft de punt (gelezen in het dashboard), en de mail die Claude uit die code opbouwt ook, in HTML en tekstversie. **Aanname:** de punt verdwijnt bij het versturen (denomailer): een punt aan het begin van een verzendregel valt weg. Niet gemeten; de bron van denomailer is vanuit de sessie niet bereikbaar. **Onbekend:** of het in de andere vier functies ook gebeurt. **Toets P1:** valt zo'n punt in een link (".org"), dan werkt de knop niet en komt iemand niet binnen. **Eerste meting:** de bron van de ontvangen mail bekijken in Proton. **Voorstel van Claude:** eigen sessie; raakt alle vijf de mailfuncties. |
 | **TT-353** | "Er ging iets mis" als het nieuwe wachtwoord gelijk is aan het oude | **Gebouwd en getest 27-09-2026 (blok 45), wacht op laag 2 — zie Laatste update.** Tekst: "Kies een ander wachtwoord dan je huidige.", bij het veld, ook in Instellingen. **Nieuw, 27-09-2026 (TT-344, laag 2), gezien door Ronald: "een neutrale melding: er ging iets mis. wat ging er mis?" Advies P1, niveau door Ronald te bevestigen.** **Toets P1:** wie zijn wachtwoord vergeten is, typt vaak hetzelfde opnieuw. Hij krijgt dan steeds dezelfde lege melding en weet niet wat hij moet veranderen; dat bepaalt of hij terugkomt. **Geverifieerd** in de console op talenttent.org: `updateUser` geeft 422, "New password should be different from the old password." `friendlyErrorMessage()` in `utils.js` kent die tekst niet en valt terug op "Er ging iets mis. Probeer het opnieuw." **Voorstel van Claude:** de melding bij het veld "Nieuw wachtwoord" zetten, met een tekst als "Kies een ander wachtwoord dan je vorige." Dezelfde vertaling geldt dan ook voor "Wachtwoord wijzigen" in Instellingen (TT-299), als Supabase daar dezelfde fout geeft (**Onbekend**, niet gemeten). |
@@ -7281,7 +7342,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | ID | Ticket | Kern |
 |---|---|---|
 | **TT-366** | Thema volgt het toestel niet | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): toestel op donker, in de app "Zoals mijn toestel", en toch licht. Advies P2.** **Rechtgezet 29-09-2026:** hier stond als aanname dat Chrome een eigen thema-instelling heeft. Ronald gebruikt geen Chrome; het toestel is een Samsung, en hij wijzigt het thema in de telefooninstellingen. **Geverifieerd in de code:** de app is licht zodra de browser "licht" of "geen voorkeur" meldt (`pasLichtDonkerToe()` in `index.html`). **Onbekend:** in welke browser of app Ronald talenttent.org opent, en wat die aan de app meldt. **Wacht op:** dat antwoord; daarna meten op zijn telefoon. **Toets P2:** het werkt, maar de app doet niet wat de keuze belooft |
-| **TT-368** | Links-rechts vegen in Zoeken gaat stroef | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): "dat moet lekker soepel gaan, net als naar boven-beneden." Advies P2.** Nog niet onderzocht. Volgende sessie, samen met TT-367. Raakt TT-170 (vegen tussen tabbladen), TT-256 (`touch-action: pan-y`) en TT-282. **Toets P2:** het werkt, maar het kost moeite |
+| **TT-368** | Links-rechts vegen in Zoeken gaat stroef | **Gebouwd en getest 29-09-2026 (blok 48) — zie Laatste update. Wacht op laag 2 op Ronalds telefoon.** Het paneel volgt nu de vinger, het buurtabblad schuift ernaast mee, loslaten laat doorglijden of terugveren (besluit Ronald: "doe wat gebruikelijk is"). Bevinding Ronald (28-09-2026): "dat moet lekker soepel gaan, net als naar boven-beneden." Advies P2. **Toets P2:** het werkt, maar het kost moeite |
 | **TT-369** | Sterren overal in de accentkleur | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026): "sterren in accentkleur geel. overal in de app." Een gevulde ster in een tag was wit. **Besluit Ronald, 29-09-2026: ook in licht goud** ("dat wordt dan goud. net als overal"). Gebouwd: `--merk` in beide thema's. **Toets P2:** werkte, maar het niveau viel weg |
 | **TT-370** | Namen van contactpersonen groter | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026): "nu vallen ze weg in de app." Een naam in een lijst is 16px (huisstijl §2). **Toets P2:** werkte, maar de naam is waar je op zoekt |
 | **TT-371** | Je eigen bericht in een variant van de accentkleur | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): "maar niet te hard contrast … geef eerst enkele ideeën voordat je gaat bouwen." Advies P2.** **Besluit Ronald, 29-09-2026: "voor nu C"** (gedempt goud met zwarte tekst). **Gebouwd en getest 29-09-2026 (vervolg).** Vervangt het huisstijlbesluit "je eigen bericht is grijs" (26-09-2026). **Toets P2:** het werkt, maar in een lang gesprek zie je niet in één blik wat je zelf zei |
@@ -7325,7 +7386,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-320** | Bandfoto 64px en hoekig, muzikantfoto 80px en rond | **Nieuw, 24-09-2026 (TT-318).** In het profielvenster verschillen de twee foto's in maat en vorm. Huisstijl: muzikantkant en bandkant volgen dezelfde regels. Vraag aan Ronald: gelijktrekken, of is het verschil bewust (een band is geen persoon). **Toets P2:** werkt, kost consistentie |
 | **TT-321** | Het woordmerk in de e-mails | **Nieuw, 24-09-2026. Wens Ronald:** *"ik wil dit ook gebruiken voor de emails."* `send-digest` en `ouder-toestemming` gebruiken nog Alfa Slab One, als tekst. **Aanname:** Gmail en Outlook tonen geen eigen lettertype in een mail; daarom als afbeelding (PNG). Niet zelf getest. Vraagt een PNG van het woordmerk en een wijziging in beide Edge Functions, die Ronald zelf plaatst. **Toets P2:** de mail werkt, maar het merk klopt niet met de app |
 | **TT-316** | Knoppen en badges: één vorm per soort | **Gebouwd en getest 24-09-2026 (vervolg 2), zie Laatste update bovenaan.** Besluiten Ronald: K1 t/m K12 akkoord, bandsterren weg uit de lijsten, en bij K3 geen kortere teksten — wat niet past loopt over twee regels. Testset blok 31, monitorronde B6 en B7. **Open: alleen laag 2** (keuzeknop en ledenlijst op een echte telefoon). Voorstel: `_niet-uploaden-TT-316-knoppen-en-badges-24-09-2026.html`. **Toets P2:** het werkte, maar acht soorten in wisselende vormen maakten de app onrustig |
-| **TT-282** | Vegen: een schuine of afbuigende veeg wisselt van tabblad | **Nieuw, 16-09-2026 (onderhoudsronde).** 30° telt als horizontaal; een veeg die steil eindigt telt ook; een veeg vanaf de schermrand wisselt. Volledige tekst: Laatste update bovenaan |
+| **TT-282** | Vegen: een schuine of afbuigende veeg wisselt van tabblad | **Nieuw, 16-09-2026 (onderhoudsronde).** 30° telt als horizontaal; een veeg die steil eindigt telt ook; een veeg vanaf de schermrand wisselt. Volledige tekst: zoek op "TT-282 (P2)" (onderhoudsronde 16-09-2026). *Gecorrigeerd 29-09-2026: hier stond "Volledige tekst: Laatste update bovenaan"; die update staat al lang niet meer bovenaan.* **Stand 29-09-2026 (TT-368):** het paneel volgt nu de vinger, dus een schuine of afbuigende veeg is zichtbaar en terug te draaien vóór het loslaten; een `touchcancel` (terugveeg van het toestel) veert terug. Opnieuw beoordelen na laag 2 van TT-368 |
 | **TT-277** | Gesprek springt bij versturen | **Opgelost 16-09-2026 (vervolg 3).** Toetsenbord blijft open, beeld staat stil. Zie Laatste update bovenaan. Nog te bevestigen op een echte telefoon |
 | **TT-278** | Inloggen ontbreekt in het hamburgermenu | **Opgelost 16-09-2026 (vervolg 3).** Uitgelogd staat Inloggen onderaan het menu |
 | **TT-279** | Verversen stuurt naar het profiel | **Opgelost 16-09-2026 (vervolg 3).** Verversen blijft op de huidige pagina, ook in een open gesprek. Open modals en tegelschermen sluiten wel |

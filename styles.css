@@ -1669,26 +1669,11 @@
     transition: all 0.2s;
   }
 
-  /* TT-170 (10-09-2026): vegen tussen de drie zoektabbladen. Het binnenkomende
-     paneel schuift mee met de vinger — een veeg naar links haalt het tabblad
-     rechts binnen, dus dat paneel komt van rechts. 180 ms, gelijk aan de
-     bladwijzer (.wheel-sheet, 0.18s), zodat de app één tempo houdt.
-     Bewust geen sleep-in-realtime van drie panelen naast elkaar: die panelen
-     verschillen sterk in hoogte en dat vraagt een herindeling van het hele
-     zoekscherm. Voorwaarde 0 — stabiliteit wint van functionaliteit. */
-  @keyframes searchPaneVanRechts {
-    from { transform: translateX(24px); opacity: 0; }
-    to   { transform: translateX(0);    opacity: 1; }
-  }
-  @keyframes searchPaneVanLinks {
-    from { transform: translateX(-24px); opacity: 0; }
-    to   { transform: translateX(0);     opacity: 1; }
-  }
-  .search-pane-in-right { animation: searchPaneVanRechts 0.18s ease-out; }
-  .search-pane-in-left  { animation: searchPaneVanLinks  0.18s ease-out; }
-  @media (prefers-reduced-motion: reduce) {
-    .search-pane-in-right, .search-pane-in-left { animation: none; }
-  }
+  /* TT-170 / TT-368: vegen tussen de drie zoektabbladen. Het paneel schuift
+     mee met de vinger, het buurtabblad ernaast; beide via `transform`, gezet
+     vanuit initZoekVeeg() in core.js. Er is hier geen eigen animatie meer.
+     Tot 29-09-2026 stonden hier de keyframes searchPaneVanRechts en
+     searchPaneVanLinks: een sprongetje van 24px pas na het loslaten (TT-368). */
   /* TT-256 (11-09-2026) — de hoofdoorzaak van het schokkerige scrollen.
      De veeg tussen de drie tabbladen (TT-170) luisterde met een niet-passieve
      `touchmove` op het hele zoekscherm. Daarmee moet de browser bij élke
