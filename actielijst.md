@@ -1,6 +1,46 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 29-09-2026 (bevindingen Ronald, 28-09-2026) — **Negen
+**Laatste update:** 29-09-2026 (vervolg) — **Besluiten Ronald over TT-369,
+TT-371 en TT-374 gebouwd, en een gesprek is compacter (TT-377, nieuw). Testset
+669 van 669. Nog open: upload naar beide repo's; TT-366 wacht op één antwoord
+van Ronald.**
+
+- **Besluiten Ronald, 29-09-2026:** (1) TT-371: "voor nu C" — je eigen bericht
+  in gedempt goud met zwarte tekst; (2) TT-369: sterren ook in licht goud,
+  "net als overal"; (3) TT-374: de knop onderin heet ook "Maak setlist"; (4)
+  TT-366: niet Chrome, "het gaat om de telefooninstellingen" van een
+  Samsung-toestel.
+- **Gebouwd:**
+  - **TT-371.** Donker `#C9AE52`, licht `#F8E7A8` met rand `#E0C96E`, tekst
+    `#1E1E1E` (nieuwe rol `--bericht-eigen-tekst`). Het bericht van de ander
+    blijft neutraal.
+  - **TT-377 — een gesprek is compacter.** Ronald: "de berichtvensters zijn
+    heel hoog. 4 berichten zijn beeldvullend." **Geverifieerd, gemeten op
+    390px:** een bericht van één regel ging van 62 naar 34px, een
+    dagscheiding van 38 naar 30px. De tijd staat nu rechtsonder naast de tekst
+    als die ruimte heeft. **Oorzaak erbij gevonden:** het bericht van de ander
+    stond altijd op 75% breedte (269px voor "Hoi"); nu is het zo breed als de
+    tekst. In het voorbeeldgesprek staan zeven berichten in beeld, was vijf.
+  - **TT-369.** Een gevulde ster is `--merk`, in beide thema's. Op een
+    gekozen keuzeknop (in licht een geel vlak) is de ster zwart, anders
+    verdwijnt hij.
+  - **TT-374.** "Zoek nummers" heet "Maak setlist".
+- **Getest:** 669/669. Blok 47 kreeg vijf controles erbij (sterren in licht,
+  ster op een gekozen knop, eigen bericht donker en licht, hoogte van een
+  bericht en een dagscheiding, de knop onderin). Blok 21 en 40 toetsen de
+  nieuwe knoptekst en bubbelkleur. Schermafdrukken vóór en na bekeken, donker
+  en licht. Monitorronde: zie de oplevering.
+- **Documenten:** huisstijl (§1, §1.3, nieuw §1.5) en projectinstructies (§11)
+  opnieuw vervangen, in het project en in `_niet-uploaden`.
+- **Gewijzigd:** `index.html`, `styles.css`, `search.js`, `tests/tt_tests.py`,
+  `actielijst.md`, `CHECKSUMS.txt`. Samen met de eerste levering van vandaag
+  is de set: `index.html`, `styles.css`, `core.js`, `utils.js`, `postcode.js`,
+  `wizard.js`, `search.js`, `musicians.js`, `bands.js`, `tests/tt_tests.py`,
+  `actielijst.md`, `CHECKSUMS.txt`.
+
+---
+
+**Vorige update:** 29-09-2026 (bevindingen Ronald, 28-09-2026) — **Negen
 bevindingen uit `2026_09_28 Bevindingen.pdf` vastgelegd als TT-366 t/m TT-374.
 Vijf gebouwd en getest: sterren overal in `--accent` (TT-369), namen in een
 lijst 16px (TT-370), de T 25% groter (TT-372), geen vlak meer achter de
@@ -7240,14 +7280,15 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-366** | Thema volgt het toestel niet | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): toestel op donker, in de app "Zoals mijn toestel", en toch licht. Advies P2.** **Aanname:** Chrome op Android heeft een eigen thema-instelling (⋮ › Instellingen › Thema). Staat die op "Licht", dan meldt Chrome licht aan de app, wat het toestel ook zegt. **Wacht op:** Ronald controleert die instelling. Staat hij op "Systeemstandaard", dan is het een fout in de app en volgt een sessie. **Toets P2:** het werkt, maar de app doet niet wat de keuze belooft |
+| **TT-366** | Thema volgt het toestel niet | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): toestel op donker, in de app "Zoals mijn toestel", en toch licht. Advies P2.** **Rechtgezet 29-09-2026:** hier stond als aanname dat Chrome een eigen thema-instelling heeft. Ronald gebruikt geen Chrome; het toestel is een Samsung, en hij wijzigt het thema in de telefooninstellingen. **Geverifieerd in de code:** de app is licht zodra de browser "licht" of "geen voorkeur" meldt (`pasLichtDonkerToe()` in `index.html`). **Onbekend:** in welke browser of app Ronald talenttent.org opent, en wat die aan de app meldt. **Wacht op:** dat antwoord; daarna meten op zijn telefoon. **Toets P2:** het werkt, maar de app doet niet wat de keuze belooft |
 | **TT-368** | Links-rechts vegen in Zoeken gaat stroef | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): "dat moet lekker soepel gaan, net als naar boven-beneden." Advies P2.** Nog niet onderzocht. Volgende sessie, samen met TT-367. Raakt TT-170 (vegen tussen tabbladen), TT-256 (`touch-action: pan-y`) en TT-282. **Toets P2:** het werkt, maar het kost moeite |
-| **TT-369** | Sterren overal in de accentkleur | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026): "sterren in accentkleur geel. overal in de app." Een gevulde ster in een tag was wit. **Open vraag aan Ronald:** in licht is `--accent` zwart, dus zijn de sterren daar zwart (huisstijl §1: geel is op crème onleesbaar, 1,5:1). Geel ook in licht? **Toets P2:** werkte, maar het niveau viel weg |
+| **TT-369** | Sterren overal in de accentkleur | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026): "sterren in accentkleur geel. overal in de app." Een gevulde ster in een tag was wit. **Besluit Ronald, 29-09-2026: ook in licht goud** ("dat wordt dan goud. net als overal"). Gebouwd: `--merk` in beide thema's. **Toets P2:** werkte, maar het niveau viel weg |
 | **TT-370** | Namen van contactpersonen groter | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026): "nu vallen ze weg in de app." Een naam in een lijst is 16px (huisstijl §2). **Toets P2:** werkte, maar de naam is waar je op zoekt |
-| **TT-371** | Je eigen bericht in een variant van de accentkleur | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): "maar niet te hard contrast … geef eerst enkele ideeën voordat je gaat bouwen." Advies P2.** Vier ideeën in `_niet-uploaden-voorstel-berichtkleur-29-09-2026.html`. Advies van Claude: C, gedempt goud met zwarte tekst. **Wacht op:** de keuze van Ronald. Vervangt het huisstijlbesluit "je eigen bericht is grijs" (26-09-2026). **Toets P2:** het werkt, maar in een lang gesprek zie je niet in één blik wat je zelf zei |
+| **TT-371** | Je eigen bericht in een variant van de accentkleur | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): "maar niet te hard contrast … geef eerst enkele ideeën voordat je gaat bouwen." Advies P2.** **Besluit Ronald, 29-09-2026: "voor nu C"** (gedempt goud met zwarte tekst). **Gebouwd en getest 29-09-2026 (vervolg).** Vervangt het huisstijlbesluit "je eigen bericht is grijs" (26-09-2026). **Toets P2:** het werkt, maar in een lang gesprek zie je niet in één blik wat je zelf zei |
 | **TT-372** | De T 25% groter, in de hele app | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026). Eén klasse `.avatar-t` (huisstijl §2). **Toets P2:** werkte, maar de T oogde verloren in zijn vak |
 | **TT-373** | Vlak achter de terugknop waar je niet terug kunt | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026), startpagina en profielpagina. Oorzaak: aanwijsstand buiten de touch-guard (huisstijl §6). **Wacht op:** laag 2 op een echte telefoon. **Toets P2:** werkte, maar zag eruit als een fout |
-| **TT-374** | "Zoek setlist" heet "Maak setlist" | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026). **Open vraag aan Ronald:** de knop onderin het paneel heet nog "Zoek nummers". In de andere stand is de knop gelijk aan de titel ("Zoek muzikanten"). Ook "Maak setlist"? **Toets P2:** werkte, maar het woord zei niet wat je doet |
+| **TT-374** | "Zoek setlist" heet "Maak setlist" | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026). **Besluit Ronald, 29-09-2026:** ook de knop onderin heet "Maak setlist" (was "Zoek nummers"). Gebouwd. **Toets P2:** werkte, maar het woord zei niet wat je doet |
+| **TT-377** | Een gesprek is te hoog: vier berichten vullen het scherm | **Gebouwd en getest 29-09-2026 (vervolg) — zie Laatste update.** Ronald: "de berichtvensters zijn heel hoog. 4 berichten zijn beeldvullend. kan je dat prettiger maken?" Huisstijl §1.5. **Wacht op:** laag 2 op zijn telefoon. **Toets P2:** het werkt, maar je scrolt voor elk bericht |
 | **TT-375** | Nog vijftien aanwijsregels buiten de touch-guard | **Nieuw, 29-09-2026, gevonden bij TT-373. Advies P2.** Onder meer `.btn-primary:hover`, `.btn-ghost:hover`, `.result-row:hover`, `.result-card:hover`, `.messages-conv-row:hover`, `.band-card:hover` en `.messages-thread-back:hover` staan buiten `@media (hover: hover)`. Op een telefoon blijft hun aanwijsstand na een tik staan, net als bij TT-373. Geteld in `styles.css` op 29-09-2026: vijftien regels, zonder de twee voor een uitgeschakelde knop en die voor de schuifbalk. **Toets P2:** het werkt, maar een knop die na een tik anders blijft, oogt als een fout |
 | **TT-365** | Het woordmerk in Tentype, het lettertype van Ronald | **Gebouwd en getest 28-09-2026 — zie Laatste update. Besluit Ronald.** Tentype vervangt het nagetekende woordmerk van TT-318; geen letterafstand, 2px bij 28px tussen TALENT en TENT; `mail-woordmerk.png` en de app-iconen opnieuw gemaakt. **In beide repo's sinds 28-09-2026** (rechtgezet 29-09-2026: hier stond "Wacht op: upload naar beide repo's"). **Wacht op:** laag 2: Ronald bekijkt kop, muzikantvenster, bandvenster, één mail en het icoon op zijn beginscherm op zijn telefoon. **Toets P2:** het werkt, maar het woordmerk is de eerste indruk |
 | **TT-361** | Bevindingen 27-09-2026: goud in donker, knoppen, meldingen, ouderroute | **Gebouwd en getest 27-09-2026 — zie Laatste update.** Acht bevindingen van Ronald. **Wacht op:** upload naar beide repo's; de mails in Supabase (TT-356, TT-325); laag 2 op talenttent.org: het wachtscherm en de goedkeuringspagina op een telefoon. **Toets P2 (advies Claude):** het werkte, maar grijze knoppen zonder rand en een onleesbaar wachtscherm kosten vertrouwen — juist bij een ouder die moet beslissen |

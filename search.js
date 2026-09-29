@@ -1900,7 +1900,7 @@ function musicianSetlistRowHTML(m) {
 //   Alleen nummers die minstens 2 gekozen muzikanten spelen.
 // - Eén weergave, de lijst. Een tik klapt een regel open en toont per
 //   muzikant of hij het speelt, met het niveau rechts naast de naam.
-// - De knop "Zoek nummers" blijft, al ververst de lijst ook vanzelf.
+// - De knop "Maak setlist" (tot 29-09-2026 "Zoek nummers") blijft, al ververst de lijst ook vanzelf.
 
 const GEDEELD_MIN = 2;
 const GEDEELD_MAX = 20;
