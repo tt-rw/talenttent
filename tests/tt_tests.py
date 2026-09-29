@@ -1849,8 +1849,8 @@ def blok_browser():
               st["titel"] == "Maak setlist" and "2 tot 20 muzikanten" in st["sub"], json.dumps(st))
         check("straalwiel staat op 10 km, sorteren op Meeste spelers",
               st["straal"] == "10 km" and st["sorteer"] == "Meeste spelers", json.dumps(st))
-        check("knoppenrij: Lijst wissen links, Zoek nummers rechts",
-              st["knoppen"] == ["Lijst wissen", "Zoek nummers"], json.dumps(st))
+        check("knoppenrij: Lijst wissen links, Maak setlist rechts (TT-374)",
+              st["knoppen"] == ["Lijst wissen", "Maak setlist"], json.dumps(st))
         check("zonder gekozen muzikanten geen resultaat", st["resultaat"] == "", st["resultaat"][:100])
 
         page.fill("#filterGedeeldCity", "Delft")
@@ -4212,7 +4212,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("donker: --accent is goud, zoals vóór 26-09-2026", d40["accent"] == "#f5c518", d40["accent"])
         check("donker: ondergrond ongewijzigd #0d0d0d", d40["bg"] == "rgb(13, 13, 13)", d40["bg"])
         check("donker: profielvlak geel met zwarte T", d40["avatar"] == ["rgb(245, 197, 24)", "rgb(0, 0, 0)"], json.dumps(d40["avatar"]))
-        check("donker: je eigen bericht is grijs, niet goud", d40["eigen"] == "rgb(42, 42, 42)", d40["eigen"])
+        # TT-371 (besluit Ronald, 29-09-2026, variant C): niet meer grijs. Blok 47 toetst de kleur.
+        check("donker: je eigen bericht is gedempt goud, geen fel goud", d40["eigen"] == "rgb(201, 174, 82)", d40["eigen"])
         check("donker: actieve tab onderin is een geel vlak met zwarte tekst",
               d40["tab"] == ["rgb(245, 197, 24)", "rgb(0, 0, 0)"], json.dumps(d40["tab"]))
         check("donker: ongelezen blijft het rode rondje", d40["ongelezen"] == "rgb(229, 83, 61)", d40["ongelezen"])
@@ -4237,7 +4238,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("licht: gekozen tabblad is een geel vlak met zwarte tekst",
               l40["gekozen"] == ["rgb(245, 197, 24)", "rgb(30, 30, 30)"], json.dumps(l40["gekozen"]))
         check("licht: profielvlak geel met zwarte T", l40["avatar"] == ["rgb(245, 197, 24)", "rgb(30, 30, 30)"], json.dumps(l40["avatar"]))
-        check("licht: je eigen bericht grijsbeige #EDE8DC", l40["eigen"] == "rgb(237, 232, 220)", l40["eigen"])
+        check("licht: je eigen bericht bleek geel #F8E7A8 (TT-371)", l40["eigen"] == "rgb(248, 231, 168)", l40["eigen"])
         check("licht: ongelezen blijft hetzelfde rood als donker", l40["ongelezen"] == d40["ongelezen"], l40["ongelezen"])
         check("licht: veldlabel donker, gewone letters",
               l40["label"] == ["none", "rgb(30, 30, 30)"], json.dumps(l40["label"]))
@@ -4874,7 +4875,8 @@ window.TT_STUB.fnAntwoord = {};
             p47.route(pat, lambda r: r.abort())
         p47.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load"); p47.wait_for_timeout(500)
 
-        # 4. Elke gevulde ster is --accent, ook in een tag. Donker goud, licht zwart.
+        # 4. Elke gevulde ster is goud (--merk), ook in een tag en ook in licht
+        #    (besluit Ronald, 29-09-2026). Op een gekozen keuzeknop de tekstkleur.
         st47 = p47.evaluate("""() => {
           const meet = (thema) => {
             if (thema) document.documentElement.dataset.theme = thema; else delete document.documentElement.dataset.theme;
@@ -4883,21 +4885,26 @@ window.TT_STUB.fnAntwoord = {};
               + starDisplayHTML(2)
               + '<div class="picker-badge-stars">★★</div>'
               + '<div class="level-choice-stars"><span class="filled">★</span></div>'
-              + '<div class="star-picker"><span class="star filled">★</span></div>';
+              + '<div class="star-picker"><span class="star filled">★</span></div>'
+              + '<div class="level-choice selected"><span class="level-choice-stars"><span class="filled">★</span></span></div>';
             const c = x => getComputedStyle(x).color;
             const uit = { accent: getComputedStyle(document.body).getPropertyValue('--accent').trim(),
               tag: c(plek.querySelector('.tag-solid .star-display-filled')),
               los: c(plek.children[1].querySelector('.star-display-filled')),
               badge: c(plek.querySelector('.picker-badge-stars')),
               keuze: c(plek.querySelector('.level-choice-stars .filled')),
-              kiezer: c(plek.querySelector('.star-picker .star.filled')) };
+              kiezer: c(plek.querySelector('.star-picker .star.filled')),
+              gekozen: c(plek.querySelector('.level-choice.selected .filled')),
+              gekozenVlak: getComputedStyle(plek.querySelector('.level-choice.selected')).backgroundColor };
             plek.remove(); return uit; };
           const d = meet(null), l = meet('licht'); delete document.documentElement.dataset.theme; return { d, l }; }""")
         goud, zwart = "rgb(245, 197, 24)", "rgb(30, 30, 30)"
         check("donker: elke gevulde ster is goud, ook in een instrumenttag",
               all(st47["d"][k] == goud for k in ("tag", "los", "badge", "keuze", "kiezer")), json.dumps(st47["d"]))
-        check("licht: elke gevulde ster is --accent (zwart), ook in een tag",
-              all(st47["l"][k] == zwart for k in ("tag", "los", "badge", "keuze", "kiezer")), json.dumps(st47["l"]))
+        check("licht: elke gevulde ster is ook goud, ook in een tag",
+              all(st47["l"][k] == goud for k in ("tag", "los", "badge", "keuze", "kiezer")), json.dumps(st47["l"]))
+        check("licht: op een gekozen (gele) keuzeknop is de ster zwart, niet onzichtbaar",
+              st47["l"]["gekozen"] == zwart and st47["l"]["gekozenVlak"] == goud, json.dumps(st47["l"]))
 
         # 5. Een naam in een lijst is 16px, overal gelijk.
         nm = p47.evaluate("""() => {
@@ -4945,9 +4952,40 @@ window.TT_STUB.fnAntwoord = {};
         # 9. "Zoek setlist" heet "Maak setlist": knop en paneeltitel.
         ms = p47.evaluate("""() => ({ knop: document.getElementById('setlistSoortNummersBtn').textContent.trim(),
           titel: document.querySelector('#setlistDeelNummers .filter-title').textContent.trim(),
+          actie: document.querySelector('#setlistDeelNummers .btn-row .btn-primary').textContent.trim(),
           oud: document.getElementById('appRoot').innerText.includes('Zoek setlist') })""")
-        check("de tweede stand van Setlist heet Maak setlist, op de knop en in de titel",
-              ms["knop"] == "Maak setlist" and ms["titel"] == "Maak setlist" and not ms["oud"], json.dumps(ms))
+        check("de tweede stand van Setlist heet Maak setlist: knop, titel en de hoofdknop onderin",
+              ms["knop"] == "Maak setlist" and ms["titel"] == "Maak setlist" and ms["actie"] == "Maak setlist"
+              and not ms["oud"], json.dumps(ms))
+
+        # 6. Je eigen bericht: gedempt goud met zwarte tekst (variant C, besluit Ronald 29-09-2026).
+        #    En compacter: een bericht van één regel is hooguit 34px hoog, de tijd staat ernaast.
+        bb = p47.evaluate("""() => {
+          const meet = (thema) => {
+            if (thema) document.documentElement.dataset.theme = thema; else delete document.documentElement.dataset.theme;
+            const plek = document.createElement('div'); plek.style.cssText = 'display:flex;flex-direction:column;width:358px';
+            document.getElementById('appRoot').appendChild(plek);
+            plek.innerHTML = '<div class="messages-day-divider">Gisteren</div>'
+              + '<div class="message-bubble own">Hoi<div class="message-bubble-time">19:31<span class="message-bubble-read">✓</span></div></div>'
+              + '<div class="message-bubble other">Hoi<div class="message-bubble-time">07:02</div></div>'
+              + '<div class="message-bubble own">' + 'Zin om zaterdag te jammen bij mij in de oefenruimte? '.repeat(3) + '<div class="message-bubble-time">19:31</div></div>';
+            const [dag, eigen, ander, lang] = plek.children; const cs = x => getComputedStyle(x);
+            const r = x => x.getBoundingClientRect();
+            const uit = { eigen: [cs(eigen).backgroundColor, cs(eigen).color], ander: cs(ander).backgroundColor,
+              hoog: [Math.round(r(eigen).height), Math.round(r(ander).height)],
+              naast: Math.abs(r(eigen.querySelector('.message-bubble-time')).bottom - r(eigen).bottom) <= 8
+                     && r(eigen.querySelector('.message-bubble-time')).left > r(eigen).left + 20,
+              langBinnen: r(lang.querySelector('.message-bubble-time')).right <= r(lang).right,
+              dag: Math.round(r(dag).height + parseFloat(cs(dag).marginTop) + parseFloat(cs(dag).marginBottom)) };
+            plek.remove(); return uit; };
+          const d = meet(null), l = meet('licht'); delete document.documentElement.dataset.theme; return { d, l }; }""")
+        check("donker: je eigen bericht is gedempt goud (#C9AE52) met zwarte tekst",
+              bb["d"]["eigen"] == ["rgb(201, 174, 82)", "rgb(30, 30, 30)"], json.dumps(bb["d"]))
+        check("licht: je eigen bericht is bleek geel (#F8E7A8) met zwarte tekst",
+              bb["l"]["eigen"] == ["rgb(248, 231, 168)", "rgb(30, 30, 30)"], json.dumps(bb["l"]))
+        check("een bericht van één regel is hooguit 34px hoog, de tijd staat op dezelfde regel",
+              max(bb["d"]["hoog"]) <= 34 and bb["d"]["naast"] and bb["d"]["langBinnen"], json.dumps(bb["d"]))
+        check("een dagscheiding neemt hooguit 34px in", bb["d"]["dag"] <= 34, json.dumps(bb["d"]))
         check("bevindingen 28-09-2026: geen paginafouten", not f47, "; ".join(f47)[:300])
         c47.close()
 
