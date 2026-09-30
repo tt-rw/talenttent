@@ -1,7 +1,7 @@
 # The Talent Tent — Actielijst
 
 **Laatste update:** 30-09-2026 (TT-61) — **De nieuwe landingspagina is
-gebouwd: richting F uit de landingsproef. Testset 700 van 700, monitorronde
+gebouwd: richting F uit de landingsproef. Testset 701 van 701, monitorronde
 21 van 21. De tien foto's staan in Supabase en zijn niet te openen via de
 pagina. Nog open: upload naar beide repo's; een grotere bandfoto; laag 2 op
 de telefoon.**
@@ -47,13 +47,33 @@ de telefoon.**
   Voorstellen van Claude: (a) "Elk niveau welkom, ook beginners." (advies),
   (b) "Speel deze week nog met iemand.", (c) "Van slaapkamer naar podium.",
   (d) geen subkop. **Besluit Ronald: laat voorlopig zo.**
-- **[UX] Advies P0, door Ronald te bevestigen: rechten op de foto's.** Staan
-  er herkenbare mensen op, dan is een licentie of hun toestemming nodig voor
-  gebruik op een wervingspagina. **Toets P0:** zonder dat kan de pagina offline
-  moeten. **Onbekend:** waar de foto's vandaan komen.
+- **Twee wijzigingen van Ronald, 30-09-2026:** (1) geen punt achter het
+  woord: "Zoek een zangeres"; (2) "pianist" wordt weer "toetsenist". De foto
+  staat nu ook als `landing/toetsenist.jpg` (kopie in Supabase, met het
+  beheeraccount; **geverifieerd**: status 200, 164.778 bytes).
+  `landing/pianist.jpg` staat er nog; de app vraagt hem niet meer op.
+  Weghalen kan Ronald in Supabase → Storage → landing (het beheeraccount mag
+  niet verwijderen).
+- **Fout gevonden en hersteld: een sprong naar een woord laadde zijn eigen
+  foto niet.** `landingNaar()` vroeg alleen de volgende foto op, en rekende
+  erop dat de huidige al als "volgende" was geladen. Bij het gewone wisselen
+  klopt dat; bij een sprong (in de testset, of later bij een eigen knop) bleef
+  het vlak staan. **Geverifieerd** op een schermafdruk. Nu vraagt hij ook de
+  huidige op. Nieuwe controle in blok 49; die zakt zonder de fix. **Toets P3:**
+  in de app springt nu niemand, dus geen gevolg voor een gebruiker nu.
+- **Getest:** 701/701. Gewijzigd: `core.js`, `index.html` (tekst en `?v=`),
+  `tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
+- **Rechten op de foto's: afgehandeld.** Hier stond een advies P0 van Claude
+  ("**Onbekend:** waar de foto's vandaan komen"). Ronald, 30-09-2026: de foto's
+  en de DJ-video komen van Pexels, vrij te gebruiken. De Pexels-licentie staat
+  gebruik in een eigen product toe, zonder naamsvermelding. Twee voorwaarden
+  blijven: een herkenbaar persoon niet in een slecht daglicht zetten, en niet
+  suggereren dat die persoon het product aanbeveelt. Daarom staat er onder de
+  foto nooit een naam of een uitspraak (besluit Ronald 29-09-2026: geen naam
+  of wijk).
 
 - **Besluiten Ronald, 29 en 30-09-2026:** zie `landingsproef-werkwijze-30-09-2026.md`
-  in het project. Kern: "Zoek een <woord>." op een foto, tien woorden in vaste
+  in het project. Kern: "Zoek een <woord>" op een foto, tien woorden in vaste
   volgorde, elke 4 seconden vanzelf de volgende; geen keuzeknoppen; de knop
   "Zoek muzikanten" opent altijd Zoeken, ook bij "band"; past op één scherm;
   een woord zonder foto blijft staan; foto's voorlopig via Claude in Supabase.
@@ -108,8 +128,8 @@ de telefoon.**
   `actielijst.md`, `CHECKSUMS.txt`.
 
 **Stand van de P0's.** TT-325 · TT-329 · TT-352, de controle TT-323, en
-TT-358 als advies P0. Nieuw als advies P0: de rechten op de landingsfoto's
-(hierboven). TT-61 is P2 en blijft P2.
+TT-358 als advies P0. De rechten op de landingsfoto's zijn afgehandeld
+(Pexels). TT-61 is P2 en blijft P2.
 
 ---
 

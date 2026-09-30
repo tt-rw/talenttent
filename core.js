@@ -1393,7 +1393,8 @@ function showView(view, mode) {
 }
 
 // ─── De landingspagina (TT-61, 30-09-2026, besluiten Ronald) ────────────────
-// Richting F uit de landingsproef: "Zoek een <woord>.", de regel waarvoor en de
+// Richting F uit de landingsproef: "Zoek een <woord>" (zonder punt, Ronald
+// 30-09-2026), de regel waarvoor en de
 // foto wisselen vanzelf, elke 4 seconden, in deze vaste volgorde (besluit
 // Ronald 30-09-2026: zang en bas zijn schaars, die staan vooraan). Vanzelf
 // wisselen is hier een bewuste uitzondering op "geen autoplay" van de
@@ -1407,7 +1408,7 @@ const LANDING_WOORDEN = [
   { woord: 'gitarist',   waarvoor: 'Voor een jam op zondag.' },
   { woord: 'zanger',     waarvoor: 'Voor eigen nummers.' },
   { woord: 'band',       waarvoor: 'Voor wie nog geen band heeft.' },
-  { woord: 'pianist',    waarvoor: 'Voor jazz, soul of iets heel anders.' },
+  { woord: 'toetsenist', waarvoor: 'Voor jazz, soul of iets heel anders.' },
   { woord: 'violist',    waarvoor: 'Voor folk, pop of een strijker erbij.' },
   { woord: 'saxofonist', waarvoor: 'Voor een funkband met blazers.' },
   { woord: 'DJ',         waarvoor: 'Voor een set met echte muzikanten.' }
@@ -1456,6 +1457,7 @@ function landingNaar(n) {
   dias.children[landingStand]?.classList.remove('aan');
   landingStand = (n + LANDING_WOORDEN.length) % LANDING_WOORDEN.length;
   dias.children[landingStand]?.classList.add('aan');
+  landingFotoLaden(landingStand); // al geladen als hij de vorige keer "de volgende" was
   landingFotoLaden((landingStand + 1) % LANDING_WOORDEN.length);
   const nu = LANDING_WOORDEN[landingStand];
   regelEl.textContent = nu.waarvoor;
