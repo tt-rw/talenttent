@@ -1425,11 +1425,15 @@
      doorschuiven na vijf seconden, pauze zodra hij zelf iets doet, en
      GEEN autoplay. Geen gekozen items: de balk staat er niet (dat regelt
      profielBannerHTML(), dat dan een lege tekst teruggeeft).
-     Vorm 5:2 en niet 16:9 — bij 375px breed is 16:9 gelijk aan 211px hoog
-     en duwt dat de naam tot op de rand van het zichtbare scherm. */
+     Vorm 2:1 (TT-384, besluit Ronald 30-09-2026; was 5:2) en niet 16:9 —
+     bij 375px breed is 16:9 gelijk aan 193px hoog en duwt dat de naam tot
+     op de rand van het zichtbare scherm. */
+  /* TT-384 (30-09-2026): geen marge onder de balk. De kop eronder
+     (.profiel-kop.op-banner) schuift 40px over de onderrand; de stippen
+     hangen los onder de balk, in de ruimte naast de profielfoto. */
   .profiel-banner {
     position: relative;
-    margin: 0 0 20px;
+    margin: 0;
   }
 
   /* Het swipen gebeurt met scroll-snap, niet met een eigen touchmove.
@@ -1451,7 +1455,8 @@
     position: relative;
     flex: 0 0 100%;
     width: 100%;
-    aspect-ratio: 5 / 2;
+    /* TT-384 (30-09-2026, besluit Ronald): 2:1, was 5:2. 25% hoger. */
+    aspect-ratio: 2 / 1;
     scroll-snap-align: start;
     /* TT-267: scroll-snap-stop: always is hier weggehaald. Dat dwingt de
        browser bij elk vlak te stoppen, ook midden in een lopende sprong, en
@@ -1530,12 +1535,17 @@
 
   /* Stip 6px zichtbaar, tikgebied 44px via het ::after-patroon uit
      huisstijl §6 — hetzelfde patroon als het bannerteken van TT-263. */
+  /* TT-384: los onder de balk, 10px eronder, zodat ze de kop niet omlaag
+     duwen. Ze staan midden tussen de foto links en de knoppen rechts. */
   .pb-stippen {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 10px);
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 6px;
-    margin-top: 10px;
   }
   .pb-stip {
     position: relative;
@@ -3280,6 +3290,36 @@
   .deel-knop svg { margin-right: -6px; }
   .deel-knop:last-child { justify-content: center; padding-right: 10px; }
   .deel-knop:last-child svg { margin-right: 0; }
+
+  /* TT-384 (30-09-2026, besluiten Ronald): de kop van het muzikantprofiel
+     staat onder elkaar. Bovenaan een rij: links de profielfoto, rechts het
+     deelicoon en het ⋯-menu, op de hoogte van de onderste helft van de foto.
+     Daaronder de naam en de regels, over de volle breedte. Zo is er naast de
+     foto ruimte voor knoppen. Met een banner valt de foto voor de helft
+     (40px van 80px) over de onderrand van de balk; zonder banner blijft
+     dezelfde opbouw staan, zonder overlap. Het bandvenster houdt voorlopig
+     .profiel-onder (TT-380) en volgt in een eigen sessie. */
+  .profiel-kop { margin-bottom: 16px; }
+  .profiel-kop.op-banner { margin-top: -40px; }
+  .profiel-kop-rij {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    /* Gepositioneerd, zonder z-index: de rij tekent zo over de balk heen,
+       maar vormt geen eigen stapel. Een eigen stapel zou de donkere laag van
+       het ⋯-menu (§8.2) onder de onderbalk laten vallen. */
+    position: relative;
+    /* De rij is zo breed als de inhoud en ligt over de stippen van de
+       balk. Alleen de foto en de knoppen vangen een tik; de rest laat hem
+       door naar de stippen eronder. */
+    pointer-events: none;
+  }
+  .profiel-kop-rij > * { pointer-events: auto; }
+  /* De knoppen staan met hun midden op het midden van de onderste helft van
+     de foto: 20px boven de onderrand. Een knop is 44px, dus 2px eronder. */
+  .profiel-kop-rij .profiel-knoppen { margin: 0 0 -2px; }
+  .profiel-kop .profile-name { margin-top: 12px; }
 
   /* TT-06 (18-09-2026): het rechtervak van de koprij. TT-318: daar staat nu
      alleen nog het kruisje; het ⋯-menu staat naast de naam. De wikkel blijft:

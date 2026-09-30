@@ -1142,8 +1142,10 @@ async function openBandModal(id) {
       ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border);margin-bottom:0;flex-shrink:0;">` : `<div class="band-avatar" style="width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`}
       <div style="min-width:0;flex:1;">
         <div class="profile-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
-        <!-- TT-380: zelfde opbouw als het muzikantprofiel — het deelicoon en
-             het ⋯-menu ter hoogte van de regel onder de naam. -->
+        <!-- TT-380: het deelicoon en het ⋯-menu ter hoogte van de regel onder
+             de naam. Het muzikantprofiel heeft sinds TT-384 een andere opbouw
+             (foto boven, knoppen ernaast, naam eronder); het bandvenster
+             volgt in een eigen sessie (besluit Ronald, 30-09-2026). -->
         <div class="profiel-onder">
           <div class="profiel-regels">
             <div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>

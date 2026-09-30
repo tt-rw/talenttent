@@ -57,15 +57,15 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
   // 22-08-2026 (Ronald): het onderste actieblok (Profiel bewerken + het
   // ⋯-menu, TT-119) is weg. Alle drie de acties — wijzigen, band-
   // uitnodigingen aan/uit, account verwijderen — staan nu in één klein
-  // menu bij de naam (sinds TT-380 eronder). Alleen op de eigen profielpagina (isOwn, niet in
+  // menu bij de naam (sinds TT-384 rechts naast de profielfoto). Alleen op de eigen profielpagina (isOwn, niet in
   // de modal) — bij het bekijken van een ander profiel, of het eigen
   // profiel via de modal, hoort dit menu niet thuis.
   const showOwnerMenu = isOwn && !inModal;
   // TT-318 (24-09-2026, besluit Ronald): in het venster van iemand anders
   // staat het ⋯-menu voor melden en blokkeren op dezelfde plek als het
   // eigen menu op Mijn Profiel. Tot nu toe stond het in de koprij, links van
-  // het kruisje (TT-06). Sinds TT-380 staat het onder de naam, rechts van het
-  // deelicoon (profielKnoppenHTML()). Alleen de plek komt hier; de
+  // het kruisje (TT-06). Sinds TT-384 staat het rechts naast de profielfoto,
+  // rechts van het deelicoon (profielKnoppenHTML()). Alleen de plek komt hier; de
   // inhoud zet openMusicianModal() erin met zetVeiligheidMenu(), zodra het
   // profiel geladen is. Op je eigen profiel komt er geen plek: je meldt of
   // blokkeert jezelf niet.
@@ -84,17 +84,22 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       </div>
     </div>` : '';
 
+  // TT-384 (30-09-2026, besluiten Ronald): de kop staat onder elkaar. Eerst
+  // een rij met links de profielfoto en rechts het deelicoon en het ⋯-menu;
+  // daaronder de naam en de regels, over de volle breedte. Staat er een
+  // banner, dan valt de foto voor de helft over de onderrand daarvan
+  // (.profiel-kop.op-banner). Zonder banner blijft dezelfde opbouw staan,
+  // alleen zonder overlap. Het bandvenster volgt in een eigen sessie.
+  const bannerHTML = profielBannerHTML(m.musician_media);
   return `
-    ${profielBannerHTML(m.musician_media)}
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
-      ${avatarHTML}
-      <div style="min-width:0;flex:1;">
-        <div class="profile-name">${escHtml(displayName)}</div>
-        <!-- TT-380 (30-09-2026, Ronald): het deelicoon en het ⋯-menu staan
-             ter hoogte van de regels onder de naam, niet meer naast de naam.
-             De naam krijgt daarmee de volle breedte. Zie profielKnoppenHTML(). -->
-        <div class="profiel-onder">
-          <div class="profiel-regels">
+    ${bannerHTML}
+    <div class="profiel-kop${bannerHTML ? ' op-banner' : ''}">
+      <div class="profiel-kop-rij">
+        ${avatarHTML}
+        ${profielKnoppenHTML('profiel', m.id, displayName, ownerMenuHTML + veiligheidPlekHTML)}
+      </div>
+      <div class="profile-name">${escHtml(displayName)}</div>
+      <div class="profiel-regels">
         <!-- TT-166 (28-08-2026, Ronald: "eenvoud"): een gebruikersnaam-subline
              hoort er alleen bij als de grote naam de échte voornaam is — laat
              displayName die keuze maken (isOwn, of een ingelogde kijker met
@@ -104,9 +109,6 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
              label. -->
         ${(displayName === m.fname && m.fname) ? `<p style="font-size:12px;color:var(--muted);margin-top:4px;">Gebruikersnaam: <strong style="color:var(--text);">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
         <div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
-          </div>
-          ${profielKnoppenHTML('profiel', m.id, displayName, ownerMenuHTML + veiligheidPlekHTML)}
-        </div>
       </div>
     </div>
     <div class="profile-badges">

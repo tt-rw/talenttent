@@ -1,6 +1,59 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 30-09-2026 (TT-383) — **Het deelicoon en het ⋯-menu bij
+**Laatste update:** 30-09-2026 (TT-384) — **De kop van het muzikantprofiel
+staat onder elkaar: de banner is groter, de profielfoto valt voor de helft
+over de onderrand, de knoppen staan rechts naast de foto en de naam eronder
+(bevinding Ronald, P2). Testset 753 van 753. Nog open: upload naar beide
+repo's; laag 2 op de telefoon; het bandvenster (TT-385).**
+
+- **Bevinding Ronald, 30-09-2026, met een schermafdruk van zijn profiel:**
+  "herschik het muzikantenprofiel. 1. maak de banner iets groter 2.
+  verplaats de profielfoto naar boven zodat het 50% over de rand van de
+  banner valt. 3. verplaats het blok met naam, profielnaam enz onder de
+  profielfoto. zo moet er meer ruimte komen voor knoppen zoals delen en de 3
+  puntjes."
+- **Besluiten Ronald, 30-09-2026:**
+  - De banner wordt 2:1 (was 5:2): 179px hoog op zijn telefoon, was 143px.
+  - Zonder banner blijft dezelfde opbouw staan: foto bovenaan, knoppen
+    ernaast, naam eronder. Alleen de overlap valt weg.
+  - Het deelicoon en het ⋯-menu staan rechts naast de foto, op het midden
+    van de onderste helft van de foto.
+  - Het bandvenster krijgt dezelfde opbouw, maar in een andere sessie, samen
+    met andere aanpassingen. Zie TT-385.
+- **Gebouwd:**
+  - `musicians.js`: `buildMusicianDetailHTML()` zet de kop in
+    `.profiel-kop`: eerst `.profiel-kop-rij` (foto links, knoppen rechts),
+    dan de naam en `.profiel-regels`. Met banner draagt de kop `.op-banner`.
+    Geldt voor Mijn Profiel en het muzikantvenster: één functie.
+  - `styles.css`: `.pb-item` 2:1. `.profiel-banner` zonder marge eronder;
+    de kop schuift 40px over de onderrand (de halve foto van 80px). De
+    stippen hangen los onder de balk (`position: absolute`, 10px eronder),
+    tussen de foto en de knoppen, en duwen niets omlaag. De rij laat een tik
+    door naar de stippen (`pointer-events`). De rij is gepositioneerd maar
+    zonder z-index, zodat de donkere laag van het ⋯-menu nog over de
+    onderbalk valt (huisstijl §8.2).
+  - `bands.js`: alleen een commentaarregel rechtgezet. Daar stond "zelfde
+    opbouw als het muzikantprofiel"; dat klopt tot TT-385 niet meer.
+- **Testset:** blok 54 (nieuw) meet de overlap, de plek van foto, knoppen en
+  naam, met en zonder banner, de aantikbare stippen, de menulaag en dat het
+  bandvenster nog de oude opbouw heeft. Zakte op de oude versie, slaagt nu.
+  Ook gezakt als de `pointer-events`-regel of de z-index verkeerd staat
+  (twee proefwijzigingen, daarna teruggezet). Blok 15 meet nu 2:1; blok 33
+  en 50 meten de knoppen naast de foto in plaats van op de regels.
+- **Schermafdruk bekeken** (390px, donker): Mijn Profiel met en zonder
+  banner, en het muzikantvenster van een ander.
+- **Rechtgezet in TT-380 (Deel 1):** de naam heeft bij een muzikant nu
+  343px bij 375px, niet 247px.
+- **Gewijzigd:** `musicians.js`, `styles.css`, `bands.js` (commentaar),
+  `index.html` (alleen `?v=`), `tests/tt_tests.py`, `actielijst.md`,
+  `CHECKSUMS.txt`.
+
+**Stand van de P0's.** Ongewijzigd: TT-325 · TT-329 · TT-352, de controle
+TT-323, en TT-358 als advies P0. TT-384 is P2.
+
+---
+
+**Vorige update:** 30-09-2026 (TT-383) — **Het deelicoon en het ⋯-menu bij
 de naam lichten niet meer op als je erop drukt (bevinding Ronald, P2).
 Testset 743 van 743. Nog open: upload naar beide repo's; laag 2 op de
 telefoon.**
@@ -7644,7 +7697,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-380** | Delen is een icoon bij de naam, op elk profiel | **Gebouwd en getest 30-09-2026 (blok 50), wacht op upload en laag 2 — zie Laatste update.** Bevinding Ronald: "profiel delen icoon toevoegen aan muzikantenprofiel". Besluiten Ronald: icoon B naast de ⋯, beide op de regels onder de naam, op Mijn Profiel, het muzikantvenster en het bandvenster. Advies P1. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: wie zijn profiel deelt, krijgt reacties en brengt nieuwe muzikanten binnen. **Open:** deelicoon ook op Mijn Bands? En `naamPastInProfielkop()` van 187px naar 247px (advies P3)? |
+| **TT-380** | Delen is een icoon bij de naam, op elk profiel | **Gebouwd en getest 30-09-2026 (blok 50), wacht op upload en laag 2 — zie Laatste update.** Bevinding Ronald: "profiel delen icoon toevoegen aan muzikantenprofiel". Besluiten Ronald: icoon B naast de ⋯, beide op de regels onder de naam, op Mijn Profiel, het muzikantvenster en het bandvenster. Advies P1. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: wie zijn profiel deelt, krijgt reacties en brengt nieuwe muzikanten binnen. **Open:** deelicoon ook op Mijn Bands? En `naamPastInProfielkop()` van 187px naar de werkelijke ruimte (advies P3)? *Rechtgezet 30-09-2026 (TT-384): hier stond "naar 247px". Sinds TT-384 staat de naam van een muzikant onder de foto en heeft hij 343px bij 375px (blok 54: volle breedte); het bandvenster is in deze sessie niet gemeten.* |
 | **TT-367** | De onderbalk laadt traag op Android | **Gemeten 29-09-2026, niet gebouwd — zie Laatste update.** Elke tik op Profiel, Berichten of Bands wist de inhoud naar "Laden..." en haalt alles opnieuw op, in twee tot vier stappen na elkaar (120–515 ms op wifi). **Besluit Ronald, 29-09-2026:** geen oude inhoud laten staan tijdens het verversen. **Open vraag aan Ronald:** de stappen tegelijk laten lopen? Bevinding Ronald (28-09-2026): "het laden duurt vrij lang van de ene knop naar de andere … Dit is op een android telefoon." Advies P1. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: een app die bij elke tik hapert, voelt kapot en wordt weggelegd |
 | **TT-357** | Testaccounts opschonen vóór de lancering | **Nieuw, 27-09-2026 (TT-65). Besluit Ronald: later opschonen, vlak vóór de lancering. Niveau: advies P1, door Ronald te bevestigen.** Alle bestaande accounts zijn testaccounts. Nu niet wissen: TT-352 en TT-323 hebben ze nog nodig, en het proefherstel van TT-65 heeft gegevens nodig. Gewiste testaccounts verdwijnen na 30 dagen vanzelf uit de back-up. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: nepprofielen in de zoekresultaten kosten vertrouwen. **Vóór lancering** |
 | **TT-356** | In de welkomstmail valt een punt weg bij het versturen | **Oorzaak gevonden en opgelost, 27-09-2026 (TT-361). Ingevoerd in Supabase en nagemeten (SHA-256), dezelfde dag. Wacht op ontvangst in TT-323.** **Oorzaak, geverifieerd in de broncode van denomailer 1.6.0** (gelezen op deno.land via de browserpane): de mail gaat als quoted-printable, afgeknipt op 74 tekens, en denomailer zet een punt aan het begin van een regel niet dubbel. De SMTP-server haalt zo'n punt weg (RFC 5321, 4.5.2). **Nagebootst** met dezelfde code en een server die dat doet: welkom verloor "vinden." én de punt in "proton.me" en "talenttent.org"; "Je hebt toestemming" verloor "online."; de andere vijf niets — dat hangt af van waar de regel afbreekt, en die plek verschuift met de wisselende naam in de afsluiter. **Oplossing:** alle vijf de functies sturen de mail als base64 (`base64Regels()` in het template). Base64 bevat geen punt. Na de wijziging komen alle acht nagebootste mails byte voor byte gelijk aan. Bestanden: `_niet-uploaden-edge-function-<naam>-27-09-2026-TT-356.ts`. **Geverifieerd:** de vijf functies in Supabase waren vóór deze wijziging gelijk aan de bestanden waarop die is gebouwd (SHA-256). *(Rechtgezet: hier stond "Aanname: de punt verdwijnt bij het versturen (denomailer)" en "Onbekend: of het in de andere vier functies ook gebeurt". Waaruit blijkt: de broncode en de nabootsing hierboven.)* **Oorspronkelijk, 27-09-2026 (TT-323). Advies P1, niveau door Ronald te bevestigen.** Ronald ontving "Je bent binnen Zestien. Welkom in de Tent!" met "…kunnen je nu vinden" zonder punt. **Geverifieerd:** de code van `welkom` in Supabase heeft de punt (gelezen in het dashboard), en de mail die Claude uit die code opbouwt ook, in HTML en tekstversie. **Aanname:** de punt verdwijnt bij het versturen (denomailer): een punt aan het begin van een verzendregel valt weg. Niet gemeten; de bron van denomailer is vanuit de sessie niet bereikbaar. **Onbekend:** of het in de andere vier functies ook gebeurt. **Toets P1:** valt zo'n punt in een link (".org"), dan werkt de knop niet en komt iemand niet binnen. **Eerste meting:** de bron van de ontvangen mail bekijken in Proton. **Voorstel van Claude:** eigen sessie; raakt alle vijf de mailfuncties. |
@@ -7693,6 +7746,8 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-372** | De T 25% groter, in de hele app | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026). Eén klasse `.avatar-t` (huisstijl §2). **Toets P2:** werkte, maar de T oogde verloren in zijn vak |
 | **TT-373** | Vlak achter de terugknop waar je niet terug kunt | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026), startpagina en profielpagina. Oorzaak: aanwijsstand buiten de touch-guard (huisstijl §6). **Wacht op:** laag 2 op een echte telefoon. **Toets P2:** werkte, maar zag eruit als een fout |
 | **TT-374** | "Zoek setlist" heet "Maak setlist" | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026). **Besluit Ronald, 29-09-2026:** ook de knop onderin heet "Maak setlist" (was "Zoek nummers"). Gebouwd. **Toets P2:** werkte, maar het woord zei niet wat je doet |
+| **TT-384** | Muzikantprofiel: banner groter, foto half over de banner, naam onder de foto | **Gebouwd en getest 30-09-2026 (blok 54) — zie Laatste update.** Bevinding Ronald met schermafdruk: "zo moet er meer ruimte komen voor knoppen zoals delen en de 3 puntjes." Besluiten Ronald: banner 2:1, zonder banner dezelfde opbouw, knoppen rechts naast de foto. **Wacht op:** upload naar beide repo's; laag 2 op zijn telefoon. **Toets P2:** het werkt, maar de knoppen hadden geen ruimte |
+| **TT-385** | Bandvenster: dezelfde kop als het muzikantprofiel (TT-384) | **Nieuw, 30-09-2026. Besluit Ronald: "bandprofiel trekken we gelijk, maar in een andere sessie met veel andere aanpassingen."** Bandfoto boven, deelicoon en ⋯-menu ernaast, naam en regel eronder. Het bandvenster heeft geen banner. Tot dan houdt het de opbouw van TT-380 (`.profiel-onder`); blok 54 meet dat, en die controle gaat mee om in dat ticket. **Toets P2:** het werkt, maar muzikant- en bandprofiel voelen niet meer hetzelfde (huisstijl §10) |
 | **TT-382** | Postcode en plaats naast elkaar, overal | **Gebouwd en getest 30-09-2026 — zie Laatste update.** Bevinding Ronald. Wizard, tegel "Je gegevens" en bandformulier. **Wacht op:** upload naar beide repo's; laag 2 op zijn telefoon. **Toets P2:** het werkt, maar twee velden onder elkaar voor één adres kosten ruimte en ogen onaf |
 | **TT-381** | "Foto verwijderen" wordt het kruisje op de foto; "Wijzig" zwart op geel | **Gebouwd en getest 30-09-2026 — zie Laatste update.** Bevinding Ronald met schermafdruk van Je mediahoek. Besluiten Ronald: alle drie de plekken, en het kruisje vraagt eerst. **Wacht op:** upload naar beide repo's; laag 2 op zijn telefoon. **Toets P2:** het werkt, maar een losse knop naast de foto en witte tekst op geel ogen onaf |
 | **TT-377** | Een gesprek is te hoog: vier berichten vullen het scherm | **Gebouwd en getest 29-09-2026 (vervolg) — zie Laatste update.** Ronald: "de berichtvensters zijn heel hoog. 4 berichten zijn beeldvullend. kan je dat prettiger maken?" Huisstijl §1.5. **Wacht op:** laag 2 op zijn telefoon. **Toets P2:** het werkt, maar je scrolt voor elk bericht |
