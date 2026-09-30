@@ -1382,6 +1382,7 @@ function showView(view, mode) {
     else { safeHistoryPush({ view }, hash); terugDiepte++; } // TT-301
   }
   werkTerugKnopBij(); // TT-301
+  landingBijwerken(); // TT-61: de foto's wisselen alleen op de landingspagina
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
   // TT-142 (25-08-2026): geen automatische focus meer bij het openen van een
@@ -1390,6 +1391,108 @@ function showView(view, mode) {
   // gebruiker moet zelf op een veld tikken voordat het toetsenbord komt.
   // autofocusFirstField() is op 16-09-2026 verwijderd als dode code.
 }
+
+// ─── De landingspagina (TT-61, 30-09-2026, besluiten Ronald) ────────────────
+// Richting F uit de landingsproef: "Zoek een <woord>.", de regel waarvoor en de
+// foto wisselen vanzelf, elke 4 seconden, in deze vaste volgorde (besluit
+// Ronald 30-09-2026: zang en bas zijn schaars, die staan vooraan). Vanzelf
+// wisselen is hier een bewuste uitzondering op "geen autoplay" van de
+// bannerbalk (huisstijl §18.5): dit scherm toont alleen foto's, geen video of
+// geluid. Geen naam of wijk in de regel eronder (Ronald, 29-09-2026).
+// De knop "Zoek muzikanten" opent altijd Zoeken, welk woord ook in beeld staat.
+const LANDING_WOORDEN = [
+  { woord: 'zangeres',   waarvoor: 'Voor je eerste optreden.' },
+  { woord: 'drummer',    waarvoor: 'Voor een band die wél repeteert.' },
+  { woord: 'bassist',    waarvoor: 'Om samen te oefenen.' },
+  { woord: 'gitarist',   waarvoor: 'Voor een jam op zondag.' },
+  { woord: 'zanger',     waarvoor: 'Voor eigen nummers.' },
+  { woord: 'band',       waarvoor: 'Voor wie nog geen band heeft.' },
+  { woord: 'pianist',    waarvoor: 'Voor jazz, soul of iets heel anders.' },
+  { woord: 'violist',    waarvoor: 'Voor folk, pop of een strijker erbij.' },
+  { woord: 'saxofonist', waarvoor: 'Voor een funkband met blazers.' },
+  { woord: 'DJ',         waarvoor: 'Voor een set met echte muzikanten.' }
+];
+const LANDING_TEMPO = 4000;
+// De foto's staan in Supabase, in de openbare map "landing", onder het woord
+// in kleine letters: landing/zangeres.jpg, landing/dj.jpg. Staat er geen foto
+// onder dat woord, dan blijft het warme vlak staan (besluit Ronald
+// 30-09-2026: een woord zonder foto blijft). Een foto erbij of een andere foto
+// vraagt dus geen nieuwe code, alleen een bestand met de juiste naam.
+const LANDING_FOTO_MAP = SUPABASE_URL + '/storage/v1/object/public/landing/';
+let landingStand = 0;
+let landingKlok = null;
+
+function landingFotoAdres(woord) {
+  return LANDING_FOTO_MAP + encodeURIComponent(woord.toLowerCase()) + '.jpg';
+}
+
+// Eén laag per woord. Een foto wordt pas gevraagd als hij bijna aan de beurt
+// is (landingFotoLaden), niet alle tien bij het openen: dat scheelt data op
+// een telefoon. Laadt hij niet, dan gaat het beeld weg en blijft het vlak.
+function landingOpbouwen() {
+  const dias = document.getElementById('landingDias');
+  if (!dias || dias.children.length) return;
+  dias.innerHTML = LANDING_WOORDEN.map(() =>
+    '<div class="landing-dia"><img alt="" decoding="async"></div>').join('');
+  dias.querySelectorAll('img').forEach(img => {
+    img.addEventListener('error', () => img.remove(), { once: true });
+  });
+  dias.children[0].classList.add('aan');
+  landingFotoLaden(0);
+  landingFotoLaden(1);
+}
+
+function landingFotoLaden(n) {
+  const dia = document.getElementById('landingDias')?.children[n];
+  const img = dia?.querySelector('img');
+  if (img && !img.getAttribute('src')) img.src = landingFotoAdres(LANDING_WOORDEN[n].woord);
+}
+
+function landingNaar(n) {
+  const dias = document.getElementById('landingDias');
+  const woordEl = document.getElementById('landingWoord');
+  const regelEl = document.getElementById('landingWaarvoor');
+  if (!dias || !woordEl || !regelEl) return;
+  dias.children[landingStand]?.classList.remove('aan');
+  landingStand = (n + LANDING_WOORDEN.length) % LANDING_WOORDEN.length;
+  dias.children[landingStand]?.classList.add('aan');
+  landingFotoLaden((landingStand + 1) % LANDING_WOORDEN.length);
+  const nu = LANDING_WOORDEN[landingStand];
+  regelEl.textContent = nu.waarvoor;
+  // Het woord schuift eruit en het nieuwe schuift erin (280 ms, zoals de proef).
+  woordEl.classList.remove('in');
+  woordEl.classList.add('uit');
+  setTimeout(() => {
+    woordEl.textContent = nu.woord;
+    woordEl.classList.remove('uit');
+    woordEl.classList.add('in');
+  }, 280);
+}
+
+// Loopt alleen zolang de landingspagina in beeld is en de app voorgrond heeft.
+// Bij "minder beweging" wisselt er niets vanzelf, net als de bannerbalk.
+// Zet ook de kop op de foto en meet de onderbalk, zodat het scherm precies
+// tussen de bovenrand en de onderbalk past.
+function landingBijwerken() {
+  const view = document.getElementById('view-landing');
+  const actief = !!view && view.classList.contains('active');
+  document.getElementById('appRoot')?.classList.toggle('landing-op-foto', actief);
+  if (actief) {
+    const balk = document.getElementById('appBottomNav');
+    if (balk && balk.offsetHeight) {
+      document.documentElement.style.setProperty('--onderbalk-hoogte', balk.offsetHeight + 'px');
+    }
+    landingOpbouwen();
+  }
+  const lopen = actief && !document.hidden && veegMagBewegen();
+  if (lopen && !landingKlok) {
+    landingKlok = setInterval(() => landingNaar(landingStand + 1), LANDING_TEMPO);
+  } else if (!lopen && landingKlok) {
+    clearInterval(landingKlok);
+    landingKlok = null;
+  }
+}
+document.addEventListener('visibilitychange', landingBijwerken);
 
 // TT-U25 (12-08-2026): zolang een modal open is, mag de pagina eronder niet
 // meescrollen. Eén waarnemer op alle modals is betrouwbaarder dan bij elke

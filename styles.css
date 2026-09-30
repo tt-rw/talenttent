@@ -68,7 +68,6 @@
     --merk: #f5c518;
     --merk-tekst: #000;
     --merk-hover: #ffd700;
-    --op-accent: #000;           /* tekst op een vlak in --accent */
     /* De gekozen stand van elke keuzeknop (huisstijl §5.1). */
     --gekozen-vlak: rgba(255,255,255,0.05);
     --gekozen-rand: #f5c518;
@@ -103,7 +102,13 @@
     --bericht-ander: var(--surface2);       /* het bericht van de ander */
     --bericht-rand: var(--border);
     --knop-klein-vlak: var(--surface2);     /* vlak onder het berichticoon op een resultaat */
-    --titel-streep: transparent;            /* streep onder het gekleurde woord op het startscherm */
+    /* TT-61 (30-09-2026): de landingspagina. Tekst en lagen op een foto zijn
+       in beide thema's gelijk; de foto bepaalt de ondergrond, niet het thema. */
+    --op-foto: #fff;                        /* kop en tekens op de foto */
+    --op-foto-zacht: #F3E7D6;               /* de regel "waarvoor" op de foto */
+    --foto-verloop: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0) 28%, rgba(0,0,0,0.75) 78%);
+    --foto-leeg: radial-gradient(55% 65% at 75% 30%, rgba(255,170,90,0.6), transparent 62%), radial-gradient(50% 60% at 25% 75%, rgba(120,70,40,0.45), transparent 70%), linear-gradient(160deg, #6a3b22, #1f120b);
+    --onderbalk-hoogte: 61px;               /* gemeten door landingBijwerken() in core.js */
   }
 
   /* ── TT-341 stap 2 (26-09-2026): het lichte thema ─────────────────────────
@@ -129,7 +134,6 @@
     --merk: #F5C518;
     --merk-tekst: #1E1E1E;
     --merk-hover: #FFD23F;
-    --op-accent: #F6F3EC;
     --gekozen-vlak: #F5C518;       /* licht: geel vlak; donker: gouden rand (Ronald) */
     --gekozen-rand: #F5C518;
     --gekozen-tekst: #1E1E1E;
@@ -159,7 +163,6 @@
     --bericht-ander: var(--surface);
     --bericht-rand: #B8B4AA;
     --knop-klein-vlak: transparent;
-    --titel-streep: #F5C518;
   }
   /* Voorbeeldtekst in een veld: de standaard van de browser is op crème te
      donker en lijkt dan ingevuld. Donker houdt de standaard van de browser. */
@@ -2106,37 +2109,112 @@
   }
 
   /* ── Landingspagina ─────────────────────── */
-/* TT-225 (hersteld 09-09-2026): eigen max-width weg + width:100% (TT-224-vervolg),
-     zodat de inhoud het canvas vult i.p.v. naar zijn eigen inhoud te krimpen. */
-  .landing-wrap { width: 100%; margin: 0 auto; padding: 0 24px 80px; }
-  .landing-hero { padding: 80px 0 60px; text-align: center; }
-  .landing-hero-inner { max-width: 640px; margin: 0 auto; }
-  .landing-title { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: clamp(36px, 7vw, 64px); letter-spacing: 0.5px; line-height: 1.1; margin-bottom: 20px; }
-  /* TT-341 stap 2: op licht een gele streep onder het woord, want gele tekst
-     is op crème onleesbaar. Op donker is de streep doorzichtig (besluit Ronald,
-     26-09-2026: "4 A"). */
-  .landing-title span { color: var(--accent); text-decoration: underline; text-decoration-color: var(--titel-streep); text-decoration-thickness: 5px; text-underline-offset: 6px; }
-  .landing-sub { font-size: 16px; color: var(--muted); line-height: 1.7; font-weight: 300; margin-bottom: 36px; max-width: 520px; margin-left: auto; margin-right: auto; }
-  .landing-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  .landing-steps { padding: 48px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 48px; }
-  .landing-steps-title { font-family: 'Roboto', sans-serif; font-size: 28px; letter-spacing: 1px; color: var(--muted); text-align: center; margin-bottom: 32px; }
-  /* Bugfix 19-08-2026: was vast op 3 kolommen naast elkaar, ongeacht
-     schermbreedte — brak (horizontale overflow) onder ~360px. Nu fluïde:
-     zoveel kolommen als passen, elk minimaal 220px. Op een telefoon wordt dat
-     vanzelf 1 kolom, op de brede weergave (main is max. 712px content) precies
-     3 — geen vast omslagpunt nodig, werkt op elke breedte. */
-  .landing-steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
-  .landing-step { text-align: center; padding: 28px 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); position: relative; }
-  .landing-step-num { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 24px; height: 24px; background: var(--accent); color: var(--op-accent); border-radius: 50%; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-  .landing-step-label { font-weight: 700; font-size: 15px; margin-bottom: 8px; }
-  .landing-step-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
-  /* TT-209 (04-09-2026): stond onderaan de pagina, na de drie stappen —
-     Ronald: "zet de login regel hoger, onder profiel aanmaken, zoals je
-     altijd ziet bij apps." Verplaatst naar direct onder de CTA-knop in de
-     hero (zie HTML). De border-top diende als scheiding tussen twee losse
-     paginasecties; die functie vervalt nu de regel binnen dezelfde
-     .landing-hero-inner staat, vandaar alleen nog padding-top. */
-  .landing-login { text-align: center; font-size: 14px; color: var(--muted); padding-top: 16px; }
+  /* TT-61 (30-09-2026, besluiten Ronald): richting F uit de landingsproef.
+     Boven de foto met de kop, onder een vlak in de kleur van de ondergrond.
+     Het hele scherm past tussen de bovenrand en de onderbalk: niets scrolt.
+     De hoogte van de onderbalk meet landingBijwerken() in core.js en zet hem
+     in --onderbalk-hoogte. De kop van de app ligt op de foto
+     (#appRoot.landing-op-foto, hieronder). Maten volgen de app: 16px zijmarge
+     (huisstijl §3), maten op de 4px-schaal, de kop op 36px (huisstijl §2:
+     een bestaande maat). In de proef was dat 20px, 14px en 38px. */
+  #view-landing.active {
+    display: flex;
+    flex-direction: column;
+    flex: none;          /* vanaf 768px rekt .app-view.active anders op tot de hele hoogte */
+    height: calc(100vh - var(--onderbalk-hoogte));
+    height: calc(100dvh - var(--onderbalk-hoogte));
+    overflow: hidden;
+  }
+  .landing-foto {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--foto-leeg);
+    color: var(--op-foto);
+  }
+  .landing-dias { position: absolute; inset: 0; }
+  /* Eén laag per woord; de actieve ligt erboven en komt in beeld. Een woord
+     zonder foto toont het warme vlak van .landing-foto (besluit Ronald
+     30-09-2026: het woord blijft staan). */
+  .landing-dia { position: absolute; inset: 0; opacity: 0; transition: opacity .9s ease; }
+  .landing-dia.aan { opacity: 1; }
+  .landing-dia img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; display: block; }
+  .landing-dia.aan img { animation: landingZoom 9s ease-out forwards; }
+  @keyframes landingZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
+  .landing-verloop { position: absolute; inset: 0; pointer-events: none; background: var(--foto-verloop); }
+  .landing-kop { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 16px 20px; }
+  .landing-title {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 900;
+    font-size: 36px;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--op-foto);
+  }
+  /* Het woord dat wisselt: gele streep eronder, in beide thema's — het staat
+     op een foto, niet op de ondergrond. */
+  .landing-woord {
+    display: inline-block;
+    text-decoration: underline;
+    text-decoration-color: var(--merk);
+    text-decoration-thickness: 6px;
+    text-underline-offset: 6px;
+  }
+  .landing-woord.uit { animation: landingWoordUit .28s ease-in forwards; }
+  .landing-woord.in { animation: landingWoordIn .34s cubic-bezier(.2,.8,.2,1); }
+  @keyframes landingWoordUit { to { transform: translateY(-40%); opacity: 0; } }
+  @keyframes landingWoordIn { from { transform: translateY(40%); opacity: 0; } to { transform: none; opacity: 1; } }
+  .landing-waarvoor { margin: 12px 0 0; font-size: 14px; color: var(--op-foto-zacht); }
+  .landing-onder {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px 16px 16px;
+    background: var(--bg);
+  }
+  .landing-sub { font-size: 18px; font-weight: 700; color: var(--text); }
+  .landing-knop { width: 100%; }
+  .landing-login { margin: 0; text-align: center; font-size: 14px; color: var(--muted); }
+  /* TT-68: "Inloggen" was 76×16 pixels. Nu een tikdoel van 44px hoog. De
+     negatieve marge houdt de regel zelf even hoog als een tekstregel; het
+     tikvlak steekt er boven en onder 12px uit. */
+  .landing-inloggen {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin: -12px 0;
+    padding: 0 4px;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+  /* De kop van de app ligt op de foto: doorzichtig, tekens en TALENT wit,
+     TENT blijft geel. Alleen zolang de landingspagina in beeld is. */
+  #appRoot.landing-op-foto .app-topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: transparent;
+  }
+  /* Vanaf 768px is #appRoot minstens een scherm hoog; met de ruimte voor de
+     onderbalk onder body erbij scrolde de landingspagina daar 60px. */
+  #appRoot.landing-op-foto { min-height: 0; }
+  /* Een open hamburgermenu houdt zijn eigen vlak en tekenkleur (.active). */
+  #appRoot.landing-op-foto header .logo span,
+  #appRoot.landing-op-foto header .nav-menu-btn:not(.active) { color: var(--op-foto); }
+  @media (prefers-reduced-motion: reduce) {
+    .landing-dia { transition: none; }
+    .landing-dia.aan img, .landing-woord.uit, .landing-woord.in { animation: none; }
+  }
 
   /* ── Navigatie ───────────────────────────── */
   .app-nav-row {
@@ -3660,12 +3738,6 @@
        afweken. Vaste 60px bovenmarge is op een klein scherm ook onnodig
        groot, er is geen kop-content om vanaf te lopen op dit scherm. */
     .auth-wrap { padding: 0 16px; margin: 24px auto; }
-    /* TT-132 (23-08-2026): landingspagina had dezelfde marge-afwijking,
-       plus een zware vaste bovenmarge die titel/subtekst/CTA-knop —
-       juist de belangrijkste actie op het eerste scherm — onnodig ver
-       onder de vouw duwde. */
-    .landing-wrap { padding: 0 16px 60px; }
-    .landing-hero { padding: 40px 0 40px; }
     /* 22-08-2026 (Ronald, "12-1"): de gouden balk bovenaan het profiel
        (.profile-header-band) moet direct tegen de vaste kop aan sluiten,
        geen kloof ertussen. Alleen op Mijn Profiel de bovenmarge weg — de
@@ -3931,7 +4003,8 @@
     .modal-overlay,
     .menu-laag,
     .save-overlay,
-    .backend-error-overlay { left: 25%; right: 25%; }
+    .backend-error-overlay,
+    #appRoot.landing-op-foto .app-topbar { left: 25%; right: 25%; }
   }
 
 

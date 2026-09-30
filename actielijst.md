@@ -1,6 +1,71 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 29-09-2026 (TT-367, TT-368) — **TT-368 gebouwd en
+**Laatste update:** 30-09-2026 (TT-61) — **De nieuwe landingspagina is
+gebouwd: richting F uit de landingsproef. Testset 699 van 699, monitorronde
+21 van 21. Nog open: upload naar beide repo's; de foto's (bucket `landing` in
+Supabase); laag 2 op de telefoon.**
+
+- **Besluiten Ronald, 29 en 30-09-2026:** zie `landingsproef-werkwijze-30-09-2026.md`
+  in het project. Kern: "Zoek een <woord>." op een foto, tien woorden in vaste
+  volgorde, elke 4 seconden vanzelf de volgende; geen keuzeknoppen; de knop
+  "Zoek muzikanten" opent altijd Zoeken, ook bij "band"; past op één scherm;
+  een woord zonder foto blijft staan; foto's voorlopig via Claude in Supabase.
+- **Gebouwd:**
+  - `index.html`: `view-landing` opnieuw — foto met kop en regel, daaronder
+    subkop, knop en inlogregel. De oude kop, "Profiel aanmaken →" en de drie
+    stappen "Hoe het werkt" zijn weg. Roboto wordt ook in 900 geladen.
+  - `core.js`: `LANDING_WOORDEN`, `landingOpbouwen()`, `landingFotoLaden()`,
+    `landingNaar()` en `landingBijwerken()`. Het wisselen loopt alleen als de
+    landingspagina in beeld is en de app voorgrond heeft; bij "minder
+    beweging" wisselt niets. `showView()` roept `landingBijwerken()` aan.
+  - `styles.css`: de oude `.landing-*`-regels en `--titel-streep` en
+    `--op-accent` zijn weg (dode code, nergens meer gebruikt). Nieuw: de
+    rollen `--op-foto`, `--op-foto-zacht`, `--foto-verloop`, `--foto-leeg` en
+    `--onderbalk-hoogte`.
+  - **De kop ligt op de foto** (`#appRoot.landing-op-foto`): doorzichtig,
+    terugknop, hamburger en TALENT wit, TENT geel. Daarvoor is de inline
+    kleur van TALENT uit de drie woordmerken gehaald; die stond al in
+    `.logo span`. Geen zichtbaar verschil elders.
+  - **De foto's:** de app vraagt `landing/<woord>.jpg` op uit de openbare
+    opslagmap `landing` van Supabase (`dj.jpg` in kleine letters). Een foto
+    wordt pas gevraagd als hij bijna aan de beurt is. Laadt hij niet, dan
+    blijft het warme vlak. **Aanname:** de map `landing` bestaat nog niet;
+    tot hij er is, toont elk woord het vlak. Een foto erbij vraagt geen
+    nieuwe code.
+- **Verschillen met de proef, alle vier uit de huisstijl:** kop 36px (proef
+  38px, geen bestaande maat), zijmarge 16px (proef 20px), opvulling op de
+  4px-schaal, en links in de kop de terugknop (TT-310). "Inloggen" heeft nu
+  een tikdoel van 44px hoog (TT-68: was 76 × 16).
+- **Rechtgezet onderweg:** vanaf 768px breed scrolde elk scherm 60px, ook de
+  landingspagina: `#appRoot` is daar minstens een scherm hoog, en `body` houdt
+  60px vrij voor de onderbalk. Voor de landingspagina is dat opgelost
+  (`#appRoot.landing-op-foto { min-height: 0 }`). **Geverifieerd** voor de
+  landingspagina. Voor de andere schermen niet onderzocht; zie TT-379.
+- **Getest:** 699/699. Nieuw blok 49, 20 controles: kop en regel, de tien
+  woorden in volgorde, geen keuzeknoppen, wisselen na 4 seconden, alleen de
+  eerste twee foto's bij het openen, een foto die laadt en een die niet
+  laadt, de kop op de foto, de knop naar Zoeken ook bij "band", stoppen
+  buiten de landingspagina en op de achtergrond, "minder beweging", het
+  tikdoel van "Inloggen", een open hamburgermenu, en past op één scherm op
+  375 × 667, 390 × 844, 430 × 932 en 1280 × 800, licht en donker. Tegen de
+  oude code zakt het blok. Blok 32 (woordmerk zonder spatie) toetst nu het
+  woordmerk zonder inline kleur. Schermafdrukken bekeken op alle vier de
+  maten, in beide thema's, met het hamburgermenu open en na een wissel.
+- **Documenten:** huisstijl §20 is nieuw (de landingspagina, met de
+  uitzondering "vanzelf wisselen"), §1, §2, §11 en §18.5 bijgewerkt;
+  projectinstructies §9, §11 en §12; landingsproef-werkwijze (zesde keer).
+  In het project en in `_niet-uploaden`.
+- **Wacht op laag 2:** de landingspagina op Ronalds telefoon, licht en donker,
+  en als app op het beginscherm.
+- **Gewijzigd:** `index.html`, `styles.css`, `core.js`, `tests/tt_tests.py`,
+  `actielijst.md`, `CHECKSUMS.txt`.
+
+**Stand van de P0's.** Ongewijzigd: TT-325 · TT-329 · TT-352, de controle
+TT-323, en TT-358 als advies P0. TT-61 is P2 en blijft P2.
+
+---
+
+**Vorige update:** 29-09-2026 (TT-367, TT-368) — **TT-368 gebouwd en
 getest: vegen tussen de zoektabbladen volgt nu de vinger. TT-367 gemeten; het
 advies "oude inhoud laten staan" is door Ronald afgewezen. Testset 679 van
 679. Nog open: upload naar beide repo's; één vraag over TT-367; laag 2 op de
@@ -7422,7 +7487,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-56** | Statusknop "sta je open voor iets nieuws?" | **Deels gebouwd 12-08-2026, zie Deel 3.** Scope teruggebracht tot alleen band-uitnodigingen (TT-41) — geen algemene "open voor van alles"-status, geen zichtbaar label voor bezoekers. Toggle op Mijn Profiel + gate op de "Uitnodigen"-knop, klaar in `index.html`. **Blokkeert productie:** het scriptje in Deel 3 (nieuwe kolom `accepts_band_invites`) moet Ronald nog draaien |
 | **TT-58** | Applaus-mechanisme | Open besluit: op personen of op prestaties, met of zonder zichtbare teller. Advies blijft: op prestaties, geen publieke teller (risico op populariteitsscore bij minderjarige gebruikers) |
 | **TT-59** | Proefrepetitie-kaart in het gesprek | Verwachtingen bespreken vóór de eerste keer samen spelen. Sluit aan op TT-11 (lagere inzet: "ik wil een keer meespelen") |
-| **TT-61** | Landingspagina herzien | "Ik ben.../Ik zoek..."-raster, nieuwste muzikanten, later succesverhalen |
+| **TT-61** | Landingspagina herzien | **Gebouwd en getest 30-09-2026: richting F uit de landingsproef** (besluiten Ronald 29 en 30-09-2026). Volledige tekst: Laatste update bovenaan en huisstijl §20. **Nog open:** upload naar beide repo's; de foto's in de opslagmap `landing` van Supabase; laag 2 op de telefoon. Het oorspronkelijke idee ("Ik ben.../Ik zoek..."-raster, nieuwste muzikanten, succesverhalen) is vervangen door de keuze voor F |
 | **TT-66** | Service worker toevoegen | Voorwaarde voor een volwaardige PWA en voor de Google Play-route (TT-70). **Raakvlak 10-08-2026:** een service worker kan de Supabase-bibliotheek in de cache houden. Dat maakt de app ook bruikbaar als het CDN wegvalt, in plaats van alleen de nette melding van TT-82. Meenemen bij het ontwerp, samen met TT-85. **Aangevuld 19-08-2026 (Ronald):** expliciete wens om de PWA weer volledig te maken, zodat de latere overstap naar een native app soepeler verloopt — dit ticket dekt dat verzoek al, geen nieuw nummer. **Nog niet opgepakt, bewust:** een verkeerd ontworpen cachestrategie kan bij een app die elke sessie opnieuw wordt gedeployed toekomstige updates laten "vastlopen" voor gebruikers (verouderde `index.html` blijft hangen in de cache). Vraagt eerst een gesprek over de cachestrategie (bijv. network-first met korte cache-tijd, of versiegebonden cache-namen die meebewegen met elke oplevering) vóórdat er gebouwd wordt |
 | **TT-67** | Laadstaten, lege staten, foutstaten | Bewust pas na de P0-tickets — anders polijst je schermen die daarna toch weer veranderen. **Deelresultaten 10-08-2026:** de foutstaat bij een niet-geladen bibliotheek (TT-82) en de meldingen bij een geweigerd bestand (TT-87) zijn al gebouwd. Die twee hoeven hier niet opnieuw |
 | **TT-68** | Toegankelijkheid | Aria-labels, contrast, tikdoelen. Ook bewust pas na P0. **Deelresultaat 10-08-2026:** bewegingsreductie is los opgelost als TT-83, de rest staat nog open. **Gemeten stand 10-08-2026 (tweede externe review):** 1× `aria-`, 0× `role=`, 0× `tabindex`, 133 inline `onclick`-handlers waarvan een deel op niet-focusbare divs/kaarten — met alleen een toetsenbord of een schermlezer is de app grotendeels onbruikbaar. Twee concrete eerste stappen, los uit te voeren: (1) klikbare kaarten `role="button"` + `tabindex="0"` geven, (2) modals `aria-modal="true"` + focus-trap. Geen blokkade voor lancering bij deze doelgroep, wel structurele schuld **Aangevuld 16-09-2026 (onderhoudsronde):** "Inloggen →" (landing, 76×16) en "Wachtwoord vergeten?" (inlogscherm, 123×14) zijn te klein als tikdoel |
@@ -7453,6 +7518,8 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-378** | De foto's van de landingspagina zelf kunnen wisselen, zonder Claude | **Nieuw, 30-09-2026, wens Ronald (29-09-2026): "pakt hij later op, als apart ticket".** Vorm volgens Ronald: een onzichtbaar account dat alleen foto's levert aan de landingspagina, geen speler. Tot die tijd zet Claude de foto's in de opslagmap `landing` (besluit Ronald 30-09-2026). **Advies P3. Toets P3:** geen aanwijsbaar gevolg voor een gebruiker nu; het gaat om Ronalds beheer. Let op: sinds TT-61 vraagt een nieuwe foto al geen nieuwe code, alleen een bestand met de juiste naam in die map |
+| **TT-379** | Vanaf 768px breed scrolt elk scherm 60px te ver | **Nieuw, 30-09-2026, gevonden bij TT-61. Advies P3.** **Geverifieerd** op de landingspagina: `#appRoot` is daar minstens een scherm hoog (`min-height: 100vh`), en `body` houdt daaronder 60px vrij voor de onderbalk. Samen is de pagina 60px hoger dan het venster. Voor de landingspagina opgelost. **Aanname:** op de andere schermen gebeurt hetzelfde, omdat beide regels app-breed gelden; niet gemeten. **Toets P3:** alleen op een laptop of tablet, en het kost niets meer dan een stukje leeg scrollen |
 | **TT-376** | De stip van een bandlid toont de eerste letter, niet de T | **Nieuw, 29-09-2026, gevonden bij TT-372. Advies P3.** `.band-member-dot` in `bands.js` (vier plekken) toont de eerste letter van de naam. Overal elders staat zonder foto de T van het logo (TT-33: "geef iedereen dan een typische T van het logo"). Vraag aan Ronald: ook hier de T? **Toets P3:** geen aanwijsbaar gevolg voor een gebruiker nu |
 | **TT-348** | Een adres met # intypen terwijl de app openstaat, toont de homepage | **Nieuw, 26-09-2026, TT-323. Advies P3.** Geverifieerd in het scherm rechts: naar `talenttent.org/#search` gaan terwijl de app al openstond, gaf de homepage; na verversen klopt het. Oorzaak: een wissel van alleen het #-deel geeft `popstate` met een lege `e.state`; de afhandeling onderaan `core.js` valt dan terug op `landing`. **Toets P3:** een gewone gebruiker typt vrijwel nooit een adres in een app die al openstaat. |
 | **TT-349** | Het zoekfilter van het vorige account blijft staan | **Nieuw, 26-09-2026, TT-323. Advies P3.** Geverifieerd in het scherm rechts: Proef zette Ukulele als filter en logde uit; daarna stond Ukulele nog in het zoekscherm van Uke. `onUserLoggedOut()` wist de bewaarde zoekopdracht (`wisBewaardeZoek()`), niet de velden van het formulier. **Toets P3:** speelt alleen op een gedeeld toestel, en een filter zegt weinig over iemand. |

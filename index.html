@@ -62,7 +62,7 @@
      laden, zodat het er is voordat de kop getekend wordt. crossorigin is
      verplicht bij een lettertype, ook op het eigen domein. -->
 <link rel="preload" href="tt-woordmerk.woff2" as="font" type="font/woff2" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
   /* TT-82 (10-08-2026, externe review 2.1): de hele app hangt aan deze ene
@@ -75,11 +75,11 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260929c">
+<link rel="stylesheet" href="styles.css?v=20260930a">
 </head>
 <body>
 
-<div id="appRoot">
+<div id="appRoot" class="landing-op-foto">
 
 <div class="app-topbar">
 <!-- TT-301 (20-09-2026, Ronald): de kop is één rij met drie vakken —
@@ -99,7 +99,7 @@
       <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
     </button>
   </div>
-  <div class="logo" onclick="naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span style="color:var(--text);">TALENT</span>TENT</div>
+  <div class="logo" onclick="naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span>TALENT</span>TENT</div>
   <div class="kop-vak kop-rechts">
     <!-- TT-63/nav-herziening (09-08-2026): hamburgermenu voor minder-frequente
          links (Ronald: te veel tabbladen, op mobiel al horizontaal scrollen).
@@ -205,28 +205,27 @@
 </div>
 
 <!-- VIEW: Landingspagina -->
+<!-- TT-61 (30-09-2026, besluiten Ronald 29 en 30-09-2026): richting F uit de
+     landingsproef. Boven de foto met "Zoek een <woord>." en de regel waarvoor;
+     het woord, de regel en de foto wisselen vanzelf, elke 4 seconden. Onder de
+     foto een vlak in de kleur van de ondergrond met de subkop, de knop en de
+     inlogregel. Geen keuzeknoppen. De knop opent altijd Zoeken, welk woord ook
+     in beeld staat. Past op één scherm, zonder scrollen. De tien woorden en
+     hun regels staan in LANDING_WOORDEN in core.js; de foto's vult
+     landingOpbouwen(). -->
 <div class="app-view active" id="view-landing">
-  <div class="landing-wrap">
-    <div class="landing-hero">
-      <div class="landing-hero-inner">
-        <h1 class="landing-title">Vind je <span>muzikant.</span><br>Start je band.</h1>
-        <p class="landing-sub">The Talent Tent brengt muzikanten bij elkaar — voor jam-sessies, repetities en optredens. Vind muzikanten of bands bij jou in de buurt.</p>
-        <div class="landing-cta">
-          <button class="btn btn-primary" onclick="showView('register')">Profiel aanmaken →</button>
-        </div>
-        <div class="landing-login">
-          <p>Heb je al een profiel? <button onclick="showView('auth')" style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:'Roboto',sans-serif;font-size:14px;font-weight:700;text-decoration:underline;">Inloggen →</button></p>
-        </div>
-      </div>
+  <div class="landing-foto">
+    <div class="landing-dias" id="landingDias" aria-hidden="true"></div>
+    <div class="landing-verloop" aria-hidden="true"></div>
+    <div class="landing-kop">
+      <h1 class="landing-title">Zoek een<br><span class="landing-woord" id="landingWoord">zangeres</span>.</h1>
+      <p class="landing-waarvoor" id="landingWaarvoor">Voor je eerste optreden.</p>
     </div>
-    <div class="landing-steps">
-      <div class="landing-steps-title">Hoe het werkt</div>
-      <div class="landing-steps-grid">
-        <div class="landing-step"><div class="landing-step-num">1</div><div class="landing-step-label">Maak je profiel</div><div class="landing-step-desc">Voeg je instrument, genres en repertoire toe.</div></div>
-        <div class="landing-step"><div class="landing-step-num">2</div><div class="landing-step-label">Zoek en match</div><div class="landing-step-desc">Zoek muzikanten of bands bij jou in de buurt.</div></div>
-        <div class="landing-step"><div class="landing-step-num">3</div><div class="landing-step-label">Speel samen</div><div class="landing-step-desc">Neem contact op en maak muziek samen.</div></div>
-      </div>
-    </div>
+  </div>
+  <div class="landing-onder">
+    <h2 class="landing-sub">Muzikanten bij jou in de buurt.</h2>
+    <button class="btn btn-primary landing-knop" onclick="showView('search')">Zoek muzikanten →</button>
+    <p class="landing-login">Zoeken kan zonder profiel. <button type="button" class="landing-inloggen" onclick="showView('auth')">Inloggen</button></p>
   </div>
 </div>
 
@@ -2121,7 +2120,7 @@
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
         </button>
       </div>
-      <div class="logo" onclick="closeMusicianModal();naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span style="color:var(--text);">TALENT</span>TENT</div>
+      <div class="logo" onclick="closeMusicianModal();naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span>TALENT</span>TENT</div>
       <!-- TT-06 (18-09-2026): melden en blokkeren staan achter een ⋯-menu
            (huisstijl §8). TT-318 (24-09-2026, besluit Ronald): dat menu staat
            niet meer in deze koprij maar rechts naast de naam, recht onder het
@@ -2158,7 +2157,7 @@
           <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
         </button>
       </div>
-      <div class="logo" onclick="document.getElementById('bandModal').classList.remove('visible');naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span style="color:var(--text);">TALENT</span>TENT</div>
+      <div class="logo" onclick="document.getElementById('bandModal').classList.remove('visible');naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span>TALENT</span>TENT</div>
       <!-- TT-06: zelfde ⋯-menu als bij het muzikantprofiel. Een band is wel te
            melden, niet te blokkeren — blokkeren gaat over een persoon.
            TT-318: net als bij het muzikantprofiel staat het menu naast de
@@ -2628,7 +2627,7 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20260929b"></script>
+<script src="core.js?v=20260930a"></script>
 <script src="utils.js?v=20260929a"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260927b"></script>
@@ -2652,6 +2651,9 @@ if (!window.ttBackendMissing) {
   initZoekVeeg();   // TT-170: vegen tussen de zoektabbladen
   appInit();
 }
+// TT-61: de landingspagina staat al in beeld vóór appInit() iets toont. Ook
+// zonder Supabase-bibliotheek hoort hij te kloppen.
+landingBijwerken();
 </script>
 </body>
 </html>
