@@ -5080,13 +5080,13 @@ window.TT_STUB.fnAntwoord = {};
         c48.close()
 
         print("\nBlok 49 — de landingspagina, richting F (TT-61)")
-        # Besluiten Ronald, 29 en 30-09-2026: "Zoek een <woord>.", tien woorden
+        # Besluiten Ronald, 29 en 30-09-2026: "Zoek een <woord>" (zonder punt), tien woorden
         # in vaste volgorde, elke 4 seconden vanzelf de volgende, geen
         # keuzeknoppen, de knop opent altijd Zoeken, past op één scherm.
         import base64
         FOTO49 = base64.b64decode("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAQAAkDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwCnRRRXsnkn/9k=")
         WOORDEN49 = ["zangeres", "drummer", "bassist", "gitarist", "zanger", "band",
-                     "pianist", "violist", "saxofonist", "DJ"]
+                     "toetsenist", "violist", "saxofonist", "DJ"]
         def ctx49(w, h, **kw):
             c = browser.new_context(viewport={"width": w, "height": h}, **kw)
             pg = c.new_page(); fouten = []; pg.on("pageerror", lambda e: fouten.append(str(e)))
@@ -5113,8 +5113,8 @@ window.TT_STUB.fnAntwoord = {};
           sub: document.querySelector('.landing-sub').textContent,
           login: document.querySelector('.landing-login').textContent,
           klok: !!landingKlok })""")
-        check("de kop leest \"Zoek een zangeres.\" met \"Voor je eerste optreden.\" eronder",
-              st49["kop"] == "Zoek eenzangeres." and st49["regel"] == "Voor je eerste optreden.", json.dumps(st49)[:300])
+        check("de kop leest \"Zoek een zangeres\", zonder punt, met \"Voor je eerste optreden.\" eronder",
+              st49["kop"] == "Zoek eenzangeres" and st49["regel"] == "Voor je eerste optreden.", json.dumps(st49)[:300])
         check("tien woorden in de volgorde van Ronald, elk een eigen laag, 4 seconden per woord",
               st49["woorden"] == WOORDEN49 and st49["dias"] == 10 and st49["tempo"] == 4000, json.dumps(st49)[:300])
         check("geen keuzeknoppen: alleen \"Zoek muzikanten →\" en \"Inloggen\"",
@@ -5162,6 +5162,8 @@ window.TT_STUB.fnAntwoord = {};
         check("de derde foto wordt gevraagd zodra de tweede in beeld komt", "bassist.jpg" in g49, json.dumps(g49))
         # De knop opent altijd Zoeken, ook als "band" in beeld staat.
         p49.evaluate("landingNaar(5)"); p49.wait_for_timeout(400)
+        check("een sprong naar een woord vraagt ook de foto van dat woord zelf op, niet alleen de volgende",
+              "band.jpg" in g49, json.dumps(g49))
         p49.click(".landing-knop"); p49.wait_for_timeout(400)
         weg49 = p49.evaluate("""() => ({ view: document.querySelector('.app-view.active').id, klok: !!landingKlok,
           klasse: document.getElementById('appRoot').classList.contains('landing-op-foto'),
