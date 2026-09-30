@@ -5447,6 +5447,25 @@ window.TT_STUB.fnAntwoord = {};
         check("de foutregel van de postcode staat onder de hele rij, niet in de smalle kolom, en verdwijnt weer",
               fout50 == [True, True], json.dumps(fout50))
 
+        print("\nBlok 53 — deelicoon en ⋯-menu bij de naam lichten niet op (TT-383, bevinding Ronald 30-09-2026)")
+        vlak53 = page.evaluate("""() => {
+          const w = document.createElement('div');
+          w.innerHTML = profielKnoppenHTML('profiel', 'x', 'Proef', '<button type="button" class="nav-menu-btn active">⋯</button>');
+          document.body.appendChild(w);
+          const uit = [...w.querySelectorAll('.nav-menu-btn')].map(b => { b.classList.add('active'); const s = getComputedStyle(b);
+            return [s.backgroundColor, s.borderTopColor, s.webkitTapHighlightColor]; });
+          w.remove(); return uit; }""")
+        leeg53 = ["rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0)"]
+        check("deelknop en ⋯-menu: geen vlak, geen rand en geen tap-highlight, ook als het menu open staat",
+              len(vlak53) == 2 and all(x == leeg53 for x in vlak53), json.dumps(vlak53))
+        css53 = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+        check("ook bij aanwijzen geen vlak (hover-regel voor .profiel-knoppen)",
+              ".profiel-knoppen .nav-menu-btn:hover { background: transparent; border-color: transparent; }" in css53[css53.find("@media (hover: hover)"):], "")
+        vlak53b = page.evaluate("""() => { const b = document.createElement('button'); b.className = 'nav-menu-btn active';
+          document.body.appendChild(b); const c = getComputedStyle(b).backgroundColor; b.remove(); return c; }""")
+        check("het hamburgermenu elders houdt zijn open-stand (buiten deze rij niets gewijzigd)",
+              vlak53b != "rgba(0, 0, 0, 0)", vlak53b)
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
