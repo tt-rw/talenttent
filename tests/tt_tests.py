@@ -3448,11 +3448,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("K5: Terug in de wizard is een tweede knop: wit, 16px, gewone letters",
               terug[:4] == ["rgb(240, 240, 240)", "solid", "16px", "none"] and "btn-ghost" in terug[4], json.dumps(terug))
         check("K5: de tweede knop heeft een rand van --line", rand(".btn-ghost") == "var(--line)", str(rand(".btn-ghost")))
-        page.evaluate("goTo(4)"); page.wait_for_timeout(450)
-        foto = page.evaluate("""() => { const b = document.getElementById('avatarRemoveBtn'); b.classList.add('visible');
-            const h = Math.round(b.getBoundingClientRect().height); const c = b.className; b.classList.remove('visible'); return [h, c]; }""")
-        check("K5: Foto verwijderen is een tweede knop van 44px (§6)",
-              foto[0] >= 44 and "btn-ghost" in foto[1], json.dumps(foto))
+        # "Foto verwijderen" was hier een tweede knop; sinds TT-381 is het een kruisje. Zie blok 51.
 
         # K2 — Account verwijderen omlijnd in rood.
         rood = page.evaluate("""() => { const b = document.getElementById('deleteAccountConfirmBtn'); const cs = getComputedStyle(b);
@@ -3650,7 +3646,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         # Blok 33 — TT-318: het ⋯-menu naast de naam, kruisje als de pijl,
         # bandvenster even breed als het muzikantvenster
         # ------------------------------------------------------------------
-        print("\nBlok 33 — vensters: ⋯ naast de naam, kruisje en bandvenster (TT-318)")
+        print("\nBlok 33 — vensters: ⋯ bij de naam, kruisje en bandvenster (TT-318, TT-380)")
         page.set_viewport_size({"width": 375, "height": 812})
         page.wait_for_timeout(80)
         venster = page.evaluate("""async () => {
@@ -3694,7 +3690,9 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             const i = inkt(box);
             const uit = Object.assign(i, {
               inKoprij: !!(plek && plek.closest('.modal-kop')),
-              naastNaam: !!(plek && naam && plek.parentElement === naam.parentElement.parentElement),
+              // TT-380: het menu staat onder de naam, in de rij met het deelicoon.
+              onderNaam: !!(plek && naam && plek.closest('.profiel-knoppen') && naam.parentElement.contains(plek)),
+              naamVol: !!(naam && naam.clientWidth === naam.parentElement.clientWidth),
               menuMidden: kb ? (kb.left + kb.right) / 2 : null,
               naam: naam ? naam.clientWidth : null,
               logoPx: getComputedStyle(box.querySelector('.modal-kop .logo')).fontSize,
@@ -3717,8 +3715,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         }""")
         for soort in ("muzikant", "band"):
             v = venster[soort]
-            check(f"{soort}: het ⋯-menu staat naast de naam, niet in de koprij",
-                  v["naastNaam"] and not v["inKoprij"], json.dumps(v))
+            check(f"{soort}: het ⋯-menu staat onder de naam, naast het deelicoon, niet in de koprij (TT-380)",
+                  v["onderNaam"] and not v["inKoprij"], json.dumps(v))
             check(f"{soort}: het kruisje staat even ver van de rand als de pijl (29px)",
                   abs(v["kruis"] - v["pijl"]) <= 0.5 and abs(v["kruis"] - 29) <= 0.5, json.dumps(v))
             check(f"{soort}: het ⋯-menu staat recht onder het kruisje",
@@ -3729,8 +3727,11 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
                   v["opvulling"] == "0px 0px 0px" and v["inhoudL"] == "16px", json.dumps(v))
             check(f"{soort}: niets steekt zijwaarts buiten het venster",
                   v["overloop"] <= 0, json.dumps(v))
-        check("de naam in het muzikantvenster houdt 187px, net als op Mijn Profiel",
-              venster["muzikant"]["naam"] == 187, json.dumps(venster["muzikant"]))
+        # TT-380: hier stond "de naam houdt 187px". Sinds het menu onder de naam
+        # staat, heeft de naam de volle breedte van zijn kolom.
+        check("de naam in het muzikant- en bandvenster heeft de volle breedte (TT-380)",
+              venster["muzikant"]["naamVol"] and venster["band"]["naamVol"]
+              and venster["muzikant"]["naam"] > 187, json.dumps(venster))
         check("bandvenster en muzikantvenster hebben dezelfde koprij",
               venster["band"]["kopL"] == venster["muzikant"]["kopL"]
               and venster["band"]["kopR"] == venster["muzikant"]["kopR"], json.dumps(venster))
@@ -5225,6 +5226,226 @@ window.TT_STUB.fnAntwoord = {};
           document.dispatchEvent(new Event('visibilitychange')); return [uit, !!landingKlok]; }""")
         check("de app op de achtergrond: het wisselen stopt, en loopt weer als hij terugkomt", vb49 == [True, True], json.dumps(vb49))
         c.close()
+
+        # ------------------------------------------------------------------
+        # Blok 50 — TT-380: delen is een icoon bij de naam, op elk profiel
+        # ------------------------------------------------------------------
+        print("\nBlok 50 — het deelicoon bij de naam, op elk profiel (TT-380)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 375, "height": 812})
+        page.evaluate("showView('about')")
+        page.wait_for_timeout(100)
+        d50 = page.evaluate("""async () => {
+          const S = window.TT_STUB;
+          const was = { hasOwnProfile, myMusicianId, share: navigator.share };
+          let gedeeld = null;
+          Object.defineProperty(navigator, 'share', { configurable: true, value: async d => { gedeeld = d; } });
+          S.rpcResults.tt_get_musicians_public = () => [{ id: 'm2', username: 'dylan', age: 30, city: 'Den Haag',
+            bio: '', goal: null, profile_color: '#f5c518', avatar_url: null, updated_at: new Date().toISOString(),
+            instrument_levels: [{ instrument: 'Drums', niveau: 3 }], genres: ['Rock'], songs: [], media: [] }];
+          S.rpcResults.tt_get_bands_public = () => [{ id: 'b2', name: 'Testband', city: 'Den Haag', description: '',
+            status: 'zoekend', profile_color: '#3ecfff', updated_at: new Date().toISOString(), avatar_url: null,
+            genres: ['Rock'], niveau: 3, members: [{ username: 'dylan', profile_color: '#f5c518' }], wanted: [] }];
+          const rect = e => e ? e.getBoundingClientRect() : null;
+          const meet = async (vak, sluit) => {
+            const naam = vak.querySelector('.profile-name');
+            const deel = vak.querySelectorAll('.deel-knop');
+            const knop = deel[0];
+            const menu = knop && knop.parentElement.querySelector('.profile-actions-menu-wrap .nav-menu-btn, .profiel-menu-plek .nav-menu-btn');
+            const regels = vak.querySelector('.profiel-regels');
+            const k = rect(knop), m = rect(menu), r = rect(regels), n = rect(naam);
+            // De inkt: de meest rechtse cirkel van het deelteken en de stippen van het menu.
+            const inktR = knop ? Math.max(...[...knop.querySelectorAll('circle')].map(c => rect(c).right)) : null;
+            const stipL = menu ? Math.min(...[...menu.querySelectorAll('circle')].map(c => rect(c).left)) : null;
+            const breed = [...(vak.closest('.modal-box') || vak).querySelectorAll('button')]
+              .filter(b => /Deel dit (band)?profiel/.test(b.textContent)).length;
+            const x = sluit ? rect(sluit) : null;
+            let url = null;
+            if (knop) { gedeeld = null; knop.click(); await new Promise(z => setTimeout(z, 20)); url = gedeeld && gedeeld.url; }
+            return { aantal: deel.length, breed,
+              maat: k ? [Math.round(k.width), Math.round(k.height)] : null,
+              menuMaat: m ? [Math.round(m.width), Math.round(m.height)] : null,
+              overlap: (k && m) ? +(k.right - m.left).toFixed(1) : null,
+              inktGat: (inktR != null && stipL != null) ? +(stipL - inktR).toFixed(1) : null,
+              hoogte: (k && r) ? +(((k.top + k.bottom) - (r.top + r.bottom)) / 2).toFixed(1) : null,
+              naamVol: !!(naam && naam.clientWidth === naam.parentElement.clientWidth),
+              naamRegels: (n && r) ? +(r.top - n.bottom).toFixed(1) : null,
+              alleenOnderKruis: (k && !m && x) ? +(((k.left + k.right) - (x.left + x.right)) / 2).toFixed(1) : null,
+              url: url ? url.replace(/^.*#/, '#') : null,
+              label: knop ? knop.getAttribute('aria-label') : null };
+          };
+          const uit = {};
+          // 1. Mijn Profiel.
+          hasOwnProfile = true; myMusicianId = 'm1';
+          document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+          document.getElementById('view-myprofile').classList.add('active');
+          const eigen = document.getElementById('myProfileContent');
+          eigen.innerHTML = buildMusicianDetailHTML({ id: 'm1', fname: 'Ronald', lname: 'W', username: 'ronald', bio: '',
+            city: 'Den Haag', age: 25, musician_songs: [], musician_media: [], musician_wanted: [],
+            musician_instruments: [{ instrument: 'Drums', niveau: 3 }], musician_genres: [{ genre: 'Rock' }] }, true, false);
+          fitProfileName(eigen);
+          uit.mijnProfiel = await meet(eigen, null);
+          const ham = rect(document.getElementById('navMenuBtn'));
+          const mm = rect(document.getElementById('profileMoreBtn'));
+          uit.menuOnderHamburger = +(((mm.left + mm.right) - (ham.left + ham.right)) / 2).toFixed(1);
+          eigen.innerHTML = '';
+          showView('about');
+          // 2. Het venster van een ander, met een eigen profiel: deelicoon en ⋯.
+          hasOwnProfile = false; myMusicianId = 'm1';
+          await openMusicianModal('m2');
+          hasOwnProfile = true; zetVeiligheidMenu('musicianModalActies', 'muzikant', 'm2', 'Dylan'); hasOwnProfile = false;
+          const mv = document.getElementById('musicianModalContent');
+          uit.ander = await meet(mv, document.querySelector('#musicianModal .modal-close'));
+          document.getElementById('musicianModal').classList.remove('visible');
+          // 3. Hetzelfde venster, bezoeker zonder profiel: alleen het deelicoon.
+          await openMusicianModal('m2');
+          uit.anderZonderProfiel = await meet(mv, document.querySelector('#musicianModal .modal-close'));
+          document.getElementById('musicianModal').classList.remove('visible');
+          // 4. Je eigen profiel in het venster: alleen het deelicoon.
+          myMusicianId = 'm2';
+          await openMusicianModal('m2');
+          uit.eigenInVenster = await meet(mv, document.querySelector('#musicianModal .modal-close'));
+          uit.eigenVoet = document.getElementById('musicianModalFooter').innerHTML.trim();
+          document.getElementById('musicianModal').classList.remove('visible');
+          myMusicianId = 'm1';
+          // 5. Het bandvenster, met menu.
+          await openBandModal('b2');
+          hasOwnProfile = true; zetVeiligheidMenu('bandModalActies', 'band', 'b2', 'Testband'); hasOwnProfile = false;
+          uit.band = await meet(document.getElementById('bandModalContent'), document.querySelector('#bandModal .modal-close'));
+          document.getElementById('bandModal').classList.remove('visible');
+          hasOwnProfile = was.hasOwnProfile; myMusicianId = was.myMusicianId;
+          delete S.rpcResults.tt_get_musicians_public; delete S.rpcResults.tt_get_bands_public;
+          Object.defineProperty(navigator, 'share', { configurable: true, value: was.share });
+          return uit;
+        }""")
+        for naam50, v in (("Mijn Profiel", d50["mijnProfiel"]), ("muzikantvenster", d50["ander"]),
+                          ("muzikantvenster zonder eigen profiel", d50["anderZonderProfiel"]),
+                          ("je eigen profiel in het venster", d50["eigenInVenster"]), ("bandvenster", d50["band"])):
+            check(f"{naam50}: precies één deelicoon, geen brede deelknop meer",
+                  v["aantal"] == 1 and v["breed"] == 0, json.dumps(v))
+            check(f"{naam50}: het deelicoon is 44×44 en staat op de regels onder de naam",
+                  v["maat"] == [44, 44] and v["hoogte"] is not None and abs(v["hoogte"]) <= 3, json.dumps(v))
+            check(f"{naam50}: de naam heeft de volle breedte, de regels staan er direct onder",
+                  v["naamVol"] and v["naamRegels"] is not None and 0 <= v["naamRegels"] <= 8, json.dumps(v))
+        for naam50, v in (("Mijn Profiel", d50["mijnProfiel"]), ("muzikantvenster", d50["ander"]), ("bandvenster", d50["band"])):
+            check(f"{naam50}: deelicoon en ⋯ zijn elk 44px, de tikvlakken overlappen niet",
+                  v["menuMaat"] == [44, 44] and v["overlap"] is not None and v["overlap"] <= 0.5, json.dumps(v))
+            check(f"{naam50}: het deelteken staat dicht bij de stippen (keuze B, Ronald): 16 tot 20px ertussen",
+                  v["inktGat"] is not None and 16 <= v["inktGat"] <= 20, json.dumps(v))
+        check("Mijn Profiel: het ⋯-menu staat nog recht onder de hamburger",
+              abs(d50["menuOnderHamburger"]) <= 2, json.dumps(d50["menuOnderHamburger"]))
+        for naam50, v in (("zonder eigen profiel", d50["anderZonderProfiel"]), ("eigen profiel in het venster", d50["eigenInVenster"])):
+            check(f"{naam50}: het deelicoon alleen staat op de plek van het menu, onder het kruisje",
+                  v["alleenOnderKruis"] is not None and abs(v["alleenOnderKruis"]) <= 1.5, json.dumps(v))
+        check("je eigen profiel in het venster: geen lege voetbalk meer", d50["eigenVoet"] == "", d50["eigenVoet"][:120])
+        check("een tik deelt de juiste link: #profiel/m1, #profiel/m2, #band/b2",
+              d50["mijnProfiel"]["url"] == "#profiel/m1" and d50["ander"]["url"] == "#profiel/m2"
+              and d50["band"]["url"] == "#band/b2", json.dumps([d50[k]["url"] for k in d50 if isinstance(d50[k], dict)]))
+        check("het deelicoon heeft een aria-label voor een schermlezer",
+              d50["mijnProfiel"]["label"] == "Deel dit profiel" and d50["band"]["label"] == "Deel dit bandprofiel",
+              json.dumps([d50["mijnProfiel"]["label"], d50["band"]["label"]]))
+        js50 = open(os.path.join(ROOT, "musicians.js"), encoding="utf-8").read() + open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
+        check("één deelknop in de code: alleen deelKnopHTML() roept shareProfile() aan",
+              len(re.findall(r"shareProfile\(", js50)) == 2 and "Deel dit profiel</button>" not in js50
+              and "Deel dit bandprofiel</button>" not in js50, str(len(re.findall(r"shareProfile\(", js50))))
+        check("geen paginafouten in blok 50", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.wait_for_timeout(80)
+
+        print("\nBlok 51 — het kruisje op de profielfoto en de zwarte tekst in Wijzig (TT-381)")
+        # Bevinding Ronald, 30-09-2026: "Foto verwijderen" wordt het kruisje rechtsboven
+        # de foto; de tekst in Wijzig wordt zwart. Besluiten Ronald: op alle drie de
+        # plekken, en het kruisje vraagt eerst.
+        PLEKKEN50 = [("avatarRemoveBtn", "avatarPreview"), ("mhAvatarRemoveBtn", "mhAvatarPreview"),
+                     ("bandAvatarRemoveBtn", "bandAvatarPreview")]
+        bouw50 = page.evaluate("""(plekken) => plekken.map(([id, voorbeeld]) => {
+          const b = document.getElementById(id); if (!b) return 'ontbreekt';
+          const wrap = b.closest('.avatar-preview-wrap');
+          return [b.tagName, b.textContent.trim(), b.className, !!wrap && wrap.contains(document.getElementById(voorbeeld)),
+                  b.getAttribute('aria-label') || '', b.getAttribute('type')]; })""", PLEKKEN50)
+        check("op alle drie de plekken is Foto verwijderen een kruisje bij de foto, geen knop met tekst",
+              all(x != 'ontbreekt' and x[0] == "BUTTON" and x[1] == "✕" and x[2] == "avatar-remove-btn" and x[3]
+                  and x[4].endswith("verwijderen") and x[5] == "button" for x in bouw50), json.dumps(bouw50))
+        check("er staat nergens meer een knop met de tekst Foto verwijderen",
+              page.evaluate("[...document.querySelectorAll('button')].filter(b => b.textContent.trim() === 'Foto verwijderen').length") == 0, "")
+        stijl50 = page.evaluate("""() => { const b = document.getElementById('mhAvatarRemoveBtn'), t = document.querySelector('.media-thumb .thumb-remove')
+            || (() => { const d = document.createElement('div'); d.className = 'media-thumb'; d.innerHTML = '<button class="thumb-remove">✕</button>';
+                        document.getElementById('appRoot').appendChild(d); return d.firstChild; })();
+          const w = e => { const c = getComputedStyle(e), a = getComputedStyle(e, '::after');
+            return [c.backgroundColor, c.color, c.width, c.height, c.borderRadius, c.fontSize, a.top, a.left]; };
+          const r = [w(b), w(t)]; if (!t.closest('#mhMediaGrid, #mediaGrid')) t.parentElement.remove(); return r; }""")
+        check("het kruisje ziet er precies zo uit als het kruisje op een mediategel, met een tikvlak van 44px",
+              stijl50[0] == stijl50[1] and stijl50[0][2] == "22px" and stijl50[0][6] == "-11px", json.dumps(stijl50))
+        page.evaluate("showView('register')"); page.wait_for_timeout(300)
+        page.evaluate("goTo(4)"); page.wait_for_timeout(450)
+        plek50 = page.evaluate("""() => { const b = document.getElementById('avatarRemoveBtn'); b.classList.add('visible');
+          const k = b.getBoundingClientRect(), f = document.getElementById('avatarPreview').getBoundingClientRect(),
+                w = document.querySelector('#step4 .avatar-edit-btn').getBoundingClientRect();
+          const raak = document.elementFromPoint(k.left + k.width / 2, k.top - 9) === b;
+          b.classList.remove('visible'); const weg = getComputedStyle(b).display;
+          return { rechts: Math.round(f.right - k.right), boven: Math.round(k.top - f.top), raak,
+                   losVanWijzig: k.bottom + 11 <= w.top, weg }; }""")
+        check("het kruisje staat rechtsboven de foto (4px van de rand), zonder foto verborgen",
+              plek50["rechts"] == 4 and plek50["boven"] == 4 and plek50["weg"] == "none", json.dumps(plek50))
+        check("ook net naast de schijf raakt een tik het kruisje, en de tikvlakken van kruisje en Wijzig raken elkaar niet",
+              plek50["raak"] and plek50["losVanWijzig"], json.dumps(plek50))
+        wijzig50 = page.evaluate("""() => { const m = () => [...document.querySelectorAll('.avatar-edit-btn')].map(e => {
+            const c = getComputedStyle(e); return [c.color, c.backgroundColor]; });
+          const donker = m(); document.documentElement.dataset.theme = 'licht'; const licht = m();
+          delete document.documentElement.dataset.theme; return { donker, licht }; }""")
+        check("Wijzig: zwarte tekst op geel, op alle drie de plekken (donker thema)",
+              len(wijzig50["donker"]) == 3 and all(x == ["rgb(0, 0, 0)", "rgb(245, 197, 24)"] for x in wijzig50["donker"]), json.dumps(wijzig50))
+        check("Wijzig in het lichte thema: de donkere merktekst op hetzelfde geel",
+              all(x == ["rgb(30, 30, 30)", "rgb(245, 197, 24)"] for x in wijzig50["licht"]), json.dumps(wijzig50))
+        vraag50 = page.evaluate("""async () => {
+          const uit = [], modal = document.getElementById('confirmModal'), tekst = () => document.getElementById('confirmMessage').textContent;
+          const ja = document.getElementById('confirmYesBtn');
+          const ronde = async (zet, vraag, zichtbaar, id) => {
+            zet(); const voor = document.getElementById(id).classList.contains('visible');
+            vraag(); await new Promise(r => setTimeout(r, 50));
+            const open = modal.classList.contains('visible'), msg = tekst(), rood = ja.classList.contains('btn-danger');
+            const nogErVoorJa = zichtbaar();
+            ja.click(); await new Promise(r => setTimeout(r, 50));
+            uit.push({ voor, open, msg, rood, nogErVoorJa, naJa: zichtbaar(), knopWeg: !document.getElementById(id).classList.contains('visible') });
+          };
+          await ronde(() => { state.avatarUrl = 'https://x.test/a.jpg'; const p = document.getElementById('avatarPreview');
+                              p.innerHTML = '<img src="https://x.test/a.jpg">'; document.getElementById('avatarRemoveBtn').classList.add('visible'); },
+                      askRemoveAvatar, () => !!state.avatarUrl, 'avatarRemoveBtn');
+          await ronde(() => { mhAvatarUrl = 'https://x.test/b.jpg'; mhRenderAvatar(); }, mhAskRemoveAvatar, () => !!mhAvatarUrl, 'mhAvatarRemoveBtn');
+          await ronde(() => { bandState.avatarUrl = 'https://x.test/c.jpg'; populateBandAvatarPreview(); }, askRemoveBandAvatar,
+                      () => !!bandState.avatarUrl, 'bandAvatarRemoveBtn');
+          return uit; }""")
+        check("het kruisje vraagt eerst, zonder rood (rood is alleen voor het account); pas na Ja is de foto weg (registratie, mediahoek, band)",
+              len(vraag50) == 3 and all(x["voor"] and x["open"] and not x["rood"] and x["nogErVoorJa"] and not x["naJa"] and x["knopWeg"] for x in vraag50)
+              and [x["msg"] for x in vraag50] == ["Profielfoto verwijderen?", "Profielfoto verwijderen?", "Bandfoto verwijderen?"],
+              json.dumps(vraag50))
+        css50 = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+        check("geen dode regels meer voor de oude knop (btn-cancel-armed en hover op .avatar-remove-btn)",
+              ".avatar-remove-btn.btn-cancel-armed" not in css50 and ".avatar-remove-btn:hover" not in css50, "")
+
+        print("\nBlok 52 — postcode en plaats naast elkaar, overal (TT-382, bevinding Ronald 30-09-2026)")
+        pp50 = page.evaluate("""() => [['zip','city'],['wbjZip','wbjCity'],['bandZip','bandCity']].map(([z, c]) => {
+          const zi = document.getElementById(z), ci = document.getElementById(c);
+          const rij = zi.closest('.postcode-plaats-rij');
+          if (!rij || rij !== ci.closest('.postcode-plaats-rij')) return z + ': niet in dezelfde rij';
+          // Meten op een zichtbare kopie van 358px (390 min 2×16): de drie formulieren staan
+          // elk in een ander scherm en zijn nu verborgen.
+          const kopie = rij.cloneNode(true); kopie.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
+          kopie.style.width = '358px'; document.body.appendChild(kopie);
+          const [a, b] = [...kopie.querySelectorAll('input')].map(e => e.getBoundingClientRect());
+          kopie.remove();
+          return z + ': ' + (Math.round(a.top) === Math.round(b.top) && Math.round(a.width) === 104 && b.left > a.right ? 'ok' : `boven ${a.top}/${b.top}, breedte ${a.width}`);
+        })""")
+        check("postcode (104px) en plaats staan op één regel in wizard, Je gegevens en bandformulier, ook op 390px",
+              pp50 == ["zip: ok", "wbjZip: ok", "bandZip: ok"], json.dumps(pp50))
+        fout50 = page.evaluate("""() => { setFieldError('bandZip', 'Proef');
+          const rij = document.getElementById('bandZip').closest('.postcode-plaats-rij');
+          const ok = !!(rij.nextElementSibling && rij.nextElementSibling.classList.contains('field-msg'));
+          clearFieldError('bandZip'); return [ok, !(rij.nextElementSibling || {}).classList?.contains('field-msg')]; }""")
+        check("de foutregel van de postcode staat onder de hele rij, niet in de smalle kolom, en verdwijnt weer",
+              fout50 == [True, True], json.dumps(fout50))
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
