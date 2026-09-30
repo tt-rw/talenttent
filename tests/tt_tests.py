@@ -5131,6 +5131,13 @@ window.TT_STUB.fnAntwoord = {};
               sorted(g49) == ["drummer.jpg", "zangeres.jpg"], json.dumps(g49))
         check("een foto die laadt staat in beeld; een woord zonder foto houdt het warme vlak",
               fo49["img0"] and not fo49["img1"], json.dumps(fo49))
+        # Besluit Ronald, 30-09-2026: de foto's zijn via de landingspagina niet te openen.
+        dicht49 = p49.evaluate("""() => { const f = document.querySelector('.landing-foto').getBoundingClientRect();
+          const el = document.elementFromPoint(f.left + f.width / 2, f.top + f.height / 3);
+          const cs = getComputedStyle(document.getElementById('landingDias'));
+          return { raak: el.tagName + '.' + el.className, pe: cs.pointerEvents, callout: cs.webkitTouchCallout || '', select: cs.userSelect }; }""")
+        check("een tik of rechtermuisklik op de foto raakt geen afbeelding: de foto is niet te openen of op te slaan",
+              not dicht49["raak"].startswith("IMG") and dicht49["pe"] == "none" and dicht49["select"] == "none", json.dumps(dicht49))
         # De kop ligt op de foto: doorzichtig, tekens en TALENT wit, TENT geel.
         kop49 = p49.evaluate("""() => { const t = document.querySelector('.app-topbar'), cs = getComputedStyle(t);
           return { pos: cs.position, bg: cs.backgroundColor, top: Math.round(t.getBoundingClientRect().top),
