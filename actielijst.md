@@ -1,6 +1,41 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 30-09-2026 (TT-384) — **De kop van het muzikantprofiel
+**Laatste update:** 30-09-2026 (TT-386) — **De profielvolledigheid op Mijn
+Profiel is een lage balk geworden: titel in goud, het percentage direct
+achter het gele stuk als finish. Geen vinkjes en geen tiptekst meer
+(bevinding en besluit Ronald, P2). Testset 759 van 759. Nog open: upload naar
+beide repo's; laag 2 op de telefoon.**
+
+- **Bevinding Ronald, 30-09-2026, met een schets:** "De voortgangsbalk
+  vervangen voor een minder hoge versie. De tekst ook in geel. De tekst wordt
+  'Profielvolledigheid'. Het percentage zet je aan het einde van de gele
+  streep, als een soort finish."
+- **Besluit Ronald, 30-09-2026:** het voorbeeld is akkoord. "Er komen geen
+  vinkjes meer. Wat je hebt voorgesteld is het enige."
+- **Gebouwd:**
+  - `wizard.js`: `renderCompletenessMeter()` geeft alleen de titel en één
+    rij: geel stuk, percentage, grijze rest. Bij 0% geen geel stuk, bij 100%
+    geen grijze rest. De rij draagt `role="progressbar"`. De berekening
+    (zes onderdelen) is ongewijzigd. De losse `margin-top` staat nu in de
+    CSS in plaats van inline.
+  - `styles.css`: `.completeness-header`, `.completeness-track`,
+    `.completeness-items`, `.comp-item` verwijderd (dode code). Nieuw:
+    `.completeness-rij`, `.completeness-rest`. Het gele stuk en de rest
+    delen de breedte via flex, dus het percentage loopt nooit over de rand.
+- **Gemeten:** titel plus balk 31px hoog, was 43px.
+- **Testset:** blok 55 (nieuw) meet titel en kleur, geen vinkjes of tip,
+  het percentage 6px achter het gele stuk, 0% en 100%, de hoogte en de
+  progressbar. Zakte op de oude versie, slaagt nu.
+- **Schermafdruk bekeken** (375px): 0%, 67% en 100%.
+- **Gewijzigd:** `wizard.js`, `styles.css`, `index.html` (alleen `?v=`),
+  `tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
+
+**Stand van de P0's.** Ongewijzigd: TT-325 · TT-329 · TT-352, de controle
+TT-323, en TT-358 als advies P0. TT-386 is P2.
+
+---
+
+**Vorige update:** 30-09-2026 (TT-384) — **De kop van het muzikantprofiel
 staat onder elkaar: de banner is groter, de profielfoto valt voor de helft
 over de onderrand, de knoppen staan rechts naast de foto en de naam eronder
 (bevinding Ronald, P2). Testset 753 van 753. Nog open: upload naar beide
@@ -7748,6 +7783,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-374** | "Zoek setlist" heet "Maak setlist" | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026). **Besluit Ronald, 29-09-2026:** ook de knop onderin heet "Maak setlist" (was "Zoek nummers"). Gebouwd. **Toets P2:** werkte, maar het woord zei niet wat je doet |
 | **TT-384** | Muzikantprofiel: banner groter, foto half over de banner, naam onder de foto | **Gebouwd en getest 30-09-2026 (blok 54) — zie Laatste update.** Bevinding Ronald met schermafdruk: "zo moet er meer ruimte komen voor knoppen zoals delen en de 3 puntjes." Besluiten Ronald: banner 2:1, zonder banner dezelfde opbouw, knoppen rechts naast de foto. **Wacht op:** upload naar beide repo's; laag 2 op zijn telefoon. **Toets P2:** het werkt, maar de knoppen hadden geen ruimte |
 | **TT-385** | Bandvenster: dezelfde kop als het muzikantprofiel (TT-384) | **Nieuw, 30-09-2026. Besluit Ronald: "bandprofiel trekken we gelijk, maar in een andere sessie met veel andere aanpassingen."** Bandfoto boven, deelicoon en ⋯-menu ernaast, naam en regel eronder. Het bandvenster heeft geen banner. Tot dan houdt het de opbouw van TT-380 (`.profiel-onder`); blok 54 meet dat, en die controle gaat mee om in dat ticket. **Toets P2:** het werkt, maar muzikant- en bandprofiel voelen niet meer hetzelfde (huisstijl §10) |
+| **TT-386** | Profielvolledigheid als lage balk, percentage als finish | **Gebouwd en getest 30-09-2026 (blok 55) — zie Laatste update.** Bevinding en besluit Ronald: titel "Profielvolledigheid" in goud, percentage achter het gele stuk, geen vinkjes en geen tiptekst meer. **Wacht op:** upload naar beide repo's; laag 2 op zijn telefoon. **Toets P2:** het werkt, maar het blok nam te veel ruimte in |
 | **TT-382** | Postcode en plaats naast elkaar, overal | **Gebouwd en getest 30-09-2026 — zie Laatste update.** Bevinding Ronald. Wizard, tegel "Je gegevens" en bandformulier. **Wacht op:** upload naar beide repo's; laag 2 op zijn telefoon. **Toets P2:** het werkt, maar twee velden onder elkaar voor één adres kosten ruimte en ogen onaf |
 | **TT-381** | "Foto verwijderen" wordt het kruisje op de foto; "Wijzig" zwart op geel | **Gebouwd en getest 30-09-2026 — zie Laatste update.** Bevinding Ronald met schermafdruk van Je mediahoek. Besluiten Ronald: alle drie de plekken, en het kruisje vraagt eerst. **Wacht op:** upload naar beide repo's; laag 2 op zijn telefoon. **Toets P2:** het werkt, maar een losse knop naast de foto en witte tekst op geel ogen onaf |
 | **TT-377** | Een gesprek is te hoog: vier berichten vullen het scherm | **Gebouwd en getest 29-09-2026 (vervolg) — zie Laatste update.** Ronald: "de berichtvensters zijn heel hoog. 4 berichten zijn beeldvullend. kan je dat prettiger maken?" Huisstijl §1.5. **Wacht op:** laag 2 op zijn telefoon. **Toets P2:** het werkt, maar je scrolt voor elk bericht |

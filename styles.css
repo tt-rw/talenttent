@@ -1348,69 +1348,46 @@
      handleCancelClick() in de JS. */
   .btn-cancel-armed { border-color: var(--accent); color: var(--accent); font-weight: 400; }
 
-  /* Completeness meter */
+  /* Completeness meter — TT-386 (30-09-2026, besluit Ronald): titel in goud,
+     daaronder één lage rij: het gele stuk, het percentage erachter als
+     finish, en de grijze rest. Het gele stuk en de rest delen de breedte
+     via flex, dus het percentage loopt nooit over de rand. */
   .completeness-wrap {
-    margin-top: 20px;
+    margin-top: 24px;
     padding: 16px;
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 10px;
   }
 
-  .completeness-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-
   .completeness-label {
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  .completeness-pct {
-    font-family: 'Roboto', sans-serif;
-    font-size: 22px;
     color: var(--accent);
+    margin-bottom: 4px;
   }
 
-  .completeness-track {
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 12px;
-  }
-
-  .completeness-fill {
-    height: 100%;
-    border-radius: 3px;
-    background: var(--accent);
-    transition: width 0.6s cubic-bezier(.4,0,.2,1);
-  }
-
-  .completeness-items {
+  .completeness-rij {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
     gap: 6px;
   }
 
-  .comp-item {
-    font-size: 11px;
-    padding: 3px 9px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    gap: 4px;
+  .completeness-fill,
+  .completeness-rest {
+    height: 6px;
+    border-radius: 3px;
   }
 
-  .comp-item.done { border-color: var(--accent); color: var(--accent); }
-  .comp-item.pending { border-color: var(--border); color: var(--muted); }
+  .completeness-fill { background: var(--accent); }
+  .completeness-rest { background: var(--border); }
+
+  .completeness-pct {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
 
   /* Profile header with personalized color */
   /* TT-132-bijvangst (23-08-2026): deze margin was dood — sinds de

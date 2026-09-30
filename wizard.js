@@ -240,34 +240,27 @@ async function editMyProfile() {
 // (Presentatie: profielstatus direct zichtbaar). Gebaseerd op echte opgeslagen
 // data, niet op tijdelijke registratie-state.
 function renderCompletenessMeter(m) {
+  // TT-386 (30-09-2026, besluit Ronald): alleen de titel en een lage balk.
+  // Het percentage staat direct achter het gele stuk, als een finish.
+  // Geen vinkjes en geen tiptekst meer.
   const checks = [
-    { done: !!m.avatar_url,                    label: 'Profielfoto' },
-    { done: (m.bio || '').length > 20,         label: 'Bio' },
-    { done: (m.musician_instruments||[]).length > 0, label: 'Instrument' },
-    { done: (m.musician_genres||[]).length > 0,      label: 'Genre' },
-    { done: (m.musician_songs||[]).length >= 3,      label: '3+ nummers' },
-    { done: (m.musician_media||[]).length > 0,       label: 'Media' },
+    !!m.avatar_url,
+    (m.bio || '').length > 20,
+    (m.musician_instruments||[]).length > 0,
+    (m.musician_genres||[]).length > 0,
+    (m.musician_songs||[]).length >= 3,
+    (m.musician_media||[]).length > 0,
   ];
-  const doneCnt = checks.filter(c => c.done).length;
-  const pct = Math.round((doneCnt / checks.length) * 100);
+  const pct = Math.round((checks.filter(Boolean).length / checks.length) * 100);
 
   return `
-    <div id="completenessMeter" class="completeness-wrap" style="margin-top:24px;">
-      <div class="completeness-header">
-        <span class="completeness-label">Profiel volledigheid</span>
+    <div id="completenessMeter" class="completeness-wrap">
+      <div class="completeness-label">Profielvolledigheid</div>
+      <div class="completeness-rij" role="progressbar" aria-label="Profielvolledigheid" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}">
+        ${pct > 0 ? `<div class="completeness-fill" style="flex:${pct};"></div>` : ''}
         <span class="completeness-pct">${pct}%</span>
+        ${pct < 100 ? `<div class="completeness-rest" style="flex:${100 - pct};"></div>` : ''}
       </div>
-      <div class="completeness-track">
-        <div class="completeness-fill" style="width:${pct}%;"></div>
-      </div>
-      <div class="completeness-items">
-        ${checks.map(c => `
-          <span class="comp-item ${c.done ? 'done' : 'pending'}">
-            ${c.done ? '✓' : '○'} ${c.label}
-          </span>
-        `).join('')}
-      </div>
-      ${pct < 100 ? `<p style="font-size:11px;color:var(--muted);margin-top:8px;">Vul je profiel verder aan om meer matches te krijgen.</p>` : `<p style="font-size:11px;color:var(--accent);margin-top:8px;font-weight:700;">Compleet profiel! Jij valt op.</p>`}
     </div>`;
 }
 
