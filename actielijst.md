@@ -1,6 +1,26 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 30-09-2026 (TT-382) — **Postcode en plaats staan in de
+**Laatste update:** 30-09-2026 (TT-383) — **Het deelicoon en het ⋯-menu bij
+de naam lichten niet meer op als je erop drukt (bevinding Ronald, P2).
+Testset 743 van 743. Nog open: upload naar beide repo's; laag 2 op de
+telefoon.**
+
+- **Wat er veranderde.** Geen vierkant vlak meer achter de twee knoppen in
+  `.profiel-knoppen` (Mijn Profiel, muzikantvenster, bandvenster): niet bij
+  de tik (tap-highlight van de telefoon), niet als het menu open staat
+  (`.active`), niet bij aanwijzen. Alleen het teken blijft. Het
+  hamburgermenu en de andere ⋯-menu's zijn niet gewijzigd.
+- **Niveau P2.** Toets: het werkt, maar het vlak stoort.
+- **Testset:** blok 53. Zakte op de oude versie, slaagt nu.
+- **Gewijzigd:** `styles.css`, `index.html` (alleen `?v=`),
+  `tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
+
+**Stand van de P0's.** Ongewijzigd: TT-325 · TT-329 · TT-352, de controle
+TT-323, en TT-358 als advies P0. TT-383 is P2.
+
+---
+
+**Vorige update:** 30-09-2026 (TT-382) — **Postcode en plaats staan in de
 hele app naast elkaar (bevinding Ronald, P2). Testset 740 van 740,
 monitorronde 21 van 21. Nog open: upload naar beide repo's; laag 2 op de
 telefoon.**

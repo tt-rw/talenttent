@@ -3262,6 +3262,14 @@
     margin: -14px 0;
   }
   .profiel-knoppen .nav-menu-btn { margin-bottom: 0; }
+  /* TT-383 (30-09-2026, Ronald: "beide knoppen lichten op (de vierkante
+     achtergrond) als je erop drukt. dit is heel storend"): het deelicoon en
+     het ⋯-menu bij de naam krijgen geen vlak — niet bij de tik (tap-highlight
+     van de telefoon), niet als het menu open staat (.active), niet bij
+     aanwijzen (die regel staat in de hover-guard onderaan, TT-182). Alleen
+     het teken zelf blijft. */
+  .profiel-knoppen .nav-menu-btn { -webkit-tap-highlight-color: transparent; }
+  .profiel-knoppen .nav-menu-btn.active { background: transparent; border-color: transparent; }
   /* Keuze B, zo dicht mogelijk bij het ⋯-menu (Ronald): het teken schuift
      naar rechts, tot 18px van de stippen. Alleen het teken schuift; de twee
      tikvlakken van 44px blijven naast elkaar en overlappen niet. Staat er
@@ -4038,6 +4046,7 @@
     .media-tab:not(.active):hover, .goal-card:not(.selected):hover,
     .level-choice:not(.selected):hover { border-color: var(--rand-hover); }
     .nav-menu-btn:hover { border-color: var(--border); background: var(--surface); }
+    .profiel-knoppen .nav-menu-btn:hover { background: transparent; border-color: transparent; } /* TT-383 */
     .modal-close:hover { background: var(--tint-hover); }
     .modal-back:hover { background: var(--tint-hover); }
     .niveau-info-btn:hover { background: var(--tint-hover); }
