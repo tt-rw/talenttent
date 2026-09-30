@@ -2133,7 +2133,18 @@
     background: var(--foto-leeg);
     color: var(--op-foto);
   }
-  .landing-dias { position: absolute; inset: 0; }
+  /* Besluit Ronald, 30-09-2026: de foto's zijn via de landingspagina niet te
+     openen. Geen tik, geen lang indrukken ("Afbeelding openen/opslaan"), geen
+     rechtermuisklik op het beeld, niet te slepen of te selecteren. Een tik op
+     de foto komt bij .landing-foto terecht, en dat is geen afbeelding. */
+  .landing-dias {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
   /* Eén laag per woord; de actieve ligt erboven en komt in beeld. Een woord
      zonder foto toont het warme vlak van .landing-foto (besluit Ronald
      30-09-2026: het woord blijft staan). */

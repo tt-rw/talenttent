@@ -1,9 +1,56 @@
 # The Talent Tent — Actielijst
 
 **Laatste update:** 30-09-2026 (TT-61) — **De nieuwe landingspagina is
-gebouwd: richting F uit de landingsproef. Testset 699 van 699, monitorronde
-21 van 21. Nog open: upload naar beide repo's; de foto's (bucket `landing` in
-Supabase); laag 2 op de telefoon.**
+gebouwd: richting F uit de landingsproef. Testset 700 van 700, monitorronde
+21 van 21. De tien foto's staan in Supabase en zijn niet te openen via de
+pagina. Nog open: upload naar beide repo's; een grotere bandfoto; laag 2 op
+de telefoon.**
+
+- **De foto's (30-09-2026, vervolg).** Ronald leverde negen foto's en een
+  video aan, met verschillende kleuren en achtergronden. **Besluit Ronald:**
+  kleurvoorstel A ("licht gelijkgetrokken": even licht, minder blauw en
+  paars, iets minder verzadigd), **behalve de violist: die in de originele
+  kleur**, want A maakte die foto donkerder. Alle tien staand bijgesneden op
+  1080 × 1920, jpg, 100 tot 265 KB. DJ is één beeld uit de video (na 4
+  seconden). De foto van de toetsenist staat onder "pianist". Voorstel:
+  `_niet-uploaden-landingsfotos-kleurvoorstel-30-09-2026.jpg`.
+- **De opslagmap `landing` staat in Supabase.** Script
+  `_niet-uploaden-sql-editor-30-09-2026-opslagmap-landing.sql`, gedraaid door
+  Ronald. **Geverifieerd** met een leesvraag: de map is openbaar, alleen jpg,
+  hooguit 500 KB per bestand; drie regels op `storage.objects` (lezen,
+  uploaden, vervangen), alle drie alleen voor het beheeraccount
+  talenttent@proton.me. Het script liep twee keer; de tweede keer gaf
+  "policy already exists" en veranderde niets.
+- **De tien foto's staan erin.** Ronald koos ze in het scherm rechts, de
+  app-pagina uploadde ze met het beheeraccount. **Geverifieerd:** alle tien
+  geven zonder inlog status 200, `image/jpeg`, met de juiste grootte.
+  Schermafdrukken van de landingspagina met de echte foto's bekeken.
+- **Rechtgezet:** hieronder stond "**Aanname:** de map `landing` bestaat nog
+  niet; tot hij er is, toont elk woord het vlak". Dat klopte bij het bouwen
+  (gemeten: "Bucket not found"), maar niet meer: de map bestaat en is gevuld.
+- **Bevinding, advies P2: de bandfoto is te klein.** Het origineel is
+  677 × 447. Staand bijgesneden is dat een strook van 251 pixels breed, vier
+  keer vergroot: op een telefoon wazig. **Toets P2:** het werkt, maar het kost
+  indruk op het eerste scherm. Wacht op een grotere foto van Ronald.
+- **Live geverifieerd, na de upload van Ronald:** talenttent.org laadt
+  `core.js?v=20260930a` en `styles.css?v=20260930a`; de eerste twee foto's
+  laden (1080 pixels breed).
+- **Besluit Ronald: de foto's zijn via de landingspagina niet te openen.**
+  Gebouwd: `.landing-dias` krijgt `pointer-events: none`, `user-select: none`
+  en `-webkit-touch-callout: none`. Een tik, lang indrukken of een
+  rechtermuisklik raakt geen afbeelding meer. Nieuwe controle in blok 49;
+  testset 700/700. Het adres van een foto blijft te openen voor wie het uit
+  de broncode haalt; dat kan bij geen enkele openbare pagina anders.
+  Gewijzigd: `styles.css`, `index.html` (`?v=`), `tests/tt_tests.py`,
+  `actielijst.md`, `CHECKSUMS.txt`.
+- **Subkop "Muzikanten bij jou in de buurt."** Ronald vond de zin hol.
+  Voorstellen van Claude: (a) "Elk niveau welkom, ook beginners." (advies),
+  (b) "Speel deze week nog met iemand.", (c) "Van slaapkamer naar podium.",
+  (d) geen subkop. **Besluit Ronald: laat voorlopig zo.**
+- **[UX] Advies P0, door Ronald te bevestigen: rechten op de foto's.** Staan
+  er herkenbare mensen op, dan is een licentie of hun toestemming nodig voor
+  gebruik op een wervingspagina. **Toets P0:** zonder dat kan de pagina offline
+  moeten. **Onbekend:** waar de foto's vandaan komen.
 
 - **Besluiten Ronald, 29 en 30-09-2026:** zie `landingsproef-werkwijze-30-09-2026.md`
   in het project. Kern: "Zoek een <woord>." op een foto, tien woorden in vaste
@@ -60,8 +107,9 @@ Supabase); laag 2 op de telefoon.**
 - **Gewijzigd:** `index.html`, `styles.css`, `core.js`, `tests/tt_tests.py`,
   `actielijst.md`, `CHECKSUMS.txt`.
 
-**Stand van de P0's.** Ongewijzigd: TT-325 · TT-329 · TT-352, de controle
-TT-323, en TT-358 als advies P0. TT-61 is P2 en blijft P2.
+**Stand van de P0's.** TT-325 · TT-329 · TT-352, de controle TT-323, en
+TT-358 als advies P0. Nieuw als advies P0: de rechten op de landingsfoto's
+(hierboven). TT-61 is P2 en blijft P2.
 
 ---
 
