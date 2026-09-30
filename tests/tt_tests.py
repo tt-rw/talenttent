@@ -1076,7 +1076,7 @@ def blok_browser():
         check("een vlak vult de hele breedte",
               banner["itemVolleBreedte"] and banner["spoorBreedte"] == 375,
               "spoor " + str(banner["spoorBreedte"]) + "px")
-        check("de balk is 5:2, niet 16:9", banner["verhouding"] == "5/2", banner["verhouding"])
+        check("de balk is 2:1 (TT-384, was 5:2), niet 16:9", banner["verhouding"] == "2/1", banner["verhouding"])
         check("een video in de banner speelt niet vanzelf",
               banner["videoGeenAutoplay"] and banner["videoStaatStil"], json.dumps(banner)[:200])
         check("en is als video herkenbaar zonder icoon", banner["videoLabel"] == "Video", str(banner["videoLabel"]))
@@ -3690,7 +3690,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             const i = inkt(box);
             const uit = Object.assign(i, {
               inKoprij: !!(plek && plek.closest('.modal-kop')),
-              // TT-380: het menu staat onder de naam, in de rij met het deelicoon.
+              // TT-380: het menu staat bij de naam, in de rij met het deelicoon.
+              // TT-384: bij een muzikant in de kop (.profiel-kop), naast de foto.
               onderNaam: !!(plek && naam && plek.closest('.profiel-knoppen') && naam.parentElement.contains(plek)),
               naamVol: !!(naam && naam.clientWidth === naam.parentElement.clientWidth),
               menuMidden: kb ? (kb.left + kb.right) / 2 : null,
@@ -3715,7 +3716,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         }""")
         for soort in ("muzikant", "band"):
             v = venster[soort]
-            check(f"{soort}: het ⋯-menu staat onder de naam, naast het deelicoon, niet in de koprij (TT-380)",
+            check(f"{soort}: het ⋯-menu staat in de profielkop, naast het deelicoon, niet in de koprij (TT-380, TT-384)",
                   v["onderNaam"] and not v["inKoprij"], json.dumps(v))
             check(f"{soort}: het kruisje staat even ver van de rand als de pijl (29px)",
                   abs(v["kruis"] - v["pijl"]) <= 0.5 and abs(v["kruis"] - 29) <= 0.5, json.dumps(v))
@@ -5255,6 +5256,9 @@ window.TT_STUB.fnAntwoord = {};
             const menu = knop && knop.parentElement.querySelector('.profile-actions-menu-wrap .nav-menu-btn, .profiel-menu-plek .nav-menu-btn');
             const regels = vak.querySelector('.profiel-regels');
             const k = rect(knop), m = rect(menu), r = rect(regels), n = rect(naam);
+            // TT-384: bij een muzikant staan de knoppen naast de foto, op het
+            // midden van de onderste helft. Bij een band (nog) op de regels.
+            const f = rect(vak.querySelector('.profiel-kop-rij .profile-avatar-photo, .profiel-kop-rij .profile-avatar-initials'));
             // De inkt: de meest rechtse cirkel van het deelteken en de stippen van het menu.
             const inktR = knop ? Math.max(...[...knop.querySelectorAll('circle')].map(c => rect(c).right)) : null;
             const stipL = menu ? Math.min(...[...menu.querySelectorAll('circle')].map(c => rect(c).left)) : null;
@@ -5269,6 +5273,7 @@ window.TT_STUB.fnAntwoord = {};
               overlap: (k && m) ? +(k.right - m.left).toFixed(1) : null,
               inktGat: (inktR != null && stipL != null) ? +(stipL - inktR).toFixed(1) : null,
               hoogte: (k && r) ? +(((k.top + k.bottom) - (r.top + r.bottom)) / 2).toFixed(1) : null,
+              naastFoto: (k && f) ? +((k.top + k.bottom) / 2 - (f.top + f.height * 0.75)).toFixed(1) : null,
               naamVol: !!(naam && naam.clientWidth === naam.parentElement.clientWidth),
               naamRegels: (n && r) ? +(r.top - n.bottom).toFixed(1) : null,
               alleenOnderKruis: (k && !m && x) ? +(((k.left + k.right) - (x.left + x.right)) / 2).toFixed(1) : null,
@@ -5324,8 +5329,12 @@ window.TT_STUB.fnAntwoord = {};
                           ("je eigen profiel in het venster", d50["eigenInVenster"]), ("bandvenster", d50["band"])):
             check(f"{naam50}: precies één deelicoon, geen brede deelknop meer",
                   v["aantal"] == 1 and v["breed"] == 0, json.dumps(v))
-            check(f"{naam50}: het deelicoon is 44×44 en staat op de regels onder de naam",
-                  v["maat"] == [44, 44] and v["hoogte"] is not None and abs(v["hoogte"]) <= 3, json.dumps(v))
+            if naam50 == "bandvenster":
+                check(f"{naam50}: het deelicoon is 44×44 en staat op de regel onder de naam (TT-380; de bandkant volgt TT-384 later)",
+                      v["maat"] == [44, 44] and v["hoogte"] is not None and abs(v["hoogte"]) <= 3, json.dumps(v))
+            else:
+                check(f"{naam50}: het deelicoon is 44×44 en staat naast de foto, op het midden van de onderste helft (TT-384)",
+                      v["maat"] == [44, 44] and v["naastFoto"] is not None and abs(v["naastFoto"]) <= 3, json.dumps(v))
             check(f"{naam50}: de naam heeft de volle breedte, de regels staan er direct onder",
                   v["naamVol"] and v["naamRegels"] is not None and 0 <= v["naamRegels"] <= 8, json.dumps(v))
         for naam50, v in (("Mijn Profiel", d50["mijnProfiel"]), ("muzikantvenster", d50["ander"]), ("bandvenster", d50["band"])):
@@ -5465,6 +5474,96 @@ window.TT_STUB.fnAntwoord = {};
           document.body.appendChild(b); const c = getComputedStyle(b).backgroundColor; b.remove(); return c; }""")
         check("het hamburgermenu elders houdt zijn open-stand (buiten deze rij niets gewijzigd)",
               vlak53b != "rgba(0, 0, 0, 0)", vlak53b)
+
+        print("\nBlok 54 — de profielkop onder elkaar, de foto half over de banner (TT-384, besluiten Ronald 30-09-2026)")
+        page_errors.clear()
+        page.set_viewport_size({"width": 375, "height": 812})
+        page.wait_for_timeout(80)
+        d54 = page.evaluate("""async () => {
+          const was = { hasOwnProfile, myMusicianId };
+          hasOwnProfile = true; myMusicianId = 'm1';
+          const r = e => e ? e.getBoundingClientRect() : null;
+          const profiel = (media) => ({ id: 'm1', fname: 'Ronald', lname: 'W', username: 'ronald', bio: '',
+            city: 'Den Haag', age: 25, avatar_url: null, musician_songs: [], musician_media: media, musician_wanted: [],
+            musician_instruments: [{ instrument: 'Drums', niveau: 3 }], musician_genres: [{ genre: 'Rock' }] });
+          document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+          document.getElementById('view-myprofile').classList.add('active');
+          const el = document.getElementById('myProfileContent');
+          const meet = () => {
+            const kop = el.querySelector('.profiel-kop'), rij = el.querySelector('.profiel-kop-rij');
+            const foto = r(rij && rij.querySelector('.profile-avatar-photo, .profile-avatar-initials'));
+            const knoppen = r(rij && rij.querySelector('.profiel-knoppen'));
+            const naam = r(el.querySelector('.profiel-kop > .profile-name'));
+            const spoor = r(el.querySelector('.pb-spoor'));
+            const inhoud = r(el);
+            return { kop: !!kop, rij: !!rij, oudeOpbouw: !!el.querySelector('.profiel-onder'),
+              foto: foto && [Math.round(foto.width), Math.round(foto.height)],
+              fotoLinks: foto ? Math.round(foto.left - inhoud.left) : null,
+              fotoMiddenOpRand: (foto && spoor) ? +((foto.top + foto.bottom) / 2 - spoor.bottom).toFixed(1) : null,
+              fotoBovenaan: foto ? +(foto.top - inhoud.top).toFixed(1) : null,
+              knoppenRechts: (knoppen && foto) ? knoppen.left > foto.right && Math.abs(knoppen.right - inhoud.right) <= 1 : null,
+              naamOnderFoto: (naam && foto) ? +(naam.top - foto.bottom).toFixed(1) : null,
+              naamVol: naam ? Math.round(naam.width) === Math.round(inhoud.width) : null };
+          };
+          const uit = {};
+          el.innerHTML = buildMusicianDetailHTML(profiel([
+            { media_type: 'foto', url: 'https://x/a.jpg', platform: null, in_banner: true },
+            { media_type: 'foto', url: 'https://x/b.jpg', platform: null, in_banner: true }]), true, false);
+          profielBannerStarten(el); fitProfileName(el);
+          await new Promise(z => setTimeout(z, 40));
+          uit.met = meet();
+          // De stippen blijven aantikbaar, ook al ligt de rij van de kop eroverheen.
+          const stip = el.querySelectorAll('.pb-stip')[1], sr = r(stip);
+          const raak = sr && document.elementFromPoint((sr.left + sr.right) / 2, (sr.top + sr.bottom) / 2);
+          uit.stipRaakbaar = raak === stip;
+          // De stippen duwen de kop niet omlaag: ze hangen los onder de balk.
+          uit.stippenLos = getComputedStyle(el.querySelector('.pb-stippen')).position === 'absolute';
+          // Het ⋯-menu: de donkere laag ligt nog over de onderbalk (huisstijl §8.2).
+          toggleProfileMoreMenu({ stopPropagation() {}, currentTarget: document.getElementById('profileMoreBtn') });
+          await new Promise(z => setTimeout(z, 30));
+          const ob = r(document.querySelector('.app-bottom-nav'));
+          const opBalk = document.elementFromPoint(ob.left + 20, (ob.top + ob.bottom) / 2);
+          uit.laagOverOnderbalk = !!(opBalk && opBalk.classList.contains('menu-laag'));
+          sluitAlleMenus();
+          el.innerHTML = buildMusicianDetailHTML(profiel([]), true, false);
+          fitProfileName(el);
+          uit.zonder = meet();
+          uit.zonderOpBanner = !!el.querySelector('.profiel-kop.op-banner');
+          el.innerHTML = ''; showView('about');
+          // De bandkant houdt voorlopig de opbouw van TT-380 (besluit Ronald: eigen sessie).
+          const S = window.TT_STUB;
+          S.rpcResults.tt_get_bands_public = () => [{ id: 'b2', name: 'Testband', city: 'Den Haag', description: '',
+            status: 'zoekend', profile_color: '#3ecfff', updated_at: new Date().toISOString(), avatar_url: null,
+            genres: ['Rock'], niveau: 3, members: [{ username: 'dylan', profile_color: '#f5c518' }], wanted: [] }];
+          hasOwnProfile = false;
+          await openBandModal('b2');
+          uit.bandOud = !!document.querySelector('#bandModalContent .profiel-onder');
+          document.getElementById('bandModal').classList.remove('visible');
+          delete S.rpcResults.tt_get_bands_public;
+          hasOwnProfile = was.hasOwnProfile; myMusicianId = was.myMusicianId;
+          return uit;
+        }""")
+        m54, z54 = d54["met"], d54["zonder"]
+        check("met banner: de kop staat onder elkaar (foto en knoppen in een rij, naam eronder), niet meer .profiel-onder",
+              m54["kop"] and m54["rij"] and not m54["oudeOpbouw"], json.dumps(m54))
+        check("met banner: het midden van de foto ligt op de onderrand van de balk (50% overlap)",
+              m54["fotoMiddenOpRand"] is not None and abs(m54["fotoMiddenOpRand"]) <= 1, json.dumps(m54))
+        check("de foto is 80×80 en staat links tegen de inhoud",
+              m54["foto"] == [80, 80] and m54["fotoLinks"] == 0 and z54["foto"] == [80, 80], json.dumps([m54, z54]))
+        check("het deelicoon en het ⋯-menu staan rechts naast de foto, tegen de rechterrand",
+              m54["knoppenRechts"] and z54["knoppenRechts"], json.dumps([m54, z54]))
+        check("de naam staat 12px onder de foto en heeft de volle breedte",
+              m54["naamOnderFoto"] is not None and 11 <= m54["naamOnderFoto"] <= 13 and m54["naamVol"]
+              and z54["naamOnderFoto"] is not None and 11 <= z54["naamOnderFoto"] <= 13 and z54["naamVol"], json.dumps([m54, z54]))
+        check("de stippen hangen los onder de balk en blijven aantikbaar door de kop heen",
+              d54["stippenLos"] and d54["stipRaakbaar"], json.dumps(d54))
+        check("een open ⋯-menu legt zijn donkere laag nog over de onderbalk (§8.2)", d54["laagOverOnderbalk"], json.dumps(d54))
+        check("zonder banner: dezelfde opbouw, de foto bovenaan zonder overlap",
+              z54["kop"] and z54["rij"] and not d54["zonderOpBanner"] and z54["fotoBovenaan"] == 0, json.dumps(z54))
+        check("het bandvenster houdt voorlopig de opbouw van TT-380 (eigen sessie, besluit Ronald)", d54["bandOud"], json.dumps(d54))
+        check("geen paginafouten in blok 54", not page_errors, "; ".join(page_errors)[:300])
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.wait_for_timeout(80)
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
