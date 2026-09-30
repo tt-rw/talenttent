@@ -391,6 +391,11 @@ function handleBandAvatarUpload(file) {
   });
 }
 
+// TT-381: zelfde vraag als bij de profielfoto (askRemoveAvatar in wizard.js).
+function askRemoveBandAvatar() {
+  showConfirm('Bandfoto verwijderen?', removeBandAvatar, 'Ja, verwijderen');
+}
+
 function removeBandAvatar() {
   bandState.avatarUrl = null;
   bandState.avatarPath = null;
@@ -1128,8 +1133,8 @@ async function openBandModal(id) {
   // te zien, en netto 0px hoog. Nu het venster geen eigen opvulling meer heeft
   // (zelfde maten als het muzikantvenster), zou hij 16px buiten de rand
   // steken. Weggehaald. Zelfde valkuil als de gouden balk van TT-126.
-  // Het ⋯-menu staat rechts naast de naam, net als bij een muzikant; op je
-  // eigen band niet.
+  // Het ⋯-menu staat onder de naam, rechts van het deelicoon (TT-380), net
+  // als bij een muzikant; op je eigen band niet.
   const veiligheidPlekHTML = isOwnBand ? ''
     : '<span id="bandModalActies" class="profiel-menu-plek"></span>';
   document.getElementById('bandModalContent').innerHTML = `
@@ -1137,9 +1142,15 @@ async function openBandModal(id) {
       ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid var(--border);margin-bottom:0;flex-shrink:0;">` : `<div class="band-avatar" style="width:64px;height:64px;border-radius:12px;font-size:26px;margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`}
       <div style="min-width:0;flex:1;">
         <div class="profile-name">${escHtml(b.name)}${bandStarDisplayHTML(b)}</div>
-        <div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
+        <!-- TT-380: zelfde opbouw als het muzikantprofiel — het deelicoon en
+             het ⋯-menu ter hoogte van de regel onder de naam. -->
+        <div class="profiel-onder">
+          <div class="profiel-regels">
+            <div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).join(', '))}</div>
+          </div>
+          ${profielKnoppenHTML('band', b.id, b.name, veiligheidPlekHTML)}
+        </div>
       </div>
-      ${veiligheidPlekHTML}
     </div>
     <div style="margin:8px 0;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>
     ${b.description ? `<p style="font-size:13px;color:var(--muted);margin:12px 0;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
@@ -1164,7 +1175,6 @@ async function openBandModal(id) {
           : '')
         : `<button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('bandModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`
       ) : ''}
-      <button class="btn btn-ghost" style="width:100%;" onclick="shareProfile('band','${jsAttr(b.id)}','${jsAttr(b.name)}')">Deel dit bandprofiel</button>
     </div>`;
 
   // TT-249: pas ná het plaatsen passend maken — zelfde reden als bij de
@@ -1172,6 +1182,6 @@ async function openBandModal(id) {
   fitProfileName(document.getElementById('bandModalContent'));
   // TT-293: zelfde reden, voor het woordmerk in de koprij van deze modal.
   fitKopLogo(document.getElementById('bandModalBox'));
-  // TT-06: je eigen band meld je niet. Het menu staat naast de bandnaam (TT-318).
+  // TT-06: je eigen band meld je niet. Het menu staat onder de bandnaam (TT-380).
   zetVeiligheidMenu('bandModalActies', 'band', isOwnBand ? null : b.id, b.name);
 }

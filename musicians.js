@@ -57,17 +57,18 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
   // 22-08-2026 (Ronald): het onderste actieblok (Profiel bewerken + het
   // ⋯-menu, TT-119) is weg. Alle drie de acties — wijzigen, band-
   // uitnodigingen aan/uit, account verwijderen — staan nu in één klein
-  // menu naast de naam. Alleen op de eigen profielpagina (isOwn, niet in
+  // menu bij de naam (sinds TT-380 eronder). Alleen op de eigen profielpagina (isOwn, niet in
   // de modal) — bij het bekijken van een ander profiel, of het eigen
   // profiel via de modal, hoort dit menu niet thuis.
   const showOwnerMenu = isOwn && !inModal;
   // TT-318 (24-09-2026, besluit Ronald): in het venster van iemand anders
   // staat het ⋯-menu voor melden en blokkeren op dezelfde plek als het
-  // eigen menu op Mijn Profiel: rechts naast de naam. Tot nu toe stond het in
-  // de koprij, links van het kruisje (TT-06). Alleen de plek komt hier; de
+  // eigen menu op Mijn Profiel. Tot nu toe stond het in de koprij, links van
+  // het kruisje (TT-06). Sinds TT-380 staat het onder de naam, rechts van het
+  // deelicoon (profielKnoppenHTML()). Alleen de plek komt hier; de
   // inhoud zet openMusicianModal() erin met zetVeiligheidMenu(), zodra het
-  // profiel geladen is. Op je eigen profiel komt er geen plek: een lege plek
-  // zou in deze rij toch 16px tussenruimte kosten.
+  // profiel geladen is. Op je eigen profiel komt er geen plek: je meldt of
+  // blokkeert jezelf niet.
   const veiligheidPlekHTML = (inModal && !isOwn)
     ? '<span id="musicianModalActies" class="profiel-menu-plek"></span>' : '';
   const ownerMenuHTML = showOwnerMenu ? `
@@ -89,6 +90,11 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       ${avatarHTML}
       <div style="min-width:0;flex:1;">
         <div class="profile-name">${escHtml(displayName)}</div>
+        <!-- TT-380 (30-09-2026, Ronald): het deelicoon en het ⋯-menu staan
+             ter hoogte van de regels onder de naam, niet meer naast de naam.
+             De naam krijgt daarmee de volle breedte. Zie profielKnoppenHTML(). -->
+        <div class="profiel-onder">
+          <div class="profiel-regels">
         <!-- TT-166 (28-08-2026, Ronald: "eenvoud"): een gebruikersnaam-subline
              hoort er alleen bij als de grote naam de échte voornaam is — laat
              displayName die keuze maken (isOwn, of een ingelogde kijker met
@@ -98,8 +104,10 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
              label. -->
         ${(displayName === m.fname && m.fname) ? `<p style="font-size:12px;color:var(--muted);margin-top:4px;">Gebruikersnaam: <strong style="color:var(--text);">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
         <div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
+          </div>
+          ${profielKnoppenHTML('profiel', m.id, displayName, ownerMenuHTML + veiligheidPlekHTML)}
+        </div>
       </div>
-      ${ownerMenuHTML}${veiligheidPlekHTML}
     </div>
     <div class="profile-badges">
       ${m.musician_instruments.map(x => `<span class="tag-solid">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
@@ -186,9 +194,27 @@ async function shareProfile(kind, id, name) {
   }
 }
 
+// TT-380 (30-09-2026, besluiten Ronald): delen is een icoon bij de naam, op
+// elk profiel — Mijn Profiel, het venster van een muzikant (ook je eigen) en
+// het bandvenster (ook je eigen band). De brede knoppen "Deel dit profiel" en
+// "Deel dit bandprofiel" onderaan zijn weg. Het icoon is de drie verbonden
+// punten (keuze B). Eén functie voor alle drie de plekken, geen eigen variant
+// per scherm. Rechts van het icoon staat het ⋯-menu, als dat er is; zonder
+// menu schuift het icoon naar de plek van het menu.
+function deelKnopHTML(kind, id, name) {
+  const label = kind === 'band' ? 'Deel dit bandprofiel' : 'Deel dit profiel';
+  return `<button type="button" class="nav-menu-btn deel-knop" onclick="shareProfile('${kind === 'band' ? 'band' : 'profiel'}','${jsAttr(id)}','${jsAttr(name)}')" aria-label="${label}" title="Delen">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><line x1="8.2" y1="10.8" x2="15.8" y2="6.2"></line><line x1="8.2" y1="13.2" x2="15.8" y2="17.8"></line></svg>
+  </button>`;
+}
+
+function profielKnoppenHTML(kind, id, name, menuHTML) {
+  return `<div class="profiel-knoppen">${deelKnopHTML(kind, id, name)}${menuHTML || ''}</div>`;
+}
+
 function musicianContactFooterHTML(m, isOwn, displayName) {
-  const shareBtn = `<button class="btn btn-ghost" style="width:100%;" onclick="shareProfile('profiel','${jsAttr(m.id)}','${jsAttr(displayName)}')">Deel dit profiel</button>`;
-  if (isOwn) return shareBtn;
+  // TT-380: delen staat nu als icoon bij de naam; hier alleen nog contact.
+  if (isOwn) return '';
   // TT-06 (18-09-2026): heb je deze muzikant zelf geblokkeerd, dan is een
   // berichtknop misleidend — het bericht zou nergens aankomen. In plaats
   // daarvan de enige zinnige volgende stap: de blokkade opheffen. De
@@ -197,13 +223,12 @@ function musicianContactFooterHTML(m, isOwn, displayName) {
   if (blokkeerIkZelf(m.id)) {
     return `<div style="display:flex;flex-direction:column;gap:8px;">
       <div class="blokkade-regel">Je hebt ${escHtml(displayName)} geblokkeerd.</div>
-      <button class="btn btn-ghost" style="width:100%;" onclick="deblokkeerMuzikant('${jsAttr(m.id)}','${jsAttr(displayName)}')">Blokkade opheffen</button>
-      ${shareBtn}</div>`;
+      <button class="btn btn-ghost" style="width:100%;" onclick="deblokkeerMuzikant('${jsAttr(m.id)}','${jsAttr(displayName)}')">Blokkade opheffen</button></div>`;
   }
   const contactBtn = hasOwnProfile
     ? `<button class="btn btn-primary" style="width:100%;" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht →</button>`
     : `<button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`;
-  return `<div style="display:flex;flex-direction:column;gap:8px;">${contactBtn}${shareBtn}</div>`;
+  return contactBtn;
 }
 
 async function openMusicianModal(id) {
@@ -304,7 +329,7 @@ async function openMusicianModal(id) {
   // (TT-43: bezoekers zonder profiel zien alleen de gebruikersnaam).
   const displayName = isOwn ? m.fname : displayNameOf(m);
   footer.innerHTML = musicianContactFooterHTML(m, isOwn, displayName);
-  // TT-06: melden en blokkeren, naast de naam (TT-318). Op je eigen profiel
+  // TT-06: melden en blokkeren, onder de naam (TT-380). Op je eigen profiel
   // niet — daar maakt buildMusicianDetailHTML() ook geen plek.
   zetVeiligheidMenu('musicianModalActies', 'muzikant', isOwn ? null : m.id, displayName);
 }
@@ -866,7 +891,7 @@ function wbjEnableManualCity() {
   field.placeholder = 'Typ je plaatsnaam en kies uit de lijst';
   const statusEl = document.getElementById('wbjPostcodeStatus');
   statusEl.style.color = 'var(--text)';
-  statusEl.textContent = 'We kunnen je plaats even niet automatisch ophalen — vul hem hieronder zelf in.';
+  statusEl.textContent = 'We kunnen je plaats even niet automatisch ophalen — vul Plaats zelf in.';
   field.focus();
 }
 function wbjRelockCity() {
@@ -1374,7 +1399,6 @@ function mhFieldSnapshot() {
 
 async function openJeMediahoek() {
   resetCancelButton('mhCancelBtn');
-  resetCancelButton('mhAvatarRemoveBtn');
   mhStartTipCycle();
   const { data, error } = await db.from('musicians')
     .select('avatar_url, musician_media(media_type, url, platform, in_banner)')
@@ -1415,7 +1439,6 @@ function mhRenderAvatar() {
   } else {
     preview.innerHTML = `<span id="mhAvatarInitials" class="avatar-t">T</span>`;
     document.getElementById('mhAvatarRemoveBtn').classList.remove('visible');
-    resetCancelButton('mhAvatarRemoveBtn');
   }
 }
 
@@ -1443,8 +1466,10 @@ function mhHandleAvatarUpload(file) {
   });
 }
 
+// TT-381: het kruisje vraagt in een venster, niet meer met een knop die van
+// tekst wisselt — een kruisje heeft geen ruimte voor "Zeker weten?".
 function mhAskRemoveAvatar() {
-  handleCancelClick('mhAvatarRemoveBtn', () => true, mhRemoveAvatar, 'Foto verwijderen. Zeker weten?');
+  showConfirm('Profielfoto verwijderen?', mhRemoveAvatar, 'Ja, verwijderen');
 }
 function mhRemoveAvatar() {
   mhAvatarUrl = null;

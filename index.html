@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20260930b">
+<link rel="stylesheet" href="styles.css?v=20260930e">
 </head>
 <body>
 
@@ -318,21 +318,26 @@
         <!-- TT-42: verschijnt alleen bij 13, 14 of 15. Mededeling, geen fout. -->
         <p class="field-hint" id="ouderLeeftijdHint" style="display:none;">Onder de 16 vragen we straks toestemming aan je ouder of verzorger. Voor hen is het één klik. Je kunt gewoon doorgaan.</p>
       </div>
-      <div class="field">
-        <label>Postcode <span class="req">*</span></label>
-        <input type="text" id="zip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onPostcodeInput(this.value)">
-        <p class="field-hint">Alleen de 4 cijfers, geen huisletters nodig.</p>
-      </div>
+      <div class="field"></div>
     </div>
 
-    <div class="field-group">
-      <div class="field">
-        <label>Plaats <span class="req">*</span></label>
-        <input type="text" id="city" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acCityManualList')">
-        <div class="autocomplete-list" id="acCityManualList"></div>
-        <div id="postcodeStatus" class="field-status"></div>
+    <!-- Postcode en plaats naast elkaar, in de hele app één vorm
+         (.postcode-plaats, bevinding Ronald 30-09-2026). Hulptekst, status en
+         foutregel staan onder de rij, over de volle breedte. -->
+    <div class="postcode-plaats">
+      <div class="postcode-plaats-rij">
+        <div class="field">
+          <label>Postcode <span class="req">*</span></label>
+          <input type="text" id="zip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onPostcodeInput(this.value)">
+        </div>
+        <div class="field">
+          <label>Plaats <span class="req">*</span></label>
+          <input type="text" id="city" placeholder="Vult vanzelf in" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acCityManualList')">
+          <div class="autocomplete-list" id="acCityManualList"></div>
+        </div>
       </div>
-      <div class="field"></div>
+      <p class="field-hint">Alleen de 4 cijfers.</p>
+      <div id="postcodeStatus" class="field-status"></div>
     </div>
 
     <div class="field-group single">
@@ -566,11 +571,11 @@
             <span id="avatarInitials" class="avatar-t">T</span>
           </div>
           <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+          <button type="button" class="avatar-remove-btn" id="avatarRemoveBtn" onclick="askRemoveAvatar()" aria-label="Profielfoto verwijderen">✕</button>
         </div>
         <div class="avatar-info">
           <strong>Upload een foto van jezelf</strong>
           <p>Een echte foto zorgt voor 3× meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
-          <button class="btn btn-ghost avatar-remove-btn" id="avatarRemoveBtn" onclick="removeAvatar()">Foto verwijderen</button>
         </div>
       </div>
       <input type="file" accept="image/*" class="avatar-upload-input" id="avatarInput" autocomplete="off" onchange="handleAvatarUpload(this.files[0]); this.value=''">
@@ -795,16 +800,23 @@
         <label>Geboortedatum <span class="req">*</span></label>
         <input type="text" id="wbjBirthDate" maxlength="10" inputmode="numeric" placeholder="dd-mm-jjjj" oninput="formatBirthDate(this)">
       </div>
-      <div class="field">
-        <label>Postcode <span class="req">*</span></label>
-        <input type="text" id="wbjZip" maxlength="4" inputmode="numeric" autocomplete="off" oninput="onWbjPostcodeInput(this.value)">
-      </div>
+      <div class="field"></div>
     </div>
 
-    <div class="field" style="margin-bottom:20px;">
-      <label>Plaats <span class="req">*</span></label>
-      <input type="text" id="wbjCity" readonly style="cursor:not-allowed;" oninput="onCitySearchInput(this.value,'wbjCityAc')">
-      <div class="autocomplete-list" id="wbjCityAc"></div>
+    <!-- Postcode en plaats naast elkaar: zelfde vorm als de wizard en het
+         bandformulier (.postcode-plaats, bevinding Ronald 30-09-2026). -->
+    <div class="postcode-plaats">
+      <div class="postcode-plaats-rij">
+        <div class="field">
+          <label>Postcode <span class="req">*</span></label>
+          <input type="text" id="wbjZip" maxlength="4" inputmode="numeric" autocomplete="off" oninput="onWbjPostcodeInput(this.value)">
+        </div>
+        <div class="field">
+          <label>Plaats <span class="req">*</span></label>
+          <input type="text" id="wbjCity" readonly style="cursor:not-allowed;" oninput="onCitySearchInput(this.value,'wbjCityAc')">
+          <div class="autocomplete-list" id="wbjCityAc"></div>
+        </div>
+      </div>
       <p id="wbjPostcodeStatus" class="field-status" style="color:var(--muted);"></p>
     </div>
 
@@ -986,11 +998,11 @@
             <span id="mhAvatarInitials" class="avatar-t">T</span>
           </div>
           <div class="avatar-edit-btn" onclick="document.getElementById('mhAvatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+          <button type="button" class="avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhAskRemoveAvatar()" aria-label="Profielfoto verwijderen">✕</button>
         </div>
         <div class="avatar-info">
           <strong>Upload een foto van jezelf</strong>
           <p>Een echte foto zorgt voor meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
-          <button class="btn btn-ghost avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhAskRemoveAvatar()">Foto verwijderen</button>
         </div>
       </div>
       <input type="file" accept="image/*" class="avatar-upload-input" id="mhAvatarInput" autocomplete="off" onchange="mhHandleAvatarUpload(this.files[0]); this.value=''">
@@ -1690,34 +1702,33 @@
               <span id="bandAvatarInitials" class="avatar-t">T</span>
             </div>
             <div class="avatar-edit-btn" onclick="document.getElementById('bandAvatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+            <button type="button" class="avatar-remove-btn" id="bandAvatarRemoveBtn" onclick="askRemoveBandAvatar()" aria-label="Bandfoto verwijderen">✕</button>
           </div>
           <div class="field" style="flex:1;margin-bottom:0;">
             <label>Bandnaam <span class="req">*</span></label>
             <input type="text" id="bandName" placeholder="Bijv. The Rusty Strings">
           </div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;">
-          <p class="field-hint">JPG of PNG, maximaal 5 MB.</p>
-          <button class="btn btn-ghost avatar-remove-btn" id="bandAvatarRemoveBtn" onclick="removeBandAvatar()" style="margin:0;flex-shrink:0;">Foto verwijderen</button>
-        </div>
+        <p class="field-hint" style="margin-bottom:20px;">JPG of PNG, maximaal 5 MB.</p>
         <input type="file" accept="image/*" class="avatar-upload-input" id="bandAvatarInput" autocomplete="off" onchange="handleBandAvatarUpload(this.files[0]); this.value=''">
 
-        <div class="field-group single">
-          <div class="field">
-            <label>Postcode <span class="req">*</span></label>
-            <input type="text" id="bandZip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onBandPostcodeInput(this.value)">
-            <p class="field-hint">Alleen de 4 cijfers, geen huisletters nodig.</p>
+        <!-- Postcode en plaats naast elkaar: zelfde vorm als het
+             muzikant-registratieformulier (.postcode-plaats, bevinding Ronald
+             30-09-2026). Was: Plaats onder Postcode (punt 4, 25-08-2026). -->
+        <div class="postcode-plaats">
+          <div class="postcode-plaats-rij">
+            <div class="field">
+              <label>Postcode <span class="req">*</span></label>
+              <input type="text" id="bandZip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onBandPostcodeInput(this.value)">
+            </div>
+            <div class="field">
+              <label>Plaats <span class="req">*</span></label>
+              <input type="text" id="bandCity" placeholder="Vult vanzelf in" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acBandCityManualList')">
+              <div class="autocomplete-list" id="acBandCityManualList"></div>
+            </div>
           </div>
-        </div>
-        <!-- Punt 4 (25-08-2026, Ronald): Plaats direct onder Postcode, zelfde
-             volgorde als het muzikant-registratieformulier. -->
-        <div class="field-group single">
-          <div class="field">
-            <label>Plaats <span class="req">*</span></label>
-            <input type="text" id="bandCity" placeholder="Wordt automatisch ingevuld o.b.v. postcode" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acBandCityManualList')">
-            <div class="autocomplete-list" id="acBandCityManualList"></div>
-            <div id="bandPostcodeStatus" class="field-status"></div>
-          </div>
+          <p class="field-hint">Alleen de 4 cijfers.</p>
+          <div id="bandPostcodeStatus" class="field-status"></div>
         </div>
         <!-- TT-51-uitbreiding (12-08-2026, Ronalds testfeedback): niveau
              van de band naar boven verplaatst — stond eerst tussen Status en
@@ -2628,15 +2639,15 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20260930b"></script>
-<script src="utils.js?v=20260929a"></script>
+<script src="utils.js?v=20260930b"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260927b"></script>
-<script src="postcode.js?v=20260929a"></script>
-<script src="wizard.js?v=20260929a"></script>
+<script src="postcode.js?v=20260930b"></script>
+<script src="wizard.js?v=20260930b"></script>
 <script src="ouder.js?v=20260927b"></script>
 <script src="search.js?v=20260929b"></script>
-<script src="musicians.js?v=20260929a"></script>
-<script src="bands.js?v=20260929a"></script>
+<script src="musicians.js?v=20260930c"></script>
+<script src="bands.js?v=20260930b"></script>
 <script src="messages.js?v=20260926v"></script>
 <script src="modals-shared.js?v=20260924a"></script>
 <script>

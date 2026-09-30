@@ -164,7 +164,9 @@ function veldElement(el) {
 // zit de knop "Toon" in dezelfde .password-wrap; de regel hoort ónder die
 // wrap, niet ertussen.
 function veldFoutAnker(el) {
-  return (el.closest && el.closest('.password-wrap')) || el;
+  // Postcode en plaats: de foutregel staat onder de rij, over de volle
+  // breedte, niet in de smalle kolom van 104px (.postcode-plaats).
+  return (el.closest && (el.closest('.password-wrap') || el.closest('.postcode-plaats-rij'))) || el;
 }
 
 function setFieldError(el, msg) {

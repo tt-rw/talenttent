@@ -643,6 +643,28 @@
 
   .field-group.single { grid-template-columns: 1fr; }
 
+  /* Postcode en plaats naast elkaar, in de hele app één vorm (bevinding
+     Ronald, 30-09-2026): de wizard, de tegel "Je gegevens" en het
+     bandformulier. Zelfde opbouw als de rij Plaats + Straal (huisstijl §7.2):
+     het smalle veld 104px vast, Plaats krijgt de rest, 8px ertussen. Blijft
+     ook op mobiel naast elkaar — daarom geen .field-group, die valt onder
+     560px terug naar één kolom. Hulptekst, status en foutregel staan onder de
+     rij, over de volle breedte; in 104px zou een zin over vijf regels lopen. */
+  .postcode-plaats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .postcode-plaats-rij {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 8px;
+  }
+  /* Ankerpunt voor de keuzelijst van de handmatige terugval: die klapt uit
+     onder het plaatsveld, niet onder de hele rij. */
+  .postcode-plaats-rij > .field { position: relative; min-width: 0; }
+
   .field {
     display: flex;
     flex-direction: column;
@@ -1291,10 +1313,13 @@
     /* TT-U23 (12-08-2026): was 28x28 pixels. */
     width: 44px; height: 44px;
     border-radius: 50%;
-    background: var(--accent);
     border: 2px solid var(--bg);
     display: flex; align-items: center; justify-content: center;
     font-size: 13px;
+    /* TT-381 (30-09-2026, Ronald): zwarte tekst op het gele vlak, niet wit.
+       Geel als vlak onder tekst is --merk met --merk-tekst (§1.1). */
+    background: var(--merk);
+    color: var(--merk-tekst);
     cursor: pointer;
   }
 
@@ -1306,15 +1331,15 @@
   .avatar-info strong { font-size: 14px; display: block; margin-bottom: 6px; }
   .avatar-info p { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
-  /* TT-316 (24-09-2026): de knop is een gewone .btn .btn-ghost. Was 22px
-     hoog, onder het tikdoel van 44px (huisstijl §6). Hier alleen nog de
-     plek en het tonen/verbergen. */
+  /* TT-381 (30-09-2026, Ronald): "Foto verwijderen" is het kruisje
+     rechtsboven de foto, zelfde kruisje als op een mediategel. Uiterlijk en
+     tikvlak staan bij .thumb-remove; hier alleen de plek en het tonen. */
   .avatar-remove-btn {
-    margin-top: 8px;
-    display: none;
+    position: absolute;
+    top: 4px; right: 4px;
   }
 
-  .avatar-remove-btn.visible { display: inline-flex; }
+  .avatar-remove-btn:not(.visible) { display: none; }
 
   /* TT-168-overgang (uit profiel-v2, TT-181-vervolg/vervolg2): een knop die
      zelf van functie wisselt i.p.v. een apart waarschuwingsvlak. Bij een
@@ -1322,9 +1347,6 @@
      (geel, niet vetgedrukt); een tweede klik bevestigt. Zie
      handleCancelClick() in de JS. */
   .btn-cancel-armed { border-color: var(--accent); color: var(--accent); font-weight: 400; }
-  /* Specificiteitsfix (TT-181-vervolg2): de gewone :hover van
-     .avatar-remove-btn (rood) won anders van deze bevestigde staat. */
-  .avatar-remove-btn.btn-cancel-armed { color: var(--accent); border-color: var(--accent); }
 
   /* Completeness meter */
   .completeness-wrap {
@@ -1754,6 +1776,9 @@
   .media-thumb .thumb-remove {
     position: absolute;
     top: 4px; right: 4px;
+  }
+  /* TT-381: het kruisje op de profiel- en bandfoto is hetzelfde kruisje. */
+  .media-thumb .thumb-remove, .avatar-remove-btn {
     background: rgba(0,0,0,0.7);
     border: none;
     color: #fff;
@@ -1766,7 +1791,7 @@
   /* TT-316 (24-09-2026, besluit Ronald K10): de donkere schijf blijft — anders
      is het kruis onzichtbaar op een licht beeld — maar het tikvlak is 44×44
      (22px + 2×11px), zelfde patroon als .niveau-info-btn::after. */
-  .media-thumb .thumb-remove::after { content: ''; position: absolute; inset: -11px; }
+  .media-thumb .thumb-remove::after, .avatar-remove-btn::after { content: ''; position: absolute; inset: -11px; }
 
   .media-thumb .thumb-type {
     position: absolute;
@@ -2472,10 +2497,10 @@
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    margin: 12px 0 6px; /* TT-377: was 16px 0 10px */
+    margin: 12px 0 6px; /* TT-381: was 16px 0 10px */
   }
 
-  /* TT-377 (Ronald, 29-09-2026: "de berichtvensters zijn heel hoog. 4
+  /* TT-381 (Ronald, 29-09-2026: "de berichtvensters zijn heel hoog. 4
      berichten zijn beeldvullend"): compacter. De tijd staat rechtsonder op de
      laatste regel als die ruimte heeft, anders eronder (float). Opvulling
      6px 10px, 4px tussen twee berichten. Was 10px 14px, 6px, en de tijd altijd
@@ -3217,6 +3242,36 @@
     margin-left: 1px;
     margin-right: -1px;
   }
+
+  /* TT-380 (30-09-2026, Ronald): het deelicoon en het ⋯-menu staan ter
+     hoogte van de regels onder de naam, niet naast de naam. De naam krijgt
+     zo de volle breedte. Geldt voor Mijn Profiel, het muzikantvenster en het
+     bandvenster: één opbouw, uit profielKnoppenHTML() in musicians.js. */
+  .profiel-onder {
+    display: flex;
+    align-items: center;
+  }
+  .profiel-regels { min-width: 0; flex: 1; }
+  .profiel-knoppen {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    /* Een knop is 44px hoog, de regels samen minder. Deze marge laat de
+       knoppen over de lucht erboven en eronder vallen, zodat ze de regels
+       niet omlaag duwen. */
+    margin: -14px 0;
+  }
+  .profiel-knoppen .nav-menu-btn { margin-bottom: 0; }
+  /* Keuze B, zo dicht mogelijk bij het ⋯-menu (Ronald): het teken schuift
+     naar rechts, tot 18px van de stippen. Alleen het teken schuift; de twee
+     tikvlakken van 44px blijven naast elkaar en overlappen niet. Staat er
+     geen menu naast (je eigen band, je eigen profiel in het venster, een
+     bezoeker zonder profiel), dan staat het teken midden in zijn vak: op de
+     plek van het menu, onder het kruisje. */
+  .deel-knop { justify-content: flex-end; padding-right: 0; }
+  .deel-knop svg { margin-right: -6px; }
+  .deel-knop:last-child { justify-content: center; padding-right: 10px; }
+  .deel-knop:last-child svg { margin-right: 0; }
 
   /* TT-06 (18-09-2026): het rechtervak van de koprij. TT-318: daar staat nu
      alleen nog het kruisje; het ⋯-menu staat naast de naam. De wikkel blijft:
@@ -3990,8 +4045,6 @@
     .picker-list-item:hover { color: var(--accent); }
     .song-remove:hover { color: var(--danger); }
     .ac-item:hover { background: var(--surface2); }
-    .avatar-remove-btn:hover { color: var(--danger); border-color: var(--danger); }
-    .avatar-remove-btn.btn-cancel-armed:hover { color: var(--accent); border-color: var(--accent); }
     .drop-zone:hover { border-color: var(--accent); background: var(--tint); }
     .add-link-btn:hover, .bio-prompt-chip:hover { border-color: var(--accent); color: var(--accent); }
   }

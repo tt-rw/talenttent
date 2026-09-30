@@ -323,7 +323,7 @@ async function loadMyProfile() {
   profielBannerStarten(el);
   mediaTitelsBijwerken(el);
   // TT-249: naam passend maken zodra hij in de pagina staat. Mijn Profiel is
-  // het krapste scherm — hier staat het ⋯-menu naast de naam.
+  // het krapste scherm. Sinds TT-380 staat het ⋯-menu onder de naam.
   fitProfileName(el);
   loadBandInvites(m.id);
   loadFounderOffers(m.id); // V-16
@@ -1483,6 +1483,13 @@ function handleAvatarUpload(file) {
     showToast(friendlyErrorMessage(e));
     removeAvatar();
   });
+}
+
+// TT-381 (30-09-2026, Ronald): het kruisje rechtsboven de foto vraagt eerst,
+// op alle drie de plekken gelijk (registratie, Je mediahoek, bandfoto).
+// removeAvatar() zelf blijft zonder vraag: een mislukte upload ruimt ermee op.
+function askRemoveAvatar() {
+  showConfirm('Profielfoto verwijderen?', removeAvatar, 'Ja, verwijderen');
 }
 
 function removeAvatar() {

@@ -1,6 +1,196 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 30-09-2026 (TT-61) — **De nieuwe landingspagina is
+**Laatste update:** 30-09-2026 (TT-382) — **Postcode en plaats staan in de
+hele app naast elkaar (bevinding Ronald, P2). Testset 740 van 740,
+monitorronde 21 van 21. Nog open: upload naar beide repo's; laag 2 op de
+telefoon.**
+
+- **Wat er veranderde.** Eén gedeelde vorm, `.postcode-plaats` in
+  `styles.css`, op drie plekken: de wizard, de tegel "Je gegevens" en het
+  bandformulier. Postcode 104px vast, Plaats krijgt de rest, 8px ertussen —
+  dezelfde opbouw als Plaats + Straal in Zoeken (huisstijl §7.2). Ook op de
+  telefoon naast elkaar. Hulptekst, status en foutregel staan onder de rij,
+  over de volle breedte; `veldFoutAnker()` in `utils.js` zet de foutregel
+  daar. De keuzelijst van de handmatige terugval klapt uit onder het
+  plaatsveld.
+- **Teksten (besluiten Ronald, 30-09-2026).** Voorbeeldtekst in Plaats:
+  "Vult vanzelf in" (was "Wordt automatisch ingevuld o.b.v. postcode", paste
+  niet meer). Hulptekst onder de rij: "Alleen de 4 cijfers." (was "Alleen de
+  4 cijfers, geen huisletters nodig."). Melding bij de terugval: "… — vul
+  Plaats zelf in." (was "vul hem hieronder zelf in"; het vak staat nu
+  rechts).
+- **Nummer rechtgezet:** deze sessie noemde dit ook TT-380; dat nummer is
+  van "delen". Nu TT-382, blok 52. Samengevoegd met TT-380 (delen) en TT-381
+  (kruisje) tot één set, besluit Ronald; samen getest.
+- **Testset:** blok 52 meet de rij op alle drie de plekken en de plek van de
+  foutregel. Zakte op de oude versie, slaagt nu.
+- **Niet gewijzigd:** de tegel "Je gegevens" heeft geen hulptekst onder de
+  postcode en geen voorbeeldtekst in Plaats; dat was al zo.
+- **Gewijzigd:** `index.html`, `styles.css`, `musicians.js`, `postcode.js`,
+  `utils.js`, `tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
+
+
+**Stand van de P0's.** Ongewijzigd: TT-325 · TT-329 · TT-352, de controle
+TT-323, en TT-358 als advies P0. TT-382 is P2.
+
+---
+
+**Vorige update:** 30-09-2026 (TT-381) — **"Foto verwijderen" is het
+kruisje rechtsboven de foto, en de tekst in "Wijzig" is zwart. Op alle drie
+de plekken: registratie, Je mediahoek en het bandformulier. Testset 738 van
+738 (met TT-382 erbij: 740), monitorronde 21 van 21. Nog open: upload naar beide repo's; laag 2 op de telefoon.**
+
+- **Bevinding Ronald, 30-09-2026, met een schermafdruk van Je mediahoek:**
+  (1) de knop "Foto verwijderen" wordt het sluitkruisje rechtsboven de
+  profielfoto; (2) de tekst in de knop "Wijzig" wordt zwart in plaats van wit.
+- **Besluiten Ronald, 30-09-2026:**
+  - Op alle drie de plekken: registratie (stap Je mediahoek), de tegel Je
+    mediahoek en het bandformulier (bandfoto).
+  - Het kruisje vraagt eerst: "Profielfoto verwijderen?", bij de band
+    "Bandfoto verwijderen?". Tot nu toe vroeg alleen Je mediahoek iets, met
+    een knop die van tekst wisselde ("Foto verwijderen. Zeker weten?"); dat
+    past niet in een kruisje.
+- **Gebouwd:**
+  - `index.html`: het kruisje staat in `.avatar-preview-wrap`, naast
+    "Wijzig". De knop "Foto verwijderen" is op de drie plekken weg. De ids
+    (`avatarRemoveBtn`, `mhAvatarRemoveBtn`, `bandAvatarRemoveBtn`) bleven
+    gelijk. Bij de band is de rij met hulptekst en knop nu alleen de
+    hulptekst.
+  - `styles.css`: `.avatar-remove-btn` deelt zijn vorm met het kruisje op een
+    mediategel (`.media-thumb .thumb-remove`): 22px, donkere schijf, witte ✕,
+    tikvlak 44px. 4px van de rand, zoals op een tegel. `.avatar-edit-btn`
+    draagt nu `--merk` met `--merk-tekst`: zwart op geel, in licht de donkere
+    merktekst (huisstijl §1.1). Weg als dode code: de gewapende stand en de
+    aanwijsstand van de oude knop.
+  - `wizard.js`: `askRemoveAvatar()`. `bands.js`: `askRemoveBandAvatar()`.
+    `musicians.js`: `mhAskRemoveAvatar()` vraagt nu met `showConfirm()`; de
+    twee `resetCancelButton('mhAvatarRemoveBtn')` zijn weg (dode code).
+    `removeAvatar()` en `removeBandAvatar()` blijven zonder vraag: een
+    mislukte upload ruimt ermee op.
+  - **De ja-knop is niet rood.** In de app is rood op die knop alleen voor
+    het verwijderen van een account (TT-188, commentaar bij `showConfirm()`);
+    een lid uit de band halen vraagt ook zonder rood. De foto is pas echt weg
+    na Opslaan (**Geverifieerd:** `saveJeMediahoek()` schrijft `avatar_url`
+    pas daar weg).
+- **Fout gevonden en hersteld tijdens het bouwen:** de gedeelde regel met de
+  mediategel zette `display: flex` ná de regel die het kruisje verbergt. Het
+  kruisje stond daardoor ook zonder foto in beeld. De testset ving het; nu
+  `.avatar-remove-btn:not(.visible) { display: none }`.
+- **Getest:** 738/738. Nieuw blok 51, 9 controles: kruisje op alle drie de
+  plekken, geen knop "Foto verwijderen" meer, zelfde vorm als het
+  tegelkruisje, plek rechtsboven en verborgen zonder foto, tikvlak los van
+  "Wijzig", zwart op geel in donker en licht, de vraag vóór het verwijderen
+  op alle drie de plekken, en geen dode regels. Tegen de oude code zakt het
+  blok. De oude controle "Foto verwijderen is een tweede knop van 44px"
+  (blok 31, K5) is weg. Schermafdrukken bekeken: registratie en bandformulier,
+  donker en licht, met en zonder foto, en de vraag.
+- **Gebouwd bovenop TT-380 (delen), besluit Ronald.** Die set stond nog in de
+  gedeelde map en niet in de repo's. Deze set bevat TT-380 én TT-381.
+- **Bandkant:** meegenomen (besluit Ronald: alle drie de plekken).
+- **Documenten:** huisstijl §1, §6 en §8 bijgewerkt. In het project en in de
+  gedeelde map.
+- **Wacht op laag 2:** op de telefoon het kruisje en "Wijzig" in Je
+  mediahoek, licht en donker.
+- **Gewijzigd:** `index.html`, `styles.css`, `wizard.js`, `musicians.js`,
+  `bands.js`, `tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
+
+**Stand van de P0's.** Ongewijzigd: TT-325 · TT-329 · TT-352, de controle
+TT-323, en TT-358 als advies P0. TT-381 is P2.
+
+---
+
+**Vorige update:** 30-09-2026 (TT-325, mail 5) — **In de mail aan het kind
+("Je hebt toestemming") staat "Belangrijk: doe dit op hetzelfde toestel…" nu
+boven de knop, als gewone alinea. Gedeployd door Ronald en nagemeten.**
+
+- **Bevinding en besluit Ronald, 30-09-2026:** de zin stond als kleine grijze
+  regel onderaan de mail; hij hoort boven de knop.
+- **Gewijzigd:** alleen de Edge Function `ouder-toestemming`, bestand
+  `_niet-uploaden-edge-function-ouder-toestemming-30-09-2026.ts`. De zin
+  verhuist van `kleineRegel` naar de derde regel van `voorKnop`. Geen app-code.
+- **Geverifieerd, 30-09-2026:** de code in Supabase is teken voor teken gelijk
+  aan dat bestand (SHA-256 `0de75407…`, gelezen in het dashboard na Deploy).
+- **Rechtgezet 30-09-2026:** deze update ontbrak. Hij verdween toen deze
+  actielijst om 18:13 door een andere sessie werd overschreven. Waaruit
+  blijkt: het bestand van 17:56 staat in de gedeelde map, de actielijst
+  noemde het niet.
+- **Nog open:** ontvangst van mail 5 in een echte mailbox hoort bij TT-323.
+
+---
+
+**Vorige update:** 30-09-2026 (TT-380) — **Delen is een icoon bij de naam,
+op elk profiel. Gebouwd en getest: testset 730 van 730, monitorronde 21 van
+21. Nog open: upload naar beide repo's; laag 2 op de telefoon; twee vragen aan
+Ronald.**
+
+- **Bevinding Ronald, 30-09-2026:** "profiel delen icoon toevoegen aan
+  muzikantenprofiel". **Geverifieerd vooraf:** op Mijn Profiel kon je je
+  profiel niet delen. In het muzikantvenster stond onderaan een brede knop
+  "Deel dit profiel", in het bandvenster "Deel dit bandprofiel".
+  **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: wie zijn
+  profiel deelt, krijgt reacties en brengt nieuwe muzikanten binnen. Advies
+  P1, niveau door Ronald te bevestigen.
+- **Besluiten Ronald, 30-09-2026:** (1) het deelicoon staat naast de ⋯, en
+  beide knoppen gaan omlaag, ter hoogte van de regels onder de naam; "UX/UI
+  kan de juiste plaats bepalen". (2) Icoon B, drie verbonden punten, "zoveel
+  mogelijk richting de 3 puntjes". (3) Ook in het publieke profiel en in de
+  bandprofielen, publiek en privé. Voorbeeld:
+  `_niet-uploaden-profiel-delen-voorstel-30-09-2026.png`.
+- **Gebouwd:**
+  - `musicians.js`: `deelKnopHTML()` en `profielKnoppenHTML()`, één functie
+    voor alle profielen. De naam staat nu alleen op zijn regel; eronder
+    `.profiel-onder` met de regels links en de knoppen rechts. De brede
+    knop "Deel dit profiel" is weg uit `musicianContactFooterHTML()`; je
+    eigen profiel in het venster heeft daardoor geen voetbalk meer.
+  - `bands.js`: het bandvenster dezelfde opbouw; "Deel dit bandprofiel" is
+    weg.
+  - `styles.css`: `.profiel-onder`, `.profiel-regels`, `.profiel-knoppen`,
+    `.deel-knop`. Het deelteken staat 18px van de stippen; de tikvlakken van
+    44px overlappen niet. Zonder ⋯-menu staat het deelicoon op de plek van
+    het menu, onder het kruisje.
+  - `wizard.js`: alleen een commentaarregel ("het ⋯-menu staat naast de
+    naam") rechtgezet.
+  - `index.html`: alleen `?v=` van de vier gewijzigde bestanden.
+- **Plek, advies UX (Ronald liet de plek aan UX):** het ⋯-menu blijft recht
+  onder de hamburger of het kruisje; het deelicoon ernaast. De naam krijgt de
+  volle breedte: 247px in plaats van 187px bij 375px. Een lange
+  gebruikersnaam ("RockDrummer92") springt naar een eigen regel; er wordt
+  niets afgekapt.
+- **Getest:** 730/730. Nieuw blok 50, 29 controles: één deelicoon en geen
+  brede knop op Mijn Profiel, het venster van een ander (met en zonder eigen
+  profiel), je eigen profiel in het venster en het bandvenster; 44×44px; op
+  het midden van de regels; naam op volle breedte; tikvlakken overlappen
+  niet; 16 tot 20px tussen teken en stippen; ⋯ onder de hamburger; zonder
+  menu onder het kruisje; de juiste link bij een tik; `aria-label`; één
+  deelknop in de code. Blok 33 aangepast: het menu staat onder de naam, en
+  de naam heeft de volle breedte (hier stond "de naam houdt 187px").
+  Schermafdrukken bekeken op 375px, donker en licht, alle vijf de
+  varianten.
+- **Documenten:** huisstijl §10.1 is nieuw; §2.1, §5, §8, §9, §10 en §12
+  bijgewerkt. Projectinstructies §9 (nieuw blok "Delen", "Melden en
+  blokkeren" rechtgezet) en §11 (dertien lijn-tekens). In het project en in
+  `_niet-uploaden`.
+- **Rechtgezet:** projectinstructies §9 en huisstijl §2.1 zeiden "de naam
+  houdt 187px". Dat klopt sinds deze wijziging niet meer: de naam heeft de
+  volle breedte van zijn kolom (blok 33 meet dat).
+- **Open vraag 1 aan Ronald: Mijn Bands.** "Bandprofielen privé" is gebouwd
+  als het bandvenster van je eigen band. De lijst met bandkaarten op Mijn
+  Bands heeft geen deelicoon. Moet het daar ook?
+- **Open vraag 2 aan Ronald, advies P3: de lengte van een naam.**
+  `naamPastInProfielkop()` weigert bij het invullen een naam die niet in
+  187px past. Er is nu 247px. **Toets P3:** geen aanwijsbaar gevolg voor een
+  gebruiker nu; alleen heel lange namen worden eerder geweigerd dan nodig.
+- **Wacht op laag 2:** het deelicoon op Ronalds telefoon, en een tik die het
+  deelmenu opent.
+- **Gewijzigd:** `musicians.js`, `bands.js`, `styles.css`, `wizard.js`,
+  `index.html`, `tests/tt_tests.py`, `actielijst.md`, `CHECKSUMS.txt`.
+
+**Stand van de P0's.** Ongewijzigd: TT-325 · TT-329 · TT-352, de controle
+TT-323, en TT-358 als advies P0. TT-380 is advies P1.
+
+---
+
+**Vorige update:** 30-09-2026 (TT-61) — **De nieuwe landingspagina is
 gebouwd: richting F uit de landingsproef. Testset 701 van 701, monitorronde
 21 van 21. De tien foto's staan in Supabase en zijn niet te openen via de
 pagina. Nog open: upload naar beide repo's; een grotere bandfoto; laag 2 op
@@ -7434,6 +7624,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-380** | Delen is een icoon bij de naam, op elk profiel | **Gebouwd en getest 30-09-2026 (blok 50), wacht op upload en laag 2 — zie Laatste update.** Bevinding Ronald: "profiel delen icoon toevoegen aan muzikantenprofiel". Besluiten Ronald: icoon B naast de ⋯, beide op de regels onder de naam, op Mijn Profiel, het muzikantvenster en het bandvenster. Advies P1. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: wie zijn profiel deelt, krijgt reacties en brengt nieuwe muzikanten binnen. **Open:** deelicoon ook op Mijn Bands? En `naamPastInProfielkop()` van 187px naar 247px (advies P3)? |
 | **TT-367** | De onderbalk laadt traag op Android | **Gemeten 29-09-2026, niet gebouwd — zie Laatste update.** Elke tik op Profiel, Berichten of Bands wist de inhoud naar "Laden..." en haalt alles opnieuw op, in twee tot vier stappen na elkaar (120–515 ms op wifi). **Besluit Ronald, 29-09-2026:** geen oude inhoud laten staan tijdens het verversen. **Open vraag aan Ronald:** de stappen tegelijk laten lopen? Bevinding Ronald (28-09-2026): "het laden duurt vrij lang van de ene knop naar de andere … Dit is op een android telefoon." Advies P1. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: een app die bij elke tik hapert, voelt kapot en wordt weggelegd |
 | **TT-357** | Testaccounts opschonen vóór de lancering | **Nieuw, 27-09-2026 (TT-65). Besluit Ronald: later opschonen, vlak vóór de lancering. Niveau: advies P1, door Ronald te bevestigen.** Alle bestaande accounts zijn testaccounts. Nu niet wissen: TT-352 en TT-323 hebben ze nog nodig, en het proefherstel van TT-65 heeft gegevens nodig. Gewiste testaccounts verdwijnen na 30 dagen vanzelf uit de back-up. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: nepprofielen in de zoekresultaten kosten vertrouwen. **Vóór lancering** |
 | **TT-356** | In de welkomstmail valt een punt weg bij het versturen | **Oorzaak gevonden en opgelost, 27-09-2026 (TT-361). Ingevoerd in Supabase en nagemeten (SHA-256), dezelfde dag. Wacht op ontvangst in TT-323.** **Oorzaak, geverifieerd in de broncode van denomailer 1.6.0** (gelezen op deno.land via de browserpane): de mail gaat als quoted-printable, afgeknipt op 74 tekens, en denomailer zet een punt aan het begin van een regel niet dubbel. De SMTP-server haalt zo'n punt weg (RFC 5321, 4.5.2). **Nagebootst** met dezelfde code en een server die dat doet: welkom verloor "vinden." én de punt in "proton.me" en "talenttent.org"; "Je hebt toestemming" verloor "online."; de andere vijf niets — dat hangt af van waar de regel afbreekt, en die plek verschuift met de wisselende naam in de afsluiter. **Oplossing:** alle vijf de functies sturen de mail als base64 (`base64Regels()` in het template). Base64 bevat geen punt. Na de wijziging komen alle acht nagebootste mails byte voor byte gelijk aan. Bestanden: `_niet-uploaden-edge-function-<naam>-27-09-2026-TT-356.ts`. **Geverifieerd:** de vijf functies in Supabase waren vóór deze wijziging gelijk aan de bestanden waarop die is gebouwd (SHA-256). *(Rechtgezet: hier stond "Aanname: de punt verdwijnt bij het versturen (denomailer)" en "Onbekend: of het in de andere vier functies ook gebeurt". Waaruit blijkt: de broncode en de nabootsing hierboven.)* **Oorspronkelijk, 27-09-2026 (TT-323). Advies P1, niveau door Ronald te bevestigen.** Ronald ontving "Je bent binnen Zestien. Welkom in de Tent!" met "…kunnen je nu vinden" zonder punt. **Geverifieerd:** de code van `welkom` in Supabase heeft de punt (gelezen in het dashboard), en de mail die Claude uit die code opbouwt ook, in HTML en tekstversie. **Aanname:** de punt verdwijnt bij het versturen (denomailer): een punt aan het begin van een verzendregel valt weg. Niet gemeten; de bron van denomailer is vanuit de sessie niet bereikbaar. **Onbekend:** of het in de andere vier functies ook gebeurt. **Toets P1:** valt zo'n punt in een link (".org"), dan werkt de knop niet en komt iemand niet binnen. **Eerste meting:** de bron van de ontvangen mail bekijken in Proton. **Voorstel van Claude:** eigen sessie; raakt alle vijf de mailfuncties. |
@@ -7482,6 +7673,8 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-372** | De T 25% groter, in de hele app | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026). Eén klasse `.avatar-t` (huisstijl §2). **Toets P2:** werkte, maar de T oogde verloren in zijn vak |
 | **TT-373** | Vlak achter de terugknop waar je niet terug kunt | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026), startpagina en profielpagina. Oorzaak: aanwijsstand buiten de touch-guard (huisstijl §6). **Wacht op:** laag 2 op een echte telefoon. **Toets P2:** werkte, maar zag eruit als een fout |
 | **TT-374** | "Zoek setlist" heet "Maak setlist" | **Gebouwd en getest 29-09-2026 — zie Laatste update.** Bevinding Ronald (28-09-2026). **Besluit Ronald, 29-09-2026:** ook de knop onderin heet "Maak setlist" (was "Zoek nummers"). Gebouwd. **Toets P2:** werkte, maar het woord zei niet wat je doet |
+| **TT-382** | Postcode en plaats naast elkaar, overal | **Gebouwd en getest 30-09-2026 — zie Laatste update.** Bevinding Ronald. Wizard, tegel "Je gegevens" en bandformulier. **Wacht op:** upload naar beide repo's; laag 2 op zijn telefoon. **Toets P2:** het werkt, maar twee velden onder elkaar voor één adres kosten ruimte en ogen onaf |
+| **TT-381** | "Foto verwijderen" wordt het kruisje op de foto; "Wijzig" zwart op geel | **Gebouwd en getest 30-09-2026 — zie Laatste update.** Bevinding Ronald met schermafdruk van Je mediahoek. Besluiten Ronald: alle drie de plekken, en het kruisje vraagt eerst. **Wacht op:** upload naar beide repo's; laag 2 op zijn telefoon. **Toets P2:** het werkt, maar een losse knop naast de foto en witte tekst op geel ogen onaf |
 | **TT-377** | Een gesprek is te hoog: vier berichten vullen het scherm | **Gebouwd en getest 29-09-2026 (vervolg) — zie Laatste update.** Ronald: "de berichtvensters zijn heel hoog. 4 berichten zijn beeldvullend. kan je dat prettiger maken?" Huisstijl §1.5. **Wacht op:** laag 2 op zijn telefoon. **Toets P2:** het werkt, maar je scrolt voor elk bericht |
 | **TT-375** | Nog vijftien aanwijsregels buiten de touch-guard | **Nieuw, 29-09-2026, gevonden bij TT-373. Advies P2.** Onder meer `.btn-primary:hover`, `.btn-ghost:hover`, `.result-row:hover`, `.result-card:hover`, `.messages-conv-row:hover`, `.band-card:hover` en `.messages-thread-back:hover` staan buiten `@media (hover: hover)`. Op een telefoon blijft hun aanwijsstand na een tik staan, net als bij TT-373. Geteld in `styles.css` op 29-09-2026: vijftien regels, zonder de twee voor een uitgeschakelde knop en die voor de schuifbalk. **Toets P2:** het werkt, maar een knop die na een tik anders blijft, oogt als een fout |
 | **TT-365** | Het woordmerk in Tentype, het lettertype van Ronald | **Gebouwd en getest 28-09-2026 — zie Laatste update. Besluit Ronald.** Tentype vervangt het nagetekende woordmerk van TT-318; geen letterafstand, 2px bij 28px tussen TALENT en TENT; `mail-woordmerk.png` en de app-iconen opnieuw gemaakt. **In beide repo's sinds 28-09-2026** (rechtgezet 29-09-2026: hier stond "Wacht op: upload naar beide repo's"). **Wacht op:** laag 2: Ronald bekijkt kop, muzikantvenster, bandvenster, één mail en het icoon op zijn beginscherm op zijn telefoon. **Toets P2:** het werkt, maar het woordmerk is de eerste indruk |
