@@ -3610,10 +3610,12 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
               abs(float(wm["kopTussen"][:-2]) - 2) < 0.01
               and abs(float(wm["vensterTussen"][:-2]) - 2) < 0.01, json.dumps(wm))
         # TT-328: "het woordmerk mag nergens met spatie." Tussen TALENT en TENT
-        # staat geen spatie, alleen de 2px van TT-365.
+        # staat geen spatie, alleen de 2px van TT-365. Sinds TT-61 (30-09-2026)
+        # zonder inline kleur: die stond al in .logo span, en de kop op de foto
+        # van de landingspagina moet TALENT wit kunnen maken.
         logos328 = re.findall(r'<div class="logo"[^>]*>(.*?)</div>', html318)
         check("het woordmerk staat nergens met een spatie (TT-328)",
-              len(logos328) == 3 and all(l == '<span style="color:var(--text);">TALENT</span>TENT' for l in logos328),
+              len(logos328) == 3 and all(l == '<span>TALENT</span>TENT' for l in logos328),
               json.dumps(logos328))
         # TT-365 (28-09-2026): het lettertype is Tentype, niet meer het
         # nagetekende woordmerk van TT-318. Herkenbaar aan de L (594 van 1000,
@@ -5076,6 +5078,144 @@ window.TT_STUB.fnAntwoord = {};
         check("de oude sprong van 24px na het loslaten bestaat niet meer", oud48, "")
         check("vegen (TT-368): geen paginafouten", not f48, "; ".join(f48)[:300])
         c48.close()
+
+        print("\nBlok 49 — de landingspagina, richting F (TT-61)")
+        # Besluiten Ronald, 29 en 30-09-2026: "Zoek een <woord>.", tien woorden
+        # in vaste volgorde, elke 4 seconden vanzelf de volgende, geen
+        # keuzeknoppen, de knop opent altijd Zoeken, past op één scherm.
+        import base64
+        FOTO49 = base64.b64decode("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAQAAkDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwCnRRRXsnkn/9k=")
+        WOORDEN49 = ["zangeres", "drummer", "bassist", "gitarist", "zanger", "band",
+                     "pianist", "violist", "saxofonist", "DJ"]
+        def ctx49(w, h, **kw):
+            c = browser.new_context(viewport={"width": w, "height": h}, **kw)
+            pg = c.new_page(); fouten = []; pg.on("pageerror", lambda e: fouten.append(str(e)))
+            pg.route("**/supabase-js@2/**", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                pg.route(pat, lambda r: r.abort())
+            gevraagd = []
+            def foto(r):
+                naam = r.request.url.rsplit("/", 1)[1]; gevraagd.append(naam)
+                if naam == "zangeres.jpg": r.fulfill(status=200, content_type="image/jpeg", body=FOTO49)
+                else: r.fulfill(status=400, body="")
+            pg.route("**/storage/v1/object/public/landing/**", foto)
+            pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load"); pg.wait_for_timeout(600)
+            return c, pg, fouten, gevraagd
+
+        c49, p49, f49, g49 = ctx49(390, 844)
+        st49 = p49.evaluate("""() => ({
+          kop: document.querySelector('#view-landing h1').textContent,
+          regel: document.getElementById('landingWaarvoor').textContent,
+          woorden: LANDING_WOORDEN.map(w => w.woord), tempo: LANDING_TEMPO,
+          dias: document.querySelectorAll('#landingDias .landing-dia').length,
+          knoppen: [...document.querySelectorAll('#view-landing button')].map(b => b.textContent.trim()),
+          chips: document.querySelectorAll('#view-landing .chip, #view-landing .tag').length,
+          sub: document.querySelector('.landing-sub').textContent,
+          login: document.querySelector('.landing-login').textContent,
+          klok: !!landingKlok })""")
+        check("de kop leest \"Zoek een zangeres.\" met \"Voor je eerste optreden.\" eronder",
+              st49["kop"] == "Zoek eenzangeres." and st49["regel"] == "Voor je eerste optreden.", json.dumps(st49)[:300])
+        check("tien woorden in de volgorde van Ronald, elk een eigen laag, 4 seconden per woord",
+              st49["woorden"] == WOORDEN49 and st49["dias"] == 10 and st49["tempo"] == 4000, json.dumps(st49)[:300])
+        check("geen keuzeknoppen: alleen \"Zoek muzikanten →\" en \"Inloggen\"",
+              st49["knoppen"] == ["Zoek muzikanten →", "Inloggen"] and st49["chips"] == 0, json.dumps(st49["knoppen"]))
+        check("subkop en inlogregel zoals besloten",
+              st49["sub"] == "Muzikanten bij jou in de buurt." and st49["login"].startswith("Zoeken kan zonder profiel."), json.dumps(st49)[:300])
+        check("het wisselen loopt zolang de landingspagina in beeld is", st49["klok"], "")
+        # Een foto wordt pas gevraagd als hij bijna aan de beurt is; laadt hij niet, dan blijft het vlak.
+        p49.wait_for_timeout(300)
+        fo49 = p49.evaluate("""() => { const d = [...document.querySelectorAll('#landingDias .landing-dia')];
+          return { img0: !!d[0].querySelector('img') && d[0].querySelector('img').naturalWidth > 0,
+                   img1: !!d[1].querySelector('img'), gevraagd: d.filter(x => x.querySelector('img[src]')).length }; }""")
+        check("bij het openen worden alleen de eerste twee foto's gevraagd",
+              sorted(g49) == ["drummer.jpg", "zangeres.jpg"], json.dumps(g49))
+        check("een foto die laadt staat in beeld; een woord zonder foto houdt het warme vlak",
+              fo49["img0"] and not fo49["img1"], json.dumps(fo49))
+        # De kop ligt op de foto: doorzichtig, tekens en TALENT wit, TENT geel.
+        kop49 = p49.evaluate("""() => { const t = document.querySelector('.app-topbar'), cs = getComputedStyle(t);
+          return { pos: cs.position, bg: cs.backgroundColor, top: Math.round(t.getBoundingClientRect().top),
+            talent: getComputedStyle(document.querySelector('header .logo span')).color,
+            tent: getComputedStyle(document.querySelector('header .logo')).color,
+            menu: getComputedStyle(document.getElementById('navMenuBtn')).color,
+            terug: getComputedStyle(document.getElementById('navTerugBtn')).color,
+            terugZicht: getComputedStyle(document.getElementById('navTerugBtn')).visibility,
+            foto: Math.round(document.querySelector('.landing-foto').getBoundingClientRect().top) }; }""")
+        check("de kop ligt doorzichtig op de foto, de foto begint bovenaan het scherm",
+              kop49["pos"] == "fixed" and kop49["bg"] == "rgba(0, 0, 0, 0)" and kop49["top"] == 0 and kop49["foto"] == 0, json.dumps(kop49))
+        check("op de foto: terugknop, hamburger en TALENT wit, TENT geel; de terugknop staat er (TT-310)",
+              kop49["talent"] == kop49["menu"] == kop49["terug"] == "rgb(255, 255, 255)"
+              and kop49["tent"] == "rgb(245, 197, 24)" and kop49["terugZicht"] == "visible", json.dumps(kop49))
+        # Na 4 seconden het volgende woord, met zijn eigen regel.
+        p49.wait_for_timeout(4200)
+        na49 = p49.evaluate("""() => ({ woord: document.getElementById('landingWoord').textContent,
+          regel: document.getElementById('landingWaarvoor').textContent,
+          aan: [...document.querySelectorAll('#landingDias .landing-dia')].findIndex(d => d.classList.contains('aan')) })""")
+        check("na 4 seconden: \"drummer\" met \"Voor een band die wél repeteert.\", tweede foto in beeld",
+              na49 == {"woord": "drummer", "regel": "Voor een band die wél repeteert.", "aan": 1}, json.dumps(na49))
+        check("de derde foto wordt gevraagd zodra de tweede in beeld komt", "bassist.jpg" in g49, json.dumps(g49))
+        # De knop opent altijd Zoeken, ook als "band" in beeld staat.
+        p49.evaluate("landingNaar(5)"); p49.wait_for_timeout(400)
+        p49.click(".landing-knop"); p49.wait_for_timeout(400)
+        weg49 = p49.evaluate("""() => ({ view: document.querySelector('.app-view.active').id, klok: !!landingKlok,
+          klasse: document.getElementById('appRoot').classList.contains('landing-op-foto'),
+          pos: getComputedStyle(document.querySelector('.app-topbar')).position,
+          talent: getComputedStyle(document.querySelector('header .logo span')).color,
+          modus: currentSearchMode })""")
+        check("de knop opent Zoeken, ook bij \"band\" (besluit Ronald 30-09-2026)",
+              weg49["view"] == "view-search" and weg49["modus"] == "musician", json.dumps(weg49))
+        check("buiten de landingspagina: wisselen gestopt, de kop weer gewoon en in de tekstkleur",
+              not weg49["klok"] and not weg49["klasse"] and weg49["pos"] == "sticky"
+              and weg49["talent"] == "rgb(240, 240, 240)", json.dumps(weg49))
+        p49.evaluate("showView('landing')"); p49.wait_for_timeout(300)
+        check("terug op de landingspagina loopt het wisselen weer",
+              p49.evaluate("!!landingKlok && document.getElementById('appRoot').classList.contains('landing-op-foto')"), "")
+        # Inloggen: tikdoel 44px (TT-68) en opent het inlogscherm.
+        lg49 = p49.evaluate("(() => { const r = document.querySelector('.landing-inloggen').getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; })()")
+        p49.click(".landing-inloggen"); p49.wait_for_timeout(300)
+        check("\"Inloggen\" heeft een tikdoel van 44px hoog en opent het inlogscherm",
+              lg49[1] >= 44 and lg49[0] >= 44 and p49.evaluate("document.querySelector('.app-view.active').id") == "view-auth", json.dumps(lg49))
+        # Een open hamburgermenu op de foto: het teken houdt de kleur van .active, anders is het wit op licht.
+        p49.evaluate("showView('landing')"); p49.wait_for_timeout(200)
+        p49.click("#navMenuBtn"); p49.wait_for_timeout(300)
+        mn49 = p49.evaluate("(() => { const b = document.getElementById('navMenuBtn'), cs = getComputedStyle(b); return [b.classList.contains('active'), cs.color, cs.backgroundColor]; })()")
+        check("een open hamburgermenu op de foto blijft zichtbaar: teken niet wit op zijn eigen vlak",
+              mn49[0] and mn49[1] != "rgb(255, 255, 255)" and mn49[1] != mn49[2], json.dumps(mn49))
+        p49.keyboard.press("Escape")
+        check("landingspagina: geen paginafouten", not f49, "; ".join(f49)[:300])
+        c49.close()
+
+        # Past op één scherm, zonder scrollen: de drie gemeten toestellen, licht en donker.
+        past49 = []
+        for (w, h) in [(375, 667), (390, 844), (430, 932), (1280, 800)]:
+            for thema in ("light", "dark"):
+                c, pg, fo, _ = ctx49(w, h, color_scheme=thema)
+                m = pg.evaluate("""() => { const r = s => document.querySelector(s).getBoundingClientRect();
+                  const nav = document.getElementById('appBottomNav');
+                  return { scroll: document.documentElement.scrollHeight - innerHeight,
+                    knop: Math.round(r('.landing-knop').bottom), login: Math.round(r('.landing-inloggen').bottom - 12),
+                    nav: Math.round(nav.getBoundingClientRect().top),
+                    var: getComputedStyle(document.documentElement).getPropertyValue('--onderbalk-hoogte').trim(),
+                    navH: nav.offsetHeight, foto: Math.round(r('.landing-foto').height) }; }""")
+                ok = (m["scroll"] <= 0 and m["knop"] < m["nav"] and m["login"] <= m["nav"]
+                      and m["var"] == f"{m['navH']}px" and m["foto"] > 300 and not fo)
+                if not ok: past49.append({"w": w, "h": h, "thema": thema, **m, "fouten": fo})
+                c.close()
+        check("past op één scherm op 375×667, 390×844, 430×932 en een laptop (1280×800), licht en donker; knop en inlogregel boven de onderbalk",
+              not past49, json.dumps(past49)[:400])
+        # Bij "minder beweging" wisselt er niets vanzelf.
+        c, pg, fo, _ = ctx49(390, 844, reduced_motion="reduce")
+        pg.wait_for_timeout(4300)
+        rm49 = pg.evaluate("({ klok: !!landingKlok, woord: document.getElementById('landingWoord').textContent })")
+        check("bij \"minder beweging\" blijft het eerste woord staan", rm49 == {"klok": False, "woord": "zangeres"}, json.dumps(rm49))
+        c.close()
+        # Een verborgen tabblad: het wisselen staat stil.
+        c, pg, fo, _ = ctx49(390, 844)
+        vb49 = pg.evaluate("""() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+          document.dispatchEvent(new Event('visibilitychange')); const uit = !landingKlok;
+          Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
+          document.dispatchEvent(new Event('visibilitychange')); return [uit, !!landingKlok]; }""")
+        check("de app op de achtergrond: het wisselen stopt, en loopt weer als hij terugkomt", vb49 == [True, True], json.dumps(vb49))
+        c.close()
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
