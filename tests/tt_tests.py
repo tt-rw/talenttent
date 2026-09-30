@@ -5565,6 +5565,49 @@ window.TT_STUB.fnAntwoord = {};
         page.set_viewport_size({"width": 390, "height": 844})
         page.wait_for_timeout(80)
 
+        print("\nBlok 55 — de profielvolledigheid als lage balk, percentage als finish (TT-386, besluit Ronald 30-09-2026)")
+        page_errors.clear()
+        page.set_viewport_size({"width": 375, "height": 812})
+        page.wait_for_timeout(80)
+        d55 = page.evaluate("""() => {
+          const r = e => e ? e.getBoundingClientRect() : null;
+          const uit = {};
+          for (const [naam, m] of [['nul', {}], ['half', { avatar_url: 'x', bio: 'een bio van ruim twintig tekens', musician_instruments: [1] }],
+                                   ['vol', { avatar_url: 'x', bio: 'een bio van ruim twintig tekens', musician_instruments: [1], musician_genres: [1], musician_songs: [1,2,3], musician_media: [1] }]]) {
+            const w = document.createElement('div'); w.style.width = '343px';
+            w.innerHTML = renderCompletenessMeter(m); document.body.appendChild(w);
+            const wrap = w.querySelector('.completeness-wrap'), lab = w.querySelector('.completeness-label');
+            const rij = w.querySelector('.completeness-rij'), fill = r(w.querySelector('.completeness-fill'));
+            const pct = r(w.querySelector('.completeness-pct')), rest = r(w.querySelector('.completeness-rest'));
+            const binnen = r(rij);
+            uit[naam] = { label: lab && lab.textContent.trim(), labelKleur: lab && getComputedStyle(lab).color,
+              pct: w.querySelector('.completeness-pct') && w.querySelector('.completeness-pct').textContent.trim(),
+              pctKleur: pct && getComputedStyle(w.querySelector('.completeness-pct')).color,
+              vinkjes: w.querySelectorAll('.comp-item, .completeness-items').length, tip: w.querySelectorAll('p').length,
+              fill: !!fill, rest: !!rest,
+              finish: fill && pct ? Math.round(pct.left - fill.right) : null,
+              restNaPct: rest && pct ? Math.round(rest.left - pct.right) : null,
+              binnenRand: pct && binnen ? pct.right <= binnen.right + 0.5 : false,
+              hoogte: lab && rij ? Math.round(r(rij).bottom - r(lab).top) : null,
+              aria: rij && rij.getAttribute('aria-valuenow') };
+            w.remove();
+          }
+          return uit; }""")
+        goud55 = "rgb(245, 197, 24)"
+        check("titel 'Profielvolledigheid' in goud, geen vinkjes en geen tiptekst meer",
+              all(d55[k]["label"] == "Profielvolledigheid" and d55[k]["labelKleur"] == goud55 and d55[k]["vinkjes"] == 0 and d55[k]["tip"] == 0 for k in d55), json.dumps(d55))
+        check("het percentage staat direct achter het gele stuk (6px), in goud",
+              d55["half"]["finish"] == 6 and d55["vol"]["finish"] == 6 and d55["half"]["pct"] == "50%" and d55["half"]["pctKleur"] == goud55, json.dumps(d55))
+        check("0%: geen geel stuk; 100%: geen grijze rest; het percentage blijft binnen de rand",
+              not d55["nul"]["fill"] and d55["nul"]["rest"] and d55["vol"]["fill"] and not d55["vol"]["rest"]
+              and all(d55[k]["binnenRand"] for k in d55) and d55["vol"]["pct"] == "100%", json.dumps(d55))
+        check("titel plus balk samen hooguit 32px hoog (was 43px)",
+              all(d55[k]["hoogte"] is not None and d55[k]["hoogte"] <= 32 for k in d55), json.dumps(d55))
+        check("de balk meldt zijn waarde aan een schermlezer (progressbar)", d55["half"]["aria"] == "50", json.dumps(d55))
+        check("geen paginafouten in blok 55", not page_errors, "; ".join(page_errors)[:300])
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.wait_for_timeout(80)
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
