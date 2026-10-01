@@ -153,6 +153,19 @@ function initModalStapeling() {
 }
 
 const HERSTELBARE_VIEWS = ['landing', 'search', 'about', 'register', 'myprofile', 'bands', 'auth', 'privacy', 'terms', 'gedragscode', 'profieltegels', 'messages', 'instellingen'];
+// Views die alleen ingelogd open gaan; uitgelogd gaat de link naar Inloggen.
+const AFGESCHERMDE_VIEWS = ['myprofile', 'bands', 'profieltegels', 'messages', 'instellingen'];
+
+// TT-389 (01-10-2026): welke view hoort bij het #-deel van de link? Zelfde
+// regels als bij het opstarten (appInit). Een onbekend #-deel gaat naar het
+// hoogste scherm, nooit vast naar de landingspagina.
+function viewUitHash() {
+  const v = location.hash.replace('#', '');
+  if (!HERSTELBARE_VIEWS.includes(v)) return hoogsteScherm();
+  if (AFGESCHERMDE_VIEWS.includes(v) && !currentUser) return 'auth';
+  if (currentUser && ['auth', 'register'].includes(v)) return hoogsteScherm();
+  return v;
+}
 
 // TT-279: het zoektabblad overleeft verversen. Alleen voor deze kijker, in
 // dit tabblad van de browser; lukt opslaan niet, dan begint Zoeken bij
@@ -290,7 +303,7 @@ async function appInit() {
     // TT-279: elke view behalve 'reset' (die hoort bij een mail-link) is
     // herstelbaar, zodat verversen altijd op de huidige pagina blijft.
     const knownHashViews = HERSTELBARE_VIEWS;
-    const gatedHashViews = ['myprofile', 'bands', 'profieltegels', 'messages', 'instellingen'];
+    const gatedHashViews = AFGESCHERMDE_VIEWS;
 
     // V-12 (13-08-2026): een gedeelde profiellink (#profiel/<id> of
     // #band/<id>, zie shareProfile()) opent direct de detailmodal, boven op
@@ -1599,9 +1612,19 @@ window.addEventListener('popstate', (e) => {
     werkTerugKnopBij(); // TT-301
     return;
   }
+  // TT-389 (01-10-2026): een stap zonder state heeft de app niet zelf gemaakt
+  // — iemand wijzigde het #-deel van de link, of opende een link met # in dit
+  // tabblad. Toon de view uit dat #-deel en geef de stap alsnog een state
+  // ('redirect' vervangt hem). Het is geen stap terug, dus de teller blijft.
+  // Hier stond: showView(e.state?.view || 'landing', 'pop'), en ingelogd
+  // kwam je dan op de landingspagina.
+  if (!e.state?.view) {
+    showView(viewUitHash(), 'redirect');
+    return;
+  }
   // TT-301: pas hier gaat er echt een stap van de app af.
   terugDiepte = Math.max(0, terugDiepte - 1);
-  showView(e.state?.view || 'landing', 'pop');
+  showView(e.state.view, 'pop');
 });
 
 

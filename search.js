@@ -77,7 +77,15 @@ function standaardWeergave() {
   try { return window.matchMedia('(max-width: 560px)').matches ? 'grid' : 'list'; }
   catch (e) { return 'list'; }
 }
-let musicianViewMode = localStorage.getItem('tt_musicianViewMode') || standaardWeergave();
+// TT-387 (01-10-2026): de bewaarde keuze lezen, binnen try. Blokkeert de
+// browser opslag ("alle cookies blokkeren"), dan gooit localStorage een
+// SecurityError. Zonder try brak search.js hier af, en gaf elke zoekopdracht
+// daarna 0 resultaten zonder melding. Nu geldt dan gewoon de standaard.
+function bewaardeWeergave(sleutel) {
+  try { return localStorage.getItem(sleutel) || standaardWeergave(); }
+  catch (e) { return standaardWeergave(); }
+}
+let musicianViewMode = bewaardeWeergave('tt_musicianViewMode');
 // TT-U13: zet de markering in beide schakelaars gelijk aan de werkelijke
 // stand. De HTML markeert "Lijst" vast; op een telefoon klopt dat niet meer.
 // TT-232 (09-09-2026): de weergavekeuze bij Muzikanten is een keuzelijst
@@ -942,7 +950,7 @@ let myAcceptsBandInvites = true;
 let lastBandResults = [];
 // TT-30 (07-08-2026): zie musicianViewMode hierboven — zelfde patroon, apart
 // onthouden per tabblad.
-let bandViewMode = localStorage.getItem('tt_bandViewMode') || standaardWeergave();
+let bandViewMode = bewaardeWeergave('tt_bandViewMode');
 function setBandViewMode(mode) {
   bandViewMode = mode;
   try { localStorage.setItem('tt_bandViewMode', mode); } catch(e) {}
@@ -1372,7 +1380,7 @@ let filterSetlistInstruments = []; // TT-139: harde instrumentfilter, zelfde pat
 // Eigen stand per tabblad, zelfde patroon als musicianViewMode/bandViewMode.
 let lastSetlistResults   = [];
 let setlistSearchSortMode = 'score';
-let setlistViewMode = localStorage.getItem('tt_setlistViewMode') || standaardWeergave();
+let setlistViewMode = bewaardeWeergave('tt_setlistViewMode');
 
 function setSetlistViewMode(mode) {
   setlistViewMode = mode;

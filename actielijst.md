@@ -1,6 +1,44 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 01-10-2026 (onderhoudsronde) — **Onderhoudsronde: zeven
+**Laatste update:** 01-10-2026 (TT-387, TT-388, TT-389) — **Drie bevindingen
+uit de onderhoudsronde opgelost. Testset 769 van 769, monitor 21 van 21. Nog
+open: upload naar beide repo's; laag 2 op talenttent.org.**
+
+**Aanleiding.** Ronald: "pak de problemen aan". Drie tickets in één sessie,
+op zijn verzoek. Het niveau van TT-387 is niet bevestigd; het blijft advies
+P0.
+
+- **TT-387 — zoeken zonder opslag.** `search.js` leest de bewaarde weergave
+  nu via `bewaardeWeergave(sleutel)`, binnen `try`. Blokkeert de browser
+  opslag, dan geldt `standaardWeergave()`. Muzikant, band en setlist.
+- **TT-388 — de hamburger 24px.** De regel `#navMenuBtn svg { width: 26px;
+  height: 26px }` in `styles.css` is weg. Gemeten: terugpijl en hamburger
+  allebei 24×24px getekend. De tekens staan nog steeds even ver van hun rand.
+- **TT-389 — een los #-deel.** Een stap zonder state in de `popstate`-
+  afhandeling (`core.js`) toont nu de view uit het #-deel (`viewUitHash()`),
+  met dezelfde regels als bij het opstarten: onbekend → het hoogste scherm,
+  afgeschermd en uitgelogd → Inloggen, ingelogd en `#auth`/`#register` → het
+  hoogste scherm. De stap krijgt alsnog een state ('redirect'). De lijst
+  afgeschermde views staat nu één keer, als `AFGESCHERMDE_VIEWS`; `appInit()`
+  gebruikt dezelfde. Een `#profiel/<id>` zonder state gaat naar het hoogste
+  scherm, niet naar het profiel. **Aanname:** dat komt alleen voor als iemand
+  zo'n link in een tabblad opent waar de app al openstaat.
+
+**Toetsen.** Blok 25 meet nu ook de getekende maat. Nieuw blok 56: zoeken
+met geblokkeerde opslag, en vijf losse #-wissels ingelogd en uitgelogd. Op de
+oude code zakken vier controles (TT-388 en drie van TT-389); de TT-387-toets
+breekt daar af met `Cannot access 'musicianSearchSeq' before
+initialization`. Op de nieuwe code slagen ze alle.
+
+**Gewijzigd:** `core.js`, `search.js`, `styles.css`, `index.html` (`?v=` van
+de drie), `tests/tt_tests.py`, `CHECKSUMS.txt`, dit bestand.
+
+**Stand van de P0's.** TT-325 · TT-329 · TT-352, de controle TT-323, TT-358
+als advies P0. TT-387 is gebouwd; wacht op upload.
+
+---
+
+**Vorige update:** 01-10-2026 (onderhoudsronde) — **Onderhoudsronde: zeven
 nieuwe bevindingen (TT-387 t/m TT-393), acht bestaande tickets aangevuld, één
 dode verwijzing verwijderd. Testset 759 van 759, monitor 21 van 21. Nog open:
 upload naar beide repo's.**
@@ -7741,7 +7779,7 @@ eerste tabel altijd gelijk is aan de stand.
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-387** | Zoeken werkt niet als de browser opslag blokkeert | **Nieuw, 01-10-2026 (onderhoudsronde). Advies P0, niveau door Ronald te bevestigen.** *Toets: loopt een gebruiker vast? Ja — zoeken, de kern van de app, geeft niets.* **Geverifieerd** (Playwright, opslag geblokkeerd nagebootst zoals Safari en Chrome dat doen bij "alle cookies blokkeren"): `search.js` leest bovenin drie keer `localStorage` zonder `try` (regel 80, 945 en 1375: `musicianViewMode`, `bandViewMode`, `setlistViewMode`). Gooit de browser een `SecurityError`, dan breekt `search.js` halverwege af. Daarna geeft elke zoekopdracht `Cannot access 'musicianViewMode' before initialization`: 0 resultaten, geen melding. Normaal: 50 resultaten. Geldt voor muzikant, band en setlist. **Aanname:** de groep is klein; hoe klein is onbekend. Elke andere plek in de app leest opslag al binnen `try`. **Richting, niet gebouwd:** dezelfde vorm als elders, met een terugval op `standaardWeergave()`. Bandkant: zelfde bestand, zelfde fix |
+| **TT-387** | Zoeken werkt niet als de browser opslag blokkeert | **Gebouwd en getest 01-10-2026 (blok 56) — zie Laatste update. Wacht op:** upload naar beide repo's. **Nieuw, 01-10-2026 (onderhoudsronde). Advies P0, niveau door Ronald te bevestigen.** *Toets: loopt een gebruiker vast? Ja — zoeken, de kern van de app, geeft niets.* **Geverifieerd** (Playwright, opslag geblokkeerd nagebootst zoals Safari en Chrome dat doen bij "alle cookies blokkeren"): `search.js` leest bovenin drie keer `localStorage` zonder `try` (regel 80, 945 en 1375: `musicianViewMode`, `bandViewMode`, `setlistViewMode`). Gooit de browser een `SecurityError`, dan breekt `search.js` halverwege af. Daarna geeft elke zoekopdracht `Cannot access 'musicianViewMode' before initialization`: 0 resultaten, geen melding. Normaal: 50 resultaten. Geldt voor muzikant, band en setlist. **Aanname:** de groep is klein; hoe klein is onbekend. Elke andere plek in de app leest opslag al binnen `try`. **Richting, niet gebouwd:** dezelfde vorm als elders, met een terugval op `standaardWeergave()`. Bandkant: zelfde bestand, zelfde fix |
 | — | **Vóór lancering (23-08-2026, niet acuut zolang alleen testprofielen bestaan):** TT-65 (back-up), TT-42 (toestemming 13-15-jarigen), TT-45 (aanvullende maatregelen ondergrens 13) — zie hun eigen rijen hieronder voor detail. Eigen sessie, gepland vóórdat er publiek geworven wordt | — |
 
 | ID | Ticket | Kern |
@@ -7873,8 +7911,8 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
-| **TT-388** | De hamburger is 26px, niet 24px | **Nieuw, 01-10-2026 (onderhoudsronde). Advies P2.** *Toets: werkt, maar de kop oogt niet in balans — precies wat TT-307 oploste.* **Geverifieerd**, gemeten tegen de stub op 390 en 1280px en op talenttent.org op 615px: het teken van de hamburger is **26×26px**, de terugpijl 24×24px. Oorzaak: `styles.css` regel 3770, `#navMenuBtn svg { width: 26px; height: 26px; }`, een overblijfsel van 22-08-2026 in het blok dat sinds TT-224 op elke breedte geldt. Die regel wint van `width="24"` in `index.html`. Blok 25 toetst alleen dat attribuut, niet de getekende maat. **Richting:** de regel weg, en blok 25 meet de getekende maat. Raakt het uiterlijk, dus een eigen sessie met schermafdruk |
-| **TT-389** | Ingelogd brengt een losse wissel van het #-deel van de link je op de landingspagina | **Nieuw, 01-10-2026 (onderhoudsronde, laag 2). Advies P2.** *Toets: werkt, maar je komt op het verkeerde scherm — en op de wervingspagina, waar een ingelogde gebruiker niets te zoeken heeft (TT-303).* **Geverifieerd** op talenttent.org, ingelogd: `location.hash = '#search'` toont `view-landing`, terwijl de link `#search` zegt. Oorzaak: de `popstate`-afhandeling in `core.js` valt terug op `showView(e.state?.view \|\| 'landing')`. Een stap in de geschiedenis die de app niet zelf maakte, heeft geen `state`. **Aanname:** zo'n stap ontstaat als iemand het #-deel zelf wijzigt, of een link met # opent in een tabblad waar de app al openstaat. Een gewone herlaadbeurt werkt wél goed (gemeten). **Richting:** terugvallen op de view uit `location.hash`, anders op `hoogsteScherm()` |
+| **TT-388** | De hamburger is 26px, niet 24px | **Gebouwd en getest 01-10-2026 (blok 25) — zie Laatste update. Wacht op:** upload naar beide repo's. **Nieuw, 01-10-2026 (onderhoudsronde). Advies P2.** *Toets: werkt, maar de kop oogt niet in balans — precies wat TT-307 oploste.* **Geverifieerd**, gemeten tegen de stub op 390 en 1280px en op talenttent.org op 615px: het teken van de hamburger is **26×26px**, de terugpijl 24×24px. Oorzaak: `styles.css` regel 3770, `#navMenuBtn svg { width: 26px; height: 26px; }`, een overblijfsel van 22-08-2026 in het blok dat sinds TT-224 op elke breedte geldt. Die regel wint van `width="24"` in `index.html`. Blok 25 toetst alleen dat attribuut, niet de getekende maat. **Richting:** de regel weg, en blok 25 meet de getekende maat. Raakt het uiterlijk, dus een eigen sessie met schermafdruk |
+| **TT-389** | Ingelogd brengt een losse wissel van het #-deel van de link je op de landingspagina | **Gebouwd en getest 01-10-2026 (blok 56) — zie Laatste update. Wacht op:** upload naar beide repo's; laag 2 op talenttent.org. **Nieuw, 01-10-2026 (onderhoudsronde, laag 2). Advies P2.** *Toets: werkt, maar je komt op het verkeerde scherm — en op de wervingspagina, waar een ingelogde gebruiker niets te zoeken heeft (TT-303).* **Geverifieerd** op talenttent.org, ingelogd: `location.hash = '#search'` toont `view-landing`, terwijl de link `#search` zegt. Oorzaak: de `popstate`-afhandeling in `core.js` valt terug op `showView(e.state?.view \|\| 'landing')`. Een stap in de geschiedenis die de app niet zelf maakte, heeft geen `state`. **Aanname:** zo'n stap ontstaat als iemand het #-deel zelf wijzigt, of een link met # opent in een tabblad waar de app al openstaat. Een gewone herlaadbeurt werkt wél goed (gemeten). **Richting:** terugvallen op de view uit `location.hash`, anders op `hoogsteScherm()` |
 | **TT-390** | Twee controlevragen vragen "Weet je het zeker?" | **Nieuw, 01-10-2026 (onderhoudsronde). Advies P2.** *Toets: werkt, maar huisstijl §19 legt vast dat die vraag wordt weggeklikt.* **[UX]** Wie op "Ja" tikt zonder te lezen, gooit zijn invoer weg. **Geverifieerd** (grep): `bands.js:310` "Weet je het zeker? Wat je hebt ingevuld gaat verloren." (bandformulier verlaten) en `ouder.js:284` "Weet je het zeker? Alles wat je hebt ingevuld wordt gewist. Je begint dan later opnieuw." (ouderroute stoppen). **Voorstel:** een vraag naar het gevolg, met de knop als antwoord, zoals §19. Tekst is een besluit van Ronald |
 | **TT-366** | Thema volgt het toestel niet | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): toestel op donker, in de app "Zoals mijn toestel", en toch licht. Advies P2.** **Rechtgezet 29-09-2026:** hier stond als aanname dat Chrome een eigen thema-instelling heeft. Ronald gebruikt geen Chrome; het toestel is een Samsung, en hij wijzigt het thema in de telefooninstellingen. **Geverifieerd in de code:** de app is licht zodra de browser "licht" of "geen voorkeur" meldt (`pasLichtDonkerToe()` in `index.html`). **Onbekend:** in welke browser of app Ronald talenttent.org opent, en wat die aan de app meldt. **Wacht op:** dat antwoord; daarna meten op zijn telefoon. **Toets P2:** het werkt, maar de app doet niet wat de keuze belooft |
 | **TT-368** | Links-rechts vegen in Zoeken gaat stroef | **Gebouwd en getest 29-09-2026 (blok 48) — zie Laatste update. Wacht op laag 2 op Ronalds telefoon.** Het paneel volgt nu de vinger, het buurtabblad schuift ernaast mee, loslaten laat doorglijden of terugveren (besluit Ronald: "doe wat gebruikelijk is"). Bevinding Ronald (28-09-2026): "dat moet lekker soepel gaan, net als naar boven-beneden." Advies P2. **Toets P2:** het werkt, maar het kost moeite |

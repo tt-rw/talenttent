@@ -3762,12 +3762,9 @@
        De knop staat nu als eigen vak ín de koprij, dus die truc is weg. De
        marge onder de knop staat op nul via .kop-vak .nav-menu-btn, bovenin
        dit bestand — dezelfde regel voor de gewone kop en voor een venster. */
-    /* Punt 3 (22-08-2026, Ronald): hamburgerpictogram groter, in verhouding
-       met het woordmerk. Het woordmerk heeft op mobiel line-height:1 bij
-       font-size 28px — dus 28px is de visuele hoogte van de tekst zelf.
-       26px icoon past daar dicht bij, binnen de knop van 44px (tikdoel
-       blijft ongewijzigd, alleen het icoon zelf wordt groter getekend). */
-    #navMenuBtn svg { width: 26px; height: 26px; }
+    /* TT-388 (01-10-2026): hier stond #navMenuBtn svg { width: 26px; height: 26px }
+       (22-08-2026). Die regel won van width="24" in index.html; de hamburger
+       is 24px, net als de terugpijl (TT-307). */
     .nav-menu-dropdown { right: 16px; top: -18px; }
     /* TT-233: geen eigen ruimte bovenaan bij Zoeken — de knoppenrij erboven
        levert die al (20px). Mijn Profiel heeft geen knoppenrij en houdt zijn
