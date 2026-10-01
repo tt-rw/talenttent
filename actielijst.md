@@ -91,6 +91,7 @@ het claude.ai-project bevat nog de volledige tekst van 18-09-2026. §8 zegt
 dat daar alleen één verwijsregel staat. Gevolg: elke sessie krijgt eerst de
 oude regels (elf JS-bestanden, geen `ouder.js`, één uitzondering in
 `.github/`). Claude kan dat vak niet aanpassen.
+*Opgelost 01-10-2026, dezelfde sessie: Ronald heeft het vak vervangen door één alinea die naar `claude/projectinstructies.md` verwijst. Geverifieerd: de sessie kreeg daarna alleen die alinea mee.*
 
 **Stand van de P0's.** Ongewijzigd: TT-325 · TT-329 · TT-352, de controle
 TT-323, en TT-358 als advies P0. Nieuw: **TT-387 als advies P0**, niveau door
