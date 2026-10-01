@@ -2649,6 +2649,15 @@ def blok_browser():
           .map(s => s.getAttribute('width') + 'x' + s.getAttribute('height'))""")
         check("elk terugteken en de hamburger zijn 24px, in de kop én in elk venster (TT-307, TT-311)",
               len(maten) >= 4 and all(m == "24x24" for m in maten), json.dumps(maten))
+        # TT-388 (01-10-2026): het attribuut zei 24, maar een regel in
+        # styles.css tekende de hamburger op 26px. Meet daarom ook de
+        # getekende maat.
+        getekend = page.evaluate("""() => ['#navTerugBtn svg', '#navMenuBtn svg'].map(q => {
+          const r = document.querySelector(q).getBoundingClientRect();
+          return Math.round(r.width) + 'x' + Math.round(r.height);
+        })""")
+        check("terugpijl en hamburger worden allebei op 24×24px getekend (TT-388)",
+              getekend == ["24x24", "24x24"], json.dumps(getekend))
         check("het terugteken is een lijn-teken met dezelfde dikte als de hamburger (huisstijl §12)",
               teken["dikte"] == teken["hamDikte"] == "2" and teken["vulling"] == "none"
               and teken["lijn"], json.dumps(teken))
@@ -5607,6 +5616,89 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 55", not page_errors, "; ".join(page_errors)[:300])
         page.set_viewport_size({"width": 390, "height": 844})
         page.wait_for_timeout(80)
+
+        # Blok 56 — onderhoudsronde 01-10-2026: TT-387 en TT-389
+        print("\nBlok 56 — zoeken zonder opslag (TT-387) en een los #-deel (TT-389)")
+        # TT-387: de browser blokkeert opslag, zoals bij "alle cookies
+        # blokkeren". localStorage gooit dan een SecurityError.
+        bctx = browser.new_context(viewport={"width": 390, "height": 844})
+        bctx.add_init_script("""Object.defineProperty(window, 'localStorage', {
+          configurable: true, get() { throw new DOMException('geblokkeerd', 'SecurityError'); } });""")
+        bp = bctx.new_page()
+        b_fouten = []
+        bp.on("pageerror", lambda e: b_fouten.append(str(e)))
+        bp.route("**/supabase-js@2/**", lambda r: r.fulfill(
+            status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
+                    "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            bp.route(pat, lambda r: r.abort())
+        bp.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        bp.wait_for_timeout(400)
+        geblokkeerd = bp.evaluate("""() => { try { localStorage; return false; } catch (e) { return true; } }""")
+        check("de proef blokkeert opslag echt", geblokkeerd, "")
+        check("search.js laadt helemaal, ook zonder opslag (TT-387)",
+              not b_fouten and bp.evaluate("typeof musicianViewMode === 'string' && typeof bandViewMode === 'string' && typeof setlistViewMode === 'string'"),
+              "; ".join(b_fouten)[:300])
+        zonder = bp.evaluate("""async () => {
+          window.TT_STUB.rpcResults.tt_resolve_search_origin = [{ lat: 52.0, lng: 4.3 }];
+          window.TT_STUB.rpcResults.tt_search_musicians_anon = () => [{ musician_id: 'm1', distance_km: 4, is_stale: false }];
+          window.TT_STUB.rpcResults.tt_get_musicians_public = [{
+            id: 'm1', username: 'ronnie', age: 30, city: 'Delft', bio: '', goal: null,
+            profile_color: '#f5c518', avatar_url: null, updated_at: new Date().toISOString(),
+            instrument_levels: [{ instrument: 'Drums', niveau: 3 }], genres: ['Rock'], songs: []
+          }];
+          showView('search');
+          document.getElementById('filterCity').value = 'Delft';
+          document.getElementById('filterRadius').value = '25';
+          await runSearch();
+          await new Promise(r => setTimeout(r, 150));
+          return document.getElementById('searchResults').innerText;
+        }""")
+        check("zoeken zonder opslag geeft gewoon resultaat (TT-387)",
+              "1 muzikant gevonden" in zonder and not b_fouten, (zonder[:150] + " | " + "; ".join(b_fouten))[:300])
+        check("zonder opslag geldt de standaardweergave: kaarten op een telefoon",
+              bp.evaluate("musicianViewMode") == "grid", bp.evaluate("musicianViewMode"))
+        bctx.close()
+
+        # TT-389: een stap in de geschiedenis die de app niet zelf maakte.
+        page_errors.clear()
+        hash56 = page.evaluate("""async () => {
+          const wacht = () => new Promise(r => setTimeout(r, 120));
+          const actief = () => document.querySelector('.app-view.active')?.id;
+          const uit = {};
+          currentUser = { id: 'test' };
+          showView('myprofile');
+          location.hash = '#search'; await wacht();
+          uit.ingelogdZoeken = actief(); uit.state = history.state && history.state.view;
+          location.hash = '#bestaatniet'; await wacht();
+          uit.ingelogdOnbekend = actief();
+          location.hash = '#auth'; await wacht();
+          uit.ingelogdAuth = actief();
+          currentUser = null;
+          showView('landing');
+          location.hash = '#messages'; await wacht();
+          uit.uitgelogdAfgeschermd = actief();
+          location.hash = '#bestaatniet'; await wacht();
+          uit.uitgelogdOnbekend = actief();
+          location.hash = '#about'; await wacht();
+          uit.uitgelogdOver = actief();
+          return uit;
+        }""")
+        check("ingelogd: #search in de link toont Zoeken, niet de landingspagina (TT-389)",
+              hash56["ingelogdZoeken"] == "view-search" and hash56["state"] == "search", json.dumps(hash56))
+        check("ingelogd: een onbekend #-deel of #auth gaat naar Mijn Profiel",
+              hash56["ingelogdOnbekend"] == "view-myprofile" and hash56["ingelogdAuth"] == "view-myprofile", json.dumps(hash56))
+        check("uitgelogd: een afgeschermd scherm gaat naar Inloggen, een onbekend #-deel naar de landingspagina",
+              hash56["uitgelogdAfgeschermd"] == "view-auth" and hash56["uitgelogdOnbekend"] == "view-landing"
+              and hash56["uitgelogdOver"] == "view-about", json.dumps(hash56))
+        terug56 = page.evaluate("""async () => {
+          const wacht = () => new Promise(r => setTimeout(r, 120));
+          showView('landing'); showView('search'); showView('about');
+          history.back(); await wacht();
+          return document.querySelector('.app-view.active')?.id;
+        }""")
+        check("een gewone stap terug werkt zoals voorheen", terug56 == "view-search", terug56)
+        check("geen paginafouten in blok 56", not page_errors, "; ".join(page_errors)[:300])
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
