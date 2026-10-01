@@ -105,8 +105,6 @@ function ouderPaneelSluiten() {
 // ─── Onderdeel 2: het tussenscherm ───────────────────────────────────────────
 
 function ouderStapTonen() {
-  const naam = document.getElementById('ouderKindNaam');
-  if (naam) naam.textContent = state.fname || 'je';
   const veld = document.getElementById('ouderEmail');
   const bewaard = ouderAanvraagLezen();
   if (veld && bewaard?.ouderEmail) veld.value = bewaard.ouderEmail;
