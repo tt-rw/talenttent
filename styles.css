@@ -3373,6 +3373,86 @@
   .social-knop svg { width: 28px; height: 28px; display: block; }
   .social-dicht { color: var(--muted); cursor: default; }
 
+  /* ── TT-385 fase 3 (02-10-2026): de privé bandpagina en Bandprofiel
+     bewerken ───────────────────────────────────────────────────────────────
+     Een open rol of invaller is voor de beheerder een knop (zoeken); dezelfde
+     vorm, zonder de vormgeving van de browser. */
+  button.bezetting-lid {
+    background: none; border: 0; padding: 0; margin: 0;
+    font: inherit; color: var(--text); cursor: pointer;
+  }
+  /* Een lege bandfoto op je eigen pagina opent Wie zijn we. */
+  button.bandfoto { padding: 0; font-family: inherit; cursor: pointer; }
+  /* Een uitnodiging staat direct onder de titel van zijn sectie, of 12px
+     onder de gezichten van de bezetting. */
+  .profile-media > .add-link-btn { margin-top: 0; }
+  .bezetting + .add-link-btn { margin-top: 12px; }
+
+  /* Het deelblad: één zin, dan de knoppen. */
+  .deelblad-tekst { font-size: 14px; line-height: 20px; color: var(--text); margin: 0 0 20px; }
+
+  /* Bandprofiel bewerken: het blok Bandbeheer onder de vier tegels. */
+  .band-beheer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .band-beheer .field { margin-bottom: 20px; }
+  .band-beheer .knoppen-stapel + .field-hint { margin-top: 8px; }
+  /* Een keuze uit twee of drie over de volle breedte, even brede knoppen
+     (zelfde aanpak als een knoppenrij, §5). */
+  .segmented-vol { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; width: 100%; }
+  .segmented-vol .segmented-btn { min-width: 0; white-space: normal; text-align: center; line-height: 16px; }
+  /* Tussen twee blokken in een bandtegel: 24px. */
+  .band-tegel-blok { margin-top: 24px; }
+
+  /* Wie zijn we: de bandfoto naast de bandnaam, zoals het oude bandformulier.
+     De foto is vierkant, net als op de pagina (hoeken 12px). */
+  .bandfoto-veld { display: flex; gap: 16px; align-items: center; }
+  .bandfoto-veld > .field { flex: 1; min-width: 0; }
+  .avatar-preview.avatar-preview-vierkant { border-radius: 12px; }
+  .bandfoto-hint { margin: 8px 0 20px; }
+
+  /* Een rij in Onze bezetting: foto, naam en regel, rechts de drie puntjes. */
+  .bb-rij { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .bb-foto {
+    width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .bb-foto-t { background: var(--merk); color: var(--merk-tekst); font-size: 16px; }
+  .bb-foto.bezetting-open-rondje { font-size: 18px; }
+  .bb-wacht { opacity: .55; }
+  .bb-tekst { flex: 1; min-width: 0; }
+  /* Een naam in een lijst is 16px, vet (§2). */
+  .bb-naam { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+  .bb-sub { font-size: var(--fs-sm); color: var(--muted); }
+  .bb-rij .profile-actions-menu-wrap { flex-shrink: 0; position: relative; }
+  /* De menuknop heeft onder zich de marge van de kop; in een rij niet,
+     anders wordt de rij 8px hoger dan zijn inhoud. */
+  .bb-rij .nav-menu-btn { margin-bottom: 0; }
+  /* Na een lijst en na een hulptekst: 8px tot het volgende (§3). */
+  .bb-lijst + .add-link-btn, .bb-hint + .add-link-btn { margin-top: 8px; }
+  .profile-media-title + .bb-hint { margin-bottom: 8px; }
+  .bb-lijst:not(:empty) + .bb-hint { margin-top: 8px; }
+  .bb-inval-form { margin-top: 12px; }
+
+  /* Onze muziek: de titel van een eigen nummer is te bewerken in de rij,
+     zoals het adres eronder (§18.2). Hij leest als de naam van de rij tot je
+     erin tikt. */
+  .media-rij input.nummer-titel {
+    width: 100%;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'Roboto', sans-serif;
+    color: var(--text);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+  }
+  .media-rij input.nummer-titel:focus {
+    outline: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 4px 6px;
+  }
+
   /* TT-06 (18-09-2026): het rechtervak van de koprij. TT-318: daar staat nu
      alleen nog het kruisje; het ⋯-menu staat naast de naam. De wikkel blijft:
      fitKopLogo() en het raster rekenen met de .kop-vak aan elke kant. */
@@ -4521,3 +4601,6 @@
     margin-left: 0;
   }
   label .niveau-info-btn::after { top: -14px; right: -14px; bottom: -14px; left: -14px; }
+
+/* TT-385: "Uitnodigen voor <band>" boven de berichtknop in het muzikantvenster */
+.rol-uitnodig-knop { width: 100%; margin-bottom: 8px; }

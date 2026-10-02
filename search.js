@@ -497,6 +497,38 @@ function resetMusicianSearch() {
   runSearch();
 }
 
+// TT-385 fase 3 (punt 7): een tik op een open rol of invaller van je eigen
+// band opent Zoeken met dat instrument en de plaats van de band. De andere
+// filters gaan terug naar hun beginstand, zodat het resultaat over deze ene
+// vraag gaat. Eén regel erboven zegt waarvoor (verdwijnt bij de volgende
+// keer dat Zoeken opent, configureSearchAccess()). Een invaller vraag je in
+// een bericht; een vast lid nodig je uit vanuit het venster van de muzikant
+// (rolUitnodigKnopPlaatsen() in bands.js, besluit Ronald 02-10-2026).
+function zoekMuzikantVoorRol(instrument, plaats, bandNaam, datum, bandId) {
+  sluitAlleMenus();
+  document.getElementById('bandModal').classList.remove('visible');
+  showView('search');
+  initSearchFilters();
+  document.getElementById('filterName').value = '';
+  document.getElementById('filterCity').value = plaats || '';
+  setWheelFieldValues('leeftijd', ['', ''], false);
+  setWheelFieldValues('niveau',   ['', ''], false);
+  setWheelFieldValues('radius',   [STRAAL_STANDAARD], false);
+  filterInstruments = [instrument];
+  filterGenres = [];
+  renderPickerBadges(PICKERS.filterInstruments);
+  renderPickerBadges(PICKERS.filterGenres);
+  if (plaats) scheduleSearchCityStatus('filterCity', 'filterCityStatus');
+  setSearchMode('musician'); // zoekt meteen (TT-10)
+  zoekRolBand = (!datum && bandId) ? { id: bandId, naam: bandNaam || '' } : null;
+  const melding = document.getElementById('zoekRolMelding');
+  const rond = plaats ? `Muzikanten rond ${escHtml(plaats)}.` : 'Muzikanten bij jou in de buurt.';
+  melding.innerHTML = datum
+    ? `<p class="melding-tekst"><strong>${escHtml(instrument)} voor ${invallerDatum(datum)}.</strong> ${rond} Vraag ze in een bericht.</p>`
+    : `<p class="melding-tekst"><strong>${escHtml(instrument)} voor ${escHtml(bandNaam || 'je band')}.</strong> ${rond} Open een profiel om uit te nodigen.</p>`;
+  melding.hidden = false;
+}
+
 /* TT-62: `straalOverride` is alleen voor de automatische verruiming hieronder.
    Roept een knop of filter deze functie aan, dan blijft die parameter leeg en
    geldt gewoon het straalveld van de gebruiker. */

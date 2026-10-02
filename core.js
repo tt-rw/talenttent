@@ -609,11 +609,16 @@ function toggleBandMoreMenu(e) {
   btn.classList.add('active');
   menuLaagOpen(dd);
 }
+// TT-385: het ⋯-menu van een band staat ook op de bandpagina (lid,
+// beheerder) en in de rijen van Onze bezetting. Tot 02-10-2026 keek deze
+// functie alleen in Mijn Bands; daardoor bleef het menu op de bandpagina open
+// staan na een tik op de donkere laag.
+const BAND_MENU_PLEKKEN = ['#myBandsList', '#bandModalContent', '#view-profieltegels'];
 function closeAllBandMoreMenus() {
-  const open = document.querySelectorAll('#myBandsList .inline-menu-dropdown.visible');
+  const open = document.querySelectorAll(BAND_MENU_PLEKKEN.map(p => `${p} .inline-menu-dropdown.visible`).join(', '));
   if (!open.length) return;
   open.forEach(dd => dd.classList.remove('visible'));
-  document.querySelectorAll('#myBandsList .profile-actions-menu-wrap .nav-menu-btn.active')
+  document.querySelectorAll(BAND_MENU_PLEKKEN.map(p => `${p} .profile-actions-menu-wrap .nav-menu-btn.active`).join(', '))
     .forEach(b => b.classList.remove('active'));
   menuLaagWeg();
 }
@@ -713,6 +718,11 @@ async function getMyCity() {
 }
 
 async function configureSearchAccess() {
+  // TT-385 fase 3: de regel van een open rol hoort bij die ene zoekopdracht.
+  // Vóór de eerste await: zoekMuzikantVoorRol() zet hem direct na showView().
+  const rolMelding = document.getElementById('zoekRolMelding');
+  if (rolMelding) rolMelding.hidden = true;
+  zoekRolBand = null;
   const mid = await getMyMusicianId();
   hasOwnProfile = !!mid;
   await laadBlokkadesIndienNodig(); // TT-06
@@ -1233,6 +1243,12 @@ function ontwapenTerug() {
 
 function showView(view, mode) {
   huidigeView = view; // TT-303: de terugknop leest dit
+  // TT-385 fase 3: het tegelscherm is van je eigen profiel of van een band
+  // (bewerkBandId). Wie het verlaat, laat geen open tegel of band achter;
+  // anders sluit de terugknop elders nog een tegel die er niet meer is.
+  // Terug in de geschiedenis of na verversen komt de band uit de stap zelf.
+  if (view !== 'profieltegels') { bewerkBandId = null; activeTegelScreen = 'overview'; }
+  else if (mode === 'pop' || mode === 'redirect') bewerkBandId = (history.state && history.state.band) || null;
   sluitAlleMenus();
   sluitOpruimModals(); // TT-264: een view-wissel laat nooit een spelende video achter
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
@@ -1391,8 +1407,10 @@ function showView(view, mode) {
     const hash = (view === 'toestemming' && /^#(toestemming(\/|-gegeven$)|bevestig\/)/.test(location.hash))
       ? location.hash
       : '#' + view;
-    if (mode === 'redirect') safeHistoryReplace({ view }, hash);
-    else { safeHistoryPush({ view }, hash); terugDiepte++; } // TT-301
+    // TT-385 fase 3: de stap van Bandprofiel bewerken onthoudt welke band.
+    const stap = (view === 'profieltegels' && bewerkBandId) ? { view, band: bewerkBandId } : { view };
+    if (mode === 'redirect') safeHistoryReplace(stap, hash);
+    else { safeHistoryPush(stap, hash); terugDiepte++; } // TT-301
   }
   werkTerugKnopBij(); // TT-301
   landingBijwerken(); // TT-61: de foto's wisselen alleen op de landingspagina

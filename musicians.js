@@ -202,15 +202,19 @@ async function shareProfile(kind, id, name) {
 // punten (keuze B). Eén functie voor alle drie de plekken, geen eigen variant
 // per scherm. Rechts van het icoon staat het ⋯-menu, als dat er is; zonder
 // menu schuift het icoon naar de plek van het menu.
-function deelKnopHTML(kind, id, name) {
+// TT-385 (besluit Ronald, g): de beheerder van een band die nog niet af is,
+// krijgt eerst één zin over wat er mist. Dat is de enige plek met een eigen
+// actie; die komt binnen als `actie` (JavaScript voor onclick).
+function deelKnopHTML(kind, id, name, actie) {
   const label = kind === 'band' ? 'Deel dit bandprofiel' : 'Deel dit profiel';
-  return `<button type="button" class="nav-menu-btn deel-knop" onclick="shareProfile('${kind === 'band' ? 'band' : 'profiel'}','${jsAttr(id)}','${jsAttr(name)}')" aria-label="${label}" title="Delen">
+  const klik = actie || `shareProfile('${kind === 'band' ? 'band' : 'profiel'}','${jsAttr(id)}','${jsAttr(name)}')`;
+  return `<button type="button" class="nav-menu-btn deel-knop" onclick="${klik}" aria-label="${label}" title="Delen">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><line x1="8.2" y1="10.8" x2="15.8" y2="6.2"></line><line x1="8.2" y1="13.2" x2="15.8" y2="17.8"></line></svg>
   </button>`;
 }
 
-function profielKnoppenHTML(kind, id, name, menuHTML) {
-  return `<div class="profiel-knoppen">${deelKnopHTML(kind, id, name)}${menuHTML || ''}</div>`;
+function profielKnoppenHTML(kind, id, name, menuHTML, deelActie) {
+  return `<div class="profiel-knoppen">${deelKnopHTML(kind, id, name, deelActie)}${menuHTML || ''}</div>`;
 }
 
 function musicianContactFooterHTML(m, isOwn, displayName) {
@@ -330,6 +334,8 @@ async function openMusicianModal(id) {
   // (TT-43: bezoekers zonder profiel zien alleen de gebruikersnaam).
   const displayName = isOwn ? m.fname : displayNameOf(m);
   footer.innerHTML = musicianContactFooterHTML(m, isOwn, displayName);
+  // TT-385: uit een zoekopdracht voor een open rol nodig je meteen uit.
+  rolUitnodigKnopPlaatsen(isOwn ? null : m.id);
   // TT-06: melden en blokkeren, onder de naam (TT-380). Op je eigen profiel
   // niet — daar maakt buildMusicianDetailHTML() ook geen plek.
   zetVeiligheidMenu('musicianModalActies', 'muzikant', isOwn ? null : m.id, displayName);
@@ -606,9 +612,10 @@ const TILES = [
   { id: 'mediahoek',  title: 'Je mediahoek',    sub: "video's - foto's - profielfoto" },
 ];
 
-function renderTegels() {
-  const wrap = document.getElementById('tegelsWrap');
-  wrap.innerHTML = TILES.map(t => `
+// TT-385 fase 3: de tegels van een band hebben dezelfde vorm (BAND_TILES in
+// bands.js). Eén functie voor beide lijsten.
+function tegelsHTML(lijst) {
+  return lijst.map(t => `
     <div class="tile" onclick="openTegelScreen('${jsAttr(t.id)}')">
       <div style="flex:1;">
         <div class="tile-title">${escHtml(t.title)}</div>
@@ -618,12 +625,21 @@ function renderTegels() {
   `).join('');
 }
 
+function renderTegels() {
+  document.getElementById('tegelsWrap').innerHTML = tegelsHTML(TILES);
+}
+
 // ─── Schermnavigatie binnen het tegeloverzicht ────────────────────────────
 // Zelfde soort interne stap-switcher als de wizard (goTo()), maar dan met
 // een terugknop-stap in de browsergeschiedenis per subscherm (V-03-patroon,
 // zie de popstate-handler hieronder) — bewerken van een tegel is net zo'n
 // "sluit dit eerst"-scherm als een open modal of een open gesprek.
-const TEGEL_SCREENS = { wieBenJe: 'wieBenJeScreen', watSpeelJe: 'watSpeelJeScreen', watZoekJe: 'watZoekJeScreen', jeSetlist: 'jeSetlistScreen', mediahoek: 'mediahoekScreen' };
+// TT-385 fase 3 (02-10-2026): Bandprofiel bewerken gebruikt hetzelfde
+// tegelscherm, met de vier tegels van de band. Welke band: bewerkBandId
+// (bands.js); leeg betekent je eigen profiel. Zo gelden de terugknop, "Terug
+// zonder opslaan?" en de stap in de geschiedenis voor beide gelijk.
+const TEGEL_SCREENS = { wieBenJe: 'wieBenJeScreen', watSpeelJe: 'watSpeelJeScreen', watZoekJe: 'watZoekJeScreen', jeSetlist: 'jeSetlistScreen', mediahoek: 'mediahoekScreen',
+  bandWie: 'bandWieScreen', bandBezetting: 'bandBezettingScreen', bandMuziek: 'bandMuziekScreen', bandMedia: 'bandMediaScreen' };
 let activeTegelScreen = 'overview';
 let tegelScreenHistoryPushed = false;
 
@@ -641,7 +657,11 @@ const TEGEL_WIJZIGINGEN = {
   watSpeelJe: () => wspFieldSnapshot() !== wspSnapshot,
   watZoekJe:  () => wzjFieldSnapshot() !== wzjSnapshot,
   jeSetlist:  () => jstFieldSnapshot() !== jstSnapshot,
-  mediahoek:  () => mhFieldSnapshot() !== mhSnapshot
+  mediahoek:  () => mhFieldSnapshot() !== mhSnapshot,
+  bandWie:       () => bwFieldSnapshot() !== bwSnapshot,
+  bandBezetting: () => bbFieldSnapshot() !== bbSnapshot,
+  bandMuziek:    () => bmzFieldSnapshot() !== bmzSnapshot,
+  bandMedia:     () => bmFieldSnapshot() !== bmSnapshot
 };
 
 // TT-302: welke Terug-knop hoort bij welk tegelscherm. Nodig om die knop
@@ -649,7 +669,8 @@ const TEGEL_WIJZIGINGEN = {
 // vraag op één scherm is er één te veel.
 const TEGEL_CANCEL_BTN = {
   wieBenJe: 'wbjCancelBtn', watSpeelJe: 'wspCancelBtn', watZoekJe: 'wzjCancelBtn',
-  jeSetlist: 'jstCancelBtn', mediahoek: 'mhCancelBtn'
+  jeSetlist: 'jstCancelBtn', mediahoek: 'mhCancelBtn',
+  bandWie: 'bwCancelBtn', bandBezetting: 'bbCancelBtn', bandMuziek: 'bmzCancelBtn', bandMedia: 'bmCancelBtn'
 };
 function resetCancelButtonVanTegel() {
   const id = TEGEL_CANCEL_BTN[activeTegelScreen];
@@ -671,9 +692,11 @@ function openTegelOverview() {
   werkTerugKnopBij(); // TT-301
   tegelScreenHistoryPushed = false;
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
-  document.getElementById('tegelOverviewScreen').style.display = '';
+  document.getElementById('tegelOverviewScreen').style.display = bewerkBandId ? 'none' : '';
+  document.getElementById('bandTegelOverviewScreen').style.display = bewerkBandId ? '' : 'none';
   clearInterval(mhTipTimer);
-  renderTegels();
+  if (bewerkBandId) renderBandTegels();
+  else renderTegels();
 }
 
 function openTegelScreen(id) {
@@ -682,10 +705,11 @@ function openTegelScreen(id) {
   ontwapenTerug();    // TT-302
   werkTerugKnopBij(); // TT-301: een open tegelscherm is een stap terug
   document.getElementById('tegelOverviewScreen').style.display = 'none';
+  document.getElementById('bandTegelOverviewScreen').style.display = 'none';
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
   document.getElementById(TEGEL_SCREENS[id]).style.display = '';
   if (!tegelScreenHistoryPushed) {
-    safeHistoryPush({ view: 'profieltegels', tegel: true }, '#profieltegels');
+    safeHistoryPush(bewerkBandId ? { view: 'profieltegels', tegel: true, band: bewerkBandId } : { view: 'profieltegels', tegel: true }, '#profieltegels');
     tegelScreenHistoryPushed = true;
   }
   if (id === 'wieBenJe') openWieBenJe();
@@ -693,6 +717,10 @@ function openTegelScreen(id) {
   else if (id === 'watZoekJe') openWatZoekJe();
   else if (id === 'jeSetlist') openJeSetlist();
   else if (id === 'mediahoek') openJeMediahoek();
+  else if (id === 'bandWie') openBandWie();
+  else if (id === 'bandBezetting') openBandBezetting();
+  else if (id === 'bandMuziek') openBandMuziek();
+  else if (id === 'bandMedia') openBandMedia();
 }
 
 function goToTegelOverview() {
@@ -812,19 +840,55 @@ async function openWieBenJe() {
 }
 
 // Bio bewerken in een eigen modal — meer ruimte dan het kleine tekstvakje
-// tussen de andere velden. #wbjBio (verborgen) blijft de echte waarde.
-function openWbjBioModal() {
-  document.getElementById('wbjBioModalTextarea').value = document.getElementById('wbjBio').value;
-  document.getElementById('wbjBioModal').classList.add('visible');
-  document.getElementById('wbjBioModalTextarea').focus();
+// tussen de andere velden. Het verborgen veld van het scherm (#wbjBio,
+// #bwBio) blijft de echte waarde.
+// TT-385 fase 3: één modal voor de bio van een muzikant en de tekst "Wie zijn
+// we" van een band. Ze verschillen alleen in titel, uitleg en voorzetten
+// (muzikantkant en bandkant volgen dezelfde regels, huisstijl).
+const BIO_DOELEN = {
+  wbj: {
+    titel: 'Korte bio', uitleg: 'Dit is vaak het eerste wat andere muzikanten van je lezen.',
+    bron: 'wbjBio', voorbeeld: 'Bijv. Ik speel al 3 jaar gitaar...', na: () => wbjRenderBioPreview(),
+    voorzetten: [['Hoe lang speel je al?', 'Ik speel al ... jaar '],
+                 ['Waar ben je nu mee bezig?', 'Op dit moment ben ik vooral bezig met '],
+                 ['Wat wil je bereiken?', 'Wat ik wil bereiken is ']]
+  },
+  bw: {
+    titel: 'Wie zijn we', uitleg: 'Dit lezen bezoekers direct onder jullie bezetting.',
+    bron: 'bwBio', voorbeeld: 'Bijv. Vier vrienden uit Den Haag. We maken gitaarliedjes...', na: () => bwRenderBioPreview(),
+    voorzetten: [['Hoe zijn jullie begonnen?', 'We zijn begonnen toen '],
+                 ['Wat voor muziek maken jullie?', 'We maken '],
+                 ['Waar willen jullie naartoe?', 'Wat we willen bereiken is ']]
+  }
+};
+let bioDoel = 'wbj';
+
+function openBioModal(doel) {
+  bioDoel = BIO_DOELEN[doel] ? doel : 'wbj';
+  const cfg = BIO_DOELEN[bioDoel];
+  document.getElementById('bioModalTitel').textContent = cfg.titel;
+  document.getElementById('bioModalUitleg').textContent = cfg.uitleg;
+  document.getElementById('bioModalVoorzetten').innerHTML = cfg.voorzetten.map((v, i) =>
+    `<button type="button" class="bio-prompt-chip" onclick="bioVoorzet(${i})">${escHtml(v[0])}</button>`).join('');
+  const vak = document.getElementById('bioModalTextarea');
+  vak.placeholder = cfg.voorbeeld;
+  vak.value = document.getElementById(cfg.bron).value;
+  document.getElementById('bioModal').classList.add('visible');
+  vak.focus();
 }
-function closeWbjBioModal() {
-  document.getElementById('wbjBioModal').classList.remove('visible');
+function closeBioModal() {
+  document.getElementById('bioModal').classList.remove('visible');
 }
-function wbjSyncBioFromModal() {
-  const value = document.getElementById('wbjBioModalTextarea').value;
-  document.getElementById('wbjBio').value = value;
-  wbjRenderBioPreview();
+function bioSyncVanModal() {
+  const cfg = BIO_DOELEN[bioDoel];
+  document.getElementById(cfg.bron).value = document.getElementById('bioModalTextarea').value;
+  cfg.na();
+}
+function bioVoorzet(i) {
+  const v = BIO_DOELEN[bioDoel].voorzetten[i];
+  if (!v) return;
+  applyBioPromptTo(document.getElementById('bioModalTextarea'), v[1]);
+  bioSyncVanModal();
 }
 function wbjRenderBioPreview() {
   const value = document.getElementById('wbjBio').value.trim();
@@ -836,10 +900,6 @@ function wbjRenderBioPreview() {
     preview.textContent = 'Bijv. Ik speel al 3 jaar gitaar...';
     preview.style.color = 'var(--muted)';
   }
-}
-function wbjBioPrompt(text) {
-  applyBioPromptTo(document.getElementById('wbjBioModalTextarea'), text);
-  wbjSyncBioFromModal();
 }
 
 // Gebruikersnaam: zelfde live-check als elders in de app.
@@ -1120,8 +1180,19 @@ async function saveWatZoekJe() {
 
 let jstSongs = [];
 let jstSnapshot = null;
-let jstSelectedArtist = null; // { id, name }
 let jstSearchTimeout = null;
+
+// TT-385 fase 3 (02-10-2026): de covers van een band zoek je met dezelfde
+// velden als de setlist van een muzikant (besluit Ronald, punt 8). De
+// zoekfuncties hieronder heten jst..., maar dienen beide schermen. Het
+// voorvoegsel p kiest het scherm: 'jst' (Je setlist, de standaard) of 'bc'
+// (de covers in Onze muziek). De velden heten <p>ArtistSearch, <p>ArtistAc,
+// <p>TrackWrap, <p>TrackLabel, <p>TrackSearch en <p>TrackAc.
+const songArtiest = { jst: null, bc: null }; // { id, name } per scherm
+const SONG_DOEL = {
+  jst: { lijst: () => jstSongs, kies: 'jstAddSong' },
+  bc:  { lijst: () => bcCovers, kies: 'bcAddCover' }
+};
 const jstArtistCache = new Map();
 const jstTrackCache = new Map();
 
@@ -1141,10 +1212,7 @@ async function openJeSetlist() {
     return;
   }
   jstSongs = (data.musician_songs || []).map(s => ({ title: s.song_title, artist: s.song_artist, level: s.mastery_level }));
-  jstSelectedArtist = null;
-  document.getElementById('jstArtistSearch').value = '';
-  document.getElementById('jstTrackSearch').value = '';
-  document.getElementById('jstTrackWrap').style.display = 'none';
+  songZoekLeeg('jst');
   jstRenderSongs();
   jstSnapshot = jstFieldSnapshot();
 }
@@ -1155,14 +1223,14 @@ function jstSelectFirstAc(id) {
   if (first && first.onmousedown) first.onmousedown();
 }
 
-async function jstOnArtistSearch(q) {
-  const ac = document.getElementById('jstArtistAc');
+async function jstOnArtistSearch(q, p = 'jst') {
+  const ac = document.getElementById(p + 'ArtistAc');
   if (q.trim().length < 2) { ac.classList.remove('open'); return; }
   ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Zoeken...</span></div>';
   ac.classList.add('open');
   const cacheKey = q.trim().toLowerCase();
   if (jstArtistCache.has(cacheKey)) {
-    jstRenderArtistResults(ac, jstArtistCache.get(cacheKey));
+    jstRenderArtistResults(ac, jstArtistCache.get(cacheKey), p);
     return;
   }
   clearTimeout(jstSearchTimeout);
@@ -1172,33 +1240,33 @@ async function jstOnArtistSearch(q) {
       const data = await res.json();
       const artists = (data.results || []).slice(0, 6);
       jstArtistCache.set(cacheKey, artists);
-      jstRenderArtistResults(ac, artists);
+      jstRenderArtistResults(ac, artists, p);
     } catch (e) {
       logCaught('jstOnArtistSearch', e);
       ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoekopdracht mislukt</span></div>';
     }
   }, 400);
 }
-function jstRenderArtistResults(ac, artists) {
+function jstRenderArtistResults(ac, artists, p = 'jst') {
   if (!artists.length) {
     ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Geen artiesten gevonden</span></div>';
     return;
   }
   ac.innerHTML = artists.map(a => `
-    <div class="ac-item" onmousedown="jstSelectArtist('${jsAttr(a.artistId)}','${jsAttr(a.artistName)}')">
+    <div class="ac-item" onmousedown="jstSelectArtist('${jsAttr(a.artistId)}','${jsAttr(a.artistName)}'${p === 'jst' ? '' : `,'${p}'`})">
       ${escHtml(a.artistName)}${a.primaryGenreName ? ` <span style="color:var(--muted);font-size:11px;">(${escHtml(a.primaryGenreName)})</span>` : ''}
     </div>`).join('');
 }
-function jstSelectArtist(id, name) {
-  jstSelectedArtist = { id, name };
-  document.getElementById('jstArtistSearch').value = name;
-  closeAC('jstArtistAc');
-  const wrap = document.getElementById('jstTrackWrap');
+function jstSelectArtist(id, name, p = 'jst') {
+  songArtiest[p] = { id, name };
+  document.getElementById(p + 'ArtistSearch').value = name;
+  closeAC(p + 'ArtistAc');
+  const wrap = document.getElementById(p + 'TrackWrap');
   wrap.style.display = '';
-  document.getElementById('jstTrackLabel').textContent = 'Nummer van ' + name;
-  document.getElementById('jstTrackSearch').value = '';
-  document.getElementById('jstTrackSearch').focus();
-  closeAC('jstTrackAc');
+  document.getElementById(p + 'TrackLabel').textContent = 'Nummer van ' + name;
+  document.getElementById(p + 'TrackSearch').value = '';
+  document.getElementById(p + 'TrackSearch').focus();
+  closeAC(p + 'TrackAc');
 }
 async function jstFetchArtistSongs(artistId) {
   if (jstTrackCache.has(artistId)) return jstTrackCache.get(artistId);
@@ -1213,22 +1281,24 @@ async function jstFetchArtistSongs(artistId) {
   jstTrackCache.set(artistId, songs);
   return songs;
 }
-async function jstOnTrackSearch(q) {
-  const ac = document.getElementById('jstTrackAc');
-  if (!jstSelectedArtist) return;
+async function jstOnTrackSearch(q, p = 'jst') {
+  const ac = document.getElementById(p + 'TrackAc');
+  if (!songArtiest[p]) return;
   if (!q.length) { ac.classList.remove('open'); return; }
   ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Zoeken...</span></div>';
   ac.classList.add('open');
   try {
-    const songs = await jstFetchArtistSongs(jstSelectedArtist.id);
-    jstRenderTrackResults(ac, songs, q);
+    const songs = await jstFetchArtistSongs(songArtiest[p].id);
+    jstRenderTrackResults(ac, songs, q, p);
   } catch (e) {
     logCaught('jstOnTrackSearch', e);
     ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoekopdracht mislukt</span></div>';
   }
 }
-function jstRenderTrackResults(ac, songs, q) {
+function jstRenderTrackResults(ac, songs, q, p = 'jst') {
   const qLower = q.toLowerCase();
+  const artiest = songArtiest[p];
+  const al = SONG_DOEL[p].lijst();
   const seen = new Set();
   const results = (songs || [])
     .filter(r => {
@@ -1238,7 +1308,7 @@ function jstRenderTrackResults(ac, songs, q) {
       const key = title.toLowerCase();
       if (seen.has(key)) return false;
       seen.add(key);
-      if (jstSongs.find(s => s.title.toLowerCase() === title.toLowerCase() && s.artist.toLowerCase() === jstSelectedArtist.name.toLowerCase())) return false;
+      if (al.find(s => s.title.toLowerCase() === title.toLowerCase() && s.artist.toLowerCase() === artiest.name.toLowerCase())) return false;
       return true;
     })
     .slice(0, 8);
@@ -1247,17 +1317,22 @@ function jstRenderTrackResults(ac, songs, q) {
     return;
   }
   ac.innerHTML = results.map(r => `
-    <div class="ac-item" onmousedown="jstAddSong('${jsAttr(r.trackName)}','${jsAttr(jstSelectedArtist.name)}')">${escHtml(r.trackName)}</div>`).join('');
+    <div class="ac-item" onmousedown="${SONG_DOEL[p].kies}('${jsAttr(r.trackName)}','${jsAttr(artiest.name)}')">${escHtml(r.trackName)}</div>`).join('');
 }
+// Na een keuze: beide zoekvelden leeg, het nummerveld weer weg.
+function songZoekLeeg(p) {
+  document.getElementById(p + 'ArtistSearch').value = '';
+  document.getElementById(p + 'TrackSearch').value = '';
+  document.getElementById(p + 'TrackWrap').style.display = 'none';
+  closeAC(p + 'TrackAc');
+  closeAC(p + 'ArtistAc');
+  songArtiest[p] = null;
+}
+
 function jstAddSong(title, artist) {
   if (jstSongs.find(s => s.title === title && s.artist === artist)) return;
   jstSongs.push({ title, artist, level: null });
-  document.getElementById('jstArtistSearch').value = '';
-  document.getElementById('jstTrackSearch').value = '';
-  document.getElementById('jstTrackWrap').style.display = 'none';
-  closeAC('jstTrackAc');
-  closeAC('jstArtistAc');
-  jstSelectedArtist = null;
+  songZoekLeeg('jst');
   jstRenderSongs();
 }
 function jstRenderSongs() {

@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261002a">
+<link rel="stylesheet" href="styles.css?v=20261002c">
 </head>
 <body>
 
@@ -822,7 +822,7 @@
 
     <div class="field" style="margin-bottom:20px;">
       <label>Korte bio</label>
-      <div class="picker-field" id="wbjBioField" onclick="openWbjBioModal()">
+      <div class="picker-field" id="wbjBioField" onclick="openBioModal('wbj')">
         <span class="picker-field-label" id="wbjBioPreview">Bijv. Ik speel al 3 jaar gitaar...</span>
         <span class="picker-field-chevron">✎</span>
       </div>
@@ -1045,6 +1045,274 @@
     </div>
   </div>
 
+  <!-- ═══ TT-385 fase 3 (02-10-2026): Bandprofiel bewerken ═══════════════
+       Hetzelfde tegelscherm als Profiel bewerken, voor een band
+       (bewerkBandId in bands.js). Vier tegels zoals bij de muzikant, met
+       daaronder het blok Bandbeheer (besluiten Ronald, TT-385 punt 4 en 13). -->
+  <div id="bandTegelOverviewScreen" style="display:none;">
+    <div class="panel-title">Bandprofiel bewerken</div>
+    <div id="bandTegelsWrap"></div>
+    <div class="band-beheer" id="bandBeheerBlok"></div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:24px;" onclick="showView('bands')">Terug</button>
+  </div>
+
+  <!-- Bandtegel: Wie zijn we -->
+  <div id="bandWieScreen" style="display:none;">
+    <div class="panel-title" style="margin-bottom:20px;">Wie zijn we</div>
+
+    <div class="bandfoto-veld">
+      <div class="avatar-preview-wrap">
+        <div class="avatar-preview avatar-preview-vierkant" id="bwFotoPreview" onclick="document.getElementById('bwFotoInput').click()">
+          <span class="avatar-t">T</span>
+        </div>
+        <div class="avatar-edit-btn" onclick="document.getElementById('bwFotoInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+        <button type="button" class="avatar-remove-btn" id="bwFotoRemoveBtn" onclick="bwVraagFotoWeg()" aria-label="Bandfoto verwijderen">✕</button>
+      </div>
+      <div class="field">
+        <label for="bwNaam">Bandnaam <span class="req">*</span></label>
+        <input type="text" id="bwNaam" maxlength="40" autocomplete="off" placeholder="Bijv. Nachtploeg">
+      </div>
+    </div>
+    <p class="field-hint bandfoto-hint">Bandfoto: JPG of PNG, maximaal 5 MB.</p>
+    <input type="file" accept="image/*" class="avatar-upload-input" id="bwFotoInput" autocomplete="off" onchange="bwFotoKiezen(this.files[0]); this.value=''">
+
+    <div class="postcode-plaats">
+      <div class="postcode-plaats-rij">
+        <div class="field">
+          <label for="bwZip">Postcode <span class="req">*</span></label>
+          <input type="text" id="bwZip" maxlength="4" inputmode="numeric" autocomplete="off" oninput="onBandPostcodeInput(this.value, 'bw')">
+        </div>
+        <div class="field">
+          <label for="bwCity">Plaats <span class="req">*</span></label>
+          <input type="text" id="bwCity" readonly style="cursor:not-allowed;" oninput="onCitySearchInput(this.value,'bwCityAc')">
+          <div class="autocomplete-list" id="bwCityAc"></div>
+        </div>
+      </div>
+      <p class="field-hint">Zo vinden muzikanten in de buurt jullie. De postcode ziet niemand, de plaats wel.</p>
+      <p id="bwPostcodeStatus" class="field-status"></p>
+    </div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label class="label-with-info">Ervaring van de band <button type="button" class="niveau-info-btn" onclick="openBandNiveauInfoModal()" title="Wat betekenen deze sterren?" aria-label="Wat betekenen deze sterren?">i</button></label>
+        <div id="bwErvaring" class="star-picker"></div>
+        <p class="field-hint">Te zien op de bandpagina zolang jullie iemand zoeken.</p>
+      </div>
+    </div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Wie zijn we</label>
+        <div class="picker-field" id="bwBioField" onclick="openBioModal('bw')">
+          <span class="picker-field-label" id="bwBioPreview">Bijv. Vier vrienden uit Den Haag. We maken gitaarliedjes...</span>
+          <span class="picker-field-chevron">✎</span>
+        </div>
+        <textarea id="bwBio" style="display:none;"></textarea>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" id="bwCancelBtn" onclick="cancelBandWie()">Terug</button>
+      <button class="btn btn-primary" onclick="saveBandWie()">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Bandtegel: Onze bezetting. Uitnodigen, uitnodiging intrekken en uit de
+       band halen gaan meteen (er is een ander bij betrokken); open rollen,
+       invallers en de contactpersoon gaan mee met Opslaan. -->
+  <div id="bandBezettingScreen" style="display:none;">
+    <div class="panel-title" style="margin-bottom:20px;">Onze bezetting</div>
+
+    <div class="profile-media-title">Leden</div>
+    <div class="bb-lijst" id="bbLeden"></div>
+    <button type="button" class="add-link-btn" onclick="bbLidUitnodigen()">+ Lid uitnodigen</button>
+
+    <div class="band-tegel-blok" id="bbUitgenodigdBlok" hidden>
+      <div class="profile-media-title">Uitgenodigd</div>
+      <div id="bbUitgenodigd"></div>
+    </div>
+
+    <div class="band-tegel-blok">
+      <div class="profile-media-title">Open rollen</div>
+      <div class="bb-lijst" id="bbOpen"></div>
+      <button type="button" class="add-link-btn" id="bbRolKnop"><span id="bbRolKnopLabel">+ Open rol toevoegen</span></button>
+      <div id="bbRolBadges" hidden></div>
+    </div>
+
+    <div class="band-tegel-blok">
+      <div class="profile-media-title">Invallers</div>
+      <div class="bb-lijst" id="bbInvallers"></div>
+      <p class="field-hint bb-hint">Voor één optreden. Na de datum verdwijnt de vraag vanzelf.</p>
+      <button type="button" class="add-link-btn" id="bbInvalOpen" onclick="bbInvalFormulier(true)">+ Invaller zoeken voor een optreden</button>
+      <div class="bb-inval-form" id="bbInvalForm" hidden>
+        <div class="field-group single">
+          <div class="field">
+            <label>Instrument</label>
+            <div class="picker-field" id="bbInvalInstrument">
+              <span class="picker-field-label" id="bbInvalInstrumentLabel">Kies een instrument</span>
+              <span class="picker-field-chevron">▾</span>
+            </div>
+            <div class="picker-badge-row" id="bbInvalInstrumentBadges"></div>
+          </div>
+        </div>
+        <div class="field-group single">
+          <div class="field">
+            <label for="bbInvalDatum">Datum van het optreden</label>
+            <input type="text" id="bbInvalDatum" maxlength="10" inputmode="numeric" placeholder="dd-mm-jjjj" autocomplete="off" oninput="formatBirthDate(this)">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-ghost" onclick="bbInvalFormulier(false)">Annuleren</button>
+          <button type="button" class="btn btn-primary" onclick="bbInvalToevoegen()">Invaller toevoegen</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="band-tegel-blok field">
+      <label>Contactpersoon</label>
+      <div class="menu-anchor">
+        <div class="wheel-field" id="bbContactVeld" aria-label="Contactpersoon">
+          <span class="wheel-field-label"></span>
+          <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+        </div>
+        <div class="choice-menu" id="bbContactMenu" role="listbox" aria-label="Contactpersoon"></div>
+      </div>
+      <select id="bbContactKeuze" style="display:none;" onchange="bbContact = this.value"></select>
+      <p class="field-hint">Een bericht aan de band komt bij deze persoon binnen.</p>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" id="bbCancelBtn" onclick="cancelBandBezetting()">Terug</button>
+      <button class="btn btn-primary" onclick="saveBandBezetting()">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Bandtegel: Onze muziek. Covers met dezelfde zoekvelden als Je setlist
+       (voorvoegsel bc, zie de jst-functies in musicians.js). -->
+  <div id="bandMuziekScreen" style="display:none;">
+    <div class="panel-title" style="margin-bottom:20px;">Onze muziek</div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Wat voor band?</label>
+        <div class="segmented-control segmented-vol" id="bmzSoort"></div>
+      </div>
+    </div>
+
+    <div class="field-group single">
+      <div class="field">
+        <label>Genres <span class="req">*</span></label>
+        <div class="picker-field" id="bmzGenreField">
+          <span class="picker-field-label" id="bmzGenreFieldLabel">Kies een genre</span>
+          <span class="picker-field-chevron">▾</span>
+        </div>
+        <div class="picker-badge-row" id="bmzGenreBadgeRow"></div>
+      </div>
+    </div>
+
+    <div class="band-tegel-blok">
+      <div class="profile-media-title">Eigen nummers</div>
+      <p class="field-hint bb-hint">Titel en link. Bezoekers spelen ze af in de app.</p>
+      <div id="bmzNummers"></div>
+      <button type="button" class="add-link-btn" onclick="bmzNummerErbij()">+ Nummer toevoegen</button>
+    </div>
+
+    <div class="band-tegel-blok">
+      <div class="profile-media-title">Covers</div>
+      <p class="field-hint bb-hint">Zoek eerst een band of artiest en daarna het nummer.</p>
+      <div class="field-group single">
+        <div class="field">
+          <label for="bcArtistSearch">Band of artiest</label>
+          <div class="song-search-wrap">
+            <input type="text" id="bcArtistSearch" placeholder="Bijv. Froukje, Nirvana, Adele..." autocomplete="off"
+              oninput="jstOnArtistSearch(this.value, 'bc')"
+              onkeydown="if(event.key==='Enter'){event.preventDefault(); jstSelectFirstAc('bcArtistAc');}"
+              onblur="setTimeout(()=>closeAC('bcArtistAc'),200)">
+            <div class="autocomplete-list" id="bcArtistAc"></div>
+          </div>
+        </div>
+      </div>
+      <div class="field-group single" id="bcTrackWrap" style="display:none;">
+        <div class="field">
+          <label id="bcTrackLabel" for="bcTrackSearch">Nummer</label>
+          <div class="song-search-wrap">
+            <input type="text" id="bcTrackSearch" placeholder="Zoek een nummer..." autocomplete="off"
+              oninput="jstOnTrackSearch(this.value, 'bc')"
+              onkeydown="if(event.key==='Enter'){event.preventDefault(); jstSelectFirstAc('bcTrackAc');}"
+              onblur="setTimeout(()=>closeAC('bcTrackAc'),200)">
+            <div class="autocomplete-list" id="bcTrackAc"></div>
+          </div>
+        </div>
+      </div>
+      <div id="bcCoversLijst"></div>
+      <p class="field-hint bb-hint" id="bcCoversLeeg">Nog geen covers toegevoegd.</p>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" id="bmzCancelBtn" onclick="cancelBandMuziek()">Terug</button>
+      <button class="btn btn-primary" onclick="saveBandMuziek()">Opslaan</button>
+    </div>
+  </div>
+
+  <!-- Bandtegel: Onze media. Zelfde vorm als Je mediahoek (huisstijl §18),
+       met het bannerteken; voorvoegsel bm. Daaronder de drie socials. -->
+  <div id="bandMediaScreen" style="display:none;">
+    <div class="panel-title">Onze media</div>
+    <div class="panel-sub">Upload foto's of video's van de band, of verwijs naar YouTube, Instagram of SoundCloud. Kies wat bovenaan jullie bandpagina komt.</div>
+
+    <div class="media-tabs">
+      <button type="button" class="media-tab active" onclick="switchBmMediaTab('upload', this)">Upload</button>
+      <button type="button" class="media-tab" onclick="switchBmMediaTab('links', this)">Links</button>
+    </div>
+
+    <p class="banner-teller" id="bmBannerTeller"></p>
+
+    <div class="media-pane active" id="bmPaneUpload">
+      <div class="drop-zone" id="bmDropZone"
+        ondragover="event.preventDefault(); this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="bmHandleDrop(event)">
+        <input type="file" accept="image/*,video/*" multiple autocomplete="off" onchange="bmHandleFileSelect(this.files); this.value=''">
+        <div class="drop-label"><strong>Sleep bestanden hierheen</strong> of klik om te selecteren</div>
+        <div class="drop-hint">Foto's (JPG, PNG) · Video's (MP4, MOV) · Max 50 MB per bestand</div>
+      </div>
+      <div class="media-grid" id="bmMediaGrid"></div>
+    </div>
+
+    <div class="media-pane" id="bmPaneLinks">
+      <div id="bmLinksList"></div>
+      <button type="button" class="add-link-btn" onclick="bmAddLinkRow()">+ Link toevoegen</button>
+    </div>
+
+    <div class="band-tegel-blok">
+      <div class="profile-media-title">Volg ons</div>
+      <p class="field-hint bb-hint">Alleen Instagram, TikTok en YouTube. Een gebruikersnaam of een link.</p>
+      <div class="field-group single">
+        <div class="field">
+          <label for="bmInstagram">Instagram</label>
+          <input type="text" id="bmInstagram" placeholder="Bijv. @nachtploeg" autocomplete="off" maxlength="200">
+        </div>
+      </div>
+      <div class="field-group single">
+        <div class="field">
+          <label for="bmTiktok">TikTok</label>
+          <input type="text" id="bmTiktok" placeholder="Bijv. @nachtploeg" autocomplete="off" maxlength="200">
+        </div>
+      </div>
+      <div class="field-group single">
+        <div class="field">
+          <label for="bmYoutube">YouTube</label>
+          <input type="text" id="bmYoutube" placeholder="Bijv. @nachtploeg" autocomplete="off" maxlength="200">
+        </div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-ghost" id="bmCancelBtn" onclick="cancelBandMedia()">Terug</button>
+      <button class="btn btn-primary" onclick="saveBandMedia()">Opslaan</button>
+    </div>
+  </div>
+
 </main>
 </div><!-- /view-profieltegels -->
 
@@ -1062,6 +1330,10 @@
 
   <div id="searchModeMusician">
   <div class="search-wrap">
+    <!-- TT-385 fase 3: een tik op een open rol of invaller van je eigen band
+         opent Zoeken met dat instrument en de plaats van de band. Deze regel
+         zegt waarvoor (zoekMuzikantVoorRol() in search.js). -->
+    <div class="melding" id="zoekRolMelding" hidden></div>
     <div class="search-filters">
       <!-- TT-232 (09-09-2026, Ronalds schets): het ⋯-menu is hier weg. De
            inhoud ervan ging over e-mail, niet over zoeken, en staat nu onder
@@ -1692,7 +1964,7 @@
     </div>
     <div id="createBandForm" style="display:none;">
       <div class="search-filters" style="margin-bottom:28px;">
-        <div class="filter-title" style="font-size:20px;" id="bandFormTitle">Nieuwe band aanmaken</div>
+        <div class="filter-title" style="font-size:20px;">Nieuwe band aanmaken</div>
         <!-- 25-08-2026 (Ronald, UX-feedback): compacte kop, zelfde opbouw als
              een profielweergave (foto links, naam ernaast op één regel) i.p.v.
              gescheiden blokken — zie huisstijl-en-consistentie.md §10. -->
@@ -1774,7 +2046,7 @@
         <!-- Punt 5 (25-08-2026, Ronald): knoppen omgewisseld, Band aanmaken rechts. -->
         <div class="btn-row" style="margin-top:8px;">
           <button class="btn btn-ghost" onclick="cancelBandForm()">Terug</button>
-          <button class="btn btn-primary" id="saveBandBtn" onclick="saveBand()">Band aanmaken</button>
+          <button class="btn btn-primary" onclick="saveBand()">Band aanmaken</button>
         </div>
       </div>
     </div>
@@ -2186,6 +2458,21 @@
   </div>
 </div>
 
+<!-- TT-385 (besluit Ronald, g): delen van een bandpagina die nog niet af is.
+     Alleen voor de beheerder: één zin over wat er mist, dan het deelmenu van
+     de telefoon. Een bladwijzer, dezelfde vorm als het wiel (huisstijl §7.1). -->
+<div class="modal-overlay wheel-overlay" id="bandDeelModal" data-close="sluitBandDeelBlad" onclick="if(event.target===this)sluitBandDeelBlad()">
+  <div class="wheel-sheet" role="dialog" aria-modal="true" aria-labelledby="bandDeelKop">
+    <div class="wheel-sheet-grip" aria-hidden="true"></div>
+    <div class="wheel-sheet-head" id="bandDeelKop">Je bandpagina delen</div>
+    <p class="deelblad-tekst" id="bandDeelTekst"></p>
+    <div class="knoppen-stapel">
+      <button type="button" class="btn btn-primary" onclick="bandDeelBladDelen()">Delen</button>
+    </div>
+    <div class="stille-link-regel"><button type="button" class="stille-link" onclick="bandDeelBladAanvullen()">Eerst aanvullen</button></div>
+  </div>
+</div>
+
 <!-- V-08 (13-08-2026): foto in een eigen weergave i.p.v. een nieuw tabblad,
      dat in een app-schil de gebruiker uit de app zou sturen. -->
 <div class="modal-overlay" id="mediaLightbox" data-close="closeMediaLightbox" onclick="if(event.target===this)closeMediaLightbox()">
@@ -2417,22 +2704,10 @@
 <div class="modal-overlay" id="addMemberModal" onclick="if(event.target===this)this.classList.remove('visible')">
   <div class="modal-box">
     <button class="modal-close" onclick="document.getElementById('addMemberModal').classList.remove('visible')" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
-    <div class="filter-title" style="margin-bottom:8px;">Bandleden beheren</div>
-    <!-- 22-08-2026 (Ronald): het kruisje achter een naam op de bandkaart
-         voelde "banaal, alsof je ieder moment kan worden gecancelled".
-         Verwijderen hoort nu bij dit scherm, met een duidelijke knop i.p.v.
-         een los kruisje. -->
-    <div id="currentMembersSection" style="margin-bottom:20px;">
-      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Huidige leden</div>
-      <div id="currentMembersList"></div>
-    </div>
-    <!-- TT-127-restpunt (27-08-2026, Ronalds besluit): "Bandbeheer" was een
-         los ⋯-menu-item naast "Bandleden wijzigen" — twee knoppen voor
-         hetzelfde onderwerp (wie hoort bij de band, wie beheert 'm). Nu één
-         scherm: "Bandleden beheren". Zie renderFounderTransferSection(). -->
-    <div id="founderTransferSection" style="margin-bottom:20px;"></div>
-    <div class="divider"></div>
-    <div class="filter-title" style="margin:16px 0 6px;font-size:16px;">Lid uitnodigen</div>
+    <!-- TT-385 fase 3: dit venster is alleen nog voor uitnodigen. De leden,
+         uit de band halen en beheer overdragen staan in de tegel Onze
+         bezetting en het blok Bandbeheer. -->
+    <div class="filter-title" style="margin-bottom:8px;padding-right:52px;">Lid uitnodigen</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">De muzikant staat pas als lid op het bandprofiel zodra hij of zij de uitnodiging zelf bevestigt.</p>
     <!-- V-17 (13-08-2026): zoeken kon alleen op naam of gebruikersnaam — dan
          moest je al weten wie je zocht. Instrument erbij, en zoeken werkt nu
@@ -2484,21 +2759,19 @@
      sticky .app-topbar (z-index 55) het qua stapelcontext van een modal die
      wél een hoger z-index heeft maar binnen een geneste .app-view zit
      (gevonden tijdens testen: de sluitknop was daardoor onbereikbaar). -->
-<div class="modal-overlay" id="wbjBioModal" onclick="if(event.target===this)closeWbjBioModal()">
+<!-- TT-385 fase 3: dezelfde modal voor "Wie zijn we" van een band. Titel,
+     uitleg en voorzetten komen uit BIO_DOELEN in musicians.js. -->
+<div class="modal-overlay" id="bioModal" onclick="if(event.target===this)closeBioModal()">
   <div class="modal-box modal-box-sticky-footer modal-box-slg">
-    <button class="modal-close" onclick="closeWbjBioModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+    <button class="modal-close" onclick="closeBioModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="modal-scroll-area">
-      <div class="filter-title" style="margin-bottom:4px;padding-right:52px;">Korte bio</div>
-      <p style="font-weight:700;font-style:italic;color:var(--text);font-size:13px;margin:0 0 16px;line-height:1.5;">Dit is vaak het eerste wat andere muzikanten van je lezen.</p>
-      <div class="bio-prompts">
-        <button type="button" class="bio-prompt-chip" onclick="wbjBioPrompt('Ik speel al ... jaar ')">Hoe lang speel je al?</button>
-        <button type="button" class="bio-prompt-chip" onclick="wbjBioPrompt('Op dit moment ben ik vooral bezig met ')">Waar ben je nu mee bezig?</button>
-        <button type="button" class="bio-prompt-chip" onclick="wbjBioPrompt('Wat ik wil bereiken is ')">Wat wil je bereiken?</button>
-      </div>
-      <textarea id="wbjBioModalTextarea" placeholder="Bijv. Ik speel al 3 jaar gitaar..." style="min-height:180px;" oninput="wbjSyncBioFromModal()"></textarea>
+      <div class="filter-title" id="bioModalTitel" style="margin-bottom:4px;padding-right:52px;">Korte bio</div>
+      <p id="bioModalUitleg" style="font-weight:700;font-style:italic;color:var(--text);font-size:13px;margin:0 0 16px;line-height:1.5;"></p>
+      <div class="bio-prompts" id="bioModalVoorzetten"></div>
+      <textarea id="bioModalTextarea" style="min-height:180px;" oninput="bioSyncVanModal()"></textarea>
     </div>
     <div class="modal-sticky-footer">
-      <button type="button" class="btn btn-primary" style="width:100%;" onclick="closeWbjBioModal()">Klaar</button>
+      <button type="button" class="btn btn-primary" style="width:100%;" onclick="closeBioModal()">Klaar</button>
     </div>
   </div>
 </div>
@@ -2641,16 +2914,16 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261001a"></script>
+<script src="core.js?v=20261002c"></script>
 <script src="utils.js?v=20261002a"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260927b"></script>
-<script src="postcode.js?v=20260930b"></script>
-<script src="wizard.js?v=20260930c"></script>
+<script src="postcode.js?v=20261002a"></script>
+<script src="wizard.js?v=20261002a"></script>
 <script src="ouder.js?v=20261001a"></script>
-<script src="search.js?v=20261001a"></script>
-<script src="musicians.js?v=20261002a"></script>
-<script src="bands.js?v=20261002a"></script>
+<script src="search.js?v=20261002c"></script>
+<script src="musicians.js?v=20261002c"></script>
+<script src="bands.js?v=20261002c"></script>
 <script src="messages.js?v=20261002a"></script>
 <script src="modals-shared.js?v=20261002a"></script>
 <script>
