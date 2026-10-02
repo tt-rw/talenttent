@@ -252,9 +252,14 @@ function renderCompletenessMeter(m) {
     (m.musician_media||[]).length > 0,
   ];
   const pct = Math.round((checks.filter(Boolean).length / checks.length) * 100);
+  return voortgangsBalkHTML(pct, 'completenessMeter');
+}
 
+// TT-385 (besluit Ronald, punt 3): de band krijgt dezelfde balk en dezelfde
+// functie. Alleen het getal verschilt: dat rekent elke kant zelf uit.
+function voortgangsBalkHTML(pct, id) {
   return `
-    <div id="completenessMeter" class="completeness-wrap">
+    <div${id ? ` id="${id}"` : ''} class="completeness-wrap">
       <div class="completeness-label">Profielvolledigheid</div>
       <div class="completeness-rij" role="progressbar" aria-label="Profielvolledigheid" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}">
         ${pct > 0 ? `<div class="completeness-fill" style="flex:${pct};"></div>` : ''}
@@ -975,7 +980,7 @@ function init() {
 // iemand meerdere prompts na elkaar kan gebruiken zonder tekst te verliezen.
 // TT-168-overgang (02-09-2026): kern verplaatst naar de generieke
 // applyBioPromptTo(el, text) — nodig omdat de tegel "Wie ben je" hetzelfde
-// gedrag toepast op een ander element (#wbjBioModalTextarea, geen #bio).
+// gedrag toepast op een ander element (#bioModalTextarea, geen #bio).
 function applyBioPromptTo(el, text) {
   const current = el.value;
   if (!current.trim()) {

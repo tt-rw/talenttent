@@ -91,8 +91,9 @@ function lookupPostcodeCity(normalized) {
 
 function enableManualCity(kind) {
   const isBand   = kind === 'band';
-  const cityId   = isBand ? 'bandCity' : 'city';
-  const statusId = isBand ? 'bandPostcodeStatus' : 'postcodeStatus';
+  // TT-385 fase 3: de bandkant heeft twee schermen (zie bandPostcodeDoel).
+  const cityId   = isBand ? BAND_POSTCODE_VELDEN[bandPostcodeDoel].city : 'city';
+  const statusId = isBand ? BAND_POSTCODE_VELDEN[bandPostcodeDoel].status : 'postcodeStatus';
   const field = document.getElementById(cityId);
   field.readOnly = false;
   field.style.cursor = '';
@@ -117,10 +118,12 @@ function enableManualCity(kind) {
 
 function relockCity(kind) {
   const isBand = kind === 'band';
-  const field = document.getElementById(isBand ? 'bandCity' : 'city');
+  const field = document.getElementById(isBand ? BAND_POSTCODE_VELDEN[bandPostcodeDoel].city : 'city');
   field.readOnly = true;
   field.style.cursor = 'not-allowed';
-  field.style.opacity = '0.85';
+  // Alleen het oude bandformulier had een gedempt plaatsveld; de tegel
+  // "Wie zijn we" volgt de tegel "Wie ben je" (geen demping).
+  if (!isBand || bandPostcodeDoel === 'band') field.style.opacity = '0.85';
   if (isBand) bandPostcodeManualMode = false;
   else postcodeManualMode = false;
 }
@@ -185,15 +188,25 @@ function applyResolvedCity(cityName, normalizedZip, statusEl, msg) {
 // ─── Postcode-opzoeking voor bands (zelfde aanpak als bij muzikanten) ────
 
 let bandPostcodeResolved = false;
-let editingBandId = null;
 let bandPostcodeSearchTimeout;
 let bandPostcodeFailStreak = 0;
 let bandPostcodeManualMode = false;
 let bandCitySource = 'pdok';
 
+// TT-385 fase 3 (02-10-2026): de postcode van een band staat op twee
+// schermen — het formulier "Band aanmaken" (band) en de tegel "Wie zijn we"
+// (bw). Eén opzoekroute voor beide; de velden verschillen alleen in hun id.
+// De toestand hierboven geldt voor het scherm dat het laatst een postcode
+// kreeg. Beide staan nooit tegelijk open.
+const BAND_POSTCODE_VELDEN = {
+  band: { zip: 'bandZip', city: 'bandCity', status: 'bandPostcodeStatus' },
+  bw:   { zip: 'bwZip',   city: 'bwCity',   status: 'bwPostcodeStatus' }
+};
+let bandPostcodeDoel = 'band';
+
 let bandPostcodeStatusHideTimeout;
 function applyResolvedBandCity(cityName, statusEl, msg) {
-  document.getElementById('bandCity').value = cityName;
+  document.getElementById(BAND_POSTCODE_VELDEN[bandPostcodeDoel].city).value = cityName;
   bandPostcodeResolved = true;
   statusEl.style.color = 'var(--accent)';
   statusEl.textContent = msg;
@@ -201,15 +214,17 @@ function applyResolvedBandCity(cityName, statusEl, msg) {
   bandPostcodeStatusHideTimeout = setTimeout(() => { statusEl.textContent = ''; }, 2000);
 }
 
-function onBandPostcodeInput(value) {
+function onBandPostcodeInput(value, doel) {
+  bandPostcodeDoel = doel || 'band';
+  const velden = BAND_POSTCODE_VELDEN[bandPostcodeDoel];
   bandPostcodeResolved = false;
   bandCitySource = 'pdok';
-  document.getElementById('bandCity').value = '';
-  const statusEl = document.getElementById('bandPostcodeStatus');
+  document.getElementById(velden.city).value = '';
+  const statusEl = document.getElementById(velden.status);
   clearTimeout(bandPostcodeSearchTimeout);
 
   const digits = value.trim().replace(/\D/g, '');
-  document.getElementById('bandZip').value = digits;
+  document.getElementById(velden.zip).value = digits;
   const match = digits.match(/^[1-9][0-9]{3}$/);
   if (!match) {
     statusEl.textContent = '';
@@ -396,12 +411,13 @@ function selectCitySuggestion(name, listId) {
     closeAC(listId);
     return;
   }
-  if (listId === 'acBandCityManualList') {
-    document.getElementById('bandCity').value = name;
+  if (listId === 'acBandCityManualList' || listId === 'bwCityAc') {
+    const velden = BAND_POSTCODE_VELDEN[listId === 'bwCityAc' ? 'bw' : 'band'];
+    document.getElementById(velden.city).value = name;
     bandCitySource = 'manual';
     bandPostcodeResolved = true;
-    document.getElementById('bandPostcodeStatus').textContent = `Gekozen: ${name}`;
-    document.getElementById('bandPostcodeStatus').style.color = 'var(--accent)';
+    document.getElementById(velden.status).textContent = `Gekozen: ${name}`;
+    document.getElementById(velden.status).style.color = 'var(--accent)';
     closeAC(listId);
     return;
   }
