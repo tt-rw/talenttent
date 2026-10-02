@@ -3442,8 +3442,11 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             d.innerHTML = '<button class="btn btn-danger">Verwijderen</button>'; document.getElementById('appRoot').appendChild(d);
             const w = getComputedStyle(d.firstChild).paddingLeft; d.remove(); return w; }""")
         check("K3: een knop naast een naam in een ledenlijst ook 12px", lijst == "12px", lijst)
-        check("K3: beide ledenlijsten dragen de klasse lijst-rij",
-              len(re.findall(r'class="(?:member-search-row )?lijst-rij"', js316)) == 2, "")
+        # TT-385 fase 3: de ledenlijst in "Bandleden beheren" is weg; de leden
+        # staan in de tegel Onze bezetting, met de drie puntjes in plaats van
+        # een knop. Alleen de zoeklijst van Lid uitnodigen heeft nog knoppen.
+        check("K3: de zoeklijst van Lid uitnodigen draagt de klasse lijst-rij",
+              len(re.findall(r'class="(?:member-search-row )?lijst-rij"', js316)) == 1, "")
         page.evaluate("showView('register')"); page.wait_for_timeout(450)
         wiz = page.evaluate("""() => { const r = document.querySelector('#view-register .wizard-action-bar-inner');
             const b = [...r.children].filter(x => x.offsetParent).map(x => x.getBoundingClientRect());
@@ -5370,8 +5373,11 @@ window.TT_STUB.fnAntwoord = {};
               d50["mijnProfiel"]["label"] == "Deel dit profiel" and d50["band"]["label"] == "Deel dit bandprofiel",
               json.dumps([d50["mijnProfiel"]["label"], d50["band"]["label"]]))
         js50 = open(os.path.join(ROOT, "musicians.js"), encoding="utf-8").read() + open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
-        check("één deelknop in de code: alleen deelKnopHTML() roept shareProfile() aan",
-              len(re.findall(r"shareProfile\(", js50)) == 2 and "Deel dit profiel</button>" not in js50
+        # TT-385 fase 3 (besluit g): het deelblad van de beheerder deelt ook,
+        # met de knop Delen. Dat is de enige andere aanroep.
+        check("één deelknop in de code: alleen deelKnopHTML() en het deelblad roepen shareProfile() aan",
+              len(re.findall(r"shareProfile\(", js50)) == 3 and "if (b) shareProfile('band', b.id, b.name);" in js50
+              and "Deel dit profiel</button>" not in js50
               and "Deel dit bandprofiel</button>" not in js50, str(len(re.findall(r"shareProfile\(", js50))))
         check("geen paginafouten in blok 50", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
@@ -5419,8 +5425,9 @@ window.TT_STUB.fnAntwoord = {};
             const c = getComputedStyle(e); return [c.color, c.backgroundColor]; });
           const donker = m(); document.documentElement.dataset.theme = 'licht'; const licht = m();
           delete document.documentElement.dataset.theme; return { donker, licht }; }""")
-        check("Wijzig: zwarte tekst op geel, op alle drie de plekken (donker thema)",
-              len(wijzig50["donker"]) == 3 and all(x == ["rgb(0, 0, 0)", "rgb(245, 197, 24)"] for x in wijzig50["donker"]), json.dumps(wijzig50))
+        # TT-385 fase 3: de vierde plek is de tegel Wie zijn we van een band.
+        check("Wijzig: zwarte tekst op geel, op alle vier de plekken (donker thema)",
+              len(wijzig50["donker"]) == 4 and all(x == ["rgb(0, 0, 0)", "rgb(245, 197, 24)"] for x in wijzig50["donker"]), json.dumps(wijzig50))
         check("Wijzig in het lichte thema: de donkere merktekst op hetzelfde geel",
               all(x == ["rgb(30, 30, 30)", "rgb(245, 197, 24)"] for x in wijzig50["licht"]), json.dumps(wijzig50))
         vraag50 = page.evaluate("""async () => {
@@ -5831,8 +5838,8 @@ window.TT_STUB.fnAntwoord = {};
               bz57["plek"] and bz57["voet"] == "Stuur een bericht aan de band →", json.dumps(bz57))
         check("lid: ⋯ met Band verlaten, geen knop onderin",
               lid57["menu"] == ["Band verlaten"] and not lid57["plek"] and lid57["voet"] == "", json.dumps(lid57))
-        check("beheerder: geen ⋯ en geen knop onderin (bewerken volgt in fase 3)",
-              bh57["menu"] == [] and not bh57["plek"] and bh57["voet"] == "", json.dumps(bh57))
+        check("beheerder: ⋯ met Bandprofiel bewerken (fase 3), geen knop onderin",
+              bh57["menu"] == ["Bandprofiel bewerken"] and not bh57["plek"] and bh57["voet"] == "", json.dumps(bh57))
         check("het berichtvenster noemt de contactpersoon van de band (besluit h); een gewoon bericht niet",
               d57["bericht"] == "Aan Sanne, de contactpersoon van Zoutwater." and d57["berichtGewoon"] == "Aan Sanne", json.dumps(d57["bericht"]))
         check("delen en ⋯ naast de foto zijn 24px (TT-385)", bz57["ikoon"] == [24, 24] and lid57["ikoon"] == [24, 24], json.dumps([bz57["ikoon"], lid57["ikoon"]]))
@@ -5840,6 +5847,290 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 57", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
         page.set_viewport_size({"width": 390, "height": 844})
+
+        # ------------------------------------------------------------------
+        # Blok 58 — TT-385 fase 3 (02-10-2026): het bandprofiel bewerken
+        # ------------------------------------------------------------------
+        print("\nBlok 58 — het bandprofiel bewerken (TT-385, fase 3)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.evaluate("showView('about')")
+        page.wait_for_timeout(80)
+        # De stub kent alleen platte rijen. Voor dit blok krijgt een band zijn
+        # geneste tabellen erbij, en een lid zijn muzikant; een nieuwe rij in
+        # een bandtabel krijgt een id, zoals in de database.
+        page.evaluate(r"""() => {
+          const S = window.TT_STUB;
+          window.__b58From = db.from;
+          const echt = db.from.bind(db);
+          let teller = 0;
+          const kind = ['band_wanted', 'band_members', 'band_media', 'band_nummers', 'band_covers', 'band_invallers'];
+          const muz = id => { const m = (S.data.musicians || []).find(x => x.id === id); if (!m) return null;
+            return { id: m.id, fname: m.fname || m.first_name, username: m.username, avatar_url: m.avatar_url || null,
+                     musician_instruments: (S.data.musician_instruments || []).filter(i => i.musician_id === id).map(i => ({ instrument: i.instrument })) }; };
+          db.from = (t) => { const q = echt(t); const run = q._run.bind(q);
+            q._run = () => {
+              if (q.op === 'insert' && kind.includes(t)) (Array.isArray(q.payload) ? q.payload : [q.payload]).forEach(r => { if (r && !r.id) r.id = 'n' + (++teller); });
+              const r = run();
+              if (q.op !== 'select' || !r.data) return r;
+              const rijen = Array.isArray(r.data) ? r.data : [r.data];
+              if (t === 'bands') rijen.forEach(b => kind.forEach(k => { b[k] = (S.data[k] || []).filter(x => x.band_id === b.id).map(x => {
+                const y = JSON.parse(JSON.stringify(x)); if (k === 'band_members') y.musicians = muz(x.musician_id); return y; }); }));
+              if (t === 'band_members') rijen.forEach(m => { m.musicians = muz(m.musician_id); });
+              return r; };
+            return q; };
+          window.__b58Was = { hasOwnProfile, myMusicianId, currentUser, bands: S.data.bands, members: S.data.band_members, wanted: S.data.band_wanted };
+          currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
+          S.data.bands = [{ id: 'b9', name: 'Nachtploeg', city: 'Den Haag', zip: '2512', city_source: 'pdok', description: '', niveau: null,
+            avatar_url: null, genres: ['Indie'], soort: null, pauze: false, founder_id: 'm1', contact_id: null, status: 'compleet',
+            instagram: null, tiktok: null, youtube: null }];
+          S.data.band_members = [
+            { band_id: 'b9', musician_id: 'm1', role: 'Oprichter', status: 'bevestigd', joined_at: '2026-01-01', founder_offer: null }];
+          S.data.band_wanted = []; S.data.band_media = []; S.data.band_nummers = []; S.data.band_covers = []; S.data.band_invallers = [];
+        }""")
+        d58 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 150) => new Promise(r => setTimeout(r, n)), u = {};
+          const vak = () => document.getElementById('bandModalContent');
+          const toasts = []; const oudToast = window.showToast; window.showToast = t => { toasts.push(t); oudToast(t); };
+          // 1. De privé bandpagina, net aangemaakt: alles is een uitnodiging, 15%.
+          await openBandModal('b9'); await w();
+          u.leeg = { uitnodigingen: [...vak().querySelectorAll('.add-link-btn')].map(b => b.textContent),
+            pct: vak().querySelector('.completeness-pct')?.textContent,
+            balkLaatst: vak().lastElementChild?.classList.contains('completeness-wrap'),
+            menu: [...vak().querySelectorAll('.profiel-knoppen .nav-menu-item')].map(b => b.textContent),
+            fotoKnop: !!vak().querySelector('button.bandfoto-leeg'),
+            tags: [...vak().querySelectorAll('.profile-badges .tag-solid')].map(t => t.textContent.trim()).filter(t => /^(Zoekend|Compleet)/.test(t)) };
+          // Het ⋯-menu sluit bij een tik op de donkere laag (was alleen op Mijn Bands).
+          vak().querySelector('.profiel-knoppen .profile-actions-menu-wrap .nav-menu-btn').click(); await w(50);
+          const laag = vak().querySelector('.menu-laag'); u.menuOpen = !!vak().querySelector('.inline-menu-dropdown.visible');
+          if (laag) laag.click(); await w(50);
+          u.menuDicht = !vak().querySelector('.inline-menu-dropdown.visible');
+          // Delen: eerst het deelblad met wat mist.
+          vak().querySelector('.deel-knop').click(); await w(50);
+          u.deelblad = [document.getElementById('bandDeelModal').classList.contains('visible'), document.getElementById('bandDeelTekst').textContent];
+          sluitBandDeelBlad();
+          // 2. Een uitnodiging opent de juiste tegel.
+          [...vak().querySelectorAll('.add-link-btn')].find(b => b.textContent.includes('Vertel wie')).click(); await w(400);
+          u.uitnodigingOpent = [document.querySelector('.app-view.active').id, activeTegelScreen, bewerkBandId, history.state && history.state.band];
+          // 3. Wie zijn we: fouten bij het veld, opslaan, "Terug zonder opslaan?".
+          document.getElementById('bwNaam').value = ''; await saveBandWie(); await w(50);
+          u.wieFout = [...document.querySelectorAll('#bandWieScreen .field-msg')].map(e => e.textContent.trim());
+          document.getElementById('bwNaam').value = 'Nachtploeg';
+          document.getElementById('bwBio').value = 'Vier vrienden.'; bwRenderBioPreview(); bwNiveau = 3;
+          u.wieGewijzigd = tegelHeeftWijzigingen();
+          history.back(); await w(250);
+          u.wieGewapend = [terugGewapend, activeTegelScreen];
+          await saveBandWie(); await w(100);
+          u.wieOpgeslagen = [S.data.bands[0].description, S.data.bands[0].niveau, tegelHeeftWijzigingen()];
+          goToTegelOverview(); await w(200);
+          u.overzicht = { tegels: [...document.querySelectorAll('#bandTegelsWrap .tile-title')].map(e => e.textContent),
+            eigenVerborgen: document.getElementById('tegelOverviewScreen').style.display === 'none',
+            beheer: [...document.querySelectorAll('#bandBeheerBlok .segmented-btn, #bandBeheerBlok .btn')].map(e => e.textContent),
+            opheffenRood: !!document.querySelector('#bandBeheerBlok .btn-danger') };
+          // 4. Onze bezetting, met een lid en een uitnodiging erbij.
+          S.data.band_members.push(
+            { band_id: 'b9', musician_id: 'm2', role: 'Lid', status: 'bevestigd', joined_at: '2026-02-01', founder_offer: null },
+            { band_id: 'b9', musician_id: 'm3', role: 'Lid', status: 'aangevraagd', joined_at: '2026-03-01', founder_offer: null });
+          openTegelScreen('bandBezetting'); await w(400);
+          u.leden = [...document.querySelectorAll('#bbLeden .bb-rij')].map(r => [r.querySelector('.bb-naam').textContent, [...r.querySelectorAll('.nav-menu-item')].map(b => b.textContent).join('|')]);
+          u.uitgenodigd = [...document.querySelectorAll('#bbUitgenodigd .bb-rij')].map(r => [r.querySelector('.bb-naam').textContent, r.querySelector('.nav-menu-item').textContent]);
+          u.contactKeuze = [...document.getElementById('bbContactKeuze').options].map(o => o.textContent);
+          removeMember('b9', 'm2', 'Dylan', 'Nachtploeg');
+          u.uitVraag = [document.getElementById('confirmMessage').textContent, document.getElementById('confirmYesBtn').textContent,
+                        document.getElementById('confirmYesBtn').classList.contains('btn-danger')];
+          confirmModalYes(); await w(300);
+          u.naUit = [S.data.band_members.filter(m => m.status === 'bevestigd').map(m => m.musician_id), [...document.querySelectorAll('#bbLeden .bb-naam')].length];
+          await bbIntrekken('m3', 'Sanne'); await w(300);
+          u.naIntrekken = [S.data.band_members.length, document.getElementById('bbUitgenodigdBlok').hidden];
+          document.getElementById('bbRolKnop').click(); await w(50);
+          choosePickerListValue('Basgitaar'); closePickerList();
+          bbInvalFormulier(true);
+          document.getElementById('bbInvalDatum').value = '01-01-2020'; bbInvalToevoegen();
+          u.invalFout = [...document.querySelectorAll('#bbInvalForm .field-msg')].map(e => e.textContent.trim());
+          bbInvalInstrument.push('Drums');
+          const d = new Date(Date.now() + 5 * 86400000);
+          document.getElementById('bbInvalDatum').value = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+          bbInvalToevoegen();
+          await saveBandBezetting(); await w(300);
+          u.bezettingOpgeslagen = [S.data.band_wanted.map(x => x.instrument), S.data.band_invallers.map(x => x.instrument), S.data.bands[0].status, tegelHeeftWijzigingen()];
+          // Zoeken vanuit een open rol, met de plaats van de band.
+          document.querySelector('#bbOpen .nav-menu-btn').click(); await w(30);
+          document.querySelector('#bbOpen .nav-menu-item').click(); await w(300);
+          u.zoek = [document.querySelector('.app-view.active').id, filterInstruments.slice(), document.getElementById('filterCity').value,
+                    document.getElementById('zoekRolMelding').hidden, document.getElementById('zoekRolMelding').textContent.trim(), bewerkBandId, activeTegelScreen];
+          // Vanuit die zoekopdracht: "Uitnodigen voor Nachtploeg" in het muzikantvenster, niet bij een lid.
+          u.zoekBand = zoekRolBand && zoekRolBand.id;
+          const knop = () => document.querySelector('#musicianModalFooter .rol-uitnodig-knop');
+          // De stub kent de geneste tabellen van een muzikant niet; daarom de voet zelf, met de aanroep uit openMusicianModal().
+          const voet = document.getElementById('musicianModalFooter'), voetWas = voet.innerHTML;
+          voet.innerHTML = '<button class="btn btn-primary">Stuur een bericht</button>';
+          const mm = document.getElementById('musicianModal'); mm.classList.add('visible');
+          S.data.band_members.push({ band_id: 'b9', musician_id: 'm2', role: 'Lid', status: 'bevestigd', joined_at: '2026-02-01' });
+          await rolUitnodigKnopPlaatsen('m2'); await w(50); u.knopLid = !!knop();
+          S.data.band_members = S.data.band_members.filter(m => !(m.musician_id === 'm2' && m.band_id === 'b9'));
+          await rolUitnodigKnopPlaatsen('m3'); await w(50); u.knopNieuw = knop() && knop().textContent;
+          u.knopEerst = voet.firstElementChild === knop(); u.knopMaat = knop() && [knop().offsetWidth === voet.clientWidth - parseFloat(getComputedStyle(voet).paddingLeft) - parseFloat(getComputedStyle(voet).paddingRight), getComputedStyle(knop()).marginBottom];
+          await rolUitnodigen('m3'); await w(200);
+          u.naUitnodigen = [S.data.band_members.filter(m => m.musician_id === 'm3' && m.band_id === 'b9').map(m => m.status), !!knop()];
+          voet.innerHTML = voetWas; mm.classList.remove('visible');
+          S.data.band_members = S.data.band_members.filter(m => !(m.musician_id === 'm3' && m.band_id === 'b9'));
+          configureSearchAccess(); u.zoekBandNaOpen = zoekRolBand;
+          // Een coverband telt geen eigen nummers mee, een band met alleen eigen nummers geen covers.
+          const kaal = { avatar_url: 'x', description: 'x', leden: [], wanted: [], nummers: [], covers: [], media: [], genres: ['Indie'], soort: 'covers' };
+          u.meterCovers = bandVoortgang(kaal); u.meterEigen = bandVoortgang({ ...kaal, soort: 'eigen' });
+          // 5. Onze muziek.
+          openBandTegels('b9', 'bandMuziek'); await w(400);
+          bmzKiesSoort('beide');
+          bmzNummerErbij(); bmzNummers[0].titel = 'Golf'; bmzNummers[0].url = 'https://www.youtube.com/watch?v=abcdefghijk';
+          bmzNummerErbij(); bmzNummers[1].titel = 'Zonder link';
+          await saveBandMuziek(); await w(100);
+          u.muziekFout = [...document.querySelectorAll('#bandMuziekScreen .field-msg')].map(e => e.textContent.trim());
+          bmzNummerWeg(1);
+          bcAddCover('Last Nite', 'The Strokes'); bcAddCover('Last Nite', 'The Strokes');
+          await saveBandMuziek(); await w(300);
+          u.muziekOpgeslagen = [S.data.bands[0].soort, S.data.band_nummers.map(n => n.titel + '/' + n.platform), S.data.band_covers.map(c => c.song_title), tegelHeeftWijzigingen()];
+          // De covers gebruiken dezelfde zoekfunctie als Je setlist.
+          songArtiest.bc = { id: '1', name: 'Froukje' };
+          const ac = document.getElementById('bcTrackAc');
+          jstRenderTrackResults(ac, [{ trackName: 'Groter dan ik' }], 'gro', 'bc');
+          u.coverZoek = ac.querySelector('.ac-item').getAttribute('onmousedown');
+          songArtiest.jst = { id: '1', name: 'Froukje' };
+          jstRenderTrackResults(ac, [{ trackName: 'Groter dan ik' }], 'gro');
+          u.setlistZoek = ac.querySelector('.ac-item').getAttribute('onmousedown');
+          songZoekLeeg('bc'); songArtiest.jst = null;
+          goToTegelOverview(); await w(200);
+          // 6. Onze media.
+          openTegelScreen('bandMedia'); await w(300);
+          document.getElementById('bmInstagram').value = 'geen geldige naam!';
+          await saveBandMedia(); await w(50);
+          u.mediaFout = [...document.querySelectorAll('#bandMediaScreen .field-msg')].map(e => e.textContent.trim());
+          document.getElementById('bmInstagram').value = '@nachtploeg';
+          bmAddLinkRow(); bmMediaLinks[0].url = 'https://open.spotify.com/track/1'; bmToggleLinkBanner(0);
+          await saveBandMedia(); await w(300);
+          u.mediaOpgeslagen = [S.data.bands[0].instagram, S.data.band_media.map(m => [m.media_type, m.platform, m.in_banner].join('/')), tegelHeeftWijzigingen()];
+          goToTegelOverview(); await w(300);
+          // 7. We spelen even niet.
+          await zetBandPauze(true); await w(200);
+          u.pauze = [S.data.bands[0].pauze, S.data.bands[0].status];
+          await zetBandPauze(false); await w(200);
+          // 8. De bandpagina na het invullen.
+          await openBandModal('b9'); await w(200);
+          u.gevuld = { pct: vak().querySelector('.completeness-pct')?.textContent,
+            uitnodigingen: [...vak().querySelectorAll('.add-link-btn')].map(b => b.textContent),
+            openKnop: [...vak().querySelectorAll('button.bezetting-open')].map(b => b.getAttribute('aria-label')),
+            tags: [...vak().querySelectorAll('.profile-badges .tag-solid')].map(t => t.textContent.trim().split(' ')[0]) };
+          document.getElementById('bandModal').classList.remove('visible');
+          // 9. Bezoeker en lid: geen uitnodigingen, geen balk, open rol geen knop.
+          for (const [rol, ik] of [['bezoeker', 'm3'], ['lid', 'm2']]) {
+            if (rol === 'lid') S.data.band_members.push({ band_id: 'b9', musician_id: 'm2', role: 'Lid', status: 'bevestigd', joined_at: '2026-02-01' });
+            myMusicianId = ik; await openBandModal('b9'); await w(150);
+            u[rol] = [vak().querySelectorAll('.add-link-btn').length, vak().querySelectorAll('.completeness-wrap').length, vak().querySelectorAll('button.bezetting-open').length];
+            document.getElementById('bandModal').classList.remove('visible');
+          }
+          myMusicianId = 'm1';
+          // 10. Band verlaten: de vraag noemt het gevolg (§19).
+          leaveBand('b9', 'Nachtploeg');
+          u.verlaten = [document.getElementById('confirmMessage').textContent, document.getElementById('confirmYesBtn').textContent];
+          document.getElementById('confirmModal').classList.remove('visible');
+          // 11. Een andere view laat geen band achter; je eigen profiel krijgt zijn eigen tegels.
+          showView('about'); u.weg = [bewerkBandId, activeTegelScreen];
+          showView('profieltegels'); await w(100);
+          u.eigen = [document.getElementById('tegelOverviewScreen').style.display, document.getElementById('bandTegelOverviewScreen').style.display];
+          // 12. De bio-modal voor beide kanten.
+          openBioModal('wbj'); u.bioMuzikant = [document.getElementById('bioModalTitel').textContent, document.querySelectorAll('#bioModalVoorzetten .bio-prompt-chip').length]; closeBioModal();
+          openBioModal('bw'); u.bioBand = [document.getElementById('bioModalTitel').textContent, document.querySelectorAll('#bioModalVoorzetten .bio-prompt-chip').length]; closeBioModal();
+          // 13. Opheffen vanuit Bandbeheer: de vraag noemt het gevolg, daarna Mijn Bands.
+          openBandTegels('b9'); await w(300);
+          vraagBandOpheffen();
+          u.opheffen = [document.getElementById('confirmMessage').textContent, document.getElementById('confirmYesBtn').textContent, document.getElementById('confirmYesBtn').classList.contains('btn-danger')];
+          confirmModalYes(); await w(300);
+          u.naOpheffen = [document.querySelector('.app-view.active').id, bewerkBandId, S.data.bands.length];
+          u.toasts = toasts;
+          window.showToast = oudToast;
+          return u;
+        }""")
+        page.evaluate("""() => { const S = window.TT_STUB, w = window.__b58Was;
+          db.from = window.__b58From; hasOwnProfile = w.hasOwnProfile; myMusicianId = w.myMusicianId; currentUser = w.currentUser;
+          S.data.bands = w.bands; S.data.band_members = w.members; S.data.band_wanted = w.wanted;
+          S.data.band_media = []; S.data.band_nummers = []; S.data.band_covers = []; S.data.band_invallers = []; showView('about'); }""")
+        j58 = lambda k: json.dumps(d58[k], ensure_ascii=False)
+        check("privé: elke lege sectie is een uitnodiging, de balk staat onderaan op 15%",
+              d58["leeg"]["uitnodigingen"] == ["+ Wie spelen er in de band?", "+ Vertel wie jullie zijn", "+ Laat horen hoe jullie klinken",
+                                               "+ Foto's en video's toevoegen", "+ Instagram, TikTok of YouTube", "+ Welke covers spelen jullie?"]
+              and d58["leeg"]["pct"] == "15%" and d58["leeg"]["balkLaatst"], j58("leeg"))
+        check("privé: ⋯ met Bandprofiel bewerken, een lege bandfoto is een knop",
+              d58["leeg"]["menu"] == ["Bandprofiel bewerken"] and d58["leeg"]["fotoKnop"], j58("leeg"))
+        check("het ⋯-menu van een band sluit bij een tik op de donkere laag, ook op de bandpagina",
+              d58["menuOpen"] and d58["menuDicht"], json.dumps([d58["menuOpen"], d58["menuDicht"]]))
+        check("delen van een pagina die nog niet af is: het deelblad noemt wat mist (besluit g)",
+              d58["deelblad"][0] and d58["deelblad"][1].startswith("Nog niet op je pagina: een bandfoto, Wie zijn we,")
+              and d58["deelblad"][1].endswith(" en wat voor band jullie zijn."), j58("deelblad"))
+        check("een uitnodiging opent de tegel, en de stap onthoudt de band",
+              d58["uitnodigingOpent"] == ["view-profieltegels", "bandWie", "b9", "b9"], j58("uitnodigingOpent"))
+        check("Wie zijn we: de fout staat bij het veld, terug vraagt eerst, opslaan bewaart",
+              d58["wieFout"] == ["Vul een bandnaam in"] and d58["wieGewijzigd"] and d58["wieGewapend"] == [True, "bandWie"]
+              and d58["wieOpgeslagen"] == ["Vier vrienden.", 3, False], json.dumps([d58["wieFout"], d58["wieGewapend"], d58["wieOpgeslagen"]], ensure_ascii=False))
+        check("het overzicht: vier tegels, Bandbeheer met de schakelaar, overdragen en opheffen (rood omlijnd)",
+              d58["overzicht"]["tegels"] == ["Wie zijn we", "Onze bezetting", "Onze muziek", "Onze media"] and d58["overzicht"]["eigenVerborgen"]
+              and d58["overzicht"]["beheer"] == ["We spelen", "We spelen even niet", "Beheer overdragen", "Band opheffen"]
+              and d58["overzicht"]["opheffenRood"], j58("overzicht"))
+        check("Onze bezetting: de beheerder zonder menu, een lid met Uit de band, een uitnodiging met Intrekken",
+              d58["leden"] == [["Ronald (jij)", ""], ["Dylan", "Uit de band"]] and d58["uitgenodigd"] == [["Sanne", "Uitnodiging intrekken"]]
+              and d58["contactKeuze"] == ["Ronald (jij)", "Dylan"], json.dumps([d58["leden"], d58["uitgenodigd"], d58["contactKeuze"]], ensure_ascii=False))
+        check("Uit de band: de vraag noemt het gevolg, zonder rood (keuze a, §19)",
+              d58["uitVraag"] == ["Dylan staat dan niet meer in de bezetting van Nachtploeg.", "Uit de band", False]
+              and d58["naUit"] == [["m1"], 1] and "Dylan is uit de band." in d58["toasts"], json.dumps([d58["uitVraag"], d58["naUit"]], ensure_ascii=False))
+        check("een uitnodiging intrekken gaat meteen", d58["naIntrekken"] == [1, True], j58("naIntrekken"))
+        check("een invaller in het verleden of zonder instrument wordt bij het veld geweigerd",
+              d58["invalFout"] == ["Kies een instrument", "Kies een datum vanaf vandaag"], j58("invalFout"))
+        check("Opslaan bewaart open rol en invaller; de status volgt uit de open rol (zoekend)",
+              d58["bezettingOpgeslagen"] == [["Basgitaar"], ["Drums"], "zoekend", False], j58("bezettingOpgeslagen"))
+        check("Zoek een muzikant: Zoeken met het instrument en de plaats van de band, met één regel erboven",
+              d58["zoek"][:4] == ["view-search", ["Basgitaar"], "Den Haag", False]
+              and d58["zoek"][4] == "Basgitaar voor Nachtploeg. Muzikanten rond Den Haag. Open een profiel om uit te nodigen."
+              and d58["zoek"][5] is None and d58["zoek"][6] == "overview", j58("zoek"))
+        check("een vaste rol zoeken onthoudt de band; Zoeken opnieuw openen vergeet hem",
+              d58["zoekBand"] == "b9" and d58["zoekBandNaOpen"] is None, json.dumps([d58["zoekBand"], d58["zoekBandNaOpen"]]))
+        check("muzikantvenster na een rolzoekopdracht: 'Uitnodigen voor Nachtploeg', niet bij een lid; daarna weg",
+              d58["knopLid"] is False and d58["knopNieuw"] == "Uitnodigen voor Nachtploeg" and d58["naUitnodigen"] == [["aangevraagd"], False]
+              and d58["knopEerst"] and d58["knopMaat"] == [True, "8px"],
+              json.dumps([d58["knopLid"], d58["knopNieuw"], d58["knopEerst"], d58["knopMaat"], d58["naUitnodigen"]], ensure_ascii=False))
+        check("openMusicianModal() plaatst de knop, niet bij je eigen profiel",
+              "rolUitnodigKnopPlaatsen(isOwn ? null : m.id);" in open(os.path.join(ROOT, "musicians.js"), encoding="utf-8").read())
+        mc, me = d58["meterCovers"], d58["meterEigen"]
+        check("coverband: eigen nummers tellen niet mee in de balk; alleen eigen nummers: covers tellen niet mee",
+              mc["telt"]["nummers"] is False and mc["telt"]["covers"] is True and "eigen nummers" not in mc["mist"] and "covers" in mc["mist"]
+              and me["telt"]["covers"] is False and me["telt"]["nummers"] is True and "covers" not in me["mist"], json.dumps([mc, me], ensure_ascii=False))
+        check("net aangemaakt, beheerder alleen en geen open rol: geen statuslabel", d58["leeg"]["tags"] == [], j58("leeg"))
+        check("Onze muziek: een nummer zonder link wordt bij het veld geweigerd",
+              d58["muziekFout"] == ["Vul een link in die begint met https://"], j58("muziekFout"))
+        check("Onze muziek: soort, eigen nummer met platform en een cover (één keer) worden bewaard",
+              d58["muziekOpgeslagen"] == ["beide", ["Golf/YouTube"], ["Last Nite"], False], j58("muziekOpgeslagen"))
+        check("covers en setlist delen de zoekfunctie, elk met hun eigen keuze",
+              d58["coverZoek"] == "bcAddCover('Groter dan ik','Froukje')" and d58["setlistZoek"] == "jstAddSong('Groter dan ik','Froukje')",
+              json.dumps([d58["coverZoek"], d58["setlistZoek"]]))
+        check("Onze media: een ongeldige social bij het veld, daarna social en link met banner bewaard",
+              d58["mediaFout"] == ["Vul een gebruikersnaam in, of een link die begint met https://"]
+              and d58["mediaOpgeslagen"] == ["@nachtploeg", ["link/Spotify/true"], False], json.dumps([d58["mediaFout"], d58["mediaOpgeslagen"]], ensure_ascii=False))
+        check("We spelen even niet: meteen bewaard, de status wordt inactief", d58["pauze"] == [True, "inactief"], j58("pauze"))
+        # Acht van de negen onderdelen (alleen de bandfoto mist): 15 + 85 × 8/9 = 91%.
+        check("na het invullen: 91%, geen uitnodigingen meer, de open rol is voor de beheerder een knop",
+              d58["gevuld"]["pct"] == "91%" and d58["gevuld"]["uitnodigingen"] == [] and d58["gevuld"]["openKnop"] == ["Zoek Basgitaar", "Zoek Drums"]
+              and "Zoekend" in d58["gevuld"]["tags"], j58("gevuld"))
+        check("bezoeker en lid: geen uitnodigingen, geen balk, de open rol is geen knop",
+              d58["bezoeker"] == [0, 0, 0] and d58["lid"] == [0, 0, 0], json.dumps([d58["bezoeker"], d58["lid"]]))
+        check("Band verlaten: de vraag noemt het gevolg (§19)",
+              d58["verlaten"] == ["Je staat dan niet meer in de bezetting van Nachtploeg.", "Band verlaten"], j58("verlaten"))
+        check("een andere view laat geen band of open tegel achter; Profiel bewerken toont je eigen tegels",
+              d58["weg"] == [None, "overview"] and d58["eigen"] == ["", "none"], json.dumps([d58["weg"], d58["eigen"]]))
+        check("één bio-modal: Korte bio voor de muzikant, Wie zijn we voor de band, elk drie voorzetten",
+              d58["bioMuzikant"] == ["Korte bio", 3] and d58["bioBand"] == ["Wie zijn we", 3], json.dumps([d58["bioMuzikant"], d58["bioBand"]]))
+        check("Band opheffen: de vraag noemt het gevolg, rood omlijnd, daarna Mijn Bands",
+              d58["opheffen"][0].startswith("Nachtploeg verdwijnt dan voor alle leden") and d58["opheffen"][1:] == ["Band opheffen", True]
+              and d58["naOpheffen"] == ["view-bands", None, 0], json.dumps([d58["opheffen"], d58["naOpheffen"]], ensure_ascii=False))
+        check("geen paginafouten in blok 58", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
