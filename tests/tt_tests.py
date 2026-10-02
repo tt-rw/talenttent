@@ -4253,7 +4253,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
           plek.remove(); return u; }""")
         check("knop 16px, label 14px niet vet, kaart 16px en veld 10px rond",
               vorm40 == ["16px", "14px", "400", "16px", "10px"], json.dumps(vorm40))
-        check("licht: ondergrond crème #F6F3EC", l40["bg"] == "rgb(246, 243, 236)", l40["bg"])
+        check("licht: ondergrond crème #ECE7DD (TT-402)", l40["bg"] == "rgb(236, 231, 221)", l40["bg"])
         check("licht: --accent is zwart #1E1E1E", l40["accent"] == "#1E1E1E", l40["accent"])
         check("licht: woordmerk TALENT zwart, TENT geel",
               l40["woordmerk"] == ["rgb(245, 197, 24)", "rgb(30, 30, 30)"], json.dumps(l40["woordmerk"]))
@@ -4306,8 +4306,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         c41, p41, f41 = open41("light")
         s = p41.evaluate(stand41)
         check("toestel op licht, geen keuze: de app is licht",
-              s["thema"] == "licht" and s["bg"] == "rgb(246, 243, 236)", json.dumps(s))
-        check("en de balk van het toestel is crème (theme-color #F6F3EC)", s["balk"] == "#F6F3EC", s["balk"])
+              s["thema"] == "licht" and s["bg"] == "rgb(236, 231, 221)", json.dumps(s))
+        check("en de balk van het toestel is crème (theme-color #ECE7DD)", s["balk"] == "#ECE7DD", s["balk"])
         check("de tegel Thema toont 'Zoals mijn toestel'",
               s["gekozen"] == "toestel" and s["tegel"].startswith("Zoals mijn toestel"), json.dumps(s))
         p41.evaluate("window.showView('instellingen')")
@@ -5359,9 +5359,9 @@ window.TT_STUB.fnAntwoord = {};
         for naam50, v in (("Mijn Profiel", d50["mijnProfiel"]), ("muzikantvenster", d50["ander"]), ("bandvenster", d50["band"])):
             check(f"{naam50}: deelicoon en ⋯ zijn elk 44px, de tikvlakken overlappen niet",
                   v["menuMaat"] == [44, 44] and v["overlap"] is not None and v["overlap"] <= 0.5, json.dumps(v))
-            # TT-385 (Ronald: "iets verder uit elkaar"): 20px, was 18px.
-            check(f"{naam50}: het deelteken staat 20px van de stippen (TT-385; 19 tot 21px)",
-                  v["inktGat"] is not None and 19 <= v["inktGat"] <= 21, json.dumps(v))
+            # TT-403 (Ronald: "verder af van 3 puntjes"): 28px, was 20px.
+            check(f"{naam50}: het deelteken staat 28px van de stippen (TT-403; 26 tot 30px)",
+                  v["inktGat"] is not None and 26 <= v["inktGat"] <= 30, json.dumps(v))
         check("Mijn Profiel: het ⋯-menu staat nog recht onder de hamburger",
               abs(d50["menuOnderHamburger"]) <= 2, json.dumps(d50["menuOnderHamburger"]))
         for naam50, v in (("zonder eigen profiel", d50["anderZonderProfiel"]), ("eigen profiel in het venster", d50["eigenInVenster"])):
@@ -6511,6 +6511,67 @@ window.TT_STUB.fnAntwoord = {};
               "bandStatusLabel(" in js60 and "statusLabels" not in js60 and ".band-status-compleet" not in css60
               and ".result-card-badges {" not in css60 and "musicians(fname)" not in js60, "")
         check("geen paginafouten in blok 60", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # Blok 61 — TT-253, TT-402, TT-403 (02-10-2026): Lid uitnodigen als Zoeken, licht met meer contrast, het deelteken
+        # ------------------------------------------------------------------
+        print("\nBlok 61 — Lid uitnodigen volgt Zoeken, licht heeft contrast, het deelteken is gesloten (TT-253, TT-402, TT-403)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        d61 = page.evaluate(r"""async () => {
+          const w = ms => new Promise(z => setTimeout(z, ms));
+          const uit = {};
+          const S = window.TT_STUB;
+          S.data.musicians = [{ id: 'm5', fname: 'Eku', username: 'eku', city: 'Delft', accepts_band_invites: true,
+            musician_instruments: [{ instrument: 'Drums' }] }];
+          openAddMemberModal('b1', 'Van Delft');
+          const box = document.querySelector('#addMemberModal .modal-box');
+          uit.geenSelect = !box.querySelector('select') && !box.querySelector('input[type=number]');
+          uit.keuzeveld = !!box.querySelector('#memberSearchInstrumentsField.picker-field');
+          uit.wielveld = !!box.querySelector('.filter-row-city #memberSearchRadiusField.wheel-field');
+          uit.straalBreed = Math.round(document.getElementById('memberSearchRadiusField').getBoundingClientRect().width);
+          uit.straalTekst = document.querySelector('#memberSearchRadiusField .wheel-field-label').textContent;
+          uit.geenStijl = [...box.querySelectorAll('input, .field, .filter-row-city')].every(e => !e.getAttribute('style'));
+          // Een instrument kiezen zoekt meteen, zonder naam.
+          openPickerList('memberSearchInstruments'); choosePickerListValue('Drums'); await w(500);
+          uit.badge = document.getElementById('memberSearchInstrumentsBadgeRow').textContent.trim();
+          uit.gezocht = !/Typ minimaal/.test(document.getElementById('memberSearchResults').textContent);
+          // Opnieuw openen: instrument en straal leeg.
+          setWheelFieldValues('memberRadius', ['25'], false);
+          openAddMemberModal('b1', 'Van Delft');
+          uit.leegNaOpenen = memberSearchInstruments.length === 0 && document.getElementById('memberSearchRadius').value === ''
+            && document.getElementById('memberSearchInstrumentsBadgeRow').innerHTML.trim() === '';
+          document.getElementById('addMemberModal').classList.remove('visible');
+          // Het deelteken: drie gesloten stippen.
+          const t = document.createElement('div'); t.innerHTML = deelKnopHTML('band', 'b1', 'X');
+          const c = [...t.querySelectorAll('circle')];
+          uit.gesloten = c.length === 3 && c.every(e => (e.getAttribute('fill') || e.closest('svg').getAttribute('fill')) === 'currentColor' && e.getAttribute('stroke') === 'none');
+          // Licht: ondergrond, vlak, veldrand en gedempte tekst.
+          const r = document.documentElement; const was = r.getAttribute('data-theme');
+          r.setAttribute('data-theme', 'licht'); const cs = getComputedStyle(r);
+          uit.licht = ['--bg', '--surface', '--field-border', '--muted', '--border'].map(v => cs.getPropertyValue(v).trim());
+          if (was) r.setAttribute('data-theme', was); else r.removeAttribute('data-theme');
+          return uit;
+        }""")
+        check("TT-253: geen zichtbare keuzelijst en geen kaal getalveld meer", d61["geenSelect"], json.dumps(d61))
+        check("TT-253: instrument is een keuzeveld, straal een wielveld naast Plaats", d61["keuzeveld"] and d61["wielveld"], json.dumps(d61))
+        check("TT-253: het wielveld is 104px of breder en start op Alle", d61["straalBreed"] >= 104 and d61["straalTekst"] == "Alle", json.dumps(d61))
+        check("TT-253: geen losse style= op de velden (huisstijl §3)", d61["geenStijl"], "")
+        check("TT-253: een instrument kiezen toont een badge en zoekt", "Drums" in d61["badge"] and d61["gezocht"], json.dumps(d61))
+        check("TT-253: opnieuw openen begint leeg", d61["leegNaOpenen"], "")
+        check("TT-403: het deelteken heeft drie gesloten stippen", d61["gesloten"], "")
+        def _lum(h):
+            h = h.lstrip('#'); c = [int(h[i:i+2], 16) / 255 for i in (0, 2, 4)]
+            c = [x / 12.92 if x <= 0.03928 else ((x + 0.055) / 1.055) ** 2.4 for x in c]
+            return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+        def _ratio(a, b):
+            x, y = sorted([_lum(a), _lum(b)]); return (y + 0.05) / (x + 0.05)
+        bg61, vlak61, veld61, gedempt61, rand61 = d61["licht"]
+        check("TT-402: licht, de veldrand haalt 3:1 op het vlak", _ratio(veld61, vlak61) >= 3, json.dumps(d61["licht"]))
+        check("TT-402: licht, gedempte tekst haalt 4,5:1 op het vlak", _ratio(gedempt61, vlak61) >= 4.5, json.dumps(d61["licht"]))
+        check("TT-402: licht, vlak en ondergrond verschillen zichtbaar (1,2:1 of meer)", _ratio(bg61, vlak61) >= 1.2, json.dumps(d61["licht"]))
+        check("geen paginafouten in blok 61", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
