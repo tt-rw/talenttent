@@ -118,23 +118,25 @@
      Welke stand geldt, bepaalt het blok bovenin index.html (stap 3): het
      toestel, of de eigen keuze in Instellingen. Geel (#F5C518) is op crème als tekst onleesbaar
      (1,5:1): daarom is geel hier alleen een vlak, en is --accent zwart. */
-    /* TT-402 (02-10-2026, Ronald: "meer accenten in het lichte profiel. het is
+  /* TT-402 (02-10-2026, Ronald: "meer accenten in het lichte profiel. het is
      bijna egaal waardoor je geen onderscheid kunt maken tussen knoppen/
-     invoervelden"): de ondergrond is donkerder dan het witte vlak (1,2:1, was
-     1,1:1), velden hebben een rand van 3:1 of meer (WCAG voor bedieningselementen)
-     en gedempte tekst is 5:1. Alleen de waarden van de rollen; donker blijft gelijk. */
-:root[data-theme="licht"] {
-    --bg: #ECE7DD;                 /* TT-402: donkerder dan het witte vlak, was #F6F3EC */
+     invoervelden"). Herzien dezelfde dag (Ronald: een donkerdere ondergrond
+     "komt dichterbij de lijnkleur en fontkleur"): de ondergrond blijft licht.
+     Het contrast zit in de elementen zelf: veldrand 3:1 of meer (WCAG voor
+     bedieningselementen), tags met een witte vulling en een duidelijke rand,
+     gedempte tekst 4,8:1. Donker blijft gelijk. */
+  :root[data-theme="licht"] {
+    --bg: #F6F3EC;
     --surface: #FFFEFA;
-    --surface2: #E6E1D6;           /* TT-402, was #EFEBE2 */
+    --surface2: #EFEBE2;
     --border: #D2CCBF;             /* TT-402: de rand van een vlak is zichtbaar, was #DED9CF */
     --accent: #1E1E1E;
     --danger: #B93A2F;
     --success: #287A4B;
     --text: #1E1E1E;
     --muted: #6E6A63;              /* TT-402: 5,3:1 op wit, was #8A8782 (3,5:1) */
-    --field-bg: #ECE7DD;           /* keuzevelden in de kleur van de ondergrond (Ronald) */
-    --field-border: #948D80;       /* TT-402: 3,3:1 op wit, was #C9C3B6 (1,7:1) */
+    --field-bg: #F6F3EC;           /* keuzevelden in de kleur van de ondergrond (Ronald) */
+    --field-border: #8F887B;       /* TT-402: 3,2:1 op crème, was #C9C3B6 (1,6:1) */
     --line: 1px;
     --merk: #F5C518;
     --merk-tekst: #1E1E1E;
@@ -157,10 +159,10 @@
     --laag-opslaan: rgba(30,30,30,0.45);
     --laag-menu: rgba(30,30,30,0.45);
     --laag-wiel: rgba(30,30,30,0.45);
-    --laag-fout: rgba(236,231,221,0.96);
+    --laag-fout: rgba(246,243,236,0.96);
     --schaduw-menu: 0 4px 20px rgba(30,30,30,0.06);
     --schaduw-melding: 0 4px 20px rgba(30,30,30,0.06);
-    --rand-neutraal: #CFC9BC;
+    --rand-neutraal: #ADA698;      /* TT-402: rand van een tag, 2,2:1 op crème (was #CFC9BC) */
     --rand-knop: #8A8782;          /* tweede knop: 3:1 of meer op crème en wit (Ronald, 27-09-2026) */
     --bericht-eigen: #F8E7A8;       /* bleek geel (TT-371) */
     --bericht-rand-eigen: #E0C96E;
@@ -2728,6 +2730,8 @@
   /* Bevinding Ronald 28-09-2026: gevulde sterren overal goud, ook in een
      tag (was --text). Zie .star-display-filled. */
   .tag-solid .star-display-empty { color: var(--rand-neutraal); }
+  /* TT-402: in licht een witte tag op crème, zodat hij loskomt van de ondergrond. */
+  :root[data-theme="licht"] .tag-solid { background: var(--surface); }
 
   /* TT-30: kaartweergave als alternatief voor de rijenlijst — kiesbaar via
      de "Weergave"-toggle boven het resultaat. */

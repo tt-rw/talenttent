@@ -1,7 +1,7 @@
 # The Talent Tent — Actielijst
 
 **Laatste update:** 02-10-2026 (TT-253, TT-402, TT-403: drie correcties van
-Ronald op schermafdrukken) — **Gebouwd en getest. Testset 865 van 865 (blok 61
+Ronald op schermafdrukken) — **Gebouwd en getest. Testset 866 van 866 (blok 61
 nieuw). Schermafdrukken licht en donker, 390px. Geen SQL. Wacht op upload,
 samen met fase 5 van TT-385.**
 
@@ -18,12 +18,14 @@ samen met fase 5 van TT-385.**
   (de vorm van Android/Material), 28px van de ⋯-stippen (was 20px). Eén
   functie, `deelKnopHTML()`, dus ook op het muzikantprofiel.
 - **TT-402, licht thema meer contrast** (Ronald: "bijna egaal, geen
-  onderscheid tussen knoppen en invoervelden"): alleen de waarden van de
-  rollen. Ondergrond `#ECE7DD` (was `#F6F3EC`), dus het witte vlak steekt af;
-  veldrand `#948D80`, 3,3:1 op wit (was 1,7:1); gedempte tekst `#6E6A63`,
-  5,3:1 (was 3,5:1); rand van een vlak `#D2CCBF`; `--surface2` `#E6E1D6`.
-  Velden houden de kleur van de ondergrond (besluit Ronald). `theme-color`
-  volgt. Donker ongewijzigd.
+  onderscheid tussen knoppen en invoervelden"). **Eerste versie fout en
+  dezelfde dag rechtgezet** (Ronald: "ik vroeg meer accenten en ik krijg een
+  donkerdere ondergrond die dichterbij de lijnkleur en fontkleur komt"): de
+  ondergrond is weer `#F6F3EC`, `--surface2` weer `#EFEBE2`, `theme-color`
+  weer crème. Het contrast zit nu in de elementen: veldrand `#8F887B`, 3,2:1
+  op crème (was `#C9C3B6`, 1,6:1); tags wit met rand `#ADA698` (was
+  transparant met `#CFC9BC`); gedempte tekst `#6E6A63`, 4,8:1 (was 3,5:1);
+  rand van een vlak `#D2CCBF`. Donker ongewijzigd.
 
 **Gewijzigd:** `index.html` (`?v=` styles, musicians, bands), `styles.css`,
 `bands.js`, `musicians.js`, `tests/tt_tests.py` (blok 61 nieuw, blok 41 en 50
@@ -8445,7 +8447,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 | **TT-398** | Opheffen laat de bestanden van de band in de opslag staan | **Nieuw, 02-10-2026, gevonden in TT-385 fase 3. Advies P2.** *Toets: werkt, maar de bandfoto en de media van een opgeheven band blijven via hun eigen adres te openen.* **Geverifieerd** (code gelezen): `tt_dissolve_band` wist de rijen (de bandtabellen gaan mee met `on delete cascade`), niet de map `bands/<band-id>/` in `avatars` en `media`. Niet door te bladeren (alleen de beheerder, en die band bestaat niet meer); wel te openen voor wie het adres heeft. Zelfde vraag bij een foto die de beheerder vervangt of weghaalt: die blijft ook staan, net als bij de muzikant. **Voorstel:** bij opheffen de map leegmaken (Edge Function of de app vóór de aanroep) |
 | **TT-400** | De statusregel onder postcode en plaats staat 10px links van de hulptekst | **Nieuw, 02-10-2026, gevonden bij de UI-controle van TT-385 fase 4. Advies P2.** *Toets: werkt, maar de regel staat scheef onder de hulptekst; het oog ziet een fout.* **Geverifieerd** (gemeten op 390px): `.field-hint` heeft `padding-left: var(--field-inset)` (10px), `.field-status` niet ("Gevonden: Den Haag" begint op de rand van het veld). Huisstijl §2 zegt dat alle drie (hint, status, foutregel) inspringen. Geldt overal waar `.postcode-plaats` staat: de registratie, Je gegevens, Wie zijn we en Band aanmaken. **Voorstel:** `padding-left: var(--field-inset)` op `.field-status`, met een meting op alle plekken, ook de plaatsvelden in Zoeken. Niet zelf doorgevoerd: raakt andere schermen |
 | **TT-401** | Een band op pauze kan nog in de mail met nieuwe matches staan | **Nieuw, 02-10-2026, gevonden in TT-385 fase 5. Advies P2.** *Toets: werkt, maar kost vertrouwen: een muzikant krijgt een mail over een band die niet speelt, en vindt hem daarna niet in Zoeken.* **Geverifieerd** (code gelezen): `send-digest` neemt de bands over uit een databasefunctie en filtert zelf niet op `pauze` of `status`. Een band op pauze houdt zijn open rollen (`band_wanted`). **Onbekend:** of die databasefunctie al op `status` filtert; de tekst ervan staat niet in de gedeelde map. **Voorstel:** de functietekst opvragen; filtert hij niet, dan `b.status <> 'inactief'` erbij. Hoort ook bij TT-396 (één koppelregel voor melding en Zoeken) |
-| **TT-402** | Licht thema: knoppen, velden en vlakken lopen in elkaar over | **GEBOUWD EN GETEST 02-10-2026 (blok 61), wacht op upload.** Melding Ronald op een schermafdruk van Zoeken: "meer accenten in het lichte profiel. het is bijna egaal". Ondergrond, veldrand, rand van een vlak, `--surface2` en gedempte tekst donkerder; zie de update bovenaan. **Toets P2:** werkt, maar de gebruiker ziet niet wat aan te tikken is |
+| **TT-402** | Licht thema: knoppen, velden en vlakken lopen in elkaar over | **GEBOUWD EN GETEST 02-10-2026 (blok 61), herzien dezelfde dag (geen donkerdere ondergrond, wel contrast in velden en tags), wacht op upload.** Melding Ronald op een schermafdruk van Zoeken: "meer accenten in het lichte profiel. het is bijna egaal". Ondergrond, veldrand, rand van een vlak, `--surface2` en gedempte tekst donkerder; zie de update bovenaan. **Toets P2:** werkt, maar de gebruiker ziet niet wat aan te tikken is |
 | **TT-403** | Het deelteken: gesloten stippen en meer afstand tot ⋯ | **GEBOUWD EN GETEST 02-10-2026 (blok 50 en 61), wacht op upload.** Melding Ronald: "gesloten rondje en verder af van 3 puntjes. hanteer de meest gebruikte vorm … doe dit ook op het muzikantenprofiel." Zie de update bovenaan. **Toets P2** |
 | **TT-390** | Twee controlevragen vragen "Weet je het zeker?" | **Nieuw, 01-10-2026 (onderhoudsronde). Advies P2.** *Toets: werkt, maar huisstijl §19 legt vast dat die vraag wordt weggeklikt.* **[UX]** Wie op "Ja" tikt zonder te lezen, gooit zijn invoer weg. **Geverifieerd** (grep): `bands.js:310` "Weet je het zeker? Wat je hebt ingevuld gaat verloren." (bandformulier verlaten) en `ouder.js:284` "Weet je het zeker? Alles wat je hebt ingevuld wordt gewist. Je begint dan later opnieuw." (ouderroute stoppen). **Voorstel:** een vraag naar het gevolg, met de knop als antwoord, zoals §19. Tekst is een besluit van Ronald |
 | **TT-366** | Thema volgt het toestel niet | **Nieuw, 29-09-2026, bevinding Ronald (28-09-2026): toestel op donker, in de app "Zoals mijn toestel", en toch licht. Advies P2.** **Rechtgezet 29-09-2026:** hier stond als aanname dat Chrome een eigen thema-instelling heeft. Ronald gebruikt geen Chrome; het toestel is een Samsung, en hij wijzigt het thema in de telefooninstellingen. **Geverifieerd in de code:** de app is licht zodra de browser "licht" of "geen voorkeur" meldt (`pasLichtDonkerToe()` in `index.html`). **Onbekend:** in welke browser of app Ronald talenttent.org opent, en wat die aan de app meldt. **Wacht op:** dat antwoord; daarna meten op zijn telefoon. **Toets P2:** het werkt, maar de app doet niet wat de keuze belooft |
