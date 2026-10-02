@@ -45,6 +45,10 @@ function renderPickerBadges(cfg) {
   // 21-08-2026 (Ronald): het veld toont altijd dezelfde vaste tekst, geen
   // teller meer — de badges eronder laten al zien wat er gekozen is.
   document.getElementById(cfg.fieldId + 'Label').textContent = cfg.placeholder;
+  // Huisstijl §13.1: de foutmarkering verdwijnt zodra de gebruiker het veld
+  // wijzigt. Een keuzeveld is geen invoerveld en geeft geen 'input'; daarom
+  // hier, zodra er iets gekozen is (gevonden in TT-385 fase 4).
+  if (list.length) clearFieldError(cfg.fieldEl);
   cfg.badgeRowEl.innerHTML = list.map(v => `
     <div class="picker-badge">
       <button type="button" class="picker-badge-remove" aria-label="${escAttr(v)} verwijderen" onclick="removePickerValue('${jsAttr(cfg.id)}','${jsAttr(v)}')"><span aria-hidden="true">✕</span></button>

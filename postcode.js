@@ -194,8 +194,10 @@ let bandPostcodeManualMode = false;
 let bandCitySource = 'pdok';
 
 // TT-385 fase 3 (02-10-2026): de postcode van een band staat op twee
-// schermen — het formulier "Band aanmaken" (band) en de tegel "Wie zijn we"
-// (bw). Eén opzoekroute voor beide; de velden verschillen alleen in hun id.
+// schermen — de korte wizard "Band aanmaken" (band) en de tegel "Wie zijn
+// we" (bw). Eén opzoekroute voor beide; de velden verschillen alleen in hun
+// id. De balk van de wizard loopt mee met de plaats (bandWizardBalkBij() in
+// bands.js, TT-385 fase 4).
 // De toestand hierboven geldt voor het scherm dat het laatst een postcode
 // kreeg. Beide staan nooit tegelijk open.
 const BAND_POSTCODE_VELDEN = {
@@ -208,6 +210,7 @@ let bandPostcodeStatusHideTimeout;
 function applyResolvedBandCity(cityName, statusEl, msg) {
   document.getElementById(BAND_POSTCODE_VELDEN[bandPostcodeDoel].city).value = cityName;
   bandPostcodeResolved = true;
+  bandWizardBalkBij();
   statusEl.style.color = 'var(--accent)';
   statusEl.textContent = msg;
   clearTimeout(bandPostcodeStatusHideTimeout);
@@ -220,6 +223,7 @@ function onBandPostcodeInput(value, doel) {
   bandPostcodeResolved = false;
   bandCitySource = 'pdok';
   document.getElementById(velden.city).value = '';
+  bandWizardBalkBij();
   const statusEl = document.getElementById(velden.status);
   clearTimeout(bandPostcodeSearchTimeout);
 
@@ -416,6 +420,7 @@ function selectCitySuggestion(name, listId) {
     document.getElementById(velden.city).value = name;
     bandCitySource = 'manual';
     bandPostcodeResolved = true;
+    bandWizardBalkBij();
     document.getElementById(velden.status).textContent = `Gekozen: ${name}`;
     document.getElementById(velden.status).style.color = 'var(--accent)';
     closeAC(listId);

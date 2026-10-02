@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261002c">
+<link rel="stylesheet" href="styles.css?v=20261002d">
 </head>
 <body>
 
@@ -1949,7 +1949,7 @@
 <!-- VIEW: Mijn bands -->
 <div class="app-view" id="view-bands">
   <div class="search-wrap">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+    <div id="mijnBandsKop" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
       <div>
         <div class="filter-title">Mijn bands</div>
         <p style="font-size:13px;color:var(--muted);">Bands waar jij beheerder en/of lid van bent</p>
@@ -1962,92 +1962,50 @@
            nu de naam. Huisstijl §6, regel 5: één betekenis per woord. -->
       <button class="btn btn-primary" style="white-space:nowrap;" onclick="showCreateBandForm()">Band aanmaken</button>
     </div>
+    <!-- TT-385 fase 4 (02-10-2026, besluiten Ronald): de korte wizard. Eén
+         scherm met drie vragen: naam, postcode en plaats, genres. De balk
+         begint op 0% en loopt 5% op per ingevuld veld, tot 15%. Daarna staat
+         de band en opent de privé bandpagina; de rest vult de beheerder aan
+         in de tegels. Zolang de wizard open is, staan de kop en de lijst van
+         Mijn Bands er niet. -->
     <div id="createBandForm" style="display:none;">
-      <div class="search-filters" style="margin-bottom:28px;">
-        <div class="filter-title" style="font-size:20px;">Nieuwe band aanmaken</div>
-        <!-- 25-08-2026 (Ronald, UX-feedback): compacte kop, zelfde opbouw als
-             een profielweergave (foto links, naam ernaast op één regel) i.p.v.
-             gescheiden blokken — zie huisstijl-en-consistentie.md §10. -->
-        <div style="display:flex;gap:16px;align-items:center;margin-bottom:8px;">
-          <div class="avatar-preview-wrap" style="flex-shrink:0;">
-            <div class="avatar-preview" id="bandAvatarPreview" onclick="document.getElementById('bandAvatarInput').click()" style="border-radius:12px;">
-              <span id="bandAvatarInitials" class="avatar-t">T</span>
-            </div>
-            <div class="avatar-edit-btn" onclick="document.getElementById('bandAvatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
-            <button type="button" class="avatar-remove-btn" id="bandAvatarRemoveBtn" onclick="askRemoveBandAvatar()" aria-label="Bandfoto verwijderen">✕</button>
+      <div id="bandWizardBalk" class="band-wizard-balk"></div>
+      <div class="panel-title">Band aanmaken</div>
+      <div class="panel-sub">Drie vragen, dan staat je band. De rest vul je later aan.</div>
+      <div class="field-group single">
+        <div class="field">
+          <label for="bandName">Bandnaam <span class="req">*</span></label>
+          <input type="text" id="bandName" maxlength="40" autocomplete="off" placeholder="Bijv. Nachtploeg" oninput="bandWizardBalkBij()">
+        </div>
+      </div>
+      <div class="postcode-plaats">
+        <div class="postcode-plaats-rij">
+          <div class="field">
+            <label for="bandZip">Postcode <span class="req">*</span></label>
+            <input type="text" id="bandZip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onBandPostcodeInput(this.value)">
           </div>
-          <div class="field" style="flex:1;margin-bottom:0;">
-            <label>Bandnaam <span class="req">*</span></label>
-            <input type="text" id="bandName" placeholder="Bijv. The Rusty Strings">
+          <div class="field">
+            <label for="bandCity">Plaats <span class="req">*</span></label>
+            <input type="text" id="bandCity" placeholder="Vult vanzelf in" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acBandCityManualList')">
+            <div class="autocomplete-list" id="acBandCityManualList"></div>
           </div>
         </div>
-        <p class="field-hint" style="margin-bottom:20px;">JPG of PNG, maximaal 5 MB.</p>
-        <input type="file" accept="image/*" class="avatar-upload-input" id="bandAvatarInput" autocomplete="off" onchange="handleBandAvatarUpload(this.files[0]); this.value=''">
-
-        <!-- Postcode en plaats naast elkaar: zelfde vorm als het
-             muzikant-registratieformulier (.postcode-plaats, bevinding Ronald
-             30-09-2026). Was: Plaats onder Postcode (punt 4, 25-08-2026). -->
-        <div class="postcode-plaats">
-          <div class="postcode-plaats-rij">
-            <div class="field">
-              <label>Postcode <span class="req">*</span></label>
-              <input type="text" id="bandZip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onBandPostcodeInput(this.value)">
-            </div>
-            <div class="field">
-              <label>Plaats <span class="req">*</span></label>
-              <input type="text" id="bandCity" placeholder="Vult vanzelf in" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acBandCityManualList')">
-              <div class="autocomplete-list" id="acBandCityManualList"></div>
-            </div>
-          </div>
-          <p class="field-hint">Alleen de 4 cijfers.</p>
-          <div id="bandPostcodeStatus" class="field-status"></div>
-        </div>
-        <!-- TT-51-uitbreiding (12-08-2026, Ronalds testfeedback): niveau
-             van de band naar boven verplaatst — stond eerst tussen Status en
-             Wij zoeken nog, dat voelde ondergesneeuwd voor een kernattribuut
-             van de band. Optioneel, losstaand van het niveau per instrument
-             bij muzikanten — geen verband ertussen (niveaubepaling-
-             naslagwerk.md, hoofdstuk 2). -->
-        <div class="field" style="margin-bottom:16px;">
-          <!-- V-21 (13-08-2026): "niveau" → "ervaring" voor de band-schaal. -->
-          <label>Ervaring van de band <button type="button" class="niveau-info-btn" onclick="openBandNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></label>
-          <div id="bandLevelPicker" class="star-picker"></div>
-          <p class="field-hint">Klik op de i voor de ervaringsindeling en toelichting.</p>
-        </div>
-        <div class="field" style="margin-bottom:16px;">
-          <label>Beschrijving</label>
-          <textarea id="bandDescription" placeholder="Vertel iets over de band..." style="min-height:80px;"></textarea>
-        </div>
-        <div class="field" style="margin-bottom:16px;">
-          <label>Genre(s) <span class="req">*</span></label>
+        <p class="field-hint">Zo vinden muzikanten in de buurt jullie. De postcode ziet niemand, de plaats wel.</p>
+        <div id="bandPostcodeStatus" class="field-status"></div>
+      </div>
+      <div class="field-group single">
+        <div class="field">
+          <label>Genres <span class="req">*</span></label>
           <div class="picker-field" id="bandGenreField">
-            <span class="picker-field-label" id="bandGenreFieldLabel">Genre toevoegen…</span>
+            <span class="picker-field-label" id="bandGenreFieldLabel">Kies een genre</span>
             <span class="picker-field-chevron">▾</span>
           </div>
           <div class="picker-badge-row" id="bandGenreBadgeRow"></div>
         </div>
-        <div class="field" style="margin-bottom:16px;">
-          <label>Status</label>
-          <div class="tag-grid" id="bandStatusGrid">
-            <div class="tag" onclick="selectBandStatus(this,'zoekend')">Zoekend naar leden</div>
-            <div class="tag" onclick="selectBandStatus(this,'compleet')">Band is compleet</div>
-            <div class="tag" onclick="selectBandStatus(this,'inactief')">Inactief</div>
-          </div>
-        </div>
-        <!-- Punt 2 (25-08-2026, Ronald): niet langer verplicht. -->
-        <div class="field" style="margin-bottom:16px;">
-          <label>Wij zoeken nog</label>
-          <div class="picker-field" id="bandWantedField">
-            <span class="picker-field-label" id="bandWantedFieldLabel">Instrument toevoegen…</span>
-            <span class="picker-field-chevron">▾</span>
-          </div>
-          <div class="picker-badge-row" id="bandWantedBadgeRow"></div>
-        </div>
-        <!-- Punt 5 (25-08-2026, Ronald): knoppen omgewisseld, Band aanmaken rechts. -->
-        <div class="btn-row" style="margin-top:8px;">
-          <button class="btn btn-ghost" onclick="cancelBandForm()">Terug</button>
-          <button class="btn btn-primary" onclick="saveBand()">Band aanmaken</button>
-        </div>
+      </div>
+      <div class="action-row">
+        <button class="btn btn-ghost" id="bandWizardTerugBtn" onclick="cancelBandForm()">Terug</button>
+        <button class="btn btn-primary" onclick="saveBand()">Band aanmaken</button>
       </div>
     </div>
 
@@ -2914,18 +2872,18 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261002c"></script>
+<script src="core.js?v=20261002d"></script>
 <script src="utils.js?v=20261002a"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260927b"></script>
-<script src="postcode.js?v=20261002a"></script>
-<script src="wizard.js?v=20261002a"></script>
+<script src="postcode.js?v=20261002d"></script>
+<script src="wizard.js?v=20261002d"></script>
 <script src="ouder.js?v=20261001a"></script>
-<script src="search.js?v=20261002c"></script>
+<script src="search.js?v=20261002d"></script>
 <script src="musicians.js?v=20261002c"></script>
-<script src="bands.js?v=20261002c"></script>
+<script src="bands.js?v=20261002d"></script>
 <script src="messages.js?v=20261002a"></script>
-<script src="modals-shared.js?v=20261002a"></script>
+<script src="modals-shared.js?v=20261002d"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding

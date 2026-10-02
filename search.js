@@ -1037,8 +1037,6 @@ function setBandSearchSortMode(mode) {
   }
 }
 
-let bandState = { genres: [], status: 'zoekend', wanted: [], niveau: null, avatarUrl: null, avatarPath: null };
-
 function initBandSearchFilters() {
   if (!PICKERS.filterBandGenres) {
     initPicker({

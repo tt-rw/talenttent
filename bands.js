@@ -270,55 +270,91 @@ async function executeRemoveMember(bandId, musicianId, memberName) {
 
 // ─── Mijn bands ───────────────────────────────────────────────────────────────
 
-async function showCreateBandForm() {
+// ─── De korte wizard (TT-385 fase 4, 02-10-2026, besluiten Ronald) ──────────
+// Eén scherm met drie vragen: naam, postcode en plaats, genres. Daarna staat
+// de band en opent de privé bandpagina. De balk begint op 0% en loopt 5% op
+// per ingevuld veld, tot de 15% waarop de bandpagina begint (besluit a).
+// De wizard staat in view-bands, op de plek van de lijst: geen zestiende view.
+// Hij is een stap in de geschiedenis, zoals een tegelscherm. Dus de
+// terugknop in de kop en die van het toestel sluiten eerst de wizard, met
+// dezelfde vraag "Terug zonder opslaan?" als een tegel (TT-302). De
+// afhandeling staat in de popstate van core.js.
+let bandState = { genres: [] }; // de genres die de wizard kiest
+let bandWizardStap = false;   // de wizard staat als stap in de geschiedenis
+let bandWizardDaarna = null;  // wat er gebeurt zodra die stap terug is
+
+function bandWizardOpen() {
   const form = document.getElementById('createBandForm');
-  const wasHidden = form.style.display === 'none' || !form.style.display;
-  // TT-336 (besluit Ronald, 1a): een band oprichten kan pas na de klik in de
-  // mail. Wie een band opricht, is via die band te vinden. Eerst vragen, dan
-  // pas het formulier: anders vult iemand alles in voor niets.
-  if (wasHidden) {
-    const wacht = await emailWachtOpBevestiging();
-    if (wacht) { showToast(emailBevestigMelding(wacht, 'een band oprichten')); return; }
-  }
-  if (wasHidden) {
-    resetBandForm();
-    form.style.display = 'block';
-    setTimeout(() => document.getElementById('bandName')?.focus(), 50);
-  } else {
-    form.style.display = 'none';
-  }
-  initBandForm();
+  return !!form && form.style.display === 'block';
 }
 
-// Zet het bandformulier terug naar lege 'nieuwe band'-staat.
-// V-19 (13-08-2026, in overleg vastgesteld): "Annuleren" gooide tot nu toe
-// alles weg zonder waarschuwing. Bewust smal gehouden zoals afgesproken:
-// alleen deze waarschuwing, geen wizard (dat is een apart, groter ticket).
-// Staat het formulier nog helemaal leeg, dan is er niets te verliezen — dan
-// sluit Annuleren meteen, zonder onnodige extra klik. Zodra er iets is
-// ingevuld (ook bij het bewerken van een bestaande band, waar de velden al
-// gevuld zijn), volgt eerst een bevestigingsvraag.
+function zetBandWizardZichtbaar(aan) {
+  document.getElementById('createBandForm').style.display = aan ? 'block' : 'none';
+  document.getElementById('mijnBandsKop').style.display = aan ? 'none' : 'flex';
+  document.getElementById('myBandsList').style.display = aan ? 'none' : '';
+}
+
+async function showCreateBandForm() {
+  if (bandWizardOpen()) return;
+  // TT-336 (besluit Ronald, 1a): een band oprichten kan pas na de klik in de
+  // mail. Eerst vragen, dan pas de wizard: anders vult iemand alles in voor
+  // niets. Om dezelfde reden eerst het profiel.
+  const wacht = await emailWachtOpBevestiging();
+  if (wacht) { showToast(emailBevestigMelding(wacht, 'een band oprichten')); return; }
+  if (!(await getMyMusicianId())) { showToast('Maak eerst een muzikantprofiel aan.'); return; }
+  resetBandForm();
+  zetBandWizardZichtbaar(true);
+  window.scrollTo(0, 0);
+  if (!bandWizardStap) bandWizardStap = safeHistoryPush({ view: 'bands', wizard: true }, '#bands');
+  werkTerugKnopBij(); // TT-301: een open wizard is een stap terug
+  initBandForm();
+  bandWizardBalkBij();
+  setTimeout(() => document.getElementById('bandName')?.focus(), 50);
+}
+
+// Sluit de wizard. Staat hij als stap in de geschiedenis, dan gaat die stap
+// terug. `daarna` draait pas als die stap weg is: anders sluit de terugstap
+// meteen het venster dat `daarna` opent.
+function sluitBandWizard(daarna) {
+  ontwapenTerug();
+  resetBandForm();
+  zetBandWizardZichtbaar(false);
+  if (bandWizardStap) {
+    bandWizardDaarna = daarna || null;
+    history.back();
+  } else if (daarna) {
+    daarna();
+  }
+}
+
+// De balk loopt 5% op per ingevuld veld: drie velden samen zijn de 15%
+// waarop de bandpagina begint.
+function bandWizardBalkBij() {
+  const plek = document.getElementById('bandWizardBalk');
+  if (!plek) return;
+  const ingevuld = [
+    !!document.getElementById('bandName').value.trim(),
+    bandPostcodeResolved && !!document.getElementById('bandCity').value.trim(),
+    bandState.genres.length > 0
+  ].filter(Boolean).length;
+  plek.innerHTML = voortgangsBalkHTML(Math.round(BAND_START_PCT * ingevuld / 3));
+}
+
+// Staat er iets ingevuld? Dan vraagt Terug eerst "Terug zonder opslaan?".
 function hasUnsavedBandFormInput() {
   const nameEl = document.getElementById('bandName');
   const zipEl = document.getElementById('bandZip');
-  const descEl = document.getElementById('bandDescription');
-  if ((nameEl && nameEl.value.trim()) || (zipEl && zipEl.value.trim()) || (descEl && descEl.value.trim())) return true;
-  if (bandState.genres.length || bandState.wanted.length || bandState.avatarUrl || bandState.niveau) return true;
-  if (document.querySelector('#bandStatusGrid .tag.selected')) return true;
-  return false;
+  return !!((nameEl && nameEl.value.trim()) || (zipEl && zipEl.value.trim()) || bandState.genres.length);
 }
 
+// De Terug-knop onderin: dezelfde knop die van functie wisselt als in een
+// tegel (huisstijl §8, TT-226).
 function cancelBandForm() {
-  const finish = () => { resetBandForm(); document.getElementById('createBandForm').style.display = 'none'; };
-  if (hasUnsavedBandFormInput()) {
-    showConfirm('Weet je het zeker? Wat je hebt ingevuld gaat verloren.', finish, 'Ja, terug');
-  } else {
-    finish();
-  }
+  handleCancelClick('bandWizardTerugBtn', hasUnsavedBandFormInput, () => sluitBandWizard());
 }
 
 function resetBandForm() {
-  bandState = { genres: [], status: 'zoekend', wanted: [], niveau: null, avatarUrl: null, avatarPath: null };
+  bandState = { genres: [] };
   bandPostcodeResolved = false;
   bandPostcodeFailStreak = 0;
   bandPostcodeManualMode = false;
@@ -326,81 +362,16 @@ function resetBandForm() {
   const nameEl = document.getElementById('bandName');
   const zipEl = document.getElementById('bandZip');
   const cityEl = document.getElementById('bandCity');
-  const descEl = document.getElementById('bandDescription');
   if (nameEl) nameEl.value = '';
   if (zipEl) zipEl.value = '';
   if (cityEl) { cityEl.value = ''; cityEl.readOnly = true; cityEl.style.cursor = 'not-allowed'; cityEl.style.opacity = '0.85'; }
-  if (descEl) descEl.value = '';
   const statusEl = document.getElementById('bandPostcodeStatus');
   if (statusEl) statusEl.textContent = '';
-  document.querySelectorAll('#bandStatusGrid .tag').forEach(t => t.classList.remove('selected'));
+  clearFieldErrors('createBandForm');
+  resetCancelButton('bandWizardTerugBtn');
   if (PICKERS.bandGenre) renderPickerBadges(PICKERS.bandGenre);
-  if (PICKERS.bandWanted) renderPickerBadges(PICKERS.bandWanted);
-  renderBandLevelPicker(); // TT-51: sterren terug naar leeg
-  populateBandAvatarPreview(); // V-15: voorbeeld terug naar lege "??"
   // Bekijk hier de postcode van het formulier, niet die van de tegel.
   bandPostcodeDoel = 'band';
-}
-
-// V-15 (13-08-2026): toont de bandfoto als die er is, anders de gouden T —
-// zelfde vaste letter als overal elders in de app (25-08-2026, punt 3).
-function populateBandAvatarPreview() {
-  const preview = document.getElementById('bandAvatarPreview');
-  if (!preview) return;
-  if (bandState.avatarUrl) {
-    preview.innerHTML = `<img src="${safeUrl(bandState.avatarUrl)}" alt="bandfoto">`;
-    document.getElementById('bandAvatarRemoveBtn').classList.add('visible');
-  } else {
-    preview.innerHTML = `<span id="bandAvatarInitials" class="avatar-t">T</span>`;
-    document.getElementById('bandAvatarRemoveBtn').classList.remove('visible');
-  }
-}
-
-
-// Een band bestaat pas na "Band aanmaken" als bevestigd account/profiel —
-// anders dan bij de muzikantwizard is er hier nooit een moment zonder
-// currentUser (saveBand() vraagt zelf al een muzikantprofiel af), dus de
-// foto kan altijd meteen echt geüpload worden. Bucket 'avatars' wordt
-// hergebruikt (uploadAvatarFile bestaat al) — elke upload krijgt sowieso een
-// unieke bestandsnaam, dus dat botst niet met profielfoto's.
-function handleBandAvatarUpload(file) {
-  if (!file) return;
-  const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
-  if (typeProblem) { showToast(typeProblem); return; }
-  if (file.size > 5 * 1024 * 1024) { showToast('Afbeelding is te groot. Maximum 5 MB.'); return; }
-  if (!currentUser) { showToast('Log in om een bandfoto te uploaden.'); return; }
-
-  const blobUrl = URL.createObjectURL(file);
-  const preview = document.getElementById('bandAvatarPreview');
-  preview.style.position = 'relative';
-  preview.innerHTML = `<img src="${blobUrl}" alt="bandfoto">`;
-  preview.insertAdjacentHTML('beforeend',
-    `<div class="avatar-uploading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);border-radius:12px;">
-       <div class="save-spinner" style="width:24px;height:24px;border-width:3px;margin:0;"></div>
-     </div>`);
-  document.getElementById('bandAvatarRemoveBtn').classList.add('visible');
-
-  uploadAvatarFile(file, currentUser.id).then(({ url, path }) => {
-    bandState.avatarUrl = url;
-    bandState.avatarPath = path;
-    preview.querySelector('.avatar-uploading')?.remove();
-  }).catch(e => {
-    logCaught('uploadBandAvatar', e);
-    preview.querySelector('.avatar-uploading')?.remove();
-    showToast(friendlyErrorMessage(e));
-    removeBandAvatar();
-  });
-}
-
-// TT-381: zelfde vraag als bij de profielfoto (askRemoveAvatar in wizard.js).
-function askRemoveBandAvatar() {
-  showConfirm('Bandfoto verwijderen?', removeBandAvatar, 'Ja, verwijderen');
-}
-
-function removeBandAvatar() {
-  bandState.avatarUrl = null;
-  bandState.avatarPath = null;
-  populateBandAvatarPreview();
 }
 
 // Lid uitnodigen (de zoeklijst in #addMemberModal). Sinds TT-385 geopend
@@ -654,36 +625,14 @@ function initBandForm() {
       fieldId: 'bandGenreField', badgeRowId: 'bandGenreBadgeRow',
       options: GENRES, getList: () => bandState.genres,
       placeholder: 'Kies een genre',
-      sheetTitle: 'Kies een genre'
-    });
-  }
-  if (!PICKERS.bandWanted) {
-    initPicker({
-      id: 'bandWanted',
-      fieldId: 'bandWantedField', badgeRowId: 'bandWantedBadgeRow',
-      options: INSTRUMENTS, getList: () => bandState.wanted,
-      placeholder: 'Kies een instrument',
-      sheetTitle: 'Kies een instrument'
+      sheetTitle: 'Kies een genre',
+      onChange: bandWizardBalkBij // TT-385 fase 4: de balk loopt mee
     });
   }
   // Bij hergebruik van een al bestaande picker (tweede keer dat het
   // formulier opent) staan de badges nog op de vorige band — opnieuw
   // tekenen op basis van de huidige bandState.
   renderPickerBadges(PICKERS.bandGenre);
-  renderPickerBadges(PICKERS.bandWanted);
-  renderBandLevelPicker();
-}
-
-// TT-51: sterrenkiezer voor het eigen niveau van de band. Los aangeroepen
-// (niet alleen bij het eerste opbouwen van het formulier, zoals gg/wg
-// hierboven) omdat de waarde bij elke open/reset kan veranderen.
-function renderBandLevelPicker() {
-  const el = document.getElementById('bandLevelPicker');
-  if (!el) return;
-  renderStarPicker(el, bandState.niveau || 0, (n) => {
-    bandState.niveau = n;
-    renderBandLevelPicker();
-  });
 }
 
 // TT-51-uitbreiding (12-08-2026): Tabel 1 uit niveaubepaling-naslagwerk.md,
@@ -744,12 +693,6 @@ function openBandNiveauInfoModal() {
 // ─── Band aanmaken, Mijn bands en het bandvenster ──────────────────────────────
 // Verplaatst uit musicians.js (26-09-2026). Inhoud ongewijzigd.
 
-function selectBandStatus(el, val) {
-  document.querySelectorAll('#bandStatusGrid .tag').forEach(t => t.classList.remove('selected'));
-  el.classList.add('selected');
-  bandState.status = val;
-}
-
 // TT-252 (11-09-2026): de knop "Band aanmaken" liet zich twee keer indrukken.
 // De tweede tik maakte een echte tweede band met dezelfde oprichter, en
 // opruimen kon alleen via "Band opheffen" — een pad dat een nieuwe gebruiker
@@ -776,7 +719,6 @@ async function saveBandRun() {
   const name = document.getElementById('bandName').value.trim();
   const zip  = document.getElementById('bandZip').value.trim();
   const city = document.getElementById('bandCity').value.trim();
-  const desc = document.getElementById('bandDescription').value.trim();
   // TT-247 (12-09-2026): alle fouten tegelijk, elk bij zijn eigen veld —
   // dezelfde vorm als de registratiewizard. Muzikantkant en bandkant volgen
   // dezelfde regels (huisstijl, besluit Ronald 11-09-2026). Tot nu toe waren
@@ -811,37 +753,30 @@ async function saveBandRun() {
     // bekende kolombeperking is gevonden — geen enkel veld hier is dat
     // vandaag — maar een kale select() vraagt onnodig alle kolommen op
     // terwijl alleen band.id verderop wordt gebruikt.
+    // TT-385 fase 4: de wizard vraagt alleen naam, plaats en genres. De
+    // status volgt uit de open rollen (punt 7); een nieuwe band heeft er nog
+    // geen. Bandfoto, ervaring, Wie zijn we en de bezetting vult de beheerder
+    // later aan in de tegels.
     const { data: band, error: bErr } = await db.from('bands').insert({
       name, city: normalizeCityName(city), zip,
-      description: desc || null, genres: bandState.genres,
-      status: bandState.status, founder_id: mid, city_source: bandCitySource,
-      niveau: bandState.niveau || null, // TT-51, optioneel
-      avatar_url: bandState.avatarUrl || null, // V-15
+      genres: bandState.genres,
+      status: bandStatusAfgeleid(0, false), founder_id: mid, city_source: bandCitySource,
     }).select('id').single();
     if (bErr) throw bErr;
     const bandId = band.id;
-    await db.from('band_members').insert({ band_id: bandId, musician_id: mid, role: 'Oprichter', status: 'bevestigd' });
+    const { error: mErr } = await db.from('band_members').insert({ band_id: bandId, musician_id: mid, role: 'Oprichter', status: 'bevestigd' });
+    if (mErr) throw mErr;
 
-    // TT-281 (23-09-2026): "Gezocht" wissen en opnieuw vullen in één
-    // transactie — zelfde fout en zelfde oplossing als op de profielkant.
-    // V-14: bij een complete/inactieve band kan bandState.wanted leeg zijn;
-    // dan blijft er na afloop gewoon niets gezocht staan.
-    const { error: wErr } = await db.rpc('tt_save_band_wanted', {
-      p_band_id: bandId,
-      p_instruments: bandState.wanted,
-    });
-    if (wErr) throw wErr;
-
-    resetBandForm();
-    document.getElementById('createBandForm').style.display = 'none';
     loadMyBands();
     hideSaving();
-    // TT-251 (11-09-2026): er was geen verschil tussen gelukt en mislukt — het
-    // formulier verdween in beide gevallen. Wie zijn eerste band aanmaakt is
-    // precies op dat moment het onzekerst. Dezelfde bevestiging als elders in
-    // de app: een korte melding, met de bandnaam erin zodat hij ziet wát er is
-    // aangemaakt.
-    showToast(`${name} is aangemaakt.`);
+    // TT-251 (11-09-2026): wie zijn eerste band aanmaakt, is precies op dat
+    // moment het onzekerst. Een korte melding met de bandnaam erin.
+    // TT-385 fase 4: daarna opent de privé bandpagina, met elke lege sectie
+    // als uitnodiging (besluit 1 en 2).
+    sluitBandWizard(() => {
+      openBandModal(bandId);
+      showToast(`${name} staat. Vul hem aan wanneer je wilt.`);
+    });
   } catch(e) {
     hideSaving();
     logCaught('saveBand', e);
@@ -886,24 +821,23 @@ async function loadMyBands() {
 
   const bandIds = memberships.map(m => m.band_id);
   const { data: bands } = await db.from('bands')
-    .select(`*, band_members(musician_id, role, status, founder_offer, musicians(fname, username)), band_wanted(instrument)`)
+    .select(`*, band_members(musician_id, role, status, founder_offer), band_wanted(instrument)`)
     .in('id', bandIds).order('updated_at', { ascending: false });
 
-  const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
+  // TT-385 fase 4 (besluit Ronald bij punt 11): de bandkaart toont de
+  // vierkante bandfoto, de naam, plaats en genres, de status en de open
+  // rollen als tag. Geen leden: "dat zie je als je het profiel opent". Een
+  // tik op de kaart opent de bandpagina; voor de beheerder is dat de privé
+  // bandpagina, met de balk.
   el.innerHTML = (bands || []).map(b => {
     const confirmed = (b.band_members||[]).filter(m => m.status === 'bevestigd');
-    // TT-41 (08-08-2026): uitgenodigde muzikanten staan er wél al, maar tellen
-    // nog niet als lid tot ze zelf bevestigen. Alleen de oprichter ziet dit —
-    // voor de rest van de wereld bestaat een uitnodiging niet.
-    const pending = (b.band_members||[]).filter(m => m.status === 'aangevraagd');
     const isFounder = b.founder_id === mid;
     // V-16 (13-08-2026): staat er al een lopend overname-aanbod (founder_offer)?
     // Dan geen nieuwe "Ik stop als bandleider"-knop, maar de wachtstand.
     const offerPending = isFounder && confirmed.some(m => m.founder_offer);
-    const status = statusLabels[b.status] ? b.status : '';
-    // Besluit Ronald (02-10-2026): geen statustag zolang de beheerder alleen
-    // is en er geen open rol is; zelfde regel als op de bandpagina.
-    const zonderStatus = !b.pauze && confirmed.length <= 1 && !(b.band_wanted || []).length;
+    const open = (b.band_wanted || []).map(w => w.instrument);
+    const status = bandStatusLabel(b.pauze, confirmed.length, open.length);
+    const tags = (status ? tagSolid(status) : '') + open.map(i => tagSolid('+ ' + i)).join('');
     // 22-08-2026 (Ronald): de drie losse knoppen (Band bewerken/+ Lid
     // toevoegen/Ik stop als beheerder) worden één klein ⋯-menu, zelfde
     // patroon als het profielmenu (zie huisstijl-en-consistentie.md §8).
@@ -919,8 +853,8 @@ async function loadMyBands() {
           <button class="nav-menu-item" onclick="closeAllBandMoreMenus();openBandTegels('${jsAttr(b.id)}','bandBezetting');">Bandleden beheren</button>
         </div>
       </div>` : '';
-    return `<div class="band-card">
-      <div class="band-card-header" onclick="openBandModal('${jsAttr(b.id)}')">
+    return `<div class="band-card" onclick="openBandModal('${jsAttr(b.id)}')">
+      <div class="band-card-header">
         ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar">${AVATAR_T_FALLBACK}</div>`}
         <div style="flex:1;">
           <div class="band-name">${escHtml(b.name)}</div>
@@ -932,33 +866,7 @@ async function loadMyBands() {
       <div style="padding:0 20px;">
         <div style="font-size:12px;color:var(--muted);padding:8px 0;border-top:1px solid var(--border);">Gevraagd of iemand het beheer overneemt — wachten op reactie.</div>
       </div>` : ''}
-      <div class="band-card-body">
-        <!-- 22-08-2026 (Ronald): status minder prominent — de beheerder weet
-             deze zelf al, hoort niet meer bovenaan in het overzicht. -->
-        ${zonderStatus ? '' : `<div style="margin-bottom:8px;"><span class="band-status-badge band-status-${status}">${escHtml(statusLabels[status] || b.status)}</span></div>`}
-        ${b.description ? `<p style="font-size:13px;color:var(--muted);margin-bottom:12px;font-style:italic;">"${escHtml(b.description)}"</p>` : ''}
-        <div class="band-members-row">
-          ${confirmed.map(m => {
-            const memberName = displayNameOf(m.musicians);
-            // 22-08-2026 (Ronald): het kruisje hier voelde "banaal, alsof je
-            // ieder moment kan worden gecancelled". Uit de band halen zit
-            // sinds TT-385 in de tegel Onze bezetting, achter de drie
-            // puntjes in de rij van het lid. Deze chip is nu puur informatief + klikbaar
-            // naar het profiel — geen verwijderactie meer op de kaart zelf.
-            // m.musicians.id komt hier altijd mee (dit is de eigen "Mijn
-            // Bands"-lijst, geen publieke/anonieme bron).
-            return `<div class="band-member-chip" style="cursor:pointer;" onclick="event.stopPropagation(); openMusicianModal('${jsAttr(m.musician_id)}');">
-            <div class="band-member-dot">${escHtml(memberName[0].toUpperCase())}</div>
-            ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">${escHtml(roleLabel(m.role))}</span>
-          </div>`; }).join('')}
-          ${isFounder ? pending.map(m => {
-            const memberName = displayNameOf(m.musicians);
-            return `<div class="band-member-chip" style="opacity:.55;border-style:dashed;">
-            <div class="band-member-dot">${escHtml(memberName[0].toUpperCase())}</div>
-            ${escHtml(memberName)} <span style="color:var(--muted);font-size:10px;">wacht op bevestiging</span>
-          </div>`; }).join('') : ''}
-        </div>
-      </div>
+      ${tags ? `<div class="band-card-body"><div class="profile-badges">${tags}</div></div>` : ''}
     </div>`;
   }).join('');
 }
@@ -1179,8 +1087,7 @@ function bandPaginaHTML(b, kijker) {
   // niemand is en geen open rol, staat er geen statustag. "Compleet" zou
   // dan niet kloppen.
   const zoekend = b.wanted.length > 0;
-  const alleenBeheerder = b.leden.length <= 1 && !zoekend;
-  const status = b.pauze ? 'We spelen even niet' : (alleenBeheerder ? '' : (zoekend ? 'Zoekend' : 'Compleet'));
+  const status = bandStatusLabel(b.pauze, b.leden.length, b.wanted.length);
   const tags = [
     ...b.genres.map(g => tagSolid(g)),
     BAND_SOORT_LABELS[b.soort] ? tagSolid(BAND_SOORT_LABELS[b.soort]) : '',
@@ -1384,6 +1291,16 @@ const BAND_TILES = [
   { id: 'bandMuziek',    title: 'Onze muziek',    sub: 'wat voor band - genres - eigen nummers - covers' },
   { id: 'bandMedia',     title: 'Onze media',     sub: "foto's - video's - links - banner - socials" }
 ];
+
+// De statustag op de bandpagina en op de bandkaart in Mijn Bands: één functie,
+// zodat beide plekken altijd hetzelfde zeggen (TT-385 fase 4). Besluit Ronald
+// (02-10-2026, na fase 3): zolang er naast de beheerder niemand is en geen
+// open rol, geen tag; "Compleet" zou dan niet kloppen.
+function bandStatusLabel(pauze, aantalLeden, aantalOpenRollen) {
+  if (pauze) return 'We spelen even niet';
+  if (aantalLeden <= 1 && !aantalOpenRollen) return '';
+  return aantalOpenRollen ? 'Zoekend' : 'Compleet';
+}
 
 // "Zoekend" of "compleet" volgt uit de open rollen; "We spelen even niet"
 // gaat voor (TT-385 punt 7). Een invaller telt niet mee (besluit Ronald).

@@ -1119,8 +1119,9 @@ function veegAfbreken() {
 // sandbox-achtige omgevingen zonder een "normale" document-URL — bijv. een
 // srcdoc-iframe-preview. De app moet daar nooit op crashen: browsergeschiedenis
 // (TT-16) is dan gewoon niet beschikbaar, maar de rest van de app blijft werken.
+// Geeft terug of de stap er staat (TT-385 fase 4: de bandwizard moet dat weten).
 function safeHistoryPush(stateObj, hash) {
-  try { history.pushState(stateObj, '', hash); } catch (e) { /* stil negeren, zie boven */ }
+  try { history.pushState(stateObj, '', hash); return true; } catch (e) { return false; /* stil negeren, zie boven */ }
 }
 function safeHistoryReplace(stateObj, hash) {
   try { history.replaceState(stateObj, '', hash); } catch (e) { /* stil negeren, zie boven */ }
@@ -1173,6 +1174,7 @@ function magTerug() {
   const draad = document.getElementById('messagesThreadPanel');
   if (draad && draad.style.display !== 'none' && activeConversationId) return true;
   if (activeTegelScreen !== 'overview') return true;
+  if (bandWizardOpen()) return true; // TT-385 fase 4
   // Op het hoogste scherm is er niets boven je en niets om naar terug te gaan.
   if (huidigeView === hoogsteScherm()) return false;
   // Op een hoofdtabblad wijst de knop naar het hoogste scherm.
@@ -1187,6 +1189,7 @@ function terugGaatOmhoog() {
   const draad = document.getElementById('messagesThreadPanel');
   if (draad && draad.style.display !== 'none' && activeConversationId) return false;
   if (activeTegelScreen !== 'overview') return false;
+  if (bandWizardOpen()) return false; // TT-385 fase 4: eerst de wizard dicht
   return TAB_VIEWS.includes(huidigeView);
 }
 
@@ -1223,6 +1226,7 @@ function wapenTerug() {
   // Nooit twee keer dezelfde vraag op één scherm: de Terug-knop onderin
   // valt terug zodra deze regel verschijnt.
   resetCancelButtonVanTegel();
+  resetCancelButton('bandWizardTerugBtn'); // TT-385 fase 4
   // Pas ná de huidige klik luisteren, anders vangt hij die meteen zelf af.
   // Zelfde patroon als handleCancelClick() in musicians.js (huisstijl §8).
   setTimeout(() => {
@@ -1249,6 +1253,11 @@ function showView(view, mode) {
   // Terug in de geschiedenis of na verversen komt de band uit de stap zelf.
   if (view !== 'profieltegels') { bewerkBandId = null; activeTegelScreen = 'overview'; }
   else if (mode === 'pop' || mode === 'redirect') bewerkBandId = (history.state && history.state.band) || null;
+  // TT-385 fase 4: een andere view, of de onderbalk naar Bands, sluit de
+  // bandwizard zonder opslaan, net als een open tegel. Zijn stap blijft in de
+  // geschiedenis staan en opent later gewoon Mijn Bands.
+  if (bandWizardOpen()) { resetBandForm(); zetBandWizardZichtbaar(false); }
+  bandWizardStap = false;
   sluitAlleMenus();
   sluitOpruimModals(); // TT-264: een view-wissel laat nooit een spelende video achter
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
@@ -1628,6 +1637,29 @@ window.addEventListener('popstate', (e) => {
     ontwapenTerug();
     openTegelOverview();
     werkTerugKnopBij(); // TT-301
+    return;
+  }
+  // TT-385 fase 4: de korte bandwizard is een stap, zoals een tegelscherm.
+  // Staat er iets ingevuld, dan eerst de vraag onder de kop (TT-302) en komt
+  // de stap terug. Anders gaat de wizard dicht. Sloot een knop hem al
+  // (sluitBandWizard()), dan neemt deze stap alleen de geschiedenis terug en
+  // draait daarna wat die knop nog wilde (de bandpagina openen).
+  if (bandWizardStap) {
+    bandWizardStap = false;
+    if (bandWizardOpen()) {
+      if (hasUnsavedBandFormInput() && !terugGewapend) {
+        bandWizardStap = safeHistoryPush({ view: 'bands', wizard: true }, '#bands');
+        wapenTerug();
+        return;
+      }
+      ontwapenTerug();
+      resetBandForm();
+      zetBandWizardZichtbaar(false);
+    }
+    werkTerugKnopBij();
+    const daarna = bandWizardDaarna;
+    bandWizardDaarna = null;
+    if (daarna) daarna();
     return;
   }
   // TT-389 (01-10-2026): een stap zonder state heeft de app niet zelf gemaakt
