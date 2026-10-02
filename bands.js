@@ -381,28 +381,48 @@ let memberSearchTimer = null;
 
 let addMemberBandName = ''; // V-18: nodig voor de tekst in het uitnodigingsbericht
 
+// TT-253: de gekozen instrumenten (hooguit één) en de velden van Lid
+// uitnodigen. Dezelfde componenten als Vind een muzikant (initPicker,
+// initWheelField), geen eigen variant.
+const memberSearchInstruments = [];
+function memberSearchVeldenInit() {
+  if (PICKERS.memberSearchInstruments) return;
+  const zoek = () => searchMembersToAdd(document.getElementById('memberSearchInput').value);
+  initPicker({
+    id: 'memberSearchInstruments',
+    fieldId: 'memberSearchInstrumentsField', badgeRowId: 'memberSearchInstrumentsBadgeRow',
+    options: INSTRUMENTS, getList: () => memberSearchInstruments,
+    singleMax: true,
+    placeholder: 'Kies een instrument',
+    sheetTitle: 'Kies een instrument',
+    onChange: zoek
+  });
+  initWheelField({
+    id: 'memberRadius',
+    fieldId: 'memberSearchRadiusField',
+    title: 'Straal',
+    unit: 'km',
+    // '' heet in het wiel "Alle", zoals elke lege stand (initWheel()).
+    columns: [{ inputId: 'memberSearchRadius', values: [''].concat(WHEEL_RADIUS), ariaLabel: 'Zoekstraal in kilometers' }],
+    value: [''],
+    clearTo: [''],
+    format: (v) => v[0] ? `${v[0]} km` : 'Alle',
+    hint:   (v) => v[0] ? `Straal ${v[0]} km` : 'Elke afstand',
+    onChange: zoek
+  });
+}
+
 function openAddMemberModal(bandId, bandName) {
   addMemberBandId = bandId;
   addMemberBandName = bandName || '';
   document.getElementById('memberSearchInput').value = '';
-  // V-17: instrumentlijst opnieuw vullen bij elke opening — zelfde bron
-  // (INSTRUMENTS) als de wizard, één keer opgebouwd, dan hergebruikt.
-  const instrEl = document.getElementById('memberSearchInstrument');
-  if (instrEl && instrEl.options.length <= 1) {
-    INSTRUMENTS.forEach(i => {
-      const opt = document.createElement('option');
-      opt.value = i; opt.textContent = i;
-      instrEl.appendChild(opt);
-    });
-  }
-  if (instrEl) instrEl.value = '';
-  // V-17-restpunt (13-08-2026): straal terugzetten bij elke opening, net als
-  // instrument en naam hierboven — anders blijft een eerder ingevulde straal
-  // onopgemerkt actief bij de volgende band.
-  const radiusEl = document.getElementById('memberSearchRadius');
-  if (radiusEl) radiusEl.value = '';
-  // TT-127-restpunt-vervolg (27-08-2026): zelfde terugzet-reden voor het
-  // nieuwe Plaats-veld en zijn bevestigingsregel.
+  // TT-253 (02-10-2026): instrument is een keuzeveld en straal een wielveld,
+  // zoals in Vind een muzikant. Eén keer opgebouwd, bij elke opening leeg:
+  // anders blijft een eerdere keuze onopgemerkt actief bij de volgende band.
+  memberSearchVeldenInit();
+  memberSearchInstruments.length = 0;
+  renderPickerBadges(PICKERS.memberSearchInstruments);
+  setWheelFieldValues('memberRadius', [''], false);
   const cityEl = document.getElementById('memberSearchCity');
   if (cityEl) cityEl.value = '';
   const cityStatusEl = document.getElementById('memberSearchCityStatus');
@@ -415,7 +435,7 @@ function openAddMemberModal(bandId, bandName) {
 function searchMembersToAdd(query) {
   clearTimeout(memberSearchTimer);
   const q = query.trim();
-  const instrument = document.getElementById('memberSearchInstrument')?.value || '';
+  const instrument = memberSearchInstruments[0] || ''; // TT-253: keuzeveld i.p.v. <select>
   // TT-163-bugfix (27-08-2026, live gemeld door Ronald): het nieuwe
   // Plaats-veld (memberSearchCity) triggerde nog geen zoekopdracht — de
   // guard hieronder kende alleen naam en instrument als startvoorwaarde,

@@ -200,7 +200,8 @@ async function shareProfile(kind, id, name) {
 // elk profiel — Mijn Profiel, het venster van een muzikant (ook je eigen) en
 // het bandvenster (ook je eigen band). De brede knoppen "Deel dit profiel" en
 // "Deel dit bandprofiel" onderaan zijn weg. Het icoon is de drie verbonden
-// punten (keuze B). Eén functie voor alle drie de plekken, geen eigen variant
+// punten (keuze B); sinds TT-403 met gesloten stippen, de gangbare vorm
+// (Android, Material). Eén functie voor alle drie de plekken, geen eigen variant
 // per scherm. Rechts van het icoon staat het ⋯-menu, als dat er is; zonder
 // menu schuift het icoon naar de plek van het menu.
 // TT-385 (besluit Ronald, g): de beheerder van een band die nog niet af is,
@@ -210,7 +211,7 @@ function deelKnopHTML(kind, id, name, actie) {
   const label = kind === 'band' ? 'Deel dit bandprofiel' : 'Deel dit profiel';
   const klik = actie || `shareProfile('${kind === 'band' ? 'band' : 'profiel'}','${jsAttr(id)}','${jsAttr(name)}')`;
   return `<button type="button" class="nav-menu-btn deel-knop" onclick="${klik}" aria-label="${label}" title="Delen">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.5"></circle><circle cx="6" cy="12" r="2.5"></circle><circle cx="18" cy="19" r="2.5"></circle><line x1="8.2" y1="10.8" x2="15.8" y2="6.2"></line><line x1="8.2" y1="13.2" x2="15.8" y2="17.8"></line></svg>
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="18" cy="5" r="3" stroke="none"></circle><circle cx="6" cy="12" r="3" stroke="none"></circle><circle cx="18" cy="19" r="3" stroke="none"></circle><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"></line><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"></line></svg>
   </button>`;
 }
 

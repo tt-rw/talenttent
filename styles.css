@@ -118,18 +118,23 @@
      Welke stand geldt, bepaalt het blok bovenin index.html (stap 3): het
      toestel, of de eigen keuze in Instellingen. Geel (#F5C518) is op crème als tekst onleesbaar
      (1,5:1): daarom is geel hier alleen een vlak, en is --accent zwart. */
-  :root[data-theme="licht"] {
-    --bg: #F6F3EC;
+    /* TT-402 (02-10-2026, Ronald: "meer accenten in het lichte profiel. het is
+     bijna egaal waardoor je geen onderscheid kunt maken tussen knoppen/
+     invoervelden"): de ondergrond is donkerder dan het witte vlak (1,2:1, was
+     1,1:1), velden hebben een rand van 3:1 of meer (WCAG voor bedieningselementen)
+     en gedempte tekst is 5:1. Alleen de waarden van de rollen; donker blijft gelijk. */
+:root[data-theme="licht"] {
+    --bg: #ECE7DD;                 /* TT-402: donkerder dan het witte vlak, was #F6F3EC */
     --surface: #FFFEFA;
-    --surface2: #EFEBE2;
-    --border: #DED9CF;
+    --surface2: #E6E1D6;           /* TT-402, was #EFEBE2 */
+    --border: #D2CCBF;             /* TT-402: de rand van een vlak is zichtbaar, was #DED9CF */
     --accent: #1E1E1E;
     --danger: #B93A2F;
     --success: #287A4B;
     --text: #1E1E1E;
-    --muted: #8A8782;
-    --field-bg: #F6F3EC;           /* keuzevelden in de kleur van de ondergrond (Ronald) */
-    --field-border: #C9C3B6;       /* "iets donkerder, niet veel" (Ronald) */
+    --muted: #6E6A63;              /* TT-402: 5,3:1 op wit, was #8A8782 (3,5:1) */
+    --field-bg: #ECE7DD;           /* keuzevelden in de kleur van de ondergrond (Ronald) */
+    --field-border: #948D80;       /* TT-402: 3,3:1 op wit, was #C9C3B6 (1,7:1) */
     --line: 1px;
     --merk: #F5C518;
     --merk-tekst: #1E1E1E;
@@ -152,7 +157,7 @@
     --laag-opslaan: rgba(30,30,30,0.45);
     --laag-menu: rgba(30,30,30,0.45);
     --laag-wiel: rgba(30,30,30,0.45);
-    --laag-fout: rgba(246,243,236,0.96);
+    --laag-fout: rgba(236,231,221,0.96);
     --schaduw-menu: 0 4px 20px rgba(30,30,30,0.06);
     --schaduw-melding: 0 4px 20px rgba(30,30,30,0.06);
     --rand-neutraal: #CFC9BC;
@@ -2587,7 +2592,8 @@
      elk blok apart — dat is precies wat §3 verbiedt. */
   .search-filters > .field,
   .search-filters > .filter-row,
-  .search-filters > .field-pair-row { margin-bottom: 20px; }
+  .search-filters > .field-pair-row,
+  #addMemberModal .modal-box > .field { margin-bottom: 20px; } /* TT-253: Lid uitnodigen volgt Vind een muzikant */
 
   .search-filters {
     background: var(--surface);
@@ -3272,10 +3278,10 @@
      niet. Staat er geen menu naast (je eigen band, je eigen profiel in het
      venster, een bezoeker zonder profiel), dan staat het teken midden in zijn
      vak: op de plek van het menu, onder het kruisje. */
-  .profiel-knoppen .deel-knop { justify-content: flex-end; padding-right: 0; }
-  .profiel-knoppen .deel-knop svg { margin-right: -6px; }
+  /* TT-403 (02-10-2026, Ronald: "verder af van 3 puntjes"): 28px tussen het
+     teken en de stippen, was 20px. */
+  .profiel-knoppen .deel-knop { justify-content: flex-end; padding-right: 2px; }
   .profiel-knoppen .deel-knop:last-child { justify-content: center; padding-right: 9px; }
-  .profiel-knoppen .deel-knop:last-child svg { margin-right: 0; }
 
   /* TT-384 (30-09-2026, besluiten Ronald): de kop van het muzikantprofiel
      staat onder elkaar. Bovenaan een rij: links de profielfoto, rechts het

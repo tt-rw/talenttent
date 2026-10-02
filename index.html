@@ -51,7 +51,7 @@
     if (licht) document.documentElement.setAttribute('data-theme', 'licht');
     else document.documentElement.removeAttribute('data-theme');
     var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.setAttribute('content', licht ? '#F6F3EC' : '#0d0d0d');
+    if (m) m.setAttribute('content', licht ? '#ECE7DD' : '#0d0d0d');
   }
   pasLichtDonkerToe();
 </script>
@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261002e">
+<link rel="stylesheet" href="styles.css?v=20261002f">
 </head>
 <body>
 
@@ -2667,45 +2667,44 @@
          bezetting en het blok Bandbeheer. -->
     <div class="filter-title" style="margin-bottom:8px;padding-right:52px;">Lid uitnodigen</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">De muzikant staat pas als lid op het bandprofiel zodra hij of zij de uitnodiging zelf bevestigt.</p>
-    <!-- V-17 (13-08-2026): zoeken kon alleen op naam of gebruikersnaam — dan
-         moest je al weten wie je zocht. Instrument erbij, en zoeken werkt nu
-         ook zonder getypte naam zolang er een instrument gekozen is. -->
-    <select id="memberSearchInstrument" onchange="searchMembersToAdd(document.getElementById('memberSearchInput').value)" style="width:100%;min-height:44px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:8px;box-sizing:border-box;">
-      <option value="">Alle instrumenten</option>
-    </select>
-    <input type="text" id="memberSearchInput" placeholder="Zoek op naam..." autocomplete="off" oninput="searchMembersToAdd(this.value)" style="width:100%;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:16px;margin-bottom:16px;">
-    <!-- TT-127-restpunt-vervolg (27-08-2026, Ronalds besluit): V-17-restpunt
-         koos bewust voor "geen apart Plaats-veld, vertrekpunt is altijd je
-         eigen locatie". Dat besluit is nu herzien — Ronald wil ook hier
-         vanaf een andere plaats kunnen zoeken, zoals op de drie
-         zoekpagina's (TT-160). Zelfde patroon: één .field met Plaats en
-         Straal naast elkaar, plus de "Gevonden: ..."-bevestigingsregel
-         (scheduleSearchCityStatus()/updateSearchCityStatus(), hergebruikt,
-         geen nieuwe functie). city-search-wrap/autocomplete hergebruikt
-         onCitySearchInput() met een eigen lijst-id.
-         LET OP — nog niet volledig af: resolveSearchOrigin() geeft veilig
-         een lat/lng terug voor een getypte plaats (bestaande, al gebruikte
-         RPC tt_resolve_search_origin — geeft coördinaten van een postcode/
-         plaatsnaam terug, geen persoonsgegevens). Maar tt_musician_distances
-         accepteert alleen searcher_id, geen eigen vertrekpunt. Tot die
-         databasefunctie is uitgebreid, gebruikt de afstandsberekening
-         hieronder nog steeds je eigen locatie, ongeacht wat hier wordt
-         getypt — zie de toelichting in searchMembersToAdd(). -->
-    <div class="field" style="margin-bottom:16px;">
-      <div style="display:flex;gap:8px;align-items:flex-start;">
-        <div class="city-search-wrap" style="flex:0 1 260px;min-width:0;">
+    <!-- TT-253 (02-10-2026, Ronald: "deze pagina in de bandomgeving is niet
+         aangepast"): dezelfde opbouw als Vind een muzikant (huisstijl §7):
+         Naam, dan Plaats en Straal op één regel (.filter-row-city, straal als
+         wielveld van 104px), dan Instrument als keuzeveld met badge. Geen
+         zichtbare browser-keuzelijst en geen kaal getalveld meer. De velden
+         zijn klassen, geen losse style=. De straal start op "Alle": zonder
+         straal zoekt het venster zoals voorheen, ook op naam buiten de buurt. -->
+    <div class="field">
+      <label>Naam</label>
+      <input type="text" id="memberSearchInput" placeholder="Bijv. Sanne of RockDrummer92" autocomplete="off" oninput="searchMembersToAdd(this.value)">
+    </div>
+    <div class="field">
+      <div class="filter-row-city">
+        <div class="city-search-wrap frc-plaats">
           <label>Plaats</label>
           <input type="text" id="memberSearchCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
             oninput="onCitySearchInput(this.value,'acMemberSearchCityList'); searchMembersToAdd(document.getElementById('memberSearchInput').value); scheduleSearchCityStatus('memberSearchCity','memberSearchCityStatus');"
             onblur="setTimeout(()=>closeAC('acMemberSearchCityList'),200)">
           <div class="autocomplete-list" id="acMemberSearchCityList"></div>
         </div>
-        <div class="radius-row" style="flex-shrink:0;">
-          <input type="number" id="memberSearchRadius" placeholder="bijv. 25" min="5" max="500" step="5" style="width:110px;" onchange="searchMembersToAdd(document.getElementById('memberSearchInput').value)">
-          <span style="color:var(--muted);font-size:13px;">km</span>
+        <div class="frc-straal">
+          <label>Straal</label>
+          <div class="wheel-field" id="memberSearchRadiusField">
+            <span class="wheel-field-label"></span>
+            <span class="wheel-field-chevron" aria-hidden="true">&#9662;</span>
+          </div>
+          <input type="hidden" id="memberSearchRadius" value="">
         </div>
       </div>
-      <div id="memberSearchCityStatus" class="field-status"></div>
+      <div id="memberSearchCityStatus" class="city-status"></div>
+    </div>
+    <div class="field">
+      <label>Instrument</label>
+      <div class="picker-field" id="memberSearchInstrumentsField">
+        <span class="picker-field-label" id="memberSearchInstrumentsFieldLabel">Kies een instrument</span>
+        <span class="picker-field-chevron">▾</span>
+      </div>
+      <div class="picker-badge-row" id="memberSearchInstrumentsBadgeRow"></div>
     </div>
     <div id="memberSearchResults"></div>
   </div>
@@ -2880,8 +2879,8 @@
 <script src="wizard.js?v=20261002e"></script>
 <script src="ouder.js?v=20261001a"></script>
 <script src="search.js?v=20261002e"></script>
-<script src="musicians.js?v=20261002e"></script>
-<script src="bands.js?v=20261002e"></script>
+<script src="musicians.js?v=20261002f"></script>
+<script src="bands.js?v=20261002f"></script>
 <script src="messages.js?v=20261002a"></script>
 <script src="modals-shared.js?v=20261002d"></script>
 <script>
