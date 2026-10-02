@@ -1215,7 +1215,9 @@ async function runBandSearch(straalOverride) {
       matches.forEach(m => { matchInfo[m.band_id] = m; });
 
       const ids = matches.map(m => m.band_id);
-      let query = db.from('bands').select(`id, name, city, genres, status, description, niveau, band_members(musician_id, status, musicians(fname)), band_wanted(instrument)`).in('id', ids);
+      // TT-385 fase 5: de bandfoto, de pauze en de invallers voor de bandkaart.
+      // De leden alleen om te tellen (bandStatusLabel()); geen namen meer.
+      let query = db.from('bands').select(`id, name, city, genres, status, niveau, avatar_url, pauze, band_members(status), band_wanted(instrument), band_invallers(instrument, datum)`).in('id', ids);
       if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
       const { data, error } = await query;
       if (error) throw error;
@@ -1246,12 +1248,16 @@ async function runBandSearch(straalOverride) {
       let { data, error } = await db.rpc('tt_get_bands_public', { ids });
       if (error) throw error;
       if (filterBandStatusVal) data = (data || []).filter(b => b.status === filterBandStatusVal);
+      // TT-385 fase 5: zelfde vorm als de tak hierboven. tt_get_bands_public
+      // geeft alleen bevestigde leden, alleen invallers vanaf vandaag, en geen
+      // bandfoto als de band is afgeschermd (TT-385 punt 9).
       bands = (data || []).map(b => ({
         id: b.id, name: b.name, city: b.city, genres: b.genres || [], status: b.status,
-        description: b.description,
         niveau: b.niveau, // TT-51 (12-08-2026, RPC-restpunt gesloten)
-        band_members: (b.members || []).map(x => ({ status: 'bevestigd', musicians: { fname: x.fname } })),
+        avatar_url: b.avatar_url || null, pauze: !!b.pauze,
+        band_members: (b.members || []).map(() => ({ status: 'bevestigd' })),
         band_wanted: (b.wanted || []).map(i => ({ instrument: i })),
+        band_invallers: b.invallers || [],
       }));
     }
 
@@ -1271,6 +1277,10 @@ async function runBandSearch(straalOverride) {
     const bandNiveauFilterActive = !!(bandNiveauMinVal || bandNiveauMaxVal);
 
     const filtered = (bands || []).filter(b => {
+      // TT-385 punt 7: "We spelen even niet" haalt de band uit Zoeken. Dit
+      // filter staat vóór de TT-62-controle hieronder, dus een lege uitslag
+      // verruimt gewoon de straal.
+      if (b.pauze || b.status === 'inactief') return false;
       if (!naamMatcht(nameTerm, b.name)) return false;
       if (cityQuery && !skipCityTextFilter && !(b.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterBandGenresList.length && !filterBandGenresList.some(g => (b.genres||[]).includes(g))) return false;
@@ -1335,10 +1345,9 @@ function renderBandSearchResults(bands, opts) {
   const cappedNotice = total > bands.length
     ? `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Toont de eerste ${bands.length} van ${total} resultaten — voeg een filter toe of verklein je zoekstraal voor een preciezer overzicht.</p>`
     : '';
-  const statusLabels = { zoekend: 'Zoekend', compleet: 'Compleet', inactief: 'Inactief' };
   el.innerHTML = `<div class="results-header"><span class="results-count">${total} band${total !== 1 ? 's' : ''} gevonden</span></div>
     ${verruimd}${locationHint}${cappedNotice}
-    <div class="${bandViewMode === 'grid' ? 'results-grid-view' : 'results-list'}">${bands.map(b => bandViewMode === 'grid' ? bandCardHTML(b, statusLabels) : bandRowHTML(b, statusLabels)).join('')}</div>`;
+    <div class="${bandViewMode === 'grid' ? 'results-grid-view' : 'results-list'}">${bands.map(b => bandViewMode === 'grid' ? bandCardHTML(b) : bandRowHTML(b)).join('')}</div>`;
 }
 
 // Zelfde patroon als renderCappedMusicianResults() hierboven.
@@ -1350,46 +1359,66 @@ function renderCappedBandResults() {
   renderBandSearchResults(shown, { total, showLocationHint, verruimd: bandVerruimd });
 }
 
-// Lijstweergave i.p.v. kaarten (04-08-2026) — duidelijker scanbaar bij veel resultaten.
-function bandRowHTML(b, statusLabels) {
-  const wanted = (b.band_wanted||[]).slice(0,3);
-  const status = statusLabels[b.status] ? b.status : '';
+// TT-385 fase 5 (besluit Ronald bij punt 11): de bandkaart in Zoeken. De
+// vierkante bandfoto tegenover de ronde foto van een muzikant, geen foto's van
+// de leden ("dat zie je als je het profiel opent"), de open rol als tag. Een
+// invaller voor één optreden staat er ook als tag (punt 16). De statustag
+// komt uit dezelfde functie als op de bandpagina en in Mijn Bands
+// (bandStatusLabel()). Zelfde opbouw als de Bandproef van 02-10-2026.
+function bandKaartGegevens(b) {
+  const open = (b.band_wanted || []).map(w => w.instrument);
+  const vandaag = vandaagISO();
+  const invallers = (b.band_invallers || []).filter(v => String(v.datum) >= vandaag).map(v => v.instrument);
+  const leden = (b.band_members || []).filter(m => m.status === 'bevestigd').length;
+  return {
+    foto: safeUrl(b.avatar_url),
+    status: bandStatusLabel(b.pauze, leden, open.length),
+    rollen: open.map(i => '+ ' + i).concat(invallers.map(i => 'Invaller ' + instrumentInZin(i))),
+    plaats: `${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}`
+  };
+}
+
+// "Drums" midden in een zin wordt "drums"; een afkorting als "DJ" blijft staan.
+function instrumentInZin(naam) {
+  const w = String(naam || '');
+  return /^[A-Z]{2,}\b/.test(w) ? w : w.charAt(0).toLowerCase() + w.slice(1);
+}
+
+// Lijstweergave: foto, naam, plaats met de status erachter; daaronder de open
+// rollen en invallers, dan de genres. Elk hooguit twee, met "+N" voor de rest,
+// zoals bij de muzikant (TT-153).
+function bandRowHTML(b) {
+  const k = bandKaartGegevens(b);
   return `
     <div class="result-row" onclick="openBandModal('${jsAttr(b.id)}')">
       <div class="result-row-top">
-        <div class="result-row-avatar" style="border-radius:10px;">${AVATAR_T_FALLBACK}</div>
+        <div class="result-row-avatar result-vierkant">${k.foto ? `<img src="${k.foto}" alt="${escHtml(b.name)}">` : AVATAR_T_FALLBACK}</div>
         <div class="result-row-main">
           <div class="result-row-name">${escHtml(b.name)}</div>
-          <div class="result-row-meta">
-            ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
-            <span class="band-status-badge band-status-${status}" style="margin-left:8px;">${escHtml(statusLabels[status] || b.status)}</span>
-          </div>
+          <div class="result-row-meta">${k.plaats}${k.status ? `<span class="band-status-badge">${escHtml(k.status)}</span>` : ''}</div>
         </div>
       </div>
       <div class="result-row-badges">
-        ${wanted.map(w => tagSolid('+ ' + w.instrument)).join('')}
+        ${overflowBadgeHTML(k.rollen, 2)}
+        ${overflowBadgeHTML(b.genres || [], 2)}
       </div>
     </div>`;
 }
 
-// TT-30 (07-08-2026): kaartweergave voor bands, zelfde patroon als
-// musicianCardHTML() hierboven — kiesbaar via de "Weergave"-toggle. Geen
-// berichten-icoon (in tegenstelling tot de muzikant-varianten): berichten
-// bestaan vooralsnog alleen muzikant-naar-muzikant, niet naar een band.
-function bandCardHTML(b, statusLabels) {
-  const wanted = (b.band_wanted||[]).slice(0,3);
-  const status = statusLabels[b.status] ? b.status : '';
+// TT-30 (07-08-2026): kaartweergave, kiesbaar via Weergave. Geen berichtknop:
+// een bericht aan een band gaat via de bandpagina naar de contactpersoon.
+// Eén regel tags: de eerste open rol of invaller met "+N" voor de rest, of
+// anders de status. Twee rollen passen niet op een kaart van 390px breed; de
+// tweede werd afgesneden.
+function bandCardHTML(b) {
+  const k = bandKaartGegevens(b);
+  const tags = k.rollen.length ? overflowBadgeHTML(k.rollen, 1) : (k.status ? tagSolid(k.status) : '');
   return `
     <div class="result-card" onclick="openBandModal('${jsAttr(b.id)}')">
-      <div class="result-card-photo" style="border-radius:8px;">${AVATAR_T_FALLBACK}</div>
+      <div class="result-card-photo result-vierkant">${k.foto ? `<img src="${k.foto}" alt="${escHtml(b.name)}">` : AVATAR_T_FALLBACK}</div>
       <div class="result-card-name">${escHtml(b.name)}</div>
-      <div class="result-card-meta">
-        ${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}
-        <span class="band-status-badge band-status-${status}" style="margin-left:8px;">${escHtml(statusLabels[status] || b.status)}</span>
-      </div>
-      <div class="result-card-badges">
-        ${wanted.map(w => tagSolid('+ ' + w.instrument)).join('')}
-      </div>
+      <div class="result-card-meta">${k.plaats}</div>
+      ${tags ? `<div class="result-card-badges-line">${tags}</div>` : ''}
     </div>`;
 }
 

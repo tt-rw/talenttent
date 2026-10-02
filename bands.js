@@ -1012,6 +1012,48 @@ function bandSectieHTML(titel, inhoud) {
   return `<div class="profile-media"><div class="profile-media-title">${titel}</div>${inhoud}</div>`;
 }
 
+// ─── Je bands op je muzikantprofiel (TT-385 punt 17, fase 5) ─────────────────
+// Uit de tekening van Ronald: zodra je een uitnodiging accepteert, staat de
+// band op je eigen profiel, in een blok Bands onder de bio. Op Mijn Profiel en
+// in het muzikantvenster gelijk, voor elke kijker. Een tik opent de
+// bandpagina. Twee stappen: tt_musician_band_ids geeft de bands waarvan de
+// muzikant bevestigd lid is; tt_get_bands_public levert naam, foto en rol, met
+// dezelfde afscherming als de bandpagina (TT-385 punt 9). Zo bestaat die
+// afscherming maar op één plek. Mislukt het, dan staat er geen blok.
+async function profielBandsOphalen(musicianId) {
+  if (!musicianId) return [];
+  try {
+    const { data: rijen, error } = await db.rpc('tt_musician_band_ids', { mid: musicianId });
+    if (error) throw error;
+    const ids = (rijen || []).map(r => r.band_id).filter(Boolean);
+    if (!ids.length) return [];
+    const { data, error: fout } = await db.rpc('tt_get_bands_public', { ids });
+    if (fout) throw fout;
+    return ids.map(id => (data || []).find(b => b.id === id)).filter(Boolean).map(b => {
+      const ik = (b.members || []).find(x => x.id === musicianId) || {};
+      return { id: b.id, naam: b.name, foto: b.avatar_url || null, instrumenten: ik.instruments || [], rol: ik.role || 'Lid' };
+    });
+  } catch (e) {
+    logCaught('profielBandsOphalen', e);
+    return [];
+  }
+}
+
+// Eén rij per band, in de vorm van een rij in Onze bezetting, met de
+// vierkante bandfoto. Eronder de instrumenten, en "Beheerder" voor de
+// beheerder.
+function profielBandsHTML(bands) {
+  if (!bands || !bands.length) return '';
+  return bandSectieHTML('Bands', bands.map(b => {
+    const foto = safeUrl(b.foto);
+    const beeld = foto
+      ? `<img class="bb-foto bb-foto-vierkant" src="${foto}" alt="">`
+      : `<span class="bb-foto bb-foto-t bb-foto-vierkant" aria-hidden="true">${AVATAR_T_FALLBACK}</span>`;
+    const sub = b.instrumenten.concat(b.rol === 'Oprichter' ? [roleLabel(b.rol)] : []).join(' · ');
+    return `<button type="button" class="bb-rij profiel-band-rij" onclick="openBandModal('${jsAttr(b.id)}')">${beeld}<span class="bb-tekst"><span class="bb-naam">${escHtml(b.naam)}</span>${sub ? `<span class="bb-sub">${escHtml(sub)}</span>` : ''}</span></button>`;
+  }).join(''));
+}
+
 function bandNummerHTML(n) {
   if (n.afgeschermd) {
     return `<div class="band-nummer"><span class="media-mini media-afgeschermd" role="img" aria-label="Alleen zichtbaar met een account"><span class="avatar-t">T</span></span>` +

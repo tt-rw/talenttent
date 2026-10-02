@@ -311,6 +311,7 @@ async function loadMyProfile() {
 
   const { data: myAges } = await db.rpc('tt_musicians_ages', { ids: [m.id] });
   m.age = (myAges && myAges[0]) ? myAges[0].age : undefined;
+  m.bands = await profielBandsOphalen(m.id); // TT-385 punt 17: het blok Bands
 
   // TT-120 (22-08-2026): "Jouw pad op The Talent Tent" (TT-48) staat niet
   // meer op Mijn Profiel. De functie renderProgressPanel() is op 16-09-2026

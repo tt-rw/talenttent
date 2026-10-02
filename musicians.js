@@ -95,6 +95,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       ${m.musician_genres.map(x => `<span class="tag-solid">${escHtml(x.genre)}</span>`).join('')}
     </div>
     ${m.bio ? `<p style="font-size:15px;color:var(--text);margin:12px 0;">${escHtml(m.bio)}</p>` : ''}
+    ${profielBandsHTML(m.bands)}
     ${m.musician_songs.length ? `
       <div class="profile-songs">
         <div class="profile-songs-title">Repertoire (${m.musician_songs.length} ${m.musician_songs.length === 1 ? 'nummer' : 'nummers'})</div>
@@ -314,6 +315,9 @@ async function openMusicianModal(id) {
     document.getElementById('musicianModalContent').innerHTML = '<p style="color:var(--danger)">Kon profiel niet laden.</p>';
     return;
   }
+
+  // TT-385 punt 17: de bands van deze muzikant, voor het blok Bands.
+  m.bands = await profielBandsOphalen(m.id);
 
   // Afstand tonen (indien bekend uit een eerdere zoekopdracht) i.p.v. de postcode.
   m.distance_km = musicianDistanceCache[m.id] != null ? musicianDistanceCache[m.id] : null;
