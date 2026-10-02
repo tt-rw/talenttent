@@ -12,9 +12,13 @@ let activeConversationId = null; // musician-id van de open gespreksdraad
 // nieuw account, na de volledige wizard) — nooit voor een gewone profielklik.
 let pendingMessageRecipient = null;
 
-function openMessageComposer(recipientId, recipientName) {
+// TT-385 (besluit Ronald, (h)): een bericht aan een band komt binnen bij de
+// contactpersoon. Het venster zegt dat: "Aan Jesse, de contactpersoon van
+// Nachtploeg." Zonder bandnaam blijft de regel zoals hij was.
+function openMessageComposer(recipientId, recipientName, bandNaam) {
   messageComposerRecipientId = recipientId;
   document.getElementById('messageComposerRecipientName').textContent = recipientName;
+  document.getElementById('messageComposerVia').textContent = bandNaam ? `, de contactpersoon van ${bandNaam}.` : '';
   document.getElementById('messageComposerBody').value = '';
   updateCharCounter('messageComposerBody', 'messageComposerCounter', 2000);
   document.getElementById('musicianModal').classList.remove('visible');

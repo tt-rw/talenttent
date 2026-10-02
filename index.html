@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261001a">
+<link rel="stylesheet" href="styles.css?v=20261002a">
 </head>
 <body>
 
@@ -2154,7 +2154,7 @@
 
 <!-- Band detail modal -->
 <div class="modal-overlay" id="bandModal" onclick="if(event.target===this)this.classList.remove('visible')">
-  <div class="modal-box modal-box-kop" id="bandModalBox">
+  <div class="modal-box modal-box-sticky-footer modal-box-kop" id="bandModalBox">
     <!-- TT-269 (15-09-2026, Ronald): "voer dit door in de hele app." Zelfde
          koprij als het muzikantprofiel — woordmerk links, sluiten-kruisje op
          de plek van de hamburger. Muzikantkant en bandkant volgen dezelfde
@@ -2180,6 +2180,9 @@
       </div>
     </div>
     <div id="bandModalContent" class="modal-scroll-area"></div>
+    <!-- TT-385: de knop "Stuur een bericht aan de band" staat vast onderin,
+         zoals bij het muzikantvenster (V-09). -->
+    <div id="bandModalFooter" class="modal-sticky-footer"></div>
   </div>
 </div>
 
@@ -2267,7 +2270,7 @@
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeMessageComposer()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">Bericht sturen</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Aan <strong id="messageComposerRecipientName" style="color:var(--text);"></strong></p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Aan <strong id="messageComposerRecipientName" style="color:var(--text);"></strong><span id="messageComposerVia"></span></p>
     <textarea id="messageComposerBody" placeholder="Schrijf je bericht..." maxlength="2000" style="width:100%;min-height:120px;" oninput="updateCharCounter('messageComposerBody','messageComposerCounter',2000)"></textarea>
     <div id="messageComposerCounter" style="text-align:right;font-size:12px;color:var(--muted);margin:4px 0 16px;">0/2000</div>
     <div class="btn-row">
@@ -2639,17 +2642,17 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20261001a"></script>
-<script src="utils.js?v=20260930b"></script>
+<script src="utils.js?v=20261002a"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260927b"></script>
 <script src="postcode.js?v=20260930b"></script>
 <script src="wizard.js?v=20260930c"></script>
 <script src="ouder.js?v=20261001a"></script>
 <script src="search.js?v=20261001a"></script>
-<script src="musicians.js?v=20260930d"></script>
-<script src="bands.js?v=20260930c"></script>
-<script src="messages.js?v=20260926v"></script>
-<script src="modals-shared.js?v=20260924a"></script>
+<script src="musicians.js?v=20261002a"></script>
+<script src="bands.js?v=20261002a"></script>
+<script src="messages.js?v=20261002a"></script>
+<script src="modals-shared.js?v=20261002a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding

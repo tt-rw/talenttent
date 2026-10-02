@@ -1778,21 +1778,27 @@ function profielBannerItems(mediaLijst) {
 // `afgeschermd: true` (tt_get_musicians_public). Op die plek staat de T van
 // The Talent Tent: een zwarte T op geel, als het profielvlak (TT-341). Geen knop — er valt
 // niets te openen, en een knop die niets doet is een fout (onderhoudsronde).
-// Eén functie voor de tegel op het profiel én het vlak in de bannerbalk.
-function mediaAfgeschermdHTML(plek) {
-  const klasse = plek === 'banner' ? 'pb-item media-afgeschermd' : 'profile-media-tegel media-afgeschermd';
-  return `<div class="${klasse}" role="img" aria-label="Alleen zichtbaar met een account"><span class="avatar-t">T</span></div>`;
+// TT-385 (02-10-2026, besluit Ronald): alleen nog voor de tegel op het
+// profiel. Een afgeschermd profiel heeft geen bannerbalk meer, zie
+// profielBannerHTML() hieronder.
+function mediaAfgeschermdHTML() {
+  return `<div class="profile-media-tegel media-afgeschermd" role="img" aria-label="Alleen zichtbaar met een account"><span class="avatar-t">T</span></div>`;
 }
 
 function profielBannerHTML(mediaLijst) {
   const items = profielBannerItems(mediaLijst);
   if (!items.length) return '';
+  // TT-385 (02-10-2026, besluit Ronald: "dan banner weglaten bij publieke
+  // profielen onder 16 jaar"; "een grote T als banner is niet fraai"). Is
+  // de bannerbalk afgeschermd, dan staat hij er niet. De database schermt
+  // een profiel in zijn geheel af, dus één afgeschermd item is genoeg. Geldt
+  // voor muzikant en band: beide gebruiken deze functie.
+  if (items.some(it => it.afgeschermd)) return '';
   const nr = ++profielBannerVolgnr;
   const spoorId = `pbSpoor${nr}`;
   const stippenId = `pbStippen${nr}`;
 
   const vlakken = items.map((it, i) => {
-    if (it.afgeschermd) return mediaAfgeschermdHTML('banner');
     const url = it.veilig;
     const platform = it.platform || detectPlatform(url);
     let binnen, tik;

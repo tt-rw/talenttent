@@ -386,17 +386,16 @@ function starDisplayHTML(niveau) {
   return `<span class="star-display">${filled}${empty}</span>`;
 }
 
-// TT-51-uitbreiding (12-08-2026, Ronalds beslissing): de bandster toont
-// alleen zolang de band 'Zoekend naar leden' is. Zodra de status naar
-// 'Compleet' of 'Inactief' gaat, verdwijnt de ster overal — het niveau blijft
-// wel gewoon opgeslagen, alleen niet meer zichtbaar.
+// TT-51-uitbreiding (12-08-2026, Ronalds beslissing): de ervaring van de band
+// toont alleen zolang de band iemand zoekt. Het niveau blijft wel opgeslagen.
 // TT-316 (24-09-2026, besluit Ronald): het niveau staat op het profiel, niet
-// in een lijst. De ster staat daarom alleen nog op het bandprofiel — niet meer
-// in de zoekresultaten (rij en kaart) en niet op Mijn Bands.
-function bandStarDisplayHTML(b) {
-  if (b.status !== 'zoekend') return '';
-  const html = starDisplayHTML(b.niveau);
-  return html ? ' ' + html : '';
+// in een lijst — niet in de zoekresultaten en niet op Mijn Bands.
+// TT-385 (02-10-2026, punt 14): op de bandpagina een tag "Ervaring" met de
+// sterren, niet meer achter de naam. "Zoekend" volgt uit de open rollen.
+function bandErvaringTagHTML(niveau, zoekend) {
+  if (!zoekend) return '';
+  const sterren = starDisplayHTML(niveau);
+  return sterren ? `<span class="tag-solid">Ervaring ${sterren}</span>` : '';
 }
 
 // Klikbare sterrenkiezer. `getValue`/`setValue` laten deze functie werken voor
