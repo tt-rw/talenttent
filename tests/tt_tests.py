@@ -6332,6 +6332,187 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 59", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # Blok 60 — TT-385 fase 5 (02-10-2026): de bandkaart in Zoeken, "We spelen even niet" uit Zoeken, het blok Bands
+        # ------------------------------------------------------------------
+        print("\nBlok 60 — de bandkaart in Zoeken en het blok Bands op het muzikantprofiel (TT-385, fase 5)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.evaluate("showView('about')")
+        page.wait_for_timeout(80)
+        # Zelfde opzet als blok 59: een band krijgt zijn geneste tabellen.
+        page.evaluate(r"""() => {
+          const S = window.TT_STUB;
+          window.__b60 = { from: db.from, hasOwnProfile, myMusicianId, currentUser, view: bandViewMode, rpc: JSON.parse(JSON.stringify(S.rpcResults || {})) };
+          const echt = db.from.bind(db);
+          const kind = ['band_wanted', 'band_members', 'band_invallers'];
+          db.from = (t) => { const q = echt(t); const run = q._run.bind(q);
+            q._run = () => { const r = run();
+              if (q.op !== 'select' || !r.data || t !== 'bands') return r;
+              (Array.isArray(r.data) ? r.data : [r.data]).forEach(b => kind.forEach(k => { b[k] = (S.data[k] || []).filter(x => x.band_id === b.id).map(x => JSON.parse(JSON.stringify(x))); }));
+              return r; };
+            return q; };
+          const morgen = new Date(Date.now() + 864e5), gisteren = new Date(Date.now() - 864e5);
+          const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          window.__b60datum = { morgen: iso(morgen), gisteren: iso(gisteren) };
+          S.data.bands = [
+            { id: 'b5', name: 'Nachtploeg', city: 'Den Haag', genres: ['Indie', 'Rock', 'Pop'], status: 'zoekend', niveau: 3, avatar_url: 'https://x.supabase.co/storage/v1/object/public/avatars/bands/b5/f.jpg', pauze: false, founder_id: 'm1' },
+            { id: 'b6', name: 'Zoutwater', city: 'Rijswijk', genres: ['Pop'], status: 'compleet', niveau: 3, avatar_url: null, pauze: false, founder_id: 'm2' },
+            { id: 'b7', name: 'Stille Week', city: 'Delft', genres: ['Jazz'], status: 'inactief', niveau: 3, avatar_url: null, pauze: true, founder_id: 'm3' },
+            { id: 'b8', name: 'Solo', city: 'Delft', genres: ['Folk'], status: 'compleet', niveau: 3, avatar_url: null, pauze: false, founder_id: 'm3' }
+          ];
+          S.data.band_members = [
+            { band_id: 'b5', musician_id: 'm1', role: 'Oprichter', status: 'bevestigd' }, { band_id: 'b5', musician_id: 'm2', role: 'Lid', status: 'bevestigd' },
+            { band_id: 'b6', musician_id: 'm2', role: 'Oprichter', status: 'bevestigd' }, { band_id: 'b6', musician_id: 'm3', role: 'Lid', status: 'bevestigd' },
+            { band_id: 'b7', musician_id: 'm3', role: 'Oprichter', status: 'bevestigd' }, { band_id: 'b8', musician_id: 'm3', role: 'Oprichter', status: 'bevestigd' }
+          ];
+          S.data.band_wanted = [{ band_id: 'b5', instrument: 'Basgitaar' }, { band_id: 'b7', instrument: 'Drums' }];
+          S.data.band_invallers = [{ band_id: 'b5', instrument: 'Drums', datum: window.__b60datum.morgen }, { band_id: 'b6', instrument: 'Zang', datum: window.__b60datum.gisteren },
+                                   { band_id: 'b8', instrument: 'DJ', datum: window.__b60datum.morgen }];
+          S.rpcResults.tt_search_bands_for_musician = () => ['b5', 'b6', 'b7', 'b8'].map((id, i) => ({ band_id: id, distance_km: 2 + i, score: 1 }));
+          currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
+        }""")
+        d60 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 150) => new Promise(r => setTimeout(r, n)), u = {};
+          const $ = id => document.getElementById(id), r = el => el.getBoundingClientRect();
+          showView('search'); await w(200); setSearchMode('band'); await w(100);
+          setBandViewMode('list'); await runBandSearch(); await w(200);
+          const rijen = () => [...$('bandSearchResults').querySelectorAll('.result-row')];
+          const rij = n => rijen().find(x => x.querySelector('.result-row-name').textContent === n);
+          const tags = el => [...el.querySelectorAll('.tag-solid')].map(t => t.textContent);
+          u.namen = rijen().map(x => x.querySelector('.result-row-name').textContent);
+          const n = rij('Nachtploeg'), z = rij('Zoutwater'), s = rij('Solo');
+          u.nacht = { tags: tags(n), status: (n.querySelector('.band-status-badge') || {}).textContent, foto: !!n.querySelector('.result-row-avatar img'),
+                      hoek: getComputedStyle(n.querySelector('.result-row-avatar')).borderRadius, meta: n.querySelector('.result-row-meta').firstChild.textContent.trim() };
+          u.zout = { tags: tags(z), status: (z.querySelector('.band-status-badge') || {}).textContent, t: !!z.querySelector('.result-row-avatar .avatar-t') };
+          u.solo = { tags: tags(s), status: !!s.querySelector('.band-status-badge') };
+          // UI: de badge staat 8px na de plaats; foto 44px; tags 8px onder de naamregel.
+          const badge = n.querySelector('.band-status-badge'), av = n.querySelector('.result-row-avatar');
+          u.maten = { badgeLinks: getComputedStyle(badge).marginLeft, badgeLetter: getComputedStyle(badge).fontSize, foto: [Math.round(r(av).width), Math.round(r(av).height)],
+                      naam: getComputedStyle(n.querySelector('.result-row-name')).fontSize,
+                      tagsUitlijning: Math.round(r(n.querySelector('.result-row-badges .tag-solid')).left - r(n.querySelector('.result-row-name')).left) };
+          // Kaartweergave: vierkante foto, één regel tags.
+          setBandViewMode('grid'); await w(100);
+          const kaarten = [...$('bandSearchResults').querySelectorAll('.result-card')];
+          const kaart = nm => kaarten.find(x => x.querySelector('.result-card-name').textContent === nm);
+          const kf = kaart('Nachtploeg').querySelector('.result-card-photo');
+          u.kaart = { namen: kaarten.map(x => x.querySelector('.result-card-name').textContent), vierkant: Math.round(r(kf).width) === Math.round(r(kf).height),
+                      nacht: tags(kaart('Nachtploeg')), zout: tags(kaart('Zoutwater')), solo: kaart('Solo').querySelectorAll('.result-card-badges-line').length,
+                      regels: kaart('Nachtploeg').querySelectorAll('.result-card-badges-line').length };
+          setBandViewMode('list');
+          // Alles op pauze: de app verruimt eerst, dan de lege staat (TT-62).
+          S.data.bands.forEach(b => { b.pauze = true; b.status = 'inactief'; });
+          const voor = S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_search_bands_for_musician').length;
+          await runBandSearch(); await w(300);
+          u.allesPauze = { stappen: S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_search_bands_for_musician').length - voor,
+                           kop: ($('bandSearchResults').querySelector('.no-results p') || {}).textContent };
+          S.data.bands.forEach(b => { b.pauze = b.id === 'b7'; b.status = b.id === 'b7' ? 'inactief' : 'zoekend'; });
+          // Zonder eigen profiel: de publieke functie, zelfde kaart; de bandfoto is leeg bij afscherming.
+          hasOwnProfile = false;
+          S.rpcResults.tt_search_bands_anon = () => ['b5', 'b7'].map((id, i) => ({ band_id: id, distance_km: 2 + i, score: null }));
+          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(id => ({ b5: { id: 'b5', name: 'Nachtploeg', city: 'Den Haag', genres: ['Indie'], status: 'zoekend', avatar_url: null, pauze: false,
+              afgeschermd: true, members: [{ id: 'm1', role: 'Oprichter', instruments: ['Gitaar'] }, { id: 'm2', role: 'Lid', instruments: [] }], wanted: ['Basgitaar'],
+              invallers: [{ instrument: 'Drums', datum: window.__b60datum.morgen }] },
+            b7: { id: 'b7', name: 'Stille Week', city: 'Delft', genres: [], status: 'inactief', pauze: true, members: [], wanted: [], invallers: [] } }[id])).filter(Boolean);
+          await runBandSearch(); await w(200);
+          u.anon = { namen: rijen().map(x => x.querySelector('.result-row-name').textContent), tags: rijen()[0] ? tags(rijen()[0]) : [],
+                     t: !!(rijen()[0] && rijen()[0].querySelector('.result-row-avatar .avatar-t')), status: rijen()[0] && (rijen()[0].querySelector('.band-status-badge') || {}).textContent };
+          hasOwnProfile = true;
+          // Het blok Bands op Mijn Profiel.
+          S.rpcResults.tt_musician_band_ids = (p) => p.mid === 'm1' ? [{ band_id: 'b5' }, { band_id: 'b8' }] : [];
+          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(id => ({
+            b5: { id: 'b5', name: 'Nachtploeg', avatar_url: 'https://x.supabase.co/storage/v1/object/public/avatars/bands/b5/f.jpg', members: [{ id: 'm1', role: 'Oprichter', instruments: ['Gitaar', 'Zang'] }] },
+            b8: { id: 'b8', name: 'Solo', avatar_url: null, members: [{ id: 'm3', role: 'Oprichter', instruments: [] }, { id: 'm1', role: 'Lid', instruments: ['Gitaar'] }] } }[id])).filter(Boolean);
+          showView('about'); await w(50);
+          document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+          $('view-myprofile').classList.add('active');
+          const eigen = $('myProfileContent');
+          const m = { id: 'm1', fname: 'Ronald', lname: 'W', username: 'ronald', bio: 'Gitarist en zanger.', city: 'Den Haag', age: 25,
+                      musician_songs: [{ song_title: 'A', song_artist: 'B', mastery_level: 'kan_ik' }], musician_media: [], musician_wanted: [],
+                      musician_instruments: [{ instrument: 'Gitaar', niveau: 3 }], musician_genres: [{ genre: 'Rock' }] };
+          m.bands = await profielBandsOphalen('m1');
+          eigen.innerHTML = buildMusicianDetailHTML(m, true, false);
+          const blok = [...eigen.querySelectorAll('.profile-media')].find(x => x.querySelector('.profile-media-title').textContent === 'Bands');
+          const bandRijen = blok ? [...blok.querySelectorAll('.profiel-band-rij')] : [];
+          u.blok = { er: !!blok, rijen: bandRijen.map(x => [x.querySelector('.bb-naam').textContent, (x.querySelector('.bb-sub') || {}).textContent || '']),
+                     naBio: blok && blok.previousElementSibling && blok.previousElementSibling.textContent === 'Gitarist en zanger.',
+                     voorRepertoire: blok && blok.nextElementSibling && blok.nextElementSibling.classList.contains('profile-songs'),
+                     knop: bandRijen[0] && bandRijen[0].tagName, t: !!(bandRijen[1] && bandRijen[1].querySelector('.bb-foto-t')) };
+          if (blok) {
+            const titel = blok.querySelector('.profile-media-title'), eerste = bandRijen[0], foto = eerste.querySelector('.bb-foto');
+            u.blokMaten = { titelRij: Math.round(r(eerste).top - r(titel).bottom), rijH: Math.round(r(eerste).height), links: Math.round(r(eerste).left), rechts: Math.round(390 - r(eerste).right),
+                            foto: [Math.round(r(foto).width), Math.round(r(foto).height), getComputedStyle(foto).borderRadius],
+                            naam: [getComputedStyle(eerste.querySelector('.bb-naam')).fontSize, getComputedStyle(eerste.querySelector('.bb-naam')).fontWeight],
+                            sub: getComputedStyle(eerste.querySelector('.bb-sub')).fontSize, rand: getComputedStyle(bandRijen[1]).borderBottomWidth };
+            // Een tik opent de bandpagina.
+            const echtOpen = window.openBandModal; let geopend = null; window.openBandModal = (id) => { geopend = id; };
+            eerste.click(); window.openBandModal = echtOpen; u.tik = geopend;
+          }
+          // Geen bands: geen blok. Een fout: geen blok, wel in de foutlog.
+          m.bands = await profielBandsOphalen('m9'); eigen.innerHTML = buildMusicianDetailHTML(m, true, false);
+          u.geen = [...eigen.querySelectorAll('.profile-media-title')].map(x => x.textContent).includes('Bands');
+          S.rpcErrors.tt_musician_band_ids = { code: '42883', message: 'function does not exist' };
+          const logVoor = (S.data.app_error_log || []).length;
+          m.bands = await profielBandsOphalen('m1'); eigen.innerHTML = buildMusicianDetailHTML(m, true, false);
+          u.fout = { blok: [...eigen.querySelectorAll('.profile-media-title')].map(x => x.textContent).includes('Bands'), log: (S.data.app_error_log || []).length - logVoor };
+          delete S.rpcErrors.tt_musician_band_ids;
+          eigen.innerHTML = '';
+          // In het venster, ook voor een bezoeker zonder profiel.
+          hasOwnProfile = false; myMusicianId = null;
+          S.rpcResults.tt_get_musicians_public = [{ id: 'm1', username: 'ronald', age: 25, city: 'Den Haag', bio: 'Gitarist en zanger.', instrument_levels: [], genres: [], songs: [], media: [] }];
+          await openMusicianModal('m1'); await w(100);
+          u.venster = [...$('musicianModalContent').querySelectorAll('.profiel-band-rij .bb-naam')].map(x => x.textContent);
+          u.vensterVraag = S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_musician_band_ids').slice(-1).map(c => c.params)[0];
+          $('musicianModal').classList.remove('visible');
+          showView('about');
+          return u;
+        }""")
+        page.evaluate("""() => { const S = window.TT_STUB, w = window.__b60;
+          db.from = w.from; hasOwnProfile = w.hasOwnProfile; myMusicianId = w.myMusicianId; currentUser = w.currentUser;
+          S.rpcResults = w.rpc; setBandViewMode(w.view);
+          ['bands', 'band_members', 'band_wanted', 'band_invallers'].forEach(k => { S.data[k] = []; });
+          document.getElementById('musicianModal').classList.remove('visible'); showView('about'); }""")
+        j60 = lambda k: json.dumps(d60.get(k), ensure_ascii=False)
+        check("Zoeken: een band met We spelen even niet staat er niet tussen",
+              d60["namen"] == ["Nachtploeg", "Zoutwater", "Solo"], j60("namen"))
+        check("bandrij: vierkante bandfoto (hoek 10px), Zoekend achter de plaats, open rol en invaller als tag, dan twee genres en +1",
+              d60["nacht"] == {"tags": ["+ Basgitaar", "Invaller drums", "Indie", "Rock", "+1"], "status": "Zoekend", "foto": True, "hoek": "10px", "meta": "Den Haag · 2.0 km"}, j60("nacht"))
+        check("bandrij: een invaller van gisteren telt niet; zonder foto de T; Compleet",
+              d60["zout"] == {"tags": ["Pop"], "status": "Compleet", "t": True}, j60("zout"))
+        check("bandrij: beheerder alleen zonder open rol: geen statustag; DJ blijft DJ",
+              d60["solo"] == {"tags": ["Invaller DJ", "Folk"], "status": False}, j60("solo"))
+        mt = d60["maten"]
+        check("UI: statustag 8px na de plaats, 11px; foto 44×44; naam 16px; tags op één lijn met de naam",
+              mt["badgeLinks"] == "8px" and mt["badgeLetter"] == "11px" and mt["foto"] == [44, 44] and mt["naam"] == "16px" and mt["tagsUitlijning"] == 0, j60("maten"))
+        check("kaartweergave: vierkante foto, één regel tags (eerste open rol met +N, anders de status)",
+              d60["kaart"] == {"namen": ["Nachtploeg", "Zoutwater", "Solo"], "vierkant": True, "nacht": ["+ Basgitaar", "+1"],
+                               "zout": ["Compleet"], "solo": 1, "regels": 1}, j60("kaart"))
+        check("alle bands op pauze: de app verruimt langs de ladder en eindigt in de lege staat (TT-62)",
+              d60["allesPauze"]["stappen"] > 1 and d60["allesPauze"]["kop"] == "Geen bands gevonden", j60("allesPauze"))
+        check("zonder eigen profiel: zelfde kaart uit tt_get_bands_public; afgeschermd de T; pauze eruit",
+              d60["anon"] == {"namen": ["Nachtploeg"], "tags": ["+ Basgitaar", "Invaller drums", "Indie"], "t": True, "status": "Zoekend"}, j60("anon"))
+        b = d60["blok"]
+        check("Mijn Profiel: blok Bands direct onder de bio, vóór het repertoire; één knop per band",
+              b["er"] and b["naBio"] and b["voorRepertoire"] and b["knop"] == "BUTTON", j60("blok"))
+        check("blok Bands: naam, instrumenten en Beheerder; zonder bandfoto de T",
+              b["rijen"] == [["Nachtploeg", "Gitaar · Zang · Beheerder"], ["Solo", "Gitaar"]] and b["t"], j60("blok"))
+        bm = d60["blokMaten"]
+        check("UI blok Bands: titel tot rij 8px, rij 56px plus de lijn (tikvlak ≥ 44), zijmarge 16px, foto 40×40 vierkant 8px, naam 16px vet, regel 12px, geen lijn onder de laatste",
+              bm["titelRij"] == 8 and bm["rijH"] == 57 and bm["links"] == 16 and bm["rechts"] == 16 and bm["foto"] == [40, 40, "8px"]
+              and bm["naam"] == ["16px", "700"] and bm["sub"] == "12px" and bm["rand"] == "0px", j60("blokMaten"))
+        check("een tik op een band opent de bandpagina", d60["tik"] == "b5", j60("tik"))
+        check("geen bands: geen blok; een fout: geen blok, wel een regel in de foutlog",
+              d60["geen"] is False and d60["fout"] == {"blok": False, "log": 1}, json.dumps([d60["geen"], d60["fout"]]))
+        check("het muzikantvenster, ook zonder eigen profiel, toont hetzelfde blok",
+              d60["venster"] == ["Nachtploeg", "Solo"] and d60["vensterVraag"] == {"mid": "m1"}, json.dumps([d60["venster"], d60["vensterVraag"]]))
+        js60 = open(os.path.join(ROOT, "search.js"), encoding="utf-8").read()
+        css60 = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+        check("de statustag in Zoeken komt uit bandStatusLabel(); de oude statuslabels en kleuren zijn weg",
+              "bandStatusLabel(" in js60 and "statusLabels" not in js60 and ".band-status-compleet" not in css60
+              and ".result-card-badges {" not in css60 and "musicians(fname)" not in js60, "")
+        check("geen paginafouten in blok 60", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
