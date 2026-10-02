@@ -4253,7 +4253,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
           plek.remove(); return u; }""")
         check("knop 16px, label 14px niet vet, kaart 16px en veld 10px rond",
               vorm40 == ["16px", "14px", "400", "16px", "10px"], json.dumps(vorm40))
-        check("licht: ondergrond crème #ECE7DD (TT-402)", l40["bg"] == "rgb(236, 231, 221)", l40["bg"])
+        check("licht: ondergrond crème #F6F3EC", l40["bg"] == "rgb(246, 243, 236)", l40["bg"])
         check("licht: --accent is zwart #1E1E1E", l40["accent"] == "#1E1E1E", l40["accent"])
         check("licht: woordmerk TALENT zwart, TENT geel",
               l40["woordmerk"] == ["rgb(245, 197, 24)", "rgb(30, 30, 30)"], json.dumps(l40["woordmerk"]))
@@ -4306,8 +4306,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         c41, p41, f41 = open41("light")
         s = p41.evaluate(stand41)
         check("toestel op licht, geen keuze: de app is licht",
-              s["thema"] == "licht" and s["bg"] == "rgb(236, 231, 221)", json.dumps(s))
-        check("en de balk van het toestel is crème (theme-color #ECE7DD)", s["balk"] == "#ECE7DD", s["balk"])
+              s["thema"] == "licht" and s["bg"] == "rgb(246, 243, 236)", json.dumps(s))
+        check("en de balk van het toestel is crème (theme-color #F6F3EC)", s["balk"] == "#F6F3EC", s["balk"])
         check("de tegel Thema toont 'Zoals mijn toestel'",
               s["gekozen"] == "toestel" and s["tegel"].startswith("Zoals mijn toestel"), json.dumps(s))
         p41.evaluate("window.showView('instellingen')")
@@ -6570,7 +6570,8 @@ window.TT_STUB.fnAntwoord = {};
         bg61, vlak61, veld61, gedempt61, rand61 = d61["licht"]
         check("TT-402: licht, de veldrand haalt 3:1 op het vlak", _ratio(veld61, vlak61) >= 3, json.dumps(d61["licht"]))
         check("TT-402: licht, gedempte tekst haalt 4,5:1 op het vlak", _ratio(gedempt61, vlak61) >= 4.5, json.dumps(d61["licht"]))
-        check("TT-402: licht, vlak en ondergrond verschillen zichtbaar (1,2:1 of meer)", _ratio(bg61, vlak61) >= 1.2, json.dumps(d61["licht"]))
+        check("TT-402: licht, de ondergrond blijft licht crème (herzien)", bg61.upper() == "#F6F3EC", json.dumps(d61["licht"]))
+        check("TT-402: licht, de veldrand haalt 3:1 op de ondergrond", _ratio(veld61, bg61) >= 3, json.dumps(d61["licht"]))
         check("geen paginafouten in blok 61", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
