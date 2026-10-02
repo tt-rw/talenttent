@@ -4950,8 +4950,10 @@ window.TT_STUB.fnAntwoord = {};
           const r = [...plek.children].map(v => { const t = v.querySelector('span');
             return t ? [t.className, Math.round(parseFloat(getComputedStyle(t).fontSize) / parseFloat(getComputedStyle(v).fontSize) * 100),
                         getComputedStyle(t).fontFamily.includes('TT Woordmerk')] : null; });
-          const voorbeeld = ['avatarInitials', 'mhAvatarInitials', 'bandAvatarInitials'].map(id => {
-            const e = document.getElementById(id); return e ? e.className : 'ontbreekt'; });
+          // TT-385 fase 4: de bandfoto kies je in de tegel Wie zijn we, niet meer in Band aanmaken.
+          const voorbeeld = ['avatarInitials', 'mhAvatarInitials'].map(id => {
+            const e = document.getElementById(id); return e ? e.className : 'ontbreekt'; })
+            .concat([(document.querySelector('#bwFotoPreview > span') || { className: 'ontbreekt' }).className]);
           plek.remove(); return { r, voorbeeld }; }""")
         check("elke T zonder foto is .avatar-t, in het lettertype van het logo, 125% van zijn vak",
               all(x and x[0] == "avatar-t" and x[1] == 125 and x[2] for x in t47["r"]), json.dumps(t47["r"]))
@@ -5388,8 +5390,9 @@ window.TT_STUB.fnAntwoord = {};
         # Bevinding Ronald, 30-09-2026: "Foto verwijderen" wordt het kruisje rechtsboven
         # de foto; de tekst in Wijzig wordt zwart. Besluiten Ronald: op alle drie de
         # plekken, en het kruisje vraagt eerst.
+        # TT-385 fase 4: de bandfoto staat niet meer in Band aanmaken, maar in de tegel Wie zijn we.
         PLEKKEN50 = [("avatarRemoveBtn", "avatarPreview"), ("mhAvatarRemoveBtn", "mhAvatarPreview"),
-                     ("bandAvatarRemoveBtn", "bandAvatarPreview")]
+                     ("bwFotoRemoveBtn", "bwFotoPreview")]
         bouw50 = page.evaluate("""(plekken) => plekken.map(([id, voorbeeld]) => {
           const b = document.getElementById(id); if (!b) return 'ontbreekt';
           const wrap = b.closest('.avatar-preview-wrap');
@@ -5425,9 +5428,9 @@ window.TT_STUB.fnAntwoord = {};
             const c = getComputedStyle(e); return [c.color, c.backgroundColor]; });
           const donker = m(); document.documentElement.dataset.theme = 'licht'; const licht = m();
           delete document.documentElement.dataset.theme; return { donker, licht }; }""")
-        # TT-385 fase 3: de vierde plek is de tegel Wie zijn we van een band.
-        check("Wijzig: zwarte tekst op geel, op alle vier de plekken (donker thema)",
-              len(wijzig50["donker"]) == 4 and all(x == ["rgb(0, 0, 0)", "rgb(245, 197, 24)"] for x in wijzig50["donker"]), json.dumps(wijzig50))
+        # TT-385 fase 4: drie plekken — registratie, mediahoek en de tegel Wie zijn we van een band.
+        check("Wijzig: zwarte tekst op geel, op alle drie de plekken (donker thema)",
+              len(wijzig50["donker"]) == 3 and all(x == ["rgb(0, 0, 0)", "rgb(245, 197, 24)"] for x in wijzig50["donker"]), json.dumps(wijzig50))
         check("Wijzig in het lichte thema: de donkere merktekst op hetzelfde geel",
               all(x == ["rgb(30, 30, 30)", "rgb(245, 197, 24)"] for x in wijzig50["licht"]), json.dumps(wijzig50))
         vraag50 = page.evaluate("""async () => {
@@ -5445,8 +5448,8 @@ window.TT_STUB.fnAntwoord = {};
                               p.innerHTML = '<img src="https://x.test/a.jpg">'; document.getElementById('avatarRemoveBtn').classList.add('visible'); },
                       askRemoveAvatar, () => !!state.avatarUrl, 'avatarRemoveBtn');
           await ronde(() => { mhAvatarUrl = 'https://x.test/b.jpg'; mhRenderAvatar(); }, mhAskRemoveAvatar, () => !!mhAvatarUrl, 'mhAvatarRemoveBtn');
-          await ronde(() => { bandState.avatarUrl = 'https://x.test/c.jpg'; populateBandAvatarPreview(); }, askRemoveBandAvatar,
-                      () => !!bandState.avatarUrl, 'bandAvatarRemoveBtn');
+          await ronde(() => { bwFotoUrl = 'https://x.test/c.jpg'; bwRenderFoto(); }, bwVraagFotoWeg,
+                      () => !!bwFotoUrl, 'bwFotoRemoveBtn');
           return uit; }""")
         check("het kruisje vraagt eerst, zonder rood (rood is alleen voor het account); pas na Ja is de foto weg (registratie, mediahoek, band)",
               len(vraag50) == 3 and all(x["voor"] and x["open"] and not x["rood"] and x["nogErVoorJa"] and not x["naJa"] and x["knopWeg"] for x in vraag50)
@@ -6130,6 +6133,203 @@ window.TT_STUB.fnAntwoord = {};
               d58["opheffen"][0].startswith("Nachtploeg verdwijnt dan voor alle leden") and d58["opheffen"][1:] == ["Band opheffen", True]
               and d58["naOpheffen"] == ["view-bands", None, 0], json.dumps([d58["opheffen"], d58["naOpheffen"]], ensure_ascii=False))
         check("geen paginafouten in blok 58", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ------------------------------------------------------------------
+        # Blok 59 — TT-385 fase 4 (02-10-2026): de korte wizard en de bandkaart in Mijn Bands
+        # ------------------------------------------------------------------
+        print("\nBlok 59 — de korte bandwizard en de bandkaart in Mijn Bands (TT-385, fase 4)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.evaluate("showView('about')")
+        page.wait_for_timeout(80)
+        # Zelfde opzet als blok 58: een band krijgt zijn geneste tabellen, een
+        # nieuwe rij (ook in bands) een id, zoals in de database. De postcode
+        # zoekt niet echt op, en het e-mailadres is bevestigd.
+        page.evaluate(r"""() => {
+          const S = window.TT_STUB;
+          window.__b59 = { from: db.from, hasOwnProfile, myMusicianId, currentUser, pc: lookupPostcodeCity, mail: emailWachtOpBevestiging, toast: window.showToast };
+          const echt = db.from.bind(db);
+          let teller = 0;
+          const kind = ['band_wanted', 'band_members', 'band_media', 'band_nummers', 'band_covers', 'band_invallers'];
+          const muz = id => { const m = (S.data.musicians || []).find(x => x.id === id); if (!m) return null;
+            return { id: m.id, fname: m.fname || m.first_name, username: m.username, avatar_url: m.avatar_url || null, musician_instruments: [] }; };
+          db.from = (t) => { const q = echt(t); const run = q._run.bind(q);
+            q._run = () => {
+              if (q.op === 'insert' && (kind.includes(t) || t === 'bands')) (Array.isArray(q.payload) ? q.payload : [q.payload]).forEach(r => { if (r && !r.id) r.id = 'n' + (++teller); });
+              const r = run();
+              if (q.op !== 'select' || !r.data) return r;
+              const rijen = Array.isArray(r.data) ? r.data : [r.data];
+              if (t === 'bands') rijen.forEach(b => kind.forEach(k => { b[k] = (S.data[k] || []).filter(x => x.band_id === b.id).map(x => {
+                const y = JSON.parse(JSON.stringify(x)); if (k === 'band_members') y.musicians = muz(x.musician_id); return y; }); }));
+              return r; };
+            return q; };
+          currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
+          ['bands', 'band_members', 'band_wanted', 'band_media', 'band_nummers', 'band_covers', 'band_invallers'].forEach(k => { S.data[k] = []; });
+          lookupPostcodeCity = async (pc) => pc === '2512' ? { found: true, city: 'Den Haag', source: 'pdok' } : { found: false, reason: 'notfound' };
+          emailWachtOpBevestiging = async () => null;
+          window.__b59Toasts = [];
+          window.showToast = (t) => { window.__b59Toasts.push(t); window.__b59.toast(t); };
+        }""")
+        d59 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 150) => new Promise(r => setTimeout(r, n)), u = {};
+          const $ = id => document.getElementById(id);
+          const zichtbaar = id => !!$(id) && $(id).offsetParent !== null;
+          const pct = () => ($('bandWizardBalk').querySelector('.completeness-pct') || {}).textContent;
+          const r = el => el.getBoundingClientRect();
+          showView('bands'); await w(250);
+          await showCreateBandForm(); await w(200);
+          u.open = { wizard: bandWizardOpen(), kop: zichtbaar('mijnBandsKop'), lijst: zichtbaar('myBandsList'), stap: bandWizardStap,
+                     staat: history.state && history.state.wizard, pct: pct(),
+                     omhoog: terugGaatOmhoog(), magTerug: magTerug() };
+          // Alleen de drie vragen; de velden van het oude formulier zijn weg.
+          u.velden = [...$('createBandForm').querySelectorAll('input, .picker-field')].map(e => e.id);
+          u.oud = ['bandDescription', 'bandStatusGrid', 'bandWantedField', 'bandLevelPicker', 'bandAvatarPreview', 'bandAvatarInput'].filter(id => $(id));
+          u.titel = [$('createBandForm').querySelector('.panel-title').textContent, $('createBandForm').querySelector('.panel-sub').textContent];
+          // UI-meting (huisstijl §2, §3, §6, §7).
+          const naamVeld = $('bandName'), naamLabel = naamVeld.previousElementSibling, genreLabel = $('bandGenreField').previousElementSibling;
+          const balk = $('bandWizardBalk').firstElementChild, titel = $('createBandForm').querySelector('.panel-title');
+          const knoppen = [...$('createBandForm').querySelectorAll('.action-row .btn')];
+          u.maten = { labelVeld: Math.round(r(naamVeld).top - r(naamLabel).bottom), balkTitel: Math.round(r(titel).top - r(balk).bottom),
+                      veldH: Math.round(r(naamVeld).height), veldLetter: getComputedStyle(naamVeld).fontSize, labelLetter: getComputedStyle(naamLabel).fontSize,
+                      zipH: Math.round(r($('bandZip')).height), genreH: Math.round(r($('bandGenreField')).height),
+                      naamTotPostcode: Math.round(r($('bandZip').previousElementSibling).top - r(naamVeld).bottom),
+                      genreLabelVeld: Math.round(r($('bandGenreField')).top - r(genreLabel).bottom),
+                      knopH: knoppen.map(k => Math.round(r(k).height)), knopB: knoppen.map(k => Math.round(r(k).width)),
+                      knopTekst: knoppen.map(k => k.textContent.trim()), links: Math.round(r(naamVeld).left), rechts: Math.round(390 - r(naamVeld).right) };
+          // Alle drie de fouten tegelijk, bij hun veld (huisstijl §13.1).
+          await saveBand(); await w(80);
+          u.fouten = [...$('createBandForm').querySelectorAll('.field-error')].map(e => e.id);
+          // De balk loopt 5% op per ingevuld veld.
+          $('bandName').value = 'Nachtploeg'; $('bandName').dispatchEvent(new Event('input')); await w(30);
+          u.naNaam = pct();
+          onBandPostcodeInput('2512'); await w(700);
+          u.naPostcode = [pct(), $('bandCity').value];
+          openPickerList('bandGenre'); choosePickerListValue('Indie'); closePickerList(); await w(30);
+          u.naGenre = [pct(), $('bandGenreField').classList.contains('field-error'), !!$('bandGenreField').parentElement.querySelector('.field-msg')];
+          u.foutWegNaam = !$('bandName').classList.contains('field-error');
+          // Opslaan: alleen naam, plaats en genres; de status volgt uit de open rollen.
+          await saveBand(); await w(500);
+          const band = S.data.bands[0] || {};
+          u.opgeslagen = { aantal: S.data.bands.length, name: band.name, city: band.city, zip: band.zip, genres: band.genres, status: band.status,
+                           founder: band.founder_id, bron: band.city_source,
+                           extra: ['description', 'niveau', 'avatar_url'].filter(k => k in band),
+                           leden: S.data.band_members.map(m => [m.band_id === band.id, m.musician_id, m.role, m.status]),
+                           wanted: S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_save_band_wanted').length };
+          u.na = { wizard: bandWizardOpen(), lijst: zichtbaar('myBandsList'), kop: zichtbaar('mijnBandsKop'), stap: bandWizardStap,
+                   modal: $('bandModal').classList.contains('visible'), staat: history.state && !!history.state.wizard,
+                   balk: ($('bandModalContent').querySelector('.completeness-pct') || {}).textContent,
+                   toast: window.__b59Toasts.slice(-1)[0], velden: [$('bandName').value, $('bandZip').value, bandState.genres.length] };
+          $('bandModal').classList.remove('visible'); await w(50);
+          // De terugknop in de kop: met iets ingevuld eerst de vraag, dan dicht.
+          await showCreateBandForm(); await w(150);
+          $('bandName').value = 'Proef'; $('bandName').dispatchEvent(new Event('input'));
+          terugKnop(); await w(250);
+          u.kopTerug1 = { wizard: bandWizardOpen(), vraag: $('terugLabel').style.display !== 'none', gewapend: terugGewapend, staat: history.state && !!history.state.wizard };
+          terugKnop(); await w(250);
+          u.kopTerug2 = { wizard: bandWizardOpen(), vraag: $('terugLabel').style.display !== 'none', lijst: zichtbaar('myBandsList'), view: huidigeView,
+                          staat: history.state && !!history.state.wizard, leeg: $('bandName').value };
+          // Zonder invoer gaat hij meteen dicht.
+          await showCreateBandForm(); await w(150);
+          terugKnop(); await w(250);
+          u.kopTerugLeeg = { wizard: bandWizardOpen(), view: huidigeView, staat: history.state && !!history.state.wizard };
+          // De Terug-knop onderin: dezelfde wisselknop als in een tegel.
+          await showCreateBandForm(); await w(150);
+          $('bandName').value = 'Proef'; $('bandName').dispatchEvent(new Event('input'));
+          $('bandWizardTerugBtn').click(); await w(60);
+          u.knop1 = { tekst: $('bandWizardTerugBtn').textContent, wizard: bandWizardOpen() };
+          $('bandWizardTerugBtn').click(); await w(250);
+          u.knop2 = { tekst: $('bandWizardTerugBtn').textContent, wizard: bandWizardOpen(), staat: history.state && !!history.state.wizard, view: huidigeView };
+          // Een andere view sluit de wizard zonder opslaan.
+          await showCreateBandForm(); await w(150);
+          $('bandName').value = 'Proef';
+          showView('search'); await w(100);
+          u.andereView = { wizard: bandWizardOpen(), stap: bandWizardStap, leeg: $('bandName').value };
+          // Mijn Bands: de bandkaart.
+          const id = band.id;
+          showView('bands'); await w(300);
+          const kaart = () => document.querySelector('#myBandsList .band-card');
+          const tags = () => [...kaart().querySelectorAll('.tag-solid')].map(t => t.textContent);
+          u.kaartAlleen = { tags: tags(), body: !!kaart().querySelector('.band-card-body'), leden: kaart().querySelectorAll('.band-member-chip, .band-members-row').length,
+                            meta: kaart().querySelector('.band-meta').textContent, foto: getComputedStyle(kaart().querySelector('.band-avatar')).borderRadius };
+          S.data.band_wanted.push({ band_id: id, instrument: 'Basgitaar' });
+          await loadMyBands(); await w(100);
+          u.kaartOpen = tags();
+          const vlak = r(kaart().querySelector('.band-card-body .profile-badges')), lijn = r(kaart().querySelector('.band-card-body'));
+          u.kaartTagAfstand = Math.round(vlak.top - lijn.top - parseFloat(getComputedStyle(kaart().querySelector('.band-card-body')).borderTopWidth));
+          S.data.band_wanted = []; S.data.band_members.push({ band_id: id, musician_id: 'm2', role: 'Lid', status: 'bevestigd', founder_offer: null });
+          await loadMyBands(); await w(100);
+          u.kaartCompleet = tags();
+          S.data.bands[0].pauze = true;
+          await loadMyBands(); await w(100);
+          u.kaartPauze = tags();
+          // Een tik ergens op de kaart opent de bandpagina; het ⋯-menu niet.
+          kaart().querySelector('.band-card-body').click(); await w(300);
+          u.tikKaart = $('bandModal').classList.contains('visible');
+          $('bandModal').classList.remove('visible'); await w(50);
+          kaart().querySelector('.nav-menu-btn').click(); await w(100);
+          u.tikMenu = [$('bandModal').classList.contains('visible'), !!kaart().querySelector('.inline-menu-dropdown.visible')];
+          sluitAlleMenus();
+          return u;
+        }""")
+        page.evaluate("""() => { const S = window.TT_STUB, w = window.__b59;
+          db.from = w.from; hasOwnProfile = w.hasOwnProfile; myMusicianId = w.myMusicianId; currentUser = w.currentUser;
+          lookupPostcodeCity = w.pc; emailWachtOpBevestiging = w.mail; window.showToast = w.toast;
+          ['bands', 'band_members', 'band_wanted', 'band_media', 'band_nummers', 'band_covers', 'band_invallers'].forEach(k => { S.data[k] = []; });
+          document.getElementById('bandModal').classList.remove('visible'); showView('about'); }""")
+        j59 = lambda k: json.dumps(d59[k], ensure_ascii=False)
+        check("Band aanmaken opent de wizard op de plek van de lijst, als stap in de geschiedenis, op 0%",
+              d59["open"] == {"wizard": True, "kop": False, "lijst": False, "stap": True, "staat": True, "pct": "0%",
+                              "omhoog": False, "magTerug": True}, j59("open"))
+        check("drie vragen: bandnaam, postcode en plaats, genres; de oude velden zijn weg",
+              d59["velden"] == ["bandName", "bandZip", "bandCity", "bandGenreField"] and d59["oud"] == []
+              and d59["titel"] == ["Band aanmaken", "Drie vragen, dan staat je band. De rest vul je later aan."], json.dumps([d59["velden"], d59["oud"], d59["titel"]], ensure_ascii=False))
+        m = d59["maten"]
+        check("UI: label tot veld 8px, tussen twee velden 20px, balk tot titel 8px, zijmarge 16px",
+              m["labelVeld"] == 8 and m["genreLabelVeld"] == 8 and m["naamTotPostcode"] == 20 and m["balkTitel"] == 8
+              and m["links"] == 16 and m["rechts"] == 16, j59("maten"))
+        check("UI: velden 44px hoog met 16px letter, labels 14px; knoppen 44px, even breed, Terug links",
+              m["veldH"] == 44 and m["zipH"] == 44 and m["genreH"] == 44 and m["veldLetter"] == "16px" and m["labelLetter"] == "14px"
+              and all(h >= 44 for h in m["knopH"]) and len(set(m["knopB"])) == 1 and m["knopTekst"] == ["Terug", "Band aanmaken"], j59("maten"))
+        check("leeg opslaan: alle drie de fouten tegelijk, bij hun veld", d59["fouten"] == ["bandName", "bandZip", "bandGenreField"], j59("fouten"))
+        check("de balk loopt 5% op per ingevuld veld: 5, 10, 15%",
+              d59["naNaam"] == "5%" and d59["naPostcode"] == ["10%", "Den Haag"] and d59["naGenre"][0] == "15%", json.dumps([d59["naNaam"], d59["naPostcode"], d59["naGenre"]]))
+        check("een gekozen genre haalt de foutmarkering van het keuzeveld weg (§13.1), een getypte naam die van het naamveld",
+              d59["naGenre"][1:] == [False, False] and d59["foutWegNaam"], json.dumps([d59["naGenre"], d59["foutWegNaam"]]))
+        o = d59["opgeslagen"]
+        check("opslaan bewaart naam, plaats, postcode en genres; de status volgt uit de open rollen (compleet); geen Gezocht meer",
+              o["aantal"] == 1 and o["name"] == "Nachtploeg" and o["city"] == "Den Haag" and o["zip"] == "2512" and o["genres"] == ["Indie"]
+              and o["status"] == "compleet" and o["founder"] == "m1" and o["bron"] == "pdok" and o["extra"] == [] and o["wanted"] == 0, j59("opgeslagen"))
+        check("de oprichter is meteen bevestigd lid en beheerder", o["leden"] == [[True, "m1", "Oprichter", "bevestigd"]], j59("opgeslagen"))
+        check("daarna: de privé bandpagina op 15%, met de melding; de wizard is dicht en leeg, zijn stap is terug",
+              d59["na"] == {"wizard": False, "lijst": True, "kop": True, "stap": False, "modal": True, "staat": False, "balk": "15%",
+                            "toast": "Nachtploeg staat. Vul hem aan wanneer je wilt.", "velden": ["", "", 0]}, j59("na"))
+        check("terugknop in de kop met iets ingevuld: eerst 'Terug zonder opslaan?', de wizard blijft",
+              d59["kopTerug1"] == {"wizard": True, "vraag": True, "gewapend": True, "staat": True}, j59("kopTerug1"))
+        check("tweede druk: de wizard gaat dicht, leeg, terug op Mijn Bands",
+              d59["kopTerug2"] == {"wizard": False, "vraag": False, "lijst": True, "view": "bands", "staat": False, "leeg": ""}, j59("kopTerug2"))
+        check("terugknop zonder invoer: meteen dicht, één stap", d59["kopTerugLeeg"] == {"wizard": False, "view": "bands", "staat": False}, j59("kopTerugLeeg"))
+        check("Terug onderin: eerst 'Terug zonder opslaan?', daarna dicht en zijn stap terug",
+              d59["knop1"] == {"tekst": "Terug zonder opslaan?", "wizard": True}
+              and d59["knop2"] == {"tekst": "Terug", "wizard": False, "staat": False, "view": "bands"}, json.dumps([d59["knop1"], d59["knop2"]], ensure_ascii=False))
+        check("een andere view sluit de wizard zonder opslaan", d59["andereView"] == {"wizard": False, "stap": False, "leeg": ""}, j59("andereView"))
+        ka = d59["kaartAlleen"]
+        check("bandkaart: vierkante foto, plaats en genres, geen leden; beheerder alleen zonder open rol: geen statustag",
+              ka["tags"] == [] and ka["body"] is False and ka["leden"] == 0 and ka["meta"] == "Den Haag · Indie" and ka["foto"] == "10px", j59("kaartAlleen"))
+        check("bandkaart met een open rol: Zoekend en de rol als tag, 12px onder de lijn",
+              d59["kaartOpen"] == ["Zoekend", "+ Basgitaar"] and d59["kaartTagAfstand"] == 12, json.dumps([d59["kaartOpen"], d59["kaartTagAfstand"]]))
+        check("bandkaart met een tweede lid: Compleet; met We spelen even niet: die tag",
+              d59["kaartCompleet"] == ["Compleet"] and d59["kaartPauze"] == ["We spelen even niet"], json.dumps([d59["kaartCompleet"], d59["kaartPauze"]]))
+        check("een tik op de kaart opent de bandpagina; het ⋯-menu opent alleen het menu",
+              d59["tikKaart"] is True and d59["tikMenu"] == [False, True], json.dumps([d59["tikKaart"], d59["tikMenu"]]))
+        js59 = open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
+        css59 = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+        check("één functie voor de statustag (bandpagina en Mijn Bands); de dode code van het oude formulier is weg",
+              js59.count("bandStatusLabel(") == 3 and not any(f in js59 for f in ["function selectBandStatus", "function renderBandLevelPicker",
+              "function populateBandAvatarPreview", "function handleBandAvatarUpload", "function askRemoveBandAvatar", "p_instruments: bandState"])
+              and ".band-member-chip" not in css59, str(js59.count("bandStatusLabel(")))
+        check("geen paginafouten in blok 59", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
