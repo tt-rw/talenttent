@@ -73,6 +73,8 @@
       tt_resolve_search_origin: null, tt_check_username_available: true,
       tt_cache_postcode: null, tt_accept_founder_offer: null,
       tt_expire_old_founder_offers: null,
+      // TT-385 fase 5: de bands van een muzikant (blok Bands op het profiel).
+      tt_musician_band_ids: [],
       // Laatst actief (25-09-2026): standaard iedereen in groep 0, in de
       // volgorde van de vraag. Een blok dat groepen wil toetsen, zet hier
       // zelf een functie neer en herstelt hem daarna.
