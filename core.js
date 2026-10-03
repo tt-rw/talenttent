@@ -239,6 +239,16 @@ async function appInit() {
     opstartHerstelt = !!session?.user && (herstelLinkBijStart || !!gesprekMatch ||
       /^(profiel|band|toestemming|bevestig)\//.test(hashView) ||
       (HERSTELBARE_VIEWS.includes(hashView) && !['auth', 'register'].includes(hashView)));
+    // TT-405: de opgeslagen sessie houdt het e-mailadres van het moment van
+    // inloggen. Is het daarna gewijzigd (bevestigen met een ander e-mailadres,
+    // of op een ander toestel), dan toonde de app het oude. Eén vraag aan de
+    // server bij het opstarten; lukt die niet, dan geldt de opgeslagen sessie.
+    if (session?.user) {
+      try {
+        const { data: vers } = await db.auth.getUser();
+        if (vers?.user && vers.user.id === session.user.id) session.user = vers.user;
+      } catch (e) { logCaught('appInit.getUser', e); }
+    }
     if (session?.user) {
       currentUser = session.user;
       lastSignedInUserId = session.user.id;
@@ -1147,6 +1157,11 @@ let terugDiepte = 0;
 // De view die nu actief is. showView() houdt hem bij; de terugknop heeft hem
 // nodig om te weten of hij omhoog moet of terug.
 let huidigeView = 'landing';
+// TT-404 (03-10-2026, Ronald): terug op dezelfde plek. De browser zet bij een
+// stap terug zelf de scrollstand van de vorige stap terug (bovenaan), ook als
+// er alleen een venster sluit. De app beheert de scrollstand daarom zelf.
+try { history.scrollRestoration = 'manual'; } catch (e) { /* stil negeren */ }
+const viewScrollStand = {};
 
 // ─── Het hoogste scherm (TT-303, 20-09-2026, Ronald) ─────────────────────
 // Ingelogd is dat Mijn Profiel: daar komt iedereen na het inloggen toch al
@@ -1246,6 +1261,8 @@ function ontwapenTerug() {
 }
 
 function showView(view, mode) {
+  // TT-404: onthoud waar je in de view stond die je verlaat.
+  if (huidigeView && huidigeView !== view) viewScrollStand[huidigeView] = window.scrollY;
   huidigeView = view; // TT-303: de terugknop leest dit
   // TT-385 fase 3: het tegelscherm is van je eigen profiel of van een band
   // (bewerkBandId). Wie het verlaat, laat geen open tegel of band achter;
@@ -1424,7 +1441,9 @@ function showView(view, mode) {
   werkTerugKnopBij(); // TT-301
   landingBijwerken(); // TT-61: de foto's wisselen alleen op de landingspagina
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // TT-404: een stap terug komt uit waar je was; elke andere navigatie begint bovenaan.
+  if (mode === 'pop') window.scrollTo({ top: viewScrollStand[view] || 0, behavior: 'instant' });
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
   // TT-142 (25-08-2026): geen automatische focus meer bij het openen van een
   // view. Was bedoeld als gemak (TT-37), maar opende ongevraagd het
   // toetsenbord en verstoorde daarmee de "bovenaan beginnen"-scroll — de

@@ -1,6 +1,56 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 02-10-2026 (TT-253, TT-402, TT-403: drie correcties van
+**Laatste update:** 03-10-2026 (TT-404 en TT-405: twee bevindingen van Ronald) —
+**Gebouwd en getest. Testset 876 van 876 (blok 62 nieuw). Edge Function
+`email-bevestigen` moet Ronald opnieuw deployen. Wacht op upload.**
+
+- **TT-404, terug op dezelfde plek** (Ronald: "vanuit een zoekscherm klik ik
+  door naar een profiel … ga terug naar de zoekresultaten. Dan wil ik
+  uitkomen waar ik was gebleven."). **Geverifieerd (gemeten, 390px):** een
+  venster sluiten met de terugknop of het kruisje zette Zoeken terug op 0 van
+  1500. Oorzaak: de browser zet bij een stap terug zelf de scrollstand van de
+  vorige stap terug (bovenaan). Een venster zet zelf geen stap in de
+  geschiedenis, dus ging de scrollstand mee naar boven. Nu:
+  `history.scrollRestoration = 'manual'` en `viewScrollStand` in `core.js`;
+  `showView()` onthoudt de stand van de view die je verlaat en zet hem terug
+  bij een stap terug (`mode === 'pop'`). Elke andere navigatie begint
+  bovenaan, zoals voorheen. Geldt voor alle vensters (muzikant, band,
+  Mijn Bands) en voor elke view.
+- **TT-405, nieuw e-mailadres bij het bevestigen** (Ronald: punt 1 "melding
+  dat je pas over 1 minuut een nieuw e-mailadres kan versturen", punt 2 "het
+  1e e-mailadres staat nog in het profiel").
+  1. **Minuutwachttijd weg bij een nieuw e-mailadres.** **Geverifieerd uit de
+     code:** `grensBereikt()` in de Edge Function gold voor `start` én
+     `e-mailadres`. Wie direct na "Profiel aanmaken" een verkeerd
+     e-mailadres verbeterde, zat binnen de minuut van de eerste mail. Nu geldt
+     de minuut alleen voor "Mail opnieuw sturen" (`start`); een nieuw
+     e-mailadres gaat meteen. **Het maximum van vijf mails per etmaal blijft.**
+     Bestand: `_niet-uploaden-edge-function-email-bevestigen-03-10-2026-TT-405.ts`.
+  2. **Het oude e-mailadres bleef in de app staan.** Ronald, 03-10-2026: na
+     het doorlopen opent de app en blijft hij ingelogd, dus het is een
+     *nieuwe sessie*; verversen is niet aan de orde. **Aanname (Claude), uit
+     de code:** de opgeslagen sessie houdt het e-mailadres van het moment van
+     inloggen; `appInit()` las `session.user` zonder de server te vragen. Nu
+     vraagt `appInit()` (`core.js`) bij het opstarten `getUser()` aan de
+     server en gebruikt dat e-mailadres. Daarnaast ververst
+     `bevestigEmailadresOpslaan()` (`wizard.js`) de sessie direct na het
+     wijzigen. **Onbekend:** op welk scherm Ronald het oude e-mailadres zag;
+     alle plekken lezen `currentUser.email`. Meten op de echte site na de
+     upload.
+- **Nieuwe bevinding, TT-406 (P2):** na het sluiten van een venster met de
+  terugknop zet de app een stap met de status en de #-naam van de
+  *vorige* stap in de geschiedenis (`#landing` terwijl Zoeken openstaat). Een
+  volgende terugdruk doet dan niets zichtbaars, de tweede gaat pas naar de
+  echte vorige view. Toets: kost dit een gebruiker moeite? Ja → P2. Niet
+  aangepast in deze levering (valt buiten de opdracht).
+
+**Gewijzigd:** `core.js`, `wizard.js`, `index.html` (`?v=` core en wizard),
+`tests/tt_tests.py` (blok 62 nieuw), `tests/stub/supabase-stub.js`
+(`refreshSession`, `userNu`), dit bestand, `CHECKSUMS.txt`.
+
+---
+
+**Vorige update:** 02-10-2026 (TT-253, TT-402, TT-403: drie correcties van
 Ronald op schermafdrukken) — **Gebouwd en getest. Testset 866 van 866 (blok 61
 nieuw). Schermafdrukken licht en donker, 390px. Geen SQL. Wacht op upload,
 samen met fase 5 van TT-385.**
@@ -8399,6 +8449,8 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-404** | Terug op dezelfde plek na doorklikken | **Gebouwd en getest 03-10-2026 (blok 62) — zie Laatste update. Wacht op:** upload naar beide repo's; laag 2 op een echt toestel. **Nieuw, 03-10-2026, bevinding Ronald. Advies P1.** *Toets: verandert of iemand een tweede keer opent? Ja: wie na elk profiel opnieuw door de lijst moet scrollen, stopt met zoeken.* **Geverifieerd** (gemeten, 390px). |
+| **TT-405** | Nieuw e-mailadres bij het bevestigen: wachttijd weg, oude e-mailadres blijft | **Gebouwd en getest 03-10-2026 (blok 62) — zie Laatste update. Wacht op:** upload naar beide repo's; Edge Function `email-bevestigen` opnieuw deployen; laag 2 op talenttent.org. **Nieuw, 03-10-2026, bevinding Ronald. Advies P1.** *Toets: verandert of iemand een tweede keer opent? Ja: wie bij de registratie meteen vastloopt op een melding, komt niet terug.* |
 | **TT-380** | Delen is een icoon bij de naam, op elk profiel | **Gebouwd en getest 30-09-2026 (blok 50), wacht op upload en laag 2 — zie Laatste update.** Bevinding Ronald: "profiel delen icoon toevoegen aan muzikantenprofiel". Besluiten Ronald: icoon B naast de ⋯, beide op de regels onder de naam, op Mijn Profiel, het muzikantvenster en het bandvenster. Advies P1. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: wie zijn profiel deelt, krijgt reacties en brengt nieuwe muzikanten binnen. **Open:** deelicoon ook op Mijn Bands? En `naamPastInProfielkop()` van 187px naar de werkelijke ruimte (advies P3)? *Rechtgezet 30-09-2026 (TT-384): hier stond "naar 247px". Sinds TT-384 staat de naam van een muzikant onder de foto en heeft hij 343px bij 375px (blok 54: volle breedte); het bandvenster is in deze sessie niet gemeten.* |
 | **TT-367** | De onderbalk laadt traag op Android | **Gemeten 29-09-2026, niet gebouwd — zie Laatste update.** Elke tik op Profiel, Berichten of Bands wist de inhoud naar "Laden..." en haalt alles opnieuw op, in twee tot vier stappen na elkaar (120–515 ms op wifi). **Besluit Ronald, 29-09-2026:** geen oude inhoud laten staan tijdens het verversen. **Open vraag aan Ronald:** de stappen tegelijk laten lopen? Bevinding Ronald (28-09-2026): "het laden duurt vrij lang van de ene knop naar de andere … Dit is op een android telefoon." Advies P1. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: een app die bij elke tik hapert, voelt kapot en wordt weggelegd |
 | **TT-357** | Testaccounts opschonen vóór de lancering | **Nieuw, 27-09-2026 (TT-65). Besluit Ronald: later opschonen, vlak vóór de lancering. Niveau: advies P1, door Ronald te bevestigen.** Alle bestaande accounts zijn testaccounts. Nu niet wissen: TT-352 en TT-323 hebben ze nog nodig, en het proefherstel van TT-65 heeft gegevens nodig. Gewiste testaccounts verdwijnen na 30 dagen vanzelf uit de back-up. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: nepprofielen in de zoekresultaten kosten vertrouwen. **Vóór lancering** |
@@ -8441,6 +8493,7 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-406** | Een venster sluiten met terug zet een verkeerde stap in de geschiedenis | **Nieuw, 03-10-2026, gevonden in TT-404. Advies P2.** *Toets: werkt, maar kost moeite: de eerstvolgende terugdruk doet niets zichtbaars.* **Geverifieerd** (gemeten): na het sluiten staat `#landing` in de adresregel terwijl Zoeken open is; `popstate` in `core.js` zet `history.state` van de vorige stap terug op de stapel. Niet aangepast. |
 | **TT-388** | De hamburger is 26px, niet 24px | **Gebouwd en getest 01-10-2026 (blok 25) — zie Laatste update. Wacht op:** upload naar beide repo's. **Nieuw, 01-10-2026 (onderhoudsronde). Advies P2.** *Toets: werkt, maar de kop oogt niet in balans — precies wat TT-307 oploste.* **Geverifieerd**, gemeten tegen de stub op 390 en 1280px en op talenttent.org op 615px: het teken van de hamburger is **26×26px**, de terugpijl 24×24px. Oorzaak: `styles.css` regel 3770, `#navMenuBtn svg { width: 26px; height: 26px; }`, een overblijfsel van 22-08-2026 in het blok dat sinds TT-224 op elke breedte geldt. Die regel wint van `width="24"` in `index.html`. Blok 25 toetst alleen dat attribuut, niet de getekende maat. **Richting:** de regel weg, en blok 25 meet de getekende maat. Raakt het uiterlijk, dus een eigen sessie met schermafdruk |
 | **TT-389** | Ingelogd brengt een losse wissel van het #-deel van de link je op de landingspagina | **Gebouwd en getest 01-10-2026 (blok 56) — zie Laatste update. Wacht op:** upload naar beide repo's; laag 2 op talenttent.org. **Nieuw, 01-10-2026 (onderhoudsronde, laag 2). Advies P2.** *Toets: werkt, maar je komt op het verkeerde scherm — en op de wervingspagina, waar een ingelogde gebruiker niets te zoeken heeft (TT-303).* **Geverifieerd** op talenttent.org, ingelogd: `location.hash = '#search'` toont `view-landing`, terwijl de link `#search` zegt. Oorzaak: de `popstate`-afhandeling in `core.js` valt terug op `showView(e.state?.view \|\| 'landing')`. Een stap in de geschiedenis die de app niet zelf maakte, heeft geen `state`. **Aanname:** zo'n stap ontstaat als iemand het #-deel zelf wijzigt, of een link met # opent in een tabblad waar de app al openstaat. Een gewone herlaadbeurt werkt wél goed (gemeten). **Richting:** terugvallen op de view uit `location.hash`, anders op `hoogsteScherm()` |
 | **TT-397** | Na een tegel is één druk op terug te veel nodig | **Nieuw, 02-10-2026, gevonden in TT-385 fase 3. Advies P2.** *Toets: werkt, maar kost moeite: wie terug wil, drukt een keer voor niets.* **Geverifieerd** (Playwright, ook op de code van vóór fase 3): Profiel bewerken → Wat zoek je → terug → het overzicht; nog een keer terug → nog steeds het overzicht; pas de derde keer Mijn Profiel. Oorzaak: de afhandeling in `popstate` (`core.js`) zet bij het sluiten van een tegel de huidige stap opnieuw in de geschiedenis (`safeHistoryPush(history.state, …)`), ook als er geen vraag "Terug zonder opslaan?" komt. Bandprofiel bewerken doet hetzelfde. **Voorstel:** alleen opnieuw zetten als de vraag verschijnt |

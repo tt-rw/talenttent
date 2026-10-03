@@ -586,6 +586,10 @@ async function bevestigEmailadresOpslaan() {
   if (knop) knop.disabled = true;
   try {
     const uit = await bevestigApi('e-mailadres', { email });
+    // TT-405: de sessie in de browser kent het nieuwe e-mailadres pas na een
+    // verversing. Zonder die stap zet de volgende SIGNED_IN het oude terug.
+    const { data: ververst } = await db.auth.refreshSession();
+    if (ververst?.session?.user) { currentUser = ververst.session.user; verversEmailWeergave(currentUser.email || ''); }
     bevestigUitkomstTonen(uit);
     if (!uit.bevestigd) await renderEmailBevestigBanner();
   } catch (e) {
