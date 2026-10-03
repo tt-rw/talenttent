@@ -6654,6 +6654,72 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 62", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ─────────────────────────────────────────────────────────────
+        # Blok 63 — TT-407 (03-10-2026): een tik bereikt de knop, en een
+        # gesloten venster vangt geen tik af.
+        # Aanleiding: `.profiel-kop-rij > * { pointer-events: auto }` won van
+        # de `none` van het gesloten venster. De onzichtbare deel- en ⋯-knoppen
+        # lagen boven Band aanmaken, de tabbladen in Zoeken en de eerste rij in
+        # Berichten. Elke andere controle klikte met element.click(), en dat
+        # slaat het hit-testen over: alles slaagde, terwijl een echte tik
+        # niets deed. Deze controle test zoals een vinger: wat zit er op dit punt?
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 63 — een tik bereikt de knop; een gesloten venster vangt niets af (TT-407)")
+        page.evaluate("window.TT_STUB.reset()")
+        page.evaluate("showView('landing')")
+        page.wait_for_timeout(300)
+        d63 = page.evaluate("""async () => {
+          const w = ms => new Promise(r => setTimeout(r, ms));
+          const uit = { dicht: [], bedekt: [], gemeten: 0 };
+          // 1. Gesloten vensters: geen enkel onderdeel mag een tik opvangen.
+          document.querySelectorAll('.modal-overlay:not(.visible)').forEach(m => {
+            m.querySelectorAll('*').forEach(e => {
+              if (getComputedStyle(e).pointerEvents !== 'none') {
+                const r = e.getBoundingClientRect();
+                if (r.width > 0 && r.height > 0) uit.dicht.push(m.id + ' > ' + (e.className && e.className.baseVal !== undefined ? e.className.baseVal : e.className || e.tagName));
+              }
+            });
+          });
+          // 2. Elke zichtbare knop: vijf punten, de tik moet de knop zelf raken.
+          const SEL = 'button, a[href], [onclick], .tag, .level-btn, .segmented-btn, .search-mode-tab, .goal-card';
+          for (const v of ['landing', 'auth', 'register', 'search', 'about', 'privacy', 'terms', 'gedragscode']) {
+            showView(v); await w(450);
+            const els = [...document.querySelectorAll(SEL)].filter(e => {
+              const r = e.getBoundingClientRect(), cs = getComputedStyle(e);
+              if (!(r.width > 4 && r.height > 4) || cs.display === 'none' || cs.visibility === 'hidden' || e.disabled) return false;
+              if (e.closest('.modal-overlay:not(.visible)') || e.closest('.app-view:not(.active)')) return false;
+              for (let n = e; n && n !== document.body; n = n.parentElement) {
+                const s = getComputedStyle(n);
+                if (s.opacity === '0' || s.visibility === 'hidden' || s.display === 'none') return false;
+              }
+              return true;
+            });
+            for (const e of els) {
+              e.scrollIntoView({ block: 'center' }); await w(20);
+              const r = e.getBoundingClientRect();
+              for (const [fx, fy] of [[.5, .5], [.15, .2], [.85, .2], [.15, .8], [.85, .8]]) {
+                const x = r.left + r.width * fx, y = r.top + r.height * fy;
+                if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) continue;
+                const t = document.elementFromPoint(x, y);
+                // Een laag die dezelfde handeling doet (het Wijzig-bolletje op de foto) telt niet als bedekt.
+                const zelfde = t && e.getAttribute('onclick') && (t.closest('[onclick]') || t).getAttribute('onclick') === e.getAttribute('onclick');
+                if (!(t === e || e.contains(t) || zelfde)) {
+                  uit.bedekt.push(v + ': ' + (e.innerText || e.id || e.tagName).trim().slice(0, 24).replace(/\\n/g, ' ') + ' @' + Math.round(x) + ',' + Math.round(y));
+                  break;
+                }
+              }
+              uit.gemeten++;
+            }
+          }
+          showView('landing');
+          return uit;
+        }""")
+        check("TT-407: een gesloten venster vangt geen tik af", not d63["dicht"], json.dumps(d63["dicht"][:6]))
+        check("TT-407: elke knop in elke view wordt door een echte tik bereikt", not d63["bedekt"], json.dumps(d63["bedekt"][:6]))
+        check("TT-407: de controle heeft knoppen gemeten", d63["gemeten"] >= 30, str(d63["gemeten"]))
+        check("geen paginafouten in blok 63", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
