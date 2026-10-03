@@ -6575,6 +6575,85 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 61", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # Blok 62 — TT-404, TT-405 (03-10-2026): terug op dezelfde plek, een nieuw e-mailadres komt in de sessie
+        # ------------------------------------------------------------------
+        print("\nBlok 62 — terug op dezelfde plek; nieuw e-mailadres in de sessie (TT-404, TT-405)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        d62 = page.evaluate(r"""async () => {
+          const w = ms => new Promise(z => setTimeout(z, ms));
+          const uit = {};
+          const S = window.TT_STUB;
+          uit.handmatig = history.scrollRestoration;
+          hasOwnProfile = false; currentUser = null; myMusicianId = null; filterInstruments = [];
+          S.rpcResults.tt_resolve_search_origin = [{ lat: 52, lng: 4.3 }];
+          const ids = [...Array(40).keys()].map(i => 'm' + (i + 2));
+          S.rpcResults.tt_search_musicians_anon = S.rpcResults.tt_search_musicians = () => ids.map((id, i) => ({ musician_id: id, distance_km: i + 1, is_stale: false }));
+          S.rpcResults.tt_get_musicians_public = ids.map(id => ({ id, username: 'u' + id, age: 30, city: 'Delft', bio: '', goal: null,
+            profile_color: '#f5c518', avatar_url: null, updated_at: new Date().toISOString(),
+            instrument_levels: [{ instrument: 'Drums', niveau: 3 }], genres: ['Rock'], songs: [] }));
+          showView('search'); setSearchMode('musician'); await w(700);
+          document.getElementById('filterCity').value = 'Delft'; document.getElementById('filterRadius').value = '50';
+          hasOwnProfile = false;
+          await runSearch(); await w(300);
+          uit.kaarten = document.querySelectorAll('#searchResults [onclick*=openMusicianModal]').length;
+          window.scrollTo({ top: 1500, behavior: 'instant' }); await w(150);
+          // Een andere view en terug: de scrollstand van Zoeken komt terug.
+          // Zoeken laadt bij het openen opnieuw (TT-10); hier niet, want de
+          // stub levert die tweede keer iets anders dan de eerste.
+          const echteZoek = runSearch; runSearch = async () => {};
+          showView('about'); await w(700);
+          uit.opAbout = Math.round(window.scrollY);
+          history.back(); await w(700);
+          uit.naViewTerug = Math.round(window.scrollY);
+          uit.actief = [...document.querySelectorAll('.app-view.active')].map(e => e.id).join();
+          runSearch = echteZoek; hasOwnProfile = false;
+          const kaart = () => [...document.querySelectorAll('#searchResults [onclick*=openMusicianModal]')][12];
+          window.scrollTo({ top: 1500, behavior: 'instant' }); await w(150);
+          kaart().click(); await w(500);
+          history.back(); await w(500);
+          uit.naTerug = Math.round(window.scrollY);
+          uit.modalDicht = !document.querySelector('.modal-overlay.visible');
+          kaart().click(); await w(500);
+          document.querySelector('#musicianModal .modal-close').click(); await w(500);
+          uit.naKruisje = Math.round(window.scrollY);
+          // Een gewone navigatie begint bovenaan.
+          window.scrollTo({ top: 900, behavior: 'instant' }); await w(150);
+          showView('about'); await w(900);
+          uit.nieuweNav = Math.round(window.scrollY);
+          // TT-405: na het aanpassen van het e-mailadres kent de sessie het nieuwe.
+          currentUser = { id: 'u1', email: 'fout@talenttent.org' };
+          S.refreshUser = { id: 'u1', email: 'goed@talenttent.org' };
+          bevestigApi = async () => ({ ok: true, email: 'goed@talenttent.org' });
+          const vak = document.createElement('div'); vak.id = 'bevestigEmailadresVak';
+          vak.innerHTML = '<input id="bevestigNieuwEmailadres" value="goed@talenttent.org"><button id="bevestigEmailadresBtn"></button>';
+          document.body.appendChild(vak);
+          await bevestigEmailadresOpslaan(); await w(100);
+          uit.sessieEmail = currentUser.email;
+          uit.verversd = S.calls.some(c => c.kind === 'auth' && c.name === 'refreshSession');
+          vak.remove();
+          // Nieuwe sessie: de opgeslagen sessie heeft het oude e-mailadres, de server het nieuwe.
+          S.session = { user: { id: 'u1', email: 'fout@talenttent.org' } };
+          S.userNu = { id: 'u1', email: 'goed@talenttent.org' };
+          currentUser = null;
+          await appInit(); await w(300);
+          uit.nieuweSessieEmail = currentUser && currentUser.email;
+          S.userNu = null; S.session = null; currentUser = null;
+          return uit;
+        }""")
+        check("TT-404: de browser zet de scrollstand niet meer zelf terug", d62["handmatig"] == "manual", json.dumps(d62))
+        check("TT-404: een venster sluiten via terug laat Zoeken staan waar je was", d62["modalDicht"] and abs(d62["naTerug"] - 1500) <= 2, json.dumps(d62))
+        check("TT-404: het kruisje van het venster doet hetzelfde", abs(d62["naKruisje"] - 1500) <= 2, json.dumps(d62))
+        check("TT-404: een andere view opent bovenaan", d62["opAbout"] <= 2, json.dumps(d62))
+        check("TT-404: terug naar Zoeken komt uit waar je was", d62["actief"] == "view-search" and abs(d62["naViewTerug"] - 1500) <= 2, json.dumps(d62))
+        check("TT-404: een gewone navigatie begint nog steeds bovenaan", d62["nieuweNav"] <= 2, json.dumps(d62))
+        check("TT-405: de sessie wordt ververst na een nieuw e-mailadres", d62["verversd"], json.dumps(d62))
+        check("TT-405: het nieuwe e-mailadres staat daarna in de app", d62["sessieEmail"] == "goed@talenttent.org", json.dumps(d62))
+        check("TT-405: een nieuwe sessie toont het e-mailadres van de server, niet van de opgeslagen sessie", d62["nieuweSessieEmail"] == "goed@talenttent.org", json.dumps(d62))
+        check("geen paginafouten in blok 62", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
