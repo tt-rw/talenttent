@@ -1,6 +1,59 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 03-10-2026 (TT-404 en TT-405: twee bevindingen van Ronald) —
+**Laatste update:** 03-10-2026 (TT-407: tikken bereiken knoppen niet; overzicht terugknoppen) —
+**Gebouwd en getest. Testset 880 van 880 (blok 63 nieuw; op de oude CSS zakken
+precies de twee nieuwe controles: 878 van 880). Monitorronde 21 van 21 na het
+bijwerken van `CHECKSUMS.txt`. Geen SQL. Wacht op upload, samen met TT-404 en
+TT-405.**
+
+- **TT-407, onzichtbare knoppen vangen tikken af (P0).** Gevonden in een
+  flowtest op de echte site, met de accounts Ronald en Tester1. Een tik op de
+  onderkant van "Band aanmaken", op de tabbladen Muzikant en Setlist in
+  Zoeken, op het eerste gesprek in Berichten en op de deel- en ⋯-knop van
+  Mijn Profiel deed niets. **Geverifieerd (gemeten op talenttent.org):**
+  `.profiel-kop-rij > * { pointer-events: auto }` (TT-385) wint van de `none`
+  van het gesloten `.modal-overlay`. De deel- en ⋯-knoppen van het muzikant-
+  en bandvenster lagen daardoor onzichtbaar boven het scherm eronder. Het
+  gesloten venster draagt `opacity: 0` en `pointer-events: none`; een kind met
+  `auto` wint van zijn ouder. **Oplossing:** één regel in `styles.css`,
+  `.modal-overlay:not(.visible) .profiel-kop-rij > * { pointer-events: none; }`.
+  Het venster zelf is ongewijzigd: bij een open venster blijven de knoppen
+  bereikbaar (gemeten, schermafdruk bekeken). **Waarom de testset het niet
+  zag:** elke bestaande controle klikte met `element.click()`, en dat slaat
+  het hit-testen over. **Blok 63 (nieuw)** toetst zoals een vinger: geen
+  enkel onderdeel van een gesloten venster neemt een tik aan, en op vijf punten
+  van elke zichtbare knop (landing, inloggen, registreren, Zoeken, de drie
+  teksten) raakt een tik de knop zelf. Een laag die dezelfde handeling doet (het
+  Wijzig-bolletje op de foto) telt niet als bedekt.
+- **Overzicht terug en sluiten.** Ronald: "er zijn 4 manieren om terug te
+  gaan. dat is absurd." **Geverifieerd (code gelezen, gemeten op de
+  testomgeving):** de pijl in de kop, de grote Terug-knop onderin, het kruisje
+  en de terugknop van het toestel lopen door vier verschillende paden.
+  Gemeten: de Terug-knop onderaan Profiel bewerken en Bandprofiel bewerken
+  voegt een stap toe aan de geschiedenis (de terugknop van het toestel
+  brengt je daarna terug naar dat scherm); met twee vensters open sluit de
+  terugknop van het toestel het onderste venster en het kruisje het bovenste;
+  het verplichte gebruikersnaamscherm sluit met de terugknop van het toestel;
+  Escape sluit 8 van de 20 vensters. Volledig overzicht, met een voorstel om
+  van vier naar twee manieren te gaan:
+  `_niet-uploaden-overzicht-terug-en-sluiten-03-10-2026.md`. Niets
+  gewijzigd aan de terugknoppen; zie TT-408 en TT-409.
+- **Niet verklaard:** na het versturen van een bericht deed de eerste tik op
+  de onderbalk één keer niets (echte site, 03-10-2026). Niet herhaald.
+  **Onbekend** of dit met TT-407 samenhangt. Meten na de upload.
+- **Kleine bevindingen uit de flowtest (geverifieerd, niet aangepast):** een
+  nummer zonder beheersing toont een lege, omlijnde pil (`.level-pill` zonder
+  tekst, Mijn Profiel en muzikantvenster); op de bandpagina worden rolnamen
+  afgekapt ("Gitaar, ak…"); de melding "Vul een bericht in." bedekt de titel
+  van het berichtvenster. Niveau: P2, P2, P3. Nog zonder ticketnummer.
+
+**Gewijzigd:** `styles.css` (één regel), `index.html` (`?v=` van `styles.css`),
+`tests/tt_tests.py` (blok 63 nieuw), dit bestand, `CHECKSUMS.txt`. Geen andere
+functies geraakt.
+
+---
+
+**Vorige update:** 03-10-2026 (TT-404 en TT-405: twee bevindingen van Ronald) —
 **Gebouwd en getest. Testset 876 van 876 (blok 62 nieuw). Edge Function
 `email-bevestigen` moet Ronald opnieuw deployen. Wacht op upload.**
 
@@ -8357,6 +8410,7 @@ eerste tabel altijd gelijk is aan de stand.
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-407** | Onzichtbare knoppen van het muzikant- en bandvenster vangen tikken af | **Gebouwd en getest 03-10-2026 (blok 63) — zie Laatste update. Wacht op:** upload naar beide repo's; daarna dezelfde tikken op de echte site, op een telefoon. **Nieuw, 03-10-2026. Niveau P0.** *Toets: kan een gebruiker vastlopen? Ja: een tik op Band aanmaken, op de tabbladen in Zoeken, op het eerste gesprek en op de knoppen op Mijn Profiel deed niets.* **Geverifieerd** (gemeten op talenttent.org): `pointer-events: auto` op `.profiel-kop-rij > *` wint van de `none` van het gesloten venster. |
 | **TT-387** | Zoeken werkt niet als de browser opslag blokkeert | **Gebouwd en getest 01-10-2026 (blok 56) — zie Laatste update. Wacht op:** upload naar beide repo's. **Nieuw, 01-10-2026 (onderhoudsronde). Advies P0, niveau door Ronald te bevestigen.** *Toets: loopt een gebruiker vast? Ja — zoeken, de kern van de app, geeft niets.* **Geverifieerd** (Playwright, opslag geblokkeerd nagebootst zoals Safari en Chrome dat doen bij "alle cookies blokkeren"): `search.js` leest bovenin drie keer `localStorage` zonder `try` (regel 80, 945 en 1375: `musicianViewMode`, `bandViewMode`, `setlistViewMode`). Gooit de browser een `SecurityError`, dan breekt `search.js` halverwege af. Daarna geeft elke zoekopdracht `Cannot access 'musicianViewMode' before initialization`: 0 resultaten, geen melding. Normaal: 50 resultaten. Geldt voor muzikant, band en setlist. **Aanname:** de groep is klein; hoe klein is onbekend. Elke andere plek in de app leest opslag al binnen `try`. **Richting, niet gebouwd:** dezelfde vorm als elders, met een terugval op `standaardWeergave()`. Bandkant: zelfde bestand, zelfde fix |
 | — | **Vóór lancering (23-08-2026, niet acuut zolang alleen testprofielen bestaan):** TT-65 (back-up), TT-42 (toestemming 13-15-jarigen), TT-45 (aanvullende maatregelen ondergrens 13) — zie hun eigen rijen hieronder voor detail. Eigen sessie, gepland vóórdat er publiek geworven wordt | — |
 
@@ -8449,6 +8503,8 @@ Wat er speelt, ter voorbereiding op een aparte sessie hierover:
 
 | ID | Ticket | Kern |
 |---|---|---|
+| **TT-408** | Eén pad voor alle manieren terug | **Nieuw, 03-10-2026. Voorstel Claude, niveau P1; wacht op besluit Ronald.** *Toets: verandert dit of iemand een tweede keer opent? Ja: terug is een knop die mensen overal gebruiken.* **Geverifieerd** (gemeten): (A) de Terug-knop onderaan Profiel bewerken en Bandprofiel bewerken voegt een stap toe aan de geschiedenis; (B) met twee vensters open sluit de terugknop van het toestel het onderste, het kruisje het bovenste (`popstate` in `core.js` neemt het eerste open venster in de volgorde van `index.html`); (C) het gebruikersnaamscherm sluit met de terugknop van het toestel. Geen knop verdwijnt. Zie het overzicht. |
+| **TT-409** | Van vier manieren terug naar twee | **Nieuw, 03-10-2026. Voorstel Claude, niveau P2; wacht op besluit Ronald (drie vragen in het overzicht).** Ronald: "idealiter houden we er 2 over." Advies: de pijl linksboven en de terugknop van het toestel blijven; het kruisje (16) en de grote Terug-knop onderin (22) vervallen, de keuzeknoppen heten "Annuleren". Raakt de besluiten TT-294, TT-318 en TT-310. Volgorde: eerst TT-408. |
 | **TT-404** | Terug op dezelfde plek na doorklikken | **Gebouwd en getest 03-10-2026 (blok 62) — zie Laatste update. Wacht op:** upload naar beide repo's; laag 2 op een echt toestel. **Nieuw, 03-10-2026, bevinding Ronald. Advies P1.** *Toets: verandert of iemand een tweede keer opent? Ja: wie na elk profiel opnieuw door de lijst moet scrollen, stopt met zoeken.* **Geverifieerd** (gemeten, 390px). |
 | **TT-405** | Nieuw e-mailadres bij het bevestigen: wachttijd weg, oude e-mailadres blijft | **Gebouwd en getest 03-10-2026 (blok 62) — zie Laatste update. Wacht op:** upload naar beide repo's; Edge Function `email-bevestigen` opnieuw deployen; laag 2 op talenttent.org. **Nieuw, 03-10-2026, bevinding Ronald. Advies P1.** *Toets: verandert of iemand een tweede keer opent? Ja: wie bij de registratie meteen vastloopt op een melding, komt niet terug.* |
 | **TT-380** | Delen is een icoon bij de naam, op elk profiel | **Gebouwd en getest 30-09-2026 (blok 50), wacht op upload en laag 2 — zie Laatste update.** Bevinding Ronald: "profiel delen icoon toevoegen aan muzikantenprofiel". Besluiten Ronald: icoon B naast de ⋯, beide op de regels onder de naam, op Mijn Profiel, het muzikantvenster en het bandvenster. Advies P1. **Toets P1:** verandert dit of iemand een tweede keer opent? Ja: wie zijn profiel deelt, krijgt reacties en brengt nieuwe muzikanten binnen. **Open:** deelicoon ook op Mijn Bands? En `naamPastInProfielkop()` van 187px naar de werkelijke ruimte (advies P3)? *Rechtgezet 30-09-2026 (TT-384): hier stond "naar 247px". Sinds TT-384 staat de naam van een muzikant onder de foto en heeft hij 343px bij 375px (blok 54: volle breedte); het bandvenster is in deze sessie niet gemeten.* |

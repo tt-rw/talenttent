@@ -3312,6 +3312,13 @@
     pointer-events: none;
   }
   .profiel-kop-rij > * { pointer-events: auto; }
+  /* TT-407: een gesloten venster laat geen tik door. De regel hierboven zet
+     de foto en de knoppen op `auto`, en een kind met `auto` wint van de
+     `none` van het gesloten `.modal-overlay` (opacity 0). Zo lagen de
+     onzichtbare deel- en ⋯-knoppen van het muzikant- en bandvenster boven
+     het scherm eronder en vingen tikken af (Band aanmaken, tabbladen in
+     Zoeken, eerste gesprek in Berichten, de knoppen op Mijn Profiel). */
+  .modal-overlay:not(.visible) .profiel-kop-rij > * { pointer-events: none; }
   /* De knoppen staan met hun midden op het midden van de onderste helft van
      de foto: 20px boven de onderrand. Een knop is 44px, dus 2px eronder. */
   .profiel-kop-rij .profiel-knoppen { margin: 0 0 -2px; }
