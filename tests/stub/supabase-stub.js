@@ -123,7 +123,7 @@
     updateUserError: null,
     reset() {
       this.calls = []; this.errors = {}; this.rpcErrors = {};
-      this.updateUserResult = null; this.updateUserError = null;
+      this.updateUserResult = null; this.updateUserError = null; this.refreshUser = null; this.userNu = null;
     }
   };
   window.TT_STUB = TT_STUB;
@@ -279,10 +279,16 @@
         return Promise.resolve({ data: clone(TT_STUB.rpcResults[name]), error: null });
       },
       auth: {
+        refreshSession() {
+          TT_STUB.calls.push({ kind: 'auth', name: 'refreshSession' });
+          const u = TT_STUB.refreshUser || (TT_STUB.session && TT_STUB.session.user) || null;
+          return Promise.resolve({ data: { session: u ? { user: clone(u) } : null, user: u }, error: null });
+        },
         getSession() { return Promise.resolve({ data: { session: clone(TT_STUB.session) }, error: null }); },
         getUser() {
           const s = TT_STUB.session;
-          return Promise.resolve({ data: { user: s ? clone(s.user) : null }, error: null });
+          // userNu: wat de server nu weet, als dat afwijkt van de opgeslagen sessie (TT-405)
+          return Promise.resolve({ data: { user: TT_STUB.userNu ? clone(TT_STUB.userNu) : (s ? clone(s.user) : null) }, error: null });
         },
         onAuthStateChange(cb) {
           TT_STUB.authCallback = cb;
