@@ -506,7 +506,6 @@ function resetMusicianSearch() {
 // (rolUitnodigKnopPlaatsen() in bands.js, besluit Ronald 02-10-2026).
 function zoekMuzikantVoorRol(instrument, plaats, bandNaam, datum, bandId) {
   sluitAlleMenus();
-  document.getElementById('bandModal').classList.remove('visible');
   showView('search');
   initSearchFilters();
   document.getElementById('filterName').value = '';
@@ -1390,7 +1389,7 @@ function instrumentInZin(naam) {
 function bandRowHTML(b) {
   const k = bandKaartGegevens(b);
   return `
-    <div class="result-row" onclick="openBandModal('${jsAttr(b.id)}')">
+    <div class="result-row" onclick="openBandScherm('${jsAttr(b.id)}')">
       <div class="result-row-top">
         <div class="result-row-avatar result-vierkant">${k.foto ? `<img src="${k.foto}" alt="${escHtml(b.name)}">` : AVATAR_T_FALLBACK}</div>
         <div class="result-row-main">
@@ -1414,7 +1413,7 @@ function bandCardHTML(b) {
   const k = bandKaartGegevens(b);
   const tags = k.rollen.length ? overflowBadgeHTML(k.rollen, 1) : (k.status ? tagSolid(k.status) : '');
   return `
-    <div class="result-card" onclick="openBandModal('${jsAttr(b.id)}')">
+    <div class="result-card" onclick="openBandScherm('${jsAttr(b.id)}')">
       <div class="result-card-photo result-vierkant">${k.foto ? `<img src="${k.foto}" alt="${escHtml(b.name)}">` : AVATAR_T_FALLBACK}</div>
       <div class="result-card-name">${escHtml(b.name)}</div>
       <div class="result-card-meta">${k.plaats}</div>

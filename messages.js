@@ -21,11 +21,9 @@ let gesprekVanuit = null; // view waar "Bericht sturen" vandaan kwam; null = inb
 let gesprekVia = '';      // TT-385 (h): bandnaam als het bericht bij een contactpersoon binnenkomt
 
 function openMessageComposer(recipientId, recipientName, bandNaam) {
-  // Het bandvenster sluiten; het gesprek komt in de plaats. Het profiel is een
-  // scherm (TT-410b): de pijl van het gesprek brengt je er weer terug.
-  // V-13 (13-08-2026): ook "Stuur een bericht aan deze band" komt hier uit.
-  const bandModalEl = document.getElementById('bandModal');
-  if (bandModalEl) bandModalEl.classList.remove('visible');
+  // Het profiel is een scherm (TT-410b): het gesprek komt in de plaats en de
+  // pijl van het gesprek brengt je er weer terug. Dat geldt ook voor een band
+  // (fase 2). V-13 (13-08-2026): ook "Stuur een bericht aan deze band" komt hier uit.
   gesprekVia = bandNaam || '';
   if (huidigeView !== 'messages') {
     gesprekVanuit = huidigeView;

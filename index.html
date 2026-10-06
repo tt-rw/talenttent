@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261006f">
+<link rel="stylesheet" href="styles.css?v=20261006g">
 </head>
 <body>
 
@@ -1935,12 +1935,12 @@
   </div>
 </div>
 
-<!-- VIEW: Profiel van een muzikant (TT-410b, 06-10-2026, besluit Ronald:
-     profiel en bandprofiel worden een eigen scherm met een deelbare link).
-     Was het venster #musicianModal. De kop is die van de app: pijl, woordmerk,
-     hamburger. Eén scherm, één reden: iemand bekijken. Het adres is
-     #profiel/<id>. De knop onderaan (#profielSchermVoet) staat vast boven de
-     onderbalk. -->
+<!-- VIEW: Profiel van een muzikant of een band (TT-410b, 06-10-2026, besluit
+     Ronald: profiel en bandprofiel worden een eigen scherm met een deelbare
+     link). Was het venster #musicianModal en, sinds fase 2, ook het bandvenster. De kop
+     is die van de app: pijl, woordmerk, hamburger. Eén scherm, één reden:
+     iemand of een band bekijken. Het adres is #profiel/<id> of #band/<id>. De
+     knop onderaan (#profielSchermVoet) staat vast boven de onderbalk. -->
 <div class="app-view" id="view-profiel">
   <div class="my-profile-wrap profiel-scherm">
     <div id="profielSchermContent"></div>
@@ -2342,36 +2342,6 @@
 </div>
 
 <div class="app-toast" id="appToast"></div>
-
-<!-- Band detail modal -->
-<div class="modal-overlay" id="bandModal" onclick="if(event.target===this)this.classList.remove('visible')">
-  <div class="modal-box modal-box-sticky-footer modal-box-kop" id="bandModalBox">
-    <!-- TT-269 (15-09-2026, Ronald): "voer dit door in de hele app." Zelfde
-         koprij als het muzikantprofiel — woordmerk links, sluiten-kruisje op
-         de plek van de hamburger. Muzikantkant en bandkant volgen dezelfde
-         regels (besluit Ronald, 11-09-2026). -->
-    <div class="modal-kop">
-      <!-- TT-301 (20-09-2026): zelfde terugknop als bij het muzikantprofiel.
-           Muzikantkant en bandkant volgen dezelfde regels (besluit Ronald,
-           11-09-2026). -->
-      <div class="kop-vak kop-links">
-        <button class="nav-menu-btn kop-terug" onclick="terugKnop()" aria-label="Terug" title="Terug">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
-        </button>
-      </div>
-      <div class="logo" onclick="document.getElementById('bandModal').classList.remove('visible');naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span>TALENT</span>TENT</div>
-      <!-- TT-06: zelfde ⋯-menu als bij het muzikantprofiel. Een band is wel te
-           melden, niet te blokkeren — blokkeren gaat over een persoon.
-           TT-318: net als bij het muzikantprofiel staat het menu naast de
-           bandnaam (#bandModalActies, gemaakt in openBandModal()). -->
-      <div class="kop-vak modal-kop-acties"></div>
-    </div>
-    <div id="bandModalContent" class="modal-scroll-area"></div>
-    <!-- TT-385: de knop "Stuur een bericht aan de band" staat vast onderin,
-         zoals bij het muzikantvenster (V-09). -->
-    <div id="bandModalFooter" class="modal-sticky-footer"></div>
-  </div>
-</div>
 
 <!-- TT-385 (besluit Ronald, g): delen van een bandpagina die nog niet af is.
      Alleen voor de beheerder: één zin over wat er mist, dan het deelmenu van
@@ -2810,17 +2780,17 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261006d"></script>
-<script src="utils.js?v=20261006a"></script>
+<script src="core.js?v=20261006e"></script>
+<script src="utils.js?v=20261006b"></script>
 <script src="veiligheid.js?v=20261006a"></script>
 <script src="auth.js?v=20260927b"></script>
 <script src="postcode.js?v=20261002d"></script>
 <script src="wizard.js?v=20261006c"></script>
 <script src="ouder.js?v=20261001a"></script>
-<script src="search.js?v=20261006b"></script>
-<script src="musicians.js?v=20261006b"></script>
-<script src="bands.js?v=20261006c"></script>
-<script src="messages.js?v=20261006c"></script>
+<script src="search.js?v=20261006c"></script>
+<script src="musicians.js?v=20261006c"></script>
+<script src="bands.js?v=20261006d"></script>
+<script src="messages.js?v=20261006d"></script>
 <script src="modals-shared.js?v=20261002d"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────

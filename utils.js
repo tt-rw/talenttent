@@ -1372,20 +1372,16 @@ function fitProfileName(root) {
   });
 }
 
-// TT-293 (18-09-2026): het woordmerk in een modal-koprij (.modal-kop .logo)
-// liep buiten het canvas bij een bureaubladvenster tussen circa 561 en
-// 780px breed — daar is #appRoot 50% van het venster (§11) en dus smaller
-// dan een telefoon, zelfde oorzaak als de noodtreden bij fitProfileName
-// (huisstijl §2.1). `.modal-box-kop { overflow: hidden }` knipte het
-// ⋯-menu en het sluiten-kruisje daardoor onzichtbaar weg. Zelfde aanpak
-// als fitProfileName: krimpen tot het past, geen vaste maat per scherm.
-// TT-301 (20-09-2026): dit gold tot nu toe alleen voor een koprij in een
-// venster. Sinds de terugknop erbij staat, is de gewone kop net zo krap: op
-// 280px (het smalste canvas) is er na twee knoppen van 44px nog 144px over,
-// en het woordmerk is op 28px 188px breed — gemeten 20-09-2026. Dezelfde
-// krimptrap geldt daarom nu voor allebei. Eén regel, niet per scherm
-// omzeild (§2, regel 11). De functie heette fitModalLogo(); die naam dekte
-// de inhoud niet meer.
+// TT-293 (18-09-2026): het woordmerk liep buiten het canvas bij een
+// bureaubladvenster tussen circa 561 en 780px breed — daar is #appRoot 50% van
+// het venster (§11) en dus smaller dan een telefoon, zelfde oorzaak als de
+// noodtreden bij fitProfileName (huisstijl §2.1). Zelfde aanpak als
+// fitProfileName: krimpen tot het past, geen vaste maat per scherm.
+// TT-301 (20-09-2026): de gewone kop is net zo krap: op 280px (het smalste
+// canvas) is er na twee knoppen van 44px nog 144px over, en het woordmerk is
+// op 28px 188px breed — gemeten 20-09-2026. Eén regel, niet per scherm
+// omzeild (§2, regel 11). TT-410b (06-10-2026): muzikant en band zijn een
+// scherm met de kop van de app; er is geen venster met een eigen koprij meer.
 const KOPLOGO_LADDER = [28, 24, 22, 20, 18, 16];
 // Noodtreden, zelfde gedachte als PROFIELNAAM_NOOD hierboven. Ze zijn nodig
 // in één stand: een koprij in een venster met zowel de terugknop als het
@@ -1419,7 +1415,7 @@ function meetLogoBreedte(logo, px) {
 
 function fitKopLogo(root) {
   const scope = root || document;
-  scope.querySelectorAll('.modal-kop, header').forEach(rij => {
+  scope.querySelectorAll('header').forEach(rij => {
     const logo = rij.querySelector(':scope > .logo');
     if (!logo || !rij.clientWidth) return; // nog niet zichtbaar — niets te meten
     const st = getComputedStyle(rij);

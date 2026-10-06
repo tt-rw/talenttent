@@ -187,6 +187,14 @@ async function shareProfile(kind, id, name) {
     }, 'Aanzetten en delen', false);
     return;
   }
+  // TT-410b fase 2: dezelfde vraag bij je eigen band. Alleen de beheerder
+  // heeft `bandDeelGegevens`, en alleen hij kan delen uitzetten.
+  if (kind === 'band' && bandDeelGegevens && bandDeelGegevens.id === id && bandDeelGegevens.delen_aan === false) {
+    showConfirm('Delen staat uit. Zet het aan om de link van de band te delen.', async () => {
+      if (await zetBandDelen(id, true)) shareProfile(kind, id, name);
+    }, 'Aanzetten en delen', false);
+    return;
+  }
   const path = kind === 'band' ? 'band' : 'profiel';
   const url = `${location.origin}${location.pathname}#${path}/${id}`;
   const label = kind === 'band' ? 'bandprofiel' : 'profiel';
@@ -286,18 +294,20 @@ async function profielDeelStand(id) {
   }
 }
 
-let huidigProfielId = null; // het profiel dat het scherm nu toont
+let huidigProfielId = null; // de muzikant die het scherm nu toont (leeg bij een band)
+let huidigBandId = null;    // de band die het scherm nu toont (leeg bij een muzikant)
 let profielSchermVolgnr = 0; // een trage vraag mag een nieuwer profiel niet overschrijven
 
 async function laadProfielScherm(id, linkToegang) {
   const volgnr = ++profielSchermVolgnr;
   huidigProfielId = id || null;
+  huidigBandId = null;
   const content = document.getElementById('profielSchermContent');
   const footer = document.getElementById('profielSchermVoet');
   footer.innerHTML = '';
   content.innerHTML =
     '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
-  if (!id) { toonProfielNietBeschikbaar(); return; }
+  if (!id) { toonProfielNietBeschikbaar('muzikant'); return; }
 
   // TT-158 (27-08-2026): een uitgelogde bezoeker ziet het publieke profiel
   // (geen fname, dus displayNameOf() toont de gebruikersnaam) en krijgt geen
@@ -363,7 +373,7 @@ async function laadProfielScherm(id, linkToegang) {
   const isOwn = !!(myMusicianId && myMusicianId === m.id);
   // TT-410b: een link naar een profiel waarvan delen uit staat. Je eigen
   // profiel blijft altijd te openen.
-  if (linkToegang && !delen && !isOwn) { toonProfielNietBeschikbaar(); return; }
+  if (linkToegang && !delen && !isOwn) { toonProfielNietBeschikbaar('muzikant'); return; }
   m.delen_aan = delen;
 
   // TT-385 punt 17: de bands van deze muzikant, voor het blok Bands.
@@ -395,11 +405,13 @@ async function laadProfielScherm(id, linkToegang) {
 
 // TT-410b: de pagina voor een link die uit staat, of voor een profiel dat er
 // niet is. Eén zin en één knop, in de vaste vorm van een lege staat (§15).
-function toonProfielNietBeschikbaar() {
+// TT-410b fase 2: één functie voor muzikant en band; alleen de tekst verschilt.
+function toonProfielNietBeschikbaar(soort) {
+  const band = soort === 'band';
   document.getElementById('profielSchermVoet').innerHTML = '';
   document.getElementById('profielSchermContent').innerHTML = emptyStateHTML(
-    'Dit profiel is niet beschikbaar',
-    'De muzikant deelt dit profiel niet via een link.',
+    band ? 'Deze bandpagina is niet beschikbaar' : 'Dit profiel is niet beschikbaar',
+    band ? 'De band deelt deze pagina niet via een link.' : 'De muzikant deelt dit profiel niet via een link.',
     'Naar Zoeken →',
     "showView('search')"
   );

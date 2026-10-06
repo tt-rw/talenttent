@@ -161,7 +161,7 @@ const AFGESCHERMDE_VIEWS = ['myprofile', 'bands', 'profieltegels', 'messages', '
 // hoogste scherm, nooit vast naar de landingspagina.
 function viewUitHash() {
   const v = location.hash.replace('#', '');
-  if (/^profiel\/./.test(v)) return 'profiel'; // TT-410b: de link naar een profiel
+  if (/^(profiel|band)\/./.test(v)) return 'profiel'; // TT-410b: de link naar een profiel of een band
   if (!HERSTELBARE_VIEWS.includes(v)) return hoogsteScherm();
   if (AFGESCHERMDE_VIEWS.includes(v) && !currentUser) return 'auth';
   if (currentUser && ['auth', 'register'].includes(v)) return hoogsteScherm();
@@ -346,15 +346,18 @@ async function appInit() {
       // plek, zonder nog een Zoeken eronder. Een gedeelde link of een link uit
       // een ander tabblad heeft geen stap: die opent Zoeken, met het profiel
       // erboven, en gaat langs de deelregel (laadProfielScherm()).
+      // TT-410b fase 2: een band is hetzelfde scherm met een eigen stap
+      // (`soort: 'band'`), zodat er geen zeventiende view bijkomt.
       const st = history.state;
-      const profielId = profielMatch ? decodeURIComponent(profielMatch[1]) : null;
-      const zelfdeStap = !!(profielId && st && st.view === 'profiel' && st.id === profielId);
+      const doelSoort = bandMatch ? 'band' : 'muzikant';
+      const doelId = decodeURIComponent((profielMatch || bandMatch)[1]);
+      const zelfdeStap = !!(st && st.view === 'profiel' && st.id === doelId &&
+        (st.soort === 'band') === (doelSoort === 'band'));
       if (!zelfdeStap) showView('search');
       if (currentUser) await configureSearchAccess();
-      if (profielId) {
-        if (zelfdeStap) openProfielScherm(profielId, { redirect: true, link: !st.app });
-        else openProfielScherm(profielId, { link: true });
-      } else openBandModal(decodeURIComponent(bandMatch[1]));
+      const open = doelSoort === 'band' ? openBandScherm : openProfielScherm;
+      if (zelfdeStap) open(doelId, { redirect: true, link: !st.app });
+      else open(doelId, { link: true });
     } else if (gesprekMatch) {
       // TT-279: een open gesprek blijft open na verversen.
       // Eerst de inbox als huidige stap, dan het gesprek als stap erbovenop:
@@ -634,7 +637,7 @@ function toggleBandMoreMenu(e) {
 // beheerder) en in de rijen van Onze bezetting. Tot 02-10-2026 keek deze
 // functie alleen in Mijn Bands; daardoor bleef het menu op de bandpagina open
 // staan na een tik op de donkere laag.
-const BAND_MENU_PLEKKEN = ['#myBandsList', '#bandModalContent', '#view-profieltegels'];
+const BAND_MENU_PLEKKEN = ['#myBandsList', '#profielSchermContent', '#view-profieltegels'];
 function closeAllBandMoreMenus() {
   const open = document.querySelectorAll(BAND_MENU_PLEKKEN.map(p => `${p} .inline-menu-dropdown.visible`).join(', '));
   if (!open.length) return;
@@ -1268,8 +1271,9 @@ function ontwapenTerug() {
   document.getElementById('navTerugBtn')?.classList.remove('gewapend');
 }
 
-// `extra` is alleen voor het profielscherm (TT-410b): { id, app }. `app` is
-// waar als het profiel in de app is geopend en onwaar bij een link.
+// `extra` is alleen voor het profielscherm (TT-410b): { id, app, soort }. `app`
+// is waar als het profiel in de app is geopend en onwaar bij een link; `soort`
+// is 'band' voor een bandpagina, anders een muzikant.
 function showView(view, mode, extra) {
   // TT-404: onthoud waar je in de view stond die je verlaat.
   if (huidigeView && huidigeView !== view) viewScrollStand[huidigeView] = window.scrollY;
@@ -1277,11 +1281,16 @@ function showView(view, mode, extra) {
   huidigeView = view; // TT-303: de terugknop leest dit
   // TT-410b: welk profiel, en hoe is het geopend? Bij een stap terug staat het
   // in de stap zelf; bij een link in het #-deel van het adres.
-  let profielId = null, profielVanApp = false;
+  // TT-410b fase 2: hetzelfde scherm toont een muzikant of een band
+  // (`profielSoort`); de stap onthoudt beide.
+  let profielId = null, profielVanApp = false, profielSoort = 'muzikant';
   if (view === 'profiel') {
-    const hashId = (location.hash.match(/^#profiel\/(.+)$/) || [])[1];
+    const hashMatch = location.hash.match(/^#(profiel|band)\/(.+)$/) || [];
+    profielSoort = extra ? (extra.soort === 'band' ? 'band' : 'muzikant')
+      : (mode === 'pop' && history.state && history.state.soort === 'band') ? 'band'
+      : hashMatch[1] === 'band' ? 'band' : 'muzikant';
     profielId = (extra && extra.id) || (mode === 'pop' && history.state && history.state.id)
-      || (hashId ? decodeURIComponent(hashId) : null);
+      || (hashMatch[2] ? decodeURIComponent(hashMatch[2]) : null);
     profielVanApp = extra ? !!extra.app : !!(history.state && history.state.app);
   }
   // TT-385 fase 3: het tegelscherm is van je eigen profiel of van een band
@@ -1438,7 +1447,11 @@ function showView(view, mode, extra) {
     const draadOpen = document.getElementById('messagesThreadPanel')?.style.display !== 'none' && activeConversationId;
     if (!(mode === 'pop' && draadOpen)) loadInbox();
   }
-  if (view === 'profiel') profielLaadBelofte = laadProfielScherm(profielId, !profielVanApp);
+  if (view === 'profiel') {
+    profielLaadBelofte = profielSoort === 'band'
+      ? laadBandScherm(profielId, !profielVanApp)
+      : laadProfielScherm(profielId, !profielVanApp);
+  }
   if (view === 'profieltegels') {
     if (!myMusicianId) { showToast('Je hebt nog geen profiel om te bewerken.'); showView('myprofile', 'redirect'); return; }
     openTegelOverview();
@@ -1466,8 +1479,12 @@ function showView(view, mode, extra) {
     // TT-385 fase 3: de stap van Bandprofiel bewerken onthoudt welke band.
     // TT-410b: de stap van een profiel onthoudt het id en of het in de app is geopend.
     const stap = (view === 'profieltegels' && bewerkBandId) ? { view, band: bewerkBandId }
-      : (view === 'profiel') ? { view, id: profielId, app: profielVanApp } : { view };
-    const hashDeel = (view === 'profiel' && profielId) ? '#profiel/' + profielId : null;
+      : (view === 'profiel') ? (profielSoort === 'band'
+          ? { view, id: profielId, app: profielVanApp, soort: 'band' }
+          : { view, id: profielId, app: profielVanApp })
+      : { view };
+    const hashDeel = (view === 'profiel' && profielId)
+      ? '#' + (profielSoort === 'band' ? 'band' : 'profiel') + '/' + profielId : null;
     const naarHash = hashDeel || hash;
     if (mode === 'redirect') safeHistoryReplace(stap, naarHash);
     else { safeHistoryPush(stap, naarHash); terugDiepte++; } // TT-301

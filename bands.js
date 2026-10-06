@@ -244,8 +244,9 @@ async function executeLeaveBand(bandId) {
     if (error) throw error;
     if (!data || !data.length) throw new Error('Band verlaten is niet gelukt.');
     showToast('Je hebt de band verlaten.');
-    // TT-385: band verlaten kan ook vanaf de bandpagina; die gaat dan dicht.
-    document.getElementById('bandModal').classList.remove('visible');
+    // TT-385: band verlaten kan ook vanaf de bandpagina. TT-410b fase 2: die is
+    // nu een scherm en laadt opnieuw, zoals een bezoeker de band ziet.
+    if (huidigeView === 'profiel' && huidigBandId === bandId) laadBandScherm(bandId, false);
     loadMyBands();
     profielBandsVerversen();
   } catch (e) {
@@ -750,9 +751,8 @@ async function saveBandRun() {
   // dezelfde vorm als de registratiewizard. Muzikantkant en bandkant volgen
   // dezelfde regels (huisstijl, besluit Ronald 11-09-2026). Tot nu toe waren
   // dit drie opeenvolgende toasts, één per keer.
-  // Het bandformulier staat in view-bands, niet in #bandModal — die modal is
-  // de bandweergave. Gemeten 12-09-2026; met 'bandModal' als bereik werd er
-  // niets opgeruimd.
+  // Het bandformulier staat in view-bands. Gemeten 12-09-2026: met een ander
+  // bereik werd er niets opgeruimd.
   clearFieldErrors('view-bands');
   const fouten = [];
   if (!name) fouten.push(['bandName', 'Vul een bandnaam in']);
@@ -801,7 +801,7 @@ async function saveBandRun() {
     // TT-385 fase 4: daarna opent de privé bandpagina, met elke lege sectie
     // als uitnodiging (besluit 1 en 2).
     sluitBandWizard(() => {
-      openBandModal(bandId);
+      openBandScherm(bandId);
       showToast(`${name} staat. Vul hem aan wanneer je wilt.`);
     });
   } catch(e) {
@@ -880,7 +880,7 @@ async function loadMyBands() {
           <button class="nav-menu-item" onclick="closeAllBandMoreMenus();openBandTegels('${jsAttr(b.id)}','bandBezetting');">Bandleden beheren</button>
         </div>
       </div>` : '';
-    return `<div class="band-card" onclick="openBandModal('${jsAttr(b.id)}')">
+    return `<div class="band-card" onclick="openBandScherm('${jsAttr(b.id)}')">
       <div class="band-card-header">
         ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar">${AVATAR_T_FALLBACK}</div>`}
         <div style="flex:1;">
@@ -1077,7 +1077,7 @@ function profielBandsHTML(bands) {
       ? `<img class="bb-foto bb-foto-vierkant" src="${foto}" alt="">`
       : `<span class="bb-foto bb-foto-t bb-foto-vierkant" aria-hidden="true">${AVATAR_T_FALLBACK}</span>`;
     const sub = b.instrumenten.concat(b.rol === 'Oprichter' ? [roleLabel(b.rol)] : []).join(' · ');
-    return `<button type="button" class="bb-rij profiel-band-rij" onclick="openBandModal('${jsAttr(b.id)}')">${beeld}<span class="bb-tekst"><span class="bb-naam">${escHtml(b.naam)}</span>${sub ? `<span class="bb-sub">${escHtml(sub)}</span>` : ''}</span></button>`;
+    return `<button type="button" class="bb-rij profiel-band-rij" onclick="openBandScherm('${jsAttr(b.id)}')">${beeld}<span class="bb-tekst"><span class="bb-naam">${escHtml(b.naam)}</span>${sub ? `<span class="bb-sub">${escHtml(sub)}</span>` : ''}</span></button>`;
   }).join(''));
 }
 
@@ -1135,6 +1135,9 @@ function bandPaginaHTML(b, kijker) {
         </button>
         <div class="inline-menu-dropdown">
           <button class="nav-menu-item" onclick="sluitAlleMenus();openBandTegels('${jsAttr(b.id)}')">Bandprofiel bewerken</button>
+          <!-- TT-410b fase 2 (besluit Ronald: alleen de beheerder): zelfde vorm
+               als bij de muzikant; de tekst toont de stand van nu. -->
+          <button class="nav-menu-item" id="bandDelenToggleBtn" onclick="sluitAlleMenus();toggleBandDelen('${jsAttr(b.id)}')">${bandDelenTekst(b.delen_aan !== false)}</button>
         </div>
       </div></span>`;
   } else if (kijker === 'lid') {
@@ -1147,7 +1150,7 @@ function bandPaginaHTML(b, kijker) {
         </div>
       </div></span>`;
   } else if (kijker !== 'beheerder') {
-    menuHTML = '<span id="bandModalActies" class="profiel-menu-plek"></span>';
+    menuHTML = '<span id="profielSchermActies" class="profiel-menu-plek"></span>';
   }
 
   // "Zoekend" en "compleet" volgen uit de open rollen, niet uit een los
@@ -1174,7 +1177,7 @@ function bandPaginaHTML(b, kijker) {
     <div class="profiel-kop${bannerHTML ? ' op-banner' : ''}">
       <div class="profiel-kop-rij">
         ${fotoHTML}
-        ${profielKnoppenHTML('band', b.id, b.name, menuHTML, deelActie)}
+        ${profielKnoppenHTML('band', b.id, b.name, menuHTML, deelActie, beheer || b.delen_aan !== false)}
       </div>
       <div class="profile-name">${escHtml(b.name)}</div>
       <div class="profiel-regels"><div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city || '')}</div></div>
@@ -1298,26 +1301,86 @@ function bandDeelBladAanvullen() {
 function bandVoetHTML(b, kijker) {
   if (kijker === 'beheerder' || kijker === 'lid') return '';
   if (kijker === 'gast') {
-    return `<button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('bandModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`;
+    return `<button class="btn btn-primary" style="width:100%;" onclick="showView('register')">Maak een profiel aan om contact te leggen</button>`;
   }
   if (!b.contact) return '';
   return `<button class="btn btn-primary" style="width:100%;" onclick="openMessageComposer('${jsAttr(b.contact.id)}','${jsAttr(b.contact.naam)}','${jsAttr(b.name)}')">Stuur een bericht aan de band →</button>`;
 }
 
-async function openBandModal(id) {
-  const modal = document.getElementById('bandModal');
-  const vak = document.getElementById('bandModalContent');
-  const voet = document.getElementById('bandModalFooter');
-  vak.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
-  voet.innerHTML = '';
-  modal.classList.add('visible');
+// TT-410b fase 2 (06-10-2026, besluiten Ronald): de bandpagina is, net als het
+// muzikantprofiel, een eigen scherm met een eigen link: view-profiel, route
+// #band/<id>. Het oude bandvenster bestaat niet meer en er komt geen view bij.
+// De stap in de geschiedenis is { view: 'profiel', id, app, soort: 'band' }.
+//   - In de app geopend (`link` onwaar): elke band opent, ook als delen uit staat.
+//   - Via een link (`link` waar): staat delen uit, dan toont het scherm "niet
+//     beschikbaar", behalve voor de beheerder van de band.
+function openBandScherm(id, opties) {
+  const o = opties || {};
+  showView('profiel', o.redirect ? 'redirect' : undefined, { id, app: !o.link, soort: 'band' });
+  return profielLaadBelofte;
+}
 
+// Lukt de vraag niet (bijvoorbeeld omdat het databasescript nog niet is
+// gedraaid), dan geldt de standaard: delen staat aan.
+async function bandDeelStand(id) {
+  try {
+    const { data, error } = await db.rpc('tt_band_delen', { bid: id });
+    if (error) throw error;
+    return data !== false;
+  } catch (e) {
+    logCaught('bandDeelStand', e);
+    return true;
+  }
+}
+
+function bandDelenTekst(aan) {
+  return aan ? 'Delen via link: aan' : 'Delen via link: uit';
+}
+
+async function zetBandDelen(bandId, aan) {
+  try {
+    // .select(): zonder dat meldt de database ook succes als de regels de
+    // wijziging weigeren (0 rijen geraakt, geen fout; zie TT-230).
+    const { data, error } = await db.from('bands').update({ delen_aan: aan }).eq('id', bandId).select('id');
+    if (error) throw error;
+    if (!data || !data.length) throw new Error('Delen aanpassen is niet gelukt.');
+    if (bandDeelGegevens && bandDeelGegevens.id === bandId) bandDeelGegevens.delen_aan = aan;
+    const knop = document.getElementById('bandDelenToggleBtn');
+    if (knop) knop.textContent = bandDelenTekst(aan);
+    showToast(aan ? 'Delen staat aan. De link van de band werkt.' : 'Delen staat uit. De link van de band werkt niet meer.');
+    return true;
+  } catch (e) {
+    logCaught('zetBandDelen', e);
+    showToast(friendlyErrorMessage(e));
+    return false;
+  }
+}
+
+function toggleBandDelen(bandId) {
+  const staatAan = !(bandDeelGegevens && bandDeelGegevens.id === bandId && bandDeelGegevens.delen_aan === false);
+  return zetBandDelen(bandId, !staatAan);
+}
+
+async function laadBandScherm(id, linkToegang) {
+  const volgnr = ++profielSchermVolgnr; // dezelfde teller als bij een muzikant
+  huidigProfielId = null;
+  huidigBandId = id || null;
+  bandDeelGegevens = null;
+  const vak = document.getElementById('profielSchermContent');
+  const voet = document.getElementById('profielSchermVoet');
+  voet.innerHTML = '';
+  vak.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  if (!id) { toonProfielNietBeschikbaar('band'); return; }
+
+  const delenVraag = bandDeelStand(id);
   let b = null;
   try {
     b = hasOwnProfile ? await bandUitTabellen(id) : await bandUitPubliek(id);
   } catch (e) {
-    logCaught('openBandModal', e);
+    logCaught('laadBandScherm', e);
   }
+  const delen = await delenVraag;
+  if (volgnr !== profielSchermVolgnr) return; // intussen een ander scherm geopend
   if (!b) { vak.innerHTML = '<p style="color:var(--danger)">Kon band niet laden.</p>'; return; }
 
   const ik = hasOwnProfile ? myMusicianId : null;
@@ -1325,17 +1388,20 @@ async function openBandModal(id) {
     : (ik && ik === b.beheerderId) ? 'beheerder'
     : (ik && b.leden.some(l => l.id === ik)) ? 'lid' : 'bezoeker';
 
+  // Een link naar een band waarvan delen uit staat. De beheerder opent altijd.
+  if (linkToegang && !delen && kijker !== 'beheerder') { toonProfielNietBeschikbaar('band'); return; }
+  b.delen_aan = delen;
+
   bandDeelGegevens = kijker === 'beheerder' ? b : null;
   vak.innerHTML = bandPaginaHTML(b, kijker);
   voet.innerHTML = bandVoetHTML(b, kijker);
-  // Zelfde volgorde als bij het muzikantvenster: pas na het plaatsen meten
+  // Zelfde volgorde als bij het muzikantprofiel: pas na het plaatsen meten
   // en laten schuiven (TT-265, TT-249, TT-293).
   profielBannerStarten(vak);
   mediaTitelsBijwerken(vak);
   fitProfileName(vak);
-  fitKopLogo(document.getElementById('bandModalBox'));
   // TT-06: melden. Een band is te melden, niet te blokkeren.
-  if (kijker === 'bezoeker' || kijker === 'gast') zetVeiligheidMenu('bandModalActies', 'band', b.id, b.name);
+  if (kijker === 'bezoeker' || kijker === 'gast') zetVeiligheidMenu('profielSchermActies', 'band', b.id, b.name);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1383,7 +1449,6 @@ function bandStatusAfgeleid(aantalOpenRollen, pauze) {
 // lege bandfoto) of vanaf Mijn Bands. `tegel` opent meteen één tegel.
 function openBandTegels(bandId, tegel) {
   sluitAlleMenus();
-  document.getElementById('bandModal').classList.remove('visible');
   sluitBandDeelBlad();
   bewerkBandId = bandId;
   showView('profieltegels');
