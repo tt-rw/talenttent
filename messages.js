@@ -21,8 +21,8 @@ let gesprekVanuit = null; // view waar "Bericht sturen" vandaan kwam; null = inb
 let gesprekVia = '';      // TT-385 (h): bandnaam als het bericht bij een contactpersoon binnenkomt
 
 function openMessageComposer(recipientId, recipientName, bandNaam) {
-  // Het profiel- en bandvenster sluiten; het gesprek komt in de plaats.
-  document.getElementById('musicianModal').classList.remove('visible');
+  // Het bandvenster sluiten; het gesprek komt in de plaats. Het profiel is een
+  // scherm (TT-410b): de pijl van het gesprek brengt je er weer terug.
   // V-13 (13-08-2026): ook "Stuur een bericht aan deze band" komt hier uit.
   const bandModalEl = document.getElementById('bandModal');
   if (bandModalEl) bandModalEl.classList.remove('visible');
@@ -54,7 +54,7 @@ function openMessageComposer(recipientId, recipientName, bandNaam) {
 // naar de composer gaan — geen tussenstop bij het profiel waar je nogmaals
 // op "Stuur een bericht" moet klikken (Ronald: "niet naar een tussenscherm
 // waar ik nogmaals op een knop moet drukken"). event.stopPropagation()
-// voorkomt dat de klik ook nog de rij/kaart zelf (openMusicianModal) triggert.
+// voorkomt dat de klik ook nog de rij/kaart zelf (openProfielScherm) triggert.
 // Zonder eigen profiel is er niks om vanaf te versturen — dan alsnog naar
 // het profiel-tussenscherm, dat vraagt om in te loggen/een profiel te maken;
 // pendingMessageRecipient (TT-32) zorgt dat we na die stap alsnog hier
@@ -65,7 +65,7 @@ function openRowMessageIcon(event, id, displayName) {
     openMessageComposer(id, displayName);
   } else {
     pendingMessageRecipient = { id, displayName };
-    openMusicianModal(id);
+    openProfielScherm(id);
   }
 }
 
@@ -460,5 +460,5 @@ async function heropenGesprek(otherId) {
 // profiel van de ander. Een verwijderd account heeft geen profiel meer.
 function openThreadProfile() {
   if (!activeConversationId || activeConversationDeleted) return;
-  openMusicianModal(activeConversationId);
+  openProfielScherm(activeConversationId);
 }

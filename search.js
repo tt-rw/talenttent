@@ -922,7 +922,7 @@ function musicianRowHTML(m) {
   const nameHTML = escHtml(displayName);
 
   return `
-    <div class="result-row" onclick="openMusicianModal('${jsAttr(m.id)}')">
+    <div class="result-row" onclick="openProfielScherm('${jsAttr(m.id)}')">
       <div class="result-row-top">
         <div class="result-row-avatar">${avatarHTML}</div>
         <div class="result-row-main">
@@ -939,7 +939,7 @@ function musicianRowHTML(m) {
 }
 
 // TT-30 (07-08-2026): kaartweergave als alternatief voor musicianRowHTML()
-// hierboven — zelfde onderliggende data en dezelfde openMusicianModal()-klik,
+// hierboven — zelfde onderliggende data en dezelfde openProfielScherm()-klik,
 // alleen fotogericht in plaats van compact. Kiesbaar via de "Weergave"-
 // toggle (Ronald: "bij veel profielfoto's is een kaart ook tof"), naast
 // (niet i.p.v.) de bestaande rijenlijst — voorkeur wordt onthouden per
@@ -954,7 +954,7 @@ function musicianCardHTML(m) {
   const nameHTML = escHtml(displayName);
 
   return `
-    <div class="result-card" onclick="openMusicianModal('${jsAttr(m.id)}')">
+    <div class="result-card" onclick="openProfielScherm('${jsAttr(m.id)}')">
       <div class="result-card-photo">${photoHTML}</div>
       <div class="result-card-top-row">
         <div class="result-card-name">${nameHTML}</div>
@@ -1909,7 +1909,7 @@ function musicianSetlistCardHTML(m) {
   const photoHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK;
 
   return `
-    <div class="result-card" onclick="openMusicianModal('${jsAttr(m.id)}')">
+    <div class="result-card" onclick="openProfielScherm('${jsAttr(m.id)}')">
       <div class="result-card-photo">${photoHTML}</div>
       <div class="result-card-top-row">
         <div class="result-card-name">${escHtml(displayName)}</div>
@@ -1937,7 +1937,7 @@ function musicianSetlistRowHTML(m) {
   const nameHTML = escHtml(displayName);
 
   return `
-    <div class="result-row" onclick="openMusicianModal('${jsAttr(m.id)}')">
+    <div class="result-row" onclick="openProfielScherm('${jsAttr(m.id)}')">
       <div class="result-row-top">
         <div class="result-row-avatar">${avatarHTML}</div>
         <div class="result-row-main">
@@ -2349,7 +2349,7 @@ function gedeeldRijHTML(n, i) {
     const lvl = speelt ? n.spelers[g.id] : '';
     return `
       <div class="gedeeld-speler${speelt ? '' : ' niet'}">
-        <button type="button" class="gedeeld-speler-naam" onclick="openMusicianModal('${jsAttr(g.id)}')">${escHtml(g.naam)}</button>
+        <button type="button" class="gedeeld-speler-naam" onclick="openProfielScherm('${jsAttr(g.id)}')">${escHtml(g.naam)}</button>
         ${speelt
           ? (lvl ? `<span class="level-pill">${escHtml(LEVEL_LABELS[lvl])}</span>` : '')
           : '<span class="gedeeld-speler-niet">Speelt dit niet</span>'}

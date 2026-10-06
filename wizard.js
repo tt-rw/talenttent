@@ -317,7 +317,7 @@ async function loadMyProfile() {
   // meer op Mijn Profiel. De functie renderProgressPanel() is op 16-09-2026
   // verwijderd als dode code; terug te vinden in commit 05f8ddd.
   el.innerHTML = buildMusicianDetailHTML(m, true) + renderCompletenessMeter(m);
-  // TT-265: zie de toelichting in openMusicianModal() — pas starten als de
+  // TT-265: zie de toelichting in laadProfielScherm() — pas starten als de
   // balk in de pagina staat.
   profielBannerStarten(el);
   mediaTitelsBijwerken(el);
@@ -332,6 +332,10 @@ async function loadMyProfile() {
   // '*'-select hierboven, geen aparte kolom nodig in de query.
   myAcceptsBandInvites = m.accepts_band_invites !== false;
   updateBandInviteToggleBtn();
+  // TT-410b: de stand van "Delen via link" komt uit één kleine vraag, zodat
+  // Mijn Profiel ook laadt als het databasescript nog niet is gedraaid.
+  myDeelAan = await profielDeelStand(m.id);
+  updateDelenToggleBtn();
 }
 
 function updateBandInviteToggleBtn() {
@@ -527,8 +531,15 @@ async function renderEmailBevestigBanner() {
     .select('wacht_op_bevestiging').eq('user_id', currentUser.id).maybeSingle();
   if (error) logCaught('renderEmailBevestigBanner', error);
   if (error || !data?.wacht_op_bevestiging) { el.innerHTML = ''; return; }
+  // Dicht tot de app opnieuw opent: het profiel blijft offline tot de klik,
+  // dus de melding komt de volgende keer terug (sessionStorage, geen opslag
+  // = altijd tonen).
+  let dicht = false;
+  try { dicht = sessionStorage.getItem('tt-bevestig-melding-dicht') === '1'; } catch (e) { /* geen opslag: tonen */ }
+  if (dicht) { el.innerHTML = ''; return; }
   el.innerHTML = `
-    <div class="melding">
+    <div class="melding melding-met-sluit">
+      <button type="button" class="modal-close" onclick="bevestigMeldingSluiten()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
       <p class="melding-kop">Nog één stap: bevestig je e‑mailadres</p>
       <p class="melding-tekst">We hebben een mail gestuurd naar <strong id="bevestigEmailadres">${escHtml(currentUser.email || '')}</strong>. Tik op de knop in die mail. Daarna staat je profiel online en kun je berichten sturen.</p>
       <div id="bevestigKnoppen">
@@ -548,6 +559,12 @@ async function renderEmailBevestigBanner() {
         </div>
       </div>
     </div>`;
+}
+
+function bevestigMeldingSluiten() {
+  try { sessionStorage.setItem('tt-bevestig-melding-dicht', '1'); } catch (e) { /* geen opslag: sluit alleen nu */ }
+  const el = document.getElementById('emailBevestigBanner');
+  if (el) el.innerHTML = '';
 }
 
 function bevestigEmailadresTonen(aan) {

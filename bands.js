@@ -47,6 +47,7 @@ async function respondToBandInvite(bandId, accept) {
     if (error) throw error;
     showToast(accept ? 'Je staat nu als lid op het bandprofiel.' : 'Uitnodiging geweigerd.');
     loadBandInvites(mid);
+    if (accept) profielBandsVerversen();
   } catch (e) {
     logCaught('respondToBandInvite', e);
     showToast(friendlyErrorMessage(e));
@@ -121,6 +122,7 @@ async function respondToFounderOffer(bandId, accept) {
     }
     loadFounderOffers(mid);
     loadMyBands();
+    if (accept) profielBandsVerversen();
   } catch (e) {
     logCaught('respondToFounderOffer', e);
     showToast(friendlyErrorMessage(e));
@@ -224,16 +226,28 @@ function leaveBand(bandId, bandName) {
   );
 }
 
+// Het blok Bands op Mijn Profiel (TT-385 punt 17) wordt bij het openen van
+// het scherm geladen. Verandert je lidmaatschap terwijl Mijn Profiel eronder
+// openstaat (de bandpagina opent erbovenop), dan moet het blok mee. Bevinding
+// Ronald, 06-10-2026: na "Band verlaten" bleef de band op het profiel staan.
+function profielBandsVerversen() {
+  if (document.getElementById('view-myprofile')?.classList.contains('active')) loadMyProfile();
+}
+
 async function executeLeaveBand(bandId) {
   const mid = await getMyMusicianId();
   if (!mid) return;
   try {
-    const { error } = await db.from('band_members').delete().eq('band_id', bandId).eq('musician_id', mid);
+    // .select(): zonder dat meldt de database ook succes als de regels de
+    // verwijdering weigeren (0 rijen geraakt, geen fout; zie TT-230).
+    const { data, error } = await db.from('band_members').delete().eq('band_id', bandId).eq('musician_id', mid).select('musician_id');
     if (error) throw error;
+    if (!data || !data.length) throw new Error('Band verlaten is niet gelukt.');
     showToast('Je hebt de band verlaten.');
     // TT-385: band verlaten kan ook vanaf de bandpagina; die gaat dan dicht.
     document.getElementById('bandModal').classList.remove('visible');
     loadMyBands();
+    profielBandsVerversen();
   } catch (e) {
     logCaught('executeLeaveBand', e);
     showToast(friendlyErrorMessage(e));
@@ -2318,7 +2332,7 @@ let zoekRolBand = null; // { id, naam }
 
 async function rolUitnodigKnopPlaatsen(musicianId) {
   const band = zoekRolBand;
-  const voet = document.getElementById('musicianModalFooter');
+  const voet = document.getElementById('profielSchermVoet');
   if (!band || !hasOwnProfile || !voet || !musicianId || musicianId === myMusicianId) return;
   if (typeof blokkeerIkZelf === 'function' && blokkeerIkZelf(musicianId)) return;
   const { data, error } = await db.from('band_members').select('status')
@@ -2336,5 +2350,5 @@ async function rolUitnodigen(musicianId) {
   addMemberBandId = band.id;
   addMemberBandName = band.naam;
   const gelukt = await addBandMember(musicianId, '');
-  if (gelukt) document.querySelector('#musicianModalFooter .rol-uitnodig-knop')?.remove();
+  if (gelukt) document.querySelector('#profielSchermVoet .rol-uitnodig-knop')?.remove();
 }

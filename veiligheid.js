@@ -147,9 +147,9 @@ async function deblokkeerMuzikant(id, naam) {
 // het open gesprek sluit, en de lijsten die de geblokkeerde konden tonen
 // worden opnieuw opgebouwd.
 function naBlokkadeWijziging(id) {
-  const profielModal = document.getElementById('musicianModal');
-  if (profielModal && profielModal.classList.contains('visible')) {
-    profielModal.classList.remove('visible');
+  // TT-410b: het profiel van deze muzikant is een scherm; een stap terug.
+  if (huidigeView === 'profiel' && huidigProfielId === id) {
+    if (terugDiepte > 0) history.back(); else showView('search', 'redirect');
   }
   if (typeof activeConversationId !== 'undefined' && activeConversationId === id) {
     closeConversation();

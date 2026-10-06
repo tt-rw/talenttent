@@ -2,7 +2,7 @@
 
 
 // Bouwt de profiel-detail HTML op basis van een musicians-record. Gedeeld door
-// openMusicianModal() (modal voor andere profielen) én loadMyProfile() (Mijn
+// laadProfielScherm() (scherm voor andere profielen) én loadMyProfile() (Mijn
 // Profiel) — zodat Mijn Profiel nooit de modal hoeft te openen/sluiten (dat
 // veroorzaakte een korte flits van de modal-overlay bij elk bezoek).
 function buildMusicianDetailHTML(m, isOwn, inModal) {
@@ -45,11 +45,11 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
   // eigen menu op Mijn Profiel. Tot nu toe stond het in de koprij, links van
   // het kruisje (TT-06). Sinds TT-384 staat het rechts naast de profielfoto,
   // rechts van het deelicoon (profielKnoppenHTML()). Alleen de plek komt hier; de
-  // inhoud zet openMusicianModal() erin met zetVeiligheidMenu(), zodra het
+  // inhoud zet laadProfielScherm() erin met zetVeiligheidMenu(), zodra het
   // profiel geladen is. Op je eigen profiel komt er geen plek: je meldt of
   // blokkeert jezelf niet.
   const veiligheidPlekHTML = (inModal && !isOwn)
-    ? '<span id="musicianModalActies" class="profiel-menu-plek"></span>' : '';
+    ? '<span id="profielSchermActies" class="profiel-menu-plek"></span>' : '';
   const ownerMenuHTML = showOwnerMenu ? `
     <div class="profile-actions-menu-wrap" style="flex-shrink:0;">
       <button class="nav-menu-btn" id="profileMoreBtn" onclick="toggleProfileMoreMenu(event)" aria-label="Meer opties voor je profiel" title="Meer">
@@ -60,6 +60,10 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
         <!-- TT-56 (12-08-2026): opt-out band-uitnodigingen. Alleen deze
              knop, geen zichtbaar label op het profiel zelf voor anderen. -->
         <button class="nav-menu-item" id="bandInviteToggleBtn" onclick="closeProfileMoreMenu();toggleBandInviteAvailability()">Open voor band-uitnodigingen</button>
+        <!-- TT-410b (06-10-2026, besluit Ronald): delen staat standaard aan; de
+             muzikant zet het hier zelf uit. Zelfde vorm als de knop erboven:
+             de tekst toont de stand van nu. -->
+        <button class="nav-menu-item" id="delenToggleBtn" onclick="closeProfileMoreMenu();toggleProfielDelen()">Delen via link: aan</button>
       </div>
     </div>` : '';
 
@@ -75,7 +79,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     <div class="profiel-kop${bannerHTML ? ' op-banner' : ''}">
       <div class="profiel-kop-rij">
         ${avatarHTML}
-        ${profielKnoppenHTML('profiel', m.id, displayName, ownerMenuHTML + veiligheidPlekHTML)}
+        ${profielKnoppenHTML('profiel', m.id, displayName, ownerMenuHTML + veiligheidPlekHTML, null, isOwn || m.delen_aan !== false)}
       </div>
       <div class="profile-name">${escHtml(displayName)}</div>
       <div class="profiel-regels">
@@ -175,6 +179,14 @@ function profielMediaHTML(mediaLijst) {
 // #band/<id>) die appInit() bij het openen direct naar de juiste detailmodal
 // stuurt, zie het hash-blok daar.
 async function shareProfile(kind, id, name) {
+  // TT-410b: staat delen uit op je eigen profiel, dan vraagt de app eerst of
+  // het aan mag. Eén tik op "Aanzetten en delen" doet beide.
+  if (kind === 'profiel' && id === myMusicianId && !myDeelAan) {
+    showConfirm('Delen staat uit. Zet het aan om je link te delen.', async () => {
+      if (await zetProfielDelen(true)) shareProfile(kind, id, name);
+    }, 'Aanzetten en delen', false);
+    return;
+  }
   const path = kind === 'band' ? 'band' : 'profiel';
   const url = `${location.origin}${location.pathname}#${path}/${id}`;
   const label = kind === 'band' ? 'bandprofiel' : 'profiel';
@@ -215,8 +227,11 @@ function deelKnopHTML(kind, id, name, actie) {
   </button>`;
 }
 
-function profielKnoppenHTML(kind, id, name, menuHTML, deelActie) {
-  return `<div class="profiel-knoppen">${deelKnopHTML(kind, id, name, deelActie)}${menuHTML || ''}</div>`;
+// TT-410b: `toonDeel` is onwaar bij het profiel van een ander die delen
+// uitzette: dan staat er geen deelicoon, alleen het menu.
+function profielKnoppenHTML(kind, id, name, menuHTML, deelActie, toonDeel) {
+  const deel = toonDeel === false ? '' : deelKnopHTML(kind, id, name, deelActie);
+  return `<div class="profiel-knoppen">${deel}${menuHTML || ''}</div>`;
 }
 
 function musicianContactFooterHTML(m, isOwn, displayName) {
@@ -234,39 +249,67 @@ function musicianContactFooterHTML(m, isOwn, displayName) {
   }
   const contactBtn = hasOwnProfile
     ? `<button class="btn btn-primary" style="width:100%;" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht →</button>`
-    : `<button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('musicianModal').classList.remove('visible'); showView('register')">Maak een profiel aan om contact te leggen</button>`;
+    : `<button class="btn btn-primary" style="width:100%;" onclick="showView('register')">Maak een profiel aan om contact te leggen</button>`;
   return contactBtn;
 }
 
-async function openMusicianModal(id) {
-  const modal = document.getElementById('musicianModal');
-  const content = document.getElementById('musicianModalContent');
-  const footer = document.getElementById('musicianModalFooter');
-  modal.classList.add('visible');
+// TT-410b (06-10-2026, besluit Ronald): het profiel van een muzikant is een
+// eigen scherm (view-profiel) met een eigen adres, #profiel/<id>. Dat was het
+// venster #musicianModal. Eén ingang voor elke plek in de app: een tik op een
+// zoekresultaat, een gesprek, een gedeelde link.
+//   - In de app geopend (`link` onwaar): altijd te zien, ook als de muzikant
+//     delen uitzette. Delen gaat over de link, niet over vindbaarheid.
+//   - Via een link (`link` waar): staat delen uit, dan toont het scherm "niet
+//     beschikbaar", behalve op je eigen profiel.
+// De stap in de geschiedenis onthoudt het id en of het in de app geopend is
+// (`app`), zodat verversen op een profiel dat je in de app opende niet ineens
+// "niet beschikbaar" geeft.
+let profielLaadBelofte = null; // klaar zodra het profiel op het scherm staat
 
-  // TT-158 (27-08-2026): voorheen blokkeerde deze functie hier volledig voor
-  // een uitgelogde bezoeker (!currentUser) — alleen een tekstscherm met
-  // "Account maken"/"Inloggen", geen profiel. Dat is nu weg. hasOwnProfile
-  // staat voor een uitgelogde bezoeker altijd al op false (standaardwaarde
-  // bij de declaratie, en getMyMusicianId() geeft zonder currentUser meteen
-  // null terug) — de bestaande hasOwnProfile-aftakking hieronder bediende dit
-  // pad al voor een ingelogde gebruiker zonder eigen profiel. Diezelfde
-  // aftakking bedient nu ook de volledig uitgelogde bezoeker: de publieke RPC
-  // (geen fname, dus displayNameOf() toont de gebruikersnaam) en
-  // musicianContactFooterHTML() (geen berichtknop, wel "Maak een profiel aan
-  // om contact te leggen").
+function openProfielScherm(id, opties) {
+  const o = opties || {};
+  showView('profiel', o.redirect ? 'redirect' : undefined, { id, app: !o.link });
+  return profielLaadBelofte;
+}
+
+// Hoort bij het tweede deel van de link-regel hierboven. Lukt de vraag niet
+// (bijvoorbeeld omdat het databasescript nog niet is gedraaid), dan geldt de
+// standaard: delen staat aan.
+async function profielDeelStand(id) {
+  try {
+    const { data, error } = await db.rpc('tt_profiel_delen', { mid: id });
+    if (error) throw error;
+    return data !== false;
+  } catch (e) {
+    logCaught('profielDeelStand', e);
+    return true;
+  }
+}
+
+let huidigProfielId = null; // het profiel dat het scherm nu toont
+let profielSchermVolgnr = 0; // een trage vraag mag een nieuwer profiel niet overschrijven
+
+async function laadProfielScherm(id, linkToegang) {
+  const volgnr = ++profielSchermVolgnr;
+  huidigProfielId = id || null;
+  const content = document.getElementById('profielSchermContent');
+  const footer = document.getElementById('profielSchermVoet');
   footer.innerHTML = '';
-  // TT-318: hier werd het ⋯-menu van het vorige profiel leeggemaakt (TT-06).
-  // Het menu staat sinds TT-318 in de inhoud zelf, en die wordt hieronder
-  // vervangen door "Laden...". Dat leegmaken is daarmee vanzelf gebeurd.
   content.innerHTML =
     '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  if (!id) { toonProfielNietBeschikbaar(); return; }
 
+  // TT-158 (27-08-2026): een uitgelogde bezoeker ziet het publieke profiel
+  // (geen fname, dus displayNameOf() toont de gebruikersnaam) en krijgt geen
+  // berichtknop, wel "Maak een profiel aan om contact te leggen"
+  // (musicianContactFooterHTML()). hasOwnProfile staat voor een bezoeker op
+  // false.
   let m = null, error = null;
+  const delenVraag = profielDeelStand(id);
 
   if (hasOwnProfile) {
     // B-01 tweede stap (18-08-2026): geen birth_date meer in deze select —
-    // deze modal opent ook wanneer je iemand anders' profiel bekijkt, dus
+    // dit scherm opent ook wanneer je iemand anders' profiel bekijkt, dus
     // een ingelogde gebruiker mag hier nooit de ruwe geboortedatum van een
     // ander binnenkrijgen. Leeftijd komt apart via tt_musicians_ages().
     const res = await db.from('musicians').select(`
@@ -296,45 +339,49 @@ async function openMusicianModal(id) {
         bio: row.bio, goal: row.goal, avatar_url: row.avatar_url,
         rehearsal_frequency: row.rehearsal_frequency, musical_ambition: row.musical_ambition,
         // TT-51 (12-08-2026, RPC-restpunt gesloten): instrument_levels bevat
-        // instrument + niveau samen, zodat de sterren ook in deze detailmodal
-        // verschijnen voor een bezoeker zonder eigen profiel.
+        // instrument + niveau samen, zodat de sterren ook hier verschijnen voor
+        // een bezoeker zonder eigen profiel.
         musician_instruments: (row.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
         musician_genres: (row.genres || []).map(g => ({ genre: g })),
         musician_songs: row.songs || [],
-        // TT-210 (04-09-2026): voorheen gaf de RPC alleen media_type 'link'
-        // terug (kolom 'links') — foto's en video's ontbraken voor een
-        // bezoeker zonder eigen profiel. De RPC geeft nu alle mediatypes in
-        // één kolom 'media', met exact dezelfde vorm als musician_media
-        // (media_type/url/platform) — geen aparte remap meer nodig.
+        // TT-210 (04-09-2026): de RPC geeft alle mediatypes in één kolom
+        // 'media', met exact dezelfde vorm als musician_media.
         musician_media: row.media || [],
       };
     }
   }
 
+  const delen = await delenVraag;
+  if (volgnr !== profielSchermVolgnr) return; // intussen een ander profiel geopend
+
   if (error || !m) {
     footer.innerHTML = '';
-    document.getElementById('musicianModalContent').innerHTML = '<p style="color:var(--danger)">Kon profiel niet laden.</p>';
+    content.innerHTML = '<p style="color:var(--danger)">Kon profiel niet laden.</p>';
     return;
   }
 
+  const isOwn = !!(myMusicianId && myMusicianId === m.id);
+  // TT-410b: een link naar een profiel waarvan delen uit staat. Je eigen
+  // profiel blijft altijd te openen.
+  if (linkToegang && !delen && !isOwn) { toonProfielNietBeschikbaar(); return; }
+  m.delen_aan = delen;
+
   // TT-385 punt 17: de bands van deze muzikant, voor het blok Bands.
   m.bands = await profielBandsOphalen(m.id);
+  if (volgnr !== profielSchermVolgnr) return;
 
   // Afstand tonen (indien bekend uit een eerdere zoekopdracht) i.p.v. de postcode.
   m.distance_km = musicianDistanceCache[m.id] != null ? musicianDistanceCache[m.id] : null;
 
-  const isOwn = !!(myMusicianId && myMusicianId === m.id);
-  document.getElementById('musicianModalContent').innerHTML = buildMusicianDetailHTML(m, isOwn, true);
+  content.innerHTML = buildMusicianDetailHTML(m, isOwn, true);
   // TT-265: de bannerbalk kan pas gaan schuiven als hij in de pagina staat —
   // een verborgen element heeft geen breedte, dus een gezette scrollpositie
   // komt niet aan (zelfde valkuil als bij het wiel, huisstijl §7.1).
-  profielBannerStarten(document.getElementById('musicianModalContent'));
-  mediaTitelsBijwerken(document.getElementById('musicianModalContent'));
+  profielBannerStarten(content);
+  mediaTitelsBijwerken(content);
   // TT-249: de naam kan pas passend gemaakt worden als hij in de pagina staat
   // — een element dat er nog niet is, heeft geen breedte om tegen te meten.
-  fitProfileName(document.getElementById('musicianModalContent'));
-  // TT-293: zelfde reden, voor het woordmerk in de koprij van deze modal.
-  fitKopLogo(document.getElementById('musicianModalBox'));
+  fitProfileName(content);
   // V-09: zelfde displayName-logica als binnen buildMusicianDetailHTML()
   // (TT-43: bezoekers zonder profiel zien alleen de gebruikersnaam).
   const displayName = isOwn ? m.fname : displayNameOf(m);
@@ -343,16 +390,49 @@ async function openMusicianModal(id) {
   rolUitnodigKnopPlaatsen(isOwn ? null : m.id);
   // TT-06: melden en blokkeren, onder de naam (TT-380). Op je eigen profiel
   // niet — daar maakt buildMusicianDetailHTML() ook geen plek.
-  zetVeiligheidMenu('musicianModalActies', 'muzikant', isOwn ? null : m.id, displayName);
+  zetVeiligheidMenu('profielSchermActies', 'muzikant', isOwn ? null : m.id, displayName);
 }
 
-// TT-287: het kruis en het logo roepen dit aan zonder klik-gegeven; die sluiten
-// altijd. Een klik op de overlay sluit alleen als hij naast het venster valt.
-function closeMusicianModal(e) {
-  if (!e || e.target === document.getElementById('musicianModal')) {
-    document.getElementById('musicianModal').classList.remove('visible');
+// TT-410b: de pagina voor een link die uit staat, of voor een profiel dat er
+// niet is. Eén zin en één knop, in de vaste vorm van een lege staat (§15).
+function toonProfielNietBeschikbaar() {
+  document.getElementById('profielSchermVoet').innerHTML = '';
+  document.getElementById('profielSchermContent').innerHTML = emptyStateHTML(
+    'Dit profiel is niet beschikbaar',
+    'De muzikant deelt dit profiel niet via een link.',
+    'Naar Zoeken →',
+    "showView('search')"
+  );
+}
+
+// TT-410b (06-10-2026, besluit Ronald): delen staat standaard aan. De stand
+// staat in musicians.delen_aan; de app onthoudt hem in myDeelAan.
+let myDeelAan = true;
+
+function updateDelenToggleBtn() {
+  const btn = document.getElementById('delenToggleBtn');
+  if (btn) btn.textContent = myDeelAan ? 'Delen via link: aan' : 'Delen via link: uit';
+}
+
+async function zetProfielDelen(aan) {
+  if (!myMusicianId) return false;
+  try {
+    const { error } = await db.from('musicians')
+      .update({ delen_aan: aan })
+      .eq('id', myMusicianId);
+    if (error) throw error;
+    myDeelAan = aan;
+    updateDelenToggleBtn();
+    showToast(aan ? 'Delen staat aan. Je link werkt.' : 'Delen staat uit. Je link werkt niet meer.');
+    return true;
+  } catch (e) {
+    logCaught('zetProfielDelen', e);
+    showToast(friendlyErrorMessage(e));
+    return false;
   }
 }
+
+function toggleProfielDelen() { return zetProfielDelen(!myDeelAan); }
 
 // V-08 (13-08-2026): een foto opent nu in een eigen weergave in de app zelf,
 // niet meer in een nieuw browsertabblad (dat zou iemand in een app-schil

@@ -3662,6 +3662,28 @@
     padding: 24px 24px 80px;
   }
 
+  /* TT-410b (06-10-2026): het profiel van een muzikant is een scherm met
+     dezelfde opbouw en marges als Mijn Profiel (.my-profile-wrap). De knop
+     onderaan (bericht sturen, uitnodigen) staat vast boven de onderbalk en
+     loopt over de volle breedte; de marge van de pagina trekt hij weer
+     recht met --profiel-marge. */
+  .profiel-scherm { --profiel-marge: 24px; }
+  @media (max-width: 560px) { .profiel-scherm { --profiel-marge: 16px; } }
+  .profiel-voet {
+    position: sticky;
+    bottom: var(--onderbalk-hoogte);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 16px calc(-1 * var(--profiel-marge)) 0;
+    padding: 12px var(--profiel-marge);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .profiel-voet:empty { display: none; }
+  .profiel-voet .rol-uitnodig-knop { margin-bottom: 0; } /* de ruimte komt van de gap */
+
   /* TT-119 (22-08-2026): klein menuknopje voor de minder-frequente
      profielacties. Zelfde opbouw als .nav-menu-btn/.nav-menu-dropdown,
      maar eigen positionering (relatief aan deze knop, niet aan de

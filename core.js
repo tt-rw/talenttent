@@ -161,6 +161,7 @@ const AFGESCHERMDE_VIEWS = ['myprofile', 'bands', 'profieltegels', 'messages', '
 // hoogste scherm, nooit vast naar de landingspagina.
 function viewUitHash() {
   const v = location.hash.replace('#', '');
+  if (/^profiel\/./.test(v)) return 'profiel'; // TT-410b: de link naar een profiel
   if (!HERSTELBARE_VIEWS.includes(v)) return hoogsteScherm();
   if (AFGESCHERMDE_VIEWS.includes(v) && !currentUser) return 'auth';
   if (currentUser && ['auth', 'register'].includes(v)) return hoogsteScherm();
@@ -340,10 +341,20 @@ async function appInit() {
       // TT-331: de knop in de mail aan het kind, na de goedkeuring.
       toestemmingGegevenOpenen();
     } else if (profielMatch || bandMatch) {
-      showView('search');
+      // TT-410b: een link naar een profiel is een eigen scherm. Na verversen
+      // staat de stap er al (met het id); dan komt het scherm terug op zijn
+      // plek, zonder nog een Zoeken eronder. Een gedeelde link of een link uit
+      // een ander tabblad heeft geen stap: die opent Zoeken, met het profiel
+      // erboven, en gaat langs de deelregel (laadProfielScherm()).
+      const st = history.state;
+      const profielId = profielMatch ? decodeURIComponent(profielMatch[1]) : null;
+      const zelfdeStap = !!(profielId && st && st.view === 'profiel' && st.id === profielId);
+      if (!zelfdeStap) showView('search');
       if (currentUser) await configureSearchAccess();
-      if (profielMatch) openMusicianModal(decodeURIComponent(profielMatch[1]));
-      else openBandModal(decodeURIComponent(bandMatch[1]));
+      if (profielId) {
+        if (zelfdeStap) openProfielScherm(profielId, { redirect: true, link: !st.app });
+        else openProfielScherm(profielId, { link: true });
+      } else openBandModal(decodeURIComponent(bandMatch[1]));
     } else if (gesprekMatch) {
       // TT-279: een open gesprek blijft open na verversen.
       // Eerst de inbox als huidige stap, dan het gesprek als stap erbovenop:
@@ -1257,10 +1268,22 @@ function ontwapenTerug() {
   document.getElementById('navTerugBtn')?.classList.remove('gewapend');
 }
 
-function showView(view, mode) {
+// `extra` is alleen voor het profielscherm (TT-410b): { id, app }. `app` is
+// waar als het profiel in de app is geopend en onwaar bij een link.
+function showView(view, mode, extra) {
   // TT-404: onthoud waar je in de view stond die je verlaat.
   if (huidigeView && huidigeView !== view) viewScrollStand[huidigeView] = window.scrollY;
+  const vorigeView = huidigeView;
   huidigeView = view; // TT-303: de terugknop leest dit
+  // TT-410b: welk profiel, en hoe is het geopend? Bij een stap terug staat het
+  // in de stap zelf; bij een link in het #-deel van het adres.
+  let profielId = null, profielVanApp = false;
+  if (view === 'profiel') {
+    const hashId = (location.hash.match(/^#profiel\/(.+)$/) || [])[1];
+    profielId = (extra && extra.id) || (mode === 'pop' && history.state && history.state.id)
+      || (hashId ? decodeURIComponent(hashId) : null);
+    profielVanApp = extra ? !!extra.app : !!(history.state && history.state.app);
+  }
   // TT-385 fase 3: het tegelscherm is van je eigen profiel of van een band
   // (bewerkBandId). Wie het verlaat, laat geen open tegel of band achter;
   // anders sluit de terugknop elders nog een tegel die er niet meer is.
@@ -1285,7 +1308,8 @@ function showView(view, mode) {
     landing: null, search: 'navSearch',
     about: null, register: null, myprofile: 'navMyProfile', bands: 'navMyBands',
     messages: 'navMessages', auth: 'navLogin', reset: null,
-    privacy: null, terms: null, gedragscode: null, profieltegels: null, instellingen: null
+    privacy: null, terms: null, gedragscode: null, profieltegels: null, instellingen: null,
+    profiel: null
   };
   if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
 
@@ -1404,8 +1428,17 @@ function showView(view, mode) {
 
   if (view === 'myprofile') loadMyProfile();
   if (view === 'bands') loadMyBands();
-  if (view === 'search') configureSearchAccess();
-  if (view === 'messages') loadInbox();
+  // TT-410b: terug van een profiel naar Zoeken laat de resultaten staan. Zoeken
+  // laadt bij het openen opnieuw (TT-10); met het profiel als scherm zou elke
+  // stap terug de lijst verversen en de plek kwijtraken.
+  if (view === 'search' && !(mode === 'pop' && vorigeView === 'profiel')) configureSearchAccess();
+  // TT-410b: terug van een profiel naar een open gesprek laat het gesprek
+  // staan; de inbox laadt alleen als er geen gesprek open was.
+  if (view === 'messages') {
+    const draadOpen = document.getElementById('messagesThreadPanel')?.style.display !== 'none' && activeConversationId;
+    if (!(mode === 'pop' && draadOpen)) loadInbox();
+  }
+  if (view === 'profiel') profielLaadBelofte = laadProfielScherm(profielId, !profielVanApp);
   if (view === 'profieltegels') {
     if (!myMusicianId) { showToast('Je hebt nog geen profiel om te bewerken.'); showView('myprofile', 'redirect'); return; }
     openTegelOverview();
@@ -1431,9 +1464,13 @@ function showView(view, mode) {
       ? location.hash
       : '#' + view;
     // TT-385 fase 3: de stap van Bandprofiel bewerken onthoudt welke band.
-    const stap = (view === 'profieltegels' && bewerkBandId) ? { view, band: bewerkBandId } : { view };
-    if (mode === 'redirect') safeHistoryReplace(stap, hash);
-    else { safeHistoryPush(stap, hash); terugDiepte++; } // TT-301
+    // TT-410b: de stap van een profiel onthoudt het id en of het in de app is geopend.
+    const stap = (view === 'profieltegels' && bewerkBandId) ? { view, band: bewerkBandId }
+      : (view === 'profiel') ? { view, id: profielId, app: profielVanApp } : { view };
+    const hashDeel = (view === 'profiel' && profielId) ? '#profiel/' + profielId : null;
+    const naarHash = hashDeel || hash;
+    if (mode === 'redirect') safeHistoryReplace(stap, naarHash);
+    else { safeHistoryPush(stap, naarHash); terugDiepte++; } // TT-301
   }
   werkTerugKnopBij(); // TT-301
   landingBijwerken(); // TT-61: de foto's wisselen alleen op de landingspagina

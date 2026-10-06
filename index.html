@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261006e">
+<link rel="stylesheet" href="styles.css?v=20261006f">
 </head>
 <body>
 
@@ -1935,6 +1935,19 @@
   </div>
 </div>
 
+<!-- VIEW: Profiel van een muzikant (TT-410b, 06-10-2026, besluit Ronald:
+     profiel en bandprofiel worden een eigen scherm met een deelbare link).
+     Was het venster #musicianModal. De kop is die van de app: pijl, woordmerk,
+     hamburger. Eén scherm, één reden: iemand bekijken. Het adres is
+     #profiel/<id>. De knop onderaan (#profielSchermVoet) staat vast boven de
+     onderbalk. -->
+<div class="app-view" id="view-profiel">
+  <div class="my-profile-wrap profiel-scherm">
+    <div id="profielSchermContent"></div>
+    <div id="profielSchermVoet" class="profiel-voet"></div>
+  </div>
+</div>
+
 <!-- VIEW: Mijn bands -->
 <div class="app-view" id="view-bands">
   <div class="search-wrap">
@@ -2328,41 +2341,7 @@
   </div>
 </div>
 
-<!-- Muzikant detail modal -->
 <div class="app-toast" id="appToast"></div>
-
-<div class="modal-overlay" id="musicianModal" onclick="closeMusicianModal(event)">
-  <div class="modal-box modal-box-sticky-footer modal-box-kop" id="musicianModalBox">
-    <!-- TT-268 (15-09-2026, Ronald): "voeg de hero toe, maar zonder
-         hamburgermenu. in plaats daarvan komt het sluiten-kruisje." Het
-         profiel van iemand anders dekte tot nu toe de hele kop af; je zag
-         alleen een zwevend kruisje. Nu staat hier dezelfde koprij als op de
-         rest van de app, met het kruisje op de plek van de hamburger. -->
-    <div class="modal-kop">
-      <!-- TT-301 (20-09-2026): terugknop links, zodat de koprij van een venster
-           dezelfde drie vakken heeft als de gewone kop. De knop doet hetzelfde
-           als de terugknop van Android: history.back(), en die sluit via de
-           popstate-afhandeling in core.js eerst dit venster. -->
-      <div class="kop-vak kop-links">
-        <button class="nav-menu-btn kop-terug" onclick="terugKnop()" aria-label="Terug" title="Terug">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
-        </button>
-      </div>
-      <div class="logo" onclick="closeMusicianModal();naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span>TALENT</span>TENT</div>
-      <!-- TT-06 (18-09-2026): melden en blokkeren staan achter een ⋯-menu
-           (huisstijl §8). TT-318 (24-09-2026, besluit Ronald): dat menu staat
-           niet meer in deze koprij maar rechts naast de naam, recht onder het
-           kruisje — zoals op Mijn Profiel. De koprij heeft zo dezelfde drie
-           vakken als de gewone kop: pijl, woordmerk, kruisje. De plek voor
-           het menu maakt buildMusicianDetailHTML() (#musicianModalActies). -->
-      <!-- TT-408 (06-10-2026): geen kruisje meer. De pijl links is de uitgang;
-           het lege rechtervak houdt het woordmerk op zijn plek. -->
-      <div class="kop-vak modal-kop-acties"></div>
-    </div>
-    <div id="musicianModalContent" class="modal-scroll-area"></div>
-    <div id="musicianModalFooter" class="modal-sticky-footer"></div>
-  </div>
-</div>
 
 <!-- Band detail modal -->
 <div class="modal-overlay" id="bandModal" onclick="if(event.target===this)this.classList.remove('visible')">
@@ -2831,17 +2810,17 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261006c"></script>
+<script src="core.js?v=20261006d"></script>
 <script src="utils.js?v=20261006a"></script>
-<script src="veiligheid.js?v=20260924a"></script>
+<script src="veiligheid.js?v=20261006a"></script>
 <script src="auth.js?v=20260927b"></script>
 <script src="postcode.js?v=20261002d"></script>
-<script src="wizard.js?v=20261006b"></script>
+<script src="wizard.js?v=20261006c"></script>
 <script src="ouder.js?v=20261001a"></script>
-<script src="search.js?v=20261006a"></script>
-<script src="musicians.js?v=20261006a"></script>
-<script src="bands.js?v=20261006b"></script>
-<script src="messages.js?v=20261006b"></script>
+<script src="search.js?v=20261006b"></script>
+<script src="musicians.js?v=20261006b"></script>
+<script src="bands.js?v=20261006c"></script>
+<script src="messages.js?v=20261006c"></script>
 <script src="modals-shared.js?v=20261002d"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
