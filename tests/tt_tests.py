@@ -1158,7 +1158,7 @@ def blok_browser():
         # de pijl links in de koprij is de uitgang (hij doet history.back()).
         kruis = page.evaluate("""() => {
           const uit = {};
-          for (const id of ['musicianModal', 'bandModal']) {
+          for (const id of ['bandModal']) {
             const m = document.getElementById(id);
             uit[id] = { kruis: m.querySelectorAll('.modal-close').length,
                         pijl: m.querySelectorAll('.modal-kop .kop-terug').length,
@@ -1166,7 +1166,7 @@ def blok_browser():
           }
           return uit;
         }""")
-        check("het muzikant- en bandvenster hebben geen kruisje meer, wel de pijl in de koprij (TT-408)",
+        check("het bandvenster heeft geen kruisje meer, wel de pijl in de koprij (TT-408); het muzikantprofiel is sinds TT-410b een scherm",
               all(v["kruis"] == 0 and v["pijl"] == 1 and v["rechtsVak"] for v in kruis.values()), json.dumps(kruis))
 
         # TT-268 (15-09-2026, Ronald): 12px lucht boven en onder het woordmerk,
@@ -1206,8 +1206,10 @@ def blok_browser():
           const goud = !!vak.querySelector('.profile-header-band');
           const eerste = vak.firstElementChild.className;
           vak.remove();
-          const mk = document.querySelector('#musicianModalBox .modal-kop');
+          const mk = null; // TT-410b: het profiel is een scherm, geen venster met een eigen koprij
           return {
+            schermBestaat: !!document.getElementById('view-profiel'),
+            oudVenster: !!document.getElementById('musicianModal'),
             goudenBalk: goud,
             eersteElement: eerste,
             koprijInModal: !!mk,
@@ -1222,11 +1224,8 @@ def blok_browser():
         check("de gouden balk bovenaan het profiel is weg", not profielkop["goudenBalk"], "")
         check("de hero is nu het eerste element van het profiel",
               profielkop["eersteElement"] == "profiel-banner", profielkop["eersteElement"])
-        check("het profiel van iemand anders houdt de koprij met het woordmerk",
-              profielkop["koprijInModal"] and profielkop["woordmerkInModal"], json.dumps(profielkop))
-        check("met de pijl in die rij en zonder kruisje (TT-408)",
-              profielkop["pijlInKoprij"] and not profielkop["kruisInKoprij"],
-              json.dumps(profielkop))
+        check("het profiel van iemand anders is een eigen scherm met de kop van de app, geen venster meer (TT-410b)",
+              profielkop["schermBestaat"] and not profielkop["oudVenster"], json.dumps(profielkop))
 
         # TT-269 (15-09-2026, Ronald): "voer dit door in de hele app."
         appbreed = page.evaluate("""() => {
@@ -1281,7 +1280,7 @@ def blok_browser():
 
         gesprek = tp.evaluate("""async () => {
           window.getMyMusicianId = async () => 'm1';
-          window.openMusicianModal = (id) => { window.__geopend = id; };
+          window.openProfielScherm = (id) => { window.__geopend = id; };
           document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
           document.getElementById('view-messages').classList.add('active');
           document.body.classList.remove('landing-op-foto'); // de test wisselt de view zonder showView()
@@ -1693,48 +1692,63 @@ def blok_browser():
         ic.close()
 
         # ─────────────────────────────────────────────────────────────
-        # Blok 20 — het profielvenster sluit (TT-287), 16-09-2026.
-        # Het kruis en het logo riepen closeMusicianModal() aan zonder
-        # klik-gegeven; dat gaf een TypeError en het venster bleef open.
+        # Blok 20 — het profiel is een scherm (TT-287, herschreven in TT-410b).
+        # Tot TT-410b was het een venster (#musicianModal). Nu is het view-profiel,
+        # met een eigen stap in de geschiedenis en het adres #profiel/<id>.
         # ─────────────────────────────────────────────────────────────
-        print("\nBlok 20 — het profielvenster sluit")
+        print("\nBlok 20 — het profiel is een eigen scherm (TT-410b)")
         page_errors.clear()
-        def open_profiel():
-            page.evaluate("() => document.getElementById('musicianModal').classList.add('visible')")
-        def is_open():
-            return page.evaluate("() => document.getElementById('musicianModal').classList.contains('visible')")
-        open_profiel()
-        page.evaluate("() => closeMusicianModal()")
-        check("closeMusicianModal() sluit het profielvenster (TT-408: er is geen kruisje meer)", not is_open(), "")
-        check("sluiten geeft geen paginafout", not page_errors, "; ".join(page_errors)[:200])
-        page_errors.clear()
-        page.evaluate("() => showView('search')")
-        open_profiel()
-        page.click("#musicianModal .logo")
-        page.wait_for_timeout(60)
-        naar_home = page.evaluate("() => document.getElementById('view-landing').classList.contains('active')")
-        check("het logo sluit het venster en gaat naar de homepagina",
-              not is_open() and naar_home, f"open={is_open()} landing={naar_home}")
-        check("het logo geeft geen paginafout", not page_errors, "; ".join(page_errors)[:200])
-        open_profiel()
-        page.evaluate("() => document.getElementById('musicianModalContent').click()")
-        check("een klik ín het venster laat het open", is_open(), "")
-        page.evaluate("() => document.getElementById('musicianModal').click()")
-        check("een klik naast het venster sluit het", not is_open(), "")
-        # TT-408: het kruisje is uit beide vensters; er ligt dus ook geen tikvlak meer over de koprij.
-        tikvlak = page.evaluate("""() => {
-          const uit = {};
-          for (const id of ['musicianModal', 'bandModal']) {
-            const m = document.getElementById(id);
-            m.classList.add('visible');
-            uit[id] = { kruis: m.querySelectorAll('.modal-close').length,
-                        rechtsRaak: !!document.elementFromPoint(innerWidth - 30, 34)?.closest('.modal-close') };
-            m.classList.remove('visible');
-          }
-          return uit;
+        page.evaluate("() => { showView('search'); }")
+        page.wait_for_timeout(100)
+        uit20 = page.evaluate("""async () => {
+          const r = {};
+          const S = window.TT_STUB;
+          const was = { hasOwnProfile, myMusicianId };
+          hasOwnProfile = false; myMusicianId = null;
+          S.rpcResults.tt_get_musicians_public = () => [{ id: 'm2', username: 'dylan', age: 30, city: 'Delft',
+            bio: '', goal: null, avatar_url: null, instrument_levels: [{ instrument: 'Drums', niveau: 3 }],
+            genres: ['Rock'], songs: [], media: [] }];
+          const voor = history.length;
+          await openProfielScherm('m2');
+          r.view = huidigeView;
+          r.actief = document.getElementById('view-profiel').classList.contains('active');
+          r.hash = location.hash;
+          r.stap = history.state;
+          r.oudVenster = !!document.getElementById('musicianModal');
+          r.naam = (document.querySelector('#profielSchermContent .profile-name') || {}).textContent || '';
+          r.vensterOpen = document.querySelectorAll('.modal-overlay.visible').length;
+          r.terugKnop = getComputedStyle(document.getElementById('navTerugBtn')).visibility;
+          r.onderbalk = document.getElementById('appBottomNav').style.display;
+          r.stapErbij = history.length - voor;
+          hasOwnProfile = was.hasOwnProfile; myMusicianId = was.myMusicianId;
+          delete S.rpcResults.tt_get_musicians_public;
+          return r;
         }""")
-        for mid, t_ in tikvlak.items():
-            check(f"geen kruisje en geen tikvlak in de koprij ({mid})", t_["kruis"] == 0 and not t_["rechtsRaak"], json.dumps(t_))
+        check("het profiel opent als eigen scherm, niet als venster",
+              uit20["view"] == "profiel" and uit20["actief"] and not uit20["oudVenster"] and uit20["vensterOpen"] == 0, json.dumps(uit20))
+        check("het scherm heeft een eigen adres en een eigen stap in de geschiedenis, met het id en 'in de app geopend'",
+              uit20["hash"] == "#profiel/m2" and uit20["stap"] == {"view": "profiel", "id": "m2", "app": True}
+              and uit20["stapErbij"] == 1, json.dumps(uit20))
+        check("de kop van de app staat erbij: terugknop zichtbaar, onderbalk er",
+              uit20["terugKnop"] != "hidden" and uit20["onderbalk"] != "none", json.dumps(uit20))
+        page.evaluate("() => terugKnop()")
+        page.wait_for_timeout(300)
+        terug = page.evaluate("() => ({ view: huidigeView, hash: location.hash })")
+        check("de pijl in de kop gaat terug naar Zoeken", terug["view"] == "search", json.dumps(terug))
+        page.evaluate("""async () => {
+          window.__was20 = { hasOwnProfile, myMusicianId };
+          hasOwnProfile = false; myMusicianId = null;
+          window.TT_STUB.rpcResults.tt_get_musicians_public = () => [{ id: 'm2', username: 'dylan', age: 30, city: 'Delft',
+            bio: '', goal: null, avatar_url: null, instrument_levels: [], genres: [], songs: [], media: [] }];
+          await openProfielScherm('m2');
+        }""")
+        page.wait_for_timeout(200)
+        page.click("header .logo")
+        page.wait_for_timeout(200)
+        naar_home = page.evaluate("() => document.getElementById('view-landing').classList.contains('active')")
+        page.evaluate("""() => { hasOwnProfile = window.__was20.hasOwnProfile; myMusicianId = window.__was20.myMusicianId;
+          delete window.TT_STUB.rpcResults.tt_get_musicians_public; }""")
+        check("het woordmerk gaat naar het hoogste scherm", naar_home, "")
         check("geen paginafouten in blok 20", not page_errors, "; ".join(page_errors)[:200])
 
         # ─────────────────────────────────────────────────────────────
@@ -2077,33 +2091,35 @@ def blok_browser():
           // TT-318: de plek voor het menu staat niet meer vast in index.html
           // maar in het geladen profiel, naast de naam. Deze blok toetst het
           // menu zelf; de plek toetst blok 33. Daarom hier een kale plek.
-          for (const [box, id] of [['musicianModalContent', 'musicianModalActies'], ['bandModalContent', 'bandModalActies']]) {
+          const vpp = document.getElementById('view-profiel'); vpp.classList.add('active'); // TT-410b: een scherm moet zichtbaar zijn om te meten
+          for (const [box, id] of [['profielSchermContent', 'profielSchermActies'], ['bandModalContent', 'bandModalActies']]) {
             if (!document.getElementById(id)) document.getElementById(box).insertAdjacentHTML('beforeend', '<span id="' + id + '"></span>');
           }
 
-          zetVeiligheidMenu('musicianModalActies', 'muzikant', 'm2', 'Dylan');
-          r.menuBijAnder = !!document.querySelector('#musicianModalActies .veiligheid-menu-wrap');
-          r.items = labels('musicianModalActies');
-          const knop = document.querySelector('#musicianModalActies .nav-menu-btn');
+          zetVeiligheidMenu('profielSchermActies', 'muzikant', 'm2', 'Dylan');
+          r.menuBijAnder = !!document.querySelector('#profielSchermActies .veiligheid-menu-wrap');
+          r.items = labels('profielSchermActies');
+          const knop = document.querySelector('#profielSchermActies .nav-menu-btn');
           const kr = knop.getBoundingClientRect();
           r.tikdoel = [Math.round(kr.width), Math.round(kr.height)];
           knop.click();
-          r.opentNaKlik = document.querySelector('#musicianModalActies .inline-menu-dropdown').classList.contains('visible');
+          r.opentNaKlik = document.querySelector('#profielSchermActies .inline-menu-dropdown').classList.contains('visible');
           // Sinds 24-09-2026 ligt er een donkere laag achter elk open menu; een
           // tik ernaast landt op die laag.
-          document.querySelector('#musicianModalActies .menu-laag')?.click();
-          r.sluitBuitenKlik = !document.querySelector('#musicianModalActies .inline-menu-dropdown').classList.contains('visible');
+          document.querySelector('#profielSchermActies .menu-laag')?.click();
+          r.sluitBuitenKlik = !document.querySelector('#profielSchermActies .inline-menu-dropdown').classList.contains('visible');
 
-          zetVeiligheidMenu('musicianModalActies', 'muzikant', null, '');
-          r.menuBijEigen = !!document.querySelector('#musicianModalActies .veiligheid-menu-wrap');
+          zetVeiligheidMenu('profielSchermActies', 'muzikant', null, '');
+          r.menuBijEigen = !!document.querySelector('#profielSchermActies .veiligheid-menu-wrap');
 
           zetVeiligheidMenu('bandModalActies', 'band', 'b1', 'Van Delft');
           r.bandItems = labels('bandModalActies');
 
           hasOwnProfile = false;
-          zetVeiligheidMenu('musicianModalActies', 'muzikant', 'm2', 'Dylan');
-          r.menuZonderProfiel = !!document.querySelector('#musicianModalActies .veiligheid-menu-wrap');
+          zetVeiligheidMenu('profielSchermActies', 'muzikant', 'm2', 'Dylan');
+          r.menuZonderProfiel = !!document.querySelector('#profielSchermActies .veiligheid-menu-wrap');
           hasOwnProfile = true;
+          vpp.classList.remove('active');
           return r;
         }""")
         check("het ⋯-menu staat bij andermans profiel",
@@ -2126,8 +2142,8 @@ def blok_browser():
           r.rijen = window.TT_STUB.data.musician_blocks.map(b => b.blocker_id + '>' + b.blocked_id);
           r.geblokkeerd = isGeblokkeerd('m2');
           r.ikZelf = blokkeerIkZelf('m2');
-          zetVeiligheidMenu('musicianModalActies', 'muzikant', 'm2', 'Dylan');
-          r.itemsNa = Array.from(document.querySelectorAll('#musicianModalActies .nav-menu-item')).map(b => b.textContent);
+          zetVeiligheidMenu('profielSchermActies', 'muzikant', 'm2', 'Dylan');
+          r.itemsNa = Array.from(document.querySelectorAll('#profielSchermActies .nav-menu-item')).map(b => b.textContent);
           // De omgekeerde richting: een ander blokkeert mij. Ik zie hem niet
           // meer in de zoekresultaten, maar ik kan die blokkade niet opheffen.
           blokkadeOpMij.add('m3');
@@ -2644,8 +2660,8 @@ def blok_browser():
         }""")
         maten = page.evaluate("""() => [...document.querySelectorAll('.kop-terug svg, #navMenuBtn svg')]
           .map(s => s.getAttribute('width') + 'x' + s.getAttribute('height'))""")
-        check("elk terugteken en de hamburger zijn 24px, in de kop én in elk venster (TT-307, TT-311)",
-              len(maten) >= 4 and all(m == "24x24" for m in maten), json.dumps(maten))
+        check("elk terugteken en de hamburger zijn 24px, in de kop én in het bandvenster (TT-307, TT-311; het muzikantprofiel is sinds TT-410b een scherm)",
+              len(maten) >= 3 and all(m == "24x24" for m in maten), json.dumps(maten))
         # TT-388 (01-10-2026): het attribuut zei 24, maar een regel in
         # styles.css tekende de hamburger op 26px. Meet daarom ook de
         # getekende maat.
@@ -2674,7 +2690,7 @@ def blok_browser():
           uit.hashNaLozeKlik = location.hash === hashVoor;
           showView('search');
           uit.naEenStap = zichtbaar();
-          const modal = document.getElementById('musicianModal');
+          const modal = document.getElementById('bandModal');
           terugDiepte = 0; modal.classList.add('visible');
           uit.metOpenVenster = magTerug();
           modal.classList.remove('visible');
@@ -2699,8 +2715,8 @@ def blok_browser():
           });
           return uit;
         }""")
-        check("beide koprijen in een venster hebben dezelfde terugknop",
-              len(vensterkop) == 2 and all(v["terug"] and "terugKnop()" in v["klik"]
+        check("de koprij van het bandvenster heeft de terugknop (TT-410b: het muzikantprofiel gebruikt de kop van de app)",
+              len(vensterkop) == 1 and all(v["terug"] and "terugKnop()" in v["klik"]
                                            for v in vensterkop), json.dumps(vensterkop))
 
         # Het smalste canvas dat bestaat: tussen 561 en circa 780px venster is
@@ -2730,7 +2746,7 @@ def blok_browser():
         # staan daar nog maar twee knoppen (pijl en kruisje), net als in de
         # gewone kop; het ⋯-menu staat naast de naam. De noodtreden blijven.
         drie = page.evaluate("""() => {
-          const m = document.getElementById('musicianModal');
+          const m = document.getElementById('bandModal');
           m.classList.add('visible');
           fitKopLogo(document);
           const kop = m.querySelector('.modal-kop');
@@ -2852,7 +2868,7 @@ def blok_browser():
         merk = page.evaluate("""() => [...document.querySelectorAll('.logo:not(.naam-meter)')]
           .map(el => el.getAttribute('onclick') || '')""")
         check("elk woordmerk gaat naar het hoogste scherm, niet vast naar de landingspagina",
-              len(merk) >= 3 and all("naarHoogsteScherm()" in o for o in merk)
+              len(merk) >= 2 and all("naarHoogsteScherm()" in o for o in merk)
               and not any("showView('landing')" in o for o in merk), json.dumps(merk))
 
         hoogste = page.evaluate("""async () => {
@@ -3574,7 +3590,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             c.font = "40px 'TT Woordmerk', serif"; const d = c.measureText(ch).width;
             c.font = '40px serif'; const e = c.measureText(ch).width; return a !== b || d !== e; };
           const kop = document.querySelector('header .logo');
-          const m = document.getElementById('musicianModal');
+          const m = document.getElementById('bandModal');
           m.classList.add('visible'); fitKopLogo(document);
           const vl = m.querySelector('.modal-kop .logo');
           const uit = {
@@ -3608,7 +3624,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         # van de landingspagina moet TALENT wit kunnen maken.
         logos328 = re.findall(r'<div class="logo"[^>]*>(.*?)</div>', html318)
         check("het woordmerk staat nergens met een spatie (TT-328)",
-              len(logos328) == 3 and all(l == '<span>TALENT</span>TENT' for l in logos328),
+              len(logos328) == 2 and all(l == '<span>TALENT</span>TENT' for l in logos328),
               json.dumps(logos328))
         # TT-365 (28-09-2026): het lettertype is Tentype, niet meer het
         # nagetekende woordmerk van TT-318. Herkenbaar aan de L (594 van 1000,
@@ -3671,12 +3687,37 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
                      logoL: +logo.left.toFixed(1) };
           };
           const meet = async (soort) => {
-            const boxId = soort === 'muzikant' ? 'musicianModal' : 'bandModal';
-            const plekId = soort === 'muzikant' ? 'musicianModalActies' : 'bandModalActies';
-            if (soort === 'muzikant') await openMusicianModal('m2'); else await openBandModal('b2');
+            if (soort === 'muzikant') {
+              // TT-410b: het muzikantprofiel is een scherm met de kop van de app. Het
+              // menu staat nog steeds bij de naam, recht onder de hamburger.
+              await openProfielScherm('m2');
+              hasOwnProfile = true;
+              zetVeiligheidMenu('profielSchermActies', 'muzikant', 'm2', 'Test');
+              hasOwnProfile = false;
+              const sc = document.getElementById('view-profiel');
+              const plek = document.getElementById('profielSchermActies');
+              const knop = plek && plek.querySelector('.nav-menu-btn');
+              const kb = knop ? knop.getBoundingClientRect() : null;
+              const naam = sc.querySelector('.profile-name');
+              const hl = document.querySelector('#navMenuBtn line');
+              const hb = hl.getBBox(), hm = hl.getScreenCTM();
+              const kL = hm.a * (hb.x - 1) + hm.e, kR = hm.a * (hb.x + hb.width + 1) + hm.e;
+              return {
+                inKoprij: false,
+                onderNaam: !!(plek && naam && plek.closest('.profiel-knoppen') && naam.parentElement.contains(plek)),
+                naamVol: !!(naam && naam.clientWidth === naam.parentElement.clientWidth),
+                menuMidden: kb ? (kb.left + kb.right) / 2 : null,
+                kruisMidden: (kL + kR) / 2,
+                naam: naam ? naam.clientWidth : null,
+                overloop: document.documentElement.scrollWidth - document.documentElement.clientWidth
+              };
+            }
+            const boxId = 'bandModal';
+            const plekId = 'bandModalActies';
+            await openBandModal('b2');
             // Het menu verschijnt alleen voor wie zelf een profiel heeft.
             hasOwnProfile = true;
-            zetVeiligheidMenu(plekId, soort, soort === 'muzikant' ? 'm2' : 'b2', 'Test');
+            zetVeiligheidMenu(plekId, soort, 'b2', 'Test');
             hasOwnProfile = false;
             const box = document.getElementById(boxId);
             const plek = document.getElementById(plekId);
@@ -3705,9 +3746,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
           const uit = { muzikant: await meet('muzikant'), band: await meet('band') };
           // Je eigen profiel in het venster: geen plek, dus geen lege tussenruimte.
           myMusicianId = 'm2';
-          await openMusicianModal('m2');
-          uit.eigenPlek = !!document.getElementById('musicianModalActies');
-          document.getElementById('musicianModal').classList.remove('visible');
+          await openProfielScherm('m2');
+          uit.eigenPlek = !!document.getElementById('profielSchermActies');
           hasOwnProfile = was.hasOwnProfile; myMusicianId = was.myMusicianId;
           delete S.rpcResults.tt_get_musicians_public; delete S.rpcResults.tt_get_bands_public;
           return uit;
@@ -3716,26 +3756,24 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             v = venster[soort]
             check(f"{soort}: het ⋯-menu staat in de profielkop, naast het deelicoon, niet in de koprij (TT-380, TT-384)",
                   v["onderNaam"] and not v["inKoprij"], json.dumps(v))
-            check(f"{soort}: geen kruisje; de pijl staat 29px van de rand, even ver als de hamburger van de rechterrand (TT-408)",
-                  v["kruisAantal"] == 0 and abs(v["kruis"] - v["pijl"]) <= 0.5 and abs(v["kruis"] - 29) <= 0.5, json.dumps(v))
             check(f"{soort}: het ⋯-menu staat recht onder de hamburger (de plek van het oude kruisje)",
                   v["menuMidden"] is not None and abs(v["menuMidden"] - v["kruisMidden"]) <= 2, json.dumps(v))
+            check(f"{soort}: niets steekt zijwaarts buiten het scherm of venster",
+                  v["overloop"] <= 0, json.dumps(v))
+            if soort != "band": continue  # TT-410b: het muzikantprofiel is een scherm en heeft geen eigen koprij meer
+            check(f"{soort}: geen kruisje; de pijl staat 29px van de rand, even ver als de hamburger van de rechterrand (TT-408)",
+                  v["kruisAantal"] == 0 and abs(v["kruis"] - v["pijl"]) <= 0.5 and abs(v["kruis"] - 29) <= 0.5, json.dumps(v))
             check(f"{soort}: het woordmerk is 28px, even groot als in de kop",
                   v["logoPx"] == "28px", json.dumps(v))
             check(f"{soort}: geen eigen opvulling rond het venster, inhoud op 16px",
                   v["opvulling"] == "0px 0px 0px" and v["inhoudL"] == "16px", json.dumps(v))
-            check(f"{soort}: niets steekt zijwaarts buiten het venster",
-                  v["overloop"] <= 0, json.dumps(v))
         # TT-380: hier stond "de naam houdt 187px". Sinds het menu onder de naam
         # staat, heeft de naam de volle breedte van zijn kolom.
         check("de naam in het muzikant- en bandvenster heeft de volle breedte (TT-380)",
               venster["muzikant"]["naamVol"] and venster["band"]["naamVol"]
               and venster["muzikant"]["naam"] > 187, json.dumps(venster))
-        check("bandvenster en muzikantvenster hebben dezelfde koprij",
-              venster["band"]["kopL"] == venster["muzikant"]["kopL"]
-              and venster["band"]["kopR"] == venster["muzikant"]["kopR"], json.dumps(venster))
         kopLogo = page.evaluate("() => +document.querySelector('header .logo').getBoundingClientRect().left.toFixed(1)")
-        for soort in ("muzikant", "band"):
+        for soort in ("band",):  # TT-410b: het muzikantprofiel gebruikt de kop van de app zelf
             v = venster[soort]
             check(f"{soort}: het woordmerk staat op precies dezelfde plek als in de kop (besluit Ronald)",
                   abs(v["logoL"] - kopLogo) <= 0.5, json.dumps({"kop": kopLogo, "venster": v["logoL"]}))
@@ -3868,8 +3906,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             bio: '', goal: null, profile_color: '#f5c518', avatar_url: avatar, updated_at: new Date().toISOString(),
             instrument_levels: [{ instrument: 'Drums', niveau: 3 }], genres: ['Rock'], songs: [], media }];
           const meet = async () => {
-            await openMusicianModal('m2');
-            const vak = document.querySelector('#musicianModal .modal-scroll-area');
+            await openProfielScherm('m2');
+            const vak = document.getElementById('profielSchermContent');
             const t = [...vak.querySelectorAll('.media-afgeschermd')];
             const r = {
               tegels: vak.querySelectorAll('.profile-media-tegel.media-afgeschermd').length,
@@ -3884,7 +3922,6 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
               gewoneTegels: vak.querySelectorAll('button.profile-media-tegel').length,
             };
             if (t[0]) { const cs = getComputedStyle(t[0]); r.kleur = cs.color; r.cursor = cs.cursor; }
-            closeMusicianModal();
             return r;
           };
           const uit = {};
@@ -5303,21 +5340,18 @@ window.TT_STUB.fnAntwoord = {};
           showView('about');
           // 2. Het venster van een ander, met een eigen profiel: deelicoon en ⋯.
           hasOwnProfile = false; myMusicianId = 'm1';
-          await openMusicianModal('m2');
-          hasOwnProfile = true; zetVeiligheidMenu('musicianModalActies', 'muzikant', 'm2', 'Dylan'); hasOwnProfile = false;
-          const mv = document.getElementById('musicianModalContent');
+          await openProfielScherm('m2');
+          hasOwnProfile = true; zetVeiligheidMenu('profielSchermActies', 'muzikant', 'm2', 'Dylan'); hasOwnProfile = false;
+          const mv = document.getElementById('profielSchermContent');
           uit.ander = await meet(mv, document.getElementById('navMenuBtn'));
-          document.getElementById('musicianModal').classList.remove('visible');
-          // 3. Hetzelfde venster, bezoeker zonder profiel: alleen het deelicoon.
-          await openMusicianModal('m2');
+          // 3. Hetzelfde scherm, bezoeker zonder profiel: alleen het deelicoon.
+          await openProfielScherm('m2');
           uit.anderZonderProfiel = await meet(mv, document.getElementById('navMenuBtn'));
-          document.getElementById('musicianModal').classList.remove('visible');
           // 4. Je eigen profiel in het venster: alleen het deelicoon.
           myMusicianId = 'm2';
-          await openMusicianModal('m2');
+          await openProfielScherm('m2');
           uit.eigenInVenster = await meet(mv, document.getElementById('navMenuBtn'));
-          uit.eigenVoet = document.getElementById('musicianModalFooter').innerHTML.trim();
-          document.getElementById('musicianModal').classList.remove('visible');
+          uit.eigenVoet = document.getElementById('profielSchermVoet').innerHTML.trim();
           myMusicianId = 'm1';
           // 5. Het bandvenster, met menu.
           await openBandModal('b2');
@@ -5360,8 +5394,10 @@ window.TT_STUB.fnAntwoord = {};
         js50 = open(os.path.join(ROOT, "musicians.js"), encoding="utf-8").read() + open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
         # TT-385 fase 3 (besluit g): het deelblad van de beheerder deelt ook,
         # met de knop Delen. Dat is de enige andere aanroep.
+        # TT-410b: de vierde plek is shareProfile() zelf, die zichzelf opnieuw aanroept
+        # nadat je delen hebt aangezet.
         check("één deelknop in de code: alleen deelKnopHTML() en het deelblad roepen shareProfile() aan",
-              len(re.findall(r"shareProfile\(", js50)) == 3 and "if (b) shareProfile('band', b.id, b.name);" in js50
+              len(re.findall(r"shareProfile\(", js50)) == 4 and "if (b) shareProfile('band', b.id, b.name);" in js50
               and "Deel dit profiel</button>" not in js50
               and "Deel dit bandprofiel</button>" not in js50, str(len(re.findall(r"shareProfile\(", js50))))
         check("geen paginafouten in blok 50", not page_errors, "; ".join(page_errors)[:300])
@@ -5949,19 +5985,19 @@ window.TT_STUB.fnAntwoord = {};
                     document.getElementById('zoekRolMelding').hidden, document.getElementById('zoekRolMelding').textContent.trim(), bewerkBandId, activeTegelScreen];
           // Vanuit die zoekopdracht: "Uitnodigen voor Nachtploeg" in het muzikantvenster, niet bij een lid.
           u.zoekBand = zoekRolBand && zoekRolBand.id;
-          const knop = () => document.querySelector('#musicianModalFooter .rol-uitnodig-knop');
-          // De stub kent de geneste tabellen van een muzikant niet; daarom de voet zelf, met de aanroep uit openMusicianModal().
-          const voet = document.getElementById('musicianModalFooter'), voetWas = voet.innerHTML;
+          const knop = () => document.querySelector('#profielSchermVoet .rol-uitnodig-knop');
+          // De stub kent de geneste tabellen van een muzikant niet; daarom de voet zelf, met de aanroep uit openProfielScherm().
+          const voet = document.getElementById('profielSchermVoet'), voetWas = voet.innerHTML;
+          const vp = document.getElementById('view-profiel'), vpWas = vp.classList.contains('active'); vp.classList.add('active');
           voet.innerHTML = '<button class="btn btn-primary">Stuur een bericht</button>';
-          const mm = document.getElementById('musicianModal'); mm.classList.add('visible');
-          S.data.band_members.push({ band_id: 'b9', musician_id: 'm2', role: 'Lid', status: 'bevestigd', joined_at: '2026-02-01' });
+                    S.data.band_members.push({ band_id: 'b9', musician_id: 'm2', role: 'Lid', status: 'bevestigd', joined_at: '2026-02-01' });
           await rolUitnodigKnopPlaatsen('m2'); await w(50); u.knopLid = !!knop();
           S.data.band_members = S.data.band_members.filter(m => !(m.musician_id === 'm2' && m.band_id === 'b9'));
           await rolUitnodigKnopPlaatsen('m3'); await w(50); u.knopNieuw = knop() && knop().textContent;
           u.knopEerst = voet.firstElementChild === knop(); u.knopMaat = knop() && [knop().offsetWidth === voet.clientWidth - parseFloat(getComputedStyle(voet).paddingLeft) - parseFloat(getComputedStyle(voet).paddingRight), getComputedStyle(knop()).marginBottom];
           await rolUitnodigen('m3'); await w(200);
           u.naUitnodigen = [S.data.band_members.filter(m => m.musician_id === 'm3' && m.band_id === 'b9').map(m => m.status), !!knop()];
-          voet.innerHTML = voetWas; mm.classList.remove('visible');
+          voet.innerHTML = voetWas; if (!vpWas) vp.classList.remove('active');
           S.data.band_members = S.data.band_members.filter(m => !(m.musician_id === 'm3' && m.band_id === 'b9'));
           configureSearchAccess(); u.zoekBandNaOpen = zoekRolBand;
           // Een coverband telt geen eigen nummers mee, een band met alleen eigen nummers geen covers.
@@ -6082,9 +6118,9 @@ window.TT_STUB.fnAntwoord = {};
               d58["zoekBand"] == "b9" and d58["zoekBandNaOpen"] is None, json.dumps([d58["zoekBand"], d58["zoekBandNaOpen"]]))
         check("muzikantvenster na een rolzoekopdracht: 'Uitnodigen voor Nachtploeg', niet bij een lid; daarna weg",
               d58["knopLid"] is False and d58["knopNieuw"] == "Uitnodigen voor Nachtploeg" and d58["naUitnodigen"] == [["aangevraagd"], False]
-              and d58["knopEerst"] and d58["knopMaat"] == [True, "8px"],
+              and d58["knopEerst"] and d58["knopMaat"] == [True, "0px"],
               json.dumps([d58["knopLid"], d58["knopNieuw"], d58["knopEerst"], d58["knopMaat"], d58["naUitnodigen"]], ensure_ascii=False))
-        check("openMusicianModal() plaatst de knop, niet bij je eigen profiel",
+        check("openProfielScherm() plaatst de knop, niet bij je eigen profiel",
               "rolUitnodigKnopPlaatsen(isOwn ? null : m.id);" in open(os.path.join(ROOT, "musicians.js"), encoding="utf-8").read())
         mc, me = d58["meterCovers"], d58["meterEigen"]
         check("coverband: eigen nummers tellen niet mee in de balk; alleen eigen nummers: covers tellen niet mee",
@@ -6438,10 +6474,9 @@ window.TT_STUB.fnAntwoord = {};
           // In het venster, ook voor een bezoeker zonder profiel.
           hasOwnProfile = false; myMusicianId = null;
           S.rpcResults.tt_get_musicians_public = [{ id: 'm1', username: 'ronald', age: 25, city: 'Den Haag', bio: 'Gitarist en zanger.', instrument_levels: [], genres: [], songs: [], media: [] }];
-          await openMusicianModal('m1'); await w(100);
-          u.venster = [...$('musicianModalContent').querySelectorAll('.profiel-band-rij .bb-naam')].map(x => x.textContent);
+          await openProfielScherm('m1'); await w(100);
+          u.venster = [...$('profielSchermContent').querySelectorAll('.profiel-band-rij .bb-naam')].map(x => x.textContent);
           u.vensterVraag = S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_musician_band_ids').slice(-1).map(c => c.params)[0];
-          $('musicianModal').classList.remove('visible');
           showView('about');
           return u;
         }""")
@@ -6449,7 +6484,7 @@ window.TT_STUB.fnAntwoord = {};
           db.from = w.from; hasOwnProfile = w.hasOwnProfile; myMusicianId = w.myMusicianId; currentUser = w.currentUser;
           S.rpcResults = w.rpc; setBandViewMode(w.view);
           ['bands', 'band_members', 'band_wanted', 'band_invallers'].forEach(k => { S.data[k] = []; });
-          document.getElementById('musicianModal').classList.remove('visible'); showView('about'); }""")
+          showView('about'); }""")
         j60 = lambda k: json.dumps(d60.get(k), ensure_ascii=False)
         check("Zoeken: een band met We spelen even niet staat er niet tussen",
               d60["namen"] == ["Nachtploeg", "Zoutwater", "Solo"], j60("namen"))
@@ -6575,7 +6610,7 @@ window.TT_STUB.fnAntwoord = {};
           document.getElementById('filterCity').value = 'Delft'; document.getElementById('filterRadius').value = '50';
           hasOwnProfile = false;
           await runSearch(); await w(300);
-          uit.kaarten = document.querySelectorAll('#searchResults [onclick*=openMusicianModal]').length;
+          uit.kaarten = document.querySelectorAll('#searchResults [onclick*=openProfielScherm]').length;
           window.scrollTo({ top: 1500, behavior: 'instant' }); await w(150);
           // Een andere view en terug: de scrollstand van Zoeken komt terug.
           // Zoeken laadt bij het openen opnieuw (TT-10); hier niet, want de
@@ -6587,14 +6622,14 @@ window.TT_STUB.fnAntwoord = {};
           uit.naViewTerug = Math.round(window.scrollY);
           uit.actief = [...document.querySelectorAll('.app-view.active')].map(e => e.id).join();
           runSearch = echteZoek; hasOwnProfile = false;
-          const kaart = () => [...document.querySelectorAll('#searchResults [onclick*=openMusicianModal]')][12];
+          const kaart = () => [...document.querySelectorAll('#searchResults [onclick*=openProfielScherm]')][12];
           window.scrollTo({ top: 1500, behavior: 'instant' }); await w(150);
           kaart().click(); await w(500);
           history.back(); await w(500);
           uit.naTerug = Math.round(window.scrollY);
           uit.modalDicht = !document.querySelector('.modal-overlay.visible');
           kaart().click(); await w(500);
-          document.querySelector('#musicianModal .kop-terug').click(); await w(500);
+          document.getElementById('navTerugBtn').click(); await w(500);
           uit.naKruisje = Math.round(window.scrollY);
           // Een gewone navigatie begint bovenaan.
           window.scrollTo({ top: 900, behavior: 'instant' }); await w(150);
@@ -6769,7 +6804,7 @@ window.TT_STUB.fnAntwoord = {};
         }""")
         check("TT-408: elk venster zonder kruisje heeft een andere zichtbare uitgang (pijl of knop)",
               d64k["zonderUitgang"] == [], json.dumps(d64k["zonderUitgang"]))
-        for vid in ("musicianModal", "bandModal", "deleteAccountModal", "meldModal", "bioModal"):
+        for vid in ("bandModal", "deleteAccountModal", "meldModal", "bioModal"):
             check(f"TT-408: {vid} heeft geen kruisje meer", vid in d64k["zonderKruis"], json.dumps(d64k))
         check("TT-408: de instrumentkeuze houdt zijn kruisje (stap 1 heeft verder geen uitgang)", d64k["instrumentKruis"], json.dumps(d64k))
         check("TT-408: er zijn tien kruisjes over", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 10, "")
@@ -6915,6 +6950,147 @@ window.TT_STUB.fnAntwoord = {};
         check("een gesprek vanuit de inbox sluit alleen het gesprek",
               d66["inboxVan"] is None and d66["naInbox"] == {"view": "messages", "conv": None}, j66)
         check("geen paginafouten in blok 66", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ─────────────────────────────────────────────────────────────
+        # Blok 67 — TT-410b (06-10-2026, besluiten Ronald): het muzikantprofiel
+        # is een eigen scherm met een deelbare link. Delen staat standaard
+        # aan; de muzikant zet het zelf uit. Een link naar een profiel dat
+        # delen uitzette, toont "niet beschikbaar". In de app blijft elk
+        # profiel gewoon te openen.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 67 — profiel als scherm met deelbare link (TT-410b)")
+        page_errors.clear()
+        d67 = page.evaluate("""async () => {
+          const S = window.TT_STUB, w = ms => new Promise(z => setTimeout(z, ms));
+          const was = { hasOwnProfile, myMusicianId, runSearch, share: navigator.share };
+          const uit = {};
+          hasOwnProfile = false; myMusicianId = 'm1';
+          S.rpcResults.tt_get_musicians_public = (p) => [{ id: p.ids[0], username: 'sanne', age: 30, city: 'Delft',
+            bio: 'Drummer', goal: null, avatar_url: null, instrument_levels: [{ instrument: 'Drums', niveau: 3 }],
+            genres: ['Rock'], songs: [], media: [] }];
+          // Eerdere blokken kunnen rpcResults vervangen hebben: zet de delen-vraag zelf neer.
+          S.rpcResults.tt_profiel_delen = (p) => { const r = (S.data.musicians || []).find(x => x.id === p.mid); return r ? r.delen_aan !== false : null; };
+          const naam = () => (document.querySelector('#profielSchermContent .profile-name') || {}).textContent;
+          const leeg = () => !!document.querySelector('#profielSchermContent .empty-state-title');
+          const deelIcoon = () => document.querySelectorAll('#profielSchermContent .deel-knop').length;
+          // Eerdere blokken kunnen de testrij hebben verwijderd: zet hem terug.
+          S.data.musicians = S.data.musicians || [];
+          let rij = S.data.musicians.find(m => m.id === 'm3');
+          const rijToegevoegd = !rij;
+          // Het zoekscherm zet hasOwnProfile weer aan: de rij moet ook via de tabelroute leesbaar zijn.
+          if (!rij) { rij = { id: 'm3', user_id: 'u2', username: 'sanne', first_name: 'Sanne', lname: 'Bakker', city: 'Delft', postcode: '2611', bio: '', avatar_url: null, city_source: 'pdok', profile_complete: true }; S.data.musicians.push(rij); }
+          Object.assign(rij, { musician_songs: [], musician_instruments: [], musician_genres: [], musician_media: [] });
+
+          // 1. Standaard aan: de kolom ontbreekt in de testdata en telt als aan.
+          showView('search'); await w(50);
+          await openProfielScherm('m3'); await w(80);
+          uit.standaard = { naam: naam(), leeg: leeg(), deel: deelIcoon(), rpc: S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_profiel_delen').slice(-1)[0].params };
+
+          // 2. Een link naar een profiel dat delen uitzette: niet beschikbaar.
+          rij.delen_aan = false;
+          await openProfielScherm('m3', { link: true }); await w(80);
+          uit.linkUit = { leeg: leeg(), tekst: document.querySelector('#profielSchermContent .empty-state-text')?.textContent,
+                          knop: document.querySelector('#profielSchermContent .empty-state button')?.textContent, naam: naam() || null,
+                          voet: document.getElementById('profielSchermVoet').innerHTML };
+          // 3. In de app geopend blijft het profiel gewoon zichtbaar, maar zonder deelicoon.
+          await openProfielScherm('m3'); await w(80);
+          uit.appUit = { naam: naam(), leeg: leeg(), deel: deelIcoon() };
+          // 4. Verversen: de stap onthoudt of het in de app is geopend.
+          uit.stapApp = history.state;
+          await openProfielScherm('m3', { redirect: true, link: !history.state.app }); await w(80);
+          uit.naVerversApp = { naam: naam(), leeg: leeg() };
+          // 5. Je eigen profiel is altijd te openen, ook via een link.
+          myMusicianId = 'm3';
+          await openProfielScherm('m3', { link: true }); await w(80);
+          uit.eigenLink = { naam: document.querySelector('#profielSchermContent .profile-name') ? 'aanwezig' : null, leeg: leeg() };
+          myMusicianId = 'm1';
+          // 6. Delen weer aan: de link werkt.
+          rij.delen_aan = true;
+          await openProfielScherm('m3', { link: true }); await w(80);
+          uit.linkAan = { naam: naam(), leeg: leeg(), deel: deelIcoon() };
+
+          // 7. Zet delen uit: de app schrijft musicians.delen_aan en onthoudt de stand.
+          S.calls.length = 0;
+          myMusicianId = 'm3'; myDeelAan = true;
+          document.getElementById('view-myprofile').insertAdjacentHTML('beforeend', '<button id="delenToggleBtn"></button>');
+          const ok = await zetProfielDelen(false);
+          uit.uit = { ok, stand: myDeelAan, tekst: document.getElementById('delenToggleBtn').textContent, rij: rij.delen_aan,
+                      toast: document.getElementById('appToast').textContent,
+                      aanroep: S.calls.filter(c => c.kind === 'update' || (c.table === 'musicians' && c.op === 'update')).length };
+          // 8. Het deelicoon op je eigen profiel met delen uit: eerst de vraag.
+          let gedeeld = null; Object.defineProperty(navigator, 'share', { configurable: true, value: (d) => { gedeeld = d.url; return Promise.resolve(); } });
+          shareProfile('profiel', 'm3', 'Sanne'); await w(50);
+          uit.vraag = { open: document.getElementById('confirmModal').classList.contains('visible'),
+                        tekst: document.getElementById('confirmMessage').textContent,
+                        knop: document.getElementById('confirmYesBtn').textContent, gedeeld };
+          document.getElementById('confirmYesBtn').click(); await w(150);
+          uit.naAanzetten = { gedeeld, stand: myDeelAan, rij: rij.delen_aan };
+          document.getElementById('delenToggleBtn').remove();
+
+          // 9. Terug van een profiel naar Zoeken laadt de resultaten niet opnieuw.
+          myMusicianId = 'm1'; delete rij.delen_aan; if (rijToegevoegd) S.data.musicians = S.data.musicians.filter(x => x.id !== 'm3');
+          let zoekAantal = 0; const echteZoek = runSearch; runSearch = async () => { zoekAantal++; };
+          showView('search'); await w(100);
+          const voorZoek = zoekAantal;
+          await openProfielScherm('m3'); await w(80);
+          history.back(); await w(300);
+          uit.terugZoeken = { view: huidigeView, extraZoek: zoekAantal - voorZoek };
+          runSearch = echteZoek;
+
+          // 10. De knop onderaan staat vast, boven de onderbalk.
+          await openProfielScherm('m3'); await w(80);
+          document.getElementById('profielSchermVoet').innerHTML = '<button class="btn btn-primary" style="width:100%;">Stuur een bericht →</button>';
+          const voet = document.getElementById('profielSchermVoet');
+          const vs = getComputedStyle(voet);
+          const ob = document.getElementById('appBottomNav').getBoundingClientRect();
+          uit.voet = { positie: vs.position, onder: vs.bottom, onderbalk: getComputedStyle(document.documentElement).getPropertyValue('--onderbalk-hoogte').trim(),
+                       zichtbaar: voet.getBoundingClientRect().bottom <= ob.top + 1 };
+          showView('search'); await w(50);
+
+          hasOwnProfile = was.hasOwnProfile; myMusicianId = was.myMusicianId;
+          Object.defineProperty(navigator, 'share', { configurable: true, value: was.share });
+          delete S.rpcResults.tt_get_musicians_public;
+          return uit;
+        }""")
+        j67 = json.dumps(d67, ensure_ascii=False)
+        check("standaard staat delen aan: het profiel opent, met deelicoon; de vraag gaat met het id",
+              d67["standaard"]["naam"] == "sanne" and not d67["standaard"]["leeg"] and d67["standaard"]["deel"] == 1
+              and d67["standaard"]["rpc"] == {"mid": "m3"}, j67)
+        check("een link naar een profiel dat delen uitzette toont 'niet beschikbaar' met één knop naar Zoeken, zonder profiel",
+              d67["linkUit"]["leeg"] and d67["linkUit"]["naam"] is None and d67["linkUit"]["knop"] == "Naar Zoeken →"
+              and d67["linkUit"]["tekst"] == "De muzikant deelt dit profiel niet via een link."
+              and d67["linkUit"]["voet"] == "", j67)
+        check("in de app blijft hetzelfde profiel te openen, zonder deelicoon",
+              d67["appUit"]["naam"] == "sanne" and not d67["appUit"]["leeg"] and d67["appUit"]["deel"] == 0, j67)
+        check("de stap in de geschiedenis onthoudt het id en dat het in de app is geopend; verversen houdt het profiel",
+              d67["stapApp"] == {"view": "profiel", "id": "m3", "app": True}
+              and d67["naVerversApp"]["naam"] == "sanne" and not d67["naVerversApp"]["leeg"], j67)
+        check("je eigen profiel is altijd te openen, ook via een link",
+              d67["eigenLink"]["naam"] == "aanwezig" and not d67["eigenLink"]["leeg"], j67)
+        check("delen weer aan: de link werkt weer",
+              d67["linkAan"]["naam"] == "sanne" and not d67["linkAan"]["leeg"] and d67["linkAan"]["deel"] == 1, j67)
+        check("delen uitzetten schrijft musicians.delen_aan, werkt de knop bij en meldt het",
+              d67["uit"]["ok"] and d67["uit"]["stand"] is False and d67["uit"]["rij"] is False
+              and d67["uit"]["tekst"] == "Delen via link: uit"
+              and d67["uit"]["toast"] == "Delen staat uit. Je link werkt niet meer.", j67)
+        check("het deelicoon op je eigen profiel met delen uit vraagt eerst: 'Aanzetten en delen'; daarna deelt het",
+              d67["vraag"]["open"] and d67["vraag"]["gedeeld"] is None
+              and d67["vraag"]["knop"] == "Aanzetten en delen"
+              and d67["vraag"]["tekst"] == "Delen staat uit. Zet het aan om je link te delen."
+              and d67["naAanzetten"]["stand"] is True and d67["naAanzetten"]["rij"] is True
+              and (d67["naAanzetten"]["gedeeld"] or "").endswith("#profiel/m3"), j67)
+        check("terug van een profiel naar Zoeken laadt de resultaten niet opnieuw",
+              d67["terugZoeken"] == {"view": "search", "extraZoek": 0}, j67)
+        check("de knop onderaan het profiel staat vast (sticky) boven de onderbalk",
+              d67["voet"]["positie"] == "sticky" and d67["voet"]["onder"] == d67["voet"]["onderbalk"]
+              and d67["voet"]["zichtbaar"], j67)
+        js67 = open(os.path.join(ROOT, "musicians.js"), encoding="utf-8").read()
+        sql67 = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
+        check("het oude profielvenster is weg: geen #musicianModal en geen openMusicianModal() meer in de code",
+              "musicianModal" not in open(os.path.join(ROOT, "index.html"), encoding="utf-8").read().replace("#musicianModal", "")
+              and not re.search(r"openMusicianModal|closeMusicianModal", js67 + sql67), "")
+        check("geen paginafouten in blok 67", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
