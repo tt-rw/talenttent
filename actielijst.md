@@ -5,6 +5,15 @@
 beide repo's. Stap 3b (de negen vensters met alleen een kruisje) en de veeg
 vanaf de rand zijn niet gebouwd.**
 
+- **TT-423, foutlogboek schoner (06-10-2026, Ronald: "ja", na foutrapport #9 van de
+  monitorrepo).** Twee verwachte uitkomsten van de mailaanvraag komen niet meer
+  in `app_error_log`: "Dit e-mailadres is al in gebruik." en "Nog even wachten."
+  (`bevestigVerwachteUitkomst()` in `wizard.js`, gebruikt in `bevestigEmailadresOpslaan()`
+  en `bevestigMailOpnieuw()`). De gebruiker ziet de melding nog steeds. Niet gewijzigd:
+  `JWT issued at future` (3x, bron `markeerActief`; klok van het toestel, zie TT-306)
+  en de klembordmelding in `shareProfile()`. Geraakt: `wizard.js`, `index.html` (`?v=`).
+  Testset 893 van 893.
+
 - **Besluiten Ronald, 06-10-2026:** (1) terugknoppen sterk vereenvoudigen,
   "de UX staat voorop"; (2) akkoord met de verdeling hieronder; (3) de veeg
   vanaf de linkerrand erbij, maar alleen als hij zo soepel gaat als de

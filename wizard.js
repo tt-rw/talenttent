@@ -479,6 +479,12 @@ async function saveEditedProfile() {
 // Function `email-bevestigen` stuurt de mail en zet het profiel online.
 // Woordkeus: altijd "e-mailadres", nooit "adres" (Ronald, 26-09-2026).
 
+// Verwachte uitkomsten van de mailaanvraag: geen storing, dus geen regel in
+// app_error_log. De gebruiker krijgt de melding gewoon te zien.
+function bevestigVerwachteUitkomst(e) {
+  return /al in gebruik|Nog even wachten/i.test((e && e.message) || '');
+}
+
 async function bevestigApi(actie, gegevens) {
   const { data, error } = await db.functions.invoke('email-bevestigen', {
     body: Object.assign({ actie }, gegevens || {})
@@ -571,7 +577,7 @@ async function bevestigMailOpnieuw() {
   const knop = document.getElementById('bevestigOpnieuwBtn');
   if (knop) knop.disabled = true;
   try { bevestigUitkomstTonen(await bevestigApi('start')); }
-  catch (e) { logCaught('bevestigMailOpnieuw', e); showToast(e.message || friendlyErrorMessage(e)); }
+  catch (e) { if (!bevestigVerwachteUitkomst(e)) logCaught('bevestigMailOpnieuw', e); showToast(e.message || friendlyErrorMessage(e)); }
   finally { if (knop) knop.disabled = false; }
 }
 
@@ -593,7 +599,7 @@ async function bevestigEmailadresOpslaan() {
     bevestigUitkomstTonen(uit);
     if (!uit.bevestigd) await renderEmailBevestigBanner();
   } catch (e) {
-    logCaught('bevestigEmailadresOpslaan', e);
+    if (!bevestigVerwachteUitkomst(e)) logCaught('bevestigEmailadresOpslaan', e);
     // Een fout over het e-mailadres zelf hoort bij het veld; de rest is een toast.
     if (/e-mailadres/i.test(e.message || '')) setFieldError(veld, e.message.replace(/\.$/, ''));
     else showToast(e.message || friendlyErrorMessage(e));
