@@ -1284,6 +1284,8 @@ def blok_browser():
           window.openMusicianModal = (id) => { window.__geopend = id; };
           document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
           document.getElementById('view-messages').classList.add('active');
+          document.body.classList.remove('landing-op-foto'); // de test wisselt de view zonder showView()
+          document.getElementById('appBottomNav').style.display = '';
           const lijst = [];
           for (let i = 0; i < 30; i++) lijst.push({ id: 'x' + i, sender_id: i % 2 ? 'm1' : 'm2',
             recipient_id: i % 2 ? 'm2' : 'm1', body: 'Bericht ' + i,
@@ -2667,8 +2669,8 @@ def blok_browser():
           modal.classList.remove('visible');
           return uit;
         }""")
-        check("op het openingsscherm is er niets om naar terug te gaan, maar de knop staat er wel (TT-310)",
-              zicht["bijStart"] and not zicht["magBijStart"], json.dumps(zicht))
+        check("op het openingsscherm (de landingspagina) is er niets om naar terug te gaan, en de knop staat er niet (besluit Ronald 06-10-2026)",
+              (not zicht["bijStart"]) and not zicht["magBijStart"], json.dumps(zicht))
         check("een klik doet dan ook niets — de knop verlaat de app nooit",
               zicht["hashNaLozeKlik"], json.dumps(zicht))
         check("na één stap is de knop zichtbaar",
@@ -2881,8 +2883,8 @@ def blok_browser():
         check("het hoogste scherm is Mijn Profiel ingelogd, de landingspagina uitgelogd",
               hoogste["ingelogd"] == "myprofile" and hoogste["uitgelogd"] == "landing",
               json.dumps(hoogste))
-        check("op het hoogste scherm staat de terugknop er ook, uitgelogd én ingelogd (TT-310)",
-              hoogste["opLanding"] and hoogste["opProfiel"], json.dumps(hoogste))
+        check("op Mijn Profiel staat de terugknop er ook (TT-310); op de landingspagina niet (besluit Ronald 06-10-2026)",
+              (not hoogste["opLanding"]) and hoogste["opProfiel"], json.dumps(hoogste))
         check("maar daar is niets om naar terug te gaan, en een druk laat je op Mijn Profiel",
               not hoogste["magOpLanding"] and not hoogste["magOpProfiel"]
               and hoogste["naLozeDruk"] == ["view-myprofile"], json.dumps(hoogste))
@@ -2996,7 +2998,7 @@ def blok_browser():
             terug:     zichtbaar('navTerugBtn'),
             actief:    [...document.querySelectorAll('.app-view.active')].map(v => v.id)
           };
-          showView('landing');
+          showView('search');
           uit.onderbalkTerug = zichtbaar('appBottomNav');
           uit.hamburgerTerug = zichtbaar('navMenuBtn');
           return uit;
@@ -4937,12 +4939,12 @@ window.TT_STUB.fnAntwoord = {};
                      if not (guard != -1 and guard < m.start() < css47.find("\n  }\n", guard))]
         check("de aanwijsstand van .nav-menu-btn staat alleen in de hover-guard (TT-182)",
               not los_hover, f"los op positie {los_hover}")
-        p47.evaluate("() => showView('landing')"); p47.wait_for_timeout(150)
+        p47.evaluate("() => showView('search')"); p47.wait_for_timeout(150)
         p47.tap("#navTerugBtn"); p47.wait_for_timeout(350)
         tb = p47.evaluate("""() => { const b = document.getElementById('navTerugBtn'); const c = getComputedStyle(b);
           return { vlak: c.backgroundColor, rand: c.borderTopColor, zichtbaar: c.visibility, view: document.querySelector('.app-view.active')?.id }; }""")
-        check("na een tik op de terugknop op de startpagina: geen vlak, geen rand, knop wel zichtbaar",
-              tb["vlak"] == "rgba(0, 0, 0, 0)" and tb["rand"] == "rgba(0, 0, 0, 0)" and tb["zichtbaar"] == "visible"
+        check("na een tik op de terugknop op een hoofdtabblad: geen vlak, geen rand; de knop is weg op de landingspagina waar je uitkomt",
+              tb["vlak"] == "rgba(0, 0, 0, 0)" and tb["rand"] == "rgba(0, 0, 0, 0)" and tb["zichtbaar"] == "hidden"
               and tb["view"] == "view-landing", json.dumps(tb))
 
         # 9. "Zoek setlist" heet "Maak setlist": knop en paneeltitel.
@@ -5143,9 +5145,9 @@ window.TT_STUB.fnAntwoord = {};
             foto: Math.round(document.querySelector('.landing-foto').getBoundingClientRect().top) }; }""")
         check("de kop ligt doorzichtig op de foto, de foto begint bovenaan het scherm",
               kop49["pos"] == "fixed" and kop49["bg"] == "rgba(0, 0, 0, 0)" and kop49["top"] == 0 and kop49["foto"] == 0, json.dumps(kop49))
-        check("op de foto: terugknop, hamburger en TALENT wit, TENT geel; de terugknop staat er (TT-310)",
-              kop49["talent"] == kop49["menu"] == kop49["terug"] == "rgb(255, 255, 255)"
-              and kop49["tent"] == "rgb(245, 197, 24)" and kop49["terugZicht"] == "visible", json.dumps(kop49))
+        check("op de foto: hamburger en TALENT wit, TENT geel; geen terugknop (besluit Ronald 06-10-2026)",
+              kop49["talent"] == kop49["menu"] == "rgb(255, 255, 255)"
+              and kop49["tent"] == "rgb(245, 197, 24)" and kop49["terugZicht"] == "hidden", json.dumps(kop49))
         # Na 4 seconden het volgende woord, met zijn eigen regel.
         p49.wait_for_timeout(4200)
         na49 = p49.evaluate("""() => ({ woord: document.getElementById('landingWoord').textContent,
@@ -5196,14 +5198,14 @@ window.TT_STUB.fnAntwoord = {};
                   const nav = document.getElementById('appBottomNav');
                   return { scroll: document.documentElement.scrollHeight - innerHeight,
                     knop: Math.round(r('.landing-knop').bottom), login: Math.round(r('.landing-inloggen').bottom - 12),
-                    nav: Math.round(nav.getBoundingClientRect().top),
+                    navZichtbaar: getComputedStyle(nav).display !== 'none', onderkant: innerHeight,
                     var: getComputedStyle(document.documentElement).getPropertyValue('--onderbalk-hoogte').trim(),
-                    navH: nav.offsetHeight, foto: Math.round(r('.landing-foto').height) }; }""")
-                ok = (m["scroll"] <= 0 and m["knop"] < m["nav"] and m["login"] <= m["nav"]
-                      and m["var"] == f"{m['navH']}px" and m["foto"] > 300 and not fo)
+                    foto: Math.round(r('.landing-foto').height) }; }""")
+                ok = (m["scroll"] <= 0 and m["knop"] < m["onderkant"] and m["login"] <= m["onderkant"]
+                      and not m["navZichtbaar"] and m["var"] == "0px" and m["foto"] > 300 and not fo)
                 if not ok: past49.append({"w": w, "h": h, "thema": thema, **m, "fouten": fo})
                 c.close()
-        check("past op één scherm op 375×667, 390×844, 430×932 en een laptop (1280×800), licht en donker; knop en inlogregel boven de onderbalk",
+        check("past op één scherm op 375×667, 390×844, 430×932 en een laptop (1280×800), licht en donker; zonder onderbalk (besluit Ronald 06-10-2026)",
               not past49, json.dumps(past49)[:400])
         # Bij "minder beweging" wisselt er niets vanzelf.
         c, pg, fo, _ = ctx49(390, 844, reduced_motion="reduce")
@@ -6759,6 +6761,77 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-408: de instrumentkeuze houdt zijn kruisje (stap 1 heeft verder geen uitgang)", d64k["instrumentKruis"], json.dumps(d64k))
         check("TT-408: er zijn tien kruisjes over", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 10, "")
         check("geen paginafouten in blok 64", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ─────────────────────────────────────────────────────────────
+        # Blok 65 — bevindingen 06-10-2026: band verlaten ververst Mijn Profiel
+        # en meldt een geweigerde verwijdering; het blok "bevestig je
+        # e-mailadres" is te sluiten; geen terugknop en geen onderbalk op de
+        # landingspagina.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 65 — band verlaten, blok bevestigen sluiten, landing zonder terug en onderbalk (bevindingen 06-10-2026)")
+        page.evaluate("window.TT_STUB.reset()")
+        d65 = page.evaluate("""async () => {
+          const w = ms => new Promise(r => setTimeout(r, ms));
+          const uit = {};
+          const oudFrom = db.from.bind(db), oudToast = window.showToast, oudLoad = window.loadMyProfile, oudMy = myMusicianId;
+          const toasts = []; window.showToast = t => toasts.push(t);
+          window.loadMyProfile = () => {};
+          // 1. Het blok bevestigen.
+          currentUser = { id: 'u1', email: 'test@example.com' };
+          db.from = t => t === 'musicians'
+            ? { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { wacht_op_bevestiging: true }, error: null }) }) }) }
+            : oudFrom(t);
+          try { sessionStorage.removeItem('tt-bevestig-melding-dicht'); } catch (e) {}
+          await renderEmailBevestigBanner();
+          const vak = () => document.getElementById('emailBevestigBanner');
+          uit.blokOpen = !!vak().querySelector('.melding');
+          uit.kruisje = !!vak().querySelector('.melding .modal-close');
+          vak().querySelector('.modal-close')?.click();
+          uit.naSluiten = vak().innerHTML.trim();
+          await renderEmailBevestigBanner();
+          uit.naHerladen = vak().innerHTML.trim();
+          try { sessionStorage.removeItem('tt-bevestig-melding-dicht'); } catch (e) {}
+          await renderEmailBevestigBanner();
+          uit.terugBijNieuweSessie = !!vak().querySelector('.melding');
+          // 2. Band verlaten: de verwijdering wordt geweigerd (0 rijen).
+          myMusicianId = 'm1';
+          let rijen = [];
+          db.from = t => t === 'band_members'
+            ? { delete: () => { const k = { eq: () => k, select: async () => ({ data: rijen, error: null }) }; return k; },
+                select: (...a) => oudFrom(t).select(...a) }
+            : oudFrom(t);
+          document.getElementById('bandModal').classList.add('visible');
+          let geladen = 0; window.loadMyProfile = () => { geladen++; };
+          showView('myprofile'); geladen = 0;
+          await executeLeaveBand('b1'); await w(50);
+          uit.geweigerd = { toast: toasts.slice(), modalOpen: document.getElementById('bandModal').classList.contains('visible'), profielGeladen: geladen };
+          toasts.length = 0; rijen = [{ musician_id: 'm1' }];
+          await executeLeaveBand('b1'); await w(50);
+          uit.gelukt = { toast: toasts.slice(), modalOpen: document.getElementById('bandModal').classList.contains('visible'), profielGeladen: geladen };
+          // 3. De landingspagina.
+          showView('landing'); await w(300);
+          const zicht = id => { const e = document.getElementById(id); const s = getComputedStyle(e); return s.display !== 'none' && s.visibility !== 'hidden'; };
+          uit.landing = { terug: zicht('navTerugBtn'), onderbalk: zicht('appBottomNav'), menu: zicht('navMenuBtn') };
+          showView('search'); await w(200);
+          uit.zoeken = { terug: zicht('navTerugBtn'), onderbalk: zicht('appBottomNav') };
+          // Opruimen.
+          db.from = oudFrom; window.showToast = oudToast; window.loadMyProfile = oudLoad; myMusicianId = oudMy; currentUser = null;
+          showView('landing');
+          return uit;
+        }""")
+        j65 = json.dumps(d65, ensure_ascii=False)
+        check("het blok \"bevestig je e-mailadres\" heeft het kruisje van de app en sluit", d65["blokOpen"] and d65["kruisje"] and d65["naSluiten"] == "", j65)
+        check("het blok blijft dicht tot de app opnieuw opent, en komt dan terug", d65["naHerladen"] == "" and d65["terugBijNieuweSessie"], j65)
+        check("band verlaten: een geweigerde verwijdering (0 rijen) is een foutmelding, geen succes",
+              len(d65["geweigerd"]["toast"]) == 1 and d65["geweigerd"]["toast"][0] != "Je hebt de band verlaten." and d65["geweigerd"]["modalOpen"]
+              and d65["geweigerd"]["profielGeladen"] == 0, j65)
+        check("band verlaten: Mijn Profiel wordt opnieuw geladen, zodat de band uit het blok Bands verdwijnt",
+              d65["gelukt"]["toast"] == ["Je hebt de band verlaten."] and not d65["gelukt"]["modalOpen"] and d65["gelukt"]["profielGeladen"] == 1, j65)
+        check("landingspagina: geen terugknop en geen onderbalk, wel de hamburger",
+              not d65["landing"]["terug"] and not d65["landing"]["onderbalk"] and d65["landing"]["menu"], j65)
+        check("daarbuiten staan terugknop en onderbalk er weer", d65["zoeken"]["terug"] and d65["zoeken"]["onderbalk"], j65)
+        check("geen paginafouten in blok 65", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
