@@ -1154,28 +1154,20 @@ def blok_browser():
         check("geen scroll-snap-stop die een lopende sprong afbreekt",
               vorm["snapStop"] == "normal", vorm["snapStop"])
 
+        # TT-408 (06-10-2026): het muzikant- en bandvenster hebben geen kruisje meer;
+        # de pijl links in de koprij is de uitgang (hij doet history.back()).
         kruis = page.evaluate("""() => {
-          const modal = document.getElementById('musicianModal');
-          modal.classList.add('visible');
-          const k = modal.querySelector('.modal-close').getBoundingClientRect();
-          const h = document.getElementById('navMenuBtn').getBoundingClientRect();
-          // TT-318 (24-09-2026): vergeleken wordt wat je ziet, niet de knop:
-          // de rechterrand van het kruisteken en van de lijnen van de
-          // hamburger. Beide 29px van de rand, net als de pijl links.
-          const inkt = (l) => { const b = l.getBBox(), m = l.getScreenCTM(); return m.a * (b.x + b.width + 1) + m.e; };
-          const hamInkt = inkt(document.querySelector('#navMenuBtn line'));
-          const kruisInkt = inkt(modal.querySelector('.modal-close line'));
-          modal.classList.remove('visible');
-          return {
-            kruisRechts: +(window.innerWidth - kruisInkt).toFixed(1),
-            kruisMidY: Math.round(k.top + k.height / 2),
-            hamRechts: +(window.innerWidth - hamInkt).toFixed(1),
-            hamMidY: Math.round(h.top + h.height / 2),
-          };
+          const uit = {};
+          for (const id of ['musicianModal', 'bandModal']) {
+            const m = document.getElementById(id);
+            uit[id] = { kruis: m.querySelectorAll('.modal-close').length,
+                        pijl: m.querySelectorAll('.modal-kop .kop-terug').length,
+                        rechtsVak: !!m.querySelector('.modal-kop .modal-kop-acties') };
+          }
+          return uit;
         }""")
-        check("het kruis staat even ver van de rand als de lijnen van de hamburger, op dezelfde hoogte (TT-318)",
-              abs(kruis["kruisRechts"] - kruis["hamRechts"]) <= 0.5 and abs(kruis["kruisMidY"] - kruis["hamMidY"]) <= 2,
-              json.dumps(kruis))
+        check("het muzikant- en bandvenster hebben geen kruisje meer, wel de pijl in de koprij (TT-408)",
+              all(v["kruis"] == 0 and v["pijl"] == 1 and v["rechtsVak"] for v in kruis.values()), json.dumps(kruis))
 
         # TT-268 (15-09-2026, Ronald): 12px lucht boven en onder het woordmerk,
         # gouden balk weg, en het profiel van iemand anders houdt de koprij.
@@ -1221,9 +1213,10 @@ def blok_browser():
             koprijInModal: !!mk,
             woordmerkInModal: !!(mk && mk.querySelector('.logo')),
             kruisInKoprij: !!(mk && mk.querySelector('.modal-close')),
+            pijlInKoprij: !!(mk && mk.querySelector('.kop-terug')),
             // TT-287: het tikvlak mag niet het hele venster dekken. Sinds TT-318
             // is het kruis een gewone knop in de rij, zonder los tikvlak.
-            kruisStatisch: mk ? getComputedStyle(mk.querySelector('.modal-close')).position : ''
+            kruisStatisch: ''
           };
         }""")
         check("de gouden balk bovenaan het profiel is weg", not profielkop["goudenBalk"], "")
@@ -1231,8 +1224,8 @@ def blok_browser():
               profielkop["eersteElement"] == "profiel-banner", profielkop["eersteElement"])
         check("het profiel van iemand anders houdt de koprij met het woordmerk",
               profielkop["koprijInModal"] and profielkop["woordmerkInModal"], json.dumps(profielkop))
-        check("met het sluiten-kruisje in die rij, niet los erboven",
-              profielkop["kruisInKoprij"] and profielkop["kruisStatisch"] != "absolute",
+        check("met de pijl in die rij en zonder kruisje (TT-408)",
+              profielkop["pijlInKoprij"] and not profielkop["kruisInKoprij"],
               json.dumps(profielkop))
 
         # TT-269 (15-09-2026, Ronald): "voer dit door in de hele app."
@@ -1246,7 +1239,7 @@ def blok_browser():
             gouddenBalkenOver: document.querySelectorAll('.hero-band').length,
             bandKoprij: !!mk,
             bandWoordmerk: !!(mk && mk.querySelector('.logo')),
-            bandKruisInRij: !!(mk && mk.querySelector('.modal-close')),
+            bandPijlInRij: !!(mk && mk.querySelector('.kop-terug')),
             bandScrollArea: !!(bm && bm.querySelector('.modal-scroll-area')),
             mainBoven: sm.paddingTop,
             mainZij: sm.paddingLeft,
@@ -1257,7 +1250,7 @@ def blok_browser():
         check("Profiel bewerken begint direct onder de kop",
               appbreed["mainBoven"] == "0px" and appbreed["mainZij"] == "16px", json.dumps(appbreed))
         check("het bandprofiel heeft dezelfde koprij als het muzikantprofiel",
-              appbreed["bandKoprij"] and appbreed["bandWoordmerk"] and appbreed["bandKruisInRij"],
+              appbreed["bandKoprij"] and appbreed["bandWoordmerk"] and appbreed["bandPijlInRij"],
               json.dumps(appbreed))
         check("en zijn inhoud scrolt onder die koprij door",
               appbreed["bandScrollArea"], json.dumps(appbreed))
@@ -1709,9 +1702,9 @@ def blok_browser():
         def is_open():
             return page.evaluate("() => document.getElementById('musicianModal').classList.contains('visible')")
         open_profiel()
-        page.click("#musicianModal .modal-close")
-        check("het kruis sluit het profielvenster", not is_open(), "")
-        check("het kruis geeft geen paginafout", not page_errors, "; ".join(page_errors)[:200])
+        page.evaluate("() => closeMusicianModal()")
+        check("closeMusicianModal() sluit het profielvenster (TT-408: er is geen kruisje meer)", not is_open(), "")
+        check("sluiten geeft geen paginafout", not page_errors, "; ".join(page_errors)[:200])
         page_errors.clear()
         page.evaluate("() => showView('search')")
         open_profiel()
@@ -1726,29 +1719,20 @@ def blok_browser():
         check("een klik ín het venster laat het open", is_open(), "")
         page.evaluate("() => document.getElementById('musicianModal').click()")
         check("een klik naast het venster sluit het", not is_open(), "")
+        # TT-408: het kruisje is uit beide vensters; er ligt dus ook geen tikvlak meer over de koprij.
         tikvlak = page.evaluate("""() => {
           const uit = {};
           for (const id of ['musicianModal', 'bandModal']) {
             const m = document.getElementById(id);
             m.classList.add('visible');
-            const k = m.querySelector('.modal-close').getBoundingClientRect();
-            const raak = (x, y) => !!document.elementFromPoint(x, y)?.closest('.modal-close');
-            uit[id] = { midden: raak(innerWidth / 2, innerHeight / 2),
-                        logo: raak(40, k.top + k.height / 2),
-                        kruis: raak(k.left + k.width / 2, k.top + k.height / 2),
-                        rand: raak(k.left - 4, k.top + k.height / 2),
-                        breed: Math.round(k.width) };
+            uit[id] = { kruis: m.querySelectorAll('.modal-close').length,
+                        rechtsRaak: !!document.elementFromPoint(innerWidth - 30, 34)?.closest('.modal-close') };
             m.classList.remove('visible');
           }
           return uit;
         }""")
-        for mid, t in tikvlak.items():
-            check(f"tikvlak van het kruis blijft bij het kruis ({mid})",
-                  not t["midden"] and not t["logo"], json.dumps(t))
-            # TT-318: het kruis is sinds 24-09-2026 zelf een knop van 44px,
-            # zonder onzichtbaar tikvlak eromheen.
-            check(f"het kruis is raak en minstens 44px breed ({mid})",
-                  t["kruis"] and t["breed"] >= 44, json.dumps(t))
+        for mid, t_ in tikvlak.items():
+            check(f"geen kruisje en geen tikvlak in de koprij ({mid})", t_["kruis"] == 0 and not t_["rechtsRaak"], json.dumps(t_))
         check("geen paginafouten in blok 20", not page_errors, "; ".join(page_errors)[:200])
 
         # ─────────────────────────────────────────────────────────────
@@ -2751,8 +2735,8 @@ def blok_browser():
           m.classList.remove('visible');
           return uit;
         }""")
-        check("in de koprij van een venster staat rechts alleen het kruisje (TT-318)",
-              drie["knoppenRechts"] == 1, json.dumps(drie))
+        check("in de koprij van een venster staat rechts niets: de pijl links is de uitgang (TT-408)",
+              drie["knoppenRechts"] == 0, json.dumps(drie))
         check("op het smalste canvas blijft het woordmerk in een venster vrij van de knoppen",
               drie["links"] <= 0 and drie["rechts"] <= 0, json.dumps(drie))
         check("en het staat daar op dezelfde plek als in de kop: 7px links van het midden (TT-318)",
@@ -3663,11 +3647,12 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             const k = box.querySelector('.modal-kop').getBoundingClientRect();
             const pl = box.querySelector('.kop-terug polyline');
             const b = pl.getBBox(), m = pl.getScreenCTM();
-            const kl = box.querySelector('.modal-kop .modal-close line');
-            const kb = kl.getBBox(), km = kl.getScreenCTM();
-            const kL = km.a * (kb.x - 1) + km.e, kR = km.a * (kb.x + kb.width + 1) + km.e;
+            // TT-408: geen kruisje meer; de plek ervan is die van de hamburger in de kop.
+            const hl = document.querySelector('#navMenuBtn line');
+            const hb = hl.getBBox(), hm = hl.getScreenCTM();
+            const kL = hm.a * (hb.x - 1) + hm.e, kR = hm.a * (hb.x + hb.width + 1) + hm.e;
             const logo = box.querySelector('.modal-kop .logo').getBoundingClientRect();
-            return { pijl: +(m.a * (b.x - 1) + m.e - k.left).toFixed(1), kruis: +(k.right - kR).toFixed(1),
+            return { pijl: +(m.a * (b.x - 1) + m.e - k.left).toFixed(1), kruis: +(k.right - kR).toFixed(1), kruisAantal: box.querySelectorAll('.modal-close').length,
                      kruisMidden: (kL + kR) / 2, kopL: Math.round(k.left), kopR: Math.round(k.right),
                      kruisBreed: +(kR - kL).toFixed(1), pijlHoog: +(b.height + 2).toFixed(1),
                      logoL: +logo.left.toFixed(1) };
@@ -3718,10 +3703,10 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             v = venster[soort]
             check(f"{soort}: het ⋯-menu staat in de profielkop, naast het deelicoon, niet in de koprij (TT-380, TT-384)",
                   v["onderNaam"] and not v["inKoprij"], json.dumps(v))
-            check(f"{soort}: het kruisje staat even ver van de rand als de pijl (29px)",
-                  abs(v["kruis"] - v["pijl"]) <= 0.5 and abs(v["kruis"] - 29) <= 0.5, json.dumps(v))
-            check(f"{soort}: het ⋯-menu staat recht onder het kruisje",
-                  v["menuMidden"] is not None and abs(v["menuMidden"] - v["kruisMidden"]) <= 0.5, json.dumps(v))
+            check(f"{soort}: geen kruisje; de pijl staat 29px van de rand, even ver als de hamburger van de rechterrand (TT-408)",
+                  v["kruisAantal"] == 0 and abs(v["kruis"] - v["pijl"]) <= 0.5 and abs(v["kruis"] - 29) <= 0.5, json.dumps(v))
+            check(f"{soort}: het ⋯-menu staat recht onder de hamburger (de plek van het oude kruisje)",
+                  v["menuMidden"] is not None and abs(v["menuMidden"] - v["kruisMidden"]) <= 2, json.dumps(v))
             check(f"{soort}: het woordmerk is 28px, even groot als in de kop",
                   v["logoPx"] == "28px", json.dumps(v))
             check(f"{soort}: geen eigen opvulling rond het venster, inhoud op 16px",
@@ -3741,8 +3726,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             v = venster[soort]
             check(f"{soort}: het woordmerk staat op precies dezelfde plek als in de kop (besluit Ronald)",
                   abs(v["logoL"] - kopLogo) <= 0.5, json.dumps({"kop": kopLogo, "venster": v["logoL"]}))
-            check(f"{soort}: het kruisje is twee terugpijlen: even hoog als de pijl, 16px breed",
-                  v["kruisBreed"] == 16 and v["pijlHoog"] == 16, json.dumps(v))
+            check(f"{soort}: de pijl is 16px hoog (TT-408: het kruisje is hier weg)",
+                  v["pijlHoog"] == 16, json.dumps(v))
         check("op je eigen profiel in het venster komt er geen plek voor het menu",
               not venster["eigenPlek"], json.dumps(venster))
         check("geen paginafouten in blok 33", not page_errors, "; ".join(page_errors)[:300])
@@ -3758,7 +3743,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         knoppen = re.findall(r'<button class="modal-close"[^>]*>(.*?)</button>', html322, re.S)
         teken = '<line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line>'
         check("elk kruisje in index.html is het sluitteken, nergens meer de letter ✕",
-              len(knoppen) >= 16 and all(teken in k and "✕" not in k for k in knoppen), str(len(knoppen)))
+              len(knoppen) == 10 and all(teken in k and "✕" not in k for k in knoppen), str(len(knoppen)))
         check("elk kruisje heeft een aria-label",
               all("aria-label" in t for t in re.findall(r'<button class="modal-close"[^>]*>', html322)), "")
         terug322 = re.findall(r'<button class="modal-back"[^>]*>(.*?)</button>', html322, re.S)
@@ -3768,7 +3753,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         page.wait_for_timeout(80)
         kruis322 = page.evaluate("""() => {
           const uit = {};
-          for (const id of ['meldModal', 'legalModal', 'inloggegevensModal']) {
+          for (const id of ['niveauInfoModal', 'legalModal', 'inloggegevensModal']) {
             const ov = document.getElementById(id);
             if (!ov) { uit[id] = null; continue; }
             ov.classList.add('visible');
@@ -5308,23 +5293,23 @@ window.TT_STUB.fnAntwoord = {};
           await openMusicianModal('m2');
           hasOwnProfile = true; zetVeiligheidMenu('musicianModalActies', 'muzikant', 'm2', 'Dylan'); hasOwnProfile = false;
           const mv = document.getElementById('musicianModalContent');
-          uit.ander = await meet(mv, document.querySelector('#musicianModal .modal-close'));
+          uit.ander = await meet(mv, document.getElementById('navMenuBtn'));
           document.getElementById('musicianModal').classList.remove('visible');
           // 3. Hetzelfde venster, bezoeker zonder profiel: alleen het deelicoon.
           await openMusicianModal('m2');
-          uit.anderZonderProfiel = await meet(mv, document.querySelector('#musicianModal .modal-close'));
+          uit.anderZonderProfiel = await meet(mv, document.getElementById('navMenuBtn'));
           document.getElementById('musicianModal').classList.remove('visible');
           // 4. Je eigen profiel in het venster: alleen het deelicoon.
           myMusicianId = 'm2';
           await openMusicianModal('m2');
-          uit.eigenInVenster = await meet(mv, document.querySelector('#musicianModal .modal-close'));
+          uit.eigenInVenster = await meet(mv, document.getElementById('navMenuBtn'));
           uit.eigenVoet = document.getElementById('musicianModalFooter').innerHTML.trim();
           document.getElementById('musicianModal').classList.remove('visible');
           myMusicianId = 'm1';
           // 5. Het bandvenster, met menu.
           await openBandModal('b2');
           hasOwnProfile = true; zetVeiligheidMenu('bandModalActies', 'band', 'b2', 'Testband'); hasOwnProfile = false;
-          uit.band = await meet(document.getElementById('bandModalContent'), document.querySelector('#bandModal .modal-close'));
+          uit.band = await meet(document.getElementById('bandModalContent'), document.getElementById('navMenuBtn'));
           document.getElementById('bandModal').classList.remove('visible');
           hasOwnProfile = was.hasOwnProfile; myMusicianId = was.myMusicianId;
           delete S.rpcResults.tt_get_musicians_public; delete S.rpcResults.tt_get_bands_public;
@@ -5350,7 +5335,7 @@ window.TT_STUB.fnAntwoord = {};
         check("Mijn Profiel: het ⋯-menu staat nog recht onder de hamburger",
               abs(d50["menuOnderHamburger"]) <= 2, json.dumps(d50["menuOnderHamburger"]))
         for naam50, v in (("zonder eigen profiel", d50["anderZonderProfiel"]), ("eigen profiel in het venster", d50["eigenInVenster"])):
-            check(f"{naam50}: het deelicoon alleen staat op de plek van het menu, onder het kruisje",
+            check(f"{naam50}: het deelicoon alleen staat op de plek van het menu, onder de hamburger (waar het kruisje stond)",
                   v["alleenOnderKruis"] is not None and abs(v["alleenOnderKruis"]) <= 1.5, json.dumps(v))
         check("je eigen profiel in het venster: geen lege voetbalk meer", d50["eigenVoet"] == "", d50["eigenVoet"][:120])
         check("een tik deelt de juiste link: #profiel/m1, #profiel/m2, #band/b2",
@@ -6594,7 +6579,7 @@ window.TT_STUB.fnAntwoord = {};
           uit.naTerug = Math.round(window.scrollY);
           uit.modalDicht = !document.querySelector('.modal-overlay.visible');
           kaart().click(); await w(500);
-          document.querySelector('#musicianModal .modal-close').click(); await w(500);
+          document.querySelector('#musicianModal .kop-terug').click(); await w(500);
           uit.naKruisje = Math.round(window.scrollY);
           // Een gewone navigatie begint bovenaan.
           window.scrollTo({ top: 900, behavior: 'instant' }); await w(150);
@@ -6622,7 +6607,7 @@ window.TT_STUB.fnAntwoord = {};
         }""")
         check("TT-404: de browser zet de scrollstand niet meer zelf terug", d62["handmatig"] == "manual", json.dumps(d62))
         check("TT-404: een venster sluiten via terug laat Zoeken staan waar je was", d62["modalDicht"] and abs(d62["naTerug"] - 1500) <= 2, json.dumps(d62))
-        check("TT-404: het kruisje van het venster doet hetzelfde", abs(d62["naKruisje"] - 1500) <= 2, json.dumps(d62))
+        check("TT-404: de pijl in het venster doet hetzelfde", abs(d62["naKruisje"] - 1500) <= 2, json.dumps(d62))
         check("TT-404: een andere view opent bovenaan", d62["opAbout"] <= 2, json.dumps(d62))
         check("TT-404: terug naar Zoeken komt uit waar je was", d62["actief"] == "view-search" and abs(d62["naViewTerug"] - 1500) <= 2, json.dumps(d62))
         check("TT-404: een gewone navigatie begint nog steeds bovenaan", d62["nieuweNav"] <= 2, json.dumps(d62))
@@ -6744,6 +6729,35 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-408 A: geen grote Terug-knop meer buiten de wizardstappen", d64["terugOverig"] == [], json.dumps(d64))
         check("TT-408: de wizard houdt zijn vijf Terug-knoppen", d64["wizardStappen"] == 5, json.dumps(d64))
         check("TT-408: in een keuzevraag heet de knop Annuleren", d64["keuzeknoppen"] == ["Annuleren"] * 4, json.dumps(d64))
+        # TT-408 stap 3 (06-10-2026, besluit Ronald: "alle velden waar het kruisje
+        # overbodig is kan je het kruisje weghalen"): het kruisje blijft alleen
+        # staan waar het de enige uitgang is.
+        d64k = page.evaluate("""() => {
+          const uit = { zonderUitgang: [], metKruis: [], zonderKruis: [] };
+          const uitTekst = /^(Annuleren|Klaar|Gereed|Sluiten|Uitloggen)$/;
+          // Een bladwijzer (.wheel-overlay) is geen scherm: een tik ernaast sluit hem (huisstijl §7.1).
+          for (const ov of document.querySelectorAll('.modal-overlay:not(.wheel-overlay)')) {
+            const was = ov.classList.contains('visible');
+            ov.classList.add('visible');
+            const zichtbaar = (e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden';
+            const kruis = [...ov.querySelectorAll('.modal-close')].filter(zichtbaar).length;
+            const pijl = [...ov.querySelectorAll('.kop-terug, .modal-back')].filter(zichtbaar).length;
+            const knop = [...ov.querySelectorAll('button')].filter(b => zichtbaar(b) && uitTekst.test(b.textContent.trim())).length;
+            if (kruis) uit.metKruis.push(ov.id); else uit.zonderKruis.push(ov.id);
+            if (!kruis && !pijl && !knop) uit.zonderUitgang.push(ov.id);
+            if (!was) ov.classList.remove('visible');
+          }
+          // De instrumentkeuze, stap 1: geen pijl en geen voet, dus het kruisje is de uitgang.
+          const ins = document.getElementById('instrumentLevelModal');
+          uit.instrumentKruis = !!ins.querySelector('.modal-close');
+          return uit;
+        }""")
+        check("TT-408: elk venster zonder kruisje heeft een andere zichtbare uitgang (pijl of knop)",
+              d64k["zonderUitgang"] == [], json.dumps(d64k["zonderUitgang"]))
+        for vid in ("musicianModal", "bandModal", "deleteAccountModal", "messageModal", "meldModal", "bioModal"):
+            check(f"TT-408: {vid} heeft geen kruisje meer", vid in d64k["zonderKruis"], json.dumps(d64k))
+        check("TT-408: de instrumentkeuze houdt zijn kruisje (stap 1 heeft verder geen uitgang)", d64k["instrumentKruis"], json.dumps(d64k))
+        check("TT-408: er zijn tien kruisjes over", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 10, "")
         check("geen paginafouten in blok 64", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
