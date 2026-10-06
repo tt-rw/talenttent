@@ -1,9 +1,9 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 06-10-2026 (TT-408 en TT-409, stap 1 en 2: één pad terug, geen grote Terug-knop meer onderin) —
-**Gebouwd en getest. Testset 886 van 886 (blok 64 nieuw). Wacht op upload naar
-beide repo's. Stap 3 (de kruisjes) is nog niet gebouwd: wacht op een voorstel
-en akkoord van Ronald.**
+**Laatste update:** 06-10-2026 (TT-408 en TT-409, stap 1, 2 en 3a: één pad terug, geen grote Terug-knop meer onderin, kruisje weg waar het overbodig is) —
+**Gebouwd en getest. Testset 893 van 893 (blok 64 uitgebreid). Wacht op upload naar
+beide repo's. Stap 3b (de negen vensters met alleen een kruisje) en de veeg
+vanaf de rand zijn niet gebouwd.**
 
 - **Besluiten Ronald, 06-10-2026:** (1) terugknoppen sterk vereenvoudigen,
   "de UX staat voorop"; (2) akkoord met de verdeling hieronder; (3) de veeg
@@ -14,7 +14,7 @@ en akkoord van Ronald.**
   terugknop van het toestel: terug naar de vorige plek. Terug en Verder
   onderin: alleen in de registratiewizard, als paar in duimbereik. Opslaan
   onderin: tegelschermen en Band aanmaken. Annuleren, Klaar of Sluiten: een
-  knop in elke dialoog. Kruisje: alleen foto en mediaspeler (stap 3).
+  knop in elke dialoog. Kruisje: alleen waar het de enige uitgang is (stap 3a).
 - **Stap 1, één pad (TT-408).** (A) De grote Terug-knop onderin Profiel
   bewerken en Bandprofiel bewerken is weg; daarmee voegt niets meer een stap
   toe aan de geschiedenis. (B) `bovensteModal()` in `core.js`: de terugknop
@@ -38,16 +38,32 @@ en akkoord van Ronald.**
   knoppen van de wizard blijven. **Hernoemd naar "Annuleren":** de vijf
   keuzeknoppen (Bevestigingsvraag, Account verwijderen, Bericht sturen, Melden,
   Instrument weglaten) en die in de uitnodiging met bericht (`bands.js`).
+- **Stap 3a, kruisje weg waar het overbodig is (TT-409, deel 2).** Besluit
+  Ronald, 06-10-2026: "alle velden waar het kruisje overbodig is kan je het
+  kruisje weghalen. denk aan het motto: eenvoud en slimme functionaliteit."
+  Weg (zes kruisjes): muzikantvenster en bandvenster (de pijl links in de
+  koprij is de uitgang; het lege rechtervak houdt het woordmerk op zijn plek),
+  Account verwijderen, Bericht sturen, Melden en Bio (elk heeft Annuleren of
+  Klaar). Er zijn nu **tien** kruisjes. De pijl, het ⋯-menu en het woordmerk
+  stonden en staan op dezelfde plek (gemeten, schermafdruk bekeken). Blok 64
+  controleert dat elk venster zonder kruisje een andere zichtbare uitgang heeft.
+  **Rechtgezet (§2 regel 13):** ik schreef eerder dat "Instrument en niveau
+  kiezen" de pijl in de kop heeft. Dat klopt alleen in stap 2: in stap 1
+  ("Kies een instrument") is de pijl verborgen en de voet leeg, dus het kruisje
+  is daar de enige uitgang. Het blijft staan. Gemeten in `index.html`
+  (`instrumentLevelBackBtn` heeft `hidden`, `instrumentLevelFooter` heeft
+  `display:none`).
 - **Rechtgezet in dit gesprek (§2 regel 13):** ik schreef "17 grote Terug-
   knoppen verdwijnen en 14 van de 16 kruisjes". Dat klopte niet. Gemeten: twaalf
   grote knoppen verdwijnen, zes worden "Annuleren", vijf blijven (wizard); er
   zijn 18 kruisjes, niet 16.
-- **Nog open:** (a) stap 3, de kruisjes: negen dialogen hebben geen eigen
-  uitgang en krijgen die dan (Geblokkeerd, Inloggegevens, E-mailvoorkeuren,
-  Lid uitnodigen, Niveau-uitleg, Voorwaarden, Lijstkeuze, plus Opslaan-dialogen
-  met Annuleren). Dit voegt knoppen toe en vraagt eerst een voorstel met
-  schermafdruk. Foto en mediaspeler houden hun kruisje. Het besluit "het
-  kruisje blijft altijd" (TT-294, TT-318) vervalt dan. (b) De veeg vanaf de
+- **Nog open:** (a) stap 3b: tien vensters houden hun kruisje omdat het hun
+  enige uitgang is (Geblokkeerd, Inloggegevens, E-mailvoorkeuren, Lid uitnodigen,
+  Niveau-uitleg, Voorwaarden, Lijstkeuze, Instrument kiezen stap 1, foto en
+  mediaspeler). Weghalen vraagt een vervangende uitgang: een knop onderin of
+  een kop met de pijl. Dat voegt knoppen toe en vraagt een voorstel met
+  schermafdruk en akkoord van Ronald. Het besluit "het kruisje blijft altijd"
+  (TT-294, TT-318) is voor de zes vensters hierboven vervallen. (b) De veeg vanaf de
   linkerrand: alleen iOS met de app op het beginscherm (Android heeft hem via
   het toestel), eerst bij vensters; de soepelheid is alleen op een echte
   iPhone te beoordelen. **Onbekend:** wie die toets doet. **Let op:** in de
@@ -8513,7 +8529,7 @@ eerste tabel altijd gelijk is aan de stand.
 |---|---|---|
 | **TT-407** | Onzichtbare knoppen van het muzikant- en bandvenster vangen tikken af | **Gebouwd en getest 03-10-2026 (blok 63) — zie Laatste update. Upload gedaan 03-10-2026 (Ronald: git gevuld).** daarna dezelfde tikken op de echte site, op een telefoon. **Nieuw, 03-10-2026. Niveau P0.** *Toets: kan een gebruiker vastlopen? Ja: een tik op Band aanmaken, op de tabbladen in Zoeken, op het eerste gesprek en op de knoppen op Mijn Profiel deed niets.* **Geverifieerd** (gemeten op talenttent.org): `pointer-events: auto` op `.profiel-kop-rij > *` wint van de `none` van het gesloten venster. |
 | **TT-408** | Eén pad voor alle manieren terug | **Gebouwd en getest 06-10-2026 (blok 64) — zie Laatste update. Wacht op upload naar beide repo's. Niveau P0 (Ronald 03-10-2026). Oorspronkelijk: Nieuw, 03-10-2026; besluit Ronald 03-10-2026: akkoord als eerste stap.** *Toets: verandert dit of iemand een tweede keer opent? Ja: terug is een knop die mensen overal gebruiken.* **Geverifieerd** (gemeten): (A) de Terug-knop onderaan Profiel bewerken en Bandprofiel bewerken voegt een stap toe aan de geschiedenis; (B) met twee vensters open sluit de terugknop van het toestel het onderste, het kruisje het bovenste (`popstate` in `core.js` neemt het eerste open venster in de volgorde van `index.html`); (C) het gebruikersnaamscherm sluit met de terugknop van het toestel. Geen knop verdwijnt. Zie het overzicht. **Aanvulling 06-10-2026 (UX-review, punt 21b):** de reviews noemen "dubbele Terug-knoppen". Geen nieuw ticket; dit is dit ticket en TT-409. |
-| **TT-409** | Van vier manieren terug naar twee | **Deel 1 gebouwd 06-10-2026 (de twaalf grote Terug-knoppen weg, keuzeknoppen Annuleren) — zie Laatste update. Deel 2 (de kruisjes) wacht op voorstel en akkoord Ronald. Besluit Ronald 06-10-2026: de verdeling is akkoord. Oorspronkelijk: Nieuw, 03-10-2026. Niveau P0 (Ronald 03-10-2026: blokkerend voor livegang). Besluit Ronald 03-10-2026: akkoord met twee manieren (pijl linksboven + toestel), na TT-408, in twee stappen: eerst grote Terug-knoppen onderin (weg waar de pijl hetzelfde doet; "Annuleren" alleen in keuzevragen, zelfde functie), daarna de kruisjes. Voorwaarden: pijl in elk schermvullend venster (iOS), "UX gaat voor alles". Besluit "kruisje blijft altijd" (TT-294, TT-318) mag vervallen als dat geen problemen geeft.** Ronald: "idealiter houden we er 2 over." Advies: de pijl linksboven en de terugknop van het toestel blijven; het kruisje (16) en de grote Terug-knop onderin (22) vervallen, de keuzeknoppen heten "Annuleren". Raakt de besluiten TT-294, TT-318 en TT-310. Volgorde: eerst TT-408. **Aanvulling 06-10-2026 (UX-review, punten 2 en 21b):** de reviews vragen hetzelfde als dit ticket (dubbele Terug). Geen nieuw ticket. Daarna volgt TT-410 (minder vensters). Een extra veeg om te sluiten (TT-417, c) is een derde manier en past niet bij dit besluit. |
+| **TT-409** | Van vier manieren terug naar twee | **Deel 1 gebouwd 06-10-2026 (de twaalf grote Terug-knoppen weg, keuzeknoppen Annuleren) — zie Laatste update. Deel 2a gebouwd 06-10-2026: zes kruisjes weg waar een andere uitgang bestaat (besluit Ronald). Deel 2b (de tien kruisjes die de enige uitgang zijn) wacht op voorstel en akkoord Ronald. Besluit Ronald 06-10-2026: de verdeling is akkoord. Oorspronkelijk: Nieuw, 03-10-2026. Niveau P0 (Ronald 03-10-2026: blokkerend voor livegang). Besluit Ronald 03-10-2026: akkoord met twee manieren (pijl linksboven + toestel), na TT-408, in twee stappen: eerst grote Terug-knoppen onderin (weg waar de pijl hetzelfde doet; "Annuleren" alleen in keuzevragen, zelfde functie), daarna de kruisjes. Voorwaarden: pijl in elk schermvullend venster (iOS), "UX gaat voor alles". Besluit "kruisje blijft altijd" (TT-294, TT-318) mag vervallen als dat geen problemen geeft.** Ronald: "idealiter houden we er 2 over." Advies: de pijl linksboven en de terugknop van het toestel blijven; het kruisje (16) en de grote Terug-knop onderin (22) vervallen, de keuzeknoppen heten "Annuleren". Raakt de besluiten TT-294, TT-318 en TT-310. Volgorde: eerst TT-408. **Aanvulling 06-10-2026 (UX-review, punten 2 en 21b):** de reviews vragen hetzelfde als dit ticket (dubbele Terug). Geen nieuw ticket. Daarna volgt TT-410 (minder vensters). Een extra veeg om te sluiten (TT-417, c) is een derde manier en past niet bij dit besluit. |
 | **TT-387** | Zoeken werkt niet als de browser opslag blokkeert | **Gebouwd en getest 01-10-2026 (blok 56) — zie Laatste update. Wacht op:** upload naar beide repo's. **Nieuw, 01-10-2026 (onderhoudsronde). Advies P0, niveau door Ronald te bevestigen.** *Toets: loopt een gebruiker vast? Ja — zoeken, de kern van de app, geeft niets.* **Geverifieerd** (Playwright, opslag geblokkeerd nagebootst zoals Safari en Chrome dat doen bij "alle cookies blokkeren"): `search.js` leest bovenin drie keer `localStorage` zonder `try` (regel 80, 945 en 1375: `musicianViewMode`, `bandViewMode`, `setlistViewMode`). Gooit de browser een `SecurityError`, dan breekt `search.js` halverwege af. Daarna geeft elke zoekopdracht `Cannot access 'musicianViewMode' before initialization`: 0 resultaten, geen melding. Normaal: 50 resultaten. Geldt voor muzikant, band en setlist. **Aanname:** de groep is klein; hoe klein is onbekend. Elke andere plek in de app leest opslag al binnen `try`. **Richting, niet gebouwd:** dezelfde vorm als elders, met een terugval op `standaardWeergave()`. Bandkant: zelfde bestand, zelfde fix |
 | — | **Vóór lancering (23-08-2026, niet acuut zolang alleen testprofielen bestaan):** TT-65 (back-up), TT-42 (toestemming 13-15-jarigen), TT-45 (aanvullende maatregelen ondergrens 13) — zie hun eigen rijen hieronder voor detail. Eigen sessie, gepland vóórdat er publiek geworven wordt | — |
 
