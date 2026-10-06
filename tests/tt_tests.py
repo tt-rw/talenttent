@@ -1815,6 +1815,9 @@ def blok_browser():
               json.dumps(sch))
         check("bestaande stand heet Zoek muzikanten, knop ook",
               sch["titel"] == "Zoek muzikanten" and sch["knop"] == ["Zoek muzikanten"], json.dumps(sch))
+        sub1 = page.evaluate("() => document.querySelector('#setlistDeelMuzikanten .filter-sub').textContent.trim()")
+        check("uitleg van Zoek muzikanten (TT-413)",
+              sub1 == "Maak een setlist en ontdek wie deze nummers speelt.", sub1)
 
         page.click("#setlistSoortNummersBtn")
         page.wait_for_timeout(100)
@@ -1832,7 +1835,7 @@ def blok_browser():
         check("tik op Maak setlist wisselt de stand",
               st["gekozen"] == ["false", "true"] and st["muz"] == "none" and st["num"] != "none", json.dumps(st))
         check("kop en uitleg van Maak setlist",
-              st["titel"] == "Maak setlist" and "2 tot 20 muzikanten" in st["sub"], json.dumps(st))
+              st["titel"] == "Maak setlist" and st["sub"] == "Kies een groep muzikanten en ontdek jullie gezamenlijke setlist.", json.dumps(st))
         check("straalwiel staat op 10 km, sorteren op Meeste spelers",
               st["straal"] == "10 km" and st["sorteer"] == "Meeste spelers", json.dumps(st))
         check("knoppenrij: Lijst wissen links, Maak setlist rechts (TT-374)",
