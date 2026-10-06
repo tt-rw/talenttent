@@ -1,6 +1,5 @@
 // ─── Berichten (TT-01) ───────────────────────────────────────────────────────
 
-let messageComposerRecipientId = null;
 let activeConversationId = null; // musician-id van de open gespreksdraad
 
 // TT-32 (07-08-2026): als iemand op het chat-icoon klikt zonder ingelogd te
@@ -12,23 +11,43 @@ let activeConversationId = null; // musician-id van de open gespreksdraad
 // nieuw account, na de volledige wizard) — nooit voor een gewone profielklik.
 let pendingMessageRecipient = null;
 
-// TT-385 (besluit Ronald, (h)): een bericht aan een band komt binnen bij de
-// contactpersoon. Het venster zegt dat: "Aan Jesse, de contactpersoon van
-// Nachtploeg." Zonder bandnaam blijft de regel zoals hij was.
+// TT-410a (06-10-2026, besluit Ronald): geen apart bericht-venster meer. "Een
+// bericht sturen" opent het gespreksscherm van Berichten, dat al een lege
+// staat en een tekstveld heeft. Eén plek om te schrijven, niet twee.
+// Vanuit Zoeken (of een ander scherm) gaat de pijl terug, en een verstuurd
+// bericht ook, naar dat scherm: gesprekVanuit onthoudt het. Een gesprek dat
+// je vanuit de inbox opent, werkt zoals altijd.
+let gesprekVanuit = null; // view waar "Bericht sturen" vandaan kwam; null = inbox
+let gesprekVia = '';      // TT-385 (h): bandnaam als het bericht bij een contactpersoon binnenkomt
+
 function openMessageComposer(recipientId, recipientName, bandNaam) {
-  messageComposerRecipientId = recipientId;
-  document.getElementById('messageComposerRecipientName').textContent = recipientName;
-  document.getElementById('messageComposerVia').textContent = bandNaam ? `, de contactpersoon van ${bandNaam}.` : '';
-  document.getElementById('messageComposerBody').value = '';
-  updateCharCounter('messageComposerBody', 'messageComposerCounter', 2000);
+  // Het profiel- en bandvenster sluiten; het gesprek komt in de plaats.
   document.getElementById('musicianModal').classList.remove('visible');
-  // V-13 (13-08-2026): "Stuur een bericht aan deze band" opent dezelfde
-  // composer vanuit het bandprofiel — dat modal moet dan ook dicht.
+  // V-13 (13-08-2026): ook "Stuur een bericht aan deze band" komt hier uit.
   const bandModalEl = document.getElementById('bandModal');
   if (bandModalEl) bandModalEl.classList.remove('visible');
-  document.getElementById('messageModal').classList.add('visible');
-  // TT-271 (16-09-2026, Ronald): geen automatische focus meer. Het
-  // toetsenbord komt pas op als de gebruiker zelf op het veld tikt.
+  gesprekVia = bandNaam || '';
+  if (huidigeView !== 'messages') {
+    gesprekVanuit = huidigeView;
+    showView('messages');
+  } else {
+    gesprekVanuit = null;
+  }
+  // Zonder foto-argument blijft de vorige foto staan; null geeft de T.
+  openConversation(recipientId, recipientName, null, false, false);
+  // De foto komt los binnen; de kop staat er meteen.
+  (async () => {
+    try {
+      const { data } = await db.from('musicians').select('avatar_url').eq('id', recipientId);
+      const url = data && data[0] && safeUrl(data[0].avatar_url);
+      if (url && activeConversationId === recipientId) {
+        document.getElementById('messagesThreadAvatar').innerHTML =
+          `<img src="${url}" alt="${escHtml(recipientName)}">`;
+      }
+    } catch (e) { logCaught('openMessageComposer', e); }
+  })();
+  // TT-271 (16-09-2026, Ronald): geen automatische focus. Het toetsenbord
+  // komt pas op als de gebruiker zelf op het veld tikt.
 }
 
 // TT-31 (07-08-2026): het chat-icoon op de resultatenrij/-kaart moet direct
@@ -50,13 +69,7 @@ function openRowMessageIcon(event, id, displayName) {
   }
 }
 
-function closeMessageComposer() {
-  document.getElementById('messageModal').classList.remove('visible');
-  messageComposerRecipientId = null;
-}
-
-// Gedeelde insert, gebruikt door zowel de composer (nieuw contact) als de
-// gespreksdraad (reageren op een bestaand gesprek).
+// Gedeelde insert voor de gespreksdraad (nieuw contact en bestaand gesprek).
 async function insertMessage(recipientId, body) {
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Maak eerst een profiel aan om berichten te sturen.'); return false; }
@@ -76,16 +89,6 @@ async function insertMessage(recipientId, body) {
     logCaught('insertMessage', e);
     showToast(friendlyErrorMessage(e));
     return false;
-  }
-}
-
-async function sendMessageFromComposer() {
-  if (!messageComposerRecipientId) return;
-  const body = document.getElementById('messageComposerBody').value;
-  const ok = await insertMessage(messageComposerRecipientId, body);
-  if (ok) {
-    closeMessageComposer();
-    showToast('Bericht verstuurd');
   }
 }
 
@@ -131,6 +134,9 @@ async function sendReplyInThread() {
 
   const ok = await insertMessage(activeConversationId, tekst);
   if (ok) {
+    // TT-410a: kwam het gesprek uit Zoeken, dan gaat een verstuurd bericht
+    // terug naar Zoeken, via hetzelfde pad als de pijl (popstate).
+    if (gesprekVanuit) { showToast('Bericht verstuurd'); history.back(); return; }
     openConversation(activeConversationId, document.getElementById('messagesThreadName').textContent, undefined, true);
   } else {
     // Mislukt: het voorlopige bericht weer weghalen en de tekst teruggeven,
@@ -399,7 +405,7 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
       return `${divider}<div class="message-bubble ${own ? 'own' : 'other'}">${escHtml(msg.body).replace(/\n/g, '<br>')}<div class="message-bubble-time">${escHtml(time)}${readCheck}</div></div>`;
     }).join('') : emptyStateHTML(
       'Nog geen berichten in dit gesprek',
-      '',
+      gesprekVia ? `${otherName} is de contactpersoon van ${gesprekVia}.` : '',
       'Schrijf het eerste bericht →',
       "document.getElementById('messagesReplyInput').focus()"
     ));
@@ -421,16 +427,17 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
   }
 }
 
-function closeConversation() {
+function closeConversation(stil) {
   zetVeiligheidMenu('messagesThreadActies', 'gesprek', null, ''); // TT-06
   activeConversationId = null;
+  gesprekVia = '';
   activeConversationDeleted = false; // V-04
   threadHistoryPushed = false;
   document.getElementById('messagesInboxPanel').style.display = 'block';
   document.getElementById('messagesThreadPanel').style.display = 'none';
   document.getElementById('messagesThreadPanel').classList.remove('gesprek-open');
   werkTerugKnopBij(); // TT-301
-  loadInbox();
+  if (!stil) loadInbox(); // TT-410a: terug naar Zoeken laadt de inbox niet
 }
 
 // TT-279 (16-09-2026): na verversen het gesprek uit de adresregel weer

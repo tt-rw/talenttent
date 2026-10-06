@@ -1216,7 +1216,10 @@ function terugGaatOmhoog() {
 // van een ouder, en ook de hamburger en de onderbalk staan daar niet.
 function werkTerugKnopBij() {
   const btn = document.getElementById('navTerugBtn');
-  if (btn) btn.style.visibility = (huidigeView !== 'toestemming') ? '' : 'hidden';
+  // Weg op de goedkeuringspagina (TT-310) en op de landingspagina (besluit
+  // Ronald, 06-10-2026: "er is niets om naar terug te gaan"). De plek blijft
+  // leeg, zodat het woordmerk niet verschuift.
+  if (btn) btn.style.visibility = (huidigeView !== 'toestemming' && huidigeView !== 'landing') ? '' : 'hidden';
 }
 
 function terugKnop() {
@@ -1311,7 +1314,7 @@ function showView(view, mode) {
   // komt is geen gebruiker — Zoeken, Berichten, Bands en Profiel doen voor
   // hem niets. Om dezelfde reden verdwijnen de hamburger en de terugknop.
   const bottomNavEl = document.getElementById('appBottomNav');
-  if (bottomNavEl) bottomNavEl.style.display = (view === 'register' || view === 'profieltegels' || view === 'toestemming') ? 'none' : '';
+  if (bottomNavEl) bottomNavEl.style.display = (view === 'landing' || view === 'register' || view === 'profieltegels' || view === 'toestemming') ? 'none' : '';
   const menuKnop = document.getElementById('navMenuBtn');
   if (menuKnop) menuKnop.style.display = (view === 'toestemming') ? 'none' : '';
 
@@ -1526,17 +1529,21 @@ function landingNaar(n) {
 
 // Loopt alleen zolang de landingspagina in beeld is en de app voorgrond heeft.
 // Bij "minder beweging" wisselt er niets vanzelf, net als de bannerbalk.
-// Zet ook de kop op de foto en meet de onderbalk, zodat het scherm precies
-// tussen de bovenrand en de onderbalk past.
+// Zet ook de kop op de foto. De onderbalk staat niet op de landingspagina,
+// dus het scherm past precies in de hoogte van het venster.
 function landingBijwerken() {
   const view = document.getElementById('view-landing');
   const actief = !!view && view.classList.contains('active');
   document.getElementById('appRoot')?.classList.toggle('landing-op-foto', actief);
+  document.body.classList.toggle('landing-op-foto', actief); // geen ruimte voor de onderbalk onder body
   if (actief) {
-    const balk = document.getElementById('appBottomNav');
-    if (balk && balk.offsetHeight) {
-      document.documentElement.style.setProperty('--onderbalk-hoogte', balk.offsetHeight + 'px');
-    }
+    // 06-10-2026 (bevinding Ronald): de onderbalk staat niet op de landing-
+    // pagina (showView() verbergt hem), dus het scherm is de hele hoogte.
+    document.documentElement.style.setProperty('--onderbalk-hoogte', '0px');
+    // Ook bij het opstarten: de landingspagina staat dan al actief in
+    // index.html, zonder dat showView() eerst draait.
+    const onderbalk = document.getElementById('appBottomNav');
+    if (onderbalk) onderbalk.style.display = 'none';
     landingOpbouwen();
   }
   const lopen = actief && !document.hidden && veegMagBewegen();
@@ -1643,6 +1650,15 @@ window.addEventListener('popstate', (e) => {
   // het gesprek te sluiten.
   const draad = document.getElementById('messagesThreadPanel');
   if (draad && draad.style.display !== 'none' && activeConversationId) {
+    // TT-410a: kwam het gesprek uit Zoeken (of een ander scherm), dan gaat de
+    // pijl en de terugknop van het toestel een stap verder terug, naar dat
+    // scherm. De stap van de view Berichten, die erbij kwam, gaat mee.
+    if (gesprekVanuit) {
+      gesprekVanuit = null;
+      closeConversation(true);
+      history.back();
+      return;
+    }
     closeConversation();
     safeHistoryPush(history.state, location.hash || '#messages');
     werkTerugKnopBij(); // TT-301

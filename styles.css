@@ -169,7 +169,7 @@
     --bericht-eigen-tekst: #1E1E1E;
     --bericht-ander: var(--surface);
     --bericht-rand: #B8B4AA;
-    --knop-klein-vlak: transparent;
+    --knop-klein-vlak: var(--surface2);   /* TT-410a: ook in licht een zichtbaar vlak onder het icoon (Ronald, 06-10-2026) */
   }
   /* Voorbeeldtekst in een veld: de standaard van de browser is op crème te
      donker en lijkt dan ingevuld. Donker houdt de standaard van de browser. */
@@ -2473,17 +2473,6 @@
     margin-bottom: 16px;
     border-bottom: 1px solid var(--border);
   }
-  .messages-thread-back {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-    color: var(--text);
-  }
-  .messages-thread-back:hover { border-color: var(--accent); color: var(--accent); }
   /* TT-271: foto en naam zijn tikbaar en openen het profiel. */
   .messages-thread-link { cursor: pointer; }
   .thread-verwijderd .messages-thread-link { cursor: default; }
