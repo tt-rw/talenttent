@@ -2808,15 +2808,9 @@ def blok_browser():
           stap(); await wacht();
           uit.zonderWijziging = { label: zichtbaar(), scherm: activeTegelScreen };
 
-          // Nooit twee vragen tegelijk: de knop onderin valt terug.
-          activeTegelScreen = 'wieBenJe';
-          wbjSnapshot = '__andere_momentopname__';
-          const knop = document.getElementById('wbjCancelBtn');
-          cancelWieBenJe();                 // knop onderin armeert
-          const knopGewapend = knop.dataset.armed === '1';
-          stap(); await wacht();            // nu de terugknop
-          uit.eenVraag = { knopWasGewapend: knopGewapend,
-                           knopNu: knop.dataset.armed === '1', label: zichtbaar() };
+          // TT-408: de grote Terug-knop onderin een tegelscherm bestaat niet meer.
+          uit.grotekopTerug = ['wbj','wsp','wzj','jst','mh','bw','bb','bmz','bm']
+            .filter(p => document.getElementById(p + 'CancelBtn')).length;
 
           ontwapenTerug();
           activeTegelScreen = 'overview';
@@ -2839,18 +2833,9 @@ def blok_browser():
         check("zonder wijzigingen komt er geen vraag",
               not terug["zonderWijziging"]["label"]
               and terug["zonderWijziging"]["scherm"] == "overview", json.dumps(terug))
-        check("er staat nooit meer dan één vraag op het scherm",
-              terug["eenVraag"]["knopWasGewapend"] and not terug["eenVraag"]["knopNu"]
-              and terug["eenVraag"]["label"], json.dumps(terug))
+        check("TT-408: geen enkel tegelscherm heeft nog een grote Terug-knop onderin",
+              terug["grotekopTerug"] == 0, json.dumps(terug))
 
-        knoppen = page.evaluate("""() => {
-          const bron = [cancelWieBenJe, cancelWatSpeelJe, cancelWatZoekJe,
-                        cancelJeSetlist, cancelJeMediahoek].map(f => f.toString());
-          return { viaEenControle: bron.filter(t => t.includes('tegelHeeftWijzigingen')).length,
-                   totaal: bron.length };
-        }""")
-        check("beide wegen terug gebruiken dezelfde controle, geen variant per scherm",
-              knoppen["viaEenControle"] == knoppen["totaal"] == 5, json.dumps(knoppen))
 
         check("geen paginafouten in blok 26", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
@@ -5926,7 +5911,7 @@ window.TT_STUB.fnAntwoord = {};
           u.wieGewapend = [terugGewapend, activeTegelScreen];
           await saveBandWie(); await w(100);
           u.wieOpgeslagen = [S.data.bands[0].description, S.data.bands[0].niveau, tegelHeeftWijzigingen()];
-          goToTegelOverview(); await w(200);
+          tegelScreenHistoryPushed = false; openTegelOverview(); await w(200);
           u.overzicht = { tegels: [...document.querySelectorAll('#bandTegelsWrap .tile-title')].map(e => e.textContent),
             eigenVerborgen: document.getElementById('tegelOverviewScreen').style.display === 'none',
             beheer: [...document.querySelectorAll('#bandBeheerBlok .segmented-btn, #bandBeheerBlok .btn')].map(e => e.textContent),
@@ -6002,7 +5987,7 @@ window.TT_STUB.fnAntwoord = {};
           jstRenderTrackResults(ac, [{ trackName: 'Groter dan ik' }], 'gro');
           u.setlistZoek = ac.querySelector('.ac-item').getAttribute('onmousedown');
           songZoekLeeg('bc'); songArtiest.jst = null;
-          goToTegelOverview(); await w(200);
+          tegelScreenHistoryPushed = false; openTegelOverview(); await w(200);
           // 6. Onze media.
           openTegelScreen('bandMedia'); await w(300);
           document.getElementById('bmInstagram').value = 'geen geldige naam!';
@@ -6012,7 +5997,7 @@ window.TT_STUB.fnAntwoord = {};
           bmAddLinkRow(); bmMediaLinks[0].url = 'https://open.spotify.com/track/1'; bmToggleLinkBanner(0);
           await saveBandMedia(); await w(300);
           u.mediaOpgeslagen = [S.data.bands[0].instagram, S.data.band_media.map(m => [m.media_type, m.platform, m.in_banner].join('/')), tegelHeeftWijzigingen()];
-          goToTegelOverview(); await w(300);
+          tegelScreenHistoryPushed = false; openTegelOverview(); await w(300);
           // 7. We spelen even niet.
           await zetBandPauze(true); await w(200);
           u.pauze = [S.data.bands[0].pauze, S.data.bands[0].status];
@@ -6234,13 +6219,8 @@ window.TT_STUB.fnAntwoord = {};
           await showCreateBandForm(); await w(150);
           terugKnop(); await w(250);
           u.kopTerugLeeg = { wizard: bandWizardOpen(), view: huidigeView, staat: history.state && !!history.state.wizard };
-          // De Terug-knop onderin: dezelfde wisselknop als in een tegel.
-          await showCreateBandForm(); await w(150);
-          $('bandName').value = 'Proef'; $('bandName').dispatchEvent(new Event('input'));
-          $('bandWizardTerugBtn').click(); await w(60);
-          u.knop1 = { tekst: $('bandWizardTerugBtn').textContent, wizard: bandWizardOpen() };
-          $('bandWizardTerugBtn').click(); await w(250);
-          u.knop2 = { tekst: $('bandWizardTerugBtn').textContent, wizard: bandWizardOpen(), staat: history.state && !!history.state.wizard, view: huidigeView };
+          // TT-408: onderin staat geen Terug-knop meer, alleen Band aanmaken.
+          u.grotekopTerug = !!$('bandWizardTerugBtn');
           // Een andere view sluit de wizard zonder opslaan.
           await showCreateBandForm(); await w(150);
           $('bandName').value = 'Proef';
@@ -6289,9 +6269,9 @@ window.TT_STUB.fnAntwoord = {};
         check("UI: label tot veld 8px, tussen twee velden 20px, balk tot titel 8px, zijmarge 16px",
               m["labelVeld"] == 8 and m["genreLabelVeld"] == 8 and m["naamTotPostcode"] == 20 and m["balkTitel"] == 8
               and m["links"] == 16 and m["rechts"] == 16, j59("maten"))
-        check("UI: velden 44px hoog met 16px letter, labels 14px; knoppen 44px, even breed, Terug links",
+        check("UI: velden 44px hoog met 16px letter, labels 14px; knoppen 44px, Band aanmaken over de volle breedte",
               m["veldH"] == 44 and m["zipH"] == 44 and m["genreH"] == 44 and m["veldLetter"] == "16px" and m["labelLetter"] == "14px"
-              and all(h >= 44 for h in m["knopH"]) and len(set(m["knopB"])) == 1 and m["knopTekst"] == ["Terug", "Band aanmaken"], j59("maten"))
+              and all(h >= 44 for h in m["knopH"]) and m["knopTekst"] == ["Band aanmaken"], j59("maten"))
         check("leeg opslaan: alle drie de fouten tegelijk, bij hun veld", d59["fouten"] == ["bandName", "bandZip", "bandGenreField"], j59("fouten"))
         check("de balk loopt 5% op per ingevuld veld: 5, 10, 15%",
               d59["naNaam"] == "5%" and d59["naPostcode"] == ["10%", "Den Haag"] and d59["naGenre"][0] == "15%", json.dumps([d59["naNaam"], d59["naPostcode"], d59["naGenre"]]))
@@ -6310,9 +6290,7 @@ window.TT_STUB.fnAntwoord = {};
         check("tweede druk: de wizard gaat dicht, leeg, terug op Mijn Bands",
               d59["kopTerug2"] == {"wizard": False, "vraag": False, "lijst": True, "view": "bands", "staat": False, "leeg": ""}, j59("kopTerug2"))
         check("terugknop zonder invoer: meteen dicht, één stap", d59["kopTerugLeeg"] == {"wizard": False, "view": "bands", "staat": False}, j59("kopTerugLeeg"))
-        check("Terug onderin: eerst 'Terug zonder opslaan?', daarna dicht en zijn stap terug",
-              d59["knop1"] == {"tekst": "Terug zonder opslaan?", "wizard": True}
-              and d59["knop2"] == {"tekst": "Terug", "wizard": False, "staat": False, "view": "bands"}, json.dumps([d59["knop1"], d59["knop2"]], ensure_ascii=False))
+        check("TT-408: Band aanmaken heeft geen grote Terug-knop meer", d59["grotekopTerug"] is False, j59("grotekopTerug"))
         check("een andere view sluit de wizard zonder opslaan", d59["andereView"] == {"wizard": False, "stap": False, "leeg": ""}, j59("andereView"))
         ka = d59["kaartAlleen"]
         check("bandkaart: vierkante foto, plaats en genres, geen leden; beheerder alleen zonder open rol: geen statustag",
@@ -6718,6 +6696,55 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-407: elke knop in elke view wordt door een echte tik bereikt", not d63["bedekt"], json.dumps(d63["bedekt"][:6]))
         check("TT-407: de controle heeft knoppen gemeten", d63["gemeten"] >= 30, str(d63["gemeten"]))
         check("geen paginafouten in blok 63", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ─────────────────────────────────────────────────────────────
+        # Blok 64 — TT-408 (06-10-2026): één pad voor alle manieren terug.
+        # A: de grote Terug-knop onderin een bewerkscherm voegde een stap toe;
+        #    de knoppen zijn weg. B: met twee vensters open sloot de terugknop
+        #    het onderste. C: het verplichte gebruikersnaamscherm sloot met de
+        #    terugknop van het toestel. Wat er nog "Terug" heet, is een
+        #    stap in de wizard.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 64 — één pad voor alle manieren terug (TT-408)")
+        page.evaluate("window.TT_STUB.reset()")
+        page.evaluate("showView('landing')")
+        page.wait_for_timeout(300)
+        d64 = page.evaluate("""async () => {
+          const w = ms => new Promise(r => setTimeout(r, ms));
+          const $ = id => document.getElementById(id);
+          const pop = () => window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'landing' } }));
+          const uit = {};
+          // B: eerst het venster dat DOM-eerst staat, dan een later venster erbovenop.
+          $('confirmModal').classList.add('visible'); await w(30);
+          $('meldModal').classList.add('visible'); await w(30);
+          uit.zOnder = parseInt($('confirmModal').style.zIndex || 0, 10) < parseInt($('meldModal').style.zIndex || 0, 10);
+          pop(); await w(80);
+          uit.boven = { onderOpen: $('confirmModal').classList.contains('visible'), bovenOpen: $('meldModal').classList.contains('visible') };
+          pop(); await w(80);
+          uit.daarna = { onderOpen: $('confirmModal').classList.contains('visible') };
+          $('confirmModal').classList.remove('visible'); $('meldModal').classList.remove('visible'); await w(30);
+          // C: het verplichte scherm blijft staan.
+          $('usernameGateModal').classList.add('visible'); await w(30);
+          pop(); await w(80);
+          uit.verplicht = $('usernameGateModal').classList.contains('visible');
+          $('usernameGateModal').classList.remove('visible'); await w(30);
+          // A: geen grote Terug-knop meer buiten de wizardstappen.
+          const terugKnoppen = [...document.querySelectorAll('button')].filter(b => b.textContent.trim() === 'Terug');
+          uit.terugOverig = terugKnoppen.filter(b => !/^prevStep/.test(b.getAttribute('onclick') || '')).map(b => b.getAttribute('onclick'));
+          uit.wizardStappen = terugKnoppen.length - uit.terugOverig.length;
+          uit.keuzeknoppen = ['confirmModal', 'deleteAccountModal', 'meldModal', 'instrumentLevelFooter']
+            .map(id => [...$(id).querySelectorAll('.btn-ghost')].map(b => b.textContent.trim())[0]);
+          return uit;
+        }""")
+        check("TT-408 B: een later geopend venster ligt bovenop", d64["zOnder"], json.dumps(d64))
+        check("TT-408 B: de terugknop sluit het bovenste venster, niet het onderste",
+              d64["boven"] == {"onderOpen": True, "bovenOpen": False} and d64["daarna"]["onderOpen"] is False, json.dumps(d64))
+        check("TT-408 C: het verplichte gebruikersnaamscherm sluit niet met de terugknop", d64["verplicht"], json.dumps(d64))
+        check("TT-408 A: geen grote Terug-knop meer buiten de wizardstappen", d64["terugOverig"] == [], json.dumps(d64))
+        check("TT-408: de wizard houdt zijn vijf Terug-knoppen", d64["wizardStappen"] == 5, json.dumps(d64))
+        check("TT-408: in een keuzevraag heet de knop Annuleren", d64["keuzeknoppen"] == ["Annuleren"] * 4, json.dumps(d64))
+        check("geen paginafouten in blok 64", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
