@@ -75,6 +75,12 @@
       tt_expire_old_founder_offers: null,
       // TT-385 fase 5: de bands van een muzikant (blok Bands op het profiel).
       tt_musician_band_ids: [],
+      // TT-410b: staat delen aan voor dit profiel? Leest musicians.delen_aan uit
+      // de testdata; een ontbrekende waarde telt als aan, een onbekend id geeft null.
+      tt_profiel_delen(p) {
+        const r = (TT_STUB.data.musicians || []).find(x => x.id === p.mid);
+        return r ? r.delen_aan !== false : null;
+      },
       // Laatst actief (25-09-2026): standaard iedereen in groep 0, in de
       // volgorde van de vraag. Een blok dat groepen wil toetsen, zet hier
       // zelf een functie neer en herstelt hem daarna.
