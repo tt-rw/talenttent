@@ -1,9 +1,39 @@
 # The Talent Tent — Actielijst
 
-**Laatste update:** 06-10-2026 (TT-408 en TT-409, stap 1, 2 en 3a: één pad terug, geen grote Terug-knop meer onderin, kruisje weg waar het overbodig is) —
-**Gebouwd en getest. Testset 893 van 893 (blok 64 uitgebreid). Wacht op upload naar
-beide repo's. Stap 3b (de negen vensters met alleen een kruisje) en de veeg
-vanaf de rand zijn niet gebouwd.**
+**Laatste update:** 06-10-2026 (bevindingen van Ronald: band verlaten, blok bevestigen sluiten, landingspagina; TT-424 t/m TT-426) —
+**Gebouwd en getest. Testset 900 van 900 (blok 65 nieuw). Wacht op upload naar beide repo's. Het contrast van de landingspagina
+blijft zoals het was.**
+
+- **TT-424, band verlaten bleef op Mijn Profiel staan (P2, advies Claude; toets: werkt, maar kost
+  vertrouwen).** Bevinding Ronald, 06-10-2026. **Geverifieerd** in productie (browserpane,
+  Tester1): de verwijdering in `band_members` was gelukt (`tt_musician_band_ids` gaf geen
+  band meer, een verse Mijn Profiel toonde geen blok Bands). De weergave was verouderd:
+  de bandpagina opent over Mijn Profiel en `executeLeaveBand()` laadde Mijn Profiel niet
+  opnieuw. Nu `profielBandsVerversen()` in `bands.js`, ook na het accepteren van een
+  uitnodiging of beheeraanbod (zelfde fout andersom: de band verscheen pas na heropenen).
+  Daarbij: de verwijdering leest nu terug hoeveel rijen verdwenen (`.select()`); 0 rijen
+  is een foutmelding, geen "Je hebt de band verlaten". Geraakt: `bands.js`, `index.html` (`?v=`).
+  Getoetst in blok 65. Niet gewijzigd: verwijderen van andermans lidmaatschap
+  (`executeRemoveMember`), dat raakt het profiel van die ander, niet het jouwe.
+- **TT-425, het blok "Nog één stap: bevestig je e-mailadres" is te sluiten (P2, advies Claude).**
+  Bevinding Ronald: "het blok sluit niet". Het blok heeft nu het kruisje van de app
+  (`.modal-close`, rechtsboven); sluiten is tot de app opnieuw opent (`sessionStorage`
+  `tt-bevestig-melding-dicht`), want het profiel blijft offline tot de klik. **Aanname
+  (Claude):** terugkomen bij elke nieuwe opening is gewenst. Geraakt: `wizard.js` (nieuwe
+  `bevestigMeldingSluiten()`), `styles.css` (`.melding-met-sluit`). Getoetst in blok 65.
+- **TT-426, landingspagina: geen onderbalk, geen terugknop, meer contrast (P1, advies Claude;
+  toets: de eerste indruk bepaalt of iemand blijft).** Besluiten Ronald, 06-10-2026: de
+  onderbalk was er later aan toegevoegd en gaat weg; de terugknop gaat weg ("er is niets om
+  naar terug te gaan"). **Gebouwd.** Het scherm is nu de hele hoogte; de kop houdt zijn
+  plek (de plek van de terugknop blijft leeg, het woordmerk verschuift niet). Het
+  contrast ("te egaal: kleurstelling en contrast") is een ontwerpvraag: voorstel met
+  drie varianten A, B en C in `_niet-uploaden-landing-contrast-voorstel-06-10-2026.html`;
+  **Ronald koos er geen: alle drie zijn minder dan de huidige versie, die blijft.** Dit wijzigt TT-310 (terugknop altijd) en huisstijl §20
+  (hoogte min onderbalk). Geraakt: `core.js` (`showView()`, `werkTerugKnopBij()`,
+  `landingBijwerken()`), `styles.css` (`body.landing-op-foto`), `tests/tt_tests.py`.
+  **Aanvulling:** het vlak onder de foto staat 24px hoger (opvulling onder 40px), zodat "Inloggen"
+  bereikbaar is. Een catchy subline onder de knop en een andere zin dan "Muzikanten bij jou in de buurt.":
+  Ronald laat het voorlopig; een specialist kijkt mee.
 
 - **TT-423, foutlogboek schoner (06-10-2026, Ronald: "ja", na foutrapport #9 van de
   monitorrepo).** Twee verwachte uitkomsten van de mailaanvraag komen niet meer

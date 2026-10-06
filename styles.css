@@ -541,6 +541,11 @@
   .melding-tekst strong { font-weight: 700; }
   .melding > :last-child { margin-bottom: 0; }
   .melding .stille-link-regel { margin-top: 4px; }
+  /* Melding die de gebruiker zelf mag sluiten: het kruisje van de app
+     (.modal-close) rechtsboven; de kop schuift ervoor weg. */
+  .melding-met-sluit { position: relative; }
+  .melding-met-sluit .melding-kop { padding-right: 36px; }
+  .melding-met-sluit .modal-close { top: 4px; right: 4px; }
 
   /* TT-42: de goedkeuringspagina van de ouder. */
   .toestemming-wrap { max-width: 560px; margin: 0 auto; padding-top: 40px; }
@@ -2197,7 +2202,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding: 20px 16px 16px;
+    padding: 20px 16px calc(40px + env(safe-area-inset-bottom, 0px)); /* 06-10-2026 (Ronald): hoger, "Inloggen" is anders haast niet te bereiken */
     background: var(--bg);
   }
   .landing-sub { font-size: 18px; font-weight: 700; color: var(--text); }
@@ -2234,6 +2239,8 @@
   /* Vanaf 768px is #appRoot minstens een scherm hoog; met de ruimte voor de
      onderbalk onder body erbij scrolde de landingspagina daar 60px. */
   #appRoot.landing-op-foto { min-height: 0; }
+  /* Geen onderbalk op de landingspagina (06-10-2026): ook geen ruimte ervoor. */
+  body.landing-op-foto { padding-bottom: 0; }
   /* Een open hamburgermenu houdt zijn eigen vlak en tekenkleur (.active). */
   #appRoot.landing-op-foto header .logo span,
   #appRoot.landing-op-foto header .nav-menu-btn:not(.active) { color: var(--op-foto); }
