@@ -778,8 +778,7 @@ function setLevel(i, level) {
 
 // TT-179-patroon (uit profiel-v2, TT-168-overgang): eerste klik op ✕ zet
 // een korte bevestiging ("Zeker?"), pas een tweede klik verwijdert echt —
-// zelfde tweeklaps-bevestiging als bij Annuleren (handleCancelClick),
-// hier lokaal op het nummer zelf i.p.v. een aparte knop.
+// tweeklaps-bevestiging, lokaal op het nummer zelf i.p.v. een aparte knop.
 function removeSong(i) {
   if (!state.songs[i]) return;
   if (!state.songs[i]._confirmDelete) {

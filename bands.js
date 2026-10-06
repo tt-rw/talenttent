@@ -347,12 +347,6 @@ function hasUnsavedBandFormInput() {
   return !!((nameEl && nameEl.value.trim()) || (zipEl && zipEl.value.trim()) || bandState.genres.length);
 }
 
-// De Terug-knop onderin: dezelfde knop die van functie wisselt als in een
-// tegel (huisstijl §8, TT-226).
-function cancelBandForm() {
-  handleCancelClick('bandWizardTerugBtn', hasUnsavedBandFormInput, () => sluitBandWizard());
-}
-
 function resetBandForm() {
   bandState = { genres: [] };
   bandPostcodeResolved = false;
@@ -368,7 +362,6 @@ function resetBandForm() {
   const statusEl = document.getElementById('bandPostcodeStatus');
   if (statusEl) statusEl.textContent = '';
   clearFieldErrors('createBandForm');
-  resetCancelButton('bandWizardTerugBtn');
   if (PICKERS.bandGenre) renderPickerBadges(PICKERS.bandGenre);
   // Bekijk hier de postcode van het formulier, niet die van de tegel.
   bandPostcodeDoel = 'band';
@@ -581,7 +574,7 @@ function openInviteNote(btnEl, musicianId, memberName) {
       <div style="font-size:13px;margin-bottom:8px;">Uitnodiging aan <strong>${escHtml(memberName)}</strong> — voeg eventueel een korte boodschap toe:</div>
       <textarea class="invite-note-input" maxlength="300" placeholder="Bijv. we zoeken een bassist voor onze covers, jouw profiel past goed bij ons!" style="width:100%;min-height:60px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:14px;"></textarea>
       <div class="btn-row" style="margin-top:8px;">
-        <button class="btn btn-ghost" onclick="searchMembersToAdd(document.getElementById('memberSearchInput').value)">Terug</button>
+        <button class="btn btn-ghost" onclick="searchMembersToAdd(document.getElementById('memberSearchInput').value)">Annuleren</button>
         <button class="btn btn-primary" onclick="sendInviteWithNote(this, '${jsAttr(musicianId)}')">Uitnodiging versturen</button>
       </div>
     </div>`;
@@ -1504,7 +1497,6 @@ function bwFieldSnapshot() {
 }
 
 async function openBandWie() {
-  resetCancelButton('bwCancelBtn');
   clearFieldErrors('bandWieScreen');
   const b = await bandBewerkGegevens('name, zip, city, city_source, description, niveau, avatar_url');
   if (!b) return;
@@ -1588,10 +1580,6 @@ function bwRenderBioPreview() {
   }
 }
 
-function cancelBandWie() {
-  handleCancelClick('bwCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
-}
-
 async function saveBandWie() {
   clearFieldErrors('bandWieScreen');
   // TT-247: alle fouten tegelijk, elk bij zijn eigen veld — dezelfde teksten
@@ -1650,7 +1638,6 @@ function bbFieldSnapshot() {
 }
 
 async function openBandBezetting() {
-  resetCancelButton('bbCancelBtn');
   bbInvalFormulier(false);
   const b = await bandBewerkGegevens('name, city, founder_id, contact_id, pauze, band_wanted(instrument), band_invallers(id, instrument, datum)');
   if (!b) return;
@@ -1853,10 +1840,6 @@ async function bbIntrekken(musicianId, naam) {
   }
 }
 
-function cancelBandBezetting() {
-  handleCancelClick('bbCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
-}
-
 async function saveBandBezetting() {
   if (bbFieldSnapshot() === bbSnapshot) return;
   const id = bewerkBandId;
@@ -1922,7 +1905,6 @@ function bmzFieldSnapshot() {
 }
 
 async function openBandMuziek() {
-  resetCancelButton('bmzCancelBtn');
   clearFieldErrors('bandMuziekScreen');
   songZoekLeeg('bc');
   const b = await bandBewerkGegevens('name, city, soort, genres, band_nummers(id, titel, url, created_at), band_covers(id, song_title, song_artist)');
@@ -2039,10 +2021,6 @@ function bcCoverWeg(i) {
   bcRenderCovers();
 }
 
-function cancelBandMuziek() {
-  handleCancelClick('bmzCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
-}
-
 async function saveBandMuziek() {
   clearFieldErrors('bandMuziekScreen');
   const fouten = [];
@@ -2133,7 +2111,6 @@ function bmFieldSnapshot() {
 }
 
 async function openBandMedia() {
-  resetCancelButton('bmCancelBtn');
   clearFieldErrors('bandMediaScreen');
   const scherm = document.getElementById('bandMediaScreen');
   scherm.querySelectorAll('.media-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
@@ -2266,10 +2243,6 @@ function bmSpeelLink(i) {
 function bmRemoveLink(i) {
   bmMediaLinks.splice(i, 1);
   bmRenderLinksList();
-}
-
-function cancelBandMedia() {
-  handleCancelClick('bmCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
 }
 
 const BAND_SOCIAL_VELDEN = { instagram: 'bmInstagram', tiktok: 'bmTiktok', youtube: 'bmYoutube' };

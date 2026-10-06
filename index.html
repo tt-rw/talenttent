@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261003a">
+<link rel="stylesheet" href="styles.css?v=20261006a">
 </head>
 <body>
 
@@ -769,7 +769,6 @@
   <div id="tegelOverviewScreen">
     <div class="panel-title">Profiel bewerken</div>
     <div id="tegelsWrap"></div>
-    <button class="btn btn-ghost" style="width:100%;margin-top:8px;" onclick="showView('myprofile')">Terug</button>
   </div>
 
   <!-- Subscherm: Wie ben je -->
@@ -839,7 +838,6 @@
     </div>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="wbjCancelBtn" onclick="cancelWieBenJe()">Terug</button>
       <button class="btn btn-primary" onclick="saveWieBenJe()">Opslaan</button>
     </div>
   </div>
@@ -883,7 +881,6 @@
     </div>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="wspCancelBtn" onclick="cancelWatSpeelJe()">Terug</button>
       <button class="btn btn-primary" onclick="saveWatSpeelJe()">Opslaan</button>
     </div>
   </div>
@@ -938,7 +935,6 @@
     </div>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="wzjCancelBtn" onclick="cancelWatZoekJe()">Terug</button>
       <button class="btn btn-primary" onclick="saveWatZoekJe()">Opslaan</button>
     </div>
   </div>
@@ -981,7 +977,6 @@
     <p id="jstSongsListEmpty" style="font-size:13px;color:var(--muted);margin-top:4px;">Nog geen nummers toegevoegd.</p>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="jstCancelBtn" onclick="cancelJeSetlist()">Terug</button>
       <button class="btn btn-primary" onclick="saveJeSetlist()">Opslaan</button>
     </div>
   </div>
@@ -1040,7 +1035,6 @@
     </div>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="mhCancelBtn" onclick="cancelJeMediahoek()">Terug</button>
       <button class="btn btn-primary" onclick="saveJeMediahoek()">Opslaan</button>
     </div>
   </div>
@@ -1053,7 +1047,6 @@
     <div class="panel-title">Bandprofiel bewerken</div>
     <div id="bandTegelsWrap"></div>
     <div class="band-beheer" id="bandBeheerBlok"></div>
-    <button class="btn btn-ghost" style="width:100%;margin-top:24px;" onclick="showView('bands')">Terug</button>
   </div>
 
   <!-- Bandtegel: Wie zijn we -->
@@ -1112,7 +1105,6 @@
     </div>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="bwCancelBtn" onclick="cancelBandWie()">Terug</button>
       <button class="btn btn-primary" onclick="saveBandWie()">Opslaan</button>
     </div>
   </div>
@@ -1182,7 +1174,6 @@
     </div>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="bbCancelBtn" onclick="cancelBandBezetting()">Terug</button>
       <button class="btn btn-primary" onclick="saveBandBezetting()">Opslaan</button>
     </div>
   </div>
@@ -1249,7 +1240,6 @@
     </div>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="bmzCancelBtn" onclick="cancelBandMuziek()">Terug</button>
       <button class="btn btn-primary" onclick="saveBandMuziek()">Opslaan</button>
     </div>
   </div>
@@ -1308,7 +1298,6 @@
     </div>
 
     <div class="action-row">
-      <button class="btn btn-ghost" id="bmCancelBtn" onclick="cancelBandMedia()">Terug</button>
       <button class="btn btn-primary" onclick="saveBandMedia()">Opslaan</button>
     </div>
   </div>
@@ -2004,7 +1993,6 @@
         </div>
       </div>
       <div class="action-row">
-        <button class="btn btn-ghost" id="bandWizardTerugBtn" onclick="cancelBandForm()">Terug</button>
         <button class="btn btn-primary" onclick="saveBand()">Band aanmaken</button>
       </div>
     </div>
@@ -2462,7 +2450,7 @@
     <p id="confirmMessage" style="margin-bottom:24px;font-size:14px;"></p>
     <!-- TT-228 (09-09-2026): secundaire knop links, primaire rechts. -->
     <div class="btn-row">
-      <button class="btn btn-ghost" onclick="document.getElementById('confirmModal').classList.remove('visible')">Terug</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('confirmModal').classList.remove('visible')">Annuleren</button>
       <button class="btn btn-primary" id="confirmYesBtn" onclick="confirmModalYes()">Ja, verwijderen</button>
     </div>
   </div>
@@ -2480,7 +2468,7 @@
     <div id="deleteAccountBandsArea"></div>
     <!-- TT-228 (09-09-2026): secundaire knop links, primaire rechts. -->
     <div class="btn-row" style="margin-top:20px;">
-      <button class="btn btn-ghost" onclick="closeDeleteAccountModal()">Terug</button>
+      <button class="btn btn-ghost" onclick="closeDeleteAccountModal()">Annuleren</button>
       <button class="btn btn-danger" id="deleteAccountConfirmBtn" onclick="requestFinalDeleteConfirmation()">Account verwijderen</button>
     </div>
   </div>
@@ -2490,7 +2478,7 @@
      die er nog geen hebben — bewust geen sluitkruisje/Annuleren, dit scherm
      moet worden afgerond voordat de rest van de app weer bereikbaar is
      (Ronald: "verplicht invullen bij eerstvolgend bezoek"). -->
-<div class="modal-overlay" id="usernameGateModal">
+<div class="modal-overlay" id="usernameGateModal" data-verplicht="1">
   <div class="modal-box modal-box-md">
     <div class="filter-title" style="margin-bottom:4px;">Kies een gebruikersnaam</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Nieuw: andere muzikanten zien voortaan een gebruikersnaam in plaats van je echte naam. Kies er eentje om verder te gaan.</p>
@@ -2519,7 +2507,7 @@
     <textarea id="messageComposerBody" placeholder="Schrijf je bericht..." maxlength="2000" style="width:100%;min-height:120px;" oninput="updateCharCounter('messageComposerBody','messageComposerCounter',2000)"></textarea>
     <div id="messageComposerCounter" style="text-align:right;font-size:12px;color:var(--muted);margin:4px 0 16px;">0/2000</div>
     <div class="btn-row">
-      <button class="btn btn-ghost" onclick="closeMessageComposer()">Terug</button>
+      <button class="btn btn-ghost" onclick="closeMessageComposer()">Annuleren</button>
       <button class="btn btn-primary" onclick="sendMessageFromComposer()">Versturen →</button>
     </div>
   </div>
@@ -2546,7 +2534,7 @@
     <div id="meldToelichtingCounter" style="text-align:right;font-size:12px;color:var(--muted);margin:4px 0 20px;">0/1000</div>
 
     <div class="btn-row">
-      <button class="btn btn-ghost" onclick="closeMeldModal()">Terug</button>
+      <button class="btn btn-ghost" onclick="closeMeldModal()">Annuleren</button>
       <button class="btn btn-primary" onclick="verstuurMelding()">Versturen →</button>
     </div>
   </div>
@@ -2773,7 +2761,7 @@
 
     <div class="modal-sticky-footer" id="instrumentLevelFooter" style="display:none;">
       <div class="btn-row">
-        <button type="button" class="btn btn-ghost" onclick="removeInstrumentFromSheet()">Terug</button>
+        <button type="button" class="btn btn-ghost" onclick="removeInstrumentFromSheet()">Annuleren</button>
         <button type="button" class="btn btn-ghost" onclick="openMusicianNiveauInfoModal()">Uitgebreide toelichting niveaus</button>
       </div>
     </div>
@@ -2871,16 +2859,16 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261003b"></script>
-<script src="utils.js?v=20261002a"></script>
+<script src="core.js?v=20261006a"></script>
+<script src="utils.js?v=20261006a"></script>
 <script src="veiligheid.js?v=20260924a"></script>
 <script src="auth.js?v=20260927b"></script>
 <script src="postcode.js?v=20261002d"></script>
 <script src="wizard.js?v=20261003a"></script>
 <script src="ouder.js?v=20261001a"></script>
 <script src="search.js?v=20261002e"></script>
-<script src="musicians.js?v=20261002f"></script>
-<script src="bands.js?v=20261002f"></script>
+<script src="musicians.js?v=20261006a"></script>
+<script src="bands.js?v=20261006a"></script>
 <script src="messages.js?v=20261002a"></script>
 <script src="modals-shared.js?v=20261002d"></script>
 <script>

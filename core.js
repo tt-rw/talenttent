@@ -1229,8 +1229,7 @@ function terugKnop() {
 // Staan er wijzigingen open, dan gebeurt er bij de eerste druk niets, en
 // verschijnt de regel "Terug zonder opslaan?" onder de kop. De tweede druk
 // gaat wél terug. Bevestigen doe je dus op de knop waar je net op drukte —
-// niet op de regel zelf. Zelfde gedachte als de Terug-knop onder in het
-// scherm (TT-226), maar op een plek die altijd in beeld staat.
+// niet op de regel zelf.
 let terugGewapend = false;
 
 function wapenTerug() {
@@ -1238,12 +1237,7 @@ function wapenTerug() {
   const label = document.getElementById('terugLabel');
   if (label) label.style.display = '';
   document.getElementById('navTerugBtn')?.classList.add('gewapend');
-  // Nooit twee keer dezelfde vraag op één scherm: de Terug-knop onderin
-  // valt terug zodra deze regel verschijnt.
-  resetCancelButtonVanTegel();
-  resetCancelButton('bandWizardTerugBtn'); // TT-385 fase 4
   // Pas ná de huidige klik luisteren, anders vangt hij die meteen zelf af.
-  // Zelfde patroon als handleCancelClick() in musicians.js (huisstijl §8).
   setTimeout(() => {
     document.addEventListener('click', function buitenKlik(e) {
       if (!terugGewapend) return;
@@ -1613,16 +1607,31 @@ function sluitOpruimModals() {
 
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  const lagen = [...document.querySelectorAll('.modal-overlay.visible[data-close]')];
-  if (!lagen.length) return;
   // De laatst geopende ligt bovenop (TT-229) — die sluit als eerste.
-  lagen.sort((a, b) => (parseInt(a.style.zIndex || 0, 10)) - (parseInt(b.style.zIndex || 0, 10)));
-  sluitModal(lagen[lagen.length - 1]);
+  const boven = bovensteModal(true);
+  if (boven) sluitModal(boven);
 });
 
+// TT-408 (B): de laatst geopende laag ligt bovenop (TT-229) en sluit als
+// eerste, voor de pijl, de terugknop van het toestel en Escape. Hier stond
+// het eerste open venster in de volgorde van index.html: met twee vensters
+// open sloot de terugknop het onderste.
+function bovensteModal(alleenMetClose) {
+  const lagen = [...document.querySelectorAll(alleenMetClose ? '.modal-overlay.visible[data-close]' : '.modal-overlay.visible')];
+  if (!lagen.length) return null;
+  return lagen.reduce((boven, el) =>
+    (parseInt(el.style.zIndex || 0, 10) >= parseInt(boven.style.zIndex || 0, 10)) ? el : boven);
+}
+
 window.addEventListener('popstate', (e) => {
-  const openModal = document.querySelector('.modal-overlay.visible');
+  const openModal = bovensteModal(false);
   if (openModal) {
+    // TT-408 (C): een verplicht scherm (data-verplicht) sluit nooit met de
+    // terugknop. De stap gaat terug in de geschiedenis; er verandert niets.
+    if (openModal.hasAttribute('data-verplicht')) {
+      safeHistoryPush(history.state, location.hash || '#landing');
+      return;
+    }
     sluitModal(openModal);
     syncModalScrollLock();
     safeHistoryPush(history.state, location.hash || '#landing');

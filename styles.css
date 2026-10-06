@@ -1348,13 +1348,6 @@
 
   .avatar-remove-btn:not(.visible) { display: none; }
 
-  /* TT-168-overgang (uit profiel-v2, TT-181-vervolg/vervolg2): een knop die
-     zelf van functie wisselt i.p.v. een apart waarschuwingsvlak. Bij een
-     wijziging wordt "Annuleren" bij de eerste klik het bevestigingslabel
-     (geel, niet vetgedrukt); een tweede klik bevestigt. Zie
-     handleCancelClick() in de JS. */
-  .btn-cancel-armed { border-color: var(--accent); color: var(--accent); font-weight: 400; }
-
   /* Completeness meter — TT-386 (30-09-2026, besluit Ronald): titel in goud,
      daaronder één lage rij: het gele stuk, het percentage erachter als
      finish, en de grijze rest. Het gele stuk en de rest delen de breedte

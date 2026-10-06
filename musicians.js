@@ -648,15 +648,10 @@ const TEGEL_SCREENS = { wieBenJe: 'wieBenJeScreen', watSpeelJe: 'watSpeelJeScree
 let activeTegelScreen = 'overview';
 let tegelScreenHistoryPushed = false;
 
-// TT-302 (20-09-2026, Ronald): "voeg de vraag 'terug zonder opslaan?' toe aan
-// beide terugknoppen." De Terug-knop ónder in een tegelscherm vroeg dat al
-// (handleCancelClick, huisstijl §8); de terugknop in de kop en de terugknop
-// van het toestel niet — die sloten het scherm meteen, met de ingetypte
-// wijzigingen erbij.
-//
-// De vergelijking per scherm stond tot nu toe in elk van de vijf
-// cancel-functies apart. Ze staat nu één keer hier, zodat beide wegen terug
-// dezelfde vraag stellen en er nooit één achterloopt (§2, regel 11).
+// TT-302 (20-09-2026, Ronald) en TT-408: de vraag 'terug zonder opslaan?'
+// hoort bij de pijl in de kop en de terugknop van het toestel. De grote
+// Terug-knop onderin een tegelscherm bestaat niet meer. De vergelijking per
+// scherm staat één keer hier, zodat beide wegen terug dezelfde vraag stellen.
 const TEGEL_WIJZIGINGEN = {
   wieBenJe:   () => wbjFieldSnapshot() !== wbjSnapshot,
   watSpeelJe: () => wspFieldSnapshot() !== wspSnapshot,
@@ -668,19 +663,6 @@ const TEGEL_WIJZIGINGEN = {
   bandMuziek:    () => bmzFieldSnapshot() !== bmzSnapshot,
   bandMedia:     () => bmFieldSnapshot() !== bmSnapshot
 };
-
-// TT-302: welke Terug-knop hoort bij welk tegelscherm. Nodig om die knop
-// terug te zetten zodra de regel onder de kop verschijnt — twee keer dezelfde
-// vraag op één scherm is er één te veel.
-const TEGEL_CANCEL_BTN = {
-  wieBenJe: 'wbjCancelBtn', watSpeelJe: 'wspCancelBtn', watZoekJe: 'wzjCancelBtn',
-  jeSetlist: 'jstCancelBtn', mediahoek: 'mhCancelBtn',
-  bandWie: 'bwCancelBtn', bandBezetting: 'bbCancelBtn', bandMuziek: 'bmzCancelBtn', bandMedia: 'bmCancelBtn'
-};
-function resetCancelButtonVanTegel() {
-  const id = TEGEL_CANCEL_BTN[activeTegelScreen];
-  if (id) resetCancelButton(id);
-}
 
 // Staat er een tegelscherm open met wijzigingen die nog niet zijn opgeslagen?
 // Een scherm dat nog niet is geopend heeft geen momentopname; dat telt als
@@ -728,59 +710,6 @@ function openTegelScreen(id) {
   else if (id === 'bandMedia') openBandMedia();
 }
 
-function goToTegelOverview() {
-  tegelScreenHistoryPushed = false;
-  openTegelOverview();
-}
-
-// ─── Annuleer-/bevestigingsknop die zelf van functie wisselt (TT-181-vervolg)
-// Gedeeld door alle vijf tegels: btnId = de knop, hasChanges = functie die
-// true/false teruggeeft, onConfirm = actie bij bevestigen (of meteen als er
-// niets gewijzigd is), confirmText = optionele eigen bevestigingstekst.
-function handleCancelClick(btnId, hasChanges, onConfirm, confirmText) {
-  // Ronald (03-09-2026): moet als twee regels tonen ("Terug zonder" /
-  // "opslaan?"), niet drie. Onbreekbare spatie tussen "Terug" en "zonder"
-  // voorkomt dat de browser daar ook afbreekt.
-  const text = confirmText || 'Terug\u00A0zonder opslaan?';
-  const btn = document.getElementById(btnId);
-  if (!btn) return;
-  if (!hasChanges()) { onConfirm(); return; }
-  if (btn.dataset.armed === '1') {
-    btn.dataset.armed = '';
-    btn.textContent = btn.dataset.originalText;
-    btn.classList.remove('btn-cancel-armed');
-    onConfirm();
-    return;
-  }
-  // TT-302: één vraag tegelijk. Armeert de knop onderin, dan gaat de regel
-  // onder de kop weg.
-  ontwapenTerug();
-  btn.dataset.armed = '1';
-  btn.dataset.originalText = btn.textContent;
-  btn.textContent = text;
-  btn.classList.add('btn-cancel-armed');
-  // Pas ná deze klik een listener toevoegen — anders vangt hij de huidige,
-  // nog bubbelende klik meteen weer af.
-  setTimeout(() => {
-    document.addEventListener('click', function onOutsideClick(e) {
-      if (btn.dataset.armed !== '1') return;
-      if (e.target === btn) return;
-      btn.dataset.armed = '';
-      btn.textContent = btn.dataset.originalText;
-      btn.classList.remove('btn-cancel-armed');
-    }, { once: true });
-  }, 0);
-}
-// Bij het openen van een tegel eventuele "Zeker?"-status opruimen — dekt
-// browser-terug of een directe hash-wijziging, die geen klik-event geven.
-function resetCancelButton(btnId) {
-  const btn = document.getElementById(btnId);
-  if (!btn || btn.dataset.armed !== '1') return;
-  btn.dataset.armed = '';
-  btn.textContent = btn.dataset.originalText || btn.textContent;
-  btn.classList.remove('btn-cancel-armed');
-}
-
 // ═══════════════════════════════════════════════════════════════════════
 // Tegel: Wie ben je
 // ═══════════════════════════════════════════════════════════════════════
@@ -808,7 +737,6 @@ function wbjFieldSnapshot() {
 }
 
 async function openWieBenJe() {
-  resetCancelButton('wbjCancelBtn');
   document.getElementById('wbjUsernameStatus').textContent = '';
   document.getElementById('wbjPostcodeStatus').textContent = '';
   document.getElementById('wbjEmail').value = currentUser?.email || '';
@@ -967,10 +895,6 @@ function wbjRelockCity() {
   field.style.cursor = 'not-allowed';
 }
 
-function cancelWieBenJe() {
-  handleCancelClick('wbjCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
-}
-
 async function saveWieBenJe() {
   const fname = document.getElementById('wbjFname').value.trim();
   const username = document.getElementById('wbjUsername').value.trim();
@@ -1028,7 +952,6 @@ function wspFieldSnapshot() {
 }
 
 async function openWatSpeelJe() {
-  resetCancelButton('wspCancelBtn');
   const { data, error } = await db.from('musicians')
     .select('repertoire_type, musician_instruments(instrument, niveau), musician_genres(genre)')
     .eq('id', myMusicianId).single();
@@ -1066,10 +989,6 @@ function wspRenderRepertoireType() {
   document.querySelectorAll('#wspRepertoireTypeGrid .tag').forEach(t => {
     t.classList.toggle('selected', t.dataset.val === wspRepertoireType);
   });
-}
-
-function cancelWatSpeelJe() {
-  handleCancelClick('wspCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
 }
 
 async function saveWatSpeelJe() {
@@ -1110,7 +1029,6 @@ function wzjFieldSnapshot() {
 }
 
 async function openWatZoekJe() {
-  resetCancelButton('wzjCancelBtn');
   const { data, error } = await db.from('musicians')
     .select('goal, rehearsal_frequency, musical_ambition')
     .eq('id', myMusicianId).single();
@@ -1155,10 +1073,6 @@ function wzjSelectMusicalAmbition(el, val) {
   if (already) { wzjMusicalAmbition = ''; return; }
   el.classList.add('selected');
   wzjMusicalAmbition = val;
-}
-
-function cancelWatZoekJe() {
-  handleCancelClick('wzjCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
 }
 
 async function saveWatZoekJe() {
@@ -1208,7 +1122,6 @@ function jstFieldSnapshot() {
 }
 
 async function openJeSetlist() {
-  resetCancelButton('jstCancelBtn');
   const { data, error } = await db.from('musicians')
     .select('musician_songs(song_title, song_artist, mastery_level)')
     .eq('id', myMusicianId).single();
@@ -1383,8 +1296,8 @@ function jstSetLevel(i, level) {
 // TT-226 (09-09-2026, Ronald): een aangezette "Zeker?" was niet meer te
 // annuleren. Wie zich bedacht, moest het hele tegelscherm verlaten en
 // opnieuw openen. Een klik ergens anders in de app zet de knop nu terug op
-// ✕. Zelfde patroon als handleCancelClick() hierboven: de listener wordt
-// pas ná de huidige klik geregistreerd, en verdwijnt vanzelf ({ once: true }).
+// ✕. De listener wordt pas ná de huidige klik geregistreerd, en verdwijnt
+// vanzelf ({ once: true }).
 function jstCancelConfirmDelete() {
   let gewijzigd = false;
   jstSongs.forEach(s => { if (s._confirmDelete) { delete s._confirmDelete; gewijzigd = true; } });
@@ -1418,10 +1331,6 @@ function jstRemoveSong(i) {
   }
   jstSongs.splice(i, 1);
   jstRenderSongs();
-}
-
-function cancelJeSetlist() {
-  handleCancelClick('jstCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
 }
 
 async function saveJeSetlist() {
@@ -1479,7 +1388,6 @@ function mhFieldSnapshot() {
 }
 
 async function openJeMediahoek() {
-  resetCancelButton('mhCancelBtn');
   mhStartTipCycle();
   const { data, error } = await db.from('musicians')
     .select('avatar_url, musician_media(media_type, url, platform, in_banner)')
@@ -1663,10 +1571,6 @@ function mhSpeelLink(i) {
 function mhRemoveLink(i) {
   mhMediaLinks.splice(i, 1);
   mhRenderLinksList();
-}
-
-function cancelJeMediahoek() {
-  handleCancelClick('mhCancelBtn', tegelHeeftWijzigingen, goToTegelOverview); // TT-302
 }
 
 async function saveJeMediahoek() {
