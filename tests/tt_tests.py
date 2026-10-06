@@ -1327,7 +1327,7 @@ def blok_browser():
           r.verwijderdOpent = window.__geopend;
           openMessageComposer('m2', 'Dylan');
           await new Promise(r => setTimeout(r, 120));
-          r.modalFocus = document.activeElement === document.getElementById('messageComposerBody');
+          r.modalFocus = document.activeElement === document.getElementById('messagesReplyInput'); // TT-410a: het gesprek vervangt het venster
           // TT-305 (22-09-2026): openConversation() zonder gesprekspartner
           // mag niets doen. Deed hij dat wel, dan vroeg hij de database om
           // recipient_id=eq.null en toonde hij "Gesprek laden is niet gelukt".
@@ -2273,20 +2273,28 @@ def blok_browser():
         print("\nBlok 23 — terugknop sluit modals via hun eigen opruimfunctie (TT-294)")
         page_errors.clear()
 
+        # TT-410a (06-10-2026): het berichtvenster bestaat niet meer. "Bericht
+        # sturen" opent het gesprek; de terugknop van het toestel gaat terug naar
+        # het scherm waar je vandaan kwam, en laat gesprekVanuit leeg achter.
         bericht = page.evaluate("""async () => {
           const r = {};
+          showView('search');
+          await new Promise(res => setTimeout(res, 80));
           openMessageComposer('m9', 'Test');
-          r.voorRecipient = messageComposerRecipientId;
-          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'messages' } }));
-          await new Promise(res => setTimeout(res, 50));
-          r.dicht = !document.getElementById('messageModal').classList.contains('visible');
-          r.naRecipient = messageComposerRecipientId;
+          await new Promise(res => setTimeout(res, 120));
+          r.open = { view: huidigeView, conv: activeConversationId, van: gesprekVanuit };
+          history.back();
+          await new Promise(res => setTimeout(res, 400));
+          r.dicht = { view: huidigeView, conv: activeConversationId, van: gesprekVanuit,
+                      draad: document.getElementById('messagesThreadPanel').style.display };
           return r;
         }""")
-        check("terugknop sluit het berichtenscherm", bericht["dicht"], "")
-        check("en maakt messageComposerRecipientId leeg",
-              bericht["voorRecipient"] == "m9" and bericht["naRecipient"] is None,
-              json.dumps(bericht))
+        check("bericht sturen vanuit Zoeken opent het gesprek, niet een venster",
+              bericht["open"] == {"view": "messages", "conv": "m9", "van": "search"}
+              and not page.evaluate("!!document.getElementById('messageModal')"), json.dumps(bericht))
+        check("de terugknop van het toestel gaat terug naar Zoeken en sluit het gesprek",
+              bericht["dicht"]["view"] == "search" and bericht["dicht"]["conv"] is None
+              and bericht["dicht"]["van"] is None and bericht["dicht"]["draad"] == "none", json.dumps(bericht))
 
         melden2 = page.evaluate("""async () => {
           const r = {};
@@ -5778,11 +5786,13 @@ window.TT_STUB.fnAntwoord = {};
           hasOwnProfile = true; myMusicianId = 'm2';
           await openBandModal('b8');
           voet().querySelector('button').click();
-          uit.bericht = document.getElementById('messageModal').querySelector('p').textContent.replace(/\\s+/g, ' ').trim();
-          closeMessageComposer();
+          await new Promise(res => setTimeout(res, 150));
+          uit.bericht = document.getElementById('messagesThreadList').innerText.replace(/\\s+/g, ' ');
+          closeConversation(true); gesprekVanuit = null;
           openMessageComposer('m3', 'Sanne');
-          uit.berichtGewoon = document.getElementById('messageModal').querySelector('p').textContent.replace(/\\s+/g, ' ').trim();
-          closeMessageComposer();
+          await new Promise(res => setTimeout(res, 150));
+          uit.berichtGewoon = document.getElementById('messagesThreadList').innerText.replace(/\\s+/g, ' ');
+          closeConversation(true); gesprekVanuit = null;
           db.from = was.from;
           delete S.rpcResults.tt_get_bands_public;
           hasOwnProfile = was.hasOwnProfile; myMusicianId = was.myMusicianId;
@@ -5818,8 +5828,8 @@ window.TT_STUB.fnAntwoord = {};
               lid57["menu"] == ["Band verlaten"] and not lid57["plek"] and lid57["voet"] == "", json.dumps(lid57))
         check("beheerder: ⋯ met Bandprofiel bewerken (fase 3), geen knop onderin",
               bh57["menu"] == ["Bandprofiel bewerken"] and not bh57["plek"] and bh57["voet"] == "", json.dumps(bh57))
-        check("het berichtvenster noemt de contactpersoon van de band (besluit h); een gewoon bericht niet",
-              d57["bericht"] == "Aan Sanne, de contactpersoon van Zoutwater." and d57["berichtGewoon"] == "Aan Sanne", json.dumps(d57["bericht"]))
+        check("het gesprek noemt de contactpersoon van de band (besluit h, TT-410a); een gewoon bericht niet",
+              "Sanne is de contactpersoon van Zoutwater." in d57["bericht"] and "contactpersoon" not in d57["berichtGewoon"], json.dumps([d57["bericht"], d57["berichtGewoon"]]))
         check("delen en ⋯ naast de foto zijn 24px (TT-385)", bz57["ikoon"] == [24, 24] and lid57["ikoon"] == [24, 24], json.dumps([bz57["ikoon"], lid57["ikoon"]]))
         check("de titel van een sectie staat 8px boven zijn inhoud (huisstijl §3; was 10px)", bz57["titelMarge"] == "8px", bz57["titelMarge"])
         check("geen paginafouten in blok 57", not page_errors, "; ".join(page_errors)[:300])
@@ -6759,7 +6769,7 @@ window.TT_STUB.fnAntwoord = {};
         }""")
         check("TT-408: elk venster zonder kruisje heeft een andere zichtbare uitgang (pijl of knop)",
               d64k["zonderUitgang"] == [], json.dumps(d64k["zonderUitgang"]))
-        for vid in ("musicianModal", "bandModal", "deleteAccountModal", "messageModal", "meldModal", "bioModal"):
+        for vid in ("musicianModal", "bandModal", "deleteAccountModal", "meldModal", "bioModal"):
             check(f"TT-408: {vid} heeft geen kruisje meer", vid in d64k["zonderKruis"], json.dumps(d64k))
         check("TT-408: de instrumentkeuze houdt zijn kruisje (stap 1 heeft verder geen uitgang)", d64k["instrumentKruis"], json.dumps(d64k))
         check("TT-408: er zijn tien kruisjes over", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 10, "")
@@ -6835,6 +6845,76 @@ window.TT_STUB.fnAntwoord = {};
               not d65["landing"]["terug"] and not d65["landing"]["onderbalk"] and d65["landing"]["menu"], j65)
         check("daarbuiten staan terugknop en onderbalk er weer", d65["zoeken"]["terug"] and d65["zoeken"]["onderbalk"], j65)
         check("geen paginafouten in blok 65", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ─────────────────────────────────────────────────────────────
+        # Blok 66 — TT-410a, stap 1 (06-10-2026, besluit Ronald): geen
+        # berichtvenster meer. "Bericht sturen" opent het gesprek; pijl en
+        # verstuurd bericht gaan terug naar waar je vandaan kwam. Het
+        # chat-icoon op de zoekrij is groter (optie 1) en heeft ook in licht
+        # een vlak en een dikkere lijn.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 66 — bericht sturen is het gesprek, terug naar Zoeken (TT-410a)")
+        page_errors.clear()
+        d66 = page.evaluate("""async () => {
+          const uit = {};
+          const wasInsert = insertMessage;
+          insertMessage = async () => true;
+          showView('search');
+          // De knop zoals de zoekrij hem tekent (search.js: MESSAGE_ICON_SVG in .result-row-msg-btn).
+          const plek = document.createElement('div'); plek.id = 'testChatIcoon';
+          plek.innerHTML = `<div class="result-row-msg-btn">${MESSAGE_ICON_SVG}</div>`;
+          document.getElementById('view-search').prepend(plek);
+          const knop = plek.querySelector('.result-row-msg-btn');
+          const ico = knop.querySelector('svg');
+          uit.maat = { vlak: [knop.offsetWidth, knop.offsetHeight], icoon: [ico.getBoundingClientRect().width, ico.getBoundingClientRect().height],
+                       lijn: getComputedStyle(ico).strokeWidth };
+          const had = document.documentElement.getAttribute('data-theme');
+          document.documentElement.setAttribute('data-theme', 'licht');
+          uit.lichtVlak = getComputedStyle(knop).backgroundColor;
+          if (had === null) document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', had);
+          // Eerst een bericht versturen vanuit Zoeken.
+          openMessageComposer('m2', 'Dylan');
+          await new Promise(r => setTimeout(r, 150));
+          uit.open = { view: huidigeView, conv: activeConversationId, van: gesprekVanuit };
+          document.getElementById('messagesReplyInput').value = 'Hoi, zin om te jammen?';
+          await sendReplyInThread();
+          await new Promise(r => setTimeout(r, 500));
+          uit.naSturen = { view: huidigeView, conv: activeConversationId, van: gesprekVanuit,
+                           toast: document.getElementById('appToast').textContent,
+                           draad: document.getElementById('messagesThreadPanel').style.display };
+          // Dan de eigen pijl in de kop van het gesprek.
+          openMessageComposer('m2', 'Dylan');
+          await new Promise(r => setTimeout(r, 150));
+          terugKnop();
+          await new Promise(r => setTimeout(r, 500));
+          uit.naPijl = { view: huidigeView, conv: activeConversationId, van: gesprekVanuit };
+          // Een gesprek uit de inbox werkt zoals altijd: de pijl sluit alleen het gesprek.
+          showView('messages');
+          await new Promise(r => setTimeout(r, 100));
+          await openConversation('m2', 'Dylan', null, false, false);
+          uit.inboxVan = gesprekVanuit;
+          terugKnop();
+          await new Promise(r => setTimeout(r, 300));
+          uit.naInbox = { view: huidigeView, conv: activeConversationId };
+          insertMessage = wasInsert; plek.remove();
+          return uit;
+        }""")
+        j66 = json.dumps(d66)
+        check("chat-icoon op de zoekrij: vlak 44, icoon 22, lijn 2,5 (optie 1, Ronald)",
+              d66["maat"]["vlak"] == [44, 44] and d66["maat"]["icoon"] == [22, 22] and d66["maat"]["lijn"] == "2.5px", j66)
+        check("in licht staat er een vlak onder het chat-icoon (was doorzichtig)",
+              d66["lichtVlak"] not in ("rgba(0, 0, 0, 0)", "transparent"), j66)
+        check("bericht sturen vanuit Zoeken opent het gesprek en onthoudt Zoeken",
+              d66["open"] == {"view": "messages", "conv": "m2", "van": "search"}, j66)
+        check("een verstuurd bericht gaat terug naar Zoeken, met de melding",
+              d66["naSturen"] == {"view": "search", "conv": None, "van": None, "toast": "Bericht verstuurd", "draad": "none"}, j66)
+        check("de pijl bovenin de app gaat terug naar Zoeken (de gespreksKop heeft geen eigen pijl meer)",
+              d66["naPijl"] == {"view": "search", "conv": None, "van": None}
+              and not page.evaluate("!!document.querySelector('.messages-thread-back')"), j66)
+        check("een gesprek vanuit de inbox sluit alleen het gesprek",
+              d66["inboxVan"] is None and d66["naInbox"] == {"view": "messages", "conv": None}, j66)
+        check("geen paginafouten in blok 66", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
