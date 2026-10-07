@@ -2811,7 +2811,7 @@ def blok_browser():
         page_errors.clear()
 
         # ------------------------------------------------------------------
-        # Blok 27 — TT-303: hoogste scherm, terugknop omhoog, volgorde onderin
+        # Blok 27 — TT-303/TT-428: hoogste scherm, terugknop op een tabblad, volgorde onderin
         # ------------------------------------------------------------------
         print("\nBlok 27 — hoogste scherm en volgorde onderin (TT-303)")
 
@@ -2850,15 +2850,26 @@ def blok_browser():
           await new Promise(res => setTimeout(res, 60));
           uit.naLozeDruk = [...document.querySelectorAll('.app-view.active')].map(v => v.id);
 
-          // Op een hoofdtabblad wijst de knop omhoog, niet door het klikpad.
+          // TT-428: op een hoofdtabblad doet de knop niets, en een wissel tussen
+          // tabbladen laat geen stap achter.
+          showView('myprofile'); terugDiepte = 0;
           showView('search'); showView('messages'); showView('bands');
           uit.opTabblad = zichtbaar();
-          uit.gaatOmhoog = terugGaatOmhoog();
-          const stappenVoor = terugDiepte;
+          uit.magOpTabblad = magTerug();
           terugKnop();
           await new Promise(res => setTimeout(res, 60));
           uit.naDruk = [...document.querySelectorAll('.app-view.active')].map(v => v.id);
-          uit.geenStapTerug = terugDiepte > stappenVoor; // omhoog is een nieuwe stap
+          // De terugknop van het toestel doet daar ook niets.
+          history.back();
+          await new Promise(res => setTimeout(res, 120));
+          uit.naToestelknop = [...document.querySelectorAll('.app-view.active')].map(v => v.id);
+          // Dieper in een tabblad is het één stap terug, naar die bovenkant.
+          showView('search'); await new Promise(res => setTimeout(res, 60));
+          showView('profiel', undefined, { id: 'x', app: true });
+          uit.diepMag = magTerug();
+          terugKnop();
+          await new Promise(res => setTimeout(res, 120));
+          uit.naDiep = [...document.querySelectorAll('.app-view.active')].map(v => v.id);
 
           currentUser = bewaard;
           showView('landing'); terugDiepte = 0; werkTerugKnopBij();
@@ -2872,10 +2883,14 @@ def blok_browser():
         check("maar daar is niets om naar terug te gaan, en een druk laat je op Mijn Profiel",
               not hoogste["magOpLanding"] and not hoogste["magOpProfiel"]
               and hoogste["naLozeDruk"] == ["view-myprofile"], json.dumps(hoogste))
-        check("op een hoofdtabblad staat hij wel, en wijst hij omhoog",
-              hoogste["opTabblad"] and hoogste["gaatOmhoog"], json.dumps(hoogste))
-        check("een druk daar brengt je naar Mijn Profiel, niet naar het vorige tabblad",
-              hoogste["naDruk"] == ["view-myprofile"], json.dumps(hoogste))
+        check("op een hoofdtabblad staat hij er, maar doet niets (TT-428; was TT-303: omhoog)",
+              hoogste["opTabblad"] and not hoogste["magOpTabblad"], json.dumps(hoogste))
+        check("een druk op een tabblad brengt je niet naar Mijn Profiel of het vorige tabblad",
+              hoogste["naDruk"] == ["view-bands"], json.dumps(hoogste))
+        check("de terugknop van het toestel doet op een tabblad ook niets",
+              hoogste["naToestelknop"] == ["view-bands"], json.dumps(hoogste))
+        check("dieper in een tabblad is terug één stap, naar de bovenkant van dat tabblad",
+              hoogste["diepMag"] and hoogste["naDiep"] == ["view-search"], json.dumps(hoogste))
 
         check("geen paginafouten in blok 27", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
@@ -4886,9 +4901,9 @@ window.TT_STUB.fnAntwoord = {};
         p47.tap("#navTerugBtn"); p47.wait_for_timeout(350)
         tb = p47.evaluate("""() => { const b = document.getElementById('navTerugBtn'); const c = getComputedStyle(b);
           return { vlak: c.backgroundColor, rand: c.borderTopColor, zichtbaar: c.visibility, view: document.querySelector('.app-view.active')?.id }; }""")
-        check("na een tik op de terugknop op een hoofdtabblad: geen vlak, geen rand; de knop is weg op de landingspagina waar je uitkomt",
-              tb["vlak"] == "rgba(0, 0, 0, 0)" and tb["rand"] == "rgba(0, 0, 0, 0)" and tb["zichtbaar"] == "hidden"
-              and tb["view"] == "view-landing", json.dumps(tb))
+        check("na een tik op de terugknop op een hoofdtabblad: geen vlak, geen rand; je blijft op het tabblad (TT-428)",
+              tb["vlak"] == "rgba(0, 0, 0, 0)" and tb["rand"] == "rgba(0, 0, 0, 0)" and tb["zichtbaar"] == "visible"
+              and tb["view"] == "view-search", json.dumps(tb))
 
         # 9. "Zoek setlist" heet "Maak setlist": knop en paneeltitel.
         ms = p47.evaluate("""() => ({ knop: document.getElementById('setlistSoortNummersBtn').textContent.trim(),
@@ -6092,7 +6107,7 @@ window.TT_STUB.fnAntwoord = {};
           await showCreateBandForm(); await w(200);
           u.open = { wizard: bandWizardOpen(), kop: zichtbaar('mijnBandsKop'), lijst: zichtbaar('myBandsList'), stap: bandWizardStap,
                      staat: history.state && history.state.wizard, pct: pct(),
-                     omhoog: terugGaatOmhoog(), magTerug: magTerug() };
+                     magTerug: magTerug() };
           // Alleen de drie vragen; de velden van het oude formulier zijn weg.
           u.velden = [...$('createBandForm').querySelectorAll('input, .picker-field')].map(e => e.id);
           u.oud = ['bandDescription', 'bandStatusGrid', 'bandWantedField', 'bandLevelPicker', 'bandAvatarPreview', 'bandAvatarInput'].filter(id => $(id));
@@ -6188,7 +6203,7 @@ window.TT_STUB.fnAntwoord = {};
         j59 = lambda k: json.dumps(d59[k], ensure_ascii=False)
         check("Band aanmaken opent de wizard op de plek van de lijst, als stap in de geschiedenis, op 0%",
               d59["open"] == {"wizard": True, "kop": False, "lijst": False, "stap": True, "staat": True, "pct": "0%",
-                              "omhoog": False, "magTerug": True}, j59("open"))
+                              "magTerug": True}, j59("open"))
         check("drie vragen: bandnaam, postcode en plaats, genres; de oude velden zijn weg",
               d59["velden"] == ["bandName", "bandZip", "bandCity", "bandGenreField"] and d59["oud"] == []
               and d59["titel"] == ["Band aanmaken", "Drie vragen, dan staat je band. De rest vul je later aan."], json.dumps([d59["velden"], d59["oud"], d59["titel"]], ensure_ascii=False))
@@ -7145,6 +7160,57 @@ window.TT_STUB.fnAntwoord = {};
         check("er komt geen view bij: view-profiel blijft de enige voor muzikant en band",
               len(re.findall(r'<div class="app-view[ "]', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 16, "")
         check("geen paginafouten in blok 68", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+
+        # ─────────────────────────────────────────────────────────────
+        # Blok 69 — TT-430 (07-10-2026, besluit Ronald): zoeken op alleen
+        # artiest. Een artiest kiezen is al een zoekopdracht; een nummer maakt
+        # de selectie af en vervangt de rij met alleen de artiest.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 69 — Zoek muzikanten: artiest alleen (TT-430)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        d69 = page.evaluate("""async () => {
+          const S = window.TT_STUB, w = ms => new Promise(z => setTimeout(z, ms)), u = {};
+          const aanroepen = [];
+          S.rpcResults.tt_search_musicians_by_songlist_anon = (p) => { aanroepen.push({ titles: p.titles, artists: p.artists }); return [{ musician_id: 'm1' }]; };
+          S.rpcResults.tt_get_musicians_public = (p) => p.ids.map(id => ({ id, username: 'jesse', city: 'Den Haag', avatar_url: null,
+            songs: [{ song_title: 'One', song_artist: 'Metallica', mastery_level: 2 }], instrument_levels: [] }));
+          const was = { hasOwnProfile };
+          showView('search'); await w(150);
+          hasOwnProfile = false;
+          resetSetlistSearch();
+          selectSetlistArtist(1, 'Metallica'); await w(400);
+          u.naArtiest = { rijen: setlistWantedSongs.slice(), lijst: document.getElementById('setlistSongsList').textContent.replace(/\s+/g, ' ').trim(),
+                          aanroep: aanroepen[aanroepen.length - 1], gevonden: lastSetlistResults.length,
+                          trackZichtbaar: document.getElementById('setlistTrackSearchWrap').style.display !== 'none' };
+          const voor = aanroepen.length;
+          selectSetlistArtist(1, 'Metallica'); await w(150);
+          u.nogEens = { rijen: setlistWantedSongs.length, aanroepen: aanroepen.length - voor };
+          addSetlistSong('One', 'Metallica'); await w(400);
+          u.naNummer = { rijen: setlistWantedSongs.slice(), aanroep: aanroepen[aanroepen.length - 1], badge: lastSetlistResults[0] && lastSetlistResults[0].matchedNumbers };
+          selectSetlistArtist(2, 'Nirvana'); await w(400);
+          u.tweede = { rijen: setlistWantedSongs.map(s => s.artist + '|' + s.title), matchCount: lastSetlistResults[0] && lastSetlistResults[0].matchCount };
+          hasOwnProfile = was.hasOwnProfile; resetSetlistSearch();
+          return u;
+        }""")
+        j69 = json.dumps(d69, ensure_ascii=False)
+        check("een artiest kiezen zoekt meteen, met een lege titel, en laat het nummerveld staan",
+              d69["naArtiest"]["rijen"] == [{"title": "", "artist": "Metallica"}]
+              and d69["naArtiest"]["aanroep"] == {"titles": [""], "artists": ["Metallica"]}
+              and d69["naArtiest"]["gevonden"] == 1 and d69["naArtiest"]["trackZichtbaar"], j69)
+        check("de rij met alleen een artiest zegt 'Alle nummers'",
+              "Metallica" in d69["naArtiest"]["lijst"] and "Alle nummers" in d69["naArtiest"]["lijst"], j69)
+        check("dezelfde artiest nog eens kiezen voegt niets toe en zoekt niet opnieuw",
+              d69["nogEens"] == {"rijen": 1, "aanroepen": 0}, j69)
+        check("een nummer maakt de selectie af: de rij met alleen de artiest maakt plaats",
+              d69["naNummer"]["rijen"] == [{"title": "One", "artist": "Metallica"}]
+              and d69["naNummer"]["aanroep"] == {"titles": ["One"], "artists": ["Metallica"]}
+              and d69["naNummer"]["badge"] == [1], j69)
+        check("een tweede artiest komt erbij; een muzikant telt per rij",
+              d69["tweede"]["rijen"] == ["Metallica|One", "Nirvana|"] and d69["tweede"]["matchCount"] == 1, j69)
+        check("geen paginafouten in blok 69", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
