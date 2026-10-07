@@ -228,6 +228,9 @@ if (window.matchMedia) {
 async function appInit() {
   // De tegel Thema in Instellingen: het keuzemenu van de app (huisstijl §7.1).
   initChoiceField({ id: 'thema', fieldId: 'themaTegel', menuId: 'themaMenu', selectId: 'themaKeuze' });
+  // TT-437: Delen via link en Band-uitnodigingen, zelfde vorm als Thema.
+  initChoiceField({ id: 'deel', fieldId: 'deelTegel', menuId: 'deelMenu', selectId: 'deelKeuze' });
+  initChoiceField({ id: 'uitnodig', fieldId: 'uitnodigTegel', menuId: 'uitnodigMenu', selectId: 'uitnodigKeuze' });
   toonLichtDonkerKeuze();
   try {
     initModalStapeling(); // TT-229, zie hierboven
@@ -1460,6 +1463,7 @@ function showView(view, mode, extra) {
 
   if (view === 'myprofile') loadMyProfile();
   if (view === 'bands') loadMyBands();
+  if (view === 'instellingen') laadInstellingen(); // TT-437
   // TT-410b: terug van een profiel naar Zoeken laat de resultaten staan. Zoeken
   // laadt bij het openen opnieuw (TT-10); met het profiel als scherm zou elke
   // stap terug de lijst verversen en de plek kwijtraken.

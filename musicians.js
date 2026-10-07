@@ -57,13 +57,6 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       </button>
       <div class="inline-menu-dropdown" id="profileMoreDropdown">
         <button class="nav-menu-item" onclick="closeProfileMoreMenu();editMyProfile()">Profiel bewerken</button>
-        <!-- TT-56 (12-08-2026): opt-out band-uitnodigingen. Alleen deze
-             knop, geen zichtbaar label op het profiel zelf voor anderen. -->
-        <button class="nav-menu-item" id="bandInviteToggleBtn" onclick="closeProfileMoreMenu();toggleBandInviteAvailability()">Open voor band-uitnodigingen</button>
-        <!-- TT-410b (06-10-2026, besluit Ronald): delen staat standaard aan; de
-             muzikant zet het hier zelf uit. Zelfde vorm als de knop erboven:
-             de tekst toont de stand van nu. -->
-        <button class="nav-menu-item" id="delenToggleBtn" onclick="closeProfileMoreMenu();toggleProfielDelen()">Delen via link: aan</button>
       </div>
     </div>` : '';
 
@@ -421,9 +414,13 @@ function toonProfielNietBeschikbaar(soort) {
 // staat in musicians.delen_aan; de app onthoudt hem in myDeelAan.
 let myDeelAan = true;
 
+// TT-437: de keuze staat in Instellingen (tegel "Delen via link"); het
+// verborgen <select> is de bron van waarheid, zoals bij Thema.
 function updateDelenToggleBtn() {
-  const btn = document.getElementById('delenToggleBtn');
-  if (btn) btn.textContent = myDeelAan ? 'Delen via link: aan' : 'Delen via link: uit';
+  const sel = document.getElementById('deelKeuze');
+  if (!sel) return;
+  sel.value = myDeelAan ? 'aan' : 'uit';
+  refreshChoiceField('deel');
 }
 
 async function zetProfielDelen(aan) {
@@ -440,11 +437,11 @@ async function zetProfielDelen(aan) {
   } catch (e) {
     logCaught('zetProfielDelen', e);
     showToast(friendlyErrorMessage(e));
+    updateDelenToggleBtn(); // de tegel toont weer de stand van de database
     return false;
   }
 }
 
-function toggleProfielDelen() { return zetProfielDelen(!myDeelAan); }
 
 // V-08 (13-08-2026): een foto opent nu in een eigen weergave in de app zelf,
 // niet meer in een nieuw browsertabblad (dat zou iemand in een app-schil

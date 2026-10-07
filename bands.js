@@ -1117,9 +1117,6 @@ function bandPaginaHTML(b, kijker) {
         </button>
         <div class="inline-menu-dropdown">
           <button class="nav-menu-item" onclick="sluitAlleMenus();openBandTegels('${jsAttr(b.id)}')">Bandprofiel bewerken</button>
-          <!-- TT-410b fase 2 (besluit Ronald: alleen de beheerder): zelfde vorm
-               als bij de muzikant; de tekst toont de stand van nu. -->
-          <button class="nav-menu-item" id="bandDelenToggleBtn" onclick="sluitAlleMenus();toggleBandDelen('${jsAttr(b.id)}')">${bandDelenTekst(b.delen_aan !== false)}</button>
         </div>
       </div></span>`;
   } else if (kijker === 'lid') {
@@ -1315,10 +1312,6 @@ async function bandDeelStand(id) {
   }
 }
 
-function bandDelenTekst(aan) {
-  return aan ? 'Delen via link: aan' : 'Delen via link: uit';
-}
-
 async function zetBandDelen(bandId, aan) {
   try {
     // .select(): zonder dat meldt de database ook succes als de regels de
@@ -1327,8 +1320,6 @@ async function zetBandDelen(bandId, aan) {
     if (error) throw error;
     if (!data || !data.length) throw new Error('Delen aanpassen is niet gelukt.');
     if (bandDeelGegevens && bandDeelGegevens.id === bandId) bandDeelGegevens.delen_aan = aan;
-    const knop = document.getElementById('bandDelenToggleBtn');
-    if (knop) knop.textContent = bandDelenTekst(aan);
     showToast(aan ? 'Delen staat aan. De link van de band werkt.' : 'Delen staat uit. De link van de band werkt niet meer.');
     return true;
   } catch (e) {
@@ -1336,11 +1327,6 @@ async function zetBandDelen(bandId, aan) {
     showToast(friendlyErrorMessage(e));
     return false;
   }
-}
-
-function toggleBandDelen(bandId) {
-  const staatAan = !(bandDeelGegevens && bandDeelGegevens.id === bandId && bandDeelGegevens.delen_aan === false);
-  return zetBandDelen(bandId, !staatAan);
 }
 
 async function laadBandScherm(id, linkToegang) {
@@ -1493,6 +1479,10 @@ async function renderBandBeheer() {
     bewerkBandStad = b.city || '';
     zetBandNaamRegel();
     bandBeheerOpenRollen = (b.band_wanted || []).length;
+    // TT-437: de stand van "Delen via link" komt uit de kleine vraag, zodat
+    // Bandbeheer ook laadt als het databasescript nog niet is gedraaid.
+    const delenAan = await bandDeelStand(id);
+    if (id !== bewerkBandId) return;
     // V-16: loopt er al een aanbod om het beheer over te nemen? Dan zegt de
     // knop "Aanbod intrekken", met de wachtstand eronder.
     const aanbod = (b.band_members || []).some(m => m.status === 'bevestigd' && m.founder_offer);
@@ -1507,6 +1497,14 @@ async function renderBandBeheer() {
           <button type="button" class="segmented-btn${b.pauze ? ' selected' : ''}" onclick="zetBandPauze(true)">We spelen even niet</button>
         </div>
         <p class="field-hint">Spelen jullie even niet, dan staat dat als tag op jullie bandpagina.</p>
+      </div>
+      <div class="field">
+        <label>Delen via link</label>
+        <div class="segmented-control segmented-vol" id="bandDelenKeuze">
+          <button type="button" class="segmented-btn${delenAan ? ' selected' : ''}" onclick="zetBandDelenBeheer(true)">Aan</button>
+          <button type="button" class="segmented-btn${delenAan ? '' : ' selected'}" onclick="zetBandDelenBeheer(false)">Uit</button>
+        </div>
+        <p class="field-hint">Staat delen uit, dan werkt de link van de band niet meer.</p>
       </div>
       <div class="knoppen-stapel">
         <button type="button" class="btn btn-ghost" onclick="${aanbod ? `withdrawFounderOffer('${jsAttr(id)}')` : `askFounderTransfer('${jsAttr(id)}')`}">${aanbod ? 'Aanbod intrekken' : 'Beheer overdragen'}</button>
@@ -1538,6 +1536,15 @@ async function zetBandPauze(aan) {
     logCaught('zetBandPauze', e);
     showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(e));
   }
+}
+
+// TT-437 (besluit Ronald): "Delen via link" van de band staat in Bandbeheer,
+// zoals het bij een muzikant in Instellingen staat. Werkt meteen, zonder Opslaan.
+async function zetBandDelenBeheer(aan) {
+  const id = bewerkBandId;
+  if (!id) return;
+  await zetBandDelen(id, aan);
+  renderBandBeheer();
 }
 
 function vraagBandOpheffen() {

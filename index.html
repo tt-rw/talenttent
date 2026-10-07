@@ -2288,6 +2288,41 @@
         <option value="donker">Donker</option>
       </select>
 
+      <!-- TT-437 (07-10-2026, besluit Ronald): "Delen via link" en "Open voor
+           band-uitnodigingen" staan niet meer in het ⋯-menu van Mijn Profiel
+           maar hier: het zijn instellingen, geen handelingen. Zelfde vorm als
+           Thema (initChoiceField(), huisstijl §7.1); een keuze werkt meteen.
+           Alleen zichtbaar met een profiel (laadInstellingen() in wizard.js). -->
+      <div id="instellingenProfielBlok">
+        <div class="menu-anchor">
+          <div class="tile" id="deelTegel" aria-label="Delen via link">
+            <div style="flex:1;">
+              <div class="tile-title">Delen via link</div>
+              <div class="tile-sub"><span class="wheel-field-label"></span></div>
+            </div>
+          </div>
+          <div class="choice-menu" id="deelMenu" role="listbox" aria-label="Delen via link"></div>
+        </div>
+        <select id="deelKeuze" style="display:none;" onchange="zetProfielDelen(this.value === 'aan')">
+          <option value="aan">Aan: je link werkt</option>
+          <option value="uit">Uit: je link werkt niet</option>
+        </select>
+
+        <div class="menu-anchor">
+          <div class="tile" id="uitnodigTegel" aria-label="Band-uitnodigingen">
+            <div style="flex:1;">
+              <div class="tile-title">Band-uitnodigingen</div>
+              <div class="tile-sub"><span class="wheel-field-label"></span></div>
+            </div>
+          </div>
+          <div class="choice-menu" id="uitnodigMenu" role="listbox" aria-label="Band-uitnodigingen"></div>
+        </div>
+        <select id="uitnodigKeuze" style="display:none;" onchange="zetBandUitnodigingen(this.value === 'open')">
+          <option value="open">Open voor uitnodigingen</option>
+          <option value="dicht">Niet open</option>
+        </select>
+      </div>
+
       <!-- TT-299 (20-09-2026, besluit Ronald): e-mailadres en wachtwoord
            horen bij het inlogaccount, niet bij het profiel. Ze staan daarom
            hier en niet bij "Wie ben je" — dat scherm schrijft alleen naar
@@ -2796,16 +2831,16 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261007c"></script>
+<script src="core.js?v=20261007d"></script>
 <script src="utils.js?v=20261006b"></script>
 <script src="veiligheid.js?v=20261007c"></script>
 <script src="auth.js?v=20260927b"></script>
 <script src="postcode.js?v=20261002d"></script>
-<script src="wizard.js?v=20261007a"></script>
+<script src="wizard.js?v=20261007b"></script>
 <script src="ouder.js?v=20261001a"></script>
 <script src="search.js?v=20261007b"></script>
-<script src="musicians.js?v=20261007b"></script>
-<script src="bands.js?v=20261007f"></script>
+<script src="musicians.js?v=20261007c"></script>
+<script src="bands.js?v=20261007g"></script>
 <script src="messages.js?v=20261007c"></script>
 <script src="modals-shared.js?v=20261002d"></script>
 <script>

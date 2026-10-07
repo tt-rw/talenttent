@@ -326,7 +326,7 @@ async function loadMyProfile() {
   fitProfileName(el);
   loadBandInvites(m.id);
 
-  // TT-56 (12-08-2026): opt-out band-uitnodigingen — knoptekst weerspiegelt
+  // TT-56 (12-08-2026): opt-out band-uitnodigingen — de tegel weerspiegelt
   // de huidige stand. m.accepts_band_invites komt gewoon mee via de
   // '*'-select hierboven, geen aparte kolom nodig in de query.
   myAcceptsBandInvites = m.accepts_band_invites !== false;
@@ -337,10 +337,14 @@ async function loadMyProfile() {
   updateDelenToggleBtn();
 }
 
+// TT-437 (07-10-2026, besluit Ronald): de keuze staat in Instellingen (tegel
+// "Band-uitnodigingen"), niet meer in het ⋯-menu van Mijn Profiel. Het
+// verborgen <select> is de bron van waarheid, zoals bij Thema.
 function updateBandInviteToggleBtn() {
-  const btn = document.getElementById('bandInviteToggleBtn');
-  if (!btn) return;
-  btn.textContent = myAcceptsBandInvites ? 'Open voor band-uitnodigingen' : 'Niet open voor band-uitnodigingen';
+  const sel = document.getElementById('uitnodigKeuze');
+  if (!sel) return;
+  sel.value = myAcceptsBandInvites ? 'open' : 'dicht';
+  refreshChoiceField('uitnodig');
 }
 
 // TT-56 (12-08-2026, op verzoek van Ronald): een muzikant kan hiermee zelf
@@ -348,21 +352,42 @@ function updateBandInviteToggleBtn() {
 // gehouden — blokkeert uitsluitend die uitnodigingen. Los 1-op-1 bericht
 // sturen blijft altijd mogelijk, ongewijzigd, en het profiel blijft gewoon
 // in alle zoekresultaten staan (geen zichtbaar label voor bezoekers).
-async function toggleBandInviteAvailability() {
+async function zetBandUitnodigingen(open) {
   if (!myMusicianId) return;
-  const newVal = !myAcceptsBandInvites;
   try {
     const { error } = await db.from('musicians')
-      .update({ accepts_band_invites: newVal })
+      .update({ accepts_band_invites: open })
       .eq('id', myMusicianId);
     if (error) throw error;
-    myAcceptsBandInvites = newVal;
+    myAcceptsBandInvites = open;
     updateBandInviteToggleBtn();
-    showToast(newVal ? 'Je staat weer open voor band-uitnodigingen.' : 'Je ontvangt geen band-uitnodigingen meer.');
+    showToast(open ? 'Je staat weer open voor band-uitnodigingen.' : 'Je ontvangt geen band-uitnodigingen meer.');
   } catch (e) {
-    logCaught('toggleBandInviteAvailability', e);
+    logCaught('zetBandUitnodigingen', e);
     showToast(friendlyErrorMessage(e));
+    updateBandInviteToggleBtn(); // de tegel toont weer de stand van de database
   }
+}
+
+// TT-437: de twee profielinstellingen in Instellingen laden hun stand bij het
+// openen van het scherm. Zonder profiel (alleen een account) is er niets om
+// in te stellen: het blok blijft dan weg.
+async function laadInstellingen() {
+  const blok = document.getElementById('instellingenProfielBlok');
+  if (!blok) return;
+  const mid = await getMyMusicianId();
+  blok.style.display = mid ? '' : 'none';
+  if (!mid) return;
+  try {
+    const { data, error } = await db.from('musicians').select('accepts_band_invites').eq('id', mid).single();
+    if (error) throw error;
+    myAcceptsBandInvites = data.accepts_band_invites !== false;
+  } catch (e) {
+    logCaught('laadInstellingen', e);
+  }
+  updateBandInviteToggleBtn();
+  myDeelAan = await profielDeelStand(mid);
+  updateDelenToggleBtn();
 }
 
 // ─── Submit → opslaan in Supabase ────────────────────────────────────────────
