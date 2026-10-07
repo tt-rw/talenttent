@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261006g">
+<link rel="stylesheet" href="styles.css?v=20261007a">
 </head>
 <body>
 
@@ -193,7 +193,11 @@
     <span>Berichten</span>
   </button>
   <button class="bottom-nav-btn" id="bottomNavBands" onclick="requireLogin('bands')">
+    <span class="bottom-nav-icon-wrap">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      <!-- TT-432: stip zonder cijfer zolang een verzoek om het beheer over te nemen wacht -->
+      <span id="bandsDotBottom" class="bands-dot" style="display:none;" aria-label="Een verzoek wacht"></span>
+    </span>
     <span>Bands</span>
   </button>
 </nav>
@@ -1928,9 +1932,6 @@
          wizard (Route B, TT-09) — zie resumeOnboarding()/renderOnboardingResumeBanner()
          hieronder. Alleen zichtbaar als er onafgeronde voortgang klaarstaat. -->
     <div id="onboardingResumeBanner"></div>
-    <!-- V-16 (13-08-2026): een oprichter die stopt vraagt eerst de overige
-         leden of iemand het overneemt — dat aanbod verschijnt hier. -->
-    <div id="founderOfferBanner"></div>
     <div id="myProfileContent"></div>
   </div>
 </div>
@@ -2780,16 +2781,16 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261007b"></script>
+<script src="core.js?v=20261007c"></script>
 <script src="utils.js?v=20261006b"></script>
 <script src="veiligheid.js?v=20261007b"></script>
 <script src="auth.js?v=20260927b"></script>
 <script src="postcode.js?v=20261002d"></script>
-<script src="wizard.js?v=20261006c"></script>
+<script src="wizard.js?v=20261007a"></script>
 <script src="ouder.js?v=20261001a"></script>
 <script src="search.js?v=20261007b"></script>
 <script src="musicians.js?v=20261007b"></script>
-<script src="bands.js?v=20261007b"></script>
+<script src="bands.js?v=20261007d"></script>
 <script src="messages.js?v=20261007b"></script>
 <script src="modals-shared.js?v=20261002d"></script>
 <script>

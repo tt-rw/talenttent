@@ -54,47 +54,29 @@ async function respondToBandInvite(bandId, accept) {
   }
 }
 
-// V-16 (13-08-2026): banner op Mijn Profiel voor een bevestigd lid dat is
-// gevraagd het oprichterschap over te nemen (band_members.founder_offer).
-// Vereist het losse script F-V16-oprichterschap-aanbod.sql — zonder die
-// kolom faalt de vraag stil en blijft de banner leeg, net als bij een
-// mislukte loadBandInvites()-aanroep hierboven.
-async function loadFounderOffers(musicianId) {
-  const el = document.getElementById('founderOfferBanner');
-  if (!el) return;
-  el.innerHTML = '';
-  // 22-08-2026 (Ronald): een overnameverzoek trekt zichzelf na 7 dagen in —
-  // geen cron-taak beschikbaar, dus deze controle draait "lazy" mee bij elke
-  // keer dat de banner wordt opgebouwd. Fouten hier zijn nooit blokkerend.
-  // Niet blokkerend voor de banner, wel loggen (TT-230).
+// TT-432 (07-10-2026, besluit Ronald): een verzoek om het beheer over te nemen
+// staat op de bandkaart in Mijn Bands. Op de Bands-knop in de onderbalk staat
+// een stip zonder cijfer zolang er zo'n verzoek voor jou wacht. Zonder de
+// kolom `founder_offer` faalt de vraag; dat staat dan in app_error_log (TT-230).
+async function refreshBandsDot() {
+  const dot = document.getElementById('bandsDotBottom');
+  if (!dot) return;
+  const mid = await getMyMusicianId();
+  if (!mid) { dot.style.display = 'none'; return; }
+  // 22-08-2026 (Ronald): een verzoek trekt zichzelf na 7 dagen in; geen
+  // cron-taak, dus de controle draait hier mee. Niet blokkerend, wel loggen.
   try { await db.rpc('tt_expire_old_founder_offers'); }
-  catch (e) { logCaught('loadFounderOffers/expire', e); }
+  catch (e) { logCaught('refreshBandsDot/expire', e); }
   try {
-    const { data, error } = await db.from('band_members')
-      .select('band_id, bands(name, city)')
-      .eq('musician_id', musicianId).eq('status', 'bevestigd').eq('founder_offer', true);
-    // TT-230: zie loadBandInvites() hierboven. Ontbreekt de kolom
-    // `founder_offer`, of blokkeert een RLS-regel de vraag, dan staat dat
-    // vanaf nu in de console en in app_error_log.
-    if (error) { logCaught('loadFounderOffers', error); return; }
-    if (!data || !data.length) return;
-
-    el.innerHTML = data.map(off => {
-      const naam = off.bands?.name || 'Een band';
-      return `
-      <div class="melding">
-        <p class="melding-kop">De beheerder van ${escHtml(naam)} stopt</p>
-        <p class="melding-tekst">Wil jij het beheer overnemen? Zeg je nee, dan blijft de huidige beheerder voorlopig aan.</p>
-        <div class="btn-row">
-          <button class="btn btn-ghost" onclick="respondToFounderOffer('${jsAttr(off.band_id)}', false)">Nee, liever niet</button>
-          <button class="btn btn-primary" onclick="respondToFounderOffer('${jsAttr(off.band_id)}', true)">Ik neem het over</button>
-        </div>
-      </div>`;
-    }).join('');
+    const { data, error } = await db.from('band_members').select('band_id')
+      .eq('musician_id', mid).eq('status', 'bevestigd').eq('founder_offer', true);
+    if (error) throw error;
+    // Een oudere vraag (ander account, net uitgelogd) mag een nieuwere niet overschrijven.
+    if (mid !== myMusicianId) return;
+    dot.style.display = data && data.length ? 'block' : 'none';
   } catch (e) {
-    logCaught('loadFounderOffers', e);
-    // Zelfde keuze als loadBandInvites(): stilzwijgend niets tonen i.p.v.
-    // Mijn Profiel blokkeren met een foutmelding.
+    logCaught('refreshBandsDot', e);
+    dot.style.display = 'none';
   }
 }
 
@@ -120,7 +102,7 @@ async function respondToFounderOffer(bandId, accept) {
       if (error) throw error;
       showToast('Aanbod geweigerd.');
     }
-    loadFounderOffers(mid);
+    refreshBandsDot();
     loadMyBands();
     if (accept) profielBandsVerversen();
   } catch (e) {
@@ -131,13 +113,14 @@ async function respondToFounderOffer(bandId, accept) {
 
 // V-16: de oprichter geeft aan te willen stoppen. Is er niemand anders
 // bevestigd, dan is overdragen zinloos — direct de keuze voor opheffen.
-// Zijn er wel anderen, dan gaat eerst het aanbod uit; de oprichter blijft
-// oprichter totdat iemand "Ik neem het over" heeft geklikt (of totdat hij
-// het aanbod intrekt en zelf voor opheffen kiest).
+// TT-432 (07-10-2026, besluit Ronald): zijn er wel anderen, dan kiest de
+// beheerder zelf één bevestigd lid; alleen die krijgt het verzoek. De beheerder
+// blijft beheerder totdat dat lid "Ik neem het over" kiest (of hij het verzoek
+// intrekt en zelf voor opheffen kiest). De lijst staat onder de knop in Bandbeheer.
 async function askFounderTransfer(bandId) {
   try {
     const { data: band, error } = await db.from('bands')
-      .select('name, band_members(musician_id, status)').eq('id', bandId).single();
+      .select('name, band_members(musician_id, status, musicians(fname, username))').eq('id', bandId).single();
     if (error || !band) throw error || new Error('Kon band niet laden.');
     const mid = await getMyMusicianId();
     const others = (band.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid);
@@ -152,24 +135,25 @@ async function askFounderTransfer(bandId) {
       return;
     }
 
-    showConfirm(
-      `Je vraagt ${others.length === 1 ? 'het andere bevestigde lid' : `de ${others.length} andere bevestigde leden`} van "${band.name}" of iemand het beheer wil overnemen. Neemt niemand het over, dan blijf jij voorlopig beheerder.`,
-      () => sendFounderOffer(bandId, others.map(m => m.musician_id)),
-      'Vragen'
-    );
+    const lijst = document.getElementById('overdragKeuze');
+    if (!lijst) return;
+    lijst.innerHTML = `<p class="field-hint">Kies wie het beheer van ${escHtml(band.name)} overneemt. Zegt die nee, dan blijf jij voorlopig beheerder.</p>`
+      + `<div class="knoppen-stapel">${others.map(m =>
+        `<button type="button" class="btn btn-ghost" onclick="sendFounderOffer('${jsAttr(bandId)}', '${jsAttr(m.musician_id)}')">${escHtml(displayNameOf(m.musicians))}</button>`
+      ).join('')}</div>`;
   } catch (e) {
     logCaught('askFounderTransfer', e);
     showToast(friendlyErrorMessage(e));
   }
 }
 
-async function sendFounderOffer(bandId, memberIds) {
+async function sendFounderOffer(bandId, memberId) {
   try {
-    // 22-08-2026 (Ronald): een overnameverzoek trekt zichzelf na 7 dagen in
+    // 22-08-2026 (Ronald): een verzoek trekt zichzelf na 7 dagen in
     // — founder_offer_at is het moment waarop die klok gaat lopen.
-    const { error } = await db.from('band_members').update({ founder_offer: true, founder_offer_at: new Date().toISOString() }).eq('band_id', bandId).in('musician_id', memberIds);
+    const { error } = await db.from('band_members').update({ founder_offer: true, founder_offer_at: new Date().toISOString() }).eq('band_id', bandId).eq('musician_id', memberId);
     if (error) throw error;
-    showToast('Gevraagd of iemand het overneemt. Je ziet het hier zodra iemand reageert.');
+    showToast('Gevraagd. Je ziet het hier zodra die reageert.');
     loadMyBands();
     // TT-127-restpunt (27-08-2026): de knop toont meteen "Aanbod intrekken",
     // niet pas na sluiten en heropenen. Sinds TT-385 staat hij in het blok
@@ -807,7 +791,7 @@ async function loadMyBands() {
   const el = document.getElementById('myBandsList');
   if (!el) return;
   el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:32px;">Laden...</div>';
-  // 22-08-2026: zelfde lazy vervalcontrole als in loadFounderOffers() —
+  // 22-08-2026: zelfde lazy vervalcontrole als in refreshBandsDot() —
   // Mijn Bands kan ook los daarvan geopend worden.
   // Niet blokkerend voor de lijst, wel loggen (TT-230).
   try { await db.rpc('tt_expire_old_founder_offers'); }
@@ -857,20 +841,12 @@ async function loadMyBands() {
     const open = (b.band_wanted || []).map(w => w.instrument);
     const status = bandStatusLabel(b.pauze, confirmed.length, open.length);
     const tags = (status ? tagSolid(status) : '') + open.map(i => tagSolid('+ ' + i)).join('');
-    // 22-08-2026 (Ronald): de drie losse knoppen (Band bewerken/+ Lid
-    // toevoegen/Ik stop als beheerder) worden één klein ⋯-menu, zelfde
-    // patroon als het profielmenu (zie huisstijl-en-consistentie.md §8).
-    // Elke band in de lijst heeft zijn eigen knop/menu, dus geen vaste id's
-    // — toggleBandMoreMenu() werkt met event.currentTarget in plaats daarvan.
-    const founderMenuHTML = isFounder ? `
-      <div class="profile-actions-menu-wrap" style="flex-shrink:0;" onclick="event.stopPropagation();">
-        <button class="nav-menu-btn" onclick="toggleBandMoreMenu(event)" aria-label="Meer opties voor ${escAttr(b.name)}" title="Meer">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
-        </button>
-        <div class="inline-menu-dropdown">
-          <button class="nav-menu-item" onclick="closeAllBandMoreMenus();openBandTegels('${jsAttr(b.id)}');">Bandprofiel bewerken</button>
-        </div>
-      </div>` : '';
+    // TT-433 (07-10-2026, besluit Ronald): geen ⋯-menu en geen "Band verlaten"
+    // op de kaart. Alles wat ook in het menu van de bandpagina staat, staat
+    // alleen daar: een tik op de kaart opent de bandpagina.
+    // TT-432: een verzoek om het beheer over te nemen staat op de kaart van
+    // het lid dat gekozen is.
+    const verzoekVoorMij = !isFounder && confirmed.some(m => m.musician_id === mid && m.founder_offer);
     return `<div class="band-card" onclick="openBandScherm('${jsAttr(b.id)}')">
       <div class="band-card-header">
         ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar">${AVATAR_T_FALLBACK}</div>`}
@@ -878,8 +854,18 @@ async function loadMyBands() {
           <div class="band-name">${escHtml(b.name)}</div>
           <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
         </div>
-        ${isFounder ? founderMenuHTML : `<button class="btn btn-ghost" onclick="event.stopPropagation(); leaveBand('${jsAttr(b.id)}','${jsAttr(b.name)}');">Band verlaten</button>`}
       </div>
+      ${verzoekVoorMij ? `
+      <div style="padding:0 20px 20px;" onclick="event.stopPropagation();">
+        <div class="melding">
+          <p class="melding-kop">De beheerder van ${escHtml(b.name)} stopt</p>
+          <p class="melding-tekst">Wil jij het beheer overnemen? Zeg je nee, dan blijft de huidige beheerder voorlopig aan.</p>
+          <div class="btn-row">
+            <button class="btn btn-ghost" onclick="respondToFounderOffer('${jsAttr(b.id)}', false)">Nee, liever niet</button>
+            <button class="btn btn-primary" onclick="respondToFounderOffer('${jsAttr(b.id)}', true)">Ik neem het over</button>
+          </div>
+        </div>
+      </div>` : ''}
       ${offerPending ? `
       <div style="padding:0 20px;">
         <div style="font-size:12px;color:var(--muted);padding:8px 0;border-top:1px solid var(--border);">Gevraagd of iemand het beheer overneemt — wachten op reactie.</div>
@@ -887,6 +873,7 @@ async function loadMyBands() {
       ${tags ? `<div class="band-card-body"><div class="profile-badges">${tags}</div></div>` : ''}
     </div>`;
   }).join('');
+  refreshBandsDot();
 }
 
 // ─── De bandpagina (TT-385, fase 2, 02-10-2026) ──────────────────────────────
@@ -1510,6 +1497,7 @@ async function renderBandBeheer() {
         <button type="button" class="btn btn-ghost" onclick="${aanbod ? `withdrawFounderOffer('${jsAttr(id)}')` : `askFounderTransfer('${jsAttr(id)}')`}">${aanbod ? 'Aanbod intrekken' : 'Beheer overdragen'}</button>
         <button type="button" class="btn btn-danger" onclick="vraagBandOpheffen()">Band opheffen</button>
       </div>
+      <div id="overdragKeuze"></div>
       ${aanbod ? '<p class="field-hint">Gevraagd of iemand het beheer overneemt. Wachten op reactie.</p>' : ''}`;
   } catch (e) {
     logCaught('renderBandBeheer', e);

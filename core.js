@@ -455,6 +455,7 @@ async function onUserLoggedIn(user) {
   // TT-278: Inloggen in het hamburgermenu alleen uitgelogd.
   document.getElementById('navMenuLogin').style.display = 'none';
   refreshUnreadBadge();
+  refreshBandsDot();
   markeerActief();
 
   if (onboardingInFlight) return;
@@ -548,7 +549,7 @@ function onUserLoggedOut() {
   wizardLeegmaken();
   const banner = document.getElementById('editModeBanner');
   if (banner) banner.style.display = 'none';
-  ['unreadBadge', 'unreadBadgeBottom'].forEach(id => {
+  ['unreadBadge', 'unreadBadgeBottom', 'bandsDotBottom'].forEach(id => {
     const b = document.getElementById(id);
     if (b) b.style.display = 'none';
   });

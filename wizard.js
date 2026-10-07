@@ -141,7 +141,7 @@ function leesOuderVoortgang() {
 
 // Toont, alleen als er echt iets klaarstaat, een banner op Mijn Profiel met
 // een expliciete "Verdergaan"-knop. Geen banner? Dan blijft het element leeg
-// en onzichtbaar — precies zoals bandInvitesBanner/founderOfferBanner ernaast.
+// en onzichtbaar — precies zoals bandInvitesBanner ernaast.
 function renderOnboardingResumeBanner() {
   const el = document.getElementById('onboardingResumeBanner');
   if (!el) return;
@@ -325,7 +325,6 @@ async function loadMyProfile() {
   // het krapste scherm. Sinds TT-380 staat het ⋯-menu onder de naam.
   fitProfileName(el);
   loadBandInvites(m.id);
-  loadFounderOffers(m.id); // V-16
 
   // TT-56 (12-08-2026): opt-out band-uitnodigingen — knoptekst weerspiegelt
   // de huidige stand. m.accepts_band_invites komt gewoon mee via de

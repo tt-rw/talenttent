@@ -2427,6 +2427,8 @@
     letter-spacing: 0;
     text-transform: none;
   }
+  /* TT-432: stip op de Bands-knop, zonder cijfer; rood in elk thema, zoals de teller bij Berichten. */
+  .bands-dot { position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--ongelezen); }
   .messages-conv-row {
     display: flex;
     align-items: center;
@@ -4018,6 +4020,7 @@
     .bottom-nav-btn.active { background: var(--merk); color: var(--merk-tekst); }
     .bottom-nav-icon-wrap { position: relative; display: inline-flex; }
     .bottom-nav-icon-wrap .unread-badge { top: -6px; right: -10px; }
+    .bottom-nav-icon-wrap .bands-dot { top: -3px; right: -4px; }
 
     /* De vijf tabbladen van de bovenbalk zijn op mobiel vervangen door de
        onderbalk. De knoppen blijven in de HTML staan (andere code verwijst
