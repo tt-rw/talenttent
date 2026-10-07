@@ -149,7 +149,7 @@ async function deblokkeerMuzikant(id, naam) {
 function naBlokkadeWijziging(id) {
   // TT-410b: het profiel van deze muzikant is een scherm; een stap terug.
   if (huidigeView === 'profiel' && huidigProfielId === id) {
-    if (terugDiepte > 0) history.back(); else showView('search', 'redirect');
+    popNavStap('search');
   }
   if (typeof activeConversationId !== 'undefined' && activeConversationId === id) {
     closeConversation();

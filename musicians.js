@@ -738,7 +738,6 @@ function renderTegels() {
 const TEGEL_SCREENS = { wieBenJe: 'wieBenJeScreen', watSpeelJe: 'watSpeelJeScreen', watZoekJe: 'watZoekJeScreen', jeSetlist: 'jeSetlistScreen', mediahoek: 'mediahoekScreen',
   bandWie: 'bandWieScreen', bandBezetting: 'bandBezettingScreen', bandMuziek: 'bandMuziekScreen', bandMedia: 'bandMediaScreen' };
 let activeTegelScreen = 'overview';
-let tegelScreenHistoryPushed = false;
 
 // TT-302 (20-09-2026, Ronald) en TT-408: de vraag 'terug zonder opslaan?'
 // hoort bij de pijl in de kop en de terugknop van het toestel. De grote
@@ -769,7 +768,6 @@ function openTegelOverview() {
   activeTegelScreen = 'overview';
   ontwapenTerug();    // TT-302: de vraag hoort bij het scherm dat je verlaat
   werkTerugKnopBij(); // TT-301
-  tegelScreenHistoryPushed = false;
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
   document.getElementById('tegelOverviewScreen').style.display = bewerkBandId ? 'none' : '';
   document.getElementById('bandTegelOverviewScreen').style.display = bewerkBandId ? '' : 'none';
@@ -787,10 +785,6 @@ function openTegelScreen(id) {
   document.getElementById('bandTegelOverviewScreen').style.display = 'none';
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
   document.getElementById(TEGEL_SCREENS[id]).style.display = '';
-  if (!tegelScreenHistoryPushed) {
-    safeHistoryPush(bewerkBandId ? { view: 'profieltegels', tegel: true, band: bewerkBandId } : { view: 'profieltegels', tegel: true }, '#profieltegels');
-    tegelScreenHistoryPushed = true;
-  }
   if (id === 'wieBenJe') openWieBenJe();
   else if (id === 'watSpeelJe') openWatSpeelJe();
   else if (id === 'watZoekJe') openWatZoekJe();

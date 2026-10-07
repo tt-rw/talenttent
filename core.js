@@ -6,6 +6,26 @@ const SUPABASE_KEY = 'sb_publishable_tnWUVGTBmwnn9fAILeNqqQ_UlCn5AFM';
 // binnen als #access_token=…&type=recovery. supabase-js wist dat #-deel zodra
 // het de sessie heeft opgehaald, en dat is vóórdat appInit() het leest. Daarom
 // hier vastleggen, vóór de client bestaat.
+// ─── De terugknop (TT-431, 07-10-2026, besluit Ronald: P0) ─────────────────
+// De browsergeschiedenis is geen lijst van schermen meer. Er zijn precies twee
+// stappen: het begin (state { tt: 'basis' }) en daarna één vaste stap waarop
+// de app staat. Elke terug (pijl of toestelknop) komt op het begin uit, de app
+// zet de vaste stap meteen terug en voert dán zelf één stap terug uit
+// (appTerug(), onderaan dit bestand). Eén pad voor beide knoppen. Welke
+// schermen er achter je liggen, houdt de app zelf bij in navStack.
+// Bij verversen staat de vaste stap er al (state.view): dan blijft alles zoals het is.
+(function zetTerugVal() {
+  try {
+    const st = history.state;
+    if (st && st.view) return;
+    // De scrollstand beheert de app zelf (TT-404); elke stap heeft zijn eigen instelling.
+    history.scrollRestoration = 'manual';
+    if (!(st && st.tt === 'basis')) history.replaceState({ tt: 'basis' }, '', location.href);
+    history.pushState({ view: 'landing' }, '', location.href);
+    history.scrollRestoration = 'manual';
+  } catch (e) { /* geen geschiedenis (sandbox): de terugknop in de kop werkt dan nog via de app */ }
+})();
+
 const herstelLinkBijStart = /(^#|&)type=recovery(&|$)/.test(location.hash);
 
 // TT-82: alleen een client aanmaken als de bibliotheek er is. De vlag wordt in
@@ -379,7 +399,7 @@ async function appInit() {
   // TT-301 (20-09-2026): alles hierboven hoort bij het opstarten, niet bij een
   // stap die iemand zelf heeft gezet. De teller begint dus hier op nul; op het
   // scherm waarmee de app opent, is er niets om naar terug te gaan.
-  terugDiepte = 0;
+  navStack.length = 0;
   werkTerugKnopBij();
   // Het woordmerk past zich aan de breedte aan (fitKopLogo). Meten kan pas als
   // het woordmerk-lettertype (TT Woordmerk, TT-318) geladen is — met een
@@ -1145,33 +1165,34 @@ function veegAfbreken() {
 // (TT-16) is dan gewoon niet beschikbaar, maar de rest van de app blijft werken.
 // Geeft terug of de stap er staat (TT-385 fase 4: de bandwizard moet dat weten).
 function safeHistoryPush(stateObj, hash) {
-  try { history.pushState(stateObj, '', hash); return true; } catch (e) { return false; /* stil negeren, zie boven */ }
+  try { history.pushState(stateObj, '', hash); history.scrollRestoration = 'manual'; return true; } catch (e) { return false; /* stil negeren, zie boven */ }
 }
 function safeHistoryReplace(stateObj, hash) {
   try { history.replaceState(stateObj, '', hash); } catch (e) { /* stil negeren, zie boven */ }
 }
 
 // ─── Terugknop linksboven (TT-301, 20-09-2026, Ronald) ───────────────────
-// De knop doet precies hetzelfde als de terugknop van Android: history.back().
-// Daarmee loopt hij door dezelfde popstate-afhandeling onderaan dit bestand —
-// eerst een open venster, dan een open gesprek, dan een open tegelscherm, pas
-// daarna de vorige view. Eén pad, geen tweede logica ernaast.
+// De knop doet precies hetzelfde als de terugknop van het toestel: beide
+// komen uit bij appTerug() (onderaan dit bestand). Eén pad, geen tweede logica
+// ernaast. Sinds TT-431 houdt de app de schermen zelf bij (navStack); de
+// browsergeschiedenis is alleen de vangnetstap, zie zetTerugVal().
 //
 // Waarom de knop er moet zijn: iOS heeft geen systeem-terugknop, en een app
 // die op het beginscherm staat heeft ook geen browserbalk (projectinstructies
 // §9, TT-294). Daar is dit de enige weg terug.
 
-// Hoeveel stappen de app zelf aan de geschiedenis heeft toegevoegd. Nul
-// betekent: dit is het scherm waarmee deze sessie begon, en history.back()
-// zou de app verlaten. appInit() zet de teller aan het eind op nul — die
-// eerste showView() hoort bij het opstarten en is geen stap die iemand zelf
-// heeft gezet.
-let terugDiepte = 0;
-let terugVanGesprek = false; // TT-428: zie popstate
+// De schermen achter je (TT-431): per stap { state, hash }. Een tik op een
+// tab (Zoeken, Berichten, Bands, Mijn Profiel) begint opnieuw: dat is de
+// bovenkant van het tabblad en er ligt niets achter. Elk ander scherm legt het
+// scherm waar je vandaan komt erop. Terug haalt de bovenste weer af.
+const navStack = [];
 
 // De view die nu actief is. showView() houdt hem bij; de terugknop heeft hem
 // nodig om te weten of hij omhoog moet of terug.
 let huidigeView = 'landing';
+// De stap en het adres waarmee de vaste stap van de app nu staat (TT-431).
+let stapNu = { view: 'landing' };
+let hashNu = location.hash || '#landing';
 // TT-404 (03-10-2026, Ronald): terug op dezelfde plek. De browser zet bij een
 // stap terug zelf de scrollstand van de vorige stap terug (bovenaan), ook als
 // er alleen een venster sluit. De app beheert de scrollstand daarom zelf.
@@ -1201,19 +1222,28 @@ function opTabbladBovenkant() {
   return TAB_VIEWS.includes(huidigeView) || huidigeView === hoogsteScherm();
 }
 
-// Een open venster, gesprek of tegelscherm is óók een stap terug, ook als de
-// teller nul is (bijv. na verversen op een gedeelde profiellink). Dezelfde
-// drie lagen, in dezelfde volgorde, als de popstate-afhandeling hieronder.
-function magTerug() {
+// Een open venster, gesprek, tegelscherm of wizard is een stap terug van de
+// app, ook zonder scherm erachter (bijv. na verversen). Dezelfde lagen, in
+// dezelfde volgorde, als appTerug().
+function heeftTerugLaag() {
   if (document.querySelector('.modal-overlay.visible')) return true;
   const draad = document.getElementById('messagesThreadPanel');
   if (draad && draad.style.display !== 'none' && activeConversationId) return true;
   if (activeTegelScreen !== 'overview') return true;
   if (bandWizardOpen()) return true; // TT-385 fase 4
+  return false;
+}
+// Scherm los van de onderbalk, waar de toestelknop de app mag verlaten: de
+// landingspagina en de goedkeuringspagina van een ouder (de mail zit erachter).
+function magAppVerlaten() {
+  return !heeftTerugLaag() && (huidigeView === 'toestemming' || (huidigeView === 'landing' && !currentUser));
+}
+function magTerug() {
+  if (heeftTerugLaag()) return true;
   // Op de bovenkant van een tabblad is er niets boven je en niets om naar
   // terug te gaan.
   if (opTabbladBovenkant()) return false;
-  return terugDiepte > 0;
+  return huidigeView !== 'toestemming';
 }
 
 // TT-310 (23-09-2026, Ronald): de knop staat er altijd, ook als er niets is
@@ -1232,7 +1262,7 @@ function werkTerugKnopBij() {
 
 function terugKnop() {
   if (!magTerug()) return; // nooit de app uit via deze knop
-  history.back();
+  appTerug();
 }
 
 // ─── Terug zonder opslaan (TT-302, 20-09-2026, Ronald) ───────────────────
@@ -1296,7 +1326,6 @@ function showView(view, mode, extra) {
   // bandwizard zonder opslaan, net als een open tegel. Zijn stap blijft in de
   // geschiedenis staan en opent later gewoon Mijn Bands.
   if (bandWizardOpen()) { resetBandForm(); zetBandWizardZichtbaar(false); }
-  bandWizardStap = false;
   sluitAlleMenus();
   sluitOpruimModals(); // TT-264: een view-wissel laat nooit een spelende video achter
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
@@ -1479,8 +1508,20 @@ function showView(view, mode, extra) {
     const hashDeel = (view === 'profiel' && profielId)
       ? '#' + (profielSoort === 'band' ? 'band' : 'profiel') + '/' + profielId : null;
     const naarHash = hashDeel || hash;
-    if (mode === 'redirect') safeHistoryReplace(stap, naarHash);
-    else { safeHistoryPush(stap, naarHash); terugDiepte++; } // TT-301
+    // TT-431: het scherm waar je vandaan komt, gaat op de stapel (behalve bij
+    // een omleiding, of als je op de bovenkant van een tabblad uitkomt).
+    if (mode !== 'redirect') {
+      const doelIsTop = TAB_VIEWS.includes(view) || view === 'landing' || view === hoogsteScherm();
+      if (doelIsTop && mode !== 'behoud') navStack.length = 0;
+      else if (!(vorigeView === view && location.hash === naarHash)) {
+        navStack.push({ state: history.state && history.state.view ? history.state : { view: vorigeView }, hash: location.hash || ('#' + vorigeView) });
+      }
+    }
+    // De vaste stap van de app krijgt het nieuwe scherm; er komt geen stap bij.
+    safeHistoryReplace(stap, naarHash);
+    stapNu = stap; hashNu = naarHash;
+  } else {
+    stapNu = history.state && history.state.view ? history.state : { view }; hashNu = location.hash || ('#' + view);
   }
   werkTerugKnopBij(); // TT-301
   landingBijwerken(); // TT-61: de foto's wisselen alleen op de landingspagina
@@ -1677,103 +1718,86 @@ function bovensteModal(alleenMetClose) {
     (parseInt(el.style.zIndex || 0, 10) >= parseInt(boven.style.zIndex || 0, 10)) ? el : boven);
 }
 
-window.addEventListener('popstate', (e) => {
+// Eén stap terug, voor de pijl en de toestelknop (TT-431). Eerst de lagen die
+// de app zelf opent, in vaste volgorde: een venster, een gesprek, een tegelscherm,
+// de bandwizard. Daarna het scherm achter je op de stapel. Op de bovenkant
+// van een tabblad gebeurt er niets.
+function appTerug() {
   const openModal = bovensteModal(false);
   if (openModal) {
-    // TT-408 (C): een verplicht scherm (data-verplicht) sluit nooit met de
-    // terugknop. De stap gaat terug in de geschiedenis; er verandert niets.
-    if (openModal.hasAttribute('data-verplicht')) {
-      safeHistoryPush(history.state, location.hash || '#landing');
-      return;
-    }
+    // TT-408 (C): een verplicht scherm (data-verplicht) sluit nooit met terug.
+    if (openModal.hasAttribute('data-verplicht')) return;
     sluitModal(openModal);
     syncModalScrollLock();
-    safeHistoryPush(history.state, location.hash || '#landing');
     werkTerugKnopBij(); // TT-301
     return;
   }
-  // V-03 (12-08-2026): een open gesprek was geen view en geen modal, dus de
-  // terugknop van de telefoon verliet het hele berichtenscherm in plaats van
-  // het gesprek te sluiten.
+  // V-03: een open gesprek is geen view en geen modal; terug sluit het gesprek.
   const draad = document.getElementById('messagesThreadPanel');
   if (draad && draad.style.display !== 'none' && activeConversationId) {
-    // TT-410a: kwam het gesprek uit Zoeken (of een ander scherm), dan gaat de
-    // pijl en de terugknop van het toestel een stap verder terug, naar dat
-    // scherm. De stap van de view Berichten, die erbij kwam, gaat mee.
+    // TT-410a: kwam het gesprek uit Zoeken (of een ander scherm), dan gaat terug
+    // een stap verder, naar dat scherm.
     if (gesprekVanuit) {
       gesprekVanuit = null;
       closeConversation(true);
-      terugVanGesprek = true; // TT-428: deze stap terug is bedoeld, geen wissel tussen tabbladen
-      history.back();
+      popNavStap();
       return;
     }
     closeConversation();
-    safeHistoryPush(history.state, location.hash || '#messages');
     werkTerugKnopBij(); // TT-301
     return;
   }
-  // TT-168-overgang (02-09-2026): zelfde patroon voor een open tegelscherm
-  // (bijv. "Wie ben je") — eerst dit subscherm sluiten, terug naar het
-  // tegeloverzicht, pas bij een tweede terugdruk verder naar Mijn Profiel.
+  // TT-168-overgang: een open tegelscherm sluit eerst, terug naar het overzicht.
   if (activeTegelScreen !== 'overview') {
-    // TT-302 (20-09-2026, Ronald): staan er wijzigingen open, dan gebeurt er
-    // bij de eerste druk niets en verschijnt de regel onder de kop. De stap
-    // gaat terug in de geschiedenis, zodat de gebruiker precies blijft staan
-    // waar hij stond. Geldt voor beide wegen terug — de pijl in de kop en de
-    // terugknop van het toestel lopen allebei hierlangs.
-    safeHistoryPush(history.state, location.hash || '#profieltegels');
-    if (tegelHeeftWijzigingen() && !terugGewapend) {
-      wapenTerug();
-      return;
-    }
+    // TT-302: staan er wijzigingen open, dan gebeurt er bij de eerste druk niets
+    // en verschijnt de regel onder de kop. Pijl en toestelknop lopen hierlangs.
+    if (tegelHeeftWijzigingen() && !terugGewapend) { wapenTerug(); return; }
     ontwapenTerug();
     openTegelOverview();
     werkTerugKnopBij(); // TT-301
     return;
   }
-  // TT-385 fase 4: de korte bandwizard is een stap, zoals een tegelscherm.
-  // Staat er iets ingevuld, dan eerst de vraag onder de kop (TT-302) en komt
-  // de stap terug. Anders gaat de wizard dicht. Sloot een knop hem al
-  // (sluitBandWizard()), dan neemt deze stap alleen de geschiedenis terug en
-  // draait daarna wat die knop nog wilde (de bandpagina openen).
-  if (bandWizardStap) {
-    bandWizardStap = false;
-    if (bandWizardOpen()) {
-      if (hasUnsavedBandFormInput() && !terugGewapend) {
-        bandWizardStap = safeHistoryPush({ view: 'bands', wizard: true }, '#bands');
-        wapenTerug();
-        return;
-      }
-      ontwapenTerug();
-      resetBandForm();
-      zetBandWizardZichtbaar(false);
-    }
+  // TT-385 fase 4: de korte bandwizard is een laag, zoals een tegelscherm.
+  if (bandWizardOpen()) {
+    if (hasUnsavedBandFormInput() && !terugGewapend) { wapenTerug(); return; }
+    ontwapenTerug();
+    resetBandForm();
+    zetBandWizardZichtbaar(false);
     werkTerugKnopBij();
-    const daarna = bandWizardDaarna;
-    bandWizardDaarna = null;
-    if (daarna) daarna();
+    return;
+  }
+  if (opTabbladBovenkant()) return; // TT-428
+  popNavStap();
+}
+
+// Haal het bovenste scherm van de stapel af en toon het. Ligt er niets
+// achter (verversen, gedeelde link), dan naar het hoogste scherm.
+function popNavStap(terugvalView) {
+  const vorige = navStack.pop();
+  if (!vorige) {
+    if (huidigeView !== 'landing' && huidigeView !== 'toestemming') showView(terugvalView || hoogsteScherm(), 'redirect');
+    return;
+  }
+  safeHistoryReplace(vorige.state, vorige.hash);
+  showView(vorige.state.view, 'pop');
+}
+
+window.addEventListener('popstate', (e) => {
+  // De terugval: de stap van de browser is terug op het begin. Dat is een
+  // terugdruk (pijl of toestelknop). Verlaat de gebruiker hier de app (landing,
+  // goedkeuringspagina)? Dan nog één stap terug in de browser. Anders zet de app
+  // de vaste stap terug en gaat zelf één stap terug.
+  // Een stap met state.view is een eerdere vaste stap (na een gewijzigd #-deel);
+  // ook die telt als terugdruk.
+  if (e.state && (e.state.tt === 'basis' || e.state.view)) {
+    if (magAppVerlaten()) { history.back(); return; }
+    safeHistoryPush(stapNu, hashNu);
+    appTerug();
     return;
   }
   // TT-389 (01-10-2026): een stap zonder state heeft de app niet zelf gemaakt
-  // — iemand wijzigde het #-deel van de link, of opende een link met # in dit
-  // tabblad. Toon de view uit dat #-deel en geef de stap alsnog een state
-  // ('redirect' vervangt hem). Het is geen stap terug, dus de teller blijft.
-  // Hier stond: showView(e.state?.view || 'landing', 'pop'), en ingelogd
-  // kwam je dan op de landingspagina.
-  if (!e.state?.view) {
-    showView(viewUitHash(), 'redirect');
-    return;
-  }
-  // TT-428: op de bovenkant van een tabblad doet de terugknop van het toestel
-  // niets, net als de pijl. De stap die net verdween, komt terug.
-  if (terugVanGesprek) terugVanGesprek = false;
-  else if (opTabbladBovenkant()) {
-    safeHistoryPush({ view: huidigeView }, '#' + huidigeView);
-    return;
-  }
-  // TT-301: pas hier gaat er echt een stap van de app af.
-  terugDiepte = Math.max(0, terugDiepte - 1);
-  showView(e.state.view, 'pop');
+  // — iemand wijzigde het #-deel van de link. Toon de view uit dat #-deel.
+  showView(e.state && e.state.view ? e.state.view : viewUitHash(), 'redirect');
 });
 
 

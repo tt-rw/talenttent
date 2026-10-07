@@ -290,13 +290,11 @@ async function executeRemoveMember(bandId, musicianId, memberName) {
 // de band en opent de privé bandpagina. De balk begint op 0% en loopt 5% op
 // per ingevuld veld, tot de 15% waarop de bandpagina begint (besluit a).
 // De wizard staat in view-bands, op de plek van de lijst: geen zestiende view.
-// Hij is een stap in de geschiedenis, zoals een tegelscherm. Dus de
-// terugknop in de kop en die van het toestel sluiten eerst de wizard, met
-// dezelfde vraag "Terug zonder opslaan?" als een tegel (TT-302). De
-// afhandeling staat in de popstate van core.js.
+// Hij is een laag van de app, zoals een tegelscherm. Dus de terugknop in de
+// kop en die van het toestel sluiten eerst de wizard, met dezelfde vraag
+// "Terug zonder opslaan?" als een tegel (TT-302). De afhandeling staat in
+// appTerug() in core.js.
 let bandState = { genres: [] }; // de genres die de wizard kiest
-let bandWizardStap = false;   // de wizard staat als stap in de geschiedenis
-let bandWizardDaarna = null;  // wat er gebeurt zodra die stap terug is
 
 function bandWizardOpen() {
   const form = document.getElementById('createBandForm');
@@ -320,26 +318,20 @@ async function showCreateBandForm() {
   resetBandForm();
   zetBandWizardZichtbaar(true);
   window.scrollTo(0, 0);
-  if (!bandWizardStap) bandWizardStap = safeHistoryPush({ view: 'bands', wizard: true }, '#bands');
   werkTerugKnopBij(); // TT-301: een open wizard is een stap terug
   initBandForm();
   bandWizardBalkBij();
   setTimeout(() => document.getElementById('bandName')?.focus(), 50);
 }
 
-// Sluit de wizard. Staat hij als stap in de geschiedenis, dan gaat die stap
-// terug. `daarna` draait pas als die stap weg is: anders sluit de terugstap
-// meteen het venster dat `daarna` opent.
+// Sluit de wizard (TT-431: de wizard is geen stap in de browsergeschiedenis
+// meer; hij is een laag van de app, net als een tegelscherm).
 function sluitBandWizard(daarna) {
   ontwapenTerug();
   resetBandForm();
   zetBandWizardZichtbaar(false);
-  if (bandWizardStap) {
-    bandWizardDaarna = daarna || null;
-    history.back();
-  } else if (daarna) {
-    daarna();
-  }
+  werkTerugKnopBij();
+  if (daarna) daarna();
 }
 
 // De balk loopt 5% op per ingevuld veld: drie velden samen zijn de 15%

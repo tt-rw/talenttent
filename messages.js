@@ -27,7 +27,7 @@ function openMessageComposer(recipientId, recipientName, bandNaam) {
   gesprekVia = bandNaam || '';
   if (huidigeView !== 'messages') {
     gesprekVanuit = huidigeView;
-    showView('messages');
+    showView('messages', 'behoud'); // TT-431: de stap hieronder blijft staan, terug gaat naar dit scherm
   } else {
     gesprekVanuit = null;
   }
@@ -134,7 +134,7 @@ async function sendReplyInThread() {
   if (ok) {
     // TT-410a: kwam het gesprek uit Zoeken, dan gaat een verstuurd bericht
     // terug naar Zoeken, via hetzelfde pad als de pijl (popstate).
-    if (gesprekVanuit) { showToast('Bericht verstuurd'); history.back(); return; }
+    if (gesprekVanuit) { showToast('Bericht verstuurd'); appTerug(); return; }
     openConversation(activeConversationId, document.getElementById('messagesThreadName').textContent, undefined, true);
   } else {
     // Mislukt: het voorlopige bericht weer weghalen en de tekst teruggeven,
@@ -303,7 +303,6 @@ function relativeMessageTime(iso) {
   return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
 }
 
-let threadHistoryPushed = false; // V-03: staat er al een geschiedenisstap voor dit gesprek?
 
 // V-04 (13-08-2026): blijft staan tot closeConversation()/een nieuwe
 // openConversation()-aanroep met een expliciete waarde — zo hoeft de
@@ -345,10 +344,9 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
   // berichtenscherm verlaat. Alleen bij het openen vanuit de inbox, niet bij
   // het verversen na het versturen van een bericht (dan staat de stap er al).
   // TT-279: het adres noemt het gesprek, zodat verversen het weer opent.
-  if (!threadHistoryPushed) {
-    safeHistoryPush({ view: 'messages', thread: true }, '#messages/' + encodeURIComponent(otherId));
-    threadHistoryPushed = true;
-  }
+  // TT-431: geen eigen stap meer in de browsergeschiedenis; alleen het adres
+  // noemt het gesprek.
+  safeHistoryReplace(history.state, '#messages/' + encodeURIComponent(otherId));
   if (!stil) {
     document.getElementById('messagesReplyInput').value = '';
     updateCharCounter('messagesReplyInput', 'messagesReplyCounter', 2000);
@@ -430,7 +428,7 @@ function closeConversation(stil) {
   activeConversationId = null;
   gesprekVia = '';
   activeConversationDeleted = false; // V-04
-  threadHistoryPushed = false;
+  if (huidigeView === 'messages') safeHistoryReplace(history.state, '#messages'); // TT-431
   document.getElementById('messagesInboxPanel').style.display = 'block';
   document.getElementById('messagesThreadPanel').style.display = 'none';
   document.getElementById('messagesThreadPanel').classList.remove('gesprek-open');
