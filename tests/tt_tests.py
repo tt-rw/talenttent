@@ -5704,7 +5704,8 @@ window.TT_STUB.fnAntwoord = {};
             socialLink: vak().querySelectorAll('a.social-knop').length,
             gezichtenT: vak().querySelectorAll('.bezetting-gezicht-t').length,
             open: [...vak().querySelectorAll('.bezetting-open')].map(e => [...e.children].map(c => c.textContent.trim()).join(' ')),
-            openKnop: vak().querySelectorAll('.bezetting button, button.bezetting-lid').length,
+            openKnop: vak().querySelectorAll('button.bezetting-open').length,
+            ledenKnop: vak().querySelectorAll('button.bezetting-lid:not(.bezetting-open)').length,
             namen: [...vak().querySelectorAll('.bezetting-lid:not(.bezetting-open) .bezetting-naam')].map(e => e.textContent),
             fotoVierkant: getComputedStyle(vak().querySelector('.bandfoto')).borderRadius,
             voet: voet().textContent.trim() };
@@ -5770,6 +5771,8 @@ window.TT_STUB.fnAntwoord = {};
         check("gast: gebruikersnamen, de T zonder foto, open rol en invaller zonder knop",
               g57["namen"][:2] == ["jesse", "sam"] and g57["gezichtenT"] == 2 and len(g57["open"]) == 2
               and g57["open"][0] == "+ Basgitaar gezocht" and g57["open"][1].startswith("+ Drums invaller") and g57["openKnop"] == 0, json.dumps(g57))
+        check("gast: elk lid in de bezetting is een knop die het profiel opent (TT-434)",
+              g57["ledenKnop"] == len(g57["namen"]) and g57["ledenKnop"] > 0, json.dumps(g57))
         check("gast: de bandfoto is vierkant met hoeken van 12px, de knop vraagt om een profiel",
               g57["fotoVierkant"] == "12px" and g57["voet"] == "Maak een profiel aan om contact te leggen", json.dumps(g57))
         check("met profiel: alleen bevestigde leden, op volgorde van binnenkomst, met voornaam",
