@@ -248,6 +248,25 @@ def blok1_statisch():
           body[:200] if m else "dissolveBand() niet gevonden")
 
 
+    # TT-431: de terugknop heeft precies één plek. Wie elders de browser-
+    # geschiedenis aanraakt, maakt het terugprobleem opnieuw: een tweede
+    # pad naast appTerug(). Alleen core.js mag stappen zetten of terug gaan.
+    verboden = []
+    for f in JS_FILES:
+        if f == "core.js":
+            continue
+        src = open(os.path.join(ROOT, f), encoding="utf-8").read()
+        for patroon in (r"history\.(pushState|back|forward|go)\s*\(", r"safeHistoryPush\s*\(", r"addEventListener\(\s*'popstate'"):
+            if re.search(patroon, src):
+                verboden.append(f"{f}: {patroon}")
+    check("buiten core.js raakt niets de browsergeschiedenis aan (TT-431)", not verboden,
+          f"gevonden: {verboden}")
+    core = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
+    stappen = len(re.findall(r"history\.pushState\(", core)) + len(re.findall(r"safeHistoryPush\(", core))
+    check("core.js zet maar op twee plekken een stap: het vangnet bij het laden en de herstelstap in popstate (TT-431; telt de definitie mee)",
+          stappen == 4, f"{stappen} (safeHistoryPush: definitie en gebruik in popstate; vangnet: pushState)")
+
+
 # --------------------------------------------------------------------------
 # Blok 2 t/m 5 — in de browser, tegen de stub
 # --------------------------------------------------------------------------
@@ -7311,6 +7330,61 @@ window.TT_STUB.fnAntwoord = {};
             check(f"[{knop}] de browsergeschiedenis groeit niet en de app blijft op haar eigen stap",
                   d["lengteGroei"] == 0 and d["stapIsApp"], j70)
         check("geen paginafouten in blok 70", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ─────────────────────────────────────────────────────────────
+        # Blok 71 — TT-431: de harde regels van de terugknop, voor elk scherm
+        # dat de app heeft. Geen lijst die iemand bijhoudt: de schermen komen
+        # uit index.html. Komt er een scherm bij, dan geldt de regel meteen.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 71 — terug: dezelfde regels voor elk scherm, met beide knoppen (TT-431)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        d71 = {}
+        for knop in ("pijl", "toestel"):
+            d71[knop] = page.evaluate("""async (knop) => {
+              const w = ms => new Promise(z => setTimeout(z, ms));
+              const bewaard = currentUser;
+              const TABS = ['myprofile', 'search', 'messages', 'bands'];
+              const schermen = [...document.querySelectorAll('.app-view')].map(v => v.id.replace('view-', ''))
+                .filter(v => !['landing', 'toestemming'].includes(v));
+              const druk = async () => { if (knop === 'pijl') terugKnop(); else history.back(); await w(120); };
+              const fouten = [];
+              const eigen = { myMusicianId, hasOwnProfile };
+              currentUser = { id: 'test' }; myMusicianId = 'm1'; hasOwnProfile = true;
+              for (const tab of TABS) {
+                for (const v of schermen) {
+                  showView(tab); await w(60);
+                  const lengte = history.length;
+                  // Profiel bewerken bestaat alleen mét profiel, registreren alleen zonder.
+                  myMusicianId = v === 'register' ? null : 'm1'; hasOwnProfile = v !== 'register';
+                  showView(v, undefined, v === 'profiel' ? { id: 'x', app: true } : undefined); await w(120);
+                  const gaatNaar = [];
+                  for (let i = 0; i < 6; i++) { await druk(); gaatNaar.push(huidigeView); }
+                  const naam = tab + ' > ' + v;
+                  // 1. de reeks eindigt op de bovenkant van het tabblad waar je begon, en blijft daar
+                  if (!TABS.includes(v) && gaatNaar[5] !== tab) fouten.push(naam + ' eindigt op ' + gaatNaar[5]);
+                  if (TABS.includes(v) && gaatNaar[5] !== v) fouten.push(naam + ' (tabtop) eindigt op ' + gaatNaar[5]);
+                  // 2. nooit een ander tabblad onderweg
+                  const vreemd = gaatNaar.filter(x => TABS.includes(x) && x !== (TABS.includes(v) ? v : tab));
+                  if (vreemd.length) fouten.push(naam + ' komt langs ' + vreemd.join(','));
+                  // 3. maximaal twee drukken tot de bovenkant
+                  const eerst = gaatNaar.findIndex(x => x === (TABS.includes(v) ? v : tab));
+                  if (eerst > 2) fouten.push(naam + ' heeft ' + (eerst + 1) + ' drukken nodig');
+                  // 4. de geschiedenis van de browser groeit nooit en de app staat op haar eigen stap
+                  if (history.length !== lengte) fouten.push(naam + ' geschiedenis ' + lengte + ' -> ' + history.length);
+                  if (!(history.state && history.state.view)) fouten.push(naam + ' staat niet op de stap van de app');
+                }
+              }
+              currentUser = bewaard; myMusicianId = eigen.myMusicianId; hasOwnProfile = eigen.hasOwnProfile;
+              showView('myprofile'); await w(60);
+              return { aantal: schermen.length, schermen, fouten };
+            }""", knop)
+        j71 = json.dumps(d71, ensure_ascii=False)
+        for knop, d in d71.items():
+            check(f"[{knop}] {d['aantal']} schermen x 4 tabbladen: alle regels van de terugknop gelden overal",
+                  not d["fouten"] and d["aantal"] >= 10, j71[:600])
+        check("geen paginafouten in blok 71", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
