@@ -199,23 +199,29 @@ const VEILIGHEID_MENU_ICOON =
   '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
   '<circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>';
 
-function veiligheidMenuHTML(soort, id, naam) {
+function veiligheidMenuHTML(soort, id, naam, verwijderId) {
   // Zonder eigen profiel is er niemand om de melding aan te hangen en niets om
   // vanaf te blokkeren. Dan hoort het menu er ook niet te staan.
   if (!hasOwnProfile) return '';
-  if (!id) return '';
-  if (soort !== 'band' && typeof myMusicianId !== 'undefined' && myMusicianId === id) return '';
+  if (!id && !verwijderId) return '';
+  if (id && soort !== 'band' && typeof myMusicianId !== 'undefined' && myMusicianId === id) return '';
 
   const veiligNaam = jsAttr(naam || '');
-  const veiligId = jsAttr(id);
-  const meldLabel = soort === 'band' ? 'Band melden' : 'Muzikant melden';
-  const items = [
-    `<button class="nav-menu-item" onclick="sluitVeiligheidMenus();openMeldModal('${jsAttr(soort)}','${veiligId}','${veiligNaam}')">${escHtml(meldLabel)}</button>`,
-  ];
-  if (soort !== 'band') {
-    items.push(blokkeerIkZelf(id)
-      ? `<button class="nav-menu-item" onclick="sluitVeiligheidMenus();deblokkeerMuzikant('${veiligId}','${veiligNaam}')">Blokkade opheffen</button>`
-      : `<button class="nav-menu-item" onclick="sluitVeiligheidMenus();blokkeerMuzikant('${veiligId}','${veiligNaam}')">Blokkeren</button>`);
+  const items = [];
+  if (id) {
+    const veiligId = jsAttr(id);
+    const meldLabel = soort === 'band' ? 'Band melden' : 'Muzikant melden';
+    items.push(`<button class="nav-menu-item" onclick="sluitVeiligheidMenus();openMeldModal('${jsAttr(soort)}','${veiligId}','${veiligNaam}')">${escHtml(meldLabel)}</button>`);
+    if (soort !== 'band') {
+      items.push(blokkeerIkZelf(id)
+        ? `<button class="nav-menu-item" onclick="sluitVeiligheidMenus();deblokkeerMuzikant('${veiligId}','${veiligNaam}')">Blokkade opheffen</button>`
+        : `<button class="nav-menu-item" onclick="sluitVeiligheidMenus();blokkeerMuzikant('${veiligId}','${veiligNaam}')">Blokkeren</button>`);
+    }
+  }
+  // TT-435: een gesprek verwijderen staat in dit menu, ook bij een verwijderd
+  // account (dan is er niemand meer om te melden of te blokkeren).
+  if (verwijderId) {
+    items.push(`<button class="nav-menu-item" onclick="sluitVeiligheidMenus();gesprekVerwijderen('${jsAttr(verwijderId)}','${veiligNaam}')">Gesprek verwijderen</button>`);
   }
   return `
     <div class="profile-actions-menu-wrap veiligheid-menu-wrap">
@@ -249,10 +255,10 @@ function sluitVeiligheidMenus() {
 }
 
 // Het menu in een vaste koprij zetten. Leeg als er niets te melden valt.
-function zetVeiligheidMenu(plekId, soort, id, naam) {
+function zetVeiligheidMenu(plekId, soort, id, naam, verwijderId) {
   const plek = document.getElementById(plekId);
   if (!plek) return;
-  plek.innerHTML = veiligheidMenuHTML(soort, id, naam);
+  plek.innerHTML = veiligheidMenuHTML(soort, id, naam, verwijderId);
 }
 
 // ─── Melden ──────────────────────────────────────────────────────────────────

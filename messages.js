@@ -213,9 +213,10 @@ async function loadInbox() {
     // hier altijd al uit de database (musicians.id), nooit uit vrije tekst.
     // Client-side samengevoegd en opnieuw op datum gesorteerd, want elke
     // vraag levert zijn eigen, los gesorteerde resultaat.
-    const [sentRes, receivedRes] = await Promise.all([
+    const [sentRes, receivedRes, verborgen] = await Promise.all([
       db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('sender_id', mid),
       db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('recipient_id', mid),
+      laadVerborgenGesprekken(),
     ]);
     if (sentRes.error) throw sentRes.error;
     if (receivedRes.error) throw receivedRes.error;
@@ -224,6 +225,7 @@ async function loadInbox() {
     // op mij laat dit onaangeroerd: die is stil, ik merk er niets van.
     const data = [...(sentRes.data || []), ...(receivedRes.data || [])]
       .filter(msg => !blokkeerIkZelf(msg.sender_id === mid ? msg.recipient_id : msg.sender_id))
+      .filter(msg => !gesprekVerborgenTot(verborgen, msg.sender_id === mid ? msg.recipient_id : msg.sender_id, msg.created_at))
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     if (!data || !data.length) {
@@ -330,7 +332,7 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
   // TT-06 (18-09-2026): melden en blokkeren vanuit het gesprek. Bij een
   // verwijderd account is er niemand meer om te melden of te blokkeren.
   zetVeiligheidMenu('messagesThreadActies', 'gesprek',
-    activeConversationDeleted ? null : otherId, otherName);
+    activeConversationDeleted ? null : otherId, otherName, otherId);
   // Zonder foto-argument is dit de stille verversing na het versturen: de
   // kop staat er dan al.
   if (otherAvatarSrc !== undefined) {
@@ -364,13 +366,15 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
     // geparametriseerde .eq()-vragen (heen en terug) i.p.v. mid/otherId in
     // een and(...)/or(...)-filterstring plakken. Client-side samengevoegd en
     // op datum gesorteerd (oplopend, dit is het gespreksverloop).
-    const [sentRes, receivedRes] = await Promise.all([
+    const [sentRes, receivedRes, verborgen] = await Promise.all([
       db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('sender_id', mid).eq('recipient_id', otherId),
       db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('sender_id', otherId).eq('recipient_id', mid),
+      laadVerborgenGesprekken(),
     ]);
     if (sentRes.error) throw sentRes.error;
     if (receivedRes.error) throw receivedRes.error;
     const data = [...(sentRes.data || []), ...(receivedRes.data || [])]
+      .filter(msg => !gesprekVerborgenTot(verborgen, otherId, msg.created_at))
       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
     // TT-34: dag-scheidingen ("Vandaag"/"Gisteren"/datum) tussen berichten
@@ -421,6 +425,55 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
     logCaught('openConversation', e);
     threadEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Gesprek laden is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }
+}
+
+// TT-435 (07-10-2026, besluit Ronald): een gesprek verwijderen gaat alleen bij
+// jezelf. De ander houdt het. De database bewaart per gesprek het moment van
+// verwijderen (`gesprek_verborgen`); alles daarvoor is voor jou weg. Schrijft
+// de ander later weer, dan komt het gesprek terug met alleen de nieuwe
+// berichten. Mislukt de vraag (bijvoorbeeld omdat het script nog niet is
+// gedraaid), dan blijft alles zichtbaar.
+async function laadVerborgenGesprekken() {
+  try {
+    const { data, error } = await db.from('gesprek_verborgen').select('ander_id, verborgen_op');
+    if (error) throw error;
+    const kaart = {};
+    (data || []).forEach(r => { kaart[r.ander_id] = r.verborgen_op; });
+    return kaart;
+  } catch (e) {
+    logCaught('laadVerborgenGesprekken', e);
+    return {};
+  }
+}
+
+function gesprekVerborgenTot(verborgen, otherId, createdAt) {
+  const tot = verborgen && verborgen[otherId];
+  return !!tot && new Date(createdAt) <= new Date(tot);
+}
+
+function gesprekVerwijderen(otherId, naam) {
+  const wie = naam || 'de ander';
+  const houdt = activeConversationDeleted ? '' : ` ${wie} houdt het.`;
+  showConfirm(
+    `Gesprek met ${wie} verwijderen? Het verdwijnt alleen bij jou.${houdt}`,
+    () => gesprekVerwijderenUitvoeren(otherId),
+    'Verwijderen',
+    true
+  );
+}
+
+async function gesprekVerwijderenUitvoeren(otherId) {
+  try {
+    const { error } = await db.rpc('tt_gesprek_verbergen', { ander: otherId });
+    if (error) throw error;
+  } catch (e) {
+    logCaught('gesprekVerwijderen', e);
+    showToast(friendlyErrorMessage(e));
+    return;
+  }
+  if (activeConversationId === otherId) closeConversation(); else loadInbox();
+  refreshUnreadBadge();
+  showToast('Gesprek verwijderd.');
 }
 
 function closeConversation(stil) {
