@@ -4898,10 +4898,10 @@ window.TT_STUB.fnAntwoord = {};
           const r = [...plek.children].map(v => { const t = v.querySelector('span');
             return t ? [t.className, Math.round(parseFloat(getComputedStyle(t).fontSize) / parseFloat(getComputedStyle(v).fontSize) * 100),
                         getComputedStyle(t).fontFamily.includes('TT Woordmerk')] : null; });
-          // TT-385 fase 4: de bandfoto kies je in de tegel Wie zijn we, niet meer in Band aanmaken.
+          // TT-385 fase 4: de bandfoto kies je in de tegel Onze media, niet meer in Band aanmaken.
           const voorbeeld = ['avatarInitials', 'mhAvatarInitials'].map(id => {
             const e = document.getElementById(id); return e ? e.className : 'ontbreekt'; })
-            .concat([(document.querySelector('#bwFotoPreview > span') || { className: 'ontbreekt' }).className]);
+            .concat([(document.querySelector('#bmFotoPreview > span') || { className: 'ontbreekt' }).className]);
           plek.remove(); return { r, voorbeeld }; }""")
         check("elke T zonder foto is .avatar-t, in het lettertype van het logo, 125% van zijn vak",
               all(x and x[0] == "avatar-t" and x[1] == 125 and x[2] for x in t47["r"]), json.dumps(t47["r"]))
@@ -5336,9 +5336,9 @@ window.TT_STUB.fnAntwoord = {};
         # Bevinding Ronald, 30-09-2026: "Foto verwijderen" wordt het kruisje rechtsboven
         # de foto; de tekst in Wijzig wordt zwart. Besluiten Ronald: op alle drie de
         # plekken, en het kruisje vraagt eerst.
-        # TT-385 fase 4: de bandfoto staat niet meer in Band aanmaken, maar in de tegel Wie zijn we.
+        # TT-385 fase 4: de bandfoto staat niet meer in Band aanmaken, maar in de tegel Onze media.
         PLEKKEN50 = [("avatarRemoveBtn", "avatarPreview"), ("mhAvatarRemoveBtn", "mhAvatarPreview"),
-                     ("bwFotoRemoveBtn", "bwFotoPreview")]
+                     ("bmFotoRemoveBtn", "bmFotoPreview")]
         bouw50 = page.evaluate("""(plekken) => plekken.map(([id, voorbeeld]) => {
           const b = document.getElementById(id); if (!b) return 'ontbreekt';
           const wrap = b.closest('.avatar-preview-wrap');
@@ -5394,8 +5394,8 @@ window.TT_STUB.fnAntwoord = {};
                               p.innerHTML = '<img src="https://x.test/a.jpg">'; document.getElementById('avatarRemoveBtn').classList.add('visible'); },
                       askRemoveAvatar, () => !!state.avatarUrl, 'avatarRemoveBtn');
           await ronde(() => { mhAvatarUrl = 'https://x.test/b.jpg'; mhRenderAvatar(); }, mhAskRemoveAvatar, () => !!mhAvatarUrl, 'mhAvatarRemoveBtn');
-          await ronde(() => { bwFotoUrl = 'https://x.test/c.jpg'; bwRenderFoto(); }, bwVraagFotoWeg,
-                      () => !!bwFotoUrl, 'bwFotoRemoveBtn');
+          await ronde(() => { bmFotoUrl = 'https://x.test/c.jpg'; bmRenderFoto(); }, bmVraagFotoWeg,
+                      () => !!bmFotoUrl, 'bmFotoRemoveBtn');
           return uit; }""")
         check("het kruisje vraagt eerst, zonder rood (rood is alleen voor het account); pas na Ja is de foto weg (registratie, mediahoek, band)",
               len(vraag50) == 3 and all(x["voor"] and x["open"] and not x["rood"] and x["nogErVoorJa"] and not x["naJa"] and x["knopWeg"] for x in vraag50)
@@ -7571,6 +7571,78 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-435: ontbreekt de tabel, dan blijft alles zichtbaar",
               "Dylan" in d73["zonderTabel"] and "sanne" in d73["zonderTabel"], j73)
         check("geen paginafouten in blok 73", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # Blok 74 — 07-10-2026 (bevindingen Ronald, Bandprofiel bewerken):
+        # de bandnaam onder de titel, de bandfoto in Onze media, de i direct
+        # achter "Ervaring van de band".
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 74 — bandnaam onder de titel, bandfoto in Onze media, i naast het label")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        d74 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 150) => new Promise(r => setTimeout(r, n)), u = {};
+          const $ = id => document.getElementById(id);
+          const keep = { from: db.from, myMusicianId, currentUser, hasOwnProfile, wie: window.getMyMusicianId };
+          window.getMyMusicianId = async () => myMusicianId;
+          myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; hasOwnProfile = true;
+          const echt = db.from.bind(db);
+          db.from = (t) => { const q = echt(t); const run = q._run.bind(q);
+            q._run = () => { const r = run();
+              if (q.op !== 'select' || !r.data) return r;
+              const rijen = Array.isArray(r.data) ? r.data : [r.data];
+              if (t === 'bands') rijen.forEach(b => { b.band_wanted = []; b.band_members = []; b.band_media = []; b.band_nummers = []; b.band_covers = []; b.band_invallers = []; });
+              return r; };
+            return q; };
+          S.data.musicians = [{ id: 'm1', username: 'ik' }];
+          S.data.bands = [{ id: 'b9', name: 'Silver Earring', city: 'Den Haag', zip: '2497', city_source: 'pdok', description: '', niveau: 3,
+            avatar_url: null, genres: ['Indie'], soort: null, pauze: false, founder_id: 'm1', contact_id: null, status: 'compleet',
+            instagram: null, tiktok: null, youtube: null }];
+          S.data.band_members = [{ band_id: 'b9', musician_id: 'm1', role: 'Oprichter', status: 'bevestigd', founder_offer: null }];
+          const regel = id => { const e = document.querySelector('#' + id + ' .band-naam-regel'); return e ? [e.textContent, getComputedStyle(e).display, getComputedStyle(e).fontSize] : null; };
+          openBandTegels('b9'); await w(400);
+          u.overzicht = regel('bandTegelOverviewScreen');
+          u.subs = [...document.querySelectorAll('#bandTegelsWrap .tile-sub')].map(e => e.textContent);
+          for (const [id, scherm] of [['bandBezetting', 'bandBezettingScreen'], ['bandMuziek', 'bandMuziekScreen'], ['bandMedia', 'bandMediaScreen']]) {
+            openTegelScreen(id); await w(400); u[id] = regel(scherm); }
+          u.wieRegel = !!document.querySelector('#bandWieScreen .band-naam-regel');
+          // Wie zijn we: geen foto meer.
+          openTegelScreen('bandWie'); await w(300);
+          u.wieFoto = ['bwFotoPreview', 'bwFotoRemoveBtn', 'bwFotoInput'].map(id => !!$(id));
+          const lab = document.querySelector('#bandWieScreen label.label-with-info'), kn = lab.querySelector('.niveau-info-btn');
+          const tekst = document.createRange(); tekst.selectNodeContents(lab.firstChild);
+          const tr = tekst.getBoundingClientRect(), kr = kn.getBoundingClientRect();
+          u.info = { afstand: Math.round(kr.left - tr.right), rechts: Math.round(lab.getBoundingClientRect().right - kr.right), knopTekst: kn.textContent };
+          // Onze media: foto, kruisje, opslaan.
+          openTegelScreen('bandMedia'); await w(400);
+          u.mediaFoto = ['bmFotoPreview', 'bmFotoRemoveBtn', 'bmFotoInput'].map(id => !!$(id));
+          u.kruisVoor = $('bmFotoRemoveBtn').classList.contains('visible');
+          bmFotoUrl = 'https://x.test/b.jpg'; bmRenderFoto();
+          u.kruisNa = [$('bmFotoRemoveBtn').classList.contains('visible'), $('bmFotoRemoveBtn').textContent.trim()];
+          u.wijziging = tegelHeeftWijzigingen();
+          await saveBandMedia(); await w(300);
+          u.opgeslagen = S.data.bands[0].avatar_url;
+          bmVraagFotoWeg(); await w(50); u.vraag = $('confirmMessage').textContent; confirmModalYes(); await w(50);
+          await saveBandMedia(); await w(300);
+          u.weg = S.data.bands[0].avatar_url;
+          db.from = keep.from; myMusicianId = keep.myMusicianId; currentUser = keep.currentUser; hasOwnProfile = keep.hasOwnProfile; window.getMyMusicianId = keep.wie;
+          return u;
+        }""")
+        j74 = json.dumps(d74, ensure_ascii=False)
+        check("de bandnaam staat als gedempte regel onder de titel: overzicht, bezetting, muziek en media; in Wie zijn we niet",
+              all(d74[k] and d74[k][0] == "Silver Earring" and d74[k][1] == "block" and d74[k][2] == "14px"
+                  for k in ["overzicht", "bandBezetting", "bandMuziek", "bandMedia"]) and d74["wieRegel"] is False, j74)
+        check("Wie zijn we heeft geen bandfoto meer; Onze media wel, met het kruisje pas bij een foto",
+              d74["wieFoto"] == [False] * 3 and d74["mediaFoto"] == [True] * 3 and d74["kruisVoor"] is False
+              and d74["kruisNa"] == [True, "✕"], j74)
+        check("de tegelondertitels noemen de bandfoto bij Onze media, niet meer bij Wie zijn we",
+              d74["subs"][0] == "naam - plaats - ervaring - bio" and d74["subs"][3].startswith("bandfoto - "), j74)
+        check("de bandfoto hoort bij Onze media: een wijziging telt voor 'Terug zonder opslaan?', Opslaan bewaart hem, het kruisje vraagt eerst en haalt hem weg",
+              d74["wijziging"] is True and d74["opgeslagen"] == "https://x.test/b.jpg" and d74["vraag"] == "Bandfoto verwijderen?" and d74["weg"] is None, j74)
+        check("het i-teken staat direct achter 'Ervaring van de band' (8px), niet meer rechts",
+              d74["info"]["knopTekst"] == "i" and 4 <= d74["info"]["afstand"] <= 12 and d74["info"]["rechts"] > 100, j74)
+        check("geen paginafouten in blok 74", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
