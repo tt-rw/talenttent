@@ -1167,6 +1167,7 @@ function safeHistoryReplace(stateObj, hash) {
 // eerste showView() hoort bij het opstarten en is geen stap die iemand zelf
 // heeft gezet.
 let terugDiepte = 0;
+let terugVanGesprek = false; // TT-428: zie popstate
 
 // De view die nu actief is. showView() houdt hem bij; de terugknop heeft hem
 // nodig om te weten of hij omhoog moet of terug.
@@ -1189,11 +1190,16 @@ function naarHoogsteScherm() {
   showView(hoogsteScherm());
 }
 
-// De drie hoofdtabbladen onder het hoogste scherm. Daar betekent de terugknop
-// "een niveau omhoog", niet "de vorige pagina": boven een tabblad ligt niets,
-// dus teruglopen door je eigen klikpad voelt willekeurig (UX-beoordeling
-// 20-09-2026).
-const TAB_VIEWS = ['search', 'messages', 'bands'];
+// De bovenkant van een tabblad: Zoeken, Berichten, Bands en Mijn Profiel, en
+// het hoogste scherm (de landingspagina als je uitgelogd bent). Daarboven ligt
+// niets: de terugknop doet daar niets (TT-310) en gaat nooit naar een ander
+// tabblad. Naar Mijn Profiel ga je via de onderbalk of het woordmerk.
+// *(TT-428, 07-10-2026, besluit Ronald: "terug blijft binnen het tabblad";
+// vervangt TT-303, waar terug op een tabblad naar Mijn Profiel ging.)*
+const TAB_VIEWS = ['search', 'messages', 'bands', 'myprofile'];
+function opTabbladBovenkant() {
+  return TAB_VIEWS.includes(huidigeView) || huidigeView === hoogsteScherm();
+}
 
 // Een open venster, gesprek of tegelscherm is óók een stap terug, ook als de
 // teller nul is (bijv. na verversen op een gedeelde profiellink). Dezelfde
@@ -1204,22 +1210,10 @@ function magTerug() {
   if (draad && draad.style.display !== 'none' && activeConversationId) return true;
   if (activeTegelScreen !== 'overview') return true;
   if (bandWizardOpen()) return true; // TT-385 fase 4
-  // Op het hoogste scherm is er niets boven je en niets om naar terug te gaan.
-  if (huidigeView === hoogsteScherm()) return false;
-  // Op een hoofdtabblad wijst de knop naar het hoogste scherm.
-  if (TAB_VIEWS.includes(huidigeView)) return true;
+  // Op de bovenkant van een tabblad is er niets boven je en niets om naar
+  // terug te gaan.
+  if (opTabbladBovenkant()) return false;
   return terugDiepte > 0;
-}
-
-// Staat er niets open en sta je op een hoofdtabblad? Dan gaat de knop omhoog
-// in plaats van terug.
-function terugGaatOmhoog() {
-  if (document.querySelector('.modal-overlay.visible')) return false;
-  const draad = document.getElementById('messagesThreadPanel');
-  if (draad && draad.style.display !== 'none' && activeConversationId) return false;
-  if (activeTegelScreen !== 'overview') return false;
-  if (bandWizardOpen()) return false; // TT-385 fase 4: eerst de wizard dicht
-  return TAB_VIEWS.includes(huidigeView);
 }
 
 // TT-310 (23-09-2026, Ronald): de knop staat er altijd, ook als er niets is
@@ -1238,7 +1232,6 @@ function werkTerugKnopBij() {
 
 function terugKnop() {
   if (!magTerug()) return; // nooit de app uit via deze knop
-  if (terugGaatOmhoog()) { naarHoogsteScherm(); return; } // TT-303
   history.back();
 }
 
@@ -1710,6 +1703,7 @@ window.addEventListener('popstate', (e) => {
     if (gesprekVanuit) {
       gesprekVanuit = null;
       closeConversation(true);
+      terugVanGesprek = true; // TT-428: deze stap terug is bedoeld, geen wissel tussen tabbladen
       history.back();
       return;
     }
@@ -1768,6 +1762,13 @@ window.addEventListener('popstate', (e) => {
   // kwam je dan op de landingspagina.
   if (!e.state?.view) {
     showView(viewUitHash(), 'redirect');
+    return;
+  }
+  // TT-428: op de bovenkant van een tabblad doet de terugknop van het toestel
+  // niets, net als de pijl. De stap die net verdween, komt terug.
+  if (terugVanGesprek) terugVanGesprek = false;
+  else if (opTabbladBovenkant()) {
+    safeHistoryPush({ view: huidigeView }, '#' + huidigeView);
     return;
   }
   // TT-301: pas hier gaat er echt een stap van de app af.

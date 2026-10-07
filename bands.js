@@ -877,7 +877,6 @@ async function loadMyBands() {
         </button>
         <div class="inline-menu-dropdown">
           <button class="nav-menu-item" onclick="closeAllBandMoreMenus();openBandTegels('${jsAttr(b.id)}');">Bandprofiel bewerken</button>
-          <button class="nav-menu-item" onclick="closeAllBandMoreMenus();openBandTegels('${jsAttr(b.id)}','bandBezetting');">Bandleden beheren</button>
         </div>
       </div>` : '';
     return `<div class="band-card" onclick="openBandScherm('${jsAttr(b.id)}')">

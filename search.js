@@ -1559,8 +1559,8 @@ function renderSetlistSongsList() {
   }
   if (row) row.style.display = '';
   list.innerHTML = zoekLijstHTML('#', 'Band / artiest — nummer', setlistWantedSongs.map((s, i) => ({
-    voor: `#${i + 1}`, titel: s.artist, sub: s.title,
-    actie: `removeSetlistSong(${i})`, label: `Verwijder ${s.title}`
+    voor: `#${i + 1}`, titel: s.artist, sub: s.title || 'Alle nummers',
+    actie: `removeSetlistSong(${i})`, label: `Verwijder ${s.title || s.artist}`
   })));
 }
 
@@ -1588,6 +1588,10 @@ function zoekLijstHTML(voorKop, kop, rijen) {
 
 function addSetlistSong(title, artist) {
   if (setlistWantedSongs.find(s => s.title === title && s.artist === artist)) return;
+  // TT-430: een nummer maakt de selectie van zijn artiest af. De rij met alleen
+  // die artiest ("Alle nummers") maakt plaats voor de rij met het nummer.
+  const alleenArtiest = setlistWantedSongs.findIndex(s => !s.title && s.artist === artist);
+  if (alleenArtiest !== -1) setlistWantedSongs.splice(alleenArtiest, 1);
   setlistWantedSongs.push({ title, artist });
   document.getElementById('setlistArtistSearch').value = '';
   document.getElementById('setlistTrackSearch').value = '';
@@ -1647,10 +1651,16 @@ function selectSetlistArtist(id, name) {
   const wrap = document.getElementById('setlistTrackSearchWrap');
   // Leeg, niet 'block': het blok is sinds TT-239 een .filter-row (display:grid).
   wrap.style.display = '';
-  document.getElementById('setlistTrackSearchLabel').textContent = `Nummer van ${name}`;
+  document.getElementById('setlistTrackSearchLabel').textContent = `Nummer van ${name} (kies je er een, dan zoekt hij daarop)`;
   document.getElementById('setlistTrackSearch').value = '';
-  document.getElementById('setlistTrackSearch').focus();
   closeAC('acSetlistTrackList');
+  // TT-430: een artiest alleen is al een zoekopdracht. Is er al een rij voor
+  // deze artiest (met of zonder nummer), dan verandert er niets.
+  if (!setlistWantedSongs.find(x => x.artist === name)) {
+    setlistWantedSongs.push({ title: '', artist: name });
+    renderSetlistSongsList();
+    runSetlistSearch();
+  }
 }
 
 // Stap B: nummer zoeken binnen geselecteerde artiest — lokaal filteren,
@@ -1699,7 +1709,7 @@ function resetSetlistSearch() {
 async function runSetlistSearch(straalOverride) {
   const seq = ++setlistSearchSeq; // TT-84: zie toelichting bij musicianSearchSeq
   const resultsEl = document.getElementById('setlistSearchResults');
-  if (!setlistWantedSongs.length) { showToast('Voeg minimaal één nummer toe aan de setlist.'); return; }
+  if (!setlistWantedSongs.length) { showToast('Kies minimaal één band of artiest.'); return; }
   if (straalOverride === undefined) setlistVerruimd = null; // nieuwe zoekopdracht
 
   if (!resultsEl.innerHTML.trim()) {
@@ -1831,8 +1841,11 @@ async function runSetlistSearch(straalOverride) {
     // (exacte titel+artiest, case-insensitive) en hoeveel er in totaal matchen.
     musicians.forEach(m => {
       const own = (m.musician_songs || []).map(s => `${(s.song_title||'').toLowerCase()}|||${(s.song_artist||'').toLowerCase()}`);
+      const eigenArtiesten = (m.musician_songs || []).map(x => (x.song_artist || '').toLowerCase());
       m.matchedNumbers = setlistWantedSongs
-        .map((s, i) => own.includes(`${s.title.toLowerCase()}|||${s.artist.toLowerCase()}`) ? i + 1 : null)
+        .map((s, i) => (s.title
+            ? own.includes(`${s.title.toLowerCase()}|||${s.artist.toLowerCase()}`)
+            : eigenArtiesten.includes(s.artist.toLowerCase())) ? i + 1 : null)
         .filter(n => n !== null);
       m.matchCount = m.matchedNumbers.length;
       m.distance_km = distanceMap[m.id] != null ? distanceMap[m.id] : null;
