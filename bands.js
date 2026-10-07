@@ -993,7 +993,11 @@ function bezettingLidHTML(l) {
     ? `<img class="bezetting-gezicht" src="${foto}" alt="">`
     : `<span class="bezetting-gezicht bezetting-gezicht-t">${AVATAR_T_FALLBACK}</span>`;
   const rol = l.instrumenten.length ? l.instrumenten.join(' · ') : roleLabel(l.rol);
-  return `<div class="bezetting-lid">${gezicht}<div class="bezetting-naam">${escHtml(l.naam)}</div><div class="bezetting-rol">${escHtml(rol)}</div></div>`;
+  const inhoud = `${gezicht}<div class="bezetting-naam">${escHtml(l.naam)}</div><div class="bezetting-rol">${escHtml(rol)}</div>`;
+  // Een tik opent het profiel van het lid, ook je eigen (TT-410b: elk profiel is een scherm).
+  return l.id
+    ? `<button type="button" class="bezetting-lid" onclick="openProfielScherm('${jsAttr(l.id)}')" aria-label="Profiel van ${escAttr(l.naam)}">${inhoud}</button>`
+    : `<div class="bezetting-lid">${inhoud}</div>`;
 }
 
 // Een open plek in de bezetting: een vaste rol (band_wanted) of een invaller

@@ -1952,11 +1952,9 @@
 <!-- VIEW: Mijn bands -->
 <div class="app-view" id="view-bands">
   <div class="search-wrap">
-    <div id="mijnBandsKop" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
-      <div>
-        <div class="filter-title">Mijn bands</div>
-        <p style="font-size:13px;color:var(--muted);">Bands waar jij beheerder en/of lid van bent</p>
-      </div>
+    <div id="mijnBandsKop" style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div class="filter-title" style="margin-bottom:0;">Mijn bands</div>
       <!-- TT-254 (11-09-2026): deze knop heette "Band toevoegen", terwijl de
            formuliertitel "Nieuwe band aanmaken" zegt en de opslaanknop "Band
            aanmaken". Eén actie, drie namen. Gevonden bij TT-248: de lege staat
@@ -1964,6 +1962,8 @@
            andere tekst. Drie van de vier plekken zeggen "aanmaken", dus dat is
            nu de naam. Huisstijl §6, regel 5: één betekenis per woord. -->
       <button class="btn btn-primary" style="white-space:nowrap;" onclick="showCreateBandForm()">Band aanmaken</button>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin:0;">Bands waar jij beheerder en/of lid van bent</p>
     </div>
     <!-- TT-385 fase 4 (02-10-2026, besluiten Ronald): de korte wizard. Eén
          scherm met drie vragen: naam, postcode en plaats, genres. De balk
@@ -2790,7 +2790,7 @@
 <script src="ouder.js?v=20261001a"></script>
 <script src="search.js?v=20261007b"></script>
 <script src="musicians.js?v=20261007b"></script>
-<script src="bands.js?v=20261007d"></script>
+<script src="bands.js?v=20261007e"></script>
 <script src="messages.js?v=20261007b"></script>
 <script src="modals-shared.js?v=20261002d"></script>
 <script>
