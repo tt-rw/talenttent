@@ -6208,9 +6208,8 @@ window.TT_STUB.fnAntwoord = {};
           kaart().querySelector('.band-card-body').click(); await w(300);
           u.tikKaart = $('view-profiel').classList.contains('active');
           showView('bands'); await w(150); // TT-410b fase 2: de bandpagina is een scherm; terug naar de lijst
-          kaart().querySelector('.nav-menu-btn').click(); await w(100);
-          u.tikMenu = [$('view-profiel').classList.contains('active'), !!kaart().querySelector('.inline-menu-dropdown.visible')];
-          sluitAlleMenus();
+          // TT-433: de kaart heeft geen ⋯-menu en geen knop; alles staat op de bandpagina.
+          u.kaartKnoppen = kaart().querySelectorAll('.nav-menu-btn, .inline-menu-dropdown, button').length;
           return u;
         }""")
         page.evaluate("""() => { const S = window.TT_STUB, w = window.__b59;
@@ -6259,8 +6258,8 @@ window.TT_STUB.fnAntwoord = {};
               d59["kaartOpen"] == ["Zoekend", "+ Basgitaar"] and d59["kaartTagAfstand"] == 12, json.dumps([d59["kaartOpen"], d59["kaartTagAfstand"]]))
         check("bandkaart met een tweede lid: Compleet; met We spelen even niet: die tag",
               d59["kaartCompleet"] == ["Compleet"] and d59["kaartPauze"] == ["We spelen even niet"], json.dumps([d59["kaartCompleet"], d59["kaartPauze"]]))
-        check("een tik op de kaart opent de bandpagina; het ⋯-menu opent alleen het menu",
-              d59["tikKaart"] is True and d59["tikMenu"] == [False, True], json.dumps([d59["tikKaart"], d59["tikMenu"]]))
+        check("een tik op de kaart opent de bandpagina; de kaart heeft zelf geen ⋯-menu en geen knop (TT-433)",
+              d59["tikKaart"] is True and d59["kaartKnoppen"] == 0, json.dumps([d59["tikKaart"], d59["kaartKnoppen"]]))
         js59 = open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
         css59 = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
         check("één functie voor de statustag (bandpagina en Mijn Bands); de dode code van het oude formulier is weg",
@@ -7385,6 +7384,100 @@ window.TT_STUB.fnAntwoord = {};
             check(f"[{knop}] {d['aantal']} schermen x 4 tabbladen: alle regels van de terugknop gelden overal",
                   not d["fouten"] and d["aantal"] >= 10, j71[:600])
         check("geen paginafouten in blok 71", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ─────────────────────────────────────────────────────────────
+        # Blok 72 — TT-432 en TT-433 (07-10-2026, besluiten Ronald).
+        # TT-433: de bandkaart in Mijn Bands heeft geen ⋯-menu en geen knop.
+        # TT-432: de beheerder kiest zelf één bevestigd lid; dat lid ziet het
+        # verzoek op zijn bandkaart, met een stip op de Bands-knop.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 72 — beheer overdragen aan een gekozen lid, kaart zonder menu (TT-432, TT-433)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        d72 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 150) => new Promise(r => setTimeout(r, n)), u = {};
+          const $ = id => document.getElementById(id);
+          const keep = { from: db.from, myMusicianId, currentUser, hasOwnProfile, toast: window.showToast, wie: window.getMyMusicianId };
+          // Eerdere blokken zetten getMyMusicianId vast op 'm1'; hier volgt hij het gekozen account.
+          window.getMyMusicianId = async () => myMusicianId;
+          const echt = db.from.bind(db);
+          const muz = id => { const m = (S.data.musicians || []).find(x => x.id === id); return m ? { fname: m.fname || null, username: m.username } : null; };
+          db.from = (t) => { const q = echt(t); const run = q._run.bind(q);
+            q._run = () => { const r = run();
+              if (q.op !== 'select' || !r.data) return r;
+              const rijen = Array.isArray(r.data) ? r.data : [r.data];
+              if (t === 'bands') rijen.forEach(b => { b.band_wanted = []; b.band_members = (S.data.band_members || []).filter(x => x.band_id === b.id).map(x => {
+                const y = JSON.parse(JSON.stringify(x)); y.musicians = muz(x.musician_id); return y; }); });
+              return r; };
+            return q; };
+          S.data.musicians = [{ id: 'm1', username: 'beheerder' }, { id: 'm2', username: 'dyl', fname: 'Dylan' }, { id: 'm3', username: 'sanne' }, { id: 'm4', username: 'gast' }];
+          S.data.bands = [{ id: 'b9', name: 'Van Delft', city: 'Delft', genres: ['Country'], status: 'compleet', pauze: false, founder_id: 'm1', avatar_url: null, updated_at: '2026-10-01' }];
+          S.data.band_wanted = [];
+          S.data.band_members = [
+            { band_id: 'b9', musician_id: 'm1', role: 'Oprichter', status: 'bevestigd', founder_offer: null },
+            { band_id: 'b9', musician_id: 'm2', role: 'Lid', status: 'bevestigd', founder_offer: null },
+            { band_id: 'b9', musician_id: 'm3', role: 'Lid', status: 'bevestigd', founder_offer: null },
+            { band_id: 'b9', musician_id: 'm4', role: 'Lid', status: 'aangevraagd', founder_offer: null }];
+          const aangenomen = [];
+          S.rpcResults.tt_accept_founder_offer = (p) => { aangenomen.push(p.p_band_id); return null; };
+          const ik = async (id) => { myMusicianId = id; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; hasOwnProfile = true;
+            showView('bands'); await w(200); await loadMyBands(); await w(150); };
+          const kaart = () => document.querySelector('#myBandsList .band-card');
+          const stip = () => { const d = $('bandsDotBottom'); return d ? [getComputedStyle(d).display !== 'none', d.textContent, Math.round(d.getBoundingClientRect().width), !!d.closest('#bottomNavBands')] : null; };
+          const knoppen = () => [...kaart().querySelectorAll('.melding .btn')].map(b => b.textContent);
+          // TT-433: beheerder en lid zien dezelfde kaart, zonder menu en zonder knop.
+          await ik('m1'); u.beheerderKaart = kaart().querySelectorAll('button, .nav-menu-btn, .inline-menu-dropdown').length;
+          await ik('m2'); u.lidKaart = kaart().querySelectorAll('button, .nav-menu-btn, .inline-menu-dropdown').length;
+          u.stipVoor = stip();
+          // TT-432: de beheerder opent Bandbeheer en kiest uit de bevestigde leden.
+          await ik('m1'); openBandTegels('b9'); await w(300);
+          await askFounderTransfer('b9'); await w(150);
+          u.keuze = [...document.querySelectorAll('#overdragKeuze .btn')].map(b => b.textContent);
+          document.querySelectorAll('#overdragKeuze .btn')[0].click(); await w(300);
+          u.aanbod = S.data.band_members.map(m => m.musician_id + ':' + (m.founder_offer ? 'ja' : 'nee')).join(' ');
+          u.knopNa = [...document.querySelectorAll('#bandBeheerBlok .knoppen-stapel .btn')].map(b => b.textContent);
+          // Het gekozen lid ziet het verzoek op zijn kaart en een stip; een ander lid niet.
+          await ik('m2'); await refreshBandsDot(); await w(100);
+          u.gekozen = { melding: !!kaart().querySelector('.melding'), kop: (kaart().querySelector('.melding-kop') || {}).textContent, knoppen: knoppen(), stip: stip(),
+                        tikOpKnop: (() => { let open = false; const f = window.openBandScherm; window.openBandScherm = () => { open = true; }; const kn = kaart().querySelector('.melding-tekst'); if (kn) kn.dispatchEvent(new MouseEvent('click', { bubbles: true })); window.openBandScherm = f; return open; })() };
+          await ik('m3'); await refreshBandsDot(); await w(100);
+          u.ander = { melding: !!kaart().querySelector('.melding'), stip: stip() };
+          // Nee zeggen haalt het verzoek en de stip weg; de beheerder blijft.
+          await ik('m2'); await respondToFounderOffer('b9', false); await w(300);
+          u.naNee = { melding: !!kaart().querySelector('.melding'), stip: stip(), aanbod: S.data.band_members.some(m => m.founder_offer), beheerder: S.data.bands[0].founder_id };
+          // Ja zeggen gaat via de databasefunctie.
+          S.data.band_members.find(m => m.musician_id === 'm3').founder_offer = true;
+          await ik('m3'); await respondToFounderOffer('b9', true); await w(300);
+          u.naJa = aangenomen.slice();
+          // Wat er niet meer is.
+          u.weg = { banner: !!$('founderOfferBanner'), functie: typeof loadFounderOffers };
+          db.from = keep.from; myMusicianId = keep.myMusicianId; currentUser = keep.currentUser; hasOwnProfile = keep.hasOwnProfile; window.showToast = keep.toast; window.getMyMusicianId = keep.wie;
+          showView('about'); await w(100);
+          return u;
+        }""")
+        j72 = json.dumps(d72, ensure_ascii=False)
+        check("TT-433: de bandkaart heeft voor de beheerder en voor een lid geen ⋯-menu en geen knop",
+              d72["beheerderKaart"] == 0 and d72["lidKaart"] == 0, j72)
+        check("TT-432: de beheerder kiest uit de bevestigde leden; een uitgenodigd lid staat er niet bij",
+              d72["keuze"] == ["Dylan", "sanne"], j72)
+        check("TT-432: alleen het gekozen lid krijgt het verzoek; de knop wordt 'Aanbod intrekken'",
+              d72["aanbod"] == "m1:nee m2:ja m3:nee m4:nee" and "Aanbod intrekken" in d72["knopNa"], j72)
+        check("TT-432: het gekozen lid ziet het verzoek op zijn kaart, met twee knoppen; een tik in de melding opent de bandpagina niet",
+              d72["gekozen"]["melding"] and "Van Delft" in d72["gekozen"]["kop"]
+              and d72["gekozen"]["knoppen"] == ["Nee, liever niet", "Ik neem het over"] and d72["gekozen"]["tikOpKnop"] is False, j72)
+        check("TT-432: de Bands-knop krijgt een stip zonder cijfer (10px) bij het gekozen lid; niet bij een ander lid, niet zonder verzoek",
+              d72["gekozen"]["stip"] == [True, "", 10, True] and d72["ander"] == {"melding": False, "stip": [False, "", 0, True]}
+              and d72["stipVoor"][0] is False, j72)
+        check("TT-432: nee zeggen haalt kaartmelding en stip weg en laat de beheerder staan",
+              d72["naNee"] == {"melding": False, "stip": [False, "", 0, True], "aanbod": False, "beheerder": "m1"}, j72)
+        check("TT-432: ja zeggen loopt via tt_accept_founder_offer", d72["naJa"] == ["b9"], j72)
+        check("TT-432: de melding op Mijn Profiel is weg (geen dubbele plek)",
+              d72["weg"] == {"banner": False, "functie": "undefined"}, j72)
+        core72 = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
+        check("TT-432: uitloggen haalt de stip weg en inloggen ververst hem",
+              "'bandsDotBottom'" in core72 and "refreshBandsDot();" in core72, "")
+        check("geen paginafouten in blok 72", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
