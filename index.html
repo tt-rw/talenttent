@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261007a">
+<link rel="stylesheet" href="styles.css?v=20261007b">
 </head>
 <body>
 
@@ -1049,6 +1049,7 @@
        daaronder het blok Bandbeheer (besluiten Ronald, TT-385 punt 4 en 13). -->
   <div id="bandTegelOverviewScreen" style="display:none;">
     <div class="panel-title">Bandprofiel bewerken</div>
+    <div class="band-naam-regel"></div>
     <div id="bandTegelsWrap"></div>
     <div class="band-beheer" id="bandBeheerBlok"></div>
   </div>
@@ -1057,21 +1058,12 @@
   <div id="bandWieScreen" style="display:none;">
     <div class="panel-title" style="margin-bottom:20px;">Wie zijn we</div>
 
-    <div class="bandfoto-veld">
-      <div class="avatar-preview-wrap">
-        <div class="avatar-preview avatar-preview-vierkant" id="bwFotoPreview" onclick="document.getElementById('bwFotoInput').click()">
-          <span class="avatar-t">T</span>
-        </div>
-        <div class="avatar-edit-btn" onclick="document.getElementById('bwFotoInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
-        <button type="button" class="avatar-remove-btn" id="bwFotoRemoveBtn" onclick="bwVraagFotoWeg()" aria-label="Bandfoto verwijderen">✕</button>
-      </div>
+    <div class="field-group single">
       <div class="field">
         <label for="bwNaam">Bandnaam <span class="req">*</span></label>
         <input type="text" id="bwNaam" maxlength="40" autocomplete="off" placeholder="Bijv. Nachtploeg">
       </div>
     </div>
-    <p class="field-hint bandfoto-hint">Bandfoto: JPG of PNG, maximaal 5 MB.</p>
-    <input type="file" accept="image/*" class="avatar-upload-input" id="bwFotoInput" autocomplete="off" onchange="bwFotoKiezen(this.files[0]); this.value=''">
 
     <div class="postcode-plaats">
       <div class="postcode-plaats-rij">
@@ -1091,7 +1083,7 @@
 
     <div class="field-group single">
       <div class="field">
-        <label class="label-with-info">Ervaring van de band <button type="button" class="niveau-info-btn" onclick="openBandNiveauInfoModal()" title="Wat betekenen deze sterren?" aria-label="Wat betekenen deze sterren?">i</button></label>
+        <label class="label-with-info label-info-naast">Ervaring van de band <button type="button" class="niveau-info-btn" onclick="openBandNiveauInfoModal()" title="Wat betekenen deze sterren?" aria-label="Wat betekenen deze sterren?">i</button></label>
         <div id="bwErvaring" class="star-picker"></div>
         <p class="field-hint">Te zien op de bandpagina zolang jullie iemand zoeken.</p>
       </div>
@@ -1117,7 +1109,8 @@
        band halen gaan meteen (er is een ander bij betrokken); open rollen,
        invallers en de contactpersoon gaan mee met Opslaan. -->
   <div id="bandBezettingScreen" style="display:none;">
-    <div class="panel-title" style="margin-bottom:20px;">Onze bezetting</div>
+    <div class="panel-title">Onze bezetting</div>
+    <div class="band-naam-regel"></div>
 
     <div class="profile-media-title">Leden</div>
     <div class="bb-lijst" id="bbLeden"></div>
@@ -1185,7 +1178,8 @@
   <!-- Bandtegel: Onze muziek. Covers met dezelfde zoekvelden als Je setlist
        (voorvoegsel bc, zie de jst-functies in musicians.js). -->
   <div id="bandMuziekScreen" style="display:none;">
-    <div class="panel-title" style="margin-bottom:20px;">Onze muziek</div>
+    <div class="panel-title">Onze muziek</div>
+    <div class="band-naam-regel"></div>
 
     <div class="field-group single">
       <div class="field">
@@ -1252,6 +1246,27 @@
        met het bannerteken; voorvoegsel bm. Daaronder de drie socials. -->
   <div id="bandMediaScreen" style="display:none;">
     <div class="panel-title">Onze media</div>
+    <div class="band-naam-regel"></div>
+
+    <div class="field">
+      <label>Bandfoto</label>
+      <div class="avatar-upload-area">
+        <div class="avatar-preview-wrap">
+          <div class="avatar-preview avatar-preview-vierkant" id="bmFotoPreview" onclick="document.getElementById('bmFotoInput').click()">
+            <span class="avatar-t">T</span>
+          </div>
+          <div class="avatar-edit-btn" onclick="document.getElementById('bmFotoInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+          <button type="button" class="avatar-remove-btn" id="bmFotoRemoveBtn" onclick="bmVraagFotoWeg()" aria-label="Bandfoto verwijderen">✕</button>
+        </div>
+        <div class="avatar-info">
+          <strong>Upload een foto van de band</strong>
+          <p>JPG of PNG, maximaal 5 MB.</p>
+        </div>
+      </div>
+      <input type="file" accept="image/*" class="avatar-upload-input" id="bmFotoInput" autocomplete="off" onchange="bmFotoKiezen(this.files[0]); this.value=''">
+    </div>
+
+    <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Foto's, video's en links</div>
     <div class="panel-sub">Upload foto's of video's van de band, of verwijs naar YouTube, Instagram of SoundCloud. Kies wat bovenaan jullie bandpagina komt.</div>
 
     <div class="media-tabs">
@@ -2790,7 +2805,7 @@
 <script src="ouder.js?v=20261001a"></script>
 <script src="search.js?v=20261007b"></script>
 <script src="musicians.js?v=20261007b"></script>
-<script src="bands.js?v=20261007e"></script>
+<script src="bands.js?v=20261007f"></script>
 <script src="messages.js?v=20261007c"></script>
 <script src="modals-shared.js?v=20261002d"></script>
 <script>

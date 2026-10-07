@@ -1103,7 +1103,7 @@ function bandPaginaHTML(b, kijker) {
   const fotoHTML = foto
     ? `<img class="bandfoto" src="${foto}" alt="${escHtml(b.name)}" onclick="openMediaLightbox('${jsAttr(foto)}')">`
     : beheer
-      ? `<button type="button" class="bandfoto bandfoto-leeg bandfoto-kies" onclick="openBandTegels('${jsAttr(b.id)}','bandWie')" aria-label="Kies een bandfoto">${AVATAR_T_FALLBACK}</button>`
+      ? `<button type="button" class="bandfoto bandfoto-leeg bandfoto-kies" onclick="openBandTegels('${jsAttr(b.id)}','bandMedia')" aria-label="Kies een bandfoto">${AVATAR_T_FALLBACK}</button>`
       : `<div class="bandfoto bandfoto-leeg">${AVATAR_T_FALLBACK}</div>`;
 
   // Het ⋯-menu: een lid kan de band verlaten (TT-385 punt 13); een bezoeker
@@ -1403,10 +1403,10 @@ let bewerkBandNaam = '';
 let bewerkBandStad = '';
 
 const BAND_TILES = [
-  { id: 'bandWie',       title: 'Wie zijn we',    sub: 'bandfoto - naam - plaats - ervaring - bio' },
+  { id: 'bandWie',       title: 'Wie zijn we',    sub: 'naam - plaats - ervaring - bio' },
   { id: 'bandBezetting', title: 'Onze bezetting', sub: 'leden - open rollen - invallers - contactpersoon' },
   { id: 'bandMuziek',    title: 'Onze muziek',    sub: 'wat voor band - genres - eigen nummers - covers' },
-  { id: 'bandMedia',     title: 'Onze media',     sub: "foto's - video's - links - banner - socials" }
+  { id: 'bandMedia',     title: 'Onze media',     sub: "bandfoto - foto's - video's - links - banner - socials" }
 ];
 
 // De statustag op de bandpagina en op de bandkaart in Mijn Bands: één functie,
@@ -1432,9 +1432,18 @@ function bandStatusAfgeleid(aantalOpenRollen, pauze) {
 function openBandTegels(bandId, tegel) {
   sluitAlleMenus();
   sluitBandDeelBlad();
+  if (bewerkBandId !== bandId) bewerkBandNaam = '';
   bewerkBandId = bandId;
+  zetBandNaamRegel();
   showView('profieltegels');
   if (tegel && bewerkBandId === bandId && TEGEL_SCREENS[tegel]) openTegelScreen(tegel);
+}
+
+// De bandnaam als gedempte regel onder de titel van het overzicht en van de
+// tegels Onze bezetting, Onze muziek en Onze media: zo is altijd te zien over
+// welke band het gaat. In Wie zijn we staat de naam al in het veld.
+function zetBandNaamRegel() {
+  document.querySelectorAll('.band-naam-regel').forEach(el => { el.textContent = bewerkBandNaam || ''; });
 }
 
 function waardeVan(id) {
@@ -1456,6 +1465,7 @@ async function bandBewerkGegevens(kolommen) {
   if (id !== bewerkBandId) return null;
   if (data.name) bewerkBandNaam = data.name;
   if (data.city) bewerkBandStad = data.city;
+  zetBandNaamRegel();
   return data;
 }
 
@@ -1481,6 +1491,7 @@ async function renderBandBeheer() {
     if (id !== bewerkBandId) return;
     bewerkBandNaam = b.name || '';
     bewerkBandStad = b.city || '';
+    zetBandNaamRegel();
     bandBeheerOpenRollen = (b.band_wanted || []).length;
     // V-16: loopt er al een aanbod om het beheer over te nemen? Dan zegt de
     // knop "Aanbod intrekken", met de wachtstand eronder.
@@ -1541,26 +1552,22 @@ function vraagBandOpheffen() {
 }
 
 // ─── Tegel: Wie zijn we ──────────────────────────────────────────────────────
-// Bandfoto, naam, postcode en plaats, ervaring (TT-385 punt 14) en de tekst
-// "Wie zijn we". De bandfoto gaat naar de eigen map van de band
-// (bands/<band-id>/, zie projectinstructies §10), niet naar die van de
-// beheerder: anders verdwijnt hij als de beheerder vertrekt.
+// Naam, postcode en plaats, ervaring (TT-385 punt 14) en de tekst "Wie zijn
+// we". De bandfoto staat in Onze media (besluit Ronald, 07-10-2026).
 
 let bwSnapshot = null;
-let bwFotoUrl = null;
-let bwFotoBezig = false;
 let bwNiveau = null;
 
 function bwFieldSnapshot() {
   return JSON.stringify({
     naam: waardeVan('bwNaam'), zip: waardeVan('bwZip'), city: waardeVan('bwCity'),
-    bio: waardeVan('bwBio'), foto: bwFotoUrl || null, niveau: bwNiveau || null
+    bio: waardeVan('bwBio'), niveau: bwNiveau || null
   });
 }
 
 async function openBandWie() {
   clearFieldErrors('bandWieScreen');
-  const b = await bandBewerkGegevens('name, zip, city, city_source, description, niveau, avatar_url');
+  const b = await bandBewerkGegevens('name, zip, city, city_source, description, niveau');
   if (!b) return;
   // De postcode loopt via de opzoekroute van de band (postcode.js).
   bandPostcodeDoel = 'bw';
@@ -1576,52 +1583,10 @@ async function openBandWie() {
   document.getElementById('bwZip').value = b.zip || '';
   stad.value = b.city || '';
   document.getElementById('bwBio').value = b.description || '';
-  bwFotoUrl = b.avatar_url || null;
-  bwFotoBezig = false;
   bwNiveau = b.niveau || null;
-  bwRenderFoto();
   bwRenderErvaring();
   bwRenderBioPreview();
   bwSnapshot = bwFieldSnapshot();
-}
-
-function bwRenderFoto() {
-  const vak = document.getElementById('bwFotoPreview');
-  const url = safeUrl(bwFotoUrl);
-  vak.innerHTML = url ? `<img src="${url}" alt="bandfoto">` : '<span class="avatar-t">T</span>';
-  document.getElementById('bwFotoRemoveBtn').classList.toggle('visible', !!url);
-}
-
-function bwFotoKiezen(file) {
-  if (!file) return;
-  const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
-  if (typeProblem) { showToast(typeProblem); return; }
-  if (file.size > 5 * 1024 * 1024) { showToast('Afbeelding is te groot. Maximum 5 MB.'); return; }
-  const id = bewerkBandId;
-  const vak = document.getElementById('bwFotoPreview');
-  vak.style.position = 'relative';
-  vak.innerHTML = `<img src="${URL.createObjectURL(file)}" alt="bandfoto">
-    <div class="avatar-uploading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);border-radius:12px;">
-      <div class="save-spinner" style="width:24px;height:24px;border-width:3px;margin:0;"></div>
-    </div>`;
-  bwFotoBezig = true;
-  uploadAvatarFile(file, 'bands/' + id).then(({ url }) => {
-    bwFotoBezig = false;
-    if (id !== bewerkBandId) return;
-    bwFotoUrl = url;
-    bwRenderFoto();
-  }).catch(e => {
-    bwFotoBezig = false;
-    logCaught('bwFotoKiezen', e);
-    showToast(friendlyErrorMessage(e));
-    bwRenderFoto();
-  });
-}
-
-// TT-381: het kruisje vraagt eerst, zoals bij de profielfoto. De foto is pas
-// weg na Opslaan.
-function bwVraagFotoWeg() {
-  showConfirm('Bandfoto verwijderen?', () => { bwFotoUrl = null; bwRenderFoto(); }, 'Ja, verwijderen');
 }
 
 function bwRenderErvaring() {
@@ -1655,14 +1620,12 @@ async function saveBandWie() {
     fouten.push(['bwZip', 'Vul een geldige postcode in. De plaats wordt dan automatisch ingevuld']);
   }
   if (showFieldErrors(fouten)) return;
-  if (bwFotoBezig) { showToast('De bandfoto wordt nog geüpload. Even geduld.'); return; }
   if (bwFieldSnapshot() === bwSnapshot) return;
 
   const { error } = await db.from('bands').update({
     name: naam, zip, city: normalizeCityName(city), city_source: bandCitySource,
     description: waardeVan('bwBio') || null,
-    niveau: bwNiveau || null,
-    avatar_url: bwFotoUrl || null
+    niveau: bwNiveau || null
   }).eq('id', bewerkBandId);
   if (error) {
     logCaught('saveBandWie', error);
@@ -1671,6 +1634,7 @@ async function saveBandWie() {
   }
   bewerkBandNaam = naam;
   bewerkBandStad = normalizeCityName(city);
+  zetBandNaamRegel();
   bwSnapshot = bwFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
   loadMyBands();
@@ -2162,13 +2126,16 @@ async function saveBandMuziek() {
 let bmMediaFiles = [];   // { id, url, path, type, uploading, inBanner, name }
 let bmMediaLinks = [];   // { id, url, inBanner }
 let bmSnapshot = null;
+let bmFotoUrl = null;    // de bandfoto (bands.avatar_url)
+let bmFotoBezig = false;
 let bmOrigineel = [];    // [id, url, in_banner] zoals in de database
 
 function bmFieldSnapshot() {
   return JSON.stringify({
     files: bmMediaFiles.map(m => [m.id || null, m.url, m.type, !!m.uploading, !!m.inBanner]),
     links: bmMediaLinks.map(l => [l.id || null, l.url, !!l.inBanner]),
-    instagram: waardeVan('bmInstagram'), tiktok: waardeVan('bmTiktok'), youtube: waardeVan('bmYoutube')
+    instagram: waardeVan('bmInstagram'), tiktok: waardeVan('bmTiktok'), youtube: waardeVan('bmYoutube'),
+    foto: bmFotoUrl || null
   });
 }
 
@@ -2177,7 +2144,7 @@ async function openBandMedia() {
   const scherm = document.getElementById('bandMediaScreen');
   scherm.querySelectorAll('.media-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
   scherm.querySelectorAll('.media-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
-  const b = await bandBewerkGegevens('name, city, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at)');
+  const b = await bandBewerkGegevens('name, city, avatar_url, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at)');
   if (!b) return;
   bmZet(b);
   bmSnapshot = bmFieldSnapshot();
@@ -2193,8 +2160,52 @@ function bmZet(b) {
   document.getElementById('bmInstagram').value = b.instagram || '';
   document.getElementById('bmTiktok').value = b.tiktok || '';
   document.getElementById('bmYoutube').value = b.youtube || '';
+  bmFotoUrl = b.avatar_url || null;
+  bmFotoBezig = false;
+  bmRenderFoto();
   bmRenderMediaGrid();
   bmRenderLinksList();
+}
+
+function bmRenderFoto() {
+  const vak = document.getElementById('bmFotoPreview');
+  const url = safeUrl(bmFotoUrl);
+  vak.innerHTML = url ? `<img src="${url}" alt="bandfoto">` : '<span class="avatar-t">T</span>';
+  document.getElementById('bmFotoRemoveBtn').classList.toggle('visible', !!url);
+}
+
+function bmFotoKiezen(file) {
+  if (!file) return;
+  const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
+  if (typeProblem) { showToast(typeProblem); return; }
+  if (file.size > 5 * 1024 * 1024) { showToast('Afbeelding is te groot. Maximum 5 MB.'); return; }
+  const id = bewerkBandId;
+  const vak = document.getElementById('bmFotoPreview');
+  vak.style.position = 'relative';
+  vak.innerHTML = `<img src="${URL.createObjectURL(file)}" alt="bandfoto">
+    <div class="avatar-uploading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);border-radius:12px;">
+      <div class="save-spinner" style="width:24px;height:24px;border-width:3px;margin:0;"></div>
+    </div>`;
+  bmFotoBezig = true;
+  uploadAvatarFile(file, 'bands/' + id).then(({ url }) => {
+    bmFotoBezig = false;
+    if (id !== bewerkBandId) return;
+    bmFotoUrl = url;
+    bmRenderFoto();
+  }).catch(e => {
+    bmFotoBezig = false;
+    logCaught('bmFotoKiezen', e);
+    showToast(friendlyErrorMessage(e));
+    bmRenderFoto();
+  });
+}
+
+// TT-381: het kruisje vraagt eerst, zoals bij de profielfoto. De foto is pas
+// weg na Opslaan. De bandfoto gaat naar de eigen map van de band
+// (bands/<band-id>/, zie projectinstructies §10), niet naar die van de
+// beheerder: anders verdwijnt hij als de beheerder vertrekt.
+function bmVraagFotoWeg() {
+  showConfirm('Bandfoto verwijderen?', () => { bmFotoUrl = null; bmRenderFoto(); }, 'Ja, verwijderen');
 }
 
 function switchBmMediaTab(tab, el) {
@@ -2321,6 +2332,7 @@ async function saveBandMedia() {
     }
   });
   if (showFieldErrors(fouten)) return;
+  if (bmFotoBezig) { showToast('De bandfoto wordt nog geüpload. Even geduld.'); return; }
   if (bmMediaFiles.some(m => m.uploading)) { showToast('Er wordt nog een bestand geüpload. Even geduld.'); return; }
   if (bmFieldSnapshot() === bmSnapshot) return;
   const id = bewerkBandId;
@@ -2329,7 +2341,8 @@ async function saveBandMedia() {
     const { error: sErr } = await db.from('bands').update({
       instagram: waardeVan('bmInstagram') || null,
       tiktok: waardeVan('bmTiktok') || null,
-      youtube: waardeVan('bmYoutube') || null
+      youtube: waardeVan('bmYoutube') || null,
+      avatar_url: bmFotoUrl || null
     }).eq('id', id);
     if (sErr) throw sErr;
 
@@ -2357,7 +2370,7 @@ async function saveBandMedia() {
       if (error) throw error;
     }
 
-    const b = await bandBewerkGegevens('instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at)');
+    const b = await bandBewerkGegevens('avatar_url, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at)');
     if (!b) return;
     bmZet(b);
     bmSnapshot = bmFieldSnapshot();

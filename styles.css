@@ -3368,10 +3368,7 @@
 
   /* Wie zijn we: de bandfoto naast de bandnaam, zoals het oude bandformulier.
      De foto is vierkant, net als op de pagina (hoeken 12px). */
-  .bandfoto-veld { display: flex; gap: 16px; align-items: center; }
-  .bandfoto-veld > .field { flex: 1; min-width: 0; }
   .avatar-preview.avatar-preview-vierkant { border-radius: 12px; }
-  .bandfoto-hint { margin: 8px 0 20px; }
 
   /* Een rij in Onze bezetting: foto, naam en regel, rechts de drie puntjes. */
   .bb-rij { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
@@ -4552,3 +4549,11 @@
 
 /* TT-385: "Uitnodigen voor <band>" boven de berichtknop in het muzikantvenster */
 .rol-uitnodig-knop { width: 100%; margin-bottom: 8px; }
+
+/* De bandnaam onder de titel van een bandscherm (07-10-2026, Ronald): zichtbaar,
+   niet prominent. Zelfde maat en gewicht als .panel-sub. */
+.band-naam-regel { font-size: 14px; font-weight: 300; line-height: 1.5; color: var(--muted); margin: 0 0 20px; }
+.band-naam-regel:empty { display: none; }
+/* De i-knop direct achter het label, niet rechts (Ronald, 07-10-2026, Ervaring
+   van de band). */
+.label-with-info.label-info-naast { justify-content: flex-start; padding-right: 0; gap: 8px; }
