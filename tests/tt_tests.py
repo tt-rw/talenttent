@@ -7481,6 +7481,96 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-432: uitloggen haalt de stip weg en inloggen ververst hem",
               "'bandsDotBottom'" in core72 and "refreshBandsDot();" in core72, "")
         check("geen paginafouten in blok 72", not page_errors, "; ".join(page_errors)[:300])
+
+        # Blok 73 — TT-435 (07-10-2026, besluit Ronald): een gesprek verwijderen,
+        # alleen bij jezelf, vanuit het ⋯-menu van het gesprek.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 73 — gesprek verwijderen, alleen bij jezelf (TT-435)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        d73 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 150) => new Promise(r => setTimeout(r, n)), u = {};
+          const $ = id => document.getElementById(id);
+          const keep = { myMusicianId, currentUser, hasOwnProfile, wie: window.getMyMusicianId, conf: window.showConfirm, toast: window.showToast };
+          window.getMyMusicianId = async () => myMusicianId;
+          myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; hasOwnProfile = true;
+          S.data.musicians = [{ id: 'm1', username: 'ik' }, { id: 'm2', username: 'dyl', fname: 'Dylan' }, { id: 'm3', username: 'sanne' }];
+          const nu = Date.now();
+          S.data.messages = [
+            { id: 1, sender_id: 'm2', recipient_id: 'm1', body: 'hoi vanaf Dylan', created_at: new Date(nu - 60000).toISOString(), read_at: null },
+            { id: 2, sender_id: 'm1', recipient_id: 'm2', body: 'hoi terug', created_at: new Date(nu - 50000).toISOString(), read_at: null },
+            { id: 3, sender_id: 'm3', recipient_id: 'm1', body: 'hoi vanaf Sanne', created_at: new Date(nu - 40000).toISOString(), read_at: null },
+            { id: 4, sender_id: 'm9', recipient_id: 'm1', body: 'van een weg account', created_at: new Date(nu - 30000).toISOString(), read_at: null }];
+          S.data.gesprek_verborgen = [];
+          // Eerdere blokken vervangen rpcResults; de functie staat daarom hier zelf.
+          S.rpcResults.tt_gesprek_verbergen = (p) => {
+            const nu2 = new Date().toISOString();
+            S.data.gesprek_verborgen = (S.data.gesprek_verborgen || []).filter(r => !(r.musician_id === myMusicianId && r.ander_id === p.ander));
+            S.data.gesprek_verborgen.push({ musician_id: myMusicianId, ander_id: p.ander, verborgen_op: nu2 });
+            S.data.messages.forEach(m => { if (m.recipient_id === myMusicianId && m.sender_id === p.ander && !m.read_at) m.read_at = nu2; });
+            return null; };
+          const rijen = () => [...document.querySelectorAll('#messagesInboxList .messages-conv-row .messages-conv-name')].map(e => e.textContent.replace(/\d+$/, '').trim());
+          const menuItems = () => [...document.querySelectorAll('#messagesThreadActies .nav-menu-item')].map(b => b.textContent);
+          showView('messages'); await w(300); await loadInbox(); await w(200);
+          u.voor = rijen();
+          // Het menu van een gewoon gesprek: melden, blokkeren en verwijderen.
+          await openConversation('m2', 'Dylan', null, false, false); await w(300);
+          u.menu = menuItems();
+          // Verwijderen vraagt eerst om bevestiging, met de tekst dat het alleen bij jou verdwijnt.
+          let vraag = null, knop = null, rood = null;
+          const conf = window.showConfirm; window.showConfirm = (m, f, l, d) => { vraag = m; knop = l; rood = d; window._doe = f; };
+          gesprekVerwijderen('m2', 'Dylan');
+          u.vraag = { tekst: vraag, knop, rood, aangeroepen: S.calls.some(c => c.name === 'tt_gesprek_verbergen') };
+          await window._doe(); await w(400);
+          window.showConfirm = conf;
+          u.na = { rijen: rijen(), rpc: S.calls.filter(c => c.name === 'tt_gesprek_verbergen').map(c => c.params.ander), paneel: $('messagesThreadPanel').style.display,
+                   gelezen: S.data.messages.filter(m => m.recipient_id === 'm1' && m.sender_id === 'm2').every(m => m.read_at), anderNog: S.data.messages.length };
+          // De ander schrijft opnieuw: het gesprek is terug, met alleen het nieuwe bericht.
+          S.data.messages.push({ id: 5, sender_id: 'm2', recipient_id: 'm1', body: 'ben je er nog', created_at: new Date(Date.now() + 5000).toISOString(), read_at: null });
+          await loadInbox(); await w(200);
+          u.terug = rijen();
+          await openConversation('m2', 'Dylan', null, false, false); await w(300);
+          u.draad = [...document.querySelectorAll('#messagesThreadList .message-bubble')].map(e => e.textContent).filter(t => t).join('|');
+          // Een gesprek met een verwijderd account heeft alleen dit ene item.
+          await openConversation('m9', 'Verwijderde gebruiker', null, false, true); await w(300);
+          u.menuWeg = menuItems();
+          window.showConfirm = (m) => { vraag = m; };
+          gesprekVerwijderen('m9', 'Verwijderde gebruiker');
+          window.showConfirm = conf;
+          u.vraagWeg = vraag;
+          // Mislukt de database, dan blijft het gesprek staan en komt er een melding.
+          S.rpcErrors.tt_gesprek_verbergen = { code: '42501', message: 'permission denied' };
+          let melding = null; window.showToast = (t) => { melding = t; };
+          await gesprekVerwijderenUitvoeren('m9'); await w(200);
+          u.fout = { melding: !!melding, paneel: $('messagesThreadPanel').style.display };
+          delete S.rpcErrors.tt_gesprek_verbergen;
+          // Een ontbrekende tabel laat alles zichtbaar.
+          S.errors['gesprek_verborgen'] = { code: '42P01', message: 'relation does not exist' };
+          closeConversation(true); await loadInbox(); await w(200);
+          u.zonderTabel = rijen();
+          delete S.errors['gesprek_verborgen'];
+          myMusicianId = keep.myMusicianId; currentUser = keep.currentUser; hasOwnProfile = keep.hasOwnProfile; window.getMyMusicianId = keep.wie; window.showToast = keep.toast;
+          showView('about'); await w(100);
+          return u;
+        }""")
+        j73 = json.dumps(d73, ensure_ascii=False)
+        check("TT-435: het ⋯-menu van een gesprek heeft Gesprek verwijderen, naast Melden en Blokkeren",
+              d73["menu"] == ["Muzikant melden", "Blokkeren", "Gesprek verwijderen"], j73)
+        check("TT-435: eerst een bevestiging: alleen bij jou, de ander houdt het; knop Verwijderen, rood omlijnd",
+              d73["vraag"]["tekst"] == "Gesprek met Dylan verwijderen? Het verdwijnt alleen bij jou. Dylan houdt het."
+              and d73["vraag"]["knop"] == "Verwijderen" and d73["vraag"]["rood"] is True and d73["vraag"]["aangeroepen"] is False, j73)
+        check("TT-435: na bevestigen is het gesprek uit de lijst, het gesprek sluit, de berichten van de ander blijven bestaan en zijn gelezen",
+              "Dylan" in d73["voor"] and "Dylan" not in d73["na"]["rijen"] and "sanne" in d73["na"]["rijen"]
+              and d73["na"]["rpc"] == ["m2"] and d73["na"]["paneel"] == "none" and d73["na"]["gelezen"] and d73["na"]["anderNog"] == 4, j73)
+        check("TT-435: schrijft de ander opnieuw, dan komt het gesprek terug met alleen het nieuwe bericht",
+              "Dylan" in d73["terug"] and "ben je er nog" in d73["draad"] and "hoi vanaf Dylan" not in d73["draad"] and "hoi terug" not in d73["draad"], j73)
+        check("TT-435: een gesprek met een verwijderd account is ook te verwijderen, zonder melden en blokkeren",
+              d73["menuWeg"] == ["Gesprek verwijderen"] and "Het verdwijnt alleen bij jou." in d73["vraagWeg"] and "houdt het" not in d73["vraagWeg"], j73)
+        check("TT-435: mislukt de database, dan blijft het gesprek open en komt er een melding",
+              d73["fout"]["melding"] and d73["fout"]["paneel"] == "block", j73)
+        check("TT-435: ontbreekt de tabel, dan blijft alles zichtbaar",
+              "Dylan" in d73["zonderTabel"] and "sanne" in d73["zonderTabel"], j73)
+        check("geen paginafouten in blok 73", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
