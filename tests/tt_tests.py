@@ -4262,7 +4262,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         p41.wait_for_timeout(150)
         # Besluit Ronald, 26-09-2026: de tegel is even groot als de andere, en een
         # tik opent een klein menu waarin je kiest.
-        hoogtes = p41.evaluate("[...document.querySelectorAll('#view-instellingen .tile')].map(t => Math.round(t.getBoundingClientRect().height))")
+        hoogtes = p41.evaluate("[...document.querySelectorAll('#view-instellingen .tile')].map(t => Math.round(t.getBoundingClientRect().height)).filter(h => h > 0)")
         check("de tegel Thema is even hoog als de andere tegels", len(set(hoogtes)) == 1, json.dumps(hoogtes))
         p41.click("#themaTegel"); p41.wait_for_timeout(300)
         menu41 = p41.evaluate("""() => { const m = document.getElementById('themaMenu');
@@ -5790,7 +5790,7 @@ window.TT_STUB.fnAntwoord = {};
         check("lid: ⋯ met Band verlaten, geen knop onderin",
               lid57["menu"] == ["Band verlaten"] and not lid57["plek"] and lid57["voet"] == "", json.dumps(lid57))
         check("beheerder: ⋯ met Bandprofiel bewerken (fase 3), geen knop onderin",
-              bh57["menu"] == ["Bandprofiel bewerken", "Delen via link: aan"] and not bh57["plek"] and bh57["voet"] == "", json.dumps(bh57))
+              bh57["menu"] == ["Bandprofiel bewerken"] and not bh57["plek"] and bh57["voet"] == "", json.dumps(bh57))
         check("het gesprek noemt de contactpersoon van de band (besluit h, TT-410a); een gewoon bericht niet",
               "Sanne is de contactpersoon van Zoutwater." in d57["bericht"] and "contactpersoon" not in d57["berichtGewoon"], json.dumps([d57["bericht"], d57["berichtGewoon"]]))
         check("delen en ⋯ naast de foto zijn 24px (TT-385)", bz57["ikoon"] == [24, 24] and lid57["ikoon"] == [24, 24], json.dumps([bz57["ikoon"], lid57["ikoon"]]))
@@ -6009,7 +6009,7 @@ window.TT_STUB.fnAntwoord = {};
                                                "+ Foto's en video's toevoegen", "+ Instagram, TikTok of YouTube", "+ Welke covers spelen jullie?"]
               and d58["leeg"]["pct"] == "15%" and d58["leeg"]["balkLaatst"], j58("leeg"))
         check("privé: ⋯ met Bandprofiel bewerken, een lege bandfoto is een knop",
-              d58["leeg"]["menu"] == ["Bandprofiel bewerken", "Delen via link: aan"] and d58["leeg"]["fotoKnop"], j58("leeg"))
+              d58["leeg"]["menu"] == ["Bandprofiel bewerken"] and d58["leeg"]["fotoKnop"], j58("leeg"))
         check("het ⋯-menu van een band sluit bij een tik op de donkere laag, ook op de bandpagina",
               d58["menuOpen"] and d58["menuDicht"], json.dumps([d58["menuOpen"], d58["menuDicht"]]))
         check("delen van een pagina die nog niet af is: het deelblad noemt wat mist (besluit g)",
@@ -6022,7 +6022,7 @@ window.TT_STUB.fnAntwoord = {};
               and d58["wieOpgeslagen"] == ["Vier vrienden.", 3, False], json.dumps([d58["wieFout"], d58["wieGewapend"], d58["wieOpgeslagen"]], ensure_ascii=False))
         check("het overzicht: vier tegels, Bandbeheer met de schakelaar, overdragen en opheffen (rood omlijnd)",
               d58["overzicht"]["tegels"] == ["Wie zijn we", "Onze bezetting", "Onze muziek", "Onze media"] and d58["overzicht"]["eigenVerborgen"]
-              and d58["overzicht"]["beheer"] == ["We spelen", "We spelen even niet", "Beheer overdragen", "Band opheffen"]
+              and d58["overzicht"]["beheer"] == ["We spelen", "We spelen even niet", "Aan", "Uit", "Beheer overdragen", "Band opheffen"]
               and d58["overzicht"]["opheffenRood"], j58("overzicht"))
         check("Onze bezetting: de beheerder zonder menu, een lid met Uit de band, een uitnodiging met Intrekken",
               d58["leden"] == [["Ronald (jij)", ""], ["Dylan", "Uit de band"]] and d58["uitgenodigd"] == [["Sanne", "Uitnodiging intrekken"]]
@@ -6391,6 +6391,7 @@ window.TT_STUB.fnAntwoord = {};
           // Geen bands: geen blok. Een fout: geen blok, wel in de foutlog.
           m.bands = await profielBandsOphalen('m9'); eigen.innerHTML = buildMusicianDetailHTML(m, true, false);
           u.geen = [...eigen.querySelectorAll('.profile-media-title')].map(x => x.textContent).includes('Bands');
+          appErrorLogCount = 0; // de teller van 20 is per paginabezoek; deze controle toetst de logregel, niet de teller
           S.rpcErrors.tt_musician_band_ids = { code: '42883', message: 'function does not exist' };
           const logVoor = (S.data.app_error_log || []).length;
           m.bands = await profielBandsOphalen('m1'); eigen.innerHTML = buildMusicianDetailHTML(m, true, false);
@@ -6937,9 +6938,8 @@ window.TT_STUB.fnAntwoord = {};
           // 7. Zet delen uit: de app schrijft musicians.delen_aan en onthoudt de stand.
           S.calls.length = 0;
           myMusicianId = 'm3'; myDeelAan = true;
-          document.getElementById('view-myprofile').insertAdjacentHTML('beforeend', '<button id="delenToggleBtn"></button>');
           const ok = await zetProfielDelen(false);
-          uit.uit = { ok, stand: myDeelAan, tekst: document.getElementById('delenToggleBtn').textContent, rij: rij.delen_aan,
+          uit.uit = { ok, stand: myDeelAan, tekst: document.getElementById('deelKeuze').value, rij: rij.delen_aan,
                       toast: document.getElementById('appToast').textContent,
                       aanroep: S.calls.filter(c => c.kind === 'update' || (c.table === 'musicians' && c.op === 'update')).length };
           // 8. Het deelicoon op je eigen profiel met delen uit: eerst de vraag.
@@ -6950,7 +6950,7 @@ window.TT_STUB.fnAntwoord = {};
                         knop: document.getElementById('confirmYesBtn').textContent, gedeeld };
           document.getElementById('confirmYesBtn').click(); await w(150);
           uit.naAanzetten = { gedeeld, stand: myDeelAan, rij: rij.delen_aan };
-          document.getElementById('delenToggleBtn').remove();
+          document.getElementById('deelKeuze').value = 'aan';
 
           // 9. Terug van een profiel naar Zoeken laadt de resultaten niet opnieuw.
           myMusicianId = 'm1'; delete rij.delen_aan; if (rijToegevoegd) S.data.musicians = S.data.musicians.filter(x => x.id !== 'm3');
@@ -6996,7 +6996,7 @@ window.TT_STUB.fnAntwoord = {};
               d67["linkAan"]["naam"] == "sanne" and not d67["linkAan"]["leeg"] and d67["linkAan"]["deel"] == 1, j67)
         check("delen uitzetten schrijft musicians.delen_aan, werkt de knop bij en meldt het",
               d67["uit"]["ok"] and d67["uit"]["stand"] is False and d67["uit"]["rij"] is False
-              and d67["uit"]["tekst"] == "Delen via link: uit"
+              and d67["uit"]["tekst"] == "uit"
               and d67["uit"]["toast"] == "Delen staat uit. Je link werkt niet meer.", j67)
         check("het deelicoon op je eigen profiel met delen uit vraagt eerst: 'Aanzetten en delen'; daarna deelt het",
               d67["vraag"]["open"] and d67["vraag"]["gedeeld"] is None
@@ -7102,10 +7102,10 @@ window.TT_STUB.fnAntwoord = {};
           const rij = S.data.bands.find(b => b.id === 'b8');
           stand = true;
           await openBandScherm('b8'); await w(80);
-          uit.menuAan = vak().querySelector('#bandDelenToggleBtn')?.textContent;
+          uit.menuAan = vak().querySelector('#bandDelenToggleBtn') ? 'in menu' : 'niet in menu';
           S.calls.length = 0;
-          await toggleBandDelen('b8');
-          uit.uit = { rij: rij.delen_aan, tekst: document.getElementById('bandDelenToggleBtn').textContent,
+          await zetBandDelen('b8', false);
+          uit.uit = { rij: rij.delen_aan, tekst: bandDeelGegevens.delen_aan ? 'aan' : 'uit',
                       toast: document.getElementById('appToast').textContent,
                       aanroep: S.calls.filter(c => c.kind === 'table' && c.table === 'bands' && c.op === 'update').length,
                       stand: bandDeelGegevens.delen_aan };
@@ -7158,13 +7158,13 @@ window.TT_STUB.fnAntwoord = {};
               d68["zonderScript"]["naam"] == "Nachtploeg" and not d68["zonderScript"]["leeg"], j68)
         check("de beheerder opent zijn band altijd, ook via een link, en ziet het deelicoon; zijn ⋯-menu toont de stand",
               d68["beheerderLink"]["naam"] == "Zoutwater" and not d68["beheerderLink"]["leeg"] and d68["beheerderLink"]["deel"] == 1
-              and d68["beheerderLink"]["menu"] == ["Bandprofiel bewerken", "Delen via link: uit"], j68)
+              and d68["beheerderLink"]["menu"] == ["Bandprofiel bewerken"], j68)
         check("een lid of bezoeker krijgt via een link 'niet beschikbaar'; in de app opent de band ook voor een lid, zonder deelicoon",
               d68["lidLink"]["leeg"] and d68["bezoekerLink"]["leeg"]
               and d68["lidApp"]["naam"] == "Zoutwater" and d68["lidApp"]["deel"] == 0, j68)
         check("delen uitzetten schrijft bands.delen_aan, werkt de knop bij en meldt het",
-              d68["menuAan"] == "Delen via link: aan" and d68["uit"]["rij"] is False and d68["uit"]["stand"] is False
-              and d68["uit"]["tekst"] == "Delen via link: uit" and d68["uit"]["aanroep"] == 1
+              d68["menuAan"] == "niet in menu" and d68["uit"]["rij"] is False and d68["uit"]["stand"] is False
+              and d68["uit"]["tekst"] == "uit" and d68["uit"]["aanroep"] == 1
               and d68["uit"]["toast"] == "Delen staat uit. De link van de band werkt niet meer.", j68)
         check("het deelicoon van de beheerder met delen uit vraagt eerst: 'Aanzetten en delen'; daarna deelt het #band/<id>",
               d68["vraag"]["open"] and d68["vraag"]["gedeeld"] is None and d68["vraag"]["knop"] == "Aanzetten en delen"
