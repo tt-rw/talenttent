@@ -63,7 +63,9 @@
       // TT-06 (18-09-2026): melden en blokkeren.
       musician_blocks: [], musician_reports: [],
       // TT-295 (26-09-2026): de bewaarde zoekopdracht, één rij per muzikant.
-      musician_saved_search: []
+      musician_saved_search: [],
+      // TT-435: gesprekken die een muzikant bij zichzelf verwijderde.
+      gesprek_verborgen: []
     },
     rpcResults: {
       tt_search_musicians: [], tt_search_musicians_anon: [],
@@ -85,6 +87,16 @@
       // volgorde van de vraag. Een blok dat groepen wil toetsen, zet hier
       // zelf een functie neer en herstelt hem daarna.
       tt_markeer_actief: null,
+      // TT-435: een gesprek verbergen. Zet het moment vast en leest de
+      // ongelezen berichten van de ander als gelezen, zoals de database.
+      tt_gesprek_verbergen(p) {
+        const ik = (typeof myMusicianId !== 'undefined' && myMusicianId) || 'm1';
+        const nu = new Date().toISOString();
+        const t = TT_STUB.data.gesprek_verborgen = (TT_STUB.data.gesprek_verborgen || []).filter(r => !(r.musician_id === ik && r.ander_id === p.ander));
+        t.push({ musician_id: ik, ander_id: p.ander, verborgen_op: nu });
+        (TT_STUB.data.messages || []).forEach(m => { if (m.recipient_id === ik && m.sender_id === p.ander && !m.read_at) m.read_at = nu; });
+        return null;
+      },
       tt_actief_stand(p) { return (p.ids || []).map((id, i) => ({ id, groep: 0, rang: i + 1 })); },
       tt_band_actief_stand(p) { return (p.ids || []).map((id, i) => ({ id, groep: 0, rang: i + 1 })); },
       // TT-281: de drie opslagfuncties bootsen de transactie na. Een fout via
