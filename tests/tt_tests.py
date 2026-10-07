@@ -911,7 +911,7 @@ def blok_browser():
           // 1. terugknop van de browser
           openMediaSpeler('https://youtu.be/tAGnKpE4Nxk', 'link', 'Test', 'YouTube');
           await new Promise(r => setTimeout(r, 50));
-          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'myprofile' } }));
+          history.back();
           await new Promise(r => setTimeout(r, 50));
           uit.naTerug = !modal.classList.contains('visible');
           uit.naTerugLeeg = beeld.innerHTML === '';
@@ -930,7 +930,7 @@ def blok_browser():
           // 4. een modal zonder data-close gedraagt zich als voorheen
           const bevestig = document.getElementById('confirmModal');
           bevestig.classList.add('visible');
-          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'myprofile' } }));
+          history.back();
           await new Promise(r => setTimeout(r, 50));
           uit.gewoneModal = !bevestig.classList.contains('visible');
           return uit;
@@ -1712,9 +1712,9 @@ def blok_browser():
         }""")
         check("het profiel opent als eigen scherm, niet als venster",
               uit20["view"] == "profiel" and uit20["actief"] and not uit20["oudVenster"] and uit20["vensterOpen"] == 0, json.dumps(uit20))
-        check("het scherm heeft een eigen adres en een eigen stap in de geschiedenis, met het id en 'in de app geopend'",
+        check("het scherm heeft een eigen adres en een eigen stap, met het id en 'in de app geopend'; de browser krijgt er geen stap bij (TT-431)",
               uit20["hash"] == "#profiel/m2" and uit20["stap"] == {"view": "profiel", "id": "m2", "app": True}
-              and uit20["stapErbij"] == 1, json.dumps(uit20))
+              and uit20["stapErbij"] == 0, json.dumps(uit20))
         check("de kop van de app staat erbij: terugknop zichtbaar, onderbalk er",
               uit20["terugKnop"] != "hidden" and uit20["onderbalk"] != "none", json.dumps(uit20))
         page.evaluate("() => terugKnop()")
@@ -2304,7 +2304,7 @@ def blok_browser():
           kiesMeldReden(document.querySelector('#meldRedenen .tag'), 'Ongepast gedrag');
           r.voorDoel = !!meldDoel;
           r.voorReden = meldReden;
-          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'search' } }));
+          history.back();
           await new Promise(res => setTimeout(res, 50));
           r.dicht = !document.getElementById('meldModal').classList.contains('visible');
           r.naDoel = meldDoel;
@@ -2321,7 +2321,7 @@ def blok_browser():
           const r = {};
           openPickerList('genre');
           r.voorActief = activeListPickerId;
-          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'register' } }));
+          history.back();
           await new Promise(res => setTimeout(res, 50));
           r.dicht = !document.getElementById('pickerListModal').classList.contains('visible');
           r.naActief = activeListPickerId;
@@ -2338,7 +2338,7 @@ def blok_browser():
           openInstrumentPicker('wizard');
           pickInstrumentFromSheet('Gitaar');
           r.voorLijst = state.instruments.slice();
-          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'register' } }));
+          history.back();
           await new Promise(res => setTimeout(res, 50));
           r.dicht = !document.getElementById('instrumentLevelModal').classList.contains('visible');
           r.naLijst = state.instruments.slice();
@@ -2557,7 +2557,7 @@ def blok_browser():
         terug = page.evaluate("""async () => {
           openInloggegevens();
           document.getElementById('igNieuwEmail').value = 'blijft@talenttent.org';
-          window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'instellingen' } }));
+          history.back();
           await new Promise(res => setTimeout(res, 50));
           return {
             dicht: !document.getElementById('inloggegevensModal').classList.contains('visible'),
@@ -2668,7 +2668,7 @@ def blok_browser():
           // Opstartstand nabootsen: op het hoogste scherm, geen eigen stappen,
           // niets open (TT-303: het hoogste scherm is het openingsscherm).
           showView(hoogsteScherm());
-          terugDiepte = 0; werkTerugKnopBij();
+          navStack.length = 0; werkTerugKnopBij();
           uit.bijStart = zichtbaar();
           uit.magBijStart = magTerug();
           const hashVoor = location.hash;
@@ -2677,7 +2677,7 @@ def blok_browser():
           showView('search');
           uit.naEenStap = zichtbaar();
           const modal = document.getElementById('bioModal');
-          terugDiepte = 0; modal.classList.add('visible');
+          navStack.length = 0; modal.classList.add('visible');
           uit.metOpenVenster = magTerug();
           modal.classList.remove('visible');
           return uit;
@@ -2743,8 +2743,7 @@ def blok_browser():
           const label = document.getElementById('terugLabel');
           const pijl = document.getElementById('navTerugBtn');
           const zichtbaar = () => getComputedStyle(label).display !== 'none';
-          const stap = () => window.dispatchEvent(
-            new PopStateEvent('popstate', { state: { view: 'profieltegels' } }));
+          const stap = () => history.back();
           const wacht = () => new Promise(res => setTimeout(res, 60));
           const uit = {};
 
@@ -2836,13 +2835,13 @@ def blok_browser():
 
           currentUser = null;
           uit.uitgelogd = hoogsteScherm();
-          showView('landing'); terugDiepte = 0; werkTerugKnopBij();
+          showView('landing'); navStack.length = 0; werkTerugKnopBij();
           uit.opLanding = zichtbaar();
           uit.magOpLanding = magTerug();
 
           currentUser = { id: 'test' };
           uit.ingelogd = hoogsteScherm();
-          showView('myprofile'); terugDiepte = 0; werkTerugKnopBij();
+          showView('myprofile'); navStack.length = 0; werkTerugKnopBij();
           uit.opProfiel = zichtbaar();
           uit.magOpProfiel = magTerug();
           // Een druk op het hoogste scherm doet niets: je blijft waar je bent.
@@ -2852,7 +2851,7 @@ def blok_browser():
 
           // TT-428: op een hoofdtabblad doet de knop niets, en een wissel tussen
           // tabbladen laat geen stap achter.
-          showView('myprofile'); terugDiepte = 0;
+          showView('myprofile'); navStack.length = 0;
           showView('search'); showView('messages'); showView('bands');
           uit.opTabblad = zichtbaar();
           uit.magOpTabblad = magTerug();
@@ -2872,7 +2871,7 @@ def blok_browser():
           uit.naDiep = [...document.querySelectorAll('.app-view.active')].map(v => v.id);
 
           currentUser = bewaard;
-          showView('landing'); terugDiepte = 0; werkTerugKnopBij();
+          showView('landing'); navStack.length = 0; werkTerugKnopBij();
           return uit;
         }""")
         check("het hoogste scherm is Mijn Profiel ingelogd, de landingspagina uitgelogd",
@@ -6105,8 +6104,8 @@ window.TT_STUB.fnAntwoord = {};
           const r = el => el.getBoundingClientRect();
           showView('bands'); await w(250);
           await showCreateBandForm(); await w(200);
-          u.open = { wizard: bandWizardOpen(), kop: zichtbaar('mijnBandsKop'), lijst: zichtbaar('myBandsList'), stap: bandWizardStap,
-                     staat: history.state && history.state.wizard, pct: pct(),
+          u.open = { wizard: bandWizardOpen(), kop: zichtbaar('mijnBandsKop'), lijst: zichtbaar('myBandsList'), stap: false,
+                     staat: !!(history.state && history.state.wizard), pct: pct(),
                      magTerug: magTerug() };
           // Alleen de drie vragen; de velden van het oude formulier zijn weg.
           u.velden = [...$('createBandForm').querySelectorAll('input, .picker-field')].map(e => e.id);
@@ -6142,7 +6141,7 @@ window.TT_STUB.fnAntwoord = {};
                            extra: ['description', 'niveau', 'avatar_url'].filter(k => k in band),
                            leden: S.data.band_members.map(m => [m.band_id === band.id, m.musician_id, m.role, m.status]),
                            wanted: S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_save_band_wanted').length };
-          u.na = { wizard: bandWizardOpen(), lijst: zichtbaar('myBandsList'), kop: zichtbaar('mijnBandsKop'), stap: bandWizardStap,
+          u.na = { wizard: bandWizardOpen(), lijst: zichtbaar('myBandsList'), kop: zichtbaar('mijnBandsKop'), stap: false,
                    modal: $('view-profiel').classList.contains('active'), staat: history.state && !!history.state.wizard,
                    balk: ($('profielSchermContent').querySelector('.completeness-pct') || {}).textContent,
                    toast: window.__b59Toasts.slice(-1)[0], velden: [$('bandName').value, $('bandZip').value, bandState.genres.length] };
@@ -6167,7 +6166,7 @@ window.TT_STUB.fnAntwoord = {};
           await showCreateBandForm(); await w(150);
           $('bandName').value = 'Proef';
           showView('search'); await w(100);
-          u.andereView = { wizard: bandWizardOpen(), stap: bandWizardStap, leeg: $('bandName').value };
+          u.andereView = { wizard: bandWizardOpen(), stap: false, leeg: $('bandName').value };
           // Mijn Bands: de bandkaart.
           const id = band.id;
           showView('bands'); await w(300);
@@ -6201,8 +6200,8 @@ window.TT_STUB.fnAntwoord = {};
           ['bands', 'band_members', 'band_wanted', 'band_media', 'band_nummers', 'band_covers', 'band_invallers'].forEach(k => { S.data[k] = []; });
           showView('about'); }""")
         j59 = lambda k: json.dumps(d59[k], ensure_ascii=False)
-        check("Band aanmaken opent de wizard op de plek van de lijst, als stap in de geschiedenis, op 0%",
-              d59["open"] == {"wizard": True, "kop": False, "lijst": False, "stap": True, "staat": True, "pct": "0%",
+        check("Band aanmaken opent de wizard op de plek van de lijst, als laag van de app, op 0%",
+              d59["open"] == {"wizard": True, "kop": False, "lijst": False, "stap": False, "staat": False, "pct": "0%",
                               "magTerug": True}, j59("open"))
         check("drie vragen: bandnaam, postcode en plaats, genres; de oude velden zijn weg",
               d59["velden"] == ["bandName", "bandZip", "bandCity", "bandGenreField"] and d59["oud"] == []
@@ -6228,7 +6227,7 @@ window.TT_STUB.fnAntwoord = {};
               d59["na"] == {"wizard": False, "lijst": False, "kop": False, "stap": False, "modal": True, "staat": False, "balk": "15%",
                             "toast": "Nachtploeg staat. Vul hem aan wanneer je wilt.", "velden": ["", "", 0]}, j59("na"))
         check("terugknop in de kop met iets ingevuld: eerst 'Terug zonder opslaan?', de wizard blijft",
-              d59["kopTerug1"] == {"wizard": True, "vraag": True, "gewapend": True, "staat": True}, j59("kopTerug1"))
+              d59["kopTerug1"] == {"wizard": True, "vraag": True, "gewapend": True, "staat": False}, j59("kopTerug1"))
         check("tweede druk: de wizard gaat dicht, leeg, terug op Mijn Bands",
               d59["kopTerug2"] == {"wizard": False, "vraag": False, "lijst": True, "view": "bands", "staat": False, "leeg": ""}, j59("kopTerug2"))
         check("terugknop zonder invoer: meteen dicht, één stap", d59["kopTerugLeeg"] == {"wizard": False, "view": "bands", "staat": False}, j59("kopTerugLeeg"))
@@ -6654,7 +6653,7 @@ window.TT_STUB.fnAntwoord = {};
         d64 = page.evaluate("""async () => {
           const w = ms => new Promise(r => setTimeout(r, ms));
           const $ = id => document.getElementById(id);
-          const pop = () => window.dispatchEvent(new PopStateEvent('popstate', { state: { view: 'landing' } }));
+          const pop = () => history.back();
           const uit = {};
           // B: eerst het venster dat DOM-eerst staat, dan een later venster erbovenop.
           $('confirmModal').classList.add('visible'); await w(30);
@@ -7211,6 +7210,107 @@ window.TT_STUB.fnAntwoord = {};
         check("een tweede artiest komt erbij; een muzikant telt per rij",
               d69["tweede"]["rijen"] == ["Metallica|One", "Nirvana|"] and d69["tweede"]["matchCount"] == 1, j69)
         check("geen paginafouten in blok 69", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ─────────────────────────────────────────────────────────────
+        # Blok 70 — TT-431 (07-10-2026, P0, besluit Ronald): de terugknop.
+        # Elke situatie met de pijl én met de toestelknop. Beide moeten
+        # hetzelfde doen, in één druk, en de browsergeschiedenis groeit nooit.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 70 — terug: pijl en toestelknop doen hetzelfde, in één druk (TT-431)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        d70 = {}
+        for knop in ("pijl", "toestel"):
+            d70[knop] = page.evaluate("""async (knop) => {
+              const w = ms => new Promise(z => setTimeout(z, ms)), u = {};
+              const bewaard = currentUser;
+              const nu = () => ({ v: huidigeView, h: location.hash, n: history.length });
+              const druk = async () => { if (knop === 'pijl') terugKnop(); else history.back(); await w(150); };
+              const actief = () => huidigeView;
+              currentUser = { id: 'test' };
+              showView('myprofile'); await w(100);
+              const lengte0 = history.length;
+              // 1. de bovenkant van elk tabblad: een druk doet niets
+              u.top = {};
+              for (const v of ['myprofile', 'search', 'messages', 'bands']) {
+                showView(v); await w(100);
+                await druk();
+                u.top[v] = actief();
+              }
+              // 2. wisselen tussen tabbladen laat niets achter: terug blijft binnen het tabblad
+              showView('search'); await w(60); showView('messages'); await w(60); showView('bands'); await w(60);
+              showView('search'); await w(60); showView('search'); await w(60);
+              await druk();
+              u.naTabWissel = actief();
+              // 3. dieper in een tabblad: één druk naar de bovenkant, de tweede doet niets
+              showView('search'); await w(100);
+              showView('profiel', undefined, { id: 'x', app: true }); await w(150);
+              u.diepScherm = actief();
+              await druk();
+              u.diepEen = actief();
+              await druk();
+              u.diepTwee = actief();
+              // 4. diep, dan tabbladen wisselen, dan terug: je komt nooit in een ander tabblad
+              showView('search'); await w(60);
+              showView('profiel', undefined, { id: 'x', app: true }); await w(100);
+              showView('messages'); await w(60); showView('search'); await w(60);
+              await druk();
+              u.diepWissel = actief();
+              // 5. Instellingen vanuit Mijn Profiel: terug naar Mijn Profiel
+              showView('myprofile'); await w(60);
+              showView('instellingen'); await w(100);
+              await druk();
+              u.instellingen = actief();
+              // 6. een open venster sluit eerst; het scherm eronder blijft
+              showView('search'); await w(60);
+              showView('profiel', undefined, { id: 'x', app: true }); await w(100);
+              document.getElementById('confirmModal').classList.add('visible'); await w(60);
+              await druk();
+              u.modal = { open: document.getElementById('confirmModal').classList.contains('visible'), view: actief() };
+              await druk();
+              u.modalDaarna = actief();
+              // 7. een gesprek dat uit Zoeken komt: terug naar Zoeken, en dan niets
+              showView('search'); await w(100);
+              openMessageComposer('m2', 'dylan'); await w(150);
+              u.gesprek = { view: actief(), open: !!activeConversationId };
+              await druk();
+              u.gesprekTerug = { view: actief(), open: !!activeConversationId };
+              await druk();
+              u.gesprekDaarna = actief();
+              // 8. uitgelogd: Inloggen vanaf de landingspagina, terug naar de landingspagina
+              currentUser = null;
+              showView('landing'); await w(100);
+              showView('auth'); await w(100);
+              await druk();
+              u.uitgelogd = actief();
+              // 9. de geschiedenis van de browser is door dit alles niet gegroeid
+              u.lengteGroei = history.length - lengte0;
+              u.stapIsApp = !!(history.state && history.state.view);
+              currentUser = bewaard;
+              showView('myprofile'); await w(60);
+              return u;
+            }""", knop)
+        j70 = json.dumps(d70, ensure_ascii=False)
+        for knop, d in d70.items():
+            check(f"[{knop}] de bovenkant van elk tabblad: een druk doet niets",
+                  d["top"] == {"myprofile": "myprofile", "search": "search", "messages": "messages", "bands": "bands"}, j70)
+            check(f"[{knop}] tabbladen wisselen laat geen stap achter: terug blijft op Zoeken",
+                  d["naTabWissel"] == "search", j70)
+            check(f"[{knop}] dieper in een tabblad: één druk naar de bovenkant, de tweede doet niets",
+                  d["diepScherm"] == "profiel" and d["diepEen"] == "search" and d["diepTwee"] == "search", j70)
+            check(f"[{knop}] diep, tabbladen wisselen, terug: nooit een ander tabblad",
+                  d["diepWissel"] == "search", j70)
+            check(f"[{knop}] Instellingen: terug naar Mijn Profiel", d["instellingen"] == "myprofile", j70)
+            check(f"[{knop}] een open venster sluit eerst, daarna het scherm",
+                  d["modal"] == {"open": False, "view": "profiel"} and d["modalDaarna"] == "search", j70)
+            check(f"[{knop}] een gesprek uit Zoeken: terug naar Zoeken, daarna niets",
+                  d["gesprek"] == {"view": "messages", "open": True}
+                  and d["gesprekTerug"] == {"view": "search", "open": False} and d["gesprekDaarna"] == "search", j70)
+            check(f"[{knop}] uitgelogd: Inloggen gaat terug naar de landingspagina", d["uitgelogd"] == "landing", j70)
+            check(f"[{knop}] de browsergeschiedenis groeit niet en de app blijft op haar eigen stap",
+                  d["lengteGroei"] == 0 and d["stapIsApp"], j70)
+        check("geen paginafouten in blok 70", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
