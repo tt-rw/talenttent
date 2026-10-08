@@ -4256,8 +4256,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("toestel op licht, geen keuze: de app is licht",
               s["thema"] == "licht" and s["bg"] == "rgb(246, 243, 236)", json.dumps(s))
         check("en de balk van het toestel is crème (theme-color #F6F3EC)", s["balk"] == "#F6F3EC", s["balk"])
-        check("de tegel Thema toont 'Zoals mijn toestel'",
-              s["gekozen"] == "toestel" and s["tegel"].startswith("Zoals mijn toestel"), json.dumps(s))
+        check("de tegel Thema toont 'Zoals mijn browser' (TT-440)",
+              s["gekozen"] == "toestel" and s["tegel"].startswith("Zoals mijn browser"), json.dumps(s))
         p41.evaluate("window.showView('instellingen')")
         p41.wait_for_timeout(150)
         # Besluit Ronald, 26-09-2026: de tegel is even groot als de andere, en een
@@ -4289,7 +4289,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         d = p41.evaluate(stand41)
         p41.emulate_media(color_scheme="light"); p41.wait_for_timeout(100)
         l = p41.evaluate(stand41)
-        check("op 'Zoals mijn toestel' wisselt de app mee als het toestel wisselt",
+        check("op 'Zoals mijn browser' wisselt de app mee als de melding van de browser wisselt",
               d["thema"] == "donker" and l["thema"] == "licht", json.dumps([d["thema"], l["thema"]]))
         check("geen paginafouten (toestel op licht)", not f41, "; ".join(f41)[:300])
         c41.close()
