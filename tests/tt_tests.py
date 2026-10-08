@@ -5128,10 +5128,12 @@ window.TT_STUB.fnAntwoord = {};
               st49["kop"] == "Zoek eenzangeres" and st49["regel"] == "Voor je eerste optreden.", json.dumps(st49)[:300])
         check("tien woorden in de volgorde van Ronald, elk een eigen laag, 4 seconden per woord",
               st49["woorden"] == WOORDEN49 and st49["dias"] == 10 and st49["tempo"] == 4000, json.dumps(st49)[:300])
-        check("geen keuzeknoppen: alleen \"Zoek muzikanten →\" en \"Inloggen\"",
-              st49["knoppen"] == ["Zoek muzikanten →", "Inloggen"] and st49["chips"] == 0, json.dumps(st49["knoppen"]))
+        check("geen keuzeknoppen: alleen \"Zoek muzikanten →\", \"Inloggen\" en \"Profiel aanmaken\"",
+              st49["knoppen"] == ["Zoek muzikanten →", "Inloggen", "Profiel aanmaken"] and st49["chips"] == 0, json.dumps(st49["knoppen"]))
         check("subkop en inlogregel zoals besloten",
               st49["sub"] == "Muzikanten bij jou in de buurt." and st49["login"].startswith("Zoeken kan zonder profiel."), json.dumps(st49)[:300])
+        check("\"Profiel aanmaken\" op de landingspagina opent de wizard (blokkerend voor livegang, 08-10-2026)",
+              p49.evaluate("() => { const b = [...document.querySelectorAll('#view-landing button')].find(x => x.textContent.trim() === 'Profiel aanmaken'); b.click(); const id = document.querySelector('.app-view.active').id; showView('landing'); return id; }") == "view-register", "")
         check("het wisselen loopt zolang de landingspagina in beeld is", st49["klok"], "")
         # Een foto wordt pas gevraagd als hij bijna aan de beurt is; laadt hij niet, dan blijft het vlak.
         p49.wait_for_timeout(300)
