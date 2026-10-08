@@ -1972,7 +1972,8 @@ function musicianSetlistRowHTML(m) {
 // - Het Setlist-tabblad heeft twee standen: "Zoek muzikanten" (bestaand) en
 //   "Maak setlist" (deze). Vegen blijft tussen de hoofdtabbladen.
 // - Je kiest 2 tot 20 muzikanten, alleen muzikanten, geen bands. Wie zoekt,
-//   staat er niet vanzelf in.
+//   staat er sinds 08-10-2026 als eerste vanzelf in (bevinding Ronald: "meestal
+//   wil je jezelf ook in de lijst hebben"); met het ✕ haal je jezelf weg.
 // - Plaats en Straal beperken alleen de naamsuggesties ("honderd keer Colin").
 //   Wie gekozen is, blijft staan. Geen verruiming (huisstijl §17.1).
 // - Een nummer telt als het in iemands repertoire staat, ongeacht niveau.
@@ -1994,6 +1995,7 @@ let gedeeldSearchSeq = 0;
 let gedeeldNaamSeq = 0;
 let gedeeldNaamTimeout = null;
 let gedeeldKandidaten = null;      // { sleutel, lijst } — cache per vertrekpunt en straal
+let gedeeldEigenId = null;         // wie er vanzelf is toegevoegd; haal je jezelf weg, dan komt hij niet terug
 
 function setSetlistSoort(soort) {
   setlistSoort = soort === 'nummers' ? 'nummers' : 'muzikanten';
@@ -2014,7 +2016,9 @@ function setSetlistSoort(soort) {
 // Eén plek die bepaalt wat het Setlist-tabblad bij tonen opnieuw zoekt.
 function setlistZoekVerversen() {
   if (setlistSoort === 'nummers') {
-    if (gedeeldGekozen.length >= GEDEELD_MIN) runGedeeldSearch();
+    gedeeldEigenToevoegen().then(veranderd => {
+      if (!veranderd && gedeeldGekozen.length >= GEDEELD_MIN) runGedeeldSearch();
+    });
   } else if (setlistWantedSongs.length) {
     runSetlistSearch();
   }
@@ -2156,7 +2160,7 @@ async function gedeeldKandidatenLaden() {
   const afstand = {};
   rijen.forEach(r => { afstand[r.musician_id] = r.distance_km; });
   const ids = rijen.map(r => r.musician_id);
-  // Wie zoekt, mag zichzelf ook kiezen — alleen niet vanzelf (Ronald).
+  // Wie zoekt, staat ook in de kandidaten: haalt hij zichzelf weg, dan kiest hij zichzelf hier terug.
   if (hasOwnProfile) {
     const mid = await getMyMusicianId();
     if (mid && !ids.includes(mid)) ids.push(mid);
@@ -2204,6 +2208,36 @@ function addGedeeldMuzikant(id) {
   if (gedeeldGekozen.length >= GEDEELD_MIN) runGedeeldSearch();
 }
 
+// Wie een profiel heeft, staat als eerste in de lijst (08-10-2026). Eén keer per
+// account: haal je jezelf weg, dan blijft dat zo. Een ander account (of uitloggen)
+// haalt de vorige eigenaar weer weg. Geeft waar als de lijst veranderde en de
+// resultaten zijn bijgewerkt.
+async function gedeeldEigenToevoegen() {
+  try {
+    const mid = hasOwnProfile ? await getMyMusicianId() : null;
+    if (mid === gedeeldEigenId) return false;
+    if (gedeeldEigenId) {
+      const i = gedeeldGekozen.findIndex(g => g.id === gedeeldEigenId);
+      if (i !== -1) gedeeldGekozen.splice(i, 1);
+    }
+    gedeeldEigenId = mid;
+    if (mid && !gedeeldGekozen.some(g => g.id === mid)) {
+      const { data, error } = await db.from('musicians').select('id, fname, username, city').eq('id', mid).maybeSingle();
+      if (error) throw error;
+      if (data && gedeeldGekozen.length < GEDEELD_MAX) {
+        gedeeldGekozen.unshift({ id: data.id, naam: displayNameOf(data), city: data.city || '', distance_km: null });
+      }
+    }
+    renderGedeeldGekozen();
+    if (gedeeldGekozen.length >= GEDEELD_MIN) runGedeeldSearch();
+    else { gedeeldResultaat = []; gedeeldOpen.clear(); renderGedeeldResults(); }
+    return true;
+  } catch (e) {
+    logCaught('gedeeldEigenToevoegen', e);
+    return false;
+  }
+}
+
 function removeGedeeldMuzikant(i) {
   const weg = gedeeldGekozen.splice(i, 1)[0];
   renderGedeeldGekozen();
@@ -2235,6 +2269,7 @@ function renderGedeeldGekozen() {
 
 function resetGedeeldSearch() {
   gedeeldGekozen = [];
+  gedeeldEigenId = null;
   gedeeldResultaat = [];
   gedeeldOpen.clear();
   gedeeldKandidaten = null;
@@ -2249,6 +2284,7 @@ function resetGedeeldSearch() {
   refreshChoiceField('gedeeld-sorteren');
   renderGedeeldGekozen();
   renderGedeeldResults();
+  gedeeldEigenToevoegen(); // Lijst wissen: terug naar alleen jezelf
 }
 
 function setGedeeldSortMode(mode) {
