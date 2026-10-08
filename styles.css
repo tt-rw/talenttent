@@ -1827,8 +1827,11 @@
      alleen een badge en een adres liet niet zien welke link welke video was
      (Ronald). Ze zijn vervangen door .media-rij en niet blijven staan. */
 
+  /* TT-443 (08-10-2026, besluit Ronald: "zo groot dat het nog op 1 regel past"):
+     14px in plaats van 12px, zodat de uitleg bij de banner opvalt. 16px past op
+     een toestel van 360px niet op één regel (gemeten); 14px past, met ruimte. */
   .banner-teller {
-    font-size: var(--fs-sm);
+    font-size: 14px;
     color: var(--muted);
     margin: 0 0 10px;
     line-height: 1.4;

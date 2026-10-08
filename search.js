@@ -528,6 +528,16 @@ function zoekMuzikantVoorRol(instrument, plaats, bandNaam, datum, bandId) {
   melding.hidden = false;
 }
 
+/* TT-442 (08-10-2026, besluit Ronald: optie A): je eigen profiel staat niet
+   in de resultaten van Zoeken. Een rij met jezelf had geen doel, en een bericht
+   aan jezelf verscheen dubbel. Geldt voor Zoek muzikanten en voor Zoek
+   muzikanten via een setlist. "Maak setlist" is een ander scherm en zet je
+   eigen naam bewust wel in de lijst (TT-441). `myMusicianId` staat in core.js
+   en is gevuld zodra een zoekopdracht met profiel loopt. */
+function isEigenProfiel(id) {
+  return !!myMusicianId && id === myMusicianId;
+}
+
 /* TT-62: `straalOverride` is alleen voor de automatische verruiming hieronder.
    Roept een knop of filter deze functie aan, dan blijft die parameter leeg en
    geldt gewoon het straalveld van de gebruiker. */
@@ -726,6 +736,7 @@ async function runSearch(straalOverride) {
       // TT-62-controle op een leeg resultaat, zodat de app ook dán eerst
       // ruimer zoekt in plaats van meteen een lege staat te tonen.
       if (isGeblokkeerd(m.id)) return false;
+      if (isEigenProfiel(m.id)) return false; // TT-442
       const age = ageOf(m);
       if (age < ageMin || age > ageMax) return false;
       // TT-43: het naamveld doorzoekt precies dát wat je in de lijst ook ziet
@@ -1858,7 +1869,10 @@ async function runSetlistSearch(straalOverride) {
     // keuzelijst "Sorteren op" dezelfde lijst kan herschikken zonder opnieuw
     // te zoeken. "Beste match" geeft exact de volgorde van hiervoor.
     // TT-06: zelfde regel als bij Muzikanten, vóór de TT-62-controle.
-    const filtered = musicians.filter(m => m.matchCount > 0 && !isGeblokkeerd(m.id));
+    // TT-442: je eigen profiel staat er niet bij. De eigen id moet dan bekend zijn,
+    // ook als de straal vanuit een getypte Plaats werd bepaald.
+    if (hasOwnProfile) await getMyMusicianId();
+    const filtered = musicians.filter(m => m.matchCount > 0 && !isGeblokkeerd(m.id) && !isEigenProfiel(m.id));
 
     if (seq !== setlistSearchSeq) return; // TT-84: nieuwere zoekopdracht loopt al
     // TT-62: zelfde regel als bij Muzikanten en Bands.
