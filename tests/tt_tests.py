@@ -2073,6 +2073,37 @@ def blok_browser():
                 const ok = !!document.querySelector('#setlistSongsList .zoek-lijst .zoek-lijst-nr')
                   && document.querySelector('#setlistSongsList .song-remove').getAttribute('aria-label') === 'Verwijder T"1';
                 setlistWantedSongs = []; renderSetlistSongsList(); return ok; }"""), "")
+        # 08-10-2026 (bevinding Ronald): wie een profiel heeft, staat als eerste
+        # vanzelf in Maak setlist; met het ✕ haal je jezelf weg.
+        page.evaluate("""() => {
+          window.getMyMusicianId = async () => 'm1';
+          hasOwnProfile = true; myMusicianId = 'm1';
+          gedeeldGekozen = []; gedeeldEigenId = null;
+          setSetlistSoort('muzikanten');
+          setSetlistSoort('nummers');
+        }""")
+        page.wait_for_timeout(300)
+        eigen = page.evaluate("""() => ({ namen: gedeeldGekozen.map(g => g.naam), lijst: document.getElementById('gedeeldGekozenList').innerText,
+          teller: document.getElementById('gedeeldTeller').textContent, kruis: document.querySelectorAll('#gedeeldGekozenList .song-remove').length })""")
+        check("Maak setlist: je eigen naam staat vanzelf als eerste, met ✕, teller 1 van 20",
+              eigen["namen"] == ["ronnie"] and "ronnie" in eigen["lijst"] and eigen["kruis"] == 1 and eigen["teller"].startswith("1 van 20"), json.dumps(eigen))
+        page.evaluate("""() => { gedeeldKandidaten = { sleutel: 'x', straalActief: true, lijst: [{ id: 'm2', username: 'dylan', city: 'Delft', distance_km: 8 }] };
+          addGedeeldMuzikant('m2'); }""")
+        page.evaluate("removeGedeeldMuzikant(0)")
+        page.evaluate("setSetlistSoort('muzikanten'); setSetlistSoort('nummers')")
+        page.wait_for_timeout(300)
+        weg = page.evaluate("gedeeldGekozen.map(g => g.naam)")
+        check("jezelf weghalen blijft zo: de naam komt niet terug bij heropenen", weg == ["dylan"], json.dumps(weg))
+        page.evaluate("resetGedeeldSearch()")
+        page.wait_for_timeout(300)
+        wis2 = page.evaluate("gedeeldGekozen.map(g => g.naam)")
+        check("Lijst wissen: terug naar alleen jezelf", wis2 == ["ronnie"], json.dumps(wis2))
+        page.evaluate("() => { hasOwnProfile = false; }")
+        page.evaluate("gedeeldEigenToevoegen()")
+        page.wait_for_timeout(200)
+        uit = page.evaluate("gedeeldGekozen.length")
+        check("uitgelogd of zonder profiel: jezelf staat er niet in", uit == 0, str(uit))
+        page.evaluate("hasOwnProfile = false; myMusicianId = null; gedeeldEigenId = null; resetGedeeldSearch()")
         check("geen paginafouten in blok 21", not page_errors, "; ".join(page_errors)[:300])
         page.evaluate("window.TT_STUB.reset()")
 
