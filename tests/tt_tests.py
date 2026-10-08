@@ -4184,8 +4184,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("donker: --accent is goud, zoals vóór 26-09-2026", d40["accent"] == "#f5c518", d40["accent"])
         check("donker: ondergrond ongewijzigd #0d0d0d", d40["bg"] == "rgb(13, 13, 13)", d40["bg"])
         check("donker: profielvlak geel met zwarte T", d40["avatar"] == ["rgb(245, 197, 24)", "rgb(0, 0, 0)"], json.dumps(d40["avatar"]))
-        # TT-371 (besluit Ronald, 29-09-2026, variant C): niet meer grijs. Blok 47 toetst de kleur.
-        check("donker: je eigen bericht is gedempt goud, geen fel goud", d40["eigen"] == "rgb(201, 174, 82)", d40["eigen"])
+        # TT-371 (variant C) en TT-440 (Ronald, 08-10-2026, "1 - rustig"): niet grijs, warm goud, niet het merkgeel. Blok 47 toetst de kleur.
+        check("donker: je eigen bericht is warm goud #E0B52A, niet het merkgeel", d40["eigen"] == "rgb(224, 181, 42)", d40["eigen"])
         check("donker: actieve tab onderin is een geel vlak met zwarte tekst",
               d40["tab"] == ["rgb(245, 197, 24)", "rgb(0, 0, 0)"], json.dumps(d40["tab"]))
         check("donker: ongelezen blijft het rode rondje", d40["ongelezen"] == "rgb(229, 83, 61)", d40["ongelezen"])
@@ -4210,7 +4210,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("licht: gekozen tabblad is een geel vlak met zwarte tekst",
               l40["gekozen"] == ["rgb(245, 197, 24)", "rgb(30, 30, 30)"], json.dumps(l40["gekozen"]))
         check("licht: profielvlak geel met zwarte T", l40["avatar"] == ["rgb(245, 197, 24)", "rgb(30, 30, 30)"], json.dumps(l40["avatar"]))
-        check("licht: je eigen bericht bleek geel #F8E7A8 (TT-371)", l40["eigen"] == "rgb(248, 231, 168)", l40["eigen"])
+        check("licht: je eigen bericht vol geel #F2CE4A (TT-440)", l40["eigen"] == "rgb(242, 206, 74)", l40["eigen"])
         check("licht: ongelezen blijft hetzelfde rood als donker", l40["ongelezen"] == d40["ongelezen"], l40["ongelezen"])
         check("licht: veldlabel donker, gewone letters",
               l40["label"] == ["none", "rgb(30, 30, 30)"], json.dumps(l40["label"]))
@@ -4946,6 +4946,7 @@ window.TT_STUB.fnAntwoord = {};
             const [dag, eigen, ander, lang] = plek.children; const cs = x => getComputedStyle(x);
             const r = x => x.getBoundingClientRect();
             const uit = { eigen: [cs(eigen).backgroundColor, cs(eigen).color], ander: cs(ander).backgroundColor,
+              anderRand: cs(ander).borderTopColor, tijdEigen: cs(eigen.querySelector('.message-bubble-time')).opacity,
               hoog: [Math.round(r(eigen).height), Math.round(r(ander).height)],
               naast: Math.abs(r(eigen.querySelector('.message-bubble-time')).bottom - r(eigen).bottom) <= 8
                      && r(eigen.querySelector('.message-bubble-time')).left > r(eigen).left + 20,
@@ -4953,10 +4954,14 @@ window.TT_STUB.fnAntwoord = {};
               dag: Math.round(r(dag).height + parseFloat(cs(dag).marginTop) + parseFloat(cs(dag).marginBottom)) };
             plek.remove(); return uit; };
           const d = meet(null), l = meet('licht'); delete document.documentElement.dataset.theme; return { d, l }; }""")
-        check("donker: je eigen bericht is gedempt goud (#C9AE52) met zwarte tekst",
-              bb["d"]["eigen"] == ["rgb(201, 174, 82)", "rgb(30, 30, 30)"], json.dumps(bb["d"]))
-        check("licht: je eigen bericht is bleek geel (#F8E7A8) met zwarte tekst",
-              bb["l"]["eigen"] == ["rgb(248, 231, 168)", "rgb(30, 30, 30)"], json.dumps(bb["l"]))
+        check("donker: je eigen bericht is warm goud (#E0B52A) met zwarte tekst (TT-440)",
+              bb["d"]["eigen"] == ["rgb(224, 181, 42)", "rgb(30, 30, 30)"], json.dumps(bb["d"]))
+        check("licht: je eigen bericht is vol geel (#F2CE4A) met zwarte tekst (TT-440)",
+              bb["l"]["eigen"] == ["rgb(242, 206, 74)", "rgb(30, 30, 30)"], json.dumps(bb["l"]))
+        check("het bericht van de ander is zichtbaar tegen de ondergrond: donker #333333, licht rand #8A8782 (TT-440)",
+              bb["d"]["ander"] == "rgb(51, 51, 51)" and bb["l"]["anderRand"] == "rgb(138, 135, 130)", json.dumps([bb["d"]["ander"], bb["l"]["anderRand"]]))
+        check("de tijd in je eigen bericht heeft dekking 0,85 (TT-440)",
+              bb["d"]["tijdEigen"] == "0.85" and bb["l"]["tijdEigen"] == "0.85", json.dumps([bb["d"]["tijdEigen"], bb["l"]["tijdEigen"]]))
         check("een bericht van één regel is hooguit 34px hoog, de tijd staat op dezelfde regel",
               max(bb["d"]["hoog"]) <= 34 and bb["d"]["naast"] and bb["d"]["langBinnen"], json.dumps(bb["d"]))
         check("een dagscheiding neemt hooguit 34px in", bb["d"]["dag"] <= 34, json.dumps(bb["d"]))
