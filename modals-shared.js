@@ -152,20 +152,33 @@ function removePickerValue(id, value) {
   if (cfg.onChange) cfg.onChange();
 }
 
-// ─── Eigen instrumenten — instrument + niveau in één scherm ─────────────────
-// TT-U21 (12-08-2026) verving het druk-en-sleep-gebaar door een keuzescherm.
-// TT-116 (21-08-2026) voegt daar een instrumentenlijst aan toe. TT-168-
-// overgang (02-09-2026): omgezet naar een cfg-registry (zelfde patroon als
-// initPicker() hierboven) — de wizard EN het tegelscherm "Wat speel je"
-// delen nu dezelfde #instrumentLevelModal, elk met een eigen cfg-id i.p.v.
-// twee losse implementaties op hetzelfde element. cfg: { id, fieldId,
-// badgeRowId, getInstruments, getLevels, onChange }.
+// ─── Eigen instrumenten — instrument kiezen in een lijst, niveau inline ─────
+// TT-410a (08-10-2026, besluit Ronald): het instrument kies je nog in een
+// keuzelaag (#instrumentLevelModal, alleen de lijst), het niveau kies je
+// inline, onder de badges van het veld. Eén paneel per veld, voor één
+// instrument tegelijk: je tikt een badge om het paneel te openen of te
+// sluiten. De wizard EN het tegelscherm "Wat speel je" delen dit via een
+// cfg-registry (zelfde patroon als initPicker() hierboven). cfg: { id,
+// fieldId, badgeRowId, getInstruments, getLevels, onChange }. Per cfg houdt
+// de registry bij welk instrument openstaat (`openInstrument`) en of de
+// uitleg openstaat (`uitlegOpen`). Een instrument zonder niveau mag: het niveau
+// is geen slagboom (TT-U09, 12-08-2026); de badge zegt dan "Kies niveau".
 const INSTRUMENT_PICKERS = {};
 let activeInstrumentPickerId = null;
-let instrumentLevelTarget = null; // { instrument, cameFromList }
 
 function initInstrumentPicker(cfg) {
   INSTRUMENT_PICKERS[cfg.id] = cfg;
+  cfg.openInstrument = null;
+  cfg.uitlegOpen = false;
+  const rij = document.getElementById(cfg.badgeRowId);
+  const paneelId = cfg.badgeRowId + 'Niveau';
+  if (!document.getElementById(paneelId)) {
+    const paneel = document.createElement('div');
+    paneel.id = paneelId;
+    paneel.className = 'niveau-paneel';
+    paneel.hidden = true;
+    rij.insertAdjacentElement('afterend', paneel);
+  }
   document.getElementById(cfg.fieldId).onclick = () => openInstrumentPicker(cfg.id);
   renderInstrumentBadges(cfg.id);
   return cfg;
@@ -178,10 +191,10 @@ function instrumentLevelLabels() {
   return NIVEAU_INFO_MUSICIAN_ROWS.map(r => stripParenthetical(String(r[0]).replace(/^\d+\.\s*/, '')));
 }
 
-// TT-116: korte toelichting per niveau, onder de sterrenknop. Voorlopige
-// tekst — Ronald schrijft de definitieve versie (sessie 21-08-2026, "optie
-// 1"). Tot dan: eerste zin van de kolom "Technische beheersing" uit dezelfde
-// tabel, zodat er geen tweede bron ontstaat.
+// TT-116: korte toelichting per niveau. Voorlopige tekst — Ronald schrijft de
+// definitieve versie (sessie 21-08-2026, "optie 1"). Tot dan: eerste zin van
+// de kolom "Technische beheersing" uit dezelfde tabel, zodat er geen tweede
+// bron ontstaat.
 function instrumentLevelBlurbs() {
   return NIVEAU_INFO_MUSICIAN_ROWS.map(r => {
     const firstSentence = String(r[1]).split('. ')[0].replace(/\.+$/, '');
@@ -199,14 +212,77 @@ function renderInstrumentBadges(id) {
   document.getElementById(cfg.fieldId + 'Label').textContent = 'Kies een instrument';
   wrap.innerHTML = list.map(i => {
     const n = levels[i] || 0;
-    const stars = n ? '★'.repeat(n) : '';
+    const open = cfg.openInstrument === i;
+    const onder = n ? '<div class="picker-badge-stars">' + '★'.repeat(n) + '</div>'
+                    : '<div class="picker-badge-stars picker-badge-stars-leeg">Kies niveau</div>';
     return `
-    <div class="picker-badge has-level" onclick="reopenInstrumentBadge('${jsAttr(id)}','${jsAttr(i)}')">
-      <button type="button" class="picker-badge-remove" aria-label="${escAttr(i)} verwijderen" onclick="event.stopPropagation();quickRemoveInstrument('${jsAttr(id)}','${jsAttr(i)}')"><span aria-hidden="true">✕</span></button>
+    <div class="picker-badge has-level${open ? ' open' : ''}" onclick="toggleInstrumentNiveau('${jsAttr(id)}','${jsAttr(i)}')">
+      <button type="button" class="picker-badge-remove" aria-label="${escAttr(i)} verwijderen" onclick="event.stopPropagation();quickRemoveInstrument('${jsAttr(id)}','${jsAttr(i)}')">✕</button>
       <div class="picker-badge-label">${pickerDisplayLabel(i)}</div>
-      <div class="picker-badge-stars">${stars}</div>
+      ${onder}
     </div>`;
   }).join('');
+  renderInstrumentPaneel(id);
+}
+
+// Het paneel onder de badges: vijf compacte keuzes (sterren en naam), één zin
+// over het gekozen niveau, en een klapper met de uitleg van alle niveaus.
+function renderInstrumentPaneel(id) {
+  const cfg = INSTRUMENT_PICKERS[id];
+  const paneel = document.getElementById(cfg.badgeRowId + 'Niveau');
+  const instrument = cfg.openInstrument;
+  if (!instrument || !cfg.getInstruments().includes(instrument)) {
+    cfg.openInstrument = null;
+    paneel.hidden = true;
+    paneel.innerHTML = '';
+    return;
+  }
+  const huidig = cfg.getLevels()[instrument] || 0;
+  const labels = instrumentLevelLabels();
+  const blurbs = instrumentLevelBlurbs();
+  const keuzes = labels.map((label, idx) => {
+    const value = idx + 1;
+    let stars = '';
+    for (let i = 1; i <= 5; i++) stars += '<span class="' + (i <= value ? 'filled' : '') + '">' + (i <= value ? '★' : '☆') + '</span>';
+    return '<button type="button" class="level-choice' + (value === huidig ? ' selected' : '') + '"'
+      + ' aria-pressed="' + (value === huidig) + '" onclick="setInstrumentLevel(\'' + jsAttr(id) + '\',' + value + ')">'
+      + '<span class="level-choice-stars">' + stars + '</span>'
+      + '<span class="level-choice-label">' + escHtml(label) + '</span></button>';
+  }).join('');
+  const zin = huidig ? blurbs[huidig - 1] : 'Kies het niveau waar je het dichtst bij in de buurt zit.';
+  const uitleg = cfg.uitlegOpen
+    ? '<div class="niveau-uitleg">' + labels.map((label, idx) =>
+        '<p><strong>' + escHtml(label) + '</strong> — ' + escHtml(blurbs[idx]) + '</p>').join('') + '</div>'
+    : '';
+  paneel.innerHTML =
+    '<div class="niveau-paneel-titel">Niveau voor ' + pickerDisplayLabel(instrument) + '</div>'
+    + keuzes
+    + '<p class="picker-level-blurb">' + escHtml(zin) + '</p>'
+    + '<button type="button" class="niveau-uitleg-knop" aria-expanded="' + !!cfg.uitlegOpen + '" onclick="toggleNiveauUitleg(\'' + jsAttr(id) + '\')">Wat betekenen de niveaus?</button>'
+    + uitleg;
+  paneel.hidden = false;
+}
+
+// Tik op een badge: het paneel van dat instrument opent, of sluit als het al open stond.
+function toggleInstrumentNiveau(id, instrument) {
+  const cfg = INSTRUMENT_PICKERS[id];
+  cfg.openInstrument = cfg.openInstrument === instrument ? null : instrument;
+  cfg.uitlegOpen = false;
+  renderInstrumentBadges(id);
+}
+
+function toggleNiveauUitleg(id) {
+  const cfg = INSTRUMENT_PICKERS[id];
+  cfg.uitlegOpen = !cfg.uitlegOpen;
+  renderInstrumentPaneel(id);
+}
+
+function setInstrumentLevel(id, value) {
+  const cfg = INSTRUMENT_PICKERS[id];
+  if (!cfg.openInstrument) return;
+  cfg.getLevels()[cfg.openInstrument] = value;
+  renderInstrumentBadges(id);
+  if (cfg.onChange) cfg.onChange(); // zie toelichting bij removePickerValue-patroon, 13-08-2026
 }
 
 function quickRemoveInstrument(id, instrument) {
@@ -215,17 +291,16 @@ function quickRemoveInstrument(id, instrument) {
   const idx = list.indexOf(instrument);
   if (idx !== -1) list.splice(idx, 1);
   delete cfg.getLevels()[instrument];
+  if (cfg.openInstrument === instrument) cfg.openInstrument = null;
   renderInstrumentBadges(id);
   if (cfg.onChange) cfg.onChange();
 }
 
+// De keuzelaag met de instrumentenlijst. Een tik op een instrument voegt het
+// toe, sluit de laag en opent het paneel voor het niveau.
 function openInstrumentPicker(id) {
   activeInstrumentPickerId = id;
   renderInstrumentPickItems();
-  document.getElementById('instrumentPickStep').style.display = 'block';
-  document.getElementById('instrumentLevelStep').style.display = 'none';
-  document.getElementById('instrumentLevelFooter').style.display = 'none';
-  document.getElementById('instrumentLevelBackBtn').hidden = true;
   document.getElementById('instrumentLevelModal').classList.add('visible');
 }
 
@@ -243,130 +318,20 @@ function renderInstrumentPickItems() {
 }
 
 function pickInstrumentFromSheet(instrument) {
-  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
+  const id = activeInstrumentPickerId;
+  const cfg = INSTRUMENT_PICKERS[id];
   cfg.getInstruments().push(instrument);
   if (cfg.onChange) cfg.onChange(); // zie toelichting bij removePickerValue-patroon, 13-08-2026
-  showInstrumentLevelStep(instrument, /* cameFromList */ true);
+  closeInstrumentPicker();
+  cfg.openInstrument = instrument;
+  cfg.uitlegOpen = false;
+  renderInstrumentBadges(id);
+  const paneel = document.getElementById(cfg.badgeRowId + 'Niveau');
+  if (paneel && paneel.scrollIntoView) paneel.scrollIntoView({ block: 'nearest' });
 }
 
-// Tikken op een bestaande badge: direct naar de niveaustap, niveau wisselen.
-function reopenInstrumentBadge(id, instrument) {
-  activeInstrumentPickerId = id;
-  document.getElementById('instrumentLevelModal').classList.add('visible');
-  showInstrumentLevelStep(instrument, /* cameFromList */ false);
-}
-
-function showInstrumentLevelStep(instrument, cameFromList) {
-  instrumentLevelTarget = { instrument, cameFromList };
-  document.getElementById('instrumentPickStep').style.display = 'none';
-  document.getElementById('instrumentLevelStep').style.display = 'block';
-  document.getElementById('instrumentLevelFooter').style.display = 'block';
-  document.getElementById('instrumentLevelTitle').textContent = 'Wat is je huidige niveau voor ' + instrument + '?';
-  document.getElementById('instrumentLevelSubtitle').textContent =
-    cameFromList ? 'Kies het niveau waar je het dichtst bij in de buurt zit.' : 'Niveau wijzigen.';
-  document.getElementById('instrumentLevelBackBtn').hidden = !cameFromList;
-  renderInstrumentLevelChoices();
-}
-
-function backToInstrumentPick() {
-  if (!instrumentLevelTarget || !instrumentLevelTarget.cameFromList) return;
-  // Bugfix 23-08-2026: zelfde lek als in closeInstrumentLevelSheet()
-  // hierboven, apart nodig omdat dit pad niet via die functie loopt. Zonder
-  // dit blijft het net gekozen instrument zonder niveau in de lijst staan —
-  // en wordt het onvindbaar voor de fix hierboven zodra iemand daarna een
-  // ánder instrument kiest (instrumentLevelTarget wijst dan niet meer naar
-  // dit instrument).
-  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
-  const levels = cfg.getLevels();
-  if (!levels[instrumentLevelTarget.instrument]) {
-    const list = cfg.getInstruments();
-    const idx = list.indexOf(instrumentLevelTarget.instrument);
-    if (idx !== -1) list.splice(idx, 1);
-    renderInstrumentBadges(activeInstrumentPickerId);
-    if (cfg.onChange) cfg.onChange();
-  }
-  openInstrumentPicker(activeInstrumentPickerId);
-}
-
-function renderInstrumentLevelChoices() {
-  if (!instrumentLevelTarget) return;
-  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
-  const huidig = cfg.getLevels()[instrumentLevelTarget.instrument] || 0;
-  const labels = instrumentLevelLabels();
-  const blurbs = instrumentLevelBlurbs();
-  const rows = labels.map((label, idx) => {
-    const value = idx + 1;
-    let stars = '';
-    for (let i = 1; i <= 5; i++) stars += '<span class="' + (i <= value ? 'filled' : '') + '">' + (i <= value ? '\u2605' : '\u2606') + '</span>';
-    return '<button type="button" class="level-choice' + (value === huidig ? ' selected' : '') + '"'
-      + ' aria-pressed="' + (value === huidig) + '" onclick="setInstrumentLevel(' + value + ')">'
-      + '<span class="level-choice-stars">' + stars + '</span>'
-      + '<span style="display:flex;flex-direction:column;text-align:left;">'
-      + '<span class="level-choice-label">' + escHtml(label) + '</span>'
-      + '<span class="picker-level-blurb">' + escHtml(blurbs[idx]) + '</span></span>'
-      + '</button>';
-  }).join('');
-  document.getElementById('instrumentLevelChoices').innerHTML = rows;
-  equalizeLevelChoiceHeights();
-}
-
-// 21-08-2026: alle 5 niveauknoppen even hoog maken, ongeacht tekstlengte.
-// Meet ná het renderen de werkelijke hoogte van elke knop en zet ze
-// allemaal op de hoogste waarde. Werkt vanzelf door zodra de definitieve
-// toelichtingstekst (actielijst TT-117) de voorlopige vervangt — geen
-// handmatige CSS-waarde die opnieuw afgesteld moet worden.
-function equalizeLevelChoiceHeights() {
-  const buttons = document.querySelectorAll('#instrumentLevelChoices .level-choice');
-  if (!buttons.length) return;
-  buttons.forEach(b => { b.style.height = 'auto'; });
-  const maxHeight = Math.max(...Array.from(buttons).map(b => b.getBoundingClientRect().height));
-  buttons.forEach(b => { b.style.height = maxHeight + 'px'; });
-}
-
-function setInstrumentLevel(value) {
-  if (!instrumentLevelTarget) return;
-  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
-  cfg.getLevels()[instrumentLevelTarget.instrument] = value;
-  renderInstrumentBadges(activeInstrumentPickerId);
-  if (cfg.onChange) cfg.onChange(); // zie toelichting bij removePickerValue-patroon, 13-08-2026
-  closeInstrumentLevelSheet();
-}
-
-function removeInstrumentFromSheet() {
-  if (!instrumentLevelTarget) return;
-  // Knop heet "Terug" (Ronald, 06-09-2026) i.p.v. "Instrument verwijderen" —
-  // de actie zelf verwijdert nog steeds, dus deze melding maakt dat zichtbaar.
-  quickRemoveInstrument(activeInstrumentPickerId, instrumentLevelTarget.instrument);
-  showToast('Instrument verwijderd.');
-  closeInstrumentLevelSheet();
-}
-
-function closeInstrumentLevelSheet() {
-  // Bugfix 23-08-2026 (gevonden bij bredere code-controle, niet gemeld door
-  // Ronald): pickInstrumentFromSheet() voegt een instrument meteen toe aan
-  // de lijst, vóórdat er een niveau gekozen is — dat gebeurt pas in de stap
-  // die hierna opent. Sloot iemand dit scherm via het kruisje of een tik
-  // buiten de modal, dan bleef het instrument in de lijst staan zonder
-  // niveau. Bij opslaan ging niveau dan als null mee — instrument is
-  // verplicht in de wizard, dus dit pad is voor iedereen bereikbaar, niet
-  // een uitzondering. Alleen relevant bij een NIEUW gekozen instrument
-  // (cameFromList) zonder niveau: sluiten bij het wijzigen van een al
-  // bestaand instrument (cameFromList=false, via reopenInstrumentBadge)
-  // verandert niets aan de eerder gekozen waarde.
-  const cfg = INSTRUMENT_PICKERS[activeInstrumentPickerId];
-  if (cfg && instrumentLevelTarget && instrumentLevelTarget.cameFromList && !cfg.getLevels()[instrumentLevelTarget.instrument]) {
-    const list = cfg.getInstruments();
-    const idx = list.indexOf(instrumentLevelTarget.instrument);
-    if (idx !== -1) list.splice(idx, 1);
-    renderInstrumentBadges(activeInstrumentPickerId);
-    if (cfg.onChange) cfg.onChange();
-  }
+function closeInstrumentPicker() {
   document.getElementById('instrumentLevelModal').classList.remove('visible');
-  document.getElementById('instrumentPickStep').style.display = 'block';
-  document.getElementById('instrumentLevelStep').style.display = 'none';
-  document.getElementById('instrumentLevelFooter').style.display = 'none';
-  document.getElementById('instrumentLevelBackBtn').hidden = true;
-  instrumentLevelTarget = null;
 }
 
 // ─── Niveau: sterren 1-5 (TT-51, 12-08-2026) ─────────────────────────────────

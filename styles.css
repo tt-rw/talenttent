@@ -3490,30 +3490,7 @@
 
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
-  /* TT-116-vervolg (21-08-2026): kleine terugknop, spiegelbeeld van
-     .modal-close, voor de instrumentkeuze-sheet. Alleen zichtbaar als er
-     ook echt een vorige stap is om naar terug te gaan.
-     TT-322 (24-09-2026): spiegelbeeld blijft spiegelbeeld. Naast het nieuwe
-     sluitteken stond hier nog een cirkel met de letter ←; nu het terugteken
-     van de kop (§12 van de huisstijl), zonder cirkel. Het teken begint 17px
-     binnen de knop, dus de knop staat 12px van de linkerrand: het teken op
-     29px, even ver als de pijl in de kop. */
-  .modal-back {
-    position: absolute;
-    top: 12px; left: 12px;
-    width: 44px; height: 44px;
-    padding: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    cursor: pointer;
-    color: var(--accent);
-    transition: border-color 0.2s, background 0.2s, color 0.2s;
-  }
-  .modal-back svg { display: block; }
-  /* :hover verplaatst naar de touch-guard verderop (TT-182). */
-  .modal-back[hidden] { display: none; }
+  /* TT-410a (08-10-2026): de terugknop (.modal-back) is vervallen; het niveau staat inline. */
 
   /* TT-219 (06-09-2026): eigen, dunne scrollbarstijl voor modals i.p.v. de
      kale browserstijl — die viel qua kleur uit de toon tegen het donkere
@@ -3813,14 +3790,33 @@
     font-size: 12px; color: var(--muted); line-height: 1.4; margin-top: 4px;
   }
 
-  /* 21-08-2026: basis-minimumhoogte; de werkelijke gelijke hoogte wordt na
-     het renderen door JS bepaald (equalizeLevelChoiceHeights), op basis van
-     de langste tekst op dat moment. Zo blijft dit correct zodra de
-     voorlopige toelichtingstekst wordt vervangen door de definitieve
-     (actielijst TT-117), zonder dat deze waarde met de hand moet worden
-     bijgesteld. */
+  /* Basismaat van een niveaukeuze; in het paneel van TT-410a (hieronder) is hij 44px. */
   .level-choice { min-height: 56px; align-items: flex-start; }
   .level-choice .level-choice-stars { margin-top: 2px; }
+
+  /* TT-410a (08-10-2026): het niveau kies je inline, onder de badges van het
+     veld, in plaats van in een venster. Eén paneel voor één instrument. De
+     vijf keuzes zijn compact: sterren en naam, 44px hoog; de zin eronder
+     zegt wat het gekozen niveau betekent. */
+  .niveau-paneel {
+    margin-top: 8px; padding: 12px; background: var(--surface2);
+    border: var(--line) solid var(--border); border-radius: var(--radius-field);
+  }
+  .niveau-paneel[hidden] { display: none; }
+  .niveau-paneel-titel { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .niveau-paneel .level-choice { min-height: 44px; align-items: center; padding: 8px 14px; }
+  .niveau-paneel .level-choice .level-choice-stars { margin-top: 0; }
+  .niveau-paneel .picker-level-blurb { margin: 4px 0 0; font-size: 13px; }
+  .niveau-uitleg-knop {
+    background: none; border: none; padding: 0 4px; min-height: 44px; cursor: pointer;
+    font-family: 'Roboto', sans-serif; font-size: 13px; color: var(--muted);
+    text-decoration: underline; text-align: left;
+  }
+  .niveau-uitleg p { font-size: 12px; color: var(--muted); line-height: 1.4; margin: 0 0 6px; }
+  .niveau-uitleg p strong { color: var(--text); font-weight: 700; }
+  /* De badge van het open instrument: dikkere rand, zonder ander vlak. */
+  .picker-badge.open { box-shadow: inset 0 0 0 1px var(--accent); }
+  .picker-badge-stars-leeg { color: var(--muted); letter-spacing: 0; }
 
   /* TT-224 (hersteld 09-09-2026): media-grens (max-width:560px) losgekoppeld.
      Deze regels gelden nu op elke breedte — de webapp krijgt dezelfde schil
@@ -4191,7 +4187,6 @@
     .nav-menu-btn:hover { border-color: var(--border); background: var(--surface); }
     .profiel-knoppen .nav-menu-btn:hover { background: transparent; border-color: transparent; } /* TT-383 */
     .modal-close:hover { background: var(--tint-hover); }
-    .modal-back:hover { background: var(--tint-hover); }
     .niveau-info-btn:hover { background: var(--tint-hover); }
     .picker-field:hover { border-color: var(--accent); }
     .picker-list-item:hover { color: var(--accent); }

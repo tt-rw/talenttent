@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261008e">
+<link rel="stylesheet" href="styles.css?v=20261008f">
 </head>
 <body>
 
@@ -2704,38 +2704,17 @@
   </div>
 </div>
 
-<!-- TT-116 (21-08-2026): instrument kiezen + niveau kiezen in één scherm.
-     Twee stappen in dezelfde modal-box: eerst de instrumentenlijst
-     (#instrumentPickStep), dan de niveaukeuze (#instrumentLevelStep, bestond
-     al sinds TT-U21). Tikken op een bestaande badge opent direct de
-     niveaustap, met de huidige keuze aangevinkt (niveau wisselen).
-     21-08-2026: hergebruikt nu .modal-box-sticky-footer (bestond al voor het
-     muzikantprofiel, V-09) zodat de lijst de volledige beschikbare
-     schermhoogte vult i.p.v. een vaste 60vh — op een lange telefoon liet dat
-     hem eerder onterecht compleet lijken. De knoppen "Instrument
-     verwijderen" en "Volledige toelichting" staan nu samen in de vaste
-     voettekst, gelijke breedte, uitgelijnd met de niveauknoppen erboven. -->
-<div class="modal-overlay" id="instrumentLevelModal" data-close="closeInstrumentLevelSheet" onclick="if(event.target===this)closeInstrumentLevelSheet()">
+<!-- TT-410a (08-10-2026): de keuzelaag met alleen de instrumentenlijst. Het niveau
+     kies je inline, onder de badges van het veld (modals-shared.js, #…BadgeRowNiveau).
+     Het kruisje is hier de enige uitgang. Het element-id blijft
+     instrumentLevelModal; de naam is van voor TT-410a. -->
+<div class="modal-overlay" id="instrumentLevelModal" data-close="closeInstrumentPicker" onclick="if(event.target===this)closeInstrumentPicker()">
   <div class="modal-box modal-box-sticky-footer modal-box-slg">
-    <button class="modal-back" id="instrumentLevelBackBtn" onclick="backToInstrumentPick()" aria-label="Terug naar de instrumentenlijst" hidden><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 5 8 12 15 19"></polyline></svg></button>
-    <button class="modal-close" onclick="closeInstrumentLevelSheet()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+    <button class="modal-close" onclick="closeInstrumentPicker()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
 
     <div id="instrumentPickStep" class="modal-scroll-area">
       <div class="filter-title" style="margin-bottom:12px;padding-right:52px;">Kies een instrument</div>
       <div id="instrumentPickItems"></div>
-    </div>
-
-    <div id="instrumentLevelStep" class="modal-scroll-area" style="display:none;">
-      <div class="filter-title" id="instrumentLevelTitle" style="margin-bottom:4px;padding-left:52px;padding-right:52px;">Wat is je huidige niveau?</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;" id="instrumentLevelSubtitle">Kies het niveau waar je het dichtst bij in de buurt zit.</p>
-      <div id="instrumentLevelChoices"></div>
-    </div>
-
-    <div class="modal-sticky-footer" id="instrumentLevelFooter" style="display:none;">
-      <div class="btn-row">
-        <button type="button" class="btn btn-ghost" onclick="removeInstrumentFromSheet()">Annuleren</button>
-        <button type="button" class="btn btn-ghost" onclick="openMusicianNiveauInfoModal()">Uitgebreide toelichting niveaus</button>
-      </div>
     </div>
   </div>
 </div>
@@ -2842,7 +2821,7 @@
 <script src="musicians.js?v=20261008c"></script>
 <script src="bands.js?v=20261008b"></script>
 <script src="messages.js?v=20261008a"></script>
-<script src="modals-shared.js?v=20261002d"></script>
+<script src="modals-shared.js?v=20261008a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding
