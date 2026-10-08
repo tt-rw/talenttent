@@ -2381,24 +2381,23 @@ def blok_browser():
         check("en maakt activeListPickerId leeg", picker["voorActief"] == "genre"
               and picker["naActief"] is None, json.dumps(picker))
 
+        # TT-410a (08-10-2026): de instrumentkeuze is alleen nog de lijst. Het niveau
+        # kies je inline (blok 76). De terugknop sluit de lijst en laat de
+        # instrumenten ongewijzigd.
         instrument = page.evaluate("""async () => {
           const r = {};
           state.instruments = [];
           state.instrumentLevels = {};
           openInstrumentPicker('wizard');
-          pickInstrumentFromSheet('Gitaar');
-          r.voorLijst = state.instruments.slice();
+          r.open = document.getElementById('instrumentLevelModal').classList.contains('visible');
           history.back();
           await new Promise(res => setTimeout(res, 50));
           r.dicht = !document.getElementById('instrumentLevelModal').classList.contains('visible');
           r.naLijst = state.instruments.slice();
-          r.naTarget = instrumentLevelTarget;
           return r;
         }""")
-        check("terugknop sluit het instrumentniveau-scherm", instrument["dicht"], "")
-        check("en verwijdert een net gekozen instrument zonder niveau (TT-294, zelfde bugklasse als TT-129)",
-              instrument["voorLijst"] == ["Gitaar"] and instrument["naLijst"] == []
-              and instrument["naTarget"] is None, json.dumps(instrument))
+        check("terugknop sluit de instrumentenlijst", instrument["open"] and instrument["dicht"], json.dumps(instrument))
+        check("en laat de gekozen instrumenten ongemoeid", instrument["naLijst"] == [], json.dumps(instrument))
 
         check("geen paginafouten in blok 23", not page_errors, "; ".join(page_errors)[:300])
         page.evaluate("""() => {
@@ -3757,8 +3756,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("elk kruisje heeft een aria-label",
               all("aria-label" in t for t in re.findall(r'<button class="modal-close"[^>]*>', html322)), "")
         terug322 = re.findall(r'<button class="modal-back"[^>]*>(.*?)</button>', html322, re.S)
-        check("de terugknop in een venster is het terugteken, niet de letter ←",
-              len(terug322) == 1 and 'points="15 5 8 12 15 19"' in terug322[0] and "←" not in terug322[0], str(terug322)[:120])
+        check("geen terugknop meer in een venster (TT-410a: het niveau is inline), en nergens de letter ←",
+              len(terug322) == 0 and "←" not in html322, str(terug322)[:120])
         page.set_viewport_size({"width": 375, "height": 812})
         page.wait_for_timeout(80)
         kruis322 = page.evaluate("""() => {
@@ -6731,7 +6730,7 @@ window.TT_STUB.fnAntwoord = {};
           const terugKnoppen = [...document.querySelectorAll('button')].filter(b => b.textContent.trim() === 'Terug');
           uit.terugOverig = terugKnoppen.filter(b => !/^prevStep/.test(b.getAttribute('onclick') || '')).map(b => b.getAttribute('onclick'));
           uit.wizardStappen = terugKnoppen.length - uit.terugOverig.length;
-          uit.keuzeknoppen = ['confirmModal', 'deleteAccountModal', 'meldModal', 'instrumentLevelFooter']
+          uit.keuzeknoppen = ['confirmModal', 'deleteAccountModal', 'meldModal']
             .map(id => [...$(id).querySelectorAll('.btn-ghost')].map(b => b.textContent.trim())[0]);
           return uit;
         }""")
@@ -6741,7 +6740,7 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-408 C: het verplichte gebruikersnaamscherm sluit niet met de terugknop", d64["verplicht"], json.dumps(d64))
         check("TT-408 A: geen grote Terug-knop meer buiten de wizardstappen", d64["terugOverig"] == [], json.dumps(d64))
         check("TT-408: de wizard houdt zijn vijf Terug-knoppen", d64["wizardStappen"] == 5, json.dumps(d64))
-        check("TT-408: in een keuzevraag heet de knop Annuleren", d64["keuzeknoppen"] == ["Annuleren"] * 4, json.dumps(d64))
+        check("TT-408: in een keuzevraag heet de knop Annuleren", d64["keuzeknoppen"] == ["Annuleren"] * 3, json.dumps(d64))
         # TT-408 stap 3 (06-10-2026, besluit Ronald: "alle velden waar het kruisje
         # overbodig is kan je het kruisje weghalen"): het kruisje blijft alleen
         # staan waar het de enige uitgang is.
@@ -6769,7 +6768,7 @@ window.TT_STUB.fnAntwoord = {};
               d64k["zonderUitgang"] == [], json.dumps(d64k["zonderUitgang"]))
         for vid in ("deleteAccountModal", "meldModal", "bioModal"):
             check(f"TT-408: {vid} heeft geen kruisje meer", vid in d64k["zonderKruis"], json.dumps(d64k))
-        check("TT-408: de instrumentkeuze houdt zijn kruisje (stap 1 heeft verder geen uitgang)", d64k["instrumentKruis"], json.dumps(d64k))
+        check("TT-408: de instrumentkeuze houdt zijn kruisje (de lijst heeft verder geen uitgang)", d64k["instrumentKruis"], json.dumps(d64k))
         check("TT-408: er zijn tien kruisjes over", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 10, "")
         check("geen paginafouten in blok 64", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
@@ -7745,6 +7744,107 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 75", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
         page.set_viewport_size({"width": 390, "height": 844})
+
+        # ────────────────────────────────────────────────────────────
+        # Blok 76 — TT-410a (08-10-2026, besluit Ronald): het niveau van een
+        # instrument kies je inline, onder de badges, niet in een venster. De
+        # instrumentenlijst blijft een keuzelaag. Eén paneel per veld, voor één
+        # instrument tegelijk. Een instrument zonder niveau mag (TT-U09).
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 76 — niveau inline kiezen, instrumentenlijst blijft een keuzelaag (TT-410a)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        d76 = page.evaluate(r"""async () => {
+          const w = ms => new Promise(r => setTimeout(r, ms)), u = {}, $ = id => document.getElementById(id);
+          const keep = { myMusicianId, currentUser, hasOwnProfile };
+          myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; hasOwnProfile = true;
+          showView('profieltegels'); openTegelScreen('watSpeelJe'); await w(300);
+          wspState = { instruments: [], instrumentLevels: {}, genres: [] };
+          initInstrumentPicker({ id: 'wsp', fieldId: 'wspInstrumentField', badgeRowId: 'wspInstrumentBadgeRow',
+            getInstruments: () => wspState.instruments, getLevels: () => wspState.instrumentLevels });
+          initInstrumentPicker({ id: 'wsp', fieldId: 'wspInstrumentField', badgeRowId: 'wspInstrumentBadgeRow',
+            getInstruments: () => wspState.instruments, getLevels: () => wspState.instrumentLevels });
+          const paneel = () => $('wspInstrumentBadgeRowNiveau');
+          const badges = () => [...$('wspInstrumentBadgeRow').children];
+          u.paneelAantal = document.querySelectorAll('#wspInstrumentBadgeRowNiveau').length;
+          u.beginVerborgen = paneel().hidden;
+          // 1. Instrument kiezen uit de lijst: de laag sluit, het paneel opent, er is nog geen niveau
+          $('wspInstrumentField').click(); await w(60);
+          u.lijstOpen = $('instrumentLevelModal').classList.contains('visible');
+          pickInstrumentFromSheet('Gitaar'); await w(60);
+          u.naKeuze = { lijstDicht: !$('instrumentLevelModal').classList.contains('visible'), lijst: wspState.instruments.slice(),
+            niveau: wspState.instrumentLevels.Gitaar || null, paneelOpen: !paneel().hidden,
+            keuzes: paneel().querySelectorAll('.level-choice').length, badgeOpen: badges()[0].classList.contains('open'),
+            badgeTekst: badges()[0].querySelector('.picker-badge-stars').textContent.trim(),
+            titel: paneel().querySelector('.niveau-paneel-titel').textContent };
+          // 2. Maat: vijf keuzes van minstens 44px, binnen het scherm
+          const r = paneel().getBoundingClientRect();
+          u.maat = { minHoogte: Math.min(...[...paneel().querySelectorAll('.level-choice')].map(b => Math.round(b.getBoundingClientRect().height))),
+            binnen: r.left >= 0 && r.right <= window.innerWidth, scrollBreed: document.documentElement.scrollWidth <= window.innerWidth };
+          // 3. Niveau kiezen: een tik, het paneel blijft open met één zin over het niveau
+          const knoppen = () => [...paneel().querySelectorAll('.level-choice')];
+          knoppen()[2].click(); await w(60);
+          u.niveau3 = { niveau: wspState.instrumentLevels.Gitaar, paneelOpen: !paneel().hidden,
+            gekozen: knoppen().map(b => b.classList.contains('selected')), badge: badges()[0].querySelector('.picker-badge-stars').textContent.trim(),
+            zin: paneel().querySelector('.picker-level-blurb').textContent === instrumentLevelBlurbs()[2] };
+          knoppen()[3].click(); await w(60);
+          u.niveau4 = wspState.instrumentLevels.Gitaar;
+          // 4. De uitleg is een klapper in het paneel, geen tweede venster
+          paneel().querySelector('.niveau-uitleg-knop').click(); await w(40);
+          u.uitleg = { open: paneel().querySelectorAll('.niveau-uitleg p').length, modal: !!document.querySelector('#niveauInfoModal.visible') };
+          paneel().querySelector('.niveau-uitleg-knop').click(); await w(40);
+          u.uitlegDicht = paneel().querySelectorAll('.niveau-uitleg p').length;
+          // 5. Tik op de badge sluit het paneel, nog een tik opent het met het gekozen niveau
+          badges()[0].click(); await w(40);
+          u.dicht = paneel().hidden;
+          badges()[0].click(); await w(40);
+          u.weerOpen = { open: !paneel().hidden, gekozen: knoppen().map(b => b.classList.contains('selected')) };
+          // 6. Een tweede instrument: het eerste paneel sluit, het tweede opent, het niveau van het eerste blijft
+          $('wspInstrumentField').click(); await w(40);
+          pickInstrumentFromSheet('Bas'); await w(60);
+          u.tweede = { titel: paneel().querySelector('.niveau-paneel-titel').textContent, open: badges().map(b => b.classList.contains('open')),
+            niveauGitaar: wspState.instrumentLevels.Gitaar, zonderNiveau: badges()[1].querySelector('.picker-badge-stars').textContent.trim() };
+          // 7. Een instrument zonder niveau mag blijven staan (TT-U09)
+          u.zonderNiveauBlijft = wspState.instruments.slice();
+          // 8. Het open instrument weghalen: paneel dicht, niveau weg
+          badges()[1].querySelector('.picker-badge-remove').click(); await w(60);
+          u.weg = { lijst: wspState.instruments.slice(), dicht: paneel().hidden, niveauBas: wspState.instrumentLevels.Bas || null };
+          // 9. De oude stappen zijn weg
+          u.oud = ['instrumentLevelStep', 'instrumentLevelFooter', 'instrumentLevelBackBtn', 'instrumentLevelChoices'].filter(id => $(id));
+          u.oudeFuncties = ['showInstrumentLevelStep', 'backToInstrumentPick', 'removeInstrumentFromSheet', 'closeInstrumentLevelSheet',
+            'renderInstrumentLevelChoices', 'equalizeLevelChoiceHeights'].filter(n => typeof window[n] === 'function');
+          wspState = { instruments: [], instrumentLevels: {}, genres: [] };
+          myMusicianId = keep.myMusicianId; currentUser = keep.currentUser; hasOwnProfile = keep.hasOwnProfile;
+          return u;
+        }""")
+        j76 = json.dumps(d76, ensure_ascii=False)
+        check("het veld heeft één paneel, ook na twee keer initialiseren, en het begint verborgen",
+              d76["paneelAantal"] == 1 and d76["beginVerborgen"] is True, j76)
+        check("een instrument kiezen: de lijst sluit, het instrument staat erin zonder niveau, het paneel opent met vijf keuzes",
+              d76["lijstOpen"] and d76["naKeuze"]["lijstDicht"] and d76["naKeuze"]["lijst"] == ["Gitaar"] and d76["naKeuze"]["niveau"] is None
+              and d76["naKeuze"]["paneelOpen"] and d76["naKeuze"]["keuzes"] == 5 and d76["naKeuze"]["badgeOpen"]
+              and d76["naKeuze"]["badgeTekst"] == "Kies niveau" and d76["naKeuze"]["titel"] == "Niveau voor Gitaar", j76)
+        check("de vijf keuzes zijn minstens 44px hoog en passen op 390px",
+              d76["maat"]["minHoogte"] >= 44 and d76["maat"]["binnen"] and d76["maat"]["scrollBreed"], j76)
+        check("een niveau kiezen is één tik: het wordt gezet, het paneel blijft open, de badge toont de sterren, één zin legt het uit",
+              d76["niveau3"]["niveau"] == 3 and d76["niveau3"]["paneelOpen"] and d76["niveau3"]["gekozen"] == [False, False, True, False, False]
+              and d76["niveau3"]["badge"] == "★★★" and d76["niveau3"]["zin"], j76)
+        check("het niveau is te wijzigen met een tik", d76["niveau4"] == 4, j76)
+        check("de uitleg is een klapper in het paneel: vijf niveaus, geen tweede venster",
+              d76["uitleg"]["open"] == 5 and not d76["uitleg"]["modal"] and d76["uitlegDicht"] == 0, j76)
+        check("een tik op de badge sluit het paneel, nog een tik opent het met het gekozen niveau",
+              d76["dicht"] is True and d76["weerOpen"]["open"] and d76["weerOpen"]["gekozen"] == [False, False, False, True, False], j76)
+        check("een tweede instrument: het eerste paneel sluit, het tweede opent, het niveau van het eerste blijft",
+              d76["tweede"]["titel"] == "Niveau voor Bas" and d76["tweede"]["open"] == [False, True]
+              and d76["tweede"]["niveauGitaar"] == 4 and d76["tweede"]["zonderNiveau"] == "Kies niveau", j76)
+        check("een instrument zonder niveau mag blijven staan (TT-U09)", d76["zonderNiveauBlijft"] == ["Gitaar", "Bas"], j76)
+        check("het open instrument weghalen sluit het paneel en wist het niveau",
+              d76["weg"] == {"lijst": ["Gitaar"], "dicht": True, "niveauBas": None}, j76)
+        check("het niveau-venster en zijn stappen bestaan niet meer",
+              d76["oud"] == [] and d76["oudeFuncties"] == [], j76)
+        check("geen paginafouten in blok 76", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
