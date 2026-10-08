@@ -7681,6 +7681,71 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 74", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ─────────────────────────────────────────────────────────────
+        # Blok 75 — TT-442 en TT-443 (08-10-2026, besluiten Ronald): je eigen
+        # profiel staat niet in de resultaten van Zoeken; de uitleg bij de
+        # banner is groter en past nog op één regel.
+        # ─────────────────────────────────────────────────────────────
+        print("\nBlok 75 — eigen profiel niet in Zoeken; bannertekst op één regel (TT-442, TT-443)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 375, "height": 812})
+        d75 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = ms => new Promise(r => setTimeout(r, ms)), u = {};
+          const $ = id => document.getElementById(id);
+          const keep = { myMusicianId, currentUser, hasOwnProfile, wie: window.getMyMusicianId, filt: filterInstruments };
+          window.getMyMusicianId = async () => myMusicianId;
+          myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; hasOwnProfile = true;
+          filterInstruments = [];
+          const rij = (id, naam) => ({ id, fname: naam, username: naam.toLowerCase(), city: 'Den Haag', zip: '2491AA', bio: '', goal: null,
+            avatar_url: null, musician_instruments: [{ instrument: 'Gitaar', niveau: 3 }], musician_genres: [{ genre: 'Rock' }],
+            musician_songs: [{ song_title: 'One', song_artist: 'Metallica', mastery_level: 3 }] });
+          S.data.musicians = [rij('m1', 'Ronald'), rij('m2', 'Colin'), rij('m3', 'Tester1')];
+          const treffers = () => ['m1', 'm2', 'm3'].map((id, i) => ({ musician_id: id, distance_km: i + 2, score: 0.5, is_stale: false }));
+          S.rpcResults.tt_search_musicians = treffers;
+          S.rpcResults.tt_musicians_ages = [];
+          // 1. Zoek muzikanten
+          showView('search'); setSearchMode('musician'); await w(500);
+          document.getElementById('filterRadius').value = '10';
+          await runSearch(); await w(300);
+          const tekst = $('searchResults').textContent;
+          u.muz = { ik: /Ronald/.test(tekst), colin: /Colin/.test(tekst), tester: /Tester1/.test(tekst) };
+          u.muzLijst = lastMusicianResults.map(m => m.id);
+          // 2. Zoek muzikanten via een setlist, ook met een getypte Plaats
+          S.rpcResults.tt_search_musicians_by_songlist_anon = () => treffers();
+          S.rpcResults.tt_search_musicians_anon = () => treffers();
+          setlistWantedSongs = [{ title: '', artist: 'Metallica' }];
+          document.getElementById('filterSetlistRadius').value = '10';
+          document.getElementById('filterSetlistCity').value = '';
+          await runSetlistSearch(); await w(300);
+          u.setlist = lastSetlistResults.map(m => m.id);
+          // 3. Zonder profiel verandert er niets: niemand valt weg
+          myMusicianId = null; hasOwnProfile = false;
+          await runSearch(); await w(300);
+          u.zonderProfiel = lastMusicianResults.length;
+          // 4. De bannertekst
+          currentUser = currentUser || { id: 'u1' }; myMusicianId = 'm1'; hasOwnProfile = true;
+          showView('profieltegels'); openTegelScreen('mediahoek'); await w(250);
+          const el = $('mhBannerTeller'); el.innerHTML = bannerTellerHTML(3);
+          const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+          u.banner = { fs: cs.fontSize, regels: Math.round(r.height / parseFloat(cs.lineHeight)), breed: Math.round(r.width) };
+          u.alleTellers = ['wizardBannerTeller', 'mhBannerTeller', 'bmBannerTeller'].map(id => !!$(id) && $(id).classList.contains('banner-teller'));
+          window.getMyMusicianId = keep.wie; myMusicianId = keep.myMusicianId; currentUser = keep.currentUser;
+          hasOwnProfile = keep.hasOwnProfile; filterInstruments = keep.filt;
+          return u;
+        }""")
+        j75 = json.dumps(d75, ensure_ascii=False)
+        check("Zoek muzikanten: je eigen profiel staat er niet bij, de anderen wel",
+              d75["muz"] == {"ik": False, "colin": True, "tester": True} and d75["muzLijst"] == ["m2", "m3"], j75)
+        check("Zoek muzikanten via een setlist: je eigen profiel staat er niet bij, de anderen wel",
+              d75["setlist"] == ["m2", "m3"], j75)
+        check("zonder eigen profiel valt niemand weg", d75["zonderProfiel"] == 3, j75)
+        check("de uitleg bij de banner is 14px en past op 375px op één regel, voor alle drie de schermen",
+              d75["banner"]["fs"] == "14px" and d75["banner"]["regels"] == 1 and d75["alleTellers"] == [True] * 3, j75)
+        check("geen paginafouten in blok 75", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+        page.set_viewport_size({"width": 390, "height": 844})
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
