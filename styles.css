@@ -96,11 +96,11 @@
     --rand-neutraal: #3a3a3a;               /* badge, profielfoto, lege ster in een badge */
     --rand-knop: #888;                      /* rand van de tweede knop (.btn-ghost): 3:1 of meer op elk vlak, besluit Ronald 27-09-2026 */
     --ongelezen: #e5533d;                   /* rood rondje met het aantal ongelezen berichten */
-    --bericht-eigen: #C9AE52;               /* je eigen bericht: gedempt goud (TT-371, Ronald: "C") */
-    --bericht-rand-eigen: #C9AE52;
-    --bericht-eigen-tekst: #1E1E1E;         /* tekst in je eigen bericht: 7,7:1 */
-    --bericht-ander: var(--surface2);       /* het bericht van de ander */
-    --bericht-rand: var(--border);
+    --bericht-eigen: #E0B52A;               /* je eigen bericht: warm goud (TT-440, Ronald: "1 - rustig"; was #C9AE52, TT-371) */
+    --bericht-rand-eigen: #E0B52A;
+    --bericht-eigen-tekst: #1E1E1E;         /* tekst in je eigen bericht: 8,6:1; vlak tegen de ondergrond 10:1 */
+    --bericht-ander: #333333;               /* het bericht van de ander: 1,54:1 tegen de ondergrond, tekst 11,1:1 (TT-440; was --surface2, 1,17:1) */
+    --bericht-rand: #333333;
     --knop-klein-vlak: var(--surface2);     /* vlak onder het berichticoon op een resultaat */
     /* TT-61 (30-09-2026): de landingspagina. Tekst en lagen op een foto zijn
        in beide thema's gelijk; de foto bepaalt de ondergrond, niet het thema. */
@@ -164,11 +164,11 @@
     --schaduw-melding: 0 4px 20px rgba(30,30,30,0.06);
     --rand-neutraal: #ADA698;      /* TT-402: rand van een tag, 2,2:1 op crème (was #CFC9BC) */
     --rand-knop: #8A8782;          /* tweede knop: 3:1 of meer op crème en wit (Ronald, 27-09-2026) */
-    --bericht-eigen: #F8E7A8;       /* bleek geel (TT-371) */
-    --bericht-rand-eigen: #E0C96E;
+    --bericht-eigen: #F2CE4A;       /* vol geel (TT-440, Ronald: "1 - rustig"; was #F8E7A8, TT-371) */
+    --bericht-rand-eigen: #F2CE4A;
     --bericht-eigen-tekst: #1E1E1E;
     --bericht-ander: var(--surface);
-    --bericht-rand: #B8B4AA;
+    --bericht-rand: #8A8782;        /* TT-440: rand van het bericht van de ander, 3,2:1 op crème (was #B8B4AA, 1,9:1) */
     --knop-klein-vlak: var(--surface2);   /* TT-410a: ook in licht een zichtbaar vlak onder het icoon (Ronald, 06-10-2026) */
   }
   /* Voorbeeldtekst in een veld: de standaard van de browser is op crème te
@@ -2504,6 +2504,8 @@
   .message-bubble.own { background: var(--bericht-eigen); color: var(--bericht-eigen-tekst); border: 1px solid var(--bericht-rand-eigen); margin-left: auto; border-radius: 16px 16px 4px 16px; }
   .message-bubble.other { background: var(--bericht-ander); border: 1px solid var(--bericht-rand); border-radius: 16px 16px 16px 4px; }
   .message-bubble-time { float: right; font-size: 10px; line-height: 12px; opacity: 0.7; margin: 8px 0 0 10px; }
+  /* TT-440: de tijd in je eigen bericht haalde bij 0,7 maar 4,1:1; bij 0,85 is dat 6,2:1. */
+  .message-bubble.own .message-bubble-time { opacity: 0.85; }
   /* V-07 (13-08-2026): vinkje bij een eigen bericht dat gelezen is. */
   .message-bubble-read { margin-left: 4px; font-weight: 700; opacity: 0.85; }
 
