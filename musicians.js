@@ -91,7 +91,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       ${m.musician_instruments.map(x => `<span class="tag-solid">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
       ${m.musician_genres.map(x => `<span class="tag-solid">${escHtml(x.genre)}</span>`).join('')}
     </div>
-    ${m.bio ? `<p style="font-size:15px;color:var(--text);margin:12px 0;">${escHtml(m.bio)}</p>` : ''}
+    ${m.bio ? `<p class="profile-bio">${escHtml(m.bio)}</p>` : ''}
     ${profielBandsHTML(m.bands)}
     ${m.musician_songs.length ? `
       <div class="profile-songs">
@@ -126,15 +126,15 @@ function profielMediaHTML(mediaLijst) {
          banner. Losse <video controls> in het raster was de enige plek in de
          app waar media nog buiten dat scherm om speelde. -->
     ${(photos.length || videos.length) ? `
-      <div class="profile-media" style="margin-top:16px;">
+      <div class="profile-media">
         <div class="profile-media-title">Foto's en video's</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
           ${photos.map(p => p.afgeschermd ? mediaAfgeschermdHTML() : `<button type="button" class="profile-media-tegel" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')"><img src="${p.safeHref}" alt="Foto" style="width:100%;height:100%;object-fit:cover;"></button>`).join('')}
-          ${videos.map(v => v.afgeschermd ? mediaAfgeschermdHTML() : `<button type="button" class="profile-media-tegel" onclick="openMediaSpeler('${jsAttr(v.safeHref)}', 'video')"><video src="${v.safeHref}#t=0.1" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true" style="width:100%;height:100%;object-fit:cover;background:#000;"></video><span class="pb-label">Video</span></button>`).join('')}
+          ${videos.map(v => v.afgeschermd ? mediaAfgeschermdHTML() : `<button type="button" class="profile-media-tegel" onclick="openMediaSpeler('${jsAttr(v.safeHref)}', 'video')"><video src="${v.safeHref}#t=0.1" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true" style="width:100%;height:100%;object-fit:cover;background:#000;"></video><span class="pb-label">Video</span>${SPEELTEKEN_HTML}</button>`).join('')}
         </div>
       </div>` : ''}
     ${links.length ? `
-      <div class="profile-media" style="margin-top:16px;">
+      <div class="profile-media">
         <div class="profile-media-title">Links</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
           ${links.map(l => {
@@ -142,9 +142,9 @@ function profielMediaHTML(mediaLijst) {
             const ytId = extractYouTubeId(l.safeHref);
             const label = l.platform || 'Link';
             const inner = ytId
-              ? `<img src="https://img.youtube.com/vi/${jsAttr(ytId)}/hqdefault.jpg" alt="${escAttr(label)}" style="width:100%;height:100%;object-fit:cover;display:block;">`
+              ? `<img src="https://img.youtube.com/vi/${jsAttr(ytId)}/hqdefault.jpg" alt="${escAttr(label)}" style="width:100%;height:100%;object-fit:cover;display:block;">` + SPEELTEKEN_HTML
               : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface2);text-align:center;padding:4px;"><span style="font-size:12px;font-weight:700;color:var(--text);">${escHtml(label)}</span></div>`;
-            const tileStyle = 'display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);padding:0;background:none;';
+            const tileStyle = 'position:relative;display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);padding:0;background:none;';
             // TT-158 (27-08-2026) trok hier een grens bij "ingelogd": alleen
             // dan klikbaar. TT-218 (06-09-2026), op verzoek van Ronald: die
             // grens losgelaten — een link opent nu onder alle omstandigheden,
@@ -1353,7 +1353,7 @@ function jstRenderSongs() {
         <span>Band / Artiest — Nummer</span><span style="margin-right:40px;">Beheersing</span><span></span>
       </div>
       ${displayOrder.map(i => { const s = jstSongs[i]; return `
-        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);gap:12px;">
+        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 12px;gap:12px;">
           <div>
             <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
             <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>

@@ -536,7 +536,7 @@ function searchMembersToAdd(query) {
           ? `<span style="font-size:12px;color:var(--muted);">Niet open voor uitnodigingen</span>`
           : `<button class="btn btn-ghost" onclick="openInviteNote(this, '${jsAttr(m.id)}', '${jsAttr(memberName)}')">Uitnodigen</button>`;
         return `
-        <div class="member-search-row lijst-rij" style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <div class="member-search-row lijst-rij" style="display:flex;align-items:center;gap:12px;padding:8px 0;">
           <div style="width:32px;height:32px;border-radius:50%;background:var(--merk);color:var(--merk-tekst);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${escHtml(memberName[0].toUpperCase())}</div>
           <div style="flex:1;">
             <div style="font-weight:600;font-size:14px;">${escHtml(memberName)}</div>

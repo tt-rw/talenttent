@@ -1221,13 +1221,24 @@
   }
 
 
-  .profile-songs { margin-top: 16px; }
+  /* Eén afstand tussen de blokken van een profiel (bio, Bands, Repertoire,
+     Foto's en video's, Links; muzikant en band gelijk): 20px boven de
+     scheidslijn, 20px eronder. De lijn staat boven een blok, nooit tussen twee
+     rijen binnen een blok, en niet onder het laatste. Besluit Ronald,
+     08-10-2026. De laatste rij van een blok heeft geen opvulling onder zich,
+     anders is de ruimte onder de laatste rij groter dan boven de lijn. */
+  .profile-songs {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .profile-bio { font-size: 15px; color: var(--text); margin: 0; }
   .profile-songs-title {
     font-size: 11px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--muted);
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   .profile-song-row {
@@ -1235,11 +1246,10 @@
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px solid var(--border);
     font-size: 13px;
   }
 
-  .profile-song-row:last-child { border-bottom: none; }
+  .profile-song-row:last-child { padding-bottom: 0; }
 
   /* TT-316 (24-09-2026, besluit Ronald K9): de tagvorm van .tag-solid
      (TT-315) — wit op 5%, 11px, hoek 6px, geen hoofdletters. Wit, vet en
@@ -1480,6 +1490,27 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  /* Het speelteken (SPEELTEKEN_HTML in utils.js): midden op het beeld van een
+     video. Alleen een teken; de tik gaat naar het vlak eronder. */
+  .pb-speel {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 48px;
+    height: 48px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: rgba(13,13,13,0.65);
+    color: var(--op-foto);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .pb-speel svg { width: 20px; height: 20px; margin-left: 2px; display: block; }
+  .profile-media .pb-speel { width: 32px; height: 32px; }
+  .profile-media .pb-speel svg { width: 14px; height: 14px; }
 
   /* Een link zonder miniatuur (Spotify, SoundCloud, Instagram, TikTok)
      krijgt een kaart met de platformnaam en, zodra oEmbed antwoordt, de
@@ -2016,7 +2047,7 @@
   /* Profile media section */
   .profile-media {
     margin-top: 20px;
-    padding-top: 16px;
+    padding-top: 20px;
     border-top: 1px solid var(--border);
   }
 
@@ -2649,7 +2680,6 @@
     flex-direction: column;
     padding: 14px 20px 14px 17px;
     background: var(--surface);
-    border-bottom: 1px solid var(--border);
     border-left: 3px solid var(--accent);
     cursor: pointer;
     transition: background 0.15s;
@@ -2665,7 +2695,6 @@
     gap: 16px;
   }
 
-  .result-row:last-child { border-bottom: none; }
   .result-row:hover { background: var(--surface2); }
 
   /* TT-30 (07-08-2026): segmented control — vervangt losse ovale pillen bij
@@ -2960,9 +2989,7 @@
     align-items: center;
     gap: 12px;
     padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
   }
-  .zoek-lijst-rij:last-child { border-bottom: none; }
   .zoek-lijst-voor { width: 26px; flex-shrink: 0; }
   .zoek-lijst-nr { font-size: 14px; font-weight: 700; color: var(--accent); }
   .zoek-lijst-hoofd { flex: 1; min-width: 0; }
@@ -2975,9 +3002,7 @@
      open (Ronald, 17-09-2026: optie A). */
   .gedeeld-rij {
     background: var(--surface);
-    border-bottom: 1px solid var(--border);
   }
-  .gedeeld-rij:last-child { border-bottom: none; }
   .gedeeld-rij-kop {
     display: flex;
     align-items: center;
@@ -3373,7 +3398,7 @@
   .avatar-preview.avatar-preview-vierkant { border-radius: 12px; }
 
   /* Een rij in Onze bezetting: foto, naam en regel, rechts de drie puntjes. */
-  .bb-rij { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .bb-rij { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
   .bb-foto {
     width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
@@ -3398,10 +3423,11 @@
      bezetting, als knop; de bandfoto is vierkant, zoals overal. */
   .bb-foto-vierkant { border-radius: 8px; }
   .profiel-band-rij {
-    width: 100%; background: none; border: 0; border-bottom: 1px solid var(--border);
+    width: 100%; background: none; border: 0;
     font: inherit; color: var(--text); text-align: left; cursor: pointer;
   }
-  .profiel-band-rij:last-child { border-bottom: 0; }
+  /* Geen lijn tussen twee bands; de scheiding staat onder het blok (.profile-songs). */
+  .profiel-band-rij:last-child { padding-bottom: 0; }
   .profiel-band-rij .bb-naam, .profiel-band-rij .bb-sub { display: block; }
 
   /* Onze muziek: de titel van een eigen nummer is te bewerken in de rij,
@@ -3616,9 +3642,7 @@
     align-items: center;
     gap: 12px;
     padding: 12px 0;
-    border-bottom: 1px solid var(--border);
   }
-  .geblokkeerd-rij:last-child { border-bottom: none; }
   .geblokkeerd-naam { font-size: 16px; font-weight: 700; color: var(--text); }
   .geblokkeerd-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
   /* Geen volle-breedte knop: hij hoort bij de rij ernaast, niet bij het

@@ -751,7 +751,7 @@ function renderSongs() {
         <span>Band / Artiest — Nummer</span><span style="margin-right:40px;">Beheersing</span><span></span>
       </div>
       ${displayOrder.map(i => { const s = state.songs[i]; return `
-        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);gap:12px;">
+        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 12px;gap:12px;">
           <div>
             <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
             <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
@@ -1780,6 +1780,12 @@ function mediaAfgeschermdHTML() {
   return `<div class="profile-media-tegel media-afgeschermd" role="img" aria-label="Alleen zichtbaar met een account"><span class="avatar-t">T</span></div>`;
 }
 
+// Het speelteken: een driehoek in een ronde schijf, midden op elk beeld dat een
+// video is (de banner en de videotegel op het profiel). Alleen een teken, geen
+// knop: de tik gaat naar het vlak eronder. Besluit Ronald, 08-10-2026: "niet
+// zichtbaar in de banner dat het een video is. voeg een play teken toe."
+const SPEELTEKEN_HTML = '<span class="pb-speel" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg></span>';
+
 function profielBannerHTML(mediaLijst) {
   const items = profielBannerItems(mediaLijst);
   if (!items.length) return '';
@@ -1806,13 +1812,13 @@ function profielBannerHTML(mediaLijst) {
       // iPhone een zwart vlak zien tot er getikt wordt. muted + playsinline
       // staan erbij omdat de browser het element anders niet mag uitlezen.
       binnen = `<video class="pb-beeld" src="${escAttr(url)}#t=0.1" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video>` +
-               `<span class="pb-label">Video</span>`;
+               `<span class="pb-label">Video</span>` + SPEELTEKEN_HTML;
       tik = `openMediaSpeler('${jsAttr(url)}', 'video')`;
     } else {
       const ytId = extractYouTubeId(url);
       binnen = ytId
         ? `<img class="pb-beeld" src="https://img.youtube.com/vi/${escAttr(ytId)}/hqdefault.jpg" alt="" loading="lazy">` +
-          `<span class="pb-label" data-media-url="${escAttr(url)}">${escHtml(platform)}</span>`
+          `<span class="pb-label" data-media-url="${escAttr(url)}">${escHtml(platform)}</span>` + SPEELTEKEN_HTML
         : `<span class="pb-kaart">` +
           `<span class="pb-kaart-platform">${escHtml(platform)}</span>` +
           `<span class="pb-kaart-titel" data-media-url="${escAttr(url)}">Tik om te openen</span>` +
