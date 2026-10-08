@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261008h">
+<link rel="stylesheet" href="styles.css?v=20261008i">
 </head>
 <body>
 
@@ -347,13 +347,7 @@
     <div class="field-group single">
       <div class="field">
         <label>Korte bio</label>
-        <div class="bio-prompts">
-          <button type="button" class="bio-prompt-chip" onclick="applyBioPrompt('Ik speel al ... jaar ')">Wat doe je en hoe lang speel je al?</button>
-          <button type="button" class="bio-prompt-chip" onclick="applyBioPrompt('Op dit moment ben ik vooral bezig met ')">Op dit moment ben ik vooral bezig met...</button>
-          <button type="button" class="bio-prompt-chip" onclick="applyBioPrompt('De meeste energie krijg ik van ')">De meeste energie krijg ik van ...</button>
-          <button type="button" class="bio-prompt-chip" onclick="applyBioPrompt('Wat ik wil bereiken is ')">Vertel eens wat je wil bereiken.</button>
-        </div>
-        <textarea id="bio" placeholder="Bijv. Ik speel al 3 jaar gitaar en ben op zoek naar een drummer voor een band..."></textarea>
+        <textarea id="bio" class="bio-voorbeeld" placeholder="Hoi allemaal! Ik ben Kevin. Ik speel nu al meer dan drie jaar drums en ik wil graag een stapje verder gaan. Daarom ben ik op zoek naar anderen die het leuk vinden om samen een classic rockband te beginnen.&#10;Ik denk dat we in het begin vooral covers kunnen spelen, maar het lijkt me uiteindelijk echt vet om onze eigen muziek te maken. Mijn favoriete bands zijn onder andere Van Halen en Guns N’ Roses, maar ik luister naar nog veel meer.&#10;Lijkt het je leuk om samen een band te beginnen? Stuur me dan zeker een berichtje!"></textarea>
       </div>
     </div>
 
@@ -2788,7 +2782,7 @@
 <script src="veiligheid.js?v=20261007c"></script>
 <script src="auth.js?v=20260927b"></script>
 <script src="postcode.js?v=20261002d"></script>
-<script src="wizard.js?v=20261008b"></script>
+<script src="wizard.js?v=20261008c"></script>
 <script src="ouder.js?v=20261001a"></script>
 <script src="search.js?v=20261008b"></script>
 <script src="musicians.js?v=20261008d"></script>
