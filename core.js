@@ -1461,8 +1461,11 @@ function showView(view, mode, extra) {
     if (!currentUser && !editingMusicianId && typeof hervatOuderRoute === 'function') hervatOuderRoute();
   }
 
-  if (view === 'myprofile') loadMyProfile();
-  if (view === 'bands') loadMyBands();
+  // Bij een wissel tussen twee tabbladen blijft de vorige inhoud staan tot de nieuwe er is (geen "Laden..." in beeld).
+  // Komt het scherm uit een bewerkscherm of profiel, dan laadt het opnieuw: er kan iets gewijzigd zijn.
+  const tabWissel = TAB_VIEWS.includes(vorigeView);
+  if (view === 'myprofile') loadMyProfile({ behoud: tabWissel });
+  if (view === 'bands') loadMyBands({ behoud: tabWissel });
   if (view === 'instellingen') laadInstellingen(); // TT-437
   // TT-410b: terug van een profiel naar Zoeken laat de resultaten staan. Zoeken
   // laadt bij het openen opnieuw (TT-10); met het profiel als scherm zou elke
@@ -1472,7 +1475,7 @@ function showView(view, mode, extra) {
   // staan; de inbox laadt alleen als er geen gesprek open was.
   if (view === 'messages') {
     const draadOpen = document.getElementById('messagesThreadPanel')?.style.display !== 'none' && activeConversationId;
-    if (!(mode === 'pop' && draadOpen)) loadInbox();
+    if (!(mode === 'pop' && draadOpen)) loadInbox({ behoud: TAB_VIEWS.includes(vorigeView) });
   }
   if (view === 'profiel') {
     profielLaadBelofte = profielSoort === 'band'

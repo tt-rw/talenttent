@@ -787,10 +787,14 @@ async function saveBandRun() {
   }
 }
 
-async function loadMyBands() {
+async function loadMyBands(opties) {
   const el = document.getElementById('myBandsList');
   if (!el) return;
-  el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:32px;">Laden...</div>';
+  // Tabwissel: laat een geladen lijst van deze gebruiker staan tot de nieuwe er is.
+  if (!(opties && opties.behoud && currentUser && el.dataset.klaar === currentUser.id)) {
+    delete el.dataset.klaar;
+    el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:32px;">Laden...</div>';
+  }
   // 22-08-2026: zelfde lazy vervalcontrole als in refreshBandsDot() —
   // Mijn Bands kan ook los daarvan geopend worden.
   // Niet blokkerend voor de lijst, wel loggen (TT-230).
@@ -873,6 +877,7 @@ async function loadMyBands() {
       ${tags ? `<div class="band-card-body"><div class="profile-badges">${tags}</div></div>` : ''}
     </div>`;
   }).join('');
+  if (currentUser) el.dataset.klaar = currentUser.id;
   refreshBandsDot();
 }
 

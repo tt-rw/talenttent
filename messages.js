@@ -194,11 +194,15 @@ async function refreshUnreadBadge() {
 }
 
 // Inbox: alle berichten van/aan mij ophalen en groeperen per gesprekspartner.
-async function loadInbox() {
+async function loadInbox(opties) {
   const listEl = document.getElementById('messagesInboxList');
   document.getElementById('messagesInboxPanel').style.display = 'block';
   document.getElementById('messagesThreadPanel').style.display = 'none';
-  listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  // Tabwissel: laat een geladen lijst van deze gebruiker staan tot de nieuwe er is.
+  if (!(opties && opties.behoud && currentUser && listEl.dataset.klaar === currentUser.id)) {
+    delete listEl.dataset.klaar;
+    listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  }
 
   const mid = await getMyMusicianId();
   if (!mid) {
@@ -280,7 +284,9 @@ async function loadInbox() {
         </div>`;
     }).join('');
     listEl.innerHTML = rows;
+    if (currentUser) listEl.dataset.klaar = currentUser.id;
   } catch (e) {
+    delete listEl.dataset.klaar;
     logCaught('loadInbox', e);
     listEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Berichten laden is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
   }

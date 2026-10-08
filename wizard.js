@@ -270,12 +270,16 @@ function voortgangsBalkHTML(pct, id) {
 }
 
 
-async function loadMyProfile() {
+async function loadMyProfile(opties) {
   if (!currentUser) return;
   renderOnboardingResumeBanner();
   renderEmailBevestigBanner(); // TT-336
   const el = document.getElementById('myProfileContent');
-  el.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Laden...</div>';
+  // Tabwissel: staat er al een geladen profiel van deze gebruiker, laat dat staan tot de nieuwe er is.
+  if (!(opties && opties.behoud && el.dataset.klaar === currentUser.id)) {
+    delete el.dataset.klaar;
+    el.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Laden...</div>';
+  }
 
   // Bugfix 19-08-2026 (Ronald, live gemeld): dit was tot vandaag een
   // sterretje-select. Sinds B-01 tweede stap (18-08-2026) mag authenticated
@@ -317,6 +321,7 @@ async function loadMyProfile() {
   // meer op Mijn Profiel. De functie renderProgressPanel() is op 16-09-2026
   // verwijderd als dode code; terug te vinden in commit 05f8ddd.
   el.innerHTML = buildMusicianDetailHTML(m, true) + renderCompletenessMeter(m);
+  el.dataset.klaar = currentUser.id;
   // TT-265: zie de toelichting in laadProfielScherm() — pas starten als de
   // balk in de pagina staat.
   profielBannerStarten(el);
