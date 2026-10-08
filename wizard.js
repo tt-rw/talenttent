@@ -1033,28 +1033,8 @@ function init() {
 
 // ─── Goal ────────────────────────────────────────────────────────────────────
 
-// TT-46: prompt-chip vult het bio-veld aan i.p.v. te overschrijven, zodat
-// iemand meerdere prompts na elkaar kan gebruiken zonder tekst te verliezen.
-// TT-168-overgang (02-09-2026): kern verplaatst naar de generieke
-// applyBioPromptTo(el, text) — nodig omdat de tegels "Wie ben je" (#wbjBio) en
-// "Wie zijn we" (#bwBio) hetzelfde gedrag toepassen op een ander element.
-function applyBioPromptTo(el, text) {
-  const current = el.value;
-  if (!current.trim()) {
-    el.value = text;
-  } else {
-    const sep = /[\s\n]$/.test(current) ? '' : ' ';
-    el.value = current + sep + text;
-  }
-  el.focus();
-  el.setSelectionRange(el.value.length, el.value.length);
-  return el.value;
-}
-function applyBioPrompt(text) {
-  const el = document.getElementById('bio');
-  applyBioPromptTo(el, text);
-  state.bio = el.value;
-}
+// TT-46/TT-168 vervallen (08-10-2026, besluit Ronald): de bio-voorzetknoppen en
+// applyBioPromptTo/applyBioPrompt zijn weg; het voorbeeld staat als placeholder in het veld.
 
 function selectGoal(el, val) {
   document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));

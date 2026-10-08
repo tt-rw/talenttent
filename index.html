@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261008i">
+<link rel="stylesheet" href="styles.css?v=20261008j">
 </head>
 <body>
 
@@ -229,7 +229,7 @@
   <div class="landing-onder">
     <h2 class="landing-sub">Muzikanten bij jou in de buurt.</h2>
     <button class="btn btn-primary landing-knop" onclick="showView('search')">Zoek muzikanten →</button>
-    <p class="landing-login">Zoeken kan zonder profiel. <button type="button" class="landing-inloggen" onclick="showView('auth')">Inloggen</button></p>
+    <p class="landing-login">Zoeken kan zonder profiel. <span class="landing-acties"><button type="button" class="landing-inloggen" onclick="showView('auth')">Inloggen</button> of <button type="button" class="landing-inloggen" onclick="showView('register')">Profiel aanmaken</button></span></p>
   </div>
 </div>
 
