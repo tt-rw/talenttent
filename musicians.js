@@ -850,72 +850,8 @@ async function openWieBenJe() {
   document.getElementById('wbjZip').value = data.zip || '';
   document.getElementById('wbjCity').value = data.city || '';
   document.getElementById('wbjBio').value = data.bio || '';
-  wbjRenderBioPreview();
   wbjUsernameOk = true;
   wbjSnapshot = wbjFieldSnapshot();
-}
-
-// Bio bewerken in een eigen modal — meer ruimte dan het kleine tekstvakje
-// tussen de andere velden. Het verborgen veld van het scherm (#wbjBio,
-// #bwBio) blijft de echte waarde.
-// TT-385 fase 3: één modal voor de bio van een muzikant en de tekst "Wie zijn
-// we" van een band. Ze verschillen alleen in titel, uitleg en voorzetten
-// (muzikantkant en bandkant volgen dezelfde regels, huisstijl).
-const BIO_DOELEN = {
-  wbj: {
-    titel: 'Korte bio', uitleg: 'Dit is vaak het eerste wat andere muzikanten van je lezen.',
-    bron: 'wbjBio', voorbeeld: 'Bijv. Ik speel al 3 jaar gitaar...', na: () => wbjRenderBioPreview(),
-    voorzetten: [['Hoe lang speel je al?', 'Ik speel al ... jaar '],
-                 ['Waar ben je nu mee bezig?', 'Op dit moment ben ik vooral bezig met '],
-                 ['Wat wil je bereiken?', 'Wat ik wil bereiken is ']]
-  },
-  bw: {
-    titel: 'Wie zijn we', uitleg: 'Dit lezen bezoekers direct onder jullie bezetting.',
-    bron: 'bwBio', voorbeeld: 'Bijv. Vier vrienden uit Den Haag. We maken gitaarliedjes...', na: () => bwRenderBioPreview(),
-    voorzetten: [['Hoe zijn jullie begonnen?', 'We zijn begonnen toen '],
-                 ['Wat voor muziek maken jullie?', 'We maken '],
-                 ['Waar willen jullie naartoe?', 'Wat we willen bereiken is ']]
-  }
-};
-let bioDoel = 'wbj';
-
-function openBioModal(doel) {
-  bioDoel = BIO_DOELEN[doel] ? doel : 'wbj';
-  const cfg = BIO_DOELEN[bioDoel];
-  document.getElementById('bioModalTitel').textContent = cfg.titel;
-  document.getElementById('bioModalUitleg').textContent = cfg.uitleg;
-  document.getElementById('bioModalVoorzetten').innerHTML = cfg.voorzetten.map((v, i) =>
-    `<button type="button" class="bio-prompt-chip" onclick="bioVoorzet(${i})">${escHtml(v[0])}</button>`).join('');
-  const vak = document.getElementById('bioModalTextarea');
-  vak.placeholder = cfg.voorbeeld;
-  vak.value = document.getElementById(cfg.bron).value;
-  document.getElementById('bioModal').classList.add('visible');
-  vak.focus();
-}
-function closeBioModal() {
-  document.getElementById('bioModal').classList.remove('visible');
-}
-function bioSyncVanModal() {
-  const cfg = BIO_DOELEN[bioDoel];
-  document.getElementById(cfg.bron).value = document.getElementById('bioModalTextarea').value;
-  cfg.na();
-}
-function bioVoorzet(i) {
-  const v = BIO_DOELEN[bioDoel].voorzetten[i];
-  if (!v) return;
-  applyBioPromptTo(document.getElementById('bioModalTextarea'), v[1]);
-  bioSyncVanModal();
-}
-function wbjRenderBioPreview() {
-  const value = document.getElementById('wbjBio').value.trim();
-  const preview = document.getElementById('wbjBioPreview');
-  if (value) {
-    preview.textContent = value.length > 70 ? value.slice(0, 70) + '…' : value;
-    preview.style.color = 'var(--text)';
-  } else {
-    preview.textContent = 'Bijv. Ik speel al 3 jaar gitaar...';
-    preview.style.color = 'var(--muted)';
-  }
 }
 
 // Gebruikersnaam: zelfde live-check als elders in de app.

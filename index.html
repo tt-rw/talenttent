@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261008f">
+<link rel="stylesheet" href="styles.css?v=20261008h">
 </head>
 <body>
 
@@ -825,11 +825,9 @@
 
     <div class="field" style="margin-bottom:20px;">
       <label>Korte bio</label>
-      <div class="picker-field" id="wbjBioField" onclick="openBioModal('wbj')">
-        <span class="picker-field-label" id="wbjBioPreview">Bijv. Ik speel al 3 jaar gitaar...</span>
-        <span class="picker-field-chevron">✎</span>
-      </div>
-      <textarea id="wbjBio" style="display:none;"></textarea>
+      <!-- TT-410a stap 3b: bio inline; voorbeeldtekst staat als placeholder in het veld (geen voorzetknoppen). -->
+      <textarea id="wbjBio" class="bio-voorbeeld" placeholder="Hoi allemaal! Ik ben Kevin. Ik speel nu al meer dan drie jaar drums en ik wil graag een stapje verder gaan. Daarom ben ik op zoek naar anderen die het leuk vinden om samen een classic rockband te beginnen.&#10;Ik denk dat we in het begin vooral covers kunnen spelen, maar het lijkt me uiteindelijk echt vet om onze eigen muziek te maken. Mijn favoriete bands zijn onder andere Van Halen en Guns N’ Roses, maar ik luister naar nog veel meer.&#10;Lijkt het je leuk om samen een band te beginnen? Stuur me dan zeker een berichtje!"></textarea>
+      <p class="field-hint">Dit is vaak het eerste wat andere muzikanten van je lezen.</p>
     </div>
 
     <div class="field">
@@ -1092,11 +1090,8 @@
     <div class="field-group single">
       <div class="field">
         <label>Wie zijn we</label>
-        <div class="picker-field" id="bwBioField" onclick="openBioModal('bw')">
-          <span class="picker-field-label" id="bwBioPreview">Bijv. Vier vrienden uit Den Haag. We maken gitaarliedjes...</span>
-          <span class="picker-field-chevron">✎</span>
-        </div>
-        <textarea id="bwBio" style="display:none;"></textarea>
+<textarea id="bwBio" class="bio-voorbeeld" placeholder="Hoi! Wij zijn Zwart Vinyl, vier vrienden uit Den Haag. We staan nu twee jaar samen in de oefenruimte en spelen vooral gitaarliedjes met een rauw randje.&#10;Op dit moment werken we aan onze eerste eigen nummers. Ons doel is om dit jaar de eerste optredens te spelen in kleine zalen en op festivals in de buurt.&#10;We zoeken nog een bassist die zin heeft om met ons mee te groeien. Klinkt dat goed? Stuur ons een berichtje!"></textarea>
+        <p class="field-hint">Dit lezen bezoekers direct onder jullie bezetting.</p>
       </div>
     </div>
 
@@ -2671,28 +2666,6 @@
   </div>
 </div>
 
-<!-- TT-168-overgang (02-09-2026): bio bewerken (tegel "Wie ben je"), eigen
-     volledig-scherm-modal (TT-179). Bewust buiten view-profieltegels
-     geplaatst, net als de andere gedeelde modals hieronder — anders wint de
-     sticky .app-topbar (z-index 55) het qua stapelcontext van een modal die
-     wél een hoger z-index heeft maar binnen een geneste .app-view zit
-     (gevonden tijdens testen: de sluitknop was daardoor onbereikbaar). -->
-<!-- TT-385 fase 3: dezelfde modal voor "Wie zijn we" van een band. Titel,
-     uitleg en voorzetten komen uit BIO_DOELEN in musicians.js. -->
-<div class="modal-overlay" id="bioModal" onclick="if(event.target===this)closeBioModal()">
-  <div class="modal-box modal-box-sticky-footer modal-box-slg">
-    <div class="modal-scroll-area">
-      <div class="filter-title" id="bioModalTitel" style="margin-bottom:4px;">Korte bio</div>
-      <p id="bioModalUitleg" style="font-weight:700;font-style:italic;color:var(--text);font-size:13px;margin:0 0 16px;line-height:1.5;"></p>
-      <div class="bio-prompts" id="bioModalVoorzetten"></div>
-      <textarea id="bioModalTextarea" style="min-height:180px;" oninput="bioSyncVanModal()"></textarea>
-    </div>
-    <div class="modal-sticky-footer">
-      <button type="button" class="btn btn-primary" style="width:100%;" onclick="closeBioModal()">Klaar</button>
-    </div>
-  </div>
-</div>
-
 <!-- TT-51-uitbreiding (12-08-2026): toelichting bij het bandniveau, geopend
      via de i-knop naast "Niveau van de band". Inhoud identiek aan Tabel 1 +
      de toelichtende tekst in niveaubepaling-naslagwerk.md. -->
@@ -2772,7 +2745,7 @@
 <div class="modal-overlay" id="legalModal" onclick="if(event.target===this)closeLegalModal()">
   <div class="modal-box modal-box-xl">
     <button class="modal-close" onclick="closeLegalModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
-    <div id="legalModalContent"></div>
+    <div id="legalModalContent" class="doc-view"></div>
   </div>
 </div>
 
@@ -2815,11 +2788,11 @@
 <script src="veiligheid.js?v=20261007c"></script>
 <script src="auth.js?v=20260927b"></script>
 <script src="postcode.js?v=20261002d"></script>
-<script src="wizard.js?v=20261008a"></script>
+<script src="wizard.js?v=20261008b"></script>
 <script src="ouder.js?v=20261001a"></script>
 <script src="search.js?v=20261008b"></script>
-<script src="musicians.js?v=20261008c"></script>
-<script src="bands.js?v=20261008b"></script>
+<script src="musicians.js?v=20261008d"></script>
+<script src="bands.js?v=20261008c"></script>
 <script src="messages.js?v=20261008a"></script>
 <script src="modals-shared.js?v=20261008a"></script>
 <script>

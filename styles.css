@@ -4581,3 +4581,9 @@
 /* De i-knop direct achter het label, niet rechts (Ronald, 07-10-2026, Ervaring
    van de band). */
 .label-with-info.label-info-naast { justify-content: flex-start; padding-right: 0; gap: 8px; }
+
+/* TT-410a: voorbeeldtekst in het bio-veld (tegels Wie ben je / Wie zijn we).
+   Lichtgrijs en cursief, zodat het duidelijk een voorbeeld is; verdwijnt bij typen. */
+textarea.bio-voorbeeld { min-height: 290px; }
+textarea#bwBio.bio-voorbeeld { min-height: 230px; }
+textarea.bio-voorbeeld::placeholder { font-style: italic; opacity: 0.6; }

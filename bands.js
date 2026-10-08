@@ -1597,7 +1597,6 @@ async function openBandWie() {
   document.getElementById('bwBio').value = b.description || '';
   bwNiveau = b.niveau || null;
   bwRenderErvaring();
-  bwRenderBioPreview();
   bwSnapshot = bwFieldSnapshot();
 }
 
@@ -1605,18 +1604,6 @@ function bwRenderErvaring() {
   const el = document.getElementById('bwErvaring');
   if (!el) return;
   renderStarPicker(el, bwNiveau || 0, (n) => { bwNiveau = n; bwRenderErvaring(); });
-}
-
-function bwRenderBioPreview() {
-  const waarde = waardeVan('bwBio');
-  const preview = document.getElementById('bwBioPreview');
-  if (waarde) {
-    preview.textContent = waarde.length > 70 ? waarde.slice(0, 70) + '…' : waarde;
-    preview.style.color = 'var(--text)';
-  } else {
-    preview.textContent = 'Bijv. Vier vrienden uit Den Haag. We maken gitaarliedjes...';
-    preview.style.color = 'var(--muted)';
-  }
 }
 
 async function saveBandWie() {

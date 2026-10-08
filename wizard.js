@@ -1036,8 +1036,8 @@ function init() {
 // TT-46: prompt-chip vult het bio-veld aan i.p.v. te overschrijven, zodat
 // iemand meerdere prompts na elkaar kan gebruiken zonder tekst te verliezen.
 // TT-168-overgang (02-09-2026): kern verplaatst naar de generieke
-// applyBioPromptTo(el, text) — nodig omdat de tegel "Wie ben je" hetzelfde
-// gedrag toepast op een ander element (#bioModalTextarea, geen #bio).
+// applyBioPromptTo(el, text) — nodig omdat de tegels "Wie ben je" (#wbjBio) en
+// "Wie zijn we" (#bwBio) hetzelfde gedrag toepassen op een ander element.
 function applyBioPromptTo(el, text) {
   const current = el.value;
   if (!current.trim()) {
