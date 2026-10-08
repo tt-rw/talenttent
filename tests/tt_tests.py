@@ -2725,7 +2725,7 @@ def blok_browser():
           uit.hashNaLozeKlik = location.hash === hashVoor;
           showView('search');
           uit.naEenStap = zichtbaar();
-          const modal = document.getElementById('bioModal');
+          const modal = document.getElementById('legalModal');
           navStack.length = 0; modal.classList.add('visible');
           uit.metOpenVenster = magTerug();
           modal.classList.remove('visible');
@@ -3486,12 +3486,16 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("K2: Account verwijderen is omlijnd in rood, geen vlak (§5)",
               rood == ["rgba(0, 0, 0, 0)", "rgb(229, 83, 61)", "rgb(229, 83, 61)", "solid"], json.dumps(rood))
 
-        # K6 — één gestippelde vorm.
-        stip = page.evaluate("""() => ['.add-link-btn', '.bio-prompt-chip'].map(s => { const e = document.querySelector(s);
-            const cs = getComputedStyle(e); return [cs.borderTopStyle, cs.borderTopWidth, cs.borderTopLeftRadius, cs.fontSize, cs.fontWeight, cs.color, cs.minHeight]; })""")
-        check("K6: + Link toevoegen en de bio-voorzet hebben dezelfde vorm",
-              stip[0] == stip[1] and stip[0][0] == "dashed" and stip[0][2] == "8px" and stip[0][6] == "44px"
-              and rand(".bio-prompt-chip") == "var(--line)", json.dumps(stip) + " " + str(rand(".bio-prompt-chip")))
+        # K6 — één gestippelde vorm (de bio-voorzet is vervallen, 08-10-2026).
+        stip = page.evaluate("""() => { const e = document.querySelector('.add-link-btn'); const cs = getComputedStyle(e);
+            return [cs.borderTopStyle, cs.borderTopLeftRadius, cs.minHeight, document.querySelectorAll('.bio-prompt-chip').length]; }""")
+        check("K6: + Link toevoegen is gestippeld, 8px, 44px; er is nergens meer een bio-voorzet",
+              stip == ["dashed", "8px", "44px", 0], json.dumps(stip))
+
+        wb = page.evaluate("""() => { const v = document.getElementById('bio'); return [v.classList.contains('bio-voorbeeld'), v.placeholder.startsWith('Hoi allemaal! Ik ben Kevin.'),
+            getComputedStyle(v, '::placeholder').fontStyle, v.closest('.field').querySelectorAll('button').length]; }""")
+        check("de bio in de wizard heeft dezelfde cursieve voorbeeldtekst als de tegels en geen voorzetknoppen (consistentie)",
+              wb == [True, True, "italic", 0], json.dumps(wb))
 
         # K7/K8/K12 — zeven keuzesoorten, één stand voor gekozen en niet-gekozen.
         keuze = page.evaluate("""() => {
@@ -5903,7 +5907,7 @@ window.TT_STUB.fnAntwoord = {};
           document.getElementById('bwNaam').value = ''; await saveBandWie(); await w(50);
           u.wieFout = [...document.querySelectorAll('#bandWieScreen .field-msg')].map(e => e.textContent.trim());
           document.getElementById('bwNaam').value = 'Nachtploeg';
-          document.getElementById('bwBio').value = 'Vier vrienden.'; bwRenderBioPreview(); bwNiveau = 3;
+          document.getElementById('bwBio').value = 'Vier vrienden.'; bwNiveau = 3;
           u.wieGewijzigd = tegelHeeftWijzigingen();
           history.back(); await w(250);
           u.wieGewapend = [terugGewapend, activeTegelScreen];
@@ -6021,9 +6025,14 @@ window.TT_STUB.fnAntwoord = {};
           showView('about'); u.weg = [bewerkBandId, activeTegelScreen];
           showView('profieltegels'); await w(100);
           u.eigen = [document.getElementById('tegelOverviewScreen').style.display, document.getElementById('bandTegelOverviewScreen').style.display];
-          // 12. De bio-modal voor beide kanten.
-          openBioModal('wbj'); u.bioMuzikant = [document.getElementById('bioModalTitel').textContent, document.querySelectorAll('#bioModalVoorzetten .bio-prompt-chip').length]; closeBioModal();
-          openBioModal('bw'); u.bioBand = [document.getElementById('bioModalTitel').textContent, document.querySelectorAll('#bioModalVoorzetten .bio-prompt-chip').length]; closeBioModal();
+          // 12. De bio staat inline, voor beide kanten (TT-410a stap 3b): geen voorzetknoppen, een zichtbaar tekstveld met cursief voorbeeld, geen venster.
+          const bioInline = (id) => {
+            const vak = document.getElementById(id), veld = vak.closest('.field');
+            return [vak.tagName, vak.style.display !== 'none', veld.querySelectorAll('.bio-prompt-chip').length,
+                    vak.placeholder.slice(0, 4), getComputedStyle(vak, '::placeholder').fontStyle, !!veld.querySelector('.field-hint')];
+          };
+          u.bioMuzikant = bioInline('wbjBio'); u.bioBand = bioInline('bwBio');
+          u.bioGeenVenster = [!document.getElementById('bioModal'), typeof openBioModal];
           // 13. Opheffen vanuit Bandbeheer: de vraag noemt het gevolg, daarna Mijn Bands.
           openBandTegels('b9'); await w(300);
           vraagBandOpheffen();
@@ -6108,8 +6117,11 @@ window.TT_STUB.fnAntwoord = {};
               d58["verlaten"] == ["Je staat dan niet meer in de bezetting van Nachtploeg.", "Band verlaten"], j58("verlaten"))
         check("een andere view laat geen band of open tegel achter; Profiel bewerken toont je eigen tegels",
               d58["weg"] == [None, "overview"] and d58["eigen"] == ["", "none"], json.dumps([d58["weg"], d58["eigen"]]))
-        check("één bio-modal: Korte bio voor de muzikant, Wie zijn we voor de band, elk drie voorzetten",
-              d58["bioMuzikant"] == ["Korte bio", 3] and d58["bioBand"] == ["Wie zijn we", 3], json.dumps([d58["bioMuzikant"], d58["bioBand"]]))
+        check("de bio staat inline (TT-410a): een zichtbaar tekstveld met cursief voorbeeld en een regel uitleg, zonder voorzetknoppen, voor muzikant én band",
+              d58["bioMuzikant"] == ["TEXTAREA", True, 0, "Hoi ", "italic", True]
+              and d58["bioBand"] == ["TEXTAREA", True, 0, "Hoi!", "italic", True], json.dumps([d58["bioMuzikant"], d58["bioBand"]]))
+        check("het bio-venster bestaat niet meer: geen element, geen functie",
+              d58["bioGeenVenster"] == [True, "undefined"], json.dumps(d58["bioGeenVenster"]))
         check("Band opheffen: de vraag noemt het gevolg, rood omlijnd, daarna Mijn Bands",
               d58["opheffen"][0].startswith("Nachtploeg verdwijnt dan voor alle leden") and d58["opheffen"][1:] == ["Band opheffen", True]
               and d58["naOpheffen"] == ["view-bands", None, 0], json.dumps([d58["opheffen"], d58["naOpheffen"]], ensure_ascii=False))
@@ -6766,7 +6778,7 @@ window.TT_STUB.fnAntwoord = {};
         }""")
         check("TT-408: elk venster zonder kruisje heeft een andere zichtbare uitgang (pijl of knop)",
               d64k["zonderUitgang"] == [], json.dumps(d64k["zonderUitgang"]))
-        for vid in ("deleteAccountModal", "meldModal", "bioModal"):
+        for vid in ("deleteAccountModal", "meldModal"):
             check(f"TT-408: {vid} heeft geen kruisje meer", vid in d64k["zonderKruis"], json.dumps(d64k))
         check("TT-408: de instrumentkeuze houdt zijn kruisje (de lijst heeft verder geen uitgang)", d64k["instrumentKruis"], json.dumps(d64k))
         check("TT-408: er zijn tien kruisjes over", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 10, "")
@@ -7844,6 +7856,61 @@ window.TT_STUB.fnAntwoord = {};
         check("het niveau-venster en zijn stappen bestaan niet meer",
               d76["oud"] == [] and d76["oudeFuncties"] == [], j76)
         check("geen paginafouten in blok 76", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ────────────────────────────────────────────────────────────
+        # Blok 77 — TT-410a stap 2 en 3b (08-10-2026, besluit Ronald: "Behouden,
+        # mits het nog leesbaar is. UX gaat voor alles."): de voorwaardenlaag
+        # toont de documenten met dezelfde opmaak als de losse schermen, en de
+        # bio staat inline in de tegel Wie ben je.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 77 — voorwaardenlaag leesbaar; bio inline in Wie ben je (TT-410a)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 375, "height": 812})
+        d77 = page.evaluate(r"""async () => {
+          const w = ms => new Promise(r => setTimeout(r, ms)), u = {}, $ = id => document.getElementById(id);
+          const stijl = el => { const c = getComputedStyle(el); return [c.fontSize, c.lineHeight, c.marginTop, c.marginBottom, c.color, c.fontWeight].join('|'); };
+          u.laag = {};
+          for (const [type, viewId] of [['terms', 'view-terms'], ['privacy', 'view-privacy'], ['gedragscode', 'view-gedragscode']]) {
+            const bron = document.querySelector('#' + viewId + ' .doc-view');
+            openLegalModal(type); await w(40);
+            const inh = $('legalModalContent'), box = document.querySelector('#legalModal .modal-box');
+            const gelijk = sel => { const a = bron.querySelector(sel), b = inh.querySelector(sel); return !a ? true : (!!b && stijl(a) === stijl(b)); };
+            u.laag[type] = { h2: gelijk('h2'), p: gelijk('p'), li: gelijk('li'), upd: gelijk('.doc-updated'),
+              h2Maat: getComputedStyle(inh.querySelector('h2')).fontSize, pMaat: getComputedStyle(inh.querySelector('p')).fontSize,
+              regel: getComputedStyle(inh.querySelector('p')).lineHeight,
+              breed: box.scrollWidth <= box.clientWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth };
+            closeLegalModal();
+          }
+          const keep = { myMusicianId, currentUser, hasOwnProfile };
+          myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; hasOwnProfile = true;
+          showView('profieltegels'); openTegelScreen('wieBenJe'); await w(400);
+          const vak = $('wbjBio'), r = vak.getBoundingClientRect(), veld = vak.closest('.field');
+          u.tegel = { zichtbaar: r.width > 0 && r.height > 0, binnen: r.left >= 0 && r.right <= window.innerWidth, hoogte: Math.round(r.height),
+            scrollBreed: document.documentElement.scrollWidth <= window.innerWidth, chips: veld.querySelectorAll('.bio-prompt-chip').length,
+            voorbeeld: vak.placeholder.startsWith('Hoi allemaal! Ik ben Kevin.') && vak.placeholder.split('\n').length === 3,
+            stijl: [getComputedStyle(vak, '::placeholder').fontStyle], leeg: vak.value === '' };
+          const voor = tegelHeeftWijzigingen();
+          vak.value = 'Hoi'; vak.dispatchEvent(new Event('input', { bubbles: true })); await w(30);
+          u.tegel.wijziging = [voor, tegelHeeftWijzigingen()];
+          vak.value = '';
+          myMusicianId = keep.myMusicianId; currentUser = keep.currentUser; hasOwnProfile = keep.hasOwnProfile;
+          showView('about');
+          return u;
+        }""")
+        j77 = json.dumps(d77, ensure_ascii=False)
+        check("de voorwaardenlaag toont elk document met dezelfde opmaak als het losse scherm: koppen, alinea's, lijsten en datum",
+              all(d77["laag"][t][k] for t in d77["laag"] for k in ("h2", "p", "li", "upd")), j77)
+        check("de voorwaardenlaag is leesbaar: koppen 16px, tekst 14px met regelafstand 1,7, geen zijwaartse scroll op 375px",
+              all(v["h2Maat"] == "16px" and v["pMaat"] == "14px" and v["regel"] == "23.8px" and v["breed"] for v in d77["laag"].values()), j77)
+        check("Wie ben je: de bio is een zichtbaar tekstveld binnen het scherm van 375px, zonder voorzetknoppen",
+              d77["tegel"]["zichtbaar"] and d77["tegel"]["binnen"] and d77["tegel"]["scrollBreed"] and d77["tegel"]["chips"] == 0, j77)
+        check("Wie ben je: het veld toont de voorbeeldtekst van Kevin (3 alinea's) als cursieve placeholder en is zelf leeg",
+              d77["tegel"]["voorbeeld"] and d77["tegel"]["stijl"] == ["italic"] and d77["tegel"]["leeg"], j77)
+        check("Wie ben je: typen in de bio telt mee voor \"Terug zonder opslaan?\"",
+              d77["tegel"]["wijziging"] == [False, True], j77)
+        check("geen paginafouten in blok 77", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
