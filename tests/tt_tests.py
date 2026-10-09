@@ -8063,6 +8063,51 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-445: geen paginafouten in blok 79", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ────────────────────────────────────────────────────────────
+        # Blok 80 — TT-446 (09-10-2026, Ronald): een grote telefoonfoto wordt
+        # niet meer geweigerd; de app verkleint hem zelf voor het uploaden.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 80 — foto's verkleinen voor het uploaden (TT-446)")
+        page_errors.clear()
+        d80 = page.evaluate(r"""async () => {
+          const r = {};
+          const c = document.createElement('canvas'); c.width = 3200; c.height = 2400;
+          const x = c.getContext('2d'); const d = x.createImageData(3200, 2400);
+          for (let i = 0; i < d.data.length; i += 4) { d.data[i] = Math.random()*255; d.data[i+1] = Math.random()*255; d.data[i+2] = Math.random()*255; d.data[i+3] = 255; }
+          x.putImageData(d, 0, 0);
+          const blob = await new Promise(ok => c.toBlob(ok, 'image/png'));
+          const groot = new File([blob], 'IMG_0001.PNG', { type: 'image/png' });
+          r.voor = groot.size;
+          const klein = await fotoVerkleinen(groot);
+          r.na = klein.size; r.type = klein.type; r.naam = klein.name;
+          const bm = await createImageBitmap(klein);
+          r.breed = bm.width; r.hoog = bm.height;
+          const mini = new File([new Uint8Array(1000)], 'k.png', { type: 'image/png' });
+          r.miniZelfde = (await fotoVerkleinen(mini)) === mini;
+          const gif = new File([new Uint8Array(6*1024*1024)], 'a.gif', { type: 'image/gif' });
+          r.gifZelfde = (await fotoVerkleinen(gif)) === gif;
+          r.foto12 = bestandTeGrootMelding(new File([new Uint8Array(12*1024*1024)], 'f.jpg', { type: 'image/jpeg' }), 5*1024*1024);
+          r.foto40 = bestandTeGrootMelding(new File([new Uint8Array(40*1024*1024)], 'f.jpg', { type: 'image/jpeg' }), 5*1024*1024);
+          r.video = bestandTeGrootMelding(new File([new Uint8Array(60*1024*1024)], 'v.mp4', { type: 'video/mp4' }), 50*1024*1024);
+          r.gif = bestandTeGrootMelding(gif, 5*1024*1024);
+          return r;
+        }""")
+        j80 = json.dumps(d80, ensure_ascii=False)
+        check("TT-446: een grote foto wordt een kleinere JPG van maximaal 1600 pixels",
+              d80["type"] == "image/jpeg" and d80["na"] < d80["voor"] and max(d80["breed"], d80["hoog"]) <= 1600
+              and d80["naam"] == "IMG_0001.jpg", j80)
+        check("TT-446: een kleine foto en een GIF blijven ongemoeid",
+              d80["miniZelfde"] and d80["gifZelfde"], j80)
+        check("TT-446: een foto van 12 MB wordt niet meer geweigerd, een van 40 MB wel met een duidelijke tekst",
+              d80["foto12"] is None and "30 MB" in (d80["foto40"] or ""), j80)
+        check("TT-446: een video boven 50 MB zegt wat je doet; een grote GIF wijst naar JPG of PNG",
+              "Kort de video in" in (d80["video"] or "") and "JPG of PNG" in (d80["gif"] or ""), j80)
+        bron80 = "".join(open(os.path.join(ROOT, x), encoding="utf-8").read() for x in ["wizard.js", "musicians.js", "bands.js"])
+        check("TT-446: geen vaste grens van 5 MB meer op foto's in de schermen",
+              "Afbeelding is te groot" not in bron80, "")
+        check("TT-446: geen paginafouten in blok 80", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
