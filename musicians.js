@@ -1011,8 +1011,11 @@ function wspRenderRepertoireType() {
 }
 
 async function saveWatSpeelJe() {
-  if (!wspState.instruments.length) { showToast('Selecteer minimaal één instrument.'); return; }
-  if (!wspState.genres.length) { showToast('Selecteer minimaal één genre.'); return; }
+  // TT-444: zelfde vorm als wizardstap 2, bij het veld zelf.
+  const fouten = [];
+  if (!wspState.instruments.length) fouten.push(['wspInstrumentField', 'Kies minimaal één instrument']);
+  if (!wspState.genres.length) fouten.push(['wspGenreField', 'Kies minimaal één genre']);
+  if (showFieldErrors(fouten)) return;
 
   if (wspFieldSnapshot() === wspSnapshot) return;
 

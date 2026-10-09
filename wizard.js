@@ -556,16 +556,20 @@ async function bevestigingStarten() {
 async function renderEmailBevestigBanner() {
   const el = document.getElementById('emailBevestigBanner');
   if (!el || !currentUser) return;
+  // TT-444: staat de melding "E-mailadres bevestigd" er nog, laat die dan
+  // staan tot hij zelf verdwijnt.
+  if (el.dataset.bevestigd === '1') return;
   const { data, error } = await db.from('musicians')
     .select('wacht_op_bevestiging').eq('user_id', currentUser.id).maybeSingle();
   if (error) logCaught('renderEmailBevestigBanner', error);
-  if (error || !data?.wacht_op_bevestiging) { el.innerHTML = ''; return; }
+  if (error || !data?.wacht_op_bevestiging) { el.innerHTML = ''; bevestigPeilStoppen(); return; }
   // Dicht tot de app opnieuw opent: het profiel blijft offline tot de klik,
   // dus de melding komt de volgende keer terug (sessionStorage, geen opslag
   // = altijd tonen).
   let dicht = false;
   try { dicht = sessionStorage.getItem('tt-bevestig-melding-dicht') === '1'; } catch (e) { /* geen opslag: tonen */ }
-  if (dicht) { el.innerHTML = ''; return; }
+  if (dicht) { el.innerHTML = ''; bevestigPeilStoppen(); return; }
+  bevestigPeilStarten();
   el.innerHTML = `
     <div class="melding melding-met-sluit">
       <button type="button" class="modal-close" onclick="bevestigMeldingSluiten()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
@@ -589,6 +593,47 @@ async function renderEmailBevestigBanner() {
       </div>
     </div>`;
 }
+
+// TT-444 (bevinding Ronald, 09-10-2026: "na bevestiging blijft deze melding
+// staan"). De klik in de mail gebeurt vaak in een andere browser of op een
+// ander toestel dan waar de app openstaat; dan weet deze pagina het niet. Zolang
+// het blok zichtbaar is, kijkt de app elke 5 seconden of het profiel online is,
+// en meteen als de app weer in beeld komt. Is het zover, dan staat er kort
+// "Je e-mailadres is bevestigd" en verdwijnt het blok vanzelf; het profiel
+// laadt opnieuw, zonder wachtbericht.
+let bevestigPeilTimer = null;
+
+function bevestigPeilStarten() {
+  if (bevestigPeilTimer) return;
+  bevestigPeilTimer = setInterval(bevestigPeilen, 5000);
+}
+
+function bevestigPeilStoppen() {
+  if (bevestigPeilTimer) { clearInterval(bevestigPeilTimer); bevestigPeilTimer = null; }
+}
+
+async function bevestigPeilen() {
+  const el = document.getElementById('emailBevestigBanner');
+  if (!el || !currentUser || !el.querySelector('#bevestigKnoppen')) { bevestigPeilStoppen(); return; }
+  if (document.visibilityState !== 'visible' || el.offsetParent === null) return;
+  const { data, error } = await db.from('musicians')
+    .select('wacht_op_bevestiging').eq('user_id', currentUser.id).maybeSingle();
+  if (error) { logCaught('bevestigPeilen', error); return; }
+  if (!data || data.wacht_op_bevestiging) return;
+  bevestigPeilStoppen();
+  el.dataset.bevestigd = '1';
+  el.innerHTML = `
+    <div class="melding" role="status">
+      <p class="melding-kop">Je e‑mailadres is bevestigd</p>
+      <p class="melding-tekst">Je profiel staat online. Muzikanten kunnen je nu vinden en je kunt berichten sturen.</p>
+    </div>`;
+  setTimeout(() => { delete el.dataset.bevestigd; el.innerHTML = ''; }, 6000);
+  loadMyProfile({ behoud: true });
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') bevestigPeilen();
+});
 
 function bevestigMeldingSluiten() {
   try { sessionStorage.setItem('tt-bevestig-melding-dicht', '1'); } catch (e) { /* geen opslag: sluit alleen nu */ }
@@ -1211,13 +1256,18 @@ async function nextStep(from) {
     }
   }
   if (from === 1) {
-    if (!state.instruments.length) { showToast('Selecteer minimaal één instrument.'); return; }
     // TT-U09 (12-08-2026): niveau blokkeert stap 2 niet meer. "Welk niveau
     // ben ik?" is voor een beginnende dertienjarige een lastige vraag —
     // precies het type vraag dat mensen laat afhaken of laat liegen.
     // Het niveau blijft bestaan en telt mee in de volledigheidsmeter; het is
     // alleen geen slagboom meer. Wie het overslaat, ziet dat daar terug.
-    if (!state.genres.length) { showToast('Selecteer minimaal één genre.'); return; }
+    // TT-444: een ontbrekend instrument of genre staat bij het veld zelf, en de
+    // pagina schuift ernaartoe. Een toast bovenin zei niet welk veld, en bij een
+    // lang scherm stond het veld buiten beeld. Zelfde vorm als bij Band aanmaken.
+    const fouten = [];
+    if (!state.instruments.length) fouten.push(['instrumentPickerField', 'Kies minimaal één instrument']);
+    if (!state.genres.length) fouten.push(['genrePickerField', 'Kies minimaal één genre']);
+    if (showFieldErrors(fouten)) return;
   }
   // V-23 (12-08-2026): repertoire is optioneel, maar het beheersingsniveau
   // per nummer was dat niet. Wie nul nummers invulde mocht door; wie er één
@@ -1257,9 +1307,18 @@ async function createAccountAndProfile() {
           email: state.regEmail, password: state.regPassword
         });
         if (signInErr) {
-          // Écht een ander account, of een ander wachtwoord — dat is dan geen
-          // herstelbare situatie meer, de gebruiker moet zelf kiezen.
-          throw new Error('Er bestaat al een account met dit e-mailadres. Probeer in te loggen, of gebruik een ander e-mailadres.');
+          // Een ander wachtwoord bij een bestaand account: geen herstelbare
+          // situatie, de gebruiker kiest zelf. Dat staat bij het e-mailadres
+          // zelf, niet in een melding bovenin (TT-444, bevinding Ronald
+          // 09-10-2026: "Er ging iets mis" bij een bestaand e-mailadres).
+          // Een andere fout (te veel pogingen, geen verbinding) gaat gewoon
+          // door naar friendlyErrorMessage().
+          if (/invalid login credentials|invalid_credentials|invalid grant/i.test(signInErr.message || '')) {
+            document.getElementById('saveOverlay').classList.remove('visible');
+            showFieldErrors([['regEmail', 'Dit e-mailadres heeft al een account. Log in, of gebruik een ander e-mailadres']]);
+            return false;
+          }
+          throw signInErr;
         }
         authUser = signInData.user;
       } else {

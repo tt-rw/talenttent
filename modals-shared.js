@@ -210,6 +210,7 @@ function renderInstrumentBadges(id) {
   // 21-08-2026 (Ronald): vaste tekst, geen teller — zelfde reden als bij
   // renderPickerBadges() hierboven.
   document.getElementById(cfg.fieldId + 'Label').textContent = 'Kies een instrument';
+  if (list.length) clearFieldError(cfg.fieldId); // TT-444: zoals renderPickerBadges()
   wrap.innerHTML = list.map(i => {
     const n = levels[i] || 0;
     const open = cfg.openInstrument === i;
