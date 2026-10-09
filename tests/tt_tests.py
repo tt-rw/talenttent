@@ -7915,6 +7915,105 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 77", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ────────────────────────────────────────────────────────────
+        # Blok 78 — TT-444 (09-10-2026, bevinding Ronald na een test op de
+        # telefoon): drie meldingen die niets zeiden of bleven staan.
+        #  1. een bestaand e-mailadres gaf "Er ging iets mis";
+        #  2. een ontbrekend genre gaf een toast, bij een veld buiten beeld;
+        #  3. het blok "Nog één stap" bleef staan na de klik in de mail.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 78 — meldingen die iets zeggen (TT-444)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 375, "height": 812})
+        d78 = page.evaluate(r"""async () => {
+          const w = ms => new Promise(r => setTimeout(r, ms)), u = {}, $ = id => document.getElementById(id);
+          const keep = { myMusicianId, currentUser, hasOwnProfile };
+          const regel = id => { const e = $(id), n = e && e.nextElementSibling; return n && n.classList.contains('field-msg') ? n.textContent.trim() : null; };
+          // 1. Bestaand e-mailadres, ander wachtwoord
+          showView('register'); await w(60);
+          currentUser = null;
+          Object.assign(state, { regEmail: 'bestaat@talenttent.org', regPassword: 'fout-wachtwoord', fname: 'Test', username: 'testje', city: 'Den Haag', zip: '2497AA' });
+          TT_STUB.signUpError = { message: 'User already registered' };
+          TT_STUB.authError = { message: 'Invalid login credentials' };
+          $('appToast').textContent = ''; $('appToast').classList.remove('visible');
+          const ok1 = await createAccountAndProfile();
+          u.bestaand = { ok: ok1, veld: $('regEmail').classList.contains('field-error'), tekst: regel('regEmail'),
+            toast: $('appToast').textContent, overlay: $('saveOverlay').classList.contains('visible') };
+          // Een andere fout bij het inloggen is geen "bestaat al"
+          clearFieldError('regEmail');
+          TT_STUB.authError = { message: 'Email rate limit exceeded' };
+          await createAccountAndProfile();
+          u.anders = { veld: $('regEmail').classList.contains('field-error'), toast: $('appToast').textContent };
+          delete TT_STUB.signUpError; delete TT_STUB.authError;
+          // 2. Stap 2 van de wizard: geen instrument en geen genre
+          state.instruments = []; state.genres = []; state.instrumentLevels = {};
+          $('appToast').textContent = ''; $('appToast').classList.remove('visible');
+          await nextStep(1);
+          u.stap2 = { instr: regel('instrumentPickerField'), genre: regel('genrePickerField'),
+            instrRood: $('instrumentPickerField').classList.contains('field-error'), genreRood: $('genrePickerField').classList.contains('field-error'),
+            toast: $('appToast').textContent };
+          state.genres.push('Rock'); renderPickerBadges(PICKERS.genre);
+          u.naGenre = { genre: regel('genrePickerField'), instr: regel('instrumentPickerField') };
+          state.instruments.push('Gitaar'); renderInstrumentBadges('wizard');
+          u.naInstrument = regel('instrumentPickerField');
+          state.instruments = []; state.genres = []; state.instrumentLevels = {};
+          clearFieldErrors(document);
+          // 2b. Dezelfde regel in de tegel Wat speel je
+          wspState = { instruments: [], instrumentLevels: {}, genres: [] };
+          myMusicianId = 'm1'; hasOwnProfile = true;
+          await saveWatSpeelJe();
+          u.tegel = { instr: regel('wspInstrumentField'), genre: regel('wspGenreField'), toast: $('appToast').textContent };
+          clearFieldErrors(document);
+          wspState = { instruments: [], instrumentLevels: {}, genres: [] };
+          u.oudeTekst = [nextStep.toString(), saveWatSpeelJe.toString()].some(t => t.includes('Selecteer minimaal'));
+          // 3. Het blok "Nog één stap" verdwijnt na de bevestiging
+          currentUser = { id: 'u1', email: 'test@talenttent.org' };
+          bevestigPeilStoppen();
+          Object.assign(TT_STUB.data.musicians[0], { user_id: 'u1', wacht_op_bevestiging: true });
+          try { sessionStorage.removeItem('tt-bevestig-melding-dicht'); } catch (e) { /* geen opslag */ }
+          showView('myprofile'); await w(300);
+          await renderEmailBevestigBanner();
+          const el = $('emailBevestigBanner');
+          u.blok = { eerst: !!el.querySelector('.melding-kop') && el.textContent.includes('Nog één stap'), timer: !!bevestigPeilTimer };
+          await bevestigPeilen(); await w(50);
+          u.nogWachten = !!el.querySelector('#bevestigKnoppen');
+          TT_STUB.data.musicians[0].wacht_op_bevestiging = false;
+          await bevestigPeilen(); await w(300);
+          u.bevestigd = { tekst: el.textContent.includes('bevestigd') && !el.textContent.includes('Nog één stap'),
+            knoppen: !!el.querySelector('#bevestigKnoppen'), timer: !!bevestigPeilTimer };
+          await renderEmailBevestigBanner();
+          u.blijftStaan = el.textContent.includes('bevestigd');
+          await w(6300);
+          u.weg = el.innerHTML.trim() === '';
+          currentUser = keep.currentUser; myMusicianId = keep.myMusicianId; hasOwnProfile = keep.hasOwnProfile;
+          showView('about');
+          return u;
+        }""")
+        j78 = json.dumps(d78, ensure_ascii=False)
+        check("bestaand e-mailadres: de fout staat bij het veld E-mailadres, in gewone taal, zonder toast en zonder wachtscherm",
+              d78["bestaand"]["ok"] is False and d78["bestaand"]["veld"]
+              and d78["bestaand"]["tekst"] == "Dit e-mailadres heeft al een account. Log in, of gebruik een ander e-mailadres"
+              and "iets mis" not in d78["bestaand"]["toast"].lower() and not d78["bestaand"]["overlay"], j78)
+        check("een andere inlogfout (te veel pogingen) wordt niet als bestaand e-mailadres gemeld",
+              d78["anders"]["veld"] is False and "Te veel pogingen" in d78["anders"]["toast"], j78)
+        check("stap 2: geen instrument en geen genre geeft twee veldfouten bij de velden zelf, geen toast",
+              d78["stap2"]["instr"] == "Kies minimaal één instrument" and d78["stap2"]["genre"] == "Kies minimaal één genre"
+              and d78["stap2"]["instrRood"] and d78["stap2"]["genreRood"] and d78["stap2"]["toast"] == "", j78)
+        check("stap 2: een genre kiezen haalt alleen de genrefout weg, een instrument kiezen die van het instrument",
+              d78["naGenre"]["genre"] is None and d78["naGenre"]["instr"] == "Kies minimaal één instrument" and d78["naInstrument"] is None, j78)
+        check("tegel Wat speel je: dezelfde veldfouten, geen toast",
+              d78["tegel"]["instr"] == "Kies minimaal één instrument" and d78["tegel"]["genre"] == "Kies minimaal één genre" and d78["tegel"]["toast"] == "", j78)
+        check("de oude toasts \"Selecteer minimaal\" bestaan niet meer", d78["oudeTekst"] is False, j78)
+        check("het blok Nog één stap staat zolang het profiel wacht, en de app kijkt mee",
+              d78["blok"]["eerst"] and d78["blok"]["timer"] and d78["nogWachten"], j78)
+        check("na de bevestiging staat er \"Je e-mailadres is bevestigd\" in plaats van het blok; de app stopt met kijken",
+              d78["bevestigd"]["tekst"] and not d78["bevestigd"]["knoppen"] and not d78["bevestigd"]["timer"], j78)
+        check("de bevestigingsmelding blijft staan als het profiel opnieuw laadt, en verdwijnt daarna vanzelf",
+              d78["blijftStaan"] and d78["weg"], j78)
+        check("geen paginafouten in blok 78", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
