@@ -75,12 +75,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       </div>
       <div class="profile-name">${escHtml(displayName)}</div>
       <div class="profiel-regels">
-        <!-- TT-166 (28-08-2026, Ronald: "eenvoud"): een gebruikersnaam-subline
-             hoort er alleen bij als de grote naam een andere naam is dan de
-             gebruikersnaam. Staat de gebruikersnaam al als grote naam, dan
-             herhaalt een subline hem alleen maar. TT-420: dat volgt uit de
-             gekozen naam (weergavenaam), voor iedereen gelijk. -->
-        ${(m.username && displayName !== m.username && displayName !== 'Muzikant') ? `<p style="font-size:12px;color:var(--muted);margin-top:4px;">Gebruikersnaam: <strong style="color:var(--text);">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
+        <!-- TT-420 (09-10-2026, Ronald): geen tweede naam op het profiel. Er staat één naam: de gekozen. -->
         <div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       </div>
     </div>
