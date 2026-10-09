@@ -678,6 +678,9 @@ async function openTalentTentGesprek(stil) {
       'Muzikanten zoeken →',
       "showView('search')"
     );
+    // TT-452: pas nu, nadat je een bericht van Talent Tent zag, vragen we of je
+    // er een seintje op dit toestel bij wilt. Nooit bij het eerste bezoek.
+    if (html && await ttSeintjeVraagTonen()) threadEl.insertAdjacentHTML('beforeend', ttSeintjeVraagHTML());
     // Alles wat je nu ziet, geldt als gelezen: de stip en het getal gaan weg.
     const ongelezen = berichten.filter(b => !b.read_at).map(b => b.id);
     if (ongelezen.length) {

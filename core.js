@@ -692,6 +692,7 @@ async function openSearchPrefsModal() {
     selectDigestFrequency(musicianRes.data?.email_digest_frequency || 'daily');
     document.getElementById('searchPrefsModal').classList.add('visible');
     vulBewaardeZoekInInstellingen(); // TT-295
+    vulPushInInstellingen(); // TT-452
   } catch (e) {
     logCaught('openSearchPrefsModal', e);
     showToast(friendlyErrorMessage(e, 'je zoekvoorkeuren laden'));

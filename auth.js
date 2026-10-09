@@ -66,6 +66,9 @@ async function signIn() {
 // staat achter (hooguit staat de gebruiker serverside iets langer "ingelogd",
 // zonder dat dat in de app zichtbaar is of iets kan doen).
 async function signOut() {
+  // TT-452: uitloggen stopt het seintje op dit toestel; het hoort bij het account.
+  // Eerst, want de sessie is nodig om het abonnement te verwijderen.
+  await ttSeintjeUitzetten();
   currentUser = null;
   onUserLoggedOut();
   try {

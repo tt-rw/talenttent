@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261009b">
+<link rel="stylesheet" href="styles.css?v=20261009c">
 </head>
 <body>
 
@@ -2581,7 +2581,7 @@
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeSearchPrefsModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">E-mailvoorkeuren</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Deze instellingen gelden alleen voor e-mail. Je zoekresultaten veranderen hier niet door.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Deze keuze bepaalt ook of je een bericht van Talent Tent krijgt in je berichten, en een seintje op je toestel. Je zoekresultaten veranderen hier niet door.</p>
 
     <div class="modal-blok">
     <div class="field" style="margin-bottom:20px;">
@@ -2594,6 +2594,17 @@
     </div>
 
     <button class="btn btn-primary" style="width:100%;" onclick="saveSearchPrefs()">Opslaan</button>
+    </div>
+
+    <!-- TT-452 (09-10-2026): het seintje op dit toestel. Eigen blok met eigen
+         knop, zoals de bewaarde zoekopdracht: aan of uit werkt meteen en geldt
+         alleen voor dit toestel. Verborgen als de browser het niet kan. -->
+    <div class="modal-blok" id="pushBlok" style="display:none;">
+      <div class="field">
+        <label>Seintje op dit toestel</label>
+        <p id="pushTekst" style="font-size:13px;color:var(--muted);margin-bottom:12px;"></p>
+        <button type="button" class="btn btn-ghost" id="pushKnop" style="width:100%;"></button>
+      </div>
     </div>
 
     <!-- TT-295 (26-09-2026): de bewaarde zoekopdracht. Eigen blok met eigen
@@ -2777,17 +2788,18 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261009b"></script>
+<script src="core.js?v=20261009c"></script>
 <script src="utils.js?v=20261009a"></script>
 <script src="veiligheid.js?v=20261009a"></script>
-<script src="auth.js?v=20261009a"></script>
+<script src="auth.js?v=20261009b"></script>
 <script src="postcode.js?v=20261009a"></script>
 <script src="wizard.js?v=20261009c"></script>
 <script src="ouder.js?v=20261009a"></script>
 <script src="search.js?v=20261009b"></script>
 <script src="musicians.js?v=20261009c"></script>
 <script src="bands.js?v=20261009d"></script>
-<script src="messages.js?v=20261009b"></script>
+<script src="messages.js?v=20261009c"></script>
+<script src="push.js?v=20261009a"></script>
 <script src="modals-shared.js?v=20261009a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────

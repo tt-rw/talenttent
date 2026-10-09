@@ -2474,6 +2474,10 @@
   .message-bubble.tt-bericht { max-width: 90%; width: 90%; }
   .tt-bericht-kop { font-weight: 700; margin-bottom: 4px; }
   .tt-bericht .bb-rij { padding: 6px 0; }
+  /* TT-452: de vraag om een seintje, in het gesprek van Talent Tent. */
+  .tt-seintje-tekst { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+  .tt-seintje-knoppen { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tt-seintje-knoppen .btn { flex: 1 1 auto; min-height: 44px; }
   .tt-meer {
     display: block; width: 100%; min-height: 44px; padding: 0; background: none; border: 0;
     font: inherit; font-size: 14px; color: var(--accent); text-align: left; cursor: pointer;
