@@ -1537,7 +1537,9 @@ function showView(view, mode, extra) {
 
   // TT-404: een stap terug komt uit waar je was; elke andere navigatie begint bovenaan.
   if (mode === 'pop') window.scrollTo({ top: viewScrollStand[view] || 0, behavior: 'instant' });
-  else window.scrollTo({ top: 0, behavior: 'smooth' });
+  // TT-393: meteen bovenaan, niet vloeiend. Een vloeiende scroll bleef op de telefoon
+  // halverwege hangen als de inhoud van het scherm net wisselde (Berichten).
+  else window.scrollTo({ top: 0, behavior: 'instant' });
   // TT-142 (25-08-2026): geen automatische focus meer bij het openen van een
   // view. Was bedoeld als gemak (TT-37), maar opende ongevraagd het
   // toetsenbord en verstoorde daarmee de "bovenaan beginnen"-scroll — de

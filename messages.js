@@ -706,6 +706,7 @@ function closeConversation(stil) {
   document.getElementById('messagesThreadPanel').style.display = 'none';
   document.getElementById('messagesThreadPanel').classList.remove('gesprek-open');
   werkTerugKnopBij(); // TT-301
+  window.scrollTo({ top: 0, behavior: 'instant' }); // TT-393: de lijst begint bovenaan, niet waar het gesprek eindigde
   if (!stil) loadInbox(); // TT-410a: terug naar Zoeken laadt de inbox niet
 }
 
