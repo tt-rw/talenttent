@@ -22,6 +22,11 @@
        Was 18px, nu 12px. Eén waarde, want de hamburgerknop wordt met een
        negatieve verschuiving in de koprij getrokken en moet meebewegen. */
     --kop-lucht: 12px;
+    /* Ruimte tussen de kop (woordmerk) en het eerste blok van een hoofdscherm:
+       Zoeken, Berichten, Bands en Mijn Profiel. Eén waarde, de standaard
+       afstand tussen twee blokken (huisstijl §3). Geen bovenmarge per scherm
+       meer. */
+    --kop-ruimte: 20px;
     /* TT-233 (10-09-2026, Ronald): hoekstraal van een invoer-/keuzeveld. Eén
        waarde voor élk veld — invoerveld, keuzeveld, wielveld, lijstoptie —
        zodat geen twee velden naast elkaar een andere ronding krijgen. */
@@ -1690,7 +1695,7 @@
   .search-mode-tabs-outer {
     display: flex;
     justify-content: center;
-    padding: 20px 24px;
+    padding: var(--kop-ruimte) 24px 20px;
   }
   .search-mode-tabs {
     display: flex;
@@ -2629,6 +2634,31 @@
        blokken die allebei hun eigen marge meebrengen, tellen op. */
     padding: 0 24px 80px;
   }
+
+  /* Hoofdschermen: dezelfde ruimte onder de kop als Zoeken (de rij met
+     knoppen levert die daar zelf). Berichten en Bands stonden 0px onder de
+     kop, Mijn Profiel zonder bannerbalk ook. Met een bannerbalk blijft die
+     direct onder de kop staan (huisstijl §10). Een open gesprek houdt zijn
+     eigen kop tegen de bovenkant. */
+  #view-messages > .search-wrap,
+  #view-bands > .search-wrap { padding-top: var(--kop-ruimte); }
+  #view-messages.active .search-wrap:has(#messagesThreadPanel.gesprek-open) { padding-top: 0; }
+  #view-myprofile .my-profile-wrap:not(:has(.profiel-banner)) { padding-top: var(--kop-ruimte); }
+
+  /* Kop van Mijn Bands: titel en knop op één rij, op dezelfde middellijn
+     (TT-434); de ondertitel staat in de kolom van de titel, smaller dan de
+     knop, en breekt af over twee regels. */
+  .mijn-bands-kop {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 12px;
+    row-gap: 8px;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .mijn-bands-kop .filter-title { grid-column: 1; grid-row: 1; margin-bottom: 0; }
+  .mijn-bands-kop .btn { grid-column: 2; grid-row: 1; white-space: nowrap; }
+  .mijn-bands-sub { grid-column: 1; grid-row: 2; margin: 0; font-size: 13px; color: var(--muted); }
 
   /* Standaard witruimte tussen twee blokken in het filterpaneel: 20px, zoals
      §3 van de huisstijl voorschrijft. Stond hier als inline marge van 16px op

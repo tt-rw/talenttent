@@ -288,7 +288,7 @@ function bandWizardOpen() {
 
 function zetBandWizardZichtbaar(aan) {
   document.getElementById('createBandForm').style.display = aan ? 'block' : 'none';
-  document.getElementById('mijnBandsKop').style.display = aan ? 'none' : 'flex';
+  document.getElementById('mijnBandsKop').style.display = aan ? 'none' : 'grid';
   document.getElementById('myBandsList').style.display = aan ? 'none' : '';
 }
 

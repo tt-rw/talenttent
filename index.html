@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261009c">
+<link rel="stylesheet" href="styles.css?v=20261009d">
 </head>
 <body>
 
@@ -1956,18 +1956,19 @@
 <!-- VIEW: Mijn bands -->
 <div class="app-view" id="view-bands">
   <div class="search-wrap">
-    <div id="mijnBandsKop" style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-        <div class="filter-title" style="margin-bottom:0;">Mijn bands</div>
+    <!-- Kop van Mijn Bands: titel en knop op één rij, de ondertitel in de
+         kolom van de titel, dus smaller dan de knop en over twee regels
+         (besluit Ronald, 09-10-2026). Opmaak in .mijn-bands-kop. -->
+    <div id="mijnBandsKop" class="mijn-bands-kop">
+        <div class="filter-title">Mijn bands</div>
       <!-- TT-254 (11-09-2026): deze knop heette "Band toevoegen", terwijl de
            formuliertitel "Nieuwe band aanmaken" zegt en de opslaanknop "Band
            aanmaken". Eén actie, drie namen. Gevonden bij TT-248: de lege staat
            zette een tweede gouden knop op hetzelfde scherm, met weer een
            andere tekst. Drie van de vier plekken zeggen "aanmaken", dus dat is
            nu de naam. Huisstijl §6, regel 5: één betekenis per woord. -->
-      <button class="btn btn-primary" style="white-space:nowrap;" onclick="showCreateBandForm()">Band aanmaken</button>
-      </div>
-      <p style="font-size:13px;color:var(--muted);margin:0;">Bands waar jij beheerder en/of lid van bent</p>
+      <button class="btn btn-primary" onclick="showCreateBandForm()">Band aanmaken</button>
+      <p class="mijn-bands-sub">Bands waar jij beheerder en/of lid van bent</p>
     </div>
     <!-- TT-385 fase 4 (02-10-2026, besluiten Ronald): de korte wizard. Eén
          scherm met drie vragen: naam, postcode en plaats, genres. De balk
@@ -2797,7 +2798,7 @@
 <script src="ouder.js?v=20261009a"></script>
 <script src="search.js?v=20261009b"></script>
 <script src="musicians.js?v=20261009c"></script>
-<script src="bands.js?v=20261009d"></script>
+<script src="bands.js?v=20261009e"></script>
 <script src="messages.js?v=20261009d"></script>
 <script src="push.js?v=20261009a"></script>
 <script src="modals-shared.js?v=20261009a"></script>
