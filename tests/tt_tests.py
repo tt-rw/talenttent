@@ -4854,7 +4854,7 @@ window.TT_STUB.fnAntwoord = {};
         check("na een verlopen aanvraag staat het wachtscherm weer in zijn oorspronkelijke vorm",
               w["hersteld"] == {"kop": "Je aanvraag is verstuurd", "melding": True, "opnieuw": True}, json.dumps(w["hersteld"]))
         check("de gebruikersnaam-hint zegt het zoals Ronald het schreef",
-              "Ben je jonger dan 16 jaar? Dan moet de gebruikersnaam anders zijn dan je voornaam."
+              "Ben je jonger dan 16 jaar? Dan staat alleen deze naam op je profiel en moet hij anders zijn dan je voornaam."
               in pg.evaluate("document.querySelector('#username').closest('.field').textContent"))
         c.close()
 
@@ -5765,9 +5765,9 @@ window.TT_STUB.fnAntwoord = {};
             genres: ['Pop'], soort: null, pauze: false, founder_id: 'm1', contact_id: 'm3',
             instagram: '@zoutwater.band', tiktok: 'https://www.tiktok.com/@zoutwater', youtube: null,
             band_members: [
-              { role: 'Lid', status: 'bevestigd', joined_at: '2026-02-01', musicians: { id: 'm3', fname: 'Sanne', username: 'sanne', avatar_url: null, musician_instruments: [{ instrument: 'Zang' }] } },
-              { role: 'Oprichter', status: 'bevestigd', joined_at: '2026-01-01', musicians: { id: 'm1', fname: 'Ronald', username: 'ronnie', avatar_url: null, musician_instruments: [{ instrument: 'Drums' }] } },
-              { role: 'Lid', status: 'uitgenodigd', joined_at: '2026-03-01', musicians: { id: 'm2', fname: 'Dylan', username: 'dylan', avatar_url: null, musician_instruments: [] } }],
+              { role: 'Lid', status: 'bevestigd', joined_at: '2026-02-01', musicians: { id: 'm3', fname: 'Sanne', weergavenaam: 'Sanne', username: 'sanne', avatar_url: null, musician_instruments: [{ instrument: 'Zang' }] } },
+              { role: 'Oprichter', status: 'bevestigd', joined_at: '2026-01-01', musicians: { id: 'm1', fname: 'Ronald', weergavenaam: 'Ronald', username: 'ronnie', avatar_url: null, musician_instruments: [{ instrument: 'Drums' }] } },
+              { role: 'Lid', status: 'uitgenodigd', joined_at: '2026-03-01', musicians: { id: 'm2', fname: 'Dylan', weergavenaam: 'Dylan', username: 'dylan', avatar_url: null, musician_instruments: [] } }],
             band_wanted: [],
             band_media: [{ media_type: 'foto', url: 'https://x.test/a.jpg', platform: null, in_banner: true, created_at: '2026-01-02' },
                          { media_type: 'link', url: 'https://open.spotify.com/track/1', platform: 'Spotify', in_banner: false, created_at: '2026-01-03' }],
@@ -5871,7 +5871,7 @@ window.TT_STUB.fnAntwoord = {};
           let teller = 0;
           const kind = ['band_wanted', 'band_members', 'band_media', 'band_nummers', 'band_covers', 'band_invallers'];
           const muz = id => { const m = (S.data.musicians || []).find(x => x.id === id); if (!m) return null;
-            return { id: m.id, fname: m.fname || m.first_name, username: m.username, avatar_url: m.avatar_url || null,
+            return { id: m.id, weergavenaam: m.fname || m.first_name || m.username, username: m.username, avatar_url: m.avatar_url || null,
                      musician_instruments: (S.data.musician_instruments || []).filter(i => i.musician_id === id).map(i => ({ instrument: i.instrument })) }; };
           db.from = (t) => { const q = echt(t); const run = q._run.bind(q);
             q._run = () => {
@@ -6203,7 +6203,7 @@ window.TT_STUB.fnAntwoord = {};
           let teller = 0;
           const kind = ['band_wanted', 'band_members', 'band_media', 'band_nummers', 'band_covers', 'band_invallers'];
           const muz = id => { const m = (S.data.musicians || []).find(x => x.id === id); if (!m) return null;
-            return { id: m.id, fname: m.fname || m.first_name, username: m.username, avatar_url: m.avatar_url || null, musician_instruments: [] }; };
+            return { id: m.id, weergavenaam: m.fname || m.first_name || m.username, username: m.username, avatar_url: m.avatar_url || null, musician_instruments: [] }; };
           db.from = (t) => { const q = echt(t); const run = q._run.bind(q);
             q._run = () => {
               if (q.op === 'insert' && (kind.includes(t) || t === 'bands')) (Array.isArray(q.payload) ? q.payload : [q.payload]).forEach(r => { if (r && !r.id) r.id = 'n' + (++teller); });
@@ -7508,7 +7508,7 @@ window.TT_STUB.fnAntwoord = {};
           // Eerdere blokken zetten getMyMusicianId vast op 'm1'; hier volgt hij het gekozen account.
           window.getMyMusicianId = async () => myMusicianId;
           const echt = db.from.bind(db);
-          const muz = id => { const m = (S.data.musicians || []).find(x => x.id === id); return m ? { fname: m.fname || null, username: m.username } : null; };
+          const muz = id => { const m = (S.data.musicians || []).find(x => x.id === id); return m ? { weergavenaam: m.fname || m.username, username: m.username } : null; };
           db.from = (t) => { const q = echt(t); const run = q._run.bind(q);
             q._run = () => { const r = run();
               if (q.op !== 'select' || !r.data) return r;
@@ -7517,7 +7517,7 @@ window.TT_STUB.fnAntwoord = {};
                 const y = JSON.parse(JSON.stringify(x)); y.musicians = muz(x.musician_id); return y; }); });
               return r; };
             return q; };
-          S.data.musicians = [{ id: 'm1', username: 'beheerder' }, { id: 'm2', username: 'dyl', fname: 'Dylan' }, { id: 'm3', username: 'sanne' }, { id: 'm4', username: 'gast' }];
+          S.data.musicians = [{ id: 'm1', username: 'beheerder' }, { id: 'm2', username: 'dyl', fname: 'Dylan', weergavenaam: 'Dylan' }, { id: 'm3', username: 'sanne' }, { id: 'm4', username: 'gast' }];
           S.data.bands = [{ id: 'b9', name: 'Van Delft', city: 'Delft', genres: ['Country'], status: 'compleet', pauze: false, founder_id: 'm1', avatar_url: null, updated_at: '2026-10-01' }];
           S.data.band_wanted = [];
           S.data.band_members = [
@@ -7597,7 +7597,7 @@ window.TT_STUB.fnAntwoord = {};
           const keep = { myMusicianId, currentUser, hasOwnProfile, wie: window.getMyMusicianId, conf: window.showConfirm, toast: window.showToast };
           window.getMyMusicianId = async () => myMusicianId;
           myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; hasOwnProfile = true;
-          S.data.musicians = [{ id: 'm1', username: 'ik' }, { id: 'm2', username: 'dyl', fname: 'Dylan' }, { id: 'm3', username: 'sanne' }];
+          S.data.musicians = [{ id: 'm1', username: 'ik' }, { id: 'm2', username: 'dyl', fname: 'Dylan', weergavenaam: 'Dylan' }, { id: 'm3', username: 'sanne' }];
           const nu = Date.now();
           S.data.messages = [
             { id: 1, sender_id: 'm2', recipient_id: 'm1', body: 'hoi vanaf Dylan', created_at: new Date(nu - 60000).toISOString(), read_at: null },
@@ -7764,7 +7764,7 @@ window.TT_STUB.fnAntwoord = {};
           window.getMyMusicianId = async () => myMusicianId;
           myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; hasOwnProfile = true;
           filterInstruments = [];
-          const rij = (id, naam) => ({ id, fname: naam, username: naam.toLowerCase(), city: 'Den Haag', zip: '2491AA', bio: '', goal: null,
+          const rij = (id, naam) => ({ id, weergavenaam: naam, username: naam.toLowerCase(), city: 'Den Haag', zip: '2491AA', bio: '', goal: null,
             avatar_url: null, musician_instruments: [{ instrument: 'Gitaar', niveau: 3 }], musician_genres: [{ genre: 'Rock' }],
             musician_songs: [{ song_title: 'One', song_artist: 'Metallica', mastery_level: 3 }] });
           S.data.musicians = [rij('m1', 'Ronald'), rij('m2', 'Colin'), rij('m3', 'Tester1')];
@@ -8180,9 +8180,9 @@ window.TT_STUB.fnAntwoord = {};
           ttBerichtenBeschikbaar = true;
           const nu = Date.now();
           S.data.musicians = [
-            { id: 'm1', username: 'ik', fname: 'Ik' },
-            { id: 'm2', username: 'dyl', fname: 'Dylan', city: 'Delft', avatar_url: null },
-            { id: 'm3', username: 'sanne', fname: 'Sanne', city: 'Rijswijk', avatar_url: null }];
+            { id: 'm1', username: 'ik', fname: 'Ik', weergavenaam: 'Ik' },
+            { id: 'm2', username: 'dyl', fname: 'Dylan', weergavenaam: 'Dylan', city: 'Delft', avatar_url: null },
+            { id: 'm3', username: 'sanne', fname: 'Sanne', weergavenaam: 'Sanne', city: 'Rijswijk', avatar_url: null }];
           S.data.messages = [];
           S.rpcResults.tt_get_bands_public = [{ id: 'b1', name: 'Van Delft', city: 'Delft', avatar_url: null }];
           blokkadeDoorMij = new Set();
@@ -8327,7 +8327,7 @@ window.TT_STUB.fnAntwoord = {};
           myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; hasOwnProfile = true;
           ttBerichtenBeschikbaar = true;
           const nu = Date.now();
-          S.data.musicians = [{ id: 'm1', username: 'ik', fname: 'Ik' }, { id: 'm2', username: 'dyl', fname: 'Dylan', city: 'Delft', avatar_url: null }];
+          S.data.musicians = [{ id: 'm1', username: 'ik', fname: 'Ik', weergavenaam: 'Ik' }, { id: 'm2', username: 'dyl', fname: 'Dylan', weergavenaam: 'Dylan', city: 'Delft', avatar_url: null }];
           S.data.messages = [];
           S.data.talent_tent_berichten = [{ id: 't1', musician_id: 'm1', created_at: new Date(nu - 3600000).toISOString(), read_at: null,
             inhoud: { muzikanten: [{ id: 'm2', km: 8.5, instrumenten: ['Gitaar'] }], bands: [], meer: 0 } }];
@@ -8523,6 +8523,136 @@ window.TT_STUB.fnAntwoord = {};
         check("--kop-ruimte staat in :root en de drie regels (Zoeken, Berichten en Bands, Mijn Profiel) gebruiken hem",
               "--kop-ruimte: 20px" in css83 and css83.count("var(--kop-ruimte)") == 3, "")
         check("geen paginafouten in blok 83", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ────────────────────────────────────────────────────────────
+        # Blok 84 — 09-10-2026 (TT-420, besluiten Ronald): de gebruiker kiest
+        # welke naam anderen zien, Echte naam of Gebruikersnaam. De database
+        # zet dat om in de kolom weergavenaam; de app leest alleen die kolom.
+        # Voor ingelogd en uitgelogd gelijk. Onder de 16 geen keuze.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 84 — naamkeuze (TT-420)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        d84 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 300) => new Promise(r => setTimeout(r, n)), u = {};
+          const keep = { currentUser, myMusicianId, hasOwnProfile, musicians: S.data.musicians };
+          currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
+
+          // 1. displayNameOf leest alleen weergavenaam; fname en lname tellen niet mee.
+          u.naam = {
+            gekozen: displayNameOf({ weergavenaam: 'Henk de Jong', username: 'Drummer123', fname: 'Henk', lname: 'de Jong' }),
+            gebruikersnaam: displayNameOf({ weergavenaam: 'Drummer123', username: 'Drummer123', fname: 'Henk' }),
+            zonderVeld: displayNameOf({ username: 'Drummer123', fname: 'Henk' }),
+            leeg: displayNameOf({ weergavenaam: null, username: null }),
+            niets: displayNameOf(null)
+          };
+
+          // 2. het voorbeeld onder de keuze
+          u.zoalsAnderen = [
+            naamZoalsAnderen('Henk', 'de Jong', 'Drummer123', 'echt', 30),
+            naamZoalsAnderen('Henk', '', 'Drummer123', 'echt', 30),
+            naamZoalsAnderen('Henk', 'de Jong', 'Drummer123', 'gebruikersnaam', 30),
+            naamZoalsAnderen('Henk', 'de Jong', 'Drummer123', 'echt', 15),
+            naamZoalsAnderen('', 'de Jong', 'Drummer123', 'echt', 30)
+          ];
+
+          // 3. zoeken vindt de naam die je ziet, en alleen die
+          const term = t => naamZoekTerm(t);
+          const henk = { weergavenaam: 'Henk de Jong', username: 'Drummer123' };
+          const drum = { weergavenaam: 'Drummer123', username: 'Drummer123' };
+          u.zoek = {
+            echtOpNaam: naamMatcht(term('henk de jong'), displayNameOf(henk)),
+            echtOpDeel: naamMatcht(term('de jong'), displayNameOf(henk)),
+            echtNietOpGebruikersnaam: naamMatcht(term('drummer'), displayNameOf(henk)),
+            gebrNietOpEchteNaam: naamMatcht(term('henk'), displayNameOf(drum)),
+            gebrOpGebruikersnaam: naamMatcht(term('drummer'), displayNameOf(drum))
+          };
+
+          // 4. bezoekers: de naam komt uit tt_weergavenamen, in één vraag
+          S.data.musicians = [{ id: 'm1', user_id: 'u1', username: 'ronnie', weergavenaam: 'Ronald Wever', city: 'Den Haag' },
+                              { id: 'm2', user_id: 'u2', username: 'dylan', weergavenaam: 'dylan', city: 'Delft' }];
+          const rijen = [{ id: 'm1', username: 'ronnie' }, { id: 'm2', username: 'dylan' }];
+          const rpcKeep = S.rpcResults.tt_weergavenamen; S.rpcResults.tt_weergavenamen = p => S.weergavenamen(p);
+          S.calls = [];
+          await weergavenamenToevoegen(rijen);
+          u.bezoeker = { namen: rijen.map(displayNameOf), rpc: S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_weergavenamen').map(c => c.params) };
+          S.rpcErrors.tt_weergavenamen = { code: 'XX000', message: 'stuk' };
+          const stuk = [{ id: 'm1', username: 'ronnie' }];
+          await weergavenamenToevoegen(stuk);
+          u.bezoekerStuk = displayNameOf(stuk[0]);
+          delete S.rpcErrors.tt_weergavenamen;
+          if (rpcKeep === undefined) delete S.rpcResults.tt_weergavenamen; else S.rpcResults.tt_weergavenamen = rpcKeep;
+
+          // 5. de tegel Wie ben je: 25 jaar, echte naam
+          S.data.musicians = [{ id: 'm1', user_id: 'u1', fname: 'Ronald', lname: 'Wever', username: 'ronnie', zip: '2497', city: 'Den Haag',
+                                city_source: 'pdok', bio: '', naam_tonen: 'echt', weergavenaam: 'Ronald Wever' }];
+          S.rpcResults.tt_get_my_birth_date = '2001-01-01';
+          showView('profieltegels'); await w();
+          await openWieBenJe(); await w();
+          const blok = document.getElementById('wbjNaamKeuze');
+          const knoppen = () => Array.from(document.querySelectorAll('#wbjNaamTonenControl .segmented-btn')).map(b => [b.textContent.trim(), b.classList.contains('selected')]);
+          u.tegel25 = { zichtbaar: blok.style.display !== 'none', knoppen: knoppen(), voorbeeld: document.getElementById('wbjNaamVoorbeeld').textContent };
+          zetWbjNaamTonen('gebruikersnaam');
+          u.tegelGebr = { knoppen: knoppen(), voorbeeld: document.getElementById('wbjNaamVoorbeeld').textContent };
+          document.getElementById('wbjLname').value = 'Wever-Proef'; document.getElementById('wbjLname').dispatchEvent(new Event('input', { bubbles: true }));
+          zetWbjNaamTonen('echt');
+          u.tegelAchternaam = document.getElementById('wbjNaamVoorbeeld').textContent;
+          // opslaan stuurt de keuze mee
+          zetWbjNaamTonen('gebruikersnaam');
+          document.getElementById('wbjPostcodeStatus').textContent = '';
+          await saveWieBenJe(); await w();
+          u.opgeslagen = S.data.musicians[0].naam_tonen;
+
+          // 6. onder de 16: geen keuze
+          S.rpcResults.tt_get_my_birth_date = new Date(new Date().getFullYear() - 14, 5, 15).toISOString().slice(0, 10);
+          S.data.musicians[0].naam_tonen = 'gebruikersnaam';
+          await openWieBenJe(); await w();
+          u.tegel14 = { zichtbaar: document.getElementById('wbjNaamKeuze').style.display !== 'none' };
+
+          currentUser = keep.currentUser; myMusicianId = keep.myMusicianId; hasOwnProfile = keep.hasOwnProfile; S.data.musicians = keep.musicians;
+          S.rpcResults.tt_get_my_birth_date = null;
+          return u;
+        }""")
+        j84 = json.dumps(d84, ensure_ascii=False)
+        check("TT-420: de naam die anderen zien is weergavenaam; fname en lname tellen niet mee, zonder veld de gebruikersnaam",
+              d84["naam"] == {"gekozen": "Henk de Jong", "gebruikersnaam": "Drummer123", "zonderVeld": "Drummer123", "leeg": "Muzikant", "niets": "Muzikant"}, j84)
+        check("TT-420: het voorbeeld: vanaf 16 voor- en achternaam (achternaam optioneel), anders de gebruikersnaam; onder de 16 altijd de gebruikersnaam",
+              d84["zoalsAnderen"] == ["Henk de Jong", "Henk", "Drummer123", "Drummer123", "Drummer123"], j84)
+        check("TT-420: zoeken vindt alleen de naam die je ziet (echte naam op naam, gebruikersnaam op gebruikersnaam, niet kruislings)",
+              d84["zoek"] == {"echtOpNaam": True, "echtOpDeel": True, "echtNietOpGebruikersnaam": False,
+                              "gebrNietOpEchteNaam": False, "gebrOpGebruikersnaam": True}, j84)
+        check("TT-420: voor een bezoeker komt de gekozen naam in één vraag uit tt_weergavenamen",
+              d84["bezoeker"] == {"namen": ["Ronald Wever", "dylan"], "rpc": [{"ids": ["m1", "m2"]}]}, j84)
+        check("TT-420: mislukt tt_weergavenamen, dan toont de lijst de gebruikersnaam en geen fout",
+              d84["bezoekerStuk"] == "ronnie", j84)
+        check("TT-420: de tegel Wie ben je: vanaf 16 twee keuzes met Echte naam gekozen en het voorbeeld eronder",
+              d84["tegel25"] == {"zichtbaar": True, "knoppen": [["Echte naam", True], ["Gebruikersnaam", False]],
+                                 "voorbeeld": "Zo zien anderen je: Ronald Wever"}, j84)
+        check("TT-420: kiezen voor Gebruikersnaam wisselt de knop en het voorbeeld; de achternaam komt in het voorbeeld mee",
+              d84["tegelGebr"] == {"knoppen": [["Echte naam", False], ["Gebruikersnaam", True]], "voorbeeld": "Zo zien anderen je: ronnie"}
+              and d84["tegelAchternaam"] == "Zo zien anderen je: Ronald Wever-Proef", j84)
+        check("TT-420: opslaan bewaart de keuze (naam_tonen)", d84["opgeslagen"] == "gebruikersnaam", j84)
+        check("TT-420: onder de 16 staat er geen keuze", d84["tegel14"] == {"zichtbaar": False}, j84)
+        js84 = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in
+                ["search.js", "bands.js", "messages.js", "musicians.js", "veiligheid.js", "wizard.js"]}
+        import re as re84
+        lezen84 = {f: re84.findall(r"select\(\s*[`'\"][^`'\"]*\bfname\b", t) for f, t in js84.items()}
+        check("TT-420: geen enkele leesvraag van de app haalt fname of lname op voor andermans naam (alleen de eigen tegel Wie ben je leest ze)",
+              all(not v for f, v in lezen84.items() if f != "musicians.js") and len(lezen84["musicians.js"]) == 1,
+              json.dumps({f: len(v) for f, v in lezen84.items()}))
+        check("TT-420: het naamveld van Zoeken en Maak setlist toetst de weergavenaam, en Lid uitnodigen zoekt in weergavenaam",
+              "naamMatcht(nameTerm, displayNameOf(m))" in js84["search.js"] and "naamMatcht(term, displayNameOf(m))" in js84["search.js"]
+              and "ilike('weergavenaam'" in js84["bands.js"] and "fname.ilike" not in js84["bands.js"], "")
+        html84 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        check("TT-420: de keuze heeft twee knoppen in de vaste vorm van een keuzeknop (.segmented-btn), gelabeld Echte naam en Gebruikersnaam",
+              html84.count("zetWbjNaamTonen(") == 2 and 'id="wbjNaamTonenControl"' in html84, "")
+        check("TT-420: in de tegel Wie ben je staan de naam, de geboortedatum, de gebruikersnaam en dan de naamkeuze (de keuze hangt van de leeftijd af)",
+              html84.index('id="wbjLname"') < html84.index('id="wbjBirthDate"') < html84.index('id="wbjUsername"') < html84.index('id="wbjNaamKeuze"'), "")
+        check("TT-420: de privacyverklaring zegt niet meer dat de voor- of achternaam nooit getoond wordt",
+              "Je voornaam is alleen zichtbaar" not in html84 and "Je postcode en achternaam worden nooit" not in html84, "")
+        check("geen paginafouten in blok 84", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
