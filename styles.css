@@ -3314,34 +3314,13 @@
   }
   .band-bio { font-size: 15px; line-height: 1.5; color: var(--text); margin: 0; }
 
-  /* De bezetting met gezichten: vier per rij. Een open rol en een invaller
-     zijn een gestippeld rondje met een plus (de vorm van "iets toevoegen",
-     §5), voor een bezoeker zonder knop. */
-  .bezetting {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 12px 8px;
-  }
-  .bezetting-lid {
-    display: flex; flex-direction: column; align-items: center;
-    min-width: 0; text-align: center;
-  }
-  .bezetting-gezicht {
-    width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 8px;
-  }
-  .bezetting-gezicht-t { background: var(--merk); color: var(--merk-tekst); font-size: 22px; }
+  /* De bezetting op de bandpagina: rijen, zoals Onze bezetting en het blok
+     Bands op het muzikantprofiel (.bb-rij, TT-450). Een open rol en een
+     invaller zijn een gestippeld rondje met een vraagteken, nooit een knop. */
   .bezetting-open-rondje {
     border: var(--line) dashed var(--rand-knop);
     color: var(--text); font-size: 22px; line-height: 1;
   }
-  /* Een naam in een lijst is 16px, vet (§2). */
-  .bezetting-naam {
-    font-size: 16px; font-weight: 700; max-width: 100%;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .bezetting-rol { font-size: var(--fs-sm); color: var(--muted); max-width: 100%; overflow-wrap: anywhere; }
 
   /* Eigen nummers: de vorm van de media-rij (§18.2), zonder bewerkveld. */
   .band-nummer {
@@ -3371,17 +3350,11 @@
   .social-dicht { color: var(--muted); cursor: default; }
 
   /* ── TT-385 fase 3 (02-10-2026): de privé bandpagina en Bandprofiel
-     bewerken ───────────────────────────────────────────────────────────────
-     Een open rol of invaller is voor de beheerder een knop (zoeken); dezelfde
-     vorm, zonder de vormgeving van de browser. */
-  button.bezetting-lid {
-    background: none; border: 0; padding: 0; margin: 0;
-    font: inherit; color: var(--text); cursor: pointer;
-  }
+     bewerken ─────────────────────────────────────────────────────────────── */
   /* Een lege bandfoto op je eigen pagina opent Wie zijn we. */
   button.bandfoto { padding: 0; font-family: inherit; cursor: pointer; }
   /* Een uitnodiging staat direct onder de titel van zijn sectie, of 12px
-     onder de gezichten van de bezetting. */
+     onder de rijen van de bezetting. */
   .profile-media > .add-link-btn { margin-top: 0; }
   .bezetting + .add-link-btn { margin-top: 12px; }
 
@@ -3428,13 +3401,20 @@
   /* TT-385 punt 17: je bands op je muzikantprofiel. Dezelfde rij als in Onze
      bezetting, als knop; de bandfoto is vierkant, zoals overal. */
   .bb-foto-vierkant { border-radius: 8px; }
-  .profiel-band-rij {
+  .bb-rij-knop {
     width: 100%; background: none; border: 0;
     font: inherit; color: var(--text); text-align: left; cursor: pointer;
   }
-  /* Geen lijn tussen twee bands; de scheiding staat onder het blok (.profile-songs). */
-  .profiel-band-rij:last-child { padding-bottom: 0; }
-  .profiel-band-rij .bb-naam, .profiel-band-rij .bb-sub { display: block; }
+  /* Geen lijn tussen twee rijen; de scheiding staat onder het blok (.profile-songs). */
+  .bb-rij-knop:last-child { padding-bottom: 0; }
+  .bb-rij .bb-naam, .bb-rij .bb-sub { display: block; }
+  /* Het plusje in Bandprofiel bewerken zoekt een muzikant: een knop met
+     tikvlak van 44px rond het rondje van 40px (§6). */
+  .bb-plus {
+    position: relative; background: none; padding: 0; font-family: inherit;
+    cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .bb-plus::after { content: ''; position: absolute; inset: -2px; }
 
   /* Onze muziek: de titel van een eigen nummer is te bewerken in de rij,
      zoals het adres eronder (§18.2). Hij leest als de naam van de rij tot je

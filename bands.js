@@ -995,30 +995,25 @@ function invallerDatum(datum) {
   return escHtml(d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, ''));
 }
 
-// Eén gezicht in de bezetting. Zonder foto (of afgeschermd) de T, zoals de
-// lege profielfoto (huisstijl §18.7).
+// Eén lid in de bezetting: dezelfde rij als in Onze bezetting en op het
+// muzikantprofiel (`.bb-rij`, foto links, tekst rechts). Zonder foto (of
+// afgeschermd) de T, zoals de lege profielfoto (huisstijl §18.7).
 function bezettingLidHTML(l) {
-  const foto = safeUrl(l.avatar_url);
-  const gezicht = foto
-    ? `<img class="bezetting-gezicht" src="${foto}" alt="">`
-    : `<span class="bezetting-gezicht bezetting-gezicht-t">${AVATAR_T_FALLBACK}</span>`;
   const rol = l.instrumenten.length ? l.instrumenten.join(' · ') : roleLabel(l.rol);
-  const inhoud = `${gezicht}<div class="bezetting-naam">${escHtml(l.naam)}</div><div class="bezetting-rol">${escHtml(rol)}</div>`;
+  const inhoud = `${bbFotoHTML(l.avatar_url)}<span class="bb-tekst"><span class="bb-naam">${escHtml(l.naam)}</span><span class="bb-sub">${escHtml(rol)}</span></span>`;
   // Een tik opent het profiel van het lid, ook je eigen (TT-410b: elk profiel is een scherm).
   return l.id
-    ? `<button type="button" class="bezetting-lid" onclick="openProfielScherm('${jsAttr(l.id)}')" aria-label="Profiel van ${escAttr(l.naam)}">${inhoud}</button>`
-    : `<div class="bezetting-lid">${inhoud}</div>`;
+    ? `<button type="button" class="bb-rij bb-rij-knop bezetting-lid" onclick="openProfielScherm('${jsAttr(l.id)}')" aria-label="Profiel van ${escAttr(l.naam)}">${inhoud}</button>`
+    : `<div class="bb-rij bezetting-lid">${inhoud}</div>`;
 }
 
 // Een open plek in de bezetting: een vaste rol (band_wanted) of een invaller
-// voor één optreden. Voor een bezoeker geen knop (besluit Ronald, (e)); voor
-// de beheerder opent een tik Zoeken met dat instrument en de plaats van de
-// band (TT-385 punt 7). Die tik komt binnen als `actie`.
-function bezettingOpenHTML(instrument, regels, actie) {
-  const inhoud = `<span class="bezetting-gezicht bezetting-open-rondje" aria-hidden="true">+</span><div class="bezetting-naam">${escHtml(instrument)}</div>${regels.map(r => `<div class="bezetting-rol">${r}</div>`).join('')}`;
-  return actie
-    ? `<button type="button" class="bezetting-lid bezetting-open" onclick="${actie}" aria-label="Zoek ${escAttr(instrument)}">${inhoud}</button>`
-    : `<div class="bezetting-lid bezetting-open">${inhoud}</div>`;
+// voor één optreden. Op de bandpagina is het nooit een knop, voor niemand
+// (TT-450, besluit Ronald: een plus geeft de indruk dat je kunt tikken); het
+// teken is een vraagteken. Zoeken opent vanuit Bandprofiel bewerken, op het
+// plusje in de rij (bbRenderOpen(), bbRenderInvallers()).
+function bezettingOpenHTML(instrument, regels) {
+  return `<div class="bb-rij bezetting-open"><span class="bb-foto bezetting-open-rondje" aria-hidden="true">?</span><span class="bb-tekst"><span class="bb-naam">${escHtml(instrument)}</span>${regels.map(r => `<span class="bb-sub">${r}</span>`).join('')}</span></div>`;
 }
 
 // Een lege plek op je eigen bandpagina is een uitnodiging, geen leeg vak
@@ -1071,7 +1066,7 @@ function profielBandsHTML(bands) {
       ? `<img class="bb-foto bb-foto-vierkant" src="${foto}" alt="">`
       : `<span class="bb-foto bb-foto-t bb-foto-vierkant" aria-hidden="true">${AVATAR_T_FALLBACK}</span>`;
     const sub = b.instrumenten.concat(b.rol === 'Oprichter' ? [roleLabel(b.rol)] : []).join(' · ');
-    return `<button type="button" class="bb-rij profiel-band-rij" onclick="openBandScherm('${jsAttr(b.id)}')">${beeld}<span class="bb-tekst"><span class="bb-naam">${escHtml(b.naam)}</span>${sub ? `<span class="bb-sub">${escHtml(sub)}</span>` : ''}</span></button>`;
+    return `<button type="button" class="bb-rij bb-rij-knop" onclick="openBandScherm('${jsAttr(b.id)}')">${beeld}<span class="bb-tekst"><span class="bb-naam">${escHtml(b.naam)}</span>${sub ? `<span class="bb-sub">${escHtml(sub)}</span>` : ''}</span></button>`;
   }).join(''));
 }
 
@@ -1178,16 +1173,12 @@ function bandPaginaHTML(b, kijker) {
   // Een lege plek is voor de beheerder een uitnodiging (TT-385 punt 2); voor
   // iedereen anders staat er niets.
   const uitnodiging = tekst => beheer ? bandUitnodigingHTML(tekst, b.id) : '';
-  // Een tik op een open rol of invaller opent Zoeken, alleen voor de beheerder.
-  const zoek = (instrument, datum) => beheer
-    ? `zoekMuzikantVoorRol('${jsAttr(instrument)}','${jsAttr(b.city || '')}','${jsAttr(b.name)}','${jsAttr(datum || '')}','${jsAttr(b.id)}')` : null;
-
-  // 1. De bezetting met gezichten. Een uitgenodigd lid staat er niet op.
+  // 1. De bezetting, een rij per lid. Een uitgenodigd lid staat er niet op.
   if (b.leden.length || b.wanted.length || b.invallers.length) {
     h += bandSectieHTML('Bezetting', `<div class="bezetting">${
       b.leden.map(bezettingLidHTML).join('') +
-      b.wanted.map(w => bezettingOpenHTML(w, ['gezocht'], zoek(w))).join('') +
-      b.invallers.map(v => bezettingOpenHTML(v.instrument, ['invaller', invallerDatum(v.datum)], zoek(v.instrument, v.datum))).join('')
+      b.wanted.map(w => bezettingOpenHTML(w, ['gezocht'])).join('') +
+      b.invallers.map(v => bezettingOpenHTML(v.instrument, ['invaller', invallerDatum(v.datum)])).join('')
     }</div>${voortgang && !voortgang.af.bezetting ? uitnodiging('+ Wie spelen er in de band?') : ''}`);
   }
   // 2. Wie zijn we, direct onder de bezetting (besluit Ronald, (c)).
@@ -1782,10 +1773,16 @@ function bbRenderLeden() {
   refreshChoiceField('band-contact');
 }
 
+// Het plusje in een open rol of invaller zoekt een muzikant (Zoeken met dat
+// instrument). Daarom een knop, geen teken; "Zoek een muzikant" staat dus niet
+// ook nog in het ⋯-menu (§0, geen dubbele functie).
+function bbPlusHTML(zoekAanroep, label) {
+  return `<button type="button" class="bb-foto bezetting-open-rondje bb-plus" onclick="${zoekAanroep}" aria-label="${escAttr(label)}">+</button>`;
+}
+
 function bbRenderOpen() {
-  const rondje = '<span class="bb-foto bezetting-open-rondje" aria-hidden="true">+</span>';
-  document.getElementById('bbOpen').innerHTML = bbWanted.map((w, i) => bbRijHTML(rondje, w, 'open rol',
-    `<button class="nav-menu-item" onclick="sluitAlleMenus();bbZoekNaar(bbWanted[${i}])">Zoek een muzikant</button>` +
+  document.getElementById('bbOpen').innerHTML = bbWanted.map((w, i) => bbRijHTML(
+    bbPlusHTML(`bbZoekNaar(bbWanted[${i}])`, `Zoek een muzikant: ${w}`), w, 'open rol',
     `<button class="nav-menu-item" onclick="sluitAlleMenus();bbRolWeg(${i})">Open rol weghalen</button>`)).join('');
 }
 
@@ -1795,9 +1792,9 @@ function bbRolWeg(i) {
 }
 
 function bbRenderInvallers() {
-  const rondje = '<span class="bb-foto bezetting-open-rondje" aria-hidden="true">+</span>';
-  document.getElementById('bbInvallers').innerHTML = bbInvallers.map((v, i) => bbRijHTML(rondje, v.instrument, `invaller · ${invallerDatum(v.datum)}`,
-    `<button class="nav-menu-item" onclick="sluitAlleMenus();bbZoekNaar(bbInvallers[${i}].instrument, bbInvallers[${i}].datum)">Zoek een invaller</button>` +
+  document.getElementById('bbInvallers').innerHTML = bbInvallers.map((v, i) => bbRijHTML(
+    bbPlusHTML(`bbZoekNaar(bbInvallers[${i}].instrument, bbInvallers[${i}].datum)`, `Zoek een invaller: ${v.instrument}`),
+    v.instrument, `invaller · ${invallerDatum(v.datum)}`,
     `<button class="nav-menu-item" onclick="sluitAlleMenus();bbInvallerWeg(${i})">Invaller weghalen</button>`)).join('');
 }
 

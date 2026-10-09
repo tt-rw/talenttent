@@ -506,7 +506,9 @@ function resetMusicianSearch() {
 // (rolUitnodigKnopPlaatsen() in bands.js, besluit Ronald 02-10-2026).
 function zoekMuzikantVoorRol(instrument, plaats, bandNaam, datum, bandId) {
   sluitAlleMenus();
-  showView('search');
+  // TT-450: 'behoud'. Zoeken is een tabblad en wist anders de stapel; terug
+  // moet naar de bandpagina of het tegeloverzicht waar je vandaan kwam.
+  showView('search', 'behoud');
   initSearchFilters();
   document.getElementById('filterName').value = '';
   document.getElementById('filterCity').value = plaats || '';

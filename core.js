@@ -1246,7 +1246,7 @@ function magTerug() {
   if (heeftTerugLaag()) return true;
   // Op de bovenkant van een tabblad is er niets boven je en niets om naar
   // terug te gaan.
-  if (opTabbladBovenkant()) return false;
+  if (opTabbladBovenkant() && !navStack.length) return false; // TT-450
   return huidigeView !== 'toestemming';
 }
 
@@ -1774,7 +1774,10 @@ function appTerug() {
     werkTerugKnopBij();
     return;
   }
-  if (opTabbladBovenkant()) return; // TT-428
+  // TT-450: Zoeken geopend vanaf een open rol ligt boven een ander scherm
+  // (navStack is dan gevuld); daar gaat terug wél een stap. Een tik op een
+  // tabblad leegt de stapel, dus op de echte bovenkant doet terug niets.
+  if (opTabbladBovenkant() && !navStack.length) return; // TT-428
   popNavStap();
 }
 
