@@ -8650,6 +8650,8 @@ window.TT_STUB.fnAntwoord = {};
               html84.count("zetWbjNaamTonen(") == 2 and 'id="wbjNaamTonenControl"' in html84, "")
         check("TT-420: in de tegel Wie ben je staan de naam, de geboortedatum, de gebruikersnaam en dan de naamkeuze (de keuze hangt van de leeftijd af)",
               html84.index('id="wbjLname"') < html84.index('id="wbjBirthDate"') < html84.index('id="wbjUsername"') < html84.index('id="wbjNaamKeuze"'), "")
+        check("TT-420: het profiel toont één naam, geen tweede regel \"Gebruikersnaam: …\" onder de echte naam",
+              "Gebruikersnaam: <strong" not in js84["musicians.js"], "")
         check("TT-420: de privacyverklaring zegt niet meer dat de voor- of achternaam nooit getoond wordt",
               "Je voornaam is alleen zichtbaar" not in html84 and "Je postcode en achternaam worden nooit" not in html84, "")
         check("geen paginafouten in blok 84", not page_errors, "; ".join(page_errors)[:300])
