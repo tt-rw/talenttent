@@ -291,7 +291,7 @@ async function loadMyProfile(opties) {
   // bij de zoekresultaten en de profielmodal: vaste kolomlijst, geen
   // birth_date, leeftijd apart via tt_musicians_ages().
   const { data: m, error } = await db.from('musicians')
-    .select(`id, fname, username, city, bio, goal,
+    .select(`id, weergavenaam, username, city, bio, goal,
              rehearsal_frequency, musical_ambition, repertoire_type,
              avatar_url, accepts_band_invites,
              musician_instruments(instrument, niveau), musician_genres(genre),
@@ -1139,17 +1139,19 @@ async function nextStep(from) {
     clearFieldErrors('view-register');
     const fouten = [];
 
-    // TT-U04 (12-08-2026): achternaam is niet langer verplicht. De eigen
-    // privacyverklaring zegt dat de achternaam nooit aan andere gebruikers
-    // wordt getoond — dan levert een verplicht veld alleen drempel op.
-    // De kolom lname blijft bestaan en wordt gevuld als iemand hem invult.
+    // TT-U04 (12-08-2026): achternaam is niet langer verplicht; een verplicht
+    // veld levert alleen drempel op. TT-420: vanaf 16 staat hij, als je hem
+    // invult, standaard op je profiel (te wijzigen in Profiel bewerken). De
+    // kolom lname wordt gevuld als iemand hem invult.
     if (!state.fname) {
       fouten.push(['fname', 'Vul je voornaam in']);
-    } else if (!naamPastInProfielkop(state.fname)) {
-      // TT-249 (11-09-2026): de voornaam is voor een ingelogde bezoeker de
-      // grote naam op je profiel. Die wordt nooit afgekapt en nooit
-      // afgebroken, dus een naam die op de kleinste letter niet past, komt
-      // er niet in.
+    } else if (!naamPastInProfielkop(
+        (/^\d{2}-\d{2}-\d{4}$/.test(state.birth_date) && calcAge(state.birth_date) >= 16)
+          ? [state.fname, state.lname].filter(Boolean).join(' ') : state.fname)) {
+      // TT-249 (11-09-2026): de naam is de grote naam op je profiel. Die wordt
+      // nooit afgekapt en nooit afgebroken, dus een naam die op de kleinste
+      // letter niet past, komt er niet in. TT-420: vanaf 16 staat standaard de
+      // voor- en achternaam op je profiel, dus die samen moeten passen.
       fouten.push(['fname', 'Deze naam is te lang om op je profiel te tonen. Maak hem korter']);
     }
 

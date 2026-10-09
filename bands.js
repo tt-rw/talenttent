@@ -120,7 +120,7 @@ async function respondToFounderOffer(bandId, accept) {
 async function askFounderTransfer(bandId) {
   try {
     const { data: band, error } = await db.from('bands')
-      .select('name, band_members(musician_id, status, musicians(fname, username))').eq('id', bandId).single();
+      .select('name, band_members(musician_id, status, musicians(weergavenaam, username))').eq('id', bandId).single();
     if (error || !band) throw error || new Error('Kon band niet laden.');
     const mid = await getMyMusicianId();
     const others = (band.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid);
@@ -464,11 +464,11 @@ function searchMembersToAdd(query) {
       const fetchLimit = (instrument || (q.length >= 2 && qSafe.length >= 2)) ? 15 : 200;
       let qb = db.from('musicians').select(
         instrument
-          ? 'id, fname, username, city, accepts_band_invites, musician_instruments!inner(instrument)'
-          : 'id, fname, username, city, accepts_band_invites, musician_instruments(instrument)'
+          ? 'id, weergavenaam, username, city, accepts_band_invites, musician_instruments!inner(instrument)'
+          : 'id, weergavenaam, username, city, accepts_band_invites, musician_instruments(instrument)'
       ).limit(fetchLimit);
       if (instrument) qb = qb.eq('musician_instruments.instrument', instrument);
-      if (q.length >= 2 && qSafe.length >= 2) qb = qb.or(`fname.ilike.%${qSafe}%,username.ilike.%${qSafe}%`);
+      if (q.length >= 2 && qSafe.length >= 2) qb = qb.ilike('weergavenaam', `%${qSafe}%`); // TT-420: je vindt iemand op de naam die je ziet
 
       const { data: musicians, error } = await qb;
       if (error) throw error;
@@ -936,7 +936,7 @@ function vandaagISO() {
 // later op.
 async function bandUitTabellen(id) {
   const { data: b, error } = await db.from('bands')
-    .select(`*, band_members(role, status, joined_at, musicians(id, fname, username, avatar_url, musician_instruments(instrument))), band_wanted(instrument), band_media(media_type, url, platform, in_banner, created_at), band_nummers(titel, url, platform, created_at), band_covers(song_title, song_artist), band_invallers(instrument, datum)`)
+    .select(`*, band_members(role, status, joined_at, musicians(id, weergavenaam, username, avatar_url, musician_instruments(instrument))), band_wanted(instrument), band_media(media_type, url, platform, in_banner, created_at), band_nummers(titel, url, platform, created_at), band_covers(song_title, song_artist), band_invallers(instrument, datum)`)
     .eq('id', id).single();
   if (error) throw error;
   if (!b) return null;
@@ -966,15 +966,17 @@ async function bandUitTabellen(id) {
   };
 }
 
-// Zonder eigen profiel: de publieke functie. TT-43: alleen de gebruikersnaam
-// van een lid, nooit de voornaam. TT-04: geen postcode.
+// Zonder eigen profiel: de publieke functie. TT-420: de naam van een lid is de
+// naam die hij koos (weergavenaam), nooit fname of lname. TT-04: geen postcode.
 async function bandUitPubliek(id) {
   const { data, error } = await db.rpc('tt_get_bands_public', { ids: [id] });
   if (error) throw error;
   const row = (data || [])[0];
   if (!row) return null;
-  const leden = (row.members || []).map(m => ({
-    id: m.id || null, naam: displayNameOf({ username: m.username }), avatar_url: m.avatar_url || null,
+  const ledenRijen = (row.members || []).map(m => ({ id: m.id || null, username: m.username }));
+  await weergavenamenToevoegen(ledenRijen.filter(l => l.id));
+  const leden = (row.members || []).map((m, i) => ({
+    id: m.id || null, naam: displayNameOf(ledenRijen[i]), avatar_url: m.avatar_url || null,
     instrumenten: m.instruments || [], rol: m.role || 'Lid'
   }));
   return {
@@ -1706,7 +1708,7 @@ async function bbLaadLeden(contactStart) {
   const id = bewerkBandId;
   if (!id) return;
   const { data, error } = await db.from('band_members')
-    .select('musician_id, role, status, joined_at, musicians(id, fname, username, avatar_url, musician_instruments(instrument))')
+    .select('musician_id, role, status, joined_at, musicians(id, weergavenaam, username, avatar_url, musician_instruments(instrument))')
     .eq('band_id', id);
   if (error) {
     logCaught('bbLaadLeden', error);

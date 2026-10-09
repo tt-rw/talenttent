@@ -293,7 +293,7 @@
   <!-- STEP 1: Persoonlijke info -->
   <div class="panel active" id="step0">
     <div class="panel-title">Wie ben je</div>
-    <div class="panel-sub">Maak je profiel aan. Je gebruikersnaam is voor iedereen zichtbaar. Andere muzikanten met een eigen profiel zien ook je voornaam — bezoekers zonder profiel nooit. Je e-mail en wachtwoord blijven altijd privé.</div>
+    <div class="panel-sub">Maak je profiel aan. Vanaf 16 jaar staan je voor- en achternaam op je profiel; later kies je zelf of dat je gebruikersnaam wordt. Jonger dan 16? Dan staat alleen je gebruikersnaam op je profiel. Je e-mail en wachtwoord blijven altijd privé.</div>
 
     <div class="field-group">
       <div class="field">
@@ -311,7 +311,7 @@
         <label>Gebruikersnaam <span class="req">*</span></label>
         <input type="text" id="username" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck()">
         <p id="usernameStatus" class="field-status"></p>
-        <p class="field-hint">Dit is wat andere muzikanten van je zien — niet je echte naam. Ben je jonger dan 16 jaar? Dan moet de gebruikersnaam anders zijn dan je voornaam.</p>
+        <p class="field-hint">Dit is je artiestennaam. Ben je jonger dan 16 jaar? Dan staat alleen deze naam op je profiel en moet hij anders zijn dan je voornaam.</p>
       </div>
     </div>
 
@@ -784,6 +784,14 @@
       </div>
     </div>
 
+    <div class="field-group">
+      <div class="field">
+        <label>Geboortedatum <span class="req">*</span></label>
+        <input type="text" id="wbjBirthDate" maxlength="10" inputmode="numeric" placeholder="dd-mm-jjjj" oninput="formatBirthDate(this)">
+      </div>
+      <div class="field"></div>
+    </div>
+
     <div class="field-group single">
       <div class="field">
         <label>Gebruikersnaam <span class="req">*</span></label>
@@ -792,12 +800,14 @@
       </div>
     </div>
 
-    <div class="field-group">
-      <div class="field">
-        <label>Geboortedatum <span class="req">*</span></label>
-        <input type="text" id="wbjBirthDate" maxlength="10" inputmode="numeric" placeholder="dd-mm-jjjj" oninput="formatBirthDate(this)">
+    <!-- TT-420: welke naam anderen zien. Onder de 16 is dit blok verborgen (wbjNaamKeuzeBijwerken). -->
+    <div class="field" id="wbjNaamKeuze" style="margin-bottom:20px;">
+      <label>Naam op je profiel</label>
+      <div class="segmented-control" id="wbjNaamTonenControl">
+        <div class="segmented-btn" data-mode="echt" onclick="zetWbjNaamTonen('echt')">Echte naam</div>
+        <div class="segmented-btn" data-mode="gebruikersnaam" onclick="zetWbjNaamTonen('gebruikersnaam')">Gebruikersnaam</div>
       </div>
-      <div class="field"></div>
+      <p class="field-hint" id="wbjNaamVoorbeeld"></p>
     </div>
 
     <!-- Postcode en plaats naast elkaar: zelfde vorm als de wizard en het
@@ -2109,15 +2119,14 @@
 
       <h2>5. Minderjarigen</h2>
       <p>The Talent Tent is bedoeld voor muzikanten vanaf 13 jaar.</p>
-      <p>Ben je tussen de 13 en 16 jaar oud? Dan mag je geen profiel zelfstandig aanmaken. Dat gebeurt samen met een ouder of verzorger, die toestemming geeft voor het gebruik van de app. Ook kies je in die leeftijd niet je eigen (voor)naam als gebruikersnaam — die naam blijft dan onzichtbaar voor bezoekers zonder eigen profiel.</p>
+      <p>Ben je tussen de 13 en 16 jaar oud? Dan mag je geen profiel zelfstandig aanmaken. Dat gebeurt samen met een ouder of verzorger, die toestemming geeft voor het gebruik van de app. In die leeftijd toont je profiel altijd je gebruikersnaam, nooit je echte naam. Je gebruikersnaam mag daarom niet je eigen (voor)naam zijn.</p>
       <p>Ben je jonger dan 13? Dan mag je geen profiel aanmaken, ook niet met hulp van een ouder.</p>
 
       <h2>6. Wie kan je gegevens zien</h2>
       <ul>
-        <li>Je gebruikersnaam, profielfoto, instrumenten, genres en repertoire zijn zichtbaar voor iedereen die de zoekfunctie gebruikt, ook zonder account.</li>
+        <li>Je naam op je profiel, profielfoto, instrumenten, genres en repertoire zijn zichtbaar voor iedereen die de zoekfunctie gebruikt, ook zonder account. Die naam kies je zelf: je voor- en achternaam of je gebruikersnaam. Ben je jonger dan 16, dan is het altijd je gebruikersnaam.</li>
         <li>Ben je 13, 14 of 15? Dan zien bezoekers zonder account je profielfoto, foto's, video's en links niet. Op die plek staat de T van The Talent Tent. Wie een account heeft, ziet alles.</li>
-        <li>Je voornaam is alleen zichtbaar voor andere gebruikers die zelf ook een profiel hebben.</li>
-        <li>Je postcode en achternaam worden nooit aan andere gebruikers getoond.</li>
+        <li>Je postcode wordt nooit aan andere gebruikers getoond. Je achternaam staat alleen op je profiel als je zelf kiest voor je echte naam.</li>
         <li>Berichten die je stuurt, zijn alleen zichtbaar voor jou en de ontvanger.</li>
         <li>Een melding die je doet, gaat alleen naar ons (<strong>privacy@talenttent.org</strong>). Wie je meldt, ziet niet dat jij het was.</li>
       </ul>

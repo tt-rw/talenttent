@@ -343,7 +343,7 @@ async function renderGeblokkeerdLijst() {
   }
   try {
     const { data, error } = await db.from('musicians')
-      .select('id, fname, username, city').in('id', ids);
+      .select('id, weergavenaam, username, city').in('id', ids);
     if (error) throw error;
     const rijen = ids.map(id => {
       const m = (data || []).find(x => x.id === id);

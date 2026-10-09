@@ -654,7 +654,7 @@ async function runSearch(straalOverride) {
       // apart binnen via tt_musicians_ages(), zelfde functie als bij het
       // profiel-modal hieronder.
       const { data, error } = await db.from('musicians').select(`
-        id, fname, username, city, zip, bio, goal,
+        id, weergavenaam, username, city, zip, bio, goal,
         avatar_url,
         musician_instruments(instrument, niveau),
         musician_genres(genre),
@@ -698,9 +698,9 @@ async function runSearch(straalOverride) {
       const ids = matches.map(m => m.musician_id);
       const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
       if (error) throw error;
-      // TT-43: fname wordt hier bewust NIET overgenomen, ook niet als de RPC
-      // het (nog) meestuurt. Zo ziet een bezoeker zonder profiel altijd de
-      // gebruikersnaam, onafhankelijk van wat er server-side is aangepast.
+      // TT-420: de naam komt uit weergavenaam (de keuze van de gebruiker), nooit
+      // uit fname of lname. De publieke functie geeft hem niet mee; hij komt er
+      // apart bij (weergavenamenToevoegen()), voor bezoeker en ingelogde gelijk.
       musicians = (data || []).map(m => ({
         // B-02 (12-08-2026): de publieke functie geeft de leeftijd terug in
         // plaats van de geboortedatum. Een geboortedatum van een minderjarige
@@ -716,6 +716,7 @@ async function runSearch(straalOverride) {
         musician_genres: (m.genres || []).map(g => ({ genre: g })),
         musician_songs: m.songs || [],
       }));
+      await weergavenamenToevoegen(musicians);
     }
 
     // Client-side filters (naam, plaats, leeftijd, instrument, niveau, genre)
@@ -741,15 +742,12 @@ async function runSearch(straalOverride) {
       if (isEigenProfiel(m.id)) return false; // TT-442
       const age = ageOf(m);
       if (age < ageMin || age > ageMax) return false;
-      // TT-43: het naamveld doorzoekt precies dát wat je in de lijst ook ziet
-      // — voor een bezoeker is m.fname leeg, dus dan blijft het zoeken op
-      // gebruikersnaam. Anders zou je op een naam kunnen zoeken die je zelf
-      // nergens te zien krijgt.
-      // TT-257 (12-09-2026): voornaam en gebruikersnaam worden elk apart
-      // getoetst. Tot nu toe stonden ze met een spatie aan elkaar geplakt in
-      // één tekst, waardoor een zoekterm mét spatie over de grens tussen de
-      // twee velden kon matchen.
-      if (!naamMatcht(nameTerm, m.fname, m.username)) return false;
+      // TT-420 (besluit Ronald, 09-10-2026): het naamveld doorzoekt precies dát
+      // wat je in de lijst ziet: de gekozen naam, voor iedereen gelijk. Wie zijn
+      // gebruikersnaam toont, is niet te vinden op zijn echte naam, en andersom.
+      // TT-257 bleef gelden: één veld wordt apart getoetst, nooit aan een ander
+      // geplakt.
+      if (!naamMatcht(nameTerm, displayNameOf(m))) return false;
       if (cityQuery && !skipCityTextFilter && !(m.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterInstruments.length) {
         const mInstr = m.musician_instruments.map(x => x.instrument);
@@ -898,16 +896,17 @@ const AVATAR_T_FALLBACK = `<span class="avatar-t">T</span>`;
 // en instrument/genre-badges. Matchscore/vibe/doel/repertoire-preview zijn
 // bewust van de rij af — die zie je pas in de detailmodal na een klik.
 // Lijstweergave i.p.v. kaarten (04-08-2026) — duidelijker scanbaar bij veel resultaten.
-// TT-43 (08-08-2026): één plek die bepaalt welke naam een ander te zien
-// krijgt. Ronalds besluit: het verbergen van de echte voornaam was bedoeld
-// voor NIET-ingelogd zoeken; wie zelf een profiel heeft, mag de voornaam wél
-// zien (dat maakt de presentatie van de muzikant persoonlijker). Technisch
-// regelt de database dat: de publieke RPC tt_get_musicians_public geeft geen
-// fname meer terug, dus voor een bezoeker zonder profiel is m.fname simpelweg
-// leeg en valt deze functie automatisch terug op de gebruikersnaam. Er is dus
-// geen aparte hasOwnProfile-check nodig op elke weergaveplek.
+// TT-420 (09-10-2026, besluit Ronald): één plek die bepaalt welke naam een ander
+// te zien krijgt, voor ingelogd en uitgelogd gelijk. De gebruiker kiest zelf:
+// echte naam (voor- en achternaam) of gebruikersnaam. De database zet die keuze
+// om in de kolom weergavenaam (trigger tt_weergavenaam_bijwerken); onder de 16
+// is dat altijd de gebruikersnaam. De app leest dus alleen weergavenaam en
+// bepaalt zelf nooit uit fname of lname welke naam er staat. Een object zonder
+// dat veld (de naam is er nog niet bij gehaald) toont de gebruikersnaam.
 function displayNameOf(m) {
-  return (m && (m.fname || m.username)) || 'Muzikant';
+  if (!m) return 'Muzikant';
+  if (m.weergavenaam !== undefined) return m.weergavenaam || 'Muzikant';
+  return m.username || 'Muzikant';
 }
 
 // Bugfix/rename 19-08-2026 (Ronald): de zichtbare rol heet voortaan
@@ -1823,7 +1822,7 @@ async function runSetlistSearch(straalOverride) {
     let musicians;
     if (hasOwnProfile) {
       const { data, error } = await db.from('musicians').select(`
-        id, fname, username, city, zip, avatar_url,
+        id, weergavenaam, username, city, zip, avatar_url,
         musician_songs(song_title, song_artist, mastery_level),
         musician_instruments(instrument, niveau)
       `).in('id', ids);
@@ -1833,11 +1832,12 @@ async function runSetlistSearch(straalOverride) {
       const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
       if (error) throw error;
       musicians = (data || []).map(m => ({
-        id: m.id, username: m.username, city: m.city, // TT-43/TT-04: geen fname of postcode voor bezoekers
+        id: m.id, username: m.username, city: m.city, // TT-04: geen postcode voor bezoekers
         avatar_url: m.avatar_url,
         musician_songs: m.songs || [],
         musician_instruments: (m.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
       }));
+      await weergavenamenToevoegen(musicians);
     }
 
     // TT-139: harde instrumentfilter, zelfde regel als bij Muzikanten/Bands
@@ -2096,7 +2096,7 @@ async function gedeeldSuggesties(term) {
     const gekozenIds = new Set(gedeeldGekozen.map(g => g.id));
     const treffers = lijst
       // TT-06: een geblokkeerde muzikant is ook hier niet te vinden.
-      .filter(m => !gekozenIds.has(m.id) && !isGeblokkeerd(m.id) && naamMatcht(term, m.fname, m.username))
+      .filter(m => !gekozenIds.has(m.id) && !isGeblokkeerd(m.id) && naamMatcht(term, displayNameOf(m)))
       .sort((a, b) => {
         if (a.distance_km != null && b.distance_km != null && a.distance_km !== b.distance_km) {
           return a.distance_km - b.distance_km;
@@ -2188,21 +2188,23 @@ async function gedeeldKandidatenLaden() {
 }
 
 // Naam en plaats, en desgewenst het repertoire. Uitgelogd via de publieke
-// functie: geen voornaam, alleen de gebruikersnaam (TT-43).
+// functie; de gekozen naam komt er apart bij (TT-420).
 async function gedeeldMuzikantenLaden(ids, metNummers) {
   if (hasOwnProfile) {
     const velden = metNummers
-      ? 'id, fname, username, city, musician_songs(song_title, song_artist, mastery_level)'
-      : 'id, fname, username, city';
+      ? 'id, weergavenaam, username, city, musician_songs(song_title, song_artist, mastery_level)'
+      : 'id, weergavenaam, username, city';
     const { data, error } = await db.from('musicians').select(velden).in('id', ids);
     if (error) throw error;
     return (data || []).map(m => ({ ...m, musician_songs: m.musician_songs || [] }));
   }
   const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
   if (error) throw error;
-  return (data || []).map(m => ({
+  const rijen = (data || []).map(m => ({
     id: m.id, username: m.username, city: m.city, musician_songs: m.songs || []
   }));
+  await weergavenamenToevoegen(rijen);
+  return rijen;
 }
 
 function addGedeeldMuzikant(id) {
@@ -2238,7 +2240,7 @@ async function gedeeldEigenToevoegen() {
     }
     gedeeldEigenId = mid;
     if (mid && !gedeeldGekozen.some(g => g.id === mid)) {
-      const { data, error } = await db.from('musicians').select('id, fname, username, city').eq('id', mid).maybeSingle();
+      const { data, error } = await db.from('musicians').select('id, weergavenaam, username, city').eq('id', mid).maybeSingle();
       if (error) throw error;
       if (data && gedeeldGekozen.length < GEDEELD_MAX) {
         gedeeldGekozen.unshift({ id: data.id, naam: displayNameOf(data), city: data.city || '', distance_km: null });

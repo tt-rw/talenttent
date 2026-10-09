@@ -8,10 +8,9 @@
 function buildMusicianDetailHTML(m, isOwn, inModal) {
   const age  = ageOf(m);
 
-  // TT-43 (08-08-2026): op je eigen profiel altijd je eigen voornaam; voor een
-  // ander hangt het af van of die is ingelogd met een eigen profiel — dat
-  // regelt displayNameOf() op basis van wat de database heeft meegegeven.
-  const displayName = isOwn ? m.fname : displayNameOf(m);
+  // TT-420 (09-10-2026): jijzelf en een ander zien dezelfde naam, de naam die
+  // de gebruiker koos (displayNameOf() leest weergavenaam).
+  const displayName = displayNameOf(m);
   const avatarSrc = safeUrl(m.avatar_url);
   // TT-217 (06-09-2026): klik op de profielfoto vergroot 'm, zelfde bestaande
   // lightbox als bij de foto's onder "Foto's" (openMediaLightbox()) — geen
@@ -77,13 +76,11 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       <div class="profile-name">${escHtml(displayName)}</div>
       <div class="profiel-regels">
         <!-- TT-166 (28-08-2026, Ronald: "eenvoud"): een gebruikersnaam-subline
-             hoort er alleen bij als de grote naam de échte voornaam is — laat
-             displayName die keuze maken (isOwn, of een ingelogde kijker met
-             eigen profiel). Ziet iemand toch al de gebruikersnaam als grote
-             naam (uitgelogd/anoniem, geen eigen profiel), dan zou een subline
-             die naam alleen maar herhalen. Geen uitlegzin meer, alleen het
-             label. -->
-        ${(displayName === m.fname && m.fname) ? `<p style="font-size:12px;color:var(--muted);margin-top:4px;">Gebruikersnaam: <strong style="color:var(--text);">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
+             hoort er alleen bij als de grote naam een andere naam is dan de
+             gebruikersnaam. Staat de gebruikersnaam al als grote naam, dan
+             herhaalt een subline hem alleen maar. TT-420: dat volgt uit de
+             gekozen naam (weergavenaam), voor iedereen gelijk. -->
+        ${(m.username && displayName !== m.username && displayName !== 'Muzikant') ? `<p style="font-size:12px;color:var(--muted);margin-top:4px;">Gebruikersnaam: <strong style="color:var(--text);">${escHtml(m.username || '(nog geen gebruikersnaam)')}</strong></p>` : ''}
         <div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       </div>
     </div>
@@ -316,7 +313,7 @@ async function laadProfielScherm(id, linkToegang) {
     // een ingelogde gebruiker mag hier nooit de ruwe geboortedatum van een
     // ander binnenkrijgen. Leeftijd komt apart via tt_musicians_ages().
     const res = await db.from('musicians').select(`
-      id, fname, username, city, bio, goal,
+      id, weergavenaam, username, city, bio, goal,
       rehearsal_frequency, musical_ambition,
       avatar_url,
       musician_instruments(instrument, niveau),
@@ -351,6 +348,7 @@ async function laadProfielScherm(id, linkToegang) {
         // 'media', met exact dezelfde vorm als musician_media.
         musician_media: row.media || [],
       };
+      await weergavenamenToevoegen([m]);
     }
   }
 
@@ -385,9 +383,8 @@ async function laadProfielScherm(id, linkToegang) {
   // TT-249: de naam kan pas passend gemaakt worden als hij in de pagina staat
   // — een element dat er nog niet is, heeft geen breedte om tegen te meten.
   fitProfileName(content);
-  // V-09: zelfde displayName-logica als binnen buildMusicianDetailHTML()
-  // (TT-43: bezoekers zonder profiel zien alleen de gebruikersnaam).
-  const displayName = isOwn ? m.fname : displayNameOf(m);
+  // V-09: zelfde displayName-logica als binnen buildMusicianDetailHTML().
+  const displayName = displayNameOf(m);
   footer.innerHTML = musicianContactFooterHTML(m, isOwn, displayName);
   // TT-385: uit een zoekopdracht voor een open rol nodig je meteen uit.
   rolUitnodigKnopPlaatsen(isOwn ? null : m.id);
@@ -474,7 +471,7 @@ async function openDeleteAccountModal() {
 
   try {
     const { data: founded, error } = await db.from('bands')
-      .select('id, name, band_members(musician_id, status, musicians(id, fname, username))')
+      .select('id, name, band_members(musician_id, status, musicians(id, weergavenaam, username))')
       .eq('founder_id', mid);
     if (error) throw error;
 
@@ -802,6 +799,8 @@ function openTegelScreen(id) {
 // data staat nooit in deze kleine, lokale snapshot).
 
 let wbjSnapshot = null;
+let wbjNaamTonen = 'echt';        // TT-420: de keuze, 'echt' of 'gebruikersnaam'
+let wbjNaamLuistert = false;      // TT-420: het voorbeeld volgt de velden, één luisteraar
 let wbjUsernameOk = true;
 let wbjPostcodeTimeout, wbjCitySearchTimeout;
 let wbjPostcodeFailStreak = 0;
@@ -816,7 +815,36 @@ function wbjFieldSnapshot() {
     zip: document.getElementById('wbjZip').value.trim(),
     city: document.getElementById('wbjCity').value.trim(),
     bio: document.getElementById('wbjBio').value.trim(),
+    naam_tonen: wbjNaamTonen,
   });
+}
+
+// TT-420 (09-10-2026, besluiten Ronald): twee keuzes, Echte naam of
+// Gebruikersnaam. Vanaf 16 staat de echte naam standaard; onder de 16 staat er
+// altijd de gebruikersnaam en is er geen keuze (de database dwingt dat af). De
+// leeftijd komt uit het geboortedatumveld; zolang dat niet vol is, blijft de
+// keuze staan zoals ze was.
+function wbjLeeftijd() {
+  const s = document.getElementById('wbjBirthDate').value.trim();
+  return s.length === 10 ? calcAge(s) : null;
+}
+
+function wbjNaamKeuzeBijwerken() {
+  const leeftijd = wbjLeeftijd();
+  const blok = document.getElementById('wbjNaamKeuze');
+  blok.style.display = (leeftijd !== null && leeftijd < 16) ? 'none' : '';
+  document.querySelectorAll('#wbjNaamTonenControl .segmented-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.getAttribute('data-mode') === wbjNaamTonen);
+  });
+  const naam = naamZoalsAnderen(
+    document.getElementById('wbjFname').value, document.getElementById('wbjLname').value,
+    document.getElementById('wbjUsername').value, wbjNaamTonen, leeftijd === null ? 16 : leeftijd);
+  document.getElementById('wbjNaamVoorbeeld').textContent = naam ? `Zo zien anderen je: ${naam}` : '';
+}
+
+function zetWbjNaamTonen(waarde) {
+  wbjNaamTonen = waarde === 'gebruikersnaam' ? 'gebruikersnaam' : 'echt';
+  wbjNaamKeuzeBijwerken();
 }
 
 async function openWieBenJe() {
@@ -835,7 +863,7 @@ async function openWieBenJe() {
   // Parallel i.p.v. na elkaar — twee onafhankelijke aanvragen.
   const [{ data, error }, { data: myBirthDate }] = await Promise.all([
     db.from('musicians')
-      .select('fname, lname, username, zip, city, city_source, bio')
+      .select('fname, lname, username, zip, city, city_source, bio, naam_tonen')
       .eq('id', myMusicianId).single(),
     db.rpc('tt_get_my_birth_date'),
   ]);
@@ -850,6 +878,12 @@ async function openWieBenJe() {
   document.getElementById('wbjZip').value = data.zip || '';
   document.getElementById('wbjCity').value = data.city || '';
   document.getElementById('wbjBio').value = data.bio || '';
+  wbjNaamTonen = data.naam_tonen === 'gebruikersnaam' ? 'gebruikersnaam' : 'echt';
+  if (!wbjNaamLuistert) {
+    wbjNaamLuistert = true;
+    document.getElementById('wieBenJeScreen').addEventListener('input', wbjNaamKeuzeBijwerken);
+  }
+  wbjNaamKeuzeBijwerken();
   wbjUsernameOk = true;
   wbjSnapshot = wbjFieldSnapshot();
 }
@@ -923,9 +957,13 @@ async function saveWieBenJe() {
 
   if (!fname) { showToast('Voornaam is verplicht.'); return; }
   // TT-249: zelfde controle als in de wizard. De gebruikersnaam hiernaast
-  // wordt al live getoetst via checkUsernameAvailability().
-  if (!naamPastInProfielkop(fname)) {
-    showToast('Je voornaam is te lang om op je profiel te tonen. Maak hem korter.'); return;
+  // wordt al live getoetst via checkUsernameAvailability(). TT-420: gecontroleerd
+  // wordt de naam zoals anderen hem zien, dus bij Echte naam voor- en achternaam.
+  const leeftijd = wbjLeeftijd();
+  const opProfiel = naamZoalsAnderen(fname, document.getElementById('wbjLname').value, username,
+    wbjNaamTonen, leeftijd === null ? 16 : leeftijd);
+  if (!naamPastInProfielkop(opProfiel || fname)) {
+    showToast('Je naam is te lang om op je profiel te tonen. Maak hem korter.'); return;
   }
   if (!username || !wbjUsernameOk) { showToast('Kies eerst een beschikbare gebruikersnaam.'); return; }
   if (birthDateStr.length !== 10) { showToast('Vul een volledige geboortedatum in.'); return; }
@@ -941,6 +979,7 @@ async function saveWieBenJe() {
     zip,
     city,
     bio: document.getElementById('wbjBio').value.trim() || null,
+    naam_tonen: wbjNaamTonen,
   };
   const { error } = await db.from('musicians').update(payload).eq('id', myMusicianId);
   if (error) {

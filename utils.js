@@ -302,6 +302,39 @@ function naamMatcht(term, ...velden) {
   });
 }
 
+// TT-420 (09-10-2026): de gekozen naam van een lijst muzikanten ophalen. De
+// publieke functies (tt_get_musicians_public e.a.) geven hem niet mee, dus
+// komt hij er apart bij, in één vraag: tt_weergavenamen(ids). Dat geldt voor
+// bezoeker en ingelogde gelijk. De functie geeft alleen id en weergavenaam
+// terug, nooit fname of lname. Mislukt de vraag, dan blijft het object zonder
+// weergavenaam en toont displayNameOf() de gebruikersnaam.
+async function weergavenamenToevoegen(rijen) {
+  const ids = (rijen || []).map(r => r && r.id).filter(Boolean);
+  if (!ids.length) return rijen;
+  try {
+    const { data, error } = await db.rpc('tt_weergavenamen', { ids });
+    if (error) throw error;
+    const perId = {};
+    (data || []).forEach(x => { perId[x.id] = x.weergavenaam; });
+    rijen.forEach(r => { if (r && r.id in perId) r.weergavenaam = perId[r.id]; });
+  } catch (e) {
+    logCaught('weergavenamenToevoegen', e);
+  }
+  return rijen;
+}
+
+// TT-420: de naam zoals anderen hem zien, voor het voorbeeld onder de keuze in
+// Wie ben je en voor de lengtecontrole. Dit spiegelt de databasefunctie
+// tt_weergavenaam(); de database is leidend, dit is alleen een voorbeeld.
+// Onder de 16 staat altijd de gebruikersnaam.
+function naamZoalsAnderen(fname, lname, username, keuze, leeftijd) {
+  const voor = (fname || '').trim();
+  if (keuze === 'echt' && leeftijd >= 16 && voor) {
+    return [voor, (lname || '').trim()].filter(Boolean).join(' ');
+  }
+  return (username || '').trim();
+}
+
 // B-02 (12-08-2026): één plek die de leeftijd bepaalt. Een ingelogde
 // gebruiker leest de geboortedatum rechtstreeks; een bezoeker zonder account
 // krijgt alleen `age` uit tt_get_musicians_public. Deze functie dekt beide.

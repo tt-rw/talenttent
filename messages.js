@@ -292,7 +292,7 @@ async function loadInbox(opties) {
 
     const otherIds = Array.from(conversations.keys());
     const { data: musiciansData } = otherIds.length
-      ? await db.from('musicians').select('id, fname, username, avatar_url').in('id', otherIds)
+      ? await db.from('musicians').select('id, weergavenaam, username, avatar_url').in('id', otherIds)
       : { data: [] };
     const infoById = {};
     (musiciansData || []).forEach(m => { infoById[m.id] = m; });
@@ -593,7 +593,7 @@ async function talentTentInfoOphalen(berichten) {
   const info = { muzikanten: {}, bands: {} };
   try {
     if (mIds.size) {
-      const { data, error } = await db.from('musicians').select('id, fname, username, city, avatar_url').in('id', Array.from(mIds));
+      const { data, error } = await db.from('musicians').select('id, weergavenaam, username, city, avatar_url').in('id', Array.from(mIds));
       if (error) throw error;
       (data || []).forEach(m => { info.muzikanten[m.id] = m; });
     }
@@ -716,7 +716,7 @@ async function heropenGesprek(otherId) {
   if (otherId === TT_GESPREK_ID) { openTalentTentGesprek(); return; } // TT-451
   try {
     const { data, error } = await db.from('musicians')
-      .select('id, fname, username, avatar_url').eq('id', otherId);
+      .select('id, weergavenaam, username, avatar_url').eq('id', otherId);
     if (error) throw error;
     const info = (data || [])[0];
     const name = info ? displayNameOf(info) : 'Verwijderde gebruiker';
