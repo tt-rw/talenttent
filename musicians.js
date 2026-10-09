@@ -1457,7 +1457,7 @@ function mhHandleAvatarUpload(file) {
   if (!file) return;
   const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
   if (typeProblem) { showToast(typeProblem); return; }
-  if (file.size > 5 * 1024 * 1024) { showToast('Afbeelding is te groot. Maximum 5 MB.'); return; }
+  { const groot = bestandTeGrootMelding(file, 5 * 1024 * 1024); if (groot) { showToast(groot); return; } }
 
   const blobUrl = URL.createObjectURL(file);
   const preview = document.getElementById('mhAvatarPreview');
@@ -1499,7 +1499,7 @@ function mhHandleFileSelect(files) {
     const isVideo = (file.type || '').toLowerCase().startsWith('video/');
     const typeProblem = fileTypeProblem(file, MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
     if (typeProblem) { showToast(`"${file.name}": ${typeProblem}`); return; }
-    if (file.size > 50 * 1024 * 1024) { showToast(`"${file.name}" is te groot. Maximum 50 MB.`); return; }
+    { const groot = bestandTeGrootMelding(file, 50 * 1024 * 1024); if (groot) { showToast(groot); return; } }
 
     const blobUrl = URL.createObjectURL(file);
     const type = isVideo ? 'video' : 'foto';

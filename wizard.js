@@ -1512,12 +1512,70 @@ function fileTypeProblem(file, allowedTypes, typeLabel) {
   return `Dit bestandsformaat werkt niet. Gebruik ${typeLabel}.`;
 }
 
+// TT-446 (09-10-2026, Ronald): een telefoonfoto is al snel 4 tot 12 MB en werd
+// geweigerd met "te groot". De app verkleint een foto nu zelf voor het
+// uploaden: lange zijde maximaal 1600 pixels, JPG. GIF blijft ongemoeid
+// (anders staat de animatie stil). Mislukt het verkleinen, dan gaat het
+// origineel door en geldt de gewone grens.
+const FOTO_MAX_PX = 1600;
+const FOTO_DREMPEL_BYTES = 1024 * 1024;
+const FOTO_MAX_ORIGINEEL = 30 * 1024 * 1024;
+
+async function fotoVerkleinen(file) {
+  const type = (file.type || '').toLowerCase();
+  if (!/^image\/(jpeg|png|webp)$/.test(type) || file.size <= FOTO_DREMPEL_BYTES) return file;
+  let url = null;
+  try {
+    url = URL.createObjectURL(file);
+    const img = await new Promise((ok, fout) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => fout(new Error('foto niet te lezen'));
+      i.src = url;
+    });
+    const schaal = Math.min(1, FOTO_MAX_PX / Math.max(img.naturalWidth, img.naturalHeight));
+    const breed = Math.max(1, Math.round(img.naturalWidth * schaal));
+    const hoog = Math.max(1, Math.round(img.naturalHeight * schaal));
+    const canvas = document.createElement('canvas');
+    canvas.width = breed; canvas.height = hoog;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, breed, hoog);
+    ctx.drawImage(img, 0, 0, breed, hoog);
+    const blob = await new Promise(ok => canvas.toBlob(ok, 'image/jpeg', 0.85));
+    if (!blob || blob.size >= file.size) return file;
+    const naam = (file.name || 'foto').replace(/\.[^.]*$/, '') + '.jpg';
+    return new File([blob], naam, { type: 'image/jpeg' });
+  } catch (e) {
+    return file;
+  } finally {
+    if (url) URL.revokeObjectURL(url);
+  }
+}
+
+// Geeft null als het bestand mag, anders de melding voor de gebruiker. Een foto
+// (behalve GIF) hoeft niet klein te zijn: die verkleint de app zelf.
+function bestandTeGrootMelding(file, maxBytes) {
+  const type = (file.type || '').toLowerCase();
+  const naam = file.name ? `"${file.name}" ` : '';
+  const mb = Math.round(file.size / 1024 / 1024);
+  if (/^image\/(jpeg|png|webp)$/.test(type)) {
+    return file.size > FOTO_MAX_ORIGINEEL
+      ? `${naam}is ${mb} MB. Kies een foto van maximaal 30 MB.` : null;
+  }
+  if (file.size <= maxBytes) return null;
+  const maxMb = Math.round(maxBytes / 1024 / 1024);
+  if (type.startsWith('video/')) return `${naam}is een video van ${mb} MB. Maximaal ${maxMb} MB. Kort de video in of kies een kortere opname.`;
+  return `${naam}is ${mb} MB. Maximaal ${maxMb} MB. Gebruik een JPG of PNG, die verkleint de app zelf.`;
+}
+
 async function uploadToStorage(bucket, userId, file, maxBytes, maxLabel, allowedTypes, typeLabel) {
-  if (file.size > maxBytes) throw new Error(`Bestand is te groot. Maximum ${maxLabel}.`);
   if (allowedTypes) {
     const problem = fileTypeProblem(file, allowedTypes, typeLabel);
-    if (problem) throw new Error(problem);
+    if (problem) throw eigenFout(problem);
   }
+  file = await fotoVerkleinen(file);
+  if (file.size > maxBytes) throw eigenFout(`Het bestand is te groot. Maximaal ${maxLabel}. Een JPG of PNG verkleint de app zelf.`);
   const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
   const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const { error: upErr } = await db.storage.from(bucket).upload(path, file, { cacheControl: '3600', upsert: false });
@@ -1540,7 +1598,7 @@ function handleAvatarUpload(file) {
   // verschijnen die de server daarna alsnog weigert.
   const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
   if (typeProblem) { showToast(typeProblem); return; }
-  if (file.size > 5 * 1024 * 1024) { showToast('Afbeelding is te groot. Maximum 5 MB.'); return; }
+  { const groot = bestandTeGrootMelding(file, 5 * 1024 * 1024); if (groot) { showToast(groot); return; } }
 
   // Preview direct met de blob-URL, zodat het aanvoelt als een directe
   // reactie — de echte upload (hieronder) loopt daar los van.
@@ -1622,7 +1680,7 @@ function handleFileSelect(files) {
     // vóór de preview en vóór de upload.
     const typeProblem = fileTypeProblem(file, MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
     if (typeProblem) { showToast(`"${file.name}": ${typeProblem}`); return; }
-    if (file.size > 50 * 1024 * 1024) { showToast(`"${file.name}" is te groot. Maximum 50 MB.`); return; }
+    { const groot = bestandTeGrootMelding(file, 50 * 1024 * 1024); if (groot) { showToast(groot); return; } }
 
     const blobUrl = URL.createObjectURL(file);
     const type = isVideo ? 'video' : 'foto';

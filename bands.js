@@ -2182,7 +2182,7 @@ function bmFotoKiezen(file) {
   if (!file) return;
   const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
   if (typeProblem) { showToast(typeProblem); return; }
-  if (file.size > 5 * 1024 * 1024) { showToast('Afbeelding is te groot. Maximum 5 MB.'); return; }
+  { const groot = bestandTeGrootMelding(file, 5 * 1024 * 1024); if (groot) { showToast(groot); return; } }
   const id = bewerkBandId;
   const vak = document.getElementById('bmFotoPreview');
   vak.style.position = 'relative';
@@ -2233,7 +2233,7 @@ function bmHandleFileSelect(files) {
     const isVideo = (file.type || '').toLowerCase().startsWith('video/');
     const typeProblem = fileTypeProblem(file, MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
     if (typeProblem) { showToast(`"${file.name}": ${typeProblem}`); return; }
-    if (file.size > 50 * 1024 * 1024) { showToast(`"${file.name}" is te groot. Maximum 50 MB.`); return; }
+    { const groot = bestandTeGrootMelding(file, 50 * 1024 * 1024); if (groot) { showToast(groot); return; } }
     const entry = { id: null, name: file.name, url: URL.createObjectURL(file), path: null, type: isVideo ? 'video' : 'foto', uploading: true, inBanner: false };
     bmMediaFiles.push(entry);
     bmRenderMediaGrid();
