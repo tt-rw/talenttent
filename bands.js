@@ -1022,9 +1022,11 @@ function bezettingOpenHTML(instrument, regels, actie) {
 }
 
 // Een lege plek op je eigen bandpagina is een uitnodiging, geen leeg vak
-// (TT-385 punt 2). Een tik opent de tegel waar het hoort.
-function bandUitnodigingHTML(tekst, bandId, tegel) {
-  return `<button type="button" class="add-link-btn" onclick="openBandTegels('${jsAttr(bandId)}','${tegel}')">${escHtml(tekst)}</button>`;
+// (TT-385 punt 2). Een tik opent het tegelscherm, niet de tegel zelf: terug
+// gaat dan een stap omhoog naar de bandpagina, niet naar een scherm dat je
+// nooit hebt geopend (TT-449).
+function bandUitnodigingHTML(tekst, bandId) {
+  return `<button type="button" class="add-link-btn" onclick="openBandTegels('${jsAttr(bandId)}')">${escHtml(tekst)}</button>`;
 }
 
 function bandSectieHTML(titel, inhoud) {
@@ -1113,7 +1115,7 @@ function bandPaginaHTML(b, kijker) {
   const fotoHTML = foto
     ? `<img class="bandfoto" src="${foto}" alt="${escHtml(b.name)}" onclick="openMediaLightbox('${jsAttr(foto)}')">`
     : beheer
-      ? `<button type="button" class="bandfoto bandfoto-leeg bandfoto-kies" onclick="openBandTegels('${jsAttr(b.id)}','bandMedia')" aria-label="Kies een bandfoto">${AVATAR_T_FALLBACK}</button>`
+      ? `<button type="button" class="bandfoto bandfoto-leeg bandfoto-kies" onclick="openBandTegels('${jsAttr(b.id)}')" aria-label="Kies een bandfoto">${AVATAR_T_FALLBACK}</button>`
       : `<div class="bandfoto bandfoto-leeg">${AVATAR_T_FALLBACK}</div>`;
 
   // Het ⋯-menu: een lid kan de band verlaten (TT-385 punt 13); een bezoeker
@@ -1175,7 +1177,7 @@ function bandPaginaHTML(b, kijker) {
 
   // Een lege plek is voor de beheerder een uitnodiging (TT-385 punt 2); voor
   // iedereen anders staat er niets.
-  const uitnodiging = (tekst, tegel) => beheer ? bandUitnodigingHTML(tekst, b.id, tegel) : '';
+  const uitnodiging = tekst => beheer ? bandUitnodigingHTML(tekst, b.id) : '';
   // Een tik op een open rol of invaller opent Zoeken, alleen voor de beheerder.
   const zoek = (instrument, datum) => beheer
     ? `zoekMuzikantVoorRol('${jsAttr(instrument)}','${jsAttr(b.city || '')}','${jsAttr(b.name)}','${jsAttr(datum || '')}','${jsAttr(b.id)}')` : null;
@@ -1186,31 +1188,31 @@ function bandPaginaHTML(b, kijker) {
       b.leden.map(bezettingLidHTML).join('') +
       b.wanted.map(w => bezettingOpenHTML(w, ['gezocht'], zoek(w))).join('') +
       b.invallers.map(v => bezettingOpenHTML(v.instrument, ['invaller', invallerDatum(v.datum)], zoek(v.instrument, v.datum))).join('')
-    }</div>${voortgang && !voortgang.af.bezetting ? uitnodiging('+ Wie spelen er in de band?', 'bandBezetting') : ''}`);
+    }</div>${voortgang && !voortgang.af.bezetting ? uitnodiging('+ Wie spelen er in de band?') : ''}`);
   }
   // 2. Wie zijn we, direct onder de bezetting (besluit Ronald, (c)).
   if (b.description) h += bandSectieHTML('Wie zijn we', `<p class="band-bio">${escHtml(b.description)}</p>`);
-  else if (beheer) h += bandSectieHTML('Wie zijn we', uitnodiging('+ Vertel wie jullie zijn', 'bandWie'));
+  else if (beheer) h += bandSectieHTML('Wie zijn we', uitnodiging('+ Vertel wie jullie zijn'));
   // 3. Eigen nummers.
   const nummers = b.nummers.map(bandNummerHTML).join('');
   if (nummers) h += bandSectieHTML('Onze nummers', nummers);
-  else if (beheer && voortgang.telt.nummers) h += bandSectieHTML('Onze nummers', uitnodiging('+ Laat horen hoe jullie klinken', 'bandMuziek'));
+  else if (beheer && voortgang.telt.nummers) h += bandSectieHTML('Onze nummers', uitnodiging('+ Laat horen hoe jullie klinken'));
   // 4. Foto's en video's, en links: dezelfde functie als bij de muzikant.
   // profielMediaHTML() geeft altijd tekst terug (met een toelichting erin);
   // tel dus zelf of er iets te tonen is.
   if (b.media.some(x => safeUrl(x.url) || x.afgeschermd)) h += profielMediaHTML(b.media);
-  else if (beheer) h += bandSectieHTML("Foto's en video's", uitnodiging("+ Foto's en video's toevoegen", 'bandMedia'));
+  else if (beheer) h += bandSectieHTML("Foto's en video's", uitnodiging("+ Foto's en video's toevoegen"));
   // 5. Socials.
   const socials = bandSocialsHTML(b);
   if (socials) h += bandSectieHTML('Volg ons', socials);
-  else if (beheer) h += bandSectieHTML('Volg ons', uitnodiging('+ Instagram, TikTok of YouTube', 'bandMedia'));
+  else if (beheer) h += bandSectieHTML('Volg ons', uitnodiging('+ Instagram, TikTok of YouTube'));
   // 6. Covers, op dezelfde volgorde als het repertoire van een muzikant.
   if (b.covers.length) {
     const rijen = [...b.covers].sort((x, y) => compareArtistTitle(x.song_artist, x.song_title, y.song_artist, y.song_title))
       .map(c => `<div class="profile-song-row"><span><strong>${escHtml(c.song_artist)}</strong> — <span style="color:var(--muted)">${escHtml(c.song_title)}</span></span></div>`).join('');
     h += bandSectieHTML(`Covers (${b.covers.length} ${b.covers.length === 1 ? 'nummer' : 'nummers'})`, rijen);
   } else if (beheer && voortgang.telt.covers) {
-    h += bandSectieHTML('Covers', uitnodiging('+ Welke covers spelen jullie?', 'bandMuziek'));
+    h += bandSectieHTML('Covers', uitnodiging('+ Welke covers spelen jullie?'));
   }
   // De balk staat onderaan, zoals op Mijn Profiel; alleen de beheerder ziet
   // hem (besluit Ronald, j).
@@ -1424,15 +1426,14 @@ function bandStatusAfgeleid(aantalOpenRollen, pauze) {
 }
 
 // Openen vanaf de bandpagina (⋯ → Bandprofiel bewerken, een uitnodiging of de
-// lege bandfoto) of vanaf Mijn Bands. `tegel` opent meteen één tegel.
-function openBandTegels(bandId, tegel) {
+// lege bandfoto) of vanaf Mijn Bands. Altijd het tegeloverzicht (TT-449).
+function openBandTegels(bandId) {
   sluitAlleMenus();
   sluitBandDeelBlad();
   if (bewerkBandId !== bandId) bewerkBandNaam = '';
   bewerkBandId = bandId;
   zetBandNaamRegel();
   showView('profieltegels');
-  if (tegel && bewerkBandId === bandId && TEGEL_SCREENS[tegel]) openTegelScreen(tegel);
 }
 
 // De bandnaam als gedempte regel onder de titel van het overzicht en van de
