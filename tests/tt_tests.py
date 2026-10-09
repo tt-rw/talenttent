@@ -31,7 +31,7 @@ STUB = os.path.join(ROOT, "tests", "stub", "supabase-stub.js")
 JS_FILES = [
     "core.js", "utils.js", "veiligheid.js", "auth.js", "postcode.js", "wizard.js",
     "ouder.js", "search.js", "musicians.js", "bands.js", "messages.js",
-    "modals-shared.js",
+    "push.js", "modals-shared.js",
 ]
 
 # Scriptvolgorde uit de projectinstructies. Bindend.
@@ -4175,7 +4175,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             return { tekst: p ? p.textContent.replace(/\\s+/g, ' ').trim() : null,
                      blokken: document.querySelectorAll('#searchPrefsModal .modal-blok').length }; }""")
         check("Instellingen toont de bewaarde zoekopdracht in een eigen blok",
-              inst["blokken"] == 2 and "binnen 50 km van Den Haag" in (inst["tekst"] or "")
+              inst["blokken"] == 3 and "binnen 50 km van Den Haag" in (inst["tekst"] or "")
               and "Stoppen" in (inst["tekst"] or ""), json.dumps(inst))
         ip39.click("#bewaardeZoekInstellingen .seintje-knop")
         ip39.wait_for_timeout(400)
@@ -8298,6 +8298,181 @@ window.TT_STUB.fnAntwoord = {};
               "talent_tent_berichten').insert" not in bron81 and "talent_tent_berichten').delete" not in bron81
               and bron81.count("from('talent_tent_berichten')") == 3, "")
         check("TT-451: geen paginafouten in blok 81", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ────────────────────────────────────────────────────────────
+        # Blok 82 — TT-452 (09-10-2026, Ronald): het seintje op het toestel
+        # (web push). Stille melding met een stip op het icoon; gaat weg zodra
+        # de app opent; toestemming pas na het eerste bericht van Talent Tent;
+        # uit te zetten per toestel; mail uit = geen seintje (digest).
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 82 — het seintje op het toestel (TT-452)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        d82 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 150) => new Promise(r => setTimeout(r, n)), u = {};
+          const $ = id => document.getElementById(id);
+          const keep = { myMusicianId, currentUser, hasOwnProfile, wie: window.getMyMusicianId, api: { ...ttPushApi } };
+          window.getMyMusicianId = async () => myMusicianId;
+          myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; hasOwnProfile = true;
+          ttBerichtenBeschikbaar = true;
+          const nu = Date.now();
+          S.data.musicians = [{ id: 'm1', username: 'ik', fname: 'Ik' }, { id: 'm2', username: 'dyl', fname: 'Dylan', city: 'Delft', avatar_url: null }];
+          S.data.messages = [];
+          S.data.talent_tent_berichten = [{ id: 't1', musician_id: 'm1', created_at: new Date(nu - 3600000).toISOString(), read_at: null,
+            inhoud: { muzikanten: [{ id: 'm2', km: 8.5, instrumenten: ['Gitaar'] }], bands: [], meer: 0 } }];
+          // Een nagebootste browser: toestemming, abonnement en seintjes zijn in te stellen.
+          const m = { beschikbaar: true, toestemming: 'default', vraagt: 0, sub: null, abonneerd: 0, meldingen: [], gesloten: 0, uitgeschreven: 0, antwoord: 'granted' };
+          const maakSub = () => ({ endpoint: 'https://push.example/abc', toJSON() { return { endpoint: this.endpoint, keys: { p256dh: 'P256', auth: 'AUTH' } }; },
+            getKey() { return new Uint8Array([1, 2, 3]).buffer; }, unsubscribe: async () => { m.uitgeschreven++; m.sub = null; return true; } });
+          ttPushApi.beschikbaar = () => m.beschikbaar;
+          ttPushApi.toestemming = () => m.toestemming;
+          ttPushApi.vraagToestemming = async () => { m.vraagt++; m.toestemming = m.antwoord; return m.antwoord; };
+          ttPushApi.abonnement = async () => m.sub;
+          ttPushApi.abonneer = async () => { m.abonneerd++; m.sub = maakSub(); return m.sub; };
+          ttPushApi.meldingen = async () => m.meldingen;
+          const rpcs = naam => S.calls.filter(c => c.kind === 'rpc' && c.name === naam);
+          S.rpcResults.tt_push_abonneren = null; S.rpcResults.tt_push_uitzetten = null;
+          localStorage.removeItem(TT_SEINTJE_NIET_NU);
+          // 1. De stand.
+          m.beschikbaar = false; u.stand_niet = await ttSeintjeStand();
+          m.beschikbaar = true; m.toestemming = 'denied'; u.stand_geblokkeerd = await ttSeintjeStand();
+          m.toestemming = 'default'; u.stand_uit = await ttSeintjeStand();
+          m.toestemming = 'granted'; u.stand_toestemming_zonder_sub = await ttSeintjeStand();
+          m.sub = maakSub(); u.stand_aan = await ttSeintjeStand(); m.sub = null; m.toestemming = 'default';
+          // 2. De vraag staat alleen in het gesprek van Talent Tent, en pas als er een bericht te zien is.
+          await openTalentTentGesprek(); await w(500);
+          u.vraag_met_bericht = !!$('ttSeintjeVraag');
+          u.vraag_tekst = $('ttSeintjeVraag') ? $('ttSeintjeVraag').textContent : '';
+          u.vraag_knoppen = [...document.querySelectorAll('#ttSeintjeVraag button')].map(b => b.textContent);
+          u.toestemming_gevraagd_door_openen = m.vraagt;
+          closeConversation(true);
+          S.data.talent_tent_berichten = [];
+          await openTalentTentGesprek(); await w(400);
+          u.vraag_zonder_bericht = !!$('ttSeintjeVraag');
+          closeConversation(true);
+          S.data.talent_tent_berichten = [{ id: 't1', musician_id: 'm1', created_at: new Date(nu - 3600000).toISOString(), read_at: null,
+            inhoud: { muzikanten: [{ id: 'm2', km: 8.5, instrumenten: ['Gitaar'] }], bands: [], meer: 0 } }];
+          // 3. "Niet nu": de vraag verdwijnt, en komt niet terug.
+          await openTalentTentGesprek(); await w(400);
+          ttSeintjeVraagNietNu();
+          u.na_niet_nu = { weg: !$('ttSeintjeVraag'), bewaard: localStorage.getItem(TT_SEINTJE_NIET_NU) === '1', vraagt: m.vraagt };
+          closeConversation(true);
+          await openTalentTentGesprek(); await w(400);
+          u.vraag_na_niet_nu = !!$('ttSeintjeVraag');
+          closeConversation(true);
+          localStorage.removeItem(TT_SEINTJE_NIET_NU);
+          // 4. Aanzetten: toestemming vragen, abonneren, bij ons bewaren.
+          S.calls.length = 0;
+          u.aan = await ttSeintjeAanzetten();
+          u.aan_detail = { vraagt: m.vraagt, abonneerd: m.abonneerd, rpc: rpcs('tt_push_abonneren').map(c => c.params) };
+          // 5. Geweigerd: niets bij ons bewaard.
+          m.sub = null; m.toestemming = 'default'; m.antwoord = 'denied'; m.abonneerd = 0; S.calls.length = 0;
+          u.geweigerd = await ttSeintjeAanzetten();
+          u.geweigerd_detail = { abonneerd: m.abonneerd, rpc: rpcs('tt_push_abonneren').length };
+          m.antwoord = 'granted';
+          // 6. Een fout bij het bewaren zegt 'fout', geen halve stand.
+          m.sub = null; m.toestemming = 'default'; S.rpcErrors['tt_push_abonneren'] = { code: 'XX', message: 'stuk' };
+          u.fout = await ttSeintjeAanzetten();
+          delete S.rpcErrors['tt_push_abonneren'];
+          // 7. Uitzetten: bij ons weg en in de browser.
+          m.toestemming = 'granted'; m.sub = maakSub(); m.uitgeschreven = 0; S.calls.length = 0;
+          u.uit = await ttSeintjeUitzetten();
+          u.uit_detail = { uitgeschreven: m.uitgeschreven, rpc: rpcs('tt_push_uitzetten').map(c => c.params) };
+          // 8. Een klaarstaand seintje verdwijnt zodra de app opent of weer zichtbaar wordt.
+          m.toestemming = 'granted';
+          m.meldingen = [{ close() { m.gesloten++; } }, { close() { m.gesloten++; } }];
+          await ttSeintjeWeghalen();
+          u.weggehaald = m.gesloten;
+          m.gesloten = 0; m.toestemming = 'default';
+          await ttSeintjeWeghalen();
+          u.zonder_toestemming_niets = m.gesloten;
+          m.toestemming = 'granted'; m.gesloten = 0;
+          Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+          document.dispatchEvent(new Event('visibilitychange')); await w(100);
+          u.zichtbaar_weggehaald = m.gesloten;
+          delete document.visibilityState;
+          // 9. Instellingen: het blok staat er, met de juiste knop; weg als de browser het niet kan.
+          showView('instellingen'); await w(100);
+          m.toestemming = 'default'; m.sub = null; m.gesloten = 0;
+          await openSearchPrefsModal(); await w(300);
+          u.inst_uit = { zichtbaar: $('pushBlok').style.display !== 'none', knop: $('pushKnop').textContent, tekst: $('pushTekst').textContent };
+          m.toestemming = 'granted'; m.sub = maakSub();
+          await vulPushInInstellingen(); await w(100);
+          u.inst_aan = { knop: $('pushKnop').textContent, tekst: $('pushTekst').textContent };
+          m.toestemming = 'denied'; m.sub = null;
+          await vulPushInInstellingen(); await w(100);
+          u.inst_geblokkeerd = { knop: $('pushKnop').style.display, tekst: $('pushTekst').textContent };
+          m.beschikbaar = false;
+          await vulPushInInstellingen(); await w(100);
+          u.inst_niet = $('pushBlok').style.display;
+          m.beschikbaar = true; m.toestemming = 'default'; m.sub = null;
+          // 10. De schakelaar in Instellingen zet het seintje aan en uit.
+          await vulPushInInstellingen(); await w(100);
+          m.antwoord = 'granted'; S.calls.length = 0;
+          await pushSchakelen(); await w(200);
+          u.schakel_aan = { knop: $('pushKnop').textContent, rpc: rpcs('tt_push_abonneren').length };
+          await pushSchakelen(); await w(200);
+          u.schakel_uit = { knop: $('pushKnop').textContent, rpc: rpcs('tt_push_uitzetten').length };
+          closeSearchPrefsModal();
+          // 11. Uitloggen stopt het seintje op dit toestel (het hoort bij het account).
+          m.toestemming = 'granted'; m.sub = maakSub(); m.uitgeschreven = 0; S.calls.length = 0;
+          await signOut(); await w(200);
+          u.uitloggen = { uitgeschreven: m.uitgeschreven, rpc: rpcs('tt_push_uitzetten').length };
+          Object.assign(ttPushApi, keep.api);
+          myMusicianId = keep.myMusicianId; currentUser = keep.currentUser; hasOwnProfile = keep.hasOwnProfile; window.getMyMusicianId = keep.wie;
+          S.data.talent_tent_berichten = []; S.data.messages = [];
+          showView('about'); await w(100);
+          return u;
+        }""")
+        j82 = json.dumps(d82, ensure_ascii=False)
+        check("TT-452: de stand is aan, uit, geblokkeerd of niet beschikbaar",
+              d82["stand_niet"] == "nietBeschikbaar" and d82["stand_geblokkeerd"] == "geblokkeerd" and d82["stand_uit"] == "uit"
+              and d82["stand_toestemming_zonder_sub"] == "uit" and d82["stand_aan"] == "aan", j82)
+        check("TT-452: de vraag om een seintje staat in het gesprek van Talent Tent, met twee knoppen; openen vraagt zelf niets aan de browser",
+              d82["vraag_met_bericht"] and d82["vraag_knoppen"] == ["Zet aan", "Niet nu"]
+              and "seintje" in d82["vraag_tekst"] and d82["toestemming_gevraagd_door_openen"] == 0, j82)
+        check("TT-452: zonder bericht van Talent Tent staat de vraag er niet (eerst waarde zien)",
+              d82["vraag_zonder_bericht"] is False, j82)
+        check("TT-452: \"Niet nu\" laat de vraag verdwijnen en komt niet terug",
+              d82["na_niet_nu"]["weg"] and d82["na_niet_nu"]["bewaard"] and d82["na_niet_nu"]["vraagt"] == 0 and d82["vraag_na_niet_nu"] is False, j82)
+        check("TT-452: aanzetten vraagt toestemming, abonneert en bewaart het toestel bij het account",
+              d82["aan"] == "aan" and d82["aan_detail"]["vraagt"] == 1 and d82["aan_detail"]["abonneerd"] == 1
+              and d82["aan_detail"]["rpc"] == [{"p_endpoint": "https://push.example/abc", "p_p256dh": "P256", "p_auth": "AUTH"}], j82)
+        check("TT-452: geweigerd in de browser bewaart niets en zegt het",
+              d82["geweigerd"] == "geblokkeerd" and d82["geweigerd_detail"] == {"abonneerd": 0, "rpc": 0}, j82)
+        check("TT-452: een fout bij het bewaren geeft 'fout'",
+              d82["fout"] == "fout", j82)
+        check("TT-452: uitzetten verwijdert het toestel bij ons en in de browser",
+              d82["uit"] is True and d82["uit_detail"]["uitgeschreven"] == 1
+              and d82["uit_detail"]["rpc"] == [{"p_endpoint": "https://push.example/abc"}], j82)
+        check("TT-452: een klaarstaand seintje gaat weg zodra de app opent of weer zichtbaar wordt (de stip gaat uit)",
+              d82["weggehaald"] == 2 and d82["zonder_toestemming_niets"] == 0 and d82["zichtbaar_weggehaald"] == 2, j82)
+        check("TT-452: Instellingen heeft het blok \"Seintje op dit toestel\", met Zet aan, Zet uit of een uitleg als de browser het blokkeert",
+              d82["inst_uit"]["zichtbaar"] and d82["inst_uit"]["knop"] == "Zet aan" and d82["inst_aan"]["knop"] == "Zet uit"
+              and d82["inst_geblokkeerd"]["knop"] == "none" and "browser" in d82["inst_geblokkeerd"]["tekst"], j82)
+        check("TT-452: kan de browser geen seintjes, dan staat het blok er niet",
+              d82["inst_niet"] == "none", j82)
+        check("TT-452: de schakelaar in Instellingen zet het seintje aan en weer uit",
+              d82["schakel_aan"] == {"knop": "Zet uit", "rpc": 1} and d82["schakel_uit"] == {"knop": "Zet aan", "rpc": 1}, j82)
+        check("TT-452: uitloggen stopt het seintje op dit toestel",
+              d82["uitloggen"] == {"uitgeschreven": 1, "rpc": 1}, j82)
+        sw82 = open(os.path.join(ROOT, "sw.js"), encoding="utf-8").read()
+        push82 = open(os.path.join(ROOT, "push.js"), encoding="utf-8").read()
+        html82 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        msg82 = open(os.path.join(ROOT, "messages.js"), encoding="utf-8").read()
+        core82 = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
+        check("TT-452: de service worker toont een stil seintje met één tag en opent bij een tik het gesprek; geen cache, geen fetch",
+              "addEventListener('push'" in sw82 and "addEventListener('notificationclick'" in sw82 and "silent: true" in sw82
+              and "tag: SEINTJE_TAG" in sw82 and "setAppBadge()" in sw82 and "clearAppBadge" in push82 and "#messages/talent-tent" in sw82 and "addEventListener('fetch'" not in sw82 and "caches." not in sw82, "")
+        check("TT-452: de app bewaart een toestel alleen via de functies, en bevat alleen de publieke sleutel",
+              "tt_push_abonneren" in push82 and "tt_push_uitzetten" in push82 and "from('push_abonnementen')" not in push82
+              and "VAPID_PRIVATE" not in push82 and "TT_VAPID_PUBLIEK" in push82, "")
+        check("TT-452: push.js staat na messages.js met een ?v=, en de vraag wordt alleen in het gesprek van Talent Tent gesteld (nooit bij opstarten)",
+              html82.index('push.js?v=') > html82.index('messages.js?v=')
+              and msg82.count("ttSeintjeVraagTonen()") == 1 and "ttSeintjeVraagTonen" not in core82 and "ttSeintjeAanzetten" not in core82, "")
+        check("TT-452: geen paginafouten in blok 82", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")

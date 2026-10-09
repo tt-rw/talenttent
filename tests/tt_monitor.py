@@ -33,7 +33,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BINDENDE_SCRIPTVOLGORDE = [
     "core.js", "utils.js", "veiligheid.js", "auth.js", "postcode.js",
     "wizard.js", "ouder.js", "search.js", "musicians.js", "bands.js",
-    "messages.js", "modals-shared.js",
+    "messages.js", "push.js", "modals-shared.js",
 ]
 
 VERWACHTE_VIEWS = [
@@ -134,7 +134,9 @@ def blok_a():
 
     # A5 - geen JS-bestand dat niemand laadt
     op_schijf = {f for f in os.listdir(REPO) if f.endswith(".js")}
-    wees = op_schijf - set(BINDENDE_SCRIPTVOLGORDE)
+    # TT-452 (09-10-2026): sw.js is de service worker. De browser laadt hem
+    # zelf, niet index.html; hij hoort dus niet in de scriptvolgorde.
+    wees = op_schijf - set(BINDENDE_SCRIPTVOLGORDE) - {"sw.js"}
     toets("A", "geen onbekend JS-bestand in de hoofdmap",
           not wees, "A5", "wordt door niets geladen: %s" % kort(wees))
 
