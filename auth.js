@@ -39,7 +39,7 @@ async function signIn() {
     // fout als bij een verkeerd wachtwoord — met opzet, zodat niemand kan
     // uitproberen welke adressen een account hebben. De tekst benoemt daarom
     // het wachtwoord zonder te beweren dat het e-mailadres bestaat.
-    const tekst = friendlyErrorMessage(error);
+    const tekst = friendlyErrorMessage(error, 'inloggen');
     const msg = (error && error.message) ? error.message : '';
     if (/invalid login credentials|invalid_credentials|invalid grant/i.test(msg)) {
       showFieldErrors([[passwordEl, tekst]]);
@@ -197,7 +197,7 @@ async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
     usernameCheckFailed = true;
     lastUsernameCheckError = (e && e.message) ? e.message : String(e);
     console.error('Technische fout bij gebruikersnaam-controle:', e);
-    if (statusEl) { statusEl.textContent = friendlyErrorMessage(e); statusEl.style.color = 'var(--danger)'; }
+    if (statusEl) { statusEl.textContent = friendlyErrorMessage(e, 'de gebruikersnaam controleren'); statusEl.style.color = 'var(--danger)'; }
     return false;
   }
 }
@@ -275,13 +275,13 @@ async function saveUsernameGate() {
     // ongeldig formaat / technische fout) — dit is puur een extra vangnet
     // zodat er nooit een lege statustekst overblijft als er iets onverwachts
     // misging (bijv. lege waarde door een edge case hierboven).
-    if (!statusEl.textContent) { statusEl.textContent = 'Kon niet controleren. Probeer het opnieuw.'; statusEl.style.color = 'var(--danger)'; }
+    if (!statusEl.textContent) { statusEl.textContent = 'Gebruikersnaam controleren lukt nu niet. Controleer je verbinding en probeer het opnieuw.'; statusEl.style.color = 'var(--danger)'; }
     return;
   }
 
   const mid = usernameGateMid || await getMyMusicianId();
   const { error } = await db.from('musicians').update({ username: value }).eq('id', mid);
-  if (error) { statusEl.textContent = friendlyErrorMessage(error); statusEl.style.color = 'var(--danger)'; return; }
+  if (error) { statusEl.textContent = friendlyErrorMessage(error, 'je gebruikersnaam opslaan'); statusEl.style.color = 'var(--danger)'; return; }
 
   document.getElementById('usernameGateModal').classList.remove('visible');
   showToast('Gebruikersnaam opgeslagen!');
@@ -307,7 +307,7 @@ async function forgotPassword() {
   const { error } = await db.auth.resetPasswordForEmail(email, {
     redirectTo: 'https://talenttent.org/'
   });
-  if (error) { showToast(friendlyErrorMessage(error)); return; }
+  if (error) { showToast(friendlyErrorMessage(error, 'de herstelmail versturen')); return; }
   showAuthSuccess('✓ Herstelmail verstuurd! Controleer je inbox.');
 }
 
@@ -333,8 +333,8 @@ async function saveNewPassword() {
   const { error } = await db.auth.updateUser({ password: pw1 });
   if (error) {
     // TT-353: het huidige wachtwoord opnieuw gekozen — dat hoort bij het veld.
-    if (isZelfdeWachtwoordFout(error)) showFieldErrors([[pw1El, friendlyErrorMessage(error)]]);
-    else showToast(friendlyErrorMessage(error));
+    if (isZelfdeWachtwoordFout(error)) showFieldErrors([[pw1El, friendlyErrorMessage(error, 'je nieuwe wachtwoord opslaan')]]);
+    else showToast(friendlyErrorMessage(error, 'je nieuwe wachtwoord opslaan'));
     return;
   }
   suc.textContent = '✓ Wachtwoord opgeslagen!';
@@ -439,7 +439,7 @@ async function wijzigEmailUitvoeren(nieuw) {
       showFieldErrors([[el, 'Dit e-mailadres is al in gebruik']]);
     } else {
       logCaught('wijzigEmailUitvoeren', error);
-      showToast('Wijzigen is niet gelukt: ' + friendlyErrorMessage(error));
+      showToast(friendlyErrorMessage(error, 'je e-mailadres wijzigen'));
     }
     return;
   }
@@ -498,11 +498,11 @@ async function wijzigWachtwoord() {
   const { error } = await db.auth.updateUser({ password: pw1 });
   if (error) {
     if (isZelfdeWachtwoordFout(error)) {
-      showFieldErrors([[pw1El, friendlyErrorMessage(error)]]);
+      showFieldErrors([[pw1El, friendlyErrorMessage(error, 'je wachtwoord wijzigen')]]);
       return;
     }
     logCaught('wijzigWachtwoord', error);
-    showToast('Wijzigen is niet gelukt: ' + friendlyErrorMessage(error));
+    showToast(friendlyErrorMessage(error, 'je wachtwoord wijzigen'));
     return;
   }
   huidigEl.value = '';

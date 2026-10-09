@@ -165,7 +165,7 @@ function onPostcodeInput(value) {
         enableManualCity('musician');
       } else {
         statusEl.style.color = 'var(--danger)';
-        statusEl.textContent = 'Kon postcode nu niet controleren. Probeer het nog eens.';
+        statusEl.textContent = 'Postcode controleren lukt nu niet. Controleer je verbinding en vul de postcode nog eens in.';
       }
     }
   }, 500);
@@ -253,7 +253,7 @@ function onBandPostcodeInput(value, doel) {
         enableManualCity('band');
       } else {
         statusEl.style.color = 'var(--danger)';
-        statusEl.textContent = 'Kon postcode nu niet controleren. Probeer het nog eens.';
+        statusEl.textContent = 'Postcode controleren lukt nu niet. Controleer je verbinding en vul de postcode nog eens in.';
       }
     }
   }, 500);

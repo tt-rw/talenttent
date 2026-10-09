@@ -115,7 +115,7 @@ async function blokkeerMuzikantUitvoeren(id, wie) {
     if (error) throw error;
   } catch (e) {
     logCaught('blokkeerMuzikant', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'deze muzikant blokkeren'));
     return;
   }
   blokkadeDoorMij.add(id);
@@ -132,7 +132,7 @@ async function deblokkeerMuzikant(id, naam) {
     if (error) throw error;
   } catch (e) {
     logCaught('deblokkeerMuzikant', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de blokkade opheffen'));
     return;
   }
   blokkadeDoorMij.delete(id);
@@ -305,7 +305,7 @@ async function verstuurMelding() {
     if (error) throw error;
   } catch (e) {
     logCaught('verstuurMelding', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'je melding versturen'));
     return;
   }
   closeMeldModal();
@@ -361,6 +361,6 @@ async function renderGeblokkeerdLijst() {
     el.innerHTML = rijen;
   } catch (e) {
     logCaught('renderGeblokkeerdLijst', e);
-    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Lijst laden is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'je lijst laden')}</div>`;
   }
 }

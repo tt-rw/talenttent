@@ -205,7 +205,7 @@ async function shareProfile(kind, id, name) {
     showToast('Link gekopieerd naar klembord');
   } catch (e) {
     logCaught('shareProfile', e);
-    showToast('Kopiëren niet gelukt. Probeer het later opnieuw.');
+    showToast('Kopiëren lukt niet op dit apparaat. Kopieer de link zelf: ' + url);
   }
 }
 
@@ -436,7 +436,7 @@ async function zetProfielDelen(aan) {
     return true;
   } catch (e) {
     logCaught('zetProfielDelen', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'het delen van je profiel wijzigen'));
     updateDelenToggleBtn(); // de tegel toont weer de stand van de database
     return false;
   }
@@ -503,7 +503,7 @@ async function openDeleteAccountModal() {
         </div>`).join('')}`;
   } catch (e) {
     logCaught('openDeleteAccountModal', e);
-    area.innerHTML = `<div style="color:var(--danger);font-size:13px;">${escHtml(friendlyErrorMessage(e))}</div>`;
+    area.innerHTML = `<div style="color:var(--danger);font-size:13px;">${escHtml(friendlyErrorMessage(e, 'je bands laden'))}</div>`;
   }
 }
 
@@ -657,7 +657,7 @@ async function executeAccountDeletion() {
     logCaught('executeAccountDeletion', e);
     // De modal is op dit punt al dicht (zie requestFinalDeleteConfirmation);
     // een mislukking melden we dus via de toast, niet via een knopstatus.
-    showToast(friendlyErrorMessage(e) + ' Je account is niet volledig verwijderd — probeer het opnieuw of neem contact op.');
+    showToast(friendlyErrorMessage(e, 'je account verwijderen') + ' Je account is nog niet volledig verwijderd. Kies in Instellingen opnieuw Account verwijderen.');
   }
 }
 
@@ -840,7 +840,7 @@ async function openWieBenJe() {
     db.rpc('tt_get_my_birth_date'),
   ]);
   if (error) {
-    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    showToast(friendlyErrorMessage(error, 'je gegevens laden'));
     return;
   }
   document.getElementById('wbjFname').value = data.fname || '';
@@ -890,7 +890,7 @@ function onWbjPostcodeInput(rawValue) {
         wbjEnableManualCity();
       } else {
         statusEl.style.color = 'var(--danger)';
-        statusEl.textContent = 'Kon postcode nu niet controleren. Probeer het nog eens.';
+        statusEl.textContent = 'Postcode controleren lukt nu niet. Controleer je verbinding en vul de postcode nog eens in.';
       }
     }
   }, 500);
@@ -944,7 +944,7 @@ async function saveWieBenJe() {
   };
   const { error } = await db.from('musicians').update(payload).eq('id', myMusicianId);
   if (error) {
-    showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(error));
+    showToast(friendlyErrorMessage(error, 'je gegevens opslaan'));
     return;
   }
   wbjSnapshot = wbjFieldSnapshot();
@@ -975,7 +975,7 @@ async function openWatSpeelJe() {
     .select('repertoire_type, musician_instruments(instrument, niveau), musician_genres(genre)')
     .eq('id', myMusicianId).single();
   if (error) {
-    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    showToast(friendlyErrorMessage(error, 'je gegevens laden'));
     return;
   }
   wspState.instruments = (data.musician_instruments || []).map(x => x.instrument);
@@ -1021,7 +1021,7 @@ async function saveWatSpeelJe() {
 
   const { error: uErr } = await db.from('musicians')
     .update({ repertoire_type: wspRepertoireType || null }).eq('id', myMusicianId);
-  if (uErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(uErr)); return; }
+  if (uErr) { showToast(friendlyErrorMessage(uErr, 'je gegevens opslaan')); return; }
 
   // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
   const { error: kErr } = await db.rpc('tt_save_musician_koppelingen', {
@@ -1029,7 +1029,7 @@ async function saveWatSpeelJe() {
     p_instruments: wspState.instruments.map(instrument => ({ instrument, niveau: wspState.instrumentLevels[instrument] || null })),
     p_genres:      wspState.genres.map(genre => ({ genre })),
   });
-  if (kErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(kErr)); return; }
+  if (kErr) { showToast(friendlyErrorMessage(kErr, 'je gegevens opslaan')); return; }
 
   wspSnapshot = wspFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
@@ -1055,7 +1055,7 @@ async function openWatZoekJe() {
     .select('goal, rehearsal_frequency, musical_ambition')
     .eq('id', myMusicianId).single();
   if (error) {
-    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    showToast(friendlyErrorMessage(error, 'je gegevens laden'));
     return;
   }
   wzjGoal = data.goal || '';
@@ -1105,7 +1105,7 @@ async function saveWatZoekJe() {
     rehearsal_frequency: wzjRehearsalFrequency || null,
     musical_ambition: wzjMusicalAmbition || null,
   }).eq('id', myMusicianId);
-  if (error) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(error)); return; }
+  if (error) { showToast(friendlyErrorMessage(error, 'je gegevens opslaan')); return; }
 
   wzjSnapshot = wzjFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
@@ -1148,7 +1148,7 @@ async function openJeSetlist() {
     .select('musician_songs(song_title, song_artist, mastery_level)')
     .eq('id', myMusicianId).single();
   if (error) {
-    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    showToast(friendlyErrorMessage(error, 'je gegevens laden'));
     return;
   }
   jstSongs = (data.musician_songs || []).map(s => ({ title: s.song_title, artist: s.song_artist, level: s.mastery_level }));
@@ -1183,7 +1183,7 @@ async function jstOnArtistSearch(q, p = 'jst') {
       jstRenderArtistResults(ac, artists, p);
     } catch (e) {
       logCaught('jstOnArtistSearch', e);
-      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoekopdracht mislukt</span></div>';
+      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
     }
   }, 400);
 }
@@ -1232,7 +1232,7 @@ async function jstOnTrackSearch(q, p = 'jst') {
     jstRenderTrackResults(ac, songs, q, p);
   } catch (e) {
     logCaught('jstOnTrackSearch', e);
-    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoekopdracht mislukt</span></div>';
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
   }
 }
 function jstRenderTrackResults(ac, songs, q, p = 'jst') {
@@ -1363,7 +1363,7 @@ async function saveJeSetlist() {
     p_musician_id: myMusicianId,
     p_songs: jstSongs.map(s => ({ song_title: s.title, song_artist: s.artist, mastery_level: s.level })),
   });
-  if (error) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(error)); return; }
+  if (error) { showToast(friendlyErrorMessage(error, 'je gegevens opslaan')); return; }
   jstSnapshot = jstFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
 }
@@ -1415,7 +1415,7 @@ async function openJeMediahoek() {
     .select('avatar_url, musician_media(media_type, url, platform, in_banner)')
     .eq('id', myMusicianId).single();
   if (error) {
-    showToast('Kon je gegevens niet laden: ' + friendlyErrorMessage(error));
+    showToast(friendlyErrorMessage(error, 'je gegevens laden'));
     return;
   }
   mhAvatarUrl = data.avatar_url || null;
@@ -1472,7 +1472,7 @@ function mhHandleAvatarUpload(file) {
     mhRenderAvatar();
   }).catch(e => {
     logCaught('mhUploadAvatar', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'je foto uploaden'));
     mhRenderAvatar();
   });
 }
@@ -1514,7 +1514,7 @@ function mhHandleFileSelect(files) {
       mhRenderMediaGrid();
     }).catch(e => {
       logCaught('mhUploadMedia', e);
-      showToast(`"${file.name}": ${friendlyErrorMessage(e)}`);
+      showToast(`"${file.name}": ${friendlyErrorMessage(e, 'het bestand uploaden')}`);
       const idx = mhMediaFiles.indexOf(entry);
       if (idx !== -1) mhMediaFiles.splice(idx, 1);
       mhRenderMediaGrid();
@@ -1600,7 +1600,7 @@ async function saveJeMediahoek() {
 
   const { error: uErr } = await db.from('musicians')
     .update({ avatar_url: mhAvatarUrl || null }).eq('id', myMusicianId);
-  if (uErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(uErr)); return; }
+  if (uErr) { showToast(friendlyErrorMessage(uErr, 'je gegevens opslaan')); return; }
 
   // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
   const linkMedia = mhMediaLinks
@@ -1613,7 +1613,7 @@ async function saveJeMediahoek() {
     p_musician_id: myMusicianId,
     p_media: linkMedia.concat(fileMedia),
   });
-  if (kErr) { showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(kErr)); return; }
+  if (kErr) { showToast(friendlyErrorMessage(kErr, 'je gegevens opslaan')); return; }
 
   mhSnapshot = mhFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');

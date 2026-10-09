@@ -694,7 +694,7 @@ async function openSearchPrefsModal() {
     vulBewaardeZoekInInstellingen(); // TT-295
   } catch (e) {
     logCaught('openSearchPrefsModal', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'je zoekvoorkeuren laden'));
   }
 }
 function closeSearchPrefsModal() {
@@ -730,7 +730,7 @@ async function saveSearchPrefs() {
     showToast('E-mailvoorkeuren opgeslagen');
   } catch (e) {
     logCaught('saveSearchPrefs', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'je zoekvoorkeuren opslaan'));
   }
 }
 

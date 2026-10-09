@@ -64,11 +64,31 @@ function isZelfdeWachtwoordFout(err) {
     || /different from the old password/i.test(err.message || ''));
 }
 
-function friendlyErrorMessage(err) {
+// TT-445 (09-10-2026, Ronald): een eigen zin in de code (bijv. "Delen aanpassen
+// is niet gelukt.") werd door friendlyErrorMessage() overschreven door de
+// algemene tekst onderaan. Een fout die met eigenFout() is gemaakt, wordt
+// ongewijzigd getoond.
+function eigenFout(tekst) {
+  const e = new Error(tekst);
+  e.eigenTekst = true;
+  return e;
+}
+
+// Tweede parameter `actie`: wat de gebruiker probeerde, als werkwoordsgroep
+// ("je profiel opslaan"). Zonder bekende oorzaak noemt de melding die actie, zodat
+// de gebruiker weet wat niet gelukt is. Met een bekende oorzaak staat de
+// oorzaak in de melding, en wat je dan doet.
+function friendlyErrorMessage(err, actie) {
   const msg = (err && err.message) ? err.message : String(err || '');
   console.error('Technische foutmelding:', msg);
 
+  if (err && err.eigenTekst) return msg;
+  // Nederlandse tekst uit de database (trigger): ongewijzigd tonen.
+  if (/^Bevestig eerst je e-mailadres/i.test(msg)) return msg;
   if (isZelfdeWachtwoordFout(err)) return TEKST_ZELFDE_WACHTWOORD;
+  const status = err && (err.status || err.statusCode);
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  if (offline) return 'Je hebt geen internetverbinding. Probeer het opnieuw zodra je weer online bent.';
 
   if (/already registered|already exists/i.test(msg)) {
     return 'Er bestaat al een account met dit e-mailadres.';
@@ -96,17 +116,23 @@ function friendlyErrorMessage(err) {
   if (/rate limit|too many requests|only request this after/i.test(msg)) {
     return 'Te veel pogingen achter elkaar. Probeer het straks opnieuw.';
   }
-  if (/failed to fetch|network|networkerror/i.test(msg)) {
-    return 'Geen verbinding kunnen maken. Controleer je internetverbinding en probeer het opnieuw.';
+  if (/failed to fetch|network|networkerror|load failed/i.test(msg)) {
+    return 'Geen verbinding met The Talent Tent. Controleer je internetverbinding en probeer het opnieuw.';
   }
-  if (/JWT|token|session|auth/i.test(msg)) {
+  if (status === 429) {
+    return 'Te veel pogingen achter elkaar. Wacht een minuut en probeer het opnieuw.';
+  }
+  if (status >= 500 || /timeout|timed out|bad gateway|service unavailable|gateway/i.test(msg)) {
+    return 'De server reageert nu niet. Wacht een minuut en probeer het opnieuw. Wat je invulde blijft staan.';
+  }
+  if (/jwt|refresh token|invalid token|not authenticated|session (expired|not found|missing)/i.test(msg)) {
     return 'Je sessie is verlopen. Log opnieuw in en probeer het nog eens.';
   }
   if (/duplicate key|unique constraint/i.test(msg)) {
     return 'Dit bestaat al. Kies een andere naam en probeer het opnieuw.';
   }
-  if (/permission denied|rls/i.test(msg)) {
-    return 'Je hebt geen toestemming voor deze actie.';
+  if (/permission denied|row-level security|violates row/i.test(msg)) {
+    return 'Dit mag niet met dit account, of je bent uitgelogd. Log opnieuw in en probeer het nog eens.';
   }
   // Bugfix 23-08-2026 (P0, gemeld door Ronald: generieke foutmelding bij het
   // afronden van een nieuw profiel, "killing bij een jongere"). Vermoedelijke
@@ -121,10 +147,10 @@ function friendlyErrorMessage(err) {
   // in plaats van "Er ging iets mis. Probeer het opnieuw." — ongeacht welke
   // kolom het exact betreft.
   if (/null value in column|violates not-null constraint/i.test(msg)) {
-    return 'Eén van de velden mist een verplichte waarde bij het opslaan. Probeer het opnieuw — meld dit aan Ronald als het blijft gebeuren.';
+    return 'Eén van de velden is niet ingevuld. Controleer je invoer en probeer het opnieuw.';
   }
   if (/violates check constraint/i.test(msg)) {
-    return 'Eén van de ingevulde waarden wordt niet geaccepteerd. Probeer het opnieuw — meld dit aan Ronald als het blijft gebeuren.';
+    return 'Eén van de ingevulde waarden wordt niet geaccepteerd. Controleer je invoer en probeer het opnieuw.';
   }
   // TT-87: weigeringen door Supabase Storage. De client controleert type en
   // grootte nu zelf, dus dit hoort niet meer voor te komen. Wijkt de lijst in
@@ -136,7 +162,11 @@ function friendlyErrorMessage(err) {
   if (/payload too large|exceeded the maximum|entity too large|te groot/i.test(msg)) {
     return 'Het bestand is te groot. Een profielfoto mag maximaal 5 MB zijn, media maximaal 50 MB.';
   }
-  return 'Er ging iets mis. Probeer het opnieuw.';
+  if (actie) {
+    const a = String(actie);
+    return a.charAt(0).toUpperCase() + a.slice(1) + ' is niet gelukt. Probeer het opnieuw. Wat je invulde blijft staan.';
+  }
+  return 'Dit is niet gelukt. Probeer het opnieuw.';
 }
 
 // ─── Veldfouten (TT-247, vorm vastgesteld 12-09-2026) ────────────────────────
@@ -336,7 +366,7 @@ function showSaveSuccess(isEdit) {
   }, isEdit ? 1200 : 2000);
 }
 
-function showSaveError(msg) {
+function showSaveError(msg, actie) {
   document.getElementById('saveSpinner').style.display = 'none';
   document.getElementById('saveTitle').textContent = 'Oeps...';
   document.getElementById('saveTitle').style.color = 'var(--accent)';
@@ -352,7 +382,7 @@ function showSaveError(msg) {
   }
 
   document.getElementById('saveMsg').innerHTML =
-    `Er ging iets mis:<br><span style="color:var(--accent);font-size:12px;">${friendlyErrorMessage(msg)}</span><br><br>
+    `<span style="color:var(--accent);font-size:13px;">${escHtml(friendlyErrorMessage(msg, actie))}</span><br><br>
      <button class="btn btn-ghost" style="margin-top:8px;" onclick="document.getElementById('saveOverlay').classList.remove('visible')">Sluiten</button>`;
 }
 
@@ -466,7 +496,7 @@ async function onArtistSearch(q) {
       renderArtistResults(ac, artists, q, 'selectArtist');
     } catch(e) {
       logCaught('onArtistSearch', e);
-      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
+      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
     }
   }, 400);
 }
@@ -532,7 +562,7 @@ async function onTrackSearch(q) {
     renderTrackResults(ac, songs, q, selectedArtist, 'addSong', state.songs);
   } catch(e) {
     logCaught('onTrackSearch', e);
-    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
   }
 }
 

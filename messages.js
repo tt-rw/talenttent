@@ -85,7 +85,7 @@ async function insertMessage(recipientId, body) {
     return true;
   } catch (e) {
     logCaught('insertMessage', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'je bericht versturen'));
     return false;
   }
 }
@@ -288,7 +288,7 @@ async function loadInbox(opties) {
   } catch (e) {
     delete listEl.dataset.klaar;
     logCaught('loadInbox', e);
-    listEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Berichten laden is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
+    listEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'je berichten laden')}</div>`;
   }
 }
 
@@ -429,7 +429,7 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
     // TT-271: geen automatische focus — zie openMessageComposer().
   } catch (e) {
     logCaught('openConversation', e);
-    threadEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Gesprek laden is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
+    threadEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'het gesprek laden')}</div>`;
   }
 }
 
@@ -474,7 +474,7 @@ async function gesprekVerwijderenUitvoeren(otherId) {
     if (error) throw error;
   } catch (e) {
     logCaught('gesprekVerwijderen', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'het gesprek verwijderen'));
     return;
   }
   if (activeConversationId === otherId) closeConversation(); else loadInbox();

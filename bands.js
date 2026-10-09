@@ -50,7 +50,7 @@ async function respondToBandInvite(bandId, accept) {
     if (accept) profielBandsVerversen();
   } catch (e) {
     logCaught('respondToBandInvite', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'je antwoord op de uitnodiging versturen'));
   }
 }
 
@@ -107,7 +107,7 @@ async function respondToFounderOffer(bandId, accept) {
     if (accept) profielBandsVerversen();
   } catch (e) {
     logCaught('respondToFounderOffer', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'je antwoord op het oprichtersaanbod versturen'));
   }
 }
 
@@ -143,7 +143,7 @@ async function askFounderTransfer(bandId) {
       ).join('')}</div>`;
   } catch (e) {
     logCaught('askFounderTransfer', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'het verzoek om oprichter te worden versturen'));
   }
 }
 
@@ -161,7 +161,7 @@ async function sendFounderOffer(bandId, memberId) {
     if (bewerkBandId === bandId) renderBandBeheer();
   } catch (e) {
     logCaught('sendFounderOffer', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'het oprichtersaanbod versturen'));
   }
 }
 
@@ -174,7 +174,7 @@ async function withdrawFounderOffer(bandId) {
     if (bewerkBandId === bandId) renderBandBeheer();
   } catch (e) {
     logCaught('withdrawFounderOffer', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'het oprichtersaanbod intrekken'));
   }
 }
 
@@ -194,7 +194,7 @@ async function dissolveBand(bandId) {
     loadMyBands();
   } catch (e) {
     logCaught('dissolveBand', e);
-    showToast('Opheffen is niet gelukt: ' + friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de band opheffen'));
   }
 }
 
@@ -226,7 +226,7 @@ async function executeLeaveBand(bandId) {
     // verwijdering weigeren (0 rijen geraakt, geen fout; zie TT-230).
     const { data, error } = await db.from('band_members').delete().eq('band_id', bandId).eq('musician_id', mid).select('musician_id');
     if (error) throw error;
-    if (!data || !data.length) throw new Error('Band verlaten is niet gelukt.');
+    if (!data || !data.length) throw eigenFout('Je staat niet meer bij deze band, of je mag hem niet verlaten. Je bandenlijst is ververst.');
     showToast('Je hebt de band verlaten.');
     // TT-385: band verlaten kan ook vanaf de bandpagina. TT-410b fase 2: die is
     // nu een scherm en laadt opnieuw, zoals een bezoeker de band ziet.
@@ -235,7 +235,8 @@ async function executeLeaveBand(bandId) {
     profielBandsVerversen();
   } catch (e) {
     logCaught('executeLeaveBand', e);
-    showToast(friendlyErrorMessage(e));
+    if (e && e.eigenTekst) loadMyBands();
+    showToast(friendlyErrorMessage(e, 'de band verlaten'));
   }
 }
 
@@ -263,7 +264,7 @@ async function executeRemoveMember(bandId, musicianId, memberName) {
     if (bewerkBandId === bandId) bbLaadLeden();
   } catch (e) {
     logCaught('executeRemoveMember', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'het lid verwijderen'));
   }
 }
 
@@ -546,7 +547,7 @@ function searchMembersToAdd(query) {
         </div>`; }).join('');
     } catch (e) {
       logCaught('searchMembersToAdd', e);
-      resEl.innerHTML = `<p style="color:var(--danger);font-size:13px;">${friendlyErrorMessage(e)}</p>`;
+      resEl.innerHTML = `<p style="color:var(--danger);font-size:13px;">${friendlyErrorMessage(e, 'leden zoeken')}</p>`;
     }
   }, 300);
 }
@@ -606,9 +607,13 @@ async function addBandMember(musicianId, note) {
     const text = trimmedNote
       ? `Je bent uitgenodigd voor de band ${bandLabel}. ${trimmedNote}`
       : `Je bent uitgenodigd voor de band ${bandLabel}. Bekijk de uitnodiging op je profiel.`;
-    await insertMessage(musicianId, text);
+    const berichtVerstuurd = await insertMessage(musicianId, text);
 
-    showToast('Uitnodiging verstuurd.');
+    // TT-445: de uitnodiging staat er, maar het bericht erbij kwam niet aan.
+    // insertMessage() toonde dan al een fout; hier niet ook nog "verstuurd".
+    showToast(berichtVerstuurd
+      ? 'Uitnodiging verstuurd.'
+      : 'De uitnodiging staat in de lijst, maar het bericht erbij kwam niet aan. De muzikant ziet de uitnodiging wel op zijn profiel.');
     document.getElementById('addMemberModal').classList.remove('visible');
     loadMyBands();
     // TT-385: uitnodigen gebeurt vanuit Onze bezetting; de uitnodiging staat
@@ -617,7 +622,7 @@ async function addBandMember(musicianId, note) {
     return true;
   } catch (e) {
     logCaught('addBandMember', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'het lid uitnodigen'));
     return false;
   }
 }
@@ -783,7 +788,7 @@ async function saveBandRun() {
   } catch(e) {
     hideSaving();
     logCaught('saveBand', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de band opslaan'));
   }
 }
 
@@ -1323,13 +1328,13 @@ async function zetBandDelen(bandId, aan) {
     // wijziging weigeren (0 rijen geraakt, geen fout; zie TT-230).
     const { data, error } = await db.from('bands').update({ delen_aan: aan }).eq('id', bandId).select('id');
     if (error) throw error;
-    if (!data || !data.length) throw new Error('Delen aanpassen is niet gelukt.');
+    if (!data || !data.length) throw eigenFout('De wijziging is niet doorgevoerd: je mag deze band niet aanpassen, of je bent uitgelogd. Log opnieuw in en probeer het nog eens.');
     if (bandDeelGegevens && bandDeelGegevens.id === bandId) bandDeelGegevens.delen_aan = aan;
     showToast(aan ? 'Delen staat aan. De link van de band werkt.' : 'Delen staat uit. De link van de band werkt niet meer.');
     return true;
   } catch (e) {
     logCaught('zetBandDelen', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'het delen van de band wijzigen'));
     return false;
   }
 }
@@ -1450,7 +1455,7 @@ async function bandBewerkGegevens(kolommen) {
   const { data, error } = await db.from('bands').select(kolommen).eq('id', id).single();
   if (error || !data) {
     logCaught('bandBewerkGegevens', error || new Error('Band niet gevonden.'));
-    showToast('Kon de band niet laden: ' + friendlyErrorMessage(error || new Error('Band niet gevonden.')));
+    showToast(error ? friendlyErrorMessage(error, 'de band laden') : 'Deze band bestaat niet meer.');
     return null;
   }
   if (id !== bewerkBandId) return null;
@@ -1521,7 +1526,7 @@ async function renderBandBeheer() {
     logCaught('renderBandBeheer', e);
     // TT-230: nooit stil verdwijnen; zeg wat er niet lukt.
     el.innerHTML = `<div class="profile-media-title">Bandbeheer</div>
-      <p class="field-hint">Bandbeheer is nu niet beschikbaar. Probeer het later opnieuw.</p>`;
+      <p class="field-hint">Bandbeheer laden lukt nu niet. Controleer je verbinding en open dit scherm opnieuw.</p>`;
   }
 }
 
@@ -1539,7 +1544,7 @@ async function zetBandPauze(aan) {
     loadMyBands();
   } catch (e) {
     logCaught('zetBandPauze', e);
-    showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de pauzestand opslaan'));
   }
 }
 
@@ -1628,7 +1633,7 @@ async function saveBandWie() {
   }).eq('id', bewerkBandId);
   if (error) {
     logCaught('saveBandWie', error);
-    showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(error));
+    showToast(friendlyErrorMessage(error, 'de bandgegevens opslaan'));
     return;
   }
   bewerkBandNaam = naam;
@@ -1713,7 +1718,7 @@ async function bbLaadLeden(contactStart) {
     .eq('band_id', id);
   if (error) {
     logCaught('bbLaadLeden', error);
-    showToast('Kon de leden niet laden: ' + friendlyErrorMessage(error));
+    showToast(friendlyErrorMessage(error, 'de leden laden'));
     return;
   }
   if (id !== bewerkBandId) return;
@@ -1861,7 +1866,7 @@ async function bbIntrekken(musicianId, naam) {
     loadMyBands();
   } catch (e) {
     logCaught('bbIntrekken', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de uitnodiging intrekken'));
   }
 }
 
@@ -1905,7 +1910,7 @@ async function saveBandBezetting() {
     loadMyBands();
   } catch (e) {
     logCaught('saveBandBezetting', e);
-    showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de bezetting opslaan'));
   }
 }
 
@@ -2113,7 +2118,7 @@ async function saveBandMuziek() {
     loadMyBands();
   } catch (e) {
     logCaught('saveBandMuziek', e);
-    showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de muziek opslaan'));
   }
 }
 
@@ -2194,7 +2199,7 @@ function bmFotoKiezen(file) {
   }).catch(e => {
     bmFotoBezig = false;
     logCaught('bmFotoKiezen', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de foto uploaden'));
     bmRenderFoto();
   });
 }
@@ -2239,7 +2244,7 @@ function bmHandleFileSelect(files) {
       bmRenderMediaGrid();
     }).catch(e => {
       logCaught('bmUploadMedia', e);
-      showToast(`"${file.name}": ${friendlyErrorMessage(e)}`);
+      showToast(`"${file.name}": ${friendlyErrorMessage(e, 'het bestand uploaden')}`);
       const idx = bmMediaFiles.indexOf(entry);
       if (idx !== -1) bmMediaFiles.splice(idx, 1);
       bmRenderMediaGrid();
@@ -2377,7 +2382,7 @@ async function saveBandMedia() {
     loadMyBands();
   } catch (e) {
     logCaught('saveBandMedia', e);
-    showToast('Opslaan is niet gelukt: ' + friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de media opslaan'));
   }
 }
 

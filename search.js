@@ -801,7 +801,7 @@ async function runSearch(straalOverride) {
   } catch(e) {
     logCaught('runSearch', e);
     if (seq !== musicianSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
-    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
+    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'zoeken')}</div>`;
   }
 }
 
@@ -1328,7 +1328,7 @@ async function runBandSearch(straalOverride) {
   } catch(e) {
     logCaught('runBandSearch', e);
     if (seq !== bandSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
-    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
+    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'zoeken')}</div>`;
   }
 }
 
@@ -1650,7 +1650,7 @@ async function onSetlistArtistSearch(q) {
       renderArtistResults(ac, artists, q, 'selectSetlistArtist');
     } catch(e) {
       logCaught('onSetlistArtistSearch', e);
-      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
+      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
     }
   }, 400);
 }
@@ -1689,7 +1689,7 @@ async function onSetlistTrackSearch(q) {
     renderTrackResults(ac, songs, q, selectedSetlistArtist, 'addSetlistSong', setlistWantedSongs);
   } catch(e) {
     logCaught('onSetlistTrackSearch', e);
-    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoekopdracht mislukt</span></div>';
+    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
   }
 }
 
@@ -1889,7 +1889,7 @@ async function runSetlistSearch(straalOverride) {
   } catch(e) {
     logCaught('runSetlistSearch', e);
     if (seq !== setlistSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
-    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
+    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'zoeken')}</div>`;
   }
 }
 
@@ -2119,7 +2119,7 @@ async function gedeeldSuggesties(term) {
   } catch (e) {
     logCaught('gedeeldSuggesties', e);
     if (seq !== gedeeldNaamSeq) return;
-    ac.innerHTML = '<div class="ac-item"><span>Zoekopdracht mislukt</span></div>';
+    ac.innerHTML = '<div class="ac-item"><span>Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
     ac.classList.add('open');
   }
 }
@@ -2347,7 +2347,7 @@ async function runGedeeldSearch() {
   } catch (e) {
     logCaught('runGedeeldSearch', e);
     if (seq !== gedeeldSearchSeq) return;
-    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">Zoeken is niet gelukt: ${friendlyErrorMessage(e)}</div>`;
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'zoeken')}</div>`;
   }
 }
 
@@ -2575,7 +2575,7 @@ async function bewaarZoekUitvoeren(nu) {
     vulSeintjeBlok();
   } catch (e) {
     logCaught('bewaarZoek', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de zoekopdracht bewaren'));
   } finally {
     bewaarBezig = false;
   }
@@ -2593,7 +2593,7 @@ async function stopBewaardeZoek(vanuitInstellingen) {
     if (vanuitInstellingen) vulBewaardeZoekInInstellingen();
   } catch (e) {
     logCaught('stopBewaardeZoek', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de bewaarde zoekopdracht stoppen'));
   }
 }
 

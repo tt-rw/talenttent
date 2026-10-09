@@ -130,7 +130,7 @@ async function ouderVerzoekVersturen() {
   }
 
   const leeftijd = ouderLeeftijdUitVeld();
-  if (!ouderToestemmingNodig(leeftijd)) { showToast('Er ging iets mis met je geboortedatum. Ga terug naar stap 1.'); return; }
+  if (!ouderToestemmingNodig(leeftijd)) { showToast('Je geboortedatum ontbreekt of klopt niet. Ga terug naar stap 1 en vul hem opnieuw in.'); return; }
 
   showSaving('Aanvraag versturen...', 'Een ogenblik geduld.');
   try {
@@ -163,7 +163,7 @@ async function ouderVerzoekVersturen() {
       setFieldError(document.getElementById('regEmail'), 'Er bestaat al een account met dit e-mailadres. Probeer in te loggen, of gebruik een ander adres');
       return;
     }
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de aanvraag versturen'));
   }
 }
 
@@ -225,7 +225,7 @@ async function ouderOpnieuwSturen() {
   } catch (e) {
     hideSaving();
     logCaught('ouderOpnieuwSturen', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de mail opnieuw versturen'));
   }
 }
 
@@ -470,7 +470,7 @@ async function ouderBesluit(akkoord) {
   } catch (e) {
     hideSaving();
     logCaught('ouderBesluit', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'je antwoord versturen'));
   }
 }
 

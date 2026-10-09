@@ -369,7 +369,7 @@ async function zetBandUitnodigingen(open) {
     showToast(open ? 'Je staat weer open voor band-uitnodigingen.' : 'Je ontvangt geen band-uitnodigingen meer.');
   } catch (e) {
     logCaught('zetBandUitnodigingen', e);
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'de uitnodigingen versturen'));
     updateBandInviteToggleBtn(); // de tegel toont weer de stand van de database
   }
 }
@@ -500,7 +500,7 @@ async function saveEditedProfile() {
     showSaveSuccess(true);
   } catch (err) {
     logCaught('saveEditedProfile', err);
-    showSaveError(err.message);
+    showSaveError(err.message, 'je profiel opslaan');
   }
 }
 
@@ -668,7 +668,7 @@ async function bevestigMailOpnieuw() {
   const knop = document.getElementById('bevestigOpnieuwBtn');
   if (knop) knop.disabled = true;
   try { bevestigUitkomstTonen(await bevestigApi('start')); }
-  catch (e) { if (!bevestigVerwachteUitkomst(e)) logCaught('bevestigMailOpnieuw', e); showToast(e.message || friendlyErrorMessage(e)); }
+  catch (e) { if (!bevestigVerwachteUitkomst(e)) logCaught('bevestigMailOpnieuw', e); showToast(e.message || friendlyErrorMessage(e, 'de bevestigingsmail versturen')); }
   finally { if (knop) knop.disabled = false; }
 }
 
@@ -693,7 +693,7 @@ async function bevestigEmailadresOpslaan() {
     if (!bevestigVerwachteUitkomst(e)) logCaught('bevestigEmailadresOpslaan', e);
     // Een fout over het e-mailadres zelf hoort bij het veld; de rest is een toast.
     if (/e-mailadres/i.test(e.message || '')) setFieldError(veld, e.message.replace(/\.$/, ''));
-    else showToast(e.message || friendlyErrorMessage(e));
+    else showToast(e.message || friendlyErrorMessage(e, 'je e-mailadres opslaan'));
   } finally { if (knop) knop.disabled = false; }
 }
 
@@ -709,7 +709,7 @@ async function bevestigPaginaOpenen(code) {
   try { uit = await bevestigApi('bevestig', { code }); }
   catch (e) {
     logCaught('bevestigPaginaOpenen', e);
-    toestemmingMeldingTonen('Er ging iets mis', [
+    toestemmingMeldingTonen('E-mailadres bevestigen lukte niet', [
       'We konden je e-mailadres nu niet bevestigen. Tik over een paar minuten opnieuw op de knop in de mail.']);
     return;
   }
@@ -803,7 +803,7 @@ async function submitProfile() {
 
       userId = signInData.user?.id || authData.user?.id || null;
       currentUser = signInData.user || authData.user;
-      if (!userId) throw new Error('Kon geen account aanmaken. Probeer het opnieuw.');
+      if (!userId) throw eigenFout('Je account is aangemaakt, maar inloggen lukte niet. Ga naar Inloggen en log in met je e-mailadres en wachtwoord.');
     }
 
     // TT-02: zelfde late avatar-upload als in createAccountAndProfile() —
@@ -947,7 +947,7 @@ async function submitProfile() {
 
   } catch (err) {
     logCaught('submitProfile', err);
-    showSaveError(err.message);
+    showSaveError(err.message, 'je profiel aanmaken');
   }
 }
 
@@ -1337,7 +1337,7 @@ async function createAccountAndProfile() {
     }
 
     const userId = authUser?.id || null;
-    if (!userId) throw new Error('Kon geen account aanmaken. Probeer het opnieuw.');
+    if (!userId) throw eigenFout('Je account is aangemaakt, maar inloggen lukte niet. Ga naar Inloggen en log in met je e-mailadres en wachtwoord.');
     currentUser = authUser;
 
     // Bestaat er al een profiel bij dit account? Dat kan als een eerdere
@@ -1425,7 +1425,7 @@ async function createAccountAndProfile() {
   } catch (err) {
     logCaught('createAccountAndProfile', err);
     document.getElementById('saveOverlay').classList.remove('visible');
-    showToast(friendlyErrorMessage(err));
+    showToast(friendlyErrorMessage(err, 'je account aanmaken'));
     return false;
   } finally {
     onboardingInFlight = false;
@@ -1574,7 +1574,7 @@ function handleAvatarUpload(file) {
   }).catch(e => {
     logCaught('uploadAvatar', e);
     preview.querySelector('.avatar-uploading')?.remove();
-    showToast(friendlyErrorMessage(e));
+    showToast(friendlyErrorMessage(e, 'je foto uploaden'));
     removeAvatar();
   });
 }
@@ -1650,7 +1650,7 @@ function handleFileSelect(files) {
       renderMediaGrid();
     }).catch(e => {
       logCaught('uploadMedia', e);
-      showToast(`"${file.name}": ${friendlyErrorMessage(e)}`);
+      showToast(`"${file.name}": ${friendlyErrorMessage(e, 'het bestand uploaden')}`);
       const idx = state.mediaFiles.indexOf(entry);
       if (idx !== -1) state.mediaFiles.splice(idx, 1);
       renderMediaGrid();
