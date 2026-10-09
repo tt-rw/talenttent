@@ -2466,6 +2466,19 @@
   }
   /* TT-432: stip op de Bands-knop, zonder cijfer; rood in elk thema, zoals de teller bij Berichten. */
   .bands-dot { position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--ongelezen); }
+  /* Talent Tent: alleen lezen. Geen invoerveld, en de naam is geen link. */
+  #messagesThreadPanel.thread-systeem .messages-thread-footer { display: none; }
+  .thread-systeem .messages-thread-link { cursor: default; }
+  /* Een bericht van Talent Tent: de kernzin en de matches als rijen. Breder dan
+     een gewoon bericht (90% in plaats van 75%), want de rijen hebben ruimte nodig. */
+  .message-bubble.tt-bericht { max-width: 90%; width: 90%; }
+  .tt-bericht-kop { font-weight: 700; margin-bottom: 4px; }
+  .tt-bericht .bb-rij { padding: 6px 0; }
+  .tt-meer {
+    display: block; width: 100%; min-height: 44px; padding: 0; background: none; border: 0;
+    font: inherit; font-size: 14px; color: var(--accent); text-align: left; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
   .messages-conv-row {
     display: flex;
     align-items: center;

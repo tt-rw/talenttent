@@ -2,6 +2,25 @@
 
 let activeConversationId = null; // musician-id van de open gespreksdraad
 
+// TT-451 (09-10-2026, besluit Ronald: "de melding kan in de inbox, onder
+// gebruiker Talent Tent"): berichten van Talent Tent staan als vast gesprek in
+// de inbox. Geen nepgebruiker: ze komen uit een eigen tabel
+// (`talent_tent_berichten`), die de digest vult. Zelfde ontvangers, frequentie
+// en matches als de mail; wie de mail uitzet, krijgt ook geen bericht. Het
+// gesprek is alleen te lezen: geen invoerveld, geen menu.
+const TT_GESPREK_ID = 'talent-tent';
+const TT_GESPREK_NAAM = 'Talent Tent';
+let activeConversationSysteem = false; // waar zolang het gesprek met Talent Tent open staat
+let ttBerichtenBeschikbaar = true;     // onwaar na de eerste mislukte vraag: één logregel per bezoek
+
+// Dezelfde zinnen als de digestmail (send-digest, TEKSTEN_DIGEST).
+const TT_TEKSTEN = {
+  kernzinEenMatch: 'Er is 1 nieuwe match bij jou in de buurt',
+  kernzinMatches: 'Er zijn {aantal} nieuwe matches bij jou in de buurt',
+  meer: 'En nog {aantal} andere — bekijk ze in Zoeken',
+  bandZoekt: 'zoekt: {instrument}',
+};
+
 // TT-32 (07-08-2026): als iemand op het chat-icoon klikt zonder ingelogd te
 // zijn (of nog geen eigen profiel heeft), onthouden we wie ze wilden
 // berichten — zodat we ze na het inloggen/profiel-aanmaken direct naar de
@@ -91,7 +110,7 @@ async function insertMessage(recipientId, body) {
 }
 
 async function sendReplyInThread() {
-  if (!activeConversationId) return;
+  if (!activeConversationId || activeConversationSysteem) return; // TT-451: Talent Tent leest je alleen
   // V-04 (13-08-2026): defensieve check naast het verborgen invoerveld — het
   // veld verdwijnt bij een verwijderd account, maar een verouderd scherm
   // (bijv. al open vóórdat het account werd verwijderd) mag toch nooit
@@ -145,6 +164,16 @@ async function sendReplyInThread() {
   }
 }
 
+// TT-34/TT-451: de dag-scheiding in een gesprek, voor gewone gesprekken en
+// voor Talent Tent: "Vandaag", "Gisteren" of de datum.
+function dagLabel(d) {
+  const dag = d.toDateString();
+  const gisteren = new Date(); gisteren.setDate(gisteren.getDate() - 1);
+  if (dag === new Date().toDateString()) return 'Vandaag';
+  if (dag === gisteren.toDateString()) return 'Gisteren';
+  return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
+}
+
 // V-01 (12-08-2026): een gesprek opende bovenaan. Bij twintig berichten zag je
 // het bericht van drie weken geleden. Elke chat-app springt naar het laatste
 // bericht.
@@ -178,12 +207,16 @@ async function refreshUnreadBadge() {
     // afzender niet zien, en een blokkade moet ook de teller stil houden —
     // anders verraadt een ongelezen-badge dat er toch iets binnenkwam.
     // Daarom nu de afzenders ophalen en zelf tellen.
-    const { data, error } = await db.from('messages')
-      .select('sender_id')
-      .eq('recipient_id', mid)
-      .is('read_at', null);
+    const [{ data, error }, ttOngelezen] = await Promise.all([
+      db.from('messages')
+        .select('sender_id')
+        .eq('recipient_id', mid)
+        .is('read_at', null),
+      ttOngelezenTellen(),
+    ]);
     if (error) throw error;
-    const count = (data || []).filter(r => !blokkeerIkZelf(r.sender_id)).length;
+    // TT-451: een ongelezen bericht van Talent Tent telt als één in hetzelfde getal.
+    const count = (data || []).filter(r => !blokkeerIkZelf(r.sender_id)).length + ttOngelezen;
     if (count > 0) { toon(count > 99 ? '99+' : String(count)); }
     else { toon(null); }
   } catch (e) {
@@ -217,10 +250,11 @@ async function loadInbox(opties) {
     // hier altijd al uit de database (musicians.id), nooit uit vrije tekst.
     // Client-side samengevoegd en opnieuw op datum gesorteerd, want elke
     // vraag levert zijn eigen, los gesorteerde resultaat.
-    const [sentRes, receivedRes, verborgen] = await Promise.all([
+    const [sentRes, receivedRes, verborgen, ttBerichten] = await Promise.all([
       db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('sender_id', mid),
       db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('recipient_id', mid),
       laadVerborgenGesprekken(),
+      laadTalentTentBerichten(), // TT-451
     ]);
     if (sentRes.error) throw sentRes.error;
     if (receivedRes.error) throw receivedRes.error;
@@ -232,7 +266,7 @@ async function loadInbox(opties) {
       .filter(msg => !gesprekVerborgenTot(verborgen, msg.sender_id === mid ? msg.recipient_id : msg.sender_id, msg.created_at))
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    if (!data || !data.length) {
+    if ((!data || !data.length) && !ttBerichten.length) {
       // TT-248 (11-09-2026): was grijze tekst zonder uitweg. Nu de vaste vorm
       // uit huisstijl §15 — de knop doet de volgende stap, hij legt hem niet uit.
       listEl.innerHTML = emptyStateHTML(
@@ -257,11 +291,13 @@ async function loadInbox(opties) {
     });
 
     const otherIds = Array.from(conversations.keys());
-    const { data: musiciansData } = await db.from('musicians').select('id, fname, username, avatar_url').in('id', otherIds);
+    const { data: musiciansData } = otherIds.length
+      ? await db.from('musicians').select('id, fname, username, avatar_url').in('id', otherIds)
+      : { data: [] };
     const infoById = {};
     (musiciansData || []).forEach(m => { infoById[m.id] = m; });
 
-    const rows = Array.from(conversations.values()).map(c => {
+    const rijen = Array.from(conversations.values()).map(c => {
       const info = infoById[c.otherId];
       // TT-22: de gesprekspartner kan zijn account inmiddels verwijderd
       // hebben — berichten blijven staan, maar tonen dan een duidelijke
@@ -273,7 +309,7 @@ async function loadInbox(opties) {
       const previewPrefix = isOwn ? 'Jij: ' : '';
       const preview = c.lastMessage.body.length > 50 ? c.lastMessage.body.slice(0, 50) + '…' : c.lastMessage.body;
       const time = relativeMessageTime(c.lastMessage.created_at);
-      return `
+      return { t: new Date(c.lastMessage.created_at).getTime(), html: `
         <div class="messages-conv-row ${c.unreadCount ? 'unread' : ''}" onclick="openConversation('${jsAttr(c.otherId)}','${jsAttr(name)}','${jsAttr(avatarSrc)}', false, ${!info})">
           <div class="messages-conv-avatar">${avatarHTML}</div>
           <div class="messages-conv-main">
@@ -281,9 +317,11 @@ async function loadInbox(opties) {
             <div class="messages-conv-preview">${escHtml(previewPrefix + preview)}</div>
           </div>
           <div class="messages-conv-time">${escHtml(time)}</div>
-        </div>`;
-    }).join('');
-    listEl.innerHTML = rows;
+        </div>` };
+    });
+    // TT-451: Talent Tent staat tussen de gesprekken, op het moment van zijn laatste bericht.
+    if (ttBerichten.length) rijen.push({ t: new Date(ttBerichten[0].created_at).getTime(), html: talentTentRijHTML(ttBerichten) });
+    listEl.innerHTML = rijen.sort((a, b) => b.t - a.t).map(r => r.html).join('');
     if (currentUser) listEl.dataset.klaar = currentUser.id;
   } catch (e) {
     delete listEl.dataset.klaar;
@@ -326,6 +364,7 @@ let activeConversationDeleted = false;
 async function openConversation(otherId, otherName, otherAvatarSrc, stil, deleted) {
   if (!otherId) return;
   activeConversationId = otherId;
+  zetSysteemGesprek(false); // TT-451: een gewoon gesprek heeft weer invoerveld en menu
   werkTerugKnopBij(); // TT-301: een open gesprek is een stap terug
   if (deleted !== undefined) activeConversationDeleted = deleted;
   const composerEl = document.querySelector('#messagesThreadPanel .messages-composer-row');
@@ -387,9 +426,6 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
     // van verschillende dagen — herkenbaar chat-patroon, maakt een lang
     // gesprek beter leesbaar dan alleen een tijdstip per bubbel.
     let lastDay = null;
-    const today = new Date().toDateString();
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toDateString();
     const nieuweInhoud = (data && data.length ? data.map(msg => {
       const own = msg.sender_id === mid;
       const msgDate = new Date(msg.created_at);
@@ -397,8 +433,7 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
       let divider = '';
       if (dayStr !== lastDay) {
         lastDay = dayStr;
-        const label = dayStr === today ? 'Vandaag' : dayStr === yesterdayStr ? 'Gisteren' : msgDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
-        divider = `<div class="messages-day-divider">${escHtml(label)}</div>`;
+        divider = `<div class="messages-day-divider">${escHtml(dagLabel(msgDate))}</div>`;
       }
       const time = msgDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
       // V-07 (13-08-2026, in overleg vastgesteld): alleen een vinkje dat een
@@ -482,9 +517,185 @@ async function gesprekVerwijderenUitvoeren(otherId) {
   showToast('Gesprek verwijderd.');
 }
 
+// ─── Berichten van Talent Tent (TT-451, 09-10-2026) ──────────────────────────
+//
+// Elke digestrun schrijft per muzikant één bericht met de matches van die run
+// (Edge Function send-digest). Hier komt het terug als gesprek "Talent Tent":
+// één bericht per run, de matches als tikbare rijen. Namen en foto's staan niet
+// in het bericht; ze worden vers opgehaald, dus een nieuwe gebruikersnaam of
+// een verwijderd account klopt altijd, en een geblokkeerde muzikant staat er
+// niet in. Faalt de vraag (bijvoorbeeld omdat het SQL-script nog niet is
+// gedraaid), dan blijft de inbox gewoon werken, zonder Talent Tent.
+async function laadTalentTentBerichten() {
+  if (!ttBerichtenBeschikbaar) return [];
+  try {
+    const { data, error } = await db.from('talent_tent_berichten')
+      .select('id, inhoud, created_at, read_at')
+      .order('created_at', { ascending: false })
+      .limit(30);
+    if (error) throw error;
+    return (data || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  } catch (e) {
+    ttBerichtenBeschikbaar = false;
+    logCaught('laadTalentTentBerichten', e);
+    return [];
+  }
+}
+
+async function ttOngelezenTellen() {
+  if (!ttBerichtenBeschikbaar) return 0;
+  try {
+    const { data, error } = await db.from('talent_tent_berichten').select('id').is('read_at', null);
+    if (error) throw error;
+    return (data || []).length;
+  } catch (e) {
+    ttBerichtenBeschikbaar = false;
+    logCaught('ttOngelezenTellen', e);
+    return 0;
+  }
+}
+
+// Het gesprek met Talent Tent heeft geen invoerveld, geen menu en een naam die
+// niet tikbaar is (klasse `thread-systeem` op het paneel).
+function zetSysteemGesprek(aan) {
+  activeConversationSysteem = !!aan;
+  const paneel = document.getElementById('messagesThreadPanel');
+  if (paneel) paneel.classList.toggle('thread-systeem', !!aan);
+}
+
+function talentTentKernzin(inhoud) {
+  const aantal = ((inhoud && inhoud.muzikanten) || []).length + ((inhoud && inhoud.bands) || []).length + (Number(inhoud && inhoud.meer) || 0);
+  return aantal === 1 ? TT_TEKSTEN.kernzinEenMatch : TT_TEKSTEN.kernzinMatches.replace('{aantal}', aantal);
+}
+
+function talentTentRijHTML(berichten) {
+  const laatste = berichten[0];
+  const ongelezen = berichten.filter(b => !b.read_at).length;
+  return `
+    <div class="messages-conv-row ${ongelezen ? 'unread' : ''}" onclick="openTalentTentGesprek()">
+      <div class="messages-conv-avatar">${AVATAR_T_FALLBACK}</div>
+      <div class="messages-conv-main">
+        <div class="messages-conv-name">${escHtml(TT_GESPREK_NAAM)}${ongelezen ? ` <span class="unread-badge" style="position:static;">${ongelezen}</span>` : ''}</div>
+        <div class="messages-conv-preview">${escHtml(talentTentKernzin(laatste.inhoud))}</div>
+      </div>
+      <div class="messages-conv-time">${escHtml(relativeMessageTime(laatste.created_at))}</div>
+    </div>`;
+}
+
+// Naam, plaats en foto van alle matches in één keer: één vraag naar muzikanten
+// en één naar bands, hoeveel berichten er ook zijn.
+async function talentTentInfoOphalen(berichten) {
+  const mIds = new Set(), bIds = new Set();
+  berichten.forEach(b => {
+    ((b.inhoud && b.inhoud.muzikanten) || []).forEach(m => mIds.add(m.id));
+    ((b.inhoud && b.inhoud.bands) || []).forEach(x => bIds.add(x.id));
+  });
+  const info = { muzikanten: {}, bands: {} };
+  try {
+    if (mIds.size) {
+      const { data, error } = await db.from('musicians').select('id, fname, username, city, avatar_url').in('id', Array.from(mIds));
+      if (error) throw error;
+      (data || []).forEach(m => { info.muzikanten[m.id] = m; });
+    }
+    if (bIds.size) {
+      const { data, error } = await db.rpc('tt_get_bands_public', { ids: Array.from(bIds) });
+      if (error) throw error;
+      (data || []).forEach(b => { info.bands[b.id] = b; });
+    }
+  } catch (e) {
+    logCaught('talentTentInfoOphalen', e);
+  }
+  return info;
+}
+
+// Eén bericht: de kernzin van de mail, daaronder de matches als rijen. Een
+// match die niet meer bestaat of die je blokkeerde, staat er niet in. Blijft er
+// niets over, dan is er geen bericht om te tonen.
+function talentTentBerichtHTML(bericht, info) {
+  const inh = bericht.inhoud || {};
+  const muz = (inh.muzikanten || []).filter(m => info.muzikanten[m.id] && !isGeblokkeerd(m.id));
+  const bnd = (inh.bands || []).filter(b => info.bands[b.id]);
+  if (!muz.length && !bnd.length) return '';
+  const meer = Number(inh.meer) || 0;
+  const kernzin = talentTentKernzin({ muzikanten: muz, bands: bnd, meer });
+  const rijen = muz.map(m => {
+    const mi = info.muzikanten[m.id];
+    const naam = displayNameOf(mi);
+    const regel1 = [mi.city, m.km != null ? `${m.km} km` : ''].filter(Boolean).join(' · ');
+    const regel2 = (m.instrumenten || []).join(' · ');
+    return `<button type="button" class="bb-rij bb-rij-knop" onclick="openProfielScherm('${jsAttr(m.id)}')" aria-label="Profiel van ${escAttr(naam)}">${bbFotoHTML(mi.avatar_url)}<span class="bb-tekst"><span class="bb-naam">${escHtml(naam)}</span>${regel1 ? `<span class="bb-sub">${escHtml(regel1)}</span>` : ''}${regel2 ? `<span class="bb-sub">${escHtml(regel2)}</span>` : ''}</span></button>`;
+  }).concat(bnd.map(b => {
+    const bi = info.bands[b.id];
+    const foto = safeUrl(bi.avatar_url);
+    const beeld = foto
+      ? `<img class="bb-foto bb-foto-vierkant" src="${foto}" alt="">`
+      : `<span class="bb-foto bb-foto-t bb-foto-vierkant" aria-hidden="true">${AVATAR_T_FALLBACK}</span>`;
+    const regel1 = [bi.city, b.km != null ? `${b.km} km` : ''].filter(Boolean).join(' · ');
+    const regel2 = (b.zoekt || []).map(i => TT_TEKSTEN.bandZoekt.replace('{instrument}', i)).join(' · ');
+    return `<button type="button" class="bb-rij bb-rij-knop" onclick="openBandScherm('${jsAttr(b.id)}')" aria-label="Band ${escAttr(bi.name)}">${beeld}<span class="bb-tekst"><span class="bb-naam">${escHtml(bi.name)}</span>${regel1 ? `<span class="bb-sub">${escHtml(regel1)}</span>` : ''}${regel2 ? `<span class="bb-sub">${escHtml(regel2)}</span>` : ''}</span></button>`;
+  }));
+  const tijd = new Date(bericht.created_at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+  const meerHTML = meer
+    ? `<button type="button" class="tt-meer" onclick="showView('search')">${escHtml(TT_TEKSTEN.meer.replace('{aantal}', meer))}</button>`
+    : '';
+  return `<div class="message-bubble other tt-bericht"><div class="tt-bericht-kop">${escHtml(kernzin)}</div>${rijen.join('')}${meerHTML}<div class="message-bubble-time">${escHtml(tijd)}</div></div>`;
+}
+
+async function openTalentTentGesprek(stil) {
+  activeConversationId = TT_GESPREK_ID;
+  zetSysteemGesprek(true);
+  activeConversationDeleted = false;
+  gesprekVia = '';
+  werkTerugKnopBij(); // TT-301: een open gesprek is een stap terug
+  const paneel = document.getElementById('messagesThreadPanel');
+  paneel.classList.remove('thread-verwijderd');
+  paneel.classList.add('gesprek-open');
+  document.getElementById('messagesThreadName').textContent = TT_GESPREK_NAAM;
+  document.getElementById('messagesThreadAvatar').innerHTML = AVATAR_T_FALLBACK;
+  zetVeiligheidMenu('messagesThreadActies', 'gesprek', null, ''); // geen melden, blokkeren of verwijderen
+  document.getElementById('messagesInboxPanel').style.display = 'none';
+  paneel.style.display = 'block';
+  safeHistoryReplace(history.state, '#messages/' + TT_GESPREK_ID);
+  const threadEl = document.getElementById('messagesThreadList');
+  if (!stil) threadEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  try {
+    const berichten = (await laadTalentTentBerichten()).slice().reverse(); // oud naar nieuw, zoals elk gesprek
+    const info = await talentTentInfoOphalen(berichten);
+    if (activeConversationId !== TT_GESPREK_ID) return; // intussen gesloten of een ander gesprek
+    let laatsteDag = null;
+    const html = berichten.map(b => {
+      const inhoud = talentTentBerichtHTML(b, info);
+      if (!inhoud) return '';
+      const d = new Date(b.created_at);
+      const dag = d.toDateString();
+      const scheiding = dag !== laatsteDag ? `<div class="messages-day-divider">${escHtml(dagLabel(d))}</div>` : '';
+      laatsteDag = dag;
+      return scheiding + inhoud;
+    }).join('');
+    threadEl.innerHTML = html || emptyStateHTML(
+      'Nog geen berichten van Talent Tent',
+      'Nieuwe matches bij jou in de buurt staan hier.',
+      'Muzikanten zoeken →',
+      "showView('search')"
+    );
+    // Alles wat je nu ziet, geldt als gelezen: de stip en het getal gaan weg.
+    const ongelezen = berichten.filter(b => !b.read_at).map(b => b.id);
+    if (ongelezen.length) {
+      const { error } = await db.from('talent_tent_berichten').update({ read_at: new Date().toISOString() }).in('id', ongelezen);
+      if (error) logCaught('openTalentTentGesprek/gelezen', error);
+      refreshUnreadBadge();
+    }
+    scrollThreadToBottom();
+  } catch (e) {
+    logCaught('openTalentTentGesprek', e);
+    threadEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'de berichten van Talent Tent laden')}</div>`;
+  }
+}
+
 function closeConversation(stil) {
   zetVeiligheidMenu('messagesThreadActies', 'gesprek', null, ''); // TT-06
   activeConversationId = null;
+  zetSysteemGesprek(false); // TT-451
   gesprekVia = '';
   activeConversationDeleted = false; // V-04
   if (huidigeView === 'messages') safeHistoryReplace(history.state, '#messages'); // TT-431
@@ -498,6 +709,7 @@ function closeConversation(stil) {
 // TT-279 (16-09-2026): na verversen het gesprek uit de adresregel weer
 // openen. Naam en foto komen uit dezelfde vraag als in loadInbox().
 async function heropenGesprek(otherId) {
+  if (otherId === TT_GESPREK_ID) { openTalentTentGesprek(); return; } // TT-451
   try {
     const { data, error } = await db.from('musicians')
       .select('id, fname, username, avatar_url').eq('id', otherId);
@@ -514,6 +726,6 @@ async function heropenGesprek(otherId) {
 // TT-271 (16-09-2026, Ronald): foto en naam bovenin een gesprek openen het
 // profiel van de ander. Een verwijderd account heeft geen profiel meer.
 function openThreadProfile() {
-  if (!activeConversationId || activeConversationDeleted) return;
+  if (!activeConversationId || activeConversationDeleted || activeConversationSysteem) return;
   openProfielScherm(activeConversationId);
 }
