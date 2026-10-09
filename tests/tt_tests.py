@@ -5902,9 +5902,10 @@ window.TT_STUB.fnAntwoord = {};
           vak().querySelector('.deel-knop').click(); await w(50);
           u.deelblad = [document.getElementById('bandDeelModal').classList.contains('visible'), document.getElementById('bandDeelTekst').textContent];
           sluitBandDeelBlad();
-          // 2. Een uitnodiging opent de juiste tegel.
+          // 2. Een uitnodiging opent het tegeloverzicht (TT-449); daarna kies je de tegel.
           [...vak().querySelectorAll('.add-link-btn')].find(b => b.textContent.includes('Vertel wie')).click(); await w(400);
           u.uitnodigingOpent = [document.querySelector('.app-view.active').id, activeTegelScreen, bewerkBandId, history.state && history.state.band];
+          openTegelScreen('bandWie'); await w(200);
           // 3. Wie zijn we: fouten bij het veld, opslaan, "Terug zonder opslaan?".
           document.getElementById('bwNaam').value = ''; await saveBandWie(); await w(50);
           u.wieFout = [...document.querySelectorAll('#bandWieScreen .field-msg')].map(e => e.textContent.trim());
@@ -5972,7 +5973,7 @@ window.TT_STUB.fnAntwoord = {};
           const kaal = { avatar_url: 'x', description: 'x', leden: [], wanted: [], nummers: [], covers: [], media: [], genres: ['Indie'], soort: 'covers' };
           u.meterCovers = bandVoortgang(kaal); u.meterEigen = bandVoortgang({ ...kaal, soort: 'eigen' });
           // 5. Onze muziek.
-          openBandTegels('b9', 'bandMuziek'); await w(400);
+          openBandTegels('b9'); openTegelScreen('bandMuziek'); await w(400);
           bmzKiesSoort('beide');
           bmzNummerErbij(); bmzNummers[0].titel = 'Golf'; bmzNummers[0].url = 'https://www.youtube.com/watch?v=abcdefghijk';
           bmzNummerErbij(); bmzNummers[1].titel = 'Zonder link';
@@ -6061,8 +6062,8 @@ window.TT_STUB.fnAntwoord = {};
         check("delen van een pagina die nog niet af is: het deelblad noemt wat mist (besluit g)",
               d58["deelblad"][0] and d58["deelblad"][1].startswith("Nog niet op je pagina: een bandfoto, Wie zijn we,")
               and d58["deelblad"][1].endswith(" en wat voor band jullie zijn."), j58("deelblad"))
-        check("een uitnodiging opent de tegel, en de stap onthoudt de band",
-              d58["uitnodigingOpent"] == ["view-profieltegels", "bandWie", "b9", "b9"], j58("uitnodigingOpent"))
+        check("een uitnodiging opent het tegeloverzicht, en de stap onthoudt de band",
+              d58["uitnodigingOpent"] == ["view-profieltegels", "overview", "b9", "b9"], j58("uitnodigingOpent"))
         check("Wie zijn we: de fout staat bij het veld, terug vraagt eerst, opslaan bewaart",
               d58["wieFout"] == ["Vul een bandnaam in"] and d58["wieGewijzigd"] and d58["wieGewapend"] == [True, "bandWie"]
               and d58["wieOpgeslagen"] == ["Vier vrienden.", 3, False], json.dumps([d58["wieFout"], d58["wieGewapend"], d58["wieOpgeslagen"]], ensure_ascii=False))
