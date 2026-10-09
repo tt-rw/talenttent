@@ -8484,6 +8484,47 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-452: geen paginafouten in blok 82", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ────────────────────────────────────────────────────────────
+        # Blok 83 — 09-10-2026 (bevinding Ronald): de ruimte tussen de kop en
+        # het eerste blok is op de vier hoofdschermen gelijk (--kop-ruimte,
+        # 20px), en de ondertitel van Mijn bands staat in de kolom van de
+        # titel, links van de knop. Berichten en Bands stonden 0px onder de
+        # kop; Mijn Profiel zonder bannerbalk ook.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 83 — gelijke ruimte onder de kop, kop van Mijn bands")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        d83 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 500) => new Promise(r => setTimeout(r, n)), u = {};
+          const keep = { currentUser, myMusicianId, hasOwnProfile, musicians: S.data.musicians };
+          currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
+          S.data.musicians = [{ id: 'm1', user_id: 'u1', fname: 'Ik', username: 'ik', city: 'Den Haag', bio: 'Test',
+            musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }];
+          const kop = () => document.querySelector('header').getBoundingClientRect().bottom;
+          const top = sel => { const e = document.querySelector(sel); return e ? Math.round((e.getBoundingClientRect().top - kop()) * 10) / 10 : null; };
+          showView('search'); await w(); u.zoeken = top('#view-search .search-mode-tab');
+          showView('messages'); await w(); u.berichten = top('#messagesInboxPanel .filter-title');
+          showView('bands'); await w(); u.bands = top('#mijnBandsKop .btn');
+          const sub = document.querySelector('.mijn-bands-sub').getBoundingClientRect(), knop = document.querySelector('#mijnBandsKop .btn').getBoundingClientRect(),
+                titel = document.querySelector('#mijnBandsKop .filter-title').getBoundingClientRect();
+          u.sub = { rechtsVoorKnop: sub.right <= knop.left, onderTitel: sub.top >= titel.bottom, links: Math.round(sub.left), knopLinks: Math.round(knop.left),
+                    middenTitel: Math.round((titel.top + titel.bottom) / 2), middenKnop: Math.round((knop.top + knop.bottom) / 2) };
+          showView('myprofile'); await w(800); u.profiel = top('#myProfileContent .profile-avatar-initials');
+          currentUser = keep.currentUser; myMusicianId = keep.myMusicianId; hasOwnProfile = keep.hasOwnProfile; S.data.musicians = keep.musicians;
+          return u;
+        }""")
+        check("de eerste knop of titel staat op Zoeken, Berichten, Bands en Mijn Profiel (zonder bannerbalk) 20px onder de kop",
+              d83["zoeken"] == d83["berichten"] == d83["bands"] == d83["profiel"] == 20, json.dumps(d83))
+        check("Mijn bands: de ondertitel staat onder de titel en stopt vóór de knop; titel en knop op één middellijn",
+              d83["sub"]["rechtsVoorKnop"] and d83["sub"]["onderTitel"] and d83["sub"]["links"] == 16
+              and abs(d83["sub"]["middenTitel"] - d83["sub"]["middenKnop"]) <= 1, json.dumps(d83["sub"]))
+        css83 = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+        check("--kop-ruimte staat in :root en de drie regels (Zoeken, Berichten en Bands, Mijn Profiel) gebruiken hem",
+              "--kop-ruimte: 20px" in css83 and css83.count("var(--kop-ruimte)") == 3, "")
+        check("geen paginafouten in blok 83", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
