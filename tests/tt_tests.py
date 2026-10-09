@@ -209,6 +209,15 @@ def blok1_statisch():
         ok, why = balans(open(path, encoding="utf-8").read())
         check(f"haakjesbalans {f}", ok, why)
 
+    # TT-393: een schermwissel en het sluiten van een gesprek scrollen meteen naar boven.
+    core = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
+    msgs = open(os.path.join(ROOT, "messages.js"), encoding="utf-8").read()
+    sv = core[core.index("function showView("):core.index("// ─── De landingspagina")]
+    cc = msgs[msgs.index("function closeConversation("):]
+    cc = cc[:cc.index("\n}\n")]
+    check("TT-393: showView scrolt niet vloeiend naar boven", "behavior: 'smooth'" not in sv, "smooth in showView()")
+    check("TT-393: closeConversation scrolt meteen naar boven", "scrollTo({ top: 0, behavior: 'instant' })" in cc, "scrollTo ontbreekt")
+
     html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
 
     srcs = re.findall(r'<script\s+src="([^"?]+)(?:\?v=([^"]*))?"', html)
