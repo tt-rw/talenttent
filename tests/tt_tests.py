@@ -8153,6 +8153,153 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-446: geen paginafouten in blok 80", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ────────────────────────────────────────────────────────────
+        # Blok 81 — TT-451 (09-10-2026, Ronald): berichten van Talent Tent in de
+        # inbox. Alleen lezen, de matches als tikbare rijen, een getal op
+        # Berichten zolang er een ongelezen bericht is (de stip is voor TT-452).
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 81 — berichten van Talent Tent in de inbox (TT-451)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        d81 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 150) => new Promise(r => setTimeout(r, n)), u = {};
+          const $ = id => document.getElementById(id);
+          const keep = { myMusicianId, currentUser, hasOwnProfile, wie: window.getMyMusicianId, blok: blokkadeDoorMij, bands: S.rpcResults.tt_get_bands_public };
+          window.getMyMusicianId = async () => myMusicianId;
+          myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; hasOwnProfile = true;
+          ttBerichtenBeschikbaar = true;
+          const nu = Date.now();
+          S.data.musicians = [
+            { id: 'm1', username: 'ik', fname: 'Ik' },
+            { id: 'm2', username: 'dyl', fname: 'Dylan', city: 'Delft', avatar_url: null },
+            { id: 'm3', username: 'sanne', fname: 'Sanne', city: 'Rijswijk', avatar_url: null }];
+          S.data.messages = [];
+          S.rpcResults.tt_get_bands_public = [{ id: 'b1', name: 'Van Delft', city: 'Delft', avatar_url: null }];
+          blokkadeDoorMij = new Set();
+          S.data.talent_tent_berichten = [
+            { id: 't1', musician_id: 'm1', created_at: new Date(nu - 3 * 86400000).toISOString(), read_at: new Date(nu - 2 * 86400000).toISOString(),
+              inhoud: { muzikanten: [{ id: 'm3', km: 4.2, instrumenten: ['Zang'] }], bands: [], meer: 0 } },
+            { id: 't2', musician_id: 'm1', created_at: new Date(nu - 3600000).toISOString(), read_at: null,
+              inhoud: { muzikanten: [{ id: 'm2', km: 8.5, instrumenten: ['Gitaar', 'Bas'] }, { id: 'm9', km: 3, instrumenten: ['Drums'] }],
+                        bands: [{ id: 'b1', km: 12, zoekt: ['Drums'] }], meer: 2 } }];
+          const rij = () => [...document.querySelectorAll('#messagesInboxList .messages-conv-row')].map(e => ({
+            naam: e.querySelector('.messages-conv-name').childNodes[0].textContent.trim(),
+            voorbeeld: e.querySelector('.messages-conv-preview').textContent, ongelezen: e.classList.contains('unread'),
+            badge: (e.querySelector('.unread-badge') || {}).textContent || null }));
+          const getal = () => ({ onder: $('unreadBadgeBottom').style.display, boven: $('unreadBadge').style.display, tekst: $('unreadBadgeBottom').textContent });
+          // 1. De inbox: Talent Tent als gesprek, met de kernzin als voorbeeld en het aantal ongelezen.
+          showView('messages'); await w(300); await loadInbox(); await w(300);
+          u.inbox = rij();
+          await refreshUnreadBadge(); await w(200);
+          u.getalOngelezen = getal();
+          // 2. Een bericht van een muzikant en een van Talent Tent tellen samen in één getal.
+          S.data.messages = [{ id: 1, sender_id: 'm2', recipient_id: 'm1', body: 'hoi', created_at: new Date(nu - 1000).toISOString(), read_at: null }];
+          await refreshUnreadBadge(); await w(200);
+          u.getalSamen = getal();
+          S.data.messages = [];
+          // 3. Het gesprek openen: alleen lezen, matches als rijen, een geblokkeerde muzikant en een verwijderd account ontbreken.
+          blokkadeDoorMij = new Set(['m3']);
+          const hist = [];
+          await loadInbox(); await w(100);
+          await openTalentTentGesprek(); await w(500);
+          const bub = [...document.querySelectorAll('#messagesThreadList .tt-bericht')];
+          u.draad = { n: bub.length, tekst: bub.map(b => b.querySelector('.tt-bericht-kop').textContent),
+            rijen: [...document.querySelectorAll('#messagesThreadList .bb-rij-knop')].map(b => ({ naam: b.querySelector('.bb-naam').textContent, subs: [...b.querySelectorAll('.bb-sub')].map(x => x.textContent), klik: b.getAttribute('onclick') })),
+            meer: [...document.querySelectorAll('#messagesThreadList .tt-meer')].map(b => b.textContent),
+            naam: $('messagesThreadName').textContent, hash: location.hash, menu: $('messagesThreadActies').textContent.trim(),
+            voet: getComputedStyle(document.querySelector('#messagesThreadPanel .messages-thread-footer')).display,
+            systeem: activeConversationSysteem, dagen: [...document.querySelectorAll('#messagesThreadList .messages-day-divider')].map(e => e.textContent) };
+          u.gelezen = S.data.talent_tent_berichten.every(b => b.read_at);
+          u.getalNaLezen = getal();
+          // 4. Niet te beantwoorden.
+          document.getElementById('messagesReplyInput').value = 'hallo?';
+          const voor = S.calls.filter(c => c.table === 'messages' && c.op === 'insert').length;
+          await sendReplyInThread(); await w(200);
+          u.verstuurd = S.calls.filter(c => c.table === 'messages' && c.op === 'insert').length - voor;
+          const klikNaam = openThreadProfile(); // geen profiel om te openen
+          u.profielOpen = huidigeView;
+          // 5. Sluiten brengt de inbox terug, en een gewoon gesprek heeft weer zijn invoerveld.
+          closeConversation(); await w(300);
+          u.naSluiten = { systeem: activeConversationSysteem, paneel: $('messagesThreadPanel').classList.contains('thread-systeem') };
+          await openConversation('m2', 'Dylan', null, false, false); await w(300);
+          u.gewoon = { voet: getComputedStyle(document.querySelector('#messagesThreadPanel .messages-thread-footer')).display, systeem: activeConversationSysteem };
+          closeConversation(true);
+          // 6. Verversen op #messages/talent-tent opent het gesprek weer.
+          await heropenGesprek('talent-tent'); await w(400);
+          u.heropen = { id: activeConversationId, systeem: activeConversationSysteem };
+          closeConversation(true);
+          // 7. Een ontbrekende tabel laat de inbox gewoon werken, zonder Talent Tent en zonder getal.
+          S.data.messages = [{ id: 2, sender_id: 'm2', recipient_id: 'm1', body: 'hoi', created_at: new Date(nu - 500).toISOString(), read_at: new Date(nu).toISOString() }];
+          S.errors['talent_tent_berichten'] = { code: '42P01', message: 'relation does not exist' };
+          ttBerichtenBeschikbaar = true;
+          await loadInbox(); await w(300); await refreshUnreadBadge(); await w(200);
+          u.zonderTabel = { rijen: rij().map(r => r.naam), getal: getal(), beschikbaar: ttBerichtenBeschikbaar };
+          delete S.errors['talent_tent_berichten'];
+          ttBerichtenBeschikbaar = true;
+          // 8. Alleen verdwenen matches: geen bericht, geen lege bubbel.
+          S.data.messages = [];
+          S.data.talent_tent_berichten = [{ id: 't3', musician_id: 'm1', created_at: new Date(nu).toISOString(), read_at: null,
+            inhoud: { muzikanten: [{ id: 'm9', km: 1, instrumenten: [] }], bands: [], meer: 0 } }];
+          await openTalentTentGesprek(); await w(400);
+          u.leeg = { bubbels: document.querySelectorAll('#messagesThreadList .tt-bericht').length, tekst: $('messagesThreadList').textContent.includes('Nog geen berichten van Talent Tent') };
+          closeConversation(true);
+          // 9. De dag-scheiding komt uit één functie.
+          u.dag = [dagLabel(new Date()), dagLabel(new Date(Date.now() - 86400000))];
+          myMusicianId = keep.myMusicianId; currentUser = keep.currentUser; hasOwnProfile = keep.hasOwnProfile; window.getMyMusicianId = keep.wie;
+          blokkadeDoorMij = keep.blok; S.rpcResults.tt_get_bands_public = keep.bands; S.data.talent_tent_berichten = []; S.data.messages = [];
+          showView('about'); await w(100);
+          return u;
+        }""")
+        j81 = json.dumps(d81, ensure_ascii=False)
+        check("TT-451: Talent Tent staat als gesprek in de inbox, met de kernzin als voorbeeld en het aantal ongelezen",
+              [r["naam"] for r in d81["inbox"]] == ["Talent Tent"] and d81["inbox"][0]["ongelezen"] and d81["inbox"][0]["badge"] == "1"
+              and d81["inbox"][0]["voorbeeld"] == "Er zijn 5 nieuwe matches bij jou in de buurt", j81)
+        check("TT-451: een ongelezen bericht van Talent Tent geeft een getal op Berichten, in de bovenbalk en in de onderbalk",
+              d81["getalOngelezen"]["onder"] != "none" and d81["getalOngelezen"]["tekst"] == "1" and d81["getalOngelezen"]["boven"] != "none", j81)
+        check("TT-451: een bericht van een muzikant en een van Talent Tent tellen samen in één getal",
+              d81["getalSamen"]["tekst"] == "2", j81)
+        check("TT-451: het gesprek toont één bericht per digestrun, oud naar nieuw, met dag-scheiding",
+              d81["draad"]["n"] == 1 and len(d81["draad"]["dagen"]) == 1 and d81["draad"]["dagen"][0] == "Vandaag", j81)
+        check("TT-451: de kernzin telt alleen wat je ziet (een geblokkeerde en een verwijderde match tellen niet, \"en nog\" wel)",
+              d81["draad"]["tekst"] == ["Er zijn 4 nieuwe matches bij jou in de buurt"], j81)
+        check("TT-451: elke match is een tikbare rij met naam, plaats, afstand en instrumenten; een band met wat hij zoekt",
+              [r["naam"] for r in d81["draad"]["rijen"]] == ["Dylan", "Van Delft"]
+              and d81["draad"]["rijen"][0]["subs"] == ["Delft · 8.5 km", "Gitaar · Bas"]
+              and d81["draad"]["rijen"][1]["subs"] == ["Delft · 12 km", "zoekt: Drums"]
+              and "openProfielScherm('m2')" in d81["draad"]["rijen"][0]["klik"] and "openBandScherm('b1')" in d81["draad"]["rijen"][1]["klik"], j81)
+        check("TT-451: wat de mail onder de vijf weglaat staat er als \"En nog N andere\", als knop naar Zoeken",
+              d81["draad"]["meer"] == ["En nog 2 andere — bekijk ze in Zoeken"], j81)
+        check("TT-451: het gesprek is alleen te lezen: geen invoerveld, geen menu, naam niet tikbaar, het adres noemt het gesprek",
+              d81["draad"]["voet"] == "none" and d81["draad"]["menu"] == "" and d81["draad"]["naam"] == "Talent Tent"
+              and d81["draad"]["hash"] == "#messages/talent-tent" and d81["draad"]["systeem"] is True and d81["profielOpen"] == "messages", j81)
+        check("TT-451: er valt niets te versturen naar Talent Tent",
+              d81["verstuurd"] == 0, j81)
+        check("TT-451: openen leest alles als gelezen; het getal verdwijnt",
+              d81["gelezen"] and d81["getalNaLezen"]["onder"] == "none" and d81["getalNaLezen"]["boven"] == "none", j81)
+        check("TT-451: na sluiten heeft een gewoon gesprek weer zijn invoerveld",
+              d81["naSluiten"]["systeem"] is False and d81["naSluiten"]["paneel"] is False and d81["gewoon"]["voet"] != "none" and d81["gewoon"]["systeem"] is False, j81)
+        check("TT-451: verversen op #messages/talent-tent opent het gesprek weer",
+              d81["heropen"]["id"] == "talent-tent" and d81["heropen"]["systeem"] is True, j81)
+        check("TT-451: ontbreekt de tabel, dan werkt de inbox gewoon, zonder Talent Tent",
+              d81["zonderTabel"]["rijen"] == ["Dylan"], j81)
+        check("TT-451: ontbreekt de tabel, dan staat er geen getal en wordt er niet blijven gevraagd",
+              d81["zonderTabel"]["getal"]["onder"] == "none" and d81["zonderTabel"]["beschikbaar"] is False, j81)
+        check("TT-451: een bericht waarvan alle matches weg zijn, geeft geen lege bubbel maar de lege staat",
+              d81["leeg"]["bubbels"] == 0 and d81["leeg"]["tekst"], j81)
+        check("TT-451: Vandaag en Gisteren komen uit één functie (dagLabel)",
+              d81["dag"] == ["Vandaag", "Gisteren"], j81)
+        # Besluit Ronald, 09-10-2026: de pulserende stip is voor het browsersignaal op het icoon; in de app staat alleen een getal.
+        html81 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read() + open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+        check("TT-451: in de app zelf is er geen stip voor Talent Tent, alleen het getal",
+              "ttDot" not in html81 and "tt-dot" not in html81 and "ttHartslag" not in html81, "")
+        bron81 = open(os.path.join(ROOT, "messages.js"), encoding="utf-8").read()
+        check("TT-451: de app schrijft nooit een bericht van Talent Tent; alleen de digest maakt ze (de app leest en zet alleen read_at)",
+              "talent_tent_berichten').insert" not in bron81 and "talent_tent_berichten').delete" not in bron81
+              and bron81.count("from('talent_tent_berichten')") == 3, "")
+        check("TT-451: geen paginafouten in blok 81", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
