@@ -8014,6 +8014,55 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 78", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ────────────────────────────────────────────────────────────
+        # Blok 79 — TT-445 (09-10-2026, Ronald): geen generieke meldingen.
+        # Elke melding noemt de oorzaak of de actie die niet lukte, en zegt
+        # wat je dan doet. Eigen zinnen in de code worden niet overschreven.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 79 — meldingen met oorzaak en volgende stap (TT-445)")
+        page_errors.clear()
+        d79 = page.evaluate(r"""() => {
+          const f = friendlyErrorMessage, r = {};
+          r.onbekend = f(new Error('iets vreemds'), 'je profiel opslaan');
+          r.zonderActie = f(new Error('iets vreemds'));
+          r.eigen = f(eigenFout('Je staat niet meer bij deze band.'), 'de band verlaten');
+          r.trigger = f(new Error('Bevestig eerst je e-mailadres.'), 'je bericht versturen');
+          r.server = f({ message: 'x', status: 503 }, 'zoeken');
+          r.verbinding = f(new Error('Failed to fetch'), 'zoeken');
+          r.autor = f(new Error('author unknown'), 'je profiel opslaan');
+          r.rls = f(new Error('new row violates row-level security policy'), 'de band opslaan');
+          r.nietNul = f(new Error('null value in column "x"'), 'je profiel opslaan');
+          return r;
+        }""")
+        j79 = json.dumps(d79, ensure_ascii=False)
+        check("TT-445: een onbekende fout noemt de actie en zegt dat je invoer blijft staan",
+              d79["onbekend"].startswith("Je profiel opslaan is niet gelukt.") and "blijft staan" in d79["onbekend"], j79)
+        check("TT-445: nergens meer 'Er ging iets mis' in de centrale tekst",
+              all("iets mis" not in v.lower() for v in d79.values()), j79)
+        check("TT-445: een eigen zin in de code komt ongewijzigd door",
+              d79["eigen"] == "Je staat niet meer bij deze band.", j79)
+        check("TT-445: de Nederlandse tekst uit de database komt ongewijzigd door",
+              d79["trigger"] == "Bevestig eerst je e-mailadres.", j79)
+        check("TT-445: een serverfout zegt dat je even moet wachten",
+              "even" in d79["server"].lower() or "minuut" in d79["server"], j79)
+        check("TT-445: 'author' is geen verlopen sessie",
+              "sessie" not in d79["autor"], j79)
+        check("TT-445: geen toegang noemt inloggen als volgende stap",
+              "Log opnieuw in" in d79["rls"], j79)
+        check("TT-445: nergens meer 'meld dit aan Ronald' in meldingen",
+              "Ronald" not in d79["nietNul"], j79)
+        import re as _re79, glob as _glob79
+        bron79 = "".join(open(x, encoding="utf-8").read() for x in _glob79.glob(os.path.join(ROOT, "*.js")))
+        check("TT-445: de losse vage teksten zijn weg",
+              not any(t in bron79 for t in ["Zoekopdracht mislukt", "Kon postcode nu niet controleren", "Kopiëren niet gelukt",
+                                            "Bandbeheer is nu niet beschikbaar", "Kon niet controleren. Probeer"]), "")
+        check("TT-445: geen aanroep van friendlyErrorMessage zonder actie",
+              not _re79.findall(r"friendlyErrorMessage\(\w+\)", bron79), "")
+        check("TT-445: geen 'neem contact op' als oplossing in de app",
+              "neem contact op" not in bron79.lower(), "")
+        check("TT-445: geen paginafouten in blok 79", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
