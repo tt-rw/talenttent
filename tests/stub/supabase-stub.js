@@ -79,6 +79,10 @@
       tt_expire_old_founder_offers: null,
       // TT-385 fase 5: de bands van een muzikant (blok Bands op het profiel).
       tt_musician_band_ids: [],
+      // TT-420: de gekozen naam van een lijst muzikanten. Geeft alleen een rij
+      // voor een muzikant met een weergavenaam in de testdata; voor de rest
+      // blijft de app bij de gebruikersnaam, zoals bij een mislukte vraag.
+      tt_weergavenamen(p) { return TT_STUB.weergavenamen(p); },
       // TT-410b: staat delen aan voor dit profiel? Leest musicians.delen_aan uit
       // de testdata; een ontbrekende waarde telt als aan, een onbekend id geeft null.
       tt_profiel_delen(p) {
@@ -141,6 +145,14 @@
     // reset, anders lekt een ingesteld antwoord door naar het volgende blok.
     updateUserResult: null,
     updateUserError: null,
+    // TT-420: het antwoord van tt_weergavenamen, ook los te gebruiken door een
+    // test die rpcResults zelf vervangt.
+    weergavenamen(p) {
+      return (p.ids || []).map(id => {
+        const r = (TT_STUB.data.musicians || []).find(x => x.id === id);
+        return r && r.weergavenaam !== undefined ? { id, weergavenaam: r.weergavenaam } : null;
+      }).filter(Boolean);
+    },
     reset() {
       this.calls = []; this.errors = {}; this.rpcErrors = {};
       this.updateUserResult = null; this.updateUserError = null; this.refreshUser = null; this.userNu = null;
