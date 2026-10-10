@@ -2628,6 +2628,8 @@
 
   .auth-success.visible { display: block; }
 
+  #forgotPasswordBtn:disabled { opacity: 0.6; cursor: default; }
+
   /* ── Zoekfunctie ─────────────────────────── */
 /* TT-225 (hersteld 09-09-2026): eigen max-width weg + width:100% (TT-224-vervolg),
      zodat de inhoud het canvas vult i.p.v. naar zijn eigen inhoud te krimpen. */

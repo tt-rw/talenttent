@@ -27,6 +27,9 @@ const SUPABASE_KEY = 'sb_publishable_tnWUVGTBmwnn9fAILeNqqQ_UlCn5AFM';
 })();
 
 const herstelLinkBijStart = /(^#|&)type=recovery(&|$)/.test(location.hash);
+// De link uit de mail is al gebruikt of vervangen door een nieuwere mail: Supabase
+// geeft #error=access_denied&error_code=otp_expired. Ook vastleggen vóór de client bestaat.
+const herstelLinkVerlopen = /(^#|&)error_code=otp_expired(&|$)/.test(location.hash);
 
 // TT-82: alleen een client aanmaken als de bibliotheek er is. De vlag wordt in
 // de <head> gezet. Zonder deze controle stopt het hele script hier met een
@@ -356,7 +359,16 @@ async function appInit() {
     // TT-336: de knop in de mail "Bevestig je e-mailadres". Werkt op elk
     // toestel, ook zonder inlog; zie bevestigPaginaOpenen() in wizard.js.
     const bevestigMatch = hashView.match(/^bevestig\/(.+)$/);
-    if (bevestigMatch) {
+    if (herstelLinkVerlopen) {
+      // Eigen melding in gewone taal; de foutcode in de adresregel wissen.
+      try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) { /* geen geschiedenis */ }
+      if (currentUser) showToast('Deze link werkt niet meer. Vraag een nieuwe aan via Wachtwoord vergeten.');
+      else {
+        showView('auth', 'redirect');
+        const vak = document.getElementById('authLinkVerlopen');
+        if (vak) vak.hidden = false;
+      }
+    } else if (bevestigMatch) {
       await bevestigPaginaOpenen(decodeURIComponent(bevestigMatch[1]));
     } else if (toestemmingMatch) {
       await toestemmingPaginaOpenen(decodeURIComponent(toestemmingMatch[1]));

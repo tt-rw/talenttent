@@ -307,11 +307,35 @@ async function forgotPassword() {
   if (!emailFormaatGeldig(email)) {
     showFieldErrors([[emailEl, 'Vul een geldig e-mailadres in, bijvoorbeeld jouw@email.nl']]); return;
   }
-  const { error } = await db.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://talenttent.org/'
-  });
-  if (error) { showToast(friendlyErrorMessage(error, 'de herstelmail versturen')); return; }
-  showAuthSuccess('✓ Herstelmail verstuurd! Controleer je inbox.');
+  // Direct feedback op de knop zelf: de mail versturen duurt enkele seconden
+  // en zonder reactie tikt de gebruiker opnieuw. Tijdens het versturen en
+  // daarna 60 seconden is de knop dicht (Aanname: Supabase staat per
+  // e-mailadres hooguit één mail per minuut toe; niet gemeten).
+  const knop = document.getElementById('forgotPasswordBtn');
+  if (knop && knop.disabled) return;
+  if (knop) { knop.disabled = true; knop.textContent = 'Versturen...'; }
+  document.getElementById('authSuccess').classList.remove('visible');
+  const verlopen = document.getElementById('authLinkVerlopen'); if (verlopen) verlopen.hidden = true;
+  let gelukt = false;
+  try {
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://talenttent.org/'
+    });
+    if (error) { showToast(friendlyErrorMessage(error, 'de herstelmail versturen')); }
+    else gelukt = true;
+  } catch (e) {
+    logCaught('forgotPassword', e);
+    showToast(friendlyErrorMessage(e, 'de herstelmail versturen'));
+  }
+  if (!gelukt) {
+    if (knop) { knop.disabled = false; knop.textContent = 'Wachtwoord vergeten?'; }
+    return;
+  }
+  showAuthSuccess('✓ Herstelmail verstuurd naar ' + email + '. Controleer je inbox.');
+  if (knop) {
+    knop.textContent = 'Herstelmail verstuurd';
+    setTimeout(() => { knop.disabled = false; knop.textContent = 'Wachtwoord vergeten?'; }, 60000);
+  }
 }
 
 async function saveNewPassword() {

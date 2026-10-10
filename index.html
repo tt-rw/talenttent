@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261010a">
+<link rel="stylesheet" href="styles.css?v=20261010b">
 </head>
 <body>
 
@@ -245,6 +245,10 @@
       </div>
 
       <div id="authSuccess" class="auth-success"></div>
+      <div class="melding" id="authLinkVerlopen" hidden>
+        <p class="melding-kop">Deze link werkt niet meer</p>
+        <p class="melding-tekst">Een link werkt één keer, en alleen de nieuwste mail telt. Tik hieronder op Wachtwoord vergeten? en gebruik de link in de nieuwste mail.</p>
+      </div>
 
       <!-- TT-U08 (12-08-2026): een echt <form> met autocomplete-waarden.
            Zonder deze twee slaat een wachtwoordmanager niets op en vult
@@ -263,7 +267,7 @@
       </div>
       </form>
       <div style="text-align:right;margin-bottom:20px;">
-        <button onclick="forgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Roboto',sans-serif;text-decoration:underline;">Wachtwoord vergeten?</button>
+        <button id="forgotPasswordBtn" onclick="forgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Roboto',sans-serif;text-decoration:underline;">Wachtwoord vergeten?</button>
       </div>
       <button class="btn btn-primary" style="width:100%;margin-bottom:16px;" onclick="signIn()">Inloggen →</button>
       <div style="text-align:center;padding-top:16px;border-top:1px solid var(--border);">
@@ -2801,7 +2805,7 @@
 <script src="core.js?v=20261010a"></script>
 <script src="utils.js?v=20261010a"></script>
 <script src="veiligheid.js?v=20261009f"></script>
-<script src="auth.js?v=20261009b"></script>
+<script src="auth.js?v=20261010b"></script>
 <script src="postcode.js?v=20261009a"></script>
 <script src="wizard.js?v=20261010a"></script>
 <script src="ouder.js?v=20261009a"></script>
