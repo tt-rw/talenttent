@@ -8813,6 +8813,68 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 86", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ------------------------------------------------------------------
+        # Blok 87 — TT-459 (10-10-2026, bevinding Ronald): de repertoirelijst
+        # heeft vaste kolommen. De niveaus (met of zonder gekozen badge) en de
+        # kruisjes staan recht onder elkaar, "Zeker?" en een lange naam
+        # snijden niets af. Beide lijsten: aanmeldwizard en Je setlist.
+        # ------------------------------------------------------------------
+        print("\nBlok 87 — repertoirelijst: vaste kolommen (TT-459)")
+        JS87 = """([soort]) => {
+          const NUMMERS = [['André Hazes','Een Beetje Verliefd','basis'],['Metallica','Enter Sandman','podium'],['Metallica','One','bijna'],
+            ['Metallica','Seek & Destroy (Remastered)','bijna'],['Michael Jackson','Beat It!','basis'],['Red Hot Chili Peppers','Under the Bridge (Live at Slane Castle 2003)',null],
+            ['Superlangeartiestennaamzonderspatie','Een-bijzonder-lang-nummer-zonder-spaties-erin','podium'],['Van Halen','Jump','bijna']];
+          const lijst = document.getElementById(soort === 'wizard' ? 'songsList' : 'jstSongsList');
+          const stijl = document.createElement('style');
+          stijl.textContent = '.app-view{display:none!important}';
+          document.head.appendChild(stijl);
+          const bewaard = [];
+          for (let e = lijst; e && e !== document.body; e = e.parentElement) { bewaard.push([e, e.getAttribute('style'), e.hidden]); e.style.setProperty('display', 'block', 'important'); e.hidden = false; }
+          const rij = NUMMERS.map(n => ({ artist: n[0], title: n[1], level: n[2] }));
+          rij[3]._confirmDelete = true;
+          if (soort === 'wizard') { state.songs = rij; renderSongs(); } else { jstSongs = rij; jstRenderSongs(); }
+          const doos = lijst.firstElementChild, db = doos.getBoundingClientRect();
+          const rijen = [...doos.children].filter(c => c.classList && c.classList.contains('rep-rij'));
+          const opruimen = () => { stijl.remove(); bewaard.forEach(([e, s, h]) => { if (s === null) e.removeAttribute('style'); else e.setAttribute('style', s); e.hidden = h; }); lijst.innerHTML = ''; };
+          if (rijen.length < 4) { opruimen(); return { rijen: rijen.length, niveaus: 99, kruisjes: 99, afgesneden: ['geen .rep-rij'], knoptekstPast: false, zeker: '', zekerBreedte: 0, kruisBreedte: 0, pagina: true, kopBinnen: false, kop: false, hoogteKnop: 0 }; }
+          const af = x => Math.round(x * 10) / 10;
+          const uit = { rijen: rijen.length, kop: !!doos.querySelector('.rep-kop'),
+            niveaus: new Set(rijen.map(r => JSON.stringify([...r.querySelectorAll('.level-btn')].map(b => { const q = b.getBoundingClientRect(); return [af(q.left), af(q.right)]; })))).size,
+            kruisjes: new Set(rijen.map(r => { const q = r.querySelector('.song-remove').getBoundingClientRect(); return af(q.left) + '-' + af(q.right); })).size,
+            afgesneden: [], knoptekstPast: true, hoogteKnop: 99999, pagina: document.documentElement.scrollWidth > innerWidth };
+          rijen.forEach((r, i) => {
+            const x = r.querySelector('.song-remove'), q = x.getBoundingClientRect();
+            if (q.right > db.right + 0.5 || x.scrollWidth > x.clientWidth + 1) uit.afgesneden.push('kruis ' + i);
+            r.querySelectorAll('.rep-tekst div').forEach(d => { if (d.scrollWidth > d.clientWidth + 1) uit.afgesneden.push('tekst ' + i); });
+            const t = r.querySelector('.rep-tekst').getBoundingClientRect();
+            if (t.right > r.querySelector('.rep-niveaus').getBoundingClientRect().left) uit.afgesneden.push('tekst over niveaus ' + i);
+            r.querySelectorAll('.level-btn').forEach(b => { if (b.scrollWidth > b.clientWidth + 1) uit.knoptekstPast = false; uit.hoogteKnop = Math.min(uit.hoogteKnop, b.getBoundingClientRect().height); });
+          });
+          uit.zeker = (rijen[3].querySelector('.song-remove').textContent || '').trim();
+          uit.zekerBreedte = af(rijen[3].querySelector('.song-remove').getBoundingClientRect().width);
+          uit.kruisBreedte = af(rijen[0].querySelector('.song-remove').getBoundingClientRect().width);
+          uit.kopBinnen = [...doos.querySelector('.rep-kop').children].every(c => c.getBoundingClientRect().right <= db.right + 0.5);
+          opruimen();
+          return uit;
+        }"""
+        for soort87 in ("wizard", "setlist"):
+            for breedte87 in (360, 375, 390, 412, 768):
+                page.set_viewport_size({"width": breedte87, "height": 900})
+                page.wait_for_timeout(120)
+                d87 = page.evaluate(JS87, [soort87])
+                naam87 = f"{soort87} {breedte87}px"
+                check(f"{naam87}: alle niveaus staan in dezelfde kolommen, ook met een gekozen (vette) badge",
+                      d87["rijen"] == 8 and d87["niveaus"] == 1 and d87["knoptekstPast"] is True, json.dumps(d87))
+                check(f"{naam87}: de kruisjes staan recht onder elkaar, ook bij \"Zeker?\" (kolom van 44px)",
+                      d87["kruisjes"] == 1 and d87["zeker"] == "Zeker?" and d87["zekerBreedte"] == 44 and d87["kruisBreedte"] == 44, json.dumps(d87))
+                check(f"{naam87}: niets afgesneden, ook bij een lange naam zonder spaties; geen scroll opzij; kop binnen het vak",
+                      not d87["afgesneden"] and not d87["pagina"] and d87["kopBinnen"] and d87["kop"], json.dumps(d87))
+                check(f"{naam87}: tikdoel van een niveauknop is minstens 44px hoog", d87["hoogteKnop"] >= 44, json.dumps(d87))
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.evaluate("showView('about')")
+        check("geen paginafouten in blok 87", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
