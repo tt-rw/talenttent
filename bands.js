@@ -1171,7 +1171,7 @@ function bandPaginaHTML(b, kijker) {
       <div class="profiel-regels"><div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city || '')}</div></div>
     </div>
     <div class="profile-badges">${tags}</div>
-    ${b.pauze ? nietBeschikbaarMeldingHTML('band') : ''}`;
+    ${b.pauze ? nietBeschikbaarMeldingHTML() : ''}`;
 
   // Een lege plek is voor de beheerder een uitnodiging (TT-385 punt 2); voor
   // iedereen anders staat er niets.

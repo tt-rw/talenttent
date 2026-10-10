@@ -1990,10 +1990,8 @@ function profielBannerStarten(root) {
 // TT-457 (10-10-2026, besluit Ronald): de zin "niet beschikbaar" op een
 // muzikantprofiel en op een bandpagina. Eén functie voor beide kanten. De vorm
 // is de gewone .melding (huisstijl §13): één zin, geen kop, geen knop, geen
-// kruisje. Is de muzikant of de band beschikbaar, dan staat er niets.
-function nietBeschikbaarMeldingHTML(soort) {
-  const zin = soort === 'band'
-    ? ['We zijn momenteel ', 'niet beschikbaar', ' voor optredens.']
-    : ['Ik ben momenteel ', 'niet beschikbaar', ' voor jams en optredens.'];
-  return `<div class="melding melding-beschikbaar"><p class="melding-tekst">${escHtml(zin[0])}<strong>${escHtml(zin[1])}</strong>${escHtml(zin[2])}</p></div>`;
+// kruisje. Dezelfde zin voor muzikant en band, zodat hij op één regel past.
+// Is de muzikant of de band beschikbaar, dan staat er niets.
+function nietBeschikbaarMeldingHTML() {
+  return '<div class="melding melding-beschikbaar"><p class="melding-tekst">Momenteel <strong>niet beschikbaar</strong>.</p></div>';
 }

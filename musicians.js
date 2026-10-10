@@ -83,7 +83,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       ${m.musician_instruments.map(x => `<span class="tag-solid">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
       ${m.musician_genres.map(x => `<span class="tag-solid">${escHtml(x.genre)}</span>`).join('')}
     </div>
-    ${m.beschikbaar === false ? nietBeschikbaarMeldingHTML('muzikant') : ''}
+    ${m.beschikbaar === false ? nietBeschikbaarMeldingHTML() : ''}
     ${m.bio ? `<p class="profile-bio">${escHtml(m.bio)}</p>` : ''}
     ${profielBandsHTML(m.bands)}
     ${m.musician_songs.length ? `

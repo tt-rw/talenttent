@@ -354,8 +354,8 @@ function updateBeschikbaarToggleBtn() {
 }
 
 // TT-457 (10-10-2026, besluit Ronald): een muzikant kan zichzelf als niet
-// beschikbaar zetten. Zijn profiel toont dan de zin "Ik ben momenteel niet
-// beschikbaar voor jams en optredens." (nietBeschikbaarMeldingHTML() in
+// beschikbaar zetten. Zijn profiel toont dan de zin "Momenteel niet
+// beschikbaar." (nietBeschikbaarMeldingHTML() in
 // utils.js) en een bandbeheerder kan hem niet meer uitnodigen (TT-56, TT-41).
 // Het profiel blijft in alle zoekresultaten staan en een los bericht blijft
 // mogelijk. De kolom heet nog `accepts_band_invites`: waar betekent beschikbaar.
