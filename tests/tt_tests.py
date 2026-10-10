@@ -8764,6 +8764,55 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 85", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ────────────────────────────────────────────────────────────
+        # Blok 86 — 10-10-2026 (gemeld door Ronald, vóór livegang): "Wachtwoord
+        # vergeten" gaf geen reactie tot het antwoord van Supabase binnen was.
+        # De gebruiker tikte meerdere keren; elke tik stuurt een mail en alleen
+        # de nieuwste link werkt (otp_expired). Nu: direct "Versturen...",
+        # knop dicht tijdens en na het versturen, het e-mailadres in de
+        # bevestiging; en een verlopen link krijgt een eigen melding.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 86 — wachtwoord vergeten geeft direct antwoord")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 375, "height": 812})
+        d86 = page.evaluate(r"""async () => {
+          const w = (n) => new Promise(r => setTimeout(r, n)), u = {};
+          showView('auth'); await w(100);
+          const knop = document.getElementById('forgotPasswordBtn');
+          const suc = document.getElementById('authSuccess');
+          const verlopen = document.getElementById('authLinkVerlopen');
+          if (verlopen) verlopen.hidden = false;
+          let aantal = 0;
+          const oud = db.auth.resetPasswordForEmail;
+          db.auth.resetPasswordForEmail = () => { aantal++; return new Promise(r => setTimeout(() => r({ data: {}, error: null }), 500)); };
+          document.getElementById('loginEmail').value = 'test@talenttent.org';
+          forgotPassword(); await w(50);
+          u.tijdens = { uit: knop.disabled, tekst: knop.textContent, succes: suc.classList.contains('visible'), verlopenWeg: verlopen ? verlopen.hidden : null };
+          forgotPassword(); forgotPassword(); await w(50);
+          await w(700);
+          u.na = { uit: knop.disabled, tekst: knop.textContent, succes: suc.classList.contains('visible'), melding: suc.textContent, aantal };
+          // Een fout: de knop komt terug en er staat geen succesmelding.
+          knop.disabled = false; knop.textContent = 'Wachtwoord vergeten?';
+          db.auth.resetPasswordForEmail = () => Promise.resolve({ data: {}, error: { message: 'x', status: 429 } });
+          forgotPassword(); await w(200);
+          u.fout = { uit: knop.disabled, tekst: knop.textContent, succes: suc.classList.contains('visible') };
+          db.auth.resetPasswordForEmail = oud;
+          return u;
+        }""")
+        j86 = lambda k: json.dumps(d86[k], ensure_ascii=False)
+        check("direct na de tik: knop dicht, tekst Versturen..., melding van een verlopen link weg", d86["tijdens"]["uit"] is True and d86["tijdens"]["tekst"] == "Versturen..." and d86["tijdens"]["succes"] is False and d86["tijdens"]["verlopenWeg"] is True, j86("tijdens"))
+        check("drie tikken, één mail", d86["na"]["aantal"] == 1, j86("na"))
+        check("na het versturen: bevestiging met het e-mailadres, knop blijft dicht",
+              d86["na"]["succes"] is True and "test@talenttent.org" in d86["na"]["melding"] and d86["na"]["uit"] is True and d86["na"]["tekst"] == "Herstelmail verstuurd", j86("na"))
+        check("bij een fout: knop weer open, geen succesmelding", d86["fout"]["uit"] is False and d86["fout"]["tekst"] == "Wachtwoord vergeten?" and d86["fout"]["succes"] is False, j86("fout"))
+        core86 = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
+        html86 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        check("een verlopen herstellink (otp_expired) toont een eigen melding op het inlogscherm en wist de foutcode uit de adresregel",
+              "error_code=otp_expired" in core86 and "herstelLinkVerlopen" in core86 and "authLinkVerlopen" in core86 and 'id="authLinkVerlopen"' in html86 and "history.replaceState(history.state, ''" in core86, "")
+        check("geen paginafouten in blok 86", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
