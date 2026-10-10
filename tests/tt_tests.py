@@ -6029,9 +6029,10 @@ window.TT_STUB.fnAntwoord = {};
           u.mediaOpgeslagen = [S.data.bands[0].instagram, S.data.band_media.map(m => [m.media_type, m.platform, m.in_banner].join('/')), tegelHeeftWijzigingen()];
           tegelScreenHistoryPushed = false; openTegelOverview(); await w(300);
           // 7. We spelen even niet.
-          await zetBandPauze(true); await w(200);
-          u.pauze = [S.data.bands[0].pauze, S.data.bands[0].status];
-          await zetBandPauze(false); await w(200);
+          const statusVoor = S.data.bands[0].status;
+          await zetBandBeschikbaar(false); await w(200);
+          u.pauze = [S.data.bands[0].pauze, S.data.bands[0].status === statusVoor];
+          await zetBandBeschikbaar(true); await w(200);
           // 8. De bandpagina na het invullen.
           await openBandScherm('b9'); await w(200);
           u.gevuld = { pct: vak().querySelector('.completeness-pct')?.textContent,
@@ -6108,7 +6109,7 @@ window.TT_STUB.fnAntwoord = {};
               and d58["wieOpgeslagen"] == ["Vier vrienden.", 3, False], json.dumps([d58["wieFout"], d58["wieGewapend"], d58["wieOpgeslagen"]], ensure_ascii=False))
         check("het overzicht: vier tegels, Bandbeheer met de schakelaar, overdragen en opheffen (rood omlijnd)",
               d58["overzicht"]["tegels"] == ["Wie zijn we", "Onze bezetting", "Onze muziek", "Onze media"] and d58["overzicht"]["eigenVerborgen"]
-              and d58["overzicht"]["beheer"] == ["We spelen", "We spelen even niet", "Aan", "Uit", "Beheer overdragen", "Band opheffen"]
+              and d58["overzicht"]["beheer"] == ["Beschikbaar", "Niet beschikbaar", "Aan", "Uit", "Beheer overdragen", "Band opheffen"]
               and d58["overzicht"]["opheffenRood"], j58("overzicht"))
         check("Onze bezetting: de beheerder zonder menu, een lid met Uit de band, een uitnodiging met Intrekken",
               d58["leden"] == [["Ronald (jij)", ""], ["Dylan", "Uit de band"]] and d58["uitgenodigd"] == [["Sanne", "Uitnodiging intrekken"]]
@@ -6148,7 +6149,7 @@ window.TT_STUB.fnAntwoord = {};
         check("Onze media: een ongeldige social bij het veld, daarna social en link met banner bewaard",
               d58["mediaFout"] == ["Vul een gebruikersnaam in, of een link die begint met https://"]
               and d58["mediaOpgeslagen"] == ["@nachtploeg", ["link/Spotify/true"], False], json.dumps([d58["mediaFout"], d58["mediaOpgeslagen"]], ensure_ascii=False))
-        check("We spelen even niet: meteen bewaard, de status wordt inactief", d58["pauze"] == [True, "inactief"], j58("pauze"))
+        check("Niet beschikbaar (TT-457): meteen bewaard, de status blijft zoals de bezetting hem bepaalt", d58["pauze"] == [True, True], j58("pauze"))
         # Acht van de negen onderdelen (alleen de bandfoto mist): 15 + 85 × 8/9 = 91%.
         check("na het invullen: 91%, geen uitnodigingen meer, de open rol op de bandpagina is ook voor de beheerder geen knop",
               d58["gevuld"]["pct"] == "91%" and d58["gevuld"]["uitnodigingen"] == [] and d58["gevuld"]["openKnop"] == []
@@ -6362,8 +6363,8 @@ window.TT_STUB.fnAntwoord = {};
               ka["tags"] == [] and ka["body"] is False and ka["leden"] == 0 and ka["meta"] == "Den Haag · Indie" and ka["foto"] == "10px", j59("kaartAlleen"))
         check("bandkaart met een open rol: Zoekend en de rol als tag, 12px onder de lijn",
               d59["kaartOpen"] == ["Zoekend", "+ Basgitaar"] and d59["kaartTagAfstand"] == 12, json.dumps([d59["kaartOpen"], d59["kaartTagAfstand"]]))
-        check("bandkaart met een tweede lid: Compleet; met We spelen even niet: die tag",
-              d59["kaartCompleet"] == ["Compleet"] and d59["kaartPauze"] == ["We spelen even niet"], json.dumps([d59["kaartCompleet"], d59["kaartPauze"]]))
+        check("bandkaart met een tweede lid: Compleet; niet beschikbaar (TT-457) verandert de tag niet",
+              d59["kaartCompleet"] == ["Compleet"] and d59["kaartPauze"] == ["Compleet"], json.dumps([d59["kaartCompleet"], d59["kaartPauze"]]))
         check("een tik op de kaart opent de bandpagina; de kaart heeft zelf geen ⋯-menu en geen knop (TT-433)",
               d59["tikKaart"] is True and d59["kaartKnoppen"] == 0, json.dumps([d59["tikKaart"], d59["kaartKnoppen"]]))
         js59 = open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
@@ -6516,8 +6517,8 @@ window.TT_STUB.fnAntwoord = {};
           ['bands', 'band_members', 'band_wanted', 'band_invallers'].forEach(k => { S.data[k] = []; });
           showView('about'); }""")
         j60 = lambda k: json.dumps(d60.get(k), ensure_ascii=False)
-        check("Zoeken: een band met We spelen even niet staat er niet tussen",
-              d60["namen"] == ["Nachtploeg", "Zoutwater", "Solo"], j60("namen"))
+        check("Zoeken: een band die niet beschikbaar is (pauze) staat er gewoon tussen (TT-457)",
+              d60["namen"] == ["Nachtploeg", "Zoutwater", "Stille Week", "Solo"], j60("namen"))
         check("bandrij: vierkante bandfoto (hoek 10px), Zoekend achter de plaats, open rol en invaller als tag, dan twee genres en +1",
               d60["nacht"] == {"tags": ["+ Basgitaar", "Invaller drums", "Indie", "Rock", "+1"], "status": "Zoekend", "foto": True, "hoek": "10px", "meta": "Den Haag · 2.0 km"}, j60("nacht"))
         check("bandrij: een invaller van gisteren telt niet; zonder foto de T; Compleet",
@@ -6528,12 +6529,12 @@ window.TT_STUB.fnAntwoord = {};
         check("UI: statustag 8px na de plaats, 11px; foto 44×44; naam 16px; tags op één lijn met de naam",
               mt["badgeLinks"] == "8px" and mt["badgeLetter"] == "11px" and mt["foto"] == [44, 44] and mt["naam"] == "16px" and mt["tagsUitlijning"] == 0, j60("maten"))
         check("kaartweergave: vierkante foto, één regel tags (eerste open rol met +N, anders de status)",
-              d60["kaart"] == {"namen": ["Nachtploeg", "Zoutwater", "Solo"], "vierkant": True, "nacht": ["+ Basgitaar", "+1"],
+              d60["kaart"] == {"namen": ["Nachtploeg", "Zoutwater", "Stille Week", "Solo"], "vierkant": True, "nacht": ["+ Basgitaar", "+1"],
                                "zout": ["Compleet"], "solo": 1, "regels": 1}, j60("kaart"))
-        check("alle bands op pauze: de app verruimt langs de ladder en eindigt in de lege staat (TT-62)",
-              d60["allesPauze"]["stappen"] > 1 and d60["allesPauze"]["kop"] == "Geen bands gevonden", j60("allesPauze"))
+        check("alle bands niet beschikbaar (TT-457): ze staan er allemaal, de app verruimt niet en toont geen lege staat",
+              d60["allesPauze"]["stappen"] == 1 and d60["allesPauze"]["kop"] is None, j60("allesPauze"))
         check("zonder eigen profiel: zelfde kaart uit tt_get_bands_public; afgeschermd de T; pauze eruit",
-              d60["anon"] == {"namen": ["Nachtploeg"], "tags": ["+ Basgitaar", "Invaller drums", "Indie"], "t": True, "status": "Zoekend"}, j60("anon"))
+              d60["anon"] == {"namen": ["Nachtploeg", "Stille Week"], "tags": ["+ Basgitaar", "Invaller drums", "Indie"], "t": True, "status": "Zoekend"}, j60("anon"))
         b = d60["blok"]
         check("Mijn Profiel: blok Bands direct onder de bio, vóór het repertoire; één knop per band",
               b["er"] and b["naBio"] and b["voorRepertoire"] and b["knop"] == "BUTTON", j60("blok"))
@@ -8655,6 +8656,112 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-420: de privacyverklaring zegt niet meer dat de voor- of achternaam nooit getoond wordt",
               "Je voornaam is alleen zichtbaar" not in html84 and "Je postcode en achternaam worden nooit" not in html84, "")
         check("geen paginafouten in blok 84", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ────────────────────────────────────────────────────────────
+        # Blok 85 — TT-457 (10-10-2026, besluit Ronald): beschikbaarheid. Een
+        # muzikant of band die niet beschikbaar is, toont één zin onder de
+        # badges (de gewone .melding). Standaard staat er niets. De tegel
+        # Band-uitnodigingen is de tegel Beschikbaarheid geworden; "We spelen
+        # even niet" is Niet beschikbaar geworden en haalt de band niet meer
+        # uit Zoeken.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 85 — beschikbaarheid (TT-457)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 375, "height": 812})
+        d85 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 400) => new Promise(r => setTimeout(r, n)), u = {};
+          const keep = { currentUser, myMusicianId, hasOwnProfile, musicians: S.data.musicians, bands: S.data.bands, rpcBands: S.rpcResults.tt_get_bands_public };
+          currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
+          const basis = { city: 'Den Haag', bio: 'Test', musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] };
+          S.data.musicians = [
+            { ...basis, id: 'm1', user_id: 'u1', fname: 'Ik', username: 'ik', accepts_band_invites: false },
+            { ...basis, id: 'm2', user_id: 'u2', fname: 'Ander', username: 'ander', accepts_band_invites: true },
+            { ...basis, id: 'm3', user_id: 'u3', fname: 'Derde', username: 'derde', accepts_band_invites: false }];
+          // Eerdere blokken kunnen rpcResults vervangen hebben: zet de vragen zelf neer.
+          S.rpcResults.tt_profiel_beschikbaar = (p) => { const r = (S.data.musicians || []).find(x => x.id === p.mid); return r ? r.accepts_band_invites !== false : null; };
+          S.rpcResults.tt_profiel_delen = (p) => { const r = (S.data.musicians || []).find(x => x.id === p.mid); return r ? r.delen_aan !== false : null; };
+          S.rpcResults.tt_musician_band_ids = () => [];
+          const melding = root => root.querySelector('.melding-beschikbaar');
+          const maten = el => { if (!el) return null;
+            const r = el.getBoundingClientRect(), p = el.querySelector('.melding-tekst'), pr = p.getBoundingClientRect(), cs = getComputedStyle(p);
+            const vorige = el.previousElementSibling.getBoundingClientRect(), volgende = el.nextElementSibling.getBoundingClientRect();
+            return { tekst: p.textContent, vet: p.querySelector('strong').textContent, regels: Math.round(pr.height / parseFloat(cs.lineHeight)),
+                     letter: cs.fontSize, boven: Math.round(r.top - vorige.bottom), onder: Math.round(volgende.top - r.bottom),
+                     voor: el.previousElementSibling.className, na: el.nextElementSibling.className, breedte: Math.round(r.width),
+                     kop: !!el.querySelector('.melding-kop'), knop: !!el.querySelector('button, a'), rand: getComputedStyle(el).borderLeftWidth }; };
+          // 1. Mijn Profiel, niet beschikbaar: de zin, onder de badges en boven de bio.
+          showView('myprofile'); await w(900);
+          u.eigen = maten(melding(document.getElementById('myProfileContent')));
+          // 2. Mijn Profiel, beschikbaar: geen zin.
+          S.data.musicians[0].accepts_band_invites = true;
+          showView('search'); await w(100); showView('myprofile'); await w(900);
+          u.eigenBeschikbaar = !melding(document.getElementById('myProfileContent'));
+          S.data.musicians[0].accepts_band_invites = false;
+          // 3. Het profiel van een ander, met en zonder de zin.
+          const vak = document.getElementById('profielSchermContent');
+          await openProfielScherm('m3'); await w(700); u.ander = maten(melding(vak));
+          await openProfielScherm('m2'); await w(700); u.anderBeschikbaar = !melding(vak);
+          // 4. Zonder eigen profiel (een bezoeker): de zin staat er ook.
+          hasOwnProfile = false; S.rpcResults.tt_get_musicians_public = (p) => (p.ids || []).map(id => { const m = S.data.musicians.find(x => x.id === id);
+            return { id, username: m.username, age: 30, city: m.city, bio: m.bio, avatar_url: null, instrument_levels: [], genres: [], songs: [], media: [] }; });
+          await openProfielScherm('m3'); await w(700); u.bezoeker = !!melding(vak);
+          hasOwnProfile = true;
+          // 5. Een band die niet beschikbaar is (publieke vraag): de zin van de band, de band blijft staan.
+          hasOwnProfile = false;
+          const bandRij = pauze => ({ id: 'b9', name: 'Nachtploeg', city: 'Den Haag', genres: ['Indie'], status: 'compleet', avatar_url: null, pauze,
+            afgeschermd: false, members: [{ id: 'm1', role: 'Oprichter', instruments: ['Gitaar'] }], wanted: [], invallers: [], media: [], nummers: [], covers: [], description: 'Vier vrienden.' });
+          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(() => bandRij(true));
+          await openBandScherm('b9'); await w(700); u.band = maten(melding(vak));
+          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(() => bandRij(false));
+          await openBandScherm('b9'); await w(700); u.bandBeschikbaar = !melding(vak);
+          hasOwnProfile = true;
+          // 6. Instellingen: de tegel heet Beschikbaarheid en werkt meteen.
+          showView('instellingen'); await w(600);
+          u.tegel = { titel: (document.querySelector('#beschikbaarTegel .tile-title') || {}).textContent, sub: (document.querySelector('#beschikbaarTegel .wheel-field-label') || {}).textContent,
+                      oud: !!document.getElementById('uitnodigTegel'), opties: [...document.querySelectorAll('#beschikbaarKeuze option')].map(o => o.textContent) };
+          await zetBeschikbaarheid(true); await w(200);
+          u.naAan = [S.data.musicians[0].accepts_band_invites, document.getElementById('beschikbaarKeuze').value];
+          await zetBeschikbaarheid(false); await w(200);
+          u.naUit = [S.data.musicians[0].accepts_band_invites, document.getElementById('beschikbaarKeuze').value];
+          currentUser = keep.currentUser; myMusicianId = keep.myMusicianId; hasOwnProfile = keep.hasOwnProfile; S.data.musicians = keep.musicians; S.data.bands = keep.bands;
+          S.rpcResults.tt_get_bands_public = keep.rpcBands;
+          showView('about');
+          return u;
+        }""")
+        j85 = lambda k: json.dumps(d85.get(k), ensure_ascii=False)
+        check("muzikant, Mijn Profiel: de zin staat onder de badges en boven de bio, als .melding zonder kop, knop of kruisje",
+              d85["eigen"] and d85["eigen"]["tekst"] == "Ik ben momenteel niet beschikbaar voor jams en optredens." and d85["eigen"]["vet"] == "niet beschikbaar"
+              and d85["eigen"]["voor"] == "profile-badges" and d85["eigen"]["na"] == "profile-bio" and not d85["eigen"]["kop"] and not d85["eigen"]["knop"], j85("eigen"))
+        check("UI: de zin is 14px, de lijn links 4px, en staat 20px onder de badges en 20px boven de bio",
+              d85["eigen"]["letter"] == "14px" and d85["eigen"]["rand"] == "4px" and d85["eigen"]["boven"] == 20 and d85["eigen"]["onder"] == 20, j85("eigen"))
+        check("beschikbaar (de standaard): er staat geen zin op Mijn Profiel", d85["eigenBeschikbaar"] is True, j85("eigenBeschikbaar"))
+        check("het profiel van een ander: de zin alleen als die muzikant niet beschikbaar is, via tt_profiel_beschikbaar",
+              d85["ander"] and d85["ander"]["tekst"] == "Ik ben momenteel niet beschikbaar voor jams en optredens." and d85["anderBeschikbaar"] is True, json.dumps([d85["ander"], d85["anderBeschikbaar"]], ensure_ascii=False))
+        check("een bezoeker zonder account ziet dezelfde zin", d85["bezoeker"] is True, j85("bezoeker"))
+        check("band: de zin van de band staat onder de badges; een beschikbare band heeft geen zin",
+              d85["band"] and d85["band"]["tekst"] == "We zijn momenteel niet beschikbaar voor optredens." and d85["band"]["vet"] == "niet beschikbaar"
+              and d85["band"]["voor"] == "profile-badges" and d85["bandBeschikbaar"] is True, json.dumps([d85["band"], d85["bandBeschikbaar"]], ensure_ascii=False))
+        check("de zin past in hooguit twee regels op 375px (breedte en aantal regels gemeten)",
+              d85["eigen"]["regels"] <= 2 and d85["band"]["regels"] <= 2, json.dumps([d85["eigen"]["regels"], d85["band"]["regels"], d85["eigen"]["breedte"]]))
+        check("Instellingen: de tegel heet Beschikbaarheid, Band-uitnodigingen is weg, de keuze werkt meteen",
+              d85["tegel"]["titel"] == "Beschikbaarheid" and d85["tegel"]["oud"] is False
+              and d85["tegel"]["opties"] == ["Beschikbaar", "Niet beschikbaar: staat op je profiel"]
+              and d85["naAan"] == [True, "ja"] and d85["naUit"] == [False, "nee"], j85("tegel") + j85("naAan") + j85("naUit"))
+        js85 = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ["bands.js", "search.js", "wizard.js", "musicians.js", "utils.js"]}
+        html85 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        check("TT-457: één functie voor de zin (utils.js), gebruikt door het muzikantprofiel en de bandpagina",
+              "function nietBeschikbaarMeldingHTML(" in js85["utils.js"] and "nietBeschikbaarMeldingHTML('muzikant')" in js85["musicians.js"]
+              and "nietBeschikbaarMeldingHTML('band')" in js85["bands.js"], "")
+        check("TT-457: Zoeken laat een niet-beschikbare band staan, en bandStatusAfgeleid() en bandStatusLabel() kennen geen pauze meer",
+              "b.pauze" not in js85["search.js"] and "'inactief'" not in js85["search.js"] and "function bandStatusAfgeleid(aantalOpenRollen)" in js85["bands.js"]
+              and "function bandStatusLabel(aantalLeden, aantalOpenRollen)" in js85["bands.js"], "")
+        check("TT-457: de oude namen zijn weg (zetBandUitnodigingen, zetBandPauze, uitnodigKeuze, We spelen even niet)",
+              not any(t in js85[f] for f in js85 for t in ["zetBandUitnodigingen", "zetBandPauze", "myAcceptsBandInvites"])
+              and "uitnodigKeuze" not in html85 and not any("We spelen even niet" in js85[f] for f in js85), "")
+        check("TT-457: Lid uitnodigen noemt een niet-beschikbare muzikant Niet beschikbaar", ">Niet beschikbaar</span>" in js85["bands.js"], "")
+        check("geen paginafouten in blok 85", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
