@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261009d">
+<link rel="stylesheet" href="styles.css?v=20261010a">
 </head>
 <body>
 
@@ -2287,8 +2287,8 @@
         <option value="donker">Donker</option>
       </select>
 
-      <!-- TT-437 (07-10-2026, besluit Ronald): "Delen via link" en "Open voor
-           band-uitnodigingen" staan niet meer in het ⋯-menu van Mijn Profiel
+      <!-- TT-437 (07-10-2026, besluit Ronald): "Delen via link" en
+           "Beschikbaarheid" (TT-457, was "Band-uitnodigingen") staan niet meer in het ⋯-menu van Mijn Profiel
            maar hier: het zijn instellingen, geen handelingen. Zelfde vorm als
            Thema (initChoiceField(), huisstijl §7.1); een keuze werkt meteen.
            Alleen zichtbaar met een profiel (laadInstellingen() in wizard.js). -->
@@ -2308,17 +2308,17 @@
         </select>
 
         <div class="menu-anchor">
-          <div class="tile" id="uitnodigTegel" aria-label="Band-uitnodigingen">
+          <div class="tile" id="beschikbaarTegel" aria-label="Beschikbaarheid">
             <div style="flex:1;">
-              <div class="tile-title">Band-uitnodigingen</div>
+              <div class="tile-title">Beschikbaarheid</div>
               <div class="tile-sub"><span class="wheel-field-label"></span></div>
             </div>
           </div>
-          <div class="choice-menu" id="uitnodigMenu" role="listbox" aria-label="Band-uitnodigingen"></div>
+          <div class="choice-menu" id="beschikbaarMenu" role="listbox" aria-label="Beschikbaarheid"></div>
         </div>
-        <select id="uitnodigKeuze" style="display:none;" onchange="zetBandUitnodigingen(this.value === 'open')">
-          <option value="open">Open voor uitnodigingen</option>
-          <option value="dicht">Niet open</option>
+        <select id="beschikbaarKeuze" style="display:none;" onchange="zetBeschikbaarheid(this.value === 'ja')">
+          <option value="ja">Beschikbaar</option>
+          <option value="nee">Niet beschikbaar: staat op je profiel</option>
         </select>
       </div>
 
@@ -2798,16 +2798,16 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261009d"></script>
-<script src="utils.js?v=20261009f"></script>
+<script src="core.js?v=20261010a"></script>
+<script src="utils.js?v=20261010a"></script>
 <script src="veiligheid.js?v=20261009f"></script>
 <script src="auth.js?v=20261009b"></script>
 <script src="postcode.js?v=20261009a"></script>
-<script src="wizard.js?v=20261009f"></script>
+<script src="wizard.js?v=20261010a"></script>
 <script src="ouder.js?v=20261009a"></script>
-<script src="search.js?v=20261009f"></script>
-<script src="musicians.js?v=20261009f"></script>
-<script src="bands.js?v=20261009f"></script>
+<script src="search.js?v=20261010a"></script>
+<script src="musicians.js?v=20261010a"></script>
+<script src="bands.js?v=20261010a"></script>
 <script src="messages.js?v=20261009f"></script>
 <script src="push.js?v=20261009a"></script>
 <script src="modals-shared.js?v=20261009a"></script>

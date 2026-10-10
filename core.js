@@ -228,9 +228,9 @@ if (window.matchMedia) {
 async function appInit() {
   // De tegel Thema in Instellingen: het keuzemenu van de app (huisstijl §7.1).
   initChoiceField({ id: 'thema', fieldId: 'themaTegel', menuId: 'themaMenu', selectId: 'themaKeuze' });
-  // TT-437: Delen via link en Band-uitnodigingen, zelfde vorm als Thema.
+  // TT-437: Delen via link en Beschikbaarheid (TT-457), zelfde vorm als Thema.
   initChoiceField({ id: 'deel', fieldId: 'deelTegel', menuId: 'deelMenu', selectId: 'deelKeuze' });
-  initChoiceField({ id: 'uitnodig', fieldId: 'uitnodigTegel', menuId: 'uitnodigMenu', selectId: 'uitnodigKeuze' });
+  initChoiceField({ id: 'beschikbaar', fieldId: 'beschikbaarTegel', menuId: 'beschikbaarMenu', selectId: 'beschikbaarKeuze' });
   toonLichtDonkerKeuze();
   try {
     initModalStapeling(); // TT-229, zie hierboven

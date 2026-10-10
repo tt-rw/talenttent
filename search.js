@@ -986,10 +986,11 @@ let filterBandWantedList = [];
 // een filter dat de gebruiker zelf aanzet, geen voorgeselecteerde standaard.
 let filterBandStatusVal  = null;
 let bandSearchSortMode   = 'score';
-// TT-56 (12-08-2026): opt-out voor band-uitnodigingen. Bijgehouden als eigen
-// variabele (net als myMusicianId) zodat de knop op Mijn Profiel zijn tekst
-// kan tonen zonder steeds opnieuw te hoeven laden.
-let myAcceptsBandInvites = true;
+// TT-56 (12-08-2026), TT-457 (10-10-2026): of de muzikant zichzelf beschikbaar
+// heeft gezet (kolom `accepts_band_invites`). Bijgehouden als eigen variabele
+// (net als myMusicianId) zodat de tegel in Instellingen zijn stand kan tonen
+// zonder steeds opnieuw te hoeven laden.
+let myBeschikbaar = true;
 let lastBandResults = [];
 // TT-30 (07-08-2026): zie musicianViewMode hierboven — zelfde patroon, apart
 // onthouden per tabblad.
@@ -1226,9 +1227,9 @@ async function runBandSearch(straalOverride) {
       matches.forEach(m => { matchInfo[m.band_id] = m; });
 
       const ids = matches.map(m => m.band_id);
-      // TT-385 fase 5: de bandfoto, de pauze en de invallers voor de bandkaart.
+      // TT-385 fase 5: de bandfoto en de invallers voor de bandkaart.
       // De leden alleen om te tellen (bandStatusLabel()); geen namen meer.
-      let query = db.from('bands').select(`id, name, city, genres, status, niveau, avatar_url, pauze, band_members(status), band_wanted(instrument), band_invallers(instrument, datum)`).in('id', ids);
+      let query = db.from('bands').select(`id, name, city, genres, status, niveau, avatar_url, band_members(status), band_wanted(instrument), band_invallers(instrument, datum)`).in('id', ids);
       if (filterBandStatusVal) query = query.eq('status', filterBandStatusVal);
       const { data, error } = await query;
       if (error) throw error;
@@ -1265,7 +1266,7 @@ async function runBandSearch(straalOverride) {
       bands = (data || []).map(b => ({
         id: b.id, name: b.name, city: b.city, genres: b.genres || [], status: b.status,
         niveau: b.niveau, // TT-51 (12-08-2026, RPC-restpunt gesloten)
-        avatar_url: b.avatar_url || null, pauze: !!b.pauze,
+        avatar_url: b.avatar_url || null,
         band_members: (b.members || []).map(() => ({ status: 'bevestigd' })),
         band_wanted: (b.wanted || []).map(i => ({ instrument: i })),
         band_invallers: b.invallers || [],
@@ -1288,10 +1289,6 @@ async function runBandSearch(straalOverride) {
     const bandNiveauFilterActive = !!(bandNiveauMinVal || bandNiveauMaxVal);
 
     const filtered = (bands || []).filter(b => {
-      // TT-385 punt 7: "We spelen even niet" haalt de band uit Zoeken. Dit
-      // filter staat vóór de TT-62-controle hieronder, dus een lege uitslag
-      // verruimt gewoon de straal.
-      if (b.pauze || b.status === 'inactief') return false;
       if (!naamMatcht(nameTerm, b.name)) return false;
       if (cityQuery && !skipCityTextFilter && !(b.city || '').toLowerCase().includes(cityQuery)) return false;
       if (filterBandGenresList.length && !filterBandGenresList.some(g => (b.genres||[]).includes(g))) return false;
@@ -1383,7 +1380,7 @@ function bandKaartGegevens(b) {
   const leden = (b.band_members || []).filter(m => m.status === 'bevestigd').length;
   return {
     foto: safeUrl(b.avatar_url),
-    status: bandStatusLabel(b.pauze, leden, open.length),
+    status: bandStatusLabel(leden, open.length),
     rollen: open.map(i => '+ ' + i).concat(invallers.map(i => 'Invaller ' + instrumentInZin(i))),
     plaats: `${escHtml(b.city || '')}${b.distance_km != null ? ` · ${b.distance_km.toFixed(1)} km` : ''}`
   };

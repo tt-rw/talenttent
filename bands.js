@@ -534,7 +534,7 @@ function searchMembersToAdd(query) {
         // aan — alleen een banner op Mijn Profiel, geen uitleg waarom. De
         // knop opent nu eerst een kort tekstveld i.p.v. meteen uit te nodigen.
         const inviteAction = m.accepts_band_invites === false
-          ? `<span style="font-size:12px;color:var(--muted);">Niet open voor uitnodigingen</span>`
+          ? `<span style="font-size:12px;color:var(--muted);">Niet beschikbaar</span>`
           : `<button class="btn btn-ghost" onclick="openInviteNote(this, '${jsAttr(m.id)}', '${jsAttr(memberName)}')">Uitnodigen</button>`;
         return `
         <div class="member-search-row lijst-rij" style="display:flex;align-items:center;gap:12px;padding:8px 0;">
@@ -591,7 +591,7 @@ async function addBandMember(musicianId, note) {
       .select('accepts_band_invites').eq('id', musicianId).single();
     if (checkErr) throw checkErr;
     if (target && target.accepts_band_invites === false) {
-      showToast('Deze muzikant staat niet open voor band-uitnodigingen.');
+      showToast('Deze muzikant is niet beschikbaar.');
       return false;
     }
 
@@ -768,7 +768,7 @@ async function saveBandRun() {
     const { data: band, error: bErr } = await db.from('bands').insert({
       name, city: normalizeCityName(city), zip,
       genres: bandState.genres,
-      status: bandStatusAfgeleid(0, false), founder_id: mid, city_source: bandCitySource,
+      status: bandStatusAfgeleid(0), founder_id: mid, city_source: bandCitySource,
     }).select('id').single();
     if (bErr) throw bErr;
     const bandId = band.id;
@@ -848,7 +848,7 @@ async function loadMyBands(opties) {
     // Dan geen nieuwe "Ik stop als bandleider"-knop, maar de wachtstand.
     const offerPending = isFounder && confirmed.some(m => m.founder_offer);
     const open = (b.band_wanted || []).map(w => w.instrument);
-    const status = bandStatusLabel(b.pauze, confirmed.length, open.length);
+    const status = bandStatusLabel(confirmed.length, open.length);
     const tags = (status ? tagSolid(status) : '') + open.map(i => tagSolid('+ ' + i)).join('');
     // TT-433 (07-10-2026, besluit Ronald): geen ⋯-menu en geen "Band verlaten"
     // op de kaart. Alles wat ook in het menu van de bandpagina staat, staat
@@ -1147,7 +1147,7 @@ function bandPaginaHTML(b, kijker) {
   // niemand is en geen open rol, staat er geen statustag. "Compleet" zou
   // dan niet kloppen.
   const zoekend = b.wanted.length > 0;
-  const status = bandStatusLabel(b.pauze, b.leden.length, b.wanted.length);
+  const status = bandStatusLabel(b.leden.length, b.wanted.length);
   const tags = [
     ...b.genres.map(g => tagSolid(g)),
     BAND_SOORT_LABELS[b.soort] ? tagSolid(BAND_SOORT_LABELS[b.soort]) : '',
@@ -1170,7 +1170,8 @@ function bandPaginaHTML(b, kijker) {
       <div class="profile-name">${escHtml(b.name)}</div>
       <div class="profiel-regels"><div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city || '')}</div></div>
     </div>
-    <div class="profile-badges">${tags}</div>`;
+    <div class="profile-badges">${tags}</div>
+    ${b.pauze ? nietBeschikbaarMeldingHTML('band') : ''}`;
 
   // Een lege plek is voor de beheerder een uitnodiging (TT-385 punt 2); voor
   // iedereen anders staat er niets.
@@ -1403,18 +1404,18 @@ const BAND_TILES = [
 // De statustag op de bandpagina en op de bandkaart in Mijn Bands: één functie,
 // zodat beide plekken altijd hetzelfde zeggen (TT-385 fase 4). Besluit Ronald
 // (02-10-2026, na fase 3): zolang er naast de beheerder niemand is en geen
-// open rol, geen tag; "Compleet" zou dan niet kloppen.
-function bandStatusLabel(pauze, aantalLeden, aantalOpenRollen) {
-  if (pauze) return 'We spelen even niet';
+// open rol, geen tag; "Compleet" zou dan niet kloppen. Niet beschikbaar is
+// geen status maar een zin op de bandpagina (TT-457): de tag volgt alleen uit
+// de bezetting.
+function bandStatusLabel(aantalLeden, aantalOpenRollen) {
   if (aantalLeden <= 1 && !aantalOpenRollen) return '';
   return aantalOpenRollen ? 'Zoekend' : 'Compleet';
 }
 
-// "Zoekend" of "compleet" volgt uit de open rollen; "We spelen even niet"
-// gaat voor (TT-385 punt 7). Een invaller telt niet mee (besluit Ronald).
-// De waarde staat in bands.status, zodat Zoeken hem leest zoals voorheen.
-function bandStatusAfgeleid(aantalOpenRollen, pauze) {
-  if (pauze) return 'inactief';
+// "Zoekend" of "compleet" volgt uit de open rollen. Een invaller telt niet mee
+// (besluit Ronald). De waarde staat in bands.status, zodat Zoeken hem leest
+// zoals voorheen. Niet beschikbaar (bands.pauze) verandert hem niet (TT-457).
+function bandStatusAfgeleid(aantalOpenRollen) {
   return aantalOpenRollen ? 'zoekend' : 'compleet';
 }
 
@@ -1466,7 +1467,6 @@ function renderBandTegels() {
   renderBandBeheer();
 }
 
-let bandBeheerOpenRollen = 0;
 
 async function renderBandBeheer() {
   const el = document.getElementById('bandBeheerBlok');
@@ -1475,14 +1475,13 @@ async function renderBandBeheer() {
   el.innerHTML = '';
   try {
     const { data: b, error } = await db.from('bands')
-      .select('name, city, pauze, band_wanted(instrument), band_members(musician_id, status, founder_offer)')
+      .select('name, city, pauze, band_members(musician_id, status, founder_offer)')
       .eq('id', id).single();
     if (error || !b) throw error || new Error('Band niet gevonden.');
     if (id !== bewerkBandId) return;
     bewerkBandNaam = b.name || '';
     bewerkBandStad = b.city || '';
     zetBandNaamRegel();
-    bandBeheerOpenRollen = (b.band_wanted || []).length;
     // TT-437: de stand van "Delen via link" komt uit de kleine vraag, zodat
     // Bandbeheer ook laadt als het databasescript nog niet is gedraaid.
     const delenAan = await bandDeelStand(id);
@@ -1495,12 +1494,12 @@ async function renderBandBeheer() {
     el.innerHTML = `
       <div class="profile-media-title">Bandbeheer</div>
       <div class="field">
-        <label>Spelen jullie nu?</label>
-        <div class="segmented-control segmented-vol" id="bandPauzeKeuze">
-          <button type="button" class="segmented-btn${b.pauze ? '' : ' selected'}" onclick="zetBandPauze(false)">We spelen</button>
-          <button type="button" class="segmented-btn${b.pauze ? ' selected' : ''}" onclick="zetBandPauze(true)">We spelen even niet</button>
+        <label>Beschikbaarheid</label>
+        <div class="segmented-control segmented-vol" id="bandBeschikbaarKeuze">
+          <button type="button" class="segmented-btn${b.pauze ? '' : ' selected'}" onclick="zetBandBeschikbaar(true)">Beschikbaar</button>
+          <button type="button" class="segmented-btn${b.pauze ? ' selected' : ''}" onclick="zetBandBeschikbaar(false)">Niet beschikbaar</button>
         </div>
-        <p class="field-hint">Spelen jullie even niet, dan staat dat als tag op jullie bandpagina.</p>
+        <p class="field-hint">Zijn jullie niet beschikbaar, dan staat dat bovenaan jullie bandpagina. De band blijft vindbaar in Zoeken.</p>
       </div>
       <div class="field">
         <label>Delen via link</label>
@@ -1524,21 +1523,22 @@ async function renderBandBeheer() {
   }
 }
 
-// "We spelen even niet" werkt meteen, zonder Opslaan — zoals de schakelaars
-// in Instellingen.
-async function zetBandPauze(aan) {
+// Beschikbaarheid werkt meteen, zonder Opslaan — zoals de schakelaars in
+// Instellingen. De kolom heet nog `pauze`: waar betekent niet beschikbaar
+// (TT-457).
+async function zetBandBeschikbaar(beschikbaar) {
   const id = bewerkBandId;
   if (!id) return;
   try {
     const { error } = await db.from('bands')
-      .update({ pauze: aan, status: bandStatusAfgeleid(bandBeheerOpenRollen, aan) }).eq('id', id);
+      .update({ pauze: !beschikbaar }).eq('id', id);
     if (error) throw error;
     showToast('Wijzigingen opgeslagen.');
     renderBandBeheer();
     loadMyBands();
   } catch (e) {
-    logCaught('zetBandPauze', e);
-    showToast(friendlyErrorMessage(e, 'de pauzestand opslaan'));
+    logCaught('zetBandBeschikbaar', e);
+    showToast(friendlyErrorMessage(e, 'de beschikbaarheid opslaan'));
   }
 }
 
@@ -1650,7 +1650,6 @@ let bbInvallers = [];      // { id, instrument, datum } (gaat mee met Opslaan)
 let bbInvalInstrument = [];
 let bbContact = '';
 let bbBeheerderId = null;
-let bbPauze = false;
 let bbSnapshot = null;
 
 function bbFieldSnapshot() {
@@ -1663,10 +1662,9 @@ function bbFieldSnapshot() {
 
 async function openBandBezetting() {
   bbInvalFormulier(false);
-  const b = await bandBewerkGegevens('name, city, founder_id, contact_id, pauze, band_wanted(instrument), band_invallers(id, instrument, datum)');
+  const b = await bandBewerkGegevens('name, city, founder_id, contact_id, band_wanted(instrument), band_invallers(id, instrument, datum)');
   if (!b) return;
   bbBeheerderId = b.founder_id;
-  bbPauze = !!b.pauze;
   bbWanted = (b.band_wanted || []).map(w => w.instrument);
   bbInvallers = bbInvallersUit(b.band_invallers);
 
@@ -1897,7 +1895,7 @@ async function saveBandBezetting() {
     // contactpersoon vanzelf als het beheer wordt overgedragen.
     const { error: bErr } = await db.from('bands').update({
       contact_id: bbContact && bbContact !== bbBeheerderId ? bbContact : null,
-      status: bandStatusAfgeleid(bbWanted.length, bbPauze)
+      status: bandStatusAfgeleid(bbWanted.length)
     }).eq('id', id);
     if (bErr) throw bErr;
     // De nieuwe invallers hebben nu een id.

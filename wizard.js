@@ -316,6 +316,7 @@ async function loadMyProfile(opties) {
   const { data: myAges } = await db.rpc('tt_musicians_ages', { ids: [m.id] });
   m.age = (myAges && myAges[0]) ? myAges[0].age : undefined;
   m.bands = await profielBandsOphalen(m.id); // TT-385 punt 17: het blok Bands
+  m.beschikbaar = m.accepts_band_invites !== false; // TT-457: de zin niet beschikbaar
 
   // TT-120 (22-08-2026): "Jouw pad op The Talent Tent" (TT-48) staat niet
   // meer op Mijn Profiel. De functie renderProgressPanel() is op 16-09-2026
@@ -331,11 +332,10 @@ async function loadMyProfile(opties) {
   fitProfileName(el);
   loadBandInvites(m.id);
 
-  // TT-56 (12-08-2026): opt-out band-uitnodigingen — de tegel weerspiegelt
-  // de huidige stand. m.accepts_band_invites komt gewoon mee via de
-  // '*'-select hierboven, geen aparte kolom nodig in de query.
-  myAcceptsBandInvites = m.accepts_band_invites !== false;
-  updateBandInviteToggleBtn();
+  // TT-56 (12-08-2026), TT-457: beschikbaarheid — de tegel weerspiegelt de
+  // huidige stand. m.accepts_band_invites komt mee via de select hierboven.
+  myBeschikbaar = m.accepts_band_invites !== false;
+  updateBeschikbaarToggleBtn();
   // TT-410b: de stand van "Delen via link" komt uit één kleine vraag, zodat
   // Mijn Profiel ook laadt als het databasescript nog niet is gedraaid.
   myDeelAan = await profielDeelStand(m.id);
@@ -343,34 +343,36 @@ async function loadMyProfile(opties) {
 }
 
 // TT-437 (07-10-2026, besluit Ronald): de keuze staat in Instellingen (tegel
-// "Band-uitnodigingen"), niet meer in het ⋯-menu van Mijn Profiel. Het
-// verborgen <select> is de bron van waarheid, zoals bij Thema.
-function updateBandInviteToggleBtn() {
-  const sel = document.getElementById('uitnodigKeuze');
+// "Beschikbaarheid", sinds TT-457 de plaats van "Band-uitnodigingen"), niet
+// meer in het ⋯-menu van Mijn Profiel. Het verborgen <select> is de bron van
+// waarheid, zoals bij Thema.
+function updateBeschikbaarToggleBtn() {
+  const sel = document.getElementById('beschikbaarKeuze');
   if (!sel) return;
-  sel.value = myAcceptsBandInvites ? 'open' : 'dicht';
-  refreshChoiceField('uitnodig');
+  sel.value = myBeschikbaar ? 'ja' : 'nee';
+  refreshChoiceField('beschikbaar');
 }
 
-// TT-56 (12-08-2026, op verzoek van Ronald): een muzikant kan hiermee zelf
-// aangeven niet open te staan voor band-uitnodigingen (TT-41). Bewust smal
-// gehouden — blokkeert uitsluitend die uitnodigingen. Los 1-op-1 bericht
-// sturen blijft altijd mogelijk, ongewijzigd, en het profiel blijft gewoon
-// in alle zoekresultaten staan (geen zichtbaar label voor bezoekers).
-async function zetBandUitnodigingen(open) {
+// TT-457 (10-10-2026, besluit Ronald): een muzikant kan zichzelf als niet
+// beschikbaar zetten. Zijn profiel toont dan de zin "Ik ben momenteel niet
+// beschikbaar voor jams en optredens." (nietBeschikbaarMeldingHTML() in
+// utils.js) en een bandbeheerder kan hem niet meer uitnodigen (TT-56, TT-41).
+// Het profiel blijft in alle zoekresultaten staan en een los bericht blijft
+// mogelijk. De kolom heet nog `accepts_band_invites`: waar betekent beschikbaar.
+async function zetBeschikbaarheid(beschikbaar) {
   if (!myMusicianId) return;
   try {
     const { error } = await db.from('musicians')
-      .update({ accepts_band_invites: open })
+      .update({ accepts_band_invites: beschikbaar })
       .eq('id', myMusicianId);
     if (error) throw error;
-    myAcceptsBandInvites = open;
-    updateBandInviteToggleBtn();
-    showToast(open ? 'Je staat weer open voor band-uitnodigingen.' : 'Je ontvangt geen band-uitnodigingen meer.');
+    myBeschikbaar = beschikbaar;
+    updateBeschikbaarToggleBtn();
+    showToast(beschikbaar ? 'Je staat weer als beschikbaar.' : 'Je staat nu als niet beschikbaar.');
   } catch (e) {
-    logCaught('zetBandUitnodigingen', e);
-    showToast(friendlyErrorMessage(e, 'de uitnodigingen versturen'));
-    updateBandInviteToggleBtn(); // de tegel toont weer de stand van de database
+    logCaught('zetBeschikbaarheid', e);
+    showToast(friendlyErrorMessage(e, 'je beschikbaarheid opslaan'));
+    updateBeschikbaarToggleBtn(); // de tegel toont weer de stand van de database
   }
 }
 
@@ -386,11 +388,11 @@ async function laadInstellingen() {
   try {
     const { data, error } = await db.from('musicians').select('accepts_band_invites').eq('id', mid).single();
     if (error) throw error;
-    myAcceptsBandInvites = data.accepts_band_invites !== false;
+    myBeschikbaar = data.accepts_band_invites !== false;
   } catch (e) {
     logCaught('laadInstellingen', e);
   }
-  updateBandInviteToggleBtn();
+  updateBeschikbaarToggleBtn();
   myDeelAan = await profielDeelStand(mid);
   updateDelenToggleBtn();
 }

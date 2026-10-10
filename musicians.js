@@ -83,6 +83,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       ${m.musician_instruments.map(x => `<span class="tag-solid">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
       ${m.musician_genres.map(x => `<span class="tag-solid">${escHtml(x.genre)}</span>`).join('')}
     </div>
+    ${m.beschikbaar === false ? nietBeschikbaarMeldingHTML('muzikant') : ''}
     ${m.bio ? `<p class="profile-bio">${escHtml(m.bio)}</p>` : ''}
     ${profielBandsHTML(m.bands)}
     ${m.musician_songs.length ? `
@@ -279,6 +280,21 @@ async function profielDeelStand(id) {
   }
 }
 
+// TT-457 (10-10-2026): of de muzikant zichzelf beschikbaar heeft gezet. Aparte
+// kleine vraag, net als profielDeelStand(), zodat ook een bezoeker zonder
+// account het weet en het profiel laadt als het databasescript nog niet is
+// gedraaid. Lukt de vraag niet, dan geldt beschikbaar: er staat dan geen zin.
+async function profielBeschikbaar(id) {
+  try {
+    const { data, error } = await db.rpc('tt_profiel_beschikbaar', { mid: id });
+    if (error) throw error;
+    return data !== false;
+  } catch (e) {
+    logCaught('profielBeschikbaar', e);
+    return true;
+  }
+}
+
 let huidigProfielId = null; // de muzikant die het scherm nu toont (leeg bij een band)
 let huidigBandId = null;    // de band die het scherm nu toont (leeg bij een muzikant)
 let profielSchermVolgnr = 0; // een trage vraag mag een nieuwer profiel niet overschrijven
@@ -301,6 +317,7 @@ async function laadProfielScherm(id, linkToegang) {
   // false.
   let m = null, error = null;
   const delenVraag = profielDeelStand(id);
+  const beschikbaarVraag = profielBeschikbaar(id);
 
   if (hasOwnProfile) {
     // B-01 tweede stap (18-08-2026): geen birth_date meer in deze select —
@@ -348,6 +365,7 @@ async function laadProfielScherm(id, linkToegang) {
   }
 
   const delen = await delenVraag;
+  const beschikbaar = await beschikbaarVraag;
   if (volgnr !== profielSchermVolgnr) return; // intussen een ander profiel geopend
 
   if (error || !m) {
@@ -361,6 +379,7 @@ async function laadProfielScherm(id, linkToegang) {
   // profiel blijft altijd te openen.
   if (linkToegang && !delen && !isOwn) { toonProfielNietBeschikbaar('muzikant'); return; }
   m.delen_aan = delen;
+  m.beschikbaar = beschikbaar;
 
   // TT-385 punt 17: de bands van deze muzikant, voor het blok Bands.
   m.bands = await profielBandsOphalen(m.id);

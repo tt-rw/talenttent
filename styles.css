@@ -1238,6 +1238,10 @@
     border-top: 1px solid var(--border);
   }
   .profile-bio { font-size: 15px; color: var(--text); margin: 0; }
+  /* TT-457 (10-10-2026): de zin "niet beschikbaar" staat onder de badges, boven
+     de bio, op een muzikantprofiel en een bandpagina. De gewone .melding; alleen
+     de ruimte eronder is 20px, zoals tussen de andere blokken van een profiel. */
+  .melding-beschikbaar { margin-bottom: 20px; }
   .profile-songs-title {
     font-size: 11px;
     letter-spacing: 2px;
