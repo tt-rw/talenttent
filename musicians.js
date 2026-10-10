@@ -1341,22 +1341,22 @@ function jstRenderSongs() {
     .sort((ia, ib) => compareArtistTitle(jstSongs[ia].artist, jstSongs[ia].title, jstSongs[ib].artist, jstSongs[ib].title));
   list.innerHTML = `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
-      <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
-        <span>Band / Artiest — Nummer</span><span style="margin-right:40px;">Beheersing</span><span></span>
+      <div class="rep-kop">
+        <span>Band / Artiest — Nummer</span><span>Beheersing</span><span></span>
       </div>
       ${displayOrder.map(i => { const s = jstSongs[i]; return `
-        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 12px;gap:12px;">
-          <div>
+        <div class="rep-rij">
+          <div class="rep-tekst">
             <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
             <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
           </div>
-          <div style="display:flex;gap:4px;${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
+          <div class="rep-niveaus" style="${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
             <button type="button" class="level-btn ${s.level==='basis'?'active-basis':''}" title="Kent de structuur" onclick="jstSetLevel(${i},'basis')">Basis</button>
             <button type="button" class="level-btn ${s.level==='bijna'?'active-bijna':''}" title="Soepel, bijna klaar" onclick="jstSetLevel(${i},'bijna')">Bijna</button>
             <button type="button" class="level-btn ${s.level==='podium'?'active-podium':''}" title="Speelt het live zonder problemen" onclick="jstSetLevel(${i},'podium')">Podium</button>
           </div>
           ${s._confirmDelete
-            ? `<button type="button" class="song-remove" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:var(--danger);" onclick="jstRemoveSong(${i})" title="Bevestig verwijderen">Zeker?</button>`
+            ? `<button type="button" class="song-remove rep-zeker" onclick="jstRemoveSong(${i})" title="Bevestig verwijderen">Zeker?</button>`
             : `<button type="button" class="song-remove" onclick="jstRemoveSong(${i})" title="Verwijderen" aria-label="Verwijder ${escAttr(s.title)}">✕</button>`
           }
         </div>

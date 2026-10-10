@@ -1010,6 +1010,35 @@
 
   /* Gekozen: zie het TT-316-blok bij .tag — goud en vet (besluit Ronald K12). */
 
+  /* TT-459 (10-10-2026): de repertoirelijst (aanmeldwizard en Je setlist) heeft
+     één kolomindeling voor kop en rijen: tekst, drie niveaus van gelijke breedte,
+     het kruisje. Elke rij was een eigen grid, dus de niveaus en het kruisje
+     schoven mee met de tekst, de vette gekozen knop en "Zeker?". Nu vaste
+     kolommen: niveaus en kruisjes staan op elk toestel recht onder elkaar. */
+  .rep-kop, .rep-rij {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 158px 44px;
+    column-gap: 6px;
+    align-items: center;
+    padding: 8px 4px 8px 12px;
+  }
+  .rep-kop {
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .rep-kop > span:nth-child(2) { text-align: center; }
+  .rep-tekst { min-width: 0; overflow-wrap: anywhere; }
+  .rep-niveaus {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+  .rep-niveaus .level-btn { min-width: 0; width: 100%; padding: 8px 0; }
+  .rep-rij .song-remove.rep-zeker { padding: 0; font-size: 11px; font-weight: 700; color: var(--danger); }
+
   .song-remove {
     /* TT-U23 (12-08-2026): was 23x26 pixels. */
     display: inline-flex;

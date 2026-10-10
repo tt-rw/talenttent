@@ -810,22 +810,22 @@ function renderSongs() {
     .sort((ia, ib) => compareArtistTitle(state.songs[ia].artist, state.songs[ia].title, state.songs[ib].artist, state.songs[ib].title));
   list.innerHTML = `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
-      <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);">
-        <span>Band / Artiest — Nummer</span><span style="margin-right:40px;">Beheersing</span><span></span>
+      <div class="rep-kop">
+        <span>Band / Artiest — Nummer</span><span>Beheersing</span><span></span>
       </div>
       ${displayOrder.map(i => { const s = state.songs[i]; return `
-        <div style="display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:8px 12px;gap:12px;">
-          <div>
+        <div class="rep-rij">
+          <div class="rep-tekst">
             <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
             <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
           </div>
-          <div style="display:flex;gap:4px;${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
+          <div class="rep-niveaus" style="${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
             <button class="level-btn ${s.level==='basis'?'active-basis':''}" title="Kent de structuur" onclick="setLevel(${i},'basis')">Basis</button>
             <button class="level-btn ${s.level==='bijna'?'active-bijna':''}" title="Soepel, bijna klaar" onclick="setLevel(${i},'bijna')">Bijna</button>
             <button class="level-btn ${s.level==='podium'?'active-podium':''}" title="Je speelt het live zonder problemen" onclick="setLevel(${i},'podium')">Podium</button>
           </div>
           ${s._confirmDelete
-            ? `<button class="song-remove" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:var(--danger);" onclick="removeSong(${i})" title="Bevestig verwijderen">Zeker?</button>`
+            ? `<button class="song-remove rep-zeker" onclick="removeSong(${i})" title="Bevestig verwijderen">Zeker?</button>`
             : `<button class="song-remove" onclick="removeSong(${i})" title="Verwijderen">✕</button>`
           }
         </div>
