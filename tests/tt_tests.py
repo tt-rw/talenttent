@@ -8732,19 +8732,19 @@ window.TT_STUB.fnAntwoord = {};
         }""")
         j85 = lambda k: json.dumps(d85.get(k), ensure_ascii=False)
         check("muzikant, Mijn Profiel: de zin staat onder de badges en boven de bio, als .melding zonder kop, knop of kruisje",
-              d85["eigen"] and d85["eigen"]["tekst"] == "Ik ben momenteel niet beschikbaar voor jams en optredens." and d85["eigen"]["vet"] == "niet beschikbaar"
+              d85["eigen"] and d85["eigen"]["tekst"] == "Momenteel niet beschikbaar." and d85["eigen"]["vet"] == "niet beschikbaar"
               and d85["eigen"]["voor"] == "profile-badges" and d85["eigen"]["na"] == "profile-bio" and not d85["eigen"]["kop"] and not d85["eigen"]["knop"], j85("eigen"))
         check("UI: de zin is 14px, de lijn links 4px, en staat 20px onder de badges en 20px boven de bio",
               d85["eigen"]["letter"] == "14px" and d85["eigen"]["rand"] == "4px" and d85["eigen"]["boven"] == 20 and d85["eigen"]["onder"] == 20, j85("eigen"))
         check("beschikbaar (de standaard): er staat geen zin op Mijn Profiel", d85["eigenBeschikbaar"] is True, j85("eigenBeschikbaar"))
         check("het profiel van een ander: de zin alleen als die muzikant niet beschikbaar is, via tt_profiel_beschikbaar",
-              d85["ander"] and d85["ander"]["tekst"] == "Ik ben momenteel niet beschikbaar voor jams en optredens." and d85["anderBeschikbaar"] is True, json.dumps([d85["ander"], d85["anderBeschikbaar"]], ensure_ascii=False))
+              d85["ander"] and d85["ander"]["tekst"] == "Momenteel niet beschikbaar." and d85["anderBeschikbaar"] is True, json.dumps([d85["ander"], d85["anderBeschikbaar"]], ensure_ascii=False))
         check("een bezoeker zonder account ziet dezelfde zin", d85["bezoeker"] is True, j85("bezoeker"))
         check("band: de zin van de band staat onder de badges; een beschikbare band heeft geen zin",
-              d85["band"] and d85["band"]["tekst"] == "We zijn momenteel niet beschikbaar voor optredens." and d85["band"]["vet"] == "niet beschikbaar"
+              d85["band"] and d85["band"]["tekst"] == "Momenteel niet beschikbaar." and d85["band"]["vet"] == "niet beschikbaar"
               and d85["band"]["voor"] == "profile-badges" and d85["bandBeschikbaar"] is True, json.dumps([d85["band"], d85["bandBeschikbaar"]], ensure_ascii=False))
-        check("de zin past in hooguit twee regels op 375px (breedte en aantal regels gemeten)",
-              d85["eigen"]["regels"] <= 2 and d85["band"]["regels"] <= 2, json.dumps([d85["eigen"]["regels"], d85["band"]["regels"], d85["eigen"]["breedte"]]))
+        check("de zin past op één regel op 375px (breedte en aantal regels gemeten)",
+              d85["eigen"]["regels"] == 1 and d85["band"]["regels"] == 1, json.dumps([d85["eigen"]["regels"], d85["band"]["regels"], d85["eigen"]["breedte"]]))
         check("Instellingen: de tegel heet Beschikbaarheid, Band-uitnodigingen is weg, de keuze werkt meteen",
               d85["tegel"]["titel"] == "Beschikbaarheid" and d85["tegel"]["oud"] is False
               and d85["tegel"]["opties"] == ["Beschikbaar", "Niet beschikbaar: staat op je profiel"]
@@ -8752,8 +8752,8 @@ window.TT_STUB.fnAntwoord = {};
         js85 = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ["bands.js", "search.js", "wizard.js", "musicians.js", "utils.js"]}
         html85 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
         check("TT-457: één functie voor de zin (utils.js), gebruikt door het muzikantprofiel en de bandpagina",
-              "function nietBeschikbaarMeldingHTML(" in js85["utils.js"] and "nietBeschikbaarMeldingHTML('muzikant')" in js85["musicians.js"]
-              and "nietBeschikbaarMeldingHTML('band')" in js85["bands.js"], "")
+              "function nietBeschikbaarMeldingHTML(" in js85["utils.js"] and "nietBeschikbaarMeldingHTML()" in js85["musicians.js"]
+              and "nietBeschikbaarMeldingHTML()" in js85["bands.js"], "")
         check("TT-457: Zoeken laat een niet-beschikbare band staan, en bandStatusAfgeleid() en bandStatusLabel() kennen geen pauze meer",
               "b.pauze" not in js85["search.js"] and "'inactief'" not in js85["search.js"] and "function bandStatusAfgeleid(aantalOpenRollen)" in js85["bands.js"]
               and "function bandStatusLabel(aantalLeden, aantalOpenRollen)" in js85["bands.js"], "")
