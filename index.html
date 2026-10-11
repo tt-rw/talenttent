@@ -363,14 +363,20 @@
       </div>
     </div>
 
-    <div id="regAuthSection">
+    <!-- Wachtwoord opslaan op het juiste moment (11-10-2026): e-mailadres en
+         wachtwoord staan in een echt formulier. De knop Verder verstuurt het
+         (form="regAuthSection"), Enter in een veld doet hetzelfde. Zonder
+         formulier las Chrome het verbergen van het wachtwoordveld pas later
+         als aanmelding en bood hij het opslaan midden in de wizard aan, bij
+         het zoeken naar muzikanten of nummers. -->
+    <form id="regAuthSection" novalidate onsubmit="event.preventDefault(); nextStep(0);">
       <div class="divider"></div>
       <p id="regAuthIntro" style="font-size:12px;color:var(--muted);margin-bottom:16px;">Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.</p>
 
       <div class="field-group" id="regAuthFieldGroup">
         <div class="field">
           <label>E-mailadres <span class="req" id="regEmailReq">*</span></label>
-          <input type="email" id="regEmail" placeholder="jouw@email.nl" autocomplete="email" inputmode="email" enterkeyhint="next" onkeydown="submitOnEnter(event, () => nextStep(0))">
+          <input type="email" id="regEmail" placeholder="jouw@email.nl" autocomplete="email" inputmode="email" enterkeyhint="next">
         </div>
         <div class="field" id="regPasswordField">
           <label>Wachtwoord <span class="req">*</span></label>
@@ -378,19 +384,19 @@
                een knop "Toon". Een herhaalveld verlaagt de conversie en voegt
                niets toe zodra het wachtwoord zichtbaar te maken is. -->
           <div class="password-wrap">
-            <input type="password" id="regPassword" placeholder="Minimaal 8 tekens" autocomplete="new-password" enterkeyhint="done" onkeydown="submitOnEnter(event, () => nextStep(0))">
+            <input type="password" id="regPassword" placeholder="Minimaal 8 tekens" autocomplete="new-password" enterkeyhint="done">
             <button type="button" class="password-toggle" onclick="togglePassword('regPassword', this)" aria-label="Toon wachtwoord">Toon</button>
           </div>
         </div>
       </div>
-    </div>
+    </form>
 
     <!-- TT-144 (25-08-2026): Terug op stap 1 gaat naar de landingpagina —
          er is geen vorige stap. -->
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner btn-row">
         <button class="btn btn-ghost" onclick="prevStepFromStart()">Terug</button>
-        <button class="btn btn-primary" onclick="nextStep(0)">Verder</button>
+        <button class="btn btn-primary" type="submit" form="regAuthSection">Verder</button>
       </div>
     </div>
   </div>
@@ -2815,7 +2821,7 @@
 <script src="veiligheid.js?v=20261009f"></script>
 <script src="auth.js?v=20261010b"></script>
 <script src="postcode.js?v=20261009a"></script>
-<script src="wizard.js?v=20261010a"></script>
+<script src="wizard.js?v=20261011a"></script>
 <script src="ouder.js?v=20261009a"></script>
 <script src="search.js?v=20261010a"></script>
 <script src="musicians.js?v=20261010b"></script>

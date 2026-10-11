@@ -1344,6 +1344,14 @@ async function createAccountAndProfile() {
     if (!userId) throw eigenFout('Je account is aangemaakt, maar inloggen lukte niet. Ga naar Inloggen en log in met je e-mailadres en wachtwoord.');
     currentUser = authUser;
 
+    // 11-10-2026: het account bestaat, dus het wachtwoordveld hoeft niets meer
+    // te bevatten. Bleef het gevuld (verborgen, in een volgende stap), dan zag
+    // Chrome bij een latere netwerkaanroep, zoals een klik op een nummer, een
+    // aanmelding en bood hij het wachtwoord opslaan midden in de wizard aan.
+    // Het wachtwoord zelf blijft in state.regPassword, alleen het veld wordt leeg.
+    const regPwVeld = document.getElementById('regPassword');
+    if (regPwVeld) regPwVeld.value = '';
+
     // Bestaat er al een profiel bij dit account? Dat kan als een eerdere
     // poging wél het account maakte én het profiel, maar de gebruiker
     // (bijv. door een trage/onduidelijke reactie op het scherm) daarna
