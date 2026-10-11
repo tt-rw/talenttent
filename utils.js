@@ -1628,7 +1628,7 @@ function bannerKnopHTML(aan, onclickJs, opBeeld) {
 // (besluit Ronald, 13-09-2026).
 function bannerTellerHTML(aantal) {
   return `<span class="banner-teken" aria-hidden="true"><svg viewBox="0 0 24 24"><circle class="bb-schijf" cx="12" cy="12" r="11"></circle><rect class="bb-vorm" x="5.5" y="8.5" width="13" height="7" rx="2"></rect></svg></span>` +
-    `<b>Kies wat in je banner komt.</b> Gekozen: ${aantal} van ${MEDIA_BANNER_MAX}`;
+    `<b>Kies je bannerinhoud:</b> ${aantal} van ${MEDIA_BANNER_MAX} gekozen.`;
 }
 
 // Aan/uit zonder de lijst opnieuw te tekenen (Ronald, 13-09-2026: "alleen de

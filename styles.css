@@ -79,6 +79,7 @@
     --gekozen-tekst: #f5c518;
     --gekozen-bijschrift: var(--muted);     /* toelichting op een gekozen doelkaart */
     --keuze-vlak: var(--surface2);          /* een keuzeknop die niet gekozen is */
+    --keuze-rand: var(--border);            /* rand van een keuzeknop; een paneel mag hem overschrijven (TT-461) */
     /* Een zweem over de ondergrond: aanwijzen, ongelezen, uitgelicht. */
     --tint: rgba(255,255,255,0.05);
     --tint-hover: rgba(255,255,255,0.08);   /* aanwijzen op een ronde knop */
@@ -879,7 +880,7 @@
      bij één soort is een fout (projectinstructies §2, regel 11). */
   .tag, .level-btn, .segmented-btn, .search-mode-tab, .media-tab, .goal-card, .level-choice {
     background: var(--keuze-vlak);
-    border: var(--line) solid var(--border);
+    border: var(--line) solid var(--keuze-rand);
     border-radius: 8px;
     color: var(--text);
     font-weight: 400;
@@ -2729,6 +2730,30 @@
     border-radius: var(--radius);
     padding: 24px;
     margin-bottom: 28px;
+  }
+
+  /* TT-461 (11-10-2026, besluit Ronald: "dit wil ik. contrast"): elk
+     tegelscherm (Wie ben je, Wat speel je, Wat zoek je, Je setlist, Je mediahoek en de vier bandtegels) is een paneel zoals .search-filters (Zoeken): --surface, rand,
+     24px opvulling. De velden staan daardoor als crème vlak op de kaart. De
+     niet-gekozen keuzeknop (Echte naam) heeft de kleur en rand van een veld:
+     wit op wit viel weg. Dat gaat via --keuze-vlak en --keuze-rand, niet via een
+     eigen regel voor een keuzesoort (monitorronde B7). Alle negen tegelschermen gelijk (consistentie). */
+  #wieBenJeScreen,
+  #watSpeelJeScreen,
+  #watZoekJeScreen,
+  #jeSetlistScreen,
+  #mediahoekScreen,
+  #bandWieScreen,
+  #bandBezettingScreen,
+  #bandMuziekScreen,
+  #bandMediaScreen {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 28px;
+    --keuze-vlak: var(--field-bg);
+    --keuze-rand: var(--field-border);
   }
 
   .filter-title {
