@@ -2737,7 +2737,7 @@
      24px opvulling. De velden staan daardoor als crème vlak op de kaart. De
      niet-gekozen keuzeknop (Echte naam) heeft de kleur en rand van een veld:
      wit op wit viel weg. Dat gaat via --keuze-vlak en --keuze-rand, niet via een
-     eigen regel voor een keuzesoort (monitorronde B7). Alle negen tegelschermen gelijk (consistentie). */
+     eigen regel voor een keuzesoort (monitorronde B7). Alle negen tegelschermen en de vijf wizardstappen gelijk (consistentie). */
   #wieBenJeScreen,
   #watSpeelJeScreen,
   #watZoekJeScreen,
@@ -2746,7 +2746,8 @@
   #bandWieScreen,
   #bandBezettingScreen,
   #bandMuziekScreen,
-  #bandMediaScreen {
+  #bandMediaScreen,
+  #step0, #step1, #step2, #step3, #step4 {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
