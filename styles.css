@@ -2444,6 +2444,26 @@
   .nav-menu-item:hover { background: var(--tint); color: var(--accent); }
   .nav-menu-item + .nav-menu-item { border-top: 1px solid var(--border); }
 
+  /* TT-427 (10-10-2026, besluit Ronald): het hamburgermenu heeft een map,
+     Voorwaarden, die onder zichzelf openklapt. De scheidslijnen van dit menu
+     staan als onderrand op elke rij van .nav-menu-binnen; de laag zelf is 1px
+     te laag, zodat de onderrand van de laatste zichtbare rij buiten beeld valt
+     (.nav-menu-dropdown knipt met overflow: hidden). Zo staat er nooit een lijn
+     bovenaan als Instellingen (alleen ingelogd) verborgen is, en nooit onderaan.
+     Alleen voor dit menu; de andere ⋯-menu's houden de regel hierboven. */
+  .nav-menu-binnen { margin-bottom: -1px; }
+  .nav-menu-binnen > .nav-menu-item + .nav-menu-item { border-top: none; }
+  .nav-menu-binnen > .nav-menu-item,
+  .nav-menu-binnen > .nav-menu-map-lijst { border-bottom: 1px solid var(--border); }
+  .nav-menu-map { justify-content: space-between; }
+  /* Dezelfde ▾ als in de keuzevelden (.picker-field-chevron); open staat hij omhoog. */
+  .nav-menu-chevron { color: var(--muted); font-size: 12px; margin-left: 12px; flex-shrink: 0; transition: transform 0.15s; }
+  .nav-menu-map.open .nav-menu-chevron { transform: rotate(180deg); }
+  /* De map toont zijn items iets ingesprongen op een tintje, zodat te zien is
+     dat ze bij Voorwaarden horen. Elke rij blijft 44px hoog. */
+  .nav-menu-map-lijst { background: var(--tint); }
+  .nav-menu-sub { padding-left: 32px; }
+
   /* ── Een open menu ligt zichtbaar bovenop (24-09-2026, Ronald) ──────────
      Menuvlak --surface op pagina --bg was bijna hetzelfde grijs: je moest
      zoeken of er iets openstond. Twee dingen samen lossen dat op:

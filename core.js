@@ -632,7 +632,23 @@ function closeNavMenu() {
   if (!dd?.classList.contains('visible')) return;
   dd.classList.remove('visible');
   document.getElementById('navMenuBtn')?.classList.remove('active');
+  zetNavMap(false); // TT-427: het menu opent altijd met de map dicht
   menuLaagWeg();
+}
+// TT-427 (10-10-2026): de map Voorwaarden in het hamburgermenu klapt open en
+// dicht onder zichzelf. Eén tik opent, nog een tik sluit. Het menu blijft open.
+function zetNavMap(open) {
+  const knop = document.getElementById('navVoorwaarden');
+  const lijst = document.getElementById('navVoorwaardenLijst');
+  if (!knop || !lijst) return;
+  knop.setAttribute('aria-expanded', open ? 'true' : 'false');
+  knop.classList.toggle('open', !!open);
+  lijst.hidden = !open;
+}
+function toggleNavMap(e) {
+  if (e) e.stopPropagation();
+  const knop = document.getElementById('navVoorwaarden');
+  zetNavMap(knop?.getAttribute('aria-expanded') !== 'true');
 }
 
 // TT-119 (22-08-2026): het kleine menuknopje bij "Profiel bewerken"

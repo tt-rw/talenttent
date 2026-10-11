@@ -75,7 +75,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261010c">
+<link rel="stylesheet" href="styles.css?v=20261010d">
 </head>
 <body>
 
@@ -131,27 +131,35 @@
        hier: .app-nav-row is zijn ankerpunt (position: relative) en klapt
        direct onder de kop open. -->
   <div class="nav-menu-dropdown" id="navMenuDropdown">
-    <button class="nav-menu-item" id="navAbout" onclick="closeNavMenu();showView('about')">Over ons</button>
-    <button class="nav-menu-item" id="navPrivacy" onclick="closeNavMenu();showView('privacy')">Privacyverklaring</button>
-    <button class="nav-menu-item" id="navTerms" onclick="closeNavMenu();showView('terms')">Gebruiksvoorwaarden</button>
-    <button class="nav-menu-item" id="navGedragscode" onclick="closeNavMenu();showView('gedragscode')">Gedragscode</button>
-    <!-- TT-186 (03-09-2026): Instellingen, alleen zichtbaar ingelogd (zelfde
-         display-patroon als navLogout hieronder, via onUserLoggedIn/Out).
-         Bevat voorlopig alleen Account verwijderen — kwam uit het
-         profielmenu, want dat is accountbeheer, geen profielinhoud. Bewust
-         niet direct zichtbaar/aanklikbaar: een destructieve actie hoort niet
-         op de eerste laag (huisstijl §8). -->
-    <button class="nav-menu-item" id="navSettings" onclick="closeNavMenu();showView('instellingen')" style="display:none;">Instellingen</button>
-    <!-- TT-176 (01-09-2026): TT-166 (28-08-2026) haalde Uitloggen hier weg
-         en zette 'm uitsluitend bij Mijn Profiel — Ronald wil 'm op eigen
-         verzoek terug in het hamburgermenu. Alleen zichtbaar ingelogd
-         (onUserLoggedIn()/onUserLoggedOut() zetten display). De knop bij
-         Mijn Profiel is weer verwijderd — één plek, geen dubbele knop. -->
-    <button class="nav-menu-item" id="navLogout" onclick="closeNavMenu();navLoginClick()" style="display:none;">Uitloggen</button>
-    <!-- TT-278 (16-09-2026, Ronald): uitgelogd staat Inloggen op dezelfde
-         plek als Uitloggen. Precies één van de twee is zichtbaar
-         (onUserLoggedIn/onUserLoggedOut). -->
-    <button class="nav-menu-item" id="navMenuLogin" onclick="closeNavMenu();showView('auth')">Inloggen</button>
+    <!-- TT-427 (10-10-2026, besluit Ronald): volgorde Instellingen · Voorwaarden
+         (map) · Over ons · Uitloggen/Inloggen. De map Voorwaarden klapt open
+         onder zichzelf, in het menu: geen nieuw scherm, dus de zestien views
+         blijven zestien. Elke rij blijft een eigen knop met het oude id, zodat
+         niets anders hoeft te veranderen. Instellingen is al een scherm met
+         tegels en blijft een gewone rij (zie TT-186). Melden en Blokkeren
+         staan niet in het menu: dat zijn handelingen op een persoon, in het
+         ⋯-menu van profiel en gesprek. De binnenste laag draagt de scheidslijnen
+         (styles.css, .nav-menu-binnen), zodat ze ook kloppen als Instellingen
+         uitgelogd verborgen is. -->
+    <div class="nav-menu-binnen">
+      <!-- TT-186 (03-09-2026): Instellingen, alleen zichtbaar ingelogd (zelfde
+           display-patroon als navLogout hieronder, via onUserLoggedIn/Out). -->
+      <button class="nav-menu-item" id="navSettings" onclick="closeNavMenu();showView('instellingen')" style="display:none;">Instellingen</button>
+      <button class="nav-menu-item nav-menu-map" id="navVoorwaarden" onclick="toggleNavMap(event)" aria-expanded="false" aria-controls="navVoorwaardenLijst">Voorwaarden<span class="nav-menu-chevron" aria-hidden="true">▾</span></button>
+      <div class="nav-menu-map-lijst" id="navVoorwaardenLijst" hidden>
+        <button class="nav-menu-item nav-menu-sub" id="navTerms" onclick="closeNavMenu();showView('terms')">Gebruiksvoorwaarden</button>
+        <button class="nav-menu-item nav-menu-sub" id="navPrivacy" onclick="closeNavMenu();showView('privacy')">Privacyverklaring</button>
+        <button class="nav-menu-item nav-menu-sub" id="navGedragscode" onclick="closeNavMenu();showView('gedragscode')">Gedragscode</button>
+      </div>
+      <button class="nav-menu-item" id="navAbout" onclick="closeNavMenu();showView('about')">Over ons</button>
+      <!-- TT-176 (01-09-2026): Uitloggen staat in het hamburgermenu, alleen
+           zichtbaar ingelogd (onUserLoggedIn()/onUserLoggedOut() zetten display). -->
+      <button class="nav-menu-item" id="navLogout" onclick="closeNavMenu();navLoginClick()" style="display:none;">Uitloggen</button>
+      <!-- TT-278 (16-09-2026, Ronald): uitgelogd staat Inloggen op dezelfde
+           plek als Uitloggen. Precies één van de twee is zichtbaar
+           (onUserLoggedIn/onUserLoggedOut). -->
+      <button class="nav-menu-item" id="navMenuLogin" onclick="closeNavMenu();showView('auth')">Inloggen</button>
+    </div>
   </div>
 </div>
 <!-- TT-302 (20-09-2026, Ronald): de vraag bij onopgeslagen wijzigingen staat
@@ -2079,10 +2087,10 @@
     <div class="search-filters">
       <div class="panel-title" style="margin-bottom:20px;">Over ons</div>
       <div style="font-size:15px;line-height:1.7;color:var(--text);">
-        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat zijn we?</strong> The Talent Tent is een ontmoetingsplaats voor muzikanten. We zijn gestart voor jonge muzikanten die veel oefenen, maar moeilijk andere muzikanten vinden om mee samen te spelen. Inmiddels vinden ook ervaren en oudere muzikanten hun weg naar de Tent.</p>
+        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat is The Talent Tent?</strong> The Talent Tent is een ontmoetingsplaats voor muzikanten. We zijn gestart voor jonge muzikanten die veel oefenen, maar moeilijk andere muzikanten vinden om mee samen te spelen. We merken dat er ook interesse is van ervaren, oudere muzikanten.</p>
         <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat doen we?</strong> Je krijgt een eigen pagina met je setlist en media, en een pagina voor elke band waar je deel van uitmaakt. Onze zoekfunctie vindt muzikanten en bands bij jou in de buurt. Bands zoeken hier een nieuw of tijdelijk lid. Wij helpen je op weg naar het podium.</p>
-        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Hoe werkt het?</strong> Je maakt een profiel aan, en eventueel een bandpagina. Jij bepaalt welke informatie je met anderen deelt. Een actueel profiel levert meer op: meer applaus, en sneller gevonden worden.</p>
-        <p>Zoek muzikanten of bands bij jou in de buurt om mee te spelen. Bands kunnen ook nieuwe of tijdelijke leden zoeken.</p>
+        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Hoe werkt het?</strong> Je maakt een profiel aan, zoekt muzikanten en spreekt af om te jammen. Jij bepaalt welke informatie je met anderen deelt. Wie actief is, wordt sneller gevonden. Een volledig profiel levert meer applaus op.</p>
+        <p><strong style="color:var(--accent);">Contact</strong> Heb je een vraag, een idee of een storing? Dan horen we het graag: <a href="mailto:contact@talenttent.org" style="color:var(--accent);text-decoration:underline;">contact@talenttent.org</a>.</p>
       </div>
     </div>
   </div>
@@ -2802,7 +2810,7 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261010a"></script>
+<script src="core.js?v=20261010b"></script>
 <script src="utils.js?v=20261010b"></script>
 <script src="veiligheid.js?v=20261009f"></script>
 <script src="auth.js?v=20261010b"></script>
