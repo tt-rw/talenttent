@@ -14,7 +14,7 @@
     --danger: #e5533d;
     --success: #4caf50;
     --text: #f0f0f0;
-    --muted: #888;
+    --muted: #a8a8a8;
     /* TT-341 stap 2 (besluit Ronald, 26-09-2026: "3 B"): kaarten en velden
        ronder, in beide thema's. Was 12px en 8px. */
     --radius: 16px;
@@ -50,7 +50,7 @@
        zijn dezelfde dag weer weggehaald (§2.10, dode code meteen weg). Een
        echte typografische schaal is TT-261, en die komt dan op de 4px-schaal
        — 15px stond daar niet op, en dat was terecht Ronalds bezwaar. */
-    --fs-sm: 12px;
+    --fs-sm: 13px;
     /* TT-244 (10-09-2026, melding Ronald): één vlak en één randkleur voor élk
        veld — invoerveld, keuzeveld en wielveld. Deze twee waarden komen uit de
        contrastfix van 12-08-2026, die toen alleen op invoervelden landde.
@@ -87,7 +87,7 @@
     --rand-hover: #555;
     --rand-menu: #444;                      /* uitklapmenu, bandkaart bij aanwijzen */
     --leeg: #555;                           /* lege ster, niet-actieve stip */
-    --wiel-tekst: #6d6d6d;                  /* niet-gekozen regel in het wiel */
+    --wiel-tekst: #9a9a9a;                  /* niet-gekozen regel in het wiel */
     --tip-tekst: #c8a800;
     /* Lagen boven de pagina en hun schaduw. */
     --laag-venster: rgba(0,0,0,0.8);
@@ -139,7 +139,7 @@
     --danger: #B93A2F;
     --success: #287A4B;
     --text: #1E1E1E;
-    --muted: #6E6A63;              /* TT-402: 5,3:1 op wit, was #8A8782 (3,5:1) */
+    --muted: #524E48;              /* kleurfix 11-10-2026: 7,5:1 op crème; was #6E6A63 (TT-402) */
     --field-bg: #F6F3EC;           /* keuzevelden in de kleur van de ondergrond (Ronald) */
     --field-border: #8F887B;       /* TT-402: 3,2:1 op crème, was #C9C3B6 (1,6:1) */
     --line: 1px;
@@ -158,7 +158,7 @@
     --rand-hover: #B8B4AA;
     --rand-menu: #DED9CF;
     --leeg: #CFCAC0;
-    --wiel-tekst: #8A8782;
+    --wiel-tekst: #6E6A63;
     --tip-tekst: #1E1E1E;
     --laag-venster: rgba(30,30,30,0.45);
     --laag-opslaan: rgba(30,30,30,0.45);
@@ -179,7 +179,7 @@
   /* Voorbeeldtekst in een veld: de standaard van de browser is op crème te
      donker en lijkt dan ingevuld. Donker houdt de standaard van de browser. */
   :root[data-theme="licht"] input::placeholder,
-  :root[data-theme="licht"] textarea::placeholder { color: #B8B4AA; }
+  :root[data-theme="licht"] textarea::placeholder { color: #6E6A63; opacity: 1; }
 
   /* TT-318 (24-09-2026, besluit Ronald): het eigen woordmerk. Vervangt
      Alfa Slab One (TT-15b, tijdelijk sinds 06-08-2026).
@@ -408,7 +408,7 @@
 
   .step-label {
     margin-left: 12px;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--muted);
     letter-spacing: 2px;
     text-transform: uppercase;
@@ -978,7 +978,7 @@
   }
 
   .ac-item:last-child { border-bottom: none; }
-  .ac-item span { font-size: 11px; color: var(--muted); }
+  .ac-item span { font-size: 13px; color: var(--muted); }
   /* TT-168-overgang: min-height 44px (was ±34px, onder de tikdoel-norm) —
      fix uit profiel-v2 hier ook toegepast, geldt voor elke plek die deze
      klasse gebruikt (stads-/artiest-/nummersuggesties). */
@@ -1024,7 +1024,7 @@
   }
   .rep-kop {
     border-bottom: 1px solid var(--border);
-    font-size: 12px;
+    font-size: 13px;
     letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--muted);
@@ -1076,7 +1076,7 @@
 
   /* Gekozen: zie het TT-316-blok bij .tag. :hover staat in de guard. */
   .goal-card .goal-label { font-size: 13px; }
-  .goal-card .goal-desc { font-size: 11px; color: var(--muted); margin-top: 4px; font-weight: 300; }
+  .goal-card .goal-desc { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 300; }
   /* TT-341 stap 2: op licht is de gekozen kaart geel; grijs is daarop te zwak. */
   .goal-card.selected .goal-desc { color: var(--gekozen-bijschrift); }
 
@@ -1272,7 +1272,7 @@
      de ruimte eronder is 20px, zoals tussen de andere blokken van een profiel. */
   .melding-beschikbaar { margin-bottom: 20px; }
   .profile-songs-title {
-    font-size: 11px;
+    font-size: 13px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--muted);
@@ -1383,7 +1383,7 @@
 
   .avatar-info { flex: 1; }
   .avatar-info strong { font-size: 14px; display: block; margin-bottom: 6px; }
-  .avatar-info p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .avatar-info p { font-size: 13px; color: var(--muted); line-height: 1.5; }
 
   /* TT-381 (30-09-2026, Ronald): "Foto verwijderen" is het kruisje
      rechtsboven de foto, zelfde kruisje als op een mediategel. Uiterlijk en
@@ -1801,7 +1801,7 @@
 
   .drop-label { font-size: 14px; color: var(--muted); font-weight: 300; }
   .drop-label strong { color: var(--text); }
-  .drop-hint { font-size: 11px; color: var(--muted); margin-top: 6px; letter-spacing: 0.5px; }
+  .drop-hint { font-size: 13px; color: var(--muted); margin-top: 6px; letter-spacing: 0.5px; }
 
   /* Media thumbnails */
   .media-grid {
@@ -1853,7 +1853,7 @@
     position: absolute;
     bottom: 4px; left: 4px;
     background: rgba(0,0,0,0.7);
-    font-size: 10px;
+    font-size: 13px;
     padding: 2px 5px;
     border-radius: 3px;
     color: var(--muted);
@@ -2093,7 +2093,7 @@
   }
 
   .profile-media-title {
-    font-size: 11px;
+    font-size: 13px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--muted);
@@ -2502,7 +2502,7 @@
   .doc-view p { margin-bottom: 14px; }
   .doc-view ul { margin: 0 0 14px; padding-left: 20px; }
   .doc-view li { margin-bottom: 6px; }
-  .doc-view .doc-updated { font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+  .doc-view .doc-updated { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
 
   /* ── TT-01: Berichten (TT-34, 07-08-2026: cooler, WhatsApp-achtig
      gegroepeerd op gesprekspartner, met avatars en spraakbel-vormige
@@ -2571,7 +2571,7 @@
   .messages-conv-name { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
   .messages-conv-row.unread .messages-conv-name { color: var(--accent); }
   .messages-conv-preview { font-size: 13px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .messages-conv-time { font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+  .messages-conv-time { font-size: 13px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
 
   .messages-thread-header {
     display: flex;
@@ -2587,7 +2587,7 @@
 
   .messages-day-divider {
     text-align: center;
-    font-size: 11px;
+    font-size: 13px;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -2914,7 +2914,7 @@
     gap: 8px;
   }
   .result-card-name { font-family: 'Roboto', sans-serif; font-size: 16px; font-weight: 700; }
-  .result-card-meta { font-size: 11px; color: var(--muted); margin: 2px 0 8px; }
+  .result-card-meta { font-size: 13px; color: var(--muted); margin: 2px 0 8px; }
   /* TT-153: instrument- en genrebadges elk op een eigen, niet-wrappende
      regel — overflow wordt afgekapt met een "+N"-badge (overflowBadgeHTML),
      niet met CSS-afkapping zelf. nowrap is hier alleen een vangnet tegen een
@@ -2973,7 +2973,7 @@
   }
 
   .result-row-meta {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--muted);
     margin-top: 2px;
   }
@@ -3087,7 +3087,7 @@
     gap: 12px;
     padding: 8px 12px;
     border-bottom: 1px solid var(--border);
-    font-size: 12px;
+    font-size: 13px;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--muted);
@@ -3102,7 +3102,7 @@
   .zoek-lijst-nr { font-size: 14px; font-weight: 700; color: var(--accent); }
   .zoek-lijst-hoofd { flex: 1; min-width: 0; }
   .zoek-lijst-titel { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
-  .zoek-lijst-sub { font-size: 12px; color: var(--muted); }
+  .zoek-lijst-sub { font-size: 13px; color: var(--muted); }
   .gedeeld-teller { text-align: right; padding-right: var(--field-inset); margin: 0; }
   .gedeeld-teller:empty { display: none; }
 
@@ -3211,7 +3211,7 @@
     gap: 12px;
     margin: 40px 0 20px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 13px;
     letter-spacing: 2px;
     text-transform: uppercase;
     font-weight: 700;
@@ -3709,7 +3709,7 @@
     padding: 12px 0;
   }
   .geblokkeerd-naam { font-size: 16px; font-weight: 700; color: var(--text); }
-  .geblokkeerd-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .geblokkeerd-meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
   /* Geen volle-breedte knop: hij hoort bij de rij ernaast, niet bij het
      scherm. Hoogte blijft 44px via .btn (huisstijl §5/§6). */
   .geblokkeerd-knop { flex-shrink: 0; padding-left: 16px; padding-right: 16px; }
@@ -3721,7 +3721,7 @@
   .band-card-header { display:flex;align-items:center;gap:16px;padding:20px;flex-wrap:wrap; }
   .band-avatar { width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Roboto',sans-serif;font-size:24px;background:var(--merk);color:var(--merk-tekst);flex-shrink:0; }
   .band-name { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.3px; line-height: 1.1; }
-  .band-meta { font-size:12px;color:var(--muted);margin-top:3px; }
+  .band-meta { font-size: 13px;color:var(--muted);margin-top:3px; }
   /* TT-315 (24-09-2026): zelfde vorm als .tag-solid. TT-341 stap 2: geen
      vlak, een dunne neutrale rand; de status houdt zijn kleur in de tekst. */
   /* Een status is een tag (huisstijl §1.3): tekst in --text, ook "Zoekend".
@@ -3872,7 +3872,7 @@
   .picker-list-empty { padding: 14px 4px; font-size: 14px; color: var(--muted); }
 
   .picker-level-blurb {
-    font-size: 12px; color: var(--muted); line-height: 1.4; margin-top: 4px;
+    font-size: 13px; color: var(--muted); line-height: 1.4; margin-top: 4px;
   }
 
   /* Basismaat van een niveaukeuze; in het paneel van TT-410a (hieronder) is hij 44px. */
@@ -3897,7 +3897,7 @@
     font-family: 'Roboto', sans-serif; font-size: 13px; color: var(--muted);
     text-decoration: underline; text-align: left;
   }
-  .niveau-uitleg p { font-size: 12px; color: var(--muted); line-height: 1.4; margin: 0 0 6px; }
+  .niveau-uitleg p { font-size: 13px; color: var(--muted); line-height: 1.4; margin: 0 0 6px; }
   .niveau-uitleg p strong { color: var(--text); font-weight: 700; }
   /* De badge van het open instrument: dikkere rand, zonder ander vlak. */
   .picker-badge.open { box-shadow: inset 0 0 0 1px var(--accent); }
@@ -4117,7 +4117,7 @@
       border: none;
       color: var(--muted);
       font-family: 'Roboto', sans-serif;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 700;
       letter-spacing: 0.3px;
       cursor: pointer;
@@ -4237,7 +4237,7 @@
   }
   .tile:active { background: var(--surface2); }
   .tile-title { font-size: 17px; font-weight: 700; }
-  .tile-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .tile-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
   /* TT-260 (12-09-2026): was 11px met een eigen marge van 5px. Geen van
      beide is een maat uit de huisstijl (§2: 12px; §3: 4px-schaal). */
   .field-status { font-size: var(--fs-sm); color: var(--muted); margin-top: 4px; min-height: 16px; }
@@ -4544,7 +4544,7 @@
      14px lege regel + 20px blokmarge. De regel neemt nu pas ruimte in zodra er
      tekst in staat. updateSearchCityStatus() zet `textContent = ''`, dus het
      element is dan werkelijk leeg en `:empty` grijpt. */
-  .city-status { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .city-status { font-size: 13px; color: var(--muted); margin-top: 4px; }
   .city-status:empty { display: none; }
 
   .filter-row-city { display: flex; gap: 8px; align-items: flex-end; }
