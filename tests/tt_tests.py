@@ -869,7 +869,7 @@ def blok_browser():
         check("en staat daar in de gouden stand",
               keuze["tekenGoud"] == "rgb(245, 197, 24)", keuze["tekenGoud"])
         # Eén foto stond al in de banner, dus na deze tik zijn het er twee.
-        check("de teller telt mee", "Gekozen: 2" in keuze["teller"], keuze["teller"])
+        check("de teller telt mee", "2 van" in keuze["teller"], keuze["teller"])
         check("zes is de grens", keuze["voorGrens"] == 6 and keuze["naGrens"] == 6,
               f"voor {keuze['voorGrens']}, na {keuze['naGrens']}")
         check("de zevende keuze wordt geweigerd", keuze["tweedeLink"] is False, "")
@@ -8951,6 +8951,62 @@ window.TT_STUB.fnAntwoord = {};
         check("Over ons: contactzin met punt aan het eind", "Dan horen we het graag: contact@talenttent.org." in tekst89, "")
         check("Over ons: e-mailadres is een mailto-link", page.evaluate("!!document.querySelector('#view-about a[href=\"mailto:contact@talenttent.org\"]')"), "")
         check("geen paginafouten in blok 89", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ────────────────────────────────────────────────────────────
+        # Blok 90 — 11-10-2026 (TT-461, besluit Ronald: "dit wil ik. contrast"):
+        # het scherm Wie ben je is een paneel zoals Zoeken (.search-filters).
+        # De niet-gekozen keuzeknop heeft de kleur en rand van een veld.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 90 — Wie ben je als paneel (TT-461)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        d90 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 500) => new Promise(r => setTimeout(r, n)), u = {};
+          const keep = { currentUser, myMusicianId, hasOwnProfile, musicians: S.data.musicians };
+          currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
+          S.rpcResults.tt_get_my_birth_date = '2001-02-01';
+          S.data.musicians = [{ id: 'm1', user_id: 'u1', fname: 'Ik', lname: 'Test', username: 'ik', zip: '2522', city: 'Den Haag', city_source: 'pdok',
+            bio: 'Test', naam_tonen: 'gebruikersnaam', weergavenaam: 'ik', musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }];
+          showView('profieltegels'); await w(); openTegelScreen('wieBenJe'); await w(600);
+          const html = document.documentElement;
+          // .segmented-btn heeft een overgang van 0,15s: wacht tot een themawissel is uitgewerkt.
+          const meet = async thema => {
+            if (thema) html.dataset.theme = thema; else delete html.dataset.theme;
+            await w(400);
+            const cs = e => getComputedStyle(document.querySelector(e));
+            const p = cs('#wieBenJeScreen'), z = cs('.search-filters'), v = cs('#wbjFname');
+            const uit = cs('#wbjNaamTonenControl .segmented-btn:not(.selected)'), aan = cs('#wbjNaamTonenControl .segmented-btn.selected');
+            return { pBg: p.backgroundColor, zBg: z.backgroundColor, pRand: p.borderTopColor, zRand: z.borderTopColor, pDikte: p.borderTopWidth,
+                     pHoek: p.borderTopLeftRadius, zHoek: z.borderTopLeftRadius, pOpvul: p.paddingLeft, vBg: v.backgroundColor, vRand: v.borderTopColor,
+                     uitBg: uit.backgroundColor, uitRand: uit.borderTopColor, aanBg: aan.backgroundColor };
+          };
+          u.licht = await meet('licht'); u.donker = await meet('donker'); delete html.dataset.theme;
+          // Elk tegelscherm hoort bij hetzelfde paneel (consistentie): ook de verborgen schermen geven hun stijl.
+          const ids = ['wieBenJeScreen','watSpeelJeScreen','watZoekJeScreen','jeSetlistScreen','mediahoekScreen','bandWieScreen','bandBezettingScreen','bandMuziekScreen','bandMediaScreen'];
+          u.alleSchermen = {};
+          for (const th of ['licht', 'donker']) {
+            html.dataset.theme = th; await w(200);
+            const z = getComputedStyle(document.querySelector('.search-filters'));
+            u.alleSchermen[th] = ids.filter(i => { const p = getComputedStyle(document.getElementById(i));
+              return !(p.backgroundColor === z.backgroundColor && p.borderTopColor === z.borderTopColor && p.borderTopWidth === '1px' && p.paddingLeft === '24px' && p.borderTopLeftRadius === z.borderTopLeftRadius); });
+          }
+          delete html.dataset.theme;
+          currentUser = keep.currentUser; myMusicianId = keep.myMusicianId; hasOwnProfile = keep.hasOwnProfile; S.data.musicians = keep.musicians;
+          return u;
+        }""")
+        for thema90 in ("licht", "donker"):
+            m90 = d90[thema90]
+            check(f"Wie ben je ({thema90}): paneel gelijk aan het paneel van Zoeken (vlak, rand, hoek)",
+                  m90["pBg"] == m90["zBg"] and m90["pRand"] == m90["zRand"] and m90["pDikte"] == "1px" and m90["pHoek"] == m90["zHoek"], json.dumps(m90))
+            check(f"Wie ben je ({thema90}): 24px opvulling en de velden hebben een ander vlak dan het paneel",
+                  m90["pOpvul"] == "24px" and m90["vBg"] != m90["pBg"], json.dumps(m90))
+            check(f"Wie ben je ({thema90}): de niet-gekozen keuzeknop heeft vlak en rand van een veld, de gekozen houdt zijn eigen vlak",
+                  m90["uitBg"] == m90["vBg"] and m90["uitRand"] == m90["vRand"] and m90["aanBg"] != m90["uitBg"], json.dumps(m90))
+        check("alle negen tegelschermen (muzikant en band) zijn het paneel van Zoeken, licht en donker",
+              d90["alleSchermen"]["licht"] == [] and d90["alleSchermen"]["donker"] == [], json.dumps(d90["alleSchermen"]))
+        check("geen paginafouten in blok 90", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
