@@ -586,8 +586,8 @@ def blok_browser():
               vorm["veldGemarkeerd"] and vorm["ariaInvalid"] == "true", json.dumps(vorm))
         check("de foutregel is wit, niet rood (huisstijl §1.2)",
               vorm["regelKleur"] == "rgb(240, 240, 240)", vorm["regelKleur"])
-        check("de foutregel is 12px en springt in op --field-inset",
-              vorm["regelGrootte"] == "12px" and vorm["regelInspringing"] == "10px",  # --field-inset 10px sinds TT-341 stap 2
+        check("de foutregel is 13px (--fs-sm) en springt in op --field-inset",
+              vorm["regelGrootte"] == "13px" and vorm["regelInspringing"] == "10px",  # --field-inset 10px sinds TT-341 stap 2
               f"{vorm['regelGrootte']} / {vorm['regelInspringing']}")
         check("de foutregel heeft een lijn-icoon, geen emoji", vorm["heeftIcoon"], "")
         check("de foutregel staat onder de wachtwoord-wrap, niet ertussen",
@@ -6541,9 +6541,9 @@ window.TT_STUB.fnAntwoord = {};
         check("blok Bands: naam, instrumenten en Beheerder; zonder bandfoto de T",
               b["rijen"] == [["Nachtploeg", "Gitaar · Zang · Beheerder"], ["Solo", "Gitaar"]] and b["t"], j60("blok"))
         bm = d60["blokMaten"]
-        check("UI blok Bands: titel tot rij 8px, rij 56px plus de lijn (tikvlak ≥ 44), zijmarge 16px, foto 40×40 vierkant 8px, naam 16px vet, regel 12px, geen lijn onder de laatste",
-              bm["titelRij"] == 8 and bm["rijH"] == 57 and bm["links"] == 16 and bm["rechts"] == 16 and bm["foto"] == [40, 40, "8px"]
-              and bm["naam"] == ["16px", "700"] and bm["sub"] == "12px" and bm["rand"] == "0px", j60("blokMaten"))
+        check("UI blok Bands: titel tot rij 8px, rij 56px zonder lijn ertussen (tikvlak ≥ 44), zijmarge 16px, foto 40×40 vierkant 8px, naam 16px vet, regel 13px, geen lijn onder de laatste",
+              bm["titelRij"] == 8 and bm["rijH"] == 56 and bm["links"] == 16 and bm["rechts"] == 16 and bm["foto"] == [40, 40, "8px"]
+              and bm["naam"] == ["16px", "700"] and bm["sub"] == "13px" and bm["rand"] == "0px", j60("blokMaten"))
         check("een tik op een band opent de bandpagina", d60["tik"] == "b5", j60("tik"))
         check("geen bands: geen blok; een fout: geen blok, wel een regel in de foutlog",
               d60["geen"] is False and d60["fout"] == {"blok": False, "log": 1}, json.dumps([d60["geen"], d60["fout"]]))
