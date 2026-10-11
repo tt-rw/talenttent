@@ -8875,6 +8875,84 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 87", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ------------------------------------------------------------------
+        # Blok 88 — TT-427 (10-10-2026, besluit Ronald): het hamburgermenu heeft
+        # één map, Voorwaarden, met Gebruiksvoorwaarden, Privacyverklaring en
+        # Gedragscode. Volgorde: Instellingen (alleen ingelogd) · Voorwaarden ·
+        # Over ons · Uitloggen of Inloggen. De map klapt open onder zichzelf, het
+        # menu blijft open, en het menu opent altijd met de map dicht.
+        # ------------------------------------------------------------------
+        print("\nBlok 88 — hamburgermenu met de map Voorwaarden (TT-427)")
+        page.set_viewport_size({"width": 375, "height": 700})
+        page.evaluate("showView('search')")
+        page.wait_for_timeout(200)
+        JS88 = """([ingelogd]) => {
+          const z = (id, v) => { const e = document.getElementById(id); if (e) e.style.display = v; };
+          z('navSettings', ingelogd ? '' : 'none'); z('navLogout', ingelogd ? '' : 'none'); z('navMenuLogin', ingelogd ? 'none' : '');
+          const dd = document.getElementById('navMenuDropdown');
+          const zichtbaar = () => [...dd.querySelectorAll('.nav-menu-item')].filter(e => e.offsetParent !== null);
+          const namen = () => zichtbaar().map(e => e.textContent.replace('▾', '').trim());
+          const knop = document.getElementById('navVoorwaarden'), lijst = document.getElementById('navVoorwaardenLijst');
+          return { open: dd.classList.contains('visible'), namen: namen(), hoogtes: zichtbaar().map(e => Math.round(e.getBoundingClientRect().height)),
+                   uitgeklapt: knop ? knop.getAttribute('aria-expanded') : 'geen knop', lijstVerborgen: lijst ? lijst.hidden : null,
+                   bovenlijn: zichtbaar().length ? getComputedStyle(zichtbaar()[0]).borderTopWidth : null };
+        }"""
+        for ingelogd88 in (False, True):
+            soort88 = "ingelogd" if ingelogd88 else "uitgelogd"
+            page.evaluate("closeNavMenu()")
+            page.evaluate(JS88, [ingelogd88])
+            page.click("#navMenuBtn")
+            page.wait_for_timeout(120)
+            d = page.evaluate(JS88, [ingelogd88])
+            verwacht = (["Instellingen"] if ingelogd88 else []) + ["Voorwaarden", "Over ons", "Uitloggen" if ingelogd88 else "Inloggen"]
+            check(f"{soort88}: het menu toont {' · '.join(verwacht)}, met de map dicht",
+                  d["open"] and d["namen"] == verwacht and d["uitgeklapt"] == "false" and d["lijstVerborgen"] is True, json.dumps(d, ensure_ascii=False))
+            check(f"{soort88}: geen lijn boven de eerste rij en elke rij is 44px hoog",
+                  d["bovenlijn"] == "0px" and all(h == 44 for h in d["hoogtes"]), json.dumps(d, ensure_ascii=False))
+            if page.query_selector("#navVoorwaarden"): page.click("#navVoorwaarden")
+            page.wait_for_timeout(120)
+            d = page.evaluate(JS88, [ingelogd88])
+            verwacht_open = (["Instellingen"] if ingelogd88 else []) + ["Voorwaarden", "Gebruiksvoorwaarden", "Privacyverklaring", "Gedragscode", "Over ons", "Uitloggen" if ingelogd88 else "Inloggen"]
+            check(f"{soort88}: een tik op Voorwaarden klapt de drie items open, het menu blijft open",
+                  d["open"] and d["namen"] == verwacht_open and d["uitgeklapt"] == "true" and d["lijstVerborgen"] is False
+                  and all(h == 44 for h in d["hoogtes"]), json.dumps(d, ensure_ascii=False))
+            if page.query_selector("#navVoorwaarden"): page.click("#navVoorwaarden")
+            page.wait_for_timeout(120)
+            d = page.evaluate(JS88, [ingelogd88])
+            check(f"{soort88}: nog een tik op Voorwaarden sluit de map weer",
+                  d["open"] and d["namen"] == verwacht and d["uitgeklapt"] == "false", json.dumps(d, ensure_ascii=False))
+        for knop88, view88 in (("navTerms", "view-terms"), ("navPrivacy", "view-privacy"), ("navGedragscode", "view-gedragscode")):
+            page.evaluate("closeNavMenu()")
+            page.evaluate("showView('search')")
+            page.click("#navMenuBtn")
+            if page.query_selector("#navVoorwaarden"): page.click("#navVoorwaarden")
+            page.evaluate("k => document.getElementById(k)?.click()", knop88)
+            page.wait_for_timeout(150)
+            check(f"een tik op {knop88} in de map opent {view88} en sluit het menu",
+                  actieve_view(page) == view88 and page.evaluate("!document.getElementById('navMenuDropdown').classList.contains('visible')"),
+                  str(actieve_view(page)))
+            page.click("#navMenuBtn")
+            page.wait_for_timeout(100)
+            check(f"na {knop88} opent het menu weer met de map dicht",
+                  page.evaluate("document.getElementById('navVoorwaardenLijst')?.hidden === true && document.getElementById('navVoorwaarden')?.getAttribute('aria-expanded') === 'false'"), "")
+            page.evaluate("closeNavMenu()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.evaluate("showView('about')")
+        check("geen paginafouten in blok 88", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        print("\nBlok 89 — Over ons: tekst en contact (TT-460)")
+        page.evaluate("showView('about')")
+        page.wait_for_timeout(60)
+        tekst89 = page.evaluate("document.getElementById('view-about').innerText")
+        check("Over ons: kop 'Wat is The Talent Tent?'", "Wat is The Talent Tent?" in tekst89, "")
+        check("Over ons: geen onware claim 'Inmiddels vinden ook'", "Inmiddels" not in tekst89, "")
+        check("Over ons: geen losse slotalinea meer", "Zoek muzikanten of bands bij jou in de buurt om mee te spelen" not in tekst89, "")
+        check("Over ons: contactzin met punt aan het eind", "Dan horen we het graag: contact@talenttent.org." in tekst89, "")
+        check("Over ons: e-mailadres is een mailto-link", page.evaluate("!!document.querySelector('#view-about a[href=\"mailto:contact@talenttent.org\"]')"), "")
+        check("geen paginafouten in blok 89", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
