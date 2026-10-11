@@ -9009,6 +9009,75 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 90", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ────────────────────────────────────────────────────────────
+        # Blok 91 — 11-10-2026: stap 1 van de wizard is een echt formulier,
+        # zodat Chrome het opslaan van het wachtwoord aanbiedt op het moment
+        # van "Verder" en niet later, midden in de wizard (bij het zoeken
+        # naar muzikanten of nummers).
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 91 — stap 1 als formulier (wachtwoord opslaan)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.evaluate("showView('register')")
+        page.wait_for_timeout(300)
+        d91 = page.evaluate(r"""() => {
+          const u = {}, f = document.getElementById('regAuthSection');
+          const knop = [...document.querySelectorAll('#step0 .wizard-action-bar .btn-primary')][0];
+          u.isForm = !!f && f.tagName === 'FORM';
+          u.velden = !!f && f.contains(document.getElementById('regEmail')) && f.contains(document.getElementById('regPassword'));
+          u.knopSubmit = !!knop && knop.type === 'submit' && knop.getAttribute('form') === 'regAuthSection' && !knop.hasAttribute('onclick');
+          u.geenEnterTruc = !document.getElementById('regEmail').hasAttribute('onkeydown') && !document.getElementById('regPassword').hasAttribute('onkeydown');
+          u.terugBuiten = !f.contains(document.querySelector('#step0 .wizard-action-bar .btn-ghost'));
+          u.wwAutocomplete = document.getElementById('regPassword').getAttribute('autocomplete');
+          return u;
+        }""")
+        check("stap 1: e-mailadres en wachtwoord staan in één formulier", d91["isForm"] and d91["velden"], json.dumps(d91))
+        check("stap 1: Verder is de verzendknop van dat formulier, zonder eigen onclick", d91["knopSubmit"], json.dumps(d91))
+        check("stap 1: Enter in een veld loopt via het formulier, niet via een eigen toetsregel", d91["geenEnterTruc"], json.dumps(d91))
+        check("stap 1: Terug zit buiten het formulier en verstuurt dus niets", d91["terugBuiten"], json.dumps(d91))
+        check("stap 1: het wachtwoordveld blijft new-password", d91["wwAutocomplete"] == "new-password", json.dumps(d91))
+        page.evaluate("""() => { window.__nsCalls = 0; window.__nsOrig = window.nextStep; window.nextStep = async (n) => { window.__nsCalls += (n === 0 ? 1 : 100); }; }""")
+        page.click("#step0 .wizard-action-bar .btn-primary")
+        page.wait_for_timeout(150)
+        n_klik = page.evaluate("window.__nsCalls")
+        page.evaluate("window.__nsCalls = 0")
+        page.focus("#regEmail")
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(150)
+        n_enter_mail = page.evaluate("window.__nsCalls")
+        page.evaluate("window.__nsCalls = 0")
+        page.focus("#regPassword")
+        page.keyboard.press("Enter")
+        page.wait_for_timeout(150)
+        n_enter_ww = page.evaluate("window.__nsCalls")
+        page.evaluate("window.__nsCalls = 0")
+        page.click("#step0 .wizard-action-bar .btn-ghost")
+        page.wait_for_timeout(150)
+        n_terug = page.evaluate("window.__nsCalls")
+        page.evaluate("window.nextStep = window.__nsOrig")
+        check("stap 1: een tik op Verder roept nextStep(0) precies één keer aan", n_klik == 1, str(n_klik))
+        check("stap 1: Enter in het e-mailveld gaat naar nextStep(0), één keer", n_enter_mail == 1, str(n_enter_mail))
+        check("stap 1: Enter in het wachtwoordveld gaat naar nextStep(0), één keer", n_enter_ww == 1, str(n_enter_ww))
+        # Terug op stap 1 gaat bewust naar de landingspagina (TT-144), dus de URL wisselt; een herlaad is het niet.
+        herlaad = page.evaluate("typeof window.__nsOrig === 'undefined'")
+        check("stap 1: Terug roept nextStep niet aan en de pagina herlaadt niet", n_terug == 0 and not herlaad, f"{n_terug} herlaad={herlaad}")
+        d91b = page.evaluate(r"""async () => {
+          const $ = id => document.getElementById(id), u = {};
+          const keep = { currentUser, myMusicianId, hasOwnProfile };
+          showView('register'); await new Promise(r => setTimeout(r, 60));
+          currentUser = null;
+          $('regPassword').value = 'geheim123';
+          Object.assign(state, { regEmail: 'nieuw@talenttent.org', regPassword: 'geheim123', fname: 'Test', username: 'testje', city: 'Den Haag', zip: '2497AA' });
+          try { await createAccountAndProfile(); } catch (e) { u.fout = String(e && e.message || e); }
+          u.veld = $('regPassword').value; u.state = state.regPassword;
+          currentUser = keep.currentUser; myMusicianId = keep.myMusicianId; hasOwnProfile = keep.hasOwnProfile;
+          return u;
+        }""")
+        check("na het aanmaken van het account is het wachtwoordveld leeg, het wachtwoord in de state blijft", d91b["veld"] == "" and d91b["state"] == "geheim123", json.dumps(d91b))
+        check("geen paginafouten in blok 91", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
