@@ -8984,7 +8984,7 @@ window.TT_STUB.fnAntwoord = {};
           };
           u.licht = await meet('licht'); u.donker = await meet('donker'); delete html.dataset.theme;
           // Elk tegelscherm hoort bij hetzelfde paneel (consistentie): ook de verborgen schermen geven hun stijl.
-          const ids = ['wieBenJeScreen','watSpeelJeScreen','watZoekJeScreen','jeSetlistScreen','mediahoekScreen','bandWieScreen','bandBezettingScreen','bandMuziekScreen','bandMediaScreen','step0','step1','step2','step3','step4'];
+          const ids = ['wieBenJeScreen','watSpeelJeScreen','watZoekJeScreen','jeSetlistScreen','mediahoekScreen','bandWieScreen','bandBezettingScreen','bandMuziekScreen','bandMediaScreen','step0','step1','step2','step3','step4','ouderStap','ouderWacht','ouderWachtwoord'];
           u.alleSchermen = {};
           for (const th of ['licht', 'donker']) {
             html.dataset.theme = th; await w(200);
@@ -9004,7 +9004,7 @@ window.TT_STUB.fnAntwoord = {};
                   m90["pOpvul"] == "24px" and m90["vBg"] != m90["pBg"], json.dumps(m90))
             check(f"Wie ben je ({thema90}): de niet-gekozen keuzeknop heeft vlak en rand van een veld, de gekozen houdt zijn eigen vlak",
                   m90["uitBg"] == m90["vBg"] and m90["uitRand"] == m90["vRand"] and m90["aanBg"] != m90["uitBg"], json.dumps(m90))
-        check("alle negen tegelschermen en de vijf wizardstappen zijn het paneel van Zoeken, licht en donker",
+        check("alle negen tegelschermen, de vijf wizardstappen en de drie ouder-schermen zijn het paneel van Zoeken, licht en donker",
               d90["alleSchermen"]["licht"] == [] and d90["alleSchermen"]["donker"] == [], json.dumps(d90["alleSchermen"]))
         check("geen paginafouten in blok 90", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
