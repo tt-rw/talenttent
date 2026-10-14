@@ -937,7 +937,7 @@ function vandaagISO() {
 async function bandUitTabellen(id) {
   const { data: b, error } = await db.from('bands')
     .select(`*, band_members(role, status, joined_at, musicians(id, weergavenaam, username, avatar_url, musician_instruments(instrument))), band_wanted(instrument), band_media(media_type, url, platform, in_banner, created_at), band_nummers(titel, url, platform, created_at), band_covers(song_title, song_artist), band_invallers(instrument, datum)`)
-    .eq('id', id).single();
+    .eq('id', id).maybeSingle(); // TT-464: een band die niet (meer) bestaat is geen fout
   if (error) throw error;
   if (!b) return null;
   const opTijd = (x, y) => String(x.created_at || '').localeCompare(String(y.created_at || ''));
@@ -1348,13 +1348,21 @@ async function laadBandScherm(id, linkToegang) {
 
   const delenVraag = bandDeelStand(id);
   let b = null;
+  let mislukt = false;
   try {
     b = hasOwnProfile ? await bandUitTabellen(id) : await bandUitPubliek(id);
   } catch (e) {
-    logCaught('laadBandScherm', e);
+    mislukt = true;
+    // TT-464: het band-id staat in de melding, zodat te zien is welke band het was.
+    const m = new Error(((e && e.message) ? e.message : String(e)) + ' (band ' + id + ')');
+    m.stack = (e && e.stack) ? e.stack : null;
+    logCaught('laadBandScherm', m);
   }
   const delen = await delenVraag;
   if (volgnr !== profielSchermVolgnr) return; // intussen een ander scherm geopend
+  // TT-464: geen fout en geen band: de band bestaat niet meer. Dat is een verwachte
+  // uitkomst (zoals TT-423) en komt niet in het foutlog.
+  if (!b && !mislukt) { toonProfielNietBeschikbaar('band', true); return; }
   if (!b) { vak.innerHTML = '<p style="color:var(--danger)">Kon band niet laden.</p>'; return; }
 
   const ik = hasOwnProfile ? myMusicianId : null;

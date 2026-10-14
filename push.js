@@ -55,7 +55,10 @@ async function ttServiceWorkerAanmelden() {
     await navigator.serviceWorker.register('sw.js');
     return true;
   } catch (e) {
-    logCaught('ttServiceWorkerAanmelden', e);
+    // TT-465: een browser of beveiligingsextensie die de aanmelding weigert is een
+    // verwachte uitkomst (zoals TT-423) en komt niet in het foutlog. Elke andere
+    // fout wordt nog steeds gelogd.
+    if (!(e && (e.name === 'SecurityError' || e.message === 'Rejected'))) logCaught('ttServiceWorkerAanmelden', e);
     return false;
   }
 }

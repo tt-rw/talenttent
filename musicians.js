@@ -410,12 +410,13 @@ async function laadProfielScherm(id, linkToegang) {
 // TT-410b: de pagina voor een link die uit staat, of voor een profiel dat er
 // niet is. Eén zin en één knop, in de vaste vorm van een lege staat (§15).
 // TT-410b fase 2: één functie voor muzikant en band; alleen de tekst verschilt.
-function toonProfielNietBeschikbaar(soort) {
+function toonProfielNietBeschikbaar(soort, bestaatNiet) {
   const band = soort === 'band';
   document.getElementById('profielSchermVoet').innerHTML = '';
+  // TT-464: bestaatNiet is alleen voor een band die uit de database is verdwenen.
   document.getElementById('profielSchermContent').innerHTML = emptyStateHTML(
-    band ? 'Deze bandpagina is niet beschikbaar' : 'Dit profiel is niet beschikbaar',
-    band ? 'De band deelt deze pagina niet via een link.' : 'De muzikant deelt dit profiel niet via een link.',
+    band ? (bestaatNiet ? 'Deze bandpagina bestaat niet meer' : 'Deze bandpagina is niet beschikbaar') : 'Dit profiel is niet beschikbaar',
+    band ? (bestaatNiet ? 'De band is opgeheven, of de link klopt niet.' : 'De band deelt deze pagina niet via een link.') : 'De muzikant deelt dit profiel niet via een link.',
     'Naar Zoeken →',
     "showView('search')"
   );
