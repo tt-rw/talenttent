@@ -5774,7 +5774,7 @@ window.TT_STUB.fnAntwoord = {};
             band_nummers: [{ titel: 'Golf', url: 'https://www.youtube.com/watch?v=abcdefghijk', platform: 'YouTube', created_at: '2026-01-01' }],
             band_covers: [],
             band_invallers: [{ instrument: 'Bas', datum: gisteren }, { instrument: 'Drums', datum: straks }] };
-          db.from = () => ({ select() { return this; }, eq() { return this; }, single: async () => ({ data: JSON.parse(JSON.stringify(rij)), error: null }) });
+          db.from = () => ({ select() { return this; }, eq() { return this; }, single: async () => ({ data: JSON.parse(JSON.stringify(rij)), error: null }), maybeSingle: async () => ({ data: JSON.parse(JSON.stringify(rij)), error: null }) });
           const kijk = async (ik) => {
             hasOwnProfile = true; myMusicianId = ik;
             await openBandScherm('b8');
@@ -9076,6 +9076,71 @@ window.TT_STUB.fnAntwoord = {};
         }""")
         check("na het aanmaken van het account is het wachtwoordveld leeg, het wachtwoord in de state blijft", d91b["veld"] == "" and d91b["state"] == "geheim123", json.dumps(d91b))
         check("geen paginafouten in blok 91", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ────────────────────────────────────────────────────────────
+        # Blok 92 — 14-10-2026 (TT-464, TT-465): een band die niet meer
+        # bestaat is geen fout; een geweigerde service worker staat niet in
+        # het foutlog. Beide kwamen als foutrapport uit de monitorrepo
+        # (issue #12). Een echte fout wordt nog steeds gelogd.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 92 — verdwenen band en geweigerde service worker (TT-464, TT-465)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        d92 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 120) => new Promise(r => setTimeout(r, n)), u = {};
+          const vak = () => document.getElementById('profielSchermContent');
+          const logAantal = (bron) => (S.data.app_error_log || []).filter(r => !bron || r.source === bron).length;
+          const keep = { hasOwnProfile, myMusicianId };
+          appErrorLogCount = 0; // de teller van 20 is per paginabezoek; deze controle toetst de logregel, niet de teller
+          // 1. Met een eigen profiel: de tabel kent de band niet.
+          hasOwnProfile = true;
+          const voor1 = logAantal('laadBandScherm');
+          await openBandScherm('bestaat-niet'); await w(200);
+          u.eigenTekst = vak().textContent;
+          u.eigenLog = logAantal('laadBandScherm') - voor1;
+          u.eigenKnop = !!vak().querySelector('button');
+          // 2. Als bezoeker: de openbare functie geeft geen rij terug.
+          hasOwnProfile = false;
+          S.rpcResults.tt_get_bands_public = [];
+          const voor2 = logAantal('laadBandScherm');
+          await openBandScherm('bestaat-niet'); await w(200);
+          u.gastTekst = vak().textContent;
+          u.gastLog = logAantal('laadBandScherm') - voor2;
+          // 3. Een echte fout blijft een fout: melding, logregel mét het band-id.
+          S.rpcErrors.tt_get_bands_public = { code: '500', message: 'kapot' };
+          const voor3 = logAantal('laadBandScherm');
+          await openBandScherm('b-echte-fout'); await w(200);
+          u.foutTekst = vak().textContent;
+          const rijen = (S.data.app_error_log || []).filter(r => r.source === 'laadBandScherm');
+          u.foutLog = rijen.length - voor3;
+          u.foutBericht = rijen.length ? rijen[rijen.length - 1].message : '';
+          delete S.rpcErrors.tt_get_bands_public;
+          hasOwnProfile = keep.hasOwnProfile; myMusicianId = keep.myMusicianId;
+          // 4. Service worker: geweigerd telt niet, een andere fout wel.
+          const api = ttPushApi.beschikbaar; ttPushApi.beschikbaar = () => true;
+          const reg = Object.getOwnPropertyDescriptor(navigator, 'serviceWorker');
+          const maak = (fout) => Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: { register: () => Promise.reject(fout) } });
+          const voor4 = logAantal('ttServiceWorkerAanmelden');
+          maak(new Error('Rejected')); u.swRejected = await ttServiceWorkerAanmelden();
+          const sec = new Error('geweigerd'); sec.name = 'SecurityError';
+          maak(sec); u.swSecurity = await ttServiceWorkerAanmelden();
+          u.swGeweigerdLog = logAantal('ttServiceWorkerAanmelden') - voor4;
+          maak(new Error('onverwacht')); u.swAnders = await ttServiceWorkerAanmelden();
+          u.swAndersLog = logAantal('ttServiceWorkerAanmelden') - voor4 - u.swGeweigerdLog;
+          if (reg) Object.defineProperty(navigator, 'serviceWorker', reg); else delete navigator.serviceWorker;
+          ttPushApi.beschikbaar = api;
+          showView('about');
+          return u;
+        }""")
+        check("verdwenen band met eigen profiel: de pagina zegt dat de band niet meer bestaat", "bestaat niet meer" in d92["eigenTekst"] and "Kon band niet laden" not in d92["eigenTekst"], json.dumps(d92))
+        check("verdwenen band met eigen profiel: niets in het foutlog, wel een knop naar Zoeken", d92["eigenLog"] == 0 and d92["eigenKnop"], json.dumps(d92))
+        check("verdwenen band als bezoeker: dezelfde tekst, niets in het foutlog", "bestaat niet meer" in d92["gastTekst"] and d92["gastLog"] == 0, json.dumps(d92))
+        check("een echte fout bij de band blijft \"Kon band niet laden.\"", "Kon band niet laden" in d92["foutTekst"], json.dumps(d92))
+        check("een echte fout bij de band komt in het foutlog, met het band-id", d92["foutLog"] == 1 and "b-echte-fout" in d92["foutBericht"], json.dumps(d92))
+        check("service worker geweigerd (Rejected of SecurityError): niets in het foutlog, app gaat door", d92["swRejected"] is False and d92["swSecurity"] is False and d92["swGeweigerdLog"] == 0, json.dumps(d92))
+        check("service worker met een andere fout: wel in het foutlog", d92["swAnders"] is False and d92["swAndersLog"] == 1, json.dumps(d92))
+        check("geen paginafouten in blok 92", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")
