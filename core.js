@@ -1,7 +1,33 @@
 // ─── Supabase ────────────────────────────────────────────────────────────────
 
-const SUPABASE_URL = 'https://fqtgilwfestzofunupnu.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_tnWUVGTBmwnn9fAILeNqqQ_UlCn5AFM';
+// TT-455: elke site kiest zijn eigen database op grond van het webadres waarop
+// de app draait. Zo staat dezelfde core.js in beide repo's en kan de testsite
+// nooit in de database van productie schrijven (en andersom). Een onbekend
+// webadres krijgt geen database: de app start dan niet en toont de melding.
+// Beide sleutels zijn publishable keys (bedoeld voor de browser).
+const TT_DB_PRODUCTIE = {
+  url: 'https://fqtgilwfestzofunupnu.supabase.co',
+  key: 'sb_publishable_tnWUVGTBmwnn9fAILeNqqQ_UlCn5AFM'
+};
+const TT_DB_TEST = {
+  url: 'https://wlcrjhsniuiewvznwrun.supabase.co',
+  key: 'sb_publishable_ubEIJa7rFEmr1rPa-D2B8Q_c8UJ2QDF'
+};
+const TT_DB_PER_ADRES = {
+  'talenttent.org': TT_DB_PRODUCTIE,
+  'www.talenttent.org': TT_DB_PRODUCTIE,
+  'tt-rw.github.io': TT_DB_TEST,
+  'localhost': TT_DB_TEST,
+  '127.0.0.1': TT_DB_TEST
+};
+const TT_DB_GEKOZEN = TT_DB_PER_ADRES[location.hostname] || null;
+const SUPABASE_URL = TT_DB_GEKOZEN ? TT_DB_GEKOZEN.url : '';
+const SUPABASE_KEY = TT_DB_GEKOZEN ? TT_DB_GEKOZEN.key : '';
+if (!TT_DB_GEKOZEN) {
+  window.ttBackendMissing = true;
+  try { document.getElementById('backendErrorOverlay').classList.add('visible'); } catch (e) { /* geen melding mogelijk */ }
+  try { console.error('TT-455: geen database voor dit webadres: ' + location.hostname); } catch (e) { /* geen console */ }
+}
 // TT-344 (26-09-2026): de link uit de mail "Kies een nieuw wachtwoord" komt
 // binnen als #access_token=…&type=recovery. supabase-js wist dat #-deel zodra
 // het de sessie heeft opgehaald, en dat is vóórdat appInit() het leest. Daarom
