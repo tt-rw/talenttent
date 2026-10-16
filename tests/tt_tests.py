@@ -209,6 +209,21 @@ def blok1_statisch():
         ok, why = balans(open(path, encoding="utf-8").read())
         check(f"haakjesbalans {f}", ok, why)
 
+    # TT-455: de database wordt gekozen op webadres; productie en test staan in dezelfde core.js.
+    c455 = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
+    kaart = re.search(r"TT_DB_PER_ADRES\s*=\s*\{(.*?)\};", c455, re.S)
+    kaart = kaart.group(1) if kaart else ""
+    check("TT-455: talenttent.org en www.talenttent.org gaan naar de productiedatabase",
+          "'talenttent.org': TT_DB_PRODUCTIE" in kaart and "'www.talenttent.org': TT_DB_PRODUCTIE" in kaart, kaart[:200])
+    check("TT-455: tt-rw.github.io, localhost en 127.0.0.1 gaan naar de testdatabase",
+          all(f"'{h}': TT_DB_TEST" in kaart for h in ("tt-rw.github.io", "localhost", "127.0.0.1")), kaart[:200])
+    check("TT-455: een onbekend webadres krijgt geen database en toont de melding",
+          "TT_DB_PER_ADRES[location.hostname] || null" in c455 and "window.ttBackendMissing = true" in c455, "regel ontbreekt")
+    prod_url = re.search(r"TT_DB_PRODUCTIE = \{\s*url: '([^']+)'", c455)
+    test_url = re.search(r"TT_DB_TEST = \{\s*url: '([^']+)'", c455)
+    check("TT-455: productie- en test-URL zijn verschillend",
+          bool(prod_url and test_url and prod_url.group(1) != test_url.group(1)), "gelijk of ontbreekt")
+
     # TT-393: een schermwissel en het sluiten van een gesprek scrollen meteen naar boven.
     core = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
     msgs = open(os.path.join(ROOT, "messages.js"), encoding="utf-8").read()
