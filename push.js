@@ -55,10 +55,12 @@ async function ttServiceWorkerAanmelden() {
     await navigator.serviceWorker.register('sw.js');
     return true;
   } catch (e) {
-    // TT-465: een browser of beveiligingsextensie die de aanmelding weigert is een
-    // verwachte uitkomst (zoals TT-423) en komt niet in het foutlog. Elke andere
-    // fout wordt nog steeds gelogd.
-    if (!(e && (e.name === 'SecurityError' || e.message === 'Rejected'))) logCaught('ttServiceWorkerAanmelden', e);
+    // TT-465, TT-471: een browser of beveiligingsextensie die de aanmelding weigert is een
+    // verwachte uitkomst (zoals TT-423) en komt niet in het foutlog. Dat geldt voor
+    // SecurityError, "Rejected" en InvalidStateError ("The document is in an invalid
+    // state": de pagina is op dat moment niet actief). Elke andere fout wordt nog
+    // steeds gelogd.
+    if (!(e && (e.name === 'SecurityError' || e.name === 'InvalidStateError' || e.message === 'Rejected'))) logCaught('ttServiceWorkerAanmelden', e);
     return false;
   }
 }

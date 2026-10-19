@@ -77,6 +77,13 @@ const db = window.ttBackendMissing ? null : supabase.createClient(SUPABASE_URL, 
 // een try/catch die nooit iets teruggooit — een mislukte logpoging mag nooit
 // zelf weer een fout veroorzaken.
 let appErrorLogCount = 0;
+// TT-471: de eerste regel van elke logregel is het browsertype. Zo is bij een
+// foutrapport te zien welke browser de fout gaf. Geen nieuwe kolom nodig.
+function ttFoutStackMetToestel(stack) {
+  let toestel = '[toestel] onbekend';
+  try { toestel = '[toestel] ' + (navigator.userAgent || 'onbekend'); } catch (e) { /* geen browser-info */ }
+  return (toestel + (stack ? '\n' + String(stack) : '')).slice(0, 4000);
+}
 function logAppError(message, source, stack) {
   if (!db) return; // TT-82: geen bibliotheek, dus ook geen manier om te loggen
   if (appErrorLogCount >= 20) return;
@@ -85,7 +92,7 @@ function logAppError(message, source, stack) {
     db.from('app_error_log').insert({
       message: String(message || '').slice(0, 2000),
       source: source ? String(source).slice(0, 500) : null,
-      stack: stack ? String(stack).slice(0, 4000) : null,
+      stack: ttFoutStackMetToestel(stack),
       user_id: currentUser?.id || null,
     }).then(() => {}, () => {}); // stil falen, ook bij een netwerkfout
   } catch (e) {
