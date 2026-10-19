@@ -9140,9 +9140,23 @@ window.TT_STUB.fnAntwoord = {};
           maak(new Error('Rejected')); u.swRejected = await ttServiceWorkerAanmelden();
           const sec = new Error('geweigerd'); sec.name = 'SecurityError';
           maak(sec); u.swSecurity = await ttServiceWorkerAanmelden();
+          const ongeldig = new Error('The document is in an invalid state.'); ongeldig.name = 'InvalidStateError';
+          maak(ongeldig); u.swInvalid = await ttServiceWorkerAanmelden();
           u.swGeweigerdLog = logAantal('ttServiceWorkerAanmelden') - voor4;
           maak(new Error('onverwacht')); u.swAnders = await ttServiceWorkerAanmelden();
           u.swAndersLog = logAantal('ttServiceWorkerAanmelden') - voor4 - u.swGeweigerdLog;
+          // TT-471: elke logregel begint met het browsertype.
+          const laatste = (S.data.app_error_log || []).filter(r => r.source === 'ttServiceWorkerAanmelden').slice(-1)[0];
+          u.toestelRegel = laatste ? String(laatste.stack || '').split('\n')[0] : '';
+          appErrorLogCount = 0;
+          const voor5 = logAantal();
+          logAppError('Script error.', null, null); await w(60);
+          const l5 = (S.data.app_error_log || []).slice(-1)[0];
+          u.zonderStack = logAantal() - voor5; u.zonderStackTekst = l5 ? String(l5.stack) : '';
+          appErrorLogCount = 0;
+          logAppError('x', 'bron', 'Error: x\n    at a.js:1:1'); await w(60);
+          const l6 = (S.data.app_error_log || []).slice(-1)[0];
+          u.metStack = l6 ? String(l6.stack) : '';
           if (reg) Object.defineProperty(navigator, 'serviceWorker', reg); else delete navigator.serviceWorker;
           ttPushApi.beschikbaar = api;
           showView('about');
@@ -9155,6 +9169,9 @@ window.TT_STUB.fnAntwoord = {};
         check("een echte fout bij de band komt in het foutlog, met het band-id", d92["foutLog"] == 1 and "b-echte-fout" in d92["foutBericht"], json.dumps(d92))
         check("service worker geweigerd (Rejected of SecurityError): niets in het foutlog, app gaat door", d92["swRejected"] is False and d92["swSecurity"] is False and d92["swGeweigerdLog"] == 0, json.dumps(d92))
         check("service worker met een andere fout: wel in het foutlog", d92["swAnders"] is False and d92["swAndersLog"] == 1, json.dumps(d92))
+        check("TT-471: InvalidStateError van de service worker komt niet in het foutlog", d92["swInvalid"] is False and d92["swGeweigerdLog"] == 0, json.dumps(d92))
+        check("TT-471: een logregel begint met het browsertype, ook zonder stack", d92["toestelRegel"].startswith("[toestel] ") and d92["zonderStack"] == 1 and d92["zonderStackTekst"].startswith("[toestel] "), json.dumps(d92))
+        check("TT-471: bij een stack staat het browsertype bovenaan en de stack eronder", d92["metStack"].startswith("[toestel] ") and "at a.js:1:1" in d92["metStack"], json.dumps(d92))
         check("geen paginafouten in blok 92", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
