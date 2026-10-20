@@ -200,6 +200,13 @@
     font-style: normal;
     font-display: block;
   }
+  /* TT-492 (20-10-2026): Roboto in de repo, 400, 700 en 900 en 400 cursief (latin en
+     latin-ext, woff2). Eerder via Google Fonts, met precies deze vier. 300, 500 en 600
+     vallen op de dichtstbijzijnde, zoals voorheen. */
+  @font-face { font-family: 'Roboto'; src: url('roboto-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'Roboto'; src: url('roboto-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'Roboto'; src: url('roboto-900.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'Roboto'; src: url('roboto-400italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
   /* --font-display heeft twee gebruikers: .logo en .avatar-t. Paneeltitels
      blijven Roboto Bold (Ronald, 06-08-2026). */
   :root {
