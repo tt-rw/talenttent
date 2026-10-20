@@ -62,7 +62,8 @@
      laden, zodat het er is voordat de kop getekend wordt. crossorigin is
      verplicht bij een lettertype, ook op het eigen domein. -->
 <link rel="preload" href="tt-woordmerk.woff2" as="font" type="font/woff2" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
+<!-- TT-492 (20-10-2026): Roboto staat nu in de repo (styles.css, @font-face), niet meer bij Google Fonts: geen extern verzoek, het adres van de bezoeker gaat niet naar Google. -->
+<link rel="preload" href="roboto-400.woff2" as="font" type="font/woff2" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
   /* TT-82 (10-08-2026, externe review 2.1): de hele app hangt aan deze ene
