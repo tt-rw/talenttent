@@ -6350,8 +6350,10 @@ window.TT_STUB.fnAntwoord = {};
         check("UI: label tot veld 8px, tussen twee velden 20px, balk tot titel 8px, zijmarge 16px",
               m["labelVeld"] == 8 and m["genreLabelVeld"] == 8 and m["naamTotPostcode"] == 20 and m["balkTitel"] == 8
               and m["links"] == 16 and m["rechts"] == 16, j59("maten"))
-        check("UI: velden 44px hoog met 16px letter, labels 14px; knoppen 44px, Band aanmaken over de volle breedte",
-              m["veldH"] == 44 and m["zipH"] == 44 and m["genreH"] == 44 and m["veldLetter"] == "16px" and m["labelLetter"] == "14px"
+        # TT-492 (20-10-2026): Roboto komt nu uit de repo en laadt dus ook in de test; de regelhoogte van
+        # Roboto maakt een invulveld 45 px in plaats van 44 px. Beide voldoen aan het minimum van 44 px.
+        check("UI: velden 44 of 45px hoog met 16px letter, labels 14px; knoppen minstens 44px, Band aanmaken over de volle breedte",
+              m["veldH"] in (44, 45) and m["zipH"] in (44, 45) and m["genreH"] in (44, 45) and m["veldLetter"] == "16px" and m["labelLetter"] == "14px"
               and all(h >= 44 for h in m["knopH"]) and m["knopTekst"] == ["Band aanmaken"], j59("maten"))
         check("leeg opslaan: alle drie de fouten tegelijk, bij hun veld", d59["fouten"] == ["bandName", "bandZip", "bandGenreField"], j59("fouten"))
         check("de balk loopt 5% op per ingevuld veld: 5, 10, 15%",
