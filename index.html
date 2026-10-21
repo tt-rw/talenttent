@@ -64,7 +64,8 @@
 <link rel="preload" href="tt-woordmerk.woff2" as="font" type="font/woff2" crossorigin>
 <!-- TT-492 (20-10-2026): Roboto staat nu in de repo (styles.css, @font-face), niet meer bij Google Fonts: geen extern verzoek, het adres van de bezoeker gaat niet naar Google. -->
 <link rel="preload" href="roboto-400.woff2" as="font" type="font/woff2" crossorigin>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- TT-483 (21-10-2026): supabase-js staat nu in de repo, vaste versie 2.118.0, niet meer bij een CDN (@2 liep mee met elke nieuwe release en had geen integriteitscontrole). Geen extern verzoek meer voor deze bibliotheek. Nieuwe versie nemen = bestand vervangen en ?v= ophogen. -->
+<script src="supabase.js?v=2.118.0"></script>
 <script>
   /* TT-82 (10-08-2026, externe review 2.1): de hele app hangt aan deze ene
      externe bibliotheek. Laadt hij niet (CDN onbereikbaar, blokkerende
