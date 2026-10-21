@@ -257,7 +257,9 @@ async function checkUsernameGate() {
   // select — die kolom is voor authenticated afgesloten. Dit is weliswaar
   // altijd de eigen rij (mid = eigen id), maar tt_get_my_birth_date() is de
   // enige weg die de kolom nog mag lezen, dus ook hier via die functie.
-  const { data, error } = await db.from('musicians').select('username, fname').eq('id', mid).single();
+  // TT-454: fname/lname zijn voor andere gebruikers afgesloten; de eigen
+  // voornaam komt via tt_mijn_naam(), net als de geboortedatum hieronder.
+  const { data, error } = await db.from('musicians').select('username').eq('id', mid).single();
   if (error || !data) return false;
   if (data.username) return false;
 
@@ -269,7 +271,9 @@ async function checkUsernameGate() {
 
   const { data: myBirthDate } = await db.rpc('tt_get_my_birth_date');
   usernameGateAge = calcAgeFromISO(myBirthDate);
-  usernameGateFname = data.fname || '';
+  const { data: naamData } = await db.rpc('tt_mijn_naam');
+  const eigenNaam = Array.isArray(naamData) ? naamData[0] : naamData;
+  usernameGateFname = (eigenNaam && eigenNaam.fname) || '';
   const hintEl = document.getElementById('usernameGateAgeHint');
   if (hintEl) {
     hintEl.textContent = (usernameGateAge < 16)

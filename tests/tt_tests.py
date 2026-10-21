@@ -8633,7 +8633,7 @@ window.TT_STUB.fnAntwoord = {};
           // 5. de tegel Wie ben je: 25 jaar, echte naam
           S.data.musicians = [{ id: 'm1', user_id: 'u1', fname: 'Ronald', lname: 'Wever', username: 'ronnie', zip: '2497', city: 'Den Haag',
                                 city_source: 'pdok', bio: '', naam_tonen: 'echt', weergavenaam: 'Ronald Wever' }];
-          S.rpcResults.tt_get_my_birth_date = '2001-01-01';
+          S.rpcResults.tt_get_my_birth_date = '2001-01-01'; S.rpcResults.tt_mijn_naam = () => S.mijnNaam();
           showView('profieltegels'); await w();
           await openWieBenJe(); await w();
           const blok = document.getElementById('wbjNaamKeuze');
@@ -8651,13 +8651,13 @@ window.TT_STUB.fnAntwoord = {};
           u.opgeslagen = S.data.musicians[0].naam_tonen;
 
           // 6. onder de 16: geen keuze
-          S.rpcResults.tt_get_my_birth_date = new Date(new Date().getFullYear() - 14, 5, 15).toISOString().slice(0, 10);
+          S.rpcResults.tt_get_my_birth_date = new Date(new Date().getFullYear() - 14, 5, 15).toISOString().slice(0, 10); S.rpcResults.tt_mijn_naam = () => S.mijnNaam();
           S.data.musicians[0].naam_tonen = 'gebruikersnaam';
           await openWieBenJe(); await w();
           u.tegel14 = { zichtbaar: document.getElementById('wbjNaamKeuze').style.display !== 'none' };
 
           currentUser = keep.currentUser; myMusicianId = keep.myMusicianId; hasOwnProfile = keep.hasOwnProfile; S.data.musicians = keep.musicians;
-          S.rpcResults.tt_get_my_birth_date = null;
+          S.rpcResults.tt_get_my_birth_date = null; S.rpcResults.tt_mijn_naam = () => S.mijnNaam();
           return u;
         }""")
         j84 = json.dumps(d84, ensure_ascii=False)
@@ -8684,8 +8684,10 @@ window.TT_STUB.fnAntwoord = {};
                 ["search.js", "bands.js", "messages.js", "musicians.js", "veiligheid.js", "wizard.js"]}
         import re as re84
         lezen84 = {f: re84.findall(r"select\(\s*[`'\"][^`'\"]*\bfname\b", t) for f, t in js84.items()}
-        check("TT-420: geen enkele leesvraag van de app haalt fname of lname op voor andermans naam (alleen de eigen tegel Wie ben je leest ze)",
-              all(not v for f, v in lezen84.items() if f != "musicians.js") and len(lezen84["musicians.js"]) == 1,
+        auth84 = open(os.path.join(ROOT, "auth.js"), encoding="utf-8").read()
+        check("TT-420/TT-454: geen enkele leesvraag van de app haalt fname of lname uit de tabel (de eigen naam komt via tt_mijn_naam)",
+              all(not v for v in lezen84.values()) and not re84.findall(r"select\(\s*[`'\"][^`'\"]*\bfname\b", auth84)
+              and "tt_mijn_naam" in js84["musicians.js"] and "tt_mijn_naam" in auth84,
               json.dumps({f: len(v) for f, v in lezen84.items()}))
         check("TT-420: het naamveld van Zoeken en Maak setlist toetst de weergavenaam, en Lid uitnodigen zoekt in weergavenaam",
               "naamMatcht(nameTerm, displayNameOf(m))" in js84["search.js"] and "naamMatcht(term, displayNameOf(m))" in js84["search.js"]
@@ -9010,7 +9012,7 @@ window.TT_STUB.fnAntwoord = {};
           const S = window.TT_STUB, w = (n = 500) => new Promise(r => setTimeout(r, n)), u = {};
           const keep = { currentUser, myMusicianId, hasOwnProfile, musicians: S.data.musicians };
           currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
-          S.rpcResults.tt_get_my_birth_date = '2001-02-01';
+          S.rpcResults.tt_get_my_birth_date = '2001-02-01'; S.rpcResults.tt_mijn_naam = () => S.mijnNaam();
           S.data.musicians = [{ id: 'm1', user_id: 'u1', fname: 'Ik', lname: 'Test', username: 'ik', zip: '2522', city: 'Den Haag', city_source: 'pdok',
             bio: 'Test', naam_tonen: 'gebruikersnaam', weergavenaam: 'ik', musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }];
           showView('profieltegels'); await w(); openTegelScreen('wieBenJe'); await w(600);

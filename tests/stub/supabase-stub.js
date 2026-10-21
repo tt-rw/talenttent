@@ -83,6 +83,8 @@
       // voor een muzikant met een weergavenaam in de testdata; voor de rest
       // blijft de app bij de gebruikersnaam, zoals bij een mislukte vraag.
       tt_weergavenamen(p) { return TT_STUB.weergavenamen(p); },
+      // TT-454: de eigen voor- en achternaam, zoals de databasefunctie tt_mijn_naam().
+      tt_mijn_naam() { return TT_STUB.mijnNaam(); },
       // TT-410b: staat delen aan voor dit profiel? Leest musicians.delen_aan uit
       // de testdata; een ontbrekende waarde telt als aan, een onbekend id geeft null.
       tt_profiel_delen(p) {
@@ -152,6 +154,14 @@
         const r = (TT_STUB.data.musicians || []).find(x => x.id === id);
         return r && r.weergavenaam !== undefined ? { id, weergavenaam: r.weergavenaam } : null;
       }).filter(Boolean);
+    },
+    // TT-454: het antwoord van tt_mijn_naam(); tests die rpcResults vervangen
+    // zetten het terug met S.rpcResults.tt_mijn_naam = () => S.mijnNaam().
+    mijnNaam() {
+      const uid = TT_STUB.session && TT_STUB.session.user && TT_STUB.session.user.id;
+      const lijst = TT_STUB.data.musicians || [];
+      const m = lijst.find(r => r.user_id === uid) || lijst[0];
+      return m ? [{ fname: m.fname || null, lname: m.lname || null }] : [];
     },
     reset() {
       this.calls = []; this.errors = {}; this.rpcErrors = {};

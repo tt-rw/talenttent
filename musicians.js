@@ -876,18 +876,22 @@ async function openWieBenJe() {
   // information_schema.column_privileges), een kale select met deze kolom
   // erin faalt in zijn geheel. Apart ophalen via tt_get_my_birth_date().
   // Parallel i.p.v. na elkaar — twee onafhankelijke aanvragen.
-  const [{ data, error }, { data: myBirthDate }] = await Promise.all([
+  // TT-454: fname en lname zijn voor andere gebruikers afgesloten; de eigen
+  // naam komt via tt_mijn_naam().
+  const [{ data, error }, { data: myBirthDate }, { data: naamData }] = await Promise.all([
     db.from('musicians')
-      .select('fname, lname, username, zip, city, city_source, bio, naam_tonen')
+      .select('username, zip, city, city_source, bio, naam_tonen')
       .eq('id', myMusicianId).single(),
     db.rpc('tt_get_my_birth_date'),
+    db.rpc('tt_mijn_naam'),
   ]);
   if (error) {
     showToast(friendlyErrorMessage(error, 'je gegevens laden'));
     return;
   }
-  document.getElementById('wbjFname').value = data.fname || '';
-  document.getElementById('wbjLname').value = data.lname || '';
+  const eigenNaam = (Array.isArray(naamData) ? naamData[0] : naamData) || {};
+  document.getElementById('wbjFname').value = eigenNaam.fname || '';
+  document.getElementById('wbjLname').value = eigenNaam.lname || '';
   document.getElementById('wbjUsername').value = data.username || '';
   document.getElementById('wbjBirthDate').value = fromISODate(myBirthDate);
   document.getElementById('wbjZip').value = data.zip || '';
