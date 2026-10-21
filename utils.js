@@ -199,6 +199,16 @@ function veldFoutAnker(el) {
   return (el.closest && (el.closest('.password-wrap') || el.closest('.postcode-plaats-rij'))) || el;
 }
 
+// TT-494: korte uitslag rechts op de labelregel (zie .field-uitslag in
+// styles.css). `statusId` is het id van de statusregel onder het veld; het id
+// van de uitslag volgt daaruit (…Status wordt …Uitslag). Leeg = weg.
+function zetUitslag(statusId, tekst, goed) {
+  const el = document.getElementById(statusId.replace('Status', 'Uitslag'));
+  if (!el) return;
+  el.textContent = tekst || '';
+  el.classList.toggle('uitslag-goed', !!goed && !!tekst);
+}
+
 function setFieldError(el, msg) {
   el = veldElement(el);
   if (!el) return;

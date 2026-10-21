@@ -61,11 +61,7 @@ function populateWizardFieldsFromState() {
   // nodig, dat zou hier alleen verwarren (lijkt bezet terwijl het van jezelf is).
   usernameCheckedValue = state.username || '';
   usernameAvailable = !!state.username;
-  const usernameStatusEl = document.getElementById('usernameStatus');
-  if (usernameStatusEl) {
-    usernameStatusEl.textContent = state.username ? 'Dit is je huidige gebruikersnaam.' : '';
-    usernameStatusEl.style.color = 'var(--muted)';
-  }
+  zetUitslag('usernameStatus', state.username ? 'Huidige naam' : '', true);
   const cityFieldPWF = document.getElementById('city');
   cityFieldPWF.value = state.city;
   if (state.citySource === 'manual') {
@@ -73,7 +69,7 @@ function populateWizardFieldsFromState() {
   } else {
     cityFieldPWF.readOnly = true; cityFieldPWF.style.cursor = 'not-allowed'; cityFieldPWF.style.opacity = '0.85';
   }
-  document.getElementById('postcodeStatus').textContent = state.city ? `Gevonden: ${state.city}` : '';
+  document.getElementById('postcodeStatus').textContent = '';
   document.getElementById('bio').value = state.bio;
 
   renderInstrumentBadges('wizard');

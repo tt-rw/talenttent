@@ -128,6 +128,7 @@ function isReservedUsername(value) {
 }
 
 function scheduleUsernameCheck() {
+  wisUsernameUitslag('usernameStatus', 'username');
   clearTimeout(usernameCheckTimeout);
   usernameCheckTimeout = setTimeout(() => checkUsernameAvailability(), 400);
 }
@@ -149,19 +150,24 @@ function usernameFormatValid(u) {
 // voor het gate-scherm — bewust twee aparte variabelen, zie toelichting bij
 // usernameGateMid hieronder).
 async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
-  const input = document.getElementById(inputElId || 'username');
-  const statusEl = document.getElementById(statusElId || 'usernameStatus');
+  const statusId = statusElId || 'usernameStatus';
+  const inputId = inputElId || 'username';
+  const input = document.getElementById(inputId);
   const value = (input?.value || '').trim();
   usernameCheckedValue = value;
   usernameAvailable = false;
 
-  if (!value) { if (statusEl) statusEl.textContent = ''; return false; }
+  // TT-494: een korte uitslag (Controleren… / Beschikbaar / Niet beschikbaar)
+  // staat rechts op de labelregel; een lange uitleg staat onder het veld, in
+  // de gewone tekstkleur (huisstijl §1.2). Niet goed = rode rand om het veld.
+  wisUsernameUitslag(statusId, inputId);
+  if (!value) return false;
   if (!usernameFormatValid(value)) {
-    if (statusEl) { statusEl.textContent = 'Alleen letters, cijfers en underscore, 3-20 tekens.'; statusEl.style.color = 'var(--danger)'; }
+    zetUsernameLang(inputId, 'Alleen letters, cijfers en underscore, 3-20 tekens.');
     return false;
   }
   if (isReservedUsername(value)) {
-    if (statusEl) { statusEl.textContent = 'Deze gebruikersnaam is niet beschikbaar. Kies een andere.'; statusEl.style.color = 'var(--danger)'; }
+    zetUsernameNee(statusId, inputId);
     return false;
   }
   // TT-249 (11-09-2026): een naam wordt op het profiel nooit afgekapt en
@@ -171,10 +177,10 @@ async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
   // vallen. 20 tekens mag nog steeds — het hangt van de letters af: "MMMM..."
   // is ruim twee keer zo breed als "iiii...".
   if (!naamPastInProfielkop(value)) {
-    if (statusEl) { statusEl.textContent = 'Deze naam is te lang om op je profiel te tonen. Maak hem korter.'; statusEl.style.color = 'var(--danger)'; }
+    zetUsernameLang(inputId, 'Deze naam is te lang om op je profiel te tonen. Maak hem korter.');
     return false;
   }
-  if (statusEl) { statusEl.textContent = 'Controleren...'; statusEl.style.color = 'var(--muted)'; }
+  zetUitslag(statusId, 'Controleren…');
 
   try {
     const { data, error } = await db.rpc('tt_check_username_available', {
@@ -185,10 +191,8 @@ async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
     usernameAvailable = !!data;
     usernameCheckedValue = value;
     usernameCheckFailed = false;
-    if (statusEl) {
-      statusEl.textContent = usernameAvailable ? 'Beschikbaar' : 'Al in gebruik, kies een andere.';
-      statusEl.style.color = usernameAvailable ? 'var(--success)' : 'var(--danger)';
-    }
+    if (usernameAvailable) zetUitslag(statusId, 'Beschikbaar', true);
+    else zetUsernameNee(statusId, inputId);
     return usernameAvailable;
   } catch (e) {
     logCaught('checkUsernameAvailability', e);
@@ -200,9 +204,30 @@ async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
     usernameCheckFailed = true;
     lastUsernameCheckError = (e && e.message) ? e.message : String(e);
     console.error('Technische fout bij gebruikersnaam-controle:', e);
-    if (statusEl) { statusEl.textContent = friendlyErrorMessage(e, 'de gebruikersnaam controleren'); statusEl.style.color = 'var(--danger)'; }
+    zetUitslag(statusId, '');
+    zetUsernameLang(inputId, friendlyErrorMessage(e, 'de gebruikersnaam controleren'));
     return false;
   }
+}
+
+// TT-494: hulpfuncties voor de uitslag van de gebruikersnaamcontrole.
+// Wissen: bij elke toetsaanslag, zodat rand en melding verdwijnen zodra de
+// gebruiker weer typt (wist ook een foutregel onder het veld).
+function wisUsernameUitslag(statusId, inputId) {
+  zetUitslag(statusId, '');
+  const inp = document.getElementById(inputId);
+  if (inp) clearFieldError(inp);
+}
+// Niet goed, kort: "Niet beschikbaar" rechts op de labelregel, rode rand.
+function zetUsernameNee(statusId, inputId) {
+  zetUitslag(statusId, 'Niet beschikbaar');
+  const inp = document.getElementById(inputId);
+  if (inp) { inp.classList.add('field-error'); inp.setAttribute('aria-invalid', 'true'); }
+}
+// Niet goed, met uitleg: de standaard veldfout onder het veld (rode rand,
+// tekst in de gewone kleur, verdwijnt zodra de gebruiker typt).
+function zetUsernameLang(inputId, tekst) {
+  setFieldError(inputId, tekst);
 }
 
 // TT-38: aparte debounce voor het gate-scherm (los van scheduleUsernameCheck()
@@ -216,6 +241,7 @@ let usernameGateFname = ''; // echte voornaam, voor de <16-vergelijking
 let usernameGateMid = null;
 
 function scheduleUsernameCheck2() {
+  wisUsernameUitslag('usernameGateStatus', 'usernameGateInput');
   clearTimeout(usernameCheckTimeout);
   usernameCheckTimeout = setTimeout(() => checkUsernameAvailability('usernameGateStatus', 'usernameGateInput', usernameGateMid), 400);
 }
@@ -251,7 +277,7 @@ async function checkUsernameGate() {
       : '';
   }
   document.getElementById('usernameGateInput').value = '';
-  document.getElementById('usernameGateStatus').textContent = '';
+  wisUsernameUitslag('usernameGateStatus', 'usernameGateInput');
   document.getElementById('usernameGateModal').classList.add('visible');
   setTimeout(() => document.getElementById('usernameGateInput')?.focus(), 50);
   return true;
@@ -259,15 +285,14 @@ async function checkUsernameGate() {
 
 async function saveUsernameGate() {
   const input = document.getElementById('usernameGateInput');
-  const statusEl = document.getElementById('usernameGateStatus');
   const value = input.value.trim();
 
-  if (!value) { statusEl.textContent = 'Vul een gebruikersnaam in.'; statusEl.style.color = 'var(--danger)'; return; }
+  if (!value) { zetUsernameLang('usernameGateInput', 'Vul een gebruikersnaam in.'); return; }
   if (!usernameFormatValid(value)) {
-    statusEl.textContent = 'Alleen letters, cijfers en underscore, 3-20 tekens.'; statusEl.style.color = 'var(--danger)'; return;
+    zetUsernameLang('usernameGateInput', 'Alleen letters, cijfers en underscore, 3-20 tekens.'); return;
   }
   if (usernameGateAge < 16 && value.toLowerCase() === usernameGateFname.toLowerCase()) {
-    statusEl.textContent = 'Onder de 16 jaar moet de gebruikersnaam anders zijn dan je voornaam.'; statusEl.style.color = 'var(--danger)'; return;
+    zetUsernameLang('usernameGateInput', 'Onder de 16 jaar moet de gebruikersnaam anders zijn dan je voornaam.'); return;
   }
 
   const available = (usernameCheckedValue === value && usernameAvailable)
@@ -278,13 +303,16 @@ async function saveUsernameGate() {
     // ongeldig formaat / technische fout) — dit is puur een extra vangnet
     // zodat er nooit een lege statustekst overblijft als er iets onverwachts
     // misging (bijv. lege waarde door een edge case hierboven).
-    if (!statusEl.textContent) { statusEl.textContent = 'Gebruikersnaam controleren lukt nu niet. Controleer je verbinding en probeer het opnieuw.'; statusEl.style.color = 'var(--danger)'; }
+    const uitslagEl = document.getElementById('usernameGateUitslag');
+    if (!(uitslagEl && uitslagEl.textContent) && !input.classList.contains('field-error')) {
+      zetUsernameLang('usernameGateInput', 'Gebruikersnaam controleren lukt nu niet. Controleer je verbinding en probeer het opnieuw.');
+    }
     return;
   }
 
   const mid = usernameGateMid || await getMyMusicianId();
   const { error } = await db.from('musicians').update({ username: value }).eq('id', mid);
-  if (error) { statusEl.textContent = friendlyErrorMessage(error, 'je gebruikersnaam opslaan'); statusEl.style.color = 'var(--danger)'; return; }
+  if (error) { zetUsernameLang('usernameGateInput', friendlyErrorMessage(error, 'je gebruikersnaam opslaan')); return; }
 
   document.getElementById('usernameGateModal').classList.remove('visible');
   showToast('Gebruikersnaam opgeslagen!');

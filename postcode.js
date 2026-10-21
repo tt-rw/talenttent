@@ -101,6 +101,7 @@ function enableManualCity(kind) {
   field.value = '';
   field.placeholder = 'Typ je plaatsnaam en kies uit de lijst';
   const statusEl = document.getElementById(statusId);
+  zetUitslag(statusId, '');
   statusEl.style.color = 'var(--text)';
   statusEl.textContent = 'We kunnen je plaats even niet automatisch ophalen — vul Plaats zelf in.';
   if (isBand) {
@@ -142,13 +143,13 @@ function onPostcodeInput(value) {
   const digits = value.trim().replace(/\D/g, '');
   document.getElementById('zip').value = digits;
   const match = digits.match(/^[1-9][0-9]{3}$/);
+  statusEl.textContent = '';
   if (!match) {
-    statusEl.textContent = '';
+    zetUitslag('postcodeStatus', '');
     return;
   }
   const normalized = digits;
-  statusEl.style.color = 'var(--muted)';
-  statusEl.textContent = 'Bezig met opzoeken...';
+  zetUitslag('postcodeStatus', 'Zoeken…');
 
   postcodeSearchTimeout = setTimeout(async () => {
     const outcome = await lookupPostcodeCity(normalized);
@@ -156,7 +157,7 @@ function onPostcodeInput(value) {
       postcodeFailStreak = 0;
       if (postcodeManualMode) relockCity('musician');
       state.citySource = outcome.source;
-      applyResolvedCity(outcome.city, normalized, statusEl, `Gevonden: ${outcome.city}`);
+      applyResolvedCity(outcome.city, normalized, statusEl);
     } else if (outcome.reason === 'notfound') {
       enableManualCity('musician');
     } else {
@@ -164,25 +165,23 @@ function onPostcodeInput(value) {
       if (postcodeFailStreak >= 2) {
         enableManualCity('musician');
       } else {
-        statusEl.style.color = 'var(--danger)';
+        zetUitslag('postcodeStatus', '');
+        statusEl.style.color = 'var(--text)';
         statusEl.textContent = 'Postcode controleren lukt nu niet. Controleer je verbinding en vul de postcode nog eens in.';
       }
     }
   }, 500);
 }
 
-let postcodeStatusHideTimeout;
-function applyResolvedCity(cityName, normalizedZip, statusEl, msg) {
+function applyResolvedCity(cityName, normalizedZip, statusEl) {
   document.getElementById('city').value = cityName;
   state.city = cityName;
   state.zip  = normalizedZip;
   postcodeResolved = true;
-  statusEl.style.color = 'var(--accent)';
-  statusEl.textContent = msg;
-  // Punt 6 (25-08-2026, Ronald): melding verdwijnt na 2 seconden — het
-  // bevestigt alleen het moment zelf, hoeft niet te blijven staan.
-  clearTimeout(postcodeStatusHideTimeout);
-  postcodeStatusHideTimeout = setTimeout(() => { statusEl.textContent = ''; }, 2000);
+  // TT-494: geen melding meer ("Gevonden: …", punt 6, 25-08-2026, verdween na
+  // 2 seconden): het veld toont de plaats zelf.
+  statusEl.textContent = '';
+  zetUitslag('postcodeStatus', '');
 }
 
 // ─── Postcode-opzoeking voor bands (zelfde aanpak als bij muzikanten) ────
@@ -206,15 +205,12 @@ const BAND_POSTCODE_VELDEN = {
 };
 let bandPostcodeDoel = 'band';
 
-let bandPostcodeStatusHideTimeout;
-function applyResolvedBandCity(cityName, statusEl, msg) {
+function applyResolvedBandCity(cityName, statusEl) {
   document.getElementById(BAND_POSTCODE_VELDEN[bandPostcodeDoel].city).value = cityName;
   bandPostcodeResolved = true;
   bandWizardBalkBij();
-  statusEl.style.color = 'var(--accent)';
-  statusEl.textContent = msg;
-  clearTimeout(bandPostcodeStatusHideTimeout);
-  bandPostcodeStatusHideTimeout = setTimeout(() => { statusEl.textContent = ''; }, 2000);
+  statusEl.textContent = '';
+  zetUitslag(BAND_POSTCODE_VELDEN[bandPostcodeDoel].status, '');
 }
 
 function onBandPostcodeInput(value, doel) {
@@ -230,13 +226,13 @@ function onBandPostcodeInput(value, doel) {
   const digits = value.trim().replace(/\D/g, '');
   document.getElementById(velden.zip).value = digits;
   const match = digits.match(/^[1-9][0-9]{3}$/);
+  statusEl.textContent = '';
   if (!match) {
-    statusEl.textContent = '';
+    zetUitslag(velden.status, '');
     return;
   }
   const normalized = digits;
-  statusEl.style.color = 'var(--muted)';
-  statusEl.textContent = 'Bezig met opzoeken...';
+  zetUitslag(velden.status, 'Zoeken…');
 
   bandPostcodeSearchTimeout = setTimeout(async () => {
     const outcome = await lookupPostcodeCity(normalized);
@@ -244,7 +240,7 @@ function onBandPostcodeInput(value, doel) {
       bandPostcodeFailStreak = 0;
       if (bandPostcodeManualMode) relockCity('band');
       bandCitySource = outcome.source;
-      applyResolvedBandCity(outcome.city, statusEl, `Gevonden: ${outcome.city}`);
+      applyResolvedBandCity(outcome.city, statusEl);
     } else if (outcome.reason === 'notfound') {
       enableManualCity('band');
     } else {
@@ -252,7 +248,8 @@ function onBandPostcodeInput(value, doel) {
       if (bandPostcodeFailStreak >= 2) {
         enableManualCity('band');
       } else {
-        statusEl.style.color = 'var(--danger)';
+        zetUitslag(velden.status, '');
+        statusEl.style.color = 'var(--text)';
         statusEl.textContent = 'Postcode controleren lukt nu niet. Controleer je verbinding en vul de postcode nog eens in.';
       }
     }
@@ -410,8 +407,8 @@ function selectCitySuggestion(name, listId) {
     state.city = name;
     state.citySource = 'manual';
     postcodeResolved = true;
-    document.getElementById('postcodeStatus').textContent = `Gekozen: ${name}`;
-    document.getElementById('postcodeStatus').style.color = 'var(--accent)';
+    document.getElementById('postcodeStatus').textContent = '';
+    zetUitslag('postcodeStatus', '');
     closeAC(listId);
     return;
   }
@@ -421,8 +418,8 @@ function selectCitySuggestion(name, listId) {
     bandCitySource = 'manual';
     bandPostcodeResolved = true;
     bandWizardBalkBij();
-    document.getElementById(velden.status).textContent = `Gekozen: ${name}`;
-    document.getElementById(velden.status).style.color = 'var(--accent)';
+    document.getElementById(velden.status).textContent = '';
+    zetUitslag(velden.status, '');
     closeAC(listId);
     return;
   }
@@ -432,8 +429,8 @@ function selectCitySuggestion(name, listId) {
     document.getElementById('wbjCity').value = name;
     wbjPostcodeManualMode = true;
     const statusEl = document.getElementById('wbjPostcodeStatus');
-    statusEl.textContent = `Gekozen: ${name}`;
-    statusEl.style.color = 'var(--accent)';
+    statusEl.textContent = '';
+    zetUitslag('wbjPostcodeStatus', '');
     closeAC(listId);
     return;
   }

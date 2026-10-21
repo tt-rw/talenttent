@@ -641,7 +641,7 @@
   .panel-sub {
     font-size: 14px;
     color: var(--muted);
-    margin-bottom: 32px;
+    margin-bottom: 20px; /* huisstijl §3: tussen twee blokken 20px (was 32px) */
     font-weight: 300;
     /* 22-09-2026 (TT-42): stond er niet, dus viel dit terug op de standaard
        van de browser — ongeveer 1,2. Op één regel valt dat niet op; op drie
@@ -4274,6 +4274,36 @@
   /* TT-260 (12-09-2026): was 11px met een eigen marge van 5px. Geen van
      beide is een maat uit de huisstijl (§2: 12px; §3: 4px-schaal). */
   .field-status { font-size: var(--fs-sm); color: var(--muted); margin-top: 4px; min-height: 16px; }
+  /* Een lege statusregel neemt geen ruimte in (TT-494). Gemeten in de wizard:
+     32px in plaats van 8px tussen veld en hulptekst, en 44px in plaats van
+     20px boven Korte bio. Zodra er een melding komt, schuift de rest 24px
+     mee. Alleen in een .field en in .postcode-plaats, waar de 8px gap geldt. */
+  .field > .field-status:empty,
+  .postcode-plaats > .field-status:empty { display: none; }
+  /* Binnen een .field zit al 8px (gap) tussen veld en statusregel; de 4px
+     marge erbovenop maakte er 12 van. Huisstijl §3: veld naar statusregel 8px.
+     Een statusregel buiten een .field (autocomplete-lijst, nummerlijst) heeft
+     geen gap en houdt zijn 4px. */
+  .field > .field-status,
+  .postcode-plaats > .field-status { margin-top: 0; }
+  /* TT-494: een korte uitslag staat rechts op de labelregel, zodat er geen
+     regel bijkomt en er niets schuift. Goed: --accent. Niet goed of bezig:
+     --text (huisstijl §1.2: nooit rood als tekstkleur; de rode rand om het
+     veld wijst het veld aan). Hij verdwijnt zodra de gebruiker weer typt. */
+  .label-rij {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .field-uitslag {
+    font-size: var(--fs-sm);
+    line-height: 16px;
+    color: var(--text);
+    padding-right: var(--field-inset);
+    white-space: nowrap;
+  }
+  .field-uitslag.uitslag-goed { color: var(--accent); }
   /* TT-228 (09-09-2026): zelfde grid-aanpak als .btn-row hierboven, met
      dezelfde 8px-tussenruimte (was 10px, geen veelvoud van 4 — huisstijl
      §3). Vervangt de flex-aanpak van TT-207 (04-09-2026): die noemde het

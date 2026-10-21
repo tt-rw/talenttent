@@ -77,7 +77,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261011d">
+<link rel="stylesheet" href="styles.css?v=20261021e">
 </head>
 <body>
 
@@ -307,7 +307,7 @@
   <!-- STEP 1: Persoonlijke info -->
   <div class="panel active" id="step0">
     <div class="panel-title">Wie ben je</div>
-    <div class="panel-sub">Maak je profiel aan. Vanaf 16 jaar staan je voor- en achternaam op je profiel; later kies je zelf of dat je gebruikersnaam wordt. Jonger dan 16? Dan staat alleen je gebruikersnaam op je profiel. Je e-mail en wachtwoord blijven altijd privé.</div>
+    <div class="panel-sub">Maak je profiel aan. Vanaf 16 jaar staan je voor- en achternaam op je profiel; later kies je zelf of dat je gebruikersnaam wordt.</div>
 
     <div class="field-group">
       <div class="field">
@@ -322,21 +322,19 @@
 
     <div class="field-group single">
       <div class="field">
-        <label>Gebruikersnaam <span class="req">*</span></label>
+        <div class="label-rij"><label>Gebruikersnaam <span class="req">*</span></label><span id="usernameUitslag" class="field-uitslag" aria-live="polite"></span></div>
         <input type="text" id="username" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck()">
-        <p id="usernameStatus" class="field-status"></p>
-        <p class="field-hint">Dit is je artiestennaam. Ben je jonger dan 16 jaar? Dan staat alleen deze naam op je profiel en moet hij anders zijn dan je voornaam.</p>
+        <p class="field-hint">Ben je jonger dan 16 jaar? Dan staat alleen deze naam op je profiel en moet hij anders zijn dan je voornaam.</p>
       </div>
     </div>
 
-    <div class="field-group">
+    <div class="field-group single">
       <div class="field">
         <label>Geboortedatum <span class="req">*</span></label>
         <input type="text" id="birth_date" placeholder="01-02-2001" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this); ouderLeeftijdsregel()">
         <!-- TT-42: verschijnt alleen bij 13, 14 of 15. Mededeling, geen fout. -->
         <p class="field-hint" id="ouderLeeftijdHint" style="display:none;">Onder de 16 vragen we straks toestemming aan je ouder of verzorger. Voor hen is het één klik. Je kunt gewoon doorgaan.</p>
       </div>
-      <div class="field"></div>
     </div>
 
     <!-- Postcode en plaats naast elkaar, in de hele app één vorm
@@ -349,7 +347,7 @@
           <input type="text" id="zip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onPostcodeInput(this.value)">
         </div>
         <div class="field">
-          <label>Plaats <span class="req">*</span></label>
+          <div class="label-rij"><label>Plaats <span class="req">*</span></label><span id="postcodeUitslag" class="field-uitslag" aria-live="polite"></span></div>
           <input type="text" id="city" placeholder="Vult vanzelf in" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acCityManualList')">
           <div class="autocomplete-list" id="acCityManualList"></div>
         </div>
@@ -804,19 +802,17 @@
       </div>
     </div>
 
-    <div class="field-group">
+    <div class="field-group single">
       <div class="field">
         <label>Geboortedatum <span class="req">*</span></label>
         <input type="text" id="wbjBirthDate" maxlength="10" inputmode="numeric" placeholder="dd-mm-jjjj" oninput="formatBirthDate(this)">
       </div>
-      <div class="field"></div>
     </div>
 
     <div class="field-group single">
       <div class="field">
-        <label>Gebruikersnaam <span class="req">*</span></label>
+        <div class="label-rij"><label>Gebruikersnaam <span class="req">*</span></label><span id="wbjUsernameUitslag" class="field-uitslag" aria-live="polite"></span></div>
         <input type="text" id="wbjUsername" maxlength="20" autocomplete="off" oninput="onWbjUsernameInput()">
-        <p id="wbjUsernameStatus" class="field-status" style="color:var(--muted);"></p>
       </div>
     </div>
 
@@ -839,7 +835,7 @@
           <input type="text" id="wbjZip" maxlength="4" inputmode="numeric" autocomplete="off" oninput="onWbjPostcodeInput(this.value)">
         </div>
         <div class="field">
-          <label>Plaats <span class="req">*</span></label>
+          <div class="label-rij"><label>Plaats <span class="req">*</span></label><span id="wbjPostcodeUitslag" class="field-uitslag" aria-live="polite"></span></div>
           <input type="text" id="wbjCity" readonly style="cursor:not-allowed;" oninput="onCitySearchInput(this.value,'wbjCityAc')">
           <div class="autocomplete-list" id="wbjCityAc"></div>
         </div>
@@ -1094,7 +1090,7 @@
           <input type="text" id="bwZip" maxlength="4" inputmode="numeric" autocomplete="off" oninput="onBandPostcodeInput(this.value, 'bw')">
         </div>
         <div class="field">
-          <label for="bwCity">Plaats <span class="req">*</span></label>
+          <div class="label-rij"><label for="bwCity">Plaats <span class="req">*</span></label><span id="bwPostcodeUitslag" class="field-uitslag" aria-live="polite"></span></div>
           <input type="text" id="bwCity" readonly style="cursor:not-allowed;" oninput="onCitySearchInput(this.value,'bwCityAc')">
           <div class="autocomplete-list" id="bwCityAc"></div>
         </div>
@@ -2023,7 +2019,7 @@
             <input type="text" id="bandZip" placeholder="Bijv. 2611" maxlength="4" autocomplete="off" inputmode="numeric" oninput="onBandPostcodeInput(this.value)">
           </div>
           <div class="field">
-            <label for="bandCity">Plaats <span class="req">*</span></label>
+            <div class="label-rij"><label for="bandCity">Plaats <span class="req">*</span></label><span id="bandPostcodeUitslag" class="field-uitslag" aria-live="polite"></span></div>
             <input type="text" id="bandCity" placeholder="Vult vanzelf in" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acBandCityManualList')">
             <div class="autocomplete-list" id="acBandCityManualList"></div>
           </div>
@@ -2488,11 +2484,9 @@
      (Ronald: "verplicht invullen bij eerstvolgend bezoek"). -->
 <div class="modal-overlay" id="usernameGateModal" data-verplicht="1">
   <div class="modal-box modal-box-md">
-    <div class="filter-title" style="margin-bottom:4px;">Kies een gebruikersnaam</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Nieuw: andere muzikanten zien voortaan een gebruikersnaam in plaats van je echte naam. Kies er eentje om verder te gaan.</p>
+    <div class="label-rij" style="margin-bottom:4px;"><div class="filter-title">Kies een gebruikersnaam</div><span id="usernameGateUitslag" class="field-uitslag" aria-live="polite"></span></div>
     <div class="field">
       <input type="text" id="usernameGateInput" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck2()" onkeydown="submitOnEnter(event, saveUsernameGate)">
-      <p id="usernameGateStatus" class="field-status"></p>
       <p id="usernameGateAgeHint" class="field-hint"></p>
     </div>
     <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="saveUsernameGate()">Opslaan en verdergaan →</button>
@@ -2819,14 +2813,14 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20261019a"></script>
-<script src="utils.js?v=20261021a"></script>
+<script src="utils.js?v=20261021e"></script>
 <script src="veiligheid.js?v=20261009f"></script>
-<script src="auth.js?v=20261010b"></script>
-<script src="postcode.js?v=20261009a"></script>
-<script src="wizard.js?v=20261011a"></script>
+<script src="auth.js?v=20261021e"></script>
+<script src="postcode.js?v=20261021e"></script>
+<script src="wizard.js?v=20261021e"></script>
 <script src="ouder.js?v=20261009a"></script>
 <script src="search.js?v=20261010a"></script>
-<script src="musicians.js?v=20261021a"></script>
+<script src="musicians.js?v=20261021e"></script>
 <script src="bands.js?v=20261021a"></script>
 <script src="messages.js?v=20261021a"></script>
 <script src="push.js?v=20261019a"></script>

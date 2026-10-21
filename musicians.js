@@ -863,7 +863,7 @@ function zetWbjNaamTonen(waarde) {
 }
 
 async function openWieBenJe() {
-  document.getElementById('wbjUsernameStatus').textContent = '';
+  wisUsernameUitslag('wbjUsernameStatus', 'wbjUsername');
   document.getElementById('wbjPostcodeStatus').textContent = '';
   document.getElementById('wbjEmail').value = currentUser?.email || '';
   wbjPostcodeManualMode = false;
@@ -919,18 +919,16 @@ function onWbjPostcodeInput(rawValue) {
   clearTimeout(wbjPostcodeTimeout);
   const digits = rawValue.trim().replace(/\D/g, '');
   document.getElementById('wbjZip').value = digits;
-  if (!/^[1-9][0-9]{3}$/.test(digits)) { statusEl.textContent = ''; return; }
-  statusEl.style.color = 'var(--muted)';
-  statusEl.textContent = 'Bezig met opzoeken...';
+  statusEl.textContent = '';
+  if (!/^[1-9][0-9]{3}$/.test(digits)) { zetUitslag('wbjPostcodeStatus', ''); return; }
+  zetUitslag('wbjPostcodeStatus', 'Zoeken…');
   wbjPostcodeTimeout = setTimeout(async () => {
     const outcome = await lookupPostcodeCity(digits);
     if (outcome.found) {
       wbjPostcodeFailStreak = 0;
       if (wbjPostcodeManualMode) wbjRelockCity();
       document.getElementById('wbjCity').value = outcome.city;
-      statusEl.style.color = 'var(--accent)';
-      statusEl.textContent = `Gevonden: ${outcome.city}`;
-      setTimeout(() => { statusEl.textContent = ''; }, 2000);
+      zetUitslag('wbjPostcodeStatus', '');
     } else if (outcome.reason === 'notfound') {
       wbjEnableManualCity();
     } else {
@@ -938,7 +936,8 @@ function onWbjPostcodeInput(rawValue) {
       if (wbjPostcodeFailStreak >= 2) {
         wbjEnableManualCity();
       } else {
-        statusEl.style.color = 'var(--danger)';
+        zetUitslag('wbjPostcodeStatus', '');
+        statusEl.style.color = 'var(--text)';
         statusEl.textContent = 'Postcode controleren lukt nu niet. Controleer je verbinding en vul de postcode nog eens in.';
       }
     }
@@ -952,6 +951,7 @@ function wbjEnableManualCity() {
   field.value = '';
   field.placeholder = 'Typ je plaatsnaam en kies uit de lijst';
   const statusEl = document.getElementById('wbjPostcodeStatus');
+  zetUitslag('wbjPostcodeStatus', '');
   statusEl.style.color = 'var(--text)';
   statusEl.textContent = 'We kunnen je plaats even niet automatisch ophalen — vul Plaats zelf in.';
   field.focus();
