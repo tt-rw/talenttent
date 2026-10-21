@@ -209,6 +209,13 @@ def blok1_statisch():
         ok, why = balans(open(path, encoding="utf-8").read())
         check(f"haakjesbalans {f}", ok, why)
 
+    # TT-483: escAttr (ontsmet alleen voor JavaScript) stond in HTML-attributen en
+    # liet een aanhalingsteken in een naam het attribuut openbreken. De functie is
+    # weg. In een HTML-attribuut hoort escHtml, in een onclick-tekenreeks jsAttr.
+    for f in JS_FILES:
+        brontekst = open(os.path.join(ROOT, f), encoding="utf-8").read()
+        check(f"TT-483: {f} gebruikt escAttr niet meer", "escAttr" not in re.sub(r"//[^\n]*", "", brontekst), "escAttr komt nog voor")
+
     # TT-455: de database wordt gekozen op webadres; productie en test staan in dezelfde core.js.
     c455 = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
     kaart = re.search(r"TT_DB_PER_ADRES\s*=\s*\{(.*?)\};", c455, re.S)
@@ -9209,10 +9216,255 @@ window.TT_STUB.fnAntwoord = {};
     httpd.shutdown()
 
 
+# --------------------------------------------------------------------------
+# Blok 100 — XSS-proef (TT-475 laag 3 punt d, TT-483)
+# --------------------------------------------------------------------------
+# Doel: bewijzen dat tekst van gebruikers nergens als code in de pagina belandt.
+# Werkwijze: elk vrij tekstveld in de testdata krijgt een testtekst met scriptcode
+# (aanhalingstekens, een afsluitende backslash, een <img onerror>, een
+# javascript:-adres). Daarna opent de proef elk scherm dat die tekst toont en
+# meet drie dingen: (1) is er een element ingespoten, (2) staat er gebruikerstekst
+# buiten een tekenreeks in een onclick/oninput-handler, (3) staat er een
+# javascript:-adres in href/src. Per veld wordt bijgehouden of het ooit op een
+# scherm verscheen; een veld dat nooit verschijnt, bewijst niets en moet bewust
+# op de lijst met uitzonderingen staan.
+
+XSS_INIT = r"""
+window.__xss = [];
+window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+(function () {
+  const S = window.TT_STUB, D = S.data;
+  // De testtekst bevat geen aanhalingstekens in de code zelf, zodat ze ook na
+  // een ontsmetting voor JavaScript nog geldige code is: slaagt een aanval, dan
+  // draait ze echt. Het veldlabel staat er als gewone tekst voor.
+  const P = f => "[" + f + "]\\');window.__xss.push(1);//\"><img src=x onerror=\"window.__xss.push(1)\">\\";
+  const U = f => "javascript:window.__xss.push(1)//" + f;
+  // Variant zonder ' en &: die tekens breken een link af voordat de id eruit gelezen wordt.
+  const Q = f => "[" + f + "]\"><img src=x onerror=window.__xss.push(1)>";
+  window.__P = P; window.__U = U; window.__Q = Q;
+  window.__velden = [];
+  const v = f => { window.__velden.push(f); return P(f); };
+  const u = f => { window.__velden.push(f); return U(f); };
+  const q = f => { window.__velden.push(f); return Q(f); };
+  const inst = [{ instrument: 'Drums', niveau: 3 }];
+  D.musicians.forEach((m, i) => {
+    const t = 'musicians';
+    m.username = v(t + '.username'); m.first_name = v(t + '.first_name'); m.fname = v(t + '.fname'); m.lname = v(t + '.lname');
+    if (window.__MODUS === 'gebruikersnaam') delete m.weergavenaam; else m.weergavenaam = v(t + '.weergavenaam');
+    m.city = v(t + '.city'); m.bio = v(t + '.bio'); m.goal = v(t + '.goal');
+    m.musician_instruments = inst; m.musician_genres = [{ genre: 'Rock' }];
+    m.musician_songs = [{ song_title: v('musician_songs.song_title'), song_artist: v('musician_songs.song_artist'), mastery_level: 3 }];
+    m.musician_media = [{ id: 'mm' + i, media_type: 'link', url: u('musician_media.url'), platform: 'Link', in_banner: true },
+                        { id: 'mn' + i, media_type: 'link', url: 'https://www.youtube.com/watch?v=' + encodeURIComponent(q('musician_media.youtube_id')), platform: 'YouTube', in_banner: true }];
+  });
+  D.bands.forEach((b, i) => {
+    const t = 'bands';
+    b.name = v(t + '.name'); b.city = v(t + '.city'); b.description = v(t + '.description');
+    b.band_members = D.band_members.filter(x => x.band_id === b.id).map(x => Object.assign({}, x, {
+      joined_at: '2026-01-01', musicians: D.musicians.find(m => m.id === x.musician_id) }));
+    b.band_wanted = [{ instrument: 'Bas' }];
+    b.band_media = [{ id: 'bm' + i, media_type: 'link', url: u('band_media.url'), platform: 'Link', in_banner: true, created_at: '2026-01-01' }];
+    b.band_nummers = [{ titel: v('band_nummers.titel'), url: u('band_nummers.url'), platform: 'Link', created_at: '2026-01-01' }];
+    b.band_covers = [{ song_title: v('band_covers.song_title'), song_artist: v('band_covers.song_artist') }];
+    b.band_invallers = [{ instrument: 'Gitaar', datum: '2026-12-01' }];
+    b.instagram = u('bands.instagram'); b.tiktok = u('bands.tiktok'); b.youtube = u('bands.youtube'); b.avatar_url = u('bands.avatar_url');
+  });
+  D.messages = [
+    { id: 'x1', sender_id: 'm2', recipient_id: 'm1', body: v('messages.body'), created_at: new Date().toISOString(), read_at: null },
+    { id: 'x2', sender_id: 'm1', recipient_id: 'm2', body: v('messages.body_uit'), created_at: new Date().toISOString(), read_at: null }
+  ];
+  S.rpcResults.tt_get_musicians_public = () => D.musicians.map(m => ({ id: m.id, username: m.username, weergavenaam: m.weergavenaam, age: 30, city: m.city, bio: m.bio, goal: m.goal,
+    avatar_url: null, instrument_levels: inst, genres: ['Rock'], songs: m.musician_songs, media: m.musician_media }));
+  S.rpcResults.tt_get_bands_public = () => D.bands.map(b => Object.assign({}, b, { genres: ['Rock'] }));
+  S.rpcResults.tt_search_musicians = () => [{ musician_id: 'm2', distance_km: 3, is_stale: false }, { musician_id: 'm3', distance_km: 5, is_stale: false }];
+  S.rpcResults.tt_search_bands_for_musician = () => [{ band_id: 'b1', distance_km: 2, score: 1 }, { band_id: 'b2', distance_km: 4, score: 1 }];
+  S.rpcResults.tt_search_musicians_by_songlist_anon = () => [{ musician_id: 'm2', distance_km: 3, matches: 1 }];
+})();
+"""
+
+XSS_SCAN = r"""() => {
+  const uit = { ingespoten: [], handlers: [], adressen: [] };
+  for (const e of document.querySelectorAll('img[src="x"], svg[onload], script:not([src])[data-pwn]')) uit.ingespoten.push(e.outerHTML.slice(0, 100));
+  for (const e of document.querySelectorAll('*')) for (const a of e.attributes) {
+    if (/^on/i.test(a.name)) uit.handlers.push(a.value);
+    if (/^(href|src|action|formaction|data|srcdoc)$/i.test(a.name) && /^\s*(javascript|data:text\/html|vbscript)/i.test(a.value)) uit.adressen.push(a.name + '=' + a.value.slice(0, 60));
+  }
+  return uit;
+}"""
+
+# Elke stap opent een scherm. De volgorde is bewust: eerst zoeken en profielen,
+# dan de band in al haar tabbladen, dan Mijn profiel, berichten en instellingen.
+XSS_STAPPEN = [
+    ("zoeken muzikanten", "showView('search'); await runSearch();"),
+    ("zoeken op een getypte naam", "showView('search'); document.getElementById('filterName').value = window.__P('filterName'); await runSearch();"),
+    ("zoeken setlist", "await runSetlistSearch();"),
+    ("profiel van een ander", "openProfielScherm('m2');"),
+    ("zoeken bands", "showView('search'); await runBandSearch();"),
+    ("bandprofiel", "openBandScherm('b1');"),
+    ("band tegels", "openBandTegels('b1');"),
+    ("band wie", "await openBandWie();"),
+    ("band bezetting", "await openBandBezetting();"),
+    ("band muziek", "await openBandMuziek();"),
+    ("band media", "await openBandMedia();"),
+    ("band beheer", "await renderBandBeheer('b1');"),
+    ("lid toevoegen", "openAddMemberModal('b1', window.__P('bandnaam')); const i = document.getElementById('memberSearchInput'); i.value = 'x'; i.dispatchEvent(new Event('input'));"),
+    ("mijn profiel", "showView('myprofile'); await loadMyProfile();"),
+    ("mijn bands", "await loadMyBands();"),
+    ("band-uitnodigingen", "await loadBandInvites('m1');"),
+    ("wie ben je", "await openWieBenJe();"),
+    ("wat speel je", "await openWatSpeelJe();"),
+    ("wat zoek je", "await openWatZoekJe();"),
+    ("je setlist", "await openJeSetlist();"),
+    ("je mediahoek", "await openJeMediahoek();"),
+    ("profiel bewerken", "await editMyProfile();"),
+    ("berichten", "showView('messages'); await loadInbox();"),
+    ("gesprek", "await openConversation('m2', window.__P('naam'), null);"),
+    ("profiel vanuit gesprek", "openThreadProfile();"),
+    ("bericht schrijven", "openMessageComposer('m2', window.__P('naam'), window.__P('bandnaam'));"),
+    ("melden", "openMeldModal('muzikant', 'm2', window.__P('naam'));"),
+    ("geblokkeerden", "await openGeblokkeerdModal();"),
+    ("instellingen", "showView('instellingen'); openInloggegevens();"),
+    ("mediaspeler met youtube-link", "openMediaSpeler('https://www.youtube.com/watch?v=' + encodeURIComponent(window.__Q('yt')), 'link', null, 'YouTube');"),
+    ("mediaspeler met javascript-link", "openMediaSpeler(window.__U('speler'), 'link', null, 'Link');"),
+    ("artiestenlijst (iTunes)", "const ac = document.createElement('div'); document.body.appendChild(ac); renderArtistResults(ac, [{ artistId: window.__P('artistId'), artistName: window.__P('artiest'), primaryGenreName: window.__P('genre') }], window.__P('q'), 'selectArtist');"),
+    ("nummerlijst (iTunes)", "const ac = document.createElement('div'); document.body.appendChild(ac); const t = window.__P('titel'); renderTrackResults(ac, [{ trackName: t }], t.slice(0, 6), { name: window.__P('artiest2') }, 'addSong', []);"),
+    ("wizard: media en links", "state.mediaFiles = [{ type: 'foto', url: 'https://example.org/a.jpg', name: window.__P('bestandsnaam') }, { type: 'video', url: 'https://example.org/a.mp4', name: window.__P('bestandsnaam2') }]; state.mediaLinks = [{ url: 'https://www.youtube.com/watch?v=' + encodeURIComponent(window.__Q('yt2')), inBanner: false }, { url: window.__P('linkadres'), inBanner: false }]; renderMediaGrid(); renderLinksList();"),
+    ("lightbox", "openMediaLightbox('https://example.org/a.jpg?x=' + encodeURIComponent(window.__P('lightbox')));"),
+]
+
+# Velden die bewust nooit op een scherm komen, met de reden.
+XSS_UITZONDERINGEN = {
+    "bands.avatar_url": "javascript:-adres wordt door safeUrl() geweigerd en dus niet getoond",
+    "bands.instagram": "javascript:-adres wordt door bandSocialLink() geweigerd en dus niet getoond",
+    "bands.tiktok": "javascript:-adres wordt door bandSocialLink() geweigerd en dus niet getoond",
+    "bands.youtube": "javascript:-adres wordt door bandSocialLink() geweigerd en dus niet getoond",
+    "musicians.first_name": "kolom bestaat niet in de database (de app gebruikt fname)",
+    "musicians.goal": "keuzewaarde: de app toont alleen de gekozen kaart, nooit de tekst zelf",
+}
+
+
+def blok_xss():
+    print("\nBlok 100 — XSS-proef: tekst van gebruikers wordt nergens code")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    ingespoten, kapot, adressen, uitgevoerd, dialogen, stapfouten = [], [], [], [], [], []
+    gezien, alle_velden = set(), set()
+
+    def strip_strings(js):
+        uit, i, n = [], 0, len(js)
+        while i < n:
+            c = js[i]
+            if c in "'\"`":
+                q = c
+                i += 1
+                while i < n and js[i] != q:
+                    i += 2 if js[i] == "\\" else 1
+                i += 1
+                uit.append('""')
+            else:
+                uit.append(c)
+                i += 1
+        return "".join(uit)
+
+    def meet(pg, naam):
+        s = pg.evaluate(XSS_SCAN)
+        ingespoten.extend(f"{naam}: {x}" for x in s["ingespoten"])
+        kapot.extend(f"{naam}: {h[:90]}" for h in s["handlers"] if "__xss" in strip_strings(h))
+        adressen.extend(f"{naam}: {a}" for a in s["adressen"])
+        uitgevoerd.extend(f"{naam}: {x}" for x in pg.evaluate("window.__xss.slice(); ") if x)
+        pg.evaluate("window.__xss.length = 0")
+        gezien.update(pg.evaluate("() => window.__velden.filter(f => document.documentElement.outerHTML.includes(f))"))
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for modus in ("weergavenaam", "gebruikersnaam"):
+            ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+            pg = ctx.new_page()
+            pg.on("dialog", lambda d: (dialogen.append(d.message[:60]), d.dismiss()))
+            body = f"window.__MODUS = '{modus}';\n" + stub_js + "\n" + XSS_INIT
+            pg.route("**/supabase.js*", (lambda b: lambda r: r.fulfill(status=200, content_type="application/javascript", body=b))(body))
+            for pat in ("**/fonts.googleapis.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**"):
+                pg.route(pat, lambda r: r.abort())
+            pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            pg.wait_for_timeout(900)
+            alle_velden.update(pg.evaluate("window.__velden"))
+            meet(pg, f"{modus}: start")
+            for naam, js in XSS_STAPPEN:
+                try:
+                    pg.evaluate("async () => {" + js + "}")
+                except Exception as e:
+                    stapfouten.append(f"{modus}: {naam}: {str(e).splitlines()[0][:110]}")
+                pg.wait_for_timeout(350)
+                meet(pg, f"{modus}: {naam}")
+            ctx.close()
+
+        # Een ouder opent de link uit de mail; de voornaam van het kind komt uit de aanvraag.
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+        pg = ctx.new_page()
+        pg.on("dialog", lambda d: (dialogen.append(d.message[:60]), d.dismiss()))
+        body = stub_js + "\n" + XSS_INIT + """
+(function () {
+  const maak = window.supabase.createClient;
+  window.supabase.createClient = function () {
+    const c = maak.apply(this, arguments);
+    c.functions = { invoke: async () => ({ data: { stand: 'open', kind_voornaam: window.__P('kind_voornaam') }, error: null }) };
+    return c;
+  };
+})();
+window.TT_STUB.session = null;
+"""
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=body))
+        for pat in ("**/fonts.googleapis.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**"):
+            pg.route(pat, lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html#toestemming/abc123", wait_until="load")
+        pg.wait_for_timeout(900)
+        zichtbaar_ouder = pg.evaluate("document.documentElement.outerHTML.includes('kind_voornaam')")
+        meet(pg, "ouder-pagina")
+        # Een gemaakte adresregel met scriptcode mag geen scherm openen of iets uitvoeren.
+        pg.goto(f"http://127.0.0.1:{port}/index.html#profiel/" + "%27%22%3E%3Cimg%20src%3Dx%20onerror%3Dwindow.__xss.push(%27hash%27)%3E", wait_until="load")
+        pg.wait_for_timeout(700)
+        meet(pg, "adresregel")
+        ctx.close()
+
+        # Controle op de meting zelf: een bewust lek moet gevonden worden.
+        ctx = browser.new_context()
+        pg = ctx.new_page()
+        pg.set_content("<div id=k></div>")
+        pg.evaluate("""() => {
+          window.__xss = [];
+          const k = document.getElementById('k');
+          k.innerHTML = '<div title="x"><img src=x onerror=1></div>'
+            + '<button onclick="f(\\'a\\');window.__xss.push(1);//\\')">b</button>'
+            + '<a href="javascript:1">c</a>'; }""")
+        s = pg.evaluate(XSS_SCAN)
+        meting_ok = (len(s["ingespoten"]) == 1 and len(s["adressen"]) == 1
+                     and any("__xss" in strip_strings(h) for h in s["handlers"]))
+        ctx.close()
+        browser.close()
+    httpd.shutdown()
+
+    check("XSS-proef: de meting herkent een bewust lek (ingespoten element, kapotte handler, javascript:-adres)",
+          meting_ok, str(s)[:300])
+    check("XSS-proef: alle schermen zijn geopend zonder fout", not stapfouten, "; ".join(stapfouten)[:600])
+    check("XSS-proef: geen enkel element ingespoten door gebruikerstekst", not ingespoten, "; ".join(ingespoten[:6]))
+    check("XSS-proef: geen handler (onclick e.d.) waarin gebruikerstekst buiten een tekenreeks valt", not kapot, "; ".join(kapot[:6]))
+    check("XSS-proef: geen javascript:-adres in href, src of action", not adressen, "; ".join(adressen[:6]))
+    check("XSS-proef: er is geen code uitgevoerd en er kwam geen melding (alert) op", not uitgevoerd and not dialogen,
+          "; ".join(uitgevoerd[:6] + dialogen[:3]))
+    check("XSS-proef: de voornaam van het kind op de ouder-pagina verschijnt als tekst", zichtbaar_ouder, "niet getoond: de pagina is niet bereikt")
+    nooit = sorted(alle_velden - gezien - set(XSS_UITZONDERINGEN))
+    check(f"XSS-dekking: elk van de {len(alle_velden)} testvelden verscheen op een scherm (uitgezonderd: {len(XSS_UITZONDERINGEN)} met reden)",
+          not nooit, "nooit getoond: " + ", ".join(nooit))
+    zomaar = sorted(set(XSS_UITZONDERINGEN) & gezien)
+    check("XSS-dekking: elke uitzondering klopt nog (een uitgezonderd veld dat nu wél verschijnt, hoort in de proef)",
+          not zomaar, "nu zichtbaar: " + ", ".join(zomaar))
+
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
     blok1_statisch()
     blok_browser()
+    blok_xss()
     gezakt = [n for n, ok, _ in results if not ok]
     print(f"\nEindstand: {len(results) - len(gezakt)} van {len(results)} geslaagd")
     if gezakt:

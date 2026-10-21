@@ -1005,7 +1005,7 @@ function bezettingLidHTML(l) {
   const inhoud = `${bbFotoHTML(l.avatar_url)}<span class="bb-tekst"><span class="bb-naam">${escHtml(l.naam)}</span><span class="bb-sub">${escHtml(rol)}</span></span>`;
   // Een tik opent het profiel van het lid, ook je eigen (TT-410b: elk profiel is een scherm).
   return l.id
-    ? `<button type="button" class="bb-rij bb-rij-knop bezetting-lid" onclick="openProfielScherm('${jsAttr(l.id)}')" aria-label="Profiel van ${escAttr(l.naam)}">${inhoud}</button>`
+    ? `<button type="button" class="bb-rij bb-rij-knop bezetting-lid" onclick="openProfielScherm('${jsAttr(l.id)}')" aria-label="Profiel van ${escHtml(l.naam)}">${inhoud}</button>`
     : `<div class="bb-rij bezetting-lid">${inhoud}</div>`;
 }
 
@@ -1082,7 +1082,7 @@ function bandNummerHTML(n) {
   const platform = n.platform || detectPlatform(url);
   const ytId = extractYouTubeId(url);
   const mini = ytId
-    ? `<span class="media-mini"><img src="https://img.youtube.com/vi/${escAttr(ytId)}/hqdefault.jpg" alt=""></span>`
+    ? `<span class="media-mini"><img src="https://img.youtube.com/vi/${escHtml(ytId)}/hqdefault.jpg" alt=""></span>`
     : `<span class="media-mini"><span class="media-mini-platform">${escHtml(platform)}</span></span>`;
   return `<button type="button" class="band-nummer" onclick="openMediaSpeler('${jsAttr(url)}', 'link', '${jsAttr(n.titel)}', '${jsAttr(platform)}')">${mini}` +
     `<span class="band-nummer-tekst"><span class="band-nummer-titel">${escHtml(n.titel)}</span><span class="band-nummer-sub">${escHtml(platform)}</span></span></button>`;
@@ -1098,7 +1098,7 @@ function bandSocialsHTML(b) {
     }
     const link = bandSocialLink(soc, waarde);
     if (!link) return '';
-    return `<a class="social-knop" href="${escAttr(link)}" target="_blank" rel="noopener noreferrer" aria-label="${soc.naam} van ${escAttr(b.name)}">${soc.svg}</a>`;
+    return `<a class="social-knop" href="${link}" target="_blank" rel="noopener noreferrer" aria-label="${soc.naam} van ${escHtml(b.name)}">${soc.svg}</a>`;
   }).join('');
   return knoppen ? `<div class="socials">${knoppen}</div>` : '';
 }
@@ -1121,7 +1121,7 @@ function bandPaginaHTML(b, kijker) {
   let menuHTML = '';
   if (beheer) {
     menuHTML = `<span class="profiel-menu-plek"><div class="profile-actions-menu-wrap">
-        <button class="nav-menu-btn" onclick="toggleBandMoreMenu(event)" aria-label="Meer opties voor ${escAttr(b.name)}" title="Meer">
+        <button class="nav-menu-btn" onclick="toggleBandMoreMenu(event)" aria-label="Meer opties voor ${escHtml(b.name)}" title="Meer">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
         </button>
         <div class="inline-menu-dropdown">
@@ -1130,7 +1130,7 @@ function bandPaginaHTML(b, kijker) {
       </div></span>`;
   } else if (kijker === 'lid') {
     menuHTML = `<span class="profiel-menu-plek"><div class="profile-actions-menu-wrap">
-        <button class="nav-menu-btn" onclick="toggleBandMoreMenu(event)" aria-label="Meer opties voor ${escAttr(b.name)}" title="Meer">
+        <button class="nav-menu-btn" onclick="toggleBandMoreMenu(event)" aria-label="Meer opties voor ${escHtml(b.name)}" title="Meer">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
         </button>
         <div class="inline-menu-dropdown">
@@ -1747,7 +1747,7 @@ function bbFotoHTML(url, wacht) {
 // puntjes met wat je met deze rij kunt. Zelfde menu als op Mijn Bands.
 function bbRijHTML(beeldHTML, naam, subHTML, menuItemsHTML) {
   const menu = menuItemsHTML ? `<div class="profile-actions-menu-wrap">
-      <button class="nav-menu-btn" onclick="toggleBandMoreMenu(event)" aria-label="Meer opties voor ${escAttr(naam)}" title="Meer">
+      <button class="nav-menu-btn" onclick="toggleBandMoreMenu(event)" aria-label="Meer opties voor ${escHtml(naam)}" title="Meer">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
       </button>
       <div class="inline-menu-dropdown">${menuItemsHTML}</div>
@@ -1776,7 +1776,7 @@ function bbRenderLeden() {
 
   // De contactpersoon kies je uit de bevestigde leden.
   const sel = document.getElementById('bbContactKeuze');
-  sel.innerHTML = bbLeden.map(l => `<option value="${escAttr(l.id)}">${escHtml(l.naam + (l.id === ik ? ' (jij)' : ''))}</option>`).join('');
+  sel.innerHTML = bbLeden.map(l => `<option value="${escHtml(l.id)}">${escHtml(l.naam + (l.id === ik ? ' (jij)' : ''))}</option>`).join('');
   sel.value = bbContact || '';
   refreshChoiceField('band-contact');
 }
@@ -1785,7 +1785,7 @@ function bbRenderLeden() {
 // instrument). Daarom een knop, geen teken; "Zoek een muzikant" staat dus niet
 // ook nog in het ⋯-menu (§0, geen dubbele functie).
 function bbPlusHTML(zoekAanroep, label) {
-  return `<button type="button" class="bb-foto bezetting-open-rondje bb-plus" onclick="${zoekAanroep}" aria-label="${escAttr(label)}">+</button>`;
+  return `<button type="button" class="bb-foto bezetting-open-rondje bb-plus" onclick="${zoekAanroep}" aria-label="${escHtml(label)}">+</button>`;
 }
 
 function bbRenderOpen() {
@@ -1984,8 +1984,8 @@ function bmzNummerRijHTML(n, i) {
     <div class="media-rij">
       <button type="button" class="media-mini" onclick="bmzSpeel(${i})" aria-label="Afspelen"${veilig ? '' : ' disabled'}>${mediaLinkMiniatuurHTML(n.url)}</button>
       <div class="media-rij-tekst">
-        <input type="text" class="nummer-titel" id="bmzTitel${i}" value="${escAttr(n.titel)}" placeholder="Titel van het nummer" aria-label="Titel van het nummer" maxlength="80" autocomplete="off" oninput="bmzNummers[${i}].titel = this.value">
-        <input type="url" class="media-rij-url" id="bmzUrl${i}" value="${escAttr(n.url)}" placeholder="https://youtube.com/watch?v=..." aria-label="Link naar het nummer" oninput="bmzNummers[${i}].url = this.value" onchange="bmzRenderNummers()">
+        <input type="text" class="nummer-titel" id="bmzTitel${i}" value="${escHtml(n.titel)}" placeholder="Titel van het nummer" aria-label="Titel van het nummer" maxlength="80" autocomplete="off" oninput="bmzNummers[${i}].titel = this.value">
+        <input type="url" class="media-rij-url" id="bmzUrl${i}" value="${escHtml(n.url)}" placeholder="https://youtube.com/watch?v=..." aria-label="Link naar het nummer" oninput="bmzNummers[${i}].url = this.value" onchange="bmzRenderNummers()">
       </div>
       <button type="button" class="song-remove" onclick="bmzNummerWeg(${i})" aria-label="Nummer weghalen">✕</button>
     </div>`;
@@ -2032,7 +2032,7 @@ function bcRenderCovers() {
     return `<div class="profile-song-row"><span><strong>${escHtml(c.artist)}</strong> — <span style="color:var(--muted)">${escHtml(c.title)}</span></span>${
       c._zeker
         ? `<button type="button" class="song-remove" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:var(--danger);" onclick="bcCoverWeg(${i})" title="Bevestig weghalen">Zeker?</button>`
-        : `<button type="button" class="song-remove" onclick="bcCoverWeg(${i})" title="Weghalen" aria-label="Haal ${escAttr(c.title)} weg">✕</button>`
+        : `<button type="button" class="song-remove" onclick="bcCoverWeg(${i})" title="Weghalen" aria-label="Haal ${escHtml(c.title)} weg">✕</button>`
     }</div>`;
   }).join('');
   document.getElementById('bcCoversLeeg').hidden = bcCovers.length > 0;

@@ -623,7 +623,7 @@ function talentTentBerichtHTML(bericht, info) {
     const naam = displayNameOf(mi);
     const regel1 = [mi.city, m.km != null ? `${m.km} km` : ''].filter(Boolean).join(' · ');
     const regel2 = (m.instrumenten || []).join(' · ');
-    return `<button type="button" class="bb-rij bb-rij-knop" onclick="openProfielScherm('${jsAttr(m.id)}')" aria-label="Profiel van ${escAttr(naam)}">${bbFotoHTML(mi.avatar_url)}<span class="bb-tekst"><span class="bb-naam">${escHtml(naam)}</span>${regel1 ? `<span class="bb-sub">${escHtml(regel1)}</span>` : ''}${regel2 ? `<span class="bb-sub">${escHtml(regel2)}</span>` : ''}</span></button>`;
+    return `<button type="button" class="bb-rij bb-rij-knop" onclick="openProfielScherm('${jsAttr(m.id)}')" aria-label="Profiel van ${escHtml(naam)}">${bbFotoHTML(mi.avatar_url)}<span class="bb-tekst"><span class="bb-naam">${escHtml(naam)}</span>${regel1 ? `<span class="bb-sub">${escHtml(regel1)}</span>` : ''}${regel2 ? `<span class="bb-sub">${escHtml(regel2)}</span>` : ''}</span></button>`;
   }).concat(bnd.map(b => {
     const bi = info.bands[b.id];
     const foto = safeUrl(bi.avatar_url);
@@ -632,7 +632,7 @@ function talentTentBerichtHTML(bericht, info) {
       : `<span class="bb-foto bb-foto-t bb-foto-vierkant" aria-hidden="true">${AVATAR_T_FALLBACK}</span>`;
     const regel1 = [bi.city, b.km != null ? `${b.km} km` : ''].filter(Boolean).join(' · ');
     const regel2 = (b.zoekt || []).map(i => TT_TEKSTEN.bandZoekt.replace('{instrument}', i)).join(' · ');
-    return `<button type="button" class="bb-rij bb-rij-knop" onclick="openBandScherm('${jsAttr(b.id)}')" aria-label="Band ${escAttr(bi.name)}">${beeld}<span class="bb-tekst"><span class="bb-naam">${escHtml(bi.name)}</span>${regel1 ? `<span class="bb-sub">${escHtml(regel1)}</span>` : ''}${regel2 ? `<span class="bb-sub">${escHtml(regel2)}</span>` : ''}</span></button>`;
+    return `<button type="button" class="bb-rij bb-rij-knop" onclick="openBandScherm('${jsAttr(b.id)}')" aria-label="Band ${escHtml(bi.name)}">${beeld}<span class="bb-tekst"><span class="bb-naam">${escHtml(bi.name)}</span>${regel1 ? `<span class="bb-sub">${escHtml(regel1)}</span>` : ''}${regel2 ? `<span class="bb-sub">${escHtml(regel2)}</span>` : ''}</span></button>`;
   }));
   const tijd = new Date(bericht.created_at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
   const meerHTML = meer

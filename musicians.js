@@ -135,7 +135,7 @@ function profielMediaHTML(mediaLijst) {
             const ytId = extractYouTubeId(l.safeHref);
             const label = l.platform || 'Link';
             const inner = ytId
-              ? `<img src="https://img.youtube.com/vi/${jsAttr(ytId)}/hqdefault.jpg" alt="${escAttr(label)}" style="width:100%;height:100%;object-fit:cover;display:block;">` + SPEELTEKEN_HTML
+              ? `<img src="https://img.youtube.com/vi/${jsAttr(ytId)}/hqdefault.jpg" alt="${escHtml(label)}" style="width:100%;height:100%;object-fit:cover;display:block;">` + SPEELTEKEN_HTML
               : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface2);text-align:center;padding:4px;"><span style="font-size:12px;font-weight:700;color:var(--text);">${escHtml(label)}</span></div>`;
             const tileStyle = 'position:relative;display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);padding:0;background:none;';
             // TT-158 (27-08-2026) trok hier een grens bij "ingelogd": alleen
@@ -1358,7 +1358,7 @@ function jstRenderSongs() {
           </div>
           ${s._confirmDelete
             ? `<button type="button" class="song-remove rep-zeker" onclick="jstRemoveSong(${i})" title="Bevestig verwijderen">Zeker?</button>`
-            : `<button type="button" class="song-remove" onclick="jstRemoveSong(${i})" title="Verwijderen" aria-label="Verwijder ${escAttr(s.title)}">✕</button>`
+            : `<button type="button" class="song-remove" onclick="jstRemoveSong(${i})" title="Verwijderen" aria-label="Verwijder ${escHtml(s.title)}">✕</button>`
           }
         </div>
         ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 12px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}

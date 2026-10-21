@@ -51,7 +51,7 @@ function renderPickerBadges(cfg) {
   if (list.length) clearFieldError(cfg.fieldEl);
   cfg.badgeRowEl.innerHTML = list.map(v => `
     <div class="picker-badge">
-      <button type="button" class="picker-badge-remove" aria-label="${escAttr(v)} verwijderen" onclick="removePickerValue('${jsAttr(cfg.id)}','${jsAttr(v)}')"><span aria-hidden="true">✕</span></button>
+      <button type="button" class="picker-badge-remove" aria-label="${escHtml(v)} verwijderen" onclick="removePickerValue('${jsAttr(cfg.id)}','${jsAttr(v)}')"><span aria-hidden="true">✕</span></button>
       <div class="picker-badge-label">${pickerDisplayLabel(v)}</div>
     </div>`).join('');
 }
@@ -218,7 +218,7 @@ function renderInstrumentBadges(id) {
                     : '<div class="picker-badge-stars picker-badge-stars-leeg">Kies niveau</div>';
     return `
     <div class="picker-badge has-level${open ? ' open' : ''}" onclick="toggleInstrumentNiveau('${jsAttr(id)}','${jsAttr(i)}')">
-      <button type="button" class="picker-badge-remove" aria-label="${escAttr(i)} verwijderen" onclick="event.stopPropagation();quickRemoveInstrument('${jsAttr(id)}','${jsAttr(i)}')">✕</button>
+      <button type="button" class="picker-badge-remove" aria-label="${escHtml(i)} verwijderen" onclick="event.stopPropagation();quickRemoveInstrument('${jsAttr(id)}','${jsAttr(i)}')">✕</button>
       <div class="picker-badge-label">${pickerDisplayLabel(i)}</div>
       ${onder}
     </div>`;

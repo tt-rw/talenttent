@@ -675,11 +675,16 @@ function compareArtistTitle(artistA, titleA, artistB, titleB) {
 // via innerHTML op het scherm komt, moet hier eerst doorheen. Anders wordt
 // ingetypte HTML als HTML uitgevoerd i.p.v. als tekst getoond.
 //
-//   escHtml()  → tekst die tussen tags belandt
-//   escAttr()  → tekst die binnen een onclick/onmousedown-string belandt
-//                (was voorheen esc(); hernoemd zodat het verschil zichtbaar is)
-//   jsAttr()   → combinatie van beide: string ín een JS-aanroep ín een attribuut
-//   safeUrl()  → alleen http/https/blob toestaan in href en src
+//   escHtml()  → tekst tussen tags én elke waarde in een HTML-attribuut
+//                (aria-label, title, alt, value, data-...)
+//   jsAttr()   → een string ín een JS-aanroep ín een attribuut (onclick):
+//                eerst ontsmet voor JS, daarna voor HTML
+//   safeUrl()  → alleen http/https/blob toestaan in href en src; de uitkomst
+//                is al HTML-veilig en gaat zonder extra ontsmetting in src/href
+//   TT-483 (21-10-2026): escAttr bestaat niet meer. Het ontsmette alleen voor
+//   JS en stond op ruim twintig plekken in HTML-attributen, waar een
+//   aanhalingsteken in een naam het attribuut openbrak. Gebruik nooit een
+//   JS-ontsmetting voor een HTML-attribuut.
 
 function escHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => (
@@ -687,16 +692,12 @@ function escHtml(s) {
   ));
 }
 
-function escAttr(s) {
-  return String(s ?? '')
+function jsAttr(s) {
+  return escHtml(String(s ?? '')
     .replace(/\\/g, '\\\\')
     .replace(/'/g, "\\'")
-    .replace(/\r?\n/g, ' ');
+    .replace(/\r?\n/g, ' '));
 }
-
-// Een waarde die eerst door JS gelezen wordt (backslash-escaping) en daarna
-// door de HTML-parser (entity-escaping). Volgorde is bewust: escAttr eerst.
-function jsAttr(s) { return escHtml(escAttr(s)); }
 
 // javascript:-URL's zijn hier het echte risico: die voeren code uit zodra
 // iemand op de link klikt. blob: is toegestaan omdat de lokale foto-preview
@@ -1258,7 +1259,7 @@ function openChoiceMenu(id) {
   menu.innerHTML = zichtbaar.map(o => `
     <button type="button" class="choice-option${o.value === sel.value ? ' selected' : ''}"
             role="option" aria-selected="${o.value === sel.value ? 'true' : 'false'}"
-            data-waarde="${escAttr(o.value)}">
+            data-waarde="${escHtml(o.value)}">
       <span>${escHtml(o.textContent)}</span>
       <span class="choice-option-check" aria-hidden="true">${o.value === sel.value ? '✓' : ''}</span>
     </button>`).join('');
@@ -1537,6 +1538,13 @@ function detectPlatform(url) {
 // elke YouTube-URL bevat een video-ID, en img.youtube.com/vi/<ID>/hqdefault.jpg
 // bestaat altijd voor een geldige video.
 function extractYouTubeId(url) {
+  const id = extractYouTubeIdRuw(url);
+  // TT-483: alleen een echt video-id (letters, cijfers, - en _). Een waarde uit
+  // de link zelf (?v=...) kan na het decoderen aanhalingstekens bevatten.
+  return id && /^[A-Za-z0-9_-]{6,20}$/.test(id) ? id : null;
+}
+
+function extractYouTubeIdRuw(url) {
   let u;
   try { u = new URL(url); } catch (e) { return null; }
   const host = u.hostname.replace(/^www\./, '');
@@ -1694,17 +1702,17 @@ function openMediaSpeler(url, soort, titel, platform) {
   const embed = soort === 'link' ? mediaEmbedSrc(veilig) : null;
 
   if (soort === 'video') {
-    beeld.innerHTML = `<video src="${escAttr(veilig)}" controls autoplay playsinline style="width:100%;height:100%;background:#000;"></video>`;
+    beeld.innerHTML = `<video src="${veilig}" controls autoplay playsinline style="width:100%;height:100%;background:#000;"></video>`;
     voet.innerHTML = '';
   } else if (embed) {
-    beeld.innerHTML = `<iframe src="${escAttr(embed)}" title="${escAttr(naam)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" style="width:100%;height:100%;border:0;"></iframe>`;
-    voet.innerHTML = `<a class="btn btn-ghost" href="${escAttr(veilig)}" target="_blank" rel="noopener noreferrer">Openen op ${escHtml(platform || 'de website')}</a>`;
+    beeld.innerHTML = `<iframe src="${escHtml(embed)}" title="${escHtml(naam)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" style="width:100%;height:100%;border:0;"></iframe>`;
+    voet.innerHTML = `<a class="btn btn-ghost" href="${veilig}" target="_blank" rel="noopener noreferrer">Openen op ${escHtml(platform || 'de website')}</a>`;
   } else {
     beeld.innerHTML = `<div class="media-speler-uitleg">
       <div class="media-speler-platform">${escHtml(platform || 'Deze link')}</div>
       <p>Dit platform laat afspelen binnen een app niet toe.</p>
     </div>`;
-    voet.innerHTML = `<a class="btn btn-primary" href="${escAttr(veilig)}" target="_blank" rel="noopener noreferrer">Openen op ${escHtml(platform || 'de website')}</a>`;
+    voet.innerHTML = `<a class="btn btn-primary" href="${veilig}" target="_blank" rel="noopener noreferrer">Openen op ${escHtml(platform || 'de website')}</a>`;
   }
 
   document.getElementById('mediaSpelerModal').classList.add('visible');
@@ -1742,7 +1750,7 @@ function mediaLinkMiniatuurHTML(url) {
   const platform = veilig ? detectPlatform(veilig) : 'Link';
   const yt = veilig ? extractYouTubeId(veilig) : null;
   if (yt) {
-    return `<img src="https://img.youtube.com/vi/${escAttr(yt)}/hqdefault.jpg" alt="" loading="lazy">`;
+    return `<img src="https://img.youtube.com/vi/${escHtml(yt)}/hqdefault.jpg" alt="" loading="lazy">`;
   }
   return `<span class="media-mini-platform">${escHtml(veilig ? platform : '—')}</span>`;
 }
@@ -1763,9 +1771,9 @@ function mediaLinkRijHTML(l, i, voorvoegsel) {
         ${mediaLinkMiniatuurHTML(l.url)}
       </button>
       <div class="media-rij-tekst">
-        <div class="media-rij-titel" ${veilig ? `data-media-url="${escAttr(veilig)}"` : ''} title="${escAttr(naam)}"
+        <div class="media-rij-titel" ${veilig ? `data-media-url="${veilig}"` : ''} title="${escHtml(naam)}"
           onclick="this.classList.toggle('open')">${escHtml(naam)}</div>
-        <input type="url" class="media-rij-url" value="${escAttr(l.url || '')}" placeholder="https://youtube.com/watch?v=..."
+        <input type="url" class="media-rij-url" value="${escHtml(l.url || '')}" placeholder="https://youtube.com/watch?v=..."
           aria-label="Adres van de link"
           oninput="${fn('updateLinkUrl')}(${i}, this)" onchange="${fn('renderLinksList')}()">
       </div>
@@ -1778,7 +1786,7 @@ function mediaLinkRijHTML(l, i, voorvoegsel) {
 function mediaTegelHTML(m, i, voorvoegsel) {
   const fn = n => mediaFnNaam(voorvoegsel, n);
   const beeld = m.type === 'foto'
-    ? `<img src="${escAttr(safeUrl(m.url) || '')}" alt="${escAttr(m.name || '')}">`
+    ? `<img src="${safeUrl(m.url) || ''}" alt="${escHtml(m.name || '')}">`
     : `<span class="media-thumb-video">Video</span>`;
   return `
     <div class="media-thumb">
@@ -1868,23 +1876,23 @@ function profielBannerHTML(mediaLijst) {
     let binnen, tik;
 
     if (it.media_type === 'foto') {
-      binnen = `<img class="pb-beeld" src="${escAttr(url)}" alt="Foto ${i + 1} van ${items.length}" loading="lazy">`;
+      binnen = `<img class="pb-beeld" src="${url}" alt="Foto ${i + 1} van ${items.length}" loading="lazy">`;
       tik = `openMediaLightbox('${jsAttr(url)}')`;
     } else if (it.media_type === 'video') {
       // #t=0.1 dwingt het eerste beeld af; zonder dat laat Safari op de
       // iPhone een zwart vlak zien tot er getikt wordt. muted + playsinline
       // staan erbij omdat de browser het element anders niet mag uitlezen.
-      binnen = `<video class="pb-beeld" src="${escAttr(url)}#t=0.1" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video>` +
+      binnen = `<video class="pb-beeld" src="${url}#t=0.1" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video>` +
                `<span class="pb-label">Video</span>` + SPEELTEKEN_HTML;
       tik = `openMediaSpeler('${jsAttr(url)}', 'video')`;
     } else {
       const ytId = extractYouTubeId(url);
       binnen = ytId
-        ? `<img class="pb-beeld" src="https://img.youtube.com/vi/${escAttr(ytId)}/hqdefault.jpg" alt="" loading="lazy">` +
-          `<span class="pb-label" data-media-url="${escAttr(url)}">${escHtml(platform)}</span>` + SPEELTEKEN_HTML
+        ? `<img class="pb-beeld" src="https://img.youtube.com/vi/${escHtml(ytId)}/hqdefault.jpg" alt="" loading="lazy">` +
+          `<span class="pb-label" data-media-url="${url}">${escHtml(platform)}</span>` + SPEELTEKEN_HTML
         : `<span class="pb-kaart">` +
           `<span class="pb-kaart-platform">${escHtml(platform)}</span>` +
-          `<span class="pb-kaart-titel" data-media-url="${escAttr(url)}">Tik om te openen</span>` +
+          `<span class="pb-kaart-titel" data-media-url="${url}">Tik om te openen</span>` +
           `</span>`;
       tik = `openMediaSpeler('${jsAttr(url)}', 'link', null, '${jsAttr(platform)}')`;
     }
