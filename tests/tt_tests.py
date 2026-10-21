@@ -224,6 +224,25 @@ def blok1_statisch():
     check("TT-455: productie- en test-URL zijn verschillend",
           bool(prod_url and test_url and prod_url.group(1) != test_url.group(1)), "gelijk of ontbreekt")
 
+    # TT-483: supabase-js staat in de repo met een vaste versie; geen CDN meer.
+    idx483 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    sb_pad = os.path.join(ROOT, "supabase.js")
+    sb_ok = os.path.exists(sb_pad)
+    sb_tekst = open(sb_pad, encoding="utf-8").read() if sb_ok else ""
+    check("TT-483: index.html laadt supabase.js uit de repo met een vaste versie",
+          '<script src="supabase.js?v=2.118.0"></script>' in idx483, "regel ontbreekt")
+    check("TT-483: index.html verwijst niet meer naar jsDelivr",
+          "jsdelivr" not in idx483.lower(), "jsDelivr komt nog voor")
+    check("TT-483: supabase.js bestaat en is versie 2.118.0",
+          sb_ok and "supabase-js/2.118.0" in sb_tekst, "bestand of versie klopt niet")
+    if sb_ok:
+        r483 = subprocess.run(["node", "-e",
+            "const vm=require('vm');const c=vm.createContext({});"
+            "vm.runInContext(require('fs').readFileSync(process.argv[1],'utf8')+';this.__sb=supabase',c);"
+            "process.exit(typeof c.__sb.createClient==='function'?0:1)", sb_pad],
+            capture_output=True, text=True)
+        check("TT-483: supabase.js laadt en levert createClient", r483.returncode == 0, r483.stderr.strip()[:300])
+
     # TT-393: een schermwissel en het sluiten van een gesprek scrollen meteen naar boven.
     core = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
     msgs = open(os.path.join(ROOT, "messages.js"), encoding="utf-8").read()
@@ -237,7 +256,8 @@ def blok1_statisch():
 
     srcs = re.findall(r'<script\s+src="([^"?]+)(?:\?v=([^"]*))?"', html)
     local = [(s, v) for s, v in srcs if not s.startswith("http")]
-    order = [s for s, _ in local]
+    # TT-483: supabase.js (bibliotheek, vaste versie) telt niet mee in de volgorde van de eigen scripts.
+    order = [s for s, _ in local if s != "supabase.js"]
     check("scriptvolgorde is bindend en klopt", order == SCRIPT_ORDER,
           f"gevonden: {order}")
     zonder_v = [s for s, v in local if not v]
@@ -330,8 +350,8 @@ def blok_browser():
         page = ctx.new_page()
         page.on("pageerror", lambda e: page_errors.append(str(e)))
 
-        # De Supabase-bibliotheek van het CDN wordt vervangen door de stub.
-        page.route("**/supabase-js@2/**", lambda r: r.fulfill(
+        # De Supabase-bibliotheek (supabase.js in de repo, TT-483) wordt vervangen door de stub.
+        page.route("**/supabase.js*", lambda r: r.fulfill(
             status=200, content_type="application/javascript", body=stub_js))
         # Externe diensten die een test niet mag raken.
         for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
@@ -1299,7 +1319,7 @@ def blok_browser():
         tp = tctx.new_page()
         t_errors = []
         tp.on("pageerror", lambda e: t_errors.append(str(e)))
-        tp.route("**/supabase-js@2/**", lambda r: r.fulfill(
+        tp.route("**/supabase.js*", lambda r: r.fulfill(
             status=200, content_type="application/javascript", body=stub_js))
         for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
                     "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
@@ -1441,7 +1461,7 @@ def blok_browser():
 
         sctx = browser.new_context(viewport={"width": 344, "height": 700})
         sp = sctx.new_page()
-        sp.route("**/supabase-js@2/**", lambda r: r.fulfill(
+        sp.route("**/supabase.js*", lambda r: r.fulfill(
             status=200, content_type="application/javascript", body=stub_js))
         for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**"):
             sp.route(pat, lambda r: r.abort())
@@ -1494,7 +1514,7 @@ def blok_browser():
               std["velden"] == ["10", "10", "10"], str(std["velden"]))
         sctx = browser.new_context(viewport={"width": 412, "height": 900})
         sp = sctx.new_page()
-        sp.route("**/supabase-js@2/**", lambda r: r.fulfill(
+        sp.route("**/supabase.js*", lambda r: r.fulfill(
             status=200, content_type="application/javascript", body=stub_js))
         for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**"):
             sp.route(pat, lambda r: r.abort())
@@ -1579,7 +1599,7 @@ def blok_browser():
             fouten = []
             pg = c.new_page()
             pg.on("pageerror", lambda e: fouten.append(str(e)))
-            pg.route("**/supabase-js@2/**", lambda r: r.fulfill(
+            pg.route("**/supabase.js*", lambda r: r.fulfill(
                 status=200, content_type="application/javascript", body=body))
             for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
                         "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
@@ -3181,7 +3201,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             fouten = []
             pg = c.new_page()
             pg.on("pageerror", lambda e: fouten.append(str(e)))
-            pg.route("**/supabase-js@2/**", lambda r: r.fulfill(
+            pg.route("**/supabase.js*", lambda r: r.fulfill(
                 status=200, content_type="application/javascript", body=body))
             for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
                         "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
@@ -4292,7 +4312,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             pg = c.new_page()
             fouten = []
             pg.on("pageerror", lambda e: fouten.append(str(e)))
-            pg.route("**/supabase-js@2/**", lambda r: r.fulfill(
+            pg.route("**/supabase.js*", lambda r: r.fulfill(
                 status=200, content_type="application/javascript", body=stub_js))
             for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
                         "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
@@ -4407,7 +4427,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             fouten = []
             pg = c.new_page()
             pg.on("pageerror", lambda e: fouten.append(str(e)))
-            pg.route("**/supabase-js@2/**", lambda r: r.fulfill(
+            pg.route("**/supabase.js*", lambda r: r.fulfill(
                 status=200, content_type="application/javascript", body=body))
             for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
                         "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
@@ -4459,7 +4479,7 @@ window.TT_STUB.fnAntwoord = {};
             fouten = []
             pg = c.new_page()
             pg.on("pageerror", lambda e: fouten.append(str(e)))
-            pg.route("**/supabase-js@2/**", lambda r: r.fulfill(
+            pg.route("**/supabase.js*", lambda r: r.fulfill(
                 status=200, content_type="application/javascript", body=body))
             for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
                         "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
@@ -4876,7 +4896,7 @@ window.TT_STUB.fnAntwoord = {};
         # 4. De goedkeuringspagina: hoofdknop, en "Bedankt!" staat in beeld.
         c2 = browser.new_context(viewport={"width": 1100, "height": 420}, color_scheme="light")
         pg = c2.new_page(); f4 = []; pg.on("pageerror", lambda e: f4.append(str(e)))
-        pg.route("**/supabase-js@2/**", lambda r: r.fulfill(status=200, content_type="application/javascript",
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript",
             body=stub_js + "\n(function(){ const m = window.supabase.createClient; window.supabase.createClient = function(){ const c = m.apply(this, arguments); c.functions = { invoke: async () => ({ data: { ok: true }, error: null }) }; return c; }; })();\n"))
         for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**"):
             pg.route(pat, lambda r: r.abort())
@@ -4900,7 +4920,7 @@ window.TT_STUB.fnAntwoord = {};
         # Bevindingen Ronald, 28-09-2026 (4, 5, 7, 8 en 9).
         c47 = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
         p47 = c47.new_page(); f47 = []; p47.on("pageerror", lambda e: f47.append(str(e)))
-        p47.route("**/supabase-js@2/**", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        p47.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
         for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
             p47.route(pat, lambda r: r.abort())
         p47.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load"); p47.wait_for_timeout(500)
@@ -5031,7 +5051,7 @@ window.TT_STUB.fnAntwoord = {};
         # naar boven-beneden." Besluit Ronald, 29-09-2026: "doe wat gebruikelijk is."
         c48 = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
         p48 = c48.new_page(); f48 = []; p48.on("pageerror", lambda e: f48.append(str(e)))
-        p48.route("**/supabase-js@2/**", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        p48.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
         for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
             p48.route(pat, lambda r: r.abort())
         p48.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load"); p48.wait_for_timeout(500)
@@ -5125,7 +5145,7 @@ window.TT_STUB.fnAntwoord = {};
         def ctx49(w, h, **kw):
             c = browser.new_context(viewport={"width": w, "height": h}, **kw)
             pg = c.new_page(); fouten = []; pg.on("pageerror", lambda e: fouten.append(str(e)))
-            pg.route("**/supabase-js@2/**", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
             for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
                 pg.route(pat, lambda r: r.abort())
             gevraagd = []
@@ -5655,7 +5675,7 @@ window.TT_STUB.fnAntwoord = {};
         bp = bctx.new_page()
         b_fouten = []
         bp.on("pageerror", lambda e: b_fouten.append(str(e)))
-        bp.route("**/supabase-js@2/**", lambda r: r.fulfill(
+        bp.route("**/supabase.js*", lambda r: r.fulfill(
             status=200, content_type="application/javascript", body=stub_js))
         for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**",
                     "**/api.pdok.nl/**", "**/itunes.apple.com/**"):

@@ -93,7 +93,10 @@ def blok_a():
     html = lees("index.html")
 
     # A1 - de scriptvolgorde is bindend (§7)
-    gevonden = re.findall(r'<script src="([a-z-]+\.js)\?v=', html)
+    # TT-483: supabase.js (bibliotheek, vaste versie) staat vóór de app-scripts
+    # en telt niet mee in de bindende volgorde van de eigen scripts.
+    gevonden = [f for f in re.findall(r'<script src="([a-z-]+\.js)\?v=', html)
+                if f != "supabase.js"]
     toets("A", "scriptvolgorde gelijk aan de bindende volgorde",
           gevonden == BINDENDE_SCRIPTVOLGORDE, "A1",
           "scriptvolgorde wijkt af. Gevonden: %s" % " · ".join(gevonden))
@@ -136,7 +139,9 @@ def blok_a():
     op_schijf = {f for f in os.listdir(REPO) if f.endswith(".js")}
     # TT-452 (09-10-2026): sw.js is de service worker. De browser laadt hem
     # zelf, niet index.html; hij hoort dus niet in de scriptvolgorde.
-    wees = op_schijf - set(BINDENDE_SCRIPTVOLGORDE) - {"sw.js"}
+    # TT-483 (21-10-2026): supabase.js is de bibliotheek supabase-js, vaste
+    # versie in de repo. index.html laadt hem vóór de scriptvolgorde.
+    wees = op_schijf - set(BINDENDE_SCRIPTVOLGORDE) - {"sw.js", "supabase.js"}
     toets("A", "geen onbekend JS-bestand in de hoofdmap",
           not wees, "A5", "wordt door niets geladen: %s" % kort(wees))
 
