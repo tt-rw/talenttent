@@ -45,7 +45,7 @@ VERWACHTE_VIEWS = [
 # Documenten die in het claude.ai-project horen, niet in de repo (§8).
 PROJECTDOCUMENTEN = [
     "huisstijl-en-consistentie", "app-first-toetslijst",
-    "testprotocol-regressiepreventie", "zoekfunctienaslagwerk",
+    "testprotocol-regressiepreventie", "zoekfunctienaslagwerk", "actielijst",
 ]
 
 # Typografische tekens die de huisstijl uitdrukkelijk toestaat (§11).
@@ -361,26 +361,10 @@ def blok_c():
 # ============================================================ D - stand
 
 def blok_d():
-    lijst = lees("actielijst.md")
+    # De actielijst staat niet meer in de repo (TT-466, besluit Ronald 20-10-2026):
+    # blok A7 bewaakt dat hij er niet terugkomt.
 
-    # D1 - de actielijst heeft zijn drie vaste delen
-    koppen = re.findall(r"(?m)^# (Deel \d[a-z]?)", lijst)
-    heeft = all(any(k.startswith(d) for k in koppen)
-                for d in ("Deel 1", "Deel 2", "Deel 3"))
-    toets("D", "actielijst heeft Deel 1, 2 en 3",
-          heeft, "D1", "koppen gevonden: %s" % ", ".join(koppen))
-
-    # D2 - elk niveau heeft een tabel in Deel 1 (regel van 11-09-2026)
-    deel1 = ""
-    m = re.search(r"(?ms)^# Deel 1 .*?(?=^# Deel 2)", lijst)
-    if m:
-        deel1 = m.group(0)
-    niveaus = [n for n in ("## P0", "## P1", "## P2", "## P3") if n in deel1]
-    toets("D", "Deel 1 heeft een tabel per niveau",
-          len(niveaus) == 4, "D2",
-          "niveaus in Deel 1: %s" % (", ".join(niveaus) or "geen"))
-
-    # D3 - CHECKSUMS.txt klopt voor elk bestand dat erin staat (§4.8)
+    # D1 - CHECKSUMS.txt klopt voor elk bestand dat erin staat (§4.8)
     afwijkend = []
     for regel in lees("CHECKSUMS.txt").strip().split("\n"):
         deel = regel.split()
@@ -395,7 +379,7 @@ def blok_d():
             if hashlib.sha256(f.read()).hexdigest() != verwacht:
                 afwijkend.append(naam)
     toets("D", "CHECKSUMS.txt klopt met de bestanden",
-          not afwijkend, "D3", "checksum wijkt af: %s" % kort(afwijkend))
+          not afwijkend, "D1", "checksum wijkt af: %s" % kort(afwijkend))
 
 
 # ============================================================ afdruk
