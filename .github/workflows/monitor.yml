@@ -37,12 +37,26 @@
 # Komt er later toch gedragstoetsing in CI, dan hoort die in een APARTE
 # workflow, zodat een Playwright-storing de monitor nooit rood kleurt.
 
+# TT-496 (22-10-2026): tweede job, `bewaking`, elk kwartier. Die kijkt naar de
+# LIVE app (`tests/tt_bewaking.py`): antwoordt de site, antwoordt Supabase, hoe
+# lang loopt het certificaat en het domein nog, en de aantallen uit de
+# databasefunctie `tt_bewaking` (mislukte mails, wachtende profielen, ontbrekende
+# welkomstmails, mislukte cron-taken, pieken in `app_error_log`). Zakt hij, dan
+# eindigt de run rood en mailt GitHub naar de eigenaar van de repo: een weg die
+# niet via de mailserver van cloud86 loopt. De code voor de functie staat als
+# geheim `TT_BEWAKING_CODE` in GitHub; hij opent alleen aantallen.
+# De job `monitor` draait niet bij het kwartiersschema.
+#
+# Nog niet gebouwd: de laatste back-up op Backblaze (onbekend hoe die te lezen is).
+
 name: Monitor
 
 on:
   schedule:
     # Elke drie dagen om 06:00 UTC (08:00 Nederlandse zomertijd).
     - cron: "0 6 */3 * *"
+    # Elk kwartier: alleen de job `bewaking`.
+    - cron: "*/15 * * * *"
   push:
     branches: ["main"]
   # Zelf starten kan via de Actions-tab.
@@ -53,6 +67,7 @@ permissions:
 
 jobs:
   monitor:
+    if: github.event.schedule != '*/15 * * * *'
     runs-on: ubuntu-latest
     steps:
       - name: Wachten tot de upload compleet is
@@ -85,3 +100,16 @@ jobs:
       - name: Monitorronde
         if: steps.nieuwste.outputs.overslaan != 'ja'
         run: python3 tests/tt_monitor.py
+
+  bewaking:
+    # Kwartiersschema en handmatig starten. Niet na een upload.
+    if: github.event_name == 'schedule' && github.event.schedule == '*/15 * * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repo ophalen
+        uses: actions/checkout@v4
+
+      - name: Bewaking
+        env:
+          TT_BEWAKING_CODE: ${{ secrets.TT_BEWAKING_CODE }}
+        run: python3 tests/tt_bewaking.py
