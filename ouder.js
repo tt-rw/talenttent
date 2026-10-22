@@ -108,7 +108,21 @@ function ouderStapTonen() {
   const veld = document.getElementById('ouderEmail');
   const bewaard = ouderAanvraagLezen();
   if (veld && bewaard?.ouderEmail) veld.value = bewaard.ouderEmail;
+  ouderStopLinkZetten();
   ouderPaneelTonen('ouderStap');
+}
+
+// TT-503 D7: ook op het tussenscherm een weg terug. Alleen het wachtscherm had
+// "Stoppen en mijn gegevens wissen"; wie hier vastzat, kon zijn halve
+// registratie niet meer wissen. De regel wordt hier neergezet, zodat
+// index.html er niet voor hoeft te veranderen. Eén keer, nooit dubbel.
+function ouderStopLinkZetten() {
+  const paneel = document.getElementById('ouderStap');
+  if (!paneel || document.getElementById('ouderStapStopLink')) return;
+  const anker = paneel.querySelector('.ouder-melding');
+  if (!anker) return;
+  anker.insertAdjacentHTML('afterend',
+    '<p class="stille-link-regel" id="ouderStapStopLink"><button type="button" class="stille-link" onclick="ouderStoppenEnWissen()">Stoppen en mijn gegevens wissen</button></p>');
 }
 
 // "Later invullen": gewoon door naar stap 2. Het tussenscherm komt terug na de
@@ -141,16 +155,22 @@ async function ouderVerzoekVersturen() {
       ouder_email:   adres
     });
     hideSaving();
+    // TT-503 D7: de server geeft het nummer ook terug als de mail mislukte
+    // (mail_verstuurd false). Dan bewaren we het toch, met verstuurd 0, zodat
+    // het wachtscherm "Mail opnieuw sturen" laat zien en het kind niet vastloopt.
+    const mailGelukt = gegevens.mail_verstuurd !== false;
     ouderAanvraagBewaren({
       aanvraagId:      gegevens.aanvraag_id,
       ouderEmail:      adres,
       stand:           'open',
       vervaltOp:       gegevens.vervalt_op,
-      verstuurd:       1,
-      laatstVerstuurd: Date.now()
+      verstuurd:       mailGelukt ? 1 : 0,
+      laatstVerstuurd: mailGelukt ? Date.now() : 0
     });
     ouderPaneelSluiten();
-    showToast('Je aanvraag is verstuurd. Je kunt gewoon verder.');
+    showToast(mailGelukt
+      ? 'Je aanvraag is verstuurd. Je kunt gewoon verder.'
+      : 'De mail kon nog niet worden verstuurd. Je kunt gewoon verder; aan het eind stuur je hem opnieuw.');
     goTo(1);
   } catch (e) {
     hideSaving();
@@ -178,6 +198,18 @@ function ouderWachtTonen() {
   const bewaard = ouderAanvraagLezen();
   const adresEl = document.getElementById('ouderWachtAdres');
   if (adresEl) adresEl.textContent = bewaard?.ouderEmail || '';
+  // TT-503 D7: de eerste mail is niet verstuurd. Dan klopt "We hebben je ouder
+  // een mail gestuurd" niet; het scherm zegt wat er is en wat het kind doet.
+  if (bewaard && bewaard.verstuurd === 0) {
+    const kop  = document.getElementById('ouderWachtKop');
+    const body = document.getElementById('ouderWachtBody');
+    if (kop)  kop.textContent = 'De mail is nog niet verstuurd';
+    if (body) body.textContent = 'Het versturen naar ' + (bewaard.ouderEmail || 'je ouder') + ' lukte niet. Je profiel blijft bewaard. Tik op "Mail opnieuw sturen".';
+    ['ouderWachtMelding', 'ouderWachtVraag'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  }
   ouderPaneelTonen('ouderWacht');
   ouderHerstuurKnopBijwerken();
   ouderStandVerversen();
@@ -217,10 +249,14 @@ async function ouderOpnieuwSturen() {
   try {
     await ouderApi('opnieuw', { aanvraag_id: bewaard.aanvraagId });
     hideSaving();
-    bewaard.verstuurd = (bewaard.verstuurd || 1) + 1;
+    const wasNietVerstuurd = bewaard.verstuurd === 0;
+    bewaard.verstuurd = (bewaard.verstuurd || 0) + 1; // TT-503: 0 telt als 0, niet als 1
     bewaard.laatstVerstuurd = Date.now();
     ouderAanvraagBewaren(bewaard);
-    ouderHerstuurKnopBijwerken();
+    // Was de eerste mail mislukt, dan staat het wachtscherm nog in de
+    // foutvorm; ouderWachtTonen() zet hem terug in de normale vorm.
+    if (wasNietVerstuurd) ouderWachtTonen();
+    else ouderHerstuurKnopBijwerken();
     showToast('De mail is opnieuw verstuurd.');
   } catch (e) {
     hideSaving();
@@ -286,6 +322,11 @@ function ouderStoppenEnWissen() {
       clearOnboardingProgress();
       ouderPaneelSluiten();
       showView('landing');
+      // TT-503 D7: ook wat in het geheugen en in de velden van de wizard staat,
+      // moet weg. Alleen de opslag wissen liet de naam en de gegevens van de
+      // vorige registratie staan; "Profiel aanmaken" opende dan weer in het
+      // halve profiel. Een herlaad zet alles in één keer terug op leeg.
+      window.location.reload();
     },
     'Ja, stoppen',
     true
