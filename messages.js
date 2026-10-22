@@ -186,6 +186,19 @@ function scrollThreadToBottom() {
   // het laatste bericht er dus altijd net boven.
   if (!draad.lastElementChild) return;
   window.scrollTo(0, document.documentElement.scrollHeight);
+  // TT-499 (22-10-2026): body heeft min-height 100vh. Op Android Chrome is dat
+  // de hoogte zonder adresbalk; met adresbalk is de pagina dus tot 56px hoger
+  // dan het scherm, ook bij één bericht. De scroll hierboven schoof dan de
+  // datumregel en het eerste bericht achter de vaste gesprekskop. Past het
+  // hele gesprek op het scherm, dan staat het begin direct onder die kop.
+  const kop = document.querySelector('#messagesThreadPanel .messages-thread-header');
+  const voet = document.querySelector('#messagesThreadPanel .messages-thread-footer');
+  if (!kop || !voet) return;
+  const kopOnder = (parseFloat(getComputedStyle(kop).top) || 0) + kop.offsetHeight + 16;
+  const onderbalk = document.body.classList.contains('toetsenbord-open') ? 0 : 60;
+  if (draad.offsetHeight + voet.offsetHeight + onderbalk > window.innerHeight - kopOnder) return;
+  const teVeel = draad.getBoundingClientRect().top - kopOnder;
+  if (teVeel < 0) window.scrollBy(0, teVeel);
 }
 
 // Ongelezen-badge op de "Berichten"-navigatieknop, bijgewerkt na inloggen,
