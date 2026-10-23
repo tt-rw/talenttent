@@ -351,9 +351,14 @@ async function forgotPassword() {
   let gelukt = false;
   try {
     const { error } = await db.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://talenttent.org/'
+      // Altijd terug naar de site waar de gebruiker nu is (productie: https://talenttent.org/,
+      // testsite: de testsite). Eerder vast op productie, waardoor een herstelmail
+      // vanaf de testsite naar de echte site wees (TT-495, 23-10-2026).
+      redirectTo: new URL('./', location.href).href
     });
-    if (error) { showToast(friendlyErrorMessage(error, 'de herstelmail versturen')); }
+    // TT-495 D7: een mislukte herstelmail kwam alleen als melding bij de gebruiker
+    // en liet geen spoor achter; nu ook in app_error_log (bewaking kan hem zien).
+    if (error) { logCaught('forgotPassword', error); showToast(friendlyErrorMessage(error, 'de herstelmail versturen')); }
     else gelukt = true;
   } catch (e) {
     logCaught('forgotPassword', e);
