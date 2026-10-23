@@ -3180,6 +3180,23 @@ def blok_browser():
               ouder2["hierView"] == ["view-register"], json.dumps(ouder2))
         check("TT-333: de ouderschermen zeggen nergens \"verzoek\"",
               not ouder2["verzoekInSchermen"], json.dumps(ouder2))
+        # TT-478 (23-10-2026): het koppelen loopt via de databasefunctie, niet meer via de Edge Function.
+        kop = page.evaluate("""async () => {
+          const S = window.TT_STUB, echteApi = ouderApi, echteSubmit = submitProfile;
+          const acties = [];
+          ouderApi = async (a) => { acties.push(a); return {}; };
+          submitProfile = async () => { state.savedId = 'm1'; };
+          S.rpcResults.tt_ouder_koppelen = () => true;
+          localStorage.setItem('tt_ouder_v1', JSON.stringify({ ouderEmail: 'o@mail.nl', aanvraagId: 'a1', verstuurd: 1, laatstVerstuurd: Date.now() }));
+          const veld = document.getElementById('ouderWachtwoordVeld');
+          veld.value = 'wachtwoord123';
+          await ouderProfielAanmaken();
+          const rpc = S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_ouder_koppelen');
+          const uit = { acties, rpc: rpc.map(c => c.params), bewaard: localStorage.getItem('tt_ouder_v1') };
+          ouderApi = echteApi; submitProfile = echteSubmit;
+          return uit; }""")
+        check("TT-478: het profiel van het kind wordt via tt_ouder_koppelen gekoppeld, niet via de Edge Function",
+              kop["acties"] == [] and kop["rpc"] == [{"p_aanvraag_id": "a1"}] and kop["bewaard"] is None, json.dumps(kop))
         bron = open(os.path.join(ROOT, "ouder.js"), encoding="utf-8").read()
         zichtbaar = re.findall(r"'[^'\n]*'|`[^`]*`", bron)
         check("TT-333: geen \"verzoek\" in de teksten van ouder.js",

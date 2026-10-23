@@ -358,8 +358,10 @@ async function ouderProfielAanmaken() {
   // Gelukt? Dan het nummer van de aanvraag aan het nieuwe profiel koppelen —
   // dat is het bewijs dat bij dit account een goedkeuring hoort.
   if (state.savedId && bewaard?.aanvraagId) {
-    try { await ouderApi('koppelen', { aanvraag_id: bewaard.aanvraagId, musician_id: state.savedId }); }
-    catch (e) { logCaught('ouderKoppelen', e); }
+    try {
+      const { error } = await db.rpc('tt_ouder_koppelen', { p_aanvraag_id: bewaard.aanvraagId });
+      if (error) throw error;
+    } catch (e) { logCaught('ouderKoppelen', e); }
     ouderAanvraagWissen();
   }
 }
