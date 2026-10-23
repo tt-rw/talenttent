@@ -506,7 +506,7 @@ async function wijzigEmailUitvoeren(nieuw) {
   const gebruiker = data?.user || null;
   const wacht = gebruiker?.new_email || null;
   if (wacht) {
-    igMelding(`✓ We hebben een mail gestuurd naar ${wacht}. Klik op de link erin, dan is je adres gewijzigd. Tot die tijd log je in met ${gebruiker.email}.`);
+    igMelding(`✓ We hebben een e-mail gestuurd naar ${wacht}. Tik op de link in de e-mail om je nieuwe e-mailadres te bevestigen. Tot die tijd log je in met ${gebruiker.email}.`);
   } else {
     const nu = gebruiker?.email || nieuw;
     if (gebruiker) currentUser = gebruiker;
