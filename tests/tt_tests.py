@@ -8831,7 +8831,7 @@ window.TT_STUB.fnAntwoord = {};
           if (verlopen) verlopen.hidden = false;
           let aantal = 0;
           const oud = db.auth.resetPasswordForEmail;
-          db.auth.resetPasswordForEmail = () => { aantal++; return new Promise(r => setTimeout(() => r({ data: {}, error: null }), 500)); };
+          db.auth.resetPasswordForEmail = (e, o) => { aantal++; u.redirect = o && o.redirectTo; return new Promise(r => setTimeout(() => r({ data: {}, error: null }), 500)); };
           document.getElementById('loginEmail').value = 'test@talenttent.org';
           forgotPassword(); await w(50);
           u.tijdens = { uit: knop.disabled, tekst: knop.textContent, succes: suc.classList.contains('visible'), verlopenWeg: verlopen ? verlopen.hidden : null };
@@ -8840,9 +8840,11 @@ window.TT_STUB.fnAntwoord = {};
           u.na = { uit: knop.disabled, tekst: knop.textContent, succes: suc.classList.contains('visible'), melding: suc.textContent, aantal };
           // Een fout: de knop komt terug en er staat geen succesmelding.
           knop.disabled = false; knop.textContent = 'Wachtwoord vergeten?';
+          appErrorLogCount = 0; // de teller van 20 is per paginabezoek; deze controle toetst de logregel, niet de teller
+          const logV = (window.TT_STUB.data.app_error_log || []).filter(r => r.source === 'forgotPassword').length;
           db.auth.resetPasswordForEmail = () => Promise.resolve({ data: {}, error: { message: 'x', status: 429 } });
           forgotPassword(); await w(200);
-          u.fout = { uit: knop.disabled, tekst: knop.textContent, succes: suc.classList.contains('visible') };
+          u.fout = { uit: knop.disabled, tekst: knop.textContent, succes: suc.classList.contains('visible'), log: (window.TT_STUB.data.app_error_log || []).filter(r => r.source === 'forgotPassword').length - logV };
           db.auth.resetPasswordForEmail = oud;
           return u;
         }""")
@@ -8852,6 +8854,8 @@ window.TT_STUB.fnAntwoord = {};
         check("na het versturen: bevestiging met het e-mailadres, knop blijft dicht",
               d86["na"]["succes"] is True and "test@talenttent.org" in d86["na"]["melding"] and d86["na"]["uit"] is True and d86["na"]["tekst"] == "Herstelmail verstuurd", j86("na"))
         check("bij een fout: knop weer open, geen succesmelding", d86["fout"]["uit"] is False and d86["fout"]["tekst"] == "Wachtwoord vergeten?" and d86["fout"]["succes"] is False, j86("fout"))
+        check("TT-495: de herstellink wijst terug naar de site waar de gebruiker is (niet vast naar productie)", d86.get("redirect") and d86["redirect"].endswith("/") and "talenttent.org" not in d86["redirect"], str(d86.get("redirect")))
+        check("TT-495 D7: een mislukte herstelmail komt in app_error_log (bron forgotPassword)", d86["fout"]["log"] == 1, j86("fout"))
         core86 = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
         html86 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
         check("een verlopen herstellink (otp_expired) toont een eigen melding op het inlogscherm en wist de foutcode uit de adresregel",
