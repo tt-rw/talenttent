@@ -37,6 +37,7 @@ DREMPELS = {
     "nieuwe_soorten_uur": 5,       # veel nieuwe soorten fout tegelijk
     "wacht_zonder_mail": 1,        # wacht op bevestiging, mail nooit gestart
     "welkom_ontbreekt": 1,         # online, geen welkomstmail
+    "ouder_mail_mislukt": 1,       # eerste mail aan een ouder niet verstuurd (TT-496, 23-10-2026)
     "meldingen_niet_gemaild": 1,   # melding aan privacy@ niet verstuurd
     "accounts_zonder_profiel": 3,  # wizard blijft hangen (een enkele is normaal)
 }
