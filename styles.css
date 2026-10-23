@@ -443,8 +443,9 @@
 
   /* De ouder-schermen tonen de stappenbalk niet — ze zijn geen genummerde
      stap. Die balk levert wel de 40px lucht onder de kop (.steps
-     margin-bottom); zonder deze regel plakt de titel tegen de kop aan. */
-  .panel-ouder { padding-top: 40px; }
+     margin-bottom); zonder deze regel plakt de kaart tegen de kop aan. De
+     kaart zelf (opvulling, rand) komt uit de TT-461-regel verderop. */
+  .panel-ouder { margin-top: 40px; }
 
   /* TT-42: het blok dat het kind aan zijn ouder kan laten zien. */
   .ouder-kaart {
@@ -2744,7 +2745,7 @@
      24px opvulling. De velden staan daardoor als crème vlak op de kaart. De
      niet-gekozen keuzeknop (Echte naam) heeft de kleur en rand van een veld:
      wit op wit viel weg. Dat gaat via --keuze-vlak en --keuze-rand, niet via een
-     eigen regel voor een keuzesoort (monitorronde B7). Alle negen tegelschermen en de vijf wizardstappen gelijk (consistentie). */
+     eigen regel voor een keuzesoort (monitorronde B7). Alle negen tegelschermen, de vijf wizardstappen en de drie ouder-schermen gelijk (consistentie; TT-463, besluit Ronald 23-10-2026). */
   #wieBenJeScreen,
   #watSpeelJeScreen,
   #watZoekJeScreen,
@@ -2754,7 +2755,8 @@
   #bandBezettingScreen,
   #bandMuziekScreen,
   #bandMediaScreen,
-  #step0, #step1, #step2, #step3, #step4 {
+  #step0, #step1, #step2, #step3, #step4,
+  #ouderStap, #ouderWacht, #ouderWachtwoord {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
