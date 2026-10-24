@@ -4641,7 +4641,7 @@ window.TT_STUB.fnAntwoord = {};
               uit["ok"] is True and uit["berichten"] == 1, json.dumps(uit))
         c.close(); alle_fouten += f
 
-        # TT-421: een weigering door de database (18+ naar iemand onder 18 die niet
+        # TT-421: een weigering door de database (18+ naar iemand onder 16 die niet
         # eerst schreef) geeft een heldere zin, geen foutlog en niet "Er ging iets mis".
         c, pg, f = bevestig_pagina("", INGELOGD + "\nwindow.TT_STUB.errors['messages'] = { code: '42501', message: 'new row violates row-level security policy for table \"messages\"' };\n")
         uit = pg.evaluate("""async () => {
@@ -4659,27 +4659,30 @@ window.TT_STUB.fnAntwoord = {};
               uit["gelogd"] == [], json.dumps(uit))
         c.close(); alle_fouten += f
 
-        # TT-421: 18+ ziet geen berichtknop bij iemand onder de 18 die niet eerst schreef.
+        # TT-421: 18+ ziet geen berichtknop bij iemand onder de 16 die niet eerst schreef.
         def knop_proef(geboorte, extra=""):
             c, pg, f = bevestig_pagina("", INGELOGD
                 + "\nwindow.TT_STUB.rpcResults.tt_get_my_birth_date = " + json.dumps(geboorte) + ";\n"
-                + "window.TT_STUB.rpcResults.tt_musicians_ages = (p) => (p.ids || []).map(id => ({ id, age: id === 'kind' ? 15 : 30 }));\n"
+                + "window.TT_STUB.rpcResults.tt_musicians_ages = (p) => (p.ids || []).map(id => ({ id, age: id === 'kind' ? 15 : (id === 'tiener' ? 17 : 30) }));\n"
                 + extra)
             uit = pg.evaluate("""async () => {
               const maak = (id) => { const b = document.createElement('button'); b.setAttribute('data-bericht-id', id); b.textContent = id; document.body.appendChild(b); return b; };
               const telVoor = window.TT_STUB.calls.filter(x => x.name === 'tt_musicians_ages').length;
-              const kind = maak('kind'), vol = maak('volwassene');
+              const kind = maak('kind'), tiener = maak('tiener'), vol = maak('volwassene');
               const voor = getComputedStyle(kind).visibility;
               await new Promise(r => setTimeout(r, 500));
               return { voor, kind: getComputedStyle(kind).display, kindZicht: getComputedStyle(kind).visibility,
+                       tiener: getComputedStyle(tiener).display, tienerZicht: getComputedStyle(tiener).visibility,
                        vol: getComputedStyle(vol).display, volZicht: getComputedStyle(vol).visibility,
                        leeftijdsvragen: window.TT_STUB.calls.filter(x => x.name === 'tt_musicians_ages').length - telVoor };
             }""")
             c.close(); return uit, f
         uit, f = knop_proef("1980-01-01")
         check("TT-421: een berichtknop is onzichtbaar tot de app weet of hij mag", uit["voor"] == "hidden", json.dumps(uit))
-        check("TT-421: 18+ ziet geen knop bij iemand onder de 18 die niet eerst schreef",
+        check("TT-421: 18+ ziet geen knop bij iemand onder de 16 die niet eerst schreef",
               uit["kind"] == "none", json.dumps(uit))
+        check("TT-421: 18+ ziet de knop bij een 16- of 17-jarige wel (16+ met 16+ is vrij)",
+              uit["tiener"] != "none" and uit["tienerZicht"] == "visible", json.dumps(uit))
         check("TT-421: 18+ ziet de knop bij een volwassene wel",
               uit["vol"] != "none" and uit["volZicht"] == "visible", json.dumps(uit))
         alle_fouten += f
