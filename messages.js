@@ -103,7 +103,7 @@ async function insertMessage(recipientId, body) {
     if (error) throw error;
     return true;
   } catch (e) {
-    // TT-421: de database weigert een bericht van 18+ aan iemand onder 18 die
+    // TT-421: de database weigert een bericht van 18+ aan iemand onder 16 die
     // niet eerst schreef (rij-beveiliging, code 42501). Dat is een verwacht
     // antwoord, geen storing: een heldere zin, geen foutlog, niet "Er ging iets mis".
     if (e && (e.code === '42501' || /row-level security/i.test(e.message || ''))) {
@@ -756,7 +756,7 @@ function openThreadProfile() {
 
 // ───────────────────────────────────────────────────────────────────────────
 // TT-421 (24-10-2026, besluit Ronald): wie 18 of ouder is, kan iemand onder de
-// 18 alleen berichten als die eerst schreef. Bij zo'n profiel staat dan geen
+// 16 alleen berichten als die eerst schreef. Bij zo'n profiel staat dan geen
 // berichtknop en geen uitlegtekst. De database dwingt het ook af
 // (tt_mag_bericht); dit zorgt dat een gebruiker de knop niet eens ziet.
 //
@@ -800,19 +800,19 @@ async function berichtRechtVerwerk() {
       onbekend.forEach(id => { berichtRecht.leeftijden[id] = null; });
       (data || []).forEach(r => { berichtRecht.leeftijden[r.id] = r.age; });
     }
-    // Een onbekende leeftijd telt als onder de 18, zoals in de database.
-    const onder18 = ids.filter(id => berichtRecht.leeftijden[id] === null || berichtRecht.leeftijden[id] < 18);
+    // Een onbekende leeftijd telt als onder de 16, zoals in de database.
+    const onder16 = ids.filter(id => berichtRecht.leeftijden[id] === null || berichtRecht.leeftijden[id] < 16);
     let schreef = new Set();
-    if (onder18.length) {
+    if (onder16.length) {
       const mid = await getMyMusicianId();
       const { data, error } = await db.from('messages').select('sender_id')
-        .eq('recipient_id', mid).in('sender_id', onder18);
+        .eq('recipient_id', mid).in('sender_id', onder16);
       if (error) throw error;
       schreef = new Set((data || []).map(r => r.sender_id));
     }
     knoppen.forEach(el => {
       const id = el.getAttribute('data-bericht-id');
-      if (onder18.includes(id) && !schreef.has(id)) el.style.display = 'none';
+      if (onder16.includes(id) && !schreef.has(id)) el.style.display = 'none';
       el.setAttribute('data-bericht-ok', '1');
     });
   } catch (e) {
