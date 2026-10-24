@@ -4737,3 +4737,8 @@
 textarea.bio-voorbeeld { min-height: 290px; }
 textarea#bwBio.bio-voorbeeld { min-height: 230px; }
 textarea.bio-voorbeeld::placeholder { font-style: italic; opacity: 0.6; }
+
+/* TT-421: een berichtknop is onzichtbaar tot de app weet of de gebruiker die
+   mag tonen (messages.js, berichtRechtVerwerk). Behoudt de plek, dus niets
+   verspringt zolang de knop blijft staan. */
+[data-bericht-id]:not([data-bericht-ok]) { visibility: hidden; }

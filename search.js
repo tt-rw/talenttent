@@ -940,7 +940,7 @@ function musicianRowHTML(m) {
           <div class="result-row-name">${nameHTML}</div>
           <div class="result-row-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
         </div>
-        <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
+        <div class="result-row-msg-btn" data-bericht-id="${escHtml(m.id)}" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-row-badges">
         ${overflowBadgeHTML(instruments, 2)}
@@ -969,7 +969,7 @@ function musicianCardHTML(m) {
       <div class="result-card-photo">${photoHTML}</div>
       <div class="result-card-top-row">
         <div class="result-card-name">${nameHTML}</div>
-        <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
+        <div class="result-row-msg-btn" data-bericht-id="${escHtml(m.id)}" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       <div class="result-card-badges-line">${overflowBadgeHTML(instruments, 2)}</div>
@@ -1938,7 +1938,7 @@ function musicianSetlistCardHTML(m) {
       <div class="result-card-photo">${photoHTML}</div>
       <div class="result-card-top-row">
         <div class="result-card-name">${escHtml(displayName)}</div>
-        <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
+        <div class="result-row-msg-btn" data-bericht-id="${escHtml(m.id)}" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-card-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
       <div class="result-card-badges-line">${setlistMatchBadge(m)}</div>
@@ -1969,7 +1969,7 @@ function musicianSetlistRowHTML(m) {
           <div class="result-row-name">${nameHTML}</div>
           <div class="result-row-meta">${escHtml(m.city || '')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
         </div>
-        <div class="result-row-msg-btn" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
+        <div class="result-row-msg-btn" data-bericht-id="${escHtml(m.id)}" onclick="openRowMessageIcon(event,'${jsAttr(m.id)}','${jsAttr(displayName)}')">${MESSAGE_ICON_SVG}</div>
       </div>
       <div class="result-row-badges">
         ${setlistMatchBadge(m)}

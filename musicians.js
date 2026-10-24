@@ -242,7 +242,7 @@ function musicianContactFooterHTML(m, isOwn, displayName) {
       <button class="btn btn-ghost" style="width:100%;" onclick="deblokkeerMuzikant('${jsAttr(m.id)}','${jsAttr(displayName)}')">Blokkade opheffen</button></div>`;
   }
   const contactBtn = hasOwnProfile
-    ? `<button class="btn btn-primary" style="width:100%;" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht →</button>`
+    ? `<button class="btn btn-primary" style="width:100%;" data-bericht-id="${escHtml(m.id)}" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht →</button>`
     : `<button class="btn btn-primary" style="width:100%;" onclick="showView('register')">Maak een profiel aan om contact te leggen</button>`;
   return contactBtn;
 }

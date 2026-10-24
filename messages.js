@@ -103,6 +103,13 @@ async function insertMessage(recipientId, body) {
     if (error) throw error;
     return true;
   } catch (e) {
+    // TT-421: de database weigert een bericht van 18+ aan iemand onder 18 die
+    // niet eerst schreef (rij-beveiliging, code 42501). Dat is een verwacht
+    // antwoord, geen storing: een heldere zin, geen foutlog, niet "Er ging iets mis".
+    if (e && (e.code === '42501' || /row-level security/i.test(e.message || ''))) {
+      showToast('Deze persoon kan geen berichten ontvangen.');
+      return false;
+    }
     logCaught('insertMessage', e);
     showToast(friendlyErrorMessage(e, 'je bericht versturen'));
     return false;
@@ -746,3 +753,82 @@ function openThreadProfile() {
   if (!activeConversationId || activeConversationDeleted || activeConversationSysteem) return;
   openProfielScherm(activeConversationId);
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// TT-421 (24-10-2026, besluit Ronald): wie 18 of ouder is, kan iemand onder de
+// 18 alleen berichten als die eerst schreef. Bij zo'n profiel staat dan geen
+// berichtknop en geen uitlegtekst. De database dwingt het ook af
+// (tt_mag_bericht); dit zorgt dat een gebruiker de knop niet eens ziet.
+//
+// Eén plek: elke berichtknop of -icoon draagt data-bericht-id (het id van de
+// ontvanger). Een waarnemer pakt nieuwe knoppen op, vraagt in één keer de
+// leeftijden en de berichten die de gebruiker al kreeg, en verbergt de knoppen
+// die niet mogen. Tot die tijd is de knop onzichtbaar (styles.css). Lukt een
+// vraag niet, dan blijven de knoppen staan: de database weigert dan zelf.
+// Een gebruiker onder de 18 of zonder bekende geboortedatum ziet nooit iets
+// verdwijnen en vraagt niets extra's op.
+const berichtRecht = { gebruiker: null, mijnLeeftijd: undefined, leeftijden: {}, timer: null, bezig: false };
+
+async function berichtRechtMijnLeeftijd() {
+  if (!currentUser) return null;
+  if (berichtRecht.gebruiker !== currentUser.id) {
+    berichtRecht.gebruiker = currentUser.id;
+    berichtRecht.mijnLeeftijd = undefined;
+    berichtRecht.leeftijden = {};
+  }
+  if (berichtRecht.mijnLeeftijd !== undefined) return berichtRecht.mijnLeeftijd;
+  const { data, error } = await db.rpc('tt_get_my_birth_date');
+  if (error) throw error;
+  berichtRecht.mijnLeeftijd = data ? calcAgeFromISO(data) : null;
+  return berichtRecht.mijnLeeftijd;
+}
+
+async function berichtRechtVerwerk() {
+  if (berichtRecht.bezig) { berichtRechtPlan(); return; }
+  const knoppen = Array.from(document.querySelectorAll('[data-bericht-id]:not([data-bericht-ok])'));
+  if (!knoppen.length) return;
+  berichtRecht.bezig = true;
+  const vrij = () => knoppen.forEach(el => el.setAttribute('data-bericht-ok', '1'));
+  try {
+    const mijn = await berichtRechtMijnLeeftijd();
+    if (mijn === null || mijn < 18) { vrij(); return; }
+    const ids = Array.from(new Set(knoppen.map(el => el.getAttribute('data-bericht-id'))));
+    const onbekend = ids.filter(id => !(id in berichtRecht.leeftijden));
+    if (onbekend.length) {
+      const { data, error } = await db.rpc('tt_musicians_ages', { ids: onbekend });
+      if (error) throw error;
+      onbekend.forEach(id => { berichtRecht.leeftijden[id] = null; });
+      (data || []).forEach(r => { berichtRecht.leeftijden[r.id] = r.age; });
+    }
+    // Een onbekende leeftijd telt als onder de 18, zoals in de database.
+    const onder18 = ids.filter(id => berichtRecht.leeftijden[id] === null || berichtRecht.leeftijden[id] < 18);
+    let schreef = new Set();
+    if (onder18.length) {
+      const mid = await getMyMusicianId();
+      const { data, error } = await db.from('messages').select('sender_id')
+        .eq('recipient_id', mid).in('sender_id', onder18);
+      if (error) throw error;
+      schreef = new Set((data || []).map(r => r.sender_id));
+    }
+    knoppen.forEach(el => {
+      const id = el.getAttribute('data-bericht-id');
+      if (onder18.includes(id) && !schreef.has(id)) el.style.display = 'none';
+      el.setAttribute('data-bericht-ok', '1');
+    });
+  } catch (e) {
+    vrij();
+  } finally {
+    berichtRecht.bezig = false;
+  }
+}
+
+function berichtRechtPlan() {
+  clearTimeout(berichtRecht.timer);
+  berichtRecht.timer = setTimeout(berichtRechtVerwerk, 30);
+}
+
+(function berichtRechtStarten() {
+  if (typeof MutationObserver === 'undefined' || !document.body) return;
+  new MutationObserver(berichtRechtPlan).observe(document.body, { childList: true, subtree: true });
+  berichtRechtPlan();
+})();

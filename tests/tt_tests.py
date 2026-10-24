@@ -4641,6 +4641,61 @@ window.TT_STUB.fnAntwoord = {};
               uit["ok"] is True and uit["berichten"] == 1, json.dumps(uit))
         c.close(); alle_fouten += f
 
+        # TT-421: een weigering door de database (18+ naar iemand onder 18 die niet
+        # eerst schreef) geeft een heldere zin, geen foutlog en niet "Er ging iets mis".
+        c, pg, f = bevestig_pagina("", INGELOGD + "\nwindow.TT_STUB.errors['messages'] = { code: '42501', message: 'new row violates row-level security policy for table \"messages\"' };\n")
+        uit = pg.evaluate("""async () => {
+          const toasts = [];
+          const oud = window.showToast; window.showToast = (t) => { toasts.push(t); oud(t); };
+          const gelogd = [];
+          const oudLog = window.logCaught; window.logCaught = (...a) => { gelogd.push(a[0]); };
+          const ok = await insertMessage('m2', 'Hoi!');
+          return { ok, toasts, gelogd, berichten: window.TT_STUB.data.messages.length };
+        }""")
+        check("TT-421: een geweigerd bericht toont een heldere zin, geen 'Er ging iets mis'",
+              uit["ok"] is False and uit["toasts"] == ["Deze persoon kan geen berichten ontvangen."]
+              and uit["berichten"] == 0, json.dumps(uit))
+        check("TT-421: een geweigerd bericht komt niet in het foutlog",
+              uit["gelogd"] == [], json.dumps(uit))
+        c.close(); alle_fouten += f
+
+        # TT-421: 18+ ziet geen berichtknop bij iemand onder de 18 die niet eerst schreef.
+        def knop_proef(geboorte, extra=""):
+            c, pg, f = bevestig_pagina("", INGELOGD
+                + "\nwindow.TT_STUB.rpcResults.tt_get_my_birth_date = " + json.dumps(geboorte) + ";\n"
+                + "window.TT_STUB.rpcResults.tt_musicians_ages = (p) => (p.ids || []).map(id => ({ id, age: id === 'kind' ? 15 : 30 }));\n"
+                + extra)
+            uit = pg.evaluate("""async () => {
+              const maak = (id) => { const b = document.createElement('button'); b.setAttribute('data-bericht-id', id); b.textContent = id; document.body.appendChild(b); return b; };
+              const telVoor = window.TT_STUB.calls.filter(x => x.name === 'tt_musicians_ages').length;
+              const kind = maak('kind'), vol = maak('volwassene');
+              const voor = getComputedStyle(kind).visibility;
+              await new Promise(r => setTimeout(r, 500));
+              return { voor, kind: getComputedStyle(kind).display, kindZicht: getComputedStyle(kind).visibility,
+                       vol: getComputedStyle(vol).display, volZicht: getComputedStyle(vol).visibility,
+                       leeftijdsvragen: window.TT_STUB.calls.filter(x => x.name === 'tt_musicians_ages').length - telVoor };
+            }""")
+            c.close(); return uit, f
+        uit, f = knop_proef("1980-01-01")
+        check("TT-421: een berichtknop is onzichtbaar tot de app weet of hij mag", uit["voor"] == "hidden", json.dumps(uit))
+        check("TT-421: 18+ ziet geen knop bij iemand onder de 18 die niet eerst schreef",
+              uit["kind"] == "none", json.dumps(uit))
+        check("TT-421: 18+ ziet de knop bij een volwassene wel",
+              uit["vol"] != "none" and uit["volZicht"] == "visible", json.dumps(uit))
+        alle_fouten += f
+        uit, f = knop_proef("1980-01-01", "\nwindow.TT_STUB.data.messages.push({ id: 'x1', sender_id: 'kind', recipient_id: 'm1', body: 'Hoi' });\n")
+        check("TT-421: 18+ ziet de knop wel als het kind eerst schreef",
+              uit["kind"] != "none" and uit["kindZicht"] == "visible", json.dumps(uit))
+        alle_fouten += f
+        uit, f = knop_proef("2009-12-31")
+        check("TT-421: onder de 18 ziet elke knop, en er is geen extra vraag naar leeftijden",
+              uit["kind"] != "none" and uit["vol"] != "none" and uit["leeftijdsvragen"] == 0, json.dumps(uit))
+        alle_fouten += f
+        uit, f = knop_proef("1980-01-01", "\nwindow.TT_STUB.rpcErrors.tt_musicians_ages = { code: 'XX', message: 'stuk' };\n")
+        check("TT-421: lukt de vraag niet, dan blijft de knop staan (de database weigert zelf)",
+              uit["kind"] != "none" and uit["kindZicht"] == "visible", json.dumps(uit))
+        alle_fouten += f
+
         # 4. De knop in de mail: #bevestig/<code>.
         def via_link(extra, antwoord):
             c, pg, f = bevestig_pagina("#bevestig/abc123",

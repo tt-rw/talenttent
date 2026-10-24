@@ -1289,7 +1289,7 @@ function bandVoetHTML(b, kijker) {
     return `<button class="btn btn-primary" style="width:100%;" onclick="showView('register')">Maak een profiel aan om contact te leggen</button>`;
   }
   if (!b.contact) return '';
-  return `<button class="btn btn-primary" style="width:100%;" onclick="openMessageComposer('${jsAttr(b.contact.id)}','${jsAttr(b.contact.naam)}','${jsAttr(b.name)}')">Stuur een bericht aan de band →</button>`;
+  return `<button class="btn btn-primary" style="width:100%;" data-bericht-id="${escHtml(b.contact.id)}" onclick="openMessageComposer('${jsAttr(b.contact.id)}','${jsAttr(b.contact.naam)}','${jsAttr(b.name)}')">Stuur een bericht aan de band →</button>`;
 }
 
 // TT-410b fase 2 (06-10-2026, besluiten Ronald): de bandpagina is, net als het
