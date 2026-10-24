@@ -3996,8 +3996,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         priv = html45.split('id="view-privacy"')[1].split('id="view-terms"')[0]
         check("voorwaarden en gedragscode wijzen naar de knop ⋯",
               "knop ⋯" in voorw and "knop ⋯" in gedr)
-        check("privacyverklaring noemt het afschermen voor 13, 14 en 15",
-              "Ben je 13, 14 of 15?" in priv and "De T van The Talent Tent" in priv.replace("de T", "De T"))
+        check("privacyverklaring noemt het afschermen voor onder de 16",
+              "Ben je jonger dan 16 jaar? Dan zien bezoekers zonder account" in priv and "De T van The Talent Tent" in priv.replace("de T", "De T"))
         check("geen paginafouten in blok 36", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
         page.evaluate("window.TT_STUB.reset()")
