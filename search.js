@@ -1,6 +1,7 @@
 // ─── Zoekfunctie ─────────────────────────────────────────────────────────────
 
-const LEVEL_LABELS = { basis: 'Basis', bijna: 'Bijna', podium: 'Podiumklaar' };
+// TT-514 (besluit Ronald, 25-10-2026: "podium is goed"): overal "Podium", gelijk aan het keuzemenu in de setlist.
+const LEVEL_LABELS = { basis: 'Basis', bijna: 'Bijna', podium: 'Podium' };
 
 // TT-47 (herzien 09-08-2026): concrete ambitie-vragen naast het abstracte
 // doelveld — alleen ter aanvulling van het profiel, bewust geen zoekfilter

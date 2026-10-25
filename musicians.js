@@ -24,11 +24,14 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
   ).map(s => {
     // mastery_level komt in een class-attribuut terecht — alleen bekende
     // waarden toelaten, anders kan iemand het attribuut openbreken.
+    // TT-514 (bevinding Ronald, 25-10-2026: "een nummer zonder
+    // beheersingsniveau komt in het muzikantenprofiel met een leeg kader"):
+    // zonder beheersing geen label, zoals in Maak setlist (search.js).
     const lvl = LEVEL_LABELS[s.mastery_level] ? s.mastery_level : '';
     return `
     <div class="profile-song-row">
       <span><strong>${escHtml(s.song_artist)}</strong> — <span style="color:var(--muted)">${escHtml(s.song_title)}</span></span>
-      <span class="level-pill">${escHtml(LEVEL_LABELS[lvl] || '')}</span>
+      ${lvl ? `<span class="level-pill">${escHtml(LEVEL_LABELS[lvl])}</span>` : ''}
     </div>`;
   }).join('');
 
@@ -1211,8 +1214,11 @@ async function openJeSetlist() {
   }
   jstSongs = (data.musician_songs || []).map(s => ({ title: s.song_title, artist: s.song_artist, level: s.mastery_level }));
   songZoekLeeg('jst');
+  clearFieldErrors(document.getElementById('jeSetlistScreen'));
   jstRenderSongs();
   jstSnapshot = jstFieldSnapshot();
+  // TT-514: dezelfde voorproef als in de wizard, per nummer.
+  jstSongs.forEach(s => voorproefOphalen(() => jstSongs, s.title, s.artist, jstRenderSongs));
 }
 
 function jstSelectFirstAc(id) {
@@ -1332,72 +1338,28 @@ function jstAddSong(title, artist) {
   jstSongs.push({ title, artist, level: null });
   songZoekLeeg('jst');
   jstRenderSongs();
+  voorproefOphalen(() => jstSongs, title, artist, jstRenderSongs);
 }
+// TT-514 (Ronald, 25-10-2026: "dit wordt ook de setlist tegel"): dezelfde
+// lijst als de wizard, uit setlistLijstHTML() in utils.js.
 function jstRenderSongs() {
   const list = document.getElementById('jstSongsList');
-  const empty = document.getElementById('jstSongsListEmpty');
-  if (!jstSongs.length) {
-    list.innerHTML = '';
-    if (empty) empty.style.display = '';
-    return;
-  }
-  if (empty) empty.style.display = 'none';
-  const displayOrder = jstSongs.map((s, i) => i)
-    .sort((ia, ib) => compareArtistTitle(jstSongs[ia].artist, jstSongs[ia].title, jstSongs[ib].artist, jstSongs[ib].title));
-  list.innerHTML = `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
-      <div class="rep-kop">
-        <span>Band / Artiest — Nummer</span><span>Beheersing</span><span></span>
-      </div>
-      ${displayOrder.map(i => { const s = jstSongs[i]; return `
-        <div class="rep-rij">
-          <div class="rep-tekst">
-            <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
-            <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
-          </div>
-          <div class="rep-niveaus" style="${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
-            <button type="button" class="level-btn ${s.level==='basis'?'active-basis':''}" title="Kent de structuur" onclick="jstSetLevel(${i},'basis')">Basis</button>
-            <button type="button" class="level-btn ${s.level==='bijna'?'active-bijna':''}" title="Soepel, bijna klaar" onclick="jstSetLevel(${i},'bijna')">Bijna</button>
-            <button type="button" class="level-btn ${s.level==='podium'?'active-podium':''}" title="Speelt het live zonder problemen" onclick="jstSetLevel(${i},'podium')">Podium</button>
-          </div>
-          ${s._confirmDelete
-            ? `<button type="button" class="song-remove rep-zeker" onclick="jstRemoveSong(${i})" title="Bevestig verwijderen">Zeker?</button>`
-            : `<button type="button" class="song-remove" onclick="jstRemoveSong(${i})" title="Verwijderen" aria-label="Verwijder ${escHtml(s.title)}">✕</button>`
-          }
-        </div>
-        ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 12px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
-      `; }).join('')}
-    </div>`;
+  if (!list) return;
+  const kop = document.getElementById('jstSongsKop');
+  if (kop) kop.hidden = !jstSongs.length;
+  const teller = document.getElementById('jstSongsTeller');
+  if (teller) teller.textContent = setlistTellerTekst(jstSongs.length);
+  list.innerHTML = setlistLijstHTML(jstSongs, 'jst', 'jstRemoveSong');
+  setlistKeuzesKoppelen(jstSongs, 'jst', jstSetLevel);
 }
 function jstSetLevel(i, level) {
-  jstSongs[i].level = level;
+  if (!jstSongs[i]) return;
+  jstSongs[i].level = BEHEERSING_NAMEN[level] ? level : null;
   jstRenderSongs();
 }
-// TT-226 (09-09-2026, Ronald): een aangezette "Zeker?" was niet meer te
-// annuleren. Wie zich bedacht, moest het hele tegelscherm verlaten en
-// opnieuw openen. Een klik ergens anders in de app zet de knop nu terug op
-// ✕. De listener wordt pas ná de huidige klik geregistreerd, en verdwijnt
-// vanzelf ({ once: true }).
-function jstCancelConfirmDelete() {
-  let gewijzigd = false;
-  jstSongs.forEach(s => { if (s._confirmDelete) { delete s._confirmDelete; gewijzigd = true; } });
-  if (gewijzigd) jstRenderSongs();
-}
-
-function jstArmOutsideCancel() {
-  // Pas ná deze klik toevoegen — anders vangt de listener de huidige, nog
-  // bubbelende klik meteen weer af en staat "Zeker?" er nooit.
-  setTimeout(() => {
-    document.addEventListener('click', function onOutsideClick(e) {
-      // Een klik op een verwijderknop loopt via jstRemoveSong() zelf: die
-      // bevestigt deze regel, of zet een andere regel aan. Hier niets doen,
-      // anders draait deze listener die actie meteen weer terug.
-      if (e.target.closest && e.target.closest('.song-remove')) return;
-      jstCancelConfirmDelete();
-    }, { once: true });
-  }, 0);
-}
-
+// TT-226 (09-09-2026, Ronald): een aangezette "Zeker?" is altijd te
+// annuleren met een klik ergens anders: zekerTerugBijKlikErnaast() in utils.js,
+// dezelfde regel als in de wizard (TT-514).
 function jstRemoveSong(i) {
   if (!jstSongs[i]) return;
   if (!jstSongs[i]._confirmDelete) {
@@ -1406,7 +1368,7 @@ function jstRemoveSong(i) {
     jstSongs.forEach(s => delete s._confirmDelete);
     jstSongs[i]._confirmDelete = true;
     jstRenderSongs();
-    jstArmOutsideCancel();
+    zekerTerugBijKlikErnaast(() => jstSongs, jstRenderSongs);
     return;
   }
   jstSongs.splice(i, 1);
@@ -1414,6 +1376,9 @@ function jstRemoveSong(i) {
 }
 
 async function saveJeSetlist() {
+  // TT-514 (besluit Ronald, 25-10-2026): ook hier minimaal drie nummers, ook
+  // voor een bestaand profiel met minder; daarom vóór de controle op wijzigingen.
+  if (showFieldErrors(nummersTekortFouten(jstSongs, 'jstArtistSearch'))) return;
   if (jstFieldSnapshot() === jstSnapshot) return;
 
   // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().

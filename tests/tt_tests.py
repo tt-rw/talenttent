@@ -2004,7 +2004,7 @@ def blok_browser():
         check("paneel toont alle gekozen muzikanten in volgorde van kiezen",
               pan and [x["naam"] for x in pan["spelers"]] == ["sanne", "dylan", "ronnie"], json.dumps(pan))
         check("niveau staat rechts naast de naam",
-              pan and pan["spelers"][1]["niveau"] == "Basis" and pan["spelers"][2]["niveau"] == "Podiumklaar"
+              pan and pan["spelers"][1]["niveau"] == "Basis" and pan["spelers"][2]["niveau"] == "Podium"
               and pan["spelers"][1]["rechts"] == 0, json.dumps(pan))
         check("wie het niet speelt, staat grijs met 'Speelt dit niet'",
               pan and pan["spelers"][0]["niet"] and pan["spelers"][0]["tekst"] == "Speelt dit niet"
@@ -3275,7 +3275,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
           // Je setlist — mislukt
           zet(); S.calls = [];
           S.rpcErrors.tt_save_musician_koppelingen = { code: '23514', message: 'check' };
-          jstSongs = [{ title: 'Nieuw', artist: 'B', level: 2 }]; jstSnapshot = '';
+          jstSongs = [{ title: 'Nieuw', artist: 'B', level: 2 }, { title: 'Nieuw2', artist: 'B', level: 2 }, { title: 'Nieuw3', artist: 'B', level: 2 }]; jstSnapshot = '';  // TT-514: minimaal drie
           await saveJeSetlist();
           uit.setlistFout = titels();
           uit.setlistFoutLos = losGewist();
@@ -3284,7 +3284,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
 
           // Je setlist — lukt
           zet(); S.calls = [];
-          jstSongs = [{ title: 'Nieuw', artist: 'B', level: 2 }]; jstSnapshot = '';
+          jstSongs = [{ title: 'Nieuw', artist: 'B', level: 2 }, { title: 'Nieuw2', artist: 'B', level: 2 }, { title: 'Nieuw3', artist: 'B', level: 2 }]; jstSnapshot = '';  // TT-514: minimaal drie
           await saveJeSetlist();
           uit.setlistGoed = titels();
           const rpc = S.calls.find(c => c.kind === 'rpc' && c.name === 'tt_save_musician_koppelingen');
@@ -3315,7 +3315,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
               ato["setlistFout"] == ["Oud"], json.dumps(ato))
         check("en meldt dat het niet gelukt is", "niet gelukt" in ato["setlistToast"], ato["setlistToast"])
         check("Je setlist wist niet meer los vooraf", not ato["setlistFoutLos"], "")
-        check("gelukt opslaan vervangt het repertoire", ato["setlistGoed"] == ["Nieuw"], json.dumps(ato))
+        check("gelukt opslaan vervangt het repertoire", ato["setlistGoed"] == ["Nieuw", "Nieuw2", "Nieuw3"], json.dumps(ato))
         check("Je setlist raakt alleen het repertoire",
               ato["setlistAlleenSongs"], json.dumps(ato))
         check("mislukt opslaan van Wat speel je laat instrumenten en genres staan",
@@ -8939,46 +8939,75 @@ window.TT_STUB.fnAntwoord = {};
         page_errors.clear()
 
         # ------------------------------------------------------------------
-        # Blok 87 — TT-459 (10-10-2026, bevinding Ronald): de repertoirelijst
-        # heeft vaste kolommen. De niveaus (met of zonder gekozen badge) en de
-        # kruisjes staan recht onder elkaar, "Zeker?" en een lange naam
-        # snijden niets af. Beide lijsten: aanmeldwizard en Je setlist.
+        # Blok 87 — TT-514 (25-10-2026, besluiten Ronald; vervangt TT-459): de
+        # setlist in de wizard en in de tegel Je setlist. Omlijnde rijen met
+        # vaste kolommen. Ronalds uitlijning: de tekst van de keuze staat op
+        # dezelfde x als de voorproef en als "Beheersing" in de kop; de
+        # bovenkant van de artiest op één lijn met die van de voorproef; de
+        # kruisjes recht onder elkaar. Artiest en titel elk hoogstens twee
+        # regels. Tikdoel van de keuze 44px hoog.
         # ------------------------------------------------------------------
-        print("\nBlok 87 — repertoirelijst: vaste kolommen (TT-459)")
+        print("\nBlok 87 — setlist: omlijnde rijen, vaste kolommen, uitlijning (TT-514)")
         JS87 = """([soort]) => {
-          const NUMMERS = [['André Hazes','Een Beetje Verliefd','basis'],['Metallica','Enter Sandman','podium'],['Metallica','One','bijna'],
-            ['Metallica','Seek & Destroy (Remastered)','bijna'],['Michael Jackson','Beat It!','basis'],['Red Hot Chili Peppers','Under the Bridge (Live at Slane Castle 2003)',null],
-            ['Superlangeartiestennaamzonderspatie','Een-bijzonder-lang-nummer-zonder-spaties-erin','podium'],['Van Halen','Jump','bijna']];
+          const NUMMERS = [['André Hazes','Een Beetje Verliefd','basis',3],['Metallica','Enter Sandman','podium',123],['Metallica','One','bijna',0],
+            ['Metallica','Seek & Destroy (Remastered)','bijna',1],['Michael Jackson','Beat It!','basis',0],['Red Hot Chili Peppers','Under the Bridge (Live at Slane Castle 2003) - Remastered Deluxe Edition',null,7],
+            ['Superlangeartiestennaamzonderspatie die ook nog eens heel lang doorloopt','Een-bijzonder-lang-nummer-zonder-spaties-erin','podium',2],['Van Halen','Jump','bijna',0]];
           const lijst = document.getElementById(soort === 'wizard' ? 'songsList' : 'jstSongsList');
+          const kop = document.getElementById(soort === 'wizard' ? 'songsKop' : 'jstSongsKop');
           const stijl = document.createElement('style');
           stijl.textContent = '.app-view{display:none!important}';
           document.head.appendChild(stijl);
           const bewaard = [];
           for (let e = lijst; e && e !== document.body; e = e.parentElement) { bewaard.push([e, e.getAttribute('style'), e.hidden]); e.style.setProperty('display', 'block', 'important'); e.hidden = false; }
-          const rij = NUMMERS.map(n => ({ artist: n[0], title: n[1], level: n[2] }));
+          const rij = NUMMERS.map(n => ({ artist: n[0], title: n[1], level: n[2], spelers: n[3] }));
           rij[3]._confirmDelete = true;
           if (soort === 'wizard') { state.songs = rij; renderSongs(); } else { jstSongs = rij; jstRenderSongs(); }
-          const doos = lijst.firstElementChild, db = doos.getBoundingClientRect();
-          const rijen = [...doos.children].filter(c => c.classList && c.classList.contains('rep-rij'));
-          const opruimen = () => { stijl.remove(); bewaard.forEach(([e, s, h]) => { if (s === null) e.removeAttribute('style'); else e.setAttribute('style', s); e.hidden = h; }); lijst.innerHTML = ''; };
-          if (rijen.length < 4) { opruimen(); return { rijen: rijen.length, niveaus: 99, kruisjes: 99, afgesneden: ['geen .rep-rij'], knoptekstPast: false, zeker: '', zekerBreedte: 0, kruisBreedte: 0, pagina: true, kopBinnen: false, kop: false, hoogteKnop: 0 }; }
+          const db = lijst.getBoundingClientRect();
+          const rijen = [...lijst.querySelectorAll('.setlist-rij')];
+          const opruimen = () => { stijl.remove(); bewaard.forEach(([e, s, h]) => { if (s === null) e.removeAttribute('style'); else e.setAttribute('style', s); e.hidden = h; }); lijst.innerHTML = ''; kop.hidden = true; };
+          if (rijen.length < 8) { opruimen(); return { rijen: rijen.length }; }
           const af = x => Math.round(x * 10) / 10;
-          const uit = { rijen: rijen.length, kop: !!doos.querySelector('.rep-kop'),
-            niveaus: new Set(rijen.map(r => JSON.stringify([...r.querySelectorAll('.level-btn')].map(b => { const q = b.getBoundingClientRect(); return [af(q.left), af(q.right)]; })))).size,
-            kruisjes: new Set(rijen.map(r => { const q = r.querySelector('.song-remove').getBoundingClientRect(); return af(q.left) + '-' + af(q.right); })).size,
-            afgesneden: [], knoptekstPast: true, hoogteKnop: 99999, pagina: document.documentElement.scrollWidth > innerWidth };
+          const tekstX = el => { const r = document.createRange(); r.selectNodeContents(el); return af(r.getClientRects()[0].left); };
+          const uit = { rijen: rijen.length, kopZichtbaar: !kop.hidden && kop.getBoundingClientRect().height > 0,
+            kopTeller: kop.querySelector('.setlist-teller').textContent,
+            iMidden: (() => { const q = kop.querySelector('.niveau-info-btn').getBoundingClientRect(); return af((q.left + q.right) / 2); })(),
+            kruisMidden: new Set(),
+            keuzeX: new Set(), spelersX: new Set(), kruisjes: new Set(), omlijnd: true, scheef: [], regels: [], afgesneden: [],
+            tikdoel: 999, pagina: document.documentElement.scrollWidth > innerWidth };
           rijen.forEach((r, i) => {
+            const cs = getComputedStyle(r);
+            if (parseFloat(cs.borderTopWidth) < 1 || cs.borderTopStyle !== 'solid') uit.omlijnd = false;
+            const k = r.querySelector('.setlist-keuze .wheel-field-label');
+            uit.keuzeX.add(tekstX(k));
+            const sp = r.querySelector('.setlist-spelers');
+            if (sp.textContent.trim()) {
+              uit.spelersX.add(af(sp.querySelector('svg').getBoundingClientRect().left));
+              const a = r.querySelector('.setlist-artiest');
+              const verschil = Math.abs(a.getBoundingClientRect().top - sp.getBoundingClientRect().top);
+              if (verschil > 3) uit.scheef.push(i + ': ' + af(verschil));
+              if (sp.getBoundingClientRect().height > 33) uit.regels.push('spelers ' + i);
+            }
             const x = r.querySelector('.song-remove'), q = x.getBoundingClientRect();
-            if (q.right > db.right + 0.5 || x.scrollWidth > x.clientWidth + 1) uit.afgesneden.push('kruis ' + i);
-            r.querySelectorAll('.rep-tekst div').forEach(d => { if (d.scrollWidth > d.clientWidth + 1) uit.afgesneden.push('tekst ' + i); });
-            const t = r.querySelector('.rep-tekst').getBoundingClientRect();
-            if (t.right > r.querySelector('.rep-niveaus').getBoundingClientRect().left) uit.afgesneden.push('tekst over niveaus ' + i);
-            r.querySelectorAll('.level-btn').forEach(b => { if (b.scrollWidth > b.clientWidth + 1) uit.knoptekstPast = false; uit.hoogteKnop = Math.min(uit.hoogteKnop, b.getBoundingClientRect().height); });
+            uit.kruisjes.add(af(q.left) + '-' + af(q.right));
+            uit.kruisMidden.add(af((q.left + q.right) / 2));
+            if (q.right > db.right + 0.5) uit.afgesneden.push('kruis ' + i);
+            const ar = r.querySelector('.setlist-artiest').getBoundingClientRect(), tr = r.querySelector('.setlist-titel').getBoundingClientRect();
+            if (ar.height > 41) uit.regels.push('artiest ' + i);
+            if (tr.height > 35) uit.regels.push('titel ' + i);
+            if (r.querySelector('.setlist-tekst').getBoundingClientRect().right > r.querySelector('.setlist-rechts').getBoundingClientRect().left) uit.afgesneden.push('tekst over keuze ' + i);
+            r.querySelector('.setlist-keuze').scrollIntoView({ block: 'center' });
+            const kb = r.querySelector('.setlist-keuze').getBoundingClientRect();
+            const midden = kb.left + 4;
+            let h = 0; for (let y = kb.top - 10; y <= kb.bottom + 10; y++) { const e = document.elementFromPoint(midden, y); if (e && e.closest('.setlist-keuze') === r.querySelector('.setlist-keuze')) h++; }
+            uit.tikdoel = Math.min(uit.tikdoel, h);
           });
-          uit.zeker = (rijen[3].querySelector('.song-remove').textContent || '').trim();
-          uit.zekerBreedte = af(rijen[3].querySelector('.song-remove').getBoundingClientRect().width);
-          uit.kruisBreedte = af(rijen[0].querySelector('.song-remove').getBoundingClientRect().width);
-          uit.kopBinnen = [...doos.querySelector('.rep-kop').children].every(c => c.getBoundingClientRect().right <= db.right + 0.5);
+          uit.keuzeX = [...uit.keuzeX]; uit.spelersX = [...uit.spelersX]; uit.kruisjes = uit.kruisjes.size; uit.kruisMidden = [...uit.kruisMidden];
+          // De langste teller ("Voeg nog 2 nummers toe") past op één regel naast "Beheersing"
+          const t = kop.querySelector('.setlist-teller'); t.textContent = setlistTellerTekst(1);
+          uit.tellerHoogte = af(t.getBoundingClientRect().height); uit.tellerEenRegel = uit.tellerHoogte < 24;  // 14px: één regel ±16px
+          uit.zeker = (rijen.find(r => r.querySelector('.setlist-zeker')) || document.body).textContent.includes('Zeker?');
+          uit.zekerBreedte = af((lijst.querySelector('.setlist-zeker') || document.body).getBoundingClientRect().width);
+          uit.kopBinnen = [...kop.children].every(c => c.getBoundingClientRect().right <= db.right + 0.5);
           opruimen();
           return uit;
         }"""
@@ -8988,13 +9017,21 @@ window.TT_STUB.fnAntwoord = {};
                 page.wait_for_timeout(120)
                 d87 = page.evaluate(JS87, [soort87])
                 naam87 = f"{soort87} {breedte87}px"
-                check(f"{naam87}: alle niveaus staan in dezelfde kolommen, ook met een gekozen (vette) badge",
-                      d87["rijen"] == 8 and d87["niveaus"] == 1 and d87["knoptekstPast"] is True, json.dumps(d87))
-                check(f"{naam87}: de kruisjes staan recht onder elkaar, ook bij \"Zeker?\" (kolom van 44px)",
-                      d87["kruisjes"] == 1 and d87["zeker"] == "Zeker?" and d87["zekerBreedte"] == 44 and d87["kruisBreedte"] == 44, json.dumps(d87))
-                check(f"{naam87}: niets afgesneden, ook bij een lange naam zonder spaties; geen scroll opzij; kop binnen het vak",
-                      not d87["afgesneden"] and not d87["pagina"] and d87["kopBinnen"] and d87["kop"], json.dumps(d87))
-                check(f"{naam87}: tikdoel van een niveauknop is minstens 44px hoog", d87["hoogteKnop"] >= 44, json.dumps(d87))
+                ok87 = d87.get("rijen") == 8
+                check(f"{naam87}: acht omlijnde rijen, kop met \"8 nummers\" en Beheersing binnen het vak",
+                      ok87 and d87["omlijnd"] and d87["kopZichtbaar"] and d87["kopTeller"] == "8 nummers" and d87["kopBinnen"], json.dumps(d87))
+                check(f"{naam87}: keuze en voorproef beginnen op dezelfde x; de i van \"Beheersing\" staat recht boven de kruisjes",
+                      ok87 and len(d87["keuzeX"]) == 1 and len(d87["spelersX"]) == 1 and d87["keuzeX"][0] == d87["spelersX"][0]
+                      and len(d87["kruisMidden"]) == 1 and abs(d87["kruisMidden"][0] - d87["iMidden"]) <= 0.5, json.dumps(d87))
+                check(f"{naam87}: de teller \"Voeg nog 2 nummers toe\" past op één regel", ok87 and d87["tellerEenRegel"], json.dumps(d87))
+                check(f"{naam87}: bovenkant artiest op één lijn met bovenkant voorproef",
+                      ok87 and not d87["scheef"], json.dumps(d87))
+                check(f"{naam87}: artiest, titel en voorproef elk hoogstens twee regels; niets afgesneden; geen scroll opzij",
+                      ok87 and not d87["regels"] and not d87["afgesneden"] and not d87["pagina"], json.dumps(d87))
+                check(f"{naam87}: kruisjes recht onder elkaar, ook bij \"Zeker?\" (kolom van 44px)",
+                      ok87 and d87["kruisjes"] == 1 and d87["zeker"] and d87["zekerBreedte"] == 44, json.dumps(d87))
+                check(f"{naam87}: tikdoel van de beheersingskeuze minstens 44px hoog",
+                      ok87 and d87["tikdoel"] >= 44, json.dumps(d87))
         page.set_viewport_size({"width": 390, "height": 844})
         page.evaluate("showView('about')")
         check("geen paginafouten in blok 87", not page_errors, "; ".join(page_errors)[:300])
@@ -9283,6 +9320,185 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-471: een logregel begint met het browsertype, ook zonder stack", d92["toestelRegel"].startswith("[toestel] ") and d92["zonderStack"] == 1 and d92["zonderStackTekst"].startswith("[toestel] "), json.dumps(d92))
         check("TT-471: bij een stack staat het browsertype bovenaan en de stack eronder", d92["metStack"].startswith("[toestel] ") and "at a.js:1:1" in d92["metStack"], json.dumps(d92))
         check("geen paginafouten in blok 92", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ────────────────────────────────────────────────────────────
+        # Blok 93 — TT-514 (25-10-2026, besluiten Ronald): wizardstap Nummers
+        # en de tegel Je setlist. Drie nummers verplicht in de wizard, fout bij
+        # het zoekveld; teller "2 van 3", vanaf drie "3 nummers"; per nummer
+        # "4 anderen spelen dit ook" uit de bestaande functie, zonder het eigen
+        # profiel; bij nul of een fout niets; per nummer één vraag; niets
+        # wacht op het antwoord; beheersing via het keuzemenu; uitleg achter
+        # de i bij "Beheersing".
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 93 — setlist: drie verplicht, voorproef, keuzemenu (TT-514)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        d93 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 80) => new Promise(r => setTimeout(r, n)), u = {}, $ = id => document.getElementById(id);
+          const FN = 'tt_search_musicians_by_songlist_anon';
+          const bewaard = S.rpcResults[FN], bewaardId = myMusicianId;
+          const SPELERS = { 'one|metallica': 4, 'jump|van halen': 1 };
+          const vragen = [];
+          // Het eigen profiel ('mij') staat ook in het antwoord en telt niet mee.
+          S.rpcResults[FN] = (p) => { const k = (p.titles[0] + '|' + p.artists[0]).toLowerCase(); vragen.push(k);
+            return Array.from({ length: SPELERS[k] || 0 }, (_, i) => ({ musician_id: 'x' + i })).concat(SPELERS[k] ? [{ musician_id: 'mij' }] : []); };
+          myMusicianId = 'mij';
+          nummerSpelersCache.clear();
+          const regel = id => { const e = $(id), n = e && veldFoutAnker(e).nextElementSibling; return n && n.classList.contains('field-msg') ? n.textContent.trim() : null; };
+          const rijen = () => [...$('songsList').querySelectorAll('.setlist-rij')].map(r => ({
+            artiest: r.querySelector('.setlist-artiest').textContent, titel: r.querySelector('.setlist-titel').textContent,
+            spelers: r.querySelector('.setlist-spelers').textContent.replace(/\s+/g, ' ').trim(),
+            keuze: r.querySelector('.setlist-keuze').textContent.trim(), gekozen: r.querySelector('.setlist-keuze').classList.contains('gekozen'), el: r }));
+          const rijVan = t => rijen().find(r => r.titel === t) || { spelers: 'GEEN RIJ', keuze: 'GEEN RIJ' };
+          showView('register'); await w(60);
+          state.songs = []; goTo(3); renderSongs(); await w(60);
+          u.sub = document.querySelector('#step3 .panel-sub').textContent.trim();
+          u.kop = document.querySelector('#step3 .panel-title').textContent.trim();
+          u.ster = !!document.querySelector('#step3 label .req');
+          u.kopLeeg = $('songsKop').hidden && $('songsKop').getBoundingClientRect().height === 0;
+          // Nul nummers: Verder blokkeert, fout bij het zoekveld
+          await nextStep(3); await w(400);
+          u.nul = { stap: state.currentStep, rood: $('artistSearch').classList.contains('field-error'), tekst: regel('artistSearch'),
+            afstand: (() => { const v = $('artistSearch'), m = veldFoutAnker(v).nextElementSibling; return m && m.classList.contains('field-msg') ? Math.round(m.getBoundingClientRect().top - v.getBoundingClientRect().bottom) : null; })(),
+            inField: (() => { const m = veldFoutAnker($('artistSearch')).nextElementSibling; return !!(m && m.parentElement.classList.contains('field')); })(),
+            aria: $('artistSearch').getAttribute('aria-invalid') };
+          $('artistSearch').value = 'M'; $('artistSearch').dispatchEvent(new Event('input')); await w(20);
+          u.naTypen = { rood: $('artistSearch').classList.contains('field-error'), tekst: regel('artistSearch') };
+          // Eerste nummer: direct in de lijst, voorproef komt los daarna
+          addSong('One', 'Metallica');
+          u.direct = { rijen: rijen().length, spelers: rijVan('One').spelers, teller: $('songsTeller').textContent, kop: !$('songsKop').hidden };
+          await w(120);
+          u.een = { spelers: rijVan('One').spelers, keuze: rijVan('One').keuze };
+          await nextStep(3); await w(50);
+          u.eenVerder = { stap: state.currentStep, tekst: regel('artistSearch') };
+          clearFieldErrors(document);
+          addSong('Jump', 'Van Halen'); await w(120);
+          u.twee = { spelers: rijVan('Jump').spelers, teller: $('songsTeller').textContent };
+          await nextStep(3); await w(50);
+          u.tweeVerder = { stap: state.currentStep, tekst: regel('artistSearch') };
+          clearFieldErrors(document);
+          addSong('Niemand Speelt Dit', 'Onbekend'); await w(120);
+          u.drie = { spelers: rijVan('Niemand Speelt Dit').spelers, teller: $('songsTeller').textContent };
+          // Opmaak van de voorproef: gedempt, aantal vet in tekstkleur, icoon in --steun
+          const sp = rijen().find(r => r.titel === 'One').el.querySelector('.setlist-spelers');
+          const kleur = v => { const e = document.createElement('span'); e.style.color = `var(${v})`; document.body.appendChild(e); const c = getComputedStyle(e).color; e.remove(); return c; };
+          u.opmaak = { maat: getComputedStyle(sp).fontSize, tekst: getComputedStyle(sp).color, muted: kleur('--muted'),
+            vet: getComputedStyle(sp.querySelector('b')).color, text: kleur('--text'), icoon: getComputedStyle(sp.querySelector('svg')).color, steun: kleur('--steun') };
+          // Beheersing kiezen via het keuzemenu
+          const i1 = state.songs.findIndex(s => s.title === 'Jump');
+          $('behVeld' + i1).click(); await w(250);
+          u.menuOpen = $('behMenu' + i1).classList.contains('open');
+          const opt = [...$('behMenu' + i1).querySelectorAll('.choice-option')];
+          u.opties = opt.map(o => o.textContent.trim());
+          u.menuTekstX = Math.round(opt[0].getBoundingClientRect().left + parseFloat(getComputedStyle(opt[0]).paddingLeft));
+          u.keuzeTekstX = Math.round($('behVeld' + i1).getBoundingClientRect().left);
+          opt.find(o => o.textContent.trim() === 'Podium').click(); await w(250);
+          u.gekozen = { level: state.songs.find(s => s.title === 'Jump').level, keuze: rijVan('Jump').keuze, vet: rijVan('Jump').gekozen, leeg: rijVan('One').gekozen };
+          // Uitleg achter de i
+          openBeheersingInfo(); await w(50);
+          u.uitleg = { open: $('niveauInfoModal').classList.contains('visible'), tekst: $('niveauInfoModalContent').textContent.replace(/\s+/g, ' ').trim() };
+          $('niveauInfoModal').classList.remove('visible');
+          // Per nummer één vraag: weghalen en opnieuw kiezen vraagt niet opnieuw
+          const i = state.songs.findIndex(s => s.title === 'One'); removeSong(i); removeSong(i);
+          addSong('One', 'Metallica'); await w(120);
+          u.cache = { vragenOne: vragen.filter(k => k === 'one|metallica').length, spelers: rijVan('One').spelers };
+          // "Zeker?" gaat terug bij een klik ernaast
+          const j = state.songs.findIndex(s => s.title === 'Jump'); removeSong(j); await w(30);
+          u.zeker = $('songsList').querySelectorAll('.setlist-zeker').length;
+          document.querySelector('#step3 .panel-title').click(); await w(30);
+          u.zekerTerug = $('songsList').querySelectorAll('.setlist-zeker').length;
+          // Drie nummers: Verder gaat door
+          await nextStep(3); await w(50);
+          u.verder = { stap: state.currentStep, rood: $('artistSearch').classList.contains('field-error') };
+          // Een fout van de database: niets tonen, geen toast, volgende keer opnieuw vragen
+          goTo(3);
+          $('appToast').textContent = ''; $('appToast').classList.remove('visible');
+          S.rpcErrors[FN] = { code: '500', message: 'storing' };
+          addSong('Fout', 'Storing'); await w(120);
+          u.fout = { spelers: rijVan('Fout').spelers, toast: $('appToast').textContent, inCache: nummerSpelersCache.has('fout\u0000storing') };
+          delete S.rpcErrors[FN];
+          // Ontsmet: alleen een geheel getal boven nul geeft een voorproef
+          u.regels = [voorproefHTML('<img src=x onerror=alert(1)>'), voorproefHTML(0), voorproefHTML(-2), voorproefHTML(1.5), voorproefHTML('3')];
+          u.teksten = [setlistTellerTekst(0), setlistTellerTekst(2), setlistTellerTekst(3), setlistTellerTekst(12)];
+          // De tegel Je setlist gebruikt dezelfde lijst
+          jstSongs = [{ artist: 'Metallica', title: 'One', level: 'bijna' }]; jstRenderSongs();
+          u.tegel = { rij: !!$('jstSongsList').querySelector('.setlist-rij'), keuze: ($('jstSongsList').querySelector('.setlist-keuze') || {}).textContent,
+            kop: !$('jstSongsKop').hidden, teller: $('jstSongsTeller').textContent };
+          // Ook in de tegel minimaal drie (besluit Ronald, 25-10-2026), ook
+          // zonder wijziging (bestaand profiel met minder nummers)
+          u.tegelSter = !!document.querySelector('#jeSetlistScreen label .req');
+          const opgeslagen = [];
+          const bewaardSave = S.rpcResults.tt_save_musician_koppelingen;
+          S.rpcResults.tt_save_musician_koppelingen = (p) => { opgeslagen.push(p); return null; };
+          jstSongs = [{ artist: 'Metallica', title: 'One', level: null }, { artist: 'Van Halen', title: 'Jump', level: null }];
+          jstSnapshot = jstFieldSnapshot(); jstRenderSongs();
+          await saveJeSetlist(); await w(400);
+          u.tegelTwee = { tekst: regel('jstArtistSearch'), rood: $('jstArtistSearch').classList.contains('field-error'), opgeslagen: opgeslagen.length };
+          clearFieldErrors(document);
+          jstSongs.push({ artist: 'Onbekend', title: 'Niemand Speelt Dit', level: null }); jstRenderSongs();
+          await saveJeSetlist(); await w(100);
+          u.tegelDrie = { tekst: regel('jstArtistSearch'), opgeslagen: opgeslagen.length };
+          S.rpcResults.tt_save_musician_koppelingen = bewaardSave;
+          jstSongs = []; jstRenderSongs(); clearFieldErrors(document);
+          // Profiel: een nummer zonder beheersing krijgt geen (leeg) label
+          const proef = document.createElement('div');
+          proef.innerHTML = buildMusicianDetailHTML({ id: 'p1', weergavenaam: 'Proef', username: 'proef', musician_instruments: [], musician_genres: [], musician_media: [],
+            musician_songs: [{ song_title: 'One', song_artist: 'Metallica', mastery_level: null }, { song_title: 'Jump', song_artist: 'Van Halen', mastery_level: 'bijna' }] }, false, false);
+          u.profielLabels = [...proef.querySelectorAll('.profile-song-row')].map(r => [...r.querySelectorAll('.level-pill')].map(p => p.textContent));
+          // Opruimen
+          S.rpcResults[FN] = bewaard; nummerSpelersCache.clear(); myMusicianId = bewaardId;
+          state.songs = []; renderSongs(); clearFieldErrors(document); goTo(0); showView('about');
+          return u;
+        }""")
+        check("stap Nummers: kop \"Je setlist\", regel \"Kies drie nummers en ontdek andere muzikanten.\", rood sterretje",
+              d93["kop"] == "Je setlist" and d93["sub"] == "Kies drie nummers en ontdek andere muzikanten." and d93["ster"], json.dumps(d93))
+        check("zonder nummers: geen kop boven de lijst", d93["kopLeeg"], json.dumps(d93))
+        check("nul nummers: Verder blijft op de stap, fout \"Voeg nog 3 nummers toe\" bij het zoekveld",
+              d93["nul"]["stap"] == 3 and d93["nul"]["rood"] and d93["nul"]["tekst"] == "Voeg nog 3 nummers toe" and d93["nul"]["aria"] == "true", json.dumps(d93))
+        check("foutregel 8px onder het zoekveld, in de .field (huisstijl §3)",
+              d93["nul"]["afstand"] == 8 and d93["nul"]["inField"], json.dumps(d93))
+        check("typen in het zoekveld haalt de fout weg", not d93["naTypen"]["rood"] and d93["naTypen"]["tekst"] is None, json.dumps(d93))
+        check("een nummer staat direct in de lijst met teller \"Voeg nog 2 nummers toe\"; de voorproef wacht er niet op",
+              d93["direct"]["rijen"] == 1 and d93["direct"]["spelers"] == "" and d93["direct"]["teller"] == "Voeg nog 2 nummers toe" and d93["direct"]["kop"], json.dumps(d93))
+        check("na het antwoord: \"4 anderen spelen dit ook\" (eigen profiel telt niet mee); keuze toont \"Beheersing\"",
+              d93["een"]["spelers"] == "4 anderen spelen dit ook" and d93["een"]["keuze"] == "Beheersing", json.dumps(d93))
+        check("één nummer: Verder blokkeert met \"Voeg nog 2 nummers toe\"", d93["eenVerder"]["stap"] == 3 and d93["eenVerder"]["tekst"] == "Voeg nog 2 nummers toe", json.dumps(d93))
+        check("enkelvoud: \"1 ander speelt dit ook\"; teller \"Voeg nog 1 nummer toe\"",
+              d93["twee"]["spelers"] == "1 ander speelt dit ook" and d93["twee"]["teller"] == "Voeg nog 1 nummer toe", json.dumps(d93))
+        check("twee nummers: Verder blokkeert met \"Voeg nog 1 nummer toe\"", d93["tweeVerder"]["stap"] == 3 and d93["tweeVerder"]["tekst"] == "Voeg nog 1 nummer toe", json.dumps(d93))
+        check("nul spelers: geen voorproef; bij drie nummers wordt de teller \"3 nummers\"",
+              d93["drie"]["spelers"] == "" and d93["drie"]["teller"] == "3 nummers", json.dumps(d93))
+        check("teller: \"Voeg nog 3 nummers toe\", \"Voeg nog 1 nummer toe\", \"3 nummers\", \"12 nummers\"",
+              d93["teksten"] == ["Voeg nog 3 nummers toe", "Voeg nog 1 nummer toe", "3 nummers", "12 nummers"], json.dumps(d93))
+        o93 = d93["opmaak"]
+        check("voorproef: 12px, gedempt, het aantal vet in tekstkleur, het icoon in --steun",
+              o93["maat"] == "12px" and o93["tekst"] == o93["muted"] and o93["vet"] == o93["text"] and o93["icoon"] == o93["steun"], json.dumps(d93))
+        check("beheersing: keuzemenu met Basis, Bijna, Podium; tekst van de opties op dezelfde x als de keuze",
+              d93["menuOpen"] and d93["opties"] == ["Basis", "Bijna", "Podium"] and d93["menuTekstX"] == d93["keuzeTekstX"], json.dumps(d93))
+        check("kiezen zet de beheersing; de keuze wordt vet, een niet-gekozen blijft gedempt",
+              d93["gekozen"]["level"] == "podium" and d93["gekozen"]["keuze"] == "Podium" and d93["gekozen"]["vet"] and not d93["gekozen"]["leeg"], json.dumps(d93))
+        check("de i bij Beheersing opent de uitleg (Basis, Bijna, Podium, mag ook later)",
+              d93["uitleg"]["open"] and all(t in d93["uitleg"]["tekst"] for t in ("Basis", "Bijna", "Podium", "Mag ook later")), json.dumps(d93))
+        check("per nummer één vraag: weghalen en opnieuw kiezen vraagt niet opnieuw, de voorproef staat er weer",
+              d93["cache"]["vragenOne"] == 1 and d93["cache"]["spelers"] == "4 anderen spelen dit ook", json.dumps(d93))
+        check("\"Zeker?\" verschijnt bij de eerste tik op ✕ en gaat terug bij een klik ernaast (TT-226)",
+              d93["zeker"] == 1 and d93["zekerTerug"] == 0, json.dumps(d93))
+        check("drie nummers: Verder gaat naar stap 5, geen fout", d93["verder"]["stap"] == 4 and not d93["verder"]["rood"], json.dumps(d93))
+        check("fout van de database: geen voorproef, geen toast, volgende keer opnieuw vragen",
+              d93["fout"]["spelers"] == "" and d93["fout"]["toast"] == "" and not d93["fout"]["inCache"], json.dumps(d93))
+        check("voorproef ontsmet: alleen een geheel getal boven nul geeft tekst",
+              d93["regels"][:4] == ["", "", "", ""] and "<b>3 anderen</b> spelen dit ook" in d93["regels"][4] and "<img" not in "".join(d93["regels"]), json.dumps(d93))
+        check("tegel: rood sterretje; met twee nummers blokkeert Opslaan met \"Voeg nog 1 nummer toe\", ook zonder wijziging",
+              d93["tegelSter"] and d93["tegelTwee"]["tekst"] == "Voeg nog 1 nummer toe" and d93["tegelTwee"]["rood"] and d93["tegelTwee"]["opgeslagen"] == 0, json.dumps(d93))
+        check("tegel: met drie nummers slaat Opslaan op, zonder fout",
+              d93["tegelDrie"]["tekst"] is None and d93["tegelDrie"]["opgeslagen"] == 1, json.dumps(d93))
+        check("profiel: een nummer zonder beheersing toont geen leeg label; met beheersing wel",
+              d93["profielLabels"] == [[], ["Bijna"]], json.dumps(d93))
+        check("de tegel Je setlist gebruikt dezelfde lijst, kop en keuze",
+              d93["tegel"]["rij"] and d93["tegel"]["keuze"] == "Bijna" and d93["tegel"]["kop"] and d93["tegel"]["teller"] == "Voeg nog 2 nummers toe", json.dumps(d93))
+        check("geen paginafouten in blok 93", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         print("\nBlok 8 — elke view opent zonder fout")

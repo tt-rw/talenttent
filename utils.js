@@ -196,7 +196,10 @@ function veldElement(el) {
 function veldFoutAnker(el) {
   // Postcode en plaats: de foutregel staat onder de rij, over de volle
   // breedte, niet in de smalle kolom van 104px (.postcode-plaats).
-  return (el.closest && (el.closest('.password-wrap') || el.closest('.postcode-plaats-rij'))) || el;
+  // Zoekveld voor nummers (TT-514): de regel staat onder de .song-search-wrap,
+  // in de .field, zodat de 8px van huisstijl §3 geldt (gemeten: binnen de wrap
+  // was het 0px) en de suggestielijst direct onder het veld blijft.
+  return (el.closest && (el.closest('.password-wrap') || el.closest('.postcode-plaats-rij') || el.closest('.song-search-wrap'))) || el;
 }
 
 // TT-494: korte uitslag rechts op de labelregel (zie .field-uitslag in
@@ -802,66 +805,174 @@ function addSong(title, artist) {
   selectedArtist = null;
   renderSongs();
   requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById('artistSearch').focus()));
+  voorproefOphalen(() => state.songs, title, artist, renderSongs);
+}
+
+// ─── De setlist: wizardstap Nummers én de tegel Je setlist (TT-514) ──────────
+// Besluiten Ronald, 25-10-2026. Drie nummers zijn verplicht in de wizard. Per
+// nummer één kader: links artiest en nummer (elk hoogstens twee regels), rechts
+// de voorproef ("4 anderen spelen dit ook") en daaronder Beheersing als keuze
+// zonder rand. Eén vorm voor de wizard en de tegel; een eigen variant is een fout.
+const NUMMERS_MIN = 3;
+const BEHEERSING_NAMEN = { basis: 'Basis', bijna: 'Bijna', podium: 'Podium' };
+const PIJL_OMLAAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+const PERSONEN_TEKEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>';
+
+// Geeft de veldfout terug als er te weinig nummers zijn, anders een lege
+// lijst. Gebruikt door nextStep(3) (wizard) en saveJeSetlist() (tegel):
+// ook in de tegel minimaal drie (besluit Ronald, 25-10-2026).
+// De tekst is die van de teller boven de lijst (besluit Ronald, 25-10-2026).
+function nummersTekortFouten(lijst = state.songs, veld = 'artistSearch') {
+  if (lijst.length >= NUMMERS_MIN) return [];
+  return [[veld, setlistTellerTekst(lijst.length)]];
+}
+
+// Onder de drie: "Voeg nog 2 nummers toe" (Ronald, 25-10-2026: "2 van 3"
+// begrijpt niemand); vanaf drie "3 nummers", "4 nummers" enzovoort.
+function setlistTellerTekst(n) {
+  const nog = NUMMERS_MIN - n;
+  if (nog > 0) return nog === 1 ? 'Voeg nog 1 nummer toe' : `Voeg nog ${nog} nummers toe`;
+  return `${n} nummers`;
+}
+
+// Hoeveel ándere muzikanten met een afgerond profiel dit nummer spelen.
+// Gebruikt de bestaande functie van Zoeken (besluit Ronald, 25-10-2026: geen
+// nieuwe databasefunctie); die geeft alleen id's. Het eigen profiel telt niet
+// mee. Per nummer één vraag per bezoek: de belofte staat in de cache, ook als
+// hij nog loopt. Lukt het niet, dan geeft hij 0 en mag een volgende keer
+// opnieuw vragen.
+const nummerSpelersCache = new Map();
+function nummerSpelersOphalen(title, artist) {
+  const sleutel = `${title}\u0000${artist}`.toLowerCase();
+  if (!nummerSpelersCache.has(sleutel)) {
+    nummerSpelersCache.set(sleutel,
+      db.rpc('tt_search_musicians_by_songlist_anon', { titles: [title], artists: [artist] })
+        .then(({ data, error }) => {
+          if (error) throw error;
+          return (Array.isArray(data) ? data : []).map(r => r && r.musician_id);
+        })
+        .catch(() => { nummerSpelersCache.delete(sleutel); return []; }));
+  }
+  return nummerSpelersCache.get(sleutel).then(ids =>
+    ids.filter(id => id && id !== (typeof myMusicianId !== 'undefined' ? myMusicianId : null)).length);
+}
+
+// Vraagt de voorproef voor één nummer en tekent de lijst opnieuw als er een
+// antwoord is. Niets wacht hierop. Weggehaald, nul of geen antwoord: niets.
+function voorproefOphalen(lijst, title, artist, teken) {
+  nummerSpelersOphalen(title, artist).then(aantal => {
+    const s = lijst().find(x => x.title === title && x.artist === artist);
+    if (!s || !aantal) return;
+    s.spelers = aantal;
+    teken();
+  });
+}
+
+// De voorproef. Alleen een geheel getal boven nul telt; de waarde kan uit de
+// bewaarde voortgang komen, dus nooit ongezien in de HTML.
+function voorproefHTML(spelers) {
+  const n = Number(spelers);
+  if (!Number.isInteger(n) || n < 1) return '';
+  return `${PERSONEN_TEKEN}<b>${n} ${n === 1 ? 'ander' : 'anderen'}</b> ${n === 1 ? 'speelt' : 'spelen'} dit ook`;
+}
+
+// De rijen van de setlist. p is het voorvoegsel van de id's ('' voor de
+// wizard, 'jst' voor de tegel); weg is de naam van de verwijderfunctie.
+// Volgorde: alfabetisch op artiest, dan titel; i blijft de echte plek in de lijst.
+function setlistLijstHTML(lijst, p, weg) {
+  const volgorde = lijst.map((s, i) => i)
+    .sort((a, b) => compareArtistTitle(lijst[a].artist, lijst[a].title, lijst[b].artist, lijst[b].title));
+  return volgorde.map(i => {
+    const s = lijst[i];
+    const naam = BEHEERSING_NAMEN[s.level];
+    const opties = ['basis', 'bijna', 'podium']
+      .map(k => `<option value="${k}"${s.level === k ? ' selected' : ''}>${BEHEERSING_NAMEN[k]}</option>`).join('');
+    return `
+    <div class="setlist-rij">
+      <div class="setlist-tekst">
+        <div class="setlist-artiest">${escHtml(s.artist)}</div>
+        <div class="setlist-titel">${escHtml(s.title)}</div>
+      </div>
+      <div class="setlist-rechts">
+        <div class="setlist-spelers">${voorproefHTML(s.spelers)}</div>
+        <div class="menu-anchor">
+          <button type="button" class="setlist-keuze${naam ? ' gekozen' : ''}" id="${p}behVeld${i}" aria-label="Beheersing van ${escHtml(s.title)}"><span class="wheel-field-label">${naam || 'Beheersing'}</span>${PIJL_OMLAAG}</button>
+          <select id="${p}behSel${i}" hidden><option value=""${naam ? '' : ' selected'} style="display:none">Beheersing</option>${opties}</select>
+          <div class="choice-menu setlist-keuze-menu" id="${p}behMenu${i}" role="listbox"></div>
+        </div>
+      </div>
+      ${s._confirmDelete
+        ? `<button type="button" class="song-remove setlist-zeker" onclick="${weg}(${i})" title="Bevestig verwijderen">Zeker?</button>`
+        : `<button type="button" class="song-remove" onclick="${weg}(${i})" title="Verwijderen" aria-label="Verwijder ${escHtml(s.title)}">✕</button>`}
+    </div>`;
+  }).join('');
+}
+
+// Koppelt het keuzemenu van elke rij (huisstijl §7.1) aan de lijst.
+function setlistKeuzesKoppelen(lijst, p, zet) {
+  lijst.forEach((s, i) => {
+    initChoiceField({ id: `${p}beh${i}`, fieldId: `${p}behVeld${i}`, selectId: `${p}behSel${i}`, menuId: `${p}behMenu${i}` });
+    const sel = document.getElementById(`${p}behSel${i}`);
+    if (sel) sel.addEventListener('change', () => zet(i, sel.value || null));
+  });
+}
+
+// De toelichting achter de i bij "Beheersing" (besluit Ronald, 25-10-2026).
+// Zelfde venster als de niveau-uitleg; de teksten zijn die van de oude regel.
+function openBeheersingInfo() {
+  document.getElementById('niveauInfoModalContent').innerHTML = `
+    <div class="filter-title" style="margin-bottom:12px;">Beheersing per nummer</div>
+    <p class="beheersing-uitleg"><b>Basis</b> — je kent de structuur.</p>
+    <p class="beheersing-uitleg"><b>Bijna</b> — soepel, bijna klaar.</p>
+    <p class="beheersing-uitleg"><b>Podium</b> — je speelt het live zonder problemen.</p>
+    <p class="beheersing-uitleg" style="color:var(--muted);">Mag ook later.</p>`;
+  document.getElementById('niveauInfoModal').classList.add('visible');
 }
 
 function renderSongs() {
   const list = document.getElementById('songsList');
-  const empty = document.getElementById('songsListEmpty');
-  if (!state.songs.length) {
-    list.innerHTML = '';
-    if (empty) empty.style.display = '';
-    return;
-  }
-  if (empty) empty.style.display = 'none';
-  // Weergave alfabetisch op band/artiest, dan titel — de onderliggende index
-  // (i) blijft verwijzen naar de echte plek in state.songs, want setLevel()/
-  // removeSong() werken op die array-index, niet op de weergavevolgorde.
-  const displayOrder = state.songs
-    .map((s, i) => i)
-    .sort((ia, ib) => compareArtistTitle(state.songs[ia].artist, state.songs[ia].title, state.songs[ib].artist, state.songs[ib].title));
-  list.innerHTML = `
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:4px;">
-      <div class="rep-kop">
-        <span>Band / Artiest — Nummer</span><span>Beheersing</span><span></span>
-      </div>
-      ${displayOrder.map(i => { const s = state.songs[i]; return `
-        <div class="rep-rij">
-          <div class="rep-tekst">
-            <div style="font-size:15px;font-weight:600;">${escHtml(s.artist)}</div>
-            <div style="font-size:12px;color:var(--muted);">${escHtml(s.title)}</div>
-          </div>
-          <div class="rep-niveaus" style="${!s.level ? 'animation:levelPulse 1.5s ease-in-out infinite;' : ''}">
-            <button class="level-btn ${s.level==='basis'?'active-basis':''}" title="Kent de structuur" onclick="setLevel(${i},'basis')">Basis</button>
-            <button class="level-btn ${s.level==='bijna'?'active-bijna':''}" title="Soepel, bijna klaar" onclick="setLevel(${i},'bijna')">Bijna</button>
-            <button class="level-btn ${s.level==='podium'?'active-podium':''}" title="Je speelt het live zonder problemen" onclick="setLevel(${i},'podium')">Podium</button>
-          </div>
-          ${s._confirmDelete
-            ? `<button class="song-remove rep-zeker" onclick="removeSong(${i})" title="Bevestig verwijderen">Zeker?</button>`
-            : `<button class="song-remove" onclick="removeSong(${i})" title="Verwijderen">✕</button>`
-          }
-        </div>
-        ${!s.level ? `<div style="font-size:12px;color:var(--muted);padding:4px 12px;">Beheersing nog niet gekozen — mag ook later</div>` : ''}
-      `; }).join('')}
-    </div>`;
+  if (!list) return;
+  const kop = document.getElementById('songsKop');
+  if (kop) kop.hidden = !state.songs.length;
+  const teller = document.getElementById('songsTeller');
+  if (teller) teller.textContent = setlistTellerTekst(state.songs.length);
+  list.innerHTML = setlistLijstHTML(state.songs, '', 'removeSong');
+  setlistKeuzesKoppelen(state.songs, '', setLevel);
 }
 
 function setLevel(i, level) {
-  state.songs[i].level = level;
+  if (!state.songs[i]) return;
+  state.songs[i].level = BEHEERSING_NAMEN[level] ? level : null;
   renderSongs();
 }
 
-// TT-179-patroon (uit profiel-v2, TT-168-overgang): eerste klik op ✕ zet
-// een korte bevestiging ("Zeker?"), pas een tweede klik verwijdert echt —
-// tweeklaps-bevestiging, lokaal op het nummer zelf i.p.v. een aparte knop.
+// TT-179-patroon: eerste klik op ✕ zet "Zeker?", pas een tweede klik
+// verwijdert. TT-226-regel, nu ook in de wizard (TT-514, D7): hoogstens één
+// "Zeker?" tegelijk, en een klik ergens anders zet hem terug.
 function removeSong(i) {
   if (!state.songs[i]) return;
   if (!state.songs[i]._confirmDelete) {
+    state.songs.forEach(s => delete s._confirmDelete);
     state.songs[i]._confirmDelete = true;
     renderSongs();
+    zekerTerugBijKlikErnaast(() => state.songs, renderSongs);
     return;
   }
   state.songs.splice(i, 1);
   renderSongs();
+}
+
+// Zet "Zeker?" terug op ✕ bij een klik ergens anders (huisstijl §8, TT-226).
+// Pas ná de huidige klik registreren, en hij verdwijnt vanzelf.
+function zekerTerugBijKlikErnaast(lijst, teken) {
+  setTimeout(() => {
+    document.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('.song-remove')) return;
+      let gewijzigd = false;
+      lijst().forEach(s => { if (s._confirmDelete) { delete s._confirmDelete; gewijzigd = true; } });
+      if (gewijzigd) teken();
+    }, { once: true });
+  }, 0);
 }
 
 

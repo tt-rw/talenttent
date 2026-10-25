@@ -1269,11 +1269,10 @@ async function nextStep(from) {
     if (!state.genres.length) fouten.push(['genrePickerField', 'Kies minimaal één genre']);
     if (showFieldErrors(fouten)) return;
   }
-  // V-23 (12-08-2026): repertoire is optioneel, maar het beheersingsniveau
-  // per nummer was dat niet. Wie nul nummers invulde mocht door; wie er één
-  // invulde werd geblokkeerd. Dat strafte juist wie iets invulde.
-  // Niveau per nummer is nu ook optioneel.
-  // step 3 (doel) is bewust optioneel — mag later nog worden ingevuld
+  // TT-514 (besluit Ronald, 25-10-2026): drie nummers zijn verplicht. De fout
+  // staat bij het zoekveld, zoals bij stap 2. De beheersing per nummer blijft
+  // optioneel (V-23). Stap 3 (doel) blijft optioneel.
+  if (from === 3 && showFieldErrors(nummersTekortFouten())) return;
   goTo(from + 1);
 }
 
