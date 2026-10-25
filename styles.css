@@ -921,12 +921,11 @@
   }
   .password-toggle:hover { color: var(--accent); }
 
-  .bio-prompts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
   /* TT-316 (24-09-2026, besluit Ronald K6): één gestippelde vorm voor
      "iets toevoegen" — de voorzetten voor de bio en "+ Link toevoegen".
      Was twee vormen, elk met eigen rand, hoek en letter. :hover staat in de
      touch-guard verderop (TT-182). */
-  .bio-prompt-chip, .add-link-btn {
+  .add-link-btn {
     background: transparent;
     border: var(--line) dashed var(--border);
     border-radius: 8px;
@@ -1170,15 +1169,6 @@
   /* Zelfde regel voor een knop naast een naam in een ledenlijst (Verwijderen,
      Uitnodigen). Met 28px drukte de knop de naam naar twee regels. */
   .lijst-rij .btn { padding-left: 12px; padding-right: 12px; }
-
-  /* TT-196 (04-09-2026): straal-veld + km-label, was 4x apart inline
-     (gap:6px, geen 4px-veelvoud) — nu één klasse, zelfde 8px-waarde als
-     .picker-badge-row. */
-  .radius-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
 
   .btn-primary {
     background: var(--merk);
@@ -2086,7 +2076,7 @@
   .media-speler-voet:empty { display: none; }
   .media-speler-voet .btn { flex: 1; }
 
-  /* De vorm staat bij .bio-prompt-chip (TT-316: één gestippelde vorm). */
+  /* De vorm staat bij .add-link-btn hierboven (TT-316: één gestippelde vorm). */
   .add-link-btn {
     width: 100%;
     margin-top: 4px;
@@ -3670,13 +3660,6 @@
   }
 
 
-  .modal-sticky-footer {
-    flex-shrink: 0;
-    padding: 16px 32px;
-    border-top: 1px solid var(--border);
-    background: var(--surface);
-  }
-  .modal-sticky-footer:empty { display: none; }
 
   /* Eigen profiel beheer */
 /* TT-225 (hersteld 09-09-2026): eigen max-width weg + width:100% (TT-224-vervolg),
@@ -4100,9 +4083,6 @@
        inhoud — anders staat de knop te hoog of te laag. */
     .modal-box-sticky-footer { padding-bottom: 0; }
     .modal-box-sticky-footer .modal-scroll-area { padding-bottom: 24px; }
-    .modal-box-sticky-footer .modal-sticky-footer {
-      padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-    }
     /* De sluitknop blijft rechtsboven staan, zoals in de rest van de app.
        TT-267 (15-09-2026, Ronald): "je kunt het kruis op de plaats van het
        hamburgermenu zetten." Op mobiel vult een modal het hele scherm, dus
@@ -4343,7 +4323,7 @@
     .song-remove:hover { color: var(--danger); }
     .ac-item:hover { background: var(--surface2); }
     .drop-zone:hover { border-color: var(--accent); background: var(--tint); }
-    .add-link-btn:hover, .bio-prompt-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .add-link-btn:hover { border-color: var(--accent); color: var(--accent); }
   }
 
   /* ── Canvas op laptop/desktop (TT-224, 07-09-2026 — hersteld 09-09-2026) ──
