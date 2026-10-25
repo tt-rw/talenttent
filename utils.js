@@ -816,6 +816,9 @@ function addSong(title, artist) {
 const NUMMERS_MIN = 3;
 const BEHEERSING_NAMEN = { basis: 'Basis', bijna: 'Bijna', podium: 'Podium' };
 const PIJL_OMLAAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+// Het sluitteken van de app (zie .modal-close), met een viewBox precies om
+// de inkt: zo ligt de inkt exact waar de opmaak hem zet (TT-514, uitlijning).
+const SETLIST_KRUIS = '<svg viewBox="4 4 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>';
 const PERSONEN_TEKEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>';
 
 // Geeft de veldfout terug als er te weinig nummers zijn, anders een lege
@@ -887,23 +890,25 @@ function setlistLijstHTML(lijst, p, weg) {
     const naam = BEHEERSING_NAMEN[s.level];
     const opties = ['basis', 'bijna', 'podium']
       .map(k => `<option value="${k}"${s.level === k ? ' selected' : ''}>${BEHEERSING_NAMEN[k]}</option>`).join('');
+    // Rij als raster (bevinding Ronald, 25-10-2026, "rode lijn"): tekst
+    // links over twee rijen; rechts de voorproef (loopt door tot boven het
+    // kruisje) met de keuze eronder; het kruisje smal, in het midden van de
+    // tegel ("het sluitkruisje blijft in het midden van de tegel").
     return `
-    <div class="setlist-rij">
+    <div class="setlist-rij${s._confirmDelete ? ' zeker' : ''}">
       <div class="setlist-tekst">
         <div class="setlist-artiest">${escHtml(s.artist)}</div>
         <div class="setlist-titel">${escHtml(s.title)}</div>
       </div>
-      <div class="setlist-rechts">
-        <div class="setlist-spelers">${voorproefHTML(s.spelers)}</div>
-        <div class="menu-anchor">
-          <button type="button" class="setlist-keuze${naam ? ' gekozen' : ''}" id="${p}behVeld${i}" aria-label="Beheersing van ${escHtml(s.title)}"><span class="wheel-field-label">${naam || 'Beheersing'}</span>${PIJL_OMLAAG}</button>
-          <select id="${p}behSel${i}" hidden><option value=""${naam ? '' : ' selected'} style="display:none">Beheersing</option>${opties}</select>
-          <div class="choice-menu setlist-keuze-menu" id="${p}behMenu${i}" role="listbox"></div>
-        </div>
+      <div class="setlist-spelers">${voorproefHTML(s.spelers)}</div>
+      <div class="menu-anchor setlist-keuze-plek">
+        <button type="button" class="setlist-keuze${naam ? ' gekozen' : ''}" id="${p}behVeld${i}" aria-label="Beheersing van ${escHtml(s.title)}"><span class="wheel-field-label">${naam || 'Beheersing'}</span>${PIJL_OMLAAG}</button>
+        <select id="${p}behSel${i}" hidden><option value=""${naam ? '' : ' selected'} style="display:none">Beheersing</option>${opties}</select>
+        <div class="choice-menu setlist-keuze-menu" id="${p}behMenu${i}" role="listbox"></div>
       </div>
       ${s._confirmDelete
         ? `<button type="button" class="song-remove setlist-zeker" onclick="${weg}(${i})" title="Bevestig verwijderen">Zeker?</button>`
-        : `<button type="button" class="song-remove" onclick="${weg}(${i})" title="Verwijderen" aria-label="Verwijder ${escHtml(s.title)}">✕</button>`}
+        : `<button type="button" class="song-remove" onclick="${weg}(${i})" title="Verwijderen" aria-label="Verwijder ${escHtml(s.title)}">${SETLIST_KRUIS}</button>`}
     </div>`;
   }).join('');
 }

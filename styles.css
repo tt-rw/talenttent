@@ -1019,65 +1019,82 @@
 
   /* Gekozen: zie het TT-316-blok bij .tag — goud en vet (besluit Ronald K12). */
 
-  /* TT-514 (besluit Ronald, 25-10-2026, ontwerp C ronde 6): de setlist in
-     wizardstap Nummers en in de tegel Je setlist. Eén component, opgebouwd
-     door setlistLijstHTML() in utils.js. Elk nummer is een omlijnde rij
-     ("anders wordt het een grote bak met letters"). Drie vaste kolommen per
-     rij: tekst, voorproef + beheersing (116px), kruisje (44px), zodat alles
-     op elk toestel recht onder elkaar staat. Artiest en titel
-     elk maximaal twee regels, daarna "…". De bovenkant van de artiest staat
-     op één lijn met de bovenkant van de voorproef; de tekst van de
-     beheersingskeuze staat op dezelfde x als de voorproeftekst (Ronald).
-     Vervangt de TT-459-repertoirelijst (.rep-*, drie niveauknoppen). */
-  .setlist-rij {
+  /* TT-514 (besluit Ronald, 25-10-2026; indeling volgens zijn schets na de
+     live app, 25-10-2026): de setlist in wizardstap Nummers en in de tegel
+     Je setlist. Eén component, opgebouwd door setlistLijstHTML() in
+     utils.js. Elk nummer is een omlijnde rij ("anders wordt het een grote
+     bak met letters"). Alles op één regel (Ronald), daarna "…":
+       Artiest                                   ✕
+       Nummer
+       4 anderen spelen dit ook        Beheersing ⌄
+     - Artiest en nummer over de volle breedte tot het kruisje (op 360px
+       220px; was 88px over twee regels).
+     - De onderste regel loopt door onder het kruisje, tot 12px van de rand:
+       links de voorproef, rechts de keuze in een vaste kolom van 86px.
+     - "Beheersing" in de kop staat recht boven de keuze (zelfde kolom).
+     - Het kruisje staat in de rechterbovenhoek, even ver van de bovenrand
+       als van de zijrand: 12px, gelijk aan de opvulling links (Ronald: "de
+       afstand tussen boven en zijkant gelijk"). De bovenkant ligt op de
+       bovenkant van de artiestregel, de rechterkant op de rechterlijn van de
+       keuze en van de i in de kop (de "groene lijnen" van Ronald).
+     - Eén rechterlijn voor kruisje, keuze en i; één linkerlijn voor artiest,
+       nummer en voorproef. Getoetst in blok 87. */
+  .setlist-kop {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 116px 44px;
-    column-gap: 8px;
+    grid-template-columns: minmax(0, 1fr) 94px;
+    column-gap: 6px;
+    align-items: center;
+    /* 13px = 1px rand + 12px opvulling van de rij: zo staat "Beheersing"
+       recht boven de keuze. */
+    padding: 0 13px 8px 0;
   }
-  /* De kop: teller links, "Beheersing" met de i rechts. De i staat recht
-     boven de kruisjes (Ronald, 25-10-2026: "lijn desnoods het woord
-     beheersing rechts uit"), zodat de teller ("Voeg nog 2 nummers toe")
-     de ruimte heeft. 11px = 1px rand van de rij + (44px kruisje - 24px i) / 2. */
-  .setlist-kop { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 11px 8px 0; }
   .setlist-kop[hidden] { display: none; }
-  /* 14px: "Voeg nog 2 nummers toe" past zo ook op 360px op één regel
-     naast "Beheersing" (besluit Ronald, 25-10-2026, optie B). */
-  .setlist-teller { font-size: 14px; font-weight: 700; }
-  .setlist-kop-beh { display: flex; align-items: center; flex: none; font-size: 13px; color: var(--muted); }
+  /* 14px: "Voeg nog 2 nummers toe" past op één regel (besluit Ronald,
+     25-10-2026, optie B). */
+  .setlist-teller { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* "Beheersing" op de x van de keuze, de i op de rechterlijn (94px =
+     de tekst, lucht en de i van 24px). */
+  .setlist-kop-beh { display: flex; align-items: center; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .setlist-kop-beh .niveau-info-btn { margin-left: auto; }
   .setlist-lijst { display: flex; flex-direction: column; gap: 8px; }
   .setlist-rij {
-    align-items: start;
-    padding: 12px 0 10px 12px;
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 94px;
+    column-gap: 6px;
+    align-items: center;
+    padding: 12px 12px 4px 12px;
     border: 1px solid var(--border);
     border-radius: 10px;
   }
-  .setlist-tekst { min-width: 0; }
+  .setlist-tekst { grid-column: 1 / 3; min-width: 0; }
   .setlist-artiest, .setlist-titel, .setlist-spelers {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    white-space: nowrap;
     overflow: hidden;
-    overflow-wrap: anywhere;
+    text-overflow: ellipsis;
   }
-  .setlist-artiest { font-size: 16px; font-weight: 700; line-height: 20px; }
+  /* Ruimte rechts voor het kruisje in de hoek. */
+  .setlist-artiest { font-size: 16px; font-weight: 700; line-height: 20px; padding-right: 22px; }
   .setlist-titel { font-size: 13px; line-height: 17px; color: var(--muted); margin-top: 2px; }
-  .setlist-rechts { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   /* De voorproef: gedempt, het aantal vet in tekstkleur, het icoon in de
-     steunkleur (Ronald: "groen of zo", "niet teveel opvallen"). Twee regels
-     hoog gereserveerd zodat de keuze eronder in elke rij op dezelfde hoogte
-     staat, ook zonder voorproef. Het icoon staat vóór de tekst, zodat beide
-     regels op dezelfde x beginnen als de keuze. */
-  .setlist-spelers { font-size: 12px; line-height: 16px; min-height: 32px; color: var(--muted); }
+     steunkleur (Ronald: "groen of zo", "niet teveel opvallen"). */
+  .setlist-spelers { grid-column: 1; grid-row: 2; min-width: 0; margin-top: 8px; font-size: 12px; line-height: 16px; color: var(--muted); }
   .setlist-spelers b { color: var(--text); }
   .setlist-spelers svg { width: 14px; height: 14px; color: var(--steun); display: inline-block; vertical-align: -2px; margin-right: 5px; }
+  .setlist-keuze-plek { grid-column: 2; grid-row: 2; margin-top: 8px; }
   /* De beheersingskeuze: tekst met pijltje, zonder rand (Ronald: "iedereen
      snapt dat een pijltje naar beneden een dropdown is"). Het menu eronder
      is het gewone keuzemenu (.choice-menu), zo verschoven dat de tekst van
      de opties op dezelfde x staat als de tekst van de keuze. */
+  /* De keuze vult de kolom: de tekst links (onder "Beheersing" in de kop),
+     het pijltje rechts op de rechterlijn (onder de i en het kruisje). */
   .setlist-keuze {
+    position: relative;
+    width: 100%;
     height: 32px;
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 4px;
     padding: 0;
     border: 0;
@@ -1085,19 +1102,24 @@
     font-family: 'Roboto', sans-serif;
     font-size: 14px;
     color: var(--muted);
+    white-space: nowrap;
     cursor: pointer;
   }
-  /* Tikdoel 44px hoog (huisstijl): de knop zelf is 32px om de rij laag te
-     houden; het onzichtbare vlak eromheen maakt het tikdoel groot genoeg,
-     zelfde patroon als .niveau-info-btn::after. */
-  .setlist-keuze { position: relative; }
-  .setlist-keuze::after { content: ''; position: absolute; inset: -6px -8px; }
+  /* Tikdoel 44px hoog: het onzichtbare vlak loopt 12px naar onderen, niet
+     naar boven (daar ligt het kruisje). Zelfde patroon als .niveau-info-btn::after. */
+  .setlist-keuze::after { content: ''; position: absolute; inset: 0 -4px -12px -8px; }
   .setlist-keuze.gekozen { color: var(--text); font-weight: 700; }
   .setlist-keuze svg { width: 12px; height: 12px; flex: none; }
   /* -1px: de rand van het menu, zodat de optietekst precies op de x van de keuze staat. */
   .choice-menu.setlist-keuze-menu { left: calc(-1 * var(--field-inset) - 1px); right: auto; width: 132px; }
-  .setlist-rij .song-remove { align-self: center; }
-  .setlist-rij .song-remove.setlist-zeker { padding: 0; font-size: 11px; font-weight: 700; color: var(--danger); }
+  /* Het kruisje: tikvlak 44px met het teken van 14px in het midden (15px
+     rondom). -3px = 12px opvulling - 15px: de inkt begint precies 12px onder
+     de bovenrand en eindigt 12px voor de zijrand. */
+  .setlist-rij .song-remove { position: absolute; right: -3px; top: -3px; z-index: 2; }
+  .setlist-rij .song-remove svg { display: block; }
+  /* "Zeker?" op de plek van het kruisje, met de rechterkant op dezelfde
+     rechterlijn (15px = 3px buiten de binnenrand + 12px). */
+  .setlist-rij .song-remove.setlist-zeker { justify-content: flex-end; padding: 0 15px 0 0; font-size: 11px; font-weight: 700; color: var(--danger); }
   .beheersing-uitleg { margin: 0 0 8px; font-size: 14px; }
 
   .song-remove {

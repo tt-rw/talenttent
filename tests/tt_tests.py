@@ -8939,15 +8939,15 @@ window.TT_STUB.fnAntwoord = {};
         page_errors.clear()
 
         # ------------------------------------------------------------------
-        # Blok 87 — TT-514 (25-10-2026, besluiten Ronald; vervangt TT-459): de
-        # setlist in de wizard en in de tegel Je setlist. Omlijnde rijen met
-        # vaste kolommen. Ronalds uitlijning: de tekst van de keuze staat op
-        # dezelfde x als de voorproef en als "Beheersing" in de kop; de
-        # bovenkant van de artiest op één lijn met die van de voorproef; de
-        # kruisjes recht onder elkaar. Artiest en titel elk hoogstens twee
-        # regels. Tikdoel van de keuze 44px hoog.
+        # Blok 87 — TT-514 (25-10-2026, besluiten Ronald; indeling volgens zijn
+        # schets na de live app): de setlist in de wizard en in de tegel Je
+        # setlist. Omlijnde rijen; alles op één regel: artiest, nummer, en
+        # onderaan voorproef links en beheersing rechts. "Beheersing" in de kop
+        # staat recht boven de keuze. Het kruisje in de rechterbovenhoek: midden
+        # op de artiestregel, recht onder de i in de kop. Tikdoelen: keuze 44px
+        # hoog, kruisje 44 × 44. De teller past op één regel.
         # ------------------------------------------------------------------
-        print("\nBlok 87 — setlist: omlijnde rijen, vaste kolommen, uitlijning (TT-514)")
+        print("\nBlok 87 — setlist: indeling, uitlijning, één regel (TT-514)")
         JS87 = """([soort]) => {
           const NUMMERS = [['André Hazes','Een Beetje Verliefd','basis',3],['Metallica','Enter Sandman','podium',123],['Metallica','One','bijna',0],
             ['Metallica','Seek & Destroy (Remastered)','bijna',1],['Michael Jackson','Beat It!','basis',0],['Red Hot Chili Peppers','Under the Bridge (Live at Slane Castle 2003) - Remastered Deluxe Edition',null,7],
@@ -8958,56 +8958,72 @@ window.TT_STUB.fnAntwoord = {};
           stijl.textContent = '.app-view{display:none!important}';
           document.head.appendChild(stijl);
           const bewaard = [];
-          for (let e = lijst; e && e !== document.body; e = e.parentElement) { bewaard.push([e, e.getAttribute('style'), e.hidden]); e.style.setProperty('display', 'block', 'important'); e.hidden = false; }
+          for (let e = lijst.parentElement; e && e !== document.body; e = e.parentElement) { bewaard.push([e, e.getAttribute('style'), e.hidden]); e.style.setProperty('display', 'block', 'important'); e.hidden = false; }
           const rij = NUMMERS.map(n => ({ artist: n[0], title: n[1], level: n[2], spelers: n[3] }));
           rij[3]._confirmDelete = true;
           if (soort === 'wizard') { state.songs = rij; renderSongs(); } else { jstSongs = rij; jstRenderSongs(); }
-          const db = lijst.getBoundingClientRect();
           const rijen = [...lijst.querySelectorAll('.setlist-rij')];
           const opruimen = () => { stijl.remove(); bewaard.forEach(([e, s, h]) => { if (s === null) e.removeAttribute('style'); else e.setAttribute('style', s); e.hidden = h; }); lijst.innerHTML = ''; kop.hidden = true; };
           if (rijen.length < 8) { opruimen(); return { rijen: rijen.length }; }
           const af = x => Math.round(x * 10) / 10;
           const tekstX = el => { const r = document.createRange(); r.selectNodeContents(el); return af(r.getClientRects()[0].left); };
+          const mid = q => [af((q.left + q.right) / 2), af((q.top + q.bottom) / 2)];
+          const iq = kop.querySelector('.niveau-info-btn').getBoundingClientRect();
           const uit = { rijen: rijen.length, kopZichtbaar: !kop.hidden && kop.getBoundingClientRect().height > 0,
             kopTeller: kop.querySelector('.setlist-teller').textContent,
-            iMidden: (() => { const q = kop.querySelector('.niveau-info-btn').getBoundingClientRect(); return af((q.left + q.right) / 2); })(),
-            kruisMidden: new Set(),
-            keuzeX: new Set(), spelersX: new Set(), kruisjes: new Set(), omlijnd: true, scheef: [], regels: [], afgesneden: [],
-            tikdoel: 999, pagina: document.documentElement.scrollWidth > innerWidth };
+            kopBehX: tekstX(kop.querySelector('.setlist-kop-beh').firstChild), iMidX: mid(iq)[0], iRechts: af(iq.right), marges: new Set(), rechterlijn: new Set(),
+            keuzeX: new Set(), linksX: new Set(), kruisX: new Set(), kruisScheef: [], omlijnd: true, regels: [], afgesneden: [],
+            tikdoel: 999, kruisHoog: 999, kruisBreed: 999, pagina: document.documentElement.scrollWidth > innerWidth };
           rijen.forEach((r, i) => {
             const cs = getComputedStyle(r);
             if (parseFloat(cs.borderTopWidth) < 1 || cs.borderTopStyle !== 'solid') uit.omlijnd = false;
-            const k = r.querySelector('.setlist-keuze .wheel-field-label');
-            uit.keuzeX.add(tekstX(k));
-            const sp = r.querySelector('.setlist-spelers');
-            if (sp.textContent.trim()) {
-              uit.spelersX.add(af(sp.querySelector('svg').getBoundingClientRect().left));
-              const a = r.querySelector('.setlist-artiest');
-              const verschil = Math.abs(a.getBoundingClientRect().top - sp.getBoundingClientRect().top);
-              if (verschil > 3) uit.scheef.push(i + ': ' + af(verschil));
-              if (sp.getBoundingClientRect().height > 33) uit.regels.push('spelers ' + i);
-            }
+            const a = r.querySelector('.setlist-artiest'), t = r.querySelector('.setlist-titel'), sp = r.querySelector('.setlist-spelers');
+            uit.keuzeX.add(tekstX(r.querySelector('.setlist-keuze .wheel-field-label')));
+            uit.linksX.add(tekstX(a));
+            if (sp.textContent.trim()) uit.linksX.add(af(sp.querySelector('svg').getBoundingClientRect().left));
+            if (a.getBoundingClientRect().height > 21) uit.regels.push('artiest ' + i);
+            if (t.getBoundingClientRect().height > 18) uit.regels.push('titel ' + i);
+            if (sp.textContent.trim() && sp.getBoundingClientRect().height > 17) uit.regels.push('voorproef ' + i);
             const x = r.querySelector('.song-remove'), q = x.getBoundingClientRect();
-            uit.kruisjes.add(af(q.left) + '-' + af(q.right));
-            uit.kruisMidden.add(af((q.left + q.right) / 2));
-            if (q.right > db.right + 0.5) uit.afgesneden.push('kruis ' + i);
-            const ar = r.querySelector('.setlist-artiest').getBoundingClientRect(), tr = r.querySelector('.setlist-titel').getBoundingClientRect();
-            if (ar.height > 41) uit.regels.push('artiest ' + i);
-            if (tr.height > 35) uit.regels.push('titel ' + i);
-            if (r.querySelector('.setlist-tekst').getBoundingClientRect().right > r.querySelector('.setlist-rechts').getBoundingClientRect().left) uit.afgesneden.push('tekst over keuze ' + i);
-            r.querySelector('.setlist-keuze').scrollIntoView({ block: 'center' });
+            // Esthetiek (Ronald, 25-10-2026): binnenmarges gelijk, één rechterlijn
+            const R = r.getBoundingClientRect(), bw = parseFloat(cs.borderTopWidth), bin = { l: R.left + bw, t: R.top + bw, r: R.right - bw, b: R.bottom - bw };
+            const at = (() => { const g = document.createRange(); g.selectNodeContents(a); return g.getBoundingClientRect(); })();
+            const kt = (() => { const g = document.createRange(); g.selectNodeContents(r.querySelector('.setlist-keuze .wheel-field-label')); return g.getBoundingClientRect(); })();
+            uit.marges.add('links ' + af(at.left - bin.l));
+            uit.marges.add('onder ' + af(bin.b - kt.bottom));
+            uit.rechterlijn.add(af(r.querySelector('.setlist-keuze svg').getBoundingClientRect().right));
+            if (!x.classList.contains('setlist-zeker')) {
+              const ink = x.querySelector('svg').getBoundingClientRect();
+              uit.marges.add('boven ' + af(ink.top - bin.t)); uit.marges.add('rechts ' + af(bin.r - ink.right));
+              uit.rechterlijn.add(af(ink.right));
+              if (Math.abs(ink.top - a.getBoundingClientRect().top) > 0.5) uit.kruisScheef.push(i + ': kruisje niet op de artiestregel');
+            }
+            if (!x.classList.contains('setlist-zeker')) {
+              const ink = x.querySelector('svg').getBoundingClientRect();
+              uit.kruisX.add(af(ink.right));
+              if (a.getBoundingClientRect().right - parseFloat(getComputedStyle(a).paddingRight) > ink.left - 6) uit.afgesneden.push('artiest onder kruisje ' + i);
+            }
+            if (sp.getBoundingClientRect().right > r.querySelector('.setlist-keuze-plek').getBoundingClientRect().left) uit.afgesneden.push('voorproef over keuze ' + i);
+            r.scrollIntoView({ block: 'center' });
             const kb = r.querySelector('.setlist-keuze').getBoundingClientRect();
-            const midden = kb.left + 4;
-            let h = 0; for (let y = kb.top - 10; y <= kb.bottom + 10; y++) { const e = document.elementFromPoint(midden, y); if (e && e.closest('.setlist-keuze') === r.querySelector('.setlist-keuze')) h++; }
+            let h = 0; for (let y = kb.top - 10; y <= kb.bottom + 20; y++) { const e = document.elementFromPoint(kb.left + 4, y); if (e && e.closest('.setlist-keuze') === r.querySelector('.setlist-keuze')) h++; }
             uit.tikdoel = Math.min(uit.tikdoel, h);
+            if (!x.classList.contains('setlist-zeker')) {
+              const xq = x.getBoundingClientRect(), [mx, my] = mid(xq);
+              let hh = 0, bb = 0;
+              for (let y = xq.top - 20; y <= xq.bottom + 20; y++) { const e = document.elementFromPoint(mx, y); if (e && e.closest('.song-remove') === x) hh++; }
+              for (let xx = xq.left - 20; xx <= xq.right + 20; xx++) { const e = document.elementFromPoint(xx, my); if (e && e.closest('.song-remove') === x) bb++; }
+              uit.kruisHoog = Math.min(uit.kruisHoog, hh); uit.kruisBreed = Math.min(uit.kruisBreed, bb);
+            }
           });
-          uit.keuzeX = [...uit.keuzeX]; uit.spelersX = [...uit.spelersX]; uit.kruisjes = uit.kruisjes.size; uit.kruisMidden = [...uit.kruisMidden];
+          uit.keuzeX = [...uit.keuzeX]; uit.linksX = [...uit.linksX]; uit.kruisX = [...uit.kruisX]; uit.marges = [...uit.marges].sort(); uit.rechterlijn = [...uit.rechterlijn].concat([uit.iRechts]);
           // De langste teller ("Voeg nog 2 nummers toe") past op één regel naast "Beheersing"
           const t = kop.querySelector('.setlist-teller'); t.textContent = setlistTellerTekst(1);
-          uit.tellerHoogte = af(t.getBoundingClientRect().height); uit.tellerEenRegel = uit.tellerHoogte < 24;  // 14px: één regel ±16px
-          uit.zeker = (rijen.find(r => r.querySelector('.setlist-zeker')) || document.body).textContent.includes('Zeker?');
-          uit.zekerBreedte = af((lijst.querySelector('.setlist-zeker') || document.body).getBoundingClientRect().width);
-          uit.kopBinnen = [...kop.children].every(c => c.getBoundingClientRect().right <= db.right + 0.5);
+          uit.tellerHoogte = af(t.getBoundingClientRect().height); uit.tellerEenRegel = uit.tellerHoogte < 24 && t.scrollWidth <= t.clientWidth + 1;
+          const zk = lijst.querySelector('.setlist-zeker');
+          uit.zeker = !!zk && zk.textContent.trim() === 'Zeker?';
+          if (zk) { const rg = document.createRange(); rg.selectNodeContents(zk); uit.zekerBinnen = rg.getBoundingClientRect().right <= zk.closest('.setlist-rij').getBoundingClientRect().right - 1; }
+          uit.kopBinnen = kop.querySelector('.niveau-info-btn').getBoundingClientRect().right <= lijst.getBoundingClientRect().right + 0.5;
           opruimen();
           return uit;
         }"""
@@ -9018,20 +9034,21 @@ window.TT_STUB.fnAntwoord = {};
                 d87 = page.evaluate(JS87, [soort87])
                 naam87 = f"{soort87} {breedte87}px"
                 ok87 = d87.get("rijen") == 8
-                check(f"{naam87}: acht omlijnde rijen, kop met \"8 nummers\" en Beheersing binnen het vak",
+                check(f"{naam87}: acht omlijnde rijen, kop met \"8 nummers\", de i binnen het vak",
                       ok87 and d87["omlijnd"] and d87["kopZichtbaar"] and d87["kopTeller"] == "8 nummers" and d87["kopBinnen"], json.dumps(d87))
-                check(f"{naam87}: keuze en voorproef beginnen op dezelfde x; de i van \"Beheersing\" staat recht boven de kruisjes",
-                      ok87 and len(d87["keuzeX"]) == 1 and len(d87["spelersX"]) == 1 and d87["keuzeX"][0] == d87["spelersX"][0]
-                      and len(d87["kruisMidden"]) == 1 and abs(d87["kruisMidden"][0] - d87["iMidden"]) <= 0.5, json.dumps(d87))
+                check(f"{naam87}: \"Beheersing\" in de kop staat recht boven de keuze in elke rij",
+                      ok87 and len(d87["keuzeX"]) == 1 and d87["keuzeX"][0] == d87["kopBehX"], json.dumps(d87))
+                check(f"{naam87}: artiest, nummer en voorproef beginnen op één x en staan elk op één regel",
+                      ok87 and len(d87["linksX"]) == 1 and not d87["regels"], json.dumps(d87))
+                check(f"{naam87}: esthetiek: binnenmarges links, boven (kruisje), rechts (kruisje) en onder (keuze) alle 12px",
+                      ok87 and d87["marges"] == ["boven 12", "links 12", "onder 12", "rechts 12"], json.dumps(d87))
+                check(f"{naam87}: esthetiek: één rechterlijn voor kruisje, pijltje van de keuze en de i in de kop; kruisje op de artiestregel",
+                      ok87 and max(d87["rechterlijn"]) - min(d87["rechterlijn"]) <= 0.5 and not d87["kruisScheef"], json.dumps(d87))
+                check(f"{naam87}: niets overlapt (artiest vrij van het kruisje, voorproef vrij van de keuze); \"Zeker?\" binnen de rij; geen scroll opzij",
+                      ok87 and not d87["afgesneden"] and d87["zeker"] and d87["zekerBinnen"] and not d87["pagina"], json.dumps(d87))
                 check(f"{naam87}: de teller \"Voeg nog 2 nummers toe\" past op één regel", ok87 and d87["tellerEenRegel"], json.dumps(d87))
-                check(f"{naam87}: bovenkant artiest op één lijn met bovenkant voorproef",
-                      ok87 and not d87["scheef"], json.dumps(d87))
-                check(f"{naam87}: artiest, titel en voorproef elk hoogstens twee regels; niets afgesneden; geen scroll opzij",
-                      ok87 and not d87["regels"] and not d87["afgesneden"] and not d87["pagina"], json.dumps(d87))
-                check(f"{naam87}: kruisjes recht onder elkaar, ook bij \"Zeker?\" (kolom van 44px)",
-                      ok87 and d87["kruisjes"] == 1 and d87["zeker"] and d87["zekerBreedte"] == 44, json.dumps(d87))
-                check(f"{naam87}: tikdoel van de beheersingskeuze minstens 44px hoog",
-                      ok87 and d87["tikdoel"] >= 44, json.dumps(d87))
+                check(f"{naam87}: tikdoelen: keuze minstens 44px hoog, kruisje 44 × 44",
+                      ok87 and d87["tikdoel"] >= 44 and d87["kruisHoog"] >= 44 and d87["kruisBreed"] >= 44, json.dumps(d87))
         page.set_viewport_size({"width": 390, "height": 844})
         page.evaluate("showView('about')")
         check("geen paginafouten in blok 87", not page_errors, "; ".join(page_errors)[:300])
