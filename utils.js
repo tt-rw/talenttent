@@ -819,7 +819,38 @@ const PIJL_OMLAAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 // Het sluitteken van de app (zie .modal-close), met een viewBox precies om
 // de inkt: zo ligt de inkt exact waar de opmaak hem zet (TT-514, uitlijning).
 const SETLIST_KRUIS = '<svg viewBox="4 4 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>';
-const PERSONEN_TEKEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>';
+// ─── Lange nummerlijst op een profiel: ingeklapt tot zeven ───────────────────
+// Besluit Ronald, 26-10-2026 (optie 1): meer dan zeven nummers maakt een
+// profiel onleesbaar. Het profiel opent met zeven nummers; de laatste rijen
+// vervagen en eronder staat "Alle N nummers". Een tik ergens op de lijst klapt
+// hem open, nog een tik klapt hem weer in ("de lijst is verder niet
+// klikbaar"). Geldt voor het repertoire van een muzikant en de covers van een
+// band, ingelogd en uitgelogd. De regel onderaan is een knop, zodat de lijst
+// ook met het toetsenbord werkt; zijn klik loopt door naar de lijst.
+const NUMMERS_INGEKLAPT = 7;
+function nummerLijstHTML(rijen) {
+  if (rijen.length <= NUMMERS_INGEKLAPT) return rijen.join('');
+  return `<div class="nummers-inklap" onclick="nummersInklapWissel(this)">` +
+    `<div class="nummers-inklap-rijen">${rijen.join('')}</div>` +
+    `<button type="button" class="nummers-inklap-regel" aria-expanded="false">` +
+    `<span class="nummers-inklap-dicht">Alle ${rijen.length} nummers</span>` +
+    `<span class="nummers-inklap-open">Minder</span>${PIJL_OMLAAG}</button></div>`;
+}
+function nummersInklapWissel(lijst) {
+  const open = !lijst.classList.contains('open');
+  lijst.classList.toggle('open', open);
+  const regel = lijst.querySelector('.nummers-inklap-regel');
+  if (regel) regel.setAttribute('aria-expanded', open ? 'true' : 'false');
+  // Ingeklapt na scrollen: de bovenkant van de lijst lag dan boven het
+  // scherm. Breng de korte lijst terug in beeld, anders kijkt de gebruiker
+  // naar wat eronder staat.
+  if (!open && lijst.getBoundingClientRect().top < 0) {
+    const beweegtNiet = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    try { lijst.scrollIntoView({ behavior: beweegtNiet ? 'auto' : 'smooth', block: 'center' }); }
+    catch (e) { lijst.scrollIntoView(); }
+  }
+}
+const PERSONEN_TEKEN ='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>';
 
 // Geeft de veldfout terug als er te weinig nummers zijn, anders een lege
 // lijst. Gebruikt door nextStep(3) (wizard) en saveJeSetlist() (tegel):

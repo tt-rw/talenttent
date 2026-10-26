@@ -1203,8 +1203,9 @@ function bandPaginaHTML(b, kijker) {
   // 6. Covers, op dezelfde volgorde als het repertoire van een muzikant.
   if (b.covers.length) {
     const rijen = [...b.covers].sort((x, y) => compareArtistTitle(x.song_artist, x.song_title, y.song_artist, y.song_title))
-      .map(c => `<div class="profile-song-row"><span><strong>${escHtml(c.song_artist)}</strong> — <span style="color:var(--muted)">${escHtml(c.song_title)}</span></span></div>`).join('');
-    h += bandSectieHTML(`Covers (${b.covers.length} ${b.covers.length === 1 ? 'nummer' : 'nummers'})`, rijen);
+      .map(c => `<div class="profile-song-row"><span><strong>${escHtml(c.song_artist)}</strong> — <span style="color:var(--muted)">${escHtml(c.song_title)}</span></span></div>`);
+    // Meer dan zeven covers: ingeklapt, zoals het repertoire (nummerLijstHTML() in utils.js).
+    h += bandSectieHTML(`Covers (${b.covers.length} ${b.covers.length === 1 ? 'nummer' : 'nummers'})`, nummerLijstHTML(rijen));
   } else if (beheer && voortgang.telt.covers) {
     h += bandSectieHTML('Covers', uitnodiging('+ Welke covers spelen jullie?'));
   }

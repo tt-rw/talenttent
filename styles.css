@@ -1363,6 +1363,31 @@
 
   .profile-song-row:last-child { padding-bottom: 0; }
 
+  /* Meer dan zeven nummers op een profiel: ingeklapt tot zeven (besluit
+     Ronald, 26-10-2026, optie 1; nummerLijstHTML() in utils.js). Repertoire
+     van een muzikant en covers van een band. De hele lijst is het tikvlak.
+     Ingeklapt vervagen de laatste anderhalve rij naar 20%; de regel eronder
+     blijft scherp. Binnen de lijst houdt elke rij 8px onder zich, zodat de
+     regel in beide standen even ver van de laatste rij staat als de rijen
+     onderling. */
+  .nummers-inklap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .nummers-inklap .profile-song-row:last-child { padding-bottom: 8px; }
+  .nummers-inklap:not(.open) .profile-song-row:nth-child(n+8) { display: none; }
+  .nummers-inklap:not(.open) .nummers-inklap-rijen {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 52px), rgba(0,0,0,0.2));
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 52px), rgba(0,0,0,0.2));
+  }
+  .nummers-inklap-regel {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; padding: 8px 0 0; margin: 0; border: 0; background: none;
+    font: inherit; font-size: 13px; font-weight: 700;
+    color: var(--text); cursor: pointer;
+  }
+  .nummers-inklap-regel svg { width: 12px; height: 12px; flex: none; }
+  .nummers-inklap.open .nummers-inklap-regel svg { transform: rotate(180deg); }
+  .nummers-inklap:not(.open) .nummers-inklap-open,
+  .nummers-inklap.open .nummers-inklap-dicht { display: none; }
+
   /* TT-316 (24-09-2026, besluit Ronald K9): de tagvorm van .tag-solid
      (TT-315) — wit op 5%, 11px, hoek 6px, geen hoofdletters. Wit, vet en
      cursief blijven (projectinstructies §9). Was een grijs vlak, 10px,

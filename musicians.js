@@ -33,7 +33,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       <span><strong>${escHtml(s.song_artist)}</strong> — <span style="color:var(--muted)">${escHtml(s.song_title)}</span></span>
       ${lvl ? `<span class="level-pill">${escHtml(LEVEL_LABELS[lvl])}</span>` : ''}
     </div>`;
-  }).join('');
+  });
 
   // 22-08-2026 (Ronald): het onderste actieblok (Profiel bewerken + het
   // ⋯-menu, TT-119) is weg. Alle drie de acties — wijzigen, band-
@@ -92,7 +92,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     ${m.musician_songs.length ? `
       <div class="profile-songs">
         <div class="profile-songs-title">Repertoire (${m.musician_songs.length} ${m.musician_songs.length === 1 ? 'nummer' : 'nummers'})</div>
-        ${songRows}
+        ${nummerLijstHTML(songRows)}
       </div>` : ''}
     ${profielMediaHTML(m.musician_media)}`;
 }
