@@ -9518,6 +9518,129 @@ window.TT_STUB.fnAntwoord = {};
         check("geen paginafouten in blok 93", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
+        # ────────────────────────────────────────────────────────────
+        # Blok 94 — 26-10-2026 (besluit Ronald, optie 1): een profiel met meer
+        # dan zeven nummers opent ingeklapt tot zeven. De laatste rijen
+        # vervagen, eronder "Alle N nummers". Een tik ergens op de lijst klapt
+        # open, nog een tik klapt in. Repertoire van een muzikant en covers van
+        # een band, ingelogd en uitgelogd. Zeven of minder: geen inklap.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 94 — lange nummerlijst ingeklapt tot zeven")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.evaluate("showView('about')")
+        page.wait_for_timeout(80)
+        d94 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 60) => new Promise(r => setTimeout(r, n)), u = {};
+          const was = { hasOwnProfile, myMusicianId };
+          const nummers = n => Array.from({ length: n }, (_, i) => ({ song_artist: 'Artiest ' + String(i + 1).padStart(2, '0'), song_title: 'Nummer ' + (i + 1), mastery_level: i % 2 ? 'podium' : null }));
+          const muzikant = n => ({ id: 'm9', fname: 'Sanne', username: 'sannedrums', city: 'Den Haag', bio: 'Test', avatar_url: null, age: 17,
+            updated_at: new Date().toISOString(), musician_instruments: [{ instrument: 'Drums', niveau: 3 }], musician_genres: [{ genre: 'Rock' }],
+            musician_songs: nummers(n), musician_media: [{ media_type: 'link', url: 'https://youtu.be/tAGnKpE4Nxk', platform: 'YouTube', in_banner: false }] });
+          const zichtbaar = (vak) => [...vak.querySelectorAll('.profile-song-row')].filter(r => r.getBoundingClientRect().height > 0).length;
+          const meet = (vak) => {
+            const l = vak.querySelector('.nummers-inklap'), regel = l && l.querySelector('.nummers-inklap-regel');
+            const rijen = [...vak.querySelectorAll('.profile-song-row')].filter(r => r.getBoundingClientRect().height > 0);
+            // inkt van een rij: van de bovenkant tot de onderkant van wat erin staat (tekst en label)
+            const inkt = e => { const rs = [...e.children].map(c => c.getBoundingClientRect()); return { top: Math.min(...rs.map(x => x.top)), bottom: Math.max(...rs.map(x => x.bottom)) }; };
+            return { zichtbaar: rijen.length, open: !!(l && l.classList.contains('open')),
+              regel: regel ? [...regel.querySelectorAll('span')].filter(s => s.getBoundingClientRect().width > 0).map(s => s.textContent).join('') : null,
+              aria: regel ? regel.getAttribute('aria-expanded') : null,
+              masker: l ? (getComputedStyle(l.querySelector('.nummers-inklap-rijen')).webkitMaskImage || getComputedStyle(l.querySelector('.nummers-inklap-rijen')).maskImage) : null,
+              draai: regel ? getComputedStyle(regel.querySelector('svg')).transform : null,
+              // afstand tussen twee rijen en van de laatste zichtbare rij tot de regel (tekst tot tekst)
+              rijAfstand: rijen.length > 1 ? [...new Set(rijen.slice(1).map((r, i) => Math.round(inkt(r).top - inkt(rijen[i]).bottom)))] : null,
+              regelAfstand: regel ? Math.round([...regel.querySelectorAll('span')].find(s => s.getBoundingClientRect().width > 0).getBoundingClientRect().top - inkt(rijen[rijen.length - 1]).bottom) : null,
+              tekstHoogte: [regel ? Math.round([...regel.querySelectorAll('span')].find(s => s.getBoundingClientRect().width > 0).getBoundingClientRect().height) : null, Math.round(rijen[0].querySelector('span').getBoundingClientRect().height)],
+              regelMidden: regel ? Math.round((regel.getBoundingClientRect().left + regel.getBoundingClientRect().right) / 2 - (l.getBoundingClientRect().left + l.getBoundingClientRect().right) / 2) : null };
+          };
+          const vak = document.createElement('div');
+          vak.style.cssText = 'width:358px;position:absolute;left:16px;top:0;';
+          document.body.appendChild(vak);
+
+          // 1. Zeven nummers: geen inklap, alle zeven zichtbaar.
+          vak.innerHTML = buildMusicianDetailHTML(muzikant(7), true);
+          u.zeven = { inklap: vak.querySelectorAll('.nummers-inklap').length, zichtbaar: zichtbaar(vak) };
+          // 2. Acht nummers: ingeklapt.
+          vak.innerHTML = buildMusicianDetailHTML(muzikant(8), true);
+          u.acht = meet(vak);
+          // 3. Drieëntwintig nummers, eigen profiel (ingelogd).
+          vak.innerHTML = buildMusicianDetailHTML(muzikant(23), true);
+          u.titel = vak.querySelector('.profile-songs-title').textContent.trim();
+          u.dicht = meet(vak);
+          // Tik op een rij (niet op de regel): open
+          vak.querySelectorAll('.profile-song-row')[2].click(); await w();
+          u.openNaRij = meet(vak);
+          // Tik op een rij onderaan: weer dicht
+          vak.querySelectorAll('.profile-song-row')[20].click(); await w();
+          u.dichtNaRij = meet(vak);
+          // Tik op de regel: één keer wisselen, niet twee keer
+          vak.querySelector('.nummers-inklap-regel').click(); await w();
+          u.openNaRegel = meet(vak);
+          // Tik op een label in de rij: ook wisselen
+          vak.querySelector('.nummers-inklap .level-pill').click(); await w();
+          u.dichtNaLabel = meet(vak);
+          // Toetsenbord: Enter op de regel
+          const knop = vak.querySelector('.nummers-inklap-regel');
+          u.knopIsKnop = knop.tagName === 'BUTTON' && knop.type === 'button';
+          vak.remove();
+
+          // 4. Uitgelogd, muzikant in het profielvenster (zelfde opbouw als ingelogd).
+          hasOwnProfile = false; myMusicianId = null;
+          const vak2 = document.createElement('div');
+          vak2.style.cssText = 'width:358px;position:absolute;left:16px;top:0;';
+          document.body.appendChild(vak2);
+          vak2.innerHTML = buildMusicianDetailHTML(muzikant(12), false, true);
+          u.gastMuzikant = meet(vak2);
+          vak2.remove();
+
+          // 5. Band, uitgelogd: covers op de bandpagina.
+          const band = n => [{ id: 'b7', name: 'Nachtploeg', city: 'Den Haag', description: 'Vier vrienden.',
+            status: 'zoekend', profile_color: null, updated_at: null, avatar_url: null, genres: ['Indie'], niveau: 3,
+            wanted: [], afgeschermd: false, soort: 'covers', pauze: false, contact_id: 'm1', instagram: '', tiktok: null, youtube: '',
+            members: [{ id: 'm1', username: 'jesse', role: 'Oprichter', avatar_url: null, instruments: ['Gitaar'] }],
+            media: [], nummers: [], covers: Array.from({ length: n }, (_, i) => ({ song_title: 'Cover ' + (i + 1), song_artist: 'Band ' + String(i + 1).padStart(2, '0') })), invallers: [] }];
+          S.rpcResults.tt_get_bands_public = () => band(10);
+          await openBandScherm('b7'); await w(120);
+          const bv = document.getElementById('profielSchermContent');
+          u.bandDicht = meet(bv);
+          u.bandTitel = [...bv.querySelectorAll('.profile-media-title')].map(t => t.textContent.trim()).find(t => t.startsWith('Covers'));
+          bv.querySelectorAll('.profile-song-row')[1].click(); await w();
+          u.bandOpen = meet(bv);
+          S.rpcResults.tt_get_bands_public = () => band(7);
+          await openBandScherm('b7'); await w(120);
+          u.bandZeven = { inklap: document.getElementById('profielSchermContent').querySelectorAll('.nummers-inklap').length,
+            zichtbaar: zichtbaar(document.getElementById('profielSchermContent')) };
+          hasOwnProfile = was.hasOwnProfile; myMusicianId = was.myMusicianId;
+          return u;
+        }""")
+        check("zeven nummers: geen inklap, alle zeven zichtbaar", d94["zeven"] == {"inklap": 0, "zichtbaar": 7}, json.dumps(d94["zeven"]))
+        check("acht nummers: ingeklapt tot zeven, \"Alle 8 nummers\"", d94["acht"]["zichtbaar"] == 7 and d94["acht"]["regel"] == "Alle 8 nummers", json.dumps(d94["acht"]))
+        check("23 nummers: titel blijft \"Repertoire (23 nummers)\"", d94["titel"] == "Repertoire (23 nummers)", d94["titel"])
+        check("23 nummers: opent ingeklapt, zeven zichtbaar, \"Alle 23 nummers\", aria-expanded false",
+              d94["dicht"]["zichtbaar"] == 7 and not d94["dicht"]["open"] and d94["dicht"]["regel"] == "Alle 23 nummers" and d94["dicht"]["aria"] == "false", json.dumps(d94["dicht"]))
+        check("ingeklapt vervagen de laatste rijen (masker), opengeklapt niet",
+              "gradient" in (d94["dicht"]["masker"] or "") and (d94["openNaRij"]["masker"] in (None, "none")), json.dumps([d94["dicht"]["masker"], d94["openNaRij"]["masker"]]))
+        check("tik op een rij klapt open: alle 23 zichtbaar, \"Minder\", pijltje gedraaid, aria-expanded true",
+              d94["openNaRij"]["zichtbaar"] == 23 and d94["openNaRij"]["regel"] == "Minder" and d94["openNaRij"]["aria"] == "true" and d94["openNaRij"]["draai"] not in ("none", None), json.dumps(d94["openNaRij"]))
+        check("tik op een rij onderaan klapt weer in", d94["dichtNaRij"]["zichtbaar"] == 7 and not d94["dichtNaRij"]["open"], json.dumps(d94["dichtNaRij"]))
+        check("tik op de regel wisselt één keer (geen dubbele wissel)", d94["openNaRegel"]["open"] and d94["openNaRegel"]["zichtbaar"] == 23, json.dumps(d94["openNaRegel"]))
+        check("tik op een label in de rij wisselt ook", not d94["dichtNaLabel"]["open"] and d94["dichtNaLabel"]["zichtbaar"] == 7, json.dumps(d94["dichtNaLabel"]))
+        check("de regel is een echte knop (toetsenbord)", d94["knopIsKnop"], "")
+        check("16px tussen de rijen en van de laatste rij tot de regel, in beide standen, muzikant en band; regel even hoog als een rijtekst",
+              d94["dicht"]["rijAfstand"] == [16] and d94["openNaRij"]["rijAfstand"] == [16] and d94["dicht"]["regelAfstand"] == 16 and d94["openNaRij"]["regelAfstand"] == 16
+              and d94["bandDicht"]["rijAfstand"] == [16] and d94["bandDicht"]["regelAfstand"] == 16 and d94["dicht"]["tekstHoogte"][0] == d94["dicht"]["tekstHoogte"][1],
+              json.dumps([d94["dicht"], d94["openNaRij"]["rijAfstand"], d94["openNaRij"]["regelAfstand"], d94["bandDicht"]["regelAfstand"]]))
+        check("de regel staat gecentreerd onder de lijst", abs(d94["dicht"]["regelMidden"]) <= 1, str(d94["dicht"]["regelMidden"]))
+        check("uitgelogd, muzikantvenster: ingeklapt, \"Alle 12 nummers\"", d94["gastMuzikant"]["zichtbaar"] == 7 and d94["gastMuzikant"]["regel"] == "Alle 12 nummers", json.dumps(d94["gastMuzikant"]))
+        check("band uitgelogd, 10 covers: ingeklapt tot zeven, \"Alle 10 nummers\", titel ongewijzigd",
+              d94["bandDicht"]["zichtbaar"] == 7 and d94["bandDicht"]["regel"] == "Alle 10 nummers" and d94["bandTitel"] == "Covers (10 nummers)", json.dumps([d94["bandDicht"], d94["bandTitel"]]))
+        check("band: tik op een cover klapt open", d94["bandOpen"]["zichtbaar"] == 10 and d94["bandOpen"]["regel"] == "Minder", json.dumps(d94["bandOpen"]))
+        check("band met zeven covers: geen inklap", d94["bandZeven"] == {"inklap": 0, "zichtbaar": 7}, json.dumps(d94["bandZeven"]))
+        check("geen paginafouten in blok 94", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
         print("\nBlok 8 — elke view opent zonder fout")
         for v in VIEWS:
             naam = v.replace("view-", "")
