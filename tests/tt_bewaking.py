@@ -40,6 +40,7 @@ DREMPELS = {
     "ouder_mail_mislukt": 1,       # eerste mail aan een ouder niet verstuurd (TT-496, 23-10-2026)
     "db_aanroep_mislukt_6u": 1,    # een aanroep van de database naar een Edge Function gaf 400 of hoger (TT-469, 23-10-2026)
     "meldingen_niet_gemaild": 1,   # melding aan privacy@ niet verstuurd
+    "cron_sleutel_in_tekst": 1,    # een cron-taak met een letterlijke sleutel in de tekst (TT-470, 27-10-2026)
     "accounts_zonder_profiel": 3,  # wizard blijft hangen (een enkele is normaal)
 }
 VERWACHTE_CRONTAKEN = 6
