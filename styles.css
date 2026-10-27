@@ -3067,7 +3067,6 @@
     border-radius: var(--radius-field);
     cursor: pointer;
     transition: background 0.15s;
-    animation: slideIn 0.2s ease;
   }
 
   /* TT-153 (25-08-2026): avatar/naam/berichtknop op één regel; badges
@@ -3162,7 +3161,6 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-field);
     cursor: pointer;
-    animation: slideIn 0.2s ease;
   }
   .zoek-kaart-foto {
     position: relative;

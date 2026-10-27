@@ -321,6 +321,19 @@ function naamMatcht(term, ...velden) {
 // bezoeker en ingelogde gelijk. De functie geeft alleen id en weergavenaam
 // terug, nooit fname of lname. Mislukt de vraag, dan blijft het object zonder
 // weergavenaam en toont displayNameOf() de gebruikersnaam.
+// TT-532: een lijst id's gaat in het webadres mee; vanaf ongeveer 650 id's
+// weigert de database de vraag (gemeten 27-10-2026). Daarom in delen van 200,
+// tegelijk. `vraag(deel)` geeft één databasevraag; het antwoord heeft de vorm
+// { data, error } van één vraag.
+async function inDelen(ids, vraag) {
+  const delen = [];
+  for (let i = 0; i < ids.length; i += 200) delen.push(ids.slice(i, i + 200));
+  const uit = await Promise.all(delen.map(vraag));
+  const fout = uit.find(r => r.error);
+  if (fout) return { data: null, error: fout.error };
+  return { data: uit.flatMap(r => r.data || []), error: null };
+}
+
 // TT-367: `vraag` is een al gestarte vraag naar dezelfde (of meer) id's.
 async function weergavenamenToevoegen(rijen, vraag) {
   const ids = (rijen || []).map(r => r && r.id).filter(Boolean);

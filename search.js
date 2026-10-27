@@ -716,13 +716,13 @@ async function zoekMuzikantenOphalen(radius, origin) {
     // B-01 tweede stap (18-08-2026): birth_date staat niet in deze select. De
     // leeftijd komt apart binnen via tt_musicians_ages().
     const [{ data, error }, { data: ages, error: ageErr }] = await Promise.all([
-      db.from('musicians').select(`
+      inDelen(ids, deel => db.from('musicians').select(`
       id, weergavenaam, username, city, zip, bio, goal,
       avatar_url,
       musician_instruments(instrument, niveau),
       musician_genres(genre),
       musician_songs(song_title, song_artist, mastery_level)
-    `).in('id', ids),
+    `).in('id', deel)), // TT-532
       db.rpc('tt_musicians_ages', { ids })]);
     if (error) throw error;
     musicians = data || [];
@@ -779,7 +779,7 @@ async function zoekBandsOphalen(radius, origin) {
     actief = actiefStandVraag('band', ids); // TT-367: tegelijk
     // TT-385 fase 5: de bandfoto en de invallers voor de bandkaart. De leden
     // alleen om te tellen (bandStatusLabel()); geen namen.
-    const { data, error } = await db.from('bands').select(`id, name, city, genres, status, niveau, avatar_url, band_members(status), band_wanted(instrument), band_invallers(instrument, datum)`).in('id', ids);
+    const { data, error } = await inDelen(ids, deel => db.from('bands').select(`id, name, city, genres, status, niveau, avatar_url, band_members(status), band_wanted(instrument), band_invallers(instrument, datum)`).in('id', deel)); // TT-532
     if (error) throw error;
     bands = data || [];
   } else {
@@ -1604,11 +1604,11 @@ async function runSetlistSearch(straalOverride) {
     let musicians;
     const actief = actiefStandVraag('muzikant', ids); // TT-367: tegelijk met de gegevens
     if (hasOwnProfile) {
-      const { data, error } = await db.from('musicians').select(`
+      const { data, error } = await inDelen(ids, deel => db.from('musicians').select(`
         id, weergavenaam, username, city, zip, avatar_url,
         musician_songs(song_title, song_artist, mastery_level),
         musician_instruments(instrument, niveau)
-      `).in('id', ids);
+      `).in('id', deel)); // TT-532
       if (error) throw error;
       musicians = data;
     } else {
@@ -1911,7 +1911,7 @@ async function gedeeldMuzikantenLaden(ids, metNummers) {
     const velden = metNummers
       ? 'id, weergavenaam, username, city, musician_songs(song_title, song_artist, mastery_level)'
       : 'id, weergavenaam, username, city, avatar_url, musician_instruments(instrument)';
-    const { data, error } = await db.from('musicians').select(velden).in('id', ids);
+    const { data, error } = await inDelen(ids, deel => db.from('musicians').select(velden).in('id', deel)); // TT-532
     if (error) throw error;
     return (data || []).map(m => ({ ...m, musician_songs: m.musician_songs || [] }));
   }
