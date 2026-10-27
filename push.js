@@ -161,34 +161,31 @@ function ttSeintjeVraagNietNu() {
   if (vraag) vraag.remove();
 }
 
-// Instellingen → het blok "Seintje op dit toestel".
+// Instellingen → het blok "Seintje op dit toestel": schakelaar Uit · Aan met
+// een korte uitleg eronder (TT-520 deel 2, opdracht Ronald 27-10-2026; was een
+// regel "Aan. …" met een knop "Zet uit"). Staan meldingen in de browser uit,
+// dan zegt de uitleg waar je ze aanzet.
 async function vulPushInInstellingen() {
   const blok = document.getElementById('pushBlok');
   const tekst = document.getElementById('pushTekst');
-  const knop = document.getElementById('pushKnop');
-  if (!blok || !tekst || !knop) return;
+  if (!blok || !tekst) return;
   const stand = await ttSeintjeStand();
   blok.style.display = stand === 'nietBeschikbaar' ? 'none' : '';
-  if (stand === 'aan') {
-    tekst.textContent = 'Aan. Je krijgt een stil seintje met een stip op het icoon bij nieuwe matches.';
-    knop.textContent = 'Zet uit'; knop.style.display = ''; knop.onclick = pushSchakelen;
-  } else if (stand === 'geblokkeerd') {
-    tekst.textContent = 'Meldingen staan in je browser uit. Zet ze daar aan om een seintje te krijgen.';
-    knop.style.display = 'none';
-  } else if (stand === 'uit') {
-    tekst.textContent = 'Uit. Zet aan voor een stil seintje met een stip op het icoon bij nieuwe matches.';
-    knop.textContent = 'Zet aan'; knop.style.display = ''; knop.onclick = pushSchakelen;
-  }
+  document.querySelectorAll('#pushControl .segmented-btn').forEach(k =>
+    k.classList.toggle('selected', k.dataset.mode === (stand === 'aan' ? 'aan' : 'uit')));
+  tekst.textContent = stand === 'geblokkeerd'
+    ? 'Meldingen staan uit in je browser. Zet ze aan in de instellingen van je browser, bij Meldingen.'
+    : 'Een stil seintje met een stip op het icoon, bij nieuwe matches. Daarvoor moeten meldingen ook in je browser aanstaan.';
 }
-async function pushSchakelen() {
+async function pushSchakelen(aan) {
   const stand = await ttSeintjeStand();
-  if (stand === 'aan') {
+  if (aan === (stand === 'aan')) return;
+  if (!aan) {
     const ok = await ttSeintjeUitzetten();
-    showToast(ok ? 'Het seintje staat uit' : friendlyErrorMessage(null, 'het seintje uitzetten'));
+    if (!ok) showToast(friendlyErrorMessage(null, 'het seintje uitzetten'));
   } else {
     const uitslag = await ttSeintjeAanzetten();
-    if (uitslag === 'aan') showToast('Je krijgt een seintje bij nieuwe matches');
-    else if (uitslag === 'geblokkeerd') showToast('Meldingen staan in je browser uit. Zet ze daar aan en probeer het opnieuw.');
+    if (uitslag === 'geblokkeerd') showToast('Meldingen staan uit in je browser. Zet ze daar aan en probeer het opnieuw.');
     else if (uitslag === 'fout') showToast(friendlyErrorMessage(null, 'het seintje aanzetten'));
   }
   vulPushInInstellingen();

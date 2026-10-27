@@ -166,11 +166,13 @@ function naBlokkadeWijziging(id) {
 // de nul door een blokkade ontstaat.
 function veiligheidVerversZoeklijsten() {
   try {
-    if (typeof lastMusicianResults !== 'undefined' && lastMusicianResults.length) {
-      const over = lastMusicianResults.filter(m => !isGeblokkeerd(m.id));
-      if (over.length !== lastMusicianResults.length) {
-        lastMusicianResults = over;
-        if (over.length) renderCappedMusicianResults(); else runSearch();
+    // TT-520: het resultaat van Muzikanten heeft muzikanten en bands; een
+    // blokkade gaat over een muzikant, dus alleen die vallen eruit.
+    if (typeof lastZoekResultaten !== 'undefined' && lastZoekResultaten.length) {
+      const over = lastZoekResultaten.filter(x => x.soort === 'band' || !isGeblokkeerd(x.id));
+      if (over.length !== lastZoekResultaten.length) {
+        lastZoekResultaten = over;
+        if (over.length) renderCappedZoekResultaten(); else runSearch();
       }
     }
     if (typeof lastSetlistResults !== 'undefined' && lastSetlistResults.length) {
@@ -337,7 +339,7 @@ async function renderGeblokkeerdLijst() {
       'Je blokkeert niemand',
       'Blokkeren kan via het ⋯-menu op een profiel of in een gesprek.',
       'Muzikanten zoeken →',
-      "closeGeblokkeerdModal();showView('search')"
+      "closeGeblokkeerdModal();openZoekMuzikanten()"
     );
     return;
   }

@@ -224,17 +224,8 @@ function viewUitHash() {
   return v;
 }
 
-// TT-279: het zoektabblad overleeft verversen. Alleen voor deze kijker, in
-// dit tabblad van de browser; lukt opslaan niet, dan begint Zoeken bij
-// Muzikant, zoals voorheen.
-function bewaarZoekTabblad(mode) {
-  try { sessionStorage.setItem('tt-zoektabblad', mode); } catch (e) { /* geen opslag: geen herstel */ }
-}
-function herstelZoekTabblad() {
-  let mode = null;
-  try { mode = sessionStorage.getItem('tt-zoektabblad'); } catch (e) { return; }
-  if (mode && mode !== currentSearchMode && ZOEK_TABBLADEN.includes(mode)) setSearchMode(mode);
-}
+// TT-279: het zoekscherm overleeft verversen. TT-520: bewaarZoekStand() en
+// herstelZoekStand() staan nu in search.js, bij de drie schermen van Zoeken.
 
 // TT-341 stap 3 (26-09-2026, besluit Ronald): licht of donker. De keuze zelf
 // en het toepassen staan bovenin index.html (lichtDonkerKeuze(),
@@ -439,7 +430,7 @@ async function appInit() {
       // 'redirect': verversen voegt geen extra stap toe aan de geschiedenis.
       if (gatedHashViews.includes(hashView) && !currentUser) showView('auth', 'redirect');
       else showView(hashView, 'redirect');
-      if (hashView === 'search') herstelZoekTabblad();
+      if (hashView === 'search') herstelZoekStand();
     }
   } catch(e) {
     logCaught('appInit', e);
@@ -765,34 +756,28 @@ function closeSearchPrefsModal() {
 
 // selectDigestFrequency (zonder klik, bij het openen) vs. setDigestFrequency
 // (bij een klik) — zelfde onderscheid als elders tussen "stand tonen" en
-// "stand wijzigen".
+// "stand wijzigen". Sinds 27-10-2026 (TT-520 deel 2, opdracht Ronald) slaat
+// een klik meteen op, zoals elke andere keuze in dit venster; de knop
+// Opslaan is weg. Mislukt het, dan springt de keuze terug.
 function selectDigestFrequency(value) {
   digestFrequencyValue = value;
   document.querySelectorAll('#digestFrequencyControl .segmented-btn').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.mode === value);
   });
 }
-function setDigestFrequency(el, mode) {
-  digestFrequencyValue = mode;
-  document.querySelectorAll('#digestFrequencyControl .segmented-btn').forEach(btn => btn.classList.remove('selected'));
-  el.classList.add('selected');
-}
-
-// TT-232 (09-09-2026): schrijft alleen de e-mailvoorkeur. Sinds TT-327 is dat
-// nog één veld.
-async function saveSearchPrefs() {
-  const mid = await getMyMusicianId();
-  if (!mid) return;
+async function setDigestFrequency(el, mode) {
+  const oud = digestFrequencyValue;
+  if (mode === oud) return;
+  selectDigestFrequency(mode);
   try {
-    const { error } = await db.from('musicians').update({
-      email_digest_frequency: digestFrequencyValue
-    }).eq('id', mid);
+    const mid = await getMyMusicianId();
+    if (!mid) throw new Error('geen profiel');
+    const { error } = await db.from('musicians').update({ email_digest_frequency: mode }).eq('id', mid);
     if (error) throw error;
-    closeSearchPrefsModal();
-    showToast('E-mailvoorkeuren opgeslagen');
   } catch (e) {
-    logCaught('saveSearchPrefs', e);
-    showToast(friendlyErrorMessage(e, 'je zoekvoorkeuren opslaan'));
+    logCaught('setDigestFrequency', e);
+    selectDigestFrequency(oud);
+    showToast(friendlyErrorMessage(e, 'je e-mailvoorkeur opslaan'));
   }
 }
 
@@ -842,32 +827,16 @@ async function configureSearchAccess() {
   // sinds TT-U13 "Kaarten", en een eigen keuze uit localStorage gaat voor.
   syncViewToggles();
 
-  // TT-236 (10-09-2026): hier werd het instrumentfilter op de bandtab
-  // verborgen zonder eigen profiel. Dat is vervallen — het blok staat nu
-  // altijd, net als bij Muzikanten. De klasse .band-instrument-filter bestaat
-  // niet meer.
-  // TT-232 (09-09-2026): "Beste match" blijft bij Muzikanten altijd staan.
-  // De punten komen nu uit de ingevulde filters, niet uit je eigen profiel,
-  // dus het zoekscherm werkt uitgelogd precies hetzelfde als ingelogd.
-  // Bij Bands geldt dat (nog) niet: die score komt nog uit de database.
-  document.querySelectorAll('.sort-score-option').forEach(el => {
-    el.style.display = hasOwnProfile ? '' : 'none';
-  });
+  // TT-520 (26-10-2026): "Beste match" staat er altijd, ook voor bands en
+  // zonder eigen profiel. De punten komen uit de ingevulde filters, niet uit
+  // je eigen profiel (TT-232); bands volgen sinds TT-520 dezelfde regel. Het
+  // verbergen van Beste match bij Bands zonder profiel is daarmee vervallen.
 
-  if (!hasOwnProfile) {
-    if (bandSearchSortMode === 'score') selectSortModeByValue('filterBandSortMode', 'distance');
-  }
-  // TT-236: het zichtbare veld de gezette waarde laten tonen. Zonder deze
-  // regel blijft er "Beste match" staan terwijl er op afstand gesorteerd is.
-  refreshChoiceField('band-sorteren');
-
-  // Eigen plaats alvast invullen bij alle drie de zoektabbladen (Muzikanten,
-  // Bands, Setlist) als je een eigen profiel hebt — anders staat het Plaats-
-  // veld leeg terwijl de app achter de schermen allang je eigen postcode als
-  // vertrekpunt voor de straal gebruikt, wat verwarrend oogt. Alleen invullen
-  // als het veld nog leeg is; heb je zelf al iets getypt, dan blijft dat staan.
-  // Bevinding van Ronald (05-08-2026): dit gebeurde al voor Setlist, maar was
-  // nooit doorgevoerd naar de andere twee tabbladen — nu gelijkgetrokken.
+  // Eigen plaats alvast invullen bij Muzikanten en Mix & Match als je een
+  // eigen profiel hebt — anders staat het Plaats-veld leeg terwijl de app
+  // achter de schermen allang je eigen postcode als vertrekpunt gebruikt.
+  // Alleen als het veld nog leeg is; heb je zelf al iets getypt, dan blijft
+  // dat staan (bevinding Ronald, 05-08-2026).
   if (hasOwnProfile) {
     const city = await getMyCity();
     if (city) {
@@ -877,353 +846,37 @@ async function configureSearchAccess() {
         updateSearchCityStatus('filterCity', 'filterCityStatus');
       }
 
-      const bandCityField = document.getElementById('filterBandCity');
-      if (bandCityField && !bandCityField.value.trim()) {
-        bandCityField.value = city;
-        updateSearchCityStatus('filterBandCity', 'filterBandCityStatus');
-      }
-
       const setlistCityField = document.getElementById('filterSetlistCity');
       if (setlistCityField && !setlistCityField.value.trim()) {
         setlistCityField.value = city;
         updateSearchCityStatus('filterSetlistCity', 'filterSetlistCityStatus');
       }
-
-      // TT-289: "Maak setlist" heeft een eigen Plaats-veld, zelfde regel.
-      const gedeeldCityField = document.getElementById('filterGedeeldCity');
-      if (gedeeldCityField && !gedeeldCityField.value.trim()) {
-        gedeeldCityField.value = city;
-        updateSearchCityStatus('filterGedeeldCity', 'filterGedeeldCityStatus');
-      }
     }
   }
 
-  initBandSearchFilters();
   initSetlistSearchFilters();
 
-  // V-24 (13-08-2026, in overleg vastgesteld/TT-U17): kan de Setlist-tab
-  // wisselen (verschijnen/verdwijnen), doe dat vóór de tabbladdispatch
-  // hieronder — anders roepen we runSetlistSearch() nog aan terwijl de tab
-  // net onzichtbaar is geworden (of andersom).
-  await updateSetlistTabVisibility();
-
-  // TT-10 (05-08-2026): bij elk bezoek aan "Zoeken" meteen een resultaat tonen
-  // voor het tabblad dat op dat moment actief is, i.p.v. te wachten tot
-  // iemand zelf op een zoekknop klikt.
-  if (currentSearchMode === 'musician') runSearch();
-  else if (currentSearchMode === 'band') runBandSearch();
-  else if (currentSearchMode === 'setlist') setlistZoekVerversen(); // TT-289
+  // TT-10 (05-08-2026): bij elk bezoek aan Muzikanten of Mix & Match meteen
+  // een resultaat tonen. Het startscherm (TT-520) zoekt niets.
+  if (zoekScherm === 'muzikanten') runSearch();
+  else if (zoekScherm === 'mixmatch') setlistZoekVerversen(); // TT-289
 }
 
-// V-24 (13-08-2026, TT-U17): de Setlist-tab werd verborgen tot iemand drie
-// eigen nummers had — de aanname was dat setlist-zoeken op eigen repertoire
-// werkt. TT-158 (27-08-2026, Ronald): die drempel is losgelaten.
-// **Geverifieerd:** runSetlistSearch() zoekt op setlistWantedSongs, een
-// handmatig samengestelde lijst (Artiest → Nummer, zie de toelichting boven
-// runSetlistSearch()) — niet op het eigen repertoire van de zoeker. De
-// eigen-nummers-drempel had dus nooit een functionele grond. De tab is nu
-// voor iedereen altijd zichtbaar, ongeacht login of eigen repertoire.
-async function updateSetlistTabVisibility() {
-  const btn = document.getElementById('searchModeSetlistBtn');
-  if (!btn) return;
-  btn.style.display = '';
-}
-
-// Zet een sorteertoggle-grid programmatisch op een waarde (zonder klik-event),
-// nodig omdat "Beste match" verborgen wordt zodra er geen eigen profiel is.
+// Zet een sorteerkeuze programmatisch op een waarde (zonder klik-event).
+// TT-232/TT-236: een keuzelijst met een verborgen <select> als bron van
+// waarheid. TT-520: alleen nog Volgorde bij Muzikanten; de schakelbalk-tak
+// en de keuze bij Bands zijn vervallen.
 function selectSortModeByValue(gridId, value) {
   const grid = document.getElementById(gridId);
   if (!grid) return;
-  // TT-232 (09-09-2026): bij Muzikanten is dit een keuzelijst geworden.
-  // TT-236 (10-09-2026): bij Bands nu ook. De schakelbalk-tak hieronder blijft
-  // staan zolang een ander scherm die vorm nog gebruikt.
-  if (grid.tagName === 'SELECT') {
-    grid.value = value;
-    if (gridId === 'filterSortMode') searchSortMode = value;
-    if (gridId === 'filterBandSortMode') bandSearchSortMode = value;
-    return;
-  }
-  const target = Array.from(grid.querySelectorAll('.segmented-btn')).find(t => t.getAttribute('data-mode') === value);
-  if (!target) return;
-  grid.querySelectorAll('.segmented-btn').forEach(t => t.classList.remove('selected'));
-  target.classList.add('selected');
+  grid.value = value;
   if (gridId === 'filterSortMode') searchSortMode = value;
-  if (gridId === 'filterBandSortMode') bandSearchSortMode = value;
 }
 
-// TT-368 (29-09-2026): de tweede parameter (de richting van een veeg) is weg.
-// Een veeg schuift de panelen nu zelf mee met de vinger en roept deze functie
-// pas aan als het nieuwe paneel al op zijn plek staat. Zie initZoekVeeg().
-function setSearchMode(mode) {
-  currentSearchMode = mode;
-  bewaarZoekTabblad(mode); // TT-279
-  const isMusician = mode === 'musician';
-  const isBand     = mode === 'band';
-  const isSetlist  = mode === 'setlist';
-  document.getElementById('searchModeMusician').style.display = isMusician ? 'block' : 'none';
-  document.getElementById('searchModeBand').style.display = isBand ? 'block' : 'none';
-  document.getElementById('searchModeSetlist').style.display = isSetlist ? 'block' : 'none';
-  document.getElementById('searchModeMusicianBtn').classList.toggle('active', isMusician);
-  document.getElementById('searchModeBandBtn').classList.toggle('active', isBand);
-  document.getElementById('searchModeSetlistBtn').classList.toggle('active', isSetlist);
-  if (isBand) initBandSearchFilters();
-  if (isSetlist) initSetlistSearchFilters();
-  if (isSetlist && setlistSoort === 'nummers') initGedeeldSearchFilters(); // TT-289
-
-  // TT-10: bij het wisselen van tabblad meteen een resultaat tonen (met de
-  // filters die op dat tabblad al stonden), i.p.v. een leeg scherm totdat er
-  // zelf gezocht wordt. Setlist heeft geen zinvolle "iedereen"-status zonder
-  // minstens 1 opgegeven nummer, en "Maak setlist" niet zonder 2 gekozen
-  // muzikanten — daar laten we de bestaande lege staat staan.
-  if (isMusician) runSearch();
-  else if (isBand) runBandSearch();
-  else if (isSetlist) setlistZoekVerversen(); // TT-289: per stand
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// TT-170 — vegen tussen de drie zoektabbladen
-// ═══════════════════════════════════════════════════════════════════════════
-// Besluit Ronald, 10-09-2026: een veeg naar links toont het tabblad rechts,
-// een veeg naar rechts het tabblad links. De inhoud volgt de vinger. De
-// eerdere afspraak "veeg naar links = terug" (TT-168-wireframe) vervalt.
-//
-// TT-368 (29-09-2026, Ronald: "doe wat gebruikelijk is"): tot vandaag volgde
-// de inhoud de vinger níét. Er bewoog niets tot de vinger losliet, en dan
-// schoof het nieuwe paneel 24px in. Nu werkt het zoals de tabbladen in een
-// Android-app:
-//  - Het paneel schuift mee met de vinger. Het buurtabblad schuift er direct
-//    naast mee, zodat je ziet wat er komt.
-//  - Loslaten na meer dan een derde van de breedte, of met een snelle veeg,
-//    laat het doorglijden naar het buurtabblad. Anders veert het terug.
-//  - Aan de uiteinden beweegt er niets — geen doorlopende cyclus (TT-170).
-//  - Neemt het toestel de veeg over (de terugveeg van Android vanaf de rand
-//    geeft `touchcancel`), dan veert het paneel terug.
-//
-// Het buurpaneel staat tijdens het slepen los boven de pagina
-// (`position: absolute`), op de hoogte waar je nu kijkt, en is nooit hoger
-// dan het scherm. De pagina zelf deelt niets opnieuw in; dat was in TT-170 de
-// reden om dit niet te bouwen (panelen van verschillende hoogte).
-//
-// Alles loopt via `transform`, dus via de grafische kaart, en de luisteraars
-// blijven passief (TT-256). Het tegenhouden van horizontaal pannen doet CSS
-// met `touch-action: pan-y pinch-zoom` op #view-search.
-//
-// Les uit TT-U21 (het niveau-gebaar): nooit touch-action:none op een groot
-// vlak. Deze code laat het toestel gewoon scrollen en kiest pas een richting
-// zodra de vinger duidelijk horizontaal beweegt.
-const ZOEK_TABBLADEN = ['musician', 'band', 'setlist'];
-const ZOEK_PANEEL_IDS = { musician: 'searchModeMusician', band: 'searchModeBand', setlist: 'searchModeSetlist' };
-const VEEG_VERHOUDING  = 1.5;  // horizontaal moet 1,5x groter zijn dan verticaal
-const VEEG_AANDEEL     = 0.35; // loslaten voorbij dit deel van de breedte = doorglijden
-const VEEG_SNELHEID    = 0.4;  // px per ms; een snelle veeg glijdt ook door
-const VEEG_SNEL_MIN_PX = 30;   // ... mits de vinger minstens zo ver ging, vanaf het neerzetten
-const VEEG_GLIJ_MS     = 260;  // hele breedte; een kortere rest glijdt sneller
-
-let veeg = null; // de lopende veeg, of null
-
-// Een veeg telt niet als er iets anders overheen ligt, als de vinger in een
-// aangetikt tekstveld begint, of als het element eronder zelf horizontaal scrolt.
-function veegGeblokkeerd(doel) {
-  if (!doel || !doel.closest) return true;
-  // Een open modal of wiel-bladwijzer ligt boven op het zoekscherm.
-  if (document.querySelector('.modal-overlay.visible')) return true;
-  // TT-280 (16-09-2026, Ronald): alleen in een veld dat al is aangetikt,
-  // sleept de vinger de cursor. Over elk ander veld heen wisselt een veeg
-  // gewoon van tabblad; de tik op het veld is het signaal om te gaan typen.
-  const veld = doel.closest('input, textarea, select, [contenteditable="true"]');
-  if (veld && veld === document.activeElement) return true;
-  // Een eigen horizontale scroller (bijv. een brede tabel) houdt de veeg.
-  let el = doel;
-  while (el && el !== document.body) {
-    if (el.scrollWidth > el.clientWidth + 1) {
-      const overloop = getComputedStyle(el).overflowX;
-      if (overloop === 'auto' || overloop === 'scroll') return true;
-    }
-    el = el.parentElement;
-  }
-  return false;
-}
-
-function veegMagBewegen() {
-  return !window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-// Zet het buurpaneel klaar naast het huidige: zichtbaar, los van de pagina,
-// op de hoogte waar de gebruiker nu kijkt.
-function veegBuurKlaarzetten(v, richting) {
-  if (v.buur && v.buurRichting === richting) return;
-  veegBuurOpruimen(v);
-  const nu = ZOEK_TABBLADEN.indexOf(currentSearchMode);
-  const doelIndex = richting < 0 ? nu + 1 : nu - 1; // vinger naar links → tabblad rechts
-  if (nu === -1 || doelIndex < 0 || doelIndex >= ZOEK_TABBLADEN.length) {
-    v.buur = null; v.buurRichting = richting; v.doel = null;
-    return;
-  }
-  const buur = document.getElementById(ZOEK_PANEEL_IDS[ZOEK_TABBLADEN[doelIndex]]);
-  if (!buur) { v.buur = null; v.buurRichting = richting; v.doel = null; return; }
-  const viewRect = v.view.getBoundingClientRect();
-  const paneelRect = v.paneel.getBoundingClientRect();
-  const kopOnder = document.querySelector('.app-topbar')?.getBoundingClientRect().bottom || 0;
-  const zichtTop = Math.max(paneelRect.top, kopOnder);
-  v.view.style.position = 'relative'; // alleen tijdens het slepen, zie veegBuurOpruimen()
-  const s = buur.style;
-  s.display = 'block';
-  s.position = 'absolute';
-  s.left = '0';
-  s.right = '0';
-  s.top = (zichtTop - viewRect.top) + 'px';
-  s.height = Math.max(0, window.innerHeight - zichtTop) + 'px';
-  s.overflow = 'hidden';
-  s.willChange = 'transform';
-  s.pointerEvents = 'none';
-  v.buur = buur;
-  v.buurRichting = richting;
-  v.doel = ZOEK_TABBLADEN[doelIndex];
-  v.verschuiving = Math.max(0, kopOnder - paneelRect.top); // hoe ver de gebruiker het paneel in is
-}
-
-function veegBuurOpruimen(v) {
-  if (!v.buur) return;
-  const s = v.buur.style;
-  s.display = 'none';
-  ['position', 'left', 'right', 'top', 'height', 'overflow', 'willChange',
-   'pointerEvents', 'transform', 'transition'].forEach(k => { s[k] = ''; });
-  v.view.style.position = '';
-  v.buur = null;
-}
-
-function veegTekenen(v) {
-  v.frame = 0;
-  if (!v.buur) { v.paneel.style.transform = ''; return; } // uiteinde: niets beweegt
-  const w = v.breedte;
-  v.paneel.style.transform = `translate3d(${v.dx}px,0,0)`;
-  v.buur.style.transform = `translate3d(${v.dx + (v.buurRichting < 0 ? w : -w)}px,0,0)`;
-}
-
-// Laat beide panelen naar hun eindplek glijden en roept daarna klaar() aan.
-function veegGlijden(v, doorglijden, klaar) {
-  const w = v.breedte;
-  const eindPaneel = doorglijden ? (v.buurRichting < 0 ? -w : w) : 0;
-  const eindBuur   = doorglijden ? 0 : (v.buurRichting < 0 ? w : -w);
-  const rest = Math.abs(eindPaneel - v.dx);
-  const ms = veegMagBewegen() ? Math.round(Math.max(120, Math.min(VEEG_GLIJ_MS, (rest / w) * VEEG_GLIJ_MS))) : 0;
-  if (ms === 0) { klaar(); return; }
-  const overgang = `transform ${ms}ms cubic-bezier(0.2, 0, 0, 1)`;
-  v.paneel.style.transition = overgang;
-  v.paneel.style.transform = `translate3d(${eindPaneel}px,0,0)`;
-  if (v.buur) {
-    v.buur.style.transition = overgang;
-    v.buur.style.transform = `translate3d(${eindBuur}px,0,0)`;
-  }
-  let gedaan = false;
-  const afronden = () => { if (gedaan) return; gedaan = true; klaar(); };
-  v.paneel.addEventListener('transitionend', afronden, { once: true });
-  setTimeout(afronden, ms + 40); // vangnet: transitionend blijft soms uit
-}
-
-function veegPaneelHerstellen(paneel) {
-  paneel.style.transform = '';
-  paneel.style.transition = '';
-  paneel.style.willChange = '';
-}
-
-function initZoekVeeg() {
-  const view = document.getElementById('view-search');
-  if (!view) return;
-
-  view.addEventListener('touchstart', (e) => {
-    if (veeg && veeg.glijdt) return;               // de vorige veeg glijdt nog uit
-    veeg = null;
-    if (e.touches.length !== 1) return;          // knijpen is geen veeg
-    if (veegGeblokkeerd(e.target)) return;
-    const paneel = document.getElementById(ZOEK_PANEEL_IDS[currentSearchMode]);
-    if (!paneel) return;
-    const t = e.touches[0];
-    veeg = {
-      view, paneel, x0: t.clientX, startX: t.clientX, startY: t.clientY, dx: 0,
-      horizontaal: null, breedte: view.clientWidth || window.innerWidth,
-      buur: null, buurRichting: 0, doel: null, frame: 0, glijdt: false,
-      sporen: [{ x: t.clientX, t: performance.now() }]
-    };
-  }, { passive: true });
-
-  view.addEventListener('touchmove', (e) => {
-    const v = veeg;
-    if (!v || v.glijdt) return;
-    if (e.touches.length !== 1) { veegAfbreken(); return; }
-    const t = e.touches[0];
-    const dx = t.clientX - v.startX;
-    const dy = t.clientY - v.startY;
-    if (v.horizontaal === null) {
-      // Richting vastzetten zodra de vinger ver genoeg is voor een uitspraak.
-      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-      v.horizontaal = Math.abs(dx) > Math.abs(dy) * VEEG_VERHOUDING;
-      if (!v.horizontaal) { veeg = null; return; }  // verticaal: laat scrollen
-      v.startX = t.clientX;                        // geen sprong van 10px bij de start
-      v.paneel.style.willChange = 'transform';
-    }
-    v.dx = t.clientX - v.startX;
-    const nu = performance.now();
-    v.sporen.push({ x: t.clientX, t: nu });
-    while (v.sporen.length > 2 && nu - v.sporen[0].t > 100) v.sporen.shift();
-    if (v.dx !== 0) veegBuurKlaarzetten(v, v.dx < 0 ? -1 : 1);
-    if (!v.frame) v.frame = requestAnimationFrame(() => veegTekenen(v));
-    // TT-256 (11-09-2026): geen `e.preventDefault()` hier. Een niet-passieve
-    // touchmove dwingt de browser bij elke vingerbeweging te wachten op
-    // JavaScript, ook bij gewoon verticaal scrollen. Het tegenhouden gebeurt
-    // vooraf in CSS met `touch-action: pan-y pinch-zoom` op #view-search.
-  }, { passive: true });
-
-  view.addEventListener('touchend', (e) => {
-    const v = veeg;
-    if (!v || v.glijdt) return;
-    if (!v.horizontaal) { veeg = null; return; }
-    if (v.frame) { cancelAnimationFrame(v.frame); veegTekenen(v); }
-    // Het loslaatpunt telt mee: wie stilhield en dan losliet, veegde niet snel.
-    const los = e.changedTouches && e.changedTouches[0];
-    const nuT = performance.now();
-    v.sporen.push({ x: los ? los.clientX : v.startX + v.dx, t: nuT });
-    while (v.sporen.length > 2 && nuT - v.sporen[0].t > 100) v.sporen.shift();
-    const eerste = v.sporen[0], laatste = v.sporen[v.sporen.length - 1];
-    const tijd = laatste.t - eerste.t;
-    const snelheid = tijd > 0 ? (laatste.x - eerste.x) / tijd : 0;
-    const zelfdeKant = Math.sign(snelheid) === Math.sign(v.dx);
-    const doorglijden = !!v.buur && v.doel && (
-      Math.abs(v.dx) > v.breedte * VEEG_AANDEEL ||
-      (zelfdeKant && Math.abs(snelheid) > VEEG_SNELHEID && Math.abs(laatste.x - v.x0) > VEEG_SNEL_MIN_PX));
-    v.glijdt = true;
-    veegGlijden(v, doorglijden, () => {
-      const doel = v.doel, buur = v.buur, verschuiving = v.verschuiving || 0;
-      veegPaneelHerstellen(v.paneel);
-      veegBuurOpruimen(v);
-      veeg = null;
-      if (!doorglijden) return;
-      setSearchMode(doel);
-      // Het nieuwe paneel staat nu op de plek van het oude. Kijkt de gebruiker
-      // al een stuk het paneel in, dan scrollen we zo ver dat zijn bovenkant
-      // precies onder de kop staat — daar stond hij tijdens het slepen ook.
-      // Zo springt er niets. Stond de bovenkant nog in beeld, dan blijft alles
-      // staan.
-      if (verschuiving > 0 && buur) {
-        const kopOnder = document.querySelector('.app-topbar')?.getBoundingClientRect().bottom || 0;
-        const y = window.scrollY + buur.getBoundingClientRect().top - kopOnder;
-        window.scrollTo({ top: Math.max(0, y), behavior: 'instant' });
-      }
-    });
-  }, { passive: true });
-
-  view.addEventListener('touchcancel', veegAfbreken, { passive: true });
-}
-
-// Het toestel nam de veeg over, of er kwam een tweede vinger bij: terugveren.
-function veegAfbreken() {
-  const v = veeg;
-  if (!v || v.glijdt) return;
-  if (v.frame) cancelAnimationFrame(v.frame);
-  if (!v.horizontaal || v.dx === 0) { veegPaneelHerstellen(v.paneel); veegBuurOpruimen(v); veeg = null; return; }
-  v.glijdt = true;
-  veegGlijden(v, false, () => { veegPaneelHerstellen(v.paneel); veegBuurOpruimen(v); veeg = null; });
-}
+// TT-520 (26-10-2026, akkoord Ronald, sessie 18): vegen tussen de
+// zoektabbladen (TT-170, TT-368) is vervallen, met de tabbladen zelf. Muzikant,
+// Band en Setlist zijn nu het startscherm Zoeken met twee tegels; zie
+// zoekScherm in search.js.
 
 // De History API (pushState/replaceState) kan een SecurityError gooien in
 // sandbox-achtige omgevingen zonder een "normale" document-URL — bijv. een
@@ -1297,6 +950,7 @@ function heeftTerugLaag() {
   if (draad && draad.style.display !== 'none' && activeConversationId) return true;
   if (activeTegelScreen !== 'overview') return true;
   if (bandWizardOpen()) return true; // TT-385 fase 4
+  if (huidigeView === 'search' && zoekScherm !== 'start') return true; // TT-520
   return false;
 }
 // Scherm los van de onderbalk, waar de toestelknop de app mag verlaten: de
@@ -1532,6 +1186,12 @@ function showView(view, mode, extra) {
   // TT-410b: terug van een profiel naar Zoeken laat de resultaten staan. Zoeken
   // laadt bij het openen opnieuw (TT-10); met het profiel als scherm zou elke
   // stap terug de lijst verversen en de plek kwijtraken.
+  // TT-520: een tik op Zoeken (of een ander bezoek dat geen stap terug is)
+  // begint op het startscherm, de bovenkant van het tabblad. Een stap terug
+  // laat het scherm staan waar je was (Muzikanten met zijn resultaat).
+  // Verversen ('redirect' vanuit appInit) zet het scherm daarna terug met
+  // herstelZoekStand(); het startscherm mag die stand niet eerst overschrijven.
+  if (view === 'search' && mode !== 'pop' && mode !== 'redirect') zetZoekScherm('start');
   if (view === 'search' && !(mode === 'pop' && vorigeView === 'profiel')) configureSearchAccess();
   // TT-410b: terug van een profiel naar een open gesprek laat het gesprek
   // staan; de inbox laadt alleen als er geen gesprek open was.
@@ -1691,6 +1351,13 @@ function landingNaar(n) {
 // Bij "minder beweging" wisselt er niets vanzelf, net als de bannerbalk.
 // Zet ook de kop op de foto. De onderbalk staat niet op de landingspagina,
 // dus het scherm past precies in de hoogte van het venster.
+// Beweging mag, tenzij de gebruiker op zijn toestel minder beweging vraagt
+// (prefers-reduced-motion). Was veegMagBewegen() bij het vegen tussen de
+// zoektabbladen (TT-368); dat vegen is in TT-520 vervallen.
+function magBewegen() {
+  return !window.matchMedia || !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 function landingBijwerken() {
   const view = document.getElementById('view-landing');
   const actief = !!view && view.classList.contains('active');
@@ -1706,7 +1373,7 @@ function landingBijwerken() {
     if (onderbalk) onderbalk.style.display = 'none';
     landingOpbouwen();
   }
-  const lopen = actief && !document.hidden && veegMagBewegen();
+  const lopen = actief && !document.hidden && magBewegen();
   if (lopen && !landingKlok) {
     landingKlok = setInterval(() => landingNaar(landingStand + 1), LANDING_TEMPO);
   } else if (!lopen && landingKlok) {
@@ -1835,6 +1502,14 @@ function appTerug() {
     ontwapenTerug();
     resetBandForm();
     zetBandWizardZichtbaar(false);
+    werkTerugKnopBij();
+    return;
+  }
+  // TT-520: Muzikanten en Mix & Match liggen één stap onder het startscherm
+  // van Zoeken. Terug gaat naar dat startscherm; kwam je van buiten Zoeken
+  // (een open rol, TT-450), dan terug naar waar je vandaan kwam.
+  if (huidigeView === 'search' && zoekScherm !== 'start') {
+    zoekSchermTerug();
     werkTerugKnopBij();
     return;
   }

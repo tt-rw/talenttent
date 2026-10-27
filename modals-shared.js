@@ -34,14 +34,33 @@ const PICKERS = {}; // registry: picker-id -> cfg, voor badges/verwijderen vanui
 function initPicker(cfg) {
   PICKERS[cfg.id] = cfg;
   cfg.fieldEl = document.getElementById(cfg.fieldId);
-  cfg.badgeRowEl = document.getElementById(cfg.badgeRowId);
+  cfg.badgeRowEl = cfg.badgeRowId ? document.getElementById(cfg.badgeRowId) : null;
   cfg.fieldEl.onclick = () => openPickerList(cfg.id);
+  // TT-520: naast een wielveld werkt het veld ook met het toetsenbord, zoals
+  // het wielveld zelf (initWheelField() in utils.js).
+  if (cfg.inVeld) {
+    cfg.fieldEl.setAttribute('role', 'button');
+    cfg.fieldEl.setAttribute('tabindex', '0');
+    cfg.fieldEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPickerList(cfg.id); }
+    });
+  }
   renderPickerBadges(cfg);
   return cfg;
 }
 
 function renderPickerBadges(cfg) {
   const list = cfg.getList();
+  // TT-520 (26-10-2026): in de filters van Zoeken staat de keuze in het veld
+  // zelf ("–", "Drums, Zang"), zoals Leeftijd en Niveau ernaast. Geen
+  // badges eronder: de velden staan daar in twee kolommen. `inVeld` geeft de
+  // tekst; het veld krijgt de rand van een filter dat aanstaat (.is-set) en
+  // het streepje van de lege stand is grijs (.leeg, zie zetVeldTekst()).
+  if (cfg.inVeld) {
+    zetVeldTekst(document.getElementById(cfg.fieldId + 'Label'), cfg.inVeld(list));
+    cfg.fieldEl.classList.toggle('is-set', list.length > 0);
+    return;
+  }
   // 21-08-2026 (Ronald): het veld toont altijd dezelfde vaste tekst, geen
   // teller meer — de badges eronder laten al zien wat er gekozen is.
   document.getElementById(cfg.fieldId + 'Label').textContent = cfg.placeholder;

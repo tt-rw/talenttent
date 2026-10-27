@@ -293,7 +293,7 @@ async function loadInbox(opties) {
         'Nog geen berichten',
         'Zoek een muzikant en stuur het eerste bericht.',
         'Muzikanten zoeken →',
-        "showView('search')"
+        "openZoekMuzikanten()"
       );
       return;
     }
@@ -656,7 +656,7 @@ function talentTentBerichtHTML(bericht, info) {
   }));
   const tijd = new Date(bericht.created_at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
   const meerHTML = meer
-    ? `<button type="button" class="tt-meer" onclick="showView('search')">${escHtml(TT_TEKSTEN.meer.replace('{aantal}', meer))}</button>`
+    ? `<button type="button" class="tt-meer" onclick="openZoekMuzikanten()">${escHtml(TT_TEKSTEN.meer.replace('{aantal}', meer))}</button>`
     : '';
   return `<div class="message-bubble other tt-bericht"><div class="tt-bericht-kop">${escHtml(kernzin)}</div>${rijen.join('')}${meerHTML}<div class="message-bubble-time">${escHtml(tijd)}</div></div>`;
 }
@@ -696,7 +696,7 @@ async function openTalentTentGesprek(stil) {
       'Nog geen berichten van Talent Tent',
       'Nieuwe matches bij jou in de buurt staan hier.',
       'Muzikanten zoeken →',
-      "showView('search')"
+      "openZoekMuzikanten()"
     );
     // TT-452: pas nu, nadat je een bericht van Talent Tent zag, vragen we of je
     // er een seintje op dit toestel bij wilt. Nooit bij het eerste bezoek.

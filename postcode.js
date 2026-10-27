@@ -280,9 +280,9 @@ async function resolveSearchOrigin(rawText) {
 // TT-160 (27-08-2026, Ronalds voorstel): het Plaats-veld op de drie
 // zoekpagina's (Muzikanten/Bands/Setlist) blijft precies zo werken als
 // eerst — postcode óf plaatsnaam typen mag allebei, zie onCitySearchInput()
-// hieronder. Nieuw is een permanente bevestigingsregel eronder ("Gevonden:
-// 'plaatsnaam'"), zodat altijd zichtbaar is welke plaats de zoekopdracht nu
-// echt gebruikt. Losstaand van de melding op het profiel-/bandformulier
+// hieronder. De gevonden plaats staat rechts op de labelregel (TT-520,
+// 27-10-2026), zodat zichtbaar is welke plaats de zoekopdracht echt gebruikt
+// als het veld een postcode toont. Losstaand van de melding op het profiel-/bandformulier
 // (postcodeStatus/bandPostcodeStatus, TT-150) — die verdwijnt bewust nog
 // steeds na 2 seconden tijdens het typen; dat gedrag is hier niet aangeraakt.
 // Hergebruikt dezelfde tabel (postcode_cache) als de plaatsnaam-suggesties
@@ -292,6 +292,9 @@ const searchCityStatusSeq = {};
 
 function scheduleSearchCityStatus(inputId, statusId) {
   clearTimeout(searchCityStatusTimeouts[statusId]);
+  // Wie typt, ziet geen oude plaats achter de nieuwe tekst.
+  const oud = document.getElementById(statusId);
+  if (oud) oud.textContent = '';
   searchCityStatusTimeouts[statusId] = setTimeout(() => updateSearchCityStatus(inputId, statusId), 300);
 }
 
@@ -308,7 +311,36 @@ async function updateSearchCityStatus(inputId, statusId) {
   // niet, maar de zoekopdracht kan wel voorbij zijn gestreefd)? Dan is dit
   // antwoord verouderd — niet meer tonen.
   if (searchCityStatusSeq[statusId] !== seq) return;
-  statusEl.textContent = display ? `Gevonden: ${display}` : '';
+  // TT-520 (besluit Ronald 27-10-2026, optie a): de gevonden plaats staat in
+  // het veld zelf, grijs, direct achter wat je typte ("2522  Den Haag"), en
+  // alleen als het veld de plaats nog niet toont (een postcode of een andere
+  // schrijfwijze). Was rechts op de labelregel (21-10), en daarvoor een eigen
+  // regel "Gevonden: …" onder het veld.
+  const zelfde = display && display.toLowerCase() === raw.toLowerCase();
+  statusEl.textContent = display && !zelfde ? display : '';
+  plaatsAchterPlaatsen(inputEl, statusEl);
+}
+
+// Zet de gevonden plaats direct achter de getypte tekst, 8px ertussen, op
+// dezelfde regel; past hij niet, dan "…" vóór de rechterrand van het veld.
+// Een ResizeObserver per veld zet hem opnieuw neer als het veld van maat
+// verandert of pas later zichtbaar wordt (een ander scherm, een gedraaide
+// telefoon).
+function plaatsAchterPlaatsen(inputEl, statusEl) {
+  if (!inputEl.dataset.plaatsAchter && typeof ResizeObserver === 'function') {
+    inputEl.dataset.plaatsAchter = '1';
+    new ResizeObserver(() => plaatsAchterPlaatsen(inputEl, statusEl)).observe(inputEl);
+  }
+  if (!statusEl.textContent || !inputEl.offsetWidth) return;
+  const cs = getComputedStyle(inputEl);
+  const meet = plaatsAchterPlaatsen.c || (plaatsAchterPlaatsen.c = document.createElement('canvas').getContext('2d'));
+  meet.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const links = inputEl.offsetLeft + parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft)
+    + meet.measureText(inputEl.value).width + 8;
+  const rechts = inputEl.offsetLeft + inputEl.offsetWidth - parseFloat(cs.borderRightWidth) - parseFloat(cs.paddingRight);
+  statusEl.style.left = links + 'px';
+  statusEl.style.maxWidth = Math.max(0, rechts - links) + 'px';
+  statusEl.style.top = (inputEl.offsetTop + (inputEl.offsetHeight - statusEl.offsetHeight) / 2) + 'px';
 }
 
 // Zoekt de kanonieke plaatsnaam op bij een getypte postcode (exacte 4
@@ -347,15 +379,24 @@ async function resolveCityDisplayName(raw) {
 let citySearchTimeout = null;
 const citySuggestCache = new Map(); // query (lowercase) -> canonical city names[]
 
+// TT-526 (27-10-2026, melding Ronald): wie "Den Haag" weghaalt en 2522 typt,
+// kreeg na Enter een lijst met plaatsnamen (Aalsmeerderbrug, …) te zien. De
+// vraag voor "De" stond nog te wachten en tekende zijn antwoord ná de
+// postcode. Nu: elke toets annuleert de wachtende vraag, en een antwoord dat
+// niet meer bij het veld hoort (citySearchSeq), wordt niet getekend.
+let citySearchSeq = 0;
 function onCitySearchInput(value, listId) {
   const ac = document.getElementById(listId);
   const q = (value || '').trim();
+  clearTimeout(citySearchTimeout);
+  const seq = ++citySearchSeq;
+  const leeg = () => { ac.classList.remove('open'); ac.innerHTML = ''; };
 
   // Een postcode heeft hier geen plaatsnaam-suggesties nodig
-  if (/^\d{4}$/.test(q) || q.length < 2) { ac.classList.remove('open'); return; }
+  if (/^\d{4}$/.test(q) || q.length < 2) { leeg(); return; }
   // TT-26: als er na het weghalen van jokertekens niets bruikbaars overblijft
   // (bijv. iemand typt alleen "%%"), niets zoeken i.p.v. alles matchen.
-  if (likeSafe(q).length < 2) { ac.classList.remove('open'); return; }
+  if (likeSafe(q).length < 2) { leeg(); return; }
 
   const cacheKey = q.toLowerCase();
   if (citySuggestCache.has(cacheKey)) {
@@ -363,7 +404,6 @@ function onCitySearchInput(value, listId) {
     return;
   }
 
-  clearTimeout(citySearchTimeout);
   citySearchTimeout = setTimeout(async () => {
     try {
       // TT-26: jokertekens eruit + waarde tussen quotes, zodat een komma of %
@@ -385,10 +425,11 @@ function onCitySearchInput(value, listId) {
       names.sort((a, b) => a.localeCompare(b, 'nl'));
       const top = names.slice(0, 8);
       citySuggestCache.set(cacheKey, top);
+      if (seq !== citySearchSeq) return; // intussen verder getypt (TT-526)
       renderCitySuggestions(ac, top, listId);
     } catch (e) {
       logCaught('onCitySearchInput', e);
-      ac.classList.remove('open');
+      if (seq === citySearchSeq) ac.classList.remove('open');
     }
   }, 300);
 }
@@ -437,8 +478,7 @@ function selectCitySuggestion(name, listId) {
   const fieldMap = {
     acFilterCityList: { field: 'filterCity', status: 'filterCityStatus' },
     acFilterBandCityList: { field: 'filterBandCity', status: 'filterBandCityStatus' },
-    acFilterSetlistCityList: { field: 'filterSetlistCity', status: 'filterSetlistCityStatus' },
-    acFilterGedeeldCityList: { field: 'filterGedeeldCity', status: 'filterGedeeldCityStatus' }
+    acFilterSetlistCityList: { field: 'filterSetlistCity', status: 'filterSetlistCityStatus' }
   };
   const target = fieldMap[listId];
   if (target) {
@@ -446,9 +486,6 @@ function selectCitySuggestion(name, listId) {
     // TT-160: een gekozen suggestie is al de kanonieke naam — meteen tonen,
     // niet wachten op de getypte-tekst-vertraging.
     updateSearchCityStatus(target.field, target.status);
-    // TT-289: een gekozen plaats geeft een ander vertrekpunt voor de
-    // naamsuggesties van "Maak setlist".
-    if (listId === 'acFilterGedeeldCityList') gedeeldKandidatenVergeten();
   }
   closeAC(listId);
 }

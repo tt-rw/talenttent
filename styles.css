@@ -185,6 +185,11 @@
   }
   /* Voorbeeldtekst in een veld: de standaard van de browser is op crème te
      donker en lijkt dan ingevuld. Donker houdt de standaard van de browser. */
+  /* TT-520 (besluit Ronald 26-10-2026, sessie 19): in Zoeken staan de velden
+     direct op de crème pagina. Daar hebben ze een eigen vlak nodig, zoals in
+     donker het grijs: wit (--surface). Op een wit paneel (de tegelschermen)
+     blijven ze crème (TT-461). */
+  :root[data-theme="licht"] #view-search { --field-bg: var(--surface); }
   :root[data-theme="licht"] input::placeholder,
   :root[data-theme="licht"] textarea::placeholder { color: #6E6A63; opacity: 1; }
 
@@ -752,6 +757,12 @@
     -webkit-appearance: none;
   }
 
+  /* Een invulveld is 44px hoog, net als een keuzeveld (huisstijl §7). Sinds
+     Roboto uit de repo komt (TT-492) gaf de standaardregelhoogte 45px, en
+     stond Straal 1px lager dan Plaats (gevonden 26-10-2026). 12 + 18 + 12 +
+     2px rand = 44. Een tekstvak (textarea) houdt zijn eigen regelhoogte. */
+  input:not([type="checkbox"]):not([type="radio"]) { line-height: 18px; }
+
   /* TT-259 (24-09-2026): de focus was een gloed van goud op 10% — olijfbruin,
      huisstijl §1.1. Nu een tweede pixel vol goud: de rand wordt 2px, zonder
      gloed. De selector met :not() staat erbij omdat de basisregel hierboven
@@ -958,6 +969,20 @@
   .city-search-wrap {
     position: relative;
   }
+  /* De gevonden plaats in het veld, grijs, achter de getypte tekst (TT-520,
+     besluit Ronald 27-10-2026, optie a). Zelfde letter als het veld, zodat
+     beide op één lijn staan; plek en breedte zet plaatsAchterPlaatsen(). */
+  .plaats-achter {
+    position: absolute;
+    pointer-events: none;
+    font-size: 16px;
+    line-height: 18px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .plaats-achter:empty { display: none; }
 
   .autocomplete-list {
     position: absolute;
@@ -1363,6 +1388,17 @@
 
   .profile-song-row:last-child { padding-bottom: 0; }
 
+  /* Een nummer op twee regels: artiest groot en bovenaan, het nummer eronder
+     (besluit Ronald, 27-10-2026, sessie 21: "vanuit consistentie"; geldt voor
+     elke rij waar artiest en nummer onder elkaar staan; een lijst op één regel,
+     zoals het repertoire op een profiel, blijft). Maten gelijk aan Je setlist
+     (.setlist-artiest, .setlist-titel). Eén regel per tekst, daarna "…".
+     Opgebouwd door nummerTekstHTML() in utils.js. */
+  .song-tekst { flex: 1; min-width: 0; display: flex; flex-direction: column; text-align: left; }
+  .song-artiest, .song-titel { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .song-artiest { font-size: 16px; font-weight: 700; line-height: 20px; color: var(--text); }
+  .song-titel { font-size: 13px; font-weight: 400; line-height: 17px; color: var(--muted); margin-top: 2px; }
+
   /* Meer dan zeven nummers op een profiel: ingeklapt tot zeven (besluit
      Ronald, 26-10-2026, optie 1; nummerLijstHTML() in utils.js). Repertoire
      van een muzikant en covers van een band. De hele lijst is het tikvlak.
@@ -1389,9 +1425,10 @@
   .nummers-inklap.open .nummers-inklap-dicht { display: none; }
 
   /* TT-316 (24-09-2026, besluit Ronald K9): de tagvorm van .tag-solid
-     (TT-315) — wit op 5%, 11px, hoek 6px, geen hoofdletters. Wit, vet en
-     cursief blijven (projectinstructies §9). Was een grijs vlak, 10px,
-     hoofdletters, hoek 3px. */
+     (TT-315) — 11px, hoek 6px, geen hoofdletters. Tekstkleur en vet, niet
+     cursief (besluit Ronald 27-10-2026: "het beheersingsniveau moet niet
+     cursief. overal in de app."). Was een grijs vlak, 10px, hoofdletters,
+     hoek 3px. */
   .level-pill {
     /* TT-341 stap 2: de tagvorm van nu — geen vlak, een dunne neutrale rand. */
     background: transparent;
@@ -1401,7 +1438,6 @@
     padding: 4px 10px;
     border-radius: 6px;
     font-weight: 700;
-    font-style: italic;
     /* Feedback Ronald (13-08-2026): BASIS/BIJNA/PODIUMKLAAR waren elk een
        andere breedte, wat de rij er rommelig uit liet zien. Nu altijd
        dezelfde breedte, breed genoeg voor het langste woord, gecentreerd. */
@@ -1818,30 +1854,65 @@
   }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
-  /* Zoeken: prominente, gecentreerde modus-knoppen (muzikant/band/setlist).
-     TT-233 (10-09-2026, Ronald): boven en onder de knoppenrij stond 32px en
-     28px, en de zoekwikkel legde daar nog eens 48px bovenop. Dat gaf een lege
-     band tussen de knoppen en het filterpaneel. Nu boven en onder dezelfde
-     20px — de standaardafstand tussen twee blokken uit §3. Geldt voor alle
-     drie de zoekmodi, want deze rij staat er maar één keer. */
-  .search-mode-tabs-outer {
-    display: flex;
-    justify-content: center;
-    padding: var(--kop-ruimte) 24px 20px;
+  /* ── TT-520 (26-10-2026, besluiten Ronald): de drie schermen van Zoeken ──
+     Startscherm (titel en twee tegels), Muzikanten en Mix & Match. De titel
+     staat op elk van de drie op dezelfde plek: 20px onder de kop
+     (--kop-ruimte, app-gedrag §9), 20px boven het eerste blok (§3). */
+  #view-search > div > .search-wrap,
+  #zoekStart { padding-top: var(--kop-ruimte); }
+  .zoek-titel { margin: 0 0 20px; }
+
+  /* TT-520 (besluit Ronald 26-10-2026, sessie 19, optie A: "het is
+     rustiger"): één ondergrond. In Zoeken staan de velden direct op de
+     pagina, zonder het kader van .search-filters; alleen de treffers zijn
+     een vlak. Geldt voor Muzikanten en Mix & Match. Elders (Berichten, Over
+     ons, de tegelschermen) blijft het paneel; die beoordeelt Ronald later. */
+  #view-search .search-filters {
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin-bottom: 20px;
   }
-  .search-mode-tabs {
-    display: flex;
-    gap: 14px;
+
+  /* De tegels: het tegelpatroon van Instellingen (.tile), met een icoon links
+     op een grijs vlak (--surface2; besluit Ronald 26-10-2026, sessie 18:
+     "het is erg geel nu"). Donker een gouden, licht een zwart icoon
+     (--accent). Geen pijl (Laag 2). Een <button>: breed, tekst links. */
+  .zoek-tegel {
     width: 100%;
-    max-width: 480px;
+    text-align: left;
+    font-family: 'Roboto', sans-serif;
+    color: var(--text);
   }
-  /* TT-316: 44px hoog, rand --line, hoek 8px. Was 53px, rand 2px, hoek 10px.
-     Kleur en gekozen-stand (TT-290): zie het TT-316-blok bij .tag. */
+  .zoek-tegel-icoon {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-field);
+    background: var(--surface2);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .zoek-tegel-icoon svg { width: 24px; height: 24px; }
+  .zoek-tegel-tekst { display: flex; flex-direction: column; min-width: 0; }
+
+  /* Alles · Muzikanten · Bands: losse knoppen van 44px met de gekozen stand
+     van elke keuzeknop (huisstijl §5.1; besluit Ronald 26-10-2026, sessie 18:
+     consistentie gaat voor). Drie gelijke kolommen, 8px ertussen zoals de
+     schakelaar in Instellingen. Kleur en rand: het TT-316-blok bij .tag. */
+  .zoek-soort {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+  }
   .search-mode-tab {
-    flex: 1 1 0;
     min-width: 0;
     min-height: 44px;
-    padding: 10px 12px;
+    padding: 10px 8px;
     text-align: center;
     font-size: 15px;
     cursor: pointer;
@@ -1849,20 +1920,64 @@
     transition: all 0.2s;
   }
 
-  /* TT-170 / TT-368: vegen tussen de drie zoektabbladen. Het paneel schuift
-     mee met de vinger, het buurtabblad ernaast; beide via `transform`, gezet
-     vanuit initZoekVeeg() in core.js. Er is hier geen eigen animatie meer.
-     Tot 29-09-2026 stonden hier de keyframes searchPaneVanRechts en
-     searchPaneVanLinks: een sprongetje van 24px pas na het loslaten (TT-368). */
-  /* TT-256 (11-09-2026) — de hoofdoorzaak van het schokkerige scrollen.
-     De veeg tussen de drie tabbladen (TT-170) luisterde met een niet-passieve
-     `touchmove` op het hele zoekscherm. Daarmee moet de browser bij élke
-     vingerbeweging eerst wachten tot JavaScript klaar is, ook als de gebruiker
-     gewoon verticaal scrolt. Dat is de hapering aan het begin van elke veeg.
-     `touch-action` zegt het vooraf, zonder JavaScript: verticaal scrollen is
-     van de browser, knijpen om te zoomen blijft werken, horizontaal is van de
-     app. De luisteraar in core.js is daardoor passief geworden. */
-  #view-search { touch-action: pan-y pinch-zoom; }
+  /* Filters, rechts op de labelregel van Naam, met een pijltje dat omdraait
+     als het open is (sessie 18, punt 1). Kleur zoals terugpijl en menu:
+     --accent, donker goud, licht zwart. Even hoog als het label (18px), op
+     één lijn met de rechterrand van de tekst in het veld eronder (zoals de
+     i-knop, huisstijl §7.2). Tikvlak 44px via ::after (§6). */
+  .zoek-label-rij { padding-right: var(--field-inset); }
+  .zoek-filters-knop,
+  .zoek-wissen-knop {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 18px;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .zoek-filters-knop::after,
+  .zoek-wissen-knop::after { content: ''; position: absolute; top: -13px; bottom: -13px; left: -8px; right: -8px; }
+  .zoek-filters-pijl { transition: transform 0.15s; }
+  .zoek-filters-knop.open .zoek-filters-pijl { transform: rotate(180deg); }
+
+  /* Het filtervak: drie rijen van twee velden, 20px ertussen (§3). */
+  .zoek-filter-vak > .field-pair-row { margin-bottom: 20px; }
+  .zoek-filter-vak[hidden] { display: none; }
+
+  /* Wissen rechts, altijd zichtbaar, direct onder het laatste zichtbare veld
+     (sessie 18, punten 3 en 6). De regel is 18px hoog, zoals een label; het
+     tikvlak (44px) steekt erbuiten. Het vorige blok houdt zijn 20px eronder. */
+  .zoek-wis-rij {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    min-height: 18px;
+    padding-right: var(--field-inset);
+  }
+  /* Links de vink Onthoud mijn zoekopdracht (TT-520 deel 2, 27-10-2026). De
+     vink staat op de inspringing van de labels (--field-inset); tekst 14px
+     zoals een label. Tikvlak 44px hoog via ::after; de regel zelf blijft 18px. */
+  .zoek-onthoud {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 18px;
+    min-width: 0;
+    cursor: pointer;
+  }
+  /* De vink (20px) steekt 1px boven en onder de regel van 18px uit, zodat de
+     regel even hoog blijft als een label en Wissen op 20px blijft (§3). */
+  .zoek-onthoud input { flex-shrink: 0; margin: -1px 0; }
+  .zoek-onthoud::after { content: ''; position: absolute; top: -13px; bottom: -13px; left: 0; right: -8px; }
 
   .media-pane { display: none; }
   .media-pane.active { display: block; }
@@ -2077,6 +2192,7 @@
      met alleen .media-rij-url kreeg het adres een rand en 11px opvulling. */
   .media-rij input.media-rij-url {
     width: 100%;
+    line-height: normal;   /* geen veld van 44px, zie de invulvelden */
     margin-top: 2px;
     padding: 0;
     font-size: var(--fs-sm);
@@ -2555,7 +2671,7 @@
   .nav-menu-binnen > .nav-menu-item,
   .nav-menu-binnen > .nav-menu-map-lijst { border-bottom: 1px solid var(--border); }
   .nav-menu-map { justify-content: space-between; }
-  /* Dezelfde ▾ als in de keuzevelden (.picker-field-chevron); open staat hij omhoog. */
+  /* Uitklapteken van de menukop; open staat hij omhoog. */
   .nav-menu-chevron { color: var(--muted); font-size: 12px; margin-left: 12px; flex-shrink: 0; transition: transform 0.15s; }
   .nav-menu-map.open .nav-menu-chevron { transform: rotate(180deg); }
   /* De map toont zijn items iets ingesprongen op een tintje, zodat te zien is
@@ -2900,20 +3016,24 @@
     color: var(--muted);
   }
 
+  /* TT-520 (besluit Ronald 26-10-2026, sessie 18: "B is het meest
+     duidelijk"): elke treffer een eigen vlak, geen lijnen ertussen. Dezelfde
+     vorm als een rij in de setlist (huisstijl §7.3): rand 1px --border, hoek
+     10px, 8px tussen de rijen, 12px opvulling. Was één omlijnd blok met een
+     gele streep links per rij. Geldt voor elke resultaatrij in Zoeken. */
   .results-list {
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
+    gap: 8px;
   }
 
   .result-row {
     display: flex;
     flex-direction: column;
-    padding: 14px 20px 14px 17px;
+    padding: 12px;
     background: var(--surface);
-    border-left: 3px solid var(--accent);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-field);
     cursor: pointer;
     transition: background 0.15s;
     animation: slideIn 0.2s ease;
@@ -2989,6 +3109,93 @@
     grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
     gap: 14px;
   }
+
+  /* TT-520 deel 2 (akkoord Ronald 27-10-2026, Laag 3.3 en 3.4): de kaart in
+     Zoeken (Weergave Kaarten). Hetzelfde vlak als een rij (.result-row):
+     --surface, rand --border, hoek --radius-field. De foto is vierkant en vult
+     de kaart tot de rand; de gebruiker kiest de uitsnede zelf bij het
+     uploaden. Een oudere foto wordt in het midden uitgesneden, het bovenste
+     deel blijft staan (30%), waar meestal het hoofd zit. Rechtsonder op de
+     foto de berichtknop of "Zoekt <instrument>". De naam staat volledig
+     (§2.1: nooit afkappen); de twee regels eronder krijgen "…" als ze niet
+     passen. 12px tussen de kaarten (§3: veelvouden van 4; was 14). */
+  .zoek-kaarten {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .zoek-kaart {
+    min-width: 0;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-field);
+    cursor: pointer;
+    animation: slideIn 0.2s ease;
+  }
+  .zoek-kaart-foto {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    /* Zonder foto: de T op geel, zoals overal (TT-341). */
+    background: var(--merk);
+    color: var(--merk-tekst);
+    font-size: 48px;
+    font-weight: 700;
+  }
+  .zoek-kaart-foto img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; display: block; }
+  .zoek-kaart-hoek {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  /* Op een foto: een donker, half doorzichtig vlak met een wit icoon, in beide
+     thema's leesbaar op elke foto. */
+  .zoek-kaart-hoek .result-row-msg-btn {
+    background: rgba(0, 0, 0, 0.55);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+  .zoek-kaart-hoek .result-row-msg-icon { color: #fff; }
+  /* Geel is een vlak, nooit losse tekst op licht (huisstijl §1): een geel
+     label met de tekst in --merk-tekst. */
+  .zoek-kaart-zoekt {
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--merk);
+    color: var(--merk-tekst);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .zoek-kaart-tekst { padding: 12px; }
+  .zoek-kaart-naam {
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .zoek-kaart-regel {
+    margin-top: 2px;
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .result-card {
     position: relative;
     background: var(--surface);
@@ -3040,10 +3247,9 @@
   }
   .result-card-name { font-family: 'Roboto', sans-serif; font-size: 16px; font-weight: 700; }
   .result-card-meta { font-size: 13px; color: var(--muted); margin: 2px 0 8px; }
-  /* TT-153: instrument- en genrebadges elk op een eigen, niet-wrappende
-     regel — overflow wordt afgekapt met een "+N"-badge (overflowBadgeHTML),
-     niet met CSS-afkapping zelf. nowrap is hier alleen een vangnet tegen een
-     toevallig te lange badgetekst. */
+  /* TT-153: een badge-regel op de kaart, niet-wrappend. Sinds TT-520 deel 2
+     alleen nog in de kaart van Mix & Match (de match); die kaart volgt in
+     bouwsessie b. */
   .result-card-badges-line {
     display: flex;
     flex-wrap: nowrap;
@@ -3061,7 +3267,8 @@
     /* TT-U23 (12-08-2026): was 30x30 pixels. */
     width: 44px;
     height: 44px;
-    border-radius: 6px;
+    /* TT-520 (besluit Ronald 26-10-2026, sessie 18 punt 5): weer rond. Was 6px. */
+    border-radius: 50%;
     background: var(--knop-klein-vlak);
     display: flex;
     align-items: center;
@@ -3092,15 +3299,58 @@
   .result-row-main { flex: 1; min-width: 0; }
 
   .result-row-name {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
     font-family: 'Roboto', sans-serif;
     font-size: 16px;
     font-weight: 700;
+  }
+  /* TT-520 (Laag 3.1.b.1): "BAND" heel klein achter de naam; de vierkante
+     foto zegt het al. 11px, de maat van een tag (huisstijl §1.3). */
+  .result-row-soort {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+  /* TT-520: "Zoekt drums" rechts bij een band met een open rol, zodat je ziet
+     waarom hij in het resultaat staat. Donker goud, licht zwart (--accent):
+     geel is in licht nooit tekst (huisstijl §1). */
+  /* Twee regels onder elkaar, rechts uitgelijnd: "Zoekt" en het instrument
+     (besluit Ronald 27-10-2026), zodat de bandnaam meer ruimte houdt. */
+  .result-row-zoekt {
+    flex-shrink: 0;
+    max-width: 40%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  /* "Zoekt" staat in het midden boven het instrument; is het instrument korter
+     dan "Zoekt", dan staan beide rechts (besluit Ronald 27-10-2026). */
+  .result-row-zoekt > span:first-child { align-self: center; }
+  .result-row-zoekt > span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .result-row-meta {
     font-size: 13px;
     color: var(--muted);
     margin-top: 2px;
+    /* TT-520: één regel; past hij niet, dan "…" (een bijschrift, geen naam, §2.1). */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* TT-153 (25-08-2026): niveau (sterren) staat niet meer in het
@@ -3117,22 +3367,17 @@
     padding-left: 60px; /* avatar (44px) + gap (16px), zelfde uitlijning als de naam */
   }
 
-  /* TT-153: "+N"-badge voor verborgen instrumenten/genres — zelfde vorm als
-     .tag-solid, maar neutrale kleur (geen instrument-/genrekleur toegekend
-     aan een getal). Gedeeld door rij- en kaartweergave. */
-  .tag-solid-muted {
-    color: var(--muted);
-  }
-
   /* TT-29: envelop-icoon op muzikant-rijen — geeft in één oogopslag aan dat
      contact/bericht sturen mogelijk is (zonder de rij zelf vol te zetten met
      een losse knop). Bewuste, beperkte uitzondering op de "geen iconen"-regel
      (Ronald, 07-08-2026) — puur lijn-SVG, geen emoji. */
   /* TT-341 stap 2 (rustig): alleen een lijn in de signaalkleur. Was grijs,
      en goud bij aanwijzen. */
+  /* TT-520 (sessie 18 punt 5, bevestigd Ronald): het icoon in de tekstkleur.
+     Was --accent. */
   .result-row-msg-icon {
     flex-shrink: 0;
-    color: var(--accent);
+    color: var(--text);
   }
 
   .no-results {
@@ -3141,108 +3386,130 @@
     color: var(--muted);
   }
 
-  /* ── TT-295 (26-09-2026): de bewaarde zoekopdracht ──────────────────────
-     Onder het zoekresultaat op het tabblad Muzikant, en in Instellingen →
-     E-mailvoorkeuren. Een paneel zoals .search-filters: --surface, rand
-     --border, hoek --radius. Kop 16px vet (zoals de kop van een lege staat,
-     huisstijl §15), de zoekopdracht in woorden eronder. Eén knop, een
-     tweede knop (.btn-ghost): de zoekresultaten blijven de hoofdzaak. */
-  .seintje-blok {
-    margin-top: 20px;
-    padding: 16px;
+  /* ── De uitsnede kiezen (TT-520 deel 2, 27-10-2026, Laag 3.4) ─────────────
+     Een vierkant vlak over de volle breedte van het venster. De foto vult
+     altijd het hele vierkant (geen lege rand); kiesUitsnede() zet maat en
+     plek. Bij een profielfoto dimt alles buiten de cirkel; bij een bandfoto
+     alleen een dunne lijn langs het vierkant. touch-action: none, zodat
+     schuiven en zoomen niet de pagina laten scrollen of zoomen. */
+  .uitsnede-vlak {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    margin-top: 12px;
+    overflow: hidden;
+    border-radius: var(--radius-field);
+    background: #000;
+    touch-action: none;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .uitsnede-vlak:active { cursor: grabbing; }
+  .uitsnede-vlak img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    max-width: none;
+    transform-origin: 0 0;
+    pointer-events: none;
+  }
+  .uitsnede-masker {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-field);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.9);
+    pointer-events: none;
+  }
+  .uitsnede-masker.rond {
+    border-radius: 50%;
+    box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.55), inset 0 0 0 2px rgba(255, 255, 255, 0.9);
+  }
+  /* Op de linkerlijn van het vlak en de knoppen (één linkerlijn, Ronald 27-10-2026). */
+  .uitsnede-hint { margin: 8px 0 20px; font-size: var(--fs-sm); line-height: 16px; color: var(--muted); }
+
+  /* ── E-mailvoorkeuren (TT-520 deel 2, opdracht Ronald 27-10-2026) ─────────
+     "Een brij van knoppen en teksten": (1) elk blok begint met een vette kop
+     (17px, zoals .tile-title); (2) alles staat op één linkerlijn, zonder de
+     inspringing van een veldlabel (hier staat geen invulveld); (3) elke
+     keuzeknop is even breed, een derde van de breedte, ook Uit · Aan. Elke
+     keuze werkt meteen. 8px van kop naar knoppen, 8px van knoppen naar uitleg
+     (§3). */
+  .voorkeur-intro { margin: 0 0 20px; font-size: 13px; line-height: 18px; color: var(--muted); }
+  .voorkeur-kop { margin: 0 0 8px; font-size: 17px; line-height: 22px; font-weight: 700; color: var(--text); }
+  .voorkeur-uitleg { margin: 8px 0 0; font-size: 13px; line-height: 18px; color: var(--muted); }
+  .voorkeur-knoppen {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+  .voorkeur-knoppen .segmented-btn { width: 100%; }
+  /* De bewaarde zoekopdracht in woorden, direct onder de kop, in de tekstkleur. */
+  .voorkeur-uitleg.bewaard-zoek-tekst { margin: 0; color: var(--text); }
+
+  /* ── Mix & Match (TT-520 bouwsessie b, besluiten Ronald 25 en 27-10-2026) ──
+     Twee knoppen "Wat spelen we?" · "Wie speelt dit?", de losse knoppen van
+     Alles · Muzikanten · Bands (.zoek-soort), in twee kolommen. Daaronder de
+     vraag in één regel, in de signaalkleur (--accent: donker goud, licht
+     zwart; Ronald: de minst bekende functie, kleur keuze UX), op de
+     inspringing van de labels. 12px onder de knoppen, 20px boven het veld. */
+  .mm-soort { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 12px; }
+  .mm-vraag {
+    margin: 0 0 20px;
+    padding: 0 var(--field-inset);
+    font-size: 14px;
+    line-height: 18px;
+    color: var(--accent);
+  }
+  /* De gekozen muzikanten of nummers: rijen van het resultaat (8px ertussen),
+     20px boven de regel van Wissen. */
+  .search-filters > .mm-gekozen { margin-bottom: 20px; }
+  .mm-gekozen[hidden] { display: none; }
+  /* "Kies nog 1 muzikant." links op de regel van Wissen, zoals de vink bij
+     Muzikanten: 14px, gedempt, op de inspringing van de labels. */
+  .mm-nog { font-size: 14px; line-height: 18px; color: var(--muted); padding-left: var(--field-inset); }
+  /* Het ✕ in een rij: het teken op de rechterlijn van de tekst rechts in de
+     andere rijen (12px binnen de rand); het tikvlak blijft 44px. */
+  .mm-gekozen .song-remove { margin: -4px -14px -4px 0; }
+  /* Het filtervak van Wie speelt dit?: Plaats + Straal, dan Instrument, 20px
+     ertussen (§3), zoals de rijen in het filtervak van Muzikanten. */
+  .zoek-filter-vak > .field { margin-bottom: 20px; }
+  /* Een gekozen nummer: de vorm van een resultaatrij (.result-row). */
+  .mm-nummer-rij {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-field);
   }
-  .seintje-kop {
-    margin: 0 0 8px;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text);
-  }
-  .seintje-zoek {
-    margin: 0;
-    font-size: 13px;
-    line-height: 20px;
-    color: var(--text);
-  }
-  .seintje-klein {
-    margin: 8px 0 0;
-    font-size: var(--fs-sm);
-    line-height: 16px;
-    color: var(--muted);
-  }
-  .seintje-knop {
-    width: 100%;
-    margin-top: 16px;
-  }
-  #bewaardeZoekInstellingen .seintje-zoek { padding-left: var(--field-inset); }
-
-  /* ── TT-289 (17-09-2026): Setlist-tabblad in twee standen ────────────────
-     Twee losse knoppen met de vorm en kleuren van de hoofdtabbladen
-     (.search-mode-tab), zodat de actieve stand er precies zo uitziet als
-     "Setlist" erboven (Ronald, 17-09-2026). Zelfde breedte en tussenruimte als
-     .search-mode-tabs. Iets lager: dit is het tweede niveau, en 44px is het
-     tikdoel (huisstijl §6). */
-  .setlist-soort {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    width: 100%;
-    max-width: 480px;
-    margin: 0 auto 20px;
-  }
-  .setlist-soort .search-mode-tab {
+  /* "3 van 3", rechts in de rij, in beide vragen. */
+  .mm-telling {
+    flex-shrink: 0;
     font-size: 14px;
+    font-weight: 700;
+    line-height: 18px;
+    color: var(--accent);
+    white-space: nowrap;
   }
 
-  /* Eén vorm voor een zelf samengestelde lijst in een zoekfilter: de setlist
-     bij "Zoek muzikanten" en de gekozen muzikanten bij "Zoek setlist".
-     Opgebouwd door zoekLijstHTML() in search.js. Waarden overgenomen uit de
-     inline stijl die renderSetlistSongsList() tot 17-09-2026 had. */
-  .zoek-lijst {
-    background: var(--surface2);
+  /* Resultaat van Wat spelen we?: één rij per nummer, de vorm van een
+     resultaatrij; een tik klapt hem open (Ronald, 17-09-2026: optie A). */
+  .gedeeld-rij {
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-field);
     overflow: hidden;
   }
-  .zoek-lijst-kop {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .zoek-lijst-rij {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
-  }
-  .zoek-lijst-voor { width: 26px; flex-shrink: 0; }
-  .zoek-lijst-nr { font-size: 14px; font-weight: 700; color: var(--accent); }
-  .zoek-lijst-hoofd { flex: 1; min-width: 0; }
-  .zoek-lijst-titel { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
-  .zoek-lijst-sub { font-size: 13px; color: var(--muted); }
-  .gedeeld-teller { text-align: right; padding-right: var(--field-inset); margin: 0; }
-  .gedeeld-teller:empty { display: none; }
-
-  /* Resultaat van "Zoek setlist": één regel per nummer, een tik klapt hem
-     open (Ronald, 17-09-2026: optie A). */
-  .gedeeld-rij {
-    background: var(--surface);
-  }
   .gedeeld-rij-kop {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     width: 100%;
-    min-height: 56px;
-    padding: 8px 16px;
+    min-height: 44px;
+    padding: 12px;
     background: none;
     border: none;
     color: var(--text);
@@ -3250,33 +3517,33 @@
     text-align: left;
     cursor: pointer;
   }
-  .gedeeld-rij-tekst { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-  .gedeeld-rij-titel {
-    font-size: 15px;
-    font-weight: 700;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .gedeeld-rij-artiest {
-    font-size: var(--fs-sm);
-    color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .gedeeld-rij-telling {
-    flex-shrink: 0;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--accent);
-    white-space: nowrap;
-  }
+  .gedeeld-rij { transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); }
   .gedeeld-rij.open .gedeeld-rij-kop { border-bottom: 1px solid var(--border); }
-  .gedeeld-paneel {
-    padding: 4px 16px 8px;
-    background: var(--surface2);
+  /* Opengeklapt komt de rij los van de pagina (besluit Ronald 27-10-2026,
+     sessie 21: "het spannende moment … het mag wat meer van het scherm
+     komen"): rand in de signaalkleur, een schaduw, 2px omhoog. Geen
+     animatie van de namen (Ronald: "dat wordt na 1 x vervelend"). */
+  .gedeeld-rij.open {
+    position: relative;
+    z-index: 1;
+    border-color: var(--accent);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+    transform: translateY(-2px);
   }
+  :root[data-theme="licht"] .gedeeld-rij.open { box-shadow: 0 10px 28px rgba(30, 30, 30, 0.16); }
+  .gedeeld-paneel {
+    background: var(--surface2);
+    overflow: hidden;
+    transition: height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .gedeeld-paneel-binnen { padding: 8px 12px 12px; }
+  @media (prefers-reduced-motion: reduce) {
+    .gedeeld-rij, .gedeeld-paneel { transition: none; }
+  }
+  /* Per gekozen muzikant: foto, naam, rechts het niveau of "Speelt dit niet".
+     Wie het speelt: naam vet. Wie het niet speelt: naam gewoon, in de
+     tekstkleur, foto in kleur (Ronald: "hoeft niet zo somber … het is net of
+     ze af zijn"). Volgorde: gedeeldSpelersVolgorde() in search.js. */
   .gedeeld-speler {
     display: flex;
     align-items: center;
@@ -3284,6 +3551,19 @@
     gap: 12px;
     min-height: 44px;
   }
+  .gedeeld-speler-foto {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--merk);
+    font-size: 16px;
+  }
+  .gedeeld-speler-foto img { width: 100%; height: 100%; object-fit: cover; }
   .gedeeld-speler-naam {
     flex: 1;
     min-width: 0;
@@ -3293,14 +3573,15 @@
     border: none;
     color: var(--text);
     font: inherit;
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 700;
     text-align: left;
     cursor: pointer;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .gedeeld-speler.niet .gedeeld-speler-naam { color: var(--muted); }
+  .gedeeld-speler.niet .gedeeld-speler-naam { font-weight: 400; }
   .gedeeld-speler-niet {
     flex-shrink: 0;
     width: 100px;
@@ -3648,6 +3929,7 @@
      erin tikt. */
   .media-rij input.nummer-titel {
     width: 100%;
+    line-height: normal;   /* geen veld van 44px, zie de invulvelden */
     padding: 0;
     font-size: 14px;
     font-weight: 700;
@@ -3840,11 +4122,8 @@
   .band-avatar { width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Roboto',sans-serif;font-size:24px;background:var(--merk);color:var(--merk-tekst);flex-shrink:0; }
   .band-name { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.3px; line-height: 1.1; }
   .band-meta { font-size: 13px;color:var(--muted);margin-top:3px; }
-  /* TT-315 (24-09-2026): zelfde vorm als .tag-solid. TT-341 stap 2: geen
-     vlak, een dunne neutrale rand; de status houdt zijn kleur in de tekst. */
-  /* Een status is een tag (huisstijl §1.3): tekst in --text, ook "Zoekend".
-     27-09-2026: --accent is in donker weer goud; tags blijven neutraal. */
-  .band-status-badge { display:inline-block;background:transparent;border:1px solid var(--rand-neutraal);color:var(--text);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;margin-left:8px;white-space:nowrap;flex-shrink:0; }
+  /* TT-520: .band-status-badge (de status achter de plaats in een bandrij in
+     Zoeken) is weg; de rij toont "Zoekt <instrument>" (Laag 3.1.b.1). */
   .band-card-body { padding:0 20px 20px;border-top:1px solid var(--border); }
   /* TT-385 fase 4: de status en de open rollen als tags (huisstijl §1.3),
      12px onder de lijn, zoals in de Bandproef. Geen leden op de kaart
@@ -3925,7 +4204,7 @@
      PICKER_LABEL_BREAKS en initPicker() verderop in het JS-blok. */
   .picker-field {
     width: 100%; box-sizing: border-box; display: flex; align-items: center;
-    justify-content: space-between; gap: 8px;
+    justify-content: flex-start; gap: 8px;
     /* TT-244: zelfde vlak, rand, hoogte en lettergrootte als een invoerveld.
        Was --surface2/--border, 48px en 14px. 44px is ook de tikdoelnorm uit
        huisstijl §6; 16px voorkomt inzoomen op iOS, zie §7. */
@@ -3935,7 +4214,6 @@
     cursor: pointer; transition: border-color 0.15s;
   }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
-  .picker-field-chevron { color: var(--muted); font-size: 12px; flex-shrink: 0; }
 
   .picker-badge-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
   /* Herzien 25-08-2026 (Ronald, UX-feedback op TT-116): was een solide
@@ -4093,13 +4371,9 @@
        (22-08-2026). Die regel won van width="24" in index.html; de hamburger
        is 24px, net als de terugpijl (TT-307). */
     .nav-menu-dropdown { right: 16px; top: -18px; }
-    /* TT-233: geen eigen ruimte bovenaan bij Zoeken — de knoppenrij erboven
-       levert die al (20px). Mijn Profiel heeft geen knoppenrij en houdt zijn
-       32px. */
+    /* De ruimte bovenaan komt op Zoeken uit --kop-ruimte (TT-520), op
+       Berichten en Bands ook. Mijn Profiel houdt zijn eigen 32px. */
     .search-wrap { padding: 0 16px 60px; }
-    /* TT-289: de hoofdtabbladen houden 24px zijmarge, .search-wrap maar 16px.
-       De standknoppen lijnen uit met de hoofdtabbladen. */
-    .setlist-soort { width: calc(100% - 16px); }
     .my-profile-wrap { padding: 32px 16px 60px; }
     /* TT-130 (23-08-2026): op de telefoon scrolden de gespreksnaam en het
        invoerveld gewoon mee met de berichtenlijst — bij een langer gesprek,
@@ -4212,7 +4486,9 @@
       position: fixed;
       left: 0; right: 0; bottom: 0;
       z-index: 200;
-      background: var(--surface);
+      /* TT-520 (besluit Ronald 26-10-2026, sessie 19, optie A): de onderbalk
+         in de kleur van de pagina, alleen de lijn erboven. Was --surface. */
+      background: var(--bg);
       border-top: 1px solid var(--border);
       /* Ruimte voor de streep onderaan een iPhone. */
       padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -4239,7 +4515,18 @@
       -webkit-tap-highlight-color: transparent;
     }
     .bottom-nav-btn svg { width: 22px; height: 22px; }
-    .bottom-nav-btn.active { background: var(--merk); color: var(--merk-tekst); }
+    /* TT-520 (besluit Ronald 25-10-2026, richting A): de gekozen knop blijft
+       grijs, net als de andere; eronder een gele streep zo breed als het
+       woord, in licht en donker. Was een geel blok met zwarte tekst. */
+    .bottom-nav-btn.active > span:last-child { position: relative; }
+    .bottom-nav-btn.active > span:last-child::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: -5px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--merk);
+    }
     .bottom-nav-icon-wrap { position: relative; display: inline-flex; }
     .bottom-nav-icon-wrap .unread-badge { top: -6px; right: -10px; }
     .bottom-nav-icon-wrap .bands-dot { top: -3px; right: -4px; }
@@ -4597,12 +4884,13 @@
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: center;   /* de waarde staat gecentreerd, huisstijl §7.2 */
+    /* De waarde staat links, op de lijn van het label erboven; geen pijltje
+       (besluit Ronald 26-10-2026, huisstijl §7.2). Een tik opent het wiel. */
+    justify-content: flex-start;
     min-height: 44px;
     /* Zelfde inspringing en hoekstraal als elk ander veld. Op een scherm van
        360px blijft er 117px over voor de tekst; de langste stand,
-       "22 - 40 jaar", heeft er 81 nodig. Het pijltje staat er los overheen en
-       kost geen breedte. */
+       "22 - 40 jaar", heeft er 81 nodig. */
     padding: 0 var(--field-inset);
     /* TT-244: zelfde vlak en rand als een invoerveld. */
     background: var(--field-bg);
@@ -4617,14 +4905,11 @@
   .wheel-field:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   /* Gouden rand zodra dit filter aanstaat — in één blik te zien wat er leeft. */
   .wheel-field.is-set { border-color: var(--accent); }
-  .wheel-field-label { overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 12px); }
-  .wheel-field-chevron {
-    position: absolute;
-    right: 6px;
-    color: var(--muted);
-    font-size: 12px;
-    pointer-events: none;
-  }
+  .wheel-field-label { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  /* Filter uit: een grijs streepje in plaats van "Alle" (besluit Ronald
+     26-10-2026). Een gekozen waarde staat in --text, zo zie je in één blik wat
+     aanstaat. In het wiel zelf heet de lege stand nog "Alle". */
+  .wheel-field-label.leeg { color: var(--muted); }
 
   /* ─── Bladwijzer met het wiel ────────────────────────────────────────────── */
   /* Bewuste uitzondering op §9 (volledig scherm op mobiel): een keuzelaag van
@@ -4683,14 +4968,6 @@
   /* Plaats en Straal op één regel. Straal is zo breed als "500 km" nodig heeft
      en groeit niet mee; Plaats krijgt de rest, want plaatsnamen verschillen
      sterk in lengte. */
-  /* TT-236 (10-09-2026): de statusregel onder Plaats reserveerde altijd ruimte,
-     ook als hij leeg was. Het gat onder Plaats werd daardoor 46px, terwijl elk
-     ander blok in het filterpaneel 20px aanhoudt: 8px kolom-gap + 4px marge +
-     14px lege regel + 20px blokmarge. De regel neemt nu pas ruimte in zodra er
-     tekst in staat. updateSearchCityStatus() zet `textContent = ''`, dus het
-     element is dan werkelijk leeg en `:empty` grijpt. */
-  .city-status { font-size: 13px; color: var(--muted); margin-top: 4px; }
-  .city-status:empty { display: none; }
 
   .filter-row-city { display: flex; gap: 8px; align-items: flex-end; }
   /* Deze twee staan niet in een .field, dus de 8px tussen label en veld uit §3

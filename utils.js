@@ -507,9 +507,12 @@ function closeAC(id) {
 }
 
 // Stap A: Artiest zoeken
+// TT-526: alleen uit een lijst die openstaat. Een dichte lijst kan nog oude
+// suggesties bevatten; Enter mag die nooit kiezen.
 function selectFirstAC(listId) {
   const list = document.getElementById(listId);
-  const first = list && list.querySelector('.ac-item[onmousedown]');
+  if (!list || !list.classList.contains('open')) return;
+  const first = list.querySelector('.ac-item[onmousedown]');
   if (first && first.onmousedown) first.onmousedown();
 }
 
@@ -518,6 +521,7 @@ const itunesTrackCache = new Map();  // artistId -> songs[] (of een lopende Prom
 
 async function onArtistSearch(q) {
   const ac = document.getElementById('acArtistList');
+  clearTimeout(itunesSearchTimeout); // TT-526: een oudere vraag tekent niet meer na
   if (q.length < 2) { ac.classList.remove('open'); return; }
 
   // Direct visuele feedback tonen (i.p.v. pas na de 400ms-vertraging).
@@ -530,7 +534,6 @@ async function onArtistSearch(q) {
     return;
   }
 
-  clearTimeout(itunesSearchTimeout);
   itunesSearchTimeout = setTimeout(async () => {
     try {
       const res = await fetch(
@@ -753,19 +756,6 @@ function tagSolid(text) {
   return `<span class="tag-solid">${escHtml(text)}</span>`;
 }
 
-// TT-153 (25-08-2026): badges op zoekresultaten (muzikant, rij én kaart)
-// beperkt tot een vast aantal, met een "+N"-badge voor de rest — voorkomt dat
-// iemand met veel instrumenten/genres de rij/kaart laat springen. Gedeeld
-// door musicianRowHTML() en musicianCardHTML(), voor instrument- én
-// genrebadges apart (elk hun eigen "+N").
-function overflowBadgeHTML(items, max) {
-  const shown = items.slice(0, max);
-  const extra = items.length - shown.length;
-  let html = shown.map(i => tagSolid(i)).join('');
-  if (extra > 0) html += `<span class="tag-solid tag-solid-muted">+${extra}</span>`;
-  return html;
-}
-
 // ─── Zoektekst veilig maken voor een Supabase-query (TT-26) ─────────────────
 // Twee verschillende risico's, twee helpers:
 //  1. likeSafe(): %, _, * en \ zijn jokertekens in een ilike-patroon. Iemand
@@ -849,6 +839,17 @@ function nummersInklapWissel(lijst) {
     try { lijst.scrollIntoView({ behavior: beweegtNiet ? 'auto' : 'smooth', block: 'center' }); }
     catch (e) { lijst.scrollIntoView(); }
   }
+}
+// ─── Een nummer: artiest groot en bovenaan, het nummer eronder ───────────────
+// Besluit Ronald, 27-10-2026 (sessie 21, TT-520): "vanuit consistentie", zoals
+// Je setlist. Geldt voor elke rij waar artiest en nummer onder elkaar staan (nu
+// de nummers in Mix & Match); een lijst op één regel, zoals het repertoire op
+// een profiel, blijft zoals hij is. Een eigen opmaak per plek is een fout.
+// Zonder titel staat er alleen de artiest; de plek kan een eigen tekst
+// meegeven ("Alle nummers").
+function nummerTekstHTML(artiest, titel) {
+  return `<span class="song-tekst"><span class="song-artiest">${escHtml(artiest || '')}</span>` +
+    (titel ? `<span class="song-titel">${escHtml(titel)}</span>` : '') + `</span>`;
 }
 const PERSONEN_TEKEN ='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>';
 
@@ -1023,6 +1024,16 @@ function zekerTerugBijKlikErnaast(lijst, teken) {
 // (cfg.inputId). Alle bestaande code die die waarde uitleest, blijft daardoor
 // ongewijzigd werken.
 const WHEEL_ITEM_H = 44;   // moet gelijk zijn aan .wheel-item in styles.css
+
+// De lege stand (filter uit) in een gesloten keuzeveld: een streepje, grijs
+// (besluit Ronald 26-10-2026; was "Alle"). In het wiel zelf heet die stand
+// nog "Alle" (labelOf in initWheel()), want daar kies je hem.
+const LEEG_VELD = '–';
+function zetVeldTekst(el, tekst) {
+  if (!el) return;
+  el.textContent = tekst;
+  el.classList.toggle('leeg', tekst === LEEG_VELD);
+}
 const WHEELS = {};
 
 // cfg: { id, inputId, values[], value, onChange, onPick, ariaLabel, labels? }
@@ -1210,7 +1221,7 @@ function refreshWheelField(id) {
   if (!el) return;
   const waarden = wheelFieldValues(id);
   const labelEl = el.querySelector('.wheel-field-label');
-  if (labelEl) labelEl.textContent = cfg.format(waarden);
+  zetVeldTekst(labelEl, cfg.format(waarden));
   const aan = typeof cfg.isActief === 'function' ? cfg.isActief(waarden)
             : waarden.some(v => v !== '' && v != null);
   el.classList.toggle('is-set', !!aan);
@@ -2160,3 +2171,178 @@ function profielBannerStarten(root) {
 function nietBeschikbaarMeldingHTML() {
   return '<div class="melding melding-beschikbaar"><p class="melding-tekst">Momenteel <strong>niet beschikbaar</strong>.</p></div>';
 }
+
+// ─── Uitsnede kiezen bij een foto (TT-520 deel 2, 27-10-2026, Laag 3.4) ─────
+// Besluiten Ronald: na het kiezen van een profielfoto of bandfoto opent meteen
+// dit venster. Schuiven met één vinger, zoomen met twee vingers of het
+// muiswiel, dan "Gebruik deze foto". De uitsnede is vierkant en de foto vult
+// altijd het hele vierkant ("als er maar geen zwarte randen ontstaan"): verder
+// uitzoomen dan de rand van de foto kan niet. Bij een profielfoto toont een
+// cirkel wat er in de ronde foto's staat; bij een bandfoto het vierkant zelf.
+// Het kruisje, Escape of de terugknop van het toestel breken af: dan verandert
+// er niets. De app bewaart de uitgesneden foto (JPG, hoogstens 1080 pixels),
+// zodat elk scherm dezelfde uitsnede toont.
+// kiesUitsnede(file, 'rond' | 'vierkant') → Promise<File | null>.
+const UITSNEDE_MAX_PX = 1080;
+const UITSNEDE_MAX_ZOOM = 4;
+let uitsnede = null; // { img, url, vlak, schaal0, zoom, x, y, klaar, wijzers }
+
+function kiesUitsnede(file, vorm) {
+  return new Promise((klaar) => {
+    if (uitsnede) uitsnedeAfsluiten(null);
+    const modal = document.getElementById('uitsnedeModal');
+    const vlak = document.getElementById('uitsnedeVlak');
+    const img = document.getElementById('uitsnedeImg');
+    const url = URL.createObjectURL(file);
+    uitsnede = { img, url, vlak, file, schaal0: 1, zoom: 1, x: 0, y: 0, klaar, wijzers: new Map() };
+    document.getElementById('uitsnedeTitel').textContent = vorm === 'rond' ? 'Profielfoto' : 'Bandfoto';
+    document.getElementById('uitsnedeMasker').classList.toggle('rond', vorm === 'rond');
+    document.getElementById('uitsnedeKnop').disabled = true;
+    img.onload = () => {
+      if (!uitsnede || uitsnede.img !== img) return;
+      uitsnedeBegin();
+      document.getElementById('uitsnedeKnop').disabled = false;
+    };
+    img.onerror = () => {
+      uitsnedeAfsluiten(null);
+      showToast('Deze foto is niet te lezen. Kies een JPG of PNG.');
+    };
+    img.src = url;
+    modal.classList.add('visible');
+  });
+}
+
+// Begin: de foto vult het vierkant precies (de korte kant past), in het midden.
+function uitsnedeBegin() {
+  const u = uitsnede;
+  const z = u.vlak.clientWidth;
+  u.schaal0 = z / Math.min(u.img.naturalWidth, u.img.naturalHeight);
+  u.zoom = 1;
+  u.x = (z - u.img.naturalWidth * u.schaal0) / 2;
+  u.y = (z - u.img.naturalHeight * u.schaal0) / 2;
+  uitsnedeTekenen();
+}
+
+// Houdt de foto altijd over het hele vierkant: geen lege rand.
+function uitsnedeBegrens() {
+  const u = uitsnede;
+  const z = u.vlak.clientWidth;
+  u.zoom = Math.min(UITSNEDE_MAX_ZOOM, Math.max(1, u.zoom));
+  const s = u.schaal0 * u.zoom;
+  u.x = Math.min(0, Math.max(z - u.img.naturalWidth * s, u.x));
+  u.y = Math.min(0, Math.max(z - u.img.naturalHeight * s, u.y));
+}
+
+function uitsnedeTekenen() {
+  const u = uitsnede;
+  if (!u) return;
+  uitsnedeBegrens();
+  const s = u.schaal0 * u.zoom;
+  u.img.style.width = (u.img.naturalWidth * s) + 'px';
+  u.img.style.height = (u.img.naturalHeight * s) + 'px';
+  u.img.style.transform = `translate(${u.x}px, ${u.y}px)`;
+}
+
+// Zoomen rond een punt in het vlak: dat punt blijft onder je vingers staan.
+function uitsnedeZoom(nieuweZoom, px, py) {
+  const u = uitsnede;
+  const oud = u.schaal0 * u.zoom;
+  u.zoom = Math.min(UITSNEDE_MAX_ZOOM, Math.max(1, nieuweZoom));
+  const nieuw = u.schaal0 * u.zoom;
+  u.x = px - (px - u.x) * (nieuw / oud);
+  u.y = py - (py - u.y) * (nieuw / oud);
+  uitsnedeTekenen();
+}
+
+function uitsnedePunt(e) {
+  const r = uitsnede.vlak.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function uitsnedeWijzerNeer(e) {
+  if (!uitsnede) return;
+  e.preventDefault();
+  uitsnede.vlak.setPointerCapture(e.pointerId);
+  uitsnede.wijzers.set(e.pointerId, uitsnedePunt(e));
+}
+
+function uitsnedeWijzerBeweeg(e) {
+  const u = uitsnede;
+  if (!u || !u.wijzers.has(e.pointerId)) return;
+  e.preventDefault();
+  const voor = [...u.wijzers.values()];
+  const p = uitsnedePunt(e);
+  u.wijzers.set(e.pointerId, p);
+  const na = [...u.wijzers.values()];
+  if (na.length === 1) {
+    // Eén vinger of de muis: schuiven.
+    const oud = voor[0];
+    u.x += p.x - oud.x;
+    u.y += p.y - oud.y;
+    uitsnedeTekenen();
+  } else if (na.length >= 2) {
+    // Twee vingers: zoomen rond het midden ertussen, en meeschuiven.
+    const afstand = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    const midden = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+    const m0 = midden(voor[0], voor[1]), m1 = midden(na[0], na[1]);
+    u.x += m1.x - m0.x;
+    u.y += m1.y - m0.y;
+    uitsnedeZoom(u.zoom * afstand(na[0], na[1]) / afstand(voor[0], voor[1]), m1.x, m1.y);
+  }
+}
+
+function uitsnedeWijzerOp(e) {
+  if (!uitsnede) return;
+  uitsnede.wijzers.delete(e.pointerId);
+}
+
+function uitsnedeWiel(e) {
+  if (!uitsnede) return;
+  e.preventDefault();
+  const p = uitsnedePunt(e);
+  uitsnedeZoom(uitsnede.zoom * Math.exp(-e.deltaY / 500), p.x, p.y);
+}
+
+// "Gebruik deze foto": het vierkant op ware grootte uitsnijden, als JPG.
+function uitsnedeGebruiken() {
+  const u = uitsnede;
+  if (!u || !u.img.naturalWidth) return;
+  const s = u.schaal0 * u.zoom;
+  const zijde = u.vlak.clientWidth / s;           // de zijde in pixels van de foto
+  const uit = Math.max(1, Math.round(Math.min(UITSNEDE_MAX_PX, zijde)));
+  const canvas = document.createElement('canvas');
+  canvas.width = uit; canvas.height = uit;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, uit, uit);
+  ctx.drawImage(u.img, -u.x / s, -u.y / s, zijde, zijde, 0, 0, uit, uit);
+  const naam = (u.file.name || 'foto').replace(/\.[^.]*$/, '') + '.jpg';
+  document.getElementById('uitsnedeKnop').disabled = true;
+  canvas.toBlob((blob) => {
+    uitsnedeAfsluiten(blob ? new File([blob], naam, { type: 'image/jpeg' }) : null);
+    if (!blob) showToast('De foto uitsnijden is niet gelukt. Probeer het opnieuw.');
+  }, 'image/jpeg', 0.9);
+}
+
+// Sluit het venster en geeft de foto (of null bij afbreken) terug.
+function uitsnedeAfsluiten(uitkomst) {
+  const u = uitsnede;
+  uitsnede = null;
+  document.getElementById('uitsnedeModal').classList.remove('visible');
+  if (!u) return;
+  u.img.onload = null; u.img.onerror = null;
+  u.img.removeAttribute('src');
+  URL.revokeObjectURL(u.url);
+  u.klaar(uitkomst || null);
+}
+function sluitUitsnede() { uitsnedeAfsluiten(null); }
+
+// Draait de telefoon of verandert het venster, dan blijft de uitsnede staan.
+window.addEventListener('resize', () => {
+  if (!uitsnede || !uitsnede.img.naturalWidth) return;
+  const u = uitsnede;
+  const oud = u.schaal0;
+  u.schaal0 = u.vlak.clientWidth / Math.min(u.img.naturalWidth, u.img.naturalHeight);
+  u.x *= u.schaal0 / oud; u.y *= u.schaal0 / oud;
+  uitsnedeTekenen();
+});

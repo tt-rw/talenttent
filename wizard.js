@@ -1502,9 +1502,13 @@ function goTo(step) {
 // .webm-video kwam daar dus doorheen. De upload startte, de server weigerde,
 // en de gebruiker kreeg de nietszeggende melding "Er ging iets mis".
 // Wijzigt de bucketinstelling in Supabase? Wijzig dan ook deze twee lijsten.
-const AVATAR_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-const AVATAR_TYPE_LABEL = 'JPG, PNG, GIF of WEBP';
-const MEDIA_MIME_TYPES = AVATAR_MIME_TYPES.concat(['video/mp4', 'video/quicktime']);
+// TT-520 deel 2 (besluit Ronald 27-10-2026): geen GIF als profielfoto of
+// bandfoto ("het leidt af van andere muzikanten"), en een foto krijgt een
+// uitsnede (kiesUitsnede in utils.js); een GIF zou dan stilstaan. Bij de media
+// van een profiel of band mag een GIF wel.
+const AVATAR_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const AVATAR_TYPE_LABEL = 'JPG, PNG of WEBP';
+const MEDIA_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'];
 const MEDIA_TYPE_LABEL = 'JPG, PNG, GIF, WEBP, MP4 of MOV';
 
 // Geeft null terug als het bestand mag. Geeft anders een leesbare melding.
@@ -1599,13 +1603,16 @@ function uploadMediaFile(file, userId) {
   return uploadToStorage('media', userId, file, 50 * 1024 * 1024, '50 MB', MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
 }
 
-function handleAvatarUpload(file) {
+async function handleAvatarUpload(file) {
   if (!file) return;
   // TT-87: meteen controleren, vóór de preview. Zo ziet niemand een foto
   // verschijnen die de server daarna alsnog weigert.
   const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
   if (typeProblem) { showToast(typeProblem); return; }
   { const groot = bestandTeGrootMelding(file, 5 * 1024 * 1024); if (groot) { showToast(groot); return; } }
+  // TT-520 deel 2: eerst de uitsnede. Afbreken laat alles zoals het was.
+  file = await kiesUitsnede(file, 'rond');
+  if (!file) return;
 
   // Preview direct met de blob-URL, zodat het aanvoelt als een directe
   // reactie — de echte upload (hieronder) loopt daar los van.
