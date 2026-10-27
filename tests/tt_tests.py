@@ -8194,7 +8194,7 @@ window.TT_STUB.fnAntwoord = {};
           // 3. Nog een tik: weer weg.
           knop('Animals').click(); await w();
           u.na2 = { eigen: eigen(), aan: knop('Animals').classList.contains('aan'), toast: toast() };
-          // 4. Weghalen onder de drie nummers mag niet (TT-514): geen opslag, vinkje blijft.
+          // 4. Weghalen onder de drie nummers mag (besluit Ronald, 27-10-2026).
           const voor4 = opslaan();
           knop('Blackhole').click(); await w();
           u.na3 = { eigen: eigen(), aan: knop('Blackhole').classList.contains('aan'), toast: toast(), opslaan: opslaan() - voor4 };
@@ -8246,9 +8246,9 @@ window.TT_STUB.fnAntwoord = {};
         check("nog een tik haalt het weg, de rest blijft met zijn niveau",
               d102["na2"]["eigen"] == ["Architects/Blackhole/bijna", "Q/Z/basis", "Y/X/null"] and not d102["na2"]["aan"]
               and d102["na2"]["toast"] == "Nummer weggehaald.", j102)
-        check("weghalen onder de drie nummers: niets opgeslagen, vinkje blijft, melding",
-              d102["na3"]["opslaan"] == 0 and d102["na3"]["aan"] and d102["na3"]["toast"] == "Je repertoire heeft minimaal 3 nummers."
-              and len(d102["na3"]["eigen"]) == 3, j102)
+        check("weghalen onder de drie nummers mag: opgeslagen, vinkje weg, melding",
+              d102["na3"]["opslaan"] == 1 and not d102["na3"]["aan"] and d102["na3"]["toast"] == "Nummer weggehaald."
+              and d102["na3"]["eigen"] == ["Q/Z/basis", "Y/X/null"], j102)
         check("twee snelle tikken: één keer opslaan", d102["dubbel"]["opslaan"] == 1 and d102["dubbel"]["aan"], j102)
         check("in een ingeklapte lijst klapt de knop de lijst niet open", d102["inklap"]["open"] is False, j102)
         check("eigen profiel: geen knop, het label op de rechterlijn",
