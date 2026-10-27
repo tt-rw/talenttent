@@ -148,9 +148,10 @@ function openZoekScherm(scherm, opties) {
   }
 }
 
-// De landingspagina en "Muzikanten zoeken →" in een lege staat: meteen het
-// scherm Muzikanten (TT-520, startnotitie: "landingsknop opent Muzikanten
-// direct"). Zoeken is een tabblad; het startscherm ligt eronder.
+// "Muzikanten zoeken →" in een lege staat: meteen het scherm Muzikanten
+// (TT-520). Zoeken is een tabblad; het startscherm ligt eronder. De knop op de
+// landingspagina opent het startscherm van Zoeken, zoals het tabblad (besluit
+// Ronald 27-10-2026: "Dat moet 1 scherm terug").
 function openZoekMuzikanten() {
   showView('search');
   // configureSearchAccess() (vanuit showView) zoekt zodra het profiel bekend is.

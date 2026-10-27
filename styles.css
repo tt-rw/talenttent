@@ -236,6 +236,12 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* Geen gekleurd vlak bij een tik, nergens in de app (Ronald 27-10-2026: een
+     tik op een gedeeld nummer gaf "kort een blauw scherm. Dat is heel
+     vervelend"; eerder TT-383). De telefoon kleurt anders elk tikvlak kort
+     in. De eigenschap erft, dus één regel hier geldt voor elk element. */
+  html { -webkit-tap-highlight-color: transparent; }
+
   body {
     background: var(--bg);
     color: var(--text);
@@ -1406,7 +1412,7 @@
      blijft scherp. Binnen de lijst houdt elke rij 8px onder zich, zodat de
      regel in beide standen even ver van de laatste rij staat als de rijen
      onderling. */
-  .nummers-inklap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .nummers-inklap { cursor: pointer; }
   .nummers-inklap .profile-song-row:last-child { padding-bottom: 8px; }
   .nummers-inklap:not(.open) .profile-song-row:nth-child(n+8) { display: none; }
   .nummers-inklap:not(.open) .nummers-inklap-rijen {
@@ -1472,7 +1478,6 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
   }
   .nummer-overneem::after { content: ''; position: absolute; inset: -10px; }
   .nummer-overneem svg { width: 10px; height: 10px; }
@@ -2783,7 +2788,6 @@
   .tt-meer {
     display: block; width: 100%; min-height: 44px; padding: 0; background: none; border: 0;
     font: inherit; font-size: 14px; color: var(--accent); text-align: left; cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
   }
   .messages-conv-row {
     display: flex;
@@ -3770,11 +3774,10 @@
   .profiel-knoppen .nav-menu-btn { margin-bottom: 0; }
   /* TT-383 (30-09-2026, Ronald: "beide knoppen lichten op (de vierkante
      achtergrond) als je erop drukt. dit is heel storend"): het deelicoon en
-     het ⋯-menu bij de naam krijgen geen vlak — niet bij de tik (tap-highlight
-     van de telefoon), niet als het menu open staat (.active), niet bij
+     het ⋯-menu bij de naam krijgen geen vlak — niet bij de tik (regel op html,
+     bovenaan), niet als het menu open staat (.active), niet bij
      aanwijzen (die regel staat in de hover-guard onderaan, TT-182). Alleen
      het teken zelf blijft. */
-  .profiel-knoppen .nav-menu-btn { -webkit-tap-highlight-color: transparent; }
   .profiel-knoppen .nav-menu-btn.active { background: transparent; border-color: transparent; }
   /* TT-385 (02-10-2026, Ronald: "vergroot de delenknop en 3 puntjes … en zet
      ze iets verder uit elkaar. dit moet ook in het muzikantenprofiel"): beide
@@ -3879,7 +3882,7 @@
   .social-knop {
     width: 44px; height: 44px; padding: 8px;
     display: flex; align-items: center; justify-content: center;
-    color: var(--text); -webkit-tap-highlight-color: transparent;
+    color: var(--text);
   }
   .social-knop svg { width: 28px; height: 28px; display: block; }
   .social-dicht { color: var(--muted); cursor: default; }
@@ -3947,7 +3950,7 @@
      tikvlak van 44px rond het rondje van 40px (§6). */
   .bb-plus {
     position: relative; background: none; padding: 0; font-family: inherit;
-    cursor: pointer; -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
   }
   .bb-plus::after { content: ''; position: absolute; inset: -2px; }
 
@@ -4539,7 +4542,6 @@
       font-weight: 700;
       letter-spacing: 0.3px;
       cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
     }
     .bottom-nav-btn svg { width: 22px; height: 22px; }
     /* TT-520 (besluit Ronald 25-10-2026, richting A): de gekozen knop blijft
