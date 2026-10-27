@@ -5415,8 +5415,8 @@ window.TT_STUB.fnAntwoord = {};
           pos: getComputedStyle(document.querySelector('.app-topbar')).position,
           talent: getComputedStyle(document.querySelector('header .logo span')).color,
           modus: zoekScherm })""")
-        check("de knop opent Zoeken → Muzikanten, ook bij \"band\" (besluit Ronald 30-09-2026; TT-520)",
-              weg49["view"] == "view-search" and weg49["modus"] == "muzikanten", json.dumps(weg49))
+        check("de knop opent het startscherm van Zoeken, ook bij \"band\" (besluit Ronald 27-10-2026)",
+              weg49["view"] == "view-search" and weg49["modus"] == "start", json.dumps(weg49))
         check("buiten de landingspagina: wisselen gestopt, de kop weer gewoon en in de tekstkleur",
               not weg49["klok"] and not weg49["klasse"] and weg49["pos"] == "sticky"
               and weg49["talent"] == "rgb(240, 240, 240)", json.dumps(weg49))
@@ -5718,6 +5718,18 @@ window.TT_STUB.fnAntwoord = {};
           document.body.appendChild(b); const c = getComputedStyle(b).backgroundColor; b.remove(); return c; }""")
         check("het hamburgermenu elders houdt zijn open-stand (buiten deze rij niets gewijzigd)",
               vlak53b != "rgba(0, 0, 0, 0)", vlak53b)
+        # Geen tikvlak, nergens (Ronald 27-10-2026: een gedeeld nummer gaf "kort een
+        # blauw scherm"). Eén regel op html; geen losse regels per knop meer.
+        tik53 = page.evaluate("""() => { const w = document.createElement('div');
+          w.innerHTML = '<div class="gedeeld-rij"><button type="button" class="gedeeld-rij-kop">x</button></div><button class="btn">y</button><a href="#">z</a>';
+          document.body.appendChild(w);
+          const uit = [getComputedStyle(document.documentElement).webkitTapHighlightColor,
+            ...[...w.querySelectorAll('button, a')].map(e => getComputedStyle(e).webkitTapHighlightColor)];
+          w.remove(); return uit; }""")
+        check("geen gekleurd vlak bij een tik: html, gedeeld nummer, knop en link transparant",
+              tik53 == ["rgba(0, 0, 0, 0)"] * 4, json.dumps(tik53))
+        check("de tikregel staat één keer, op html",
+              css53.count("-webkit-tap-highlight-color") == 1 and "html { -webkit-tap-highlight-color: transparent; }" in css53, "")
 
         print("\nBlok 54 — de profielkop onder elkaar, de foto half over de banner (TT-384, besluiten Ronald 30-09-2026)")
         page_errors.clear()
@@ -10118,10 +10130,11 @@ window.TT_STUB.fnAntwoord = {};
           u.mix = { scherm: zoekScherm, zicht: zicht($('searchModeSetlist')), titel: document.querySelector('#searchModeSetlist .zoek-titel').textContent };
           $('navTerugBtn').click(); await w();
 
-          // 11. De landingsknop opent Muzikanten direct.
+          // 11. De landingsknop opent het startscherm van Zoeken, zoals het
+          // tabblad (besluit Ronald 27-10-2026: "Dat moet 1 scherm terug").
           showView('landing'); await w();
           document.querySelector('.landing-knop').click(); await w(400);
-          u.landing = { view: huidigeView, scherm: zoekScherm };
+          u.landing = { view: huidigeView, scherm: zoekScherm, zicht: zicht($('zoekStart')) };
 
           // 12. Eén ondergrond (besluit Ronald 26-10-2026, optie A): geen kader om de
           // velden, de onderbalk in de kleur van de pagina; in licht hebben de velden
@@ -10192,7 +10205,8 @@ window.TT_STUB.fnAntwoord = {};
               d95["muzikanten"] == ["muzikant"] and d95["bands"] == {"soorten": ["band"], "seintje": False}, json.dumps([d95["muzikanten"], d95["bands"]]))
         check("Mix & Match opent het Setlist-scherm, met de titel Mix & Match",
               d95["mix"] == {"scherm": "mixmatch", "zicht": True, "titel": "Mix & Match"}, j95("mix"))
-        check("de landingsknop opent Zoeken → Muzikanten", d95["landing"] == {"view": "search", "scherm": "muzikanten"}, j95("landing"))
+        check("de landingsknop opent het startscherm van Zoeken (besluit Ronald 27-10-2026)",
+              d95["landing"] == {"view": "search", "scherm": "start", "zicht": True}, j95("landing"))
         oa = d95["optieA"]
         check("één ondergrond: geen kader om de velden in Zoeken; elders blijft het paneel (optie A, 26-10-2026)",
               all(oa[t]["kader"] == ["rgba(0, 0, 0, 0)", "0px", "0px"] and oa[t]["ander"] != "rgba(0, 0, 0, 0)" for t in ("donker", "licht")), j95("optieA"))
@@ -10204,7 +10218,8 @@ window.TT_STUB.fnAntwoord = {};
         bron95 = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("messages.js", "veiligheid.js", "index.html")}
         check("Muzikanten zoeken → in een lege staat opent Muzikanten direct",
               bron95["messages.js"].count("openZoekMuzikanten()") == 3 and "openZoekMuzikanten()" in bron95["veiligheid.js"]
-              and "onclick=\"openZoekMuzikanten()\"" in bron95["index.html"], "")
+              and "openZoekMuzikanten()" not in bron95["index.html"]
+              and "class=\"btn btn-primary landing-knop\" onclick=\"showView('search')\"" in bron95["index.html"], "")
         check("blok 95: geen paginafouten", not f95, "; ".join(f95)[:300])
         c95.close()
 
