@@ -889,12 +889,7 @@ async function nummerOvernemen(ev, knop) {
     const lijst = await eigenNummersOphalen();
     const titel = knop.dataset.titel, artiest = knop.dataset.artiest, sleutel = nummerSleutel(titel, artiest);
     const erin = eigenNummerSleutels.has(sleutel);
-    if (erin && lijst.length <= NUMMERS_MIN) {
-      // TT-514: minimaal drie nummers, zoals Je setlist.
-      document.querySelectorAll('.nummer-overneem').forEach(overneemKnopZetten);
-      showToast(`Je repertoire heeft minimaal ${NUMMERS_MIN} nummers.`);
-      return;
-    }
+    // Weghalen mag ook onder de drie nummers (besluit Ronald, 27-10-2026: het minimum is voor nieuwe gebruikers).
     const nieuw = erin
       ? lijst.filter(s => nummerSleutel(s.song_title, s.song_artist) !== sleutel)
       : lijst.concat([{ song_title: titel, song_artist: artiest, mastery_level: null }]);
