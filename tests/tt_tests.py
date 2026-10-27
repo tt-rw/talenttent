@@ -216,6 +216,23 @@ def blok1_statisch():
         brontekst = open(os.path.join(ROOT, f), encoding="utf-8").read()
         check(f"TT-483: {f} gebruikt escAttr niet meer", "escAttr" not in re.sub(r"//[^\n]*", "", brontekst), "escAttr komt nog voor")
 
+    # TT-532: een lijst id's in het webadres wordt vanaf ongeveer 650 id's geweigerd
+    # (gemeten 27-10-2026). Zoeken vraagt daarom in delen van 200 (inDelen in utils.js).
+    s532 = open(os.path.join(ROOT, "search.js"), encoding="utf-8").read()
+    check("TT-532: search.js zet nooit een hele lijst id's in één vraag (.in('id', ids))",
+          not re.search(r"\.in\('id',\s*ids\)", s532), "een .in('id', ids) zonder inDelen gevonden")
+    check("TT-532: inDelen bestaat in utils.js en Zoeken gebruikt hem op de vier plekken",
+          "async function inDelen(" in open(os.path.join(ROOT, "utils.js"), encoding="utf-8").read()
+          and s532.count("inDelen(") >= 4, f"inDelen-aanroepen: {s532.count('inDelen(')}")
+    # Besluit Ronald 27-10-2026: zoekresultaten snel en zonder knipperen; een rij of
+    # kaart schuift niet in (de inschuifbeweging maakte hem bij elke filterwissel even onzichtbaar).
+    # Ook de mediahoek: "alles wat niet goed is moet er uit" (Ronald, 27-10-2026).
+    css_kn = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+    for sel in (".result-row", ".zoek-kaart", ".media-thumb", ".media-rij"):
+        blok = re.search(r"\n\s*" + re.escape(sel) + r"\s*\{([^}]*)\}", css_kn)
+        check(f"geen inschuifbeweging op {sel} (een lijst knippert niet bij opnieuw tekenen)",
+              bool(blok) and "animation" not in blok.group(1), blok.group(1).strip()[:120] if blok else "regel niet gevonden")
+
     # TT-455: de database wordt gekozen op webadres; productie en test staan in dezelfde core.js.
     c455 = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
     kaart = re.search(r"TT_DB_PER_ADRES\s*=\s*\{(.*?)\};", c455, re.S)
