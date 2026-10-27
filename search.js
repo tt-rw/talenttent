@@ -151,7 +151,9 @@ function openZoekScherm(scherm, opties) {
 // "Muzikanten zoeken →" in een lege staat: meteen het scherm Muzikanten
 // (TT-520). Zoeken is een tabblad; het startscherm ligt eronder. De knop op de
 // landingspagina opent het startscherm van Zoeken, zoals het tabblad (besluit
-// Ronald 27-10-2026: "Dat moet 1 scherm terug").
+// Ronald 27-10-2026: "Dat moet 1 scherm terug"), met 'behoud': de
+// landingspagina blijft op de stapel, dus terug gaat daarheen (besluit Ronald
+// 27-10-2026: "als je van de landing page komt, dan is dat de beste route").
 function openZoekMuzikanten() {
   showView('search');
   // configureSearchAccess() (vanuit showView) zoekt zodra het profiel bekend is.

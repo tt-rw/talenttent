@@ -10135,6 +10135,14 @@ window.TT_STUB.fnAntwoord = {};
           showView('landing'); await w();
           document.querySelector('.landing-knop').click(); await w(400);
           u.landing = { view: huidigeView, scherm: zoekScherm, zicht: zicht($('zoekStart')) };
+          // Terug vanaf dat startscherm gaat naar de landingspagina (besluit
+          // Ronald 27-10-2026); via Zoeken onderin blijft terug daar niets doen.
+          $('navTerugBtn').click(); await w(400);
+          u.landingTerug = huidigeView;
+          document.querySelector('.landing-knop').click(); await w(400);
+          $('bottomNavSearch').click(); await w(400);
+          $('navTerugBtn').click(); await w(400);
+          u.tabTerug = huidigeView;
 
           // 12. Eén ondergrond (besluit Ronald 26-10-2026, optie A): geen kader om de
           // velden, de onderbalk in de kleur van de pagina; in licht hebben de velden
@@ -10207,6 +10215,8 @@ window.TT_STUB.fnAntwoord = {};
               d95["mix"] == {"scherm": "mixmatch", "zicht": True, "titel": "Mix & Match"}, j95("mix"))
         check("de landingsknop opent het startscherm van Zoeken (besluit Ronald 27-10-2026)",
               d95["landing"] == {"view": "search", "scherm": "start", "zicht": True}, j95("landing"))
+        check("terug vanaf dat startscherm gaat naar de landingspagina; na een tik op Zoeken onderin doet terug niets",
+              d95["landingTerug"] == "landing" and d95["tabTerug"] == "search", json.dumps([d95["landingTerug"], d95["tabTerug"]]))
         oa = d95["optieA"]
         check("één ondergrond: geen kader om de velden in Zoeken; elders blijft het paneel (optie A, 26-10-2026)",
               all(oa[t]["kader"] == ["rgba(0, 0, 0, 0)", "0px", "0px"] and oa[t]["ander"] != "rgba(0, 0, 0, 0)" for t in ("donker", "licht")), j95("optieA"))
@@ -10219,7 +10229,7 @@ window.TT_STUB.fnAntwoord = {};
         check("Muzikanten zoeken → in een lege staat opent Muzikanten direct",
               bron95["messages.js"].count("openZoekMuzikanten()") == 3 and "openZoekMuzikanten()" in bron95["veiligheid.js"]
               and "openZoekMuzikanten()" not in bron95["index.html"]
-              and "class=\"btn btn-primary landing-knop\" onclick=\"showView('search')\"" in bron95["index.html"], "")
+              and "class=\"btn btn-primary landing-knop\" onclick=\"showView('search', 'behoud')\"" in bron95["index.html"], "")
         check("blok 95: geen paginafouten", not f95, "; ".join(f95)[:300])
         c95.close()
 
