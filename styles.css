@@ -1442,10 +1442,41 @@
        andere breedte, wat de rij er rommelig uit liet zien. Nu altijd
        dezelfde breedte, breed genoeg voor het langste woord, gecentreerd. */
     display: inline-block;
-    width: 100px;
+    /* TT-528 (besluit Ronald, 27-10-2026): 72px, overal ("zoveel mogelijk
+       consistentie"); daarnaast past het vierkantje van 24px + 4px in de
+       oude 100px, zodat de nummers niets van hun ruimte verliezen. */
+    width: 72px;
+    /* Vaste hoogte, gelijk aan de overneemknop ernaast (was 23px uit de
+       letterhoogte, die per toestel verschilt). */
+    height: 24px;
+    line-height: 14px;
     text-align: center;
     box-sizing: border-box;
   }
+
+  /* TT-528: niveau en overneemknop samen, rechts in de rij. De knop heeft de
+     rand en de hoogte van het label; het tikvlak is 44px (huisstijl §6). Een
+     vinkje in --steun als het nummer in je repertoire staat; de rand blijft. */
+  .nummer-rechts { display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex-shrink: 0; }
+  .nummer-overneem {
+    position: relative;
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--rand-neutraal);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nummer-overneem::after { content: ''; position: absolute; inset: -10px; }
+  .nummer-overneem svg { width: 10px; height: 10px; }
+  .nummer-overneem.aan { color: var(--steun); }
 
 
   /* Divider */

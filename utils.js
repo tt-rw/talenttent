@@ -840,6 +840,81 @@ function nummersInklapWissel(lijst) {
     catch (e) { lijst.scrollIntoView(); }
   }
 }
+// ─── Een nummer van een ander in één tik overnemen (TT-528) ─────────────────
+// Besluiten Ronald, 27-10-2026: een vierkantje met een klein plusteken rechts
+// naast het niveaulabel, op het profiel van een ander en bij de covers van een
+// band; staat het nummer in je repertoire, dan een vinkje in --steun (de rand
+// niet). Nog een tik haalt het weg. Overnemen zonder niveau. Zonder profiel
+// staat de knop er ook; een tik nodigt uit een profiel te maken. Vergelijken
+// zoals Mix & Match: titel en artiest exact, hoofdletters maken niet uit.
+const OVERNEEM_PLUS = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1v8M1 5h8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
+const OVERNEEM_VINK = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 5.2l2.3 2.3L8.5 2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+let eigenNummerSleutels = null; // Set van "titel|||artiest", of null als (nog) onbekend
+const nummerSleutel = (titel, artiest) => `${String(titel || '').toLowerCase()}|||${String(artiest || '').toLowerCase()}`;
+
+function overneemKnopHTML(titel, artiest) {
+  return `<button type="button" class="nummer-overneem" data-titel="${escHtml(titel)}" data-artiest="${escHtml(artiest)}"` +
+    ` aria-pressed="false" aria-label="Zet ${escHtml(titel)} in je repertoire" onclick="nummerOvernemen(event, this)">${OVERNEEM_PLUS}</button>`;
+}
+function overneemKnopZetten(knop) {
+  const aan = !!(eigenNummerSleutels && eigenNummerSleutels.has(nummerSleutel(knop.dataset.titel, knop.dataset.artiest)));
+  if (knop.classList.contains('aan') === aan && knop.firstElementChild) return;
+  knop.classList.toggle('aan', aan);
+  knop.setAttribute('aria-pressed', aan ? 'true' : 'false');
+  knop.setAttribute('aria-label', `${aan ? 'Haal' : 'Zet'} ${knop.dataset.titel} ${aan ? 'uit' : 'in'} je repertoire`);
+  knop.innerHTML = aan ? OVERNEEM_VINK : OVERNEEM_PLUS;
+}
+async function eigenNummersOphalen() {
+  const { data, error } = await db.from('musician_songs')
+    .select('song_title, song_artist, mastery_level').eq('musician_id', myMusicianId);
+  if (error) throw error;
+  eigenNummerSleutels = new Set((data || []).map(s => nummerSleutel(s.song_title, s.song_artist)));
+  return data || [];
+}
+// Na het tonen van een profiel of bandpagina: de knoppen in de juiste stand.
+async function overneemKnoppenBijwerken(vak) {
+  const knoppen = vak ? [...vak.querySelectorAll('.nummer-overneem')] : [];
+  if (!knoppen.length || !hasOwnProfile || !myMusicianId) return;
+  try { await eigenNummersOphalen(); }
+  catch (e) { logCaught('overneemKnoppenBijwerken', e); return; } // de knoppen blijven een plusteken
+  knoppen.forEach(overneemKnopZetten);
+}
+async function nummerOvernemen(ev, knop) {
+  if (ev) ev.stopPropagation(); // de lijst eromheen klapt anders open of dicht
+  if (!hasOwnProfile || !myMusicianId) { showToast('Maak een gratis profiel aan, dan bewaren we dit nummer.'); return; }
+  if (knop.dataset.bezig) return;
+  knop.dataset.bezig = '1';
+  try {
+    // Altijd de lijst zoals hij nu in de database staat: Je setlist kan intussen gewijzigd zijn.
+    const lijst = await eigenNummersOphalen();
+    const titel = knop.dataset.titel, artiest = knop.dataset.artiest, sleutel = nummerSleutel(titel, artiest);
+    const erin = eigenNummerSleutels.has(sleutel);
+    if (erin && lijst.length <= NUMMERS_MIN) {
+      // TT-514: minimaal drie nummers, zoals Je setlist.
+      document.querySelectorAll('.nummer-overneem').forEach(overneemKnopZetten);
+      showToast(`Je repertoire heeft minimaal ${NUMMERS_MIN} nummers.`);
+      return;
+    }
+    const nieuw = erin
+      ? lijst.filter(s => nummerSleutel(s.song_title, s.song_artist) !== sleutel)
+      : lijst.concat([{ song_title: titel, song_artist: artiest, mastery_level: null }]);
+    const { error } = await db.rpc('tt_save_musician_koppelingen', {
+      p_musician_id: myMusicianId,
+      p_songs: nieuw.map(s => ({ song_title: s.song_title, song_artist: s.song_artist, mastery_level: s.mastery_level })),
+    });
+    if (error) { showToast(friendlyErrorMessage(error, 'je repertoire opslaan')); return; }
+    eigenNummerSleutels = new Set(nieuw.map(s => nummerSleutel(s.song_title, s.song_artist)));
+    // Staat hetzelfde nummer vaker op het scherm (repertoire en covers), dan alle knoppen mee.
+    document.querySelectorAll('.nummer-overneem').forEach(overneemKnopZetten);
+    showToast(erin ? 'Nummer weggehaald.' : 'Nummer opgeslagen. Vergeet je niveau niet!');
+  } catch (e) {
+    logCaught('nummerOvernemen', e);
+    showToast(friendlyErrorMessage(e, 'je repertoire opslaan'));
+  } finally {
+    delete knop.dataset.bezig;
+  }
+}
+
 // ─── Een nummer: artiest groot en bovenaan, het nummer eronder ───────────────
 // Besluit Ronald, 27-10-2026 (sessie 21, TT-520): "vanuit consistentie", zoals
 // Je setlist. Geldt voor elke rij waar artiest en nummer onder elkaar staan (nu

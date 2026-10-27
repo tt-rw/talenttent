@@ -3669,12 +3669,14 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         # K9 — het niveaulabel in de tagvorm.
         pil = page.evaluate("""() => { const s = document.createElement('span'); s.className = 'level-pill'; s.textContent = 'Basis';
             document.getElementById('appRoot').appendChild(s); const cs = getComputedStyle(s);
-            const u = [cs.backgroundColor, cs.fontSize, cs.borderTopLeftRadius, cs.textTransform, cs.fontWeight, cs.fontStyle, cs.color, cs.width];
+            const u = [cs.backgroundColor, cs.fontSize, cs.borderTopLeftRadius, cs.textTransform, cs.fontWeight, cs.fontStyle, cs.color, cs.width, cs.height];
             s.remove(); return u; }""")
         # Niet cursief sinds 27-10-2026 (besluit Ronald: "het beheersingsniveau moet
         # niet cursief. overal in de app."); vervangt "wit, vet, cursief" van K9.
-        check("K9: niveaulabel in de tagvorm, wit, vet, niet cursief, vaste breedte",
-              pil == ["rgba(0, 0, 0, 0)", "11px", "6px", "none", "700", "normal", "rgb(240, 240, 240)", "100px"], json.dumps(pil))
+        # Breedte 72px sinds 27-10-2026 (TT-528, besluit Ronald: "ja, overal smaller.
+        # zoveel mogelijk consistentie"); vervangt 100px. Vaste hoogte 24px.
+        check("K9: niveaulabel in de tagvorm, wit, vet, niet cursief, vaste breedte en hoogte",
+              pil == ["rgba(0, 0, 0, 0)", "11px", "6px", "none", "700", "normal", "rgb(240, 240, 240)", "72px", "24px"], json.dumps(pil))
 
         # K10 — kruisjes.
         kruis = page.evaluate("""() => {
@@ -6595,7 +6597,7 @@ window.TT_STUB.fnAntwoord = {};
         # Zelfde opzet als blok 59: een band krijgt zijn geneste tabellen.
         page.evaluate(r"""() => {
           const S = window.TT_STUB;
-          window.__b60 = { from: db.from, hasOwnProfile, myMusicianId, currentUser, view: musicianViewMode, rpc: JSON.parse(JSON.stringify(S.rpcResults || {})) };
+          window.__b60 = { from: db.from, hasOwnProfile, myMusicianId, currentUser, view: musicianViewMode, rpc: Object.assign({}, S.rpcResults || {}) }; // een JSON-kopie liet de functies vallen, zodat ze voor de rest van de testset weg waren (gevonden bij TT-528)
           const echt = db.from.bind(db);
           const kind = ['band_wanted', 'band_members', 'band_invallers'];
           db.from = (t) => { const q = echt(t); const run = q._run.bind(q);
@@ -8130,6 +8132,136 @@ window.TT_STUB.fnAntwoord = {};
               f101["eigen"] == {"lat": None, "lng": None, "eigen": True, "plaats": "Den Haag"}
               and f101["ander"]["eigen"] is False and f101["ander"]["lat"] == 52.07, j101)
         check("geen paginafouten in blok 101", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ────────────────────────────────────────────────────────────
+        # Blok 102 — TT-528 (besluiten Ronald, 27-10-2026): een nummer van een
+        # ander in één tik overnemen. Een vierkantje met een plusteken rechts
+        # naast het niveaulabel (72px, overal); staat het nummer erin, een
+        # vinkje in --steun (de rand niet). Nog een tik haalt het weg, niet
+        # onder de drie nummers. Zonder profiel een uitnodiging. Niet op je
+        # eigen profiel. De lijst klapt niet open of dicht door de knop.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 102 — nummer overnemen in één tik (TT-528)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.evaluate("showView('about')")
+        page.wait_for_timeout(80)
+        d102 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 120) => new Promise(r => setTimeout(r, n)), u = {};
+          const keep = { hasOwnProfile, myMusicianId, currentUser };
+          hasOwnProfile = true; myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' };
+          const eigen = () => (S.data.musician_songs || []).filter(s => s.musician_id === 'm1').map(s => s.song_artist + '/' + s.song_title + '/' + s.mastery_level).sort();
+          S.data.musician_songs = [
+            { musician_id: 'm1', song_title: 'Blackhole', song_artist: 'Architects', mastery_level: 'bijna' },
+            { musician_id: 'm1', song_title: 'X', song_artist: 'Y', mastery_level: null },
+            { musician_id: 'm1', song_title: 'Z', song_artist: 'Q', mastery_level: 'basis' }];
+          const lied = (a, t, l) => ({ song_artist: a, song_title: t, mastery_level: l });
+          const songs = [lied('Architects', 'Animals', 'podium'), lied('architects', 'BLACKHOLE', 'bijna'), lied('Blur', 'Song 2', 'podium'), lied('Oasis', 'Wonderwall', null)];
+          const muz = (id, lijst) => ({ id, weergavenaam: 'Sanne', username: 'sanne', city: 'Den Haag', bio: '', avatar_url: null, age: 17,
+            musician_instruments: [{ instrument: 'Drums', niveau: 3 }], musician_genres: [], musician_songs: lijst, musician_media: [] });
+          const vak = document.createElement('div');
+          vak.style.cssText = 'width:358px;position:absolute;left:16px;top:0;';
+          document.body.appendChild(vak);
+          const R = e => e.getBoundingClientRect();
+          const rij = t => [...vak.querySelectorAll('.profile-song-row')].find(r => r.textContent.toLowerCase().includes(t.toLowerCase()));
+          const knop = t => rij(t).querySelector('.nummer-overneem');
+          const toast = () => document.getElementById('appToast').textContent;
+          const opslaan = () => S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_save_musician_koppelingen').length;
+          // 1. Het profiel van een ander: een knop per nummer, vinkje bij wat erin staat (hoofdletters tellen niet).
+          vak.innerHTML = buildMusicianDetailHTML(muz('m9', songs), false, true);
+          await overneemKnoppenBijwerken(vak);
+          u.knoppen = vak.querySelectorAll('.nummer-overneem').length;
+          u.stand = ['Animals', 'Blackhole', 'Song 2', 'Wonderwall'].map(t => knop(t).classList.contains('aan'));
+          const kA = knop('Animals'), kB = knop('Blackhole'), rA = rij('Animals'), pA = rA.querySelector('.level-pill');
+          const cs = el => getComputedStyle(el);
+          const steun = (() => { const i = document.createElement('i'); i.style.color = 'var(--steun)'; document.body.appendChild(i); const c = cs(i).color; i.remove(); return c; })();
+          const randLabel = cs(pA).borderTopColor;
+          u.maat = { pil: [Math.round(R(pA).width), Math.round(R(pA).height)], knop: [Math.round(R(kA).width), Math.round(R(kA).height)],
+                     tussen: Math.round(R(kA).left - R(pA).right), rechts: Math.round(R(rA).right - R(kA).right),
+                     kolom: Math.round(R(rA).right - R(pA).left), boven: Math.round(R(kA).top - R(pA).top),
+                     zonderLabel: Math.round(R(rij('Wonderwall')).right - R(knop('Wonderwall')).right),
+                     plus: Math.round(R(kA.querySelector('svg')).width),
+                     randKnop: cs(kA).borderTopColor === randLabel, randVink: cs(kB).borderTopColor === randLabel,
+                     vinkKleur: cs(kB).color === steun, plusKleur: cs(kA).color !== steun,
+                     tikvlak: (() => { const a = getComputedStyle(kA, '::after'); return [a.content, a.top]; })(),
+                     aria: [kA.getAttribute('aria-pressed'), kB.getAttribute('aria-pressed'), kB.getAttribute('aria-label')] };
+          // 2. Tik op het plusteken: overgenomen zonder niveau, vinkje, melding.
+          const voor = opslaan();
+          kA.click(); await w();
+          u.na1 = { eigen: eigen(), aan: knop('Animals').classList.contains('aan'), toast: toast(), opslaan: opslaan() - voor };
+          // 3. Nog een tik: weer weg.
+          knop('Animals').click(); await w();
+          u.na2 = { eigen: eigen(), aan: knop('Animals').classList.contains('aan'), toast: toast() };
+          // 4. Weghalen onder de drie nummers mag niet (TT-514): geen opslag, vinkje blijft.
+          const voor4 = opslaan();
+          knop('Blackhole').click(); await w();
+          u.na3 = { eigen: eigen(), aan: knop('Blackhole').classList.contains('aan'), toast: toast(), opslaan: opslaan() - voor4 };
+          // 5. Twee snelle tikken: één keer opslaan.
+          const voor5 = opslaan();
+          knop('Song 2').click(); knop('Song 2').click(); await w(250);
+          u.dubbel = { opslaan: opslaan() - voor5, aan: knop('Song 2').classList.contains('aan') };
+          // 6. Lange lijst (ingeklapt): de knop klapt de lijst niet open.
+          const veel = Array.from({ length: 9 }, (_, i) => lied('Artiest ' + i, 'Nummer ' + i, null));
+          vak.innerHTML = buildMusicianDetailHTML(muz('m9', veel), false, true);
+          await overneemKnoppenBijwerken(vak);
+          vak.querySelector('.nummers-inklap .nummer-overneem').click(); await w();
+          u.inklap = { open: vak.querySelector('.nummers-inklap').classList.contains('open') };
+          // 7. Je eigen profiel: geen knop, het label rechts.
+          vak.innerHTML = buildMusicianDetailHTML(muz('m1', songs), true);
+          const pE = vak.querySelector('.level-pill');
+          u.eigenProfiel = { knoppen: vak.querySelectorAll('.nummer-overneem').length,
+                             rechts: Math.round(R(pE.closest('.profile-song-row')).right - R(pE).right) };
+          // 8. Zonder profiel: knop staat er, een tik nodigt uit, niets opgeslagen.
+          hasOwnProfile = false; myMusicianId = null;
+          vak.innerHTML = buildMusicianDetailHTML(muz('m9', songs), false, true);
+          const voor8 = opslaan();
+          await overneemKnoppenBijwerken(vak);
+          vak.querySelector('.nummer-overneem').click(); await w();
+          u.gast = { knoppen: vak.querySelectorAll('.nummer-overneem').length, toast: toast(), opslaan: opslaan() - voor8 };
+          // 9. Mix & Match: hetzelfde label, ook 72px.
+          const gs = document.createElement('div'); gs.className = 'gedeeld-speler'; gs.innerHTML = '<span class="level-pill">Podium</span>';
+          vak.innerHTML = ''; vak.appendChild(gs);
+          u.mixMatch = [Math.round(R(gs.querySelector('.level-pill')).width), Math.round(R(gs.querySelector('.level-pill')).height)];
+          vak.remove();
+          hasOwnProfile = keep.hasOwnProfile; myMusicianId = keep.myMusicianId; currentUser = keep.currentUser;
+          return u;
+        }""")
+        j102 = json.dumps(d102, ensure_ascii=False)
+        check("profiel van een ander: een knop per nummer, vinkje bij wat al in je repertoire staat (hoofdletters tellen niet)",
+              d102["knoppen"] == 4 and d102["stand"] == [False, True, False, False], j102)
+        mt = d102["maat"]
+        check("label 72x24, knop 24x24, 4px ertussen, samen 100px, knop op de rechterlijn, bovenkanten gelijk",
+              mt["pil"] == [72, 24] and mt["knop"] == [24, 24] and mt["tussen"] == 4 and mt["kolom"] == 100
+              and mt["rechts"] == 0 and mt["boven"] == 0 and mt["zonderLabel"] == 0, j102)
+        check("klein plusteken (10px), rand als het label, vinkje groen en de rand niet, tikvlak 44px",
+              mt["plus"] == 10 and mt["randKnop"] and mt["randVink"] and mt["vinkKleur"] and mt["plusKleur"]
+              and mt["tikvlak"][1] == "-10px", j102)
+        check("knop meldt zijn stand aan een schermlezer",
+              mt["aria"][0] == "false" and mt["aria"][1] == "true" and mt["aria"][2].startswith("Haal "), j102)
+        check("tik op het plusteken: overgenomen zonder niveau, vinkje, melding 'Vergeet je niveau niet!'",
+              "Architects/Animals/null" in d102["na1"]["eigen"] and len(d102["na1"]["eigen"]) == 4 and d102["na1"]["aan"]
+              and d102["na1"]["toast"] == "Nummer opgeslagen. Vergeet je niveau niet!" and d102["na1"]["opslaan"] == 1, j102)
+        check("nog een tik haalt het weg, de rest blijft met zijn niveau",
+              d102["na2"]["eigen"] == ["Architects/Blackhole/bijna", "Q/Z/basis", "Y/X/null"] and not d102["na2"]["aan"]
+              and d102["na2"]["toast"] == "Nummer weggehaald.", j102)
+        check("weghalen onder de drie nummers: niets opgeslagen, vinkje blijft, melding",
+              d102["na3"]["opslaan"] == 0 and d102["na3"]["aan"] and d102["na3"]["toast"] == "Je repertoire heeft minimaal 3 nummers."
+              and len(d102["na3"]["eigen"]) == 3, j102)
+        check("twee snelle tikken: één keer opslaan", d102["dubbel"]["opslaan"] == 1 and d102["dubbel"]["aan"], j102)
+        check("in een ingeklapte lijst klapt de knop de lijst niet open", d102["inklap"]["open"] is False, j102)
+        check("eigen profiel: geen knop, het label op de rechterlijn",
+              d102["eigenProfiel"] == {"knoppen": 0, "rechts": 0}, j102)
+        check("zonder profiel: knop staat er, een tik nodigt uit, niets opgeslagen",
+              d102["gast"]["knoppen"] == 4 and d102["gast"]["toast"] == "Maak een gratis profiel aan, dan bewaren we dit nummer."
+              and d102["gast"]["opslaan"] == 0, j102)
+        check("Mix & Match: hetzelfde label, 72x24", d102["mixMatch"] == [72, 24], j102)
+        bjs = open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
+        check("covers van een band krijgen dezelfde knop, met het vinkje na het laden",
+              "overneemKnopHTML(c.song_title, c.song_artist)" in bjs
+              and "vak.innerHTML = bandPaginaHTML(b, kijker);\n  overneemKnoppenBijwerken(vak);" in bjs, "bands.js")
+        check("geen paginafouten in blok 102", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         # ────────────────────────────────────────────────────────────

@@ -1205,7 +1205,8 @@ function bandPaginaHTML(b, kijker) {
   // 6. Covers, op dezelfde volgorde als het repertoire van een muzikant.
   if (b.covers.length) {
     const rijen = [...b.covers].sort((x, y) => compareArtistTitle(x.song_artist, x.song_title, y.song_artist, y.song_title))
-      .map(c => `<div class="profile-song-row"><span><strong>${escHtml(c.song_artist)}</strong> — <span style="color:var(--muted)">${escHtml(c.song_title)}</span></span></div>`);
+      // TT-528: elke cover in één tik in je eigen repertoire, zoals bij een muzikant.
+      .map(c => `<div class="profile-song-row"><span><strong>${escHtml(c.song_artist)}</strong> — <span style="color:var(--muted)">${escHtml(c.song_title)}</span></span><span class="nummer-rechts">${overneemKnopHTML(c.song_title, c.song_artist)}</span></div>`);
     // Meer dan zeven covers: ingeklapt, zoals het repertoire (nummerLijstHTML() in utils.js).
     h += bandSectieHTML(`Covers (${b.covers.length} ${b.covers.length === 1 ? 'nummer' : 'nummers'})`, nummerLijstHTML(rijen));
   } else if (beheer && voortgang.telt.covers) {
@@ -1379,6 +1380,7 @@ async function laadBandScherm(id, linkToegang) {
 
   bandDeelGegevens = kijker === 'beheerder' ? b : null;
   vak.innerHTML = bandPaginaHTML(b, kijker);
+  overneemKnoppenBijwerken(vak); // TT-528: vinkje bij covers die al in je repertoire staan
   voet.innerHTML = bandVoetHTML(b, kijker);
   // Zelfde volgorde als bij het muzikantprofiel: pas na het plaatsen meten
   // en laten schuiven (TT-265, TT-249, TT-293).

@@ -28,10 +28,12 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     // beheersingsniveau komt in het muzikantenprofiel met een leeg kader"):
     // zonder beheersing geen label, zoals in Maak setlist (search.js).
     const lvl = LEVEL_LABELS[s.mastery_level] ? s.mastery_level : '';
+    // TT-528: op het profiel van een ander een knop om het nummer over te nemen.
+    const knop = isOwn ? '' : overneemKnopHTML(s.song_title, s.song_artist);
     return `
     <div class="profile-song-row">
       <span><strong>${escHtml(s.song_artist)}</strong> — <span style="color:var(--muted)">${escHtml(s.song_title)}</span></span>
-      ${lvl ? `<span class="level-pill">${escHtml(LEVEL_LABELS[lvl])}</span>` : ''}
+      ${lvl || knop ? `<span class="nummer-rechts">${lvl ? `<span class="level-pill">${escHtml(LEVEL_LABELS[lvl])}</span>` : ''}${knop}</span>` : ''}
     </div>`;
   });
 
@@ -392,6 +394,7 @@ async function laadProfielScherm(id, linkToegang) {
   m.distance_km = musicianDistanceCache[m.id] != null ? musicianDistanceCache[m.id] : null;
 
   content.innerHTML = buildMusicianDetailHTML(m, isOwn, true);
+  overneemKnoppenBijwerken(content); // TT-528: vinkje bij wat al in je repertoire staat
   // TT-265: de bannerbalk kan pas gaan schuiven als hij in de pagina staat —
   // een verborgen element heeft geen breedte, dus een gezette scrollpositie
   // komt niet aan (zelfde valkuil als bij het wiel, huisstijl §7.1).
