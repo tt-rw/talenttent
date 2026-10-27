@@ -870,10 +870,10 @@ async function runSearch(straalOverride) {
     let origin, originResolved;
     if (hasOwnProfile) {
       const mid = await getMyMusicianId();
-      const myCity = await getMyCity();
       const typedCity = document.getElementById('filterCity').value.trim();
-      const usesOwnCity = !typedCity || (!!myCity && typedCity.toLowerCase() === myCity.toLowerCase());
-      const o = usesOwnCity ? { lat: null, lng: null } : await resolveSearchOrigin(typedCity);
+      const o = await zoekVertrekpunt(typedCity); // TT-527: dezelfde regel op elk zoekscherm
+      const usesOwnCity = o.eigen;
+      const myCity = o.plaats;
       origin = { mid, lat: o.lat, lng: o.lng };
       // Een getypte plaats die nergens matcht valt terug op je eigen locatie,
       // en blijft dan als tekstfilter gelden, zodat een tikfout niet
@@ -1534,11 +1534,14 @@ async function runSetlistSearch(straalOverride) {
         // altijd vanaf je eigen postcode berekend, ook als je hier expliciet
         // een andere plaats had ingetypt (bijv. "Rotterdam" terwijl je eigen
         // profiel in Delft staat). Dat gaf verwarrende/onjuiste afstanden.
-        // Nu: een ingevulde Plaats heeft altijd voorrang; eigen postcode is
-        // alleen nog de fallback als het veld leeg is.
-        const cityVal = document.getElementById('filterSetlistCity').value.trim();
-        if (cityVal) {
-          const origin = await resolveSearchOrigin(cityVal);
+        // Nu: een andere plaats in het veld heeft voorrang; anders je eigen
+        // postcode.
+        // TT-527 (27-10-2026): staat je eigen woonplaats in het veld (zo vult
+        // de app het in), dan meet het vanaf je eigen postcode, zoals
+        // Muzikanten en Wat spelen we?. Een andere plaats blijft voorgaan.
+        const vertrek = await zoekVertrekpunt(document.getElementById('filterSetlistCity').value);
+        if (!vertrek.eigen) {
+          const origin = vertrek;
           if (origin.lat == null) return { data: null, error: null };
           return db.rpc('tt_search_musicians_anon', {
             origin_lat: origin.lat, origin_lng: origin.lng, radius_km: radius
@@ -1546,13 +1549,8 @@ async function runSetlistSearch(straalOverride) {
         }
         if (hasOwnProfile) {
           const mid = await getMyMusicianId();
-          // TT-159 (27-08-2026, bugfix/aanname): deze aanroep miste
-          // origin_lat/origin_lng — dezelfde tt_search_musicians-functie
-          // krijgt die in runSearch() wél altijd mee (zie hierboven). Zonder
-          // een expliciet getypte Plaats hier (cityVal leeg, anders was deze
-          // tak niet bereikt) is er geen ander vertrekpunt dan de eigen
-          // postcode van de zoeker — vandaar null/null, exact zoals
-          // runSearch() dat doet via `usesOwnCity`.
+          // TT-159 (27-08-2026): origin_lat/origin_lng null = de eigen
+          // postcode van de zoeker, exact zoals runSearch() via `usesOwnCity`.
           return db.rpc('tt_search_musicians', {
             searcher_id: mid, radius_km: radius,
             origin_lat: null, origin_lng: null

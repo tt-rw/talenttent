@@ -8049,6 +8049,90 @@ window.TT_STUB.fnAntwoord = {};
         page.set_viewport_size({"width": 390, "height": 844})
 
         # ────────────────────────────────────────────────────────────
+        # Blok 101 — TT-527 (27-10-2026): dezelfde muzikant staat op elk
+        # zoekscherm op dezelfde afstand. Je eigen woonplaats in het Plaats-veld
+        # telt als je eigen postcode (Muzikanten, Wie speelt dit?, Lid zoeken);
+        # een andere plaats wordt het vertrekpunt; zonder profiel het veld.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 101 — één vertrekpunt op elk zoekscherm (TT-527)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        d101 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = ms => new Promise(r => setTimeout(r, ms)), u = {};
+          const $ = id => document.getElementById(id);
+          const keep = { myMusicianId, currentUser, hasOwnProfile, myOwnCity, wie: window.getMyMusicianId };
+          window.getMyMusicianId = async () => myMusicianId;
+          myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' };
+          hasOwnProfile = true; myOwnCity = 'Den Haag'; filterInstruments.length = 0; filterSetlistInstruments.length = 0;
+          const rij = (id, naam) => ({ id, weergavenaam: naam, username: naam.toLowerCase(), city: 'Den Haag', zip: '2491AA', bio: '', goal: null,
+            avatar_url: null, accepts_band_invites: true, musician_instruments: [{ instrument: 'Gitaar', niveau: 3 }], musician_genres: [{ genre: 'Rock' }],
+            musician_songs: [{ song_title: 'One', song_artist: 'Metallica', mastery_level: 3 }] });
+          S.data.musicians = [rij('m1', 'Ronald'), rij('m2', 'Dylan')];
+          S.data.band_members = [];
+          // De database: vanaf je eigen postcode 2,9 km, vanaf het midden van een plaats 7,5 km.
+          S.rpcResults.tt_resolve_search_origin = [{ lat: 52.07, lng: 4.30 }];
+          const afstand = p => (p.origin_lat == null ? 2.9 : 7.5);
+          S.rpcResults.tt_search_musicians = p => [{ musician_id: 'm2', distance_km: afstand(p), score: 0.5, is_stale: false }];
+          S.rpcResults.tt_search_musicians_anon = p => [{ musician_id: 'm2', distance_km: afstand(p), score: 0.5, is_stale: false }];
+          S.rpcResults.tt_search_musicians_by_songlist_anon = () => [{ musician_id: 'm2' }];
+          S.rpcResults.tt_musician_distances = p => p.musician_ids.map(id => ({ musician_id: id, distance_km: afstand(p) }));
+          S.rpcResults.tt_musicians_ages = [];
+          const laatste = naam => [...S.calls].reverse().find(c => c.kind === 'rpc' && c.name === naam);
+          const scherm = async plaats => {
+            const r = {};
+            $('filterCity').value = plaats; $('filterRadius').value = '10';
+            await runSearch(); await w(200);
+            r.muzikanten = musicianDistanceCache['m2'];
+            setlistWantedSongs = [{ title: '', artist: 'Metallica' }];
+            $('filterSetlistCity').value = plaats; $('filterSetlistRadius').value = '10';
+            await runSetlistSearch(); await w(200);
+            r.wieSpeelt = musicianDistanceCache['m2'];
+            r.wieFunctie = laatste('tt_search_musicians_anon') ? 'anon' : 'eigen';
+            addMemberBandId = 'b9'; $('memberSearchCity').value = plaats;
+            searchMembersToAdd(''); await w(700);
+            const d = laatste('tt_musician_distances');
+            r.lidZoeken = d ? afstand(d.params) : null;
+            S.calls.length = 0;
+            return r;
+          };
+          showView('search'); openZoekScherm('muzikanten'); await w(400);
+          S.calls.length = 0;
+          u.eigen = await scherm('Den Haag');
+          u.kleineLetters = await scherm('den haag');
+          u.leeg = await scherm('');
+          u.ander = await scherm('Delft');
+          // Zonder profiel: het veld is het vertrekpunt, ook met "Den Haag".
+          myMusicianId = null; hasOwnProfile = false;
+          u.functie = { zonder: await zoekVertrekpunt('Den Haag'), zonderLeeg: await zoekVertrekpunt('') };
+          myMusicianId = 'm1'; hasOwnProfile = true;
+          u.functie.eigen = await zoekVertrekpunt(' Den Haag ');
+          u.functie.ander = await zoekVertrekpunt('2611');
+          window.getMyMusicianId = keep.wie; myMusicianId = keep.myMusicianId; currentUser = keep.currentUser;
+          hasOwnProfile = keep.hasOwnProfile; myOwnCity = keep.myOwnCity;
+          setlistWantedSongs = []; addMemberBandId = null;
+          return u;
+        }""")
+        j101 = json.dumps(d101, ensure_ascii=False)
+        check("eigen woonplaats in het veld: Muzikanten, Wie speelt dit? en Lid zoeken meten alle drie vanaf je eigen postcode",
+              d101["eigen"] == {"muzikanten": 2.9, "wieSpeelt": 2.9, "wieFunctie": "eigen", "lidZoeken": 2.9}, j101)
+        check("eigen woonplaats in kleine letters telt ook als je eigen postcode",
+              d101["kleineLetters"] == d101["eigen"], j101)
+        # Lid zoeken zoekt bewust niet als naam, instrument en plaats leeg zijn (TT-163).
+        check("leeg veld: Muzikanten en Wie speelt dit? vanaf je eigen postcode; Lid zoeken zoekt dan niet",
+              d101["leeg"] == {"muzikanten": 2.9, "wieSpeelt": 2.9, "wieFunctie": "eigen", "lidZoeken": None}, j101)
+        check("een andere plaats is op alle drie het vertrekpunt",
+              d101["ander"]["muzikanten"] == 7.5 and d101["ander"]["wieSpeelt"] == 7.5 and d101["ander"]["lidZoeken"] == 7.5, j101)
+        f101 = d101["functie"]
+        check("zonder profiel is het veld het vertrekpunt, ook met een plaatsnaam",
+              f101["zonder"]["eigen"] is False and f101["zonder"]["lat"] == 52.07
+              and f101["zonderLeeg"]["eigen"] is False and f101["zonderLeeg"]["lat"] is None, j101)
+        check("met profiel: eigen woonplaats (spaties eromheen) = eigen postcode, een postcode = die plaats",
+              f101["eigen"] == {"lat": None, "lng": None, "eigen": True, "plaats": "Den Haag"}
+              and f101["ander"]["eigen"] is False and f101["ander"]["lat"] == 52.07, j101)
+        check("geen paginafouten in blok 101", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ────────────────────────────────────────────────────────────
         # Blok 76 — TT-410a (08-10-2026, besluit Ronald): het niveau van een
         # instrument kies je inline, onder de badges, niet in een venster. De
         # instrumentenlijst blijft een keuzelaag. Eén paneel per veld, voor één

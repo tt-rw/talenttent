@@ -494,7 +494,8 @@ function searchMembersToAdd(query) {
       const radiusVal = document.getElementById('memberSearchRadius')?.value.trim();
       const radius = radiusVal ? parseInt(radiusVal, 10) : null;
       const cityQuery = document.getElementById('memberSearchCity')?.value.trim();
-      const origin = cityQuery ? await resolveSearchOrigin(cityQuery) : { lat: null, lng: null };
+      // TT-527: je eigen woonplaats telt als je eigen postcode, zoals bij Muzikanten.
+      const origin = await zoekVertrekpunt(cityQuery);
       try {
         const { data: distances, error: distErr } = await db.rpc('tt_musician_distances', {
           searcher_id: await getMyMusicianId(),

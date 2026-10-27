@@ -277,6 +277,25 @@ async function resolveSearchOrigin(rawText) {
   }
 }
 
+// TT-527 (27-10-2026): één regel voor het vertrekpunt, op elk zoekscherm
+// (Muzikanten, Wie speelt dit?, Lid zoeken). Met een eigen profiel geldt een
+// leeg veld of je eigen woonplaats als je eigen postcode (lat en lng null,
+// eigen: true); een andere plaats of postcode wordt dát vertrekpunt. Zonder
+// profiel: wat in het veld staat. Daarvoor mat Wie speelt dit? je eigen
+// woonplaats vanaf het midden van de plaats, en stond dezelfde muzikant op
+// twee schermen op een andere afstand.
+async function zoekVertrekpunt(tekst) {
+  const getypt = (tekst || '').trim();
+  if (hasOwnProfile) {
+    const mijnPlaats = await getMyCity();
+    if (!getypt || (!!mijnPlaats && getypt.toLowerCase() === mijnPlaats.toLowerCase())) {
+      return { lat: null, lng: null, eigen: true, plaats: mijnPlaats };
+    }
+  }
+  const o = await resolveSearchOrigin(getypt);
+  return { lat: o.lat, lng: o.lng, eigen: false, plaats: null };
+}
+
 // TT-160 (27-08-2026, Ronalds voorstel): het Plaats-veld op de drie
 // zoekpagina's (Muzikanten/Bands/Setlist) blijft precies zo werken als
 // eerst — postcode óf plaatsnaam typen mag allebei, zie onCitySearchInput()
