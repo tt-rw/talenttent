@@ -323,6 +323,9 @@ async function laadProfielScherm(id, linkToegang) {
   let m = null, error = null;
   const delenVraag = profielDeelStand(id);
   const beschikbaarVraag = profielBeschikbaar(id);
+  // TT-367: leeftijd en bands hangen alleen af van het id; tegelijk vragen.
+  const bandsVraag = profielBandsOphalen(id);
+  const leeftijdVraag = hasOwnProfile ? db.rpc('tt_musicians_ages', { ids: [id] }) : null;
 
   if (hasOwnProfile) {
     // B-01 tweede stap (18-08-2026): geen birth_date meer in deze select —
@@ -340,7 +343,7 @@ async function laadProfielScherm(id, linkToegang) {
     `).eq('id', id).single();
     m = res.data; error = res.error;
     if (m) {
-      const { data: ages } = await db.rpc('tt_musicians_ages', { ids: [id] });
+      const { data: ages } = await leeftijdVraag;
       m.age = (ages && ages[0]) ? ages[0].age : undefined;
     }
   } else {
@@ -387,7 +390,7 @@ async function laadProfielScherm(id, linkToegang) {
   m.beschikbaar = beschikbaar;
 
   // TT-385 punt 17: de bands van deze muzikant, voor het blok Bands.
-  m.bands = await profielBandsOphalen(m.id);
+  m.bands = await bandsVraag;
   if (volgnr !== profielSchermVolgnr) return;
 
   // Afstand tonen (indien bekend uit een eerdere zoekopdracht) i.p.v. de postcode.

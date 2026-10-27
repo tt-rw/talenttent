@@ -58,15 +58,17 @@ async function respondToBandInvite(bandId, accept) {
 // staat op de bandkaart in Mijn Bands. Op de Bands-knop in de onderbalk staat
 // een stip zonder cijfer zolang er zo'n verzoek voor jou wacht. Zonder de
 // kolom `founder_offer` faalt de vraag; dat staat dan in app_error_log (TT-230).
-async function refreshBandsDot() {
+async function refreshBandsDot(opties) {
   const dot = document.getElementById('bandsDotBottom');
   if (!dot) return;
   const mid = await getMyMusicianId();
   if (!mid) { dot.style.display = 'none'; return; }
   // 22-08-2026 (Ronald): een verzoek trekt zichzelf na 7 dagen in; geen
   // cron-taak, dus de controle draait hier mee. Niet blokkerend, wel loggen.
-  try { await db.rpc('tt_expire_old_founder_offers'); }
-  catch (e) { logCaught('refreshBandsDot/expire', e); }
+  if (!(opties && opties.zonderVerval)) {
+    try { await db.rpc('tt_expire_old_founder_offers'); }
+    catch (e) { logCaught('refreshBandsDot/expire', e); }
+  }
   try {
     const { data, error } = await db.from('band_members').select('band_id')
       .eq('musician_id', mid).eq('status', 'bevestigd').eq('founder_offer', true);
@@ -805,8 +807,12 @@ async function loadMyBands(opties) {
   // 22-08-2026: zelfde lazy vervalcontrole als in refreshBandsDot() —
   // Mijn Bands kan ook los daarvan geopend worden.
   // Niet blokkerend voor de lijst, wel loggen (TT-230).
-  try { await db.rpc('tt_expire_old_founder_offers'); }
-  catch (e) { logCaught('loadMyBands/expire', e); }
+  // TT-367: de controle loopt tegelijk met de vraag naar je lidmaatschappen;
+  // de bands zelf pas daarna, zodat een verlopen aanbod er al af is.
+  const verval = (async () => {
+    try { await db.rpc('tt_expire_old_founder_offers'); }
+    catch (e) { logCaught('loadMyBands/expire', e); }
+  })();
 
   const mid = await getMyMusicianId();
   if (!mid) {
@@ -820,7 +826,8 @@ async function loadMyBands(opties) {
     return;
   }
 
-  const { data: memberships } = await db.from('band_members').select('band_id').eq('musician_id', mid).eq('status', 'bevestigd');
+  const [{ data: memberships }] = await Promise.all([
+    db.from('band_members').select('band_id').eq('musician_id', mid).eq('status', 'bevestigd'), verval]);
   if (!memberships?.length) {
     // TT-248: stond hier als grijze tekst zonder uitweg, tien regels onder de
     // lege staat hierboven die wél een knop had. Nu dezelfde vaste vorm.
@@ -885,7 +892,7 @@ async function loadMyBands(opties) {
     </div>`;
   }).join('');
   if (currentUser) el.dataset.klaar = currentUser.id;
-  refreshBandsDot();
+  refreshBandsDot({ zonderVerval: true }); // de controle liep hierboven al
 }
 
 // ─── De bandpagina (TT-385, fase 2, 02-10-2026) ──────────────────────────────

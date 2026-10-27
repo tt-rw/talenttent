@@ -286,6 +286,12 @@ async function loadMyProfile(opties) {
   // "Nog geen profiel" als gevolg. Zelfde oplossing als eerder al toegepast
   // bij de zoekresultaten en de profielmodal: vaste kolomlijst, geen
   // birth_date, leeftijd apart via tt_musicians_ages().
+  // TT-367: leeftijd, bands en de stand van Delen hangen alleen af van het id.
+  // Ze lopen tegelijk met het profiel, niet een voor een erna.
+  const bijvragen = (id) => Promise.all([
+    db.rpc('tt_musicians_ages', { ids: [id] }), profielBandsOphalen(id), profielDeelStand(id)]);
+  const voorafId = myMusicianId;
+  const vooraf = voorafId ? bijvragen(voorafId) : null;
   const { data: m, error } = await db.from('musicians')
     .select(`id, weergavenaam, username, city, bio, goal,
              rehearsal_frequency, musical_ambition, repertoire_type,
@@ -309,9 +315,9 @@ async function loadMyProfile(opties) {
     return;
   }
 
-  const { data: myAges } = await db.rpc('tt_musicians_ages', { ids: [m.id] });
+  const [{ data: myAges }, mijnBands, deelAan] = await (voorafId === m.id ? vooraf : bijvragen(m.id));
   m.age = (myAges && myAges[0]) ? myAges[0].age : undefined;
-  m.bands = await profielBandsOphalen(m.id); // TT-385 punt 17: het blok Bands
+  m.bands = mijnBands; // TT-385 punt 17: het blok Bands
   m.beschikbaar = m.accepts_band_invites !== false; // TT-457: de zin niet beschikbaar
 
   // TT-120 (22-08-2026): "Jouw pad op The Talent Tent" (TT-48) staat niet
@@ -334,7 +340,7 @@ async function loadMyProfile(opties) {
   updateBeschikbaarToggleBtn();
   // TT-410b: de stand van "Delen via link" komt uit één kleine vraag, zodat
   // Mijn Profiel ook laadt als het databasescript nog niet is gedraaid.
-  myDeelAan = await profielDeelStand(m.id);
+  myDeelAan = deelAan;
   updateDelenToggleBtn();
 }
 

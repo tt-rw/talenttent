@@ -321,11 +321,12 @@ function naamMatcht(term, ...velden) {
 // bezoeker en ingelogde gelijk. De functie geeft alleen id en weergavenaam
 // terug, nooit fname of lname. Mislukt de vraag, dan blijft het object zonder
 // weergavenaam en toont displayNameOf() de gebruikersnaam.
-async function weergavenamenToevoegen(rijen) {
+// TT-367: `vraag` is een al gestarte vraag naar dezelfde (of meer) id's.
+async function weergavenamenToevoegen(rijen, vraag) {
   const ids = (rijen || []).map(r => r && r.id).filter(Boolean);
   if (!ids.length) return rijen;
   try {
-    const { data, error } = await db.rpc('tt_weergavenamen', { ids });
+    const { data, error } = await (vraag || db.rpc('tt_weergavenamen', { ids }));
     if (error) throw error;
     const perId = {};
     (data || []).forEach(x => { perId[x.id] = x.weergavenaam; });

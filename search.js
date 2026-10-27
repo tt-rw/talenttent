@@ -309,12 +309,17 @@ function bandFilterScore(b) {
 // beheerder: de oprichter kan de band al verlaten hebben.
 // Mislukt de vraag, dan staat iedereen in groep 0: de gekozen sortering
 // werkt dan gewoon, zonder dat de gebruiker iets merkt.
-async function zetActiefStand(soort, lijst) {
+// TT-367: de vraag mag al eerder gestart zijn, met alle gevonden id's
+// (`vraag`), tegelijk met de gegevens. De rang is alleen een volgorde, dus een
+// ruimere lijst geeft dezelfde volgorde.
+function actiefStandVraag(soort, ids) {
+  return db.rpc(soort === 'band' ? 'tt_band_actief_stand' : 'tt_actief_stand', { ids });
+}
+async function zetActiefStand(soort, lijst, vraag) {
   lijst.forEach(x => { x.actiefGroep = 0; x.actiefRang = 0; });
   if (!lijst.length) return;
-  const functie = soort === 'band' ? 'tt_band_actief_stand' : 'tt_actief_stand';
   try {
-    const { data, error } = await db.rpc(functie, { ids: lijst.map(x => x.id) });
+    const { data, error } = await (vraag || actiefStandVraag(soort, lijst.map(x => x.id)));
     if (error) throw error;
     const perId = {};
     (data || []).forEach(r => { perId[r.id] = r; });
@@ -696,7 +701,7 @@ function isEigenProfiel(id) {
    van vóór TT-520. */
 async function zoekMuzikantenOphalen(radius, origin) {
   const matchInfo = {};
-  let musicians = [];
+  let musicians = [], actief = null;
   if (hasOwnProfile) {
     const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians', {
       searcher_id: origin.mid, radius_km: radius,
@@ -706,18 +711,21 @@ async function zoekMuzikantenOphalen(radius, origin) {
     if (!matches.length) return { lijst: [], matchInfo };
     matches.forEach(m => { matchInfo[m.musician_id] = m; });
     const ids = matches.map(m => m.musician_id);
+    // TT-367: gegevens, leeftijd en laatst actief tegelijk, niet na elkaar.
+    actief = actiefStandVraag('muzikant', ids);
     // B-01 tweede stap (18-08-2026): birth_date staat niet in deze select. De
     // leeftijd komt apart binnen via tt_musicians_ages().
-    const { data, error } = await db.from('musicians').select(`
+    const [{ data, error }, { data: ages, error: ageErr }] = await Promise.all([
+      db.from('musicians').select(`
       id, weergavenaam, username, city, zip, bio, goal,
       avatar_url,
       musician_instruments(instrument, niveau),
       musician_genres(genre),
       musician_songs(song_title, song_artist, mastery_level)
-    `).in('id', ids);
+    `).in('id', ids),
+      db.rpc('tt_musicians_ages', { ids })]);
     if (error) throw error;
     musicians = data || [];
-    const { data: ages, error: ageErr } = await db.rpc('tt_musicians_ages', { ids });
     if (!ageErr && ages) {
       const ageById = {};
       ages.forEach(a => { ageById[a.id] = a.age; });
@@ -734,6 +742,8 @@ async function zoekMuzikantenOphalen(radius, origin) {
     if (!matches.length) return { lijst: [], matchInfo };
     matches.forEach(m => { matchInfo[m.musician_id] = m; });
     const ids = matches.map(m => m.musician_id);
+    actief = actiefStandVraag('muzikant', ids); // TT-367: tegelijk
+    const namenVraag = db.rpc('tt_weergavenamen', { ids });
     const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
     if (error) throw error;
     // TT-420: de naam komt uit weergavenaam (weergavenamenToevoegen()), nooit
@@ -746,17 +756,17 @@ async function zoekMuzikantenOphalen(radius, origin) {
       musician_genres: (m.genres || []).map(g => ({ genre: g })),
       musician_songs: m.songs || [],
     }));
-    await weergavenamenToevoegen(musicians);
+    await weergavenamenToevoegen(musicians, namenVraag);
   }
   musicians.forEach(m => { m.soort = 'muzikant'; });
-  return { lijst: musicians, matchInfo };
+  return { lijst: musicians, matchInfo, actief };
 }
 
 /* De bands bij een vertrekpunt. Zelfde vorm als hierboven. Een band die niet
    beschikbaar is, staat er gewoon in (TT-457). */
 async function zoekBandsOphalen(radius, origin) {
   const matchInfo = {};
-  let bands = [];
+  let bands = [], actief = null;
   if (hasOwnProfile) {
     const { data: matches, error: rpcErr } = await db.rpc('tt_search_bands_for_musician', {
       searcher_id: origin.mid, radius_km: radius,
@@ -766,6 +776,7 @@ async function zoekBandsOphalen(radius, origin) {
     if (!matches.length) return { lijst: [], matchInfo };
     matches.forEach(m => { matchInfo[m.band_id] = m; });
     const ids = matches.map(m => m.band_id);
+    actief = actiefStandVraag('band', ids); // TT-367: tegelijk
     // TT-385 fase 5: de bandfoto en de invallers voor de bandkaart. De leden
     // alleen om te tellen (bandStatusLabel()); geen namen.
     const { data, error } = await db.from('bands').select(`id, name, city, genres, status, niveau, avatar_url, band_members(status), band_wanted(instrument), band_invallers(instrument, datum)`).in('id', ids);
@@ -780,6 +791,7 @@ async function zoekBandsOphalen(radius, origin) {
     if (!matches.length) return { lijst: [], matchInfo };
     matches.forEach(m => { matchInfo[m.band_id] = m; });
     const ids = matches.map(m => m.band_id);
+    actief = actiefStandVraag('band', ids); // TT-367: tegelijk
     const { data, error } = await db.rpc('tt_get_bands_public', { ids });
     if (error) throw error;
     // TT-385 fase 5: zelfde vorm als hierboven. tt_get_bands_public geeft alleen
@@ -795,7 +807,7 @@ async function zoekBandsOphalen(radius, origin) {
     }));
   }
   bands.forEach(b => { b.soort = 'band'; });
-  return { lijst: bands, matchInfo };
+  return { lijst: bands, matchInfo, actief };
 }
 
 /* TT-520: één zoekopdracht voor Alles, Muzikanten en Bands.
@@ -984,7 +996,7 @@ async function runSearch(straalOverride) {
       if (v !== undefined) return runSearch(v);
       geenResultaat(); return;
     }
-    await Promise.all([zetActiefStand('muzikant', muzikanten), zetActiefStand('band', bands)]);
+    await Promise.all([zetActiefStand('muzikant', muzikanten, muz.actief), zetActiefStand('band', bands, bnd.actief)]);
     if (seq !== musicianSearchSeq) return; // TT-84
     lastZoekResultaten = sortZoekLijst(muzikanten.concat(bands));
     renderCappedZoekResultaten();
@@ -1590,6 +1602,7 @@ async function runSetlistSearch(straalOverride) {
     }
 
     let musicians;
+    const actief = actiefStandVraag('muzikant', ids); // TT-367: tegelijk met de gegevens
     if (hasOwnProfile) {
       const { data, error } = await db.from('musicians').select(`
         id, weergavenaam, username, city, zip, avatar_url,
@@ -1599,6 +1612,7 @@ async function runSetlistSearch(straalOverride) {
       if (error) throw error;
       musicians = data;
     } else {
+      const namenVraag = db.rpc('tt_weergavenamen', { ids });
       const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
       if (error) throw error;
       musicians = (data || []).map(m => ({
@@ -1607,7 +1621,7 @@ async function runSetlistSearch(straalOverride) {
         musician_songs: m.songs || [],
         musician_instruments: (m.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
       }));
-      await weergavenamenToevoegen(musicians);
+      await weergavenamenToevoegen(musicians, namenVraag);
     }
 
     // TT-139: harde instrumentfilter, zelfde regel als bij Muzikanten/Bands
@@ -1653,7 +1667,7 @@ async function runSetlistSearch(straalOverride) {
       if (v !== undefined) return runSetlistSearch(v);
       geenResultaat(!!radiusIds); return;
     }
-    await zetActiefStand('muzikant', filtered);
+    await zetActiefStand('muzikant', filtered, actief);
     if (seq !== setlistSearchSeq) return; // TT-84
     lastSetlistResults = sortSetlistList(filtered);
     renderCappedSetlistResults();
@@ -1901,6 +1915,7 @@ async function gedeeldMuzikantenLaden(ids, metNummers) {
     if (error) throw error;
     return (data || []).map(m => ({ ...m, musician_songs: m.musician_songs || [] }));
   }
+  const namenVraag = db.rpc('tt_weergavenamen', { ids }); // TT-367: tegelijk
   const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
   if (error) throw error;
   const rijen = (data || []).map(m => ({
@@ -1908,7 +1923,7 @@ async function gedeeldMuzikantenLaden(ids, metNummers) {
     musician_instruments: (m.instrument_levels || []).map(x => ({ instrument: x.instrument })),
     musician_songs: m.songs || []
   }));
-  await weergavenamenToevoegen(rijen);
+  await weergavenamenToevoegen(rijen, namenVraag);
   return rijen;
 }
 
