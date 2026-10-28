@@ -737,6 +737,32 @@ function safeUrl(u) {
   return /^(https?:\/\/|blob:)/i.test(s) ? escHtml(s) : '';
 }
 
+/* Fotootje (28-10-2026, besluit Ronald: optie b). Naast elke profiel- en
+   bandfoto in `avatars` staat een vierkante versie van FOTO_KLEIN_PX pixels,
+   met dezelfde naam plus `_klein.jpg` (uploadAvatarFile() in wizard.js).
+   Lijsten en de kop van een profiel tonen het fotootje; een tik op de foto
+   opent de grote. De grootste plek is 80 pixels; 240 dekt een scherm met drie
+   beeldpunten per pixel. Ontbreekt het fotootje (een foto van vóór deze
+   wijziging, een half gelukte upload, een oude versie van de app), dan laadt
+   de browser vanzelf de grote foto: zie de luisteraar hieronder. */
+const FOTO_KLEIN_PX = 240;
+const AVATARS_PAD = '/storage/v1/object/public/avatars/';
+function fotoKleinPad(pad) {
+  return String(pad).replace(/\.[^./]*$/, '') + '_klein.jpg';
+}
+// `src` komt uit safeUrl(). Geeft de bron-attributen voor een <img>.
+function kleinFotoAttr(src) {
+  if (!src.includes(AVATARS_PAD) || src.endsWith('_klein.jpg')) return `src="${src}"`;
+  return `src="${fotoKleinPad(src)}" data-groot="${src}"`;
+}
+document.addEventListener('error', e => {
+  const img = e.target;
+  if (!(img instanceof HTMLImageElement) || !img.dataset.groot) return;
+  const groot = img.dataset.groot;
+  delete img.dataset.groot;
+  img.src = groot;
+}, true);
+
 // TT-U04 (12-08-2026): maakt een wachtwoord zichtbaar. Vervangt het
 // herhaalveld — je kunt zelf controleren wat je hebt getypt.
 function togglePassword(inputId, btn) {

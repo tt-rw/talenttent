@@ -16,7 +16,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
   // lightbox als bij de foto's onder "Foto's" (openMediaLightbox()) — geen
   // nieuwe component, hergebruik van het bestaande patroon.
   const avatarHTML = avatarSrc
-    ? `<img class="profile-avatar-photo" src="${avatarSrc}" alt="${escHtml(displayName)}" style="margin-bottom:0;flex-shrink:0;cursor:pointer;" onclick="openMediaLightbox('${jsAttr(avatarSrc)}')">`
+    ? `<img class="profile-avatar-photo" ${kleinFotoAttr(avatarSrc)} alt="${escHtml(displayName)}" style="margin-bottom:0;flex-shrink:0;cursor:pointer;" onclick="openMediaLightbox('${jsAttr(avatarSrc)}')">`
     : `<div class="profile-avatar-initials" style="margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`;
 
   const songRows = [...m.musician_songs].sort((a, b) =>
@@ -1475,7 +1475,7 @@ function switchMhMediaTab(tab, el) {
 function mhRenderAvatar() {
   const preview = document.getElementById('mhAvatarPreview');
   if (mhAvatarUrl) {
-    preview.innerHTML = `<img src="${safeUrl(mhAvatarUrl)}" alt="profielfoto">`;
+    preview.innerHTML = `<img ${kleinFotoAttr(safeUrl(mhAvatarUrl))} alt="profielfoto">`;
     document.getElementById('mhAvatarRemoveBtn').classList.add('visible');
   } else {
     preview.innerHTML = `<span id="mhAvatarInitials" class="avatar-t">T</span>`;
@@ -1633,6 +1633,7 @@ async function saveJeMediahoek() {
   const { error: uErr } = await db.from('musicians')
     .update({ avatar_url: mhAvatarUrl || null }).eq('id', myMusicianId);
   if (uErr) { showToast(friendlyErrorMessage(uErr, 'je gegevens opslaan')); return; }
+  oudeFotosOpruimen(currentUser && currentUser.id, mhAvatarUrl);
 
   // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
   const linkMedia = mhMediaLinks

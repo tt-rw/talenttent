@@ -59,7 +59,7 @@ function openMessageComposer(recipientId, recipientName, bandNaam) {
       const url = data && data[0] && safeUrl(data[0].avatar_url);
       if (url && activeConversationId === recipientId) {
         document.getElementById('messagesThreadAvatar').innerHTML =
-          `<img src="${url}" alt="${escHtml(recipientName)}">`;
+          `<img ${kleinFotoAttr(url)} alt="${escHtml(recipientName)}">`;
       }
     } catch (e) { logCaught('openMessageComposer', e); }
   })();
@@ -324,7 +324,7 @@ async function loadInbox(opties) {
       // naam i.p.v. de generieke "Muzikant"-fallback van displayNameOf().
       const name = info ? displayNameOf(info) : 'Verwijderde gebruiker';
       const avatarSrc = info ? safeUrl(info.avatar_url) : null;
-      const avatarHTML = avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(name)}">` : AVATAR_T_FALLBACK;
+      const avatarHTML = avatarSrc ? `<img ${kleinFotoAttr(avatarSrc)} alt="${escHtml(name)}">` : AVATAR_T_FALLBACK;
       const isOwn = c.lastMessage.sender_id === mid;
       const previewPrefix = isOwn ? 'Jij: ' : '';
       const preview = c.lastMessage.body.length > 50 ? c.lastMessage.body.slice(0, 50) + '…' : c.lastMessage.body;
@@ -402,7 +402,7 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
   // kop staat er dan al.
   if (otherAvatarSrc !== undefined) {
     const avatarEl = document.getElementById('messagesThreadAvatar');
-    avatarEl.innerHTML = otherAvatarSrc ? `<img src="${safeUrl(otherAvatarSrc)}" alt="${escHtml(otherName)}">` : AVATAR_T_FALLBACK;
+    avatarEl.innerHTML = otherAvatarSrc ? `<img ${kleinFotoAttr(safeUrl(otherAvatarSrc))} alt="${escHtml(otherName)}">` : AVATAR_T_FALLBACK;
   }
   document.getElementById('messagesInboxPanel').style.display = 'none';
   document.getElementById('messagesThreadPanel').style.display = 'block';
@@ -648,7 +648,7 @@ function talentTentBerichtHTML(bericht, info) {
     const bi = info.bands[b.id];
     const foto = safeUrl(bi.avatar_url);
     const beeld = foto
-      ? `<img class="bb-foto bb-foto-vierkant" src="${foto}" alt="">`
+      ? `<img class="bb-foto bb-foto-vierkant" ${kleinFotoAttr(foto)} alt="">`
       : `<span class="bb-foto bb-foto-t bb-foto-vierkant" aria-hidden="true">${AVATAR_T_FALLBACK}</span>`;
     const regel1 = [bi.city, b.km != null ? `${b.km} km` : ''].filter(Boolean).join(' · ');
     const regel2 = (b.zoekt || []).map(i => TT_TEKSTEN.bandZoekt.replace('{instrument}', i)).join(' · ');

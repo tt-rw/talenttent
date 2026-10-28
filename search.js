@@ -1173,7 +1173,7 @@ function musicianRowHTML(m) {
   const displayName = displayNameOf(m);
   return zoekRijHTML({
     klik: `openProfielScherm('${jsAttr(m.id)}')`,
-    foto: avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK,
+    foto: avatarSrc ? `<img ${kleinFotoAttr(avatarSrc)} alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK,
     naam: displayName,
     eerste: eersteGekozen((m.musician_instruments || []).map(x => x.instrument)),
     plaats: m.city || '',
@@ -1209,7 +1209,7 @@ function musicianCardHTML(m) {
   const displayName = displayNameOf(m);
   return zoekKaartHTML({
     klik: `openProfielScherm('${jsAttr(m.id)}')`,
-    foto: avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : '',
+    foto: avatarSrc ? `<img ${kleinFotoAttr(avatarSrc)} alt="${escHtml(displayName)}">` : '',
     naam: displayName,
     eerste: eersteGekozen((m.musician_instruments || []).map(x => x.instrument)),
     plaats: m.city || '',
@@ -1243,7 +1243,7 @@ function bandRowHTML(b) {
   const zoekt = gezocht.length ? eersteGekozen(gezocht) : '';
   return zoekRijHTML({
     klik: `openBandScherm('${jsAttr(b.id)}')`,
-    foto: foto ? `<img src="${foto}" alt="${escHtml(b.name)}">` : AVATAR_T_FALLBACK,
+    foto: foto ? `<img ${kleinFotoAttr(foto)} alt="${escHtml(b.name)}">` : AVATAR_T_FALLBACK,
     vierkant: true,
     naam: b.name || '',
     eerste: eersteGekozen(b.genres || []),
@@ -1262,7 +1262,7 @@ function bandCardHTML(b) {
   const zoekt = gezocht.length ? eersteGekozen(gezocht) : '';
   return zoekKaartHTML({
     klik: `openBandScherm('${jsAttr(b.id)}')`,
-    foto: foto ? `<img src="${foto}" alt="${escHtml(b.name)}">` : '',
+    foto: foto ? `<img ${kleinFotoAttr(foto)} alt="${escHtml(b.name)}">` : '',
     band: true,
     naam: b.name || '',
     eerste: eersteGekozen(b.genres || []),
@@ -1732,7 +1732,7 @@ function musicianSetlistRowHTML(m) {
   const instr = (m.musician_instruments || []).map(x => x.instrument);
   return zoekRijHTML({
     klik: `openProfielScherm('${jsAttr(m.id)}')`,
-    foto: avatarSrc ? `<img src="${avatarSrc}" alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK,
+    foto: avatarSrc ? `<img ${kleinFotoAttr(avatarSrc)} alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK,
     naam: displayName,
     eerste: instr.find(v => filterSetlistInstruments.includes(v)) || instr[0] || '',
     plaats: m.city || '',
@@ -2009,7 +2009,7 @@ function renderGedeeldGekozen() {
     const foto = safeUrl(g.foto);
     return zoekRijHTML({
       klik: `openProfielScherm('${jsAttr(g.id)}')`,
-      foto: foto ? `<img src="${foto}" alt="${escHtml(g.naam)}">` : AVATAR_T_FALLBACK,
+      foto: foto ? `<img ${kleinFotoAttr(foto)} alt="${escHtml(g.naam)}">` : AVATAR_T_FALLBACK,
       naam: g.naam,
       eerste: g.instrument,
       plaats: g.city,
@@ -2139,7 +2139,7 @@ function gedeeldRijHTML(n, i) {
     const foto = safeUrl(g.foto);
     return `
       <div class="gedeeld-speler${speelt ? '' : ' niet'}">
-        <span class="gedeeld-speler-foto">${foto ? `<img src="${foto}" alt="">` : AVATAR_T_FALLBACK}</span>
+        <span class="gedeeld-speler-foto">${foto ? `<img ${kleinFotoAttr(foto)} alt="">` : AVATAR_T_FALLBACK}</span>
         <button type="button" class="gedeeld-speler-naam" onclick="openProfielScherm('${jsAttr(g.id)}')">${escHtml(g.naam)}</button>
         ${speelt
           ? (lvl ? `<span class="level-pill">${escHtml(LEVEL_LABELS[lvl])}</span>` : '')

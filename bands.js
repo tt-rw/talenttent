@@ -867,7 +867,7 @@ async function loadMyBands(opties) {
     const verzoekVoorMij = !isFounder && confirmed.some(m => m.musician_id === mid && m.founder_offer);
     return `<div class="band-card" onclick="openBandScherm('${jsAttr(b.id)}')">
       <div class="band-card-header">
-        ${b.avatar_url ? `<img src="${safeUrl(b.avatar_url)}" alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar">${AVATAR_T_FALLBACK}</div>`}
+        ${b.avatar_url ? `<img ${kleinFotoAttr(safeUrl(b.avatar_url))} alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar">${AVATAR_T_FALLBACK}</div>`}
         <div style="flex:1;">
           <div class="band-name">${escHtml(b.name)}</div>
           <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
@@ -1074,7 +1074,7 @@ function profielBandsHTML(bands) {
   return bandSectieHTML('Bands', bands.map(b => {
     const foto = safeUrl(b.foto);
     const beeld = foto
-      ? `<img class="bb-foto bb-foto-vierkant" src="${foto}" alt="">`
+      ? `<img class="bb-foto bb-foto-vierkant" ${kleinFotoAttr(foto)} alt="">`
       : `<span class="bb-foto bb-foto-t bb-foto-vierkant" aria-hidden="true">${AVATAR_T_FALLBACK}</span>`;
     const sub = b.instrumenten.concat(b.rol === 'Oprichter' ? [roleLabel(b.rol)] : []).join(' · ');
     return `<button type="button" class="bb-rij bb-rij-knop" onclick="openBandScherm('${jsAttr(b.id)}')">${beeld}<span class="bb-tekst"><span class="bb-naam">${escHtml(b.naam)}</span>${sub ? `<span class="bb-sub">${escHtml(sub)}</span>` : ''}</span></button>`;
@@ -1119,7 +1119,7 @@ function bandPaginaHTML(b, kijker) {
   const foto = safeUrl(b.avatar_url);
   // De beheerder tikt op een lege bandfoto om er een te kiezen (TT-385 punt 2).
   const fotoHTML = foto
-    ? `<img class="bandfoto" src="${foto}" alt="${escHtml(b.name)}" onclick="openMediaLightbox('${jsAttr(foto)}')">`
+    ? `<img class="bandfoto" ${kleinFotoAttr(foto)} alt="${escHtml(b.name)}" onclick="openMediaLightbox('${jsAttr(foto)}')">`
     : beheer
       ? `<button type="button" class="bandfoto bandfoto-leeg bandfoto-kies" onclick="openBandTegels('${jsAttr(b.id)}')" aria-label="Kies een bandfoto">${AVATAR_T_FALLBACK}</button>`
       : `<div class="bandfoto bandfoto-leeg">${AVATAR_T_FALLBACK}</div>`;
@@ -1751,7 +1751,7 @@ function bbFotoHTML(url, wacht) {
   const veilig = safeUrl(url);
   const extra = wacht ? ' bb-wacht' : '';
   return veilig
-    ? `<img class="bb-foto${extra}" src="${veilig}" alt="">`
+    ? `<img class="bb-foto${extra}" ${kleinFotoAttr(veilig)} alt="">`
     : `<span class="bb-foto bb-foto-t${extra}" aria-hidden="true">${AVATAR_T_FALLBACK}</span>`;
 }
 
@@ -2192,7 +2192,7 @@ function bmZet(b) {
 function bmRenderFoto() {
   const vak = document.getElementById('bmFotoPreview');
   const url = safeUrl(bmFotoUrl);
-  vak.innerHTML = url ? `<img src="${url}" alt="bandfoto">` : '<span class="avatar-t">T</span>';
+  vak.innerHTML = url ? `<img ${kleinFotoAttr(url)} alt="bandfoto">` : '<span class="avatar-t">T</span>';
   document.getElementById('bmFotoRemoveBtn').classList.toggle('visible', !!url);
 }
 
@@ -2369,6 +2369,7 @@ async function saveBandMedia() {
       avatar_url: bmFotoUrl || null
     }).eq('id', id);
     if (sErr) throw sErr;
+    oudeFotosOpruimen('bands/' + id, bmFotoUrl);
 
     // Alleen wat wegging weghalen, wat wijzigde bijwerken en wat nieuw is
     // toevoegen (zie Onze muziek). De volgorde blijft die van binnenkomst.

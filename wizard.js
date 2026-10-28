@@ -97,7 +97,7 @@ function populateWizardFieldsFromState() {
 
   const avatarPreview = document.getElementById('avatarPreview');
   if (state.avatarUrl) {
-    avatarPreview.innerHTML = `<img src="${safeUrl(state.avatarUrl)}" alt="profielfoto">`;
+    avatarPreview.innerHTML = `<img ${kleinFotoAttr(safeUrl(state.avatarUrl))} alt="profielfoto">`;
     document.getElementById('avatarRemoveBtn').classList.add('visible');
   } else {
     avatarPreview.innerHTML = `<span id="avatarInitials" class="avatar-t">T</span>`;
@@ -450,6 +450,7 @@ async function persistEditedProfile() {
     profile_complete: true, // TT-09: dit is de definitieve klik op "Profiel aanmaken"/"Wijzigingen opslaan"/"Opslaan"
   }).eq('id', mid);
   if (uErr) throw new Error(uErr.message);
+  oudeFotosOpruimen(currentUser && currentUser.id, state.avatarUrl);
 
   // TT-281 (23-09-2026): wissen en opnieuw vullen gebeurt in één
   // databasefunctie, in één transactie. Mislukt één stap, dan blijft alles
@@ -874,6 +875,7 @@ async function submitProfile() {
 
     if (mErr) throw new Error(mErr.message);
     mid = musician.id;
+    oudeFotosOpruimen(userId, state.avatarUrl);
 
     // 3. Instrumenten (TT-51: niveau 1-5 gaat mee, gevalideerd bij stap 1 —
     // hier defensief || null voor het geval deze functie ooit buiten de
@@ -1427,6 +1429,7 @@ async function createAccountAndProfile() {
       ({ data: musician, error: mErr } = await db.from('musicians').insert(musicianRow).select('id').single());
     }
     if (mErr) throw new Error(mErr.message);
+    oudeFotosOpruimen(userId, state.avatarUrl);
 
     editingMusicianId = musician.id;
     myMusicianId = musician.id;
@@ -1598,11 +1601,77 @@ async function uploadToStorage(bucket, userId, file, maxBytes, maxLabel, allowed
   const { error: upErr } = await db.storage.from(bucket).upload(path, file, { cacheControl: '3600', upsert: false });
   if (upErr) throw upErr;
   const { data } = db.storage.from(bucket).getPublicUrl(path);
-  return { url: data.publicUrl, path };
+  return { url: data.publicUrl, path, file };
 }
 
-function uploadAvatarFile(file, userId) {
-  return uploadToStorage('avatars', userId, file, 5 * 1024 * 1024, '5 MB', AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
+// Fotootje (zie fotoKleinPad() in utils.js): het midden van de foto,
+// vierkant, FOTO_KLEIN_PX pixels, JPG.
+async function fotootjeMaken(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, fout) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => fout(new Error('foto niet te lezen'));
+      i.src = url;
+    });
+    const zijde = Math.min(img.naturalWidth, img.naturalHeight);
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = FOTO_KLEIN_PX;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, FOTO_KLEIN_PX, FOTO_KLEIN_PX);
+    ctx.drawImage(img, (img.naturalWidth - zijde) / 2, (img.naturalHeight - zijde) / 2, zijde, zijde,
+      0, 0, FOTO_KLEIN_PX, FOTO_KLEIN_PX);
+    const blob = await new Promise(ok => canvas.toBlob(ok, 'image/jpeg', 0.8));
+    if (!blob) throw new Error('fotootje niet gemaakt');
+    return blob;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+// Het fotootje gaat mee met de foto. Mislukt het, dan staat de foto er toch:
+// de app toont dan de grote foto (utils.js).
+let fotoUploadsBezig = 0;
+async function uploadAvatarFile(file, userId) {
+  fotoUploadsBezig++;
+  try {
+    const uit = await uploadToStorage('avatars', userId, file, 5 * 1024 * 1024, '5 MB', AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
+    try {
+      const klein = await fotootjeMaken(uit.file);
+      const { error } = await db.storage.from('avatars').upload(fotoKleinPad(uit.path), klein,
+        { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
+      if (error) throw error;
+    } catch (e) {
+      logCaught('fotootjeUploaden', e);
+    }
+    return uit;
+  } finally {
+    fotoUploadsBezig--;
+  }
+}
+
+// Na het opslaan: elke foto in de map die niet de huidige is, gaat weg, met
+// zijn fotootje (28-10-2026). Zo blijft een vervangen of verwijderde foto
+// niet via zijn link te openen. `map` is het account-id of `bands/<band-id>`.
+// Loopt er nog een upload, dan niets: die foto is nog niet opgeslagen. De
+// volgende keer opslaan ruimt het op.
+async function oudeFotosOpruimen(map, huidigeUrl) {
+  if (!map || fotoUploadsBezig) return;
+  try {
+    const delen = String(huidigeUrl || '').split(AVATARS_PAD);
+    const huidig = delen.length === 2 ? decodeURIComponent(delen[1]) : null;
+    const houden = huidig ? [huidig, fotoKleinPad(huidig)] : [];
+    const { data, error } = await db.storage.from('avatars').list(map, { limit: 1000 });
+    if (error) throw error;
+    const weg = (data || []).filter(f => f.id).map(f => `${map}/${f.name}`).filter(p => !houden.includes(p));
+    if (!weg.length) return;
+    const { error: wErr } = await db.storage.from('avatars').remove(weg);
+    if (wErr) throw wErr;
+  } catch (e) {
+    logCaught('oudeFotosOpruimen', e);
+  }
 }
 
 function uploadMediaFile(file, userId) {

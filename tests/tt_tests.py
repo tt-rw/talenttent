@@ -13,6 +13,7 @@ Wat laag 1 NIET dekt: database, RLS-regels, echt inloggen. Dat is laag 2,
 die Claude in de browser doorloopt. Zie actielijst.md, TT-231.
 """
 
+import base64
 import glob
 import http.server
 import json
@@ -8291,6 +8292,145 @@ window.TT_STUB.fnAntwoord = {};
               "overneemKnopHTML(c.song_title, c.song_artist)" in bjs
               and "vak.innerHTML = bandPaginaHTML(b, kijker);\n  overneemKnoppenBijwerken(vak);" in bjs, "bands.js")
         check("geen paginafouten in blok 102", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ────────────────────────────────────────────────────────────
+        # Blok 103 — fotootjes (28-10-2026, besluit Ronald: optie b). Naast
+        # elke profiel- en bandfoto een vierkant fotootje van 240 pixels;
+        # lijsten en de kop van een profiel tonen het fotootje, een tik de grote
+        # foto. Ontbreekt het fotootje, dan de grote foto. Na opslaan gaan oude
+        # foto's uit de map, met hun fotootje.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 103 — fotootjes in lijsten, terugval en oude foto's opruimen")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        # Plaatjes uit de opslag: een grote foto bestaat, een fotootje niet.
+        _png103 = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
+        def _opslag103(route):
+            if route.request.url.endswith("_klein.jpg"):
+                route.fulfill(status=404, body="")
+            else:
+                route.fulfill(status=200, content_type="image/png", body=_png103)
+        page.route("**/storage/v1/object/public/avatars/**", _opslag103)
+        d103 = page.evaluate(r"""async () => {
+          const u = {}, w = (n = 150) => new Promise(r => setTimeout(r, n));
+          const echt = db.storage.from;
+          const bak = {};            // pad -> { type, blob }
+          let fout2 = false, n = 0;
+          db.storage.from = bucket => ({
+            async upload(pad, blob, opt) {
+              n++;
+              if (fout2 && pad.endsWith('_klein.jpg')) return { data: null, error: { message: 'upload mislukt' } };
+              bak[bucket + ':' + pad] = { blob, opt }; return { data: { path: pad }, error: null };
+            },
+            async list(map) {
+              const pre = bucket + ':' + map + '/';
+              const rij = Object.keys(bak).filter(k => k.startsWith(pre)).map(k => k.slice(pre.length)).filter(x => !x.includes('/'));
+              return { data: rij.map(name => ({ name, id: 'id-' + name })).concat([{ name: 'submap', id: null }]), error: null };
+            },
+            async remove(paden) { paden.forEach(p => delete bak[bucket + ':' + p]); return { data: [], error: null }; },
+            getPublicUrl: p => ({ data: { publicUrl: location.origin + '/storage/v1/object/public/' + bucket + '/' + p } })
+          });
+          try {
+            // 1. Upload: foto en fotootje, het fotootje vierkant, 240 pixels, JPG.
+            const c = document.createElement('canvas'); c.width = 1200; c.height = 800;
+            c.getContext('2d').fillRect(0, 0, 1200, 800);
+            const png = await new Promise(ok => c.toBlob(ok, 'image/png'));
+            const uit = await uploadAvatarFile(new File([png], 'foto.png', { type: 'image/png' }), 'u1');
+            u.paden = Object.keys(bak).sort();
+            const kl = bak['avatars:' + fotoKleinPad(uit.path)];
+            if (kl) { const bm = await createImageBitmap(kl.blob); u.klein = { b: bm.width, h: bm.height, type: kl.blob.type, opt: kl.opt }; }
+            u.url = uit.url; u.bezigNa = fotoUploadsBezig;
+            // 2. Mislukt het fotootje, dan staat de foto er toch en komt er geen fout.
+            fout2 = true;
+            try { const r2 = await uploadAvatarFile(new File([png], 'foto2.png', { type: 'image/png' }), 'u1'); u.zonderKlein = !!r2.url; }
+            catch (e) { u.zonderKlein = 'fout: ' + e.message; }
+            fout2 = false; u.bezigNa2 = fotoUploadsBezig;
+            // 3. De bron-attributen.
+            const groot = location.origin + '/storage/v1/object/public/avatars/u1/123_ab.jpg';
+            u.attr = {
+              avatar: kleinFotoAttr(safeUrl(groot)),
+              band: kleinFotoAttr(safeUrl(location.origin + '/storage/v1/object/public/avatars/bands/b1/9_x.jpeg')),
+              media: kleinFotoAttr(safeUrl(location.origin + '/storage/v1/object/public/media/u1/1_a.jpg')),
+              blob: kleinFotoAttr('blob:http://x/1'),
+              alKlein: kleinFotoAttr(safeUrl(location.origin + '/storage/v1/object/public/avatars/u1/123_ab_klein.jpg')) };
+            // 4. Terugval: het fotootje ontbreekt, de browser laadt de grote foto.
+            const vak = document.createElement('div'); document.body.appendChild(vak);
+            vak.innerHTML = `<img ${kleinFotoAttr(safeUrl(groot))} alt="">`;
+            const img = vak.querySelector('img');
+            for (let i = 0; i < 20 && !(img.complete && img.naturalWidth); i++) await w(100);
+            u.terugval = { src: img.getAttribute('src'), geladen: img.naturalWidth > 0, groot: img.dataset.groot || null };
+            vak.remove();
+            // 5. Zoeken, profielkop en bandpagina tonen het fotootje; een tik opent de grote foto.
+            const m = { id: 'm2', soort: 'muzikant', weergavenaam: 'Sanne', username: 'sanne', city: 'Delft', age: 17, avatar_url: groot,
+              musician_instruments: [{ instrument: 'Drums', niveau: 3 }], musician_genres: [], musician_songs: [], musician_media: [] };
+            const src = h => { const d = document.createElement('div'); d.innerHTML = h; const i = d.querySelector('img'); return i ? { src: i.getAttribute('src'), groot: i.dataset.groot || null, klik: i.getAttribute('onclick') } : null; };
+            u.zoekRij = src(musicianRowHTML(m));
+            u.zoekKaart = src(musicianCardHTML(m));
+            u.kop = src(buildMusicianDetailHTML(m, false, false));
+            u.zonderFoto = src(musicianRowHTML(Object.assign({}, m, { avatar_url: null })));
+            // 6. Opruimen na opslaan.
+            for (const k of Object.keys(bak)) delete bak[k];
+            const zet = p => { bak['avatars:' + p] = { blob: null }; };
+            ['u1/1_oud.jpg', 'u1/1_oud_klein.jpg', 'u1/2_nu.jpg', 'u1/2_nu_klein.jpg', 'u1/3_los.png'].forEach(zet);
+            await oudeFotosOpruimen('u1', location.origin + '/storage/v1/object/public/avatars/u1/2_nu.jpg');
+            u.naOpslaan = Object.keys(bak).sort();
+            fotoUploadsBezig = 1; zet('u1/4_nieuw.jpg');
+            await oudeFotosOpruimen('u1', null);
+            u.tijdensUpload = Object.keys(bak).sort();
+            fotoUploadsBezig = 0;
+            await oudeFotosOpruimen('u1', null);
+            u.fotoWeg = Object.keys(bak).sort();
+            ['bands/b1/5_a.jpg', 'bands/b1/5_a_klein.jpg', 'bands/b1/6_b.jpg', 'u9/7_c.jpg'].forEach(zet);
+            await oudeFotosOpruimen('bands/b1', location.origin + '/storage/v1/object/public/avatars/bands/b1/6_b.jpg');
+            u.band = Object.keys(bak).sort();
+            await oudeFotosOpruimen('', null);
+            u.legeMap = Object.keys(bak).sort();
+          } finally {
+            db.storage.from = echt;
+            fotoUploadsBezig = 0;
+          }
+          return u;
+        }""")
+        page.unroute("**/storage/v1/object/public/avatars/**")
+        j103 = json.dumps(d103, ensure_ascii=False)
+        k103 = d103.get("klein") or {}
+        check("fotootje: de upload zet de foto én een fotootje met dezelfde naam plus _klein.jpg",
+              len(d103["paden"]) == 2 and d103["paden"][1].endswith("_klein.jpg")
+              and d103["paden"][1].replace("_klein.jpg", "") == d103["paden"][0].rsplit(".", 1)[0], j103)
+        check("fotootje: vierkant, 240 bij 240 pixels, JPG", k103.get("b") == 240 and k103.get("h") == 240
+              and k103.get("type") == "image/jpeg", j103)
+        check("fotootje: de upload geeft de link van de grote foto terug", d103["url"].endswith(d103["paden"][0].split(":", 1)[1]), j103)
+        check("fotootje: mislukt het fotootje, dan staat de foto er toch, zonder fout",
+              d103["zonderKlein"] is True and d103["bezigNa"] == 0 and d103["bezigNa2"] == 0, j103)
+        a103 = d103["attr"]
+        check("fotootje: een profiel- en bandfoto krijgen het fotootje, met de grote foto als terugval",
+              '_klein.jpg"' in a103["avatar"] and 'data-groot="' in a103["avatar"] and "123_ab.jpg\"" in a103["avatar"]
+              and "9_x_klein.jpg" in a103["band"], j103)
+        check("fotootje: media, een voorbeeld (blob) en een fotootje zelf blijven ongewijzigd",
+              "data-groot" not in a103["media"] + a103["blob"] + a103["alKlein"] and "_klein" not in a103["media"], j103)
+        check("fotootje: ontbreekt het fotootje, dan laadt de grote foto",
+              d103["terugval"]["geladen"] and d103["terugval"]["src"].endswith("123_ab.jpg") and not d103["terugval"]["groot"], j103)
+        check("fotootje: Zoeken (rij en kaart) en de kop van een profiel tonen het fotootje",
+              all(x and x["src"].endswith("_klein.jpg") for x in (d103["zoekRij"], d103["zoekKaart"], d103["kop"])), j103)
+        check("fotootje: een tik op de profielfoto opent de grote foto",
+              "123_ab.jpg'" in (d103["kop"] or {}).get("klik", "") and "_klein" not in (d103["kop"] or {}).get("klik", ""), j103)
+        check("fotootje: geen foto (of afgeschermd), dan ook geen fotootje", d103["zonderFoto"] is None, j103)
+        check("opruimen: na opslaan blijven alleen de huidige foto en zijn fotootje over",
+              d103["naOpslaan"] == ["avatars:u1/2_nu.jpg", "avatars:u1/2_nu_klein.jpg"], j103)
+        check("opruimen: loopt er nog een upload, dan blijft alles staan",
+              len(d103["tijdensUpload"]) == 3, j103)
+        check("opruimen: foto verwijderd, dan gaan foto en fotootje weg",
+              d103["fotoWeg"] == [], j103)
+        check("opruimen: een bandmap ruimt alleen zijn eigen oude foto's op",
+              d103["band"] == ["avatars:bands/b1/6_b.jpg", "avatars:u9/7_c.jpg"] and d103["legeMap"] == d103["band"], j103)
+        bron103 = {x: open(os.path.join(ROOT, x), encoding="utf-8").read() for x in ["wizard.js", "musicians.js", "bands.js", "search.js", "messages.js"]}
+        check("opruimen: alle vijf plekken waar een foto wordt opgeslagen, ruimen op",
+              bron103["wizard.js"].count("oudeFotosOpruimen(") == 4 and bron103["musicians.js"].count("oudeFotosOpruimen(") == 1
+              and bron103["bands.js"].count("oudeFotosOpruimen(") == 1, "")
+        _kaal103 = re.findall(r'<img[^>]*src="\$\{(?:avatarSrc|foto|veilig|url)\}"', "".join(bron103.values()))
+        check("fotootje: geen profiel- of bandfoto meer zonder fotootje in de schermen", not _kaal103, str(_kaal103)[:300])
+        check("geen paginafouten in blok 103", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         # ────────────────────────────────────────────────────────────
