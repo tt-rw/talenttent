@@ -325,6 +325,15 @@ function naamMatcht(term, ...velden) {
 // weigert de database de vraag (gemeten 27-10-2026). Daarom in delen van 200,
 // tegelijk. `vraag(deel)` geeft één databasevraag; het antwoord heeft de vorm
 // { data, error } van één vraag.
+// Een vraag van Supabase start pas bij `await` of `.then()` (Geverifieerd
+// 28-10-2026, TT-537). Moet een vraag nu al lopen terwijl het antwoord pas
+// later nodig is, zet hem dan in vraagNu(). Een netwerkfout komt dan terug als
+// { data: null, error }, net als een fout van de database: zo geeft een vraag
+// die door een eerdere fout nooit wordt afgewacht, geen losse fout.
+function vraagNu(vraag) {
+  return vraag.then(r => r, e => ({ data: null, error: e }));
+}
+
 async function inDelen(ids, vraag) {
   const delen = [];
   for (let i = 0; i < ids.length; i += 200) delen.push(ids.slice(i, i + 200));
@@ -737,22 +746,24 @@ function safeUrl(u) {
   return /^(https?:\/\/|blob:)/i.test(s) ? escHtml(s) : '';
 }
 
-/* Fotootje (28-10-2026, besluit Ronald: optie b). Naast elke profiel- en
-   bandfoto in `avatars` staat een vierkante versie van FOTO_KLEIN_PX pixels,
-   met dezelfde naam plus `_klein.jpg` (uploadAvatarFile() in wizard.js).
-   Lijsten en de kop van een profiel tonen het fotootje; een tik op de foto
-   opent de grote. De grootste plek is 80 pixels; 240 dekt een scherm met drie
-   beeldpunten per pixel. Ontbreekt het fotootje (een foto van vóór deze
-   wijziging, een half gelukte upload, een oude versie van de app), dan laadt
-   de browser vanzelf de grote foto: zie de luisteraar hieronder. */
+/* Fotootje (28-10-2026, TT-537, besluit Ronald: optie b). Naast elke foto in
+   `avatars` (profiel- en bandfoto) en `media` (de mediahoek) staat een
+   vierkante versie van FOTO_KLEIN_PX pixels, met dezelfde naam plus
+   `_klein.jpg` (uploadToStorage() in wizard.js). Lijsten, de kop van een
+   profiel en de mediategels tonen het fotootje; een tik op de foto en de
+   bannerbalk tonen de grote. De grootste plek is 80 pixels; 240 dekt een
+   scherm met drie beeldpunten per pixel. Een GIF heeft geen fotootje.
+   Ontbreekt het fotootje (een foto van vóór deze wijziging, een half gelukte
+   upload, een oude versie van de app), dan laadt de browser vanzelf de grote
+   foto: zie de luisteraar hieronder. */
 const FOTO_KLEIN_PX = 240;
-const AVATARS_PAD = '/storage/v1/object/public/avatars/';
+const FOTO_KLEIN_MAPPEN = /\/storage\/v1\/object\/public\/(avatars|media)\//;
 function fotoKleinPad(pad) {
   return String(pad).replace(/\.[^./]*$/, '') + '_klein.jpg';
 }
 // `src` komt uit safeUrl(). Geeft de bron-attributen voor een <img>.
 function kleinFotoAttr(src) {
-  if (!src.includes(AVATARS_PAD) || src.endsWith('_klein.jpg')) return `src="${src}"`;
+  if (!FOTO_KLEIN_MAPPEN.test(src) || src.endsWith('_klein.jpg') || /\.gif$/i.test(src)) return `src="${src}"`;
   return `src="${fotoKleinPad(src)}" data-groot="${src}"`;
 }
 document.addEventListener('error', e => {
@@ -2064,7 +2075,7 @@ function mediaLinkRijHTML(l, i, voorvoegsel) {
 function mediaTegelHTML(m, i, voorvoegsel) {
   const fn = n => mediaFnNaam(voorvoegsel, n);
   const beeld = m.type === 'foto'
-    ? `<img src="${safeUrl(m.url) || ''}" alt="${escHtml(m.name || '')}">`
+    ? `<img ${kleinFotoAttr(safeUrl(m.url))} alt="${escHtml(m.name || '')}">`
     : `<span class="media-thumb-video">Video</span>`;
   return `
     <div class="media-thumb">

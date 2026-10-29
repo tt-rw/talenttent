@@ -316,7 +316,7 @@ function bandFilterScore(b) {
 // (`vraag`), tegelijk met de gegevens. De rang is alleen een volgorde, dus een
 // ruimere lijst geeft dezelfde volgorde.
 function actiefStandVraag(soort, ids) {
-  return db.rpc(soort === 'band' ? 'tt_band_actief_stand' : 'tt_actief_stand', { ids });
+  return vraagNu(db.rpc(soort === 'band' ? 'tt_band_actief_stand' : 'tt_actief_stand', { ids }));
 }
 async function zetActiefStand(soort, lijst, vraag) {
   lijst.forEach(x => { x.actiefGroep = 0; x.actiefRang = 0; });
@@ -746,7 +746,7 @@ async function zoekMuzikantenOphalen(radius, origin) {
     matches.forEach(m => { matchInfo[m.musician_id] = m; });
     const ids = matches.map(m => m.musician_id);
     actief = actiefStandVraag('muzikant', ids); // TT-367: tegelijk
-    const namenVraag = db.rpc('tt_weergavenamen', { ids });
+    const namenVraag = vraagNu(db.rpc('tt_weergavenamen', { ids }));
     const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
     if (error) throw error;
     // TT-420: de naam komt uit weergavenaam (weergavenamenToevoegen()), nooit
@@ -1615,7 +1615,7 @@ async function runSetlistSearch(straalOverride) {
       if (error) throw error;
       musicians = data;
     } else {
-      const namenVraag = db.rpc('tt_weergavenamen', { ids });
+      const namenVraag = vraagNu(db.rpc('tt_weergavenamen', { ids }));
       const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
       if (error) throw error;
       musicians = (data || []).map(m => ({
@@ -1884,7 +1884,7 @@ async function gedeeldKandidatenLaden() {
   const sleutel = hasOwnProfile ? 'profiel' : 'bezoeker';
   if (gedeeldKandidaten && gedeeldKandidaten.sleutel === sleutel) return gedeeldKandidaten.lijst;
 
-  const alle = db.rpc('tt_search_musicians_anon', { origin_lat: null, origin_lng: null, radius_km: null });
+  const alle = vraagNu(db.rpc('tt_search_musicians_anon', { origin_lat: null, origin_lng: null, radius_km: null }));
   const dichtbij = hasOwnProfile
     ? getMyMusicianId().then(mid => db.rpc('tt_search_musicians', {
         searcher_id: mid, radius_km: STRAAL_LANDELIJK, origin_lat: null, origin_lng: null }))
@@ -1918,7 +1918,7 @@ async function gedeeldMuzikantenLaden(ids, metNummers) {
     if (error) throw error;
     return (data || []).map(m => ({ ...m, musician_songs: m.musician_songs || [] }));
   }
-  const namenVraag = db.rpc('tt_weergavenamen', { ids }); // TT-367: tegelijk
+  const namenVraag = vraagNu(db.rpc('tt_weergavenamen', { ids })); // TT-367: tegelijk
   const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
   if (error) throw error;
   const rijen = (data || []).map(m => ({

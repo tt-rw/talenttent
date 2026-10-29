@@ -450,7 +450,7 @@ async function persistEditedProfile() {
     profile_complete: true, // TT-09: dit is de definitieve klik op "Profiel aanmaken"/"Wijzigingen opslaan"/"Opslaan"
   }).eq('id', mid);
   if (uErr) throw new Error(uErr.message);
-  oudeFotosOpruimen(currentUser && currentUser.id, state.avatarUrl);
+  opslagOpruimen('avatars', currentUser && currentUser.id, [state.avatarUrl]);
 
   // TT-281 (23-09-2026): wissen en opnieuw vullen gebeurt in één
   // databasefunctie, in één transactie. Mislukt één stap, dan blijft alles
@@ -474,6 +474,7 @@ async function persistEditedProfile() {
     p_media:       linkMedia.concat(fileMedia),
   });
   if (kErr) throw new Error(kErr.message);
+  opslagOpruimen('media', currentUser && currentUser.id, fileMedia.map(m => m.url));
 
   state.savedId = mid;
 }
@@ -875,7 +876,7 @@ async function submitProfile() {
 
     if (mErr) throw new Error(mErr.message);
     mid = musician.id;
-    oudeFotosOpruimen(userId, state.avatarUrl);
+    opslagOpruimen('avatars', userId, [state.avatarUrl]);
 
     // 3. Instrumenten (TT-51: niveau 1-5 gaat mee, gevalideerd bij stap 1 —
     // hier defensief || null voor het geval deze functie ooit buiten de
@@ -1429,7 +1430,7 @@ async function createAccountAndProfile() {
       ({ data: musician, error: mErr } = await db.from('musicians').insert(musicianRow).select('id').single());
     }
     if (mErr) throw new Error(mErr.message);
-    oudeFotosOpruimen(userId, state.avatarUrl);
+    opslagOpruimen('avatars', userId, [state.avatarUrl]);
 
     editingMusicianId = musician.id;
     myMusicianId = musician.id;
@@ -1589,7 +1590,32 @@ function bestandTeGrootMelding(file, maxBytes) {
   return `${naam}is ${mb} MB. Maximaal ${maxMb} MB. Gebruik een JPG of PNG, die verkleint de app zelf.`;
 }
 
+// Het fotootje gaat mee met elke foto (JPG, PNG, WebP; geen GIF of video), in
+// `avatars` en in `media` (TT-537). Mislukt het, dan staat de foto er toch: de
+// app toont dan de grote foto (utils.js). fotoUploadsBezig telt de uploads die
+// nog lopen; opslagOpruimen() wist dan niets.
+let fotoUploadsBezig = 0;
 async function uploadToStorage(bucket, userId, file, maxBytes, maxLabel, allowedTypes, typeLabel) {
+  fotoUploadsBezig++;
+  try {
+    const uit = await uploadToStorageZonderKlein(bucket, userId, file, maxBytes, maxLabel, allowedTypes, typeLabel);
+    if (/^image\/(jpeg|png|webp)$/.test((uit.file.type || '').toLowerCase())) {
+      try {
+        const klein = await fotootjeMaken(uit.file);
+        const { error } = await db.storage.from(bucket).upload(fotoKleinPad(uit.path), klein,
+          { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
+        if (error) throw error;
+      } catch (e) {
+        logCaught('fotootjeUploaden', e);
+      }
+    }
+    return uit;
+  } finally {
+    fotoUploadsBezig--;
+  }
+}
+
+async function uploadToStorageZonderKlein(bucket, userId, file, maxBytes, maxLabel, allowedTypes, typeLabel) {
   if (allowedTypes) {
     const problem = fileTypeProblem(file, allowedTypes, typeLabel);
     if (problem) throw eigenFout(problem);
@@ -1631,46 +1657,35 @@ async function fotootjeMaken(file) {
   }
 }
 
-// Het fotootje gaat mee met de foto. Mislukt het, dan staat de foto er toch:
-// de app toont dan de grote foto (utils.js).
-let fotoUploadsBezig = 0;
-async function uploadAvatarFile(file, userId) {
-  fotoUploadsBezig++;
-  try {
-    const uit = await uploadToStorage('avatars', userId, file, 5 * 1024 * 1024, '5 MB', AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
-    try {
-      const klein = await fotootjeMaken(uit.file);
-      const { error } = await db.storage.from('avatars').upload(fotoKleinPad(uit.path), klein,
-        { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
-      if (error) throw error;
-    } catch (e) {
-      logCaught('fotootjeUploaden', e);
-    }
-    return uit;
-  } finally {
-    fotoUploadsBezig--;
-  }
+function uploadAvatarFile(file, userId) {
+  return uploadToStorage('avatars', userId, file, 5 * 1024 * 1024, '5 MB', AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
 }
 
-// Na het opslaan: elke foto in de map die niet de huidige is, gaat weg, met
-// zijn fotootje (28-10-2026). Zo blijft een vervangen of verwijderde foto
-// niet via zijn link te openen. `map` is het account-id of `bands/<band-id>`.
-// Loopt er nog een upload, dan niets: die foto is nog niet opgeslagen. De
-// volgende keer opslaan ruimt het op.
-async function oudeFotosOpruimen(map, huidigeUrl) {
+// Na het opslaan: elk bestand in de map dat niet meer op het profiel of de
+// bandpagina staat, gaat weg, met zijn fotootje (TT-537). Zo blijft een
+// vervangen of verwijderde foto of video niet via zijn link te openen.
+// `bucket` is 'avatars' of 'media'; `map` het account-id of `bands/<band-id>`;
+// `urls` de links die blijven. Loopt er nog een upload, dan niets: dat bestand
+// is nog niet opgeslagen. De volgende keer opslaan ruimt het op.
+async function opslagOpruimen(bucket, map, urls) {
   if (!map || fotoUploadsBezig) return;
   try {
-    const delen = String(huidigeUrl || '').split(AVATARS_PAD);
-    const huidig = delen.length === 2 ? decodeURIComponent(delen[1]) : null;
-    const houden = huidig ? [huidig, fotoKleinPad(huidig)] : [];
-    const { data, error } = await db.storage.from('avatars').list(map, { limit: 1000 });
+    const pad = `/storage/v1/object/public/${bucket}/`;
+    const houden = [];
+    (urls || []).forEach(u => {
+      const delen = String(u || '').split(pad);
+      if (delen.length !== 2) return;
+      const p = decodeURIComponent(delen[1]);
+      houden.push(p, fotoKleinPad(p));
+    });
+    const { data, error } = await db.storage.from(bucket).list(map, { limit: 1000 });
     if (error) throw error;
     const weg = (data || []).filter(f => f.id).map(f => `${map}/${f.name}`).filter(p => !houden.includes(p));
     if (!weg.length) return;
-    const { error: wErr } = await db.storage.from('avatars').remove(weg);
+    const { error: wErr } = await db.storage.from(bucket).remove(weg);
     if (wErr) throw wErr;
   } catch (e) {
-    logCaught('oudeFotosOpruimen', e);
+    logCaught('opslagOpruimen', e);
   }
 }
 
@@ -1836,7 +1851,7 @@ function removeMedia(i) {
   // Al geüpload bestand meteen weer opruimen uit Storage — voorkomt dat
   // verwijderde media als wees achterblijft (best effort, geen blokkerende fout).
   if (entry?.path) {
-    db.storage.from('media').remove([entry.path]).then(() => {}, e => logCaught('removeMedia', e));
+    db.storage.from('media').remove([entry.path, fotoKleinPad(entry.path)]).then(() => {}, e => logCaught('removeMedia', e));
   }
 }
 

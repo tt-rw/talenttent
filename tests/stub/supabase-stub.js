@@ -302,23 +302,31 @@
   function createClient() {
     return {
       from(table) { return new Query(table); },
+      // TT-537 (28-10-2026): zoals de echte bibliotheek start een vraag pas bij
+      // `await` of `.then()`, niet bij het aanroepen. Vroeger startte de stub
+      // direct; daardoor leek een vraag die "vooraf" werd klaargezet, tegelijk
+      // te lopen, terwijl hij in de echte app pas later startte.
       rpc(name, params) {
-        TT_STUB.calls.push({ kind: 'rpc', name, params: clone(params || null) });
-        const err = TT_STUB.rpcErrors[name];
-        if (err) return Promise.resolve({ data: null, error: clone(err) });
-        const has = Object.prototype.hasOwnProperty.call(TT_STUB.rpcResults, name);
-        if (has && typeof TT_STUB.rpcResults[name] === 'function') {
-          // Een functie mag op de parameters reageren — nodig om bijvoorbeeld
-          // een straal-afhankelijk antwoord na te bootsen (TT-62).
-          return Promise.resolve({ data: clone(TT_STUB.rpcResults[name](params || {})), error: null });
-        }
-        if (!has) {
-          return Promise.resolve({
-            data: null,
-            error: { code: 'PGRST202', message: 'Could not find the function public.' + name, details: null, hint: null }
-          });
-        }
-        return Promise.resolve({ data: clone(TT_STUB.rpcResults[name]), error: null });
+        const run = () => {
+          TT_STUB.calls.push({ kind: 'rpc', name, params: clone(params || null) });
+          const err = TT_STUB.rpcErrors[name];
+          if (err) return { data: null, error: clone(err) };
+          const has = Object.prototype.hasOwnProperty.call(TT_STUB.rpcResults, name);
+          if (has && typeof TT_STUB.rpcResults[name] === 'function') {
+            // Een functie mag op de parameters reageren — nodig om bijvoorbeeld
+            // een straal-afhankelijk antwoord na te bootsen (TT-62).
+            return { data: clone(TT_STUB.rpcResults[name](params || {})), error: null };
+          }
+          if (!has) {
+            return { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.' + name, details: null, hint: null } };
+          }
+          return { data: clone(TT_STUB.rpcResults[name]), error: null };
+        };
+        return {
+          then(onOk, onErr) { return Promise.resolve().then(run).then(onOk, onErr); },
+          catch(fn) { return this.then(undefined, fn); },
+          finally(fn) { return this.then().finally(fn); }
+        };
       },
       auth: {
         refreshSession() {

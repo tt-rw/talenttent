@@ -2300,7 +2300,7 @@ function bmRemoveMedia(i) {
   bmMediaFiles.splice(i, 1);
   bmRenderMediaGrid();
   if (entry && entry.path) {
-    db.storage.from('media').remove([entry.path]).then(() => {}, e => logCaught('bmRemoveMedia', e));
+    db.storage.from('media').remove([entry.path, fotoKleinPad(entry.path)]).then(() => {}, e => logCaught('bmRemoveMedia', e));
   }
 }
 
@@ -2369,7 +2369,7 @@ async function saveBandMedia() {
       avatar_url: bmFotoUrl || null
     }).eq('id', id);
     if (sErr) throw sErr;
-    oudeFotosOpruimen('bands/' + id, bmFotoUrl);
+    opslagOpruimen('avatars', 'bands/' + id, [bmFotoUrl]);
 
     // Alleen wat wegging weghalen, wat wijzigde bijwerken en wat nieuw is
     // toevoegen (zie Onze muziek). De volgorde blijft die van binnenkomst.
@@ -2394,6 +2394,7 @@ async function saveBandMedia() {
         ({ band_id: id, media_type: m.media_type, url: m.url, platform: m.platform, in_banner: m.in_banner })));
       if (error) throw error;
     }
+    opslagOpruimen('media', 'bands/' + id, nu.map(m => m.url));
 
     const b = await bandBewerkGegevens('avatar_url, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at)');
     if (!b) return;

@@ -8373,19 +8373,32 @@ window.TT_STUB.fnAntwoord = {};
             for (const k of Object.keys(bak)) delete bak[k];
             const zet = p => { bak['avatars:' + p] = { blob: null }; };
             ['u1/1_oud.jpg', 'u1/1_oud_klein.jpg', 'u1/2_nu.jpg', 'u1/2_nu_klein.jpg', 'u1/3_los.png'].forEach(zet);
-            await oudeFotosOpruimen('u1', location.origin + '/storage/v1/object/public/avatars/u1/2_nu.jpg');
+            await opslagOpruimen('avatars', 'u1', [location.origin + '/storage/v1/object/public/avatars/u1/2_nu.jpg']);
             u.naOpslaan = Object.keys(bak).sort();
             fotoUploadsBezig = 1; zet('u1/4_nieuw.jpg');
-            await oudeFotosOpruimen('u1', null);
+            await opslagOpruimen('avatars', 'u1', [null]);
             u.tijdensUpload = Object.keys(bak).sort();
             fotoUploadsBezig = 0;
-            await oudeFotosOpruimen('u1', null);
+            await opslagOpruimen('avatars', 'u1', [null]);
             u.fotoWeg = Object.keys(bak).sort();
             ['bands/b1/5_a.jpg', 'bands/b1/5_a_klein.jpg', 'bands/b1/6_b.jpg', 'u9/7_c.jpg'].forEach(zet);
-            await oudeFotosOpruimen('bands/b1', location.origin + '/storage/v1/object/public/avatars/bands/b1/6_b.jpg');
+            await opslagOpruimen('avatars', 'bands/b1', [location.origin + '/storage/v1/object/public/avatars/bands/b1/6_b.jpg']);
             u.band = Object.keys(bak).sort();
-            await oudeFotosOpruimen('', null);
+            await opslagOpruimen('avatars', '', []);
             u.legeMap = Object.keys(bak).sort();
+            // 7. Media (TT-537): een foto krijgt een fotootje, een video en een GIF niet.
+            for (const k of Object.keys(bak)) delete bak[k];
+            const fm = await uploadMediaFile(new File([png], 'm.png', { type: 'image/png' }), 'u1');
+            await uploadMediaFile(new File([new Uint8Array(2000)], 'v.mp4', { type: 'video/mp4' }), 'u1');
+            await uploadMediaFile(new File([new Uint8Array(2000)], 'a.gif', { type: 'image/gif' }), 'u1');
+            u.media = Object.keys(bak).filter(k => k.startsWith('media:')).map(k => k.split('/').pop().replace(/^\d+_[a-z0-9]+/, 'X')).sort();
+            u.mediaTegel = src(`<div>${mediaTegelHTML({ type: 'foto', url: fm.url, name: 'm' }, 0, 'mh')}</div>`);
+            u.mediaGif = kleinFotoAttr(safeUrl(location.origin + '/storage/v1/object/public/media/u1/1_a.gif'));
+            u.raster = src(profielMediaHTML([{ media_type: 'foto', url: fm.url }]));
+            // 8. Opruimen in media: wat op het profiel blijft, blijft; de rest gaat weg.
+            const houdUrl = fm.url;
+            await opslagOpruimen('media', 'u1', [houdUrl]);
+            u.mediaNa = Object.keys(bak).filter(k => k.startsWith('media:')).map(k => k.split('/').pop().replace(/^\d+_[a-z0-9]+/, 'X')).sort();
           } finally {
             db.storage.from = echt;
             fotoUploadsBezig = 0;
@@ -8407,8 +8420,9 @@ window.TT_STUB.fnAntwoord = {};
         check("fotootje: een profiel- en bandfoto krijgen het fotootje, met de grote foto als terugval",
               '_klein.jpg"' in a103["avatar"] and 'data-groot="' in a103["avatar"] and "123_ab.jpg\"" in a103["avatar"]
               and "9_x_klein.jpg" in a103["band"], j103)
-        check("fotootje: media, een voorbeeld (blob) en een fotootje zelf blijven ongewijzigd",
-              "data-groot" not in a103["media"] + a103["blob"] + a103["alKlein"] and "_klein" not in a103["media"], j103)
+        check("fotootje: een foto in de mediahoek krijgt ook het fotootje; een voorbeeld (blob) en een fotootje zelf blijven ongewijzigd",
+              "1_a_klein.jpg" in a103["media"] and 'data-groot="' in a103["media"]
+              and "data-groot" not in a103["blob"] + a103["alKlein"], j103)
         check("fotootje: ontbreekt het fotootje, dan laadt de grote foto",
               d103["terugval"]["geladen"] and d103["terugval"]["src"].endswith("123_ab.jpg") and not d103["terugval"]["groot"], j103)
         check("fotootje: Zoeken (rij en kaart) en de kop van een profiel tonen het fotootje",
@@ -8425,12 +8439,97 @@ window.TT_STUB.fnAntwoord = {};
         check("opruimen: een bandmap ruimt alleen zijn eigen oude foto's op",
               d103["band"] == ["avatars:bands/b1/6_b.jpg", "avatars:u9/7_c.jpg"] and d103["legeMap"] == d103["band"], j103)
         bron103 = {x: open(os.path.join(ROOT, x), encoding="utf-8").read() for x in ["wizard.js", "musicians.js", "bands.js", "search.js", "messages.js"]}
-        check("opruimen: alle vijf plekken waar een foto wordt opgeslagen, ruimen op",
-              bron103["wizard.js"].count("oudeFotosOpruimen(") == 4 and bron103["musicians.js"].count("oudeFotosOpruimen(") == 1
-              and bron103["bands.js"].count("oudeFotosOpruimen(") == 1, "")
+        check("opruimen: alle vijf plekken waar een profiel- of bandfoto wordt opgeslagen, ruimen op",
+              bron103["wizard.js"].count("opslagOpruimen('avatars'") == 3 and bron103["musicians.js"].count("opslagOpruimen('avatars'") == 1
+              and bron103["bands.js"].count("opslagOpruimen('avatars'") == 1, "")
+        check("opruimen: de drie plekken waar de mediahoek wordt opgeslagen, ruimen op",
+              bron103["wizard.js"].count("opslagOpruimen('media'") == 1 and bron103["musicians.js"].count("opslagOpruimen('media'") == 1
+              and bron103["bands.js"].count("opslagOpruimen('media'") == 1, "")
+        check("media: een foto krijgt een fotootje, een video en een GIF niet",
+              d103["media"] == ["X.gif", "X.mp4", "X.png", "X_klein.jpg"], j103)
+        check("media: de tegel bij bewerken en het raster op het profiel tonen het fotootje; een GIF niet",
+              (d103["mediaTegel"] or {}).get("src", "").endswith("_klein.jpg") and (d103["raster"] or {}).get("src", "").endswith("_klein.jpg")
+              and "data-groot" not in d103["mediaGif"], j103)
+        check("media: na opslaan blijven alleen de foto op het profiel en zijn fotootje over",
+              d103["mediaNa"] == ["X.png", "X_klein.jpg"], j103)
+        _x103 = "".join(bron103[x] for x in ["wizard.js", "musicians.js", "bands.js"])
+        check("media: een net geüpload bestand dat weer weg gaat, neemt zijn fotootje mee",
+              _x103.count("remove([entry.path, fotoKleinPad(entry.path)])") == 3 and "remove([entry.path])" not in _x103, "")
         _kaal103 = re.findall(r'<img[^>]*src="\$\{(?:avatarSrc|foto|veilig|url)\}"', "".join(bron103.values()))
         check("fotootje: geen profiel- of bandfoto meer zonder fotootje in de schermen", not _kaal103, str(_kaal103)[:300])
         check("geen paginafouten in blok 103", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ────────────────────────────────────────────────────────────
+        # Blok 104 — vragen echt tegelijk (TT-537, 28-10-2026, akkoord Ronald).
+        # Een vraag van Supabase start pas bij await of .then(); de stub doet
+        # sinds TT-537 hetzelfde. Een vraag die vooraf klaarstaat, staat in
+        # vraagNu() en start dus vóór de vraag die als eerste wordt afgewacht.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 104 — vragen die vooraf klaarstaan, lopen echt tegelijk (TT-537)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        d104 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, u = {};
+          const keep = { hasOwnProfile, rpc: Object.assign({}, S.rpcResults) };
+          try {
+            hasOwnProfile = false;
+            S.rpcResults.tt_search_musicians_anon = [{ musician_id: 'm2', distance_km: null }];
+            S.rpcResults.tt_get_musicians_public = [{ id: 'm2', username: 'sanne', city: 'Delft', instrument_levels: [], genres: [], songs: [] }];
+            S.rpcResults.tt_weergavenamen = [{ id: 'm2', weergavenaam: 'Sanne' }];
+            S.rpcResults.tt_actief_stand = [{ id: 'm2', groep: 0, rang: 1 }];
+            S.rpcResults.tt_search_bands_anon = [{ band_id: 'b1', distance_km: null }];
+            S.rpcResults.tt_get_bands_public = [{ id: 'b1', name: 'Van Delft', city: 'Delft', genres: [], members: [], wanted: [], invallers: [] }];
+            S.rpcResults.tt_band_actief_stand = [{ id: 'b1', groep: 0, rang: 1 }];
+            const volgorde = () => S.calls.filter(c => c.kind === 'rpc').map(c => c.name);
+            // 1. Muzikanten zonder profiel.
+            S.calls = [];
+            const m = await zoekMuzikantenOphalen(10, { lat: null, lng: null });
+            await zetActiefStand('muzikant', m.lijst, m.actief);
+            u.muz = volgorde(); u.muzNaam = (m.lijst[0] || {}).weergavenaam || null; u.muzGroep = (m.lijst[0] || {}).actiefGroep;
+            // 2. Bands zonder profiel.
+            S.calls = [];
+            const b = await zoekBandsOphalen(10, { lat: null, lng: null });
+            await zetActiefStand('band', b.lijst, b.actief);
+            u.band = volgorde();
+            // 3. Een netwerkfout in een vooraf gestarte vraag geeft geen losse fout.
+            try {
+              const nw = await vraagNu({ then: (ok, fout) => Promise.reject(new Error('netwerk weg')).then(ok, fout) });
+              u.netwerk = { data: nw.data, error: nw.error ? String(nw.error.message || nw.error) : null };
+            } catch (e) { u.netwerk = { losseFout: String(e.message || e) }; }
+            // 4. De stub start een vraag pas bij then, zoals de echte bibliotheek.
+            S.calls = [];
+            const v = db.rpc('tt_weergavenamen', { ids: ['m2'] });
+            await new Promise(r => setTimeout(r, 30));
+            u.luiVoor = S.calls.length;
+            await v;
+            u.luiNa = S.calls.length;
+          } finally {
+            hasOwnProfile = keep.hasOwnProfile;
+            S.rpcResults = keep.rpc;
+          }
+          return u;
+        }""")
+        j104 = json.dumps(d104, ensure_ascii=False)
+        m104 = d104["muz"]
+        check("tegelijk: laatst actief en de namen starten vóór de gegevens van de muzikanten",
+              "tt_get_musicians_public" in m104 and m104.index("tt_actief_stand") < m104.index("tt_get_musicians_public")
+              and m104.index("tt_weergavenamen") < m104.index("tt_get_musicians_public"), j104)
+        check("tegelijk: elke vraag loopt één keer, en het resultaat is gelijk (naam en groep)",
+              m104.count("tt_actief_stand") == 1 and m104.count("tt_weergavenamen") == 1
+              and d104["muzNaam"] == "Sanne" and d104["muzGroep"] == 0, j104)
+        b104 = d104["band"]
+        check("tegelijk: bij bands start laatst actief vóór de gegevens",
+              "tt_get_bands_public" in b104 and b104.index("tt_band_actief_stand") < b104.index("tt_get_bands_public"), j104)
+        check("tegelijk: een netwerkfout komt terug als { error }, niet als losse fout",
+              (d104["netwerk"] or {}).get("data", 1) is None and bool((d104["netwerk"] or {}).get("error")), j104)
+        check("stub: een vraag start pas bij await of then, zoals de echte bibliotheek",
+              d104["luiVoor"] == 0 and d104["luiNa"] == 1, j104)
+        _bron104 = "".join(open(os.path.join(ROOT, x), encoding="utf-8").read() for x in JS_FILES)
+        _los104 = re.findall(r"(?:const|let)\s+\w+\s*=\s*(?:hasOwnProfile \? )?db\.rpc\(", _bron104)
+        check("tegelijk: geen vraag van Supabase meer in een variabele zonder vraagNu() (die zou pas later starten)",
+              not _los104, str(_los104))
+        check("geen paginafouten in blok 104", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         # ────────────────────────────────────────────────────────────

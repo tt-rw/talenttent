@@ -127,7 +127,7 @@ function profielMediaHTML(mediaLijst) {
       <div class="profile-media">
         <div class="profile-media-title">Foto's en video's</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
-          ${photos.map(p => p.afgeschermd ? mediaAfgeschermdHTML() : `<button type="button" class="profile-media-tegel" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')"><img src="${p.safeHref}" alt="Foto" style="width:100%;height:100%;object-fit:cover;"></button>`).join('')}
+          ${photos.map(p => p.afgeschermd ? mediaAfgeschermdHTML() : `<button type="button" class="profile-media-tegel" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')"><img ${kleinFotoAttr(p.safeHref)} alt="Foto" style="width:100%;height:100%;object-fit:cover;"></button>`).join('')}
           ${videos.map(v => v.afgeschermd ? mediaAfgeschermdHTML() : `<button type="button" class="profile-media-tegel" onclick="openMediaSpeler('${jsAttr(v.safeHref)}', 'video')"><video src="${v.safeHref}#t=0.1" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true" style="width:100%;height:100%;object-fit:cover;background:#000;"></video><span class="pb-label">Video</span>${SPEELTEKEN_HTML}</button>`).join('')}
         </div>
       </div>` : ''}
@@ -325,7 +325,7 @@ async function laadProfielScherm(id, linkToegang) {
   const beschikbaarVraag = profielBeschikbaar(id);
   // TT-367: leeftijd en bands hangen alleen af van het id; tegelijk vragen.
   const bandsVraag = profielBandsOphalen(id);
-  const leeftijdVraag = hasOwnProfile ? db.rpc('tt_musicians_ages', { ids: [id] }) : null;
+  const leeftijdVraag = hasOwnProfile ? vraagNu(db.rpc('tt_musicians_ages', { ids: [id] })) : null;
 
   if (hasOwnProfile) {
     // B-01 tweede stap (18-08-2026): geen birth_date meer in deze select —
@@ -1583,7 +1583,7 @@ function mhRemoveMedia(i) {
   mhMediaFiles.splice(i, 1);
   mhRenderMediaGrid();
   if (entry?.path) {
-    db.storage.from('media').remove([entry.path]).then(() => {}, e => logCaught('mhRemoveMedia', e));
+    db.storage.from('media').remove([entry.path, fotoKleinPad(entry.path)]).then(() => {}, e => logCaught('mhRemoveMedia', e));
   }
 }
 
@@ -1633,7 +1633,7 @@ async function saveJeMediahoek() {
   const { error: uErr } = await db.from('musicians')
     .update({ avatar_url: mhAvatarUrl || null }).eq('id', myMusicianId);
   if (uErr) { showToast(friendlyErrorMessage(uErr, 'je gegevens opslaan')); return; }
-  oudeFotosOpruimen(currentUser && currentUser.id, mhAvatarUrl);
+  opslagOpruimen('avatars', currentUser && currentUser.id, [mhAvatarUrl]);
 
   // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
   const linkMedia = mhMediaLinks
@@ -1647,6 +1647,7 @@ async function saveJeMediahoek() {
     p_media: linkMedia.concat(fileMedia),
   });
   if (kErr) { showToast(friendlyErrorMessage(kErr, 'je gegevens opslaan')); return; }
+  opslagOpruimen('media', currentUser && currentUser.id, fileMedia.map(m => m.url));
 
   mhSnapshot = mhFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
