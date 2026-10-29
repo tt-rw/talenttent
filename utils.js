@@ -898,20 +898,32 @@ function nummersInklapWissel(lijst) {
 // niet). Nog een tik haalt het weg. Overnemen zonder niveau. Zonder profiel
 // staat de knop er ook; een tik nodigt uit een profiel te maken. Vergelijken
 // zoals Mix & Match: titel en artiest exact, hoofdletters maken niet uit.
+// TT-531 (besluiten Ronald, 29-10-2026, op beeld): een tik op het plusteken
+// opent eerst het keuzemenu (Basis, Bijna, Podium) onder de
+// knop, als drie labels in de vorm van het niveaulabel (optie 1 op beeld);
+// een tik ernaast annuleert. Vervangt "overnemen zonder niveau". Het vinkje
+// haalt het nummer meteen weg, zonder menu.
 const OVERNEEM_PLUS = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1v8M1 5h8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
 const OVERNEEM_VINK = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 5.2l2.3 2.3L8.5 2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 let eigenNummerSleutels = null; // Set van "titel|||artiest", of null als (nog) onbekend
 const nummerSleutel = (titel, artiest) => `${String(titel || '').toLowerCase()}|||${String(artiest || '').toLowerCase()}`;
 
+let overneemTeller = 0; // elke knop een eigen nummer, voor het keuzemenu eronder
 function overneemKnopHTML(titel, artiest) {
-  return `<button type="button" class="nummer-overneem" data-titel="${escHtml(titel)}" data-artiest="${escHtml(artiest)}"` +
-    ` aria-pressed="false" aria-label="Zet ${escHtml(titel)} in je repertoire" onclick="nummerOvernemen(event, this)">${OVERNEEM_PLUS}</button>`;
+  const n = ++overneemTeller;
+  const opties = ['basis', 'bijna', 'podium'].map(k => `<option value="${k}">${BEHEERSING_NAMEN[k]}</option>`).join('');
+  return `<span class="menu-anchor nummer-overneem-plek">` +
+    `<button type="button" class="nummer-overneem" id="ovnVeld${n}" data-nr="${n}" data-titel="${escHtml(titel)}" data-artiest="${escHtml(artiest)}"` +
+    ` aria-pressed="false" aria-haspopup="listbox" aria-expanded="false" aria-label="Zet ${escHtml(titel)} in je repertoire" onclick="nummerOvernemen(event, this)">${OVERNEEM_PLUS}</button>` +
+    `<select id="ovnSel${n}" hidden onchange="nummerOvernemenMet(${n}, this)"><option value="" selected style="display:none">Beheersing</option>${opties}</select>` +
+    `<div class="choice-menu overneem-menu beheersing-menu" id="ovnMenu${n}" role="listbox"></div></span>`;
 }
 function overneemKnopZetten(knop) {
   const aan = !!(eigenNummerSleutels && eigenNummerSleutels.has(nummerSleutel(knop.dataset.titel, knop.dataset.artiest)));
   if (knop.classList.contains('aan') === aan && knop.firstElementChild) return;
   knop.classList.toggle('aan', aan);
   knop.setAttribute('aria-pressed', aan ? 'true' : 'false');
+  if (aan) knop.removeAttribute('aria-haspopup'); else knop.setAttribute('aria-haspopup', 'listbox');
   knop.setAttribute('aria-label', `${aan ? 'Haal' : 'Zet'} ${knop.dataset.titel} ${aan ? 'uit' : 'in'} je repertoire`);
   knop.innerHTML = aan ? OVERNEEM_VINK : OVERNEEM_PLUS;
 }
@@ -934,16 +946,38 @@ async function nummerOvernemen(ev, knop) {
   if (ev) ev.stopPropagation(); // de lijst eromheen klapt anders open of dicht
   if (!hasOwnProfile || !myMusicianId) { showToast('Maak een gratis profiel aan, dan bewaren we dit nummer.'); return; }
   if (knop.dataset.bezig) return;
+  if (knop.classList.contains('aan')) { repertoireBijwerken(knop, null); return; }
+  // Eerst de beheersing kiezen: het gewone keuzemenu (huisstijl §7.1).
+  const n = knop.dataset.nr, id = `ovn${n}`;
+  CHOICE_FIELDS[id] = { id, fieldId: knop.id, selectId: `ovnSel${n}`, menuId: `ovnMenu${n}` };
+  toggleChoiceMenu(id);
+}
+function nummerOvernemenMet(n, sel) {
+  const level = sel.value;
+  sel.value = ''; // een volgende keer weer zonder vinkje in het menu
+  const knop = document.getElementById(`ovnVeld${n}`);
+  if (knop && BEHEERSING_NAMEN[level]) repertoireBijwerken(knop, level);
+}
+// level: een beheersing om het nummer mee over te nemen, of null om het weg te halen.
+async function repertoireBijwerken(knop, level) {
+  if (knop.dataset.bezig) return;
   knop.dataset.bezig = '1';
   try {
     // Altijd de lijst zoals hij nu in de database staat: Je setlist kan intussen gewijzigd zijn.
     const lijst = await eigenNummersOphalen();
     const titel = knop.dataset.titel, artiest = knop.dataset.artiest, sleutel = nummerSleutel(titel, artiest);
     const erin = eigenNummerSleutels.has(sleutel);
-    // Weghalen mag ook onder de drie nummers (besluit Ronald, 27-10-2026: het minimum is voor nieuwe gebruikers).
-    const nieuw = erin
-      ? lijst.filter(s => nummerSleutel(s.song_title, s.song_artist) !== sleutel)
-      : lijst.concat([{ song_title: titel, song_artist: artiest, mastery_level: null }]);
+    const ditNummer = s => nummerSleutel(s.song_title, s.song_artist) === sleutel;
+    let nieuw;
+    if (level) {
+      // Stond het er intussen al in, dan krijgt het deze beheersing.
+      nieuw = erin ? lijst.map(s => ditNummer(s) ? { ...s, mastery_level: level } : s)
+                   : lijst.concat([{ song_title: titel, song_artist: artiest, mastery_level: level }]);
+    } else {
+      // Weghalen mag ook onder de drie nummers (besluit Ronald, 27-10-2026: het minimum is voor nieuwe gebruikers).
+      if (!erin) { document.querySelectorAll('.nummer-overneem').forEach(overneemKnopZetten); return; }
+      nieuw = lijst.filter(s => !ditNummer(s));
+    }
     const { error } = await db.rpc('tt_save_musician_koppelingen', {
       p_musician_id: myMusicianId,
       p_songs: nieuw.map(s => ({ song_title: s.song_title, song_artist: s.song_artist, mastery_level: s.mastery_level })),
@@ -952,9 +986,9 @@ async function nummerOvernemen(ev, knop) {
     eigenNummerSleutels = new Set(nieuw.map(s => nummerSleutel(s.song_title, s.song_artist)));
     // Staat hetzelfde nummer vaker op het scherm (repertoire en covers), dan alle knoppen mee.
     document.querySelectorAll('.nummer-overneem').forEach(overneemKnopZetten);
-    showToast(erin ? 'Nummer weggehaald.' : 'Nummer opgeslagen. Vergeet je niveau niet!');
+    showToast(level ? 'Nummer opgeslagen.' : 'Nummer weggehaald.');
   } catch (e) {
-    logCaught('nummerOvernemen', e);
+    logCaught('repertoireBijwerken', e);
     showToast(friendlyErrorMessage(e, 'je repertoire opslaan'));
   } finally {
     delete knop.dataset.bezig;
@@ -1057,7 +1091,7 @@ function setlistLijstHTML(lijst, p, weg) {
       <div class="menu-anchor setlist-keuze-plek">
         <button type="button" class="setlist-keuze${naam ? ' gekozen' : ''}" id="${p}behVeld${i}" aria-label="Beheersing van ${escHtml(s.title)}"><span class="wheel-field-label">${naam || 'Beheersing'}</span>${PIJL_OMLAAG}</button>
         <select id="${p}behSel${i}" hidden><option value=""${naam ? '' : ' selected'} style="display:none">Beheersing</option>${opties}</select>
-        <div class="choice-menu setlist-keuze-menu" id="${p}behMenu${i}" role="listbox"></div>
+        <div class="choice-menu setlist-keuze-menu beheersing-menu" id="${p}behMenu${i}" role="listbox"></div>
       </div>
       ${s._confirmDelete
         ? `<button type="button" class="song-remove setlist-zeker" onclick="${weg}(${i})" title="Bevestig verwijderen">Zeker?</button>`

@@ -8166,7 +8166,10 @@ window.TT_STUB.fnAntwoord = {};
 
         # ────────────────────────────────────────────────────────────
         # Blok 102 — TT-528 (besluiten Ronald, 27-10-2026): een nummer van een
-        # ander in één tik overnemen. Een vierkantje met een plusteken rechts
+        # ander overnemen. TT-531 (besluiten Ronald, 29-10-2026): de tik op het
+        # plusteken opent eerst het keuzemenu van Je setlist (Basis, Bijna,
+        # Podium), 132px breed, rechts op de rechterlijn van de knop; een tik
+        # ernaast annuleert; het vinkje haalt meteen weg, zonder menu. Een vierkantje met een plusteken rechts
         # naast het niveaulabel (72px, overal); staat het nummer erin, een
         # vinkje in --steun (de rand niet). Nog een tik haalt het weg, niet
         # onder de drie nummers. Zonder profiel een uitnodiging. Niet op je
@@ -8217,27 +8220,61 @@ window.TT_STUB.fnAntwoord = {};
                      vinkKleur: cs(kB).color === steun, plusKleur: cs(kA).color !== steun,
                      tikvlak: (() => { const a = getComputedStyle(kA, '::after'); return [a.content, a.top]; })(),
                      aria: [kA.getAttribute('aria-pressed'), kB.getAttribute('aria-pressed'), kB.getAttribute('aria-label')] };
-          // 2. Tik op het plusteken: overgenomen zonder niveau, vinkje, melding.
+          const menuVan = t => rij(t).querySelector('.choice-menu.open');
+          const kies = async (t, naam) => { knop(t).click(); await w(); const m = menuVan(t);
+            const o = m && [...m.querySelectorAll('.choice-option')].find(x => x.textContent.trim() === naam); if (o) o.click(); await w(300); }; // 300: de sluitbeweging duurt tot 260 ms
+          // 2. Tik op het plusteken: het keuzemenu, nog niets opgeslagen. Een tik ernaast annuleert.
           const voor = opslaan();
+          document.getElementById('appToast').textContent = '';
           kA.click(); await w();
-          u.na1 = { eigen: eigen(), aan: knop('Animals').classList.contains('aan'), toast: toast(), opslaan: opslaan() - voor };
-          // 3. Nog een tik: weer weg.
+          const mA = menuVan('Animals');
+          u.menu = mA ? { opties: [...mA.querySelectorAll('.choice-option')].map(o => o.textContent.trim()),
+                          vinkjes: [...mA.querySelectorAll('.choice-option-check')].filter(c => c.textContent.trim()).length,
+                          breed: Math.round(R(mA).width), rechts: Math.round(R(kA).right - R(mA).right),
+                          labels: [...mA.querySelectorAll('.choice-option')].map(o => [Math.round(R(o).width), Math.round(R(o).height)]),
+                          tussen: (() => { const o = mA.querySelectorAll('.choice-option'); return Math.round(R(o[1]).top - R(o[0]).bottom); })(),
+                          tik: (() => { const a = getComputedStyle(mA.querySelector('.choice-option'), '::after'); return [a.top, a.left]; })(),
+                          lijn: getComputedStyle(mA.querySelectorAll('.choice-option')[1]).marginTop,
+                          laagKleur: getComputedStyle(document.querySelector('.menu-laag')).backgroundColor,
+                          plusRand: getComputedStyle(kA).borderTopColor, plusZ: getComputedStyle(kA).zIndex,
+                          accent: (() => { const i = document.createElement('i'); i.style.color = 'var(--accent)'; document.body.appendChild(i); const c = getComputedStyle(i).color; i.remove(); return c; })(),
+                          onder: Math.round(R(mA).top - R(kA).bottom), laag: document.querySelectorAll('.menu-laag').length,
+                          aria: kA.getAttribute('aria-expanded'), opslaan: opslaan() - voor, toast: toast() } : null;
+          const laag = document.querySelector('.menu-laag'); if (laag) laag.click(); await w(300);
+          u.annuleer = { open: !!menuVan('Animals'), laag: document.querySelectorAll('.menu-laag').length, opslaan: opslaan() - voor,
+                         aan: knop('Animals').classList.contains('aan'), aria: knop('Animals').getAttribute('aria-expanded') };
+          // Daarna kiezen: opgeslagen met die beheersing, vinkje, melding.
+          await kies('Animals', 'Bijna');
+          u.na1 = { eigen: eigen(), aan: knop('Animals').classList.contains('aan'), toast: toast(), opslaan: opslaan() - voor,
+                    open: !!document.querySelector('.choice-menu.open'), popup: knop('Animals').getAttribute('aria-haspopup') };
+          // 3. Tik op het vinkje: meteen weg, zonder menu.
           knop('Animals').click(); await w();
-          u.na2 = { eigen: eigen(), aan: knop('Animals').classList.contains('aan'), toast: toast() };
+          u.na2 = { eigen: eigen(), aan: knop('Animals').classList.contains('aan'), toast: toast(), menu: !!document.querySelector('.choice-menu.open') };
+          // Opnieuw overnemen: het menu heeft geen vinkje van de vorige keer.
+          knop('Animals').click(); await w();
+          u.opnieuw = [...menuVan('Animals').querySelectorAll('.choice-option-check')].filter(c => c.textContent.trim()).length;
+          document.querySelector('.menu-laag').click(); await w(300);
           // 4. Weghalen onder de drie nummers mag (besluit Ronald, 27-10-2026).
           const voor4 = opslaan();
           knop('Blackhole').click(); await w();
           u.na3 = { eigen: eigen(), aan: knop('Blackhole').classList.contains('aan'), toast: toast(), opslaan: opslaan() - voor4 };
-          // 5. Twee snelle tikken: één keer opslaan.
+          // 5. Kiezen en meteen nog een tik op de knop: één keer opslaan.
           const voor5 = opslaan();
-          knop('Song 2').click(); knop('Song 2').click(); await w(250);
-          u.dubbel = { opslaan: opslaan() - voor5, aan: knop('Song 2').classList.contains('aan') };
+          knop('Song 2').click(); await w();
+          menuVan('Song 2').querySelector('.choice-option').click(); knop('Song 2').click(); await w(250);
+          u.dubbel = { opslaan: opslaan() - voor5, aan: knop('Song 2').classList.contains('aan'), eigen: eigen().filter(x => x.startsWith('Blur')) };
           // 6. Lange lijst (ingeklapt): de knop klapt de lijst niet open.
           const veel = Array.from({ length: 9 }, (_, i) => lied('Artiest ' + i, 'Nummer ' + i, null));
           vak.innerHTML = buildMusicianDetailHTML(muz('m9', veel), false, true);
           await overneemKnoppenBijwerken(vak);
-          vak.querySelector('.nummers-inklap .nummer-overneem').click(); await w();
-          u.inklap = { open: vak.querySelector('.nummers-inklap').classList.contains('open') };
+          const kI = vak.querySelectorAll('.nummers-inklap .nummer-overneem')[6];
+          kI.click(); await w();
+          const rijen = vak.querySelector('.nummers-inklap-rijen');
+          u.inklap = { open: vak.querySelector('.nummers-inklap').classList.contains('open'),
+                       menu: !!vak.querySelector('.choice-menu.open'), masker: getComputedStyle(rijen).maskImage || getComputedStyle(rijen).webkitMaskImage };
+          document.querySelector('.menu-laag').click(); await w(300);
+          u.inklap.na = getComputedStyle(rijen).maskImage || getComputedStyle(rijen).webkitMaskImage;
+          u.inklap.openNa = vak.querySelector('.nummers-inklap').classList.contains('open');
           // 7. Je eigen profiel: geen knop, het label rechts.
           vak.innerHTML = buildMusicianDetailHTML(muz('m1', songs), true);
           const pE = vak.querySelector('.level-pill');
@@ -8249,7 +8286,8 @@ window.TT_STUB.fnAntwoord = {};
           const voor8 = opslaan();
           await overneemKnoppenBijwerken(vak);
           vak.querySelector('.nummer-overneem').click(); await w();
-          u.gast = { knoppen: vak.querySelectorAll('.nummer-overneem').length, toast: toast(), opslaan: opslaan() - voor8 };
+          u.gast = { knoppen: vak.querySelectorAll('.nummer-overneem').length, toast: toast(), opslaan: opslaan() - voor8,
+                     menu: !!document.querySelector('.choice-menu.open') };
           // 9. Mix & Match: hetzelfde label, ook 72px.
           const gs = document.createElement('div'); gs.className = 'gedeeld-speler'; gs.innerHTML = '<span class="level-pill">Podium</span>';
           vak.innerHTML = ''; vak.appendChild(gs);
@@ -8270,22 +8308,38 @@ window.TT_STUB.fnAntwoord = {};
               and mt["tikvlak"][1] == "-10px", j102)
         check("knop meldt zijn stand aan een schermlezer",
               mt["aria"][0] == "false" and mt["aria"][1] == "true" and mt["aria"][2].startswith("Haal "), j102)
-        check("tik op het plusteken: overgenomen zonder niveau, vinkje, melding 'Vergeet je niveau niet!'",
-              "Architects/Animals/null" in d102["na1"]["eigen"] and len(d102["na1"]["eigen"]) == 4 and d102["na1"]["aan"]
-              and d102["na1"]["toast"] == "Nummer opgeslagen. Vergeet je niveau niet!" and d102["na1"]["opslaan"] == 1, j102)
-        check("nog een tik haalt het weg, de rest blijft met zijn niveau",
+        mn = d102["menu"] or {}
+        check("tik op het plusteken: keuzemenu Basis, Bijna, Podium, zonder vinkje, nog niets opgeslagen",
+              mn.get("opties") == ["Basis", "Bijna", "Podium"] and mn.get("vinkjes") == 0 and mn.get("opslaan") == 0
+              and mn.get("toast") == "" and mn.get("laag") == 1 and mn.get("aria") == "true", j102)
+        check("optie 1b: drie labels van 72x36, 8px ertussen, tikvlak 44px, vlak 90px breed op de rechterlijn, 6px eronder",
+              mn.get("labels") == [[72, 36]] * 3 and mn.get("tussen") == 8 and mn.get("tik") == ["-4px", "-8px"]
+              and mn.get("breed") == 90 and mn.get("rechts") == 0 and mn.get("onder") == 6, j102)
+        check("optie 1: lichtere laag (35% in donker), plusteken licht op boven de laag",
+              mn.get("laagKleur") == "rgba(0, 0, 0, 0.35)" and mn.get("plusRand") == mn.get("accent") and mn.get("plusZ") == "242", j102)
+        check("tik ernaast annuleert: menu en laag weg, niets opgeslagen, plusteken blijft",
+              d102["annuleer"] == {"open": False, "laag": 0, "opslaan": 0, "aan": False, "aria": "false"}, j102)
+        check("kies Bijna: opgeslagen met Bijna, vinkje, melding 'Nummer opgeslagen.', menu dicht",
+              "Architects/Animals/bijna" in d102["na1"]["eigen"] and len(d102["na1"]["eigen"]) == 4 and d102["na1"]["aan"]
+              and d102["na1"]["toast"] == "Nummer opgeslagen." and d102["na1"]["opslaan"] == 1
+              and not d102["na1"]["open"] and d102["na1"]["popup"] is None, j102)
+        check("tik op het vinkje haalt het meteen weg, zonder menu; de rest blijft met zijn niveau",
               d102["na2"]["eigen"] == ["Architects/Blackhole/bijna", "Q/Z/basis", "Y/X/null"] and not d102["na2"]["aan"]
-              and d102["na2"]["toast"] == "Nummer weggehaald.", j102)
+              and d102["na2"]["toast"] == "Nummer weggehaald." and not d102["na2"]["menu"], j102)
+        check("opnieuw overnemen: het menu heeft geen vinkje van de vorige keer", d102["opnieuw"] == 0, j102)
         check("weghalen onder de drie nummers mag: opgeslagen, vinkje weg, melding",
               d102["na3"]["opslaan"] == 1 and not d102["na3"]["aan"] and d102["na3"]["toast"] == "Nummer weggehaald."
               and d102["na3"]["eigen"] == ["Q/Z/basis", "Y/X/null"], j102)
-        check("twee snelle tikken: één keer opslaan", d102["dubbel"]["opslaan"] == 1 and d102["dubbel"]["aan"], j102)
-        check("in een ingeklapte lijst klapt de knop de lijst niet open", d102["inklap"]["open"] is False, j102)
+        check("kiezen en meteen nog een tik: één keer opslaan, met Basis",
+              d102["dubbel"]["opslaan"] == 1 and d102["dubbel"]["aan"] and d102["dubbel"]["eigen"] == ["Blur/Song 2/basis"], j102)
+        ik = d102["inklap"]
+        check("in een ingeklapte lijst: de knop klapt de lijst niet open, het menu vervaagt niet mee, daarna weer vervaagd",
+              ik["open"] is False and ik["menu"] and ik["masker"] == "none" and ik["na"] != "none" and ik["openNa"] is False, j102)
         check("eigen profiel: geen knop, het label op de rechterlijn",
               d102["eigenProfiel"] == {"knoppen": 0, "rechts": 0}, j102)
         check("zonder profiel: knop staat er, een tik nodigt uit, niets opgeslagen",
               d102["gast"]["knoppen"] == 4 and d102["gast"]["toast"] == "Maak een gratis profiel aan, dan bewaren we dit nummer."
-              and d102["gast"]["opslaan"] == 0, j102)
+              and d102["gast"]["opslaan"] == 0 and not d102["gast"]["menu"], j102)
         check("Mix & Match: hetzelfde label, 72x24", d102["mixMatch"] == [72, 24], j102)
         bjs = open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
         check("covers van een band krijgen dezelfde knop, met het vinkje na het laden",
@@ -10012,8 +10066,10 @@ window.TT_STUB.fnAntwoord = {};
           u.menuOpen = $('behMenu' + i1).classList.contains('open');
           const opt = [...$('behMenu' + i1).querySelectorAll('.choice-option')];
           u.opties = opt.map(o => o.textContent.trim());
-          u.menuTekstX = Math.round(opt[0].getBoundingClientRect().left + parseFloat(getComputedStyle(opt[0]).paddingLeft));
-          u.keuzeTekstX = Math.round($('behVeld' + i1).getBoundingClientRect().left);
+          // TT-531 (besluit Ronald, 29-10-2026): dezelfde labels als bij het plusteken, rechts op de rechterlijn van de keuze.
+          u.labels = opt.map(o => [Math.round(o.getBoundingClientRect().width), Math.round(o.getBoundingClientRect().height)]);
+          u.rechts = Math.round($('behVeld' + i1).getBoundingClientRect().right - $('behMenu' + i1).getBoundingClientRect().right);
+          u.vinkjes = [...$('behMenu' + i1).querySelectorAll('.choice-option-check')].filter(c => getComputedStyle(c).display !== 'none' && c.textContent.trim()).length;
           opt.find(o => o.textContent.trim() === 'Podium').click(); await w(250);
           u.gekozen = { level: state.songs.find(s => s.title === 'Jump').level, keuze: rijVan('Jump').keuze, vet: rijVan('Jump').gekozen, leeg: rijVan('One').gekozen };
           // Uitleg achter de i
@@ -10095,8 +10151,8 @@ window.TT_STUB.fnAntwoord = {};
         o93 = d93["opmaak"]
         check("voorproef: 12px, gedempt, het aantal vet in tekstkleur, het icoon in --steun",
               o93["maat"] == "12px" and o93["tekst"] == o93["muted"] and o93["vet"] == o93["text"] and o93["icoon"] == o93["steun"], json.dumps(d93))
-        check("beheersing: keuzemenu met Basis, Bijna, Podium; tekst van de opties op dezelfde x als de keuze",
-              d93["menuOpen"] and d93["opties"] == ["Basis", "Bijna", "Podium"] and d93["menuTekstX"] == d93["keuzeTekstX"], json.dumps(d93))
+        check("beheersing: Basis, Bijna, Podium als labels van 72x36, rechts op de rechterlijn van de keuze, geen vinkje (TT-531)",
+              d93["menuOpen"] and d93["opties"] == ["Basis", "Bijna", "Podium"] and d93["labels"] == [[72, 36]] * 3 and d93["rechts"] == 0 and d93["vinkjes"] == 0, json.dumps(d93))
         check("kiezen zet de beheersing; de keuze wordt vet, een niet-gekozen blijft gedempt",
               d93["gekozen"]["level"] == "podium" and d93["gekozen"]["keuze"] == "Podium" and d93["gekozen"]["vet"] and not d93["gekozen"]["leeg"], json.dumps(d93))
         check("de i bij Beheersing opent de uitleg (Basis, Bijna, Podium, mag ook later)",

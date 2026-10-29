@@ -99,6 +99,8 @@
     --laag-venster: rgba(0,0,0,0.8);
     --laag-opslaan: rgba(0,0,0,0.7);
     --laag-menu: rgba(0,0,0,0.6);
+    --laag-beheersing: rgba(0,0,0,0.35);    /* lichter, achter de beheersingskeuze (TT-531) */
+    --schaduw-beheersing: 0 8px 24px rgba(0,0,0,0.45);
     --laag-wiel: rgba(0,0,0,0.55);
     --laag-fout: rgba(13,13,13,0.96);
     --schaduw-menu: 0 12px 32px rgba(0,0,0,0.7);
@@ -170,6 +172,8 @@
     --laag-venster: rgba(30,30,30,0.45);
     --laag-opslaan: rgba(30,30,30,0.45);
     --laag-menu: rgba(30,30,30,0.45);
+    --laag-beheersing: rgba(30,30,30,0.15);
+    --schaduw-beheersing: 0 8px 24px rgba(30,30,30,0.14);
     --laag-wiel: rgba(30,30,30,0.45);
     --laag-fout: rgba(246,243,236,0.96);
     --schaduw-menu: 0 4px 20px rgba(30,30,30,0.06);
@@ -1141,8 +1145,12 @@
   .setlist-keuze::after { content: ''; position: absolute; inset: 0 -4px -12px -8px; }
   .setlist-keuze.gekozen { color: var(--text); font-weight: 700; }
   .setlist-keuze svg { width: 12px; height: 12px; flex: none; }
-  /* -1px: de rand van het menu, zodat de optietekst precies op de x van de keuze staat. */
-  .choice-menu.setlist-keuze-menu { left: calc(-1 * var(--field-inset) - 1px); right: auto; width: 132px; }
+  /* De beheersing kiezen met dezelfde labels als bij het plusteken (TT-531,
+     besluit Ronald 29-10-2026: "in Je setlist hetzelfde doorvoeren"): het menu
+     rechts op de rechterlijn van de keuze. */
+  .choice-menu.setlist-keuze-menu { left: auto; right: 0; }
+  /* Zolang het menu openstaat, ligt de keuze boven de laag, zoals het plusteken. */
+  .setlist-keuze[aria-expanded="true"] { z-index: 242; }
   /* Het kruisje: tikvlak 44px met het teken van 14px in het midden (15px
      rondom). -3px = 12px opvulling - 15px: de inkt begint precies 12px onder
      de bovenrand en eindigt 12px voor de zijrand. */
@@ -1482,6 +1490,35 @@
   .nummer-overneem::after { content: ''; position: absolute; inset: -10px; }
   .nummer-overneem svg { width: 10px; height: 10px; }
   .nummer-overneem.aan { color: var(--steun); }
+  /* TT-531: het keuzemenu onder het plusteken. Even breed als in Je setlist
+     (besluit Ronald, 29-10-2026: "zo laten"), de rechterkant op de
+     rechterlijn van de knop. In een ingeklapte lijst valt de vervaging weg
+     zolang het menu openstaat, anders vervaagt het menu mee. */
+  .nummer-overneem-plek { display: flex; }
+  .choice-menu.overneem-menu { left: auto; right: 0; }
+  /* Zolang het menu openstaat, ligt het plusteken licht op boven de laag. */
+  .nummer-overneem[aria-expanded="true"] { z-index: 242; border-color: var(--accent); color: var(--accent); background: var(--bg); }
+  /* De beheersing kiezen met labels in de vorm van het niveaulabel (TT-531,
+     besluit Ronald 29-10-2026, optie 1 op beeld): een wit vlak (licht), drie
+     labels van 72px, lichtere laag, geen lijnen en geen vinkje. 36px hoog met
+     8px ertussen (besluit Ronald, optie b): elk label heeft 44px tikvlak (huisstijl §6). */
+  .choice-menu.beheersing-menu {
+    width: auto; padding: 8px; border-radius: 12px;
+    background: var(--surface3); box-shadow: var(--schaduw-beheersing);
+  }
+  .menu-laag:has(+ .beheersing-menu) { background: var(--laag-beheersing); }
+  .beheersing-menu .choice-option {
+    position: relative; justify-content: center; width: 72px; min-height: 36px; height: 36px; padding: 0;
+    background: var(--surface); border: 1px solid var(--rand-neutraal); border-radius: 8px;
+    font-size: 12px; font-weight: 700;
+  }
+  .beheersing-menu .choice-option + .choice-option { border-top: 1px solid var(--rand-neutraal); margin-top: 8px; }
+  .beheersing-menu .choice-option::after { content: ''; position: absolute; inset: -4px -8px; }
+  /* Geen vinkje en geen gekozen stand in het menu: de keuze staat al in de rij
+     (Ronald: "de tussenstap met een vinkje kan eruit ... kiezen is direct weergeven"). */
+  .beheersing-menu .choice-option.selected { color: var(--text); }
+  .beheersing-menu .choice-option-check { display: none; }
+  .nummers-inklap:not(.open) .nummers-inklap-rijen:has(.choice-menu.open) { -webkit-mask-image: none; mask-image: none; }
 
 
   /* Divider */
