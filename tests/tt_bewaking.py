@@ -43,8 +43,9 @@ DREMPELS = {
     "meldingen_niet_gemaild": 1,   # melding aan privacy@ niet verstuurd
     "cron_sleutel_in_tekst": 1,    # een cron-taak met een letterlijke sleutel in de tekst (TT-470, 27-10-2026)
     "accounts_zonder_profiel": 3,  # wizard blijft hangen (een enkele is normaal)
+    "rem_piek_6u": 1,              # een internetadres deed 300 of meer aanroepen in een minuut (TT-487, besluit Ronald 30-10-2026)
 }
-VERWACHTE_CRONTAKEN = 7  # sinds 29-10-2026 ook tt-aanroepen-nakijken (elke 5 minuten)
+VERWACHTE_CRONTAKEN = 8  # sinds 29-10-2026 ook tt-aanroepen-nakijken (elke 5 minuten); sinds 30-10-2026 ook tt-rem-opruimen (TT-487)
 CRON_MISLUKT_DREMPEL = 1
 CERT_MIN_DAGEN = 30
 DOMEIN_MIN_DAGEN = 30
