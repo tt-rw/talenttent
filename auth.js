@@ -70,6 +70,7 @@ async function signOut() {
   // Eerst, want de sessie is nodig om het abonnement te verwijderen.
   await ttSeintjeUitzetten();
   currentUser = null;
+  fotoLinksWissen(); // TT-480: de tijdelijke links horen bij dit account
   onUserLoggedOut();
   try {
     await db.auth.signOut();

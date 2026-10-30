@@ -8361,13 +8361,15 @@ window.TT_STUB.fnAntwoord = {};
         # Plaatjes uit de opslag: een grote foto bestaat, een fotootje niet.
         _png103 = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
         def _opslag103(route):
-            if route.request.url.endswith("_klein.jpg"):
+            if "_klein.jpg" in route.request.url:
                 route.fulfill(status=404, body="")
             else:
                 route.fulfill(status=200, content_type="image/png", body=_png103)
-        page.route("**/storage/v1/object/public/avatars/**", _opslag103)
+        # Sinds TT-480 laadt een foto via een tijdelijke link (/sign/); zie blok 105.
+        page.route("**/storage/v1/object/sign/avatars/**", _opslag103)
         d103 = page.evaluate(r"""async () => {
           const u = {}, w = (n = 150) => new Promise(r => setTimeout(r, n));
+          fotoLinksWissen();
           const echt = db.storage.from;
           const bak = {};            // pad -> { type, blob }
           let fout2 = false, n = 0;
@@ -8383,7 +8385,8 @@ window.TT_STUB.fnAntwoord = {};
               return { data: rij.map(name => ({ name, id: 'id-' + name })).concat([{ name: 'submap', id: null }]), error: null };
             },
             async remove(paden) { paden.forEach(p => delete bak[bucket + ':' + p]); return { data: [], error: null }; },
-            getPublicUrl: p => ({ data: { publicUrl: location.origin + '/storage/v1/object/public/' + bucket + '/' + p } })
+            getPublicUrl: p => ({ data: { publicUrl: location.origin + '/storage/v1/object/public/' + bucket + '/' + p } }),
+            createSignedUrls: (p, sec) => echt.call(db.storage, bucket).createSignedUrls(p, sec)
           });
           try {
             // 1. Upload: foto en fotootje, het fotootje vierkant, 240 pixels, JPG.
@@ -8413,12 +8416,12 @@ window.TT_STUB.fnAntwoord = {};
             vak.innerHTML = `<img ${kleinFotoAttr(safeUrl(groot))} alt="">`;
             const img = vak.querySelector('img');
             for (let i = 0; i < 20 && !(img.complete && img.naturalWidth); i++) await w(100);
-            u.terugval = { src: img.getAttribute('src'), geladen: img.naturalWidth > 0, groot: img.dataset.groot || null };
+            u.terugval = { src: (img.getAttribute('src') || '').split('?')[0], geladen: img.naturalWidth > 0, groot: img.dataset.groot || null };
             vak.remove();
             // 5. Zoeken, profielkop en bandpagina tonen het fotootje; een tik opent de grote foto.
             const m = { id: 'm2', soort: 'muzikant', weergavenaam: 'Sanne', username: 'sanne', city: 'Delft', age: 17, avatar_url: groot,
               musician_instruments: [{ instrument: 'Drums', niveau: 3 }], musician_genres: [], musician_songs: [], musician_media: [] };
-            const src = h => { const d = document.createElement('div'); d.innerHTML = h; const i = d.querySelector('img'); return i ? { src: i.getAttribute('src'), groot: i.dataset.groot || null, klik: i.getAttribute('onclick') } : null; };
+            const src = h => { const d = document.createElement('div'); d.innerHTML = h; const i = d.querySelector('img'); return i ? { src: (i.getAttribute('src') || i.dataset.ttFoto || '').split('?')[0], groot: i.dataset.groot || null, klik: i.getAttribute('onclick') } : null; };
             u.zoekRij = src(musicianRowHTML(m));
             u.zoekKaart = src(musicianCardHTML(m));
             u.kop = src(buildMusicianDetailHTML(m, false, false));
@@ -8459,7 +8462,7 @@ window.TT_STUB.fnAntwoord = {};
           }
           return u;
         }""")
-        page.unroute("**/storage/v1/object/public/avatars/**")
+        page.unroute("**/storage/v1/object/sign/avatars/**")
         j103 = json.dumps(d103, ensure_ascii=False)
         k103 = d103.get("klein") or {}
         check("fotootje: de upload zet de foto én een fotootje met dezelfde naam plus _klein.jpg",
@@ -8512,6 +8515,118 @@ window.TT_STUB.fnAntwoord = {};
         _kaal103 = re.findall(r'<img[^>]*src="\$\{(?:avatarSrc|foto|veilig|url)\}"', "".join(bron103.values()))
         check("fotootje: geen profiel- of bandfoto meer zonder fotootje in de schermen", not _kaal103, str(_kaal103)[:300])
         check("geen paginafouten in blok 103", not page_errors, "; ".join(page_errors)[:300])
+        page_errors.clear()
+
+        # ────────────────────────────────────────────────────────────
+        # Blok 105 — foto's en video's afgeschermd (TT-480, akkoord Ronald
+        # 30-10-2026). Elke foto en video uit `avatars` en `media` laadt via
+        # een tijdelijke link van 7 dagen: per scherm één vraag per map,
+        # onthouden in localStorage, gewist bij uitloggen. Ontbreekt een
+        # fotootje, dan de link van de grote foto.
+        # ────────────────────────────────────────────────────────────
+        print("\nBlok 105 — foto's en video's via een tijdelijke link (TT-480)")
+        page_errors.clear()
+        page.evaluate("window.TT_STUB.reset()")
+        _png105 = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
+        _openbaar105 = []
+        def _teken105(route):
+            route.fulfill(status=200, content_type="image/png", body=_png105)
+        def _open105(route):
+            _openbaar105.append(route.request.url)
+            route.fulfill(status=400, body="")
+        page.route("**/storage/v1/object/sign/**", _teken105)
+        page.route("**/storage/v1/object/public/**", _open105)
+        d105 = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, u = {}, w = (n = 200) => new Promise(r => setTimeout(r, n));
+          const O = location.origin + '/storage/v1/object/public/';
+          const tekenen = () => S.calls.filter(c => c.kind === 'sign');
+          fotoLinksWissen(); S.calls = [];
+          const groot = O + 'avatars/u1/1_a.jpg';
+          const m = { id: 'm2', soort: 'muzikant', weergavenaam: 'Sanne', username: 'sanne', city: 'Delft', age: 17, avatar_url: groot,
+            musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] };
+          // 1. Eén scherm met profielfoto's, een mediategel, de bannerbalk (foto en video) en een videotegel.
+          const vak = document.createElement('div'); document.body.appendChild(vak);
+          vak.innerHTML = musicianRowHTML(m) + musicianCardHTML(m)
+            + `<div>${mediaTegelHTML({ type: 'foto', url: O + 'media/u1/2_b.jpg', name: 'b' }, 0, 'mh')}</div>`
+            + profielBannerHTML([{ media_type: 'foto', url: O + 'media/u1/3_c.jpg', in_banner: true }, { media_type: 'video', url: O + 'media/u1/4_d.mp4', in_banner: true }])
+            + `<img ${kleinFotoAttr('https://img.youtube.com/vi/abc/hqdefault.jpg')} alt=""><img ${fotoBronAttr('blob:http://x/1')} alt="">`;
+          u.direct = [...vak.querySelectorAll('img,video')].map(e => e.getAttribute('src') || 'data:' + e.dataset.ttFoto);
+          for (let i = 0; i < 20 && vak.querySelector('[data-tt-foto]'); i++) await w(50);
+          u.na = [...vak.querySelectorAll('img,video')].map(e => e.getAttribute('src'));
+          u.over = vak.querySelectorAll('[data-tt-foto]').length;
+          u.video = (vak.querySelector('video') || {}).getAttribute ? vak.querySelector('video').getAttribute('src') : null;
+          u.tekenen1 = tekenen().map(c => ({ b: c.bucket, n: c.paden.length, sec: c.sec, paden: c.paden }));
+          const img = vak.querySelector('img');
+          for (let i = 0; i < 20 && !(img.complete && img.naturalWidth); i++) await w(50);
+          u.geladen = img.naturalWidth > 0;
+          // 2. Hetzelfde scherm opnieuw: de link staat er direct, geen nieuwe vraag.
+          S.calls = [];
+          const tweede = kleinFotoAttr(safeUrl(groot));
+          vak.innerHTML = musicianRowHTML(m); await w(100);
+          u.tweede = { attr: tweede, vragen: tekenen().length };
+          // 3. Na herladen (geheugen leeg) komen de links uit localStorage.
+          fotoLinks = null; S.calls = [];
+          u.herladen = { attr: kleinFotoAttr(safeUrl(groot)), vragen: tekenen().length,
+                         opslag: Object.keys(JSON.parse(localStorage.getItem('tt_fotolinks') || '{}')).length };
+          // 4. Een link die binnen een dag verloopt, vraagt de app opnieuw op.
+          const g = fotoLinksGeheugen(); const k = 'avatars/u1/1_a_klein.jpg';
+          g.set(k, [g.get(k)[0], Date.now() + 12 * 3600 * 1000]);
+          u.bijnaVerlopen = kleinFotoAttr(safeUrl(groot)).startsWith('data-tt-foto');
+          // 5. Ontbreekt het fotootje, dan de link van de grote foto.
+          S.signMis = ['avatars/u1/9_z_klein.jpg']; S.calls = [];
+          vak.innerHTML = `<img ${kleinFotoAttr(safeUrl(O + 'avatars/u1/9_z.jpg'))} alt="">`;
+          for (let i = 0; i < 20 && vak.querySelector('[data-tt-foto]'); i++) await w(50);
+          u.zonderKlein = vak.querySelector('img').getAttribute('src');
+          S.signMis = [];
+          // 6. De vergroting en de speler.
+          openMediaLightbox(O + 'media/u1/5_e.jpg'); await w(200);
+          u.vergroting = document.getElementById('mediaLightboxImg').getAttribute('src');
+          closeMediaLightbox();
+          openMediaSpeler(O + 'media/u1/6_f.mp4', 'video'); await w(200);
+          const v = document.querySelector('#mediaSpelerBeeld video');
+          u.speler = v ? v.getAttribute('src') : null;
+          if (typeof closeMediaSpeler === 'function') closeMediaSpeler();
+          // 7. Uitloggen wist de links.
+          fotoLinksWissen();
+          u.gewist = { opslag: localStorage.getItem('tt_fotolinks'), geheugen: fotoLinksGeheugen().size };
+          vak.remove();
+          return u;
+        }""")
+        page.unroute("**/storage/v1/object/sign/**")
+        page.unroute("**/storage/v1/object/public/**")
+        j105 = json.dumps(d105, ensure_ascii=False)
+        teken105 = lambda s: isinstance(s, str) and "/storage/v1/object/sign/" in s and "token=" in s
+        check("afgeschermd: geen enkele foto of video laadt via de openbare link", not _openbaar105, str(_openbaar105)[:300])
+        prot105 = [x for x in d105["na"] if x and not x.startswith("https://img.youtube.com/") and not x.startswith("blob:")]
+        check("afgeschermd: profielfoto's, mediategel, bannerbalk (foto en video) krijgen een tijdelijke link",
+              d105["over"] == 0 and len(prot105) == 5 and all(teken105(x) for x in prot105) and None not in d105["na"], j105)
+        check("afgeschermd: YouTube en een voorbeeld (blob) blijven ongewijzigd",
+              "https://img.youtube.com/vi/abc/hqdefault.jpg" in d105["na"] and "blob:http://x/1" in d105["na"], j105)
+        check("afgeschermd: de video houdt zijn #t=0.1 (eerste beeld)", teken105(d105["video"]) and d105["video"].endswith("#t=0.1"), j105)
+        t1 = d105["tekenen1"]
+        check("afgeschermd: één vraag per map voor het hele scherm, links van 7 dagen",
+              sorted(x["b"] for x in t1) == ["avatars", "media"] and all(x["sec"] == 604800 for x in t1), j105)
+        check("afgeschermd: de vraag voor de profielfoto haalt fotootje én grote foto op",
+              any(x["b"] == "avatars" and "u1/1_a_klein.jpg" in x["paden"] and "u1/1_a.jpg" in x["paden"] for x in t1), j105)
+        check("afgeschermd: de foto laadt via de tijdelijke link", d105["geladen"], j105)
+        check("afgeschermd: een tweede keer staat de link er direct, zonder nieuwe vraag",
+              teken105(d105["tweede"]["attr"].split('"')[1]) and d105["tweede"]["vragen"] == 0, j105)
+        check("afgeschermd: na herladen komen de links uit de opslag van de browser",
+              teken105(d105["herladen"]["attr"].split('"')[1]) and d105["herladen"]["vragen"] == 0 and d105["herladen"]["opslag"] >= 6, j105)
+        check("afgeschermd: een link die binnen een dag verloopt, vraagt de app opnieuw op", d105["bijnaVerlopen"], j105)
+        check("afgeschermd: ontbreekt het fotootje, dan de link van de grote foto",
+              teken105(d105["zonderKlein"]) and "/avatars/u1/9_z.jpg?" in d105["zonderKlein"], j105)
+        check("afgeschermd: de vergroting en de speler laden via een tijdelijke link",
+              teken105(d105["vergroting"]) and teken105(d105["speler"]), j105)
+        check("afgeschermd: uitloggen wist de onthouden links",
+              d105["gewist"]["opslag"] is None and d105["gewist"]["geheugen"] == 0, j105)
+        bron105 = {x: open(os.path.join(ROOT, x), encoding="utf-8").read() for x in ["utils.js", "musicians.js", "bands.js", "search.js", "messages.js", "wizard.js", "auth.js"]}
+        _kaal105 = re.findall(r'<(?:img|video)[^>]*\ssrc="\$\{(?!URL\.createObjectURL|blobUrl)[^}]*\}', "".join(bron105.values()))
+        _kaal105 = [x for x in _kaal105 if "youtube" not in x]
+        check("afgeschermd: geen <img> of <video> met een eigen bron buiten fotoBronAttr", not _kaal105, str(_kaal105)[:300])
+        check("afgeschermd: signOut wist de links vóór het uitloggen",
+              re.search(r"async function signOut\(\) \{[^}]*fotoLinksWissen\(\);", bron105["auth.js"]) is not None, "auth.js")
+        check("geen paginafouten in blok 105", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
         # ────────────────────────────────────────────────────────────

@@ -754,25 +754,167 @@ function safeUrl(u) {
    bannerbalk tonen de grote. De grootste plek is 80 pixels; 240 dekt een
    scherm met drie beeldpunten per pixel. Een GIF heeft geen fotootje.
    Ontbreekt het fotootje (een foto van vóór deze wijziging, een half gelukte
-   upload, een oude versie van de app), dan laadt de browser vanzelf de grote
-   foto: zie de luisteraar hieronder. */
+   upload, een oude versie van de app), dan krijgt het de tijdelijke link van
+   de grote foto (fotoLinksOphalen, TT-480); de luisteraar hieronder is het
+   vangnet. */
 const FOTO_KLEIN_PX = 240;
-const FOTO_KLEIN_MAPPEN = /\/storage\/v1\/object\/public\/(avatars|media)\//;
 function fotoKleinPad(pad) {
   return String(pad).replace(/\.[^./]*$/, '') + '_klein.jpg';
 }
 // `src` komt uit safeUrl(). Geeft de bron-attributen voor een <img>.
 function kleinFotoAttr(src) {
-  if (!FOTO_KLEIN_MAPPEN.test(src) || src.endsWith('_klein.jpg') || /\.gif$/i.test(src)) return `src="${src}"`;
-  return `src="${fotoKleinPad(src)}" data-groot="${src}"`;
+  if (!fotoLinkSleutel(src) || src.endsWith('_klein.jpg') || /\.gif$/i.test(src)) return fotoBronAttr(src);
+  return `${fotoBronAttr(fotoKleinPad(src))} data-groot="${src}"`;
 }
 document.addEventListener('error', e => {
   const img = e.target;
   if (!(img instanceof HTMLImageElement) || !img.dataset.groot) return;
   const groot = img.dataset.groot;
   delete img.dataset.groot;
-  img.src = groot;
+  fotoBronZetten(img, groot);
 }, true);
+
+/* Afgeschermde foto's en video's (TT-480, akkoord Ronald 30-10-2026). De
+   mappen `avatars` en `media` zijn dicht: een bestand laadt alleen via een
+   tijdelijke link van 7 dagen. De database bewaart de openbare link; daaruit
+   leest de app map en pad. Wie een link mag maken, staat in de opslagregels
+   (systeem-naslag §10): ingelogd alles; een bezoeker zonder account niets van
+   13 t/m 15 jaar of een onbekende leeftijd.
+   - fotoBronAttr(src) geeft src="<tijdelijke link>" als de app de link al
+     heeft, anders data-tt-foto="<openbare link>". Een DOM-wachter vraagt dan
+     alle ontbrekende links van het scherm in één keer op (één vraag per map)
+     en zet src. Ontbreekt een fotootje, dan krijgt het de link van de grote
+     foto.
+   - fotoBronZetten(el, src) doet hetzelfde voor één element (de vergroting).
+   - De links staan 7 dagen in localStorage. Tot een dag voor het verlopen
+     gebruikt de app dezelfde link, zodat de browser de foto uit zijn eigen
+     opslag haalt: een tweede bezoek kost geen extra tijd.
+   - Uitloggen wist de onthouden links (signOut in auth.js).
+   Een andere bron (landing, YouTube, blob) blijft ongewijzigd. */
+const FOTO_LINK_SEC = 7 * 24 * 3600;
+const FOTO_LINK_MARGE_MS = 24 * 3600 * 1000;
+const FOTO_LINK_OPSLAG = 'tt_fotolinks';
+const FOTO_LINK_MAX = 600;
+const FOTO_AFGESCHERMD = /\/storage\/v1\/object\/public\/(avatars|media)\/([^?#]+)/;
+let fotoLinks = null;              // 'map/pad' -> [link, verloopt in ms]
+const fotoLinksOnderweg = new Map(); // 'map/pad' -> Promise
+
+function fotoLinksGeheugen() {
+  if (fotoLinks) return fotoLinks;
+  fotoLinks = new Map();
+  try {
+    const nu = Date.now();
+    Object.entries(JSON.parse(localStorage.getItem(FOTO_LINK_OPSLAG) || '{}')).forEach(([k, v]) => {
+      if (Array.isArray(v) && v[1] - FOTO_LINK_MARGE_MS > nu) fotoLinks.set(k, v);
+    });
+  } catch (e) { /* geen opslag: alleen in het geheugen */ }
+  return fotoLinks;
+}
+function fotoLinksBewaren() {
+  const g = fotoLinksGeheugen();
+  while (g.size > FOTO_LINK_MAX) g.delete(g.keys().next().value);
+  try { localStorage.setItem(FOTO_LINK_OPSLAG, JSON.stringify(Object.fromEntries(g))); } catch (e) { /* zie boven */ }
+}
+function fotoLinksWissen() {
+  fotoLinks = new Map();
+  try { localStorage.removeItem(FOTO_LINK_OPSLAG); } catch (e) { /* zie boven */ }
+}
+// 'avatars/<pad>' bij een afgeschermde map, anders null.
+function fotoLinkSleutel(src) {
+  const m = FOTO_AFGESCHERMD.exec(String(src || ''));
+  return m ? m[1] + '/' + decodeURIComponent(m[2]) : null;
+}
+// De tijdelijke link; de bron zelf als hij niet afgeschermd is; null als de
+// app de link nog niet heeft.
+function fotoLinkUitGeheugen(src) {
+  const k = fotoLinkSleutel(src);
+  if (!k) return src;
+  const v = fotoLinksGeheugen().get(k);
+  return v && v[1] - FOTO_LINK_MARGE_MS > Date.now() ? v[0] : null;
+}
+// Haalt de links voor deze sleutels op: één vraag per map, tegelijk.
+async function fotoLinksOphalen(sleutels) {
+  const wacht = [], perMap = {};
+  sleutels.forEach(k => {
+    if (fotoLinksOnderweg.has(k)) { wacht.push(fotoLinksOnderweg.get(k)); return; }
+    const i = k.indexOf('/');
+    (perMap[k.slice(0, i)] = perMap[k.slice(0, i)] || []).push(k.slice(i + 1));
+  });
+  Object.entries(perMap).forEach(([map, paden]) => {
+    const vraag = (async () => {
+      try {
+        const { data, error } = await db.storage.from(map).createSignedUrls(paden, FOTO_LINK_SEC);
+        if (error) throw error;
+        const tot = Date.now() + FOTO_LINK_SEC * 1000, g = fotoLinksGeheugen(), mis = [];
+        (data || []).forEach(r => {
+          if (r && r.signedUrl && !r.error) g.set(map + '/' + r.path, [r.signedUrl, tot]);
+          else if (r && r.path) mis.push(r.path);
+        });
+        // Een fotootje dat ontbreekt, krijgt de link van de grote foto.
+        mis.forEach(p => {
+          const groot = paden.find(x => x !== p && fotoKleinPad(x) === p);
+          const v = groot && g.get(map + '/' + groot);
+          if (v) g.set(map + '/' + p, v);
+        });
+        const echtMis = mis.filter(p => !g.has(map + '/' + p) && !p.endsWith('_klein.jpg'));
+        if (echtMis.length) logCaught('fotoLinks', new Error(`geen link voor ${echtMis.length} bestand(en) in ${map}`));
+        fotoLinksBewaren();
+      } catch (e) {
+        logCaught('fotoLinks', e);
+      } finally {
+        paden.forEach(p => fotoLinksOnderweg.delete(map + '/' + p));
+      }
+    })();
+    paden.forEach(p => fotoLinksOnderweg.set(map + '/' + p, vraag));
+    wacht.push(vraag);
+  });
+  await Promise.all(wacht);
+}
+// `src` komt uit safeUrl() en mag een #-deel hebben (#t=0.1 bij een video).
+function fotoBronAttr(src) {
+  const [basis, achter] = String(src).split(/(?=#)/);
+  const link = fotoLinkUitGeheugen(basis);
+  if (link === basis) return `src="${src}"`;
+  if (link) return `src="${escHtml(link)}${achter || ''}"`;
+  return `data-tt-foto="${src}"`;
+}
+async function fotoBronZetten(el, src) {
+  const [basis, achter] = String(src).split(/(?=#)/);
+  let link = fotoLinkUitGeheugen(basis);
+  if (link === null) {
+    el.removeAttribute('src');
+    await fotoLinksOphalen([fotoLinkSleutel(basis)]);
+    link = fotoLinkUitGeheugen(basis);
+  }
+  if (link) el.src = link + (achter || '');
+}
+// De DOM-wachter: zet elke data-tt-foto om in een src.
+let fotoAanvullenGepland = false;
+async function fotoLinksAanvullen() {
+  fotoAanvullenGepland = false;
+  const els = [...document.querySelectorAll('[data-tt-foto]')];
+  if (!els.length) return;
+  const nodig = new Set();
+  els.forEach(el => [el.dataset.ttFoto, el.dataset.groot].forEach(s => {
+    const basis = s && s.split('#')[0];
+    if (basis && fotoLinkUitGeheugen(basis) === null) nodig.add(fotoLinkSleutel(basis));
+  }));
+  if (nodig.size) await fotoLinksOphalen([...nodig]);
+  els.forEach(el => {
+    const s = el.dataset.ttFoto;
+    if (!s) return;
+    const [basis, achter] = s.split(/(?=#)/);
+    const link = fotoLinkUitGeheugen(basis);
+    if (!link) return;
+    el.removeAttribute('data-tt-foto');
+    el.src = link + (achter || '');
+  });
+}
+new MutationObserver(() => {
+  if (fotoAanvullenGepland) return;
+  fotoAanvullenGepland = true;
+  queueMicrotask(fotoLinksAanvullen);
+}).observe(document.documentElement, { childList: true, subtree: true });
 
 // TT-U04 (12-08-2026): maakt een wachtwoord zichtbaar. Vervangt het
 // herhaalveld — je kunt zelf controleren wat je hebt getypt.
@@ -2025,7 +2167,7 @@ function openMediaSpeler(url, soort, titel, platform) {
   const embed = soort === 'link' ? mediaEmbedSrc(veilig) : null;
 
   if (soort === 'video') {
-    beeld.innerHTML = `<video src="${veilig}" controls autoplay playsinline style="width:100%;height:100%;background:#000;"></video>`;
+    beeld.innerHTML = `<video ${fotoBronAttr(veilig)} controls autoplay playsinline style="width:100%;height:100%;background:#000;"></video>`;
     voet.innerHTML = '';
   } else if (embed) {
     beeld.innerHTML = `<iframe src="${escHtml(embed)}" title="${escHtml(naam)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" style="width:100%;height:100%;border:0;"></iframe>`;
@@ -2199,13 +2341,13 @@ function profielBannerHTML(mediaLijst) {
     let binnen, tik;
 
     if (it.media_type === 'foto') {
-      binnen = `<img class="pb-beeld" src="${url}" alt="Foto ${i + 1} van ${items.length}" loading="lazy">`;
+      binnen = `<img class="pb-beeld" ${fotoBronAttr(url)} alt="Foto ${i + 1} van ${items.length}" loading="lazy">`;
       tik = `openMediaLightbox('${jsAttr(url)}')`;
     } else if (it.media_type === 'video') {
       // #t=0.1 dwingt het eerste beeld af; zonder dat laat Safari op de
       // iPhone een zwart vlak zien tot er getikt wordt. muted + playsinline
       // staan erbij omdat de browser het element anders niet mag uitlezen.
-      binnen = `<video class="pb-beeld" src="${url}#t=0.1" muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video>` +
+      binnen = `<video class="pb-beeld" ${fotoBronAttr(url + '#t=0.1')} muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video>` +
                `<span class="pb-label">Video</span>` + SPEELTEKEN_HTML;
       tik = `openMediaSpeler('${jsAttr(url)}', 'video')`;
     } else {

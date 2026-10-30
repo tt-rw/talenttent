@@ -164,7 +164,7 @@
       return m ? [{ fname: m.fname || null, lname: m.lname || null }] : [];
     },
     reset() {
-      this.calls = []; this.errors = {}; this.rpcErrors = {};
+      this.calls = []; this.errors = {}; this.rpcErrors = {}; this.signMis = [];
       this.updateUserResult = null; this.updateUserError = null; this.refreshUser = null; this.userNu = null;
     }
   };
@@ -380,11 +380,20 @@
         resetPasswordForEmail() { return Promise.resolve({ data: {}, error: null }); }
       },
       storage: {
-        from() {
+        from(bucket) {
           return {
             upload() { return Promise.resolve({ data: { path: 'test.jpg' }, error: null }); },
             remove() { return Promise.resolve({ data: [], error: null }); },
-            getPublicUrl(p) { return { data: { publicUrl: 'https://example.invalid/' + p } }; }
+            getPublicUrl(p) { return { data: { publicUrl: 'https://example.invalid/' + p } }; },
+            // TT-480: tijdelijke links. Een pad in TT_STUB.signMis bestaat niet
+            // (of mag niet); de link wijst naar /storage/v1/object/sign/ op de testsite.
+            createSignedUrls(paden, sec) {
+              TT_STUB.calls.push({ kind: 'sign', bucket, paden: clone(paden), sec });
+              const data = paden.map(p => (TT_STUB.signMis || []).includes(bucket + '/' + p)
+                ? { path: p, signedUrl: null, error: 'Either the object does not exist or you do not have access to it' }
+                : { path: p, signedUrl: location.origin + '/storage/v1/object/sign/' + bucket + '/' + p + '?token=stub', error: null });
+              return Promise.resolve({ data, error: null });
+            }
           };
         }
       }
