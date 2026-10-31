@@ -60,7 +60,23 @@ const herstelLinkVerlopen = /(^#|&)error_code=otp_expired(&|$)/.test(location.ha
 // TT-82: alleen een client aanmaken als de bibliotheek er is. De vlag wordt in
 // de <head> gezet. Zonder deze controle stopt het hele script hier met een
 // ReferenceError en wordt geen enkele functie meer gedefinieerd.
-const db = window.ttBackendMissing ? null : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// TT-306: Supabase weigert soms heel even een vers inlogbewijs, met de melding
+// "JWT issued at future". De oorzaak zit aan de kant van Supabase, niet bij het
+// toestel of de app. Elke vraag aan Supabase die daarop strandt, gaat na 2
+// seconden nog één keer. De weigering komt vóór de vraag wordt uitgevoerd, dus
+// opnieuw sturen doet niets dubbel. Elke andere fout gaat ongewijzigd door.
+const TT_HERHAAL_NA_MS = 2000;
+async function ttFetchMetHerhaling(input, init) {
+  const antwoord = await fetch(input, init);
+  if (antwoord.ok) return antwoord;
+  let tekst = '';
+  try { tekst = await antwoord.clone().text(); } catch (e) { return antwoord; }
+  if (!/issued at future/i.test(tekst)) return antwoord;
+  await new Promise(klaar => setTimeout(klaar, TT_HERHAAL_NA_MS));
+  return fetch(input, init);
+}
+
+const db = window.ttBackendMissing ? null : supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { global: { fetch: ttFetchMetHerhaling } });
 
 // ─── Foutregistratie (TT-64, stap 1) ────────────────────────────────────────
 // Minimale versie: alleen de foutmelding zelf wegschrijven, geen dashboard,

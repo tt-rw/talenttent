@@ -23,6 +23,7 @@ import socketserver
 import subprocess
 import sys
 import threading
+import time
 
 from playwright.sync_api import sync_playwright
 
@@ -11148,11 +11149,82 @@ window.TT_STUB.session = null;
           not zomaar, "nu zichtbaar: " + ", ".join(zomaar))
 
 
+# --------------------------------------------------------------------------
+# Blok 108 — herhaling bij "JWT issued at future" (TT-306, 8D, 31-10-2026)
+# --------------------------------------------------------------------------
+# Echte supabase.js, het netwerk nagebootst: Supabase weigert eerst met
+# "JWT issued at future". De app moet dan na 2 seconden precies één keer
+# opnieuw vragen, en bij elke andere fout niet.
+
+def blok_jwt_herhaling():
+    print("\nBlok 108 — herhaling bij 'JWT issued at future' (TT-306)")
+    core = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
+    check("core.js geeft de herhaling mee aan de databaseverbinding",
+          "createClient(SUPABASE_URL, SUPABASE_KEY, { global: { fetch: ttFetchMetHerhaling } })" in core)
+    toekomst = '{"code":"PGRST303","details":null,"hint":null,"message":"JWT issued at future"}'
+    verlopen = '{"code":"PGRST303","details":null,"hint":null,"message":"JWT expired"}'
+    plan = {
+        "proef_a": [(401, toekomst), (200, '[{"a":1}]')],
+        "proef_b": [(401, verlopen), (200, '[{"a":1}]')],
+        "proef_c": [(401, toekomst), (201, '[{"a":2}]')],
+        "proef_d": [(200, '[{"a":3}]')],
+        "proef_e": [(401, toekomst), (401, toekomst), (200, '[]')],
+    }
+    log = {k: [] for k in plan}
+    def route(r):
+        url = r.request.url
+        for naam, reeks in plan.items():
+            if f"/rest/v1/{naam}" in url:
+                i = len(log[naam])
+                log[naam].append((time.monotonic(), r.request.method, r.request.post_data))
+                status, body = reeks[min(i, len(reeks) - 1)]
+                return r.fulfill(status=status, content_type="application/json", body=body)
+        return r.fulfill(status=200, content_type="application/json", body="[]")
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(viewport={"width": 390, "height": 844})
+        page.route("https://*.supabase.co/**", route)
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(300)
+        uit = page.evaluate("""async () => {
+          const r = {};
+          r.a = await db.from('proef_a').select('*');
+          r.b = await db.from('proef_b').select('*');
+          r.c = await db.from('proef_c').insert({ tekst: 'één keer' }).select();
+          r.d = await db.from('proef_d').select('*');
+          r.e = await db.from('proef_e').select('*');
+          const kort = x => ({ data: x.data, fout: x.error ? x.error.message : null });
+          return { a: kort(r.a), b: kort(r.b), c: kort(r.c), d: kort(r.d), e: kort(r.e) };
+        }""")
+        browser.close()
+    httpd.shutdown()
+    a = log["proef_a"]
+    check("weigering 'issued at future': na de herhaling komen de gegevens binnen",
+          uit["a"]["fout"] is None and uit["a"]["data"] == [{"a": 1}], str(uit["a"]))
+    check("weigering 'issued at future': precies twee vragen", len(a) == 2, f"{len(a)} vragen")
+    check("de herhaling komt na 2 seconden (1,9 tot 3 s)",
+          len(a) == 2 and 1.9 <= a[1][0] - a[0][0] <= 3.0,
+          f"{(a[1][0] - a[0][0]) if len(a) == 2 else '-'} s")
+    check("een andere weigering ('JWT expired') gaat niet opnieuw",
+          len(log["proef_b"]) == 1 and uit["b"]["fout"] == "JWT expired", f"{len(log['proef_b'])} vragen, {uit['b']}")
+    c = log["proef_c"]
+    check("opslaan: de herhaling stuurt dezelfde inhoud mee",
+          len(c) == 2 and c[0][1] == c[1][1] == "POST" and c[0][2] == c[1][2] and "één keer" in (c[0][2] or ""),
+          str(c))
+    check("opslaan: na de herhaling geslaagd", uit["c"]["fout"] is None, str(uit["c"]))
+    check("een geslaagde vraag gaat één keer", len(log["proef_d"]) == 1 and uit["d"]["fout"] is None)
+    check("twee weigeringen achter elkaar: hooguit één herhaling, de fout komt terug",
+          len(log["proef_e"]) == 2 and uit["e"]["fout"] == "JWT issued at future",
+          f"{len(log['proef_e'])} vragen, {uit['e']}")
+
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
     blok1_statisch()
     blok_browser()
     blok_xss()
+    blok_jwt_herhaling()
     gezakt = [n for n, ok, _ in results if not ok]
     print(f"\nEindstand: {len(results) - len(gezakt)} van {len(results)} geslaagd")
     if gezakt:
