@@ -88,12 +88,12 @@ jobs:
 
       - name: Repo ophalen
         if: steps.nieuwste.outputs.overslaan != 'ja'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Node klaarzetten
         # tt_monitor.py gebruikt `node --check` per JS-bestand.
         if: steps.nieuwste.outputs.overslaan != 'ja'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "20"
 
@@ -107,7 +107,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Repo ophalen
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Bewaking
         env:
