@@ -45,7 +45,7 @@ DREMPELS = {
     "accounts_zonder_profiel": 3,  # wizard blijft hangen (een enkele is normaal)
     "rem_piek_6u": 1,              # een internetadres deed 300 of meer aanroepen in een minuut (TT-487, besluit Ronald 30-10-2026)
 }
-VERWACHTE_CRONTAKEN = 8  # sinds 29-10-2026 ook tt-aanroepen-nakijken (elke 5 minuten); sinds 30-10-2026 ook tt-rem-opruimen (TT-487)
+VERWACHTE_CRONTAKEN = 9  # sinds 29-10-2026 ook tt-aanroepen-nakijken (elke 5 minuten); sinds 30-10-2026 ook tt-rem-opruimen (TT-487); sinds 02-11-2026 ook tt-digest-herhalen (TT-550)
 CRON_MISLUKT_DREMPEL = 1
 CERT_MIN_DAGEN = 30
 DOMEIN_MIN_DAGEN = 30
@@ -82,7 +82,9 @@ def met_herhaling(naam, functie):
 
 
 def vraag(url, headers=None, data=None):
-    req = urllib.request.Request(url, headers=headers or {}, data=data)
+    # Eigen naam in de kop: sommige diensten weigeren de standaardnaam van Python (403).
+    headers = dict({"User-Agent": "TalentTent-bewaking/1.0"}, **(headers or {}))
+    req = urllib.request.Request(url, headers=headers, data=data)
     with urllib.request.urlopen(req, timeout=20) as r:
         return r.status, r.read().decode("utf-8", "replace")
 
@@ -134,25 +136,40 @@ def cert_dagen():
     return (verloopt - datetime.datetime.now(UTC)).days
 
 
+# Eerst het register van .org zelf, dan de doorverwijzer rdap.org.
+# rdap.org gaf de runner van GitHub sinds 22-10-2026 elke keer 403 (8D bewaking, 02-11-2026).
+RDAP_BRONNEN = [
+    "https://rdap.publicinterestregistry.org/rdap/domain/%s",
+    "https://rdap.org/domain/%s",
+]
+
+
 def domein_dagen():
-    """RDAP van het domein. Is RDAP onbereikbaar, dan geeft dit None (geen valse melding)."""
+    """Dagen tot het domein verloopt, via RDAP. Geen bron of geen datum: fout (nooit stil groen)."""
     domein = ".".join(SITE.split(".")[-2:])
-    status, tekst = vraag("https://rdap.org/domain/%s" % domein)
-    for e in json.loads(tekst).get("events", []):
-        if e.get("eventAction") == "expiration":
-            eind = datetime.datetime.strptime(e["eventDate"][:10], "%Y-%m-%d").replace(tzinfo=UTC)
-            return (eind - datetime.datetime.now(UTC)).days
-    return None
+    fouten = []
+    for bron in RDAP_BRONNEN:
+        try:
+            _, tekst = vraag(bron % domein)
+        except Exception as e:  # noqa: BLE001
+            fouten.append("%s: %s" % (bron.split("/")[2], e))
+            continue
+        for e in json.loads(tekst).get("events", []):
+            if e.get("eventAction") == "expiration":
+                eind = datetime.datetime.strptime(e["eventDate"][:10], "%Y-%m-%d").replace(tzinfo=UTC)
+                return (eind - datetime.datetime.now(UTC)).days
+        fouten.append("%s: geen datum" % bron.split("/")[2])
+    raise RuntimeError("; ".join(fouten))
 
 
 def main():
     regels = []   # (naam, uitkomst, goed)
 
-    def stap(naam, functie, beoordeling=None, kritiek=True):
+    def stap(naam, functie, beoordeling=None):
         try:
             waarde = met_herhaling(naam, functie)
         except Exception as e:  # noqa: BLE001
-            regels.append((naam, "FOUT: %s" % e, not kritiek))
+            regels.append((naam, "FOUT: %s" % e, False))
             return None
         goed, tekst = beoordeling(waarde) if beoordeling else (bool(waarde), str(waarde))
         regels.append((naam, tekst, goed))
@@ -162,10 +179,9 @@ def main():
     stap("Supabase antwoordt", supabase_antwoordt)
     stap("certificaat", cert_dagen,
          lambda d: (d >= CERT_MIN_DAGEN, "%d dagen" % d))
-    # Het domein: een onbereikbare RDAP-dienst is geen alarm.
+    # Een controle die niet werkt, staat nooit op "ok" (8D bewaking, 02-11-2026).
     stap("domein verloopt", domein_dagen,
-         lambda d: (True, "onbekend (RDAP gaf geen datum)") if d is None
-         else (d >= DOMEIN_MIN_DAGEN, "%d dagen" % d), kritiek=False)
+         lambda d: (d >= DOMEIN_MIN_DAGEN, "%d dagen" % d))
 
     t = stap("tellingen uit de database", tellingen,
              lambda x: (True, "opgehaald"))
@@ -180,6 +196,15 @@ def main():
     fout = [r for r in regels if not r[2]]
     print("-" * 60)
     print("%d van %d goed" % (len(regels) - len(fout), len(regels)))
+    # De oorzaak bovenaan de run in GitHub, zonder het log te openen (8D bewaking, 02-11-2026).
+    for naam, tekst, _ in fout:
+        print("::error title=Bewaking: %s::%s" % (naam, tekst))
+    samenvatting = os.environ.get("GITHUB_STEP_SUMMARY")
+    if samenvatting:
+        with open(samenvatting, "a", encoding="utf-8") as f:
+            f.write("### Bewaking: %d van %d goed\n\n" % (len(regels) - len(fout), len(regels)))
+            for naam, tekst, _ in fout:
+                f.write("- **MIS** %s: %s\n" % (naam, tekst))
     # Niet gecontroleerd: de laatste back-up op Backblaze (TT-496, nog niet gebouwd).
     return 1 if fout else 0
 

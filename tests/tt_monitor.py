@@ -386,6 +386,76 @@ def blok_d():
           not afwijkend, "D1", "checksum wijkt af: %s" % kort(afwijkend))
 
 
+# ============================================================ E - bewaking
+
+def blok_e():
+    """De bewaking (`tests/tt_bewaking.py`) toetst zichzelf, zonder netwerk.
+    Aanleiding (8D bewaking, 02-11-2026): de domeincontrole werkte sinds
+    22-10-2026 nooit en stond toch op "ok"."""
+    import contextlib
+    import importlib.util
+    import io
+    import json
+
+    sys.dont_write_bytecode = True   # geen map __pycache__ in tests/
+    spec = importlib.util.spec_from_file_location(
+        "tt_bewaking", os.path.join(REPO, "tests", "tt_bewaking.py"))
+    b = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(b)
+    b.WACHT_SECONDEN = 0
+
+    goed = {k: 0 for k in b.DREMPELS}
+    goed.update(cron_taken=b.VERWACHTE_CRONTAKEN, cron_mislukt=0)
+    rdap = json.dumps({"events": [{"eventAction": "expiration",
+                                   "eventDate": "2099-01-01T00:00:00Z"}]})
+
+    def draai(vraag, cert):
+        b.vraag, b.cert_dagen = vraag, cert
+        oud = os.environ.get("TT_BEWAKING_CODE")
+        os.environ["TT_BEWAKING_CODE"] = "proef"
+        uit = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(uit):
+                code = b.main()
+        finally:
+            if oud is None:
+                os.environ.pop("TT_BEWAKING_CODE", None)
+            else:
+                os.environ["TT_BEWAKING_CODE"] = oud
+        return code, uit.getvalue()
+
+    def alles_goed(url, headers=None, data=None):
+        if "rdap" in url:
+            return 200, rdap
+        if "tt_bewaking" in url:
+            return 200, json.dumps(goed)
+        return 200, "ok"
+
+    def alles_kapot(url, headers=None, data=None):
+        raise OSError("proef: geen verbinding")
+
+    def cert_kapot():
+        raise OSError("proef: geen verbinding")
+
+    # E1 - alles in orde: groen, geen vals alarm uit het script zelf
+    code, uit = draai(alles_goed, lambda: 365)
+    toets("E", "bewaking: alles in orde geeft groen", code == 0 and " MIS " not in uit,
+          "E1", "bewaking geeft rood terwijl alles in orde is")
+
+    # E2 - elke controle die niet werkt, staat op MIS (nooit stil groen)
+    code, uit = draai(alles_kapot, cert_kapot)
+    stil = [r.strip() for r in uit.splitlines() if r.startswith("  ok ")]
+    toets("E", "bewaking: een controle die niet werkt, staat nooit op ok",
+          code == 1 and not stil, "E2", "stil groen: %s" % kort(stil))
+
+    # E3 - elke MIS staat ook als melding bovenaan de run in GitHub
+    mis = sum(1 for r in uit.splitlines() if r.startswith("  MIS "))
+    meldingen = sum(1 for r in uit.splitlines() if r.startswith("::error title=Bewaking: "))
+    toets("E", "bewaking: elke MIS staat als melding in GitHub",
+          mis > 0 and mis == meldingen, "E3",
+          "%d keer MIS, %d meldingen" % (mis, meldingen))
+
+
 # ============================================================ afdruk
 
 NAMEN = {
@@ -393,6 +463,7 @@ NAMEN = {
     "B": "huisstijl en consistentie",
     "C": "dode code",
     "D": "stand en oplevering",
+    "E": "bewaking toetst zichzelf",
 }
 
 
@@ -401,11 +472,12 @@ def main():
     blok_b()
     blok_c()
     blok_d()
+    blok_e()
 
     print("")
     print("TT MONITOR — vaste onderhoudscontrole")
     print("=" * 54)
-    for letter in "ABCD":
+    for letter in "ABCDE":
         eigen = [r for r in regels if r[0] == letter]
         goed = sum(1 for r in eigen if r[2])
         vlag = "" if goed == len(eigen) else "   ← %d punt" % (len(eigen) - goed)
