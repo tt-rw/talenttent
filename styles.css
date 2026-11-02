@@ -10,7 +10,7 @@
        TT-341 stap 2 had hier #f0f0f0 gezet ("rustig"). Wat van "rustig"
        blijft: tags neutraal omlijnd, je eigen bericht grijs, het profielvlak
        geel met een zwarte T. --accent2 (cyaan) blijft weg. */
-    --accent: #f5c518;
+    --accent: #FFB81C;
     /* --steun (TT-514, besluit Ronald 25-10-2026): rustige steunkleur voor
        een klein icoon dat iets positiefs aanwijst, nu alleen de voorproef in
        de setlist ("4 anderen spelen dit ook"). Geen tekst- of vlakkleur.
@@ -52,10 +52,13 @@
 
        --fs-md, --fs-lg en --fs-display hebben hier kort gestaan omdat de
        huisstijl ze noemde. Ze werden door geen enkele regel gebruikt, dus ze
-       zijn dezelfde dag weer weggehaald (§2.10, dode code meteen weg). Een
-       echte typografische schaal is TT-261, en die komt dan op de 4px-schaal
-       — 15px stond daar niet op, en dat was terecht Ronalds bezwaar. */
-    --fs-sm: 13px;
+       zijn dezelfde dag weer weggehaald (§2.10, dode code meteen weg).
+       TT-517 fase 1 (besluit Ronald 30-10-2026, huisstijl §2): zes
+       lettermaten, 11 · 12 · 15 · 17 · 22 · 32px. Elke font-size in dit
+       bestand is één van die zes; buiten de schaal staan alleen een
+       invoerveld (16px, iPhone), het woordmerk en een teken dat zijn vak vult.
+       --fs-sm is de rol Hulptekst, 12px (was 13px met Roboto). */
+    --fs-sm: 12px;
     /* TT-244 (10-09-2026, melding Ronald): één vlak en één randkleur voor élk
        veld — invoerveld, keuzeveld en wielveld. Deze twee waarden komen uit de
        contrastfix van 12-08-2026, die toen alleen op invoervelden landde.
@@ -74,27 +77,33 @@
        --merk    = geel als vlak onder zwarte tekst dat in elk thema geel
                    blijft: de hoofdknop, de verzendknop, de actieve tab
                    onderin, het profielvlak met de T, de actieve stip en
-                   TENT in het woordmerk. */
-    --merk: #f5c518;
+                   TENT in het woordmerk.
+       TT-517 fase 1 (besluit Ronald 31-10-2026): warmgeel, Pantone 1235 C,
+       #FFB81C, in de hele app. Vervangt #F5C518. */
+    --merk: #FFB81C;
     --merk-tekst: #000;
-    --merk-hover: #ffd700;
-    /* De gekozen stand van elke keuzeknop (huisstijl §5.1). */
-    --gekozen-vlak: rgba(255,255,255,0.05);
-    --gekozen-rand: #f5c518;
-    --gekozen-tekst: #f5c518;
-    --gekozen-bijschrift: var(--muted);     /* toelichting op een gekozen doelkaart */
+    --merk-hover: #FFC444;
+    /* De gekozen stand van elke keuzeknop (huisstijl §5.1). TT-517 fase 11
+       (besluit Ronald 01-11-2026, B): in donker ook een geel vlak met donkere
+       tekst, zoals in licht. Was een gouden rand met gouden tekst op wit 5%. */
+    --gekozen-vlak: #FFB81C;
+    --gekozen-rand: #FFB81C;
+    --gekozen-tekst: #1E1E1E;
+    --gekozen-bijschrift: rgba(30,30,30,0.8); /* toelichting op een gekozen doelkaart */
     --keuze-vlak: var(--surface2);          /* een keuzeknop die niet gekozen is */
-    --keuze-rand: var(--border);            /* rand van een keuzeknop; een paneel mag hem overschrijven (TT-461) */
+    --keuze-rand: var(--border);            /* rand van een keuzeknop */
     /* Een zweem over de ondergrond: aanwijzen, ongelezen, uitgelicht. */
     --tint: rgba(255,255,255,0.05);
     --tint-hover: rgba(255,255,255,0.08);   /* aanwijzen op een ronde knop */
     --tint-grip: rgba(255,255,255,0.20);    /* greep van het wielvenster */
     --surface3: #222;                       /* lijst met suggesties */
+    --vlak: #222;                           /* TT-517 fase 2 (huisstijl §24, optie B): een rij, kaart of tegel; donker een stap lichter dan de pagina */
+    --schaduw-vlak: none;                   /* donker: een schaduw valt weg op zwart */
     --rand-hover: #555;
     --rand-menu: #444;                      /* uitklapmenu, bandkaart bij aanwijzen */
     --leeg: #555;                           /* lege ster, niet-actieve stip */
     --wiel-tekst: #9a9a9a;                  /* niet-gekozen regel in het wiel */
-    --tip-tekst: #c8a800;
+    --tip-tekst: #DD9F18;                   /* TT-517: warmgeel, even licht als het oude #c8a800 */
     /* Lagen boven de pagina en hun schaduw. */
     --laag-venster: rgba(0,0,0,0.8);
     --laag-opslaan: rgba(0,0,0,0.7);
@@ -109,8 +118,8 @@
     --rand-neutraal: #3a3a3a;               /* badge, profielfoto, lege ster in een badge */
     --rand-knop: #888;                      /* rand van de tweede knop (.btn-ghost): 3:1 of meer op elk vlak, besluit Ronald 27-09-2026 */
     --ongelezen: #e5533d;                   /* rood rondje met het aantal ongelezen berichten */
-    --bericht-eigen: #E0B52A;               /* je eigen bericht: warm goud (TT-440, Ronald: "1 - rustig"; was #C9AE52, TT-371) */
-    --bericht-rand-eigen: #E0B52A;
+    --bericht-eigen: #E5A623;               /* je eigen bericht: warm goud (TT-440; TT-517 mee verwarmd, besluit Ronald 31-10-2026; was #E0B52A) */
+    --bericht-rand-eigen: #E5A623;
     --bericht-eigen-tekst: #1E1E1E;         /* tekst in je eigen bericht: 8,6:1; vlak tegen de ondergrond 10:1 */
     --bericht-ander: #333333;               /* het bericht van de ander: 1,54:1 tegen de ondergrond, tekst 11,1:1 (TT-440; was --surface2, 1,17:1) */
     --bericht-rand: #333333;
@@ -119,6 +128,16 @@
        in beide thema's gelijk; de foto bepaalt de ondergrond, niet het thema. */
     --op-foto: #fff;                        /* kop en tekens op de foto */
     --op-foto-zacht: #F3E7D6;               /* de regel "waarvoor" op de foto */
+    --op-foto-donker: #52575F;              /* TT-517 fase 4: antraciet op een lichte foto in de hoes, geen zwart (huisstijl §21) */
+    --podium: #101114;                      /* TT-517 fase 4: de hoes zonder foto, het lege podium (huisstijl §21) */
+    /* TT-517 fase 6: de schijnwerper, twee warme lichtbundels in warmgeel (--merk), van linksboven en rechtsboven
+       (huisstijl §21). In licht en donker gelijk: hij staat op het podium, niet op het thema.
+       Klein in een rondje of vierkant (lijst, bezetting, gesprek); groot in de hoes, boven de naam. */
+    --bundel-klein: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><defs><filter id='z' x='-.5' y='-.5' width='2' height='2'><feGaussianBlur stdDeviation='2.5'/></filter><linearGradient id='l' x2='0' y2='1'><stop offset='0' stop-color='%23FFB81C' stop-opacity='.4'/><stop offset='1' stop-color='%23FFB81C' stop-opacity='.14'/></linearGradient><radialGradient id='e'><stop offset='0' stop-color='%23FFB81C' stop-opacity='.5'/><stop offset='1' stop-color='%23FFB81C' stop-opacity='0'/></radialGradient></defs><g filter='url(%23z)' fill='url(%23l)'><polygon points='4,0 18,0 70,80 34,80'/><polygon points='82,0 96,0 66,80 30,80'/></g><ellipse cx='50' cy='80' rx='34' ry='9' fill='url(%23e)'/></svg>");
+    /* TT-517 fase 6: het silhouet in de voorbeeldfoto bij het uploaden, zwart met een smalle warme
+       rand, zonder instrument (huisstijl §2): één persoon of drie (band). */
+    --silhouet-muzikant: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%23050506' stroke='%238A6A22' stroke-width='1.4' stroke-linejoin='round'><g transform='translate(50 0) scale(1)' transform-origin='0 100'><circle cx='0' cy='38' r='9.5'/><path d='M-15 100 L-14 62 Q-13 51 -4 50 L4 50 Q13 51 14 62 L15 100 Z'/></g></svg>");
+    --silhouet-band: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%23050506' stroke='%238A6A22' stroke-width='1.4' stroke-linejoin='round'><g transform='translate(26 0) scale(0.74)' transform-origin='0 100'><circle cx='0' cy='38' r='9.5'/><path d='M-15 100 L-14 62 Q-13 51 -4 50 L4 50 Q13 51 14 62 L15 100 Z'/></g><g transform='translate(74 0) scale(0.74)' transform-origin='0 100'><circle cx='0' cy='38' r='9.5'/><path d='M-15 100 L-14 62 Q-13 51 -4 50 L4 50 Q13 51 14 62 L15 100 Z'/></g><g><g transform='translate(50 0) scale(0.8)' transform-origin='0 100'><circle cx='0' cy='38' r='9.5'/><path d='M-15 100 L-14 62 Q-13 51 -4 50 L4 50 Q13 51 14 62 L15 100 Z'/></g></g></svg>");
     --foto-verloop: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0) 28%, rgba(0,0,0,0.75) 78%);
     --foto-leeg: radial-gradient(55% 65% at 75% 30%, rgba(255,170,90,0.6), transparent 62%), radial-gradient(50% 60% at 25% 75%, rgba(120,70,40,0.45), transparent 70%), linear-gradient(160deg, #6a3b22, #1f120b);
     --onderbalk-hoogte: 61px;               /* gemeten door landingBijwerken() in core.js */
@@ -129,8 +148,8 @@
      regels hieronder in dit bestand gelden voor beide thema's; alleen de
      waarden van de rollen verschillen. Actief als <html data-theme="licht">.
      Welke stand geldt, bepaalt het blok bovenin index.html (stap 3): het
-     toestel, of de eigen keuze in Instellingen. Geel (#F5C518) is op crème als tekst onleesbaar
-     (1,5:1): daarom is geel hier alleen een vlak, en is --accent zwart. */
+     toestel, of de eigen keuze in Instellingen. Geel (#FFB81C) is op crème als tekst onleesbaar
+     (1,6:1): daarom is geel hier alleen een vlak, en is --accent zwart. */
   /* TT-402 (02-10-2026, Ronald: "meer accenten in het lichte profiel. het is
      bijna egaal waardoor je geen onderscheid kunt maken tussen knoppen/
      invoervelden"). Herzien dezelfde dag (Ronald: een donkerdere ondergrond
@@ -152,11 +171,11 @@
     --field-bg: #F6F3EC;           /* keuzevelden in de kleur van de ondergrond (Ronald) */
     --field-border: #8F887B;       /* TT-402: 3,2:1 op crème, was #C9C3B6 (1,6:1) */
     --line: 1px;
-    --merk: #F5C518;
+    --merk: #FFB81C;
     --merk-tekst: #1E1E1E;
-    --merk-hover: #FFD23F;
-    --gekozen-vlak: #F5C518;       /* licht: geel vlak; donker: gouden rand (Ronald) */
-    --gekozen-rand: #F5C518;
+    --merk-hover: #FFC444;
+    --gekozen-vlak: #FFB81C;       /* licht en donker: geel vlak (TT-517 fase 11, B) */
+    --gekozen-rand: #FFB81C;
     --gekozen-tekst: #1E1E1E;
     --gekozen-bijschrift: rgba(30,30,30,0.8);
     --keuze-vlak: var(--surface);
@@ -164,6 +183,8 @@
     --tint-hover: rgba(30,30,30,0.06);
     --tint-grip: #B8B4AA;
     --surface3: #FFFEFA;
+    --vlak: var(--surface);
+    --schaduw-vlak: 0 1px 2px rgba(30,30,30,0.06), 0 4px 14px rgba(30,30,30,0.07);
     --rand-hover: #B8B4AA;
     --rand-menu: #DED9CF;
     --leeg: #CFCAC0;
@@ -180,8 +201,8 @@
     --schaduw-melding: 0 4px 20px rgba(30,30,30,0.06);
     --rand-neutraal: #ADA698;      /* TT-402: rand van een tag, 2,2:1 op crème (was #CFC9BC) */
     --rand-knop: #8A8782;          /* tweede knop: 3:1 of meer op crème en wit (Ronald, 27-09-2026) */
-    --bericht-eigen: #F2CE4A;       /* vol geel (TT-440, Ronald: "1 - rustig"; was #F8E7A8, TT-371) */
-    --bericht-rand-eigen: #F2CE4A;
+    --bericht-eigen: #FFC94D;       /* vol geel (TT-440; TT-517 mee verwarmd, besluit Ronald 31-10-2026; was #F2CE4A) */
+    --bericht-rand-eigen: #FFC94D;
     --bericht-eigen-tekst: #1E1E1E;
     --bericht-ander: var(--surface);
     --bericht-rand: #8A8782;        /* TT-440: rand van het bericht van de ander, 3,2:1 op crème (was #B8B4AA, 1,9:1) */
@@ -189,11 +210,12 @@
   }
   /* Voorbeeldtekst in een veld: de standaard van de browser is op crème te
      donker en lijkt dan ingevuld. Donker houdt de standaard van de browser. */
-  /* TT-520 (besluit Ronald 26-10-2026, sessie 19): in Zoeken staan de velden
-     direct op de crème pagina. Daar hebben ze een eigen vlak nodig, zoals in
-     donker het grijs: wit (--surface). Op een wit paneel (de tegelschermen)
-     blijven ze crème (TT-461). */
-  :root[data-theme="licht"] #view-search { --field-bg: var(--surface); }
+  /* TT-520 en TT-517 fase 2 (huisstijl §7.4, §24; besluit Ronald 31-10-2026):
+     het paneel om een scherm is overal weg, de velden staan direct op de crème
+     pagina. Daar hebben ze een eigen vlak nodig, zoals in donker het grijs: wit
+     (--surface). Geldt voor elke pagina (.app-view); een venster houdt zijn
+     eigen vlak (§24, "wat blijft"). */
+  :root[data-theme="licht"] .app-view { --field-bg: var(--surface); }
   :root[data-theme="licht"] input::placeholder,
   :root[data-theme="licht"] textarea::placeholder { color: #6E6A63; opacity: 1; }
 
@@ -202,8 +224,8 @@
      TT-365 (28-09-2026, besluit Ronald): het bestand is nu Tentype, het
      lettertype dat Ronald liet ontwerpen. Het verving het nagetekende
      woordmerk van TT-318. Het bestand bevat alleen A, E, H, L, N, T en de
-     spatie: genoeg voor "TALENTTENT" en voor de T van het logo in een lege
-     profielfoto (AVATAR_T_FALLBACK, TT-33). Voor lopende tekst is het dus
+     spatie: genoeg voor "TALENTTENT" en voor de T van het logo (.avatar-t).
+     Voor lopende tekst is het dus
      onbruikbaar. Het staat in de repo zelf, niet bij Google Fonts: 1,4 kB,
      geen extern verzoek. font-display: block — het woordmerk verschijnt meteen in de
      goede vorm; fitKopLogo() meet pas als het geladen is (core.js).
@@ -215,27 +237,46 @@
     font-style: normal;
     font-display: block;
   }
-  /* TT-492 (20-10-2026): Roboto in de repo, 400, 700 en 900 en 400 cursief (latin en
-     latin-ext, woff2). Eerder via Google Fonts, met precies deze vier. 300, 500 en 600
-     vallen op de dichtstbijzijnde, zoals voorheen. */
-  @font-face { font-family: 'Roboto'; src: url('roboto-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Roboto'; src: url('roboto-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Roboto'; src: url('roboto-900.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
-  @font-face { font-family: 'Roboto'; src: url('roboto-400italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
+  /* TT-517 fase 1 (besluit Ronald 30-10-2026): Inter in plaats van Roboto.
+     Inter 4.1 (rsms/inter), SIL Open Font License 1.1; de licentie staat in het
+     bestand zelf. In de repo, nooit bij Google Fonts (TT-492). Verkleind tot
+     dezelfde Latijnse letters als de vorige Roboto-bestanden (latin en
+     latin-ext): 400, 700 en 900 en 400 cursief. 300, 500 en 600 vallen op de
+     dichtstbijzijnde, zoals voorheen. */
+  @font-face { font-family: 'Inter'; src: url('inter-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'Inter'; src: url('inter-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'Inter'; src: url('inter-900.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
+  @font-face { font-family: 'Inter'; src: url('inter-400italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
   /* --font-display heeft twee gebruikers: .logo en .avatar-t. Paneeltitels
-     blijven Roboto Bold (Ronald, 06-08-2026). */
+     zijn Inter Bold (Ronald, 06-08-2026; letter TT-517). */
   :root {
-    --font-display: 'TT Woordmerk', 'Roboto', sans-serif;
+    --font-display: 'TT Woordmerk', 'Inter', sans-serif;
   }
-  /* De T van het logo op een plek zonder foto of zonder toegang: een lege
-     profielfoto (AVATAR_T_FALLBACK in search.js), de voorbeeldfoto bij het
-     uploaden, en een afgeschermd medium (TT-45). Eén klasse voor elke T.
+  /* De T van het logo: alleen het gesprek met The Talent Tent zelf
+     (TT_AVATAR_HTML in messages.js). Een lege profielfoto is de schijnwerper
+     (hieronder), een afgeschermd beeld is wazig (.foto-wazig, TT-517 fase 7).
      Bevinding Ronald 28-09-2026: de T is 25% groter dan de letter van zijn
      vak ("voer dat door in de hele app"). De maat van elk vak blijft staan. */
   .avatar-t {
     font-family: var(--font-display);
     font-size: 1.25em;
     line-height: 1;
+  }
+  /* Het gesprek met The Talent Tent: het logo, een zwarte T op geel. */
+  .avatar-logo {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%; border-radius: inherit;
+    background: var(--merk); color: var(--merk-tekst);
+  }
+  /* TT-517 fase 6 (huisstijl §21): zonder foto de schijnwerper, klein. Twee
+     bundels uit de bovenhoeken vallen samen op het midden. Eén klasse
+     voor elke plek zonder foto (ZONDER_FOTO_HTML in search.js); het vak
+     eromheen geeft maat en vorm. Vervangt de gele T. */
+  .schijnwerper {
+    display: block;
+    width: 100%; height: 100%;
+    border-radius: inherit;
+    background: var(--bundel-klein) center / 100% 100% no-repeat, var(--podium);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -249,7 +290,10 @@
   body {
     background: var(--bg);
     color: var(--text);
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
+    /* TT-517 fase 1: tekst zonder eigen maat krijgt de rol Tekst, 15px, niet
+       de 16px van de browser (bijvoorbeeld "Laden..." in Bands en Berichten). */
+    font-size: 15px;
     min-height: 100vh;
   }
 
@@ -277,6 +321,18 @@
   /* ── App views ───────────────────────────── */
   .app-view { display: none; }
   .app-view.active { display: block; }
+  /* TT-517 fase 9 (huisstijl §23, besluit Ronald 2A): de overgang naar en van
+     een profiel (schuifProfiel() in core.js). De vorige view blijft 0,32 s
+     staan, vast op zijn plek, onder de nieuwe; het profiel ligt bovenop, met
+     een zachte schaduw aan de linkerrand. Kop en onderbalk liggen hoger
+     (z-index 50 en 200) en staan stil. Een eigen vlak, zodat de view eronder
+     niet doorschijnt; flow-root houdt de bovenmarge van de eerste regel (de hoes
+     8px onder de kop) binnen dat vlak, zodat er geen streep van de view eronder
+     zichtbaar is. De inhoud staat daardoor op dezelfde plek. */
+  .app-view.view-weg { display: block; position: fixed; z-index: 1; margin: 0; pointer-events: none; }
+  .app-view.view-erin { display: flow-root; position: relative; z-index: 2; }
+  .app-view.view-erin, .app-view.view-profiel-schuift { background: var(--bg); min-height: 100vh; }
+  .app-view.view-profiel-schuift { z-index: 3; box-shadow: -8px 0 24px rgba(0, 0, 0, .18); }
 
   /* Alleen op desktop/web: pagina's vullen minimaal de schermhoogte,
      zodat er minder onnodig gescrold hoeft te worden. Op mobiel blijft
@@ -288,6 +344,8 @@
     #appRoot { display: flex; flex-direction: column; min-height: 100vh; }
     .app-topbar { flex-shrink: 0; }
     .app-view.active { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    /* TT-517 fase 9: de view die even blijft staan, houdt dezelfde opbouw. */
+    .app-view.view-weg { display: flex; flex-direction: column; }
   }
 
 /* ── Sticky topbar (header + nav blijven altijd zichtbaar) ── */
@@ -345,7 +403,7 @@
      met de terugknop erboven, zodat je ziet waar hij bij hoort. */
   .terug-label {
     padding: 0 16px 10px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--accent);
     line-height: 1.2;
@@ -354,7 +412,8 @@
   .kop-terug.gewapend { background: var(--surface); border-color: var(--accent); }
 
   .logo {
-    /* TT-U23 (12-08-2026): het logo is de home-knop, dus ook een tikdoel. */
+    /* 44px hoog, zoals de knoppen naast hem: de rij van de kop. Sinds TT-517
+       fase 3 geen knop meer (besluit C1); was de home-knop (TT-U23). */
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -394,8 +453,48 @@
     margin-right: calc(2em / 28);
   }
 
+  /* TT-517 fase 3 (01-11-2026, besluiten Ronald): de titel van het scherm
+     staat in de kop, het woordmerk alleen op de landingspagina en op de
+     goedkeuringspagina voor ouders (besluit O1: "dat geeft de ouder meer
+     context"; .kop-woordmerk, zetKopTitel() in core.js). Titel en
+     woordmerk delen het middenvak; de plaats staat vast, zodat de hamburger
+     altijd in het rechtervak blijft. De titel staat wiskundig in het midden,
+     zoals op de proefpagina (woordmerk E); alleen het woordmerk schuift
+     optisch 7px (TT-318). Rol Tegelkop: 17px vet, tekstkleur van het thema.
+     Een tik doet niets (besluit C1). Te lang: fitKopTitel() in utils.js
+     (17 · 15px, dan twee regels van 15px; nooit afgekapt, besluit N2). */
+  header > .kop-links { grid-column: 1; grid-row: 1; }
+  header > .logo, header > .kop-titel { grid-column: 2; grid-row: 1; }
+  header > .kop-rechts { grid-column: 3; grid-row: 1; }
+  #appRoot:not(.kop-woordmerk) header > .logo { display: none; }
+  #appRoot.kop-woordmerk header > .kop-titel { display: none; }
+  .kop-titel {
+    justify-self: center;
+    min-width: 0;
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .kop-titel.twee-regels { white-space: normal; font-size: 15px; }
+  /* De titel in het scherm zelf is de bron van de kop en staat er voor het oog
+     niet meer, anders staat hij dubbel. Een schermlezer leest hem nog. */
+  .app-view .scherm-titel {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip-path: inset(50%) !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   .tagline {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
     letter-spacing: 3px;
     text-transform: uppercase;
@@ -437,11 +536,14 @@
 
   .step-label {
     margin-left: 12px;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
     letter-spacing: 2px;
     text-transform: uppercase;
     font-weight: 500;
+    /* TT-517 fase 11: op 360px brak "STAP 1 VAN 5" over twee regels. Nu
+       altijd één regel; de streepjes ervoor geven de ruimte (flex). */
+    white-space: nowrap;
   }
 
   /* Wizard-stappen (2025-08-25, punt A uit het mobiel-first-voorstel):
@@ -463,15 +565,13 @@
   .panel-ouder.active { display: block; }
 
   /* De ouder-schermen tonen de stappenbalk niet — ze zijn geen genummerde
-     stap. Die balk levert wel de 40px lucht onder de kop (.steps
-     margin-bottom); zonder deze regel plakt de kaart tegen de kop aan. De
-     kaart zelf (opvulling, rand) komt uit de TT-461-regel verderop. */
-  .panel-ouder { margin-top: 40px; }
+     stap. TT-517 fase 3: de ruimte onder de kop komt uit main
+     (--kop-ruimte, 20px), zoals op elk scherm; tot 01-11-2026 stond hier
+     40px. */
+  .panel-ouder { margin-top: 0; }
 
   /* TT-42: het blok dat het kind aan zijn ouder kan laten zien. */
   .ouder-kaart {
-    background: var(--surface2);
-    border: var(--line) solid var(--border);
     border-radius: var(--radius);
     padding: 16px;
     margin-bottom: 24px;
@@ -479,7 +579,7 @@
 
   .ouder-kaart p {
     margin: 0 0 12px;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 300;
     line-height: 1.5;
   }
@@ -504,7 +604,7 @@
   /* De vraag boven de twee knoppen van het wachtscherm: gewone tekst, geen
      bijschrift — hij leidt de knoppen in (27-09-2026). */
   .ouder-vraag {
-    font-size: 14px;
+    font-size: 12px;
     line-height: 20px;
     color: var(--text);
     margin: 24px 0 8px;
@@ -530,14 +630,14 @@
     border: 0;
     padding: 0;
     font: inherit;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: var(--fs-sm);
     color: var(--muted);
     text-decoration: underline;
     cursor: pointer;
     min-height: 44px;
   }
-  .stille-link:hover { color: var(--text); }
+  @media (hover: hover) { .stille-link:hover { color: var(--text); } } /* TT-517 fase 9: alleen met een muis */
 
   /* ── Melding (huisstijl §13, vastgelegd en gebouwd 27-09-2026) ──────────
      Eén vorm voor elke melding bovenaan een scherm: "Nog één stap", "Je bent
@@ -554,14 +654,14 @@
     margin-bottom: 16px;
   }
   .melding-kop {
-    font-size: 16px;
+    font-size: 15px;
     line-height: 22px;
     font-weight: 700;
     color: var(--text);
     margin: 0 0 4px;
   }
   .melding-tekst {
-    font-size: 14px;
+    font-size: 12px;
     line-height: 20px;
     color: var(--text);
     margin: 0 0 12px;
@@ -597,7 +697,7 @@
      dan de rest van de flow. */
   .toestemming-blok p,
   .toestemming-melding {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 300;
     line-height: 1.5;
     color: var(--muted);
@@ -613,7 +713,7 @@
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1.5;
     letter-spacing: normal;
     text-transform: none;
@@ -647,16 +747,16 @@
   }
 
   .panel-title {
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 700;
-    font-size: 26px;
+    font-size: 22px;
     letter-spacing: 0.5px;
     margin-bottom: 6px;
     color: var(--accent);
   }
 
   .panel-sub {
-    font-size: 14px;
+    font-size: 12px;
     color: var(--muted);
     margin-bottom: 20px; /* huisstijl §3: tussen twee blokken 20px (was 32px) */
     font-weight: 300;
@@ -719,7 +819,7 @@
        normaal gewicht — in beide thema's. Was 11px, grijs, hoofdletters met
        2px letterafstand. Label, hulptekst en voorbeeldtekst waren alle drie
        grijs en klein en lazen als één brei (advies UX). */
-    font-size: 14px;
+    font-size: 12px;
     letter-spacing: 0;
     text-transform: none;
     color: var(--text);
@@ -754,7 +854,7 @@
     border: 1px solid var(--field-border);
     border-radius: var(--radius-field);
     color: var(--text);
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
     /* TT-U22 (12-08-2026): 16px is het minimum. Safari op iOS zoomt
        automatisch in bij focus op een veld onder 16px, en zoomt niet terug
        uit. Een invoerveld staat daarom altijd op 16px, los van welke
@@ -767,9 +867,9 @@
     -webkit-appearance: none;
   }
 
-  /* Een invulveld is 44px hoog, net als een keuzeveld (huisstijl §7). Sinds
-     Roboto uit de repo komt (TT-492) gaf de standaardregelhoogte 45px, en
-     stond Straal 1px lager dan Plaats (gevonden 26-10-2026). 12 + 18 + 12 +
+  /* Een invulveld is 44px hoog, net als een keuzeveld (huisstijl §7). De
+     standaardregelhoogte van het lettertype gaf 45px, en stond Straal 1px
+     lager dan Plaats (gevonden 26-10-2026, met Roboto). 12 + 18 + 12 +
      2px rand = 44. Een tekstvak (textarea) houdt zijn eigen regelhoogte. */
   input:not([type="checkbox"]):not([type="radio"]) { line-height: 18px; }
 
@@ -873,7 +973,7 @@
     background-position: right 14px center;
     background-size: 12px 8px;
   }
-  .delete-band-choice:hover { border-color: var(--accent); }
+  @media (hover: hover) { .delete-band-choice:hover { border-color: var(--accent); } } /* TT-517 fase 9: alleen met een muis */
   .delete-band-choice:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 
   textarea { resize: vertical; min-height: 80px; }
@@ -892,7 +992,7 @@
     align-items: center;
     min-height: 44px;
     padding: 8px 16px;
-    font-size: 13px;
+    font-size: 12px;
     cursor: pointer;
     transition: all 0.15s;
     user-select: none;
@@ -908,10 +1008,13 @@
      gouden rand, gouden vette tekst. Maat, opvulling en letter staan per
      soort; kleur, rand en hoek staan alleen hier. Een eigen kleur of rand
      bij één soort is een fout (projectinstructies §2, regel 11). */
+  /* TT-517 fase 11 (besluit Ronald 01-11-2026, B: "alles rond"): elke
+     keuzeknop is een pil, zoals elke actieknop. Elke knop rond, elk veld
+     hoekig. Was 8px (fase 2). */
   .tag, .level-btn, .segmented-btn, .search-mode-tab, .media-tab, .goal-card, .level-choice {
     background: var(--keuze-vlak);
     border: var(--line) solid var(--keuze-rand);
-    border-radius: 8px;
+    border-radius: 999px;
     color: var(--text);
     font-weight: 400;
     font-style: normal;
@@ -938,10 +1041,10 @@
     position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
     min-height: 44px; padding: 0 12px;
     background: none; border: none; color: var(--muted);
-    font-family: 'Roboto', sans-serif; font-size: 13px; font-weight: 700;
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700;
     cursor: pointer;
   }
-  .password-toggle:hover { color: var(--accent); }
+  @media (hover: hover) { .password-toggle:hover { color: var(--accent); } } /* TT-517 fase 9: alleen met een muis */
 
   /* TT-316 (24-09-2026, besluit Ronald K6): één gestippelde vorm voor
      "iets toevoegen" — de voorzetten voor de bio en "+ Link toevoegen".
@@ -950,7 +1053,7 @@
   .add-link-btn {
     background: transparent;
     border: var(--line) dashed var(--border);
-    border-radius: 8px;
+    border-radius: 999px; /* TT-517 fase 11, B: ook de gestippelde knop een pil */
     /* TT-U23 (12-08-2026): tikdoel minimaal 44px hoog, randen meegerekend. */
     box-sizing: border-box;
     display: inline-flex;
@@ -958,8 +1061,8 @@
     justify-content: center;
     min-height: 44px;
     padding: 8px 16px;
-    font-family: 'Roboto', sans-serif;
-    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
     font-weight: 700;
     color: var(--muted);
     cursor: pointer;
@@ -985,7 +1088,7 @@
   .plaats-achter {
     position: absolute;
     pointer-events: none;
-    font-size: 16px;
+    font-size: 15px;
     line-height: 18px;
     color: var(--muted);
     white-space: nowrap;
@@ -1013,7 +1116,7 @@
   .ac-item {
     padding: 12px 16px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 12px;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -1022,7 +1125,7 @@
   }
 
   .ac-item:last-child { border-bottom: none; }
-  .ac-item span { font-size: 13px; color: var(--muted); }
+  .ac-item span { font-size: 12px; color: var(--muted); }
   /* TT-168-overgang: min-height 44px (was ±34px, onder de tikdoel-norm) —
      fix uit profiel-v2 hier ook toegepast, geldt voor elke plek die deze
      klasse gebruikt (stads-/artiest-/nummersuggesties). */
@@ -1045,11 +1148,11 @@
     min-height: 44px;
     min-width: 44px;
     padding: 8px 14px;
-    font-size: 13px;
+    font-size: 12px;
     cursor: pointer;
     transition: all 0.15s;
     white-space: nowrap;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
   }
 
   /* Gekozen: zie het TT-316-blok bij .tag — goud en vet (besluit Ronald K12). */
@@ -1086,10 +1189,10 @@
   .setlist-kop[hidden] { display: none; }
   /* 14px: "Voeg nog 2 nummers toe" past op één regel (besluit Ronald,
      25-10-2026, optie B). */
-  .setlist-teller { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .setlist-teller { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* "Beheersing" op de x van de keuze, de i op de rechterlijn (94px =
      de tekst, lucht en de i van 24px). */
-  .setlist-kop-beh { display: flex; align-items: center; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .setlist-kop-beh { display: flex; align-items: center; font-size: 12px; color: var(--muted); white-space: nowrap; }
   .setlist-kop-beh .niveau-info-btn { margin-left: auto; }
   .setlist-lijst { display: flex; flex-direction: column; gap: 8px; }
   .setlist-rij {
@@ -1098,8 +1201,10 @@
     grid-template-columns: minmax(0, 1fr) 94px;
     column-gap: 6px;
     align-items: center;
-    padding: 12px 12px 4px 12px;
-    border: 1px solid var(--border);
+    /* Onder 3px + een keuze van 33px: de tekst van de keuze staat 12px boven
+       de rand, net als links, boven en rechts (TT-517 fase 1: met Inter op
+       12px was dat 12,7px bij 4px + 32px). */
+    padding: 12px 12px 3px 12px;
     border-radius: 10px;
   }
   .setlist-tekst { grid-column: 1 / 3; min-width: 0; }
@@ -1109,8 +1214,8 @@
     text-overflow: ellipsis;
   }
   /* Ruimte rechts voor het kruisje in de hoek. */
-  .setlist-artiest { font-size: 16px; font-weight: 700; line-height: 20px; padding-right: 22px; }
-  .setlist-titel { font-size: 13px; line-height: 17px; color: var(--muted); margin-top: 2px; }
+  .setlist-artiest { font-size: 15px; font-weight: 700; line-height: 20px; padding-right: 22px; }
+  .setlist-titel { font-size: 12px; line-height: 17px; color: var(--muted); margin-top: 2px; }
   /* De voorproef: gedempt, het aantal vet in tekstkleur, het icoon in de
      steunkleur (Ronald: "groen of zo", "niet teveel opvallen"). */
   .setlist-spelers { grid-column: 1; grid-row: 2; min-width: 0; margin-top: 8px; font-size: 12px; line-height: 16px; color: var(--muted); }
@@ -1126,7 +1231,7 @@
   .setlist-keuze {
     position: relative;
     width: 100%;
-    height: 32px;
+    height: 33px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1134,8 +1239,8 @@
     padding: 0;
     border: 0;
     background: none;
-    font-family: 'Roboto', sans-serif;
-    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
     color: var(--muted);
     white-space: nowrap;
     cursor: pointer;
@@ -1159,7 +1264,7 @@
   /* "Zeker?" op de plek van het kruisje, met de rechterkant op dezelfde
      rechterlijn (15px = 3px buiten de binnenrand + 12px). */
   .setlist-rij .song-remove.setlist-zeker { justify-content: flex-end; padding: 0 15px 0 0; font-size: 11px; font-weight: 700; color: var(--danger); }
-  .beheersing-uitleg { margin: 0 0 8px; font-size: 14px; }
+  .beheersing-uitleg { margin: 0 0 8px; font-size: 12px; }
 
   .song-remove {
     /* TT-U23 (12-08-2026): was 23x26 pixels. */
@@ -1194,11 +1299,14 @@
     cursor: pointer;
     transition: all 0.2s;
     text-align: center;
+    /* TT-517 fase 11 (besluit Ronald 01-11-2026, 2): een doelkaart van drie
+       regels is een kaart, geen pil: hoek 16px zoals een tegel. */
+    border-radius: var(--radius);
   }
 
   /* Gekozen: zie het TT-316-blok bij .tag. :hover staat in de guard. */
-  .goal-card .goal-label { font-size: 13px; }
-  .goal-card .goal-desc { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 300; }
+  .goal-card .goal-label { font-size: 12px; }
+  .goal-card .goal-desc { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 300; }
   /* TT-341 stap 2: op licht is de gekozen kaart geel; grijs is daarop te zwak. */
   .goal-card.selected .goal-desc { color: var(--gekozen-bijschrift); }
 
@@ -1241,12 +1349,18 @@
     justify-content: center;
     min-height: 44px;
     padding: 13px 28px;
-    border-radius: 8px;
-    font-family: 'Roboto', sans-serif;
+    /* TT-517 fase 2 (huisstijl §4, §5; besluit Ronald 31-10-2026, optie A):
+       elke knop is een pil. Keuzeknoppen en de gestippelde knop blijven 8px. */
+    border-radius: 999px;
+    font-family: 'Inter', sans-serif;
     /* TT-341 stap 2 (besluit Ronald, 26-09-2026: "1 B, maar maak de tekst
        groter zodat het meer vullend wordt"): gewone letters, 16px, in beide
        thema's. Was 14px in hoofdletters met 1px letterafstand. */
-    font-size: 16px;
+    font-size: 15px;
+    /* TT-517 fase 11: vaste regelhoogte. Met de standaardregelhoogte van Inter
+       (circa 18,2px) werd elke knop 45px in plaats van 44px (huisstijl §6),
+       zoals eerder het invulveld (26-10-2026). 13 + 18 + 13 = 44. */
+    line-height: 18px;
     font-weight: 700;
     letter-spacing: 0;
     text-transform: none;
@@ -1276,6 +1390,17 @@
     gap: 8px;
   }
   .btn-row .btn { min-width: 0; }
+  /* TT-517 fase 11 (besluit Ronald 01-11-2026, "2"): past de tekst van een
+     knop niet naast de andere, dan onder elkaar, over de volle breedte; de
+     handeling boven, de knop met rand (die in de HTML altijd eerst staat)
+     eronder. initKnoppenRij() in core.js zet de klasse. Een raster blijft
+     (TT-228). Bewust een vaste regel per knop en niet `order`: .btn heeft
+     `transition: all`, en dan schuift `order` mee; een browser die niet
+     tekent, laat hem halverwege staan (gemeten in het browservenster, zelfde
+     soort als fase 8 en 9). Een regel (grid-row) schuift niet. */
+  .btn-row.btn-rij-stapel { grid-auto-flow: row; }
+  .btn-row.btn-rij-stapel > .btn { grid-row: 1; }
+  .btn-row.btn-rij-stapel > .btn-ghost { grid-row: 2; }
   /* TT-316 (24-09-2026): in een rij is een knop op 390px zo'n 175px breed.
      Met 28px opvulling links en rechts liep de tekst over twee regels (58px
      hoog, op de zoekpagina 62px). 12px houdt hem op één regel en op 44px. */
@@ -1289,9 +1414,16 @@
     color: var(--merk-tekst);
   }
 
-  .btn-primary:hover {
-    background: var(--merk-hover);
-    transform: translateY(-1px);
+  /* TT-517 fase 9 (huisstijl §23 en TT-373): een telefoon houdt de aanwijsstand
+     na een tik vast. Dan kreeg een tik een tweede, blijvend teken (een ander
+     vlak, 1px omhoog) naast het indrukken. Elke aanwijsstand staat daarom in
+     @media (hover: hover), hier op zijn eigen plek, zodat de volgorde van de
+     regels gelijk blijft; met een muis verandert er niets. */
+  @media (hover: hover) {
+    .btn-primary:hover {
+      background: var(--merk-hover);
+      transform: translateY(-1px);
+    }
   }
 
   /* TT-316 (24-09-2026, besluit Ronald K5): tekst wit, rand --line. Was
@@ -1307,8 +1439,14 @@
     color: var(--text);
     border: var(--line) solid var(--rand-knop);
   }
+  /* TT-517 fase 11: een knop met rand is even hoog als een knop zonder rand
+     (44px); de rand gaat van de opvulling af, niet erbij. */
+  .btn-ghost, .btn-danger {
+    padding-top: calc(13px - var(--line));
+    padding-bottom: calc(13px - var(--line));
+  }
 
-  .btn-ghost:hover { color: var(--text); border-color: var(--text); }
+  @media (hover: hover) { .btn-ghost:hover { color: var(--text); border-color: var(--text); } } /* TT-517 fase 9: alleen met een muis */
 
   /* Een knop die nog niet kan (vinkje niet gezet, wachttijd loopt): half
      zichtbaar, geen handje, geen verschuiving bij aanwijzen. Eén regel voor
@@ -1326,8 +1464,8 @@
   }
 
   .profile-name {
-    font-family: 'Roboto', sans-serif;
-    font-size: 36px;
+    font-family: 'Inter', sans-serif;
+    font-size: 32px;
     letter-spacing: 1px;
     line-height: 1;
   }
@@ -1354,7 +1492,7 @@
   }
 
   .profile-meta {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
     margin-top: 4px;
     margin-bottom: 20px;
@@ -1385,7 +1523,7 @@
      de ruimte eronder is 20px, zoals tussen de andere blokken van een profiel. */
   .melding-beschikbaar { margin-bottom: 20px; }
   .profile-songs-title {
-    font-size: 13px;
+    font-size: 12px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--muted);
@@ -1397,7 +1535,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .profile-song-row:last-child { padding-bottom: 0; }
@@ -1410,8 +1548,8 @@
      Opgebouwd door nummerTekstHTML() in utils.js. */
   .song-tekst { flex: 1; min-width: 0; display: flex; flex-direction: column; text-align: left; }
   .song-artiest, .song-titel { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .song-artiest { font-size: 16px; font-weight: 700; line-height: 20px; color: var(--text); }
-  .song-titel { font-size: 13px; font-weight: 400; line-height: 17px; color: var(--muted); margin-top: 2px; }
+  .song-artiest { font-size: 15px; font-weight: 700; line-height: 20px; color: var(--text); }
+  .song-titel { font-size: 12px; font-weight: 400; line-height: 17px; color: var(--muted); margin-top: 2px; }
 
   /* Meer dan zeven nummers op een profiel: ingeklapt tot zeven (besluit
      Ronald, 26-10-2026, optie 1; nummerLijstHTML() in utils.js). Repertoire
@@ -1430,7 +1568,7 @@
   .nummers-inklap-regel {
     display: flex; align-items: center; justify-content: center; gap: 6px;
     width: 100%; padding: 8px 0 0; margin: 0; border: 0; background: none;
-    font: inherit; font-size: 13px; font-weight: 700;
+    font: inherit; font-size: 12px; font-weight: 700;
     color: var(--text); cursor: pointer;
   }
   .nummers-inklap-regel svg { width: 12px; height: 12px; flex: none; }
@@ -1548,17 +1686,16 @@
 
   .avatar-preview {
     width: 96px; height: 96px;
-    /* TT-341 stap 2: het profielvlak is overal geel met een zwarte T (Ronald,
-       26-09-2026). Er is geen profielkleur per persoon meer. */
     border-radius: 50%;
-    background: var(--merk);
+    /* TT-517 fase 6 (huisstijl §2, besluiten Ronald 31-10-2026): zolang er
+       geen foto is de schijnwerper met een silhouet, één persoon, zonder
+       instrument. Een gekozen foto ligt erover (img hieronder). */
+    background: var(--silhouet-muzikant) center bottom / 100% 100% no-repeat,
+      var(--bundel-klein) center / 100% 100% no-repeat, var(--podium);
     border: 3px solid var(--merk);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Roboto', sans-serif;
-    font-size: 34px;
-    color: var(--merk-tekst);
     overflow: hidden;
     transition: border-color 0.3s;
     cursor: pointer;
@@ -1577,7 +1714,7 @@
     border-radius: 50%;
     border: 2px solid var(--bg);
     display: flex; align-items: center; justify-content: center;
-    font-size: 13px;
+    font-size: 12px;
     /* TT-381 (30-09-2026, Ronald): zwarte tekst op het gele vlak, niet wit.
        Geel als vlak onder tekst is --merk met --merk-tekst (§1.1). */
     background: var(--merk);
@@ -1590,8 +1727,13 @@
   }
 
   .avatar-info { flex: 1; }
-  .avatar-info strong { font-size: 14px; display: block; margin-bottom: 6px; }
-  .avatar-info p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .avatar-info strong { font-size: 12px; display: block; margin-bottom: 6px; }
+  /* TT-517 fase 6 (huisstijl §2, besluit Ronald 31-10-2026: "kop met foto is
+     goed"): zonder foto "Upload een foto van jezelf", met foto "Je
+     profielfoto" (band: "Jullie bandfoto"). De foto in het rondje beslist. */
+  .avatar-upload-area:has(.avatar-preview img) .kop-zonder-foto,
+  .avatar-upload-area:not(:has(.avatar-preview img)) .kop-met-foto { display: none; }
+  .avatar-info p { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
   /* TT-381 (30-09-2026, Ronald): "Foto verwijderen" is het kruisje
      rechtsboven de foto, zelfde kruisje als op een mediategel. Uiterlijk en
@@ -1610,8 +1752,6 @@
   .completeness-wrap {
     margin-top: 24px;
     padding: 16px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
     border-radius: 10px;
   }
 
@@ -1656,62 +1796,142 @@
      vaste waarde te staan (dat was de "gele-lijn"-valkuil); veilige
      standaard voor het geval dit element ooit zonder inline style wordt
      gebruikt. */
-  /* ═══ TT-265 (15-09-2026): de bannerbalk op het profiel ═══════════════
-     Besluiten van Ronald: maximaal zes items, swipen, stippen eronder,
-     doorschuiven na vijf seconden, pauze zodra hij zelf iets doet, en
-     GEEN autoplay. Geen gekozen items: de balk staat er niet (dat regelt
-     profielBannerHTML(), dat dan een lege tekst teruggeeft).
-     Vorm 2:1 (TT-384, besluit Ronald 30-09-2026; was 5:2) en niet 16:9 —
-     bij 375px breed is 16:9 gelijk aan 193px hoog en duwt dat de naam tot
-     op de rand van het zichtbare scherm. */
-  /* TT-384 (30-09-2026): geen marge onder de balk. De kop eronder
-     (.profiel-kop.op-banner) schuift 40px over de onderrand; de stippen
-     hangen los onder de balk, in de ruimte naast de profielfoto. */
-  .profiel-banner {
+  /* ═══ TT-517 fase 4 (01-11-2026): het profiel als hoes (huisstijl §21) ═══
+     Vervangt de bannerbalk van TT-265 en de ronde profielfoto naast de
+     knoppen van TT-384. Muzikant en band gelijk; opbouw in profielHoesHTML()
+     en hoesStarten() in utils.js.
+     - 4:3, binnen de marge, hoeken 16px, zonder lijst of lijn.
+     - 8px onder de kop (besluit Ronald (d), 01-11-2026: "8px ziet er
+       natuurlijker uit"). Tekst begint 20px onder de kop, een foto 8px.
+     - Vegen gaat met scroll-snap, niet met een eigen touchmove (§16). */
+  .hoes { position: relative; margin: 8px 0 16px; color: var(--op-foto); }
+  .hoes.tekst-donker { color: var(--op-foto-donker); }
+  .hoes-beeld {
     position: relative;
-    margin: 0;
+    aspect-ratio: 4 / 3;
+    border-radius: 16px;
+    overflow: hidden;
+    isolation: isolate;
+    background: var(--podium);
   }
-
-  /* Het swipen gebeurt met scroll-snap, niet met een eigen touchmove.
-     Huisstijl §16 verbiedt een niet-passieve touchmove op een bewegend
-     vlak; de browser doet dit zelf beter en vloeiender. */
-  .pb-spoor {
+  .hoes-spoor {
     display: flex;
+    height: 100%;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
-    overscroll-behavior: contain;
-    border-radius: 8px;
+    overscroll-behavior-x: contain;
     scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
   }
-  .pb-spoor::-webkit-scrollbar { display: none; }
-
-  .pb-item {
+  .hoes-spoor::-webkit-scrollbar { display: none; }
+  .hoes-vlak {
     position: relative;
     flex: 0 0 100%;
-    width: 100%;
-    /* TT-384 (30-09-2026, besluit Ronald): 2:1, was 5:2. 25% hoger. */
-    aspect-ratio: 2 / 1;
+    height: 100%;
     scroll-snap-align: start;
-    /* TT-267: scroll-snap-stop: always is hier weggehaald. Dat dwingt de
-       browser bij elk vlak te stoppen, ook midden in een lopende sprong, en
-       dat is een van de manieren waarop de balk halverwege bleef staan. */
+    display: block;
     padding: 0;
     margin: 0;
-    border: none;
-    border-radius: 8px;
+    border: 0;
+    border-radius: 0;
     overflow: hidden;
-    background: var(--surface2);
+    background: var(--podium); /* ook zolang een foto laadt, of als hij niet laadt */
+    color: inherit;
+    font: inherit;
     cursor: pointer;
-    display: block;
+  }
+  div.hoes-vlak { cursor: default; }
+  .hoes-img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  /* TT-517 fase 5: een bannerfoto met een gekozen kader. uitsnedeStijl() zet
+     maat en plek in procenten van de hoes; het vlak knipt de rest weg. */
+  .hoes-img.hoes-kader { position: absolute; max-width: none; object-fit: fill; }
+
+  /* Het matglas: vijf lagen van hetzelfde beeld (hoesWaasMaken()), een iets
+     groter vlak zodat de vervaagde rand buiten beeld valt. */
+  .hoes-waas { position: absolute; inset: 0; pointer-events: none; }
+  .hoes-waas img { position: absolute; left: -6%; top: -6%; width: 112%; height: 112%; object-fit: cover; }
+  .hoes-waas-tint {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0) 54%, rgba(0,0,0,calc(var(--waas) * .12)) 61%,
+      rgba(0,0,0,calc(var(--waas) * .35)) 67%, rgba(0,0,0,calc(var(--waas) * .7)) 73%, rgba(0,0,0,var(--waas)) 80%);
+  }
+  .hoes-vlak[data-tekst="donker"] .hoes-waas-tint {
+    background: linear-gradient(to bottom, rgba(255,255,255,0) 54%, rgba(255,255,255,calc((var(--waas) + .2) * .12)) 61%,
+      rgba(255,255,255,calc((var(--waas) + .2) * .35)) 67%, rgba(255,255,255,calc((var(--waas) + .2) * .7)) 73%, rgba(255,255,255,calc(var(--waas) + .2)) 80%);
+  }
+  /* Is het beeld niet te meten (een beeld van een andere site), dan de
+     veilige vorm: dezelfde waas onder witte tekst, zonder vervaging. */
+  .hoes-vlak.hoes-veilig::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to bottom, rgba(0,0,0,0) 54%, rgba(0,0,0,.1) 61%, rgba(0,0,0,.3) 67%, rgba(0,0,0,.6) 73%, rgba(0,0,0,.85) 80%);
   }
 
-  .pb-beeld {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+  /* Naam en regel op de foto, in de kleur van de hoes. De naam houdt rechts
+     ruimte vrij voor delen en ⋯ (--hoes-tekst-rechts, hoesStarten()); een
+     lange naam wordt dus eerder kleiner (§2.1, fitProfileName()). */
+  .hoes-tekst {
+    position: absolute;
+    left: 16px;
+    right: var(--hoes-tekst-rechts, 78px);
+    bottom: 24px;
+    pointer-events: none;
+  }
+  .hoes .profile-name { margin: 0; color: inherit; font-weight: 900; line-height: 1.1; }
+  .hoes .profile-meta { color: inherit; }
+
+  /* Delen en ⋯ rechtsonder, op de regel van de naam, zonder vlak eronder
+     (besluit Ronald 31-10-2026, positie 2). Het ⋯ staat recht onder de
+     hamburger. */
+  .hoes .profiel-knoppen { position: absolute; right: 1px; bottom: 10px; margin: 0; color: inherit; }
+  .hoes .profiel-menu-plek { margin: 0; }
+  .hoes .profiel-knoppen .nav-menu-btn { color: inherit; }
+
+  /* De stippen zijn alleen een aanwijzing dat er meer beelden zijn, geen knop
+     (besluit Ronald 31-10-2026; TT-541). */
+  .hoes-stippen {
+    position: absolute; left: 0; right: 0; bottom: 8px;
+    display: flex; justify-content: center; gap: 6px;
+    pointer-events: none;
+  }
+  .hoes-stip { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .45; }
+  .hoes-stip.aan { opacity: 1; }
+
+  /* Pijltjes alleen met een muis, bij het aanwijzen van de hoes; niet op het
+     eerste en het laatste beeld (hidden), nooit op een telefoon. Alleen het
+     teken, 30px, in de kleur van de hoes; tikvlak 44px, 8px van de rand. */
+  .hoes-pijl {
+    position: absolute; top: 50%; z-index: 1;
+    width: 44px; height: 44px; margin-top: -22px;
+    display: none; place-items: center;
+    padding: 0; border: 0; background: none; color: inherit; cursor: pointer;
+  }
+  .hoes-pijl.vorige { left: 8px; }
+  .hoes-pijl.volgende { right: 8px; }
+  .hoes-pijl svg { width: 30px; height: 30px; }
+  /* De regel die ze toont, staat in de hover-guard (TT-182), onderaan. */
+
+  /* Een video of YouTube in de hoes: het speelteken in het midden. Een link
+     zonder miniatuur: de kaart op het podium. De vaste naam "Video" en de
+     platformnaam onderaan vervallen: daar staat de naam. */
+  .hoes .pb-kaart { background: var(--podium); border: 0; border-radius: 0; color: var(--op-foto); }
+  .hoes .pb-kaart-titel { color: var(--op-foto); }
+  .hoes .pb-kaart-platform { color: var(--merk); } /* op het podium in elk thema gelijk, zoals de foto */
+
+  /* TT-517 fase 6 (huisstijl §21): zonder foto de schijnwerper, groot. Twee
+     bundels, van linksboven en rechtsboven, die samen op de naam vallen;
+     de lichtvlek ligt op de naam. hoesBundelZetten() in utils.js meet de naam
+     en tekent de bundels op de maat van de hoes. */
+  .hoes-bundel { position: absolute; inset: 0; pointer-events: none; }
+  .hoes-bundel svg { display: block; width: 100%; height: 100%; }
+  /* Alleen voor de eigenaar: een pil "Voeg een foto toe" in het midden van
+     de hoes, horizontaal en verticaal (besluit Ronald 01-11-2026: "centreer
+     de knop verticaal en horizontaal. dan gaat het altijd goed"). De vorm is
+     de hoofdknop (§5); hier alleen de plek. */
+  .hoes-foto-knop {
+    position: absolute; z-index: 1;
+    top: 50%; left: 50%;
+    translate: -50% -50%; /* los van transform, die de hoofdknop bij aanwijzen 1px optilt */
+    white-space: nowrap;
   }
 
   /* Tekst-only, geen icoon: de app telt tien vaste tekens en een elfde
@@ -1776,7 +1996,7 @@
     text-align: center;
   }
   .pb-kaart-platform {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
     color: var(--accent);
   }
@@ -1790,71 +2010,48 @@
     overflow: hidden;
   }
 
-  /* Stip 6px zichtbaar, tikgebied 44px via het ::after-patroon uit
-     huisstijl §6 — hetzelfde patroon als het bannerteken van TT-263. */
-  /* TT-384: los onder de balk, 10px eronder, zodat ze de kop niet omlaag
-     duwen. Ze staan midden tussen de foto links en de knoppen rechts. */
-  .pb-stippen {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + 10px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
-  }
-  .pb-stip {
-    position: relative;
-    width: 6px;
-    height: 6px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: var(--leeg);
-    cursor: pointer;
-    transition: background .2s ease;
-  }
-  .pb-stip::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 44px;
-    height: 44px;
-    transform: translate(-50%, -50%);
-  }
-  /* Actieve stip geel (Ronald, 15-09-2026): "hier ben je". */
-  .pb-stip.aan { background: var(--merk); }
-
   /* Eén vorm voor een foto- en een videotegel onder het profiel (TT-265). */
   .profile-media-tegel {
     position: relative;
     display: block;
     aspect-ratio: 1;
-    border-radius: 8px;
+    border-radius: 12px;  /* TT-517 fase 2 (huisstijl §21): tegels onder Foto's en video's en Links 12px, was 8px */
     overflow: hidden;
     border: 1px solid var(--border);
     padding: 0;
     background: none;
     cursor: pointer;
   }
-  /* TT-45 (25-09-2026): een afgeschermd medium van een 13- tot 15-jarige,
-     voor een bezoeker zonder account. De T van het app-icoon: goud op
-     antraciet. Geen knop, dus ook geen handje als cursor. */
-  .media-afgeschermd {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    /* TT-341 stap 2: zelfde vlak als het profielvlak — geel met een zwarte T,
-       in elk thema. Was een gouden T op --surface2. */
-    background: var(--merk);
-    color: var(--merk-tekst);
-    font-size: 32px;
-    line-height: 1;
-    cursor: default;
-    user-select: none;
+  /* TT-517 fase 7 (huisstijl §18.7, besluit Ronald 01-11-2026, B): een
+     afgeschermd beeld van een 13- tot 15-jarige, voor een bezoeker zonder
+     account. Een eigen, piepkleine versie van de foto (16 x 12 pixels), groot
+     getoond en vervaagd; iets vergroot, zodat de vage rand buiten het vak valt.
+     De vervaging volgt de maat van het vak (--wazig). Geen teken, geen knop. */
+  .foto-wazig {
+    display: block; width: 100%; height: 100%; object-fit: cover;
+    filter: blur(var(--wazig, 3px)); transform: scale(1.2);
+    pointer-events: none; user-select: none;
   }
+  .hoes-wazig, .media-afgeschermd, .media-mini-wazig { overflow: hidden; }
+  .hoes-wazig { --wazig: 24px; }
+  /* Foto's, video's en links samen in één vlak (mediaAfgeschermdHTML()):
+     het wazige beeld onder een donkere waas (minstens 45%, zo dat wit 6,1:1
+     haalt op het lichtste punt), hoek 10px, minstens 168px hoog;
+     het aantal (15px vet) en de opmerking (15px), wit, gecentreerd. De
+     opmerking was op de proef 14px; 14 is geen van de zes lettermaten (§2). */
+  .media-afgeschermd {
+    position: relative; display: grid; place-items: center;
+    min-height: 168px; border-radius: 10px; padding: 16px;
+    background: var(--podium); cursor: default; --wazig: 20px;
+  }
+  .media-afgeschermd .foto-wazig { position: absolute; inset: 0; }
+  /* De waas: minstens 45%, donkerder bij een licht beeld (wazigWaasZetten()). */
+  .media-afgeschermd::after { content: ""; position: absolute; inset: 0; background: rgb(13 13 13 / var(--waas-vlak, .45)); }
+  .media-afgeschermd-tekst {
+    position: relative; z-index: 1; display: grid; gap: 6px; text-align: center; color: #fff; max-width: 28ch;
+  }
+  .media-afgeschermd-tekst b { font-size: 15px; line-height: 20px; font-weight: 700; }
+  .media-afgeschermd-tekst span { font-size: 15px; line-height: 20px; }
 
   .profile-media-tegel .pb-label {
     left: 4px;
@@ -1867,37 +2064,13 @@
      bovenaan het profiel is weg, de hero begint direct onder de kop. Niets
      gebruikt de klasse nog (§2.10). */
 
-  .profile-avatar-photo {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid var(--rand-neutraal); /* TT-341 stap 2: neutraal, was de profielkleur */
-    margin-bottom: 12px;
-  }
-
-  .profile-avatar-initials {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Roboto', sans-serif;
-    /* TT-341 stap 2: het profielvlak is overal geel met een zwarte T (Ronald,
-       26-09-2026). Er is geen profielkleur per persoon meer. */
-    font-size: 30px;
-    background: var(--merk);
-    color: var(--merk-tekst);
-    margin-bottom: 12px;
-    border: 3px solid var(--merk);
-  }
-
   /* Media upload section */
   .media-tip {
     background: var(--tint); /* §1.1 */
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 12px 16px;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--tip-tekst);
     margin-bottom: 20px;
     display: flex;
@@ -1920,9 +2093,9 @@
     min-height: 44px;
     padding: 10px;
     text-align: center;
-    font-size: 13px;
+    font-size: 12px;
     cursor: pointer;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
     transition: all 0.2s;
   }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
@@ -1936,34 +2109,26 @@
   .zoek-titel { margin: 0 0 20px; }
 
   /* TT-520 (besluit Ronald 26-10-2026, sessie 19, optie A: "het is
-     rustiger"): één ondergrond. In Zoeken staan de velden direct op de
-     pagina, zonder het kader van .search-filters; alleen de treffers zijn
-     een vlak. Geldt voor Muzikanten en Mix & Match. Elders (Berichten, Over
-     ons, de tegelschermen) blijft het paneel; die beoordeelt Ronald later. */
-  #view-search .search-filters {
-    background: none;
-    border: none;
-    border-radius: 0;
-    padding: 0;
-    margin-bottom: 20px;
-  }
+     rustiger"): één ondergrond. Sinds TT-517 fase 2 heeft .search-filters
+     nergens meer een kader (zie daar); in Zoeken staat het eerste resultaat
+     20px onder het laatste veld. */
+  #view-search .search-filters { margin-bottom: 20px; }
 
-  /* De tegels: het tegelpatroon van Instellingen (.tile), met een icoon links
-     op een grijs vlak (--surface2; besluit Ronald 26-10-2026, sessie 18:
-     "het is erg geel nu"). Donker een gouden, licht een zwart icoon
-     (--accent). Geen pijl (Laag 2). Een <button>: breed, tekst links. */
+  /* De tegels: het tegelpatroon van Instellingen (.tile), met een icoon links.
+     Donker een gouden, licht een zwart icoon (--accent). Geen pijl (Laag 2).
+     Een <button>: breed, tekst links. TT-517 fase 11 (besluit Ronald
+     01-11-2026, C, licht en donker): geen vlak achter het icoon; het vak van
+     44px blijft, zodat de tekst op dezelfde plek staat. */
   .zoek-tegel {
     width: 100%;
     text-align: left;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
     color: var(--text);
   }
   .zoek-tegel-icoon {
     flex: 0 0 44px;
     width: 44px;
     height: 44px;
-    border-radius: var(--radius-field);
-    background: var(--surface2);
     color: var(--accent);
     display: flex;
     align-items: center;
@@ -1989,8 +2154,13 @@
     text-align: center;
     font-size: 15px;
     cursor: pointer;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
     transition: all 0.2s;
+  }
+  /* TT-517 fase 11: onder 360px breed paste "Muzikanten" niet meer in zijn
+     knop en werd afgekapt. Dan 12px, de volgende maat uit de huisstijl. */
+  @media (max-width: 359px) {
+    .search-mode-tab { font-size: 12px; }
   }
 
   /* Filters, rechts op de labelregel van Naam, met een pijltje dat omdraait
@@ -2008,8 +2178,8 @@
     padding: 0;
     border: none;
     background: none;
-    font-family: 'Roboto', sans-serif;
-    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
     font-weight: 700;
     line-height: 18px;
     color: var(--accent);
@@ -2086,9 +2256,9 @@
     background: none;
   }
 
-  .drop-label { font-size: 14px; color: var(--muted); font-weight: 300; }
+  .drop-label { font-size: 12px; color: var(--muted); font-weight: 300; }
   .drop-label strong { color: var(--text); }
-  .drop-hint { font-size: 13px; color: var(--muted); margin-top: 6px; letter-spacing: 0.5px; }
+  .drop-hint { font-size: 12px; color: var(--muted); margin-top: 6px; letter-spacing: 0.5px; }
 
   /* Media thumbnails */
   .media-grid {
@@ -2106,8 +2276,6 @@
     position: relative;
     aspect-ratio: 1;
     border-radius: 8px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
   }
 
   .media-thumb img {
@@ -2139,7 +2307,7 @@
     position: absolute;
     bottom: 4px; left: 4px;
     background: rgba(0,0,0,0.7);
-    font-size: 13px;
+    font-size: 12px;
     padding: 2px 5px;
     border-radius: 3px;
     color: var(--muted);
@@ -2155,7 +2323,7 @@
      14px in plaats van 12px, zodat de uitleg bij de banner opvalt. 16px past op
      een toestel van 360px niet op één regel (gemeten); 14px past, met ruimte. */
   .banner-teller {
-    font-size: 14px;
+    font-size: 12px;
     color: var(--muted);
     margin: 0 0 10px;
     line-height: 1.4;
@@ -2210,8 +2378,6 @@
     align-items: center;
     padding: 8px;
     margin-bottom: 10px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
     border-radius: 8px;
   }
 
@@ -2234,7 +2400,7 @@
   /* Een platformnaam moet in 56px passen: "SoundCloud" past niet op één
      regel, dus breekt hij af in plaats van weggesneden te worden. */
   .media-mini-platform {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--text);
     text-align: center;
@@ -2248,7 +2414,7 @@
      (besluit Ronald 13-09-2026); op een bureaublad verschijnt hij daarnaast
      als label bij aanwijzen, via het title-attribuut. */
   .media-rij-titel {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
@@ -2267,7 +2433,7 @@
     margin-top: 2px;
     padding: 0;
     font-size: var(--fs-sm);
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
     color: var(--muted);
     background: transparent;
     border: none;
@@ -2332,7 +2498,7 @@
   .media-speler-titel {
     flex: 1;
     min-width: 0;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 700;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2358,7 +2524,7 @@
     background: var(--surface2);
   }
   .media-speler-uitleg p { font-size: var(--fs-sm); color: var(--muted); margin: 0; line-height: 1.4; }
-  .media-speler-platform { font-size: 14px; font-weight: 700; }
+  .media-speler-platform { font-size: 12px; font-weight: 700; }
   .media-speler-voet { display: flex; gap: 8px; padding: 12px 14px; background: var(--surface); }
   .media-speler-voet:empty { display: none; }
   .media-speler-voet .btn { flex: 1; }
@@ -2379,7 +2545,7 @@
   }
 
   .profile-media-title {
-    font-size: 13px;
+    font-size: 12px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--muted);
@@ -2433,7 +2599,7 @@
     color: var(--text);
     padding: 14px 20px;
     border-radius: 10px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     box-shadow: var(--schaduw-melding);
     opacity: 0;
@@ -2468,14 +2634,14 @@
   @keyframes spin { to { transform: rotate(360deg); } }
 
   .save-box h3 {
-    font-family: 'Roboto', sans-serif;
-    font-size: 28px;
+    font-family: 'Inter', sans-serif;
+    font-size: 22px;
     letter-spacing: 1px;
     margin-bottom: 8px;
   }
 
   .save-box p {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
     font-weight: 300;
   }
@@ -2528,9 +2694,9 @@
   .landing-verloop { position: absolute; inset: 0; pointer-events: none; background: var(--foto-verloop); }
   .landing-kop { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 16px 20px; }
   .landing-title {
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 900;
-    font-size: 36px;
+    font-size: 32px;
     line-height: 1.05;
     letter-spacing: -0.01em;
     color: var(--op-foto);
@@ -2548,7 +2714,7 @@
   .landing-woord.in { animation: landingWoordIn .34s cubic-bezier(.2,.8,.2,1); }
   @keyframes landingWoordUit { to { transform: translateY(-40%); opacity: 0; } }
   @keyframes landingWoordIn { from { transform: translateY(40%); opacity: 0; } to { transform: none; opacity: 1; } }
-  .landing-waarvoor { margin: 12px 0 0; font-size: 14px; color: var(--op-foto-zacht); }
+  .landing-waarvoor { margin: 12px 0 0; font-size: 12px; color: var(--op-foto-zacht); }
   .landing-onder {
     flex: none;
     display: flex;
@@ -2557,9 +2723,9 @@
     padding: 20px 16px calc(40px + env(safe-area-inset-bottom, 0px)); /* 06-10-2026 (Ronald): hoger, "Inloggen" is anders haast niet te bereiken */
     background: var(--bg);
   }
-  .landing-sub { font-size: 18px; font-weight: 700; color: var(--text); }
+  .landing-sub { font-size: 17px; font-weight: 700; color: var(--text); }
   .landing-knop { width: 100%; }
-  .landing-login { margin: 0; text-align: center; font-size: 14px; color: var(--muted); }
+  .landing-login { margin: 0; text-align: center; font-size: 12px; color: var(--muted); }
   /* 08-10-2026: Inloggen en Profiel aanmaken op een eigen rij onder de tekst, zodat hun tikvlakken elkaar niet overlappen. */
   .landing-acties { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 8px; }
   .landing-acties .landing-inloggen { margin: -12px 0; }
@@ -2575,8 +2741,8 @@
     background: none;
     border: none;
     color: var(--text);
-    font-family: 'Roboto', sans-serif;
-    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
     font-weight: 700;
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -2632,8 +2798,8 @@
     min-height: 44px;
     padding: 10px 20px;
     border-radius: 8px 8px 0 0;
-    font-family: 'Roboto', sans-serif;
-    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -2648,7 +2814,7 @@
     flex-shrink: 0;
   }
 
-  .nav-btn:hover { color: var(--text); }
+  @media (hover: hover) { .nav-btn:hover { color: var(--text); } } /* TT-517 fase 9: alleen met een muis */
   .nav-btn.active {
     background: var(--surface);
     border-color: var(--border);
@@ -2721,13 +2887,13 @@
     background: transparent;
     border: none;
     color: var(--text);
-    font-family: 'Roboto', sans-serif;
-    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: background 0.15s;
   }
-  .nav-menu-item:hover { background: var(--tint); color: var(--accent); }
+  @media (hover: hover) { .nav-menu-item:hover { background: var(--tint); color: var(--accent); } } /* TT-517 fase 9: alleen met een muis */
   .nav-menu-item + .nav-menu-item { border-top: 1px solid var(--border); }
 
   /* TT-427 (10-10-2026, besluit Ronald): het hamburgermenu heeft een map,
@@ -2777,18 +2943,18 @@
 
   /* TT-63 (09-08-2026): documentweergaven (privacy/voorwaarden/gedragscode) */
   .doc-view h2 {
-    font-family: 'Roboto', sans-serif;
-    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
     font-weight: 700;
     color: var(--accent);
     margin: 28px 0 10px;
   }
   .doc-view h2:first-of-type { margin-top: 4px; }
-  .doc-view p, .doc-view li { font-size: 14px; line-height: 1.7; color: var(--text); }
+  .doc-view p, .doc-view li { font-size: 12px; line-height: 1.7; color: var(--text); }
   .doc-view p { margin-bottom: 14px; }
   .doc-view ul { margin: 0 0 14px; padding-left: 20px; }
   .doc-view li { margin-bottom: 6px; }
-  .doc-view .doc-updated { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .doc-view .doc-updated { font-size: 12px; color: var(--muted); margin-bottom: 24px; }
 
   /* ── TT-01: Berichten (TT-34, 07-08-2026: cooler, WhatsApp-achtig
      gegroepeerd op gesprekspartner, met avatars en spraakbel-vormige
@@ -2800,7 +2966,7 @@
     right: 2px;
     background: var(--ongelezen); /* rood in elk thema (Ronald, 26-09-2026) */
     color: #fff;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     line-height: 1.4;
     padding: 1px 6px;
@@ -2819,44 +2985,42 @@
   .tt-bericht-kop { font-weight: 700; margin-bottom: 4px; }
   .tt-bericht .bb-rij { padding: 6px 0; }
   /* TT-452: de vraag om een seintje, in het gesprek van Talent Tent. */
-  .tt-seintje-tekst { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+  .tt-seintje-tekst { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
   .tt-seintje-knoppen { display: flex; gap: 8px; flex-wrap: wrap; }
   .tt-seintje-knoppen .btn { flex: 1 1 auto; min-height: 44px; }
   .tt-meer {
     display: block; width: 100%; min-height: 44px; padding: 0; background: none; border: 0;
-    font: inherit; font-size: 14px; color: var(--accent); text-align: left; cursor: pointer;
+    font: inherit; font-size: 12px; color: var(--accent); text-align: left; cursor: pointer;
   }
   .messages-conv-row {
     display: flex;
     align-items: center;
     gap: 14px;
     padding: 12px 16px;
-    border: 1px solid var(--border);
     border-radius: 14px;
     margin-bottom: 8px;
     cursor: pointer;
     transition: border-color 0.15s, transform 0.15s;
   }
-  .messages-conv-row:hover { border-color: var(--accent); transform: translateY(-1px); }
-  .messages-conv-row.unread { background: var(--tint); border-color: var(--accent); } /* §1.1 */
+  @media (hover: hover) { .messages-conv-row:hover { border-color: var(--accent); transform: translateY(-1px); } } /* TT-517 fase 9: alleen met een muis */
   .messages-conv-avatar {
     width: 48px; height: 48px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    /* TT-341 stap 2: het profielvlak is overal geel met een zwarte T (Ronald,
-       26-09-2026). Er is geen profielkleur per persoon meer. */
+    /* TT-517 fase 6: zonder foto de schijnwerper (.schijnwerper); de maat
+       van de letter is voor de T van het gesprek met The Talent Tent. */
     font-size: 20px;
-    background: var(--merk);
-    color: var(--merk-tekst);
+    background: var(--podium);
     flex-shrink: 0;
     overflow: hidden;
   }
   .messages-conv-avatar img { width: 100%; height: 100%; object-fit: cover; }
   .messages-conv-main { flex: 1; min-width: 0; }
-  .messages-conv-name { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
-  .messages-conv-row.unread .messages-conv-name { color: var(--accent); }
-  .messages-conv-preview { font-size: 13px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .messages-conv-time { font-size: 13px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+  .messages-conv-name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+  /* TT-517 fase 11 (besluit Ronald 01-11-2026): een ongelezen gesprek ziet eruit
+     als elk ander gesprek; het rode getal is het teken ("opvallend genoeg"). */
+  .messages-conv-preview { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .messages-conv-time { font-size: 12px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
 
   .messages-thread-header {
     display: flex;
@@ -2872,7 +3036,7 @@
 
   .messages-day-divider {
     text-align: center;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -2891,7 +3055,8 @@
     padding: 6px 10px;
     border-radius: 16px;
     margin-bottom: 4px;
-    font-size: 14px;
+    /* TT-517 fase 1 (besluit Ronald 31-10-2026): een bericht is lopende tekst, 15px. */
+    font-size: 15px;
     line-height: 20px;
     word-break: break-word;
   }
@@ -2900,7 +3065,7 @@
      ("rustig", 26-09-2026). Beide blokken een rand. */
   .message-bubble.own { background: var(--bericht-eigen); color: var(--bericht-eigen-tekst); border: 1px solid var(--bericht-rand-eigen); margin-left: auto; border-radius: 16px 16px 4px 16px; }
   .message-bubble.other { background: var(--bericht-ander); border: 1px solid var(--bericht-rand); border-radius: 16px 16px 16px 4px; }
-  .message-bubble-time { float: right; font-size: 10px; line-height: 12px; opacity: 0.7; margin: 8px 0 0 10px; }
+  .message-bubble-time { float: right; font-size: 11px; line-height: 12px; opacity: 0.7; margin: 8px 0 0 10px; }
   /* TT-440: de tijd in je eigen bericht haalde bij 0,7 maar 4,1:1; bij 0,85 is dat 6,2:1. */
   .message-bubble.own .message-bubble-time { opacity: 0.85; }
   /* V-07 (13-08-2026): vinkje bij een eigen bericht dat gelezen is. */
@@ -2928,10 +3093,10 @@
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
-    transition: transform 0.1s;
   }
-  .messages-send-btn:hover { transform: scale(1.05); }
-  .messages-send-btn:active { transform: scale(0.95); }
+  /* TT-517 fase 9 (huisstijl §23, besluit Ronald 1A): de verstuurknop drukt in
+     zoals elke knop (core.js, initTikIndrukken). Was 95% bij een tik en 105%
+     bij de muis erboven; op een telefoon bleef die 105% na de tik staan. */
 
   /* ── Auth scherm ─────────────────────────── */
 /* TT-225 (hersteld 09-09-2026): eigen max-width weg + width:100% (TT-224-vervolg),
@@ -2942,19 +3107,12 @@
     padding: 0 24px;
   }
 
-  .auth-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 36px;
-  }
-
   .auth-success {
     background: rgba(76,175,80,0.1);
     border: 1px solid rgba(76,175,80,0.3);
     border-radius: 8px;
     padding: 10px 14px;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--success);
     margin-bottom: 16px;
     display: none;
@@ -2980,14 +3138,25 @@
      kop, Mijn Profiel zonder bannerbalk ook. Met een bannerbalk blijft die
      direct onder de kop staan (huisstijl §10). Een open gesprek houdt zijn
      eigen kop tegen de bovenkant. */
-  #view-messages > .search-wrap,
-  #view-bands > .search-wrap { padding-top: var(--kop-ruimte); }
+  /* TT-517 fase 3 (01-11-2026, besluit Ronald): de titel van het scherm staat
+     in de kop; op elk scherm begint de inhoud 20px onder de kop. Gold eerst
+     alleen voor Berichten en Bands; Over ons, de drie voorwaarden,
+     Instellingen, de registratie, Profiel bewerken, Inloggen en Nieuw
+     wachtwoord stonden op 0, 24 of 40px. */
+  .app-view > .search-wrap,
+  #view-register > main,
+  #view-profieltegels > main { padding-top: var(--kop-ruimte); }
   #view-messages.active .search-wrap:has(#messagesThreadPanel.gesprek-open) { padding-top: 0; }
-  #view-myprofile .my-profile-wrap:not(:has(.profiel-banner)) { padding-top: var(--kop-ruimte); }
+  #view-myprofile .my-profile-wrap:not(:has(.hoes)) { padding-top: var(--kop-ruimte); }
+  /* TT-517 fase 4 (besluit Ronald (d), 01-11-2026): een profiel met een hoes
+     begint met de foto, 8px onder de kop (.hoes). Tekst begint 20px onder de
+     kop, een foto 8px: een foto heeft een harde rand. */
+  .my-profile-wrap:has(> .hoes, > div > .hoes) { padding-top: 0; }
 
   /* Kop van Mijn Bands: titel en knop op één rij, op dezelfde middellijn
      (TT-434); de ondertitel staat in de kolom van de titel, smaller dan de
-     knop, en breekt af over twee regels. */
+     knop, en breekt af over twee regels. TT-517 fase 3: de titel staat in de
+     kop van de app; de ondertitel schuift op zijn plek, naast de knop. */
   .mijn-bands-kop {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -2998,7 +3167,7 @@
   }
   .mijn-bands-kop .filter-title { grid-column: 1; grid-row: 1; margin-bottom: 0; }
   .mijn-bands-kop .btn { grid-column: 2; grid-row: 1; white-space: nowrap; }
-  .mijn-bands-sub { grid-column: 1; grid-row: 2; margin: 0; font-size: 13px; color: var(--muted); }
+  .mijn-bands-sub { grid-column: 1; grid-row: 1; margin: 0; font-size: 12px; color: var(--muted); }
 
   /* Standaard witruimte tussen twee blokken in het filterpaneel: 20px, zoals
      §3 van de huisstijl voorschrijft. Stond hier als inline marge van 16px op
@@ -3008,20 +3177,14 @@
   .search-filters > .field-pair-row,
   #addMemberModal .modal-box > .field { margin-bottom: 20px; } /* TT-253: Lid uitnodigen volgt Vind een muzikant */
 
-  .search-filters {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 24px;
-    margin-bottom: 28px;
-  }
-
-  /* TT-461 (11-10-2026, besluit Ronald: "dit wil ik. contrast"): elk
-     tegelscherm (Wie ben je, Wat speel je, Wat zoek je, Je setlist, Je mediahoek en de vier bandtegels) is een paneel zoals .search-filters (Zoeken): --surface, rand,
-     24px opvulling. De velden staan daardoor als crème vlak op de kaart. De
-     niet-gekozen keuzeknop (Echte naam) heeft de kleur en rand van een veld:
-     wit op wit viel weg. Dat gaat via --keuze-vlak en --keuze-rand, niet via een
-     eigen regel voor een keuzesoort (monitorronde B7). Alle negen tegelschermen, de vijf wizardstappen en de drie ouder-schermen gelijk (consistentie; TT-463, besluit Ronald 23-10-2026). */
+  /* TT-517 fase 2 (huisstijl §7.4, §24; besluit Ronald 31-10-2026: "wat mij
+     opvalt is dat overal nog de extra laag te zien is. die wil ik er ook
+     tussenuit, net als bij de zoekvelden"): geen omlijnd paneel om een scherm,
+     nergens. Velden en knoppen staan op de pagina, zoals in Zoeken: Over ons,
+     de juridische pagina's, Instellingen, de negen tegelschermen, de vijf
+     wizardstappen en de drie ouder-schermen. Vervangt het paneel van TT-461.
+     Alleen de marge eronder blijft. */
+  .search-filters,
   #wieBenJeScreen,
   #watSpeelJeScreen,
   #watZoekJeScreen,
@@ -3033,19 +3196,13 @@
   #bandMediaScreen,
   #step0, #step1, #step2, #step3, #step4,
   #ouderStap, #ouderWacht, #ouderWachtwoord {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 24px;
     margin-bottom: 28px;
-    --keuze-vlak: var(--field-bg);
-    --keuze-rand: var(--field-border);
   }
 
   .filter-title {
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 700;
-    font-size: 19px;
+    font-size: 22px;
     color: var(--accent);
     letter-spacing: 0.5px;
     margin-bottom: 20px;
@@ -3059,7 +3216,7 @@
   .filter-sub {
     padding-left: var(--field-inset);
     margin: 0 0 20px;
-    font-size: 14px;
+    font-size: 12px;
     color: var(--muted);
     line-height: 1.4;
   }
@@ -3082,7 +3239,7 @@
   }
 
   .results-count {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
   }
 
@@ -3101,8 +3258,6 @@
     display: flex;
     flex-direction: column;
     padding: 12px;
-    background: var(--surface);
-    border: 1px solid var(--border);
     border-radius: var(--radius-field);
     cursor: pointer;
     transition: background 0.15s;
@@ -3117,7 +3272,7 @@
     gap: 16px;
   }
 
-  .result-row:hover { background: var(--surface2); }
+  @media (hover: hover) { .result-row:hover { background: var(--surface2); } } /* TT-517 fase 9: alleen met een muis */
 
   /* TT-30 (07-08-2026): segmented control — vervangt losse ovale pillen bij
      "Sorteren op" en de nieuwe "Weergave"-toggle door aaneengesloten
@@ -3138,11 +3293,11 @@
     min-height: 44px;
     box-sizing: border-box;
     padding: 8px 16px;
-    font-size: 13px;
+    font-size: 12px;
     cursor: pointer;
     user-select: none;
     transition: all 0.15s;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
     white-space: nowrap;
   }
 
@@ -3196,8 +3351,6 @@
   .zoek-kaart {
     min-width: 0;
     overflow: hidden;
-    background: var(--surface);
-    border: 1px solid var(--border);
     border-radius: var(--radius-field);
     cursor: pointer;
   }
@@ -3208,11 +3361,8 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    /* Zonder foto: de T op geel, zoals overal (TT-341). */
-    background: var(--merk);
-    color: var(--merk-tekst);
-    font-size: 48px;
-    font-weight: 700;
+    /* Zonder foto: de schijnwerper (TT-517 fase 6, huisstijl §21). */
+    background: var(--podium);
   }
   .zoek-kaart-foto img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; display: block; }
   .zoek-kaart-hoek {
@@ -3249,83 +3399,21 @@
   }
   .zoek-kaart-tekst { padding: 12px; }
   .zoek-kaart-naam {
-    font-family: 'Roboto', sans-serif;
-    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
     line-height: 20px;
     font-weight: 700;
     overflow-wrap: anywhere;
   }
   .zoek-kaart-regel {
     margin-top: 2px;
-    font-size: 13px;
+    font-size: 12px;
     line-height: 18px;
     color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .result-card {
-    position: relative;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px;
-    cursor: pointer;
-    transition: border-color 0.15s;
-    animation: slideIn 0.2s ease;
-    /* TT-206 (04-09-2026, gemeld door Ronald met screenshot, met pixels
-       nagemeten: 475px vs 417px breed). Oorzaak: een grid-item krijgt
-       standaard min-width:auto, wat het item nooit smaller laat worden dan
-       de eigen inhoud (bijv. een langere naam of badge-tekst). Bij twee
-       kaarten met verschillende inhoud in dezelfde rij van een "1fr 1fr"-
-       grid geeft dat een ongelijke kolomverdeling, ook al staat er nergens
-       een vaste breedte. min-width:0 zet dat uit — de kaart mag altijd
-       precies de halve breedte innemen, tekst wrapt dan i.p.v. de kolom te
-       verbreden. Geldt voor zowel muzikant- als bandkaarten (zelfde klasse). */
-    min-width: 0;
-  }
-  .result-card:hover { border-color: var(--accent); }
-  /* TT-33 (07-08-2026): profielformaat (verticaal) i.p.v. een korte liggende
-     banner — het is immers een profielfoto (Ronald, 07-08-2026). */
-  .result-card-photo {
-    width: 100%;
-    aspect-ratio: 3 / 4;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    /* TT-341 stap 2: het profielvlak is overal geel met een zwarte T (Ronald,
-       26-09-2026). Er is geen profielkleur per persoon meer. */
-    font-size: 48px;
-    font-weight: 700;
-    background: var(--merk);
-    color: var(--merk-tekst);
-    overflow: hidden;
-    margin-bottom: 10px;
-  }
-  .result-card-photo img { width: 100%; height: 100%; object-fit: cover; }
-  /* TT-153 (25-08-2026): alleen de naam is vet — de rest van de kaart
-     (plaats/afstand, badges) is normaal lettergewicht, consistent met de
-     rijweergave (Ronald: "alleen de naam vet lettertype, de rest niet"). */
-  .result-card-top-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .result-card-name { font-family: 'Roboto', sans-serif; font-size: 16px; font-weight: 700; }
-  .result-card-meta { font-size: 13px; color: var(--muted); margin: 2px 0 8px; }
-  /* TT-153: een badge-regel op de kaart, niet-wrappend. Sinds TT-520 deel 2
-     alleen nog in de kaart van Mix & Match (de match); die kaart volgt in
-     bouwsessie b. */
-  .result-card-badges-line {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow: hidden;
-    gap: 5px;
-    margin-bottom: 4px;
-  }
-  .result-card-badges-line:last-child { margin-bottom: 0; }
   /* TT-30: envelop-icoon op rijen zit nu in een klein afgerond knopvlak
      i.p.v. los aan het eind van de rij te zweven. TT-316 (24-09-2026,
      besluit Ronald K11): ook de kaart gebruikt deze knop. Die had een goud
@@ -3347,12 +3435,8 @@
     width: 44px; height: 44px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Roboto', sans-serif;
-    /* TT-341 stap 2: het profielvlak is overal geel met een zwarte T (Ronald,
-       26-09-2026). Er is geen profielkleur per persoon meer. */
-    font-size: 18px;
-    background: var(--merk);
-    color: var(--merk-tekst);
+    /* TT-517 fase 6: zonder foto de schijnwerper (.schijnwerper). */
+    background: var(--podium);
     flex-shrink: 0;
     overflow: hidden;
   }
@@ -3362,7 +3446,6 @@
      foto, een muzikant een ronde (rij) of staande (kaart). Zo is het verschil
      in de lijst meteen te zien. Hoeken als de bandkaart in Mijn Bands. */
   .result-row-avatar.result-vierkant { border-radius: 10px; }
-  .result-card-photo.result-vierkant { aspect-ratio: 1 / 1; }
 
   .result-row-main { flex: 1; min-width: 0; }
 
@@ -3371,8 +3454,8 @@
     align-items: baseline;
     gap: 6px;
     min-width: 0;
-    font-family: 'Roboto', sans-serif;
-    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
     font-weight: 700;
   }
   /* TT-520 (Laag 3.1.b.1): "BAND" heel klein achter de naam; de vierkante
@@ -3396,7 +3479,7 @@
     flex-direction: column;
     align-items: flex-end;
     text-align: right;
-    font-size: 13px;
+    font-size: 12px;
     line-height: 16px;
     font-weight: 700;
     color: var(--accent);
@@ -3412,7 +3495,7 @@
   }
 
   .result-row-meta {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
     margin-top: 2px;
     /* TT-520: één regel; past hij niet, dan "…" (een bijschrift, geen naam, §2.1). */
@@ -3455,15 +3538,17 @@
   }
 
   /* ── De uitsnede kiezen (TT-520 deel 2, 27-10-2026, Laag 3.4) ─────────────
-     Een vierkant vlak over de volle breedte van het venster. De foto vult
-     altijd het hele vierkant (geen lege rand); kiesUitsnede() zet maat en
-     plek. Bij een profielfoto dimt alles buiten de cirkel; bij een bandfoto
-     alleen een dunne lijn langs het vierkant. touch-action: none, zodat
+     Een kader van 4:3 over de volle breedte van het venster, precies de hoes
+     (TT-517 fase 5, huisstijl §21). De foto vult altijd het hele kader (geen
+     lege rand); kiesUitsnede() zet maat en plek. Een dunne witte lijn langs
+     het kader; gestippeld in het midden wat klein in lijsten komt: het
+     rondje (profielfoto) of het vierkant (bandfoto), zo hoog als het kader.
+     Bij een bannerfoto geen gestippelde vorm. touch-action: none, zodat
      schuiven en zoomen niet de pagina laten scrollen of zoomen. */
   .uitsnede-vlak {
     position: relative;
     width: 100%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: 4 / 3;
     margin-top: 12px;
     overflow: hidden;
     border-radius: var(--radius-field);
@@ -3489,10 +3574,19 @@
     box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.9);
     pointer-events: none;
   }
-  .uitsnede-masker.rond {
-    border-radius: 50%;
-    box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.55), inset 0 0 0 2px rgba(255, 255, 255, 0.9);
+  .uitsnede-klein {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 50%;
+    aspect-ratio: 1 / 1;
+    transform: translateX(-50%);
+    border: 2px dashed rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
   }
+  .uitsnede-klein.rond { border-radius: 50%; }
+  .uitsnede-klein[hidden] { display: none; }
   /* Op de linkerlijn van het vlak en de knoppen (één linkerlijn, Ronald 27-10-2026). */
   .uitsnede-hint { margin: 8px 0 20px; font-size: var(--fs-sm); line-height: 16px; color: var(--muted); }
 
@@ -3503,9 +3597,9 @@
      keuzeknop is even breed, een derde van de breedte, ook Uit · Aan. Elke
      keuze werkt meteen. 8px van kop naar knoppen, 8px van knoppen naar uitleg
      (§3). */
-  .voorkeur-intro { margin: 0 0 20px; font-size: 13px; line-height: 18px; color: var(--muted); }
+  .voorkeur-intro { margin: 0 0 20px; font-size: 12px; line-height: 18px; color: var(--muted); }
   .voorkeur-kop { margin: 0 0 8px; font-size: 17px; line-height: 22px; font-weight: 700; color: var(--text); }
-  .voorkeur-uitleg { margin: 8px 0 0; font-size: 13px; line-height: 18px; color: var(--muted); }
+  .voorkeur-uitleg { margin: 8px 0 0; font-size: 12px; line-height: 18px; color: var(--muted); }
   .voorkeur-knoppen {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3526,7 +3620,7 @@
   .mm-vraag {
     margin: 0 0 20px;
     padding: 0 var(--field-inset);
-    font-size: 14px;
+    font-size: 12px;
     line-height: 18px;
     color: var(--accent);
   }
@@ -3536,7 +3630,7 @@
   .mm-gekozen[hidden] { display: none; }
   /* "Kies nog 1 muzikant." links op de regel van Wissen, zoals de vink bij
      Muzikanten: 14px, gedempt, op de inspringing van de labels. */
-  .mm-nog { font-size: 14px; line-height: 18px; color: var(--muted); padding-left: var(--field-inset); }
+  .mm-nog { font-size: 12px; line-height: 18px; color: var(--muted); padding-left: var(--field-inset); }
   /* Het ✕ in een rij: het teken op de rechterlijn van de tekst rechts in de
      andere rijen (12px binnen de rand); het tikvlak blijft 44px. */
   .mm-gekozen .song-remove { margin: -4px -14px -4px 0; }
@@ -3549,14 +3643,12 @@
     align-items: center;
     gap: 16px;
     padding: 12px;
-    background: var(--surface);
-    border: 1px solid var(--border);
     border-radius: var(--radius-field);
   }
   /* "3 van 3", rechts in de rij, in beide vragen. */
   .mm-telling {
     flex-shrink: 0;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 700;
     line-height: 18px;
     color: var(--accent);
@@ -3566,8 +3658,6 @@
   /* Resultaat van Wat spelen we?: één rij per nummer, de vorm van een
      resultaatrij; een tik klapt hem open (Ronald, 17-09-2026: optie A). */
   .gedeeld-rij {
-    background: var(--surface);
-    border: 1px solid var(--border);
     border-radius: var(--radius-field);
     overflow: hidden;
   }
@@ -3628,8 +3718,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--merk);
-    font-size: 16px;
+    background: var(--podium); /* TT-517 fase 6: zonder foto de schijnwerper */
   }
   .gedeeld-speler-foto img { width: 100%; height: 100%; object-fit: cover; }
   .gedeeld-speler-naam {
@@ -3667,12 +3756,12 @@
     padding: 60px 20px;
   }
   .empty-state-title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     margin-bottom: 8px;
   }
   .empty-state-text {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
     margin-bottom: 24px;
   }
@@ -3685,7 +3774,7 @@
     gap: 12px;
     margin: 40px 0 20px;
     color: var(--muted);
-    font-size: 13px;
+    font-size: 12px;
     letter-spacing: 2px;
     text-transform: uppercase;
     font-weight: 700;
@@ -3796,8 +3885,8 @@
   }
 
   /* TT-380 (30-09-2026, Ronald): het deelicoon en het ⋯-menu, één opbouw
-     uit profielKnoppenHTML() in musicians.js. Sinds TT-384 (muzikant) en
-     TT-385 (band) staan ze rechts naast de foto, in .profiel-kop-rij. */
+     uit profielKnoppenHTML() in musicians.js. Sinds TT-517 fase 4 staan ze
+     rechtsonder op de hoes (.hoes .profiel-knoppen). */
   .profiel-regels { min-width: 0; flex: 1; }
   .profiel-knoppen {
     display: flex;
@@ -3836,57 +3925,6 @@
   .profiel-knoppen .deel-knop { justify-content: flex-end; padding-right: 2px; }
   .profiel-knoppen .deel-knop:last-child { justify-content: center; padding-right: 9px; }
 
-  /* TT-384 (30-09-2026, besluiten Ronald): de kop van het muzikantprofiel
-     staat onder elkaar. Bovenaan een rij: links de profielfoto, rechts het
-     deelicoon en het ⋯-menu, op de hoogte van de onderste helft van de foto.
-     Daaronder de naam en de regels, over de volle breedte. Zo is er naast de
-     foto ruimte voor knoppen. Met een banner valt de foto voor de helft
-     (40px van 80px) over de onderrand van de balk; zonder banner blijft
-     dezelfde opbouw staan, zonder overlap. Sinds TT-385 (02-10-2026) heeft
-     de bandpagina dezelfde kop, met een vierkante bandfoto (.bandfoto). */
-  .profiel-kop { margin-bottom: 16px; }
-  .profiel-kop.op-banner { margin-top: -40px; }
-  .profiel-kop-rij {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-    /* Gepositioneerd, zonder z-index: de rij tekent zo over de balk heen,
-       maar vormt geen eigen stapel. Een eigen stapel zou de donkere laag van
-       het ⋯-menu (§8.2) onder de onderbalk laten vallen. */
-    position: relative;
-    /* De rij is zo breed als de inhoud en ligt over de stippen van de
-       balk. Alleen de foto en de knoppen vangen een tik; de rest laat hem
-       door naar de stippen eronder. */
-    pointer-events: none;
-  }
-  .profiel-kop-rij > * { pointer-events: auto; }
-  /* TT-407: een gesloten venster laat geen tik door. De regel hierboven zet
-     de foto en de knoppen op `auto`, en een kind met `auto` wint van de
-     `none` van het gesloten `.modal-overlay` (opacity 0). Zo lagen de
-     onzichtbare deel- en ⋯-knoppen van het muzikant- en bandvenster boven
-     het scherm eronder en vingen tikken af (Band aanmaken, tabbladen in
-     Zoeken, eerste gesprek in Berichten, de knoppen op Mijn Profiel). */
-  .modal-overlay:not(.visible) .profiel-kop-rij > * { pointer-events: none; }
-  /* De knoppen staan met hun midden op het midden van de onderste helft van
-     de foto: 20px boven de onderrand. Een knop is 44px, dus 2px eronder. */
-  .profiel-kop-rij .profiel-knoppen { margin: 0 0 -2px; }
-  .profiel-kop .profile-name { margin-top: 12px; }
-
-  /* ── TT-385 (02-10-2026): de bandpagina ──────────────────────────────────
-     Zelfde kop als het muzikantprofiel (§10.2); alleen de foto is vierkant,
-     zodat een band in één blik geen persoon is (besluit Ronald, punt 11). */
-  .bandfoto {
-    width: 80px; height: 80px; flex-shrink: 0;
-    border-radius: 12px; object-fit: cover;
-    border: 3px solid var(--rand-neutraal); /* zoals .profile-avatar-photo */
-    cursor: pointer;
-  }
-  .bandfoto-leeg {
-    display: flex; align-items: center; justify-content: center;
-    background: var(--merk); color: var(--merk-tekst); border-color: var(--merk);
-    font-size: 30px; cursor: default; /* zoals .profile-avatar-initials */
-  }
   .band-bio { font-size: 15px; line-height: 1.5; color: var(--text); margin: 0; }
 
   /* De bezetting op de bandpagina: rijen, zoals Onze bezetting en het blok
@@ -3901,15 +3939,15 @@
   .band-nummer {
     display: flex; align-items: center; gap: 12px;
     width: 100%; min-height: 44px; padding: 8px; margin-bottom: 8px;
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    border-radius: 8px;
     color: var(--text); font: inherit; text-align: left; cursor: pointer;
   }
   div.band-nummer { cursor: default; }
   .band-nummer:last-child { margin-bottom: 0; }
   .band-nummer-tekst { display: flex; flex-direction: column; min-width: 0; }
-  .band-nummer-titel { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .band-nummer-titel { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .band-nummer-sub { font-size: var(--fs-sm); color: var(--muted); }
-  .media-mini.media-afgeschermd { background: var(--merk); color: var(--merk-tekst); font-size: 24px; border: 0; cursor: default; }
+  .media-mini.media-mini-wazig { border: 0; cursor: default; --wazig: 2px; }
 
   /* Socials: knoppen met alleen het logo (Ronald, 02-10-2026). Teken 28px,
      tikvlak 44px (§6), 12px ertussen. De rij schuift 8px naar links, zodat
@@ -3926,15 +3964,13 @@
 
   /* ── TT-385 fase 3 (02-10-2026): de privé bandpagina en Bandprofiel
      bewerken ─────────────────────────────────────────────────────────────── */
-  /* Een lege bandfoto op je eigen pagina opent Wie zijn we. */
-  button.bandfoto { padding: 0; font-family: inherit; cursor: pointer; }
   /* Een uitnodiging staat direct onder de titel van zijn sectie, of 12px
      onder de rijen van de bezetting. */
   .profile-media > .add-link-btn { margin-top: 0; }
   .bezetting + .add-link-btn { margin-top: 12px; }
 
   /* Het deelblad: één zin, dan de knoppen. */
-  .deelblad-tekst { font-size: 14px; line-height: 20px; color: var(--text); margin: 0 0 20px; }
+  .deelblad-tekst { font-size: 12px; line-height: 20px; color: var(--text); margin: 0 0 20px; }
 
   /* Bandprofiel bewerken: het blok Bandbeheer onder de vier tegels. */
   .band-beheer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
@@ -3949,7 +3985,12 @@
 
   /* Wie zijn we: de bandfoto naast de bandnaam, zoals het oude bandformulier.
      De foto is vierkant, net als op de pagina (hoeken 12px). */
-  .avatar-preview.avatar-preview-vierkant { border-radius: 12px; }
+  .avatar-preview.avatar-preview-vierkant {
+    border-radius: 12px;
+    /* TT-517 fase 6: een bandfoto, drie personen in de bundel (huisstijl §2). */
+    background: var(--silhouet-band) center bottom / 100% 100% no-repeat,
+      var(--bundel-klein) center / 100% 100% no-repeat, var(--podium);
+  }
 
   /* Een rij in Onze bezetting: foto, naam en regel, rechts de drie puntjes. */
   .bb-rij { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
@@ -3957,12 +3998,12 @@
     width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
   }
-  .bb-foto-t { background: var(--merk); color: var(--merk-tekst); font-size: 16px; }
+  .bb-foto-leeg { background: var(--podium); overflow: hidden; } /* TT-517 fase 6: zonder foto de schijnwerper; fase 7: het vak snijdt het wazige beeld af */
   .bb-foto.bezetting-open-rondje { font-size: 18px; }
   .bb-wacht { opacity: .55; }
   .bb-tekst { flex: 1; min-width: 0; }
   /* Een naam in een lijst is 16px, vet (§2). */
-  .bb-naam { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
+  .bb-naam { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
   .bb-sub { font-size: var(--fs-sm); color: var(--muted); }
   .bb-rij .profile-actions-menu-wrap { flex-shrink: 0; position: relative; }
   /* De menuknop heeft onder zich de marge van de kop; in een rij niet,
@@ -3998,9 +4039,9 @@
     width: 100%;
     line-height: normal;   /* geen veld van 44px, zie de invulvelden */
     padding: 0;
-    font-size: 14px;
+    font-size: 16px;   /* een invoerveld is 16px, ook hier: onder 16px zoomt iOS in (§7, TT-517) */
     font-weight: 700;
-    font-family: 'Roboto', sans-serif;
+    font-family: 'Inter', sans-serif;
     color: var(--text);
     background: transparent;
     border: none;
@@ -4175,20 +4216,20 @@
     gap: 12px;
     padding: 12px 0;
   }
-  .geblokkeerd-naam { font-size: 16px; font-weight: 700; color: var(--text); }
-  .geblokkeerd-meta { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .geblokkeerd-naam { font-size: 15px; font-weight: 700; color: var(--text); }
+  .geblokkeerd-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
   /* Geen volle-breedte knop: hij hoort bij de rij ernaast, niet bij het
      scherm. Hoogte blijft 44px via .btn (huisstijl §5/§6). */
   .geblokkeerd-knop { flex-shrink: 0; padding-left: 16px; padding-right: 16px; }
 
   /* ── Band kaarten ────────────────────────── */
   /* TT-385 fase 4: de hele kaart opent de bandpagina, niet alleen de kop. */
-  .band-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;transition:border-color 0.2s;cursor:pointer; }
-  .band-card:hover { border-color:var(--rand-menu); }
+  .band-card { border-radius:var(--radius);overflow:hidden;margin-bottom:16px;transition:border-color 0.2s;cursor:pointer; }
+  @media (hover: hover) { .band-card:hover { border-color:var(--rand-menu); } } /* TT-517 fase 9: alleen met een muis */
   .band-card-header { display:flex;align-items:center;gap:16px;padding:20px;flex-wrap:wrap; }
-  .band-avatar { width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Roboto',sans-serif;font-size:24px;background:var(--merk);color:var(--merk-tekst);flex-shrink:0; }
-  .band-name { font-family: 'Roboto', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 0.3px; line-height: 1.1; }
-  .band-meta { font-size: 13px;color:var(--muted);margin-top:3px; }
+  .band-avatar { width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--podium);flex-shrink:0; } /* TT-517 fase 6: zonder foto de schijnwerper */
+  .band-name { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: 0.3px; line-height: 1.1; }
+  .band-meta { font-size: 12px;color:var(--muted);margin-top:3px; }
   /* TT-520: .band-status-badge (de status achter de plaats in een bandrij in
      Zoeken) is weg; de rij toont "Zoekt <instrument>" (Laag 3.1.b.1). */
   .band-card-body { padding:0 20px 20px;border-top:1px solid var(--border); }
@@ -4202,7 +4243,8 @@
      bandformulier), .star-display is alleen-lezen (profiel/zoekresultaat). */
   .star-picker { display:flex; gap:4px; }
   .star-picker .star { font-size:22px; line-height:1; color:var(--border); cursor:pointer; user-select:none; transition:color 0.1s; }
-  .star-picker .star:hover, .star-picker .star.filled { color:var(--merk); }
+  .star-picker .star.filled { color:var(--merk); }
+  @media (hover: hover) { .star-picker .star:hover { color:var(--merk); } } /* TT-517 fase 9: alleen met een muis */
   .star-display { font-size:12px; letter-spacing:1px; white-space:nowrap; }
   /* TT-369 (besluit Ronald, 29-09-2026): een gevulde ster is overal goud
      (--merk), ook in licht: "dat wordt dan goud. net als overal." */
@@ -4216,7 +4258,7 @@
   .level-choice {
     display:flex; align-items:center; gap:12px; width:100%;
     min-height:56px; padding:10px 14px; margin-bottom:8px;
-    font-family:'Roboto',sans-serif; font-size:14px;
+    font-family:'Inter',sans-serif; font-size:12px;
     text-align:left; cursor:pointer; transition:border-color 0.15s, background 0.15s;
   }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
@@ -4277,7 +4319,7 @@
        huisstijl §6; 16px voorkomt inzoomen op iOS, zie §7. */
     background: var(--field-bg); border: 1px solid var(--field-border); border-radius: var(--radius-field);
     min-height: 44px; padding: 10px var(--field-inset); margin-top: 0;
-    font-family: 'Roboto', sans-serif; font-size: 16px; color: var(--text);
+    font-family: 'Inter', sans-serif; font-size: 16px; color: var(--text);
     cursor: pointer; transition: border-color 0.15s;
   }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
@@ -4294,11 +4336,13 @@
   /* TT-168-overgang (02-09-2026, TT-181-vervolg3): definitieve rand-alleen-
      stijl — geen vlak, tekst wit (was goud). Sterren blijven apart goud,
      zie .picker-badge-stars hieronder. */
+  /* TT-517 fase 11 (besluit Ronald B, elke knop rond): ook een gekozen
+     instrument of genre is een pil. Was 8px. */
   .picker-badge {
     position: relative; width: auto; min-height: 44px; box-sizing: border-box;
     display: flex; align-items: center; justify-content: center;
     background: var(--surface2); color: var(--text); border: var(--line) solid var(--accent);
-    border-radius: 8px; padding: 6px 26px 6px 10px; font-size: 13px; font-weight: 400;
+    border-radius: 999px; padding: 6px 26px 6px 10px; font-size: 12px; font-weight: 400;
     line-height: 1.25; text-align: center;
   }
   .picker-badge.has-level {
@@ -4309,7 +4353,7 @@
   .picker-badge-remove {
     position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
     width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
-    background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 0; font-size: 14px;
+    background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 0; font-size: 12px;
   }
   /* TT-U23: onzichtbaar tikvlak van 44x44 rond de kleine knop. */
   .picker-badge-remove::after { content: ''; position: absolute; inset: -8px; }
@@ -4331,11 +4375,11 @@
   .picker-list-item.selected {
     background: var(--surface2); border-left: 3px solid var(--accent); padding-left: 7px;
   }
-  .picker-list-item-check { color: var(--accent); font-size: 16px; flex-shrink: 0; margin-left: 8px; }
-  .picker-list-empty { padding: 14px 4px; font-size: 14px; color: var(--muted); }
+  .picker-list-item-check { color: var(--accent); font-size: 15px; flex-shrink: 0; margin-left: 8px; }
+  .picker-list-empty { padding: 14px 4px; font-size: 12px; color: var(--muted); }
 
   .picker-level-blurb {
-    font-size: 13px; color: var(--muted); line-height: 1.4; margin-top: 4px;
+    font-size: 12px; color: var(--muted); line-height: 1.4; margin-top: 4px;
   }
 
   /* Basismaat van een niveaukeuze; in het paneel van TT-410a (hieronder) is hij 44px. */
@@ -4351,16 +4395,16 @@
     border: var(--line) solid var(--border); border-radius: var(--radius-field);
   }
   .niveau-paneel[hidden] { display: none; }
-  .niveau-paneel-titel { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .niveau-paneel-titel { font-size: 12px; font-weight: 700; margin-bottom: 8px; }
   .niveau-paneel .level-choice { min-height: 44px; align-items: center; padding: 8px 14px; }
   .niveau-paneel .level-choice .level-choice-stars { margin-top: 0; }
-  .niveau-paneel .picker-level-blurb { margin: 4px 0 0; font-size: 13px; }
+  .niveau-paneel .picker-level-blurb { margin: 4px 0 0; font-size: 12px; }
   .niveau-uitleg-knop {
     background: none; border: none; padding: 0 4px; min-height: 44px; cursor: pointer;
-    font-family: 'Roboto', sans-serif; font-size: 13px; color: var(--muted);
+    font-family: 'Inter', sans-serif; font-size: 12px; color: var(--muted);
     text-decoration: underline; text-align: left;
   }
-  .niveau-uitleg p { font-size: 13px; color: var(--muted); line-height: 1.4; margin: 0 0 6px; }
+  .niveau-uitleg p { font-size: 12px; color: var(--muted); line-height: 1.4; margin: 0 0 6px; }
   .niveau-uitleg p strong { color: var(--text); font-weight: 700; }
   /* De badge van het open instrument: dikkere rand, zonder ander vlak. */
   .picker-badge.open { box-shadow: inset 0 0 0 1px var(--accent); }
@@ -4493,7 +4537,7 @@
        marge-regel (zie huisstijl §3) niet — enige twee schermen die
        afweken. Vaste 60px bovenmarge is op een klein scherm ook onnodig
        groot, er is geen kop-content om vanaf te lopen op dit scherm. */
-    .auth-wrap { padding: 0 16px; margin: 24px auto; }
+    .auth-wrap { padding: 0 16px; margin: var(--kop-ruimte) auto; }
     /* 22-08-2026 (Ronald, "12-1"): de gouden balk bovenaan het profiel
        (.profile-header-band) moet direct tegen de vaste kop aan sluiten,
        geen kloof ertussen. Alleen op Mijn Profiel de bovenmarge weg — de
@@ -4574,8 +4618,8 @@
       background: none;
       border: none;
       color: var(--muted);
-      font-family: 'Roboto', sans-serif;
-      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.3px;
       cursor: pointer;
@@ -4639,34 +4683,26 @@
     text-align: center;
   }
   .backend-error-title {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 700;
     color: var(--accent);
     margin-bottom: 12px;
   }
   .backend-error-box p {
-    font-size: 14px;
+    font-size: 12px;
     color: var(--text);
     line-height: 1.6;
     margin-bottom: 10px;
   }
   .backend-error-box p.sub {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--muted);
     margin-bottom: 20px;
   }
-  .backend-error-box button {
-    width: 100%;
-    padding: 12px 20px;
-    background: var(--merk);
-    color: var(--merk-tekst);
-    border: none;
-    border-radius: 8px;
-    font-family: 'Roboto', sans-serif;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-  }
+  /* TT-517 fase 11 (besluit Ronald B, elke knop rond): de knop is een gewone
+     .btn .btn-primary (pil, 44px); hier alleen de volle breedte. Was een
+     eigen vorm met hoek 8px. */
+  .backend-error-box .btn { width: 100%; }
 
   /* ── Bewegingsreductie (TT-83, externe review 4.3) ───────────────────────
      Sommige mensen zetten in hun besturingssysteem "verminder beweging" aan.
@@ -4700,12 +4736,29 @@
   .tile {
     display: flex; align-items: center; gap: 12px;
     min-height: 44px; padding: 16px; margin-bottom: 16px;
-    background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent);
     border-radius: var(--radius); cursor: pointer;
   }
-  .tile:active { background: var(--surface2); }
+  /* TT-517 fase 2 (huisstijl §24, besluit Ronald 31-10-2026, optie B: "voor nu
+     optie B, met schaduw"): een rij, kaart of tegel heeft geen rand en geen
+     gele streep links. Licht: een wit vlak met een zachte schaduw; donker: een
+     stap lichter vlak (#222), zonder schaduw. Eén regel voor elk vlak, met de
+     rollen --vlak en --schaduw-vlak. De rand blijft 1px, maar doorzichtig: zo
+     verschuift de inhoud niet, en een open rij in Mix & Match (§7.6) kleurt
+     zijn eigen rand. Een eigen vlak of rand per soort is een fout. */
+  /* TT-517 fase 11: ook de rij van een gesprek in Berichten; die stond nog met
+     een zichtbare rand en zonder vlak (gemist in fase 2). */
+  .result-row, .zoek-kaart, .mm-nummer-rij, .gedeeld-rij, .band-card, .tile,
+  .setlist-rij, .media-rij, .media-thumb, .band-nummer, .completeness-wrap, .ouder-kaart,
+  .messages-conv-row {
+    background: var(--vlak);
+    border: 1px solid transparent;
+    box-shadow: var(--schaduw-vlak);
+  }
+
+  /* TT-517 fase 9 (huisstijl §23, besluit Ronald 1A): een tegel drukt in zoals
+     elke rij en kaart (core.js, initTikIndrukken). Was een ander vlak bij een tik. */
   .tile-title { font-size: 17px; font-weight: 700; }
-  .tile-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .tile-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
   /* TT-260 (12-09-2026): was 11px met een eigen marge van 5px. Geen van
      beide is een maat uit de huisstijl (§2: 12px; §3: 4px-schaal). */
   .field-status { font-size: var(--fs-sm); color: var(--muted); margin-top: 4px; min-height: 16px; }
@@ -4762,6 +4815,12 @@
      een sleepstatus, geen hover-simulatie — blijft een losse, altijd-actieve
      regel bij .drop-zone hierboven. */
   @media (hover: hover) {
+    /* TT-517 fase 4: de pijltjes op de hoes, alleen met een muis (ook een
+       fijne aanwijzer), bij het aanwijzen van de hoes (huisstijl §21). */
+    @media (pointer: fine) {
+      .hoes:hover .hoes-pijl:not([hidden]),
+      .hoes-pijl:focus-visible:not([hidden]) { display: grid; }
+    }
     /* TT-316: één hover voor alle zeven keuzesoorten, alleen niet-gekozen. */
     .tag:not(.selected):hover, .level-btn:not([class*="active-"]):hover,
     .segmented-btn:not(.selected):hover, .search-mode-tab:not(.active):hover,
@@ -5109,16 +5168,16 @@
     background: transparent;
     border: none;
     color: var(--text);
-    font-family: 'Roboto', sans-serif;
-    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
     text-align: left;
     cursor: pointer;
     transition: background 0.12s;
   }
   .choice-option + .choice-option { border-top: 1px solid var(--border); }
-  .choice-option:hover { background: var(--tint); }
+  @media (hover: hover) { .choice-option:hover { background: var(--tint); } } /* TT-517 fase 9: alleen met een muis */
   .choice-option.selected { color: var(--accent); font-weight: 700; }
-  .choice-option-check { color: var(--accent); font-size: 14px; }
+  .choice-option-check { color: var(--accent); font-size: 12px; }
 
 
   /* Label met de i-knop ernaast (zelfde patroon als "Mijn Instrumenten"). */
@@ -5149,7 +5208,7 @@
 
 /* De bandnaam onder de titel van een bandscherm (07-10-2026, Ronald): zichtbaar,
    niet prominent. Zelfde maat en gewicht als .panel-sub. */
-.band-naam-regel { font-size: 14px; font-weight: 300; line-height: 1.5; color: var(--muted); margin: 0 0 20px; }
+.band-naam-regel { font-size: 12px; font-weight: 300; line-height: 1.5; color: var(--muted); margin: 0 0 20px; }
 .band-naam-regel:empty { display: none; }
 /* De i-knop direct achter het label, niet rechts (Ronald, 07-10-2026, Ervaring
    van de band). */

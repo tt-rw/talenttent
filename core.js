@@ -461,7 +461,7 @@ async function appInit() {
   // terugvalletter heeft het woordmerk een andere breedte en klopt de eerste
   // meting niet.
   fitKopLogo(document);
-  if (document.fonts?.ready) document.fonts.ready.then(() => fitKopLogo(document));
+  if (document.fonts?.ready) document.fonts.ready.then(() => { fitKopLogo(document); fitKopTitel(); });
 }
 
 // Bug gevonden door Ronald (05-08-2026): db.auth.signInWithPassword() binnen
@@ -788,7 +788,7 @@ async function setDigestFrequency(el, mode) {
   try {
     const mid = await getMyMusicianId();
     if (!mid) throw new Error('geen profiel');
-    const { error } = await db.from('musicians').update({ email_digest_frequency: mode }).eq('id', mid);
+    const { error } = rijenGeraakt(await db.from('musicians').update({ email_digest_frequency: mode }).eq('id', mid).select('id'));
     if (error) throw error;
   } catch (e) {
     logCaught('setDigestFrequency', e);
@@ -937,8 +937,9 @@ const viewScrollStand = {};
 // ─── Het hoogste scherm (TT-303, 20-09-2026, Ronald) ─────────────────────
 // Ingelogd is dat Mijn Profiel: daar komt iedereen na het inloggen toch al
 // uit, en op de landingspagina heeft een ingelogde gebruiker niets meer te
-// zoeken. Uitgelogd blijft het de landingspagina. Het woordmerk gaat hierheen,
-// en de terugknop op een hoofdtabblad ook.
+// zoeken. Uitgelogd blijft het de landingspagina. De knop "Naar mijn profiel"
+// na het bevestigen gaat hierheen. Het woordmerk niet meer: een tik op titel
+// of woordmerk doet niets (TT-517 fase 3, besluit Ronald C1, 01-11-2026).
 function hoogsteScherm() {
   return currentUser ? 'myprofile' : 'landing';
 }
@@ -949,7 +950,7 @@ function naarHoogsteScherm() {
 // De bovenkant van een tabblad: Zoeken, Berichten, Bands en Mijn Profiel, en
 // het hoogste scherm (de landingspagina als je uitgelogd bent). Daarboven ligt
 // niets: de terugknop doet daar niets (TT-310) en gaat nooit naar een ander
-// tabblad. Naar Mijn Profiel ga je via de onderbalk of het woordmerk.
+// tabblad. Naar Mijn Profiel ga je via de onderbalk.
 // *(TT-428, 07-10-2026, besluit Ronald: "terug blijft binnen het tabblad";
 // vervangt TT-303, waar terug op een tabblad naar Mijn Profiel ging.)*
 const TAB_VIEWS = ['search', 'messages', 'bands', 'myprofile'];
@@ -1034,6 +1035,7 @@ function ontwapenTerug() {
 // is waar als het profiel in de app is geopend en onwaar bij een link; `soort`
 // is 'band' voor een bandpagina, anders een muzikant.
 function showView(view, mode, extra) {
+  stopSchuif(); // TT-517 fase 9: een nieuwe stap maakt een lopende overgang meteen af
   // TT-404: onthoud waar je in de view stond die je verlaat.
   if (huidigeView && huidigeView !== view) viewScrollStand[huidigeView] = window.scrollY;
   const vorigeView = huidigeView;
@@ -1064,12 +1066,17 @@ function showView(view, mode, extra) {
   if (bandWizardOpen()) { resetBandForm(); zetBandWizardZichtbaar(false); }
   sluitAlleMenus();
   sluitOpruimModals(); // TT-264: een view-wissel laat nooit een spelende video achter
+  // TT-517 fase 9: waar de vorige view stond, voor de overgang naar of van een profiel.
+  const oudEl = document.querySelector('.app-view.active');
+  const oudVak = oudEl ? oudEl.getBoundingClientRect() : null;
+  const oudKind = oudEl && oudEl.firstElementChild ? oudEl.firstElementChild.getBoundingClientRect().top : 0;
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.bottom-nav-btn').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-current'); });
 
   const el = document.getElementById(`view-${view}`);
   if (el) el.classList.add('active');
+  zetKopTitel(); // TT-517 fase 3: meteen de goede kop, niet pas een beeld later
 
   const navMap = {
     landing: null, search: 'navSearch',
@@ -1277,11 +1284,76 @@ function showView(view, mode, extra) {
   // TT-393: meteen bovenaan, niet vloeiend. Een vloeiende scroll bleef op de telefoon
   // halverwege hangen als de inhoud van het scherm net wisselde (Berichten).
   else window.scrollTo({ top: 0, behavior: 'instant' });
+  schuifProfiel(vorigeView, view, mode, oudEl, oudVak, oudKind); // TT-517 fase 9
   // TT-142 (25-08-2026): geen automatische focus meer bij het openen van een
   // view. Was bedoeld als gemak (TT-37), maar opende ongevraagd het
   // toetsenbord en verstoorde daarmee de "bovenaan beginnen"-scroll — de
   // gebruiker moet zelf op een veld tikken voordat het toetsenbord komt.
   // autofocusFirstField() is op 16-09-2026 verwijderd als dode code.
+}
+
+// ─── Leven bij een tik: naar een profiel (TT-517 fase 9, huisstijl §23, besluit Ronald 2A) ───
+// Het profiel schuift in 0,32 s van rechts over de lijst; de lijst schuift 30%
+// mee naar links en wordt iets donkerder. Terug: andersom. Kop en onderbalk
+// staan stil (ze liggen boven de views). Er wordt nergens op gewacht: de
+// nieuwe view staat al klaar en vult zich zoals altijd; alleen het beeld
+// beweegt. De vorige view blijft daarvoor 0,32 s staan, vast op de plek waar
+// hij stond (.view-weg), en vangt geen tik meer. Geen overgang bij een
+// omleiding ('redirect', bijv. het openen van een link), van profiel naar
+// profiel, of met "minder beweging" op het toestel: dan wisselt het scherm in
+// één keer, zoals voorheen. Werkt met Web Animations; een toestel zonder
+// wisselt ook in één keer.
+const SCHUIF_MS = 320, SCHUIF_KROMME = 'cubic-bezier(.2, .8, .2, 1)';
+var schuifKlaar = null; // var: showView kan al lopen voordat deze regel is gelezen
+function stopSchuif() { if (schuifKlaar) schuifKlaar(); }
+function schuifProfiel(vorigeView, view, mode, oudEl, oudVak, oudKind) {
+  const heen = view === 'profiel' && vorigeView !== 'profiel';
+  const terug = vorigeView === 'profiel' && view !== 'profiel';
+  if ((!heen && !terug) || mode === 'redirect' || !magBewegen() || !oudEl || !oudVak) return;
+  const nieuwEl = document.getElementById(`view-${view}`);
+  if (!nieuwEl || nieuwEl === oudEl || !nieuwEl.animate) return;
+  const profiel = heen ? nieuwEl : oudEl, lijst = heen ? oudEl : nieuwEl;
+  // Vast op zijn plek. Een view met een bovenmarge in zijn eerste regel (de hoes
+  // staat 8px onder de kop) houdt die marge vast gezet binnen zich, waar hij hem
+  // eerst naar buiten doorgaf: meet de inhoud en zet die terug waar hij stond
+  // (oudKind: de bovenkant van de eerste regel, gemeten vóór de wissel).
+  oudEl.classList.add('view-weg');
+  Object.assign(oudEl.style, { top: oudVak.top + 'px', left: oudVak.left + 'px', width: oudVak.width + 'px' });
+  const kind = oudEl.firstElementChild;
+  if (kind) oudEl.style.top = (oudVak.top - (kind.getBoundingClientRect().top - oudKind)) + 'px';
+  nieuwEl.classList.add('view-erin');
+  profiel.classList.add('view-profiel-schuift');
+  const opties = { duration: SCHUIF_MS, easing: SCHUIF_KROMME };
+  const lijstUit = [{ transform: 'none', filter: 'none' }, { transform: 'translateX(-30%)', filter: 'brightness(.8)' }];
+  const profielIn = [{ transform: 'translateX(100%)' }, { transform: 'none' }];
+  // De vaste view valt buiten de knip van #appRoot. Op een computer (de app als
+  // kolom in het midden) zou hij naast die kolom zichtbaar worden; het knipvlak
+  // schuift daarom precies tegen de beweging in, zodat alleen het deel binnen
+  // zijn eigen kolom te zien is. De schaduw links van het profiel blijft zichtbaar.
+  if (heen) { lijstUit[0].clipPath = 'inset(0 0 0 0)'; lijstUit[1].clipPath = 'inset(0 0 0 30%)'; }
+  else { profielIn[0].clipPath = 'inset(0 100% 0 -24px)'; profielIn[1].clipPath = 'inset(0 0 0 -24px)'; }
+  const animaties = [
+    profiel.animate(heen ? profielIn : [...profielIn].reverse(), opties),
+    lijst.animate(heen ? lijstUit : [...lijstUit].reverse(), opties)
+  ];
+  let vangnet = 0;
+  const klaar = () => {
+    if (schuifKlaar !== klaar) return;
+    schuifKlaar = null;
+    clearTimeout(vangnet);
+    animaties.forEach(a => a.cancel());
+    oudEl.classList.remove('view-weg');
+    oudEl.style.top = oudEl.style.left = oudEl.style.width = '';
+    nieuwEl.classList.remove('view-erin');
+    profiel.classList.remove('view-profiel-schuift');
+  };
+  schuifKlaar = klaar;
+  animaties[0].finished.then(klaar, klaar);
+  // 8D (01-11-2026): tekent de browser niet (een venster dat niet in beeld is),
+  // dan loopt de beweging niet en komt "klaar" nooit; de vorige view bleef dan
+  // staan. Zelfde soort fout als decode() bij de kaart (fase 8). Een timer ruimt
+  // daarom altijd op, ruim na het einde van de beweging (zoals het keuzemenu).
+  vangnet = setTimeout(klaar, SCHUIF_MS + 80);
 }
 
 // ─── De landingspagina (TT-61, 30-09-2026, besluiten Ronald) ────────────────
@@ -1417,6 +1489,63 @@ function syncModalScrollLock() {
   });
 })();
 
+// ─── De titel in de kop (TT-517 fase 3, 01-11-2026, besluiten Ronald) ─────
+// De kop toont de naam van het scherm. Twee uitzonderingen: het profiel van een
+// andere muzikant of een band toont diens naam (die blijft ook groot op het
+// profiel), en het woordmerk staat op de landingspagina en op de
+// goedkeuringspagina (view-toestemming: een ouder komt uit de mail en kent de
+// app niet, besluit Ronald O1; dezelfde view toont de uitkomst van een
+// bevestigingslink).
+// De tekst staat op één plek: de .scherm-titel in het scherm zelf (voor het oog
+// verborgen, styles.css), of data-kop op de view als het scherm geen eigen titel
+// toont (Mijn profiel, een open gesprek: "Berichten"). Welke titel zichtbaar is,
+// wisselt op veel plekken (wizardstap, tegelscherm, zoekscherm, gesprek); één
+// waarnemer is betrouwbaarder dan een aanroep op elk van die plekken, zelfde
+// afweging als bewaakModals() hierboven.
+const KOP_WOORDMERK_VIEWS = ['view-landing', 'view-toestemming'];
+function kopTitelTekst() {
+  const view = document.querySelector('.app-view.active');
+  if (!view || KOP_WOORDMERK_VIEWS.includes(view.id)) return '';
+  if (view.id === 'view-profiel') {
+    return view.querySelector('#profielSchermContent .profile-name')?.textContent.trim() || '';
+  }
+  const bron = [...view.querySelectorAll('.scherm-titel')]
+    .find(el => el.offsetParent !== null && el.textContent.trim());
+  return bron ? bron.textContent.trim() : (view.dataset.kop || '');
+}
+function zetKopTitel() {
+  const kop = document.getElementById('kopTitel');
+  if (!kop) return;
+  const view = document.querySelector('.app-view.active');
+  const woordmerk = !!view && KOP_WOORDMERK_VIEWS.includes(view.id);
+  const root = document.getElementById('appRoot');
+  if (root && root.classList.contains('kop-woordmerk') !== woordmerk) {
+    root.classList.toggle('kop-woordmerk', woordmerk);
+    if (woordmerk) fitKopLogo(document);
+  }
+  const tekst = kopTitelTekst();
+  if (kop.textContent === tekst) return;
+  kop.textContent = tekst;
+  fitKopTitel();
+}
+(function bewaakKopTitel() {
+  const root = document.getElementById('appRoot');
+  if (!root) return;
+  let gepland = false;
+  const plan = () => {
+    if (gepland) return;
+    gepland = true;
+    requestAnimationFrame(() => { gepland = false; zetKopTitel(); });
+  };
+  // Pas beginnen als alle scripts geladen zijn: zetKopTitel() gebruikt
+  // fitKopTitel() en fitKopLogo() uit utils.js.
+  document.addEventListener('DOMContentLoaded', () => {
+    new MutationObserver(plan).observe(root, { subtree: true, childList: true,
+      attributes: true, attributeFilter: ['class', 'style', 'hidden'] });
+    plan();
+  });
+})();
+
 // Sluit, indien open, eerst een modal (telt als één "terug"-stap), daarna een
 // open gesprek, en pas daarna een view — voorkomt dat een open profiel-,
 // band- of gespreksscherm zomaar verdwijnt samen met de hele pagina eronder.
@@ -1429,7 +1558,7 @@ function syncModalScrollLock() {
 let naamHermeetTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(naamHermeetTimer);
-  naamHermeetTimer = setTimeout(() => { fitProfileName(document); fitKopLogo(document); }, 150);
+  naamHermeetTimer = setTimeout(() => { fitProfileName(document); fitKopLogo(document); fitKopTitel(); }, 150);
 });
 
 // TT-264 (13-09-2026, Ronald): "als ik een video inline afspeel en ik druk op
@@ -1587,4 +1716,116 @@ function isTypveld(el) {
       if (!isTypveld(document.activeElement)) document.body.classList.remove('toetsenbord-open');
     }, 0);
   });
+})();
+
+// ─── Leven bij een tik: indrukken (TT-517 fase 9, huisstijl §23, besluit Ronald 1A) ───
+// Wat je aanraakt (een rij, kaart, tegel of knop) wordt 2% kleiner en veert
+// terug. "Aanraakbaar" is de dichtstbijzijnde knop of link, anders het
+// buitenste element van een rij met een handje als muisaanwijzer (cursor:
+// pointer; dat erft door naar alles erin, dus de tegel zelf en niet de regel
+// tekst die je raakt). Zo valt elk nieuw onderdeel er vanzelf onder, en drukt
+// in een rij met een eigen knop alleen het aangeraakte deel in. Pas na 50 ms
+// vinger op het scherm; begint de vinger binnen die tijd te scrollen (meer dan
+// 10px, of de browser neemt het over), dan drukt er niets in. Een snelle tik
+// krijgt toch een teken: even in, dan terug.
+// Het werkt met de eigenschap `scale`, niet met `transform`: zo blijft een
+// verschuiving die een knop al heeft (bijv. translateY(-50%)) gewoon staan.
+// De animatie loopt los van de CSS (Web Animations), dus een bestaande
+// `transition` op het element blijft onaangeroerd. Niet in een vlak dat je
+// veegt (de hoes, het wiel, de uitsnede), niet op een uitgeschakelde knop,
+// niet op een typveld, niet op iets hoger dan het halve scherm (geen rij of
+// knop meer). Met "minder beweging" op het toestel: niets.
+const TIK_IN_MS = 90, TIK_TERUG_MS = 220, TIK_WACHT_MS = 50, TIK_SCHAAL = '0.98';
+const TIK_VEER = 'cubic-bezier(.34, 1.56, .64, 1)';
+function tikDoel(doel) {
+  if (!doel || !doel.closest || isTypveld(doel) || doel.tagName === 'SELECT') return null;
+  if (doel.closest('.hoes-spoor, .wheel-scroll, .uitsnede-vlak')) return null;
+  let el = null;
+  for (let e = doel; e && e !== document.body; e = e.parentElement) {
+    if (e.matches('button, a[href], [role="button"]')) { el = e; break; }
+    if (getComputedStyle(e).cursor === 'pointer') el = e;
+    else if (el) break;
+  }
+  if (!el || el.disabled || el.getAttribute('aria-disabled') === 'true') return null;
+  const r = el.getBoundingClientRect();
+  return r.width && r.height <= window.innerHeight / 2 ? el : null;
+}
+(function initTikIndrukken() {
+  if (!document.documentElement.animate) return; // een toestel zonder Web Animations: geen teken, verder alles gelijk
+  let actief = null, ingedrukt = null, klok = 0, start = null;
+  const drukIn = el => {
+    ingedrukt = el.animate([{ scale: '1' }, { scale: TIK_SCHAAL }],
+      { duration: TIK_IN_MS, easing: 'ease-out', fill: 'forwards' });
+  };
+  const laatLos = (el, veer) => {
+    if (ingedrukt) { ingedrukt.cancel(); ingedrukt = null; }
+    if (veer) el.animate([{ scale: TIK_SCHAAL }, { scale: '1' }], { duration: TIK_TERUG_MS, easing: TIK_VEER });
+  };
+  const stop = () => { // scrollen of de browser neemt het over: gewoon terug, geen veer
+    clearTimeout(klok);
+    if (actief) laatLos(actief, false);
+    actief = null;
+  };
+  document.addEventListener('pointerdown', e => {
+    stop();
+    if (!e.isPrimary || e.button > 0 || !magBewegen()) return;
+    const el = tikDoel(e.target);
+    if (!el) return;
+    actief = el; start = { x: e.clientX, y: e.clientY };
+    klok = setTimeout(() => { if (actief === el) drukIn(el); }, TIK_WACHT_MS);
+  }, { passive: true, capture: true });
+  document.addEventListener('pointermove', e => {
+    if (actief && (Math.abs(e.clientX - start.x) > 10 || Math.abs(e.clientY - start.y) > 10)) stop();
+  }, { passive: true, capture: true });
+  document.addEventListener('pointerup', () => {
+    clearTimeout(klok);
+    const el = actief; actief = null;
+    if (!el) return;
+    if (ingedrukt) { laatLos(el, true); return; }
+    // Een snelle tik: even in, dan terug met dezelfde veer.
+    el.animate([
+      { scale: '1', easing: 'ease-out' },
+      { scale: TIK_SCHAAL, easing: TIK_VEER, offset: TIK_IN_MS / (TIK_IN_MS + TIK_TERUG_MS) },
+      { scale: '1' }
+    ], { duration: TIK_IN_MS + TIK_TERUG_MS });
+  }, { passive: true, capture: true });
+  document.addEventListener('pointercancel', stop, { passive: true, capture: true });
+  window.addEventListener('scroll', () => { if (actief) stop(); }, { passive: true, capture: true });
+})();
+
+// TT-517 fase 11 (besluit Ronald 01-11-2026, "2"): knoppen in een rij staan
+// naast elkaar en zijn even breed (TT-228). Past de tekst van een knop dan
+// niet op één regel, dan staan ze onder elkaar: de handeling boven, de knop
+// met rand (Annuleren) eronder (.btn-rij-stapel in styles.css). Gemeten met
+// de breedte van de tekst, niet met de hoogte van de knop: zo verandert de
+// klasse de meting niet. Ook voor een rij die later in de pagina komt.
+(function initKnoppenRij() {
+  if (!window.ResizeObserver || !window.MutationObserver) return;
+  const doek = document.createElement('canvas').getContext('2d');
+  const rijen = new Set();
+  const meet = rij => {
+    const kn = [...rij.children].filter(k => k.classList.contains('btn') && k.offsetParent);
+    let past = true;
+    if (kn.length > 1) {
+      const gat = parseFloat(getComputedStyle(rij).columnGap) || 0;
+      const deel = (rij.clientWidth - gat * (kn.length - 1)) / kn.length;
+      past = kn.every(k => {
+        const cs = getComputedStyle(k);
+        doek.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        const rand = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+        return doek.measureText(k.textContent.trim()).width + rand <= deel;
+      });
+    }
+    rij.classList.toggle('btn-rij-stapel', !past);
+  };
+  const kijker = new ResizeObserver(lijst => lijst.forEach(e => meet(e.target)));
+  const volg = el => {
+    if (el.nodeType !== 1) return;
+    const nieuw = el.classList.contains('btn-row') ? [el] : [...el.getElementsByClassName('btn-row')];
+    nieuw.forEach(r => { if (!rijen.has(r)) { rijen.add(r); kijker.observe(r); } });
+  };
+  volg(document.body);
+  new MutationObserver(m => m.forEach(x => x.addedNodes.forEach(volg))).observe(document.body, { childList: true, subtree: true });
+  // Inter laadt na de eerste meting; daarna opnieuw meten met de echte letter.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => rijen.forEach(meet));
 })();

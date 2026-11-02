@@ -316,7 +316,7 @@ async function saveUsernameGate() {
   }
 
   const mid = usernameGateMid || await getMyMusicianId();
-  const { error } = await db.from('musicians').update({ username: value }).eq('id', mid);
+  const { error } = rijenGeraakt(await db.from('musicians').update({ username: value }).eq('id', mid).select('id'));
   if (error) { zetUsernameLang('usernameGateInput', friendlyErrorMessage(error, 'je gebruikersnaam opslaan')); return; }
 
   document.getElementById('usernameGateModal').classList.remove('visible');

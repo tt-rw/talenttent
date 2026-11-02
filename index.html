@@ -18,7 +18,7 @@
 <meta property="og:url" content="https://talenttent.org/">
 <meta property="og:title" content="The Talent Tent — Talent zoekt talent">
 <meta property="og:description" content="Vind muzikanten en bands bij jou in de buurt voor jams, repetities en optredens.">
-<meta property="og:image" content="https://talenttent.org/icon-512.png?v=20260928a">
+<meta property="og:image" content="https://talenttent.org/icon-512.png?v=20261031a">
 <meta property="og:image:width" content="512">
 <meta property="og:image:height" content="512">
 <meta property="og:locale" content="nl_NL">
@@ -26,9 +26,9 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="The Talent Tent — Talent zoekt talent">
 <meta name="twitter:description" content="Vind muzikanten en bands bij jou in de buurt voor jams, repetities en optredens.">
-<meta name="twitter:image" content="https://talenttent.org/icon-512.png?v=20260928a">
+<meta name="twitter:image" content="https://talenttent.org/icon-512.png?v=20261031a">
 
-<link rel="manifest" href="manifest.json?v=20260928a">
+<link rel="manifest" href="manifest.json?v=20261031a">
 <meta name="theme-color" content="#0d0d0d">
 <!-- TT-341 stap 3 (26-09-2026, besluit Ronald: "a"): licht of donker.
      Standaard volgt de app het toestel. Een eigen keuze uit Instellingen
@@ -55,15 +55,15 @@
   }
   pasLichtDonkerToe();
 </script>
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20260928a">
-<link rel="apple-touch-icon" href="icon-192.png?v=20260928a">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20261031a">
+<link rel="apple-touch-icon" href="icon-192.png?v=20261031a">
 <!-- TT-318 (24-09-2026): Alfa Slab One is weg uit deze regel; het woordmerk
      heeft een eigen lettertype in de repo (styles.css, @font-face). Vooraf
      laden, zodat het er is voordat de kop getekend wordt. crossorigin is
      verplicht bij een lettertype, ook op het eigen domein. -->
 <link rel="preload" href="tt-woordmerk.woff2" as="font" type="font/woff2" crossorigin>
-<!-- TT-492 (20-10-2026): Roboto staat nu in de repo (styles.css, @font-face), niet meer bij Google Fonts: geen extern verzoek, het adres van de bezoeker gaat niet naar Google. -->
-<link rel="preload" href="roboto-400.woff2" as="font" type="font/woff2" crossorigin>
+<!-- TT-492 (20-10-2026): het lettertype staat in de repo (styles.css, @font-face), niet bij Google Fonts: geen extern verzoek, het adres van de bezoeker gaat niet naar Google. TT-517 fase 1: Inter in plaats van Roboto. -->
+<link rel="preload" href="inter-400.woff2" as="font" type="font/woff2" crossorigin>
 <!-- TT-483 (21-10-2026): supabase-js staat nu in de repo, vaste versie 2.118.0, niet meer bij een CDN (@2 liep mee met elke nieuwe release en had geen integriteitscontrole). Geen extern verzoek meer voor deze bibliotheek. Nieuwe versie nemen = bestand vervangen en ?v= ophogen. -->
 <script src="supabase.js?v=2.118.0"></script>
 <script>
@@ -77,7 +77,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261029d">
+<link rel="stylesheet" href="styles.css?v=20261101j">
 </head>
 <body>
 
@@ -101,7 +101,12 @@
       <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
     </button>
   </div>
-  <div class="logo" onclick="naarHoogsteScherm()" style="cursor:pointer;" title="Naar je beginscherm"><span>TALENT</span>TENT</div>
+  <div class="logo"><span>TALENT</span>TENT</div>
+  <!-- TT-517 fase 3 (01-11-2026, besluit Ronald woordmerk E): de titel van het
+       scherm staat in de kop, het woordmerk alleen op de landingspagina. De tekst
+       komt van de .scherm-titel in het scherm (zetKopTitel() in core.js). Een tik
+       op titel of woordmerk doet niets (besluit Ronald, C1). -->
+  <h1 class="kop-titel" id="kopTitel"></h1>
   <div class="kop-vak kop-rechts">
     <!-- TT-63/nav-herziening (09-08-2026): hamburgermenu voor minder-frequente
          links (Ronald: te veel tabbladen, op mobiel al horizontaal scrollen).
@@ -212,7 +217,7 @@
   </button>
 </nav>
 
-<div id="editModeBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:8px 24px;background:var(--tint);border-top:1px solid var(--border);font-size:13px;">
+<div id="editModeBanner" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:8px 24px;background:var(--tint);border-top:1px solid var(--border);font-size:12px;">
   <span>Je bent nog bezig met je profiel bewerken.</span>
   <button class="btn btn-primary" onclick="requireLogin('register')">Verder bewerken →</button>
 </div>
@@ -250,8 +255,8 @@
   <div class="auth-wrap">
     <div class="auth-panel">
       <div style="text-align:center;margin-bottom:24px;">
-        <div style="font-family:'Roboto',sans-serif;font-size:28px;color:var(--accent);letter-spacing:1px;">Inloggen</div>
-        <p style="font-size:13px;color:var(--muted);margin-top:4px;">Welkom terug bij The Talent Tent</p>
+        <div class="scherm-titel">Inloggen</div>
+        <p style="font-size:12px;color:var(--muted);margin-top:4px;">Welkom terug bij The Talent Tent</p>
       </div>
 
       <div id="authSuccess" class="auth-success"></div>
@@ -277,11 +282,11 @@
       </div>
       </form>
       <div style="text-align:right;margin-bottom:20px;">
-        <button id="forgotPasswordBtn" onclick="forgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Roboto',sans-serif;text-decoration:underline;">Wachtwoord vergeten?</button>
+        <button id="forgotPasswordBtn" onclick="forgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:underline;">Wachtwoord vergeten?</button>
       </div>
       <button class="btn btn-primary" style="width:100%;margin-bottom:16px;" onclick="signIn()">Inloggen →</button>
       <div style="text-align:center;padding-top:16px;border-top:1px solid var(--border);">
-        <p style="font-size:13px;color:var(--muted);margin-bottom:8px;">Nog geen profiel?</p>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Nog geen profiel?</p>
         <button class="btn btn-ghost" style="width:100%;" onclick="showView('register')">Profiel aanmaken →</button>
       </div>
     </div>
@@ -306,7 +311,7 @@
 
   <!-- STEP 1: Persoonlijke info -->
   <div class="panel active" id="step0">
-    <div class="panel-title">Wie ben je</div>
+    <div class="panel-title scherm-titel">Wie ben je</div>
     <div class="panel-sub">Maak je profiel aan. Vanaf 16 jaar staan je voor- en achternaam op je profiel; later kies je zelf of dat je gebruikersnaam wordt.</div>
 
     <div class="field-group">
@@ -403,7 +408,7 @@
 
   <!-- STEP 2: Instrument & genre -->
   <div class="panel" id="step1">
-    <div class="panel-title">Wat speel je</div>
+    <div class="panel-title scherm-titel">Wat speel je</div>
     <div class="panel-sub">Je instrument(en), je niveau per instrument, en de genres die je speelt.</div>
 
     <div class="field-group single">
@@ -457,7 +462,7 @@
 
   <!-- STEP 3: Wat zoek je -->
   <div class="panel" id="step2">
-    <div class="panel-title">Wat wil je nu?</div>
+    <div class="panel-title scherm-titel">Wat wil je nu?</div>
     <div class="panel-sub">Je doel op The Talent Tent. Alle drie de velden zijn optioneel.</div>
 
     <div class="goal-options" id="goalOptions">
@@ -514,7 +519,7 @@
 
   <!-- STEP 4: Je setlist -->
   <div class="panel" id="step3">
-    <div class="panel-title">Je setlist</div>
+    <div class="panel-title scherm-titel">Je setlist</div>
     <!-- TT-514 (besluit Ronald, 25-10-2026): drie nummers verplicht. Eén
          rustige regel, met wat het oplevert. -->
     <div class="panel-sub">Kies drie nummers en ontdek andere muzikanten.</div>
@@ -570,21 +575,19 @@
 
   <!-- STEP 5: Media -->
   <div class="panel" id="step4">
-    <div class="panel-title">Je mediahoek</div>
+    <div class="panel-title scherm-titel">Je mediahoek</div>
 
     <div class="field">
       <label>Profielfoto</label>
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
-          <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarInput').click()">
-            <span id="avatarInitials" class="avatar-t">T</span>
-          </div>
+          <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarInput').click()"></div>
           <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="avatarRemoveBtn" onclick="askRemoveAvatar()" aria-label="Profielfoto verwijderen">✕</button>
         </div>
         <div class="avatar-info">
-          <strong>Upload een foto van jezelf</strong>
-          <p>Een echte foto zorgt voor 3× meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
+          <strong><span class="kop-zonder-foto">Upload een foto van jezelf</span><span class="kop-met-foto">Je profielfoto</span></strong>
+          <p>JPG of PNG, maximaal 5 MB.</p>
         </div>
       </div>
       <input type="file" accept="image/*" class="avatar-upload-input" id="avatarInput" autocomplete="off" onchange="handleAvatarUpload(this.files[0]); this.value=''">
@@ -662,7 +665,7 @@
 
   <!-- Onderdeel 2: het tussenscherm -->
   <div class="panel-ouder" id="ouderStap">
-    <div class="panel-title" style="margin-bottom:19px;">Je hebt toestemming van thuis nodig</div>
+    <div class="panel-title scherm-titel" style="margin-bottom:19px;">Toestemming</div>
     <div class="panel-sub" style="margin-bottom:19px;">Onder de 16 mag je profiel pas online met toestemming van je ouder of verzorger. Wij sturen één mail met één knop. Meer hoeven ze niet te doen.</div>
 
     <div class="ouder-kaart">
@@ -696,7 +699,7 @@
 
   <!-- Onderdeel 3: het wachtscherm -->
   <div class="panel-ouder" id="ouderWacht">
-    <div class="panel-title" id="ouderWachtKop">Je aanvraag is verstuurd</div>
+    <div class="panel-title scherm-titel" id="ouderWachtKop">Je aanvraag is verstuurd</div>
     <div class="panel-sub" id="ouderWachtBody">We hebben je ouder een mail gestuurd op <strong class="ouder-adres" id="ouderWachtAdres"></strong>.
       Geeft je ouder toestemming, dan laten we het je weten. Daarna kies je een wachtwoord en staat je profiel online.</div>
 
@@ -722,7 +725,7 @@
 
   <!-- Onderdeel 7: het wachtwoordscherm -->
   <div class="panel-ouder" id="ouderWachtwoord">
-    <div class="panel-title">Kies je wachtwoord</div>
+    <div class="panel-title scherm-titel">Kies je wachtwoord</div>
     <div class="panel-sub">Je ouder heeft toestemming gegeven. Hierna staat je profiel online.</div>
 
     <div class="field-group single">
@@ -776,13 +779,13 @@
 
   <!-- Tegeloverzicht -->
   <div id="tegelOverviewScreen">
-    <div class="panel-title">Profiel bewerken</div>
+    <div class="panel-title scherm-titel">Profiel bewerken</div>
     <div id="tegelsWrap"></div>
   </div>
 
   <!-- Subscherm: Wie ben je -->
   <div id="wieBenJeScreen" style="display:none;">
-    <div class="panel-title" style="margin-bottom:20px;">Wie ben je</div>
+    <div class="panel-title scherm-titel" style="margin-bottom:20px;">Wie ben je</div>
 
     <div class="field-group">
       <div class="field">
@@ -859,7 +862,7 @@
 
   <!-- Subscherm: Wat speel je -->
   <div id="watSpeelJeScreen" style="display:none;">
-    <div class="panel-title">Wat speel je</div>
+    <div class="panel-title scherm-titel">Wat speel je</div>
     <div class="panel-sub">Je instrument(en), je niveau per instrument, en de genres die je speelt.</div>
 
     <div class="field" style="margin-bottom:20px;">
@@ -900,7 +903,7 @@
 
   <!-- Subscherm: Wat zoek je -->
   <div id="watZoekJeScreen" style="display:none;">
-    <div class="panel-title">Wat zoek je</div>
+    <div class="panel-title scherm-titel">Wat zoek je</div>
     <div class="panel-sub">Je doel op The Talent Tent. Alle drie de velden zijn optioneel.</div>
 
     <div class="goal-options" id="wzjGoalOptions">
@@ -954,7 +957,7 @@
 
   <!-- Subscherm: Je setlist -->
   <div id="jeSetlistScreen" style="display:none;">
-    <div class="panel-title">Je setlist</div>
+    <div class="panel-title scherm-titel">Je setlist</div>
     <div class="panel-sub">Zoek eerst een band of artiest en daarna het nummer.</div>
 
     <!-- TT-514 (Ronald, 25-10-2026: "dit wordt ook de setlist tegel"): zelfde
@@ -998,21 +1001,19 @@
 
   <!-- Subscherm: Je mediahoek -->
   <div id="mediahoekScreen" style="display:none;">
-    <div class="panel-title" style="margin-bottom:20px;">Je mediahoek</div>
+    <div class="panel-title scherm-titel" style="margin-bottom:20px;">Je mediahoek</div>
 
     <div class="field">
       <label>Profielfoto</label>
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
-          <div class="avatar-preview" id="mhAvatarPreview" onclick="document.getElementById('mhAvatarInput').click()">
-            <span id="mhAvatarInitials" class="avatar-t">T</span>
-          </div>
+          <div class="avatar-preview" id="mhAvatarPreview" onclick="document.getElementById('mhAvatarInput').click()"></div>
           <div class="avatar-edit-btn" onclick="document.getElementById('mhAvatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhAskRemoveAvatar()" aria-label="Profielfoto verwijderen">✕</button>
         </div>
         <div class="avatar-info">
-          <strong>Upload een foto van jezelf</strong>
-          <p>Een echte foto zorgt voor meer reacties.<br>JPG of PNG, maximaal 5 MB.</p>
+          <strong><span class="kop-zonder-foto">Upload een foto van jezelf</span><span class="kop-met-foto">Je profielfoto</span></strong>
+          <p>JPG of PNG, maximaal 5 MB.</p>
         </div>
       </div>
       <input type="file" accept="image/*" class="avatar-upload-input" id="mhAvatarInput" autocomplete="off" onchange="mhHandleAvatarUpload(this.files[0]); this.value=''">
@@ -1059,7 +1060,7 @@
        (bewerkBandId in bands.js). Vier tegels zoals bij de muzikant, met
        daaronder het blok Bandbeheer (besluiten Ronald, TT-385 punt 4 en 13). -->
   <div id="bandTegelOverviewScreen" style="display:none;">
-    <div class="panel-title">Bandprofiel bewerken</div>
+    <div class="panel-title scherm-titel">Bandprofiel bewerken</div>
     <div class="band-naam-regel"></div>
     <div id="bandTegelsWrap"></div>
     <div class="band-beheer" id="bandBeheerBlok"></div>
@@ -1067,7 +1068,7 @@
 
   <!-- Bandtegel: Wie zijn we -->
   <div id="bandWieScreen" style="display:none;">
-    <div class="panel-title" style="margin-bottom:20px;">Wie zijn we</div>
+    <div class="panel-title scherm-titel" style="margin-bottom:20px;">Wie zijn we</div>
 
     <div class="field-group single">
       <div class="field">
@@ -1117,7 +1118,7 @@
        band halen gaan meteen (er is een ander bij betrokken); open rollen,
        invallers en de contactpersoon gaan mee met Opslaan. -->
   <div id="bandBezettingScreen" style="display:none;">
-    <div class="panel-title">Onze bezetting</div>
+    <div class="panel-title scherm-titel">Onze bezetting</div>
     <div class="band-naam-regel"></div>
 
     <div class="profile-media-title">Leden</div>
@@ -1184,7 +1185,7 @@
   <!-- Bandtegel: Onze muziek. Covers met dezelfde zoekvelden als Je setlist
        (voorvoegsel bc, zie de jst-functies in musicians.js). -->
   <div id="bandMuziekScreen" style="display:none;">
-    <div class="panel-title">Onze muziek</div>
+    <div class="panel-title scherm-titel">Onze muziek</div>
     <div class="band-naam-regel"></div>
 
     <div class="field-group single">
@@ -1250,21 +1251,19 @@
   <!-- Bandtegel: Onze media. Zelfde vorm als Je mediahoek (huisstijl §18),
        met het bannerteken; voorvoegsel bm. Daaronder de drie socials. -->
   <div id="bandMediaScreen" style="display:none;">
-    <div class="panel-title">Onze media</div>
+    <div class="panel-title scherm-titel">Onze media</div>
     <div class="band-naam-regel"></div>
 
     <div class="field">
       <label>Bandfoto</label>
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
-          <div class="avatar-preview avatar-preview-vierkant" id="bmFotoPreview" onclick="document.getElementById('bmFotoInput').click()">
-            <span class="avatar-t">T</span>
-          </div>
+          <div class="avatar-preview avatar-preview-vierkant" id="bmFotoPreview" onclick="document.getElementById('bmFotoInput').click()"></div>
           <div class="avatar-edit-btn" onclick="document.getElementById('bmFotoInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="bmFotoRemoveBtn" onclick="bmVraagFotoWeg()" aria-label="Bandfoto verwijderen">✕</button>
         </div>
         <div class="avatar-info">
-          <strong>Upload een foto van de band</strong>
+          <strong><span class="kop-zonder-foto">Upload een foto van de band</span><span class="kop-met-foto">Jullie bandfoto</span></strong>
           <p>JPG of PNG, maximaal 5 MB.</p>
         </div>
       </div>
@@ -1339,7 +1338,7 @@
        (zoekScherm in search.js, terug via appTerug() in core.js). Vervangt de
        vier standen Muzikant · Band · Setlist (twee) en het vegen ertussen. -->
   <div id="zoekStart" class="search-wrap">
-    <h1 class="filter-title zoek-titel">Zoeken</h1>
+    <h1 class="filter-title zoek-titel scherm-titel">Zoeken</h1>
     <!-- Twee brede tegels onder elkaar; icoon links op een grijs vlak, geen
          pijl (Laag 2, besluit Ronald 25-10-2026; icoonvlak 26-10-2026). Het
          bestaande tegelpatroon (.tile), zoals in Instellingen. -->
@@ -1355,7 +1354,7 @@
 
   <div id="searchModeMusician" style="display:none;">
   <div class="search-wrap">
-    <h1 class="filter-title zoek-titel">Muzikanten</h1>
+    <h1 class="filter-title zoek-titel scherm-titel">Muzikanten</h1>
     <!-- TT-520 Laag 3.1: muzikanten en bands op één scherm. Losse knoppen van
          44px, de gekozen stand van elke keuzeknop (huisstijl §5.1). -->
     <div class="zoek-soort" role="tablist" aria-label="Wat zoek je?">
@@ -1494,7 +1493,7 @@
          Mix & Match. Twee knoppen, de vraag als regel eronder; geen zoekknop,
          geen sortering, geen weergave (alleen de lijst). Het resultaat
          verschijnt vanzelf onder wat je koos. -->
-    <h1 class="filter-title zoek-titel">Mix &amp; Match</h1>
+    <h1 class="filter-title zoek-titel scherm-titel">Mix &amp; Match</h1>
     <div class="zoek-soort mm-soort" role="tablist" aria-label="Wat wil je weten?">
       <button type="button" role="tab" class="search-mode-tab active" id="setlistSoortNummersBtn" aria-selected="true" onclick="setSetlistSoort('nummers')">Wat spelen we?</button>
       <button type="button" role="tab" class="search-mode-tab" id="setlistSoortMuzikantenBtn" aria-selected="false" onclick="setSetlistSoort('muzikanten')">Wie speelt dit?</button>
@@ -1612,7 +1611,7 @@
 <!-- ═══════════════════════════════════════════ -->
 <!-- VIEW: Mijn profiel                          -->
 <!-- ═══════════════════════════════════════════ -->
-<div class="app-view" id="view-myprofile">
+<div class="app-view" id="view-myprofile" data-kop="Mijn profiel">
   <div class="my-profile-wrap">
     <!-- TT-336: "Nog één stap: bevestig je e-mailadres", alleen zolang het
          profiel op de klik in de mail wacht. Zie renderEmailBevestigBanner(). -->
@@ -1647,7 +1646,7 @@
          kolom van de titel, dus smaller dan de knop en over twee regels
          (besluit Ronald, 09-10-2026). Opmaak in .mijn-bands-kop. -->
     <div id="mijnBandsKop" class="mijn-bands-kop">
-        <div class="filter-title">Mijn bands</div>
+        <div class="filter-title scherm-titel">Mijn bands</div>
       <!-- TT-254 (11-09-2026): deze knop heette "Band toevoegen", terwijl de
            formuliertitel "Nieuwe band aanmaken" zegt en de opslaanknop "Band
            aanmaken". Eén actie, drie namen. Gevonden bij TT-248: de lege staat
@@ -1665,7 +1664,7 @@
          Mijn Bands er niet. -->
     <div id="createBandForm" style="display:none;">
       <div id="bandWizardBalk" class="band-wizard-balk"></div>
-      <div class="panel-title">Band aanmaken</div>
+      <div class="panel-title scherm-titel">Band aanmaken</div>
       <div class="panel-sub">Drie vragen, dan staat je band. De rest vul je later aan.</div>
       <div class="field-group single">
         <div class="field">
@@ -1707,10 +1706,10 @@
 </div>
 
 <!-- VIEW: Berichten (TT-01) -->
-<div class="app-view" id="view-messages">
+<div class="app-view" id="view-messages" data-kop="Berichten">
   <div class="search-wrap">
     <div id="messagesInboxPanel">
-      <div class="filter-title" style="margin-bottom:16px;">Berichten</div>
+      <div class="filter-title scherm-titel" style="margin-bottom:16px;">Berichten</div>
       <div id="messagesInboxList"><div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div></div>
     </div>
     <div id="messagesThreadPanel" style="display:none;">
@@ -1739,7 +1738,7 @@
         <div id="messagesReplyCounter" style="text-align:right;font-size:12px;color:var(--muted);margin-top:4px;">0/2000</div>
         <!-- V-04 (13-08-2026): i.p.v. een actief invoerveld naar een niet meer
              bestaand account. -->
-        <div id="messagesDeletedNotice" style="display:none;text-align:center;font-size:13px;color:var(--muted);padding:12px;background:var(--surface2);border-radius:8px;">Dit account bestaat niet meer. Je kunt dit gesprek niet voortzetten.</div>
+        <div id="messagesDeletedNotice" style="display:none;text-align:center;font-size:12px;color:var(--muted);padding:12px;background:var(--surface2);border-radius:8px;">Dit account bestaat niet meer. Je kunt dit gesprek niet voortzetten.</div>
       </div>
     </div>
   </div>
@@ -1749,7 +1748,7 @@
 <div class="app-view" id="view-about">
   <div class="search-wrap">
     <div class="search-filters">
-      <div class="panel-title" style="margin-bottom:20px;">Over ons</div>
+      <div class="panel-title scherm-titel" style="margin-bottom:20px;">Over ons</div>
       <div style="font-size:15px;line-height:1.7;color:var(--text);">
         <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat is The Talent Tent?</strong> The Talent Tent is een ontmoetingsplaats voor muzikanten. We zijn gestart voor jonge muzikanten die veel oefenen, maar moeilijk andere muzikanten vinden om mee samen te spelen. We merken dat er ook interesse is van ervaren, oudere muzikanten.</p>
         <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat doen we?</strong> Je krijgt een eigen pagina met je setlist en media, en een pagina voor elke band waar je deel van uitmaakt. Onze zoekfunctie vindt muzikanten en bands bij jou in de buurt. Bands zoeken hier een nieuw of tijdelijk lid. Wij helpen je op weg naar het podium.</p>
@@ -1764,7 +1763,7 @@
 <div class="app-view" id="view-privacy">
   <div class="search-wrap">
     <div class="search-filters doc-view">
-      <div class="panel-title">Privacyverklaring</div>
+      <div class="panel-title scherm-titel">Privacyverklaring</div>
       <div class="doc-updated">Laatst bijgewerkt: 24 oktober 2026</div>
 
       <h2>1. Wie zijn wij</h2>
@@ -1808,7 +1807,7 @@
       <h2>6. Wie kan je gegevens zien</h2>
       <ul>
         <li>Je naam op je profiel, profielfoto, instrumenten, genres en repertoire zijn zichtbaar voor iedereen die de zoekfunctie gebruikt, ook zonder account. Die naam kies je zelf: je voor- en achternaam of je gebruikersnaam. Ben je jonger dan 16 jaar? Dan is het altijd je gebruikersnaam.</li>
-        <li>Ben je jonger dan 16 jaar? Dan zien bezoekers zonder account je profielfoto, foto's, video's en links niet. Op die plek staat de T van The Talent Tent. Wie een account heeft, ziet alles.</li>
+        <li>Ben je jonger dan 16 jaar? Dan zien bezoekers zonder account je profielfoto, foto's, video's en links niet. Op die plek staat een wazig beeld: een piepkleine versie van de foto, zo klein dat niemand erop te herkennen is. Wie een account heeft, ziet alles.</li>
         <li>Je postcode wordt nooit aan andere gebruikers getoond. Je achternaam staat alleen op je profiel als je zelf kiest voor je echte naam.</li>
         <li>Berichten die je stuurt, zijn alleen zichtbaar voor jou en de ontvanger.</li>
         <li>Ben je jonger dan 16 jaar? Dan kan iemand van 18 of ouder je pas een bericht sturen nadat jij die persoon eerst een bericht stuurde. Met alle anderen kun je vrij berichten.</li>
@@ -1844,7 +1843,7 @@
 <div class="app-view" id="view-terms">
   <div class="search-wrap">
     <div class="search-filters doc-view">
-      <div class="panel-title">Gebruiksvoorwaarden</div>
+      <div class="panel-title scherm-titel">Gebruiksvoorwaarden</div>
       <div class="doc-updated">Laatst bijgewerkt: 25 september 2026</div>
 
       <p>Door een account aan te maken op The Talent Tent (talenttent.org) ga je akkoord met deze gebruiksvoorwaarden.</p>
@@ -1902,7 +1901,7 @@
 <div class="app-view" id="view-gedragscode">
   <div class="search-wrap">
     <div class="search-filters doc-view">
-      <div class="panel-title">Gedragscode</div>
+      <div class="panel-title scherm-titel">Gedragscode</div>
       <div class="doc-updated">Laatst bijgewerkt: 25 september 2026</div>
 
       <p>Muziek maken is het leukst als je het samen doet. Daarom bestaat The Talent Tent: om je te helpen andere muzikanten te vinden om mee te jammen, te repeteren of op te treden. Deze gedragscode gaat over hoe we dat met elkaar willen doen — met plezier, en met respect voor elkaar.</p>
@@ -1951,7 +1950,7 @@
 <div class="app-view" id="view-instellingen">
   <div class="search-wrap">
     <div class="search-filters">
-      <div class="panel-title" style="margin-bottom:20px;">Instellingen</div>
+      <div class="panel-title scherm-titel" style="margin-bottom:20px;">Instellingen</div>
 
       <!-- TT-341 stap 3 (26-09-2026): licht of donker. "Thema" (besluit
            Ronald: "thema is goed"), niet "Weergave": dat woord betekent in
@@ -2058,8 +2057,8 @@
   <div class="auth-wrap">
     <div class="auth-panel">
       <div style="text-align:center;margin-bottom:24px;">
-        <div style="font-family:'Roboto',sans-serif;font-size:28px;color:var(--accent);letter-spacing:1px;">Nieuw wachtwoord</div>
-        <p style="font-size:13px;color:var(--muted);margin-top:6px;">Kies een nieuw wachtwoord voor je account.</p>
+        <div class="scherm-titel">Nieuw wachtwoord</div>
+        <p style="font-size:12px;color:var(--muted);margin-top:6px;">Kies een nieuw wachtwoord voor je account.</p>
       </div>
       <div id="resetSuccess" class="auth-success"></div>
       <div class="field" style="margin-bottom:20px;">
@@ -2099,7 +2098,9 @@
 </div>
 
 <!-- TT-520 deel 2 (27-10-2026, Laag 3.4): de uitsnede kiezen na het kiezen van
-     een profielfoto of bandfoto (kiesUitsnede() in utils.js). Geen kruisje
+     een profielfoto of bandfoto (kiesUitsnede() in utils.js). TT-517 fase 5:
+     een kader van 4:3, ook voor een bannerfoto; gestippeld het rondje of
+     vierkant dat klein in lijsten staat (#uitsnedeKlein). Geen kruisje
      (TT-409: een kruisje alleen waar het niet anders kan): Annuleren, Escape
      en de terugknop van het toestel breken af. Tweede knop links, hoofdknop
      rechts (TT-228), zoals de controlevraag. -->
@@ -2110,6 +2111,7 @@
          onpointerup="uitsnedeWijzerOp(event)" onpointercancel="uitsnedeWijzerOp(event)" onwheel="uitsnedeWiel(event)">
       <img id="uitsnedeImg" alt="Je foto" draggable="false">
       <div class="uitsnede-masker" id="uitsnedeMasker"></div>
+      <div class="uitsnede-klein" id="uitsnedeKlein"></div>
     </div>
     <p class="uitsnede-hint">Schuif en zoom tot de foto goed staat.</p>
     <div class="btn-row">
@@ -2147,7 +2149,7 @@
 <!-- Generieke bevestigingsmodal (bijv. profiel verwijderen) -->
 <div class="modal-overlay" id="confirmModal">
   <div class="modal-box modal-box-sm">
-    <p id="confirmMessage" style="margin-bottom:24px;font-size:14px;"></p>
+    <p id="confirmMessage" style="margin-bottom:24px;font-size:12px;"></p>
     <!-- TT-228 (09-09-2026): secundaire knop links, primaire rechts. -->
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="document.getElementById('confirmModal').classList.remove('visible')">Annuleren</button>
@@ -2163,7 +2165,7 @@
 <div class="modal-overlay" id="deleteAccountModal" onclick="if(event.target===this)closeDeleteAccountModal()">
   <div class="modal-box modal-box-lg">
     <h3 style="margin-bottom:12px;">Account verwijderen</h3>
-    <p style="margin-bottom:16px;font-size:14px;">Dit account inclusief alle gegevens wordt permanent verwijderd.</p>
+    <p style="margin-bottom:16px;font-size:12px;">Dit account inclusief alle gegevens wordt permanent verwijderd.</p>
     <div id="deleteAccountBandsArea"></div>
     <!-- TT-228 (09-09-2026): secundaire knop links, primaire rechts. -->
     <div class="btn-row" style="margin-top:20px;">
@@ -2201,7 +2203,7 @@
 <div class="modal-overlay" id="meldModal" data-close="closeMeldModal" onclick="if(event.target===this)closeMeldModal()">
   <div class="modal-box modal-box-md">
     <div class="filter-title" id="meldTitel" style="margin-bottom:4px;">Melden</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Over <strong id="meldDoelNaam" style="color:var(--text);"></strong>. Je melding komt bij ons binnen; de ander krijgt hier geen bericht van.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:20px;">Over <strong id="meldDoelNaam" style="color:var(--text);"></strong>. Je melding komt bij ons binnen; de ander krijgt hier geen bericht van.</p>
 
     <div class="field" style="margin-bottom:20px;">
       <label>Waar gaat het over?</label>
@@ -2226,7 +2228,7 @@
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeGeblokkeerdModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">Geblokkeerde muzikanten</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Je ziet ze niet in de zoekresultaten, en hun berichten komen niet bij je aan.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:20px;">Je ziet ze niet in de zoekresultaten, en hun berichten komen niet bij je aan.</p>
     <div id="geblokkeerdLijst"></div>
   </div>
 </div>
@@ -2240,7 +2242,7 @@
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeInloggegevens()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">E-mailadres en wachtwoord</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Hiermee log je in.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:20px;">Hiermee log je in.</p>
 
     <div id="igMelding" class="auth-success"></div>
 
@@ -2348,7 +2350,7 @@
          uit de band halen en beheer overdragen staan in de tegel Onze
          bezetting en het blok Bandbeheer. -->
     <div class="filter-title" style="margin-bottom:8px;padding-right:52px;">Lid uitnodigen</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">De muzikant staat pas als lid op het bandprofiel zodra hij of zij de uitnodiging zelf bevestigt.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">De muzikant staat pas als lid op het bandprofiel zodra hij of zij de uitnodiging zelf bevestigt.</p>
     <!-- TT-253 (02-10-2026, Ronald: "deze pagina in de bandomgeving is niet
          aangepast"): dezelfde opbouw als Vind een muzikant (huisstijl §7):
          Naam, dan Plaats en Straal op één regel (.filter-row-city, straal als
@@ -2496,7 +2498,7 @@
     <div class="backend-error-title">De app kan nu niet starten</div>
     <p>Een onderdeel van The Talent Tent is niet geladen. Daardoor werkt inloggen en zoeken op dit moment niet.</p>
     <p class="sub">Dit komt meestal door een tijdelijke storing of door je internetverbinding. Probeer het opnieuw. Blijft de melding staan? Mail dan naar contact@talenttent.org.</p>
-    <button type="button" onclick="location.reload()">Opnieuw proberen</button>
+    <button type="button" class="btn btn-primary" onclick="location.reload()">Opnieuw proberen</button>
   </div>
 </div>
 <script>
@@ -2507,17 +2509,17 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261031b"></script>
-<script src="utils.js?v=20261030a"></script>
+<script src="core.js?v=20261101d"></script>
+<script src="utils.js?v=20261101g"></script>
 <script src="veiligheid.js?v=20261026b"></script>
-<script src="auth.js?v=20261030a"></script>
+<script src="auth.js?v=20261031a"></script>
 <script src="postcode.js?v=20261027e"></script>
-<script src="wizard.js?v=20261028b"></script>
+<script src="wizard.js?v=20261101e"></script>
 <script src="ouder.js?v=20261023a"></script>
-<script src="search.js?v=20261028b"></script>
-<script src="musicians.js?v=20261030a"></script>
-<script src="bands.js?v=20261028b"></script>
-<script src="messages.js?v=20261028a"></script>
+<script src="search.js?v=20261101b"></script>
+<script src="musicians.js?v=20261101h"></script>
+<script src="bands.js?v=20261101e"></script>
+<script src="messages.js?v=20261101b"></script>
 <script src="push.js?v=20261027b"></script>
 <script src="modals-shared.js?v=20261026c"></script>
 <script>

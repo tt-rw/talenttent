@@ -279,6 +279,10 @@ def blok_b():
             for d in delen)]
         if not geraakt or len(geraakt) == len(keuzes):
             continue   # geen keuzesoort, of de gezamenlijke regel zelf
+        # TT-517 fase 11 (besluit Ronald 01-11-2026): de doelkaart is een kaart,
+        # geen pil. Alleen haar hoek mag dus eigen zijn; vlak, rand en kleur niet.
+        if geraakt == ["goal-card"]:
+            inhoud = re.sub(r"(?<![\w-])border-radius\s*:\s*var\(--radius\)\s*;", "", inhoud)
         if verboden.search(inhoud):
             afwijkend.add(delen[0][:60])
     toets("B", "één vorm voor elke keuzeknop, geen eigen vlak of rand",

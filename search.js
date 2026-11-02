@@ -1058,8 +1058,8 @@ function renderZoekResultaten(lijst, opts) {
     }
     el.innerHTML = `
       <div class="no-results">
-        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">${kop}</p>
-        <p style="font-size:13px;">${uitleg}</p>
+        <p style="font-size:15px;font-weight:600;margin-bottom:8px;">${kop}</p>
+        <p style="font-size:12px;">${uitleg}</p>
       </div>`;
     onthoudBijwerken();
     return;
@@ -1104,14 +1104,12 @@ function renderCappedZoekResultaten() {
 // bandpagina naar de contactpersoon.
 const MESSAGE_ICON_SVG = `<svg class="result-row-msg-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><title>Bericht sturen mogelijk</title><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path></svg>`;
 
-// TT-33 (07-08-2026): zonder profielfoto (of zonder identiteit, uitgelogd)
-// tonen we altijd de "T" van het logo i.p.v. de voorletter van de naam —
-// consistente merkherkenning i.p.v. een willekeurige letter per gebruiker
-// (Ronald: "geef iedereen dan een typische T van het logo"). Zelfde lettertype
-// als het woordmerk (--font-display).
-// Bevinding Ronald 28-09-2026: de vorm staat in .avatar-t (styles.css), één
-// klasse voor elke T in de app, 25% groter dan de letter van zijn vak.
-const AVATAR_T_FALLBACK = `<span class="avatar-t">T</span>`;
+// TT-517 fase 6 (huisstijl §21, besluit Ronald 31-10-2026): zonder foto staat
+// overal de schijnwerper, klein: een leeg podium met twee warme lichtbundels
+// uit de bovenhoeken, samen op het midden (besluit Ronald 01-11-2026). In elke
+// lijst, de bezetting en berichten gelijk.
+// Vervangt de gele T van TT-33. Het vak eromheen geeft maat en vorm.
+const ZONDER_FOTO_HTML = '<span class="schijnwerper" aria-hidden="true"></span>';
 
 // TT-420 (09-10-2026, besluit Ronald): één plek die bepaalt welke naam een ander
 // te zien krijgt, voor ingelogd en uitgelogd gelijk. De gebruiker kiest zelf:
@@ -1169,11 +1167,10 @@ function zoekRijHTML(opts) {
 function musicianRowHTML(m) {
   // TT-38 / TT-43: de foto is voor iedereen zichtbaar (Ronald: die is te
   // belangrijk voor de presentatie om achter een login te zetten).
-  const avatarSrc = safeUrl(m.avatar_url);
   const displayName = displayNameOf(m);
   return zoekRijHTML({
     klik: `openProfielScherm('${jsAttr(m.id)}')`,
-    foto: avatarSrc ? `<img ${kleinFotoAttr(avatarSrc)} alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK,
+    foto: fotoHTML(m.avatar_url, displayName) || ZONDER_FOTO_HTML,
     naam: displayName,
     eerste: eersteGekozen((m.musician_instruments || []).map(x => x.instrument)),
     plaats: m.city || '',
@@ -1195,7 +1192,7 @@ function zoekKaartHTML(o) {
   const eerste = (o.band ? '<span class="result-row-soort">BAND</span>' + (o.eerste ? ' · ' : '') : '') + escHtml(o.eerste || '');
   return `
     <div class="zoek-kaart" onclick="${o.klik}">
-      <div class="zoek-kaart-foto${o.foto ? '' : ' zonder-foto'}">${o.foto || AVATAR_T_FALLBACK}${o.hoek ? `<div class="zoek-kaart-hoek">${o.hoek}</div>` : ''}</div>
+      <div class="zoek-kaart-foto">${o.foto || ZONDER_FOTO_HTML}${o.hoek ? `<div class="zoek-kaart-hoek">${o.hoek}</div>` : ''}</div>
       <div class="zoek-kaart-tekst">
         <div class="zoek-kaart-naam">${escHtml(o.naam)}</div>
         <div class="zoek-kaart-regel">${eerste}</div>
@@ -1205,11 +1202,10 @@ function zoekKaartHTML(o) {
 }
 
 function musicianCardHTML(m) {
-  const avatarSrc = safeUrl(m.avatar_url);
   const displayName = displayNameOf(m);
   return zoekKaartHTML({
     klik: `openProfielScherm('${jsAttr(m.id)}')`,
-    foto: avatarSrc ? `<img ${kleinFotoAttr(avatarSrc)} alt="${escHtml(displayName)}">` : '',
+    foto: fotoHTML(m.avatar_url, displayName),
     naam: displayName,
     eerste: eersteGekozen((m.musician_instruments || []).map(x => x.instrument)),
     plaats: m.city || '',
@@ -1238,12 +1234,11 @@ function instrumentInZin(naam) {
 // zoeker waarom de band in het resultaat staat (Laag 3.1, besluit Ronald
 // 25-10-2026). Geen berichtknop (zie MESSAGE_ICON_SVG).
 function bandRowHTML(b) {
-  const foto = safeUrl(b.avatar_url);
   const gezocht = (b.band_wanted || []).map(w => w.instrument);
   const zoekt = gezocht.length ? eersteGekozen(gezocht) : '';
   return zoekRijHTML({
     klik: `openBandScherm('${jsAttr(b.id)}')`,
-    foto: foto ? `<img ${kleinFotoAttr(foto)} alt="${escHtml(b.name)}">` : AVATAR_T_FALLBACK,
+    foto: fotoHTML(b.avatar_url, b.name) || ZONDER_FOTO_HTML,
     vierkant: true,
     naam: b.name || '',
     eerste: eersteGekozen(b.genres || []),
@@ -1257,12 +1252,11 @@ function bandRowHTML(b) {
 // aan een band gaat via de bandpagina naar de contactpersoon. Rechtsonder op de
 // foto "Zoekt <instrument>", hetzelfde instrument als in de rij (TT-520).
 function bandCardHTML(b) {
-  const foto = safeUrl(b.avatar_url);
   const gezocht = (b.band_wanted || []).map(w => w.instrument);
   const zoekt = gezocht.length ? eersteGekozen(gezocht) : '';
   return zoekKaartHTML({
     klik: `openBandScherm('${jsAttr(b.id)}')`,
-    foto: foto ? `<img ${kleinFotoAttr(foto)} alt="${escHtml(b.name)}">` : '',
+    foto: fotoHTML(b.avatar_url, b.name),
     band: true,
     naam: b.name || '',
     eerste: eersteGekozen(b.genres || []),
@@ -1695,8 +1689,8 @@ function renderSetlistResults(musicians, opts) {
       : 'Niemand in de Tent (binnen je zoekgebied) heeft (nog) een match met deze setlist.';
     el.innerHTML = `
       <div class="no-results">
-        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen muzikanten gevonden</p>
-        <p style="font-size:13px;">${uitleg}</p>
+        <p style="font-size:15px;font-weight:600;margin-bottom:8px;">Geen muzikanten gevonden</p>
+        <p style="font-size:12px;">${uitleg}</p>
       </div>`;
     return;
   }
@@ -1727,12 +1721,11 @@ function mmTellingHTML(n, van) {
 // berichtknop (Laag 3.2.b.4). Een tik opent het profiel. Het instrument: het
 // gekozen filter als hij dat speelt, anders zijn eerste.
 function musicianSetlistRowHTML(m) {
-  const avatarSrc = safeUrl(m.avatar_url);
   const displayName = displayNameOf(m);
   const instr = (m.musician_instruments || []).map(x => x.instrument);
   return zoekRijHTML({
     klik: `openProfielScherm('${jsAttr(m.id)}')`,
-    foto: avatarSrc ? `<img ${kleinFotoAttr(avatarSrc)} alt="${escHtml(displayName)}">` : AVATAR_T_FALLBACK,
+    foto: fotoHTML(m.avatar_url, displayName) || ZONDER_FOTO_HTML,
     naam: displayName,
     eerste: instr.find(v => filterSetlistInstruments.includes(v)) || instr[0] || '',
     plaats: m.city || '',
@@ -2006,10 +1999,9 @@ function renderGedeeldGekozen() {
   const teller = document.getElementById('gedeeldTeller');
   list.hidden = !gedeeldGekozen.length;
   list.innerHTML = gedeeldGekozen.map((g, i) => {
-    const foto = safeUrl(g.foto);
     return zoekRijHTML({
       klik: `openProfielScherm('${jsAttr(g.id)}')`,
-      foto: foto ? `<img ${kleinFotoAttr(foto)} alt="${escHtml(g.naam)}">` : AVATAR_T_FALLBACK,
+      foto: fotoHTML(g.foto, g.naam) || ZONDER_FOTO_HTML,
       naam: g.naam,
       eerste: g.instrument,
       plaats: g.city,
@@ -2094,8 +2086,8 @@ function renderGedeeldResults() {
   if (!totaal) {
     el.innerHTML = `
       <div class="no-results">
-        <p style="font-size:16px;font-weight:600;margin-bottom:8px;">Geen gedeelde nummers</p>
-        <p style="font-size:13px;">Geen van deze nummers staat bij minstens 2 van deze muzikanten in het repertoire.</p>
+        <p style="font-size:15px;font-weight:600;margin-bottom:8px;">Geen gedeelde nummers</p>
+        <p style="font-size:12px;">Geen van deze nummers staat bij minstens 2 van deze muzikanten in het repertoire.</p>
       </div>`;
     return;
   }
@@ -2136,10 +2128,9 @@ function gedeeldRijHTML(n, i) {
   const spelers = gedeeldSpelersVolgorde(n).map(g => {
     const speelt = Object.prototype.hasOwnProperty.call(n.spelers, g.id);
     const lvl = speelt ? n.spelers[g.id] : '';
-    const foto = safeUrl(g.foto);
     return `
       <div class="gedeeld-speler${speelt ? '' : ' niet'}">
-        <span class="gedeeld-speler-foto">${foto ? `<img ${kleinFotoAttr(foto)} alt="">` : AVATAR_T_FALLBACK}</span>
+        <span class="gedeeld-speler-foto">${fotoHTML(g.foto, '') || ZONDER_FOTO_HTML}</span>
         <button type="button" class="gedeeld-speler-naam" onclick="openProfielScherm('${jsAttr(g.id)}')">${escHtml(g.naam)}</button>
         ${speelt
           ? (lvl ? `<span class="level-pill">${escHtml(LEVEL_LABELS[lvl])}</span>` : '')

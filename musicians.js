@@ -12,12 +12,8 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
   // de gebruiker koos (displayNameOf() leest weergavenaam).
   const displayName = displayNameOf(m);
   const avatarSrc = safeUrl(m.avatar_url);
-  // TT-217 (06-09-2026): klik op de profielfoto vergroot 'm, zelfde bestaande
-  // lightbox als bij de foto's onder "Foto's" (openMediaLightbox()) — geen
-  // nieuwe component, hergebruik van het bestaande patroon.
-  const avatarHTML = avatarSrc
-    ? `<img class="profile-avatar-photo" ${kleinFotoAttr(avatarSrc)} alt="${escHtml(displayName)}" style="margin-bottom:0;flex-shrink:0;cursor:pointer;" onclick="openMediaLightbox('${jsAttr(avatarSrc)}')">`
-    : `<div class="profile-avatar-initials" style="margin-bottom:0;flex-shrink:0;">${AVATAR_T_FALLBACK}</div>`;
+  // TT-217 (06-09-2026): klik op de profielfoto vergroot 'm (openMediaLightbox()).
+  // TT-517 fase 4: de foto staat groot in de hoes (profielHoesHTML() in utils.js).
 
   const songRows = [...m.musician_songs].sort((a, b) =>
     compareArtistTitle(a.song_artist, a.song_title, b.song_artist, b.song_title)
@@ -64,26 +60,21 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       </div>
     </div>` : '';
 
-  // TT-384 (30-09-2026, besluiten Ronald): de kop staat onder elkaar. Eerst
-  // een rij met links de profielfoto en rechts het deelicoon en het ⋯-menu;
-  // daaronder de naam en de regels, over de volle breedte. Staat er een
-  // banner, dan valt de foto voor de helft over de onderrand daarvan
-  // (.profiel-kop.op-banner). Zonder banner blijft dezelfde opbouw staan,
-  // alleen zonder overlap. Het bandvenster volgt in een eigen sessie.
-  const bannerHTML = profielBannerHTML(m.musician_media);
+  // TT-517 fase 4 (01-11-2026): de kop is de hoes (huisstijl §21). Foto,
+  // banner, naam, de regel eronder, delen en ⋯ staan erin. Vervangt de ronde
+  // profielfoto naast de knoppen (TT-384) en de bannerbalk (TT-265).
   return `
-    ${bannerHTML}
-    <div class="profiel-kop${bannerHTML ? ' op-banner' : ''}">
-      <div class="profiel-kop-rij">
-        ${avatarHTML}
-        ${profielKnoppenHTML('profiel', m.id, displayName, ownerMenuHTML + veiligheidPlekHTML, null, isOwn || m.delen_aan !== false)}
-      </div>
-      <div class="profile-name">${escHtml(displayName)}</div>
-      <div class="profiel-regels">
-        <!-- TT-420 (09-10-2026, Ronald): geen tweede naam op het profiel. Er staat één naam: de gekozen. -->
-        <div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>
-      </div>
-    </div>
+    ${profielHoesHTML({
+      foto: avatarSrc, wazig: wazigBron(m.avatar_url), naam: displayName, media: m.musician_media,
+      // TT-517 fase 6: zonder foto ziet alleen de eigenaar "Voeg een foto toe".
+      fotoToevoegen: isOwn ? 'voegFotoToe()' : null,
+      // TT-517 fase 8: de tekst van het visitekaartje (kaartMaken() in utils.js).
+      kaart: { id: m.id, naam: displayName, regel: `${age} jaar · ${m.city || ''}`,
+               wat: m.musician_instruments.map(x => x.instrument), onder: m.musician_genres.map(x => x.genre) },
+      // TT-420 (09-10-2026, Ronald): geen tweede naam op het profiel. Er staat één naam: de gekozen.
+      regels: `<div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>`,
+      knoppen: profielKnoppenHTML('profiel', m.id, displayName, ownerMenuHTML + veiligheidPlekHTML, null, isOwn || m.delen_aan !== false)
+    })}
     <div class="profile-badges">
       ${m.musician_instruments.map(x => `<span class="tag-solid">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
       ${m.musician_genres.map(x => `<span class="tag-solid">${escHtml(x.genre)}</span>`).join('')}
@@ -96,7 +87,16 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
         <div class="profile-songs-title">Repertoire (${m.musician_songs.length} ${m.musician_songs.length === 1 ? 'nummer' : 'nummers'})</div>
         ${nummerLijstHTML(songRows)}
       </div>` : ''}
-    ${profielMediaHTML(m.musician_media)}`;
+    ${profielMediaHTML(m.musician_media, m.avatar_url)}`;
+}
+
+// TT-517 fase 6 (huisstijl §21, besluit Ronald 31-10-2026): de knop "Voeg een
+// foto toe" in de hoes opent Je mediahoek; voor de beheerder van een band Onze
+// media. Daar kiest de eigenaar zijn foto. Muzikant en band gelijk.
+async function voegFotoToe(bandId) {
+  if (bandId) openBandTegels(bandId);
+  else { if (!(await getMyMusicianId())) return; showView('profieltegels'); }
+  openTegelScreen(bandId ? 'bandMedia' : 'mediahoek');
 }
 
 // TT-385 (02-10-2026): het mediaraster en de links onder een profiel, voor
@@ -106,12 +106,21 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
 // een href voert code uit zodra iemand erop klikt — die laten we hier vallen
 // in plaats van hem als lege link te tonen.
 // TT-45 (25-09-2026): een afgeschermd item heeft geen adres, maar hoort er
-// wél te staan — als de T, zie mediaAfgeschermdHTML() in utils.js.
+// wél te staan. TT-517 fase 7: alle afgeschermde media samen in één wazig vlak
+// (mediaAfgeschermdHTML() in utils.js); `fotoWazig` is de profiel- of bandfoto.
 // TT-02: ook geüploade foto's en video's, niet alleen links.
-function profielMediaHTML(mediaLijst) {
+function profielMediaHTML(mediaLijst, fotoWazig) {
   const lijst = (mediaLijst || [])
     .map(x => ({ ...x, safeHref: safeUrl(x.url) }))
     .filter(x => x.safeHref || x.afgeschermd);
+  // De database schermt een profiel in zijn geheel af: één afgeschermd item is genoeg.
+  if (lijst.some(x => x.afgeschermd)) {
+    return `
+    <div class="profile-media">
+      <div class="profile-media-title">Foto's en video's</div>
+      ${mediaAfgeschermdHTML(lijst, fotoWazig)}
+    </div>`;
+  }
   const links = lijst.filter(x => x.media_type === 'link');
   const photos = lijst.filter(x => x.media_type === 'foto');
   const videos = lijst.filter(x => x.media_type === 'video');
@@ -127,8 +136,8 @@ function profielMediaHTML(mediaLijst) {
       <div class="profile-media">
         <div class="profile-media-title">Foto's en video's</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
-          ${photos.map(p => p.afgeschermd ? mediaAfgeschermdHTML() : `<button type="button" class="profile-media-tegel" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')"><img ${kleinFotoAttr(p.safeHref)} alt="Foto" style="width:100%;height:100%;object-fit:cover;"></button>`).join('')}
-          ${videos.map(v => v.afgeschermd ? mediaAfgeschermdHTML() : `<button type="button" class="profile-media-tegel" onclick="openMediaSpeler('${jsAttr(v.safeHref)}', 'video')"><video ${fotoBronAttr(v.safeHref + '#t=0.1')} muted playsinline preload="metadata" tabindex="-1" aria-hidden="true" style="width:100%;height:100%;object-fit:cover;background:#000;"></video><span class="pb-label">Video</span>${SPEELTEKEN_HTML}</button>`).join('')}
+          ${photos.map(p => `<button type="button" class="profile-media-tegel" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')"><img ${kleinFotoAttr(p.safeHref)} alt="Foto" style="width:100%;height:100%;object-fit:cover;"></button>`).join('')}
+          ${videos.map(v => `<button type="button" class="profile-media-tegel" onclick="openMediaSpeler('${jsAttr(v.safeHref)}', 'video')"><video ${fotoBronAttr(v.safeHref + '#t=0.1')} muted playsinline preload="metadata" tabindex="-1" aria-hidden="true" style="width:100%;height:100%;object-fit:cover;background:#000;"></video><span class="pb-label">Video</span>${SPEELTEKEN_HTML}</button>`).join('')}
         </div>
       </div>` : ''}
     ${links.length ? `
@@ -136,13 +145,11 @@ function profielMediaHTML(mediaLijst) {
         <div class="profile-media-title">Links</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
           ${links.map(l => {
-            if (l.afgeschermd) return mediaAfgeschermdHTML();
             const ytId = extractYouTubeId(l.safeHref);
             const label = l.platform || 'Link';
             const inner = ytId
               ? `<img src="https://img.youtube.com/vi/${jsAttr(ytId)}/hqdefault.jpg" alt="${escHtml(label)}" style="width:100%;height:100%;object-fit:cover;display:block;">` + SPEELTEKEN_HTML
               : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface2);text-align:center;padding:4px;"><span style="font-size:12px;font-weight:700;color:var(--text);">${escHtml(label)}</span></div>`;
-            const tileStyle = 'position:relative;display:block;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--border);padding:0;background:none;';
             // TT-158 (27-08-2026) trok hier een grens bij "ingelogd": alleen
             // dan klikbaar. TT-218 (06-09-2026), op verzoek van Ronald: die
             // grens losgelaten — een link opent nu onder alle omstandigheden,
@@ -151,7 +158,7 @@ function profielMediaHTML(mediaLijst) {
             // browser en daarmee de app uit. Nu opent hij in het mediascherm;
             // kan een platform daar niet spelen, dan biedt dat scherm zelf de
             // knop naar het platform aan.
-            return `<button type="button" onclick="openMediaSpeler('${jsAttr(l.safeHref)}', 'link', null, '${jsAttr(label)}')" style="${tileStyle}cursor:pointer;">${inner}</button>`;
+            return `<button type="button" onclick="openMediaSpeler('${jsAttr(l.safeHref)}', 'link', null, '${jsAttr(label)}')" class="profile-media-tegel">${inner}</button>`;  /* TT-517 fase 2: dezelfde tegel als foto en video (was een gelijke inline stijl), dus ook 12px */
           }).join('')}
         </div>
       </div>` : ''}`;
@@ -194,17 +201,100 @@ async function shareProfile(kind, id, name) {
     text: `Bekijk het ${label} van ${name} op The Talent Tent.`,
     url
   };
-  if (navigator.share) {
+  // TT-517 fase 8 (huisstijl §22): het visitekaartje gaat mee. Neemt het
+  // deelmenu een beeld aan (telefoon), dan de kaart en de link samen. Zo niet
+  // (meestal een computer), dan de link naar het klembord en de kaart bij de
+  // downloads. Lukt de kaart niet, dan gaat alleen de link, zoals eerder.
+  const kanBeeld = !!(navigator.share && navigator.canShare &&
+    navigator.canShare({ files: [new File([''], 'kaart.jpg', { type: 'image/jpeg' })] }));
+  if (kanBeeld) {
+    const kaart = await kaartVoorDelen(kind, id);
+    if (kaart) {
+      try { await navigator.share({ ...shareData, files: [kaart] }); return; } catch (e) {
+        if (e && e.name === 'AbortError') return; // eigen annulering, geen foutmelding nodig
+        logCaught('shareProfile kaart', e);
+      }
+    }
+  }
+  if (navigator.share && (kanBeeld || !navigator.clipboard)) {
     try { await navigator.share(shareData); } catch (e) { /* eigen annulering, geen foutmelding nodig */ }
     return;
   }
   try {
     await navigator.clipboard.writeText(url);
-    showToast('Link gekopieerd naar klembord');
   } catch (e) {
     logCaught('shareProfile', e);
     showToast('Kopiëren lukt niet op dit apparaat. Kopieer de link zelf: ' + url);
+    return;
   }
+  const kaart = await kaartVoorDelen(kind, id);
+  if (kaart) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(kaart);
+    a.download = kaart.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  }
+  showToast(kaart ? 'Link gekopieerd. Je kaart staat bij je downloads.' : 'Link gekopieerd naar klembord');
+}
+
+// TT-517 fase 8: de kaart als bestand, of null. Het beeld is wat een bezoeker
+// zonder account ziet: de app vraagt het op zonder inlogbewijs, met de
+// openbare functie van de database (dezelfde regel als TT-45: de database
+// beslist wat afgeschermd is). De tekst komt van de hoes op het scherm
+// (data-kaart). Duurt het langer dan 3 seconden, dan geen kaart: het deelmenu
+// mag niet lang op zich laten wachten.
+async function kaartVoorDelen(kind, id) {
+  const hoes = [...document.querySelectorAll('.hoes[data-kaart]')]
+    .find(h => { try { return JSON.parse(h.dataset.kaart).id === id; } catch (e) { return false; } });
+  if (!hoes) return null;
+  const maken = (async () => {
+    const g = JSON.parse(hoes.dataset.kaart);
+    const src = await kaartBeeldOphalen(kind, id);
+    const beeld = await kaartBeeldLaden(src);
+    const c = await kaartMaken(g, beeld);
+    const blob = await new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.9));
+    if (!blob) return null;
+    const naam = String(g.naam).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'kaart';
+    return new File([blob], `talenttent-${naam}.jpg`, { type: 'image/jpeg' });
+  })().catch(e => { logCaught('kaartVoorDelen', e); return null; });
+  return Promise.race([maken, new Promise(ok => setTimeout(() => ok(null), 3000))]);
+}
+
+// De profielfoto of bandfoto zoals een bezoeker zonder account hem krijgt: de
+// foto, de wazige versie ('data:…' of 'afgeschermd'), of null (geen foto).
+// Alleen de sleutel van de app gaat mee, geen inlogbewijs.
+async function kaartBeeldOphalen(kind, id) {
+  const fn = kind === 'band' ? 'tt_get_bands_public' : 'tt_get_musicians_public';
+  const r = await ttFetchMetHerhaling(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: [id] })
+  });
+  if (!r.ok) throw new Error(`${fn}: ${r.status}`);
+  const rij = (await r.json())[0];
+  if (!rij) throw new Error(`${fn}: geen rij`);
+  return rij.avatar_url || null;
+}
+
+// Het beeld laden zodat het canvas het mag lezen: { img, wazig } of null.
+// Met load en error, niet met decode(): decode() wacht op het tekenen van de
+// pagina en komt in een browser die niet tekent nooit terug (gemeten
+// 01-11-2026: in het browservenster van Claude 0 van 2 kaarten met foto).
+async function kaartBeeldLaden(src) {
+  if (!src) return null;
+  const img = new Image();
+  const geladen = new Promise((ok, nee) => { img.onload = ok; img.onerror = () => nee(new Error('beeld laadt niet')); });
+  const w = wazigBron(src);
+  if (w) img.src = w;
+  else {
+    // Een webadres, geen HTML: daarom niet door safeUrl() (die zet & om).
+    if (!/^https:\/\//i.test(String(src))) return null;
+    img.crossOrigin = 'anonymous';
+    await fotoBronZetten(img, String(src));
+  }
+  await geladen;
+  return { img, wazig: !!w };
 }
 
 // TT-380 (30-09-2026, besluiten Ronald): delen is een icoon bij de naam, op
@@ -339,7 +429,7 @@ async function laadProfielScherm(id, linkToegang) {
       musician_instruments(instrument, niveau),
       musician_genres(genre),
       musician_songs(song_title, song_artist, mastery_level),
-      musician_media(media_type, url, platform, in_banner)
+      musician_media(media_type, url, platform, in_banner, created_at, uitsnede)
     `).eq('id', id).single();
     m = res.data; error = res.error;
     if (m) {
@@ -398,10 +488,10 @@ async function laadProfielScherm(id, linkToegang) {
 
   content.innerHTML = buildMusicianDetailHTML(m, isOwn, true);
   overneemKnoppenBijwerken(content); // TT-528: vinkje bij wat al in je repertoire staat
-  // TT-265: de bannerbalk kan pas gaan schuiven als hij in de pagina staat —
-  // een verborgen element heeft geen breedte, dus een gezette scrollpositie
-  // komt niet aan (zelfde valkuil als bij het wiel, huisstijl §7.1).
-  profielBannerStarten(content);
+  // TT-517 fase 4: de hoes pas starten als hij in de pagina staat — een
+  // verborgen element heeft geen breedte (zelfde valkuil als bij het wiel,
+  // huisstijl §7.1).
+  hoesStarten(content);
   mediaTitelsBijwerken(content);
   // TT-249: de naam kan pas passend gemaakt worden als hij in de pagina staat
   // — een element dat er nog niet is, heeft geen breedte om tegen te meten.
@@ -447,9 +537,9 @@ function updateDelenToggleBtn() {
 async function zetProfielDelen(aan) {
   if (!myMusicianId) return false;
   try {
-    const { error } = await db.from('musicians')
+    const { error } = rijenGeraakt(await db.from('musicians')
       .update({ delen_aan: aan })
-      .eq('id', myMusicianId);
+      .eq('id', myMusicianId).select('id'));
     if (error) throw error;
     myDeelAan = aan;
     updateDelenToggleBtn();
@@ -488,7 +578,7 @@ async function openDeleteAccountModal() {
   if (!mid) { showToast('Je hebt geen profiel om te verwijderen.'); return; }
 
   const area = document.getElementById('deleteAccountBandsArea');
-  area.innerHTML = '<div style="color:var(--muted);font-size:13px;">Bezig met controleren...</div>';
+  area.innerHTML = '<div style="color:var(--muted);font-size:12px;">Bezig met controleren...</div>';
   document.getElementById('deleteAccountConfirmBtn').disabled = false;
   document.getElementById('deleteAccountConfirmBtn').textContent = 'Account verwijderen';
   document.getElementById('deleteAccountModal').classList.add('visible');
@@ -513,7 +603,7 @@ async function openDeleteAccountModal() {
     pendingSoloBandIds = soloBandIds;
 
     area.innerHTML = !decisions.length ? '' : `
-      <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Je bent beheerder van ${decisions.length === 1 ? 'een band' : `${decisions.length} bands`} met andere leden. Kies per band wat er gebeurt:</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Je bent beheerder van ${decisions.length === 1 ? 'een band' : `${decisions.length} bands`} met andere leden. Kies per band wat er gebeurt:</div>
       ${decisions.map(b => `
         <div class="delete-account-band-row" data-band-id="${jsAttr(b.id)}" style="margin:8px 0;padding:12px;border:1px solid var(--border);border-radius:8px;">
           <div style="font-weight:700;margin-bottom:8px;">${escHtml(b.name)}</div>
@@ -524,7 +614,7 @@ async function openDeleteAccountModal() {
         </div>`).join('')}`;
   } catch (e) {
     logCaught('openDeleteAccountModal', e);
-    area.innerHTML = `<div style="color:var(--danger);font-size:13px;">${escHtml(friendlyErrorMessage(e, 'je bands laden'))}</div>`;
+    area.innerHTML = `<div style="color:var(--danger);font-size:12px;">${escHtml(friendlyErrorMessage(e, 'je bands laden'))}</div>`;
   }
 }
 
@@ -1009,7 +1099,7 @@ async function saveWieBenJe() {
     bio: document.getElementById('wbjBio').value.trim() || null,
     naam_tonen: wbjNaamTonen,
   };
-  const { error } = await db.from('musicians').update(payload).eq('id', myMusicianId);
+  const { error } = rijenGeraakt(await db.from('musicians').update(payload).eq('id', myMusicianId).select('id'));
   if (error) {
     showToast(friendlyErrorMessage(error, 'je gegevens opslaan'));
     return;
@@ -1086,8 +1176,8 @@ async function saveWatSpeelJe() {
 
   if (wspFieldSnapshot() === wspSnapshot) return;
 
-  const { error: uErr } = await db.from('musicians')
-    .update({ repertoire_type: wspRepertoireType || null }).eq('id', myMusicianId);
+  const { error: uErr } = rijenGeraakt(await db.from('musicians')
+    .update({ repertoire_type: wspRepertoireType || null }).eq('id', myMusicianId).select('id'));
   if (uErr) { showToast(friendlyErrorMessage(uErr, 'je gegevens opslaan')); return; }
 
   // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
@@ -1167,11 +1257,11 @@ function wzjSelectMusicalAmbition(el, val) {
 async function saveWatZoekJe() {
   if (wzjFieldSnapshot() === wzjSnapshot) return;
 
-  const { error } = await db.from('musicians').update({
+  const { error } = rijenGeraakt(await db.from('musicians').update({
     goal: wzjGoal || null,
     rehearsal_frequency: wzjRehearsalFrequency || null,
     musical_ambition: wzjMusicalAmbition || null,
-  }).eq('id', myMusicianId);
+  }).eq('id', myMusicianId).select('id'));
   if (error) { showToast(friendlyErrorMessage(error, 'je gegevens opslaan')); return; }
 
   wzjSnapshot = wzjFieldSnapshot();
@@ -1434,7 +1524,7 @@ function mhRenderTip() {
 function mhFieldSnapshot() {
   return JSON.stringify({
     avatarUrl: mhAvatarUrl,
-    mediaFiles: mhMediaFiles.map(m => ({ url: m.url, type: m.type, uploading: m.uploading, inBanner: !!m.inBanner })),
+    mediaFiles: mhMediaFiles.map(m => ({ url: m.url, type: m.type, uploading: m.uploading, inBanner: !!m.inBanner, uitsnede: m.uitsnede || null })),
     mediaLinks: mhMediaLinks,
   });
 }
@@ -1442,16 +1532,18 @@ function mhFieldSnapshot() {
 async function openJeMediahoek() {
   mhStartTipCycle();
   const { data, error } = await db.from('musicians')
-    .select('avatar_url, musician_media(media_type, url, platform, in_banner)')
+    .select('avatar_url, musician_media(media_type, url, platform, in_banner, created_at, uitsnede)')
     .eq('id', myMusicianId).single();
   if (error) {
     showToast(friendlyErrorMessage(error, 'je gegevens laden'));
     return;
   }
   mhAvatarUrl = data.avatar_url || null;
+  // TT-517 fase 4: op volgorde van toevoegen, zoals in de hoes en bij een band.
+  data.musician_media = opVolgordeVanToevoegen(data.musician_media);
   mhMediaFiles = (data.musician_media || [])
     .filter(x => x.media_type === 'foto' || x.media_type === 'video')
-    .map(x => ({ name: '', url: x.url, path: null, type: x.media_type, uploading: false, inBanner: !!x.in_banner }));
+    .map(x => ({ name: '', url: x.url, path: null, type: x.media_type, uploading: false, inBanner: !!x.in_banner, uitsnede: x.uitsnede || null }));
   mhMediaLinks = (data.musician_media || []).filter(x => x.media_type === 'link')
     .map(x => ({ url: x.url, inBanner: !!x.in_banner }));
 
@@ -1478,7 +1570,7 @@ function mhRenderAvatar() {
     preview.innerHTML = `<img ${kleinFotoAttr(safeUrl(mhAvatarUrl))} alt="profielfoto">`;
     document.getElementById('mhAvatarRemoveBtn').classList.add('visible');
   } else {
-    preview.innerHTML = `<span id="mhAvatarInitials" class="avatar-t">T</span>`;
+    preview.innerHTML = ''; // TT-517 fase 6: de schijnwerper met silhouet (styles.css)
     document.getElementById('mhAvatarRemoveBtn').classList.remove('visible');
   }
 }
@@ -1563,12 +1655,7 @@ function mhRenderMediaGrid() {
 // TT-263: dezelfde keuze als in de wizard, met dezelfde grens over foto's,
 // video's en links samen.
 function mhToggleMediaBanner(i) {
-  const m = mhMediaFiles[i];
-  if (!m) return;
-  if (!bannerKeuzeMag(bannerAantal(mhMediaFiles, mhMediaLinks), !m.inBanner)) return;
-  m.inBanner = !m.inBanner;
-  bannerKnopStandZetten('mhMediaGrid', i, m.inBanner);
-  bannerTellerBijwerken('mhBannerTeller', mhMediaFiles, mhMediaLinks);
+  return bannerTekenTik(mhMediaFiles[i], mhMediaFiles, mhMediaLinks, 'mhMediaGrid', 'mhBannerTeller');
 }
 
 function mhSpeelMedia(i) {
@@ -1630,8 +1717,8 @@ function mhRemoveLink(i) {
 async function saveJeMediahoek() {
   if (mhFieldSnapshot() === mhSnapshot) return;
 
-  const { error: uErr } = await db.from('musicians')
-    .update({ avatar_url: mhAvatarUrl || null }).eq('id', myMusicianId);
+  const { error: uErr } = rijenGeraakt(await db.from('musicians')
+    .update({ avatar_url: mhAvatarUrl || null, ...wazigVeld(mhAvatarUrl) }).eq('id', myMusicianId).select('id'));
   if (uErr) { showToast(friendlyErrorMessage(uErr, 'je gegevens opslaan')); return; }
   opslagOpruimen('avatars', currentUser && currentUser.id, [mhAvatarUrl]);
 
@@ -1641,7 +1728,7 @@ async function saveJeMediahoek() {
     .map(l => ({ media_type: 'link', url: l.url, platform: detectPlatform(l.url), in_banner: !!l.inBanner }));
   const fileMedia = mhMediaFiles
     .filter(m => m.url && !m.uploading && !m.url.startsWith('blob:'))
-    .map(m => ({ media_type: m.type, url: m.url, in_banner: !!m.inBanner }));
+    .map(m => ({ media_type: m.type, url: m.url, in_banner: !!m.inBanner, uitsnede: bannerKader(m), wazig: wazigVoor(m.url) }));
   const { error: kErr } = await db.rpc('tt_save_musician_koppelingen', {
     p_musician_id: myMusicianId,
     p_media: linkMedia.concat(fileMedia),
@@ -1694,7 +1781,7 @@ function openMusicianNiveauInfoModal() {
   const rowsHTML = NIVEAU_INFO_MUSICIAN_ROWS.map(r => `<tr>${r.map((c, i) => `<td>${escHtml(i === 0 ? stripParenthetical(c) : c)}</td>`).join('')}</tr>`).join('');
   document.getElementById('niveauInfoModalContent').innerHTML = `
     <div class="filter-title" style="margin-bottom:4px;">Niveau-indeling per instrument</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies per instrument het niveau waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Kies per instrument het niveau waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
     <div class="niveau-info-wrap">
       <table class="niveau-info-table">
         <thead><tr>${NIVEAU_INFO_MUSICIAN_HEADERS.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead>
@@ -1702,10 +1789,10 @@ function openMusicianNiveauInfoModal() {
       </table>
     </div>
     <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Belangrijk: gebruik dit systeem als jouw kompas</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Geen enkele muzikant past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Niveau 4), maar nog nooit op een podium hebben gestaan (Niveau 1).</p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Zie deze niveaubeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Geen enkele muzikant past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Niveau 4), maar nog nooit op een podium hebben gestaan (Niveau 1).</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Zie deze niveaubeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
     <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Hoe kies je jouw niveau?</div>
-    <p style="font-size:13px;color:var(--muted);">Loop de criteria per niveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg het niveau waar jij het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
+    <p style="font-size:12px;color:var(--muted);">Loop de criteria per niveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg het niveau waar jij het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
   `;
   document.getElementById('niveauInfoModal').classList.add('visible');
 }

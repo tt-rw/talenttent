@@ -41,9 +41,9 @@ async function respondToBandInvite(bandId, accept) {
   const mid = await getMyMusicianId();
   if (!mid) return;
   try {
-    const { error } = await db.from('band_members')
+    const { error } = rijenGeraakt(await db.from('band_members')
       .update({ status: accept ? 'bevestigd' : 'geweigerd' })
-      .eq('band_id', bandId).eq('musician_id', mid);
+      .eq('band_id', bandId).eq('musician_id', mid).select('band_id'));
     if (error) throw error;
     showToast(accept ? 'Je staat nu als lid op het bandprofiel.' : 'Uitnodiging geweigerd.');
     loadBandInvites(mid);
@@ -100,7 +100,7 @@ async function respondToFounderOffer(bandId, accept) {
     } else {
       // TT-230: het resultaat werd hier niet gelezen. Mislukte de schrijfactie,
       // dan zag de gebruiker toch "Aanbod geweigerd" en bleef het aanbod staan.
-      const { error } = await db.from('band_members').update({ founder_offer: false, founder_offer_at: null }).eq('band_id', bandId).eq('musician_id', mid);
+      const { error } = rijenGeraakt(await db.from('band_members').update({ founder_offer: false, founder_offer_at: null }).eq('band_id', bandId).eq('musician_id', mid).select('band_id'));
       if (error) throw error;
       showToast('Aanbod geweigerd.');
     }
@@ -153,7 +153,7 @@ async function sendFounderOffer(bandId, memberId) {
   try {
     // 22-08-2026 (Ronald): een verzoek trekt zichzelf na 7 dagen in
     // — founder_offer_at is het moment waarop die klok gaat lopen.
-    const { error } = await db.from('band_members').update({ founder_offer: true, founder_offer_at: new Date().toISOString() }).eq('band_id', bandId).eq('musician_id', memberId);
+    const { error } = rijenGeraakt(await db.from('band_members').update({ founder_offer: true, founder_offer_at: new Date().toISOString() }).eq('band_id', bandId).eq('musician_id', memberId).select('band_id'));
     if (error) throw error;
     showToast('Gevraagd. Je ziet het hier zodra die reageert.');
     loadMyBands();
@@ -169,7 +169,7 @@ async function sendFounderOffer(bandId, memberId) {
 
 async function withdrawFounderOffer(bandId) {
   try {
-    const { error } = await db.from('band_members').update({ founder_offer: false, founder_offer_at: null }).eq('band_id', bandId);
+    const { error } = rijenGeraakt(await db.from('band_members').update({ founder_offer: false, founder_offer_at: null }).eq('band_id', bandId).select('band_id'));
     if (error) throw error;
     showToast('Aanbod ingetrokken.');
     loadMyBands();
@@ -258,7 +258,7 @@ function removeMember(bandId, musicianId, memberName, bandName) {
 
 async function executeRemoveMember(bandId, musicianId, memberName) {
   try {
-    const { error } = await db.from('band_members').delete().eq('band_id', bandId).eq('musician_id', musicianId);
+    const { error } = rijenGeraakt(await db.from('band_members').delete().eq('band_id', bandId).eq('musician_id', musicianId).select('band_id'));
     if (error) throw error;
     showToast(`${memberName} is uit de band.`);
     loadMyBands();
@@ -415,7 +415,7 @@ function openAddMemberModal(bandId, bandName) {
   if (cityEl) cityEl.value = '';
   const cityStatusEl = document.getElementById('memberSearchCityStatus');
   if (cityStatusEl) cityStatusEl.textContent = '';
-  document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens, kies een instrument, of vul een plaats in, om te zoeken.</p>';
+  document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:12px;">Typ minimaal 2 tekens, kies een instrument, of vul een plaats in, om te zoeken.</p>';
   document.getElementById('addMemberModal').classList.add('visible');
   setTimeout(() => document.getElementById('memberSearchInput')?.focus(), 50);
 }
@@ -438,10 +438,10 @@ function searchMembersToAdd(query) {
   // instrument gekozen is — dat was precies de klacht ("je moet al weten
   // wie je zoekt"). TT-163: of zolang er een plaats getypt is.
   if (!instrument && !cityTyped && (q.length < 2 || qSafe.length < 2)) {
-    resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Typ minimaal 2 tekens, kies een instrument, of vul een plaats in, om te zoeken.</p>';
+    resEl.innerHTML = '<p style="color:var(--muted);font-size:12px;">Typ minimaal 2 tekens, kies een instrument, of vul een plaats in, om te zoeken.</p>';
     return;
   }
-  resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Zoeken...</p>';
+  resEl.innerHTML = '<p style="color:var(--muted);font-size:12px;">Zoeken...</p>';
   memberSearchTimer = setTimeout(async () => {
     try {
       const { data: existing } = await db.from('band_members').select('musician_id').eq('band_id', addMemberBandId);
@@ -478,7 +478,7 @@ function searchMembersToAdd(query) {
 
       let filtered = (musicians||[]).filter(m => !existingIds.includes(m.id));
       if (!filtered.length) {
-        resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Geen (nieuwe) muzikanten gevonden.</p>';
+        resEl.innerHTML = '<p style="color:var(--muted);font-size:12px;">Geen (nieuwe) muzikanten gevonden.</p>';
         return;
       }
 
@@ -525,7 +525,7 @@ function searchMembersToAdd(query) {
       }
 
       if (!filtered.length) {
-        resEl.innerHTML = '<p style="color:var(--muted);font-size:13px;">Geen (nieuwe) muzikanten binnen deze straal gevonden.</p>';
+        resEl.innerHTML = '<p style="color:var(--muted);font-size:12px;">Geen (nieuwe) muzikanten binnen deze straal gevonden.</p>';
         return;
       }
       resEl.innerHTML = filtered.map(m => {
@@ -542,16 +542,16 @@ function searchMembersToAdd(query) {
           : `<button class="btn btn-ghost" onclick="openInviteNote(this, '${jsAttr(m.id)}', '${jsAttr(memberName)}')">Uitnodigen</button>`;
         return `
         <div class="member-search-row lijst-rij" style="display:flex;align-items:center;gap:12px;padding:8px 0;">
-          <div style="width:32px;height:32px;border-radius:50%;background:var(--merk);color:var(--merk-tekst);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${escHtml(memberName[0].toUpperCase())}</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--merk);color:var(--merk-tekst);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">${escHtml(memberName[0].toUpperCase())}</div>
           <div style="flex:1;">
-            <div style="font-weight:600;font-size:14px;">${escHtml(memberName)}</div>
+            <div style="font-weight:600;font-size:12px;">${escHtml(memberName)}</div>
             <div style="font-size:12px;color:var(--muted);">${escHtml(m.city||'')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}${(m.musician_instruments||[]).length ? ' · ' + escHtml(m.musician_instruments.map(x=>x.instrument).slice(0,2).join(', ')) : ''}</div>
           </div>
           <span class="member-invite-action">${inviteAction}</span>
         </div>`; }).join('');
     } catch (e) {
       logCaught('searchMembersToAdd', e);
-      resEl.innerHTML = `<p style="color:var(--danger);font-size:13px;">${friendlyErrorMessage(e, 'leden zoeken')}</p>`;
+      resEl.innerHTML = `<p style="color:var(--danger);font-size:12px;">${friendlyErrorMessage(e, 'leden zoeken')}</p>`;
     }
   }, 300);
 }
@@ -567,8 +567,8 @@ function openInviteNote(btnEl, musicianId, memberName) {
   if (!row) return;
   row.innerHTML = `
     <div style="width:100%;">
-      <div style="font-size:13px;margin-bottom:8px;">Uitnodiging aan <strong>${escHtml(memberName)}</strong> — voeg eventueel een korte boodschap toe:</div>
-      <textarea class="invite-note-input" maxlength="300" placeholder="Bijv. we zoeken een bassist voor onze covers, jouw profiel past goed bij ons!" style="width:100%;min-height:60px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Roboto',sans-serif;font-size:14px;"></textarea>
+      <div style="font-size:12px;margin-bottom:8px;">Uitnodiging aan <strong>${escHtml(memberName)}</strong> — voeg eventueel een korte boodschap toe:</div>
+      <textarea class="invite-note-input" maxlength="300" placeholder="Bijv. we zoeken een bassist voor onze covers, jouw profiel past goed bij ons!" style="width:100%;min-height:96px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Inter',sans-serif;font-size:16px;"></textarea>
       <div class="btn-row" style="margin-top:8px;">
         <button class="btn btn-ghost" onclick="searchMembersToAdd(document.getElementById('memberSearchInput').value)">Annuleren</button>
         <button class="btn btn-primary" onclick="sendInviteWithNote(this, '${jsAttr(musicianId)}')">Uitnodiging versturen</button>
@@ -687,7 +687,7 @@ function openBandNiveauInfoModal() {
   const rowsHTML = NIVEAU_INFO_BAND_ROWS.map(r => `<tr>${r.map((c, i) => `<td>${escHtml(i === 0 ? stripParenthetical(c) : c)}</td>`).join('')}</tr>`).join('');
   document.getElementById('niveauInfoModalContent').innerHTML = `
     <div class="filter-title" style="margin-bottom:4px;">Ervaringsindeling voor bands</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Kies de ervaring waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Kies de ervaring waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
     <div class="niveau-info-wrap">
       <table class="niveau-info-table">
         <thead><tr>${NIVEAU_INFO_BAND_HEADERS.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead>
@@ -695,10 +695,10 @@ function openBandNiveauInfoModal() {
       </table>
     </div>
     <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Belangrijk: gebruik dit systeem als jouw kompas</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">Geen enkele muzikant of band past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Ervaring 4), maar nog nooit op een podium hebben gestaan (Ervaring 1). Of je band speelt superstrak samen (Ervaring 3), maar jullie hebben je zakelijke randzaken nog niet op orde (Ervaring 2).</p>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Zie deze ervaringsbeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Geen enkele muzikant of band past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Ervaring 4), maar nog nooit op een podium hebben gestaan (Ervaring 1). Of je band speelt superstrak samen (Ervaring 3), maar jullie hebben je zakelijke randzaken nog niet op orde (Ervaring 2).</p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Zie deze ervaringsbeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
     <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Hoe kies je jullie ervaring?</div>
-    <p style="font-size:13px;color:var(--muted);">Loop de criteria per ervaringsniveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg de ervaring waar jij of je band het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
+    <p style="font-size:12px;color:var(--muted);">Loop de criteria per ervaringsniveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg de ervaring waar jij of je band het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
   `;
   document.getElementById('niveauInfoModal').classList.add('visible');
 }
@@ -867,7 +867,7 @@ async function loadMyBands(opties) {
     const verzoekVoorMij = !isFounder && confirmed.some(m => m.musician_id === mid && m.founder_offer);
     return `<div class="band-card" onclick="openBandScherm('${jsAttr(b.id)}')">
       <div class="band-card-header">
-        ${b.avatar_url ? `<img ${kleinFotoAttr(safeUrl(b.avatar_url))} alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar">${AVATAR_T_FALLBACK}</div>`}
+        ${b.avatar_url ? `<img ${kleinFotoAttr(safeUrl(b.avatar_url))} alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar">${ZONDER_FOTO_HTML}</div>`}
         <div style="flex:1;">
           <div class="band-name">${escHtml(b.name)}</div>
           <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
@@ -945,7 +945,7 @@ function vandaagISO() {
 // later op.
 async function bandUitTabellen(id) {
   const { data: b, error } = await db.from('bands')
-    .select(`*, band_members(role, status, joined_at, musicians(id, weergavenaam, username, avatar_url, musician_instruments(instrument))), band_wanted(instrument), band_media(media_type, url, platform, in_banner, created_at), band_nummers(titel, url, platform, created_at), band_covers(song_title, song_artist), band_invallers(instrument, datum)`)
+    .select(`*, band_members(role, status, joined_at, musicians(id, weergavenaam, username, avatar_url, musician_instruments(instrument))), band_wanted(instrument), band_media(media_type, url, platform, in_banner, created_at, uitsnede), band_nummers(titel, url, platform, created_at), band_covers(song_title, song_artist), band_invallers(instrument, datum)`)
     .eq('id', id).maybeSingle(); // TT-464: een band die niet (meer) bestaat is geen fout
   if (error) throw error;
   if (!b) return null;
@@ -1008,7 +1008,8 @@ function invallerDatum(datum) {
 
 // Eén lid in de bezetting: dezelfde rij als in Onze bezetting en op het
 // muzikantprofiel (`.bb-rij`, foto links, tekst rechts). Zonder foto (of
-// afgeschermd) de T, zoals de lege profielfoto (huisstijl §18.7).
+// afgeschermd) de schijnwerper, zoals elke lege profielfoto (huisstijl §21;
+// afgeschermd wordt wazig in fase 7 van TT-517, §18.7).
 function bezettingLidHTML(l) {
   const rol = l.instrumenten.length ? l.instrumenten.join(' · ') : roleLabel(l.rol);
   const inhoud = `${bbFotoHTML(l.avatar_url)}<span class="bb-tekst"><span class="bb-naam">${escHtml(l.naam)}</span><span class="bb-sub">${escHtml(rol)}</span></span>`;
@@ -1072,18 +1073,17 @@ async function profielBandsOphalen(musicianId) {
 function profielBandsHTML(bands) {
   if (!bands || !bands.length) return '';
   return bandSectieHTML('Bands', bands.map(b => {
-    const foto = safeUrl(b.foto);
-    const beeld = foto
-      ? `<img class="bb-foto bb-foto-vierkant" ${kleinFotoAttr(foto)} alt="">`
-      : `<span class="bb-foto bb-foto-t bb-foto-vierkant" aria-hidden="true">${AVATAR_T_FALLBACK}</span>`;
+    const beeld = bbFotoHTML(b.foto, false, true);
     const sub = b.instrumenten.concat(b.rol === 'Oprichter' ? [roleLabel(b.rol)] : []).join(' · ');
     return `<button type="button" class="bb-rij bb-rij-knop" onclick="openBandScherm('${jsAttr(b.id)}')">${beeld}<span class="bb-tekst"><span class="bb-naam">${escHtml(b.naam)}</span>${sub ? `<span class="bb-sub">${escHtml(sub)}</span>` : ''}</span></button>`;
   }).join(''));
 }
 
-function bandNummerHTML(n) {
+function bandNummerHTML(n, fotoWazig) {
+  // TT-517 fase 7: afgeschermd het wazige beeld van de bandfoto (een nummer
+  // heeft zelf geen beeld), anders het algemene (huisstijl §18.7).
   if (n.afgeschermd) {
-    return `<div class="band-nummer"><span class="media-mini media-afgeschermd" role="img" aria-label="Alleen zichtbaar met een account"><span class="avatar-t">T</span></span>` +
+    return `<div class="band-nummer"><span class="media-mini media-mini-wazig" role="img" aria-label="Alleen zichtbaar met een account">${wazigHTML(wazigBron(fotoWazig) || WAZIG_ALGEMEEN)}</span>` +
       `<span class="band-nummer-tekst"><span class="band-nummer-titel">${escHtml(n.titel)}</span><span class="band-nummer-sub">Alleen met een account</span></span></div>`;
   }
   const url = safeUrl(n.url);
@@ -1117,12 +1117,9 @@ function bandSocialsHTML(b) {
 function bandPaginaHTML(b, kijker) {
   const beheer = kijker === 'beheerder';
   const foto = safeUrl(b.avatar_url);
-  // De beheerder tikt op een lege bandfoto om er een te kiezen (TT-385 punt 2).
-  const fotoHTML = foto
-    ? `<img class="bandfoto" ${kleinFotoAttr(foto)} alt="${escHtml(b.name)}" onclick="openMediaLightbox('${jsAttr(foto)}')">`
-    : beheer
-      ? `<button type="button" class="bandfoto bandfoto-leeg bandfoto-kies" onclick="openBandTegels('${jsAttr(b.id)}')" aria-label="Kies een bandfoto">${AVATAR_T_FALLBACK}</button>`
-      : `<div class="bandfoto bandfoto-leeg">${AVATAR_T_FALLBACK}</div>`;
+  // TT-517 fase 6 (huisstijl §21): zonder foto ziet alleen de beheerder in
+  // de hoes de knop "Voeg een foto toe"; die opent Onze media.
+  const fotoToevoegen = beheer ? `voegFotoToe('${jsAttr(b.id)}')` : null;
 
   // Het ⋯-menu: een lid kan de band verlaten (TT-385 punt 13); een bezoeker
   // meldt de band (TT-06, de inhoud zet zetVeiligheidMenu() erin). De
@@ -1168,17 +1165,15 @@ function bandPaginaHTML(b, kijker) {
   // één zin over wat er mist (besluit Ronald, g).
   const voortgang = beheer ? bandVoortgang(b) : null;
   const deelActie = voortgang && voortgang.pct < 100 ? `openBandDeelBlad('${jsAttr(b.id)}')` : null;
-  const bannerHTML = profielBannerHTML(b.media);
+  // TT-517 fase 4 (01-11-2026): de kop is de hoes, zoals bij de muzikant (huisstijl §21).
   let h = `
-    ${bannerHTML}
-    <div class="profiel-kop${bannerHTML ? ' op-banner' : ''}">
-      <div class="profiel-kop-rij">
-        ${fotoHTML}
-        ${profielKnoppenHTML('band', b.id, b.name, menuHTML, deelActie, beheer || b.delen_aan !== false)}
-      </div>
-      <div class="profile-name">${escHtml(b.name)}</div>
-      <div class="profiel-regels"><div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city || '')}</div></div>
-    </div>
+    ${profielHoesHTML({
+      foto, wazig: wazigBron(b.avatar_url), naam: b.name, media: b.media, fotoToevoegen,
+      // TT-517 fase 8: het visitekaartje; een band die iemand zoekt, toont dat in een pil.
+      kaart: { id: b.id, naam: b.name, regel: b.city || '', wat: b.genres, onder: [], zoekt: b.wanted },
+      regels: `<div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city || '')}</div>`,
+      knoppen: profielKnoppenHTML('band', b.id, b.name, menuHTML, deelActie, beheer || b.delen_aan !== false)
+    })}
     <div class="profile-badges">${tags}</div>
     ${b.pauze ? nietBeschikbaarMeldingHTML() : ''}`;
 
@@ -1197,13 +1192,13 @@ function bandPaginaHTML(b, kijker) {
   if (b.description) h += bandSectieHTML('Wie zijn we', `<p class="band-bio">${escHtml(b.description)}</p>`);
   else if (beheer) h += bandSectieHTML('Wie zijn we', uitnodiging('+ Vertel wie jullie zijn'));
   // 3. Eigen nummers.
-  const nummers = b.nummers.map(bandNummerHTML).join('');
+  const nummers = b.nummers.map(n => bandNummerHTML(n, b.avatar_url)).join('');
   if (nummers) h += bandSectieHTML('Onze nummers', nummers);
   else if (beheer && voortgang.telt.nummers) h += bandSectieHTML('Onze nummers', uitnodiging('+ Laat horen hoe jullie klinken'));
   // 4. Foto's en video's, en links: dezelfde functie als bij de muzikant.
   // profielMediaHTML() geeft altijd tekst terug (met een toelichting erin);
   // tel dus zelf of er iets te tonen is.
-  if (b.media.some(x => safeUrl(x.url) || x.afgeschermd)) h += profielMediaHTML(b.media);
+  if (b.media.some(x => safeUrl(x.url) || x.afgeschermd)) h += profielMediaHTML(b.media, b.avatar_url);
   else if (beheer) h += bandSectieHTML("Foto's en video's", uitnodiging("+ Foto's en video's toevoegen"));
   // 5. Socials.
   const socials = bandSocialsHTML(b);
@@ -1331,11 +1326,9 @@ async function bandDeelStand(id) {
 
 async function zetBandDelen(bandId, aan) {
   try {
-    // .select(): zonder dat meldt de database ook succes als de regels de
-    // wijziging weigeren (0 rijen geraakt, geen fout; zie TT-230).
-    const { data, error } = await db.from('bands').update({ delen_aan: aan }).eq('id', bandId).select('id');
+    // .select() en rijenGeraakt(): 0 rijen is een geweigerde wijziging (TT-230).
+    const { error } = rijenGeraakt(await db.from('bands').update({ delen_aan: aan }).eq('id', bandId).select('id'));
     if (error) throw error;
-    if (!data || !data.length) throw eigenFout('De wijziging is niet doorgevoerd: je mag deze band niet aanpassen, of je bent uitgelogd. Log opnieuw in en probeer het nog eens.');
     if (bandDeelGegevens && bandDeelGegevens.id === bandId) bandDeelGegevens.delen_aan = aan;
     showToast(aan ? 'Delen staat aan. De link van de band werkt.' : 'Delen staat uit. De link van de band werkt niet meer.');
     return true;
@@ -1389,9 +1382,9 @@ async function laadBandScherm(id, linkToegang) {
   vak.innerHTML = bandPaginaHTML(b, kijker);
   overneemKnoppenBijwerken(vak); // TT-528: vinkje bij covers die al in je repertoire staan
   voet.innerHTML = bandVoetHTML(b, kijker);
-  // Zelfde volgorde als bij het muzikantprofiel: pas na het plaatsen meten
-  // en laten schuiven (TT-265, TT-249, TT-293).
-  profielBannerStarten(vak);
+  // Zelfde volgorde als bij het muzikantprofiel: pas na het plaatsen starten
+  // en meten (TT-517 fase 4, TT-249, TT-293).
+  hoesStarten(vak);
   mediaTitelsBijwerken(vak);
   fitProfileName(vak);
   // TT-06: melden. Een band is te melden, niet te blokkeren.
@@ -1550,8 +1543,8 @@ async function zetBandBeschikbaar(beschikbaar) {
   const id = bewerkBandId;
   if (!id) return;
   try {
-    const { error } = await db.from('bands')
-      .update({ pauze: !beschikbaar }).eq('id', id);
+    const { error } = rijenGeraakt(await db.from('bands')
+      .update({ pauze: !beschikbaar }).eq('id', id).select('id'));
     if (error) throw error;
     showToast('Wijzigingen opgeslagen.');
     renderBandBeheer();
@@ -1640,11 +1633,11 @@ async function saveBandWie() {
   if (showFieldErrors(fouten)) return;
   if (bwFieldSnapshot() === bwSnapshot) return;
 
-  const { error } = await db.from('bands').update({
+  const { error } = rijenGeraakt(await db.from('bands').update({
     name: naam, zip, city: normalizeCityName(city), city_source: bandCitySource,
     description: waardeVan('bwBio') || null,
     niveau: bwNiveau || null
-  }).eq('id', bewerkBandId);
+  }).eq('id', bewerkBandId).select('id'));
   if (error) {
     logCaught('saveBandWie', error);
     showToast(friendlyErrorMessage(error, 'de bandgegevens opslaan'));
@@ -1747,12 +1740,16 @@ async function bbLaadLeden(contactStart) {
   bbRenderLeden();
 }
 
-function bbFotoHTML(url, wacht) {
+// De foto in een rij (.bb-rij): het fotootje, afgeschermd het wazige beeld
+// (TT-517 fase 7), anders de schijnwerper. `vierkant`: een bandfoto.
+function bbFotoHTML(url, wacht, vierkant) {
+  const extra = (wacht ? ' bb-wacht' : '') + (vierkant ? ' bb-foto-vierkant' : '');
+  const w = wazigBron(url);
+  if (w) return `<span class="bb-foto bb-foto-leeg${extra}" aria-hidden="true">${wazigHTML(w)}</span>`;
   const veilig = safeUrl(url);
-  const extra = wacht ? ' bb-wacht' : '';
   return veilig
     ? `<img class="bb-foto${extra}" ${kleinFotoAttr(veilig)} alt="">`
-    : `<span class="bb-foto bb-foto-t${extra}" aria-hidden="true">${AVATAR_T_FALLBACK}</span>`;
+    : `<span class="bb-foto bb-foto-leeg${extra}" aria-hidden="true">${ZONDER_FOTO_HTML}</span>`;
 }
 
 // Eén rij: foto, naam, een regel eronder (al als HTML), en rechts de drie
@@ -1876,8 +1873,8 @@ async function bbIntrekken(musicianId, naam) {
   const id = bewerkBandId;
   if (!id) return;
   try {
-    const { error } = await db.from('band_members').delete()
-      .eq('band_id', id).eq('musician_id', musicianId).eq('status', 'aangevraagd');
+    const { error } = rijenGeraakt(await db.from('band_members').delete()
+      .eq('band_id', id).eq('musician_id', musicianId).eq('status', 'aangevraagd').select('band_id'));
     if (error) throw error;
     showToast(`Uitnodiging aan ${naam} ingetrokken.`);
     bbLaadLeden();
@@ -1913,10 +1910,10 @@ async function saveBandBezetting() {
     }
     // Leeg is de beheerder (projectinstructies §10): zo volgt de
     // contactpersoon vanzelf als het beheer wordt overgedragen.
-    const { error: bErr } = await db.from('bands').update({
+    const { error: bErr } = rijenGeraakt(await db.from('bands').update({
       contact_id: bbContact && bbContact !== bbBeheerderId ? bbContact : null,
       status: bandStatusAfgeleid(bbWanted.length)
-    }).eq('id', id);
+    }).eq('id', id).select('id'));
     if (bErr) throw bErr;
     // De nieuwe invallers hebben nu een id.
     const { data: rijen, error: rErr } = await db.from('band_invallers').select('id, instrument, datum').eq('band_id', id);
@@ -2085,7 +2082,7 @@ async function saveBandMuziek() {
   const id = bewerkBandId;
   if (!id) return;
   try {
-    const { error: bErr } = await db.from('bands').update({ soort: bmzSoort, genres: bmzGenres.slice() }).eq('id', id);
+    const { error: bErr } = rijenGeraakt(await db.from('bands').update({ soort: bmzSoort, genres: bmzGenres.slice() }).eq('id', id).select('id'));
     if (bErr) throw bErr;
 
     // Eigen nummers en covers: alleen wat wegging weghalen, wat wijzigde
@@ -2150,11 +2147,11 @@ let bmMediaLinks = [];   // { id, url, inBanner }
 let bmSnapshot = null;
 let bmFotoUrl = null;    // de bandfoto (bands.avatar_url)
 let bmFotoBezig = false;
-let bmOrigineel = [];    // [id, url, in_banner] zoals in de database
+let bmOrigineel = [];    // [id, url, in_banner, uitsnede] zoals in de database
 
 function bmFieldSnapshot() {
   return JSON.stringify({
-    files: bmMediaFiles.map(m => [m.id || null, m.url, m.type, !!m.uploading, !!m.inBanner]),
+    files: bmMediaFiles.map(m => [m.id || null, m.url, m.type, !!m.uploading, !!m.inBanner, m.uitsnede || null]),
     links: bmMediaLinks.map(l => [l.id || null, l.url, !!l.inBanner]),
     instagram: waardeVan('bmInstagram'), tiktok: waardeVan('bmTiktok'), youtube: waardeVan('bmYoutube'),
     foto: bmFotoUrl || null
@@ -2166,7 +2163,7 @@ async function openBandMedia() {
   const scherm = document.getElementById('bandMediaScreen');
   scherm.querySelectorAll('.media-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
   scherm.querySelectorAll('.media-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
-  const b = await bandBewerkGegevens('name, city, avatar_url, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at)');
+  const b = await bandBewerkGegevens('name, city, avatar_url, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at, uitsnede)');
   if (!b) return;
   bmZet(b);
   bmSnapshot = bmFieldSnapshot();
@@ -2175,9 +2172,9 @@ async function openBandMedia() {
 function bmZet(b) {
   const opTijd = (x, y) => String(x.created_at || '').localeCompare(String(y.created_at || ''));
   const rijen = (b.band_media || []).slice().sort(opTijd);
-  bmOrigineel = rijen.map(r => [r.id, r.url, !!r.in_banner]);
+  bmOrigineel = rijen.map(r => [r.id, r.url, !!r.in_banner, JSON.stringify(uitsnedeGeldig(r.uitsnede))]);
   bmMediaFiles = rijen.filter(r => r.media_type === 'foto' || r.media_type === 'video')
-    .map(r => ({ id: r.id, name: '', url: r.url, path: null, type: r.media_type, uploading: false, inBanner: !!r.in_banner }));
+    .map(r => ({ id: r.id, name: '', url: r.url, path: null, type: r.media_type, uploading: false, inBanner: !!r.in_banner, uitsnede: r.uitsnede || null }));
   bmMediaLinks = rijen.filter(r => r.media_type === 'link').map(r => ({ id: r.id, url: r.url, inBanner: !!r.in_banner }));
   document.getElementById('bmInstagram').value = b.instagram || '';
   document.getElementById('bmTiktok').value = b.tiktok || '';
@@ -2192,7 +2189,7 @@ function bmZet(b) {
 function bmRenderFoto() {
   const vak = document.getElementById('bmFotoPreview');
   const url = safeUrl(bmFotoUrl);
-  vak.innerHTML = url ? `<img ${kleinFotoAttr(url)} alt="bandfoto">` : '<span class="avatar-t">T</span>';
+  vak.innerHTML = url ? `<img ${kleinFotoAttr(url)} alt="bandfoto">` : ''; // TT-517 fase 6: zonder foto de schijnwerper met silhouet (styles.css)
   document.getElementById('bmFotoRemoveBtn').classList.toggle('visible', !!url);
 }
 
@@ -2278,12 +2275,7 @@ function bmRenderMediaGrid() {
 }
 
 function bmToggleMediaBanner(i) {
-  const m = bmMediaFiles[i];
-  if (!m) return;
-  if (!bannerKeuzeMag(bannerAantal(bmMediaFiles, bmMediaLinks), !m.inBanner)) return;
-  m.inBanner = !m.inBanner;
-  bannerKnopStandZetten('bmMediaGrid', i, m.inBanner);
-  bannerTellerBijwerken('bmBannerTeller', bmMediaFiles, bmMediaLinks);
+  return bannerTekenTik(bmMediaFiles[i], bmMediaFiles, bmMediaLinks, 'bmMediaGrid', 'bmBannerTeller');
 }
 
 function bmSpeelMedia(i) {
@@ -2362,21 +2354,22 @@ async function saveBandMedia() {
   const id = bewerkBandId;
   if (!id) return;
   try {
-    const { error: sErr } = await db.from('bands').update({
+    const { error: sErr } = rijenGeraakt(await db.from('bands').update({
       instagram: waardeVan('bmInstagram') || null,
       tiktok: waardeVan('bmTiktok') || null,
       youtube: waardeVan('bmYoutube') || null,
-      avatar_url: bmFotoUrl || null
-    }).eq('id', id);
+      avatar_url: bmFotoUrl || null,
+      ...wazigVeld(bmFotoUrl)
+    }).eq('id', id).select('id'));
     if (sErr) throw sErr;
     opslagOpruimen('avatars', 'bands/' + id, [bmFotoUrl]);
 
     // Alleen wat wegging weghalen, wat wijzigde bijwerken en wat nieuw is
     // toevoegen (zie Onze muziek). De volgorde blijft die van binnenkomst.
     const nu = bmMediaFiles.filter(m => m.url && !m.url.startsWith('blob:'))
-      .map(m => ({ id: m.id, media_type: m.type, url: m.url, platform: null, in_banner: !!m.inBanner }))
+      .map(m => ({ id: m.id, media_type: m.type, url: m.url, platform: null, in_banner: !!m.inBanner, uitsnede: bannerKader(m) }))
       .concat(bmMediaLinks.filter(l => l.url.trim())
-        .map(l => ({ id: l.id, media_type: 'link', url: l.url.trim(), platform: detectPlatform(l.url.trim()), in_banner: !!l.inBanner })));
+        .map(l => ({ id: l.id, media_type: 'link', url: l.url.trim(), platform: detectPlatform(l.url.trim()), in_banner: !!l.inBanner, uitsnede: null })));
     const weg = bmOrigineel.map(r => r[0]).filter(x => !nu.some(m => m.id === x));
     if (weg.length) {
       const { error } = await db.from('band_media').delete().in('id', weg);
@@ -2384,19 +2377,19 @@ async function saveBandMedia() {
     }
     for (const m of nu.filter(m => m.id)) {
       const oud = bmOrigineel.find(r => r[0] === m.id);
-      if (oud && oud[1] === m.url && oud[2] === m.in_banner) continue;
-      const { error } = await db.from('band_media').update({ url: m.url, platform: m.platform, in_banner: m.in_banner }).eq('id', m.id);
+      if (oud && oud[1] === m.url && oud[2] === m.in_banner && oud[3] === JSON.stringify(m.uitsnede)) continue;
+      const { error } = await db.from('band_media').update({ url: m.url, platform: m.platform, in_banner: m.in_banner, uitsnede: m.uitsnede }).eq('id', m.id);
       if (error) throw error;
     }
     const nieuw = nu.filter(m => !m.id);
     if (nieuw.length) {
       const { error } = await db.from('band_media').insert(nieuw.map(m =>
-        ({ band_id: id, media_type: m.media_type, url: m.url, platform: m.platform, in_banner: m.in_banner })));
+        ({ band_id: id, media_type: m.media_type, url: m.url, platform: m.platform, in_banner: m.in_banner, uitsnede: m.uitsnede, wazig: wazigVoor(m.url) })));
       if (error) throw error;
     }
     opslagOpruimen('media', 'bands/' + id, nu.map(m => m.url));
 
-    const b = await bandBewerkGegevens('avatar_url, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at)');
+    const b = await bandBewerkGegevens('avatar_url, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at, uitsnede)');
     if (!b) return;
     bmZet(b);
     bmSnapshot = bmFieldSnapshot();
