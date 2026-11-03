@@ -399,6 +399,7 @@ async function saveNewPassword() {
   if (error) {
     // TT-353: het huidige wachtwoord opnieuw gekozen — dat hoort bij het veld.
     if (isZelfdeWachtwoordFout(error)) showFieldErrors([[pw1El, friendlyErrorMessage(error, 'je nieuwe wachtwoord opslaan')]]);
+    else if (isZwakWachtwoordFout(error)) showFieldErrors([[pw1El, TEKST_ZWAK_WACHTWOORD]]);
     else showToast(friendlyErrorMessage(error, 'je nieuwe wachtwoord opslaan'));
     return;
   }
@@ -501,7 +502,7 @@ async function wijzigEmailUitvoeren(nieuw) {
     // Huisstijl §13.1: een serverantwoord dat over één veld gaat, hoort bij
     // dat veld te staan, niet in een toast.
     if (/already|in use|in gebruik|registered|exists|taken/i.test(error.message || '')) {
-      showFieldErrors([[el, 'Dit e-mailadres is al in gebruik']]);
+      showFieldErrors([[el, TEKST_EMAIL_BEZET]]);
     } else {
       logCaught('wijzigEmailUitvoeren', error);
       showToast(friendlyErrorMessage(error, 'je e-mailadres wijzigen'));
@@ -564,6 +565,10 @@ async function wijzigWachtwoord() {
   if (error) {
     if (isZelfdeWachtwoordFout(error)) {
       showFieldErrors([[pw1El, friendlyErrorMessage(error, 'je wachtwoord wijzigen')]]);
+      return;
+    }
+    if (isZwakWachtwoordFout(error)) {
+      showFieldErrors([[pw1El, TEKST_ZWAK_WACHTWOORD]]);
       return;
     }
     logCaught('wijzigWachtwoord', error);

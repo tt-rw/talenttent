@@ -699,7 +699,8 @@ async function bevestigEmailadresOpslaan() {
   } catch (e) {
     if (!bevestigVerwachteUitkomst(e)) logCaught('bevestigEmailadresOpslaan', e);
     // Een fout over het e-mailadres zelf hoort bij het veld; de rest is een toast.
-    if (/e-mailadres/i.test(e.message || '')) setFieldError(veld, e.message.replace(/\.$/, ''));
+    if (/al in gebruik/i.test(e.message || '')) setFieldError(veld, TEKST_EMAIL_BEZET);
+    else if (/e-mailadres/i.test(e.message || '')) setFieldError(veld, e.message.replace(/\.$/, ''));
     else showToast(e.message || friendlyErrorMessage(e, 'je e-mailadres opslaan'));
   } finally { if (knop) knop.disabled = false; }
 }
@@ -1327,7 +1328,7 @@ async function createAccountAndProfile() {
           // door naar friendlyErrorMessage().
           if (/invalid login credentials|invalid_credentials|invalid grant/i.test(signInErr.message || '')) {
             document.getElementById('saveOverlay').classList.remove('visible');
-            showFieldErrors([['regEmail', 'Dit e-mailadres heeft al een account. Log in, of gebruik een ander e-mailadres']]);
+            showFieldErrors([['regEmail', TEKST_ACCOUNT_BESTAAT]]);
             return false;
           }
           throw signInErr;
@@ -1445,8 +1446,14 @@ async function createAccountAndProfile() {
     showToast('Account aangemaakt! Vul nu je profiel verder aan.');
     return true;
   } catch (err) {
-    logCaught('createAccountAndProfile', err);
     document.getElementById('saveOverlay').classList.remove('visible');
+    // TT-481: een te makkelijk wachtwoord hoort bij het veld, net als
+    // "al een account" bij het e-mailadres. Geen storing, dus geen logregel.
+    if (isZwakWachtwoordFout(err)) {
+      showFieldErrors([['regPassword', TEKST_ZWAK_WACHTWOORD]]);
+      return false;
+    }
+    logCaught('createAccountAndProfile', err);
     showToast(friendlyErrorMessage(err, 'je account aanmaken'));
     return false;
   } finally {

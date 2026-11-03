@@ -2749,8 +2749,9 @@ def blok_browser():
             toast: document.getElementById('appToast').classList.contains('visible')
           };
         }""")
-        check("'adres al in gebruik' komt bij het veld te staan, niet in een toast (huisstijl §13.1)",
-              bezet["fout"] and "al in gebruik" in bezet["fout"] and not bezet["toast"],
+        # TT-481 (03-11-2026, besluit Ronald): de tekst werd "hoort al bij een ander account".
+        check("'e-mailadres bezet' komt bij het veld te staan, niet in een toast (huisstijl §13.1)",
+              bezet["fout"] == "Dit e-mailadres hoort al bij een ander account. Kies een ander e-mailadres" and not bezet["toast"],
               json.dumps(bezet))
 
         wachtwoord = page.evaluate("""async () => {
@@ -9059,7 +9060,7 @@ window.TT_STUB.fnAntwoord = {};
         j78 = json.dumps(d78, ensure_ascii=False)
         check("bestaand e-mailadres: de fout staat bij het veld E-mailadres, in gewone taal, zonder toast en zonder wachtscherm",
               d78["bestaand"]["ok"] is False and d78["bestaand"]["veld"]
-              and d78["bestaand"]["tekst"] == "Dit e-mailadres heeft al een account. Log in, of gebruik een ander e-mailadres"
+              and d78["bestaand"]["tekst"] == "Je hebt al een account met dit e-mailadres. Log in en ga verder waar je was"
               and "iets mis" not in d78["bestaand"]["toast"].lower() and not d78["bestaand"]["overlay"], j78)
         check("een andere inlogfout (te veel pogingen) wordt niet als bestaand e-mailadres gemeld",
               d78["anders"]["veld"] is False and "Te veel pogingen" in d78["anders"]["toast"], j78)
@@ -13392,6 +13393,160 @@ def blok_csp_melder():
     check("geen paginafouten in blok 121", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_tt481():
+    # TT-481 (03-11-2026, besluiten Ronald): (1) één vriendelijke tekst voor "dit
+    # e-mailadres heeft al een account", bij aanmelden en bij wijzigen; (2) een te
+    # makkelijk wachtwoord (Supabase: weak_password) staat bij het wachtwoordveld;
+    # (3) hooguit 10 berichten per 24 uur zonder antwoord; elk antwoord zet de teller op 0.
+    print("\nBlok 122 — TT-481: account bestaat al, te makkelijk wachtwoord, berichtgrens (10 per 24 uur)")
+    ACCOUNT = "Je hebt al een account met dit e-mailadres. Log in en ga verder waar je was"
+    BEZET = "Dit e-mailadres hoort al bij een ander account. Kies een ander e-mailadres"
+    ZWAK = "Dit wachtwoord is te makkelijk te raden. Kies een ander wachtwoord"
+    app = {n: open(os.path.join(ROOT, n), encoding="utf-8").read()
+           for n in ("wizard.js", "ouder.js", "utils.js", "auth.js", "messages.js")}
+    oud = [n for n, t in app.items() if re.search(
+        r"heeft al een account\. Log in, of|gebruik een ander adres|'Dit e-mailadres is al in gebruik'|Er bestaat al een account", t)]
+    check("de oude teksten voor 'account bestaat al' staan nergens meer in de app", not oud, str(oud))
+    check("de berichtgrens is 10, in de app (messages.js)", "const BERICHTGRENS = 10;" in app["messages.js"], "")
+    check("de tekst staat op één plek (utils.js) en vijf plekken gebruiken hem",
+          app["utils.js"].count(ACCOUNT) == 1 and app["utils.js"].count(BEZET) == 1
+          and sum(t.count("TEKST_ACCOUNT_BESTAAT") + t.count("TEKST_EMAIL_BEZET") for t in app.values()) >= 7, "")
+
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        fouten = []
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(400)
+        r = page.evaluate("""async () => {
+          const S = window.TT_STUB, $ = id => document.getElementById(id);
+          const w = ms => new Promise(k => setTimeout(k, ms));
+          const regel = id => { const el = $(id); const f = el && el.closest('.field'); const m = f && f.querySelector('.field-msg'); return m ? m.textContent : null; };
+          const toastAan = () => $('appToast').classList.contains('visible');
+          const toastWeg = () => { $('appToast').textContent = ''; $('appToast').classList.remove('visible'); };
+          const logs = () => (S.data.app_error_log || []).length;
+          const ZWAK = { code: 'weak_password', status: 422, message: 'Password is known to be weak and easy to guess, please choose a different one.' };
+          const u = {};
+          u.vertaal = { zwak: friendlyErrorMessage(ZWAK), bestaat: friendlyErrorMessage({ message: 'User already registered' }),
+                        wacht: friendlyErrorMessage({ message: 'Wacht op antwoord.' }) };
+
+          // Aanmelden: te makkelijk wachtwoord
+          showView('register'); await w(60); currentUser = null;
+          Object.assign(state, { regEmail: 'nieuw@talenttent.org', regPassword: 'wachtwoord', fname: 'Test', username: 'testje', city: 'Den Haag', zip: '2497AA' });
+          S.signUpError = ZWAK; toastWeg(); const l0 = logs();
+          u.aanmelden = { ok: await createAccountAndProfile(), tekst: regel('regPassword'), toast: toastAan(), log: logs() - l0,
+                          overlay: $('saveOverlay').classList.contains('visible') };
+          delete S.signUpError; clearFieldErrors(document);
+
+          // De foutpagina bij opslaan (overlay)
+          showSaveError('User already registered', 'je profiel aanmaken');
+          u.overlay = $('saveMsg').textContent;
+          $('saveOverlay').classList.remove('visible');
+
+          // Nieuw wachtwoord (herstel)
+          showView('reset');
+          S.updateUserError = ZWAK; $('resetPassword1').value = 'wachtwoord'; $('resetPassword2').value = 'wachtwoord'; toastWeg();
+          await saveNewPassword();
+          u.herstel = { tekst: regel('resetPassword1'), toast: toastAan() };
+          S.updateUserError = null; clearFieldErrors(document);
+
+          // Instellingen: wachtwoord wijzigen en e-mailadres wijzigen
+          currentUser = { id: 'u1', email: 'sanne@talenttent.org' };
+          openInloggegevens();
+          S.updateUserError = ZWAK;
+          $('igHuidigWachtwoord').value = 'huidig123'; $('igNieuwWachtwoord1').value = 'wachtwoord'; $('igNieuwWachtwoord2').value = 'wachtwoord'; toastWeg();
+          await wijzigWachtwoord();
+          u.wijzigWw = { tekst: regel('igNieuwWachtwoord1'), toast: toastAan() };
+          S.updateUserError = { status: 422, code: 'email_exists', message: 'A user with this email address has already been registered' };
+          toastWeg();
+          await wijzigEmailUitvoeren('bezet@talenttent.org');
+          u.wijzigEmail = { tekst: regel('igNieuwEmail'), toast: toastAan() };
+          S.updateUserError = null; clearFieldErrors(document);
+
+          // Berichtgrens: de regel zelf
+          const nu = Date.now(), uur = 3600 * 1000;
+          const m = h => ({ created_at: new Date(nu - h * uur).toISOString() });
+          const reeks = (n, h) => Array.from({ length: n }, (_, i) => m(h + i * 0.1));
+          u.regel = {
+            negenVers: wachtOpAntwoord(reeks(9, 1), [], nu),
+            tienVers: wachtOpAntwoord(reeks(10, 1), [], nu),
+            tienEenOud: wachtOpAntwoord([...reeks(9, 1), m(25)], [], nu),
+            antwoordReset: wachtOpAntwoord([...reeks(10, 2), ...reeks(3, 0.1)], [m(1)], nu),
+            tienNaAntwoord: wachtOpAntwoord(reeks(10, 0.1), [m(3)], nu)
+          };
+
+          // Berichtgrens: in het gesprek
+          window.getMyMusicianId = async () => 'm1';
+          window.emailWachtOpBevestiging = async () => null;
+          document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+          $('view-messages').classList.add('active');
+          const bericht = (id, van, naar, h) => ({ id, sender_id: van, recipient_id: naar, body: 'b' + id, created_at: new Date(nu - h * uur).toISOString(), read_at: null });
+          const invoer = $('messagesReplyInput'), knop = document.querySelector('#messagesThreadPanel .messages-send-btn');
+          const stand = () => ({ dicht: invoer.disabled, knopDicht: knop.disabled, tekst: invoer.getAttribute('placeholder'),
+                                 teller: $('messagesReplyCounter').style.visibility !== 'hidden' });
+          const tien = Array.from({ length: 10 }, (_, i) => bericht('t' + i, 'm1', 'm2', 1 + i * 0.1));
+          S.data.messages = tien.slice();
+          await openConversation('m2', 'Dylan', '', false, false); await w(50);
+          u.gesprekDicht = stand();
+          S.data.messages = [bericht('d', 'm1', 'm3', 1)];
+          await openConversation('m3', 'Lua', '', false, false); await w(50);
+          u.anderGesprekOpen = stand();
+          S.data.messages = [...tien, bericht('e', 'm2', 'm1', 0.5)];
+          await openConversation('m2', 'Dylan', '', false, false); await w(50);
+          u.naAntwoordOpen = stand();
+          // Negen berichten, dan het tiende: na het versturen gaat het veld dicht
+          S.data.messages = tien.slice(0, 9);
+          gesprekVanuit = null;
+          await openConversation('m2', 'Dylan', '', false, false); await w(50);
+          u.naNegenOpen = stand();
+          invoer.value = 'tiende bericht';
+          await sendReplyInThread(); await w(150);
+          u.naTiendeDicht = stand();
+          // De database weigert (gelijktijdige poging): korte melding, tekst blijft
+          zetWachtOpAntwoord(false); S.data.messages = [];
+          S.errors.messages = { code: 'P0001', message: 'Wacht op antwoord.' }; toastWeg(); const l1 = logs();
+          u.dbWeigert = { ok: await insertMessage('m2', 'hoi'), toast: $('appToast').textContent, log: logs() - l1 };
+          delete S.errors.messages;
+          return u;
+        }""")
+        browser.close()
+    httpd.shutdown()
+    j = json.dumps(r, ensure_ascii=False)[:900]
+    check("friendlyErrorMessage: te makkelijk wachtwoord, bestaand account en de berichtgrens in gewone taal",
+          r["vertaal"]["zwak"] == ZWAK + "." and r["vertaal"]["bestaat"] == ACCOUNT + "."
+          and r["vertaal"]["wacht"] == "Wacht op antwoord.", j)
+    check("aanmelden met een te makkelijk wachtwoord: melding bij het wachtwoordveld, geen toast, geen foutlog",
+          r["aanmelden"]["ok"] is False and r["aanmelden"]["tekst"] == ZWAK and not r["aanmelden"]["toast"]
+          and r["aanmelden"]["log"] == 0 and not r["aanmelden"]["overlay"], j)
+    check("de foutpagina bij opslaan gebruikt de nieuwe tekst", ACCOUNT + "." in r["overlay"], r["overlay"])
+    check("nieuw wachtwoord (herstel): te makkelijk staat bij het veld, geen toast",
+          r["herstel"]["tekst"] == ZWAK and not r["herstel"]["toast"], j)
+    check("Instellingen, wachtwoord wijzigen: te makkelijk staat bij het veld, geen toast",
+          r["wijzigWw"]["tekst"] == ZWAK and not r["wijzigWw"]["toast"], j)
+    check("Instellingen, e-mailadres wijzigen naar een bezet e-mailadres: de wijzig-tekst bij het veld",
+          r["wijzigEmail"]["tekst"] == BEZET and not r["wijzigEmail"]["toast"], j)
+    check("berichtgrens: 9 vrij, 10 binnen 24 uur dicht, ouder dan 24 uur telt niet, een antwoord zet de teller op 0, 10 na het antwoord dicht",
+          r["regel"] == {"negenVers": False, "tienVers": True, "tienEenOud": False, "antwoordReset": False, "tienNaAntwoord": True}, j)
+    check("gesprek met 10 berichten zonder antwoord: veld en knop dicht, het veld zegt 'Wacht op antwoord'",
+          r["gesprekDicht"] == {"dicht": True, "knopDicht": True, "tekst": "Wacht op antwoord", "teller": False}, j)
+    check("een ander gesprek opent daarna gewoon open, met de gewone tekst",
+          r["anderGesprekOpen"]["dicht"] is False and r["anderGesprekOpen"]["knopDicht"] is False
+          and r["anderGesprekOpen"]["tekst"] == "Typ een bericht..." and r["anderGesprekOpen"]["teller"] is True, j)
+    check("antwoordt de ander na de 10 berichten, dan gaat het veld weer open", r["naAntwoordOpen"]["dicht"] is False, j)
+    check("na het tiende bericht gaat het veld dicht", r["naNegenOpen"]["dicht"] is False and r["naTiendeDicht"]["dicht"] is True, j)
+    check("weigert de database toch (gelijktijdig), dan 'Wacht op antwoord.' en geen foutlog",
+          r["dbWeigert"]["ok"] is False and r["dbWeigert"]["toast"] == "Wacht op antwoord." and r["dbWeigert"]["log"] == 0, j)
+    check("geen paginafouten in blok 122", not fouten, "; ".join(fouten)[:300])
+
+
 # TT-483 deel b (03-11-2026): elke pagina in elk browserblok luistert naar een
 # weigering van de regel. Zo draait de hele testset met de regel aan, en zakt
 # hij als een scherm iets nodig heeft dat de regel niet toestaat. Adressen van
@@ -13449,6 +13604,7 @@ def main():
     blok_xss()
     blok_jwt_herhaling()
     blok_csp_melder()
+    blok_tt481()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

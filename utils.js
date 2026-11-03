@@ -64,6 +64,25 @@ function isZelfdeWachtwoordFout(err) {
     || /different from the old password/i.test(err.message || ''));
 }
 
+// TT-481 (03-11-2026, besluit Ronald): Supabase weigert in productie een
+// wachtwoord dat in lijsten van gelekte wachtwoorden staat (code
+// `weak_password`). Eén tekst, bij het wachtwoordveld, op elke plek waar een
+// wachtwoord wordt gekozen. In test staat de weigering niet aan (alleen Pro).
+const TEKST_ZWAK_WACHTWOORD = 'Dit wachtwoord is te makkelijk te raden. Kies een ander wachtwoord';
+
+function isZwakWachtwoordFout(err) {
+  const msg = (err && err.message) ? err.message : String(err || '');
+  return !!err && (err.code === 'weak_password'
+    || /weak_password|known to be weak|easy to guess|pwned/i.test(msg));
+}
+
+// TT-481 (03-11-2026, besluit Ronald): één tekst voor "dit e-mailadres heeft al
+// een account", op elke plek. Bij aanmelden (wizard, ouderroute): de eerste.
+// Bij wijzigen, als je al bent ingelogd: de tweede. Zonder slotpunt: het zijn
+// meldingen bij een veld (huisstijl §13.1).
+const TEKST_ACCOUNT_BESTAAT = 'Je hebt al een account met dit e-mailadres. Log in en ga verder waar je was';
+const TEKST_EMAIL_BEZET = 'Dit e-mailadres hoort al bij een ander account. Kies een ander e-mailadres';
+
 // TT-445 (09-10-2026, Ronald): een eigen zin in de code (bijv. "Delen aanpassen
 // is niet gelukt.") werd door friendlyErrorMessage() overschreven door de
 // algemene tekst onderaan. Een fout die met eigenFout() is gemaakt, wordt
@@ -96,13 +115,15 @@ function friendlyErrorMessage(err, actie) {
   if (err && err.eigenTekst) return msg;
   // Nederlandse tekst uit de database (trigger): ongewijzigd tonen.
   if (/^Bevestig eerst je e-mailadres/i.test(msg)) return msg;
+  if (/^Wacht op antwoord/i.test(msg)) return msg; // TT-481, trigger tt_berichtgrens
   if (isZelfdeWachtwoordFout(err)) return TEKST_ZELFDE_WACHTWOORD;
+  if (isZwakWachtwoordFout(err)) return TEKST_ZWAK_WACHTWOORD + '.';
   const status = err && (err.status || err.statusCode);
   const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
   if (offline) return 'Je hebt geen internetverbinding. Probeer het opnieuw zodra je weer online bent.';
 
   if (/already registered|already exists/i.test(msg)) {
-    return 'Er bestaat al een account met dit e-mailadres.';
+    return TEKST_ACCOUNT_BESTAAT + '.';
   }
   // TT-255 (11-09-2026, Ronald): een verkeerd wachtwoord gaf tot nu toe de
   // algemene tekst onderaan deze functie — "Er ging iets mis. Probeer het
@@ -455,7 +476,7 @@ function showSaveError(msg, actie) {
 
   if (isAlreadyRegistered) {
     document.getElementById('saveMsg').innerHTML =
-      `Er bestaat al een account met dit e-mailadres.<br><br>
+      `${TEKST_ACCOUNT_BESTAAT}.<br><br>
        <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="goToLoginFromError()">Inloggen →</button>
        <button class="btn btn-ghost" style="width:100%;" onclick="document.getElementById('saveOverlay').classList.remove('visible')">Sluiten</button>`;
     return;

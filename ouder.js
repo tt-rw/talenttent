@@ -180,7 +180,7 @@ async function ouderVerzoekVersturen() {
     if (/in gebruik/i.test(e.message || '')) {
       ouderPaneelSluiten();
       goTo(0);
-      setFieldError(document.getElementById('regEmail'), 'Er bestaat al een account met dit e-mailadres. Probeer in te loggen, of gebruik een ander adres');
+      setFieldError(document.getElementById('regEmail'), TEKST_ACCOUNT_BESTAAT);
       return;
     }
     showToast(friendlyErrorMessage(e, 'de aanvraag versturen'));

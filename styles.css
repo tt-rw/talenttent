@@ -3100,6 +3100,8 @@
     min-height: 44px;
     max-height: 120px;
   }
+  /* TT-481: dicht zolang je op antwoord wacht; zelfde zwakte als .btn:disabled. */
+  .messages-send-btn:disabled { opacity: 0.5; cursor: default; }
   .messages-send-btn {
     width: 44px; height: 44px;
     border-radius: 50%;
