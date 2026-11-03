@@ -2446,7 +2446,7 @@ def blok_browser():
 
         melden = page.evaluate("""async () => {
           const r = {};
-          openMeldModal('gesprek', 'm5', 'Kim');
+          await openMeldModal('gesprek', 'm5', 'Kim');
           r.titel = document.getElementById('meldTitel').textContent;
           r.naam = document.getElementById('meldDoelNaam').textContent;
           r.redenen = document.querySelectorAll('#meldRedenen .tag').length;
@@ -2460,6 +2460,7 @@ def blok_browser():
           r.rijen = window.TT_STUB.data.musician_reports.map(x =>
             [x.reporter_id, x.target_type, x.target_id, x.reason, x.note].join('|'));
           r.dicht = !document.getElementById('meldModal').classList.contains('visible');
+          document.getElementById('confirmModal').classList.remove('visible'); // TT-555: het aanbod om te blokkeren
           return r;
         }""")
         check("de meldmodal noemt het doel en biedt vijf redenen",
@@ -2545,7 +2546,7 @@ def blok_browser():
 
         melden2 = page.evaluate("""async () => {
           const r = {};
-          openMeldModal('muzikant', 'm9', 'Test');
+          await openMeldModal('muzikant', 'm9', 'Test');
           kiesMeldReden(document.querySelector('#meldRedenen .tag'), 'Ongepast gedrag');
           r.voorDoel = !!meldDoel;
           r.voorReden = meldReden;
@@ -11190,7 +11191,8 @@ XSS_STAPPEN = [
     ("gesprek", "await openConversation('m2', window.__P('naam'), null);"),
     ("profiel vanuit gesprek", "openThreadProfile();"),
     ("bericht schrijven", "openMessageComposer('m2', window.__P('naam'), window.__P('bandnaam'));"),
-    ("melden", "openMeldModal('muzikant', 'm2', window.__P('naam'));"),
+    ("melden", "await openMeldModal('muzikant', 'm2', window.__P('naam'));"),
+    ("al gemeld (TT-555)", "closeMeldModal(); window.TT_STUB.rpcResults.tt_al_gemeld = true; await openMeldModal('muzikant', 'm2', window.__P('naam')); window.TT_STUB.rpcResults.tt_al_gemeld = false;"),
     ("geblokkeerden", "await openGeblokkeerdModal();"),
     ("instellingen", "showView('instellingen'); openInloggegevens();"),
     ("gesprek Talent Tent", "showView('messages'); await loadInbox(); await openTalentTentGesprek();"),
@@ -13713,6 +13715,129 @@ def blok_tt481():
     check("geen paginafouten in blok 122", not fouten, "; ".join(fouten)[:300])
 
 
+# Blok 125 — TT-555: één melding per persoon per 30 dagen, en blokkeren aanbieden
+# --------------------------------------------------------------------------
+# Besluiten Ronald 03-11-2026: "een melding per persoon", "een termijn van een
+# maand of zo" (30 dagen), "bied na een melding aan om te blokkeren", en het
+# UX-advies (akkoord): wie al meldde, ziet dat vóór het formulier. De grens zelf
+# staat in de database (tt_meldgrens); deze proef toetst de app.
+def blok_tt555():
+    print("\nBlok 125 — TT-555: één melding per persoon per 30 dagen, blokkeren aanbieden")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        fouten = []
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(400)
+        r = page.evaluate("""async () => {
+          const S = window.TT_STUB, $ = id => document.getElementById(id);
+          const w = ms => new Promise(k => setTimeout(k, ms));
+          const logs = () => (S.data.app_error_log || []).length;
+          const stand = () => ({
+            formulier: $('meldModal').classList.contains('visible'),
+            vraag: $('confirmModal').classList.contains('visible') ? $('confirmMessage').textContent : null,
+            ja: $('confirmYesBtn').textContent, nee: $('confirmNoBtn').textContent,
+            toast: $('appToast').classList.contains('visible') ? $('appToast').textContent : null });
+          const schoon = () => { $('confirmModal').classList.remove('visible'); $('meldModal').classList.remove('visible');
+                                 $('appToast').textContent = ''; $('appToast').classList.remove('visible'); };
+          window.getMyMusicianId = async () => 'm1';
+          hasOwnProfile = true; myMusicianId = 'm1';
+          S.data.musician_blocks = []; S.data.musician_reports = [];
+          await laadBlokkades();
+          const u = {};
+
+          // 1 al gemeld: geen formulier, wel de vraag om te blokkeren
+          S.rpcResults.tt_al_gemeld = p => p.p_doel === 'm2';
+          schoon(); S.calls = [];
+          await openMeldModal('muzikant', 'm2', 'Dylan'); await w(30);
+          u.alGemeld = stand();
+          u.vraagParam = (S.calls.find(c => c.name === 'tt_al_gemeld') || {}).params;
+          // Blokkeren via de vraag
+          confirmModalYes(); await w(60);
+          u.naBlokkeren = { rijen: S.data.musician_blocks.map(b => b.blocker_id + '>' + b.blocked_id), toast: stand().toast };
+          // 2 al gemeld en al geblokkeerd: alleen een korte melding
+          schoon(); await openMeldModal('gesprek', 'm2', 'Dylan'); await w(30);
+          u.alGemeldGeblokkeerd = stand();
+          // 3 een band die al gemeld is: alleen een korte melding
+          S.rpcResults.tt_al_gemeld = true;
+          schoon(); await openMeldModal('band', 'b1', 'Van Delft'); await w(30);
+          u.bandAlGemeld = stand();
+
+          // 4 nieuwe melding van een muzikant: bedankt, en blokkeren aanbieden
+          S.rpcResults.tt_al_gemeld = false;
+          schoon(); await openMeldModal('muzikant', 'm3', 'Sanne'); await w(30);
+          u.formulierOpen = stand().formulier;
+          kiesMeldReden(document.querySelector('#meldRedenen .tag'), 'Ongepast gedrag');
+          await verstuurMelding(); await w(30);
+          u.naMelding = stand();
+          u.meldRijen = S.data.musician_reports.map(x => x.target_type + ':' + x.target_id);
+          document.getElementById('confirmNoBtn').click(); await w(30);
+          u.nietNu = { open: $('confirmModal').classList.contains('visible'), blokkades: S.data.musician_blocks.length };
+          // 5 nieuwe melding van een band: alleen bedankt
+          schoon(); await openMeldModal('band', 'b2', 'De Band'); await w(30);
+          kiesMeldReden(document.querySelector('#meldRedenen .tag'), 'Iets anders');
+          await verstuurMelding(); await w(30);
+          u.bandMelding = stand();
+
+          // 6 de database weigert (tweede toestel): geen foutlog, de vraag om te blokkeren
+          schoon(); await openMeldModal('muzikant', 'm4', 'Kim'); await w(30);
+          kiesMeldReden(document.querySelector('#meldRedenen .tag'), 'Iets anders');
+          S.errors.musician_reports = { code: 'P0001', message: 'Je hebt dit al gemeld.', hint: 'TT-555' };
+          const l1 = logs();
+          await verstuurMelding(); await w(30);
+          u.dbWeigert = Object.assign(stand(), { log: logs() - l1 });
+          delete S.errors.musician_reports;
+
+          // 7 de vraag "al gemeld?" mislukt: het formulier opent toch
+          S.rpcErrors.tt_al_gemeld = { code: 'XX000', message: 'proef' };
+          schoon(); await openMeldModal('muzikant', 'm5', 'Lua'); await w(30);
+          u.vraagMislukt = stand().formulier;
+          delete S.rpcErrors.tt_al_gemeld;
+
+          // 8 elke andere bevestiging houdt "Annuleren"
+          schoon(); showConfirm('Proef', () => {}, 'Ja'); u.anderNee = $('confirmNoBtn').textContent;
+          schoon();
+          return u;
+        }""")
+        browser.close()
+    httpd.shutdown()
+    j = json.dumps(r, ensure_ascii=False)[:900]
+    VRAAG = " Wil je {0} ook blokkeren? Berichten komen dan niet meer bij je aan. De ander merkt daar niets van."
+    check("al gemeld: geen formulier, wel 'Je hebt Dylan al gemeld. We kijken ernaar.' met de vraag om te blokkeren",
+          r["alGemeld"]["formulier"] is False
+          and r["alGemeld"]["vraag"] == "Je hebt Dylan al gemeld. We kijken ernaar." + VRAAG.format("Dylan")
+          and r["alGemeld"]["ja"] == "Blokkeren" and r["alGemeld"]["nee"] == "Niet nu", j)
+    check("de vraag 'al gemeld?' gaat over het juiste doel", r["vraagParam"] == {"p_doel": "m2"}, j)
+    check("Blokkeren in die vraag blokkeert direct", r["naBlokkeren"]["rijen"] == ["m1>m2"]
+          and r["naBlokkeren"]["toast"] == "Dylan is geblokkeerd.", j)
+    check("al gemeld en al geblokkeerd (ook vanuit een gesprek): alleen een korte melding",
+          r["alGemeldGeblokkeerd"]["vraag"] is None and r["alGemeldGeblokkeerd"]["formulier"] is False
+          and r["alGemeldGeblokkeerd"]["toast"] == "Je hebt Dylan al gemeld. We kijken ernaar.", j)
+    check("een band die al gemeld is: alleen een korte melding, geen blokkeren",
+          r["bandAlGemeld"]["vraag"] is None and r["bandAlGemeld"]["toast"] == "Je hebt Van Delft al gemeld. We kijken ernaar.", j)
+    check("nieuwe melding van een muzikant: 'Bedankt. We kijken ernaar.' en de vraag om te blokkeren",
+          r["formulierOpen"] is True and r["meldRijen"] == ["muzikant:m3"]
+          and r["naMelding"]["vraag"] == "Bedankt. We kijken ernaar." + VRAAG.format("Sanne")
+          and r["naMelding"]["nee"] == "Niet nu", j)
+    check("'Niet nu' sluit de vraag en blokkeert niemand", r["nietNu"] == {"open": False, "blokkades": 1}, j)
+    check("nieuwe melding van een band: alleen 'Bedankt. We kijken ernaar.'",
+          r["bandMelding"]["vraag"] is None and r["bandMelding"]["toast"] == "Bedankt. We kijken ernaar.", j)
+    check("weigert de database (al gemeld vanaf een ander toestel): formulier dicht, de vraag, geen foutlog",
+          r["dbWeigert"]["formulier"] is False and r["dbWeigert"]["log"] == 0
+          and r["dbWeigert"]["vraag"] == "Je hebt Kim al gemeld. We kijken ernaar." + VRAAG.format("Kim"), j)
+    check("mislukt de vraag 'al gemeld?', dan opent het formulier toch", r["vraagMislukt"] is True, j)
+    check("elke andere bevestiging houdt 'Annuleren'", r["anderNee"] == "Annuleren", j)
+    check("geen paginafouten in blok 125", not fouten, "; ".join(fouten)[:300])
+
+
 # TT-483 deel b (03-11-2026): elke pagina in elk browserblok luistert naar een
 # weigering van de regel. Zo draait de hele testset met de regel aan, en zakt
 # hij als een scherm iets nodig heeft dat de regel niet toestaat. Adressen van
@@ -13773,6 +13898,7 @@ def main():
     blok_tt481()
     blok_tt489()
     blok_tt553()
+    blok_tt555()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

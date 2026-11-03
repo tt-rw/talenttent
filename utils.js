@@ -10,8 +10,11 @@ let confirmCallback = null;
 // "Vragen" (founder-overdracht). Rood hoort alleen bij het echt verwijderen
 // van een account. Vierde parameter 'danger' (standaard false/leeg) regelt
 // dat nu per aanroep i.p.v. altijd aan te staan.
-function showConfirm(message, onConfirm, confirmLabel, danger) {
+// TT-555 (03-11-2026): vijfde parameter cancelLabel. Na een gelukte melding is
+// "Annuleren" fout: er valt niets meer te annuleren. Standaard "Annuleren".
+function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel) {
   document.getElementById('confirmMessage').textContent = message;
+  document.getElementById('confirmNoBtn').textContent = cancelLabel || 'Annuleren';
   const yesBtn = document.getElementById('confirmYesBtn');
   yesBtn.textContent = confirmLabel || 'Ja, verwijderen';
   // TT-316 (24-09-2026): destructief is omlijnd in rood (.btn-danger), nooit

@@ -77,6 +77,8 @@
       tt_resolve_search_origin: null, tt_check_username_available: true,
       tt_cache_postcode: null, tt_accept_founder_offer: null,
       tt_expire_old_founder_offers: null,
+      // TT-555: meldde ik dit doel de laatste 30 dagen al? Standaard nee.
+      tt_al_gemeld: false,
       // TT-385 fase 5: de bands van een muzikant (blok Bands op het profiel).
       tt_musician_band_ids: [],
       // TT-420: de gekozen naam van een lijst muzikanten. Geeft alleen een rij

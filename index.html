@@ -2171,7 +2171,7 @@
     <p id="confirmMessage" style="margin-bottom:24px;font-size:12px;"></p>
     <!-- TT-228 (09-09-2026): secundaire knop links, primaire rechts. -->
     <div class="btn-row">
-      <button class="btn btn-ghost" onclick="document.getElementById('confirmModal').classList.remove('visible')">Annuleren</button>
+      <button class="btn btn-ghost" id="confirmNoBtn" onclick="document.getElementById('confirmModal').classList.remove('visible')">Annuleren</button>
       <button class="btn btn-primary" id="confirmYesBtn" onclick="confirmModalYes()">Ja, verwijderen</button>
     </div>
   </div>
@@ -2529,8 +2529,8 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20261103b"></script>
-<script src="utils.js?v=20261103c"></script>
-<script src="veiligheid.js?v=20261026b"></script>
+<script src="utils.js?v=20261103d"></script>
+<script src="veiligheid.js?v=20261103a"></script>
 <script src="auth.js?v=20261103a"></script>
 <script src="postcode.js?v=20261027e"></script>
 <script src="wizard.js?v=20261103a"></script>

@@ -265,7 +265,12 @@ function zetVeiligheidMenu(plekId, soort, id, naam, verwijderId) {
 
 // ─── Melden ──────────────────────────────────────────────────────────────────
 
-function openMeldModal(soort, id, naam) {
+// TT-555 (besluiten Ronald 03-11-2026): één melding per persoon of band per 30
+// dagen; de database bewaakt dat (tt_meldgrens). Wie al meldde, ziet dat vóór
+// het formulier, zodat hij niet voor niets typt. Na een melding biedt de app
+// aan de muzikant te blokkeren; een band kun je niet blokkeren.
+async function openMeldModal(soort, id, naam) {
+  if (id && await alGemeld(id)) { naMelding(soort, id, naam, true); return; }
   meldDoel = { soort, id, naam: naam || '' };
   meldReden = null;
   const wat = soort === 'band' ? 'Band melden' : soort === 'gesprek' ? 'Gesprek melden' : 'Muzikant melden';
@@ -306,12 +311,46 @@ async function verstuurMelding() {
     });
     if (error) throw error;
   } catch (e) {
+    // TT-555: een verwacht antwoord, geen storing (vangt een melding vanaf een
+    // tweede toestel; gewoonlijk zag de melder dit al vóór het formulier).
+    if (/^Je hebt dit al gemeld/i.test((e && e.message) || '')) {
+      closeMeldModal();
+      naMelding(doel.soort, doel.id, doel.naam, true);
+      return;
+    }
     logCaught('verstuurMelding', e);
     showToast(friendlyErrorMessage(e, 'je melding versturen'));
     return;
   }
   closeMeldModal();
-  showToast('Bedankt. We kijken ernaar.');
+  naMelding(doel.soort, doel.id, doel.naam, false);
+}
+
+// Ja of nee: meldde ik dit doel de laatste 30 dagen al? Bij een fout opent het
+// formulier gewoon; de database weigert een tweede melding dan alsnog.
+async function alGemeld(id) {
+  try {
+    const { data, error } = await db.rpc('tt_al_gemeld', { p_doel: id });
+    if (error) throw error;
+    return data === true;
+  } catch (e) {
+    logCaught('alGemeld', e);
+    return false;
+  }
+}
+
+// Na een melding, of als het al gemeld is: bedanken, en bij een muzikant die ik
+// nog niet blokkeer het aanbod om te blokkeren (besluit Ronald: "doen ze dat
+// niet, dan is het hun eigen keuze").
+function naMelding(soort, id, naam, alEerder) {
+  const wie = naam || (soort === 'band' ? 'deze band' : 'deze muzikant');
+  const kop = alEerder ? `Je hebt ${wie} al gemeld. We kijken ernaar.` : 'Bedankt. We kijken ernaar.';
+  if (soort === 'band' || !id || blokkeerIkZelf(id)) { showToast(kop); return; }
+  showConfirm(
+    `${kop} Wil je ${wie} ook blokkeren? Berichten komen dan niet meer bij je aan. De ander merkt daar niets van.`,
+    () => blokkeerMuzikantUitvoeren(id, wie),
+    'Blokkeren', false, 'Niet nu'
+  );
 }
 
 // ─── Geblokkeerde muzikanten (Instellingen) ──────────────────────────────────
