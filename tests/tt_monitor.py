@@ -179,6 +179,16 @@ def blok_a():
     toets("A", "geen geheime sleutel in de repo",
           not verdacht, "A8", kort(verdacht))
 
+    # A9 - TT-483 deel b (03-11-2026, besluit Ronald): de regel die laden en
+    # versturen begrenst, staat als eerste in de kop, zonder code van buiten.
+    kop = html[:html.find("</head>")]
+    m = re.search(r'<meta http-equiv="Content-Security-Policy" content="([^"]+)">', kop)
+    regel = m.group(1) if m else ""
+    toets("A", "de regel (Content-Security-Policy) staat vóór het eerste script",
+          bool(m) and m.start() < kop.find("<script")
+          and "script-src 'self' 'unsafe-inline';" in regel and "*" not in regel,
+          "A9", "de regel ontbreekt, staat te laat of laat code van buiten toe")
+
 
 # ============================================================ B - huisstijl
 
@@ -454,6 +464,16 @@ def blok_e():
     toets("E", "bewaking: elke MIS staat als melding in GitHub",
           mis > 0 and mis == meldingen, "E3",
           "%d keer MIS, %d meldingen" % (mis, meldingen))
+
+    # E4 - TT-483 deel b: één weigering van de regel maakt de bewaking rood
+    def een_weigering(url, headers=None, data=None):
+        if "tt_bewaking" in url:
+            return 200, json.dumps(dict(goed, csp_weigeringen_6u=1))
+        return alles_goed(url, headers, data)
+    code, uit = draai(een_weigering, lambda: 365)
+    toets("E", "bewaking: één weigering van de regel geeft rood",
+          code == 1 and any(r.startswith("  MIS ") and "csp_weigeringen_6u" in r for r in uit.splitlines()),
+          "E4", "een weigering van de regel blijft groen")
 
 
 # ============================================================ afdruk

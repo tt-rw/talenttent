@@ -100,10 +100,15 @@ function ttFoutStackMetToestel(stack) {
   try { toestel = '[toestel] ' + (navigator.userAgent || 'onbekend'); } catch (e) { /* geen browser-info */ }
   return (toestel + (stack ? '\n' + String(stack) : '')).slice(0, 4000);
 }
-function logAppError(message, source, stack) {
+// buitenTeller: alleen voor een weigering van de regel (TT-483 deel b). Die
+// heeft een eigen grens (ttCspMelden), zodat twintig andere fouten hem nooit
+// kunnen verdringen.
+function logAppError(message, source, stack, buitenTeller) {
   if (!db) return; // TT-82: geen bibliotheek, dus ook geen manier om te loggen
-  if (appErrorLogCount >= 20) return;
-  appErrorLogCount++;
+  if (!buitenTeller) {
+    if (appErrorLogCount >= 20) return;
+    appErrorLogCount++;
+  }
   try {
     db.from('app_error_log').insert({
       message: String(message || '').slice(0, 2000),
@@ -141,6 +146,40 @@ window.addEventListener('unhandledrejection', (e) => {
   const message = reason?.message || String(reason);
   logAppError(message, 'unhandledrejection', reason?.stack);
 });
+
+// TT-483 deel b (03-11-2026, besluit Ronald): een weigering van de regel in
+// index.html (Content-Security-Policy). Dan laadt iets niet wat een gebruiker
+// nodig heeft, of probeert iemand iets vreemds. Ronald: "anders zijn we blind".
+// Elke soort één keer per bezoek, hoogstens tien, naar het foutenlog met bron
+// csp:<soort>. De bewaking telt die rijen en de database mailt Ronald direct.
+// Alleen het webadres van de dienst, nooit de rest van de link: een fotolink
+// draagt een sleutel. Een browserextensie valt erbuiten; die is niet van ons
+// en gaf anders vals alarm.
+const ttCspGemeld = new Set();
+function ttCspMelden(e) {
+  try {
+    const bron = String(e.sourceFile || '');
+    const geweigerd = String(e.blockedURI || '');
+    if (/^[a-z-]*extension:/i.test(bron) || /^[a-z-]*extension:/i.test(geweigerd)) return;
+    const soort = String(e.effectiveDirective || e.violatedDirective || 'onbekend');
+    let wat = geweigerd || '(leeg)';
+    if (/^(data|blob):/i.test(geweigerd)) wat = geweigerd.split(':')[0] + ':';
+    else { try { wat = new URL(geweigerd).origin; } catch (x) { /* 'inline' of 'eval' */ } }
+    const sleutel = soort + ' ' + wat;
+    if (ttCspGemeld.has(sleutel) || ttCspGemeld.size >= 10) return;
+    ttCspGemeld.add(sleutel);
+    console.error('Regel weigert ' + sleutel);
+    let waar = '';
+    try { waar = bron ? new URL(bron).pathname : ''; } catch (x) { /* geen bron */ }
+    logAppError('Regel weigert ' + soort + ': ' + wat, 'csp:' + soort,
+      'pagina ' + location.pathname + (waar ? '\nbron ' + waar + ':' + (e.lineNumber || 0) : ''), true);
+  } catch (x) {
+    // nooit teruggooien vanuit de melder zelf
+  }
+}
+(window.ttCspWeigeringen || []).forEach(ttCspMelden);
+// Wat de regel hierna weigert, gaat via het blokje in index.html direct hierheen.
+window.ttCspWeigeringen = { push: ttCspMelden };
 
 // ─── App initialisatie ───────────────────────────────────────────────────────
 

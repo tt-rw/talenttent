@@ -3,6 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- TT-483 deel b (03-11-2026, besluit Ronald: optie A): de regel die zegt
+     wat de pagina mag laden en waarheen hij gegevens mag sturen. Alleen eigen
+     code; gegevens alleen naar de eigen database (productie en test, want
+     beide sites publiceren dit ene bestand) en de bekende diensten. GitHub
+     Pages kan zo'n regel niet als kop meesturen, daarom staat hij hier, als
+     eerste, vóór elk script. 'unsafe-inline' blijft: de app heeft honderden
+     onclick=-knoppen (optie B, niet gekozen). Tegen gesmokkelde tekst
+     beschermt het ontsmetten (TT-493).
+     EEN NIEUWE DIENST? Zet hem hier erbij. De testset (blok 1, TT-483b)
+     zakt zolang een adres in de code niet in deze regel of in zijn lijst
+     "alleen een link" staat. Elke weigering gaat naar het foutenlog (bron
+     csp:...), de bewaking telt hem en Ronald krijgt direct een mail. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://fqtgilwfestzofunupnu.supabase.co https://wlcrjhsniuiewvznwrun.supabase.co https://img.youtube.com; media-src 'self' blob: https://fqtgilwfestzofunupnu.supabase.co https://wlcrjhsniuiewvznwrun.supabase.co; connect-src 'self' https://fqtgilwfestzofunupnu.supabase.co https://wlcrjhsniuiewvznwrun.supabase.co https://itunes.apple.com https://api.pdok.nl https://www.youtube.com https://open.spotify.com https://soundcloud.com https://www.tiktok.com; frame-src https://www.youtube-nocookie.com https://open.spotify.com https://w.soundcloud.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<script>
+  /* TT-483 deel b: een weigering van de regel hierboven onthouden vanaf het
+     eerste moment. core.js meldt ze aan het foutenlog zodra dat kan. */
+  window.ttCspWeigeringen = [];
+  document.addEventListener('securitypolicyviolation', function (e) { window.ttCspWeigeringen.push(e); });
+</script>
 <title>The Talent Tent — Talent zoekt talent</title>
 
 <!-- TT-81 (10-08-2026, externe review 3.2): omschrijving + deelvoorbeeld.
@@ -2509,7 +2528,7 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261103a"></script>
+<script src="core.js?v=20261103b"></script>
 <script src="utils.js?v=20261103a"></script>
 <script src="veiligheid.js?v=20261026b"></script>
 <script src="auth.js?v=20261031a"></script>

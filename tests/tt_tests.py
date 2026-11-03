@@ -365,6 +365,63 @@ def blok1_statisch():
     check("elke opslag controleert of de database echt iets wijzigde (geen 'opgeslagen' bij 0 rijen, TT-230)",
           not zonder, "; ".join(zonder)[:400])
 
+    # TT-483 deel b (03-11-2026, besluit Ronald): de regel die laden en
+    # versturen begrenst. Ronald: "we moeten dit goed monitoren". Deze
+    # controles houden een vergeten dienst tegen vóór hij live gaat.
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    kop = html[:html.find("</head>")]
+    m = re.search(r'<meta http-equiv="Content-Security-Policy" content="([^"]+)">', kop)
+    check("TT-483b: de regel (Content-Security-Policy) staat in de kop van index.html", m, "meta-tag ontbreekt")
+    regel = m.group(1) if m else ""
+    eerste_script = kop.find("<script")
+    check("TT-483b: de regel staat vóór het eerste script en de eerste link",
+          m and m.start() < eerste_script and m.start() < kop.find("<link"),
+          f"regel op {m.start() if m else -1}, eerste script op {eerste_script}")
+    delen = {d.split()[0]: d.split()[1:] for d in regel.split(";") if d.strip()}
+    check("TT-483b: geen code van buiten (script-src alleen 'self' en 'unsafe-inline')",
+          delen.get("script-src") == ["'self'", "'unsafe-inline'"], str(delen.get("script-src")))
+    check("TT-483b: object-src 'none', base-uri 'self', form-action 'self', default-src 'self'",
+          delen.get("object-src") == ["'none'"] and delen.get("base-uri") == ["'self'"]
+          and delen.get("form-action") == ["'self'"] and delen.get("default-src") == ["'self'"], str(delen)[:300])
+    check("TT-483b: geen eval en geen jokerteken in de regel",
+          "unsafe-eval" not in regel and "*" not in regel and " https: " not in regel + " ", regel[:300])
+    check("TT-483b: het blokje dat weigeringen vanaf het begin onthoudt, staat direct na de regel",
+          m and "securitypolicyviolation" in kop[m.end():eerste_script + 400], "")
+    toegestaan = set()
+    for lijst in delen.values():
+        toegestaan.update(x for x in lijst if x.startswith("https://"))
+    # Adressen in de code die de pagina nooit laadt: een gewone link, een
+    # naamruimte of uitleg in een opmerking. Een adres dat de app wel laadt,
+    # hoort in de regel in index.html, niet hier.
+    alleen_link = {
+        "https://talenttent.org",          # eigen site, links en deelvoorbeeld
+        "https://github.com",              # uitleg in opmerkingen
+        "https://youtube.com",             # herkennen van een YouTube-link
+        "https://www.instagram.com",       # link naar het platform
+        "https://developer.mozilla.org",   # uitleg in een opmerking
+        "http://www.w3.org",               # naamruimte van SVG
+        "http://localhost",                # testadres in TT_DB_PER_ADRES
+    }
+    in_code = {}
+    for f in JS_FILES + ["index.html", "sw.js"]:
+        tekst = open(os.path.join(ROOT, f), encoding="utf-8").read()
+        for adres in re.findall(r"https?://[a-zA-Z0-9.-]+", tekst):
+            in_code.setdefault(adres, f)
+    onbekend = sorted(f"{a} ({f})" for a, f in in_code.items()
+                      if a not in toegestaan and a not in alleen_link)
+    check("TT-483b: elk webadres in de code staat in de regel of in de lijst 'alleen een link'",
+          not onbekend, "zet het in de regel in index.html of in alleen_link: " + "; ".join(onbekend)[:500])
+    zonder_host = []
+    for f in JS_FILES:
+        tekst = open(os.path.join(ROOT, f), encoding="utf-8").read()
+        zonder_host += [f"{f}: {x[:40]}" for x in re.findall(r"https?://\$\{[^}]*\}[^'\"`]*", tekst)]
+    check("TT-483b: geen webadres waarvan de dienst pas tijdens het draaien ontstaat (https://${...})",
+          not zonder_host, "; ".join(zonder_host)[:300])
+    core = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
+    check("TT-483b: core.js meldt elke weigering aan het foutenlog (bron csp:, buiten de teller van 20)",
+          "function ttCspMelden" in core and "'csp:' + soort" in core
+          and "window.ttCspWeigeringen = { push: ttCspMelden }" in core, "")
+
 
 # --------------------------------------------------------------------------
 # Blok 2 t/m 5 — in de browser, tegen de stub
@@ -11826,8 +11883,10 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
         ("lang", 1, [profiel(F("donker"), "[]", "Sanne van der Heijden-B"), "openProfielScherm('m2')"]),
         ("opslag", 1, [profiel("location.origin+'/storage/v1/object/public/avatars/a/foto.png'"), "openProfielScherm('m2')"]),
         # De opslag geeft een link naar een ander webadres dat geen toestemming geeft om te meten.
+        # TT-483 deel b: dat adres staat in de regel (de database van test); localhost niet, dus
+        # het beeld komt nu van daar, en de route hieronder geeft het zonder toestemming om te meten.
         ("vreemd", 1, [profiel("location.origin+'/storage/v1/object/public/avatars/a/vreemd.png'"),
-                       "db.storage.from = () => ({ createSignedUrls: async paden => ({ data: paden.map(p => ({ path: p, signedUrl: location.origin.replace('127.0.0.1', 'localhost') + '/icon-192.png', error: null })), error: null }) })",
+                       "db.storage.from = () => ({ createSignedUrls: async paden => ({ data: paden.map(p => ({ path: p, signedUrl: 'https://wlcrjhsniuiewvznwrun.supabase.co/storage/v1/object/sign/avatars/a/vreemd.png?token=proef', error: null })), error: null }) })",
                        "openProfielScherm('m2')"]),
     ]
     res, fouten = {}, []
@@ -11845,6 +11904,9 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
                 page.route("**/testfoto/*.png", lambda r: r.fulfill(status=200, content_type="image/png", body=beelden[r.request.url.rsplit("/", 1)[1][:-4]]))
                 # De opslag: een foto op hetzelfde webadres, dus met toestemming om te meten.
                 page.route("**/storage/v1/object/sign/**", lambda r: r.fulfill(status=200, content_type="image/png", body=beelden["licht"]))
+                # Scenario "vreemd": een ander webadres dat meten niet toestaat (toestemming voor een ander adres).
+                page.route("**/sign/avatars/a/vreemd.png*", lambda r: r.fulfill(status=200, content_type="image/png", body=beelden["licht"],
+                                                                                 headers={"access-control-allow-origin": "https://ander.example"}))
                 page.goto(f"{basis}/index.html", wait_until="load")
                 page.wait_for_timeout(500)
                 for st in stappen:
@@ -12488,9 +12550,6 @@ def blok_tt517_fase8():
             page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
             for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
                 page.route(pat, lambda r: r.abort())
-            # De foto's: een eigen adres met toestemming om te meten (zoals de opslag).
-            page.route("https://beeld.test/**", lambda r: r.fulfill(status=200, content_type="image/png",
-                       headers={"Access-Control-Allow-Origin": "*"}, body=beelden[r.request.url.rsplit("/", 1)[1].split(".")[0]]))
             # De openbare functie zoals een bezoeker zonder account: wat de database dan geeft.
             def rpc(r):
                 anon.append({"url": r.request.url, "headers": {k.lower(): v for k, v in r.request.headers.items()},
@@ -12502,6 +12561,10 @@ def blok_tt517_fase8():
             # Playwright kiest de laatst geregistreerde route eerst: eerst alles dicht, dan de functie.
             page.route("https://*.supabase.co/**", lambda r: r.abort())
             page.route("https://*.supabase.co/rest/v1/rpc/**", rpc)
+            # De foto's: een eigen adres met toestemming om te meten (zoals de opslag). TT-483 deel b:
+            # de opslag van de testdatabase, want de regel in index.html laat geen ander adres toe.
+            page.route("**/object/public/proef/**", lambda r: r.fulfill(status=200, content_type="image/png",
+                       headers={"Access-Control-Allow-Origin": "*"}, body=beelden[r.request.url.rsplit("/", 1)[1].split(".")[0]]))
             page.goto(f"{basis}/index.html", wait_until="load"); page.wait_for_timeout(500)
             page.evaluate("""(telefoon) => {
               window.__gedeeld = []; window.__klembord = [];
@@ -12520,7 +12583,7 @@ def blok_tt517_fase8():
               S.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
               // Ingelogd ziet de app de echte foto (strepen); een bezoeker zou de wazige versie krijgen.
               S.rpcResults.tt_get_musicians_public = () => [{ id: 'm2', username: 'noorbas', age: 15, city: 'Den Haag', bio: '', goal: null,
-                profile_color: '#FFB81C', avatar_url: 'https://beeld.test/ruit.png', updated_at: new Date().toISOString(),
+                profile_color: '#FFB81C', avatar_url: 'https://wlcrjhsniuiewvznwrun.supabase.co/storage/v1/object/public/proef/ruit.png', updated_at: new Date().toISOString(),
                 instrument_levels: [{ instrument: 'Basgitaar', niveau: 3 }], genres: ['Funk', 'Jazz', 'Pop'], songs: [], media: [] }];
               S.rpcResults.tt_get_bands_public = () => [{ id: 'b2', name: 'Ypenburg Groove', city: 'Den Haag', description: '',
                 status: 'zoekend', profile_color: '#3ecfff', updated_at: new Date().toISOString(), avatar_url: null,
@@ -12530,7 +12593,7 @@ def blok_tt517_fase8():
         # Een kleine wazige versie (16 x 12) van het strepenbeeld, zoals de database die geeft.
         def wazig(page):
             return page.evaluate("""async () => {
-              const i = new Image(); i.src = 'https://beeld.test/ruit.png'; i.crossOrigin = 'anonymous'; await new Promise(ok => { if (i.complete && i.naturalWidth) ok(); else i.onload = ok; });
+              const i = new Image(); i.src = 'https://wlcrjhsniuiewvznwrun.supabase.co/storage/v1/object/public/proef/ruit.png'; i.crossOrigin = 'anonymous'; await new Promise(ok => { if (i.complete && i.naturalWidth) ok(); else i.onload = ok; });
               const c = document.createElement('canvas'); c.width = 16; c.height = 12;
               c.getContext('2d').drawImage(i, 0, 0, 16, 12); return c.toDataURL('image/jpeg', 0.7); }""")
         # Meet een kaart (een File of een canvas) in de pagina.
@@ -12578,7 +12641,7 @@ def blok_tt517_fase8():
         res["anon"] = list(anon)
         # Dezelfde kaart met de echte foto (ter vergelijking: zo scherp mag de kaart van een 15-jarige nooit zijn).
         res["echt"] = page.evaluate("""async (MEET) => { const meet = eval(MEET);
-          const i = new Image(); i.crossOrigin = 'anonymous'; i.src = 'https://beeld.test/ruit.png'; await new Promise(ok => { if (i.complete && i.naturalWidth) ok(); else i.onload = ok; });
+          const i = new Image(); i.crossOrigin = 'anonymous'; i.src = 'https://wlcrjhsniuiewvznwrun.supabase.co/storage/v1/object/public/proef/ruit.png'; await new Promise(ok => { if (i.complete && i.naturalWidth) ok(); else i.onload = ok; });
           return meet(await kaartMaken({ naam: 'noorbas', regel: '15 jaar · Den Haag', wat: ['Basgitaar'], onder: ['Funk'] }, { img: i, wazig: false })); }""", MEET)
         # 2. De band: zoekt keyboard en zang, geen foto (de schijnwerper).
         staat.update(antwoord=[{"id": "b2", "avatar_url": None}])
@@ -12609,7 +12672,7 @@ def blok_tt517_fase8():
         ctx.close()
         # 5. Computer zonder deelmenu: de link naar het klembord, de kaart bij de downloads.
         ctx, page = nieuw(1280, False)
-        staat.update(antwoord=[{"id": "m2", "avatar_url": "https://beeld.test/donker.png"}], status=200)
+        staat.update(antwoord=[{"id": "m2", "avatar_url": "https://wlcrjhsniuiewvznwrun.supabase.co/storage/v1/object/public/proef/donker.png"}], status=200)
         page.evaluate("async () => { await openProfielScherm('m2'); await new Promise(z => setTimeout(z, 400)); }")
         dl = None
         try:
@@ -12630,7 +12693,7 @@ def blok_tt517_fase8():
         staat.update(status=200)
         # 7. De kaart zelf, op de zwaarste beelden: wit, strepen, geen foto, een lange naam en veel genres.
         res["los"] = page.evaluate("""async (MEET) => { const meet = eval(MEET); const uit = {};
-          const laad = async n => { const i = new Image(); i.crossOrigin = 'anonymous'; i.src = 'https://beeld.test/' + n + '.png'; await new Promise(ok => { if (i.complete && i.naturalWidth) ok(); else i.onload = ok; }); return { img: i, wazig: false }; };
+          const laad = async n => { const i = new Image(); i.crossOrigin = 'anonymous'; i.src = 'https://wlcrjhsniuiewvznwrun.supabase.co/storage/v1/object/public/proef/' + n + '.png'; await new Promise(ok => { if (i.complete && i.naturalWidth) ok(); else i.onload = ok; }); return { img: i, wazig: false }; };
           const g = { naam: 'fleurcello', regel: '18 jaar · Delft', wat: ['Cello'], onder: ['Klassiek', 'Indie', 'Folk'] };
           uit.wit = await meet(await kaartMaken(g, await laad('wit')));
           uit.strepen = await meet(await kaartMaken(g, await laad('strepen')));
@@ -13288,8 +13351,86 @@ def blok_pijl():
     httpd.shutdown()
 
 
+def blok_csp_melder():
+    # TT-483 deel b (03-11-2026, besluit Ronald: "anders zijn we blind"). Een
+    # weigering van de regel komt in het foutenlog: één rij per soort, alleen het
+    # webadres van de dienst (nooit de rest van de link), ook als de gewone teller
+    # van twintig al vol is. Het adres .test is gereserveerd: telt niet in blok 120.
+    print("\nBlok 121 — TT-483b: een weigering komt in het foutenlog, één keer per soort")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844})
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        fouten = []
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(400)
+        r = page.evaluate("""async () => {
+          const csp = () => (window.TT_STUB.data.app_error_log || []).filter(x => String(x.source || '').startsWith('csp:'));
+          const voor = csp().length;
+          for (let n = 0; n < 25; n++) logAppError('ruis ' + n, 'proef-teller');
+          const zet = u => { const i = document.createElement('img'); i.src = u; document.body.appendChild(i); };
+          zet('https://verboden.test/a.png?token=geheim123'); zet('https://verboden.test/b.png'); zet('https://verboden.test/c.png');
+          await new Promise(k => setTimeout(k, 800));
+          const na = csp().slice(voor);
+          return { aantal: na.length, rij: na[0] || null, doorgezet: !!window.ttCspWeigeringen && typeof ttCspMelden === 'function' && window.ttCspWeigeringen.push === ttCspMelden,
+                   ruis: (window.TT_STUB.data.app_error_log || []).filter(x => x.source === 'proef-teller').length };
+        }""")
+        browser.close()
+    httpd.shutdown()
+    rij = r["rij"] or {}
+    check("een weigering komt in het foutenlog: bron csp:img-src, alleen het webadres van de dienst",
+          rij.get("source") == "csp:img-src" and rij.get("message") == "Regel weigert img-src: https://verboden.test", json.dumps(rij)[:300])
+    check("drie keer dezelfde soort: één rij (geen vloed in het foutenlog)", r["aantal"] == 1, str(r["aantal"]))
+    check("de rest van de link (een sleutel) komt nooit in het foutenlog", "geheim123" not in json.dumps(rij), json.dumps(rij)[:300])
+    check("ook met de gewone teller van twintig vol komt de weigering erin", r["ruis"] == 20 and r["aantal"] == 1, json.dumps(r)[:200])
+    check("na het laden van core.js gaat elke weigering direct naar de melder", r["doorgezet"], "")
+    check("geen paginafouten in blok 121", not fouten, "; ".join(fouten)[:300])
+
+
+# TT-483 deel b (03-11-2026): elke pagina in elk browserblok luistert naar een
+# weigering van de regel. Zo draait de hele testset met de regel aan, en zakt
+# hij als een scherm iets nodig heeft dat de regel niet toestaat. Adressen van
+# testgegevens (example.org) laadt de echte app nooit; die tellen niet.
+CSP_WEIGERINGEN = []
+# Testgegevens die nooit echt laden: example.org/.com, .test (gereserveerd voor proeven) en de nephost "x".
+CSP_TESTADRESSEN = ("https://example.org", "https://example.com", ".test/", "https://x/")
+CSP_LUISTER = """document.addEventListener('securitypolicyviolation', e => {
+  try { window.__ttCspMelding((e.effectiveDirective || e.violatedDirective) + ' ' + e.blockedURI + ' (pagina ' + location.pathname + ')'); } catch (x) {}
+});"""
+
+
+def _csp_vangnet():
+    from playwright.sync_api import Browser
+
+    def melding(tekst):
+        if not any(a in tekst for a in CSP_TESTADRESSEN):
+            CSP_WEIGERINGEN.append(tekst)
+
+    oud_context, oud_pagina = Browser.new_context, Browser.new_page
+
+    def new_context(self, *a, **kw):
+        c = oud_context(self, *a, **kw)
+        c.expose_function("__ttCspMelding", melding)
+        c.add_init_script(CSP_LUISTER)
+        return c
+
+    def new_page(self, *a, **kw):
+        pg = oud_pagina(self, *a, **kw)
+        pg.expose_function("__ttCspMelding", melding)
+        pg.add_init_script(CSP_LUISTER)
+        return pg
+
+    Browser.new_context, Browser.new_page = new_context, new_page
+
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
+    _csp_vangnet()
     blok1_statisch()
     blok_tt517_fase1()
     blok_tt517_fase2()
@@ -13307,6 +13448,10 @@ def main():
     blok_browser()
     blok_xss()
     blok_jwt_herhaling()
+    blok_csp_melder()
+    print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
+    check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
+          not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])
     gezakt = [n for n, ok, _ in results if not ok]
     print(f"\nEindstand: {len(results) - len(gezakt)} van {len(results)} geslaagd")
     if gezakt:
