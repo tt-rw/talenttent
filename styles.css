@@ -311,6 +311,10 @@
        de 16px van de browser (bijvoorbeeld "Laden..." in Bands en Berichten). */
     font-size: 15px;
     min-height: 100vh;
+    /* TT-553 (03-11-2026): een woord dat niet op de regel past, breekt af in
+       plaats van uit zijn vak te lopen. Raakt alleen zo'n woord; tekst die al
+       past en rijen met "…" (white-space: nowrap) veranderen niet. */
+    overflow-wrap: break-word;
   }
 
   /* TT-212-vervolg (06-09-2026): overflow-x:hidden stond eerst op body zelf.
@@ -1555,6 +1559,7 @@
   }
 
   .profile-song-row:last-child { padding-bottom: 0; }
+  .profile-song-row > :first-child { overflow-wrap: anywhere; } /* TT-553: lange titel breekt af */
 
   /* Een nummer op twee regels: artiest groot en bovenaan, het nummer eronder
      (besluit Ronald, 27-10-2026, sessie 21: "vanuit consistentie"; geldt voor
@@ -2012,6 +2017,8 @@
     text-align: center;
   }
   .pb-kaart-platform {
+    max-width: 100%;
+    overflow-wrap: anywhere; /* TT-553 */
     font-size: 17px;
     font-weight: 700;
     color: var(--accent);
@@ -3032,7 +3039,7 @@
   }
   .messages-conv-avatar img { width: 100%; height: 100%; object-fit: cover; }
   .messages-conv-main { flex: 1; min-width: 0; }
-  .messages-conv-name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; }
+  .messages-conv-name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; overflow-wrap: anywhere; } /* TT-553 */
   /* TT-517 fase 11 (besluit Ronald 01-11-2026): een ongelezen gesprek ziet eruit
      als elk ander gesprek; het rode getal is het teken ("opvallend genoeg"). */
   .messages-conv-preview { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -3047,7 +3054,7 @@
     border-bottom: 1px solid var(--border);
   }
   /* TT-271: foto en naam zijn tikbaar en openen het profiel. */
-  .messages-thread-link { cursor: pointer; }
+  .messages-thread-link { cursor: pointer; overflow-wrap: anywhere; } /* TT-553 */
   .thread-verwijderd .messages-thread-link { cursor: default; }
 
   .messages-day-divider {
@@ -3340,6 +3347,10 @@
     border-radius: 6px;
     white-space: nowrap;
   }
+  /* TT-553: een label dat breder is dan de regel, breekt af in plaats van uit
+     beeld te lopen (alleen een instrument of genre van tientallen tekens). */
+  .tag-solid { max-width: 100%; }
+  .profile-badges .tag-solid { white-space: normal; overflow-wrap: anywhere; }
   /* Bevinding Ronald 28-09-2026: gevulde sterren overal goud, ook in een
      tag (was --text). Zie .star-display-filled. */
   .tag-solid .star-display-empty { color: var(--rand-neutraal); }
@@ -3469,6 +3480,7 @@
 
   .result-row-main { flex: 1; min-width: 0; }
 
+  .result-row-naam { overflow-wrap: anywhere; } /* TT-553: zoals .bb-naam */
   .result-row-name {
     display: flex;
     align-items: baseline;
@@ -3946,6 +3958,27 @@
   .profiel-knoppen .deel-knop:last-child { justify-content: center; padding-right: 9px; }
 
   .band-bio { font-size: 15px; line-height: 1.5; color: var(--text); margin: 0; }
+
+  /* TT-553 (besluit Ronald 03-11-2026: a). Een woord in de bio of in "Wie zijn
+     we" dat niet op de regel past (bijna altijd een geplakte link), staat op
+     één regel met "(meer)" erachter. Een tik toont het hele woord, dat dan
+     afbreekt. Past het woord, dan geen "(meer)" (.past, langWoordenVolgen()). */
+  .lang-woord { display: inline-flex; max-width: 100%; vertical-align: top; }
+  .lang-woord-tekst { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lang-woord-meer {
+    position: relative;
+    flex: none;
+    margin-left: 4px;
+    padding: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .lang-woord-meer::after { content: ''; position: absolute; top: -13px; bottom: -13px; left: -8px; right: -8px; }
+  .lang-woord.past .lang-woord-meer, .lang-woord.open .lang-woord-meer { display: none; }
+  .lang-woord.open .lang-woord-tekst { overflow: visible; white-space: normal; overflow-wrap: anywhere; }
 
   /* De bezetting op de bandpagina: rijen, zoals Onze bezetting en het blok
      Bands op het muzikantprofiel (.bb-rij, TT-450). Een open rol en een

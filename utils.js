@@ -770,6 +770,34 @@ function jsAttr(s) {
     .replace(/\r?\n/g, ' '));
 }
 
+// TT-553 (besluit Ronald 03-11-2026: a). Tekst voor de bio en "Wie zijn we":
+// een woord van LANG_WOORD_TEKENS tekens of meer (bijna altijd een geplakte
+// link) staat op één regel met "(meer)"; een tik toont het hele woord. De rest
+// gaat door escHtml, zoals altijd.
+const LANG_WOORD_TEKENS = 20;
+function tekstMetMeerHTML(tekst) {
+  return String(tekst ?? '').split(/(\s+)/).map(w => w.length >= LANG_WOORD_TEKENS && !/\s/.test(w)
+    ? `<span class="lang-woord"><span class="lang-woord-tekst">${escHtml(w)}</span><button type="button" class="lang-woord-meer" onclick="langWoordOpen(this)" aria-label="Toon het hele woord">(meer)</button></span>`
+    : escHtml(w)).join('');
+}
+function langWoordOpen(knop) { knop.parentElement.classList.add('open'); }
+// Past een lang woord toch op de regel, dan verdwijnt "(meer)" (.past). Gemeten
+// in het volgende beeld (les 8D 03-11-2026: nooit in de melding zelf de maat
+// wijzigen), ook bij draaien van het toestel en voor tekst die later komt.
+(function langWoordenVolgen() {
+  if (!window.ResizeObserver || !window.MutationObserver || !document.body) return;
+  const kijker = new ResizeObserver(lijst => requestAnimationFrame(() => lijst.forEach(e => {
+    const t = e.target;
+    if (t.parentElement) t.parentElement.classList.toggle('past', t.scrollWidth <= t.clientWidth + 1);
+  })));
+  const volg = el => {
+    if (el.nodeType !== 1) return;
+    (el.classList.contains('lang-woord-tekst') ? [el] : [...el.getElementsByClassName('lang-woord-tekst')]).forEach(t => kijker.observe(t));
+  };
+  volg(document.body);
+  new MutationObserver(m => m.forEach(x => x.addedNodes.forEach(volg))).observe(document.body, { childList: true, subtree: true });
+})();
+
 // javascript:-URL's zijn hier het echte risico: die voeren code uit zodra
 // iemand op de link klikt. blob: is toegestaan omdat de lokale foto-preview
 // die gebruikt (URL.createObjectURL).

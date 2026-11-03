@@ -80,7 +80,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       ${m.musician_genres.map(x => `<span class="tag-solid">${escHtml(x.genre)}</span>`).join('')}
     </div>
     ${m.beschikbaar === false ? nietBeschikbaarMeldingHTML() : ''}
-    ${m.bio ? `<p class="profile-bio">${escHtml(m.bio)}</p>` : ''}
+    ${m.bio ? `<p class="profile-bio">${tekstMetMeerHTML(m.bio)}</p>` : ''}
     ${profielBandsHTML(m.bands)}
     ${m.musician_songs.length ? `
       <div class="profile-songs">
@@ -149,7 +149,7 @@ function profielMediaHTML(mediaLijst, fotoWazig) {
             const label = l.platform || 'Link';
             const inner = ytId
               ? `<img src="https://img.youtube.com/vi/${jsAttr(ytId)}/hqdefault.jpg" alt="${escHtml(label)}" style="width:100%;height:100%;object-fit:cover;display:block;">` + SPEELTEKEN_HTML
-              : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface2);text-align:center;padding:4px;"><span style="font-size:12px;font-weight:700;color:var(--text);">${escHtml(label)}</span></div>`;
+              : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface2);text-align:center;padding:4px;"><span style="font-size:12px;font-weight:700;color:var(--text);overflow-wrap:anywhere;">${escHtml(label)}</span></div>`;
             // TT-158 (27-08-2026) trok hier een grens bij "ingelogd": alleen
             // dan klikbaar. TT-218 (06-09-2026), op verzoek van Ronald: die
             // grens losgelaten — een link opent nu onder alle omstandigheden,

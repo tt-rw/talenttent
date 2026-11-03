@@ -13437,6 +13437,101 @@ def blok_csp_melder():
     check("geen paginafouten in blok 121", not fouten, "; ".join(fouten)[:300])
 
 
+# --------------------------------------------------------------------------
+# Blok 124 — TT-553: een lang woord loopt nergens uit zijn vak (besluit Ronald 03-11-2026: a)
+# --------------------------------------------------------------------------
+# Elk testveld van de XSS-proef krijgt één woord van 69 tekens zonder spatie.
+# De proef opent dezelfde schermen en meet elk element met dat woord: het mag
+# niet buiten het scherm komen en niet uit zijn vak lopen. Daarna: de bio met
+# een lange link toont "(meer)", een tik toont het hele woord binnen de kolom,
+# een woord dat past krijgt geen "(meer)", en een bandnaam van één lang woord breekt in de kop
+# af en blijft heel zichtbaar (besluit Ronald 01-11-2026, N2: een naam wordt nooit afgekapt;
+# bevestigd 03-11-2026).
+
+LANG_WOORD = "LANGWOORD" + "abcdefghij" * 6
+LANG_UITZONDERINGEN = {
+    "hoes > profile-name": "besluit Ronald TT-249: een profielnaam wordt nooit afgekapt of afgebroken; de invulcontrole (naamPastInProfielkop) houdt een te lange naam tegen",
+}
+LANG_MEET = r"""() => {
+  const uit = [], W = innerWidth;
+  for (const e of document.querySelectorAll('body *')) {
+    if (!e.offsetParent && getComputedStyle(e).position !== 'fixed') continue;
+    if (![...e.childNodes].some(n => n.nodeType === 3 && n.textContent.includes('LANGWOORD'))) continue;
+    if (e.closest('.hoes-tekst') && e.classList.contains('profile-name')) continue;
+    if (e.closest('.lang-woord:not(.open)')) continue;
+    const cs = getComputedStyle(e), r = e.getBoundingClientRect(), o = e.parentElement;
+    const morst = cs.overflowX === 'visible' && e.scrollWidth > e.clientWidth + 1;
+    const overOuder = r.right > o.getBoundingClientRect().right + 1 && getComputedStyle(o).overflowX === 'visible';
+    const buiten = r.right > W + 1 && !e.closest('.hoes-spoor');
+    if (morst || overOuder || buiten) uit.push((e.className || e.tagName) + '<' + (o.className || o.tagName));
+  }
+  return uit;
+}"""
+
+
+def blok_tt553():
+    print("\nBlok 124 — TT-553: een lang woord loopt nergens uit zijn vak")
+    stub_js = open(STUB, encoding="utf-8").read()
+    regel = next(r for r in XSS_INIT.splitlines() if r.strip().startswith("const P = f =>"))
+    init = XSS_INIT.replace(regel, '  const P = f => "' + LANG_WOORD + '";')
+    check("TT-553: de proeftekst is vervangen door het lange woord", init != XSS_INIT)
+    httpd, port = serve()
+    fout, stapfouten = [], []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+        pg = ctx.new_page()
+        body = "window.__MODUS = 'weergavenaam';\n" + stub_js + "\n" + init
+        pg.route("**/supabase.js*", (lambda b: lambda r: r.fulfill(status=200, content_type="application/javascript", body=b))(body))
+        for pat in ("**/fonts.googleapis.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**", "**/example.org/**"):
+            pg.route(pat, lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(900)
+        for naam, js in XSS_STAPPEN:
+            try:
+                pg.evaluate("async () => {" + js + "}")
+            except Exception as e:
+                stapfouten.append(f"{naam}: {str(e).splitlines()[0][:90]}")
+                continue
+            pg.wait_for_timeout(350)
+            fout.extend(f"{naam}: {x}" for x in pg.evaluate(LANG_MEET))
+        # De bio met een lange link, op de bandpagina: een verse pagina, zonder
+        # de vensters die de stappen hierboven openlieten.
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(900)
+        pg.evaluate("async () => { const b = window.TT_STUB.data.bands[0]; b.name = 'Supercalifragilistischexpialidociousband'; b.description = 'Kijk op https://www.instagram.com/supercalifragilistisch.drummer.official/reels/ voor meer'; openBandScherm(b.id); }")
+        pg.wait_for_timeout(900)
+        dicht = pg.evaluate("""() => { const k = document.querySelector('.band-bio .lang-woord'); if (!k) return null;
+          const t = k.querySelector('.lang-woord-tekst'), m = k.querySelector('.lang-woord-meer'), b = document.querySelector('.band-bio').getBoundingClientRect(), r = m.getBoundingClientRect();
+          return { meer: !!m.offsetParent && m.textContent === '(meer)', afgekapt: t.scrollWidth > t.clientWidth, binnen: k.getBoundingClientRect().right <= b.right + 0.5,
+                   tik: r.width + 16 >= 44 && r.height + 26 >= 44 }; }""")
+        pg.click(".band-bio .lang-woord-meer")
+        pg.wait_for_timeout(300)
+        open_ = pg.evaluate("""() => { const k = document.querySelector('.band-bio .lang-woord'), b = document.querySelector('.band-bio').getBoundingClientRect();
+          return { open: k.classList.contains('open'), knopWeg: !k.querySelector('.lang-woord-meer').offsetParent,
+                   heel: k.textContent.includes('reels/'), binnen: k.getBoundingClientRect().right <= b.right + 0.5 }; }""")
+        kop = pg.evaluate("""() => { const t = document.querySelector('.kop-titel'), cs = getComputedStyle(t), r = t.getBoundingClientRect();
+          const menu = document.querySelector('header > .kop-rechts').getBoundingClientRect();
+          return { heel: t.scrollWidth <= t.clientWidth + 1 && cs.textOverflow !== 'ellipsis', tweeRegels: t.classList.contains('twee-regels'),
+                   naastMenu: r.right <= menu.left + 0.5, inDeRij: r.height <= 44 }; }""")
+        pg.evaluate("document.querySelector('.band-bio').innerHTML = tekstMetMeerHTML('Wij zijn Supercalifragilistisch')")
+        pg.wait_for_timeout(300)
+        past = pg.evaluate("() => { const k = document.querySelector('.band-bio .lang-woord'); return k.classList.contains('past') && !k.querySelector('.lang-woord-meer').offsetParent; }")
+        kort = pg.evaluate("() => tekstMetMeerHTML('Wij spelen rock <b>') === 'Wij spelen rock &lt;b&gt;'")
+        ctx.close()
+        browser.close()
+    httpd.shutdown()
+    check("TT-553: alle schermen geopend zonder fout", not stapfouten, "; ".join(stapfouten)[:400])
+    check(f"TT-553: geen woord van {len(LANG_WOORD)} tekens buiten het scherm of uit zijn vak (uitgezonderd: {len(LANG_UITZONDERINGEN)} met reden)",
+          not fout, "; ".join(sorted(set(fout)))[:600])
+    check("TT-553: een lange link in de bio staat op één regel met \"(meer)\", binnen de kolom, tikvlak 44px",
+          bool(dicht) and all(dicht.values()), str(dicht))
+    check("TT-553: een tik op \"(meer)\" toont het hele woord binnen de kolom en de knop verdwijnt", all(open_.values()), str(open_))
+    check("TT-553: een woord dat past, krijgt geen \"(meer)\"", past)
+    check("TT-553: tekst zonder lang woord gaat ongewijzigd door escHtml", kort)
+    check("TT-553: een bandnaam van één lang woord (40 tekens) breekt in de kop af: heel zichtbaar, naast het menu, binnen de rij van 44px", all(kop.values()), str(kop))
+
+
 def blok_tt489():
     # TT-489 (03-11-2026, besluit Ronald): de database laat de app alleen de
     # kolommen message, source, stack en user_id schrijven in het foutenlog, en
@@ -13677,6 +13772,7 @@ def main():
     blok_csp_melder()
     blok_tt481()
     blok_tt489()
+    blok_tt553()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

@@ -1189,7 +1189,7 @@ function bandPaginaHTML(b, kijker) {
     }</div>${voortgang && !voortgang.af.bezetting ? uitnodiging('+ Wie spelen er in de band?') : ''}`);
   }
   // 2. Wie zijn we, direct onder de bezetting (besluit Ronald, (c)).
-  if (b.description) h += bandSectieHTML('Wie zijn we', `<p class="band-bio">${escHtml(b.description)}</p>`);
+  if (b.description) h += bandSectieHTML('Wie zijn we', `<p class="band-bio">${tekstMetMeerHTML(b.description)}</p>`);
   else if (beheer) h += bandSectieHTML('Wie zijn we', uitnodiging('+ Vertel wie jullie zijn'));
   // 3. Eigen nummers.
   const nummers = b.nummers.map(n => bandNummerHTML(n, b.avatar_url)).join('');
