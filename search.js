@@ -1369,10 +1369,10 @@ function initSetlistSearchFilters() {
 // Een gekozen nummer of een nummer in het resultaat: één rij, de artiest groot
 // en bovenaan, het nummer eronder (nummerTekstHTML(), besluit Ronald
 // 27-10-2026). Een artiest zonder nummer zoekt op al zijn nummers (TT-430).
-// Het kruisje blijft hier een kaal ✕, zonder "Zeker?"-stap: dit is een
+// Het kruisje achter een rij (RIJ_KRUIS), zonder "Zeker?"-stap: dit is een
 // zoekfilter dat je zelf net hebt toegevoegd (huisstijl §8).
 function mmKruisHTML(actie, label) {
-  return `<button type="button" class="song-remove" onclick="event.stopPropagation(); ${actie}" title="Verwijderen" aria-label="${escHtml(label)}">✕</button>`;
+  return `<button type="button" class="song-remove" onclick="event.stopPropagation(); ${actie}" title="Verwijderen" aria-label="${escHtml(label)}">${RIJ_KRUIS}</button>`;
 }
 function renderSetlistSongsList() {
   const list = document.getElementById('setlistSongsList');

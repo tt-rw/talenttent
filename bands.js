@@ -1292,7 +1292,7 @@ function bandDeelBladAanvullen() {
 function bandVoetHTML(b, kijker) {
   if (kijker === 'beheerder' || kijker === 'lid') return '';
   if (kijker === 'gast') {
-    return `<button class="btn btn-primary" style="width:100%;" onclick="showView('register')">Maak een profiel aan om contact te leggen</button>`;
+    return `<button class="btn btn-primary" style="width:100%;" onclick="showView('register')">Maak een profiel en leg contact</button>`;
   }
   if (!b.contact) return '';
   return `<button class="btn btn-primary" style="width:100%;" data-bericht-id="${escHtml(b.contact.id)}" onclick="openMessageComposer('${jsAttr(b.contact.id)}','${jsAttr(b.contact.naam)}','${jsAttr(b.name)}')">Stuur een bericht aan de band →</button>`;
@@ -1996,7 +1996,7 @@ function bmzNummerRijHTML(n, i) {
         <input type="text" class="nummer-titel" id="bmzTitel${i}" value="${escHtml(n.titel)}" placeholder="Titel van het nummer" aria-label="Titel van het nummer" maxlength="80" autocomplete="off" oninput="bmzNummers[${i}].titel = this.value">
         <input type="url" class="media-rij-url" id="bmzUrl${i}" value="${escHtml(n.url)}" placeholder="https://youtube.com/watch?v=..." aria-label="Link naar het nummer" oninput="bmzNummers[${i}].url = this.value" onchange="bmzRenderNummers()">
       </div>
-      <button type="button" class="song-remove" onclick="bmzNummerWeg(${i})" aria-label="Nummer weghalen">✕</button>
+      <button type="button" class="song-remove" onclick="bmzNummerWeg(${i})" aria-label="Nummer weghalen">${RIJ_KRUIS}</button>
     </div>`;
 }
 
@@ -2041,7 +2041,7 @@ function bcRenderCovers() {
     return `<div class="profile-song-row"><span><strong>${escHtml(c.artist)}</strong> — <span style="color:var(--muted)">${escHtml(c.title)}</span></span>${
       c._zeker
         ? `<button type="button" class="song-remove" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:var(--danger);" onclick="bcCoverWeg(${i})" title="Bevestig weghalen">Zeker?</button>`
-        : `<button type="button" class="song-remove" onclick="bcCoverWeg(${i})" title="Weghalen" aria-label="Haal ${escHtml(c.title)} weg">✕</button>`
+        : `<button type="button" class="song-remove" onclick="bcCoverWeg(${i})" title="Weghalen" aria-label="Haal ${escHtml(c.title)} weg">${RIJ_KRUIS}</button>`
     }</div>`;
   }).join('');
   document.getElementById('bcCoversLeeg').hidden = bcCovers.length > 0;

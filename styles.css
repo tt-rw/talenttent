@@ -247,6 +247,22 @@
   @font-face { font-family: 'Inter'; src: url('inter-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
   @font-face { font-family: 'Inter'; src: url('inter-900.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
   @font-face { font-family: 'Inter'; src: url('inter-400italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
+  /* 8D 02-11-2026 en besluit Ronald 03-11-2026: de tekens → ✕ ✓ ★ ☆ zitten
+     niet in de verkleinde Inter-bestanden, dus tekende de telefoon ze uit zijn
+     eigen letter (dun, en elk teken een andere maat). tt-tekens-400 en
+     tt-tekens-700 bevatten alleen die vijf: één vorm per teken, zo dik als
+     Inter Regular en Inter Bold; kruisje, vinkje en sterren hebben hetzelfde
+     vak, dus bij dezelfde maat even groot. Zelfde familie, alleen voor die
+     tekens (unicode-range); de rest van de tekst raakt het niet. Gemaakt met
+     _niet-uploaden/pijl/maak-tekens.py. */
+  @font-face { font-family: 'Inter'; src: url('tt-tekens-400.woff') format('woff'); font-weight: 400; font-style: normal; font-display: swap; unicode-range: U+2192, U+2713, U+2715, U+2605-2606; }
+  @font-face { font-family: 'Inter'; src: url('tt-tekens-700.woff') format('woff'); font-weight: 700; font-style: normal; font-display: swap; unicode-range: U+2192, U+2713, U+2715, U+2605-2606; }
+  @font-face { font-family: 'Inter'; src: url('tt-tekens-700.woff') format('woff'); font-weight: 900; font-style: normal; font-display: swap; unicode-range: U+2192, U+2713, U+2715, U+2605-2606; }
+  @font-face { font-family: 'Inter'; src: url('tt-tekens-400.woff') format('woff'); font-weight: 400; font-style: italic; font-display: swap; unicode-range: U+2192, U+2713, U+2715, U+2605-2606; }
+  /* Besluit Ronald 03-11-2026 (op beeld, A): elk los teken ✕ ✓ ★ ☆ is 11px,
+     overal even groot (de puntjes ⋯ niet). Een teken in een zin (zoals
+     "✓ Je wachtwoord is gewijzigd.") volgt de zin. */
+  :root { --tekenmaat: 11px; }
   /* --font-display heeft twee gebruikers: .logo en .avatar-t. Paneeltitels
      zijn Inter Bold (Ronald, 06-08-2026; letter TT-517). */
   :root {
@@ -1278,7 +1294,7 @@
     border: none;
     color: var(--muted);
     cursor: pointer;
-    font-size: 18px;
+    font-size: var(--tekenmaat);
     line-height: 1;
     padding: 0;
     transition: color 0.15s;
@@ -2294,7 +2310,7 @@
     color: #fff;
     border-radius: 50%;
     width: 22px; height: 22px;
-    font-size: 12px;
+    font-size: var(--tekenmaat);
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
@@ -3069,7 +3085,7 @@
   /* TT-440: de tijd in je eigen bericht haalde bij 0,7 maar 4,1:1; bij 0,85 is dat 6,2:1. */
   .message-bubble.own .message-bubble-time { opacity: 0.85; }
   /* V-07 (13-08-2026): vinkje bij een eigen bericht dat gelezen is. */
-  .message-bubble-read { margin-left: 4px; font-weight: 700; opacity: 0.85; }
+  .message-bubble-read { margin-left: 4px; font-size: var(--tekenmaat); font-weight: 700; opacity: 0.85; }
 
   .messages-composer-row {
     display: flex;
@@ -3314,7 +3330,9 @@
     background: transparent;
     border: 1px solid var(--rand-neutraal);
     color: var(--text);
-    font-size: 11px;
+    /* Besluit Ronald 02-11-2026: 12px (was 11px): het instrument is wat je op
+       een profiel het eerst zoekt. */
+    font-size: 12px;
     font-weight: 500;
     padding: 4px 10px;
     border-radius: 6px;
@@ -4242,10 +4260,13 @@
      consistent met de rest van de UI. .star-picker is klikbaar (wizard/
      bandformulier), .star-display is alleen-lezen (profiel/zoekresultaat). */
   .star-picker { display:flex; gap:4px; }
-  .star-picker .star { font-size:22px; line-height:1; color:var(--border); cursor:pointer; user-select:none; transition:color 0.1s; }
+  /* Besluit Ronald 03-11-2026 (2A): de sterren die je zelf aantikt blijven zo
+     groot als ze waren. Met de ster uit tt-tekens is dat 27px (inkt 16px hoog,
+     gelijk aan de vorige ster op 22px; gemeten); de rij blijft 22px hoog. */
+  .star-picker .star { font-size:27px; line-height:22px; color:var(--leeg); cursor:pointer; user-select:none; transition:color 0.1s; }
   .star-picker .star.filled { color:var(--merk); }
   @media (hover: hover) { .star-picker .star:hover { color:var(--merk); } } /* TT-517 fase 9: alleen met een muis */
-  .star-display { font-size:12px; letter-spacing:1px; white-space:nowrap; }
+  .star-display { font-size:var(--tekenmaat); letter-spacing:1px; white-space:nowrap; }
   /* TT-369 (besluit Ronald, 29-09-2026): een gevulde ster is overal goud
      (--merk), ook in licht: "dat wordt dan goud. net als overal." */
   .star-display-filled { color:var(--merk); }
@@ -4258,12 +4279,16 @@
   .level-choice {
     display:flex; align-items:center; gap:12px; width:100%;
     min-height:56px; padding:10px 14px; margin-bottom:8px;
-    font-family:'Inter',sans-serif; font-size:12px;
+    /* Besluit Ronald 02-11-2026: 15px zoals elke knop (was 12px: kleine
+       letters op een groot geel vlak). */
+    font-family:'Inter',sans-serif; font-size:15px;
     text-align:left; cursor:pointer; transition:border-color 0.15s, background 0.15s;
   }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
   /* Gekozen: zie het TT-316-blok bij .tag. */
-  .level-choice-stars { flex-shrink:0; font-size:18px; letter-spacing:1px; color:var(--border); }
+  /* Een lege ster is overal --leeg (TT-315); --border was in donker onzichtbaar
+     (#2a2a2a op #222, gezien 03-11-2026). */
+  .level-choice-stars { flex-shrink:0; font-size:var(--tekenmaat); letter-spacing:1px; color:var(--leeg); }
   .level-choice-stars .filled { color:var(--merk); }
   /* Op een gekozen keuzeknop is het vlak in licht geel: dan de tekstkleur
      van de gekozen stand, anders verdwijnt de ster. */
@@ -4349,11 +4374,11 @@
     cursor: pointer; flex-direction: column; min-height: 56px; padding: 8px 26px 6px 10px;
   }
   .picker-badge-label { flex: 1; display: flex; align-items: center; justify-content: center; }
-  .picker-badge-stars { font-size: 11px; min-height: 14px; letter-spacing: 1px; color: var(--merk); }
+  .picker-badge-stars { font-size: var(--tekenmaat); min-height: 14px; letter-spacing: 1px; color: var(--merk); }
   .picker-badge-remove {
     position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
     width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
-    background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 0; font-size: 12px;
+    background: transparent; border: none; color: var(--muted); cursor: pointer; padding: 0; font-size: var(--tekenmaat);
   }
   /* TT-U23: onzichtbaar tikvlak van 44x44 rond de kleine knop. */
   .picker-badge-remove::after { content: ''; position: absolute; inset: -8px; }
@@ -4375,7 +4400,7 @@
   .picker-list-item.selected {
     background: var(--surface2); border-left: 3px solid var(--accent); padding-left: 7px;
   }
-  .picker-list-item-check { color: var(--accent); font-size: 15px; flex-shrink: 0; margin-left: 8px; }
+  .picker-list-item-check { color: var(--accent); font-size: var(--tekenmaat); flex-shrink: 0; margin-left: 8px; }
   .picker-list-empty { padding: 14px 4px; font-size: 12px; color: var(--muted); }
 
   .picker-level-blurb {
@@ -5177,7 +5202,7 @@
   .choice-option + .choice-option { border-top: 1px solid var(--border); }
   @media (hover: hover) { .choice-option:hover { background: var(--tint); } } /* TT-517 fase 9: alleen met een muis */
   .choice-option.selected { color: var(--accent); font-weight: 700; }
-  .choice-option-check { color: var(--accent); font-size: 12px; }
+  .choice-option-check { color: var(--accent); font-size: var(--tekenmaat); }
 
 
   /* Label met de i-knop ernaast (zelfde patroon als "Mijn Instrumenten"). */

@@ -5552,7 +5552,9 @@ window.TT_STUB.fnAntwoord = {};
               .filter(b => /Deel dit (band)?profiel/.test(b.textContent)).length;
             const x = sluit ? rect(sluit) : null;
             let url = null;
-            if (knop) { gedeeld = null; knop.click(); await new Promise(z => setTimeout(z, 20)); url = gedeeld && gedeeld.url; }
+            if (knop) { gedeeld = null; knop.click();
+              // 8D 03-11-2026: delen maakt eerst de kaart (fase 8, hooguit 3 s); wacht op het delen zelf, niet een vaste 20 ms.
+              for (let i = 0; i < 70 && !gedeeld; i++) await new Promise(z => setTimeout(z, 50)); url = gedeeld && gedeeld.url; }
             return { aantal: deel.length, breed,
               maat: k ? [Math.round(k.width), Math.round(k.height)] : null,
               menuMaat: m ? [Math.round(m.width), Math.round(m.height)] : null,
@@ -6108,7 +6110,7 @@ window.TT_STUB.fnAntwoord = {};
               len(g57["rijen"]) >= 4 and all(r == "row/true" for r in g57["rijen"]), json.dumps(g57["rijen"]))
         # TT-517 fase 4: de bandfoto staat in de hoes, zoals bij een muzikant (was een vierkant van 12px).
         check("gast: de bandfoto staat in de hoes met hoeken van 16px, de knop vraagt om een profiel",
-              g57["fotoVierkant"] == "16px" and g57["voet"] == "Maak een profiel aan om contact te leggen", json.dumps(g57))
+              g57["fotoVierkant"] == "16px" and g57["voet"] == "Maak een profiel en leg contact", json.dumps(g57))
         check("met profiel: alleen bevestigde leden, op volgorde van binnenkomst, met voornaam",
               bz57["namen"] == ["Ronald", "Sanne"], json.dumps(bz57))
         check("met profiel: een invaller van gisteren staat er niet meer, die van straks wel",
@@ -7362,6 +7364,7 @@ window.TT_STUB.fnAntwoord = {};
                         tekst: document.getElementById('confirmMessage').textContent,
                         knop: document.getElementById('confirmYesBtn').textContent, gedeeld };
           document.getElementById('confirmYesBtn').click(); await w(150);
+          for (let i = 0; i < 70 && !gedeeld; i++) await w(50); // 8D 03-11-2026: wacht op het delen (kaart eerst), geen vaste tijd
           uit.naAanzetten = { gedeeld, stand: myDeelAan, rij: rij.delen_aan };
           document.getElementById('deelKeuze').value = 'aan';
 
@@ -7534,6 +7537,7 @@ window.TT_STUB.fnAntwoord = {};
                         tekst: document.getElementById('confirmMessage').textContent,
                         knop: document.getElementById('confirmYesBtn').textContent, gedeeld };
           document.getElementById('confirmYesBtn').click(); await w(150);
+          for (let i = 0; i < 70 && !gedeeld; i++) await w(50); // 8D 03-11-2026: wacht op het delen (kaart eerst), geen vaste tijd
           uit.naAanzetten = { rij: rij.delen_aan, gedeeld, toast: document.getElementById('appToast').textContent };
           // 9. Een geweigerde wijziging (0 rijen) is een foutmelding, geen succes.
           const ok = await zetBandDelen('b-bestaat-niet', false);
@@ -7559,7 +7563,7 @@ window.TT_STUB.fnAntwoord = {};
               d68["standaard"]["naam"] == "Nachtploeg" and not d68["standaard"]["leeg"] and d68["standaard"]["deel"] == 1
               and d68["standaard"]["hash"] == "#band/b7" and d68["standaard"]["actief"]
               and d68["standaard"]["rpc"] == {"bid": "b7"}
-              and d68["standaard"]["bericht"] == "Maak een profiel aan om contact te leggen", j68)
+              and d68["standaard"]["bericht"] == "Maak een profiel en leg contact", j68)
         check("de stap in de geschiedenis is { view, id, app, soort: 'band' }",
               d68["standaard"]["stap"] == {"view": "profiel", "id": "b7", "app": True, "soort": "band"}, j68)
         check("een link naar een band waarvan delen uit staat toont 'niet beschikbaar' met één knop naar Zoeken, zonder band",
@@ -11376,7 +11380,8 @@ def blok_tt517_fase1():
             page.wait_for_timeout(300)
             m = page.evaluate("""async () => {
               await Promise.all(['400 15px Inter', '700 15px Inter', '900 32px Inter', 'italic 400 15px Inter'].map(f => document.fonts.load(f)));
-              const geladen = [...document.fonts].filter(f => f.family.replace(/["']/g, '') === 'Inter' && f.status === 'loaded').length;
+              // De vier letterbestanden (heel het bereik); de pijl (alleen U+2192, blok 119) telt apart.
+              const geladen = [...document.fonts].filter(f => f.family.replace(/["']/g, '') === 'Inter' && f.status === 'loaded' && f.unicodeRange === 'U+0-10FFFF').length;
               const r = getComputedStyle(document.documentElement);
               return { body: getComputedStyle(document.body).fontFamily, geladen,
                        merk: r.getPropertyValue('--merk').trim().toUpperCase(), accent: r.getPropertyValue('--accent').trim().toUpperCase() }; }""")
@@ -13074,9 +13079,16 @@ def blok_tt517_fase11():
     # (huisstijl §6), ook een knop met rand; met Inter waren ze 45 en 47px.
     # (2) "Stap 1 van 5" in de registratie op één regel, ook op 320px.
     # (3) de dode .result-card is weg. De rij van een gesprek staat in blok 109.
+    # (4) 8D 02-11-2026: de knop voor een bezoeker zonder profiel op één regel.
     print("\nBlok 118 — TT-517 fase 11: eindcontrole")
     css = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
     check("de dode .result-card is weg uit styles.css", ".result-card" not in css)
+    # Besluiten Ronald 02-11-2026: tags 12px (was 11px); de naam in een niveaukeuze 15px zoals elke knop (was 12px).
+    tag = re.search(r"\n  \.tag-solid \{([^}]*)\}", css)
+    kz = re.search(r"\n  \.level-choice \{([^}]*)\}", css)
+    check("een tag (instrument, genre) is 12px; de naam in een niveaukeuze 15px",
+          tag and "font-size: 12px" in tag.group(1) and kz and "font-size:15px" in kz.group(1).replace(" ", ""),
+          json.dumps([tag and tag.group(1)[-200:], kz and kz.group(1)]))
     # 8D (01-11-2026): de volgorde onder elkaar stond eerst met `order` op de knop. .btn heeft
     # `transition: all`, dus `order` schoof mee; in het browservenster (dat niet tekent) bleef
     # Annuleren boven staan (gemeten). De volgorde staat met een vaste regel (grid-row), nooit `order`.
@@ -13146,6 +13158,14 @@ def blok_tt517_fase11():
                     const cs = getComputedStyle(b), rg = document.createRange(); rg.selectNodeContents(b);
                     return [b.textContent.trim(), Math.round(rg.getBoundingClientRect().width * 10) / 10,
                             b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), cs.fontSize]; });
+                  // 8D 02-11-2026 (besluit Ronald): de knop voor een bezoeker zonder profiel, onderaan het
+                  // profiel van een muzikant en een band, staat op één regel (44px), ook op 320px.
+                  showView('profiel', undefined, { id: null }); await w(400);
+                  const voet = document.getElementById('profielSchermVoet');
+                  u.gast = [musicianContactFooterHTML({ id: 'x' }, false, 'X'), bandVoetHTML({}, 'gast')].map(h => {
+                    voet.innerHTML = h; const k = voet.querySelector('.btn');
+                    return [k.textContent, k.getBoundingClientRect().height]; });
+                  voet.innerHTML = '';
                   return u; }""")
                 ctx.close()
                 mis = [k for k in u["knoppen"] if k[1] != 44]
@@ -13169,12 +13189,96 @@ def blok_tt517_fase11():
                 check(f"{thema} {breed}px: Alles, Muzikanten en Bands passen in hun knop, niets afgekapt",
                       len(u["soort"]) == 3 and all(t[1] <= t[2] for t in u["soort"])
                       and all(t[3] == ("12px" if breed < 360 else "15px") for t in u["soort"]), json.dumps(u["soort"]))
+                check(f"{thema} {breed}px: de knop voor een bezoeker zonder profiel (muzikant en band) is \"Maak een profiel en leg contact\", op één regel (44px)",
+                      u["gast"] == [["Maak een profiel en leg contact", 44], ["Maak een profiel en leg contact", 44]], json.dumps(u["gast"], ensure_ascii=False))
                 check(f"{thema} {breed}px: geen vlak achter het icoon op de zoektegels",
                       len(u["icoon"]) == 2 and all(k == "rgba(0, 0, 0, 0)" for k in u["icoon"]), json.dumps(u["icoon"]))
                 check(f"{thema} {breed}px: \"Stap 1 van 5\" op één regel en binnen de marge",
                       u["stapHoog"] < 2 * 15 and u["stapPast"], json.dumps([u["stapHoog"], u["stapPast"]]))
         check("geen JS-fout in blok 118", not fouten, "; ".join(fouten)[:300])
         browser.close()
+    httpd.shutdown()
+
+
+def blok_pijl():
+    # 8D 02-11-2026 (besluit Ronald: "dit is goed"): de pijl → in de dikte van de
+    # letter. Besluit Ronald 03-11-2026 (op beeld, A): ook ✕ ✓ ★ ☆ uit onze eigen
+    # letter, elk los teken 11px; (1A) het kruisje achter een rij overal RIJ_KRUIS;
+    # (2A) de sterren die je aantikt zo groot als ze waren. Inter (verkleind) heeft
+    # die tekens niet; zonder eigen letter tekent de telefoon ze, dun en elk anders.
+    print("\nBlok 119 — de tekens → ✕ ✓ ★ ☆ in onze letter, even groot")
+    css = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+    for f in ("tt-tekens-400.woff", "tt-tekens-700.woff"):
+        check(f"het bestand {f} staat in de repo", os.path.isfile(os.path.join(ROOT, f)), "ontbreekt")
+    for f in ("tt-pijl-400.woff", "tt-pijl-700.woff"):
+        check(f"het oude bestand {f} is weg (vervangen door tt-tekens)", not os.path.isfile(os.path.join(ROOT, f)), "staat er nog")
+    faces = re.findall(r"@font-face\s*\{\s*font-family:\s*'Inter';\s*src:\s*url\('(tt-tekens-\d+\.woff)'\)[^}]*font-weight:\s*(\d+);\s*font-style:\s*(\w+);[^}]*unicode-range:\s*U\+2192, U\+2713, U\+2715, U\+2605-2606;", css)
+    check("de tekens horen bij Inter voor 400, 700, 900 en 400 cursief, alleen voor → ✓ ✕ ★ ☆",
+          sorted(faces) == sorted([("tt-tekens-400.woff", "400", "normal"), ("tt-tekens-700.woff", "700", "normal"),
+                                    ("tt-tekens-700.woff", "900", "normal"), ("tt-tekens-400.woff", "400", "italic")]), json.dumps(faces))
+    check("geen verwijzing meer naar tt-pijl", "tt-pijl" not in css + open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())
+    check("de tekenmaat staat op één plek: --tekenmaat 11px", re.search(r":root \{ --tekenmaat: 11px; \}", css) is not None)
+    bron = "".join(open(os.path.join(ROOT, x), encoding="utf-8").read() for x in JS_FILES) + open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    los = re.findall(r'class="song-remove"[^>]*>✕<', bron)
+    check("1A: geen kruisje achter een rij meer als teken ✕; elk is RIJ_KRUIS", not los and bron.count("${RIJ_KRUIS}") == 5, json.dumps([los, bron.count("${RIJ_KRUIS}")]))
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 800})
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        fouten = []
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        u = page.evaluate("""async () => {
+          for (const w of [400, 700]) await document.fonts.load(w + ' 120px Inter', '→✓✕★☆');
+          const c = document.createElement('canvas'); c.width = 400; c.height = 220; const g = c.getContext('2d');
+          const meet = (font, t) => { g.clearRect(0, 0, 400, 220); g.font = font; g.fillText(t, 20, 160);
+            const d = g.getImageData(0, 0, 400, 220).data; let n = 0, x0 = 1e9, x1 = 0, y0 = 1e9, y1 = 0;
+            for (let y = 0; y < 220; y++) for (let x = 0; x < 400; x++) if (d[(y * 400 + x) * 4 + 3] > 127) {
+              n++; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+            return { n, x0, x1, y0, y1 }; };
+          const uit = {};
+          for (const t of ['→', '✓', '✕', '★', '☆']) uit[t] = { r: meet('400 120px Inter', t), b: meet('700 120px Inter', t),
+            rx: meet('400 120px Inter, serif', t), rm: meet('400 120px monospace', t), bm: meet('700 120px monospace', t) };
+          return uit; }""")
+        for t_, m in u.items():
+            check(f"{t_} komt uit onze letter, niet uit die van de telefoon (gewoon en vet)",
+                  m["r"]["n"] > 0 and m["r"] != m["rm"] and m["b"] != m["bm"] and m["r"] == m["rx"], json.dumps(m))
+        r, b = u["→"]["r"], u["→"]["b"]
+        check("de pijl: vet is dikker dan gewoon (meer inkt)", b["n"] > r["n"] * 1.25, json.dumps([r["n"], b["n"]]))
+        check("de pijl: één vorm, begin en midden gelijk, lengte en hoogte hooguit 4px verschil op 120px",
+              abs(r["x0"] - b["x0"]) <= 2 and abs((r["y0"] + r["y1"]) - (b["y0"] + b["y1"])) <= 2
+              and abs(r["x1"] - b["x1"]) <= 4 and abs((r["y1"] - r["y0"]) - (b["y1"] - b["y0"])) <= 4, json.dumps([r, b]))
+        h = {t_: u[t_]["r"]["y1"] - u[t_]["r"]["y0"] for t_ in ("✕", "★", "☆")}
+        check("kruisje en sterren even groot (hoogte hooguit 4px verschil op 120px)", max(h.values()) - min(h.values()) <= 4, json.dumps(h))
+        # De maat in de app: elk los teken 11px, de sterren die je aantikt 27px in een rij van 22px.
+        m = page.evaluate("""() => {
+          const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
+          plek.innerHTML = '<div class="picker-badge has-level"><span class="picker-badge-label">Gitaar</span><div class="picker-badge-stars">★★</div><button class="picker-badge-remove">✕</button></div>'
+            + '<div class="level-choice"><span class="level-choice-stars"><span class="filled">★</span>☆</span></div>'
+            + '<span class="star-display"><span class="star-display-filled">★</span><span class="star-display-empty">☆</span></span>'
+            + '<div class="media-thumb"><button class="thumb-remove">✕</button></div><button class="avatar-remove-btn visible">✕</button>'
+            + '<div class="message-bubble own">Hoi<div class="message-bubble-time">19:31<span class="message-bubble-read">✓</span></div></div>'
+            + '<span class="choice-option-check">✓</span><span class="picker-list-item-check">✓</span><div id="pr119" class="star-picker"></div>';
+          renderStarPicker(document.getElementById('pr119'), 3, () => {});
+          const fs = s => getComputedStyle(plek.querySelector(s)).fontSize;
+          const sels = ['.picker-badge-stars', '.picker-badge-remove', '.level-choice-stars', '.star-display-filled', '.star-display-empty',
+            '.thumb-remove', '.avatar-remove-btn', '.message-bubble-read', '.choice-option-check', '.picker-list-item-check'];
+          const ster = plek.querySelector('#pr119 .star');
+          const leeg = getComputedStyle(document.documentElement).getPropertyValue('--leeg').trim();
+          const uit = { maten: Object.fromEntries(sels.map(s => [s, fs(s)])), tik: [getComputedStyle(ster).fontSize, Math.round(ster.getBoundingClientRect().height)],
+            leeg: [getComputedStyle(plek.querySelector('.level-choice-stars')).color, getComputedStyle(plek.querySelector('#pr119 .star:not(.filled)')).color,
+                   getComputedStyle(plek.querySelector('.star-display-empty')).color] };
+          plek.remove(); return uit; }""")
+        check("elk los teken ✕ ✓ ★ ☆ is 11px (besluit Ronald A)", set(m["maten"].values()) == {"11px"}, json.dumps(m["maten"]))
+        check("2A: de sterren die je aantikt 27px (inkt zoals de vorige ster op 22px), rij 22px hoog", m["tik"] == ["27px", 22], json.dumps(m["tik"]))
+        check("een lege ster heeft overal dezelfde kleur (--leeg): niveaukeuze, sterren die je aantikt, sterren op een profiel",
+              len(set(m["leeg"])) == 1, json.dumps(m["leeg"]))
+        check("geen JS-fout in blok 119", not fouten, "; ".join(fouten)[:300])
+        ctx.close(); browser.close()
     httpd.shutdown()
 
 
@@ -13192,6 +13296,7 @@ def main():
     blok_tt517_fase9()
     blok_tt517_fase10()
     blok_tt517_fase11()
+    blok_pijl()
     blok_0_rijen()
     blok_browser()
     blok_xss()

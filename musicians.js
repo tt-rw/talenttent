@@ -338,7 +338,7 @@ function musicianContactFooterHTML(m, isOwn, displayName) {
   }
   const contactBtn = hasOwnProfile
     ? `<button class="btn btn-primary" style="width:100%;" data-bericht-id="${escHtml(m.id)}" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht →</button>`
-    : `<button class="btn btn-primary" style="width:100%;" onclick="showView('register')">Maak een profiel aan om contact te leggen</button>`;
+    : `<button class="btn btn-primary" style="width:100%;" onclick="showView('register')">Maak een profiel en leg contact</button>`;
   return contactBtn;
 }
 
@@ -407,7 +407,7 @@ async function laadProfielScherm(id, linkToegang) {
 
   // TT-158 (27-08-2026): een uitgelogde bezoeker ziet het publieke profiel
   // (geen fname, dus displayNameOf() toont de gebruikersnaam) en krijgt geen
-  // berichtknop, wel "Maak een profiel aan om contact te leggen"
+  // berichtknop, wel "Maak een profiel en leg contact"
   // (musicianContactFooterHTML()). hasOwnProfile staat voor een bezoeker op
   // false.
   let m = null, error = null;

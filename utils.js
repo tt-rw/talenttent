@@ -1012,7 +1012,9 @@ const BEHEERSING_NAMEN = { basis: 'Basis', bijna: 'Bijna', podium: 'Podium' };
 const PIJL_OMLAAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 // Het sluitteken van de app (zie .modal-close), met een viewBox precies om
 // de inkt: zo ligt de inkt exact waar de opmaak hem zet (TT-514, uitlijning).
-const SETLIST_KRUIS = '<svg viewBox="4 4 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>';
+// Besluit Ronald 03-11-2026 (1A, "maak dit overal gelijk"): elk kruisje
+// achter een rij (setlist, links, covers, Mix & Match) is dit kruisje.
+const RIJ_KRUIS = '<svg viewBox="4 4 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>';
 // ─── Lange nummerlijst op een profiel: ingeklapt tot zeven ───────────────────
 // Besluit Ronald, 26-10-2026 (optie 1): meer dan zeven nummers maakt een
 // profiel onleesbaar. Het profiel opent met zeven nummers; de laatste rijen
@@ -1248,7 +1250,7 @@ function setlistLijstHTML(lijst, p, weg) {
       </div>
       ${s._confirmDelete
         ? `<button type="button" class="song-remove setlist-zeker" onclick="${weg}(${i})" title="Bevestig verwijderen">Zeker?</button>`
-        : `<button type="button" class="song-remove" onclick="${weg}(${i})" title="Verwijderen" aria-label="Verwijder ${escHtml(s.title)}">${SETLIST_KRUIS}</button>`}
+        : `<button type="button" class="song-remove" onclick="${weg}(${i})" title="Verwijderen" aria-label="Verwijder ${escHtml(s.title)}">${RIJ_KRUIS}</button>`}
     </div>`;
   }).join('');
 }
@@ -2296,7 +2298,7 @@ function mediaLinkRijHTML(l, i, voorvoegsel) {
           aria-label="Adres van de link"
           oninput="${fn('updateLinkUrl')}(${i}, this)" onchange="${fn('renderLinksList')}()">
       </div>
-      <button type="button" class="song-remove" onclick="${fn('removeLink')}(${i})" aria-label="Link verwijderen">✕</button>
+      <button type="button" class="song-remove" onclick="${fn('removeLink')}(${i})" aria-label="Link verwijderen">${RIJ_KRUIS}</button>
     </div>`;
 }
 
