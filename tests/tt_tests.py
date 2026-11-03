@@ -11086,36 +11086,65 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
   const v = f => { window.__velden.push(f); return P(f); };
   const u = f => { window.__velden.push(f); return U(f); };
   const q = f => { window.__velden.push(f); return Q(f); };
-  const inst = [{ instrument: 'Drums', niveau: 3 }];
+  // TT-490 (03-11-2026): ook de kolommen die de app als keuzelijst toont
+  // (instrument, genre, platform, rol, open rol, invaller). Een gebruiker kan
+  // ze via de aansluiting met elke tekst vullen; de database controleert ze
+  // niet (gemeten in test: geen check op deze kolommen).
+  const inst = [{ instrument: v('musician_instruments.instrument'), niveau: 3 }];
+  const genre = v('musician_genres.genre');
+  D.musician_instruments = D.musicians.map(m => ({ musician_id: m.id, instrument: inst[0].instrument, niveau: 3 }));
+  D.musician_genres = D.musicians.map(m => ({ musician_id: m.id, genre }));
+  D.musician_wanted = [{ musician_id: 'm1', instrument: v('musician_wanted.instrument') }];
   D.musicians.forEach((m, i) => {
     const t = 'musicians';
     m.username = v(t + '.username'); m.first_name = v(t + '.first_name'); m.fname = v(t + '.fname'); m.lname = v(t + '.lname');
     if (window.__MODUS === 'gebruikersnaam') delete m.weergavenaam; else m.weergavenaam = v(t + '.weergavenaam');
     m.city = v(t + '.city'); m.bio = v(t + '.bio'); m.goal = v(t + '.goal');
-    m.musician_instruments = inst; m.musician_genres = [{ genre: 'Rock' }];
+    m.zip = v(t + '.zip'); m.musical_ambition = v(t + '.musical_ambition'); m.profile_color = v(t + '.profile_color');
+    m.vibe_label = v(t + '.vibe_label'); m.vibe_emoji = v(t + '.vibe_emoji');
+    m.musician_instruments = inst; m.musician_genres = [{ genre }];
     m.musician_songs = [{ song_title: v('musician_songs.song_title'), song_artist: v('musician_songs.song_artist'), mastery_level: 3 }];
     m.musician_media = [{ id: 'mm' + i, media_type: 'link', url: u('musician_media.url'), platform: 'Link', in_banner: true },
-                        { id: 'mn' + i, media_type: 'link', url: 'https://www.youtube.com/watch?v=' + encodeURIComponent(q('musician_media.youtube_id')), platform: 'YouTube', in_banner: true }];
+                        { id: 'mp' + i, media_type: 'link', url: 'https://example.org/link' + i, platform: v('musician_media.platform'), in_banner: true },
+                        { id: 'mn' + i, media_type: 'link', url: 'https://www.youtube.com/watch?v=' + encodeURIComponent(q('musician_media.youtube_id')), platform: 'YouTube', in_banner: true },
+                        { id: 'mf' + i, media_type: 'foto', url: 'https://example.org/f' + i + '.jpg', platform: null, in_banner: true,
+                          uitsnede: { x: v('musician_media.uitsnede'), y: 0, b: 1, h: 1 } }];
   });
+  D.band_members.forEach(x => { if (x.role !== 'Oprichter') x.role = v('band_members.role'); });
+  D.band_wanted = [{ band_id: 'b1', instrument: v('band_wanted.instrument'), note: v('band_wanted.note') }];
   D.bands.forEach((b, i) => {
     const t = 'bands';
     b.name = v(t + '.name'); b.city = v(t + '.city'); b.description = v(t + '.description');
+    b.genre = v(t + '.genre'); b.genres = [v(t + '.genres')]; b.goal = v(t + '.goal'); b.profile_color = v(t + '.profile_color'); b.zip = v(t + '.zip');
     b.band_members = D.band_members.filter(x => x.band_id === b.id).map(x => Object.assign({}, x, {
       joined_at: '2026-01-01', musicians: D.musicians.find(m => m.id === x.musician_id) }));
-    b.band_wanted = [{ instrument: 'Bas' }];
-    b.band_media = [{ id: 'bm' + i, media_type: 'link', url: u('band_media.url'), platform: 'Link', in_banner: true, created_at: '2026-01-01' }];
-    b.band_nummers = [{ titel: v('band_nummers.titel'), url: u('band_nummers.url'), platform: 'Link', created_at: '2026-01-01' }];
+    b.band_wanted = D.band_wanted.filter(x => x.band_id === b.id);
+    b.band_media = [{ id: 'bm' + i, media_type: 'link', url: u('band_media.url'), platform: 'Link', in_banner: true, created_at: '2026-01-01' },
+                    { id: 'bp' + i, media_type: 'link', url: 'https://example.org/band' + i, platform: v('band_media.platform'), in_banner: true, created_at: '2026-01-02' }];
+    b.band_nummers = [{ titel: v('band_nummers.titel'), url: u('band_nummers.url'), platform: 'Link', created_at: '2026-01-01' },
+                      { titel: 'Eigen nummer', url: 'https://example.org/nummer' + i, platform: v('band_nummers.platform'), created_at: '2026-01-02' }];
     b.band_covers = [{ song_title: v('band_covers.song_title'), song_artist: v('band_covers.song_artist') }];
-    b.band_invallers = [{ instrument: 'Gitaar', datum: '2026-12-01' }];
+    b.band_invallers = [{ instrument: v('band_invallers.instrument'), datum: '2026-12-01' }];
     b.instagram = u('bands.instagram'); b.tiktok = u('bands.tiktok'); b.youtube = u('bands.youtube'); b.avatar_url = u('bands.avatar_url');
   });
   D.messages = [
     { id: 'x1', sender_id: 'm2', recipient_id: 'm1', body: v('messages.body'), created_at: new Date().toISOString(), read_at: null },
     { id: 'x2', sender_id: 'm1', recipient_id: 'm2', body: v('messages.body_uit'), created_at: new Date().toISOString(), read_at: null }
   ];
+  // Het gesprek Talent Tent: de inhoud schrijft send-digest, met instrumenten
+  // uit de profielen (gebruikerstekst) en de afstand.
+  D.talent_tent_berichten = [{ id: 't1', musician_id: 'm1', created_at: new Date().toISOString(), read_at: null,
+    inhoud: { muzikanten: [{ id: 'm2', km: v('talent_tent_berichten.km'), instrumenten: [v('talent_tent_berichten.instrumenten')] }],
+              bands: [{ id: 'b1', km: 2, zoekt: [v('talent_tent_berichten.zoekt')] }], meer: 0 } }];
+  // De bewaarde zoekopdracht; pas in de eigen stap in de data, zodat de
+  // zoekstappen hierboven niet op deze filters zoeken.
+  window.__bewaard = { musician_id: 'm1', soort: 'alles', volgorde: 'score', radius_km: 10,
+    instruments: [v('musician_saved_search.instruments')], genres: [v('musician_saved_search.genres')],
+    plaats: v('musician_saved_search.plaats'), plaats_tekst: v('musician_saved_search.plaats_tekst'),
+    age_min: null, age_max: null, niveau_min: null, niveau_max: null };
   S.rpcResults.tt_get_musicians_public = () => D.musicians.map(m => ({ id: m.id, username: m.username, weergavenaam: m.weergavenaam, age: 30, city: m.city, bio: m.bio, goal: m.goal,
-    avatar_url: null, instrument_levels: inst, genres: ['Rock'], songs: m.musician_songs, media: m.musician_media }));
-  S.rpcResults.tt_get_bands_public = () => D.bands.map(b => Object.assign({}, b, { genres: ['Rock'] }));
+    avatar_url: null, instrument_levels: inst, genres: [genre], songs: m.musician_songs, media: m.musician_media }));
+  S.rpcResults.tt_get_bands_public = () => D.bands.map(b => Object.assign({}, b));
   S.rpcResults.tt_search_musicians = () => [{ musician_id: 'm2', distance_km: 3, is_stale: false }, { musician_id: 'm3', distance_km: 5, is_stale: false }];
   S.rpcResults.tt_search_bands_for_musician = () => [{ band_id: 'b1', distance_km: 2, score: 1 }, { band_id: 'b2', distance_km: 4, score: 1 }];
   S.rpcResults.tt_search_musicians_by_songlist_anon = () => [{ musician_id: 'm2', distance_km: 3, matches: 1 }];
@@ -11164,6 +11193,9 @@ XSS_STAPPEN = [
     ("melden", "openMeldModal('muzikant', 'm2', window.__P('naam'));"),
     ("geblokkeerden", "await openGeblokkeerdModal();"),
     ("instellingen", "showView('instellingen'); openInloggegevens();"),
+    ("gesprek Talent Tent", "showView('messages'); await loadInbox(); await openTalentTentGesprek();"),
+    ("e-mailvoorkeuren met bewaarde zoekopdracht", "window.TT_STUB.data.musician_saved_search = [window.__bewaard]; bewaardeZoek = undefined; await openSearchPrefsModal(); await new Promise(r => setTimeout(r, 200));"),
+    ("zoeken met bewaarde zoekopdracht", "document.getElementById('searchPrefsModal').classList.remove('visible'); showView('search'); onthoudToegepast = false; openZoekScherm('muzikanten', { geenZoek: true }); await onthoudHerstellen(); await runSearch();"),
     ("mediaspeler met youtube-link", "openMediaSpeler('https://www.youtube.com/watch?v=' + encodeURIComponent(window.__Q('yt')), 'link', null, 'YouTube');"),
     ("mediaspeler met javascript-link", "openMediaSpeler(window.__U('speler'), 'link', null, 'Link');"),
     ("artiestenlijst (iTunes)", "const ac = document.createElement('div'); document.body.appendChild(ac); renderArtistResults(ac, [{ artistId: window.__P('artistId'), artistName: window.__P('artiest'), primaryGenreName: window.__P('genre') }], window.__P('q'), 'selectArtist');"),
@@ -11180,6 +11212,18 @@ XSS_UITZONDERINGEN = {
     "bands.youtube": "javascript:-adres wordt door bandSocialLink() geweigerd en dus niet getoond",
     "musicians.first_name": "kolom bestaat niet in de database (de app gebruikt fname)",
     "musicians.goal": "keuzewaarde: de app toont alleen de gekozen kaart, nooit de tekst zelf",
+    # TT-490 (03-11-2026), elk gecontroleerd in de code:
+    "musicians.musical_ambition": "keuzewaarde: de app vergelijkt hem alleen met de kaarten (wzjMusicalAmbition), toont de tekst nooit",
+    "musicians.zip": "komt alleen via .value in het postcodeveld, nooit in HTML",
+    "bands.zip": "komt alleen via .value in het postcodeveld, nooit in HTML",
+    "musicians.profile_color": "de app leest de kolom niet (er is geen profielkleur meer, TT-341)",
+    "bands.profile_color": "de app leest de kolom niet (er is geen profielkleur meer, TT-341)",
+    "musicians.vibe_label": "de app leest de kolom niet",
+    "musicians.vibe_emoji": "de app leest de kolom niet",
+    "bands.goal": "de app leest de kolom niet",
+    "band_wanted.note": "de app leest de kolom niet",
+    "musician_wanted.instrument": "de app leest de tabel niet meer (TT-232)",
+    "musician_media.uitsnede": "uitsnedeGeldig() maakt er getallen van; tekst wordt geweigerd en het kader vervalt",
 }
 
 
