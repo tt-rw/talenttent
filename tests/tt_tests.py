@@ -13393,6 +13393,33 @@ def blok_csp_melder():
     check("geen paginafouten in blok 121", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_tt489():
+    # TT-489 (03-11-2026, besluit Ronald): de database laat de app alleen de
+    # kolommen message, source, stack en user_id schrijven in het foutenlog, en
+    # knipt af op 2000, 500 en 4000 tekens. Schrijft de app een andere kolom (zoals
+    # created_at), dan weigert de database de hele regel en is de fout onzichtbaar.
+    print("\nBlok 123 — TT-489: de app schrijft alleen wat de database in het foutenlog toelaat")
+    plekken = []
+    for naam in sorted(os.listdir(ROOT)):
+        if naam.endswith(".js") and naam != "supabase.js":
+            tekst = open(os.path.join(ROOT, naam), encoding="utf-8").read()
+            for m in re.finditer(r"from\(\s*['\"]app_error_log['\"]\s*\)", tekst):
+                plekken.append((naam, tekst, m.end()))
+    check("het foutenlog wordt op één plek geschreven (logAppError in core.js)",
+          len(plekken) == 1 and plekken[0][0] == "core.js", str([p[0] for p in plekken]))
+    if plekken:
+        naam, tekst, begin = plekken[0]
+        m = re.compile(r"\.insert\(\{(.*?)\}\)", re.S).search(tekst, begin)
+        kolommen = set(re.findall(r"^\s*([a-z_]+)\s*:", m.group(1), re.M)) if m else set()
+        check("logAppError schrijft alleen message, source, stack en user_id",
+              kolommen == {"message", "source", "stack", "user_id"}, str(sorted(kolommen)))
+        romp = m.group(1) if m else ""
+        check("de app knipt af zoals de database: message 2000, source 500",
+              ".slice(0, 2000)" in romp and ".slice(0, 500)" in romp, romp[:200])
+    check("de stack met toestel is hooguit 4000 tekens, zoals de database",
+          re.search(r"function ttFoutStackMetToestel[\s\S]{0,400}\.slice\(0, 4000\)", open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()) is not None, "")
+
+
 def blok_tt481():
     # TT-481 (03-11-2026, besluiten Ronald): (1) één vriendelijke tekst voor "dit
     # e-mailadres heeft al een account", bij aanmelden en bij wijzigen; (2) een te
@@ -13605,6 +13632,7 @@ def main():
     blok_jwt_herhaling()
     blok_csp_melder()
     blok_tt481()
+    blok_tt489()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

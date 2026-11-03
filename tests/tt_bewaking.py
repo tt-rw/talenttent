@@ -45,8 +45,9 @@ DREMPELS = {
     "accounts_zonder_profiel": 3,  # wizard blijft hangen (een enkele is normaal)
     "rem_piek_6u": 1,              # een internetadres deed 300 of meer aanroepen in een minuut (TT-487, besluit Ronald 30-10-2026)
     "csp_weigeringen_6u": 1,       # de regel in index.html weigerde iets, laatste 6 uur (TT-483 deel b, besluit Ronald 03-11-2026)
+    "foutlog_grens_6u": 1,         # een internetadres raakte de grens van 60 regels per uur in het foutenlog (TT-489, besluit Ronald 03-11-2026)
 }
-VERWACHTE_CRONTAKEN = 9  # sinds 29-10-2026 ook tt-aanroepen-nakijken (elke 5 minuten); sinds 30-10-2026 ook tt-rem-opruimen (TT-487); sinds 02-11-2026 ook tt-digest-herhalen (TT-550)
+VERWACHTE_CRONTAKEN = 10  # sinds 29-10-2026 ook tt-aanroepen-nakijken (elke 5 minuten); sinds 30-10-2026 ook tt-rem-opruimen (TT-487); sinds 02-11-2026 ook tt-digest-herhalen (TT-550); sinds 03-11-2026 ook tt-foutlog-opruimen (TT-489)
 CRON_MISLUKT_DREMPEL = 1
 CERT_MIN_DAGEN = 30
 DOMEIN_MIN_DAGEN = 30
