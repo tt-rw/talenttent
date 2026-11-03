@@ -440,11 +440,18 @@ def blok_e():
                 os.environ["GITHUB_STEP_SUMMARY"] = samenvatting
         return code, uit.getvalue()
 
+    import urllib.error
+
+    def opslag_antwoord(tekst):
+        raise urllib.error.HTTPError("proef", 400, "Bad Request", {}, io.BytesIO(tekst.encode()))
+
     def alles_goed(url, headers=None, data=None):
         if "rdap" in url:
             return 200, rdap
         if "tt_bewaking" in url:
             return 200, json.dumps(goed)
+        if "/storage/v1/object/public/" in url:
+            opslag_antwoord('{"error":"Bucket not found"}')
         return 200, "ok"
 
     def alles_kapot(url, headers=None, data=None):
@@ -495,6 +502,17 @@ def blok_e():
     toets("E", "bewaking: één weigering van de regel geeft rood",
           code == 1 and any(r.startswith("  MIS ") and "csp_weigeringen_6u" in r for r in uit.splitlines()),
           "E4", "een weigering van de regel blijft groen")
+
+    # E6 - 8D TT-480 (03-11-2026): een open foto- of videomap geeft rood
+    def map_open(url, headers=None, data=None):
+        if "/storage/v1/object/public/media/" in url:
+            opslag_antwoord('{"error":"not_found","message":"Object not found"}')
+        return alles_goed(url, headers, data)
+    code, uit = draai(map_open, lambda: 365)
+    toets("E", "bewaking: een open foto- of videomap geeft rood",
+          code == 1 and any(r.startswith("  MIS ") and "mappen dicht" in r and "media" in r
+                            for r in uit.splitlines()),
+          "E6", "een open map blijft groen")
 
 
 # ============================================================ afdruk

@@ -164,6 +164,27 @@ def domein_dagen():
     raise RuntimeError("; ".join(fouten))
 
 
+# TT-480 (besluit Ronald 30-10-2026): foto's en video's laden alleen via een
+# tijdelijke link. Een dichte map geeft op de openbare weg "Bucket not found";
+# een open map geeft "Object not found" (8D TT-480, 03-11-2026: productie bleef
+# open en niets merkte het op).
+MAPPEN_DICHT = ("avatars", "media")
+
+
+def mappen_open():
+    """Lijst van mappen die op de openbare weg open staan. Leeg = goed."""
+    basis, _ = database()
+    open_ = []
+    for m in MAPPEN_DICHT:
+        try:
+            vraag(basis + "/storage/v1/object/public/%s/tt-bewaking-bestaat-niet.jpg" % m)
+            open_.append(m)
+        except urllib.error.HTTPError as e:
+            if "Bucket not found" not in e.read().decode("utf-8", "replace"):
+                open_.append(m)
+    return open_
+
+
 def main():
     regels = []   # (naam, uitkomst, goed)
 
@@ -184,6 +205,8 @@ def main():
     # Een controle die niet werkt, staat nooit op "ok" (8D bewaking, 02-11-2026).
     stap("domein verloopt", domein_dagen,
          lambda d: (d >= DOMEIN_MIN_DAGEN, "%d dagen" % d))
+    stap("foto- en videomappen dicht", mappen_open,
+         lambda o: (not o, "dicht" if not o else "OPEN: %s" % ", ".join(o)))
 
     t = stap("tellingen uit de database", tellingen,
              lambda x: (True, "opgehaald"))
