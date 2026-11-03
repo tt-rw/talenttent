@@ -423,6 +423,10 @@ def blok_e():
         b.vraag, b.cert_dagen = vraag, cert
         oud = os.environ.get("TT_BEWAKING_CODE")
         os.environ["TT_BEWAKING_CODE"] = "proef"
+        # 8D 03-11-2026 (sessie 64): een proefronde schreef "MIS ..." in de
+        # samenvatting van de echte run in GitHub; dat leest als een echte fout.
+        # Tijdens een proef is er daarom geen samenvatting.
+        samenvatting = os.environ.pop("GITHUB_STEP_SUMMARY", None)
         uit = io.StringIO()
         try:
             with contextlib.redirect_stdout(uit):
@@ -432,6 +436,8 @@ def blok_e():
                 os.environ.pop("TT_BEWAKING_CODE", None)
             else:
                 os.environ["TT_BEWAKING_CODE"] = oud
+            if samenvatting is not None:
+                os.environ["GITHUB_STEP_SUMMARY"] = samenvatting
         return code, uit.getvalue()
 
     def alles_goed(url, headers=None, data=None):
@@ -471,6 +477,21 @@ def blok_e():
             return 200, json.dumps(dict(goed, csp_weigeringen_6u=1))
         return alles_goed(url, headers, data)
     code, uit = draai(een_weigering, lambda: 365)
+    # E5 - 8D 03-11-2026: een proefronde schrijft niets in de samenvatting van de run
+    import tempfile
+    with tempfile.NamedTemporaryFile("r", suffix=".md") as tijdelijk:
+        oud_s = os.environ.get("GITHUB_STEP_SUMMARY")
+        os.environ["GITHUB_STEP_SUMMARY"] = tijdelijk.name
+        try:
+            draai(alles_kapot, cert_kapot)
+        finally:
+            if oud_s is None:
+                os.environ.pop("GITHUB_STEP_SUMMARY", None)
+            else:
+                os.environ["GITHUB_STEP_SUMMARY"] = oud_s
+        leeg = open(tijdelijk.name, encoding="utf-8").read() == ""
+    toets("E", "bewaking: een proefronde schrijft niets in de samenvatting van de run",
+          leeg, "E5", "een proefronde schreef MIS in de samenvatting van de run")
     toets("E", "bewaking: één weigering van de regel geeft rood",
           code == 1 and any(r.startswith("  MIS ") and "csp_weigeringen_6u" in r for r in uit.splitlines()),
           "E4", "een weigering van de regel blijft groen")
