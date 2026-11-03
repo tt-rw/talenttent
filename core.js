@@ -1818,7 +1818,12 @@ function tikDoel(doel) {
     }
     rij.classList.toggle('btn-rij-stapel', !past);
   };
-  const kijker = new ResizeObserver(lijst => lijst.forEach(e => meet(e.target)));
+  // 8D 03-11-2026: meten pas in het volgende beeld. De klasse maakt de rij
+  // hoger; binnen de waarnemer gaf dat "ResizeObserver loop completed with
+  // undelivered notifications" in het foutenlog (15 regels in productie sinds
+  // 02-11-2026). De meting gaat over de breedte, dus de tweede melding verandert
+  // niets meer.
+  const kijker = new ResizeObserver(lijst => requestAnimationFrame(() => lijst.forEach(e => meet(e.target))));
   const volg = el => {
     if (el.nodeType !== 1) return;
     const nieuw = el.classList.contains('btn-row') ? [el] : [...el.getElementsByClassName('btn-row')];

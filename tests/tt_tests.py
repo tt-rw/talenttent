@@ -13108,6 +13108,9 @@ def blok_tt517_fase11():
                 page = ctx.new_page()
                 page.on("pageerror", lambda e: fouten.append(str(e)))
                 page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+                # 8D 03-11-2026: "ResizeObserver loop completed with undelivered notifications" kwam
+                # in productie in het foutenlog (de knoppenrij zette haar klasse binnen de waarnemer).
+                page.add_init_script("window.__roLus = []; addEventListener('error', e => { if (/ResizeObserver/.test(e.message)) __roLus.push(location.hash); });")
                 page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
                 page.wait_for_timeout(300)
                 u = page.evaluate("""async () => {
@@ -13167,6 +13170,7 @@ def blok_tt517_fase11():
                     return [k.textContent, k.getBoundingClientRect().height]; });
                   voet.innerHTML = '';
                   return u; }""")
+                ro118 = page.evaluate("window.__roLus")
                 ctx.close()
                 mis = [k for k in u["knoppen"] if k[1] != 44]
                 check(f"{thema} {breed}px: elke zichtbare knop op landing, inloggen en registratie is 44px ({len(u['knoppen'])} knoppen)",
@@ -13184,6 +13188,8 @@ def blok_tt517_fase11():
                     if not (hoog and gelijk and (naast or onder)): fout_v.append(v)
                 check(f"{thema} {breed}px: knoppen in een venster: één regel tekst (44px), even breed, naast elkaar of onder elkaar met Annuleren onderaan",
                       not fout_v, json.dumps(fout_v, ensure_ascii=False)[:400])
+                check(f"{thema} {breed}px: geen melding \"ResizeObserver loop\" bij openen en doorlopen van de schermen (8D 03-11-2026)",
+                      ro118 == [], json.dumps(ro118))
                 check(f"{thema} {breed}px: een gekozen instrument of genre is een pil; de knop op het foutscherm is een gewone hoofdknop (pil)",
                       u["badge"] == "999px" and u["foutKnop"] == ["btn btn-primary", "999px"], json.dumps([u["badge"], u["foutKnop"]]))
                 check(f"{thema} {breed}px: Alles, Muzikanten en Bands passen in hun knop, niets afgekapt",
