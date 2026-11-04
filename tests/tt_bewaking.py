@@ -52,7 +52,7 @@ DREMPELS = {
 # productie (tt_beveiliging_hash: regels per rij, rechten, functies, triggers,
 # RLS). Verandert er ongemerkt iets, dan wordt de bewaking rood. Een bewuste
 # wijziging levert het nieuwe getal in dezelfde upload mee.
-VERWACHTE_BEVEILIGING = "bebbf47131cb"  # 04-11-2026, na TT-556 (grenzen) en TT-507
+VERWACHTE_BEVEILIGING = "d0389c52cf52"  # 04-11-2026, na TT-556 (grenzen, ook Wat zoek je) en TT-507
 VERWACHTE_CRONTAKEN = 10  # sinds 29-10-2026 ook tt-aanroepen-nakijken (elke 5 minuten); sinds 30-10-2026 ook tt-rem-opruimen (TT-487); sinds 02-11-2026 ook tt-digest-herhalen (TT-550); sinds 03-11-2026 ook tt-foutlog-opruimen (TT-489)
 CRON_MISLUKT_DREMPEL = 1
 CERT_MIN_DAGEN = 30
