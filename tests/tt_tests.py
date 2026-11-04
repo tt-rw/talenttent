@@ -13874,6 +13874,71 @@ def _csp_vangnet():
     Browser.new_context, Browser.new_page = new_context, new_page
 
 
+def blok_tt557():
+    # TT-557 (04-11-2026): een tik vóór de app helemaal geladen is. Gemeten in
+    # productie: een bezoeker op een trage telefoon tikte "Zoek muzikanten"
+    # terwijl modals-shared.js nog binnenkwam ("PICKERS is not defined", Zoeken
+    # bleef leeg). De server houdt hier één script drie seconden vast en de test
+    # tikt intussen. Zakt op de vorige index.html (3 van de 4 tikken).
+    print("\nBlok 126 — TT-557: een tik vóór de app geladen is, werkt zodra de app klaar is")
+    stub_js = open(STUB, encoding="utf-8").read()
+    traag = {"naam": None}
+
+    class Traag(QuietHandler):
+        def do_GET(self):
+            if traag["naam"] and traag["naam"] in self.path:
+                time.sleep(3)
+            return super().do_GET()
+
+    class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
+        daemon_threads = True
+
+    httpd = Server(("127.0.0.1", 0), Traag)
+    port = httpd.server_address[1]
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    gevallen = [
+        ("modals-shared.js", "button.landing-knop", "bandWizardOpen", "Zoek muzikanten, laatste script nog onderweg", "view-search"),
+        ("bands.js", "button.landing-knop", None, "Zoek muzikanten, halverwege het laden", "view-search"),
+        ("utils.js", "button.landing-inloggen", None, "Inloggen, vroeg in het laden", "view-auth"),
+        ("utils.js", "#navMenuBtn", None, "menu, vroeg in het laden", "menu"),
+        (None, "button.landing-inloggen", None, "na het laden werkt een tik direct", "view-auth"),
+    ]
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for script, sel, wacht, naam, verwacht in gevallen:
+            traag["naam"] = script
+            ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            fouten = []
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load" if script is None else "commit")
+            knop = page.locator(sel).first
+            knop.wait_for(state="visible", timeout=10000)
+            if wacht:
+                for _ in range(500):
+                    if page.evaluate(f"typeof {wacht} === 'function'"):
+                        break
+                    page.wait_for_timeout(20)
+            vroeg = page.evaluate("!window.ttAppKlaar")
+            knop.click(no_wait_after=True)
+            if script is None:
+                page.wait_for_timeout(100)
+            else:
+                page.wait_for_load_state("load")
+                page.wait_for_timeout(1500)
+            uit = page.evaluate("""() => document.getElementById('navMenuDropdown').classList.contains('visible')
+                ? 'menu' : (document.querySelector('.app-view.active') || {}).id""")
+            check(f"TT-557: {naam}", uit == verwacht and not fouten and vroeg == (script is not None),
+                  f"scherm {uit}, verwacht {verwacht}; tik vóór klaar {vroeg}; fouten {fouten}")
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
     _csp_vangnet()
@@ -13899,6 +13964,7 @@ def main():
     blok_tt489()
     blok_tt553()
     blok_tt555()
+    blok_tt557()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

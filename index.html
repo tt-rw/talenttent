@@ -22,6 +22,22 @@
   window.ttCspWeigeringen = [];
   document.addEventListener('securitypolicyviolation', function (e) { window.ttCspWeigeringen.push(e); });
 </script>
+<script>
+  /* TT-557 (04-11-2026): een tik vóór de app helemaal geladen is. De
+     landingspagina staat al in beeld terwijl de scripts op een trage
+     verbinding nog binnenkomen. Een knop zou dan code aanroepen die er nog
+     niet is (gemeten: "PICKERS is not defined", Zoeken bleef leeg). De tik
+     wordt onthouden en uitgevoerd zodra de app klaar is (startscript onderaan). */
+  window.ttVroegeTik = null;
+  document.addEventListener('click', function (e) {
+    if (window.ttAppKlaar) { if (e.isTrusted) window.ttVroegeTik = null; return; } /* een nieuwe tik gaat voor */
+    var knop = e.target && e.target.closest ? e.target.closest('[onclick]') : null;
+    if (!knop) return;
+    e.preventDefault();
+    e.stopPropagation(); /* in de vangfase: de onclick van de knop draait nu niet */
+    window.ttVroegeTik = knop;
+  }, true);
+</script>
 <title>The Talent Tent — Talent zoekt talent</title>
 
 <!-- TT-81 (10-08-2026, externe review 3.2): omschrijving + deelvoorbeeld.
@@ -2547,10 +2563,18 @@
 // hierboven in de HTML is dan al zichtbaar. Zou appInit() toch draaien, dan
 // volgt een reeks onbegrijpelijke fouten in de console en een half gevulde
 // pagina achter de melding.
+// TT-557: vanaf hier zijn alle scripts er; een tik werkt weer direct. Een tik
+// van daarvoor (zie bovenaan) volgt pas als appInit() het scherm heeft gekozen,
+// en alleen als de knop dan nog in beeld staat.
+window.ttAppKlaar = true;
 if (!window.ttBackendMissing) {
   init();
   initSearchFilters();
-  appInit();
+  Promise.resolve(appInit()).then(() => {
+    const knop = window.ttVroegeTik;
+    window.ttVroegeTik = null;
+    if (knop && knop.isConnected && knop.getClientRects().length) knop.click();
+  });
 }
 // TT-61: de landingspagina staat al in beeld vóór appInit() iets toont. Ook
 // zonder Supabase-bibliotheek hoort hij te kloppen.
