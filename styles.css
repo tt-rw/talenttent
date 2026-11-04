@@ -4222,8 +4222,10 @@
      onderaan (bericht sturen, uitnodigen) staat vast boven de onderbalk en
      loopt over de volle breedte; de marge van de pagina trekt hij weer
      recht met --profiel-marge. */
-  .profiel-scherm { --profiel-marge: 24px; }
-  @media (max-width: 560px) { .profiel-scherm { --profiel-marge: 16px; } }
+  /* TT-558: 16px op elke breedte, zoals de marge van het scherm zelf. Hier
+     stond 24px boven 560px venster: de knop onderaan stak daar 8px buiten
+     de app uit, aan beide kanten. */
+  .profiel-scherm { --profiel-marge: 16px; }
   .profiel-voet {
     position: sticky;
     bottom: var(--onderbalk-hoogte);
@@ -4907,7 +4909,11 @@
   @media (min-width: 561px) {
     /* #appRoot is de enige wrapper om kop, navigatie, alle .app-view's en
        alle modals — deze ene regel volstaat voor de normale documentstroom. */
-    #appRoot { width: 50%; margin: 0 auto; }
+    /* TT-558 (besluit Ronald 04-11-2026, keuze B): nooit smaller dan een
+       telefoon van 360px. Tussen 561 en 719px venster was 50% smaller dan
+       dat, en de regels voor een smal toestel (onder 360px) kijken naar het
+       venster, niet naar de app. Daar brak "Muzikanten" af. */
+    #appRoot { width: max(50%, 360px); margin: 0 auto; }
     /* position:fixed-elementen negeren #appRoot en zouden anders de volle
        vensterbreedte pakken. .app-toast hoeft niet mee: die staat op
        left:50% + transform en valt al samen met het midden van dit canvas. */
@@ -4917,7 +4923,7 @@
     .menu-laag,
     .save-overlay,
     .backend-error-overlay,
-    #appRoot.landing-op-foto .app-topbar { left: 25%; right: 25%; }
+    #appRoot.landing-op-foto .app-topbar { left: min(25%, calc(50% - 180px)); right: min(25%, calc(50% - 180px)); }
   }
 
 

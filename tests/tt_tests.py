@@ -2953,9 +2953,11 @@ def blok_browser():
         check("geen venster heeft nog een eigen koprij: muzikant en band gebruiken de kop van de app (TT-410b)",
               len(vensterkop) == 0, json.dumps(vensterkop))
 
-        # Het smalste canvas dat bestaat: tussen 561 en circa 780px venster is
-        # #appRoot 50% breed (TT-224), dus smaller dan een telefoon. Daar moet
-        # het woordmerk een trede kleiner, anders loopt het over de knoppen.
+        # Het smalste canvas dat bestaat: tussen 561 en 719px venster. Tot TT-558
+        # was #appRoot daar 50% breed (TT-224), smaller dan een telefoon, en moest
+        # het woordmerk een trede kleiner. Sinds TT-558 (besluit Ronald 04-11-2026)
+        # is de app daar 360px, zo breed als een telefoon; het woordmerk past dan
+        # op de grootste trede die past, en loopt nooit over de knoppen.
         page.set_viewport_size({"width": 561, "height": 844})
         page.wait_for_timeout(80)
         smal = page.evaluate("""() => {
@@ -2968,12 +2970,13 @@ def blok_browser():
           const lb = logo.getBoundingClientRect();
           return {
             px: Math.round(parseFloat(getComputedStyle(logo).fontSize)),
+            app: Math.round(document.getElementById('appRoot').getBoundingClientRect().width),
             overlapLinks: Math.round(terug.right - lb.left),
             overlapRechts: Math.round(lb.right - ham.left)
           };
         }""")
-        check("op het smalste canvas krimpt het woordmerk mee",
-              smal["px"] < 28, json.dumps(smal))
+        check("het smalste canvas is 360px, zo breed als een telefoon, en het woordmerk staat op een trede van fitKopLogo (TT-558)",
+              smal["app"] == 360 and smal["px"] in (28, 24, 22, 20, 18, 16), json.dumps(smal))
         check("en het loopt daar niet over de knoppen heen",
               smal["overlapLinks"] <= 0 and smal["overlapRechts"] <= 0, json.dumps(smal))
 
@@ -13939,6 +13942,86 @@ def blok_tt557():
     httpd.shutdown()
 
 
+def blok_tt558():
+    # TT-558 (besluit Ronald 04-11-2026, keuze B): op een computer is de app nooit
+    # smaller dan een telefoon van 360px. Tussen 561 en 719px venster was 50%
+    # smaller dan dat; daar brak "Muzikanten" in de keuzerij af (562 tot 696px).
+    # De vaste lagen (onderbalk, vensters, menu) lopen gelijk met de app. De
+    # knop onderaan het profiel stak 8px buiten de app uit (--profiel-marge 24px).
+    print("\nBlok 127 — TT-558: de app is op een computer minstens 360px breed")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 561, "height": 844}, color_scheme="dark")
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(400)
+        page.evaluate("async () => { showView('search'); await new Promise(r => setTimeout(r, 250)); }")
+        fout_app, fout_laag, fout_knop, fout_voet = [], [], [], []
+        breedtes = list(range(561, 722, 8)) + [719, 720, 1024, 1280, 1920]
+        for b in breedtes:
+            page.set_viewport_size({"width": b, "height": 844})
+            page.wait_for_timeout(260)
+            u = page.evaluate("""async () => {
+              const w = ms => new Promise(r => setTimeout(r, ms));
+              const a = document.getElementById('appRoot').getBoundingClientRect();
+              const u = { app: [a.left, a.right, a.width] };
+              // Elke vaste laag als proefelement direct in #appRoot, zichtbaar gemaakt:
+              // een dichte laag of een laag in een verborgen scherm heeft geen maat.
+              u.lagen = [];
+              for (const k of ['app-bottom-nav', 'modal-overlay', 'menu-laag', 'save-overlay', 'backend-error-overlay', 'wizard-action-bar']) {
+                const e = document.createElement('div'); e.className = k;
+                e.style.cssText = 'display:block;visibility:hidden;height:10px';
+                document.getElementById('appRoot').appendChild(e);
+                const cs = getComputedStyle(e), r = e.getBoundingClientRect();
+                u.lagen.push([k, cs.position, Math.round(r.left - a.left), Math.round(a.right - r.right)]);
+                e.remove();
+              }
+              const knoppen = sel => [...document.querySelectorAll(sel)].filter(k => k.offsetParent).map(k => {
+                const rg = document.createRange(); rg.selectNodeContents(k); const cs = getComputedStyle(k);
+                return [k.textContent.trim(), Math.round(k.getBoundingClientRect().height),
+                        Math.round(rg.getBoundingClientRect().width * 10) / 10,
+                        k.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)]; });
+              openZoekScherm('muzikanten'); await w(300);
+              u.knoppen = knoppen('.zoek-soort .search-mode-tab');
+              openZoekScherm('mixmatch'); await w(300);
+              u.knoppen = u.knoppen.concat(knoppen('.mm-soort .search-mode-tab'));
+              showView('profiel', undefined, { id: null }); await w(300);
+              const voet = document.getElementById('profielSchermVoet');
+              voet.innerHTML = musicianContactFooterHTML({ id: 'x' }, false, 'X'); await w(50);
+              const v = voet.getBoundingClientRect();
+              u.voet = [Math.round(v.left - a.left), Math.round(a.right - v.right)];
+              voet.innerHTML = ''; showView('search'); await w(200);
+              return u; }""")
+            verwacht = max(b * 0.5, 360)
+            if abs(u["app"][2] - verwacht) > 0.5 or abs(u["app"][0] - (b - verwacht) / 2) > 0.5:
+                fout_app.append([b, u["app"]])
+            mis = [l for l in u["lagen"] if l[1] != "fixed" or l[2] != 0 or l[3] != 0]
+            if mis or len(u["lagen"]) != 6:
+                fout_laag.append([b, mis or "geen lagen gevonden"])
+            if len(u["knoppen"]) != 5 or any(k[1] != 44 or k[2] > k[3] for k in u["knoppen"]):
+                fout_knop.append([b, u["knoppen"]])
+            if u["voet"] != [0, 0]:
+                fout_voet.append([b, u["voet"]])
+        ctx.close()
+        browser.close()
+    httpd.shutdown()
+    n = len(breedtes)
+    check(f"TT-558: de app is max(50% van het venster, 360px) breed en gecentreerd ({n} breedtes, 561 tot 1920px)",
+          not fout_app, json.dumps(fout_app)[:400])
+    check(f"TT-558: onderbalk, vensters en menu lopen gelijk met de app ({n} breedtes)",
+          not fout_laag, json.dumps(fout_laag, ensure_ascii=False)[:400])
+    check(f"TT-558: Alles · Muzikanten · Bands en Wat spelen we? · Wie speelt dit? op één regel van 44px ({n} breedtes)",
+          not fout_knop, json.dumps(fout_knop, ensure_ascii=False)[:400])
+    check(f"TT-558: de knop onderaan het profiel valt precies binnen de app ({n} breedtes)",
+          not fout_voet, json.dumps(fout_voet)[:400])
+
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
     _csp_vangnet()
@@ -13965,6 +14048,7 @@ def main():
     blok_tt553()
     blok_tt555()
     blok_tt557()
+    blok_tt558()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])
