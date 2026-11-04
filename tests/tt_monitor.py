@@ -415,7 +415,7 @@ def blok_e():
     b.WACHT_SECONDEN = 0
 
     goed = {k: 0 for k in b.DREMPELS}
-    goed.update(cron_taken=b.VERWACHTE_CRONTAKEN, cron_mislukt=0)
+    goed.update(cron_taken=b.VERWACHTE_CRONTAKEN, cron_mislukt=0, beveiliging_hash=b.VERWACHTE_BEVEILIGING)
     rdap = json.dumps({"events": [{"eventAction": "expiration",
                                    "eventDate": "2099-01-01T00:00:00Z"}]})
 
@@ -513,6 +513,29 @@ def blok_e():
           code == 1 and any(r.startswith("  MIS ") and "mappen dicht" in r and "media" in r
                             for r in uit.splitlines()),
           "E6", "een open map blijft groen")
+
+    # E7 - TT-507 (04-11-2026): een gewijzigde beveiliging of een tabel zonder RLS geeft rood
+    def beveiliging_anders(url, headers=None, data=None):
+        if "tt_bewaking" in url:
+            return 200, json.dumps(dict(goed, beveiliging_hash="000000000000"))
+        return alles_goed(url, headers, data)
+    def tabel_zonder_rls(url, headers=None, data=None):
+        if "tt_bewaking" in url:
+            return 200, json.dumps(dict(goed, tabellen_zonder_rls=1))
+        return alles_goed(url, headers, data)
+    def zonder_getal(url, headers=None, data=None):
+        if "tt_bewaking" in url:
+            return 200, json.dumps({k: v for k, v in goed.items() if k != "beveiliging_hash"})
+        return alles_goed(url, headers, data)
+    rood = []
+    for naam, vraag_, sleutel in (("ander controlegetal", beveiliging_anders, "beveiliging_hash"),
+                                  ("tabel zonder RLS", tabel_zonder_rls, "tabellen_zonder_rls"),
+                                  ("geen controlegetal", zonder_getal, "beveiliging_hash")):
+        code, uit = draai(vraag_, lambda: 365)
+        if not (code == 1 and any(r.startswith("  MIS ") and sleutel in r for r in uit.splitlines())):
+            rood.append(naam)
+    toets("E", "bewaking: een gewijzigde beveiliging of een tabel zonder RLS geeft rood",
+          not rood, "E7", "blijft groen bij: %s" % ", ".join(rood))
 
 
 # ============================================================ afdruk

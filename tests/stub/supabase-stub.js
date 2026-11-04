@@ -200,7 +200,8 @@
       this.singleMode = null;
       this.limitN = null;
     }
-    select(cols) { if (this.op === 'select') this.columns = cols || '*'; else this.columns = cols || '*'; return this; }
+    // TT-556: { count: 'exact', head: true } geeft het aantal en geen rijen, zoals Supabase.
+    select(cols, opts) { this.columns = cols || '*'; if (opts && opts.count) { this.telMode = true; this.kopMode = !!opts.head; } return this; }
     insert(rows) { this.op = 'insert'; this.payload = rows; return this; }
     update(vals) { this.op = 'update'; this.payload = vals; return this; }
     upsert(rows, opts) { this.op = 'upsert'; this.payload = rows; this.conflict = opts && opts.onConflict; return this; }
@@ -260,6 +261,7 @@
           return { data: rows[0], error: null };
         }
         if (this.singleMode === 'maybe') return { data: rows[0] || null, error: null };
+        if (this.telMode) return { data: this.kopMode ? null : rows, count: rows.length, error: null };
         return { data: rows, error: null };
       }
       if (this.op === 'insert' || this.op === 'upsert') {

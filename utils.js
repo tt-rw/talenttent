@@ -107,6 +107,35 @@ function rijenGeraakt(res) {
   return { data: res.data, error: { code: '42501', message: 'row-level security: 0 rijen geraakt' } };
 }
 
+// TT-556 (besluiten Ronald 04-11-2026): hoeveel één persoon of één band mag
+// hebben. Dezelfde getallen staan als slot in de database (tt_rijgrens,
+// tt_bandgrens); de app zegt het al vóór de handeling. Wijzig ze alleen samen.
+const GRENZEN = { bands: 10, nummers: 300, beeld: 8, links: 20, covers: 300, eigenNummers: 200, invallers: 20 };
+
+// Zit de lijst vol, dan de zin tonen en true teruggeven: de handeling stopt.
+function grensBereikt(aantal, grens, zin) {
+  if (aantal < grens) return false;
+  showToast(zin);
+  return true;
+}
+
+// Links: na de laatste toegestane link verdwijnt "+ Link toevoegen" en staat
+// er één regel onder de lijst (besluit Ronald 04-11-2026).
+function linkGrensBijwerken(lijst, aantal) {
+  const vol = aantal >= GRENZEN.links;
+  const knop = lijst.parentElement && lijst.parentElement.querySelector('.add-link-btn');
+  if (knop) knop.style.display = vol ? 'none' : '';
+  if (vol) lijst.insertAdjacentHTML('beforeend', `<div class="drop-hint">Maximaal ${GRENZEN.links} links.</div>`);
+}
+
+// Bands: eigen bands en bands waar je lid van bent, samen hooguit 10.
+async function bandsVol(mid) {
+  const { count, error } = await db.from('band_members')
+    .select('band_id', { count: 'exact', head: true }).eq('musician_id', mid).eq('status', 'bevestigd');
+  if (error) return false; // de database houdt de grens toch; geen extra melding
+  return grensBereikt(count || 0, GRENZEN.bands, `Je zit al in ${GRENZEN.bands} bands. Verlaat er eerst één.`);
+}
+
 // Tweede parameter `actie`: wat de gebruiker probeerde, als werkwoordsgroep
 // ("je profiel opslaan"). Zonder bekende oorzaak noemt de melding die actie, zodat
 // de gebruiker weet wat niet gelukt is. Met een bekende oorzaak staat de
@@ -119,6 +148,7 @@ function friendlyErrorMessage(err, actie) {
   // Nederlandse tekst uit de database (trigger): ongewijzigd tonen.
   if (/^Bevestig eerst je e-mailadres/i.test(msg)) return msg;
   if (/^Wacht op antwoord/i.test(msg)) return msg; // TT-481, trigger tt_berichtgrens
+  if (err && err.hint === 'TT-556') return msg; // grens per persoon of band (tt_rijgrens, tt_bandgrens)
   if (isZelfdeWachtwoordFout(err)) return TEKST_ZELFDE_WACHTWOORD;
   if (isZwakWachtwoordFout(err)) return TEKST_ZWAK_WACHTWOORD + '.';
   const status = err && (err.status || err.statusCode);
@@ -1042,6 +1072,7 @@ function highlight(text, q) {
 
 function addSong(title, artist) {
   if (state.songs.find(s => s.title===title && s.artist===artist)) return;
+  if (grensBereikt(state.songs.length, GRENZEN.nummers, `Je repertoire is vol: maximaal ${GRENZEN.nummers} nummers.`)) return;
   state.songs.push({ title, artist, level: null });
   document.getElementById('artistSearch').value = '';
   document.getElementById('trackSearch').value = '';
@@ -1178,6 +1209,7 @@ async function repertoireBijwerken(knop, level) {
     let nieuw;
     if (level) {
       // Stond het er intussen al in, dan krijgt het deze beheersing.
+      if (!erin && grensBereikt(lijst.length, GRENZEN.nummers, `Je repertoire is vol: maximaal ${GRENZEN.nummers} nummers.`)) return;
       nieuw = erin ? lijst.map(s => ditNummer(s) ? { ...s, mastery_level: level } : s)
                    : lijst.concat([{ song_title: titel, song_artist: artiest, mastery_level: level }]);
     } else {

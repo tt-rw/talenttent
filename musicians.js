@@ -1619,7 +1619,7 @@ function mhHandleDrop(e) {
 
 function mhHandleFileSelect(files) {
   Array.from(files).forEach(file => {
-    if (mhMediaFiles.length >= 8) { showToast('Maximum 8 bestanden.'); return; }
+    if (mhMediaFiles.length >= GRENZEN.beeld) { showToast('Maximum 8 bestanden.'); return; }
     const isVideo = (file.type || '').toLowerCase().startsWith('video/');
     const typeProblem = fileTypeProblem(file, MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
     if (typeProblem) { showToast(`"${file.name}": ${typeProblem}`); return; }
@@ -1675,6 +1675,7 @@ function mhRemoveMedia(i) {
 }
 
 function mhAddLinkRow() {
+  if (mhMediaLinks.length >= GRENZEN.links) return;
   mhMediaLinks.push({ url: '', inBanner: false });
   mhRenderLinksList();
 }
@@ -1682,6 +1683,7 @@ function mhAddLinkRow() {
 function mhRenderLinksList() {
   const list = document.getElementById('mhLinksList');
   list.innerHTML = mhMediaLinks.map((l, i) => mediaLinkRijHTML(l, i, 'mh')).join('');
+  linkGrensBijwerken(list, mhMediaLinks.length);
   mediaTitelsBijwerken(list);
   bannerTellerBijwerken('mhBannerTeller', mhMediaFiles, mhMediaLinks);
 }

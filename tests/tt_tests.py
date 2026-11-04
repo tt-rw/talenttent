@@ -14022,6 +14022,142 @@ def blok_tt558():
           not fout_voet, json.dumps(fout_voet)[:400])
 
 
+# Blok 128 — TT-556: grenzen per persoon en per band
+# --------------------------------------------------------------------------
+# Besluiten Ronald 04-11-2026: bands 10 (eigen en lid samen), nummers 300,
+# foto's en video's 8, links 20 (daarna verdwijnt "+ Link toevoegen"), covers
+# 300, eigen nummers 200, invallers 20. Het slot staat in de database
+# (tt_rijgrens, tt_bandgrens); deze proef toetst dat de app het vóór de
+# handeling zegt, en dat een weigering van de database als gewone zin verschijnt.
+def blok_tt556():
+    print("\nBlok 128 — TT-556: grenzen per persoon en per band")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        fouten = []
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(400)
+        r = page.evaluate("""async () => {
+          const S = window.TT_STUB, $ = id => document.getElementById(id);
+          const w = ms => new Promise(k => setTimeout(k, ms));
+          const toast = () => $('appToast').classList.contains('visible') ? $('appToast').textContent : null;
+          const schoon = () => { $('appToast').textContent = ''; $('appToast').classList.remove('visible'); };
+          const u = {};
+          u.grenzen = GRENZEN;
+          u.vangnet = friendlyErrorMessage({ code: 'P0001', message: 'Maximaal 20 links.', hint: 'TT-556' }, 'je profiel opslaan');
+          u.anderFout = friendlyErrorMessage({ code: 'P0001', message: 'iets anders', hint: null }, 'je profiel opslaan');
+
+          // Nummers: de 201e komt er niet bij
+          state.songs = Array.from({ length: 300 }, (_, i) => ({ title: 't' + i, artist: 'a', level: null }));
+          schoon(); addSong('nieuw', 'b'); u.nummers = { aantal: state.songs.length, toast: toast() };
+          state.songs = state.songs.slice(0, 299);
+          schoon(); addSong('nieuw', 'b'); u.nummer200 = { aantal: state.songs.length, toast: toast() };
+          state.songs = [];
+
+          // Links: drie plekken, één vorm
+          const links = (lijst, toevoegen, render, id) => {
+            lijst.length = 0;
+            for (let i = 0; i < 19; i++) lijst.push({ url: 'https://example.org/' + i, inBanner: false });
+            render();
+            const knop = $(id).parentElement.querySelector('.add-link-btn');
+            const voor = { knop: knop.style.display, regel: $(id).querySelector('.drop-hint') ? $(id).querySelector('.drop-hint').textContent : null };
+            toevoegen();
+            const na = { aantal: lijst.length, knop: knop.style.display, regel: $(id).querySelector('.drop-hint') ? $(id).querySelector('.drop-hint').textContent : null };
+            toevoegen();
+            const nogEens = lijst.length;
+            lijst.splice(5, 1); render();
+            const naWeg = { knop: knop.style.display, regel: !!$(id).querySelector('.drop-hint') };
+            lijst.length = 0; render();
+            return { voor, na, nogEens, naWeg };
+          };
+          u.linksWizard = links(state.mediaLinks, addLinkRow, renderLinksList, 'linksList');
+          u.linksProfiel = links(mhMediaLinks, mhAddLinkRow, mhRenderLinksList, 'mhLinksList');
+          u.linksBand = links(bmMediaLinks, bmAddLinkRow, bmRenderLinksList, 'bmLinksList');
+
+          // Covers, eigen nummers, invallers
+          bcCovers = Array.from({ length: 300 }, (_, i) => ({ id: 'c' + i, title: 't' + i, artist: 'a' }));
+          schoon(); bcAddCover('nieuw', 'b'); u.covers = { aantal: bcCovers.length, toast: toast() };
+          bcCovers = [];
+          bmzNummers = Array.from({ length: 200 }, (_, i) => ({ id: 'n' + i, titel: 't' + i, url: '' }));
+          schoon(); bmzNummerErbij(); u.eigen = { aantal: bmzNummers.length, toast: toast() };
+          bmzNummers = [];
+          const morgen = new Date(Date.now() + 864e5);
+          const dmj = String(morgen.getDate()).padStart(2, '0') + '-' + String(morgen.getMonth() + 1).padStart(2, '0') + '-' + morgen.getFullYear();
+          bbInvallers = Array.from({ length: 20 }, (_, i) => ({ id: 'v' + i, instrument: 'Drums', datum: '2999-01-01' }));
+          bbInvalInstrument = ['Gitaar']; $('bbInvalDatum').value = dmj;
+          schoon(); bbInvalToevoegen(); u.invallers = { aantal: bbInvallers.length, toast: toast() };
+          bbInvallers = bbInvallers.slice(0, 19);
+          bbInvalInstrument = ['Gitaar']; $('bbInvalDatum').value = dmj;
+          schoon(); bbInvalToevoegen(); u.invaller20 = { aantal: bbInvallers.length, toast: toast() };
+          bbInvallers = [];
+
+          // Bands: vóór de wizard en vóór het accepteren van een uitnodiging
+          window.getMyMusicianId = async () => 'm1';
+          window.emailWachtOpBevestiging = async () => null;
+          S.data.band_members = Array.from({ length: 10 }, (_, i) => ({ band_id: 'b' + i, musician_id: 'm1', role: 'Lid', status: 'bevestigd' }))
+            .concat([{ band_id: 'b10', musician_id: 'm1', role: 'Lid', status: 'aangevraagd' }]);
+          schoon(); await showCreateBandForm(); await w(30);
+          u.wizardVol = { open: bandWizardOpen(), toast: toast() };
+          schoon(); await respondToBandInvite('b10', true); await w(30);
+          u.accepterenVol = { status: S.data.band_members.find(m => m.band_id === 'b10').status, toast: toast() };
+          schoon(); await respondToBandInvite('b10', false); await w(30);
+          u.weigerenVol = S.data.band_members.find(m => m.band_id === 'b10').status;
+          S.data.band_members = S.data.band_members.filter(m => m.band_id !== 'b0');
+          S.data.band_members.find(m => m.band_id === 'b10').status = 'aangevraagd';
+          schoon(); await respondToBandInvite('b10', true); await w(30);
+          u.accepteren9 = S.data.band_members.find(m => m.band_id === 'b10').status;
+          S.data.band_members = S.data.band_members.filter(m => m.band_id !== 'b10' && m.band_id !== 'b1');
+          schoon(); await showCreateBandForm(); await w(30);
+          u.wizard8 = bandWizardOpen();
+          sluitBandWizard();
+          // De database weigert toch (ander toestel): de zin van de database
+          S.data.band_members = [{ band_id: 'b20', musician_id: 'm1', role: 'Lid', status: 'aangevraagd' }];
+          S.errors.band_members = { code: 'P0001', message: 'Je zit al in 10 bands. Verlaat er eerst één.', hint: 'TT-556' };
+          schoon(); await respondToBandInvite('b20', true); await w(30);
+          u.dbWeigert = toast();
+          delete S.errors.band_members;
+          S.data.band_members = [];
+          return u;
+        }""")
+        browser.close()
+    httpd.shutdown()
+    j = json.dumps(r, ensure_ascii=False)[:900]
+    check("TT-556: de grenzen in de app zijn de besluiten van Ronald (bands 10, nummers 300, beeld 8, links 20, covers 300, eigen nummers 200, invallers 20)",
+          r["grenzen"] == {"bands": 10, "nummers": 300, "beeld": 8, "links": 20, "covers": 300, "eigenNummers": 200, "invallers": 20}, j)
+    check("TT-556: een weigering van de database (hint TT-556) verschijnt als de zin zelf; een andere fout niet",
+          r["vangnet"] == "Maximaal 20 links." and r["anderFout"] != "iets anders", j)
+    check("TT-556: het 301e nummer komt er niet bij, met 'Je repertoire is vol: maximaal 300 nummers.'; het 300e wel",
+          r["nummers"] == {"aantal": 300, "toast": "Je repertoire is vol: maximaal 300 nummers."}
+          and r["nummer200"]["aantal"] == 300 and r["nummer200"]["toast"] != "Je repertoire is vol: maximaal 300 nummers.", j)
+    for naam, sleutel in (("wizard", "linksWizard"), ("profiel bewerken", "linksProfiel"), ("bandprofiel bewerken", "linksBand")):
+        l = r[sleutel]
+        check(f"TT-556: links in {naam}: bij 19 staat de knop er, bij 20 verdwijnt hij met 'Maximaal 20 links.'; een 21e kan niet; na weghalen is de knop terug",
+              l["voor"] == {"knop": "", "regel": None} and l["na"] == {"aantal": 20, "knop": "none", "regel": "Maximaal 20 links."}
+              and l["nogEens"] == 20 and l["naWeg"] == {"knop": "", "regel": False}, json.dumps(l, ensure_ascii=False))
+    check("TT-556: de 301e cover komt er niet bij, met 'Maximaal 300 covers.'",
+          r["covers"] == {"aantal": 300, "toast": "Maximaal 300 covers."}, j)
+    check("TT-556: het 201e eigen nummer komt er niet bij, met 'Maximaal 200 eigen nummers.'",
+          r["eigen"] == {"aantal": 200, "toast": "Maximaal 200 eigen nummers."}, j)
+    check("TT-556: de 21e invaller komt er niet bij, met 'Maximaal 20 invallers.'; de 20e wel",
+          r["invallers"] == {"aantal": 20, "toast": "Maximaal 20 invallers."} and r["invaller20"]["aantal"] == 20, j)
+    check("TT-556: bij 10 bands opent de wizard niet, met 'Je zit al in 10 bands. Verlaat er eerst één.'; bij 8 wel",
+          r["wizardVol"] == {"open": False, "toast": "Je zit al in 10 bands. Verlaat er eerst één."} and r["wizard8"] is True, j)
+    check("TT-556: bij 10 bands blijft een uitnodiging open, met dezelfde zin; weigeren kan altijd; bij 9 lukt accepteren",
+          r["accepterenVol"] == {"status": "aangevraagd", "toast": "Je zit al in 10 bands. Verlaat er eerst één."}
+          and r["weigerenVol"] == "geweigerd" and r["accepteren9"] == "bevestigd", j)
+    check("TT-556: weigert de database toch (ander toestel), dan staat zijn zin in beeld",
+          r["dbWeigert"] == "Je zit al in 10 bands. Verlaat er eerst één.", j)
+    check("geen paginafouten in blok 128", not fouten, "; ".join(fouten)[:300])
+
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
     _csp_vangnet()
@@ -14049,6 +14185,7 @@ def main():
     blok_tt555()
     blok_tt557()
     blok_tt558()
+    blok_tt556()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

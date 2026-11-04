@@ -46,7 +46,13 @@ DREMPELS = {
     "rem_piek_6u": 1,              # een internetadres deed 300 of meer aanroepen in een minuut (TT-487, besluit Ronald 30-10-2026)
     "csp_weigeringen_6u": 1,       # de regel in index.html weigerde iets, laatste 6 uur (TT-483 deel b, besluit Ronald 03-11-2026)
     "foutlog_grens_6u": 1,         # een internetadres raakte de grens van 60 regels per uur in het foutenlog (TT-489, besluit Ronald 03-11-2026)
+    "tabellen_zonder_rls": 1,      # een tabel zonder beveiliging per rij (TT-507, besluit Ronald 04-11-2026)
 }
+# TT-507 (besluit Ronald 04-11-2026): het controlegetal van de beveiliging in
+# productie (tt_beveiliging_hash: regels per rij, rechten, functies, triggers,
+# RLS). Verandert er ongemerkt iets, dan wordt de bewaking rood. Een bewuste
+# wijziging levert het nieuwe getal in dezelfde upload mee.
+VERWACHTE_BEVEILIGING = "bebbf47131cb"  # 04-11-2026, na TT-556 (grenzen) en TT-507
 VERWACHTE_CRONTAKEN = 10  # sinds 29-10-2026 ook tt-aanroepen-nakijken (elke 5 minuten); sinds 30-10-2026 ook tt-rem-opruimen (TT-487); sinds 02-11-2026 ook tt-digest-herhalen (TT-550); sinds 03-11-2026 ook tt-foutlog-opruimen (TT-489)
 CRON_MISLUKT_DREMPEL = 1
 CERT_MIN_DAGEN = 30
@@ -112,6 +118,8 @@ def beoordeel(t):
         uit.append((naam, waarde, "< %d" % drempel, isinstance(waarde, int) and waarde < drempel))
     taken = t.get("cron_taken")
     uit.append(("cron_taken", taken, "= %d" % VERWACHTE_CRONTAKEN, taken == VERWACHTE_CRONTAKEN))
+    h = t.get("beveiliging_hash")
+    uit.append(("beveiliging_hash", h, "= %s" % VERWACHTE_BEVEILIGING, h == VERWACHTE_BEVEILIGING))
     mislukt = t.get("cron_mislukt")
     uit.append(("cron_mislukt", mislukt, "< %d" % CRON_MISLUKT_DREMPEL,
                 isinstance(mislukt, int) and mislukt < CRON_MISLUKT_DREMPEL))

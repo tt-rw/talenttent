@@ -40,6 +40,7 @@ async function loadBandInvites(musicianId) {
 async function respondToBandInvite(bandId, accept) {
   const mid = await getMyMusicianId();
   if (!mid) return;
+  if (accept && await bandsVol(mid)) return; // TT-556
   try {
     const { error } = rijenGeraakt(await db.from('band_members')
       .update({ status: accept ? 'bevestigd' : 'geweigerd' })
@@ -301,7 +302,9 @@ async function showCreateBandForm() {
   // niets. Om dezelfde reden eerst het profiel.
   const wacht = await emailWachtOpBevestiging();
   if (wacht) { showToast(emailBevestigMelding(wacht, 'een band oprichten')); return; }
-  if (!(await getMyMusicianId())) { showToast('Maak eerst een muzikantprofiel aan.'); return; }
+  const mid = await getMyMusicianId();
+  if (!mid) { showToast('Maak eerst een muzikantprofiel aan.'); return; }
+  if (await bandsVol(mid)) return; // TT-556: vóór de wizard, niet pas bij opslaan
   resetBandForm();
   zetBandWizardZichtbaar(true);
   window.scrollTo(0, 0);
@@ -1857,6 +1860,7 @@ function bbInvalToevoegen() {
   if (!iso) fouten.push(['bbInvalDatum', 'Vul de datum in als dd-mm-jjjj']);
   else if (iso < vandaagISO()) fouten.push(['bbInvalDatum', 'Kies een datum vanaf vandaag']);
   if (showFieldErrors(fouten)) return;
+  if (grensBereikt(bbInvallers.length, GRENZEN.invallers, `Maximaal ${GRENZEN.invallers} invallers.`)) return;
   bbInvallers.push({ id: null, instrument, datum: iso });
   bbInvallers.sort((x, y) => x.datum.localeCompare(y.datum));
   bbInvalFormulier(false);
@@ -2007,6 +2011,7 @@ function bmzRenderNummers() {
 }
 
 function bmzNummerErbij() {
+  if (grensBereikt(bmzNummers.length, GRENZEN.eigenNummers, `Maximaal ${GRENZEN.eigenNummers} eigen nummers.`)) return;
   bmzNummers.push({ id: null, titel: '', url: '' });
   bmzRenderNummers();
   document.getElementById(`bmzTitel${bmzNummers.length - 1}`)?.focus();
@@ -2026,6 +2031,7 @@ function bmzSpeel(i) {
 // Covers: kiezen uit de zoekvelden (jstOnArtistSearch met voorvoegsel bc).
 function bcAddCover(title, artist) {
   if (bcCovers.find(c => c.title === title && c.artist === artist)) return;
+  if (grensBereikt(bcCovers.length, GRENZEN.covers, `Maximaal ${GRENZEN.covers} covers.`)) return;
   bcCovers.push({ id: null, title, artist });
   songZoekLeeg('bc');
   bcRenderCovers();
@@ -2246,7 +2252,7 @@ function bmHandleDrop(e) {
 function bmHandleFileSelect(files) {
   const id = bewerkBandId;
   Array.from(files).forEach(file => {
-    if (bmMediaFiles.length >= 8) { showToast('Maximum 8 bestanden.'); return; }
+    if (bmMediaFiles.length >= GRENZEN.beeld) { showToast('Maximum 8 bestanden.'); return; }
     const isVideo = (file.type || '').toLowerCase().startsWith('video/');
     const typeProblem = fileTypeProblem(file, MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
     if (typeProblem) { showToast(`"${file.name}": ${typeProblem}`); return; }
@@ -2297,6 +2303,7 @@ function bmRemoveMedia(i) {
 }
 
 function bmAddLinkRow() {
+  if (bmMediaLinks.length >= GRENZEN.links) return;
   bmMediaLinks.push({ id: null, url: '', inBanner: false });
   bmRenderLinksList();
 }
@@ -2304,6 +2311,7 @@ function bmAddLinkRow() {
 function bmRenderLinksList() {
   const lijst = document.getElementById('bmLinksList');
   lijst.innerHTML = bmMediaLinks.map((l, i) => mediaLinkRijHTML(l, i, 'bm')).join('');
+  linkGrensBijwerken(lijst, bmMediaLinks.length);
   mediaTitelsBijwerken(lijst);
   bannerTellerBijwerken('bmBannerTeller', bmMediaFiles, bmMediaLinks);
 }

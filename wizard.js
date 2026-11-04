@@ -1841,7 +1841,7 @@ function handleDrop(e) {
 // bij de avatar-upload in stap 1 hoeft hier niet uitgesteld te worden.
 function handleFileSelect(files) {
   Array.from(files).forEach(file => {
-    if (state.mediaFiles.length >= 8) { showToast('Maximum 8 bestanden.'); return; }
+    if (state.mediaFiles.length >= GRENZEN.beeld) { showToast('Maximum 8 bestanden.'); return; }
     const isVideo = (file.type || '').toLowerCase().startsWith('video/');
     // TT-87: controleren tegen dezelfde lijst als de bucket in Supabase,
     // vóór de preview en vóór de upload.
@@ -1919,6 +1919,7 @@ function removeMedia(i) {
 // laten staan — zie werkwijze §2.10, dode code gaat meteen weg.
 
 function addLinkRow() {
+  if (state.mediaLinks.length >= GRENZEN.links) return;
   state.mediaLinks.push({ url: '', inBanner: false });
   renderLinksList();
 }
@@ -1926,6 +1927,7 @@ function addLinkRow() {
 function renderLinksList() {
   const list = document.getElementById('linksList');
   list.innerHTML = state.mediaLinks.map((l, i) => mediaLinkRijHTML(l, i, '')).join('');
+  linkGrensBijwerken(list, state.mediaLinks.length);
   mediaTitelsBijwerken(list);
   bannerTellerBijwerken('wizardBannerTeller', state.mediaFiles, state.mediaLinks);
 }
