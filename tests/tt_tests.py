@@ -1026,7 +1026,7 @@ def blok_browser():
         check("zes is de grens", keuze["voorGrens"] == 6 and keuze["naGrens"] == 6,
               f"voor {keuze['voorGrens']}, na {keuze['naGrens']}")
         check("de zevende keuze wordt geweigerd", keuze["tweedeLink"] is False, "")
-        check("en dat wordt gemeld", "maximaal 6" in keuze["toast"], keuze["toast"])
+        check("en dat wordt gemeld: 'Maximum van 6 items bereikt.' (besluit Ronald 05-11-2026)", keuze["toast"] == "Maximum van 6 items bereikt.", keuze["toast"])
         check("een lege link kan niet in de banner", keuze["legeLink"] is False, "")
 
         opslaan = page.evaluate("""async () => {
@@ -3104,8 +3104,8 @@ def blok_browser():
           await new Promise(res => setTimeout(res, 60));
           uit.naLozeDruk = [...document.querySelectorAll('.app-view.active')].map(v => v.id);
 
-          // TT-428: op een hoofdtabblad doet de knop niets, en een wissel tussen
-          // tabbladen laat geen stap achter.
+          // TT-548 (besluit Ronald 05-11-2026): op Zoeken, Berichten en Bands gaat
+          // terug naar Mijn Profiel; een wissel tussen tabbladen laat geen stap achter.
           showView('myprofile'); navStack.length = 0;
           showView('search'); showView('messages'); showView('bands');
           uit.opTabblad = zichtbaar();
@@ -3113,7 +3113,8 @@ def blok_browser():
           terugKnop();
           await new Promise(res => setTimeout(res, 60));
           uit.naDruk = [...document.querySelectorAll('.app-view.active')].map(v => v.id);
-          // De terugknop van het toestel doet daar ook niets.
+          // De terugknop van het toestel doet daar hetzelfde.
+          showView('bands'); await new Promise(res => setTimeout(res, 60));
           history.back();
           await new Promise(res => setTimeout(res, 120));
           uit.naToestelknop = [...document.querySelectorAll('.app-view.active')].map(v => v.id);
@@ -3132,17 +3133,17 @@ def blok_browser():
         check("het hoogste scherm is Mijn Profiel ingelogd, de landingspagina uitgelogd",
               hoogste["ingelogd"] == "myprofile" and hoogste["uitgelogd"] == "landing",
               json.dumps(hoogste))
-        check("op Mijn Profiel staat de terugknop er ook (TT-310); op de landingspagina niet (besluit Ronald 06-10-2026)",
-              (not hoogste["opLanding"]) and hoogste["opProfiel"], json.dumps(hoogste))
+        check("op Mijn Profiel en op de landingspagina staat geen terugknop: het hoogste scherm (TT-548, besluit Ronald 05-11-2026; was TT-310)",
+              (not hoogste["opLanding"]) and not hoogste["opProfiel"], json.dumps(hoogste))
         check("maar daar is niets om naar terug te gaan, en een druk laat je op Mijn Profiel",
               not hoogste["magOpLanding"] and not hoogste["magOpProfiel"]
               and hoogste["naLozeDruk"] == ["view-myprofile"], json.dumps(hoogste))
-        check("op een hoofdtabblad staat hij er, maar doet niets (TT-428; was TT-303: omhoog)",
-              hoogste["opTabblad"] and not hoogste["magOpTabblad"], json.dumps(hoogste))
-        check("een druk op een tabblad brengt je niet naar Mijn Profiel of het vorige tabblad",
-              hoogste["naDruk"] == ["view-bands"], json.dumps(hoogste))
-        check("de terugknop van het toestel doet op een tabblad ook niets",
-              hoogste["naToestelknop"] == ["view-bands"], json.dumps(hoogste))
+        check("op Zoeken, Berichten en Bands staat hij er en mag hij (TT-548, besluit Ronald 05-11-2026; was TT-428: niets)",
+              hoogste["opTabblad"] and hoogste["magOpTabblad"], json.dumps(hoogste))
+        check("een druk op de bovenkant van Bands brengt je naar Mijn Profiel, niet naar het vorige tabblad",
+              hoogste["naDruk"] == ["view-myprofile"], json.dumps(hoogste))
+        check("de terugknop van het toestel doet op de bovenkant van Bands hetzelfde",
+              hoogste["naToestelknop"] == ["view-myprofile"], json.dumps(hoogste))
         check("dieper in een tabblad is terug één stap, naar de bovenkant van dat tabblad",
               hoogste["diepMag"] and hoogste["naDiep"] == ["view-search"], json.dumps(hoogste))
 
@@ -5357,11 +5358,13 @@ window.TT_STUB.fnAntwoord = {};
         los_hover = [m.start() for m in re.finditer(r"\.nav-menu-btn:hover", css47) if not in_guard(css47, m.start())]
         check("de aanwijsstand van .nav-menu-btn staat alleen in de hover-guard (TT-182)",
               not los_hover, f"los op positie {los_hover}")
-        p47.evaluate("() => showView('search')"); p47.wait_for_timeout(150)
+        # TT-548: op de bovenkant van een tabblad gaat terug nu omhoog; de proef
+        # tikt daarom één laag dieper (Over ons vanuit Zoeken), terug naar Zoeken.
+        p47.evaluate("() => { showView('search'); showView('about'); }"); p47.wait_for_timeout(150)
         p47.tap("#navTerugBtn"); p47.wait_for_timeout(350)
         tb = p47.evaluate("""() => { const b = document.getElementById('navTerugBtn'); const c = getComputedStyle(b);
           return { vlak: c.backgroundColor, rand: c.borderTopColor, zichtbaar: c.visibility, view: document.querySelector('.app-view.active')?.id }; }""")
-        check("na een tik op de terugknop op een hoofdtabblad: geen vlak, geen rand; je blijft op het tabblad (TT-428)",
+        check("na een tik op de terugknop: geen vlak, geen rand; je komt op het tabblad terug (TT-182, TT-548)",
               tb["vlak"] == "rgba(0, 0, 0, 0)" and tb["rand"] == "rgba(0, 0, 0, 0)" and tb["zichtbaar"] == "visible"
               and tb["view"] == "view-search", json.dumps(tb))
 
@@ -6396,6 +6399,9 @@ window.TT_STUB.fnAntwoord = {};
           u.terugPaginaToestel = [huidigeView, !!vak().querySelector('.profile-name')];
           appTerug(); await w(300);
           u.terugBands = [huidigeView, navStack.length];
+          // TT-548: daarna naar Mijn Profiel. Net als de database geeft de stub
+          // de gekoppelde lijsten van een profiel altijd als lijst, ook leeg.
+          (S.data.musicians || []).forEach(r => { for (const k of ['musician_instruments', 'musician_genres', 'musician_songs', 'musician_media']) if (!Array.isArray(r[k])) r[k] = []; });
           appTerug(); await w(200);
           u.terugBoven = [huidigeView, navStack.length];
           // 9. Bezoeker en lid: geen uitnodigingen, geen balk, open rol geen knop.
@@ -6509,9 +6515,9 @@ window.TT_STUB.fnAntwoord = {};
               json.dumps([d58["zoekStapel"], d58["terugEdit"], d58["terugEditToestel"]]))
         check("bandpagina: de open rol heeft een vraagteken, nooit een plus, en is geen knop (TT-450)",
               d58["pagina"]["plus"] is False and d58["pagina"]["vraag"] == ["?", "?"], j58("pagina"))
-        check("Zoeken vanaf een open rol legt Zoeken boven de bandpagina; terug komt op de bandpagina, dan Mijn Bands, dan niets (TT-450)",
+        check("Zoeken vanaf een open rol legt Zoeken boven de bandpagina; terug komt op de bandpagina, dan Mijn Bands, dan Mijn Profiel (TT-450, TT-548)",
               d58["vanafPagina"][0] == "search" and d58["vanafPagina"][1][-2:] == ["bands", "profiel"] and d58["terugPagina"] == ["profiel", True, True]
-              and d58["terugPaginaToestel"] == ["profiel", True] and d58["terugBands"] == ["bands", 0] and d58["terugBoven"] == ["bands", 0],
+              and d58["terugPaginaToestel"] == ["profiel", True] and d58["terugBands"] == ["bands", 0] and d58["terugBoven"] == ["myprofile", 0],
               json.dumps([d58["vanafPagina"], d58["terugPagina"], d58["terugPaginaToestel"], d58["terugBands"], d58["terugBoven"]]))
         check("bezoeker en lid: geen uitnodigingen, geen balk, de open rol is geen knop",
               d58["bezoeker"] == [0, 0, 0] and d58["lid"] == [0, 0, 0], json.dumps([d58["bezoeker"], d58["lid"]]))
@@ -7737,19 +7743,19 @@ window.TT_STUB.fnAntwoord = {};
               currentUser = { id: 'test' };
               showView('myprofile'); await w(100);
               const lengte0 = history.length;
-              // 1. de bovenkant van elk tabblad: een druk doet niets
+              // 1. de bovenkant van elk tabblad: Mijn Profiel blijft, de andere gaan naar Mijn Profiel (TT-548)
               u.top = {};
               for (const v of ['myprofile', 'search', 'messages', 'bands']) {
                 showView(v); await w(100);
                 await druk();
                 u.top[v] = actief();
               }
-              // 2. wisselen tussen tabbladen laat niets achter: terug blijft binnen het tabblad
+              // 2. wisselen tussen tabbladen laat niets achter: terug gaat naar Mijn Profiel, niet naar het vorige tabblad
               showView('search'); await w(60); showView('messages'); await w(60); showView('bands'); await w(60);
               showView('search'); await w(60); showView('search'); await w(60);
               await druk();
               u.naTabWissel = actief();
-              // 3. dieper in een tabblad: één druk naar de bovenkant, de tweede doet niets
+              // 3. dieper in een tabblad: één druk naar de bovenkant, de tweede naar Mijn Profiel
               showView('search'); await w(100);
               showView('profiel', undefined, { id: 'x', app: true }); await w(150);
               u.diepScherm = actief();
@@ -7757,7 +7763,7 @@ window.TT_STUB.fnAntwoord = {};
               u.diepEen = actief();
               await druk();
               u.diepTwee = actief();
-              // 4. diep, dan tabbladen wisselen, dan terug: je komt nooit in een ander tabblad
+              // 4. diep, dan tabbladen wisselen, dan terug: naar Mijn Profiel, nooit naar het oude scherm
               showView('search'); await w(60);
               showView('profiel', undefined, { id: 'x', app: true }); await w(100);
               showView('messages'); await w(60); showView('search'); await w(60);
@@ -7776,7 +7782,7 @@ window.TT_STUB.fnAntwoord = {};
               u.modal = { open: document.getElementById('confirmModal').classList.contains('visible'), view: actief() };
               await druk();
               u.modalDaarna = actief();
-              // 7. een gesprek dat uit Zoeken komt: terug naar Zoeken, en dan niets
+              // 7. een gesprek dat uit Zoeken komt: terug naar Zoeken, en dan naar Mijn Profiel
               showView('search'); await w(100);
               openMessageComposer('m2', 'dylan'); await w(150);
               u.gesprek = { view: actief(), open: !!activeConversationId };
@@ -7799,20 +7805,20 @@ window.TT_STUB.fnAntwoord = {};
             }""", knop)
         j70 = json.dumps(d70, ensure_ascii=False)
         for knop, d in d70.items():
-            check(f"[{knop}] de bovenkant van elk tabblad: een druk doet niets",
-                  d["top"] == {"myprofile": "myprofile", "search": "search", "messages": "messages", "bands": "bands"}, j70)
-            check(f"[{knop}] tabbladen wisselen laat geen stap achter: terug blijft op Zoeken",
-                  d["naTabWissel"] == "search", j70)
-            check(f"[{knop}] dieper in een tabblad: één druk naar de bovenkant, de tweede doet niets",
-                  d["diepScherm"] == "profiel" and d["diepEen"] == "search" and d["diepTwee"] == "search", j70)
-            check(f"[{knop}] diep, tabbladen wisselen, terug: nooit een ander tabblad",
-                  d["diepWissel"] == "search", j70)
+            check(f"[{knop}] de bovenkant van Zoeken, Berichten en Bands: een druk naar Mijn Profiel; op Mijn Profiel niets (TT-548)",
+                  d["top"] == {"myprofile": "myprofile", "search": "myprofile", "messages": "myprofile", "bands": "myprofile"}, j70)
+            check(f"[{knop}] tabbladen wisselen laat geen stap achter: terug gaat naar Mijn Profiel, niet naar het vorige tabblad",
+                  d["naTabWissel"] == "myprofile", j70)
+            check(f"[{knop}] dieper in een tabblad: één druk naar de bovenkant, de tweede naar Mijn Profiel",
+                  d["diepScherm"] == "profiel" and d["diepEen"] == "search" and d["diepTwee"] == "myprofile", j70)
+            check(f"[{knop}] diep, tabbladen wisselen, terug: naar Mijn Profiel, nooit naar het oude scherm",
+                  d["diepWissel"] == "myprofile", j70)
             check(f"[{knop}] Instellingen: terug naar Mijn Profiel", d["instellingen"] == "myprofile", j70)
             check(f"[{knop}] een open venster sluit eerst, daarna het scherm",
                   d["modal"] == {"open": False, "view": "profiel"} and d["modalDaarna"] == "search", j70)
-            check(f"[{knop}] een gesprek uit Zoeken: terug naar Zoeken, daarna niets",
+            check(f"[{knop}] een gesprek uit Zoeken: terug naar Zoeken, daarna naar Mijn Profiel",
                   d["gesprek"] == {"view": "messages", "open": True}
-                  and d["gesprekTerug"] == {"view": "search", "open": False} and d["gesprekDaarna"] == "search", j70)
+                  and d["gesprekTerug"] == {"view": "search", "open": False} and d["gesprekDaarna"] == "myprofile", j70)
             check(f"[{knop}] uitgelogd: Inloggen gaat terug naar de landingspagina", d["uitgelogd"] == "landing", j70)
             check(f"[{knop}] de browsergeschiedenis groeit niet en de app blijft op haar eigen stap",
                   d["lengteGroei"] == 0 and d["stapIsApp"], j70)
@@ -7849,11 +7855,10 @@ window.TT_STUB.fnAntwoord = {};
                   const gaatNaar = [];
                   for (let i = 0; i < 6; i++) { await druk(); gaatNaar.push(huidigeView); }
                   const naam = tab + ' > ' + v;
-                  // 1. de reeks eindigt op de bovenkant van het tabblad waar je begon, en blijft daar
-                  if (!TABS.includes(v) && gaatNaar[5] !== tab) fouten.push(naam + ' eindigt op ' + gaatNaar[5]);
-                  if (TABS.includes(v) && gaatNaar[5] !== v) fouten.push(naam + ' (tabtop) eindigt op ' + gaatNaar[5]);
-                  // 2. nooit een ander tabblad onderweg
-                  const vreemd = gaatNaar.filter(x => TABS.includes(x) && x !== (TABS.includes(v) ? v : tab));
+                  // 1. de reeks eindigt op Mijn Profiel, het hoogste scherm, en blijft daar (TT-548)
+                  if (gaatNaar[5] !== 'myprofile' || gaatNaar[4] !== 'myprofile') fouten.push(naam + ' eindigt op ' + gaatNaar[5]);
+                  // 2. onderweg alleen het eigen tabblad en Mijn Profiel, nooit een ander tabblad
+                  const vreemd = gaatNaar.filter(x => TABS.includes(x) && x !== (TABS.includes(v) ? v : tab) && x !== 'myprofile');
                   if (vreemd.length) fouten.push(naam + ' komt langs ' + vreemd.join(','));
                   // 3. maximaal twee drukken tot de bovenkant
                   const eerst = gaatNaar.findIndex(x => x === (TABS.includes(v) ? v : tab));
@@ -10697,7 +10702,8 @@ window.TT_STUB.fnAntwoord = {};
           document.querySelector('.landing-knop').click(); await w(400);
           u.landing = { view: huidigeView, scherm: zoekScherm, zicht: zicht($('zoekStart')) };
           // Terug vanaf dat startscherm gaat naar de landingspagina (besluit
-          // Ronald 27-10-2026); via Zoeken onderin blijft terug daar niets doen.
+          // Ronald 27-10-2026); via Zoeken onderin ook: uitgelogd is dat het
+          // hoogste scherm (TT-548, besluit Ronald 05-11-2026).
           $('navTerugBtn').click(); await w(400);
           u.landingTerug = huidigeView;
           document.querySelector('.landing-knop').click(); await w(400);
@@ -10733,8 +10739,8 @@ window.TT_STUB.fnAntwoord = {};
               and d95["balk"]["streep"] == "rgb(255, 184, 28)" and abs(d95["balk"]["breed"] - d95["balk"]["woord"]) <= 1 and d95["balk"]["hoog"] == "3px", j95("balk"))
         check("een tik op Muzikanten opent het scherm, met de titel Muzikanten",
               d95["open"] == {"scherm": "muzikanten", "muz": True, "start": False, "titel": "Muzikanten"}, j95("open"))
-        check("terug op Muzikanten gaat naar het startscherm; daar doet terug niets",
-              d95["terug1"] == {"scherm": "start", "view": "search"} and d95["terug2"] == {"scherm": "start", "view": "search"},
+        check("terug op Muzikanten gaat naar het startscherm; daarna naar het hoogste scherm, uitgelogd de landingspagina (TT-548)",
+              d95["terug1"] == {"scherm": "start", "view": "search"} and d95["terug2"] == {"scherm": "start", "view": "landing"},
               json.dumps([d95["terug1"], d95["terug2"]]))
         check("een tik op Zoeken onderin brengt je naar het startscherm", d95["tab"] == "start", j95("tab"))
         s95 = d95["soort"]
@@ -10778,8 +10784,8 @@ window.TT_STUB.fnAntwoord = {};
               d95["mix"] == {"scherm": "mixmatch", "zicht": True, "titel": "Mix & Match"}, j95("mix"))
         check("de landingsknop opent het startscherm van Zoeken (besluit Ronald 27-10-2026)",
               d95["landing"] == {"view": "search", "scherm": "start", "zicht": True}, j95("landing"))
-        check("terug vanaf dat startscherm gaat naar de landingspagina; na een tik op Zoeken onderin doet terug niets",
-              d95["landingTerug"] == "landing" and d95["tabTerug"] == "search", json.dumps([d95["landingTerug"], d95["tabTerug"]]))
+        check("terug vanaf dat startscherm gaat naar de landingspagina; na een tik op Zoeken onderin ook (TT-548: het hoogste scherm)",
+              d95["landingTerug"] == "landing" and d95["tabTerug"] == "landing", json.dumps([d95["landingTerug"], d95["tabTerug"]]))
         oa = d95["optieA"]
         # TT-517 fase 2 (besluit Ronald 31-10-2026): ook elders geen paneel meer (Over ons als voorbeeld; blok 90 toetst alle schermen).
         check("één ondergrond: geen kader om de velden in Zoeken, en ook elders niet (optie A, 26-10-2026; overal sinds 31-10-2026)",
@@ -14022,6 +14028,19 @@ def blok_tt558():
           not fout_voet, json.dumps(fout_voet)[:400])
 
 
+def OUDE_GRENSZINNEN():
+    """Oude vormen van een grensmelding in de app-bestanden (besluit Ronald 05-11-2026)."""
+    uit = []
+    vormen = [r"Maximaal \$\{GRENZEN", r"Maximum 8 bestanden", r"repertoire is vol", r"banner toont maximaal"]
+    for f in sorted(os.listdir(ROOT)):
+        if f.endswith(".js") and f != "supabase.js" or f == "index.html":
+            t = open(os.path.join(ROOT, f), encoding="utf-8").read()
+            for v in vormen:
+                if re.search(v, t):
+                    uit.append(f + ": " + v)
+    return uit
+
+
 # Blok 128 — TT-556: grenzen per persoon en per band
 # --------------------------------------------------------------------------
 # Besluiten Ronald 04-11-2026: bands 10 (eigen en lid samen), nummers 300,
@@ -14052,7 +14071,7 @@ def blok_tt556():
           const schoon = () => { $('appToast').textContent = ''; $('appToast').classList.remove('visible'); };
           const u = {};
           u.grenzen = GRENZEN;
-          u.vangnet = friendlyErrorMessage({ code: 'P0001', message: 'Maximaal 20 links.', hint: 'TT-556' }, 'je profiel opslaan');
+          u.vangnet = friendlyErrorMessage({ code: 'P0001', message: 'Maximum van 20 links bereikt.', hint: 'TT-556' }, 'je profiel opslaan');
           u.anderFout = friendlyErrorMessage({ code: 'P0001', message: 'iets anders', hint: null }, 'je profiel opslaan');
 
           // Nummers: de 201e komt er niet bij
@@ -14099,6 +14118,18 @@ def blok_tt556():
           schoon(); bbInvalToevoegen(); u.invaller20 = { aantal: bbInvallers.length, toast: toast() };
           bbInvallers = [];
 
+          // Foto's en video's: het 9e bestand komt er niet bij, op alle drie de plekken (besluit Ronald 05-11-2026)
+          const bestand = new File(['x'], 'a.jpg', { type: 'image/jpeg' });
+          const acht = () => Array.from({ length: 8 }, (_, i) => ({ id: 'f' + i }));
+          const bewaard = { w: state.mediaFiles, m: mhMediaFiles, b: bmMediaFiles };
+          state.mediaFiles = acht(); schoon(); handleFileSelect([bestand]); u.bestandWizard = { aantal: state.mediaFiles.length, toast: toast() };
+          mhMediaFiles = acht(); schoon(); mhHandleFileSelect([bestand]); u.bestandProfiel = { aantal: mhMediaFiles.length, toast: toast() };
+          bmMediaFiles = acht(); schoon(); bmHandleFileSelect([bestand]); u.bestandBand = { aantal: bmMediaFiles.length, toast: toast() };
+          state.mediaFiles = bewaard.w; mhMediaFiles = bewaard.m; bmMediaFiles = bewaard.b;
+          // De banner: het 7e item mag niet aan
+          schoon(); u.banner7 = { mag: bannerKeuzeMag(MEDIA_BANNER_MAX, true), toast: toast() };
+          schoon(); u.banner6 = bannerKeuzeMag(MEDIA_BANNER_MAX - 1, true);
+
           // Bands: vóór de wizard en vóór het accepteren van een uitnodiging
           window.getMyMusicianId = async () => 'm1';
           window.emailWachtOpBevestiging = async () => null;
@@ -14133,21 +14164,28 @@ def blok_tt556():
     check("TT-556: de grenzen in de app zijn de besluiten van Ronald (bands 10, nummers 300, beeld 8, links 20, covers 300, eigen nummers 200, invallers 20)",
           r["grenzen"] == {"bands": 10, "nummers": 300, "beeld": 8, "links": 20, "covers": 300, "eigenNummers": 200, "invallers": 20}, j)
     check("TT-556: een weigering van de database (hint TT-556) verschijnt als de zin zelf; een andere fout niet",
-          r["vangnet"] == "Maximaal 20 links." and r["anderFout"] != "iets anders", j)
-    check("TT-556: het 301e nummer komt er niet bij, met 'Je repertoire is vol: maximaal 300 nummers.'; het 300e wel",
-          r["nummers"] == {"aantal": 300, "toast": "Je repertoire is vol: maximaal 300 nummers."}
-          and r["nummer200"]["aantal"] == 300 and r["nummer200"]["toast"] != "Je repertoire is vol: maximaal 300 nummers.", j)
+          r["vangnet"] == "Maximum van 20 links bereikt." and r["anderFout"] != "iets anders", j)
+    check("TT-556: het 301e nummer komt er niet bij, met 'Maximum van 300 nummers bereikt.'; het 300e wel",
+          r["nummers"] == {"aantal": 300, "toast": "Maximum van 300 nummers bereikt."}
+          and r["nummer200"]["aantal"] == 300 and r["nummer200"]["toast"] != "Maximum van 300 nummers bereikt.", j)
     for naam, sleutel in (("wizard", "linksWizard"), ("profiel bewerken", "linksProfiel"), ("bandprofiel bewerken", "linksBand")):
         l = r[sleutel]
-        check(f"TT-556: links in {naam}: bij 19 staat de knop er, bij 20 verdwijnt hij met 'Maximaal 20 links.'; een 21e kan niet; na weghalen is de knop terug",
-              l["voor"] == {"knop": "", "regel": None} and l["na"] == {"aantal": 20, "knop": "none", "regel": "Maximaal 20 links."}
+        check(f"TT-556: links in {naam}: bij 19 staat de knop er, bij 20 verdwijnt hij met 'Maximum van 20 links bereikt.'; een 21e kan niet; na weghalen is de knop terug",
+              l["voor"] == {"knop": "", "regel": None} and l["na"] == {"aantal": 20, "knop": "none", "regel": "Maximum van 20 links bereikt."}
               and l["nogEens"] == 20 and l["naWeg"] == {"knop": "", "regel": False}, json.dumps(l, ensure_ascii=False))
-    check("TT-556: de 301e cover komt er niet bij, met 'Maximaal 300 covers.'",
-          r["covers"] == {"aantal": 300, "toast": "Maximaal 300 covers."}, j)
-    check("TT-556: het 201e eigen nummer komt er niet bij, met 'Maximaal 200 eigen nummers.'",
-          r["eigen"] == {"aantal": 200, "toast": "Maximaal 200 eigen nummers."}, j)
-    check("TT-556: de 21e invaller komt er niet bij, met 'Maximaal 20 invallers.'; de 20e wel",
-          r["invallers"] == {"aantal": 20, "toast": "Maximaal 20 invallers."} and r["invaller20"]["aantal"] == 20, j)
+    check("TT-556: de 301e cover komt er niet bij, met 'Maximum van 300 covers bereikt.'",
+          r["covers"] == {"aantal": 300, "toast": "Maximum van 300 covers bereikt."}, j)
+    check("TT-556: het 201e eigen nummer komt er niet bij, met 'Maximum van 200 eigen nummers bereikt.'",
+          r["eigen"] == {"aantal": 200, "toast": "Maximum van 200 eigen nummers bereikt."}, j)
+    check("TT-556: de 21e invaller komt er niet bij, met 'Maximum van 20 invallers bereikt.'; de 20e wel",
+          r["invallers"] == {"aantal": 20, "toast": "Maximum van 20 invallers bereikt."} and r["invaller20"]["aantal"] == 20, j)
+    for naam, sleutel in (("de wizard", "bestandWizard"), ("profiel bewerken", "bestandProfiel"), ("bandprofiel bewerken", "bestandBand")):
+        check(f"grensmelding (besluit Ronald 05-11-2026): het 9e bestand in {naam} komt er niet bij, met 'Maximum van 8 bestanden bereikt.'",
+              r[sleutel] == {"aantal": 8, "toast": "Maximum van 8 bestanden bereikt."}, j)
+    check("grensmelding (besluit Ronald 05-11-2026): het 7e item in de banner mag niet aan, met 'Maximum van 6 items bereikt.'; het 6e wel",
+          r["banner7"] == {"mag": False, "toast": "Maximum van 6 items bereikt."} and r["banner6"] is True, j)
+    check("grensmelding (besluit Ronald 05-11-2026): geen enkele oude vorm meer in de app ('Maximaal … .', 'Maximum 8 bestanden', 'repertoire is vol', 'banner toont')",
+          not OUDE_GRENSZINNEN(), "; ".join(OUDE_GRENSZINNEN()))
     check("TT-556: bij 10 bands opent de wizard niet, met 'Je zit al in 10 bands. Verlaat er eerst één.'; bij 8 wel",
           r["wizardVol"] == {"open": False, "toast": "Je zit al in 10 bands. Verlaat er eerst één."} and r["wizard8"] is True, j)
     check("TT-556: bij 10 bands blijft een uitnodiging open, met dezelfde zin; weigeren kan altijd; bij 9 lukt accepteren",
@@ -14156,6 +14194,103 @@ def blok_tt556():
     check("TT-556: weigert de database toch (ander toestel), dan staat zijn zin in beeld",
           r["dbWeigert"] == "Je zit al in 10 bands. Verlaat er eerst één.", j)
     check("geen paginafouten in blok 128", not fouten, "; ".join(fouten)[:300])
+
+
+# Blok 129 — TT-548: elke terugdruk heeft een zichtbaar gevolg
+# --------------------------------------------------------------------------
+# Besluit Ronald 01-11-2026 (P0): "ik wil een grondige meting van alle knoppen".
+# De route zoals een gebruiker hem loopt: een laag open laten in een tabblad
+# (gesprek, Muzikanten, Mix & Match, bandwizard, tegel), via de onderbalk naar
+# een ander tabblad, daar elk scherm openen, dan terug met de pijl en met de
+# toestelknop. Een druk die niets zichtbaars doet terwijl je nog niet op de
+# bovenkant staat, is een dode druk. Blok 71 liet tot twee drukken toe en ving
+# dit daarom niet.
+TT548_JS = r"""async ({knop, laag, doelTab, scherm}) => {
+  const w = ms => new Promise(z => setTimeout(z, ms));
+  const TABS = ['myprofile', 'search', 'messages', 'bands'];
+  const NAV = { myprofile: 'bottomNavProfile', search: 'bottomNavSearch', messages: 'bottomNavMessages', bands: 'bottomNavBands' };
+  const sig = () => {
+    const v = huidigeView;
+    const m = [...document.querySelectorAll('.modal-overlay.visible')].map(e => e.id).join(',');
+    const p = document.getElementById('messagesThreadPanel');
+    const draad = v === 'messages' && p.style.display !== 'none' && !!activeConversationId;
+    const z = v === 'search' ? zoekScherm : '';
+    const t = v === 'profieltegels' ? activeTegelScreen : '';
+    const b = v === 'bands' && bandWizardOpen();
+    return { v, m, draad, z, t, b, s: [v, m, draad, z, t, b].join('|') };
+  };
+  // TT-548 (besluit Ronald 05-11-2026): Mijn Profiel is het hoogste scherm; daar houdt terug op.
+  const rust = (x) => x.v === 'myprofile' && !x.m && !x.t;
+  const druk = async () => { if (knop === 'pijl') document.getElementById('navTerugBtn').click(); else history.back(); await w(140); };
+  currentUser = { id: 'test' }; myMusicianId = 'm1'; hasOwnProfile = true;
+  navStack.length = 0;
+  if (activeConversationId) closeConversation(true);
+  // 1. een laag open laten in zijn eigen tabblad
+  if (laag === 'gesprek') { document.getElementById(NAV.messages).click(); await w(120); await openConversation('m2', 'dylan', null, false, false); await w(120); }
+  if (laag === 'muzikanten' || laag === 'mixmatch') { document.getElementById(NAV.search).click(); await w(120); openZoekScherm(laag, { geenZoek: true, stil: true }); await w(80); }
+  if (laag === 'bandwizard') { document.getElementById(NAV.bands).click(); await w(150); await showCreateBandForm(); await w(120); }
+  if (laag === 'tegel') { document.getElementById(NAV.myprofile).click(); await w(100); showView('profieltegels'); await w(120); openTegelScreen('wieBenJe'); await w(120); }
+  const laagStand = sig().s;
+  // 2. via de onderbalk naar het doeltabblad
+  document.getElementById(NAV[doelTab]).click(); await w(150);
+  // 3. daar een scherm openen
+  if (scherm) { showView(scherm, undefined, scherm === 'profiel' ? { id: 'x', app: true } : undefined); await w(150); }
+  const start = sig();
+  // 4. terug, tot zes keer
+  const drukken = [];
+  let dood = 0;
+  for (let i = 0; i < 6; i++) {
+    const voor = sig();
+    if (rust(voor)) break;
+    await druk();
+    const na = sig();
+    const nietsZichtbaar = voor.s === na.s;
+    if (nietsZichtbaar) dood++;
+    drukken.push({ voor: voor.s, na: na.s, dood: nietsZichtbaar });
+  }
+  const eind = sig();
+  return { laagStand, start: start.s, eind: eind.s, eindTab: eind.v, rust: rust(eind), dood, drukken };
+}"""
+
+
+def blok_tt548():
+    print("\nBlok 129 — TT-548: elke terugdruk heeft een zichtbaar gevolg")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    resultaten, fouten = [], []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(400)
+        schermen = page.evaluate("""[...document.querySelectorAll('.app-view')].map(v => v.id.replace('view-', ''))
+            .filter(v => !['landing', 'toestemming', 'register', 'myprofile', 'search', 'messages', 'bands'].includes(v))""")
+        for knop in ("pijl", "toestel"):
+            for laag in ("geen", "gesprek", "muzikanten", "mixmatch", "bandwizard", "tegel"):
+                for doel in ("myprofile", "search", "messages", "bands"):
+                    for scherm in [None] + schermen:
+                        page.evaluate("window.TT_STUB.reset()")
+                        r = page.evaluate(TT548_JS, {"knop": knop, "laag": laag, "doelTab": doel, "scherm": scherm})
+                        r.update(knop=knop, laag=laag, doel=doel, scherm=scherm)
+                        resultaten.append(r)
+        browser.close()
+    httpd.shutdown()
+    n = len(resultaten)
+    dood = [f"{r['knop']}: {r['laag']} open, {r['doel']} > {r['scherm'] or '-'}" for r in resultaten if r["dood"]]
+    eind = [f"{r['knop']}: {r['laag']} open, {r['doel']} > {r['scherm'] or '-'} eindigt op {r['eind']}" for r in resultaten
+            if not r["rust"] or r["eindTab"] != "myprofile"
+            or (r["scherm"] and r["doel"] != "myprofile" and not any(d["na"].startswith(r["doel"] + "|") for d in r["drukken"]))]
+    check(f"TT-548: geen enkele dode terugdruk ({n} routes: 6 lagen x 4 tabbladen x {len(schermen) + 1} schermen x pijl en toestelknop)",
+          not dood and n >= 400, f"{len(dood)} dood: " + "; ".join(dood[:8]))
+    check(f"TT-548: elke route komt langs de bovenkant van het tabblad waar je naartoe tikte en eindigt op Mijn Profiel ({n} routes)",
+          not eind, "; ".join(eind[:8]))
+    check("geen paginafouten in blok 129", not fouten, "; ".join(fouten)[:300])
 
 
 def main():
@@ -14186,6 +14321,7 @@ def main():
     blok_tt557()
     blok_tt558()
     blok_tt556()
+    blok_tt548()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

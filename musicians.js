@@ -1619,7 +1619,7 @@ function mhHandleDrop(e) {
 
 function mhHandleFileSelect(files) {
   Array.from(files).forEach(file => {
-    if (mhMediaFiles.length >= GRENZEN.beeld) { showToast('Maximum 8 bestanden.'); return; }
+    if (mhMediaFiles.length >= GRENZEN.beeld) { showToast(`Maximum van ${GRENZEN.beeld} bestanden bereikt.`); return; }
     const isVideo = (file.type || '').toLowerCase().startsWith('video/');
     const typeProblem = fileTypeProblem(file, MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
     if (typeProblem) { showToast(`"${file.name}": ${typeProblem}`); return; }

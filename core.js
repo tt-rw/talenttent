@@ -987,11 +987,11 @@ function naarHoogsteScherm() {
 }
 
 // De bovenkant van een tabblad: Zoeken, Berichten, Bands en Mijn Profiel, en
-// het hoogste scherm (de landingspagina als je uitgelogd bent). Daarboven ligt
-// niets: de terugknop doet daar niets (TT-310) en gaat nooit naar een ander
-// tabblad. Naar Mijn Profiel ga je via de onderbalk.
-// *(TT-428, 07-10-2026, besluit Ronald: "terug blijft binnen het tabblad";
-// vervangt TT-303, waar terug op een tabblad naar Mijn Profiel ging.)*
+// het hoogste scherm (de landingspagina als je uitgelogd bent). Terug gaat
+// vanaf Zoeken, Berichten en Bands naar het hoogste scherm; op het hoogste
+// scherm staat geen pijl en doet de toestelknop niets.
+// *(TT-548, besluit Ronald 05-11-2026; vervangt voor de bovenkant TT-428, waar
+// terug op een tabblad niets deed, en TT-310, waar de pijl er altijd stond.)*
 const TAB_VIEWS = ['search', 'messages', 'bands', 'myprofile'];
 function opTabbladBovenkant() {
   return TAB_VIEWS.includes(huidigeView) || huidigeView === hoogsteScherm();
@@ -1016,24 +1016,25 @@ function magAppVerlaten() {
 }
 function magTerug() {
   if (heeftTerugLaag()) return true;
-  // Op de bovenkant van een tabblad is er niets boven je en niets om naar
-  // terug te gaan.
-  if (opTabbladBovenkant() && !navStack.length) return false; // TT-450
+  // TT-548 (besluit Ronald 05-11-2026): het hoogste scherm (Mijn Profiel, of
+  // uitgelogd de landingspagina) heeft niets boven zich. Vanaf de bovenkant van
+  // Zoeken, Berichten en Bands gaat terug daarheen.
+  if (huidigeView === hoogsteScherm() && !navStack.length) return false;
   return huidigeView !== 'toestemming';
 }
 
-// TT-310 (23-09-2026, Ronald): de knop staat er altijd, ook als er niets is
-// om naar terug te gaan — overal dezelfde kop: terug, woordmerk, hamburger.
-// Een druk doet dan niets (zie terugKnop()). Was sinds TT-301: onzichtbaar
-// zolang magTerug() onwaar was.
-// Enige uitzondering: de goedkeuringspagina (TT-42). Die is het hele bezoek
-// van een ouder, en ook de hamburger en de onderbalk staan daar niet.
+// De knop staat overal, behalve op het hoogste scherm (Mijn Profiel, of
+// uitgelogd de landingspagina) en de goedkeuringspagina (TT-42). Daar is er
+// niets om naar terug te gaan; de plek blijft leeg, zodat de kop niet
+// verschuift (TT-548, besluit Ronald 05-11-2026; was TT-310: altijd zichtbaar).
 function werkTerugKnopBij() {
   const btn = document.getElementById('navTerugBtn');
   // Weg op de goedkeuringspagina (TT-310) en op de landingspagina (besluit
   // Ronald, 06-10-2026: "er is niets om naar terug te gaan"). De plek blijft
   // leeg, zodat het woordmerk niet verschuift.
-  if (btn) btn.style.visibility = (huidigeView !== 'toestemming' && huidigeView !== 'landing') ? '' : 'hidden';
+  // TT-548 (besluit Ronald 05-11-2026): ook weg op Mijn Profiel, het hoogste
+  // scherm. Een pijl die niets doet, voelt als "nog een keer tikken".
+  if (btn) btn.style.visibility = (huidigeView !== 'toestemming' && huidigeView !== 'landing' && huidigeView !== hoogsteScherm()) ? '' : 'hidden';
 }
 
 function terugKnop() {
@@ -1103,6 +1104,16 @@ function showView(view, mode, extra) {
   // bandwizard zonder opslaan, net als een open tegel. Zijn stap blijft in de
   // geschiedenis staan en opent later gewoon Mijn Bands.
   if (bandWizardOpen()) { resetBandForm(); zetBandWizardZichtbaar(false); }
+  // TT-548 (P0, besluit Ronald 01-11-2026): een tik op een tabblad laat ook geen
+  // open gesprek achter, net als een tegel en de bandwizard hierboven. Anders
+  // sluit de eerste terugdruk elders eerst dat gesprek, dat niet in beeld is,
+  // en lijkt de tik niets te doen. Terug, een omleiding en "Bericht sturen"
+  // ('behoud') houden het gesprek open.
+  if (activeConversationId && !['pop', 'redirect', 'behoud'].includes(mode)
+      && (TAB_VIEWS.includes(view) || view === 'landing' || view === hoogsteScherm())) {
+    gesprekVanuit = null;
+    closeConversation(true);
+  }
   sluitAlleMenus();
   sluitOpruimModals(); // TT-264: een view-wissel laat nooit een spelende video achter
   // TT-517 fase 9: waar de vorige view stond, voor de overgang naar of van een profiel.
@@ -1643,8 +1654,8 @@ function bovensteModal(alleenMetClose) {
 
 // Eén stap terug, voor de pijl en de toestelknop (TT-431). Eerst de lagen die
 // de app zelf opent, in vaste volgorde: een venster, een gesprek, een tegelscherm,
-// de bandwizard. Daarna het scherm achter je op de stapel. Op de bovenkant
-// van een tabblad gebeurt er niets.
+// de bandwizard. Daarna het scherm achter je op de stapel. Vanaf de bovenkant
+// van Zoeken, Berichten en Bands naar het hoogste scherm; daar gebeurt niets.
 function appTerug() {
   const openModal = bovensteModal(false);
   if (openModal) {
@@ -1698,9 +1709,15 @@ function appTerug() {
     return;
   }
   // TT-450: Zoeken geopend vanaf een open rol ligt boven een ander scherm
-  // (navStack is dan gevuld); daar gaat terug wél een stap. Een tik op een
-  // tabblad leegt de stapel, dus op de echte bovenkant doet terug niets.
-  if (opTabbladBovenkant() && !navStack.length) return; // TT-428
+  // (navStack is dan gevuld); daar gaat terug eerst een stap. Een tik op een
+  // tabblad leegt de stapel.
+  // TT-548 (besluit Ronald 05-11-2026, vervangt TT-428 voor de bovenkant):
+  // het hoogste scherm is het eind; vanaf de bovenkant van Zoeken, Berichten
+  // en Bands gaat terug naar het hoogste scherm, als een tik op de onderbalk.
+  if (!navStack.length) {
+    if (huidigeView === hoogsteScherm()) return;
+    if (opTabbladBovenkant()) { showView(hoogsteScherm()); return; }
+  }
   popNavStap();
 }
 

@@ -125,7 +125,7 @@ function linkGrensBijwerken(lijst, aantal) {
   const vol = aantal >= GRENZEN.links;
   const knop = lijst.parentElement && lijst.parentElement.querySelector('.add-link-btn');
   if (knop) knop.style.display = vol ? 'none' : '';
-  if (vol) lijst.insertAdjacentHTML('beforeend', `<div class="drop-hint">Maximaal ${GRENZEN.links} links.</div>`);
+  if (vol) lijst.insertAdjacentHTML('beforeend', `<div class="drop-hint">Maximum van ${GRENZEN.links} links bereikt.</div>`);
 }
 
 // Bands: eigen bands en bands waar je lid van bent, samen hooguit 10.
@@ -1072,7 +1072,7 @@ function highlight(text, q) {
 
 function addSong(title, artist) {
   if (state.songs.find(s => s.title===title && s.artist===artist)) return;
-  if (grensBereikt(state.songs.length, GRENZEN.nummers, `Je repertoire is vol: maximaal ${GRENZEN.nummers} nummers.`)) return;
+  if (grensBereikt(state.songs.length, GRENZEN.nummers, `Maximum van ${GRENZEN.nummers} nummers bereikt.`)) return;
   state.songs.push({ title, artist, level: null });
   document.getElementById('artistSearch').value = '';
   document.getElementById('trackSearch').value = '';
@@ -1209,7 +1209,7 @@ async function repertoireBijwerken(knop, level) {
     let nieuw;
     if (level) {
       // Stond het er intussen al in, dan krijgt het deze beheersing.
-      if (!erin && grensBereikt(lijst.length, GRENZEN.nummers, `Je repertoire is vol: maximaal ${GRENZEN.nummers} nummers.`)) return;
+      if (!erin && grensBereikt(lijst.length, GRENZEN.nummers, `Maximum van ${GRENZEN.nummers} nummers bereikt.`)) return;
       nieuw = erin ? lijst.map(s => ditNummer(s) ? { ...s, mastery_level: level } : s)
                    : lijst.concat([{ song_title: titel, song_artist: artiest, mastery_level: level }]);
     } else {
@@ -2263,7 +2263,7 @@ function bannerKnopStandZetten(houderId, i, aan) {
 function bannerKeuzeMag(huidigAantal, wordtAan) {
   if (!wordtAan) return true;
   if (huidigAantal < MEDIA_BANNER_MAX) return true;
-  showToast(`Je banner toont maximaal ${MEDIA_BANNER_MAX} items.`);
+  showToast(`Maximum van ${MEDIA_BANNER_MAX} items bereikt.`);
   return false;
 }
 

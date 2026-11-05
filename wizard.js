@@ -1841,7 +1841,7 @@ function handleDrop(e) {
 // bij de avatar-upload in stap 1 hoeft hier niet uitgesteld te worden.
 function handleFileSelect(files) {
   Array.from(files).forEach(file => {
-    if (state.mediaFiles.length >= GRENZEN.beeld) { showToast('Maximum 8 bestanden.'); return; }
+    if (state.mediaFiles.length >= GRENZEN.beeld) { showToast(`Maximum van ${GRENZEN.beeld} bestanden bereikt.`); return; }
     const isVideo = (file.type || '').toLowerCase().startsWith('video/');
     // TT-87: controleren tegen dezelfde lijst als de bucket in Supabase,
     // vóór de preview en vóór de upload.
