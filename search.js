@@ -602,6 +602,16 @@ function volgendeStraal(huidig) {
   return undefined;
 }
 
+// TT-563: de stand van het verruimen (TT-62), voor Muzikanten en Wie speelt dit?
+// gelijk. `vorige` is de stand van nu; de eerste straal blijft bewaard.
+function verruimStap(vorige, radius) {
+  const naar = volgendeStraal(radius);
+  return naar === undefined ? null : { van: vorige ? vorige.van : radius, naar };
+}
+function verruimLeeg(vorige, radius) {
+  return { van: vorige ? vorige.van : null, naar: radius, leeg: true };
+}
+
 function straalTekst(km) {
   return km == null ? 'je zoekgebied' : `${km} km`;
 }
@@ -862,19 +872,17 @@ async function runSearch(straalOverride) {
     const ruimerZoeken = (straalActief) => {
       // TT-257 (besluit Ronald, 12-09-2026): zoek je op naam, dan verruimt de
       // app niet. Je zoekt één bepaalde persoon of band.
-      if (nameTerm) return undefined;
-      if (!straalActief) return undefined;
-      const volgende = volgendeStraal(radius);
-      if (volgende === undefined) return undefined;
-      zoekVerruimd = { van: zoekVerruimd ? zoekVerruimd.van : radius, naar: volgende };
-      return volgende;
+      if (nameTerm || !straalActief) return undefined;
+      const stap = verruimStap(zoekVerruimd, radius);
+      if (!stap) return undefined;
+      zoekVerruimd = stap;
+      return stap.naar;
     };
     const geenResultaat = () => {
       lastZoekResultaten = [];
       // Is er al landelijk gezocht, dan ligt het aan de filters, niet aan de straal.
       zoekVerruimd = (straalOverride !== undefined && volgendeStraal(radius) === undefined)
-        ? { van: zoekVerruimd ? zoekVerruimd.van : null, naar: radius, leeg: true }
-        : null;
+        ? verruimLeeg(zoekVerruimd, radius) : null;
       renderZoekResultaten([], { verruimd: zoekVerruimd, naamGezocht: !!nameTerm, straal: radius });
     };
 
@@ -1007,7 +1015,7 @@ async function runSearch(straalOverride) {
   } catch(e) {
     logCaught('runSearch', e);
     if (seq !== musicianSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
-    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'zoeken')}</div>`;
+    resultsEl.innerHTML = foutStaatHTML(e, 'zoeken', 'runSearch()');
   }
 }
 
@@ -1437,7 +1445,7 @@ async function onSetlistArtistSearch(q) {
       renderArtistResults(ac, artists, q, 'selectSetlistArtist');
     } catch(e) {
       logCaught('onSetlistArtistSearch', e);
-      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
+      ac.innerHTML = AC_FOUT_HTML;
     }
   }, 400);
 }
@@ -1477,7 +1485,7 @@ async function onSetlistTrackSearch(q) {
     renderTrackResults(ac, songs, q, selectedSetlistArtist, 'addSetlistSong', setlistWantedSongs);
   } catch(e) {
     logCaught('onSetlistTrackSearch', e);
-    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
+    ac.innerHTML = AC_FOUT_HTML;
   }
 }
 
@@ -1520,16 +1528,15 @@ async function runSetlistSearch(straalOverride) {
     // pas na de straal-aanroep bekend (radiusIds), dus die geven we mee.
     const ruimerZoeken = (straalActief) => {
       if (!straalActief) return undefined;
-      const volgende = volgendeStraal(radius);
-      if (volgende === undefined) return undefined;
-      setlistVerruimd = { van: setlistVerruimd ? setlistVerruimd.van : radius, naar: volgende };
-      return volgende;
+      const stap = verruimStap(setlistVerruimd, radius);
+      if (!stap) return undefined;
+      setlistVerruimd = stap;
+      return stap.naar;
     };
     const geenResultaat = (straalActief) => {
       lastSetlistResults = [];
       setlistVerruimd = (straalActief && straalOverride !== undefined && volgendeStraal(radius) === undefined)
-        ? { van: setlistVerruimd ? setlistVerruimd.van : null, naar: radius, leeg: true }
-        : null;
+        ? verruimLeeg(setlistVerruimd, radius) : null;
       renderSetlistResults([], { verruimd: setlistVerruimd });
     };
 
@@ -1672,7 +1679,7 @@ async function runSetlistSearch(straalOverride) {
   } catch(e) {
     logCaught('runSetlistSearch', e);
     if (seq !== setlistSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
-    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'zoeken')}</div>`;
+    resultsEl.innerHTML = foutStaatHTML(e, 'zoeken', 'runSetlistSearch()');
   }
 }
 
@@ -1854,7 +1861,7 @@ async function gedeeldSuggesties(term) {
   } catch (e) {
     logCaught('gedeeldSuggesties', e);
     if (seq !== gedeeldNaamSeq) return;
-    ac.innerHTML = '<div class="ac-item"><span>Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
+    ac.innerHTML = AC_FOUT_HTML;
     ac.classList.add('open');
   }
 }
@@ -2063,7 +2070,7 @@ async function runGedeeldSearch() {
   } catch (e) {
     logCaught('runGedeeldSearch', e);
     if (seq !== gedeeldSearchSeq) return;
-    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'zoeken')}</div>`;
+    el.innerHTML = foutStaatHTML(e, 'zoeken', 'runGedeeldSearch()');
   }
 }
 

@@ -3722,10 +3722,11 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("de bio in de wizard heeft dezelfde cursieve voorbeeldtekst als de tegels en geen voorzetknoppen (consistentie)",
               wb == [True, True, "italic", 0], json.dumps(wb))
 
-        # K7/K8/K12 — zeven keuzesoorten, één stand voor gekozen en niet-gekozen.
+        # K7/K8/K12 — zes keuzesoorten, één stand voor gekozen en niet-gekozen
+        # (TT-518, 06-11-2026: .level-btn weg, sinds TT-514 nergens gebruikt).
         keuze = page.evaluate("""() => {
           const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
-          const soorten = [['div','tag','selected'], ['button','level-btn','active-bijna'], ['div','segmented-btn','selected'],
+          const soorten = [['div','tag','selected'], ['div','segmented-btn','selected'],
                            ['button','search-mode-tab','active'], ['button','media-tab','active'], ['div','goal-card','selected'],
                            ['button','level-choice','selected']];
           const meet = e => { const cs = getComputedStyle(e);
@@ -3742,11 +3743,11 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         keuze = [[k[0], k[1].replace(" | 16px | ", " | 999px | "), k[2].replace(" | 16px | ", " | 999px | ")] if k[0] == "goal-card" else k for k in keuze]
         los = {k[1] for k in keuze}
         aan = {k[2] for k in keuze}
-        check("K7: niet-gekozen is bij alle zeven soorten gelijk (--surface2, rand 1,5px, een pil, wit)",
+        check("K7: niet-gekozen is bij alle zes soorten gelijk (--surface2, rand 1,5px, een pil, wit)",
               len(los) == 1 and los.pop().replace(" | 1px", "").replace(" | 1.5px", "") == "rgb(30, 30, 30) | rgb(42, 42, 42) | 999px | rgb(240, 240, 240) | 400 | normal"
-              and all(rand(k) == "var(--line)" for k in (".tag", ".level-btn", ".segmented-btn", ".search-mode-tab", ".media-tab", ".goal-card", ".level-choice")),
+              and all(rand(k) == "var(--line)" for k in (".tag", ".segmented-btn", ".search-mode-tab", ".media-tab", ".goal-card", ".level-choice")),
               json.dumps(keuze)[:400])
-        check("K7/K8/K12: gekozen is bij alle zeven soorten gelijk (geel vlak, donkere tekst, vet, niet cursief; TT-517 fase 11, B)",
+        check("K7/K8/K12: gekozen is bij alle zes soorten gelijk (geel vlak, donkere tekst, vet, niet cursief; TT-517 fase 11, B)",
               len(aan) == 1 and aan.pop().replace(" | 1px", "").replace(" | 1.5px", "") == "rgb(255, 184, 28) | rgb(255, 184, 28) | 999px | rgb(30, 30, 30) | 700 | normal",
               json.dumps(keuze)[:400])
 
@@ -7102,7 +7103,7 @@ window.TT_STUB.fnAntwoord = {};
             });
           });
           // 2. Elke zichtbare knop: vijf punten, de tik moet de knop zelf raken.
-          const SEL = 'button, a[href], [onclick], .tag, .level-btn, .segmented-btn, .search-mode-tab, .goal-card';
+          const SEL = 'button, a[href], [onclick], .tag, .segmented-btn, .search-mode-tab, .goal-card';
           for (const v of ['landing', 'auth', 'register', 'search', 'about', 'privacy', 'terms', 'gedragscode']) {
             showView(v); await w(450);
             const els = [...document.querySelectorAll(SEL)].filter(e => {
@@ -10254,10 +10255,10 @@ window.TT_STUB.fnAntwoord = {};
           showView('about');
           return u;
         }""")
-        check("verdwenen band met eigen profiel: de pagina zegt dat de band niet meer bestaat", "bestaat niet meer" in d92["eigenTekst"] and "Kon band niet laden" not in d92["eigenTekst"], json.dumps(d92))
+        check("verdwenen band met eigen profiel: de pagina zegt dat de band niet meer bestaat", "bestaat niet meer" in d92["eigenTekst"] and "Laden lukt nu niet" not in d92["eigenTekst"], json.dumps(d92))
         check("verdwenen band met eigen profiel: niets in het foutlog, wel een knop naar Zoeken", d92["eigenLog"] == 0 and d92["eigenKnop"], json.dumps(d92))
         check("verdwenen band als bezoeker: dezelfde tekst, niets in het foutlog", "bestaat niet meer" in d92["gastTekst"] and d92["gastLog"] == 0, json.dumps(d92))
-        check("een echte fout bij de band blijft \"Kon band niet laden.\"", "Kon band niet laden" in d92["foutTekst"], json.dumps(d92))
+        check("een echte fout bij de band toont de foutstaat (TT-561, besluit Ronald 06-11-2026)", "Laden lukt nu niet" in d92["foutTekst"] and "Probeer het opnieuw" in d92["foutTekst"], json.dumps(d92))
         check("een echte fout bij de band komt in het foutlog, met het band-id", d92["foutLog"] == 1 and "b-echte-fout" in d92["foutBericht"], json.dumps(d92))
         check("service worker geweigerd (Rejected of SecurityError): niets in het foutlog, app gaat door", d92["swRejected"] is False and d92["swSecurity"] is False and d92["swGeweigerdLog"] == 0, json.dumps(d92))
         check("service worker met een andere fout: wel in het foutlog", d92["swAnders"] is False and d92["swAndersLog"] == 1, json.dumps(d92))
@@ -11653,7 +11654,7 @@ def blok_tt517_fase2():
               r.knoppen = knoppen.length;
               r.geenPil = knoppen.filter(b => getComputedStyle(b).borderTopLeftRadius !== '999px').map(b => b.textContent.trim()).slice(0, 5);
               r.keuze = {};
-              for (const k of ['tag', 'level-btn', 'segmented-btn', 'search-mode-tab', 'media-tab', 'goal-card', 'level-choice', 'add-link-btn']) {
+              for (const k of ['tag', 'segmented-btn', 'search-mode-tab', 'media-tab', 'goal-card', 'level-choice', 'add-link-btn']) {
                 const e = document.createElement('button'); e.className = k; proef.appendChild(e);
                 r.keuze[k] = getComputedStyle(e).borderTopLeftRadius;
               }
@@ -14293,6 +14294,114 @@ def blok_tt548():
     check("geen paginafouten in blok 129", not fouten, "; ".join(fouten)[:300])
 
 
+# --------------------------------------------------------------------------
+# Blok 130 — onderhoudsronde 06-11-2026: een storing is geen lege staat (TT-561),
+# geen rode tekst (TT-562), de tip stopt buiten beeld (TT-564), tikvlak
+# "Wachtwoord vergeten?" (TT-510), geen vervaging (TT-284), geen losse kleur (TT-512).
+# --------------------------------------------------------------------------
+def blok_onderhoud_0611():
+    print("\nBlok 130 — onderhoudsronde 06-11-2026: storing, foutstaat, tip, tikvlak, kleuren")
+    js = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in JS_FILES}
+    css = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+    # TT-562: rood alleen nog op het label "Zeker?" (een knop die iets weggooit, §1.2).
+    rood = [f"{f}:{i + 1}" for f, t in js.items() for i, r in enumerate(t.split("\n"))
+            if re.search(r"color:\s*var\(--danger\)", r) and "song-remove" not in r]
+    check("TT-562: geen foutmelding meer in rode tekst in de JS", not rood, ", ".join(rood))
+    check("TT-562: de zin 'Zoeken lukt nu niet' staat er één keer, met punt",
+          sum(t.count("Zoeken lukt nu niet") for t in js.values()) == 1
+          and "typ opnieuw.</div>" in js["utils.js"], "")
+    # TT-512: geen vaste kleur buiten :root (commentaar en een masker tellen niet).
+    zonder = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    zonder = re.sub(r':root(\[data-theme="licht"\])?\s*\{[^}]*\}', "", zonder)
+    los = [h for h in re.findall(r"[^\n]*#[0-9a-fA-F]{3,8}\b[^\n]*", zonder) if "mask-image" not in h]
+    check("TT-512: geen vaste kleur buiten :root in styles.css", not los, "; ".join(x.strip() for x in los)[:300])
+    kaart = js["utils.js"][js["utils.js"].index("async function kaartMaken"):]
+    kaart = kaart[:kaart.index("\n}\n")]
+    check("TT-512: de kaart tekent met de kleurrollen, geen losse kleur",
+          not re.findall(r"'#[0-9a-fA-F]{3,8}'", kaart.replace("addColorStop(1, '#000')", "")), "")
+    check("TT-284: geen vervaging op de opslaglaag en op de berichtknop van een kaart",
+          not re.search(r"\.save-overlay\s*\{[^}]*backdrop-filter", zonder)
+          and not re.search(r"\.zoek-kaart-hoek \.result-row-msg-btn\s*\{[^}]*backdrop-filter", zonder), "")
+
+    stub_js = open(STUB, encoding="utf-8").read() + \
+        "\nwindow.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };\n"
+    httpd, port = serve()
+    fouten = []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(500)
+        uit = page.evaluate(r"""async () => {
+          const w = ms => new Promise(z => setTimeout(z, ms)), d = window.TT_STUB.data, u = {};
+          d.musicians.forEach(m => { m.musician_songs = []; m.musician_media = []; m.musician_instruments = []; m.musician_genres = []; });
+          const tekst = id => document.getElementById(id).innerText.replace(/\s+/g, ' ').trim();
+          const kleur = id => { const t = document.querySelector('#' + id + ' .empty-state-title'); return t ? getComputedStyle(t).color : null; };
+          const tekstKleur = getComputedStyle(document.body).color;
+          // Mijn Profiel bij een storing op musicians
+          myMusicianId = null; window.TT_STUB.errors.musicians = { code: '503', message: 'Service Unavailable' };
+          showView('myprofile'); await w(600);
+          u.profiel = tekst('view-myprofile'); u.profielKleur = kleur('view-myprofile');
+          // Probeer het opnieuw, na de storing
+          delete window.TT_STUB.errors.musicians;
+          document.querySelector('#view-myprofile .empty-state .btn')?.click(); await w(800);
+          u.profielNa = tekst('view-myprofile');
+          // Mijn Bands bij een storing op band_members
+          window.TT_STUB.errors.band_members = { code: '503', message: 'Service Unavailable' };
+          showView('bands'); await w(600);
+          u.bands = tekst('view-bands');
+          delete window.TT_STUB.errors.band_members;
+          // Geen profiel (geen rij) blijft gewoon "Nog geen profiel"
+          myMusicianId = null; const bewaard = d.musicians.splice(0); showView('search'); await w(100);
+          showView('myprofile'); await w(600);
+          u.geenProfiel = tekst('view-myprofile'); d.musicians.push(...bewaard);
+          u.tekstKleur = tekstKleur;
+          // TT-564: de tip stopt als je via de onderbalk weggaat
+          myMusicianId = 'm1'; hasOwnProfile = true;
+          showView('profieltegels'); await w(200); await openTegelScreen('mediahoek'); await w(300);
+          const tip = () => document.getElementById('mhTipText').textContent;
+          u.tipLoopt = tip(); await w(2700); u.tipLooptNa = tip();
+          document.getElementById('bottomNavSearch').click(); await w(200);
+          const stand = tip(); await w(2700); u.tipStil = stand === tip();
+          // TT-561 D7: een profiel dat niet bestaat is geen storing
+          showView('profiel', undefined, { id: 'bestaat-niet', app: true }); await w(800);
+          u.weg = tekst('view-profiel');
+          showView('myprofile'); await w(200);
+          return u; }""")
+        check("TT-561 D7: een profiel dat niet bestaat zegt 'Dit profiel bestaat niet meer', geen foutstaat",
+              "Dit profiel bestaat niet meer" in uit["weg"] and "Laden lukt nu niet" not in uit["weg"], uit["weg"][:160])
+        check("TT-561: een storing toont op Mijn Profiel 'Laden lukt nu niet' met 'Probeer het opnieuw', niet 'Nog geen profiel'",
+              "Laden lukt nu niet" in uit["profiel"] and "Probeer het opnieuw" in uit["profiel"] and "Nog geen profiel" not in uit["profiel"], uit["profiel"][:160])
+        check("TT-562: de foutstaat staat in de tekstkleur, niet in rood", uit["profielKleur"] == uit["tekstKleur"],
+              f'{uit["profielKleur"]} tegen {uit["tekstKleur"]}')
+        check("TT-561: 'Probeer het opnieuw' laadt het profiel na de storing", "Laden lukt nu niet" not in uit["profielNa"], uit["profielNa"][:160])
+        check("TT-561: een storing toont op Mijn Bands de foutstaat, niet 'Nog geen bands'",
+              "Laden lukt nu niet" in uit["bands"] and "Nog geen bands" not in uit["bands"], uit["bands"][:160])
+        check("TT-561: zonder profiel (geen rij) blijft het 'Nog geen profiel'", "Nog geen profiel" in uit["geenProfiel"], uit["geenProfiel"][:160])
+        check("TT-564: de tip wisselt in Je mediahoek en staat stil na weggaan via de onderbalk",
+              uit["tipLoopt"] != uit["tipLooptNa"] and uit["tipStil"], json.dumps({k: uit[k] for k in ("tipLoopt", "tipLooptNa", "tipStil")}))
+        # TT-510: tikvlak van "Wachtwoord vergeten?" 44px, zonder het veld of Inloggen te raken.
+        page.evaluate("currentUser = null; showView('auth')"); page.wait_for_timeout(300)
+        t = page.evaluate("""() => { const k = document.getElementById('forgotPasswordBtn'), a = getComputedStyle(k, '::after');
+          const b = k.getBoundingClientRect(), top = b.top + parseFloat(a.top), onder = b.bottom - parseFloat(a.bottom);
+          const veld = document.getElementById('loginPassword').getBoundingClientRect();
+          const knop = [...document.querySelectorAll('#view-auth .btn-primary')].find(x => x.textContent.includes('Inloggen')).getBoundingClientRect();
+          return { hoog: Math.round(onder - top), boven: Math.round(top - veld.bottom), onder: Math.round(knop.top - onder),
+                   midden: document.elementFromPoint(b.left + b.width / 2, top + 2) === k }; }""")
+        check("TT-510: 'Wachtwoord vergeten?' heeft een tikvlak van 44px, los van het veld en van Inloggen",
+              t["hoog"] >= 44 and t["boven"] >= 0 and t["onder"] >= 0 and t["midden"], json.dumps(t))
+        browser.close()
+    httpd.shutdown()
+    fouten = [x for x in fouten if "musician_songs is not iterable" not in x]  # TT-509, de stub
+    check("geen paginafouten in blok 130", not fouten, "; ".join(fouten)[:300])
+
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
     _csp_vangnet()
@@ -14322,6 +14431,7 @@ def main():
     blok_tt558()
     blok_tt556()
     blok_tt548()
+    blok_onderhoud_0611()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

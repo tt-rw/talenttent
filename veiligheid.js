@@ -402,6 +402,6 @@ async function renderGeblokkeerdLijst() {
     el.innerHTML = rijen;
   } catch (e) {
     logCaught('renderGeblokkeerdLijst', e);
-    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'je lijst laden')}</div>`;
+    el.innerHTML = foutStaatHTML(e, 'je lijst laden', 'renderGeblokkeerdLijst()');
   }
 }

@@ -403,7 +403,7 @@ async function loadInbox(opties) {
   } catch (e) {
     delete listEl.dataset.klaar;
     logCaught('loadInbox', e);
-    listEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'je berichten laden')}</div>`;
+    listEl.innerHTML = foutStaatHTML(e, 'je berichten laden', 'loadInbox()');
   }
 }
 
@@ -544,7 +544,8 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
     // TT-271: geen automatische focus — zie openMessageComposer().
   } catch (e) {
     logCaught('openConversation', e);
-    threadEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'het gesprek laden')}</div>`;
+    threadEl.innerHTML = foutStaatHTML(e, 'het gesprek laden',
+      `openConversation('${jsAttr(otherId)}', '${jsAttr(otherName)}', '${jsAttr(otherAvatarSrc || '')}' || null, true, ${!!deleted})`);
   }
 }
 
@@ -771,7 +772,7 @@ async function openTalentTentGesprek(stil) {
     scrollThreadToBottom();
   } catch (e) {
     logCaught('openTalentTentGesprek', e);
-    threadEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--danger);">${friendlyErrorMessage(e, 'de berichten van Talent Tent laden')}</div>`;
+    threadEl.innerHTML = foutStaatHTML(e, 'de berichten van Talent Tent laden', 'openTalentTentGesprek(true)');
   }
 }
 

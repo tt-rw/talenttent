@@ -210,6 +210,8 @@ def blok_b():
     gedefinieerd |= set(re.findall(r"setProperty\(\s*['\"](--[a-z0-9-]+)",
                                    alle_js))
     gebruikt = set(re.findall(r"var\(\s*(--[a-z0-9-]+)", css + html + alle_js))
+    # TT-512: de kaart (canvas) leest een rol met rol('--naam') in utils.js.
+    gebruikt |= set(re.findall(r"rol\(\s*['\"](--[a-z0-9-]+)", alle_js))
     onbekend = gebruikt - gedefinieerd
     toets("B", "elke gebruikte CSS-variabele is gedefinieerd",
           not onbekend, "B2",
@@ -274,10 +276,11 @@ def blok_b():
           "oude knopklasse: %s; knop met eigen vorm: %s" % (kort(terug), kort(eigen)))
 
     # B7 - één vorm voor elke keuze uit meerdere (TT-316). Vlak, rand, hoek en
-    # kleur van de zeven keuzesoorten staan alleen in de gezamenlijke regels.
+    # kleur van de zes keuzesoorten staan alleen in de gezamenlijke regels
+    # (TT-518, 06-11-2026: .level-btn weg).
     # Een losse regel die dat voor één soort toch zet, is een afwijkende vorm.
     # border-color mag wel: dat is de stand bij aanwijzen (:hover).
-    keuzes = ["tag", "level-btn", "segmented-btn", "search-mode-tab",
+    keuzes = ["tag", "segmented-btn", "search-mode-tab",
               "media-tab", "goal-card", "level-choice"]
     verboden = re.compile(r"(?<![\w-])(background(?:-color)?|border|border-width|"
                           r"border-style|border-radius|color)\s*:")

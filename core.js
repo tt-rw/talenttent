@@ -188,13 +188,29 @@ let currentUser = null;
 // samen met getMyMusicianId() uit bands.js (26-09-2026): alle bestanden
 // gebruiken ze, dus ze horen bij het in- en uitloggen.
 let myMusicianId = null;
+// TT-561: de fout van de laatste vraag naar het eigen id. Geeft getMyMusicianId()
+// null terug terwijl dit gezet is, dan was er een storing en is er niet "geen
+// profiel". Een scherm toont dan de foutstaat, nooit "Nog geen profiel".
+let myMusicianIdFout = null;
 
 async function getMyMusicianId() {
   if (myMusicianId) return myMusicianId;
+  myMusicianIdFout = null;
   if (!currentUser) return null;
-  const { data } = await db.from('musicians').select('id').eq('user_id', currentUser.id).single();
+  const { data, error } = await db.from('musicians').select('id').eq('user_id', currentUser.id).single();
+  // PGRST116: geen rij. Dat is "geen profiel", geen storing.
+  if (error && error.code !== 'PGRST116') {
+    myMusicianIdFout = error;
+    logCaught('getMyMusicianId', error);
+    return null;
+  }
   myMusicianId = data?.id || null;
   return myMusicianId;
+}
+// TT-561: de melding als getMyMusicianId() niets gaf. Bij een storing de oorzaak,
+// anders de tekst over het ontbrekende profiel.
+function geenProfielMelding(tekst) {
+  showToast(myMusicianIdFout ? friendlyErrorMessage(myMusicianIdFout, 'je profiel laden') : tekst);
 }
 
 // TT-336 (26-09-2026, besluiten Ronald): wie 16 of ouder is, stuurt pas
@@ -788,7 +804,7 @@ function closeAllBandMoreMenus() {
 // Vereist een eigen profiel: de voorkeuren staan op musicians.
 async function openSearchPrefsModal() {
   const mid = await getMyMusicianId();
-  if (!mid) { showToast('Maak eerst een profiel aan om e-mailvoorkeuren in te stellen.'); return; }
+  if (!mid) { geenProfielMelding('Maak eerst een profiel aan om e-mailvoorkeuren in te stellen.'); return; }
   try {
     // TT-232 (09-09-2026): musician_wanted wordt hier niet meer gelezen of
     // geschreven. De bestaande rijen blijven staan; alleen dit scherm raakt
@@ -862,7 +878,8 @@ async function getMyCity() {
   if (myOwnCity) return myOwnCity;
   const mid = await getMyMusicianId();
   if (!mid) return null;
-  const { data } = await db.from('musicians').select('city').eq('id', mid).maybeSingle();
+  const { data, error } = await db.from('musicians').select('city').eq('id', mid).maybeSingle();
+  if (error) { logCaught('getMyCity', error); return null; } // TT-561: niet onthouden, volgende keer opnieuw
   myOwnCity = data?.city || null;
   return myOwnCity;
 }
@@ -1080,6 +1097,12 @@ function showView(view, mode, extra) {
   if (huidigeView && huidigeView !== view) viewScrollStand[huidigeView] = window.scrollY;
   const vorigeView = huidigeView;
   huidigeView = view; // TT-303: de terugknop leest dit
+  // TT-564: de wisselende tip in de mediahoek loopt alleen zolang zijn scherm in beeld is.
+  if (vorigeView !== view && typeof mhTipTimer !== 'undefined') {
+    clearInterval(mhTipTimer); clearInterval(wizardMhTipTimer);
+    if (view === 'profieltegels' && activeTegelScreen === 'mediahoek') mhStartTipCycle();
+    if (view === 'register' && state.currentStep === 4) wizardMhStartTipCycle();
+  }
   // TT-410b: welk profiel, en hoe is het geopend? Bij een stap terug staat het
   // in de stap zelf; bij een link in het #-deel van het adres.
   // TT-410b fase 2: hetzelfde scherm toont een muzikant of een band

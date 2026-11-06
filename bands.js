@@ -67,8 +67,10 @@ async function refreshBandsDot(opties) {
   // 22-08-2026 (Ronald): een verzoek trekt zichzelf na 7 dagen in; geen
   // cron-taak, dus de controle draait hier mee. Niet blokkerend, wel loggen.
   if (!(opties && opties.zonderVerval)) {
-    try { await db.rpc('tt_expire_old_founder_offers'); }
-    catch (e) { logCaught('refreshBandsDot/expire', e); }
+    try {
+      const { error } = await db.rpc('tt_expire_old_founder_offers'); // TT-561: fout zit in het antwoord
+      if (error) logCaught('refreshBandsDot/expire', error);
+    } catch (e) { logCaught('refreshBandsDot/expire', e); }
   }
   try {
     const { data, error } = await db.from('band_members').select('band_id')
@@ -303,7 +305,7 @@ async function showCreateBandForm() {
   const wacht = await emailWachtOpBevestiging();
   if (wacht) { showToast(emailBevestigMelding(wacht, 'een band oprichten')); return; }
   const mid = await getMyMusicianId();
-  if (!mid) { showToast('Maak eerst een muzikantprofiel aan.'); return; }
+  if (!mid) { geenProfielMelding('Maak eerst een muzikantprofiel aan.'); return; }
   if (await bandsVol(mid)) return; // TT-556: vóór de wizard, niet pas bij opslaan
   resetBandForm();
   zetBandWizardZichtbaar(true);
@@ -447,7 +449,8 @@ function searchMembersToAdd(query) {
   resEl.innerHTML = '<p style="color:var(--muted);font-size:12px;">Zoeken...</p>';
   memberSearchTimer = setTimeout(async () => {
     try {
-      const { data: existing } = await db.from('band_members').select('musician_id').eq('band_id', addMemberBandId);
+      const { data: existing, error: ledenFout } = await db.from('band_members').select('musician_id').eq('band_id', addMemberBandId);
+      if (ledenFout) throw ledenFout; // TT-561: anders lijkt een lid nog uit te nodigen
       const existingIds = (existing||[]).map(x => x.musician_id);
 
       // TT-43: zoeken op voornaam óf gebruikersnaam — een oprichter kent zijn
@@ -554,7 +557,7 @@ function searchMembersToAdd(query) {
         </div>`; }).join('');
     } catch (e) {
       logCaught('searchMembersToAdd', e);
-      resEl.innerHTML = `<p style="color:var(--danger);font-size:12px;">${friendlyErrorMessage(e, 'leden zoeken')}</p>`;
+      resEl.innerHTML = foutStaatHTML(e, 'leden zoeken', "searchMembersToAdd(document.getElementById('memberSearchInput').value)");
     }
   }, 300);
 }
@@ -752,7 +755,7 @@ async function saveBandRun() {
 
   const mid = await getMyMusicianId();
   // Gaat niet over een veld in dit formulier, maar over je account — toast.
-  if (!mid) { showToast('Maak eerst een muzikantprofiel aan.'); return; }
+  if (!mid) { geenProfielMelding('Maak eerst een muzikantprofiel aan.'); return; }
 
   // TT-252: de laag blokkeert het scherm tijdens het opslaan, zodat een tweede
   // tik de knop ook fysiek niet meer bereikt. TT-251: zonder die laag was er
@@ -812,12 +815,19 @@ async function loadMyBands(opties) {
   // Niet blokkerend voor de lijst, wel loggen (TT-230).
   // TT-367: de controle loopt tegelijk met de vraag naar je lidmaatschappen;
   // de bands zelf pas daarna, zodat een verlopen aanbod er al af is.
+  // TT-561: Supabase gooit niets; een fout komt terug in het antwoord.
   const verval = (async () => {
-    try { await db.rpc('tt_expire_old_founder_offers'); }
-    catch (e) { logCaught('loadMyBands/expire', e); }
+    try {
+      const { error } = await db.rpc('tt_expire_old_founder_offers');
+      if (error) logCaught('loadMyBands/expire', error);
+    } catch (e) { logCaught('loadMyBands/expire', e); }
   })();
 
   const mid = await getMyMusicianId();
+  if (!mid && myMusicianIdFout) {
+    el.innerHTML = foutStaatHTML(myMusicianIdFout, 'je bands laden', 'loadMyBands()');
+    return;
+  }
   if (!mid) {
     // TT-248: via de vaste vorm uit huisstijl §15, net als elke andere lege staat.
     el.innerHTML = emptyStateHTML(
@@ -829,8 +839,13 @@ async function loadMyBands(opties) {
     return;
   }
 
-  const [{ data: memberships }] = await Promise.all([
+  const [{ data: memberships, error: lidFout }] = await Promise.all([
     db.from('band_members').select('band_id').eq('musician_id', mid).eq('status', 'bevestigd'), verval]);
+  if (lidFout) {
+    logCaught('loadMyBands/leden', lidFout);
+    el.innerHTML = foutStaatHTML(lidFout, 'je bands laden', 'loadMyBands()');
+    return;
+  }
   if (!memberships?.length) {
     // TT-248: stond hier als grijze tekst zonder uitweg, tien regels onder de
     // lege staat hierboven die wél een knop had. Nu dezelfde vaste vorm.
@@ -844,9 +859,14 @@ async function loadMyBands(opties) {
   }
 
   const bandIds = memberships.map(m => m.band_id);
-  const { data: bands } = await db.from('bands')
+  const { data: bands, error: bandFout } = await db.from('bands')
     .select(`*, band_members(musician_id, role, status, founder_offer), band_wanted(instrument)`)
     .in('id', bandIds).order('updated_at', { ascending: false });
+  if (bandFout) {
+    logCaught('loadMyBands/bands', bandFout);
+    el.innerHTML = foutStaatHTML(bandFout, 'je bands laden', 'loadMyBands()');
+    return;
+  }
 
   // TT-385 fase 4 (besluit Ronald bij punt 11): de bandkaart toont de
   // vierkante bandfoto, de naam, plaats en genres, de status en de open
@@ -952,7 +972,6 @@ async function bandUitTabellen(id) {
     .eq('id', id).maybeSingle(); // TT-464: een band die niet (meer) bestaat is geen fout
   if (error) throw error;
   if (!b) return null;
-  const opTijd = (x, y) => String(x.created_at || '').localeCompare(String(y.created_at || ''));
   const leden = (b.band_members || [])
     .filter(m => m.status === 'bevestigd' && m.musicians)
     .sort((x, y) => String(x.joined_at || '').localeCompare(String(y.joined_at || '')))
@@ -972,8 +991,8 @@ async function bandUitTabellen(id) {
     wanted: (b.band_wanted || []).map(w => w.instrument),
     invallers: (b.band_invallers || []).filter(v => String(v.datum) >= vandaag)
       .sort((x, y) => String(x.datum).localeCompare(String(y.datum))),
-    media: (b.band_media || []).slice().sort(opTijd),
-    nummers: (b.band_nummers || []).slice().sort(opTijd),
+    media: opVolgordeVanToevoegen(b.band_media), // TT-563: één functie, muzikant en band gelijk
+    nummers: opVolgordeVanToevoegen(b.band_nummers),
     covers: b.band_covers || []
   };
 }
@@ -1370,7 +1389,7 @@ async function laadBandScherm(id, linkToegang) {
   // TT-464: geen fout en geen band: de band bestaat niet meer. Dat is een verwachte
   // uitkomst (zoals TT-423) en komt niet in het foutlog.
   if (!b && !mislukt) { toonProfielNietBeschikbaar('band', true); return; }
-  if (!b) { vak.innerHTML = '<p style="color:var(--danger)">Kon band niet laden.</p>'; return; }
+  if (!b) { vak.innerHTML = foutStaatHTML(mislukt, 'de band laden', `laadBandScherm('${jsAttr(id)}', ${!!linkToegang})`); return; }
 
   const ik = hasOwnProfile ? myMusicianId : null;
   const kijker = !hasOwnProfile ? 'gast'
@@ -1974,8 +1993,7 @@ function bmzZet(b) {
   bmzSoort = b.soort || null;
   bmzGenres.length = 0;
   (b.genres || []).forEach(g => bmzGenres.push(g));
-  bmzNummers = (b.band_nummers || [])
-    .slice().sort((x, y) => String(x.created_at || '').localeCompare(String(y.created_at || '')))
+  bmzNummers = opVolgordeVanToevoegen(b.band_nummers)
     .map(n => ({ id: n.id, titel: n.titel || '', url: n.url || '' }));
   bcCovers = (b.band_covers || []).map(c => ({ id: c.id, title: c.song_title, artist: c.song_artist }));
 }
@@ -2176,8 +2194,7 @@ async function openBandMedia() {
 }
 
 function bmZet(b) {
-  const opTijd = (x, y) => String(x.created_at || '').localeCompare(String(y.created_at || ''));
-  const rijen = (b.band_media || []).slice().sort(opTijd);
+  const rijen = opVolgordeVanToevoegen(b.band_media);
   bmOrigineel = rijen.map(r => [r.id, r.url, !!r.in_banner, JSON.stringify(uitsnedeGeldig(r.uitsnede))]);
   bmMediaFiles = rijen.filter(r => r.media_type === 'foto' || r.media_type === 'video')
     .map(r => ({ id: r.id, name: '', url: r.url, path: null, type: r.media_type, uploading: false, inBanner: !!r.in_banner, uitsnede: r.uitsnede || null }));

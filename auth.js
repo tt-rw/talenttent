@@ -270,9 +270,11 @@ async function checkUsernameGate() {
   // die declaratie.
   usernameGateMid = mid;
 
-  const { data: myBirthDate } = await db.rpc('tt_get_my_birth_date');
+  const { data: myBirthDate, error: gebFout } = await db.rpc('tt_get_my_birth_date');
+  if (gebFout) logCaught('usernameGate/geboortedatum', gebFout); // TT-561
   usernameGateAge = calcAgeFromISO(myBirthDate);
-  const { data: naamData } = await db.rpc('tt_mijn_naam');
+  const { data: naamData, error: naamFout } = await db.rpc('tt_mijn_naam');
+  if (naamFout) logCaught('usernameGate/naam', naamFout); // TT-561
   const eigenNaam = Array.isArray(naamData) ? naamData[0] : naamData;
   usernameGateFname = (eigenNaam && eigenNaam.fname) || '';
   const hintEl = document.getElementById('usernameGateAgeHint');

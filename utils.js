@@ -633,7 +633,7 @@ async function onArtistSearch(q) {
       renderArtistResults(ac, artists, q, 'selectArtist');
     } catch(e) {
       logCaught('onArtistSearch', e);
-      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
+      ac.innerHTML = AC_FOUT_HTML;
     }
   }, 400);
 }
@@ -699,7 +699,7 @@ async function onTrackSearch(q) {
     renderTrackResults(ac, songs, q, selectedArtist, 'addSong', state.songs);
   } catch(e) {
     logCaught('onTrackSearch', e);
-    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger)">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
+    ac.innerHTML = AC_FOUT_HTML;
   }
 }
 
@@ -1931,6 +1931,20 @@ function emptyStateHTML(kop, uitleg, knopLabel, knopActie) {
   </div>`;
 }
 
+// TT-561/TT-562 (besluit Ronald 06-11-2026): laden mislukt. Dezelfde vorm als
+// een lege staat, in de tekstkleur, nooit rood (huisstijl §1.2), met één knop
+// die het laden herhaalt. Een storing toont zo nooit "Nog geen …".
+// De uitleg alleen bij een bekende oorzaak (geen verbinding, server, sessie);
+// zonder oorzaak zegt de kop genoeg. Bij laden is er niets ingevuld.
+function foutStaatHTML(err, actie, knopActie) {
+  const tekst = friendlyErrorMessage(err, actie).replace(/\s*Wat je invulde blijft staan\.$/, '');
+  const zonderOorzaak = / is niet gelukt\. Probeer het opnieuw\.$/.test(tekst);
+  return emptyStateHTML('Laden lukt nu niet', zonderOorzaak ? '' : tekst,
+    'Probeer het opnieuw', knopActie);
+}
+// Eén regel in een keuzelijst als zoeken mislukt (TT-562). Geen keuze: geen tik.
+const AC_FOUT_HTML = '<div class="ac-item ac-fout">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw.</div>';
+
 
 // ─── Naam in een profielkop (TT-249, herzien 11-09-2026) ─────────────────────
 //
@@ -2307,7 +2321,7 @@ function openMediaSpeler(url, soort, titel, platform) {
   const embed = soort === 'link' ? mediaEmbedSrc(veilig) : null;
 
   if (soort === 'video') {
-    beeld.innerHTML = `<video ${fotoBronAttr(veilig)} controls autoplay playsinline style="width:100%;height:100%;background:#000;"></video>`;
+    beeld.innerHTML = `<video ${fotoBronAttr(veilig)} controls autoplay playsinline style="width:100%;height:100%;background:var(--beeld-zwart);"></video>`;
     voet.innerHTML = '';
   } else if (embed) {
     beeld.innerHTML = `<iframe src="${escHtml(embed)}" title="${escHtml(naam)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" style="width:100%;height:100%;border:0;"></iframe>`;
@@ -2886,8 +2900,13 @@ async function kaartMaken(g, beeld) {
     await Promise.all(['900 40px Inter', '700 40px Inter', '400 40px Inter', '40px "TT Woordmerk"'].map(f => document.fonts.load(f)));
   }
   const M = KAART_MATEN, W = KAART_PX, H = KAART_HOES, S = KAART_S;
+  // TT-512: de kleuren uit de kleurrollen, nooit een losse kleur (huisstijl §1).
+  // Alle zes zijn in licht en donker gelijk: de kaart heeft één uiterlijk (§22).
+  const rol = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const K = { podium: rol('--podium'), wit: rol('--op-foto'), antraciet: rol('--op-foto-donker'),
+              geel: rol('--merk'), opGeel: rol('--kaart-op-geel'), grijs: rol('--kaart-grijs') };
   const [c, x] = kaartDoek(W, W);
-  x.fillStyle = '#101114';
+  x.fillStyle = K.podium;
   x.fillRect(0, 0, W, W);
 
   // De naam op één regel; een lange naam wordt kleiner (zoals fitProfileName()).
@@ -2903,7 +2922,7 @@ async function kaartMaken(g, beeld) {
   const naamBoven = regelBoven - 4 * S * r / 36 - 1.1 * n;
   const naamBasis = kaartBasis(naamBoven, n, 1.1);
 
-  let kleur = '#FFFFFF';
+  let kleur = K.wit;
   if (beeld) {
     const img = beeld.img;
     let o = null;
@@ -2945,7 +2964,7 @@ async function kaartMaken(g, beeld) {
       stops.forEach(([p, a]) => t.addColorStop(p / 100, `rgba(${tint.join(',')},${a})`));
       x.fillStyle = t; x.fillRect(0, 0, W, H);
     }
-    if (o && o.donker) kleur = '#52575F';
+    if (o && o.donker) kleur = K.antraciet;
   } else {
     // De schijnwerper van hoesBundelZetten(): twee bundels uit de bovenhoeken
     // die samen op de naam vallen, en een lichtvlek op de naam.
@@ -2981,8 +3000,8 @@ async function kaartMaken(g, beeld) {
   const mm = x.measureText('TALENTTENT');
   const merkBasis = vlakMidden + (mm.actualBoundingBoxAscent - mm.actualBoundingBoxDescent) / 2;
   const merkX = W - KAART_MARGE - wT - tussen - wN;
-  x.fillStyle = '#FFFFFF'; x.fillText('TALENT', merkX, merkBasis);
-  x.fillStyle = '#FFB81C'; x.fillText('TENT', merkX + wT + tussen, merkBasis);
+  x.fillStyle = K.wit; x.fillText('TALENT', merkX, merkBasis);
+  x.fillStyle = K.geel; x.fillText('TENT', merkX + wT + tussen, merkBasis);
 
   // Links wat iemand speelt (vet), daaronder de genres (grijs) of wat een
   // band zoekt (een pil in warmgeel).
@@ -2998,20 +3017,20 @@ async function kaartMaken(g, beeld) {
   const tussenRegels = hWat && hOnder ? M.onder * (zoekt ? 0.35 : 0.15) : 0;
   let boven = vlakMidden - (hWat + tussenRegels + hOnder) / 2;
   if (wat.tekst) {
-    x.font = `700 ${wat.f}px Inter`; x.fillStyle = '#FFFFFF';
+    x.font = `700 ${wat.f}px Inter`; x.fillStyle = K.wit;
     x.fillText(wat.tekst, KAART_MARGE, kaartBasis(boven, wat.f, 1.25));
     boven += hWat + tussenRegels;
   }
   if (onder.tekst && zoekt) {
     x.font = `700 ${onder.f}px Inter`;
     const pw = x.measureText(onder.tekst).width + 2 * padX;
-    x.fillStyle = '#FFB81C';
+    x.fillStyle = K.geel;
     const rr = hOnder / 2;
     x.beginPath(); x.arc(KAART_MARGE + rr, boven + rr, rr, Math.PI / 2, Math.PI * 1.5); x.arc(KAART_MARGE + pw - rr, boven + rr, rr, -Math.PI / 2, Math.PI / 2); x.closePath(); x.fill();
-    x.fillStyle = '#000000';
+    x.fillStyle = K.opGeel;
     x.fillText(onder.tekst, KAART_MARGE + padX, kaartBasis(boven + padY, onder.f, 1.25));
   } else if (onder.tekst) {
-    x.font = `400 ${onder.f}px Inter`; x.fillStyle = '#B9B9B9';
+    x.font = `400 ${onder.f}px Inter`; x.fillStyle = K.grijs;
     x.fillText(onder.tekst, KAART_MARGE, kaartBasis(boven, onder.f, 1.3));
   }
   return c;
@@ -3172,6 +3191,9 @@ function uitsnedeWijzerOp(e) {
   uitsnede.wijzers.delete(e.pointerId);
 }
 
+// TT-565: bewust niet passief (inline onwheel): het muiswiel zoomt hier, dus de
+// pagina mag niet meescrollen. Alleen boven het venster Uitsnede, dus scrollen
+// elders hapert er niet door. Uitzondering op huisstijl §16 regel 1.
 function uitsnedeWiel(e) {
   if (!uitsnede) return;
   e.preventDefault();

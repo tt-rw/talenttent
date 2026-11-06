@@ -466,9 +466,13 @@ async function laadProfielScherm(id, linkToegang) {
   const beschikbaar = await beschikbaarVraag;
   if (volgnr !== profielSchermVolgnr) return; // intussen een ander profiel geopend
 
+  // TT-561 D7 (zoals TT-464 bij een band): geen rij is een profiel dat niet meer
+  // bestaat; dan helpt opnieuw proberen niet. Alleen een echte fout is de foutstaat.
+  if (!m && (!error || error.code === 'PGRST116')) { toonProfielNietBeschikbaar('muzikant', true); return; }
   if (error || !m) {
+    logCaught('laadProfielScherm', error);
     footer.innerHTML = '';
-    content.innerHTML = '<p style="color:var(--danger)">Kon profiel niet laden.</p>';
+    content.innerHTML = foutStaatHTML(error, 'het profiel laden', `laadProfielScherm('${jsAttr(id)}', ${!!linkToegang})`);
     return;
   }
 
@@ -512,10 +516,14 @@ async function laadProfielScherm(id, linkToegang) {
 function toonProfielNietBeschikbaar(soort, bestaatNiet) {
   const band = soort === 'band';
   document.getElementById('profielSchermVoet').innerHTML = '';
-  // TT-464: bestaatNiet is alleen voor een band die uit de database is verdwenen.
+  // TT-464: bestaatNiet is een band of profiel dat uit de database is verdwenen
+  // (sinds TT-561 ook een profiel, muzikant en band gelijk).
+  const kop = band ? (bestaatNiet ? 'Deze bandpagina bestaat niet meer' : 'Deze bandpagina is niet beschikbaar')
+                   : (bestaatNiet ? 'Dit profiel bestaat niet meer' : 'Dit profiel is niet beschikbaar');
+  const uitleg = band ? (bestaatNiet ? 'De band is opgeheven, of de link klopt niet.' : 'De band deelt deze pagina niet via een link.')
+                      : (bestaatNiet ? 'Het account is verwijderd, of de link klopt niet.' : 'De muzikant deelt dit profiel niet via een link.');
   document.getElementById('profielSchermContent').innerHTML = emptyStateHTML(
-    band ? (bestaatNiet ? 'Deze bandpagina bestaat niet meer' : 'Deze bandpagina is niet beschikbaar') : 'Dit profiel is niet beschikbaar',
-    band ? (bestaatNiet ? 'De band is opgeheven, of de link klopt niet.' : 'De band deelt deze pagina niet via een link.') : 'De muzikant deelt dit profiel niet via een link.',
+    kop, uitleg,
     'Naar Zoeken →',
     "showView('search')"
   );
@@ -575,7 +583,7 @@ function closeMediaLightbox() {
 // toelichting bij executeAccountDeletion().
 async function openDeleteAccountModal() {
   const mid = await getMyMusicianId();
-  if (!mid) { showToast('Je hebt geen profiel om te verwijderen.'); return; }
+  if (!mid) { geenProfielMelding('Je hebt geen profiel om te verwijderen.'); return; }
 
   const area = document.getElementById('deleteAccountBandsArea');
   area.innerHTML = '<div style="color:var(--muted);font-size:12px;">Bezig met controleren...</div>';
@@ -614,7 +622,9 @@ async function openDeleteAccountModal() {
         </div>`).join('')}`;
   } catch (e) {
     logCaught('openDeleteAccountModal', e);
-    area.innerHTML = `<div style="color:var(--danger);font-size:12px;">${escHtml(friendlyErrorMessage(e, 'je bands laden'))}</div>`;
+    // Zonder je bands kun je niet per band kiezen: eerst opnieuw laden (TT-561).
+    document.getElementById('deleteAccountConfirmBtn').disabled = true;
+    area.innerHTML = foutStaatHTML(e, 'je bands laden', 'openDeleteAccountModal()');
   }
 }
 
@@ -778,7 +788,8 @@ async function executeAccountDeletion() {
 async function deleteAllStorageForUser(userId) {
   for (const bucket of ['avatars', 'media']) {
     try {
-      const { data: files } = await db.storage.from(bucket).list(userId);
+      const { data: files, error: lijstFout } = await db.storage.from(bucket).list(userId);
+      if (lijstFout) throw lijstFout; // TT-561: anders blijven bestanden stil achter
       if (files && files.length) {
         const paths = files.map(f => `${userId}/${f.name}`);
         await db.storage.from(bucket).remove(paths);
@@ -1344,7 +1355,7 @@ async function jstOnArtistSearch(q, p = 'jst') {
       jstRenderArtistResults(ac, artists, p);
     } catch (e) {
       logCaught('jstOnArtistSearch', e);
-      ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
+      ac.innerHTML = AC_FOUT_HTML;
     }
   }, 400);
 }
@@ -1393,7 +1404,7 @@ async function jstOnTrackSearch(q, p = 'jst') {
     jstRenderTrackResults(ac, songs, q, p);
   } catch (e) {
     logCaught('jstOnTrackSearch', e);
-    ac.innerHTML = '<div class="ac-item"><span style="color:var(--danger);">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw</span></div>';
+    ac.innerHTML = AC_FOUT_HTML;
   }
 }
 function jstRenderTrackResults(ac, songs, q, p = 'jst') {

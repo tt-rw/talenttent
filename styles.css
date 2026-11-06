@@ -130,6 +130,11 @@
     --op-foto-zacht: #F3E7D6;               /* de regel "waarvoor" op de foto */
     --op-foto-donker: #52575F;              /* TT-517 fase 4: antraciet op een lichte foto in de hoes, geen zwart (huisstijl §21) */
     --podium: #101114;                      /* TT-517 fase 4: de hoes zonder foto, het lege podium (huisstijl §21) */
+    --beeld-zwart: #000;                    /* TT-512: achter een video of foto die het vlak niet vult (mediascherm, uitsnede) */
+    --ongelezen-tekst: #fff;                /* TT-512: het getal op het rode rondje */
+    --kaart-op-geel: #000;                  /* TT-512: tekst op de gele pil van de kaart (huisstijl §22) */
+    --kaart-grijs: #B9B9B9;                 /* TT-512: de genres op de kaart (huisstijl §22) */
+    --voorbeeldtekst-licht: #6E6A63;        /* TT-512: voorbeeldtekst in een veld, alleen in licht (huisstijl §7) */
     /* TT-517 fase 6: de schijnwerper, twee warme lichtbundels in warmgeel (--merk), van linksboven en rechtsboven
        (huisstijl §21). In licht en donker gelijk: hij staat op het podium, niet op het thema.
        Klein in een rondje of vierkant (lijst, bezetting, gesprek); groot in de hoes, boven de naam. */
@@ -217,7 +222,7 @@
      eigen vlak (§24, "wat blijft"). */
   :root[data-theme="licht"] .app-view { --field-bg: var(--surface); }
   :root[data-theme="licht"] input::placeholder,
-  :root[data-theme="licht"] textarea::placeholder { color: #6E6A63; opacity: 1; }
+  :root[data-theme="licht"] textarea::placeholder { color: var(--voorbeeldtekst-licht); opacity: 1; }
 
   /* TT-318 (24-09-2026, besluit Ronald): het eigen woordmerk. Vervangt
      Alfa Slab One (TT-15b, tijdelijk sinds 06-08-2026).
@@ -658,6 +663,16 @@
     min-height: 44px;
   }
   @media (hover: hover) { .stille-link:hover { color: var(--text); } } /* TT-517 fase 9: alleen met een muis */
+  /* "Wachtwoord vergeten?" op Inloggen (TT-510): de letter van een stille uitweg,
+     zonder dat de regel hoger wordt. Tikvlak 44px via ::after (huisstijl §6):
+     11px erboven (tot het veld), 18px eronder (12px vrij tot Inloggen). */
+  .link-vergeten {
+    position: relative;
+    background: none; border: 0; padding: 0;
+    font-family: 'Inter', sans-serif; font-size: var(--fs-sm);
+    color: var(--muted); text-decoration: underline; cursor: pointer;
+  }
+  .link-vergeten::after { content: ''; position: absolute; left: 0; right: 0; top: -11px; bottom: -18px; }
 
   /* ── Melding (huisstijl §13, vastgelegd en gebouwd 27-09-2026) ──────────
      Eén vorm voor elke melding bovenaan een scherm: "Nog één stap", "Je bent
@@ -1031,7 +1046,7 @@
   /* TT-517 fase 11 (besluit Ronald 01-11-2026, B: "alles rond"): elke
      keuzeknop is een pil, zoals elke actieknop. Elke knop rond, elk veld
      hoekig. Was 8px (fase 2). */
-  .tag, .level-btn, .segmented-btn, .search-mode-tab, .media-tab, .goal-card, .level-choice {
+  .tag, .segmented-btn, .search-mode-tab, .media-tab, .goal-card, .level-choice {
     background: var(--keuze-vlak);
     border: var(--line) solid var(--keuze-rand);
     border-radius: 999px;
@@ -1040,7 +1055,6 @@
     font-style: normal;
   }
   .tag.selected,
-  .level-btn.active-basis, .level-btn.active-bijna, .level-btn.active-podium,
   .segmented-btn.selected,
   .search-mode-tab.active,
   .media-tab.active,
@@ -1146,28 +1160,12 @@
 
   .ac-item:last-child { border-bottom: none; }
   .ac-item span { font-size: 12px; color: var(--muted); }
+  /* TT-562: een foutregel in de lijst is geen keuze; in de tekstkleur. */
+  .ac-item.ac-fout { cursor: default; pointer-events: none; }
   /* TT-168-overgang: min-height 44px (was ±34px, onder de tikdoel-norm) —
      fix uit profiel-v2 hier ook toegepast, geldt voor elke plek die deze
      klasse gebruikt (stads-/artiest-/nummersuggesties). */
   .ac-item { min-height: 44px; box-sizing: border-box; }
-
-  .level-btn {
-    /* TT-U23/V-20 (12-08-2026): was 49x22 pixels, gemeten op 390px.
-       Nu minimaal 44x44, en 13px tekst i.p.v. 11px. */
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    min-width: 44px;
-    padding: 8px 14px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-    font-family: 'Inter', sans-serif;
-  }
-
-  /* Gekozen: zie het TT-316-blok bij .tag — goud en vet (besluit Ronald K12). */
 
   /* TT-514 (besluit Ronald, 25-10-2026; indeling volgens zijn schets na de
      live app, 25-10-2026): de setlist in wizardstap Nummers en in de tegel
@@ -2063,7 +2061,7 @@
   /* De waas: minstens 45%, donkerder bij een licht beeld (wazigWaasZetten()). */
   .media-afgeschermd::after { content: ""; position: absolute; inset: 0; background: rgb(13 13 13 / var(--waas-vlak, .45)); }
   .media-afgeschermd-tekst {
-    position: relative; z-index: 1; display: grid; gap: 6px; text-align: center; color: #fff; max-width: 28ch;
+    position: relative; z-index: 1; display: grid; gap: 6px; text-align: center; color: var(--op-foto); max-width: 28ch;
   }
   .media-afgeschermd-tekst b { font-size: 15px; line-height: 20px; font-weight: 700; }
   .media-afgeschermd-tekst span { font-size: 15px; line-height: 20px; }
@@ -2306,7 +2304,7 @@
   .media-thumb .thumb-remove, .avatar-remove-btn {
     background: rgba(0,0,0,0.7);
     border: none;
-    color: #fff;
+    color: var(--op-foto);
     border-radius: 50%;
     width: 22px; height: 22px;
     font-size: var(--tekenmaat);
@@ -2521,7 +2519,7 @@
   }
   .media-speler-beeld {
     aspect-ratio: 16 / 9;
-    background: #000;
+    background: var(--beeld-zwart);
     position: relative;
   }
   .media-speler-beeld iframe,
@@ -2589,7 +2587,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(4px);
+    /* Geen vervaging (TT-284, huisstijl §16 regel 4): de laag dekt het hele scherm. */
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s;
@@ -2980,7 +2978,7 @@
     top: 2px;
     right: 2px;
     background: var(--ongelezen); /* rood in elk thema (Ronald, 26-09-2026) */
-    color: #fff;
+    color: var(--ongelezen-tekst);
     font-size: 11px;
     font-weight: 700;
     line-height: 1.4;
@@ -3378,11 +3376,9 @@
   /* Op een foto: een donker, half doorzichtig vlak met een wit icoon, in beide
      thema's leesbaar op elke foto. */
   .zoek-kaart-hoek .result-row-msg-btn {
-    background: rgba(0, 0, 0, 0.55);
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
+    background: rgba(0, 0, 0, 0.55); /* geen vervaging: die rekent bij elk scrollbeeld opnieuw (TT-284, §16) */
   }
-  .zoek-kaart-hoek .result-row-msg-icon { color: #fff; }
+  .zoek-kaart-hoek .result-row-msg-icon { color: var(--op-foto); }
   /* Geel is een vlak, nooit losse tekst op licht (huisstijl §1): een geel
      label met de tekst in --merk-tekst. */
   .zoek-kaart-zoekt {
@@ -3547,7 +3543,7 @@
     margin-top: 12px;
     overflow: hidden;
     border-radius: var(--radius-field);
-    background: #000;
+    background: var(--beeld-zwart);
     touch-action: none;
     cursor: grab;
     user-select: none;
@@ -4810,8 +4806,8 @@
       .hoes:hover .hoes-pijl:not([hidden]),
       .hoes-pijl:focus-visible:not([hidden]) { display: grid; }
     }
-    /* TT-316: één hover voor alle zeven keuzesoorten, alleen niet-gekozen. */
-    .tag:not(.selected):hover, .level-btn:not([class*="active-"]):hover,
+    /* TT-316: één hover voor alle zes keuzesoorten, alleen niet-gekozen. */
+    .tag:not(.selected):hover,
     .segmented-btn:not(.selected):hover, .search-mode-tab:not(.active):hover,
     .media-tab:not(.active):hover, .goal-card:not(.selected):hover,
     .level-choice:not(.selected):hover { border-color: var(--rand-hover); }

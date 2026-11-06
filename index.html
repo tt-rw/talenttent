@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261106a">
+<link rel="stylesheet" href="styles.css?v=20261106b">
 </head>
 <body>
 
@@ -317,7 +317,7 @@
       </div>
       </form>
       <div style="text-align:right;margin-bottom:20px;">
-        <button id="forgotPasswordBtn" onclick="forgotPassword()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:underline;">Wachtwoord vergeten?</button>
+        <button id="forgotPasswordBtn" class="link-vergeten" onclick="forgotPassword()">Wachtwoord vergeten?</button>
       </div>
       <button class="btn btn-primary" style="width:100%;margin-bottom:16px;" onclick="signIn()">Inloggen →</button>
       <div style="text-align:center;padding-top:16px;border-top:1px solid var(--border);">
@@ -2544,17 +2544,17 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261105a"></script>
-<script src="utils.js?v=20261105a"></script>
-<script src="veiligheid.js?v=20261103a"></script>
-<script src="auth.js?v=20261103a"></script>
+<script src="core.js?v=20261106b"></script>
+<script src="utils.js?v=20261106b"></script>
+<script src="veiligheid.js?v=20261106b"></script>
+<script src="auth.js?v=20261106b"></script>
 <script src="postcode.js?v=20261027e"></script>
-<script src="wizard.js?v=20261105a"></script>
+<script src="wizard.js?v=20261106b"></script>
 <script src="ouder.js?v=20261103a"></script>
-<script src="search.js?v=20261103a"></script>
-<script src="musicians.js?v=20261106a"></script>
-<script src="bands.js?v=20261105a"></script>
-<script src="messages.js?v=20261103b"></script>
+<script src="search.js?v=20261106b"></script>
+<script src="musicians.js?v=20261106c"></script>
+<script src="bands.js?v=20261106b"></script>
+<script src="messages.js?v=20261106b"></script>
 <script src="push.js?v=20261027b"></script>
 <script src="modals-shared.js?v=20261026c"></script>
 <script>

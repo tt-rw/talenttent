@@ -229,7 +229,7 @@ function vulStateUitVoortgang(saved) {
 // voortaan uitsluitend voor het aanmaken van een nieuw account.
 async function editMyProfile() {
   const mid = await getMyMusicianId();
-  if (!mid) { showToast('Je hebt nog geen profiel om te bewerken.'); return; }
+  if (!mid) { geenProfielMelding('Je hebt nog geen profiel om te bewerken.'); return; }
   showView('profieltegels');
 }
 // Profielvolledigheid — alleen zichtbaar voor de eigenaar op "Mijn profiel"
@@ -302,6 +302,12 @@ async function loadMyProfile(opties) {
     .eq('user_id', currentUser.id)
     .single();
 
+  // TT-561: een storing is geen "geen profiel". PGRST116 = geen rij.
+  if (error && error.code !== 'PGRST116') {
+    logCaught('loadMyProfile', error);
+    el.innerHTML = foutStaatHTML(error, 'je profiel laden', 'loadMyProfile()');
+    return;
+  }
   if (error || !m) {
     // TT-248 (11-09-2026): inhoudelijk ongewijzigd, nu via de vaste vorm uit
     // huisstijl §15. Dit was het voorbeeld waar de andere lege staten naar
@@ -1367,7 +1373,8 @@ async function createAccountAndProfile() {
     // toch nog eens op "Verder" drukte. Dan dat bestaande profiel gewoon
     // overnemen, in plaats van een tweede rij te proberen aan te maken —
     // dat zou stuklopen op de unieke regel per account (musicians_user_id_idx).
-    const { data: existingProfile } = await db.from('musicians').select('id').eq('user_id', userId).single();
+    const { data: existingProfile, error: bestaatFout } = await db.from('musicians').select('id').eq('user_id', userId).single();
+    if (bestaatFout && bestaatFout.code !== 'PGRST116') throw bestaatFout; // TT-561: storing is geen "geen profiel"
     if (existingProfile?.id) {
       editingMusicianId = existingProfile.id;
       myMusicianId = existingProfile.id;
