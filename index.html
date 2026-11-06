@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261106b">
+<link rel="stylesheet" href="styles.css?v=20261106d">
 </head>
 <body>
 
@@ -340,8 +340,7 @@
     <div class="step-dot" id="dot1"></div>
     <div class="step-dot" id="dot2"></div>
     <div class="step-dot" id="dot3"></div>
-    <div class="step-dot" id="dot4"></div>
-    <span class="step-label" id="stepLabel">Stap 1 van 5</span>
+    <span class="step-label" id="stepLabel">Stap 1 van 4</span>
   </div>
 
   <!-- STEP 1: Persoonlijke info -->
@@ -495,65 +494,8 @@
     </div>
   </div>
 
-  <!-- STEP 3: Wat zoek je -->
+  <!-- STEP 3: Je setlist -->
   <div class="panel" id="step2">
-    <div class="panel-title scherm-titel">Wat wil je nu?</div>
-    <div class="panel-sub">Je doel op The Talent Tent. Alle drie de velden zijn optioneel.</div>
-
-    <div class="goal-options" id="goalOptions">
-      <div class="goal-card" onclick="selectGoal(this,'oefenen')">
-        <div class="goal-label">Samen oefenen</div>
-        <div class="goal-desc">Jammen, repeteren, skills verbeteren</div>
-      </div>
-      <div class="goal-card" onclick="selectGoal(this,'band')">
-        <div class="goal-label">Band starten</div>
-        <div class="goal-desc">Band opzetten met vaste leden</div>
-      </div>
-      <div class="goal-card" onclick="selectGoal(this,'optreden')">
-        <div class="goal-label">Optreden</div>
-        <div class="goal-desc">Festivals, evenementen, open podia, enz.</div>
-      </div>
-      <div class="goal-card" onclick="selectGoal(this,'alles')">
-        <div class="goal-label">Alles!</div>
-        <div class="goal-desc">Open voor alles wat muzikaal is</div>
-      </div>
-    </div>
-
-    <div class="field-group single">
-      <div class="field">
-        <label>Hoe vaak wil je oefenen?</label>
-        <div class="tag-grid" id="rehearsalFreqGrid">
-          <div class="tag" onclick="selectRehearsalFrequency(this,'dagelijks')">Dagelijks</div>
-          <div class="tag" onclick="selectRehearsalFrequency(this,'wekelijks')">Wekelijks</div>
-          <div class="tag" onclick="selectRehearsalFrequency(this,'paar_per_maand')">Paar keer per maand</div>
-          <div class="tag" onclick="selectRehearsalFrequency(this,'losse_jams')">Losse jams, als het uitkomt</div>
-          <div class="tag" onclick="selectRehearsalFrequency(this,'per_project')">Projectmatig</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="field-group single">
-      <div class="field">
-        <label>Wat wil je de komende tijd bereiken?</label>
-        <div class="tag-grid" id="ambitionGrid">
-          <div class="tag" onclick="selectMusicalAmbition(this,'verbeteren')">Mezelf verbeteren op mijn instrument</div>
-          <div class="tag" onclick="selectMusicalAmbition(this,'stijlen')">Nieuwe stijlen ontdekken</div>
-          <div class="tag" onclick="selectMusicalAmbition(this,'eigen_werk')">Samen nummers/eigen werk maken</div>
-          <div class="tag" onclick="selectMusicalAmbition(this,'plezier')">Gewoon plezier, geen groot plan</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="wizard-action-bar">
-      <div class="wizard-action-bar-inner btn-row">
-        <button class="btn btn-ghost" onclick="prevStep(2)">Terug</button>
-        <button class="btn btn-primary" onclick="nextStep(2)">Verder</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- STEP 4: Je setlist -->
-  <div class="panel" id="step3">
     <div class="panel-title scherm-titel">Je setlist</div>
     <!-- TT-514 (besluit Ronald, 25-10-2026): drie nummers verplicht. Eén
          rustige regel, met wat het oplevert. -->
@@ -602,14 +544,14 @@
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner btn-row">
-        <button class="btn btn-ghost" onclick="prevStep(3)">Terug</button>
-        <button class="btn btn-primary" onclick="nextStep(3)">Verder</button>
+        <button class="btn btn-ghost" onclick="prevStep(2)">Terug</button>
+        <button class="btn btn-primary" onclick="nextStep(2)">Verder</button>
       </div>
     </div>
   </div>
 
-  <!-- STEP 5: Media -->
-  <div class="panel" id="step4">
+  <!-- STEP 4: Media -->
+  <div class="panel" id="step3">
     <div class="panel-title scherm-titel">Je mediahoek</div>
 
     <div class="field">
@@ -685,7 +627,7 @@
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner btn-row">
-        <button class="btn btn-ghost" onclick="prevStep(4)">Terug</button>
+        <button class="btn btn-ghost" onclick="prevStep(3)">Terug</button>
         <button class="btn btn-primary" id="submitProfileBtn" onclick="submitProfile()" disabled>Profiel aanmaken</button>
       </div>
     </div>
@@ -802,7 +744,7 @@
 <!-- VIEW: Profiel bewerken (tegeloverzicht)      -->
 <!-- TT-168-overgang (02-09-2026): 1-op-1 uit profiel-v2.html overgezet.   -->
 <!-- Elke tegel heeft een eigen, smalle opslaanfunctie die alleen de eigen -->
-<!-- kolommen raakt (zie saveWieBenJe()/saveWatSpeelJe()/saveWatZoekJe()/  -->
+<!-- kolommen raakt (zie saveWieBenJe()/saveWatSpeelJe()/                 -->
 <!-- saveJeSetlist()/saveJeMediahoek() in de JS hieronder) — nooit het      -->
 <!-- hele profiel in één keer, dat was precies het risico van de oude      -->
 <!-- bewerken-via-wizard-aanpak (persistEditedProfile() overschreef altijd -->
@@ -933,60 +875,6 @@
 
     <div class="action-row">
       <button class="btn btn-primary" onclick="saveWatSpeelJe()">Opslaan</button>
-    </div>
-  </div>
-
-  <!-- Subscherm: Wat zoek je -->
-  <div id="watZoekJeScreen" style="display:none;">
-    <div class="panel-title scherm-titel">Wat zoek je</div>
-    <div class="panel-sub">Je doel op The Talent Tent. Alle drie de velden zijn optioneel.</div>
-
-    <div class="goal-options" id="wzjGoalOptions">
-      <div class="goal-card" data-val="oefenen" onclick="wzjSelectGoal(this,'oefenen')">
-        <div class="goal-label">Samen oefenen</div>
-        <div class="goal-desc">Jammen, repeteren, skills verbeteren</div>
-      </div>
-      <div class="goal-card" data-val="band" onclick="wzjSelectGoal(this,'band')">
-        <div class="goal-label">Band starten</div>
-        <div class="goal-desc">Band opzetten met vaste leden</div>
-      </div>
-      <div class="goal-card" data-val="optreden" onclick="wzjSelectGoal(this,'optreden')">
-        <div class="goal-label">Optreden</div>
-        <div class="goal-desc">Festivals, evenementen, open podia, enz.</div>
-      </div>
-      <div class="goal-card" data-val="alles" onclick="wzjSelectGoal(this,'alles')">
-        <div class="goal-label">Alles!</div>
-        <div class="goal-desc">Open voor alles wat muzikaal is</div>
-      </div>
-    </div>
-
-    <div class="field-group single">
-      <div class="field">
-        <label>Hoe vaak wil je oefenen?</label>
-        <div class="tag-grid" id="wzjRehearsalFreqGrid">
-          <div class="tag" data-val="dagelijks" onclick="wzjSelectRehearsalFrequency(this,'dagelijks')">Dagelijks</div>
-          <div class="tag" data-val="wekelijks" onclick="wzjSelectRehearsalFrequency(this,'wekelijks')">Wekelijks</div>
-          <div class="tag" data-val="paar_per_maand" onclick="wzjSelectRehearsalFrequency(this,'paar_per_maand')">Paar keer per maand</div>
-          <div class="tag" data-val="losse_jams" onclick="wzjSelectRehearsalFrequency(this,'losse_jams')">Losse jams, als het uitkomt</div>
-          <div class="tag" data-val="per_project" onclick="wzjSelectRehearsalFrequency(this,'per_project')">Projectmatig</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="field-group single">
-      <div class="field">
-        <label>Wat wil je de komende tijd bereiken?</label>
-        <div class="tag-grid" id="wzjAmbitionGrid">
-          <div class="tag" data-val="verbeteren" onclick="wzjSelectMusicalAmbition(this,'verbeteren')">Mezelf verbeteren op mijn instrument</div>
-          <div class="tag" data-val="stijlen" onclick="wzjSelectMusicalAmbition(this,'stijlen')">Nieuwe stijlen ontdekken</div>
-          <div class="tag" data-val="eigen_werk" onclick="wzjSelectMusicalAmbition(this,'eigen_werk')">Samen nummers/eigen werk maken</div>
-          <div class="tag" data-val="plezier" onclick="wzjSelectMusicalAmbition(this,'plezier')">Gewoon plezier, geen groot plan</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="action-row">
-      <button class="btn btn-primary" onclick="saveWatZoekJe()">Opslaan</button>
     </div>
   </div>
 
@@ -1799,7 +1687,7 @@
   <div class="search-wrap">
     <div class="search-filters doc-view">
       <div class="panel-title scherm-titel">Privacyverklaring</div>
-      <div class="doc-updated">Laatst bijgewerkt: 24 oktober 2026</div>
+      <div class="doc-updated">Laatst bijgewerkt: 6 november 2026</div>
 
       <h2>1. Wie zijn wij</h2>
       <p>The Talent Tent (talenttent.org) is een platform dat muzikanten met elkaar in contact brengt voor jams, repetities en optredens. The Talent Tent wordt beheerd door Ronald, als privépersoon.</p>
@@ -1814,7 +1702,7 @@
         <li>Woonplaats en alleen de vier cijfers van je postcode (dus niet de letters erachter). Vier cijfers wijzen een wijk aan, geen huis of straat. We gebruiken ze alleen om de afstand tussen de wijken van muzikanten te berekenen. Deze cijfers worden nooit aan andere gebruikers getoond</li>
         <li>Gebruikersnaam</li>
         <li>Eventueel: een korte bio, een profielfoto, en foto's/video's/links die je zelf toevoegt</li>
-        <li>De instrumenten die je speelt, je genres, je repertoire (nummers), en je muzikale doel/ambitie</li>
+        <li>De instrumenten die je speelt, je genres en je repertoire (nummers)</li>
         <li>Berichten die je verstuurt aan andere muzikanten via de app</li>
         <li>Wanneer je voor het laatst actief was in de app</li>
         <li>Blokkeringen en meldingen die je zelf doet</li>
@@ -2544,15 +2432,15 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261106b"></script>
+<script src="core.js?v=20261106d"></script>
 <script src="utils.js?v=20261106b"></script>
 <script src="veiligheid.js?v=20261106b"></script>
 <script src="auth.js?v=20261106b"></script>
 <script src="postcode.js?v=20261027e"></script>
-<script src="wizard.js?v=20261106b"></script>
+<script src="wizard.js?v=20261106d"></script>
 <script src="ouder.js?v=20261103a"></script>
-<script src="search.js?v=20261106b"></script>
-<script src="musicians.js?v=20261106c"></script>
+<script src="search.js?v=20261106d"></script>
+<script src="musicians.js?v=20261106d"></script>
 <script src="bands.js?v=20261106b"></script>
 <script src="messages.js?v=20261106b"></script>
 <script src="push.js?v=20261027b"></script>

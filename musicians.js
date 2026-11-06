@@ -423,8 +423,7 @@ async function laadProfielScherm(id, linkToegang) {
     // een ingelogde gebruiker mag hier nooit de ruwe geboortedatum van een
     // ander binnenkrijgen. Leeftijd komt apart via tt_musicians_ages().
     const res = await db.from('musicians').select(`
-      id, weergavenaam, username, city, bio, goal,
-      rehearsal_frequency, musical_ambition,
+      id, weergavenaam, username, city, bio,
       avatar_url,
       musician_instruments(instrument, niveau),
       musician_genres(genre),
@@ -446,8 +445,7 @@ async function laadProfielScherm(id, linkToegang) {
         // B-02: leeftijd i.p.v. geboortedatum; birth_date blijft als terugval
         // zolang script C nog niet is gedraaid. TT-43: geen fname voor bezoekers.
         id: row.id, username: row.username, age: row.age, birth_date: row.birth_date, city: row.city,
-        bio: row.bio, goal: row.goal, avatar_url: row.avatar_url,
-        rehearsal_frequency: row.rehearsal_frequency, musical_ambition: row.musical_ambition,
+        bio: row.bio, avatar_url: row.avatar_url,
         // TT-51 (12-08-2026, RPC-restpunt gesloten): instrument_levels bevat
         // instrument + niveau samen, zodat de sterren ook hier verschijnen voor
         // een bezoeker zonder eigen profiel.
@@ -820,11 +818,11 @@ const TILES = [
   { id: 'wieBenJe',   title: 'Wie ben je',      sub: 'naam - plaats - bio' },
   { id: 'watSpeelJe', title: 'Wat speel je',    sub: 'instrumenten - niveau - genres - eigen nummers/covers' },
   // TT-227 (09-09-2026, Ronald): "Je setlist" hoort direct onder "Wat speel
-  // je" — dat zijn allebei vragen over wat je zelf speelt. "Wat zoek je"
-  // schuift een plek naar beneden. Deze volgorde stuurt het tegeloverzicht
-  // volledig aan (renderTegels() leest deze lijst), dus dit is de enige plek.
+  // je" — dat zijn allebei vragen over wat je zelf speelt. Deze volgorde stuurt
+  // het tegeloverzicht volledig aan (renderTegels() leest deze lijst), dus dit
+  // is de enige plek. TT-543 (06-11-2026, besluit Ronald): de tegel "Wat zoek
+  // je" is weg; de app deed niets met de antwoorden.
   { id: 'jeSetlist',  title: 'Je setlist',      sub: 'covers - eigen nummers' },
-  { id: 'watZoekJe',  title: 'Wat zoek je',     sub: 'muzikant - band - optreden - ambitie' },
   { id: 'mediahoek',  title: 'Je mediahoek',    sub: "video's - foto's - profielfoto" },
 ];
 
@@ -854,7 +852,7 @@ function renderTegels() {
 // tegelscherm, met de vier tegels van de band. Welke band: bewerkBandId
 // (bands.js); leeg betekent je eigen profiel. Zo gelden de terugknop, "Terug
 // zonder opslaan?" en de stap in de geschiedenis voor beide gelijk.
-const TEGEL_SCREENS = { wieBenJe: 'wieBenJeScreen', watSpeelJe: 'watSpeelJeScreen', watZoekJe: 'watZoekJeScreen', jeSetlist: 'jeSetlistScreen', mediahoek: 'mediahoekScreen',
+const TEGEL_SCREENS = { wieBenJe: 'wieBenJeScreen', watSpeelJe: 'watSpeelJeScreen', jeSetlist: 'jeSetlistScreen', mediahoek: 'mediahoekScreen',
   bandWie: 'bandWieScreen', bandBezetting: 'bandBezettingScreen', bandMuziek: 'bandMuziekScreen', bandMedia: 'bandMediaScreen' };
 let activeTegelScreen = 'overview';
 
@@ -865,7 +863,6 @@ let activeTegelScreen = 'overview';
 const TEGEL_WIJZIGINGEN = {
   wieBenJe:   () => wbjFieldSnapshot() !== wbjSnapshot,
   watSpeelJe: () => wspFieldSnapshot() !== wspSnapshot,
-  watZoekJe:  () => wzjFieldSnapshot() !== wzjSnapshot,
   jeSetlist:  () => jstFieldSnapshot() !== jstSnapshot,
   mediahoek:  () => mhFieldSnapshot() !== mhSnapshot,
   bandWie:       () => bwFieldSnapshot() !== bwSnapshot,
@@ -906,7 +903,6 @@ function openTegelScreen(id) {
   document.getElementById(TEGEL_SCREENS[id]).style.display = '';
   if (id === 'wieBenJe') openWieBenJe();
   else if (id === 'watSpeelJe') openWatSpeelJe();
-  else if (id === 'watZoekJe') openWatZoekJe();
   else if (id === 'jeSetlist') openJeSetlist();
   else if (id === 'mediahoek') openJeMediahoek();
   else if (id === 'bandWie') openBandWie();
@@ -1200,82 +1196,6 @@ async function saveWatSpeelJe() {
   if (kErr) { showToast(friendlyErrorMessage(kErr, 'je gegevens opslaan')); return; }
 
   wspSnapshot = wspFieldSnapshot();
-  showToast('Wijzigingen opgeslagen.');
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// Tegel: Wat zoek je
-// ═══════════════════════════════════════════════════════════════════════
-// Alle drie velden optioneel. Raakt uitsluitend musicians.goal,
-// musicians.rehearsal_frequency, musicians.musical_ambition.
-
-let wzjGoal = '';
-let wzjRehearsalFrequency = '';
-let wzjMusicalAmbition = '';
-let wzjSnapshot = null;
-
-function wzjFieldSnapshot() {
-  return JSON.stringify({ goal: wzjGoal, rehearsalFrequency: wzjRehearsalFrequency, musicalAmbition: wzjMusicalAmbition });
-}
-
-async function openWatZoekJe() {
-  const { data, error } = await db.from('musicians')
-    .select('goal, rehearsal_frequency, musical_ambition')
-    .eq('id', myMusicianId).single();
-  if (error) {
-    showToast(friendlyErrorMessage(error, 'je gegevens laden'));
-    return;
-  }
-  wzjGoal = data.goal || '';
-  wzjRehearsalFrequency = data.rehearsal_frequency || '';
-  wzjMusicalAmbition = data.musical_ambition || '';
-  wzjRenderAll();
-  wzjSnapshot = wzjFieldSnapshot();
-}
-
-function wzjRenderAll() {
-  document.querySelectorAll('#wzjGoalOptions .goal-card').forEach(c => {
-    c.classList.toggle('selected', c.dataset.val === wzjGoal);
-  });
-  document.querySelectorAll('#wzjRehearsalFreqGrid .tag').forEach(t => {
-    t.classList.toggle('selected', t.dataset.val === wzjRehearsalFrequency);
-  });
-  document.querySelectorAll('#wzjAmbitionGrid .tag').forEach(t => {
-    t.classList.toggle('selected', t.dataset.val === wzjMusicalAmbition);
-  });
-}
-
-function wzjSelectGoal(el, val) {
-  document.querySelectorAll('#wzjGoalOptions .goal-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  wzjGoal = val;
-}
-function wzjSelectRehearsalFrequency(el, val) {
-  const already = el.classList.contains('selected');
-  document.querySelectorAll('#wzjRehearsalFreqGrid .tag').forEach(t => t.classList.remove('selected'));
-  if (already) { wzjRehearsalFrequency = ''; return; }
-  el.classList.add('selected');
-  wzjRehearsalFrequency = val;
-}
-function wzjSelectMusicalAmbition(el, val) {
-  const already = el.classList.contains('selected');
-  document.querySelectorAll('#wzjAmbitionGrid .tag').forEach(t => t.classList.remove('selected'));
-  if (already) { wzjMusicalAmbition = ''; return; }
-  el.classList.add('selected');
-  wzjMusicalAmbition = val;
-}
-
-async function saveWatZoekJe() {
-  if (wzjFieldSnapshot() === wzjSnapshot) return;
-
-  const { error } = rijenGeraakt(await db.from('musicians').update({
-    goal: wzjGoal || null,
-    rehearsal_frequency: wzjRehearsalFrequency || null,
-    musical_ambition: wzjMusicalAmbition || null,
-  }).eq('id', myMusicianId).select('id'));
-  if (error) { showToast(friendlyErrorMessage(error, 'je gegevens opslaan')); return; }
-
-  wzjSnapshot = wzjFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
 }
 

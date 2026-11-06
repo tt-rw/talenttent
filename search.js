@@ -3,30 +3,8 @@
 // TT-514 (besluit Ronald, 25-10-2026: "podium is goed"): overal "Podium", gelijk aan het keuzemenu in de setlist.
 const LEVEL_LABELS = { basis: 'Basis', bijna: 'Bijna', podium: 'Podium' };
 
-// TT-47 (herzien 09-08-2026): concrete ambitie-vragen naast het abstracte
-// doelveld — alleen ter aanvulling van het profiel, bewust geen zoekfilter
-// (besluit Ronald, 09-08-2026). Eerste versie had een aparte "wil je
-// optreden?"-vraag die dubbel op de doelkaart "Optreden" zat; vervangen door
-// een vraag over muzikale groei, die geen overlap heeft met het doelveld.
-// Nog niet definitief (Ronald, 09-08-2026: "dit is nog niet goed genoeg") —
-// doel en ambitie voelen nog te dicht bij elkaar, komt terug in een latere sessie.
-const REHEARSAL_LABELS = {
-  dagelijks:       'Dagelijks',
-  wekelijks:       'Wekelijks',
-  paar_per_maand:  'Paar keer per maand',
-  losse_jams:      'Losse jams, als het uitkomt',
-  per_project:     'Projectmatig'
-};
-const AMBITION_LABELS = {
-  verbeteren: 'Mezelf verbeteren op mijn instrument',
-  stijlen:    'Nieuwe stijlen ontdekken',
-  eigen_werk: 'Samen nummers/eigen werk maken',
-  plezier:    'Gewoon plezier, geen groot plan'
-};
-// TT-52 (12-08-2026): repertoire-type, optioneel, per profiel (niet per nummer).
-// Losse waarden gekozen (niet 'eigen_werk' hergebruikt) omdat musical_ambition.eigen_werk
-// een andere betekenis heeft: dat is een wens ("samen nummers/eigen werk maken"),
-// dit veld is een feit over het huidige repertoire ("covers/eigen nummers/beide").
+// TT-52 (12-08-2026): repertoire-type, optioneel, per profiel (niet per nummer):
+// een feit over het huidige repertoire ("covers/eigen nummers/beide").
 const REPERTOIRE_TYPE_LABELS = {
   covers: 'Covers',
   eigen:  'Eigen nummers',
@@ -730,7 +708,7 @@ async function zoekMuzikantenOphalen(radius, origin) {
     // leeftijd komt apart binnen via tt_musicians_ages().
     const [{ data, error }, { data: ages, error: ageErr }] = await Promise.all([
       inDelen(ids, deel => db.from('musicians').select(`
-      id, weergavenaam, username, city, zip, bio, goal,
+      id, weergavenaam, username, city, zip, bio,
       avatar_url,
       musician_instruments(instrument, niveau),
       musician_genres(genre),
@@ -764,7 +742,7 @@ async function zoekMuzikantenOphalen(radius, origin) {
     // geboortedatum.
     musicians = (data || []).map(m => ({
       id: m.id, username: m.username, age: m.age, birth_date: m.birth_date, city: m.city,
-      bio: m.bio, goal: m.goal, avatar_url: m.avatar_url,
+      bio: m.bio, avatar_url: m.avatar_url,
       musician_instruments: (m.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
       musician_genres: (m.genres || []).map(g => ({ genre: g })),
       musician_songs: m.songs || [],

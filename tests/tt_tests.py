@@ -3031,7 +3031,7 @@ def blok_browser():
           uit.zonderWijziging = { label: zichtbaar(), scherm: activeTegelScreen };
 
           // TT-408: de grote Terug-knop onderin een tegelscherm bestaat niet meer.
-          uit.grotekopTerug = ['wbj','wsp','wzj','jst','mh','bw','bb','bmz','bm']
+          uit.grotekopTerug = ['wbj','wsp','jst','mh','bw','bb','bmz','bm']
             .filter(p => document.getElementById(p + 'CancelBtn')).length;
 
           ontwapenTerug();
@@ -3186,14 +3186,15 @@ def blok_browser():
               and leeftijd["zestien"]["ww"] and leeftijd["twintig"]["ww"],
               json.dumps(leeftijd))
 
-        # De koppeling in goTo() loopt op volgorde over `.panel`. Een zesde
-        # `.panel` zou elke wizardstap één plek opschuiven.
+        # De koppeling in goTo() loopt op volgorde over `.panel`. Een vijfde
+        # `.panel` zou elke wizardstap één plek opschuiven. TT-543 (06-11-2026,
+        # besluit Ronald): vier stappen, "Wat wil je nu?" is weg.
         panelen = page.evaluate("""() => ({
           panel: [...document.querySelectorAll('.panel')].map(p => p.id),
           ouder: [...document.querySelectorAll('.panel-ouder')].map(p => p.id)
         })""")
-        check("er zijn precies vijf .panel-elementen, de vijf wizardstappen",
-              panelen["panel"] == ["step0", "step1", "step2", "step3", "step4"],
+        check("er zijn precies vier .panel-elementen, de vier wizardstappen (TT-543)",
+              panelen["panel"] == ["step0", "step1", "step2", "step3"],
               json.dumps(panelen))
         check("de drie ouder-schermen dragen panel-ouder",
               panelen["ouder"] == ["ouderStap", "ouderWacht", "ouderWachtwoord"],
@@ -3616,12 +3617,12 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         page.evaluate("showView('register')"); page.wait_for_timeout(50)
         page.evaluate("goTo(1)")
         label = page.evaluate("document.getElementById('stepLabel').textContent")
-        check("de wizard toont 'Stap 2 van 5' (TT-250)", label == "Stap 2 van 5", label)
+        check("de wizard toont 'Stap 2 van 4' (TT-250, TT-543)", label == "Stap 2 van 4", label)
         doorzicht = page.evaluate("getComputedStyle(document.querySelector('.step-dot.done')).opacity")
         check("een afgeronde stap is vol goud", doorzicht == "1", doorzicht)
         page.evaluate("goTo(0)")
-        check("en begint op 'Stap 1 van 5'",
-              page.evaluate("document.getElementById('stepLabel').textContent") == "Stap 1 van 5", "")
+        check("en begint op 'Stap 1 van 4'",
+              page.evaluate("document.getElementById('stepLabel').textContent") == "Stap 1 van 4", "")
 
         check("geen paginafouten in blok 30", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
@@ -3722,12 +3723,13 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("de bio in de wizard heeft dezelfde cursieve voorbeeldtekst als de tegels en geen voorzetknoppen (consistentie)",
               wb == [True, True, "italic", 0], json.dumps(wb))
 
-        # K7/K8/K12 — zes keuzesoorten, één stand voor gekozen en niet-gekozen
-        # (TT-518, 06-11-2026: .level-btn weg, sinds TT-514 nergens gebruikt).
+        # K7/K8/K12 — vijf keuzesoorten, één stand voor gekozen en niet-gekozen
+        # (TT-518, 06-11-2026: .level-btn weg, sinds TT-514 nergens gebruikt;
+        # TT-543, 06-11-2026: de doelkaart .goal-card weg met stap 3).
         keuze = page.evaluate("""() => {
           const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
           const soorten = [['div','tag','selected'], ['div','segmented-btn','selected'],
-                           ['button','search-mode-tab','active'], ['button','media-tab','active'], ['div','goal-card','selected'],
+                           ['button','search-mode-tab','active'], ['button','media-tab','active'],
                            ['button','level-choice','selected']];
           const meet = e => { const cs = getComputedStyle(e);
             return [cs.backgroundColor, cs.borderTopWidth, cs.borderTopColor, cs.borderTopLeftRadius, cs.color, cs.fontWeight, cs.fontStyle].join(' | '); };
@@ -3736,18 +3738,16 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             const b = document.createElement(tag); b.className = k + ' ' + aan; b.textContent = 'x'; b.style.transition = 'none';
             plek.append(a, b); return [k, meet(a), meet(b)]; });
           plek.remove(); return uit; }""")
-        # TT-517 fase 11 (besluit Ronald 01-11-2026): de doelkaart is een kaart (hoek 16px), de andere zes een pil.
-        doel = [k for k in keuze if k[0] == "goal-card"][0]
-        check("de doelkaart (Wat zoek je) heeft hoek 16px, gekozen en niet gekozen",
-              " | 16px | " in doel[1] and " | 16px | " in doel[2], json.dumps(doel))
-        keuze = [[k[0], k[1].replace(" | 16px | ", " | 999px | "), k[2].replace(" | 16px | ", " | 999px | ")] if k[0] == "goal-card" else k for k in keuze]
+        check("de doelkaart .goal-card bestaat niet meer, in de pagina en in de stijlen (TT-543)",
+              page.evaluate("document.querySelectorAll('.goal-card, .goal-options').length") == 0
+              and ".goal-" not in open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read(), "")
         los = {k[1] for k in keuze}
         aan = {k[2] for k in keuze}
-        check("K7: niet-gekozen is bij alle zes soorten gelijk (--surface2, rand 1,5px, een pil, wit)",
+        check("K7: niet-gekozen is bij alle vijf soorten gelijk (--surface2, rand 1,5px, een pil, wit)",
               len(los) == 1 and los.pop().replace(" | 1px", "").replace(" | 1.5px", "") == "rgb(30, 30, 30) | rgb(42, 42, 42) | 999px | rgb(240, 240, 240) | 400 | normal"
-              and all(rand(k) == "var(--line)" for k in (".tag", ".segmented-btn", ".search-mode-tab", ".media-tab", ".goal-card", ".level-choice")),
+              and all(rand(k) == "var(--line)" for k in (".tag", ".segmented-btn", ".search-mode-tab", ".media-tab", ".level-choice")),
               json.dumps(keuze)[:400])
-        check("K7/K8/K12: gekozen is bij alle zes soorten gelijk (geel vlak, donkere tekst, vet, niet cursief; TT-517 fase 11, B)",
+        check("K7/K8/K12: gekozen is bij alle vijf soorten gelijk (geel vlak, donkere tekst, vet, niet cursief; TT-517 fase 11, B)",
               len(aan) == 1 and aan.pop().replace(" | 1px", "").replace(" | 1.5px", "") == "rgb(255, 184, 28) | rgb(255, 184, 28) | 999px | rgb(30, 30, 30) | 700 | normal",
               json.dumps(keuze)[:400])
 
@@ -5041,7 +5041,7 @@ window.TT_STUB.fnAntwoord = {};
           zet('artistSearch', 'Queen'); zet('trackSearch', 'Bohemian');
           document.getElementById('consentCheckbox').checked = true;
           Object.assign(state, { fname: 'Uke', regEmail: 'uke@proton.me', regPassword: 'geheim123',
-            instruments: ['Ukelele'], genres: ['Pop'], goal: 'band',
+            instruments: ['Ukelele'], genres: ['Pop'], repertoireType: 'covers',
             songs: [{ title: 'Bohemian Rhapsody', artist: 'Queen', level: 2 }],
             mediaLinks: [{ url: 'https://youtu.be/x' }] });
           populateWizardFieldsFromState();
@@ -5057,7 +5057,7 @@ window.TT_STUB.fnAntwoord = {};
           const panelen = [...v.querySelectorAll('.panel')];
           return {
             gevuld,
-            stateGevuld: ['fname', 'regEmail', 'regPassword', 'goal'].filter(k => state[k]),
+            stateGevuld: ['fname', 'regEmail', 'regPassword', 'repertoireType'].filter(k => state[k]),
             lijsten: ['instruments', 'genres', 'songs', 'mediaLinks', 'mediaFiles'].filter(k => state[k].length),
             stap: panelen.findIndex(p => p.classList.contains('active')),
             veldfouten: v.querySelectorAll('.field-error').length,
@@ -5744,10 +5744,10 @@ window.TT_STUB.fnAntwoord = {};
         check("het kruisje ziet er precies zo uit als het kruisje op een mediategel, met een tikvlak van 44px",
               stijl50[0] == stijl50[1] and stijl50[0][2] == "22px" and stijl50[0][6] == "-11px", json.dumps(stijl50))
         page.evaluate("showView('register')"); page.wait_for_timeout(300)
-        page.evaluate("goTo(4)"); page.wait_for_timeout(450)
+        page.evaluate("goTo(3)"); page.wait_for_timeout(450)
         plek50 = page.evaluate("""() => { const b = document.getElementById('avatarRemoveBtn'); b.classList.add('visible');
           const k = b.getBoundingClientRect(), f = document.getElementById('avatarPreview').getBoundingClientRect(),
-                w = document.querySelector('#step4 .avatar-edit-btn').getBoundingClientRect();
+                w = document.querySelector('#step3 .avatar-edit-btn').getBoundingClientRect();
           const raak = document.elementFromPoint(k.left + k.width / 2, k.top - 9) === b;
           b.classList.remove('visible'); const weg = getComputedStyle(b).display;
           return { rechts: Math.round(f.right - k.right), boven: Math.round(k.top - f.top), raak,
@@ -7103,7 +7103,7 @@ window.TT_STUB.fnAntwoord = {};
             });
           });
           // 2. Elke zichtbare knop: vijf punten, de tik moet de knop zelf raken.
-          const SEL = 'button, a[href], [onclick], .tag, .segmented-btn, .search-mode-tab, .goal-card';
+          const SEL = 'button, a[href], [onclick], .tag, .segmented-btn, .search-mode-tab';
           for (const v of ['landing', 'auth', 'register', 'search', 'about', 'privacy', 'terms', 'gedragscode']) {
             showView(v); await w(450);
             const els = [...document.querySelectorAll(SEL)].filter(e => {
@@ -7186,7 +7186,7 @@ window.TT_STUB.fnAntwoord = {};
               d64["boven"] == {"onderOpen": True, "bovenOpen": False} and d64["daarna"]["onderOpen"] is False, json.dumps(d64))
         check("TT-408 C: het verplichte gebruikersnaamscherm sluit niet met de terugknop", d64["verplicht"], json.dumps(d64))
         check("TT-408 A: geen grote Terug-knop meer buiten de wizardstappen", d64["terugOverig"] == [], json.dumps(d64))
-        check("TT-408: de wizard houdt zijn vijf Terug-knoppen", d64["wizardStappen"] == 5, json.dumps(d64))
+        check("TT-408: de wizard houdt zijn vier Terug-knoppen, één per stap (TT-543: 4 stappen)", d64["wizardStappen"] == 4, json.dumps(d64))
         check("TT-408: in een keuzevraag heet de knop Annuleren", d64["keuzeknoppen"] == ["Annuleren"] * 3, json.dumps(d64))
         # TT-408 stap 3 (06-10-2026, besluit Ronald: "alle velden waar het kruisje
         # overbodig is kan je het kruisje weghalen"): het kruisje blijft alleen
@@ -10090,8 +10090,8 @@ window.TT_STUB.fnAntwoord = {};
           };
           u.licht = await meet('licht'); u.donker = await meet('donker'); delete html.dataset.theme;
           // Elk scherm dat een paneel had: geen vlak, geen rand, geen opvulling, geen hoek. Ook de verborgen schermen geven hun stijl.
-          const sel = ['#wieBenJeScreen','#watSpeelJeScreen','#watZoekJeScreen','#jeSetlistScreen','#mediahoekScreen','#bandWieScreen','#bandBezettingScreen',
-            '#bandMuziekScreen','#bandMediaScreen','#step0','#step1','#step2','#step3','#step4','#ouderStap','#ouderWacht','#ouderWachtwoord',
+          const sel = ['#wieBenJeScreen','#watSpeelJeScreen','#jeSetlistScreen','#mediahoekScreen','#bandWieScreen','#bandBezettingScreen',
+            '#bandMuziekScreen','#bandMediaScreen','#step0','#step1','#step2','#step3','#ouderStap','#ouderWacht','#ouderWachtwoord',
             '#view-auth .auth-panel','#view-reset .auth-panel','#view-about .search-filters','#view-privacy .search-filters','#view-terms .search-filters',
             '#view-gedragscode .search-filters','#view-instellingen .search-filters','#view-search .search-filters'];
           u.alleSchermen = {};
@@ -10112,7 +10112,7 @@ window.TT_STUB.fnAntwoord = {};
                   m90["vBg"] != m90["paginaBg"] and m90["vBg"] == ("rgb(255, 254, 250)" if thema90 == "licht" else "rgb(36, 36, 36)"), json.dumps(m90))
             check(f"Wie ben je ({thema90}): de niet-gekozen keuzeknop heeft de stand van Zoeken (--keuze-vlak), de gekozen zijn eigen vlak",
                   m90["aanBg"] != m90["uitBg"], json.dumps(m90))
-        check("geen paneel om een scherm, nergens: negen tegelschermen, vijf wizardstappen, drie ouder-schermen, inloggen, Over ons, juridisch, Instellingen, Zoeken (licht en donker)",
+        check("geen paneel om een scherm, nergens: acht tegelschermen, vier wizardstappen, drie ouder-schermen, inloggen, Over ons, juridisch, Instellingen, Zoeken (licht en donker)",
               d90["alleSchermen"]["licht"] == [] and d90["alleSchermen"]["donker"] == [], json.dumps(d90["alleSchermen"]))
         check("geen paginafouten in blok 90", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
@@ -10299,13 +10299,13 @@ window.TT_STUB.fnAntwoord = {};
             keuze: r.querySelector('.setlist-keuze').textContent.trim(), gekozen: r.querySelector('.setlist-keuze').classList.contains('gekozen'), el: r }));
           const rijVan = t => rijen().find(r => r.titel === t) || { spelers: 'GEEN RIJ', keuze: 'GEEN RIJ' };
           showView('register'); await w(60);
-          state.songs = []; goTo(3); renderSongs(); await w(60);
-          u.sub = document.querySelector('#step3 .panel-sub').textContent.trim();
-          u.kop = document.querySelector('#step3 .panel-title').textContent.trim();
-          u.ster = !!document.querySelector('#step3 label .req');
+          state.songs = []; goTo(2); renderSongs(); await w(60);
+          u.sub = document.querySelector('#step2 .panel-sub').textContent.trim();
+          u.kop = document.querySelector('#step2 .panel-title').textContent.trim();
+          u.ster = !!document.querySelector('#step2 label .req');
           u.kopLeeg = $('songsKop').hidden && $('songsKop').getBoundingClientRect().height === 0;
           // Nul nummers: Verder blokkeert, fout bij het zoekveld
-          await nextStep(3); await w(400);
+          await nextStep(2); await w(400);
           u.nul = { stap: state.currentStep, rood: $('artistSearch').classList.contains('field-error'), tekst: regel('artistSearch'),
             afstand: (() => { const v = $('artistSearch'), m = veldFoutAnker(v).nextElementSibling; return m && m.classList.contains('field-msg') ? Math.round(m.getBoundingClientRect().top - v.getBoundingClientRect().bottom) : null; })(),
             inField: (() => { const m = veldFoutAnker($('artistSearch')).nextElementSibling; return !!(m && m.parentElement.classList.contains('field')); })(),
@@ -10317,12 +10317,12 @@ window.TT_STUB.fnAntwoord = {};
           u.direct = { rijen: rijen().length, spelers: rijVan('One').spelers, teller: $('songsTeller').textContent, kop: !$('songsKop').hidden };
           await w(120);
           u.een = { spelers: rijVan('One').spelers, keuze: rijVan('One').keuze };
-          await nextStep(3); await w(50);
+          await nextStep(2); await w(50);
           u.eenVerder = { stap: state.currentStep, tekst: regel('artistSearch') };
           clearFieldErrors(document);
           addSong('Jump', 'Van Halen'); await w(120);
           u.twee = { spelers: rijVan('Jump').spelers, teller: $('songsTeller').textContent };
-          await nextStep(3); await w(50);
+          await nextStep(2); await w(50);
           u.tweeVerder = { stap: state.currentStep, tekst: regel('artistSearch') };
           clearFieldErrors(document);
           addSong('Niemand Speelt Dit', 'Onbekend'); await w(120);
@@ -10355,13 +10355,13 @@ window.TT_STUB.fnAntwoord = {};
           // "Zeker?" gaat terug bij een klik ernaast
           const j = state.songs.findIndex(s => s.title === 'Jump'); removeSong(j); await w(30);
           u.zeker = $('songsList').querySelectorAll('.setlist-zeker').length;
-          document.querySelector('#step3 .panel-title').click(); await w(30);
+          document.querySelector('#step2 .panel-title').click(); await w(30);
           u.zekerTerug = $('songsList').querySelectorAll('.setlist-zeker').length;
           // Drie nummers: Verder gaat door
-          await nextStep(3); await w(50);
+          await nextStep(2); await w(50);
           u.verder = { stap: state.currentStep, rood: $('artistSearch').classList.contains('field-error') };
           // Een fout van de database: niets tonen, geen toast, volgende keer opnieuw vragen
-          goTo(3);
+          goTo(2);
           $('appToast').textContent = ''; $('appToast').classList.remove('visible');
           S.rpcErrors[FN] = { code: '500', message: 'storing' };
           addSong('Fout', 'Storing'); await w(120);
@@ -10404,7 +10404,7 @@ window.TT_STUB.fnAntwoord = {};
               d93["kop"] == "Je setlist" and d93["sub"] == "Kies drie nummers en ontdek andere muzikanten." and d93["ster"], json.dumps(d93))
         check("zonder nummers: geen kop boven de lijst", d93["kopLeeg"], json.dumps(d93))
         check("nul nummers: Verder blijft op de stap, fout \"Voeg nog 3 nummers toe\" bij het zoekveld",
-              d93["nul"]["stap"] == 3 and d93["nul"]["rood"] and d93["nul"]["tekst"] == "Voeg nog 3 nummers toe" and d93["nul"]["aria"] == "true", json.dumps(d93))
+              d93["nul"]["stap"] == 2 and d93["nul"]["rood"] and d93["nul"]["tekst"] == "Voeg nog 3 nummers toe" and d93["nul"]["aria"] == "true", json.dumps(d93))
         check("foutregel 8px onder het zoekveld, in de .field (huisstijl §3)",
               d93["nul"]["afstand"] == 8 and d93["nul"]["inField"], json.dumps(d93))
         check("typen in het zoekveld haalt de fout weg", not d93["naTypen"]["rood"] and d93["naTypen"]["tekst"] is None, json.dumps(d93))
@@ -10412,10 +10412,10 @@ window.TT_STUB.fnAntwoord = {};
               d93["direct"]["rijen"] == 1 and d93["direct"]["spelers"] == "" and d93["direct"]["teller"] == "Voeg nog 2 nummers toe" and d93["direct"]["kop"], json.dumps(d93))
         check("na het antwoord: \"4 anderen spelen dit ook\" (eigen profiel telt niet mee); keuze toont \"Beheersing\"",
               d93["een"]["spelers"] == "4 anderen spelen dit ook" and d93["een"]["keuze"] == "Beheersing", json.dumps(d93))
-        check("één nummer: Verder blokkeert met \"Voeg nog 2 nummers toe\"", d93["eenVerder"]["stap"] == 3 and d93["eenVerder"]["tekst"] == "Voeg nog 2 nummers toe", json.dumps(d93))
+        check("één nummer: Verder blokkeert met \"Voeg nog 2 nummers toe\"", d93["eenVerder"]["stap"] == 2 and d93["eenVerder"]["tekst"] == "Voeg nog 2 nummers toe", json.dumps(d93))
         check("enkelvoud: \"1 ander speelt dit ook\"; teller \"Voeg nog 1 nummer toe\"",
               d93["twee"]["spelers"] == "1 ander speelt dit ook" and d93["twee"]["teller"] == "Voeg nog 1 nummer toe", json.dumps(d93))
-        check("twee nummers: Verder blokkeert met \"Voeg nog 1 nummer toe\"", d93["tweeVerder"]["stap"] == 3 and d93["tweeVerder"]["tekst"] == "Voeg nog 1 nummer toe", json.dumps(d93))
+        check("twee nummers: Verder blokkeert met \"Voeg nog 1 nummer toe\"", d93["tweeVerder"]["stap"] == 2 and d93["tweeVerder"]["tekst"] == "Voeg nog 1 nummer toe", json.dumps(d93))
         check("nul spelers: geen voorproef; bij drie nummers wordt de teller \"3 nummers\"",
               d93["drie"]["spelers"] == "" and d93["drie"]["teller"] == "3 nummers", json.dumps(d93))
         check("teller: \"Voeg nog 3 nummers toe\", \"Voeg nog 1 nummer toe\", \"3 nummers\", \"12 nummers\"",
@@ -10433,7 +10433,7 @@ window.TT_STUB.fnAntwoord = {};
               d93["cache"]["vragenOne"] == 1 and d93["cache"]["spelers"] == "4 anderen spelen dit ook", json.dumps(d93))
         check("\"Zeker?\" verschijnt bij de eerste tik op ✕ en gaat terug bij een klik ernaast (TT-226)",
               d93["zeker"] == 1 and d93["zekerTerug"] == 0, json.dumps(d93))
-        check("drie nummers: Verder gaat naar stap 5, geen fout", d93["verder"]["stap"] == 4 and not d93["verder"]["rood"], json.dumps(d93))
+        check("drie nummers: Verder gaat naar stap 4, de mediahoek, geen fout (TT-543)", d93["verder"]["stap"] == 3 and not d93["verder"]["rood"], json.dumps(d93))
         check("fout van de database: geen voorproef, geen toast, volgende keer opnieuw vragen",
               d93["fout"]["spelers"] == "" and d93["fout"]["toast"] == "" and not d93["fout"]["inCache"], json.dumps(d93))
         check("voorproef ontsmet: alleen een geheel getal boven nul geeft tekst",
@@ -11193,7 +11193,6 @@ XSS_STAPPEN = [
     ("band-uitnodigingen", "await loadBandInvites('m1');"),
     ("wie ben je", "await openWieBenJe();"),
     ("wat speel je", "await openWatSpeelJe();"),
-    ("wat zoek je", "await openWatZoekJe();"),
     ("je setlist", "await openJeSetlist();"),
     ("je mediahoek", "await openJeMediahoek();"),
     ("profiel bewerken", "await editMyProfile();"),
@@ -11223,9 +11222,9 @@ XSS_UITZONDERINGEN = {
     "bands.tiktok": "javascript:-adres wordt door bandSocialLink() geweigerd en dus niet getoond",
     "bands.youtube": "javascript:-adres wordt door bandSocialLink() geweigerd en dus niet getoond",
     "musicians.first_name": "kolom bestaat niet in de database (de app gebruikt fname)",
-    "musicians.goal": "keuzewaarde: de app toont alleen de gekozen kaart, nooit de tekst zelf",
+    "musicians.goal": "de app leest de kolom niet (TT-543: stap 3 en de tegel Wat zoek je zijn weg)",
     # TT-490 (03-11-2026), elk gecontroleerd in de code:
-    "musicians.musical_ambition": "keuzewaarde: de app vergelijkt hem alleen met de kaarten (wzjMusicalAmbition), toont de tekst nooit",
+    "musicians.musical_ambition": "de app leest de kolom niet (TT-543: stap 3 en de tegel Wat zoek je zijn weg)",
     "musicians.zip": "komt alleen via .value in het postcodeveld, nooit in HTML",
     "bands.zip": "komt alleen via .value in het postcodeveld, nooit in HTML",
     "musicians.profile_color": "de app leest de kolom niet (er is geen profielkleur meer, TT-341)",
@@ -11654,7 +11653,7 @@ def blok_tt517_fase2():
               r.knoppen = knoppen.length;
               r.geenPil = knoppen.filter(b => getComputedStyle(b).borderTopLeftRadius !== '999px').map(b => b.textContent.trim()).slice(0, 5);
               r.keuze = {};
-              for (const k of ['tag', 'segmented-btn', 'search-mode-tab', 'media-tab', 'goal-card', 'level-choice', 'add-link-btn']) {
+              for (const k of ['tag', 'segmented-btn', 'search-mode-tab', 'media-tab', 'level-choice', 'add-link-btn']) {
                 const e = document.createElement('button'); e.className = k; proef.appendChild(e);
                 r.keuze[k] = getComputedStyle(e).borderTopLeftRadius;
               }
@@ -11678,8 +11677,8 @@ def blok_tt517_fase2():
                   and ((u["schaduwVerwacht"] != "none") if thema == "licht" else (u["schaduwVerwacht"] == "none")), json.dumps([u["vlakKleur"], u["schaduwVerwacht"]]))
             check(f"{thema}: een open rij in Mix & Match houdt zijn eigen rand (--accent)", u["openRand"] != "rgba(0, 0, 0, 0)", u["openRand"])
             check(f"{thema}: elke knop (.btn) is een pil, 999px ({u['knoppen']} knoppen)", u["knoppen"] > 20 and not u["geenPil"], json.dumps(u["geenPil"]))
-            check(f"{thema}: keuzeknoppen en de gestippelde knop zijn ook een pil, de doelkaart hoek 16px (TT-517 fase 11, besluiten Ronald)",
-                  all(v == ("16px" if k == "goal-card" else "999px") for k, v in u["keuze"].items()), json.dumps(u["keuze"]))
+            check(f"{thema}: keuzeknoppen en de gestippelde knop zijn ook een pil (TT-517 fase 11, besluiten Ronald)",
+                  all(v == "999px" for v in u["keuze"].values()), json.dumps(u["keuze"]))
             check(f"{thema}: de tegels onder Foto's en video's en Links hebben hoeken van 12px", u["tegelHoek"] == "12px", u["tegelHoek"])
         check("licht: een veld op de pagina is wit (#FFFEFA), donker grijs (#242424)",
               uit["licht"]["veldPagina"] == "rgb(255, 254, 250)" and uit["donker"]["veldPagina"] == "rgb(36, 36, 36)",
@@ -12354,7 +12353,7 @@ window.TT_STUB.data.bands[0].founder_id = 'm1';
             return { leeg: e.children.length === 0, laag: getComputedStyle(e).backgroundImage.split('url("data:').length - 1,
               silhouet: (getComputedStyle(e).backgroundImage.match(/<circle/g) || []).length, kop: zicht('.kop-zonder-foto') && !zicht('.kop-met-foto'),
               wijzig: area.querySelector('.avatar-edit-btn').textContent.trim() }; };
-          ['step4', 'tegelScreens', 'mediahoekScreen', 'bandMediaScreen'].forEach(id => { const e = document.getElementById(id); if (e) { e.style.display = 'block'; e.classList.add('active'); } });
+          ['step3', 'tegelScreens', 'mediahoekScreen', 'bandMediaScreen'].forEach(id => { const e = document.getElementById(id); if (e) { e.style.display = 'block'; e.classList.add('active'); } });
           document.querySelectorAll('.app-view').forEach(v => v.classList.add('active'));
           const zonder = ['avatarPreview', 'mhAvatarPreview', 'bmFotoPreview'].map(meet);
           ['avatarPreview', 'mhAvatarPreview', 'bmFotoPreview'].forEach(id => { document.getElementById(id).innerHTML = '<img src="icon-192.png" alt="">'; });
@@ -13197,7 +13196,7 @@ def blok_tt517_fase10():
 def blok_tt517_fase11():
     # TT-517 fase 11 (01-11-2026), eindcontrole: (1) elke knop is precies 44px
     # (huisstijl §6), ook een knop met rand; met Inter waren ze 45 en 47px.
-    # (2) "Stap 1 van 5" in de registratie op één regel, ook op 320px.
+    # (2) "Stap 1 van 4" in de registratie op één regel, ook op 320px (TT-543: 4 stappen).
     # (3) de dode .result-card is weg. De rij van een gesprek staat in blok 109.
     # (4) 8D 02-11-2026: de knop voor een bezoeker zonder profiel op één regel.
     print("\nBlok 118 — TT-517 fase 11: eindcontrole")
@@ -13319,7 +13318,7 @@ def blok_tt517_fase11():
                       u["gast"] == [["Maak een profiel en leg contact", 44], ["Maak een profiel en leg contact", 44]], json.dumps(u["gast"], ensure_ascii=False))
                 check(f"{thema} {breed}px: geen vlak achter het icoon op de zoektegels",
                       len(u["icoon"]) == 2 and all(k == "rgba(0, 0, 0, 0)" for k in u["icoon"]), json.dumps(u["icoon"]))
-                check(f"{thema} {breed}px: \"Stap 1 van 5\" op één regel en binnen de marge",
+                check(f"{thema} {breed}px: \"Stap 1 van 4\" op één regel en binnen de marge",
                       u["stapHoog"] < 2 * 15 and u["stapPast"], json.dumps([u["stapHoog"], u["stapPast"]]))
         check("geen JS-fout in blok 118", not fouten, "; ".join(fouten)[:300])
         browser.close()
@@ -14402,6 +14401,96 @@ def blok_onderhoud_0611():
     check("geen paginafouten in blok 130", not fouten, "; ".join(fouten)[:300])
 
 
+
+# --------------------------------------------------------------------------
+# Blok 131 — TT-543 (besluit Ronald 06-11-2026): stap 3 "Wat wil je nu?" en de
+# tegel "Wat zoek je" zijn weg. De app deed niets met de antwoorden. Profiel
+# aanmaken telt 4 stappen; de database wijzigt niet.
+# --------------------------------------------------------------------------
+def blok_tt543():
+    print("\nBlok 131 — TT-543: Profiel aanmaken in 4 stappen, zonder Wat zoek je")
+    js_bron = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in JS_FILES)
+    kolommen = [k for k in ("goal", "rehearsal_frequency", "musical_ambition", "rehearsalFrequency", "musicalAmbition")
+                if re.search(r"(?<![\w-])" + k + r"(?![\w-])", js_bron)]
+    check("geen JS-bestand leest of schrijft goal, rehearsal_frequency of musical_ambition (opgeslagen antwoorden blijven onaangeroerd)",
+          not kolommen, str(kolommen))
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten = []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(400)
+        u = page.evaluate("""async () => {
+          const w = ms => new Promise(r => setTimeout(r, ms));
+          const u = {};
+          showView('register'); await w(100);
+          u.stippen = document.querySelectorAll('#stepsBar .step-dot').length;
+          u.titels = [...document.querySelectorAll('#view-register .panel .panel-title')].map(e => e.textContent.trim());
+          u.weg = ['goalOptions', 'rehearsalFreqGrid', 'ambitionGrid', 'watZoekJeScreen', 'wzjGoalOptions']
+            .filter(id => document.getElementById(id));
+          u.functies = ['selectGoal', 'selectRehearsalFrequency', 'selectMusicalAmbition', 'openWatZoekJe', 'saveWatZoekJe']
+            .filter(f => typeof window[f] === 'function');
+          u.tegels = TILES.map(t => t.id);
+          u.tegelSchermen = Object.keys(TEGEL_SCREENS).includes('watZoekJe') || Object.keys(TEGEL_WIJZIGINGEN).includes('watZoekJe');
+          // Verder vanaf Wat speel je gaat naar Je setlist; Terug weer terug.
+          Object.assign(state, { instruments: ['Gitaar'], instrumentLevels: { Gitaar: 2 }, genres: ['Rock'] });
+          goTo(1); await nextStep(1); await w(50);
+          u.naWatSpeelJe = [state.currentStep, document.querySelector('#view-register .panel.active .panel-title').textContent.trim(),
+                            document.getElementById('stepLabel').textContent];
+          await prevStep(2); await w(50);
+          u.terug = state.currentStep;
+          // Drie nummers: Verder gaat naar Je mediahoek, de laatste stap.
+          state.songs = [{ title: 'A', artist: 'X', level: null }, { title: 'B', artist: 'X', level: null }, { title: 'C', artist: 'X', level: null }];
+          goTo(2); await nextStep(2); await w(50);
+          u.naSetlist = [state.currentStep, document.querySelector('#view-register .panel.active .panel-title').textContent.trim(),
+                         document.getElementById('stepLabel').textContent, !!document.querySelector('#view-register .panel.active #submitProfileBtn')];
+          // De wisselende tip loopt op de mediahoek, ook na terugkomen (core.js).
+          const tip = () => document.getElementById('wizardMhTipText').innerHTML;
+          const a = tip(); await w(2700); u.tipWisselt = a !== tip();
+          showView('about'); await w(100); showView('register'); await w(100);
+          const b = tip(); await w(2700); u.tipNaTerugkomen = b !== tip();
+          // Opslag: de nieuwe opname schrijft "stap"; een oude opname wordt omgezet.
+          state.onboarding = true; goTo(2);
+          const opname = JSON.parse(localStorage.getItem('tt_onboarding_v1') || '{}');
+          u.opname = { stap: opname.stap, step: opname.step, doel: 'goal' in opname };
+          state.onboarding = false; clearOnboardingProgress();
+          u.omzetting = [{ step: 0 }, { step: 1 }, { step: 2 }, { step: 3 }, { step: 4 }, {}, { stap: 3 }, { stap: 0, step: 4 }]
+            .map(opgeslagenStap);
+          goTo(0); state.songs = []; state.instruments = []; state.genres = []; state.instrumentLevels = {};
+          showView('about');
+          return u; }""")
+        browser.close()
+    httpd.shutdown()
+    check("Profiel aanmaken heeft 4 stappen: Wie ben je, Wat speel je, Je setlist, Je mediahoek",
+          u["stippen"] == 4 and u["titels"] == ["Wie ben je", "Wat speel je", "Je setlist", "Je mediahoek"], json.dumps(u))
+    check("de doelkaarten, de twee vragen en het scherm Wat zoek je bestaan niet meer, ook hun functies niet",
+          not u["weg"] and not u["functies"], json.dumps([u["weg"], u["functies"]]))
+    check("Profiel bewerken heeft 4 tegels: Wie ben je, Wat speel je, Je setlist, Je mediahoek",
+          u["tegels"] == ["wieBenJe", "watSpeelJe", "jeSetlist", "mediahoek"] and not u["tegelSchermen"], json.dumps(u["tegels"]))
+    check("Verder op Wat speel je gaat naar Je setlist (Stap 3 van 4); Terug gaat terug",
+          u["naWatSpeelJe"] == [2, "Je setlist", "Stap 3 van 4"] and u["terug"] == 1, json.dumps([u["naWatSpeelJe"], u["terug"]]))
+    check("Verder op Je setlist gaat naar Je mediahoek (Stap 4 van 4), met de knop Profiel aanmaken",
+          u["naSetlist"] == [3, "Je mediahoek", "Stap 4 van 4", True], json.dumps(u["naSetlist"]))
+    check("de tip in Je mediahoek wisselt, ook na een ander scherm en terug",
+          u["tipWisselt"] and u["tipNaTerugkomen"], json.dumps([u["tipWisselt"], u["tipNaTerugkomen"]]))
+    check("de voortgang bewaart 'stap' in de nieuwe telling, zonder doel",
+          u["opname"] == {"stap": 2, "step": None, "doel": False} or u["opname"] == {"stap": 2, "doel": False}, json.dumps(u["opname"]))
+    check("een opname van vóór TT-543 komt op dezelfde stap terug: oud 3 (setlist) wordt 2, oud 4 (media) wordt 3, oud 2 (doel) wordt de setlist",
+          u["omzetting"] == [0, 1, 2, 2, 3, 0, 3, 0], json.dumps(u["omzetting"]))
+    privacy = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    privacy = privacy[privacy.index('id="view-privacy"'):privacy.index('id="view-terms"')]
+    check("de privacyverklaring noemt geen doel of ambitie meer en is bijgewerkt op 6 november 2026 (besluit Ronald 06-11-2026)",
+          not re.search(r"\bdoel\b|ambitie", privacy, re.I) and "Laatst bijgewerkt: 6 november 2026" in privacy, "")
+    check("geen paginafouten in blok 131", not fouten, "; ".join(fouten)[:300])
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
     _csp_vangnet()
@@ -14432,6 +14521,7 @@ def main():
     blok_tt556()
     blok_tt548()
     blok_onderhoud_0611()
+    blok_tt543()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

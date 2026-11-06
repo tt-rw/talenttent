@@ -276,12 +276,12 @@ def blok_b():
           "oude knopklasse: %s; knop met eigen vorm: %s" % (kort(terug), kort(eigen)))
 
     # B7 - één vorm voor elke keuze uit meerdere (TT-316). Vlak, rand, hoek en
-    # kleur van de zes keuzesoorten staan alleen in de gezamenlijke regels
-    # (TT-518, 06-11-2026: .level-btn weg).
+    # kleur van de vijf keuzesoorten staan alleen in de gezamenlijke regels
+    # (TT-518, 06-11-2026: .level-btn weg; TT-543, 06-11-2026: .goal-card weg).
     # Een losse regel die dat voor één soort toch zet, is een afwijkende vorm.
     # border-color mag wel: dat is de stand bij aanwijzen (:hover).
     keuzes = ["tag", "segmented-btn", "search-mode-tab",
-              "media-tab", "goal-card", "level-choice"]
+              "media-tab", "level-choice"]
     verboden = re.compile(r"(?<![\w-])(background(?:-color)?|border|border-width|"
                           r"border-style|border-radius|color)\s*:")
     afwijkend = set()
@@ -292,10 +292,6 @@ def blok_b():
             for d in delen)]
         if not geraakt or len(geraakt) == len(keuzes):
             continue   # geen keuzesoort, of de gezamenlijke regel zelf
-        # TT-517 fase 11 (besluit Ronald 01-11-2026): de doelkaart is een kaart,
-        # geen pil. Alleen haar hoek mag dus eigen zijn; vlak, rand en kleur niet.
-        if geraakt == ["goal-card"]:
-            inhoud = re.sub(r"(?<![\w-])border-radius\s*:\s*var\(--radius\)\s*;", "", inhoud)
         if verboden.search(inhoud):
             afwijkend.add(delen[0][:60])
     toets("B", "één vorm voor elke keuzeknop, geen eigen vlak of rand",

@@ -24,14 +24,14 @@ function saveOnboardingProgress() {
       ouderRoute: !!state.ouderRoute,
       regEmail: state.regEmail || '',
       akkoord: !!document.getElementById('consentCheckbox')?.checked,
-      step: state.currentStep,
+      // TT-543 (06-11-2026): de wizard telt 4 stappen. "stap" vervangt "step",
+      // zodat een opname van vóór die dag herkenbaar is (zie opgeslagenStap()).
+      stap: state.currentStep,
       fname: state.fname, lname: state.lname, birth_date: state.birth_date,
       username: state.username,
       city: state.city, zip: state.zip, bio: state.bio, citySource: state.citySource,
       instruments: state.instruments, instrumentLevels: state.instrumentLevels, genres: state.genres, songs: state.songs,
       repertoireType: state.repertoireType,
-      goal: state.goal,
-      rehearsalFrequency: state.rehearsalFrequency, musicalAmbition: state.musicalAmbition,
       mediaLinks: state.mediaLinks
       // Bewust NIET bewaard: regPassword, avatarUrl (blob-url overleeft een
       // refresh toch niet — zie bekende beperking TT-02), mediaFiles.
@@ -79,17 +79,6 @@ function populateWizardFieldsFromState() {
   renderLinksList();
   renderMediaGrid();
 
-  const goalOrder = ['oefenen', 'band', 'optreden', 'alles'];
-  const goalIdx = goalOrder.indexOf(state.goal);
-  document.querySelectorAll('.goal-card').forEach((c, i) => c.classList.toggle('selected', i === goalIdx));
-
-  // TT-47
-  document.querySelectorAll('#rehearsalFreqGrid .tag').forEach(t => {
-    t.classList.toggle('selected', REHEARSAL_LABELS[state.rehearsalFrequency] === t.textContent);
-  });
-  document.querySelectorAll('#ambitionGrid .tag').forEach(t => {
-    t.classList.toggle('selected', AMBITION_LABELS[state.musicalAmbition] === t.textContent);
-  });
   // TT-52
   document.querySelectorAll('#repertoireTypeGrid .tag').forEach(t => {
     t.classList.toggle('selected', REPERTOIRE_TYPE_LABELS[state.repertoireType] === t.textContent);
@@ -163,7 +152,7 @@ function resumeOnboarding() {
   vulStateUitVoortgang(saved);
 
   showView('register');
-  goTo(saved.step || 1);
+  goTo(opgeslagenStap(saved) || 1);
   populateWizardFieldsFromState();
   document.getElementById('submitProfileBtn').textContent = 'Profiel aanmaken';
 }
@@ -186,16 +175,26 @@ function hervatOuderRoute() {
   if (vinkje && saved.akkoord) { vinkje.checked = true; updateSubmitProfileState(); }
 
   const aanvraag = ouderAanvraagLezen();
-  if (!aanvraag) { goTo(saved.step || 0); ouderLeeftijdsregel(); return true; }
+  if (!aanvraag) { goTo(opgeslagenStap(saved)); ouderLeeftijdsregel(); return true; }
 
   // Wacht hij nog, dan het wachtscherm; is de ouder akkoord, dan het
   // wachtwoordscherm. ouderStandVerversen() binnen ouderWachtTonen() haalt de
   // actuele stand op en schuift zo nodig zelf door.
-  goTo(saved.step || 0);
+  goTo(opgeslagenStap(saved));
   ouderLeeftijdsregel();
   if (aanvraag.stand === 'goedgekeurd') ouderWachtwoordTonen();
   else ouderWachtTonen();
   return true;
+}
+
+// TT-543 (06-11-2026, besluit Ronald): stap 3 "Wat wil je nu?" is weg; de
+// wizard telt 4 stappen. Een opname van vóór die dag heeft "step" in de oude
+// telling (0 tot en met 4): de setlist was 3 en de media 4, nu 2 en 3. De oude
+// doelstap (2) wordt de setlist.
+function opgeslagenStap(saved) {
+  if (Number.isInteger(saved.stap)) return saved.stap;
+  const oud = saved.step || 0;
+  return oud >= 3 ? oud - 1 : oud;
 }
 
 // Zet één opgeslagen momentopname terug in `state`. Gedeeld door beide
@@ -214,9 +213,6 @@ function vulStateUitVoortgang(saved) {
   state.genres = saved.genres || [];
   state.songs = saved.songs || [];
   state.repertoireType = saved.repertoireType || '';
-  state.goal = saved.goal || '';
-  state.rehearsalFrequency = saved.rehearsalFrequency || '';
-  state.musicalAmbition = saved.musicalAmbition || '';
   state.mediaLinks = saved.mediaLinks || [];
   postcodeResolved = !!state.zip;
 }
@@ -293,8 +289,7 @@ async function loadMyProfile(opties) {
   const voorafId = myMusicianId;
   const vooraf = voorafId ? bijvragen(voorafId) : null;
   const { data: m, error } = await db.from('musicians')
-    .select(`id, weergavenaam, username, city, bio, goal,
-             rehearsal_frequency, musical_ambition, repertoire_type,
+    .select(`id, weergavenaam, username, city, bio, repertoire_type,
              avatar_url, accepts_band_invites,
              musician_instruments(instrument, niveau), musician_genres(genre),
              musician_songs(song_title, song_artist, mastery_level),
@@ -447,9 +442,6 @@ async function persistEditedProfile() {
     city:             state.city,
     zip:              state.zip || null,
     bio:              state.bio || null,
-    goal:             state.goal || null,
-    rehearsal_frequency: state.rehearsalFrequency || null,
-    musical_ambition:    state.musicalAmbition || null,
     repertoire_type:  state.repertoireType || null,
     avatar_url:       state.avatarUrl || null,
     ...wazigVeld(state.avatarUrl),
@@ -869,9 +861,6 @@ async function submitProfile() {
         city:             state.city,
         zip:              state.zip || null,
         bio:              state.bio || null,
-        goal:             state.goal || null,
-        rehearsal_frequency: state.rehearsalFrequency || null,
-        musical_ambition:    state.musicalAmbition || null,
         repertoire_type:  state.repertoireType || null,
         profile_color:    DEFAULT_PROFILE_COLOR,
         avatar_url:       state.avatarUrl || null,
@@ -993,9 +982,6 @@ function legeWizardState() {
     genres: [],
     songs: [],
     repertoireType: '', // TT-52 (12-08-2026): covers/eigen/beide, optioneel, per profiel
-    goal: '',
-    rehearsalFrequency: '',
-    musicalAmbition: '',
     avatarUrl: null,
     avatarFile: null,
     avatarPath: null,
@@ -1099,29 +1085,6 @@ function init() {
 // TT-46/TT-168 vervallen (08-10-2026, besluit Ronald): de bio-voorzetknoppen en
 // applyBioPromptTo/applyBioPrompt zijn weg; het voorbeeld staat als placeholder in het veld.
 
-function selectGoal(el, val) {
-  document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  state.goal = val;
-}
-
-// TT-47: zelfde nogmaals-klikken-om-te-wissen als bij een enkelvoudige
-// keuze — optioneel veld, dus een tweede klik op de al gekozen optie
-// maakt de keuze weer ongedaan i.p.v. gedwongen een keuze te houden.
-function selectRehearsalFrequency(el, val) {
-  const already = el.classList.contains('selected');
-  document.querySelectorAll('#rehearsalFreqGrid .tag').forEach(t => t.classList.remove('selected'));
-  if (already) { state.rehearsalFrequency = ''; return; }
-  el.classList.add('selected');
-  state.rehearsalFrequency = val;
-}
-function selectMusicalAmbition(el, val) {
-  const already = el.classList.contains('selected');
-  document.querySelectorAll('#ambitionGrid .tag').forEach(t => t.classList.remove('selected'));
-  if (already) { state.musicalAmbition = ''; return; }
-  el.classList.add('selected');
-  state.musicalAmbition = val;
-}
 // TT-52: zelfde patroon — optioneel, per profiel, nogmaals klikken wist de keuze.
 function selectRepertoireType(el, val) {
   const already = el.classList.contains('selected');
@@ -1291,8 +1254,8 @@ async function nextStep(from) {
   }
   // TT-514 (besluit Ronald, 25-10-2026): drie nummers zijn verplicht. De fout
   // staat bij het zoekveld, zoals bij stap 2. De beheersing per nummer blijft
-  // optioneel (V-23). Stap 3 (doel) blijft optioneel.
-  if (from === 3 && showFieldErrors(nummersTekortFouten())) return;
+  // optioneel (V-23). TT-543 (06-11-2026): de setlist is stap 3 (index 2).
+  if (from === 2 && showFieldErrors(nummersTekortFouten())) return;
   goTo(from + 1);
 }
 
@@ -1514,7 +1477,7 @@ function goTo(step) {
   // TT-168-overgang (02-09-2026): tip-tekst bij "Je mediahoek" wisselt om de
   // 2,5 seconde (zelfde patroon als de mhTipTimer in het tegelscherm) —
   // alleen actief zolang die stap ook echt getoond wordt.
-  if (step === 4) wizardMhStartTipCycle();
+  if (step === 3) wizardMhStartTipCycle();
   else clearInterval(wizardMhTipTimer);
 }
 

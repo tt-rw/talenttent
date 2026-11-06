@@ -1101,7 +1101,7 @@ function showView(view, mode, extra) {
   if (vorigeView !== view && typeof mhTipTimer !== 'undefined') {
     clearInterval(mhTipTimer); clearInterval(wizardMhTipTimer);
     if (view === 'profieltegels' && activeTegelScreen === 'mediahoek') mhStartTipCycle();
-    if (view === 'register' && state.currentStep === 4) wizardMhStartTipCycle();
+    if (view === 'register' && state.currentStep === 3) wizardMhStartTipCycle(); // TT-543: de mediahoek is stap 4 (index 3)
   }
   // TT-410b: welk profiel, en hoe is het geopend? Bij een stap terug staat het
   // in de stap zelf; bij een link in het #-deel van het adres.

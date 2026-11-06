@@ -89,7 +89,6 @@
     --gekozen-vlak: #FFB81C;
     --gekozen-rand: #FFB81C;
     --gekozen-tekst: #1E1E1E;
-    --gekozen-bijschrift: rgba(30,30,30,0.8); /* toelichting op een gekozen doelkaart */
     --keuze-vlak: var(--surface2);          /* een keuzeknop die niet gekozen is */
     --keuze-rand: var(--border);            /* rand van een keuzeknop */
     /* Een zweem over de ondergrond: aanwijzen, ongelezen, uitgelicht. */
@@ -182,7 +181,6 @@
     --gekozen-vlak: #FFB81C;       /* licht en donker: geel vlak (TT-517 fase 11, B) */
     --gekozen-rand: #FFB81C;
     --gekozen-tekst: #1E1E1E;
-    --gekozen-bijschrift: rgba(30,30,30,0.8);
     --keuze-vlak: var(--surface);
     --tint: rgba(30,30,30,0.04);
     --tint-hover: rgba(30,30,30,0.06);
@@ -1046,7 +1044,7 @@
   /* TT-517 fase 11 (besluit Ronald 01-11-2026, B: "alles rond"): elke
      keuzeknop is een pil, zoals elke actieknop. Elke knop rond, elk veld
      hoekig. Was 8px (fase 2). */
-  .tag, .segmented-btn, .search-mode-tab, .media-tab, .goal-card, .level-choice {
+  .tag, .segmented-btn, .search-mode-tab, .media-tab, .level-choice {
     background: var(--keuze-vlak);
     border: var(--line) solid var(--keuze-rand);
     border-radius: 999px;
@@ -1058,7 +1056,6 @@
   .segmented-btn.selected,
   .search-mode-tab.active,
   .media-tab.active,
-  .goal-card.selected,
   .level-choice.selected {
     background: var(--gekozen-vlak);
     border-color: var(--gekozen-rand);
@@ -1296,29 +1293,6 @@
 
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
-  /* Goal selector */
-  .goal-options {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .goal-card {
-    padding: 16px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-    /* TT-517 fase 11 (besluit Ronald 01-11-2026, 2): een doelkaart van drie
-       regels is een kaart, geen pil: hoek 16px zoals een tegel. */
-    border-radius: var(--radius);
-  }
-
-  /* Gekozen: zie het TT-316-blok bij .tag. :hover staat in de guard. */
-  .goal-card .goal-label { font-size: 12px; }
-  .goal-card .goal-desc { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 300; }
-  /* TT-341 stap 2: op licht is de gekozen kaart geel; grijs is daarop te zwak. */
-  .goal-card.selected .goal-desc { color: var(--gekozen-bijschrift); }
 
   /* TT-142/TT-143 (25-08-2026): actiebalk herzien op verzoek van Ronald
      (telefoonscreenshots). Was twee rijen, veel hoger dan de vaste onderbalk
@@ -3202,14 +3176,13 @@
   .search-filters,
   #wieBenJeScreen,
   #watSpeelJeScreen,
-  #watZoekJeScreen,
   #jeSetlistScreen,
   #mediahoekScreen,
   #bandWieScreen,
   #bandBezettingScreen,
   #bandMuziekScreen,
   #bandMediaScreen,
-  #step0, #step1, #step2, #step3, #step4,
+  #step0, #step1, #step2, #step3,
   #ouderStap, #ouderWacht, #ouderWachtwoord {
     margin-bottom: 28px;
   }
@@ -4806,10 +4779,10 @@
       .hoes:hover .hoes-pijl:not([hidden]),
       .hoes-pijl:focus-visible:not([hidden]) { display: grid; }
     }
-    /* TT-316: één hover voor alle zes keuzesoorten, alleen niet-gekozen. */
+    /* TT-316: één hover voor alle keuzesoorten, alleen niet-gekozen (TT-543: de doelkaart is weg). */
     .tag:not(.selected):hover,
     .segmented-btn:not(.selected):hover, .search-mode-tab:not(.active):hover,
-    .media-tab:not(.active):hover, .goal-card:not(.selected):hover,
+    .media-tab:not(.active):hover,
     .level-choice:not(.selected):hover { border-color: var(--rand-hover); }
     .nav-menu-btn:hover { border-color: var(--border); background: var(--surface); }
     .profiel-knoppen .nav-menu-btn:hover { background: transparent; border-color: transparent; } /* TT-383 */
