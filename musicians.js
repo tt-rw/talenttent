@@ -916,7 +916,7 @@ let wbjSnapshot = null;
 let wbjNaamTonen = 'echt';        // TT-420: de keuze, 'echt' of 'gebruikersnaam'
 let wbjNaamLuistert = false;      // TT-420: het voorbeeld volgt de velden, één luisteraar
 let wbjUsernameOk = true;
-let wbjPostcodeTimeout, wbjCitySearchTimeout;
+let wbjPostcodeTimeout;
 let wbjPostcodeFailStreak = 0;
 let wbjPostcodeManualMode = false;
 

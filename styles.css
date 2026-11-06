@@ -1151,14 +1151,6 @@
      klasse gebruikt (stads-/artiest-/nummersuggesties). */
   .ac-item { min-height: 44px; box-sizing: border-box; }
 
-  /* Added songs list */
-  .songs-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 4px;
-  }
-
   .level-btn {
     /* TT-U23/V-20 (12-08-2026): was 49x22 pixels, gemeten op 390px.
        Nu minimaal 44x44, en 13px tekst i.p.v. 11px. */
@@ -3233,19 +3225,6 @@
     margin-bottom: 20px;
   }
 
-  /* TT-239 (10-09-2026): een korte toelichting onder een filtertitel. Alleen
-     het Setlist-tabblad heeft er een; Muzikant en Band niet. Stond daar als
-     inline stijl — huisstijl §3 verbiedt dat. De titel krijgt .has-sub, zodat
-     de afstand titel → toelichting 8px is en toelichting → eerste veld 20px. */
-  .filter-title.has-sub { margin-bottom: 8px; }
-  .filter-sub {
-    padding-left: var(--field-inset);
-    margin: 0 0 20px;
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.4;
-  }
-
 
   .filter-row {
     display: grid;
@@ -3356,14 +3335,6 @@
   .tag-solid .star-display-empty { color: var(--rand-neutraal); }
   /* TT-402: in licht een witte tag op crème, zodat hij loskomt van de ondergrond. */
   :root[data-theme="licht"] .tag-solid { background: var(--surface); }
-
-  /* TT-30: kaartweergave als alternatief voor de rijenlijst — kiesbaar via
-     de "Weergave"-toggle boven het resultaat. */
-  .results-grid-view {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-    gap: 14px;
-  }
 
   /* TT-520 deel 2 (akkoord Ronald 27-10-2026, Laag 3.3 en 3.4): de kaart in
      Zoeken (Weergave Kaarten). Hetzelfde vlak als een rij (.result-row):
@@ -3541,14 +3512,6 @@
      ná het openen van het profiel. Meerdere instrumenten met elk een eigen
      niveau maakten één "het niveau" onder de naam onmogelijk (Ronalds
      toetsvraag: drums niveau 2, gitaar niveau 3 — welke toon je?). */
-
-  .result-row-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-    padding-left: 60px; /* avatar (44px) + gap (16px), zelfde uitlijning als de naam */
-  }
 
   /* TT-29: envelop-icoon op muzikant-rijen — geeft in één oogopslag aan dat
      contact/bericht sturen mogelijk is (zonder de rij zelf vol te zetten met
@@ -3798,27 +3761,6 @@
     margin-bottom: 24px;
   }
   .empty-state-title + .btn { margin-top: 16px; }
-
-  /* Duidelijke scheiding tussen zoekcriteria en zoekresultaat (04-08-2026) */
-  .results-section-divider {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 40px 0 20px;
-    color: var(--muted);
-    font-size: 12px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-weight: 700;
-  }
-
-  .results-section-divider::before,
-  .results-section-divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
 
   /* Muzikant detail modal */
   /* TT-190 (04-09-2026): Ronald wil elk scherm/modal openen onder 0,1s.
@@ -4630,22 +4572,7 @@
        inhoud — anders staat de knop te hoog of te laag. */
     .modal-box-sticky-footer { padding-bottom: 0; }
     .modal-box-sticky-footer .modal-scroll-area { padding-bottom: 24px; }
-    /* De sluitknop blijft rechtsboven staan, zoals in de rest van de app.
-       TT-267 (15-09-2026, Ronald): "je kunt het kruis op de plaats van het
-       hamburgermenu zetten." Op mobiel vult een modal het hele scherm, dus
-       het kruis staat daar precies waar de hamburger stond — dezelfde plek
-       voor dezelfde duim. Gemeten in de browser: de hamburger is 48x44 op
-       18px van boven en 16px van rechts, dus zijn middelpunt ligt 40px van
-       beide randen. Het kruis is 33x33; op 24/24 ligt zijn middelpunt op
-       40,5px. Boven 560px blijft 16/24 gelden (TT-219, browser-scrollbar).
-       Was tot 15-09-2026: top 12px, right 12px.
-       TT-322 (24-09-2026): die regel voor mobiel is weg. Het kruis staat op
-       elke breedte op dezelfde plek, met het teken op 29px van de rand. */
-    /* Punt 2 (25-08-2026, Ronald): op mobiel was één kaart beeldvullend —
-       te breed. Vaste 2 kolommen i.p.v. auto-fill, zodat het altijd 2 naast
-       elkaar zijn, ongeacht de precieze schermbreedte binnen dit bereik. */
-    .results-grid-view { grid-template-columns: 1fr 1fr; }
-  
+
   /* ── TT-U24 (12-08-2026): vaste onderbalk op de telefoon ─────────────────
      Boven 560px onzichtbaar; daar blijft de bestaande bovenbalk staan. */
   .app-bottom-nav { display: none; }
