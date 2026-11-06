@@ -453,8 +453,6 @@ function igMeldingWeg() {
 function verversEmailWeergave(email) {
   const igEl = document.getElementById('igHuidigEmail');
   if (igEl) igEl.textContent = email;
-  const wbjEl = document.getElementById('wbjEmail');
-  if (wbjEl) wbjEl.value = email;
 }
 
 function openInloggegevens() {

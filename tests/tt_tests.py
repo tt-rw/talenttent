@@ -2720,16 +2720,16 @@ def blok_browser():
           return {
             tekst: document.getElementById('igMelding').textContent,
             huidig: document.getElementById('igHuidigEmail').textContent,
-            wbj: document.getElementById('wbjEmail').value,
+            wbj: !!document.getElementById('wbjEmail'),
             user: currentUser.email
           };
         }""")
         check("wijzigt Supabase meteen, dan zegt de app dát, niet 'controleer je mail'",
               "is gewijzigd" in direct["tekst"] and "mail gestuurd" not in direct["tekst"],
               json.dumps(direct))
-        check("en het nieuwe adres staat meteen in het venster, in Wie ben je en in currentUser",
+        check("en het nieuwe adres staat meteen in het venster en in currentUser; Wie ben je toont geen e-mailadres (TT-543)",
               direct["huidig"] == "direct@talenttent.org"
-              and direct["wbj"] == "direct@talenttent.org"
+              and direct["wbj"] is False
               and direct["user"] == "direct@talenttent.org", json.dumps(direct))
 
         bezet = page.evaluate("""async () => {
@@ -2819,7 +2819,6 @@ def blok_browser():
         page.evaluate("""() => {
           window.TT_STUB.reset();
           currentUser = null;
-          document.getElementById('wbjEmail').value = '';
         }""")
 
         # ------------------------------------------------------------------

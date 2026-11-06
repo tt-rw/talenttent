@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261106d">
+<link rel="stylesheet" href="styles.css?v=20261106e">
 </head>
 <body>
 
@@ -361,18 +361,18 @@
 
     <div class="field-group single">
       <div class="field">
-        <div class="label-rij"><label>Gebruikersnaam <span class="req">*</span></label><span id="usernameUitslag" class="field-uitslag" aria-live="polite"></span></div>
-        <input type="text" id="username" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck()">
-        <p class="field-hint">Ben je jonger dan 16 jaar? Dan staat alleen deze naam op je profiel en moet hij anders zijn dan je voornaam.</p>
+        <label>Geboortedatum <span class="req">*</span></label>
+        <input type="text" id="birth_date" placeholder="01-02-2001" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this); ouderLeeftijdsregel()">
+        <!-- TT-42: verschijnt alleen bij 13, 14 of 15. Mededeling, geen fout. -->
+        <p class="field-hint" id="ouderLeeftijdHint" style="display:none;">Onder de 16 vragen we straks toestemming aan je ouder of verzorger. Voor hen is het één klik. Je kunt gewoon doorgaan.</p>
       </div>
     </div>
 
     <div class="field-group single">
       <div class="field">
-        <label>Geboortedatum <span class="req">*</span></label>
-        <input type="text" id="birth_date" placeholder="01-02-2001" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this); ouderLeeftijdsregel()">
-        <!-- TT-42: verschijnt alleen bij 13, 14 of 15. Mededeling, geen fout. -->
-        <p class="field-hint" id="ouderLeeftijdHint" style="display:none;">Onder de 16 vragen we straks toestemming aan je ouder of verzorger. Voor hen is het één klik. Je kunt gewoon doorgaan.</p>
+        <div class="label-rij"><label>Gebruikersnaam <span class="req">*</span></label><span id="usernameUitslag" class="field-uitslag" aria-live="polite"></span></div>
+        <input type="text" id="username" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck()">
+        <p class="field-hint">Ben je jonger dan 16 jaar? Dan staat alleen deze naam op je profiel en moet hij anders zijn dan je voornaam.</p>
       </div>
     </div>
 
@@ -410,7 +410,7 @@
          het zoeken naar muzikanten of nummers. -->
     <form id="regAuthSection" novalidate onsubmit="event.preventDefault(); nextStep(0);">
       <div class="divider"></div>
-      <p id="regAuthIntro" style="font-size:12px;color:var(--muted);margin-bottom:16px;">Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.</p>
+      <p id="regAuthIntro" class="inlog-intro">Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.</p>
 
       <div class="field-group" id="regAuthFieldGroup">
         <div class="field">
@@ -762,7 +762,7 @@
 
   <!-- Subscherm: Wie ben je -->
   <div id="wieBenJeScreen" style="display:none;">
-    <div class="panel-title scherm-titel" style="margin-bottom:20px;">Wie ben je</div>
+    <div class="panel-title scherm-titel">Wie ben je</div>
 
     <div class="field-group">
       <div class="field">
@@ -790,13 +790,15 @@
     </div>
 
     <!-- TT-420: welke naam anderen zien. Onder de 16 is dit blok verborgen (wbjNaamKeuzeBijwerken). -->
-    <div class="field" id="wbjNaamKeuze" style="margin-bottom:20px;">
+    <div class="field-group single" id="wbjNaamKeuze">
+    <div class="field">
       <label>Naam op je profiel</label>
       <div class="segmented-control" id="wbjNaamTonenControl">
         <div class="segmented-btn" data-mode="echt" onclick="zetWbjNaamTonen('echt')">Echte naam</div>
         <div class="segmented-btn" data-mode="gebruikersnaam" onclick="zetWbjNaamTonen('gebruikersnaam')">Gebruikersnaam</div>
       </div>
       <p class="field-hint" id="wbjNaamVoorbeeld"></p>
+    </div>
     </div>
 
     <!-- Postcode en plaats naast elkaar: zelfde vorm als de wizard en het
@@ -813,24 +815,21 @@
           <div class="autocomplete-list" id="wbjCityAc"></div>
         </div>
       </div>
-      <p id="wbjPostcodeStatus" class="field-status" style="color:var(--muted);"></p>
+      <p id="wbjPostcodeStatus" class="field-status"></p>
     </div>
 
-    <div class="field" style="margin-bottom:20px;">
+    <div class="field-group single">
+    <div class="field">
       <label>Korte bio</label>
       <!-- TT-410a stap 3b: bio inline; voorbeeldtekst staat als placeholder in het veld (geen voorzetknoppen). -->
       <textarea id="wbjBio" class="bio-voorbeeld" placeholder="Hoi allemaal! Ik ben Kevin. Ik speel nu al meer dan drie jaar drums en ik wil graag een stapje verder gaan. Daarom ben ik op zoek naar anderen die het leuk vinden om samen een classic rockband te beginnen.&#10;Ik denk dat we in het begin vooral covers kunnen spelen, maar het lijkt me uiteindelijk echt vet om onze eigen muziek te maken. Mijn favoriete bands zijn onder andere Van Halen en Guns N’ Roses, maar ik luister naar nog veel meer.&#10;Lijkt het je leuk om samen een band te beginnen? Stuur me dan zeker een berichtje!"></textarea>
       <p class="field-hint">Dit is vaak het eerste wat andere muzikanten van je lezen.</p>
     </div>
-
-    <div class="field">
-      <label>E-mailadres</label>
-      <input type="text" id="wbjEmail" readonly style="cursor:not-allowed;">
-      <!-- TT-299 (20-09-2026): het adres blijft hier leesbaar staan, want
-           hier zoekt iemand het. Wijzigen gebeurt bij Instellingen, samen
-           met het wachtwoord. -->
-      <p class="field-status" style="color:var(--muted);">Dit is het e-mailadres waarmee je inlogt. Wijzigen doe je bij Instellingen.</p>
     </div>
+
+    <!-- TT-543 (06-11-2026, besluit Ronald): het e-mailadres staat hier niet
+         meer. Het staat in Instellingen, met de knop om het te wijzigen;
+         hier was het dubbel. -->
 
     <div class="action-row">
       <button class="btn btn-primary" onclick="saveWieBenJe()">Opslaan</button>
@@ -2435,12 +2434,12 @@
 <script src="core.js?v=20261106d"></script>
 <script src="utils.js?v=20261106b"></script>
 <script src="veiligheid.js?v=20261106b"></script>
-<script src="auth.js?v=20261106b"></script>
+<script src="auth.js?v=20261106c"></script>
 <script src="postcode.js?v=20261027e"></script>
 <script src="wizard.js?v=20261106d"></script>
 <script src="ouder.js?v=20261103a"></script>
 <script src="search.js?v=20261106d"></script>
-<script src="musicians.js?v=20261106d"></script>
+<script src="musicians.js?v=20261106e"></script>
 <script src="bands.js?v=20261106b"></script>
 <script src="messages.js?v=20261106b"></script>
 <script src="push.js?v=20261027b"></script>

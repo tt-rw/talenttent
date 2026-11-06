@@ -971,7 +971,6 @@ function zetWbjNaamTonen(waarde) {
 async function openWieBenJe() {
   wisUsernameUitslag('wbjUsernameStatus', 'wbjUsername');
   document.getElementById('wbjPostcodeStatus').textContent = '';
-  document.getElementById('wbjEmail').value = currentUser?.email || '';
   wbjPostcodeManualMode = false;
   wbjPostcodeFailStreak = 0;
   const wbjCityFieldReset = document.getElementById('wbjCity');
