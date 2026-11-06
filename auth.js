@@ -147,9 +147,8 @@ function usernameFormatValid(u) {
 // #usernameGateInput. Het gate-scherm controleerde dus stilzwijgend een leeg
 // veld i.p.v. wat Ronald daadwerkelijk had getypt, en faalde geruisloos.
 // Nu configureerbaar: welk invoerveld, en welke id uitgesloten moet worden
-// van de uniekheidscheck (editingMusicianId voor de wizard, usernameGateMid
-// voor het gate-scherm — bewust twee aparte variabelen, zie toelichting bij
-// usernameGateMid hieronder).
+// van de uniekheidscheck (geen voor de wizard: daar bestaat nog geen profiel,
+// TT-570; usernameGateMid voor het gate-scherm).
 async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
   const statusId = statusElId || 'usernameStatus';
   const inputId = inputElId || 'username';
@@ -186,7 +185,7 @@ async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
   try {
     const { data, error } = await db.rpc('tt_check_username_available', {
       uname: value,
-      exclude_id: (excludeId !== undefined ? excludeId : editingMusicianId) || null
+      exclude_id: excludeId || null
     });
     if (error) throw error;
     usernameAvailable = !!data;
@@ -235,10 +234,7 @@ function zetUsernameLang(inputId, tekst) {
 // in de wizard, andere input-id/status-id).
 let usernameGateAge = null; // leeftijd van het profiel, opgehaald bij het checken
 let usernameGateFname = ''; // echte voornaam, voor de <16-vergelijking
-// Eigen variabele i.p.v. editingMusicianId hergebruiken — die laatste stuurt
-// ook de "Profiel bewerken"-modus/veld-vergrendeling in de wizard aan, en zou
-// als ongewenst neveneffect de wizard in bewerkmodus zetten als iemand na het
-// inloggen per ongeluk naar "Profiel aanmaken" navigeert.
+// Het profiel waarvoor het gate-scherm de gebruikersnaam vraagt.
 let usernameGateMid = null;
 
 function scheduleUsernameCheck2() {
@@ -265,9 +261,7 @@ async function checkUsernameGate() {
   if (data.username) return false;
 
   // Bugfix (07-08-2026, gemeld door Ronald: "opslaan lukt niet"): deze functie
-  // gaf de eigen id nooit door aan de beschikbaarheidscheck. Eigen variabele
-  // (usernameGateMid) i.p.v. editingMusicianId — zie toelichting hierboven bij
-  // die declaratie.
+  // gaf de eigen id nooit door aan de beschikbaarheidscheck (usernameGateMid).
   usernameGateMid = mid;
 
   const { data: myBirthDate, error: gebFout } = await db.rpc('tt_get_my_birth_date');

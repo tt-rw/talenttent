@@ -475,21 +475,18 @@ function hideSaving() {
   if (overlay) overlay.classList.remove('visible');
 }
 
-function showSaveSuccess(isEdit) {
+// TT-570: alleen nog het einde van de wizard. Bewerken loopt via de tegels,
+// elk met een eigen melding.
+function showSaveSuccess() {
   document.getElementById('saveSpinner').style.display = 'none';
-  if (isEdit) {
-    document.getElementById('saveTitle').textContent = 'Profiel bijgewerkt!';
-    document.getElementById('saveMsg').textContent = 'Je wijzigingen zijn opgeslagen.';
-  } else {
-    document.getElementById('saveTitle').textContent = 'Profiel aangemaakt!';
-    document.getElementById('saveMsg').textContent = 'Welkom bij The Talent Tent! Je gaat naar je profiel...';
-  }
+  document.getElementById('saveTitle').textContent = 'Profiel aangemaakt!';
+  document.getElementById('saveMsg').textContent = 'Welkom bij The Talent Tent! Je gaat naar je profiel...';
   setTimeout(() => {
     document.getElementById('saveOverlay').classList.remove('visible');
     // TT-32 (07-08-2026): net als bij onUserLoggedIn() — een gloednieuw
     // account dat via het chat-icoon in de registratiewizard belandde, gaat
     // na de laatste stap direct naar de composer i.p.v. naar Mijn Profiel.
-    if (!isEdit && pendingMessageRecipient) {
+    if (pendingMessageRecipient) {
       const recipient = pendingMessageRecipient;
       pendingMessageRecipient = null;
       showView('search');
@@ -497,7 +494,7 @@ function showSaveSuccess(isEdit) {
       return;
     }
     showView('myprofile');
-  }, isEdit ? 1200 : 2000);
+  }, 2000);
 }
 
 function showSaveError(msg, actie) {

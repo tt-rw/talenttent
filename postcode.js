@@ -521,7 +521,6 @@ function fromISODate(iso) {
   return `${dd}-${mm}-${yyyy}`;
 }
 
-let editingMusicianId = null;
 // TT-168-overgang (02-09-2026): editSnapshot/buildEditSnapshot() zijn
 // vervallen — die vergeleken de wizard-state tijdens het bewerken van een
 // bestaand profiel via de wizard (TT-143). Elke tegel heeft nu zijn eigen,

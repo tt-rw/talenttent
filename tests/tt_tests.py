@@ -4814,8 +4814,9 @@ window.TT_STUB.fnAntwoord = {};
           const maak = db.from.bind(db);
           db.from = (t) => { const q = maak(t); if (t === 'musicians') { const u = q.update.bind(q);
             q.update = (v) => { if (v && v.profile_complete === true) { v = Object.assign({}, v, { profile_complete: false, wacht_op_bevestiging: true }); } return u(v); }; } return q; };
-          state.onboarding = true; editingMusicianId = 'm1'; pendingMessageRecipient = { id: 'm2', displayName: 'Dylan' };
-          await saveEditedProfile();
+          state.onboarding = true; pendingMessageRecipient = { id: 'm2', displayName: 'Dylan' };
+          document.getElementById('consentCheckbox').checked = true;
+          await submitProfile();
           await new Promise(r => setTimeout(r, 600));
           const blok = document.getElementById('emailBevestigBanner');
           return {
@@ -4864,25 +4865,24 @@ window.TT_STUB.fnAntwoord = {};
         c.close(); alle_fouten += f
 
         # 2. Zonder wachten (13 t/m 15, of de database nog niet bijgewerkt):
-        #    "Profiel aangemaakt!", niet meer "Profiel bijgewerkt!".
+        #    "Profiel aangemaakt!". TT-570: bewerken loopt alleen via de tegels;
+        #    de wizard kent geen "Profiel bijgewerkt!" meer.
         c, pg, f = bevestig_pagina("", INGELOGD + ONAF)
         uit = pg.evaluate("""async () => {
-          localStorage.setItem('tt_onboarding_v1', JSON.stringify({ userId: 'u1', mid: 'm1', step: 5 }));
-          state.onboarding = true; editingMusicianId = 'm1';
-          await saveEditedProfile();
+          localStorage.setItem('tt_onboarding_v1', JSON.stringify({ userId: 'u1', step: 3 }));
+          state.onboarding = true;
+          document.getElementById('consentCheckbox').checked = true;
+          await submitProfile();
           const nieuw = document.getElementById('saveTitle').textContent;
           const voortgang = localStorage.getItem('tt_onboarding_v1');
-          await new Promise(r => setTimeout(r, 2300));
-          editingMusicianId = 'm1';
-          await saveEditedProfile();
-          return { nieuw, voortgang, bewerkt: document.getElementById('saveTitle').textContent,
-                   acties: window.TT_STUB.fnCalls.length };
+          return { nieuw, voortgang, acties: window.TT_STUB.fnCalls.length,
+                   bijgewerkt: showSaveSuccess.toString().includes('bijgewerkt') };
         }""")
         check("TT-336: een nieuwe registratie eindigt op 'Profiel aangemaakt!' en wist de voortgang",
               uit["nieuw"] == "Profiel aangemaakt!" and uit["voortgang"] is None and uit["acties"] == 0,
               json.dumps(uit))
-        check("TT-336: bewerken blijft 'Profiel bijgewerkt!'",
-              uit["bewerkt"] == "Profiel bijgewerkt!", json.dumps(uit))
+        check("TT-570: de wizard kent geen 'Profiel bijgewerkt!' meer (bewerken loopt via de tegels)",
+              not uit["bijgewerkt"], json.dumps(uit))
         c.close(); alle_fouten += f
 
         # 3. Geen berichten en geen band zolang het profiel wacht (1a).
@@ -5019,7 +5019,7 @@ window.TT_STUB.fnAntwoord = {};
 
         # 5. Woordkeus (Ronald, 26-09-2026): "e-mailadres", nooit los "adres".
         bron = open(os.path.join(ROOT, "wizard.js"), encoding="utf-8").read()
-        stuk = bron[bron.index("// ─── TT-336"):bron.index("// TT-168-overgang (02-09-2026): saveEditedProfileHere()")]
+        stuk = bron[bron.index("// ─── TT-336"):bron.index("async function submitProfile()")]
         teksten = re.findall(r"'[^'\n]*'|`[^`]*`", stuk)
         los = [t for t in teksten if re.search(r"(?<![-\w])adres", t, re.I)]
         check("TT-336: de teksten zeggen 'e-mailadres', nergens los 'adres'", not los, str(los)[:300])
@@ -8620,8 +8620,9 @@ window.TT_STUB.fnAntwoord = {};
         check("opruimen: een bandmap ruimt alleen zijn eigen oude foto's op",
               d103["band"] == ["avatars:bands/b1/6_b.jpg", "avatars:u9/7_c.jpg"] and d103["legeMap"] == d103["band"], j103)
         bron103 = {x: open(os.path.join(ROOT, x), encoding="utf-8").read() for x in ["wizard.js", "musicians.js", "bands.js", "search.js", "messages.js"]}
-        check("opruimen: alle vijf plekken waar een profiel- of bandfoto wordt opgeslagen, ruimen op",
-              bron103["wizard.js"].count("opslagOpruimen('avatars'") == 3 and bron103["musicians.js"].count("opslagOpruimen('avatars'") == 1
+        # TT-570: de wizard slaat op één plek op (persistEditedProfile), was drie.
+        check("opruimen: alle drie plekken waar een profiel- of bandfoto wordt opgeslagen, ruimen op",
+              bron103["wizard.js"].count("opslagOpruimen('avatars'") == 1 and bron103["musicians.js"].count("opslagOpruimen('avatars'") == 1
               and bron103["bands.js"].count("opslagOpruimen('avatars'") == 1, "")
         check("opruimen: de drie plekken waar de mediahoek wordt opgeslagen, ruimen op",
               bron103["wizard.js"].count("opslagOpruimen('media'") == 1 and bron103["musicians.js"].count("opslagOpruimen('media'") == 1
@@ -9013,14 +9014,17 @@ window.TT_STUB.fnAntwoord = {};
           TT_STUB.signUpError = { message: 'User already registered' };
           TT_STUB.authError = { message: 'Invalid login credentials' };
           $('appToast').textContent = ''; $('appToast').classList.remove('visible');
-          const ok1 = await createAccountAndProfile();
-          u.bestaand = { ok: ok1, veld: $('regEmail').classList.contains('field-error'), tekst: regel('regEmail'),
+          // TT-570: het account ontstaat bij de laatste knop; de fout brengt je terug naar stap 1.
+          $('consentCheckbox').checked = true; goTo(3);
+          await submitProfile();
+          u.bestaand = { stap: state.currentStep, veld: $('regEmail').classList.contains('field-error'), tekst: regel('regEmail'),
             toast: $('appToast').textContent, overlay: $('saveOverlay').classList.contains('visible') };
           // Een andere fout bij het inloggen is geen "bestaat al"
           clearFieldError('regEmail');
           TT_STUB.authError = { message: 'Email rate limit exceeded' };
-          await createAccountAndProfile();
-          u.anders = { veld: $('regEmail').classList.contains('field-error'), toast: $('appToast').textContent };
+          await submitProfile();
+          u.anders = { veld: $('regEmail').classList.contains('field-error'), toast: $('appToast').textContent + ' ' + $('saveMsg').textContent };
+          $('saveOverlay').classList.remove('visible'); $('consentCheckbox').checked = false;
           delete TT_STUB.signUpError; delete TT_STUB.authError;
           // 2. Stap 2 van de wizard: geen instrument en geen genre
           state.instruments = []; state.genres = []; state.instrumentLevels = {};
@@ -9068,7 +9072,7 @@ window.TT_STUB.fnAntwoord = {};
         }""")
         j78 = json.dumps(d78, ensure_ascii=False)
         check("bestaand e-mailadres: de fout staat bij het veld E-mailadres, in gewone taal, zonder toast en zonder wachtscherm",
-              d78["bestaand"]["ok"] is False and d78["bestaand"]["veld"]
+              d78["bestaand"]["stap"] == 0 and d78["bestaand"]["veld"]
               and d78["bestaand"]["tekst"] == "Je hebt al een account met dit e-mailadres. Log in en ga verder waar je was"
               and "iets mis" not in d78["bestaand"]["toast"].lower() and not d78["bestaand"]["overlay"], j78)
         check("een andere inlogfout (te veel pogingen) wordt niet als bestaand e-mailadres gemeld",
@@ -10176,7 +10180,7 @@ window.TT_STUB.fnAntwoord = {};
           currentUser = null;
           $('regPassword').value = 'geheim123';
           Object.assign(state, { regEmail: 'nieuw@talenttent.org', regPassword: 'geheim123', fname: 'Test', username: 'testje', city: 'Den Haag', zip: '2497AA' });
-          try { await createAccountAndProfile(); } catch (e) { u.fout = String(e && e.message || e); }
+          try { await accountAanmaken(); } catch (e) { u.fout = String(e && e.message || e); }
           u.veld = $('regPassword').value; u.state = state.regPassword;
           currentUser = keep.currentUser; myMusicianId = keep.myMusicianId; hasOwnProfile = keep.hasOwnProfile;
           return u;
@@ -12073,8 +12077,9 @@ def blok_tt517_fase5():
     check("één functie voor het bannerteken op een foto, in de wizard, Je mediahoek en Onze media",
           all(f"return bannerTekenTik({a}" in t for a, t in (("state.mediaFiles[i]", wiz), ("mhMediaFiles[i]", mus), ("bmMediaFiles[i]", bnd)))
           and utl.count("async function bannerTekenTik(") == 1)
-    check("opslaan stuurt het kader mee op elke plek (wizard twee keer, mediahoek, band)",
-          wiz.count("bannerKader(m)") == 2 and mus.count("bannerKader(m)") == 1 and bnd.count("bannerKader(m)") == 1)
+    # TT-570: de wizard heeft nog één opslagweg (persistEditedProfile), was twee.
+    check("opslaan stuurt het kader mee op elke plek (wizard, mediahoek, band)",
+          wiz.count("bannerKader(m)") == 1 and mus.count("bannerKader(m)") == 1 and bnd.count("bannerKader(m)") == 1)
 
     stub_js = open(STUB, encoding="utf-8").read()
     ingelogd = stub_js + """
@@ -13618,7 +13623,7 @@ def blok_tt481():
           showView('register'); await w(60); currentUser = null;
           Object.assign(state, { regEmail: 'nieuw@talenttent.org', regPassword: 'wachtwoord', fname: 'Test', username: 'testje', city: 'Den Haag', zip: '2497AA' });
           S.signUpError = ZWAK; toastWeg(); const l0 = logs();
-          u.aanmelden = { ok: await createAccountAndProfile(), tekst: regel('regPassword'), toast: toastAan(), log: logs() - l0,
+          u.aanmelden = { ok: await accountAanmaken(), tekst: regel('regPassword'), toast: toastAan(), log: logs() - l0,
                           overlay: $('saveOverlay').classList.contains('visible') };
           delete S.signUpError; clearFieldErrors(document);
 
@@ -13700,7 +13705,7 @@ def blok_tt481():
           r["vertaal"]["zwak"] == ZWAK + "." and r["vertaal"]["bestaat"] == ACCOUNT + "."
           and r["vertaal"]["wacht"] == "Wacht op antwoord.", j)
     check("aanmelden met een te makkelijk wachtwoord: melding bij het wachtwoordveld, geen toast, geen foutlog",
-          r["aanmelden"]["ok"] is False and r["aanmelden"]["tekst"] == ZWAK and not r["aanmelden"]["toast"]
+          r["aanmelden"]["ok"] is None and r["aanmelden"]["tekst"] == ZWAK and not r["aanmelden"]["toast"]
           and r["aanmelden"]["log"] == 0 and not r["aanmelden"]["overlay"], j)
     check("de foutpagina bij opslaan gebruikt de nieuwe tekst", ACCOUNT + "." in r["overlay"], r["overlay"])
     check("nieuw wachtwoord (herstel): te makkelijk staat bij het veld, geen toast",
@@ -14490,6 +14495,168 @@ def blok_tt543():
           not re.search(r"\bdoel\b|ambitie", privacy, re.I) and "Laatst bijgewerkt: 6 november 2026" in privacy, "")
     check("geen paginafouten in blok 131", not fouten, "; ".join(fouten)[:300])
 
+
+def blok_tt570():
+    # TT-570 (P0, besluiten Ronald 06-11-2026): account en profiel zijn één
+    # handeling, bij de laatste knop, voor iedereen. Wie halverwege stopt, heeft
+    # geen account en gaat in dezelfde browser verder waar hij was. Gaat hij
+    # terug voor een fout (wachtwoord, e-mailadres), dan blijft alles staan.
+    print("\nBlok 132 — TT-570: account en profiel in één handeling, niets raakt kwijt")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten = []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844})
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(400)
+        a = page.evaluate("""async () => {
+          const S = window.TT_STUB, $ = id => document.getElementById(id), w = ms => new Promise(r => setTimeout(r, ms)), u = {};
+          localStorage.removeItem('tt_onboarding_v1');
+          showView('register'); await w(80);
+          $('fname').value = 'Kevin'; $('lname').value = ''; $('birth_date').value = '01-01-2000';
+          $('username').value = 'kevin_gitaar'; $('bio').value = 'Ik speel gitaar';
+          $('regEmail').value = 'kevin@talenttent.org'; $('regPassword').value = 'geheim123';
+          Object.assign(state, { zip: '2497AA', city: 'Den Haag' }); postcodeResolved = true;
+          usernameCheckedValue = 'kevin_gitaar'; usernameAvailable = true;
+          const voor = S.calls.length;
+          await nextStep(0); await w(50);
+          const opname = localStorage.getItem('tt_onboarding_v1') || '';
+          u.stap1 = { stap: state.currentStep, onboarding: state.onboarding,
+            auth: S.calls.slice(voor).filter(c => c.kind === 'auth').map(c => c.name),
+            rij: S.calls.slice(voor).filter(c => c.table === 'musicians' && c.op !== 'select').length,
+            opname: !!opname, mid: opname.includes('"mid"'), wachtwoord: opname.includes('geheim123'), user: currentUser };
+          Object.assign(state, { instruments: ['Gitaar'], instrumentLevels: { Gitaar: 3 }, genres: ['Rock'],
+            songs: [{ title: 'A', artist: 'X', level: null }, { title: 'B', artist: 'X', level: null }, { title: 'C', artist: 'X', level: null }] });
+          goTo(3); await w(50);
+          return u; }""")
+        check("stap 1 vanaf 16: geen account en geen profielregel, wel door naar stap 2",
+              a["stap1"]["stap"] == 1 and a["stap1"]["auth"] == [] and a["stap1"]["rij"] == 0 and a["stap1"]["user"] is None,
+              json.dumps(a))
+        check("de voortgang staat in de browser, zonder account-id en zonder wachtwoord",
+              a["stap1"]["opname"] and not a["stap1"]["mid"] and not a["stap1"]["wachtwoord"], json.dumps(a))
+
+        page.reload(wait_until="load")
+        page.wait_for_timeout(400)
+        b = page.evaluate("""async () => {
+          const S = window.TT_STUB, $ = id => document.getElementById(id), w = ms => new Promise(r => setTimeout(r, ms)), u = {};
+          const regel = id => { const e = $(id), f = e && e.closest('.field'), m = f && f.querySelector('.field-msg'); return m ? m.textContent.trim() : null; };
+          const actief = () => document.querySelector('#view-register .panel.active')?.id;
+          const blijft = () => ({ fname: $('fname').value, email: $('regEmail').value, instr: state.instruments.join(), songs: state.songs.length });
+          showView('register'); await w(80);
+          u.hervat = { stap: state.currentStep, paneel: actief(), ...blijft(), ww: $('regPassword').value };
+          // Na verversen is het wachtwoord weg: terug naar stap 1, bij het veld.
+          $('consentCheckbox').checked = true; updateSubmitProfileState();
+          const v0 = S.calls.length;
+          await submitProfile(); await w(50);
+          u.geenWw = { stap: state.currentStep, tekst: regel('regPassword'), signUp: S.calls.slice(v0).filter(c => c.name === 'signUp').length, ...blijft() };
+          // Wachtwoord invullen en weer naar het eind.
+          $('regPassword').value = 'wachtwoord'; await nextStep(0); goTo(3); await w(50);
+          // Te makkelijk wachtwoord: terug naar stap 1, alles blijft staan.
+          S.signUpError = { code: 'weak_password', status: 422, message: 'Password is known to be weak and easy to guess, please choose a different one.' };
+          await submitProfile(); await w(900);
+          const vak = $('regPassword').getBoundingClientRect();
+          u.zwak = { stap: state.currentStep, tekst: regel('regPassword'), overlay: $('saveOverlay').classList.contains('visible'),
+            inBeeld: vak.top >= 56 && vak.bottom <= innerHeight - 64, ...blijft() };
+          // Bestaand e-mailadres met een ander wachtwoord: bij het e-mailadres.
+          $('regPassword').value = 'goedgekozen99'; await nextStep(0); goTo(3);
+          S.signUpError = { message: 'User already registered' }; S.authError = { message: 'Invalid login credentials' };
+          await submitProfile(); await w(50);
+          u.bestaat = { stap: state.currentStep, tekst: regel('regEmail'), overlay: $('saveOverlay').classList.contains('visible'), ...blijft() };
+          delete S.signUpError; delete S.authError; clearFieldErrors(document);
+          // Gelukt: account, één rij met profile_complete, koppelingen in één aanroep.
+          S.data.musicians = S.data.musicians.filter(m => m.user_id !== 'u1');
+          const maak = db.from.bind(db);
+          db.from = (t) => { const q = maak(t); if (t === 'musicians') { const i = q.insert.bind(q);
+            q.insert = (v) => i(Object.assign({ id: 'mNieuw' }, v)); } return q; };
+          goTo(3);
+          const v1 = S.calls.length;
+          await submitProfile(); await w(50);
+          const na = S.calls.slice(v1);
+          const rij = S.data.musicians.find(m => m.id === 'mNieuw') || {};
+          u.klaar = { auth: na.filter(c => c.kind === 'auth').map(c => c.name),
+            inserts: na.filter(c => c.table === 'musicians' && c.op === 'insert').length,
+            rij: { user: rij.user_id, af: rij.profile_complete, naam: rij.fname },
+            koppel: na.filter(c => c.kind === 'rpc' && c.name === 'tt_save_musician_koppelingen').map(c => c.params.p_musician_id),
+            instr: (na.find(c => c.name === 'tt_save_musician_koppelingen') || { params: {} }).params.p_instruments,
+            opname: localStorage.getItem('tt_onboarding_v1'), titel: $('saveTitle').textContent, state: [state.onboarding, state.ouderRoute] };
+          // Mijn Profiel leest de koppelingen mee; de stub kent geen ingebedde select.
+          Object.assign(S.data.musicians.find(m => m.id === 'mNieuw') || {}, { musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] });
+          // Tweede poging na een halve eerste: de rij bestaat al, geen tweede rij.
+          await w(2200);
+          state.onboarding = true; $('consentCheckbox').checked = true;
+          const v2 = S.calls.length;
+          await submitProfile(); await w(50);
+          const na2 = S.calls.slice(v2);
+          u.tweede = { inserts: na2.filter(c => c.table === 'musicians' && c.op === 'insert').length,
+            updates: na2.filter(c => c.table === 'musicians' && c.op === 'update').length,
+            signUp: na2.filter(c => c.name === 'signUp').length };
+          u.weg = { banner: !!$('onboardingResumeBanner'), balk: !!$('editModeBanner'),
+            functies: ['resumeOnboarding', 'renderOnboardingResumeBanner', 'readSavedOnboarding', 'createAccountAndProfile', 'saveEditedProfile', 'hervatOuderRoute']
+              .filter(f => typeof window[f] === 'function'),
+            tekst: document.body.innerHTML.includes('Je bent nog bezig met je profiel') };
+          return u; }""")
+        jb = json.dumps(b, ensure_ascii=False)
+        check("in dezelfde browser gaat de wizard verder op de bewaarde stap, met de antwoorden ingevuld",
+              b["hervat"]["stap"] == 3 and b["hervat"]["paneel"] == "step3" and b["hervat"]["fname"] == "Kevin"
+              and b["hervat"]["email"] == "kevin@talenttent.org" and b["hervat"]["instr"] == "Gitaar" and b["hervat"]["songs"] == 3
+              and b["hervat"]["ww"] == "", jb)
+        check("na verversen ontbreekt alleen het wachtwoord: terug naar stap 1 met \"Vul je wachtwoord opnieuw in\" bij het veld, geen account (besluit Ronald)",
+              b["geenWw"]["stap"] == 0 and b["geenWw"]["tekst"] == "Vul je wachtwoord opnieuw in" and b["geenWw"]["signUp"] == 0
+              and b["geenWw"]["fname"] == "Kevin" and b["geenWw"]["instr"] == "Gitaar" and b["geenWw"]["songs"] == 3, jb)
+        check("te makkelijk wachtwoord bij de laatste knop: terug naar stap 1, het veld met de fout in beeld, alle gegevens blijven staan",
+              b["zwak"]["stap"] == 0 and b["zwak"]["tekst"] == "Dit wachtwoord is te makkelijk te raden. Kies een ander wachtwoord"
+              and not b["zwak"]["overlay"] and b["zwak"]["inBeeld"] and b["zwak"]["fname"] == "Kevin" and b["zwak"]["email"] == "kevin@talenttent.org"
+              and b["zwak"]["instr"] == "Gitaar" and b["zwak"]["songs"] == 3, jb)
+        check("bestaand e-mailadres bij de laatste knop: terug naar stap 1, fout bij het e-mailadres, alle gegevens blijven staan",
+              b["bestaat"]["stap"] == 0 and (b["bestaat"]["tekst"] or "").startswith("Je hebt al een account met dit e-mailadres")
+              and not b["bestaat"]["overlay"] and b["bestaat"]["fname"] == "Kevin" and b["bestaat"]["instr"] == "Gitaar"
+              and b["bestaat"]["songs"] == 3, jb)
+        check("Profiel aanmaken: account en inloggen, één profielregel met profile_complete, koppelingen in één aanroep",
+              b["klaar"]["auth"] == ["signUp", "signInWithPassword"] and b["klaar"]["inserts"] == 1
+              and b["klaar"]["rij"] == {"user": "u1", "af": True, "naam": "Kevin"} and b["klaar"]["koppel"] == ["mNieuw"]
+              and b["klaar"]["instr"] == [{"instrument": "Gitaar", "niveau": 3}], jb)
+        check("na Profiel aanmaken: de voortgang is gewist en 'Profiel aangemaakt!' staat in beeld",
+              b["klaar"]["opname"] is None and b["klaar"]["titel"] == "Profiel aangemaakt!" and b["klaar"]["state"] == [False, False], jb)
+        check("een tweede poging gebruikt de bestaande profielregel: geen tweede rij, geen tweede account",
+              b["tweede"]["inserts"] == 0 and b["tweede"]["updates"] == 1 and b["tweede"]["signUp"] == 0, jb)
+        check("de melding 'Je bent nog bezig met je profiel', de balk 'Verder bewerken' en de oude functies bestaan niet meer",
+              not b["weg"]["banner"] and not b["weg"]["balk"] and b["weg"]["functies"] == [] and not b["weg"]["tekst"], jb)
+
+        # Ingelogd zonder profiel (account gemaakt, de rest liep stuk): eigen opname terug, die van een ander niet.
+        c = page.evaluate("""async () => {
+          const S = window.TT_STUB, $ = id => document.getElementById(id), w = ms => new Promise(r => setTimeout(r, ms)), u = {};
+          const keep = { currentUser, myMusicianId };
+          wizardLeegmaken();
+          currentUser = { id: 'u1', email: 'kevin@talenttent.org' }; myMusicianId = null;
+          localStorage.setItem('tt_onboarding_v1', JSON.stringify({ userId: 'u7', stap: 2, fname: 'Ander' }));
+          showView('register'); await w(80);
+          u.ander = { stap: state.currentStep, fname: $('fname').value };
+          wizardLeegmaken();
+          localStorage.setItem('tt_onboarding_v1', JSON.stringify({ userId: 'u1', stap: 2, fname: 'Kevin', regEmail: 'kevin@talenttent.org' }));
+          showView('register'); await w(80);
+          u.eigen = { stap: state.currentStep, fname: $('fname').value, email: $('regEmail').value, alleenLezen: $('regEmail').readOnly,
+            ww: getComputedStyle($('regPasswordField')).display };
+          localStorage.removeItem('tt_onboarding_v1'); wizardLeegmaken();
+          currentUser = keep.currentUser; myMusicianId = keep.myMusicianId;
+          showView('about');
+          return u; }""")
+        jc = json.dumps(c, ensure_ascii=False)
+        check("ingelogd zonder profiel: de opname van een ander account wordt nooit hervat",
+              c["ander"]["stap"] == 0 and c["ander"]["fname"] == "", jc)
+        check("ingelogd zonder profiel: de eigen opname wordt hervat, het e-mailadres alleen-lezen, geen wachtwoordveld",
+              c["eigen"]["stap"] == 2 and c["eigen"]["fname"] == "Kevin" and c["eigen"]["email"] == "kevin@talenttent.org"
+              and c["eigen"]["alleenLezen"] and c["eigen"]["ww"] == "none", jc)
+        browser.close()
+    httpd.shutdown()
+    check("geen paginafouten in blok 132", not fouten, "; ".join(fouten)[:300])
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
     _csp_vangnet()
@@ -14521,6 +14688,7 @@ def main():
     blok_tt548()
     blok_onderhoud_0611()
     blok_tt543()
+    blok_tt570()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

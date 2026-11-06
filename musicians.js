@@ -747,12 +747,8 @@ async function executeAccountDeletion() {
     myMusicianId = null;
     myOwnCity = null;
     // Voorkomt dat een volgende login op ditzelfde (mogelijk nog bestaande,
-    // zie stap 5 hierboven) auth-account een oude wizard-stand terugvindt —
-    // readSavedOnboarding() matcht alleen op userId, niet op of er nog een
-    // profiel bestaat. Zonder dit zou de "Verdergaan"-banner op Mijn Profiel
-    // (of, vóór TT-210, de automatische sprong) verwijzen naar de laatst
-    // bewaarde stap van het inmiddels verwijderde profiel (gevonden
-    // 06-09-2026, Ronald: "kom ik meteen op de laatste stap: media
+    // zie stap 5 hierboven) auth-account een oude wizard-stand terugvindt
+    // (gevonden 06-09-2026, Ronald: "kom ik meteen op de laatste stap: media
     // toevoegen").
     clearOnboardingProgress();
     try { await signOut(); } catch (e) { /* sessie kan al ongeldig zijn ná stap 5 hierboven */ }

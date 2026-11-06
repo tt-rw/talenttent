@@ -11,6 +11,9 @@
 // voor 13-15-jarigen: een maat wordt in de standaard doorgevoerd, nooit per
 // scherm omzeild (projectinstructies §2 regel 11). Bijvangst: ook een
 // dertigjarige die halverwege stopt, vindt zijn werk terug.
+// TT-570 (06-11-2026, besluit Ronald): het account ontstaat niet meer na
+// stap 1, maar samen met het profiel bij de laatste knop, voor iedereen. Tot
+// dan staat alles alleen hier, net als bij route A.
 const ONBOARDING_STORAGE_KEY = 'tt_onboarding_v1';
 
 function saveOnboardingProgress() {
@@ -20,7 +23,6 @@ function saveOnboardingProgress() {
   try {
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({
       userId: currentUser?.id || null,
-      mid: editingMusicianId,
       ouderRoute: !!state.ouderRoute,
       regEmail: state.regEmail || '',
       akkoord: !!document.getElementById('consentCheckbox')?.checked,
@@ -48,9 +50,8 @@ function clearOnboardingProgress() {
   try { localStorage.removeItem(ONBOARDING_STORAGE_KEY); } catch (e) { /* zie boven */ }
 }
 
-// Vult de wizard-velden op basis van de huidige `state` — gedeeld door
-// editMyProfile() (state komt uit de database) en resumeOnboarding()
-// (state komt terug uit sessionStorage), zodat beide altijd hetzelfde doen.
+// Vult de wizard-velden op basis van de huidige `state`, bij het hervatten
+// van een registratie (hervatRegistratie()).
 function populateWizardFieldsFromState() {
   document.getElementById('fname').value = state.fname;
   document.getElementById('lname').value = state.lname;
@@ -94,85 +95,52 @@ function populateWizardFieldsFromState() {
   }
 }
 
-// TT-210 (06-09-2026): vervangt Route B (TT-09). Was: bij elke login/refresh
-// automatisch de wizard openen op de bewaarde stap, ongeacht welke pagina de
-// gebruiker probeerde te bereiken — Ronald (die de app goed kent) begreep zelf
-// niet waarom dat gebeurde. Nu: sessionStorage blijft als vangnet tegen
-// dataverlies, maar het openen van de wizard is een bewuste klik op Mijn
-// Profiel, geen automatische omleiding. Een refresh laat je voortaan gewoon
-// op de pagina staan waar je was.
-
-// Pure check, geen neveneffecten — leest alleen, verandert niets. Gebruikt
-// door zowel de banner-render (loadMyProfile) als resumeOnboarding() zelf.
-function readSavedOnboarding() {
-  const saved = leesOpgeslagenVoortgang();
-  if (!saved || !saved.mid || !currentUser || saved.userId !== currentUser.id) return null;
-  return saved;
-}
-
-// Kale lezer, gedeeld door beide routes.
+// Kale lezer.
 function leesOpgeslagenVoortgang() {
   try { return JSON.parse(localStorage.getItem(ONBOARDING_STORAGE_KEY) || 'null'); }
   catch (e) { return null; }
 }
 
-// TT-42: hetzelfde, maar voor route A — er is dan nog geen account en dus
-// geen mid en geen ingelogde gebruiker.
-function leesOuderVoortgang() {
+// TT-570: de momentopname van een registratie die nog loopt. Een opname met
+// `mid` is van vóór TT-570 (account na stap 1) en telt niet meer. Bestaat er
+// sinds de laatste knop wél een account maar geen profiel (de rest liep stuk),
+// dan hoort de opname bij precies dat account: een ander account ziet hem nooit.
+function leesRegistratieVoortgang() {
   const saved = leesOpgeslagenVoortgang();
-  if (!saved || !saved.ouderRoute || saved.mid || currentUser) return null;
+  if (!saved || saved.mid) return null;
+  if (saved.userId && (!currentUser || saved.userId !== currentUser.id)) return null;
   return saved;
 }
 
-// Toont, alleen als er echt iets klaarstaat, een banner op Mijn Profiel met
-// een expliciete "Verdergaan"-knop. Geen banner? Dan blijft het element leeg
-// en onzichtbaar — precies zoals bandInvitesBanner ernaast.
-function renderOnboardingResumeBanner() {
-  const el = document.getElementById('onboardingResumeBanner');
-  if (!el) return;
-  const saved = readSavedOnboarding();
-  if (!saved) { el.innerHTML = ''; return; }
-  el.innerHTML = `
-    <div class="melding">
-      <p class="melding-kop">Je bent nog bezig met je profiel</p>
-      <p class="melding-tekst">Je kunt verdergaan waar je was gebleven.</p>
-      <button class="btn btn-primary" onclick="resumeOnboarding()">Verdergaan</button>
-    </div>`;
+// TT-42: route A — er is dan nog geen account en geen ingelogde gebruiker.
+function leesOuderVoortgang() {
+  const saved = leesRegistratieVoortgang();
+  return saved && saved.ouderRoute && !currentUser ? saved : null;
 }
 
-// Voorheen tryResumeOnboarding() — liep automatisch bij elke login/refresh.
-// Nu alleen op een bewuste klik op de "Verdergaan"-knop hierboven.
-function resumeOnboarding() {
-  const saved = readSavedOnboarding();
-  if (!saved) return;
-
-  editingMusicianId = saved.mid;
-  myMusicianId = saved.mid;
-  state.onboarding = true;
-  vulStateUitVoortgang(saved);
-
-  showView('register');
-  goTo(opgeslagenStap(saved) || 1);
-  populateWizardFieldsFromState();
-  document.getElementById('submitProfileBtn').textContent = 'Profiel aanmaken';
-}
-
-// TT-42 — route A hervatten. Draait bij het openen van de wizard zonder
-// ingelogde gebruiker. Het kind komt hier terug na de mail van zijn ouder, of
+// Een registratie hervatten. Draait bij het openen van de wizard. TT-570:
+// voor iedereen, niet alleen route A: wie halverwege stopt, gaat in deze
+// browser verder waar hij was. Loopt de registratie in dit tabblad al
+// (state staat aan), dan blijft alles zoals het is: wat nog niet bewaard is,
+// mag niet worden overschreven door de opname.
+// TT-42: het kind van route A komt hier terug na de mail van zijn ouder, of
 // gewoon omdat hij de app weer opent terwijl hij nog wacht.
 // Geeft true als er iets is hervat.
-function hervatOuderRoute() {
-  const saved = leesOuderVoortgang();
-  if (!saved) return false;
+function hervatRegistratie() {
+  if (state.onboarding || state.ouderRoute) return false;
+  const saved = leesRegistratieVoortgang();
+  if (!saved || (saved.ouderRoute && currentUser)) return false;
 
-  state.ouderRoute = true;
+  state.ouderRoute = !!saved.ouderRoute;
+  state.onboarding = !saved.ouderRoute;
   state.regEmail = saved.regEmail || '';
   vulStateUitVoortgang(saved);
   populateWizardFieldsFromState();
   const emailVeld = document.getElementById('regEmail');
-  if (emailVeld) emailVeld.value = state.regEmail;
+  if (emailVeld && !currentUser) emailVeld.value = state.regEmail;
   const vinkje = document.getElementById('consentCheckbox');
   if (vinkje && saved.akkoord) { vinkje.checked = true; updateSubmitProfileState(); }
+  if (!state.ouderRoute) { goTo(opgeslagenStap(saved)); return true; }
 
   const aanvraag = ouderAanvraagLezen();
   if (!aanvraag) { goTo(opgeslagenStap(saved)); ouderLeeftijdsregel(); return true; }
@@ -264,7 +232,6 @@ function voortgangsBalkHTML(pct, id) {
 
 async function loadMyProfile(opties) {
   if (!currentUser) return;
-  renderOnboardingResumeBanner();
   renderEmailBevestigBanner(); // TT-336
   const el = document.getElementById('myProfileContent');
   // Tabwissel: staat er al een geladen profiel van deze gebruiker, laat dat staan tot de nieuwe er is.
@@ -417,22 +384,11 @@ function updateSubmitProfileState() {
   saveOnboardingProgress();
 }
 
-// TT-121 (22-08-2026): opslaan per stap. Schrijft het VOLLEDIGE profiel,
-// net zoals het einde van de wizard al deed — bij het bewerken staat
-// state altijd vol met alle velden, ook van stappen die deze keer niet
-// zijn bezocht (geladen door editMyProfile() bij het openen). Een save
-// vanaf om het even welke stap is daarom veilig.
-// TT-137 (23-08-2026): opgesplitst in een pure schrijffunctie
-// (persistEditedProfile, geen UI) en twee dunne lagen eromheen —
-// saveEditedProfile() (met spinner/succesmelding, navigeert daarna naar
-// Mijn Profiel — de expliciete "Opslaan"-knop) en silentlySaveEditIfNeeded()
-// (stil, blijft op de huidige stap — aangeroepen vanuit nextStep()/
-// prevStep()). Reden: vóór deze wijziging sloeg "Verder →" tijdens het
-// bewerken van een bestaand profiel helemaal niets op — alleen "Opslaan"
-// deed dat. Een wijziging + "Verder →" + tabblad sluiten was dan stil
-// verlies, zonder enige waarschuwing.
-async function persistEditedProfile() {
-  const mid = editingMusicianId;
+// Schrijft het hele profiel weg: de rij en, in één databasefunctie, de
+// instrumenten, genres, nummers en media. TT-570: de laatste stap van de
+// wizard, voor elke registratie. Ook bij een tweede poging nadat de eerste
+// halverwege stukliep: dan bestaat de rij al en klopt het resultaat toch.
+async function persistEditedProfile(mid) {
   if (!mid) return;
   const { error: uErr } = rijenGeraakt(await db.from('musicians').update({
     fname:            state.fname,
@@ -446,7 +402,7 @@ async function persistEditedProfile() {
     avatar_url:       state.avatarUrl || null,
     ...wazigVeld(state.avatarUrl),
     city_source:      state.citySource || 'pdok',
-    profile_complete: true, // TT-09: dit is de definitieve klik op "Profiel aanmaken"/"Wijzigingen opslaan"/"Opslaan"
+    profile_complete: true, // de klik op "Profiel aanmaken". Bij 16+ wacht de database eerst op de bevestiging (TT-336)
   }).eq('id', mid).select('id'));
   if (uErr) throw new Error(uErr.message);
   opslagOpruimen('avatars', currentUser && currentUser.id, [state.avatarUrl]);
@@ -476,37 +432,6 @@ async function persistEditedProfile() {
   opslagOpruimen('media', currentUser && currentUser.id, fileMedia.map(m => m.url));
 
   state.savedId = mid;
-}
-
-async function saveEditedProfile() {
-  if (!editingMusicianId) return; // defensief, hoort niet voor te komen
-  // TT-336 (26-09-2026): bij 16+ eindigt "Profiel aanmaken" hier, niet in de
-  // rest van submitProfile() — het account en de rij bestaan al sinds stap 1.
-  // state.onboarding zegt dat dit de afronding van een nieuwe registratie is.
-  // Tot TT-336 toonde de app dan "Profiel bijgewerkt!" en bleef de bewaarde
-  // voortgang staan, met "Je bent nog bezig met je profiel" op Mijn Profiel.
-  const nieuw = !!state.onboarding;
-  showSaving();
-  myOwnCity = null; // eigen plaats kan net gewijzigd zijn — cache opnieuw laten opbouwen
-  try {
-    await persistEditedProfile();
-    const mid = editingMusicianId;
-    editingMusicianId = null;
-    if (nieuw) {
-      clearOnboardingProgress();
-      state.onboarding = false;
-      // De database houdt het profiel onzichtbaar tot de klik in de mail.
-      if (await profielWachtOpBevestiging(mid)) { await bevestigingStarten(); return; }
-      showSaveSuccess(false);
-      return;
-    }
-    // isEdit=true: toont "Profiel bijgewerkt!" en gaat na 1,2s naar Mijn
-    // Profiel — ongeacht vanaf welke stap er is opgeslagen.
-    showSaveSuccess(true);
-  } catch (err) {
-    logCaught('saveEditedProfile', err);
-    showSaveError(err.message, 'je profiel opslaan');
-  }
 }
 
 // ─── TT-336: het e-mailadres bevestigen (16 jaar en ouder) ──────────────────
@@ -744,21 +669,10 @@ async function bevestigPaginaOpenen(code) {
   }
 }
 
-// TT-168-overgang (02-09-2026): saveEditedProfileHere() en
-// silentlySaveEditIfNeeded() zijn vervallen — die hoorden bij het
-// tussentijds opslaan tijdens het bewerken van een bestaand profiel via de
-// wizard (TT-121/TT-137). Bewerken loopt nu via het tegeloverzicht, elke
-// tegel met een eigen smalle opslaanfunctie (zie de tegelschermen
-// verderop). saveEditedProfile() hieronder blijft wél bestaan — dat is de
-// afrondende opslag van de wizard zelf (submitProfile()), ook bij een
-// gloednieuwe registratie, zodra editingMusicianId (na stap 1) gezet is.
-
+// TT-570 (06-11-2026, besluit Ronald): account en profiel zijn één handeling,
+// bij deze knop, voor iedereen. Daarvoor bestaat er geen account, dus kan
+// niemand halverwege vastzitten.
 async function submitProfile() {
-  // TT-121 (22-08-2026): bewerken van een bestaand profiel loopt voortaan
-  // altijd via saveEditedProfile() — vanaf deze laatste stap ("Wijzigingen
-  // opslaan") net zo goed als vanaf een tussenstap ("Opslaan").
-  if (editingMusicianId) { await saveEditedProfile(); return; }
-
   // Defensieve check naast de disabled-knop: een nieuw account mag nooit
   // aangemaakt worden zonder aangevinkt akkoord.
   if (!document.getElementById('consentCheckbox')?.checked) {
@@ -780,42 +694,27 @@ async function submitProfile() {
     return;
   }
 
+  // TT-570: het wachtwoord staat bewust niet in de browser. Na verversen is
+  // het dus weg: terug naar stap 1, de fout bij het veld, de rest blijft staan.
+  // De tekst zegt waarom je terug bent (besluit Ronald, 06-11-2026).
+  if (!currentUser && !state.ouderRoute && !state.regPassword) {
+    terugNaarVeld('regPassword', 'Vul je wachtwoord opnieuw in');
+    return;
+  }
+
   showSaving();
   myOwnCity = null; // eigen plaats kan net gewijzigd zijn — cache opnieuw laten opbouwen
+  onboardingInFlight = true; // zie core.js: het inloggen hieronder stuurt niemand weg
 
   try {
     let userId = currentUser?.id || null;
-    let mid;
-
-    // Defensieve terugvaloptie: normaal gesproken bestaat het account/profiel
-    // hier al (aangemaakt in createAccountAndProfile() na stap 1, TT-09).
-    // Deze tak wordt in de gewone flow niet meer bereikt, maar blijft staan
-    // voor het geval editingMusicianId onverhoopt ontbreekt.
-    // 1. Account aanmaken
     if (!userId) {
-      const { data: authData, error: authErr } = await db.auth.signUp({
-        email:    state.regEmail,
-        password: state.regPassword,
-        options:  { data: { fname: state.fname } }
-      });
-      if (authErr) throw new Error(authErr.message);
-
-      // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief
-      const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
-        email:    state.regEmail,
-        password: state.regPassword
-      });
-      if (signInErr) throw new Error(signInErr.message);
-
-      userId = signInData.user?.id || authData.user?.id || null;
-      currentUser = signInData.user || authData.user;
-      if (!userId) throw eigenFout('Je account is aangemaakt, maar inloggen lukte niet. Ga naar Inloggen en log in met je e-mailadres en wachtwoord.');
+      userId = await accountAanmaken();
+      if (!userId) return; // de fout staat al bij het veld
     }
 
-    // TT-02: zelfde late avatar-upload als in createAccountAndProfile() —
-    // pas nu bestaat er zeker een user_id/sessie om naar Storage te mogen
-    // schrijven. Alleen relevant als er nog een niet-geüploade state.avatarFile
-    // hangt (in de normale flow is dat hier allang gebeurd).
+    // TT-02: pas nu bestaat er een user_id/sessie om naar Storage te mogen
+    // schrijven. Een mislukte upload houdt het profiel niet tegen.
     if (state.avatarFile) {
       try {
         const { url, path } = await uploadAvatarFile(state.avatarFile, userId);
@@ -829,7 +728,7 @@ async function submitProfile() {
       state.avatarFile = null;
     }
 
-    // TT-42 (route A): media die tijdens het wachten is uitgekozen, kon toen
+    // TT-42, TT-570: media die tijdens de wizard is uitgekozen, kon toen
     // nergens heen — er was nog geen account. Nu wel. Mislukt een upload, dan
     // blokkeert dat het profiel niet; dat bestand valt eruit en de gebruiker
     // kan het later alsnog toevoegen via Profiel bewerken.
@@ -846,116 +745,113 @@ async function submitProfile() {
       }
     }
 
-    // 2. Hoofdprofiel opslaan
-    // Bugfix 23-08-2026: zelfde reden als in createAccountAndProfile()
-    // hierboven — birth_date zit in deze insert, een kale .select() zou
-    // daardoor falen sinds B-01 tweede stap. Alleen 'id' is nodig (mid
-    // hieronder).
-    const { data: musician, error: mErr } = await db
-      .from('musicians')
-      .insert({
-        fname:            state.fname,
-        lname:            state.lname || null,
-        username:         state.username,
-        birth_date:       toISODate(state.birth_date),
-        city:             state.city,
-        zip:              state.zip || null,
-        bio:              state.bio || null,
-        repertoire_type:  state.repertoireType || null,
-        profile_color:    DEFAULT_PROFILE_COLOR,
-        avatar_url:       state.avatarUrl || null,
-        ...wazigVeld(state.avatarUrl),
-        city_source:      state.citySource || 'pdok',
-        user_id:          userId,
-        profile_complete: true,
-      })
-      .select('id')
-      .single();
-
-    if (mErr) throw new Error(mErr.message);
-    mid = musician.id;
-    opslagOpruimen('avatars', userId, [state.avatarUrl]);
-
-    // 3. Instrumenten (TT-51: niveau 1-5 gaat mee, gevalideerd bij stap 1 —
-    // hier defensief || null voor het geval deze functie ooit buiten de
-    // normale wizard-flow wordt aangeroepen zonder die validatie)
-    if (state.instruments.length) {
-      const { error: iErr } = await db.from('musician_instruments').insert(
-        state.instruments.map(instrument => ({ musician_id: mid, instrument, niveau: state.instrumentLevels[instrument] || null }))
-      );
-      if (iErr) throw new Error(iErr.message);
+    // De rij. Bestaat hij al, dan liep een eerdere poging na dit punt stuk:
+    // die rij gebruiken, één rij per account (musicians_user_id_idx).
+    // Bugfix 23-08-2026: alleen 'id' terugvragen; birth_date mag authenticated
+    // niet lezen, een kale .select() zou falen.
+    const { data: bestaand, error: bestaatFout } = await db.from('musicians').select('id').eq('user_id', userId).single();
+    if (bestaatFout && bestaatFout.code !== 'PGRST116') throw bestaatFout; // TT-561: storing is geen "geen profiel"
+    let mid = bestaand?.id || null;
+    if (!mid) {
+      const { data: musician, error: mErr } = await db
+        .from('musicians')
+        .insert({
+          fname:            state.fname,
+          lname:            state.lname || null,
+          username:         state.username,
+          birth_date:       toISODate(state.birth_date),
+          city:             state.city,
+          zip:              state.zip || null,
+          bio:              state.bio || null,
+          repertoire_type:  state.repertoireType || null,
+          profile_color:    DEFAULT_PROFILE_COLOR,
+          avatar_url:       state.avatarUrl || null,
+          ...wazigVeld(state.avatarUrl),
+          city_source:      state.citySource || 'pdok',
+          user_id:          userId,
+          profile_complete: true,
+        })
+        .select('id')
+        .single();
+      if (mErr) throw new Error(mErr.message);
+      mid = musician.id;
     }
+    myMusicianId = mid;
 
-    // 4. Genres
-    if (state.genres.length) {
-      const { error: gErr } = await db.from('musician_genres').insert(
-        state.genres.map(genre => ({ musician_id: mid, genre }))
-      );
-      if (gErr) throw new Error(gErr.message);
-    }
-
-    // 5. Repertoire
-    if (state.songs.length) {
-      const { error: sErr } = await db.from('musician_songs').insert(
-        state.songs.map(s => ({
-          musician_id:   mid,
-          song_title:    s.title,
-          song_artist:   s.artist,
-          mastery_level: s.level,
-        }))
-      );
-      if (sErr) throw new Error(sErr.message);
-    }
-
-    // 6. Media links
-    const linkMedia = state.mediaLinks
-      .filter(l => l.url.trim())
-      .map(l => ({
-        musician_id: mid,
-        media_type:  'link',
-        url:         l.url,
-        platform:    detectPlatform(l.url),
-        in_banner:   !!l.inBanner,
-      }));
-
-    if (linkMedia.length) {
-      const { error: lErr } = await db.from('musician_media').insert(linkMedia);
-      if (lErr) throw new Error(lErr.message);
-    }
-
-    // 7. Media-bestanden (foto's/video's, TT-02) — alleen bestanden die
-    // daadwerkelijk klaar zijn met uploaden; een blob-URL zou na deze sessie
-    // toch niets meer voorstellen, dus die worden overgeslagen.
-    const fileMedia = state.mediaFiles
-      .filter(m => m.url && !m.uploading && !m.url.startsWith('blob:'))
-      .map(m => ({
-        musician_id: mid,
-        media_type:  m.type,
-        url:         m.url,
-        in_banner:   !!m.inBanner,
-        uitsnede:    bannerKader(m),
-        wazig:       wazigVoor(m.url),
-      }));
-    if (fileMedia.length) {
-      const { error: fErr } = await db.from('musician_media').insert(fileMedia);
-      if (fErr) throw new Error(fErr.message);
-    }
-
-    state.savedId = mid;
-
-    // TT-09: "Welkom!" hoort bij het écht afronden van de allereerste keer
-    // (state.onboarding), niet bij het technische onderscheid insert/update.
-    if (state.onboarding) { clearOnboardingProgress(); state.onboarding = false; }
-    // TT-42: bij route A stond de hele wizard lokaal. Nu het profiel er staat,
-    // hoort daar niets meer van in de browser achter te blijven.
-    if (state.ouderRoute) { clearOnboardingProgress(); state.ouderRoute = false; }
-    editingMusicianId = null;
-    showSaveSuccess(false);
+    // Instrumenten, genres, nummers en media in één transactie (TT-281).
+    await persistEditedProfile(mid);
+    // Nu het profiel er staat, hoort er niets meer van in de browser.
+    clearOnboardingProgress();
+    state.onboarding = false;
+    state.ouderRoute = false;
+    // TT-336: bij 16+ houdt de database het profiel onzichtbaar tot de klik in de mail.
+    if (await profielWachtOpBevestiging(mid)) { await bevestigingStarten(); return; }
+    showSaveSuccess();
 
   } catch (err) {
     logCaught('submitProfile', err);
     showSaveError(err.message, 'je profiel aanmaken');
+  } finally {
+    onboardingInFlight = false;
   }
+}
+
+// TT-570: maakt het account aan en logt in. Geeft het id, of null als de fout
+// bij een veld staat. Zo'n fout brengt de gebruiker terug naar dat veld; alles
+// wat hij invulde, blijft staan (eis Ronald, 06-11-2026).
+async function accountAanmaken() {
+  const { data: authData, error: authErr } = await db.auth.signUp({
+    email:    state.regEmail,
+    password: state.regPassword,
+    options:  { data: { fname: state.fname } }
+  });
+  // TT-481: een te makkelijk wachtwoord hoort bij het veld. Geen storing,
+  // dus geen logregel.
+  if (authErr && isZwakWachtwoordFout(authErr)) { terugNaarVeld('regPassword', TEKST_ZWAK_WACHTWOORD); return null; }
+  // 22-08-2026 (P0, live gemeld door Ronald): een eerdere poging met dit
+  // e-mailadres kan het account al hebben gemaakt, ook als de rest toen niet
+  // lukte. Bij precies die melding inloggen met de ingevulde gegevens.
+  const alAccount = !!authErr && /already registered|already exists/i.test(authErr.message || '');
+  if (authErr && !alAccount) throw new Error(authErr.message);
+
+  // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief. Dit
+  // activeert ook onAuthStateChange (SIGNED_IN); onboardingInFlight voorkomt
+  // dat die de gebruiker voortijdig naar Mijn Profiel stuurt.
+  const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
+    email: state.regEmail, password: state.regPassword
+  });
+  if (signInErr) {
+    // Een ander wachtwoord bij een bestaand account (TT-444): bij het
+    // e-mailadres zelf. Route A vroeg het e-mailadres al na bij de aanvraag.
+    if (alAccount && !state.ouderRoute
+        && /invalid login credentials|invalid_credentials|invalid grant/i.test(signInErr.message || '')) {
+      terugNaarVeld('regEmail', TEKST_ACCOUNT_BESTAAT);
+      return null;
+    }
+    throw new Error(signInErr.message);
+  }
+  const authUser = signInData.user || authData?.user || null;
+  if (!authUser?.id) throw eigenFout('Je account is aangemaakt, maar inloggen lukte niet. Ga naar Inloggen en log in met je e-mailadres en wachtwoord.');
+  currentUser = authUser;
+
+  // 11-10-2026: het account bestaat, dus het wachtwoordveld hoeft niets meer
+  // te bevatten. Bleef het gevuld, dan bood Chrome later midden in de app
+  // aan het wachtwoord op te slaan.
+  const regPwVeld = document.getElementById('regPassword');
+  if (regPwVeld) regPwVeld.value = '';
+  // De opname hoort nu bij dit account: liep de rest stuk, dan vindt hij na
+  // inloggen zijn antwoorden terug (leesRegistratieVoortgang()).
+  saveOnboardingProgress();
+  return authUser.id;
+}
+
+// TT-570: terug naar het veld met de fout. Route A heeft het wachtwoord op
+// het laatste scherm, niet in stap 1.
+function terugNaarVeld(id, tekst) {
+  document.getElementById('saveOverlay').classList.remove('visible');
+  if (state.ouderRoute) { setFieldError(document.getElementById('ouderWachtwoordVeld'), tekst); return; }
+  goTo(0);
+  showFieldErrors([[id, tekst]]);
 }
 
 // ─── State ───────────────────────────────────────────────────────────────────
@@ -1096,10 +992,6 @@ function selectRepertoireType(el, val) {
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
 
-// Voorkomt dat een dubbele klik tijdens het aanmaken van het account (korte
-// wachttijd voor signUp+signIn+insert) per ongeluk twee accounts aanmaakt.
-let creatingAccount = false;
-
 async function nextStep(from) {
   if (from === 0) {
     state.fname      = document.getElementById('fname').value.trim();
@@ -1108,7 +1000,7 @@ async function nextStep(from) {
     state.bio        = document.getElementById('bio').value.trim();
     state.username   = document.getElementById('username').value.trim();
 
-    if (!editingMusicianId) {
+    if (!currentUser) {
       state.regEmail    = document.getElementById('regEmail').value.trim();
       state.regPassword = document.getElementById('regPassword').value;
     }
@@ -1166,7 +1058,7 @@ async function nextStep(from) {
       fouten.push(['username', 'Onder de 16 jaar moet de gebruikersnaam anders zijn dan je voornaam']);
     }
 
-    if (!editingMusicianId) {
+    if (!currentUser) {
       // TT-258 (12-09-2026): het formaat werd hier helemaal niet gecontroleerd
       // — alleen of het veld leeg was. "testeremail" ging naar Supabase, en
       // diens antwoord raakte geen enkele regel in friendlyErrorMessage(). De
@@ -1211,32 +1103,26 @@ async function nextStep(from) {
       return;
     }
 
-    if (!editingMusicianId) {
-      // TT-42 (route A, besluit Ronald 22-09-2026): is de gebruiker 13, 14 of
-      // 15, dan ontstaat hier géén account en géén profielregel. Er gaat eerst
-      // een mailtje naar zijn ouder; alles wat hij invult blijft zolang in zijn
-      // eigen browser staan. Het account ontstaat pas op het laatste scherm,
-      // na de goedkeuring (zie ouder.js en submitProfile()).
-      if (ouderToestemmingNodig(leeftijd)) {
-        state.ouderRoute = true;
-        saveOnboardingProgress();
-        // Loopt er al een goedgekeurde aanvraag? Dan hoeft hij niets meer te
-        // vragen en gaat hij gewoon verder met zijn profiel.
-        const lopend = ouderAanvraagLezen();
-        if (lopend && lopend.stand !== 'geweigerd' && lopend.stand !== 'verlopen') { goTo(1); return; }
-        ouderStapTonen();
-        return;
-      }
-      state.ouderRoute = false;
-      // TT-09: account + minimaal profiel ontstaan al hier, i.p.v. pas bij de
-      // laatste stap. De rest van de wizard wordt daardoor een aanvulling op
-      // een al bestaand (nog niet "af") profiel — zie createAccountAndProfile().
-      if (creatingAccount) return;
-      creatingAccount = true;
-      const ok = await createAccountAndProfile();
-      creatingAccount = false;
-      if (!ok) return;
+    // TT-42 (route A, besluit Ronald 22-09-2026): is de gebruiker 13, 14 of
+    // 15, dan ontstaat hier géén account en géén profielregel. Er gaat eerst
+    // een mailtje naar zijn ouder; alles wat hij invult blijft zolang in zijn
+    // eigen browser staan. Het account ontstaat pas op het laatste scherm,
+    // na de goedkeuring (zie ouder.js en submitProfile()).
+    if (ouderToestemmingNodig(leeftijd)) {
+      state.ouderRoute = true;
+      state.onboarding = false;
+      saveOnboardingProgress();
+      // Loopt er al een goedgekeurde aanvraag? Dan hoeft hij niets meer te
+      // vragen en gaat hij gewoon verder met zijn profiel.
+      const lopend = ouderAanvraagLezen();
+      if (lopend && lopend.stand !== 'geweigerd' && lopend.stand !== 'verlopen') { goTo(1); return; }
+      ouderStapTonen();
+      return;
     }
+    state.ouderRoute = false;
+    // TT-570 (besluit Ronald, 06-11-2026): ook vanaf 16 ontstaat hier geen
+    // account meer. Alles blijft in de browser tot "Profiel aanmaken".
+    state.onboarding = true;
   }
   if (from === 1) {
     // TT-U09 (12-08-2026): niveau blokkeert stap 2 niet meer. "Welk niveau
@@ -1257,178 +1143,6 @@ async function nextStep(from) {
   // optioneel (V-23). TT-543 (06-11-2026): de setlist is stap 3 (index 2).
   if (from === 2 && showFieldErrors(nummersTekortFouten())) return;
   goTo(from + 1);
-}
-
-// TT-09: maakt het account (auth) + een minimaal profiel aan zodra iemand
-// stap 1 (Aanmelden) afrondt. Het profiel telt vanaf hier al mee als
-// "bestaand" voor de rest van de wizard (update i.p.v. insert), maar wordt
-// pas zichtbaar voor anderen zodra profile_complete op true wordt gezet —
-// dat gebeurt alleen bij een geslaagde klik op de allerlaatste knop
-// "Profiel aanmaken" (zie submitProfile()). Stopt iemand hiertussen, dan
-// blijft het profiel permanent onzichtbaar voor anderen (geen "lege profielen").
-async function createAccountAndProfile() {
-  showSaving('Account aanmaken...', 'Heel even geduld, dit duurt maar een paar seconden.');
-  onboardingInFlight = true;
-  try {
-    const { data: authData, error: authErr } = await db.auth.signUp({
-      email:    state.regEmail,
-      password: state.regPassword,
-      options:  { data: { fname: state.fname } }
-    });
-    // 22-08-2026 (P0, live gemeld door Ronald): een eerdere poging met
-    // hetzelfde e-mailadres kan het inlogaccount al hebben aangemaakt, ook
-    // als de rest toen niet afrondde (zie hieronder, "bestaat er al een
-    // profiel?"). Zonder dit liep de gebruiker dan vast op "al
-    // geregistreerd", met geen enkele weg vooruit — ook niet bij een nieuwe,
-    // verse poging. Nu: bij precies díe foutmelding gewoon inloggen met de
-    // zojuist ingevulde gegevens, en normaal verdergaan.
-    let authUser = authData?.user || null;
-    if (authErr) {
-      if (/already registered|already exists/i.test(authErr.message)) {
-        const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
-          email: state.regEmail, password: state.regPassword
-        });
-        if (signInErr) {
-          // Een ander wachtwoord bij een bestaand account: geen herstelbare
-          // situatie, de gebruiker kiest zelf. Dat staat bij het e-mailadres
-          // zelf, niet in een melding bovenin (TT-444, bevinding Ronald
-          // 09-10-2026: "Er ging iets mis" bij een bestaand e-mailadres).
-          // Een andere fout (te veel pogingen, geen verbinding) gaat gewoon
-          // door naar friendlyErrorMessage().
-          if (/invalid login credentials|invalid_credentials|invalid grant/i.test(signInErr.message || '')) {
-            document.getElementById('saveOverlay').classList.remove('visible');
-            showFieldErrors([['regEmail', TEKST_ACCOUNT_BESTAAT]]);
-            return false;
-          }
-          throw signInErr;
-        }
-        authUser = signInData.user;
-      } else {
-        throw new Error(authErr.message);
-      }
-    } else {
-      // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief.
-      // Let op: dit activeert zelf ook de onAuthStateChange-listener
-      // (SIGNED_IN) — de onboardingInFlight-vlag hierboven voorkomt dat die
-      // daardoor de gebruiker voortijdig naar Mijn Profiel stuurt.
-      const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
-        email: state.regEmail, password: state.regPassword
-      });
-      if (signInErr) throw new Error(signInErr.message);
-      authUser = signInData.user || authUser;
-    }
-
-    const userId = authUser?.id || null;
-    if (!userId) throw eigenFout('Je account is aangemaakt, maar inloggen lukte niet. Ga naar Inloggen en log in met je e-mailadres en wachtwoord.');
-    currentUser = authUser;
-
-    // 11-10-2026: het account bestaat, dus het wachtwoordveld hoeft niets meer
-    // te bevatten. Bleef het gevuld (verborgen, in een volgende stap), dan zag
-    // Chrome bij een latere netwerkaanroep, zoals een klik op een nummer, een
-    // aanmelding en bood hij het wachtwoord opslaan midden in de wizard aan.
-    // Het wachtwoord zelf blijft in state.regPassword, alleen het veld wordt leeg.
-    const regPwVeld = document.getElementById('regPassword');
-    if (regPwVeld) regPwVeld.value = '';
-
-    // Bestaat er al een profiel bij dit account? Dat kan als een eerdere
-    // poging wél het account maakte én het profiel, maar de gebruiker
-    // (bijv. door een trage/onduidelijke reactie op het scherm) daarna
-    // toch nog eens op "Verder" drukte. Dan dat bestaande profiel gewoon
-    // overnemen, in plaats van een tweede rij te proberen aan te maken —
-    // dat zou stuklopen op de unieke regel per account (musicians_user_id_idx).
-    const { data: existingProfile, error: bestaatFout } = await db.from('musicians').select('id').eq('user_id', userId).single();
-    if (bestaatFout && bestaatFout.code !== 'PGRST116') throw bestaatFout; // TT-561: storing is geen "geen profiel"
-    if (existingProfile?.id) {
-      editingMusicianId = existingProfile.id;
-      myMusicianId = existingProfile.id;
-      state.onboarding = true;
-      document.getElementById('saveOverlay').classList.remove('visible');
-      showToast('Je had hier al een profiel — we gaan gewoon verder.');
-      return true;
-    }
-
-    // TT-02: pas nu bestaat er een user_id/sessie om naar Storage te mogen
-    // schrijven, dus een bij stap 1 gekozen profielfoto wordt pas hier echt
-    // geüpload — niet bij het selecteren van het bestand zelf. Een mislukte
-    // upload blokkeert het aanmaken van het account niet; de gebruiker kan
-    // de foto later alsnog toevoegen via "Profiel bewerken".
-    if (state.avatarFile) {
-      try {
-        const { url, path } = await uploadAvatarFile(state.avatarFile, userId);
-        state.avatarUrl = url;
-        state.avatarPath = path;
-      } catch (e) {
-        logCaught('createAccountAndProfile', e);
-        showToast('Account aangemaakt, maar de profielfoto kon niet worden geüpload. Voeg de foto later toe via Profiel bewerken.');
-        state.avatarUrl = null;
-      }
-      state.avatarFile = null;
-    }
-
-    const musicianRow = {
-      fname:            state.fname,
-      lname:            state.lname || null,
-      username:         state.username,
-      birth_date:       toISODate(state.birth_date),
-      city:             state.city,
-      zip:              state.zip || null,
-      bio:              state.bio || null,
-      profile_color:    DEFAULT_PROFILE_COLOR,
-      avatar_url:       state.avatarUrl || null,
-      ...wazigVeld(state.avatarUrl),
-      user_id:          userId,
-      profile_complete: false,
-      city_source:      state.citySource || 'pdok',
-    };
-
-    // 22-08-2026 (P0, live gemeld door Ronald): meermaals leidde precies deze
-    // schrijfactie tot een rechtenfout, direct na signInWithPassword() — maar
-    // niet elke keer (één van de geteste accounts kreeg wél een profiel). Dat
-    // wijst niet op een structureel verkeerde regel (die zou altijd falen),
-    // maar op een moment vlak na het inloggen waarop de nieuwe sessie soms
-    // nog niet overal is doorgekomen. Daarom nu één automatische herkansing
-    // ná een korte pauze, in plaats van de gebruiker terug te sturen naar
-    // stap 1 — die had op dat moment allang een geldig, ingelogd account.
-    let musician, mErr;
-    // Bugfix 23-08-2026 (P0, gemeld door Ronald: "inloggen/profiel aanmaken
-    // is stuk"): een kale .select() na insert() vraagt impliciet ALLE
-    // kolommen van de nieuwe rij terug. musicianRow bevat birth_date. Sinds
-    // B-01 tweede stap (18-08-2026) mag authenticated die kolom niet meer
-    // lezen — ook niet van zichzelf. Een sterretje-select faalt dan in zijn
-    // geheel (zelfde Postgres-gedrag als al gerepareerd in editMyProfile()
-    // en loadMyProfile()). Elke nieuwe accountaanmaak liep hierdoor vast, met
-    // twee mislukte pogingen en een foutmelding tot gevolg. Hierna alleen
-    // 'id' terugvragen — verder wordt er niets van musician.* gebruikt.
-    ({ data: musician, error: mErr } = await db.from('musicians').insert(musicianRow).select('id').single());
-    if (mErr) {
-      console.error('Eerste poging profiel aanmaken mislukt, probeer nog eens:', mErr);
-      await new Promise(resolve => setTimeout(resolve, 800));
-      ({ data: musician, error: mErr } = await db.from('musicians').insert(musicianRow).select('id').single());
-    }
-    if (mErr) throw new Error(mErr.message);
-    opslagOpruimen('avatars', userId, [state.avatarUrl]);
-
-    editingMusicianId = musician.id;
-    myMusicianId = musician.id;
-    state.onboarding = true;
-
-    document.getElementById('saveOverlay').classList.remove('visible');
-    showToast('Account aangemaakt! Vul nu je profiel verder aan.');
-    return true;
-  } catch (err) {
-    document.getElementById('saveOverlay').classList.remove('visible');
-    // TT-481: een te makkelijk wachtwoord hoort bij het veld, net als
-    // "al een account" bij het e-mailadres. Geen storing, dus geen logregel.
-    if (isZwakWachtwoordFout(err)) {
-      showFieldErrors([['regPassword', TEKST_ZWAK_WACHTWOORD]]);
-      return false;
-    }
-    logCaught('createAccountAndProfile', err);
-    showToast(friendlyErrorMessage(err, 'je account aanmaken'));
-    return false;
-  } finally {
-    onboardingInFlight = false;
-  }
 }
 
 // TT-168-overgang (02-09-2026): "Terug" ging voorheen ook een "niet
@@ -1746,17 +1460,15 @@ async function handleAvatarUpload(file) {
   document.getElementById('avatarRemoveBtn').classList.add('visible');
 
   if (!currentUser) {
-    // Stap 1 ("Aanmelden"): het account/user_id bestaat op dit moment nog
-    // niet, dus er is nog geen sessie om naar Storage te mogen schrijven.
-    // Bewaar het bestand zelf — createAccountAndProfile() uploadt het echt
-    // zodra er een user_id is.
+    // Tijdens de wizard bestaat er nog geen account (TT-570), dus nog geen
+    // sessie om naar Storage te mogen schrijven. Bewaar het bestand zelf —
+    // submitProfile() uploadt het echt zodra er een user_id is.
     state.avatarFile = file;
     state.avatarUrl = null;
     return;
   }
 
-  // Account bestaat al (profiel bewerken, of een hervatte onboarding na
-  // stap 1) — meteen echt uploaden.
+  // Account bestaat al — meteen echt uploaden.
   preview.insertAdjacentHTML('beforeend',
     `<div class="avatar-uploading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);border-radius:50%;">
        <div class="save-spinner" style="width:24px;height:24px;border-width:3px;margin:0;"></div>

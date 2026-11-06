@@ -61,7 +61,7 @@ function ouderLeeftijdsregel() {
   // bewaren. Het veld verdwijnt dus uit stap 1.
   const wwVeld = document.getElementById('regPasswordField');
   const groep  = document.getElementById('regAuthFieldGroup');
-  if (wwVeld && !editingMusicianId) {
+  if (wwVeld && !currentUser) {
     wwVeld.style.display = nodig ? 'none' : '';
     if (groep) groep.classList.toggle('single', nodig);
   }

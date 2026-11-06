@@ -519,15 +519,11 @@ async function appInit() {
   if (document.fonts?.ready) document.fonts.ready.then(() => { fitKopLogo(document); fitKopTitel(); });
 }
 
-// Bug gevonden door Ronald (05-08-2026): db.auth.signInWithPassword() binnen
-// createAccountAndProfile() activeert zelf al de bestaande onAuthStateChange-
-// listener (event SIGNED_IN) → die riep onUserLoggedIn() aan → die stuurde
-// meteen door naar Mijn Profiel, nog vóórdat createAccountAndProfile() zelf de
-// kans kreeg om verder te gaan naar stap 2. Gevolg: de wizard werd na stap 1
-// alsnog onderbroken, met een profiel van 0% volledigheid als resultaat —
-// precies wat TT-09 juist wilde voorkomen. Deze vlag zorgt dat onUserLoggedIn()
-// zich stil houdt zolang createAccountAndProfile() nog loopt; die functie
-// bepaalt zelf (via goTo()) wat de volgende stap is.
+// Bug gevonden door Ronald (05-08-2026): db.auth.signInWithPassword() activeert
+// zelf al de onAuthStateChange-listener (SIGNED_IN) → onUserLoggedIn() → die
+// stuurde meteen door naar Mijn Profiel, terwijl het aanmaken nog liep. Deze
+// vlag houdt onUserLoggedIn() stil zolang submitProfile() het account en het
+// profiel aanmaakt (TT-570: dat is nu één handeling, bij de laatste knop).
 let onboardingInFlight = false;
 
 // TT-279 (16-09-2026, Ronald): verversen blijft op de huidige pagina. Staat
@@ -576,19 +572,14 @@ async function onUserLoggedIn(user) {
   // Zoeken te hebben bezocht, kreeg een bandprofiel dan via het beperkte/
   // anonieme pad — klikbare ledenchips en de berichtknop werkten daar dan
   // niet (gevonden bij het testen van de klikbare bandledenchips, 13-08-2026).
-  // Nu alvast gezet bij elke echte login (niet tijdens createAccountAndProfile
-  // zelf, vandaar ná de onboardingInFlight-check hierboven) — configureSearchAccess()
+  // Nu alvast gezet bij elke echte login (niet tijdens het aanmaken in
+  // submitProfile(), vandaar ná de onboardingInFlight-check hierboven) — configureSearchAccess()
   // blijft 'm daarna gewoon opnieuw zetten, dat is onschadelijk.
   hasOwnProfile = !!(await getMyMusicianId());
   // TT-06 (18-09-2026): de blokkadelijst moet er zijn vóórdat er iets gezocht
   // of geladen wordt — anders staat een geblokkeerde muzikant één keer in het
   // eerste zoekresultaat.
   await laadBlokkades();
-
-  // TT-210 (06-09-2026): Route B (automatisch naar de wizard bij onafgeronde
-  // onboarding) is vervangen door een bewuste knop op Mijn Profiel — zie
-  // renderOnboardingResumeBanner()/resumeOnboarding(). Een refresh stuurt
-  // niemand meer ongevraagd weg van de pagina die hij probeerde te bereiken.
 
   // TT-32 (07-08-2026): kwam dit inloggen vanuit een klik op het chat-icoon
   // (bestaand account, dus meteen een profiel beschikbaar)? Dan direct naar
@@ -645,10 +636,6 @@ function onUserLoggedOut() {
   hasOwnProfile = false;
   wisBlokkades(); // TT-06: de blokkades van de vorige gebruiker mogen niet blijven staan
   wisBewaardeZoek(); // TT-295: idem voor de bewaarde zoekopdracht
-  // Beveiligingsfix: een editeer-sessie (via "Profiel bewerken") mag nooit
-  // blijven bestaan na uitloggen — anders kan een uitgelogde bezoeker via de
-  // "Verder bewerken"-balk alsnog bij de laatst bewerkte profielgegevens.
-  editingMusicianId = null;
   clearOnboardingProgress();
   pendingMessageRecipient = null;
   usernameGateMid = null;
@@ -657,8 +644,6 @@ function onUserLoggedOut() {
   // TT-352: state én elk veld van de wizard leeg, ook het vinkje, de
   // plaats en het wachtwoord.
   wizardLeegmaken();
-  const banner = document.getElementById('editModeBanner');
-  if (banner) banner.style.display = 'none';
   ['unreadBadge', 'unreadBadgeBottom', 'bandsDotBottom'].forEach(id => {
     const b = document.getElementById(id);
     if (b) b.style.display = 'none';
@@ -1190,62 +1175,34 @@ function showView(view, mode, extra) {
   if (menuKnop) menuKnop.style.display = (view === 'toestemming') ? 'none' : '';
 
   if (view === 'register') {
-    if (editingMusicianId && !currentUser) {
-      // Beveiligingsfix: een leftover editingMusicianId (bijv. na uitloggen
-      // zonder dat deze view actief herlaadt) mag nooit alsnog toegang geven
-      // tot de wizard met bestaande profielgegevens. Een verse registratie
-      // (editingMusicianId leeg) blijft wél altijd toegankelijk zonder login —
-      // dat is immers hoe je een account aanmaakt.
-      editingMusicianId = null;
-      showToast('Log in om je profiel te bewerken.');
-      showView('auth', 'redirect');
-      return;
-    }
-    if (currentUser && myMusicianId && !editingMusicianId) { showView('myprofile', 'redirect'); return; }
-    // TT-168-overgang (02-09-2026): "locked" betekent sinds de overgang naar
-    // het tegeloverzicht nog maar één ding — een onboarding die al voorbij
-    // stap 1 is (account bestaat al, resumeOnboarding()). Bewerken van
-    // een al afgerond profiel loopt niet meer via de wizard, dus die
-    // vertakking (en de save-step-btn-knoppen die daarbij hoorden) is
-    // vervallen.
-    const locked = !!editingMusicianId;
-    ['fname', 'lname', 'birth_date'].forEach(id => {
-      const fld = document.getElementById(id);
-      if (fld) {
-        fld.readOnly = locked;
-        fld.style.cursor = locked ? 'not-allowed' : '';
-        fld.style.opacity = locked ? '0.85' : '';
-      }
-    });
-    // Zodra het account al bestaat (stap 1 was al gezet), hoeft e-mail/
-    // wachtwoord niet nogmaals ingevuld te worden — alleen-lezen e-mailveld
-    // ter bevestiging, wachtwoordveld helemaal weg.
-    const authSection = document.getElementById('regAuthSection');
+    if (currentUser && myMusicianId) { showView('myprofile', 'redirect'); return; }
+    // TT-570: de wizard is alleen voor een nieuw account. Een ingelogde
+    // gebruiker komt hier alleen zonder profiel: het account ontstond bij de
+    // laatste knop, de rest liep stuk. Dan geen tweede e-mailadres en
+    // wachtwoord vragen: het e-mailadres alleen-lezen, het wachtwoord weg.
+    const ingelogd = !!currentUser;
     const regEmailField = document.getElementById('regEmail');
     const regPasswordField = document.getElementById('regPasswordField');
     const regAuthFieldGroup = document.getElementById('regAuthFieldGroup');
     const regAuthIntro = document.getElementById('regAuthIntro');
     const regEmailReq = document.getElementById('regEmailReq');
-    if (authSection) authSection.style.display = '';
-    if (regPasswordField) regPasswordField.style.display = locked ? 'none' : '';
-    if (regAuthFieldGroup) regAuthFieldGroup.classList.toggle('single', locked);
+    if (regPasswordField) regPasswordField.style.display = ingelogd ? 'none' : '';
+    if (regAuthFieldGroup) regAuthFieldGroup.classList.toggle('single', ingelogd);
     if (regEmailField) {
-      regEmailField.readOnly = locked;
-      regEmailField.style.cursor = locked ? 'not-allowed' : '';
-      regEmailField.style.opacity = locked ? '0.85' : '';
-      if (locked) regEmailField.value = currentUser?.email || '';
+      regEmailField.readOnly = ingelogd;
+      regEmailField.style.cursor = ingelogd ? 'not-allowed' : '';
+      regEmailField.style.opacity = ingelogd ? '0.85' : '';
+      if (ingelogd) regEmailField.value = currentUser.email || '';
     }
-    if (regEmailReq) regEmailReq.style.display = locked ? 'none' : '';
+    if (regEmailReq) regEmailReq.style.display = ingelogd ? 'none' : '';
     if (regAuthIntro) {
-      regAuthIntro.textContent = locked
+      regAuthIntro.textContent = ingelogd
         ? 'Dit is het e-mailadres waarmee je inlogt. Wijzigen kan hier niet.'
         : 'Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.';
     }
 
-    // Akkoord-checkbox: alleen verplicht bij het allereerste bezoek aan
-    // stap 1. Is het account al aangemaakt (bijv. na een refresh mid-
-    // onboarding), dan is die toestemming al gegeven bij de eerste keer —
-    // opnieuw aanvinken levert dan alleen wrijving op zonder meerwaarde.
+    // Akkoord-checkbox: altijd verplicht. TT-570: het akkoord hoort bij het
+    // aanmaken van account en profiel, en dat gebeurt nu pas bij de laatste knop.
     // Bugfix 06-09-2026 (gevonden tijdens het uitzoeken van de vinkje-
     // uitlijning, niet door Ronald gemeld): style.display = '' wist de
     // display-eigenschap uit de inline stijl in plaats van 'm terug te zetten
@@ -1255,22 +1212,15 @@ function showView(view, mode, extra) {
     // draaide — de rij viel terug op het label-standaard "inline", zonder
     // gap en zonder align-items. Expliciet 'flex' teruggeven i.p.v. leeg.
     const consentRow = document.getElementById('consentCheckbox')?.closest('label');
-    if (consentRow) consentRow.style.display = locked ? 'none' : 'flex';
-    if (locked) {
-      document.getElementById('submitProfileBtn').disabled = false;
-    } else {
-      updateSubmitProfileState();
-    }
+    if (consentRow) consentRow.style.display = 'flex';
+    updateSubmitProfileState();
 
-    // TT-42 (route A): staat er een halve registratie van een 13-15-jarige in
-    // deze browser, dan pakt de wizard die op waar hij gebleven was — ook na
-    // dagen. Het kind komt hier terug via de link in de mail van ons aan hem.
-    // Alleen zonder ingelogde gebruiker: wie al een account heeft, hoort hier
-    // nooit meer in route A te belanden.
-    // Staat bewust ónderaan dit blok: de regels hierboven zetten het
-    // wachtwoordveld weer zichtbaar, en ouderLeeftijdsregel() hoort daar
+    // Staat er een halve registratie in deze browser, dan pakt de wizard die
+    // op waar hij gebleven was — ook na dagen (TT-42 route A; TT-570 voor
+    // iedereen). Staat bewust ónderaan dit blok: de regels hierboven zetten
+    // het wachtwoordveld weer zichtbaar, en ouderLeeftijdsregel() hoort daar
     // overheen te gaan, niet andersom.
-    if (!currentUser && !editingMusicianId && typeof hervatOuderRoute === 'function') hervatOuderRoute();
+    if (typeof hervatRegistratie === 'function') hervatRegistratie();
   }
 
   // Bij een wissel tussen twee tabbladen blijft de vorige inhoud staan tot de nieuwe er is (geen "Laden..." in beeld).
@@ -1304,9 +1254,6 @@ function showView(view, mode, extra) {
     if (!myMusicianId) { showToast('Je hebt nog geen profiel om te bewerken.'); showView('myprofile', 'redirect'); return; }
     openTegelOverview();
   }
-
-  const banner = document.getElementById('editModeBanner');
-  if (banner) banner.style.display = (currentUser && editingMusicianId && view !== 'register') ? 'flex' : 'none';
 
   // TT-16: browsergeschiedenis bijwerken, zodat de terugknop (Android/browser)
   // eerst de vorige pagina toont i.p.v. meteen de hele app te sluiten.
