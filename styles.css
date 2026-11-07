@@ -1198,10 +1198,14 @@
   .setlist-kop[hidden] { display: none; }
   /* 14px: "Voeg nog 2 nummers toe" past op één regel (besluit Ronald,
      25-10-2026, optie B). */
-  .setlist-teller { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .setlist-teller { font-size: 12px; line-height: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* "Beheersing" op de x van de keuze, de i op de rechterlijn (94px =
      de tekst, lucht en de i van 24px). */
-  .setlist-kop-beh { display: flex; align-items: center; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .setlist-kop-beh { display: flex; align-items: center; font-size: 12px; line-height: 16px; color: var(--muted); white-space: nowrap; }
+  /* TT-543 F4 (8D sessie 88): de keuze "Beheersing" of "Podium" in een rij.
+     15px, niet 16: in de knop van 33px blijft de tekst dan op een hele pixel
+     staan, en de binnenmarge onder 12px (blok 87; met 16px werd het 12,5). */
+  .setlist-keuze .wheel-field-label { line-height: 15px; }
   .setlist-kop-beh .niveau-info-btn { margin-left: auto; }
   .setlist-lijst { display: flex; flex-direction: column; gap: 8px; }
   .setlist-rij {
@@ -1364,6 +1368,10 @@
      i.p.v. de "main"-shorthand hierboven — die zou ook de boven-/zijmarge
      resetten. */
   #view-register main { padding-bottom: 130px; }
+  /* TT-543 blok 4 (besluit Ronald 06-11-2026, voorstel 16): de vier tegels van
+     Profiel bewerken hebben dezelfde vaste balk, met Opslaan op de plek van
+     Verder. Dezelfde ruimte eronder; openTegelScreen() zet de klasse. */
+  #view-profieltegels main.met-vaste-balk { padding-bottom: 130px; }
 
   .btn {
     /* TT-U23 (12-08-2026): elke knop minimaal 44px hoog. */
@@ -1741,6 +1749,7 @@
     /* TT-543 blok 2 (F2): 11px vet stond in elke regel zelf (de 12px hier gold
        nergens). Nu in de standaard. */
     font-size: 11px;
+    line-height: 16px; /* TT-543 F4 (8D sessie 88) */
     font-weight: 700;
     /* TT-381 (30-09-2026, Ronald): zwarte tekst op het gele vlak, niet wit.
        Geel als vlak onder tekst is --merk met --merk-tekst (§1.1). */
@@ -1754,7 +1763,8 @@
   }
 
   .avatar-info { flex: 1; }
-  .avatar-info strong { font-size: 12px; display: block; margin-bottom: 6px; }
+  .avatar-info[onclick] { cursor: pointer; } /* TT-543 blok 4, voorstel 26 */
+  .avatar-info strong { font-size: 12px; line-height: 16px; display: block; margin-bottom: 6px; } /* line-height: TT-543 F4 */
   /* TT-517 fase 6 (huisstijl §2, besluit Ronald 31-10-2026: "kop met foto is
      goed"): zonder foto "Upload een foto van jezelf", met foto "Je
      profielfoto" (band: "Jullie bandfoto"). De foto in het rondje beslist. */
@@ -2309,6 +2319,7 @@
     border-radius: 50%;
     width: 22px; height: 22px;
     font-size: var(--tekenmaat);
+    line-height: 11px; /* TT-543 F4 (8D sessie 88) */
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
@@ -2340,7 +2351,7 @@
     font-size: 12px;
     color: var(--muted);
     margin: 0 0 10px;
-    line-height: 1.4;
+    line-height: 16px; /* TT-543 F4 (8D sessie 88): was 1.4, dus 16,8px */
   }
   .banner-teller b { color: var(--text); }
   /* Het teken vóór de tekst, in de gouden stand en op teksthoogte
@@ -4415,6 +4426,34 @@
   }
   /* TT-U23: onzichtbaar tikvlak van 44x44 rond de kleine knop. */
   .picker-badge-remove::after { content: ''; position: absolute; inset: -8px; }
+  /* TT-543 F4 (8D sessie 88): vaste regelhoogte voor het kruisje (teken, 11px). */
+  .picker-badge-remove { line-height: 11px; }
+  /* TT-543 blok 4 (besluiten Ronald 07-11-2026, voorstellen 21 C en 22): in
+     Profiel aanmaken en Wat speel je is het keuzeveld de laatste knop van het
+     raster, "+ Instrument" of "+ Genre", in de stippelvorm van "+ Toevoegen"
+     (Je mediahoek). Letters 15px (Tekst, huisstijl §2; was 12px). Instrumenten
+     staan als rijen onder elkaar, de sterren rechts, zoals de beheersing in Je
+     setlist. pickerToevoegenPlaatsen() in modals-shared.js zet de klassen. */
+  .picker-badge-row.met-toevoegen { margin-top: 0; }
+  /* Rechts 32px: 6px lucht tot het kruisje. "Folk / Akoestisch" (121px) past op
+     360px niet op één regel en breekt dan af; de buurknop wordt even hoog. */
+  .picker-badge-row.met-toevoegen .picker-badge { font-size: 15px; line-height: 20px; padding-right: 32px; }
+  .picker-badge-row.instrument-rijen { grid-template-columns: 1fr; }
+  .picker-badge-row.instrument-rijen .picker-badge.has-level {
+    flex-direction: row; justify-content: flex-start; gap: 12px; min-height: 44px; padding: 0 48px 0 20px; text-align: left;
+  }
+  .picker-badge-row.instrument-rijen .picker-badge-label { justify-content: flex-start; }
+  .picker-badge-row.instrument-rijen .picker-badge-stars { min-height: 0; line-height: 16px; }
+  .picker-badge-row.instrument-rijen .picker-badge-remove { right: 10px; }
+  .picker-field.picker-toevoegen {
+    justify-content: center; gap: 6px; padding: 0 12px;
+    background: transparent; border: 2px dashed var(--border); border-radius: 999px; font-size: 15px;
+  }
+  .picker-toevoegen .picker-field-label { line-height: 20px; }
+  /* Het niveaupaneel staat in de rijen direct onder het gekozen instrument; de
+     ruimte erboven is de 8px van het raster (besluit Ronald 07-11-2026, a). */
+  .picker-badge-row.instrument-rijen > .niveau-paneel { margin-top: 0; }
+  .picker-toevoegen .media-toevoegen-plus { width: 16px; height: 16px; }
 
   .picker-list-item {
     padding: 14px 10px; font-size: 15px; border-top: 1px solid var(--border);
@@ -4807,6 +4846,12 @@
      en de bandtegels volgen in hun eigen onderdeel van TT-543. */
   #tegelsWrap .tile-title { line-height: 22px; }
   #tegelsWrap .tile-sub { line-height: 16px; }
+  /* TT-543 blok 4 (besluit Ronald 06-11-2026, voorstel 17, op beeld): de
+     onderregel toont wat je invulde, op één regel; past het niet, dan eindigt
+     hij op "…". "Nog leeg" in de signaalkleur, vet. */
+  #tegelsWrap .tile > div { min-width: 0; }
+  #tegelsWrap .tile-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tegel-leeg { color: var(--accent); font-weight: 700; }
   /* TT-260 (12-09-2026): was 11px met een eigen marge van 5px. Geen van
      beide is een maat uit de huisstijl (§2: 12px; §3: 4px-schaal). */
   .field-status { font-size: var(--fs-sm); line-height: 16px; color: var(--muted); margin-top: 4px; min-height: 16px; }

@@ -264,7 +264,9 @@ function veldFoutAnker(el) {
   // Zoekveld voor nummers (TT-514): de regel staat onder de .song-search-wrap,
   // in de .field, zodat de 8px van huisstijl §3 geldt (gemeten: binnen de wrap
   // was het 0px) en de suggestielijst direct onder het veld blijft.
-  return (el.closest && (el.closest('.password-wrap') || el.closest('.postcode-plaats-rij') || el.closest('.song-search-wrap'))) || el;
+  // TT-543 blok 4: "+ Instrument" en "+ Genre" staan in het raster van de keuzes;
+  // de foutregel staat onder dat raster.
+  return (el.closest && (el.closest('.password-wrap') || el.closest('.postcode-plaats-rij') || el.closest('.song-search-wrap') || el.closest('.picker-badge-row'))) || el;
 }
 
 // TT-494: korte uitslag rechts op de labelregel (zie .field-uitslag in
@@ -2446,6 +2448,10 @@ function mediaTegelHTML(m, i, voorvoegsel) {
 // De knoppen van een link dragen het nummer van de link in zijn eigen lijst;
 // in het raster staan de links na de bestanden (bannerKnopStandZetten telt
 // daarom de bestanden mee, zie linkBannerTik()).
+// Het plusteken van "+ Toevoegen" (Je mediahoek) en "+ Instrument" en "+ Genre"
+// (TT-543 blok 4): één tekening.
+const PLUS_TEKEN = '<svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
 function mediaRasterHTML(bestanden, links, voorvoegsel) {
   const fn = n => mediaFnNaam(voorvoegsel, n);
   const id = voorvoegsel || 'wiz';
@@ -2453,7 +2459,7 @@ function mediaRasterHTML(bestanden, links, voorvoegsel) {
     .concat(links.map((l, i) => mediaLinkKaartHTML(l, i, fn)));
   tegels.push(`<div class="menu-anchor media-toevoegen-plek">` +
     `<button type="button" class="media-toevoegen" id="${id}MediaToevoegen" aria-haspopup="listbox" aria-expanded="false"` +
-    ` onclick="mediaToevoegenMenu(event, '${id}')"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Toevoegen</button>` +
+    ` onclick="mediaToevoegenMenu(event, '${id}')">${PLUS_TEKEN}Toevoegen</button>` +
     `<select id="${id}MediaToevoegenSel" hidden onchange="${fn('mediaToevoegenKeuze')}(this)">` +
     `<option value="foto">Foto</option><option value="video">Video</option><option value="link">Link</option></select>` +
     `<div class="choice-menu beheersing-menu media-toevoegen-menu" id="${id}MediaToevoegenMenu" role="listbox"></div></div>`);

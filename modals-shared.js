@@ -73,6 +73,35 @@ function renderPickerBadges(cfg) {
       <button type="button" class="picker-badge-remove" aria-label="${escHtml(v)} verwijderen" onclick="removePickerValue('${jsAttr(cfg.id)}','${jsAttr(v)}')"><span aria-hidden="true">✕</span></button>
       <div class="picker-badge-label">${pickerDisplayLabel(v)}</div>
     </div>`).join('');
+  pickerToevoegenPlaatsen(cfg, cfg.badgeRowEl, false);
+}
+
+// TT-543 blok 4 (besluit Ronald 07-11-2026, voorstel 22): in Profiel aanmaken en
+// Wat speel je staat geen keuzeveld boven de keuzes. Het veld zelf is de laatste
+// knop van het raster, "+ Instrument" of "+ Genre", in de stippelvorm van
+// "+ Toevoegen" in Je mediahoek; een tik opent dezelfde lijst. Instrumenten
+// staan dan als rijen onder elkaar, met de sterren rechts (voorstel 21 C).
+// Alleen voor een keuze met `toevoegen` in zijn cfg; de bandschermen volgen in
+// onderdeel 6 van TT-543.
+// Het veld staat ín het raster; een nieuwe tekening van het raster haalt het even
+// uit de pagina. Daarom onthoudt de app het element per veld, de eerste keer dat
+// het er nog los staat (ook als een tegel opnieuw een cfg maakt).
+const TOEVOEG_VELDEN = {};
+function pickerToevoegenPlaatsen(cfg, rij, rijen) {
+  // Staat het veld al in het raster, dan blijft het daar, ook als een cfg zonder
+  // `toevoegen` het raster opnieuw tekent (anders raakt het veld weg).
+  const bekend = TOEVOEG_VELDEN[cfg.fieldId];
+  if (!cfg.toevoegen && !bekend) return;
+  const veld = bekend || (TOEVOEG_VELDEN[cfg.fieldId] = document.getElementById(cfg.fieldId));
+  if (!veld.classList.contains('picker-toevoegen')) {
+    veld.classList.add('picker-toevoegen');
+    veld.dataset.toevoegen = cfg.toevoegen;
+    veld.insertAdjacentHTML('afterbegin', PLUS_TEKEN);
+  }
+  veld.querySelector('.picker-field-label').textContent = cfg.toevoegen || veld.dataset.toevoegen;
+  rij.classList.add('met-toevoegen');
+  rij.classList.toggle('instrument-rijen', rijen);
+  rij.appendChild(veld);
 }
 
 let activeListPickerId = null;
@@ -110,6 +139,17 @@ function renderPickerListItems() {
   if (!cfg) return;
   const list = cfg.getList();
   const wrap = document.getElementById('pickerListItems');
+  // TT-543 blok 4 (besluit Ronald 07-11-2026, A: "ik wil 1 reactie voor beide
+  // schermen"): bij "+ Genre" werkt de lijst als die van "+ Instrument": alleen
+  // wat je nog niet koos, één tik voegt toe en sluit de lijst. Weghalen gaat met
+  // het kruisje op de keuze.
+  if (cfg.toevoegen) {
+    const over = cfg.options.filter(opt => !list.includes(opt));
+    wrap.innerHTML = over.length
+      ? over.map(opt => `<div class="picker-list-item" onclick="choosePickerListValue('${jsAttr(opt)}')">${pickerDisplayLabel(opt)}</div>`).join('')
+      : '<div class="picker-list-empty">Alles al gekozen</div>';
+    return;
+  }
   wrap.innerHTML = cfg.options.map(opt => {
     const isSelected = list.includes(opt);
     return `<div class="picker-list-item${isSelected ? ' selected' : ''}" onclick="choosePickerListValue('${jsAttr(opt)}')">${pickerDisplayLabel(opt)}${isSelected ? '<span class="picker-list-item-check" aria-hidden="true">✓</span>' : ''}</div>`;
@@ -120,6 +160,13 @@ function choosePickerListValue(value) {
   const cfg = PICKERS[activeListPickerId];
   if (!cfg) return;
   const list = cfg.getList();
+  if (cfg.toevoegen) { // TT-543 blok 4, A: toevoegen en de lijst sluiten
+    if (!list.includes(value)) list.push(value);
+    closePickerList();
+    renderPickerBadges(cfg);
+    if (cfg.onChange) cfg.onChange();
+    return;
+  }
   // Herzien 25-08-2026 (Ronald, UX-feedback): klikken op een al-gekozen item
   // zet het nu uit (toggle) i.p.v. het opnieuw toe te voegen — logisch nu het
   // item zichtbaar blijft staan met een vinkje.
@@ -230,6 +277,9 @@ function renderInstrumentBadges(id) {
   // renderPickerBadges() hierboven.
   document.getElementById(cfg.fieldId + 'Label').textContent = 'Kies een instrument';
   if (list.length) clearFieldError(cfg.fieldId); // TT-444: zoals renderPickerBadges()
+  // Het niveaupaneel kan ín het raster staan (zie hieronder); een nieuwe tekening
+  // haalt het daar weg, dus eerst vasthouden.
+  const paneel = document.getElementById(cfg.badgeRowId + 'Niveau');
   wrap.innerHTML = list.map(i => {
     const n = levels[i] || 0;
     const open = cfg.openInstrument === i;
@@ -242,6 +292,14 @@ function renderInstrumentBadges(id) {
       ${onder}
     </div>`;
   }).join('');
+  pickerToevoegenPlaatsen(cfg, wrap, true);
+  // TT-543 blok 4 (besluit Ronald 07-11-2026, a): in de rijen opent het
+  // niveaupaneel direct onder het instrument waarop je tikte, boven "+ Instrument".
+  // Anders (geen rijen, of geen open instrument) staat het onder het raster.
+  if (paneel) {
+    const open = wrap.classList.contains('instrument-rijen') && wrap.querySelector('.picker-badge.open');
+    if (open) open.after(paneel); else wrap.after(paneel);
+  }
   renderInstrumentPaneel(id);
 }
 
@@ -297,10 +355,15 @@ function toggleNiveauUitleg(id) {
   renderInstrumentPaneel(id);
 }
 
+// TT-543 blok 4 (besluit Ronald 07-11-2026): een tik op een niveau kiest het en
+// klapt het paneel meteen dicht ("als je niveau aanklikt, dan moet dat (grote)
+// niveauscherm direct inklappen"). Wijzigen: tik op de rij van het instrument.
 function setInstrumentLevel(id, value) {
   const cfg = INSTRUMENT_PICKERS[id];
   if (!cfg.openInstrument) return;
   cfg.getLevels()[cfg.openInstrument] = value;
+  cfg.openInstrument = null;
+  cfg.uitlegOpen = false;
   renderInstrumentBadges(id);
   if (cfg.onChange) cfg.onChange(); // zie toelichting bij removePickerValue-patroon, 13-08-2026
 }

@@ -916,7 +916,8 @@ function init() {
     id: 'wizard',
     fieldId: 'instrumentPickerField', badgeRowId: 'instrumentBadgeRow',
     getInstruments: () => state.instruments, getLevels: () => state.instrumentLevels,
-    onChange: saveOnboardingProgress
+    onChange: saveOnboardingProgress,
+    toevoegen: 'Instrument', // TT-543 blok 4, voorstel 22
   });
   initPicker({
     id: 'genre',
@@ -924,7 +925,8 @@ function init() {
     options: GENRES, getList: () => state.genres,
     placeholder: 'Kies een genre',
     sheetTitle: 'Kies een genre',
-    onChange: saveOnboardingProgress
+    onChange: saveOnboardingProgress,
+    toevoegen: 'Genre', // TT-543 blok 4, voorstel 22
   });
 
   syncViewToggles(); // TT-U13: schakelaars gelijkzetten met de werkelijke stand

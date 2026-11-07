@@ -810,16 +810,18 @@ async function deleteAllStorageForUser(userId) {
 // zijn dezelfde cfg-registry als de wizard (zie initInstrumentPicker()/
 // initPicker() hierboven) — één modal, twee registraties.
 
+// TT-543 blok 4: geen vaste onderregel meer; renderTegels() vult hem met wat
+// je invulde (tegelRegelHTML()).
 const TILES = [
-  { id: 'wieBenJe',   title: 'Wie ben je',      sub: 'naam - plaats - bio' },
-  { id: 'watSpeelJe', title: 'Wat speel je',    sub: 'instrumenten - niveau - genres - eigen nummers/covers' },
+  { id: 'wieBenJe',   title: 'Wie ben je' },
+  { id: 'watSpeelJe', title: 'Wat speel je' },
   // TT-227 (09-09-2026, Ronald): "Je setlist" hoort direct onder "Wat speel
   // je" — dat zijn allebei vragen over wat je zelf speelt. Deze volgorde stuurt
   // het tegeloverzicht volledig aan (renderTegels() leest deze lijst), dus dit
   // is de enige plek. TT-543 (06-11-2026, besluit Ronald): de tegel "Wat zoek
   // je" is weg; de app deed niets met de antwoorden.
-  { id: 'jeSetlist',  title: 'Je setlist',      sub: 'covers - eigen nummers' },
-  { id: 'mediahoek',  title: 'Je mediahoek',    sub: "video's - foto's - profielfoto" },
+  { id: 'jeSetlist',  title: 'Je setlist' },
+  { id: 'mediahoek',  title: 'Je mediahoek' },
 ];
 
 // TT-385 fase 3: de tegels van een band hebben dezelfde vorm (BAND_TILES in
@@ -835,8 +837,58 @@ function tegelsHTML(lijst) {
   `).join('');
 }
 
+// TT-543 blok 4 (besluit Ronald 06-11-2026, voorstel 17, op beeld): elke tegel
+// toont wat je invulde, en "Nog leeg" als er in die tegel nog niets staat. Eerst
+// de tegels met de vorige regels (geen sprong in de hoogte), dan de echte. De
+// vorige regels horen bij één profiel: na inloggen als een ander niet tonen.
+let tegelRegels = { mid: null, regels: {} };
+let tegelRegelsVraag = 0;
+
+function tegelRegelHTML(id, m) {
+  const lijst = (x) => Array.isArray(x) ? x : [];
+  const leeg = (wat) => `<span class="tegel-leeg">Nog leeg</span> · ${escHtml(wat)}`;
+  const deel = (n, een, meer) => n ? `${n} ${n === 1 ? een : meer}` : '';
+  if (id === 'wieBenJe') {
+    const delen = [m.weergavenaam || m.username, m.city].filter(Boolean);
+    return delen.length ? escHtml(delen.join(' · ')) : leeg('vul je naam in');
+  }
+  if (id === 'watSpeelJe') {
+    const delen = [lijst(m.musician_instruments).map(x => x.instrument).join(', '),
+      lijst(m.musician_genres).map(x => x.genre).join(', ')].filter(Boolean);
+    return delen.length ? escHtml(delen.join(' · ')) : leeg('kies een instrument');
+  }
+  if (id === 'jeSetlist') {
+    const n = lijst(m.musician_songs).length;
+    return n ? escHtml(deel(n, 'nummer', 'nummers')) : leeg('kies drie nummers');
+  }
+  if (id === 'mediahoek') {
+    const media = lijst(m.musician_media), tel = (t) => media.filter(x => x.media_type === t).length;
+    const delen = [m.avatar_url ? 'Profielfoto' : '', deel(tel('foto'), 'foto', "foto's"),
+      deel(tel('video'), 'video', "video's"), deel(tel('link'), 'link', 'links')].filter(Boolean);
+    return delen.length ? escHtml(delen.join(' · ')) : leeg('voeg een foto toe');
+  }
+  return '';
+}
+
 function renderTegels() {
-  document.getElementById('tegelsWrap').innerHTML = tegelsHTML(TILES);
+  const wrap = document.getElementById('tegelsWrap'), mid = myMusicianId;
+  const tegels = () => {
+    const regels = tegelRegels.mid === mid ? tegelRegels.regels : {};
+    wrap.innerHTML = tegelsHTML(TILES);
+    wrap.querySelectorAll('.tile-sub').forEach((el, i) => { el.innerHTML = regels[TILES[i].id] || '&nbsp;'; });
+  };
+  tegels();
+  const vraag = ++tegelRegelsVraag;
+  db.from('musicians')
+    .select('weergavenaam, username, city, avatar_url, musician_instruments(instrument), musician_genres(genre), musician_songs(song_title), musician_media(media_type)')
+    .eq('id', mid).single()
+    .then(({ data, error }) => {
+      // Een oudere vraag of een fout laat de regels staan zoals ze waren.
+      if (vraag !== tegelRegelsVraag || error || !data) return;
+      tegelRegels = { mid, regels: {} };
+      TILES.forEach(t => { tegelRegels.regels[t.id] = tegelRegelHTML(t.id, data); });
+      tegels();
+    }, () => {});
 }
 
 // ─── Schermnavigatie binnen het tegeloverzicht ────────────────────────────
@@ -876,8 +928,48 @@ function tegelHeeftWijzigingen() {
   try { return !!meet(); } catch (e) { return false; }
 }
 
+// TT-543 blok 4 (voorstel 16): de vier tegels van je eigen profiel hebben de
+// vaste balk met Opslaan; main krijgt dan de ruimte eronder, zoals de stappen.
+const TEGELS_MET_BALK = ['wieBenJe', 'watSpeelJe', 'jeSetlist', 'mediahoek'];
+function zetVasteBalkRuimte(id) {
+  document.querySelector('#view-profieltegels > main').classList.toggle('met-vaste-balk', TEGELS_MET_BALK.includes(id));
+}
+
+// TT-543 blok 4 (besluit Ronald 07-11-2026, voorstel 19): in de vier tegels van
+// je profiel staat Opslaan uit (half doorzichtig) zolang er niets gewijzigd is.
+// Wijzigingen komen uit velden, uit vensters (instrument, genre, link) en uit
+// geüploade bestanden; daarom kijkt de app na elke invoer, tik en wijziging in
+// het scherm opnieuw. Eén vergelijking: TEGEL_WIJZIGINGEN hierboven.
+function zetOpslaanAan(aan) {
+  if (!TEGELS_MET_BALK.includes(activeTegelScreen)) return;
+  const knop = document.querySelector('#' + TEGEL_SCREENS[activeTegelScreen] + ' .wizard-action-bar .btn-primary');
+  if (knop) knop.disabled = !aan;
+}
+function werkOpslaanBij() { zetOpslaanAan(tegelHeeftWijzigingen()); }
+(function opslaanVolgen() {
+  let gepland = false;
+  const plan = () => {
+    if (gepland || !TEGELS_MET_BALK.includes(activeTegelScreen)) return;
+    gepland = true;
+    // setTimeout, geen requestAnimationFrame: dat wacht op het volgende beeld,
+    // en in een venster dat niet getekend wordt komt dat niet (gemeten sessie 88).
+    setTimeout(() => { gepland = false; werkOpslaanBij(); }, 0);
+  };
+  ['input', 'change', 'click'].forEach(t => document.addEventListener(t, plan, true));
+  const view = document.getElementById('view-profieltegels');
+  if (view) new MutationObserver(plan).observe(view, { childList: true, subtree: true });
+})();
+
+// TT-543 blok 4 (besluit Ronald 07-11-2026, voorstel 20): na Opslaan terug naar
+// Profiel bewerken, waar de regel van de tegel meteen het nieuwe toont. Alleen
+// als die tegel nog openstaat; de melding "Wijzigingen opgeslagen." blijft.
+function terugNaOpslaan(id) {
+  if (activeTegelScreen === id) appTerug();
+}
+
 function openTegelOverview() {
   activeTegelScreen = 'overview';
+  zetVasteBalkRuimte('overview');
   ontwapenTerug();    // TT-302: de vraag hoort bij het scherm dat je verlaat
   werkTerugKnopBij(); // TT-301
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
@@ -890,16 +982,20 @@ function openTegelOverview() {
 function openTegelScreen(id) {
   if (!TEGEL_SCREENS[id]) return;
   activeTegelScreen = id;
+  zetVasteBalkRuimte(id);
   ontwapenTerug();    // TT-302
   werkTerugKnopBij(); // TT-301: een open tegelscherm is een stap terug
   document.getElementById('tegelOverviewScreen').style.display = 'none';
   document.getElementById('bandTegelOverviewScreen').style.display = 'none';
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
   document.getElementById(TEGEL_SCREENS[id]).style.display = '';
-  if (id === 'wieBenJe') openWieBenJe();
-  else if (id === 'watSpeelJe') openWatSpeelJe();
-  else if (id === 'jeSetlist') openJeSetlist();
-  else if (id === 'mediahoek') openJeMediahoek();
+  // TT-543 blok 4 (voorstel 19): Opslaan staat uit tot de tegel geladen is en
+  // er iets wijzigt.
+  zetOpslaanAan(false);
+  if (id === 'wieBenJe') openWieBenJe().then(werkOpslaanBij, werkOpslaanBij);
+  else if (id === 'watSpeelJe') openWatSpeelJe().then(werkOpslaanBij, werkOpslaanBij);
+  else if (id === 'jeSetlist') openJeSetlist().then(werkOpslaanBij, werkOpslaanBij);
+  else if (id === 'mediahoek') openJeMediahoek().then(werkOpslaanBij, werkOpslaanBij);
   else if (id === 'bandWie') openBandWie();
   else if (id === 'bandBezetting') openBandBezetting();
   else if (id === 'bandMuziek') openBandMuziek();
@@ -1098,6 +1194,7 @@ async function saveWieBenJe() {
   }
   wbjSnapshot = wbjFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
+  terugNaOpslaan('wieBenJe');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1134,11 +1231,13 @@ async function openWatSpeelJe() {
   initInstrumentPicker({
     id: 'wsp', fieldId: 'wspInstrumentField', badgeRowId: 'wspInstrumentBadgeRow',
     getInstruments: () => wspState.instruments, getLevels: () => wspState.instrumentLevels,
+    toevoegen: 'Instrument', // TT-543 blok 4, voorstel 22
   });
   initPicker({
     id: 'wspGenre', fieldId: 'wspGenreField', badgeRowId: 'wspGenreBadgeRow',
     options: GENRES, getList: () => wspState.genres,
     placeholder: 'Kies een genre', sheetTitle: 'Kies een genre',
+    toevoegen: 'Genre', // TT-543 blok 4, voorstel 22
   });
   wspSnapshot = wspFieldSnapshot();
 }
@@ -1162,6 +1261,7 @@ async function saveWatSpeelJe() {
 
   wspSnapshot = wspFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
+  terugNaOpslaan('watSpeelJe');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1382,6 +1482,7 @@ async function saveJeSetlist() {
   if (error) { showToast(friendlyErrorMessage(error, 'je gegevens opslaan')); return; }
   jstSnapshot = jstFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
+  terugNaOpslaan('jeSetlist');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1577,6 +1678,7 @@ async function saveJeMediahoek() {
 
   mhSnapshot = mhFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
+  terugNaOpslaan('mediahoek');
 }
 
 // ─── Niveautabel voor muzikanten (de i-knop) ─────────────────────────────────

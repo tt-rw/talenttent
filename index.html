@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261107c">
+<link rel="stylesheet" href="styles.css?v=20261107e">
 </head>
 <body>
 
@@ -555,7 +555,8 @@
           <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="avatarRemoveBtn" onclick="askRemoveAvatar()" aria-label="Profielfoto verwijderen">✕</button>
         </div>
-        <div class="avatar-info">
+        <!-- TT-543 blok 4 (voorstel 26, besluit Ronald 07-11-2026): ook de tekst kiest een foto. -->
+        <div class="avatar-info" onclick="document.getElementById('avatarInput').click()">
           <strong><span class="kop-zonder-foto">Upload een foto van jezelf</span><span class="kop-met-foto">Je profielfoto</span></strong>
         </div>
       </div>
@@ -563,7 +564,7 @@
     </div>
 
     <h2 class="hoofdstuk-kop">Foto's, video's en links</h2>
-    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Een profiel met media valt op.</div>
+    <div class="panel-sub">Met goede media valt je profiel veel meer op.</div>
 
     <!-- TT-263 (13-09-2026): de keuze voor de bannerbalk op het profiel; de
          grens geldt over foto's, video's en links samen.
@@ -720,7 +721,10 @@
 <div class="app-view" id="view-profieltegels">
 <main>
 
-  <!-- Tegeloverzicht -->
+  <!-- Tegeloverzicht. TT-543 blok 4 (besluit Ronald 06-11-2026, voorstel 17):
+       elke tegel toont wat je invulde, of "Nog leeg" (renderTegels()).
+       Opslaan staat in de vier tegels vast onderin, in dezelfde balk als
+       Verder in de stappen (voorstel 16); de bandtegels volgen in onderdeel 6. -->
   <div id="tegelOverviewScreen">
     <div class="panel-title scherm-titel">Profiel bewerken</div>
     <div id="tegelsWrap"></div>
@@ -797,8 +801,10 @@
          meer. Het staat in Instellingen, met de knop om het te wijzigen;
          hier was het dubbel. -->
 
-    <div class="action-row">
-      <button class="btn btn-primary" onclick="saveWieBenJe()">Opslaan</button>
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-primary" onclick="saveWieBenJe()">Opslaan</button>
+      </div>
     </div>
   </div>
 
@@ -829,16 +835,19 @@
       </div>
     </div>
 
-    <div class="action-row">
-      <button class="btn btn-primary" onclick="saveWatSpeelJe()">Opslaan</button>
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-primary" onclick="saveWatSpeelJe()">Opslaan</button>
+      </div>
     </div>
   </div>
 
   <!-- Subscherm: Je setlist -->
   <div id="jeSetlistScreen" style="display:none;">
     <div class="panel-title scherm-titel">Je setlist</div>
-    <!-- TT-543 (besluit Ronald 06-11-2026, voorstel 9): dezelfde zin als stap 3. -->
-    <div class="panel-sub">Kies drie nummers en ontdek andere muzikanten.</div>
+    <!-- TT-543 blok 4 (besluit Ronald 07-11-2026, voorstel 23): de zin "Kies drie
+         nummers en ontdek andere muzikanten." staat alleen in de wizard; daar zijn
+         drie nummers verplicht. Hier is hij weg, ook met minder dan drie nummers. -->
 
     <!-- TT-514 (Ronald, 25-10-2026: "dit wordt ook de setlist tegel"): zelfde
          opbouw als wizardstap Nummers; de lijst komt uit setlistLijstHTML(). -->
@@ -874,8 +883,10 @@
     </div>
     <div class="setlist-lijst" id="jstSongsList"></div>
 
-    <div class="action-row">
-      <button class="btn btn-primary" onclick="saveJeSetlist()">Opslaan</button>
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-primary" onclick="saveJeSetlist()">Opslaan</button>
+      </div>
     </div>
   </div>
 
@@ -891,7 +902,8 @@
           <div class="avatar-edit-btn" onclick="document.getElementById('mhAvatarInput').click()">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhAskRemoveAvatar()" aria-label="Profielfoto verwijderen">✕</button>
         </div>
-        <div class="avatar-info">
+        <!-- TT-543 blok 4 (voorstel 26): ook de tekst kiest een foto. -->
+        <div class="avatar-info" onclick="document.getElementById('mhAvatarInput').click()">
           <strong><span class="kop-zonder-foto">Upload een foto van jezelf</span><span class="kop-met-foto">Je profielfoto</span></strong>
         </div>
       </div>
@@ -899,15 +911,17 @@
     </div>
 
     <h2 class="hoofdstuk-kop">Foto's, video's en links</h2>
-    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Een profiel met media valt op.</div>
+    <div class="panel-sub">Met goede media valt je profiel veel meer op.</div>
 
     <!-- TT-543 blok 3: zelfde raster als wizardstap 4 (mediaRasterHTML()). -->
     <p class="banner-teller" id="mhBannerTeller"></p>
     <div class="media-raster" id="mhMediaGrid"></div>
     <input type="file" id="mhMediaInvoer" class="media-invoer" multiple autocomplete="off" onchange="mhHandleFileSelect(this.files); this.value=''">
 
-    <div class="action-row">
-      <button class="btn btn-primary" onclick="saveJeMediahoek()">Opslaan</button>
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-primary" onclick="saveJeMediahoek()">Opslaan</button>
+      </div>
     </div>
   </div>
 
@@ -2383,18 +2397,18 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20261107b"></script>
-<script src="utils.js?v=20261107b"></script>
+<script src="utils.js?v=20261107c"></script>
 <script src="veiligheid.js?v=20261106b"></script>
 <script src="auth.js?v=20261106d"></script>
 <script src="postcode.js?v=20261107a"></script>
-<script src="wizard.js?v=20261107c"></script>
+<script src="wizard.js?v=20261107d"></script>
 <script src="ouder.js?v=20261106a"></script>
 <script src="search.js?v=20261107a"></script>
-<script src="musicians.js?v=20261107b"></script>
+<script src="musicians.js?v=20261107d"></script>
 <script src="bands.js?v=20261106b"></script>
 <script src="messages.js?v=20261106b"></script>
 <script src="push.js?v=20261027b"></script>
-<script src="modals-shared.js?v=20261026c"></script>
+<script src="modals-shared.js?v=20261107c"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding

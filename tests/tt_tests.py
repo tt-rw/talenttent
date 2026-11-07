@@ -5085,7 +5085,7 @@ window.TT_STUB.fnAntwoord = {};
             stap: panelen.findIndex(p => p.classList.contains('active')),
             veldfouten: v.querySelectorAll('.field-error').length,
             songs: document.getElementById('songsList').children.length,
-            instrumentBadges: document.getElementById('instrumentBadgeRow').children.length,
+            instrumentBadges: document.getElementById('instrumentBadgeRow').querySelectorAll('.picker-badge').length, // TT-543 blok 4: "+ Instrument" staat in de rij
             knop: document.getElementById('submitProfileBtn').disabled
           };
         }""")
@@ -8884,7 +8884,7 @@ window.TT_STUB.fnAntwoord = {};
           initInstrumentPicker({ id: 'wsp', fieldId: 'wspInstrumentField', badgeRowId: 'wspInstrumentBadgeRow',
             getInstruments: () => wspState.instruments, getLevels: () => wspState.instrumentLevels });
           const paneel = () => $('wspInstrumentBadgeRowNiveau');
-          const badges = () => [...$('wspInstrumentBadgeRow').children];
+          const badges = () => [...$('wspInstrumentBadgeRow').querySelectorAll('.picker-badge')]; // TT-543 blok 4: "+ Instrument" staat in de rij
           u.paneelAantal = document.querySelectorAll('#wspInstrumentBadgeRowNiveau').length;
           u.beginVerborgen = paneel().hidden;
           // 1. Instrument kiezen uit de lijst: de laag sluit, het paneel opent, er is nog geen niveau
@@ -8902,12 +8902,16 @@ window.TT_STUB.fnAntwoord = {};
             binnen: r.left >= 0 && r.right <= window.innerWidth, scrollBreed: document.documentElement.scrollWidth <= window.innerWidth };
           // 3. Niveau kiezen: een tik, het paneel blijft open met één zin over het niveau
           const knoppen = () => [...paneel().querySelectorAll('.level-choice')];
+          // TT-543 blok 4 (besluit Ronald 07-11-2026): een niveau kiezen klapt het paneel dicht.
           knoppen()[2].click(); await w(60);
           u.niveau3 = { niveau: wspState.instrumentLevels.Gitaar, paneelOpen: !paneel().hidden,
-            gekozen: knoppen().map(b => b.classList.contains('selected')), badge: badges()[0].querySelector('.picker-badge-stars').textContent.trim(),
-            zin: paneel().querySelector('.picker-level-blurb').textContent === instrumentLevelBlurbs()[2] };
+            badge: badges()[0].querySelector('.picker-badge-stars').textContent.trim() };
+          badges()[0].click(); await w(40);
+          u.niveau3.gekozen = knoppen().map(b => b.classList.contains('selected'));
+          u.niveau3.zin = paneel().querySelector('.picker-level-blurb').textContent === instrumentLevelBlurbs()[2];
           knoppen()[3].click(); await w(60);
-          u.niveau4 = wspState.instrumentLevels.Gitaar;
+          u.niveau4 = { niveau: wspState.instrumentLevels.Gitaar, dicht: paneel().hidden };
+          badges()[0].click(); await w(40);
           // 4. De uitleg is een klapper in het paneel, geen tweede venster
           paneel().querySelector('.niveau-uitleg-knop').click(); await w(40);
           u.uitleg = { open: paneel().querySelectorAll('.niveau-uitleg p').length, modal: !!document.querySelector('#niveauInfoModal.visible') };
@@ -8945,10 +8949,10 @@ window.TT_STUB.fnAntwoord = {};
               and d76["naKeuze"]["badgeTekst"] == "Kies niveau" and d76["naKeuze"]["titel"] == "Niveau voor Gitaar", j76)
         check("de vijf keuzes zijn minstens 44px hoog en passen op 390px",
               d76["maat"]["minHoogte"] >= 44 and d76["maat"]["binnen"] and d76["maat"]["scrollBreed"], j76)
-        check("een niveau kiezen is één tik: het wordt gezet, het paneel blijft open, de badge toont de sterren, één zin legt het uit",
-              d76["niveau3"]["niveau"] == 3 and d76["niveau3"]["paneelOpen"] and d76["niveau3"]["gekozen"] == [False, False, True, False, False]
+        check("een niveau kiezen is één tik: het wordt gezet, het paneel klapt dicht (besluit Ronald 07-11-2026), de rij toont de sterren; open je hem weer, dan staat het niveau gekozen met één zin uitleg",
+              d76["niveau3"]["niveau"] == 3 and not d76["niveau3"]["paneelOpen"] and d76["niveau3"]["gekozen"] == [False, False, True, False, False]
               and d76["niveau3"]["badge"] == "★★★" and d76["niveau3"]["zin"], j76)
-        check("het niveau is te wijzigen met een tik", d76["niveau4"] == 4, j76)
+        check("het niveau is te wijzigen: tik op de rij, tik op een ander niveau, het paneel klapt dicht", d76["niveau4"] == {"niveau": 4, "dicht": True}, j76)
         check("de uitleg is een klapper in het paneel: vijf niveaus, geen tweede venster",
               d76["uitleg"]["open"] == 5 and not d76["uitleg"]["modal"] and d76["uitlegDicht"] == 0, j76)
         check("een tik op de badge sluit het paneel, nog een tik opent het met het gekozen niveau",
@@ -9033,7 +9037,8 @@ window.TT_STUB.fnAntwoord = {};
         d78 = page.evaluate(r"""async () => {
           const w = ms => new Promise(r => setTimeout(r, ms)), u = {}, $ = id => document.getElementById(id);
           const keep = { myMusicianId, currentUser, hasOwnProfile };
-          const regel = id => { const e = $(id), n = e && e.nextElementSibling; return n && n.classList.contains('field-msg') ? n.textContent.trim() : null; };
+          // TT-543 blok 4: de regel staat onder het anker van het veld (bij "+ Instrument" en "+ Genre" onder het raster).
+          const regel = id => { const e = $(id), a = e && veldFoutAnker(e), n = a && a.nextElementSibling; return n && n.classList.contains('field-msg') ? n.textContent.trim() : null; };
           // 1. Bestaand e-mailadres, ander wachtwoord
           showView('register'); await w(60);
           currentUser = null;
@@ -11448,7 +11453,9 @@ def blok_tt517_fase1():
     check("styles.css: elke lettermaat is één van de zes (11 · 12 · 15 · 17 · 22 · 32px), op de uitzonderingen na",
           not fout, "; ".join(fout)[:400])
     velden = [f"{sel} {px}px" for sel, px in _tt517_css_maten(css)
-              if re.search(r'(^|[^\w-])(input|textarea|select)\b|picker-field\b|wheel-field\b', sel) and px != 16]
+              if re.search(r'(^|[^\w-])(input|textarea|select)\b|picker-field\b|wheel-field\b', sel) and px != 16
+              # TT-543 blok 4 (voorstel 22): "+ Instrument" en "+ Genre" zijn geen veld meer maar een knop (15px, huisstijl §2).
+              and 'picker-toevoegen' not in sel]
     check("styles.css: elk veld (invoer, keuze, wiel) is 16px", not velden, "; ".join(velden)[:300])
     check("--fs-sm is 12px, de rol Hulptekst", re.search(r'--fs-sm:\s*12px;', css) is not None, "")
     bericht = [px for sel, px in _tt517_css_maten(css) if sel == ".message-bubble"]
@@ -14431,7 +14438,7 @@ def blok_onderhoud_0611():
             wizard: !document.getElementById('wizardMhTipText') && !document.querySelector('#step3 .media-tip'),
             functies: ['mhStartTipCycle', 'wizardMhStartTipCycle'].filter(f => typeof window[f] === 'function'),
             zin: document.querySelector('#mediahoekScreen .panel-sub').textContent.trim() === document.querySelector('#step3 .panel-sub').textContent.trim()
-              && document.querySelector('#mediahoekScreen .panel-sub').textContent.includes('Een profiel met media valt op.') };
+              && document.querySelector('#mediahoekScreen .panel-sub').textContent.trim() === 'Met goede media valt je profiel veel meer op.' };
           document.getElementById('bottomNavSearch').click(); await w(200);
           // TT-561 D7: een profiel dat niet bestaat is geen storing
           showView('profiel', undefined, { id: 'bestaat-niet', app: true }); await w(800);
@@ -14448,7 +14455,7 @@ def blok_onderhoud_0611():
         check("TT-561: een storing toont op Mijn Bands de foutstaat, niet 'Nog geen bands'",
               "Laden lukt nu niet" in uit["bands"] and "Nog geen bands" not in uit["bands"], uit["bands"][:160])
         check("TT-561: zonder profiel (geen rij) blijft het 'Nog geen profiel'", "Nog geen profiel" in uit["geenProfiel"], uit["geenProfiel"][:160])
-        check("TT-543 blok 3: de wisselende tip is weg in Je mediahoek en wizardstap 4; beide zeggen 'Een profiel met media valt op.'",
+        check("TT-543 blok 3 en 4: de wisselende tip is weg in Je mediahoek en wizardstap 4; beide zeggen alleen 'Met goede media valt je profiel veel meer op.' (voorstel 24)",
               uit["tipWeg"] == {"tegel": True, "wizard": True, "functies": [], "zin": True}, json.dumps(uit["tipWeg"]))
         # TT-510: tikvlak van "Wachtwoord vergeten?" 44px, zonder het veld of Inloggen te raken.
         page.evaluate("currentUser = null; showView('auth')"); page.wait_for_timeout(300)
@@ -14639,7 +14646,7 @@ def blok_tt543_blok1():
             sub: !!t2.querySelector('.panel-sub'), opmaakInRegel: !!t2.querySelector('label[style], label span[style]') };
           u.f1.watSpeelJe = NORMAAL('#watSpeelJeScreen');
           openTegelScreen('jeSetlist'); await w(250);
-          u.tegel3Zin = $('jeSetlistScreen').querySelector('.panel-sub').textContent.trim();
+          u.tegel3Zin = $('jeSetlistScreen').querySelector('.panel-sub')?.textContent.trim() || null;
           u.f1.jeSetlist = NORMAAL('#jeSetlistScreen');
           // Voorstel 12: geen "JPG of PNG, maximaal 5 MB." bij de profielfoto (stap 4 en de tegel).
           u.fotoRegel = [...document.querySelectorAll('#step3 .avatar-info p, #jeMediahoekScreen .avatar-info p, #mediahoekScreen .avatar-info p')].map(e => e.textContent);
@@ -14661,8 +14668,9 @@ def blok_tt543_blok1():
     for naam, d in (("stap 2", u["stap2"]), ("tegel Wat speel je", u["tegel2"])):
         check(f"{naam}: labels \"Instrumenten *\" en \"Genres *\", rechts \"Niveau\" met de i op de rechterrand van het veld, geen uitleg en geen opmaak in de regel (voorstellen 6, 7, 8; F2)",
               d["labels"] == ["Instrumenten *", "Genres *"] and d["uitleg"] == "Niveaui" and d["iRand"] == 0 and not d["sub"] and not d["opmaakInRegel"], json.dumps(d))
-    check("Je setlist: in stap 3 en de tegel dezelfde zin, en geen streep onder de lijst in stap 3 (voorstellen 9, 10)",
-          u["stap3Zin"] == u["tegel3Zin"] == "Kies drie nummers en ontdek andere muzikanten." and not u["stap3Streep"], json.dumps([u["stap3Zin"], u["tegel3Zin"], u["stap3Streep"]]))
+    # TT-543 blok 4, voorstel 23 (besluit Ronald 07-11-2026): de zin alleen in de wizard (herziet voorstel 9).
+    check("Je setlist: de zin \"Kies drie nummers en ontdek andere muzikanten.\" alleen in stap 3, niet in de tegel; geen streep onder de lijst in stap 3 (voorstellen 23, 10)",
+          u["stap3Zin"] == "Kies drie nummers en ontdek andere muzikanten." and u["tegel3Zin"] is None and not u["stap3Streep"], json.dumps([u["stap3Zin"], u["tegel3Zin"], u["stap3Streep"]]))
     check("geen regel \"JPG of PNG, maximaal 5 MB.\" bij de profielfoto (voorstel 12)", not u["fotoRegel"], json.dumps(u["fotoRegel"]))
     f1 = {k: v for k, v in u["f1"].items() if v}
     check("F1: elke zichtbare tekst in stap 1, 2, 3, het tegeloverzicht en de tegels Wie ben je, Wat speel je en Je setlist heeft een vaste regelhoogte (huisstijl §2)",
@@ -14718,7 +14726,7 @@ def blok_tt543_blok2():
                 const ks = koppen(sel), d = { koppen: ks.map(tekst), maat: [...new Set(ks.map(kop))],
                   links: [...new Set(ks.map(k => Math.round(R(k).left)))], erboven: [], eronder: [] };
                 ks.forEach((k, i) => { const v = blok(k); if (v) d.erboven.push(af(v.lastElementChild && v.classList.contains('field-group') ? v : v, onder(k)));
-                  const n = onder(k).nextElementSibling; d.eronder.push([n.className.split(' ')[0], af(onder(k), n.classList.contains('field-group') || n.classList.contains('field') ? (n.querySelector('label, .picker-field, .avatar-upload-area') || n) : n)]); });
+                  const n = onder(k).nextElementSibling; d.eronder.push([n.className.split(' ')[0], af(onder(k), n.classList.contains('field-group') || n.classList.contains('field') ? (n.querySelector('label, .picker-badge, .picker-field, .avatar-upload-area') || n) : n)]); }); // .picker-badge: TT-543 blok 4, de keuzes staan bovenaan
                 d.veldLinks = Math.round(R(document.querySelector(sel + ' input:not([type=file]), ' + sel + ' .picker-field, ' + sel + ' .avatar-upload-area')).left);
                 d.lijnen = [...document.querySelectorAll(sel + ' .divider')].filter(e => e.offsetParent).length;
                 d.eersteBoven = Math.round(R(onder(ks[0])).top - R(document.querySelector(sel)).top);
@@ -15159,6 +15167,270 @@ def blok_tt543_blok3():
     check("geen fout in de pagina", not fouten, "; ".join(fouten)[:300])
 
 
+# --------------------------------------------------------------------------
+# Blok 136 — TT-543 onderdeel 1, blok 4 (besluiten Ronald 06-11-2026, op
+# beeld): (16) Opslaan vast onderin de vier tegels van Profiel bewerken, in
+# dezelfde balk als Verder in de stappen; (17) het tegeloverzicht toont per
+# tegel wat je invulde, en "Nog leeg" waar een tegel leeg is. De bandtegels
+# blijven tot onderdeel 6 zoals ze waren. Op 390px en 360px, donker en licht.
+# --------------------------------------------------------------------------
+def blok_tt543_blok4():
+    print("\nBlok 136 — TT-543 blok 4: vaste balk, tegeloverzicht, Opslaan uit en terug, + Instrument, regelhoogtes")
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    js = open(os.path.join(ROOT, "musicians.js"), encoding="utf-8").read()
+    check("de vaste onderregels van de vier tegels zijn weg uit de code",
+          all(x not in js for x in ("naam - plaats - bio", "instrumenten - niveau - genres", "covers - eigen nummers", "video's - foto's - profielfoto")), "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten, uit = [], {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breed, thema in ((390, "dark"), (360, "light")):
+            ctx = browser.new_context(viewport={"width": breed, "height": 844}, color_scheme=thema)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(400)
+            uit[breed] = page.evaluate("""async () => {
+              const w = ms => new Promise(r => setTimeout(r, ms)), $ = id => document.getElementById(id), u = {};
+              const R = e => e.getBoundingClientRect(), S = window.TT_STUB, m = S.data.musicians[0];
+              const main = document.querySelector('#view-profieltegels > main');
+              const subs = () => [...document.querySelectorAll('#tegelsWrap .tile-sub')].map(e => e.innerText);
+              const laatste = sch => Math.max(...[...sch.querySelectorAll('*')].filter(e => e.offsetParent && !e.closest('.wizard-action-bar') && R(e).height > 0).map(e => R(e).bottom));
+              // De balk van de stappen, als maat.
+              showView('register'); await w(200); goTo(0); await w(300); window.scrollTo(0, 1e5); await w(100);
+              const wb = document.querySelector('#step0 .wizard-action-bar'), wk = wb.querySelector('.btn-primary');
+              u.wiz = { balk: [Math.round(R(wb).left), Math.round(R(wb).right), Math.round(R(wb).height), Math.round(innerHeight - R(wb).bottom)],
+                knopH: Math.round(R(wk).height), inhoudTotBalk: Math.round(R(wb).top - laatste($('step0'))), pad: getComputedStyle(document.querySelector('#view-register main')).paddingBottom };
+              // Ingelogd met profiel, een gevuld profiel.
+              S.session = { user: { id: 'u1', email: 't@t.nl' } }; currentUser = { id: 'u1', email: 't@t.nl' }; myMusicianId = 'm1';
+              S.rpcResults.tt_mijn_naam = [{ fname: 'Ronald', lname: 'Wever' }]; S.rpcResults.tt_get_my_birth_date = '2001-02-01';
+              Object.assign(m, { weergavenaam: 'Ronald Wever', avatar_url: 'https://x/a.jpg', zip: '2497',
+                musician_instruments: [{ instrument: 'Drums' }, { instrument: 'Zang' }], musician_genres: [{ genre: 'Rock' }, { genre: 'Indie' }],
+                musician_songs: [{ song_title: 'a' }, { song_title: 'b' }, { song_title: 'c' }],
+                musician_media: [{ media_type: 'foto' }, { media_type: 'foto' }, { media_type: 'video' }, { media_type: 'link' }] });
+              showView('profieltegels'); await w(300);
+              const tegels = [...document.querySelectorAll('#tegelsWrap .tile')];
+              u.vol = { subs: subs(), hoog: tegels.map(t => Math.round(R(t).height)), pad: getComputedStyle(main).paddingBottom,
+                leegKlasse: document.querySelectorAll('#tegelsWrap .tegel-leeg').length,
+                vraag: S.calls.filter(c => c.table === 'musicians' && String(c.columns).includes('musician_media(media_type)')).length };
+              // Elke tegel: de balk zoals bij de stappen, Opslaan zichtbaar zonder scrollen.
+              u.tegels = {};
+              for (const id of ['wieBenJe', 'watSpeelJe', 'jeSetlist', 'mediahoek']) {
+                openTegelScreen(id); await w(300); window.scrollTo(0, 0); await w(80);
+                const sch = $(TEGEL_SCREENS[id]), bar = sch.querySelector('.wizard-action-bar'), knop = bar && bar.querySelector('.btn-primary');
+                const d = { balk: bar ? [Math.round(R(bar).left), Math.round(R(bar).right), Math.round(R(bar).height), Math.round(innerHeight - R(bar).bottom)] : null,
+                  vast: bar ? getComputedStyle(bar).position : null, tekst: knop ? knop.textContent.trim() : null, knopH: knop ? Math.round(R(knop).height) : null,
+                  inBeeld: knop ? R(knop).bottom <= innerHeight && R(knop).top >= 0 : false, actieRij: sch.querySelectorAll('.action-row').length,
+                  pad: getComputedStyle(main).paddingBottom };
+                window.scrollTo(0, 1e5); await w(80);
+                d.inhoudTotBalk = bar ? Math.round(R(bar).top - laatste(sch)) : null;
+                u.tegels[id] = d;
+              }
+              // Opslaan werkt nog: Wie ben je, een andere plaats.
+              openTegelScreen('wieBenJe'); await w(300);
+              $('wbjBio').value = 'Een langere bio voor de test.'; $('wbjBio').dispatchEvent(new Event('input')); await w(60);
+              document.querySelector('#wieBenJeScreen .wizard-action-bar .btn-primary').click(); await w(300);
+              u.opgeslagen = m.bio;
+              // Terug naar het overzicht: de regels zijn opnieuw opgehaald.
+              m.musician_songs = [{ song_title: 'a' }]; m.city = 'Delft';
+              openTegelOverview(); await w(300);
+              u.ververst = { subs: subs(), pad: getComputedStyle(main).paddingBottom };
+              // Een leeg profiel: "Nog leeg", vet, in de signaalkleur.
+              Object.assign(m, { avatar_url: null, musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] });
+              openTegelOverview(); await w(300);
+              const leeg = document.querySelector('#tegelsWrap .tegel-leeg');
+              u.leeg = { subs: subs(), aantal: document.querySelectorAll('#tegelsWrap .tegel-leeg').length,
+                kleur: getComputedStyle(leeg).color, accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+                dik: getComputedStyle(leeg).fontWeight, hoog: [...document.querySelectorAll('#tegelsWrap .tile')].map(t => Math.round(R(t).height)) };
+              // Een lange regel blijft op één regel, met "…".
+              Object.assign(m, { weergavenaam: 'Alexandra Wilhelmina van der Heijden-Smit', city: 'Capelle aan den IJssel' });
+              openTegelOverview(); await w(300);
+              const s0 = document.querySelector('#tegelsWrap .tile-sub');
+              u.lang = { regel: Math.round(R(s0).height), afgekapt: s0.scrollWidth > s0.clientWidth, eind: getComputedStyle(s0).textOverflow,
+                binnen: R(s0).right <= R(s0.closest('.tile')).right };
+              // Een fout bij het ophalen laat de vorige regels staan.
+              const voor = subs(); S.errors['musicians.musician_media'] = { code: '500', message: 'stuk' };
+              openTegelOverview(); await w(300);
+              u.fout = { gelijk: JSON.stringify(subs()) === JSON.stringify(voor) }; delete S.errors['musicians.musician_media'];
+              // Een ander profiel op hetzelfde toestel ziet de regels van de vorige niet, ook niet even.
+              S.data.musicians.push({ id: 'm9', user_id: 'u9', username: 'ander', city: 'Leiden' }); myMusicianId = 'm9';
+              S.errors['musicians.musician_media'] = { code: '500', message: 'stuk' };
+              openTegelOverview(); await w(300);
+              u.ander = subs(); delete S.errors['musicians.musician_media']; myMusicianId = 'm1';
+              // De bandtegels: geen vaste balk, geen extra ruimte (onderdeel 6).
+              bewerkBandId = 'b1'; openTegelScreen('bandWie'); await w(300);
+              u.band = { balk: $('bandWieScreen').querySelectorAll('.wizard-action-bar').length, rij: $('bandWieScreen').querySelectorAll('.action-row').length,
+                pad: getComputedStyle(main).paddingBottom };
+              bewerkBandId = null; showView('about');
+              return u; }""")
+            # Voorstellen 19 tot en met 26 en F4 (besluiten Ronald 07-11-2026, sessie 88).
+            uit[breed]["b"] = page.evaluate("""async () => {
+              const w = ms => new Promise(r => setTimeout(r, ms)), $ = id => document.getElementById(id), u = {};
+              const R = e => e.getBoundingClientRect(), S = window.TT_STUB, m = S.data.musicians[0];
+              const knop = () => document.querySelector('#' + TEGEL_SCREENS[activeTegelScreen] + ' .wizard-action-bar .btn-primary');
+              const NORMAAL = sel => [...document.querySelectorAll(sel + ' *')].filter(el => el.offsetParent
+                && [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())
+                && !el.classList.contains('scherm-titel') && getComputedStyle(el).lineHeight === 'normal').map(el => el.className + ' «' + el.textContent.trim().slice(0, 20) + '»');
+              S.session = { user: { id: 'u1', email: 't@t.nl' } }; currentUser = { id: 'u1', email: 't@t.nl' }; myMusicianId = 'm1';
+              Object.assign(m, { weergavenaam: 'Ronald Wever', zip: '2497', city: 'Den Haag', bio: 'Test', avatar_url: null,
+                musician_instruments: [{ instrument: 'Drums', niveau: 3 }, { instrument: 'Harmonica (mondharmonica)', niveau: null }],
+                musician_genres: [{ genre: 'Rock' }, { genre: 'Folk / Akoestisch' }, { genre: 'Pop' }],
+                musician_songs: [{ song_title: 'Enter Sandman', song_artist: 'Metallica', mastery_level: 'podium' }, { song_title: 'b', song_artist: 'Y', mastery_level: null }, { song_title: 'c', song_artist: 'Z', mastery_level: null }],
+                musician_media: [{ media_type: 'foto', url: 'https://x/a.jpg', in_banner: false }] });
+              S.rpcResults.tt_save_musician_koppelingen = null;
+              showView('profieltegels'); await w(300);
+              // 19: Opslaan uit bij openen, aan na een wijziging, weer uit als het terug is zoals het was.
+              u.uit = {};
+              for (const id of ['wieBenJe', 'watSpeelJe', 'jeSetlist', 'mediahoek']) { openTegelScreen(id); await w(400); u.uit[id] = knop().disabled; }
+              openTegelScreen('wieBenJe'); await w(400);
+              const bio = $('wbjBio'); bio.value = 'Anders'; bio.dispatchEvent(new Event('input', { bubbles: true })); await w(60);
+              u.aan = knop().disabled === false;
+              bio.value = 'Test'; bio.dispatchEvent(new Event('input', { bubbles: true })); await w(60);
+              u.weerUit = knop().disabled; await w(400);
+              u.halfDoorzichtig = getComputedStyle(knop()).opacity;
+              // Ook als er geen beeld getekend wordt (verborgen venster): geen requestAnimationFrame nodig.
+              const rafOud = window.requestAnimationFrame; window.requestAnimationFrame = () => 0;
+              bio.value = 'Zonder beeld'; bio.dispatchEvent(new Event('input', { bubbles: true })); await w(60);
+              u.zonderBeeld = knop().disabled === false;
+              bio.value = 'Test'; bio.dispatchEvent(new Event('input', { bubbles: true })); await w(60);
+              u.zonderBeeld = u.zonderBeeld && knop().disabled === true;
+              window.requestAnimationFrame = rafOud;
+              // 20: na Opslaan terug naar Profiel bewerken, met de melding.
+              bio.value = 'Nieuw'; bio.dispatchEvent(new Event('input', { bubbles: true })); await w(60);
+              knop().click(); await w(500);
+              u.naOpslaan = { tegel: activeTegelScreen, overzicht: $('tegelOverviewScreen').style.display !== 'none', toast: $('appToast').textContent };
+              // 21 C en 22: in de tegel het veld als laatste knop van het raster; instrumenten als rijen; 15px.
+              openTegelScreen('watSpeelJe'); await w(400);
+              const ir = $('wspInstrumentBadgeRow'), gr = $('wspGenreBadgeRow');
+              const kinderen = rij => [...rij.children].filter(e => e.offsetParent);
+              const ik = kinderen(ir), gk = kinderen(gr);
+              u.tegel = { instrLaatste: ik[ik.length - 1].id, instrTekst: ik[ik.length - 1].textContent.trim(), genreLaatste: gk[gk.length - 1].id,
+                genreTekst: gk[gk.length - 1].textContent.trim(), kolomInstr: getComputedStyle(ir).gridTemplateColumns.split(' ').length,
+                kolomGenre: getComputedStyle(gr).gridTemplateColumns.split(' ').length,
+                instrBreed: ik.every(e => Math.abs(R(e).width - R(ir).width) < 1), instrHoog: Math.round(R(ik[0]).height),
+                maat: getComputedStyle(ik[0]).fontSize + '/' + getComputedStyle(ik[0]).lineHeight,
+                genreMaat: getComputedStyle(gk[0]).fontSize, links: Math.round(R(ik[0].querySelector('.picker-badge-label')).left - R(ik[0]).left),
+                sterRechts: R(ik[0].querySelector('.picker-badge-stars')).right <= R(ik[0].querySelector('.picker-badge-remove')).left,
+                genreCel: Math.abs(R(gk[gk.length - 1]).width - R(gk[0]).width) < 1, plus: !!gk[gk.length - 1].querySelector('svg'),
+                stippel: getComputedStyle(gk[gk.length - 1]).borderTopStyle, toevoegHoog: Math.round(R(gk[gk.length - 1]).height),
+                kruisLucht: Math.round(R(gk[1].querySelector('.picker-badge-remove span') || gk[1].querySelector('.picker-badge-remove')).left - R(gk[1].querySelector('.picker-badge-label')).right) };
+              $('wspGenreField').click(); await w(300);
+              u.tegel.lijst = !!document.querySelector('.modal-overlay.visible');
+              // 28 A (besluit Ronald 07-11-2026): de genrelijst werkt als die van de instrumenten:
+              // alleen wat je nog niet koos, één tik voegt toe en sluit de lijst.
+              const items = [...document.querySelectorAll('#pickerListItems .picker-list-item')].map(e => e.textContent.trim());
+              u.a = { zonderGekozen: !items.includes('Rock') && !items.includes('Pop') && items.includes('Jazz') };
+              [...document.querySelectorAll('#pickerListItems .picker-list-item')].find(e => e.textContent.trim() === 'Jazz').click(); await w(300);
+              u.a.dicht = !$('pickerListModal').classList.contains('visible');
+              u.a.genres = wspState.genres.slice();
+              u.a.laatsteKnop = [...$('wspGenreBadgeRow').children].pop().id;
+              // 29: een niveau kiezen klapt het paneel dicht.
+              const rij0 = $('wspInstrumentBadgeRow').querySelector('.picker-badge'); rij0.click(); await w(100);
+              const pn = $('wspInstrumentBadgeRowNiveau'); u.a.paneelOpen = !pn.hidden;
+              // Besluit Ronald 07-11-2026 (a): het paneel opent direct onder het instrument waarop je tikte, boven "+ Instrument".
+              const rijen = [...$('wspInstrumentBadgeRow').children], open0 = $('wspInstrumentBadgeRow').querySelector('.picker-badge'); // na de tik opnieuw getekend
+              u.a.plek = { naGetikte: pn.previousElementSibling === open0 && open0.classList.contains('open'), afstand: Math.round(R(pn).top - R(open0).bottom),
+                voorTweede: rijen.indexOf(pn) < rijen.indexOf($('wspInstrumentBadgeRow').querySelectorAll('.picker-badge')[1]),
+                toevoegenLaatst: rijen[rijen.length - 1].id };
+              pn.querySelectorAll('.level-choice')[1].click(); await w(100);
+              u.a.paneelNaNiveau = pn.hidden;
+              document.querySelectorAll('.modal-overlay.visible').forEach(o => typeof sluitModal === 'function' ? sluitModal(o) : o.classList.remove('visible')); await w(200);
+              // Zonder instrument: de foutregel onder het raster.
+              wspState.instruments = []; renderInstrumentBadges('wsp'); await saveWatSpeelJe(); await w(200);
+              const fr = document.querySelector('#watSpeelJeScreen .field-msg');
+              u.tegel.fout = fr ? [fr.textContent.trim(), fr.previousElementSibling.id] : null;
+              wspState.instruments = ['Drums']; renderInstrumentBadges('wsp'); clearFieldErrors('watSpeelJeScreen');
+              // F4: met gevulde schermen geen regelhoogte "normal" (tegels 2, 3, 4).
+              u.f4 = {};
+              wspState.instruments = ['Drums', 'Zang']; wspState.instrumentLevels = { Drums: 3 }; renderInstrumentBadges('wsp'); await w(100);
+              u.f4.watSpeelJe = NORMAAL('#watSpeelJeScreen');
+              openTegelScreen('jeSetlist'); await w(400); jstSongs = [{ title: 'a', artist: 'A', level: 'podium' }, { title: 'b', artist: 'B', level: null }]; jstRenderSongs(); await w(100);
+              u.f4.jeSetlist = NORMAAL('#jeSetlistScreen');
+              openTegelScreen('mediahoek'); await w(500);
+              u.f4.mediahoek = NORMAAL('#mediahoekScreen');
+              u.bannerRegel = getComputedStyle($('mhBannerTeller')).lineHeight;
+              // 26: een tik op de tekst naast de profielfoto kiest een foto.
+              let gekozen = 0; $('mhAvatarInput').click = () => gekozen++;
+              document.querySelector('#mediahoekScreen .avatar-info').click();
+              u.tekstKiest = gekozen;
+              // Wizard stap 2: zelfde vorm.
+              S.session = null; currentUser = null; myMusicianId = null; showView('register'); await w(200); goTo(1); await w(200);
+              Object.assign(state, { instruments: ['Drums'], instrumentLevels: { Drums: 2 }, genres: ['Rock'] });
+              renderInstrumentBadges('wizard'); renderPickerBadges(PICKERS.genre); await w(100);
+              const wi = kinderen($('instrumentBadgeRow')), wg = kinderen($('genreBadgeRow'));
+              u.wizard = { instr: [wi[wi.length - 1].id, wi[wi.length - 1].textContent.trim()], genre: [wg[wg.length - 1].id, wg[wg.length - 1].textContent.trim()],
+                kolom: getComputedStyle($('instrumentBadgeRow')).gridTemplateColumns.split(' ').length, maat: getComputedStyle(wi[0]).fontSize,
+                normaal: NORMAAL('#step1') };
+              goTo(2); state.songs = [{ title: 'a', artist: 'A', level: 'podium' }, { title: 'b', artist: 'B', level: null }]; if (typeof renderSongs === 'function') renderSongs(); await w(100);
+              u.wizard.normaalStap3 = NORMAAL('#step2');
+              goTo(3); await w(300); u.wizard.normaalStap4 = NORMAAL('#step3');
+              let wk = 0; $('avatarInput').click = () => wk++; document.querySelector('#step3 .avatar-info').click(); u.wizard.tekstKiest = wk;
+              showView('about');
+              return u; }""")
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    for breed in (390, 360):
+        u = uit[breed]
+        j = json.dumps(u)
+        for id_, d in u["tegels"].items():
+            check(f"{breed}px {id_}: Opslaan vast onderin, in dezelfde balk als Verder (zelfde plek, hoogte en knop), zichtbaar zonder scrollen; geen knop meer onder de velden",
+                  d["balk"] == u["wiz"]["balk"] and d["vast"] == "fixed" and d["tekst"] == "Opslaan" and d["knopH"] == u["wiz"]["knopH"]
+                  and d["inBeeld"] and d["actieRij"] == 0 and d["pad"] == u["wiz"]["pad"], json.dumps([d, u["wiz"]]))
+        check(f"{breed}px Wie ben je: onderaan dezelfde ruimte tussen de inhoud en de balk als in stap 1",
+              u["tegels"]["wieBenJe"]["inhoudTotBalk"] == u["wiz"]["inhoudTotBalk"], json.dumps([u["tegels"]["wieBenJe"], u["wiz"]]))
+        check(f"{breed}px Opslaan in de balk slaat op (Wie ben je)", u["opgeslagen"] == "Een langere bio voor de test.", j)
+        check(f"{breed}px tegeloverzicht: per tegel wat je invulde, in één vraag; geen extra ruimte onderaan",
+              u["vol"]["subs"] == ["Ronald Wever · Den Haag", "Drums, Zang · Rock, Indie", "3 nummers", "Profielfoto · 2 foto's · 1 video · 1 link"]
+              and u["vol"]["leegKlasse"] == 0 and u["vol"]["vraag"] == 1 and u["vol"]["pad"] != u["wiz"]["pad"], j)
+        check(f"{breed}px tegeloverzicht: terug na Opslaan toont de nieuwe gegevens",
+              u["ververst"]["subs"][0] == "Ronald Wever · Delft" and u["ververst"]["subs"][2] == "1 nummer" and u["ververst"]["pad"] == u["vol"]["pad"], j)
+        check(f"{breed}px leeg profiel: \"Nog leeg\" met wat je kunt doen, vet in de signaalkleur; elke tegel even hoog",
+              u["leeg"]["subs"][1:] == ["Nog leeg · kies een instrument", "Nog leeg · kies drie nummers", "Nog leeg · voeg een foto toe"]
+              and u["leeg"]["aantal"] == 3 and u["leeg"]["dik"] == "700" and len(set(u["leeg"]["hoog"] + u["vol"]["hoog"])) == 1, j)
+        check(f"{breed}px een lange regel blijft op één regel (16px) en eindigt op \"…\" binnen de tegel",
+              u["lang"]["regel"] == 16 and u["lang"]["afgekapt"] and u["lang"]["eind"] == "ellipsis" and u["lang"]["binnen"], j)
+        check(f"{breed}px een fout bij het ophalen laat de regels staan", u["fout"]["gelijk"], j)
+        check(f"{breed}px een ander profiel op hetzelfde toestel ziet de regels van het vorige niet",
+              all(x.strip() == "" for x in u["ander"]), json.dumps(u["ander"]))
+        check(f"{breed}px Bandprofiel bewerken blijft zoals het was: Opslaan onder de velden, geen extra ruimte (onderdeel 6)",
+              u["band"]["balk"] == 0 and u["band"]["rij"] == 1 and u["band"]["pad"] == u["vol"]["pad"], j)
+    for breed in (390, 360):
+        b = uit[breed]["b"]; jb = json.dumps(b, ensure_ascii=False)
+        check(f"{breed}px 19: Opslaan staat uit bij het openen van elke tegel, aan na een wijziging, weer uit als alles terug is; half doorzichtig",
+              all(b["uit"].values()) and b["aan"] and b["weerUit"] and b["halfDoorzichtig"] == "0.5" and b["zonderBeeld"], jb)
+        check(f"{breed}px 20: na Opslaan terug naar Profiel bewerken, met \"Wijzigingen opgeslagen.\"",
+              b["naOpslaan"] == {"tegel": "overview", "overzicht": True, "toast": "Wijzigingen opgeslagen."}, jb)
+        t = b["tegel"]
+        check(f"{breed}px 21 C en 22 (tegel): het keuzeveld is de laatste knop, \"+ Instrument\" en \"+ Genre\", gestippeld, 44px; instrumenten als rijen (één kolom, 44px, tekst 20px binnen de rand van 1px, sterren voor het kruisje), genres in twee kolommen; 15px",
+              t["instrLaatste"] == "wspInstrumentField" and t["instrTekst"] == "Instrument" and t["genreLaatste"] == "wspGenreField" and t["genreTekst"] == "Genre"
+              and t["kolomInstr"] == 1 and t["kolomGenre"] == 2 and t["instrBreed"] and t["instrHoog"] == 44 and t["maat"] == "15px/20px" and t["genreMaat"] == "15px"
+              and t["links"] == 21 and t["sterRechts"] and t["genreCel"] and t["plus"] and t["stippel"] == "dashed" and t["toevoegHoog"] == 44, jb)
+        check(f"{breed}px 28 A: de genrelijst toont alleen wat je nog niet koos; één tik voegt toe en sluit de lijst; \"+ Genre\" blijft de laatste knop",
+              b["a"]["zonderGekozen"] and b["a"]["dicht"] and b["a"]["genres"][-1] == "Jazz" and b["a"]["laatsteKnop"] == "wspGenreField", jb)
+        check(f"{breed}px 29: een niveau kiezen klapt het paneel dicht", b["a"]["paneelOpen"] and b["a"]["paneelNaNiveau"], jb)
+        check(f"{breed}px het niveaupaneel opent direct onder het instrument waarop je tikte (8px), vóór het volgende instrument; \"+ Instrument\" blijft de laatste knop",
+              b["a"]["plek"] == {"naGetikte": True, "afstand": 8, "voorTweede": True, "toevoegenLaatst": "wspInstrumentField"}, jb)
+        check(f"{breed}px 22: een tik op \"+ Genre\" opent de lijst; zonder instrument staat de foutregel onder het raster",
+              t["lijst"] and t["fout"] == ["Kies minimaal één instrument", "wspInstrumentBadgeRow"], jb)
+        check(f"{breed}px F4 (8D): met gevulde schermen geen regelhoogte \"normal\" in Wat speel je, Je setlist en Je mediahoek, en in stap 2, 3 en 4; de bannerregel 16px",
+              not any(b["f4"].values()) and not b["wizard"]["normaal"] and not b["wizard"]["normaalStap3"] and not b["wizard"]["normaalStap4"] and b["bannerRegel"] == "16px", jb)
+        check(f"{breed}px 26: een tik op de tekst naast de profielfoto kiest een foto, in de tegel en in stap 4",
+              b["tekstKiest"] == 1 and b["wizard"]["tekstKiest"] == 1, jb)
+        check(f"{breed}px 21 C en 22 (stap 2): dezelfde vorm als de tegel",
+              b["wizard"]["instr"] == ["instrumentPickerField", "Instrument"] and b["wizard"]["genre"] == ["genrePickerField", "Genre"]
+              and b["wizard"]["kolom"] == 1 and b["wizard"]["maat"] == "15px", jb)
+    u3, u6 = uit[390], uit[360]
+    check("\"Nog leeg\" heeft de signaalkleur in donker en licht (--accent)",
+          u3["leeg"]["kleur"] == "rgb(255, 184, 28)" and u6["leeg"]["kleur"] == "rgb(30, 30, 30)", json.dumps([u3["leeg"], u6["leeg"]]))
+    check("geen fout in de pagina", not fouten, "; ".join(fouten)[:300])
+
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
     _csp_vangnet()
@@ -15194,6 +15466,7 @@ def main():
     blok_tt543_blok1()
     blok_tt543_blok2()
     blok_tt543_blok3()
+    blok_tt543_blok4()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])
