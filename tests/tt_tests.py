@@ -14994,6 +14994,8 @@ def blok_tt543_blok3():
               const toast = () => $('appToast').classList.contains('visible') ? $('appToast').textContent : null;
               const schoon = () => { $('appToast').textContent = ''; $('appToast').classList.remove('visible'); };
               showView('register'); await w(200); goTo(3); await w(800);
+              // 8D 07-11-2026: een nieuwe bezoeker ziet zonder iets te doen "+ Toevoegen" in stap 4.
+              u.nieuw = { kinderen: $('mediaGrid').children.length, toevoegen: !!$('wizMediaToevoegen') };
               state.mediaFiles = [{ type: 'foto', url: 'https://x/a.jpg', name: 'a' }, { type: 'foto', url: 'https://x/b.jpg', name: 'b' },
                                   { type: 'video', url: 'https://x/c.mp4', name: 'c' }];
               state.mediaLinks = [{ url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', inBanner: false }, { url: 'https://soundcloud.com/a/b', inBanner: false }];
@@ -15106,6 +15108,8 @@ def blok_tt543_blok3():
     httpd.shutdown()
     for breed in (390, 360):
         u = uit[breed]; j = json.dumps(u, ensure_ascii=False)[:600]
+        check(f"{breed}px: een nieuwe bezoeker ziet in stap 4 meteen '+ Toevoegen', zonder voorbereiding (8D 07-11-2026)",
+              u["nieuw"] == {"kinderen": 1, "toevoegen": True}, j)
         check(f"{breed}px: één raster van drie kolommen, 8px ertussen, vierkante tegels van gelijke maat",
               u["raster"]["kolommen"] == 3 and u["raster"]["kolomGat"] == 8 and u["raster"]["rijGat"] == 8
               and u["raster"]["vierkant"] and u["raster"]["gelijk"], j)

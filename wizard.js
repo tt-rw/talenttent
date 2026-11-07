@@ -929,6 +929,10 @@ function init() {
 
   syncViewToggles(); // TT-U13: schakelaars gelijkzetten met de werkelijke stand
 
+  // TT-543 blok 3 (8D, 07-11-2026): het raster van stap 4 bestaat alleen uit
+  // JavaScript; zonder deze regel ziet een nieuwe bezoeker geen "+ Toevoegen".
+  renderMediaGrid();
+
   // Update avatar initials placeholder reactively
   document.getElementById('fname').addEventListener('input', () => {
     state.fname = document.getElementById('fname').value.trim();
