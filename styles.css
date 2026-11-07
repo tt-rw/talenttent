@@ -102,7 +102,6 @@
     --rand-menu: #444;                      /* uitklapmenu, bandkaart bij aanwijzen */
     --leeg: #555;                           /* lege ster, niet-actieve stip */
     --wiel-tekst: #9a9a9a;                  /* niet-gekozen regel in het wiel */
-    --tip-tekst: #DD9F18;                   /* TT-517: warmgeel, even licht als het oude #c8a800 */
     /* Lagen boven de pagina en hun schaduw. */
     --laag-venster: rgba(0,0,0,0.8);
     --laag-opslaan: rgba(0,0,0,0.7);
@@ -192,7 +191,6 @@
     --rand-menu: #DED9CF;
     --leeg: #CFCAC0;
     --wiel-tekst: #6E6A63;
-    --tip-tekst: #1E1E1E;
     --laag-venster: rgba(30,30,30,0.45);
     --laag-opslaan: rgba(30,30,30,0.45);
     --laag-menu: rgba(30,30,30,0.45);
@@ -1329,6 +1327,37 @@
   .wizard-action-bar-inner {
     margin: 0 auto;
   }
+  /* TT-543 blok 3 (besluiten Ronald 07-11-2026, op beeld): "De laatste
+     stap" in wizardstap 4 staat los van Je mediahoek. 128px onder de media
+     een grijze streep (--muted) over de hele breedte van het scherm: 16px
+     voorbij de tekstlijn aan beide kanten, de rand van main. 32px onder de
+     streep de kop, 12px onder de kop het akkoord. */
+  .laatste-stap { margin-top: 128px; }
+  .laatste-stap::before {
+    content: '';
+    display: block;
+    margin: 0 -16px 32px;
+    border-top: 1px solid var(--muted);
+  }
+  .laatste-stap .hoofdstuk-kop { margin-top: 0; }
+  .akkoord-regel {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0; /* geen inspringing van een veldlabel: vinkje op de lijn van de kop */
+  }
+  .akkoord-regel input { margin: 0; flex-shrink: 0; }
+  /* Een knop die leest als een woord in de tekst (opent een venster, verlaat
+     het scherm niet; TT-63). */
+  .tekst-knop {
+    background: none; border: none; padding: 0; margin: 0;
+    font: inherit; color: var(--accent); text-decoration: underline; cursor: pointer;
+  }
 
   /* Ruimte houden voor de vaste balk hierboven, zodat het laatste veld van
      elke stap er nooit achter verdwijnt. Bewust als losse padding-bottom
@@ -2064,21 +2093,6 @@
      bovenaan het profiel is weg, de hero begint direct onder de kop. Niets
      gebruikt de klasse nog (§2.10). */
 
-  /* Media upload section */
-  .media-tip {
-    background: var(--tint); /* §1.1 */
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-size: 12px;
-    color: var(--tip-tekst);
-    margin-bottom: 20px;
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    line-height: 1.5;
-  }
-
   /* TT-316: twee losse keuzeknoppen, niet meer één aaneengesloten balk.
      Kleur, rand en gekozen-stand: zie het TT-316-blok bij .tag. */
   .media-tabs {
@@ -2480,6 +2494,61 @@
     z-index: 2;
   }
   .media-thumb-laden .save-spinner { width: 20px; height: 20px; border-width: 3px; margin: 0; }
+
+  /* ── TT-543 blok 3: de mediahoek als één raster (besluiten Ronald 06 en
+     07-11-2026, op beeld) ──────────────────────────────────────────────
+     Wizardstap 4 en Je mediahoek (mediaRasterHTML() in utils.js). Drie
+     kolommen, 8px ertussen; een tegel op --vlak met hoeken 12px, zoals de
+     tegels in de hoes (huisstijl §4). Onze media van een band houdt tot
+     onderdeel 6 .media-grid en de twee tabbladen. */
+  .banner-teller:has(+ .media-raster) { margin-bottom: 12px; }
+  .media-raster {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .media-raster .media-thumb { border-radius: 12px; background: var(--vlak); }
+  .media-raster .media-thumb-open,
+  .media-raster .media-thumb-laden { border-radius: 12px; }
+  .media-raster .media-thumb-open img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* Een link zonder beeld: de naam van het platform in het midden, 15px vet
+     (zoals op het beeld van het besluit). */
+  .media-kaart-platform {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%; padding: 0 8px; box-sizing: border-box;
+    font-size: 15px; line-height: 18px; font-weight: 700; color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  /* De kiezer voor foto's en video's: onzichtbaar; het menu opent hem. */
+  .media-invoer { display: none; }
+
+  /* "+ Toevoegen": de laatste tegel, in de gestippelde vorm van "iets
+     toevoegen" (huisstijl §5), even groot als een tegel. */
+  .media-toevoegen-plek { aspect-ratio: 1; }
+  .media-toevoegen {
+    position: relative;
+    width: 100%; height: 100%;
+    box-sizing: border-box;
+    padding: 0;
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    font-family: 'Inter', sans-serif; font-size: 12px; line-height: 16px; font-weight: 400;
+    cursor: pointer;
+  }
+  .media-toevoegen-plus { width: 20px; height: 20px; display: block; }
+  /* Zolang het menu openstaat, ligt de tegel licht boven de donkere laag,
+     zoals het plusteken bij Beheersing (TT-531). */
+  .media-toevoegen[aria-expanded="true"] { z-index: 242; border-color: var(--accent); color: var(--accent); background: var(--bg); }
+  /* Het menu opzij: de onderkant op die van Toevoegen, de zijkant op de rand
+     van de tegel ernaast (8px tussenruimte). Ook als er onder geen plaats is
+     (.naar-boven uit utils.js) blijft het zo staan. */
+  .choice-menu.media-toevoegen-menu,
+  .choice-menu.media-toevoegen-menu.naar-boven { top: auto; bottom: 0; }
+  .choice-menu.media-toevoegen-menu.naar-links { left: auto; right: calc(100% + 8px); transform-origin: right bottom; }
+  .choice-menu.media-toevoegen-menu.naar-rechts { right: auto; left: calc(100% + 8px); transform-origin: left bottom; }
 
   /* ── Het mediascherm ──────────────────────────────────────────────────── */
   .media-speler-box {
@@ -4795,6 +4864,9 @@
     white-space: nowrap;
   }
   .field-uitslag.uitslag-goed { color: var(--accent); }
+  /* TT-543 blok 3: de naam van het platform in het venster Link toevoegen,
+     grijs (besluit Ronald 07-11-2026). */
+  .field-uitslag.uitslag-stil { color: var(--muted); }
   /* TT-228 (09-09-2026): zelfde grid-aanpak als .btn-row hierboven, met
      dezelfde 8px-tussenruimte (was 10px, geen veelvoud van 4 — huisstijl
      §3). Vervangt de flex-aanpak van TT-207 (04-09-2026): die noemde het

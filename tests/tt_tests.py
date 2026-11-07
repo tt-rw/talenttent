@@ -929,10 +929,13 @@ def blok_browser():
             { url: 'https://www.instagram.com/p/abc/', inBanner: false }
           ];
           mhRenderMediaGrid();
-          mhRenderLinksList();
+          // TT-543 blok 3: de link als rij staat nog in Onze media van een band
+          // (tot onderdeel 6); de rijcontroles hieronder lopen daar.
+          bmMediaFiles = []; bmMediaLinks = mhMediaLinks.map(l => ({ id: null, ...l }));
+          bmRenderLinksList();
           await new Promise(r => setTimeout(r, 250));
 
-          const rij = document.querySelector('#mhLinksList .media-rij');
+          const rij = document.querySelector('#bmLinksList .media-rij');
           const titel = rij.querySelector('.media-rij-titel');
           const mini = rij.querySelector('.media-mini img');
           const knop = rij.querySelector('.banner-btn');
@@ -943,12 +946,13 @@ def blok_browser():
           const tKnop = tegel.querySelector('.banner-btn').getBoundingClientRect();
           const tKruis = tegel.querySelector('.thumb-remove').getBoundingClientRect();
           const tVak = tegel.getBoundingClientRect();
+          const linkTegels = [...document.querySelectorAll('#mhMediaGrid .media-thumb-link')];
+          const videoTegel = document.querySelectorAll('#mhMediaGrid .media-thumb')[1];
 
           return {
-            aantalRijen: document.querySelectorAll('#mhLinksList .media-rij').length,
+            aantalRijen: document.querySelectorAll('#bmLinksList .media-rij').length,
             heeftBannerKnop: !!knop,
             knopUit: knop.getAttribute('aria-pressed'),
-            miniIsYoutube: !!mini && mini.src.indexOf('img.youtube.com') === 0 + mini.src.indexOf('img.youtube.com'),
             miniSrc: mini ? mini.src : '',
             titelTekst: titel.textContent,
             titelEenRegel: st.whiteSpace === 'nowrap' && st.textOverflow === 'ellipsis',
@@ -959,9 +963,18 @@ def blok_browser():
             tegelKnopLinks: Math.round(tKnop.left - tVak.left),
             tegelKruisRechts: Math.round(tVak.right - tKruis.right),
             tegelKnopBoven: Math.round(tKnop.top - tVak.top),
+            linkTegels: linkTegels.length,
+            linkTegelsKnoppen: linkTegels.every(t => t.querySelector('.banner-btn') && t.querySelector('.thumb-remove')),
+            ytTegel: (linkTegels[0].querySelector('img') || {}).src || '',
+            ytSpeel: !!linkTegels[0].querySelector('.pb-speel'),
+            igTegel: (linkTegels[1].querySelector('.media-kaart-platform') || {}).textContent || '',
+            videoSpeel: !!videoTegel.querySelector('.pb-speel'),
+            geenTypelabel: !document.querySelector('#mhMediaGrid .thumb-type'),
+            geenWoordVideo: !/video/i.test(videoTegel.textContent),
+            laatsteToevoegen: document.getElementById('mhMediaGrid').lastElementChild.classList.contains('media-toevoegen-plek'),
           };
         }""")
-        check("elke link is een rij met miniatuur", media["aantalRijen"] == 2, json.dumps(media)[:200])
+        check("in Onze media is elke link nog een rij met miniatuur (tot onderdeel 6)", media["aantalRijen"] == 2, json.dumps(media)[:200])
         check("elke rij heeft het bannerteken", media["heeftBannerKnop"], "")
         check("niet gekozen staat op aria-pressed=false", media["knopUit"] == "false", media["knopUit"])
         check("een YouTube-link toont het echte beeld",
@@ -980,20 +993,28 @@ def blok_browser():
               media["tegelKnopLinks"] <= 6 and media["tegelKnopBoven"] <= 6, json.dumps(media)[:200])
         check("op een tegel staat het kruis rechtsboven",
               media["tegelKruisRechts"] <= 6, str(media["tegelKruisRechts"]))
+        check("TT-543 blok 3: in Je mediahoek is elke link een tegel in het raster, met bannerteken en kruis",
+              media["linkTegels"] == 2 and media["linkTegelsKnoppen"], json.dumps(media)[:300])
+        check("TT-543 blok 3: een YouTube-link toont het echte beeld met het speelteken; een ander platform zijn naam",
+              "img.youtube.com" in media["ytTegel"] and media["ytSpeel"] and media["igTegel"] == "Instagram", json.dumps(media)[:300])
+        check("TT-543 blok 3: een video krijgt het speelteken in plaats van het woord VIDEO; geen typelabels",
+              media["videoSpeel"] and media["geenWoordVideo"] and media["geenTypelabel"], json.dumps(media)[:300])
+        check("TT-543 blok 3: de laatste tegel is + Toevoegen", media["laatsteToevoegen"], "")
 
         keuze = page.evaluate("""async () => {
           const uit = {};
           // Ronald, 13-09-2026: "alleen de knop moet aan/uit gaan, verder
           // niets." Vasthouden welk element er stond, en na de tik kijken of
           // het nog dat élement is — hertekenen zou het vervangen.
-          const rijVoor = document.querySelector('#mhLinksList .media-rij');
-          const miniVoor = rijVoor.querySelector('.media-mini img');
+          const tegelVoor = document.querySelector('#mhMediaGrid .media-thumb-link');
+          const beeldVoor = tegelVoor.querySelector('img');
           mhToggleLinkBanner(0);
-          const rijNa = document.querySelector('#mhLinksList .media-rij');
-          uit.zelfdeRij = rijVoor === rijNa && rijVoor.isConnected;
-          uit.zelfdeMiniatuur = miniVoor === rijNa.querySelector('.media-mini img');
-          uit.naTik = document.querySelector('#mhLinksList .banner-btn').getAttribute('aria-pressed');
-          uit.geenGoudeRand = getComputedStyle(rijNa).borderTopColor === getComputedStyle(document.querySelectorAll('#mhLinksList .media-rij')[1]).borderTopColor;
+          const tegels = document.querySelectorAll('#mhMediaGrid .media-thumb-link');
+          uit.zelfdeRij = tegelVoor === tegels[0] && tegelVoor.isConnected;
+          uit.zelfdeMiniatuur = beeldVoor === tegels[0].querySelector('img');
+          uit.naTik = tegels[0].querySelector('.banner-btn').getAttribute('aria-pressed');
+          const r = e => { const c = getComputedStyle(e); return [c.borderTopColor, c.borderTopWidth, c.boxShadow].join('|'); };
+          uit.geenGoudeRand = r(tegels[0]) === r(tegels[1]);
           uit.tekenInTeller = !!document.querySelector('#mhBannerTeller .banner-teken svg');
           uit.tekenGoud = uit.tekenInTeller
             ? getComputedStyle(document.querySelector('#mhBannerTeller .bb-schijf')).fill
@@ -1007,17 +1028,17 @@ def blok_browser():
           uit.naGrens = bannerAantal(mhMediaFiles, mhMediaLinks);
           uit.tweedeLink = mhMediaLinks[1].inBanner;
           uit.toast = (document.getElementById('appToast') || {}).textContent || '';
-          // lege link mag niet in de banner
-          mhMediaLinks.push({ url: '', inBanner: false });
-          mhRenderLinksList();
-          mhToggleLinkBanner(2);
-          uit.legeLink = mhMediaLinks[2].inBanner;
+          // lege link mag niet in de banner (Onze media; in het raster bestaat geen lege link)
+          bmMediaLinks.push({ id: null, url: '', inBanner: false });
+          bmRenderLinksList();
+          bmToggleLinkBanner(2);
+          uit.legeLink = bmMediaLinks[2].inBanner;
           return uit;
         }""")
         check("tikken zet het teken aan", keuze["naTik"] == "true", keuze["naTik"])
-        check("aan/uit tekent de lijst niet opnieuw",
+        check("aan/uit tekent het raster niet opnieuw",
               keuze["zelfdeRij"] and keuze["zelfdeMiniatuur"], json.dumps(keuze)[:200])
-        check("een gekozen rij krijgt géén gouden rand", keuze["geenGoudeRand"], "")
+        check("een gekozen tegel krijgt géén gouden rand", keuze["geenGoudeRand"], "")
         check("het bannerteken staat vóór de tellertekst", keuze["tekenInTeller"], "")
         check("en staat daar in de gouden stand",
               keuze["tekenGoud"] == "rgb(255, 184, 28)", keuze["tekenGoud"])
@@ -1027,7 +1048,7 @@ def blok_browser():
               f"voor {keuze['voorGrens']}, na {keuze['naGrens']}")
         check("de zevende keuze wordt geweigerd", keuze["tweedeLink"] is False, "")
         check("en dat wordt gemeld: 'Maximum van 6 items bereikt.' (besluit Ronald 05-11-2026)", keuze["toast"] == "Maximum van 6 items bereikt.", keuze["toast"])
-        check("een lege link kan niet in de banner", keuze["legeLink"] is False, "")
+        check("een lege link kan niet in de banner (Onze media)", keuze["legeLink"] is False, "")
 
         opslaan = page.evaluate("""async () => {
           window.TT_STUB.calls = [];
@@ -3577,7 +3598,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         # Het menu is lichter dan de pagina.
         kleuren = page.evaluate("""() => ['navMenuDropdown', 'profileMoreDropdown'].map(id => {
             const el = document.getElementById(id); return el ? getComputedStyle(el).backgroundColor : null; })
-            .concat([getComputedStyle(document.querySelector('.choice-menu')).backgroundColor])""")
+            .concat([getComputedStyle(document.querySelector('.choice-menu:not(.beheersing-menu)')).backgroundColor])""")
         check("elk menu heeft het vlak --surface2", all(k == "rgb(30, 30, 30)" for k in kleuren if k), json.dumps(kleuren))
 
         # Goud nooit als doorschijnend vlak (huisstijl §1.1).
@@ -4003,7 +4024,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         knoppen = re.findall(r'<button class="modal-close"[^>]*>(.*?)</button>', html322, re.S)
         teken = '<line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line>'
         check("elk kruisje in index.html is het sluitteken, nergens meer de letter ✕",
-              len(knoppen) == 10 and all(teken in k and "✕" not in k for k in knoppen), str(len(knoppen)))
+              len(knoppen) == 11 and all(teken in k and "✕" not in k for k in knoppen), str(len(knoppen)))  # 11 sinds TT-543 blok 3: Link toevoegen
         check("elk kruisje heeft een aria-label",
               all("aria-label" in t for t in re.findall(r'<button class="modal-close"[^>]*>', html322)), "")
         terug322 = re.findall(r'<button class="modal-back"[^>]*>(.*?)</button>', html322, re.S)
@@ -7220,7 +7241,8 @@ window.TT_STUB.fnAntwoord = {};
         for vid in ("deleteAccountModal", "meldModal"):
             check(f"TT-408: {vid} heeft geen kruisje meer", vid in d64k["zonderKruis"], json.dumps(d64k))
         check("TT-408: de instrumentkeuze houdt zijn kruisje (de lijst heeft verder geen uitgang)", d64k["instrumentKruis"], json.dumps(d64k))
-        check("TT-408: er zijn tien kruisjes over", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 10, "")
+        # TT-543 blok 3: Link toevoegen is het elfde (geen pijl of knop terug; app-gedrag "Modals").
+        check("TT-408: er zijn elf kruisjes, elk als enige uitgang", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 11, "")
         check("geen paginafouten in blok 64", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
@@ -11226,13 +11248,14 @@ XSS_STAPPEN = [
     ("mediaspeler met javascript-link", "openMediaSpeler(window.__U('speler'), 'link', null, 'Link');"),
     ("artiestenlijst (iTunes)", "const ac = document.createElement('div'); document.body.appendChild(ac); renderArtistResults(ac, [{ artistId: window.__P('artistId'), artistName: window.__P('artiest'), primaryGenreName: window.__P('genre') }], window.__P('q'), 'selectArtist');"),
     ("nummerlijst (iTunes)", "const ac = document.createElement('div'); document.body.appendChild(ac); const t = window.__P('titel'); renderTrackResults(ac, [{ trackName: t }], t.slice(0, 6), { name: window.__P('artiest2') }, 'addSong', []);"),
-    ("wizard: media en links", "state.mediaFiles = [{ type: 'foto', url: 'https://example.org/a.jpg', name: window.__P('bestandsnaam') }, { type: 'video', url: 'https://example.org/a.mp4', name: window.__P('bestandsnaam2') }]; state.mediaLinks = [{ url: 'https://www.youtube.com/watch?v=' + encodeURIComponent(window.__Q('yt2')), inBanner: false }, { url: window.__P('linkadres'), inBanner: false }]; renderMediaGrid(); renderLinksList();"),
+    ("wizard: media en links", "state.mediaFiles = [{ type: 'foto', url: 'https://example.org/a.jpg', name: window.__P('bestandsnaam') }, { type: 'video', url: 'https://example.org/a.mp4', name: window.__P('bestandsnaam2') }]; state.mediaLinks = [{ url: 'https://www.youtube.com/watch?v=' + encodeURIComponent(window.__Q('yt2')), inBanner: false }, { url: window.__P('linkadres'), inBanner: false }]; renderMediaGrid();"),
     ("lightbox", "openMediaLightbox('https://example.org/a.jpg?x=' + encodeURIComponent(window.__P('lightbox')));"),
 ]
 
 # Velden die bewust nooit op een scherm komen, met de reden.
 XSS_UITZONDERINGEN = {
     "bands.avatar_url": "javascript:-adres wordt door safeUrl() geweigerd en dus niet getoond",
+    "musician_media.url": "javascript:-adres wordt door safeUrl() geweigerd; sinds TT-543 blok 3 staat het adres van een link nergens meer in een veld (Je mediahoek toont de naam van het platform)",
     "bands.instagram": "javascript:-adres wordt door bandSocialLink() geweigerd en dus niet getoond",
     "bands.tiktok": "javascript:-adres wordt door bandSocialLink() geweigerd en dus niet getoond",
     "bands.youtube": "javascript:-adres wordt door bandSocialLink() geweigerd en dus niet getoond",
@@ -11468,11 +11491,11 @@ def blok_tt517_fase1():
     licht = css[css.index(':root[data-theme="licht"] {'):]
     licht = licht[:licht.index('}')]
     rollen = {
-        "donker": [rol(donker, r) for r in ("merk", "accent", "merk-hover", "gekozen-rand", "gekozen-tekst", "tip-tekst", "bericht-eigen", "bericht-rand-eigen")],
+        "donker": [rol(donker, r) for r in ("merk", "accent", "merk-hover", "gekozen-rand", "gekozen-tekst", "bericht-eigen", "bericht-rand-eigen")],
         "licht": [rol(licht, r) for r in ("merk", "merk-hover", "gekozen-vlak", "gekozen-rand", "bericht-eigen", "bericht-rand-eigen")],
     }
     check("warmgeel #FFB81C in elke gele rol, met de afgeleide tinten (donker)",
-          rollen["donker"] == ["#FFB81C", "#FFB81C", "#FFC444", "#FFB81C", "#1E1E1E", "#DD9F18", "#E5A623", "#E5A623"], json.dumps(rollen))  # gekozen-tekst donker sinds fase 11 (B)
+          rollen["donker"] == ["#FFB81C", "#FFB81C", "#FFC444", "#FFB81C", "#1E1E1E", "#E5A623", "#E5A623"], json.dumps(rollen))  # gekozen-tekst donker sinds fase 11 (B)
     check("warmgeel #FFB81C in elke gele rol, met de afgeleide tinten (licht)",
           rollen["licht"] == ["#FFB81C", "#FFC444", "#FFB81C", "#FFB81C", "#FFC94D", "#FFC94D"], json.dumps(rollen))
     oud = [f for f in TT517_APP for kleur in ("f5c518", "ffd700", "ffd23f", "e0b52a", "f2ce4a", "c8a800")
@@ -12147,7 +12170,7 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
           // 4. Het bannerteken in Je mediahoek: eerst het kader; Annuleren laat alles staan.
           mhMediaFiles = [{ name: '', url, path: null, type: 'foto', uploading: false, inBanner: false },
                           { name: '', url: 'https://x/v.mp4', path: null, type: 'video', uploading: false, inBanner: false }];
-          mhMediaLinks = []; document.getElementById('mhMediaGrid').innerHTML = mhMediaFiles.map((m, i) => mediaTegelHTML(m, i, 'mh')).join('');
+          mhMediaLinks = []; mhRenderMediaGrid();
           let t = mhToggleMediaBanner(0); await w(300);
           u.teken = { venster: $('uitsnedeModal').classList.contains('visible'), titel: $('uitsnedeTitel').textContent };
           $('uitsnedeAnnuleren').click(); await t;
@@ -14116,8 +14139,23 @@ def blok_tt556():
             lijst.length = 0; render();
             return { voor, na, nogEens, naWeg };
           };
-          u.linksWizard = links(state.mediaLinks, addLinkRow, renderLinksList, 'linksList');
-          u.linksProfiel = links(mhMediaLinks, mhAddLinkRow, mhRenderLinksList, 'mhLinksList');
+          // TT-543 blok 3: in de wizard en Je mediahoek staat geen knop "+ Link
+          // toevoegen" meer; de grens meldt de app bij de keuze Link in het menu
+          // van "+ Toevoegen", vóór het venster opent.
+          const linksRaster = (lijst, keuze) => {
+            const sel = { value: '' }; const venster = () => $('linkToevoegenModal').classList.contains('visible');
+            lijst.length = 0;
+            for (let i = 0; i < 19; i++) lijst.push({ url: 'https://example.org/' + i, inBanner: false });
+            schoon(); sel.value = 'link'; keuze(sel);
+            const bij19 = { venster: venster(), toast: toast() }; sluitLinkToevoegen();
+            lijst.push({ url: 'https://example.org/19', inBanner: false });
+            schoon(); sel.value = 'link'; keuze(sel);
+            const bij20 = { venster: venster(), toast: toast(), aantal: lijst.length }; sluitLinkToevoegen();
+            lijst.length = 0;
+            return { bij19, bij20 };
+          };
+          u.linksWizard = linksRaster(state.mediaLinks, mediaToevoegenKeuze);
+          u.linksProfiel = linksRaster(mhMediaLinks, mhMediaToevoegenKeuze);
           u.linksBand = links(bmMediaLinks, bmAddLinkRow, bmRenderLinksList, 'bmLinksList');
 
           // Covers, eigen nummers, invallers
@@ -14187,7 +14225,12 @@ def blok_tt556():
     check("TT-556: het 301e nummer komt er niet bij, met 'Maximum van 300 nummers bereikt.'; het 300e wel",
           r["nummers"] == {"aantal": 300, "toast": "Maximum van 300 nummers bereikt."}
           and r["nummer200"]["aantal"] == 300 and r["nummer200"]["toast"] != "Maximum van 300 nummers bereikt.", j)
-    for naam, sleutel in (("wizard", "linksWizard"), ("profiel bewerken", "linksProfiel"), ("bandprofiel bewerken", "linksBand")):
+    for naam, sleutel in (("wizard", "linksWizard"), ("profiel bewerken", "linksProfiel")):
+        l = r[sleutel]
+        check(f"TT-556 en TT-543 blok 3: links in {naam}: bij 19 opent Link het venster; bij 20 niet, met 'Maximum van 20 links bereikt.'",
+              l["bij19"] == {"venster": True, "toast": None}
+              and l["bij20"] == {"venster": False, "toast": "Maximum van 20 links bereikt.", "aantal": 20}, json.dumps(l, ensure_ascii=False))
+    for naam, sleutel in (("bandprofiel bewerken", "linksBand"),):
         l = r[sleutel]
         check(f"TT-556: links in {naam}: bij 19 staat de knop er, bij 20 verdwijnt hij met 'Maximum van 20 links bereikt.'; een 21e kan niet; na weghalen is de knop terug",
               l["voor"] == {"knop": "", "regel": None} and l["na"] == {"aantal": 20, "knop": "none", "regel": "Maximum van 20 links bereikt."}
@@ -14314,7 +14357,7 @@ def blok_tt548():
 
 # --------------------------------------------------------------------------
 # Blok 130 — onderhoudsronde 06-11-2026: een storing is geen lege staat (TT-561),
-# geen rode tekst (TT-562), de tip stopt buiten beeld (TT-564), tikvlak
+# geen rode tekst (TT-562), de tip stopt buiten beeld (TT-564; sinds TT-543 blok 3 is de tip weg), tikvlak
 # "Wachtwoord vergeten?" (TT-510), geen vervaging (TT-284), geen losse kleur (TT-512).
 # --------------------------------------------------------------------------
 def blok_onderhoud_0611():
@@ -14380,13 +14423,16 @@ def blok_onderhoud_0611():
           showView('myprofile'); await w(600);
           u.geenProfiel = tekst('view-myprofile'); d.musicians.push(...bewaard);
           u.tekstKleur = tekstKleur;
-          // TT-564: de tip stopt als je via de onderbalk weggaat
+          // TT-543 blok 3 (besluit Ronald 06-11-2026, voorstel 13): de wisselende
+          // tip van TT-564 is weg, in de tegel en in de wizard; geen timer meer.
           myMusicianId = 'm1'; hasOwnProfile = true;
           showView('profieltegels'); await w(200); await openTegelScreen('mediahoek'); await w(300);
-          const tip = () => document.getElementById('mhTipText').textContent;
-          u.tipLoopt = tip(); await w(2700); u.tipLooptNa = tip();
+          u.tipWeg = { tegel: !document.getElementById('mhTipText') && !document.querySelector('#mediahoekScreen .media-tip'),
+            wizard: !document.getElementById('wizardMhTipText') && !document.querySelector('#step3 .media-tip'),
+            functies: ['mhStartTipCycle', 'wizardMhStartTipCycle'].filter(f => typeof window[f] === 'function'),
+            zin: document.querySelector('#mediahoekScreen .panel-sub').textContent.trim() === document.querySelector('#step3 .panel-sub').textContent.trim()
+              && document.querySelector('#mediahoekScreen .panel-sub').textContent.includes('Een profiel met media valt op.') };
           document.getElementById('bottomNavSearch').click(); await w(200);
-          const stand = tip(); await w(2700); u.tipStil = stand === tip();
           // TT-561 D7: een profiel dat niet bestaat is geen storing
           showView('profiel', undefined, { id: 'bestaat-niet', app: true }); await w(800);
           u.weg = tekst('view-profiel');
@@ -14402,8 +14448,8 @@ def blok_onderhoud_0611():
         check("TT-561: een storing toont op Mijn Bands de foutstaat, niet 'Nog geen bands'",
               "Laden lukt nu niet" in uit["bands"] and "Nog geen bands" not in uit["bands"], uit["bands"][:160])
         check("TT-561: zonder profiel (geen rij) blijft het 'Nog geen profiel'", "Nog geen profiel" in uit["geenProfiel"], uit["geenProfiel"][:160])
-        check("TT-564: de tip wisselt in Je mediahoek en staat stil na weggaan via de onderbalk",
-              uit["tipLoopt"] != uit["tipLooptNa"] and uit["tipStil"], json.dumps({k: uit[k] for k in ("tipLoopt", "tipLooptNa", "tipStil")}))
+        check("TT-543 blok 3: de wisselende tip is weg in Je mediahoek en wizardstap 4; beide zeggen 'Een profiel met media valt op.'",
+              uit["tipWeg"] == {"tegel": True, "wizard": True, "functies": [], "zin": True}, json.dumps(uit["tipWeg"]))
         # TT-510: tikvlak van "Wachtwoord vergeten?" 44px, zonder het veld of Inloggen te raken.
         page.evaluate("currentUser = null; showView('auth')"); page.wait_for_timeout(300)
         t = page.evaluate("""() => { const k = document.getElementById('forgotPasswordBtn'), a = getComputedStyle(k, '::after');
@@ -14471,11 +14517,6 @@ def blok_tt543():
           goTo(2); await nextStep(2); await w(50);
           u.naSetlist = [state.currentStep, document.querySelector('#view-register .panel.active .panel-title').textContent.trim(),
                          document.getElementById('stepLabel').textContent, !!document.querySelector('#view-register .panel.active #submitProfileBtn')];
-          // De wisselende tip loopt op de mediahoek, ook na terugkomen (core.js).
-          const tip = () => document.getElementById('wizardMhTipText').innerHTML;
-          const a = tip(); await w(2700); u.tipWisselt = a !== tip();
-          showView('about'); await w(100); showView('register'); await w(100);
-          const b = tip(); await w(2700); u.tipNaTerugkomen = b !== tip();
           // Opslag: de nieuwe opname schrijft "stap"; een oude opname wordt omgezet.
           state.onboarding = true; goTo(2);
           const opname = JSON.parse(localStorage.getItem('tt_onboarding_v1') || '{}');
@@ -14498,8 +14539,6 @@ def blok_tt543():
           u["naWatSpeelJe"] == [2, "Je setlist", "Stap 3 van 4"] and u["terug"] == 1, json.dumps([u["naWatSpeelJe"], u["terug"]]))
     check("Verder op Je setlist gaat naar Je mediahoek (Stap 4 van 4), met de knop Profiel aanmaken",
           u["naSetlist"] == [3, "Je mediahoek", "Stap 4 van 4", True], json.dumps(u["naSetlist"]))
-    check("de tip in Je mediahoek wisselt, ook na een ander scherm en terug",
-          u["tipWisselt"] and u["tipNaTerugkomen"], json.dumps([u["tipWisselt"], u["tipNaTerugkomen"]]))
     check("de voortgang bewaart 'stap' in de nieuwe telling, zonder doel",
           u["opname"] == {"stap": 2, "step": None, "doel": False} or u["opname"] == {"stap": 2, "doel": False}, json.dumps(u["opname"]))
     check("een opname van vóór TT-543 komt op dezelfde stap terug: oud 3 (setlist) wordt 2, oud 4 (media) wordt 3, oud 2 (doel) wordt de setlist",
@@ -14728,8 +14767,12 @@ def blok_tt543_blok2():
               s1["koppen"] == ["Over jou", "Je inloggegevens"] and s1["maat"] == MAAT and s1["erboven"] == [32] and [e[1] for e in s1["eronder"]] == [20, 20]
               and s1["eersteBoven"] == 0 and s1["lijnen"] == 0 and s1["zinOnderKop"] == "regAuthFieldGroup" and s1["zinnen"] == 0, json.dumps(s1))
         for naam, d, kn in (("stap 2", u["stap2"], ["Instrumenten *", "Genres *"]), ("tegel Wat speel je", u["tegel2"], ["Instrumenten *", "Genres *"]),
-                            ("stap 4", u["stap4"], ["Profielfoto", "Foto's, video's en links"]), ("tegel Je mediahoek", u["tegel4"], ["Profielfoto", "Foto's, video's en links"])):
-            sub = d["eronder"][-1][1] if kn[-1].startswith("Foto") else None
+                            # TT-543 blok 3 (besluiten Ronald 07-11-2026): stap 4 eindigt met "De laatste stap",
+                            # los onder een streep (blok 135); het vinkje staat er 20px onder, zoals een veld.
+                            ("stap 4", u["stap4"], ["Profielfoto", "Foto's, video's en links", "De laatste stap"]), ("tegel Je mediahoek", u["tegel4"], ["Profielfoto", "Foto's, video's en links"])):
+            sub = next((e[1] for k, e in zip(kn, d["eronder"]) if k.startswith("Foto")), None)
+            if kn[-1] == "De laatste stap" and d["eronder"][-1] != ["akkoord-regel", 20]:
+                sub = -1
             check(f"{breed}px {naam}: koppen {kn}, 17px vet op één regel, op de linkerlijn van de velden; 32px tussen twee onderwerpen; 20px tot het veld" + ("; 4px tot de regel eronder" if sub is not None else ""),
                   d["koppen"] == kn and d["maat"] == MAAT and d["links"] == [d["veldLinks"]] and d["erboven"][-1] == 32
                   and d["eronder"][0][1] == 20 and (sub is None or sub == 4) and (kn[0] != "Instrumenten *" or d["eronder"][1][1] == 20) and d["lijnen"] == 0, json.dumps(d))
@@ -14909,6 +14952,209 @@ def blok_tt570():
     httpd.shutdown()
     check("geen paginafouten in blok 132", not fouten, "; ".join(fouten)[:300])
 
+# --------------------------------------------------------------------------
+# Blok 135 — TT-543 onderdeel 1, blok 3 (besluiten Ronald 06 en 07-11-2026):
+# Je mediahoek als één raster van drie met de tegel "+ Toevoegen", het
+# keuzemenu Foto · Video · Link opzij, het venster "Link toevoegen", de tip
+# weg. Wizardstap 4 en de tegel Je mediahoek, op 390px en 360px. Onze media
+# van een band blijft tot onderdeel 6 zoals hij was.
+# --------------------------------------------------------------------------
+def blok_tt543_blok3():
+    print("\nBlok 135 — TT-543 blok 3: Je mediahoek als één raster")
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    js = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in JS_FILES)
+    css = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+    check("geen tabbladen, sleepvak of tip meer in wizardstap 4 en Je mediahoek; hun code is weg",
+          all(x not in html for x in ("switchMediaTab", "switchMhMediaTab", 'id="dropZone"', 'id="mhDropZone"', "pane-upload", "mhPaneUpload",
+                                      'id="linksList"', 'id="mhLinksList"', "wizardMhTipText", "mhTipText", "media-tip"))
+          and all(x not in js for x in ("function switchMediaTab", "function switchMhMediaTab", "function handleDrop", "function mhHandleDrop",
+                                        "function addLinkRow", "function mhAddLinkRow", "function renderLinksList", "function mhRenderLinksList",
+                                        "MH_TIPS", "WIZARD_MH_TIPS", "TipTimer"))
+          and ".media-tip" not in css and "--tip-tekst" not in css, "")
+    check("Onze media van een band houdt tabbladen, sleepvak en de rij per link (tot onderdeel 6)",
+          'id="bmDropZone"' in html and 'id="bmLinksList"' in html and "switchBmMediaTab" in html, "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten, uit = [], {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breed in (390, 360):
+            ctx = browser.new_context(viewport={"width": breed, "height": 844}, color_scheme="dark")
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(400)
+            uit[breed] = page.evaluate("""async () => {
+              const w = ms => new Promise(r => setTimeout(r, ms)), $ = id => document.getElementById(id), u = {};
+              const R = e => e.getBoundingClientRect();
+              const toast = () => $('appToast').classList.contains('visible') ? $('appToast').textContent : null;
+              const schoon = () => { $('appToast').textContent = ''; $('appToast').classList.remove('visible'); };
+              showView('register'); await w(200); goTo(3); await w(800);
+              state.mediaFiles = [{ type: 'foto', url: 'https://x/a.jpg', name: 'a' }, { type: 'foto', url: 'https://x/b.jpg', name: 'b' },
+                                  { type: 'video', url: 'https://x/c.mp4', name: 'c' }];
+              state.mediaLinks = [{ url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', inBanner: false }, { url: 'https://soundcloud.com/a/b', inBanner: false }];
+              renderMediaGrid(); await w(100);
+              const raster = $('mediaGrid'), kinderen = [...raster.children].map(R);
+              const teller = R($('wizardBannerTeller'));
+              u.raster = { kolommen: getComputedStyle(raster).gridTemplateColumns.split(' ').length,
+                kolomGat: Math.round(kinderen[1].left - kinderen[0].right), rijGat: Math.round(kinderen[3].top - kinderen[0].bottom),
+                vierkant: kinderen.every(k => Math.abs(k.width - k.height) < 1), gelijk: kinderen.every(k => Math.abs(k.width - kinderen[0].width) < 1),
+                tellerTotRaster: Math.round(kinderen[0].top - teller.bottom),
+                hoek: getComputedStyle(raster.querySelector('.media-thumb')).borderTopLeftRadius,
+                toevoegenHoek: getComputedStyle($('wizMediaToevoegen')).borderTopLeftRadius,
+                toevoegenRand: getComputedStyle($('wizMediaToevoegen')).borderTopStyle,
+                toevoegenTekst: $('wizMediaToevoegen').textContent.trim(),
+                plusteken: !!$('wizMediaToevoegen').querySelector('svg.media-toevoegen-plus'),
+                toevoegenRegel: getComputedStyle($('wizMediaToevoegen')).lineHeight,
+                teller: $('wizardBannerTeller').innerText.trim() };
+              // Het menu: Toevoegen in kolom 3 (6 tegels) → naar links; in kolom 1 (3 tegels) → naar rechts.
+              $('wizMediaToevoegen').click(); await w(300);
+              const menu = $('wizMediaToevoegenMenu'), m = R(menu), t = R($('wizMediaToevoegen'));
+              u.menuLinks = { open: menu.classList.contains('open'), labels: [...menu.querySelectorAll('.choice-option')].map(o => o.textContent.trim()),
+                vorm: menu.classList.contains('beheersing-menu'), labelBreed: Math.round(R(menu.querySelector('.choice-option')).width),
+                zijkant: Math.round(m.right - kinderen[1].right), onderkant: Math.round(m.bottom - t.bottom),
+                laag: !!document.querySelector('.menu-laag'), tegelLicht: getComputedStyle($('wizMediaToevoegen')).zIndex };
+              sluitAlleMenus(); await w(250);
+              state.mediaLinks = []; state.mediaFiles = state.mediaFiles.slice(0, 2).concat([state.mediaFiles[2]]); renderMediaGrid(); await w(100);
+              const k2 = [...$('mediaGrid').children].map(R);
+              $('wizMediaToevoegen').click(); await w(300);
+              const m2 = R($('wizMediaToevoegenMenu')), t2 = R($('wizMediaToevoegen'));
+              u.menuRechts = { zijkant: Math.round(m2.left - k2[1].left), onderkant: Math.round(m2.bottom - t2.bottom), rechtsVanTegel: m2.left > t2.right };
+              // Foto en Video openen de kiezer met het juiste soort bestand.
+              const invoer = $('mediaInvoer'); let geklikt = [];
+              invoer.click = () => geklikt.push(invoer.accept);
+              $('wizMediaToevoegenMenu').querySelectorAll('.choice-option')[0].click(); await w(250);
+              $('wizMediaToevoegen').click(); await w(300); $('wizMediaToevoegenMenu').querySelectorAll('.choice-option')[1].click(); await w(250);
+              u.kiezer = geklikt;
+              // Bij 8 bestanden: eerst de melding, de kiezer opent niet.
+              state.mediaFiles = Array.from({ length: 8 }, (_, i) => ({ type: 'foto', url: 'https://x/' + i + '.jpg', name: '' })); renderMediaGrid();
+              geklikt = []; schoon(); mediaToevoegenKeuze({ value: 'foto' });
+              u.grensBeeld = { kiezer: geklikt.length, toast: toast() };
+              state.mediaFiles = []; renderMediaGrid();
+              // Het venster Link toevoegen
+              $('wizMediaToevoegen').click(); await w(300); $('wizMediaToevoegenMenu').querySelectorAll('.choice-option')[2].click(); await w(400);
+              const box = document.querySelector('#linkToevoegenModal .modal-box'), veld = $('linkToevoegenVeld'), knop = $('linkToevoegenKnop');
+              const label = document.querySelector('#linkToevoegenModal label'), plat = $('linkToevoegenPlatform');
+              u.venster = { open: $('linkToevoegenModal').classList.contains('visible'), titel: document.querySelector('#linkToevoegenModal .filter-title').textContent.trim(),
+                leeg: [veld.value, plat.textContent, knop.disabled], focus: document.activeElement === veld,
+                schermvullend: Math.round(R(box).width) === window.innerWidth, knopTekst: knop.textContent.trim() };
+              veld.value = 'youtu.be/dQw4w9WgXcQ'; veld.dispatchEvent(new Event('input'));
+              const lr = R(label), pr = R(plat), vr = R(veld), kr = R(knop);
+              u.venster.vol = [plat.textContent, knop.disabled];
+              u.venster.maat = { labelIn: Math.round(lr.left + parseFloat(getComputedStyle(label).paddingLeft) - vr.left),
+                platformIn: Math.round(vr.right - (pr.right - parseFloat(getComputedStyle(plat).paddingRight))),
+                zelfdeRegel: Math.abs((lr.top + lr.bottom) / 2 - (pr.top + pr.bottom) / 2) < 1,
+                grootte: getComputedStyle(plat).fontSize, grijs: getComputedStyle(plat).color === getComputedStyle(document.querySelector('.field-hint') || document.body).color || getComputedStyle(plat).color,
+                knopOnderVeld: Math.round(kr.top - vr.bottom), knopBreed: Math.round(kr.width) === Math.round(vr.width) };
+              knop.click(); await w(300);
+              u.toegevoegd = { links: state.mediaLinks.map(l => l.url), dicht: !$('linkToevoegenModal').classList.contains('visible'),
+                tegel: !!document.querySelector('#mediaGrid .media-thumb-link .pb-speel') };
+              // Een link die niet te openen is, komt er niet in.
+              openLinkToevoegen(url => state.mediaLinks.push({ url, inBanner: false })); await w(100);
+              veld.value = 'geen link'; veld.dispatchEvent(new Event('input')); schoon(); knop.click(); await w(100);
+              u.ongeldig = { aantal: state.mediaLinks.length, toast: toast(), open: $('linkToevoegenModal').classList.contains('visible') };
+              sluitLinkToevoegen();
+              // Banner op een link-tegel: alleen dat teken wisselt.
+              renderMediaGrid(); const voor = document.querySelector('#mediaGrid .media-thumb-link');
+              toggleLinkBanner(0);
+              u.linkBanner = { zelfde: voor === document.querySelector('#mediaGrid .media-thumb-link'), stand: voor.querySelector('.banner-btn').getAttribute('aria-pressed'),
+                teller: $('wizardBannerTeller').innerText.includes('1 van 6') };
+              removeLink(0); u.naWeg = state.mediaLinks.length;
+              // De laatste stap (besluiten Ronald 07-11-2026, op beeld): los van de media.
+              { const blok = document.querySelector('#step3 .laatste-stap'), b = R(blok), st = getComputedStyle(blok, '::before');
+                const kop = blok.querySelector('.hoofdstuk-kop'), regel = blok.querySelector('.akkoord-regel'), vink = $('consentCheckbox');
+                const main = R(document.querySelector('#view-register main')), raster = R($('mediaGrid'));
+                const opent = [];
+                for (const k of regel.querySelectorAll('.tekst-knop')) { k.click(); await w(150); const m = document.querySelector('.modal-overlay.visible'); opent.push(m ? m.id : null); if (m) m.classList.remove('visible'); }
+                vink.checked = false; updateSubmitProfileState(); const uit = $('submitProfileBtn').disabled;
+                vink.checked = true; updateSubmitProfileState(); const aan = !$('submitProfileBtn').disabled;
+                vink.checked = false; updateSubmitProfileState();
+                u.laatste = { naMedia: blok.previousElementSibling === $('mediaInvoer'), mediaTotStreep: Math.round(b.top - raster.bottom),
+                  streepBreed: Math.round(b.left + parseFloat(st.marginLeft) - main.left) === 0 && Math.round(main.right - (b.right - parseFloat(st.marginRight))) === 0,
+                  streep: st.borderTopWidth + ' ' + st.borderTopStyle + ' ' + (st.borderTopColor === getComputedStyle(document.body).getPropertyValue('--muted').trim() || st.borderTopColor),
+                  streepTotKop: Math.round(R(kop).top - b.top - parseFloat(st.borderTopWidth)), kop: kop.textContent.trim(),
+                  kopTotRegel: Math.round(R(regel).top - R(kop).bottom), vinkOpLijn: Math.round(R(vink).left - R(kop).left),
+                  maat: getComputedStyle(regel).fontSize + '/' + getComputedStyle(regel).lineHeight,
+                  tekst: regel.textContent.replace(/\\s+/g, ' ').trim(), vensters: opent.length === 3 && opent.every(Boolean), stap: state.currentStep,
+                  knopUitAan: [uit, aan], nietInTegel: !document.querySelector('#mediahoekScreen .laatste-stap, #mediahoekScreen #consentCheckbox') };
+              }
+              // Je mediahoek: hetzelfde raster
+              myMusicianId = 'm1'; hasOwnProfile = true;
+              showView('profieltegels'); await w(200); await openTegelScreen('mediahoek'); await w(400);
+              mhMediaFiles = [{ type: 'foto', url: 'https://x/a.jpg', name: '' }]; mhMediaLinks = [{ url: 'https://soundcloud.com/a/b', inBanner: false }]; mhRenderMediaGrid();
+              u.tegel = { raster: $('mhMediaGrid').classList.contains('media-raster'), kinderen: $('mhMediaGrid').children.length,
+                laatste: $('mhMediaGrid').lastElementChild.querySelector('#mhMediaToevoegen') !== null,
+                tellerTotRaster: Math.round(R($('mhMediaGrid').firstElementChild).top - R($('mhBannerTeller')).bottom) };
+              openLinkToevoegen(url => { mhMediaLinks.push({ url, inBanner: false }); mhRenderMediaGrid(); }); await w(100);
+              veld.value = 'https://open.spotify.com/track/x'; veld.dispatchEvent(new Event('input')); knop.click(); await w(200);
+              u.tegel.na = mhMediaLinks.map(l => l.url); u.tegel.gewijzigd = mhFieldSnapshot() !== mhSnapshot;
+              return u;
+            }""")
+            if breed == 390:
+                page.evaluate("showView('register'); goTo(3)"); page.wait_for_timeout(800)
+                page.evaluate("""() => { state.mediaFiles = [{ type: 'foto', url: 'icon-512.png', name: '' }, { type: 'video', url: 'https://x/c.mp4', name: '' }];
+                  state.mediaLinks = [{ url: 'https://soundcloud.com/a/b', inBanner: true }]; renderMediaGrid();
+                  document.querySelectorAll('#step3 h2.hoofdstuk-kop')[1].scrollIntoView(); window.scrollBy(0, -80); }""")
+                page.wait_for_timeout(300)
+                page.screenshot(path="/tmp/tt543_blok3_raster.png")
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    for breed in (390, 360):
+        u = uit[breed]; j = json.dumps(u, ensure_ascii=False)[:600]
+        check(f"{breed}px: één raster van drie kolommen, 8px ertussen, vierkante tegels van gelijke maat",
+              u["raster"]["kolommen"] == 3 and u["raster"]["kolomGat"] == 8 and u["raster"]["rijGat"] == 8
+              and u["raster"]["vierkant"] and u["raster"]["gelijk"], j)
+        check(f"{breed}px: 12px van de bannerzin tot het raster; tegels en Toevoegen hoeken 12px; Toevoegen gestippeld, regelhoogte 16px",
+              u["raster"]["tellerTotRaster"] == 12 and u["raster"]["hoek"] == "12px" and u["raster"]["toevoegenHoek"] == "12px"
+              and u["raster"]["toevoegenRand"] == "dashed" and u["raster"]["toevoegenTekst"] == "Toevoegen" and u["raster"]["plusteken"] and u["raster"]["toevoegenRegel"] == "16px", j)
+        check(f"{breed}px: de zin 'Kies je bannerinhoud' staat er, ook bij 0 (voorstel 14: nee)",
+              "Kies je bannerinhoud:" in u["raster"]["teller"], j)
+        check(f"{breed}px: + Toevoegen opent het menu Foto · Video · Link in de vorm van Beheersing (72px), met de donkere laag; de tegel licht erboven",
+              u["menuLinks"]["open"] and u["menuLinks"]["labels"] == ["Foto", "Video", "Link"] and u["menuLinks"]["vorm"]
+              and u["menuLinks"]["labelBreed"] == 72 and u["menuLinks"]["laag"] and u["menuLinks"]["tegelLicht"] == "242", j)
+        check(f"{breed}px: Toevoegen rechts: het menu klapt naar links, zijkant op de tegel ernaast en onderkant op Toevoegen (0px)",
+              u["menuLinks"]["zijkant"] == 0 and u["menuLinks"]["onderkant"] == 0, j)
+        check(f"{breed}px: Toevoegen links: het menu klapt naar rechts, met dezelfde uitlijning (0px)",
+              u["menuRechts"]["zijkant"] == 0 and u["menuRechts"]["onderkant"] == 0 and u["menuRechts"]["rechtsVanTegel"], j)
+        check(f"{breed}px: Foto opent de kiezer voor beelden, Video die voor video's",
+              u["kiezer"] == ["image/*", "video/*"], j)
+        check(f"{breed}px: bij 8 bestanden zegt de app 'Maximum van 8 bestanden bereikt.' en opent de kiezer niet",
+              u["grensBeeld"] == {"kiezer": 0, "toast": "Maximum van 8 bestanden bereikt."}, j)
+        check(f"{breed}px: Link opent het venster 'Link toevoegen', schermvullend, veld leeg met de cursor erin, 'Link' rechts, Toevoegen uit",
+              u["venster"]["open"] and u["venster"]["titel"] == "Link toevoegen" and u["venster"]["leeg"] == ["", "Link", True]
+              and u["venster"]["focus"] and u["venster"]["schermvullend"] and u["venster"]["knopTekst"] == "Toevoegen", j)
+        check(f"{breed}px: met een link staat het platform rechts op de regel van het label, 12px, 10px van de rand (gespiegeld aan het label); Toevoegen aan",
+              u["venster"]["vol"] == ["YouTube", False] and u["venster"]["maat"]["labelIn"] == 10 and u["venster"]["maat"]["platformIn"] == 10
+              and u["venster"]["maat"]["zelfdeRegel"] and u["venster"]["maat"]["grootte"] == "12px", j)
+        check(f"{breed}px: Toevoegen staat direct onder het veld, even breed",
+              u["venster"]["maat"]["knopBreed"] and 0 < u["venster"]["maat"]["knopOnderVeld"] <= 28, j)
+        check(f"{breed}px: Toevoegen zet de link erbij (https:// ervoor als het ontbrak), sluit het venster; een YouTube-tegel krijgt het speelteken",
+              u["toegevoegd"]["links"] == ["https://youtu.be/dQw4w9WgXcQ"] and u["toegevoegd"]["dicht"] and u["toegevoegd"]["tegel"], j)
+        check(f"{breed}px: een link die niet te openen is, komt er niet in: 'Deze link kan niet geopend worden.', het venster blijft open",
+              u["ongeldig"] == {"aantal": 1, "toast": "Deze link kan niet geopend worden.", "open": True}, j)
+        check(f"{breed}px: het bannerteken op een link-tegel wisselt zonder hertekenen; de teller telt mee; ✕ haalt de link weg",
+              u["linkBanner"] == {"zelfde": True, "stand": "true", "teller": True} and u["naWeg"] == 0, j)
+        l = u["laatste"]
+        check(f"{breed}px: 'De laatste stap' staat los onder de media: 128px tot een streep van 1px over de hele breedte, 32px tot de kop",
+              l["naMedia"] and l["mediaTotStreep"] == 128 and l["streepBreed"] and l["streep"].startswith("1px solid") and l["streepTotKop"] == 32
+              and l["kop"] == "De laatste stap", j)
+        check(f"{breed}px: het akkoord met vinkje onder de kop (20px), vinkje op de lijn van de kop, 12/16px; Profiel aanmaken pas aan na het vinkje (besluit Ronald 07-11-2026: B)",
+              l["kopTotRegel"] == 20 and l["vinkOpLijn"] == 0 and l["maat"] == "12px/16px" and l["knopUitAan"] == [True, True]
+              and l["tekst"] == "Ik ga akkoord met de Gebruiksvoorwaarden, Privacyverklaring en Gedragscode.", j)
+        check(f"{breed}px: de drie namen openen hun venster, de wizard blijft op stap 4; de tegel Je mediahoek heeft geen laatste stap",
+              l["vensters"] and l["stap"] == 3 and l["nietInTegel"], j)
+        check(f"{breed}px: Je mediahoek heeft hetzelfde raster, met Toevoegen als laatste tegel en 12px onder de bannerzin",
+              u["tegel"]["raster"] and u["tegel"]["kinderen"] == 3 and u["tegel"]["laatste"] and u["tegel"]["tellerTotRaster"] == 12, j)
+        check(f"{breed}px: een link toevoegen in Je mediahoek zet hem in de lijst en telt als wijziging voor Opslaan",
+              u["tegel"]["na"] == ["https://soundcloud.com/a/b", "https://open.spotify.com/track/x"] and u["tegel"]["gewijzigd"], j)
+    check("geen fout in de pagina", not fouten, "; ".join(fouten)[:300])
+
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
     _csp_vangnet()
@@ -14943,6 +15189,7 @@ def main():
     blok_tt570()
     blok_tt543_blok1()
     blok_tt543_blok2()
+    blok_tt543_blok3()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

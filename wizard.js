@@ -78,7 +78,6 @@ function populateWizardFieldsFromState() {
   if (PICKERS.genre) renderPickerBadges(PICKERS.genre);
 
   renderSongs();
-  renderLinksList();
   renderMediaGrid();
 
   const avatarPreview = document.getElementById('avatarPreview');
@@ -177,7 +176,8 @@ function vulStateUitVoortgang(saved) {
   state.instrumentLevels = saved.instrumentLevels || {};
   state.genres = saved.genres || [];
   state.songs = saved.songs || [];
-  state.mediaLinks = saved.mediaLinks || [];
+  // TT-543 blok 3: een lege link (uit een opname van vóór het raster) telt niet.
+  state.mediaLinks = (saved.mediaLinks || []).filter(l => l && String(l.url || '').trim());
   postcodeResolved = !!state.zip;
 }
 
@@ -906,31 +906,6 @@ function wizardLeegmaken() {
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 
-// TT-168-overgang (02-09-2026): tip-tekst bij "Je mediahoek" (wizardstap 4),
-// zelfde wisselende tekst en interval als het tegelscherm — eigen, losse
-// timer/element-id (#wizardMhTipText) omdat de wizard een ander scherm is
-// dan het tegeloverzicht, ook al delen ze dezelfde teksten.
-const WIZARD_MH_TIPS = [
-  'toon de energie die jij als muzikant wil laten zien.',
-  'een compleet profiel krijgt veel meer aandacht.',
-];
-let wizardMhTipIndex = 0;
-let wizardMhTipTimer = null;
-function wizardMhStartTipCycle() {
-  clearInterval(wizardMhTipTimer);
-  wizardMhTipIndex = 0;
-  wizardMhRenderTip();
-  wizardMhTipTimer = setInterval(() => {
-    wizardMhTipIndex = (wizardMhTipIndex + 1) % WIZARD_MH_TIPS.length;
-    wizardMhRenderTip();
-  }, 2500);
-}
-function wizardMhRenderTip() {
-  const el = document.getElementById('wizardMhTipText');
-  if (!el) return;
-  el.innerHTML = `<strong>Tip:</strong> ${escHtml(WIZARD_MH_TIPS[wizardMhTipIndex])}`;
-}
-
 function init() {
   // TT-116 (21-08-2026): instrument- en genrekeuze zijn nu een pulldown-veld
   // met badges, geen altijd-zichtbaar knoppenraster meer. Zie de
@@ -1186,11 +1161,6 @@ function goTo(step) {
   // TT-142 (25-08-2026): geen automatische focus meer bij een stapwissel —
   // zie de toelichting bij showView() hierboven.
 
-  // TT-168-overgang (02-09-2026): tip-tekst bij "Je mediahoek" wisselt om de
-  // 2,5 seconde (zelfde patroon als de mhTipTimer in het tegelscherm) —
-  // alleen actief zolang die stap ook echt getoond wordt.
-  if (step === 3) wizardMhStartTipCycle();
-  else clearInterval(wizardMhTipTimer);
 }
 
 // ─── Personalisatie ──────────────────────────────────────────────────────────
@@ -1503,17 +1473,12 @@ function removeAvatar() {
 
 // ─── Media ───────────────────────────────────────────────────────────────────
 
-function switchMediaTab(tab, el) {
-  document.querySelectorAll('.media-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.media-pane').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('pane-' + tab).classList.add('active');
-}
-
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('dropZone').classList.remove('drag-over');
-  handleFileSelect(e.dataTransfer.files);
+// TT-543 blok 3: een keuze in het menu van "+ Toevoegen" (utils.js).
+function mediaToevoegenKeuze(sel) {
+  mediaToevoegenStart(sel, state.mediaFiles, state.mediaLinks, 'mediaInvoer', url => {
+    state.mediaLinks.push({ url, inBanner: false });
+    renderMediaGrid();
+  });
 }
 
 // TT-02: de media-stap (step4) komt in de wizard altijd ná stap 1
@@ -1565,7 +1530,7 @@ function handleFileSelect(files) {
 
 function renderMediaGrid() {
   const grid = document.getElementById('mediaGrid');
-  grid.innerHTML = state.mediaFiles.map((m, i) => mediaTegelHTML(m, i, '')).join('');
+  grid.innerHTML = mediaRasterHTML(state.mediaFiles, state.mediaLinks, '');
   bannerTellerBijwerken('wizardBannerTeller', state.mediaFiles, state.mediaLinks);
 }
 
@@ -1598,36 +1563,8 @@ function removeMedia(i) {
 // staan nu in utils.js (TT-263): drie bestanden gebruiken ze. Geen kopie
 // laten staan — zie werkwijze §2.10, dode code gaat meteen weg.
 
-function addLinkRow() {
-  if (state.mediaLinks.length >= GRENZEN.links) return;
-  state.mediaLinks.push({ url: '', inBanner: false });
-  renderLinksList();
-}
-
-function renderLinksList() {
-  const list = document.getElementById('linksList');
-  list.innerHTML = state.mediaLinks.map((l, i) => mediaLinkRijHTML(l, i, '')).join('');
-  linkGrensBijwerken(list, state.mediaLinks.length);
-  mediaTitelsBijwerken(list);
-  bannerTellerBijwerken('wizardBannerTeller', state.mediaFiles, state.mediaLinks);
-}
-
-// Tijdens het typen alleen de waarde bijhouden. De lijst wordt pas opnieuw
-// getekend als het veld verlaten wordt (onchange in mediaLinkRijHTML) —
-// hertekenen tijdens het typen haalt de aandacht uit het veld.
-function updateLinkUrl(i, el) {
-  if (!state.mediaLinks[i]) return;
-  state.mediaLinks[i].url = el.value;
-}
-
 function toggleLinkBanner(i) {
-  const l = state.mediaLinks[i];
-  if (!l) return;
-  if (!l.url.trim()) { showToast('Vul eerst het adres van de link in.'); return; }
-  if (!bannerKeuzeMag(bannerAantal(state.mediaFiles, state.mediaLinks), !l.inBanner)) return;
-  l.inBanner = !l.inBanner;
-  bannerKnopStandZetten('linksList', i, l.inBanner);
-  bannerTellerBijwerken('wizardBannerTeller', state.mediaFiles, state.mediaLinks);
+  linkBannerTik(state.mediaLinks[i], i, state.mediaFiles, state.mediaLinks, 'mediaGrid', 'wizardBannerTeller');
 }
 
 function speelLink(i) {
@@ -1638,6 +1575,6 @@ function speelLink(i) {
 
 function removeLink(i) {
   state.mediaLinks.splice(i, 1);
-  renderLinksList();
+  renderMediaGrid();
 }
 

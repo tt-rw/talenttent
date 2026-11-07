@@ -883,7 +883,6 @@ function openTegelOverview() {
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
   document.getElementById('tegelOverviewScreen').style.display = bewerkBandId ? 'none' : '';
   document.getElementById('bandTegelOverviewScreen').style.display = bewerkBandId ? '' : 'none';
-  clearInterval(mhTipTimer);
   if (bewerkBandId) renderBandTegels();
   else renderTegels();
 }
@@ -1397,27 +1396,6 @@ let mhMediaFiles = [];
 let mhMediaLinks = [];
 let mhSnapshot = null;
 
-const MH_TIPS = [
-  'toon de energie die jij als muzikant wil laten zien.',
-  'een compleet profiel krijgt veel meer aandacht.',
-];
-let mhTipIndex = 0;
-let mhTipTimer = null;
-function mhStartTipCycle() {
-  clearInterval(mhTipTimer);
-  mhTipIndex = 0;
-  mhRenderTip();
-  mhTipTimer = setInterval(() => {
-    mhTipIndex = (mhTipIndex + 1) % MH_TIPS.length;
-    mhRenderTip();
-  }, 2500);
-}
-function mhRenderTip() {
-  const el = document.getElementById('mhTipText');
-  if (!el) return;
-  el.innerHTML = `<strong>Tip:</strong> ${escHtml(MH_TIPS[mhTipIndex])}`;
-}
-
 function mhFieldSnapshot() {
   return JSON.stringify({
     avatarUrl: mhAvatarUrl,
@@ -1427,7 +1405,6 @@ function mhFieldSnapshot() {
 }
 
 async function openJeMediahoek() {
-  mhStartTipCycle();
   const { data, error } = await db.from('musicians')
     .select('avatar_url, musician_media(media_type, url, platform, in_banner, created_at, uitsnede)')
     .eq('id', myMusicianId).single();
@@ -1446,19 +1423,7 @@ async function openJeMediahoek() {
 
   mhRenderAvatar();
   mhRenderMediaGrid();
-  mhRenderLinksList();
-  const mhScreen = document.getElementById('mediahoekScreen');
-  mhScreen.querySelectorAll('.media-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
-  mhScreen.querySelectorAll('.media-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
   mhSnapshot = mhFieldSnapshot();
-}
-
-function switchMhMediaTab(tab, el) {
-  const mhScreen = document.getElementById('mediahoekScreen');
-  mhScreen.querySelectorAll('.media-tab').forEach(t => t.classList.remove('active'));
-  mhScreen.querySelectorAll('.media-pane').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById(tab === 'upload' ? 'mhPaneUpload' : 'mhPaneLinks').classList.add('active');
 }
 
 function mhRenderAvatar() {
@@ -1508,10 +1473,12 @@ function mhRemoveAvatar() {
   mhRenderAvatar();
 }
 
-function mhHandleDrop(e) {
-  e.preventDefault();
-  document.getElementById('mhDropZone').classList.remove('drag-over');
-  mhHandleFileSelect(e.dataTransfer.files);
+// TT-543 blok 3: een keuze in het menu van "+ Toevoegen" (utils.js).
+function mhMediaToevoegenKeuze(sel) {
+  mediaToevoegenStart(sel, mhMediaFiles, mhMediaLinks, 'mhMediaInvoer', url => {
+    mhMediaLinks.push({ url, inBanner: false });
+    mhRenderMediaGrid();
+  });
 }
 
 function mhHandleFileSelect(files) {
@@ -1545,7 +1512,7 @@ function mhHandleFileSelect(files) {
 
 function mhRenderMediaGrid() {
   const grid = document.getElementById('mhMediaGrid');
-  grid.innerHTML = mhMediaFiles.map((m, i) => mediaTegelHTML(m, i, 'mh')).join('');
+  grid.innerHTML = mediaRasterHTML(mhMediaFiles, mhMediaLinks, 'mh');
   bannerTellerBijwerken('mhBannerTeller', mhMediaFiles, mhMediaLinks);
 }
 
@@ -1571,35 +1538,8 @@ function mhRemoveMedia(i) {
   }
 }
 
-function mhAddLinkRow() {
-  if (mhMediaLinks.length >= GRENZEN.links) return;
-  mhMediaLinks.push({ url: '', inBanner: false });
-  mhRenderLinksList();
-}
-
-function mhRenderLinksList() {
-  const list = document.getElementById('mhLinksList');
-  list.innerHTML = mhMediaLinks.map((l, i) => mediaLinkRijHTML(l, i, 'mh')).join('');
-  linkGrensBijwerken(list, mhMediaLinks.length);
-  mediaTitelsBijwerken(list);
-  bannerTellerBijwerken('mhBannerTeller', mhMediaFiles, mhMediaLinks);
-}
-
-// Tijdens het typen alleen de waarde bijhouden; hertekenen gebeurt als het
-// veld verlaten wordt, anders springt de aandacht uit het veld.
-function mhUpdateLinkUrl(i, el) {
-  if (!mhMediaLinks[i]) return;
-  mhMediaLinks[i].url = el.value;
-}
-
 function mhToggleLinkBanner(i) {
-  const l = mhMediaLinks[i];
-  if (!l) return;
-  if (!l.url.trim()) { showToast('Vul eerst het adres van de link in.'); return; }
-  if (!bannerKeuzeMag(bannerAantal(mhMediaFiles, mhMediaLinks), !l.inBanner)) return;
-  l.inBanner = !l.inBanner;
-  bannerKnopStandZetten('mhLinksList', i, l.inBanner);
-  bannerTellerBijwerken('mhBannerTeller', mhMediaFiles, mhMediaLinks);
+  linkBannerTik(mhMediaLinks[i], i, mhMediaFiles, mhMediaLinks, 'mhMediaGrid', 'mhBannerTeller');
 }
 
 function mhSpeelLink(i) {
@@ -1610,7 +1550,7 @@ function mhSpeelLink(i) {
 
 function mhRemoveLink(i) {
   mhMediaLinks.splice(i, 1);
-  mhRenderLinksList();
+  mhRenderMediaGrid();
 }
 
 async function saveJeMediahoek() {

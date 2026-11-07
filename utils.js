@@ -2432,6 +2432,152 @@ function mediaTegelHTML(m, i, voorvoegsel) {
     </div>`;
 }
 
+// ─── TT-543 blok 3: de mediahoek als één raster ──────────────────────────
+// Besluiten Ronald 06 en 07-11-2026 (voorstel 15 B, op beeld): foto's, video's
+// en links staan in één raster van drie, zonder tabbladen en zonder sleepvak.
+// De laatste tegel is "+ Toevoegen" in de gestippelde vorm. Een tik opent het
+// keuzemenu Foto · Video · Link in de vorm van Beheersing (huisstijl §7.7),
+// opzij van de tegel. Op elke tegel het bannerteken links en ✕ rechts; geen
+// typelabel en geen gele rand; een video en een YouTube-link krijgen het
+// speelteken. Een link wijzig je door hem te verwijderen en opnieuw toe te
+// voegen. Geldt voor de wizard (stap 4) en Je mediahoek. Onze media van een
+// band volgt in onderdeel 6 en gebruikt tot dan mediaTegelHTML() en
+// mediaLinkRijHTML() hierboven.
+// De knoppen van een link dragen het nummer van de link in zijn eigen lijst;
+// in het raster staan de links na de bestanden (bannerKnopStandZetten telt
+// daarom de bestanden mee, zie linkBannerTik()).
+function mediaRasterHTML(bestanden, links, voorvoegsel) {
+  const fn = n => mediaFnNaam(voorvoegsel, n);
+  const id = voorvoegsel || 'wiz';
+  const tegels = bestanden.map((m, i) => mediaKaartHTML(m, i, fn))
+    .concat(links.map((l, i) => mediaLinkKaartHTML(l, i, fn)));
+  tegels.push(`<div class="menu-anchor media-toevoegen-plek">` +
+    `<button type="button" class="media-toevoegen" id="${id}MediaToevoegen" aria-haspopup="listbox" aria-expanded="false"` +
+    ` onclick="mediaToevoegenMenu(event, '${id}')"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Toevoegen</button>` +
+    `<select id="${id}MediaToevoegenSel" hidden onchange="${fn('mediaToevoegenKeuze')}(this)">` +
+    `<option value="foto">Foto</option><option value="video">Video</option><option value="link">Link</option></select>` +
+    `<div class="choice-menu beheersing-menu media-toevoegen-menu" id="${id}MediaToevoegenMenu" role="listbox"></div></div>`);
+  return tegels.join('');
+}
+
+function mediaKaartHTML(m, i, fn) {
+  const beeld = m.type === 'foto'
+    ? `<img ${kleinFotoAttr(safeUrl(m.url))} alt="${escHtml(m.name || '')}">`
+    : SPEELTEKEN_HTML;
+  return `
+    <div class="media-thumb">
+      <button type="button" class="media-thumb-open" onclick="${fn('speelMedia')}(${i})" aria-label="${m.type === 'foto' ? 'Foto bekijken' : 'Video afspelen'}">${beeld}</button>
+      ${bannerKnopHTML(!!m.inBanner, `${fn('toggleMediaBanner')}(${i})`, true)}
+      ${m.uploading ? `<div class="media-thumb-laden"><div class="save-spinner"></div></div>` : ''}
+      <button type="button" class="thumb-remove" onclick="${fn('removeMedia')}(${i})" aria-label="Verwijderen">✕</button>
+    </div>`;
+}
+
+function mediaLinkKaartHTML(l, i, fn) {
+  const veilig = safeUrl(l.url);
+  const platform = veilig ? detectPlatform(veilig) : 'Link';
+  const yt = veilig ? extractYouTubeId(veilig) : null;
+  const beeld = yt
+    ? `<img src="https://img.youtube.com/vi/${escHtml(yt)}/hqdefault.jpg" alt="" loading="lazy">${SPEELTEKEN_HTML}`
+    : `<span class="media-kaart-platform">${escHtml(platform)}</span>`;
+  return `
+    <div class="media-thumb media-thumb-link">
+      <button type="button" class="media-thumb-open" onclick="${fn('speelLink')}(${i})" aria-label="${escHtml(platform)} openen">${beeld}</button>
+      ${bannerKnopHTML(!!l.inBanner, `${fn('toggleLinkBanner')}(${i})`, true)}
+      <button type="button" class="thumb-remove" onclick="${fn('removeLink')}(${i})" aria-label="Link verwijderen">✕</button>
+    </div>`;
+}
+
+// Het keuzemenu van "+ Toevoegen": het gewone keuzemenu (huisstijl §7.1) met
+// de labels van Beheersing. Het klapt opzij open, naar de kant met ruimte:
+// staat Toevoegen in de eerste kolom, dan naar rechts, anders naar links. De
+// zijkant valt op de rand van de tegel ernaast, de onderkant op die van
+// Toevoegen (besluit Ronald 06-11-2026, gemeten 0px).
+function mediaToevoegenMenu(ev, id) {
+  if (ev) ev.stopPropagation();
+  const knop = document.getElementById(`${id}MediaToevoegen`);
+  const menu = document.getElementById(`${id}MediaToevoegenMenu`);
+  const raster = knop && knop.closest('.media-raster');
+  if (!knop || !menu || !raster) return;
+  const eersteKolom = Math.abs(knop.getBoundingClientRect().left - raster.getBoundingClientRect().left) < 1;
+  menu.classList.toggle('naar-rechts', eersteKolom);
+  menu.classList.toggle('naar-links', !eersteKolom);
+  // Zonder keuze openen: dan geeft elke keuze een wijziging, ook twee keer Foto.
+  const sel = document.getElementById(`${id}MediaToevoegenSel`);
+  if (sel) sel.value = '';
+  const sleutel = `${id}MediaToevoegen`;
+  CHOICE_FIELDS[sleutel] = { id: sleutel, fieldId: knop.id, selectId: `${id}MediaToevoegenSel`, menuId: menu.id };
+  toggleChoiceMenu(sleutel);
+}
+
+// Na de keuze in het menu. Een grens meldt de app vóór de handeling (app-gedrag,
+// Grenzen): dan opent de kiezer of het venster niet.
+function mediaToevoegenStart(sel, bestanden, links, invoerId, linkErbij) {
+  const keuze = sel.value;
+  sel.value = ''; // een volgende keer weer zonder keuze
+  if (keuze === 'foto' || keuze === 'video') {
+    if (grensBereikt(bestanden.length, GRENZEN.beeld, `Maximum van ${GRENZEN.beeld} bestanden bereikt.`)) return;
+    const invoer = document.getElementById(invoerId);
+    if (!invoer) return;
+    // Schuine streep en ster los: de monitor leest die twee samen als begin
+    // van commentaar (tt_monitor.py, zonder_commentaar).
+    invoer.accept = (keuze === 'foto' ? 'image' : 'video') + '/' + '*';
+    invoer.click();
+  } else if (keuze === 'link') {
+    if (grensBereikt(links.length, GRENZEN.links, `Maximum van ${GRENZEN.links} links bereikt.`)) return;
+    openLinkToevoegen(linkErbij);
+  }
+}
+
+// Een tik op het bannerteken van een link in het raster.
+function linkBannerTik(l, i, bestanden, links, rasterId, tellerId) {
+  if (!l) return;
+  if (!bannerKeuzeMag(bannerAantal(bestanden, links), !l.inBanner)) return;
+  l.inBanner = !l.inBanner;
+  bannerKnopStandZetten(rasterId, bestanden.length + i, l.inBanner);
+  bannerTellerBijwerken(tellerId, bestanden, links);
+}
+
+// ─── Het venster "Link toevoegen" (besluit Ronald 07-11-2026, op beeld) ──
+// Eén veld "Link". De naam van het platform staat rechts op de regel van het
+// label, 12px grijs, gespiegeld aan het label; geen herkend platform: "Link".
+// Toevoegen staat direct onder het veld en is uit zolang het veld leeg is.
+// Zonder https:// ervoor zet de app het er zelf voor; een link die daarna
+// nog niet te openen is, komt er niet in.
+let linkToevoegenKlaar = null;
+function openLinkToevoegen(klaar) {
+  linkToevoegenKlaar = klaar;
+  const veld = document.getElementById('linkToevoegenVeld');
+  veld.value = '';
+  linkToevoegenInvoer();
+  document.getElementById('linkToevoegenModal').classList.add('visible');
+  setTimeout(() => veld.focus(), 50);
+}
+function sluitLinkToevoegen() {
+  linkToevoegenKlaar = null;
+  document.getElementById('linkToevoegenModal').classList.remove('visible');
+}
+function linkToevoegenWaarde() {
+  const s = document.getElementById('linkToevoegenVeld').value.trim();
+  return !s || /^https?:\/\//i.test(s) ? s : 'https://' + s;
+}
+function linkToevoegenInvoer() {
+  const url = linkToevoegenWaarde();
+  document.getElementById('linkToevoegenPlatform').textContent = url ? detectPlatform(url) : 'Link';
+  document.getElementById('linkToevoegenKnop').disabled = !url;
+}
+function linkToevoegenOk() {
+  const url = linkToevoegenWaarde();
+  if (!url) return;
+  if (!safeUrl(url) || /\s/.test(url) || !/^https?:\/\/[^/]+\.[^/]+/i.test(url)) {
+    showToast('Deze link kan niet geopend worden.');
+    return;
+  }
+  const klaar = linkToevoegenKlaar;
+  sluitLinkToevoegen();
+  if (klaar) klaar(url);
+}
+
 // Een tik op het bannerteken van een foto of video (wizard, Je mediahoek,
 // Onze media; één functie, huisstijl §18.2). TT-517 fase 5 (huisstijl §21):
 // kiest de gebruiker een foto voor de banner, dan opent eerst het kader van

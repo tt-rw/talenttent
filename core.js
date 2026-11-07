@@ -1082,12 +1082,6 @@ function showView(view, mode, extra) {
   if (huidigeView && huidigeView !== view) viewScrollStand[huidigeView] = window.scrollY;
   const vorigeView = huidigeView;
   huidigeView = view; // TT-303: de terugknop leest dit
-  // TT-564: de wisselende tip in de mediahoek loopt alleen zolang zijn scherm in beeld is.
-  if (vorigeView !== view && typeof mhTipTimer !== 'undefined') {
-    clearInterval(mhTipTimer); clearInterval(wizardMhTipTimer);
-    if (view === 'profieltegels' && activeTegelScreen === 'mediahoek') mhStartTipCycle();
-    if (view === 'register' && state.currentStep === 3) wizardMhStartTipCycle(); // TT-543: de mediahoek is stap 4 (index 3)
-  }
   // TT-410b: welk profiel, en hoe is het geopend? Bij een stap terug staat het
   // in de stap zelf; bij een link in het #-deel van het adres.
   // TT-410b fase 2: hetzelfde scherm toont een muzikant of een band
@@ -1199,16 +1193,8 @@ function showView(view, mode, extra) {
 
     // Akkoord-checkbox: altijd verplicht. TT-570: het akkoord hoort bij het
     // aanmaken van account en profiel, en dat gebeurt nu pas bij de laatste knop.
-    // Bugfix 06-09-2026 (gevonden tijdens het uitzoeken van de vinkje-
-    // uitlijning, niet door Ronald gemeld): style.display = '' wist de
-    // display-eigenschap uit de inline stijl in plaats van 'm terug te zetten
-    // naar wat er al stond. Voor deze rij betekende dat: bij elke gewone,
-    // niet-hervatte registratie (verreweg het vaakste pad) verloor de rij
-    // zijn "display:flex" voorgoed zodra showView('register') één keer
-    // draaide — de rij viel terug op het label-standaard "inline", zonder
-    // gap en zonder align-items. Expliciet 'flex' teruggeven i.p.v. leeg.
-    const consentRow = document.getElementById('consentCheckbox')?.closest('label');
-    if (consentRow) consentRow.style.display = 'flex';
+    // TT-543 blok 3: de rij staat in .akkoord-regel (styles.css); geen
+    // inline stijl meer om terug te zetten.
     updateSubmitProfileState();
 
     // Staat er een halve registratie in deze browser, dan pakt de wizard die

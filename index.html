@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261107b">
+<link rel="stylesheet" href="styles.css?v=20261107c">
 </head>
 <body>
 
@@ -562,60 +562,34 @@
       <input type="file" accept="image/*" class="avatar-upload-input" id="avatarInput" autocomplete="off" onchange="handleAvatarUpload(this.files[0]); this.value=''">
     </div>
 
-    <div class="media-tip">
-      <span id="wizardMhTipText"><strong>Tip:</strong> toon de energie die jij als muzikant wil laten zien.</span>
-    </div>
-
     <h2 class="hoofdstuk-kop">Foto's, video's en links</h2>
     <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Een profiel met media valt op.</div>
 
-    <div class="media-tabs">
-      <button class="media-tab active" onclick="switchMediaTab('upload', this)">Upload</button>
-      <button class="media-tab" onclick="switchMediaTab('links', this)">Links</button>
-    </div>
-
-    <!-- TT-263 (13-09-2026): de keuze voor de bannerbalk op het profiel. De
-         grens geldt over foto's, video's en links samen, dus staat de teller
-         buiten de twee tabbladen en niet erin. -->
+    <!-- TT-263 (13-09-2026): de keuze voor de bannerbalk op het profiel; de
+         grens geldt over foto's, video's en links samen.
+         TT-543 blok 3 (besluiten Ronald 06 en 07-11-2026): één raster met de
+         tegel "+ Toevoegen" (mediaRasterHTML() in utils.js); geen tabbladen,
+         geen sleepvak, geen wisselende tip. -->
     <p class="banner-teller" id="wizardBannerTeller"></p>
+    <div class="media-raster" id="mediaGrid"></div>
+    <input type="file" id="mediaInvoer" class="media-invoer" multiple autocomplete="off" onchange="handleFileSelect(this.files); this.value=''">
 
-    <!-- Upload pane -->
-    <div class="media-pane active" id="pane-upload">
-      <div class="drop-zone" id="dropZone"
-        ondragover="event.preventDefault(); this.classList.add('drag-over')"
-        ondragleave="this.classList.remove('drag-over')"
-        ondrop="handleDrop(event)">
-        <input type="file" accept="image/*,video/*" multiple autocomplete="off" onchange="handleFileSelect(this.files); this.value=''">
-        <div class="drop-label"><strong>Sleep bestanden hierheen</strong> of klik om te selecteren</div>
-        <div class="drop-hint">Foto's (JPG, PNG) · Video's (MP4, MOV) · Max 50 MB per bestand</div>
-      </div>
-      <div class="media-grid" id="mediaGrid"></div>
+    <!-- TT-543 blok 3 (besluiten Ronald 07-11-2026, op beeld): "De laatste
+         stap" staat los van Je mediahoek: 128px onder de media een grijze
+         streep over de hele breedte, daaronder een kop en het akkoord met
+         vinkje. Alleen in de wizard; de tegel Je mediahoek eindigt bij de media.
+         TT-63: de drie namen openen een venster (openLegalModal()), nooit een
+         link die de wizard verlaat. -->
+    <div class="laatste-stap">
+      <h2 class="hoofdstuk-kop">De laatste stap</h2>
+      <label class="akkoord-regel">
+        <input type="checkbox" id="consentCheckbox" onchange="updateSubmitProfileState()">
+        <span>Ik ga akkoord met de
+          <button type="button" class="tekst-knop" onclick="event.preventDefault();openLegalModal('terms')">Gebruiksvoorwaarden</button>,
+          <button type="button" class="tekst-knop" onclick="event.preventDefault();openLegalModal('privacy')">Privacyverklaring</button> en
+          <button type="button" class="tekst-knop" onclick="event.preventDefault();openLegalModal('gedragscode')">Gedragscode</button>.</span>
+      </label>
     </div>
-
-    <!-- Links pane -->
-    <div class="media-pane" id="pane-links">
-      <div id="linksList"></div>
-      <button class="add-link-btn" onclick="addLinkRow()">+ Link toevoegen</button>
-    </div>
-
-    <!-- TT-63 (09-08-2026): expliciet consent-moment vóór de definitieve klik —
-         de privacyverklaring zegt dat toestemming hier gegeven wordt, dus moet
-         hier ook echt een zichtbare/klikbare verwijzing staan.
-         TT-63-fix (23-08-2026): niet langer <a href="#terms" target="_blank">.
-         Dat opende geen nieuw tabblad in een ingebedde mobiele browser (bijv.
-         WhatsApp) maar navigeerde de wizard zelf weg, met verlies van alle
-         voortgang. Nu: gewone knoppen die een modal openen (openLegalModal()),
-         geen navigatie, geen href, dus geen risico meer op het verlaten van
-         de wizard. -->
-    <label style="display:flex;align-items:flex-start;gap:8px;margin-top:20px;font-size:12px;color:var(--muted);cursor:pointer;">
-      <input type="checkbox" id="consentCheckbox" onchange="updateSubmitProfileState()" style="margin-top:-3px;flex-shrink:0;">
-      <span>
-        Ik ga akkoord met de
-        <button type="button" onclick="event.preventDefault();openLegalModal('terms')" style="background:none;border:none;padding:0;margin:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer;">Gebruiksvoorwaarden</button>,
-        <button type="button" onclick="event.preventDefault();openLegalModal('privacy')" style="background:none;border:none;padding:0;margin:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer;">Privacyverklaring</button> en
-        <button type="button" onclick="event.preventDefault();openLegalModal('gedragscode')" style="background:none;border:none;padding:0;margin:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer;">Gedragscode</button>.
-      </span>
-    </label>
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner btn-row">
@@ -924,36 +898,13 @@
       <input type="file" accept="image/*" class="avatar-upload-input" id="mhAvatarInput" autocomplete="off" onchange="mhHandleAvatarUpload(this.files[0]); this.value=''">
     </div>
 
-    <div class="media-tip">
-      <span id="mhTipText"><strong>Tip:</strong> toon de energie die jij als muzikant wil laten zien.</span>
-    </div>
-
     <h2 class="hoofdstuk-kop">Foto's, video's en links</h2>
-    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud.</div>
+    <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Een profiel met media valt op.</div>
 
-    <div class="media-tabs">
-      <button type="button" class="media-tab active" onclick="switchMhMediaTab('upload', this)">Upload</button>
-      <button type="button" class="media-tab" onclick="switchMhMediaTab('links', this)">Links</button>
-    </div>
-
+    <!-- TT-543 blok 3: zelfde raster als wizardstap 4 (mediaRasterHTML()). -->
     <p class="banner-teller" id="mhBannerTeller"></p>
-
-    <div class="media-pane active" id="mhPaneUpload">
-      <div class="drop-zone" id="mhDropZone"
-        ondragover="event.preventDefault(); this.classList.add('drag-over')"
-        ondragleave="this.classList.remove('drag-over')"
-        ondrop="mhHandleDrop(event)">
-        <input type="file" accept="image/*,video/*" multiple autocomplete="off" onchange="mhHandleFileSelect(this.files); this.value=''">
-        <div class="drop-label"><strong>Sleep bestanden hierheen</strong> of klik om te selecteren</div>
-        <div class="drop-hint">Foto's (JPG, PNG) · Video's (MP4, MOV) · Max 50 MB per bestand</div>
-      </div>
-      <div class="media-grid" id="mhMediaGrid"></div>
-    </div>
-
-    <div class="media-pane" id="mhPaneLinks">
-      <div id="mhLinksList"></div>
-      <button type="button" class="add-link-btn" onclick="mhAddLinkRow()">+ Link toevoegen</button>
-    </div>
+    <div class="media-raster" id="mhMediaGrid"></div>
+    <input type="file" id="mhMediaInvoer" class="media-invoer" multiple autocomplete="off" onchange="mhHandleFileSelect(this.files); this.value=''">
 
     <div class="action-row">
       <button class="btn btn-primary" onclick="saveJeMediahoek()">Opslaan</button>
@@ -2049,6 +2000,26 @@
 </div>
 
 <!-- Generieke bevestigingsmodal (bijv. profiel verwijderen) -->
+<!-- TT-543 blok 3 (besluit Ronald 07-11-2026, op beeld): een link toevoegen.
+     Eén veld; de naam van het platform rechts op de regel van het label;
+     Toevoegen direct onder het veld, uit zolang het veld leeg is. Het kruisje
+     is de enige uitgang (huisstijl §9). Functies in utils.js. -->
+<div class="modal-overlay" id="linkToevoegenModal" data-close="sluitLinkToevoegen" onclick="if(event.target===this)sluitLinkToevoegen()">
+  <div class="modal-box modal-box-md">
+    <button class="modal-close" onclick="sluitLinkToevoegen()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+    <div class="filter-title">Link toevoegen</div>
+    <div class="field-group single">
+      <div class="field">
+        <div class="label-rij"><label for="linkToevoegenVeld">Link</label><span id="linkToevoegenPlatform" class="field-uitslag uitslag-stil" aria-live="polite">Link</span></div>
+        <input type="url" id="linkToevoegenVeld" placeholder="Plak hier je link" autocomplete="off" inputmode="url" oninput="linkToevoegenInvoer()" onkeydown="submitOnEnter(event, linkToevoegenOk)">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-primary" id="linkToevoegenKnop" onclick="linkToevoegenOk()" disabled>Toevoegen</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="confirmModal">
   <div class="modal-box modal-box-sm">
     <p id="confirmMessage" style="margin-bottom:24px;font-size:12px;"></p>
@@ -2411,15 +2382,15 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261107a"></script>
-<script src="utils.js?v=20261107a"></script>
+<script src="core.js?v=20261107b"></script>
+<script src="utils.js?v=20261107b"></script>
 <script src="veiligheid.js?v=20261106b"></script>
 <script src="auth.js?v=20261106d"></script>
 <script src="postcode.js?v=20261107a"></script>
-<script src="wizard.js?v=20261107a"></script>
+<script src="wizard.js?v=20261107b"></script>
 <script src="ouder.js?v=20261106a"></script>
 <script src="search.js?v=20261107a"></script>
-<script src="musicians.js?v=20261107a"></script>
+<script src="musicians.js?v=20261107b"></script>
 <script src="bands.js?v=20261106b"></script>
 <script src="messages.js?v=20261106b"></script>
 <script src="push.js?v=20261027b"></script>
