@@ -1545,8 +1545,9 @@ def blok_browser():
             const lab = document.getElementById(id).closest('.field').querySelector('label');
             let n = lab;
             while (n) { n.style.display = 'block'; n.classList.add('active'); n = n.parentElement; }
-            lab.style.display = 'flex';
-            const tekst = lab.querySelector('span');
+            // TT-543 (voorstel 8): het label is "Instrumenten *" in een
+            // .label-rij; de tekst staat direct in het label.
+            const tekst = lab;
             // De ster moet op dezelfde regel staan als het eerste woord.
             // Het vak zelf meten zegt niets: dat groeit mee met de ster.
             const r = document.createRange();
@@ -1559,7 +1560,7 @@ def blok_browser():
           return uit;
         }""")
         for s in sterren:
-            check(f"sterretje naast 'Mijn Instrumenten' op 344px ({s['id']})",
+            check(f"sterretje naast 'Instrumenten' op 344px ({s['id']})",
                   s["eenRegel"], str(s))
         sctx.close()
         check("geen paginafouten in blok 17", not page_errors, "; ".join(page_errors)[:200])
@@ -5040,7 +5041,7 @@ window.TT_STUB.fnAntwoord = {};
           zet('artistSearch', 'Queen'); zet('trackSearch', 'Bohemian');
           document.getElementById('consentCheckbox').checked = true;
           Object.assign(state, { fname: 'Uke', regEmail: 'uke@proton.me', regPassword: 'geheim123',
-            instruments: ['Ukelele'], genres: ['Pop'], repertoireType: 'covers',
+            instruments: ['Ukelele'], genres: ['Pop'], naamTonen: 'gebruikersnaam',
             songs: [{ title: 'Bohemian Rhapsody', artist: 'Queen', level: 2 }],
             mediaLinks: [{ url: 'https://youtu.be/x' }] });
           populateWizardFieldsFromState();
@@ -5056,7 +5057,7 @@ window.TT_STUB.fnAntwoord = {};
           const panelen = [...v.querySelectorAll('.panel')];
           return {
             gevuld,
-            stateGevuld: ['fname', 'regEmail', 'regPassword', 'repertoireType'].filter(k => state[k]),
+            stateGevuld: ['fname', 'regEmail', 'regPassword'].filter(k => state[k]).concat(state.naamTonen === 'echt' ? [] : ['naamTonen']),
             lijsten: ['instruments', 'genres', 'songs', 'mediaLinks', 'mediaFiles'].filter(k => state[k].length),
             stap: panelen.findIndex(p => p.classList.contains('active')),
             veldfouten: v.querySelectorAll('.field-error').length,
@@ -5255,9 +5256,11 @@ window.TT_STUB.fnAntwoord = {};
               and w["verlopen"]["knoppen"] == ["btn btn-primary"], json.dumps(w["verlopen"]))
         check("na een verlopen aanvraag staat het wachtscherm weer in zijn oorspronkelijke vorm",
               w["hersteld"] == {"kop": "Je aanvraag is verstuurd", "melding": True, "opnieuw": True}, json.dumps(w["hersteld"]))
-        check("de gebruikersnaam-hint zegt het zoals Ronald het schreef",
-              "Ben je jonger dan 16 jaar? Dan staat alleen deze naam op je profiel en moet hij anders zijn dan je voornaam."
-              in pg.evaluate("document.querySelector('#username').closest('.field').textContent"))
+        # TT-543 (besluit Ronald 06-11-2026, voorstel 2): de zin onder
+        # Gebruikersnaam is weg; de keuze "Naam op je profiel" staat ervoor in de
+        # plaats. Onder de 16 meldt de fout bij Verder dat de naam anders moet zijn.
+        check("de zin onder Gebruikersnaam is weg (besluit Ronald 06-11-2026, voorstel 2)",
+              "Ben je jonger dan 16" not in pg.evaluate("document.querySelector('#username').closest('.field').textContent"))
         c.close()
 
         # 4. De goedkeuringspagina: hoofdknop, en "Bedankt!" staat in beeld.
@@ -9907,7 +9910,9 @@ window.TT_STUB.fnAntwoord = {};
             // TT-517 fase 2 (huisstijl §24): een vlak zonder zichtbare rand; de rand van 1px is doorzichtig.
             if (parseFloat(cs.borderTopWidth) !== 1 || cs.borderTopColor !== 'rgba(0, 0, 0, 0)' || cs.backgroundColor === 'rgba(0, 0, 0, 0)') uit.omlijnd = false;
             const a = r.querySelector('.setlist-artiest'), t = r.querySelector('.setlist-titel'), sp = r.querySelector('.setlist-spelers');
-            uit.keuzeX.add(tekstX(r.querySelector('.setlist-keuze .wheel-field-label')));
+            // TT-519 (besluit Ronald 25-10-2026): het woord staat steeds 4px voor het pijltje.
+            { const g = document.createRange(); g.selectNodeContents(r.querySelector('.setlist-keuze .wheel-field-label'));
+              uit.keuzeX.add(af(r.querySelector('.setlist-keuze svg').getBoundingClientRect().left - g.getBoundingClientRect().right)); }
             uit.linksX.add(tekstX(a));
             if (sp.textContent.trim()) uit.linksX.add(af(sp.querySelector('svg').getBoundingClientRect().left));
             if (a.getBoundingClientRect().height > 21) uit.regels.push('artiest ' + i);
@@ -9923,9 +9928,14 @@ window.TT_STUB.fnAntwoord = {};
             uit.rechterlijn.add(af(r.querySelector('.setlist-keuze svg').getBoundingClientRect().right));
             if (!x.classList.contains('setlist-zeker')) {
               const ink = x.querySelector('svg').getBoundingClientRect();
-              uit.marges.add('boven ' + af(ink.top - bin.t)); uit.marges.add('rechts ' + af(bin.r - ink.right));
+              uit.marges.add('rechts ' + af(bin.r - ink.right));
               uit.rechterlijn.add(af(ink.right));
-              if (Math.abs(ink.top - a.getBoundingClientRect().top) > 0.5) uit.kruisScheef.push(i + ': kruisje niet op de artiestregel');
+              // TT-519 (besluit Ronald 25-10-2026): de bovenkant van de inkt op de bovenkant van de hoofdletter van de artiest.
+              const acs = getComputedStyle(a), cv = document.createElement('canvas').getContext('2d');
+              cv.font = acs.fontWeight + ' ' + acs.fontSize + ' ' + acs.fontFamily;
+              const fm = cv.measureText('M'), lh = parseFloat(acs.lineHeight);
+              const capTop = a.getBoundingClientRect().top + (lh - (fm.fontBoundingBoxAscent + fm.fontBoundingBoxDescent)) / 2 + (fm.fontBoundingBoxAscent - fm.actualBoundingBoxAscent);
+              if (Math.abs(ink.top - capTop) > 0.5) uit.kruisScheef.push(i + ': kruisje niet op de bovenkant van de hoofdletter (' + af(ink.top - capTop) + 'px)');
             }
             if (!x.classList.contains('setlist-zeker')) {
               const ink = x.querySelector('svg').getBoundingClientRect();
@@ -9965,13 +9975,13 @@ window.TT_STUB.fnAntwoord = {};
                 ok87 = d87.get("rijen") == 8
                 check(f"{naam87}: acht rijen als vlak zonder zichtbare rand, kop met \"8 nummers\", de i binnen het vak",
                       ok87 and d87["omlijnd"] and d87["kopZichtbaar"] and d87["kopTeller"] == "8 nummers" and d87["kopBinnen"], json.dumps(d87))
-                check(f"{naam87}: \"Beheersing\" in de kop staat recht boven de keuze in elke rij",
-                      ok87 and len(d87["keuzeX"]) == 1 and d87["keuzeX"][0] == d87["kopBehX"], json.dumps(d87))
+                check(f"{naam87}: in elke rij staat het woord van de keuze 4px voor het pijltje (TT-519, besluit Ronald 25-10-2026)",
+                      ok87 and d87["keuzeX"] == [4], json.dumps(d87))
                 check(f"{naam87}: artiest, nummer en voorproef beginnen op één x en staan elk op één regel",
                       ok87 and len(d87["linksX"]) == 1 and not d87["regels"], json.dumps(d87))
-                check(f"{naam87}: esthetiek: binnenmarges links, boven (kruisje), rechts (kruisje) en onder (keuze) alle 12px",
-                      ok87 and d87["marges"] == ["boven 12", "links 12", "onder 12", "rechts 12"], json.dumps(d87))
-                check(f"{naam87}: esthetiek: één rechterlijn voor kruisje, pijltje van de keuze en de i in de kop; kruisje op de artiestregel",
+                check(f"{naam87}: esthetiek: binnenmarges links, rechts (kruisje) en onder (keuze) alle 12px",
+                      ok87 and d87["marges"] == ["links 12", "onder 12", "rechts 12"], json.dumps(d87))
+                check(f"{naam87}: esthetiek: één rechterlijn voor kruisje, pijltje van de keuze en de i in de kop; kruisje op de bovenkant van de hoofdletter (TT-519)",
                       ok87 and max(d87["rechterlijn"]) - min(d87["rechterlijn"]) <= 0.5 and not d87["kruisScheef"], json.dumps(d87))
                 check(f"{naam87}: niets overlapt (artiest vrij van het kruisje, voorproef vrij van de keuze); \"Zeker?\" binnen de rij; geen scroll opzij",
                       ok87 and not d87["afgesneden"] and d87["zeker"] and d87["zekerBinnen"] and not d87["pagina"], json.dumps(d87))
@@ -12240,7 +12250,10 @@ def blok_tt517_fase6():
     check("de teksten naast de foto: zonder foto de kop, met foto \"Je profielfoto\" of \"Jullie bandfoto\"",
           html.count('<span class="kop-zonder-foto">Upload een foto van jezelf</span><span class="kop-met-foto">Je profielfoto</span>') == 2
           and html.count('<span class="kop-zonder-foto">Upload een foto van de band</span><span class="kop-met-foto">Jullie bandfoto</span>') == 1
-          and html.count("<p>JPG of PNG, maximaal 5 MB.</p>") == 3)
+          # TT-543 (besluit Ronald 06-11-2026, voorstel 12; wijzigt 31-10-2026):
+          # de regel staat niet meer bij de profielfoto. Bij de bandfoto nog wel
+          # (onderdeel 6 van TT-543).
+          and html.count("<p>JPG of PNG, maximaal 5 MB.</p>") == 1)
 
     stub_js = open(STUB, encoding="utf-8").read()
     httpd, port = serve()
@@ -14496,6 +14509,125 @@ def blok_tt543():
     check("geen paginafouten in blok 131", not fouten, "; ".join(fouten)[:300])
 
 
+# --------------------------------------------------------------------------
+# Blok 133 — TT-543 onderdeel 1, blok 1 (besluiten Ronald 06-11-2026,
+# voorstellen 1 tot en met 10 en 12, fout F1; TT-519): Profiel aanmaken en de
+# tegels Wie ben je, Wat speel je en Je setlist gelijk en korter.
+# --------------------------------------------------------------------------
+def blok_tt543_blok1():
+    print("\nBlok 133 — TT-543 blok 1: stap 1 tot en met 3 en de tegels gelijk en korter")
+    js_bron = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in JS_FILES)
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    check("geen JS-bestand leest of schrijft repertoire_type meer (voorstel 6; de kolom blijft in de database)",
+          not re.search(r"repertoire_?[tT]ype|REPERTOIRE_TYPE", re.sub(r"//[^\n]*", "", js_bron)), "")
+    check("de teksten die weg zijn, staan nergens meer: uitleg bovenaan stap 1, de zin onder Gebruikersnaam, \"Alleen de 4 cijfers.\", \"Wat speel je vooral?\", de uitleg onder Wat speel je",
+          not any(w in html for w in ("Maak je profiel aan. Vanaf 16", "Ben je jonger dan 16 jaar? Dan staat", "Alleen de 4 cijfers.",
+                                       "Wat speel je vooral?", "Je instrument(en), je niveau per instrument")), "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten = []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(400)
+        u = page.evaluate("""async () => {
+          const w = ms => new Promise(r => setTimeout(r, ms));
+          const u = {}, $ = id => document.getElementById(id);
+          const NORMAAL = sel => [...document.querySelectorAll(sel + ' *')].filter(el => el.offsetParent
+              && [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())
+              && !el.classList.contains('scherm-titel')   // visueel verborgen: de titel staat in de kop
+              && getComputedStyle(el).lineHeight === 'normal').map(el => el.className + ' «' + el.textContent.trim().slice(0, 30) + '»');
+          showView('register'); goTo(0); await w(100);
+          const p0 = $('step0');
+          u.stap1 = { sub: !!p0.querySelector('.panel-sub'), datum: $('birth_date').placeholder,
+            plaatsDoorzichtig: getComputedStyle($('city')).opacity, bioZin: p0.querySelector('#bio').closest('.field').querySelector('.field-hint')?.textContent };
+          // Voorstel 2: de naamkeuze, met het voorbeeld; onder de 16 verborgen.
+          const zet = (id, v) => { $(id).value = v; $(id).dispatchEvent(new Event('input', { bubbles: true })); };
+          zet('fname', 'Sander'); zet('lname', 'de Vries'); zet('username', 'rockdrummer'); zet('birth_date', '01-02-2000');
+          u.naam16 = [getComputedStyle($('naamKeuze')).display, $('naamVoorbeeld').textContent,
+                      p0.querySelector('#naamTonenControl .selected')?.dataset.mode];
+          zetNaamTonen('gebruikersnaam');
+          u.naamGebruiker = [$('naamVoorbeeld').textContent, state.naamTonen];
+          state.onboarding = true; saveOnboardingProgress();
+          u.bewaard = JSON.parse(localStorage.getItem('tt_onboarding_v1') || '{}').naamTonen;
+          state.naamTonen = 'echt'; vulStateUitVoortgang(JSON.parse(localStorage.getItem('tt_onboarding_v1')));
+          u.terug = state.naamTonen;
+          state.onboarding = false; clearOnboardingProgress();
+          const jaar = new Date().getFullYear() - 14;
+          zet('birth_date', '01-02-' + jaar);
+          u.naam14 = getComputedStyle($('naamKeuze')).display;
+          // persistEditedProfile schrijft de keuze mee (TT-420: de database maakt er de naam van).
+          const echteFrom = db.from.bind(db); let geschreven = null;
+          db.from = t => { const q = echteFrom(t); if (t === 'musicians') { const up = q.update.bind(q); q.update = v => { geschreven = v; return up(v); }; } return q; };
+          state.naamTonen = 'gebruikersnaam'; state.mediaLinks = []; state.mediaFiles = []; state.songs = [];
+          try { await persistEditedProfile('m1'); } catch (e) {}
+          db.from = echteFrom;
+          u.schrijft = !!geschreven && geschreven.naam_tonen === 'gebruikersnaam' && !('repertoire_type' in geschreven);
+          u.f1 = {};
+          for (let i = 0; i < 3; i++) { goTo(i); await w(80); u.f1['stap' + (i + 1)] = NORMAAL('#step' + i); }
+          // Voorstel 8: Instrumenten en Genres; "Niveau" met de i op de rechterrand van het veld.
+          goTo(1); await w(80);
+          const labels = scope => [...scope.querySelectorAll('label')].map(l => l.textContent.replace(/\s+/g, ' ').trim());
+          const iRand = (scope, veld) => Math.round((scope.querySelector('.label-uitleg .niveau-info-btn').getBoundingClientRect().right - $(veld).getBoundingClientRect().right) * 10) / 10;
+          u.stap2 = { labels: labels($('step1')), uitleg: $('step1').querySelector('.label-uitleg')?.textContent.trim(), iRand: iRand($('step1'), 'instrumentPickerField'),
+            sub: !!$('step1').querySelector('.panel-sub'), opmaakInRegel: !!$('step1').querySelector('label[style], label span[style]') };
+          // Voorstel 10: geen streep onder de lijst in stap 3.
+          u.stap3Streep = !!$('step2').querySelector('.divider');
+          u.stap3Zin = $('step2').querySelector('.panel-sub').textContent.trim();
+          // De tegels.
+          window.TT_STUB.session = { user: { id: 'u1', email: 't@t.nl' } }; currentUser = { id: 'u1', email: 't@t.nl' }; myMusicianId = 'm1';
+          showView('profieltegels'); await w(150);
+          u.f1.overzicht = NORMAAL('#tegelOverviewScreen');
+          openTegelScreen('wieBenJe'); await w(250);
+          const paren = [['fname', 'wbjFname'], ['lname', 'wbjLname'], ['birth_date', 'wbjBirthDate'], ['username', 'wbjUsername'], ['zip', 'wbjZip'], ['city', 'wbjCity']];
+          u.voorbeelden = paren.filter(([a, b]) => $(a).placeholder !== $(b).placeholder || !$(a).placeholder).map(p => p.join('/'));
+          u.tegelPlaats = getComputedStyle($('wbjCity')).opacity;
+          u.bioZinTegel = $('wbjBio').closest('.field').querySelector('.field-hint')?.textContent;
+          u.f1.wieBenJe = NORMAAL('#wieBenJeScreen');
+          openTegelScreen('watSpeelJe'); await w(250);
+          const t2 = $('watSpeelJeScreen');
+          u.tegel2 = { labels: labels(t2), uitleg: t2.querySelector('.label-uitleg')?.textContent.trim(), iRand: iRand(t2, 'wspInstrumentField'),
+            sub: !!t2.querySelector('.panel-sub'), opmaakInRegel: !!t2.querySelector('label[style], label span[style]') };
+          u.f1.watSpeelJe = NORMAAL('#watSpeelJeScreen');
+          openTegelScreen('jeSetlist'); await w(250);
+          u.tegel3Zin = $('jeSetlistScreen').querySelector('.panel-sub').textContent.trim();
+          u.f1.jeSetlist = NORMAAL('#jeSetlistScreen');
+          // Voorstel 12: geen "JPG of PNG, maximaal 5 MB." bij de profielfoto (stap 4 en de tegel).
+          u.fotoRegel = [...document.querySelectorAll('#step3 .avatar-info p, #jeMediahoekScreen .avatar-info p, #mediahoekScreen .avatar-info p')].map(e => e.textContent);
+          showView('about');
+          return u; }""")
+        browser.close()
+    httpd.shutdown()
+    check("stap 1: geen uitleg bovenaan, geboortedatum \"dd-mm-jjjj\", Plaats niet doorschijnend, de zin onder de bio (voorstellen 1, 2, 4, 5)",
+          u["stap1"] == {"sub": False, "datum": "dd-mm-jjjj", "plaatsDoorzichtig": "1", "bioZin": "Dit is vaak het eerste wat andere muzikanten van je lezen."}, json.dumps(u["stap1"]))
+    check("stap 1: vanaf 16 de keuze Naam op je profiel, standaard Echte naam, met \"Zo zien anderen je: Sander de Vries\" (voorstel 2)",
+          u["naam16"][0] != "none" and u["naam16"][1:] == ["Zo zien anderen je: Sander de Vries", "echt"], json.dumps(u["naam16"]))
+    check("stap 1: Gebruikersnaam kiezen toont de gebruikersnaam en zit in de bewaarde voortgang",
+          u["naamGebruiker"] == ["Zo zien anderen je: rockdrummer", "gebruikersnaam"] and u["bewaard"] == "gebruikersnaam" and u["terug"] == "gebruikersnaam",
+          json.dumps([u["naamGebruiker"], u["bewaard"], u["terug"]]))
+    check("stap 1: onder de 16 is de keuze verborgen, zoals in de tegel", u["naam14"] == "none", u["naam14"])
+    check("Profiel aanmaken schrijft de keuze mee (naam_tonen) en geen repertoire_type", u["schrijft"] is True, str(u["schrijft"]))
+    check("stap 1 en de tegel Wie ben je: dezelfde voorbeeldtekst in alle zes velden, Plaats niet doorschijnend, dezelfde zin onder de bio (voorstellen 1, 4, 5)",
+          not u["voorbeelden"] and u["tegelPlaats"] == "1" and u["bioZinTegel"] == u["stap1"]["bioZin"], json.dumps([u["voorbeelden"], u["tegelPlaats"], u["bioZinTegel"]]))
+    for naam, d in (("stap 2", u["stap2"]), ("tegel Wat speel je", u["tegel2"])):
+        check(f"{naam}: labels \"Instrumenten *\" en \"Genres *\", rechts \"Niveau\" met de i op de rechterrand van het veld, geen uitleg en geen opmaak in de regel (voorstellen 6, 7, 8; F2)",
+              d["labels"] == ["Instrumenten *", "Genres *"] and d["uitleg"] == "Niveaui" and d["iRand"] == 0 and not d["sub"] and not d["opmaakInRegel"], json.dumps(d))
+    check("Je setlist: in stap 3 en de tegel dezelfde zin, en geen streep onder de lijst in stap 3 (voorstellen 9, 10)",
+          u["stap3Zin"] == u["tegel3Zin"] == "Kies drie nummers en ontdek andere muzikanten." and not u["stap3Streep"], json.dumps([u["stap3Zin"], u["tegel3Zin"], u["stap3Streep"]]))
+    check("geen regel \"JPG of PNG, maximaal 5 MB.\" bij de profielfoto (voorstel 12)", not u["fotoRegel"], json.dumps(u["fotoRegel"]))
+    f1 = {k: v for k, v in u["f1"].items() if v}
+    check("F1: elke zichtbare tekst in stap 1, 2, 3, het tegeloverzicht en de tegels Wie ben je, Wat speel je en Je setlist heeft een vaste regelhoogte (huisstijl §2)",
+          not f1, json.dumps(f1, ensure_ascii=False))
+    check("geen paginafouten in blok 133", not fouten, "; ".join(fouten)[:300])
+
+
 def blok_tt570():
     # TT-570 (P0, besluiten Ronald 06-11-2026): account en profiel zijn één
     # handeling, bij de laatste knop, voor iedereen. Wie halverwege stopt, heeft
@@ -14689,6 +14821,7 @@ def main():
     blok_onderhoud_0611()
     blok_tt543()
     blok_tt570()
+    blok_tt543_blok1()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

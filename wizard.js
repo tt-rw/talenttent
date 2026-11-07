@@ -32,8 +32,8 @@ function saveOnboardingProgress() {
       fname: state.fname, lname: state.lname, birth_date: state.birth_date,
       username: state.username,
       city: state.city, zip: state.zip, bio: state.bio, citySource: state.citySource,
+      naamTonen: state.naamTonen,
       instruments: state.instruments, instrumentLevels: state.instrumentLevels, genres: state.genres, songs: state.songs,
-      repertoireType: state.repertoireType,
       mediaLinks: state.mediaLinks
       // Bewust NIET bewaard: regPassword, avatarUrl (blob-url overleeft een
       // refresh toch niet — zie bekende beperking TT-02), mediaFiles.
@@ -66,12 +66,13 @@ function populateWizardFieldsFromState() {
   const cityFieldPWF = document.getElementById('city');
   cityFieldPWF.value = state.city;
   if (state.citySource === 'manual') {
-    cityFieldPWF.readOnly = false; cityFieldPWF.style.cursor = ''; cityFieldPWF.style.opacity = '';
+    cityFieldPWF.readOnly = false; cityFieldPWF.style.cursor = '';
   } else {
-    cityFieldPWF.readOnly = true; cityFieldPWF.style.cursor = 'not-allowed'; cityFieldPWF.style.opacity = '0.85';
+    cityFieldPWF.readOnly = true; cityFieldPWF.style.cursor = 'not-allowed';
   }
   document.getElementById('postcodeStatus').textContent = '';
   document.getElementById('bio').value = state.bio;
+  naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen);
 
   renderInstrumentBadges('wizard');
   if (PICKERS.genre) renderPickerBadges(PICKERS.genre);
@@ -79,11 +80,6 @@ function populateWizardFieldsFromState() {
   renderSongs();
   renderLinksList();
   renderMediaGrid();
-
-  // TT-52
-  document.querySelectorAll('#repertoireTypeGrid .tag').forEach(t => {
-    t.classList.toggle('selected', REPERTOIRE_TYPE_LABELS[state.repertoireType] === t.textContent);
-  });
 
   const avatarPreview = document.getElementById('avatarPreview');
   if (state.avatarUrl) {
@@ -175,12 +171,12 @@ function vulStateUitVoortgang(saved) {
   state.city = saved.city || '';
   state.zip = saved.zip || '';
   state.bio = saved.bio || '';
+  state.naamTonen = saved.naamTonen === 'gebruikersnaam' ? 'gebruikersnaam' : 'echt';
   state.citySource = saved.citySource || 'pdok';
   state.instruments = saved.instruments || [];
   state.instrumentLevels = saved.instrumentLevels || {};
   state.genres = saved.genres || [];
   state.songs = saved.songs || [];
-  state.repertoireType = saved.repertoireType || '';
   state.mediaLinks = saved.mediaLinks || [];
   postcodeResolved = !!state.zip;
 }
@@ -256,7 +252,7 @@ async function loadMyProfile(opties) {
   const voorafId = myMusicianId;
   const vooraf = voorafId ? bijvragen(voorafId) : null;
   const { data: m, error } = await db.from('musicians')
-    .select(`id, weergavenaam, username, city, bio, repertoire_type,
+    .select(`id, weergavenaam, username, city, bio,
              avatar_url, accepts_band_invites,
              musician_instruments(instrument, niveau), musician_genres(genre),
              musician_songs(song_title, song_artist, mastery_level),
@@ -398,7 +394,7 @@ async function persistEditedProfile(mid) {
     city:             state.city,
     zip:              state.zip || null,
     bio:              state.bio || null,
-    repertoire_type:  state.repertoireType || null,
+    naam_tonen:       state.naamTonen,
     avatar_url:       state.avatarUrl || null,
     ...wazigVeld(state.avatarUrl),
     city_source:      state.citySource || 'pdok',
@@ -763,7 +759,6 @@ async function submitProfile() {
           city:             state.city,
           zip:              state.zip || null,
           bio:              state.bio || null,
-          repertoire_type:  state.repertoireType || null,
           profile_color:    DEFAULT_PROFILE_COLOR,
           avatar_url:       state.avatarUrl || null,
           ...wazigVeld(state.avatarUrl),
@@ -877,7 +872,7 @@ function legeWizardState() {
     instrumentLevels: {}, // TT-51 (12-08-2026): instrument (string) -> niveau 1-5
     genres: [],
     songs: [],
-    repertoireType: '', // TT-52 (12-08-2026): covers/eigen/beide, optioneel, per profiel
+    naamTonen: 'echt', // TT-543: Echte naam of Gebruikersnaam, zoals in de tegel Wie ben je (TT-420)
     avatarUrl: null,
     avatarFile: null,
     avatarPath: null,
@@ -966,6 +961,9 @@ function init() {
   document.getElementById('bio').addEventListener('input', () => {
     state.bio = document.getElementById('bio').value.trim();
   });
+  // TT-543: het voorbeeld "Zo zien anderen je" volgt de velden, zoals in de tegel.
+  document.getElementById('step0').addEventListener('input', () => naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen));
+  naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen);
 
   // TT-122 (22-08-2026): inlogveld alvast vullen met het laatst gebruikte
   // e-mailadres op dit toestel.
@@ -981,13 +979,14 @@ function init() {
 // TT-46/TT-168 vervallen (08-10-2026, besluit Ronald): de bio-voorzetknoppen en
 // applyBioPromptTo/applyBioPrompt zijn weg; het voorbeeld staat als placeholder in het veld.
 
-// TT-52: zelfde patroon — optioneel, per profiel, nogmaals klikken wist de keuze.
-function selectRepertoireType(el, val) {
-  const already = el.classList.contains('selected');
-  document.querySelectorAll('#repertoireTypeGrid .tag').forEach(t => t.classList.remove('selected'));
-  if (already) { state.repertoireType = ''; return; }
-  el.classList.add('selected');
-  state.repertoireType = val;
+// TT-543 (besluit Ronald 06-11-2026, voorstel 2): de keuze Naam op je profiel
+// staat ook in stap 1, met dezelfde functie als de tegel (naamKeuzeBijwerken()).
+const WIZ_NAAM = { blok: 'naamKeuze', control: 'naamTonenControl', voorbeeld: 'naamVoorbeeld',
+  fname: 'fname', lname: 'lname', username: 'username', geboorte: 'birth_date' };
+function zetNaamTonen(waarde) {
+  state.naamTonen = waarde === 'gebruikersnaam' ? 'gebruikersnaam' : 'echt';
+  naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen);
+  saveOnboardingProgress();
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
@@ -1018,9 +1017,8 @@ async function nextStep(from) {
     // kolom lname wordt gevuld als iemand hem invult.
     if (!state.fname) {
       fouten.push(['fname', 'Vul je voornaam in']);
-    } else if (!naamPastInProfielkop(
-        (/^\d{2}-\d{2}-\d{4}$/.test(state.birth_date) && calcAge(state.birth_date) >= 16)
-          ? [state.fname, state.lname].filter(Boolean).join(' ') : state.fname)) {
+    } else if (!naamPastInProfielkop(naamZoalsAnderen(state.fname, state.lname, state.username, state.naamTonen,
+        /^\d{2}-\d{2}-\d{4}$/.test(state.birth_date) ? calcAge(state.birth_date) : 16) || state.fname)) {
       // TT-249 (11-09-2026): de naam is de grote naam op je profiel. Die wordt
       // nooit afgekapt en nooit afgebroken, dus een naam die op de kleinste
       // letter niet past, komt er niet in. TT-420: vanaf 16 staat standaard de

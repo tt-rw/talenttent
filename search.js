@@ -3,14 +3,6 @@
 // TT-514 (besluit Ronald, 25-10-2026: "podium is goed"): overal "Podium", gelijk aan het keuzemenu in de setlist.
 const LEVEL_LABELS = { basis: 'Basis', bijna: 'Bijna', podium: 'Podium' };
 
-// TT-52 (12-08-2026): repertoire-type, optioneel, per profiel (niet per nummer):
-// een feit over het huidige repertoire ("covers/eigen nummers/beide").
-const REPERTOIRE_TYPE_LABELS = {
-  covers: 'Covers',
-  eigen:  'Eigen nummers',
-  beide:  'Allebei'
-};
-
 // TT-520 (26-10-2026): één filterset voor muzikanten én bands. Instrument
 // betekent bij een muzikant "speelt", bij een band "zoekt" (Laag 3.1, besluit
 // Ronald 25-10-2026: een band die het gekozen instrument zoekt, is een treffer).

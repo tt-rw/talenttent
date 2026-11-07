@@ -946,18 +946,9 @@ function wbjLeeftijd() {
   return s.length === 10 ? calcAge(s) : null;
 }
 
-function wbjNaamKeuzeBijwerken() {
-  const leeftijd = wbjLeeftijd();
-  const blok = document.getElementById('wbjNaamKeuze');
-  blok.style.display = (leeftijd !== null && leeftijd < 16) ? 'none' : '';
-  document.querySelectorAll('#wbjNaamTonenControl .segmented-btn').forEach(btn => {
-    btn.classList.toggle('selected', btn.getAttribute('data-mode') === wbjNaamTonen);
-  });
-  const naam = naamZoalsAnderen(
-    document.getElementById('wbjFname').value, document.getElementById('wbjLname').value,
-    document.getElementById('wbjUsername').value, wbjNaamTonen, leeftijd === null ? 16 : leeftijd);
-  document.getElementById('wbjNaamVoorbeeld').textContent = naam ? `Zo zien anderen je: ${naam}` : '';
-}
+const WBJ_NAAM = { blok: 'wbjNaamKeuze', control: 'wbjNaamTonenControl', voorbeeld: 'wbjNaamVoorbeeld',
+  fname: 'wbjFname', lname: 'wbjLname', username: 'wbjUsername', geboorte: 'wbjBirthDate' };
+function wbjNaamKeuzeBijwerken() { naamKeuzeBijwerken(WBJ_NAAM, wbjNaamTonen); }
 
 function zetWbjNaamTonen(waarde) {
   wbjNaamTonen = waarde === 'gebruikersnaam' ? 'gebruikersnaam' : 'echt';
@@ -1113,11 +1104,11 @@ async function saveWieBenJe() {
 // ═══════════════════════════════════════════════════════════════════════
 // Tegel: Wat speel je
 // ═══════════════════════════════════════════════════════════════════════
-// Raakt uitsluitend musician_instruments, musician_genres en
-// musicians.repertoire_type.
+// Raakt uitsluitend musician_instruments en musician_genres. TT-543 (besluit
+// Ronald 06-11-2026, voorstel 6): "Wat speel je vooral?" is weg; de kolom
+// repertoire_type staat nog in de database, de app leest en schrijft hem niet.
 
 let wspState = { instruments: [], instrumentLevels: {}, genres: [] };
-let wspRepertoireType = '';
 let wspSnapshot = null;
 
 function wspFieldSnapshot() {
@@ -1125,13 +1116,12 @@ function wspFieldSnapshot() {
     instruments: wspState.instruments,
     instrumentLevels: wspState.instrumentLevels,
     genres: wspState.genres,
-    repertoireType: wspRepertoireType,
   });
 }
 
 async function openWatSpeelJe() {
   const { data, error } = await db.from('musicians')
-    .select('repertoire_type, musician_instruments(instrument, niveau), musician_genres(genre)')
+    .select('musician_instruments(instrument, niveau), musician_genres(genre)')
     .eq('id', myMusicianId).single();
   if (error) {
     showToast(friendlyErrorMessage(error, 'je gegevens laden'));
@@ -1141,7 +1131,6 @@ async function openWatSpeelJe() {
   wspState.instrumentLevels = {};
   (data.musician_instruments || []).forEach(x => { if (x.niveau) wspState.instrumentLevels[x.instrument] = x.niveau; });
   wspState.genres = (data.musician_genres || []).map(x => x.genre);
-  wspRepertoireType = data.repertoire_type || '';
 
   initInstrumentPicker({
     id: 'wsp', fieldId: 'wspInstrumentField', badgeRowId: 'wspInstrumentBadgeRow',
@@ -1152,21 +1141,7 @@ async function openWatSpeelJe() {
     options: GENRES, getList: () => wspState.genres,
     placeholder: 'Kies een genre', sheetTitle: 'Kies een genre',
   });
-  wspRenderRepertoireType();
   wspSnapshot = wspFieldSnapshot();
-}
-
-function wspSelectRepertoireType(el, val) {
-  const already = el.classList.contains('selected');
-  document.querySelectorAll('#wspRepertoireTypeGrid .tag').forEach(t => t.classList.remove('selected'));
-  if (already) { wspRepertoireType = ''; return; }
-  el.classList.add('selected');
-  wspRepertoireType = val;
-}
-function wspRenderRepertoireType() {
-  document.querySelectorAll('#wspRepertoireTypeGrid .tag').forEach(t => {
-    t.classList.toggle('selected', t.dataset.val === wspRepertoireType);
-  });
 }
 
 async function saveWatSpeelJe() {
@@ -1177,10 +1152,6 @@ async function saveWatSpeelJe() {
   if (showFieldErrors(fouten)) return;
 
   if (wspFieldSnapshot() === wspSnapshot) return;
-
-  const { error: uErr } = rijenGeraakt(await db.from('musicians')
-    .update({ repertoire_type: wspRepertoireType || null }).eq('id', myMusicianId).select('id'));
-  if (uErr) { showToast(friendlyErrorMessage(uErr, 'je gegevens opslaan')); return; }
 
   // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
   const { error: kErr } = await db.rpc('tt_save_musician_koppelingen', {

@@ -564,6 +564,7 @@
     letter-spacing: 2px;
     text-transform: uppercase;
     font-weight: 500;
+    line-height: 16px; /* TT-543 F1: vaste regelhoogte (huisstijl §2) */
     /* TT-517 fase 11: op 360px brak "STAP 1 VAN 5" over twee regels. Nu
        altijd één regel; de streepjes ervoor geven de ruimte (flex). */
     white-space: nowrap;
@@ -1244,7 +1245,9 @@
     height: 33px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    /* TT-519 (besluit Ronald 25-10-2026, gebouwd in TT-543): het woord staat
+       rechts, steeds 4px voor het pijltje; het pijltje blijft op de rechterlijn. */
+    justify-content: flex-end;
     gap: 4px;
     padding: 0;
     border: 0;
@@ -1267,9 +1270,13 @@
   /* Zolang het menu openstaat, ligt de keuze boven de laag, zoals het plusteken. */
   .setlist-keuze[aria-expanded="true"] { z-index: 242; }
   /* Het kruisje: tikvlak 44px met het teken van 14px in het midden (15px
-     rondom). -3px = 12px opvulling - 15px: de inkt begint precies 12px onder
-     de bovenrand en eindigt 12px voor de zijrand. */
-  .setlist-rij .song-remove { position: absolute; right: -3px; top: -3px; z-index: 2; }
+     rondom). Rechts -3px = 12px opvulling - 15px: de inkt eindigt 12px voor
+     de zijrand. */
+  /* TT-519 (besluit Ronald 25-10-2026, gebouwd in TT-543): de bovenkant van de
+     inkt staat op de bovenkant van de hoofdletter van de artiest, niet op de
+     bovenkant van de regel. Inter 15px vet op een regel van 20px: de
+     hoofdletter begint 4,5px onder de regel (gemeten), dus -3px + 4,5px. */
+  .setlist-rij .song-remove { position: absolute; right: -3px; top: 1.5px; z-index: 2; }
   .setlist-rij .song-remove svg { display: block; }
   /* "Zeker?" op de plek van het kruisje, met de rechterkant op dezelfde
      rechterlijn (15px = 3px buiten de binnenrand + 12px). */
@@ -4251,7 +4258,7 @@
      telefoon bestaat geen hover, dus het icoon leek daar altijd onopvallend
      grijs. Nu standaard geel, zodat het ook zonder hover als klikbaar
      opvalt. */
-  .niveau-info-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; flex-shrink:0; border-radius:50%; border:1px solid var(--accent); background:none; color:var(--accent); font-size:11px; font-weight:700; cursor:pointer; margin-left:6px; vertical-align:middle; padding:0; }
+  .niveau-info-btn { position:relative; display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; flex-shrink:0; border-radius:50%; border:1px solid var(--accent); background:none; color:var(--accent); font-size:11px; line-height:22px; font-weight:700; cursor:pointer; margin-left:6px; vertical-align:middle; padding:0; }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
   /* TT-U23 (12-08-2026): onzichtbaar tikvlak van 44x44 rond de kleine knop. */
   .niveau-info-btn::after { content:''; position:absolute; top:-10px; right:-10px; bottom:-10px; left:-10px; }
@@ -4299,6 +4306,8 @@
     font-family: 'Inter', sans-serif; font-size: 16px; color: var(--text);
     cursor: pointer; transition: border-color 0.15s;
   }
+  /* TT-543 F1: vaste regelhoogte; 10 + 22 + 10 + 2px rand = de 44px van een veld. */
+  .picker-field-label { line-height: 22px; }
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
   .picker-badge-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
@@ -4721,6 +4730,11 @@
      elke rij en kaart (core.js, initTikIndrukken). Was een ander vlak bij een tik. */
   .tile-title { font-size: 17px; font-weight: 700; }
   .tile-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  /* TT-543 F1: vaste regelhoogte (huisstijl §2); 22px zoals .voorkeur-kop, 16px
+     zoals elke hulptekst. Nu alleen in Profiel bewerken; Zoeken, Instellingen
+     en de bandtegels volgen in hun eigen onderdeel van TT-543. */
+  #tegelsWrap .tile-title { line-height: 22px; }
+  #tegelsWrap .tile-sub { line-height: 16px; }
   /* TT-260 (12-09-2026): was 11px met een eigen marge van 5px. Geen van
      beide is een maat uit de huisstijl (§2: 12px; §3: 4px-schaal). */
   .field-status { font-size: var(--fs-sm); line-height: 16px; color: var(--muted); margin-top: 4px; min-height: 16px; }
@@ -4750,6 +4764,11 @@
     align-items: baseline;
     gap: 8px;
   }
+  /* TT-543 (besluit Ronald 06-11-2026, voorstel 8): "Niveau (i)" rechts op de
+     labelregel, zoals "Beheersing (i)" in Je setlist. De i staat op de
+     rechterrand van het veld. Was opmaak in de regel zelf (F2). */
+  .label-rij.label-info { align-items: center; }
+  .label-uitleg { display: flex; align-items: center; font-size: 12px; line-height: 18px; color: var(--muted); white-space: nowrap; }
   .field-uitslag {
     font-size: var(--fs-sm);
     line-height: 16px;

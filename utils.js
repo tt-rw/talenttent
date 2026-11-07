@@ -436,6 +436,24 @@ function naamZoalsAnderen(fname, lname, username, keuze, leeftijd) {
   return (username || '').trim();
 }
 
+// TT-543 (besluit Ronald 06-11-2026, voorstel 2): het blok "Naam op je
+// profiel" staat in stap 1 en in de tegel Wie ben je. Eén functie voor beide;
+// `v` noemt de id's van dat scherm. Onder de 16 is het blok verborgen; zolang de
+// geboortedatum niet vol is, blijft het zichtbaar (TT-420).
+function naamKeuzeBijwerken(v, keuze) {
+  const blok = document.getElementById(v.blok);
+  if (!blok) return;
+  const datum = document.getElementById(v.geboorte).value.trim();
+  const leeftijd = datum.length === 10 ? calcAge(datum) : null;
+  blok.style.display = (leeftijd !== null && leeftijd < 16) ? 'none' : '';
+  blok.querySelectorAll(`#${v.control} .segmented-btn`).forEach(btn => {
+    btn.classList.toggle('selected', btn.getAttribute('data-mode') === keuze);
+  });
+  const naam = naamZoalsAnderen(document.getElementById(v.fname).value, document.getElementById(v.lname).value,
+    document.getElementById(v.username).value, keuze, leeftijd === null ? 16 : leeftijd);
+  document.getElementById(v.voorbeeld).textContent = naam ? `Zo zien anderen je: ${naam}` : '';
+}
+
 // B-02 (12-08-2026): één plek die de leeftijd bepaalt. Een ingelogde
 // gebruiker leest de geboortedatum rechtstreeks; een bezoeker zonder account
 // krijgt alleen `age` uit tt_get_musicians_public. Deze functie dekt beide.

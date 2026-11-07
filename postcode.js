@@ -122,9 +122,10 @@ function relockCity(kind) {
   const field = document.getElementById(isBand ? BAND_POSTCODE_VELDEN[bandPostcodeDoel].city : 'city');
   field.readOnly = true;
   field.style.cursor = 'not-allowed';
-  // Alleen het oude bandformulier had een gedempt plaatsveld; de tegel
-  // "Wie zijn we" volgt de tegel "Wie ben je" (geen demping).
-  if (!isBand || bandPostcodeDoel === 'band') field.style.opacity = '0.85';
+  // Alleen het bandformulier heeft nog een gedempt plaatsveld (onderdeel 6 van
+  // TT-543). Stap 1 en de tegels volgen de tegel "Wie ben je": geen demping
+  // (TT-543, besluit Ronald 06-11-2026, voorstel 5).
+  if (isBand && bandPostcodeDoel === 'band') field.style.opacity = '0.85';
   if (isBand) bandPostcodeManualMode = false;
   else postcodeManualMode = false;
 }
