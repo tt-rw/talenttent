@@ -1542,11 +1542,13 @@ def blok_browser():
         sterren = sp.evaluate("""() => {
           const uit = [];
           for (const id of ['instrumentPickerField', 'wspInstrumentField']) {
-            const lab = document.getElementById(id).closest('.field').querySelector('label');
+            // TT-543 blok 2 (hoofdstukindeling A): "Instrumenten *" is de kop
+            // boven de veldgroep, in .hoofdstuk-kop-rij met Niveau (i).
+            const vorige = document.getElementById(id).closest('.field-group').previousElementSibling;
+            const lab = vorige.matches('.hoofdstuk-kop') ? vorige : vorige.querySelector('.hoofdstuk-kop');
             let n = lab;
             while (n) { n.style.display = 'block'; n.classList.add('active'); n = n.parentElement; }
-            // TT-543 (voorstel 8): het label is "Instrumenten *" in een
-            // .label-rij; de tekst staat direct in het label.
+            // TT-543 (voorstel 8): de tekst staat direct in de kop.
             const tekst = lab;
             // De ster moet op dezelfde regel staan als het eerste woord.
             // Het vak zelf meten zegt niets: dat groeit mee met de ster.
@@ -14574,7 +14576,8 @@ def blok_tt543_blok1():
           for (let i = 0; i < 3; i++) { goTo(i); await w(80); u.f1['stap' + (i + 1)] = NORMAAL('#step' + i); }
           // Voorstel 8: Instrumenten en Genres; "Niveau" met de i op de rechterrand van het veld.
           goTo(1); await w(80);
-          const labels = scope => [...scope.querySelectorAll('label')].map(l => l.textContent.replace(/\s+/g, ' ').trim());
+          // TT-543 blok 2: Instrumenten en Genres zijn koppen (hoofdstukindeling A).
+          const labels = scope => [...scope.querySelectorAll('label, .hoofdstuk-kop')].map(l => l.textContent.replace(/\s+/g, ' ').trim());
           const iRand = (scope, veld) => Math.round((scope.querySelector('.label-uitleg .niveau-info-btn').getBoundingClientRect().right - $(veld).getBoundingClientRect().right) * 10) / 10;
           u.stap2 = { labels: labels($('step1')), uitleg: $('step1').querySelector('.label-uitleg')?.textContent.trim(), iRand: iRand($('step1'), 'instrumentPickerField'),
             sub: !!$('step1').querySelector('.panel-sub'), opmaakInRegel: !!$('step1').querySelector('label[style], label span[style]') };
@@ -14626,6 +14629,123 @@ def blok_tt543_blok1():
     check("F1: elke zichtbare tekst in stap 1, 2, 3, het tegeloverzicht en de tegels Wie ben je, Wat speel je en Je setlist heeft een vaste regelhoogte (huisstijl §2)",
           not f1, json.dumps(f1, ensure_ascii=False))
     check("geen paginafouten in blok 133", not fouten, "; ".join(fouten)[:300])
+
+
+# --------------------------------------------------------------------------
+# Blok 134 — TT-543 onderdeel 1, blok 2 (besluiten Ronald 06-11-2026):
+# hoofdstukindeling A (een kop per onderwerp: 17px vet, 32px erboven, geen
+# streep), "Je inloggegevens" in stap 1 en in Instellingen, en F2 in de tegel
+# Je mediahoek. Op 390px en 360px.
+# --------------------------------------------------------------------------
+def blok_tt543_blok2():
+    print("\nBlok 134 — TT-543 blok 2: koppen per onderwerp en Je inloggegevens")
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    check("de streep en de zin boven de inloggegevens zijn weg, ook hun code (regAuthIntro, .inlog-intro)",
+          "regAuthIntro" not in html and "inlog-intro" not in html
+          and "regAuthIntro" not in "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in JS_FILES)
+          and ".inlog-intro" not in open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read(), "")
+    check("nergens meer \"E-mailadres en wachtwoord\" als titel, \"waarmee je inlogt\" of \"Hiermee log je in.\"",
+          "E-mailadres en wachtwoord</" not in html and "waarmee je inlogt" not in html and "Hiermee log je in." not in html, "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten, uit = [], {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breed in (390, 360):
+            ctx = browser.new_context(viewport={"width": breed, "height": 844}, color_scheme="dark")
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(400)
+            uit[breed] = page.evaluate("""async () => {
+              const w = ms => new Promise(r => setTimeout(r, ms)), $ = id => document.getElementById(id), u = {};
+              const R = e => e.getBoundingClientRect();
+              const tekst = e => e.textContent.replace(/\\s+/g, ' ').trim();
+              const kop = e => { const c = getComputedStyle(e); return [c.fontSize, c.lineHeight, c.fontWeight, Math.round(R(e).height)].join(' '); };
+              const koppen = sel => [...document.querySelectorAll(sel + ' .hoofdstuk-kop')].filter(e => e.offsetParent);
+              const af = (a, b) => Math.round((R(b).top - R(a).bottom) * 10) / 10;
+              // Het blok boven een kop: het vorige element in de stroom (een .hoofdstuk-kop-rij telt als de kop).
+              const blok = k => { const k2 = k.parentElement.classList.contains('hoofdstuk-kop-rij') ? k.parentElement : k;
+                let v = k2.previousElementSibling; while (v && (!v.offsetParent || v.classList.contains('scherm-titel'))) v = v.previousElementSibling;
+                if (!v && k2.parentElement.id === 'regAuthSection') { v = k2.parentElement.previousElementSibling; }
+                return v; };
+              const onder = k => k.parentElement.classList.contains('hoofdstuk-kop-rij') ? k.parentElement : k;
+              const scherm = async (sel) => {
+                await w(700);
+                const ks = koppen(sel), d = { koppen: ks.map(tekst), maat: [...new Set(ks.map(kop))],
+                  links: [...new Set(ks.map(k => Math.round(R(k).left)))], erboven: [], eronder: [] };
+                ks.forEach((k, i) => { const v = blok(k); if (v) d.erboven.push(af(v.lastElementChild && v.classList.contains('field-group') ? v : v, onder(k)));
+                  const n = onder(k).nextElementSibling; d.eronder.push([n.className.split(' ')[0], af(onder(k), n.classList.contains('field-group') || n.classList.contains('field') ? (n.querySelector('label, .picker-field, .avatar-upload-area') || n) : n)]); });
+                d.veldLinks = Math.round(R(document.querySelector(sel + ' input:not([type=file]), ' + sel + ' .picker-field, ' + sel + ' .avatar-upload-area')).left);
+                d.lijnen = [...document.querySelectorAll(sel + ' .divider')].filter(e => e.offsetParent).length;
+                d.eersteBoven = Math.round(R(onder(ks[0])).top - R(document.querySelector(sel)).top);
+                return d; };
+              showView('register'); goTo(0);
+              u.stap1 = await scherm('#step0');
+              u.stap1.zinOnderKop = (() => { const k = document.querySelector('#regAuthSection .hoofdstuk-kop'); const n = k.nextElementSibling; return n.id; })();
+              u.stap1.zinnen = [...document.querySelectorAll('#regAuthSection p')].filter(e => e.offsetParent).length;
+              Object.assign(state, { instruments: ['Gitaar, elektrisch', 'Zang'], instrumentLevels: { 'Gitaar, elektrisch': 3, 'Zang': 2 }, genres: ['Rock', 'Indie'] });
+              goTo(1); renderInstrumentBadges('wizard'); renderPickerBadges(PICKERS.genre);
+              u.stap2 = await scherm('#step1');
+              u.stap2.iRand = Math.round(R(document.querySelector('#step1 .hoofdstuk-kop-rij .niveau-info-btn')).right - R($('instrumentPickerField')).right);
+              goTo(3);
+              u.stap4 = await scherm('#step3');
+              window.TT_STUB.session = { user: { id: 'u1', email: 't@t.nl' } }; currentUser = { id: 'u1', email: 't@t.nl' }; myMusicianId = 'm1';
+              showView('profieltegels'); await w(150);
+              openTegelScreen('watSpeelJe');
+              u.tegel2 = await scherm('#watSpeelJeScreen');
+              openTegelScreen('mediahoek');
+              u.tegel4 = await scherm('#mediahoekScreen');
+              u.f2 = [...document.querySelectorAll('#mediahoekScreen [style], #step3 .avatar-edit-btn[style]')].filter(e => e.id !== 'mediahoekScreen').map(e => e.className || e.tagName);
+              u.wijzig = [...document.querySelectorAll('#mediahoekScreen .avatar-edit-btn, #step3 .avatar-edit-btn')].map(e => getComputedStyle(e).fontSize + ' ' + getComputedStyle(e).fontWeight);
+              // TT-570: ingelogd zonder profiel: het e-mailadres is niet te wijzigen, met de reden eronder.
+              myMusicianId = null; showView('register'); await w(200);
+              u.ingelogd = { zinnen: [...document.querySelectorAll('#regAuthSection p')].filter(e => e.offsetParent).length, alleenLezen: $('regEmail').readOnly };
+              currentUser = null; window.TT_STUB.session = null; showView('register'); await w(100);
+              currentUser = { id: 'u1', email: 't@t.nl' }; window.TT_STUB.session = { user: { id: 'u1', email: 't@t.nl' } }; myMusicianId = 'm1';
+              showView('instellingen'); await w(300);
+              const tegel = [...document.querySelectorAll('#view-instellingen .tile')].find(t => (t.getAttribute('onclick') || '').includes('openInloggegevens'));
+              u.tegel = [tekst(tegel.querySelector('.tile-title')), tekst(tegel.querySelector('.tile-sub'))];
+              openInloggegevens(); await w(300);
+              const vt = document.querySelector('#inloggegevensModal .filter-title');
+              u.venster = tekst(vt);
+              u.vensterZin = vt.nextElementSibling.tagName === 'P';
+              u.vensterOnder = getComputedStyle(vt).marginBottom + (vt.hasAttribute('style') ? ' style' : '');
+              closeInloggegevens(); showView('about');
+              return u; }""")
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    MAAT = ["17px 22px 700 22"]
+    for breed in (390, 360):
+        u = uit[breed]
+        s1 = u["stap1"]
+        check(f"{breed}px stap 1: koppen \"Over jou\" (bovenaan) en \"Je inloggegevens\" (17px vet, 22px, één regel), 32px onder de bio, 20px tot het label, geen streep en geen zin (voorstel 18; B, besluit Ronald 07-11-2026)",
+              s1["koppen"] == ["Over jou", "Je inloggegevens"] and s1["maat"] == MAAT and s1["erboven"] == [32] and [e[1] for e in s1["eronder"]] == [20, 20]
+              and s1["eersteBoven"] == 0 and s1["lijnen"] == 0 and s1["zinOnderKop"] == "regAuthFieldGroup" and s1["zinnen"] == 0, json.dumps(s1))
+        for naam, d, kn in (("stap 2", u["stap2"], ["Instrumenten *", "Genres *"]), ("tegel Wat speel je", u["tegel2"], ["Instrumenten *", "Genres *"]),
+                            ("stap 4", u["stap4"], ["Profielfoto", "Foto's, video's en links"]), ("tegel Je mediahoek", u["tegel4"], ["Profielfoto", "Foto's, video's en links"])):
+            sub = d["eronder"][-1][1] if kn[-1].startswith("Foto") else None
+            check(f"{breed}px {naam}: koppen {kn}, 17px vet op één regel, op de linkerlijn van de velden; 32px tussen twee onderwerpen; 20px tot het veld" + ("; 4px tot de regel eronder" if sub is not None else ""),
+                  d["koppen"] == kn and d["maat"] == MAAT and d["links"] == [d["veldLinks"]] and d["erboven"][-1] == 32
+                  and d["eronder"][0][1] == 20 and (sub is None or sub == 4) and (kn[0] != "Instrumenten *" or d["eronder"][1][1] == 20) and d["lijnen"] == 0, json.dumps(d))
+        check(f"{breed}px stap 2: de i van Niveau op de rechterrand van het veld", u["stap2"]["iRand"] == 0, str(u["stap2"]["iRand"]))
+        eerste = [u[k]["eersteBoven"] for k in ("stap2", "stap4", "tegel2", "tegel4")]
+        check(f"{breed}px de eerste kop van een scherm staat bovenaan, waar het eerste label stond: geen 32px boven het eerste onderwerp",
+              eerste == [0, 0, 0, 0], json.dumps(eerste))
+    u = uit[390]
+    check("F2: geen opmaak in de regel in de tegel Je mediahoek en bij Wijzig in stap 4; Wijzig blijft 11px vet",
+          not u["f2"] and u["wijzig"] == ["11px 700", "11px 700"], json.dumps([u["f2"], u["wijzig"]]))
+    check("TT-570: ingelogd zonder profiel is het e-mailadres alleen-lezen, zonder zin erbij (besluit Ronald 07-11-2026)",
+          u["ingelogd"]["zinnen"] == 0 and u["ingelogd"]["alleenLezen"], json.dumps(u["ingelogd"]))
+    check("Instellingen: tegel \"Je inloggegevens\" met \"e-mailadres en wachtwoord\"; het venster heet ook \"Je inloggegevens\", zonder zin eronder, 20px tot de inhoud (besluit Ronald 07-11-2026)",
+          u["tegel"] == ["Je inloggegevens", "e-mailadres en wachtwoord"] and u["venster"] == "Je inloggegevens" and not u["vensterZin"] and u["vensterOnder"] == "20px",
+          json.dumps([u["tegel"], u["venster"], u["vensterZin"], u["vensterOnder"]]))
+    check("geen paginafouten in blok 134", not fouten, "; ".join(fouten)[:300])
 
 
 def blok_tt570():
@@ -14822,6 +14942,7 @@ def main():
     blok_tt543()
     blok_tt570()
     blok_tt543_blok1()
+    blok_tt543_blok2()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

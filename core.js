@@ -422,7 +422,7 @@ async function appInit() {
         // TT-309 (23-09-2026, gemeld door Ronald): een e-mailwijziging met
         // bevestigingsmail voltrekt zich pas als de link is aangeklikt. Zonder
         // deze tak bleef currentUser.email op het oude adres staan, en
-        // ververste het scherm "E-mailadres en wachtwoord" niet vanzelf.
+        // ververste het scherm "Je inloggegevens" niet vanzelf.
         currentUser = session.user;
         verversEmailWeergave(currentUser.email || '');
       }
@@ -1184,7 +1184,6 @@ function showView(view, mode, extra) {
     const regEmailField = document.getElementById('regEmail');
     const regPasswordField = document.getElementById('regPasswordField');
     const regAuthFieldGroup = document.getElementById('regAuthFieldGroup');
-    const regAuthIntro = document.getElementById('regAuthIntro');
     const regEmailReq = document.getElementById('regEmailReq');
     if (regPasswordField) regPasswordField.style.display = ingelogd ? 'none' : '';
     if (regAuthFieldGroup) regAuthFieldGroup.classList.toggle('single', ingelogd);
@@ -1195,11 +1194,8 @@ function showView(view, mode, extra) {
       if (ingelogd) regEmailField.value = currentUser.email || '';
     }
     if (regEmailReq) regEmailReq.style.display = ingelogd ? 'none' : '';
-    if (regAuthIntro) {
-      regAuthIntro.textContent = ingelogd
-        ? 'Dit is het e-mailadres waarmee je inlogt. Wijzigen kan hier niet.'
-        : 'Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.';
-    }
+    // TT-543 blok 2 (besluit Ronald 07-11-2026): geen zin bij de
+    // inloggegevens, ook niet als het e-mailadres alleen-lezen is.
 
     // Akkoord-checkbox: altijd verplicht. TT-570: het akkoord hoort bij het
     // aanmaken van account en profiel, en dat gebeurt nu pas bij de laatste knop.

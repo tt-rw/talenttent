@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261107a">
+<link rel="stylesheet" href="styles.css?v=20261107b">
 </head>
 <body>
 
@@ -343,6 +343,11 @@
   <div class="panel active" id="step0">
     <div class="panel-title scherm-titel">Wie ben je</div>
 
+    <!-- TT-543 blok 2 (besluit Ronald 07-11-2026, B op beeld): stap 1 heeft
+         twee onderwerpen, dus ook het eerste krijgt een kop (hoofdstukindeling A).
+         De tegel Wie ben je heeft één onderwerp en dus geen kop. -->
+    <h2 class="hoofdstuk-kop">Over jou</h2>
+
     <div class="field-group">
       <div class="field">
         <label>Voornaam <span class="req">*</span></label>
@@ -415,9 +420,12 @@
          formulier las Chrome het verbergen van het wachtwoordveld pas later
          als aanmelding en bood hij het opslaan midden in de wizard aan, bij
          het zoeken naar muzikanten of nummers. -->
+    <!-- TT-543 blok 2 (besluit Ronald 06-11-2026, voorstel 18, optie 1 met
+         kop): e-mailadres en wachtwoord blijven in stap 1, onder de kop "Je
+         inloggegevens" (hoofdstukindeling A). Geen streep en geen zin eronder,
+         ook niet als het e-mailadres alleen-lezen is (besluit Ronald 07-11-2026). -->
     <form id="regAuthSection" novalidate onsubmit="event.preventDefault(); nextStep(0);">
-      <div class="divider"></div>
-      <p id="regAuthIntro" class="inlog-intro">Vul hier je inloggegevens in. Je hebt deze nodig om later terug te komen en je profiel te beheren.</p>
+      <h2 class="hoofdstuk-kop">Je inloggegevens</h2>
 
       <div class="field-group" id="regAuthFieldGroup">
         <div class="field">
@@ -451,9 +459,11 @@
   <div class="panel" id="step1">
     <div class="panel-title scherm-titel">Wat speel je</div>
 
+    <!-- TT-543 blok 2, hoofdstukindeling A (besluit Ronald 06-11-2026): twee
+         onderwerpen, elk met een kop. Zelfde opbouw in stap 2 en de tegel. -->
+    <div class="label-rij label-info hoofdstuk-kop-rij"><h2 class="hoofdstuk-kop">Instrumenten <span class="req">*</span></h2><span class="label-uitleg">Niveau<button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></span></div>
     <div class="field-group single">
       <div class="field">
-        <div class="label-rij label-info"><label>Instrumenten <span class="req">*</span></label><span class="label-uitleg">Niveau<button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></span></div>
         <div class="picker-field" id="instrumentPickerField">
           <span class="picker-field-label" id="instrumentPickerFieldLabel">Kies een instrument</span>
         </div>
@@ -461,9 +471,9 @@
       </div>
     </div>
 
+    <h2 class="hoofdstuk-kop">Genres <span class="req">*</span></h2>
     <div class="field-group single">
       <div class="field">
-        <label>Genres <span class="req">*</span></label>
         <div class="picker-field" id="genrePickerField">
           <span class="picker-field-label" id="genrePickerFieldLabel">Kies een genre</span>
         </div>
@@ -537,12 +547,12 @@
   <div class="panel" id="step3">
     <div class="panel-title scherm-titel">Je mediahoek</div>
 
+    <h2 class="hoofdstuk-kop">Profielfoto</h2>
     <div class="field">
-      <label>Profielfoto</label>
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
           <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarInput').click()"></div>
-          <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+          <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="avatarRemoveBtn" onclick="askRemoveAvatar()" aria-label="Profielfoto verwijderen">✕</button>
         </div>
         <div class="avatar-info">
@@ -556,7 +566,7 @@
       <span id="wizardMhTipText"><strong>Tip:</strong> toon de energie die jij als muzikant wil laten zien.</span>
     </div>
 
-    <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Foto's, video's en links</div>
+    <h2 class="hoofdstuk-kop">Foto's, video's en links</h2>
     <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud. Een profiel met media valt op.</div>
 
     <div class="media-tabs">
@@ -822,10 +832,12 @@
   <div id="watSpeelJeScreen" style="display:none;">
     <div class="panel-title scherm-titel">Wat speel je</div>
 
-    <!-- TT-543 F2: dezelfde veldgroepen als stap 2; de afstanden stonden in de regel zelf. -->
+    <!-- TT-543 F2: dezelfde veldgroepen als stap 2; de afstanden stonden in de regel zelf.
+         TT-543 blok 2, hoofdstukindeling A (besluit Ronald 06-11-2026): twee
+         onderwerpen, elk met een kop. Zelfde opbouw in stap 2 en de tegel. -->
+    <div class="label-rij label-info hoofdstuk-kop-rij"><h2 class="hoofdstuk-kop">Instrumenten <span class="req">*</span></h2><span class="label-uitleg">Niveau<button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></span></div>
     <div class="field-group single">
       <div class="field">
-        <div class="label-rij label-info"><label>Instrumenten <span class="req">*</span></label><span class="label-uitleg">Niveau<button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></span></div>
         <div class="picker-field" id="wspInstrumentField">
           <span class="picker-field-label" id="wspInstrumentFieldLabel">Kies een instrument</span>
         </div>
@@ -833,9 +845,9 @@
       </div>
     </div>
 
+    <h2 class="hoofdstuk-kop">Genres <span class="req">*</span></h2>
     <div class="field-group single">
       <div class="field">
-        <label>Genres <span class="req">*</span></label>
         <div class="picker-field" id="wspGenreField">
           <span class="picker-field-label" id="wspGenreFieldLabel">Kies een genre</span>
         </div>
@@ -895,14 +907,14 @@
 
   <!-- Subscherm: Je mediahoek -->
   <div id="mediahoekScreen" style="display:none;">
-    <div class="panel-title scherm-titel" style="margin-bottom:20px;">Je mediahoek</div>
+    <div class="panel-title scherm-titel">Je mediahoek</div>
 
+    <h2 class="hoofdstuk-kop">Profielfoto</h2>
     <div class="field">
-      <label>Profielfoto</label>
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
           <div class="avatar-preview" id="mhAvatarPreview" onclick="document.getElementById('mhAvatarInput').click()"></div>
-          <div class="avatar-edit-btn" onclick="document.getElementById('mhAvatarInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+          <div class="avatar-edit-btn" onclick="document.getElementById('mhAvatarInput').click()">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhAskRemoveAvatar()" aria-label="Profielfoto verwijderen">✕</button>
         </div>
         <div class="avatar-info">
@@ -916,7 +928,7 @@
       <span id="mhTipText"><strong>Tip:</strong> toon de energie die jij als muzikant wil laten zien.</span>
     </div>
 
-    <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Foto's, video's en links</div>
+    <h2 class="hoofdstuk-kop">Foto's, video's en links</h2>
     <div class="panel-sub">Upload foto's of video's, of verwijs naar YouTube, Instagram of SoundCloud.</div>
 
     <div class="media-tabs">
@@ -1907,8 +1919,9 @@
            "waarmee log ik in". -->
       <div class="tile" onclick="openInloggegevens()">
         <div style="flex:1;">
-          <div class="tile-title">E-mailadres en wachtwoord</div>
-          <div class="tile-sub">waarmee je inlogt</div>
+          <!-- TT-543 blok 2 (besluit Ronald 06-11-2026): dezelfde naam als de kop in Profiel aanmaken. -->
+          <div class="tile-title">Je inloggegevens</div>
+          <div class="tile-sub">e-mailadres en wachtwoord</div>
         </div>
       </div>
 
@@ -2130,8 +2143,8 @@
 <div class="modal-overlay" id="inloggegevensModal" data-close="closeInloggegevens" onclick="if(event.target===this)closeInloggegevens()">
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeInloggegevens()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
-    <div class="filter-title" style="margin-bottom:4px;">E-mailadres en wachtwoord</div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:20px;">Hiermee log je in.</p>
+    <!-- TT-543 blok 2 (besluit Ronald 07-11-2026): geen zin onder de titel; de titel zegt het al. -->
+    <div class="filter-title">Je inloggegevens</div>
 
     <div id="igMelding" class="auth-success"></div>
 
@@ -2398,7 +2411,7 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261106e"></script>
+<script src="core.js?v=20261107a"></script>
 <script src="utils.js?v=20261107a"></script>
 <script src="veiligheid.js?v=20261106b"></script>
 <script src="auth.js?v=20261106d"></script>
