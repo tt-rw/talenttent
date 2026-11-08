@@ -8,6 +8,12 @@ python3 tests/tt_tests.py
 
 Afsluitcode 0 = alles geslaagd. Claude draait dit vóór elke oplevering.
 
+Na een herstel alleen de geraakte blokken: `python3 tests/tt_tests.py --blok naam1,naam2`
+(de namen staan in `BLOKKEN` in `tt_tests.py`). De testset start niet als er al
+een testset of een andere browserproef draait (afsluitcode 2), en een blok dat
+afbreekt telt als gezakt; de run gaat door. De volledige run draait één keer per
+dag; daarna `--blok`, of `--hervat` voor de blokken die nog niet liepen (8D TT-543, 08-11-2026).
+
 ## Wat laag 1 dekt
 
 | Blok | Controle |

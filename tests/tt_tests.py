@@ -6,8 +6,23 @@ Draait volledig automatisch in de sessie, tegen de Supabase-stub in
 tests/stub/supabase-stub.js. Raakt de echte database niet.
 
 Gebruik:    python3 tests/tt_tests.py
+            python3 tests/tt_tests.py --blok blok_tt543_blok5,blok_xss
+            (alleen de genoemde blokken, na een herstel)
+            python3 tests/tt_tests.py --hervat
+            (de blokken van de volledige run van vandaag die nog niet liepen)
 Uitvoer:    een regel per controle, plus een eindstand.
-Afsluitcode 0 = alles geslaagd, 1 = minstens een controle gezakt.
+Afsluitcode 0 = alles geslaagd, 1 = minstens een controle gezakt,
+2 = niet gestart: er draait al een testset of een andere browserproef, of
+de volledige run liep vandaag al.
+
+Eén run tegelijk, en een afbrekend blok breekt de run niet af
+(8D TT-543 sessie 96, besluit Ronald 08-11-2026: "doe toch maar want
+anders maak je iedere keer dezelfde fout"). De volledige testset liep in
+sessie 96 drie keer: een tweede proef ernaast, en een blok dat afbrak
+nam de rest van de run mee. Ook niet meerdere volledige runs na elkaar
+(Ronald, 08-11-2026): de volledige run draait één keer per dag
+(projectinstructies §4); daarna --blok of --hervat. De stand staat in
+~/.tt_testset_stand.json, in de werkomgeving, nooit in de repo.
 
 Wat laag 1 NIET dekt: database, RLS-regels, echt inloggen. Dat is laag 2,
 die Claude in de browser doorloopt. Zie actielijst.md, TT-231.
@@ -15824,50 +15839,149 @@ def blok_tt543_onderdeel2():
     check("blok 139: geen fout in de pagina", not fouten, "; ".join(fouten)[:300])
 
 
+# De volgorde van de volledige testset. Een nieuw blok komt hier bij.
+BLOKKEN = [
+    blok1_statisch,
+    blok_tt517_fase1,
+    blok_tt517_fase2,
+    blok_tt517_fase3,
+    blok_tt517_fase4,
+    blok_tt517_fase5,
+    blok_tt517_fase6,
+    blok_tt517_fase7,
+    blok_tt517_fase8,
+    blok_tt517_fase9,
+    blok_tt517_fase10,
+    blok_tt517_fase11,
+    blok_pijl,
+    blok_0_rijen,
+    blok_browser,
+    blok_xss,
+    blok_jwt_herhaling,
+    blok_csp_melder,
+    blok_tt481,
+    blok_tt489,
+    blok_tt553,
+    blok_tt555,
+    blok_tt557,
+    blok_tt558,
+    blok_tt556,
+    blok_tt548,
+    blok_onderhoud_0611,
+    blok_tt543,
+    blok_tt570,
+    blok_tt543_blok1,
+    blok_tt543_blok2,
+    blok_tt543_blok3,
+    blok_tt543_blok4,
+    blok_tt543_blok4b,
+    blok_tt543_blok5,
+    blok_tt543_onderdeel2,
+]
+
+
+def andere_browserproef():
+    """Een andere testset of Playwright-proef die nu draait (Linux: /proc).
+    Twee tegelijk gaf valse fouten (systeem-naslag §12) en dubbel werk."""
+    # Deze run zelf en zijn ouders (de shell die hem startte) tellen niet mee.
+    eigen, pid = set(), os.getpid()
+    while pid > 1 and pid not in eigen:
+        eigen.add(pid)
+        try:
+            pid = int(open(f"/proc/{pid}/stat").read().rsplit(")", 1)[1].split()[1])
+        except (OSError, ValueError, IndexError):
+            break
+    gevonden = []
+    for pad in glob.glob("/proc/[0-9]*/cmdline"):
+        try:
+            pid = int(pad.split("/")[2])
+            if pid in eigen:
+                continue
+            args = open(pad, "rb").read().decode("utf-8", "replace").split("\0")
+        except (OSError, ValueError):
+            continue
+        # Alleen het programma zelf telt, niet een shell waarvan de opdracht
+        # de naam toevallig noemt: een andere testset (python … tt_tests.py)
+        # of een Playwright-browserproef (de driver draait met "run-driver").
+        testset = os.path.basename(args[0]).startswith("python") and any(a.endswith("tt_tests.py") for a in args)
+        if testset or "run-driver" in args:
+            gevonden.append(f"{pid}: {' '.join(args)[:120]}")
+    return gevonden
+
+
+def draai_blok(fn):
+    """Een blok dat afbreekt, telt als gezakt; de run gaat door met het volgende blok."""
+    try:
+        fn()
+    except Exception as e:  # noqa: BLE001 — elke fout in een blok is een gezakte controle
+        check(f"{fn.__name__} liep tot het eind (brak af, de rest van dit blok is niet getoetst)",
+              False, f"{type(e).__name__}: {str(e).splitlines()[0][:300] if str(e) else ''}")
+
+
+STAND = os.environ.get("TT_TESTSET_STAND") or os.path.expanduser("~/.tt_testset_stand.json")
+
+
+def lees_stand():
+    try:
+        return json.load(open(STAND, encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def schrijf_stand(stand):
+    with open(STAND, "w", encoding="utf-8") as f:
+        json.dump(stand, f, ensure_ascii=False)
+
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
+    andere = andere_browserproef()
+    if andere:
+        print("NIET GESTART: er draait al een testset of een andere browserproef.")
+        print("Wacht tot die klaar is; twee tegelijk geeft valse fouten en dubbel werk.")
+        for regel in andere:
+            print("  " + regel)
+        return 2
+    vandaag = time.strftime("%Y-%m-%d")
+    stand = lees_stand()
+    blokken, telt_mee = BLOKKEN, False
+    if "--blok" in sys.argv:
+        namen = sys.argv[sys.argv.index("--blok") + 1].split(",")
+        onbekend = [n for n in namen if n not in {f.__name__ for f in BLOKKEN}]
+        if onbekend:
+            print("Onbekend blok: " + ", ".join(onbekend))
+            return 2
+        blokken = [f for f in BLOKKEN if f.__name__ in namen]
+    elif "--hervat" in sys.argv:
+        if stand.get("datum") != vandaag:
+            print("NIET GESTART: vandaag liep nog geen volledige run; er is niets te hervatten.")
+            return 2
+        blokken = [f for f in BLOKKEN if f.__name__ not in stand.get("klaar", [])]
+        print(f"Hervat: {len(blokken)} blokken die vandaag nog niet liepen.")
+        telt_mee = True
+    else:
+        if stand.get("datum") == vandaag:
+            print(f"NIET GESTART: de volledige testset liep vandaag al (start {stand.get('start')}, "
+                  f"{len(stand.get('klaar', []))} van {len(BLOKKEN)} blokken, uitslag: {stand.get('uitslag', 'onderbroken')}).")
+            print("Draai alleen de geraakte blokken: --blok naam1,naam2. Een onderbroken run: --hervat.")
+            return 2
+        stand = {"datum": vandaag, "start": time.strftime("%H:%M"), "klaar": []}
+        schrijf_stand(stand)
+        telt_mee = True
     _csp_vangnet()
-    blok1_statisch()
-    blok_tt517_fase1()
-    blok_tt517_fase2()
-    blok_tt517_fase3()
-    blok_tt517_fase4()
-    blok_tt517_fase5()
-    blok_tt517_fase6()
-    blok_tt517_fase7()
-    blok_tt517_fase8()
-    blok_tt517_fase9()
-    blok_tt517_fase10()
-    blok_tt517_fase11()
-    blok_pijl()
-    blok_0_rijen()
-    blok_browser()
-    blok_xss()
-    blok_jwt_herhaling()
-    blok_csp_melder()
-    blok_tt481()
-    blok_tt489()
-    blok_tt553()
-    blok_tt555()
-    blok_tt557()
-    blok_tt558()
-    blok_tt556()
-    blok_tt548()
-    blok_onderhoud_0611()
-    blok_tt543()
-    blok_tt570()
-    blok_tt543_blok1()
-    blok_tt543_blok2()
-    blok_tt543_blok3()
-    blok_tt543_blok4()
-    blok_tt543_blok4b()
-    blok_tt543_blok5()
-    blok_tt543_onderdeel2()
+    for fn in blokken:
+        draai_blok(fn)
+        if telt_mee:
+            stand["klaar"] = stand.get("klaar", []) + [fn.__name__]
+            schrijf_stand(stand)
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])
     gezakt = [n for n, ok, _ in results if not ok]
     print(f"\nEindstand: {len(results) - len(gezakt)} van {len(results)} geslaagd")
+    if telt_mee:
+        stand["uitslag"] = f"{len(results) - len(gezakt)} van {len(results)} geslaagd"
+        schrijf_stand(stand)
     if gezakt:
         print("Gezakt:")
         for n in gezakt:
