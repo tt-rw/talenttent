@@ -527,7 +527,7 @@ function showSaveError(msg, actie) {
   if (isAlreadyRegistered) {
     document.getElementById('saveMsg').innerHTML =
       `${TEKST_ACCOUNT_BESTAAT}.<br><br>
-       <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="goToLoginFromError()">Inloggen →</button>
+       <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="goToLoginFromError()">Inloggen</button>
        <button class="btn btn-ghost" style="width:100%;" onclick="document.getElementById('saveOverlay').classList.remove('visible')">Sluiten</button>`;
     return;
   }

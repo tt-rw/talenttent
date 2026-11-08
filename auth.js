@@ -3,13 +3,10 @@
 // showAuthError() en de banners #authError / #resetError zijn op 12-09-2026
 // verwijderd (TT-247, §2.10 dode code meteen weg). Elke foutmelding op deze
 // schermen staat nu bij het veld waar hij over gaat; wat niet over één veld
-// gaat, is een toast. De succesbanner blijft — een geslaagde handeling hoort
-// niet bij één veld.
-function showAuthSuccess(msg) {
-  const el = document.getElementById('authSuccess');
-  el.textContent = msg;
-  el.classList.add('visible');
-}
+// gaat, is een toast. Een geslaagde handeling (herstelmail verstuurd,
+// wachtwoord opgeslagen) staat in de vaste meldingvorm (huisstijl §13;
+// TT-543 onderdeel 2, besluiten Ronald 08-11-2026). De functie showAuthSuccess en de
+// groene balk op deze twee schermen zijn daarmee weg.
 
 async function signIn() {
   const emailEl    = document.getElementById('loginEmail');
@@ -343,7 +340,7 @@ async function forgotPassword() {
   const knop = document.getElementById('forgotPasswordBtn');
   if (knop && knop.disabled) return;
   if (knop) { knop.disabled = true; knop.textContent = 'Versturen...'; }
-  document.getElementById('authSuccess').classList.remove('visible');
+  document.getElementById('authHerstelVerstuurd').hidden = true;
   const verlopen = document.getElementById('authLinkVerlopen'); if (verlopen) verlopen.hidden = true;
   let gelukt = false;
   try {
@@ -365,7 +362,9 @@ async function forgotPassword() {
     if (knop) { knop.disabled = false; knop.textContent = 'Wachtwoord vergeten?'; }
     return;
   }
-  showAuthSuccess('✓ Herstelmail verstuurd naar ' + email + '. Controleer je inbox.');
+  document.getElementById('authHerstelTekst').textContent =
+    'Kijk in de inbox van ' + email + '. De link in de mail werkt één keer.';
+  document.getElementById('authHerstelVerstuurd').hidden = false;
   if (knop) {
     knop.textContent = 'Herstelmail verstuurd';
     setTimeout(() => { knop.disabled = false; knop.textContent = 'Wachtwoord vergeten?'; }, 60000);
@@ -374,21 +373,17 @@ async function forgotPassword() {
 
 async function saveNewPassword() {
   const pw1El = document.getElementById('resetPassword1');
-  const pw2El = document.getElementById('resetPassword2');
   const pw1 = pw1El.value;
-  const pw2 = pw2El.value;
-  const suc = document.getElementById('resetSuccess');
-  suc.classList.remove('visible');
+  const suc = document.getElementById('resetOpgeslagen');
+  suc.hidden = true;
 
-  // TT-247 (12-09-2026): ook hier de fout bij het veld. De banner #resetError
-  // toonde één fout tegelijk boven twee identiek ogende wachtwoordvelden;
-  // welk veld het was, stond er niet bij.
+  // TT-247 (12-09-2026): ook hier de fout bij het veld. TT-543 onderdeel 2
+  // (besluit Ronald 08-11-2026, voorstel 5): één veld met Toon, zoals stap 1
+  // van Profiel aanmaken; "Wachtwoord herhalen" is weg.
   clearFieldErrors('view-reset');
   const fouten = [];
   if (!pw1) fouten.push([pw1El, 'Vul een nieuw wachtwoord in']);
   else if (pw1.length < 8) fouten.push([pw1El, 'Kies een wachtwoord van minimaal 8 tekens']);
-  if (!pw2) fouten.push([pw2El, 'Herhaal je nieuwe wachtwoord']);
-  else if (pw1 && pw1 !== pw2) fouten.push([pw2El, 'Deze komt niet overeen met het wachtwoord hierboven']);
   if (showFieldErrors(fouten)) return;
 
   const { error } = await db.auth.updateUser({ password: pw1 });
@@ -399,8 +394,7 @@ async function saveNewPassword() {
     else showToast(friendlyErrorMessage(error, 'je nieuwe wachtwoord opslaan'));
     return;
   }
-  suc.textContent = '✓ Wachtwoord opgeslagen!';
-  suc.classList.add('visible');
+  suc.hidden = false;
   setTimeout(() => showView('myprofile'), 2000);
 }
 

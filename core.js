@@ -1163,8 +1163,17 @@ function showView(view, mode, extra) {
   // is als zodanig besloten door Ronald, 22-09-2026: wie via de mail binnen-
   // komt is geen gebruiker — Zoeken, Berichten, Bands en Profiel doen voor
   // hem niets. Om dezelfde reden verdwijnen de hamburger en de terugknop.
+  // TT-543 onderdeel 2 (besluit Ronald 08-11-2026, voorstel 3): ook niet op
+  // Inloggen en Nieuw wachtwoord, zoals bij Profiel aanmaken: één taak per
+  // scherm; terug gaat met de pijl.
   const bottomNavEl = document.getElementById('appBottomNav');
-  if (bottomNavEl) bottomNavEl.style.display = (view === 'landing' || view === 'register' || view === 'profieltegels' || view === 'toestemming') ? 'none' : '';
+  if (bottomNavEl) bottomNavEl.style.display = ['landing', 'register', 'profieltegels', 'toestemming', 'auth', 'reset'].includes(view) ? 'none' : '';
+  // TT-543 F4: het e-mailadres als verborgen gebruikersnaam bij Nieuw
+  // wachtwoord, zodat een wachtwoordbeheerder het bij het juiste account opslaat.
+  if (view === 'reset') {
+    const gebruikersnaam = document.getElementById('resetGebruikersnaam');
+    if (gebruikersnaam) gebruikersnaam.value = currentUser?.email || '';
+  }
   const menuKnop = document.getElementById('navMenuBtn');
   if (menuKnop) menuKnop.style.display = (view === 'toestemming') ? 'none' : '';
 

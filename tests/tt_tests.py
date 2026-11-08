@@ -4770,7 +4770,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             pg.wait_for_timeout(1500)
             uit = pg.evaluate("""() => ({
               views: [...document.querySelectorAll('.app-view.active')].map(v => v.id),
-              velden: !!document.getElementById('resetPassword1') && !!document.getElementById('resetPassword2'),
+              velden: !!document.getElementById('resetPassword1') && !document.getElementById('resetPassword2'), // TT-543 onderdeel 2, besluit 5: één veld
               poort: document.getElementById('usernameGateModal').classList.contains('visible')
             })""")
             c.close()
@@ -5126,9 +5126,9 @@ window.TT_STUB.fnAntwoord = {};
               str(zonder_toon))
         check("TT-355: elk wachtwoordveld zegt de browser of het nieuw of huidig is",
               wwvelden and not zonder_ac, str(zonder_ac))
-        check("TT-355: de twee velden van 'Nieuw wachtwoord' zijn new-password",
-              all(re.search(r'id="' + i + r'"[^>]*autocomplete="new-password"', html45)
-                  for i in ("resetPassword1", "resetPassword2")), "")
+        # TT-543 onderdeel 2 (besluit Ronald 08-11-2026, voorstel 5): één veld.
+        check("TT-355: het veld van 'Nieuw wachtwoord' is new-password",
+              re.search(r'id="resetPassword1"[^>]*autocomplete="new-password"', html45) is not None, "")
 
         c, pg, f = bevestig_pagina("", INGELOGD)
         uit = pg.evaluate("""async () => {
@@ -5143,14 +5143,13 @@ window.TT_STUB.fnAntwoord = {};
 
           showView('reset');
           const r1 = document.getElementById('resetPassword1');
-          const r2 = document.getElementById('resetPassword2');
           const knop = r1.closest('.password-wrap')?.querySelector('.password-toggle');
           if (knop) { knop.click(); r.toonType = r1.type; r.toonTekst = knop.textContent;
                       knop.click(); r.terugType = r1.type; }
           window.TT_STUB.updateUserError = OUD;
-          r1.value = 'oudgeheim1'; r2.value = 'oudgeheim1';
+          r1.value = 'oudgeheim1';
           await saveNewPassword();
-          r.reset = fout(r1); r.resetToast = toast(); r.resetRij2 = fout(r2);
+          r.reset = fout(r1); r.resetToast = toast();
           window.TT_STUB.updateUserError = null;
           document.getElementById('appToast').classList.remove('visible');
 
@@ -5175,8 +5174,7 @@ window.TT_STUB.fnAntwoord = {};
               uit.get("toonType") == "text" and uit.get("toonTekst") == "Verberg"
               and uit.get("terugType") == "password", json.dumps(uit))
         check("TT-353: het oude wachtwoord kiezen geeft een melding bij 'Nieuw wachtwoord', geen toast",
-              uit["reset"] and "ander wachtwoord" in uit["reset"] and not uit["resetToast"]
-              and not uit["resetRij2"], json.dumps(uit))
+              uit["reset"] and "ander wachtwoord" in uit["reset"] and not uit["resetToast"], json.dumps(uit))
         check("TT-353: in Instellingen houdt nieuw = huidig de wijziging tegen, bij het nieuwe veld",
               uit["igGelijk"] and "ander wachtwoord" in uit["igGelijk"] and uit["igGelijkCalls"] == 0,
               json.dumps(uit))
@@ -5493,8 +5491,8 @@ window.TT_STUB.fnAntwoord = {};
               st49["kop"] == "Zoek eenzangeres" and st49["regel"] == "Voor je eerste optreden.", json.dumps(st49)[:300])
         check("tien woorden in de volgorde van Ronald, elk een eigen laag, 4 seconden per woord",
               st49["woorden"] == WOORDEN49 and st49["dias"] == 10 and st49["tempo"] == 4000, json.dumps(st49)[:300])
-        check("geen keuzeknoppen: alleen \"Zoek muzikanten →\", \"Inloggen\" en \"Profiel aanmaken\"",
-              st49["knoppen"] == ["Zoek muzikanten →", "Inloggen", "Profiel aanmaken"] and st49["chips"] == 0, json.dumps(st49["knoppen"]))
+        check("geen keuzeknoppen: alleen \"Zoek muzikanten\", \"Inloggen\" en \"Profiel aanmaken\" (geen pijl, TT-543 onderdeel 2)",
+              st49["knoppen"] == ["Zoek muzikanten", "Inloggen", "Profiel aanmaken"] and st49["chips"] == 0, json.dumps(st49["knoppen"]))
         check("subkop en inlogregel zoals besloten",
               st49["sub"] == "Muzikanten bij jou in de buurt." and st49["login"].startswith("Zoeken kan zonder profiel."), json.dumps(st49)[:300])
         check("\"Profiel aanmaken\" op de landingspagina opent de wizard (blokkerend voor livegang, 08-10-2026)",
@@ -6213,7 +6211,7 @@ window.TT_STUB.fnAntwoord = {};
         check("socials: een gebruikersnaam wordt een link, een volledige link blijft",
               bz57["links"] == ["https://www.instagram.com/zoutwater.band", "https://www.tiktok.com/@zoutwater"], json.dumps(bz57))
         check("bezoeker: ⋯ voor melden, een knop naar de contactpersoon",
-              bz57["plek"] and bz57["voet"] == "Stuur een bericht aan de band →", json.dumps(bz57))
+              bz57["plek"] and bz57["voet"] == "Stuur een bericht aan de band", json.dumps(bz57))
         check("lid: ⋯ met Band verlaten, geen knop onderin",
               lid57["menu"] == ["Band verlaten"] and not lid57["plek"] and lid57["voet"] == "", json.dumps(lid57))
         check("beheerder: ⋯ met Bandprofiel bewerken (fase 3), geen knop onderin",
@@ -7477,7 +7475,7 @@ window.TT_STUB.fnAntwoord = {};
 
           // 10. De knop onderaan staat vast, boven de onderbalk.
           await openProfielScherm('m3'); await w(80);
-          document.getElementById('profielSchermVoet').innerHTML = '<button class="btn btn-primary" style="width:100%;">Stuur een bericht →</button>';
+          document.getElementById('profielSchermVoet').innerHTML = '<button class="btn btn-primary" style="width:100%;">Stuur een bericht</button>';
           const voet = document.getElementById('profielSchermVoet');
           const vs = getComputedStyle(voet);
           const ob = document.getElementById('appBottomNav').getBoundingClientRect();
@@ -7496,7 +7494,7 @@ window.TT_STUB.fnAntwoord = {};
               d67["standaard"]["naam"] == "sanne" and not d67["standaard"]["leeg"] and d67["standaard"]["deel"] == 1
               and d67["standaard"]["rpc"] == {"mid": "m3"}, j67)
         check("een link naar een profiel dat delen uitzette toont 'niet beschikbaar' met één knop naar Zoeken, zonder profiel",
-              d67["linkUit"]["leeg"] and d67["linkUit"]["naam"] is None and d67["linkUit"]["knop"] == "Naar Zoeken →"
+              d67["linkUit"]["leeg"] and d67["linkUit"]["naam"] is None and d67["linkUit"]["knop"] == "Naar Zoeken"
               and d67["linkUit"]["tekst"] == "De muzikant deelt dit profiel niet via een link."
               and d67["linkUit"]["voet"] == "", j67)
         check("in de app blijft hetzelfde profiel te openen, zonder deelicoon",
@@ -7667,7 +7665,7 @@ window.TT_STUB.fnAntwoord = {};
               d68["linkUit"]["leeg"] and d68["linkUit"]["naam"] is None
               and d68["linkUit"]["kop"] == "Deze bandpagina is niet beschikbaar"
               and d68["linkUit"]["tekst"] == "De band deelt deze pagina niet via een link."
-              and d68["linkUit"]["knop"] == "Naar Zoeken →" and d68["linkUit"]["voet"] == "", j68)
+              and d68["linkUit"]["knop"] == "Naar Zoeken" and d68["linkUit"]["voet"] == "", j68)
         check("in de app opent dezelfde band, zonder deelicoon; verversen houdt hem",
               d68["appUit"]["naam"] == "Nachtploeg" and not d68["appUit"]["leeg"] and d68["appUit"]["deel"] == 0
               and d68["stapApp"] == {"view": "profiel", "id": "b7", "app": True, "soort": "band"}
@@ -9860,7 +9858,8 @@ window.TT_STUB.fnAntwoord = {};
           const w = (n) => new Promise(r => setTimeout(r, n)), u = {};
           showView('auth'); await w(100);
           const knop = document.getElementById('forgotPasswordBtn');
-          const suc = document.getElementById('authSuccess');
+          // TT-543 onderdeel 2 (besluit 4): de bevestiging is de vaste melding #authHerstelVerstuurd.
+          const suc = document.getElementById('authHerstelVerstuurd');
           const verlopen = document.getElementById('authLinkVerlopen');
           if (verlopen) verlopen.hidden = false;
           let aantal = 0;
@@ -9868,17 +9867,17 @@ window.TT_STUB.fnAntwoord = {};
           db.auth.resetPasswordForEmail = (e, o) => { aantal++; u.redirect = o && o.redirectTo; return new Promise(r => setTimeout(() => r({ data: {}, error: null }), 500)); };
           document.getElementById('loginEmail').value = 'test@talenttent.org';
           forgotPassword(); await w(50);
-          u.tijdens = { uit: knop.disabled, tekst: knop.textContent, succes: suc.classList.contains('visible'), verlopenWeg: verlopen ? verlopen.hidden : null };
+          u.tijdens = { uit: knop.disabled, tekst: knop.textContent, succes: !suc.hidden, verlopenWeg: verlopen ? verlopen.hidden : null };
           forgotPassword(); forgotPassword(); await w(50);
           await w(700);
-          u.na = { uit: knop.disabled, tekst: knop.textContent, succes: suc.classList.contains('visible'), melding: suc.textContent, aantal };
+          u.na = { uit: knop.disabled, tekst: knop.textContent, succes: !suc.hidden, melding: suc.textContent, aantal };
           // Een fout: de knop komt terug en er staat geen succesmelding.
           knop.disabled = false; knop.textContent = 'Wachtwoord vergeten?';
           appErrorLogCount = 0; // de teller van 20 is per paginabezoek; deze controle toetst de logregel, niet de teller
           const logV = (window.TT_STUB.data.app_error_log || []).filter(r => r.source === 'forgotPassword').length;
           db.auth.resetPasswordForEmail = () => Promise.resolve({ data: {}, error: { message: 'x', status: 429 } });
           forgotPassword(); await w(200);
-          u.fout = { uit: knop.disabled, tekst: knop.textContent, succes: suc.classList.contains('visible'), log: (window.TT_STUB.data.app_error_log || []).filter(r => r.source === 'forgotPassword').length - logV };
+          u.fout = { uit: knop.disabled, tekst: knop.textContent, succes: !suc.hidden, log: (window.TT_STUB.data.app_error_log || []).filter(r => r.source === 'forgotPassword').length - logV };
           db.auth.resetPasswordForEmail = oud;
           return u;
         }""")
@@ -10841,7 +10840,7 @@ window.TT_STUB.fnAntwoord = {};
               oa["donker"]["veld"] == "rgb(36, 36, 36)" and oa["licht"]["veld"] == "rgb(255, 254, 250)"
               and all(oa[t]["veld"] != oa[t]["pagina"] for t in ("donker", "licht")), j95("optieA"))
         bron95 = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("messages.js", "veiligheid.js", "index.html")}
-        check("Muzikanten zoeken → in een lege staat opent Muzikanten direct",
+        check("Muzikanten zoeken in een lege staat opent Muzikanten direct",
               bron95["messages.js"].count("openZoekMuzikanten()") == 3 and "openZoekMuzikanten()" in bron95["veiligheid.js"]
               and "openZoekMuzikanten()" not in bron95["index.html"]
               and "class=\"btn btn-primary landing-knop\" onclick=\"showView('search', 'behoud')\"" in bron95["index.html"], "")
@@ -13681,7 +13680,7 @@ def blok_tt481():
 
           // Nieuw wachtwoord (herstel)
           showView('reset');
-          S.updateUserError = ZWAK; $('resetPassword1').value = 'wachtwoord'; $('resetPassword2').value = 'wachtwoord'; toastWeg();
+          S.updateUserError = ZWAK; $('resetPassword1').value = 'wachtwoord'; toastWeg();
           await saveNewPassword();
           u.herstel = { tekst: regel('resetPassword1'), toast: toastAan() };
           S.updateUserError = null; clearFieldErrors(document);
@@ -15677,6 +15676,154 @@ def blok_tt543_blok5():
     check("blok 138: geen fout in de pagina", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_tt543_onderdeel2():
+    # TT-543 onderdeel 2, besluiten Ronald 08-11-2026 (besluitenlijst onderdeel 2):
+    # 1 geen welkomzin; 2 B één regel "Nog geen profiel? Profiel aanmaken";
+    # 3 geen onderbalk op Inloggen en Nieuw wachtwoord; 4 de herstelmail in de
+    # vaste meldingvorm; 5 één wachtwoordveld; 6 geen zin onder de titel en geen
+    # pijl in een knop, in de hele app. Fouten F1 (regelhoogte), F2 (opmaak in
+    # de regel), F4 (formulier). "Wachtwoord opgeslagen" in de meldingvorm
+    # (besluit Ronald 08-11-2026, sessie 96). Gemeten als nieuwe bezoeker, via
+    # de echte route, zonder iets voor te bereiden (systeem-naslag §12).
+    print("\nBlok 139 — TT-543 onderdeel 2: Landingspagina, Inloggen en Nieuw wachtwoord")
+    app = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ["index.html"] + JS_FILES)
+    zonder_uitleg = re.sub(r"<!--.*?-->|/\*.*?\*/", "", app, flags=re.S)
+    zonder_uitleg = re.sub(r"(?m)(^|[^:'\"\\])//.*$", r"\1", zonder_uitleg)
+    pijlen = re.findall(r"[^\n]{0,40}→\s*(?:</button>|'|`|\")", zonder_uitleg)
+    check("6: geen knop met een pijl → in de app (17 knoppen, ook Zoek muzikanten)", not pijlen, json.dumps(pijlen, ensure_ascii=False)[:300])
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    def view_html(v):
+        i = html.index('id="%s"' % v)
+        j = min(k for k in (html.find('<div class="app-view"', i + 10), html.find('<div class="app-toast"', i)) if k > 0)
+        return html[i:j]
+    for v in ("view-auth", "view-reset"):
+        check("F2: geen opmaak in de regel (style=) in %s" % v, "style=" not in view_html(v), "")
+    check("F4: Nieuw wachtwoord staat in een formulier, met het e-mailadres als verborgen gebruikersnaam",
+          re.search(r'<form[^>]*saveNewPassword', view_html("view-reset")) is not None and 'autocomplete="username"' in view_html("view-reset"), "")
+    check("dode code: showAuthSuccess, #authSuccess, #resetSuccess en Wachtwoord herhalen zijn weg",
+          not any(t in app for t in ("function showAuthSuccess", "showAuthSuccess(", 'id="authSuccess"', 'id="resetSuccess"', "resetPassword2"))
+          and "Wachtwoord herhalen" not in view_html("view-reset"), "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten, uit = [], {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breedte, thema in ((390, "dark"), (360, "light")):
+            ctx = browser.new_context(viewport={"width": breedte, "height": 844}, color_scheme=thema)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(400)
+            meet = """() => {
+              const v = document.querySelector('.app-view.active');
+              const lh = [];
+              for (const el of v.querySelectorAll('*')) {
+                if (el.offsetParent === null || el.closest('.scherm-titel')) continue;
+                const tekst = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
+                if (tekst && getComputedStyle(el).lineHeight === 'normal') lh.push(el.className || el.tagName);
+              }
+              const knoppen = [...document.querySelectorAll('.btn')].filter(b => b.offsetParent).map(b => b.textContent.trim());
+              return { view: v.id, onderbalk: getComputedStyle(document.getElementById('appBottomNav')).display, lh, knoppen,
+                       kop: document.querySelector('.app-topbar').getBoundingClientRect().bottom };
+            }"""
+            u = {"landing": page.evaluate(meet)}
+            u["landingOnder"] = page.evaluate("Math.round(document.querySelector('.landing-onder').getBoundingClientRect().bottom) <= innerHeight")
+            # Inloggen via de echte tik op de landingspagina.
+            page.locator("#view-landing .landing-inloggen").first.click()
+            page.wait_for_timeout(400)
+            u["auth"] = page.evaluate(meet)
+            u["auth"].update(page.evaluate("""() => {
+              const v = document.getElementById('view-auth'), r = e => e.getBoundingClientRect();
+              const knop = v.querySelector('.btn-primary'), regel = v.querySelector('.landing-login'), aanmaken = regel && regel.querySelector('button');
+              const label = v.querySelector('label'), verg = document.getElementById('forgotPasswordBtn'), vr = r(verg);
+              const lijnen = [...v.querySelectorAll('*')].filter(e => e.offsetParent && parseFloat(getComputedStyle(e).borderTopWidth) > 0 && e.tagName === 'DIV' && !e.closest('.field'));
+              return { tekst: v.innerText, eersteLabel: r(label).top, ghost: v.querySelectorAll('.btn-ghost').length,
+                regel: regel ? regel.textContent.replace(/\\s+/g, ' ').trim() : null, regelAfstand: regel ? r(regel).top - r(knop).bottom : null,
+                tikvlak: aanmaken ? r(aanmaken).height : null, strepen: lijnen.length,
+                vergetenBoven: document.elementFromPoint(vr.x + 4, vr.top - 10) === verg, vergetenOnder: document.elementFromPoint(vr.x + 4, vr.bottom + 16) === verg };
+            }"""))
+            # Herstelmail: e-mailadres typen, echte tik op Wachtwoord vergeten?
+            page.fill("#loginEmail", "jesse@voorbeeld.nl")
+            page.click("#forgotPasswordBtn")
+            page.wait_for_timeout(500)
+            u["herstel"] = page.evaluate("""() => {
+              const m = document.getElementById('authHerstelVerstuurd');
+              return { zichtbaar: !!m && !m.hidden && m.offsetParent !== null, vorm: m && m.classList.contains('melding'),
+                kop: m && m.querySelector('.melding-kop').textContent, tekst: m && m.querySelector('.melding-tekst').textContent,
+                groen: [...document.querySelectorAll('#view-auth .auth-success')].length,
+                knop: document.getElementById('forgotPasswordBtn').textContent };
+            }""")
+            # Profiel aanmaken vanaf Inloggen: echte tik.
+            if page.locator("#view-auth .landing-login button").count():
+                page.locator("#view-auth .landing-login button").click()
+                page.wait_for_timeout(400)
+            u["naAanmaken"] = page.evaluate("document.querySelector('.app-view.active').id")
+            # Nieuw wachtwoord: het scherm uit de herstellink.
+            page.evaluate("showView('reset')")
+            page.wait_for_timeout(300)
+            u["reset"] = page.evaluate(meet)
+            u["reset"].update(page.evaluate("""() => {
+              const v = document.getElementById('view-reset');
+              return { tekst: v.innerText, velden: v.querySelectorAll('input[type=password]').length, sterren: v.querySelectorAll('.req').length,
+                inFormulier: !!document.getElementById('resetPassword1').closest('form') };
+            }"""))
+            page.click("#view-reset .btn-primary")
+            page.wait_for_timeout(200)
+            u["leeg"] = page.evaluate("[...document.querySelectorAll('#view-reset .field-msg')].map(e => e.textContent.trim())")
+            page.fill("#resetPassword1", "kort")
+            page.click("#view-reset .btn-primary")
+            page.wait_for_timeout(200)
+            u["kort"] = page.evaluate("[...document.querySelectorAll('#view-reset .field-msg')].map(e => e.textContent.trim())")
+            page.fill("#resetPassword1", "eenlangwachtwoord")
+            if page.locator("#resetPassword2").count():
+                page.fill("#resetPassword2", "eenlangwachtwoord")
+                page.locator("#resetPassword1").focus()
+            page.keyboard.press("Enter")
+            page.wait_for_timeout(400)
+            u["opgeslagen"] = page.evaluate("""() => {
+              const m = document.getElementById('resetOpgeslagen');
+              if (!m) return { zichtbaar: false, aanroep: [] };
+              return { zichtbaar: !m.hidden && m.offsetParent !== null, vorm: m.classList.contains('melding'), tekst: m.textContent.trim(),
+                aanroep: (TT_STUB.calls || []).filter(c => c.name === 'updateUser').map(c => c.attrs && c.attrs.password) };
+            }""")
+            uit[f"{breedte}-{thema}"] = u
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    for naam, u in uit.items():
+        j = json.dumps(u, ensure_ascii=False)[:700]
+        a, r = u["auth"], u["reset"]
+        check(f"{naam} 3: geen onderbalk op Inloggen en Nieuw wachtwoord", a["onderbalk"] == "none" and r["onderbalk"] == "none", j)
+        check(f"{naam} 1 en 6: geen welkomzin en geen zin onder de titel", "Welkom terug" not in a["tekst"] and "Kies een nieuw wachtwoord" not in r["tekst"], j)
+        check(f"{naam} 1: het eerste label staat 20px onder de kop", round(a["eersteLabel"] - a["kop"]) == 20, j)
+        check(f"{naam} 2 B: één regel 'Nog geen profiel? Profiel aanmaken', geen streep, geen tweede knop",
+              a["regel"] == "Nog geen profiel? Profiel aanmaken" and a["ghost"] == 0 and a["strepen"] == 0, j)
+        check(f"{naam} 2 B: de regel staat 24px onder Inloggen, tikvlak 44px", a["regelAfstand"] is not None and round(a["regelAfstand"]) == 24 and round(a["tikvlak"] or 0) == 44, j)
+        check(f"{naam} 2 B: een tik op Profiel aanmaken opent de wizard", u["naAanmaken"] == "view-register", j)
+        check(f"{naam}: het tikvlak van Wachtwoord vergeten? is 44px (10px erboven en 16px eronder raken de knop)", a["vergetenBoven"] and a["vergetenOnder"], j)
+        h = u["herstel"]
+        check(f"{naam} 4: de herstelmail staat in de vaste meldingvorm, met kop en e-mailadres",
+              h["zichtbaar"] and h["vorm"] and h["kop"] == "Herstelmail verstuurd"
+              and h["tekst"] == "Kijk in de inbox van jesse@voorbeeld.nl. De link in de mail werkt één keer." and h["groen"] == 0 and h["knop"] == "Herstelmail verstuurd", j)
+        check(f"{naam} 5: één wachtwoordveld, geen sterretje, in een formulier", r["velden"] == 1 and r["sterren"] == 0 and r["inFormulier"], j)
+        check(f"{naam} 5: leeg en te kort staan bij het veld",
+              u["leeg"] == ["Vul een nieuw wachtwoord in"] and u["kort"] == ["Kies een wachtwoord van minimaal 8 tekens"], j)
+        o = u["opgeslagen"]
+        check(f"{naam}: 'Wachtwoord opgeslagen' in de vaste meldingvorm, zonder vinkje; het nieuwe wachtwoord gaat naar de server",
+              o["zichtbaar"] and o["vorm"] and o["tekst"] == "Wachtwoord opgeslagen" and o["aanroep"][-1:] == ["eenlangwachtwoord"], j)
+        check(f"{naam} F1: geen regelhoogte 'normal' op de landingspagina, Inloggen en Nieuw wachtwoord",
+              not u["landing"]["lh"] and not a["lh"] and not r["lh"], j)
+        check(f"{naam} 6: de knoppen zonder pijl: Zoek muzikanten, Inloggen, Wachtwoord opslaan",
+              "Zoek muzikanten" in u["landing"]["knoppen"] and "Inloggen" in a["knoppen"] and "Wachtwoord opslaan" in r["knoppen"]
+              and not [k for k in u["landing"]["knoppen"] + a["knoppen"] + r["knoppen"] if "→" in k], j)
+        check(f"{naam}: de landingspagina past nog op één scherm", u["landingOnder"], j)
+    check("blok 139: geen fout in de pagina", not fouten, "; ".join(fouten)[:300])
+
+
 def main():
     print("The Talent Tent — vaste testset, laag 1 (TT-231)")
     _csp_vangnet()
@@ -15715,6 +15862,7 @@ def main():
     blok_tt543_blok4()
     blok_tt543_blok4b()
     blok_tt543_blok5()
+    blok_tt543_onderdeel2()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

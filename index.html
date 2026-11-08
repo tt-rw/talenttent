@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261108a">
+<link rel="stylesheet" href="styles.css?v=20261108c">
 </head>
 <body>
 
@@ -274,7 +274,7 @@
   </div>
   <div class="landing-onder">
     <h2 class="landing-sub">Muzikanten bij jou in de buurt.</h2>
-    <button class="btn btn-primary landing-knop" onclick="showView('search', 'behoud')">Zoek muzikanten →</button>
+    <button class="btn btn-primary landing-knop" onclick="showView('search', 'behoud')">Zoek muzikanten</button>
     <p class="landing-login">Zoeken kan zonder profiel. <span class="landing-acties"><button type="button" class="landing-inloggen" onclick="showView('auth')">Inloggen</button> of <button type="button" class="landing-inloggen" onclick="showView('register')">Profiel aanmaken</button></span></p>
   </div>
 </div>
@@ -285,12 +285,16 @@
 <div class="app-view" id="view-auth">
   <div class="auth-wrap">
     <div class="auth-panel">
-      <div style="text-align:center;margin-bottom:24px;">
-        <div class="scherm-titel">Inloggen</div>
-        <p style="font-size:12px;color:var(--muted);margin-top:4px;">Welkom terug bij The Talent Tent</p>
-      </div>
+      <!-- TT-543 onderdeel 2 (besluiten Ronald 08-11-2026): geen welkomzin (1),
+           geen onderbalk (3, showView() in core.js), de herstelmail in de vaste
+           meldingvorm (4), één regel "Nog geen profiel? Profiel aanmaken" (2, B),
+           geen pijl in een knop (6). Afstanden in styles.css (.auth-panel). -->
+      <div class="scherm-titel">Inloggen</div>
 
-      <div id="authSuccess" class="auth-success"></div>
+      <div class="melding" id="authHerstelVerstuurd" hidden>
+        <p class="melding-kop">Herstelmail verstuurd</p>
+        <p class="melding-tekst" id="authHerstelTekst"></p>
+      </div>
       <div class="melding" id="authLinkVerlopen" hidden>
         <p class="melding-kop">Deze link werkt niet meer</p>
         <p class="melding-tekst">Een link werkt één keer, en alleen de nieuwste mail telt. Tik hieronder op Wachtwoord vergeten? en gebruik de link in de nieuwste mail.</p>
@@ -300,11 +304,11 @@
            Zonder deze twee slaat een wachtwoordmanager niets op en vult
            iOS/Android niets in. -->
       <form onsubmit="event.preventDefault(); signIn();">
-      <div class="field" style="margin-bottom:16px;">
+      <div class="field">
         <label>E-mailadres</label>
         <input type="email" id="loginEmail" placeholder="jouw@email.nl" autocomplete="email" inputmode="email" enterkeyhint="next" required onkeydown="submitOnEnter(event, signIn)">
       </div>
-      <div class="field" style="margin-bottom:8px;">
+      <div class="field">
         <label>Wachtwoord</label>
         <div class="password-wrap">
           <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" enterkeyhint="done" required onkeydown="submitOnEnter(event, signIn)">
@@ -312,14 +316,11 @@
         </div>
       </div>
       </form>
-      <div style="text-align:right;margin-bottom:20px;">
+      <div class="auth-vergeten-rij">
         <button id="forgotPasswordBtn" class="link-vergeten" onclick="forgotPassword()">Wachtwoord vergeten?</button>
       </div>
-      <button class="btn btn-primary" style="width:100%;margin-bottom:16px;" onclick="signIn()">Inloggen →</button>
-      <div style="text-align:center;padding-top:16px;border-top:1px solid var(--border);">
-        <p style="font-size:12px;color:var(--muted);margin-bottom:8px;">Nog geen profiel?</p>
-        <button class="btn btn-ghost" style="width:100%;" onclick="showView('register')">Profiel aanmaken →</button>
-      </div>
+      <button class="btn btn-primary" onclick="signIn()">Inloggen</button>
+      <p class="landing-login">Nog geen profiel? <button type="button" class="landing-inloggen" onclick="showView('register')">Profiel aanmaken</button></p>
     </div>
   </div>
 </div>
@@ -1926,26 +1927,28 @@
 <div class="app-view" id="view-reset">
   <div class="auth-wrap">
     <div class="auth-panel">
-      <div style="text-align:center;margin-bottom:24px;">
-        <div class="scherm-titel">Nieuw wachtwoord</div>
-        <p style="font-size:12px;color:var(--muted);margin-top:6px;">Kies een nieuw wachtwoord voor je account.</p>
+      <!-- TT-543 onderdeel 2 (besluiten Ronald 08-11-2026): geen zin onder de
+           titel (6), één wachtwoordveld met Toon zonder sterretje (5, zoals stap 1
+           van Profiel aanmaken), geen onderbalk (3), geen pijl in de knop (6),
+           "Wachtwoord opgeslagen" in de vaste meldingvorm. F4: een echt <form>
+           met het e-mailadres als verborgen gebruikersnaam, zodat een
+           wachtwoordbeheerder het nieuwe wachtwoord bij het juiste account
+           opslaat (resetGebruikersnaam, gevuld door showView() in core.js). -->
+      <div class="scherm-titel">Nieuw wachtwoord</div>
+      <div class="melding" id="resetOpgeslagen" hidden>
+        <p class="melding-kop">Wachtwoord opgeslagen</p>
       </div>
-      <div id="resetSuccess" class="auth-success"></div>
-      <div class="field" style="margin-bottom:20px;">
-        <label>Nieuw wachtwoord <span class="req">*</span></label>
+      <form onsubmit="event.preventDefault(); saveNewPassword();">
+      <input type="email" id="resetGebruikersnaam" autocomplete="username" hidden>
+      <div class="field">
+        <label>Nieuw wachtwoord</label>
         <div class="password-wrap">
-          <input type="password" id="resetPassword1" placeholder="Minimaal 8 tekens" autocomplete="new-password" onkeydown="submitOnEnter(event, saveNewPassword)">
+          <input type="password" id="resetPassword1" placeholder="Minimaal 8 tekens" autocomplete="new-password" enterkeyhint="done" onkeydown="submitOnEnter(event, saveNewPassword)">
           <button type="button" class="password-toggle" onclick="togglePassword('resetPassword1', this)" aria-label="Toon wachtwoord">Toon</button>
         </div>
       </div>
-      <div class="field" style="margin-bottom:20px;">
-        <label>Wachtwoord herhalen <span class="req">*</span></label>
-        <div class="password-wrap">
-          <input type="password" id="resetPassword2" placeholder="••••••••" autocomplete="new-password" onkeydown="submitOnEnter(event, saveNewPassword)">
-          <button type="button" class="password-toggle" onclick="togglePassword('resetPassword2', this)" aria-label="Toon wachtwoord">Toon</button>
-        </div>
-      </div>
-      <button class="btn btn-primary" style="width:100%;" onclick="saveNewPassword()">Wachtwoord opslaan →</button>
+      <button class="btn btn-primary">Wachtwoord opslaan</button>
+      </form>
     </div>
   </div>
 </div>
@@ -2076,7 +2079,7 @@
       <input type="text" id="usernameGateInput" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck2()" onkeydown="submitOnEnter(event, saveUsernameGate)">
       <p id="usernameGateAgeHint" class="field-hint"></p>
     </div>
-    <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="saveUsernameGate()">Opslaan en verdergaan →</button>
+    <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="saveUsernameGate()">Opslaan en verdergaan</button>
     <!-- TT-138 (23-08-2026): dit scherm heeft bewust geen kruisje/Annuleren
          (TT-38, "verplicht invullen bij eerstvolgend bezoek") — maar had
          tot nu toe ook geen enkele andere uitweg. Faalt de beschikbaarheids-
@@ -2108,7 +2111,7 @@
 
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="closeMeldModal()">Annuleren</button>
-      <button class="btn btn-primary" onclick="verstuurMelding()">Versturen →</button>
+      <button class="btn btn-primary" onclick="verstuurMelding()">Versturen</button>
     </div>
   </div>
 </div>
@@ -2399,17 +2402,17 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261107b"></script>
-<script src="utils.js?v=20261108b"></script>
-<script src="veiligheid.js?v=20261106b"></script>
-<script src="auth.js?v=20261106d"></script>
+<script src="core.js?v=20261108c"></script>
+<script src="utils.js?v=20261108c"></script>
+<script src="veiligheid.js?v=20261108c"></script>
+<script src="auth.js?v=20261108c"></script>
 <script src="postcode.js?v=20261107a"></script>
-<script src="wizard.js?v=20261108a"></script>
+<script src="wizard.js?v=20261108c"></script>
 <script src="ouder.js?v=20261106a"></script>
 <script src="search.js?v=20261108a"></script>
-<script src="musicians.js?v=20261108a"></script>
-<script src="bands.js?v=20261108a"></script>
-<script src="messages.js?v=20261106b"></script>
+<script src="musicians.js?v=20261108c"></script>
+<script src="bands.js?v=20261108c"></script>
+<script src="messages.js?v=20261108c"></script>
 <script src="push.js?v=20261027b"></script>
 <script src="modals-shared.js?v=20261108a"></script>
 <script>

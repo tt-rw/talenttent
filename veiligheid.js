@@ -377,7 +377,7 @@ async function renderGeblokkeerdLijst() {
     el.innerHTML = emptyStateHTML(
       'Je blokkeert niemand',
       'Blokkeren kan via het ⋯-menu op een profiel of in een gesprek.',
-      'Muzikanten zoeken →',
+      'Muzikanten zoeken',
       "closeGeblokkeerdModal();openZoekMuzikanten()"
     );
     return;

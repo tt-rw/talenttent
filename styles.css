@@ -662,14 +662,15 @@
   @media (hover: hover) { .stille-link:hover { color: var(--text); } } /* TT-517 fase 9: alleen met een muis */
   /* "Wachtwoord vergeten?" op Inloggen (TT-510): de letter van een stille uitweg,
      zonder dat de regel hoger wordt. Tikvlak 44px via ::after (huisstijl §6):
-     11px erboven (tot het veld), 18px eronder (12px vrij tot Inloggen). */
+     11px erboven (tot het veld), 17px eronder (3px vrij tot Inloggen, gemeten).
+     TT-543 F1: vaste regelhoogte 16px (huisstijl §2, hulpregel), 11 + 16 + 17 = 44. */
   .link-vergeten {
     position: relative;
     background: none; border: 0; padding: 0;
-    font-family: 'Inter', sans-serif; font-size: var(--fs-sm);
+    font-family: 'Inter', sans-serif; font-size: var(--fs-sm); line-height: 16px;
     color: var(--muted); text-decoration: underline; cursor: pointer;
   }
-  .link-vergeten::after { content: ''; position: absolute; left: 0; right: 0; top: -11px; bottom: -18px; }
+  .link-vergeten::after { content: ''; position: absolute; left: 0; right: 0; top: -11px; bottom: -17px; }
 
   /* ── Melding (huisstijl §13, vastgelegd en gebouwd 27-09-2026) ──────────
      Eén vorm voor elke melding bovenaan een scherm: "Nog één stap", "Je bent
@@ -2793,7 +2794,7 @@
   .landing-woord.in { animation: landingWoordIn .34s cubic-bezier(.2,.8,.2,1); }
   @keyframes landingWoordUit { to { transform: translateY(-40%); opacity: 0; } }
   @keyframes landingWoordIn { from { transform: translateY(40%); opacity: 0; } to { transform: none; opacity: 1; } }
-  .landing-waarvoor { margin: 12px 0 0; font-size: 12px; color: var(--op-foto-zacht); }
+  .landing-waarvoor { margin: 12px 0 0; font-size: 12px; line-height: 18px; color: var(--op-foto-zacht); } /* TT-543 F1: vaste regelhoogte (huisstijl §2) */
   .landing-onder {
     flex: none;
     display: flex;
@@ -2802,9 +2803,10 @@
     padding: 20px 16px calc(40px + env(safe-area-inset-bottom, 0px)); /* 06-10-2026 (Ronald): hoger, "Inloggen" is anders haast niet te bereiken */
     background: var(--bg);
   }
-  .landing-sub { font-size: 17px; font-weight: 700; color: var(--text); }
+  /* TT-543 F1: vaste regelhoogtes (huisstijl §2): kop 17/22 zoals .hoofdstuk-kop, regel 12/18. */
+  .landing-sub { font-size: 17px; line-height: 22px; font-weight: 700; color: var(--text); }
   .landing-knop { width: 100%; }
-  .landing-login { margin: 0; text-align: center; font-size: 12px; color: var(--muted); }
+  .landing-login { margin: 0; text-align: center; font-size: 12px; line-height: 18px; color: var(--muted); }
   /* 08-10-2026: Inloggen en Profiel aanmaken op een eigen rij onder de tekst, zodat hun tikvlakken elkaar niet overlappen. */
   .landing-acties { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 8px; }
   .landing-acties .landing-inloggen { margin: -12px 0; }
@@ -2822,6 +2824,7 @@
     color: var(--text);
     font-family: 'Inter', sans-serif;
     font-size: 12px;
+    line-height: 18px; /* TT-543 F1 */
     font-weight: 700;
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -3187,6 +3190,20 @@
     margin: 60px auto;
     padding: 0 24px;
   }
+
+  /* TT-543 onderdeel 2 (08-11-2026): de afstanden van Inloggen en Nieuw
+     wachtwoord, uit de regel gehaald (huisstijl §3). Maten ongewijzigd: veld
+     tot veld 16px, wachtwoord tot "Wachtwoord vergeten?" 8px, daarna 20px tot
+     de knop; op Nieuw wachtwoord veld tot knop 20px. "Nog geen profiel?
+     Profiel aanmaken" is de inlogregel van de landingspagina (.landing-login),
+     24px onder de knop: de tekst staat 30px onder de knop, zoals op het beeld
+     van het besluit (voorstel 2, B; gemeten). */
+  .auth-panel .field { margin-bottom: 16px; }
+  .auth-panel .field:has(+ .auth-vergeten-rij) { margin-bottom: 8px; }
+  .auth-panel .field:has(+ .btn) { margin-bottom: 20px; }
+  .auth-vergeten-rij { text-align: right; margin-bottom: 20px; }
+  .auth-panel .btn { width: 100%; }
+  .auth-panel .landing-login { margin-top: 24px; }
 
   .auth-success {
     background: rgba(76,175,80,0.1);

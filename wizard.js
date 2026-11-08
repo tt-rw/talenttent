@@ -273,7 +273,7 @@ async function loadMyProfile(opties) {
     el.innerHTML = emptyStateHTML(
       'Nog geen profiel',
       'Maak je muzikantprofiel aan om gevonden te worden.',
-      'Profiel aanmaken →',
+      'Profiel aanmaken',
       "showView('register')"
     );
     return;

@@ -833,7 +833,7 @@ async function loadMyBands(opties) {
     el.innerHTML = emptyStateHTML(
       'Nog geen profiel',
       'Maak je muzikantprofiel aan om een band te kunnen oprichten.',
-      'Profiel aanmaken →',
+      'Profiel aanmaken',
       "showView('register')"
     );
     return;
@@ -852,7 +852,7 @@ async function loadMyBands(opties) {
     el.innerHTML = emptyStateHTML(
       'Nog geen bands',
       'Richt je eigen band op, of wacht tot iemand je uitnodigt.',
-      'Band aanmaken →',
+      'Band aanmaken',
       'showCreateBandForm()'
     );
     return;
@@ -1317,7 +1317,7 @@ function bandVoetHTML(b, kijker) {
     return `<button class="btn btn-primary" style="width:100%;" onclick="showView('register')">Maak een profiel en leg contact</button>`;
   }
   if (!b.contact) return '';
-  return `<button class="btn btn-primary" style="width:100%;" data-bericht-id="${escHtml(b.contact.id)}" onclick="openMessageComposer('${jsAttr(b.contact.id)}','${jsAttr(b.contact.naam)}','${jsAttr(b.name)}')">Stuur een bericht aan de band →</button>`;
+  return `<button class="btn btn-primary" style="width:100%;" data-bericht-id="${escHtml(b.contact.id)}" onclick="openMessageComposer('${jsAttr(b.contact.id)}','${jsAttr(b.contact.naam)}','${jsAttr(b.name)}')">Stuur een bericht aan de band</button>`;
 }
 
 // TT-410b fase 2 (06-10-2026, besluiten Ronald): de bandpagina is, net als het

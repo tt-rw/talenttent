@@ -349,7 +349,7 @@ async function loadInbox(opties) {
       listEl.innerHTML = emptyStateHTML(
         'Nog geen berichten',
         'Zoek een muzikant en stuur het eerste bericht.',
-        'Muzikanten zoeken →',
+        'Muzikanten zoeken',
         "openZoekMuzikanten()"
       );
       return;
@@ -527,7 +527,7 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
     }).join('') : emptyStateHTML(
       'Nog geen berichten in dit gesprek',
       gesprekVia ? `${otherName} is de contactpersoon van ${gesprekVia}.` : '',
-      'Schrijf het eerste bericht →',
+      'Schrijf het eerste bericht',
       "document.getElementById('messagesReplyInput').focus()"
     ));
     // TT-277: een stille verversing vervangt de lijst alleen als er iets
@@ -756,7 +756,7 @@ async function openTalentTentGesprek(stil) {
     threadEl.innerHTML = html || emptyStateHTML(
       'Nog geen berichten van Talent Tent',
       'Nieuwe matches bij jou in de buurt staan hier.',
-      'Muzikanten zoeken →',
+      'Muzikanten zoeken',
       "openZoekMuzikanten()"
     );
     // TT-452: pas nu, nadat je een bericht van Talent Tent zag, vragen we of je
