@@ -3,10 +3,19 @@
 // Ronald, 08-08-2026): één klik, geen tussenscherm, en het staat op de plek
 // waar iemand na het inloggen sowieso terechtkomt. De banner verschijnt alleen
 // als er daadwerkelijk iets open staat — geen lege plek in het scherm.
+// TT-578 (8D, wens Ronald 08-11-2026: "de melding blijft staan totdat de
+// muzikant een van beide knoppen heeft geklikt"): een uitnodiging verdwijnt
+// alleen als de database zegt dat hij weg is (gekozen, of ingetrokken door de
+// beheerder). Tot 08-11-2026 maakte deze functie de melding eerst leeg en
+// toonde hij bij een mislukte vraag niets meer. Nu blijft wat er stond tot er
+// een antwoord is; een oudere vraag overschrijft een nieuwere niet. Een ander
+// account ziet de melding van het vorige nooit (dataset.mid).
+let bandInvitesVolgnr = 0;
 async function loadBandInvites(musicianId) {
   const el = document.getElementById('bandInvitesBanner');
   if (!el) return;
-  el.innerHTML = '';
+  if (el.dataset.mid !== String(musicianId)) { el.innerHTML = ''; el.dataset.mid = String(musicianId); }
+  const volgnr = ++bandInvitesVolgnr;
   try {
     const { data, error } = await db.from('band_members')
       .select('band_id, bands(name, city)')
@@ -15,7 +24,8 @@ async function loadBandInvites(musicianId) {
     // `error` naast lege data. Zonder deze regel viel dat samen met "geen
     // uitnodigingen" en verdween de fout spoorloos.
     if (error) { logCaught('loadBandInvites', error); return; }
-    if (!data || !data.length) return;
+    if (volgnr !== bandInvitesVolgnr || el.dataset.mid !== String(musicianId)) return;
+    if (!data || !data.length) { el.innerHTML = ''; return; }
 
     el.innerHTML = data.map(inv => {
       const naam = inv.bands?.name || 'Een band';
@@ -1368,6 +1378,7 @@ async function laadBandScherm(id, linkToegang) {
   bandDeelGegevens = null;
   const vak = document.getElementById('profielSchermContent');
   const voet = document.getElementById('profielSchermVoet');
+  vak.classList.remove('muzikant-profiel'); // TT-543: de bandpagina volgt in onderdeel 6
   voet.innerHTML = '';
   vak.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
   if (!id) { toonProfielNietBeschikbaar('band'); return; }
@@ -2454,7 +2465,9 @@ let zoekRolBand = null; // { id, naam }
 
 async function rolUitnodigKnopPlaatsen(musicianId) {
   const band = zoekRolBand;
-  const voet = document.getElementById('profielSchermVoet');
+  // TT-543 onderdeel 3 (F3 B): op het muzikantprofiel staan de knoppen onder
+  // de bio (#profielSchermActie), niet meer in de vaste balk onderaan.
+  const voet = document.getElementById('profielSchermActie');
   if (!band || !hasOwnProfile || !voet || !musicianId || musicianId === myMusicianId) return;
   if (typeof blokkeerIkZelf === 'function' && blokkeerIkZelf(musicianId)) return;
   const { data, error } = await db.from('band_members').select('status')
@@ -2472,5 +2485,5 @@ async function rolUitnodigen(musicianId) {
   addMemberBandId = band.id;
   addMemberBandName = band.naam;
   const gelukt = await addBandMember(musicianId, '');
-  if (gelukt) document.querySelector('#profielSchermVoet .rol-uitnodig-knop')?.remove();
+  if (gelukt) document.querySelector('#profielSchermActie .rol-uitnodig-knop')?.remove();
 }

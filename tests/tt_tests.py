@@ -1267,6 +1267,12 @@ def blok_browser():
           uit.fotoEnVideoSamen = vak.querySelectorAll('.profile-media')[0].querySelectorAll('.profile-media-tegel').length;
           uit.videoOpentMediascherm = (vak.querySelector('.profile-media-tegel[onclick*="openMediaSpeler"]') !== null);
           uit.geenLosseControls = vak.querySelectorAll('.profile-media video[controls]').length;
+          // TT-543 onderdeel 3 (besluit Ronald 08-11-2026, 5): geen woord "Video"
+          // op een videotegel van het muzikantprofiel; de bandpagina houdt hem
+          // tot onderdeel 6, op één regel, afgekapt met ….
+          uit.geenVideoWoord = vak.querySelectorAll('.profile-media-tegel .pb-label').length === 0;
+          uit.speelteken = vak.querySelectorAll('.profile-media-tegel .pb-speel').length;
+          vak.innerHTML = profielMediaHTML([{ media_type: 'video', url: 'https://x/c.mp4', platform: null, in_banner: false }], null, false);
           const label = vak.querySelector('.profile-media-tegel .pb-label');
           uit.labelWrap = label ? getComputedStyle(label).whiteSpace + ' ' + getComputedStyle(label).textOverflow : null;
 
@@ -1304,12 +1310,14 @@ def blok_browser():
         check("de hoes schuift niet uit zichzelf door (besluit Ronald 30-10-2026)", banner["staatStil"], "")
         check("boven zes gekozen items telt alleen de eerste zes",
               banner["grensZes"] == 6, str(banner["grensZes"]))
-        check("foto's en video's staan in één raster",
-              banner["mediaTitels"] == ["Foto's en video's", "Links"], json.dumps(banner["mediaTitels"]))
-        check("met een tegel per foto en per video", banner["fotoEnVideoSamen"] == 2, str(banner["fotoEnVideoSamen"]))
+        check("foto's, video's en links staan in één blok \"Foto's, video's en links\" (TT-543 onderdeel 3, besluit 5)",
+              banner["mediaTitels"] == ["Foto's, video's en links"], json.dumps(banner["mediaTitels"]))
+        check("met een tegel per foto, per video en per link", banner["fotoEnVideoSamen"] == 3, str(banner["fotoEnVideoSamen"]))
+        check("geen woord \"Video\" op een videotegel; het speelteken blijft (besluit 5)",
+              banner["geenVideoWoord"] and banner["speelteken"] == 2, json.dumps([banner["geenVideoWoord"], banner["speelteken"]]))
         check("een video in het raster opent het mediascherm", banner["videoOpentMediascherm"], "")
         check("en speelt niet meer los in de pagina", banner["geenLosseControls"] == 0, str(banner["geenLosseControls"]))
-        check("de naam van een video op een tegel staat op één regel en kapt af met …",
+        check("bandpagina (tot onderdeel 6): de naam van een video op een tegel staat op één regel en kapt af met …",
               banner["labelWrap"] == "nowrap ellipsis", str(banner["labelWrap"]))
         check("het profiel toont geen 'bijgewerkt'-regel meer", banner["geenBijgewerkt"], "")
         check("de groene balk met kloppende stip is weg", banner["geenGroeneBalk"], "")
@@ -1562,10 +1570,12 @@ def blok_browser():
           vak.remove();
           return uit;
         }""")
-        check("één nummer: 'Repertoire (1 nummer)'",
-              telling["een"] == "Repertoire (1 nummer)", telling["een"])
-        check("twee nummers: 'Repertoire (2 nummers)'",
-              telling["twee"] == "Repertoire (2 nummers)", telling["twee"])
+        # TT-543 onderdeel 3 (besluit Ronald 08-11-2026, 6; wijzigt 26-10-2026):
+        # de kop is "Repertoire", zonder aantal.
+        check("één nummer: kop 'Repertoire', zonder aantal",
+              telling["een"] == "Repertoire", telling["een"])
+        check("twee nummers: kop 'Repertoire', zonder aantal",
+              telling["twee"] == "Repertoire", telling["twee"])
 
         sctx = browser.new_context(viewport={"width": 344, "height": 700})
         sp = sctx.new_page()
@@ -3539,14 +3549,21 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
           hasOwnProfile = true; myMusicianId = 'm1';
           const plek = document.createElement('div'); plek.id = 'testProfiel';
           document.getElementById('view-about').prepend(plek);
+          // TT-543 onderdeel 3 (1E): Mijn Profiel heeft geen ⋯-menu meer. Het
+          // menu in de pagina is nu dat van het profiel van een ander (melden
+          // en blokkeren), dezelfde vorm (.inline-menu-dropdown).
           plek.innerHTML = buildMusicianDetailHTML({
-            id: 'm1', fname: 'Ronald', lname: 'W', username: 'ronald', bio: 'test',
+            id: 'm2', fname: 'Sanne', lname: 'W', username: 'sanne', bio: 'test',
             musician_songs: [], musician_media: [], musician_instruments: [],
-            musician_genres: [], musician_wanted: [] }, true, false);
+            musician_genres: [], musician_wanted: [] }, false, true);
+          zetVeiligheidMenu('profielSchermActies', 'muzikant', 'm2', 'Sanne');
         }""")
+        PMENU_KNOP = "#testProfiel .veiligheid-menu-wrap .nav-menu-btn"
+        PMENU = "#testProfiel .veiligheid-menu-wrap .inline-menu-dropdown"
+        open_pmenu = f"document.querySelector('{PMENU_KNOP}').click()"
 
-        check("het eigen profiel staat in beeld, met het ⋯-menu",
-              page.evaluate("document.getElementById('profileMoreBtn').getBoundingClientRect().width > 0"), "")
+        check("het profiel staat in beeld, met het ⋯-menu",
+              page.evaluate(f"document.querySelector('{PMENU_KNOP}').getBoundingClientRect().width > 0"), "")
 
         def midden(sel):
             return page.evaluate("""s => { const r = document.querySelector(s).getBoundingClientRect();
@@ -3571,12 +3588,12 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
               page.evaluate(open_menus) == 0 and page.evaluate("huidigeView") == "about",
               f"{page.evaluate(open_menus)} menu's open, view {page.evaluate('huidigeView')}")
         page.evaluate("toggleNavMenu()")
-        page.evaluate("toggleProfileMoreMenu()")
+        page.evaluate(open_pmenu)
         check("twee menu's na elkaar openen: er staat er één open",
               page.evaluate(open_menus) == 1 and page.evaluate(lagen) == 1,
               f"{page.evaluate(open_menus)} menu's, {page.evaluate(lagen)} lagen")
         check("het tweede menu is het open menu",
-              page.evaluate("document.getElementById('profileMoreDropdown').classList.contains('visible')"), "")
+              page.evaluate(f"document.querySelector('{PMENU}').classList.contains('visible')"), "")
         check("de laag dekt de kop af", bovenste(*midden(".logo")) == "laag", bovenste(*midden(".logo")))
         check("de laag dekt de onderbalk af (menu in de pagina)", bovenste(*onderbalk) == "laag", bovenste(*onderbalk))
 
@@ -3588,7 +3605,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("die tik bereikt de onderbalk niet", not page.evaluate("window.__zoekGetikt"), "")
 
         # Escape en een view-wissel sluiten ook.
-        page.evaluate("toggleProfileMoreMenu()"); page.keyboard.press("Escape")
+        page.evaluate(open_pmenu); page.keyboard.press("Escape")
         check("Escape sluit het menu en de laag",
               page.evaluate(open_menus) == 0 and page.evaluate(lagen) == 0, "")
         page.evaluate("document.getElementById('testProfiel').remove()")
@@ -3611,8 +3628,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         page.evaluate("sluitAlleMenus()")
 
         # Het menu is lichter dan de pagina.
-        kleuren = page.evaluate("""() => ['navMenuDropdown', 'profileMoreDropdown'].map(id => {
-            const el = document.getElementById(id); return el ? getComputedStyle(el).backgroundColor : null; })
+        kleuren = page.evaluate("""() => ['#navMenuDropdown', '.veiligheid-menu-wrap .inline-menu-dropdown'].map(sel => {
+            const el = document.querySelector(sel); return el ? getComputedStyle(el).backgroundColor : null; })
             .concat([getComputedStyle(document.querySelector('.choice-menu:not(.beheersing-menu)')).backgroundColor])""")
         check("elk menu heeft het vlak --surface2", all(k == "rgb(30, 30, 30)" for k in kleuren if k), json.dumps(kleuren))
 
@@ -4205,7 +4222,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         # TT-517 fase 7 (besluit Ronald 01-11-2026, B; huisstijl §18.7): geen
         # tegels meer, maar één wazig vlak met het aantal en de opmerking.
         check("afgeschermd: foto, video en link samen in één wazig vlak, geen tegels, geen apart blok Links (fase 7)",
-              af["tegels"] == 0 and af["vlak"] == 1 and af["titels"] == ["Foto's en video's"]
+              # TT-543 onderdeel 3 (besluit 5): het muzikantprofiel heeft één blok "Foto's, video's en links".
+              af["tegels"] == 0 and af["vlak"] == 1 and af["titels"] == ["Foto's, video's en links"]
               and af["vlakTekst"] == ["2 foto's en video's · 1 link", "Maak een profiel aan om de inhoud te bekijken."], json.dumps(af))
         check("afgeschermd zonder wazige versie: het vlak toont het algemene wazige beeld (fase 7)",
               len(af["vlakBeeld"]) == 1 and af["vlakBeeld"][0].startswith("foto-wazig|data:image/jpeg;base64,"), json.dumps(af))
@@ -5682,10 +5700,8 @@ window.TT_STUB.fnAntwoord = {};
             city: 'Den Haag', age: 25, musician_songs: [], musician_media: [], musician_wanted: [],
             musician_instruments: [{ instrument: 'Drums', niveau: 3 }], musician_genres: [{ genre: 'Rock' }] }, true, false);
           fitProfileName(eigen);
-          uit.mijnProfiel = await meet(eigen, null);
-          const ham = rect(document.getElementById('navMenuBtn'));
-          const mm = rect(document.getElementById('profileMoreBtn'));
-          uit.menuOnderHamburger = +(((mm.left + mm.right) - (ham.left + ham.right)) / 2).toFixed(1);
+          // TT-543 onderdeel 3 (1E): geen ⋯-menu meer op Mijn Profiel; het deelicoon staat op zijn plek.
+          uit.mijnProfiel = await meet(eigen, document.getElementById('navMenuBtn'));
           eigen.innerHTML = '';
           showView('about');
           // 2. Het venster van een ander, met een eigen profiel: deelicoon en ⋯.
@@ -5724,15 +5740,15 @@ window.TT_STUB.fnAntwoord = {};
                   v["maat"] == [44, 44] and v["opFoto"] and v["hoogte"] is not None and abs(v["hoogte"]) <= 1, json.dumps(v))
             check(f"{naam50}: de naam heeft de volle breedte, de regels staan er direct onder",
                   v["naamVol"] and v["naamRegels"] is not None and 0 <= v["naamRegels"] <= 8, json.dumps(v))
-        for naam50, v in (("Mijn Profiel", d50["mijnProfiel"]), ("muzikantvenster", d50["ander"]), ("bandvenster", d50["band"])):
+        for naam50, v in (("muzikantvenster", d50["ander"]), ("bandvenster", d50["band"])):
             check(f"{naam50}: deelicoon en ⋯ zijn elk 44px, de tikvlakken overlappen niet",
                   v["menuMaat"] == [44, 44] and v["overlap"] is not None and v["overlap"] <= 0.5, json.dumps(v))
             # TT-403 (Ronald: "verder af van 3 puntjes"): 28px, was 20px.
             check(f"{naam50}: het deelteken staat 28px van de stippen (TT-403; 26 tot 30px)",
                   v["inktGat"] is not None and 26 <= v["inktGat"] <= 30, json.dumps(v))
-        check("Mijn Profiel: het ⋯-menu staat nog recht onder de hamburger",
-              abs(d50["menuOnderHamburger"]) <= 2, json.dumps(d50["menuOnderHamburger"]))
-        for naam50, v in (("zonder eigen profiel", d50["anderZonderProfiel"]), ("eigen profiel in het venster", d50["eigenInVenster"])):
+        check("Mijn Profiel: geen ⋯-menu meer (TT-543 onderdeel 3, besluit 1E)",
+              d50["mijnProfiel"]["menuMaat"] is None, json.dumps(d50["mijnProfiel"]))
+        for naam50, v in (("Mijn Profiel", d50["mijnProfiel"]), ("zonder eigen profiel", d50["anderZonderProfiel"]), ("eigen profiel in het venster", d50["eigenInVenster"])):
             check(f"{naam50}: het deelicoon alleen staat op de plek van het menu, onder de hamburger (waar het kruisje stond)",
                   v["alleenOnderKruis"] is not None and abs(v["alleenOnderKruis"]) <= 1.5, json.dumps(v))
         check("je eigen profiel in het venster: geen lege voetbalk meer", d50["eigenVoet"] == "", d50["eigenVoet"][:120])
@@ -5919,14 +5935,19 @@ window.TT_STUB.fnAntwoord = {};
           const raak = sr && document.elementFromPoint((sr.left + sr.right) / 2, (sr.top + sr.bottom) / 2);
           uit.stipGeenDoel = !!raak && raak !== stip && !!raak.closest('.hoes-vlak');
           // Het ⋯-menu: de donkere laag ligt nog over de onderbalk (huisstijl §8.2).
-          toggleProfileMoreMenu({ stopPropagation() {}, currentTarget: document.getElementById('profileMoreBtn') });
+          // TT-543 onderdeel 3 (1E): Mijn Profiel heeft geen ⋯ meer; het menu in de
+          // hoes is nu dat van het profiel van een ander (melden en blokkeren).
+          el.innerHTML = buildMusicianDetailHTML({ ...profiel([]), id: 'm2' }, false, true);
+          zetVeiligheidMenu('profielSchermActies', 'muzikant', 'm2', 'Sanne');
+          el.querySelector('.veiligheid-menu-wrap .nav-menu-btn').click();
           await new Promise(z => setTimeout(z, 30));
           const ob = r(document.querySelector('.app-bottom-nav'));
           const opBalk = document.elementFromPoint(ob.left + 20, (ob.top + ob.bottom) / 2);
           uit.laagOverOnderbalk = !!(opBalk && opBalk.classList.contains('menu-laag'));
-          const dd = r(document.getElementById('profileMoreDropdown'));
+          const ddEl = el.querySelector('.veiligheid-menu-wrap .inline-menu-dropdown');
+          const dd = r(ddEl);
           const opMenu = dd && document.elementFromPoint(dd.left + 20, dd.top + 20);
-          uit.menuBovenop = !!(opMenu && opMenu.closest('#profileMoreDropdown'));
+          uit.menuBovenop = !!(opMenu && ddEl.contains(opMenu));
           sluitAlleMenus();
           el.innerHTML = buildMusicianDetailHTML(profiel([]), true, false);
           fitProfileName(el);
@@ -5945,7 +5966,7 @@ window.TT_STUB.fnAntwoord = {};
           return uit;
         }""")
         for naam54, v in (("met banner", d54["met"]), ("zonder banner", d54["zonder"]), ("bandpagina", d54["band"])):
-            check(f"{naam54}: de hoes is het eerste element, met naam, regel, delen en ⋯ erin; geen ronde foto meer",
+            check(f"{naam54}: de hoes is het eerste element, met naam, regel en delen erin; geen ronde foto meer",
                   v["eerste"] == "hoes" and v["eenHoes"] == 1 and v["naamInHoes"] and v["knoppenInHoes"] and v["rondeFoto"] == 0, json.dumps(v))
         check("een tik op een stip gaat naar het beeld eronder: de stip is geen doel (TT-541)", d54["stipGeenDoel"], json.dumps(d54))
         check("een open ⋯-menu legt zijn donkere laag nog over de onderbalk (§8.2), en ligt zelf bovenop",
@@ -6366,9 +6387,12 @@ window.TT_STUB.fnAntwoord = {};
           zoekMuzikantVoorRol('Basgitaar', bewerkBandStad, bewerkBandNaam, '', bewerkBandId); await w(300);
           // Vanuit die zoekopdracht: "Uitnodigen voor Nachtploeg" in het muzikantvenster, niet bij een lid.
           u.zoekBand = zoekRolBand && zoekRolBand.id;
-          const knop = () => document.querySelector('#profielSchermVoet .rol-uitnodig-knop');
-          // De stub kent de geneste tabellen van een muzikant niet; daarom de voet zelf, met de aanroep uit openProfielScherm().
-          const voet = document.getElementById('profielSchermVoet'), voetWas = voet.innerHTML;
+          // TT-543 onderdeel 3 (F3 B): de knoppen staan onder de bio (#profielSchermActie), niet meer in de voet.
+          const knop = () => document.querySelector('#profielSchermActie .rol-uitnodig-knop');
+          // De stub kent de geneste tabellen van een muzikant niet; daarom de plek zelf, met de aanroep uit openProfielScherm().
+          const vakPS = document.getElementById('profielSchermContent'), vakPSWas = vakPS.innerHTML;
+          vakPS.insertAdjacentHTML('beforeend', '<div class="profiel-actie" id="profielSchermActie"></div>');
+          const voet = document.getElementById('profielSchermActie'), voetWas = voet.innerHTML;
           const vp = document.getElementById('view-profiel'), vpWas = vp.classList.contains('active'); vp.classList.add('active');
           voet.innerHTML = '<button class="btn btn-primary">Stuur een bericht</button>';
                     S.data.band_members.push({ band_id: 'b9', musician_id: 'm2', role: 'Lid', status: 'bevestigd', joined_at: '2026-02-01' });
@@ -6378,7 +6402,7 @@ window.TT_STUB.fnAntwoord = {};
           u.knopEerst = voet.firstElementChild === knop(); u.knopMaat = knop() && [knop().offsetWidth === voet.clientWidth - parseFloat(getComputedStyle(voet).paddingLeft) - parseFloat(getComputedStyle(voet).paddingRight), getComputedStyle(knop()).marginBottom];
           await rolUitnodigen('m3'); await w(200);
           u.naUitnodigen = [S.data.band_members.filter(m => m.musician_id === 'm3' && m.band_id === 'b9').map(m => m.status), !!knop()];
-          voet.innerHTML = voetWas; if (!vpWas) vp.classList.remove('active');
+          vakPS.innerHTML = vakPSWas; if (!vpWas) vp.classList.remove('active');
           S.data.band_members = S.data.band_members.filter(m => !(m.musician_id === 'm3' && m.band_id === 'b9'));
           configureSearchAccess(); u.zoekBandNaOpen = zoekRolBand;
           // Een coverband telt geen eigen nummers mee, een band met alleen eigen nummers geen covers.
@@ -6891,7 +6915,9 @@ window.TT_STUB.fnAntwoord = {};
           const blok = [...eigen.querySelectorAll('.profile-media')].find(x => x.querySelector('.profile-media-title').textContent === 'Bands');
           const bandRijen = blok ? [...blok.querySelectorAll('.bb-rij-knop')] : [];
           u.blok = { er: !!blok, rijen: bandRijen.map(x => [x.querySelector('.bb-naam').textContent, (x.querySelector('.bb-sub') || {}).textContent || '']),
-                     naBio: blok && blok.previousElementSibling && blok.previousElementSibling.textContent === 'Gitarist en zanger.',
+                     // TT-543 onderdeel 3 (1E): tussen de bio en Bands staat de knop "Profiel bewerken".
+                     naBio: blok && blok.previousElementSibling && blok.previousElementSibling.classList.contains('profiel-actie')
+                            && blok.previousElementSibling.previousElementSibling.textContent === 'Gitarist en zanger.',
                      voorRepertoire: blok && blok.nextElementSibling && blok.nextElementSibling.classList.contains('profile-songs'),
                      knop: bandRijen[0] && bandRijen[0].tagName, t: !!(bandRijen[1] && bandRijen[1].querySelector('.bb-foto-leeg .schijnwerper')) };
           if (blok) {
@@ -6957,8 +6983,9 @@ window.TT_STUB.fnAntwoord = {};
         check("blok Bands: naam, instrumenten en Beheerder; zonder bandfoto de T",
               b["rijen"] == [["Nachtploeg", "Gitaar · Zang · Beheerder"], ["Solo", "Gitaar"]] and b["t"], j60("blok"))
         bm = d60["blokMaten"]
-        check("UI blok Bands: titel tot rij 8px, rij 56px zonder lijn ertussen (tikvlak ≥ 44), zijmarge 16px, foto 40×40 vierkant 8px, naam 15px vet, regel 12px (TT-517), geen lijn onder de laatste",
-              bm["titelRij"] == 8 and bm["rijH"] == 56 and bm["links"] == 16 and bm["rechts"] == 16 and bm["foto"] == [40, 40, "8px"]
+        # TT-543 onderdeel 3 (4A): de kop staat 12px boven de inhoud (was 8px).
+        check("UI blok Bands: titel tot rij 12px, rij 56px zonder lijn ertussen (tikvlak ≥ 44), zijmarge 16px, foto 40×40 vierkant 8px, naam 15px vet, regel 12px (TT-517), geen lijn onder de laatste",
+              bm["titelRij"] == 12 and bm["rijH"] == 56 and bm["links"] == 16 and bm["rechts"] == 16 and bm["foto"] == [40, 40, "8px"]
               and bm["naam"] == ["15px", "700"] and bm["sub"] == "12px" and bm["rand"] == "0px", j60("blokMaten"))
         check("een tik op een band opent de bandpagina", d60["tik"] == "b5", j60("tik"))
         check("geen bands: geen blok; een fout: geen blok, wel een regel in de foutlog",
@@ -9826,7 +9853,7 @@ window.TT_STUB.fnAntwoord = {};
         j85 = lambda k: json.dumps(d85.get(k), ensure_ascii=False)
         check("muzikant, Mijn Profiel: de zin staat onder de badges en boven de bio, als .melding zonder kop, knop of kruisje",
               d85["eigen"] and d85["eigen"]["tekst"] == "Momenteel niet beschikbaar." and d85["eigen"]["vet"] == "niet beschikbaar"
-              and d85["eigen"]["voor"] == "profile-badges" and d85["eigen"]["na"] == "profile-bio" and not d85["eigen"]["kop"] and not d85["eigen"]["knop"], j85("eigen"))
+              and d85["eigen"]["voor"] == "profiel-wat" and d85["eigen"]["na"] == "profile-bio" and not d85["eigen"]["kop"] and not d85["eigen"]["knop"], j85("eigen"))
         check("UI: de zin is 12px (TT-517), de lijn links 4px, en staat 20px onder de badges en 20px boven de bio",
               d85["eigen"]["letter"] == "12px" and d85["eigen"]["rand"] == "4px" and d85["eigen"]["boven"] == 20 and d85["eigen"]["onder"] == 20, j85("eigen"))
         check("beschikbaar (de standaard): er staat geen zin op Mijn Profiel", d85["eigenBeschikbaar"] is True, j85("eigenBeschikbaar"))
@@ -10606,7 +10633,8 @@ window.TT_STUB.fnAntwoord = {};
         }""")
         check("zeven nummers: geen inklap, alle zeven zichtbaar", d94["zeven"] == {"inklap": 0, "zichtbaar": 7}, json.dumps(d94["zeven"]))
         check("acht nummers: ingeklapt tot zeven, \"Alle 8 nummers\"", d94["acht"]["zichtbaar"] == 7 and d94["acht"]["regel"] == "Alle 8 nummers", json.dumps(d94["acht"]))
-        check("23 nummers: titel blijft \"Repertoire (23 nummers)\"", d94["titel"] == "Repertoire (23 nummers)", d94["titel"])
+        # TT-543 onderdeel 3 (besluit 6; wijzigt 26-10-2026): de kop is "Repertoire", zonder aantal.
+        check("23 nummers: de kop is \"Repertoire\", het aantal staat in \"Alle 23 nummers\"", d94["titel"] == "Repertoire", d94["titel"])
         check("23 nummers: opent ingeklapt, zeven zichtbaar, \"Alle 23 nummers\", aria-expanded false",
               d94["dicht"]["zichtbaar"] == 7 and not d94["dicht"]["open"] and d94["dicht"]["regel"] == "Alle 23 nummers" and d94["dicht"]["aria"] == "false", json.dumps(d94["dicht"]))
         check("ingeklapt vervagen de laatste rijen (masker), opengeklapt niet",
@@ -12079,8 +12107,10 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
     check("naam, regel, delen en ⋯ staan op de foto, muzikant en band gelijk", not f, json.dumps(f))
     f = {f"{b}:{n}": [r[(b, n)]["menuOnderHamburger"], r[(b, n)]["knopOpRegel"]] for b, n in hoes3 if abs(r[(b, n)]["menuOnderHamburger"]) > 1 or abs(r[(b, n)]["knopOpRegel"]) > 1}
     check("delen en ⋯ rechtsonder op de regel onder de naam, het ⋯ recht onder de hamburger (positie 2)", not f, json.dumps(f))
-    check("de naam is op 390px 264px breed naast de twee knoppen, nooit afgekapt", r[(390, "mijn")]["naamBreed"] == 264 and not any(r[k]["afgekapt"] for k in r if isinstance(r[k], dict) and "afgekapt" in r[k]),
-          str(r[(390, "mijn")]["naamBreed"]))
+    # TT-543 onderdeel 3 (1E): Mijn Profiel heeft alleen het deelicoon; de naam krijgt de plek van het ⋯ erbij.
+    check("de naam is op 390px 264px breed naast de twee knoppen (een ander profiel), 300px naast alleen het deelicoon (Mijn Profiel), nooit afgekapt",
+          r[(390, "ander")]["naamBreed"] == 264 and r[(390, "mijn")]["naamBreed"] == 300 and not any(r[k]["afgekapt"] for k in r if isinstance(r[k], dict) and "afgekapt" in r[k]),
+          str([r[(390, "ander")]["naamBreed"], r[(390, "mijn")]["naamBreed"]]))
     check("een lange naam wordt kleiner en past (§2.1), en raakt de knoppen niet", not r[(390, "lang")]["afgekapt"] and r[(390, "lang")]["naamPx"] != "32px" and not r[(390, "lang")]["naamRaaktKnop"], json.dumps(r[(390, "lang")]))
     WIT, ANT = "rgb(255, 255, 255)", "rgb(82, 87, 95)"
     zelfde = lambda m: m["naamKleur"] == m["metaKleur"] == m["knopKleur"]
@@ -14783,11 +14813,12 @@ def blok_tt543_blok2():
             ctx.close()
         browser.close()
     httpd.shutdown()
-    MAAT = ["17px 22px 700 22"]
+    # TT-543 onderdeel 3 (besluiten Ronald 08-11-2026): de kop is 22px (regelhoogte 28px), ook in de stappen; de ruimte blijft 32 en 20px.
+    MAAT = ["22px 28px 700 28"]
     for breed in (390, 360):
         u = uit[breed]
         s1 = u["stap1"]
-        check(f"{breed}px stap 1: koppen \"Over jou\" (bovenaan) en \"Je inloggegevens\" (17px vet, 22px, één regel), 32px onder de bio, 20px tot het label, geen streep en geen zin (voorstel 18; B, besluit Ronald 07-11-2026)",
+        check(f"{breed}px stap 1: koppen \"Over jou\" (bovenaan) en \"Je inloggegevens\" (22px vet, 28px, één regel), 32px onder de bio, 20px tot het label, geen streep en geen zin (voorstel 18; B, besluit Ronald 07-11-2026)",
               s1["koppen"] == ["Over jou", "Je inloggegevens"] and s1["maat"] == MAAT and s1["erboven"] == [32] and [e[1] for e in s1["eronder"]] == [20, 20]
               and s1["eersteBoven"] == 0 and s1["lijnen"] == 0 and s1["zinOnderKop"] == "regAuthFieldGroup" and s1["zinnen"] == 0, json.dumps(s1))
         for naam, d, kn in (("stap 2", u["stap2"], ["Instrumenten *", "Genres *"]), ("tegel Wat speel je", u["tegel2"], ["Instrumenten *", "Genres *"]),
@@ -14797,7 +14828,7 @@ def blok_tt543_blok2():
             sub = next((e[1] for k, e in zip(kn, d["eronder"]) if k.startswith("Foto")), None)
             if kn[-1] == "De laatste stap" and d["eronder"][-1] != ["akkoord-regel", 20]:
                 sub = -1
-            check(f"{breed}px {naam}: koppen {kn}, 17px vet op één regel, op de linkerlijn van de velden; 32px tussen twee onderwerpen; 20px tot het veld" + ("; 4px tot de regel eronder" if sub is not None else ""),
+            check(f"{breed}px {naam}: koppen {kn}, 22px vet op één regel, op de linkerlijn van de velden; 32px tussen twee onderwerpen; 20px tot het veld" + ("; 4px tot de regel eronder" if sub is not None else ""),
                   d["koppen"] == kn and d["maat"] == MAAT and d["links"] == [d["veldLinks"]] and d["erboven"][-1] == 32
                   and d["eronder"][0][1] == 20 and (sub is None or sub == 4) and (kn[0] != "Instrumenten *" or d["eronder"][1][1] == 20) and d["lijnen"] == 0, json.dumps(d))
         check(f"{breed}px stap 2: de i van Niveau op de rechterrand van het veld", u["stap2"]["iRand"] == 0, str(u["stap2"]["iRand"]))
@@ -15840,6 +15871,224 @@ def blok_tt543_onderdeel2():
 
 
 # De volgorde van de volledige testset. Een nieuw blok komt hier bij.
+def blok_tt543_onderdeel3():
+    # TT-543 onderdeel 3, besluiten Ronald 08-11-2026 (besluitenlijst onderdeel 3):
+    # 1E "Profiel bewerken" als knop onder de bio, geen ⋯ op Mijn Profiel; F3 B
+    # "Stuur een bericht" (bezoeker: "Maak een profiel en leg contact") onder de
+    # bio, geen vaste balk; 3 instrumenten en genres als tekst, 12px gedempt, niet
+    # vet, alleen gevulde sterren van 11px (maten: besluiten Ronald sessie 98);
+    # 4A blokkop 22px vet (28px), 40px erboven, 12px tot de inhoud, geen lijn;
+    # 5 foto's, video's en links in één raster van drie, geen woord "Video";
+    # 6 kop "Repertoire" zonder aantal; F1 vaste regelhoogtes; F2 geen opmaak in
+    # de regel. De bandpagina blijft tot onderdeel 6 zoals hij was. TT-578: een
+    # banduitnodiging verdwijnt alleen als de database zegt dat hij weg is.
+    print("\nBlok 140 — TT-543 onderdeel 3: het profiel (Mijn Profiel en het profiel van een ander)")
+    app = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ["index.html"] + JS_FILES)
+    css = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+    check("1E: het ⋯-menu van Mijn Profiel is weg, ook zijn code (profileMoreBtn, toggleProfileMoreMenu, closeProfileMoreMenu)",
+          not any(t in app for t in ("profileMoreBtn", "profileMoreDropdown", "toggleProfileMoreMenu", "closeProfileMoreMenu")), "")
+    check("F3 B: de knop voor een open rol staat op het muzikantprofiel onder de bio; de oude regel voor de voet is weg",
+          "#profielSchermActie .rol-uitnodig-knop" in app and ".profiel-voet .rol-uitnodig-knop" not in css, "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten, uit = [], {}
+    LAAD = """(bezoeker) => {
+      const S = window.TT_STUB, M = S.data.musicians;
+      const extra = (mid) => ({
+        musician_instruments: [{ musician_id: mid, instrument: 'Elektrische gitaar', niveau: 4 }, { musician_id: mid, instrument: 'Zang', niveau: 2 }],
+        musician_genres: ['Rock', 'Indie', 'Blues'].map(genre => ({ musician_id: mid, genre })),
+        musician_songs: Array.from({ length: 9 }, (_, i) => ({ song_title: 'Nummer ' + i, song_artist: 'Artiest ' + i, mastery_level: 'podium' })),
+        musician_media: [
+          { media_type: 'foto', url: 'https://x.test/a.jpg', platform: null, in_banner: false, created_at: '2026-10-01T10:00:00Z', uitsnede: null },
+          { media_type: 'video', url: 'https://x.test/b.mp4', platform: null, in_banner: false, created_at: '2026-10-02T10:00:00Z', uitsnede: null },
+          { media_type: 'link', url: 'https://open.spotify.com/artist/x', platform: 'Spotify', in_banner: false, created_at: '2026-10-03T10:00:00Z', uitsnede: null }] });
+      const bio = 'Ik speel sinds mijn twaalfde gitaar. Ik zoek een drummer om mee te jammen.';
+      Object.assign(M[0], { weergavenaam: 'Ronald Wever', bio, avatar_url: null, accepts_band_invites: true }, extra('m1'));
+      Object.assign(M[1], { weergavenaam: 'Dylan de Vries', bio, avatar_url: null, city: 'Delft' }, extra('m2'));
+      S.rpcResults.tt_musicians_ages = (p) => (p.ids || []).map(id => ({ id, age: 19 }));
+      S.rpcResults.tt_musician_band_ids = () => [{ band_id: 'b1' }];
+      S.rpcResults.tt_get_bands_public = () => [{ id: 'b1', name: 'Van Delft', city: 'Delft', description: 'Vier vrienden.', avatar_url: null,
+        genres: ['Rock'], niveau: 3, wanted: [], soort: 'beide', pauze: false, contact_id: 'm1', instagram: null, tiktok: null, youtube: null,
+        media: [{ media_type: 'video', url: 'https://x.test/c.mp4', platform: null, in_banner: false }, { media_type: 'link', url: 'https://open.spotify.com/artist/y', platform: 'Spotify', in_banner: false }],
+        nummers: [], covers: [], invallers: [],
+        members: [{ id: 'm1', username: 'ronald', role: 'Oprichter', instruments: ['Elektrische gitaar'] }, { id: 'm2', username: 'dylan', role: 'Lid', instruments: ['Zang'] }] }];
+      const e = extra('m2');
+      S.rpcResults.tt_get_musicians_public = () => [{ id: 'm2', username: 'dylan', age: 19, city: 'Delft', bio, avatar_url: null,
+        instrument_levels: e.musician_instruments.map(x => ({ instrument: x.instrument, niveau: x.niveau })), genres: e.musician_genres.map(x => x.genre),
+        songs: e.musician_songs, media: e.musician_media }];
+      if (bezoeker) { hasOwnProfile = false; myMusicianId = null; } else { hasOwnProfile = true; myMusicianId = 'm1'; }
+    }"""
+    MEET = """() => {
+      const v = document.querySelector('.app-view.active'), r = e => e.getBoundingClientRect(), cs = e => getComputedStyle(e);
+      const q = s => v.querySelector(s), qa = s => [...v.querySelectorAll(s)];
+      const proef = document.createElement('span'); proef.style.color = 'var(--muted)'; v.appendChild(proef); const gedempt = cs(proef).color; proef.remove();
+      const bio = q('.profile-bio'), actie = q('.profiel-actie'), wat = q('.profiel-wat'), regels = qa('.profiel-wat-regel');
+      const u = { view: v.id };
+      u.wat = regels.map(e => [e.textContent.trim(), cs(e).fontSize, cs(e).lineHeight, cs(e).fontWeight, cs(e).color === gedempt]);
+      u.sterren = qa('.profiel-wat .star-display').map(e => [e.textContent, cs(e).fontSize]);
+      u.watAfstand = [regels.length > 1 ? Math.round(r(regels[1]).top - r(regels[0]).bottom) : null, wat && bio ? Math.round(r(bio).top - r(wat).bottom) : null];
+      u.actie = actie ? { volgt: actie.previousElementSibling === bio, afstand: Math.round(r(actie).top - r(bio).bottom), pos: cs(actie).position,
+        knoppen: [...actie.querySelectorAll('.btn')].map(b => [b.textContent.trim(), b.classList.contains('btn-ghost') ? 'omlijnd' : 'geel', Math.round(r(b).width) === Math.round(r(bio).width), Math.round(r(b).height)]) } : null;
+      const voet = document.getElementById('profielSchermVoet'); u.voet = voet ? [voet.innerHTML.trim(), cs(voet).display] : null;
+      u.menu = qa('.hoes .nav-menu-btn:not(.deel-knop)').length;
+      u.blokken = qa('.profile-media, .profile-songs').map(b => { const t = b.querySelector('.profile-media-title, .profile-songs-title'), vorige = b.previousElementSibling, inh = t.nextElementSibling;
+        return [t.textContent.trim(), cs(t).fontSize, cs(t).lineHeight, cs(t).fontWeight, cs(t).textTransform, cs(t).letterSpacing, cs(b).borderTopWidth,
+          vorige ? Math.round(r(b).top - r(vorige).bottom) : null, inh ? Math.round(r(inh).top - r(t).bottom) : null]; });
+      const raster = q('.media-raster-drie');
+      u.raster = raster ? { kolommen: cs(raster).gridTemplateColumns.split(' ').length, gelijk: new Set(cs(raster).gridTemplateColumns.split(' ')).size === 1, gap: cs(raster).gap,
+        tegels: raster.children.length, woordVideo: raster.querySelectorAll('.pb-label').length, speel: raster.querySelectorAll('.pb-speel').length,
+        link: [...raster.querySelectorAll('.media-tegel-link-naam')].map(e => [e.textContent, cs(e).fontSize, cs(e).fontWeight]) } : null;
+      u.normaal = qa('*').filter(e => e.offsetParent && !e.closest('.hoes-waas') && [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()) && cs(e).lineHeight === 'normal')
+        .map(e => (e.className || e.tagName) + ': ' + e.textContent.trim().slice(0, 20));
+      u.stijl = qa('.profiel-actie [style], .media-raster-drie [style], .profile-song-row span[style], .profile-meta[style], .profiel-wat [style]').map(e => e.className || e.tagName);
+      return u; }"""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breedte, thema in ((390, "dark"), (360, "light")):
+            for wie in ("mijn", "ander", "bezoeker", "band"):
+                ctx = browser.new_context(viewport={"width": breedte, "height": 844}, color_scheme=thema)
+                ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+                page = ctx.new_page()
+                page.on("pageerror", lambda e: fouten.append(str(e)))
+                bezoeker = wie in ("bezoeker", "band")
+                body = stub_js if bezoeker else stub_js + "\nwindow.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };\n"
+                page.route("**/supabase.js*", (lambda b: (lambda r: r.fulfill(status=200, content_type="application/javascript", body=b)))(body))
+                for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**"):
+                    page.route(pat, lambda r: r.abort())
+                page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+                page.wait_for_timeout(500)
+                page.evaluate(LAAD, bezoeker)
+                if wie == "mijn":
+                    # De echte route: een tik op Profiel in de onderbalk.
+                    page.locator("#appBottomNav [onclick*=\"myprofile\"]").first.click()
+                else:
+                    page.evaluate("async () => { await %s; }" % ("openBandScherm('b1')" if wie == "band" else "openProfielScherm('m2')"))
+                page.wait_for_timeout(1200)
+                page.evaluate("scrollTo(0, 0)")
+                u = page.evaluate(MEET)
+                if wie != "band":
+                    # TT-577 (muzikant): de knop ligt nergens onder de onderbalk; in beeld is hij zelf het bovenste element.
+                    knop = page.locator(".app-view.active .profiel-actie .btn").first
+                    knop.scroll_into_view_if_needed(); page.wait_for_timeout(200)
+                    u["bovenop"] = page.evaluate("""() => { const b = document.querySelector('.app-view.active .profiel-actie .btn'), r = b.getBoundingClientRect();
+                      const nav = document.getElementById('appBottomNav').getBoundingClientRect();
+                      return [b.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)), r.bottom <= nav.top]; }""")
+                if wie == "ander":
+                    # TT-421: mag je deze muzikant geen bericht sturen, dan verbergt messages.js de knop;
+                    # dan neemt de plek onder de bio ook geen ruimte in.
+                    u["verborgen"] = page.evaluate("""() => { const a = document.getElementById('profielSchermActie'), b = a.querySelector('[data-bericht-id]');
+                      b.style.display = 'none'; const uit = [getComputedStyle(a).display];
+                      a.insertAdjacentHTML('afterbegin', '<button class="btn btn-ghost rol-uitnodig-knop">Uitnodigen voor Van Delft</button>');
+                      uit.push(getComputedStyle(a).display); a.querySelector('.rol-uitnodig-knop').remove(); b.style.display = ''; return uit; }""")
+                if wie == "mijn":
+                    page.locator("#view-myprofile .profiel-actie .btn").click()
+                    page.wait_for_timeout(400)
+                    u["naTik"] = page.evaluate("document.querySelector('.app-view.active').id")
+                uit[(breedte, wie)] = u
+                ctx.close()
+        # TT-578: de banduitnodiging op Mijn Profiel.
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        body = stub_js + "\nwindow.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };\n"
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=body))
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(500)
+        page.evaluate(LAAD, False)
+        uit["578"] = page.evaluate("""async () => {
+          const S = window.TT_STUB, w = ms => new Promise(z => setTimeout(z, ms)), el = document.getElementById('bandInvitesBanner');
+          const tekst = () => el.innerText.replace(/\\s+/g, ' ').trim();
+          S.data.bands.push({ id: 'b30', name: 'Zoutwater', city: 'Leiden', founder_id: 'm2' });
+          S.data.band_members.push({ band_id: 'b30', musician_id: 'm1', role: 'Lid', status: 'aangevraagd' });
+          showView('myprofile'); await w(900);
+          const u = { eerst: tekst() };
+          // Een mislukte vraag: de melding blijft staan, de fout staat in de foutlog.
+          const log = (S.data.app_error_log || []).length;
+          S.errors['band_members'] = { code: '500', message: 'storing' };
+          await loadBandInvites('m1');
+          u.naFout = tekst(); u.gelogd = (S.data.app_error_log || []).length - log;
+          delete S.errors['band_members'];
+          // Een tabwissel en terug: de melding blijft.
+          showView('search'); await w(200); showView('myprofile'); await w(900);
+          u.naTab = tekst();
+          // Ingetrokken door de beheerder: de database zegt dat hij weg is, dan gaat hij weg.
+          S.data.band_members = S.data.band_members.filter(m => m.band_id !== 'b30');
+          await loadBandInvites('m1'); u.naIntrekken = tekst();
+          // Een ander account ziet de melding van het vorige nooit.
+          S.data.band_members.push({ band_id: 'b30', musician_id: 'm1', role: 'Lid', status: 'aangevraagd' });
+          await loadBandInvites('m1'); u.weer = tekst();
+          S.errors['band_members'] = { code: '500', message: 'storing' };
+          await loadBandInvites('m2'); u.anderAccount = tekst();
+          delete S.errors['band_members'];
+          // Kiezen: Weigeren maakt de melding weg.
+          await loadBandInvites('m1'); myMusicianId = 'm1';
+          el.querySelector('.btn-ghost').click(); await w(400);
+          u.naWeigeren = [tekst(), (S.data.band_members.find(m => m.band_id === 'b30') || {}).status];
+          // D7: de melding "Nog één stap" verdwijnt ook niet bij een mislukte vraag; een ander account ziet haar niet.
+          const eb = document.getElementById('emailBevestigBanner'), oudFrom = db.from.bind(db);
+          const antwoord = (data, error) => { db.from = t => t === 'musicians'
+            ? { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data, error }) }) }) } : oudFrom(t); };
+          try { sessionStorage.removeItem('tt-bevestig-melding-dicht'); } catch (e) {}
+          antwoord({ wacht_op_bevestiging: true }, null); await renderEmailBevestigBanner(); u.stapEerst = !!eb.querySelector('.melding');
+          const log2 = (S.data.app_error_log || []).length;
+          antwoord(null, { code: '500', message: 'storing' }); await renderEmailBevestigBanner();
+          u.stapNaFout = [!!eb.querySelector('.melding'), (S.data.app_error_log || []).length - log2];
+          const wasUser = currentUser; currentUser = { id: 'u9', email: 'ander@example.com' };
+          await renderEmailBevestigBanner(); u.stapAnder = eb.innerHTML.trim();
+          currentUser = wasUser; db.from = oudFrom; bevestigPeilStoppen();
+          return u; }""")
+        ctx.close()
+        browser.close()
+    httpd.shutdown()
+    for breedte in (390, 360):
+        for wie in ("mijn", "ander", "bezoeker"):
+            u = uit[(breedte, wie)]
+            n = f"{breedte}px {wie}"
+            check(f"{n} (3): instrumenten en genres als twee regels tekst, 12px (18px), niet vet, gedempt, gescheiden door ' · '",
+                  [x[0] for x in u["wat"]] == ["Elektrische gitaar ★★★★ · Zang ★★", "Rock · Indie · Blues"]
+                  and all(x[1:] == ["12px", "18px", "400", True] for x in u["wat"]), json.dumps(u["wat"], ensure_ascii=False))
+            check(f"{n} (3): alleen gevulde sterren, 11px; 4px tussen de regels, 20px tot de bio",
+                  u["sterren"] == [["★★★★", "11px"], ["★★", "11px"]] and u["watAfstand"] == [4, 20], json.dumps([u["sterren"], u["watAfstand"]], ensure_ascii=False))
+            knop = {"mijn": ["Profiel bewerken", "omlijnd"], "ander": ["Stuur een bericht", "geel"], "bezoeker": ["Maak een profiel en leg contact", "geel"]}[wie]
+            check(f"{n} (1E, F3 B): één knop '{knop[0]}' direct onder de bio, 20px, over de breedte van de bio, 44px, scrolt mee",
+                  u["actie"] and u["actie"]["volgt"] and u["actie"]["afstand"] == 20 and u["actie"]["pos"] == "static"
+                  and u["actie"]["knoppen"] == [knop + [True, 44]], json.dumps(u["actie"], ensure_ascii=False))
+            check(f"{n} (F3 B, TT-577): geen vaste balk onderaan; de knop ligt boven de onderbalk en vangt zelf de tik",
+                  (u["voet"] is None or u["voet"][0] == "") and u["bovenop"] == [True, True], json.dumps([u["voet"], u["bovenop"]]))
+            check(f"{n} (1E): ⋯ alleen op het profiel van een ingelogde ander",
+                  u["menu"] == (1 if wie == "ander" else 0), str(u["menu"]))
+            check(f"{n} (4A, 6): koppen Bands, Repertoire en Foto's, video's en links: 22px vet (28px), geen hoofdletters, geen lijn, 40px erboven, 12px tot de inhoud",
+                  [b[0] for b in u["blokken"]] == ["Bands", "Repertoire", "Foto's, video's en links"]
+                  and all(b[1:7] == ["22px", "28px", "700", "none", "normal", "0px"] and b[7] == 40 and b[8] == 12 for b in u["blokken"]), json.dumps(u["blokken"], ensure_ascii=False))
+            check(f"{n} (5): één raster van drie gelijke kolommen, 8px; foto, video en link; geen woord 'Video', wel het speelteken; linknaam 15px vet",
+                  u["raster"] and u["raster"]["kolommen"] == 3 and u["raster"]["gelijk"] and u["raster"]["gap"] == "8px" and u["raster"]["tegels"] == 3
+                  and u["raster"]["woordVideo"] == 0 and u["raster"]["speel"] == 1 and u["raster"]["link"] == [["Spotify", "15px", "700"]], json.dumps(u["raster"]))
+            check(f"{n} (F1): geen tekst met regelhoogte 'normal'", not u["normaal"], json.dumps(u["normaal"], ensure_ascii=False)[:300])
+            check(f"{n} (F2): geen opmaak in de regel in knop, raster, nummerrij, regel onder de naam en instrumenten", not u["stijl"], json.dumps(u["stijl"]))
+        check(f"{breedte}px ander (TT-421): is de berichtknop verborgen en staat er verder niets, dan neemt de plek geen ruimte; met een andere knop wel",
+              uit[(breedte, "ander")]["verborgen"] == ["none", "flex"], json.dumps(uit[(breedte, "ander")]["verborgen"]))
+        check(f"{breedte}px mijn (1E): een tik op Profiel bewerken opent Profiel bewerken", uit[(breedte, "mijn")]["naTik"] == "view-profieltegels", uit[(breedte, "mijn")]["naTik"])
+        b = uit[(breedte, "band")]
+        check(f"{breedte}px bandpagina blijft tot onderdeel 6: kleine koppen in hoofdletters met een lijn, de knop in de vaste balk",
+              b["blokken"] and all(x[1] == "12px" and x[4] == "uppercase" and x[6] == "1px" for x in b["blokken"])
+              and b["voet"] and b["voet"][0] != "" and b["actie"] is None and b["raster"] is None, json.dumps([b["blokken"], b["voet"]], ensure_ascii=False)[:400])
+    t = uit["578"]
+    # De bandnaam komt uit de koppeling met bands; die kent de stub niet ("Een band"). Live gemeten in test (TT-578).
+    check("TT-578: de uitnodiging staat op Mijn Profiel, met Weigeren en Bevestigen",
+          "wil je als lid" in t["eerst"] and t["eerst"].endswith("Weigeren Bevestigen"), t["eerst"])
+    check("TT-578: een mislukte vraag laat de uitnodiging staan, en schrijft de fout in de foutlog",
+          t["naFout"] == t["eerst"] and t["gelogd"] >= 1, json.dumps(t, ensure_ascii=False))
+    check("TT-578: een tabwissel laat de uitnodiging staan", t["naTab"] == t["eerst"], t["naTab"])
+    check("TT-578: ingetrokken door de beheerder (weg in de database): de melding gaat weg", t["naIntrekken"] == "", t["naIntrekken"])
+    check("TT-578: een ander account ziet de uitnodiging van het vorige nooit, ook niet bij een storing",
+          t["weer"] == t["eerst"] and t["anderAccount"] == "", json.dumps(t, ensure_ascii=False))
+    check("TT-578: Weigeren slaat de keuze op en haalt de melding weg", t["naWeigeren"] == ["", "geweigerd"], json.dumps(t["naWeigeren"]))
+    check("TT-578 D7: 'Nog één stap' blijft staan bij een mislukte vraag (de fout in de foutlog); een ander account ziet haar niet",
+          t["stapEerst"] and t["stapNaFout"][0] and t["stapNaFout"][1] >= 1 and t["stapAnder"] == "", json.dumps([t.get("stapEerst"), t.get("stapNaFout"), t.get("stapAnder")]))
+    check("geen paginafouten in blok 140", not [f for f in fouten if "musician_songs is not iterable" not in f], "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -15877,6 +16126,7 @@ BLOKKEN = [
     blok_tt543_blok4b,
     blok_tt543_blok5,
     blok_tt543_onderdeel2,
+    blok_tt543_onderdeel3,
 ]
 
 

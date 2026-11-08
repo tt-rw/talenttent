@@ -425,7 +425,9 @@ function closeInstrumentPicker() {
 // Alleen-lezen weergave, bijv. op een profiel of in een zoekresultaat.
 // Geen ster als niveau ontbreekt (oude/onvolledige data) — dan liever niets
 // tonen dan een verzonnen niveau suggereren.
-function starDisplayHTML(niveau) {
+// TT-543 onderdeel 3 (besluit Ronald 08-11-2026): op het muzikantprofiel
+// alleen de gevulde sterren (`alleenGevuld`); elders blijven de lege erbij.
+function starDisplayHTML(niveau, alleenGevuld) {
   const n = Number(niveau);
   if (!Number.isInteger(n) || n < 1 || n > 5) return '';
   // TT-51-fix (12-08-2026): gevulde en lege sterren in aparte spans met een
@@ -434,7 +436,7 @@ function starDisplayHTML(niveau) {
   // te onderscheiden, waardoor alle 5 sterren als "gevuld" oogden (gemeld
   // door Ronald: 3 sterren gekozen, na opslaan leken het er 5).
   const filled = `<span class="star-display-filled">${'★'.repeat(n)}</span>`;
-  const empty = n < 5 ? `<span class="star-display-empty">${'☆'.repeat(5 - n)}</span>` : '';
+  const empty = (n < 5 && !alleenGevuld) ? `<span class="star-display-empty">${'☆'.repeat(5 - n)}</span>` : '';
   return `<span class="star-display">${filled}${empty}</span>`;
 }
 

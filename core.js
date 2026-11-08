@@ -687,7 +687,6 @@ function menuLaagWeg() {
 }
 function sluitAlleMenus() {
   closeNavMenu();
-  closeProfileMoreMenu();
   closeAllBandMoreMenus();
   if (typeof sluitVeiligheidMenus === 'function') sluitVeiligheidMenus();
   if (typeof closeChoiceMenu === 'function') closeChoiceMenu();
@@ -729,26 +728,6 @@ function toggleNavMap(e) {
   if (e) e.stopPropagation();
   const knop = document.getElementById('navVoorwaarden');
   zetNavMap(knop?.getAttribute('aria-expanded') !== 'true');
-}
-
-// TT-119 (22-08-2026): het kleine menuknopje bij "Profiel bewerken"
-// (band-uitnodigingen aan/uit).
-function toggleProfileMoreMenu(e) {
-  if (e) e.stopPropagation();
-  const dd = document.getElementById('profileMoreDropdown');
-  const opening = !dd.classList.contains('visible');
-  sluitAlleMenus();
-  if (!opening) return;
-  dd.classList.add('visible');
-  document.getElementById('profileMoreBtn').classList.add('active');
-  menuLaagOpen(dd);
-}
-function closeProfileMoreMenu() {
-  const dd = document.getElementById('profileMoreDropdown');
-  if (!dd?.classList.contains('visible')) return;
-  dd.classList.remove('visible');
-  document.getElementById('profileMoreBtn')?.classList.remove('active');
-  menuLaagWeg();
 }
 
 // 22-08-2026 (Ronald): zelfde ⋯-menupatroon voor elke bandkaart in "Mijn

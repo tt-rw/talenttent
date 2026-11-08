@@ -2634,6 +2634,55 @@
     margin-bottom: 8px;
   }
 
+  /* TT-543 onderdeel 3 (besluiten Ronald 08-11-2026, besluitenlijst onderdeel
+     3): het muzikantprofiel, Mijn Profiel en het profiel van een ander.
+     Afgebakend met .muzikant-profiel (op #myProfileContent, en op
+     #profielSchermContent zolang daar een muzikant staat): de bandpagina
+     gebruikt dezelfde blokken en volgt in onderdeel 6; dan gaan deze maten
+     naar de standaard hierboven.
+     4A: een blokkop is 22px vet (regelhoogte 28px), 40px erboven, 12px tot de
+     inhoud, geen lijn. F1: elke tekst een vaste regelhoogte. */
+  .muzikant-profiel .profile-songs,
+  .muzikant-profiel .profile-media { margin-top: 40px; padding-top: 0; border-top: 0; }
+  .muzikant-profiel .profile-songs-title,
+  .muzikant-profiel .profile-media-title {
+    font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: 0;
+    text-transform: none; color: var(--text); margin-bottom: 12px;
+  }
+  .muzikant-profiel .hoes .profile-meta { margin-bottom: 0; line-height: 18px; }
+  .muzikant-profiel .profile-bio { line-height: 20px; }
+  .muzikant-profiel .profile-song-row { line-height: 18px; }
+  .muzikant-profiel .nummers-inklap-regel { line-height: 18px; }
+  .muzikant-profiel .bb-naam { line-height: 20px; }
+  .muzikant-profiel .bb-sub { line-height: 18px; }
+  .profile-song-titel { color: var(--muted); }
+  /* 3 (maat 12px en sterren 11px: besluiten Ronald sessie 98): instrumenten en
+     genres als tekst, elk een regel, gedempt, niet vet; 4px tussen de regels,
+     20px tot de bio. */
+  .profiel-wat { display: flow-root; margin-bottom: 20px; } /* flow-root: ook leeg houdt het blok zijn 20px, zoals de tags ervoor */
+  .profiel-wat-regel { font-size: 12px; line-height: 18px; color: var(--muted); overflow-wrap: anywhere; }
+  .profiel-wat-regel + .profiel-wat-regel { margin-top: 4px; }
+  /* 1E en F3 B: de knop onder de bio scrolt mee, 20px eronder. Meer knoppen
+     (uitnodigen voor een open rol, een blokkade) onder elkaar, 8px ertussen. */
+  .profiel-actie { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+  .profiel-actie:empty { display: none; }
+  /* Mag je deze muzikant geen bericht sturen (TT-421, messages.js verbergt de
+     knop), en staat er verder niets, dan neemt de plek ook geen 20px in. */
+  .profiel-actie:not(:has(> :not([data-bericht-id][style*="display: none"]))) { display: none; }
+  .profiel-actie .btn { margin: 0; }
+  /* 5: foto's, video's en links in één raster van drie, 8px tussen de tegels,
+     zoals Je mediahoek. Een link zonder beeld toont zijn naam, 15px vet. */
+  .media-raster-drie { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .media-tegel-beeld { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .media-tegel-video { background: var(--beeld-zwart); }
+  .media-tegel-link {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%; padding: 4px; background: var(--surface2); text-align: center;
+  }
+  .media-tegel-link-naam { font-size: 15px; line-height: 20px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+  /* 2A (voorlopig): de meter blijft onderaan Mijn Profiel; F1 voor zijn label. */
+  .my-profile-wrap .completeness-label { line-height: 18px; }
+
   /* TT-06: de regel "Je hebt ... geblokkeerd." boven de knop Blokkade
      opheffen. Heette tot 25-09-2026 .profile-fresh, naar de regel "Deze week
      bijgewerkt" die toen van het profiel verdween. */
@@ -4240,9 +4289,10 @@
 
   /* TT-410b (06-10-2026): het profiel van een muzikant is een scherm met
      dezelfde opbouw en marges als Mijn Profiel (.my-profile-wrap). De knop
-     onderaan (bericht sturen, uitnodigen) staat vast boven de onderbalk en
-     loopt over de volle breedte; de marge van de pagina trekt hij weer
-     recht met --profiel-marge. */
+     onderaan staat vast boven de onderbalk en loopt over de volle breedte; de
+     marge van de pagina trekt hij weer recht met --profiel-marge. Sinds TT-543
+     onderdeel 3 alleen nog op de bandpagina (tot onderdeel 6); een muzikant
+     heeft de knop onder de bio (.profiel-actie). */
   /* TT-558: 16px op elke breedte, zoals de marge van het scherm zelf. Hier
      stond 24px boven 560px venster: de knop onderaan stak daar 8px buiten
      de app uit, aan beide kanten. */
@@ -4260,7 +4310,6 @@
     border-top: 1px solid var(--border);
   }
   .profiel-voet:empty { display: none; }
-  .profiel-voet .rol-uitnodig-knop { margin-bottom: 0; } /* de ruimte komt van de gap */
 
   /* TT-119 (22-08-2026): klein menuknopje voor de minder-frequente
      profielacties. Zelfde opbouw als .nav-menu-btn/.nav-menu-dropdown,
@@ -4872,18 +4921,20 @@
      beide is een maat uit de huisstijl (§2: 12px; §3: 4px-schaal). */
   .field-status { font-size: var(--fs-sm); line-height: 16px; color: var(--muted); margin-top: 4px; min-height: 16px; }
   /* TT-543 hoofdstukindeling A (besluit Ronald 06-11-2026, op beeld): een
-     scherm met meer dan één onderwerp krijgt per onderwerp een kop van 17px
-     vet, 32px ruimte erboven, geen streep. Op de linkerlijn van de velden,
+     scherm met meer dan één onderwerp krijgt per onderwerp een kop (sinds
+     08-11-2026 22px, zie hieronder) vet, 32px ruimte erboven, geen streep. Op de linkerlijn van de velden,
      zonder de inspringing van een label (zoals .voorkeur-kop). 20px tot de
      inhoud, zoals op het beeld van het besluit. De eerste kop van een scherm
      staat waar het eerste label stond. Een kop met iets rechts (Niveau met de
      i) staat in .hoofdstuk-kop-rij; die rij draagt dan de marges. Boven de kop
      staat een .field-group (20px eronder): de marges vallen samen tot 32px. */
-  .hoofdstuk-kop { margin: 32px 0 20px; padding: 0; font-size: 17px; line-height: 22px; font-weight: 700; color: var(--text); }
-  /* De rij is zo hoog als de kop (22px); de i (24px) staat er gecentreerd op
-     en steekt 1px boven en onder uit. Zo staat het veld 20px onder de kop,
-     net als bij een kop zonder rij (gemeten: anders 21px). */
-  .hoofdstuk-kop-rij { margin: 32px 0 20px; height: 22px; }
+  /* TT-543 onderdeel 3 (besluiten Ronald 08-11-2026): de kop is 22px
+     (regelhoogte 28px), in Profiel bewerken én Profiel aanmaken; de ruimte
+     blijft 32px erboven en 20px tot de inhoud. Was 17px (22px). */
+  .hoofdstuk-kop { margin: 32px 0 20px; padding: 0; font-size: 22px; line-height: 28px; font-weight: 700; color: var(--text); }
+  /* De rij is zo hoog als de kop (28px); de i (24px) staat er gecentreerd op.
+     Zo staat het veld 20px onder de kop, net als bij een kop zonder rij. */
+  .hoofdstuk-kop-rij { margin: 32px 0 20px; height: 28px; }
   .hoofdstuk-kop-rij > .hoofdstuk-kop { margin: 0; }
   .scherm-titel + .hoofdstuk-kop,
   .scherm-titel + .hoofdstuk-kop-rij { margin-top: 0; }

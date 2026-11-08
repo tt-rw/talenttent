@@ -28,37 +28,46 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     const knop = isOwn ? '' : overneemKnopHTML(s.song_title, s.song_artist);
     return `
     <div class="profile-song-row">
-      <span><strong>${escHtml(s.song_artist)}</strong> — <span style="color:var(--muted)">${escHtml(s.song_title)}</span></span>
+      <span><strong>${escHtml(s.song_artist)}</strong> — <span class="profile-song-titel">${escHtml(s.song_title)}</span></span>
       ${lvl || knop ? `<span class="nummer-rechts">${lvl ? `<span class="level-pill">${escHtml(LEVEL_LABELS[lvl])}</span>` : ''}${knop}</span>` : ''}
     </div>`;
   });
 
-  // 22-08-2026 (Ronald): het onderste actieblok (Profiel bewerken + het
-  // ⋯-menu, TT-119) is weg. Alle drie de acties — wijzigen, band-
-  // uitnodigingen aan/uit, account verwijderen — staan nu in één klein
-  // menu bij de naam (sinds TT-384 rechts naast de profielfoto). Alleen op de eigen profielpagina (isOwn, niet in
-  // de modal) — bij het bekijken van een ander profiel, of het eigen
-  // profiel via de modal, hoort dit menu niet thuis.
-  const showOwnerMenu = isOwn && !inModal;
-  // TT-318 (24-09-2026, besluit Ronald): in het venster van iemand anders
-  // staat het ⋯-menu voor melden en blokkeren op dezelfde plek als het
-  // eigen menu op Mijn Profiel. Tot nu toe stond het in de koprij, links van
-  // het kruisje (TT-06). Sinds TT-384 staat het rechts naast de profielfoto,
-  // rechts van het deelicoon (profielKnoppenHTML()). Alleen de plek komt hier; de
-  // inhoud zet laadProfielScherm() erin met zetVeiligheidMenu(), zodra het
-  // profiel geladen is. Op je eigen profiel komt er geen plek: je meldt of
-  // blokkeert jezelf niet.
+  // TT-318 (24-09-2026, besluit Ronald): in het profielscherm van iemand
+  // anders staat het ⋯-menu voor melden en blokkeren rechts van het
+  // deelicoon (profielKnoppenHTML()). Alleen de plek komt hier; de inhoud zet
+  // laadProfielScherm() erin met zetVeiligheidMenu(), zodra het profiel
+  // geladen is. Op je eigen profiel komt er geen plek: je meldt of blokkeert
+  // jezelf niet.
+  // TT-543 onderdeel 3 (besluit Ronald 08-11-2026, 1E): het ⋯-menu op Mijn
+  // Profiel (één regel, "Profiel bewerken") is weg; het deelicoon staat op de
+  // plek van het menu. "Profiel bewerken" is een knop onder de bio.
   const veiligheidPlekHTML = (inModal && !isOwn)
     ? '<span id="profielSchermActies" class="profiel-menu-plek"></span>' : '';
-  const ownerMenuHTML = showOwnerMenu ? `
-    <div class="profile-actions-menu-wrap" style="flex-shrink:0;">
-      <button class="nav-menu-btn" id="profileMoreBtn" onclick="toggleProfileMoreMenu(event)" aria-label="Meer opties voor je profiel" title="Meer">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
-      </button>
-      <div class="inline-menu-dropdown" id="profileMoreDropdown">
-        <button class="nav-menu-item" onclick="closeProfileMoreMenu();editMyProfile()">Profiel bewerken</button>
-      </div>
-    </div>` : '';
+  // TT-543 onderdeel 3 (besluiten Ronald 08-11-2026, 1E en F3 B): één knop
+  // onder de bio, die meescrolt. Mijn Profiel: "Profiel bewerken" (omlijnd).
+  // Het profiel van een ander: de plek voor "Stuur een bericht" (of "Maak een
+  // profiel en leg contact"); laadProfielScherm() vult hem. Je eigen profiel
+  // in het profielscherm krijgt geen knop, zoals voorheen.
+  const actieHTML = (isOwn && !inModal)
+    ? '<div class="profiel-actie"><button class="btn btn-ghost" onclick="editMyProfile()">Profiel bewerken</button></div>'
+    : (inModal && !isOwn) ? '<div class="profiel-actie" id="profielSchermActie"></div>' : '';
+
+  // TT-543 onderdeel 3 (besluit Ronald 08-11-2026, 3; maat 12px en sterren
+  // 11px, besluit Ronald sessie 98): instrumenten en genres als tekst, elk op
+  // een eigen regel, gescheiden door " · ", niet vet, gedempt. Alleen de
+  // gevulde sterren. Vervangt de tags (.tag-solid) op het muzikantprofiel.
+  const instrumentenRegel = m.musician_instruments.map(x => {
+    const sterren = starDisplayHTML(x.niveau, true);
+    return escHtml(x.instrument) + (sterren ? ' ' + sterren : '');
+  }).join(' · ');
+  const genresRegel = m.musician_genres.map(x => escHtml(x.genre)).join(' · ');
+  // Het blok staat er altijd, ook leeg: dan houdt het de 20px onder de hoes.
+  const watHTML = `
+    <div class="profiel-wat">
+      ${instrumentenRegel ? `<div class="profiel-wat-regel">${instrumentenRegel}</div>` : ''}
+      ${genresRegel ? `<div class="profiel-wat-regel">${genresRegel}</div>` : ''}
+    </div>`;
 
   // TT-517 fase 4 (01-11-2026): de kop is de hoes (huisstijl §21). Foto,
   // banner, naam, de regel eronder, delen en ⋯ staan erin. Vervangt de ronde
@@ -72,22 +81,20 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       kaart: { id: m.id, naam: displayName, regel: `${age} jaar · ${m.city || ''}`,
                wat: m.musician_instruments.map(x => x.instrument), onder: m.musician_genres.map(x => x.genre) },
       // TT-420 (09-10-2026, Ronald): geen tweede naam op het profiel. Er staat één naam: de gekozen.
-      regels: `<div class="profile-meta" style="margin-bottom:0;">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>`,
-      knoppen: profielKnoppenHTML('profiel', m.id, displayName, ownerMenuHTML + veiligheidPlekHTML, null, isOwn || m.delen_aan !== false)
+      regels: `<div class="profile-meta">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>`,
+      knoppen: profielKnoppenHTML('profiel', m.id, displayName, veiligheidPlekHTML, null, isOwn || m.delen_aan !== false)
     })}
-    <div class="profile-badges">
-      ${m.musician_instruments.map(x => `<span class="tag-solid">${escHtml(x.instrument)}${starDisplayHTML(x.niveau) ? ' ' + starDisplayHTML(x.niveau) : ''}</span>`).join('')}
-      ${m.musician_genres.map(x => `<span class="tag-solid">${escHtml(x.genre)}</span>`).join('')}
-    </div>
+    ${watHTML}
     ${m.beschikbaar === false ? nietBeschikbaarMeldingHTML() : ''}
     ${m.bio ? `<p class="profile-bio">${tekstMetMeerHTML(m.bio)}</p>` : ''}
+    ${actieHTML}
     ${profielBandsHTML(m.bands)}
     ${m.musician_songs.length ? `
       <div class="profile-songs">
-        <div class="profile-songs-title">Repertoire (${m.musician_songs.length} ${m.musician_songs.length === 1 ? 'nummer' : 'nummers'})</div>
+        <div class="profile-songs-title">Repertoire</div>
         ${nummerLijstHTML(songRows)}
       </div>` : ''}
-    ${profielMediaHTML(m.musician_media, m.avatar_url)}`;
+    ${profielMediaHTML(m.musician_media, m.avatar_url, true)}`;
 }
 
 // TT-517 fase 6 (huisstijl §21, besluit Ronald 31-10-2026): de knop "Voeg een
@@ -109,7 +116,12 @@ async function voegFotoToe(bandId) {
 // wél te staan. TT-517 fase 7: alle afgeschermde media samen in één wazig vlak
 // (mediaAfgeschermdHTML() in utils.js); `fotoWazig` is de profiel- of bandfoto.
 // TT-02: ook geüploade foto's en video's, niet alleen links.
-function profielMediaHTML(mediaLijst, fotoWazig) {
+// TT-543 onderdeel 3 (besluit Ronald 08-11-2026, 5): op het muzikantprofiel
+// (`muzikant` waar) foto's, video's en links in één blok "Foto's, video's en
+// links", één raster van drie, zoals Je mediahoek; geen woord "Video" op een
+// videotegel (het speelteken blijft). De bandpagina houdt tot onderdeel 6 de
+// vorm hieronder (twee blokken).
+function profielMediaHTML(mediaLijst, fotoWazig, muzikant) {
   const lijst = (mediaLijst || [])
     .map(x => ({ ...x, safeHref: safeUrl(x.url) }))
     .filter(x => x.safeHref || x.afgeschermd);
@@ -117,13 +129,36 @@ function profielMediaHTML(mediaLijst, fotoWazig) {
   if (lijst.some(x => x.afgeschermd)) {
     return `
     <div class="profile-media">
-      <div class="profile-media-title">Foto's en video's</div>
+      <div class="profile-media-title">${muzikant ? "Foto's, video's en links" : "Foto's en video's"}</div>
       ${mediaAfgeschermdHTML(lijst, fotoWazig)}
     </div>`;
   }
   const links = lijst.filter(x => x.media_type === 'link');
   const photos = lijst.filter(x => x.media_type === 'foto');
   const videos = lijst.filter(x => x.media_type === 'video');
+  const fotoTegel = p => `<button type="button" class="profile-media-tegel" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')"><img ${kleinFotoAttr(p.safeHref)} alt="Foto" class="media-tegel-beeld"></button>`;
+  const videoTegel = (v, metWoord) => `<button type="button" class="profile-media-tegel" onclick="openMediaSpeler('${jsAttr(v.safeHref)}', 'video')"><video ${fotoBronAttr(v.safeHref + '#t=0.1')} muted playsinline preload="metadata" tabindex="-1" aria-hidden="true" class="media-tegel-beeld media-tegel-video"></video>${metWoord ? '<span class="pb-label">Video</span>' : ''}${SPEELTEKEN_HTML}</button>`;
+  const linkTegel = l => {
+    const ytId = extractYouTubeId(l.safeHref);
+    const label = l.platform || 'Link';
+    const inner = ytId
+      ? `<img src="https://img.youtube.com/vi/${jsAttr(ytId)}/hqdefault.jpg" alt="${escHtml(label)}" class="media-tegel-beeld">` + SPEELTEKEN_HTML
+      : `<span class="media-tegel-link"><span class="media-tegel-link-naam">${escHtml(label)}</span></span>`;
+    // TT-218: een link opent onder alle omstandigheden, ook uitgelogd.
+    // TT-263: in het mediascherm; kan een platform daar niet spelen, dan
+    // biedt dat scherm zelf de knop naar het platform aan.
+    return `<button type="button" onclick="openMediaSpeler('${jsAttr(l.safeHref)}', 'link', null, '${jsAttr(label)}')" class="profile-media-tegel">${inner}</button>`;
+  };
+  if (muzikant) {
+    if (!lijst.length) return '';
+    return `
+      <div class="profile-media">
+        <div class="profile-media-title">Foto's, video's en links</div>
+        <div class="media-raster-drie">
+          ${photos.map(fotoTegel).join('')}${videos.map(v => videoTegel(v, false)).join('')}${links.map(linkTegel).join('')}
+        </div>
+      </div>`;
+  }
   return `
     <!-- TT-265 (15-09-2026, Ronald): "foto's en geüploade video's staan naast
          elkaar, de links staan eronder." Eén raster in plaats van twee
@@ -331,14 +366,15 @@ function musicianContactFooterHTML(m, isOwn, displayName) {
   // daarvan de enige zinnige volgende stap: de blokkade opheffen. De
   // omgekeerde richting (hij blokkeert jou) laat dit scherm bewust
   // ongewijzigd: die blokkade is stil, zie veiligheid.js.
+  // TT-543 onderdeel 3 (F2): geen opmaak in de regel; .profiel-actie zet de
+  // knoppen onder elkaar, over de volle breedte, 8px ertussen.
   if (blokkeerIkZelf(m.id)) {
-    return `<div style="display:flex;flex-direction:column;gap:8px;">
-      <div class="blokkade-regel">Je hebt ${escHtml(displayName)} geblokkeerd.</div>
-      <button class="btn btn-ghost" style="width:100%;" onclick="deblokkeerMuzikant('${jsAttr(m.id)}','${jsAttr(displayName)}')">Blokkade opheffen</button></div>`;
+    return `<div class="blokkade-regel">Je hebt ${escHtml(displayName)} geblokkeerd.</div>
+      <button class="btn btn-ghost" onclick="deblokkeerMuzikant('${jsAttr(m.id)}','${jsAttr(displayName)}')">Blokkade opheffen</button>`;
   }
   const contactBtn = hasOwnProfile
-    ? `<button class="btn btn-primary" style="width:100%;" data-bericht-id="${escHtml(m.id)}" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht</button>`
-    : `<button class="btn btn-primary" style="width:100%;" onclick="showView('register')">Maak een profiel en leg contact</button>`;
+    ? `<button class="btn btn-primary" data-bericht-id="${escHtml(m.id)}" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht</button>`
+    : `<button class="btn btn-primary" onclick="showView('register')">Maak een profiel en leg contact</button>`;
   return contactBtn;
 }
 
@@ -400,6 +436,9 @@ async function laadProfielScherm(id, linkToegang) {
   huidigBandId = null;
   const content = document.getElementById('profielSchermContent');
   const footer = document.getElementById('profielSchermVoet');
+  // TT-543 onderdeel 3: .muzikant-profiel bakent de maten van het
+  // muzikantprofiel af; de bandpagina (zelfde vak) volgt in onderdeel 6.
+  content.classList.add('muzikant-profiel');
   footer.innerHTML = '';
   content.innerHTML =
     '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
@@ -499,8 +538,11 @@ async function laadProfielScherm(id, linkToegang) {
   // — een element dat er nog niet is, heeft geen breedte om tegen te meten.
   fitProfileName(content);
   // V-09: zelfde displayName-logica als binnen buildMusicianDetailHTML().
+  // TT-543 onderdeel 3 (F3 B): de knop staat onder de bio, niet meer in de
+  // vaste balk onderaan (die blijft voor de bandpagina, tot onderdeel 6).
   const displayName = displayNameOf(m);
-  footer.innerHTML = musicianContactFooterHTML(m, isOwn, displayName);
+  const actie = document.getElementById('profielSchermActie');
+  if (actie) actie.innerHTML = musicianContactFooterHTML(m, isOwn, displayName);
   // TT-385: uit een zoekopdracht voor een open rol nodig je meteen uit.
   rolUitnodigKnopPlaatsen(isOwn ? null : m.id);
   // TT-06: melden en blokkeren, onder de naam (TT-380). Op je eigen profiel

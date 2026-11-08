@@ -229,6 +229,10 @@ function voortgangsBalkHTML(pct, id) {
 async function loadMyProfile(opties) {
   if (!currentUser) return;
   renderEmailBevestigBanner(); // TT-336
+  // TT-578 D7: een uitnodiging van een vorig account blijft nooit staan, ook
+  // niet als dit account (nog) geen profiel heeft.
+  const uitnodigingen = document.getElementById('bandInvitesBanner');
+  if (uitnodigingen && uitnodigingen.dataset.mid !== String(myMusicianId)) { uitnodigingen.innerHTML = ''; delete uitnodigingen.dataset.mid; }
   const el = document.getElementById('myProfileContent');
   // Tabwissel: staat er al een geladen profiel van deze gebruiker, laat dat staan tot de nieuwe er is.
   if (!(opties && opties.behoud && el.dataset.klaar === currentUser.id)) {
@@ -488,8 +492,16 @@ async function renderEmailBevestigBanner() {
   if (el.dataset.bevestigd === '1') return;
   const { data, error } = await db.from('musicians')
     .select('wacht_op_bevestiging').eq('user_id', currentUser.id).maybeSingle();
-  if (error) logCaught('renderEmailBevestigBanner', error);
-  if (error || !data?.wacht_op_bevestiging) { el.innerHTML = ''; bevestigPeilStoppen(); return; }
+  // TT-578 D7: een mislukte vraag laat de melding staan zoals ze stond; alleen
+  // de database zegt of het e-mailadres nog wacht op bevestiging.
+  // Van een ander account blijft niets staan (dataset.uid).
+  if (error) {
+    logCaught('renderEmailBevestigBanner', error);
+    if (el.dataset.uid !== currentUser.id) { el.innerHTML = ''; bevestigPeilStoppen(); }
+    return;
+  }
+  el.dataset.uid = currentUser.id;
+  if (!data?.wacht_op_bevestiging) { el.innerHTML = ''; bevestigPeilStoppen(); return; }
   // Dicht tot de app opnieuw opent: het profiel blijft offline tot de klik,
   // dus de melding komt de volgende keer terug (sessionStorage, geen opslag
   // = altijd tonen).
