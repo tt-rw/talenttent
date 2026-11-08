@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261107e">
+<link rel="stylesheet" href="styles.css?v=20261108a">
 </head>
 <body>
 
@@ -551,13 +551,14 @@
     <div class="field">
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
-          <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarInput').click()"></div>
+          <div class="avatar-preview" id="avatarPreview" onclick="avatarTik()"></div>
           <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="avatarRemoveBtn" onclick="askRemoveAvatar()" aria-label="Profielfoto verwijderen">✕</button>
         </div>
-        <!-- TT-543 blok 4 (voorstel 26, besluit Ronald 07-11-2026): ook de tekst kiest een foto. -->
-        <div class="avatar-info" onclick="document.getElementById('avatarInput').click()">
+        <!-- TT-543 blok 4b (besluiten Ronald 08-11-2026): de tekst doet niets; met foto de uitlegregel. -->
+        <div class="avatar-info">
           <strong><span class="kop-zonder-foto">Upload een foto van jezelf</span><span class="kop-met-foto">Je profielfoto</span></strong>
+          <p class="kop-met-foto">Tik op je foto om hem te verschuiven.</p>
         </div>
       </div>
       <input type="file" accept="image/*" class="avatar-upload-input" id="avatarInput" autocomplete="off" onchange="handleAvatarUpload(this.files[0]); this.value=''">
@@ -898,13 +899,14 @@
     <div class="field">
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
-          <div class="avatar-preview" id="mhAvatarPreview" onclick="document.getElementById('mhAvatarInput').click()"></div>
+          <div class="avatar-preview" id="mhAvatarPreview" onclick="mhAvatarTik()"></div>
           <div class="avatar-edit-btn" onclick="document.getElementById('mhAvatarInput').click()">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhAskRemoveAvatar()" aria-label="Profielfoto verwijderen">✕</button>
         </div>
-        <!-- TT-543 blok 4 (voorstel 26): ook de tekst kiest een foto. -->
-        <div class="avatar-info" onclick="document.getElementById('mhAvatarInput').click()">
+        <!-- TT-543 blok 4b (besluiten Ronald 08-11-2026): de tekst doet niets; met foto de uitlegregel. -->
+        <div class="avatar-info">
           <strong><span class="kop-zonder-foto">Upload een foto van jezelf</span><span class="kop-met-foto">Je profielfoto</span></strong>
+          <p class="kop-met-foto">Tik op je foto om hem te verschuiven.</p>
         </div>
       </div>
       <input type="file" accept="image/*" class="avatar-upload-input" id="mhAvatarInput" autocomplete="off" onchange="mhHandleAvatarUpload(this.files[0]); this.value=''">
@@ -1128,12 +1130,13 @@
       <label>Bandfoto</label>
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
-          <div class="avatar-preview avatar-preview-vierkant" id="bmFotoPreview" onclick="document.getElementById('bmFotoInput').click()"></div>
+          <div class="avatar-preview avatar-preview-vierkant" id="bmFotoPreview" onclick="bmFotoTik()"></div>
           <div class="avatar-edit-btn" onclick="document.getElementById('bmFotoInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="bmFotoRemoveBtn" onclick="bmVraagFotoWeg()" aria-label="Bandfoto verwijderen">✕</button>
         </div>
         <div class="avatar-info">
           <strong><span class="kop-zonder-foto">Upload een foto van de band</span><span class="kop-met-foto">Jullie bandfoto</span></strong>
+          <p class="kop-met-foto">Tik op de foto om hem te verschuiven.</p><!-- TT-543 blok 4b -->
           <p>JPG of PNG, maximaal 5 MB.</p>
         </div>
       </div>
@@ -1433,7 +1436,7 @@
       </div>
 
       <!-- Filters: Plaats + Straal, en Instrument (TT-139: hooguit één
-           instrument, Zang en Songwriting erbij). Instrument toont de keuze in
+           instrument, Zang, Achtergrondzang en Songwriting erbij). Instrument toont de keuze in
            het veld, zoals bij Muzikanten. -->
       <div class="zoek-filter-vak" id="mmFilterVak" hidden>
         <div class="field">
@@ -2397,18 +2400,18 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20261107b"></script>
-<script src="utils.js?v=20261107c"></script>
+<script src="utils.js?v=20261108b"></script>
 <script src="veiligheid.js?v=20261106b"></script>
 <script src="auth.js?v=20261106d"></script>
 <script src="postcode.js?v=20261107a"></script>
-<script src="wizard.js?v=20261107d"></script>
+<script src="wizard.js?v=20261108a"></script>
 <script src="ouder.js?v=20261106a"></script>
-<script src="search.js?v=20261107a"></script>
-<script src="musicians.js?v=20261107d"></script>
-<script src="bands.js?v=20261106b"></script>
+<script src="search.js?v=20261108a"></script>
+<script src="musicians.js?v=20261108a"></script>
+<script src="bands.js?v=20261108a"></script>
 <script src="messages.js?v=20261106b"></script>
 <script src="push.js?v=20261027b"></script>
-<script src="modals-shared.js?v=20261107c"></script>
+<script src="modals-shared.js?v=20261108a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding

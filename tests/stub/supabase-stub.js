@@ -386,7 +386,16 @@
       storage: {
         from(bucket) {
           return {
-            upload() { return Promise.resolve({ data: { path: 'test.jpg' }, error: null }); },
+            // TT-543 blok 4b: elke upload in TT_STUB.uploads; download geeft het
+            // bestand uit TT_STUB.bestanden ('map/pad' -> Blob), anders een fout.
+            upload(pad) {
+              (TT_STUB.uploads = TT_STUB.uploads || []).push(bucket + '/' + pad);
+              return Promise.resolve({ data: { path: 'test.jpg' }, error: null });
+            },
+            download(pad) {
+              const b = (TT_STUB.bestanden || {})[bucket + '/' + pad];
+              return Promise.resolve(b ? { data: b, error: null } : { data: null, error: { message: 'Object not found' } });
+            },
             remove() { return Promise.resolve({ data: [], error: null }); },
             getPublicUrl(p) { return { data: { publicUrl: 'https://example.invalid/' + p } }; },
             // TT-480: tijdelijke links. Een pad in TT_STUB.signMis bestaat niet

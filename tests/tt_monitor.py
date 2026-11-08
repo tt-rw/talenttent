@@ -46,6 +46,8 @@ VERWACHTE_VIEWS = [
 PROJECTDOCUMENTEN = [
     "huisstijl-en-consistentie", "app-first-toetslijst",
     "testprotocol-regressiepreventie", "zoekfunctienaslagwerk", "actielijst",
+    # De stand staat sinds 08-11-2026 in open.md, afgesloten.md en tickets/.
+    "open.md", "afgesloten.md", "tickets",
 ]
 
 # Typografische tekens die de huisstijl uitdrukkelijk toestaat (§11).
@@ -535,6 +537,16 @@ def blok_e():
             rood.append(naam)
     toets("E", "bewaking: een gewijzigde beveiliging of een tabel zonder RLS geeft rood",
           not rood, "E7", "blijft groen bij: %s" % ", ".join(rood))
+
+    # E8 - TT-576 (08-11-2026): een instrument of genre zonder plek in de zoekvolgorde geeft rood
+    def zonder_plek(url, headers=None, data=None):
+        if "tt_bewaking" in url:
+            return 200, json.dumps(dict(goed, zonder_plek=1))
+        return alles_goed(url, headers, data)
+    code, uit = draai(zonder_plek, lambda: 365)
+    toets("E", "bewaking: een instrument of genre zonder plek in de zoekvolgorde geeft rood",
+          code == 1 and any(r.startswith("  MIS ") and "zonder_plek" in r for r in uit.splitlines()),
+          "E8", "een instrument zonder plek blijft groen")
 
 
 # ============================================================ afdruk

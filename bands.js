@@ -2170,6 +2170,7 @@ let bmMediaFiles = [];   // { id, url, path, type, uploading, inBanner, name }
 let bmMediaLinks = [];   // { id, url, inBanner }
 let bmSnapshot = null;
 let bmFotoUrl = null;    // de bandfoto (bands.avatar_url)
+let bmFotoBron = null, bmFotoKader = null; // TT-543 blok 4b: de hele foto en de plek
 let bmFotoBezig = false;
 let bmOrigineel = [];    // [id, url, in_banner, uitsnede] zoals in de database
 
@@ -2187,7 +2188,7 @@ async function openBandMedia() {
   const scherm = document.getElementById('bandMediaScreen');
   scherm.querySelectorAll('.media-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
   scherm.querySelectorAll('.media-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
-  const b = await bandBewerkGegevens('name, city, avatar_url, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at, uitsnede)');
+  const b = await bandBewerkGegevens('name, city, avatar_url, avatar_bron, avatar_kader, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at, uitsnede)');
   if (!b) return;
   bmZet(b);
   bmSnapshot = bmFieldSnapshot();
@@ -2203,6 +2204,8 @@ function bmZet(b) {
   document.getElementById('bmTiktok').value = b.tiktok || '';
   document.getElementById('bmYoutube').value = b.youtube || '';
   bmFotoUrl = b.avatar_url || null;
+  bmFotoBron = b.avatar_bron || null;
+  bmFotoKader = b.avatar_kader || null;
   bmFotoBezig = false;
   bmRenderFoto();
   bmRenderMediaGrid();
@@ -2222,8 +2225,21 @@ async function bmFotoKiezen(file) {
   if (typeProblem) { showToast(typeProblem); return; }
   { const groot = bestandTeGrootMelding(file, 5 * 1024 * 1024); if (groot) { showToast(groot); return; } }
   const id = bewerkBandId;
-  file = await kiesUitsnede(file, 'vierkant'); // TT-520 deel 2: eerst de uitsnede
-  if (!file || id !== bewerkBandId) return;
+  const uit = await kiesUitsnede(file, 'vierkant'); // TT-520 deel 2: eerst de uitsnede
+  if (uit && id === bewerkBandId) bmFotoZetten({ file: uit, kader: uit.kader, bron: file });
+}
+
+// TT-543 blok 4b: een tik op de bandfoto verschuift hem; zonder foto kies je er een.
+async function bmFotoTik() {
+  if (!bmFotoUrl) { document.getElementById('bmFotoInput').click(); return; }
+  const id = bewerkBandId;
+  const uit = await fotoVerschuiven({ url: bmFotoUrl, bron: bmFotoBron, kader: bmFotoKader }, 'vierkant');
+  if (uit && id === bewerkBandId) bmFotoZetten(uit);
+}
+
+// Toont de nieuwe uitsnede meteen en uploadt hem, met de hele foto erbij.
+function bmFotoZetten(uit) {
+  const id = bewerkBandId, file = uit.file;
   const vak = document.getElementById('bmFotoPreview');
   vak.style.position = 'relative';
   vak.innerHTML = `<img src="${URL.createObjectURL(file)}" alt="bandfoto">
@@ -2231,10 +2247,12 @@ async function bmFotoKiezen(file) {
       <div class="save-spinner" style="width:24px;height:24px;border-width:3px;margin:0;"></div>
     </div>`;
   bmFotoBezig = true;
-  uploadAvatarFile(file, 'bands/' + id).then(({ url }) => {
+  fotoMetBronUploaden(uit, 'bands/' + id).then(({ url, bron, kader }) => {
     bmFotoBezig = false;
     if (id !== bewerkBandId) return;
     bmFotoUrl = url;
+    bmFotoBron = bron;
+    bmFotoKader = kader;
     bmRenderFoto();
   }).catch(e => {
     bmFotoBezig = false;
@@ -2249,7 +2267,7 @@ async function bmFotoKiezen(file) {
 // (bands/<band-id>/, zie projectinstructies §10), niet naar die van de
 // beheerder: anders verdwijnt hij als de beheerder vertrekt.
 function bmVraagFotoWeg() {
-  showConfirm('Bandfoto verwijderen?', () => { bmFotoUrl = null; bmRenderFoto(); }, 'Ja, verwijderen');
+  showConfirm('Bandfoto verwijderen?', () => { bmFotoUrl = bmFotoBron = bmFotoKader = null; bmRenderFoto(); }, 'Ja, verwijderen');
 }
 
 function switchBmMediaTab(tab, el) {
@@ -2302,10 +2320,7 @@ function bmToggleMediaBanner(i) {
 }
 
 function bmSpeelMedia(i) {
-  const m = bmMediaFiles[i];
-  if (!m || !m.url) return;
-  if (m.type === 'foto') { openMediaLightbox(m.url); return; }
-  openMediaSpeler(m.url, 'video', m.name || '', '');
+  mediaTegelTik(bmMediaFiles[i]); // TT-543 blok 4b: een bannerfoto opent het kader
 }
 
 // Een net geüpload bestand dat weer weg gaat, gaat ook uit de opslag. Een
@@ -2384,10 +2399,12 @@ async function saveBandMedia() {
       tiktok: waardeVan('bmTiktok') || null,
       youtube: waardeVan('bmYoutube') || null,
       avatar_url: bmFotoUrl || null,
-      ...wazigVeld(bmFotoUrl)
+      ...wazigVeld(bmFotoUrl),
+      avatar_bron: bmFotoUrl ? bmFotoBron : null,
+      avatar_kader: bmFotoUrl ? bmFotoKader : null
     }).eq('id', id).select('id'));
     if (sErr) throw sErr;
-    opslagOpruimen('avatars', 'bands/' + id, [bmFotoUrl]);
+    opslagOpruimen('avatars', 'bands/' + id, [bmFotoUrl, bmFotoBron]);
 
     // Alleen wat wegging weghalen, wat wijzigde bijwerken en wat nieuw is
     // toevoegen (zie Onze muziek). De volgorde blijft die van binnenkomst.
@@ -2414,7 +2431,7 @@ async function saveBandMedia() {
     }
     opslagOpruimen('media', 'bands/' + id, nu.map(m => m.url));
 
-    const b = await bandBewerkGegevens('avatar_url, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at, uitsnede)');
+    const b = await bandBewerkGegevens('avatar_url, avatar_bron, avatar_kader, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at, uitsnede)');
     if (!b) return;
     bmZet(b);
     bmSnapshot = bmFieldSnapshot();

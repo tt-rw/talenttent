@@ -756,18 +756,19 @@ function renderTrackResults(ac, songs, q, artist, addFnName, existingList) {
 
 // 21-08-2026: "Anders" weggehaald. Zonder vrij tekstveld kan iemand toch
 // niet aangeven wélk instrument dat dan is — de optie voegde niets toe en
-// kostte wel eenduidigheid in de matching. Bestaande profielen met "Anders"
-// (indien aanwezig) blijven gewoon werken; zie de toelichting bij
-// PICKER_LABEL_BREAKS hieronder voor hetzelfde principe.
-// TT-124 (22-08-2026): alfabetisch, op Ronalds verzoek. Alleen de weergave-
-// volgorde wijzigt — instrumenten/genres worden als tekst opgeslagen, niet
-// als locatienummer in deze lijst, dus dit raakt geen bestaande profielen
-// of de matching.
+// kostte wel eenduidigheid in de matching.
+// TT-124 (22-08-2026): alfabetisch, op Ronalds verzoek. Instrumenten worden
+// als tekst opgeslagen, niet als plek in deze lijst.
+// TT-543 blok 5 (08-11-2026, besluiten Ronald): Achtergrondzang, Akoestische
+// gitaar, Elektrische gitaar, Mondharmonica en Percussie overig erbij;
+// Gitaar, akoestisch · Gitaar, elektrisch · Harmonica (mondharmonica) eruit.
+// Bestaande profielen, open rollen, invallers en bewaarde zoekopdrachten zijn
+// in de database omgezet naar de nieuwe namen (script van 08-11-2026).
 const INSTRUMENTS = [
-  'Basgitaar', 'Cello', 'Conga / Bongo', 'DJ / Electronica', 'Drums',
-  'Gitaar, akoestisch', 'Gitaar, elektrisch', 'Harmonica (mondharmonica)',
-  'Keyboard', 'Piano', 'Saxofoon', 'Songwriting', 'Tamboerijn', 'Trompet',
-  'Ukulele', 'Viool', 'Zang'
+  'Achtergrondzang', 'Akoestische gitaar', 'Basgitaar', 'Cello',
+  'Conga / Bongo', 'DJ / Electronica', 'Drums', 'Elektrische gitaar',
+  'Keyboard', 'Mondharmonica', 'Percussie overig', 'Piano', 'Saxofoon',
+  'Songwriting', 'Tamboerijn', 'Trompet', 'Ukulele', 'Viool', 'Zang'
 ];
 
 // "Anders" verwijderd (22-08-2026, Ronald) — zelfde reden als bij
@@ -2605,6 +2606,20 @@ async function bannerTekenTik(m, bestanden, links, gridId, tellerId) {
   bannerTellerBijwerken(tellerId, bestanden, links);
 }
 
+// TT-543 blok 4b (besluit Ronald 07-11-2026, B): een tik op een foto die in de
+// banner staat, opent het kader op zijn plek; een andere foto opent groot, een
+// video speelt af. Wizard, Je mediahoek en Onze media.
+async function mediaTegelTik(m) {
+  if (!m || !m.url) return;
+  if (m.type === 'foto' && m.inBanner) {
+    const kader = await kiesUitsnede(m.url, 'banner', m.uitsnede);
+    if (kader) m.uitsnede = kader;
+    return;
+  }
+  if (m.type === 'foto') { openMediaLightbox(m.url); return; }
+  openMediaSpeler(m.url, 'video', m.name || '', '');
+}
+
 // Wat de app van het kader bewaart: alleen bij een foto in de banner.
 function bannerKader(m) {
   return m && m.type === 'foto' && m.inBanner ? uitsnedeGeldig(m.uitsnede) : null;
@@ -3230,13 +3245,16 @@ function nietBeschikbaarMeldingHTML() {
 //     gestippelde vorm. De foto zelf blijft heel (groot openen toont alles);
 //     de app bewaart alleen de plek van het kader, als delen van de foto:
 //     { x, y, b, h } (links, boven, breedte, hoogte; elk 0 tot 1).
-// kiesUitsnede(bron, 'rond' | 'vierkant' | 'banner') → Promise<File | object | null>.
+// kiesUitsnede(bron, 'rond' | 'vierkant' | 'banner', kader?) → Promise<File | object | null>.
 // `bron` is een bestand, of bij 'banner' ook het adres van een geüploade foto.
+// TT-543 blok 4b: met `kader` (een eerder bewaarde plek) opent het venster op
+// die plek. Bij 'rond' en 'vierkant' draagt het bestand de plek mee als
+// `bestand.kader`, zodat de app hem later opnieuw kan openen.
 const UITSNEDE_MAX_PX = 1080;
 const UITSNEDE_MAX_ZOOM = 4;
 let uitsnede = null; // { img, url, eigenUrl, vlak, vorm, schaal0, zoom, x, y, klaar, wijzers }
 
-function kiesUitsnede(bron, vorm) {
+function kiesUitsnede(bron, vorm, kader) {
   return new Promise((klaar) => {
     if (uitsnede) uitsnedeAfsluiten(null);
     const modal = document.getElementById('uitsnedeModal');
@@ -3245,7 +3263,7 @@ function kiesUitsnede(bron, vorm) {
     const isBestand = typeof bron !== 'string';
     const url = isBestand ? URL.createObjectURL(bron) : bron;
     uitsnede = { img, url, eigenUrl: isBestand, vlak, vorm, file: isBestand ? bron : null,
-      schaal0: 1, zoom: 1, x: 0, y: 0, klaar, wijzers: new Map() };
+      schaal0: 1, zoom: 1, x: 0, y: 0, klaar, wijzers: new Map(), start: uitsnedeGeldig(kader) };
     document.getElementById('uitsnedeTitel').textContent =
       vorm === 'rond' ? 'Profielfoto' : vorm === 'banner' ? 'Bannerfoto' : 'Bandfoto';
     const klein = document.getElementById('uitsnedeKlein');
@@ -3275,7 +3293,8 @@ function uitsnedeMaten() {
 }
 
 // Begin: de foto vult het kader precies. Een staande foto (hoger dan het
-// kader) begint bovenaan, een andere in het midden.
+// kader) begint bovenaan, een andere in het midden. Met een bewaarde plek
+// (blok 4b) begint het venster daar.
 function uitsnedeBegin() {
   const u = uitsnede, m = uitsnedeMaten();
   const nw = u.img.naturalWidth, nh = u.img.naturalHeight;
@@ -3283,6 +3302,12 @@ function uitsnedeBegin() {
   u.zoom = 1;
   u.x = (m.W - nw * u.schaal0) / 2;
   u.y = nh / nw > m.H / m.W ? 0 : (m.H - nh * u.schaal0) / 2;
+  if (u.start) {
+    const s = m.W / (u.start.b * nw);
+    u.zoom = s / u.schaal0;
+    u.x = -u.start.x * nw * s;
+    u.y = -u.start.y * nh * s;
+  }
   uitsnedeTekenen();
 }
 
@@ -3376,10 +3401,11 @@ function uitsnedeGebruiken() {
   const m = uitsnedeMaten();
   const s = u.schaal0 * u.zoom;
   const bw = m.W / s, bh = m.H / s;               // het kader in pixels van de foto
+  const nw = u.img.naturalWidth, nh = u.img.naturalHeight;
+  const r = v => Math.max(0, Math.round(v * 10000) / 10000);
+  const kader = { x: r(-u.x / s / nw), y: r(-u.y / s / nh), b: r(bw / nw), h: r(bh / nh) };
   if (u.vorm === 'banner') {
-    const nw = u.img.naturalWidth, nh = u.img.naturalHeight;
-    const r = v => Math.max(0, Math.round(v * 10000) / 10000);
-    uitsnedeAfsluiten({ x: r(-u.x / s / nw), y: r(-u.y / s / nh), b: r(bw / nw), h: r(bh / nh) });
+    uitsnedeAfsluiten(kader);
     return;
   }
   const uh = Math.max(1, Math.round(Math.min(UITSNEDE_MAX_PX, bh)));
@@ -3393,7 +3419,9 @@ function uitsnedeGebruiken() {
   const naam = (u.file.name || 'foto').replace(/\.[^.]*$/, '') + '.jpg';
   document.getElementById('uitsnedeKnop').disabled = true;
   canvas.toBlob((blob) => {
-    uitsnedeAfsluiten(blob ? new File([blob], naam, { type: 'image/jpeg' }) : null);
+    const bestand = blob ? new File([blob], naam, { type: 'image/jpeg' }) : null;
+    if (bestand) bestand.kader = kader;
+    uitsnedeAfsluiten(bestand);
     if (!blob) showToast('De foto uitsnijden is niet gelukt. Probeer het opnieuw.');
   }, 'image/jpeg', 0.9);
 }
@@ -3430,6 +3458,41 @@ function uitsnedeGeldig(k) {
   if (![x, y, b, h].every(Number.isFinite)) return null;
   if (x < 0 || y < 0 || b <= 0 || h <= 0 || x + b > 1.001 || y + h > 1.001) return null;
   return { x, y, b, h };
+}
+
+// TT-543 blok 4b (besluiten Ronald 07 en 08-11-2026): een profiel- of bandfoto
+// later verschuiven. `foto` = { url, bron, kader }: url is de uitsnede, bron
+// de hele foto (een bestand dat nog niet is geüpload, of de opgeslagen link)
+// en kader de plek van de uitsnede daarin. Een foto van vóór blok 4b heeft
+// geen bron: dan opent de uitsnede zelf (besluit A: alleen inzoomen en
+// verschuiven). Geeft { file, kader, bron }, of null bij afbreken.
+async function fotoVerschuiven(foto, vorm) {
+  const bron = foto.bron || foto.url;
+  const bestand = typeof bron === 'string' ? await fotoBestandOphalen(bron) : bron;
+  if (!bestand) { showToast('De foto openen is niet gelukt. Probeer het opnieuw.'); return null; }
+  const file = await kiesUitsnede(bestand, vorm, foto.bron ? foto.kader : null);
+  return file ? { file, kader: file.kader, bron } : null;
+}
+// Een opgeslagen foto als bestand, via de eigen map (de opslagregels).
+async function fotoBestandOphalen(link) {
+  try {
+    const m = FOTO_AFGESCHERMD.exec(String(link || ''));
+    if (!m) throw new Error('geen link naar de opslag');
+    const pad = decodeURIComponent(m[2]);
+    const { data, error } = await db.storage.from(m[1]).download(pad);
+    if (error) throw error;
+    return new File([data], pad.split('/').pop(), { type: data.type || 'image/jpeg' });
+  } catch (e) {
+    logCaught('fotoBestandOphalen', e);
+    return null;
+  }
+}
+// Uploadt een nieuwe uitsnede en, als die er nog niet staat, de hele foto.
+// `map` is het account-id of `bands/<band-id>`. Geeft { url, bron, kader }.
+async function fotoMetBronUploaden(uit, map) {
+  const [a, b] = await Promise.all([uploadAvatarFile(uit.file, map),
+    typeof uit.bron === 'string' ? { url: uit.bron } : uploadAvatarFile(uit.bron, map)]);
+  return { url: a.url, bron: b.url, kader: uitsnedeGeldig(uit.kader) };
 }
 
 // Een bannerfoto met een kader in de hoes: de foto zo groot en zo verschoven

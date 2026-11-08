@@ -181,7 +181,7 @@ function choosePickerListValue(value) {
   }
   if (cfg.singleMax) {
     // TT-55/TT-183: maximaal 1 instrument, met losse uitzonderingen (Zang,
-    // Songwriting) die niet meetellen voor die limiet.
+    // Achtergrondzang, Songwriting) die niet meetellen voor die limiet.
     const exceptions = cfg.exceptionValues || [];
     if (exceptions.includes(value)) {
       if (!list.includes(value)) list.push(value);

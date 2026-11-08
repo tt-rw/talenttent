@@ -7150,7 +7150,9 @@ window.TT_STUB.fnAntwoord = {};
                 const t = document.elementFromPoint(x, y);
                 // Een laag die dezelfde handeling doet (het Wijzig-bolletje op de foto) telt niet als bedekt.
                 const zelfde = t && e.getAttribute('onclick') && (t.closest('[onclick]') || t).getAttribute('onclick') === e.getAttribute('onclick');
-                if (!(t === e || e.contains(t) || zelfde)) {
+                // TT-543 blok 4b (besluit Ronald 07-11-2026): Wijzig op de foto kiest bewust iets anders dan de foto zelf (verschuiven).
+                const wijzigOpFoto = t && e.classList.contains('avatar-preview') && t.closest('.avatar-edit-btn') && t.closest('.avatar-preview-wrap') === e.closest('.avatar-preview-wrap');
+                if (!(t === e || e.contains(t) || zelfde || wijzigOpFoto)) {
                   uit.bedekt.push(v + ': ' + (e.innerText || e.id || e.tagName).trim().slice(0, 24).replace(/\\n/g, ' ') + ' @' + Math.round(x) + ',' + Math.round(y));
                   break;
                 }
@@ -14649,7 +14651,7 @@ def blok_tt543_blok1():
           u.tegel3Zin = $('jeSetlistScreen').querySelector('.panel-sub')?.textContent.trim() || null;
           u.f1.jeSetlist = NORMAAL('#jeSetlistScreen');
           // Voorstel 12: geen "JPG of PNG, maximaal 5 MB." bij de profielfoto (stap 4 en de tegel).
-          u.fotoRegel = [...document.querySelectorAll('#step3 .avatar-info p, #jeMediahoekScreen .avatar-info p, #mediahoekScreen .avatar-info p')].map(e => e.textContent);
+          u.fotoRegel = [...document.querySelectorAll('#step3 .avatar-info p, #jeMediahoekScreen .avatar-info p, #mediahoekScreen .avatar-info p')].map(e => e.textContent).filter(t => /JPG|PNG|MB/.test(t));
           showView('about');
           return u; }""")
         browser.close()
@@ -14735,7 +14737,7 @@ def blok_tt543_blok2():
               u.stap1 = await scherm('#step0');
               u.stap1.zinOnderKop = (() => { const k = document.querySelector('#regAuthSection .hoofdstuk-kop'); const n = k.nextElementSibling; return n.id; })();
               u.stap1.zinnen = [...document.querySelectorAll('#regAuthSection p')].filter(e => e.offsetParent).length;
-              Object.assign(state, { instruments: ['Gitaar, elektrisch', 'Zang'], instrumentLevels: { 'Gitaar, elektrisch': 3, 'Zang': 2 }, genres: ['Rock', 'Indie'] });
+              Object.assign(state, { instruments: ['Elektrische gitaar', 'Zang'], instrumentLevels: { 'Elektrische gitaar': 3, 'Zang': 2 }, genres: ['Rock', 'Indie'] });
               goTo(1); renderInstrumentBadges('wizard'); renderPickerBadges(PICKERS.genre);
               u.stap2 = await scherm('#step1');
               u.stap2.iRand = Math.round(R(document.querySelector('#step1 .hoofdstuk-kop-rij .niveau-info-btn')).right - R($('instrumentPickerField')).right);
@@ -15278,7 +15280,7 @@ def blok_tt543_blok4():
                 && !el.classList.contains('scherm-titel') && getComputedStyle(el).lineHeight === 'normal').map(el => el.className + ' «' + el.textContent.trim().slice(0, 20) + '»');
               S.session = { user: { id: 'u1', email: 't@t.nl' } }; currentUser = { id: 'u1', email: 't@t.nl' }; myMusicianId = 'm1';
               Object.assign(m, { weergavenaam: 'Ronald Wever', zip: '2497', city: 'Den Haag', bio: 'Test', avatar_url: null,
-                musician_instruments: [{ instrument: 'Drums', niveau: 3 }, { instrument: 'Harmonica (mondharmonica)', niveau: null }],
+                musician_instruments: [{ instrument: 'Drums', niveau: 3 }, { instrument: 'Mondharmonica', niveau: null }],
                 musician_genres: [{ genre: 'Rock' }, { genre: 'Folk / Akoestisch' }, { genre: 'Pop' }],
                 musician_songs: [{ song_title: 'Enter Sandman', song_artist: 'Metallica', mastery_level: 'podium' }, { song_title: 'b', song_artist: 'Y', mastery_level: null }, { song_title: 'c', song_artist: 'Z', mastery_level: null }],
                 musician_media: [{ media_type: 'foto', url: 'https://x/a.jpg', in_banner: false }] });
@@ -15354,7 +15356,7 @@ def blok_tt543_blok4():
               openTegelScreen('mediahoek'); await w(500);
               u.f4.mediahoek = NORMAAL('#mediahoekScreen');
               u.bannerRegel = getComputedStyle($('mhBannerTeller')).lineHeight;
-              // 26: een tik op de tekst naast de profielfoto kiest een foto.
+              // Blok 4b (besluit Ronald 08-11-2026, vervangt 26): een tik op de tekst doet niets.
               let gekozen = 0; $('mhAvatarInput').click = () => gekozen++;
               document.querySelector('#mediahoekScreen .avatar-info').click();
               u.tekstKiest = gekozen;
@@ -15420,8 +15422,8 @@ def blok_tt543_blok4():
               t["lijst"] and t["fout"] == ["Kies minimaal één instrument", "wspInstrumentBadgeRow"], jb)
         check(f"{breed}px F4 (8D): met gevulde schermen geen regelhoogte \"normal\" in Wat speel je, Je setlist en Je mediahoek, en in stap 2, 3 en 4; de bannerregel 16px",
               not any(b["f4"].values()) and not b["wizard"]["normaal"] and not b["wizard"]["normaalStap3"] and not b["wizard"]["normaalStap4"] and b["bannerRegel"] == "16px", jb)
-        check(f"{breed}px 26: een tik op de tekst naast de profielfoto kiest een foto, in de tegel en in stap 4",
-              b["tekstKiest"] == 1 and b["wizard"]["tekstKiest"] == 1, jb)
+        check(f"{breed}px blok 4b (besluit Ronald 08-11-2026, vervangt 26): een tik op de tekst naast de profielfoto doet niets, in de tegel en in stap 4",
+              b["tekstKiest"] == 0 and b["wizard"]["tekstKiest"] == 0, jb)
         check(f"{breed}px 21 C en 22 (stap 2): dezelfde vorm als de tegel",
               b["wizard"]["instr"] == ["instrumentPickerField", "Instrument"] and b["wizard"]["genre"] == ["genrePickerField", "Genre"]
               and b["wizard"]["kolom"] == 1 and b["wizard"]["maat"] == "15px", jb)
@@ -15429,6 +15431,250 @@ def blok_tt543_blok4():
     check("\"Nog leeg\" heeft de signaalkleur in donker en licht (--accent)",
           u3["leeg"]["kleur"] == "rgb(255, 184, 28)" and u6["leeg"]["kleur"] == "rgb(30, 30, 30)", json.dumps([u3["leeg"], u6["leeg"]]))
     check("geen fout in de pagina", not fouten, "; ".join(fouten)[:300])
+
+
+def blok_tt543_blok4b():
+    print("\nBlok 137 — TT-543 blok 4b: een foto later verschuiven (profielfoto, bandfoto, bannerfoto)")
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    check("blok 4b: een tik op de foto gaat via avatarTik, mhAvatarTik en bmFotoTik; Wijzig kiest nog steeds een foto",
+          'id="avatarPreview" onclick="avatarTik()"' in html and 'id="mhAvatarPreview" onclick="mhAvatarTik()"' in html
+          and 'id="bmFotoPreview" onclick="bmFotoTik()"' in html
+          and html.count("class=\"avatar-edit-btn\" onclick=\"document.getElementById('avatarInput').click()\"") == 1
+          and html.count("class=\"avatar-edit-btn\" onclick=\"document.getElementById('mhAvatarInput').click()\"") == 1
+          and "class=\"avatar-edit-btn\" onclick=\"document.getElementById('bmFotoInput').click()\"" in html, "")
+    check("blok 4b (besluit Ronald 08-11-2026): de tekst naast de foto doet niets, op alle drie de schermen",
+          'class="avatar-info" onclick' not in html, "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten, uit = [], {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breed, thema in ((390, "dark"), (360, "light")):
+            ctx = browser.new_context(viewport={"width": breed, "height": 844}, color_scheme=thema)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(400)
+            uit[breed] = page.evaluate("""async () => {
+              const w = ms => new Promise(r => setTimeout(r, ms)), $ = id => document.getElementById(id), u = {};
+              const S = window.TT_STUB, m = S.data.musicians[0], O = 'https://x.supabase.co/storage/v1/object/public/';
+              const zichtbaar = e => !!e && getComputedStyle(e).display !== 'none' && e.getClientRects().length > 0;
+              const open = () => $('uitsnedeModal').classList.contains('visible');
+              const ups = () => (S.uploads || []).filter(x => !x.endsWith('_klein.jpg'));
+              const dicht = (a, b) => !!a && !!b && ['x', 'y', 'b', 'h'].every(k => Math.abs(a[k] - b[k]) < 0.002);
+              // Een liggende foto van 1200 x 800, links rood, rechts blauw.
+              const cv = document.createElement('canvas'); cv.width = 1200; cv.height = 800;
+              const cx = cv.getContext('2d'); cx.fillStyle = '#c33'; cx.fillRect(0, 0, 1200, 800); cx.fillStyle = '#33c'; cx.fillRect(800, 0, 400, 800);
+              const blob = await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.9));
+              const bestand = new File([blob], 'podium.jpg', { type: 'image/jpeg' });
+              S.bestanden = { 'avatars/u1/oud.jpg': blob, 'avatars/u1/heel.jpg': blob, 'avatars/bands/b1/oud.jpg': blob };
+              // Een geüploade foto krijgt een link op de eigen testsite, niet example.invalid: die weigert de regel (TT-483b).
+              const echtFrom = db.storage.from.bind(db.storage);
+              db.storage.from = b => { const o = echtFrom(b); o.getPublicUrl = pad => ({ data: { publicUrl: location.origin + '/storage/v1/object/public/' + b + '/' + pad } }); return o; };
+              // 1. Het venster opent op een bewaarde plek en geeft die plek terug.
+              const start = { x: 0.25, y: 0.1, b: 0.5, h: 0.5625 };
+              let bel = kiesUitsnede(bestand, 'rond', start); await w(400);
+              u.start = { open: open(), titel: $('uitsnedeTitel').textContent };
+              uitsnedeGebruiken(); const f = await bel; u.start.kader = f && f.kader; u.start.terug = dicht(f && f.kader, start);
+              bel = kiesUitsnede(URL.createObjectURL(blob), 'banner', start); await w(400);
+              uitsnedeGebruiken(); u.start.banner = dicht(await bel, start);
+              bel = kiesUitsnede(bestand, 'rond'); await w(400); uitsnedeGebruiken(); const f2 = await bel;
+              u.start.zonder = f2 && f2.kader;
+              // 2. Je mediahoek, ingelogd.
+              S.session = { user: { id: 'u1', email: 't@t.nl' } }; currentUser = { id: 'u1', email: 't@t.nl' }; myMusicianId = 'm1';
+              S.rpcResults.tt_mijn_naam = [{ fname: 'Jesse', lname: 'de Vries' }]; S.rpcResults.tt_get_my_birth_date = '2001-02-01';
+              Object.assign(m, { avatar_url: null, avatar_bron: null, avatar_kader: null,
+                musician_media: [{ media_type: 'foto', url: URL.createObjectURL(blob), in_banner: true, created_at: '2026-11-01', uitsnede: start },
+                                 { media_type: 'foto', url: URL.createObjectURL(blob), in_banner: false, created_at: '2026-11-02', uitsnede: null }] });
+              showView('profieltegels'); await w(300); openTegelScreen('mediahoek'); await w(500);
+              const regel = () => document.querySelector('#mediahoekScreen .avatar-info p.kop-met-foto');
+              // Zonder foto: een tik kiest een foto, geen venster, geen uitlegregel.
+              let kies = 0; $('mhAvatarInput').click = () => kies++;
+              await mhAvatarTik(); u.mhLeeg = { kies, venster: open(), regel: zichtbaar(regel()) };
+              // Een foto van vóór blok 4b (alleen de uitsnede): het venster met de uitsnede zelf.
+              mhAvatarUrl = O + 'avatars/u1/oud.jpg'; mhAvatarBron = null; mhAvatarKader = null; mhRenderAvatar(); await w(100);
+              const rg = regel(); u.regel = { zichtbaar: zichtbaar(rg), tekst: rg && rg.textContent, maat: rg && getComputedStyle(rg).fontSize, hoogte: rg && getComputedStyle(rg).lineHeight };
+              S.uploads = []; kies = 0;
+              const tik = mhAvatarTik(); await w(500);
+              u.oud = { venster: open(), titel: $('uitsnedeTitel').textContent, zoom: uitsnede && uitsnede.zoom, knop: $('uitsnedeKnop').textContent, kies };
+              $('uitsnedeKnop').click(); await tik; await w(300);
+              u.oud.uploads = ups().length; u.oud.bron = mhAvatarBron; u.oud.kader = !!uitsnedeGeldig(mhAvatarKader); u.oud.nieuweUrl = mhAvatarUrl !== O + 'avatars/u1/oud.jpg';
+              // Opslaan bewaart foto, bron en plek.
+              u.oud.opslaanAan = !document.querySelector('#mediahoekScreen .wizard-action-bar .btn-primary').disabled;
+              await saveJeMediahoek(); await w(200);
+              u.oud.opgeslagen = { bron: m.avatar_bron, kader: !!uitsnedeGeldig(m.avatar_kader) };
+              // Een nieuwe foto: de app uploadt de uitsnede én de hele foto.
+              S.uploads = [];
+              await (async () => { const t = mhHandleAvatarUpload(bestand); await w(400); uitsnedeGebruiken(); await t; await w(300); })();
+              u.nieuw = { uploads: ups().length, bronIsLink: typeof mhAvatarBron === 'string' && mhAvatarBron !== mhAvatarUrl, kader: !!uitsnedeGeldig(mhAvatarKader) };
+              // Een foto mét bewaarde plek: het venster opent daar, en Annuleren laat alles staan.
+              mhAvatarUrl = O + 'avatars/u1/uitsnede.jpg'; mhAvatarBron = O + 'avatars/u1/heel.jpg'; mhAvatarKader = start; mhRenderAvatar();
+              S.uploads = []; const t2 = mhAvatarTik(); await w(500);
+              u.terug = { venster: open() }; uitsnedeGebruiken(); await t2; await w(300);
+              u.terug.plek = dicht(mhAvatarKader, start); u.terug.uploads = ups().length; u.terug.bron = mhAvatarBron === O + 'avatars/u1/heel.jpg';
+              const voor = [mhAvatarUrl, mhAvatarBron, JSON.stringify(mhAvatarKader)];
+              const t3 = mhAvatarTik(); await w(500); $('uitsnedeAnnuleren').click(); await t3; await w(100);
+              u.annuleren = { dicht: !open(), gelijk: JSON.stringify(voor) === JSON.stringify([mhAvatarUrl, mhAvatarBron, JSON.stringify(mhAvatarKader)]) };
+              // Een bron die niet te openen is: een melding, geen venster.
+              mhAvatarBron = O + 'avatars/u1/weg.jpg'; await mhAvatarTik(); await w(100);
+              u.kapot = { venster: open(), melding: ($('appToast') || {}).textContent || '' };
+              // Verwijderen: alles leeg bij Opslaan.
+              mhRemoveAvatar(); await saveJeMediahoek(); await w(200);
+              u.weg = { url: m.avatar_url, bron: m.avatar_bron, kader: m.avatar_kader, regel: zichtbaar(regel()) };
+              // 3. Bannerfoto: een tik opent het kader op zijn plek; een andere foto opent groot.
+              openTegelScreen('mediahoek'); await w(500);
+              const b0 = mhMediaFiles[0]; const tb = mhSpeelMedia(0); await w(400);
+              u.banner = { venster: open(), titel: $('uitsnedeTitel').textContent };
+              if (uitsnede) uitsnede.x -= 10; uitsnedeTekenen(); $('uitsnedeKnop').click(); await tb; await w(100);
+              u.banner.anders = !dicht(b0.uitsnede, start) && !!uitsnedeGeldig(b0.uitsnede);
+              u.banner.opslaanAan = !document.querySelector('#mediahoekScreen .wizard-action-bar .btn-primary').disabled;
+              mhSpeelMedia(1); await w(200);
+              u.groot = { lightbox: $('mediaLightbox').classList.contains('visible'), venster: open() }; closeMediaLightbox();
+              // 4. Stap 4 van de aanmelding, nog zonder account.
+              S.session = null; currentUser = null; showView('register'); await w(200); goTo(3); await w(300);
+              removeAvatar(); let wk = 0; $('avatarInput').click = () => wk++; await avatarTik();
+              u.wiz = { kiesZonderFoto: wk };
+              const tw = handleAvatarUpload(bestand); await w(400); uitsnedeGebruiken(); await tw; await w(100);
+              u.wiz.bewaard = { file: state.avatarFile instanceof File, bron: state.avatarBron === bestand, kader: !!uitsnedeGeldig(state.avatarKader), url: state.avatarUrl };
+              u.wiz.regel = zichtbaar(document.querySelector('#step3 .avatar-info p.kop-met-foto'));
+              const k1 = state.avatarKader; const tw2 = avatarTik(); await w(400);
+              u.wiz.opPlek = open(); uitsnedeGebruiken(); await tw2; u.wiz.zelfdeBron = state.avatarBron === bestand && dicht(state.avatarKader, k1);
+              u.wiz.velden = fotoBronVelden();
+              // 5. Onze media: de bandfoto.
+              currentUser = { id: 'u1', email: 't@t.nl' }; showView('profieltegels'); await w(200);
+              Object.values(TEGEL_SCREENS).forEach(id => $(id).style.display = 'none'); $('bandMediaScreen').style.display = '';
+              bewerkBandId = 'b1'; bmFotoUrl = null; bmFotoBron = null; bmFotoKader = null; bmRenderFoto();
+              let bk = 0; $('bmFotoInput').click = () => bk++; await bmFotoTik();
+              const bregel = () => document.querySelector('#bandMediaScreen .avatar-info p.kop-met-foto');
+              u.band = { kies: bk, regelLeeg: zichtbaar(bregel()) };
+              bmFotoUrl = O + 'avatars/bands/b1/oud.jpg'; bmRenderFoto(); S.uploads = [];
+              const tb2 = bmFotoTik(); await w(500);
+              u.band.titel = $('uitsnedeTitel').textContent; u.band.regel = zichtbaar(bregel()) && bregel().textContent;
+              uitsnedeGebruiken(); await tb2; await w(300);
+              u.band.bron = bmFotoBron; u.band.uploads = ups(); u.band.kader = !!uitsnedeGeldig(bmFotoKader);
+              u.band.tekstDoetNiets = !document.querySelector('#bandMediaScreen .avatar-info').onclick;
+              db.storage.from = echtFrom;
+              showView('about');
+              return u; }""")
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    for breed in (390, 360):
+        u = uit[breed]; ju = json.dumps(u)[:1500]
+        check(f"{breed}px het venster opent op een bewaarde plek en geeft die terug (rond en banner); zonder plek ook een plek",
+              u["start"]["open"] and u["start"]["terug"] and u["start"]["banner"] and bool(u["start"]["zonder"]), ju)
+        check(f"{breed}px zonder foto: een tik op de foto kiest een foto, geen venster, geen uitlegregel",
+              u["mhLeeg"] == {"kies": 1, "venster": False, "regel": False}, ju)
+        check(f"{breed}px met foto de uitlegregel \"Tik op je foto om hem te verschuiven.\" (12px, regelhoogte 18px)",
+              u["regel"] == {"zichtbaar": True, "tekst": "Tik op je foto om hem te verschuiven.", "maat": "12px", "hoogte": "18px"}, ju)
+        o = u["oud"]
+        check(f"{breed}px besluit A: een oudere foto opent het venster met de uitsnede zelf (zoom 1), knop \"Gebruik deze foto\"",
+              o["venster"] and o["titel"] == "Profielfoto" and o["zoom"] == 1 and o["knop"] == "Gebruik deze foto" and o["kies"] == 0, ju)
+        check(f"{breed}px na verschuiven: één upload (de uitsnede); de oude foto wordt de bron; Opslaan gaat aan en bewaart bron en plek",
+              o["uploads"] == 1 and o["bron"] == "https://x.supabase.co/storage/v1/object/public/avatars/u1/oud.jpg" and o["kader"] and o["nieuweUrl"]
+              and o["opslaanAan"] and o["opgeslagen"]["bron"] == o["bron"] and o["opgeslagen"]["kader"], ju)
+        check(f"{breed}px een nieuwe foto: twee uploads (uitsnede en hele foto), bron en plek bewaard",
+              u["nieuw"] == {"uploads": 2, "bronIsLink": True, "kader": True}, ju)
+        check(f"{breed}px een foto met bewaarde plek opent daar; Gebruik deze foto geeft dezelfde plek, zonder de hele foto opnieuw te uploaden",
+              u["terug"] == {"venster": True, "plek": True, "uploads": 1, "bron": True}, ju)
+        check(f"{breed}px Annuleren laat foto, hele foto en plek staan",
+              u["annuleren"] == {"dicht": True, "gelijk": True}, ju)
+        check(f"{breed}px een hele foto die niet te openen is: geen venster, wel een melding",
+              not u["kapot"]["venster"] and "niet gelukt" in u["kapot"]["melding"], ju)
+        check(f"{breed}px foto verwijderd en opgeslagen: foto, bron en plek leeg; geen uitlegregel",
+              u["weg"] == {"url": None, "bron": None, "kader": None, "regel": False}, ju)
+        check(f"{breed}px een tik op een bannerfoto opent het kader (Bannerfoto); de nieuwe plek telt als wijziging",
+              u["banner"]["venster"] and u["banner"]["titel"] == "Bannerfoto" and u["banner"]["anders"] and u["banner"]["opslaanAan"], ju)
+        check(f"{breed}px een tik op een andere foto opent hem groot, zonder venster",
+              u["groot"] == {"lightbox": True, "venster": False}, ju)
+        wz = u["wiz"]
+        check(f"{breed}px stap 4 zonder account: zonder foto kiest een tik een foto; met foto bewaart de app bestand, hele foto en plek",
+              wz["kiesZonderFoto"] == 1 and wz["bewaard"] == {"file": True, "bron": True, "kader": True, "url": None} and wz["regel"], ju)
+        check(f"{breed}px stap 4: een tik verschuift dezelfde hele foto; zonder link gaan er geen bron en plek naar de database",
+              wz["opPlek"] and wz["zelfdeBron"] and wz["velden"] == {"avatar_bron": None, "avatar_kader": None}, ju)
+        bd = u["band"]
+        check(f"{breed}px Onze media: zonder bandfoto kiest een tik een foto; met foto de regel \"Tik op de foto om hem te verschuiven.\" en het venster Bandfoto",
+              bd["kies"] == 1 and not bd["regelLeeg"] and bd["titel"] == "Bandfoto" and bd["regel"] == "Tik op de foto om hem te verschuiven.", ju)
+        check(f"{breed}px Onze media: de uitsnede gaat naar de map van de band; de oude foto wordt de bron; de tekst doet niets",
+              bd["uploads"] and all(x.startswith("avatars/bands/b1/") for x in bd["uploads"]) and len(bd["uploads"]) == 1
+              and bd["bron"] == "https://x.supabase.co/storage/v1/object/public/avatars/bands/b1/oud.jpg" and bd["kader"] and bd["tekstDoetNiets"], ju)
+    check("blok 137: geen fout in de pagina", not fouten, "; ".join(fouten)[:300])
+
+
+# Blok 138 — TT-543 blok 5 (besluiten Ronald sessie 88, 08-11-2026): de
+# instrumentlijst. Nieuw: Achtergrondzang, Akoestische gitaar, Elektrische
+# gitaar, Mondharmonica, Percussie overig. Weg: Gitaar, akoestisch · Gitaar,
+# elektrisch · Harmonica (mondharmonica). Achtergrondzang telt bij Zoeken niet
+# mee voor de grens van één instrument ("kan ook als extra optie naast 1
+# instrument"), net als Zang en Songwriting.
+NIEUWE_INSTRUMENTEN = [
+    "Achtergrondzang", "Akoestische gitaar", "Basgitaar", "Cello", "Conga / Bongo",
+    "DJ / Electronica", "Drums", "Elektrische gitaar", "Keyboard", "Mondharmonica",
+    "Percussie overig", "Piano", "Saxofoon", "Songwriting", "Tamboerijn", "Trompet",
+    "Ukulele", "Viool", "Zang",
+]
+OUDE_INSTRUMENTEN = ["Gitaar, akoestisch", "Gitaar, elektrisch", "Harmonica (mondharmonica)"]
+
+
+def blok_tt543_blok5():
+    print("\nBlok 138 — TT-543 blok 5: de instrumentlijst")
+    code = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read()
+                   for f in ("index.html", "utils.js", "search.js", "bands.js", "modals-shared.js", "musicians.js", "wizard.js", "core.js"))
+    check("blok 5: geen oude instrumentnaam meer als waarde in de code van de app",
+          not [o for o in OUDE_INSTRUMENTEN if ("'%s'" % o) in code or ('"%s"' % o) in code], "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten, uit = [], {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844})
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(400)
+        uit = page.evaluate("""async () => {
+          const w = ms => new Promise(r => setTimeout(r, ms)), u = {};
+          u.lijst = INSTRUMENTS.slice();
+          // De keuzelaag van de wizard toont de hele lijst, in deze volgorde.
+          const wid = Object.keys(INSTRUMENT_PICKERS)[0];
+          const bewaar = INSTRUMENT_PICKERS[wid].getInstruments().splice(0);
+          openInstrumentPicker(wid); await w(50);
+          u.keuzelaag = [...document.querySelectorAll('#instrumentPickItems .picker-list-item')].map(e => e.textContent.trim());
+          closeInstrumentPicker();
+          INSTRUMENT_PICKERS[wid].getInstruments().push(...bewaar);
+          // Zoeken: hooguit één instrument; Zang, Achtergrondzang en Songwriting komen erbij.
+          const kies = (id, v) => { openPickerList(id); choosePickerListValue(v); };
+          filterInstruments.length = 0;
+          ['Drums', 'Achtergrondzang', 'Zang', 'Basgitaar'].forEach(v => kies('filterInstruments', v));
+          u.muzikanten = filterInstruments.slice();
+          filterInstruments.length = 0;
+          if (typeof initSetlistSearchFilters === 'function') initSetlistSearchFilters();
+          filterSetlistInstruments.length = 0;
+          ['Elektrische gitaar', 'Achtergrondzang', 'Mondharmonica'].forEach(v => kies('filterSetlistInstruments', v));
+          u.setlist = filterSetlistInstruments.slice();
+          filterSetlistInstruments.length = 0;
+          return u;
+        }""")
+        browser.close()
+    httpd.shutdown()
+    j = json.dumps(uit, ensure_ascii=False)[:600]
+    check("blok 5: de lijst is de besloten lijst van 19 instrumenten, alfabetisch",
+          uit.get("lijst") == NIEUWE_INSTRUMENTEN, j)
+    check("blok 5: de keuzelaag bij Wat speel je toont dezelfde 19 instrumenten",
+          uit.get("keuzelaag") == NIEUWE_INSTRUMENTEN, j)
+    check("blok 5: Zoeken Muzikanten — Achtergrondzang blijft staan naast één instrument; een tweede instrument vervangt het eerste",
+          uit.get("muzikanten") == ["Achtergrondzang", "Zang", "Basgitaar"], j)
+    check("blok 5: Zoeken op setlist — dezelfde regel",
+          uit.get("setlist") == ["Achtergrondzang", "Mondharmonica"], j)
+    check("blok 138: geen fout in de pagina", not fouten, "; ".join(fouten)[:300])
 
 
 def main():
@@ -15467,6 +15713,8 @@ def main():
     blok_tt543_blok2()
     blok_tt543_blok3()
     blok_tt543_blok4()
+    blok_tt543_blok4b()
+    blok_tt543_blok5()
     print("\nBlok 120 — TT-483b: de regel weigerde niets, in de hele testset")
     check("TT-483b: geen enkele weigering van de regel in alle browserblokken",
           not CSP_WEIGERINGEN, "; ".join(sorted(set(CSP_WEIGERINGEN)))[:800])

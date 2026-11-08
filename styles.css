@@ -1763,7 +1763,6 @@
   }
 
   .avatar-info { flex: 1; }
-  .avatar-info[onclick] { cursor: pointer; } /* TT-543 blok 4, voorstel 26 */
   .avatar-info strong { font-size: 12px; line-height: 16px; display: block; margin-bottom: 6px; } /* line-height: TT-543 F4 */
   /* TT-517 fase 6 (huisstijl §2, besluit Ronald 31-10-2026: "kop met foto is
      goed"): zonder foto "Upload een foto van jezelf", met foto "Je

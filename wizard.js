@@ -397,11 +397,12 @@ async function persistEditedProfile(mid) {
     naam_tonen:       state.naamTonen,
     avatar_url:       state.avatarUrl || null,
     ...wazigVeld(state.avatarUrl),
+    ...fotoBronVelden(),
     city_source:      state.citySource || 'pdok',
     profile_complete: true, // de klik op "Profiel aanmaken". Bij 16+ wacht de database eerst op de bevestiging (TT-336)
   }).eq('id', mid).select('id'));
   if (uErr) throw new Error(uErr.message);
-  opslagOpruimen('avatars', currentUser && currentUser.id, [state.avatarUrl]);
+  opslagOpruimen('avatars', currentUser && currentUser.id, [state.avatarUrl, fotoBronVelden().avatar_bron]);
 
   // TT-281 (23-09-2026): wissen en opnieuw vullen gebeurt in één
   // databasefunctie, in één transactie. Mislukt één stap, dan blijft alles
@@ -713,9 +714,10 @@ async function submitProfile() {
     // schrijven. Een mislukte upload houdt het profiel niet tegen.
     if (state.avatarFile) {
       try {
-        const { url, path } = await uploadAvatarFile(state.avatarFile, userId);
-        state.avatarUrl = url;
-        state.avatarPath = path;
+        const f = await fotoMetBronUploaden({ file: state.avatarFile, bron: state.avatarBron, kader: state.avatarKader }, userId);
+        state.avatarUrl = f.url;
+        state.avatarBron = f.bron;
+        state.avatarKader = f.kader;
       } catch (e) {
         logCaught('submitProfile', e);
         showToast('Profiel opgeslagen, maar de profielfoto kon niet worden geüpload. Voeg de foto later toe via Profiel bewerken.');
@@ -762,6 +764,7 @@ async function submitProfile() {
           profile_color:    DEFAULT_PROFILE_COLOR,
           avatar_url:       state.avatarUrl || null,
           ...wazigVeld(state.avatarUrl),
+          ...fotoBronVelden(),
           city_source:      state.citySource || 'pdok',
           user_id:          userId,
           profile_complete: true,
@@ -875,7 +878,8 @@ function legeWizardState() {
     naamTonen: 'echt', // TT-543: Echte naam of Gebruikersnaam, zoals in de tegel Wie ben je (TT-420)
     avatarUrl: null,
     avatarFile: null,
-    avatarPath: null,
+    avatarBron: null,  // TT-543 blok 4b: de hele foto (bestand of link)
+    avatarKader: null, // en de plek van de uitsnede daarin
     ouderRoute: false, // TT-42: true zolang 13-15 wacht op de klik van zijn ouder
     mediaFiles: [],
     mediaLinks: [],
@@ -1414,6 +1418,13 @@ function uploadMediaFile(file, userId) {
   return uploadToStorage('media', userId, file, 50 * 1024 * 1024, '50 MB', MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
 }
 
+// TT-543 blok 4b: wat de rij van de profielfoto meekrijgt. Alleen een
+// opgeslagen link; zonder foto niets.
+function fotoBronVelden() {
+  const bron = state.avatarUrl && typeof state.avatarBron === 'string' ? state.avatarBron : null;
+  return { avatar_bron: bron, avatar_kader: bron ? uitsnedeGeldig(state.avatarKader) : null };
+}
+
 async function handleAvatarUpload(file) {
   if (!file) return;
   // TT-87: meteen controleren, vóór de preview. Zo ziet niemand een foto
@@ -1422,9 +1433,19 @@ async function handleAvatarUpload(file) {
   if (typeProblem) { showToast(typeProblem); return; }
   { const groot = bestandTeGrootMelding(file, 5 * 1024 * 1024); if (groot) { showToast(groot); return; } }
   // TT-520 deel 2: eerst de uitsnede. Afbreken laat alles zoals het was.
-  file = await kiesUitsnede(file, 'rond');
-  if (!file) return;
+  const uit = await kiesUitsnede(file, 'rond');
+  if (uit) avatarZetten({ file: uit, kader: uit.kader, bron: file });
+}
 
+// TT-543 blok 4b: een tik op de foto verschuift hem; zonder foto kies je er een.
+async function avatarTik() {
+  if (!state.avatarUrl && !state.avatarFile) { document.getElementById('avatarInput').click(); return; }
+  const uit = await fotoVerschuiven({ url: state.avatarUrl, bron: state.avatarBron, kader: state.avatarKader }, 'rond');
+  if (uit) avatarZetten(uit);
+}
+
+function avatarZetten(uit) {
+  const file = uit.file;
   // Preview direct met de blob-URL, zodat het aanvoelt als een directe
   // reactie — de echte upload (hieronder) loopt daar los van.
   const blobUrl = URL.createObjectURL(file);
@@ -1438,6 +1459,8 @@ async function handleAvatarUpload(file) {
     // sessie om naar Storage te mogen schrijven. Bewaar het bestand zelf —
     // submitProfile() uploadt het echt zodra er een user_id is.
     state.avatarFile = file;
+    state.avatarBron = uit.bron;
+    state.avatarKader = uit.kader;
     state.avatarUrl = null;
     return;
   }
@@ -1447,9 +1470,10 @@ async function handleAvatarUpload(file) {
     `<div class="avatar-uploading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);border-radius:50%;">
        <div class="save-spinner" style="width:24px;height:24px;border-width:3px;margin:0;"></div>
      </div>`);
-  uploadAvatarFile(file, currentUser.id).then(({ url, path }) => {
+  fotoMetBronUploaden(uit, currentUser.id).then(({ url, bron, kader }) => {
     state.avatarUrl = url;
-    state.avatarPath = path;
+    state.avatarBron = bron;
+    state.avatarKader = kader;
     state.avatarFile = null;
     preview.querySelector('.avatar-uploading')?.remove();
   }).catch(e => {
@@ -1470,7 +1494,8 @@ function askRemoveAvatar() {
 function removeAvatar() {
   state.avatarUrl = null;
   state.avatarFile = null;
-  state.avatarPath = null;
+  state.avatarBron = null;
+  state.avatarKader = null;
   const preview = document.getElementById('avatarPreview');
   preview.innerHTML = ''; // TT-517 fase 6: de schijnwerper met silhouet (styles.css)
   preview.style.borderColor = '';
@@ -1547,10 +1572,7 @@ function toggleMediaBanner(i) {
 }
 
 function speelMedia(i) {
-  const m = state.mediaFiles[i];
-  if (!m || !m.url) return;
-  if (m.type === 'foto') { openMediaLightbox(m.url); return; }
-  openMediaSpeler(m.url, 'video', m.name || '', '');
+  mediaTegelTik(state.mediaFiles[i]); // TT-543 blok 4b: een bannerfoto opent het kader
 }
 
 function removeMedia(i) {

@@ -47,12 +47,13 @@ DREMPELS = {
     "csp_weigeringen_6u": 1,       # de regel in index.html weigerde iets, laatste 6 uur (TT-483 deel b, besluit Ronald 03-11-2026)
     "foutlog_grens_6u": 1,         # een internetadres raakte de grens van 60 regels per uur in het foutenlog (TT-489, besluit Ronald 03-11-2026)
     "tabellen_zonder_rls": 1,      # een tabel zonder beveiliging per rij (TT-507, besluit Ronald 04-11-2026)
+    "zonder_plek": 1,              # een instrument of genre zonder plek in instrument_bits of genre_bits: telt niet mee bij Zoeken (TT-576, 08-11-2026)
 }
 # TT-507 (besluit Ronald 04-11-2026): het controlegetal van de beveiliging in
 # productie (tt_beveiliging_hash: regels per rij, rechten, functies, triggers,
 # RLS). Verandert er ongemerkt iets, dan wordt de bewaking rood. Een bewuste
 # wijziging levert het nieuwe getal in dezelfde upload mee.
-VERWACHTE_BEVEILIGING = "d0389c52cf52"  # 04-11-2026, na TT-556 (grenzen, ook Wat zoek je) en TT-507
+VERWACHTE_BEVEILIGING = "6f06b62b8ffa"  # 08-11-2026, na TT-543 blok 4b (leesrecht hele foto) en TT-576 (bewaking zonder_plek)
 VERWACHTE_CRONTAKEN = 10  # sinds 29-10-2026 ook tt-aanroepen-nakijken (elke 5 minuten); sinds 30-10-2026 ook tt-rem-opruimen (TT-487); sinds 02-11-2026 ook tt-digest-herhalen (TT-550); sinds 03-11-2026 ook tt-foutlog-opruimen (TT-489)
 CRON_MISLUKT_DREMPEL = 1
 CERT_MIN_DAGEN = 30

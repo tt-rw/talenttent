@@ -397,15 +397,15 @@ function pickerVeldTekst(lijst) {
 function initSearchFilters() {
   if (PICKERS.filterInstruments) return; // al ingevuld
 
-  // TT-55/TT-183: maximaal 1 instrument, Zang en Songwriting als losse
-  // uitzonderingen die niet meetellen voor die limiet — afgehandeld door
+  // TT-55/TT-183: maximaal 1 instrument, Zang, Achtergrondzang (TT-543) en
+  // Songwriting als losse uitzonderingen die niet meetellen voor die limiet — afgehandeld door
   // de generieke picker (singleMax + exceptionValues), zie
   // choosePickerListValue().
   initPicker({
     id: 'filterInstruments',
     fieldId: 'filterInstrumentsField',
     options: INSTRUMENTS, getList: () => filterInstruments,
-    singleMax: true, exceptionValues: ['Zang', 'Songwriting'],
+    singleMax: true, exceptionValues: ['Zang', 'Achtergrondzang', 'Songwriting'],
     inVeld: pickerVeldTekst,
     sheetTitle: 'Kies een instrument',
     onChange: runSearch
@@ -1310,7 +1310,7 @@ function zetMmFilters(open) {
 function toggleMmFilters() { zetMmFilters(!mmFiltersOpen); }
 
 // TT-139: instrumentkeuze, zelfde patroon als bij Muzikanten — hooguit één
-// instrument, Zang en Songwriting als losse uitzonderingen. De keuze staat in
+// instrument, Zang, Achtergrondzang en Songwriting als losse uitzonderingen. De keuze staat in
 // het veld zelf (pickerVeldTekst), zoals bij Muzikanten.
 function initSetlistSearchFilters() {
   if (!PICKERS.filterSetlistInstruments) {
@@ -1318,7 +1318,7 @@ function initSetlistSearchFilters() {
       id: 'filterSetlistInstruments',
       fieldId: 'filterSetlistInstrumentsField',
       options: INSTRUMENTS, getList: () => filterSetlistInstruments,
-      singleMax: true, exceptionValues: ['Zang', 'Songwriting'],
+      singleMax: true, exceptionValues: ['Zang', 'Achtergrondzang', 'Songwriting'],
       inVeld: pickerVeldTekst,
       sheetTitle: 'Kies een instrument',
       onChange: () => { zetMmFiltersTeller(); if (setlistWantedSongs.length) runSetlistSearch(); }

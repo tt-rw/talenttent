@@ -1493,6 +1493,7 @@ async function saveJeSetlist() {
 // (verwijderen + opnieuw invullen).
 
 let mhAvatarUrl = null;
+let mhAvatarBron = null, mhAvatarKader = null; // TT-543 blok 4b: de hele foto en de plek
 let mhMediaFiles = [];
 let mhMediaLinks = [];
 let mhSnapshot = null;
@@ -1507,13 +1508,15 @@ function mhFieldSnapshot() {
 
 async function openJeMediahoek() {
   const { data, error } = await db.from('musicians')
-    .select('avatar_url, musician_media(media_type, url, platform, in_banner, created_at, uitsnede)')
+    .select('avatar_url, avatar_bron, avatar_kader, musician_media(media_type, url, platform, in_banner, created_at, uitsnede)')
     .eq('id', myMusicianId).single();
   if (error) {
     showToast(friendlyErrorMessage(error, 'je gegevens laden'));
     return;
   }
   mhAvatarUrl = data.avatar_url || null;
+  mhAvatarBron = data.avatar_bron || null;
+  mhAvatarKader = data.avatar_kader || null;
   // TT-517 fase 4: op volgorde van toevoegen, zoals in de hoes en bij een band.
   data.musician_media = opVolgordeVanToevoegen(data.musician_media);
   mhMediaFiles = (data.musician_media || [])
@@ -1543,9 +1546,20 @@ async function mhHandleAvatarUpload(file) {
   const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
   if (typeProblem) { showToast(typeProblem); return; }
   { const groot = bestandTeGrootMelding(file, 5 * 1024 * 1024); if (groot) { showToast(groot); return; } }
-  file = await kiesUitsnede(file, 'rond'); // TT-520 deel 2: eerst de uitsnede
-  if (!file) return;
+  const uit = await kiesUitsnede(file, 'rond'); // TT-520 deel 2: eerst de uitsnede
+  if (uit) mhAvatarZetten({ file: uit, kader: uit.kader, bron: file });
+}
 
+// TT-543 blok 4b: een tik op de foto verschuift hem; zonder foto kies je er een.
+async function mhAvatarTik() {
+  if (!mhAvatarUrl) { document.getElementById('mhAvatarInput').click(); return; }
+  const uit = await fotoVerschuiven({ url: mhAvatarUrl, bron: mhAvatarBron, kader: mhAvatarKader }, 'rond');
+  if (uit) mhAvatarZetten(uit);
+}
+
+// Toont de nieuwe uitsnede meteen en uploadt hem, met de hele foto erbij.
+function mhAvatarZetten(uit) {
+  const file = uit.file;
   const blobUrl = URL.createObjectURL(file);
   const preview = document.getElementById('mhAvatarPreview');
   preview.innerHTML = `<img src="${blobUrl}" alt="profielfoto">
@@ -1554,8 +1568,10 @@ async function mhHandleAvatarUpload(file) {
     </div>`;
   preview.style.position = 'relative';
 
-  uploadAvatarFile(file, currentUser.id).then(({ url }) => {
+  fotoMetBronUploaden(uit, currentUser.id).then(({ url, bron, kader }) => {
     mhAvatarUrl = url;
+    mhAvatarBron = bron;
+    mhAvatarKader = kader;
     mhRenderAvatar();
   }).catch(e => {
     logCaught('mhUploadAvatar', e);
@@ -1571,6 +1587,8 @@ function mhAskRemoveAvatar() {
 }
 function mhRemoveAvatar() {
   mhAvatarUrl = null;
+  mhAvatarBron = null;
+  mhAvatarKader = null;
   mhRenderAvatar();
 }
 
@@ -1624,10 +1642,7 @@ function mhToggleMediaBanner(i) {
 }
 
 function mhSpeelMedia(i) {
-  const m = mhMediaFiles[i];
-  if (!m || !m.url) return;
-  if (m.type === 'foto') { openMediaLightbox(m.url); return; }
-  openMediaSpeler(m.url, 'video', m.name || '', '');
+  mediaTegelTik(mhMediaFiles[i]); // TT-543 blok 4b: een bannerfoto opent het kader
 }
 
 function mhRemoveMedia(i) {
@@ -1658,9 +1673,11 @@ async function saveJeMediahoek() {
   if (mhFieldSnapshot() === mhSnapshot) return;
 
   const { error: uErr } = rijenGeraakt(await db.from('musicians')
-    .update({ avatar_url: mhAvatarUrl || null, ...wazigVeld(mhAvatarUrl) }).eq('id', myMusicianId).select('id'));
+    .update({ avatar_url: mhAvatarUrl || null, ...wazigVeld(mhAvatarUrl),
+      avatar_bron: mhAvatarUrl ? mhAvatarBron : null, avatar_kader: mhAvatarUrl ? mhAvatarKader : null })
+    .eq('id', myMusicianId).select('id'));
   if (uErr) { showToast(friendlyErrorMessage(uErr, 'je gegevens opslaan')); return; }
-  opslagOpruimen('avatars', currentUser && currentUser.id, [mhAvatarUrl]);
+  opslagOpruimen('avatars', currentUser && currentUser.id, [mhAvatarUrl, mhAvatarBron]);
 
   // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
   const linkMedia = mhMediaLinks
