@@ -1816,7 +1816,7 @@ def blok_browser():
           open: document.getElementById('messagesThreadPanel').style.display,
           id: typeof activeConversationId === 'undefined' ? null : activeConversationId })""")
         check("verversen in een gesprek houdt het gesprek open",
-              gesp["view"] == "view-messages" and gesp["open"] == "block" and gesp["id"] == "m2",
+              gesp["view"] == "view-messages" and gesp["open"] == "flex" and gesp["id"] == "m2",  # TT-543 onderdeel 5: een open gesprek is flex (voorstel 1)
               json.dumps(gesp))
         ip.evaluate("history.back()")
         ip.wait_for_timeout(300)
@@ -8106,7 +8106,7 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-435: een gesprek met een verwijderd account is ook te verwijderen, zonder melden en blokkeren",
               d73["menuWeg"] == ["Gesprek verwijderen"] and "Het verdwijnt alleen bij jou." in d73["vraagWeg"] and "houdt het" not in d73["vraagWeg"], j73)
         check("TT-435: mislukt de database, dan blijft het gesprek open en komt er een melding",
-              d73["fout"]["melding"] and d73["fout"]["paneel"] == "block", j73)
+              d73["fout"]["melding"] and d73["fout"]["paneel"] == "flex", j73)  # TT-543 onderdeel 5: open = flex
         check("TT-435: ontbreekt de tabel, dan blijft alles zichtbaar",
               "Dylan" in d73["zonderTabel"] and "sanne" in d73["zonderTabel"], j73)
         check("geen paginafouten in blok 73", not page_errors, "; ".join(page_errors)[:300])
@@ -13753,7 +13753,7 @@ def blok_tt481():
           const bericht = (id, van, naar, h) => ({ id, sender_id: van, recipient_id: naar, body: 'b' + id, created_at: new Date(nu - h * uur).toISOString(), read_at: null });
           const invoer = $('messagesReplyInput'), knop = document.querySelector('#messagesThreadPanel .messages-send-btn');
           const stand = () => ({ dicht: invoer.disabled, knopDicht: knop.disabled, tekst: invoer.getAttribute('placeholder'),
-                                 teller: $('messagesReplyCounter').style.visibility !== 'hidden' });
+                                 teller: !$('messagesReplyCounter').hidden });
           const tien = Array.from({ length: 10 }, (_, i) => bericht('t' + i, 'm1', 'm2', 1 + i * 0.1));
           S.data.messages = tien.slice();
           await openConversation('m2', 'Dylan', '', false, false); await w(50);
@@ -13801,7 +13801,7 @@ def blok_tt481():
           r["gesprekDicht"] == {"dicht": True, "knopDicht": True, "tekst": "Wacht op antwoord", "teller": False}, j)
     check("een ander gesprek opent daarna gewoon open, met de gewone tekst",
           r["anderGesprekOpen"]["dicht"] is False and r["anderGesprekOpen"]["knopDicht"] is False
-          and r["anderGesprekOpen"]["tekst"] == "Typ een bericht..." and r["anderGesprekOpen"]["teller"] is True, j)
+          and r["anderGesprekOpen"]["tekst"] == "Typ een bericht..." and r["anderGesprekOpen"]["teller"] is False, j)  # TT-543 onderdeel 5, voorstel 3: een leeg veld heeft geen teller
     check("antwoordt de ander na de 10 berichten, dan gaat het veld weer open", r["naAntwoordOpen"]["dicht"] is False, j)
     check("na het tiende bericht gaat het veld dicht", r["naNegenOpen"]["dicht"] is False and r["naTiendeDicht"]["dicht"] is True, j)
     check("weigert de database toch (gelijktijdig), dan 'Wacht op antwoord.' en geen foutlog",
@@ -16355,6 +16355,202 @@ def blok_tt543_onderdeel4():
     check("geen paginafouten in blok 141", not [f for f in fouten if "musician_songs is not iterable" not in f], "; ".join(fouten)[:300])
 
 
+def blok_tt543_onderdeel5():
+    # TT-543 onderdeel 5 (Berichten), besluitenlijst onderdeel 5 (besluiten Ronald
+    # 09-11-2026, sessie 103 en 104): voorstel 1 (het invoerveld staat altijd
+    # onderaan, vlak boven de onderbalk; een kort gesprek zakt naar het veld);
+    # voorstel 2 (één regel van 44px, groeit mee tot vijf regels, 132px, vraag 3);
+    # voorstel 3 en vraag 1 (de teller alleen bij de laatste 200 tekens, in een
+    # gesprek en bij Melden); voorstel 4 (een nieuw gesprek zonder knop: "Stuur
+    # <naam> een eerste bericht"); voorstel 5 (kop: foto 40px, naam 17px, geen
+    # lijn; berichten 132px vanaf de bovenkant); F1 vaste regelhoogtes; F2/TT-549
+    # en TT-577 (vraag 2: de gemeten hoogte van de onderbalk, ook na de
+    # landingspagina); F3 teller nooit rood; F4 geen teller bij een verwijderd
+    # account; F5 de kop van Talent Tent even hoog; F6 "Nog geen profiel" met knop;
+    # F7 geen opmaak in de regel.
+    print("\nBlok 142 — TT-543 onderdeel 5: Berichten (invoerveld onderaan, meegroeien, teller, kop, onderbalk)")
+    msgjs = open(os.path.join(ROOT, "messages.js"), encoding="utf-8").read()
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    deel = html[html.index('id="view-messages"'):html.index('<!-- VIEW: Over ons -->')]
+    check("F7: geen opmaak in de regel in view-messages (index.html) en in messages.js",
+          'style="' not in msgjs and deel.count('style="') == 2 and deel.count('style="display:none;"') == 2, str(deel.count('style="')))
+    check("F3: de teller kent geen rood meer (updateCharCounter)",
+          "--danger" not in open(os.path.join(ROOT, "utils.js"), encoding="utf-8").read().split("function updateCharCounter")[1].split("\n}")[0], "")
+    check("TT-577: niets zet --onderbalk-hoogte nog met de hand op een getal; één functie meet de balk",
+          "setProperty('--onderbalk-hoogte', '0px')" not in open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
+          and "function onderbalkHoogteZetten" in open(os.path.join(ROOT, "core.js"), encoding="utf-8").read(), "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten = []
+    LAAD = """async ([n, naam, via, verwijderd]) => {
+      const S = window.TT_STUB; hasOwnProfile = true; myMusicianId = 'm1';
+      window.getMyMusicianId = async () => 'm1'; window.emailWachtOpBevestiging = async () => null;
+      if (huidigeView !== 'messages') showView('messages');
+      await new Promise(r => setTimeout(r, 200));
+      const L = [];
+      for (let i = 0; i < n; i++) L.push({ id: 'x' + i, sender_id: i % 2 ? 'm1' : 'm2', recipient_id: i % 2 ? 'm2' : 'm1',
+        body: i % 3 ? 'Zaterdag middag?' : 'Hoi! Ik zag dat je ook Creep van Radiohead speelt. Zin om een keer te jammen?',
+        created_at: new Date(Date.now() - (n - i) * 3600000).toISOString(), read_at: new Date().toISOString() });
+      S.data.messages = L;
+      gesprekVanuit = null;
+      if (via) openMessageComposer('m2', naam, via); else await openConversation('m2', naam, '', false, verwijderd);
+      await new Promise(r => setTimeout(r, 300));
+    }"""
+    MEET = """() => { const $ = s => document.querySelector(s), r = s => { const e = $(s); if (!e || !e.getClientRects().length) return null; const b = e.getBoundingClientRect(); return [Math.round(b.top), Math.round(b.bottom)]; };
+      const lijst = $('#messagesThreadList'), laatste = lijst.lastElementChild.getBoundingClientRect(), kop = $('#messagesThreadPanel .messages-thread-header');
+      const naam = getComputedStyle($('#messagesThreadName')), foto = $('#messagesThreadAvatar').getBoundingClientRect();
+      return { nav: r('#appBottomNav'), navH: $('#appBottomNav').offsetHeight, var: getComputedStyle(document.documentElement).getPropertyValue('--onderbalk-hoogte').trim(),
+        veld: r('#messagesReplyInput'), voet: r('#messagesThreadPanel .messages-thread-footer'), teller: r('#messagesReplyCounter'),
+        laatsteOnder: Math.round(laatste.bottom), lijstBoven: Math.round(lijst.getBoundingClientRect().top), scroll: document.documentElement.scrollHeight - innerHeight,
+        kop: [Math.round(kop.getBoundingClientRect().top), Math.round(kop.getBoundingClientRect().height)], lijn: getComputedStyle(kop).borderBottomStyle,
+        foto: Math.round(foto.width), naam: [naam.fontSize, naam.lineHeight, naam.fontWeight],
+        leeg: lijst.querySelector('.empty-state') ? { kop: lijst.querySelector('.empty-state-title').textContent, tekst: (lijst.querySelector('.empty-state-text') || {}).textContent || '',
+          knoppen: lijst.querySelectorAll('.empty-state button').length } : null }; }"""
+    NORMAAL = """(sel) => [...document.querySelectorAll(sel)].flatMap(w => [w, ...w.querySelectorAll('*')]).filter(e => e.offsetParent && e.getBoundingClientRect().width > 1
+        && ([...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()) || e.tagName === 'TEXTAREA') && getComputedStyle(e).lineHeight === 'normal')
+        .map(e => (e.id ? '#' + e.id + ' ' : '') + (typeof e.className === 'string' ? e.className : e.tagName) + ': ' + (e.textContent || '').trim().slice(0, 20))"""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breedte, hoogte, thema in ((390, 844, "dark"), (360, 780, "light")):
+            n = f"{breedte}px {'donker' if thema == 'dark' else 'licht'}"
+            ctx = browser.new_context(viewport={"width": breedte, "height": hoogte}, color_scheme=thema, is_mobile=True, has_touch=True)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(500)
+            # TT-577 (vraag 2): de landingspagina zet de maat op 0; daarna is hij de echte hoogte van de balk.
+            land = page.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--onderbalk-hoogte').trim()")
+            page.locator(".landing-knop").click(); page.wait_for_timeout(400)
+            zoek = page.evaluate("""() => { const b = document.getElementById('appBottomNav');
+              return [getComputedStyle(document.documentElement).getPropertyValue('--onderbalk-hoogte').trim(), b.offsetHeight, parseFloat(getComputedStyle(document.body).paddingBottom)]; }""")
+            check(f"{n} (TT-577): op de landingspagina 0px; na de landingspagina de gemeten hoogte van de onderbalk ({zoek[1]}px), ook onder body",
+                  land == "0px" and zoek[0] == f"{zoek[1]}px" and zoek[1] > 60 and zoek[2] == zoek[1], json.dumps([land, zoek]))
+            voet = page.evaluate("""async () => { window.TT_STUB.rpcResults.tt_get_musicians_public = [{ id: 'm3', username: 'sanne', age: 19, city: 'Delft', bio: '', goal: null, avatar_url: null,
+                instrument_levels: [{ instrument: 'Zang', niveau: 3 }], genres: [], songs: [] }];
+              await openProfielScherm('m3'); await new Promise(r => setTimeout(r, 300));
+              const v = document.getElementById('profielSchermVoet'); if (!v) return null;
+              v.innerHTML = '<button class="btn btn-primary" style="width:100%;">Stuur een bericht</button>';
+              for (let i = 0; i < 30; i++) v.insertAdjacentHTML('beforebegin', '<p>regel</p>');
+              await new Promise(r => setTimeout(r, 50));
+              return [Math.round(v.getBoundingClientRect().bottom), Math.round(document.getElementById('appBottomNav').getBoundingClientRect().top)]; }""")
+            check(f"{n} (TT-577): de vaste balk van een profiel staat op de onderbalk, niet erachter (na de landingspagina)",
+                  voet and voet[0] == voet[1], json.dumps(voet))
+            # Voorstel 1: een kort gesprek.
+            page.evaluate(LAAD, [1, "Dylan de Vries", "", False])
+            k = page.evaluate(MEET)
+            check(f"{n} (voorstel 1): een kort gesprek: het invoerveld staat vlak op de onderbalk, het bericht direct erboven, niets scrolt",
+                  k["veld"][1] == k["nav"][0] and k["voet"][1] == k["nav"][0] and k["voet"][0] - k["laatsteOnder"] == 20 and k["scroll"] <= 0, json.dumps(k))
+            check(f"{n} (voorstel 5): kop: foto 40px, naam 17/22px vet, geen lijn; de berichten beginnen 132px vanaf de bovenkant (16px onder de kop van 48px)",
+                  k["foto"] == 40 and k["naam"] == ["17px", "22px", "700"] and k["lijn"] == "none" and k["kop"] == [68, 48] and k["lijstBoven"] == 132, json.dumps(k))
+            check(f"{n} (voorstel 2 en 3): leeg één regel van 44px, geen teller", k["veld"][1] - k["veld"][0] == 44 and k["teller"] is None, json.dumps(k))
+            # Voorstel 2: meegroeien.
+            page.tap("#messagesReplyInput")
+            groei = []
+            for tekst in ("Hoi", "Hoi Dylan! Zaterdag kan ik vanaf twee uur. Ik neem mijn versterker mee.",
+                          "Hoi Dylan! Zaterdag kan ik vanaf twee uur. Ik neem mijn versterker en een paar kabels mee. Zullen we Creep en Zombie doen? Die ken ik allebei uit mijn hoofd.",
+                          "Lange tekst. " * 60):
+                page.fill("#messagesReplyInput", tekst); page.wait_for_timeout(60)
+                groei.append(page.evaluate("""() => { const e = document.getElementById('messagesReplyInput'), cs = getComputedStyle(e);
+                  return [e.offsetHeight, cs.overflowY, cs.lineHeight, Math.round(innerHeight - document.querySelector('#messagesThreadPanel .messages-thread-footer').getBoundingClientRect().bottom)]; }"""))
+            check(f"{n} (voorstel 2, vraag 3): het veld groeit mee per regel van 22px (44, 66, …) tot 132px, daarna scrolt het; tijdens typen op de onderrand",
+                  groei[0][:3] == [44, "hidden", "22px"] and groei[1][0] in (66, 88) and groei[2][0] in (110, 132) and groei[3][:2] == [132, "auto"]
+                  and all(g[3] == 0 for g in groei), json.dumps(groei))
+            # Voorstel 3 en F3: de teller.
+            tel = []
+            for lengte in (1799, 1800, 2000):
+                page.evaluate(f"document.getElementById('messagesReplyInput').value = 'x'.repeat({lengte}); berichtInvoerBijwerken()")
+                tel.append(page.evaluate("""() => { const t = document.getElementById('messagesReplyCounter'); const cs = getComputedStyle(t);
+                  const muted = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
+                  const proef = document.createElement('span'); proef.style.color = muted; document.body.appendChild(proef); const grijs = getComputedStyle(proef).color; proef.remove();
+                  return [t.offsetParent !== null, t.textContent, cs.color === grijs, cs.fontSize, cs.lineHeight]; }"""))
+            check(f"{n} (voorstel 3, F3): de teller pas vanaf 1800 tekens ('1800/2000'), grijs, ook bij 2000; 12/16px",
+                  tel[0][0] is False and tel[1][:3] == [True, "1800/2000", True] and tel[2][:3] == [True, "2000/2000", True] and tel[1][3:] == ["12px", "16px"], json.dumps(tel))
+            # F2/TT-549: in een lang gesprek, met de teller in beeld, valt niets achter de onderbalk.
+            page.evaluate("document.activeElement.blur()"); page.wait_for_timeout(100)
+            page.evaluate(LAAD, [22, "Dylan de Vries", "", False])
+            page.evaluate("document.getElementById('messagesReplyInput').value = 'x'.repeat(1900); berichtInvoerBijwerken()"); page.wait_for_timeout(100)
+            page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)"); page.wait_for_timeout(100)
+            lang = page.evaluate(MEET)
+            check(f"{n} (F2, TT-549): lang gesprek met de teller in beeld: de voet en de teller eindigen op de onderbalk, het laatste bericht staat erboven",
+                  lang["teller"] and lang["teller"][1] <= lang["nav"][0] and lang["voet"][1] == lang["nav"][0] and lang["laatsteOnder"] <= lang["voet"][0] and lang["scroll"] > 0, json.dumps(lang))
+            page.evaluate("document.getElementById('messagesReplyInput').value = ''; berichtInvoerBijwerken()")
+            check(f"{n} (F1): geen regelhoogte 'normal' in een gesprek", not page.evaluate(NORMAAL, "#messagesThreadPanel"),
+                  json.dumps(page.evaluate(NORMAAL, "#messagesThreadPanel"), ensure_ascii=False)[:300])
+            # Voorstel 4: een nieuw gesprek.
+            page.evaluate(LAAD, [0, "Noor", "Van Delft", False])
+            nieuw = page.evaluate(MEET)
+            check(f"{n} (voorstel 4): een nieuw gesprek: 'Stuur Noor een eerste bericht', de regel over de contactpersoon, geen knop; het veld op de onderbalk",
+                  nieuw["leeg"] == {"kop": "Stuur Noor een eerste bericht", "tekst": "Noor is de contactpersoon van Van Delft.", "knoppen": 0}
+                  and nieuw["veld"][1] == nieuw["nav"][0], json.dumps(nieuw, ensure_ascii=False))
+            # F4: verwijderd account.
+            page.evaluate("appTerug && 0")
+            page.evaluate(LAAD, [3, "Verwijderde gebruiker", "", True])
+            page.evaluate("document.getElementById('messagesReplyInput').value = 'x'.repeat(1900); berichtInvoerBijwerken()")
+            weg = page.evaluate(MEET)
+            check(f"{n} (F4): bij een verwijderd account geen invoerveld en geen teller; de melding staat op de onderbalk",
+                  weg["veld"] is None and weg["teller"] is None and weg["voet"][1] == weg["nav"][0], json.dumps(weg))
+            page.evaluate("document.getElementById('messagesReplyInput').value = ''")
+            # F5: de kop van Talent Tent even hoog als die van een gewoon gesprek.
+            tt = page.evaluate("""async () => { window.TT_STUB.data.talent_tent_berichten = [];
+              await openTalentTentGesprek(); await new Promise(r => setTimeout(r, 200));
+              const k = document.querySelector('#messagesThreadPanel .messages-thread-header').getBoundingClientRect();
+              return [Math.round(k.height), Math.round(document.getElementById('messagesThreadList').getBoundingClientRect().top)]; }""")
+            check(f"{n} (F5): de kop in het gesprek met Talent Tent is even hoog (48px); de inhoud begint ook op 132px", tt == [48, 132], json.dumps(tt))
+            # F6: Berichten zonder eigen profiel.
+            gp = page.evaluate("""async () => { closeConversation(true); const was = window.getMyMusicianId; window.getMyMusicianId = async () => null; myMusicianIdFout = null;
+              await loadInbox(); const l = document.getElementById('messagesInboxList');
+              const u = [l.querySelector('.empty-state-title')?.textContent, l.querySelector('.empty-state .btn-primary')?.textContent];
+              myMusicianIdFout = { message: 'Failed to fetch' }; await loadInbox();
+              u.push(l.querySelector('.empty-state-title')?.textContent); myMusicianIdFout = null; window.getMyMusicianId = was; return u; }""")
+            check(f"{n} (F6): Berichten zonder profiel: 'Nog geen profiel' met de knop 'Profiel aanmaken'; bij een storing de foutstaat",
+                  gp == ["Nog geen profiel", "Profiel aanmaken", "Laden lukt nu niet"], json.dumps(gp))
+            # Vraag 1: de teller bij Melden.
+            meld = page.evaluate("""async () => { openMeldModal('gesprek', null, 'Dylan'); await new Promise(r => setTimeout(r, 100));
+              const v = document.getElementById('meldToelichting'), t = document.getElementById('meldToelichtingCounter'), rij = t.nextElementSibling;
+              const afstand = () => Math.round(rij.getBoundingClientRect().top - v.getBoundingClientRect().bottom);
+              const u = [[t.offsetParent !== null, afstand()]];
+              for (const n of [799, 800, 1000]) { v.value = 'x'.repeat(n); updateCharCounter('meldToelichting', 'meldToelichtingCounter', 1000);
+                u.push([t.offsetParent !== null, t.textContent, Math.round(t.getBoundingClientRect().top - v.getBoundingClientRect().bottom), afstand(), getComputedStyle(t).color]); }
+              document.getElementById('meldModal').classList.remove('visible'); return u; }""")
+            check(f"{n} (vraag 1): Melden: geen teller tot 800 tekens, dan '800/1000', 4px onder het veld; 20px tot de knoppen, met en zonder teller; dezelfde grijze kleur",
+                  meld[0] == [False, 20] and meld[1][0] is False and meld[2][:3] == [True, "800/1000", 4] and meld[2][3] == 4 + 16 + 20
+                  and meld[3][:2] == [True, "1000/1000"] and meld[3][4] == meld[2][4], json.dumps(meld))
+            # Vraag 5 (besluit Ronald 09-11-2026): het jaartal alleen bij een bericht van een ander jaar.
+            jaar = page.evaluate("""() => { const nu = new Date(), j = nu.getFullYear(), d = (y, m, dag) => new Date(y, m, dag, 12);
+              const oudIso = d(j - 1, 10, 6).toISOString();
+              return [dagLabel(d(j - 1, 10, 6)), dagLabel(d(j, 0, 2)), relativeMessageTime(oudIso), relativeMessageTime(d(j, 0, 2).toISOString()), j, nu < d(j, 0, 10)]; }""")
+            j5 = jaar[4]
+            check(f"{n} (vraag 5): jaartal alleen bij een ander jaar: '6 november {j5 - 1}' en '6 nov {j5 - 1}'; dit jaar zonder jaartal",
+                  jaar[0] == f"6 november {j5 - 1}" and jaar[1] == "2 januari" and jaar[2] == f"6 nov {j5 - 1}"
+                  and (jaar[3] == "2 jan" or jaar[5]), json.dumps(jaar))  # in de eerste dagen van januari is 2 januari nog "Gisteren" of een weekdag
+            # TT-581 (09-11-2026): wie het toetsenbord wegveegt, houdt de cursor in het veld; de onderbalk
+            # moet dan terugkomen. Het toetsenbord nagebootst met een lager scherm (het zichtbare deel krimpt).
+            page.evaluate(LAAD, [1, "Dylan de Vries", "", False])
+            stand581 = lambda: page.evaluate("[getComputedStyle(document.getElementById('appBottomNav')).display, document.activeElement.id || '']")
+            t581 = []
+            for versturen in (False, True):
+                page.tap("#messagesReplyInput"); page.wait_for_timeout(100)
+                page.set_viewport_size({"width": breedte, "height": hoogte - 320}); page.wait_for_timeout(250)
+                if versturen:
+                    page.fill("#messagesReplyInput", "Zaterdag?"); page.tap("#messagesThreadPanel .messages-send-btn"); page.wait_for_timeout(600)
+                t581.append(stand581())
+                # Een strook met suggesties (50px) is geen wegschuiven; 170px groei is het eerste teken (vraag 7).
+                page.set_viewport_size({"width": breedte, "height": hoogte - 270}); page.wait_for_timeout(250)
+                t581.append(stand581())
+                page.set_viewport_size({"width": breedte, "height": hoogte - 150}); page.wait_for_timeout(250)
+                t581.append(stand581())
+                page.set_viewport_size({"width": breedte, "height": hoogte}); page.wait_for_timeout(350)
+                t581.append(stand581())
+            check(f"{n} (TT-581, vraag 7): toetsenbord open: geen onderbalk, ook na versturen en met een strook suggesties; bij het eerste teken van wegschuiven is de onderbalk terug",
+                  t581 == [["none", "messagesReplyInput"], ["none", "messagesReplyInput"], ["grid", ""], ["grid", ""]] * 2, json.dumps(t581))
+            ctx.close()
+    check("geen paginafouten in blok 142", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -16394,6 +16590,7 @@ BLOKKEN = [
     blok_tt543_onderdeel2,
     blok_tt543_onderdeel3,
     blok_tt543_onderdeel4,
+    blok_tt543_onderdeel5,
 ]
 
 

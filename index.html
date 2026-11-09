@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261109b">
+<link rel="stylesheet" href="styles.css?v=20261109c">
 </head>
 <body>
 
@@ -1589,20 +1589,20 @@
 <div class="app-view" id="view-messages" data-kop="Berichten">
   <div class="search-wrap">
     <div id="messagesInboxPanel">
-      <div class="filter-title scherm-titel" style="margin-bottom:16px;">Berichten</div>
-      <div id="messagesInboxList"><div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div></div>
+      <div class="filter-title scherm-titel">Berichten</div>
+      <div id="messagesInboxList"><div class="berichten-laden">Laden...</div></div>
     </div>
     <div id="messagesThreadPanel" style="display:none;">
       <div class="messages-thread-header">
         <!-- TT-271 (16-09-2026, Ronald): foto en naam openen het profiel van
              de ander. Niet bij een verwijderd account (zie openThreadProfile). -->
         <div class="messages-conv-avatar messages-thread-link" id="messagesThreadAvatar" onclick="openThreadProfile()"></div>
-        <div class="filter-title messages-thread-link" id="messagesThreadName" style="margin:0;" role="button" tabindex="0" onclick="openThreadProfile()"></div>
+        <div class="filter-title messages-thread-naam messages-thread-link" id="messagesThreadName" role="button" tabindex="0" onclick="openThreadProfile()"></div>
         <!-- TT-06 (18-09-2026): melden en blokkeren vanuit het gesprek zelf.
              Rechts in de rij, achter een ⋯-menu (huisstijl §8). -->
-        <span id="messagesThreadActies" style="margin-left:auto;"></span>
+        <span id="messagesThreadActies" class="messages-thread-acties"></span>
       </div>
-      <div id="messagesThreadList" style="display:flex;flex-direction:column;margin-bottom:16px;"></div>
+      <div id="messagesThreadList"></div>
       <!-- TT-130 (23-08-2026): composer + teller + verwijderd-melding samen
            in één voettekst-wrapper, zodat ze op mobiel samen sticky kunnen
            worden gemaakt (zie CSS) zonder dat de teller/melding achterblijft
@@ -1612,13 +1612,13 @@
           <!-- TT-277 (16-09-2026): de verzendknop pakt de focus niet van het
                invoerveld. Anders klapt het toetsenbord weg, komt de onderbalk
                terug en springt het beeld heen en weer. -->
-          <textarea id="messagesReplyInput" placeholder="Typ een bericht..." maxlength="2000" oninput="updateCharCounter('messagesReplyInput','messagesReplyCounter',2000)"></textarea>
+          <textarea id="messagesReplyInput" rows="1" placeholder="Typ een bericht..." maxlength="2000" oninput="berichtInvoerBijwerken()"></textarea>
           <button class="messages-send-btn" onmousedown="event.preventDefault()" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
         </div>
-        <div id="messagesReplyCounter" style="text-align:right;font-size:12px;color:var(--muted);margin-top:4px;">0/2000</div>
+        <div id="messagesReplyCounter" class="teken-teller" hidden></div>
         <!-- V-04 (13-08-2026): i.p.v. een actief invoerveld naar een niet meer
              bestaand account. -->
-        <div id="messagesDeletedNotice" style="display:none;text-align:center;font-size:12px;color:var(--muted);padding:12px;background:var(--surface2);border-radius:8px;">Dit account bestaat niet meer. Je kunt dit gesprek niet voortzetten.</div>
+        <div id="messagesDeletedNotice" class="messages-verwijderd-melding" style="display:none;">Dit account bestaat niet meer. Je kunt dit gesprek niet voortzetten.</div>
       </div>
     </div>
   </div>
@@ -2113,11 +2113,11 @@
       <div class="tag-grid" id="meldRedenen"></div>
     </div>
 
-    <div class="field" style="margin-bottom:4px;">
+    <div class="field meld-toelichting-veld">
       <label>Toelichting (niet verplicht)</label>
       <textarea id="meldToelichting" placeholder="Wat is er gebeurd?" maxlength="1000" style="width:100%;min-height:100px;" oninput="updateCharCounter('meldToelichting','meldToelichtingCounter',1000)"></textarea>
     </div>
-    <div id="meldToelichtingCounter" style="text-align:right;font-size:12px;color:var(--muted);margin:4px 0 20px;">0/1000</div>
+    <div id="meldToelichtingCounter" class="teken-teller" hidden></div>
 
     <div class="btn-row">
       <button class="btn btn-ghost" onclick="closeMeldModal()">Annuleren</button>
@@ -2362,8 +2362,8 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261108d"></script>
-<script src="utils.js?v=20261108c"></script>
+<script src="core.js?v=20261109c"></script>
+<script src="utils.js?v=20261109a"></script>
 <script src="veiligheid.js?v=20261108c"></script>
 <script src="auth.js?v=20261108c"></script>
 <script src="postcode.js?v=20261107a"></script>
@@ -2372,7 +2372,7 @@
 <script src="search.js?v=20261109a"></script>
 <script src="musicians.js?v=20261109a"></script>
 <script src="bands.js?v=20261109a"></script>
-<script src="messages.js?v=20261109a"></script>
+<script src="messages.js?v=20261109c"></script>
 <script src="push.js?v=20261027b"></script>
 <script src="modals-shared.js?v=20261108d"></script>
 <script>

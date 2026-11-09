@@ -1147,6 +1147,7 @@ function showView(view, mode, extra) {
   // scherm; terug gaat met de pijl.
   const bottomNavEl = document.getElementById('appBottomNav');
   if (bottomNavEl) bottomNavEl.style.display = ['landing', 'register', 'profieltegels', 'toestemming', 'auth', 'reset'].includes(view) ? 'none' : '';
+  onderbalkHoogteZetten(); // TT-577: meteen, niet pas bij de waarnemer een beeld later
   // TT-543 F4: het e-mailadres als verborgen gebruikersnaam bij Nieuw
   // wachtwoord, zodat een wachtwoordbeheerder het bij het juiste account opslaat.
   if (view === 'reset') {
@@ -1444,11 +1445,11 @@ function landingBijwerken() {
   if (actief) {
     // 06-10-2026 (bevinding Ronald): de onderbalk staat niet op de landing-
     // pagina (showView() verbergt hem), dus het scherm is de hele hoogte.
-    document.documentElement.style.setProperty('--onderbalk-hoogte', '0px');
     // Ook bij het opstarten: de landingspagina staat dan al actief in
     // index.html, zonder dat showView() eerst draait.
     const onderbalk = document.getElementById('appBottomNav');
     if (onderbalk) onderbalk.style.display = 'none';
+    onderbalkHoogteZetten(); // TT-577: nu 0px; terug zodra de balk er weer staat
     landingOpbouwen();
   }
   const lopen = actief && !document.hidden && magBewegen();
@@ -1460,6 +1461,27 @@ function landingBijwerken() {
   }
 }
 document.addEventListener('visibilitychange', landingBijwerken);
+
+// TT-577 en TT-543 onderdeel 5, F2 (besluit Ronald 09-11-2026, vraag 2): de
+// hoogte van de onderbalk, gemeten, in --onderbalk-hoogte (styles.css). De ruimte
+// onder body, het invoerveld van een gesprek en de vaste balk van een profiel
+// staan daarop. 0px als de balk er niet staat (landingspagina, Profiel aanmaken,
+// tijdens typen). Tot nu toe zette landingBijwerken() de waarde op 0px en zette
+// niets hem terug, en de rest van de app rekende met 60px; de balk is 69px.
+// showView() en landingBijwerken() zetten hem meteen na het tonen of verbergen;
+// een waarnemer volgt de rest (tijdens typen, een ander lettertype). Alleen de
+// waarnemer is niet genoeg: verbergen en tonen in één beeld ziet hij niet.
+function onderbalkHoogteZetten() {
+  const balk = document.getElementById('appBottomNav');
+  if (!balk) return;
+  document.documentElement.style.setProperty('--onderbalk-hoogte', balk.offsetHeight + 'px');
+}
+(function onderbalkHoogteVolgen() {
+  const balk = document.getElementById('appBottomNav');
+  if (!balk) return;
+  onderbalkHoogteZetten();
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(onderbalkHoogteZetten).observe(balk);
+})();
 
 // TT-U25 (12-08-2026): zolang een modal open is, mag de pagina eronder niet
 // meescrollen. Eén waarnemer op alle modals is betrouwbaarder dan bij elke
@@ -1711,6 +1733,28 @@ function isTypveld(el) {
     setTimeout(() => {
       if (!isTypveld(document.activeElement)) document.body.classList.remove('toetsenbord-open');
     }, 0);
+  });
+  // TT-581 (09-11-2026, gemeld door Ronald op een Samsung met Opera): wie het
+  // toetsenbord wegveegt of de terugknop gebruikt, houdt de cursor in het veld.
+  // Dan kwam de onderbalk niet terug tot je ververste. Het toetsenbord zelf is te
+  // zien aan het zichtbare deel van het scherm: dat krimpt als het opkomt en
+  // groeit terug als het weggaat. Groeit het terug terwijl er nog een veld de
+  // focus heeft, dan haalt de app die focus weg; de balk komt terug (focusout).
+  // Besluit Ronald 09-11-2026 (vraag 7): bij het eerste teken dat het toetsenbord
+  // wegschuift (120px groei), niet pas als het scherm weer bijna vol is ("de
+  // onderbalk komt met een kleine vertraging terug"). Een strook met suggesties
+  // of emoji (tot circa 50px) telt niet als wegschuiven.
+  const vv = window.visualViewport;
+  if (!vv) return;
+  let volle = vv.height, laagste = vv.height;
+  vv.addEventListener('resize', () => {
+    const h = vv.height;
+    if (!document.body.classList.contains('toetsenbord-open')) { volle = laagste = h; return; }
+    if (h < laagste) { laagste = h; return; }               // het toetsenbord komt (nog) op
+    if (volle - laagste > 150 && h - laagste > 120) {        // het stond open en schuift weg
+      volle = laagste = h;
+      if (isTypveld(document.activeElement)) document.activeElement.blur();
+    }
   });
 })();
 

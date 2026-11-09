@@ -143,7 +143,7 @@
     --silhouet-band: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%23050506' stroke='%238A6A22' stroke-width='1.4' stroke-linejoin='round'><g transform='translate(26 0) scale(0.74)' transform-origin='0 100'><circle cx='0' cy='38' r='9.5'/><path d='M-15 100 L-14 62 Q-13 51 -4 50 L4 50 Q13 51 14 62 L15 100 Z'/></g><g transform='translate(74 0) scale(0.74)' transform-origin='0 100'><circle cx='0' cy='38' r='9.5'/><path d='M-15 100 L-14 62 Q-13 51 -4 50 L4 50 Q13 51 14 62 L15 100 Z'/></g><g><g transform='translate(50 0) scale(0.8)' transform-origin='0 100'><circle cx='0' cy='38' r='9.5'/><path d='M-15 100 L-14 62 Q-13 51 -4 50 L4 50 Q13 51 14 62 L15 100 Z'/></g></g></svg>");
     --foto-verloop: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0) 28%, rgba(0,0,0,0.75) 78%);
     --foto-leeg: radial-gradient(55% 65% at 75% 30%, rgba(255,170,90,0.6), transparent 62%), radial-gradient(50% 60% at 25% 75%, rgba(120,70,40,0.45), transparent 70%), linear-gradient(160deg, #6a3b22, #1f120b);
-    --onderbalk-hoogte: 61px;               /* gemeten door landingBijwerken() in core.js */
+    --onderbalk-hoogte: 69px;               /* gemeten door onderbalkHoogteZetten() in core.js (TT-577) */
   }
 
   /* ── TT-341 stap 2 (26-09-2026): het lichte thema ─────────────────────────
@@ -3168,20 +3168,32 @@
   }
   .messages-conv-avatar img { width: 100%; height: 100%; object-fit: cover; }
   .messages-conv-main { flex: 1; min-width: 0; }
-  .messages-conv-name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 6px; overflow-wrap: anywhere; } /* TT-553 */
+  .messages-conv-name { font-weight: 700; font-size: 15px; line-height: 20px; display: flex; align-items: center; gap: 6px; overflow-wrap: anywhere; } /* TT-553 */
   /* TT-517 fase 11 (besluit Ronald 01-11-2026): een ongelezen gesprek ziet eruit
      als elk ander gesprek; het rode getal is het teken ("opvallend genoeg"). */
-  .messages-conv-preview { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .messages-conv-time { font-size: 12px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+  .messages-conv-name .unread-badge { position: static; } /* F7: stond in de regel (messages.js) */
+  .messages-conv-preview { font-size: 12px; line-height: 18px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .messages-conv-time { font-size: 12px; line-height: 16px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
 
+  /* TT-543 onderdeel 5 (besluit Ronald 09-11-2026, voorstel 5): een compacte
+     kop. Foto 40px, naam 17px (de maat van een tegelkop), geen lijn eronder;
+     de berichten beginnen 25px hoger. Was foto 48px, naam 22px, 16px en een
+     lijn. F5: de rij is altijd 44px hoog (het tikvlak van ⋯), ook in het
+     gesprek met Talent Tent zonder ⋯; daar stond de kop 4px lager. */
   .messages-thread-header {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding-bottom: 16px;
+    box-sizing: content-box; /* 44px inhoud; de 4px boven (sticky) komen erbij */
+    min-height: 44px;
     margin-bottom: 16px;
-    border-bottom: 1px solid var(--border);
   }
+  .messages-thread-header .messages-conv-avatar { width: 40px; height: 40px; font-size: 17px; }
+  .filter-title.messages-thread-naam { font-size: 17px; line-height: 22px; margin: 0; } /* de kleur en dikte van een paneeltitel blijven */
+  .messages-thread-acties { margin-left: auto; }
+  /* F5: de menuknop heeft onder zich de marge van de kop; in deze rij niet,
+     anders is de rij 8px hoger dan het tikvlak en staat ⋯ 4px te hoog. */
+  .messages-thread-acties .nav-menu-btn { margin-bottom: 0; }
   /* TT-271: foto en naam zijn tikbaar en openen het profiel. */
   .messages-thread-link { cursor: pointer; overflow-wrap: anywhere; } /* TT-553 */
   .thread-verwijderd .messages-thread-link { cursor: default; }
@@ -3189,6 +3201,7 @@
   .messages-day-divider {
     text-align: center;
     font-size: 12px;
+    line-height: 16px; /* TT-543 onderdeel 5, F1 */
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -3228,13 +3241,20 @@
     gap: 8px;
     align-items: flex-end;
   }
+  /* TT-543 onderdeel 5 (besluiten Ronald 09-11-2026, voorstel 2 en vraag 3):
+     leeg één regel van 44px, zoals elk veld (1 + 10 + 22 + 10 + 1). Groeit
+     mee tot vijf regels (132px), daarna scrolt het veld
+     (berichtInvoerBijwerken() in messages.js). Was twee regels (66px) zonder
+     meegroeien, regelhoogte "normal". */
   .messages-composer-row textarea {
     flex: 1;
     border-radius: 20px;
-    padding: 12px 18px;
+    padding: 10px 18px;
+    line-height: 22px;
     resize: none;
     min-height: 44px;
-    max-height: 120px;
+    max-height: 132px;
+    overflow-y: hidden;
   }
   /* TT-481: dicht zolang je op antwoord wacht; zelfde zwakte als .btn:disabled. */
   .messages-send-btn:disabled { opacity: 0.5; cursor: default; }
@@ -3248,6 +3268,34 @@
     cursor: pointer;
     flex-shrink: 0;
   }
+  /* TT-543 onderdeel 5 (besluit Ronald 09-11-2026, voorstel 1): het
+     invoerveld staat altijd onderaan, vlak boven de onderbalk, zoals in elke
+     chat-app. Een open gesprek is minstens zo hoog als het scherm tussen de kop
+     en de onderbalk; de berichten zakken naar het invoerveld en de lege ruimte
+     staat erboven. Was: het veld direct onder het laatste bericht, met tot
+     437px leeg eronder. JS zet het paneel op flex (openConversation). */
+  #messagesThreadPanel { flex-direction: column; }
+  #messagesThreadPanel.gesprek-open {
+    min-height: calc(100vh - 2 * var(--kop-lucht) - 44px - env(safe-area-inset-top, 0px) - var(--onderbalk-hoogte));
+    min-height: calc(100dvh - 2 * var(--kop-lucht) - 44px - env(safe-area-inset-top, 0px) - var(--onderbalk-hoogte));
+  }
+  #messagesThreadList {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+  }
+  /* TT-543 onderdeel 5, F7 en F1: de teksten van Berichten hebben een klasse en
+     een vaste regelhoogte; was opmaak in de regel. */
+  .zoek-laden, .berichten-laden { text-align: center; padding: 40px; color: var(--muted); font-size: 15px; line-height: 20px; }
+  .messages-verwijderd-melding {
+    text-align: center; font-size: 12px; line-height: 16px; color: var(--muted);
+    padding: 12px; background: var(--surface2); border-radius: 8px;
+  }
+  /* F4: bij een verwijderd account geen teller, zoals geen invoerveld. */
+  #messagesThreadPanel.thread-verwijderd #messagesReplyCounter { display: none; }
+
   /* TT-517 fase 9 (huisstijl §23, besluit Ronald 1A): de verstuurknop drukt in
      zoals elke knop (core.js, initTikIndrukken). Was 95% bij een tik en 105%
      bij de muis erboven; op een telefoon bleef die 105% na de tik staan. */
@@ -3688,7 +3736,6 @@
   .no-results-kop { font-size: 15px; line-height: 20px; font-weight: 600; margin-bottom: 8px; }
   .no-results-tekst { font-size: 12px; line-height: 18px; }
   .zoek-uitleg { font-size: 12px; line-height: 18px; color: var(--muted); margin: 0 0 12px; }
-  .zoek-laden { text-align: center; padding: 40px; color: var(--muted); font-size: 15px; line-height: 20px; }
   .zoek-laden .save-spinner { margin: 0 auto 16px; }
 
   /* ── De uitsnede kiezen (TT-520 deel 2, 27-10-2026, Laag 3.4) ─────────────
@@ -3941,6 +3988,16 @@
     margin-bottom: 24px;
   }
   .empty-state-title + .btn { margin-top: 16px; }
+
+  /* ── De tekenteller (updateCharCounter() in utils.js) ─────────────────────
+     TT-543 onderdeel 5 (besluiten Ronald 09-11-2026, voorstel 3, vraag 1, F3):
+     alleen zichtbaar bij de laatste 200 tekens, altijd grijs (nooit rood,
+     huisstijl §1.2). Eén vorm voor elke teller: in een gesprek en bij Melden. */
+  .teken-teller { text-align: right; font-size: 12px; line-height: 16px; color: var(--muted); margin-top: 4px; }
+  /* Melden: 20px tot de knoppen, met of zonder teller; de teller staat 4px onder het veld. */
+  .meld-toelichting-veld { margin-bottom: 20px; }
+  .meld-toelichting-veld:has(+ .teken-teller:not([hidden])) { margin-bottom: 4px; }
+  .meld-toelichting-veld + .teken-teller { margin: 0 0 20px; }
 
   /* Muzikant detail modal */
   /* TT-190 (04-09-2026): Ronald wil elk scherm/modal openen onder 0,1s.
@@ -4730,9 +4787,12 @@
        Onderafstand gelijk aan wat body al reserveert voor de vaste
        onderbalk (60px + safe area), zodat de composer daar nooit onder
        verdwijnt. */
+    /* TT-543 onderdeel 5, F2 (TT-549): de hoogte van de onderbalk zelf
+       (--onderbalk-hoogte, gemeten in core.js). Hier stond 60px; de balk is
+       69px, dus de teller viel 9px achter de onderbalk. */
     #messagesThreadPanel .messages-thread-footer {
       position: sticky;
-      bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+      bottom: var(--onderbalk-hoogte);
       z-index: 30;
       background: var(--bg);
       padding-top: 8px;
@@ -4856,8 +4916,10 @@
        hoogte meer te reserveren. */
     .app-nav-row { justify-content: flex-end; padding: 0; }
 
-    /* Inhoud mag niet achter de onderbalk verdwijnen. */
-    body { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+    /* Inhoud mag niet achter de onderbalk verdwijnen. TT-543 onderdeel 5
+       (besluit Ronald 09-11-2026, vraag 2): de gemeten hoogte van de onderbalk,
+       met de streep van een iPhone erin. Was 60px; de balk is 69px. */
+    body { padding-bottom: var(--onderbalk-hoogte); }
   
 
   /* ── Backend niet geladen (TT-82) ────────────────────────────────────────

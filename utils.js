@@ -34,13 +34,18 @@ function confirmModalYes() {
 // Bevinding Ronald (10-08-2026): teller ontbrak bij het schrijven van een
 // bericht ("0/2000 hadden we afgesproken"). Generiek gehouden zodat hij ook
 // bij toekomstige velden met een maxlength hergebruikt kan worden.
+// TT-543 onderdeel 5 (besluiten Ronald 09-11-2026, voorstel 3 en vraag 1): de
+// teller staat er alleen bij de laatste 200 tekens, voor elke teller. "0/2000"
+// zegt niets bij een bericht van één zin. Altijd grijs (.teken-teller), ook
+// bij de grens: rood is nooit een tekstkleur (huisstijl §1.2, fout F3).
+const TELLER_ZICHTBAAR_REST = 200;
 function updateCharCounter(textareaId, counterId, max) {
   const el = document.getElementById(textareaId);
   const counter = document.getElementById(counterId);
   if (!el || !counter) return;
   const len = el.value.length;
   counter.textContent = `${len}/${max}`;
-  counter.style.color = len >= max ? 'var(--danger)' : 'var(--muted)';
+  counter.hidden = len < max - TELLER_ZICHTBAAR_REST;
 }
 
 function showToast(msg, duration) {
@@ -1940,12 +1945,17 @@ function wheelSheetClear() {
 // had elk scherm zijn eigen vorm; "Nog geen profiel" had een knop en "Nog geen
 // bands" tien regels verderop niet. Nooit een tweede knop toevoegen — kiezen
 // is precies wat in een lege staat niet lukt.
+// Eén uitzondering zonder knop (huisstijl §15, TT-543 onderdeel 5, besluit
+// Ronald 09-11-2026, voorstel 4): een nieuw gesprek. Het invoerveld eronder is
+// daar de volgende stap; een knop die alleen de cursor zet, is een tweede knop
+// voor dezelfde handeling. Zonder knopLabel dus geen knop.
 function emptyStateHTML(kop, uitleg, knopLabel, knopActie) {
   const uitlegHTML = uitleg ? `<p class="empty-state-text">${escHtml(uitleg)}</p>` : '';
+  const knopHTML = knopLabel ? `<button class="btn btn-primary" onclick="${knopActie}">${escHtml(knopLabel)}</button>` : '';
   return `<div class="empty-state">
     <p class="empty-state-title">${escHtml(kop)}</p>
     ${uitlegHTML}
-    <button class="btn btn-primary" onclick="${knopActie}">${escHtml(knopLabel)}</button>
+    ${knopHTML}
   </div>`;
 }
 

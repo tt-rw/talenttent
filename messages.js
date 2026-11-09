@@ -148,11 +148,34 @@ function zetWachtOpAntwoord(aan) {
   if (!input.dataset.standaard) input.dataset.standaard = input.getAttribute('placeholder') || '';
   input.disabled = !!aan;
   input.setAttribute('placeholder', aan ? 'Wacht op antwoord' : input.dataset.standaard);
-  if (aan) input.value = '';
   if (knop) knop.disabled = !!aan;
-  // De teller zegt niets als je niet kunt typen; zichtbaarheid, zodat niets verschuift.
-  const teller = document.getElementById('messagesReplyCounter');
-  if (teller) teller.style.visibility = aan ? 'hidden' : '';
+  // Een leeg veld heeft geen teller (TT-543 onderdeel 5, voorstel 3) en is één regel hoog.
+  if (aan) { input.value = ''; berichtInvoerBijwerken(); }
+}
+
+// TT-543 onderdeel 5 (besluiten Ronald 09-11-2026, voorstel 2 en 3, vraag 3):
+// het invoerveld groeit mee met de tekst, tot vijf regels (max-height in
+// styles.css); daarna scrolt het veld. De teller staat er pas bij de laatste
+// 200 tekens. Elke wijziging van de tekst gaat hierlangs, ook leegmaken na
+// versturen en teruggeven na een mislukte poging.
+function berichtInvoerBijwerken() {
+  updateCharCounter('messagesReplyInput', 'messagesReplyCounter', 2000);
+  const el = document.getElementById('messagesReplyInput');
+  if (!el) return;
+  // Stond je onderaan in het gesprek, dan blijft het laatste bericht boven het
+  // veld als het groeit (het veld staat vast onderaan).
+  const doc = document.documentElement;
+  const onderaan = window.innerHeight + window.scrollY >= doc.scrollHeight - 2;
+  const voor = el.offsetHeight;
+  el.style.height = '';
+  if (!el.value || !el.offsetParent) { el.style.overflowY = ''; return; } // leeg of niet in beeld: één regel
+  const rand = el.offsetHeight - el.clientHeight;
+  const max = parseFloat(getComputedStyle(el).maxHeight) || Infinity;
+  const nodig = el.scrollHeight + rand;
+  el.style.height = Math.min(nodig, max) + 'px';
+  el.style.overflowY = nodig > max ? 'auto' : '';
+  const groei = el.offsetHeight - voor;
+  if (onderaan && groei > 0) window.scrollBy(0, groei);
 }
 
 async function sendReplyInThread() {
@@ -193,7 +216,7 @@ async function sendReplyInThread() {
   draad.appendChild(voorlopig);
   nieuw.push(voorlopig);
   input.value = '';
-  updateCharCounter('messagesReplyInput', 'messagesReplyCounter', 2000);
+  berichtInvoerBijwerken();
   scrollThreadToBottom();
   vliegBericht(voorlopig, vanaf);
 
@@ -208,7 +231,7 @@ async function sendReplyInThread() {
     // zodat niemand denkt dat het verstuurd is.
     nieuw.forEach(el => el.remove());
     input.value = tekst;
-    updateCharCounter('messagesReplyInput', 'messagesReplyCounter', 2000);
+    berichtInvoerBijwerken();
   }
 }
 
@@ -235,7 +258,13 @@ function dagLabel(d) {
   const gisteren = new Date(); gisteren.setDate(gisteren.getDate() - 1);
   if (dag === new Date().toDateString()) return 'Vandaag';
   if (dag === gisteren.toDateString()) return 'Gisteren';
-  return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
+  // TT-543 onderdeel 5 (besluit Ronald 09-11-2026, vraag 5): het jaartal alleen
+  // als het bericht niet van dit jaar is: "6 november 2025".
+  return d.toLocaleDateString('nl-NL', anderJaar(d) ? { day: 'numeric', month: 'long', year: 'numeric' } : { day: 'numeric', month: 'long' });
+}
+
+function anderJaar(d) {
+  return d.getFullYear() !== new Date().getFullYear();
 }
 
 // V-01 (12-08-2026): een gesprek opende bovenaan. Bij twintig berichten zag je
@@ -249,6 +278,7 @@ function scrollThreadToBottom() {
   // staat onderaan in de paginastroom; helemaal naar beneden scrollen zet
   // het laatste bericht er dus altijd net boven.
   if (!draad.lastElementChild) return;
+  onderbalkHoogteZetten(); // de ruimte onder de pagina klopt vóór het scrollen, ook vlak na een schermwissel
   window.scrollTo(0, document.documentElement.scrollHeight);
   // TT-499 (22-10-2026): body heeft min-height 100vh. Op Android Chrome is dat
   // de hoogte zonder adresbalk; met adresbalk is de pagina dus tot 56px hoger
@@ -259,7 +289,8 @@ function scrollThreadToBottom() {
   const voet = document.querySelector('#messagesThreadPanel .messages-thread-footer');
   if (!kop || !voet) return;
   const kopOnder = (parseFloat(getComputedStyle(kop).top) || 0) + kop.offsetHeight + 16;
-  const onderbalk = document.body.classList.contains('toetsenbord-open') ? 0 : 60;
+  // TT-577: de gemeten hoogte (0 tijdens typen); hier stond 60.
+  const onderbalk = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--onderbalk-hoogte')) || 0;
   if (draad.offsetHeight + voet.offsetHeight + onderbalk > window.innerHeight - kopOnder) return;
   const teVeel = draad.getBoundingClientRect().top - kopOnder;
   if (teVeel < 0) window.scrollBy(0, teVeel);
@@ -311,12 +342,24 @@ async function loadInbox(opties) {
   // Tabwissel: laat een geladen lijst van deze gebruiker staan tot de nieuwe er is.
   if (!(opties && opties.behoud && currentUser && listEl.dataset.klaar === currentUser.id)) {
     delete listEl.dataset.klaar;
-    listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+    listEl.innerHTML = '<div class="berichten-laden">Laden...</div>';
   }
 
   const mid = await getMyMusicianId();
+  // TT-561: een storing is nooit "geen profiel".
+  if (!mid && myMusicianIdFout) {
+    listEl.innerHTML = foutStaatHTML(myMusicianIdFout, 'je berichten laden', 'loadInbox()');
+    return;
+  }
   if (!mid) {
-    listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Maak eerst een profiel aan om berichten te kunnen sturen en ontvangen.</div>';
+    // TT-543 onderdeel 5, F6: was een grijze regel zonder uitweg. Nu de vaste
+    // vorm uit huisstijl §15, zoals "Nog geen profiel" op Mijn Bands.
+    listEl.innerHTML = emptyStateHTML(
+      'Nog geen profiel',
+      'Maak je muzikantprofiel aan om berichten te sturen en te ontvangen.',
+      'Profiel aanmaken',
+      "showView('register')"
+    );
     return;
   }
 
@@ -390,7 +433,7 @@ async function loadInbox(opties) {
         <div class="messages-conv-row ${c.unreadCount ? 'unread' : ''}" onclick="openConversation('${jsAttr(c.otherId)}','${jsAttr(name)}','${jsAttr(avatarSrc)}', false, ${!info})">
           <div class="messages-conv-avatar">${avatarHTML}</div>
           <div class="messages-conv-main">
-            <div class="messages-conv-name">${escHtml(name)}${c.unreadCount ? ` <span class="unread-badge" style="position:static;">${c.unreadCount}</span>` : ''}</div>
+            <div class="messages-conv-name">${escHtml(name)}${c.unreadCount ? ` <span class="unread-badge">${c.unreadCount}</span>` : ''}</div>
             <div class="messages-conv-preview">${escHtml(previewPrefix + preview)}</div>
           </div>
           <div class="messages-conv-time">${escHtml(time)}</div>
@@ -423,7 +466,8 @@ function relativeMessageTime(iso) {
   if (d.toDateString() === yesterday.toDateString()) return 'Gisteren';
   const diffDays = Math.floor(diffMs / 86400000);
   if (diffDays < 7) return d.toLocaleDateString('nl-NL', { weekday: 'short' });
-  return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+  // Vraag 5 (besluit Ronald 09-11-2026): "6 nov 2025" als het niet van dit jaar is.
+  return d.toLocaleDateString('nl-NL', anderJaar(d) ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' });
 }
 
 
@@ -463,7 +507,7 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
     avatarEl.innerHTML = otherAvatarSrc ? `<img ${kleinFotoAttr(safeUrl(otherAvatarSrc))} alt="${escHtml(otherName)}">` : ZONDER_FOTO_HTML;
   }
   document.getElementById('messagesInboxPanel').style.display = 'none';
-  document.getElementById('messagesThreadPanel').style.display = 'block';
+  document.getElementById('messagesThreadPanel').style.display = 'flex'; // TT-543 onderdeel 5, voorstel 1
   // V-03 (12-08-2026): eigen stap in de geschiedenis, zodat de terugknop van
   // de telefoon eerst het gesprek sluit en niet meteen het hele
   // berichtenscherm verlaat. Alleen bij het openen vanuit de inbox, niet bij
@@ -474,15 +518,21 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
   safeHistoryReplace(history.state, '#messages/' + encodeURIComponent(otherId));
   if (!stil) {
     document.getElementById('messagesReplyInput').value = '';
-    updateCharCounter('messagesReplyInput', 'messagesReplyCounter', 2000);
+    berichtInvoerBijwerken();
   }
   const threadEl = document.getElementById('messagesThreadList');
   // V-02: bij een stille verversing (na het versturen van een bericht) geen
   // "Laden..." tonen — het gesprek staat al op het scherm.
-  if (!stil) threadEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  if (!stil) threadEl.innerHTML = '<div class="berichten-laden">Laden...</div>';
 
   const mid = await getMyMusicianId();
-  if (!mid) return;
+  if (!mid) {
+    // TT-543 onderdeel 5 (8D F6, D7): stond op "Laden..." zonder einde.
+    if (myMusicianIdFout) threadEl.innerHTML = foutStaatHTML(myMusicianIdFout, 'het gesprek laden',
+      `openConversation('${jsAttr(otherId)}', '${jsAttr(otherName)}', '${jsAttr(otherAvatarSrc || '')}' || null, false, ${!!deleted})`);
+    else closeConversation();
+    return;
+  }
 
   try {
     // TT-71 (12-08-2026): zelfde aanpak als loadInbox() hierboven — twee
@@ -525,10 +575,11 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
       const readCheck = (own && msg.read_at) ? `<span class="message-bubble-read" title="Gelezen">✓</span>` : '';
       return `${divider}<div class="message-bubble ${own ? 'own' : 'other'}">${escHtml(msg.body).replace(/\n/g, '<br>')}<div class="message-bubble-time">${escHtml(time)}${readCheck}</div></div>`;
     }).join('') : emptyStateHTML(
-      'Nog geen berichten in dit gesprek',
-      gesprekVia ? `${otherName} is de contactpersoon van ${gesprekVia}.` : '',
-      'Schrijf het eerste bericht',
-      "document.getElementById('messagesReplyInput').focus()"
+      // TT-543 onderdeel 5 (besluit Ronald 09-11-2026, voorstel 4): geen knop.
+      // "Schrijf het eerste bericht" zette alleen de cursor in het invoerveld
+      // eronder; de kop zegt wat kan, het veld is de volgende stap.
+      `Stuur ${otherName} een eerste bericht`,
+      gesprekVia ? `${otherName} is de contactpersoon van ${gesprekVia}.` : ''
     ));
     // TT-277: een stille verversing vervangt de lijst alleen als er iets
     // veranderde. Zo blijft het net verstuurde bericht gewoon staan.
@@ -656,7 +707,7 @@ function talentTentRijHTML(berichten) {
     <div class="messages-conv-row ${ongelezen ? 'unread' : ''}" onclick="openTalentTentGesprek()">
       <div class="messages-conv-avatar">${TT_AVATAR_HTML}</div>
       <div class="messages-conv-main">
-        <div class="messages-conv-name">${escHtml(TT_GESPREK_NAAM)}${ongelezen ? ` <span class="unread-badge" style="position:static;">${ongelezen}</span>` : ''}</div>
+        <div class="messages-conv-name">${escHtml(TT_GESPREK_NAAM)}${ongelezen ? ` <span class="unread-badge">${ongelezen}</span>` : ''}</div>
         <div class="messages-conv-preview">${escHtml(talentTentKernzin(laatste.inhoud))}</div>
       </div>
       <div class="messages-conv-time">${escHtml(relativeMessageTime(laatste.created_at))}</div>
@@ -735,10 +786,10 @@ async function openTalentTentGesprek(stil) {
   document.getElementById('messagesThreadAvatar').innerHTML = TT_AVATAR_HTML;
   zetVeiligheidMenu('messagesThreadActies', 'gesprek', null, ''); // geen melden, blokkeren of verwijderen
   document.getElementById('messagesInboxPanel').style.display = 'none';
-  paneel.style.display = 'block';
+  paneel.style.display = 'flex'; // TT-543 onderdeel 5, voorstel 1
   safeHistoryReplace(history.state, '#messages/' + TT_GESPREK_ID);
   const threadEl = document.getElementById('messagesThreadList');
-  if (!stil) threadEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  if (!stil) threadEl.innerHTML = '<div class="berichten-laden">Laden...</div>';
   try {
     const berichten = (await laadTalentTentBerichten()).slice().reverse(); // oud naar nieuw, zoals elk gesprek
     const info = await talentTentInfoOphalen(berichten);
