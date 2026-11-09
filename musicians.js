@@ -81,7 +81,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
       kaart: { id: m.id, naam: displayName, regel: `${age} jaar · ${m.city || ''}`,
                wat: m.musician_instruments.map(x => x.instrument), onder: m.musician_genres.map(x => x.genre) },
       // TT-420 (09-10-2026, Ronald): geen tweede naam op het profiel. Er staat één naam: de gekozen.
-      regels: `<div class="profile-meta">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}</div>`,
+      regels: `<div class="profile-meta">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${afstandTekst(m.distance_km)}` : ''}</div>`,
       knoppen: profielKnoppenHTML('profiel', m.id, displayName, veiligheidPlekHTML, null, isOwn || m.delen_aan !== false)
     })}
     ${watHTML}
@@ -439,6 +439,7 @@ async function laadProfielScherm(id, linkToegang) {
   // TT-543 onderdeel 3: .muzikant-profiel bakent de maten van het
   // muzikantprofiel af; de bandpagina (zelfde vak) volgt in onderdeel 6.
   content.classList.add('muzikant-profiel');
+  content.classList.remove('uitnodig-open'); // TT-543 onderdeel 4: een nieuw profiel begint zonder het blok
   footer.innerHTML = '';
   content.innerHTML =
     '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
@@ -543,8 +544,9 @@ async function laadProfielScherm(id, linkToegang) {
   const displayName = displayNameOf(m);
   const actie = document.getElementById('profielSchermActie');
   if (actie) actie.innerHTML = musicianContactFooterHTML(m, isOwn, displayName);
-  // TT-385: uit een zoekopdracht voor een open rol nodig je meteen uit.
-  rolUitnodigKnopPlaatsen(isOwn ? null : m.id);
+  // TT-385: uit een zoekopdracht voor een open rol of een lid nodig je uit
+  // (TT-543 onderdeel 4, B4: de knop opent eerst het blok met de boodschap).
+  rolUitnodigKnopPlaatsen(isOwn ? null : m.id, displayName);
   // TT-06: melden en blokkeren, onder de naam (TT-380). Op je eigen profiel
   // niet — daar maakt buildMusicianDetailHTML() ook geen plek.
   zetVeiligheidMenu('profielSchermActies', 'muzikant', isOwn ? null : m.id, displayName);

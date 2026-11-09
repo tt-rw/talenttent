@@ -1437,9 +1437,6 @@
      Met 28px opvulling links en rechts liep de tekst over twee regels (58px
      hoog, op de zoekpagina 62px). 12px houdt hem op één regel en op 44px. */
   .btn-row .btn, .action-row .btn { padding-left: 12px; padding-right: 12px; }
-  /* Zelfde regel voor een knop naast een naam in een ledenlijst (Verwijderen,
-     Uitnodigen). Met 28px drukte de knop de naam naar twee regels. */
-  .lijst-rij .btn { padding-left: 12px; padding-right: 12px; }
 
   .btn-primary {
     background: var(--merk);
@@ -2177,6 +2174,7 @@
     padding: 10px 8px;
     text-align: center;
     font-size: 15px;
+    line-height: 20px; /* TT-543 onderdeel 4, F1 (huisstijl §2) */
     cursor: pointer;
     font-family: 'Inter', sans-serif;
     transition: all 0.2s;
@@ -2211,11 +2209,23 @@
   }
   .zoek-filters-knop::after,
   .zoek-wissen-knop::after { content: ''; position: absolute; top: -13px; bottom: -13px; left: -8px; right: -8px; }
+  /* TT-543 onderdeel 4 (besluit Ronald 09-11-2026, voor de hele app): Wissen
+     eindigt op het eind van het pijltje van Filters, ook als er "Filters (2)"
+     staat, en ook waar geen Filters staat (Wat spelen we?). Het pijltje heeft
+     binnen zijn vak van 16px rechts 3,3px lucht; het woord Wissen 0,8px.
+     Gemeten op beeld: 2,5px naar links. Rechts op de regel, ook als er links
+     niets staat. */
+  .zoek-wissen-knop { margin-left: auto; margin-right: 2.5px; }
+  .zoek-filters-knop[hidden] { display: none; }
   .zoek-filters-pijl { transition: transform 0.15s; }
   .zoek-filters-knop.open .zoek-filters-pijl { transform: rotate(180deg); }
 
   /* Het filtervak: drie rijen van twee velden, 20px ertussen (§3). */
   .zoek-filter-vak > .field-pair-row { margin-bottom: 20px; }
+  /* TT-543 onderdeel 4 (3C): Filters staat rechts op de regel van Onthoud mijn
+     zoekopdracht; het vak klapt 20px daaronder open, met Naam als eerste veld
+     en Wissen onderaan (20px onder het laatste veld). */
+  .zoek-filters-rij + .zoek-filter-vak { margin-top: 20px; }
   .zoek-filter-vak[hidden] { display: none; }
 
   /* Wissen rechts, altijd zichtbaar, direct onder het laatste zichtbare veld
@@ -2659,6 +2669,17 @@
   /* 3 (maat 12px en sterren 11px: besluiten Ronald sessie 98): instrumenten en
      genres als tekst, elk een regel, gedempt, niet vet; 4px tussen de regels,
      20px tot de bio. */
+  /* TT-543 onderdeel 4 (besluiten Ronald 09-11-2026, B4, en sessie 102): het
+     blok "<naam> uitnodigen voor <band>" staat direct onder de hoes, op de plek
+     van instrument, genres en bio; de rest van het profiel staat er dan niet.
+     Kop 22/28 (de hoofdstukkop), 20px tot het label, berichtvak, 20px tot de
+     knoppen, 8px ertussen. rolUitnodigBlokOpenen() in bands.js. */
+  .uitnodig-open > :not(.hoes):not(.uitnodig-blok) { display: none; }
+  .uitnodig-blok { margin-bottom: 20px; }
+  .uitnodig-blok .hoofdstuk-kop { margin-top: 0; overflow-wrap: anywhere; }
+  /* Het berichtvak toont de hele voorbeeldtekst, ook op 320px (drie regels). */
+  .uitnodig-blok textarea { min-height: 88px; }
+  .uitnodig-knoppen { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
   .profiel-wat { display: flow-root; margin-bottom: 20px; } /* flow-root: ook leeg houdt het blok zijn 20px, zoals de tags ervoor */
   .profiel-wat-regel { font-size: 12px; line-height: 18px; color: var(--muted); overflow-wrap: anywhere; }
   .profiel-wat-regel + .profiel-wat-regel { margin-top: 4px; }
@@ -3321,8 +3342,7 @@
      elk blok apart — dat is precies wat §3 verbiedt. */
   .search-filters > .field,
   .search-filters > .filter-row,
-  .search-filters > .field-pair-row,
-  #addMemberModal .modal-box > .field { margin-bottom: 20px; } /* TT-253: Lid uitnodigen volgt Vind een muzikant */
+  .search-filters > .field-pair-row { margin-bottom: 20px; }
 
   /* TT-517 fase 2 (huisstijl §7.4, §24; besluit Ronald 31-10-2026: "wat mij
      opvalt is dat overal nog de extra laag te zien is. die wil ik er ook
@@ -3373,6 +3393,7 @@
 
   .results-count {
     font-size: 12px;
+    line-height: 18px; /* TT-543 onderdeel 4, F1 */
     color: var(--muted);
   }
 
@@ -3587,6 +3608,7 @@
     min-width: 0;
     font-family: 'Inter', sans-serif;
     font-size: 15px;
+    line-height: 20px; /* TT-543 onderdeel 4, F1: zoals de naam in een kaart */
     font-weight: 700;
   }
   /* TT-520 (Laag 3.1.b.1): "BAND" heel klein achter de naam; de vierkante
@@ -3594,6 +3616,7 @@
   .result-row-soort {
     flex-shrink: 0;
     font-size: 11px;
+    line-height: 16px; /* TT-543 onderdeel 4, F1 */
     font-weight: 700;
     letter-spacing: 0.5px;
     color: var(--muted);
@@ -3627,6 +3650,7 @@
 
   .result-row-meta {
     font-size: 12px;
+    line-height: 18px; /* TT-543 onderdeel 4, F1: zoals de regel in een kaart */
     color: var(--muted);
     margin-top: 2px;
     /* TT-520: één regel; past hij niet, dan "…" (een bijschrift, geen naam, §2.1). */
@@ -3659,6 +3683,13 @@
     padding: 60px 20px;
     color: var(--muted);
   }
+  /* TT-543 onderdeel 4 (F1, F2): de teksten van Zoeken hebben een klasse en een
+     vaste regelhoogte; was opmaak in de regel zonder regelhoogte. */
+  .no-results-kop { font-size: 15px; line-height: 20px; font-weight: 600; margin-bottom: 8px; }
+  .no-results-tekst { font-size: 12px; line-height: 18px; }
+  .zoek-uitleg { font-size: 12px; line-height: 18px; color: var(--muted); margin: 0 0 12px; }
+  .zoek-laden { text-align: center; padding: 40px; color: var(--muted); font-size: 15px; line-height: 20px; }
+  .zoek-laden .save-spinner { margin: 0 auto 16px; }
 
   /* ── De uitsnede kiezen (TT-520 deel 2, 27-10-2026, Laag 3.4) ─────────────
      Een kader van 4:3 over de volle breedte van het venster, precies de hoes
@@ -3754,6 +3785,27 @@
   /* "Kies nog 1 muzikant." links op de regel van Wissen, zoals de vink bij
      Muzikanten: 14px, gedempt, op de inspringing van de labels. */
   .mm-nog { font-size: 12px; line-height: 18px; color: var(--muted); padding-left: var(--field-inset); }
+  /* TT-543 onderdeel 4, voorstel 5 (besluiten Ronald 09-11-2026): "Uit je
+     setlist" links op de regel van Wissen, in de vorm van Filters, op de
+     inspringing van de labels. De lijst klapt 8px eronder open in de vorm van
+     de keuzelijst: een vlak met rand, rijen van 44px, hoogstens 240px, dan
+     scrollen. Rij: de band in de tekstkleur, " · Nummer" gedempt, één regel. */
+  .mm-setlijst-knop { margin-left: var(--field-inset); }
+  .mm-setlijst {
+    margin-top: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    overscroll-behavior: contain;   /* huisstijl §16 */
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .mm-setlijst[hidden] { display: none; }
+  /* Rij 44px, zoals de keuzelijst (`.ac-item`), de lijn ertussen meegeteld: de
+     tekst staat in het midden van de vaste hoogte (besluit Ronald 09-11-2026). */
+  .mm-setlijst .picker-list-item { line-height: 20px; padding-top: 0; padding-bottom: 0; height: 44px; }
+  .mm-setlijst-tekst { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mm-setlijst-nummer { color: var(--muted); }
   /* Het ✕ in een rij: het teken op de rechterlijn van de tekst rechts in de
      andere rijen (12px binnen de rand); het tikvlak blijft 44px. */
   .mm-gekozen .song-remove { margin: -4px -14px -4px 0; }
@@ -4537,7 +4589,11 @@
   .picker-list-item.selected {
     background: var(--surface2); border-left: 3px solid var(--accent); padding-left: 7px;
   }
-  .picker-list-item-check { color: var(--accent); font-size: var(--tekenmaat); flex-shrink: 0; margin-left: 8px; }
+  /* TT-543 onderdeel 4 (besluit Ronald 09-11-2026, voorstel 5 vorm 2: "het
+     vinkje is erg schriel"): het vinkje van een gekozen rij in de keuzelijst
+     is 16px, niet --tekenmaat (11px). Geldt voor de keuzelijst van Instrument
+     en Genre en voor Uit je setlist (huisstijl §2, uitzondering 3). */
+  .picker-list-item-check { color: var(--accent); font-size: 16px; line-height: 20px; flex-shrink: 0; margin-left: 8px; }
   .picker-list-empty { padding: 14px 4px; font-size: 12px; color: var(--muted); }
 
   .picker-level-blurb {
@@ -4907,10 +4963,11 @@
   .tile-title { font-size: 17px; font-weight: 700; }
   .tile-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
   /* TT-543 F1: vaste regelhoogte (huisstijl §2); 22px zoals .voorkeur-kop, 16px
-     zoals elke hulptekst. Nu alleen in Profiel bewerken; Zoeken, Instellingen
-     en de bandtegels volgen in hun eigen onderdeel van TT-543. */
-  #tegelsWrap .tile-title { line-height: 22px; }
-  #tegelsWrap .tile-sub { line-height: 16px; }
+     zoals elke hulptekst. Profiel bewerken en (onderdeel 4) de tegels van
+     Zoeken; Instellingen en de bandtegels volgen in hun eigen onderdeel van
+     TT-543. */
+  #tegelsWrap .tile-title, .zoek-tegel .tile-title { line-height: 22px; }
+  #tegelsWrap .tile-sub, .zoek-tegel .tile-sub { line-height: 16px; }
   /* TT-543 blok 4 (besluit Ronald 06-11-2026, voorstel 17, op beeld): de
      onderregel toont wat je invulde, op één regel; past het niet, dan eindigt
      hij op "…". "Nog leeg" in de signaalkleur, vet. */
@@ -5222,6 +5279,11 @@
   /* Gouden rand zodra dit filter aanstaat — in één blik te zien wat er leeft. */
   .wheel-field.is-set { border-color: var(--accent); }
   .wheel-field-label { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  /* TT-543 onderdeel 4, F1: de waarde in een keuzeveld heeft een vaste
+     regelhoogte, zoals .picker-field-label. Alleen in het veld zelf: de tegel
+     Thema in Instellingen gebruikt dezelfde klasse in zijn onderregel
+     (onderdeel 7). */
+  .wheel-field > .wheel-field-label { line-height: 22px; }
   /* Filter uit: een grijs streepje in plaats van "Alle" (besluit Ronald
      26-10-2026). Een gekozen waarde staat in --text, zo zie je in één blik wat
      aanstaat. In het wiel zelf heet de lege stand nog "Alle". */

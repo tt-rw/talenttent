@@ -174,12 +174,15 @@ function setZoekSoort(soort) {
 // sessie 18, punt 1). Achter het woord tussen haakjes hoeveel filters aan
 // staan (besluit Ronald 27-10-2026, vervangt "geen getal" van 26-10-2026).
 // Elk ingesteld filter telt één keer: Instrument met twee instrumenten is 1.
-// Telt mee: Instrument, Niveau, Leeftijd, Genre. Volgorde en Weergave zijn
-// geen filters. Bij nul alleen "Filters".
+// Telt mee: Naam, Instrument, Niveau, Leeftijd, Genre. Volgorde en Weergave
+// zijn geen filters. Bij nul alleen "Filters". Naam telt sinds TT-543
+// onderdeel 4 (besluit Ronald 09-11-2026, sessie 102): hij staat achter
+// Filters (3C), en anders zoek je op een naam die je niet ziet.
 let zoekFiltersOpen = false;
 function aantalZoekFilters() {
   const waarde = id => { const el = document.getElementById(id); return el ? el.value : ''; };
-  return [filterInstruments.length > 0,
+  return [!!waarde('filterName').trim(),
+          filterInstruments.length > 0,
           !!(waarde('filterNiveauMin') || waarde('filterNiveauMax')),
           !!(waarde('filterAgeMin') || waarde('filterAgeMax')),
           filterGenres.length > 0].filter(Boolean).length;
@@ -596,7 +599,7 @@ function verruimdNotice(verruimd, meervoud) {
   const staart = verruimd.naar >= STRAAL_LANDELIJK
     ? `Dit zijn de dichtstbijzijnde ${meervoud} in heel Nederland.`
     : `Dit zijn de dichtstbijzijnde ${meervoud}, tot ${verruimd.naar} km.`;
-  return `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Binnen ${straalTekst(verruimd.van)} vonden we nog geen match. ${staart}</p>`;
+  return `<p class="zoek-uitleg">Binnen ${straalTekst(verruimd.van)} vonden we nog geen match. ${staart}</p>`;
 }
 
 // Het woord voor wat er op het scherm staat, per soort (TT-520).
@@ -632,6 +635,9 @@ function resetMusicianSearch() {
 // (rolUitnodigKnopPlaatsen() in bands.js, besluit Ronald 02-10-2026).
 // TT-520: je zoekt hier een muzikant, dus de soort is Muzikanten, en Filters
 // staat open, zodat je het gekozen instrument ziet.
+// TT-543 onderdeel 4 (besluiten Ronald 09-11-2026, B4 en sessie 102): ook
+// "+ Lid uitnodigen" komt hier, zonder instrument. Dan blijft Filters dicht
+// (er is niets te zien) en zegt de regel "Lid voor <band>.".
 function zoekMuzikantVoorRol(instrument, plaats, bandNaam, datum, bandId) {
   sluitAlleMenus();
   // TT-450: 'behoud'. Zoeken is een tabblad en wist anders de stapel; terug
@@ -644,7 +650,7 @@ function zoekMuzikantVoorRol(instrument, plaats, bandNaam, datum, bandId) {
   setWheelFieldValues('niveau',   ['', ''], false);
   setWheelFieldValues('radius',   [STRAAL_STANDAARD], false);
   filterInstruments.length = 0;
-  filterInstruments.push(instrument);
+  if (instrument) filterInstruments.push(instrument);
   filterGenres.length = 0;
   renderPickerBadges(PICKERS.filterInstruments);
   renderPickerBadges(PICKERS.filterGenres);
@@ -656,15 +662,16 @@ function zoekMuzikantVoorRol(instrument, plaats, bandNaam, datum, bandId) {
     laadBewaardeZoek().then(z => zetOnthoudVink(!!z)).catch(e => logCaught('zoekMuzikantVoorRol', e));
   }
   zetZoekSoortKnoppen('muzikanten');
-  zetZoekFilters(true);
+  zetZoekFilters(!!instrument);
   // configureSearchAccess() (vanuit showView) zoekt meteen (TT-10).
   openZoekScherm('muzikanten', { direct: true, geenZoek: true });
   zoekRolBand = (!datum && bandId) ? { id: bandId, naam: bandNaam || '' } : null;
   const melding = document.getElementById('zoekRolMelding');
   const rond = plaats ? `Muzikanten rond ${escHtml(plaats)}.` : 'Muzikanten bij jou in de buurt.';
+  const wie = instrument ? escHtml(instrument) : 'Lid';
   melding.innerHTML = datum
-    ? `<p class="melding-tekst"><strong>${escHtml(instrument)} voor ${invallerDatum(datum)}.</strong> ${rond} Vraag ze in een bericht.</p>`
-    : `<p class="melding-tekst"><strong>${escHtml(instrument)} voor ${escHtml(bandNaam || 'je band')}.</strong> ${rond} Open een profiel om uit te nodigen.</p>`;
+    ? `<p class="melding-tekst"><strong>${wie} voor ${invallerDatum(datum)}.</strong> ${rond} Vraag ze in een bericht.</p>`
+    : `<p class="melding-tekst"><strong>${wie} voor ${escHtml(bandNaam || 'je band')}.</strong> ${rond} Open een profiel om uit te nodigen.</p>`;
   melding.hidden = false;
 }
 
@@ -809,8 +816,8 @@ async function runSearch(straalOverride) {
   // het nieuwe binnen is — geen laadanimatie die het scherm laat "knipperen".
   // Alleen bij de allereerste zoekopdracht (nog niets op het scherm) tonen we 'm.
   if (!resultsEl.innerHTML.trim()) {
-    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
-      <div class="save-spinner" style="margin:0 auto 16px;"></div>Zoeken...
+    resultsEl.innerHTML = `<div class="zoek-laden">
+      <div class="save-spinner"></div>Zoeken...
     </div>`;
   }
 
@@ -1036,8 +1043,8 @@ function renderZoekResultaten(lijst, opts) {
     }
     el.innerHTML = `
       <div class="no-results">
-        <p style="font-size:15px;font-weight:600;margin-bottom:8px;">${kop}</p>
-        <p style="font-size:12px;">${uitleg}</p>
+        <p class="no-results-kop">${kop}</p>
+        <p class="no-results-tekst">${uitleg}</p>
       </div>`;
     onthoudBijwerken();
     return;
@@ -1045,10 +1052,10 @@ function renderZoekResultaten(lijst, opts) {
 
   const verruimd = verruimdNotice(opts.verruimd, zoekMeervoud());
   const locationHint = opts.showLocationHint
-    ? `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Dit zijn ${lijst.length} willekeurige ${zoekMeervoud()} uit heel Nederland — vul een plaats in voor resultaten bij jou in de buurt.</p>`
+    ? `<p class="zoek-uitleg">Dit zijn ${lijst.length} willekeurige ${zoekMeervoud()} uit heel Nederland — vul een plaats in voor resultaten bij jou in de buurt.</p>`
     : '';
   const cappedNotice = total > lijst.length
-    ? `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Toont de eerste ${lijst.length} van ${total} resultaten — voeg een filter toe of verklein je zoekstraal voor een preciezer overzicht.</p>`
+    ? `<p class="zoek-uitleg">Toont de eerste ${lijst.length} van ${total} resultaten — voeg een filter toe of verklein je zoekstraal voor een preciezer overzicht.</p>`
     : '';
   const kaarten = musicianViewMode === 'grid';
   el.innerHTML = `
@@ -1117,8 +1124,14 @@ function eersteGekozen(lijst) {
   const gekozen = lijst.find(v => filterInstruments.includes(v) || filterGenres.includes(v));
   return gekozen || lijst[0] || '';
 }
+// TT-560 (besluiten Ronald 06-11-2026 en 09-11-2026, beeld C): een afstand in
+// hele kilometers, overal gelijk: Zoeken, Mix & Match, het profiel en het
+// bericht van Talent Tent (de mail rekent zo in send-digest). Onder 1 km
+// staat "1 km" (naar boven afgerond). Eén functie; een eigen afronding per
+// plek is een fout.
 function afstandTekst(km) {
-  return km != null ? `${km.toFixed(1)} km` : '';
+  if (km == null || km === '' || isNaN(Number(km))) return '';
+  return `${Math.max(1, Math.round(Number(km)))} km`;
 }
 
 /* TT-520 (Laag 3.1.b.1, akkoord Ronald 25-10-2026; vlak per treffer sessie 18):
@@ -1360,15 +1373,22 @@ function renderSetlistSongsList() {
       ${nummerTekstHTML(s.artist, s.title || 'Alle nummers')}
       ${mmKruisHTML(`removeSetlistSong(${i})`, `Verwijder ${s.title || s.artist}`)}
     </div>`).join('');
+  mmSetlijstTekenen(); // het vinkje in "Uit je setlist" volgt de gekozen nummers
 }
 
-function addSetlistSong(title, artist) {
-  if (setlistWantedSongs.find(s => s.title === title && s.artist === artist)) return;
+// Een nummer erbij in Wie speelt dit?; geeft false als het er al stond.
+function setlistNummerErbij(title, artist) {
+  if (setlistWantedSongs.find(s => s.title === title && s.artist === artist)) return false;
   // TT-430: een nummer maakt de selectie van zijn artiest af. De rij met alleen
   // die artiest ("Alle nummers") maakt plaats voor de rij met het nummer.
   const alleenArtiest = setlistWantedSongs.findIndex(s => !s.title && s.artist === artist);
   if (alleenArtiest !== -1) setlistWantedSongs.splice(alleenArtiest, 1);
   setlistWantedSongs.push({ title, artist });
+  return true;
+}
+
+function addSetlistSong(title, artist) {
+  if (!setlistNummerErbij(title, artist)) return;
   document.getElementById('setlistArtistSearch').value = '';
   document.getElementById('setlistTrackSearch').value = '';
   document.getElementById('setlistTrackSearchWrap').style.display = 'none';
@@ -1389,13 +1409,86 @@ function removeSetlistSong(i) {
   else document.getElementById('setlistSearchResults').innerHTML = '';
 }
 
+// ─── Uit je setlist (TT-543 onderdeel 4, voorstel 5) ──────────────────────────
+// Besluiten Ronald 09-11-2026: links op de regel van Wissen "Uit je setlist", in
+// de vorm van Filters (warmgeel, 12px vet, pijltje), standaard dicht. Een tik
+// klapt je eigen nummers eronder open, in de vorm van de keuzelijst (rij 44px,
+// hoogstens 240px, daarna scrollen), elke rij "Band · Nummer", op band en dan
+// nummer (compareArtistTitle()). De lijst blijft open: je kiest er meer. Een
+// gekozen nummer heeft de gekozen stand van de keuzelijst (vlak, warmgele
+// streep links, vinkje 16px); een tik erop haalt het weer weg, zoals in de
+// keuzelijst van Instrument en Genre (besluit 25-08-2026). Alleen met een
+// profiel. De lijst komt bij elke keer tonen vers uit musician_songs: zo staat
+// een net toegevoegd nummer er meteen in.
+let mmSetlijstNummers = [];   // [{ artist, title }], gesorteerd
+let mmSetlijstOpen = false;
+let mmSetlijstFout = false;
+let mmSetlijstSeq = 0;
+
+async function mmSetlijstTonen() {
+  const knop = document.getElementById('mmSetlijstKnop');
+  if (!knop) return;
+  const seq = ++mmSetlijstSeq;
+  const mid = hasOwnProfile ? await getMyMusicianId() : null;
+  if (seq !== mmSetlijstSeq) return;
+  if (!mid) { knop.hidden = true; zetMmSetlijst(false); return; }
+  const { data, error } = await db.from('musician_songs').select('song_title, song_artist').eq('musician_id', mid);
+  if (seq !== mmSetlijstSeq) return;
+  // TT-561: een storing is nooit "geen nummers": de knop blijft en de lijst zegt het.
+  mmSetlijstFout = !!error;
+  if (error) logCaught('mmSetlijstTonen', error);
+  mmSetlijstNummers = (data || []).map(s => ({ artist: s.song_artist || '', title: s.song_title || '' }))
+    .filter(s => s.artist && s.title)
+    .sort((a, b) => compareArtistTitle(a.artist, a.title, b.artist, b.title));
+  knop.hidden = !mmSetlijstFout && !mmSetlijstNummers.length;
+  if (knop.hidden) zetMmSetlijst(false);
+  else mmSetlijstTekenen();
+}
+
+function zetMmSetlijst(open) {
+  mmSetlijstOpen = !!open;
+  const knop = document.getElementById('mmSetlijstKnop');
+  const lijst = document.getElementById('mmSetlijst');
+  if (knop) { knop.classList.toggle('open', mmSetlijstOpen); knop.setAttribute('aria-expanded', mmSetlijstOpen ? 'true' : 'false'); }
+  if (lijst) lijst.hidden = !mmSetlijstOpen;
+  if (mmSetlijstOpen) mmSetlijstTekenen();
+}
+function toggleMmSetlijst() { zetMmSetlijst(!mmSetlijstOpen); }
+
+function mmSetlijstGekozen(s) {
+  const a = s.artist.toLowerCase(), t = s.title.toLowerCase();
+  return setlistWantedSongs.findIndex(w => (w.artist || '').toLowerCase() === a && (w.title || '').toLowerCase() === t);
+}
+
+function mmSetlijstTekenen() {
+  const lijst = document.getElementById('mmSetlijst');
+  if (!lijst || !mmSetlijstOpen) return;
+  if (mmSetlijstFout) { lijst.innerHTML = '<div class="picker-list-empty">Je setlist laden lukt nu niet. Controleer je verbinding en probeer het opnieuw.</div>'; return; }
+  lijst.innerHTML = mmSetlijstNummers.map((s, i) => {
+    const gekozen = mmSetlijstGekozen(s) !== -1;
+    return `<div class="picker-list-item${gekozen ? ' selected' : ''}" role="option" aria-selected="${gekozen}" onclick="mmSetlijstKies(${i})">`
+      + `<span class="mm-setlijst-tekst">${escHtml(s.artist)}<span class="mm-setlijst-nummer"> · ${escHtml(s.title)}</span></span>`
+      + `${gekozen ? '<span class="picker-list-item-check" aria-hidden="true">✓</span>' : ''}</div>`;
+  }).join('');
+}
+
+function mmSetlijstKies(i) {
+  const s = mmSetlijstNummers[i];
+  if (!s) return;
+  const al = mmSetlijstGekozen(s);
+  if (al !== -1) { removeSetlistSong(al); return; }
+  if (!setlistNummerErbij(s.title, s.artist)) return;
+  renderSetlistSongsList();
+  runSetlistSearch(); // TT-10: direct verversen
+}
+
 // Stap A: artiest zoeken (zelfde iTunes-aanpak als profiel-repertoire, TT-139).
 async function onSetlistArtistSearch(q) {
   const ac = document.getElementById('acSetlistArtistList');
   clearTimeout(setlistItunesSearchTimeout); // TT-526: een oudere vraag tekent niet meer na
   if (q.length < 2) { ac.classList.remove('open'); return; }
 
-  ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
+  ac.innerHTML = '<div class="ac-item"><span>Zoeken...</span></div>';
   ac.classList.add('open');
 
   const cacheKey = q.toLowerCase();
@@ -1447,7 +1540,7 @@ async function onSetlistTrackSearch(q) {
   if (!selectedSetlistArtist) return;
   if (q.length < 1) { ac.classList.remove('open'); return; }
 
-  ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
+  ac.innerHTML = '<div class="ac-item"><span>Zoeken...</span></div>';
   ac.classList.add('open');
 
   try {
@@ -1484,8 +1577,8 @@ async function runSetlistSearch(straalOverride) {
   if (straalOverride === undefined) setlistVerruimd = null; // nieuwe zoekopdracht
 
   if (!resultsEl.innerHTML.trim()) {
-    resultsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
-      <div class="save-spinner" style="margin:0 auto 16px;"></div>Zoeken...
+    resultsEl.innerHTML = `<div class="zoek-laden">
+      <div class="save-spinner"></div>Zoeken...
     </div>`;
   }
 
@@ -1666,14 +1759,14 @@ function renderSetlistResults(musicians, opts) {
       : 'Niemand in de Tent (binnen je zoekgebied) heeft (nog) een match met deze setlist.';
     el.innerHTML = `
       <div class="no-results">
-        <p style="font-size:15px;font-weight:600;margin-bottom:8px;">Geen muzikanten gevonden</p>
-        <p style="font-size:12px;">${uitleg}</p>
+        <p class="no-results-kop">Geen muzikanten gevonden</p>
+        <p class="no-results-tekst">${uitleg}</p>
       </div>`;
     return;
   }
   const verruimd = verruimdNotice(opts.verruimd, 'muzikanten');
   const cappedNotice = total > musicians.length
-    ? `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Toont de eerste ${musicians.length} van ${total} resultaten — voeg meer nummers toe of verklein je zoekstraal voor een preciezer overzicht.</p>`
+    ? `<p class="zoek-uitleg">Toont de eerste ${musicians.length} van ${total} resultaten — voeg meer nummers toe of verklein je zoekstraal voor een preciezer overzicht.</p>`
     : '';
   el.innerHTML = `
     <div class="results-header">
@@ -1776,8 +1869,9 @@ function setlistZoekVerversen() {
     gedeeldEigenToevoegen().then(veranderd => {
       if (!veranderd && gedeeldGekozen.length >= GEDEELD_MIN) runGedeeldSearch();
     });
-  } else if (setlistWantedSongs.length) {
-    runSetlistSearch();
+  } else {
+    mmSetlijstTonen(); // TT-543 onderdeel 4, voorstel 5
+    if (setlistWantedSongs.length) runSetlistSearch();
   }
 }
 
@@ -1840,7 +1934,7 @@ async function gedeeldSuggesties(term) {
 function gedeeldMeta(m) {
   const delen = [];
   if (m.city) delen.push(m.city);
-  if (m.distance_km != null) delen.push(`${Math.round(m.distance_km)} km`);
+  if (m.distance_km != null) delen.push(afstandTekst(m.distance_km)); // TT-560
   return delen.join(' · ');
 }
 
@@ -2011,8 +2105,8 @@ async function runGedeeldSearch() {
     return;
   }
   if (!el.innerHTML.trim()) {
-    el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);">
-      <div class="save-spinner" style="margin:0 auto 16px;"></div>Zoeken...
+    el.innerHTML = `<div class="zoek-laden">
+      <div class="save-spinner"></div>Zoeken...
     </div>`;
   }
   try {
@@ -2063,14 +2157,14 @@ function renderGedeeldResults() {
   if (!totaal) {
     el.innerHTML = `
       <div class="no-results">
-        <p style="font-size:15px;font-weight:600;margin-bottom:8px;">Geen gedeelde nummers</p>
-        <p style="font-size:12px;">Geen van deze nummers staat bij minstens 2 van deze muzikanten in het repertoire.</p>
+        <p class="no-results-kop">Geen gedeelde nummers</p>
+        <p class="no-results-tekst">Geen van deze nummers staat bij minstens 2 van deze muzikanten in het repertoire.</p>
       </div>`;
     return;
   }
   const getoond = gedeeldResultaat.slice(0, SEARCH_RESULT_LIMIT);
   const cappedNotice = totaal > getoond.length
-    ? `<p style="font-size:12px;color:var(--muted);margin:0 0 12px;">Toont de eerste ${getoond.length} van ${totaal} nummers.</p>`
+    ? `<p class="zoek-uitleg">Toont de eerste ${getoond.length} van ${totaal} nummers.</p>`
     : '';
   el.innerHTML = `
     <div class="results-header">

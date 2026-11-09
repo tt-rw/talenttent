@@ -595,7 +595,8 @@ def blok_browser():
         # De laag wordt gezet door een MutationObserver, dus één tik later.
         stapel = page.evaluate("""async () => {
           const tik = () => new Promise(r => setTimeout(r, 0));
-          const a = document.getElementById('addMemberModal');
+          // TT-543 onderdeel 4: Lid uitnodigen is weg; een ander venster neemt zijn plek in.
+          const a = document.getElementById('niveauInfoModal');
           const b = document.getElementById('confirmModal');
           const z = el => parseInt(el.style.zIndex) || 0;
           const uit = {};
@@ -2304,7 +2305,7 @@ def blok_browser():
               lst["n"] == 2 and lst["zichtbaar"] and lst["tekst"] == ['A|T"1', "B|Alle nummers"] and lst["nr"] == 0
               and lst["label"] == 'Verwijder T"1', json.dumps(lst))
         check("resultaat: één rij per muzikant, gekozen instrument, rechts 1 van 2, geen berichtknop, geen kaarten",
-              lst["rij"]["meta"] == "Drums · Delft · 8.2 km" and lst["rij"]["tel"] == "1 van 2"
+              lst["rij"]["meta"] == "Drums · Delft · 8 km" and lst["rij"]["tel"] == "1 van 2"
               and not lst["rij"]["bericht"] and lst["rij"]["kaart"] == 0, json.dumps(lst))
         check("het nummerveld heet Nummer van <artiest>, zonder uitleg", lst["nummerLabel"] == "Nummer van Metallica", json.dumps(lst))
         check("Wissen wist nummers en filters, Plaats blijft staan",
@@ -3737,15 +3738,11 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("K3: twee knoppen naast elkaar zijn even hoog en minstens 44px", len(set(rij)) == 1 and rij[0] >= 44, json.dumps(rij))
         opv = page.evaluate("""() => { const b = document.querySelector('#confirmModal .btn-row .btn'); return getComputedStyle(b).paddingLeft; }""")
         check("K3: in een knoppenrij 12px opvulling links en rechts", opv == "12px", opv)
-        lijst = page.evaluate("""() => { const d = document.createElement('div'); d.className = 'lijst-rij';
-            d.innerHTML = '<button class="btn btn-danger">Verwijderen</button>'; document.getElementById('appRoot').appendChild(d);
-            const w = getComputedStyle(d.firstChild).paddingLeft; d.remove(); return w; }""")
-        check("K3: een knop naast een naam in een ledenlijst ook 12px", lijst == "12px", lijst)
-        # TT-385 fase 3: de ledenlijst in "Bandleden beheren" is weg; de leden
-        # staan in de tegel Onze bezetting, met de drie puntjes in plaats van
-        # een knop. Alleen de zoeklijst van Lid uitnodigen heeft nog knoppen.
-        check("K3: de zoeklijst van Lid uitnodigen draagt de klasse lijst-rij",
-              len(re.findall(r'class="(?:member-search-row )?lijst-rij"', js316)) == 1, "")
+        # TT-543 onderdeel 4 (B4): de zoeklijst van Lid uitnodigen was de laatste
+        # lijst met een knop naast een naam (.lijst-rij); met het venster is ook
+        # de regel weg (dode code).
+        check("K3: de klasse lijst-rij is weg, in de code en in styles.css",
+              "lijst-rij" not in js316 and "lijst-rij" not in open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read(), "")
         page.evaluate("showView('register')"); page.wait_for_timeout(450)
         wiz = page.evaluate("""() => { const r = document.querySelector('#view-register .wizard-action-bar-inner');
             const b = [...r.children].filter(x => x.offsetParent).map(x => x.getBoundingClientRect());
@@ -4056,7 +4053,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         knoppen = re.findall(r'<button class="modal-close"[^>]*>(.*?)</button>', html322, re.S)
         teken = '<line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line>'
         check("elk kruisje in index.html is het sluitteken, nergens meer de letter ✕",
-              len(knoppen) == 11 and all(teken in k and "✕" not in k for k in knoppen), str(len(knoppen)))  # 11 sinds TT-543 blok 3: Link toevoegen
+              len(knoppen) == 10 and all(teken in k and "✕" not in k for k in knoppen), str(len(knoppen)))  # 11 sinds TT-543 blok 3 (Link toevoegen); 10 sinds TT-543 onderdeel 4 (Lid uitnodigen weg)
         check("elk kruisje heeft een aria-label",
               all("aria-label" in t for t in re.findall(r'<button class="modal-close"[^>]*>', html322)), "")
         terug322 = re.findall(r'<button class="modal-back"[^>]*>(.*?)</button>', html322, re.S)
@@ -4463,13 +4460,13 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             [{ musician_id: 'm2', distance_km: 9, score: 0, is_stale: false }]; }""")
         zoek(up39)
         vk = up39.evaluate("""() => { const v = document.getElementById('zoekOnthoud');
-            const rij = document.querySelector('.zoek-wis-rij'), l = v.closest('label'), w = document.getElementById('zoekWissenKnop');
+            const rij = document.querySelector('.zoek-filters-rij'), l = v.closest('label'), w = document.getElementById('zoekFiltersKnop'); // TT-543 onderdeel 4, 3C
             return { er: !!v, tekst: l.textContent.trim(), links: Math.round(v.getBoundingClientRect().left - rij.getBoundingClientRect().left),
                      zelfdeRij: Math.abs(l.getBoundingClientRect().top + l.getBoundingClientRect().height / 2
                        - (w.getBoundingClientRect().top + w.getBoundingClientRect().height / 2)) <= 1,
                      tik: Math.round(parseFloat(getComputedStyle(l, '::after').top) * -2 + l.getBoundingClientRect().height),
                      blok: !!document.querySelector('.seintje-blok, #seintjePlek') }; }""")
-        check("de vink staat links op de regel van Wissen, op de inspringing van de labels (10px), met de tekst 'Onthoud mijn zoekopdracht'",
+        check("de vink staat links op de regel van Filters (3C, besluit Ronald 08-11-2026), op de inspringing van de labels (10px), met de tekst 'Onthoud mijn zoekopdracht'",
               vk["er"] and vk["tekst"] == "Onthoud mijn zoekopdracht" and vk["links"] == 10 and vk["zelfdeRij"], json.dumps(vk))
         check("het tikvlak van de vink is minstens 44px hoog (huisstijl §6)", vk["tik"] >= 44, json.dumps(vk))
         check("het blok 'Bewaar deze zoekopdracht' is weg", not vk["blok"], "")
@@ -6400,8 +6397,12 @@ window.TT_STUB.fnAntwoord = {};
           S.data.band_members = S.data.band_members.filter(m => !(m.musician_id === 'm2' && m.band_id === 'b9'));
           await rolUitnodigKnopPlaatsen('m3'); await w(50); u.knopNieuw = knop() && knop().textContent;
           u.knopEerst = voet.firstElementChild === knop(); u.knopMaat = knop() && [knop().offsetWidth === voet.clientWidth - parseFloat(getComputedStyle(voet).paddingLeft) - parseFloat(getComputedStyle(voet).paddingRight), getComputedStyle(knop()).marginBottom];
-          await rolUitnodigen('m3'); await w(200);
-          u.naUitnodigen = [S.data.band_members.filter(m => m.musician_id === 'm3' && m.band_id === 'b9').map(m => m.status), !!knop()];
+          // TT-543 onderdeel 4 (B4): de knop opent eerst het blok met de boodschap; versturen nodigt uit.
+          vakPS.insertAdjacentHTML('afterbegin', '<div class="hoes"></div>');
+          knop().click(); await w(50);
+          u.blokOpen = !!document.querySelector('#profielSchermContent .uitnodig-blok') && S.data.band_members.filter(m => m.musician_id === 'm3' && m.band_id === 'b9').length === 0;
+          await rolUitnodigen('m3', document.querySelector('.uitnodig-blok .btn-primary')); await w(200);
+          u.naUitnodigen = [S.data.band_members.filter(m => m.musician_id === 'm3' && m.band_id === 'b9').map(m => m.status), !!knop(), !!document.querySelector('.uitnodig-blok')];
           vakPS.innerHTML = vakPSWas; if (!vpWas) vp.classList.remove('active');
           S.data.band_members = S.data.band_members.filter(m => !(m.musician_id === 'm3' && m.band_id === 'b9'));
           configureSearchAccess(); u.zoekBandNaOpen = zoekRolBand;
@@ -6542,12 +6543,12 @@ window.TT_STUB.fnAntwoord = {};
               and d58["zoek"][5] is None and d58["zoek"][6] == "overview", j58("zoek"))
         check("een vaste rol zoeken onthoudt de band; Zoeken opnieuw openen vergeet hem",
               d58["zoekBand"] == "b9" and d58["zoekBandNaOpen"] is None, json.dumps([d58["zoekBand"], d58["zoekBandNaOpen"]]))
-        check("muzikantvenster na een rolzoekopdracht: 'Uitnodigen voor Nachtploeg', niet bij een lid; daarna weg",
-              d58["knopLid"] is False and d58["knopNieuw"] == "Uitnodigen voor Nachtploeg" and d58["naUitnodigen"] == [["aangevraagd"], False]
+        check("muzikantvenster na een rolzoekopdracht: 'Uitnodigen voor Nachtploeg', niet bij een lid; een tik opent het blok (B4), versturen nodigt uit, daarna knop en blok weg",
+              d58["knopLid"] is False and d58["knopNieuw"] == "Uitnodigen voor Nachtploeg" and d58["blokOpen"] and d58["naUitnodigen"] == [["aangevraagd"], False, False]
               and d58["knopEerst"] and d58["knopMaat"] == [True, "0px"],
               json.dumps([d58["knopLid"], d58["knopNieuw"], d58["knopEerst"], d58["knopMaat"], d58["naUitnodigen"]], ensure_ascii=False))
         check("openProfielScherm() plaatst de knop, niet bij je eigen profiel",
-              "rolUitnodigKnopPlaatsen(isOwn ? null : m.id);" in open(os.path.join(ROOT, "musicians.js"), encoding="utf-8").read())
+              "rolUitnodigKnopPlaatsen(isOwn ? null : m.id, displayName);" in open(os.path.join(ROOT, "musicians.js"), encoding="utf-8").read())
         mc, me = d58["meterCovers"], d58["meterEigen"]
         check("coverband: eigen nummers tellen niet mee in de balk; alleen eigen nummers: covers tellen niet mee",
               mc["telt"]["nummers"] is False and mc["telt"]["covers"] is True and "eigen nummers" not in mc["mist"] and "covers" in mc["mist"]
@@ -6959,10 +6960,10 @@ window.TT_STUB.fnAntwoord = {};
               d60["namen"] == ["Nachtploeg", "Stille Week", "Zoutwater", "Solo"], j60("namen"))
         check("bandrij (TT-520): vierkante foto (hoek 10px), BAND achter de naam, genre · plaats · afstand, rechts Zoekt basgitaar, geen tags en geen berichtknop",
               d60["nacht"] == {"tags": 0, "rechts": "Zoekt basgitaar", "soort": "BAND", "foto": True, "hoek": "10px",
-                               "meta": "Indie · Den Haag · 2.0 km", "bericht": False}, j60("nacht"))
+                               "meta": "Indie · Den Haag · 2 km", "bericht": False}, j60("nacht"))
         check("bandrij: zonder open rol niets rechts (een invaller telt niet als open rol); zonder foto de T",
-              d60["zout"] == {"rechts": None, "meta": "Pop · Rijswijk · 3.0 km", "t": True}
-              and d60["solo"] == {"rechts": None, "meta": "Folk · Delft · 5.0 km"}, json.dumps([d60["zout"], d60["solo"]]))
+              d60["zout"] == {"rechts": None, "meta": "Pop · Rijswijk · 3 km", "t": True}
+              and d60["solo"] == {"rechts": None, "meta": "Folk · Delft · 5 km"}, json.dumps([d60["zout"], d60["solo"]]))
         mt = d60["maten"]
         check("UI: foto 44×44; naam 15px (TT-517); BAND 11px; Zoekt tegen de rechterkant (12px opvulling + 1px rand)",
               mt["foto"] == [44, 44] and mt["naam"] == "15px" and mt["soort"] == "11px" and mt["zoektRechts"] == 13, j60("maten"))
@@ -7002,7 +7003,7 @@ window.TT_STUB.fnAntwoord = {};
 
         # Blok 61 — TT-253, TT-402, TT-403 (02-10-2026): Lid uitnodigen als Zoeken, licht met meer contrast, het deelteken
         # ------------------------------------------------------------------
-        print("\nBlok 61 — Lid uitnodigen volgt Zoeken, licht heeft contrast, het deelteken is gesloten (TT-253, TT-402, TT-403)")
+        print("\nBlok 61 — Lid uitnodigen is weg (TT-543 onderdeel 4), licht heeft contrast, het deelteken is gesloten (TT-402, TT-403)")
         page_errors.clear()
         page.evaluate("window.TT_STUB.reset()")
         page.set_viewport_size({"width": 390, "height": 844})
@@ -7012,24 +7013,8 @@ window.TT_STUB.fnAntwoord = {};
           const S = window.TT_STUB;
           S.data.musicians = [{ id: 'm5', fname: 'Eku', username: 'eku', city: 'Delft', accepts_band_invites: true,
             musician_instruments: [{ instrument: 'Drums' }] }];
-          openAddMemberModal('b1', 'Van Delft');
-          const box = document.querySelector('#addMemberModal .modal-box');
-          uit.geenSelect = !box.querySelector('select') && !box.querySelector('input[type=number]');
-          uit.keuzeveld = !!box.querySelector('#memberSearchInstrumentsField.picker-field');
-          uit.wielveld = !!box.querySelector('.filter-row-city #memberSearchRadiusField.wheel-field');
-          uit.straalBreed = Math.round(document.getElementById('memberSearchRadiusField').getBoundingClientRect().width);
-          uit.straalTekst = document.querySelector('#memberSearchRadiusField .wheel-field-label').textContent;
-          uit.geenStijl = [...box.querySelectorAll('input, .field, .filter-row-city')].every(e => !e.getAttribute('style'));
-          // Een instrument kiezen zoekt meteen, zonder naam.
-          openPickerList('memberSearchInstruments'); choosePickerListValue('Drums'); await w(500);
-          uit.badge = document.getElementById('memberSearchInstrumentsBadgeRow').textContent.trim();
-          uit.gezocht = !/Typ minimaal/.test(document.getElementById('memberSearchResults').textContent);
-          // Opnieuw openen: instrument en straal leeg.
-          setWheelFieldValues('memberRadius', ['25'], false);
-          openAddMemberModal('b1', 'Van Delft');
-          uit.leegNaOpenen = memberSearchInstruments.length === 0 && document.getElementById('memberSearchRadius').value === ''
-            && document.getElementById('memberSearchInstrumentsBadgeRow').innerHTML.trim() === '';
-          document.getElementById('addMemberModal').classList.remove('visible');
+          // TT-543 onderdeel 4 (B4): het venster Lid uitnodigen en zijn functies zijn weg (blok 141 toetst de nieuwe route).
+          uit.vensterWeg = !document.getElementById('addMemberModal') && ['openAddMemberModal', 'searchMembersToAdd', 'openInviteNote', 'sendInviteWithNote', 'memberSearchVeldenInit'].every(f => typeof window[f] === 'undefined');
           // Het deelteken: drie gesloten stippen.
           const t = document.createElement('div'); t.innerHTML = deelKnopHTML('band', 'b1', 'X');
           const c = [...t.querySelectorAll('circle')];
@@ -7041,12 +7026,7 @@ window.TT_STUB.fnAntwoord = {};
           if (was) r.setAttribute('data-theme', was); else r.removeAttribute('data-theme');
           return uit;
         }""")
-        check("TT-253: geen zichtbare keuzelijst en geen kaal getalveld meer", d61["geenSelect"], json.dumps(d61))
-        check("TT-253: instrument is een keuzeveld, straal een wielveld naast Plaats", d61["keuzeveld"] and d61["wielveld"], json.dumps(d61))
-        check("TT-253: het wielveld is 104px of breder en start leeg (–)", d61["straalBreed"] >= 104 and d61["straalTekst"] == "–", json.dumps(d61))
-        check("TT-253: geen losse style= op de velden (huisstijl §3)", d61["geenStijl"], "")
-        check("TT-253: een instrument kiezen toont een badge en zoekt", "Drums" in d61["badge"] and d61["gezocht"], json.dumps(d61))
-        check("TT-253: opnieuw openen begint leeg", d61["leegNaOpenen"], "")
+        check("TT-543 onderdeel 4 (B4): het venster Lid uitnodigen en zijn functies zijn weg (TT-253 vervalt daarmee)", d61["vensterWeg"], json.dumps(d61))
         check("TT-403: het deelteken heeft drie gesloten stippen", d61["gesloten"], "")
         def _lum(h):
             h = h.lstrip('#'); c = [int(h[i:i+2], 16) / 255 for i in (0, 2, 4)]
@@ -7283,8 +7263,8 @@ window.TT_STUB.fnAntwoord = {};
         for vid in ("deleteAccountModal", "meldModal"):
             check(f"TT-408: {vid} heeft geen kruisje meer", vid in d64k["zonderKruis"], json.dumps(d64k))
         check("TT-408: de instrumentkeuze houdt zijn kruisje (de lijst heeft verder geen uitgang)", d64k["instrumentKruis"], json.dumps(d64k))
-        # TT-543 blok 3: Link toevoegen is het elfde (geen pijl of knop terug; app-gedrag "Modals").
-        check("TT-408: er zijn elf kruisjes, elk als enige uitgang", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 11, "")
+        # TT-543 blok 3: Link toevoegen kwam erbij (11); TT-543 onderdeel 4 (B4): Lid uitnodigen is weg (10).
+        check("TT-408: er zijn tien kruisjes, elk als enige uitgang", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 10, "")
         check("geen paginafouten in blok 64", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
@@ -8309,10 +8289,7 @@ window.TT_STUB.fnAntwoord = {};
             await runSetlistSearch(); await w(200);
             r.wieSpeelt = musicianDistanceCache['m2'];
             r.wieFunctie = laatste('tt_search_musicians_anon') ? 'anon' : 'eigen';
-            addMemberBandId = 'b9'; $('memberSearchCity').value = plaats;
-            searchMembersToAdd(''); await w(700);
-            const d = laatste('tt_musician_distances');
-            r.lidZoeken = d ? afstand(d.params) : null;
+            // TT-543 onderdeel 4 (B4): Lid zoeken is weg; een lid zoek je in Muzikanten.
             S.calls.length = 0;
             return r;
           };
@@ -8330,19 +8307,18 @@ window.TT_STUB.fnAntwoord = {};
           u.functie.ander = await zoekVertrekpunt('2611');
           window.getMyMusicianId = keep.wie; myMusicianId = keep.myMusicianId; currentUser = keep.currentUser;
           hasOwnProfile = keep.hasOwnProfile; myOwnCity = keep.myOwnCity;
-          setlistWantedSongs = []; addMemberBandId = null;
+          setlistWantedSongs = [];
           return u;
         }""")
         j101 = json.dumps(d101, ensure_ascii=False)
-        check("eigen woonplaats in het veld: Muzikanten, Wie speelt dit? en Lid zoeken meten alle drie vanaf je eigen postcode",
-              d101["eigen"] == {"muzikanten": 2.9, "wieSpeelt": 2.9, "wieFunctie": "eigen", "lidZoeken": 2.9}, j101)
+        check("eigen woonplaats in het veld: Muzikanten en Wie speelt dit? meten beide vanaf je eigen postcode (Lid zoeken is sinds TT-543 onderdeel 4 Muzikanten)",
+              d101["eigen"] == {"muzikanten": 2.9, "wieSpeelt": 2.9, "wieFunctie": "eigen"}, j101)
         check("eigen woonplaats in kleine letters telt ook als je eigen postcode",
               d101["kleineLetters"] == d101["eigen"], j101)
-        # Lid zoeken zoekt bewust niet als naam, instrument en plaats leeg zijn (TT-163).
-        check("leeg veld: Muzikanten en Wie speelt dit? vanaf je eigen postcode; Lid zoeken zoekt dan niet",
-              d101["leeg"] == {"muzikanten": 2.9, "wieSpeelt": 2.9, "wieFunctie": "eigen", "lidZoeken": None}, j101)
-        check("een andere plaats is op alle drie het vertrekpunt",
-              d101["ander"]["muzikanten"] == 7.5 and d101["ander"]["wieSpeelt"] == 7.5 and d101["ander"]["lidZoeken"] == 7.5, j101)
+        check("leeg veld: Muzikanten en Wie speelt dit? vanaf je eigen postcode",
+              d101["leeg"] == {"muzikanten": 2.9, "wieSpeelt": 2.9, "wieFunctie": "eigen"}, j101)
+        check("een andere plaats is op beide het vertrekpunt",
+              d101["ander"]["muzikanten"] == 7.5 and d101["ander"]["wieSpeelt"] == 7.5, j101)
         f101 = d101["functie"]
         check("zonder profiel is het veld het vertrekpunt, ook met een plaatsnaam",
               f101["zonder"]["eigen"] is False and f101["zonder"]["lat"] == 52.07
@@ -9374,7 +9350,7 @@ window.TT_STUB.fnAntwoord = {};
               d81["draad"]["tekst"] == ["Er zijn 4 nieuwe matches bij jou in de buurt"], j81)
         check("TT-451: elke match is een tikbare rij met naam, plaats, afstand en instrumenten; een band met wat hij zoekt",
               [r["naam"] for r in d81["draad"]["rijen"]] == ["Dylan", "Van Delft"]
-              and d81["draad"]["rijen"][0]["subs"] == ["Delft · 8.5 km", "Gitaar · Bas"]
+              and d81["draad"]["rijen"][0]["subs"] == ["Delft · 9 km", "Gitaar · Bas"]
               and d81["draad"]["rijen"][1]["subs"] == ["Delft · 12 km", "zoekt: Drums"]
               and "openProfielScherm('m2')" in d81["draad"]["rijen"][0]["klik"] and "openBandScherm('b1')" in d81["draad"]["rijen"][1]["klik"], j81)
         check("TT-451: wat de mail onder de vijf weglaat staat er als \"En nog N andere\", als knop naar Zoeken",
@@ -9763,9 +9739,10 @@ window.TT_STUB.fnAntwoord = {};
               all(not v for v in lezen84.values()) and not re84.findall(r"select\(\s*[`'\"][^`'\"]*\bfname\b", auth84)
               and "tt_mijn_naam" in js84["musicians.js"] and "tt_mijn_naam" in auth84,
               json.dumps({f: len(v) for f, v in lezen84.items()}))
-        check("TT-420: het naamveld van Zoeken en Maak setlist toetst de weergavenaam, en Lid uitnodigen zoekt in weergavenaam",
+        # TT-543 onderdeel 4 (B4): Lid uitnodigen is weg; een lid zoek je in Muzikanten (dezelfde naamregel).
+        check("TT-420: het naamveld van Zoeken en Maak setlist toetst de weergavenaam; bands.js zoekt nergens op fname",
               "naamMatcht(nameTerm, displayNameOf(m))" in js84["search.js"] and "naamMatcht(term, displayNameOf(m))" in js84["search.js"]
-              and "ilike('weergavenaam'" in js84["bands.js"] and "fname.ilike" not in js84["bands.js"], "")
+              and "fname.ilike" not in js84["bands.js"], "")
         html84 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
         check("TT-420: de keuze heeft twee knoppen in de vaste vorm van een keuzeknop (.segmented-btn), gelabeld Echte naam en Gebruikersnaam",
               html84.count("zetWbjNaamTonen(") == 2 and 'id="wbjNaamTonenControl"' in html84, "")
@@ -9880,7 +9857,9 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-457: de oude namen zijn weg (zetBandUitnodigingen, zetBandPauze, uitnodigKeuze, We spelen even niet)",
               not any(t in js85[f] for f in js85 for t in ["zetBandUitnodigingen", "zetBandPauze", "myAcceptsBandInvites"])
               and "uitnodigKeuze" not in html85 and not any("We spelen even niet" in js85[f] for f in js85), "")
-        check("TT-457: Lid uitnodigen noemt een niet-beschikbare muzikant Niet beschikbaar", ">Niet beschikbaar</span>" in js85["bands.js"], "")
+        # TT-543 onderdeel 4 (B4): het venster is weg; wie geen banduitnodigingen wil (TT-56), krijgt op zijn profiel geen knop (blok 141).
+        check("TT-56/TT-457: uitnodigen vanuit Zoeken kijkt naar accepts_band_invites vóór de knop er komt",
+              "accepts_band_invites === false) return;" in js85["bands.js"] and "select('accepts_band_invites')" in js85["bands.js"], "")
         check("geen paginafouten in blok 85", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
@@ -10718,16 +10697,17 @@ window.TT_STUB.fnAntwoord = {};
             gekozen: soort.map(b => b.getAttribute('aria-selected')),
             kleur: getComputedStyle(soort[0]).color, rand: getComputedStyle(soort[0]).borderTopColor };
 
-          // 5. Zichtbaar: Naam, Plaats + Straal. Filters op de labelregel van Naam, Wissen eronder.
-          const veld = $('filterName'), knop = $('zoekFiltersKnop'), wis = $('zoekWissenKnop'), label = document.querySelector('label[for="filterName"]');
+          // 5. TT-543 onderdeel 4 (3C, besluit Ronald 08-11-2026): zichtbaar alleen Plaats + Straal;
+          // daaronder links de vink, rechts Filters; Naam, de andere velden en Wissen achter Filters.
+          const veld = $('filterName'), knop = $('zoekFiltersKnop'), wis = $('zoekWissenKnop'), label = document.querySelector('label.zoek-onthoud');
           const pijl = knop.querySelector('.zoek-filters-pijl');
           const straal = $('filterRadiusField');
-          u.dicht = { vak: zicht($('zoekFilterVak')), instrument: zicht($('filterInstrumentsField')), aria: knop.getAttribute('aria-expanded'),
+          u.dicht = { vak: zicht($('zoekFilterVak')), naam: zicht(veld), instrument: zicht($('filterInstrumentsField')), aria: knop.getAttribute('aria-expanded'),
             tekst: knop.textContent.trim(), kleur: getComputedStyle(knop).color, letter: getComputedStyle(knop).fontSize,
-            label: [getComputedStyle(label).fontSize, getComputedStyle(label).fontWeight, getComputedStyle(label).color],
-            knopRechts: Math.round(r(veld).right - r(pijl).right), wisRechts: Math.round(r(veld).right - r(wis).right),
+            label: [getComputedStyle(document.querySelector('label[for="filterCity"]')).fontSize, getComputedStyle(document.querySelector('label[for="filterCity"]')).fontWeight, getComputedStyle(document.querySelector('label[for="filterCity"]')).color],
+            knopRechts: Math.round(r(straal).right - r(pijl).right),
             knopMidden: Math.round((r(knop).top + r(knop).bottom) / 2 - (r(label).top + r(label).bottom) / 2),
-            wisOnder: Math.round(r(wis).top - r(straal).bottom), wisZicht: zicht(wis),
+            knopOnder: Math.round(r(label).top - r(straal).bottom), wisZicht: zicht(wis),
             oudeKnoppen: document.querySelectorAll('#searchModeMusician .btn-row, #searchModeMusician .field-hint, #searchModeMusician .results-section-divider').length };
           knop.click(); await w();
           const labels = [...document.querySelectorAll('#zoekFilterVak .field > label')];
@@ -10736,6 +10716,9 @@ window.TT_STUB.fnAntwoord = {};
             labels: labels.map(l => (l.querySelector('span') || l).textContent.trim()), waarden: velden.map(v => v.querySelector('.wheel-field-label').textContent),
             paren: [0, 2, 4].map(i => Math.round(r(velden[i]).top) === Math.round(r(velden[i + 1]).top)),
             kolommen: [0, 1].map(i => Math.round(r(velden[i]).width)),
+            naamBreed: Math.round(r(veld).width) === Math.round(r(velden[0]).right - r(velden[0]).left + 12 + r(velden[1]).width),
+            naamOnder: Math.round(r(veld.closest('.field')).top - r(label).bottom),
+            wisRechts: +(r(straal).right - r(wis).right).toFixed(1), wisZicht: zicht(wis),
             wisOnder: Math.round(r(wis).top - r(velden[5]).bottom) };
 
           // 6. Instrument en Genre tonen de keuze in het veld; een band die het instrument zoekt is een treffer.
@@ -10836,19 +10819,20 @@ window.TT_STUB.fnAntwoord = {};
               s95["tekst"] == ["Alles", "Muzikanten", "Bands"] and min(s95["hoog"]) >= 44 and s95["tussen"] == [8, 8]
               and s95["gekozen"] == ["true", "false", "false"] and s95["kleur"] == "rgb(30, 30, 30)" and s95["rand"] == "rgb(255, 184, 28)", j95("soort"))
         dt = d95["dicht"]
-        check("Filters dicht: alleen Naam en Plaats + Straal; Instrument zit erachter; geen zoekknop, uitlegregels of scheiding",
-              not dt["vak"] and not dt["instrument"] and dt["aria"] == "false" and dt["oudeKnoppen"] == 0, j95("dicht"))
+        check("Filters dicht (3C): alleen Plaats + Straal; Naam en Instrument zitten erachter, Wissen ook; geen zoekknop, uitlegregels of scheiding",
+              not dt["vak"] and not dt["naam"] and not dt["instrument"] and not dt["wisZicht"] and dt["aria"] == "false" and dt["oudeKnoppen"] == 0, j95("dicht"))
         check("Filters: het woord met een pijltje, zonder getal, 12px (TT-517), goud in donker",
               dt["tekst"] == "Filters" and dt["kleur"] == "rgb(255, 184, 28)" and dt["letter"] == "12px", j95("dicht"))
         check("labels 12px (TT-517), gewone letter, tekstkleur (huisstijl §7)", dt["label"] == ["12px", "400", "rgb(240, 240, 240)"], j95("dicht"))
-        check("Filters en Wissen lijnen rechts uit met de tekst in het veld (10px), Filters op de middellijn van het label",
-              dt["knopRechts"] == 10 and dt["wisRechts"] == 10 and abs(dt["knopMidden"]) <= 1, j95("dicht"))
-        check("Wissen staat altijd, direct onder het laatste zichtbare veld (20px)",
-              dt["wisZicht"] and dt["wisOnder"] == 20 and d95["openF"]["wisOnder"] == 20, json.dumps([dt["wisOnder"], d95["openF"]["wisOnder"]]))
+        check("Filters (3C) rechts op de regel van Onthoud mijn zoekopdracht, 20px onder Plaats en Straal, het pijltje 10px van de rechterrand van het veld, op de middellijn van de vink",
+              dt["knopRechts"] == 10 and dt["knopOnder"] == 20 and abs(dt["knopMidden"]) <= 1, j95("dicht"))
+        check("Wissen (3C) onderaan het filtervak, 20px onder het laatste veld; het eind op het pijltje van Filters (2,5px naar links, besluit Ronald 09-11-2026)",
+              d95["openF"]["wisZicht"] and d95["openF"]["wisOnder"] == 20 and d95["openF"]["wisRechts"] == 12.5, json.dumps(d95["openF"]))
         of = d95["openF"]
-        check("Filters open: pijltje omgedraaid, zes velden in twee kolommen, in de vaste volgorde",
+        check("Filters open (3C): pijltje omgedraaid, Naam over de hele breedte 20px onder de regel van Filters, dan zes velden in twee kolommen, in de vaste volgorde",
               of["vak"] and of["aria"] == "true" and of["draai"].startswith("matrix(-1")
-              and of["labels"] == ["Instrument", "Niveau", "Leeftijd", "Genre", "Volgorde", "Weergave"]
+              and of["labels"] == ["Naam", "Instrument", "Niveau", "Leeftijd", "Genre", "Volgorde", "Weergave"]
+              and of["naamBreed"] and of["naamOnder"] == 20
               and all(of["paren"]) and of["kolommen"][0] == of["kolommen"][1], j95("openF"))
         check("beginstand van de filters: –, –, –, –, Beste match, Lijst",
               of["waarden"] == ["–", "–", "–", "–", "Beste match", "Lijst"], j95("openF"))
@@ -10863,7 +10847,7 @@ window.TT_STUB.fnAntwoord = {};
         check("berichtknop rond, 44px, icoon in de tekstkleur",
               rj["bk"][0] == "50%" and rj["bk"][1] == 44 and rj["bk"][2] == rj["tekstKleur"], j95("rijen"))
         check("muzikant: instrument · plaats · afstand onder de naam; band: BAND, Zoekt drums, geen berichtknop en geen tags",
-              rj["meta"] == "Gitaar · Rijswijk · 5.4 km" and rj["band"] == {"soort": "BAND", "zoekt": "Zoekt drums", "bericht": False, "tags": 0}, j95("rijen"))
+              rj["meta"] == "Gitaar · Rijswijk · 5 km" and rj["band"] == {"soort": "BAND", "zoekt": "Zoekt drums", "bericht": False, "tags": 0}, j95("rijen"))
         check("de telling noemt muzikanten en bands", rj["telling"] == "2 muzikanten en 1 band gevonden", j95("rijen"))
         check("Muzikanten toont alleen muzikanten, Bands alleen bands (zonder het mailblok)",
               d95["muzikanten"] == ["muzikant"] and d95["bands"] == {"soorten": ["band"], "seintje": False}, json.dumps([d95["muzikanten"], d95["bands"]]))
@@ -10964,8 +10948,8 @@ window.TT_STUB.fnAntwoord = {};
           S.data.postcode_cache = [{ postcode: '2611', city: 'Delft', alternatieve_schrijfwijzen: [] }];
           openZoekScherm('muzikanten', { geenZoek: true }); showView('search', 'pop'); await w();
           const st = $('filterCityStatus');
-          // Drie plaatsvelden sinds TT-520 bouwsessie b (Wat spelen we? heeft geen Plaats meer).
-          u.plekken = ['filterCityStatus', 'filterSetlistCityStatus', 'memberSearchCityStatus']
+          // Twee plaatsvelden sinds TT-543 onderdeel 4 (B4: Lid uitnodigen is weg; Wat spelen we? heeft geen Plaats).
+          u.plekken = ['filterCityStatus', 'filterSetlistCityStatus']
             .map(id => { const e = $(id); return !!e && e.classList.contains('plaats-achter') && e.parentElement.classList.contains('city-search-wrap'); });
           u.oudeRegel = document.querySelectorAll('.city-status').length;
           $('filterCity').value = '2611'; await updateSearchCityStatus('filterCity', 'filterCityStatus');
@@ -11054,8 +11038,8 @@ window.TT_STUB.fnAntwoord = {};
           return u;
         }""")
         j97 = lambda k: json.dumps(d97.get(k), ensure_ascii=False)
-        check("de gevonden plaats staat op alle drie de plekken in het veld (optie a); de regel eronder is weg",
-              d97["plekken"] == [True, True, True] and d97["oudeRegel"] == 0, j97("plekken"))
+        check("de gevonden plaats staat op beide plekken in het veld (optie a); de regel eronder is weg",
+              d97["plekken"] == [True, True] and d97["oudeRegel"] == 0, j97("plekken"))
         check("bij een postcode: 'Delft' grijs in het veld, 8px achter de cijfers, op dezelfde regel; Plaats en Straal blijven op één lijn",
               d97["postcode"] == {"tekst": "Delft", "grijs": True, "afstand": 8, "midden": 0, "binnen": True, "labelLijn": 0, "veldLijn": 0}, j97("postcode"))
         check("toont het veld de plaats al ('delft'), dan geen uitslag", d97["zelfde"] == "", j97("zelfde"))
@@ -11067,9 +11051,9 @@ window.TT_STUB.fnAntwoord = {};
         kk = d97["kaarten"]["k"]
         check("kaart: vierkante foto tot de rand van de kaart (ook bij een band)",
               all(x["foto"][0] == x["foto"][1] and x["randLinks"] <= 1 for x in kk), j97("kaarten"))
-        check("kaart: naam volledig, geen tags; muzikant 'Drums' en 'Rijswijk · 4.1 km', band 'BAND · Rock' en 'Den Haag · 3.2 km'",
-              kk[0]["naam"] == "Silver Earring" and kk[0]["regels"] == ["BAND · Rock", "Den Haag · 3.2 km"]
-              and kk[1]["naam"] == "Daan van der Berg" and kk[1]["regels"] == ["Drums", "Rijswijk · 4.1 km"]
+        check("kaart: naam volledig, geen tags; muzikant 'Drums' en 'Rijswijk · 4 km', band 'BAND · Rock' en 'Den Haag · 3 km' (TT-560: hele km)",
+              kk[0]["naam"] == "Silver Earring" and kk[0]["regels"] == ["BAND · Rock", "Den Haag · 3 km"]
+              and kk[1]["naam"] == "Daan van der Berg" and kk[1]["regels"] == ["Drums", "Rijswijk · 4 km"]
               and all(x["tags"] == 0 and x["naamAfgekapt"] != "ellipsis" for x in kk), j97("kaarten"))
         check("kaart: rechtsonder op de foto 'Zoekt' (band) of de berichtknop (muzikant)",
               kk[0]["hoek"] == "zoek-kaart-zoekt" and kk[1]["hoek"].startswith("result-row-msg-btn") and kk[0]["opFoto"] and kk[1]["opFoto"], j97("kaarten"))
@@ -11273,7 +11257,8 @@ XSS_STAPPEN = [
     ("band muziek", "await openBandMuziek();"),
     ("band media", "await openBandMedia();"),
     ("band beheer", "await renderBandBeheer('b1');"),
-    ("lid toevoegen", "openAddMemberModal('b1', window.__P('bandnaam')); const i = document.getElementById('memberSearchInput'); i.value = 'x'; i.dispatchEvent(new Event('input'));"),
+    # TT-543 onderdeel 4 (B4): "+ Lid uitnodigen" opent Zoeken met de band erboven; op het profiel het blok met de boodschap.
+    ("lid uitnodigen", "zoekMuzikantVoorRol('', 'Delft', window.__P('bandnaam'), '', 'b1'); await new Promise(r => setTimeout(r, 300)); await openProfielScherm('m2'); await new Promise(r => setTimeout(r, 400)); document.querySelector('#profielSchermActie .rol-uitnodig-knop')?.click();"),
     ("mijn profiel", "showView('myprofile'); await loadMyProfile();"),
     ("mijn bands", "await loadMyBands();"),
     ("band-uitnodigingen", "await loadBandInvites('m1');"),
@@ -11304,6 +11289,7 @@ XSS_STAPPEN = [
 # Velden die bewust nooit op een scherm komen, met de reden.
 XSS_UITZONDERINGEN = {
     "bands.avatar_url": "javascript:-adres wordt door safeUrl() geweigerd en dus niet getoond",
+    "talent_tent_berichten.km": "TT-560: de app toont een afgerond getal (afstandTekst()), nooit de tekst zelf; een tekst wordt een lege afstand",
     "musician_media.url": "javascript:-adres wordt door safeUrl() geweigerd; sinds TT-543 blok 3 staat het adres van een link nergens meer in een veld (Je mediahoek toont de naam van het platform)",
     "bands.instagram": "javascript:-adres wordt door bandSocialLink() geweigerd en dus niet getoond",
     "bands.tiktok": "javascript:-adres wordt door bandSocialLink() geweigerd en dus niet getoond",
@@ -11455,7 +11441,8 @@ TT517_SCHAAL = {11, 12, 15, 17, 22, 32}
 # (TT-244: zelfde letter als een invoerveld).
 TT517_UITZONDERING = re.compile(
     r'(^|[^\w-])(input|textarea|select)\b|\.logo\b|avatar(?!-edit-btn|-info)|initials|photo|-foto\b|bandfoto'
-    r'|media-afgeschermd|media-mini(?![\w-])|star|song-remove|open-rondje|picker-field\b|wheel-field\b|niveau-info-btn', re.I)
+    r'|media-afgeschermd|media-mini(?![\w-])|star|song-remove|open-rondje|picker-field\b|wheel-field\b|niveau-info-btn'
+    r'|picker-list-item-check', re.I)  # het vinkje in de keuzelijst: 16px (TT-543 onderdeel 4, besluit Ronald 09-11-2026, huisstijl §2)
 TT517_APP = ["index.html", "styles.css", "manifest.json"] + JS_FILES
 
 
@@ -11615,13 +11602,13 @@ def blok_tt517_fase1():
                 pas = []
                 for w in (320, 360, 390):
                     page.set_viewport_size({"width": w, "height": 800})
-                    pas.append(page.evaluate("""() => { openAddMemberModal('b1', 'Testband');
-                      const res = document.getElementById('memberSearchResults');
-                      res.innerHTML = '<div class="member-search-row"><button id="tt517x">Uitnodigen</button></div>';
-                      openInviteNote(document.getElementById('tt517x'), 'm9', 'Test');
-                      const t = res.querySelector('.invite-note-input'), c = t.cloneNode(); c.value = t.placeholder; t.parentNode.appendChild(c);
+                    # TT-543 onderdeel 4 (B4): de boodschap staat in het blok op het profiel.
+                    pas.append(page.evaluate("""() => { showView('profiel'); zoekRolBand = { id: 'b1', naam: 'Testband' };
+                      const vak = document.getElementById('profielSchermContent'), was = vak.innerHTML; vak.innerHTML = '<div class="hoes"></div>';
+                      rolUitnodigBlokOpenen('m9', 'Test');
+                      const t = document.getElementById('uitnodigBoodschap'), c = t.cloneNode(); c.removeAttribute('id'); c.value = t.placeholder; t.parentNode.appendChild(c);
                       const r = [innerWidth, t.clientHeight, c.scrollHeight]; c.remove();
-                      document.getElementById('addMemberModal').classList.remove('visible'); return r; }"""))
+                      rolUitnodigBlokSluiten(); vak.innerHTML = was; zoekRolBand = null; return r; }"""))
                 page.set_viewport_size({"width": 390, "height": 844})
                 check("de boodschap bij een uitnodiging (16px) toont de hele voorbeeldtekst op 320, 360 en 390px",
                       all(h >= n for _, h, n in pas), json.dumps(pas))
@@ -13493,7 +13480,10 @@ def blok_pijl():
             leeg: [getComputedStyle(plek.querySelector('.level-choice-stars')).color, getComputedStyle(plek.querySelector('#pr119 .star:not(.filled)')).color,
                    getComputedStyle(plek.querySelector('.star-display-empty')).color] };
           plek.remove(); return uit; }""")
-        check("elk los teken ✕ ✓ ★ ☆ is 11px (besluit Ronald A)", set(m["maten"].values()) == {"11px"}, json.dumps(m["maten"]))
+        # Uitzondering (3): het vinkje bij een gekozen rij in de keuzelijst is 16px (TT-543 onderdeel 4, besluit Ronald 09-11-2026, vorm 2).
+        check("elk los teken ✕ ✓ ★ ☆ is 11px (besluit Ronald A), behalve het vinkje in de keuzelijst: 16px (besluit Ronald 09-11-2026)",
+              {k: v for k, v in m["maten"].items() if k != ".picker-list-item-check"} and set(v for k, v in m["maten"].items() if k != ".picker-list-item-check") == {"11px"}
+              and m["maten"][".picker-list-item-check"] == "16px", json.dumps(m["maten"]))
         check("2A: de sterren die je aantikt 27px (inkt zoals de vorige ster op 22px), rij 22px hoog", m["tik"] == ["27px", 22], json.dumps(m["tik"]))
         check("een lege ster heeft overal dezelfde kleur (--leeg): niveaukeuze, sterren die je aantikt, sterren op een profiel",
               len(set(m["leeg"])) == 1, json.dumps(m["leeg"]))
@@ -16089,6 +16079,282 @@ def blok_tt543_onderdeel3():
     check("geen paginafouten in blok 140", not [f for f in fouten if "musician_songs is not iterable" not in f], "; ".join(fouten)[:300])
 
 
+def blok_tt543_onderdeel4():
+    # TT-543 onderdeel 4 (Zoeken), besluitenlijst onderdeel 4 (besluiten Ronald 08 en
+    # 09-11-2026, en sessie 102): 3C (alleen Plaats en Straal zichtbaar; Filters
+    # rechts op de regel van Onthoud mijn zoekopdracht; Naam en Wissen in het
+    # filtervak; Naam telt mee in "Filters (n)"); B4 ("+ Lid uitnodigen" opent
+    # Zoeken met de band erboven, zoals een open rol; op het profiel opent
+    # "Uitnodigen voor <band>" het blok met de boodschap; de rest van het profiel
+    # staat er dan niet; het venster Lid uitnodigen is weg); voorstel 5 ("Uit je
+    # setlist" in Wie speelt dit?, vorm van Filters, de lijst blijft open, vinkje
+    # 16px, ook in de keuzelijst van Instrument en Genre); Wissen eindigt op het
+    # eind van het pijltje van Filters (Muzikanten, Wie speelt dit?, Wat spelen
+    # we?); TT-560 hele km, onder 1 km "1 km"; F1 vaste regelhoogtes.
+    print("\nBlok 141 — TT-543 onderdeel 4: Zoeken (3C, Lid uitnodigen B4, Uit je setlist, Wissen, hele km)")
+    app = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ["index.html"] + JS_FILES)
+    zoekjs = open(os.path.join(ROOT, "search.js"), encoding="utf-8").read()
+    check("B4: het venster Lid uitnodigen en zijn code zijn weg (addMemberModal, memberSearch…, openInviteNote, sendInviteWithNote)",
+          'id="addMemberModal"' not in app and "getElementById('addMemberModal')" not in app
+          and not any(t in app for t in ("memberSearch", "openAddMemberModal", "searchMembersToAdd", "openInviteNote", "sendInviteWithNote", "addMemberBand")), "")
+    check("F2: geen opmaak in de regel in search.js", 'style="' not in zoekjs, "")
+    check("TT-560: geen afstand met een cijfer achter de komma meer (toFixed bij km)",
+          not re.search(r"distance_km\)?\.toFixed|km\.toFixed|toFixed\(1\)\} km", app), "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten, uit = [], {}
+    LAAD = """(bezoeker) => {
+      const S = window.TT_STUB, M = S.data.musicians;
+      S.rpcResults.tt_resolve_search_origin = [{ lat: 52.07, lng: 4.3 }];
+      S.rpcResults.tt_search_musicians = () => [{ musician_id: 'm2', distance_km: 0.4, is_stale: false }, { musician_id: 'm3', distance_km: 3.6, is_stale: false }];
+      S.rpcResults.tt_search_musicians_anon = S.rpcResults.tt_search_musicians;
+      S.rpcResults.tt_search_bands_for_musician = () => [{ band_id: 'b2', distance_km: 12.4, score: 0 }];
+      S.rpcResults.tt_search_bands_anon = S.rpcResults.tt_search_bands_for_musician;
+      const pub = (id, naam, stad, instr) => ({ id, username: naam, age: 19, city: stad, bio: '', goal: null, avatar_url: null,
+        instrument_levels: [{ instrument: instr, niveau: 3 }], genres: ['Rock'], songs: [] });
+      S.rpcResults.tt_get_musicians_public = [pub('m2', 'colin', 'Delft', 'Basgitaar'), pub('m3', 'sanne', 'Rijswijk', 'Zang')];
+      S.rpcResults.tt_get_bands_public = [{ id: 'b2', name: 'Silver Earring', city: 'Hoorn', genres: ['Rock'], status: 'compleet',
+        niveau: 4, avatar_url: null, members: [1], wanted: [], invallers: [] }];
+      S.data.musician_songs = [
+        { musician_id: 'm1', song_title: 'Creep', song_artist: 'Radiohead', mastery_level: 'podium' },
+        { musician_id: 'm1', song_title: 'Wonderwall', song_artist: 'Oasis', mastery_level: 'bijna' },
+        { musician_id: 'm1', song_title: 'Black', song_artist: 'Pearl Jam', mastery_level: null },
+        { musician_id: 'm1', song_title: 'Alive', song_artist: 'Pearl Jam', mastery_level: null },
+        { musician_id: 'm1', song_title: 'Zombie', song_artist: 'The Cranberries', mastery_level: 'basis' }];
+      const bio = 'Ik speel sinds mijn twaalfde gitaar.';
+      Object.assign(M[1], { weergavenaam: 'Colin Wever', bio, avatar_url: null, accepts_band_invites: true,
+        musician_instruments: [{ musician_id: 'm2', instrument: 'Basgitaar', niveau: 3 }], musician_genres: [{ musician_id: 'm2', genre: 'Rock' }],
+        musician_songs: [{ song_title: 'Creep', song_artist: 'Radiohead', mastery_level: 'podium' }], musician_media: [] });
+      Object.assign(M[2], { weergavenaam: 'Sanne Bakker', bio, avatar_url: null, musician_instruments: [{ musician_id: 'm3', instrument: 'Zang', niveau: 4 }],
+        musician_genres: [], musician_songs: [], musician_media: [] });
+      S.rpcResults.tt_musicians_ages = (p) => (p.ids || []).map(id => ({ id, age: 19 }));
+      S.rpcResults.tt_musician_band_ids = () => [];
+      if (bezoeker) { hasOwnProfile = false; myMusicianId = null; } else { hasOwnProfile = true; myMusicianId = 'm1'; }
+    }"""
+    # De inkt van het pijltje en van "Wissen", in CSS-pixels: het pijltje loopt in zijn vak van 24 tot x = 18 (+1 rondje
+    # van de lijn); het woord eindigt waar de letter eindigt (measureText), niet waar zijn vak eindigt.
+    INKT = """([wisSel, pijlSel]) => {
+      const wis = document.querySelector(wisSel), cs = getComputedStyle(wis), r = wis.getBoundingClientRect();
+      const ctx = document.createElement('canvas').getContext('2d'); ctx.font = `${cs.fontWeight} ${cs.fontSize} Inter`;
+      const m = ctx.measureText(wis.textContent.trim());
+      const wisInkt = r.left + m.actualBoundingBoxRight;
+      let pijlInkt = null;
+      if (pijlSel) { const s = document.querySelector(pijlSel).getBoundingClientRect(); pijlInkt = s.left + s.width * 19 / 24; }
+      return { wisInkt: +wisInkt.toFixed(2), pijlInkt: pijlInkt == null ? null : +pijlInkt.toFixed(2), wisRechts: +r.right.toFixed(2) }; }"""
+    NORMAAL = """(sel) => [...document.querySelectorAll(sel)].flatMap(w => [w, ...w.querySelectorAll('*')]).filter(e => e.offsetParent && e.getBoundingClientRect().width > 1
+        && [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()) && getComputedStyle(e).lineHeight === 'normal')
+        .map(e => (e.id ? '#' + e.id + ' ' : '') + (typeof e.className === 'string' ? e.className : e.tagName) + ': ' + e.textContent.trim().slice(0, 20))"""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breedte, thema in ((390, "dark"), (360, "light")):
+            for wie in ("lid", "bezoeker"):
+                ctx = browser.new_context(viewport={"width": breedte, "height": 844}, color_scheme=thema)
+                ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+                page = ctx.new_page()
+                page.on("pageerror", lambda e: fouten.append(str(e)))
+                bezoeker = wie == "bezoeker"
+                body = stub_js if bezoeker else stub_js + "\nwindow.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };\n"
+                page.route("**/supabase.js*", (lambda b: (lambda r: r.fulfill(status=200, content_type="application/javascript", body=b)))(body))
+                for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**"):
+                    page.route(pat, lambda r: r.abort())
+                page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+                page.wait_for_timeout(500)
+                page.evaluate(LAAD, bezoeker)
+                u = {}
+                # 1. Muzikanten (3C), via de echte route: Zoeken onderin, de tegel Muzikanten.
+                # Een bezoeker begint op de landingspagina (zonder onderbalk): de knop daar opent Zoeken.
+                page.locator(".landing-knop" if bezoeker else "#bottomNavSearch").click(); page.wait_for_timeout(300)
+                page.locator("#zoekTegelMuzikanten").click(); page.wait_for_timeout(400)
+                page.fill("#filterCity", "Den Haag"); page.wait_for_timeout(1200)
+                if not bezoeker:
+                    page.evaluate("hasOwnProfile = true; myMusicianId = 'm1'")
+                u["dicht"] = page.evaluate("""() => { const $ = id => document.getElementById(id), r = e => e.getBoundingClientRect(), zicht = e => !!e && e.offsetParent !== null;
+                  const rij = document.querySelector('.zoek-filters-rij'), straal = $('filterRadiusField'), knop = $('zoekFiltersKnop'), vink = document.querySelector('label.zoek-onthoud');
+                  const eerste = document.querySelector('#searchResults .results-count');
+                  return { naam: zicht($('filterName')), vak: zicht($('zoekFilterVak')), wissen: zicht($('zoekWissenKnop')),
+                    rijOnder: Math.round(r(rij).top - r(straal).bottom), knopInRij: rij.contains(knop) && rij.contains(vink),
+                    midden: Math.round((r(knop).top + r(knop).bottom) / 2 - (r(vink).top + r(vink).bottom) / 2),
+                    totTelling: eerste ? Math.round(r(eerste).top - r(rij).bottom) : null,
+                    eersteRij: document.querySelector('#searchResults .result-row') ? Math.round(r(document.querySelector('#searchResults .result-row')).top) : null,
+                    meta: [...document.querySelectorAll('#searchResults .result-row-meta')].map(e => e.textContent.trim()) }; }""")
+                page.locator("#zoekFiltersKnop").click(); page.wait_for_timeout(300)
+                page.fill("#filterName", "dyl"); page.wait_for_timeout(900)
+                u["open"] = page.evaluate("""(INKT) => { const $ = id => document.getElementById(id), r = e => e.getBoundingClientRect();
+                  const vak = $('zoekFilterVak'), velden = [...vak.querySelectorAll('.wheel-field')], wis = $('zoekWissenKnop');
+                  return { eersteVeld: vak.querySelector('.field input') && vak.querySelector('.field input').id, naamOnder: Math.round(r($('filterName').closest('.field')).top - r(document.querySelector('.zoek-filters-rij')).bottom),
+                    wisInVak: vak.contains(wis), wisOnder: Math.round(r(wis).top - r(velden[velden.length - 1]).bottom),
+                    teller: $('zoekFiltersTekst').textContent }; }""", None)
+                u["inktMuz"] = page.evaluate(INKT, ["#zoekWissenKnop", "#zoekFiltersKnop .zoek-filters-pijl"])
+                page.evaluate("openPickerList('filterInstruments'); choosePickerListValue('Basgitaar')"); page.wait_for_timeout(500)
+                u["teller2"] = page.evaluate("document.getElementById('zoekFiltersTekst').textContent")
+                u["inktMuz2"] = page.evaluate(INKT, ["#zoekWissenKnop", "#zoekFiltersKnop .zoek-filters-pijl"])
+                # Het vinkje in de keuzelijst van Instrument: 16px.
+                page.evaluate("openPickerList('filterInstruments')"); page.wait_for_timeout(300)
+                u["vinkInstrument"] = page.evaluate("""() => { const v = document.querySelector('#pickerListItems .picker-list-item.selected .picker-list-item-check');
+                  return v ? [v.textContent, getComputedStyle(v).fontSize] : null; }""")
+                page.evaluate("closePickerList()"); page.wait_for_timeout(200)
+                page.locator("#zoekWissenKnop").click(); page.wait_for_timeout(600)
+                u["naWissen"] = page.evaluate("[document.getElementById('filterName').value, document.getElementById('zoekFiltersTekst').textContent, document.getElementById('filterCity').value]")
+                u["normaalMuz"] = page.evaluate(NORMAAL, "#searchModeMusician")
+                page.evaluate("setMusicianViewMode('grid')"); page.wait_for_timeout(400)
+                u["normaalKaart"] = page.evaluate(NORMAAL, "#searchResults")
+                page.evaluate("setMusicianViewMode('list')")
+                # 2. Mix & Match.
+                page.evaluate("openZoekScherm('mixmatch')"); page.wait_for_timeout(500)
+                u["inktWat"] = page.evaluate(INKT, ["#setlistDeelNummers .zoek-wissen-knop", None])
+                u["normaalStart"] = None
+                page.locator("#setlistSoortMuzikantenBtn").click(); page.wait_for_timeout(700)
+                u["inktWie"] = page.evaluate(INKT, ["#setlistDeelMuzikanten .zoek-wissen-knop", "#mmFiltersKnop .zoek-filters-pijl"])
+                u["setlijst"] = page.evaluate("""() => { const k = document.getElementById('mmSetlijstKnop'), w = document.querySelector('#setlistDeelMuzikanten .zoek-wissen-knop'), r = e => e.getBoundingClientRect();
+                  const f = document.getElementById('mmFiltersKnop');
+                  return { zicht: !!k && k.offsetParent !== null, tekst: k && k.textContent.trim(), dicht: document.getElementById('mmSetlijst').hidden,
+                    zelfdeRij: k && k.offsetParent ? Math.abs((r(k).top + r(k).bottom) / 2 - (r(w).top + r(w).bottom) / 2) <= 1 : null,
+                    links: k && k.offsetParent ? Math.round(r(k).left - r(document.getElementById('setlistArtistSearch')).left) : null,
+                    vorm: k && k.offsetParent ? [getComputedStyle(k).fontSize, getComputedStyle(k).fontWeight, getComputedStyle(k).color === getComputedStyle(f).color, !!k.querySelector('.zoek-filters-pijl')] : null }; }""")
+                if not bezoeker:
+                    page.locator("#mmSetlijstKnop").click(); page.wait_for_timeout(300)
+                    rij = page.locator("#mmSetlijst .picker-list-item", has_text="Black")
+                    rij.click(); page.wait_for_timeout(500)
+                    page.locator("#mmSetlijst .picker-list-item", has_text="Creep").click(); page.wait_for_timeout(500)
+                    u["lijst"] = page.evaluate("""() => { const l = document.getElementById('mmSetlijst'), r = e => e.getBoundingClientRect(), cs = e => getComputedStyle(e);
+                      const rijen = [...l.querySelectorAll('.picker-list-item')], g = l.querySelector('.selected');
+                      return { open: !l.hidden, rijen: rijen.map(x => x.textContent.replace('✓', '').trim()), hoog: rijen.map(x => Math.round(r(x).height)),
+                        max: cs(l).maxHeight, overflow: cs(l).overflowY, onder: Math.round(r(l).top - r(document.getElementById('mmSetlijstKnop')).bottom),
+                        gekozen: rijen.filter(x => x.classList.contains('selected')).map(x => x.textContent.replace('✓', '').trim()),
+                        streep: g ? [cs(g).borderLeftWidth, cs(g).borderLeftColor === cs(document.getElementById('mmSetlijstKnop')).color] : null,
+                        vink: g ? [g.querySelector('.picker-list-item-check').textContent, cs(g.querySelector('.picker-list-item-check')).fontSize] : null,
+                        nummer: g ? cs(g.querySelector('.mm-setlijst-nummer')).color === cs(document.querySelector('.mm-vraag')).color : null,
+                        gekozenRijen: setlistWantedSongs.map(s => s.artist + '|' + s.title), focus: document.activeElement && document.activeElement.id }; }""")
+                    page.locator("#mmSetlijst .picker-list-item", has_text="Black").click(); page.wait_for_timeout(400)
+                    u["naTweede"] = page.evaluate("[setlistWantedSongs.map(s => s.title), !document.getElementById('mmSetlijst').hidden]")
+                    page.locator("#setlistDeelMuzikanten .zoek-wissen-knop").click(); page.wait_for_timeout(300)
+                    u["naWissenMM"] = page.evaluate("[setlistWantedSongs.length, !document.getElementById('mmSetlijst').hidden, document.querySelectorAll('#mmSetlijst .selected').length]")
+                    u["normaalMM"] = page.evaluate(NORMAAL, "#searchModeSetlist")
+                    # 3. "+ Lid uitnodigen" in Onze bezetting: Zoeken → Muzikanten met de band erboven (B4, "zoals open rol").
+                    page.evaluate("""() => { bewerkBandId = 'b9'; bewerkBandNaam = 'Van Delft'; bewerkBandStad = 'Den Haag'; window.tegelHeeftWijzigingen = () => false; bbLidUitnodigen(); }""")
+                    page.wait_for_timeout(900)
+                    u["lid"] = page.evaluate("""() => ({ view: huidigeView, scherm: zoekScherm, soort: zoekSoort, plaats: document.getElementById('filterCity').value,
+                      instrument: filterInstruments.slice(), filtersOpen: !document.getElementById('zoekFilterVak').hidden,
+                      melding: document.getElementById('zoekRolMelding').hidden ? null : document.getElementById('zoekRolMelding').textContent.trim(),
+                      band: zoekRolBand }) """)
+                    # 4. Het profiel van een muzikant uit die zoekopdracht: "Uitnodigen voor Van Delft" opent het blok.
+                    page.evaluate("async () => { await openProfielScherm('m2'); }"); page.wait_for_timeout(1200)
+                    u["voor"] = page.evaluate("""() => { const c = document.getElementById('profielSchermContent'), r = e => e.getBoundingClientRect();
+                      return { knop: (c.querySelector('.rol-uitnodig-knop') || {}).textContent, watTop: Math.round(r(c.querySelector('.profiel-wat')).top - r(c.querySelector('.hoes')).bottom),
+                        meta: (c.querySelector('.profile-meta') || {}).textContent }; }""")
+                    page.locator("#profielSchermActie .rol-uitnodig-knop").click(); page.wait_for_timeout(300)
+                    u["blok"] = page.evaluate("""(NORMAAL) => { const c = document.getElementById('profielSchermContent'), b = c.querySelector('.uitnodig-blok'), r = e => e.getBoundingClientRect(), cs = e => getComputedStyle(e);
+                      if (!b) return null;
+                      const kop = b.querySelector('.hoofdstuk-kop'), lab = b.querySelector('label'), ta = b.querySelector('textarea'), kn = [...b.querySelectorAll('.btn')];
+                      const zichtbaar = [...c.children].filter(e => e.offsetParent !== null).map(e => e.className.split(' ')[0]);
+                      const ct = ta.cloneNode(); ct.removeAttribute('id'); ct.value = ta.placeholder; ta.parentNode.appendChild(ct); const past = ta.clientHeight >= ct.scrollHeight; ct.remove();
+                      return { kop: kop.textContent, kopMaat: [cs(kop).fontSize, cs(kop).lineHeight, cs(kop).fontWeight], kopTop: Math.round(r(kop).top - r(c.querySelector('.hoes')).bottom),
+                        label: lab.textContent, labelMaat: [cs(lab).fontSize, cs(lab).lineHeight], kopTotLabel: Math.round(r(lab).top - r(kop).bottom),
+                        labelTotVak: Math.round(r(ta).top - r(lab).bottom), vakTotKnop: Math.round(r(kn[0]).top - r(ta).bottom), tussenKnoppen: Math.round(r(kn[1]).top - r(kn[0]).bottom),
+                        knoppen: kn.map(k => [k.textContent.trim(), k.classList.contains('btn-primary') ? 'geel' : 'omlijnd', Math.round(r(k).width) === Math.round(r(ta).width), Math.round(r(k).height)]),
+                        zichtbaar, past, rechts: Math.round(r(c).right - r(kop).right) >= 0, normaal: [...b.querySelectorAll('*')].filter(e => [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()) && cs(e).lineHeight === 'normal').length,
+                        stijl: b.querySelectorAll('[style]').length }; }""", None)
+                    page.locator(".uitnodig-blok .btn-ghost").click(); page.wait_for_timeout(300)
+                    u["naAnnuleren"] = page.evaluate("""() => { const c = document.getElementById('profielSchermContent');
+                      return [!c.querySelector('.uitnodig-blok'), !c.classList.contains('uitnodig-open'), !!c.querySelector('.rol-uitnodig-knop'), c.querySelector('.profile-bio').offsetParent !== null]; }""")
+                    page.locator("#profielSchermActie .rol-uitnodig-knop").click(); page.wait_for_timeout(300)
+                    page.fill("#uitnodigBoodschap", "We zoeken een bassist.")
+                    page.locator(".uitnodig-blok .btn-primary").click(); page.wait_for_timeout(800)
+                    u["verstuurd"] = page.evaluate("""() => { const S = window.TT_STUB, c = document.getElementById('profielSchermContent');
+                      return { rij: S.data.band_members.filter(m => m.band_id === 'b9' && m.musician_id === 'm2').map(m => [m.role, m.status]),
+                        bericht: (S.data.messages || []).filter(m => m.receiver_id === 'm2' || m.ontvanger_id === 'm2' || m.to_id === 'm2').map(m => m.content || m.text || m.body).filter(Boolean).pop() || JSON.stringify((S.data.messages || []).slice(-1)),
+                        blok: !!c.querySelector('.uitnodig-blok'), knop: !!c.querySelector('.rol-uitnodig-knop'), bio: c.querySelector('.profile-bio').offsetParent !== null }; }""")
+                    # TT-56: wie geen banduitnodigingen wil, krijgt geen knop.
+                    page.evaluate("""async () => { window.TT_STUB.data.musicians[2].accepts_band_invites = false; await openProfielScherm('m3'); }"""); page.wait_for_timeout(1200)
+                    u["nietBeschikbaar"] = page.evaluate("!!document.querySelector('#profielSchermActie .rol-uitnodig-knop')")
+                # 5. TT-560: één afronding.
+                u["km"] = page.evaluate("""() => [afstandTekst(0), afstandTekst(0.3), afstandTekst(0.99), afstandTekst(1.49), afstandTekst(2.5), afstandTekst(12.46), afstandTekst(null), afstandTekst('3.6'),
+                  gedeeldMeta({ city: 'Delft', distance_km: 0.2 })]""")
+                uit[(breedte, wie)] = u
+                ctx.close()
+        browser.close()
+    httpd.shutdown()
+    for breedte in (390, 360):
+        for wie in ("lid", "bezoeker"):
+            u = uit[(breedte, wie)]
+            n = f"{breedte}px {wie}"
+            d = u["dicht"]
+            check(f"{n} (3C): dicht zie je alleen Plaats en Straal; Naam, het filtervak en Wissen staan achter Filters",
+                  not d["naam"] and not d["vak"] and not d["wissen"], json.dumps(d))
+            check(f"{n} (3C): Filters staat rechts op de regel van Onthoud mijn zoekopdracht, 20px onder Plaats en Straal, op de middellijn van de vink",
+                  d["knopInRij"] and d["rijOnder"] == 20 and abs(d["midden"]) <= 1, json.dumps(d))
+            # Het beeld van 3C (08-11-2026) gaf 311px; F1 zet de regel "… gevonden" op 18px (was 'normal', 15px): 314px.
+            check(f"{n} (3C, F1): de telling 20px onder die regel; de eerste muzikant op 314px (was 401px; 311 op het beeld, +3px door de vaste regelhoogte van de telling)",
+                  d["totTelling"] == 20 and d["eersteRij"] == 314, json.dumps(d))
+            check(f"{n} (TT-560): afstand in hele km in de rij; onder 1 km '1 km'",
+                  d["meta"] == (["Basgitaar · Delft · 1 km", "Zang · Rijswijk · 4 km", "Hoorn · 12 km"] if wie == "lid" else ["Basgitaar · Delft · 1 km", "Zang · Rijswijk · 4 km", "Rock · Hoorn · 12 km"]) and all(" km" in m and "." not in m for m in d["meta"]), json.dumps(d["meta"], ensure_ascii=False))
+            o = u["open"]
+            check(f"{n} (3C): open staat Naam als eerste veld, 20px onder de regel van Filters; Wissen onderaan het vak, 20px onder het laatste veld",
+                  o["eersteVeld"] == "filterName" and o["naamOnder"] == 20 and o["wisInVak"] and o["wisOnder"] == 20, json.dumps(o))
+            check(f"{n} (besluit sessie 102): een ingevulde naam telt mee in Filters: 'Filters (1)', met een instrument 'Filters (2)'",
+                  o["teller"] == "Filters (1)" and u["teller2"] == "Filters (2)", json.dumps([o["teller"], u["teller2"]]))
+            check(f"{n}: Wissen wist de naam en laat Plaats staan; de teller gaat terug naar 'Filters'",
+                  u["naWissen"] == ["", "Filters", "Den Haag"], json.dumps(u["naWissen"]))
+            for sleutel, waar in (("inktMuz", "Muzikanten"), ("inktMuz2", "Muzikanten met 'Filters (2)'"), ("inktWie", "Wie speelt dit?")):
+                k = u[sleutel]
+                check(f"{n} (Wissen, hele app): {waar}: Wissen eindigt op het eind van het pijltje van Filters (inkt, binnen 0,5px)",
+                      abs(k["wisInkt"] - k["pijlInkt"]) <= 0.5, json.dumps(k))
+            check(f"{n} (Wissen, hele app): Wat spelen we? (zonder Filters): Wissen op dezelfde plek als bij Muzikanten",
+                  abs(u["inktWat"]["wisInkt"] - u["inktMuz"]["wisInkt"]) <= 0.5, json.dumps([u["inktWat"], u["inktMuz"]]))
+            check(f"{n} (Wissen): niet meegeschoven bij 'Filters (2)'", abs(u["inktMuz"]["wisInkt"] - u["inktMuz2"]["wisInkt"]) <= 0.1, json.dumps([u["inktMuz"], u["inktMuz2"]]))
+            check(f"{n} (voorstel 5): het vinkje in de keuzelijst van Instrument is 16px", u["vinkInstrument"] == ["✓", "16px"], json.dumps(u["vinkInstrument"]))
+            s = u["setlijst"]
+            if wie == "bezoeker":
+                check(f"{n} (voorstel 5): zonder profiel geen 'Uit je setlist'", not s["zicht"], json.dumps(s))
+            else:
+                check(f"{n} (voorstel 5): 'Uit je setlist' links op de regel van Wissen, op de inspringing van de labels, in de vorm van Filters (12px vet, warmgeel, pijltje), standaard dicht",
+                      s["zicht"] and s["tekst"] == "Uit je setlist" and s["dicht"] and s["zelfdeRij"] and s["links"] == 10
+                      and s["vorm"] == ["12px", "700", True, True], json.dumps(s))
+                l = u["lijst"]
+                check(f"{n} (voorstel 5): de lijst 'Band · Nummer', op band en dan nummer, rijen van 44px, hoogstens 240px, dan scrollen; 8px onder de knop",
+                      l["rijen"] == ["Oasis · Wonderwall", "Pearl Jam · Alive", "Pearl Jam · Black", "Radiohead · Creep", "The Cranberries · Zombie"]
+                      and all(h == 44 for h in l["hoog"]) and l["max"] == "240px" and l["overflow"] == "auto" and l["onder"] == 8, json.dumps(l, ensure_ascii=False))
+                check(f"{n} (voorstel 5): kiezen voegt het nummer toe en de lijst blijft open; gekozen: vlak, warmgele streep links, vinkje 16px; het nummer gedempt",
+                      l["open"] and l["gekozenRijen"] == ["Pearl Jam|Black", "Radiohead|Creep"] and l["gekozen"] == ["Pearl Jam · Black", "Radiohead · Creep"]
+                      and l["streep"] == ["3px", True] and l["vink"] == ["✓", "16px"], json.dumps(l, ensure_ascii=False))
+                check(f"{n} (voorstel 5): kiezen uit de lijst opent het toetsenbord niet (geen focus op het zoekveld)",
+                      l["focus"] != "setlistArtistSearch", json.dumps(l["focus"]))
+                check(f"{n} (voorstel 5): een tik op een gekozen nummer haalt het weg, zoals in de keuzelijst; de lijst blijft open",
+                      u["naTweede"] == [["Creep"], True], json.dumps(u["naTweede"]))
+                check(f"{n} (voorstel 5): Wissen wist de gekozen nummers, ook de vinkjes; de lijst blijft open",
+                      u["naWissenMM"] == [0, True, 0], json.dumps(u["naWissenMM"]))
+                lid = u["lid"]
+                check(f"{n} (B4, 'zoals open rol'): '+ Lid uitnodigen' opent Zoeken → Muzikanten, soort Muzikanten, de plaats van de band, geen instrument, Filters dicht",
+                      lid["view"] == "search" and lid["scherm"] == "muzikanten" and lid["soort"] == "muzikanten" and lid["plaats"] == "Den Haag"
+                      and lid["instrument"] == [] and not lid["filtersOpen"] and lid["band"] == {"id": "b9", "naam": "Van Delft"}, json.dumps(lid, ensure_ascii=False))
+                check(f"{n} (B4): de regel erboven: 'Lid voor Van Delft. Muzikanten rond Den Haag. Open een profiel om uit te nodigen.'",
+                      lid["melding"] == "Lid voor Van Delft. Muzikanten rond Den Haag. Open een profiel om uit te nodigen.", json.dumps(lid["melding"], ensure_ascii=False))
+                v = u["voor"]
+                check(f"{n} (B4): op het profiel staat 'Uitnodigen voor Van Delft'; de afstand in hele km",
+                      v["knop"] == "Uitnodigen voor Van Delft" and v["meta"].endswith("· 1 km"), json.dumps(v, ensure_ascii=False))
+                b = u["blok"]
+                check(f"{n} (B4): het blok: kop 'Colin Wever uitnodigen voor Van Delft' (22/28 vet), label 'Boodschap aan Colin Wever (niet verplicht)' (12/18)",
+                      b and b["kop"] == "Colin Wever uitnodigen voor Van Delft" and b["kopMaat"] == ["22px", "28px", "700"]
+                      and b["label"] == "Boodschap aan Colin Wever (niet verplicht)" and b["labelMaat"] == ["12px", "18px"], json.dumps(b, ensure_ascii=False))
+                check(f"{n} (B4): de kop op de plek van instrument en genres ({v['watTop']}px onder de hoes); kop tot label 20px, label tot berichtvak 8px, berichtvak tot knop 20px, 8px tussen de knoppen",
+                      b and b["kopTop"] == v["watTop"] and b["kopTotLabel"] == 20 and b["labelTotVak"] == 8 and b["vakTotKnop"] == 20 and b["tussenKnoppen"] == 8, json.dumps(b))
+                check(f"{n} (B4): 'Uitnodiging versturen' (geel) boven 'Annuleren' (omlijnd), over de breedte, 44px",
+                      b and b["knoppen"] == [["Uitnodiging versturen", "geel", True, 44], ["Annuleren", "omlijnd", True, 44]], json.dumps(b and b["knoppen"]))
+                check(f"{n} (B4, besluit sessie 102): alleen de hoes en het blok; bands, repertoire en foto's staan er niet; de voorbeeldtekst past; geen regelhoogte 'normal', geen opmaak in de regel",
+                      b and b["zichtbaar"] == ["hoes", "uitnodig-blok"] and b["past"] and b["rechts"] and b["normaal"] == 0 and b["stijl"] == 0, json.dumps(b))
+                check(f"{n} (B4): Annuleren zet het profiel terug, met de knop", u["naAnnuleren"] == [True, True, True, True], json.dumps(u["naAnnuleren"]))
+                vs = u["verstuurd"]
+                check(f"{n} (B4): versturen maakt de uitnodiging (Lid, aangevraagd) met de boodschap in het bericht; daarna blok en knop weg, het profiel terug",
+                      vs["rij"] == [["Lid", "aangevraagd"]] and "We zoeken een bassist." in vs["bericht"] and not vs["blok"] and not vs["knop"] and vs["bio"], json.dumps(vs, ensure_ascii=False))
+                check(f"{n} (TT-56): wie geen banduitnodigingen wil, krijgt geen knop (zoals in het oude venster)", u["nietBeschikbaar"] is False, "")
+                check(f"{n} (F1): geen regelhoogte 'normal' in Mix & Match", not u["normaalMM"], json.dumps(u["normaalMM"], ensure_ascii=False)[:300])
+            check(f"{n} (F1): geen regelhoogte 'normal' in Muzikanten (lijst en kaarten)", not u["normaalMuz"] and not u["normaalKaart"],
+                  json.dumps([u["normaalMuz"], u["normaalKaart"]], ensure_ascii=False)[:300])
+            check(f"{n} (TT-560): één afronding: 0 en 0,3 en 0,99 → '1 km', 1,49 → '1 km', 2,5 → '3 km', 12,46 → '12 km', geen afstand → '', ook in Wat spelen we?",
+                  u["km"] == ["1 km", "1 km", "1 km", "1 km", "3 km", "12 km", "", "4 km", "Delft · 1 km"], json.dumps(u["km"], ensure_ascii=False))
+    check("geen paginafouten in blok 141", not [f for f in fouten if "musician_songs is not iterable" not in f], "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -16127,6 +16393,7 @@ BLOKKEN = [
     blok_tt543_blok5,
     blok_tt543_onderdeel2,
     blok_tt543_onderdeel3,
+    blok_tt543_onderdeel4,
 ]
 
 

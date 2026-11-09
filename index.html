@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261108e">
+<link rel="stylesheet" href="styles.css?v=20261109b">
 </head>
 <body>
 
@@ -1241,17 +1241,11 @@
          regel zegt waarvoor (zoekMuzikantVoorRol() in search.js). -->
     <div class="melding" id="zoekRolMelding" hidden></div>
     <div class="search-filters">
-      <!-- Zichtbaar: Naam, Plaats + Straal. De rest achter Filters, rechts op
-           de labelregel van Naam, met een pijltje (TT-520, besluiten Ronald
-           26-10-2026, sessie 18: punten 1 en 2). Geen uitlegregels. -->
-      <div class="field">
-        <div class="label-rij zoek-label-rij">
-          <label for="filterName">Naam</label>
-          <button type="button" class="zoek-filters-knop" id="zoekFiltersKnop" aria-expanded="false" aria-controls="zoekFilterVak" onclick="toggleZoekFilters()"><span id="zoekFiltersTekst">Filters</span><svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
-        </div>
-        <input type="text" id="filterName" placeholder="Bijv. Sanne of The Rusty Strings" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
-      </div>
-
+      <!-- TT-543 onderdeel 4 (besluit Ronald 08-11-2026, 3C): zichtbaar alleen
+           Plaats + Straal. Daaronder de regel met links Onthoud mijn
+           zoekopdracht en rechts Filters. Naam en de andere velden staan achter
+           Filters; Wissen staat onderaan het filtervak. Wijzigt besluit
+           26-10-2026 (Naam zichtbaar, Filters op de labelregel van Naam). -->
       <!-- TT-160/TT-233: Plaats en Straal op één regel; Straal is een wielveld
            van 104px. Huisstijl §7.2. -->
       <div class="field">
@@ -1275,10 +1269,21 @@
         </div>
       </div>
 
+      <!-- Links de vink Onthoud mijn zoekopdracht (TT-520 deel 2, onthoudKlik()
+           in search.js), rechts Filters met het pijltje (3C). -->
+      <div class="zoek-wis-rij zoek-filters-rij">
+        <label class="zoek-onthoud"><input type="checkbox" id="zoekOnthoud" onchange="onthoudKlik(this)"><span>Onthoud mijn zoekopdracht</span></label>
+        <button type="button" class="zoek-filters-knop" id="zoekFiltersKnop" aria-expanded="false" aria-controls="zoekFilterVak" onclick="toggleZoekFilters()"><span id="zoekFiltersTekst">Filters</span><svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+      </div>
+
       <!-- Filters, in twee kolommen: Instrument, Niveau, Leeftijd, Genre,
            Volgorde, Weergave (TT-520). Instrument en Genre tonen hun keuze in
            het veld zelf, zoals Leeftijd en Niveau (grijs "–" = filter uit). -->
       <div class="zoek-filter-vak" id="zoekFilterVak" hidden>
+        <div class="field">
+          <label for="filterName">Naam</label>
+          <input type="text" id="filterName" placeholder="Bijv. Sanne of The Rusty Strings" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
+        </div>
         <div class="field-pair-row">
           <div class="field">
             <label>Instrument</label>
@@ -1345,15 +1350,12 @@
             </select>
           </div>
         </div>
-      </div>
-
-      <!-- Wissen staat altijd, rechts, direct onder het laatste zichtbare veld;
-           het wist alles behalve Plaats en Straal (besluiten Ronald 26-10-2026,
-           sessie 18, punten 3 en 6). Links de vink Onthoud mijn zoekopdracht
-           (bouwsessie a, deel 2, 27-10-2026; onthoudKlik() in search.js). -->
-      <div class="zoek-wis-rij">
-        <label class="zoek-onthoud"><input type="checkbox" id="zoekOnthoud" onchange="onthoudKlik(this)"><span>Onthoud mijn zoekopdracht</span></label>
-        <button type="button" class="zoek-wissen-knop" id="zoekWissenKnop" onclick="resetMusicianSearch()">Wissen</button>
+        <!-- Wissen onderaan het filtervak, rechts, 20px onder het laatste veld;
+             het wist alles behalve Plaats en Straal (besluiten Ronald 26-10-2026,
+             sessie 18, punt 3; plek 3C, 08-11-2026). -->
+        <div class="zoek-wis-rij">
+          <button type="button" class="zoek-wissen-knop" id="zoekWissenKnop" onclick="resetMusicianSearch()">Wissen</button>
+        </div>
       </div>
     </div>
 
@@ -1471,10 +1473,16 @@
       <!-- De gekozen nummers; verborgen zolang er geen is
            (renderSetlistSongsList()). -->
       <div class="results-list mm-gekozen" id="setlistSongsList" hidden></div>
+      <!-- TT-543 onderdeel 4, voorstel 5 (besluiten Ronald 09-11-2026): links op
+           de regel van Wissen "Uit je setlist", in de vorm van Filters; alleen
+           met een profiel (mmSetlijstTonen() in search.js). Een tik klapt je
+           nummers eronder open, "Band · Nummer", op band en dan nummer; de lijst
+           blijft open en een gekozen nummer heeft het vinkje. -->
       <div class="zoek-wis-rij">
-        <span></span>
+        <button type="button" class="zoek-filters-knop mm-setlijst-knop" id="mmSetlijstKnop" aria-expanded="false" aria-controls="mmSetlijst" onclick="toggleMmSetlijst()" hidden>Uit je setlist<svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
         <button type="button" class="zoek-wissen-knop" onclick="resetSetlistSearch()">Wissen</button>
       </div>
+      <div class="mm-setlijst" id="mmSetlijst" role="listbox" aria-label="Uit je setlist" aria-multiselectable="true" hidden></div>
     </div>
     <div id="setlistSearchResults"></div>
     </div>
@@ -2237,56 +2245,6 @@
   </div>
 </div>
 
-<!-- Bandlid toevoegen (alleen bestaande muzikantprofielen) -->
-<div class="modal-overlay" id="addMemberModal" onclick="if(event.target===this)this.classList.remove('visible')">
-  <div class="modal-box">
-    <button class="modal-close" onclick="document.getElementById('addMemberModal').classList.remove('visible')" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
-    <!-- TT-385 fase 3: dit venster is alleen nog voor uitnodigen. De leden,
-         uit de band halen en beheer overdragen staan in de tegel Onze
-         bezetting en het blok Bandbeheer. -->
-    <div class="filter-title" style="margin-bottom:8px;padding-right:52px;">Lid uitnodigen</div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">De muzikant staat pas als lid op het bandprofiel zodra hij of zij de uitnodiging zelf bevestigt.</p>
-    <!-- TT-253 (02-10-2026, Ronald: "deze pagina in de bandomgeving is niet
-         aangepast"): dezelfde opbouw als Vind een muzikant (huisstijl §7):
-         Naam, dan Plaats en Straal op één regel (.filter-row-city, straal als
-         wielveld van 104px), dan Instrument als keuzeveld met badge. Geen
-         zichtbare browser-keuzelijst en geen kaal getalveld meer. De velden
-         zijn klassen, geen losse style=. De straal start leeg ("–"): zonder
-         straal zoekt het venster zoals voorheen, ook op naam buiten de buurt. -->
-    <div class="field">
-      <label>Naam</label>
-      <input type="text" id="memberSearchInput" placeholder="Bijv. Sanne of RockDrummer92" autocomplete="off" oninput="searchMembersToAdd(this.value)">
-    </div>
-    <div class="field">
-      <div class="filter-row-city">
-        <div class="city-search-wrap frc-plaats">
-          <label for="memberSearchCity">Plaats</label>
-          <input type="text" id="memberSearchCity" placeholder="Bijv. Den Haag of 2511" autocomplete="off"
-            oninput="onCitySearchInput(this.value,'acMemberSearchCityList'); searchMembersToAdd(document.getElementById('memberSearchInput').value); scheduleSearchCityStatus('memberSearchCity','memberSearchCityStatus');"
-            onblur="setTimeout(()=>closeAC('acMemberSearchCityList'),200)">
-          <span id="memberSearchCityStatus" class="plaats-achter" aria-live="polite"></span>
-            <div class="autocomplete-list" id="acMemberSearchCityList"></div>
-        </div>
-        <div class="frc-straal">
-          <label>Straal</label>
-          <div class="wheel-field" id="memberSearchRadiusField">
-            <span class="wheel-field-label"></span>
-          </div>
-          <input type="hidden" id="memberSearchRadius" value="">
-        </div>
-      </div>
-    </div>
-    <div class="field">
-      <label>Instrument</label>
-      <div class="picker-field" id="memberSearchInstrumentsField">
-        <span class="picker-field-label" id="memberSearchInstrumentsFieldLabel">Kies een instrument</span>
-      </div>
-      <div class="picker-badge-row" id="memberSearchInstrumentsBadgeRow"></div>
-    </div>
-    <div id="memberSearchResults"></div>
-  </div>
-</div>
-
 <!-- TT-51-uitbreiding (12-08-2026): toelichting bij het bandniveau, geopend
      via de i-knop naast "Niveau van de band". Inhoud identiek aan Tabel 1 +
      de toelichtende tekst in niveaubepaling-naslagwerk.md. -->
@@ -2411,10 +2369,10 @@
 <script src="postcode.js?v=20261107a"></script>
 <script src="wizard.js?v=20261108d"></script>
 <script src="ouder.js?v=20261106a"></script>
-<script src="search.js?v=20261108a"></script>
-<script src="musicians.js?v=20261108d"></script>
-<script src="bands.js?v=20261108d"></script>
-<script src="messages.js?v=20261108c"></script>
+<script src="search.js?v=20261109a"></script>
+<script src="musicians.js?v=20261109a"></script>
+<script src="bands.js?v=20261109a"></script>
+<script src="messages.js?v=20261109a"></script>
 <script src="push.js?v=20261027b"></script>
 <script src="modals-shared.js?v=20261108d"></script>
 <script>

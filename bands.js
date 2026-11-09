@@ -376,230 +376,16 @@ function resetBandForm() {
   bandPostcodeDoel = 'band';
 }
 
-// Lid uitnodigen (de zoeklijst in #addMemberModal). Sinds TT-385 geopend
-// vanuit de tegel Onze bezetting.
-let addMemberBandId = null;
-let memberSearchTimer = null;
-
-let addMemberBandName = ''; // V-18: nodig voor de tekst in het uitnodigingsbericht
-
-// TT-253: de gekozen instrumenten (hooguit één) en de velden van Lid
-// uitnodigen. Dezelfde componenten als Vind een muzikant (initPicker,
-// initWheelField), geen eigen variant.
-const memberSearchInstruments = [];
-function memberSearchVeldenInit() {
-  if (PICKERS.memberSearchInstruments) return;
-  const zoek = () => searchMembersToAdd(document.getElementById('memberSearchInput').value);
-  initPicker({
-    id: 'memberSearchInstruments',
-    fieldId: 'memberSearchInstrumentsField', badgeRowId: 'memberSearchInstrumentsBadgeRow',
-    options: INSTRUMENTS, getList: () => memberSearchInstruments,
-    singleMax: true,
-    placeholder: 'Kies een instrument',
-    sheetTitle: 'Kies een instrument',
-    onChange: zoek
-  });
-  initWheelField({
-    id: 'memberRadius',
-    fieldId: 'memberSearchRadiusField',
-    title: 'Straal',
-    unit: 'km',
-    // '' heet in het wiel "Alle", in het gesloten veld een grijs streepje,
-    // zoals elke lege stand (initWheel(), LEEG_VELD).
-    columns: [{ inputId: 'memberSearchRadius', values: [''].concat(WHEEL_RADIUS), ariaLabel: 'Zoekstraal in kilometers' }],
-    value: [''],
-    clearTo: [''],
-    format: (v) => v[0] ? `${v[0]} km` : LEEG_VELD,
-    hint:   (v) => v[0] ? `Straal ${v[0]} km` : 'Elke afstand',
-    onChange: zoek
-  });
-}
-
-function openAddMemberModal(bandId, bandName) {
-  addMemberBandId = bandId;
-  addMemberBandName = bandName || '';
-  document.getElementById('memberSearchInput').value = '';
-  // TT-253 (02-10-2026): instrument is een keuzeveld en straal een wielveld,
-  // zoals in Vind een muzikant. Eén keer opgebouwd, bij elke opening leeg:
-  // anders blijft een eerdere keuze onopgemerkt actief bij de volgende band.
-  memberSearchVeldenInit();
-  memberSearchInstruments.length = 0;
-  renderPickerBadges(PICKERS.memberSearchInstruments);
-  setWheelFieldValues('memberRadius', [''], false);
-  const cityEl = document.getElementById('memberSearchCity');
-  if (cityEl) cityEl.value = '';
-  const cityStatusEl = document.getElementById('memberSearchCityStatus');
-  if (cityStatusEl) cityStatusEl.textContent = '';
-  document.getElementById('memberSearchResults').innerHTML = '<p style="color:var(--muted);font-size:12px;">Typ minimaal 2 tekens, kies een instrument, of vul een plaats in, om te zoeken.</p>';
-  document.getElementById('addMemberModal').classList.add('visible');
-  setTimeout(() => document.getElementById('memberSearchInput')?.focus(), 50);
-}
-
-function searchMembersToAdd(query) {
-  clearTimeout(memberSearchTimer);
-  const q = query.trim();
-  const instrument = memberSearchInstruments[0] || ''; // TT-253: keuzeveld i.p.v. <select>
-  // TT-163-bugfix (27-08-2026, live gemeld door Ronald): het nieuwe
-  // Plaats-veld (memberSearchCity) triggerde nog geen zoekopdracht — de
-  // guard hieronder kende alleen naam en instrument als startvoorwaarde,
-  // dus bij alleen een getypte plaats bleef de melding "Typ minimaal 2
-  // tekens..." staan en werd er nooit gezocht. Plaats telt nu ook mee.
-  const cityTyped = (document.getElementById('memberSearchCity')?.value || '').trim();
-  const resEl = document.getElementById('memberSearchResults');
-  // TT-26: jokertekens (%, _, *) uit de zoekterm halen, anders kan een getypt
-  // %-teken het ilike-patroon veel breder maken dan de gebruiker bedoelt.
-  const qSafe = likeSafe(q);
-  // V-17 (13-08-2026): zoeken kan nu ook zónder getypte naam, zolang er een
-  // instrument gekozen is — dat was precies de klacht ("je moet al weten
-  // wie je zoekt"). TT-163: of zolang er een plaats getypt is.
-  if (!instrument && !cityTyped && (q.length < 2 || qSafe.length < 2)) {
-    resEl.innerHTML = '<p style="color:var(--muted);font-size:12px;">Typ minimaal 2 tekens, kies een instrument, of vul een plaats in, om te zoeken.</p>';
-    return;
-  }
-  resEl.innerHTML = '<p style="color:var(--muted);font-size:12px;">Zoeken...</p>';
-  memberSearchTimer = setTimeout(async () => {
-    try {
-      const { data: existing, error: ledenFout } = await db.from('band_members').select('musician_id').eq('band_id', addMemberBandId);
-      if (ledenFout) throw ledenFout; // TT-561: anders lijkt een lid nog uit te nodigen
-      const existingIds = (existing||[]).map(x => x.musician_id);
-
-      // TT-43: zoeken op voornaam óf gebruikersnaam — een oprichter kent zijn
-      // toekomstige bandlid soms alleen van diens profielnaam.
-      // TT-56 (12-08-2026): accepts_band_invites erbij, om de "Uitnodigen"-
-      // knop hieronder te kunnen verbergen voor wie dat heeft uitgezet.
-      // V-17: bij een gekozen instrument gebruiken we !inner zodat de filter
-      // op musician_instruments.instrument ook echt de resultatenlijst raakt
-      // (zonder !inner filtert een geneste relatie alleen de sub-rijen, niet
-      // welke muzikanten worden teruggegeven).
-      // TT-163-bugfix, vervolg: bij naam of instrument filtert de database
-      // zelf al voor (ilike/eq), dus 15 is ruim genoeg. Zoek je alleen op
-      // Plaats, dan filtert de database hier nog niets — de rijen komen in
-      // willekeurige/onbepaalde volgorde binnen, en pas hierna wordt op
-      // afstand gefilterd. Bij 15 zou een muzikant binnen de straal gemist
-      // kunnen worden als hij toevallig niet bij de eerste 15 zit. Ruimer bij
-      // een plaats-only zoekopdracht; een échte serverside geo-filter is
-      // groter werk en hoort bij TT-28 (filtering/paginering naar de
-      // database), niet bij deze bugfix.
-      const fetchLimit = (instrument || (q.length >= 2 && qSafe.length >= 2)) ? 15 : 200;
-      let qb = db.from('musicians').select(
-        instrument
-          ? 'id, weergavenaam, username, city, accepts_band_invites, musician_instruments!inner(instrument)'
-          : 'id, weergavenaam, username, city, accepts_band_invites, musician_instruments(instrument)'
-      ).limit(fetchLimit);
-      if (instrument) qb = qb.eq('musician_instruments.instrument', instrument);
-      if (q.length >= 2 && qSafe.length >= 2) qb = qb.ilike('weergavenaam', `%${qSafe}%`); // TT-420: je vindt iemand op de naam die je ziet
-
-      const { data: musicians, error } = await qb;
-      if (error) throw error;
-
-      let filtered = (musicians||[]).filter(m => !existingIds.includes(m.id));
-      if (!filtered.length) {
-        resEl.innerHTML = '<p style="color:var(--muted);font-size:12px;">Geen (nieuwe) muzikanten gevonden.</p>';
-        return;
-      }
-
-      // V-17-restpunt (13-08-2026) + TT-163 (27-08-2026): afstand ophalen via
-      // tt_musician_distances — een eigen, kleine databasefunctie die alleen
-      // een getal (km) teruggeeft, nooit ruwe coördinaten van een ander
-      // (B-01). Sinds TT-163 accepteert de functie ook een eigen
-      // origin_lat/origin_lng: getypt in het Plaats-veld hierboven
-      // (memberSearchCity), via de bestaande resolveSearchOrigin() — dat
-      // zijn coördinaten van een postcode/plaatsnaam uit postcode_cache,
-      // geen persoonsgegevens (dezelfde functie die runSearch() al gebruikt).
-      // Leeg Plaats-veld: origin_lat/origin_lng blijven null, de functie
-      // valt dan vanzelf terug op de eigen locatie van searcher_id — precies
-      // het gedrag van vóór TT-163.
-      const radiusVal = document.getElementById('memberSearchRadius')?.value.trim();
-      const radius = radiusVal ? parseInt(radiusVal, 10) : null;
-      const cityQuery = document.getElementById('memberSearchCity')?.value.trim();
-      // TT-527: je eigen woonplaats telt als je eigen postcode, zoals bij Muzikanten.
-      const origin = await zoekVertrekpunt(cityQuery);
-      try {
-        const { data: distances, error: distErr } = await db.rpc('tt_musician_distances', {
-          searcher_id: await getMyMusicianId(),
-          musician_ids: filtered.map(m => m.id),
-          origin_lat: origin.lat,
-          origin_lng: origin.lng
-        });
-        if (!distErr && distances) {
-          const distMap = {};
-          distances.forEach(d => { distMap[d.musician_id] = d.distance_km; });
-          filtered.forEach(m => { m.distance_km = distMap[m.id] != null ? distMap[m.id] : null; });
-          if (radius) {
-            filtered = filtered.filter(m => m.distance_km == null || m.distance_km <= radius);
-          }
-          filtered.sort((a, b) => {
-            if (a.distance_km == null && b.distance_km == null) return 0;
-            if (a.distance_km == null) return 1;
-            if (b.distance_km == null) return -1;
-            return a.distance_km - b.distance_km;
-          });
-        }
-      } catch (distE) {
-        logCaught('searchMembersToAdd', distE);
-        // Stil falen: afstand is een verrijking, geen vereiste voor deze zoekopdracht.
-      }
-
-      if (!filtered.length) {
-        resEl.innerHTML = '<p style="color:var(--muted);font-size:12px;">Geen (nieuwe) muzikanten binnen deze straal gevonden.</p>';
-        return;
-      }
-      resEl.innerHTML = filtered.map(m => {
-        const memberName = displayNameOf(m);
-        // TT-56 (12-08-2026): wie accepts_band_invites heeft uitgezet, krijgt
-        // hier geen "Uitnodigen"-knop. Deze tekst is alleen zichtbaar voor de
-        // zoekende oprichter zelf, in dit besloten beheerscherm — geen
-        // zichtbaar label op het publieke profiel van de muzikant zelf.
-        // V-18 (13-08-2026): een uitnodiging kwam tot nu toe zonder woorden
-        // aan — alleen een banner op Mijn Profiel, geen uitleg waarom. De
-        // knop opent nu eerst een kort tekstveld i.p.v. meteen uit te nodigen.
-        const inviteAction = m.accepts_band_invites === false
-          ? `<span style="font-size:12px;color:var(--muted);">Niet beschikbaar</span>`
-          : `<button class="btn btn-ghost" onclick="openInviteNote(this, '${jsAttr(m.id)}', '${jsAttr(memberName)}')">Uitnodigen</button>`;
-        return `
-        <div class="member-search-row lijst-rij" style="display:flex;align-items:center;gap:12px;padding:8px 0;">
-          <div style="width:32px;height:32px;border-radius:50%;background:var(--merk);color:var(--merk-tekst);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">${escHtml(memberName[0].toUpperCase())}</div>
-          <div style="flex:1;">
-            <div style="font-weight:600;font-size:12px;">${escHtml(memberName)}</div>
-            <div style="font-size:12px;color:var(--muted);">${escHtml(m.city||'')}${m.distance_km != null ? ` · ${m.distance_km.toFixed(1)} km` : ''}${(m.musician_instruments||[]).length ? ' · ' + escHtml(m.musician_instruments.map(x=>x.instrument).slice(0,2).join(', ')) : ''}</div>
-          </div>
-          <span class="member-invite-action">${inviteAction}</span>
-        </div>`; }).join('');
-    } catch (e) {
-      logCaught('searchMembersToAdd', e);
-      resEl.innerHTML = foutStaatHTML(e, 'leden zoeken', "searchMembersToAdd(document.getElementById('memberSearchInput').value)");
-    }
-  }, 300);
-}
+// TT-543 onderdeel 4 (besluit Ronald 09-11-2026, B4): uitnodigen gaat via
+// Zoeken en het profiel van de muzikant (zie "Uitnodigen vanuit Zoeken"
+// onderaan). Het venster Lid uitnodigen met zijn eigen zoeklijst is weg.
 
 // TT-41 (08-08-2026): een oprichter kon iemand voorheen zonder diens medeweten
 // als lid op het bandprofiel zetten. Vanaf nu ontstaat er een uitnodiging
 // (status 'aangevraagd'); pas als de muzikant zelf bevestigt via de banner op
 // Mijn Profiel wordt het 'bevestigd' en is het lidmaatschap zichtbaar.
-// V-18 (13-08-2026): opent een kort tekstveld in de resultatenrij i.p.v.
-// meteen uit te nodigen — zo kan de oprichter een reden meegeven.
-function openInviteNote(btnEl, musicianId, memberName) {
-  const row = btnEl.closest('.member-search-row');
-  if (!row) return;
-  row.innerHTML = `
-    <div style="width:100%;">
-      <div style="font-size:12px;margin-bottom:8px;">Uitnodiging aan <strong>${escHtml(memberName)}</strong> — voeg eventueel een korte boodschap toe:</div>
-      <textarea class="invite-note-input" maxlength="300" placeholder="Bijv. we zoeken een bassist voor onze covers, jouw profiel past goed bij ons!" style="width:100%;min-height:96px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Inter',sans-serif;font-size:16px;"></textarea>
-      <div class="btn-row" style="margin-top:8px;">
-        <button class="btn btn-ghost" onclick="searchMembersToAdd(document.getElementById('memberSearchInput').value)">Annuleren</button>
-        <button class="btn btn-primary" onclick="sendInviteWithNote(this, '${jsAttr(musicianId)}')">Uitnodiging versturen</button>
-      </div>
-    </div>`;
-  row.querySelector('.invite-note-input')?.focus();
-}
-
-function sendInviteWithNote(btnEl, musicianId) {
-  const row = btnEl.closest('.member-search-row');
-  const note = row?.querySelector('.invite-note-input')?.value.trim() || '';
-  addBandMember(musicianId, note);
-}
-
-async function addBandMember(musicianId, note) {
+// V-18 (13-08-2026): de oprichter kan een korte boodschap meegeven.
+async function addBandMember(band, musicianId, note) {
   try {
     // TT-56 (12-08-2026): defensieve check naast de verborgen knop hierboven
     // — zelfde patroon als de akkoord-checkbox bij registratie (TT-63): de
@@ -616,14 +402,14 @@ async function addBandMember(musicianId, note) {
     }
 
     const { error } = await db.from('band_members').insert({
-      band_id: addMemberBandId, musician_id: musicianId, role: 'Lid', status: 'aangevraagd'
+      band_id: band.id, musician_id: musicianId, role: 'Lid', status: 'aangevraagd'
     });
     if (error) throw error;
 
     // V-18: de boodschap komt binnen als gewoon bericht, zodat de ontvanger
     // weet waarom hij gevraagd wordt — niet alleen een naam op een banner.
     const trimmedNote = (note || '').trim();
-    const bandLabel = addMemberBandName ? `"${addMemberBandName}"` : 'onze band';
+    const bandLabel = band.naam ? `"${band.naam}"` : 'onze band';
     const text = trimmedNote
       ? `Je bent uitgenodigd voor de band ${bandLabel}. ${trimmedNote}`
       : `Je bent uitgenodigd voor de band ${bandLabel}. Bekijk de uitnodiging op je profiel.`;
@@ -634,11 +420,9 @@ async function addBandMember(musicianId, note) {
     showToast(berichtVerstuurd
       ? 'Uitnodiging verstuurd.'
       : 'De uitnodiging staat in de lijst, maar het bericht erbij kwam niet aan. De muzikant ziet de uitnodiging wel op zijn profiel.');
-    document.getElementById('addMemberModal').classList.remove('visible');
     loadMyBands();
-    // TT-385: uitnodigen gebeurt vanuit Onze bezetting; de uitnodiging staat
-    // daar meteen in de lijst.
-    if (bewerkBandId === addMemberBandId) bbLaadLeden();
+    // TT-385: terug in Onze bezetting staat de uitnodiging meteen in de lijst.
+    if (bewerkBandId === band.id) bbLaadLeden();
     return true;
   } catch (e) {
     logCaught('addBandMember', e);
@@ -1379,6 +1163,7 @@ async function laadBandScherm(id, linkToegang) {
   const vak = document.getElementById('profielSchermContent');
   const voet = document.getElementById('profielSchermVoet');
   vak.classList.remove('muzikant-profiel'); // TT-543: de bandpagina volgt in onderdeel 6
+  vak.classList.remove('uitnodig-open'); // TT-543 onderdeel 4: het blok hoort bij een muzikantprofiel
   voet.innerHTML = '';
   vak.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
   if (!id) { toonProfielNietBeschikbaar('band'); return; }
@@ -1897,8 +1682,13 @@ function bbInvalToevoegen() {
   bbRenderInvallers();
 }
 
+// TT-543 onderdeel 4 (besluiten Ronald 09-11-2026, B4, en sessie 102: "zoals
+// open rol"): "+ Lid uitnodigen" opent Zoeken → Muzikanten met de band erboven,
+// net als het plusje van een open rol, maar zonder instrument.
 function bbLidUitnodigen() {
-  if (bewerkBandId) openAddMemberModal(bewerkBandId, bewerkBandNaam);
+  if (!bewerkBandId) return;
+  if (tegelHeeftWijzigingen()) { showToast('Sla eerst je wijzigingen op.'); return; }
+  zoekMuzikantVoorRol('', bewerkBandStad, bewerkBandNaam, '', bewerkBandId);
 }
 
 // Een uitnodiging intrekken gaat meteen: wie nog niet antwoordde, staat ook
@@ -2455,35 +2245,81 @@ async function saveBandMedia() {
 }
 
 // ─── Uitnodigen vanuit Zoeken (besluit Ronald, 02-10-2026, na fase 3) ─────────
-// Een tik op een open rol opent Zoeken (zoekMuzikantVoorRol()). Het venster
-// van een muzikant uit die zoekopdracht krijgt dan de knop "Uitnodigen voor
-// <band>", boven de berichtknop. Alleen voor een vaste rol: een invaller
-// vraag je in een bericht. De band staat in zoekRolBand tot Zoeken opnieuw
-// opent (configureSearchAccess()). Wie al lid of uitgenodigd is, krijgt geen
+// Een tik op een open rol of op "+ Lid uitnodigen" opent Zoeken
+// (zoekMuzikantVoorRol()). Het profiel van een muzikant uit die zoekopdracht
+// krijgt dan de knop "Uitnodigen voor <band>", boven de berichtknop. Alleen
+// voor een vaste rol of een lid: een invaller vraag je in een bericht. De band
+// staat in zoekRolBand tot Zoeken opnieuw opent (configureSearchAccess()). Wie
+// al lid of uitgenodigd is, of geen banduitnodigingen wil (TT-56), krijgt geen
 // knop.
 let zoekRolBand = null; // { id, naam }
 
-async function rolUitnodigKnopPlaatsen(musicianId) {
+async function rolUitnodigKnopPlaatsen(musicianId, naam) {
   const band = zoekRolBand;
   // TT-543 onderdeel 3 (F3 B): op het muzikantprofiel staan de knoppen onder
   // de bio (#profielSchermActie), niet meer in de vaste balk onderaan.
   const voet = document.getElementById('profielSchermActie');
   if (!band || !hasOwnProfile || !voet || !musicianId || musicianId === myMusicianId) return;
   if (typeof blokkeerIkZelf === 'function' && blokkeerIkZelf(musicianId)) return;
-  const { data, error } = await db.from('band_members').select('status')
-    .eq('band_id', band.id).eq('musician_id', musicianId);
-  if (error) { logCaught('rolUitnodigKnopPlaatsen', error); return; }
-  if (zoekRolBand !== band || (data || []).length) return;
+  // TT-56: wie banduitnodigingen uit heeft, kreeg in het venster Lid uitnodigen
+  // geen knop; hier ook niet. De vraag loopt tegelijk met die naar de leden.
+  const [leden, wil] = await Promise.all([
+    db.from('band_members').select('status').eq('band_id', band.id).eq('musician_id', musicianId),
+    db.from('musicians').select('accepts_band_invites').eq('id', musicianId).maybeSingle()
+  ]);
+  if (leden.error) { logCaught('rolUitnodigKnopPlaatsen', leden.error); return; }
+  if (wil.error) { logCaught('rolUitnodigKnopPlaatsen', wil.error); return; }
+  if (zoekRolBand !== band || (leden.data || []).length || wil.data?.accepts_band_invites === false) return;
   if (voet.querySelector('.rol-uitnodig-knop')) return;
   voet.insertAdjacentHTML('afterbegin',
-    `<button class="btn btn-ghost rol-uitnodig-knop" onclick="rolUitnodigen('${jsAttr(musicianId)}')">Uitnodigen voor ${escHtml(band.naam)}</button>`);
+    `<button class="btn btn-ghost rol-uitnodig-knop" onclick="rolUitnodigBlokOpenen('${jsAttr(musicianId)}', '${jsAttr(naam || '')}')">Uitnodigen voor ${escHtml(band.naam)}</button>`);
 }
 
-async function rolUitnodigen(musicianId) {
+// TT-543 onderdeel 4 (besluiten Ronald 09-11-2026, B4, en sessie 102): een tik
+// op "Uitnodigen voor <band>" nodigt niet meteen uit, maar opent onder de hoes
+// één blok: de kop "<naam> uitnodigen voor <band>" (de naam die de app toont,
+// over meer regels als hij lang is), het berichtvak met "Boodschap aan <naam>
+// (niet verplicht)" erboven, en "Uitnodiging versturen" en "Annuleren". De
+// rest van het profiel staat er dan niet (.uitnodig-open in styles.css);
+// Annuleren zet het terug. Vervangt de korte boodschap uit het venster Lid
+// uitnodigen (V-18).
+function rolUitnodigBlokOpenen(musicianId, naam) {
+  const band = zoekRolBand;
+  const content = document.getElementById('profielSchermContent');
+  const hoes = content?.querySelector('.hoes');
+  if (!band || !hoes) return;
+  content.querySelector('.uitnodig-blok')?.remove();
+  hoes.insertAdjacentHTML('afterend', `
+    <section class="uitnodig-blok">
+      <h2 class="hoofdstuk-kop">${escHtml(naam)} uitnodigen voor ${escHtml(band.naam)}</h2>
+      <div class="field">
+        <label for="uitnodigBoodschap">Boodschap aan ${escHtml(naam)} (niet verplicht)</label>
+        <textarea id="uitnodigBoodschap" maxlength="300" placeholder="Bijv. we zoeken een bassist voor onze covers, jouw profiel past goed bij ons!"></textarea>
+      </div>
+      <div class="uitnodig-knoppen">
+        <button type="button" class="btn btn-primary" onclick="rolUitnodigen('${jsAttr(musicianId)}', this)">Uitnodiging versturen</button>
+        <button type="button" class="btn btn-ghost" onclick="rolUitnodigBlokSluiten()">Annuleren</button>
+      </div>
+    </section>`);
+  content.classList.add('uitnodig-open');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function rolUitnodigBlokSluiten() {
+  const content = document.getElementById('profielSchermContent');
+  if (!content) return;
+  content.querySelector('.uitnodig-blok')?.remove();
+  content.classList.remove('uitnodig-open');
+}
+
+async function rolUitnodigen(musicianId, knop) {
   const band = zoekRolBand;
   if (!band) return;
-  addMemberBandId = band.id;
-  addMemberBandName = band.naam;
-  const gelukt = await addBandMember(musicianId, '');
-  if (gelukt) document.querySelector('#profielSchermActie .rol-uitnodig-knop')?.remove();
+  if (knop) knop.disabled = true; // een tweede tik maakt geen tweede uitnodiging
+  const boodschap = document.getElementById('uitnodigBoodschap')?.value || '';
+  const gelukt = await addBandMember(band, musicianId, boodschap);
+  if (knop) knop.disabled = false;
+  if (!gelukt) return; // het blok en de tekst blijven staan; de melding zegt wat er misging
+  rolUitnodigBlokSluiten();
+  document.querySelector('#profielSchermActie .rol-uitnodig-knop')?.remove();
 }

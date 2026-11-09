@@ -702,7 +702,7 @@ function talentTentBerichtHTML(bericht, info) {
   const rijen = muz.map(m => {
     const mi = info.muzikanten[m.id];
     const naam = displayNameOf(mi);
-    const regel1 = [mi.city, m.km != null ? `${m.km} km` : ''].filter(Boolean).join(' · ');
+    const regel1 = [mi.city, afstandTekst(m.km)].filter(Boolean).join(' · '); // TT-560: hele km
     const regel2 = (m.instrumenten || []).join(' · ');
     return `<button type="button" class="bb-rij bb-rij-knop" onclick="openProfielScherm('${jsAttr(m.id)}')" aria-label="Profiel van ${escHtml(naam)}">${bbFotoHTML(mi.avatar_url)}<span class="bb-tekst"><span class="bb-naam">${escHtml(naam)}</span>${regel1 ? `<span class="bb-sub">${escHtml(regel1)}</span>` : ''}${regel2 ? `<span class="bb-sub">${escHtml(regel2)}</span>` : ''}</span></button>`;
   }).concat(bnd.map(b => {
@@ -711,7 +711,7 @@ function talentTentBerichtHTML(bericht, info) {
     const beeld = foto
       ? `<img class="bb-foto bb-foto-vierkant" ${kleinFotoAttr(foto)} alt="">`
       : `<span class="bb-foto bb-foto-leeg bb-foto-vierkant" aria-hidden="true">${ZONDER_FOTO_HTML}</span>`;
-    const regel1 = [bi.city, b.km != null ? `${b.km} km` : ''].filter(Boolean).join(' · ');
+    const regel1 = [bi.city, afstandTekst(b.km)].filter(Boolean).join(' · '); // TT-560: hele km
     const regel2 = (b.zoekt || []).map(i => TT_TEKSTEN.bandZoekt.replace('{instrument}', i)).join(' · ');
     return `<button type="button" class="bb-rij bb-rij-knop" onclick="openBandScherm('${jsAttr(b.id)}')" aria-label="Band ${escHtml(bi.name)}">${beeld}<span class="bb-tekst"><span class="bb-naam">${escHtml(bi.name)}</span>${regel1 ? `<span class="bb-sub">${escHtml(regel1)}</span>` : ''}${regel2 ? `<span class="bb-sub">${escHtml(regel2)}</span>` : ''}</span></button>`;
   }));
