@@ -89,19 +89,22 @@
     --gekozen-vlak: #FFB81C;
     --gekozen-rand: #FFB81C;
     --gekozen-tekst: #1E1E1E;
+    /* De gekozen regel in een keuzemenu: een zwevende pil, een tint lichter dan
+       het menu (T2, besluit Ronald 09-11-2026, TT-543 draaiwielen). */
+    --gekozen-pil: #2C2C2C;
+    --schaduw-gekozen-pil: 0 1px 2px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.35), 0 0 0 .5px rgba(255,255,255,.06);
     --keuze-vlak: var(--surface2);          /* een keuzeknop die niet gekozen is */
     --keuze-rand: var(--border);            /* rand van een keuzeknop */
     /* Een zweem over de ondergrond: aanwijzen, ongelezen, uitgelicht. */
     --tint: rgba(255,255,255,0.05);
     --tint-hover: rgba(255,255,255,0.08);   /* aanwijzen op een ronde knop */
-    --tint-grip: rgba(255,255,255,0.20);    /* greep van het wielvenster */
+    --tint-grip: rgba(255,255,255,0.20);    /* greep van een bladwijzer */
     --surface3: #222;                       /* lijst met suggesties */
     --vlak: #222;                           /* TT-517 fase 2 (huisstijl §24, optie B): een rij, kaart of tegel; donker een stap lichter dan de pagina */
     --schaduw-vlak: none;                   /* donker: een schaduw valt weg op zwart */
     --rand-hover: #555;
     --rand-menu: #444;                      /* uitklapmenu, bandkaart bij aanwijzen */
     --leeg: #555;                           /* lege ster, niet-actieve stip */
-    --wiel-tekst: #9a9a9a;                  /* niet-gekozen regel in het wiel */
     /* Lagen boven de pagina en hun schaduw. */
     --laag-venster: rgba(0,0,0,0.8);
     --laag-opslaan: rgba(0,0,0,0.7);
@@ -180,6 +183,8 @@
     --gekozen-vlak: #FFB81C;       /* licht en donker: geel vlak (TT-517 fase 11, B) */
     --gekozen-rand: #FFB81C;
     --gekozen-tekst: #1E1E1E;
+    --gekozen-pil: #FFFEFA;
+    --schaduw-gekozen-pil: 0 1px 2px rgba(30,30,30,.14), 0 2px 8px rgba(30,30,30,.08), 0 0 0 .5px rgba(30,30,30,.08);
     --keuze-vlak: var(--surface);
     --tint: rgba(30,30,30,0.04);
     --tint-hover: rgba(30,30,30,0.06);
@@ -190,7 +195,6 @@
     --rand-hover: #B8B4AA;
     --rand-menu: #DED9CF;
     --leeg: #CFCAC0;
-    --wiel-tekst: #6E6A63;
     --laag-venster: rgba(30,30,30,0.45);
     --laag-opslaan: rgba(30,30,30,0.45);
     --laag-menu: rgba(30,30,30,0.45);
@@ -1685,7 +1689,6 @@
   /* Geen vinkje en geen gekozen stand in het menu: de keuze staat al in de rij
      (Ronald: "de tussenstap met een vinkje kan eruit ... kiezen is direct weergeven"). */
   .beheersing-menu .choice-option.selected { color: var(--text); }
-  .beheersing-menu .choice-option-check { display: none; }
   .nummers-inklap:not(.open) .nummers-inklap-rijen:has(.choice-menu.open) { -webkit-mask-image: none; mask-image: none; }
 
 
@@ -5171,157 +5174,17 @@
   }
 
 
-  /* ─── Draaiwiel (TT-233, 10-09-2026) ──────────────────────────────────────
-     Huisstijl §7.1. De vorm die iedereen van zijn telefoon kent: één paneel
-     per keuze, de waarden vervagen naar boven en onder, en één balk markeert
-     de gekozen regel. Vijf regels zichtbaar, de middelste is gekozen.
-     Regelhoogte 44px staat ook in utils.js als WHEEL_ITEM_H — die twee moeten
-     gelijk blijven, anders leest het wiel de verkeerde waarde af.
-     Vervangt het TT-232-blok, dat twee keer in dit bestand stond. */
-  /* TT-256 (11-09-2026): het paneel is zo breed als zijn inhoud, met een
-     ondergrens van 200px — niet zo breed als de bladwijzer. Een vak van de
-     volle breedte met 128px inhoud erin leest als een leeg scherm, niet als
-     een keuze. De bladwijzer eromheen blijft wél volle breedte. */
-  .picker-group {
-    position: relative;
-    display: flex;
-    align-items: stretch;
-    justify-content: center;    /* kolommen als blok in het midden, zie hieronder */
-    gap: 4px;
-    height: 220px;              /* 5 regels van 44px */
-    padding: 0 8px;
-    width: fit-content;
-    min-width: 200px;
-    max-width: 100%;
-    margin: 0 auto;
-    background: var(--surface2);
-    border: var(--line) solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
-  .picker-group:focus-within { border-color: var(--accent); }
-  /* De markering van de gekozen regel: één balk over de hele groep, geen
-     lijnen per kolom. Scrollt niet mee. De balk loopt wél over de volle
-     breedte — die markeert de regel, niet de kolom.
-     TT-256: geen goudwas meer. Goud op 10% over --surface2 rekent uit op
-     #332f1d — olijfbruin. Het goud zit nu in de gekozen waarde zelf, waar het
-     goud blijft; de balk is neutraal en markeert alleen de regel. */
-  .picker-band {
-    position: absolute;
-    left: 8px; right: 8px;
-    top: 88px;                  /* 2 regels van 44px */
-    height: 44px;
-    background: var(--tint);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    pointer-events: none;
-  }
-  /* TT-256: de vervaging ligt als vaste laag óver het paneel, niet als masker
-     op de bewegende inhoud. Een mask-image op een scrollende laag dwingt de
-     browser die laag bij elk frame opnieuw te tekenen. */
-  .picker-fade {
-    position: absolute;
-    left: 1px; right: 1px;
-    height: 74px;
-    pointer-events: none;
-    z-index: 1;
-  }
-  .picker-fade-top {
-    top: 1px;
-    border-radius: var(--radius) var(--radius) 0 0;
-    background: linear-gradient(to bottom, var(--surface2) 0%, transparent 100%);
-  }
-  .picker-fade-bottom {
-    bottom: 1px;
-    border-radius: 0 0 var(--radius) var(--radius);
-    background: linear-gradient(to top, var(--surface2) 0%, transparent 100%);
-  }
-  /* Vaste kolombreedte, geen flex:1. De meeste gebruikers bedienen de app met
-     hun rechterduim; kolommen die de volle breedte uitrekken duwen de eerste
-     kolom tegen de linkerrand, buiten duimbereik. */
-  .wheel { position: relative; height: 100%; width: 72px; flex: 0 0 auto; z-index: 1; }
-  .wheel:focus { outline: none; }
-  .wheel:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 8px; }
-  .wheel-scroll {
-    height: 100%;
-    overflow-y: auto;
-    scroll-snap-type: y mandatory;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    /* TT-256: het wiel houdt zijn eigen beweging vast. Zonder deze regel
-       scrolt de bladwijzer of de pagina eronder mee zodra het wiel aan zijn
-       eind is — dat leest als haperen. */
-    overscroll-behavior: contain;
-    /* De vervaging staat nu op .picker-fade, over het paneel heen. */
-    /* TT-275: de scroller loopt door tot de buren en de randen van het paneel
-       (maten uit wielTreffervlak() in utils.js). Zo draait het wiel ook naast
-       het getal en over "km". */
-    margin-left: calc(-1 * var(--wiel-l, 0px));
-    margin-right: calc(-1 * var(--wiel-r, 0px));
-  }
-  /* Met een muis trekt `mandatory` het wiel bij elke klik van het muiswiel
-     terug naar de dichtstbijzijnde regel, midden in de beweging. Met een
-     vinger is dat juist het gewenste vastklikken. Vandaar per invoersoort. */
-  @media (pointer: fine) {
-    .wheel-scroll { scroll-snap-type: y proximity; }
-  }
-  .wheel-scroll::-webkit-scrollbar { display: none; }
-  /* Twee lege regels boven en onder, zodat ook de eerste en de laatste
-     waarde in het midden kunnen staan. */
-  .wheel-pad { height: 88px; }
-  .wheel-item {
-    height: 44px;
-    line-height: 44px;
-    text-align: center;
-    font-size: 17px;
-    color: var(--wiel-tekst);
-    scroll-snap-align: center;
-    /* TT-275: zelfde maat terug als opvulling, zodat het getal midden in zijn
-       kolom blijft staan. */
-    padding: 0 var(--wiel-r, 0px) 0 var(--wiel-l, 0px);
-    cursor: pointer;
-    user-select: none;
-    white-space: nowrap;
-    transition: color 0.15s;
-  }
-  .wheel-item.selected { color: var(--accent); font-weight: 700; }
-  /* Koppelwoord en eenheid staan op de hoogte van de gekozen regel, als vaste
-     kolom in het paneel — geen los woord naast het paneel. */
-  .wheel-sep,
-  .wheel-unit {
-    align-self: flex-start;
-    margin-top: 88px;
-    height: 44px;
-    line-height: 44px;
-    color: var(--muted);
-    font-size: var(--fs-sm);
-    text-align: center;
-    flex: 0 0 auto;
-    pointer-events: none;   /* TT-275: het wiel eronder vangt de veeg */
-  }
-  .wheel-sep  { width: 44px; }
-  .wheel-unit { width: 52px; font-size: 15px; }
-  /* TT-256: de eenheid telt niet mee in het centreren. Zonder deze tegenhanger
-     wordt "5 km" als blok gecentreerd en staat de 5 zelf 28px links van het
-     midden — je leest dan een cijfer dat scheef hangt. Deze lege kolom is even
-     breed als .wheel-unit en zet de kolommen terug in het midden. Wordt smaller
-     op een heel smal scherm, in plaats van het paneel te laten uitlopen. */
-  .wheel-unit-spacer {
-    pointer-events: none;
-    width: 52px;
-    flex: 0 1 auto;
-    min-width: 0;
-  }
-
-  /* ─── Wielveld: het tikveld dat de bladwijzer opent ──────────────────────── */
+  /* ─── Keuzeveld: het tikveld dat het keuzemenu opent ─────────────────────── */
   .wheel-field {
     position: relative;
     display: flex;
     align-items: center;
-    /* De waarde staat links, op de lijn van het label erboven; geen pijltje
-       (besluit Ronald 26-10-2026, huisstijl §7.2). Een tik opent het wiel. */
-    justify-content: flex-start;
+    /* De waarde staat in het midden; geen pijltje (besluit Ronald
+       09-11-2026, TT-543 draaiwielen: "met het verdwijnen van de draaiwielen
+       kan het niet anders. de lege ruimte is niet mooi"; vervangt "links"
+       van 26-10-2026, huisstijl §7.2). Een tik opent het keuzemenu. */
+    justify-content: center;
+    text-align: center;
     min-height: 44px;
     /* Zelfde inspringing en hoekstraal als elk ander veld. Op een scherm van
        360px blijft er 117px over voor de tekst; de langste stand,
@@ -5348,10 +5211,10 @@
   .wheel-field > .wheel-field-label { line-height: 22px; }
   /* Filter uit: een grijs streepje in plaats van "Alle" (besluit Ronald
      26-10-2026). Een gekozen waarde staat in --text, zo zie je in één blik wat
-     aanstaat. In het wiel zelf heet de lege stand nog "Alle". */
+     aanstaat. */
   .wheel-field-label.leeg { color: var(--muted); }
 
-  /* ─── Bladwijzer met het wiel ────────────────────────────────────────────── */
+  /* ─── Bladwijzer (het deelblad van een band, #bandDeelModal) ──────────────── */
   /* Bewuste uitzondering op §9 (volledig scherm op mobiel): een keuzelaag van
      circa 300px is geen scherm. Daarom een eigen klasse en niet .modal-box —
      die krijgt op mobiel 100dvh. */
@@ -5393,19 +5256,9 @@
     font-size: 15px;
     margin-bottom: 12px;
   }
-  /* Terugleesregel onder het wiel: "Niveau 3 t/m 5 — Half-Gevorderd t/m
-     Professioneel". Vaste hoogte, zodat de knoppen eronder niet verspringen. */
-  .wheel-hint {
-    font-size: var(--fs-sm);
-    color: var(--accent);
-    text-align: center;
-    margin: 12px 0 0;
-    min-height: 18px;
-  }
-  .wheel-sheet .btn-row { margin-top: 14px; }
 
   /* ─── Rijen op het zoekscherm (huisstijl §7.2) ───────────────────────────── */
-  /* Plaats en Straal op één regel. Straal is zo breed als "500 km" nodig heeft
+  /* Plaats en Straal op één regel. Straal is zo breed als "100 km" nodig heeft
      en groeit niet mee; Plaats krijgt de rest, want plaatsnamen verschillen
      sterk in lengte. */
 
@@ -5492,7 +5345,34 @@
   .choice-option + .choice-option { border-top: 1px solid var(--border); }
   @media (hover: hover) { .choice-option:hover { background: var(--tint); } } /* TT-517 fase 9: alleen met een muis */
   .choice-option.selected { color: var(--accent); font-weight: 700; }
-  .choice-option-check { color: var(--accent); font-size: var(--tekenmaat); }
+
+  /* ─── De vorm van elk keuzemenu (TT-543 draaiwielen, besluiten Ronald
+     09-11-2026; huisstijl §7.1) ───────────────────────────────────────────
+     Een paneel met ronde hoeken; elke regel een pil, de tekst in het midden,
+     2px ertussen, geen lijn. Hoogstens zeven regels; meer scrollen in het
+     menu. De gekozen regel (T2, "T2 wordt het"): een zwevende pil en de letter
+     vet in de accentkleur (donker warmgeel, licht zwart). Bij aanwijzen met de
+     muis de grijze pil hierboven. De beheersingskeuze en "+ Toevoegen" houden
+     hun labelvorm (huisstijl §7.7, besluit Ronald 09-11-2026). */
+  .choice-menu:not(.beheersing-menu) {
+    padding: 8px;
+    border-radius: 22px;
+    max-height: 344px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .choice-menu:not(.beheersing-menu) .choice-option {
+    justify-content: center;
+    text-align: center;
+    margin: 2px 0;
+    padding: 0 12px;
+    border-radius: 999px;
+  }
+  .choice-menu:not(.beheersing-menu) .choice-option + .choice-option { border-top: none; }
+  .choice-menu:not(.beheersing-menu) .choice-option.selected {
+    background: var(--gekozen-pil);
+    box-shadow: var(--schaduw-gekozen-pil);
+  }
 
 
   /* Label met de i-knop ernaast (zelfde patroon als "Mijn Instrumenten"). */

@@ -10,23 +10,32 @@ let filterInstruments = [];
 let filterGenres      = [];
 let searchSortMode    = 'score';
 
-// TT-232 (09-09-2026): vaste stappen voor de draaiwielen. Lege waarde = het
-// filter staat uit ("Alle" bovenaan het wiel, TT-308, was "Geen").
-// Leeftijd: per 3 jaar tot 24, daarna per 5 — bij tieners telt één jaar
-// verschil zwaar, bij volwassenen niet meer.
-const WHEEL_AGE_MIN = [''].concat([13,16,19,22], rangeStep(25, 95, 5));
-const WHEEL_AGE_MAX = [''].concat([15,18,21,24], rangeStep(30, 95, 5), [99]);
-const WHEEL_NIVEAU  = ['', 1, 2, 3, 4, 5];
-// TT-233 (10-09-2026): straal terug van 28 naar 10 standen. 28 standen tot
-// 500 km vroegen een lange scrollbeweging voor een keuze die in de praktijk
-// tussen 10 en 50 km ligt. Nederland is ongeveer 300 km lang.
-const WHEEL_RADIUS  = [5, 10, 15, 25, 50, 75, 100, 150, 250, 500];
-const STRAAL_STANDAARD = 10;  // beginstand van elk straalwiel (Ronald, 16-09-2026, TT-276; was 5)
+// Vaste stappen voor de keuzemenu's (TT-543 draaiwielen, besluiten Ronald
+// 09-11-2026). Straal: "niemand zoekt een muzikant 100 km van zijn woonplaats";
+// vindt de app niets, dan verruimt hij zelf tot 500 km (STRAAL_LADDER, TT-62).
+const STRAAL_STAPPEN = [5, 10, 15, 25, 50, 100];
+const STRAAL_STANDAARD = 10;  // beginstand van elk straalveld (Ronald, 16-09-2026, TT-276; was 5)
+const STRAAL_RIJEN = STRAAL_STAPPEN.map(km => ({ t: `${km} km`, waarden: [km] }));
+// Leeftijd in groepen (besluit Ronald 09-11-2026). De zoekfunctie houdt één
+// ondergrens en één bovengrens: kies je meer groepen, dan zoekt hij van de
+// laagste tot de hoogste, en wat ertussen ligt, licht mee op.
+const LEEFTIJD_GROEPEN = [[13, 15], [16, 18], [19, 24], [25, 34], [35, '']];
+const LEEFTIJD_RIJEN = LEEFTIJD_GROEPEN.map(([van, tot]) => ({ t: tot === '' ? `${van}+` : `${van}-${tot}`, waarden: [van, tot] }));
+const NIVEAU_RIJEN = [1, 2, 3, 4, 5].map(n => ({ t: String(n), waarden: [n, n] }));
 
-function rangeStep(from, to, step) {
-  const out = [];
-  for (let v = from; v <= to; v += step) out.push(v);
-  return out;
+// Een bewaarde zoekopdracht van vóór de keuzemenu's kan een stap hebben die
+// niet meer bestaat (besluit Ronald 09-11-2026, "In de app omzetten"): een
+// straal boven 100 km en 75 km worden 100 km; een leeftijd wordt de groepen
+// eromheen ("20 t/m 30" wordt 19 t/m 34).
+function straalOpStap(km) {
+  const n = Number(km);
+  if (!n) return STRAAL_STANDAARD;
+  return STRAAL_STAPPEN.find(s => s >= n) || STRAAL_STAPPEN[STRAAL_STAPPEN.length - 1];
+}
+function leeftijdOpGroepen(min, max) {
+  if (min === '' && max === '') return ['', ''];
+  const groep = (n) => LEEFTIJD_GROEPEN.find(([van, tot]) => tot === '' || Number(n) <= tot);
+  return [min === '' ? LEEFTIJD_GROEPEN[0][0] : groep(min)[0], max === '' ? '' : groep(max)[1]];
 }
 
 // TT-01 / TT-232: e-mailvoorkeuren, nu onder Instellingen. Beïnvloedt alleen
@@ -403,59 +412,49 @@ function initSearchFilters() {
   // TT-55/TT-183: maximaal 1 instrument, Zang, Achtergrondzang (TT-543) en
   // Songwriting als losse uitzonderingen die niet meetellen voor die limiet — afgehandeld door
   // de generieke picker (singleMax + exceptionValues), zie
-  // choosePickerListValue().
+  // pickerWaardeWissel().
   initPicker({
     id: 'filterInstruments',
-    fieldId: 'filterInstrumentsField',
+    fieldId: 'filterInstrumentsField', menuId: 'filterInstrumentsMenu',
     options: INSTRUMENTS, getList: () => filterInstruments,
     singleMax: true, exceptionValues: ['Zang', 'Achtergrondzang', 'Songwriting'],
     inVeld: pickerVeldTekst,
-    sheetTitle: 'Kies een instrument',
     onChange: runSearch
   });
 
   initPicker({
     id: 'filterGenres',
-    fieldId: 'filterGenresField',
+    fieldId: 'filterGenresField', menuId: 'filterGenresMenu',
     options: GENRES, getList: () => filterGenres,
     inVeld: pickerVeldTekst,
-    sheetTitle: 'Kies een genre',
     onChange: runSearch
   });
 
-  // TT-233 (10-09-2026): de wielvelden. Elk veld opent een bladwijzer met het
-  // wiel erin; het wiel schrijft naar de verborgen invoervelden die runSearch()
-  // uitleest.
+  // De keuzevelden met vaste stappen (TT-543 draaiwielen, besluiten Ronald
+  // 09-11-2026). Elk veld klapt een menu uit; het menu schrijft naar de
+  // verborgen invoervelden die runSearch() uitleest.
   initWheelField({
     id: 'radius',
-    fieldId: 'filterRadiusField',
-    title: 'Straal',
-    unit: 'km',
-    columns: [{ inputId: 'filterRadius', values: WHEEL_RADIUS, ariaLabel: 'Zoekstraal in kilometers' }],
+    fieldId: 'filterRadiusField', menuId: 'filterRadiusMenu',
+    inputs: ['filterRadius'],
+    rijen: STRAAL_RIJEN,
     value: [STRAAL_STANDAARD],
     clearTo: [STRAAL_STANDAARD],
     // Zoeken zonder straal bestaat niet, dus "aan" betekent hier: afgeweken
-    // van de standaard. Een veld dat altijd goud is, zegt niets.
+    // van de standaard. Een veld dat altijd geel is, zegt niets.
     isActief: (v) => Number(v[0]) !== STRAAL_STANDAARD,
     format: (v) => `${v[0]} km`,
-    hint:   (v) => `Straal ${v[0]} km`,
     onChange: runSearch
   });
 
   initWheelField({
     id: 'leeftijd',
-    fieldId: 'filterAgeField',
-    title: 'Leeftijd',
-    sep: 't/m',
-    unit: 'jaar',
-    koppelBereik: true,
-    columns: [
-      { inputId: 'filterAgeMin', values: WHEEL_AGE_MIN, ariaLabel: 'Leeftijd vanaf' },
-      { inputId: 'filterAgeMax', values: WHEEL_AGE_MAX, ariaLabel: 'Leeftijd tot en met' }
-    ],
+    fieldId: 'filterAgeField', menuId: 'filterAgeMenu',
+    inputs: ['filterAgeMin', 'filterAgeMax'],
+    rijen: LEEFTIJD_RIJEN,
+    bereik: true,
     value: ['', ''],
     format: (v) => leeftijdKort(v[0], v[1]),
-    hint:   (v) => leeftijdBereikTekst(v[0], v[1]),
     onChange: runSearch
   });
 
@@ -463,26 +462,16 @@ function initSearchFilters() {
   // muzikant het niveau op een instrument, bij een band het niveau van de band.
   initWheelField({
     id: 'niveau',
-    fieldId: 'filterNiveauField',
-    title: 'Niveau',
-    sep: 't/m',
-    koppelBereik: true,
-    // Niveau begint bij 1. "Geen t/m 2" bestaat dus niet: kiest iemand een
-    // bovengrens terwijl de ondergrens op Geen staat, dan wordt die 1.
-    // (Ronald, 10-09-2026)
-    ondergrensVerplicht: true,
-    infoActie: openZoekNiveauInfo,
-    columns: [
-      { inputId: 'filterNiveauMin', values: WHEEL_NIVEAU, ariaLabel: 'Niveau vanaf' },
-      { inputId: 'filterNiveauMax', values: WHEEL_NIVEAU, ariaLabel: 'Niveau tot en met' }
-    ],
+    fieldId: 'filterNiveauField', menuId: 'filterNiveauMenu',
+    inputs: ['filterNiveauMin', 'filterNiveauMax'],
+    rijen: NIVEAU_RIJEN,
+    bereik: true,
     value: ['', ''],
     format: (v) => niveauKort(v[0], v[1]),
-    hint:   (v) => niveauBereikTekst(v[0], v[1]),
     onChange: runSearch
   });
 
-  // Volgorde en Weergave: geen wiel maar een keuzemenu (huisstijl §7.1).
+  // Volgorde en Weergave: een keuzemenu uit een verborgen <select>.
   initChoiceField({ id: 'sorteren', fieldId: 'filterSortModeField',
                     menuId: 'filterSortModeMenu', selectId: 'filterSortMode' });
   initChoiceField({ id: 'weergave', fieldId: 'musicianViewToggleField',
@@ -490,23 +479,9 @@ function initSearchFilters() {
   syncViewToggles();
 }
 
-// De naam van een niveau, uit dezelfde tabel als de i-knop toont
-// (NIVEAU_INFO_MUSICIAN_ROWS in musicians.js) — één bron, geen tweede lijst die
-// uit de pas kan lopen. "1. Beginner (Bedroom)" wordt "Beginner".
-function niveauNaam(n) {
-  try {
-    return NIVEAU_INFO_MUSICIAN_ROWS[n - 1][0].replace(/^\d+\.\s*/, '').replace(/\s*\(.*\)\s*$/, '');
-  } catch (e) {
-    return '';
-  }
-}
-
-// Leest een gekozen bereik terug in woorden. De korte vorm staat in het
-// gesloten veld, de lange vorm op de terugleesregel in de bladwijzer.
-// In het gesloten veld staat een streepje tussen de grenzen: "22 - 40 jaar"
-// (Ronald, 10-09-2026). Korter dan "t/m", en het veld is maar een halve regel
-// breed. In het wiel en op de terugleesregel blijft "t/m" staan — daar is
-// ruimte en leest het woord duidelijker.
+// Een gekozen bereik in het gesloten veld, met een streepje tussen de grenzen:
+// "22 - 40 jaar" (Ronald, 10-09-2026). Eén niveau is "3", niet "Alleen 3"
+// (besluit Ronald 09-11-2026).
 function leeftijdKort(min, max) {
   if (min === '' && max === '') return LEEG_VELD; // filter uit, zie utils.js
   if (min !== '' && max === '') return `${min}+ jaar`;
@@ -515,27 +490,11 @@ function leeftijdKort(min, max) {
   return `${min} - ${max} jaar`;
 }
 
-function leeftijdBereikTekst(min, max) {
-  if (min === '' && max === '') return 'Alle leeftijden';
-  if (min !== '' && max === '') return `${min} jaar en ouder`;
-  if (min === '' && max !== '') return `Tot en met ${max} jaar`;
-  if (min === max) return `Alleen ${min} jaar`;
-  return `${min} t/m ${max} jaar`;
-}
-
 function niveauKort(min, max) {
   if (min === '' && max === '') return LEEG_VELD; // filter uit, zie utils.js
   if (min !== '' && max === '') return `${min}+`;
-  if (min === max) return `Alleen ${min}`;
+  if (String(min) === String(max)) return String(min);
   return `${min} - ${max}`;
-}
-
-function niveauBereikTekst(min, max) {
-  const naam = (n) => { const t = niveauNaam(n); return t ? ` — ${t}` : ''; };
-  if (min === '' && max === '') return 'Alle niveaus';
-  if (min !== '' && max === '') return `Niveau ${min} en hoger${naam(min)}`;
-  if (min === max) return `Alleen niveau ${min}${naam(min)}`;
-  return `Niveau ${min} t/m ${max} — ${niveauNaam(min)} t/m ${niveauNaam(max)}`;
 }
 
 // Straal-invoer strikt uitlezen: 0 km moet ook echt 0 km betekenen (0 is
@@ -1027,8 +986,9 @@ function renderZoekResultaten(lijst, opts) {
     let kop, uitleg;
     if (opts.leeftijdBijBands) {
       // TT-520: een band heeft geen leeftijd (besluit 26-10-2026, punt 5).
+      // TT-543 draaiwielen: het menu heeft geen regel "Alle" meer.
       kop = 'Geen bands bij deze leeftijd';
-      uitleg = 'Een band heeft geen leeftijd. Zet Leeftijd op Alle om bands te zien.';
+      uitleg = 'Een band heeft geen leeftijd. Haal de leeftijd weg om bands te zien.';
     } else if (opts.naamGezocht) {
       const wie = { muzikanten: ['Deze muzikant staat er niet', 'Niemand'],
                     bands: ['Deze band staat er niet', 'Geen band'],
@@ -1329,29 +1289,26 @@ function initSetlistSearchFilters() {
   if (!PICKERS.filterSetlistInstruments) {
     initPicker({
       id: 'filterSetlistInstruments',
-      fieldId: 'filterSetlistInstrumentsField',
+      fieldId: 'filterSetlistInstrumentsField', menuId: 'filterSetlistInstrumentsMenu',
       options: INSTRUMENTS, getList: () => filterSetlistInstruments,
       singleMax: true, exceptionValues: ['Zang', 'Achtergrondzang', 'Songwriting'],
       inVeld: pickerVeldTekst,
-      sheetTitle: 'Kies een instrument',
       onChange: () => { zetMmFiltersTeller(); if (setlistWantedSongs.length) runSetlistSearch(); }
     });
   }
 
-  // Hetzelfde straalwiel als bij Muzikanten. Het verborgen invoerveld houdt
+  // Hetzelfde straalmenu als bij Muzikanten. Het verborgen invoerveld houdt
   // zijn id, dus runSetlistSearch() leest het ongewijzigd uit.
   if (!WHEEL_FIELDS['setlist-straal']) {
     initWheelField({
       id: 'setlist-straal',
-      fieldId: 'filterSetlistRadiusField',
-      title: 'Straal',
-      unit: 'km',
-      columns: [{ inputId: 'filterSetlistRadius', values: WHEEL_RADIUS, ariaLabel: 'Zoekstraal in kilometers' }],
+      fieldId: 'filterSetlistRadiusField', menuId: 'filterSetlistRadiusMenu',
+      inputs: ['filterSetlistRadius'],
+      rijen: STRAAL_RIJEN,
       value: [STRAAL_STANDAARD],
       clearTo: [STRAAL_STANDAARD],
       isActief: (v) => Number(v[0]) !== STRAAL_STANDAARD,
       format: (v) => `${v[0]} km`,
-      hint:   (v) => `Straal ${v[0]} km`,
       onChange: () => { if (setlistWantedSongs.length) runSetlistSearch(); }
     });
   }
@@ -2378,9 +2335,9 @@ async function onthoudHerstellen() {
   filterGenres.length = 0; (z.genres || []).forEach(x => filterGenres.push(x));
   renderPickerBadges(PICKERS.filterInstruments);
   renderPickerBadges(PICKERS.filterGenres);
-  setWheelFieldValues('leeftijd', [tekst(z.age_min), tekst(z.age_max)], false);
+  setWheelFieldValues('leeftijd', leeftijdOpGroepen(tekst(z.age_min), tekst(z.age_max)), false);
   setWheelFieldValues('niveau', [tekst(z.niveau_min), tekst(z.niveau_max)], false);
-  setWheelFieldValues('radius', [tekst(Number(z.radius_km))], false);
+  setWheelFieldValues('radius', [straalOpStap(z.radius_km)], false);
   if (z.plaats) {
     document.getElementById('filterCity').value = z.plaats;
     updateSearchCityStatus('filterCity', 'filterCityStatus');

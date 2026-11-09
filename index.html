@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261109c">
+<link rel="stylesheet" href="styles.css?v=20261109d">
 </head>
 <body>
 
@@ -1246,8 +1246,8 @@
            zoekopdracht en rechts Filters. Naam en de andere velden staan achter
            Filters; Wissen staat onderaan het filtervak. Wijzigt besluit
            26-10-2026 (Naam zichtbaar, Filters op de labelregel van Naam). -->
-      <!-- TT-160/TT-233: Plaats en Straal op één regel; Straal is een wielveld
-           van 104px. Huisstijl §7.2. -->
+      <!-- TT-160/TT-233: Plaats en Straal op één regel; Straal is een
+           keuzeveld van 104px. Huisstijl §7.2. -->
       <div class="field">
         <div class="filter-row-city">
           <div class="city-search-wrap frc-plaats">
@@ -1261,8 +1261,11 @@
           </div>
           <div class="frc-straal">
             <label>Straal</label>
-            <div class="wheel-field" id="filterRadiusField">
-              <span class="wheel-field-label"></span>
+            <div class="menu-anchor">
+              <div class="wheel-field" id="filterRadiusField" aria-label="Straal">
+                <span class="wheel-field-label"></span>
+              </div>
+              <div class="choice-menu" id="filterRadiusMenu" role="listbox" aria-label="Straal"></div>
             </div>
             <input type="hidden" id="filterRadius" value="10">
           </div>
@@ -1276,51 +1279,63 @@
         <button type="button" class="zoek-filters-knop" id="zoekFiltersKnop" aria-expanded="false" aria-controls="zoekFilterVak" onclick="toggleZoekFilters()"><span id="zoekFiltersTekst">Filters</span><svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
       </div>
 
-      <!-- Filters, in twee kolommen: Instrument, Niveau, Leeftijd, Genre,
-           Volgorde, Weergave (TT-520). Instrument en Genre tonen hun keuze in
-           het veld zelf, zoals Leeftijd en Niveau (grijs "–" = filter uit). -->
+      <!-- Filters (TT-543 draaiwielen, besluiten Ronald 09-11-2026): Naam,
+           Instrument en Genre over de hele breedte, dan Niveau naast Leeftijd
+           en Volgorde naast Weergave. Elk keuzeveld klapt een menu uit
+           (huisstijl §7.1); de waarde staat in het midden (grijs "–" = filter
+           uit). -->
       <div class="zoek-filter-vak" id="zoekFilterVak" hidden>
         <div class="field">
           <label for="filterName">Naam</label>
           <input type="text" id="filterName" placeholder="Bijv. Sanne of The Rusty Strings" oninput="scheduleMusicianAutoSearch()" onkeydown="submitOnEnter(event, runSearch)">
         </div>
-        <div class="field-pair-row">
-          <div class="field">
-            <label>Instrument</label>
-            <div class="wheel-field" id="filterInstrumentsField">
+        <div class="field">
+          <label>Instrument</label>
+          <div class="menu-anchor">
+            <div class="wheel-field" id="filterInstrumentsField" aria-label="Instrument">
               <span class="wheel-field-label" id="filterInstrumentsFieldLabel"></span>
             </div>
+            <div class="choice-menu" id="filterInstrumentsMenu" role="listbox" aria-label="Instrument"></div>
           </div>
+        </div>
+        <div class="field">
+          <label>Genre</label>
+          <div class="menu-anchor">
+            <div class="wheel-field" id="filterGenresField" aria-label="Genre">
+              <span class="wheel-field-label" id="filterGenresFieldLabel"></span>
+            </div>
+            <div class="choice-menu" id="filterGenresMenu" role="listbox" aria-label="Genre"></div>
+          </div>
+        </div>
+        <div class="field-pair-row">
           <div class="field">
             <label class="label-with-info">
               <span>Niveau</span>
               <button type="button" class="niveau-info-btn" onclick="openZoekNiveauInfo()" aria-label="Wat betekenen de niveaus 1 tot en met 5?" title="Toelichting op niveau">i</button>
             </label>
-            <div class="wheel-field" id="filterNiveauField">
-              <span class="wheel-field-label"></span>
+            <div class="menu-anchor">
+              <div class="wheel-field" id="filterNiveauField" aria-label="Niveau">
+                <span class="wheel-field-label"></span>
+              </div>
+              <div class="choice-menu" id="filterNiveauMenu" role="listbox" aria-label="Niveau"></div>
             </div>
             <input type="hidden" id="filterNiveauMin">
             <input type="hidden" id="filterNiveauMax">
           </div>
-        </div>
-        <div class="field-pair-row">
           <div class="field">
             <label>Leeftijd</label>
-            <div class="wheel-field" id="filterAgeField">
-              <span class="wheel-field-label"></span>
+            <div class="menu-anchor">
+              <div class="wheel-field" id="filterAgeField" aria-label="Leeftijd">
+                <span class="wheel-field-label"></span>
+              </div>
+              <div class="choice-menu" id="filterAgeMenu" role="listbox" aria-label="Leeftijd"></div>
             </div>
             <input type="hidden" id="filterAgeMin">
             <input type="hidden" id="filterAgeMax">
           </div>
-          <div class="field">
-            <label>Genre</label>
-            <div class="wheel-field" id="filterGenresField">
-              <span class="wheel-field-label" id="filterGenresFieldLabel"></span>
-            </div>
-          </div>
         </div>
-        <!-- Volgorde en Weergave: een keuzemenu, geen wiel (huisstijl §7.1).
-             Het verborgen <select> is de bron van waarheid. -->
+        <!-- Volgorde en Weergave: het verborgen <select> is de bron van
+             waarheid (huisstijl §7.1). -->
         <div class="field-pair-row">
           <div class="field">
             <label>Volgorde</label>
@@ -1455,8 +1470,11 @@
             </div>
             <div class="frc-straal">
               <label>Straal</label>
-              <div class="wheel-field" id="filterSetlistRadiusField">
-                <span class="wheel-field-label"></span>
+              <div class="menu-anchor">
+                <div class="wheel-field" id="filterSetlistRadiusField" aria-label="Straal">
+                  <span class="wheel-field-label"></span>
+                </div>
+                <div class="choice-menu" id="filterSetlistRadiusMenu" role="listbox" aria-label="Straal"></div>
               </div>
               <input type="hidden" id="filterSetlistRadius" value="10">
             </div>
@@ -1464,8 +1482,11 @@
         </div>
         <div class="field">
           <label>Instrument</label>
-          <div class="wheel-field" id="filterSetlistInstrumentsField">
-            <span class="wheel-field-label" id="filterSetlistInstrumentsFieldLabel"></span>
+          <div class="menu-anchor">
+            <div class="wheel-field" id="filterSetlistInstrumentsField" aria-label="Instrument">
+              <span class="wheel-field-label" id="filterSetlistInstrumentsFieldLabel"></span>
+            </div>
+            <div class="choice-menu" id="filterSetlistInstrumentsMenu" role="listbox" aria-label="Instrument"></div>
           </div>
         </div>
       </div>
@@ -1967,7 +1988,7 @@
 
 <!-- TT-385 (besluit Ronald, g): delen van een bandpagina die nog niet af is.
      Alleen voor de beheerder: één zin over wat er mist, dan het deelmenu van
-     de telefoon. Een bladwijzer, dezelfde vorm als het wiel (huisstijl §7.1). -->
+     de telefoon. Een bladwijzer van onderen (huisstijl §7.1). -->
 <div class="modal-overlay wheel-overlay" id="bandDeelModal" data-close="sluitBandDeelBlad" onclick="if(event.target===this)sluitBandDeelBlad()">
   <div class="wheel-sheet" role="dialog" aria-modal="true" aria-labelledby="bandDeelKop">
     <div class="wheel-sheet-grip" aria-hidden="true"></div>
@@ -2272,9 +2293,8 @@
 </div>
 
 <!-- TT-116 (21-08-2026): gedeeld keuzescherm voor de "kies-en-badge"-picker,
-     gebruikt door alle instrument/genre-velden zonder niveau (7 van de 8
-     plekken — alleen de eigen-instrumentkeuze in de wizard heeft een niveau,
-     zie instrumentLevelModal hierboven). Zelfde sticky-footer-opbouw als
+     gebruikt door de instrument- en genrevelden buiten Zoeken (in Zoeken
+     klapt een keuzemenu uit, TT-543 draaiwielen). Zelfde sticky-footer-opbouw als
      hierboven, hier zonder voettekst (die blijft leeg en dus onzichtbaar). -->
 <div class="modal-overlay" id="pickerListModal" data-close="closePickerList" onclick="if(event.target===this)closePickerList()">
   <div class="modal-box modal-box-sticky-footer modal-box-lg">
@@ -2282,29 +2302,6 @@
     <div class="modal-scroll-area">
       <div class="filter-title" id="pickerListTitle" style="margin-bottom:12px;padding-right:52px;"></div>
       <div id="pickerListItems"></div>
-    </div>
-  </div>
-</div>
-
-<!-- TT-233 (10-09-2026): de bladwijzer met het draaiwiel. Huisstijl §7.1.
-     Bewust .modal-overlay: dat geeft de bestaande scrollvergrendeling en de
-     terugknop-afhandeling in core.js gratis. De waarnemer in core.js leest de
-     modals één keer bij het laden, dus dit element moet in de HTML staan en
-     mag niet in JS worden aangemaakt.
-     Bewust géén .modal-box: die wordt op mobiel 100dvh (volledig scherm), en
-     een keuzelaag is geen scherm. -->
-<div class="modal-overlay wheel-overlay" id="wheelSheetModal" onclick="if(event.target===this)closeWheelSheet()">
-  <div class="wheel-sheet" role="dialog" aria-modal="true" aria-labelledby="wheelSheetTitle">
-    <div class="wheel-sheet-grip" aria-hidden="true"></div>
-    <div class="wheel-sheet-head">
-      <span id="wheelSheetTitle"></span>
-      <button type="button" class="niveau-info-btn" id="wheelSheetInfo" style="display:none;" aria-label="Toelichting">i</button>
-    </div>
-    <div class="picker-group" id="wheelSheetGroup"></div>
-    <div class="wheel-hint" id="wheelSheetHint"></div>
-    <div class="btn-row" id="wheelSheetActions">
-      <button class="btn btn-ghost" onclick="wheelSheetClear()">Wissen</button>
-      <button class="btn btn-primary" onclick="closeWheelSheet()">Gereed</button>
     </div>
   </div>
 </div>
@@ -2362,19 +2359,19 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261109c"></script>
-<script src="utils.js?v=20261109a"></script>
+<script src="core.js?v=20261109d"></script>
+<script src="utils.js?v=20261109d"></script>
 <script src="veiligheid.js?v=20261108c"></script>
 <script src="auth.js?v=20261108c"></script>
 <script src="postcode.js?v=20261107a"></script>
 <script src="wizard.js?v=20261108d"></script>
 <script src="ouder.js?v=20261106a"></script>
-<script src="search.js?v=20261109a"></script>
+<script src="search.js?v=20261109d"></script>
 <script src="musicians.js?v=20261109a"></script>
-<script src="bands.js?v=20261109a"></script>
+<script src="bands.js?v=20261109d"></script>
 <script src="messages.js?v=20261109c"></script>
 <script src="push.js?v=20261027b"></script>
-<script src="modals-shared.js?v=20261108d"></script>
+<script src="modals-shared.js?v=20261109d"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding

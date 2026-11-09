@@ -1080,7 +1080,7 @@ function opsommingNL(lijst) {
 // ─── Het deelblad (TT-385, besluit Ronald g) ─────────────────────────────────
 // Alleen voor de beheerder, alleen zolang de pagina niet af is: één zin over
 // wat er nog mist, dan het deelmenu van de telefoon. "Eerst aanvullen" opent
-// Bandprofiel bewerken. Een bladwijzer, dezelfde vorm als het wiel (§7.1).
+// Bandprofiel bewerken. Een bladwijzer van onderen (huisstijl §7.1).
 let bandDeelGegevens = null;
 
 function openBandDeelBlad(bandId) {

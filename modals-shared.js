@@ -35,15 +35,22 @@ function initPicker(cfg) {
   PICKERS[cfg.id] = cfg;
   cfg.fieldEl = document.getElementById(cfg.fieldId);
   cfg.badgeRowEl = cfg.badgeRowId ? document.getElementById(cfg.badgeRowId) : null;
-  cfg.fieldEl.onclick = () => openPickerList(cfg.id);
-  // TT-520: naast een wielveld werkt het veld ook met het toetsenbord, zoals
-  // het wielveld zelf (initWheelField() in utils.js).
+  // TT-543 draaiwielen (besluiten Ronald 09-11-2026): in Zoeken klapt het veld
+  // het keuzemenu uit, zoals Straal, Leeftijd en Niveau ernaast (utils.js).
+  // Het menu blijft open: je kiest er meer dan één.
   if (cfg.inVeld) {
-    cfg.fieldEl.setAttribute('role', 'button');
-    cfg.fieldEl.setAttribute('tabindex', '0');
-    cfg.fieldEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPickerList(cfg.id); }
+    initChoiceField({
+      id: 'picker-' + cfg.id, fieldId: cfg.fieldId, menuId: cfg.menuId, meer: true,
+      rijen: () => cfg.options.map(o => ({ t: o, gekozen: cfg.getList().includes(o) })),
+      kies: (i) => {
+        pickerWaardeWissel(cfg, cfg.options[i]);
+        renderPickerBadges(cfg);
+        if (cfg.onChange) cfg.onChange();
+      },
+      ververs: () => renderPickerBadges(cfg),
     });
+  } else {
+    cfg.fieldEl.onclick = () => openPickerList(cfg.id);
   }
   renderPickerBadges(cfg);
   return cfg;
@@ -170,42 +177,39 @@ function choosePickerListValue(value) {
   // Herzien 25-08-2026 (Ronald, UX-feedback): klikken op een al-gekozen item
   // zet het nu uit (toggle) i.p.v. het opnieuw toe te voegen — logisch nu het
   // item zichtbaar blijft staan met een vinkje.
+  pickerWaardeWissel(cfg, value);
+  renderPickerBadges(cfg);
+  if (cfg.onChange) cfg.onChange();
+  if (cfg.singleMax) { closePickerList(); return; }
+  // TT-134 (23-08-2026): een meervoudig veld (bijv. genre, of "Wij zoeken
+  // nog" bij een band) sloot voorheen ook na één keuze — voor drie genres
+  // moest het volledig-scherm-keuzescherm dus drie keer apart geopend
+  // worden. Nu blijft het open. De gebruiker sluit zelf met het kruisje zodra
+  // hij klaar is.
+  renderPickerListItems();
+}
+
+// Zet een waarde aan of uit in de lijst van een keuzeveld; geeft terug of de
+// waarde nu gekozen is. Gedeeld door de lijst hierboven en het keuzemenu in
+// Zoeken (initPicker()).
+function pickerWaardeWissel(cfg, value) {
+  const list = cfg.getList();
   if (list.includes(value)) {
-    const idx = list.indexOf(value);
-    list.splice(idx, 1);
-    renderPickerBadges(cfg);
-    if (cfg.onChange) cfg.onChange();
-    if (!cfg.singleMax) renderPickerListItems();
-    else closePickerList();
-    return;
+    list.splice(list.indexOf(value), 1);
+    return false;
   }
   if (cfg.singleMax) {
     // TT-55/TT-183: maximaal 1 instrument, met losse uitzonderingen (Zang,
     // Achtergrondzang, Songwriting) die niet meetellen voor die limiet.
     const exceptions = cfg.exceptionValues || [];
-    if (exceptions.includes(value)) {
-      if (!list.includes(value)) list.push(value);
-    } else {
+    if (!exceptions.includes(value)) {
       const kept = list.filter(v => exceptions.includes(v));
       list.length = 0;
       kept.forEach(v => list.push(v));
-      list.push(value);
     }
-    renderPickerBadges(cfg);
-    if (cfg.onChange) cfg.onChange();
-    closePickerList();
-    return;
   }
-  // TT-134 (23-08-2026): een meervoudig veld (bijv. genre, of "Wij zoeken
-  // nog" bij een band) sloot voorheen ook na één keuze — voor drie genres
-  // moest het volledig-scherm-keuzescherm dus drie keer apart geopend
-  // worden. Nu blijft het open; alleen de gekozen waarde verdwijnt uit de
-  // resterende lijst. De gebruiker sluit zelf met het kruisje zodra hij
-  // klaar is.
-  if (!list.includes(value)) list.push(value);
-  renderPickerBadges(cfg);
-  if (cfg.onChange) cfg.onChange();
-  renderPickerListItems();
+  list.push(value);
+  return true;
 }
 
 function removePickerValue(id, value) {

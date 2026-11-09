@@ -671,51 +671,99 @@ def blok_browser():
               "zoekstraal aan" not in leeg, leeg[:200])
         page.evaluate("window.TT_STUB.reset()")
 
-        print("\nBlok 11 — het wiel en vloeiend scrollen (TT-256)")
-        wiel = page.evaluate("""async () => {
-          showView('search');
-          openWheelSheet('radius');
-          await new Promise(r => requestAnimationFrame(
-            () => requestAnimationFrame(() => setTimeout(r, 60))));
-          const groep  = document.getElementById('wheelSheetGroup');
-          const kolom  = groep.querySelector('.wheel');
-          const scroll = groep.querySelector('.wheel-scroll');
-          const band   = groep.querySelector('.picker-band');
-          const sheet  = document.querySelector('#wheelSheetModal .wheel-sheet');
-          const g = groep.getBoundingClientRect();
-          const k = kolom.getBoundingClientRect();
-          const zoek = document.getElementById('view-search');
-          return {
-            afwijkingMidden: Math.abs((k.left + k.width / 2) - (g.left + g.width / 2)),
-            groepBreedte: Math.round(g.width),
-            sheetBreedte: Math.round(sheet.getBoundingClientRect().width),
-            spacers: groep.querySelectorAll('.wheel-unit-spacer').length,
-            fades: groep.querySelectorAll('.picker-fade').length,
-            bandKleur: getComputedStyle(band).backgroundColor,
-            masker: getComputedStyle(scroll).maskImage || 'none',
-            overscroll: getComputedStyle(scroll).overscrollBehaviorY,
-            touchActie: getComputedStyle(zoek).touchAction
+        print("\nBlok 11 — het keuzemenu (TT-543 draaiwielen, besluiten Ronald 09-11-2026)")
+        # Het wiel is weg. Elk keuzeveld klapt een menu uit onder het veld; de
+        # gekozen regel is een zwevende pil met de letter vet in de accentkleur
+        # (T2); één keuze sluit na de tik, meer keuzes blijven open.
+        km = page.evaluate("""async () => {
+          const wacht = (n) => new Promise(r => setTimeout(r, n));
+          showView('search'); openZoekScherm('muzikanten', { geenZoek: true });
+          if (document.getElementById('zoekFilterVak').hidden) toggleZoekFilters();
+          window.scrollTo(0, 0);
+          setWheelFieldValues('radius', [STRAAL_STANDAARD], false); // een blok hiervoor zette 5 km
+          const veld = document.getElementById('filterRadiusField');
+          veld.click(); await wacht(320);
+          const menu = document.getElementById('filterRadiusMenu');
+          const rijen = [...menu.querySelectorAll('.choice-option')];
+          const gekozen = menu.querySelector('.choice-option.selected');
+          const cs = getComputedStyle(gekozen), ms = getComputedStyle(menu), rs = getComputedStyle(rijen[0]);
+          const root = getComputedStyle(document.documentElement);
+          const uit = {
+            open: menu.classList.contains('open'),
+            onder: Math.round(menu.getBoundingClientRect().top - veld.getBoundingClientRect().bottom),
+            rijen: rijen.map(r => r.textContent.trim()),
+            gekozen: gekozen && gekozen.textContent.trim(),
+            pil: cs.backgroundColor, pilVar: root.getPropertyValue('--gekozen-pil').trim(),
+            schaduw: cs.boxShadow !== 'none', letter: cs.color, accent: root.getPropertyValue('--accent').trim(), vet: cs.fontWeight,
+            midden: rs.justifyContent, hoek: rs.borderTopLeftRadius, lijn: rs.borderTopWidth,
+            hoogte: Math.round(rijen[0].getBoundingClientRect().height),
+            maxHoogte: ms.maxHeight, overscroll: ms.overscrollBehaviorY, vinkje: menu.textContent.includes('✓'),
+            veldMidden: getComputedStyle(veld).justifyContent,
+            zoekTouch: getComputedStyle(document.getElementById('view-search')).touchAction
           };
+          rijen[4].click(); await wacht(320);
+          uit.naTik = { open: menu.classList.contains('open'), waarde: document.getElementById('filterRadius').value,
+                        veld: veld.textContent.trim(), rand: veld.classList.contains('is-set') };
+          // Meer keuzes: Niveau 2 en 4 kiest 2 t/m 4 en blijft open.
+          window.scrollTo(0, 0);
+          const nv = document.getElementById('filterNiveauField');
+          nv.click(); await wacht(320);
+          const nm = document.getElementById('filterNiveauMenu');
+          nm.querySelectorAll('.choice-option')[1].click();
+          nm.querySelectorAll('.choice-option')[3].click(); await wacht(50);
+          uit.niveau = { open: nm.classList.contains('open'), meer: nm.getAttribute('aria-multiselectable'),
+                         licht: [...nm.querySelectorAll('.choice-option.selected')].map(r => r.textContent.trim()),
+                         min: document.getElementById('filterNiveauMin').value, max: document.getElementById('filterNiveauMax').value,
+                         veld: nv.textContent.trim() };
+          // 2 en 4 uit: alleen 3 blijft.
+          nm.querySelectorAll('.choice-option')[1].click(); nm.querySelectorAll('.choice-option')[3].click(); await wacht(50);
+          uit.niveauEen = nv.textContent.trim();
+          sluitAlleMenus(); await wacht(320);
+          uit.dicht = !nm.classList.contains('open');
+          // Leeftijd in groepen: 16-18 en 19-24 is 16 t/m 24.
+          document.getElementById('filterAgeField').click(); await wacht(320);
+          const lm = document.getElementById('filterAgeMenu');
+          uit.leeftijdRijen = [...lm.querySelectorAll('.choice-option')].map(r => r.textContent.trim());
+          lm.querySelectorAll('.choice-option')[1].click(); lm.querySelectorAll('.choice-option')[2].click(); await wacht(50);
+          uit.leeftijd = [document.getElementById('filterAgeMin').value, document.getElementById('filterAgeMax').value,
+                          document.getElementById('filterAgeField').textContent.trim()];
+          sluitAlleMenus(); await wacht(320);
+          resetMusicianSearch(); await wacht(100);
+          return uit;
         }""")
-        check("het getal staat in het midden van het paneel",
-              wiel["afwijkingMidden"] <= 1, f"{wiel['afwijkingMidden']}px naast het midden")
-        check("het paneel is smaller dan de bladwijzer",
-              wiel["groepBreedte"] < wiel["sheetBreedte"],
-              f"paneel {wiel['groepBreedte']}px, bladwijzer {wiel['sheetBreedte']}px")
-        check("de eenheid heeft een tegenhanger links",
-              wiel["spacers"] == 1, str(wiel["spacers"]))
-        check("de vervaging ligt over het paneel, niet op de scroller",
-              wiel["fades"] == 2 and wiel["masker"] == "none",
-              f"fades={wiel['fades']} masker={wiel['masker']}")
-        check("de markeringsbalk is niet goud gewassen",
-              "245, 197, 24" not in wiel["bandKleur"], wiel["bandKleur"])
-        check("het wiel houdt zijn eigen scrollbeweging vast",
-              wiel["overscroll"] == "contain", wiel["overscroll"])
+        check("een tik op Straal klapt het menu uit, 6px onder het veld",
+              km["open"] and km["onder"] == 6, json.dumps({k: km[k] for k in ("open", "onder")}))
+        check("Straal: 5, 10, 15, 25, 50, 100 km (besluit Ronald, geen 100+)",
+              km["rijen"] == ["5 km", "10 km", "15 km", "25 km", "50 km", "100 km"], str(km["rijen"]))
+        check("de gekozen regel is de standaard (10 km)", km["gekozen"] == "10 km", str(km["gekozen"]))
+        check("de gekozen regel: een zwevende pil in --gekozen-pil, met schaduw (T2)",
+              km["pilVar"] == "#2C2C2C" and km["pil"] == "rgb(44, 44, 44)" and km["schaduw"],
+              json.dumps({k: km[k] for k in ("pil", "pilVar", "schaduw")}))
+        check("en de letter vet in de accentkleur",
+              km["vet"] == "700" and km["accent"].upper() in ("#FFB81C",) and km["letter"] == "rgb(255, 184, 28)",
+              json.dumps({k: km[k] for k in ("letter", "accent", "vet")}))
+        check("elke regel: tekst in het midden, een pil, geen lijn ertussen, 44px",
+              km["midden"] == "center" and km["hoek"] == "999px" and km["lijn"] == "0px" and km["hoogte"] == 44,
+              json.dumps({k: km[k] for k in ("midden", "hoek", "lijn", "hoogte")}))
+        check("hoogstens zeven regels in beeld; het menu houdt zijn scrollbeweging vast; geen vinkje",
+              km["maxHoogte"] == "344px" and km["overscroll"] == "contain" and not km["vinkje"],
+              json.dumps({k: km[k] for k in ("maxHoogte", "overscroll", "vinkje")}))
+        check("de waarde in het veld staat in het midden (besluit Ronald 09-11-2026)",
+              km["veldMidden"] == "center", km["veldMidden"])
+        check("één keuze: de tik kiest en sluit; het veld toont 50 km met de gele rand",
+              km["naTik"] == {"open": False, "waarde": "50", "veld": "50 km", "rand": True}, json.dumps(km["naTik"]))
+        check("Niveau: 2 en 4 kiest 2 t/m 4, 3 licht mee op, het menu blijft open",
+              km["niveau"] == {"open": True, "meer": "true", "licht": ["2", "3", "4"], "min": "2", "max": "4", "veld": "2 - 4"},
+              json.dumps(km["niveau"]))
+        check("één niveau toont \"3\", niet \"Alleen 3\" (besluit Ronald)", km["niveauEen"] == "3", km["niveauEen"])
+        check("een tik ernaast sluit het menu", km["dicht"], "")
+        check("Leeftijd in groepen: 13-15, 16-18, 19-24, 25-34, 35+",
+              km["leeftijdRijen"] == ["13-15", "16-18", "19-24", "25-34", "35+"], str(km["leeftijdRijen"]))
+        check("16-18 en 19-24 zoekt 16 t/m 24", km["leeftijd"] == ["16", "24", "16 - 24 jaar"], str(km["leeftijd"]))
         # TT-520: het vegen tussen de zoektabbladen is weg; het zoekscherm
         # houdt geen horizontale beweging meer vast.
         check("het zoekscherm laat alle beweging aan de browser (geen veeg meer, TT-520)",
-              wiel["touchActie"] == "auto", wiel["touchActie"])
-        page.evaluate("closeWheelSheet()")
+              km["zoekTouch"] == "auto", km["zoekTouch"])
 
         print("\nBlok 12 — veldfouten (TT-247) en zoeken op naam (TT-257)")
 
@@ -1615,12 +1663,12 @@ def blok_browser():
         check("geen paginafouten in blok 17", not page_errors, "; ".join(page_errors)[:200])
 
         # ─────────────────────────────────────────────────────────────
-        # Blok 18 — het hele wielpaneel draait mee (TT-275) en de
-        # standaardstraal is 10 km (TT-276), 16-09-2026.
-        # Naast het getal en over "km" moet het wiel ook reageren; anders
-        # bedekt de duim het getal dat je kiest.
+        # Blok 18 — de hele regel van een menu is tikbaar (TT-275, nu voor
+        # het keuzemenu, TT-543 draaiwielen) en de standaardstraal is 10 km
+        # (TT-276), 16-09-2026. Naast het getal moet de regel ook reageren;
+        # anders bedekt de duim het getal dat je kiest.
         # ─────────────────────────────────────────────────────────────
-        print("\nBlok 18 — het hele wielpaneel draait mee, standaardstraal 10 km")
+        print("\nBlok 18 — de hele regel van een menu is tikbaar, standaardstraal 10 km")
         page_errors.clear()
         page.evaluate("window.TT_STUB.reset()")
         # De velden lezen uit het HTML-bestand zelf: een verborgen veld neemt
@@ -1643,66 +1691,26 @@ def blok_browser():
             sp.route(pat, lambda r: r.abort())
         sp.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
         sp.wait_for_timeout(300)
-        for veld, kolommen in (("radius", 1), ("leeftijd", 2), ("niveau", 2)):
+        for veld in ("filterRadius", "filterAge", "filterNiveau"):
             vlak = sp.evaluate("""async (id) => {
-              showView('search');
-              openWheelSheet(id);
-              await new Promise(r => requestAnimationFrame(
-                () => requestAnimationFrame(() => setTimeout(r, 80))));
-              const groep = document.getElementById('wheelSheetGroup');
-              const g = groep.getBoundingClientRect();
-              const y = g.top + g.height / 2;
-              const wielOp = (x) => {
-                const el = document.elementFromPoint(x, y);
-                const w = el && el.closest('.wheel');
-                return w ? w.id : null;
-              };
-              const wielen = [...groep.querySelectorAll('.wheel')].map(w => w.id);
-              const uit = { links: wielOp(g.left + 4), rechts: wielOp(g.right - 4),
-                            wielen, midden: [] };
-              const eenheid = groep.querySelector('.wheel-unit');
-              if (eenheid) { const u = eenheid.getBoundingClientRect();
-                             uit.overEenheid = wielOp(u.left + u.width / 2); }
-              const sep = groep.querySelector('.wheel-sep');
-              if (sep) { const s = sep.getBoundingClientRect();
-                         uit.naastSepL = wielOp(s.left + 2);
-                         uit.naastSepR = wielOp(s.right - 2); }
-              // Het getal zelf staat nog op zijn plek.
-              groep.querySelectorAll('.wheel').forEach(w => {
-                const k = w.getBoundingClientRect();
-                const it = w.querySelector('.wheel-item.selected');
-                const r = document.createRange(); r.selectNodeContents(it);
-                const t = r.getBoundingClientRect();
-                uit.midden.push(Math.abs((t.left + t.width / 2) - (k.left + k.width / 2)));
+              showView('search'); openZoekScherm('muzikanten', { geenZoek: true });
+              if (document.getElementById('zoekFilterVak').hidden) toggleZoekFilters();
+              window.scrollTo(0, 0); sluitAlleMenus();
+              await new Promise(r => setTimeout(r, 300));
+              document.getElementById(id + 'Field').click();
+              await new Promise(r => setTimeout(r, 400));
+              const menu = document.getElementById(id + 'Menu');
+              const m = menu.getBoundingClientRect();
+              return [...menu.querySelectorAll('.choice-option')].map(rij => {
+                const r = rij.getBoundingClientRect(), y = r.top + r.height / 2;
+                const op = (x) => document.elementFromPoint(x, y)?.closest('.choice-option') === rij;
+                return { links: op(m.left + 10), rechts: op(m.right - 10), breed: Math.round(m.width - r.width) };
               });
-              return uit;
             }""", veld)
-            w = vlak["wielen"]
-            check(f"{veld}: linkerrand van het paneel draait het eerste wiel",
-                  vlak["links"] == w[0], str(vlak))
-            check(f"{veld}: rechterrand van het paneel draait het laatste wiel",
-                  vlak["rechts"] == w[-1], str(vlak))
-            if kolommen == 1:
-                check(f"{veld}: over 'km' draait het wiel",
-                      vlak.get("overEenheid") == w[0], str(vlak))
-            else:
-                check(f"{veld}: 't/m' is links en rechts verdeeld over beide wielen",
-                      vlak.get("naastSepL") == w[0] and vlak.get("naastSepR") == w[1], str(vlak))
-            check(f"{veld}: de getallen staan nog midden in hun kolom",
-                  max(vlak["midden"]) <= 1, str(vlak["midden"]))
-            sp.evaluate("closeWheelSheet()")
-            sp.wait_for_timeout(100)
-        # Echt draaien met het muiswiel boven "km".
-        sp.evaluate("""async () => { openWheelSheet('radius');
-          await new Promise(r => requestAnimationFrame(
-            () => requestAnimationFrame(() => setTimeout(r, 80)))); }""")
-        u = sp.evaluate("""() => { const b = document.querySelector('#wheelSheetGroup .wheel-unit')
-          .getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }""")
-        sp.mouse.move(u["x"], u["y"])
-        sp.mouse.wheel(0, 132)
-        sp.wait_for_timeout(600)
-        na = sp.evaluate("document.getElementById('filterRadius').value")
-        check("scrollen boven 'km' kiest een andere straal", na != "10", f"waarde {na}")
+            check(f"{veld}: elke regel is tikbaar van de linker- tot de rechterkant van het menu",
+                  vlak and all(r["links"] and r["rechts"] and r["breed"] <= 18 for r in vlak), str(vlak)[:300])
+            sp.evaluate("sluitAlleMenus()")
+            sp.wait_for_timeout(300)
         sctx.close()
         check("geen paginafouten in blok 18", not page_errors, "; ".join(page_errors)[:200])
 
@@ -10714,15 +10722,18 @@ window.TT_STUB.fnAntwoord = {};
           const velden = [...document.querySelectorAll('#zoekFilterVak .wheel-field')];
           u.openF = { vak: zicht($('zoekFilterVak')), aria: knop.getAttribute('aria-expanded'), draai: getComputedStyle(pijl).transform,
             labels: labels.map(l => (l.querySelector('span') || l).textContent.trim()), waarden: velden.map(v => v.querySelector('.wheel-field-label').textContent),
-            paren: [0, 2, 4].map(i => Math.round(r(velden[i]).top) === Math.round(r(velden[i + 1]).top)),
-            kolommen: [0, 1].map(i => Math.round(r(velden[i]).width)),
-            naamBreed: Math.round(r(veld).width) === Math.round(r(velden[0]).right - r(velden[0]).left + 12 + r(velden[1]).width),
+            paren: [2, 4].map(i => Math.round(r(velden[i]).top) === Math.round(r(velden[i + 1]).top)),
+            kolommen: [2, 3].map(i => Math.round(r(velden[i]).width)),
+            naamBreed: [0, 1].every(i => Math.round(r(veld).width) === Math.round(r(velden[i]).width)),
             naamOnder: Math.round(r(veld.closest('.field')).top - r(label).bottom),
             wisRechts: +(r(straal).right - r(wis).right).toFixed(1), wisZicht: zicht(wis),
             wisOnder: Math.round(r(wis).top - r(velden[5]).bottom) };
 
           // 6. Instrument en Genre tonen de keuze in het veld; een band die het instrument zoekt is een treffer.
-          openPickerList('filterInstruments'); choosePickerListValue('Drums'); await w(400);
+          // Het veld klapt het keuzemenu uit (TT-543 draaiwielen).
+          $('filterInstrumentsField').click(); await w(300);
+          [...$('filterInstrumentsMenu').querySelectorAll('.choice-option')].find(o => o.textContent.trim() === 'Drums').click();
+          sluitAlleMenus(); await w(400);
           u.instrument = { tekst: $('filterInstrumentsFieldLabel').textContent, aan: $('filterInstrumentsField').classList.contains('is-set'),
             treffers: lastZoekResultaten.map(x => x.id) };
 
@@ -10829,9 +10840,9 @@ window.TT_STUB.fnAntwoord = {};
         check("Wissen (3C) onderaan het filtervak, 20px onder het laatste veld; het eind op het pijltje van Filters (2,5px naar links, besluit Ronald 09-11-2026)",
               d95["openF"]["wisZicht"] and d95["openF"]["wisOnder"] == 20 and d95["openF"]["wisRechts"] == 12.5, json.dumps(d95["openF"]))
         of = d95["openF"]
-        check("Filters open (3C): pijltje omgedraaid, Naam over de hele breedte 20px onder de regel van Filters, dan zes velden in twee kolommen, in de vaste volgorde",
+        check("Filters open (3C): pijltje omgedraaid, Naam 20px onder de regel van Filters; Naam, Instrument en Genre over de hele breedte, dan Niveau naast Leeftijd en Volgorde naast Weergave (besluit Ronald 09-11-2026, draaiwielen)",
               of["vak"] and of["aria"] == "true" and of["draai"].startswith("matrix(-1")
-              and of["labels"] == ["Naam", "Instrument", "Niveau", "Leeftijd", "Genre", "Volgorde", "Weergave"]
+              and of["labels"] == ["Naam", "Instrument", "Genre", "Niveau", "Leeftijd", "Volgorde", "Weergave"]
               and of["naamBreed"] and of["naamOnder"] == 20
               and all(of["paren"]) and of["kolommen"][0] == of["kolommen"][1], j95("openF"))
         check("beginstand van de filters: –, –, –, –, Beste match, Lijst",
@@ -10875,11 +10886,12 @@ window.TT_STUB.fnAntwoord = {};
         c95.close()
 
         # ────────────────────────────────────────────────────────────
-        # Blok 96 — keuzevelden zonder pijltje (besluit Ronald 26-10-2026):
-        # de waarde staat links op de lijn van het label, de lege stand is een
-        # grijs streepje; in het wiel zelf heet die stand nog "Alle".
+        # Blok 96 — keuzevelden zonder pijltje (besluit Ronald 26-10-2026),
+        # de waarde in het midden (besluit Ronald 09-11-2026, TT-543
+        # draaiwielen; vervangt "links" van 26-10-2026), de lege stand is een
+        # grijs streepje.
         # ────────────────────────────────────────────────────────────
-        print("\nBlok 96 — keuzevelden: geen pijltje, waarde links, lege stand grijs")
+        print("\nBlok 96 — keuzevelden: geen pijltje, waarde in het midden, lege stand grijs")
         c96 = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
         p96 = c96.new_page(); f96 = []; p96.on("pageerror", lambda e: f96.append(str(e)))
         p96.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
@@ -10889,13 +10901,13 @@ window.TT_STUB.fnAntwoord = {};
         d96 = p96.evaluate(r"""async () => {
           const w = (n = 200) => new Promise(r => setTimeout(r, n)), u = {}, $ = id => document.getElementById(id);
           u.pijltjes = document.querySelectorAll('.wheel-field-chevron, .picker-field-chevron').length;
-          u.links = [...document.querySelectorAll('.wheel-field')].every(e => getComputedStyle(e).justifyContent === 'flex-start');
+          u.midden = [...document.querySelectorAll('.wheel-field')].every(e => getComputedStyle(e).justifyContent === 'center');
           openZoekScherm('muzikanten', { geenZoek: true }); showView('search', 'pop'); toggleZoekFilters(); await w();
           const muted = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim();
           const kleur = el => getComputedStyle(el).color;
-          const pijl = id => { const v = $(id), l = v.closest('.field, .frc-straal').querySelector('label'), t = v.querySelector('.wheel-field-label');
-            const rg = document.createRange(); rg.selectNodeContents(l.firstElementChild || l); const lx = rg.getBoundingClientRect().left;
-            return Math.round(t.getBoundingClientRect().left - lx); };
+          const pijl = id => { const v = $(id).getBoundingClientRect(), t = $(id).querySelector('.wheel-field-label');
+            const rg = document.createRange(); rg.selectNodeContents(t); const tr = rg.getBoundingClientRect();
+            return Math.round((tr.left + tr.width / 2) - (v.left + v.width / 2)); };
           u.uitlijn = ['filterInstrumentsField', 'filterNiveauField', 'filterAgeField', 'filterGenresField', 'filterSortModeField', 'musicianViewToggleField', 'filterRadiusField'].map(pijl);
           const pr = $('filterCity').getBoundingClientRect(), sr = $('filterRadiusField').getBoundingClientRect();
           const pl = document.querySelector('.frc-plaats label').getBoundingClientRect(), sl = document.querySelector('.frc-straal label').getBoundingClientRect();
@@ -10911,18 +10923,21 @@ window.TT_STUB.fnAntwoord = {};
                         lft: [lft.textContent, lft.classList.contains('leeg')] };
           setWheelFieldValues('leeftijd', ['', ''], false);
           $('filterAgeField').click(); await w(300);
-          u.wiel = [...document.querySelectorAll('#wheelSheetModal .wheel-item')].map(e => e.textContent)[0] || null;
+          u.menu = { eerste: [...$('filterAgeMenu').querySelectorAll('.choice-option')].map(e => e.textContent.trim())[0] || null,
+                     gekozen: $('filterAgeMenu').querySelectorAll('.choice-option.selected').length };
+          sluitAlleMenus();
           return u;
         }""")
         j96 = lambda k: json.dumps(d96.get(k), ensure_ascii=False)
         check("geen pijltje meer in een keuzeveld, in de hele app", d96["pijltjes"] == 0, j96("pijltjes"))
-        check("elk wielveld zet de waarde links", d96["links"], "")
-        check("in Zoeken staat elke waarde op de lijn van het label erboven (±1px)", all(abs(x) <= 1 for x in d96["uitlijn"]), j96("uitlijn"))
+        check("elk keuzeveld zet de waarde in het midden", d96["midden"], "")
+        check("in Zoeken staat elke waarde in het midden van zijn veld (±1px)", all(abs(x) <= 1 for x in d96["uitlijn"]), j96("uitlijn"))
         check("filter uit: een grijs streepje (Instrument en Leeftijd); Volgorde is nooit leeg",
               d96["leeg"]["inst"] == ["–", True, True] and d96["leeg"]["lft"] == ["–", True, True] and d96["leeg"]["volg"] == [False], j96("leeg"))
         check("een gekozen waarde staat in de tekstkleur, zonder .leeg",
               d96["gekozen"]["inst"] == ["Drums", False, False] and d96["gekozen"]["lft"] == ["16+ jaar", False], j96("gekozen"))
-        check("in het wiel heet de lege stand nog Alle", d96["wiel"] == "Alle", j96("wiel"))
+        check("filter uit: in het menu is geen regel gekozen en er is geen regel \"Alle\"",
+              d96["menu"] == {"eerste": "13-15", "gekozen": 0}, j96("menu"))
         check("invulveld en keuzeveld zijn beide 44px; Plaats en Straal staan op één lijn (veld en label)",
               d96["plaatsStraal"] == [44, 44, 0, 0], j96("plaatsStraal"))
         check("blok 96: geen paginafouten", not f96, "; ".join(f96)[:300])
@@ -13469,11 +13484,11 @@ def blok_pijl():
             + '<span class="star-display"><span class="star-display-filled">★</span><span class="star-display-empty">☆</span></span>'
             + '<div class="media-thumb"><button class="thumb-remove">✕</button></div><button class="avatar-remove-btn visible">✕</button>'
             + '<div class="message-bubble own">Hoi<div class="message-bubble-time">19:31<span class="message-bubble-read">✓</span></div></div>'
-            + '<span class="choice-option-check">✓</span><span class="picker-list-item-check">✓</span><div id="pr119" class="star-picker"></div>';
+            + '<span class="picker-list-item-check">✓</span><div id="pr119" class="star-picker"></div>'; // een keuzemenu heeft geen vinkje meer (TT-543 draaiwielen, T2)
           renderStarPicker(document.getElementById('pr119'), 3, () => {});
           const fs = s => getComputedStyle(plek.querySelector(s)).fontSize;
           const sels = ['.picker-badge-stars', '.picker-badge-remove', '.level-choice-stars', '.star-display-filled', '.star-display-empty',
-            '.thumb-remove', '.avatar-remove-btn', '.message-bubble-read', '.choice-option-check', '.picker-list-item-check'];
+            '.thumb-remove', '.avatar-remove-btn', '.message-bubble-read', '.picker-list-item-check'];
           const ster = plek.querySelector('#pr119 .star');
           const leeg = getComputedStyle(document.documentElement).getPropertyValue('--leeg').trim();
           const uit = { maten: Object.fromEntries(sels.map(s => [s, fs(s)])), tik: [getComputedStyle(ster).fontSize, Math.round(ster.getBoundingClientRect().height)],
@@ -15686,7 +15701,9 @@ def blok_tt543_blok5():
           closeInstrumentPicker();
           INSTRUMENT_PICKERS[wid].getInstruments().push(...bewaar);
           // Zoeken: hooguit één instrument; Zang, Achtergrondzang en Songwriting komen erbij.
-          const kies = (id, v) => { openPickerList(id); choosePickerListValue(v); };
+          // Het veld klapt het keuzemenu uit (TT-543 draaiwielen); kies de regel.
+          const kies = (id, v) => { const cfg = CHOICE_FIELDS['picker-' + id]; openChoiceMenu('picker-' + id);
+            [...document.getElementById(cfg.menuId).querySelectorAll('.choice-option')].find(o => o.textContent.trim() === v).click(); closeChoiceMenu(); };
           filterInstruments.length = 0;
           ['Drums', 'Achtergrondzang', 'Zang', 'Basgitaar'].forEach(v => kies('filterInstruments', v));
           u.muzikanten = filterInstruments.slice();
@@ -16185,14 +16202,17 @@ def blok_tt543_onderdeel4():
                     wisInVak: vak.contains(wis), wisOnder: Math.round(r(wis).top - r(velden[velden.length - 1]).bottom),
                     teller: $('zoekFiltersTekst').textContent }; }""", None)
                 u["inktMuz"] = page.evaluate(INKT, ["#zoekWissenKnop", "#zoekFiltersKnop .zoek-filters-pijl"])
-                page.evaluate("openPickerList('filterInstruments'); choosePickerListValue('Basgitaar')"); page.wait_for_timeout(500)
+                page.evaluate("""async () => { document.getElementById('filterInstrumentsField').click(); await new Promise(r => setTimeout(r, 300));
+                  [...document.querySelectorAll('#filterInstrumentsMenu .choice-option')].find(o => o.textContent.trim() === 'Basgitaar').click(); sluitAlleMenus(); }"""); page.wait_for_timeout(500)
                 u["teller2"] = page.evaluate("document.getElementById('zoekFiltersTekst').textContent")
                 u["inktMuz2"] = page.evaluate(INKT, ["#zoekWissenKnop", "#zoekFiltersKnop .zoek-filters-pijl"])
-                # Het vinkje in de keuzelijst van Instrument: 16px.
-                page.evaluate("openPickerList('filterInstruments')"); page.wait_for_timeout(300)
-                u["vinkInstrument"] = page.evaluate("""() => { const v = document.querySelector('#pickerListItems .picker-list-item.selected .picker-list-item-check');
-                  return v ? [v.textContent, getComputedStyle(v).fontSize] : null; }""")
-                page.evaluate("closePickerList()"); page.wait_for_timeout(200)
+                # Instrument klapt het keuzemenu uit (TT-543 draaiwielen): de
+                # gekozen regel is de zwevende pil, zonder vinkje (vervangt het
+                # vinkje van 16px in de keuzelijst, voorstel 5).
+                page.evaluate("document.getElementById('filterInstrumentsField').click()"); page.wait_for_timeout(300)
+                u["vinkInstrument"] = page.evaluate("""() => { const v = document.querySelector('#filterInstrumentsMenu .choice-option.selected');
+                  return v ? [v.textContent.trim(), v.textContent.includes('✓'), getComputedStyle(v).fontWeight] : null; }""")
+                page.evaluate("sluitAlleMenus()"); page.wait_for_timeout(300)
                 page.locator("#zoekWissenKnop").click(); page.wait_for_timeout(600)
                 u["naWissen"] = page.evaluate("[document.getElementById('filterName').value, document.getElementById('zoekFiltersTekst').textContent, document.getElementById('filterCity').value]")
                 u["normaalMuz"] = page.evaluate(NORMAAL, "#searchModeMusician")
@@ -16302,7 +16322,7 @@ def blok_tt543_onderdeel4():
             check(f"{n} (Wissen, hele app): Wat spelen we? (zonder Filters): Wissen op dezelfde plek als bij Muzikanten",
                   abs(u["inktWat"]["wisInkt"] - u["inktMuz"]["wisInkt"]) <= 0.5, json.dumps([u["inktWat"], u["inktMuz"]]))
             check(f"{n} (Wissen): niet meegeschoven bij 'Filters (2)'", abs(u["inktMuz"]["wisInkt"] - u["inktMuz2"]["wisInkt"]) <= 0.1, json.dumps([u["inktMuz"], u["inktMuz2"]]))
-            check(f"{n} (voorstel 5): het vinkje in de keuzelijst van Instrument is 16px", u["vinkInstrument"] == ["✓", "16px"], json.dumps(u["vinkInstrument"]))
+            check(f"{n}: Instrument is een keuzemenu; de gekozen regel is vet, zonder vinkje (TT-543 draaiwielen)", u["vinkInstrument"] == ["Basgitaar", False, "700"], json.dumps(u["vinkInstrument"]))
             s = u["setlijst"]
             if wie == "bezoeker":
                 check(f"{n} (voorstel 5): zonder profiel geen 'Uit je setlist'", not s["zicht"], json.dumps(s))
@@ -16551,6 +16571,108 @@ def blok_tt543_onderdeel5():
     check("geen paginafouten in blok 142", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_tt543_draaiwielen():
+    # TT-543 draaiwielen (TT-422), besluitenlijst draaiwielen (besluiten Ronald
+    # 09-11-2026, sessie 105 en 106): het wiel is weg uit de hele app; elk
+    # keuzeveld klapt een menu uit; gekozen = zwevende pil (T2), in licht #FFFEFA
+    # met de letter zwart; de beheersingskeuze houdt zijn labelvorm; een
+    # bewaarde zoekopdracht met een stap die niet meer bestaat, wordt in de app
+    # omgezet (straal boven 100 en 75 worden 100 km; leeftijd de groepen
+    # eromheen); het menu klapt onder het veld uit en de pagina schuift tot de
+    # laatste regel boven de onderbalk staat.
+    print("\nBlok 143 — TT-543 draaiwielen: keuzemenu in plaats van het wiel")
+    bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("utils.js", "search.js", "index.html", "styles.css")}
+    weg = [w for w in ("openWheelSheet", "wheelSheetModal", "WHEEL_ITEM_H", "WHEEL_RADIUS", ".wheel-item", ".picker-group", "--wiel-tekst")
+           if any(w in t for t in bron.values())]
+    check("het wiel is weg: geen bladwijzer, geen wielcode, geen wielstijl", not weg, str(weg))
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten = []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for thema in ("dark", "light"):
+            ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme=thema, is_mobile=True, has_touch=True)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(500)
+            u = page.evaluate("""async () => {
+              const w = (n = 350) => new Promise(r => setTimeout(r, n)), $ = id => document.getElementById(id), u = {};
+              showView('search'); openZoekScherm('muzikanten', { geenZoek: true });
+              if ($('zoekFilterVak').hidden) toggleZoekFilters();
+              window.scrollTo(0, 0); await w(100);
+              // De kleur van de gekozen regel.
+              $('filterSortModeField').click(); await w();
+              const g = $('filterSortModeMenu').querySelector('.choice-option.selected'), cs = getComputedStyle(g);
+              u.pil = [cs.backgroundColor, cs.color, cs.fontWeight, cs.boxShadow !== 'none'];
+              // Onder het veld, boven de onderbalk, met de pagina meegeschoven.
+              const m = $('filterSortModeMenu').getBoundingClientRect(), v = $('filterSortModeField').getBoundingClientRect();
+              u.plek = { onder: Math.round(m.top - v.bottom), boven: Math.round($('appBottomNav').getBoundingClientRect().top - m.bottom) >= 0,
+                         geschoven: scrollY > 0, naarBoven: $('filterSortModeMenu').classList.contains('naar-boven') };
+              sluitAlleMenus(); await w();
+              u.naSluiten = document.body.style.paddingBottom;
+              // Een oude bewaarde zoekopdracht: 150 km, 20 t/m 30 jaar.
+              const S = window.TT_STUB; hasOwnProfile = true; myMusicianId = 'm1'; window.getMyMusicianId = async () => 'm1';
+              const oud = (km, min, max) => ({ musician_id: 'm1', soort: 'alles', volgorde: 'score', radius_km: km, instruments: [], genres: [],
+                age_min: min, age_max: max, niveau_min: null, niveau_max: null, plaats: 'Delft', plaats_tekst: 'Delft', origin_lat: 52, origin_lng: 4.36 });
+              u.herstel = [];
+              for (const [km, min, max] of [[150, 20, 30], [75, null, 17], [500, 40, null], [25, 16, 24]]) {
+                S.data.musician_saved_search = [oud(km, min, max)]; bewaardeZoek = undefined; onthoudToegepast = false;
+                await onthoudHerstellen();
+                u.herstel.push([$('filterRadius').value, $('filterAgeMin').value, $('filterAgeMax').value,
+                                $('filterRadiusField').textContent.trim(), $('filterAgeField').textContent.trim()]);
+              }
+              resetMusicianSearch(); setWheelFieldValues('radius', [10], false);
+              // Mix & Match: hetzelfde straalmenu.
+              openZoekScherm('mixmatch'); await w(300); setSetlistSoort('muzikanten'); await w(300);
+              if (typeof zetMmFilters === 'function') zetMmFilters(true);
+              await w(200);
+              $('filterSetlistRadiusField').click(); await w();
+              u.mm = [...$('filterSetlistRadiusMenu').querySelectorAll('.choice-option')].map(o => o.textContent.trim() + (o.classList.contains('selected') ? '*' : ''));
+              sluitAlleMenus(); await w();
+              return u;
+            }""")
+            licht = thema == "light"
+            n = "licht" if licht else "donker"
+            check(f"{n}: de gekozen regel is de zwevende pil (T2): {'#FFFEFA, letter zwart' if licht else '#2C2C2C, letter warmgeel'}, vet, met schaduw",
+                  u["pil"] == (["rgb(255, 254, 250)", "rgb(30, 30, 30)", "700", True] if licht else ["rgb(44, 44, 44)", "rgb(255, 184, 28)", "700", True]),
+                  json.dumps(u["pil"]))
+            check(f"{n}: het menu klapt onder het veld uit (6px), niet omhoog; de pagina schuift tot het boven de onderbalk staat",
+                  u["plek"] == {"onder": 6, "boven": True, "geschoven": True, "naarBoven": False}, json.dumps(u["plek"]))
+            check(f"{n}: na het sluiten is de tijdelijke ruimte onder de pagina weg", u["naSluiten"] == "", u["naSluiten"])
+            check(f"{n}: een oude bewaarde zoekopdracht wordt omgezet: 150 km en 75 km worden 100 km, 500 km wordt 100 km; 20 t/m 30 wordt 19 t/m 34, t/m 17 wordt 13 t/m 18, vanaf 40 wordt 35+; 25 km en 16 t/m 24 blijven",
+                  u["herstel"] == [["100", "19", "34", "100 km", "19 - 34 jaar"], ["100", "13", "18", "100 km", "13 - 18 jaar"],
+                                   ["100", "35", "", "100 km", "35+ jaar"], ["25", "16", "24", "25 km", "16 - 24 jaar"]], json.dumps(u["herstel"], ensure_ascii=False))
+            check(f"{n}: Mix & Match heeft hetzelfde straalmenu, 10 km gekozen",
+                  u["mm"] == ["5 km", "10 km*", "15 km", "25 km", "50 km", "100 km"], json.dumps(u["mm"]))
+            # De beheersingskeuze houdt zijn labelvorm (besluit Ronald 09-11-2026).
+            b = page.evaluate("""async () => {
+              const w = (n = 350) => new Promise(r => setTimeout(r, n));
+              const vak = document.createElement('div'); document.body.appendChild(vak);
+              vak.innerHTML = overneemKnopHTML('Creep', 'Radiohead');
+              const n = vak.querySelector('.nummer-overneem').dataset.nr;
+              CHOICE_FIELDS['ovn' + n] = { id: 'ovn' + n, fieldId: 'ovnVeld' + n, selectId: 'ovnSel' + n, menuId: 'ovnMenu' + n };
+              openChoiceMenu('ovn' + n); await w();
+              const m = document.getElementById('ovnMenu' + n), o = m.querySelectorAll('.choice-option');
+              const r = [...o].map(x => { const c = getComputedStyle(x); return [Math.round(x.getBoundingClientRect().width), Math.round(x.getBoundingClientRect().height), c.borderTopLeftRadius, c.fontSize]; });
+              const uit = { labels: r, hoek: getComputedStyle(m).borderTopLeftRadius, opvul: getComputedStyle(m).paddingTop,
+                            tussen: Math.round(o[1].getBoundingClientRect().top - o[0].getBoundingClientRect().bottom), max: getComputedStyle(m).maxHeight };
+              sluitAlleMenus(); await w(); vak.remove();
+              return uit;
+            }""")
+            check(f"{n}: de beheersingskeuze houdt zijn labels (72×36px, hoek 8px, 12px; menu hoek 12px, 8px opvulling, 8px ertussen)",
+                  b["labels"] == [[72, 36, "8px", "12px"]] * 3 and b["hoek"] == "12px" and b["opvul"] == "8px" and b["tussen"] == 8 and b["max"] == "none",
+                  json.dumps(b))
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    check("blok 143: geen paginafouten", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -16591,6 +16713,7 @@ BLOKKEN = [
     blok_tt543_onderdeel3,
     blok_tt543_onderdeel4,
     blok_tt543_onderdeel5,
+    blok_tt543_draaiwielen,
 ]
 
 

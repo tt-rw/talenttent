@@ -1772,14 +1772,14 @@ function isTypveld(el) {
 // verschuiving die een knop al heeft (bijv. translateY(-50%)) gewoon staan.
 // De animatie loopt los van de CSS (Web Animations), dus een bestaande
 // `transition` op het element blijft onaangeroerd. Niet in een vlak dat je
-// veegt (de hoes, het wiel, de uitsnede), niet op een uitgeschakelde knop,
+// veegt (de hoes, de uitsnede), niet op een uitgeschakelde knop,
 // niet op een typveld, niet op iets hoger dan het halve scherm (geen rij of
 // knop meer). Met "minder beweging" op het toestel: niets.
 const TIK_IN_MS = 90, TIK_TERUG_MS = 220, TIK_WACHT_MS = 50, TIK_SCHAAL = '0.98';
 const TIK_VEER = 'cubic-bezier(.34, 1.56, .64, 1)';
 function tikDoel(doel) {
   if (!doel || !doel.closest || isTypveld(doel) || doel.tagName === 'SELECT') return null;
-  if (doel.closest('.hoes-spoor, .wheel-scroll, .uitsnede-vlak')) return null;
+  if (doel.closest('.hoes-spoor, .uitsnede-vlak')) return null;
   let el = null;
   for (let e = doel; e && e !== document.body; e = e.parentElement) {
     if (e.matches('button, a[href], [role="button"]')) { el = e; break; }
