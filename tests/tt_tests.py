@@ -695,7 +695,7 @@ def blok_browser():
             gekozen: gekozen && gekozen.textContent.trim(),
             pil: cs.backgroundColor, pilVar: root.getPropertyValue('--gekozen-pil').trim(),
             schaduw: cs.boxShadow !== 'none', letter: cs.color, accent: root.getPropertyValue('--accent').trim(), vet: cs.fontWeight,
-            midden: rs.justifyContent, hoek: rs.borderTopLeftRadius, lijn: rs.borderTopWidth,
+            midden: rs.justifyContent, hoek: rs.borderTopLeftRadius, menuHoek: ms.borderTopLeftRadius, lijn: rs.borderTopWidth,
             hoogte: Math.round(rijen[0].getBoundingClientRect().height),
             maxHoogte: ms.maxHeight, overscroll: ms.overscrollBehaviorY, vinkje: menu.textContent.includes('✓'),
             veldMidden: getComputedStyle(veld).justifyContent,
@@ -742,9 +742,9 @@ def blok_browser():
         check("en de letter vet in de accentkleur",
               km["vet"] == "700" and km["accent"].upper() in ("#FFB81C",) and km["letter"] == "rgb(255, 184, 28)",
               json.dumps({k: km[k] for k in ("letter", "accent", "vet")}))
-        check("elke regel: tekst in het midden, een pil, geen lijn ertussen, 44px",
-              km["midden"] == "center" and km["hoek"] == "999px" and km["lijn"] == "0px" and km["hoogte"] == 44,
-              json.dumps({k: km[k] for k in ("midden", "hoek", "lijn", "hoogte")}))
+        check("elke regel: tekst in het midden, hoek 8px zoals het ⋯-menu (besluit Ronald 09-11-2026), geen lijn ertussen, 44px",
+              km["midden"] == "center" and km["hoek"] == "8px" and km["menuHoek"] == "8px" and km["lijn"] == "0px" and km["hoogte"] == 44,
+              json.dumps({k: km[k] for k in ("midden", "hoek", "menuHoek", "lijn", "hoogte")}))
         check("hoogstens zeven regels in beeld; het menu houdt zijn scrollbeweging vast; geen vinkje",
               km["maxHoogte"] == "344px" and km["overscroll"] == "contain" and not km["vinkje"],
               json.dumps({k: km[k] for k in ("maxHoogte", "overscroll", "vinkje")}))

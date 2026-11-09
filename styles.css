@@ -5348,15 +5348,17 @@
 
   /* ─── De vorm van elk keuzemenu (TT-543 draaiwielen, besluiten Ronald
      09-11-2026; huisstijl §7.1) ───────────────────────────────────────────
-     Een paneel met ronde hoeken; elke regel een pil, de tekst in het midden,
-     2px ertussen, geen lijn. Hoogstens zeven regels; meer scrollen in het
-     menu. De gekozen regel (T2, "T2 wordt het"): een zwevende pil en de letter
-     vet in de accentkleur (donker warmgeel, licht zwart). Bij aanwijzen met de
-     muis de grijze pil hierboven. De beheersingskeuze en "+ Toevoegen" houden
-     hun labelvorm (huisstijl §7.7, besluit Ronald 09-11-2026). */
+     Een paneel met de hoek van de ⋯-menu's (8px, besluit Ronald 09-11-2026:
+     "keuzemenu met scherpere hoek, maar blijft gecentreerd"); elke regel even
+     rond, de tekst in het midden, 2px ertussen, geen lijn. Hoogstens zeven
+     regels; meer scrollen in het menu. De gekozen regel (T2, "T2 wordt het"):
+     een zwevend vlak en de letter vet in de accentkleur (donker warmgeel, licht
+     zwart). Bij aanwijzen met de muis het grijze vlak hierboven. De
+     beheersingskeuze en "+ Toevoegen" houden hun labelvorm (huisstijl §7.7);
+     het ⋯-menu blijft zoals het is (besluiten Ronald 09-11-2026). */
   .choice-menu:not(.beheersing-menu) {
     padding: 8px;
-    border-radius: 22px;
+    border-radius: 8px;
     max-height: 344px;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -5366,7 +5368,7 @@
     text-align: center;
     margin: 2px 0;
     padding: 0 12px;
-    border-radius: 999px;
+    border-radius: 8px;
   }
   .choice-menu:not(.beheersing-menu) .choice-option + .choice-option { border-top: none; }
   .choice-menu:not(.beheersing-menu) .choice-option.selected {
