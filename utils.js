@@ -124,15 +124,6 @@ function grensBereikt(aantal, grens, zin) {
   return true;
 }
 
-// Links: na de laatste toegestane link verdwijnt "+ Link toevoegen" en staat
-// er één regel onder de lijst (besluit Ronald 04-11-2026).
-function linkGrensBijwerken(lijst, aantal) {
-  const vol = aantal >= GRENZEN.links;
-  const knop = lijst.parentElement && lijst.parentElement.querySelector('.add-link-btn');
-  if (knop) knop.style.display = vol ? 'none' : '';
-  if (vol) lijst.insertAdjacentHTML('beforeend', `<div class="drop-hint">Maximum van ${GRENZEN.links} links bereikt.</div>`);
-}
-
 // Bands: eigen bands en bands waar je lid van bent, samen hooguit 10.
 async function bandsVol(mid) {
   const { count, error } = await db.from('band_members')
@@ -1058,15 +1049,6 @@ function submitOnEnter(event, fn) {
   }
 }
 
-// TT-30 (07-08-2026): effen tags i.p.v. ovale outline-badges op de
-// zoekresultaten. TT-315 (24-09-2026, besluit Ronald: "minder rommelig, het
-// meest clean"): het vlak is voor elke tag hetzelfde, wit op 5%
-// (huisstijl §1.1). De kleur zit alleen in de tekst. Tot die dag was het vlak
-// de tekstkleur op 16% dekking; bij goud gaf dat olijfbruin.
-function tagSolid(text) {
-  return `<span class="tag-solid">${escHtml(text)}</span>`;
-}
-
 // ─── Zoektekst veilig maken voor een Supabase-query (TT-26) ─────────────────
 // Twee verschillende risico's, twee helpers:
 //  1. likeSafe(): %, _, * en \ zijn jokertekens in een ilike-patroon. Iemand
@@ -1877,7 +1859,10 @@ function fitProfileName(root) {
     const ruimte = el.clientWidth;
     if (!ruimte) return; // nog niet zichtbaar — niets te meten
     el.style.fontSize = '';
-    for (const px of PROFIELNAAM_LADDER.concat(PROFIELNAAM_NOOD)) {
+    // TT-543 onderdeel 6: een naam met data-max (de kleine hoes van Mijn Bands)
+    // begint op die maat.
+    const max = Number(el.dataset.max) || Infinity;
+    for (const px of PROFIELNAAM_LADDER.concat(PROFIELNAAM_NOOD).filter(x => x <= max)) {
       el.style.fontSize = px + 'px';
       if (el.scrollWidth <= ruimte) return;
     }
@@ -2234,6 +2219,13 @@ function mediaFnNaam(voorvoegsel, naam) {
 
 // Miniatuur van een link: bij YouTube het echte beeld, anders een vlak met de
 // platformnaam. Bewust zonder extra netwerkaanvraag per link (TT-184).
+// TT-543 onderdeel 6 (F1, besluit Ronald 10-11-2026: "C"): de naam van een
+// platform in een klein vakje breekt bij de hoofdletter ("Sound / Cloud"),
+// niet midden in een woord. De letter blijft 11px.
+function platformNaamHTML(naam) {
+  return escHtml(naam).replace(/([a-z])([A-Z])/g, '$1<wbr>$2');
+}
+
 function mediaLinkMiniatuurHTML(url) {
   const veilig = safeUrl(url);
   const platform = veilig ? detectPlatform(veilig) : 'Link';
@@ -2241,50 +2233,7 @@ function mediaLinkMiniatuurHTML(url) {
   if (yt) {
     return `<img src="https://img.youtube.com/vi/${escHtml(yt)}/hqdefault.jpg" alt="" loading="lazy">`;
   }
-  return `<span class="media-mini-platform">${escHtml(veilig ? platform : '—')}</span>`;
-}
-
-// Eén rij in het tabblad Links: bannerteken · miniatuur · naam · adres · ✕.
-// De naam staat op één regel en wordt afgekapt met één beletselteken; een tik
-// vouwt 'm uit (besluit Ronald 13-09-2026, M1), op een bureaublad verschijnt
-// hij bovendien als label bij aanwijzen (title).
-function mediaLinkRijHTML(l, i, voorvoegsel) {
-  const fn = n => mediaFnNaam(voorvoegsel, n);
-  const veilig = safeUrl(l.url);
-  const platform = veilig ? detectPlatform(veilig) : '';
-  const naam = platform || 'Nieuwe link';
-  return `
-    <div class="media-rij">
-      ${bannerKnopHTML(!!l.inBanner, `${fn('toggleLinkBanner')}(${i})`)}
-      <button type="button" class="media-mini" onclick="${fn('speelLink')}(${i})" aria-label="Afspelen"${veilig ? '' : ' disabled'}>
-        ${mediaLinkMiniatuurHTML(l.url)}
-      </button>
-      <div class="media-rij-tekst">
-        <div class="media-rij-titel" ${veilig ? `data-media-url="${veilig}"` : ''} title="${escHtml(naam)}"
-          onclick="this.classList.toggle('open')">${escHtml(naam)}</div>
-        <input type="url" class="media-rij-url" value="${escHtml(l.url || '')}" placeholder="https://youtube.com/watch?v=..."
-          aria-label="Adres van de link"
-          oninput="${fn('updateLinkUrl')}(${i}, this)" onchange="${fn('renderLinksList')}()">
-      </div>
-      <button type="button" class="song-remove" onclick="${fn('removeLink')}(${i})" aria-label="Link verwijderen">${RIJ_KRUIS}</button>
-    </div>`;
-}
-
-// Eén tegel in het tabblad Upload. Bannerteken linksboven, ✕ rechtsboven
-// (besluit Ronald 13-09-2026).
-function mediaTegelHTML(m, i, voorvoegsel) {
-  const fn = n => mediaFnNaam(voorvoegsel, n);
-  const beeld = m.type === 'foto'
-    ? `<img ${kleinFotoAttr(safeUrl(m.url))} alt="${escHtml(m.name || '')}">`
-    : `<span class="media-thumb-video">Video</span>`;
-  return `
-    <div class="media-thumb">
-      <button type="button" class="media-thumb-open" onclick="${fn('speelMedia')}(${i})" aria-label="${m.type === 'foto' ? 'Foto bekijken' : 'Video afspelen'}">${beeld}</button>
-      ${bannerKnopHTML(!!m.inBanner, `${fn('toggleMediaBanner')}(${i})`, true)}
-      ${m.uploading ? `<div class="media-thumb-laden"><div class="save-spinner"></div></div>` : ''}
-      <div class="thumb-type">${escHtml(m.type)}</div>
-      <button type="button" class="thumb-remove" onclick="${fn('removeMedia')}(${i})" aria-label="Verwijderen">✕</button>
-    </div>`;
+  return `<span class="media-mini-platform">${veilig ? platformNaamHTML(platform) : '—'}</span>`;
 }
 
 // ─── TT-543 blok 3: de mediahoek als één raster ──────────────────────────
@@ -2295,9 +2244,8 @@ function mediaTegelHTML(m, i, voorvoegsel) {
 // opzij van de tegel. Op elke tegel het bannerteken links en ✕ rechts; geen
 // typelabel en geen gele rand; een video en een YouTube-link krijgen het
 // speelteken. Een link wijzig je door hem te verwijderen en opnieuw toe te
-// voegen. Geldt voor de wizard (stap 4) en Je mediahoek. Onze media van een
-// band volgt in onderdeel 6 en gebruikt tot dan mediaTegelHTML() en
-// mediaLinkRijHTML() hierboven.
+// voegen. Geldt voor de wizard (stap 4), Je mediahoek en, sinds onderdeel 6,
+// Onze media van een band (besluit Ronald 10-11-2026, 10).
 // De knoppen van een link dragen het nummer van de link in zijn eigen lijst;
 // in het raster staan de links na de bestanden (bannerKnopStandZetten telt
 // daarom de bestanden mee, zie linkBannerTik()).
@@ -2618,6 +2566,9 @@ const HOES_PIJL = r => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColo
 // profielKnoppenHTML(); o.media: de media voor de banner; o.fotoToevoegen:
 // JavaScript voor de knop "Voeg een foto toe" op een leeg podium, alleen voor de
 // eigenaar (TT-517 fase 6, huisstijl §21); anders null.
+// TT-543 onderdeel 6 (besluit Ronald 10-11-2026, 4 C): de kleine hoes van Mijn
+// Bands. o.tik: JavaScript voor een tik op het eerste beeld (in plaats van
+// groot bekijken); o.naamMax: de grootste maat van de naam in px.
 function profielHoesHTML(o) {
   const items = profielBannerItems(o.media);
   // TT-385 (02-10-2026, besluit Ronald): een afgeschermde banner staat er
@@ -2632,7 +2583,10 @@ function profielHoesHTML(o) {
   const n = banner.length + voor;
   const naam = escHtml(o.naam);
 
-  const eerste = !voor ? '' : o.foto
+  const eerste = !voor ? '' : o.tik
+    ? `<button type="button" class="hoes-vlak${o.foto ? '' : ' hoes-leeg'}" onclick="${o.tik}" aria-label="${naam} openen">` +
+      (o.foto ? `<img class="hoes-img" ${hoesBronAttr(o.foto)} alt="${naam}">` : '<span class="hoes-bundel"></span>') + '</button>'
+    : o.foto
     ? `<button type="button" class="hoes-vlak" onclick="openMediaLightbox('${jsAttr(o.foto)}')" aria-label="Foto van ${naam} groot bekijken">` +
       `<img class="hoes-img" ${hoesBronAttr(o.foto)} alt="${naam}"></button>`
     // TT-517 fase 7: afgeschermd het wazige beeld, geen knop (huisstijl §18.7).
@@ -2686,7 +2640,7 @@ function profielHoesHTML(o) {
   const kaart = o.kaart ? ` data-kaart="${escHtml(JSON.stringify(o.kaart))}"` : '';
   return `<div class="hoes"${kaart}>
     <div class="hoes-beeld"><div class="hoes-spoor">${eerste}${vlakken}</div>${meer}${knop}</div>
-    <div class="hoes-tekst"><div class="profile-name">${naam}</div><div class="profiel-regels">${o.regels}</div></div>
+    <div class="hoes-tekst"><div class="profile-name"${o.naamMax ? ` data-max="${Number(o.naamMax)}"` : ''}>${naam}</div><div class="profiel-regels">${o.regels}</div></div>
     ${o.knoppen}
   </div>`;
 }

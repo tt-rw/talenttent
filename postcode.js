@@ -97,7 +97,6 @@ function enableManualCity(kind) {
   const field = document.getElementById(cityId);
   field.readOnly = false;
   field.style.cursor = '';
-  field.style.opacity = '';
   field.value = '';
   field.placeholder = 'Typ je plaatsnaam en kies uit de lijst';
   const statusEl = document.getElementById(statusId);
@@ -122,10 +121,8 @@ function relockCity(kind) {
   const field = document.getElementById(isBand ? BAND_POSTCODE_VELDEN[bandPostcodeDoel].city : 'city');
   field.readOnly = true;
   field.style.cursor = 'not-allowed';
-  // Alleen het bandformulier heeft nog een gedempt plaatsveld (onderdeel 6 van
-  // TT-543). Stap 1 en de tegels volgen de tegel "Wie ben je": geen demping
-  // (TT-543, besluit Ronald 06-11-2026, voorstel 5).
-  if (isBand && bandPostcodeDoel === 'band') field.style.opacity = '0.85';
+  // Geen gedempt plaatsveld meer, ook niet bij Band aanmaken (TT-543, besluit
+  // Ronald 06-11-2026, voorstel 5; onderdeel 6, F2, 10-11-2026).
   if (isBand) bandPostcodeManualMode = false;
   else postcodeManualMode = false;
 }
@@ -196,8 +193,7 @@ let bandCitySource = 'pdok';
 // TT-385 fase 3 (02-10-2026): de postcode van een band staat op twee
 // schermen — de korte wizard "Band aanmaken" (band) en de tegel "Wie zijn
 // we" (bw). Eén opzoekroute voor beide; de velden verschillen alleen in hun
-// id. De balk van de wizard loopt mee met de plaats (bandWizardBalkBij() in
-// bands.js, TT-385 fase 4).
+// id.
 // De toestand hierboven geldt voor het scherm dat het laatst een postcode
 // kreeg. Beide staan nooit tegelijk open.
 const BAND_POSTCODE_VELDEN = {
@@ -209,7 +205,6 @@ let bandPostcodeDoel = 'band';
 function applyResolvedBandCity(cityName, statusEl) {
   document.getElementById(BAND_POSTCODE_VELDEN[bandPostcodeDoel].city).value = cityName;
   bandPostcodeResolved = true;
-  bandWizardBalkBij();
   statusEl.textContent = '';
   zetUitslag(BAND_POSTCODE_VELDEN[bandPostcodeDoel].status, '');
 }
@@ -220,7 +215,6 @@ function onBandPostcodeInput(value, doel) {
   bandPostcodeResolved = false;
   bandCitySource = 'pdok';
   document.getElementById(velden.city).value = '';
-  bandWizardBalkBij();
   const statusEl = document.getElementById(velden.status);
   clearTimeout(bandPostcodeSearchTimeout);
 
@@ -478,7 +472,6 @@ function selectCitySuggestion(name, listId) {
     document.getElementById(velden.city).value = name;
     bandCitySource = 'manual';
     bandPostcodeResolved = true;
-    bandWizardBalkBij();
     document.getElementById(velden.status).textContent = '';
     zetUitslag(velden.status, '');
     closeAC(listId);

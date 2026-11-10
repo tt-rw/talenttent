@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261110b">
+<link rel="stylesheet" href="styles.css?v=20261110c">
 </head>
 <body>
 
@@ -725,8 +725,9 @@
 
   <!-- Tegeloverzicht. TT-543 blok 4 (besluit Ronald 06-11-2026, voorstel 17):
        elke tegel toont wat je invulde, of "Nog leeg" (renderTegels()).
-       Opslaan staat in de vier tegels vast onderin, in dezelfde balk als
-       Verder in de stappen (voorstel 16); de bandtegels volgen in onderdeel 6. -->
+       Opslaan staat in elke tegel vast onderin, in dezelfde balk als Verder
+       in de stappen (voorstel 16); sinds onderdeel 6 ook in de vier
+       bandtegels (besluit Ronald 10-11-2026, 9). -->
   <div id="tegelOverviewScreen">
     <div class="panel-title scherm-titel">Profiel bewerken</div>
     <div id="tegelsWrap"></div>
@@ -958,7 +959,7 @@
         </div>
         <div class="field">
           <div class="label-rij"><label for="bwCity">Plaats <span class="req">*</span></label><span id="bwPostcodeUitslag" class="field-uitslag" aria-live="polite"></span></div>
-          <input type="text" id="bwCity" readonly style="cursor:not-allowed;" oninput="onCitySearchInput(this.value,'bwCityAc')">
+          <input type="text" id="bwCity" placeholder="Vult vanzelf in" readonly style="cursor:not-allowed;" oninput="onCitySearchInput(this.value,'bwCityAc')">
           <div class="autocomplete-list" id="bwCityAc"></div>
         </div>
       </div>
@@ -977,12 +978,14 @@
       <div class="field">
         <label>Wie zijn we</label>
 <textarea id="bwBio" class="bio-voorbeeld" placeholder="Hoi! Wij zijn Zwart Vinyl, vier vrienden uit Den Haag. We staan nu twee jaar samen in de oefenruimte en spelen vooral gitaarliedjes met een rauw randje.&#10;Op dit moment werken we aan onze eerste eigen nummers. Ons doel is om dit jaar de eerste optredens te spelen in kleine zalen en op festivals in de buurt.&#10;We zoeken nog een bassist die zin heeft om met ons mee te groeien. Klinkt dat goed? Stuur ons een berichtje!"></textarea>
-        <p class="field-hint">Dit lezen bezoekers direct onder jullie bezetting.</p>
+        <p class="field-hint">Dit is vaak het eerste wat muzikanten van jullie lezen.</p>
       </div>
     </div>
 
-    <div class="action-row">
-      <button class="btn btn-primary" onclick="saveBandWie()">Opslaan</button>
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-primary" onclick="saveBandWie()">Opslaan</button>
+      </div>
     </div>
   </div>
 
@@ -993,30 +996,30 @@
     <div class="panel-title scherm-titel">Onze bezetting</div>
     <div class="band-naam-regel"></div>
 
-    <div class="profile-media-title">Leden</div>
+    <h2 class="hoofdstuk-kop">Leden</h2>
     <div class="bb-lijst" id="bbLeden"></div>
-    <button type="button" class="add-link-btn" onclick="bbLidUitnodigen()">+ Lid uitnodigen</button>
+    <button type="button" class="picker-field picker-toevoegen toevoegen-breed" onclick="bbLidUitnodigen()"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="picker-field-label">Lid uitnodigen</span></button>
 
     <div class="band-tegel-blok" id="bbUitgenodigdBlok" hidden>
-      <div class="profile-media-title">Uitgenodigd</div>
+      <h2 class="hoofdstuk-kop">Uitgenodigd</h2>
       <div id="bbUitgenodigd"></div>
     </div>
 
     <div class="band-tegel-blok">
-      <div class="profile-media-title">Open rollen</div>
+      <h2 class="hoofdstuk-kop">Open rollen</h2>
       <div class="bb-lijst" id="bbOpen"></div>
-      <div class="menu-anchor">
-        <button type="button" class="add-link-btn" id="bbRolKnop"><span id="bbRolKnopLabel">+ Open rol toevoegen</span></button>
+      <div class="menu-anchor toevoegen-breed">
+        <button type="button" class="picker-field picker-toevoegen" id="bbRolKnop"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="picker-field-label" id="bbRolKnopLabel">Open rol toevoegen</span></button>
         <div class="choice-menu menu-breed" id="bbRolMenu" role="listbox" aria-label="Open rol"></div>
       </div>
       <div id="bbRolBadges" hidden></div>
     </div>
 
     <div class="band-tegel-blok">
-      <div class="profile-media-title">Invallers</div>
+      <h2 class="hoofdstuk-kop">Invallers</h2>
       <div class="bb-lijst" id="bbInvallers"></div>
       <p class="field-hint bb-hint">Voor één optreden. Na de datum verdwijnt de vraag vanzelf.</p>
-      <button type="button" class="add-link-btn" id="bbInvalOpen" onclick="bbInvalFormulier(true)">+ Invaller zoeken voor een optreden</button>
+      <button type="button" class="picker-field picker-toevoegen toevoegen-breed" id="bbInvalOpen" onclick="bbInvalFormulier(true)"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="picker-field-label">Invaller zoeken voor een optreden</span></button>
       <div class="bb-inval-form" id="bbInvalForm" hidden>
         <div class="field-group single">
           <div class="field">
@@ -1054,8 +1057,10 @@
       <p class="field-hint">Een bericht aan de band komt bij deze persoon binnen.</p>
     </div>
 
-    <div class="action-row">
-      <button class="btn btn-primary" onclick="saveBandBezetting()">Opslaan</button>
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-primary" onclick="saveBandBezetting()">Opslaan</button>
+      </div>
     </div>
   </div>
 
@@ -1065,16 +1070,16 @@
     <div class="panel-title scherm-titel">Onze muziek</div>
     <div class="band-naam-regel"></div>
 
+    <h2 class="hoofdstuk-kop">Wat voor band?</h2>
     <div class="field-group single">
       <div class="field">
-        <label>Wat voor band?</label>
         <div class="segmented-control segmented-vol" id="bmzSoort"></div>
       </div>
     </div>
 
+    <h2 class="hoofdstuk-kop">Genres <span class="req">*</span></h2>
     <div class="field-group single">
       <div class="field">
-        <label>Genres <span class="req">*</span></label>
         <div class="picker-field" id="bmzGenreField">
           <span class="picker-field-label" id="bmzGenreFieldLabel">Kies een genre</span>
         </div>
@@ -1083,14 +1088,14 @@
     </div>
 
     <div class="band-tegel-blok">
-      <div class="profile-media-title">Eigen nummers</div>
+      <h2 class="hoofdstuk-kop">Eigen nummers</h2>
       <p class="field-hint bb-hint">Titel en link. Bezoekers spelen ze af in de app.</p>
       <div id="bmzNummers"></div>
-      <button type="button" class="add-link-btn" onclick="bmzNummerErbij()">+ Nummer toevoegen</button>
+      <button type="button" class="picker-field picker-toevoegen toevoegen-breed" onclick="bmzNummerErbij()"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="picker-field-label">Nummer toevoegen</span></button>
     </div>
 
     <div class="band-tegel-blok">
-      <div class="profile-media-title">Covers</div>
+      <h2 class="hoofdstuk-kop">Covers</h2>
       <p class="field-hint bb-hint">Zoek eerst een band of artiest en daarna het nummer.</p>
       <div class="field-group single">
         <div class="field">
@@ -1120,8 +1125,10 @@
       <p class="field-hint bb-hint" id="bcCoversLeeg">Nog geen covers toegevoegd.</p>
     </div>
 
-    <div class="action-row">
-      <button class="btn btn-primary" onclick="saveBandMuziek()">Opslaan</button>
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-primary" onclick="saveBandMuziek()">Opslaan</button>
+      </div>
     </div>
   </div>
 
@@ -1131,52 +1138,33 @@
     <div class="panel-title scherm-titel">Onze media</div>
     <div class="band-naam-regel"></div>
 
+    <!-- TT-543 onderdeel 6 (besluiten Ronald 10-11-2026, 10, F3 tot en met F5):
+         zoals Je mediahoek. Kop Bandfoto; één raster met "+ Toevoegen"; geen
+         tabbladen, geen sleepvak, geen bestandseisen vooraf. -->
+    <h2 class="hoofdstuk-kop">Bandfoto</h2>
     <div class="field">
-      <label>Bandfoto</label>
       <div class="avatar-upload-area">
         <div class="avatar-preview-wrap">
           <div class="avatar-preview avatar-preview-vierkant" id="bmFotoPreview" onclick="bmFotoTik()"></div>
-          <div class="avatar-edit-btn" onclick="document.getElementById('bmFotoInput').click()" style="font-size:11px;font-weight:700;">Wijzig</div>
+          <div class="avatar-edit-btn" onclick="document.getElementById('bmFotoInput').click()">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="bmFotoRemoveBtn" onclick="bmVraagFotoWeg()" aria-label="Bandfoto verwijderen">✕</button>
         </div>
         <div class="avatar-info">
           <strong><span class="kop-zonder-foto">Upload een foto van de band</span><span class="kop-met-foto">Jullie bandfoto</span></strong>
           <p class="kop-met-foto">Tik op de foto om hem te verschuiven.</p><!-- TT-543 blok 4b -->
-          <p>JPG of PNG, maximaal 5 MB.</p>
         </div>
       </div>
       <input type="file" accept="image/*" class="avatar-upload-input" id="bmFotoInput" autocomplete="off" onchange="bmFotoKiezen(this.files[0]); this.value=''">
     </div>
 
-    <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Foto's, video's en links</div>
-    <div class="panel-sub">Upload foto's of video's van de band, of verwijs naar YouTube, Instagram of SoundCloud. Kies wat bovenaan jullie bandpagina komt.</div>
-
-    <div class="media-tabs">
-      <button type="button" class="media-tab active" onclick="switchBmMediaTab('upload', this)">Upload</button>
-      <button type="button" class="media-tab" onclick="switchBmMediaTab('links', this)">Links</button>
-    </div>
-
+    <h2 class="hoofdstuk-kop">Foto's, video's en links</h2>
+    <div class="panel-sub">Met goede media valt jullie bandpagina veel meer op.</div>
     <p class="banner-teller" id="bmBannerTeller"></p>
-
-    <div class="media-pane active" id="bmPaneUpload">
-      <div class="drop-zone" id="bmDropZone"
-        ondragover="event.preventDefault(); this.classList.add('drag-over')"
-        ondragleave="this.classList.remove('drag-over')"
-        ondrop="bmHandleDrop(event)">
-        <input type="file" accept="image/*,video/*" multiple autocomplete="off" onchange="bmHandleFileSelect(this.files); this.value=''">
-        <div class="drop-label"><strong>Sleep bestanden hierheen</strong> of klik om te selecteren</div>
-        <div class="drop-hint">Foto's (JPG, PNG) · Video's (MP4, MOV) · Max 50 MB per bestand</div>
-      </div>
-      <div class="media-grid" id="bmMediaGrid"></div>
-    </div>
-
-    <div class="media-pane" id="bmPaneLinks">
-      <div id="bmLinksList"></div>
-      <button type="button" class="add-link-btn" onclick="bmAddLinkRow()">+ Link toevoegen</button>
-    </div>
+    <div class="media-raster" id="bmMediaGrid"></div>
+    <input type="file" id="bmMediaInvoer" class="media-invoer" multiple autocomplete="off" onchange="bmHandleFileSelect(this.files); this.value=''">
 
     <div class="band-tegel-blok">
-      <div class="profile-media-title">Volg ons</div>
+      <h2 class="hoofdstuk-kop">Volg ons</h2>
       <p class="field-hint bb-hint">Alleen Instagram, TikTok en YouTube. Een gebruikersnaam of een link.</p>
       <div class="field-group single">
         <div class="field">
@@ -1198,8 +1186,10 @@
       </div>
     </div>
 
-    <div class="action-row">
-      <button class="btn btn-primary" onclick="saveBandMedia()">Opslaan</button>
+    <div class="wizard-action-bar">
+      <div class="wizard-action-bar-inner btn-row">
+        <button class="btn btn-primary" onclick="saveBandMedia()">Opslaan</button>
+      </div>
     </div>
   </div>
 
@@ -1525,7 +1515,7 @@
     <div id="emailBevestigBanner"></div>
     <!-- TT-41: openstaande banduitnodigingen, alleen zichtbaar als er zijn -->
     <div id="bandInvitesBanner"></div>
-    <div id="myProfileContent" class="muzikant-profiel"></div>
+    <div id="myProfileContent" class="profiel-pagina"></div>
   </div>
 </div>
 
@@ -1533,23 +1523,21 @@
      Ronald: profiel en bandprofiel worden een eigen scherm met een deelbare
      link). Was het venster #musicianModal en, sinds fase 2, ook het bandvenster. De kop
      is die van de app: pijl, woordmerk, hamburger. Eén scherm, één reden:
-     iemand of een band bekijken. Het adres is #profiel/<id> of #band/<id>. Bij
-     een muzikant staat de knop onder de bio (#profielSchermActie, TT-543
-     onderdeel 3); bij een band staat hij tot onderdeel 6 nog vast onderaan
-     (#profielSchermVoet). -->
+     iemand of een band bekijken. Het adres is #profiel/<id> of #band/<id>. De
+     knop staat onder de bio en scrolt mee, bij muzikant en band gelijk
+     (.profiel-actie; TT-543 onderdeel 3 en 6). -->
 <div class="app-view" id="view-profiel">
-  <div class="my-profile-wrap profiel-scherm">
-    <div id="profielSchermContent"></div>
-    <div id="profielSchermVoet" class="profiel-voet"></div>
+  <div class="my-profile-wrap">
+    <div id="profielSchermContent" class="profiel-pagina"></div>
   </div>
 </div>
 
 <!-- VIEW: Mijn bands -->
 <div class="app-view" id="view-bands">
   <div class="search-wrap">
-    <!-- Kop van Mijn Bands: titel en knop op één rij, de ondertitel in de
-         kolom van de titel, dus smaller dan de knop en over twee regels
-         (besluit Ronald, 09-10-2026). Opmaak in .mijn-bands-kop. -->
+    <!-- Kop van Mijn Bands: titel en knop op één rij. De ondertitel is weg
+         (TT-543 onderdeel 6, besluit Ronald 10-11-2026, 4). Opmaak in
+         .mijn-bands-kop. -->
     <div id="mijnBandsKop" class="mijn-bands-kop">
         <div class="filter-title scherm-titel">Mijn bands</div>
       <!-- TT-254 (11-09-2026): deze knop heette "Band toevoegen", terwijl de
@@ -1559,22 +1547,20 @@
            andere tekst. Drie van de vier plekken zeggen "aanmaken", dus dat is
            nu de naam. Huisstijl §6, regel 5: één betekenis per woord. -->
       <button class="btn btn-primary" onclick="showCreateBandForm()">Band aanmaken</button>
-      <p class="mijn-bands-sub">Bands waar jij beheerder en/of lid van bent</p>
     </div>
     <!-- TT-385 fase 4 (02-10-2026, besluiten Ronald): de korte wizard. Eén
-         scherm met drie vragen: naam, postcode en plaats, genres. De balk
-         begint op 0% en loopt 5% op per ingevuld veld, tot 15%. Daarna staat
-         de band en opent de privé bandpagina; de rest vult de beheerder aan
-         in de tegels. Zolang de wizard open is, staan de kop en de lijst van
+         scherm met drie vragen: naam, postcode en plaats, genres. Geen balk
+         (TT-543 onderdeel 6, besluit Ronald 10-11-2026, 5); daarna staat de
+         band en opent de privé bandpagina op 15%; de rest vult de beheerder
+         aan in de tegels. Zolang de wizard open is, staan de kop en de lijst van
          Mijn Bands er niet. -->
     <div id="createBandForm" style="display:none;">
-      <div id="bandWizardBalk" class="band-wizard-balk"></div>
       <div class="panel-title scherm-titel">Band aanmaken</div>
       <div class="panel-sub">Drie vragen, dan staat je band. De rest vul je later aan.</div>
       <div class="field-group single">
         <div class="field">
           <label for="bandName">Bandnaam <span class="req">*</span></label>
-          <input type="text" id="bandName" maxlength="40" autocomplete="off" placeholder="Bijv. Nachtploeg" oninput="bandWizardBalkBij()">
+          <input type="text" id="bandName" maxlength="40" autocomplete="off" placeholder="Bijv. Nachtploeg">
         </div>
       </div>
       <div class="postcode-plaats">
@@ -1585,7 +1571,7 @@
           </div>
           <div class="field">
             <div class="label-rij"><label for="bandCity">Plaats <span class="req">*</span></label><span id="bandPostcodeUitslag" class="field-uitslag" aria-live="polite"></span></div>
-            <input type="text" id="bandCity" placeholder="Vult vanzelf in" readonly style="cursor:not-allowed;opacity:0.85;" oninput="onCitySearchInput(this.value,'acBandCityManualList')">
+            <input type="text" id="bandCity" placeholder="Vult vanzelf in" readonly style="cursor:not-allowed;" oninput="onCitySearchInput(this.value,'acBandCityManualList')">
             <div class="autocomplete-list" id="acBandCityManualList"></div>
           </div>
         </div>
@@ -2334,18 +2320,18 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20261110b"></script>
-<script src="utils.js?v=20261110b"></script>
+<script src="utils.js?v=20261110c"></script>
 <script src="veiligheid.js?v=20261108c"></script>
 <script src="auth.js?v=20261108c"></script>
-<script src="postcode.js?v=20261107a"></script>
+<script src="postcode.js?v=20261110a"></script>
 <script src="wizard.js?v=20261110a"></script>
 <script src="ouder.js?v=20261106a"></script>
-<script src="search.js?v=20261110a"></script>
-<script src="musicians.js?v=20261110a"></script>
-<script src="bands.js?v=20261110a"></script>
+<script src="search.js?v=20261110b"></script>
+<script src="musicians.js?v=20261110b"></script>
+<script src="bands.js?v=20261110b"></script>
 <script src="messages.js?v=20261109c"></script>
 <script src="push.js?v=20261027b"></script>
-<script src="modals-shared.js?v=20261110a"></script>
+<script src="modals-shared.js?v=20261110b"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding

@@ -427,18 +427,6 @@ function starDisplayHTML(niveau, alleenGevuld) {
   return `<span class="star-display">${filled}${empty}</span>`;
 }
 
-// TT-51-uitbreiding (12-08-2026, Ronalds beslissing): de ervaring van de band
-// toont alleen zolang de band iemand zoekt. Het niveau blijft wel opgeslagen.
-// TT-316 (24-09-2026, besluit Ronald): het niveau staat op het profiel, niet
-// in een lijst — niet in de zoekresultaten en niet op Mijn Bands.
-// TT-385 (02-10-2026, punt 14): op de bandpagina een tag "Ervaring" met de
-// sterren, niet meer achter de naam. "Zoekend" volgt uit de open rollen.
-function bandErvaringTagHTML(niveau, zoekend) {
-  if (!zoekend) return '';
-  const sterren = starDisplayHTML(niveau);
-  return sterren ? `<span class="tag-solid">Ervaring ${sterren}</span>` : '';
-}
-
 // Klikbare sterrenkiezer. `getValue`/`setValue` laten deze functie werken voor
 // zowel een los instrument (wizard) als de band zelf (bandformulier) zonder
 // twee bijna-identieke functies te hoeven onderhouden.

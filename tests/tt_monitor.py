@@ -278,12 +278,12 @@ def blok_b():
           "oude knopklasse: %s; knop met eigen vorm: %s" % (kort(terug), kort(eigen)))
 
     # B7 - één vorm voor elke keuze uit meerdere (TT-316). Vlak, rand, hoek en
-    # kleur van de vijf keuzesoorten staan alleen in de gezamenlijke regels
-    # (TT-518, 06-11-2026: .level-btn weg; TT-543, 06-11-2026: .goal-card weg).
+    # kleur van de vier keuzesoorten staan alleen in de gezamenlijke regels
+    # (TT-518, 06-11-2026: .level-btn weg; TT-543, 06-11-2026: .goal-card weg;
+    # TT-543 onderdeel 6, 10-11-2026: .media-tab weg, Onze media heeft geen tabbladen meer).
     # Een losse regel die dat voor één soort toch zet, is een afwijkende vorm.
     # border-color mag wel: dat is de stand bij aanwijzen (:hover).
-    keuzes = ["tag", "segmented-btn", "search-mode-tab",
-              "media-tab", "level-choice"]
+    keuzes = ["tag", "segmented-btn", "search-mode-tab", "level-choice"]
     verboden = re.compile(r"(?<![\w-])(background(?:-color)?|border|border-width|"
                           r"border-style|border-radius|color)\s*:")
     afwijkend = set()

@@ -94,7 +94,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
         <div class="profile-songs-title">Repertoire</div>
         ${nummerLijstHTML(songRows)}
       </div>` : ''}
-    ${profielMediaHTML(m.musician_media, m.avatar_url, true)}`;
+    ${profielMediaHTML(m.musician_media, m.avatar_url)}`;
 }
 
 // TT-517 fase 6 (huisstijl §21, besluit Ronald 31-10-2026): de knop "Voeg een
@@ -116,20 +116,21 @@ async function voegFotoToe(bandId) {
 // wél te staan. TT-517 fase 7: alle afgeschermde media samen in één wazig vlak
 // (mediaAfgeschermdHTML() in utils.js); `fotoWazig` is de profiel- of bandfoto.
 // TT-02: ook geüploade foto's en video's, niet alleen links.
-// TT-543 onderdeel 3 (besluit Ronald 08-11-2026, 5): op het muzikantprofiel
-// (`muzikant` waar) foto's, video's en links in één blok "Foto's, video's en
-// links", één raster van drie, zoals Je mediahoek; geen woord "Video" op een
-// videotegel (het speelteken blijft). De bandpagina houdt tot onderdeel 6 de
-// vorm hieronder (twee blokken).
-function profielMediaHTML(mediaLijst, fotoWazig, muzikant) {
+// TT-543 onderdeel 3 (besluit Ronald 08-11-2026, 5) en onderdeel 6 (besluit
+// Ronald 10-11-2026, 1e): foto's, video's en links in één blok "Foto's, video's
+// en links", één raster van drie, zoals Je mediahoek; muzikant en band gelijk.
+// Geen woord "Video" op een videotegel (het speelteken blijft). Niets te tonen:
+// geen blok (lege tekst).
+function profielMediaHTML(mediaLijst, fotoWazig) {
   const lijst = (mediaLijst || [])
     .map(x => ({ ...x, safeHref: safeUrl(x.url) }))
     .filter(x => x.safeHref || x.afgeschermd);
+  if (!lijst.length) return '';
   // De database schermt een profiel in zijn geheel af: één afgeschermd item is genoeg.
   if (lijst.some(x => x.afgeschermd)) {
     return `
     <div class="profile-media">
-      <div class="profile-media-title">${muzikant ? "Foto's, video's en links" : "Foto's en video's"}</div>
+      <div class="profile-media-title">Foto's, video's en links</div>
       ${mediaAfgeschermdHTML(lijst, fotoWazig)}
     </div>`;
   }
@@ -137,7 +138,7 @@ function profielMediaHTML(mediaLijst, fotoWazig, muzikant) {
   const photos = lijst.filter(x => x.media_type === 'foto');
   const videos = lijst.filter(x => x.media_type === 'video');
   const fotoTegel = p => `<button type="button" class="profile-media-tegel" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')"><img ${kleinFotoAttr(p.safeHref)} alt="Foto" class="media-tegel-beeld"></button>`;
-  const videoTegel = (v, metWoord) => `<button type="button" class="profile-media-tegel" onclick="openMediaSpeler('${jsAttr(v.safeHref)}', 'video')"><video ${fotoBronAttr(v.safeHref + '#t=0.1')} muted playsinline preload="metadata" tabindex="-1" aria-hidden="true" class="media-tegel-beeld media-tegel-video"></video>${metWoord ? '<span class="pb-label">Video</span>' : ''}${SPEELTEKEN_HTML}</button>`;
+  const videoTegel = v => `<button type="button" class="profile-media-tegel" onclick="openMediaSpeler('${jsAttr(v.safeHref)}', 'video')"><video ${fotoBronAttr(v.safeHref + '#t=0.1')} muted playsinline preload="metadata" tabindex="-1" aria-hidden="true" class="media-tegel-beeld media-tegel-video"></video>${SPEELTEKEN_HTML}</button>`;
   const linkTegel = l => {
     const ytId = extractYouTubeId(l.safeHref);
     const label = l.platform || 'Link';
@@ -149,54 +150,13 @@ function profielMediaHTML(mediaLijst, fotoWazig, muzikant) {
     // biedt dat scherm zelf de knop naar het platform aan.
     return `<button type="button" onclick="openMediaSpeler('${jsAttr(l.safeHref)}', 'link', null, '${jsAttr(label)}')" class="profile-media-tegel">${inner}</button>`;
   };
-  if (muzikant) {
-    if (!lijst.length) return '';
-    return `
+  return `
       <div class="profile-media">
         <div class="profile-media-title">Foto's, video's en links</div>
         <div class="media-raster-drie">
-          ${photos.map(fotoTegel).join('')}${videos.map(v => videoTegel(v, false)).join('')}${links.map(linkTegel).join('')}
+          ${photos.map(fotoTegel).join('')}${videos.map(videoTegel).join('')}${links.map(linkTegel).join('')}
         </div>
       </div>`;
-  }
-  return `
-    <!-- TT-265 (15-09-2026, Ronald): "foto's en geüploade video's staan naast
-         elkaar, de links staan eronder." Eén raster in plaats van twee
-         secties. Een video is daarin een tegel met zijn eerste beeld en het
-         woord "Video"; hij speelt niet ter plekke maar opent het mediascherm
-         van TT-263 — dezelfde weg als een link, en dezelfde weg als de
-         banner. Losse <video controls> in het raster was de enige plek in de
-         app waar media nog buiten dat scherm om speelde. -->
-    ${(photos.length || videos.length) ? `
-      <div class="profile-media">
-        <div class="profile-media-title">Foto's en video's</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
-          ${photos.map(p => `<button type="button" class="profile-media-tegel" onclick="openMediaLightbox('${jsAttr(p.safeHref)}')"><img ${kleinFotoAttr(p.safeHref)} alt="Foto" style="width:100%;height:100%;object-fit:cover;"></button>`).join('')}
-          ${videos.map(v => `<button type="button" class="profile-media-tegel" onclick="openMediaSpeler('${jsAttr(v.safeHref)}', 'video')"><video ${fotoBronAttr(v.safeHref + '#t=0.1')} muted playsinline preload="metadata" tabindex="-1" aria-hidden="true" style="width:100%;height:100%;object-fit:cover;background:#000;"></video><span class="pb-label">Video</span>${SPEELTEKEN_HTML}</button>`).join('')}
-        </div>
-      </div>` : ''}
-    ${links.length ? `
-      <div class="profile-media">
-        <div class="profile-media-title">Links</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;">
-          ${links.map(l => {
-            const ytId = extractYouTubeId(l.safeHref);
-            const label = l.platform || 'Link';
-            const inner = ytId
-              ? `<img src="https://img.youtube.com/vi/${jsAttr(ytId)}/hqdefault.jpg" alt="${escHtml(label)}" style="width:100%;height:100%;object-fit:cover;display:block;">` + SPEELTEKEN_HTML
-              : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--surface2);text-align:center;padding:4px;"><span style="font-size:12px;font-weight:700;color:var(--text);overflow-wrap:anywhere;">${escHtml(label)}</span></div>`;
-            // TT-158 (27-08-2026) trok hier een grens bij "ingelogd": alleen
-            // dan klikbaar. TT-218 (06-09-2026), op verzoek van Ronald: die
-            // grens losgelaten — een link opent nu onder alle omstandigheden,
-            // ook uitgelogd.
-            // TT-263 (13-09-2026, Ronald): de link stuurde de bezoeker naar de
-            // browser en daarmee de app uit. Nu opent hij in het mediascherm;
-            // kan een platform daar niet spelen, dan biedt dat scherm zelf de
-            // knop naar het platform aan.
-            return `<button type="button" onclick="openMediaSpeler('${jsAttr(l.safeHref)}', 'link', null, '${jsAttr(label)}')" class="profile-media-tegel">${inner}</button>`;  /* TT-517 fase 2: dezelfde tegel als foto en video (was een gelijke inline stijl), dus ook 12px */
-          }).join('')}
-        </div>
-      </div>` : ''}`;
 }
 
 // V-09 (13-08-2026): losgetrokken uit buildMusicianDetailHTML() zodat de
@@ -435,12 +395,7 @@ async function laadProfielScherm(id, linkToegang) {
   huidigProfielId = id || null;
   huidigBandId = null;
   const content = document.getElementById('profielSchermContent');
-  const footer = document.getElementById('profielSchermVoet');
-  // TT-543 onderdeel 3: .muzikant-profiel bakent de maten van het
-  // muzikantprofiel af; de bandpagina (zelfde vak) volgt in onderdeel 6.
-  content.classList.add('muzikant-profiel');
   content.classList.remove('uitnodig-open'); // TT-543 onderdeel 4: een nieuw profiel begint zonder het blok
-  footer.innerHTML = '';
   content.innerHTML =
     '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
   if (!id) { toonProfielNietBeschikbaar('muzikant'); return; }
@@ -509,7 +464,6 @@ async function laadProfielScherm(id, linkToegang) {
   if (!m && (!error || error.code === 'PGRST116')) { toonProfielNietBeschikbaar('muzikant', true); return; }
   if (error || !m) {
     logCaught('laadProfielScherm', error);
-    footer.innerHTML = '';
     content.innerHTML = foutStaatHTML(error, 'het profiel laden', `laadProfielScherm('${jsAttr(id)}', ${!!linkToegang})`);
     return;
   }
@@ -557,7 +511,6 @@ async function laadProfielScherm(id, linkToegang) {
 // TT-410b fase 2: één functie voor muzikant en band; alleen de tekst verschilt.
 function toonProfielNietBeschikbaar(soort, bestaatNiet) {
   const band = soort === 'band';
-  document.getElementById('profielSchermVoet').innerHTML = '';
   // TT-464: bestaatNiet is een band of profiel dat uit de database is verdwenen
   // (sinds TT-561 ook een profiel, muzikant en band gelijk).
   const kop = band ? (bestaatNiet ? 'Deze bandpagina bestaat niet meer' : 'Deze bandpagina is niet beschikbaar')
@@ -875,7 +828,7 @@ function tegelsHTML(lijst) {
     <div class="tile" onclick="openTegelScreen('${jsAttr(t.id)}')">
       <div style="flex:1;">
         <div class="tile-title">${escHtml(t.title)}</div>
-        <div class="tile-sub">${escHtml(t.sub)}</div>
+        <div class="tile-sub">&nbsp;</div>
       </div>
     </div>
   `).join('');
@@ -974,13 +927,16 @@ function tegelHeeftWijzigingen() {
 
 // TT-543 blok 4 (voorstel 16): de vier tegels van je eigen profiel hebben de
 // vaste balk met Opslaan; main krijgt dan de ruimte eronder, zoals de stappen.
-const TEGELS_MET_BALK = ['wieBenJe', 'watSpeelJe', 'jeSetlist', 'mediahoek'];
+// Onderdeel 6 (besluit Ronald 10-11-2026, 9): ook de vier tegels van een band.
+const TEGELS_MET_BALK = ['wieBenJe', 'watSpeelJe', 'jeSetlist', 'mediahoek',
+  'bandWie', 'bandBezetting', 'bandMuziek', 'bandMedia'];
 function zetVasteBalkRuimte(id) {
   document.querySelector('#view-profieltegels > main').classList.toggle('met-vaste-balk', TEGELS_MET_BALK.includes(id));
 }
 
-// TT-543 blok 4 (besluit Ronald 07-11-2026, voorstel 19): in de vier tegels van
-// je profiel staat Opslaan uit (half doorzichtig) zolang er niets gewijzigd is.
+// TT-543 blok 4 (besluit Ronald 07-11-2026, voorstel 19): in de tegels van je
+// profiel en van een band staat Opslaan uit (half doorzichtig) zolang er niets
+// gewijzigd is.
 // Wijzigingen komen uit velden, uit vensters (instrument, genre, link) en uit
 // geüploade bestanden; daarom kijkt de app na elke invoer, tik en wijziging in
 // het scherm opnieuw. Eén vergelijking: TEGEL_WIJZIGINGEN hierboven.
@@ -1040,10 +996,10 @@ function openTegelScreen(id) {
   else if (id === 'watSpeelJe') openWatSpeelJe().then(werkOpslaanBij, werkOpslaanBij);
   else if (id === 'jeSetlist') openJeSetlist().then(werkOpslaanBij, werkOpslaanBij);
   else if (id === 'mediahoek') openJeMediahoek().then(werkOpslaanBij, werkOpslaanBij);
-  else if (id === 'bandWie') openBandWie();
-  else if (id === 'bandBezetting') openBandBezetting();
-  else if (id === 'bandMuziek') openBandMuziek();
-  else if (id === 'bandMedia') openBandMedia();
+  else if (id === 'bandWie') openBandWie().then(werkOpslaanBij, werkOpslaanBij);
+  else if (id === 'bandBezetting') openBandBezetting().then(werkOpslaanBij, werkOpslaanBij);
+  else if (id === 'bandMuziek') openBandMuziek().then(werkOpslaanBij, werkOpslaanBij);
+  else if (id === 'bandMedia') openBandMedia().then(werkOpslaanBij, werkOpslaanBij);
 }
 
 // ═══════════════════════════════════════════════════════════════════════

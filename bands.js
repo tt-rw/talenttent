@@ -322,7 +322,6 @@ async function showCreateBandForm() {
   window.scrollTo(0, 0);
   werkTerugKnopBij(); // TT-301: een open wizard is een stap terug
   initBandForm();
-  bandWizardBalkBij();
   setTimeout(() => document.getElementById('bandName')?.focus(), 50);
 }
 
@@ -334,19 +333,6 @@ function sluitBandWizard(daarna) {
   zetBandWizardZichtbaar(false);
   werkTerugKnopBij();
   if (daarna) daarna();
-}
-
-// De balk loopt 5% op per ingevuld veld: drie velden samen zijn de 15%
-// waarop de bandpagina begint.
-function bandWizardBalkBij() {
-  const plek = document.getElementById('bandWizardBalk');
-  if (!plek) return;
-  const ingevuld = [
-    !!document.getElementById('bandName').value.trim(),
-    bandPostcodeResolved && !!document.getElementById('bandCity').value.trim(),
-    bandState.genres.length > 0
-  ].filter(Boolean).length;
-  plek.innerHTML = voortgangsBalkHTML(Math.round(BAND_START_PCT * ingevuld / 3));
 }
 
 // Staat er iets ingevuld? Dan vraagt Terug eerst "Terug zonder opslaan?".
@@ -367,7 +353,7 @@ function resetBandForm() {
   const cityEl = document.getElementById('bandCity');
   if (nameEl) nameEl.value = '';
   if (zipEl) zipEl.value = '';
-  if (cityEl) { cityEl.value = ''; cityEl.readOnly = true; cityEl.style.cursor = 'not-allowed'; cityEl.style.opacity = '0.85'; }
+  if (cityEl) { cityEl.value = ''; cityEl.readOnly = true; cityEl.style.cursor = 'not-allowed'; }
   const statusEl = document.getElementById('bandPostcodeStatus');
   if (statusEl) statusEl.textContent = '';
   clearFieldErrors('createBandForm');
@@ -438,8 +424,7 @@ function initBandForm() {
       fieldId: 'bandGenreField', badgeRowId: 'bandGenreBadgeRow',
       options: GENRES, getList: () => bandState.genres,
       placeholder: 'Kies een genre',
-      toevoegen: 'Genre', // TT-543 draaiwielen deel 2, besluit Ronald 10-11-2026 (vraag 3: "A")
-      onChange: bandWizardBalkBij // TT-385 fase 4: de balk loopt mee
+      toevoegen: 'Genre' // TT-543 draaiwielen deel 2, besluit Ronald 10-11-2026 (vraag 3: "A")
     });
   }
   // Bij hergebruik van een al bestaande picker (tweede keer dat het
@@ -662,63 +647,61 @@ async function loadMyBands(opties) {
     return;
   }
 
-  // TT-385 fase 4 (besluit Ronald bij punt 11): de bandkaart toont de
-  // vierkante bandfoto, de naam, plaats en genres, de status en de open
-  // rollen als tag. Geen leden: "dat zie je als je het profiel opent". Een
-  // tik op de kaart opent de bandpagina; voor de beheerder is dat de privé
-  // bandpagina, met de balk.
+  // TT-543 onderdeel 6 (besluit Ronald 10-11-2026, 4 C): per band een kleine
+  // hoes, de bandfoto 200px hoog, de naam en de plaats (besluit sessie 112) op de
+  // foto in de tekstkleur van de hoes (huisstijl §21), rechts "Zoekt
+  // <instrument>" als gele pil. Geen tags en geen ondertitel. Een tik opent de
+  // bandpagina; voor de beheerder is dat de privé bandpagina, met de balk.
+  // TT-433: geen ⋯-menu en geen knop; die staan op de bandpagina.
   el.innerHTML = (bands || []).map(b => {
     const confirmed = (b.band_members||[]).filter(m => m.status === 'bevestigd');
     const isFounder = b.founder_id === mid;
     // V-16 (13-08-2026): staat er al een lopend overname-aanbod (founder_offer)?
-    // Dan geen nieuwe "Ik stop als bandleider"-knop, maar de wachtstand.
+    // Dan de wachtstand onder de hoes.
     const offerPending = isFounder && confirmed.some(m => m.founder_offer);
     const open = (b.band_wanted || []).map(w => w.instrument);
-    const status = bandStatusLabel(confirmed.length, open.length);
-    const tags = (status ? tagSolid(status) : '') + open.map(i => tagSolid('+ ' + i)).join('');
-    // TT-433 (07-10-2026, besluit Ronald): geen ⋯-menu en geen "Band verlaten"
-    // op de kaart. Alles wat ook in het menu van de bandpagina staat, staat
-    // alleen daar: een tik op de kaart opent de bandpagina.
-    // TT-432: een verzoek om het beheer over te nemen staat op de kaart van
+    // TT-432: een verzoek om het beheer over te nemen staat onder de hoes van
     // het lid dat gekozen is.
     const verzoekVoorMij = !isFounder && confirmed.some(m => m.musician_id === mid && m.founder_offer);
-    return `<div class="band-card" onclick="openBandScherm('${jsAttr(b.id)}')">
-      <div class="band-card-header">
-        ${b.avatar_url ? `<img ${kleinFotoAttr(safeUrl(b.avatar_url))} alt="${escHtml(b.name)}" class="band-avatar" style="object-fit:cover;">` : `<div class="band-avatar">${ZONDER_FOTO_HTML}</div>`}
-        <div style="flex:1;">
-          <div class="band-name">${escHtml(b.name)}</div>
-          <div class="band-meta">${escHtml(b.city||'')}${b.city&&b.genres?.length?' · ':''}${escHtml((b.genres||[]).slice(0,2).join(', '))}</div>
-        </div>
-      </div>
+    const zoekt = open.length
+      ? `<div class="profiel-knoppen"><span class="zoek-kaart-zoekt">Zoekt ${escHtml(instrumentInZin(open[0]))}</span></div>` : '';
+    return `<div class="mijn-band">
+      <div class="band-hoes">${profielHoesHTML({
+        foto: safeUrl(b.avatar_url), wazig: null, naam: b.name, media: [], naamMax: 28,
+        tik: `openBandScherm('${jsAttr(b.id)}')`,
+        regels: `<div class="profile-meta">${escHtml(b.city || '')}</div>`, knoppen: zoekt
+      })}</div>
       ${verzoekVoorMij ? `
-      <div style="padding:0 20px 20px;" onclick="event.stopPropagation();">
-        <div class="melding">
-          <p class="melding-kop">De beheerder van ${escHtml(b.name)} stopt</p>
-          <p class="melding-tekst">Wil jij het beheer overnemen? Zeg je nee, dan blijft de huidige beheerder voorlopig aan.</p>
-          <div class="btn-row">
-            <button class="btn btn-ghost" onclick="respondToFounderOffer('${jsAttr(b.id)}', false)">Nee, liever niet</button>
-            <button class="btn btn-primary" onclick="respondToFounderOffer('${jsAttr(b.id)}', true)">Ik neem het over</button>
-          </div>
+      <div class="melding mijn-band-melding">
+        <p class="melding-kop">De beheerder van ${escHtml(b.name)} stopt</p>
+        <p class="melding-tekst">Wil jij het beheer overnemen? Zeg je nee, dan blijft de huidige beheerder voorlopig aan.</p>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="respondToFounderOffer('${jsAttr(b.id)}', false)">Nee, liever niet</button>
+          <button class="btn btn-primary" onclick="respondToFounderOffer('${jsAttr(b.id)}', true)">Ik neem het over</button>
         </div>
       </div>` : ''}
-      ${offerPending ? `
-      <div style="padding:0 20px;">
-        <div style="font-size:12px;color:var(--muted);padding:8px 0;border-top:1px solid var(--border);">Gevraagd of iemand het beheer overneemt — wachten op reactie.</div>
-      </div>` : ''}
-      ${tags ? `<div class="band-card-body"><div class="profile-badges">${tags}</div></div>` : ''}
+      ${offerPending ? `<p class="mijn-band-wacht">Gevraagd of iemand het beheer overneemt — wachten op reactie.</p>` : ''}
     </div>`;
   }).join('');
+  // Pas in de pagina meten: de tekstkleur per foto, de bundels zonder foto, en
+  // de naam die past naast de pil (huisstijl §2.1, §21).
+  hoesStarten(el);
+  el.querySelectorAll('.band-hoes .hoes').forEach(hoes => {
+    const pil = hoes.querySelector('.zoek-kaart-zoekt');
+    if (pil) hoes.style.setProperty('--hoes-tekst-rechts', (pil.offsetWidth + 24) + 'px');
+  });
+  fitProfileName(el);
   if (currentUser) el.dataset.klaar = currentUser.id;
   refreshBandsDot({ zonderVerval: true }); // de controle liep hierboven al
 }
 
 // ─── De bandpagina (TT-385, fase 2, 02-10-2026) ──────────────────────────────
-// Besluiten Ronald, TT-385 in actielijst.md. De bandpagina heeft dezelfde
-// opbouw als het muzikantprofiel (huisstijl §10, §10.2): banner, een rij met
-// links de bandfoto en rechts delen en ⋯, daaronder de naam. Dan de tags, de
-// bezetting met gezichten, Wie zijn we, eigen nummers, foto's en video's,
-// socials en covers. Alleen wat is ingevuld staat erop. Geen bandchat: de
-// knop onderin stuurt een bericht aan de contactpersoon.
+// Besluiten Ronald, TT-385 in actielijst.md, en TT-543 onderdeel 6
+// (10-11-2026). De bandpagina heeft dezelfde opbouw als het muzikantprofiel
+// (huisstijl §10.2, §21): de hoes met naam, delen en ⋯; twee gedempte regels;
+// Wie zijn we en de logo's van Volg ons zonder kop; de knop; dan Bezetting,
+// Onze nummers, Foto's, video's en links, en Covers. Alleen wat is ingevuld
+// staat erop. Geen bandchat: de knop stuurt een bericht aan de contactpersoon.
 // Twee wegen naar dezelfde gegevens: met een eigen profiel leest de app de
 // tabellen zelf; zonder eigen profiel komt alles uit tt_get_bands_public, die
 // voor een bezoeker zonder account afschermt (TT-385 punt 9). Beide wegen
@@ -908,7 +891,7 @@ function bandNummerHTML(n, fotoWazig) {
   const ytId = extractYouTubeId(url);
   const mini = ytId
     ? `<span class="media-mini"><img src="https://img.youtube.com/vi/${escHtml(ytId)}/hqdefault.jpg" alt=""></span>`
-    : `<span class="media-mini"><span class="media-mini-platform">${escHtml(platform)}</span></span>`;
+    : `<span class="media-mini"><span class="media-mini-platform">${platformNaamHTML(platform)}</span></span>`;
   return `<button type="button" class="band-nummer" onclick="openMediaSpeler('${jsAttr(url)}', 'link', '${jsAttr(n.titel)}', '${jsAttr(platform)}')">${mini}` +
     `<span class="band-nummer-tekst"><span class="band-nummer-titel">${escHtml(n.titel)}</span><span class="band-nummer-sub">${escHtml(platform)}</span></span></button>`;
 }
@@ -930,6 +913,11 @@ function bandSocialsHTML(b) {
 
 // De pagina zelf. kijker: 'beheerder', 'lid', 'bezoeker' (eigen profiel) of
 // 'gast' (geen eigen profiel).
+// TT-543 onderdeel 6 (besluiten Ronald 10-11-2026, 1a tot en met 1f en 13): de
+// opbouw van het muzikantprofiel (onderdeel 3). De hoes; twee gedempte regels
+// in plaats van tags; Wie zijn we zonder kop, zoals de bio; de logo's van Volg
+// ons als één rij eronder, zonder kop; de knop, die meescrolt; dan de blokken
+// Bezetting, Onze nummers, Foto's, video's en links (één raster) en Covers.
 function bandPaginaHTML(b, kijker) {
   const beheer = kijker === 'beheerder';
   const foto = safeUrl(b.avatar_url);
@@ -939,18 +927,11 @@ function bandPaginaHTML(b, kijker) {
 
   // Het ⋯-menu: een lid kan de band verlaten (TT-385 punt 13); een bezoeker
   // meldt de band (TT-06, de inhoud zet zetVeiligheidMenu() erin). De
-  // beheerder bewerkt hier zijn bandprofiel (TT-385 fase 3).
+  // beheerder heeft geen menu meer: "Bandprofiel bewerken" is een knop onder
+  // Wie zijn we (1d, zoals Mijn Profiel); het deelicoon staat op de plek van
+  // het menu.
   let menuHTML = '';
-  if (beheer) {
-    menuHTML = `<span class="profiel-menu-plek"><div class="profile-actions-menu-wrap">
-        <button class="nav-menu-btn" onclick="toggleBandMoreMenu(event)" aria-label="Meer opties voor ${escHtml(b.name)}" title="Meer">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
-        </button>
-        <div class="inline-menu-dropdown">
-          <button class="nav-menu-item" onclick="sluitAlleMenus();openBandTegels('${jsAttr(b.id)}')">Bandprofiel bewerken</button>
-        </div>
-      </div></span>`;
-  } else if (kijker === 'lid') {
+  if (kijker === 'lid') {
     menuHTML = `<span class="profiel-menu-plek"><div class="profile-actions-menu-wrap">
         <button class="nav-menu-btn" onclick="toggleBandMoreMenu(event)" aria-label="Meer opties voor ${escHtml(b.name)}" title="Meer">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
@@ -959,28 +940,47 @@ function bandPaginaHTML(b, kijker) {
           <button class="nav-menu-item" onclick="sluitAlleMenus();leaveBand('${jsAttr(b.id)}','${jsAttr(b.name)}')">Band verlaten</button>
         </div>
       </div></span>`;
-  } else if (kijker !== 'beheerder') {
+  } else if (!beheer) {
     menuHTML = '<span id="profielSchermActies" class="profiel-menu-plek"></span>';
   }
 
-  // "Zoekend" en "compleet" volgen uit de open rollen, niet uit een los
-  // veld (TT-385 punt 7). Een invaller telt niet mee (besluit Ronald).
-  // Besluit Ronald (02-10-2026, na fase 3): zolang er naast de beheerder
-  // niemand is en geen open rol, staat er geen statustag. "Compleet" zou
-  // dan niet kloppen.
-  const zoekend = b.wanted.length > 0;
-  const status = bandStatusLabel(b.leden.length, b.wanted.length);
-  const tags = [
-    ...b.genres.map(g => tagSolid(g)),
-    BAND_SOORT_LABELS[b.soort] ? tagSolid(BAND_SOORT_LABELS[b.soort]) : '',
-    status ? tagSolid(status) : '',
-    bandErvaringTagHTML(b.niveau, zoekend)
-  ].join('');
+  // 1a: twee gedempte regels, zoals instrumenten en genres op het
+  // muzikantprofiel. De genres; dan wat voor band en, zolang de band iemand
+  // zoekt, de ervaring met de gevulde sterren. De tag Zoekend of Compleet is
+  // weg: de bezetting toont "gezocht" al (wijzigt besluit 02-10-2026).
+  const sterren = b.wanted.length ? starDisplayHTML(b.niveau, true) : '';
+  const regel2 = [BAND_SOORT_LABELS[b.soort] ? escHtml(BAND_SOORT_LABELS[b.soort]) : '',
+    sterren ? 'Ervaring ' + sterren : ''].filter(Boolean).join(' · ');
+  const regel1 = b.genres.map(g => escHtml(g)).join(' · ');
+  const watHTML = `
+    <div class="profiel-wat">
+      ${regel1 ? `<div class="profiel-wat-regel">${regel1}</div>` : ''}
+      ${regel2 ? `<div class="profiel-wat-regel">${regel2}</div>` : ''}
+    </div>`;
 
   // De beheerder van een pagina die nog niet af is, krijgt bij delen eerst
   // één zin over wat er mist (besluit Ronald, g).
   const voortgang = beheer ? bandVoortgang(b) : null;
   const deelActie = voortgang && voortgang.pct < 100 ? `openBandDeelBlad('${jsAttr(b.id)}')` : null;
+  // Een lege plek is voor de beheerder een uitnodiging (TT-385 punt 2); voor
+  // iedereen anders staat er niets.
+  const uitnodiging = tekst => beheer ? bandUitnodigingHTML(tekst, b.id) : '';
+
+  // 1c en 1d: één knop onder Wie zijn we, die meescrolt (zoals F3 B en 1E van
+  // onderdeel 3). Een bezoeker stuurt de band een bericht (aan de
+  // contactpersoon); zonder profiel "Maak een profiel en leg contact"; de
+  // beheerder "Bandprofiel bewerken" (omlijnd). Een lid heeft geen knop. Mag
+  // je de contactpersoon geen bericht sturen (TT-421), dan verbergt
+  // messages.js de knop en neemt de plek geen ruimte in.
+  let actie = '';
+  if (kijker === 'gast') {
+    actie = `<button class="btn btn-primary" onclick="showView('register')">Maak een profiel en leg contact</button>`;
+  } else if (kijker === 'bezoeker' && b.contact) {
+    actie = `<button class="btn btn-primary" data-bericht-id="${escHtml(b.contact.id)}" onclick="openMessageComposer('${jsAttr(b.contact.id)}','${jsAttr(b.contact.naam)}','${jsAttr(b.name)}')">Stuur een bericht aan de band</button>`;
+  } else if (beheer) {
+    actie = `<button class="btn btn-ghost" onclick="openBandTegels('${jsAttr(b.id)}')">Bandprofiel bewerken</button>`;
+  }
+
   // TT-517 fase 4 (01-11-2026): de kop is de hoes, zoals bij de muzikant (huisstijl §21).
   let h = `
     ${profielHoesHTML({
@@ -990,13 +990,18 @@ function bandPaginaHTML(b, kijker) {
       regels: `<div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city || '')}</div>`,
       knoppen: profielKnoppenHTML('band', b.id, b.name, menuHTML, deelActie, beheer || b.delen_aan !== false)
     })}
-    <div class="profile-badges">${tags}</div>
+    ${watHTML}
     ${b.pauze ? nietBeschikbaarMeldingHTML() : ''}`;
+  // 1b: Wie zijn we direct onder de regels, zonder kop, zoals de bio
+  // (wijzigt besluit (c) van TT-385: "direct onder de bezetting").
+  if (b.description) h += `<p class="profile-bio">${tekstMetMeerHTML(b.description)}</p>`;
+  else h += uitnodiging('+ Vertel wie jullie zijn');
+  // 13 (besluit Ronald 10-11-2026, A): de logo's van Volg ons als één rij
+  // direct onder Wie zijn we, zonder kop, boven de knop.
+  h += bandSocialsHTML(b) || uitnodiging('+ Instagram, TikTok of YouTube');
+  if (actie) h += `<div class="profiel-actie">${actie}</div>`;
 
-  // Een lege plek is voor de beheerder een uitnodiging (TT-385 punt 2); voor
-  // iedereen anders staat er niets.
-  const uitnodiging = tekst => beheer ? bandUitnodigingHTML(tekst, b.id) : '';
-  // 1. De bezetting, een rij per lid. Een uitgenodigd lid staat er niet op.
+  // De bezetting, een rij per lid. Een uitgenodigd lid staat er niet op.
   if (b.leden.length || b.wanted.length || b.invallers.length) {
     h += bandSectieHTML('Bezetting', `<div class="bezetting">${
       b.leden.map(bezettingLidHTML).join('') +
@@ -1004,29 +1009,23 @@ function bandPaginaHTML(b, kijker) {
       b.invallers.map(v => bezettingOpenHTML(v.instrument, ['invaller', invallerDatum(v.datum)])).join('')
     }</div>${voortgang && !voortgang.af.bezetting ? uitnodiging('+ Wie spelen er in de band?') : ''}`);
   }
-  // 2. Wie zijn we, direct onder de bezetting (besluit Ronald, (c)).
-  if (b.description) h += bandSectieHTML('Wie zijn we', `<p class="band-bio">${tekstMetMeerHTML(b.description)}</p>`);
-  else if (beheer) h += bandSectieHTML('Wie zijn we', uitnodiging('+ Vertel wie jullie zijn'));
-  // 3. Eigen nummers.
+  // Eigen nummers.
   const nummers = b.nummers.map(n => bandNummerHTML(n, b.avatar_url)).join('');
   if (nummers) h += bandSectieHTML('Onze nummers', nummers);
   else if (beheer && voortgang.telt.nummers) h += bandSectieHTML('Onze nummers', uitnodiging('+ Laat horen hoe jullie klinken'));
-  // 4. Foto's en video's, en links: dezelfde functie als bij de muzikant.
-  // profielMediaHTML() geeft altijd tekst terug (met een toelichting erin);
-  // tel dus zelf of er iets te tonen is.
-  if (b.media.some(x => safeUrl(x.url) || x.afgeschermd)) h += profielMediaHTML(b.media, b.avatar_url);
-  else if (beheer) h += bandSectieHTML("Foto's en video's", uitnodiging("+ Foto's en video's toevoegen"));
-  // 5. Socials.
-  const socials = bandSocialsHTML(b);
-  if (socials) h += bandSectieHTML('Volg ons', socials);
-  else if (beheer) h += bandSectieHTML('Volg ons', uitnodiging('+ Instagram, TikTok of YouTube'));
-  // 6. Covers, op dezelfde volgorde als het repertoire van een muzikant.
+  // 1e: foto's, video's en links in één raster van drie, zoals bij de muzikant.
+  // profielMediaHTML() geeft niets terug als er niets te tonen is.
+  const media = profielMediaHTML(b.media, b.avatar_url);
+  if (media) h += media;
+  else if (beheer) h += bandSectieHTML("Foto's, video's en links", uitnodiging("+ Foto's en video's toevoegen"));
+  // Covers, op dezelfde volgorde als het repertoire van een muzikant. 1f: de
+  // kop zonder aantal; het aantal staat in "Alle 9 nummers".
   if (b.covers.length) {
     const rijen = [...b.covers].sort((x, y) => compareArtistTitle(x.song_artist, x.song_title, y.song_artist, y.song_title))
       // TT-528: elke cover in één tik in je eigen repertoire, zoals bij een muzikant.
-      .map(c => `<div class="profile-song-row"><span><strong>${escHtml(c.song_artist)}</strong> — <span style="color:var(--muted)">${escHtml(c.song_title)}</span></span><span class="nummer-rechts">${overneemKnopHTML(c.song_title, c.song_artist)}</span></div>`);
+      .map(c => `<div class="profile-song-row"><span><strong>${escHtml(c.song_artist)}</strong> — <span class="profile-song-titel">${escHtml(c.song_title)}</span></span><span class="nummer-rechts">${overneemKnopHTML(c.song_title, c.song_artist)}</span></div>`);
     // Meer dan zeven covers: ingeklapt, zoals het repertoire (nummerLijstHTML() in utils.js).
-    h += bandSectieHTML(`Covers (${b.covers.length} ${b.covers.length === 1 ? 'nummer' : 'nummers'})`, nummerLijstHTML(rijen));
+    h += bandSectieHTML('Covers', nummerLijstHTML(rijen));
   } else if (beheer && voortgang.telt.covers) {
     h += bandSectieHTML('Covers', uitnodiging('+ Welke covers spelen jullie?'));
   }
@@ -1104,16 +1103,6 @@ function bandDeelBladAanvullen() {
   if (b) openBandTegels(b.id);
 }
 
-// De knop onderin: alleen voor wie geen lid is (besluit Ronald, punt 6).
-function bandVoetHTML(b, kijker) {
-  if (kijker === 'beheerder' || kijker === 'lid') return '';
-  if (kijker === 'gast') {
-    return `<button class="btn btn-primary" style="width:100%;" onclick="showView('register')">Maak een profiel en leg contact</button>`;
-  }
-  if (!b.contact) return '';
-  return `<button class="btn btn-primary" style="width:100%;" data-bericht-id="${escHtml(b.contact.id)}" onclick="openMessageComposer('${jsAttr(b.contact.id)}','${jsAttr(b.contact.naam)}','${jsAttr(b.name)}')">Stuur een bericht aan de band</button>`;
-}
-
 // TT-410b fase 2 (06-10-2026, besluiten Ronald): de bandpagina is, net als het
 // muzikantprofiel, een eigen scherm met een eigen link: view-profiel, route
 // #band/<id>. Het oude bandvenster bestaat niet meer en er komt geen view bij.
@@ -1161,10 +1150,7 @@ async function laadBandScherm(id, linkToegang) {
   huidigBandId = id || null;
   bandDeelGegevens = null;
   const vak = document.getElementById('profielSchermContent');
-  const voet = document.getElementById('profielSchermVoet');
-  vak.classList.remove('muzikant-profiel'); // TT-543: de bandpagina volgt in onderdeel 6
   vak.classList.remove('uitnodig-open'); // TT-543 onderdeel 4: het blok hoort bij een muzikantprofiel
-  voet.innerHTML = '';
   vak.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
   if (!id) { toonProfielNietBeschikbaar('band'); return; }
 
@@ -1199,7 +1185,6 @@ async function laadBandScherm(id, linkToegang) {
   bandDeelGegevens = kijker === 'beheerder' ? b : null;
   vak.innerHTML = bandPaginaHTML(b, kijker);
   overneemKnoppenBijwerken(vak); // TT-528: vinkje bij covers die al in je repertoire staan
-  voet.innerHTML = bandVoetHTML(b, kijker);
   // Zelfde volgorde als bij het muzikantprofiel: pas na het plaatsen starten
   // en meten (TT-517 fase 4, TT-249, TT-293).
   hoesStarten(vak);
@@ -1226,22 +1211,11 @@ let bewerkBandNaam = '';
 let bewerkBandStad = '';
 
 const BAND_TILES = [
-  { id: 'bandWie',       title: 'Wie zijn we',    sub: 'naam - plaats - ervaring - bio' },
-  { id: 'bandBezetting', title: 'Onze bezetting', sub: 'leden - open rollen - invallers - contactpersoon' },
-  { id: 'bandMuziek',    title: 'Onze muziek',    sub: 'wat voor band - genres - eigen nummers - covers' },
-  { id: 'bandMedia',     title: 'Onze media',     sub: "bandfoto - foto's - video's - links - banner - socials" }
+  { id: 'bandWie',       title: 'Wie zijn we' },
+  { id: 'bandBezetting', title: 'Onze bezetting' },
+  { id: 'bandMuziek',    title: 'Onze muziek' },
+  { id: 'bandMedia',     title: 'Onze media' }
 ];
-
-// De statustag op de bandpagina en op de bandkaart in Mijn Bands: één functie,
-// zodat beide plekken altijd hetzelfde zeggen (TT-385 fase 4). Besluit Ronald
-// (02-10-2026, na fase 3): zolang er naast de beheerder niemand is en geen
-// open rol, geen tag; "Compleet" zou dan niet kloppen. Niet beschikbaar is
-// geen status maar een zin op de bandpagina (TT-457): de tag volgt alleen uit
-// de bezetting.
-function bandStatusLabel(aantalLeden, aantalOpenRollen) {
-  if (aantalLeden <= 1 && !aantalOpenRollen) return '';
-  return aantalOpenRollen ? 'Zoekend' : 'Compleet';
-}
 
 // "Zoekend" of "compleet" volgt uit de open rollen. Een invaller telt niet mee
 // (besluit Ronald). De waarde staat in bands.status, zodat Zoeken hem leest
@@ -1293,9 +1267,64 @@ async function bandBewerkGegevens(kolommen) {
 
 // ─── Het overzicht: vier tegels en Bandbeheer ────────────────────────────────
 
+// TT-543 onderdeel 6 (besluit Ronald 10-11-2026, 6: "omwille van de
+// consistentie"): elke tegel toont wat er staat, zoals Profiel bewerken
+// (onderdeel 1, voorstel 17), en "Nog leeg" waar niets staat. Eerst de regels
+// van de vorige keer, alleen van dezelfde band; bij een fout blijven ze staan.
+// Alleen Onze media kan leeg zijn: plaats, genres en de beheerder zijn er altijd.
+let bandTegelRegels = { id: null, regels: {} };
+let bandTegelRegelsVraag = 0;
+
+function bandTegelRegelHTML(id, b) {
+  const lijst = (x) => Array.isArray(x) ? x : [];
+  const leeg = (wat) => `<span class="tegel-leeg">Nog leeg</span> · ${escHtml(wat)}`;
+  const deel = (n, een, meer) => n ? `${n} ${n === 1 ? een : meer}` : '';
+  if (id === 'bandWie') {
+    const sterren = starDisplayHTML(b.niveau, true);
+    const delen = [b.city ? escHtml(b.city) : '', sterren ? 'ervaring ' + sterren : ''].filter(Boolean);
+    return delen.join(' · '); // plaats is verplicht: nooit leeg
+  }
+  if (id === 'bandBezetting') {
+    const vandaag = vandaagISO();
+    const delen = [deel(lijst(b.band_members).filter(m => m.status === 'bevestigd').length, 'lid', 'leden'),
+      deel(lijst(b.band_wanted).length, 'open rol', 'open rollen'),
+      deel(lijst(b.band_invallers).filter(v => String(v.datum) >= vandaag).length, 'invaller', 'invallers')].filter(Boolean);
+    return escHtml(delen.join(' · ')); // de beheerder is altijd lid: nooit leeg
+  }
+  if (id === 'bandMuziek') {
+    const delen = [lijst(b.genres).join(', '), deel(lijst(b.band_nummers).length, 'eigen nummer', 'eigen nummers'),
+      deel(lijst(b.band_covers).length, 'cover', 'covers')].filter(Boolean);
+    return escHtml(delen.join(' · ')); // genres zijn verplicht: nooit leeg
+  }
+  if (id === 'bandMedia') {
+    const media = lijst(b.band_media), tel = (t) => media.filter(x => x.media_type === t).length;
+    const delen = [b.avatar_url ? 'Bandfoto' : '', deel(tel('foto'), 'foto', "foto's"),
+      deel(tel('video'), 'video', "video's"), deel(tel('link'), 'link', 'links')].filter(Boolean);
+    return delen.length ? escHtml(delen.join(' · ')) : leeg('voeg een foto toe');
+  }
+  return '';
+}
+
 function renderBandTegels() {
-  document.getElementById('bandTegelsWrap').innerHTML = tegelsHTML(BAND_TILES);
+  const wrap = document.getElementById('bandTegelsWrap'), id = bewerkBandId;
+  const tegels = () => {
+    const regels = bandTegelRegels.id === id ? bandTegelRegels.regels : {};
+    wrap.innerHTML = tegelsHTML(BAND_TILES);
+    wrap.querySelectorAll('.tile-sub').forEach((el, i) => { el.innerHTML = regels[BAND_TILES[i].id] || '&nbsp;'; });
+  };
+  tegels();
   renderBandBeheer();
+  const vraag = ++bandTegelRegelsVraag;
+  db.from('bands')
+    .select('city, niveau, genres, avatar_url, band_members(status), band_wanted(instrument), band_invallers(datum), band_nummers(titel), band_covers(song_title), band_media(media_type)')
+    .eq('id', id).single()
+    .then(({ data, error }) => {
+      // Een oudere vraag, een andere band of een fout laat de regels staan.
+      if (vraag !== bandTegelRegelsVraag || id !== bewerkBandId || error || !data) return;
+      bandTegelRegels = { id, regels: {} };
+      BAND_TILES.forEach(t => { bandTegelRegels.regels[t.id] = bandTegelRegelHTML(t.id, data); });
+      tegels();
+    }, () => {});
 }
 
 
@@ -1467,6 +1496,7 @@ async function saveBandWie() {
   bwSnapshot = bwFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
   loadMyBands();
+  terugNaOpslaan('bandWie'); // TT-543 onderdeel 6 (besluit Ronald 10-11-2026, 9)
 }
 
 // ─── Tegel: Onze bezetting ───────────────────────────────────────────────────
@@ -1506,7 +1536,7 @@ async function openBandBezetting() {
   initPicker({
     id: 'bbWanted', fieldId: 'bbRolKnop', menuId: 'bbRolMenu', badgeRowId: 'bbRolBadges',
     options: INSTRUMENTS, getList: () => bbWanted,
-    placeholder: '+ Open rol toevoegen',
+    placeholder: 'Open rol toevoegen', // het plusteken staat in de knop (F6)
     onChange: bbRenderOpen
   });
   // De invaller: één instrument, in het veld zelf; het menu sluit na de tik.
@@ -1751,6 +1781,7 @@ async function saveBandBezetting() {
     bbSnapshot = bbFieldSnapshot();
     showToast('Wijzigingen opgeslagen.');
     loadMyBands();
+    terugNaOpslaan('bandBezetting'); // TT-543 onderdeel 6 (besluit Ronald 10-11-2026, 9)
   } catch (e) {
     logCaught('saveBandBezetting', e);
     showToast(friendlyErrorMessage(e, 'de bezetting opslaan'));
@@ -1961,6 +1992,7 @@ async function saveBandMuziek() {
     bmzSnapshot = bmzFieldSnapshot();
     showToast('Wijzigingen opgeslagen.');
     loadMyBands();
+    terugNaOpslaan('bandMuziek'); // TT-543 onderdeel 6 (besluit Ronald 10-11-2026, 9)
   } catch (e) {
     logCaught('saveBandMuziek', e);
     showToast(friendlyErrorMessage(e, 'de muziek opslaan'));
@@ -1991,9 +2023,6 @@ function bmFieldSnapshot() {
 
 async function openBandMedia() {
   clearFieldErrors('bandMediaScreen');
-  const scherm = document.getElementById('bandMediaScreen');
-  scherm.querySelectorAll('.media-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
-  scherm.querySelectorAll('.media-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
   const b = await bandBewerkGegevens('name, city, avatar_url, avatar_bron, avatar_kader, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at, uitsnede)');
   if (!b) return;
   bmZet(b);
@@ -2015,7 +2044,6 @@ function bmZet(b) {
   bmFotoBezig = false;
   bmRenderFoto();
   bmRenderMediaGrid();
-  bmRenderLinksList();
 }
 
 function bmRenderFoto() {
@@ -2076,18 +2104,13 @@ function bmVraagFotoWeg() {
   showConfirm('Bandfoto verwijderen?', () => { bmFotoUrl = bmFotoBron = bmFotoKader = null; bmRenderFoto(); }, 'Ja, verwijderen');
 }
 
-function switchBmMediaTab(tab, el) {
-  const scherm = document.getElementById('bandMediaScreen');
-  scherm.querySelectorAll('.media-tab').forEach(t => t.classList.remove('active'));
-  scherm.querySelectorAll('.media-pane').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById(tab === 'upload' ? 'bmPaneUpload' : 'bmPaneLinks').classList.add('active');
-}
-
-function bmHandleDrop(e) {
-  e.preventDefault();
-  document.getElementById('bmDropZone').classList.remove('drag-over');
-  bmHandleFileSelect(e.dataTransfer.files);
+// TT-543 onderdeel 6 (besluit Ronald 10-11-2026, 10): een keuze in het menu van
+// "+ Toevoegen", zoals Je mediahoek (utils.js).
+function bmMediaToevoegenKeuze(sel) {
+  mediaToevoegenStart(sel, bmMediaFiles, bmMediaLinks, 'bmMediaInvoer', url => {
+    bmMediaLinks.push({ id: null, url, inBanner: false });
+    bmRenderMediaGrid();
+  });
 }
 
 function bmHandleFileSelect(files) {
@@ -2116,8 +2139,9 @@ function bmHandleFileSelect(files) {
   });
 }
 
+// Eén raster: foto's en video's, dan links, dan "+ Toevoegen" (mediaRasterHTML()).
 function bmRenderMediaGrid() {
-  document.getElementById('bmMediaGrid').innerHTML = bmMediaFiles.map((m, i) => mediaTegelHTML(m, i, 'bm')).join('');
+  document.getElementById('bmMediaGrid').innerHTML = mediaRasterHTML(bmMediaFiles, bmMediaLinks, 'bm');
   bannerTellerBijwerken('bmBannerTeller', bmMediaFiles, bmMediaLinks);
 }
 
@@ -2140,33 +2164,8 @@ function bmRemoveMedia(i) {
   }
 }
 
-function bmAddLinkRow() {
-  if (bmMediaLinks.length >= GRENZEN.links) return;
-  bmMediaLinks.push({ id: null, url: '', inBanner: false });
-  bmRenderLinksList();
-}
-
-function bmRenderLinksList() {
-  const lijst = document.getElementById('bmLinksList');
-  lijst.innerHTML = bmMediaLinks.map((l, i) => mediaLinkRijHTML(l, i, 'bm')).join('');
-  linkGrensBijwerken(lijst, bmMediaLinks.length);
-  mediaTitelsBijwerken(lijst);
-  bannerTellerBijwerken('bmBannerTeller', bmMediaFiles, bmMediaLinks);
-}
-
-function bmUpdateLinkUrl(i, el) {
-  if (!bmMediaLinks[i]) return;
-  bmMediaLinks[i].url = el.value;
-}
-
 function bmToggleLinkBanner(i) {
-  const l = bmMediaLinks[i];
-  if (!l) return;
-  if (!l.url.trim()) { showToast('Vul eerst de link in.'); return; }
-  if (!bannerKeuzeMag(bannerAantal(bmMediaFiles, bmMediaLinks), !l.inBanner)) return;
-  l.inBanner = !l.inBanner;
-  bannerKnopStandZetten('bmLinksList', i, l.inBanner);
-  bannerTellerBijwerken('bmBannerTeller', bmMediaFiles, bmMediaLinks);
+  linkBannerTik(bmMediaLinks[i], i, bmMediaFiles, bmMediaLinks, 'bmMediaGrid', 'bmBannerTeller');
 }
 
 function bmSpeelLink(i) {
@@ -2177,7 +2176,7 @@ function bmSpeelLink(i) {
 
 function bmRemoveLink(i) {
   bmMediaLinks.splice(i, 1);
-  bmRenderLinksList();
+  bmRenderMediaGrid();
 }
 
 const BAND_SOCIAL_VELDEN = { instagram: 'bmInstagram', tiktok: 'bmTiktok', youtube: 'bmYoutube' };
@@ -2243,6 +2242,7 @@ async function saveBandMedia() {
     bmSnapshot = bmFieldSnapshot();
     showToast('Wijzigingen opgeslagen.');
     loadMyBands();
+    terugNaOpslaan('bandMedia'); // TT-543 onderdeel 6 (besluit Ronald 10-11-2026, 9)
   } catch (e) {
     logCaught('saveBandMedia', e);
     showToast(friendlyErrorMessage(e, 'de media opslaan'));

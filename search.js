@@ -727,7 +727,7 @@ async function zoekBandsOphalen(radius, origin) {
     const ids = matches.map(m => m.band_id);
     actief = actiefStandVraag('band', ids); // TT-367: tegelijk
     // TT-385 fase 5: de bandfoto en de invallers voor de bandkaart. De leden
-    // alleen om te tellen (bandStatusLabel()); geen namen.
+    // alleen om te tellen; geen namen.
     const { data, error } = await inDelen(ids, deel => db.from('bands').select(`id, name, city, genres, status, niveau, avatar_url, band_members(status), band_wanted(instrument), band_invallers(instrument, datum)`).in('id', deel)); // TT-532
     if (error) throw error;
     bands = data || [];
