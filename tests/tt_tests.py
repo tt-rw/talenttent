@@ -2621,41 +2621,41 @@ def blok_browser():
               and melden2["naDoel"] is None and melden2["naReden"] is None,
               json.dumps(melden2))
 
+        # TT-543 draaiwielen deel 2 (besluiten Ronald 10-11-2026): de vensters met
+        # een lijst bestaan niet meer; "+ Genre" en "+ Instrument" klappen het
+        # keuzemenu uit. De terugknop sluit eerst het menu (TT-584) en laat de
+        # keuzes staan; na een nieuw instrument opent dan het niveau (vraag 5: A).
         picker = page.evaluate("""async () => {
-          const r = {};
-          openPickerList('genre');
-          r.voorActief = activeListPickerId;
-          history.back();
-          await new Promise(res => setTimeout(res, 50));
-          r.dicht = !document.getElementById('pickerListModal').classList.contains('visible');
-          r.naActief = activeListPickerId;
+          const r = {}, w = ms => new Promise(res => setTimeout(res, ms));
+          state.genres = []; state.instruments = []; state.instrumentLevels = {};
+          showView('register'); await w(80); goTo(1); await w(80);
+          renderPickerBadges(PICKERS.genre); renderInstrumentBadges('wizard');
+          document.getElementById('genrePickerField').click(); await w(40);
+          r.genreOpen = !!document.querySelector('#genrePickerFieldMenu.open');
+          [...document.querySelectorAll('#genrePickerFieldMenu .choice-option')].find(x => x.textContent.trim() === 'Jazz').click(); await w(40);
+          appTerug(); await w(300);
+          r.genreDicht = !document.querySelector('.choice-menu.open') && !document.querySelector('.menu-laag');
+          r.genres = state.genres.slice(); r.view = huidigeView;
+          document.getElementById('instrumentPickerField').click(); await w(40);
+          [...document.querySelectorAll('#instrumentPickerFieldMenu .choice-option')].find(x => x.textContent.trim() === 'Cello').click(); await w(40);
+          appTerug(); await w(300);
+          r.instrDicht = !document.querySelector('.choice-menu.open');
+          r.instr = state.instruments.slice(); r.niveauOpen = INSTRUMENT_PICKERS.wizard.openInstrument;
+          r.vensters = ['pickerListModal', 'instrumentLevelModal'].filter(id => document.getElementById(id));
+          r.functies = ['openPickerList', 'closePickerList', 'choosePickerListValue', 'renderPickerListItems'].filter(n => typeof window[n] === 'function');
           return r;
         }""")
-        check("terugknop sluit de kies-uit-lijst", picker["dicht"], "")
-        check("en maakt activeListPickerId leeg", picker["voorActief"] == "genre"
-              and picker["naActief"] is None, json.dumps(picker))
-
-        # TT-410a (08-10-2026): de instrumentkeuze is alleen nog de lijst. Het niveau
-        # kies je inline (blok 76). De terugknop sluit de lijst en laat de
-        # instrumenten ongewijzigd.
-        instrument = page.evaluate("""async () => {
-          const r = {};
-          state.instruments = [];
-          state.instrumentLevels = {};
-          openInstrumentPicker('wizard');
-          r.open = document.getElementById('instrumentLevelModal').classList.contains('visible');
-          history.back();
-          await new Promise(res => setTimeout(res, 50));
-          r.dicht = !document.getElementById('instrumentLevelModal').classList.contains('visible');
-          r.naLijst = state.instruments.slice();
-          return r;
-        }""")
-        check("terugknop sluit de instrumentenlijst", instrument["open"] and instrument["dicht"], json.dumps(instrument))
-        check("en laat de gekozen instrumenten ongemoeid", instrument["naLijst"] == [], json.dumps(instrument))
+        check("terugknop sluit het menu van \"+ Genre\" en laat de keuze staan (TT-543 draaiwielen deel 2)",
+              picker["genreOpen"] and picker["genreDicht"] and picker["genres"] == ["Jazz"] and picker["view"] == "register", json.dumps(picker))
+        check("terugknop sluit het menu van \"+ Instrument\", het instrument blijft en zijn niveau opent",
+              picker["instrDicht"] and picker["instr"] == ["Cello"] and picker["niveauOpen"] == "Cello", json.dumps(picker))
+        check("de vensters met een lijst en hun functies bestaan niet meer",
+              picker["vensters"] == [] and picker["functies"] == [], json.dumps(picker))
 
         check("geen paginafouten in blok 23", not page_errors, "; ".join(page_errors)[:300])
         page.evaluate("""() => {
-          state.instruments = []; state.instrumentLevels = {};
+          state.instruments = []; state.instrumentLevels = {}; state.genres = [];
+          INSTRUMENT_PICKERS.wizard.openInstrument = null;
         }""")
 
         # ─────────────────────────────────────────────────────────────
@@ -4061,7 +4061,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         knoppen = re.findall(r'<button class="modal-close"[^>]*>(.*?)</button>', html322, re.S)
         teken = '<line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line>'
         check("elk kruisje in index.html is het sluitteken, nergens meer de letter ✕",
-              len(knoppen) == 10 and all(teken in k and "✕" not in k for k in knoppen), str(len(knoppen)))  # 11 sinds TT-543 blok 3 (Link toevoegen); 10 sinds TT-543 onderdeel 4 (Lid uitnodigen weg)
+              len(knoppen) == 8 and all(teken in k and "✕" not in k for k in knoppen), str(len(knoppen)))  # 11 sinds TT-543 blok 3 (Link toevoegen); 10 sinds TT-543 onderdeel 4 (Lid uitnodigen weg); 8 sinds TT-543 draaiwielen deel 2 (de twee vensters met een lijst weg)
         check("elk kruisje heeft een aria-label",
               all("aria-label" in t for t in re.findall(r'<button class="modal-close"[^>]*>', html322)), "")
         terug322 = re.findall(r'<button class="modal-back"[^>]*>(.*?)</button>', html322, re.S)
@@ -6361,8 +6361,8 @@ window.TT_STUB.fnAntwoord = {};
           u.naUit = [S.data.band_members.filter(m => m.status === 'bevestigd').map(m => m.musician_id), [...document.querySelectorAll('#bbLeden .bb-naam')].length];
           await bbIntrekken('m3', 'Sanne'); await w(300);
           u.naIntrekken = [S.data.band_members.length, document.getElementById('bbUitgenodigdBlok').hidden];
-          document.getElementById('bbRolKnop').click(); await w(50);
-          choosePickerListValue('Basgitaar'); closePickerList();
+          document.getElementById('bbRolKnop').click(); await w(50); // TT-543 draaiwielen deel 2: het keuzemenu
+          [...document.querySelectorAll('#bbRolMenu .choice-option')].find(x => x.textContent.trim() === 'Basgitaar').click(); sluitAlleMenus();
           bbInvalFormulier(true);
           document.getElementById('bbInvalDatum').value = '01-01-2020'; bbInvalToevoegen();
           u.invalFout = [...document.querySelectorAll('#bbInvalForm .field-msg')].map(e => e.textContent.trim());
@@ -6661,14 +6661,16 @@ window.TT_STUB.fnAntwoord = {};
           u.oud = ['bandDescription', 'bandStatusGrid', 'bandWantedField', 'bandLevelPicker', 'bandAvatarPreview', 'bandAvatarInput'].filter(id => $(id));
           u.titel = [$('createBandForm').querySelector('.panel-title').textContent, $('createBandForm').querySelector('.panel-sub').textContent];
           // UI-meting (huisstijl §2, §3, §6, §7).
-          const naamVeld = $('bandName'), naamLabel = naamVeld.previousElementSibling, genreLabel = $('bandGenreField').previousElementSibling;
+          // TT-543 draaiwielen deel 2 (vraag 3: A): "+ Genre" staat in het raster; het label staat boven het raster.
+          const genreRij = $('bandGenreField').closest('.picker-badge-row') || $('bandGenreField');
+          const naamVeld = $('bandName'), naamLabel = naamVeld.previousElementSibling, genreLabel = genreRij.previousElementSibling;
           const balk = $('bandWizardBalk').firstElementChild, titel = $('createBandForm').querySelector('.panel-title');
           const knoppen = [...$('createBandForm').querySelectorAll('.action-row .btn')];
           u.maten = { labelVeld: Math.round(r(naamVeld).top - r(naamLabel).bottom), balkTitel: Math.round(r(titel).top - r(balk).bottom),
                       veldH: Math.round(r(naamVeld).height), veldLetter: getComputedStyle(naamVeld).fontSize, labelLetter: getComputedStyle(naamLabel).fontSize,
                       zipH: Math.round(r($('bandZip')).height), genreH: Math.round(r($('bandGenreField')).height),
                       naamTotPostcode: Math.round(r($('bandZip').previousElementSibling).top - r(naamVeld).bottom),
-                      genreLabelVeld: Math.round(r($('bandGenreField')).top - r(genreLabel).bottom),
+                      genreLabelVeld: Math.round(r(genreRij).top - r(genreLabel).bottom),
                       knopH: knoppen.map(k => Math.round(r(k).height)), knopB: knoppen.map(k => Math.round(r(k).width)),
                       knopTekst: knoppen.map(k => k.textContent.trim()), links: Math.round(r(naamVeld).left), rechts: Math.round(390 - r(naamVeld).right) };
           // Alle drie de fouten tegelijk, bij hun veld (huisstijl §13.1).
@@ -6679,8 +6681,9 @@ window.TT_STUB.fnAntwoord = {};
           u.naNaam = pct();
           onBandPostcodeInput('2512'); await w(700);
           u.naPostcode = [pct(), $('bandCity').value];
-          openPickerList('bandGenre'); choosePickerListValue('Indie'); closePickerList(); await w(30);
-          u.naGenre = [pct(), $('bandGenreField').classList.contains('field-error'), !!$('bandGenreField').parentElement.querySelector('.field-msg')];
+          $('bandGenreField').click(); await w(30); // TT-543 draaiwielen deel 2: het keuzemenu
+          [...document.querySelectorAll('#bandGenreFieldMenu .choice-option')].find(x => x.textContent.trim() === 'Indie').click(); sluitAlleMenus(); await w(30);
+          u.naGenre = [pct(), $('bandGenreField').classList.contains('field-error'), !!$('bandGenreField').closest('.field').querySelector('.field-msg')];
           u.foutWegNaam = !$('bandName').classList.contains('field-error');
           // Opslaan: alleen naam, plaats en genres; de status volgt uit de open rollen.
           await saveBand(); await w(500);
@@ -7262,18 +7265,18 @@ window.TT_STUB.fnAntwoord = {};
             if (!kruis && !pijl && !knop) uit.zonderUitgang.push(ov.id);
             if (!was) ov.classList.remove('visible');
           }
-          // De instrumentkeuze, stap 1: geen pijl en geen voet, dus het kruisje is de uitgang.
-          const ins = document.getElementById('instrumentLevelModal');
-          uit.instrumentKruis = !!ins.querySelector('.modal-close');
+          // TT-543 draaiwielen deel 2: de instrumentkeuze is geen venster meer, maar het keuzemenu.
+          uit.instrumentVenster = !!document.getElementById('instrumentLevelModal');
           return uit;
         }""")
         check("TT-408: elk venster zonder kruisje heeft een andere zichtbare uitgang (pijl of knop)",
               d64k["zonderUitgang"] == [], json.dumps(d64k["zonderUitgang"]))
         for vid in ("deleteAccountModal", "meldModal"):
             check(f"TT-408: {vid} heeft geen kruisje meer", vid in d64k["zonderKruis"], json.dumps(d64k))
-        check("TT-408: de instrumentkeuze houdt zijn kruisje (de lijst heeft verder geen uitgang)", d64k["instrumentKruis"], json.dumps(d64k))
-        # TT-543 blok 3: Link toevoegen kwam erbij (11); TT-543 onderdeel 4 (B4): Lid uitnodigen is weg (10).
-        check("TT-408: er zijn tien kruisjes, elk als enige uitgang", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 10, "")
+        check("TT-408: de instrumentkeuze is geen venster meer (het keuzemenu, TT-543 draaiwielen deel 2)", not d64k["instrumentVenster"], json.dumps(d64k))
+        # TT-543 blok 3: Link toevoegen kwam erbij (11); TT-543 onderdeel 4 (B4): Lid uitnodigen is weg (10);
+        # TT-543 draaiwielen deel 2: de twee vensters met een lijst zijn weg (8).
+        check("TT-408: er zijn acht kruisjes, elk als enige uitgang", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 8, "")
         check("geen paginafouten in blok 64", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
@@ -8892,11 +8895,13 @@ window.TT_STUB.fnAntwoord = {};
 
         # ────────────────────────────────────────────────────────────
         # Blok 76 — TT-410a (08-10-2026, besluit Ronald): het niveau van een
-        # instrument kies je inline, onder de badges, niet in een venster. De
-        # instrumentenlijst blijft een keuzelaag. Eén paneel per veld, voor één
-        # instrument tegelijk. Een instrument zonder niveau mag (TT-U09).
+        # instrument kies je inline, onder de badges, niet in een venster. Eén
+        # paneel per veld, voor één instrument tegelijk. Een instrument zonder
+        # niveau mag (TT-U09). Het instrument kies je sinds TT-543 draaiwielen
+        # deel 2 (besluiten Ronald 10-11-2026, 1B en vraag 5: A) in het keuzemenu;
+        # het niveau opent vanzelf als het menu dicht is.
         # ────────────────────────────────────────────────────────────
-        print("\nBlok 76 — niveau inline kiezen, instrumentenlijst blijft een keuzelaag (TT-410a)")
+        print("\nBlok 76 — niveau inline kiezen, instrument in het keuzemenu (TT-410a, TT-543 draaiwielen deel 2)")
         page_errors.clear()
         page.evaluate("window.TT_STUB.reset()")
         page.set_viewport_size({"width": 390, "height": 844})
@@ -8912,14 +8917,19 @@ window.TT_STUB.fnAntwoord = {};
             getInstruments: () => wspState.instruments, getLevels: () => wspState.instrumentLevels });
           const paneel = () => $('wspInstrumentBadgeRowNiveau');
           const badges = () => [...$('wspInstrumentBadgeRow').querySelectorAll('.picker-badge')]; // TT-543 blok 4: "+ Instrument" staat in de rij
+          const menuOpen = () => !!document.querySelector('#wspInstrumentFieldMenu.open');
+          const kies = t => [...document.querySelectorAll('#wspInstrumentFieldMenu .choice-option')].find(x => x.textContent.trim() === t).click();
           u.paneelAantal = document.querySelectorAll('#wspInstrumentBadgeRowNiveau').length;
+          u.menuAantal = document.querySelectorAll('#wspInstrumentFieldMenu').length;
           u.beginVerborgen = paneel().hidden;
-          // 1. Instrument kiezen uit de lijst: de laag sluit, het paneel opent, er is nog geen niveau
+          // 1. Instrument kiezen in het menu: het menu blijft open; dicht opent het paneel, er is nog geen niveau
           $('wspInstrumentField').click(); await w(60);
-          u.lijstOpen = $('instrumentLevelModal').classList.contains('visible');
-          pickInstrumentFromSheet('Gitaar'); await w(60);
-          u.naKeuze = { lijstDicht: !$('instrumentLevelModal').classList.contains('visible'), lijst: wspState.instruments.slice(),
-            niveau: wspState.instrumentLevels.Gitaar || null, paneelOpen: !paneel().hidden,
+          u.lijstOpen = menuOpen();
+          kies('Akoestische gitaar'); await w(60);
+          u.blijftOpen = menuOpen() && paneel().hidden;
+          $('wspInstrumentField').click(); await w(300); // na de sluitbeweging
+          u.naKeuze = { lijstDicht: !menuOpen(), lijst: wspState.instruments.slice(),
+            niveau: wspState.instrumentLevels['Akoestische gitaar'] || null, paneelOpen: !paneel().hidden,
             keuzes: paneel().querySelectorAll('.level-choice').length, badgeOpen: badges()[0].classList.contains('open'),
             badgeTekst: badges()[0].querySelector('.picker-badge-stars').textContent.trim(),
             titel: paneel().querySelector('.niveau-paneel-titel').textContent };
@@ -8931,13 +8941,13 @@ window.TT_STUB.fnAntwoord = {};
           const knoppen = () => [...paneel().querySelectorAll('.level-choice')];
           // TT-543 blok 4 (besluit Ronald 07-11-2026): een niveau kiezen klapt het paneel dicht.
           knoppen()[2].click(); await w(60);
-          u.niveau3 = { niveau: wspState.instrumentLevels.Gitaar, paneelOpen: !paneel().hidden,
+          u.niveau3 = { niveau: wspState.instrumentLevels['Akoestische gitaar'], paneelOpen: !paneel().hidden,
             badge: badges()[0].querySelector('.picker-badge-stars').textContent.trim() };
           badges()[0].click(); await w(40);
           u.niveau3.gekozen = knoppen().map(b => b.classList.contains('selected'));
           u.niveau3.zin = paneel().querySelector('.picker-level-blurb').textContent === instrumentLevelBlurbs()[2];
           knoppen()[3].click(); await w(60);
-          u.niveau4 = { niveau: wspState.instrumentLevels.Gitaar, dicht: paneel().hidden };
+          u.niveau4 = { niveau: wspState.instrumentLevels['Akoestische gitaar'], dicht: paneel().hidden };
           badges()[0].click(); await w(40);
           // 4. De uitleg is een klapper in het paneel, geen tweede venster
           paneel().querySelector('.niveau-uitleg-knop').click(); await w(40);
@@ -8951,29 +8961,39 @@ window.TT_STUB.fnAntwoord = {};
           u.weerOpen = { open: !paneel().hidden, gekozen: knoppen().map(b => b.classList.contains('selected')) };
           // 6. Een tweede instrument: het eerste paneel sluit, het tweede opent, het niveau van het eerste blijft
           $('wspInstrumentField').click(); await w(40);
-          pickInstrumentFromSheet('Bas'); await w(60);
+          kies('Basgitaar'); await w(40);
+          sluitAlleMenus(); await w(60); // een tik ernaast
           u.tweede = { titel: paneel().querySelector('.niveau-paneel-titel').textContent, open: badges().map(b => b.classList.contains('open')),
-            niveauGitaar: wspState.instrumentLevels.Gitaar, zonderNiveau: badges()[1].querySelector('.picker-badge-stars').textContent.trim() };
+            niveauGitaar: wspState.instrumentLevels['Akoestische gitaar'], zonderNiveau: badges()[1].querySelector('.picker-badge-stars').textContent.trim() };
           // 7. Een instrument zonder niveau mag blijven staan (TT-U09)
           u.zonderNiveauBlijft = wspState.instruments.slice();
           // 8. Het open instrument weghalen: paneel dicht, niveau weg
           badges()[1].querySelector('.picker-badge-remove').click(); await w(60);
-          u.weg = { lijst: wspState.instruments.slice(), dicht: paneel().hidden, niveauBas: wspState.instrumentLevels.Bas || null };
+          u.weg = { lijst: wspState.instruments.slice(), dicht: paneel().hidden, niveauBas: wspState.instrumentLevels.Basgitaar || null };
+          // 8b. Een tik op een gekozen instrument in het menu haalt het weg, met zijn niveau (1B)
+          $('wspInstrumentField').click(); await w(40);
+          u.menuGekozen = [...document.querySelectorAll('#wspInstrumentFieldMenu .choice-option.selected')].map(x => x.textContent.trim());
+          kies('Akoestische gitaar'); await w(40);
+          u.menuWeg = { lijst: wspState.instruments.slice(), niveau: wspState.instrumentLevels['Akoestische gitaar'] || null, open: menuOpen() };
+          sluitAlleMenus(); await w(60);
+          u.menuWeg.paneelDicht = paneel().hidden;
           // 9. De oude stappen zijn weg
           u.oud = ['instrumentLevelStep', 'instrumentLevelFooter', 'instrumentLevelBackBtn', 'instrumentLevelChoices'].filter(id => $(id));
           u.oudeFuncties = ['showInstrumentLevelStep', 'backToInstrumentPick', 'removeInstrumentFromSheet', 'closeInstrumentLevelSheet',
-            'renderInstrumentLevelChoices', 'equalizeLevelChoiceHeights'].filter(n => typeof window[n] === 'function');
+            'renderInstrumentLevelChoices', 'equalizeLevelChoiceHeights', 'openInstrumentPicker', 'closeInstrumentPicker',
+            'pickInstrumentFromSheet', 'renderInstrumentPickItems'].filter(n => typeof window[n] === 'function');
+          u.oud.push(...['instrumentLevelModal'].filter(id => $(id)));
           wspState = { instruments: [], instrumentLevels: {}, genres: [] };
           myMusicianId = keep.myMusicianId; currentUser = keep.currentUser; hasOwnProfile = keep.hasOwnProfile;
           return u;
         }""")
         j76 = json.dumps(d76, ensure_ascii=False)
-        check("het veld heeft één paneel, ook na twee keer initialiseren, en het begint verborgen",
-              d76["paneelAantal"] == 1 and d76["beginVerborgen"] is True, j76)
-        check("een instrument kiezen: de lijst sluit, het instrument staat erin zonder niveau, het paneel opent met vijf keuzes",
-              d76["lijstOpen"] and d76["naKeuze"]["lijstDicht"] and d76["naKeuze"]["lijst"] == ["Gitaar"] and d76["naKeuze"]["niveau"] is None
+        check("het veld heeft één paneel en één menu, ook na twee keer initialiseren, en het paneel begint verborgen",
+              d76["paneelAantal"] == 1 and d76["menuAantal"] == 1 and d76["beginVerborgen"] is True, j76)
+        check("een instrument kiezen: het menu blijft open (1B); dicht staat het instrument erin zonder niveau en opent het paneel vanzelf met vijf keuzes (vraag 5: A)",
+              d76["lijstOpen"] and d76["blijftOpen"] and d76["naKeuze"]["lijstDicht"] and d76["naKeuze"]["lijst"] == ["Akoestische gitaar"] and d76["naKeuze"]["niveau"] is None
               and d76["naKeuze"]["paneelOpen"] and d76["naKeuze"]["keuzes"] == 5 and d76["naKeuze"]["badgeOpen"]
-              and d76["naKeuze"]["badgeTekst"] == "Kies niveau" and d76["naKeuze"]["titel"] == "Niveau voor Gitaar", j76)
+              and d76["naKeuze"]["badgeTekst"] == "Kies niveau" and d76["naKeuze"]["titel"] == "Niveau voor Akoestische gitaar", j76)
         check("de vijf keuzes zijn minstens 44px hoog en passen op 390px",
               d76["maat"]["minHoogte"] >= 44 and d76["maat"]["binnen"] and d76["maat"]["scrollBreed"], j76)
         check("een niveau kiezen is één tik: het wordt gezet, het paneel klapt dicht (besluit Ronald 07-11-2026), de rij toont de sterren; open je hem weer, dan staat het niveau gekozen met één zin uitleg",
@@ -8985,12 +9005,14 @@ window.TT_STUB.fnAntwoord = {};
         check("een tik op de badge sluit het paneel, nog een tik opent het met het gekozen niveau",
               d76["dicht"] is True and d76["weerOpen"]["open"] and d76["weerOpen"]["gekozen"] == [False, False, False, True, False], j76)
         check("een tweede instrument: het eerste paneel sluit, het tweede opent, het niveau van het eerste blijft",
-              d76["tweede"]["titel"] == "Niveau voor Bas" and d76["tweede"]["open"] == [False, True]
+              d76["tweede"]["titel"] == "Niveau voor Basgitaar" and d76["tweede"]["open"] == [False, True]
               and d76["tweede"]["niveauGitaar"] == 4 and d76["tweede"]["zonderNiveau"] == "Kies niveau", j76)
-        check("een instrument zonder niveau mag blijven staan (TT-U09)", d76["zonderNiveauBlijft"] == ["Gitaar", "Bas"], j76)
+        check("een instrument zonder niveau mag blijven staan (TT-U09)", d76["zonderNiveauBlijft"] == ["Akoestische gitaar", "Basgitaar"], j76)
         check("het open instrument weghalen sluit het paneel en wist het niveau",
-              d76["weg"] == {"lijst": ["Gitaar"], "dicht": True, "niveauBas": None}, j76)
-        check("het niveau-venster en zijn stappen bestaan niet meer",
+              d76["weg"] == {"lijst": ["Akoestische gitaar"], "dicht": True, "niveauBas": None}, j76)
+        check("in het menu staat een gekozen instrument als pil; een tik erop haalt het weg met zijn niveau, het menu blijft open, dicht opent geen paneel",
+              d76["menuGekozen"] == ["Akoestische gitaar"] and d76["menuWeg"] == {"lijst": [], "niveau": None, "open": True, "paneelDicht": True}, j76)
+        check("het niveau-venster, het venster met de instrumentenlijst en hun functies bestaan niet meer",
               d76["oud"] == [] and d76["oudeFuncties"] == [], j76)
         check("geen paginafouten in blok 76", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
@@ -15373,20 +15395,21 @@ def blok_tt543_blok4():
                 stippel: getComputedStyle(gk[gk.length - 1]).borderTopStyle, toevoegHoog: Math.round(R(gk[gk.length - 1]).height),
                 kruisLucht: Math.round(R(gk[1].querySelector('.picker-badge-remove span') || gk[1].querySelector('.picker-badge-remove')).left - R(gk[1].querySelector('.picker-badge-label')).right) };
               $('wspGenreField').click(); await w(300);
-              u.tegel.lijst = !!document.querySelector('.modal-overlay.visible');
-              // 28 A (besluit Ronald 07-11-2026): de genrelijst werkt als die van de instrumenten:
-              // alleen wat je nog niet koos, één tik voegt toe en sluit de lijst.
-              const items = [...document.querySelectorAll('#pickerListItems .picker-list-item')].map(e => e.textContent.trim());
-              u.a = { zonderGekozen: !items.includes('Rock') && !items.includes('Pop') && items.includes('Jazz') };
-              [...document.querySelectorAll('#pickerListItems .picker-list-item')].find(e => e.textContent.trim() === 'Jazz').click(); await w(300);
-              u.a.dicht = !$('pickerListModal').classList.contains('visible');
+              u.tegel.lijst = !!document.querySelector('#wspGenreFieldMenu.open') && !document.querySelector('.modal-overlay.visible');
+              // 1B (TT-543 draaiwielen deel 2, besluit Ronald 10-11-2026; vervangt 28 A van 07-11-2026):
+              // het menu toont alle genres, een gekozen genre als pil; een tik voegt toe en het menu blijft open.
+              const items = [...document.querySelectorAll('#wspGenreFieldMenu .choice-option')];
+              u.a = { alles: items.length === GENRES.length, gekozen: items.filter(e => e.classList.contains('selected')).map(e => e.textContent.trim()), voor: wspState.genres.slice() };
+              items.find(e => e.textContent.trim() === 'Jazz').click(); await w(300);
+              u.a.dicht = !!document.querySelector('#wspGenreFieldMenu.open'); // 1B: blijft open
               u.a.genres = wspState.genres.slice();
-              u.a.laatsteKnop = [...$('wspGenreBadgeRow').children].pop().id;
+              sluitAlleMenus(); await w(300);
+              u.a.laatsteKnop = [...$('wspGenreBadgeRow').children].filter(e => !e.matches('.choice-menu, .menu-laag')).pop().id;
               // 29: een niveau kiezen klapt het paneel dicht.
               const rij0 = $('wspInstrumentBadgeRow').querySelector('.picker-badge'); rij0.click(); await w(100);
               const pn = $('wspInstrumentBadgeRowNiveau'); u.a.paneelOpen = !pn.hidden;
               // Besluit Ronald 07-11-2026 (a): het paneel opent direct onder het instrument waarop je tikte, boven "+ Instrument".
-              const rijen = [...$('wspInstrumentBadgeRow').children], open0 = $('wspInstrumentBadgeRow').querySelector('.picker-badge'); // na de tik opnieuw getekend
+              const rijen = [...$('wspInstrumentBadgeRow').children].filter(e => !e.matches('.choice-menu, .menu-laag')), open0 = $('wspInstrumentBadgeRow').querySelector('.picker-badge'); // na de tik opnieuw getekend
               u.a.plek = { naGetikte: pn.previousElementSibling === open0 && open0.classList.contains('open'), afstand: Math.round(R(pn).top - R(open0).bottom),
                 voorTweede: rijen.indexOf(pn) < rijen.indexOf($('wspInstrumentBadgeRow').querySelectorAll('.picker-badge')[1]),
                 toevoegenLaatst: rijen[rijen.length - 1].id };
@@ -15464,12 +15487,12 @@ def blok_tt543_blok4():
               t["instrLaatste"] == "wspInstrumentField" and t["instrTekst"] == "Instrument" and t["genreLaatste"] == "wspGenreField" and t["genreTekst"] == "Genre"
               and t["kolomInstr"] == 1 and t["kolomGenre"] == 2 and t["instrBreed"] and t["instrHoog"] == 44 and t["maat"] == "15px/20px" and t["genreMaat"] == "15px"
               and t["links"] == 21 and t["sterRechts"] and t["genreCel"] and t["plus"] and t["stippel"] == "dashed" and t["toevoegHoog"] == 44, jb)
-        check(f"{breed}px 28 A: de genrelijst toont alleen wat je nog niet koos; één tik voegt toe en sluit de lijst; \"+ Genre\" blijft de laatste knop",
-              b["a"]["zonderGekozen"] and b["a"]["dicht"] and b["a"]["genres"][-1] == "Jazz" and b["a"]["laatsteKnop"] == "wspGenreField", jb)
+        check(f"{breed}px 1B (vervangt 28 A): het menu van \"+ Genre\" toont alle genres, de gekozen als pil; een tik voegt toe en het menu blijft open; \"+ Genre\" blijft de laatste knop",
+              b["a"]["alles"] and b["a"]["gekozen"] and set(b["a"]["gekozen"]) == set(b["a"]["voor"]) and b["a"]["dicht"] and b["a"]["genres"][-1] == "Jazz" and b["a"]["laatsteKnop"] == "wspGenreField", jb)
         check(f"{breed}px 29: een niveau kiezen klapt het paneel dicht", b["a"]["paneelOpen"] and b["a"]["paneelNaNiveau"], jb)
         check(f"{breed}px het niveaupaneel opent direct onder het instrument waarop je tikte (8px), vóór het volgende instrument; \"+ Instrument\" blijft de laatste knop",
               b["a"]["plek"] == {"naGetikte": True, "afstand": 8, "voorTweede": True, "toevoegenLaatst": "wspInstrumentField"}, jb)
-        check(f"{breed}px 22: een tik op \"+ Genre\" opent de lijst; zonder instrument staat de foutregel onder het raster",
+        check(f"{breed}px 22: een tik op \"+ Genre\" opent het keuzemenu (geen venster); zonder instrument staat de foutregel onder het raster",
               t["lijst"] and t["fout"] == ["Kies minimaal één instrument", "wspInstrumentBadgeRow"], jb)
         check(f"{breed}px F4 (8D): met gevulde schermen geen regelhoogte \"normal\" in Wat speel je, Je setlist en Je mediahoek, en in stap 2, 3 en 4; de bannerregel 16px",
               not any(b["f4"].values()) and not b["wizard"]["normaal"] and not b["wizard"]["normaalStap3"] and not b["wizard"]["normaalStap4"] and b["bannerRegel"] == "16px", jb)
@@ -15694,13 +15717,15 @@ def blok_tt543_blok5():
         uit = page.evaluate("""async () => {
           const w = ms => new Promise(r => setTimeout(r, ms)), u = {};
           u.lijst = INSTRUMENTS.slice();
-          // De keuzelaag van de wizard toont de hele lijst, in deze volgorde.
+          // Het keuzemenu van de wizard toont de hele lijst, in deze volgorde
+          // (TT-543 draaiwielen deel 2: het menu onder "+ Instrument", geen venster meer).
           const wid = Object.keys(INSTRUMENT_PICKERS)[0];
           const bewaar = INSTRUMENT_PICKERS[wid].getInstruments().splice(0);
-          openInstrumentPicker(wid); await w(50);
-          u.keuzelaag = [...document.querySelectorAll('#instrumentPickItems .picker-list-item')].map(e => e.textContent.trim());
-          closeInstrumentPicker();
+          openChoiceMenu('instrument-' + wid); await w(50);
+          u.keuzelaag = [...document.getElementById(CHOICE_FIELDS['instrument-' + wid].menuId).querySelectorAll('.choice-option')].map(e => e.textContent.trim());
+          closeChoiceMenu(); await w(50);
           INSTRUMENT_PICKERS[wid].getInstruments().push(...bewaar);
+          INSTRUMENT_PICKERS[wid].openInstrument = null;
           // Zoeken: hooguit één instrument; Zang, Achtergrondzang en Songwriting komen erbij.
           // Het veld klapt het keuzemenu uit (TT-543 draaiwielen); kies de regel.
           const kies = (id, v) => { const cfg = CHOICE_FIELDS['picker-' + id]; openChoiceMenu('picker-' + id);
@@ -15721,7 +15746,7 @@ def blok_tt543_blok5():
     j = json.dumps(uit, ensure_ascii=False)[:600]
     check("blok 5: de lijst is de besloten lijst van 19 instrumenten, alfabetisch",
           uit.get("lijst") == NIEUWE_INSTRUMENTEN, j)
-    check("blok 5: de keuzelaag bij Wat speel je toont dezelfde 19 instrumenten",
+    check("blok 5: het keuzemenu onder \"+ Instrument\" toont dezelfde 19 instrumenten",
           uit.get("keuzelaag") == NIEUWE_INSTRUMENTEN, j)
     check("blok 5: Zoeken Muzikanten — Achtergrondzang blijft staan naast één instrument; een tweede instrument vervangt het eerste",
           uit.get("muzikanten") == ["Achtergrondzang", "Zang", "Basgitaar"], j)
@@ -16616,7 +16641,7 @@ def blok_tt543_draaiwielen():
               u.plek = { onder: Math.round(m.top - v.bottom), boven: Math.round($('appBottomNav').getBoundingClientRect().top - m.bottom) >= 0,
                          geschoven: scrollY > 0, naarBoven: $('filterSortModeMenu').classList.contains('naar-boven') };
               sluitAlleMenus(); await w();
-              u.naSluiten = document.body.style.paddingBottom;
+              u.naSluiten = document.body.style.minHeight + document.body.style.paddingBottom; // TT-543 draaiwielen deel 2: de ruimte is een minimale hoogte
               // Een oude bewaarde zoekopdracht: 150 km, 20 t/m 30 jaar.
               const S = window.TT_STUB; hasOwnProfile = true; myMusicianId = 'm1'; window.getMyMusicianId = async () => 'm1';
               const oud = (km, min, max) => ({ musician_id: 'm1', soort: 'alles', volgorde: 'score', radius_km: km, instruments: [], genres: [],
@@ -16843,6 +16868,207 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
     check("blok 144: geen paginafouten", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_tt543_draaiwielen_deel2():
+    # TT-543 draaiwielen deel 2 (besluitenlijst deel 2, besluiten Ronald
+    # 10-11-2026, sessie 109): Instrument en Genre overal het keuzemenu; de
+    # vensters met een lijst zijn weg. 1B: het menu toont alles, een gekozen
+    # keuze als pil, en blijft open; een tik op een gekozen keuze haalt hem weg.
+    # Vraag 2 en 2b (R2): onder een veld of knop over de hele breedte staat het
+    # menu 3/4 in het midden; een smaller veld houdt een menu even breed als het
+    # veld. Vraag 3: de genres van een band krijgen "+ Genre". Vraag 4: de
+    # invaller toont leeg grijs "Kies een instrument" in het midden. Vraag 5: het
+    # niveau van een nieuw instrument opent vanzelf als het menu dicht is. Bij de
+    # bouw: een menu op een korte pagina valt niet meer over de onderbalk of
+    # achter de balk Terug/Verder.
+    print("\nBlok 145 — TT-543 draaiwielen deel 2: Instrument en Genre overal het keuzemenu")
+    bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("utils.js", "modals-shared.js", "index.html", "styles.css", "wizard.js", "musicians.js", "bands.js")}
+    weg = [w for w in ('id="pickerListModal"', 'id="instrumentLevelModal"', "function openPickerList", "function choosePickerListValue",
+                       "function openInstrumentPicker", "function pickInstrumentFromSheet", "sheetTitle:", ".modal-box-sticky-footer", ".modal-box-slg")
+           if any(w in t for t in bron.values())]
+    check("de vensters met een lijst zijn weg: geen venster, geen functie, geen titel, geen opmaak", not weg, str(weg))
+    stub_js = open(STUB, encoding="utf-8").read()
+    ingelogd = stub_js + """
+window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instruments: m.musician_instruments || [],
+  musician_genres: m.musician_genres || [], musician_songs: m.musician_songs || [], musician_media: m.musician_media || [] }));
+"""
+    httpd, port = serve()
+    fouten = []
+    MEET = """(o) => { const v = document.getElementById(o.veld), m = document.getElementById(o.menu);
+      const R = e => e.getBoundingClientRect(), vr = R(v), mr = R(m), anker = R(o.anker ? document.getElementById(o.anker) : m.parentElement);
+      const balken = [...document.querySelectorAll('#appBottomNav, .wizard-action-bar')].filter(b => b.getClientRects().length && getComputedStyle(b).position === 'fixed').map(b => R(b).top);
+      const rijen = [...m.querySelectorAll('.choice-option')];
+      return { open: m.classList.contains('open'), venster: !!document.querySelector('.modal-overlay.visible'),
+        onder: Math.round(mr.top - vr.bottom), breed: Math.round(mr.width), ankerBreed: Math.round(anker.width),
+        midden: Math.abs((mr.left + mr.right) / 2 - (anker.left + anker.right) / 2) < 1,
+        boven: Math.round(Math.min(innerHeight, ...balken) - mr.bottom), regels: rijen.length,
+        gekozen: rijen.filter(r => r.classList.contains('selected')).map(r => r.textContent.trim()),
+        tweeRegels: rijen.map(r => r.querySelector('span')).filter(x => x.getBoundingClientRect().height > 30).map(x => x.textContent) }; }"""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for thema, breed in (("dark", 390), ("light", 390), ("dark", 360)):
+            n = f"{'licht' if thema == 'light' else 'donker'} {breed}px"
+            ctx = browser.new_context(viewport={"width": breed, "height": 844}, color_scheme=thema)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=ingelogd))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(500)
+            u = page.evaluate("""async (MEET) => {
+              const meet = eval(MEET), w = (n = 350) => new Promise(r => setTimeout(r, n)), $ = id => document.getElementById(id), u = {};
+              const kies = (menu, t) => [...$(menu).querySelectorAll('.choice-option')].find(x => x.textContent.trim() === t).click();
+              const tik = id => $(id).click();
+              // 1. Profiel aanmaken, stap 2: "+ Instrument" en "+ Genre" (als bezoeker: ingelogd opent Mijn Profiel).
+              const ingelogdAls = currentUser; currentUser = null;
+              showView('register'); await w(200); goTo(1); await w(200);
+              state.instruments.length = 0; state.instruments.push('Elektrische gitaar'); state.instrumentLevels = { 'Elektrische gitaar': 3 };
+              state.genres.length = 0; state.genres.push('Rock', 'Indie');
+              renderInstrumentBadges('wizard'); renderPickerBadges(PICKERS.genre); window.scrollTo(0, 0); await w(100);
+              tik('genrePickerField'); await w();
+              u.wGenre = meet({ veld: 'genrePickerField', menu: 'genrePickerFieldMenu' });
+              kies('genrePickerFieldMenu', 'Jazz'); await w(100);
+              u.wGenre.naTik = [state.genres.slice(), $('genrePickerFieldMenu').classList.contains('open'),
+                [...$('genrePickerFieldMenu').querySelectorAll('.choice-option.selected')].map(x => x.textContent.trim())];
+              kies('genrePickerFieldMenu', 'Rock'); await w(100);
+              u.wGenre.weg = state.genres.slice();
+              u.wGenre.balkNa = meet({ veld: 'genrePickerField', menu: 'genrePickerFieldMenu' }).boven;
+              sluitAlleMenus(); await w();
+              u.wGenre.ruimteWeg = document.body.style.minHeight;
+              // 8D (10-11-2026): met een open menu ligt de laag over de kop, en staat er geen inhoud van de pagina over de kop.
+              window.scrollTo(0, 120); await w(100); tik('genrePickerField'); await w();
+              u.kop = (() => { const k = [...document.querySelectorAll('.app-topbar')].find(x => x.getClientRects().length).getBoundingClientRect();
+                const e = document.elementsFromPoint(20, k.top + k.height / 2);
+                return [scrollY > 0, e[0].classList.contains('menu-laag'), !!(e[1] && e[1].closest('.app-topbar')), document.querySelectorAll('main.menu-drager').length]; })();
+              sluitAlleMenus(); await w();
+              u.kop.push(document.querySelectorAll('.menu-drager, .menu-drager-plat').length);
+              window.scrollTo(0, 0); await w(100);
+              tik('instrumentPickerField'); await w();
+              u.wInstr = meet({ veld: 'instrumentPickerField', menu: 'instrumentPickerFieldMenu' });
+              kies('instrumentPickerFieldMenu', 'Basgitaar'); kies('instrumentPickerFieldMenu', 'Cello'); await w(100);
+              u.wInstr.paneelTijdensMenu = $('instrumentBadgeRowNiveau').hidden;
+              sluitAlleMenus(); await w();
+              u.wInstr.niveau = [INSTRUMENT_PICKERS.wizard.openInstrument, !$('instrumentBadgeRowNiveau').hidden,
+                $('instrumentBadgeRowNiveau').previousElementSibling.querySelector('.picker-badge-label').textContent];
+              setInstrumentLevel('wizard', 2); await w(50);
+              tik('instrumentPickerField'); await w(); sluitAlleMenus(); await w();
+              u.wInstr.zonderNieuw = INSTRUMENT_PICKERS.wizard.openInstrument;
+              state.instruments.length = 0; state.genres.length = 0; state.instrumentLevels = {};
+              currentUser = ingelogdAls;
+              // 2. Band aanmaken: korte pagina, "+ Genre" (vraag 3: A).
+              myMusicianId = 'm1'; hasOwnProfile = true; showView('bands'); await w(300);
+              await showCreateBandForm(); await w(300); document.activeElement && document.activeElement.blur();
+              u.band = { toevoegen: $('bandGenreField').classList.contains('picker-toevoegen') && $('bandGenreField').textContent.trim() === 'Genre' };
+              window.scrollTo(0, 0); await w(100);
+              tik('bandGenreField'); await w();
+              Object.assign(u.band, meet({ veld: 'bandGenreField', menu: 'bandGenreFieldMenu' }));
+              ['Pop', 'Punk', 'Jazz'].forEach(t => kies('bandGenreFieldMenu', t)); await w();
+              u.band.naDrie = [bandState.genres.slice(), meet({ veld: 'bandGenreField', menu: 'bandGenreFieldMenu' }).boven];
+              sluitAlleMenus(); await w(); bandState.genres.length = 0; renderPickerBadges(PICKERS.bandGenre);
+              // 3. Onze bezetting: open rol, invaller, contactpersoon.
+              openBandTegels('b1'); await w(300); openTegelScreen('bandBezetting'); await openBandBezetting(); await w(300);
+              window.scrollTo(0, 0); await w(100);
+              tik('bbRolKnop'); await w();
+              u.rol = meet({ veld: 'bbRolKnop', menu: 'bbRolMenu' });
+              kies('bbRolMenu', 'Drums'); await w(100);
+              u.rol.naTik = [bbWanted.slice(), $('bbRolMenu').classList.contains('open'), document.querySelectorAll('#bbOpen .bb-rij').length];
+              sluitAlleMenus(); await w();
+              bbInvalFormulier(true); await w(100);
+              const lab = $('bbInvalInstrumentLabel'), lv = $('bbInvalInstrument');
+              u.inval = { leeg: [lab.textContent, lab.classList.contains('leeg'), getComputedStyle(lab).color,
+                Math.abs((lab.getBoundingClientRect().left + lab.getBoundingClientRect().right) / 2 - (lv.getBoundingClientRect().left + lv.getBoundingClientRect().right) / 2) < 1] };
+              lv.scrollIntoView({ block: 'center' }); await w(100);
+              tik('bbInvalInstrument'); await w();
+              Object.assign(u.inval, meet({ veld: 'bbInvalInstrument', menu: 'bbInvalInstrumentMenu' }));
+              kies('bbInvalInstrumentMenu', 'Trompet'); await w();
+              u.inval.na = [lab.textContent, lab.classList.contains('leeg'), lv.classList.contains('is-set'), $('bbInvalInstrumentMenu').classList.contains('open'), bbInvalInstrument.slice()];
+              bbInvalFormulier(false);
+              $('bbContactVeld').scrollIntoView({ block: 'center' }); await w(100);
+              tik('bbContactVeld'); await w();
+              u.contact = meet({ veld: 'bbContactVeld', menu: 'bbContactMenu' });
+              sluitAlleMenus(); await w();
+              // 4. Onze muziek: "+ Genre".
+              openTegelScreen('bandMuziek'); await openBandMuziek(); await w(300); window.scrollTo(0, 0); await w(100);
+              tik('bmzGenreField'); await w();
+              u.muziek = meet({ veld: 'bmzGenreField', menu: 'bmzGenreFieldMenu' });
+              u.muziek.toevoegen = $('bmzGenreField').classList.contains('picker-toevoegen');
+              sluitAlleMenus(); await w();
+              // 5. Zoeken: Instrument en Genre 3/4 in het midden; de smallere velden even breed als het veld.
+              showView('search'); openZoekScherm('muzikanten', { geenZoek: true }); if ($('zoekFilterVak').hidden) toggleZoekFilters(); await w(300);
+              u.zoek = {};
+              for (const [id, veld, menu] of [['picker-filterInstruments', 'filterInstrumentsField', 'filterInstrumentsMenu'], ['picker-filterGenres', 'filterGenresField', 'filterGenresMenu'],
+                  ['radius', 'filterRadiusField', 'filterRadiusMenu'], ['leeftijd', 'filterAgeField', 'filterAgeMenu'], ['niveau', 'filterNiveauField', 'filterNiveauMenu'],
+                  ['sorteren', 'filterSortModeField', 'filterSortModeMenu'], ['weergave', 'filterWeergaveField', 'filterWeergaveMenu']]) {
+                const c = CHOICE_FIELDS[id]; window.scrollTo(0, 0); await w(50);
+                openChoiceMenu(id); await w();
+                const m = meet({ veld: c.fieldId, menu: c.menuId, anker: c.fieldId });
+                u.zoek[id] = [m.breed, m.ankerBreed, m.midden, m.tweeRegels.length];
+                sluitAlleMenus(); await w(200);
+              }
+              openZoekScherm('mixmatch'); await w(300); setSetlistSoort('muzikanten'); await w(200); if (typeof zetMmFilters === 'function') zetMmFilters(true); await w(200);
+              initSetlistSearchFilters(); window.scrollTo(0, 0); await w(50);
+              openChoiceMenu('picker-filterSetlistInstruments'); await w();
+              const mm = meet({ veld: 'filterSetlistInstrumentsField', menu: 'filterSetlistInstrumentsMenu', anker: 'filterSetlistInstrumentsField' });
+              u.mm = [mm.breed, mm.ankerBreed, mm.midden];
+              sluitAlleMenus(); await w();
+              // Thema, Delen via link en Beschikbaarheid: ook 3/4 (besluit Ronald 10-11-2026: "Ja, ook 3/4").
+              u.breed = {};
+              showView('instellingen'); await w(300);
+              for (const id of ['thema', 'deel', 'beschikbaar']) {
+                const c = CHOICE_FIELDS[id], v = $(c.fieldId);
+                if (!v || !v.getClientRects().length) { u.breed[id] = 'niet in beeld'; continue; }
+                v.scrollIntoView({ block: 'center' }); await w(100);
+                openChoiceMenu(id); await w();
+                const m = meet({ veld: c.fieldId, menu: c.menuId, anker: c.fieldId });
+                u.breed[id] = [m.breed, m.ankerBreed, m.midden];
+                sluitAlleMenus(); await w(200);
+              }
+              return u;
+            }""", MEET)
+            j = lambda x: json.dumps(x, ensure_ascii=False)[:900]
+            drie = round((breed - 32) * 0.75)
+            def menu_ok(m, regels):
+                return (m["open"] and not m["venster"] and m["onder"] == 6 and abs(m["breed"] - drie) <= 1 and m["midden"]
+                        and m["boven"] >= 0 and m["regels"] == regels and not m["tweeRegels"])
+            check(f"{n}: Profiel aanmaken \"+ Genre\": het keuzemenu, 6px eronder, 3/4 in het midden ({drie}px), boven de balk Terug/Verder, 15 genres, de gekozen als pil, niets over twee regels",
+                  menu_ok(u["wGenre"], 15) and set(u["wGenre"]["gekozen"]) == {"Rock", "Indie"}, j(u["wGenre"]))
+            check(f"{n}: 1B: een tik voegt toe en het menu blijft open met de nieuwe pil; een tik op een gekozen genre haalt het weg; het menu blijft boven de balk; dicht is de ruimte weg",
+                  u["wGenre"]["naTik"][0] == ["Rock", "Indie", "Jazz"] and u["wGenre"]["naTik"][1] and "Jazz" in u["wGenre"]["naTik"][2]
+                  and u["wGenre"]["weg"] == ["Indie", "Jazz"] and u["wGenre"]["balkNa"] >= 0 and u["wGenre"]["ruimteWeg"] == "", j(u["wGenre"]))
+            check(f"{n}: 8D: met een open menu op een gescrolde pagina ligt de laag over de kop en staat de kop direct daaronder, niet de pagina; dicht is alles terug",
+                  u["kop"] == [True, True, True, 0, 0], j(u["kop"]))
+            check(f"{n}: Profiel aanmaken \"+ Instrument\": het keuzemenu, 3/4 in het midden, 19 instrumenten",
+                  menu_ok(u["wInstr"], 19) and u["wInstr"]["gekozen"] == ["Elektrische gitaar"], j(u["wInstr"]))
+            check(f"{n}: vraag 5: het niveau opent pas als het menu dicht is, onder het eerste nieuwe instrument; zonder nieuw instrument opent niets",
+                  u["wInstr"]["paneelTijdensMenu"] and u["wInstr"]["niveau"] == ["Basgitaar", True, "Basgitaar"] and u["wInstr"]["zonderNieuw"] is None, j(u["wInstr"]))
+            check(f"{n}: Band aanmaken: \"+ Genre\" (vraag 3: A); het menu 3/4 in het midden en boven de onderbalk, ook op deze korte pagina en als het raster groeit",
+                  u["band"]["toevoegen"] and menu_ok(u["band"], 15) and u["band"]["naDrie"][0] == ["Pop", "Punk", "Jazz"] and u["band"]["naDrie"][1] >= 0, j(u["band"]))
+            check(f"{n}: Onze muziek: \"+ Genre\", het menu 3/4 in het midden",
+                  u["muziek"]["toevoegen"] and menu_ok(u["muziek"], 15), j(u["muziek"]))
+            check(f"{n}: \"+ Open rol toevoegen\": het keuzemenu 3/4 in het midden; een tik zet de rol in de lijst en het menu blijft open",
+                  menu_ok(u["rol"], 19) and u["rol"]["naTik"][0][-1] == "Drums" and u["rol"]["naTik"][1], j(u["rol"]))
+            check(f"{n}: invaller (vraag 4: B): leeg grijs \"Kies een instrument\" in het midden; het menu 3/4 in het midden; de tik kiest en sluit; geen gele rand",
+                  u["inval"]["leeg"][0] == "Kies een instrument" and u["inval"]["leeg"][1] and u["inval"]["leeg"][3]
+                  and u["inval"]["open"] and u["inval"]["onder"] == 6 and abs(u["inval"]["breed"] - drie) <= 1 and u["inval"]["midden"] and u["inval"]["regels"] == 19
+                  and u["inval"]["na"] == ["Trompet", False, False, False, ["Trompet"]], j(u["inval"]))
+            check(f"{n}: Contactpersoon: het menu 3/4 in het midden (R2)",
+                  u["contact"]["open"] and abs(u["contact"]["breed"] - drie) <= 1 and u["contact"]["midden"], j(u["contact"]))
+            z = u["zoek"]
+            check(f"{n}: Zoeken: Instrument en Genre 3/4 in het midden; Straal, Leeftijd, Niveau, Volgorde en Weergave even breed als hun veld (R2)",
+                  all(abs(z[k][0] - drie) <= 1 and z[k][2] and z[k][3] == 0 for k in ("picker-filterInstruments", "picker-filterGenres"))
+                  and all(z[k][0] == z[k][1] for k in ("radius", "leeftijd", "niveau", "sorteren", "weergave")), j(z))
+            check(f"{n}: Mix & Match: Instrument 3/4 in het midden (R2)",
+                  abs(u["mm"][0] - drie) <= 1 and u["mm"][2], j(u["mm"]))
+            check(f"{n}: Thema, Delen via link en Beschikbaarheid: het menu 3/4 in het midden (besluit Ronald 10-11-2026: \"Ja, ook 3/4\")",
+                  all(isinstance(x, list) and abs(x[0] - drie) <= 1 and x[1] == breed - 32 and x[2] for x in u["breed"].values()) and len(u["breed"]) == 3, j(u["breed"]))
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    check("blok 145: geen paginafouten", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -16885,6 +17111,7 @@ BLOKKEN = [
     blok_tt543_onderdeel5,
     blok_tt543_draaiwielen,
     blok_tt582_bundel,
+    blok_tt543_draaiwielen_deel2,
 ]
 
 

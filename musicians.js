@@ -1280,7 +1280,7 @@ async function openWatSpeelJe() {
   initPicker({
     id: 'wspGenre', fieldId: 'wspGenreField', badgeRowId: 'wspGenreBadgeRow',
     options: GENRES, getList: () => wspState.genres,
-    placeholder: 'Kies een genre', sheetTitle: 'Kies een genre',
+    placeholder: 'Kies een genre',
     toevoegen: 'Genre', // TT-543 blok 4, voorstel 22
   });
   wspSnapshot = wspFieldSnapshot();

@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261110a">
+<link rel="stylesheet" href="styles.css?v=20261110b">
 </head>
 <body>
 
@@ -1005,7 +1005,10 @@
     <div class="band-tegel-blok">
       <div class="profile-media-title">Open rollen</div>
       <div class="bb-lijst" id="bbOpen"></div>
-      <button type="button" class="add-link-btn" id="bbRolKnop"><span id="bbRolKnopLabel">+ Open rol toevoegen</span></button>
+      <div class="menu-anchor">
+        <button type="button" class="add-link-btn" id="bbRolKnop"><span id="bbRolKnopLabel">+ Open rol toevoegen</span></button>
+        <div class="choice-menu menu-breed" id="bbRolMenu" role="listbox" aria-label="Open rol"></div>
+      </div>
       <div id="bbRolBadges" hidden></div>
     </div>
 
@@ -1018,10 +1021,12 @@
         <div class="field-group single">
           <div class="field">
             <label>Instrument</label>
-            <div class="picker-field" id="bbInvalInstrument">
-              <span class="picker-field-label" id="bbInvalInstrumentLabel">Kies een instrument</span>
+            <div class="menu-anchor">
+              <div class="wheel-field" id="bbInvalInstrument" aria-label="Instrument">
+                <span class="wheel-field-label leeg" id="bbInvalInstrumentLabel">Kies een instrument</span>
+              </div>
+              <div class="choice-menu menu-breed" id="bbInvalInstrumentMenu" role="listbox" aria-label="Instrument"></div>
             </div>
-            <div class="picker-badge-row" id="bbInvalInstrumentBadges"></div>
           </div>
         </div>
         <div class="field-group single">
@@ -1043,7 +1048,7 @@
         <div class="wheel-field" id="bbContactVeld" aria-label="Contactpersoon">
           <span class="wheel-field-label"></span>
         </div>
-        <div class="choice-menu" id="bbContactMenu" role="listbox" aria-label="Contactpersoon"></div>
+        <div class="choice-menu menu-breed" id="bbContactMenu" role="listbox" aria-label="Contactpersoon"></div>
       </div>
       <select id="bbContactKeuze" style="display:none;" onchange="bbContact = this.value"></select>
       <p class="field-hint">Een bericht aan de band komt bij deze persoon binnen.</p>
@@ -1294,7 +1299,7 @@
             <div class="wheel-field" id="filterInstrumentsField" aria-label="Instrument">
               <span class="wheel-field-label" id="filterInstrumentsFieldLabel"></span>
             </div>
-            <div class="choice-menu" id="filterInstrumentsMenu" role="listbox" aria-label="Instrument"></div>
+            <div class="choice-menu menu-breed" id="filterInstrumentsMenu" role="listbox" aria-label="Instrument"></div>
           </div>
         </div>
         <div class="field">
@@ -1303,7 +1308,7 @@
             <div class="wheel-field" id="filterGenresField" aria-label="Genre">
               <span class="wheel-field-label" id="filterGenresFieldLabel"></span>
             </div>
-            <div class="choice-menu" id="filterGenresMenu" role="listbox" aria-label="Genre"></div>
+            <div class="choice-menu menu-breed" id="filterGenresMenu" role="listbox" aria-label="Genre"></div>
           </div>
         </div>
         <div class="field-pair-row">
@@ -1485,7 +1490,7 @@
             <div class="wheel-field" id="filterSetlistInstrumentsField" aria-label="Instrument">
               <span class="wheel-field-label" id="filterSetlistInstrumentsFieldLabel"></span>
             </div>
-            <div class="choice-menu" id="filterSetlistInstrumentsMenu" role="listbox" aria-label="Instrument"></div>
+            <div class="choice-menu menu-breed" id="filterSetlistInstrumentsMenu" role="listbox" aria-label="Instrument"></div>
           </div>
         </div>
       </div>
@@ -1867,7 +1872,7 @@
             <div class="tile-sub"><span class="wheel-field-label"></span></div>
           </div>
         </div>
-        <div class="choice-menu" id="themaMenu" role="listbox" aria-label="Thema"></div>
+        <div class="choice-menu menu-breed" id="themaMenu" role="listbox" aria-label="Thema"></div>
       </div>
       <select id="themaKeuze" style="display:none;" onchange="kiesLichtDonker(this.value)">
         <option value="toestel">Zoals mijn browser</option>
@@ -1888,7 +1893,7 @@
               <div class="tile-sub"><span class="wheel-field-label"></span></div>
             </div>
           </div>
-          <div class="choice-menu" id="deelMenu" role="listbox" aria-label="Delen via link"></div>
+          <div class="choice-menu menu-breed" id="deelMenu" role="listbox" aria-label="Delen via link"></div>
         </div>
         <select id="deelKeuze" style="display:none;" onchange="zetProfielDelen(this.value === 'aan')">
           <option value="aan">Aan: je link werkt</option>
@@ -1902,7 +1907,7 @@
               <div class="tile-sub"><span class="wheel-field-label"></span></div>
             </div>
           </div>
-          <div class="choice-menu" id="beschikbaarMenu" role="listbox" aria-label="Beschikbaarheid"></div>
+          <div class="choice-menu menu-breed" id="beschikbaarMenu" role="listbox" aria-label="Beschikbaarheid"></div>
         </div>
         <select id="beschikbaarKeuze" style="display:none;" onchange="zetBeschikbaarheid(this.value === 'ja')">
           <option value="ja">Beschikbaar</option>
@@ -2275,35 +2280,6 @@
   </div>
 </div>
 
-<!-- TT-410a (08-10-2026): de keuzelaag met alleen de instrumentenlijst. Het niveau
-     kies je inline, onder de badges van het veld (modals-shared.js, #…BadgeRowNiveau).
-     Het kruisje is hier de enige uitgang. Het element-id blijft
-     instrumentLevelModal; de naam is van voor TT-410a. -->
-<div class="modal-overlay" id="instrumentLevelModal" data-close="closeInstrumentPicker" onclick="if(event.target===this)closeInstrumentPicker()">
-  <div class="modal-box modal-box-sticky-footer modal-box-slg">
-    <button class="modal-close" onclick="closeInstrumentPicker()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
-
-    <div id="instrumentPickStep" class="modal-scroll-area">
-      <div class="filter-title" style="margin-bottom:12px;padding-right:52px;">Kies een instrument</div>
-      <div id="instrumentPickItems"></div>
-    </div>
-  </div>
-</div>
-
-<!-- TT-116 (21-08-2026): gedeeld keuzescherm voor de "kies-en-badge"-picker,
-     gebruikt door de instrument- en genrevelden buiten Zoeken (in Zoeken
-     klapt een keuzemenu uit, TT-543 draaiwielen). Zelfde sticky-footer-opbouw als
-     hierboven, hier zonder voettekst (die blijft leeg en dus onzichtbaar). -->
-<div class="modal-overlay" id="pickerListModal" data-close="closePickerList" onclick="if(event.target===this)closePickerList()">
-  <div class="modal-box modal-box-sticky-footer modal-box-lg">
-    <button class="modal-close" onclick="closePickerList()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
-    <div class="modal-scroll-area">
-      <div class="filter-title" id="pickerListTitle" style="margin-bottom:12px;padding-right:52px;"></div>
-      <div id="pickerListItems"></div>
-    </div>
-  </div>
-</div>
-
 <!-- TT-63-fix (23-08-2026): Gebruiksvoorwaarden/Privacyverklaring/Gedragscode
      openden voorheen via <a href="#terms" target="_blank">. Op meerdere
      mobiele browsers/webviews (bevestigd: een WhatsApp-ingebedde browser)
@@ -2357,19 +2333,19 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261110a"></script>
-<script src="utils.js?v=20261110a"></script>
+<script src="core.js?v=20261110b"></script>
+<script src="utils.js?v=20261110b"></script>
 <script src="veiligheid.js?v=20261108c"></script>
 <script src="auth.js?v=20261108c"></script>
 <script src="postcode.js?v=20261107a"></script>
-<script src="wizard.js?v=20261108d"></script>
+<script src="wizard.js?v=20261110a"></script>
 <script src="ouder.js?v=20261106a"></script>
 <script src="search.js?v=20261110a"></script>
-<script src="musicians.js?v=20261109a"></script>
-<script src="bands.js?v=20261109d"></script>
+<script src="musicians.js?v=20261110a"></script>
+<script src="bands.js?v=20261110a"></script>
 <script src="messages.js?v=20261109c"></script>
 <script src="push.js?v=20261027b"></script>
-<script src="modals-shared.js?v=20261109d"></script>
+<script src="modals-shared.js?v=20261110a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding

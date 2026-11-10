@@ -438,7 +438,7 @@ function initBandForm() {
       fieldId: 'bandGenreField', badgeRowId: 'bandGenreBadgeRow',
       options: GENRES, getList: () => bandState.genres,
       placeholder: 'Kies een genre',
-      sheetTitle: 'Kies een genre',
+      toevoegen: 'Genre', // TT-543 draaiwielen deel 2, besluit Ronald 10-11-2026 (vraag 3: "A")
       onChange: bandWizardBalkBij // TT-385 fase 4: de balk loopt mee
     });
   }
@@ -1499,18 +1499,22 @@ async function openBandBezetting() {
   bbWanted = (b.band_wanted || []).map(w => w.instrument);
   bbInvallers = bbInvallersUit(b.band_invallers);
 
-  // Het knopje "+ Open rol toevoegen" opent de gewone instrumentenlijst.
-  // Wat gekozen is, staat als rij in de lijst erboven, niet als badge.
+  // Het knopje "+ Open rol toevoegen" klapt het keuzemenu uit, 3/4 in het
+  // midden; het blijft open (TT-543 draaiwielen deel 2, besluiten Ronald
+  // 10-11-2026: 1B en R2). Wat gekozen is, staat als rij in de lijst erboven,
+  // niet als badge.
   initPicker({
-    id: 'bbWanted', fieldId: 'bbRolKnop', badgeRowId: 'bbRolBadges',
+    id: 'bbWanted', fieldId: 'bbRolKnop', menuId: 'bbRolMenu', badgeRowId: 'bbRolBadges',
     options: INSTRUMENTS, getList: () => bbWanted,
-    placeholder: '+ Open rol toevoegen', sheetTitle: 'Welk instrument zoeken jullie?',
+    placeholder: '+ Open rol toevoegen',
     onChange: bbRenderOpen
   });
+  // De invaller: één instrument, in het veld zelf; het menu sluit na de tik.
+  // Leeg staat er grijs "Kies een instrument" (besluit Ronald 10-11-2026, vraag 4: "B").
   initPicker({
-    id: 'bbInval', fieldId: 'bbInvalInstrument', badgeRowId: 'bbInvalInstrumentBadges',
+    id: 'bbInval', fieldId: 'bbInvalInstrument', menuId: 'bbInvalInstrumentMenu',
     options: INSTRUMENTS, getList: () => bbInvalInstrument, singleMax: true,
-    placeholder: 'Kies een instrument', sheetTitle: 'Kies een instrument'
+    inVeld: lijst => lijst.join(', '), leegTekst: 'Kies een instrument'
   });
   // Eén keer aanmelden: initChoiceField() hangt luisteraars aan het veld.
   if (!CHOICE_FIELDS['band-contact']) {
@@ -1782,7 +1786,8 @@ async function openBandMuziek() {
   initPicker({
     id: 'bmzGenre', fieldId: 'bmzGenreField', badgeRowId: 'bmzGenreBadgeRow',
     options: GENRES, getList: () => bmzGenres,
-    placeholder: 'Kies een genre', sheetTitle: 'Kies een genre'
+    placeholder: 'Kies een genre',
+    toevoegen: 'Genre' // TT-543 draaiwielen deel 2, besluit Ronald 10-11-2026 (vraag 3: "A")
   });
   bmzRenderSoort();
   bmzRenderNummers();

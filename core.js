@@ -676,14 +676,19 @@ function menuLaagOpen(dd) {
   // Elke ouder met een eigen z-index (de kop, de navigatierij) gaat mee
   // omhoog, anders blijft de onderbalk boven de laag liggen. Een modal niet:
   // die ligt al bovenaan (TT-229). Zie .menu-drager in styles.css.
+  // TT-543 draaiwielen deel 2 (8D, 10-11-2026): <main> (z-index 10) niet: die
+  // omhoog zette de hele pagina boven de kop, en wat onder de kop door scrolde,
+  // stond dan over de kop heen (gemeten in Wat speel je). <main> verliest zolang
+  // het menu openstaat zijn z-index (.menu-drager-plat); de laag ligt dan, net als
+  // in Zoeken, over de kop en de onderbalk.
   for (let x = dd.parentElement; x && x !== document.body; x = x.parentElement) {
     if (x.classList.contains('modal-overlay')) break;
-    if (getComputedStyle(x).zIndex !== 'auto') x.classList.add('menu-drager');
+    if (getComputedStyle(x).zIndex !== 'auto') x.classList.add(x.tagName === 'MAIN' ? 'menu-drager-plat' : 'menu-drager');
   }
 }
 function menuLaagWeg() {
   document.querySelectorAll('.menu-laag').forEach(l => l.remove());
-  document.querySelectorAll('.menu-drager').forEach(x => x.classList.remove('menu-drager'));
+  document.querySelectorAll('.menu-drager, .menu-drager-plat').forEach(x => x.classList.remove('menu-drager', 'menu-drager-plat'));
 }
 function sluitAlleMenus() {
   closeNavMenu();

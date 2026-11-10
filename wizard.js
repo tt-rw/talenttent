@@ -940,7 +940,6 @@ function init() {
     fieldId: 'genrePickerField', badgeRowId: 'genreBadgeRow',
     options: GENRES, getList: () => state.genres,
     placeholder: 'Kies een genre',
-    sheetTitle: 'Kies een genre',
     onChange: saveOnboardingProgress,
     toevoegen: 'Genre', // TT-543 blok 4, voorstel 22
   });

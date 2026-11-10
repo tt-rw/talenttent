@@ -271,7 +271,9 @@ function veldFoutAnker(el) {
   // was het 0px) en de suggestielijst direct onder het veld blijft.
   // TT-543 blok 4: "+ Instrument" en "+ Genre" staan in het raster van de keuzes;
   // de foutregel staat onder dat raster.
-  return (el.closest && (el.closest('.password-wrap') || el.closest('.postcode-plaats-rij') || el.closest('.song-search-wrap') || el.closest('.picker-badge-row'))) || el;
+  // TT-543 draaiwielen deel 2: een keuzeveld met zijn menu (de invaller); de
+  // regel staat onder het veld, het menu blijft direct onder het veld uitklappen.
+  return (el.closest && (el.closest('.password-wrap') || el.closest('.postcode-plaats-rij') || el.closest('.song-search-wrap') || el.closest('.picker-badge-row') || el.closest('.menu-anchor'))) || el;
 }
 
 // TT-494: korte uitslag rechts op de labelregel (zie .field-uitslag in
@@ -1554,10 +1556,16 @@ let actiefKeuzeMenu = null;
 
 // cfg: { id, fieldId, menuId, selectId }                — één keuze uit een <select>
 //   of { id, fieldId, menuId, rijen(), kies(i), meer?, ververs?() } — eigen rijen
+//   naSluiten?(): na elke manier van sluiten (TT-543 draaiwielen deel 2: het
+//   niveau van een nieuw instrument).
+// Opnieuw aanroepen voor hetzelfde veld (een tegel die opnieuw opent) vervangt
+// alleen de cfg; de luisteraars zitten er dan al.
 function initChoiceField(cfg) {
   CHOICE_FIELDS[cfg.id] = cfg;
   const el = document.getElementById(cfg.fieldId);
   if (!el) return;
+  if (el.ttKeuzeVeld === cfg.id) { refreshChoiceField(cfg.id); return; }
+  el.ttKeuzeVeld = cfg.id;
   el.setAttribute('role', 'combobox');
   el.setAttribute('aria-haspopup', 'listbox');
   el.setAttribute('aria-expanded', 'false');
@@ -1614,8 +1622,14 @@ function tekenKeuzeMenu(id) {
       if (cfg.kies) {
         cfg.kies(i);
         // Meer keuzes: het menu blijft open en toont de nieuwe stand. Eén
-        // keuze: de tik kiest en sluit (besluit Ronald 09-11-2026).
-        if (cfg.meer && actiefKeuzeMenu === id) tekenKeuzeMenu(id);
+        // keuze: de tik kiest en sluit (besluit Ronald 09-11-2026). Groeit het
+        // raster boven het menu (een nieuw genre, een nieuwe rol), dan schuift
+        // het menu mee omlaag en blijft het boven de balk.
+        if (cfg.meer && actiefKeuzeMenu === id) {
+          tekenKeuzeMenu(id);
+          const veld = document.getElementById(cfg.fieldId);
+          if (veld) menuInBeeld(menu, veld);
+        }
         else closeChoiceMenu();
         return;
       }
@@ -1692,10 +1706,18 @@ function openChoiceMenu(id) {
 // omhoog uit; de beweging begint dan aan de onderkant.
 // Gemeten vanaf het veld, niet vanaf het menu: de rechthoek van het menu krimpt
 // tijdens het uitklappen.
+// TT-543 draaiwielen deel 2 (gemeten 10-11-2026, sessie 109): ook de balk
+// Terug/Verder van Profiel aanmaken en de tegels is een balk onderaan; daar viel
+// het menu achter. En de ruimte onder de pagina is een minimale hoogte van de
+// pagina, geen opvulling: de pagina is minstens 100vh hoog, en op een korte
+// pagina (Band aanmaken) maakte opvulling haar niet langer, zodat ze niet kon
+// schuiven en het menu over de onderbalk viel.
+const BALKEN_ONDER = '#appBottomNav, .wizard-action-bar';
 function menuInBeeld(menu, veld) {
-  const balk = document.getElementById('appBottomNav');
-  const balkTop = balk && balk.getClientRects().length ? balk.getBoundingClientRect().top : window.innerHeight; // vast element: geen offsetParent
-  const onder = Math.min(window.innerHeight, balkTop);
+  const balken = [...document.querySelectorAll(BALKEN_ONDER)]
+    .filter(b => b.getClientRects().length && getComputedStyle(b).position === 'fixed') // vast element: geen offsetParent
+    .map(b => b.getBoundingClientRect().top);
+  const onder = Math.min(window.innerHeight, ...balken);
   const veldRect = veld.getBoundingClientRect();
   const tekort = veldRect.bottom + 6 + menu.offsetHeight + 12 - onder;
   if (tekort <= 0) return;
@@ -1705,9 +1727,8 @@ function menuInBeeld(menu, veld) {
   }
   const kanNog = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
   if (kanNog < tekort) {
-    const nu = parseFloat(getComputedStyle(document.body).paddingBottom) || 0; // de ruimte voor de onderbalk blijft
-    document.body.style.paddingBottom = Math.ceil(nu + tekort - kanNog) + 'px';
-    menu.ttRuimteOnder = true;
+    if (menu.ttMinHoogte === undefined) menu.ttMinHoogte = document.body.style.minHeight; // terug bij sluiten
+    document.body.style.minHeight = Math.ceil(document.body.offsetHeight + tekort - kanNog) + 'px';
   }
   const beweegtNiet = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   window.scrollBy({ top: Math.ceil(tekort), behavior: beweegtNiet ? 'auto' : 'smooth' });
@@ -1744,7 +1765,7 @@ function closeChoiceMenu() {
     menu.ttOpruimen = null;
     menu.classList.remove('open', 'sluit', 'naar-boven', 'onderaan');
     menu.innerHTML = '';
-    if (menu.ttRuimteOnder) { document.body.style.paddingBottom = ''; menu.ttRuimteOnder = false; }
+    if (menu.ttMinHoogte !== undefined) { document.body.style.minHeight = menu.ttMinHoogte; delete menu.ttMinHoogte; }
   };
   const bijEindeBeweging = (e) => {
     if (e.animationName === 'choiceMenuDicht') opruimen();
@@ -1756,6 +1777,7 @@ function closeChoiceMenu() {
   t = setTimeout(opruimen, beweegtNiet ? 0 : 260);
   // openChoiceMenu() gebruikt dit om een nog lopende sluiting af te breken.
   menu.ttOpruimen = opruimen;
+  if (cfg && cfg.naSluiten) cfg.naSluiten();
 }
 
 // ─── Lege staat (huisstijl §15, TT-248, 11-09-2026) ──────────────────────────

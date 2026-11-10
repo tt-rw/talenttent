@@ -3120,6 +3120,9 @@
      ouders hun z-index in eigen regels dragen, soms later in dit bestand.
      Een modal krijgt deze klasse nooit: die ligt al bovenaan (TT-229). */
   .menu-drager { z-index: 240 !important; }
+  /* <main> gaat niet omhoog maar verliest zijn eigen stapellaag (TT-543
+     draaiwielen deel 2, 8D 10-11-2026): omhoog stond de pagina boven de kop. */
+  .menu-drager-plat { z-index: auto !important; }
 
   /* TT-63 (09-08-2026): documentweergaven (privacy/voorwaarden/gedragscode) */
   .doc-view h2 {
@@ -4096,7 +4099,6 @@
   }
 
   .modal-box-lg { max-width: 480px; }
-  .modal-box-slg { max-width: 520px; }
   .modal-box-xl { max-width: 760px; }
 
   /* In de kop van het mediascherm staat het kruis gewoon in de rij mee, niet
@@ -4355,61 +4357,35 @@
   /* TT-219 (06-09-2026): eigen, dunne scrollbarstijl voor modals i.p.v. de
      kale browserstijl — die viel qua kleur uit de toon tegen het donkere
      thema en zat, vóór de 24px-inspringing hierboven, bovenop .modal-close.
-     Geldt voor beide scrolvarianten: .modal-box zelf (de meeste modals) en
-     .modal-scroll-area (de sticky-footer-variant, bijv. de instrumentkeuze).
+     Geldt voor .modal-box (de sticky-footer-variant is weg sinds TT-543
+     draaiwielen deel 2, 10-11-2026: de vensters met een lijst bestaan niet meer).
      Zelfde gedachte als .app-nav::-webkit-scrollbar, hier zichtbaar en
      getint i.p.v. verborgen — een lijst die kan scrollen, moet dat blijven
      tonen. Firefox gebruikt scrollbar-width/-color, andere browsers de
      ::-webkit-scrollbar-regels. */
   .modal-box,
-  .modal-box-sticky-footer .modal-scroll-area,
   .niveau-info-wrap {
     scrollbar-width: thin;
     scrollbar-color: var(--border) var(--surface);
   }
   .modal-box::-webkit-scrollbar,
-  .modal-box-sticky-footer .modal-scroll-area::-webkit-scrollbar,
   .niveau-info-wrap::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   .modal-box::-webkit-scrollbar-track,
-  .modal-box-sticky-footer .modal-scroll-area::-webkit-scrollbar-track,
   .niveau-info-wrap::-webkit-scrollbar-track {
     background: var(--surface);
   }
   .modal-box::-webkit-scrollbar-thumb,
-  .modal-box-sticky-footer .modal-scroll-area::-webkit-scrollbar-thumb,
   .niveau-info-wrap::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 4px;
   }
   .modal-box::-webkit-scrollbar-thumb:hover,
-  .modal-box-sticky-footer .modal-scroll-area::-webkit-scrollbar-thumb:hover,
   .niveau-info-wrap::-webkit-scrollbar-thumb:hover {
     background: var(--muted);
   }
-
-  /* V-09 (13-08-2026): de contactknop op een profiel stond onderaan een lang
-     scherm — bij een gevuld profiel moest je er lang naartoe scrollen. Deze
-     twee klassen maken van modal-box een kolom: de inhoud scrolt in het
-     midden, de knop blijft vast onderaan zichtbaar. Alleen de musicianModal
-     gebruikt dit vooralsnog (zie V-09 in de akkoordlijst). */
-  .modal-box-sticky-footer {
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    overflow: hidden;
-  }
-  .modal-box-sticky-footer .modal-scroll-area {
-    overflow-y: auto;
-    overscroll-behavior: contain;   /* TT-256, zelfde reden als .modal-box */
-    padding: 32px;
-    flex: 1;
-    min-height: 0;
-  }
-
-
 
   /* Eigen profiel beheer */
 /* TT-225 (hersteld 09-09-2026): eigen max-width weg + width:100% (TT-224-vervolg),
@@ -4869,11 +4845,6 @@
       overflow-y: auto;
       padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
     }
-    /* V-09: bij de sticky-footerknop hoort de onderste ruimte (incl. de
-       inkeping onderaan het scherm) bij de knop, niet bij de scrollende
-       inhoud — anders staat de knop te hoog of te laag. */
-    .modal-box-sticky-footer { padding-bottom: 0; }
-    .modal-box-sticky-footer .modal-scroll-area { padding-bottom: 24px; }
 
   /* ── TT-U24 (12-08-2026): vaste onderbalk op de telefoon ─────────────────
      Boven 560px onzichtbaar; daar blijft de bestaande bovenbalk staan. */
@@ -5420,6 +5391,17 @@
   }
   .keuze-meer svg { width: 18px; height: 18px; }
   .choice-menu.onderaan .keuze-meer { opacity: 0; }
+  /* TT-543 draaiwielen deel 2 (besluiten Ronald 10-11-2026, sessie 109): onder
+     een veld of knop over de hele breedte staat het menu 3/4 breed in het
+     midden ("3/4 komt in het midden. zeker niet steeds wisselend, afhankelijk
+     van waar het plusje staat"; vraag 2b: "R2"; ook Thema, Delen via link en
+     Beschikbaarheid: "Ja, ook 3/4"). Een smaller veld (Straal,
+     Leeftijd, Niveau, Volgorde, Weergave) houdt een menu even breed als het
+     veld. Bij "+ Instrument" en "+ Genre" staat het menu in het raster van de
+     keuzes, direct onder de laatste regel (pickerMenuKoppelen() in
+     modals-shared.js). */
+  .choice-menu.menu-breed { left: 12.5%; right: auto; width: 75%; }
+  .picker-badge-row.met-toevoegen { position: relative; }
 
 
   /* Label met de i-knop ernaast (zelfde patroon als "Mijn Instrumenten"). */
