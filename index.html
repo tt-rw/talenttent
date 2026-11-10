@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261109e">
+<link rel="stylesheet" href="styles.css?v=20261110a">
 </head>
 <body>
 
@@ -962,7 +962,6 @@
           <div class="autocomplete-list" id="bwCityAc"></div>
         </div>
       </div>
-      <p class="field-hint">Zo vinden muzikanten in de buurt jullie. De postcode ziet niemand, de plaats wel.</p>
       <p id="bwPostcodeStatus" class="field-status"></p>
     </div>
 
@@ -1222,7 +1221,7 @@
     </button>
     <button type="button" class="tile zoek-tegel" id="zoekTegelMixMatch" onclick="openZoekScherm('mixmatch')">
       <span class="zoek-tegel-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg></span>
-      <span class="zoek-tegel-tekst"><span class="tile-title">Mix &amp; Match</span><span class="tile-sub">Ontdek wat jullie samen kunnen spelen</span></span>
+      <span class="zoek-tegel-tekst"><span class="tile-title">Mix &amp; Match</span><span class="tile-sub">Vergelijk setlists met andere muzikanten</span></span>
     </button>
   </div>
 
@@ -1585,7 +1584,6 @@
             <div class="autocomplete-list" id="acBandCityManualList"></div>
           </div>
         </div>
-        <p class="field-hint">Zo vinden muzikanten in de buurt jullie. De postcode ziet niemand, de plaats wel.</p>
         <div id="bandPostcodeStatus" class="field-status"></div>
       </div>
       <div class="field-group single">
@@ -2359,14 +2357,14 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261109d"></script>
-<script src="utils.js?v=20261109d"></script>
+<script src="core.js?v=20261110a"></script>
+<script src="utils.js?v=20261110a"></script>
 <script src="veiligheid.js?v=20261108c"></script>
 <script src="auth.js?v=20261108c"></script>
 <script src="postcode.js?v=20261107a"></script>
 <script src="wizard.js?v=20261108d"></script>
 <script src="ouder.js?v=20261106a"></script>
-<script src="search.js?v=20261109d"></script>
+<script src="search.js?v=20261110a"></script>
 <script src="musicians.js?v=20261109a"></script>
 <script src="bands.js?v=20261109d"></script>
 <script src="messages.js?v=20261109c"></script>

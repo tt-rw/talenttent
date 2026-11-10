@@ -2103,7 +2103,7 @@ def blok_browser():
             teller: document.getElementById('gedeeldTeller').textContent };
         }""")
         check("twee muzikanten: resultaat verschijnt vanzelf",
-              res["kop"] == "1 nummer dat jullie samen spelen", json.dumps(res))
+              res["kop"] == "1 nummer dat minstens 2 van jullie spelen", json.dumps(res))
         check("hoofdletters maken niet uit bij het vergelijken",
               [r["artiest"].lower() + "/" + r["titel"].lower() for r in res["rijen"]] == ["xband/alpha"], json.dumps(res))
         check("de artiest staat groot en bovenaan, het nummer eronder (besluit 27-10-2026)",
@@ -6755,8 +6755,9 @@ window.TT_STUB.fnAntwoord = {};
               d59["velden"] == ["bandName", "bandZip", "bandCity", "bandGenreField"] and d59["oud"] == []
               and d59["titel"] == ["Band aanmaken", "Drie vragen, dan staat je band. De rest vul je later aan."], json.dumps([d59["velden"], d59["oud"], d59["titel"]], ensure_ascii=False))
         m = d59["maten"]
-        check("UI: label tot veld 8px, tussen twee velden 20px, balk tot titel 8px, zijmarge 16px",
-              m["labelVeld"] == 8 and m["genreLabelVeld"] == 8 and m["naamTotPostcode"] == 20 and m["balkTitel"] == 8
+        # TT-582 (besluit Ronald 09-11-2026: A, 4px en 16px, op alle schermen; was 8px en 20px).
+        check("UI: label tot veld 4px, tussen twee velden 16px (TT-582), balk tot titel 8px, zijmarge 16px",
+              m["labelVeld"] == 4 and m["genreLabelVeld"] == 4 and m["naamTotPostcode"] == 16 and m["balkTitel"] == 8
               and m["links"] == 16 and m["rechts"] == 16, j59("maten"))
         # Sinds 26-10-2026 is een invulveld weer precies 44px (regelhoogte 18px); met Roboto uit de repo
         # (TT-492) was het 45px.
@@ -10808,7 +10809,7 @@ window.TT_STUB.fnAntwoord = {};
         j95 = lambda k: json.dumps(d95.get(k), ensure_ascii=False)
         check("startscherm: titel Zoeken en twee tegels met hun regel (Laag 2)",
               d95["start"]["scherm"] == "start" and d95["start"]["titel"] == "Zoeken"
-              and d95["start"]["tegels"] == ["Muzikanten|Muzikanten en bands bij jou in de buurt", "Mix & Match|Ontdek wat jullie samen kunnen spelen"]
+              and d95["start"]["tegels"] == ["Muzikanten|Muzikanten en bands bij jou in de buurt", "Mix & Match|Vergelijk setlists met andere muzikanten"]
               and not d95["start"]["muzZicht"], j95("start"))
         # TT-517 fase 11 (besluit Ronald 01-11-2026, C): geen vlak achter het icoon (was --surface2).
         check("tegels: echte knoppen, één icoon en geen pijl; geen vlak achter het icoon, goud in donker",
@@ -10835,15 +10836,15 @@ window.TT_STUB.fnAntwoord = {};
         check("Filters: het woord met een pijltje, zonder getal, 12px (TT-517), goud in donker",
               dt["tekst"] == "Filters" and dt["kleur"] == "rgb(255, 184, 28)" and dt["letter"] == "12px", j95("dicht"))
         check("labels 12px (TT-517), gewone letter, tekstkleur (huisstijl §7)", dt["label"] == ["12px", "400", "rgb(240, 240, 240)"], j95("dicht"))
-        check("Filters (3C) rechts op de regel van Onthoud mijn zoekopdracht, 20px onder Plaats en Straal, het pijltje 10px van de rechterrand van het veld, op de middellijn van de vink",
-              dt["knopRechts"] == 10 and dt["knopOnder"] == 20 and abs(dt["knopMidden"]) <= 1, j95("dicht"))
-        check("Wissen (3C) onderaan het filtervak, 20px onder het laatste veld; het eind op het pijltje van Filters (2,5px naar links, besluit Ronald 09-11-2026)",
-              d95["openF"]["wisZicht"] and d95["openF"]["wisOnder"] == 20 and d95["openF"]["wisRechts"] == 12.5, json.dumps(d95["openF"]))
+        check("Filters (3C) rechts op de regel van Onthoud mijn zoekopdracht, 16px onder Plaats en Straal (TT-582), het pijltje 10px van de rechterrand van het veld, op de middellijn van de vink",
+              dt["knopRechts"] == 10 and dt["knopOnder"] == 16 and abs(dt["knopMidden"]) <= 1, j95("dicht"))
+        check("Wissen (3C) onderaan het filtervak, 16px onder het laatste veld (TT-582); het eind op het pijltje van Filters (2,5px naar links, besluit Ronald 09-11-2026)",
+              d95["openF"]["wisZicht"] and d95["openF"]["wisOnder"] == 16 and d95["openF"]["wisRechts"] == 12.5, json.dumps(d95["openF"]))
         of = d95["openF"]
-        check("Filters open (3C): pijltje omgedraaid, Naam 20px onder de regel van Filters; Naam, Instrument en Genre over de hele breedte, dan Niveau naast Leeftijd en Volgorde naast Weergave (besluit Ronald 09-11-2026, draaiwielen)",
+        check("Filters open (3C): pijltje omgedraaid, Naam 16px onder de regel van Filters (TT-582); Naam, Instrument en Genre over de hele breedte, dan Niveau naast Leeftijd en Volgorde naast Weergave (besluit Ronald 09-11-2026, draaiwielen)",
               of["vak"] and of["aria"] == "true" and of["draai"].startswith("matrix(-1")
               and of["labels"] == ["Naam", "Instrument", "Genre", "Niveau", "Leeftijd", "Volgorde", "Weergave"]
-              and of["naamBreed"] and of["naamOnder"] == 20
+              and of["naamBreed"] and of["naamOnder"] == 16
               and all(of["paren"]) and of["kolommen"][0] == of["kolommen"][1], j95("openF"))
         check("beginstand van de filters: –, –, –, –, Beste match, Lijst",
               of["waarden"] == ["–", "–", "–", "–", "Beste match", "Lijst"], j95("openF"))
@@ -16301,16 +16302,17 @@ def blok_tt543_onderdeel4():
             d = u["dicht"]
             check(f"{n} (3C): dicht zie je alleen Plaats en Straal; Naam, het filtervak en Wissen staan achter Filters",
                   not d["naam"] and not d["vak"] and not d["wissen"], json.dumps(d))
-            check(f"{n} (3C): Filters staat rechts op de regel van Onthoud mijn zoekopdracht, 20px onder Plaats en Straal, op de middellijn van de vink",
-                  d["knopInRij"] and d["rijOnder"] == 20 and abs(d["midden"]) <= 1, json.dumps(d))
+            check(f"{n} (3C): Filters staat rechts op de regel van Onthoud mijn zoekopdracht, 16px onder Plaats en Straal (TT-582), op de middellijn van de vink",
+                  d["knopInRij"] and d["rijOnder"] == 16 and abs(d["midden"]) <= 1, json.dumps(d))
             # Het beeld van 3C (08-11-2026) gaf 311px; F1 zet de regel "… gevonden" op 18px (was 'normal', 15px): 314px.
-            check(f"{n} (3C, F1): de telling 20px onder die regel; de eerste muzikant op 314px (was 401px; 311 op het beeld, +3px door de vaste regelhoogte van de telling)",
-                  d["totTelling"] == 20 and d["eersteRij"] == 314, json.dumps(d))
+            # TT-582 (10-11-2026): label tot veld 4px en Filters 16px onder Plaats en Straal: 8px hoger, 306px.
+            check(f"{n} (3C, F1, TT-582): de telling 20px onder die regel; de eerste muzikant op 306px (314px vóór TT-582)",
+                  d["totTelling"] == 20 and d["eersteRij"] == 306, json.dumps(d))
             check(f"{n} (TT-560): afstand in hele km in de rij; onder 1 km '1 km'",
                   d["meta"] == (["Basgitaar · Delft · 1 km", "Zang · Rijswijk · 4 km", "Hoorn · 12 km"] if wie == "lid" else ["Basgitaar · Delft · 1 km", "Zang · Rijswijk · 4 km", "Rock · Hoorn · 12 km"]) and all(" km" in m and "." not in m for m in d["meta"]), json.dumps(d["meta"], ensure_ascii=False))
             o = u["open"]
-            check(f"{n} (3C): open staat Naam als eerste veld, 20px onder de regel van Filters; Wissen onderaan het vak, 20px onder het laatste veld",
-                  o["eersteVeld"] == "filterName" and o["naamOnder"] == 20 and o["wisInVak"] and o["wisOnder"] == 20, json.dumps(o))
+            check(f"{n} (3C, TT-582): open staat Naam als eerste veld, 16px onder de regel van Filters; Wissen onderaan het vak, 16px onder het laatste veld",
+                  o["eersteVeld"] == "filterName" and o["naamOnder"] == 16 and o["wisInVak"] and o["wisOnder"] == 16, json.dumps(o))
             check(f"{n} (besluit sessie 102): een ingevulde naam telt mee in Filters: 'Filters (1)', met een instrument 'Filters (2)'",
                   o["teller"] == "Filters (1)" and u["teller2"] == "Filters (2)", json.dumps([o["teller"], u["teller2"]]))
             check(f"{n}: Wissen wist de naam en laat Plaats staan; de teller gaat terug naar 'Filters'",
@@ -16356,8 +16358,8 @@ def blok_tt543_onderdeel4():
                 check(f"{n} (B4): het blok: kop 'Colin Wever uitnodigen voor Van Delft' (22/28 vet), label 'Boodschap aan Colin Wever (niet verplicht)' (12/18)",
                       b and b["kop"] == "Colin Wever uitnodigen voor Van Delft" and b["kopMaat"] == ["22px", "28px", "700"]
                       and b["label"] == "Boodschap aan Colin Wever (niet verplicht)" and b["labelMaat"] == ["12px", "18px"], json.dumps(b, ensure_ascii=False))
-                check(f"{n} (B4): de kop op de plek van instrument en genres ({v['watTop']}px onder de hoes); kop tot label 20px, label tot berichtvak 8px, berichtvak tot knop 20px, 8px tussen de knoppen",
-                      b and b["kopTop"] == v["watTop"] and b["kopTotLabel"] == 20 and b["labelTotVak"] == 8 and b["vakTotKnop"] == 20 and b["tussenKnoppen"] == 8, json.dumps(b))
+                check(f"{n} (B4): de kop op de plek van instrument en genres ({v['watTop']}px onder de hoes); kop tot label 20px, label tot berichtvak 4px (TT-582), berichtvak tot knop 20px, 8px tussen de knoppen",
+                      b and b["kopTop"] == v["watTop"] and b["kopTotLabel"] == 20 and b["labelTotVak"] == 4 and b["vakTotKnop"] == 20 and b["tussenKnoppen"] == 8, json.dumps(b))
                 check(f"{n} (B4): 'Uitnodiging versturen' (geel) boven 'Annuleren' (omlijnd), over de breedte, 44px",
                       b and b["knoppen"] == [["Uitnodiging versturen", "geel", True, 44], ["Annuleren", "omlijnd", True, 44]], json.dumps(b and b["knoppen"]))
                 check(f"{n} (B4, besluit sessie 102): alleen de hoes en het blok; bands, repertoire en foto's staan er niet; de voorbeeldtekst past; geen regelhoogte 'normal', geen opmaak in de regel",
@@ -16673,6 +16675,174 @@ def blok_tt543_draaiwielen():
     check("blok 143: geen paginafouten", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_tt582_bundel():
+    # Bundel TT-582 (sessie 108, 10-11-2026, besluiten Ronald):
+    # TT-582 ruimte in formulieren: veldnaam tot veld 4px, tussen velden 16px,
+    #   een regel onder een veld 8px, lege uitlegregel weg, hulptekst bij de
+    #   band weg; gemeten op dezelfde 18 schermen als de proef ("A" op alle 18
+    #   schermen zoals getoond, sessie 107). VERWACHT is de meting van A.
+    # TT-584 terug met een open menu: de eerste druk sluit alleen het menu.
+    # TT-586 een veld met suggesties schuift bij de tik tot 20px onder de kop.
+    # TT-588 keuzemenu: warmgele pijl met vervaging als er meer regels zijn;
+    #   letter 17px in het menu en in het keuzeveld; typveld blijft 16px.
+    print("\nBlok 144 — bundel TT-582: ruimte in formulieren, terug met een menu, toetsenbord, keuzemenu")
+    VERWACHT = json.loads('''{"inloggen":[["L>V",4],["V>L",16],["L>V",4]],"nieuw-ww":[["L>V",4]],"wizard1":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8],["H>L",80],["L>V",4],["V>L",16],["L>V",4]],"wizard2":[["L>V",20],["V>V",80]],"wizard3":[["L>V",4]],"wizard4":[],"toestemming":[["L>V",4],["V>H",8]],"muzikanten":[["L>V",4],["V>L",50],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"mixmatch":[["L>V",4]],"inloggegevens":[["L>H",4],["H>V",4],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"wiebenje":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8],["H>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8]],"watspeelje":[["L>V",20],["V>V",80]],"jesetlist":[["L>V",4]],"bandaanmaken":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"bandwie":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>H",12],["H>L",16],["L>V",4],["V>H",8]],"bandbezetting":[["H>L",76],["L>V",4],["V>H",8]],"bandmuziek":[["L>L",20],["L>V",4],["V>H",63],["H>L",8],["L>V",4],["V>H",16]],"bandmedia":[["H>L",8],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]]}''')
+    idx = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    check("TT-582: de hulptekst bij postcode en plaats van een band is weg (Band aanmaken, Wie zijn we)",
+          "Zo vinden muzikanten in de buurt jullie" not in idx)
+    css = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+    check("TT-582 en TT-588: één maat per soort in :root (--ruimte-label 4px, --ruimte-velden 16px, --ruimte-uitleg 8px, --keuze-letter 17px)",
+          all(v in css for v in ("--ruimte-label: 4px;", "--ruimte-velden: 16px;", "--ruimte-uitleg: 8px;", "--keuze-letter: 17px;")))
+    stub_js = open(STUB, encoding="utf-8").read()
+    ingelogd = stub_js + """
+window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instruments: m.musician_instruments || [],
+  musician_genres: m.musician_genres || [], musician_songs: m.musician_songs || [], musician_media: m.musician_media || [] }));
+"""
+    SC = [
+     ("inloggen", 0, ["showView('auth')"]),
+     ("nieuw-ww", 0, ["showView('reset')"]),
+     ("wizard1", 0, ["showView('register')"]),
+     ("wizard2", 0, ["showView('register')", "goTo(1)"]),
+     ("wizard3", 0, ["showView('register')", "goTo(2)"]),
+     ("wizard4", 0, ["showView('register')", "goTo(3)"]),
+     ("toestemming", 0, ["showView('register')", "ouderStapTonen()"]),
+     ("muzikanten", 0, ["showView('search')", "openZoekScherm('muzikanten',{geenZoek:true})", "if(document.getElementById('zoekFilterVak').hidden) toggleZoekFilters()"]),
+     ("mixmatch", 0, ["showView('search')", "openZoekScherm('mixmatch',{geenZoek:true})"]),
+     ("inloggegevens", 1, ["showView('instellingen')", "openInloggegevens()"]),
+     ("wiebenje", 1, ["showView('profieltegels')", "openTegelScreen('wieBenJe')"]),
+     ("watspeelje", 1, ["showView('profieltegels')", "openTegelScreen('watSpeelJe')"]),
+     ("jesetlist", 1, ["showView('profieltegels')", "openTegelScreen('jeSetlist')"]),
+     ("bandaanmaken", 1, ["showView('bands')", "showCreateBandForm()"]),
+     ("bandwie", 1, ["openBandTegels('b9')", "openTegelScreen('bandWie')"]),
+     ("bandbezetting", 1, ["openBandTegels('b9')", "openTegelScreen('bandBezetting')"]),
+     ("bandmuziek", 1, ["openBandTegels('b9')", "openTegelScreen('bandMuziek')"]),
+     ("bandmedia", 1, ["openBandTegels('b9')", "openTegelScreen('bandMedia')"]),
+    ]
+    MEET = r"""() => {
+     const shown=e=>{const b=e.getBoundingClientRect(); if(b.width<2||b.height<2) return false; const s=getComputedStyle(e); return s.visibility!=='hidden' && s.display!=='none';};
+     const modal=[...document.querySelectorAll('.modal-overlay.visible')].filter(shown).pop();
+     const root=modal||document.querySelector('.app-view.active');
+     const LAB='label:not(.zoek-onthoud), .label-rij, .label-with-info';
+     const CTL='input[type=text],input[type=email],input[type=password],input[type=search],input[type=tel],input[type=url],input[type=number],input[type=date],input:not([type]),textarea,select,.wheel-field,.picker-field,.segmented-control';
+     let items=[];
+     for(const e of root.querySelectorAll(LAB)){ if(!shown(e)) continue; if(e.parentElement.closest('.label-rij, .label-with-info')) continue; if(e.querySelector(CTL)) continue; const b=e.getBoundingClientRect(); items.push({k:'L',top:b.top,bot:b.bottom}); }
+     for(const e of root.querySelectorAll(CTL)){ if(!shown(e)) continue; if(e.parentElement.closest('.wheel-field,.picker-field,.segmented-control')) continue; const b=e.getBoundingClientRect(); if(b.height<30) continue; items.push({k:'V',top:b.top,bot:b.bottom}); }
+     for(const e of root.querySelectorAll('.field-hint, .field-status')){ if(!shown(e)||!e.textContent.trim()) continue; const b=e.getBoundingClientRect(); items.push({k:'H',top:b.top,bot:b.bottom}); }
+     items.sort((a,b)=>a.top-b.top);
+     const rows=[]; for(const i of items){ const r=rows.find(r=>r.k===i.k && Math.abs(r.top-i.top)<3); if(r){r.bot=Math.max(r.bot,i.bot);} else rows.push({...i}); }
+     rows.sort((a,b)=>a.top-b.top);
+     const gaps=[]; for(let n=0;n<rows.length-1;n++){ const a=rows[n], b=rows[n+1]; const g=Math.round(b.top-a.bot); if(g<0||g>90) continue; gaps.push([a.k+'>'+b.k,g]); }
+     const leeg=[...root.querySelectorAll('.field > .field-hint:empty')].filter(e=>getComputedStyle(e).display!=='none').length;
+     return {gaps, leeg};
+    }"""
+    httpd, port = serve()
+    fouten = []
+
+    def nieuw(browser, thema, body, touch=False):
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme=thema, is_mobile=touch, has_touch=touch)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=body))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(500)
+        if thema == "light":
+            page.evaluate("document.documentElement.setAttribute('data-theme','licht')")
+        return ctx, page
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        # TT-582: de 18 schermen van de proef, licht en donker.
+        for thema in ("dark", "light"):
+            afwijk = []
+            for sid, inl, stappen in SC:
+                ctx, page = nieuw(browser, thema, ingelogd if inl else stub_js)
+                for s in stappen:
+                    page.evaluate(f"(async()=>{{ {s} }})()"); page.wait_for_timeout(450)
+                page.evaluate("document.activeElement && document.activeElement.blur()"); page.wait_for_timeout(250)
+                m = page.evaluate(MEET)
+                if m["gaps"] != VERWACHT[sid] or m["leeg"]:
+                    afwijk.append([sid, m["gaps"], m["leeg"]])
+                ctx.close()
+            n = "licht" if thema == "light" else "donker"
+            check(f"TT-582 {n}: op alle 18 schermen de ruimte van A (veldnaam tot veld 4px, tussen velden 16px, regel onder een veld 8px; geen lege uitlegregel)",
+                  not afwijk, json.dumps(afwijk)[:600])
+        for thema in ("dark", "light"):
+            n = "licht" if thema == "light" else "donker"
+            ctx, page = nieuw(browser, thema, stub_js)
+            u = page.evaluate("""async () => {
+              const w = (n = 350) => new Promise(r => setTimeout(r, n)), $ = id => document.getElementById(id), u = {};
+              showView('search'); openZoekScherm('muzikanten', { geenZoek: true });
+              if ($('zoekFilterVak').hidden) toggleZoekFilters();
+              await w(200);
+              // TT-588: Genre heeft 15 regels: het teken staat er, warmgeel.
+              $('filterGenresField').click(); await w();
+              const m = $('filterGenresMenu'), t = m.querySelector('.keuze-meer');
+              u.teken = !!t && getComputedStyle(t).color;
+              u.zichtbaar = t ? getComputedStyle(t).opacity : null;
+              u.letter = [getComputedStyle(m.querySelector('.choice-option')).fontSize, getComputedStyle($('filterGenresField')).fontSize,
+                          getComputedStyle($('filterRadiusField')).fontSize, getComputedStyle($('filterCity')).fontSize];
+              u.hoogte = Math.round(m.getBoundingClientRect().height);
+              m.scrollTop = m.scrollHeight; await w(200);
+              u.onderaan = [m.classList.contains('onderaan'), getComputedStyle(t).opacity];
+              // TT-584: terug sluit eerst alleen het menu.
+              m.scrollTop = 0; await w(100);
+              history.back(); await w(500);
+              u.terug1 = [!!document.querySelector('.menu-laag'), !!actiefKeuzeMenu, zoekScherm];
+              history.back(); await w(500);
+              u.terug2 = zoekScherm;
+              openZoekScherm('muzikanten', { geenZoek: true }); await w(300);
+              u.terug3 = [!!document.querySelector('.choice-menu.open'), !!document.querySelector('.menu-laag')];
+              // Straal heeft 6 regels: geen teken.
+              if ($('zoekFilterVak').hidden) toggleZoekFilters();
+              $('filterRadiusField').click(); await w();
+              u.straal = !!$('filterRadiusMenu').querySelector('.keuze-meer');
+              sluitAlleMenus(); await w();
+              // TT-584: het hamburgermenu.
+              const view = huidigeView;
+              toggleNavMenu(); await w(200);
+              history.back(); await w(500);
+              u.nav = [$('navMenuDropdown').classList.contains('visible'), huidigeView === view, zoekScherm];
+              return u;
+            }""")
+            check(f"TT-588 {n}: Genre (15 regels): de onderkant vervaagt met een warmgele pijl; onderaan gescrold verdwijnt het teken; Straal (6 regels) heeft geen teken",
+                  u["teken"] == "rgb(255, 184, 28)" and u["zichtbaar"] == "1" and u["onderaan"] == [True, "0"] and u["straal"] is False and u["hoogte"] == 344,
+                  json.dumps(u))
+            check(f"TT-588 {n}: letter 17px in het menu en in het keuzeveld (Genre, Straal); typveld Plaats 16px",
+                  u["letter"] == ["17px", "17px", "17px", "16px"], json.dumps(u["letter"]))
+            check(f"TT-584 {n}: terug met een open keuzemenu sluit alleen het menu; de volgende druk gaat naar het startscherm; terugkomen toont geen open menu",
+                  u["terug1"] == [False, False, "muzikanten"] and u["terug2"] == "start" and u["terug3"] == [False, False], json.dumps(u))
+            check(f"TT-584 {n}: terug met het hamburgermenu open sluit alleen het menu",
+                  u["nav"] == [False, True, "muzikanten"], json.dumps(u["nav"]))
+            ctx.close()
+        # TT-586: aanraakscherm; het veld met suggesties schuift tot 20px onder de kop.
+        for thema in ("dark", "light"):
+            n = "licht" if thema == "light" else "donker"
+            ctx, page = nieuw(browser, thema, stub_js, touch=True)
+            page.evaluate("(async()=>{ showView('register'); goTo(2); })()"); page.wait_for_timeout(600)
+            page.evaluate("window.scrollTo(0, 0)"); page.wait_for_timeout(100)
+            page.tap("#artistSearch"); page.wait_for_timeout(900)
+            a = page.evaluate("""() => { const kop = [...document.querySelectorAll('.app-topbar')].find(k => k.getClientRects().length);
+                 const veld = document.getElementById('artistSearch').closest('.field');
+                 return { stap: Math.round(veld.getBoundingClientRect().top - kop.getBoundingClientRect().bottom), focus: document.activeElement.id }; }""")
+            page.evaluate("document.activeElement.blur()"); page.wait_for_timeout(300)
+            a["naBlur"] = page.evaluate("document.body.style.minHeight")
+            page.evaluate("(async()=>{ showView('search'); openZoekScherm('mixmatch', { geenZoek: true }); })()"); page.wait_for_timeout(600)
+            page.evaluate("window.scrollTo(0, 0)"); page.wait_for_timeout(100)
+            page.tap("#gedeeldNaam"); page.wait_for_timeout(900)
+            a["mm"] = page.evaluate("""() => { const kop = [...document.querySelectorAll('.app-topbar')].find(k => k.getClientRects().length);
+                 return Math.round(document.getElementById('gedeeldNaam').closest('.field').getBoundingClientRect().top - kop.getBoundingClientRect().bottom); }""")
+            check(f"TT-586 {n}: een tik op een veld met suggesties zet de veldnaam 20px onder de kop (wizard stap 3, Mix & Match); de tijdelijke ruimte is weg na het veld",
+                  a["stap"] == 20 and a["focus"] == "artistSearch" and a["mm"] == 20 and a["naBlur"] == "", json.dumps(a))
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    check("blok 144: geen paginafouten", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -16714,6 +16884,7 @@ BLOKKEN = [
     blok_tt543_onderdeel4,
     blok_tt543_onderdeel5,
     blok_tt543_draaiwielen,
+    blok_tt582_bundel,
 ]
 
 

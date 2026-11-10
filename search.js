@@ -2123,9 +2123,12 @@ function renderGedeeldResults() {
   const cappedNotice = totaal > getoond.length
     ? `<p class="zoek-uitleg">Toont de eerste ${getoond.length} van ${totaal} nummers.</p>`
     : '';
+  // TT-585 (besluit Ronald 10-11-2026): de lijst telt elk nummer dat minstens
+  // GEDEELD_MIN van de gekozen muzikanten spelen; "jullie samen" zei dat
+  // iedereen het speelt.
   el.innerHTML = `
     <div class="results-header">
-      <span class="results-count">${totaal} ${totaal === 1 ? 'nummer dat' : 'nummers die'} jullie samen spelen</span>
+      <span class="results-count">${totaal} ${totaal === 1 ? 'nummer dat' : 'nummers die'} minstens ${GEDEELD_MIN} van jullie spelen</span>
     </div>
     ${cappedNotice}
     <div class="results-list">

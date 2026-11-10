@@ -32,6 +32,19 @@
        afstand tussen twee blokken (huisstijl §3). Geen bovenmarge per scherm
        meer. */
     --kop-ruimte: 20px;
+    /* TT-582 (besluit Ronald 09-11-2026, sessie 107, op beeld: "A" op alle 18
+       schermen; gebouwd 10-11-2026): één maat per soort witruimte in een
+       formulier, overal deze variabelen, nooit een los getal (huisstijl §3).
+       Veldnaam tot veld 4px; tussen twee velden 16px; een uitlegregel of
+       foutregel onder een veld 8px. Was 8px, 20px en 8px. */
+    --ruimte-label: 4px;
+    --ruimte-velden: 16px;
+    --ruimte-uitleg: 8px;
+    /* TT-588 (besluiten Ronald 10-11-2026, sessie 108, op beeld: "F1 17px";
+       "Ja, veld gelijk aan menu"): de letter van elke regel in een keuzemenu en
+       van de waarde in een keuzeveld. Typvelden blijven 16px (§7). Was 15px in
+       het menu en 16px in het veld. */
+    --keuze-letter: 17px;
     /* TT-233 (10-09-2026, Ronald): hoekstraal van een invoer-/keuzeveld. Eén
        waarde voor élk veld — invoerveld, keuzeveld, wielveld, lijstoptie —
        zodat geen twee velden naast elkaar een andere ronding krijgen. */
@@ -810,8 +823,8 @@
   .field-group {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 20px;
+    gap: var(--ruimte-velden) 20px;
+    margin-bottom: var(--ruimte-velden);
   }
 
   .field-group.single { grid-template-columns: 1fr; }
@@ -826,8 +839,8 @@
   .postcode-plaats {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-bottom: 20px;
+    gap: var(--ruimte-label);
+    margin-bottom: var(--ruimte-velden);
   }
   .postcode-plaats-rij {
     display: grid;
@@ -841,7 +854,7 @@
   .field {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--ruimte-label);
   }
 
   /* TT-233 (10-09-2026, Ronald): een label stond tegen de rand van de kolom,
@@ -980,6 +993,18 @@
     line-height: 16px;
     color: var(--muted);
   }
+  /* TT-582: een uitlegregel, statusregel of foutregel ónder een veld staat
+     --ruimte-uitleg (8px) onder het veld; de gap geeft --ruimte-label, de marge
+     de rest. Direct onder de veldnaam (tussen veldnaam en veld) blijft het de
+     gap. Een lege uitlegregel neemt geen ruimte in. */
+  .field > .field-hint,
+  .field > .field-status,
+  .field > .field-msg,
+  .postcode-plaats > .field-hint,
+  .postcode-plaats > .field-status,
+  .postcode-plaats > .field-msg { margin-top: calc(var(--ruimte-uitleg) - var(--ruimte-label)); }
+  .field > :is(label, .label-rij, .label-with-info) + :is(.field-hint, .field-status, .field-msg) { margin-top: 0; }
+  .field > .field-hint:empty { display: none; }
 
   /* Bugfix 12-08-2026 (melding Ronald: "breed veld", onduidelijk wat ermee
      moest bij het akkoord-vinkje op de laatste wizard-stap). Oorzaak: de
@@ -2224,11 +2249,11 @@
   .zoek-filters-knop.open .zoek-filters-pijl { transform: rotate(180deg); }
 
   /* Het filtervak: drie rijen van twee velden, 20px ertussen (§3). */
-  .zoek-filter-vak > .field-pair-row { margin-bottom: 20px; }
+  .zoek-filter-vak > .field-pair-row { margin-bottom: var(--ruimte-velden); }
   /* TT-543 onderdeel 4 (3C): Filters staat rechts op de regel van Onthoud mijn
      zoekopdracht; het vak klapt 20px daaronder open, met Naam als eerste veld
      en Wissen onderaan (20px onder het laatste veld). */
-  .zoek-filters-rij + .zoek-filter-vak { margin-top: 20px; }
+  .zoek-filters-rij + .zoek-filter-vak { margin-top: var(--ruimte-velden); }
   .zoek-filter-vak[hidden] { display: none; }
 
   /* Wissen rechts, altijd zichtbaar, direct onder het laatste zichtbare veld
@@ -3319,7 +3344,7 @@
      Profiel aanmaken" is de inlogregel van de landingspagina (.landing-login),
      24px onder de knop: de tekst staat 30px onder de knop, zoals op het beeld
      van het besluit (voorstel 2, B; gemeten). */
-  .auth-panel .field { margin-bottom: 16px; }
+  .auth-panel .field { margin-bottom: var(--ruimte-velden); }
   .auth-panel .field:has(+ .auth-vergeten-rij) { margin-bottom: 8px; }
   .auth-panel .field:has(+ .btn) { margin-bottom: 20px; }
   .auth-vergeten-rij { text-align: right; margin-bottom: 20px; }
@@ -3393,7 +3418,7 @@
      elk blok apart — dat is precies wat §3 verbiedt. */
   .search-filters > .field,
   .search-filters > .filter-row,
-  .search-filters > .field-pair-row { margin-bottom: 20px; }
+  .search-filters > .field-pair-row { margin-bottom: var(--ruimte-velden); }
 
   /* TT-517 fase 2 (huisstijl §7.4, §24; besluit Ronald 31-10-2026: "wat mij
      opvalt is dat overal nog de extra laag te zien is. die wil ik er ook
@@ -3430,7 +3455,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-    margin-bottom: 16px;
+    margin-bottom: var(--ruimte-velden);
   }
 
   .filter-row.single { grid-template-columns: 1fr; }
@@ -3861,7 +3886,7 @@
   .mm-gekozen .song-remove { margin: -4px -14px -4px 0; }
   /* Het filtervak van Wie speelt dit?: Plaats + Straal, dan Instrument, 20px
      ertussen (§3), zoals de rijen in het filtervak van Muzikanten. */
-  .zoek-filter-vak > .field { margin-bottom: 20px; }
+  .zoek-filter-vak > .field { margin-bottom: var(--ruimte-velden); }
   /* Een gekozen nummer: de vorm van een resultaatrij (.result-row). */
   .mm-nummer-rij {
     display: flex;
@@ -4209,7 +4234,7 @@
 
   /* Bandprofiel bewerken: het blok Bandbeheer onder de vier tegels. */
   .band-beheer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
-  .band-beheer .field { margin-bottom: 20px; }
+  .band-beheer .field { margin-bottom: var(--ruimte-velden); }
   .band-beheer .knoppen-stapel + .field-hint { margin-top: 8px; }
   /* Een keuze uit twee of drie over de volle breedte, even brede knoppen
      (zelfde aanpak als een knoppenrij, §5). */
@@ -4563,7 +4588,7 @@
        huisstijl §6; 16px voorkomt inzoomen op iOS, zie §7. */
     background: var(--field-bg); border: 1px solid var(--field-border); border-radius: var(--radius-field);
     min-height: 44px; padding: 10px var(--field-inset); margin-top: 0;
-    font-family: 'Inter', sans-serif; font-size: 16px; color: var(--text);
+    font-family: 'Inter', sans-serif; font-size: var(--keuze-letter); color: var(--text);
     cursor: pointer; transition: border-color 0.15s;
   }
   /* TT-543 F1: vaste regelhoogte; 10 + 22 + 10 + 2px rand = de 44px van een veld. */
@@ -5069,12 +5094,9 @@
      mee. Alleen in een .field en in .postcode-plaats, waar de 8px gap geldt. */
   .field > .field-status:empty,
   .postcode-plaats > .field-status:empty { display: none; }
-  /* Binnen een .field zit al 8px (gap) tussen veld en statusregel; de 4px
-     marge erbovenop maakte er 12 van. Huisstijl §3: veld naar statusregel 8px.
-     Een statusregel buiten een .field (autocomplete-lijst, nummerlijst) heeft
-     geen gap en houdt zijn 4px. */
-  .field > .field-status,
-  .postcode-plaats > .field-status { margin-top: 0; }
+  /* Een statusregel buiten een .field (autocomplete-lijst, nummerlijst) heeft
+     geen gap en houdt zijn 4px. In een .field en .postcode-plaats: TT-582,
+     bij .field-hint hierboven. */
   /* TT-494: een korte uitslag staat rechts op de labelregel, zodat er geen
      regel bijkomt en er niets schuift. Goed: --accent. Niet goed of bezig:
      --text (huisstijl §1.2: nooit rood als tekstkleur; de rode rand om het
@@ -5194,7 +5216,7 @@
     background: var(--field-bg);
     border: 1px solid var(--field-border);
     border-radius: var(--radius-field);
-    font-size: 16px;
+    font-size: var(--keuze-letter);
     color: var(--text);
     cursor: pointer;
     user-select: none;
@@ -5266,7 +5288,7 @@
   /* Deze twee staan niet in een .field, dus de 8px tussen label en veld uit §3
      kwam hier niet vanzelf. */
   .filter-row-city .frc-plaats,
-  .filter-row-city .frc-straal { display: flex; flex-direction: column; gap: 8px; }
+  .filter-row-city .frc-straal { display: flex; flex-direction: column; gap: var(--ruimte-label); }
   .filter-row-city .frc-plaats { flex: 1 1 auto; min-width: 0; }
   .filter-row-city .frc-straal { flex: 0 0 auto; }
   .filter-row-city .frc-straal .wheel-field { min-width: 104px; }
@@ -5278,7 +5300,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: var(--ruimte-velden);
   }
   .field-pair-row .field { min-width: 0; }
   /* Onder 360px past de rij niet meer naast elkaar. */
@@ -5366,6 +5388,7 @@
   .choice-menu:not(.beheersing-menu) .choice-option {
     justify-content: center;
     text-align: center;
+    font-size: var(--keuze-letter);
     margin: 2px 0;
     padding: 0 12px;
     border-radius: 8px;
@@ -5375,6 +5398,28 @@
     background: var(--gekozen-pil);
     box-shadow: var(--schaduw-gekozen-pil);
   }
+  /* TT-588 (besluit Ronald 10-11-2026, sessie 108: "M2 met een gele pijl"):
+     staan er meer regels dan in beeld passen, dan vervaagt de onderkant van het
+     menu en staat er een warmgele pijl. Onderaan gescrold verdwijnt het teken.
+     Het teken ligt over de onderste regel (marge -36px) en maakt het menu niet
+     hoger; een tik gaat erdoorheen naar de regel. Getekend door
+     keuzeMeerTeken() in utils.js. */
+  .keuze-meer {
+    position: sticky;
+    bottom: -8px;
+    margin: -36px -8px -8px;
+    height: 44px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 6px;
+    background: linear-gradient(to bottom, transparent, var(--surface2) 70%);
+    color: var(--merk);
+    pointer-events: none;
+    transition: opacity 0.12s;
+  }
+  .keuze-meer svg { width: 18px; height: 18px; }
+  .choice-menu.onderaan .keuze-meer { opacity: 0; }
 
 
   /* Label met de i-knop ernaast (zelfde patroon als "Mijn Instrumenten"). */

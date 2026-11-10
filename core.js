@@ -1619,6 +1619,15 @@ function bovensteModal(alleenMetClose) {
 // de bandwizard. Daarna het scherm achter je op de stapel. Vanaf de bovenkant
 // van Zoeken, Berichten en Bands naar het hoogste scherm; daar gebeurt niets.
 function appTerug() {
+  // TT-584 (besluit Ronald 10-11-2026): staat er een menu open (keuzemenu,
+  // ⋯-menu, hamburgermenu), dan sluit de eerste druk op terug alleen dat menu,
+  // zoals bij een venster. Elk menu legt de laag van menuLaagOpen() neer; die
+  // laag is dus het teken. Tot 10-11-2026 bleef een keuzemenu in Zoeken open
+  // staan als je terugging en weer terugkwam.
+  if (document.querySelector('.menu-laag')) {
+    sluitAlleMenus();
+    return;
+  }
   const openModal = bovensteModal(false);
   if (openModal) {
     // TT-408 (C): een verplicht scherm (data-verplicht) sluit nooit met terug.
@@ -1755,6 +1764,72 @@ function isTypveld(el) {
       volle = laagste = h;
       if (isTypveld(document.activeElement)) document.activeElement.blur();
     }
+  });
+})();
+
+// TT-586 (besluit Ronald 10-11-2026): een veld met suggesties schuift bij de
+// tik naar boven, tot onder de kop, zodat de suggesties boven het toetsenbord
+// in beeld staan. Alleen op een aanraakscherm. Geldt voor elk typveld met een
+// .autocomplete-list in zijn .field (15 velden op 10-11-2026). De veldnaam komt
+// --kop-ruimte (20px) onder de kop, de standaard tussen kop en inhoud. Past dat
+// niet omdat de pagina te kort is, dan wordt de pagina tijdelijk hoger (een
+// minimale hoogte op body; extra opvulling helpt niet: body heeft min-height
+// 100vh met border-box, dus opvulling valt binnen die hoogte zolang de pagina
+// korter is dan het scherm). Dat gaat weg zodra het veld de focus verliest.
+function suggestieVeld(el) {
+  if (!isTypveld(el)) return null;
+  const veld = el.closest('.field');
+  return veld && veld.querySelector('.autocomplete-list') ? veld : null;
+}
+function scrollOuder(el) {
+  for (let x = el.parentElement; x && x !== document.body && x !== document.documentElement; x = x.parentElement) {
+    const o = getComputedStyle(x).overflowY;
+    if ((o === 'auto' || o === 'scroll') && x.scrollHeight > x.clientHeight) return x;
+  }
+  return null;
+}
+function veldOnderKop(el) {
+  const veld = suggestieVeld(el);
+  if (!veld || document.activeElement !== el) return;
+  const ouder = scrollOuder(veld);
+  const ruimte = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kop-ruimte')) || 20;
+  let boven;
+  if (ouder) boven = ouder.getBoundingClientRect().top;
+  else {
+    const kop = [...document.querySelectorAll('.app-topbar')].find(k => k.getClientRects().length);
+    boven = kop ? Math.max(0, kop.getBoundingClientRect().bottom) : 0;
+  }
+  const stap = Math.round(veld.getBoundingClientRect().top - (boven + ruimte));
+  if (Math.abs(stap) < 2) return;
+  const beweegtNiet = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const gedrag = beweegtNiet ? 'auto' : 'smooth';
+  if (ouder) { ouder.scrollBy({ top: stap, behavior: gedrag }); return; }
+  if (stap > 0) {
+    const kanNog = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+    if (kanNog < stap) {
+      document.body.style.minHeight = Math.ceil(document.documentElement.scrollHeight + stap - kanNog) + 'px';
+      document.body.dataset.ttVeldRuimte = '1';
+    }
+  }
+  window.scrollBy({ top: stap, behavior: gedrag });
+}
+(function initVeldOnderKop() {
+  if (!window.matchMedia || !window.matchMedia('(pointer: coarse)').matches) return;
+  document.addEventListener('focusin', e => {
+    if (!suggestieVeld(e.target)) return;
+    const el = e.target;
+    // Eén keer meteen, één keer als het toetsenbord staat (de browser schuift
+    // het veld zelf ook in beeld; deze tweede stap zet het waar het hoort).
+    setTimeout(() => veldOnderKop(el), 0);
+    setTimeout(() => veldOnderKop(el), 350);
+  });
+  document.addEventListener('focusout', e => {
+    if (!suggestieVeld(e.target) || !document.body.dataset.ttVeldRuimte) return;
+    setTimeout(() => {
+      if (suggestieVeld(document.activeElement)) return; // naar het volgende veld met suggesties
+      document.body.style.minHeight = '';
+      delete document.body.dataset.ttVeldRuimte;
+    }, 0);
   });
 })();
 

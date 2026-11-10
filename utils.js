@@ -1604,6 +1604,7 @@ function tekenKeuzeMenu(id) {
   menu.innerHTML = rijen.map((r, i) => `
     <button type="button" class="choice-option${r.gekozen ? ' selected' : ''}"
             role="option" aria-selected="${r.gekozen ? 'true' : 'false'}" data-i="${i}"${r.waarde != null ? ` data-waarde="${escHtml(r.waarde)}"` : ''}><span>${escHtml(r.t)}</span></button>`).join('');
+  keuzeMeerTeken(menu);
   menu.scrollTop = scroll;
   if (cfg.meer) menu.setAttribute('aria-multiselectable', 'true');
   menu.querySelectorAll('.choice-option').forEach(rij => {
@@ -1628,6 +1629,23 @@ function tekenKeuzeMenu(id) {
       refreshChoiceField(id);
     });
   });
+}
+
+// TT-588 (besluit Ronald 10-11-2026: "M2 met een gele pijl"): het teken dat er
+// meer regels zijn dan in beeld passen. Niet bij de labelvorm (§7.7). Onderaan
+// gescrold krijgt het menu de klasse .onderaan en verdwijnt het teken.
+const KEUZE_MEER_PIJL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+function keuzeMeerTeken(menu) {
+  if (menu.classList.contains('beheersing-menu')) return;
+  if (menu.scrollHeight <= menu.clientHeight + 1) return;
+  const teken = document.createElement('div');
+  teken.className = 'keuze-meer';
+  teken.setAttribute('aria-hidden', 'true');
+  teken.innerHTML = KEUZE_MEER_PIJL;
+  menu.appendChild(teken);
+  const bijScroll = () => menu.classList.toggle('onderaan', menu.scrollTop + menu.clientHeight >= menu.scrollHeight - 2);
+  if (!menu.ttMeerLuisteraar) { menu.addEventListener('scroll', bijScroll, { passive: true }); menu.ttMeerLuisteraar = true; }
+  bijScroll();
 }
 
 function toggleChoiceMenu(id) {
@@ -1724,7 +1742,7 @@ function closeChoiceMenu() {
     clearTimeout(t);
     menu.removeEventListener('animationend', bijEindeBeweging);
     menu.ttOpruimen = null;
-    menu.classList.remove('open', 'sluit', 'naar-boven');
+    menu.classList.remove('open', 'sluit', 'naar-boven', 'onderaan');
     menu.innerHTML = '';
     if (menu.ttRuimteOnder) { document.body.style.paddingBottom = ''; menu.ttRuimteOnder = false; }
   };
