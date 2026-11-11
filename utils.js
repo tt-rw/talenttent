@@ -262,7 +262,7 @@ function veldFoutAnker(el) {
   // was het 0px) en de suggestielijst direct onder het veld blijft.
   // TT-543 blok 4: "+ Instrument" en "+ Genre" staan in het raster van de keuzes;
   // de foutregel staat onder dat raster.
-  // TT-543 draaiwielen deel 2: een keuzeveld met zijn menu (de invaller); de
+  // TT-543 draaiwielen deel 2: een keuzeveld met zijn menu (sinds blok 2: Rol bij uitnodigen); de
   // regel staat onder het veld, het menu blijft direct onder het veld uitklappen.
   return (el.closest && (el.closest('.password-wrap') || el.closest('.postcode-plaats-rij') || el.closest('.song-search-wrap') || el.closest('.picker-badge-row') || el.closest('.menu-anchor'))) || el;
 }
@@ -1710,7 +1710,10 @@ function menuInBeeld(menu, veld) {
   const kanNog = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
   if (kanNog < tekort) {
     if (menu.ttMinHoogte === undefined) menu.ttMinHoogte = document.body.style.minHeight; // terug bij sluiten
-    document.body.style.minHeight = Math.ceil(document.body.offsetHeight + tekort - kanNog) + 'px';
+    // 8D (TT-543 onderdeel 6, blok 2, 11-11-2026): de pagina kan langer zijn dan
+    // body (een marge die eronder uitsteekt). Gemeten vanaf de hoogte van de
+    // pagina, anders groeit ze niet en valt het menu over de balk (was 9px).
+    document.body.style.minHeight = Math.ceil(Math.max(document.body.offsetHeight, document.documentElement.scrollHeight) + tekort - kanNog) + 'px';
   }
   const beweegtNiet = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   window.scrollBy({ top: Math.ceil(tekort), behavior: beweegtNiet ? 'auto' : 'smooth' });

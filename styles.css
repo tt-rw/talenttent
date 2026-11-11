@@ -1113,29 +1113,6 @@
   }
   @media (hover: hover) { .password-toggle:hover { color: var(--accent); } } /* TT-517 fase 9: alleen met een muis */
 
-  /* TT-316 (24-09-2026, besluit Ronald K6): één gestippelde vorm voor
-     "iets toevoegen" — de voorzetten voor de bio en "+ Link toevoegen".
-     Was twee vormen, elk met eigen rand, hoek en letter. :hover staat in de
-     touch-guard verderop (TT-182). */
-  .add-link-btn {
-    background: transparent;
-    border: var(--line) dashed var(--border);
-    border-radius: 999px; /* TT-517 fase 11, B: ook de gestippelde knop een pil */
-    /* TT-U23 (12-08-2026): tikdoel minimaal 44px hoog, randen meegerekend. */
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    padding: 8px 16px;
-    font-family: 'Inter', sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
   /* Song search */
   /* TT-241 (10-09-2026): dit is alleen nog een ankerpunt voor de keuzelijst
      die eronder uitklapt. Weg: padding-left:44px op het veld (ruimte voor een
@@ -2474,6 +2451,15 @@
   .choice-menu.media-toevoegen-menu.naar-boven { top: auto; bottom: 0; }
   .choice-menu.media-toevoegen-menu.naar-links { left: auto; right: calc(100% + 8px); transform-origin: right bottom; }
   .choice-menu.media-toevoegen-menu.naar-rechts { right: auto; left: calc(100% + 8px); transform-origin: left bottom; }
+  /* TT-590 (besluit Ronald 11-11-2026: "B"): in het donkere thema krijgt het
+     menu de gele stippellijn van het vak "+ Toevoegen"; donkergrijs viel weg
+     tegen de donkere pagina (Samsung). Het menu Beheersing in Je setlist
+     blijft zoals het was (besluit Ronald: "ad 2. nu"). */
+  :root:not([data-theme="licht"]) .choice-menu.media-toevoegen-menu { border: 2px dashed var(--merk); }
+  /* TT-590 (besluit Ronald 11-11-2026: "het keuzemenu is nu lichter dan de knop
+     met +. geef het keuzemenu dezelfde kleur."): in het lichte thema het vlak
+     van het open vak "+ Toevoegen". */
+  :root[data-theme="licht"] .choice-menu.media-toevoegen-menu { background: var(--bg); }
 
   /* ── Het mediascherm ──────────────────────────────────────────────────── */
   .media-speler-box {
@@ -2522,12 +2508,6 @@
   .media-speler-voet { display: flex; gap: 8px; padding: 12px 14px; background: var(--surface); }
   .media-speler-voet:empty { display: none; }
   .media-speler-voet .btn { flex: 1; }
-
-  /* De vorm staat bij .add-link-btn hierboven (TT-316: één gestippelde vorm). */
-  .add-link-btn {
-    width: 100%;
-    margin-top: 4px;
-  }
 
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
@@ -2582,6 +2562,8 @@
   .uitnodig-blok .hoofdstuk-kop { margin-top: 0; overflow-wrap: anywhere; }
   /* Het berichtvak toont de hele voorbeeldtekst, ook op 320px (drie regels). */
   .uitnodig-blok textarea { min-height: 88px; }
+  /* Blok 2 (TT-543 onderdeel 6, B2-7): het veld Rol boven het berichtvak, de vaste ruimte tussen twee velden (TT-582). */
+  .uitnodig-blok .field + .field { margin-top: var(--ruimte-velden); }
   .uitnodig-knoppen { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
   .profiel-wat { display: flow-root; margin-bottom: 20px; } /* flow-root: ook leeg houdt het blok zijn 20px, zoals de tags ervoor */
   .profiel-wat-regel { font-size: 12px; line-height: 18px; color: var(--muted); overflow-wrap: anywhere; }
@@ -4057,7 +4039,7 @@
   /* TT-543 onderdeel 6 (besluit Ronald 10-11-2026, 13 A): de rij staat direct
      onder Wie zijn we, zonder kop, 12px onder de tekst. Zonder Wie zijn we
      direct onder de regels (de 20px van .profiel-wat). Op beeld gemeten. */
-  .profile-bio + .socials, .profile-bio + .add-link-btn { margin-top: 12px; }
+  .profile-bio + .socials { margin-top: 12px; }
   .social-knop {
     width: 44px; height: 44px; padding: 8px;
     display: flex; align-items: center; justify-content: center;
@@ -4068,10 +4050,6 @@
 
   /* ── TT-385 fase 3 (02-10-2026): de privé bandpagina en Bandprofiel
      bewerken ─────────────────────────────────────────────────────────────── */
-  /* Een uitnodiging staat direct onder de titel van zijn sectie, of 12px
-     onder de rijen van de bezetting. */
-  .profile-media > .add-link-btn { margin-top: 0; }
-  .bezetting + .add-link-btn { margin-top: 12px; }
 
   /* Het deelblad: één zin, dan de knoppen. */
   .deelblad-tekst { font-size: 12px; line-height: 20px; color: var(--text); margin: 0 0 20px; }
@@ -4105,6 +4083,8 @@
   .bb-foto-leeg { background: var(--podium); overflow: hidden; } /* TT-517 fase 6: zonder foto de schijnwerper; fase 7: het vak snijdt het wazige beeld af */
   .bb-foto.bezetting-open-rondje { font-size: 18px; }
   .bb-wacht { opacity: .55; }
+  /* TT-580 (besluit Ronald 10-11-2026, 2): een uitnodiging op de bandpagina, naam half doorzichtig. */
+  .bezetting-uitgenodigd .bb-naam { opacity: .55; }
   .bb-tekst { flex: 1; min-width: 0; }
   /* Een naam in een lijst is 16px, vet (§2). */
   .bb-naam { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
@@ -4123,7 +4103,8 @@
   .hoofdstuk-kop + .bb-hint { margin-bottom: 8px; }
   .picker-field.toevoegen-breed, .menu-anchor.toevoegen-breed { margin-top: 8px; }
   .bb-lijst:not(:empty) + .bb-hint { margin-top: 8px; }
-  .bb-inval-form { margin-top: 12px; }
+  /* Rollen wijzigen (TT-543 onderdeel 6, blok 2): het anker van het menu onder de rij van een lid; neemt geen ruimte in. */
+  .bb-rollen-veld { height: 0; }
   /* TT-385 punt 17: je bands op je muzikantprofiel. Dezelfde rij als in Onze
      bezetting, als knop; de bandfoto is vierkant, zoals overal. */
   .bb-foto-vierkant { border-radius: 8px; }
@@ -4956,7 +4937,6 @@
     .picker-list-item:hover { color: var(--accent); }
     .song-remove:hover { color: var(--danger); }
     .ac-item:hover { background: var(--surface2); }
-    .add-link-btn:hover { border-color: var(--accent); color: var(--accent); }
   }
 
   /* ── Canvas op laptop/desktop (TT-224, 07-09-2026 — hersteld 09-09-2026) ──

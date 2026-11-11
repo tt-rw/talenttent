@@ -371,7 +371,9 @@ function resetBandForm() {
 // (status 'aangevraagd'); pas als de muzikant zelf bevestigt via de banner op
 // Mijn Profiel wordt het 'bevestigd' en is het lidmaatschap zichtbaar.
 // V-18 (13-08-2026): de oprichter kan een korte boodschap meegeven.
-async function addBandMember(band, musicianId, note) {
+// Blok 2 (besluit Ronald 11-11-2026, B2-7): de uitnodiging draagt de rollen in
+// deze band; zonder rollen vult de database de instrumenten van het profiel in.
+async function addBandMember(band, musicianId, note, rollen) {
   try {
     // TT-56 (12-08-2026): defensieve check naast de verborgen knop hierboven
     // — zelfde patroon als de akkoord-checkbox bij registratie (TT-63): de
@@ -388,7 +390,7 @@ async function addBandMember(band, musicianId, note) {
     }
 
     const { error } = await db.from('band_members').insert({
-      band_id: band.id, musician_id: musicianId, role: 'Lid', status: 'aangevraagd'
+      band_id: band.id, musician_id: musicianId, role: 'Lid', status: 'aangevraagd', rollen: rollen || []
     });
     if (error) throw error;
 
@@ -735,39 +737,38 @@ function bandSocialLink(soc, waarde) {
   return soc.basis + naam;
 }
 
-function vandaagISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-// Met een eigen profiel: de tabellen zelf. Een invaller van vóór vandaag
-// telt niet meer (TT-385, besluit Ronald: "de app"); de nachttaak ruimt hem
-// later op.
+// Met een eigen profiel: de tabellen zelf. Per lid de rollen in deze band
+// (TT-543 onderdeel 6, besluit Ronald 10-11-2026, 12); een invaller heeft geen
+// datum meer en blijft tot de beheerder hem weghaalt (besluit Ronald
+// 10-11-2026: "ja, weghalen").
 async function bandUitTabellen(id) {
   const { data: b, error } = await db.from('bands')
-    .select(`*, band_members(role, status, joined_at, musicians(id, weergavenaam, username, avatar_url, musician_instruments(instrument))), band_wanted(instrument), band_media(media_type, url, platform, in_banner, created_at, uitsnede), band_nummers(titel, url, platform, created_at), band_covers(song_title, song_artist), band_invallers(instrument, datum)`)
+    .select(`*, band_members(role, rollen, status, joined_at, musicians(id, weergavenaam, username, avatar_url)), band_wanted(instrument), band_media(media_type, url, platform, in_banner, created_at, uitsnede), band_nummers(titel, url, platform, created_at), band_covers(song_title, song_artist), band_invallers(instrument, created_at)`)
     .eq('id', id).maybeSingle(); // TT-464: een band die niet (meer) bestaat is geen fout
   if (error) throw error;
   if (!b) return null;
+  const naarLid = m => ({
+    id: m.musicians.id, naam: displayNameOf(m.musicians), avatar_url: m.musicians.avatar_url || null,
+    rollen: m.rollen || [], rol: m.role
+  });
   const leden = (b.band_members || [])
     .filter(m => m.status === 'bevestigd' && m.musicians)
     .sort((x, y) => String(x.joined_at || '').localeCompare(String(y.joined_at || '')))
-    .map(m => ({
-      id: m.musicians.id, naam: displayNameOf(m.musicians), avatar_url: m.musicians.avatar_url || null,
-      instrumenten: (m.musicians.musician_instruments || []).map(i => i.instrument), rol: m.role
-    }));
+    .map(naarLid);
+  // TT-580 (besluit Ronald 10-11-2026, 2): een uitnodiging staat in de
+  // bezetting, alleen voor leden en beheerder (bandPaginaHTML()).
+  const uitgenodigd = (b.band_members || []).filter(m => m.status === 'aangevraagd' && m.musicians).map(naarLid);
   const beheerder = leden.find(l => l.rol === 'Oprichter');
   const beheerderId = b.founder_id || (beheerder ? beheerder.id : null);
-  const vandaag = vandaagISO();
   return {
     id: b.id, name: b.name, city: b.city, description: b.description, niveau: b.niveau,
     avatar_url: b.avatar_url || null, genres: b.genres || [], soort: b.soort || null, pauze: !!b.pauze,
     instagram: b.instagram, tiktok: b.tiktok, youtube: b.youtube, afgeschermd: false,
-    leden, beheerderId,
+    leden, uitgenodigd, beheerderId,
     contact: leden.find(l => l.id === b.contact_id) || leden.find(l => l.id === beheerderId) || null,
     wanted: (b.band_wanted || []).map(w => w.instrument),
-    invallers: (b.band_invallers || []).filter(v => String(v.datum) >= vandaag)
-      .sort((x, y) => String(x.datum).localeCompare(String(y.datum))),
+    invallers: (b.band_invallers || []).slice()
+      .sort((x, y) => String(x.created_at || '').localeCompare(String(y.created_at || ''))),
     media: opVolgordeVanToevoegen(b.band_media), // TT-563: één functie, muzikant en band gelijk
     nummers: opVolgordeVanToevoegen(b.band_nummers),
     covers: b.band_covers || []
@@ -783,56 +784,55 @@ async function bandUitPubliek(id) {
   if (!row) return null;
   const ledenRijen = (row.members || []).map(m => ({ id: m.id || null, username: m.username }));
   await weergavenamenToevoegen(ledenRijen.filter(l => l.id));
+  // `instruments` zijn sinds blok 2 de rollen in deze band (tt_get_bands_public).
   const leden = (row.members || []).map((m, i) => ({
     id: m.id || null, naam: displayNameOf(ledenRijen[i]), avatar_url: m.avatar_url || null,
-    instrumenten: m.instruments || [], rol: m.role || 'Lid'
+    rollen: m.instruments || [], rol: m.role || 'Lid'
   }));
   return {
     id: row.id, name: row.name, city: row.city, description: row.description, niveau: row.niveau,
     avatar_url: row.avatar_url || null, genres: row.genres || [], soort: row.soort || null, pauze: !!row.pauze,
     instagram: row.instagram, tiktok: row.tiktok, youtube: row.youtube, afgeschermd: !!row.afgeschermd,
-    leden, beheerderId: null,
+    leden, uitgenodigd: [], beheerderId: null,
     contact: leden.find(l => l.id && l.id === row.contact_id) || null,
     wanted: row.wanted || [], invallers: row.invallers || [],
     media: row.media || [], nummers: row.nummers || [], covers: row.covers || []
   };
 }
 
-// De datum van een invaller, voluit leesbaar: "za 14 nov".
-function invallerDatum(datum) {
-  const d = new Date(String(datum) + 'T12:00:00');
-  if (isNaN(d)) return escHtml(String(datum || ''));
-  return escHtml(d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, ''));
+// De bezetting (TT-543 onderdeel 6, besluiten Ronald 10-11-2026, 12: "naam vet
+// en functie kleiner eronder", en 11-11-2026, B2-12, "2A"): één rij per
+// persoon, op naam, met de rollen op alfabet achter elkaar ("Basgitaar · Drums"),
+// zoals het blok Bands en Onze bezetting. Een lid zonder rol staat er als "Lid".
+// (Was één rij per rol, B2-1.)
+function bezettingRijen(leden) {
+  return [...leden].sort((x, y) => x.naam.localeCompare(y.naam, 'nl'))
+    .map(l => [l, l.rollen.length ? [...l.rollen].sort((x, y) => x.localeCompare(y, 'nl')).join(' · ') : roleLabel('Lid')]);
 }
 
-// Eén lid in de bezetting: dezelfde rij als in Onze bezetting en op het
+// Eén rij in de bezetting: dezelfde rij als in Onze bezetting en op het
 // muzikantprofiel (`.bb-rij`, foto links, tekst rechts). Zonder foto (of
 // afgeschermd) de schijnwerper, zoals elke lege profielfoto (huisstijl §21;
-// afgeschermd wordt wazig in fase 7 van TT-517, §18.7).
-function bezettingLidHTML(l) {
-  const rol = l.instrumenten.length ? l.instrumenten.join(' · ') : roleLabel(l.rol);
-  const inhoud = `${bbFotoHTML(l.avatar_url)}<span class="bb-tekst"><span class="bb-naam">${escHtml(l.naam)}</span><span class="bb-sub">${escHtml(rol)}</span></span>`;
+// afgeschermd wordt wazig in fase 7 van TT-517, §18.7). Een uitnodiging
+// (TT-580) staat er half doorzichtig, met "uitgenodigd" achter de rol.
+function bezettingLidHTML(l, rol, uitgenodigd) {
+  const sub = uitgenodigd ? `${rol} · uitgenodigd` : rol;
+  const inhoud = `${bbFotoHTML(l.avatar_url, uitgenodigd)}<span class="bb-tekst"><span class="bb-naam">${escHtml(l.naam)}</span><span class="bb-sub">${escHtml(sub)}</span></span>`;
+  const klas = 'bb-rij bezetting-lid' + (uitgenodigd ? ' bezetting-uitgenodigd' : '');
   // Een tik opent het profiel van het lid, ook je eigen (TT-410b: elk profiel is een scherm).
   return l.id
-    ? `<button type="button" class="bb-rij bb-rij-knop bezetting-lid" onclick="openProfielScherm('${jsAttr(l.id)}')" aria-label="Profiel van ${escHtml(l.naam)}">${inhoud}</button>`
-    : `<div class="bb-rij bezetting-lid">${inhoud}</div>`;
+    ? `<button type="button" class="${klas} bb-rij-knop" onclick="openProfielScherm('${jsAttr(l.id)}')" aria-label="Profiel van ${escHtml(l.naam)}">${inhoud}</button>`
+    : `<div class="${klas}">${inhoud}</div>`;
 }
 
-// Een open plek in de bezetting: een vaste rol (band_wanted) of een invaller
-// voor één optreden. Op de bandpagina is het nooit een knop, voor niemand
-// (TT-450, besluit Ronald: een plus geeft de indruk dat je kunt tikken); het
-// teken is een vraagteken. Zoeken opent vanuit Bandprofiel bewerken, op het
-// plusje in de rij (bbRenderOpen(), bbRenderInvallers()).
-function bezettingOpenHTML(instrument, regels) {
-  return `<div class="bb-rij bezetting-open"><span class="bb-foto bezetting-open-rondje" aria-hidden="true">?</span><span class="bb-tekst"><span class="bb-naam">${escHtml(instrument)}</span>${regels.map(r => `<span class="bb-sub">${r}</span>`).join('')}</span></div>`;
-}
-
-// Een lege plek op je eigen bandpagina is een uitnodiging, geen leeg vak
-// (TT-385 punt 2). Een tik opent het tegelscherm, niet de tegel zelf: terug
-// gaat dan een stap omhoog naar de bandpagina, niet naar een scherm dat je
-// nooit hebt geopend (TT-449).
-function bandUitnodigingHTML(tekst, bandId) {
-  return `<button type="button" class="add-link-btn" onclick="openBandTegels('${jsAttr(bandId)}')">${escHtml(tekst)}</button>`;
+// Een open plek in de bezetting: een open rol (band_wanted, "Gezocht") of een
+// invaller ("Invaller"), vet, met het instrument eronder: dezelfde vorm als
+// een lid (besluit Ronald 10-11-2026, 12). Op de bandpagina is het nooit een
+// knop, voor niemand (TT-450, besluit Ronald: een plus geeft de indruk dat je
+// kunt tikken); het teken is een vraagteken (V1). Zoeken opent vanuit
+// Bandprofiel bewerken, op het plusje in de rij (bbRenderOpen(), bbRenderInvallers()).
+function bezettingOpenHTML(kop, instrument) {
+  return `<div class="bb-rij bezetting-open"><span class="bb-foto bezetting-open-rondje" aria-hidden="true">?</span><span class="bb-tekst"><span class="bb-naam">${kop}</span><span class="bb-sub">${escHtml(instrument)}</span></span></div>`;
 }
 
 function bandSectieHTML(titel, inhoud) {
@@ -858,7 +858,7 @@ async function profielBandsOphalen(musicianId) {
     if (fout) throw fout;
     return ids.map(id => (data || []).find(b => b.id === id)).filter(Boolean).map(b => {
       const ik = (b.members || []).find(x => x.id === musicianId) || {};
-      return { id: b.id, naam: b.name, foto: b.avatar_url || null, instrumenten: ik.instruments || [], rol: ik.role || 'Lid' };
+      return { id: b.id, naam: b.name, foto: b.avatar_url || null, rollen: ik.instruments || [], rol: ik.role || 'Lid' };
     });
   } catch (e) {
     logCaught('profielBandsOphalen', e);
@@ -867,13 +867,14 @@ async function profielBandsOphalen(musicianId) {
 }
 
 // Eén rij per band, in de vorm van een rij in Onze bezetting, met de
-// vierkante bandfoto. Eronder de instrumenten, en "Beheerder" voor de
-// beheerder.
+// vierkante bandfoto. Eronder de rollen in die band (besluit Ronald
+// 11-11-2026, B2-3: niet alle instrumenten van het profiel), en "Beheerder"
+// voor de beheerder.
 function profielBandsHTML(bands) {
   if (!bands || !bands.length) return '';
   return bandSectieHTML('Bands', bands.map(b => {
     const beeld = bbFotoHTML(b.foto, false, true);
-    const sub = b.instrumenten.concat(b.rol === 'Oprichter' ? [roleLabel(b.rol)] : []).join(' · ');
+    const sub = b.rollen.concat(b.rol === 'Oprichter' ? [roleLabel(b.rol)] : []).join(' · ');
     return `<button type="button" class="bb-rij bb-rij-knop" onclick="openBandScherm('${jsAttr(b.id)}')">${beeld}<span class="bb-tekst"><span class="bb-naam">${escHtml(b.naam)}</span>${sub ? `<span class="bb-sub">${escHtml(sub)}</span>` : ''}</span></button>`;
   }).join(''));
 }
@@ -964,7 +965,9 @@ function bandPaginaHTML(b, kijker) {
   const deelActie = voortgang && voortgang.pct < 100 ? `openBandDeelBlad('${jsAttr(b.id)}')` : null;
   // Een lege plek is voor de beheerder een uitnodiging (TT-385 punt 2); voor
   // iedereen anders staat er niets.
-  const uitnodiging = tekst => beheer ? bandUitnodigingHTML(tekst, b.id) : '';
+  // Wat leeg is, vervalt, ook voor de beheerder, net als op het muzikantprofiel
+  // (besluit Ronald 11-11-2026, B2-10; was een uitnodiging per lege plek,
+  // TT-385 punt 2). De balk onderaan en het deelblad noemen wat nog mist.
 
   // 1c en 1d: één knop onder Wie zijn we, die meescrolt (zoals F3 B en 1E van
   // onderdeel 3). Een bezoeker stuurt de band een bericht (aan de
@@ -995,40 +998,40 @@ function bandPaginaHTML(b, kijker) {
   // 1b: Wie zijn we direct onder de regels, zonder kop, zoals de bio
   // (wijzigt besluit (c) van TT-385: "direct onder de bezetting").
   if (b.description) h += `<p class="profile-bio">${tekstMetMeerHTML(b.description)}</p>`;
-  else h += uitnodiging('+ Vertel wie jullie zijn');
   // 13 (besluit Ronald 10-11-2026, A): de logo's van Volg ons als één rij
   // direct onder Wie zijn we, zonder kop, boven de knop.
-  h += bandSocialsHTML(b) || uitnodiging('+ Instagram, TikTok of YouTube');
+  h += bandSocialsHTML(b) || '';
   if (actie) h += `<div class="profiel-actie">${actie}</div>`;
 
-  // De bezetting, een rij per lid. Een uitgenodigd lid staat er niet op.
-  if (b.leden.length || b.wanted.length || b.invallers.length) {
+  // De bezetting, een rij per rol. Een uitnodiging zien alleen leden en de
+  // beheerder (TT-580), na de leden; een bezoeker ziet hem niet.
+  const uitgenodigd = (kijker === 'lid' || beheer) ? (b.uitgenodigd || []) : [];
+  if (b.leden.length || uitgenodigd.length || b.wanted.length || b.invallers.length) {
     h += bandSectieHTML('Bezetting', `<div class="bezetting">${
-      b.leden.map(bezettingLidHTML).join('') +
-      b.wanted.map(w => bezettingOpenHTML(w, ['gezocht'])).join('') +
-      b.invallers.map(v => bezettingOpenHTML(v.instrument, ['invaller', invallerDatum(v.datum)])).join('')
-    }</div>${voortgang && !voortgang.af.bezetting ? uitnodiging('+ Wie spelen er in de band?') : ''}`);
+      bezettingRijen(b.leden).map(([l, r]) => bezettingLidHTML(l, r, false)).join('') +
+      bezettingRijen(uitgenodigd).map(([l, r]) => bezettingLidHTML(l, r, true)).join('') +
+      b.wanted.map(w => bezettingOpenHTML('Gezocht', w)).join('') +
+      b.invallers.map(v => bezettingOpenHTML('Invaller', v.instrument)).join('')
+    }</div>`);
   }
   // Eigen nummers.
   const nummers = b.nummers.map(n => bandNummerHTML(n, b.avatar_url)).join('');
   if (nummers) h += bandSectieHTML('Onze nummers', nummers);
-  else if (beheer && voortgang.telt.nummers) h += bandSectieHTML('Onze nummers', uitnodiging('+ Laat horen hoe jullie klinken'));
-  // 1e: foto's, video's en links in één raster van drie, zoals bij de muzikant.
-  // profielMediaHTML() geeft niets terug als er niets te tonen is.
-  const media = profielMediaHTML(b.media, b.avatar_url);
-  if (media) h += media;
-  else if (beheer) h += bandSectieHTML("Foto's, video's en links", uitnodiging("+ Foto's en video's toevoegen"));
-  // Covers, op dezelfde volgorde als het repertoire van een muzikant. 1f: de
-  // kop zonder aantal; het aantal staat in "Alle 9 nummers".
+  // Covers, op dezelfde volgorde als het repertoire van een muzikant, en op
+  // dezelfde plek: na de nummers, voor de foto's (besluit Ronald 11-11-2026,
+  // B2-11: wie → nummers → foto's, video's en links). 1f: de kop zonder
+  // aantal; het aantal staat in "Alle 9 nummers".
   if (b.covers.length) {
     const rijen = [...b.covers].sort((x, y) => compareArtistTitle(x.song_artist, x.song_title, y.song_artist, y.song_title))
       // TT-528: elke cover in één tik in je eigen repertoire, zoals bij een muzikant.
       .map(c => `<div class="profile-song-row"><span><strong>${escHtml(c.song_artist)}</strong> — <span class="profile-song-titel">${escHtml(c.song_title)}</span></span><span class="nummer-rechts">${overneemKnopHTML(c.song_title, c.song_artist)}</span></div>`);
     // Meer dan zeven covers: ingeklapt, zoals het repertoire (nummerLijstHTML() in utils.js).
     h += bandSectieHTML('Covers', nummerLijstHTML(rijen));
-  } else if (beheer && voortgang.telt.covers) {
-    h += bandSectieHTML('Covers', uitnodiging('+ Welke covers spelen jullie?'));
   }
+  // 1e: foto's, video's en links in één raster van drie, zoals bij de muzikant.
+  // profielMediaHTML() geeft niets terug als er niets te tonen is.
+  const media = profielMediaHTML(b.media, b.avatar_url);
+  if (media) h += media;
   // De balk staat onderaan, zoals op Mijn Profiel; alleen de beheerder ziet
   // hem (besluit Ronald, j).
   if (voortgang) h += voortgangsBalkHTML(voortgang.pct);
@@ -1285,10 +1288,9 @@ function bandTegelRegelHTML(id, b) {
     return delen.join(' · '); // plaats is verplicht: nooit leeg
   }
   if (id === 'bandBezetting') {
-    const vandaag = vandaagISO();
     const delen = [deel(lijst(b.band_members).filter(m => m.status === 'bevestigd').length, 'lid', 'leden'),
       deel(lijst(b.band_wanted).length, 'open rol', 'open rollen'),
-      deel(lijst(b.band_invallers).filter(v => String(v.datum) >= vandaag).length, 'invaller', 'invallers')].filter(Boolean);
+      deel(lijst(b.band_invallers).length, 'invaller', 'invallers')].filter(Boolean);
     return escHtml(delen.join(' · ')); // de beheerder is altijd lid: nooit leeg
   }
   if (id === 'bandMuziek') {
@@ -1316,7 +1318,7 @@ function renderBandTegels() {
   renderBandBeheer();
   const vraag = ++bandTegelRegelsVraag;
   db.from('bands')
-    .select('city, niveau, genres, avatar_url, band_members(status), band_wanted(instrument), band_invallers(datum), band_nummers(titel), band_covers(song_title), band_media(media_type)')
+    .select('city, niveau, genres, avatar_url, band_members(status), band_wanted(instrument), band_invallers(id), band_nummers(titel), band_covers(song_title), band_media(media_type)')
     .eq('id', id).single()
     .then(({ data, error }) => {
       // Een oudere vraag, een andere band of een fout laat de regels staan.
@@ -1504,28 +1506,33 @@ async function saveBandWie() {
 // de contactpersoon (punt 6). Wat je met iemand kunt, zit achter de drie
 // puntjes in zijn rij (Ronald: "het moet veel subtieler, meer functioneel").
 
-let bbLeden = [];          // bevestigde leden
+let bbLeden = [];          // bevestigde leden: { id, naam, avatar_url, rollen, rol }
 let bbUitgenodigd = [];    // uitgenodigd, nog geen antwoord
+let bbRollenBewerkt = {};  // id -> rollen die nog niet zijn opgeslagen (gaat mee met Opslaan)
+let bbRollenLid = null;    // het lid waarvan het menu Rollen wijzigen openstaat
 let bbWanted = [];         // open rollen (gaat mee met Opslaan)
-let bbInvallers = [];      // { id, instrument, datum } (gaat mee met Opslaan)
-let bbInvalInstrument = [];
+let bbWantedVervuld = {};  // id -> rollen waarvan de open rol wegging doordat dit lid ze kreeg (B2-9)
+let bbInvallers = [];      // { id, instrument } (gaat mee met Opslaan)
+let bbInvalLijst = [];     // de instrumenten van bbInvallers, voor het keuzemenu
 let bbContact = '';
 let bbBeheerderId = null;
 let bbSnapshot = null;
 
 function bbFieldSnapshot() {
   return JSON.stringify({
-    wanted: bbWanted,
-    invallers: bbInvallers.map(v => [v.id || null, v.instrument, v.datum]),
+    wanted: [...bbWanted].sort(), // B2-9: een open rol die terugkomt, staat achteraan
+    invallers: bbInvallers.map(v => [v.id || null, v.instrument]),
+    rollen: Object.keys(bbRollenBewerkt).sort().map(id => [id, bbRollenBewerkt[id]]),
     contact: bbContact || null
   });
 }
 
 async function openBandBezetting() {
-  bbInvalFormulier(false);
-  const b = await bandBewerkGegevens('name, city, founder_id, contact_id, band_wanted(instrument), band_invallers(id, instrument, datum)');
+  const b = await bandBewerkGegevens('name, city, founder_id, contact_id, band_wanted(instrument), band_invallers(id, instrument, created_at)');
   if (!b) return;
   bbBeheerderId = b.founder_id;
+  bbRollenBewerkt = {};
+  bbWantedVervuld = {};
   bbWanted = (b.band_wanted || []).map(w => w.instrument);
   bbInvallers = bbInvallersUit(b.band_invallers);
 
@@ -1539,16 +1546,27 @@ async function openBandBezetting() {
     placeholder: 'Open rol toevoegen', // het plusteken staat in de knop (F6)
     onChange: bbRenderOpen
   });
-  // De invaller: één instrument, in het veld zelf; het menu sluit na de tik.
-  // Leeg staat er grijs "Kies een instrument" (besluit Ronald 10-11-2026, vraag 4: "B").
+  // De invaller zonder datum (besluit Ronald 11-11-2026, B2-8): "+ Invaller
+  // toevoegen" werkt als "+ Open rol toevoegen": het keuzemenu blijft open en
+  // een tik op een gekozen instrument haalt de invaller weer weg.
   initPicker({
-    id: 'bbInval', fieldId: 'bbInvalInstrument', menuId: 'bbInvalInstrumentMenu',
-    options: INSTRUMENTS, getList: () => bbInvalInstrument, singleMax: true,
-    inVeld: lijst => lijst.join(', '), leegTekst: 'Kies een instrument'
+    id: 'bbInval', fieldId: 'bbInvalKnop', menuId: 'bbInvalMenu', badgeRowId: 'bbInvalBadges',
+    options: INSTRUMENTS, getList: () => bbInvalLijst,
+    placeholder: 'Invaller toevoegen', // het plusteken staat in de knop (F6)
+    onChange: bbInvalGewijzigd
   });
   // Eén keer aanmelden: initChoiceField() hangt luisteraars aan het veld.
   if (!CHOICE_FIELDS['band-contact']) {
     initChoiceField({ id: 'band-contact', fieldId: 'bbContactVeld', menuId: 'bbContactMenu', selectId: 'bbContactKeuze' });
+  }
+  // Rollen wijzigen (besluit Ronald 11-11-2026, B2-6: "A, per lid"): het
+  // keuzemenu van Open rol, onder de rij van het lid (bbRollenWijzigen()).
+  if (!CHOICE_FIELDS['bb-rollen']) {
+    initChoiceField({
+      id: 'bb-rollen', fieldId: 'bbRollenVeld', menuId: 'bbRollenMenu', meer: true,
+      rijen: () => INSTRUMENTS.map(t => ({ t, gekozen: bbRollenVan(bbRollenLid).includes(t) })),
+      kies: i => bbRolWissel(INSTRUMENTS[i])
+    });
   }
   await bbLaadLeden(b.contact_id);
   bbRenderOpen();
@@ -1556,13 +1574,31 @@ async function openBandBezetting() {
   bbSnapshot = bbFieldSnapshot();
 }
 
-// Een invaller van vóór vandaag telt niet meer; de nachttaak ruimt hem op.
+// De invallers op volgorde van toevoegen. bbInvalLijst houdt dezelfde
+// instrumenten bij voor het keuzemenu.
 function bbInvallersUit(rijen) {
-  const vandaag = vandaagISO();
-  return (rijen || [])
-    .map(v => ({ id: v.id || null, instrument: v.instrument, datum: String(v.datum) }))
-    .filter(v => v.datum >= vandaag)
-    .sort((x, y) => x.datum.localeCompare(y.datum));
+  const lijst = (rijen || []).slice()
+    .sort((x, y) => String(x.created_at || '').localeCompare(String(y.created_at || '')))
+    .map(v => ({ id: v.id || null, instrument: v.instrument }));
+  bbInvalLijst = lijst.map(v => v.instrument);
+  return lijst;
+}
+
+// Het keuzemenu wijzigde bbInvalLijst: een nieuw instrument wordt een nieuwe
+// invaller, een weggehaald instrument haalt die invaller weg. De grens van 20
+// zegt de app vóór de handeling (app-gedrag, Grenzen).
+function bbInvalGewijzigd() {
+  if (bbInvalLijst.length > GRENZEN.invallers) {
+    bbInvalLijst.pop();
+    grensBereikt(GRENZEN.invallers, GRENZEN.invallers, `Maximum van ${GRENZEN.invallers} invallers bereikt.`);
+    if (PICKERS.bbInval) renderPickerBadges(PICKERS.bbInval);
+  }
+  const over = bbInvallers.slice();
+  bbInvallers = bbInvalLijst.map(t => {
+    const i = over.findIndex(v => v.instrument === t);
+    return i === -1 ? { id: null, instrument: t } : over.splice(i, 1)[0];
+  });
+  bbRenderInvallers();
 }
 
 // Leden en uitnodigingen. Los van de rest, want uitnodigen, intrekken en
@@ -1571,7 +1607,7 @@ async function bbLaadLeden(contactStart) {
   const id = bewerkBandId;
   if (!id) return;
   const { data, error } = await db.from('band_members')
-    .select('musician_id, role, status, joined_at, musicians(id, weergavenaam, username, avatar_url, musician_instruments(instrument))')
+    .select('musician_id, role, rollen, status, musicians(id, weergavenaam, username, avatar_url)')
     .eq('band_id', id);
   if (error) {
     logCaught('bbLaadLeden', error);
@@ -1579,13 +1615,23 @@ async function bbLaadLeden(contactStart) {
     return;
   }
   if (id !== bewerkBandId) return;
-  const opVolgorde = (x, y) => String(x.joined_at || '').localeCompare(String(y.joined_at || ''));
+  // Op naam, zoals de bezetting op de bandpagina (besluit Ronald 11-11-2026, B2-1).
+  const opNaam = (x, y) => x.naam.localeCompare(y.naam, 'nl');
   const naarLid = m => ({
     id: m.musician_id, naam: displayNameOf(m.musicians), avatar_url: (m.musicians && m.musicians.avatar_url) || null,
-    instrumenten: ((m.musicians && m.musicians.musician_instruments) || []).map(i => i.instrument), rol: m.role
+    rollen: m.rollen || [], rol: m.role
   });
-  bbLeden = (data || []).filter(m => m.status === 'bevestigd').sort(opVolgorde).map(naarLid);
-  bbUitgenodigd = (data || []).filter(m => m.status === 'aangevraagd').sort(opVolgorde).map(naarLid);
+  bbLeden = (data || []).filter(m => m.status === 'bevestigd').map(naarLid).sort(opNaam);
+  bbUitgenodigd = (data || []).filter(m => m.status === 'aangevraagd').map(naarLid).sort(opNaam);
+  // Een lid dat er niet meer is, heeft ook geen rollen meer om op te slaan.
+  Object.keys(bbRollenBewerkt).forEach(x => { if (!bbLeden.some(l => l.id === x)) delete bbRollenBewerkt[x]; });
+  // Wie weg is, speelt die rol niet meer: de open rol komt terug.
+  Object.keys(bbWantedVervuld).forEach(x => {
+    if (bbLeden.some(l => l.id === x)) return;
+    bbWanted.push(...bbWantedVervuld[x]);
+    delete bbWantedVervuld[x];
+    bbRenderOpen();
+  });
   // De contactpersoon is een bevestigd lid; anders de beheerder.
   const gewenst = contactStart !== undefined ? contactStart : bbContact;
   bbContact = bbLeden.some(l => l.id === gewenst) ? gewenst : bbBeheerderId;
@@ -1606,32 +1652,51 @@ function bbFotoHTML(url, wacht, vierkant) {
 
 // Eén rij: foto, naam, een regel eronder (al als HTML), en rechts de drie
 // puntjes met wat je met deze rij kunt. Zelfde menu als op Mijn Bands.
-function bbRijHTML(beeldHTML, naam, subHTML, menuItemsHTML) {
+function bbRijHTML(beeldHTML, naam, subHTML, menuItemsHTML, lidId) {
   const menu = menuItemsHTML ? `<div class="profile-actions-menu-wrap">
       <button class="nav-menu-btn" onclick="toggleBandMoreMenu(event)" aria-label="Meer opties voor ${escHtml(naam)}" title="Meer">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>
       </button>
       <div class="inline-menu-dropdown">${menuItemsHTML}</div>
     </div>` : '';
-  return `<div class="bb-rij">${beeldHTML}<div class="bb-tekst"><div class="bb-naam">${escHtml(naam)}</div><div class="bb-sub">${subHTML}</div></div>${menu}</div>`;
+  const lid = lidId ? ` data-lid="${escHtml(lidId)}"` : '';
+  return `<div class="bb-rij"${lid}>${beeldHTML}<div class="bb-tekst"><div class="bb-naam">${escHtml(naam)}</div><div class="bb-sub">${subHTML}</div></div>${menu}</div>`;
+}
+
+// De rollen van een lid zoals ze nu op het scherm staan: nog niet opgeslagen
+// wijzigingen gaan voor.
+function bbRollenVan(id) {
+  if (bbRollenBewerkt[id]) return bbRollenBewerkt[id];
+  const l = bbLeden.find(x => x.id === id);
+  return l ? l.rollen : [];
+}
+
+// De regel onder een lid: zijn rollen (een lid zonder rol: "Lid"), en
+// "beheerder" bij de beheerder.
+function bbLidRegel(l) {
+  const rollen = bbRollenVan(l.id);
+  return [rollen.length ? rollen.join(' · ') : roleLabel('Lid'), l.id === bbBeheerderId ? 'beheerder' : ''].filter(Boolean).join(' · ');
 }
 
 function bbRenderLeden() {
   const ik = myMusicianId;
+  // Het menu Rollen wijzigen hangt onder een rij; eerst terug naar zijn eigen plek.
+  const anker = document.getElementById('bbRollenAnker');
+  if (anker && anker.parentElement && anker.parentElement.id === 'bbLeden') document.getElementById('bbLeden').after(anker);
+  // Eén rij per lid, met de rollen eronder (besluit Ronald 11-11-2026, B2-6:
+  // "A, per lid"). Rollen wijzigen kan bij elk lid, ook bij de beheerder zelf.
+  // De beheerder haalt zichzelf niet uit de band: dat is beheer overdragen of
+  // de band opheffen (Bandbeheer).
   document.getElementById('bbLeden').innerHTML = bbLeden.map(l => {
-    const isBeheerder = l.id === bbBeheerderId;
-    const delen = [l.instrumenten.join(' · '), isBeheerder ? 'beheerder' : ''].filter(Boolean);
-    const sub = delen.length ? delen.join(' · ') : roleLabel(l.rol).toLowerCase();
-    // De beheerder haalt zichzelf niet uit de band: dat is beheer overdragen
-    // of de band opheffen (Bandbeheer).
-    const menu = isBeheerder ? '' :
-      `<button class="nav-menu-item" onclick="sluitAlleMenus();removeMember('${jsAttr(bewerkBandId)}','${jsAttr(l.id)}','${jsAttr(l.naam)}','${jsAttr(bewerkBandNaam)}')">Uit de band</button>`;
-    return bbRijHTML(bbFotoHTML(l.avatar_url), l.naam + (l.id === ik ? ' (jij)' : ''), escHtml(sub), menu);
+    const menu = `<button class="nav-menu-item" onclick="sluitAlleMenus();bbRollenWijzigen('${jsAttr(l.id)}')">Rollen wijzigen</button>` +
+      (l.id === bbBeheerderId ? '' :
+      `<button class="nav-menu-item" onclick="sluitAlleMenus();removeMember('${jsAttr(bewerkBandId)}','${jsAttr(l.id)}','${jsAttr(l.naam)}','${jsAttr(bewerkBandNaam)}')">Uit de band</button>`);
+    return bbRijHTML(bbFotoHTML(l.avatar_url), l.naam + (l.id === ik ? ' (jij)' : ''), escHtml(bbLidRegel(l)), menu, l.id);
   }).join('');
 
   document.getElementById('bbUitgenodigdBlok').hidden = !bbUitgenodigd.length;
   document.getElementById('bbUitgenodigd').innerHTML = bbUitgenodigd.map(l =>
-    bbRijHTML(bbFotoHTML(l.avatar_url, true), l.naam, 'uitgenodigd, nog geen antwoord',
+    bbRijHTML(bbFotoHTML(l.avatar_url, true), l.naam, escHtml(`${l.rollen.length ? l.rollen.join(' · ') : roleLabel('Lid')} · uitgenodigd`),
       `<button class="nav-menu-item" onclick="sluitAlleMenus();bbIntrekken('${jsAttr(l.id)}','${jsAttr(l.naam)}')">Uitnodiging intrekken</button>`)
   ).join('');
 
@@ -1649,9 +1714,59 @@ function bbPlusHTML(zoekAanroep, label) {
   return `<button type="button" class="bb-foto bezetting-open-rondje bb-plus" onclick="${zoekAanroep}" aria-label="${escHtml(label)}">+</button>`;
 }
 
+// Rollen wijzigen: het keuzemenu klapt uit onder de rij van het lid. Het menu
+// blijft open; een tik op een gekozen rol haalt hem weg. De laatste rol blijft
+// staan (besluit Ronald 11-11-2026, B2-4: minstens één rol).
+function bbRollenWijzigen(id) {
+  const rij = document.querySelector(`#bbLeden .bb-rij[data-lid="${CSS.escape(id)}"]`);
+  const anker = document.getElementById('bbRollenAnker');
+  if (!rij || !anker) return;
+  rij.after(anker);
+  bbRollenLid = id;
+  openChoiceMenu('bb-rollen');
+}
+
+function bbRolWissel(rol) {
+  const l = bbLeden.find(x => x.id === bbRollenLid);
+  if (!l) return;
+  let nieuw = bbRollenVan(l.id).slice();
+  const vervuld = bbWantedVervuld[l.id] || [];
+  if (nieuw.includes(rol)) {
+    if (nieuw.length === 1) { showToast('Kies minstens één rol.'); return; }
+    nieuw = nieuw.filter(r => r !== rol);
+    // Weer uitgezet: de open rol die daardoor wegging, komt terug.
+    if (vervuld.includes(rol)) {
+      vervuld.splice(vervuld.indexOf(rol), 1);
+      bbWanted.push(rol);
+      bbRenderOpen();
+    }
+  } else {
+    nieuw.push(rol);
+    // Een open rol gaat weg zodra een lid die rol krijgt (besluit Ronald
+    // 11-11-2026, B2-9: "A"). De database doet hetzelfde (tt_open_rol_vervuld);
+    // alleen voor een rol die nieuw is, want alleen daar haalt die hem weg.
+    const plek = bbWanted.indexOf(rol);
+    if (plek >= 0 && !l.rollen.includes(rol)) {
+      bbWanted.splice(plek, 1);
+      vervuld.push(rol);
+      bbRenderOpen();
+      showToast(`Open rol ${rol} weg: ${l.naam} speelt dit nu.`);
+    }
+  }
+  if (vervuld.length) bbWantedVervuld[l.id] = vervuld;
+  else delete bbWantedVervuld[l.id];
+  nieuw.sort((x, y) => x.localeCompare(y, 'nl'));
+  if (nieuw.join('\n') === l.rollen.join('\n')) delete bbRollenBewerkt[l.id];
+  else bbRollenBewerkt[l.id] = nieuw;
+  const sub = document.querySelector(`#bbLeden .bb-rij[data-lid="${CSS.escape(l.id)}"] .bb-sub`);
+  if (sub) sub.textContent = bbLidRegel(l);
+}
+
+// Een open rol en een invaller: "Gezocht" of "Invaller" vet, het instrument
+// eronder, zoals op de bandpagina (besluit Ronald 10-11-2026, 12: één vorm).
 function bbRenderOpen() {
   document.getElementById('bbOpen').innerHTML = bbWanted.map((w, i) => bbRijHTML(
-    bbPlusHTML(`bbZoekNaar(bbWanted[${i}])`, `Zoek een muzikant: ${w}`), w, 'open rol',
+    bbPlusHTML(`bbZoekNaar(bbWanted[${i}])`, `Zoek een muzikant: ${w}`), 'Gezocht', escHtml(w),
     `<button class="nav-menu-item" onclick="sluitAlleMenus();bbRolWeg(${i})">Open rol weghalen</button>`)).join('');
 }
 
@@ -1662,58 +1777,24 @@ function bbRolWeg(i) {
 
 function bbRenderInvallers() {
   document.getElementById('bbInvallers').innerHTML = bbInvallers.map((v, i) => bbRijHTML(
-    bbPlusHTML(`bbZoekNaar(bbInvallers[${i}].instrument, bbInvallers[${i}].datum)`, `Zoek een invaller: ${v.instrument}`),
-    v.instrument, `invaller · ${invallerDatum(v.datum)}`,
+    bbPlusHTML(`bbZoekNaar(bbInvallers[${i}].instrument, true)`, `Zoek een invaller: ${v.instrument}`),
+    'Invaller', escHtml(v.instrument),
     `<button class="nav-menu-item" onclick="sluitAlleMenus();bbInvallerWeg(${i})">Invaller weghalen</button>`)).join('');
 }
 
 function bbInvallerWeg(i) {
   bbInvallers.splice(i, 1);
+  bbInvalLijst = bbInvallers.map(v => v.instrument);
+  if (PICKERS.bbInval) renderPickerBadges(PICKERS.bbInval);
   bbRenderInvallers();
 }
 
 // Zoeken verlaat dit scherm. Staat er nog iets open, dan eerst opslaan:
 // anders is het weg.
-function bbZoekNaar(instrument, datum) {
+function bbZoekNaar(instrument, invaller) {
   if (!instrument) return;
   if (tegelHeeftWijzigingen()) { showToast('Sla eerst je wijzigingen op.'); return; }
-  zoekMuzikantVoorRol(instrument, bewerkBandStad, bewerkBandNaam, datum || '', bewerkBandId);
-}
-
-function bbInvalFormulier(open) {
-  const form = document.getElementById('bbInvalForm');
-  if (!form) return;
-  form.hidden = !open;
-  document.getElementById('bbInvalOpen').hidden = !!open;
-  if (open) {
-    bbInvalInstrument.length = 0;
-    if (PICKERS.bbInval) renderPickerBadges(PICKERS.bbInval);
-    document.getElementById('bbInvalDatum').value = '';
-    clearFieldErrors('bbInvalForm');
-  }
-}
-
-function bbInvalToevoegen() {
-  clearFieldErrors('bbInvalForm');
-  const instrument = bbInvalInstrument[0];
-  const tekst = waardeVan('bbInvalDatum');
-  let iso = '';
-  if (/^\d{2}-\d{2}-\d{4}$/.test(tekst)) {
-    const kandidaat = toISODate(tekst);
-    const d = new Date(kandidaat + 'T12:00:00');
-    // Een datum als 31-02 bestaat niet; de browser schuift die door.
-    if (!isNaN(d) && d.getDate() === Number(tekst.slice(0, 2))) iso = kandidaat;
-  }
-  const fouten = [];
-  if (!instrument) fouten.push(['bbInvalInstrument', 'Kies een instrument']);
-  if (!iso) fouten.push(['bbInvalDatum', 'Vul de datum in als dd-mm-jjjj']);
-  else if (iso < vandaagISO()) fouten.push(['bbInvalDatum', 'Kies een datum vanaf vandaag']);
-  if (showFieldErrors(fouten)) return;
-  if (grensBereikt(bbInvallers.length, GRENZEN.invallers, `Maximum van ${GRENZEN.invallers} invallers bereikt.`)) return;
-  bbInvallers.push({ id: null, instrument, datum: iso });
-  bbInvallers.sort((x, y) => x.datum.localeCompare(y.datum));
-  bbInvalFormulier(false);
-  bbRenderInvallers();
+  zoekMuzikantVoorRol(instrument, bewerkBandStad, bewerkBandNaam, !!invaller, bewerkBandId);
 }
 
 // TT-543 onderdeel 4 (besluiten Ronald 09-11-2026, B4, en sessie 102: "zoals
@@ -1722,7 +1803,7 @@ function bbInvalToevoegen() {
 function bbLidUitnodigen() {
   if (!bewerkBandId) return;
   if (tegelHeeftWijzigingen()) { showToast('Sla eerst je wijzigingen op.'); return; }
-  zoekMuzikantVoorRol('', bewerkBandStad, bewerkBandNaam, '', bewerkBandId);
+  zoekMuzikantVoorRol('', bewerkBandStad, bewerkBandNaam, false, bewerkBandId);
 }
 
 // Een uitnodiging intrekken gaat meteen: wie nog niet antwoordde, staat ook
@@ -1748,6 +1829,15 @@ async function saveBandBezetting() {
   const id = bewerkBandId;
   if (!id) return;
   try {
+    // De rollen per lid (besluit Ronald 10-11-2026, 12). Alleen de beheerder
+    // mag ze wijzigen; de database bewaakt dat ook (tt_rollen_bewaken). Eerst
+    // de rollen: de database haalt dan de open rol van een nieuwe rol weg
+    // (B2-9), en de open rollen hieronder zetten daarna precies wat je ziet.
+    for (const [lid, rollen] of Object.entries(bbRollenBewerkt)) {
+      const { error } = rijenGeraakt(await db.from('band_members').update({ rollen })
+        .eq('band_id', id).eq('musician_id', lid).select('musician_id'));
+      if (error) throw error;
+    }
     // TT-281: de open rollen in één transactie, zoals voorheen.
     const { error: wErr } = await db.rpc('tt_save_band_wanted', { p_band_id: id, p_instruments: bbWanted });
     if (wErr) throw wErr;
@@ -1763,7 +1853,7 @@ async function saveBandBezetting() {
     const nieuw = bbInvallers.filter(v => !v.id);
     if (nieuw.length) {
       const { error } = await db.from('band_invallers')
-        .insert(nieuw.map(v => ({ band_id: id, instrument: v.instrument, datum: v.datum })));
+        .insert(nieuw.map(v => ({ band_id: id, instrument: v.instrument })));
       if (error) throw error;
     }
     // Leeg is de beheerder (projectinstructies §10): zo volgt de
@@ -1774,10 +1864,16 @@ async function saveBandBezetting() {
     }).eq('id', id).select('id'));
     if (bErr) throw bErr;
     // De nieuwe invallers hebben nu een id.
-    const { data: rijen, error: rErr } = await db.from('band_invallers').select('id, instrument, datum').eq('band_id', id);
+    const { data: rijen, error: rErr } = await db.from('band_invallers').select('id, instrument, created_at').eq('band_id', id);
     if (rErr) throw rErr;
     bbInvallers = bbInvallersUit(rijen);
     bbRenderInvallers();
+    // De rollen staan nu in de database; de leden opnieuw, met hun rollen.
+    if (Object.keys(bbRollenBewerkt).length) {
+      bbRollenBewerkt = {};
+      bbWantedVervuld = {};
+      await bbLaadLeden();
+    }
     bbSnapshot = bbFieldSnapshot();
     showToast('Wijzigingen opgeslagen.');
     loadMyBands();
@@ -2288,6 +2384,10 @@ async function rolUitnodigKnopPlaatsen(musicianId, naam) {
 // rest van het profiel staat er dan niet (.uitnodig-open in styles.css);
 // Annuleren zet het terug. Vervangt de korte boodschap uit het venster Lid
 // uitnodigen (V-18).
+// Blok 2 (besluit Ronald 11-11-2026, B2-7): boven de boodschap het veld
+// "Rol in <band>": wat de muzikant in deze band doet, minstens één rol. Kwam
+// je via een open rol, dan staat die rol er al in.
+let uitnodigRollen = [];
 function rolUitnodigBlokOpenen(musicianId, naam) {
   const band = zoekRolBand;
   const content = document.getElementById('profielSchermContent');
@@ -2298,6 +2398,15 @@ function rolUitnodigBlokOpenen(musicianId, naam) {
     <section class="uitnodig-blok">
       <h2 class="hoofdstuk-kop">${escHtml(naam)} uitnodigen voor ${escHtml(band.naam)}</h2>
       <div class="field">
+        <label>Rol in ${escHtml(band.naam)}</label>
+        <div class="menu-anchor">
+          <div class="wheel-field" id="uitnodigRolVeld" aria-label="Rol in ${escHtml(band.naam)}">
+            <span class="wheel-field-label" id="uitnodigRolVeldLabel"></span>
+          </div>
+          <div class="choice-menu menu-breed" id="uitnodigRolMenu" role="listbox" aria-label="Rol"></div>
+        </div>
+      </div>
+      <div class="field">
         <label for="uitnodigBoodschap">Boodschap aan ${escHtml(naam)} (niet verplicht)</label>
         <textarea id="uitnodigBoodschap" maxlength="300" placeholder="Bijv. we zoeken een bassist voor onze covers, jouw profiel past goed bij ons!"></textarea>
       </div>
@@ -2306,6 +2415,12 @@ function rolUitnodigBlokOpenen(musicianId, naam) {
         <button type="button" class="btn btn-ghost" onclick="rolUitnodigBlokSluiten()">Annuleren</button>
       </div>
     </section>`);
+  uitnodigRollen = band.rol && INSTRUMENTS.includes(band.rol) ? [band.rol] : [];
+  initPicker({
+    id: 'uitnodigRol', fieldId: 'uitnodigRolVeld', menuId: 'uitnodigRolMenu',
+    options: INSTRUMENTS, getList: () => uitnodigRollen,
+    inVeld: lijst => lijst.join(', '), leegTekst: 'Kies een rol'
+  });
   content.classList.add('uitnodig-open');
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
@@ -2322,7 +2437,11 @@ async function rolUitnodigen(musicianId, knop) {
   if (!band) return;
   if (knop) knop.disabled = true; // een tweede tik maakt geen tweede uitnodiging
   const boodschap = document.getElementById('uitnodigBoodschap')?.value || '';
-  const gelukt = await addBandMember(band, musicianId, boodschap);
+  if (showFieldErrors(uitnodigRollen.length ? [] : [['uitnodigRolVeld', 'Kies minstens één rol']])) {
+    if (knop) knop.disabled = false;
+    return;
+  }
+  const gelukt = await addBandMember(band, musicianId, boodschap, uitnodigRollen.slice());
   if (knop) knop.disabled = false;
   if (!gelukt) return; // het blok en de tekst blijven staan; de melding zegt wat er misging
   rolUitnodigBlokSluiten();

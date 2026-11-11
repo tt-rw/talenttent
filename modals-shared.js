@@ -40,13 +40,14 @@ function initPicker(cfg) {
   // Deel 2 (besluiten Ronald 10-11-2026, sessie 109): ook buiten Zoeken, het
   // venster met de lijst bestaat niet meer. "1B": het menu toont alle keuzes,
   // een gekozen keuze als pil, en blijft open; een tik op een gekozen keuze
-  // haalt hem weg. Een veld met één keuze (de invaller) sluit na de tik.
+  // haalt hem weg. Sinds blok 2 van TT-543 onderdeel 6 (11-11-2026) heeft geen
+  // veld meer één keuze: de invaller kiest nu zoals een open rol.
   // De luisteraars zitten aan het veld; een tegel die opnieuw een cfg maakt,
   // gebruikt daarom altijd de nieuwste (PICKERS[cfg.id]).
   const c = () => PICKERS[cfg.id];
   pickerMenuKoppelen({
     id: 'picker-' + cfg.id, fieldId: cfg.fieldId, menuId: cfg.menuId, rij: cfg.badgeRowEl,
-    meer: !(cfg.singleMax && !cfg.exceptionValues), label: cfg.toevoegen || cfg.placeholder,
+    meer: true, label: cfg.toevoegen || cfg.placeholder,
     rijen: () => c().options.map(o => ({ t: o, gekozen: c().getList().includes(o) })),
     kies: (i) => {
       pickerWaardeWissel(c(), c().options[i]);
@@ -99,7 +100,7 @@ function renderPickerBadges(cfg) {
   // tekst; het veld krijgt de rand van een filter dat aanstaat (.is-set) en
   // het streepje van de lege stand is grijs (.leeg, zie zetVeldTekst()).
   // TT-543 draaiwielen deel 2 (besluit Ronald 10-11-2026, vraag 4: "B"): een
-  // formulierveld (de invaller) toont leeg een grijze aanwijzing in het midden
+  // formulierveld (sinds blok 2: Rol bij uitnodigen) toont leeg een grijze aanwijzing in het midden
   // (`leegTekst`) en krijgt geen gele rand: die rand is de stand van een
   // filter dat aanstaat (huisstijl §7.1).
   if (cfg.inVeld) {

@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261110c">
+<link rel="stylesheet" href="styles.css?v=20261111b">
 </head>
 <body>
 
@@ -998,6 +998,12 @@
 
     <h2 class="hoofdstuk-kop">Leden</h2>
     <div class="bb-lijst" id="bbLeden"></div>
+    <!-- Rollen wijzigen (besluit Ronald 11-11-2026, B2-6): het menu klapt uit
+         onder de rij van het lid; bbRollenWijzigen() zet dit anker daar. -->
+    <div class="menu-anchor bb-rollen-anker" id="bbRollenAnker">
+      <div class="bb-rollen-veld" id="bbRollenVeld" aria-label="Rollen"></div>
+      <div class="choice-menu menu-breed" id="bbRollenMenu" role="listbox" aria-label="Rollen"></div>
+    </div>
     <button type="button" class="picker-field picker-toevoegen toevoegen-breed" onclick="bbLidUitnodigen()"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="picker-field-label">Lid uitnodigen</span></button>
 
     <div class="band-tegel-blok" id="bbUitgenodigdBlok" hidden>
@@ -1018,31 +1024,13 @@
     <div class="band-tegel-blok">
       <h2 class="hoofdstuk-kop">Invallers</h2>
       <div class="bb-lijst" id="bbInvallers"></div>
-      <p class="field-hint bb-hint">Voor één optreden. Na de datum verdwijnt de vraag vanzelf.</p>
-      <button type="button" class="picker-field picker-toevoegen toevoegen-breed" id="bbInvalOpen" onclick="bbInvalFormulier(true)"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="picker-field-label">Invaller zoeken voor een optreden</span></button>
-      <div class="bb-inval-form" id="bbInvalForm" hidden>
-        <div class="field-group single">
-          <div class="field">
-            <label>Instrument</label>
-            <div class="menu-anchor">
-              <div class="wheel-field" id="bbInvalInstrument" aria-label="Instrument">
-                <span class="wheel-field-label leeg" id="bbInvalInstrumentLabel">Kies een instrument</span>
-              </div>
-              <div class="choice-menu menu-breed" id="bbInvalInstrumentMenu" role="listbox" aria-label="Instrument"></div>
-            </div>
-          </div>
-        </div>
-        <div class="field-group single">
-          <div class="field">
-            <label for="bbInvalDatum">Datum van het optreden</label>
-            <input type="text" id="bbInvalDatum" maxlength="10" inputmode="numeric" placeholder="dd-mm-jjjj" autocomplete="off" oninput="formatBirthDate(this)">
-          </div>
-        </div>
-        <div class="btn-row">
-          <button type="button" class="btn btn-ghost" onclick="bbInvalFormulier(false)">Annuleren</button>
-          <button type="button" class="btn btn-primary" onclick="bbInvalToevoegen()">Invaller toevoegen</button>
-        </div>
+      <!-- TT-543 onderdeel 6, blok 2 (besluit Ronald 11-11-2026, B2-8): geen
+           datum en geen formulier meer; het keuzemenu van Open rol. -->
+      <div class="menu-anchor toevoegen-breed">
+        <button type="button" class="picker-field picker-toevoegen" id="bbInvalKnop"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="picker-field-label" id="bbInvalKnopLabel">Invaller toevoegen</span></button>
+        <div class="choice-menu menu-breed" id="bbInvalMenu" role="listbox" aria-label="Invaller"></div>
       </div>
+      <div id="bbInvalBadges" hidden></div>
     </div>
 
     <div class="band-tegel-blok field">
@@ -2320,18 +2308,18 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20261110b"></script>
-<script src="utils.js?v=20261110c"></script>
+<script src="utils.js?v=20261111a"></script>
 <script src="veiligheid.js?v=20261108c"></script>
 <script src="auth.js?v=20261108c"></script>
 <script src="postcode.js?v=20261110a"></script>
 <script src="wizard.js?v=20261110a"></script>
 <script src="ouder.js?v=20261106a"></script>
-<script src="search.js?v=20261110b"></script>
+<script src="search.js?v=20261111a"></script>
 <script src="musicians.js?v=20261110b"></script>
-<script src="bands.js?v=20261110b"></script>
+<script src="bands.js?v=20261111d"></script>
 <script src="messages.js?v=20261109c"></script>
 <script src="push.js?v=20261027b"></script>
-<script src="modals-shared.js?v=20261110b"></script>
+<script src="modals-shared.js?v=20261111a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding

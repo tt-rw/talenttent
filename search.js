@@ -597,7 +597,11 @@ function resetMusicianSearch() {
 // TT-543 onderdeel 4 (besluiten Ronald 09-11-2026, B4 en sessie 102): ook
 // "+ Lid uitnodigen" komt hier, zonder instrument. Dan blijft Filters dicht
 // (er is niets te zien) en zegt de regel "Lid voor <band>.".
-function zoekMuzikantVoorRol(instrument, plaats, bandNaam, datum, bandId) {
+// Blok 2 (besluiten Ronald 11-11-2026, B2-7 en B2-8): een invaller heeft geen
+// datum meer; de regel zegt "Invaller <instrument> voor <band>.". Bij een open
+// rol onthoudt zoekRolBand het instrument: bij uitnodigen staat die rol al
+// ingevuld (rolUitnodigBlokOpenen() in bands.js).
+function zoekMuzikantVoorRol(instrument, plaats, bandNaam, invaller, bandId) {
   sluitAlleMenus();
   // TT-450: 'behoud'. Zoeken is een tabblad en wist anders de stapel; terug
   // moet naar de bandpagina of het tegeloverzicht waar je vandaan kwam.
@@ -624,13 +628,13 @@ function zoekMuzikantVoorRol(instrument, plaats, bandNaam, datum, bandId) {
   zetZoekFilters(!!instrument);
   // configureSearchAccess() (vanuit showView) zoekt meteen (TT-10).
   openZoekScherm('muzikanten', { direct: true, geenZoek: true });
-  zoekRolBand = (!datum && bandId) ? { id: bandId, naam: bandNaam || '' } : null;
+  zoekRolBand = (!invaller && bandId) ? { id: bandId, naam: bandNaam || '', rol: instrument || '' } : null;
   const melding = document.getElementById('zoekRolMelding');
   const rond = plaats ? `Muzikanten rond ${escHtml(plaats)}.` : 'Muzikanten bij jou in de buurt.';
-  const wie = instrument ? escHtml(instrument) : 'Lid';
-  melding.innerHTML = datum
-    ? `<p class="melding-tekst"><strong>${wie} voor ${invallerDatum(datum)}.</strong> ${rond} Vraag ze in een bericht.</p>`
-    : `<p class="melding-tekst"><strong>${wie} voor ${escHtml(bandNaam || 'je band')}.</strong> ${rond} Open een profiel om uit te nodigen.</p>`;
+  const band = escHtml(bandNaam || 'je band');
+  melding.innerHTML = invaller
+    ? `<p class="melding-tekst"><strong>Invaller ${escHtml(instrument)} voor ${band}.</strong> ${rond} Vraag ze in een bericht.</p>`
+    : `<p class="melding-tekst"><strong>${instrument ? escHtml(instrument) : 'Lid'} voor ${band}.</strong> ${rond} Open een profiel om uit te nodigen.</p>`;
   melding.hidden = false;
 }
 
@@ -726,9 +730,9 @@ async function zoekBandsOphalen(radius, origin) {
     matches.forEach(m => { matchInfo[m.band_id] = m; });
     const ids = matches.map(m => m.band_id);
     actief = actiefStandVraag('band', ids); // TT-367: tegelijk
-    // TT-385 fase 5: de bandfoto en de invallers voor de bandkaart. De leden
-    // alleen om te tellen; geen namen.
-    const { data, error } = await inDelen(ids, deel => db.from('bands').select(`id, name, city, genres, status, niveau, avatar_url, band_members(status), band_wanted(instrument), band_invallers(instrument, datum)`).in('id', deel)); // TT-532
+    // TT-385 fase 5: de bandfoto voor de bandkaart. De leden alleen om te
+    // tellen; geen namen.
+    const { data, error } = await inDelen(ids, deel => db.from('bands').select(`id, name, city, genres, status, niveau, avatar_url, band_members(status), band_wanted(instrument)`).in('id', deel)); // TT-532
     if (error) throw error;
     bands = data || [];
   } else {
@@ -744,15 +748,13 @@ async function zoekBandsOphalen(radius, origin) {
     const { data, error } = await db.rpc('tt_get_bands_public', { ids });
     if (error) throw error;
     // TT-385 fase 5: zelfde vorm als hierboven. tt_get_bands_public geeft alleen
-    // bevestigde leden, alleen invallers vanaf vandaag, en geen bandfoto als de
-    // band is afgeschermd (TT-385 punt 9).
+    // bevestigde leden, en geen bandfoto als de band is afgeschermd (TT-385 punt 9).
     bands = (data || []).map(b => ({
       id: b.id, name: b.name, city: b.city, genres: b.genres || [], status: b.status,
       niveau: b.niveau,
       avatar_url: b.avatar_url || null,
       band_members: (b.members || []).map(() => ({ status: 'bevestigd' })),
       band_wanted: (b.wanted || []).map(i => ({ instrument: i })),
-      band_invallers: b.invallers || [],
     }));
   }
   bands.forEach(b => { b.soort = 'band'; });
