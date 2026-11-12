@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261111b">
+<link rel="stylesheet" href="styles.css?v=20261112b">
 </head>
 <body>
 
@@ -932,7 +932,8 @@
   <!-- ═══ TT-385 fase 3 (02-10-2026): Bandprofiel bewerken ═══════════════
        Hetzelfde tegelscherm als Profiel bewerken, voor een band
        (bewerkBandId in bands.js). Vier tegels zoals bij de muzikant, met
-       daaronder het blok Bandbeheer (besluiten Ronald, TT-385 punt 4 en 13). -->
+       daaronder het hoofdstuk Bandbeheer met drie tegels (TT-543 onderdeel 6,
+       blok 3: Bandstatus, Beheer overdragen, Bandprofiel verwijderen). -->
   <div id="bandTegelOverviewScreen" style="display:none;">
     <div class="panel-title scherm-titel">Bandprofiel bewerken</div>
     <div class="band-naam-regel"></div>
@@ -1846,7 +1847,7 @@
             <div class="tile-sub"><span class="wheel-field-label"></span></div>
           </div>
         </div>
-        <div class="choice-menu menu-breed" id="themaMenu" role="listbox" aria-label="Thema"></div>
+        <div class="choice-menu menu-breed menu-tegel" id="themaMenu" role="listbox" aria-label="Thema"></div>
       </div>
       <select id="themaKeuze" style="display:none;" onchange="kiesLichtDonker(this.value)">
         <option value="toestel">Zoals mijn browser</option>
@@ -1867,7 +1868,7 @@
               <div class="tile-sub"><span class="wheel-field-label"></span></div>
             </div>
           </div>
-          <div class="choice-menu menu-breed" id="deelMenu" role="listbox" aria-label="Delen via link"></div>
+          <div class="choice-menu menu-breed menu-tegel" id="deelMenu" role="listbox" aria-label="Delen via link"></div>
         </div>
         <select id="deelKeuze" style="display:none;" onchange="zetProfielDelen(this.value === 'aan')">
           <option value="aan">Aan: je link werkt</option>
@@ -1881,7 +1882,7 @@
               <div class="tile-sub"><span class="wheel-field-label"></span></div>
             </div>
           </div>
-          <div class="choice-menu menu-breed" id="beschikbaarMenu" role="listbox" aria-label="Beschikbaarheid"></div>
+          <div class="choice-menu menu-breed menu-tegel" id="beschikbaarMenu" role="listbox" aria-label="Beschikbaarheid"></div>
         </div>
         <select id="beschikbaarKeuze" style="display:none;" onchange="zetBeschikbaarheid(this.value === 'ja')">
           <option value="ja">Beschikbaar</option>
@@ -1978,6 +1979,21 @@
   </div>
 </div>
 
+<!-- TT-543 onderdeel 6, blok 3 (besluiten Ronald 10-11-2026, 7d; beeld
+     stappen-voorstel en vervolg-overdragen): Beheer overdragen. Een kop, één
+     zin en de bevestigde leden als rij; een tik stuurt het verzoek. Geen
+     kruisje (TT-409): Annuleren en de terugknop van het toestel sluiten. -->
+<div class="modal-overlay" id="overdragenModal" data-close="sluitOverdragen" onclick="if(event.target===this)sluitOverdragen()">
+  <div class="modal-box modal-box-md">
+    <h2 class="hoofdstuk-kop overdragen-kop">Beheer overdragen</h2>
+    <p class="overdragen-tekst" id="overdragenTekst"></p>
+    <div id="overdragenLijst" class="overdragen-lijst"></div>
+    <div class="knoppen-stapel">
+      <button type="button" class="btn btn-ghost" onclick="sluitOverdragen()">Annuleren</button>
+    </div>
+  </div>
+</div>
+
 <!-- TT-520 deel 2 (27-10-2026, Laag 3.4): de uitsnede kiezen na het kiezen van
      een profielfoto of bandfoto (kiesUitsnede() in utils.js). TT-517 fase 5:
      een kader van 4:3, ook voor een bannerfoto; gestippeld het rondje of
@@ -2050,6 +2066,8 @@
 
 <div class="modal-overlay" id="confirmModal">
   <div class="modal-box modal-box-sm">
+    <!-- TT-543 onderdeel 6, blok 3: een kop alleen als showConfirm() er een meegeeft. -->
+    <h2 class="confirm-kop" id="confirmKop" hidden></h2>
     <p id="confirmMessage" style="margin-bottom:24px;font-size:12px;"></p>
     <!-- TT-228 (09-09-2026): secundaire knop links, primaire rechts. -->
     <div class="btn-row">
@@ -2307,17 +2325,17 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261110b"></script>
-<script src="utils.js?v=20261111a"></script>
+<script src="core.js?v=20261112a"></script>
+<script src="utils.js?v=20261112a"></script>
 <script src="veiligheid.js?v=20261108c"></script>
 <script src="auth.js?v=20261108c"></script>
 <script src="postcode.js?v=20261110a"></script>
 <script src="wizard.js?v=20261110a"></script>
 <script src="ouder.js?v=20261106a"></script>
 <script src="search.js?v=20261111a"></script>
-<script src="musicians.js?v=20261110b"></script>
-<script src="bands.js?v=20261111d"></script>
-<script src="messages.js?v=20261109c"></script>
+<script src="musicians.js?v=20261112a"></script>
+<script src="bands.js?v=20261112b"></script>
+<script src="messages.js?v=20261112a"></script>
 <script src="push.js?v=20261027b"></script>
 <script src="modals-shared.js?v=20261111a"></script>
 <script>

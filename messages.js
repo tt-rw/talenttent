@@ -125,6 +125,30 @@ async function insertMessage(recipientId, body) {
   }
 }
 
+// TT-543 onderdeel 6, blok 3 (besluiten Ronald 10-11-2026, 7d en 11, en
+// 12-11-2026, B3-3 en B3-5; TT-579): een bericht dat de app zelf meestuurt
+// bij een stap in een band (uitnodiging beantwoord, beheer gevraagd,
+// overgenomen of ingetrokken, uit de band, bandprofiel verwijderd). De stap
+// zelf is dan al gelukt, dus geen melding als het bericht niet aankomt. Een
+// verwachte weigering (TT-421: onder 16 en niet eerst geschreven; TT-481:
+// wacht op antwoord; TT-336: e-mailadres nog niet bevestigd) komt niet in het
+// foutlog; een storing wel. Geeft waar terug als het bericht is opgeslagen.
+async function stilBericht(ontvangerId, tekst) {
+  const mid = await getMyMusicianId();
+  const body = String(tekst || '').trim();
+  if (!mid || !ontvangerId || ontvangerId === mid || !body) return false;
+  try {
+    const { error } = await db.from('messages').insert({ sender_id: mid, recipient_id: ontvangerId, body });
+    if (error) throw error;
+    return true;
+  } catch (e) {
+    const tekstFout = (e && e.message) || '';
+    const verwacht = e && (e.code === '42501' || /row-level security|^Wacht op antwoord/i.test(tekstFout) || e.hint === 'TT-336');
+    if (!verwacht) logCaught('stilBericht', e);
+    return false;
+  }
+}
+
 // TT-481 (03-11-2026, besluit Ronald): hooguit 10 berichten per 24 uur zonder
 // antwoord. Elk antwoord van de ander zet de teller op 0; na 24 uur kan het
 // weer. Zoals de grote apps: de grens zit in het tekstveld, zonder uitleg

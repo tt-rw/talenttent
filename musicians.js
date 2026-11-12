@@ -180,14 +180,6 @@ async function shareProfile(kind, id, name) {
     }, 'Aanzetten en delen', false);
     return;
   }
-  // TT-410b fase 2: dezelfde vraag bij je eigen band. Alleen de beheerder
-  // heeft `bandDeelGegevens`, en alleen hij kan delen uitzetten.
-  if (kind === 'band' && bandDeelGegevens && bandDeelGegevens.id === id && bandDeelGegevens.delen_aan === false) {
-    showConfirm('Delen staat uit. Zet het aan om de link van de band te delen.', async () => {
-      if (await zetBandDelen(id, true)) shareProfile(kind, id, name);
-    }, 'Aanzetten en delen', false);
-    return;
-  }
   const path = kind === 'band' ? 'band' : 'profiel';
   const url = `${location.origin}${location.pathname}#${path}/${id}`;
   const label = kind === 'band' ? 'bandprofiel' : 'profiel';
@@ -513,9 +505,11 @@ function toonProfielNietBeschikbaar(soort, bestaatNiet) {
   const band = soort === 'band';
   // TT-464: bestaatNiet is een band of profiel dat uit de database is verdwenen
   // (sinds TT-561 ook een profiel, muzikant en band gelijk).
-  const kop = band ? (bestaatNiet ? 'Deze bandpagina bestaat niet meer' : 'Deze bandpagina is niet beschikbaar')
+  // TT-543 onderdeel 6, blok 3: een band deelt altijd (Delen via link is weg,
+  // 7c), dus bij een band is er alleen "bestaat niet meer".
+  const kop = band ? 'Deze bandpagina bestaat niet meer'
                    : (bestaatNiet ? 'Dit profiel bestaat niet meer' : 'Dit profiel is niet beschikbaar');
-  const uitleg = band ? (bestaatNiet ? 'De band is opgeheven, of de link klopt niet.' : 'De band deelt deze pagina niet via een link.')
+  const uitleg = band ? 'Het bandprofiel is verwijderd, of de link klopt niet.'
                       : (bestaatNiet ? 'Het account is verwijderd, of de link klopt niet.' : 'De muzikant deelt dit profiel niet via een link.');
   document.getElementById('profielSchermContent').innerHTML = emptyStateHTML(
     kop, uitleg,

@@ -12,7 +12,11 @@ let confirmCallback = null;
 // dat nu per aanroep i.p.v. altijd aan te staan.
 // TT-555 (03-11-2026): vijfde parameter cancelLabel. Na een gelukte melding is
 // "Annuleren" fout: er valt niets meer te annuleren. Standaard "Annuleren".
-function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel) {
+// TT-543 onderdeel 6, blok 3: een vraag kan een kop krijgen (zesde
+// parameter), zoals bij Bandprofiel verwijderen (beeld akkoord Ronald 10-11-2026).
+function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel, kop) {
+  const kopEl = document.getElementById('confirmKop');
+  if (kopEl) { kopEl.textContent = kop || ''; kopEl.hidden = !kop; }
   document.getElementById('confirmMessage').textContent = message;
   document.getElementById('confirmNoBtn').textContent = cancelLabel || 'Annuleren';
   const yesBtn = document.getElementById('confirmYesBtn');
@@ -3032,7 +3036,11 @@ async function kaartMaken(g, beeld) {
 // is de gewone .melding (huisstijl §13): één zin, geen kop, geen knop, geen
 // kruisje. Dezelfde zin voor muzikant en band, zodat hij op één regel past.
 // Is de muzikant of de band beschikbaar, dan staat er niets.
-function nietBeschikbaarMeldingHTML() {
+// TT-543 onderdeel 6, blok 3 (besluit Ronald 10-11-2026, 7b): een band toont
+// de naam van zijn stand ("Tijdelijk niet beschikbaar." of "Inactief."), vet
+// en in het midden van het vak. De muzikant volgt in blok 4.
+function nietBeschikbaarMeldingHTML(stand) {
+  if (stand) return `<div class="melding melding-beschikbaar melding-stand"><p class="melding-tekst"><strong>${escHtml(stand)}.</strong></p></div>`;
   return '<div class="melding melding-beschikbaar"><p class="melding-tekst">Momenteel <strong>niet beschikbaar</strong>.</p></div>';
 }
 

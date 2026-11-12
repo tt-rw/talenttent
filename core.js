@@ -1223,7 +1223,7 @@ function showView(view, mode, extra) {
   }
   if (view === 'profiel') {
     profielLaadBelofte = profielSoort === 'band'
-      ? laadBandScherm(profielId, !profielVanApp)
+      ? laadBandScherm(profielId)
       : laadProfielScherm(profielId, !profielVanApp);
   }
   if (view === 'profieltegels') {

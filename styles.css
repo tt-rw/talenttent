@@ -1553,6 +1553,17 @@
      de bio, op een muzikantprofiel en een bandpagina. De gewone .melding; alleen
      de ruimte eronder is 20px, zoals tussen de andere blokken van een profiel. */
   .melding-beschikbaar { margin-bottom: 20px; }
+  /* TT-543 onderdeel 6, blok 3 (besluit Ronald 10-11-2026, 7b: "dit mag wel
+     gecentreerd"): de stand van een band staat in het midden van het vak. */
+  .melding-stand .melding-tekst { margin: 0; text-align: center; }
+  /* De kop van een controlevraag (showConfirm met kop, blok 3). */
+  .confirm-kop { margin: 0 0 8px; font-size: 17px; line-height: 22px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+  /* Beheer overdragen (blok 3): kop, één zin, de leden als rij. */
+  .overdragen-kop { margin-top: 0; }
+  .overdragen-tekst { margin: 0 0 16px; font-size: 12px; line-height: 18px; color: var(--muted); overflow-wrap: anywhere; }
+  /* 8D blok 3 (12-11-2026, D7): de tekst van een controlevraag noemt namen; een lang woord breekt af (huisstijl §2.2). */
+  #confirmMessage { overflow-wrap: anywhere; }
+  .overdragen-lijst { margin-bottom: 20px; }
   .profile-songs-title {
     font-size: 12px;
     letter-spacing: 2px;
@@ -4055,9 +4066,9 @@
   .deelblad-tekst { font-size: 12px; line-height: 20px; color: var(--text); margin: 0 0 20px; }
 
   /* Bandprofiel bewerken: het blok Bandbeheer onder de vier tegels. */
-  .band-beheer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
-  .band-beheer .field { margin-bottom: var(--ruimte-velden); }
-  .band-beheer .knoppen-stapel + .field-hint { margin-top: 8px; }
+  /* TT-543 onderdeel 6, blok 3: Bandbeheer is een hoofdstuk met tegels, zoals
+     Instellingen; de kop (.hoofdstuk-kop) zorgt voor de ruimte erboven. */
+  .band-beheer .tile:last-child { margin-bottom: 0; }
   /* Een keuze uit twee of drie over de volle breedte, even brede knoppen
      (zelfde aanpak als een knoppenrij, §5). */
   .segmented-vol { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; width: 100%; }
@@ -4830,14 +4841,15 @@
   /* TT-543 F1: vaste regelhoogte (huisstijl §2); 22px zoals .voorkeur-kop, 16px
      zoals elke hulptekst. Profiel bewerken, (onderdeel 4) de tegels van Zoeken
      en (onderdeel 6) Bandprofiel bewerken; Instellingen volgt in onderdeel 7. */
-  #tegelsWrap .tile-title, #bandTegelsWrap .tile-title, .zoek-tegel .tile-title { line-height: 22px; }
+  #tegelsWrap .tile-title, #bandTegelsWrap .tile-title, #bandBeheerBlok .tile-title, .zoek-tegel .tile-title { line-height: 22px; }
   #tegelsWrap .tile-sub, #bandTegelsWrap .tile-sub, .zoek-tegel .tile-sub { line-height: 16px; }
   /* TT-543 blok 4 (besluit Ronald 06-11-2026, voorstel 17, op beeld): de
      onderregel toont wat je invulde, op één regel; past het niet, dan eindigt
      hij op "…". "Nog leeg" in de signaalkleur, vet. Sinds onderdeel 6 (besluit
      Ronald 10-11-2026, 6) ook de tegels van een band. */
-  #tegelsWrap .tile > div, #bandTegelsWrap .tile > div { min-width: 0; }
-  #tegelsWrap .tile-sub, #bandTegelsWrap .tile-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* TT-543 onderdeel 6, blok 3 (8D 12-11-2026): ook de tegels van Bandbeheer; een lange bandnaam liep uit de tegel. */
+  #tegelsWrap .tile > div, #bandTegelsWrap .tile > div, #bandBeheerBlok .tile > div { min-width: 0; }
+  #tegelsWrap .tile-sub, #bandTegelsWrap .tile-sub, #bandBeheerBlok .tile-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 16px; }
   .tegel-leeg { color: var(--accent); font-weight: 700; }
   /* TT-260 (12-09-2026): was 11px met een eigen marge van 5px. Geen van
      beide is een maat uit de huisstijl (§2: 12px; §3: 4px-schaal). */
@@ -5200,6 +5212,11 @@
      keuzes, direct onder de laatste regel (pickerMenuKoppelen() in
      modals-shared.js). */
   .choice-menu.menu-breed { left: 12.5%; right: auto; width: 75%; }
+  /* TT-543 onderdeel 6, blok 3 (besluit Ronald 10-11-2026, 7b: "ja, akkoord"):
+     een menu onder een tegel heeft de tekst links (Thema, Delen via link,
+     Beschikbaarheid, Bandstatus); een menu onder een keuzeveld houdt de tekst
+     in het midden. Huisstijl §7.1. */
+  .choice-menu.menu-tegel .choice-option { justify-content: flex-start; text-align: left; }
   .picker-badge-row.met-toevoegen { position: relative; }
 
 

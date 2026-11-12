@@ -59,6 +59,12 @@ async function respondToBandInvite(bandId, accept) {
     showToast(accept ? 'Je staat nu als lid op het bandprofiel.' : 'Uitnodiging geweigerd.');
     loadBandInvites(mid);
     if (accept) profielBandsVerversen();
+    // TT-579 (TT-543 onderdeel 6, besluit Ronald 10-11-2026, 11): de beheerder
+    // krijgt het antwoord als gewoon bericht, in het gesprek van de uitnodiging.
+    const band = await bandNaamEnBeheerder(bandId);
+    if (band) stilBericht(band.beheerder, accept
+      ? `Ja, ik doe mee met ${band.naam}!`
+      : `Bedankt voor de uitnodiging, maar ik doe niet mee met ${band.naam}.`);
   } catch (e) {
     logCaught('respondToBandInvite', e);
     showToast(friendlyErrorMessage(e, 'je antwoord op de uitnodiging versturen'));
@@ -98,6 +104,9 @@ async function refreshBandsDot(opties) {
 async function respondToFounderOffer(bandId, accept) {
   const mid = await getMyMusicianId();
   if (!mid) return;
+  // TT-543 blok 3 (besluit Ronald 10-11-2026, 11): de beheerder krijgt het
+  // antwoord als bericht. Eerst lezen wie dat is: na het overnemen ben jij het.
+  const band = await bandNaamEnBeheerder(bandId);
   try {
     if (accept) {
       // 22-08-2026: dit liep eerder via drie losse schrijfacties vanuit de
@@ -117,6 +126,9 @@ async function respondToFounderOffer(bandId, accept) {
       if (error) throw error;
       showToast('Aanbod geweigerd.');
     }
+    if (band) stilBericht(band.beheerder, accept
+      ? `Ik neem het beheer van ${band.naam} over.`
+      : `Ik neem het beheer van ${band.naam} niet over. Bedankt voor de vraag!`);
     refreshBandsDot();
     loadMyBands();
     if (accept) profielBandsVerversen();
@@ -126,53 +138,64 @@ async function respondToFounderOffer(bandId, accept) {
   }
 }
 
-// V-16: de oprichter geeft aan te willen stoppen. Is er niemand anders
-// bevestigd, dan is overdragen zinloos — direct de keuze voor opheffen.
-// TT-432 (07-10-2026, besluit Ronald): zijn er wel anderen, dan kiest de
-// beheerder zelf één bevestigd lid; alleen die krijgt het verzoek. De beheerder
-// blijft beheerder totdat dat lid "Ik neem het over" kiest (of hij het verzoek
-// intrekt en zelf voor opheffen kiest). De lijst staat onder de knop in Bandbeheer.
-async function askFounderTransfer(bandId) {
+// TT-543 onderdeel 6, blok 3 (besluiten Ronald 10-11-2026, 7d en 11, en
+// 12-11-2026, B3-2 tot en met B3-5): bij een stap die een ander raakt, krijgt
+// die een gewoon bericht van de beheerder of het lid, in hun gesprek. De
+// naam van de band en wie de beheerder is, eerst uit de database.
+async function bandNaamEnBeheerder(bandId) {
   try {
-    const { data: band, error } = await db.from('bands')
-      .select('name, band_members(musician_id, status, musicians(weergavenaam, username))').eq('id', bandId).single();
-    if (error || !band) throw error || new Error('Kon band niet laden.');
-    const mid = await getMyMusicianId();
-    const others = (band.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid);
-
-    if (!others.length) {
-      showConfirm(
-        `Je bent het enige bevestigde lid van "${band.name}". Er is niemand om het beheer aan over te dragen. Stoppen betekent dat de band wordt opgeheven.`,
-        () => dissolveBand(bandId),
-        'Band opheffen',
-        true
-      );
-      return;
-    }
-
-    const lijst = document.getElementById('overdragKeuze');
-    if (!lijst) return;
-    lijst.innerHTML = `<p class="field-hint">Kies wie het beheer van ${escHtml(band.name)} overneemt. Zegt die nee, dan blijf jij voorlopig beheerder.</p>`
-      + `<div class="knoppen-stapel">${others.map(m =>
-        `<button type="button" class="btn btn-ghost" onclick="sendFounderOffer('${jsAttr(bandId)}', '${jsAttr(m.musician_id)}')">${escHtml(displayNameOf(m.musicians))}</button>`
-      ).join('')}</div>`;
+    const { data, error } = await db.from('bands').select('name, founder_id').eq('id', bandId).maybeSingle();
+    if (error) throw error;
+    return data ? { naam: data.name || '', beheerder: data.founder_id || null } : null;
   } catch (e) {
-    logCaught('askFounderTransfer', e);
-    showToast(friendlyErrorMessage(e, 'het verzoek om oprichter te worden versturen'));
+    logCaught('bandNaamEnBeheerder', e);
+    return null;
   }
 }
 
-async function sendFounderOffer(bandId, memberId) {
+// Beheer overdragen (TT-432; TT-543 blok 3, 7d): een venster met kop, één
+// zin en de bevestigde leden als rij. Een tik op een lid stuurt het verzoek,
+// met een bericht aan dat lid. Zolang niemand het accepteert, blijft de
+// beheerder beheerder. De tegel staat er alleen als er een ander lid is (B3-2).
+async function openOverdragen() {
+  const bandId = bewerkBandId;
+  if (!bandId) return;
+  const lijst = document.getElementById('overdragenLijst');
+  try {
+    const mid = await getMyMusicianId();
+    const { data: band, error } = await db.from('bands')
+      .select('name, band_members(musician_id, status, rollen, musicians(id, weergavenaam, username, avatar_url))').eq('id', bandId).single();
+    if (error || !band) throw error || new Error('Band niet gevonden.');
+    const anderen = (band.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid && m.musicians)
+      .map(m => ({ id: m.musician_id, naam: displayNameOf(m.musicians), avatar_url: m.musicians.avatar_url || null, rollen: m.rollen || [] }))
+      .sort((x, y) => x.naam.localeCompare(y.naam, 'nl'));
+    if (!anderen.length) { renderBandBeheer(); return; }
+    document.getElementById('overdragenTekst').textContent =
+      `Wie neemt ${band.name} over? Zolang niemand heeft geaccepteerd, blijf jij de beheerder.`;
+    lijst.innerHTML = anderen.map(l =>
+      `<button type="button" class="bb-rij bb-rij-knop" onclick="sendFounderOffer('${jsAttr(bandId)}','${jsAttr(l.id)}','${jsAttr(l.naam)}')">${bbFotoHTML(l.avatar_url)}<span class="bb-tekst"><span class="bb-naam">${escHtml(l.naam)}</span><span class="bb-sub">${escHtml(l.rollen.join(' · ') || 'Lid')}</span></span></button>`
+    ).join('');
+    document.getElementById('overdragenModal').classList.add('visible');
+  } catch (e) {
+    logCaught('openOverdragen', e);
+    showToast(friendlyErrorMessage(e, 'de leden van de band laden'));
+  }
+}
+function sluitOverdragen() {
+  document.getElementById('overdragenModal').classList.remove('visible');
+}
+
+async function sendFounderOffer(bandId, memberId, naam) {
   try {
     // 22-08-2026 (Ronald): een verzoek trekt zichzelf na 7 dagen in
     // — founder_offer_at is het moment waarop die klok gaat lopen.
     const { error } = rijenGeraakt(await db.from('band_members').update({ founder_offer: true, founder_offer_at: new Date().toISOString() }).eq('band_id', bandId).eq('musician_id', memberId).select('band_id'));
     if (error) throw error;
-    showToast('Gevraagd. Je ziet het hier zodra die reageert.');
+    sluitOverdragen();
+    showToast(naam ? `Gevraagd aan ${naam}.` : 'Gevraagd.');
+    const band = await bandNaamEnBeheerder(bandId);
+    if (band) stilBericht(memberId, `Wil jij het beheer van ${band.naam} overnemen?`);
     loadMyBands();
-    // TT-127-restpunt (27-08-2026): de knop toont meteen "Aanbod intrekken",
-    // niet pas na sluiten en heropenen. Sinds TT-385 staat hij in het blok
-    // Bandbeheer van Bandprofiel bewerken.
     if (bewerkBandId === bandId) renderBandBeheer();
   } catch (e) {
     logCaught('sendFounderOffer', e);
@@ -180,11 +203,24 @@ async function sendFounderOffer(bandId, memberId) {
   }
 }
 
+// Een vraag die nog loopt: een tik op de tegel vraagt of je hem intrekt. Het
+// lid krijgt daar een bericht over (B3-3).
+function vraagOverdragenIntrekken(bandId, naam) {
+  showConfirm(
+    `Je vraag aan ${naam} over het beheer van ${bewerkBandNaam || 'de band'} vervalt dan.`,
+    () => withdrawFounderOffer(bandId),
+    'Vraag intrekken', false
+  );
+}
+
 async function withdrawFounderOffer(bandId) {
   try {
+    const { data: gevraagd } = await db.from('band_members').select('musician_id').eq('band_id', bandId).eq('founder_offer', true);
     const { error } = rijenGeraakt(await db.from('band_members').update({ founder_offer: false, founder_offer_at: null }).eq('band_id', bandId).select('band_id'));
     if (error) throw error;
-    showToast('Aanbod ingetrokken.');
+    showToast('Vraag ingetrokken.');
+    const band = await bandNaamEnBeheerder(bandId);
+    if (band) (gevraagd || []).forEach(g => stilBericht(g.musician_id, `Ik trek mijn vraag over het beheer van ${band.naam} in.`));
     loadMyBands();
     if (bewerkBandId === bandId) renderBandBeheer();
   } catch (e) {
@@ -194,22 +230,36 @@ async function withdrawFounderOffer(bandId) {
 }
 
 // TT-312 (25-09-2026): "Gezocht", de leden en de band in één
-// databasefunctie, in één transactie. Vroeger wiste de app "Gezocht" en de
-// leden zonder foutcontrole, en pas daarna de band. Mislukte dat laatste,
-// dan bleef een band over zonder leden en zonder beheerder. Zelfde oplossing
-// als TT-281.
+// databasefunctie, in één transactie. TT-543 blok 3 (besluit Ronald
+// 10-11-2026, 7d): "Bandprofiel verwijderen" in plaats van "Band opheffen";
+// elk lid krijgt daarna een bericht. De bestanden van de band wist de
+// database zelf (TT-458, `opslag-opruimen`).
 async function dissolveBand(bandId) {
+  const band = await bandNaamEnBeheerder(bandId);
+  let leden = [];
+  try {
+    const mid = await getMyMusicianId();
+    const { data } = await db.from('band_members').select('musician_id').eq('band_id', bandId).eq('status', 'bevestigd');
+    leden = (data || []).map(m => m.musician_id).filter(id => id && id !== mid);
+  } catch (e) { logCaught('dissolveBand/leden', e); }
   try {
     const { error } = await db.rpc('tt_dissolve_band', { p_band_id: bandId });
     if (error) throw error;
-    showToast('Band opgeheven.');
-    // TT-385: opheffen gebeurt in Bandprofiel bewerken. Dat scherm hoort dan
+    const naam = band ? band.naam : '';
+    let verstuurd = 0;
+    if (naam) {
+      const uitslagen = await Promise.all(leden.map(id => stilBericht(id, `Het profiel van ${naam} is verwijderd. De band bestaat niet meer in deze app.`)));
+      verstuurd = uitslagen.filter(Boolean).length;
+    }
+    showToast((naam ? `Het profiel van ${naam} is verwijderd.` : 'Het bandprofiel is verwijderd.')
+      + (leden.length && verstuurd === leden.length ? ' De leden hebben een bericht gekregen.' : ''));
+    // TT-385: verwijderen gebeurt in Bandprofiel bewerken. Dat scherm hoort dan
     // bij een band die er niet meer is; terug naar Mijn Bands.
     if (bewerkBandId === bandId) { showView('bands'); return; }
     loadMyBands();
   } catch (e) {
     logCaught('dissolveBand', e);
-    showToast(friendlyErrorMessage(e, 'de band opheffen'));
+    showToast(friendlyErrorMessage(e, 'het bandprofiel verwijderen'));
   }
 }
 
@@ -245,7 +295,7 @@ async function executeLeaveBand(bandId) {
     showToast('Je hebt de band verlaten.');
     // TT-385: band verlaten kan ook vanaf de bandpagina. TT-410b fase 2: die is
     // nu een scherm en laadt opnieuw, zoals een bezoeker de band ziet.
-    if (huidigeView === 'profiel' && huidigBandId === bandId) laadBandScherm(bandId, false);
+    if (huidigeView === 'profiel' && huidigBandId === bandId) laadBandScherm(bandId);
     loadMyBands();
     profielBandsVerversen();
   } catch (e) {
@@ -264,16 +314,18 @@ async function executeLeaveBand(bandId) {
 function removeMember(bandId, musicianId, memberName, bandName) {
   showConfirm(
     `${memberName} staat dan niet meer in de bezetting van ${bandName}.`,
-    () => executeRemoveMember(bandId, musicianId, memberName),
+    () => executeRemoveMember(bandId, musicianId, memberName, bandName),
     'Uit de band'
   );
 }
 
-async function executeRemoveMember(bandId, musicianId, memberName) {
+async function executeRemoveMember(bandId, musicianId, memberName, bandName) {
   try {
     const { error } = rijenGeraakt(await db.from('band_members').delete().eq('band_id', bandId).eq('musician_id', musicianId).select('band_id'));
     if (error) throw error;
     showToast(`${memberName} is uit de band.`);
+    // TT-543 blok 3 (besluit Ronald 12-11-2026, B3-5; tekst van Ronald).
+    if (bandName) stilBericht(musicianId, `Je staat niet meer in de bezetting van ${bandName}. Bedankt voor het meespelen.`);
     loadMyBands();
     // De lijst in Onze bezetting klopt meteen, niet pas na heropenen.
     if (bewerkBandId === bandId) bbLaadLeden();
@@ -641,7 +693,7 @@ async function loadMyBands(opties) {
 
   const bandIds = memberships.map(m => m.band_id);
   const { data: bands, error: bandFout } = await db.from('bands')
-    .select(`*, band_members(musician_id, role, status, founder_offer), band_wanted(instrument)`)
+    .select(`*, band_members(musician_id, role, status, founder_offer, musicians(weergavenaam, username)), band_wanted(instrument)`)
     .in('id', bandIds).order('updated_at', { ascending: false });
   if (bandFout) {
     logCaught('loadMyBands/bands', bandFout);
@@ -665,6 +717,11 @@ async function loadMyBands(opties) {
     // TT-432: een verzoek om het beheer over te nemen staat onder de hoes van
     // het lid dat gekozen is.
     const verzoekVoorMij = !isFounder && confirmed.some(m => m.musician_id === mid && m.founder_offer);
+    // TT-543 blok 3 (beeld vervolg-overdragen, akkoord Ronald 10-11-2026; B3-4):
+    // wie vraagt het, en de oude beheerder blijft lid.
+    const naamVan = m => (m && m.musicians ? displayNameOf(m.musicians) : '');
+    const beheerderNaam = naamVan(confirmed.find(m => m.musician_id === b.founder_id)) || 'De beheerder';
+    const gevraagdAan = confirmed.filter(m => m.founder_offer).map(naamVan).filter(Boolean);
     const zoekt = open.length
       ? `<div class="profiel-knoppen"><span class="zoek-kaart-zoekt">Zoekt ${escHtml(instrumentInZin(open[0]))}</span></div>` : '';
     return `<div class="mijn-band">
@@ -675,14 +732,14 @@ async function loadMyBands(opties) {
       })}</div>
       ${verzoekVoorMij ? `
       <div class="melding mijn-band-melding">
-        <p class="melding-kop">De beheerder van ${escHtml(b.name)} stopt</p>
-        <p class="melding-tekst">Wil jij het beheer overnemen? Zeg je nee, dan blijft de huidige beheerder voorlopig aan.</p>
+        <p class="melding-kop">${escHtml(beheerderNaam)} vraagt of jij ${escHtml(b.name)} overneemt</p>
+        <p class="melding-tekst">Je wordt dan beheerder. ${escHtml(beheerderNaam)} blijft lid van de band.</p>
         <div class="btn-row">
           <button class="btn btn-ghost" onclick="respondToFounderOffer('${jsAttr(b.id)}', false)">Nee, liever niet</button>
           <button class="btn btn-primary" onclick="respondToFounderOffer('${jsAttr(b.id)}', true)">Ik neem het over</button>
         </div>
       </div>` : ''}
-      ${offerPending ? `<p class="mijn-band-wacht">Gevraagd of iemand het beheer overneemt — wachten op reactie.</p>` : ''}
+      ${offerPending ? `<p class="mijn-band-wacht">${gevraagdAan.length ? `Gevraagd aan ${escHtml(opsommingNL(gevraagdAan))}` : 'Gevraagd'} · wacht op antwoord</p>` : ''}
     </div>`;
   }).join('');
   // Pas in de pagina meten: de tekstkleur per foto, de bundels zonder foto, en
@@ -762,7 +819,7 @@ async function bandUitTabellen(id) {
   const beheerderId = b.founder_id || (beheerder ? beheerder.id : null);
   return {
     id: b.id, name: b.name, city: b.city, description: b.description, niveau: b.niveau,
-    avatar_url: b.avatar_url || null, genres: b.genres || [], soort: b.soort || null, pauze: !!b.pauze,
+    avatar_url: b.avatar_url || null, genres: b.genres || [], soort: b.soort || null, stand: bandStandVan(b),
     instagram: b.instagram, tiktok: b.tiktok, youtube: b.youtube, afgeschermd: false,
     leden, uitgenodigd, beheerderId,
     contact: leden.find(l => l.id === b.contact_id) || leden.find(l => l.id === beheerderId) || null,
@@ -791,7 +848,7 @@ async function bandUitPubliek(id) {
   }));
   return {
     id: row.id, name: row.name, city: row.city, description: row.description, niveau: row.niveau,
-    avatar_url: row.avatar_url || null, genres: row.genres || [], soort: row.soort || null, pauze: !!row.pauze,
+    avatar_url: row.avatar_url || null, genres: row.genres || [], soort: row.soort || null, stand: bandStandVan(row),
     instagram: row.instagram, tiktok: row.tiktok, youtube: row.youtube, afgeschermd: !!row.afgeschermd,
     leden, uitgenodigd: [], beheerderId: null,
     contact: leden.find(l => l.id && l.id === row.contact_id) || null,
@@ -991,10 +1048,10 @@ function bandPaginaHTML(b, kijker) {
       // TT-517 fase 8: het visitekaartje; een band die iemand zoekt, toont dat in een pil.
       kaart: { id: b.id, naam: b.name, regel: b.city || '', wat: b.genres, onder: [], zoekt: b.wanted },
       regels: `<div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city || '')}</div>`,
-      knoppen: profielKnoppenHTML('band', b.id, b.name, menuHTML, deelActie, beheer || b.delen_aan !== false)
+      knoppen: profielKnoppenHTML('band', b.id, b.name, menuHTML, deelActie, true)
     })}
     ${watHTML}
-    ${b.pauze ? nietBeschikbaarMeldingHTML() : ''}`;
+    ${standMeldingHTML(b.stand)}`;
   // 1b: Wie zijn we direct onder de regels, zonder kop, zoals de bio
   // (wijzigt besluit (c) van TT-385: "direct onder de bezetting").
   if (b.description) h += `<p class="profile-bio">${tekstMetMeerHTML(b.description)}</p>`;
@@ -1110,44 +1167,15 @@ function bandDeelBladAanvullen() {
 // muzikantprofiel, een eigen scherm met een eigen link: view-profiel, route
 // #band/<id>. Het oude bandvenster bestaat niet meer en er komt geen view bij.
 // De stap in de geschiedenis is { view: 'profiel', id, app, soort: 'band' }.
-//   - In de app geopend (`link` onwaar): elke band opent, ook als delen uit staat.
-//   - Via een link (`link` waar): staat delen uit, dan toont het scherm "niet
-//     beschikbaar", behalve voor de beheerder van de band.
+// Een band opent altijd, in de app en via een link: Delen via link is weg
+// (TT-543 onderdeel 6, besluit Ronald 10-11-2026, 7c).
 function openBandScherm(id, opties) {
   const o = opties || {};
   showView('profiel', o.redirect ? 'redirect' : undefined, { id, app: !o.link, soort: 'band' });
   return profielLaadBelofte;
 }
 
-// Lukt de vraag niet (bijvoorbeeld omdat het databasescript nog niet is
-// gedraaid), dan geldt de standaard: delen staat aan.
-async function bandDeelStand(id) {
-  try {
-    const { data, error } = await db.rpc('tt_band_delen', { bid: id });
-    if (error) throw error;
-    return data !== false;
-  } catch (e) {
-    logCaught('bandDeelStand', e);
-    return true;
-  }
-}
-
-async function zetBandDelen(bandId, aan) {
-  try {
-    // .select() en rijenGeraakt(): 0 rijen is een geweigerde wijziging (TT-230).
-    const { error } = rijenGeraakt(await db.from('bands').update({ delen_aan: aan }).eq('id', bandId).select('id'));
-    if (error) throw error;
-    if (bandDeelGegevens && bandDeelGegevens.id === bandId) bandDeelGegevens.delen_aan = aan;
-    showToast(aan ? 'Delen staat aan. De link van de band werkt.' : 'Delen staat uit. De link van de band werkt niet meer.');
-    return true;
-  } catch (e) {
-    logCaught('zetBandDelen', e);
-    showToast(friendlyErrorMessage(e, 'het delen van de band wijzigen'));
-    return false;
-  }
-}
-
-async function laadBandScherm(id, linkToegang) {
+async function laadBandScherm(id) {
   const volgnr = ++profielSchermVolgnr; // dezelfde teller als bij een muzikant
   huidigProfielId = null;
   huidigBandId = id || null;
@@ -1157,7 +1185,6 @@ async function laadBandScherm(id, linkToegang) {
   vak.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
   if (!id) { toonProfielNietBeschikbaar('band'); return; }
 
-  const delenVraag = bandDeelStand(id);
   let b = null;
   let mislukt = false;
   try {
@@ -1169,21 +1196,17 @@ async function laadBandScherm(id, linkToegang) {
     m.stack = (e && e.stack) ? e.stack : null;
     logCaught('laadBandScherm', m);
   }
-  const delen = await delenVraag;
   if (volgnr !== profielSchermVolgnr) return; // intussen een ander scherm geopend
   // TT-464: geen fout en geen band: de band bestaat niet meer. Dat is een verwachte
   // uitkomst (zoals TT-423) en komt niet in het foutlog.
   if (!b && !mislukt) { toonProfielNietBeschikbaar('band', true); return; }
-  if (!b) { vak.innerHTML = foutStaatHTML(mislukt, 'de band laden', `laadBandScherm('${jsAttr(id)}', ${!!linkToegang})`); return; }
+  if (!b) { vak.innerHTML = foutStaatHTML(mislukt, 'de band laden', `laadBandScherm('${jsAttr(id)}')`); return; }
 
   const ik = hasOwnProfile ? myMusicianId : null;
   const kijker = !hasOwnProfile ? 'gast'
     : (ik && ik === b.beheerderId) ? 'beheerder'
     : (ik && b.leden.some(l => l.id === ik)) ? 'lid' : 'bezoeker';
 
-  // Een link naar een band waarvan delen uit staat. De beheerder opent altijd.
-  if (linkToegang && !delen && kijker !== 'beheerder') { toonProfielNietBeschikbaar('band'); return; }
-  b.delen_aan = delen;
 
   bandDeelGegevens = kijker === 'beheerder' ? b : null;
   vak.innerHTML = bandPaginaHTML(b, kijker);
@@ -1330,6 +1353,35 @@ function renderBandTegels() {
 }
 
 
+// TT-543 onderdeel 6, blok 3 (besluiten Ronald 10-11-2026, 7 tot en met 7d,
+// en 12-11-2026, B3-2): Bandbeheer is een hoofdstuk met drie tegels, zoals
+// Instellingen. Bandstatus kiest één van drie standen in het keuzemenu onder
+// de tegel (tekst links, huisstijl §7.1); Beheer overdragen alleen als er een
+// ander lid is; Bandprofiel verwijderen in plaats van Band opheffen. Delen
+// via link is weg (7c). De regel onder Beheer overdragen is korter, zodat hij
+// op één regel past (besluit Ronald 12-11-2026, B3-9).
+const BAND_STANDEN = [
+  { waarde: 'actief', label: 'Actief', menu: 'Actief' },
+  { waarde: 'tijdelijk', label: 'Tijdelijk niet beschikbaar', menu: 'Tijdelijk niet beschikbaar (blijft vindbaar)' },
+  { waarde: 'inactief', label: 'Inactief', menu: 'Inactief (niet vindbaar)' }
+];
+
+// De stand uit de database. Zonder de kolom `stand` (het script van blok 3
+// nog niet gedraaid) volgt hij uit `pauze`, zoals voorheen.
+function bandStandVan(b) {
+  if (b && BAND_STANDEN.some(x => x.waarde === b.stand)) return b.stand;
+  return b && b.pauze ? 'tijdelijk' : 'actief';
+}
+
+// De zin op de bandpagina (besluit Ronald 10-11-2026, 7b: "ja. dit mag wel
+// gecentreerd."): de naam van de stand; bij Actief niets.
+function standMeldingHTML(stand) {
+  const st = BAND_STANDEN.find(x => x.waarde === stand && x.waarde !== 'actief');
+  return st ? nietBeschikbaarMeldingHTML(st.label) : '';
+}
+
+let bandBeheerStand = 'actief';
+
 async function renderBandBeheer() {
   const el = document.getElementById('bandBeheerBlok');
   const id = bewerkBandId;
@@ -1337,90 +1389,91 @@ async function renderBandBeheer() {
   el.innerHTML = '';
   try {
     const { data: b, error } = await db.from('bands')
-      .select('name, city, pauze, band_members(musician_id, status, founder_offer)')
+      .select('*, band_members(musician_id, status, founder_offer, musicians(weergavenaam, username))')
       .eq('id', id).single();
     if (error || !b) throw error || new Error('Band niet gevonden.');
     if (id !== bewerkBandId) return;
     bewerkBandNaam = b.name || '';
     bewerkBandStad = b.city || '';
     zetBandNaamRegel();
-    // TT-437: de stand van "Delen via link" komt uit de kleine vraag, zodat
-    // Bandbeheer ook laadt als het databasescript nog niet is gedraaid.
-    const delenAan = await bandDeelStand(id);
-    if (id !== bewerkBandId) return;
-    // V-16: loopt er al een aanbod om het beheer over te nemen? Dan zegt de
-    // knop "Aanbod intrekken", met de wachtstand eronder.
-    const aanbod = (b.band_members || []).some(m => m.status === 'bevestigd' && m.founder_offer);
-    // De knop "Band opheffen" is destructief en staat daarom omlijnd in rood
-    // (huisstijl §5), onder de rest. De vraag ervoor noemt het gevolg (§19).
+    bandBeheerStand = bandStandVan(b);
+    const mid = await getMyMusicianId();
+    const anderen = (b.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid);
+    const gevraagd = anderen.filter(m => m.founder_offer).map(m => m.musicians ? displayNameOf(m.musicians) : '').filter(Boolean);
+    const stand = BAND_STANDEN.find(x => x.waarde === bandBeheerStand);
+    // Een vraag die loopt: de tegel noemt hem, een tik vraagt of je hem intrekt.
+    const overdragen = !anderen.length ? '' : gevraagd.length
+      ? `<div class="tile" onclick="vraagOverdragenIntrekken('${jsAttr(id)}','${jsAttr(opsommingNL(gevraagd))}')">
+          <div style="flex:1;"><div class="tile-title">Beheer overdragen</div>
+          <div class="tile-sub">gevraagd aan ${escHtml(opsommingNL(gevraagd))} · wacht op antwoord</div></div></div>`
+      : `<div class="tile" onclick="openOverdragen()">
+          <div style="flex:1;"><div class="tile-title">Beheer overdragen</div>
+          <div class="tile-sub">draag het beheer over aan een bandlid</div></div></div>`;
     el.innerHTML = `
-      <div class="profile-media-title">Bandbeheer</div>
-      <div class="field">
-        <label>Beschikbaarheid</label>
-        <div class="segmented-control segmented-vol" id="bandBeschikbaarKeuze">
-          <button type="button" class="segmented-btn${b.pauze ? '' : ' selected'}" onclick="zetBandBeschikbaar(true)">Beschikbaar</button>
-          <button type="button" class="segmented-btn${b.pauze ? ' selected' : ''}" onclick="zetBandBeschikbaar(false)">Niet beschikbaar</button>
+      <h2 class="hoofdstuk-kop">Bandbeheer</h2>
+      <div class="menu-anchor">
+        <div class="tile" id="bandStandTegel" aria-label="Bandstatus">
+          <div style="flex:1;"><div class="tile-title">Bandstatus</div>
+          <div class="tile-sub"><span class="wheel-field-label">${escHtml(stand.label)}</span></div></div>
         </div>
-        <p class="field-hint">Zijn jullie niet beschikbaar, dan staat dat bovenaan jullie bandpagina. De band blijft vindbaar in Zoeken.</p>
+        <div class="choice-menu menu-breed menu-tegel" id="bandStandMenu" role="listbox" aria-label="Bandstatus"></div>
       </div>
-      <div class="field">
-        <label>Delen via link</label>
-        <div class="segmented-control segmented-vol" id="bandDelenKeuze">
-          <button type="button" class="segmented-btn${delenAan ? ' selected' : ''}" onclick="zetBandDelenBeheer(true)">Aan</button>
-          <button type="button" class="segmented-btn${delenAan ? '' : ' selected'}" onclick="zetBandDelenBeheer(false)">Uit</button>
-        </div>
-        <p class="field-hint">Staat delen uit, dan werkt de link van de band niet meer.</p>
-      </div>
-      <div class="knoppen-stapel">
-        <button type="button" class="btn btn-ghost" onclick="${aanbod ? `withdrawFounderOffer('${jsAttr(id)}')` : `askFounderTransfer('${jsAttr(id)}')`}">${aanbod ? 'Aanbod intrekken' : 'Beheer overdragen'}</button>
-        <button type="button" class="btn btn-danger" onclick="vraagBandOpheffen()">Band opheffen</button>
-      </div>
-      <div id="overdragKeuze"></div>
-      ${aanbod ? '<p class="field-hint">Gevraagd of iemand het beheer overneemt. Wachten op reactie.</p>' : ''}`;
+      ${overdragen}
+      <div class="tile" onclick="vraagBandVerwijderen()">
+        <div style="flex:1;"><div class="tile-title">Bandprofiel verwijderen</div>
+        <div class="tile-sub">permanent verwijderen van ${escHtml(b.name || '')}</div></div>
+      </div>`;
+    initChoiceField({
+      id: 'band-stand', fieldId: 'bandStandTegel', menuId: 'bandStandMenu',
+      rijen: () => BAND_STANDEN.map(x => ({ t: x.menu, gekozen: x.waarde === bandBeheerStand })),
+      kies: i => zetBandStand(BAND_STANDEN[i].waarde)
+    });
   } catch (e) {
     logCaught('renderBandBeheer', e);
     // TT-230: nooit stil verdwijnen; zeg wat er niet lukt.
-    el.innerHTML = `<div class="profile-media-title">Bandbeheer</div>
+    el.innerHTML = `<h2 class="hoofdstuk-kop">Bandbeheer</h2>
       <p class="field-hint">Bandbeheer laden lukt nu niet. Controleer je verbinding en open dit scherm opnieuw.</p>`;
   }
 }
 
-// Beschikbaarheid werkt meteen, zonder Opslaan — zoals de schakelaars in
-// Instellingen. De kolom heet nog `pauze`: waar betekent niet beschikbaar
-// (TT-457).
-async function zetBandBeschikbaar(beschikbaar) {
+// De stand werkt meteen, zonder Opslaan, zoals een keuze in Instellingen.
+async function zetBandStand(stand) {
   const id = bewerkBandId;
-  if (!id) return;
+  if (!id || stand === bandBeheerStand) return;
   try {
     const { error } = rijenGeraakt(await db.from('bands')
-      .update({ pauze: !beschikbaar }).eq('id', id).select('id'));
+      .update({ stand }).eq('id', id).select('id'));
     if (error) throw error;
     showToast('Wijzigingen opgeslagen.');
     renderBandBeheer();
     loadMyBands();
   } catch (e) {
-    logCaught('zetBandBeschikbaar', e);
-    showToast(friendlyErrorMessage(e, 'de beschikbaarheid opslaan'));
+    logCaught('zetBandStand', e);
+    showToast(friendlyErrorMessage(e, 'de bandstatus opslaan'));
   }
 }
 
-// TT-437 (besluit Ronald): "Delen via link" van de band staat in Bandbeheer,
-// zoals het bij een muzikant in Instellingen staat. Werkt meteen, zonder Opslaan.
-async function zetBandDelenBeheer(aan) {
+// De vraag vóór het verwijderen (huisstijl §19; beeld stappen-voorstel, akkoord
+// Ronald 10-11-2026): een kop met de vraag, de namen van de leden, Terug en
+// Bandprofiel verwijderen naast elkaar, rood omlijnd.
+async function vraagBandVerwijderen() {
   const id = bewerkBandId;
   if (!id) return;
-  await zetBandDelen(id, aan);
-  renderBandBeheer();
-}
-
-function vraagBandOpheffen() {
-  const id = bewerkBandId;
-  if (!id) return;
+  let namen = [];
+  try {
+    const mid = await getMyMusicianId();
+    const { data, error } = await db.from('band_members')
+      .select('musician_id, status, musicians(weergavenaam, username)').eq('band_id', id).eq('status', 'bevestigd');
+    if (error) throw error;
+    namen = (data || []).filter(m => m.musician_id !== mid && m.musicians).map(m => displayNameOf(m.musicians));
+  } catch (e) { logCaught('vraagBandVerwijderen', e); }
+  if (id !== bewerkBandId) return;
+  const naam = bewerkBandNaam || 'de band';
   showConfirm(
-    `${bewerkBandNaam || 'De band'} verdwijnt dan voor alle leden, met de foto's, nummers en covers. Dat is niet terug te draaien.`,
+    `Het profiel verdwijnt dan${namen.length ? ` voor ${opsommingNL(namen)}` : ''}, met de foto's, nummers en covers. Dat is niet terug te draaien.`,
     () => dissolveBand(id),
-    'Band opheffen',
-    true
+    'Bandprofiel verwijderen', true, null,
+    `Bandprofiel van ${naam} verwijderen?`
   );
 }
 
@@ -1686,7 +1739,7 @@ function bbRenderLeden() {
   // Eén rij per lid, met de rollen eronder (besluit Ronald 11-11-2026, B2-6:
   // "A, per lid"). Rollen wijzigen kan bij elk lid, ook bij de beheerder zelf.
   // De beheerder haalt zichzelf niet uit de band: dat is beheer overdragen of
-  // de band opheffen (Bandbeheer).
+  // het bandprofiel verwijderen (Bandbeheer).
   document.getElementById('bbLeden').innerHTML = bbLeden.map(l => {
     const menu = `<button class="nav-menu-item" onclick="sluitAlleMenus();bbRollenWijzigen('${jsAttr(l.id)}')">Rollen wijzigen</button>` +
       (l.id === bbBeheerderId ? '' :

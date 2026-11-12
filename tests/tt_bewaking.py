@@ -53,7 +53,7 @@ DREMPELS = {
 # productie (tt_beveiliging_hash: regels per rij, rechten, functies, triggers,
 # RLS). Verandert er ongemerkt iets, dan wordt de bewaking rood. Een bewuste
 # wijziging levert het nieuwe getal in dezelfde upload mee.
-VERWACHTE_BEVEILIGING = "1f84da3e33e7"  # 11-11-2026, na TT-543 onderdeel 6 blok 2 (rollen per lid, open rol weg, vaste search_path; script v3). Daarvoor 6f06b62b8ffa (08-11-2026)
+VERWACHTE_BEVEILIGING = "19189aa09923"  # 12-11-2026, na TT-543 onderdeel 6 blok 3 (bands.stand, trigger tt_stand_pauze, zoeken en mail, overdragen; script bandstatus). Daarvoor 1f84da3e33e7 (11-11-2026), 6f06b62b8ffa (08-11-2026)
 VERWACHTE_CRONTAKEN = 9  # sinds 11-11-2026 zonder tt-invallers-opruimen (TT-543 blok 2: invaller zonder datum); sinds 29-10-2026 ook tt-aanroepen-nakijken (elke 5 minuten); sinds 30-10-2026 ook tt-rem-opruimen (TT-487); sinds 02-11-2026 ook tt-digest-herhalen (TT-550); sinds 03-11-2026 ook tt-foutlog-opruimen (TT-489)
 CRON_MISLUKT_DREMPEL = 1
 CERT_MIN_DAGEN = 30
