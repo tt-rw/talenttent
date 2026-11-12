@@ -1247,7 +1247,7 @@ const BAND_TILES = [
 
 // "Zoekend" of "compleet" volgt uit de open rollen. Een invaller telt niet mee
 // (besluit Ronald). De waarde staat in bands.status, zodat Zoeken hem leest
-// zoals voorheen. Niet beschikbaar (bands.pauze) verandert hem niet (TT-457).
+// zoals voorheen. De Bandstatus (bands.stand) verandert hem niet (TT-457).
 function bandStatusAfgeleid(aantalOpenRollen) {
   return aantalOpenRollen ? 'zoekend' : 'compleet';
 }
@@ -1364,11 +1364,9 @@ function renderBandTegels() {
 // via link is weg (7c). De regel onder Beheer overdragen is korter, zodat hij
 // op één regel past (besluit Ronald 12-11-2026, B3-9).
 
-// De stand uit de database. Zonder de kolom `stand` (het script van blok 3
-// nog niet gedraaid) volgt hij uit `pauze`, zoals voorheen.
+// De stand uit de database (bands.stand). Een onbekende waarde telt als Actief.
 function bandStandVan(b) {
-  if (b && STANDEN.some(x => x.waarde === b.stand)) return b.stand;
-  return b && b.pauze ? 'tijdelijk' : 'actief';
+  return b && STANDEN.some(x => x.waarde === b.stand) ? b.stand : 'actief';
 }
 
 let bandBeheerStand = 'actief';

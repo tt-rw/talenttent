@@ -6119,7 +6119,7 @@ window.TT_STUB.fnAntwoord = {};
           hasOwnProfile = false; myMusicianId = null;
           S.rpcResults.tt_get_bands_public = () => [{ id: 'b7', name: 'Nachtploeg', city: 'Den Haag', description: 'Vier vrienden.',
             status: 'zoekend', profile_color: null, updated_at: null, avatar_url: null, genres: ['Indie'], niveau: 3,
-            wanted: ['Basgitaar'], afgeschermd: true, soort: 'beide', pauze: false, contact_id: 'm1',
+            wanted: ['Basgitaar'], afgeschermd: true, soort: 'beide', contact_id: 'm1',
             instagram: '', tiktok: null, youtube: '',
             members: [{ id: 'm1', username: 'jesse', role: 'Oprichter', avatar_url: null, instruments: ['Gitaar', 'Zang'] },
                       { id: 'm2', username: 'sam', role: 'Lid', avatar_url: null, instruments: ['Toetsen'] }],
@@ -6158,7 +6158,7 @@ window.TT_STUB.fnAntwoord = {};
             voet: voet().textContent.trim() };
                     // 2. Met een eigen profiel: de tabellen zelf (nagebootst, de stub kent geen ingesloten tabellen).
           const rij = { id: 'b8', name: 'Zoutwater', city: 'Rijswijk', description: '', niveau: 4, avatar_url: null,
-            genres: ['Pop'], soort: null, pauze: false, founder_id: 'm1', contact_id: 'm3',
+            genres: ['Pop'], soort: null, founder_id: 'm1', contact_id: 'm3',
             instagram: '@zoutwater.band', tiktok: 'https://www.tiktok.com/@zoutwater', youtube: null,
             band_members: [
               { role: 'Lid', rollen: ['Zang'], status: 'bevestigd', joined_at: '2026-02-01', musicians: { id: 'm3', fname: 'Sanne', weergavenaam: 'Sanne', username: 'sanne', avatar_url: null } },
@@ -6290,7 +6290,7 @@ window.TT_STUB.fnAntwoord = {};
           window.__b58Was = { hasOwnProfile, myMusicianId, currentUser, bands: S.data.bands, members: S.data.band_members, wanted: S.data.band_wanted };
           currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
           S.data.bands = [{ id: 'b9', name: 'Nachtploeg', city: 'Den Haag', zip: '2512', city_source: 'pdok', description: '', niveau: null,
-            avatar_url: null, genres: ['Indie'], soort: null, pauze: false, founder_id: 'm1', contact_id: null, status: 'compleet',
+            avatar_url: null, genres: ['Indie'], soort: null, founder_id: 'm1', contact_id: null, status: 'compleet',
             instagram: null, tiktok: null, youtube: null }];
           S.data.band_members = [
             { band_id: 'b9', musician_id: 'm1', role: 'Oprichter', status: 'bevestigd', joined_at: '2026-01-01', founder_offer: null }];
@@ -6822,10 +6822,10 @@ window.TT_STUB.fnAntwoord = {};
               return r; };
             return q; };
           S.data.bands = [
-            { id: 'b5', name: 'Nachtploeg', city: 'Den Haag', genres: ['Indie', 'Rock', 'Pop'], status: 'zoekend', niveau: 3, avatar_url: 'https://x.supabase.co/storage/v1/object/public/avatars/bands/b5/f.jpg', pauze: false, founder_id: 'm1' },
-            { id: 'b6', name: 'Zoutwater', city: 'Rijswijk', genres: ['Pop'], status: 'compleet', niveau: 3, avatar_url: null, pauze: false, founder_id: 'm2' },
-            { id: 'b7', name: 'Stille Week', city: 'Delft', genres: ['Jazz'], status: 'inactief', niveau: 3, avatar_url: null, pauze: true, founder_id: 'm3' },
-            { id: 'b8', name: 'Solo', city: 'Delft', genres: ['Folk'], status: 'compleet', niveau: 3, avatar_url: null, pauze: false, founder_id: 'm3' }
+            { id: 'b5', name: 'Nachtploeg', city: 'Den Haag', genres: ['Indie', 'Rock', 'Pop'], status: 'zoekend', niveau: 3, avatar_url: 'https://x.supabase.co/storage/v1/object/public/avatars/bands/b5/f.jpg', founder_id: 'm1' },
+            { id: 'b6', name: 'Zoutwater', city: 'Rijswijk', genres: ['Pop'], status: 'compleet', niveau: 3, avatar_url: null, founder_id: 'm2' },
+            { id: 'b7', name: 'Stille Week', city: 'Delft', genres: ['Jazz'], status: 'inactief', niveau: 3, avatar_url: null, stand: 'tijdelijk', founder_id: 'm3' },
+            { id: 'b8', name: 'Solo', city: 'Delft', genres: ['Folk'], status: 'compleet', niveau: 3, avatar_url: null, founder_id: 'm3' }
           ];
           S.data.band_members = [
             { band_id: 'b5', musician_id: 'm1', role: 'Oprichter', status: 'bevestigd' }, { band_id: 'b5', musician_id: 'm2', role: 'Lid', status: 'bevestigd' },
@@ -6884,20 +6884,20 @@ window.TT_STUB.fnAntwoord = {};
                       tags: kaarten.reduce((n, k) => n + k.querySelectorAll('.tag-solid').length, 0),
                       regels: kaart('Nachtploeg').querySelectorAll('.zoek-kaart-regel').length };
           setMusicianViewMode('list');
-          // Alles op pauze: de app verruimt eerst, dan de lege staat (TT-62).
-          S.data.bands.forEach(b => { b.pauze = true; b.status = 'inactief'; });
+          // Alle bands Tijdelijk niet beschikbaar: ze blijven vindbaar (TT-457).
+          S.data.bands.forEach(b => { b.stand = 'tijdelijk'; b.status = 'inactief'; });
           const voor = S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_search_bands_for_musician').length;
           await runSearch(); await w(300);
           u.allesPauze = { stappen: S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_search_bands_for_musician').length - voor,
                            kop: ($('searchResults').querySelector('.no-results p') || {}).textContent };
-          S.data.bands.forEach(b => { b.pauze = b.id === 'b7'; b.status = b.id === 'b7' ? 'inactief' : 'zoekend'; });
+          S.data.bands.forEach(b => { b.stand = b.id === 'b7' ? 'tijdelijk' : 'actief'; b.status = b.id === 'b7' ? 'inactief' : 'zoekend'; });
           // Zonder eigen profiel: de publieke functie, zelfde kaart; de bandfoto is leeg bij afscherming.
           hasOwnProfile = false;
           S.rpcResults.tt_search_bands_anon = () => ['b5', 'b7'].map((id, i) => ({ band_id: id, distance_km: 2 + i, score: null }));
-          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(id => ({ b5: { id: 'b5', name: 'Nachtploeg', city: 'Den Haag', genres: ['Indie'], status: 'zoekend', avatar_url: null, pauze: false,
+          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(id => ({ b5: { id: 'b5', name: 'Nachtploeg', city: 'Den Haag', genres: ['Indie'], status: 'zoekend', avatar_url: null,
               afgeschermd: true, members: [{ id: 'm1', role: 'Oprichter', instruments: ['Gitaar'] }, { id: 'm2', role: 'Lid', instruments: [] }], wanted: ['Basgitaar'],
               invallers: [{ instrument: 'Drums' }] },
-            b7: { id: 'b7', name: 'Stille Week', city: 'Delft', genres: [], status: 'inactief', pauze: true, members: [], wanted: [], invallers: [] } }[id])).filter(Boolean);
+            b7: { id: 'b7', name: 'Stille Week', city: 'Delft', genres: [], status: 'inactief', stand: 'tijdelijk', members: [], wanted: [], invallers: [] } }[id])).filter(Boolean);
           await runSearch(); await w(200);
           u.anon = { namen: rijen().map(naamVan), rechts: rijen()[0] ? rechts(rijen()[0]) : null,
                      t: !!(rijen()[0] && rijen()[0].querySelector('.result-row-avatar .schijnwerper')) };
@@ -6960,7 +6960,7 @@ window.TT_STUB.fnAntwoord = {};
           ['bands', 'band_members', 'band_wanted', 'band_invallers'].forEach(k => { S.data[k] = []; });
           showView('about'); }""")
         j60 = lambda k: json.dumps(d60.get(k), ensure_ascii=False)
-        check("Zoeken: een band die niet beschikbaar is (pauze) staat er gewoon tussen (TT-457); zoekende bands boven complete binnen de ring van 5 km (TT-520)",
+        check("Zoeken: een band die Tijdelijk niet beschikbaar is staat er gewoon tussen (TT-457); zoekende bands boven complete binnen de ring van 5 km (TT-520)",
               d60["namen"] == ["Nachtploeg", "Stille Week", "Zoutwater", "Solo"], j60("namen"))
         check("bandrij (TT-520): vierkante foto (hoek 10px), BAND achter de naam, genre · plaats · afstand, rechts Zoekt basgitaar, geen tags en geen berichtknop",
               d60["nacht"] == {"tags": 0, "rechts": "Zoekt basgitaar", "soort": "BAND", "foto": True, "hoek": "10px",
@@ -7534,7 +7534,7 @@ window.TT_STUB.fnAntwoord = {};
           const deelIcoon = () => vak().querySelectorAll('.deel-knop').length;
           S.rpcResults.tt_get_bands_public = (p) => [{ id: p.ids[0], name: 'Nachtploeg', city: 'Den Haag', description: 'Vier vrienden.',
             status: 'zoekend', avatar_url: null, genres: ['Indie'], niveau: 3, wanted: ['Basgitaar'], afgeschermd: false,
-            soort: 'beide', pauze: false, stand: 'actief', contact_id: 'm1', instagram: null, tiktok: null, youtube: null,
+            soort: 'beide', stand: 'actief', contact_id: 'm1', instagram: null, tiktok: null, youtube: null,
             members: [{ id: 'm1', username: 'jesse', role: 'Oprichter', avatar_url: null, instruments: ['Gitaar'] }],
             media: [], nummers: [], covers: [], invallers: [] }];
 
@@ -7860,7 +7860,7 @@ window.TT_STUB.fnAntwoord = {};
               return r; };
             return q; };
           S.data.musicians = [{ id: 'm1', username: 'beheerder' }, { id: 'm2', username: 'dyl', fname: 'Dylan', weergavenaam: 'Dylan' }, { id: 'm3', username: 'sanne' }, { id: 'm4', username: 'gast' }];
-          S.data.bands = [{ id: 'b9', name: 'Van Delft', city: 'Delft', genres: ['Country'], status: 'compleet', pauze: false, founder_id: 'm1', avatar_url: null, updated_at: '2026-10-01' }];
+          S.data.bands = [{ id: 'b9', name: 'Van Delft', city: 'Delft', genres: ['Country'], status: 'compleet', founder_id: 'm1', avatar_url: null, updated_at: '2026-10-01' }];
           S.data.band_wanted = [];
           S.data.band_members = [
             { band_id: 'b9', musician_id: 'm1', role: 'Oprichter', status: 'bevestigd', founder_offer: null },
@@ -8075,7 +8075,7 @@ window.TT_STUB.fnAntwoord = {};
             return q; };
           S.data.musicians = [{ id: 'm1', username: 'ik' }];
           S.data.bands = [{ id: 'b9', name: 'Silver Earring', city: 'Den Haag', zip: '2497', city_source: 'pdok', description: '', niveau: 3,
-            avatar_url: null, genres: ['Indie'], soort: null, pauze: false, founder_id: 'm1', contact_id: null, status: 'compleet',
+            avatar_url: null, genres: ['Indie'], soort: null, founder_id: 'm1', contact_id: null, status: 'compleet',
             instagram: null, tiktok: null, youtube: null }];
           S.data.band_members = [{ band_id: 'b9', musician_id: 'm1', role: 'Oprichter', status: 'bevestigd', founder_offer: null }];
           const regel = id => { const e = document.querySelector('#' + id + ' .band-naam-regel'); return e ? [e.textContent, getComputedStyle(e).display, getComputedStyle(e).fontSize] : null; };
@@ -9769,16 +9769,16 @@ window.TT_STUB.fnAntwoord = {};
           hasOwnProfile = true;
           // 6. Een band (publieke vraag): de zin van de band, de band blijft staan.
           hasOwnProfile = false;
-          // TT-543 onderdeel 6, blok 3: de band heeft drie standen (stand); zonder die kolom volgt hij uit pauze.
-          const bandRij = (pauze, stand) => ({ id: 'b9', name: 'Nachtploeg', city: 'Den Haag', genres: ['Indie'], status: 'compleet', avatar_url: null, pauze, stand,
+          // TT-543 onderdeel 6, blok 3: de band heeft drie standen (stand); zonder geldige stand geldt Actief (opruimen, 12-11-2026).
+          const bandRij = (stand) => ({ id: 'b9', name: 'Nachtploeg', city: 'Den Haag', genres: ['Indie'], status: 'compleet', avatar_url: null, stand,
             afgeschermd: false, members: [{ id: 'm1', role: 'Oprichter', instruments: ['Gitaar'] }], wanted: [], invallers: [], media: [], nummers: [], covers: [], description: 'Vier vrienden.' });
-          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(() => bandRij(true, 'tijdelijk'));
+          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(() => bandRij('tijdelijk'));
           await openBandScherm('b9'); await w(700); u.band = maten(melding(vak));
-          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(() => bandRij(true, 'inactief'));
+          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(() => bandRij('inactief'));
           await openBandScherm('b9'); await w(700); u.bandInactief = maten(melding(vak));
-          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(() => bandRij(true, undefined));
-          await openBandScherm('b9'); await w(700); u.bandZonderKolom = maten(melding(vak));
-          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(() => bandRij(false, 'actief'));
+          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(() => bandRij(undefined));
+          await openBandScherm('b9'); await w(700); u.bandZonderStand = !melding(vak);
+          S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(() => bandRij('actief'));
           await openBandScherm('b9'); await w(700); u.bandBeschikbaar = !melding(vak);
           hasOwnProfile = true;
           // 7. Instellingen: de tegel heet Status, toont de korte naam en kiest in het menu; een keuze werkt meteen.
@@ -9814,12 +9814,12 @@ window.TT_STUB.fnAntwoord = {};
               and d85["anderActief"] is True and d85["standRpc"] == ["m3", "m2"], json.dumps([d85["ander"], d85["anderActief"], d85["standRpc"]], ensure_ascii=False))
         check("een bezoeker zonder account ziet dezelfde zin", d85["bezoeker"] == "Inactief.", j85("bezoeker"))
         check("lukt de vraag naar de stand niet, dan geldt Actief: geen zin, het profiel laadt", d85["foutGeenZin"] is True, j85("foutGeenZin"))
-        check("band (blok 3, 7b): de zin is de naam van de stand, vet en in het midden; onder de twee regels; Actief heeft geen zin; zonder de kolom stand volgt hij uit pauze",
+        check("band (blok 3, 7b): de zin is de naam van de stand, vet en in het midden; onder de twee regels; Actief heeft geen zin; zonder geldige stand geldt Actief (geen zin)",
               d85["band"] and d85["band"]["tekst"] == "Tijdelijk niet beschikbaar." and d85["band"]["vet"] == "Tijdelijk niet beschikbaar."
               and d85["band"]["uitlijning"] == "center" and d85["band"]["voor"] == "profiel-wat"
               and d85["bandInactief"] and d85["bandInactief"]["tekst"] == "Inactief." and d85["bandInactief"]["uitlijning"] == "center"
-              and d85["bandZonderKolom"] and d85["bandZonderKolom"]["tekst"] == "Tijdelijk niet beschikbaar."
-              and d85["bandBeschikbaar"] is True, json.dumps([d85["band"], d85["bandInactief"], d85["bandZonderKolom"], d85["bandBeschikbaar"]], ensure_ascii=False))
+              and d85["bandZonderStand"] is True
+              and d85["bandBeschikbaar"] is True, json.dumps([d85["band"], d85["bandInactief"], d85["bandZonderStand"], d85["bandBeschikbaar"]], ensure_ascii=False))
         check("muzikant en band: dezelfde zin, dezelfde maten (letter, lijn, afstanden, uitlijning)",
               all(d85["eigen"][k] == d85["band"][k] for k in ("tekst", "letter", "rand", "boven", "onder", "uitlijning", "voor")), json.dumps([d85["eigen"], d85["band"]], ensure_ascii=False))
         check("de zin past op één regel op 375px (breedte en aantal regels gemeten)",
@@ -9840,7 +9840,7 @@ window.TT_STUB.fnAntwoord = {};
               and "standMeldingHTML(b.stand)" in js85["bands.js"]
               and "nietBeschikbaarMeldingHTML" not in alle85 and "Momenteel" not in alle85, "")
         check("TT-457: Zoeken laat een niet-beschikbare band staan, en bandStatusAfgeleid() kent geen pauze (bandStatusLabel() is weg, TT-543 onderdeel 6)",
-              "b.pauze" not in js85["search.js"] and "'inactief'" not in js85["search.js"] and "function bandStatusAfgeleid(aantalOpenRollen)" in js85["bands.js"]
+              "b.pauze" not in js85["search.js"] and "pauze" not in js85["bands.js"] and "'inactief'" not in js85["search.js"] and "function bandStatusAfgeleid(aantalOpenRollen)" in js85["bands.js"]
               and "bandStatusLabel(" not in js85["bands.js"], "")
         check("de oude namen zijn weg (zetBeschikbaarheid, myBeschikbaar, tt_profiel_beschikbaar, zetBandUitnodigingen, zetBandPauze, uitnodigKeuze, We spelen even niet)",
               not any(t in alle85 for t in ["zetBeschikbaarheid", "myBeschikbaar", "tt_profiel_beschikbaar", "profielBeschikbaar", "updateBeschikbaarToggleBtn",
@@ -10582,7 +10582,7 @@ window.TT_STUB.fnAntwoord = {};
           // 5. Band, uitgelogd: covers op de bandpagina.
           const band = n => [{ id: 'b7', name: 'Nachtploeg', city: 'Den Haag', description: 'Vier vrienden.',
             status: 'zoekend', profile_color: null, updated_at: null, avatar_url: null, genres: ['Indie'], niveau: 3,
-            wanted: [], afgeschermd: false, soort: 'covers', pauze: false, contact_id: 'm1', instagram: '', tiktok: null, youtube: '',
+            wanted: [], afgeschermd: false, soort: 'covers', contact_id: 'm1', instagram: '', tiktok: null, youtube: '',
             members: [{ id: 'm1', username: 'jesse', role: 'Oprichter', avatar_url: null, instruments: ['Gitaar'] }],
             media: [], nummers: [], covers: Array.from({ length: n }, (_, i) => ({ song_title: 'Cover ' + (i + 1), song_artist: 'Band ' + String(i + 1).padStart(2, '0') })), invallers: [] }];
           S.rpcResults.tt_get_bands_public = () => band(10);
@@ -15890,7 +15890,7 @@ def blok_tt543_onderdeel3():
       S.rpcResults.tt_musicians_ages = (p) => (p.ids || []).map(id => ({ id, age: 19 }));
       S.rpcResults.tt_musician_band_ids = () => [{ band_id: 'b1' }];
       S.rpcResults.tt_get_bands_public = () => [{ id: 'b1', name: 'Van Delft', city: 'Delft', description: 'Vier vrienden.', avatar_url: null,
-        genres: ['Rock'], niveau: 3, wanted: [], soort: 'beide', pauze: false, contact_id: 'm1', instagram: null, tiktok: null, youtube: null,
+        genres: ['Rock'], niveau: 3, wanted: [], soort: 'beide', contact_id: 'm1', instagram: null, tiktok: null, youtube: null,
         media: [{ media_type: 'video', url: 'https://x.test/c.mp4', platform: null, in_banner: false }, { media_type: 'link', url: 'https://open.spotify.com/artist/y', platform: 'Spotify', in_banner: false }],
         nummers: [], covers: [], invallers: [],
         members: [{ id: 'm1', username: 'ronald', role: 'Oprichter', instruments: ['Elektrische gitaar'] }, { id: 'm2', username: 'dylan', role: 'Lid', instruments: ['Zang'] }] }];
@@ -17058,10 +17058,10 @@ BLOK146_DATA = r"""() => {
   S.data.musician_instruments = S.data.musicians.flatMap(m => m.musician_instruments);
   S.data.bands = [
     { id: 'b9', name: 'Nachtploeg', city: 'Den Haag', zip: '2512', city_source: 'pdok', description: 'Vier vrienden uit Den Haag.', niveau: 3,
-      avatar_url: null, genres: ['Rock', 'Funk'], soort: 'beide', pauze: false, founder_id: 'm1', contact_id: 'm1', status: 'zoekend',
+      avatar_url: null, genres: ['Rock', 'Funk'], soort: 'beide', founder_id: 'm1', contact_id: 'm1', status: 'zoekend',
       instagram: '@nachtploeg', tiktok: 'nachtploeg', youtube: null, updated_at: '2026-11-09' },
     { id: 'b8', name: 'Zoutwater', city: 'Rijswijk', zip: '2282', city_source: 'pdok', description: '', niveau: null,
-      avatar_url: null, genres: ['Pop'], soort: null, pauze: false, founder_id: 'm3', contact_id: 'm3', status: 'compleet',
+      avatar_url: null, genres: ['Pop'], soort: null, founder_id: 'm3', contact_id: 'm3', status: 'compleet',
       instagram: null, tiktok: null, youtube: null, updated_at: '2026-11-01' }];
   S.data.band_members = [
     { band_id: 'b9', musician_id: 'm1', role: 'Oprichter', status: 'bevestigd', joined_at: '2026-01-01', founder_offer: null },
@@ -17093,7 +17093,6 @@ BLOK146_DATA = r"""() => {
       return r; };
     return q; };
   S.rpcResults.tt_musician_band_ids = (p) => S.data.band_members.filter(x => x.musician_id === p.mid && x.status === 'bevestigd').map(x => ({ band_id: x.band_id }));
-  S.rpcResults.tt_band_delen = true;
   currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
   window.getMyMusicianId = async () => myMusicianId;
   window.emailWachtOpBevestiging = async () => null;
