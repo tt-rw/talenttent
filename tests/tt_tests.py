@@ -17920,6 +17920,166 @@ def blok_tt543_onderdeel7():
     check("blok 151: geen paginafouten", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_tt543_onderdeel8():
+    print("\nBlok 152 — TT-543 onderdeel 8 (Ouderschermen): V1 tot en met V5, F1 tot en met F5, TT-583 nr 11, B1 en B2")
+    bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("ouder.js", "index.html", "styles.css")}
+    # Het stuk van index.html met de drie ouderschermen.
+    html = bron["index.html"]
+    ouder_html = html[html.index('id="ouderStap"'):html.index('<!-- /view-register -->')]
+    check("F2: geen opmaak in de regel op de ouderschermen en in toestemmingMeldingTonen()",
+          'style="margin-bottom:19px' not in ouder_html and 'style="width:100%;margin-top:8px;"' not in bron["ouder.js"], "")
+    check("F4: de voorbeeldtekst bij het e-mailadres van de ouder begint met 'Bijv.'",
+          'placeholder="Bijv. papa@email.nl"' in ouder_html, "")
+    # F5 (TT-350): geen los "adres" in een zichtbare tekst van de ouderroute. Commentaar telt niet mee.
+    zonder_comm = re.sub(r"//[^\n]*", "", bron["ouder.js"])
+    teksten = re.findall(r"'([^'\n]*)'", zonder_comm) + re.findall(r"`([^`]*)`", zonder_comm)
+    zichtbaar = re.sub(r"<!--.*?-->", "", ouder_html, flags=re.S)
+    los = [t for t in teksten if re.search(r"(?<![-a-z])adres\b", t)] + re.findall(r"[^<>]*(?<![-a-z])adres\b[^<>]*", re.sub(r"<[^>]+>", "<>", zichtbaar))
+    check("F5: nergens een los 'adres' waar e-mailadres bedoeld is (ouder.js en de ouderschermen)", not los, json.dumps(los, ensure_ascii=False)[:300])
+    check("TT-583 nr 11: de hulpregel bij het e-mailadres is 'Controleer het e-mailadres.'",
+          '<p class="field-hint">Controleer het e-mailadres.</p>' in ouder_html, "")
+    check("V3: 'Weet je het zeker?' staat niet meer in ouder.js (TT-363)", "Weet je het zeker" not in bron["ouder.js"], "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten = []
+    uitslag = {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breedte in (390, 360):
+            ctx = browser.new_context(viewport={"width": breedte, "height": 844}, color_scheme="dark")
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**", "**/x.test/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(500)
+            uitslag[breedte] = page.evaluate(r"""async () => {
+              const w = (n = 300) => new Promise(r => setTimeout(r, n)), $ = id => document.getElementById(id), u = {};
+              const r = e => e.getBoundingClientRect(), cs = e => getComputedStyle(e);
+              const LANG = 'Abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopq';
+              const echteApi = ouderApi;
+              const binnen = el => { const b = r(el), v = r($('toestemmingInhoud')); return b.left >= v.left - 0.5 && b.right <= v.right + 0.5; };
+              const geenOverloop = () => document.documentElement.scrollWidth <= innerWidth;
+              // V1: de regel bij de geboortedatum en het scherm Toestemming.
+              showView('register'); await w(300);
+              $('birth_date').value = '01-01-2012'; ouderLeeftijdsregel();
+              u.v1Geboorte = $('ouderLeeftijdHint').textContent;
+              state.regEmail = 'noor.devries@voorbeeld.nl'; state.fname = 'Noor';
+              localStorage.removeItem('tt_ouder_v1');
+              ouderStapTonen(); await w(500);
+              u.v1Sub = $('ouderStap').querySelector('.panel-sub').textContent;
+              u.v1Kaart = [...$('ouderStap').querySelectorAll('.ouder-kaart p')].map(e => e.textContent);
+              u.subOnderRuimte = cs($('ouderStap').querySelector('.panel-sub')).marginBottom;
+              // F1: vaste regelhoogtes op het scherm Toestemming.
+              u.f1Toestemming = [cs($('ouderStap').querySelector('.ouder-kaart p')).lineHeight, cs($('ouderStapStopLink').querySelector('.stille-link')).lineHeight,
+                                 r($('ouderStapStopLink').querySelector('.stille-link')).height];
+              // B2: wissen zonder aanvraag.
+              ouderStoppenEnWissen(); await w(300);
+              u.b2 = { kop: $('confirmKop').textContent, tekst: $('confirmMessage').textContent, ja: $('confirmYesBtn').textContent,
+                       rood: $('confirmYesBtn').classList.contains('btn-danger'), nee: $('confirmNoBtn').textContent };
+              $('confirmModal').classList.remove('visible'); confirmCallback = null; await w(200);
+              // V2: mail niet verstuurd: "Mail opnieuw sturen" is de hoofdknop; daarna weer de gewone vorm.
+              ouderApi = async (a) => (a === 'stand' ? { stand: 'open' } : {});
+              localStorage.setItem('tt_ouder_v1', JSON.stringify({ aanvraagId: 'a1', ouderEmail: 'mama.devries@voorbeeld.nl', stand: 'open', verstuurd: 0, laatstVerstuurd: 0 }));
+              ouderWachtTonen(); await w(400);
+              u.v2 = { knop: $('ouderOpnieuwKnop').className, uit: $('ouderOpnieuwKnop').disabled };
+              localStorage.setItem('tt_ouder_v1', JSON.stringify({ aanvraagId: 'a1', ouderEmail: 'mama.devries@voorbeeld.nl', stand: 'open', verstuurd: 1, laatstVerstuurd: Date.now() }));
+              ouderWachtTonen(); await w(400);
+              u.v2Gewoon = $('ouderOpnieuwKnop').className;
+              // F1: de vraagregel op het wachtscherm 18px, gelijk aan de tekst erboven.
+              u.f1Wacht = [cs($('ouderWachtVraag')).lineHeight, cs($('ouderWachtBody')).lineHeight];
+              u.f5Vraag = $('ouderWachtVraag').textContent;
+              // V3: wissen met aanvraag.
+              ouderStoppenEnWissen(); await w(300);
+              u.v3 = { kop: $('confirmKop').textContent, tekst: $('confirmMessage').textContent, ja: $('confirmYesBtn').textContent,
+                       rood: $('confirmYesBtn').classList.contains('btn-danger'), nee: $('confirmNoBtn').textContent };
+              $('confirmModal').classList.remove('visible'); confirmCallback = null;
+              clearInterval(ouderStandTimer); ouderPaneelSluiten();
+              // V4: de ouderpagina, met een voornaam van één lang woord op 360px.
+              ouderApi = async (a) => (a === 'lezen' ? { stand: 'open', kind_voornaam: 'Noor' } : { ok: true });
+              history.replaceState({}, '', '#toestemming/abc'); await toestemmingPaginaOpenen('abc'); await w(400);
+              window.scrollTo(0, 0); await w(100);
+              const vak = $('toestemmingInhoud'), h1 = vak.querySelector('h1'), zin = vak.querySelector('.toestemming-melding');
+              const blokken = [...vak.querySelectorAll('.toestemming-blok')], akk = vak.querySelector('.toestemming-akkoord'), knoppen = vak.querySelector('.toestemming-knoppen');
+              const kopRand = r(document.querySelector('#view-toestemming').closest('body').querySelector('header') || document.querySelector('header')).bottom;
+              u.v4 = { titel: [cs(h1).color === cs(document.body).color, cs(h1).fontSize, cs(h1).lineHeight, cs(h1).letterSpacing],
+                       titelZin: Math.round(r(zin).top - r(h1).bottom),
+                       kopje: [cs(blokken[0].querySelector('h2')).fontSize, cs(blokken[0].querySelector('h2')).lineHeight],
+                       kopjeTekst: Math.round(r(blokken[0].querySelector('p')).top - r(blokken[0].querySelector('h2')).bottom),
+                       tekst: [cs(zin).lineHeight, cs(blokken[0].querySelector('p')).lineHeight, cs(akk).lineHeight],
+                       tussen: [Math.round(r(blokken[0]).top - r(zin).bottom), Math.round(r(blokken[1]).top - r(blokken[0]).bottom),
+                                Math.round(r(blokken[2]).top - r(blokken[1]).bottom), Math.round(r(akk).top - r(blokken[2]).bottom),
+                                Math.round(r(knoppen).top - r(akk).bottom)],
+                       vinkje: Math.round(r(akk.querySelector('input')).top - r(akk.querySelector('span')).top),
+                       onderBalk: Math.round(r(h1).top - kopRand) };
+              ouderApi = async (a) => (a === 'lezen' ? { stand: 'open', kind_voornaam: LANG } : { ok: true });
+              await toestemmingPaginaOpenen('abc'); await w(400);
+              u.lang = { titel: binnen(vak.querySelector('h1')), blokken: [...vak.querySelectorAll('.toestemming-blok p, .toestemming-akkoord span')].every(binnen), pagina: geenOverloop() };
+              // B1: "Bedankt!" en "Genoteerd": 8px tussen de zinnen.
+              ouderApi = async (a) => (a === 'lezen' ? { stand: 'open', kind_voornaam: 'Noor' } : { ok: true });
+              await toestemmingPaginaOpenen('abc'); await w(300);
+              $('toestemmingVinkje').checked = true; toestemmingKnopBijwerken(); await ouderBesluit(true); await w(300);
+              const zinnen = [...vak.querySelectorAll('.toestemming-melding')];
+              u.b1 = { titel: vak.querySelector('h1').textContent, afstand: zinnen.slice(1).map((z, i) => Math.round(r(z).top - r(zinnen[i]).bottom)) };
+              // V5: de eindschermen.
+              u.v5 = [];
+              for (const [stand, besloten] of [['goedgekeurd', '2026-11-10T10:00:00Z'], ['geweigerd', null], ['verlopen', null]]) {
+                ouderApi = async () => ({ stand, besloten_op: besloten, kind_voornaam: 'Noor' });
+                await toestemmingPaginaOpenen('abc'); await w(200);
+                u.v5.push([vak.querySelector('h1').textContent, [...vak.querySelectorAll('.toestemming-melding')].map(e => e.textContent)]);
+              }
+              ouderApi = async () => { throw new Error('Onbekende link.'); };
+              await toestemmingPaginaOpenen('kapot'); await w(200);
+              u.v5.push([vak.querySelector('h1').textContent, [...vak.querySelectorAll('.toestemming-melding')].map(e => e.textContent)]);
+              // F2: de knop op de pagina van de bevestigingslink staat in een knoppenstapel, 20px onder de zin.
+              toestemmingMeldingTonen('Je e-mailadres is bevestigd', ['Je profiel staat online.'], { tekst: 'Inloggen', actie: "void 0" }); await w(200);
+              const knop = vak.querySelector('button');
+              u.f2 = { inRegel: knop.getAttribute('style'), breed: Math.round(r(knop).width) === Math.round(r(vak).width), boven: Math.round(r(knop).top - r(vak.querySelector('.toestemming-melding')).bottom) };
+              ouderApi = echteApi;
+              return u;
+            }""")
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    d = uitslag[390]
+    j = lambda k, dd=d: json.dumps(dd.get(k), ensure_ascii=False)
+    check("V1: 'Onder de 16 jaar' bij de geboortedatum, bovenaan Toestemming (alleen de eerste zin) en in 'Dit kun je ze laten lezen'",
+          d["v1Geboorte"].startswith("Onder de 16 jaar vragen we straks toestemming")
+          and d["v1Sub"] == "Onder de 16 jaar mag je profiel pas online met toestemming van je ouder of verzorger."
+          and "Onder de 16 jaar mag dat alleen met toestemming van een ouder." in d["v1Kaart"][2], j("v1Sub") + j("v1Kaart"))
+    check("F2/F3: onder de zin van Toestemming de vaste 20px van .panel-sub (was 19px in de regel)", d["subOnderRuimte"] == "20px", j("subOnderRuimte"))
+    check("F1: 'Dit kun je ze laten lezen' 18px, de stille link 16px met tikvlak 44px", d["f1Toestemming"] == ["18px", "16px", 44], j("f1Toestemming"))
+    check("B2: wissen vóór de aanvraag: kop, de zin zonder ouder, Annuleren en Gegevens wissen rood omlijnd",
+          d["b2"] == {"kop": "Je gegevens wissen?", "tekst": "Alles wat je invulde verdwijnt van dit toestel. Dat is niet terug te draaien.",
+                      "ja": "Gegevens wissen", "rood": True, "nee": "Annuleren"}, j("b2"))
+    check("V2: mail niet verstuurd: 'Mail opnieuw sturen' is de hoofdknop en werkt; bij een gewone aanvraag weer een tweede knop",
+          d["v2"] == {"knop": "btn btn-primary", "uit": False} and d["v2Gewoon"] == "btn btn-ghost", j("v2") + j("v2Gewoon"))
+    check("F1: de vraagregel op het wachtscherm 18px, gelijk aan de tekst erboven; F5: 'e-mailadres'",
+          d["f1Wacht"] == ["18px", "18px"] and d["f5Vraag"] == "Geen mail ontvangen, of een fout in het e-mailadres?", j("f1Wacht"))
+    check("V3 (TT-363): kop 'Je gegevens wissen?', het gevolg met het e-mailadres van de ouder, Annuleren en Gegevens wissen rood omlijnd",
+          d["v3"] == {"kop": "Je gegevens wissen?", "tekst": "Alles wat je invulde en de aanvraag aan mama.devries@voorbeeld.nl verdwijnen van dit toestel. Dat is niet terug te draaien.",
+                      "ja": "Gegevens wissen", "rood": True, "nee": "Annuleren"}, j("v3"))
+    check("V4: titel in tekstkleur 22/28px zonder letterafstand, 4px tot de zin, 20px onder de balk",
+          d["v4"]["titel"][:3] == [True, "22px", "28px"] and d["v4"]["titel"][3] in ("0px", "normal") and d["v4"]["titelZin"] == 4 and d["v4"]["onderBalk"] == 20, j("v4"))
+    check("V4: kopjes 17/22px, 8px tot de tekst; tekst 18px; 20px tussen de blokken, boven het vinkje en boven de knoppen; vinkje op de eerste regel",
+          d["v4"]["kopje"] == ["17px", "22px"] and d["v4"]["kopjeTekst"] == 8 and d["v4"]["tekst"] == ["18px", "18px", "18px"]
+          and d["v4"]["tussen"] == [20, 20, 20, 20, 20] and d["v4"]["vinkje"] == 0, j("v4"))
+    for b in (390, 360):
+        check(f"8D-regel: een voornaam van één lang woord blijft binnen de ouderpagina ({b}px)",
+              uitslag[b]["lang"] == {"titel": True, "blokken": True, "pagina": True}, json.dumps(uitslag[b]["lang"]))
+    check("B1: 'Bedankt!' met 8px tussen de zinnen", d["b1"] == {"titel": "Bedankt!", "afstand": [8, 8]}, j("b1"))
+    check("V5: de eindschermen hebben een titel die zegt wat er is, met de zin eronder zonder herhaling",
+          d["v5"] == [["Toestemming is al gegeven", ["Op 10 november 2026. Je hoeft niets meer te doen."]],
+                      ["Deze aanvraag is afgewezen", ["Er gebeurt verder niets."]],
+                      ["Deze link werkt niet meer", ["Een aanvraag vervalt na veertien dagen. Je hoeft niets te doen."]],
+                      ["Deze link werkt niet", ["Heb je meer mails van ons gekregen? Gebruik dan de knop in de nieuwste."]]], j("v5"))
+    check("F2: de knop op de pagina van de bevestigingslink zonder opmaak in de regel, volle breedte, 20px onder de zin",
+          d["f2"] == {"inRegel": None, "breed": True, "boven": 20}, j("f2"))
+    check("blok 152: geen paginafouten", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -17969,6 +18129,7 @@ BLOKKEN = [
     blok_tt543_b29,
     blok_tt543_onderdeel6_blok3,
     blok_tt543_onderdeel7,
+    blok_tt543_onderdeel8,
 ]
 
 

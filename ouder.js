@@ -137,9 +137,9 @@ async function ouderVerzoekVersturen() {
   const adres = (veld?.value || '').trim();
   clearFieldErrors(document.getElementById('ouderStap'));
   if (!adres) { setFieldError(veld, 'Vul het e-mailadres van je ouder of verzorger in'); return; }
-  if (!emailFormaatGeldig(adres)) { setFieldError(veld, 'Dit adres klopt niet. Controleer het nog een keer'); return; }
+  if (!emailFormaatGeldig(adres)) { setFieldError(veld, 'Dit e-mailadres klopt niet. Controleer het nog een keer'); return; }
   if (adres.toLowerCase() === (state.regEmail || '').toLowerCase()) {
-    setFieldError(veld, 'Dit is je eigen e-mailadres. Vul het adres van je ouder of verzorger in');
+    setFieldError(veld, 'Dit is je eigen e-mailadres. Vul het e-mailadres van je ouder of verzorger in');
     return;
   }
 
@@ -209,6 +209,10 @@ function ouderWachtTonen() {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
+    // TT-543 onderdeel 8, V2 (besluit Ronald 12-11-2026): opnieuw sturen is
+    // hier de enige volgende stap, dus de hoofdknop (zoals bij "verlopen").
+    const knop = document.getElementById('ouderOpnieuwKnop');
+    if (knop) { knop.classList.remove('btn-ghost'); knop.classList.add('btn-primary'); }
   }
   ouderPaneelTonen('ouderWacht');
   ouderHerstuurKnopBijwerken();
@@ -226,7 +230,7 @@ function ouderHerstuurKnopBijwerken() {
 
   if ((bewaard.verstuurd || 0) >= OUDER_MAX_VERSTUURD) {
     knop.disabled = true;
-    if (regel) regel.textContent = 'Je hebt de mail drie keer gestuurd. Klopt het adres niet? Vul dan een ander in.';
+    if (regel) regel.textContent = 'Je hebt de mail drie keer gestuurd. Klopt het e-mailadres niet? Vul dan een ander in.';
     return;
   }
 
@@ -313,9 +317,16 @@ function ouderVerlopenTonen() {
   }
 }
 
+// TT-543 onderdeel 8, V3 (besluit Ronald 12-11-2026, lost TT-363 op): de vraag
+// noemt het gevolg en het e-mailadres van de ouder (huisstijl §19), in de vorm
+// van Account verwijderen: kop, zin, Annuleren en "Gegevens wissen" rood omlijnd.
 function ouderStoppenEnWissen() {
+  const bewaard = ouderAanvraagLezen();
+  const tekst = bewaard?.ouderEmail
+    ? 'Alles wat je invulde en de aanvraag aan ' + bewaard.ouderEmail + ' verdwijnen van dit toestel. Dat is niet terug te draaien.'
+    : 'Alles wat je invulde verdwijnt van dit toestel. Dat is niet terug te draaien.';
   showConfirm(
-    'Weet je het zeker? Alles wat je hebt ingevuld wordt gewist. Je begint dan later opnieuw.',
+    tekst,
     () => {
       clearInterval(ouderStandTimer);
       ouderAanvraagWissen();
@@ -328,8 +339,10 @@ function ouderStoppenEnWissen() {
       // halve profiel. Een herlaad zet alles in één keer terug op leeg.
       window.location.reload();
     },
-    'Ja, stoppen',
-    true
+    'Gegevens wissen',
+    true,
+    'Annuleren',
+    'Je gegevens wissen?'
   );
 }
 
@@ -386,8 +399,9 @@ async function toestemmingPaginaOpenen(code) {
     // homepage. De ouder kwam daar zonder uitleg uit en wist niet wat hij
     // moest doen. Sinds TT-330 blijft elke link uit een eerdere mail werken;
     // deze melding blijft over voor een link die kapot of vervangen is.
-    toestemmingMeldingTonen('The Talent Tent',
-      ['Deze link werkt niet. Heb je meer mails van ons gekregen? Gebruik dan de knop in de nieuwste.']);
+    // TT-543 onderdeel 8, V5: een titel die zegt wat er is.
+    toestemmingMeldingTonen('Deze link werkt niet',
+      ['Heb je meer mails van ons gekregen? Gebruik dan de knop in de nieuwste.']);
   }
 }
 
@@ -401,7 +415,7 @@ function toestemmingMeldingTonen(kop, regels, knop) {
   vak.innerHTML = `
     <h1 class="panel-title">${escHtml(kop)}</h1>
     ${regels.map(r => `<p class="toestemming-melding">${escHtml(r)}</p>`).join('\n    ')}` +
-    (knop ? `\n    <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="${knop.actie}">${escHtml(knop.tekst)}</button>` : '');
+    (knop ? `\n    <div class="knoppen-stapel toestemming-knoppen"><button class="btn btn-primary" onclick="${knop.actie}">${escHtml(knop.tekst)}</button></div>` : '');
 }
 
 // TT-332 (26-09-2026): de ouder weet na zijn antwoord niet dat hij klaar is.
@@ -472,14 +486,17 @@ function toestemmingKnopBijwerken() {
   knop.disabled = !vinkje.checked;
 }
 
+// TT-543 onderdeel 8, V5 (besluit Ronald 12-11-2026): de titel zegt wat er is,
+// de zin eronder herhaalt hem niet.
 function toestemmingAfgehandeldTonen(stand, beslotenOp) {
   const datum = beslotenOp ? nlDatum(beslotenOp) : '';
-  const teksten = {
-    goedgekeurd: `Dit is al geregeld${datum ? ' op ' + datum : ''}. Je hoeft niets meer te doen.`,
-    geweigerd:   'Deze aanvraag is afgewezen. Er gebeurt verder niets.',
-    verlopen:    'Deze link is verlopen. Een aanvraag vervalt na veertien dagen; je hoeft niets te doen.'
+  const schermen = {
+    goedgekeurd: ['Toestemming is al gegeven', `${datum ? 'Op ' + datum + '. ' : ''}Je hoeft niets meer te doen.`],
+    geweigerd:   ['Deze aanvraag is afgewezen', 'Er gebeurt verder niets.'],
+    verlopen:    ['Deze link werkt niet meer', 'Een aanvraag vervalt na veertien dagen. Je hoeft niets te doen.']
   };
-  toestemmingMeldingTonen('The Talent Tent', [teksten[stand] || teksten.verlopen]);
+  const [kop, regel] = schermen[stand] || schermen.verlopen;
+  toestemmingMeldingTonen(kop, [regel]);
 }
 
 async function ouderBesluit(akkoord) {

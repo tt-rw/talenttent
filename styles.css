@@ -625,7 +625,7 @@
     margin: 0 0 12px;
     font-size: 12px;
     font-weight: 300;
-    line-height: 1.5;
+    line-height: 18px; /* TT-543 onderdeel 8, F1: vaste regelhoogte (huisstijl §2) */
   }
   .ouder-kaart p:last-child { margin-bottom: 0; }
   .ouder-kaart-kop { font-weight: 700; color: var(--accent); }
@@ -649,7 +649,7 @@
      bijschrift — hij leidt de knoppen in (27-09-2026). */
   .ouder-vraag {
     font-size: 12px;
-    line-height: 20px;
+    line-height: 18px; /* TT-543 onderdeel 8, F1: gelijk aan de tekst eromheen */
     color: var(--text);
     margin: 24px 0 8px;
   }
@@ -676,6 +676,7 @@
     font: inherit;
     font-family: 'Inter', sans-serif;
     font-size: var(--fs-sm);
+    line-height: 16px; /* TT-543 onderdeel 8, F1: vaste regelhoogte; tikvlak blijft 44px */
     color: var(--muted);
     text-decoration: underline;
     cursor: pointer;
@@ -731,20 +732,33 @@
   .melding-met-sluit .melding-kop { padding-right: 36px; }
   .melding-met-sluit .modal-close { top: 4px; right: 4px; }
 
-  /* TT-42: de goedkeuringspagina van de ouder. */
-  .toestemming-wrap { max-width: 560px; margin: 0 auto; padding-top: 40px; }
+  /* TT-42: de goedkeuringspagina van de ouder.
+     TT-543 onderdeel 8, V4 (besluit Ronald 12-11-2026: "B", op beeld): 20px
+     onder de balk, zoals elk scherm; titel 22/28px in tekstkleur, 4px tot de
+     zin; kopjes 17/22px, 8px tot de tekst; tekst 12/18px; 20px tussen de
+     blokken, ook boven het vinkje en boven de knoppen. Geldt ook voor de
+     bevestigingslink, "Bedankt!" en "Genoteerd" (zelfde scherm). */
+  .toestemming-wrap { max-width: 560px; margin: 0 auto; padding-top: 20px; }
+  .toestemming-wrap .panel-title {
+    color: var(--text);
+    font-size: 22px;
+    line-height: 28px;
+    letter-spacing: 0;
+    margin: 0 0 4px;
+  }
 
   .toestemming-blok a,
   .toestemming-melding a,
   .toestemming-akkoord a { color: var(--accent); }
 
-  .toestemming-blok { margin-bottom: 24px; }
+  .toestemming-blok { margin: 20px 0 0; }
 
   .toestemming-blok h2 {
-    font-size: 15px;
+    font-size: 17px;
+    line-height: 22px;
     font-weight: 700;
     color: var(--text);
-    margin: 0 0 6px;
+    margin: 0 0 8px;
   }
 
   /* Gelijk aan .panel-sub op de andere schermen: zelfde maat, gewicht en
@@ -754,10 +768,13 @@
   .toestemming-melding {
     font-size: 12px;
     font-weight: 300;
-    line-height: 1.5;
+    line-height: 18px;
     color: var(--muted);
-    margin: 0 0 12px;
+    margin: 0;
   }
+  /* Twee of meer zinnen op een eindscherm ("Bedankt!", "Genoteerd"): 8px
+     ertussen (TT-543 onderdeel 8, besluit Ronald 12-11-2026: "A"). */
+  .toestemming-melding + .toestemming-melding { margin-top: 8px; }
 
   /* Dit is een <label>, en de algemene labelregel hierboven maakt daar
      hoofdletters met 2px letterafstand van. Dat is de stijl voor een
@@ -769,16 +786,20 @@
     align-items: flex-start;
     gap: 12px;
     font-size: 12px;
-    line-height: 1.5;
+    line-height: 18px;
     letter-spacing: normal;
     text-transform: none;
     font-weight: 400;
     color: var(--text);
     padding-left: 0;
-    margin: 24px 0;
+    margin: 20px 0 0;
   }
 
-  .toestemming-akkoord input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
+  /* F3: het vinkje is even hoog als de regel (18px), dus zonder marge op de lijn. */
+  .toestemming-akkoord input { margin: 0; width: 18px; height: 18px; flex: none; }
+  /* 8D 12-11-2026 (sessie 122): een voornaam van één lang woord liep uit de
+     zin naast het vinkje (flexkind). Breekt nu af, huisstijl §2.2. */
+  .toestemming-akkoord span { min-width: 0; overflow-wrap: anywhere; }
 
   /* TT-42: twee knoppen onder elkaar, op volle breedte. Nodig waar het
      opschrift niet in een halve breedte past — "Toestemming geven",
@@ -794,7 +815,7 @@
 
   .knoppen-stapel .btn { width: 100%; }
 
-  .toestemming-knoppen { margin-top: 24px; }
+  .toestemming-knoppen { margin-top: 20px; }
 
   @keyframes slideIn {
     from { opacity: 0; transform: translateY(16px); }
