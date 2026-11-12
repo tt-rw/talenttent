@@ -1291,8 +1291,10 @@
   .setlist-rij .song-remove { position: absolute; right: -3px; top: 1.5px; z-index: 2; }
   .setlist-rij .song-remove svg { display: block; }
   /* "Zeker?" op de plek van het kruisje, met de rechterkant op dezelfde
-     rechterlijn (15px = 3px buiten de binnenrand + 12px). */
-  .setlist-rij .song-remove.setlist-zeker { justify-content: flex-end; padding: 0 15px 0 0; font-size: 11px; font-weight: 700; color: var(--danger); }
+     rechterlijn (15px = 3px buiten de binnenrand + 12px). Ook bij een cover
+     in Onze muziek van een band (8D TT-543, 12-11-2026: daar stond hij 7px
+     rechts van het kruisje, met opmaak in de regel). */
+  .song-remove.setlist-zeker { justify-content: flex-end; padding: 0 15px 0 0; font-size: 11px; font-weight: 700; color: var(--danger); }
   .beheersing-uitleg { margin: 0 0 8px; font-size: 12px; }
 
   .song-remove {

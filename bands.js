@@ -2039,7 +2039,7 @@ function bcRenderCovers() {
     const c = bcCovers[i];
     return `<div class="profile-song-row"><span><strong>${escHtml(c.artist)}</strong> — <span style="color:var(--muted)">${escHtml(c.title)}</span></span>${
       c._zeker
-        ? `<button type="button" class="song-remove" style="width:auto;padding:0 8px;font-size:11px;font-weight:700;color:var(--danger);" onclick="bcCoverWeg(${i})" title="Bevestig weghalen">Zeker?</button>`
+        ? `<button type="button" class="song-remove setlist-zeker" onclick="bcCoverWeg(${i})" title="Bevestig weghalen">Zeker?</button>`
         : `<button type="button" class="song-remove" onclick="bcCoverWeg(${i})" title="Weghalen" aria-label="Haal ${escHtml(c.title)} weg">${RIJ_KRUIS}</button>`
     }</div>`;
   }).join('');

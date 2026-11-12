@@ -17602,6 +17602,17 @@ def blok_tt543_onderdeel6_blok3():
           openBandTegels('b9'); await w(500);
           u.kop = $('bandBeheerBlok').querySelector('.hoofdstuk-kop')?.textContent;
           u.tegels = [...$('bandBeheerBlok').querySelectorAll('.tile')].map(t => [t.querySelector('.tile-title').textContent, t.querySelector('.tile-sub').textContent.trim()]);
+          // 1b. 8D TT-543 (12-11-2026, besluit Ronald O-7): "Zeker?" bij een cover in Onze muziek staat op de rechterlijn van het kruisje, met de vaste opmaak.
+          S.data.band_covers = [{ band_id: 'b9', song_title: 'Everlong', song_artist: 'Foo Fighters' }];
+          [...$('bandTegelsWrap').querySelectorAll('.tile')].find(t => t.textContent.includes('Onze muziek')).click(); await w(700);
+          const covKnop = () => $('bcCoversLijst').querySelector('.profile-song-row .song-remove');
+          const kruisRechts = covKnop().querySelector('svg').getBoundingClientRect().right;
+          covKnop().click(); await w(200);
+          const zr = document.createRange(); zr.selectNodeContents(covKnop());
+          u.coverZeker = { tekst: covKnop().textContent, verschil: Math.round((zr.getBoundingClientRect().right - kruisRechts) * 10) / 10,
+                           stijlInRegel: covKnop().getAttribute('style'), klasse: covKnop().classList.contains('setlist-zeker'), hoogte: Math.round(covKnop().getBoundingClientRect().height) };
+          document.body.click(); await w(150);
+          S.data.band_covers = []; openBandTegels('b9'); await w(500);
           // 2. Bandstatus: het keuzemenu onder de tegel, tekst links, drie standen.
           $('bandStandTegel').click(); await w(300);
           const menu = $('bandStandMenu'), opties = [...menu.querySelectorAll('.choice-option')];
@@ -17683,6 +17694,8 @@ def blok_tt543_onderdeel6_blok3():
           {k: v for k, v in d["menu"].items() if k != "uitleg"} == {"open": True, "regels": [["Actief"], ["Tijdelijk niet beschikbaar", "blijft vindbaar"], ["Inactief", "niet vindbaar"]], "gekozen": 0, "tekstLinks": True}, j("menu"))
     check("Bandstatus (O-4, 390px): de naam op één regel, de uitleg 12px grijs eronder zoals onder een tegel, op de linkerlijn; een regel met uitleg 58px, de andere 44px",
           d["menu"]["uitleg"] == UITLEG_GOED, j("menu"))
+    check("8D (O-7): 'Zeker?' bij een cover in Onze muziek staat op de rechterlijn van het kruisje (0px), met de vaste opmaak (setlist-zeker, geen opmaak in de regel), tikvlak 44px",
+          d["coverZeker"] == {"tekst": "Zeker?", "verschil": 0, "stijlInRegel": None, "klasse": True, "hoogte": 44}, j("coverZeker"))
     check("Bandstatus: een keuze werkt meteen (bands.stand) en de tegel toont de nieuwe stand",
           d["naInactief"] == {"stand": "inactief", "regel": "Inactief", "toast": "Wijzigingen opgeslagen."}, j("naInactief"))
     check("de bandpagina van een inactieve band toont 'Inactief.' in het midden (7b)", d["zin"] == ["Inactief.", "center"], j("zin"))
