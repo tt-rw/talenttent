@@ -249,15 +249,15 @@ async function loadMyProfile(opties) {
   // "Nog geen profiel" als gevolg. Zelfde oplossing als eerder al toegepast
   // bij de zoekresultaten en de profielmodal: vaste kolomlijst, geen
   // birth_date, leeftijd apart via tt_musicians_ages().
-  // TT-367: leeftijd, bands en de stand van Delen hangen alleen af van het id.
-  // Ze lopen tegelijk met het profiel, niet een voor een erna.
+  // TT-367: leeftijd en bands hangen alleen af van het id. Ze lopen tegelijk
+  // met het profiel, niet een voor een erna.
   const bijvragen = (id) => Promise.all([
-    db.rpc('tt_musicians_ages', { ids: [id] }), profielBandsOphalen(id), profielDeelStand(id)]);
+    db.rpc('tt_musicians_ages', { ids: [id] }), profielBandsOphalen(id)]);
   const voorafId = myMusicianId;
   const vooraf = voorafId ? bijvragen(voorafId) : null;
   const { data: m, error } = await db.from('musicians')
     .select(`id, weergavenaam, username, city, bio,
-             avatar_url, accepts_band_invites,
+             avatar_url, stand,
              musician_instruments(instrument, niveau), musician_genres(genre),
              musician_songs(song_title, song_artist, mastery_level),
              musician_media(media_type, url, platform, in_banner, created_at, uitsnede)`)
@@ -283,10 +283,9 @@ async function loadMyProfile(opties) {
     return;
   }
 
-  const [{ data: myAges }, mijnBands, deelAan] = await (voorafId === m.id ? vooraf : bijvragen(m.id));
+  const [{ data: myAges }, mijnBands] = await (voorafId === m.id ? vooraf : bijvragen(m.id));
   m.age = (myAges && myAges[0]) ? myAges[0].age : undefined;
   m.bands = mijnBands; // TT-385 punt 17: het blok Bands
-  m.beschikbaar = m.accepts_band_invites !== false; // TT-457: de zin niet beschikbaar
 
   // TT-120 (22-08-2026): "Jouw pad op The Talent Tent" (TT-48) staat niet
   // meer op Mijn Profiel. De functie renderProgressPanel() is op 16-09-2026
@@ -302,53 +301,47 @@ async function loadMyProfile(opties) {
   fitProfileName(el);
   loadBandInvites(m.id);
 
-  // TT-56 (12-08-2026), TT-457: beschikbaarheid — de tegel weerspiegelt de
-  // huidige stand. m.accepts_band_invites komt mee via de select hierboven.
-  myBeschikbaar = m.accepts_band_invites !== false;
-  updateBeschikbaarToggleBtn();
-  // TT-410b: de stand van "Delen via link" komt uit één kleine vraag, zodat
-  // Mijn Profiel ook laadt als het databasescript nog niet is gedraaid.
-  myDeelAan = deelAan;
-  updateDelenToggleBtn();
+  // TT-543 onderdeel 6, blok 4: de tegel Status toont de stand van nu.
+  myStand = m.stand || 'actief';
+  toonStatus();
 }
 
-// TT-437 (07-10-2026, besluit Ronald): de keuze staat in Instellingen (tegel
-// "Beschikbaarheid", sinds TT-457 de plaats van "Band-uitnodigingen"), niet
-// meer in het ⋯-menu van Mijn Profiel. Het verborgen <select> is de bron van
-// waarheid, zoals bij Thema.
-function updateBeschikbaarToggleBtn() {
-  const sel = document.getElementById('beschikbaarKeuze');
-  if (!sel) return;
-  sel.value = myBeschikbaar ? 'ja' : 'nee';
-  refreshChoiceField('beschikbaar');
+// TT-543 onderdeel 6, blok 4 (besluiten Ronald 10-11-2026, 7b: "akkoord met
+// jouw variant"; 12-11-2026, B4-1): de tegel Status in Instellingen, gelijk aan
+// Bandstatus (STANDEN in utils.js). Vervangt Beschikbaarheid (TT-457) en
+// Band-uitnodigingen (TT-56). De zin op het profiel is de naam van de stand
+// (standMeldingHTML()); alleen Actief krijgt banduitnodigingen; Inactief staat
+// niet in Zoeken. Een los bericht blijft mogelijk.
+let myStand = 'actief';
+
+// De tegel toont de stand van nu (de korte naam, zoals Bandstatus).
+function toonStatus() {
+  const st = STANDEN.find(x => x.waarde === myStand) || STANDEN[0];
+  const label = document.querySelector('#statusTegel .wheel-field-label');
+  if (label) label.textContent = st.label;
 }
 
-// TT-457 (10-10-2026, besluit Ronald): een muzikant kan zichzelf als niet
-// beschikbaar zetten. Zijn profiel toont dan de zin "Momenteel niet
-// beschikbaar." (nietBeschikbaarMeldingHTML() in
-// utils.js) en een bandbeheerder kan hem niet meer uitnodigen (TT-56, TT-41).
-// Het profiel blijft in alle zoekresultaten staan en een los bericht blijft
-// mogelijk. De kolom heet nog `accepts_band_invites`: waar betekent beschikbaar.
-async function zetBeschikbaarheid(beschikbaar) {
-  if (!myMusicianId) return;
+// Een keuze werkt meteen, zonder Opslaan, zoals Thema en Bandstatus.
+async function zetStatus(stand) {
+  if (!myMusicianId || stand === myStand) return;
   try {
     const { error } = rijenGeraakt(await db.from('musicians')
-      .update({ accepts_band_invites: beschikbaar })
+      .update({ stand })
       .eq('id', myMusicianId).select('id'));
     if (error) throw error;
-    myBeschikbaar = beschikbaar;
-    updateBeschikbaarToggleBtn();
-    showToast(beschikbaar ? 'Je staat weer als beschikbaar.' : 'Je staat nu als niet beschikbaar.');
+    myStand = stand;
+    toonStatus();
+    showToast('Wijzigingen opgeslagen.');
   } catch (e) {
-    logCaught('zetBeschikbaarheid', e);
-    showToast(friendlyErrorMessage(e, 'je beschikbaarheid opslaan'));
-    updateBeschikbaarToggleBtn(); // de tegel toont weer de stand van de database
+    logCaught('zetStatus', e);
+    showToast(friendlyErrorMessage(e, 'je status opslaan'));
+    toonStatus(); // de tegel toont weer de stand van de database
   }
 }
 
-// TT-437: de twee profielinstellingen in Instellingen laden hun stand bij het
-// openen van het scherm. Zonder profiel (alleen een account) is er niets om
-// in te stellen: het blok blijft dan weg.
+// TT-437: de status laadt zijn stand bij het openen van Instellingen. Zonder
+// profiel (alleen een account) is er niets om in te stellen: het blok blijft
+// dan weg.
 async function laadInstellingen() {
   const blok = document.getElementById('instellingenProfielBlok');
   if (!blok) return;
@@ -356,15 +349,13 @@ async function laadInstellingen() {
   blok.style.display = mid ? '' : 'none';
   if (!mid) return;
   try {
-    const { data, error } = await db.from('musicians').select('accepts_band_invites').eq('id', mid).single();
+    const { data, error } = await db.from('musicians').select('stand').eq('id', mid).single();
     if (error) throw error;
-    myBeschikbaar = data.accepts_band_invites !== false;
+    if (STANDEN.some(x => x.waarde === data.stand)) myStand = data.stand;
   } catch (e) {
     logCaught('laadInstellingen', e);
   }
-  updateBeschikbaarToggleBtn();
-  myDeelAan = await profielDeelStand(mid);
-  updateDelenToggleBtn();
+  toonStatus();
 }
 
 // ─── Submit → opslaan in Supabase ────────────────────────────────────────────

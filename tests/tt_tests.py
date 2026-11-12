@@ -1883,8 +1883,8 @@ def blok_browser():
         }""")
         check("het profiel opent als eigen scherm, niet als venster",
               uit20["view"] == "profiel" and uit20["actief"] and not uit20["oudVenster"] and uit20["vensterOpen"] == 0, json.dumps(uit20))
-        check("het scherm heeft een eigen adres en een eigen stap, met het id en 'in de app geopend'; de browser krijgt er geen stap bij (TT-431)",
-              uit20["hash"] == "#profiel/m2" and uit20["stap"] == {"view": "profiel", "id": "m2", "app": True}
+        check("het scherm heeft een eigen adres en een eigen stap, met het id (geen vlag 'in de app geopend' meer: Delen via link is weg, TT-543 onderdeel 6, 7c); de browser krijgt er geen stap bij (TT-431)",
+              uit20["hash"] == "#profiel/m2" and uit20["stap"] == {"view": "profiel", "id": "m2"}
               and uit20["stapErbij"] == 0, json.dumps(uit20))
         check("de kop van de app staat erbij: terugknop zichtbaar, onderbalk er",
               uit20["terugKnop"] != "hidden" and uit20["onderbalk"] != "none", json.dumps(uit20))
@@ -3157,7 +3157,7 @@ def blok_browser():
           uit.naToestelknop = [...document.querySelectorAll('.app-view.active')].map(v => v.id);
           // Dieper in een tabblad is het één stap terug, naar die bovenkant.
           showView('search'); await new Promise(res => setTimeout(res, 60));
-          showView('profiel', undefined, { id: 'x', app: true });
+          showView('profiel', undefined, { id: 'x' });
           uit.diepMag = magTerug();
           terugKnop();
           await new Promise(res => setTimeout(res, 120));
@@ -5753,11 +5753,11 @@ window.TT_STUB.fnAntwoord = {};
         js50 = open(os.path.join(ROOT, "musicians.js"), encoding="utf-8").read() + open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
         # TT-385 fase 3 (besluit g): het deelblad van de beheerder deelt ook,
         # met de knop Delen. Dat is de enige andere aanroep.
-        # TT-410b: de vierde plek is shareProfile() zelf, die zichzelf opnieuw aanroept
-        # nadat je delen hebt aangezet. De vraag voor de band is weg met Delen via
-        # link (TT-543 onderdeel 6, blok 3, 7c): dus vier.
+        # Plus de functie zelf. Delen via link is weg, bij de band (blok 3) en de
+        # muzikant (blok 4; TT-543 onderdeel 6, 7c): shareProfile() roept zichzelf
+        # niet meer aan na "Aanzetten en delen". Dus drie.
         check("één deelknop in de code: alleen deelKnopHTML() en het deelblad roepen shareProfile() aan",
-              len(re.findall(r"shareProfile\(", js50)) == 4 and "if (b) shareProfile('band', b.id, b.name);" in js50
+              len(re.findall(r"shareProfile\(", js50)) == 3 and "if (b) shareProfile('band', b.id, b.name);" in js50
               and "Deel dit profiel</button>" not in js50
               and "Deel dit bandprofiel</button>" not in js50, str(len(re.findall(r"shareProfile\(", js50))))
         check("geen paginafouten in blok 50", not page_errors, "; ".join(page_errors)[:300])
@@ -7015,7 +7015,7 @@ window.TT_STUB.fnAntwoord = {};
           const w = ms => new Promise(z => setTimeout(z, ms));
           const uit = {};
           const S = window.TT_STUB;
-          S.data.musicians = [{ id: 'm5', fname: 'Eku', username: 'eku', city: 'Delft', accepts_band_invites: true,
+          S.data.musicians = [{ id: 'm5', fname: 'Eku', username: 'eku', city: 'Delft', stand: 'actief',
             musician_instruments: [{ instrument: 'Drums' }] }];
           // TT-543 onderdeel 4 (B4): het venster Lid uitnodigen en zijn functies zijn weg (blok 141 toetst de nieuwe route).
           uit.vensterWeg = !document.getElementById('addMemberModal') && ['openAddMemberModal', 'searchMembersToAdd', 'openInviteNote', 'sendInviteWithNote', 'memberSearchVeldenInit'].every(f => typeof window[f] === 'undefined');
@@ -7413,12 +7413,12 @@ window.TT_STUB.fnAntwoord = {};
 
         # ─────────────────────────────────────────────────────────────
         # Blok 67 — TT-410b (06-10-2026, besluiten Ronald): het muzikantprofiel
-        # is een eigen scherm met een deelbare link. Delen staat standaard
-        # aan; de muzikant zet het zelf uit. Een link naar een profiel dat
-        # delen uitzette, toont "niet beschikbaar". In de app blijft elk
-        # profiel gewoon te openen.
+        # is een eigen scherm met een deelbare link. Sinds TT-543 onderdeel 6,
+        # blok 4 (besluit Ronald 10-11-2026, 7c: "ja, weghalen") is Delen via
+        # link weg, zoals bij de band (blok 68): een link opent altijd, voor
+        # iedereen, en het deelicoon vraagt niets vooraf.
         # ─────────────────────────────────────────────────────────────
-        print("\nBlok 67 — profiel als scherm met deelbare link (TT-410b)")
+        print("\nBlok 67 — profiel als scherm met deelbare link (TT-410b; Delen via link weg, TT-543 onderdeel 6, 7c)")
         page_errors.clear()
         d67 = page.evaluate("""async () => {
           const S = window.TT_STUB, w = ms => new Promise(z => setTimeout(z, ms));
@@ -7430,8 +7430,6 @@ window.TT_STUB.fnAntwoord = {};
           S.rpcResults.tt_get_musicians_public = (p) => [{ id: p.ids[0], username: 'sanne', age: 30, city: 'Delft',
             bio: 'Drummer', goal: null, avatar_url: null, instrument_levels: [{ instrument: 'Drums', niveau: 3 }],
             genres: ['Rock'], songs: [], media: [] }];
-          // Eerdere blokken kunnen rpcResults vervangen hebben: zet de delen-vraag zelf neer.
-          S.rpcResults.tt_profiel_delen = (p) => { const r = (S.data.musicians || []).find(x => x.id === p.mid); return r ? r.delen_aan !== false : null; };
           const naam = () => (document.querySelector('#profielSchermContent .profile-name') || {}).textContent;
           const leeg = () => !!document.querySelector('#profielSchermContent .empty-state-title');
           const deelIcoon = () => document.querySelectorAll('#profielSchermContent .deel-knop').length;
@@ -7443,54 +7441,30 @@ window.TT_STUB.fnAntwoord = {};
           if (!rij) { rij = { id: 'm3', user_id: 'u2', username: 'sanne', first_name: 'Sanne', lname: 'Bakker', city: 'Delft', postcode: '2611', bio: '', avatar_url: null, city_source: 'pdok', profile_complete: true }; S.data.musicians.push(rij); }
           Object.assign(rij, { musician_songs: [], musician_instruments: [], musician_genres: [], musician_media: [] });
 
-          // 1. Standaard aan: de kolom ontbreekt in de testdata en telt als aan.
+          // 1. Het profiel opent, met deelicoon; de app vraagt de delen-stand niet meer op.
           showView('search'); await w(50);
-          await openProfielScherm('m3'); await w(80);
-          uit.standaard = { naam: naam(), leeg: leeg(), deel: deelIcoon(), rpc: S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_profiel_delen').slice(-1)[0].params };
-
-          // 2. Een link naar een profiel dat delen uitzette: niet beschikbaar.
-          rij.delen_aan = false;
-          await openProfielScherm('m3', { link: true }); await w(80);
-          uit.linkUit = { leeg: leeg(), tekst: document.querySelector('#profielSchermContent .empty-state-text')?.textContent,
-                          knop: document.querySelector('#profielSchermContent .empty-state button')?.textContent, naam: naam() || null,
-                          voet: document.querySelectorAll('#profielSchermContent .profiel-actie').length ? 'knop' : '' };
-          // 3. In de app geopend blijft het profiel gewoon zichtbaar, maar zonder deelicoon.
-          await openProfielScherm('m3'); await w(80);
-          uit.appUit = { naam: naam(), leeg: leeg(), deel: deelIcoon() };
-          // 4. Verversen: de stap onthoudt of het in de app is geopend.
-          uit.stapApp = history.state;
-          await openProfielScherm('m3', { redirect: true, link: !history.state.app }); await w(80);
-          uit.naVerversApp = { naam: naam(), leeg: leeg() };
-          // 5. Je eigen profiel is altijd te openen, ook via een link.
-          myMusicianId = 'm3';
-          await openProfielScherm('m3', { link: true }); await w(80);
-          uit.eigenLink = { naam: document.querySelector('#profielSchermContent .profile-name') ? 'aanwezig' : null, leeg: leeg() };
-          myMusicianId = 'm1';
-          // 6. Delen weer aan: de link werkt.
-          rij.delen_aan = true;
-          await openProfielScherm('m3', { link: true }); await w(80);
-          uit.linkAan = { naam: naam(), leeg: leeg(), deel: deelIcoon() };
-
-          // 7. Zet delen uit: de app schrijft musicians.delen_aan en onthoudt de stand.
           S.calls.length = 0;
-          myMusicianId = 'm3'; myDeelAan = true;
-          const ok = await zetProfielDelen(false);
-          uit.uit = { ok, stand: myDeelAan, tekst: document.getElementById('deelKeuze').value, rij: rij.delen_aan,
-                      toast: document.getElementById('appToast').textContent,
-                      aanroep: S.calls.filter(c => c.kind === 'update' || (c.table === 'musicians' && c.op === 'update')).length };
-          // 8. Het deelicoon op je eigen profiel met delen uit: eerst de vraag.
+          await openProfielScherm('m3'); await w(80);
+          uit.standaard = { naam: naam(), leeg: leeg(), deel: deelIcoon(), stap: history.state,
+                            deelRpc: S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_profiel_delen').length };
+          // 2. Verversen houdt het profiel (de stap heeft het id, geen vlag 'in de app').
+          await openProfielScherm('m3', { redirect: true }); await w(80);
+          uit.naVervers = { naam: naam(), leeg: leeg() };
+          // 3. Je eigen profiel: het deelicoon deelt meteen, zonder vraag vooraf.
+          myMusicianId = 'm3';
           let gedeeld = null; Object.defineProperty(navigator, 'share', { configurable: true, value: (d) => { gedeeld = d.url; return Promise.resolve(); } });
           shareProfile('profiel', 'm3', 'Sanne'); await w(50);
-          uit.vraag = { open: document.getElementById('confirmModal').classList.contains('visible'),
-                        tekst: document.getElementById('confirmMessage').textContent,
-                        knop: document.getElementById('confirmYesBtn').textContent, gedeeld };
-          document.getElementById('confirmYesBtn').click(); await w(150);
+          uit.vraag = document.getElementById('confirmModal').classList.contains('visible');
           for (let i = 0; i < 70 && !gedeeld; i++) await w(50); // 8D 03-11-2026: wacht op het delen (kaart eerst), geen vaste tijd
-          uit.naAanzetten = { gedeeld, stand: myDeelAan, rij: rij.delen_aan };
-          document.getElementById('deelKeuze').value = 'aan';
+          uit.gedeeld = gedeeld;
+          // 4. Een profiel dat er niet is: "bestaat niet meer", met één knop naar Zoeken.
+          await openProfielScherm('bestaat-niet'); await w(80);
+          uit.weg = { leeg: leeg(), kop: document.querySelector('#profielSchermContent .empty-state-title')?.textContent,
+                      tekst: document.querySelector('#profielSchermContent .empty-state-text')?.textContent,
+                      knop: document.querySelector('#profielSchermContent .empty-state button')?.textContent };
 
-          // 9. Terug van een profiel naar Zoeken laadt de resultaten niet opnieuw.
-          myMusicianId = 'm1'; delete rij.delen_aan; if (rijToegevoegd) S.data.musicians = S.data.musicians.filter(x => x.id !== 'm3');
+          // 5. Terug van een profiel naar Zoeken laadt de resultaten niet opnieuw.
+          myMusicianId = 'm1'; if (rijToegevoegd) S.data.musicians = S.data.musicians.filter(x => x.id !== 'm3');
           let zoekAantal = 0; const echteZoek = runSearch; runSearch = async () => { zoekAantal++; };
           showView('search'); await w(100);
           const voorZoek = zoekAantal;
@@ -7499,7 +7473,7 @@ window.TT_STUB.fnAntwoord = {};
           uit.terugZoeken = { view: huidigeView, extraZoek: zoekAantal - voorZoek };
           runSearch = echteZoek;
 
-          // 10. De knop staat onder de bio en scrolt mee (TT-543 onderdeel 3 en 6); er is geen vaste voet meer.
+          // 6. De knop staat onder de bio en scrolt mee (TT-543 onderdeel 3 en 6); er is geen vaste voet meer.
           await openProfielScherm('m3'); await w(80);
           uit.voet = { voetBestaat: !!document.getElementById('profielSchermVoet'), actie: !!document.getElementById('profielSchermActie') };
           showView('search'); await w(50);
@@ -7511,41 +7485,29 @@ window.TT_STUB.fnAntwoord = {};
           return uit;
         }""")
         j67 = json.dumps(d67, ensure_ascii=False)
-        check("standaard staat delen aan: het profiel opent, met deelicoon; de vraag gaat met het id",
+        check("het profiel opent als scherm, met deelicoon; de stap is { view, id }; de app vraagt de delen-stand niet meer op (tt_profiel_delen)",
               d67["standaard"]["naam"] == "sanne" and not d67["standaard"]["leeg"] and d67["standaard"]["deel"] == 1
-              and d67["standaard"]["rpc"] == {"mid": "m3"}, j67)
-        check("een link naar een profiel dat delen uitzette toont 'niet beschikbaar' met één knop naar Zoeken, zonder profiel",
-              d67["linkUit"]["leeg"] and d67["linkUit"]["naam"] is None and d67["linkUit"]["knop"] == "Naar Zoeken"
-              and d67["linkUit"]["tekst"] == "De muzikant deelt dit profiel niet via een link."
-              and d67["linkUit"]["voet"] == "", j67)
-        check("in de app blijft hetzelfde profiel te openen, zonder deelicoon",
-              d67["appUit"]["naam"] == "sanne" and not d67["appUit"]["leeg"] and d67["appUit"]["deel"] == 0, j67)
-        check("de stap in de geschiedenis onthoudt het id en dat het in de app is geopend; verversen houdt het profiel",
-              d67["stapApp"] == {"view": "profiel", "id": "m3", "app": True}
-              and d67["naVerversApp"]["naam"] == "sanne" and not d67["naVerversApp"]["leeg"], j67)
-        check("je eigen profiel is altijd te openen, ook via een link",
-              d67["eigenLink"]["naam"] == "aanwezig" and not d67["eigenLink"]["leeg"], j67)
-        check("delen weer aan: de link werkt weer",
-              d67["linkAan"]["naam"] == "sanne" and not d67["linkAan"]["leeg"] and d67["linkAan"]["deel"] == 1, j67)
-        check("delen uitzetten schrijft musicians.delen_aan, werkt de knop bij en meldt het",
-              d67["uit"]["ok"] and d67["uit"]["stand"] is False and d67["uit"]["rij"] is False
-              and d67["uit"]["tekst"] == "uit"
-              and d67["uit"]["toast"] == "Delen staat uit. Je link werkt niet meer.", j67)
-        check("het deelicoon op je eigen profiel met delen uit vraagt eerst: 'Aanzetten en delen'; daarna deelt het",
-              d67["vraag"]["open"] and d67["vraag"]["gedeeld"] is None
-              and d67["vraag"]["knop"] == "Aanzetten en delen"
-              and d67["vraag"]["tekst"] == "Delen staat uit. Zet het aan om je link te delen."
-              and d67["naAanzetten"]["stand"] is True and d67["naAanzetten"]["rij"] is True
-              and (d67["naAanzetten"]["gedeeld"] or "").endswith("#profiel/m3"), j67)
+              and d67["standaard"]["stap"] == {"view": "profiel", "id": "m3"} and d67["standaard"]["deelRpc"] == 0, j67)
+        check("verversen houdt het profiel",
+              d67["naVervers"]["naam"] == "sanne" and not d67["naVervers"]["leeg"], j67)
+        check("Delen via link is weg (7c): het deelicoon op je eigen profiel vraagt niets vooraf en deelt #profiel/<id>",
+              d67["vraag"] is False and (d67["gedeeld"] or "").endswith("#profiel/m3"), j67)
+        check("een profiel dat er niet is: 'Dit profiel bestaat niet meer' met één knop naar Zoeken (de tekst 'niet beschikbaar' is weg)",
+              d67["weg"]["leeg"] and d67["weg"]["kop"] == "Dit profiel bestaat niet meer"
+              and d67["weg"]["tekst"] == "Het account is verwijderd, of de link klopt niet." and d67["weg"]["knop"] == "Naar Zoeken", j67)
         check("terug van een profiel naar Zoeken laadt de resultaten niet opnieuw",
               d67["terugZoeken"] == {"view": "search", "extraZoek": 0}, j67)
         check("geen vaste knop onderaan meer (TT-543 onderdeel 3, F3 B, en onderdeel 6, 1c; de knop onder de bio toetst blok 140)",
               d67["voet"]["voetBestaat"] is False, j67)
         js67 = open(os.path.join(ROOT, "musicians.js"), encoding="utf-8").read()
         sql67 = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
+        src67 = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ["index.html"] + JS_FILES)
         check("het oude profielvenster is weg: geen #musicianModal en geen openMusicianModal() meer in de code",
               "musicianModal" not in open(os.path.join(ROOT, "index.html"), encoding="utf-8").read().replace("#musicianModal", "")
               and not re.search(r"openMusicianModal|closeMusicianModal", js67 + sql67), "")
+        check("Delen via link van een muzikant is weg uit de code: geen tt_profiel_delen, profielDeelStand, zetProfielDelen, myDeelAan, deelKeuze of delen_aan; geen vlag 'app' of 'link' bij het openen (7c)",
+              all(x not in src67 for x in ("tt_profiel_delen", "profielDeelStand", "zetProfielDelen", "myDeelAan", "deelKeuze", "deelTegel",
+                                           "delen_aan", "Aanzetten en delen", "profielVanApp", "history.state.app", "link: true", "linkToegang")), "")
         check("geen paginafouten in blok 67", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
@@ -7585,12 +7547,12 @@ window.TT_STUB.fnAntwoord = {};
                             actief: document.getElementById('view-profiel').classList.contains('active'),
                             bericht: (vak().querySelector('.profiel-actie') || { textContent: '' }).textContent.trim() };
           // 2. Via een link opent dezelfde band ook (TT-543 onderdeel 6, 7c: Delen via link is weg).
-          await openBandScherm('b7', { link: true }); await w(80);
+          await openBandScherm('b7'); await w(80);
           uit.link = { naam: naam(), leeg: leeg(), deel: deelIcoon() };
-          // 3. Verversen: de stap onthoudt dat het in de app is geopend.
+          // 3. Verversen houdt de band (de stap heeft het id en de soort).
           await openBandScherm('b7'); await w(80);
           uit.stapApp = history.state;
-          await openBandScherm('b7', { redirect: true, link: !history.state.app }); await w(80);
+          await openBandScherm('b7', { redirect: true }); await w(80);
           uit.naVerversApp = { naam: naam(), leeg: leeg() };
 
           // 4. Met een eigen profiel: beheerder, lid en bezoeker (de tabellen zijn nagebootst), via een link.
@@ -7602,14 +7564,14 @@ window.TT_STUB.fnAntwoord = {};
           bandUitTabellen = async () => band(ledenLijst);
           hasOwnProfile = true;
           myMusicianId = 'm1';
-          await openBandScherm('b8', { link: true }); await w(80);
+          await openBandScherm('b8'); await w(80);
           uit.beheerderLink = { naam: naam(), leeg: leeg(), deel: deelIcoon(),
             menu: [...vak().querySelectorAll('.profiel-knoppen .nav-menu-item')].map(b => b.textContent.trim()) };
           myMusicianId = 'm3';
-          await openBandScherm('b8', { link: true }); await w(80);
+          await openBandScherm('b8'); await w(80);
           uit.lidLink = { naam: naam(), leeg: leeg(), deel: deelIcoon() };
           myMusicianId = 'm2';
-          await openBandScherm('b8', { link: true }); await w(80);
+          await openBandScherm('b8'); await w(80);
           uit.bezoekerLink = { naam: naam(), leeg: leeg(), deel: deelIcoon() };
           // 5. Delen: geen vraag meer vooraf, meteen het deelmenu.
           let gedeeld = null;
@@ -7641,11 +7603,11 @@ window.TT_STUB.fnAntwoord = {};
               d68["standaard"]["naam"] == "Nachtploeg" and not d68["standaard"]["leeg"] and d68["standaard"]["deel"] == 1
               and d68["standaard"]["hash"] == "#band/b7" and d68["standaard"]["actief"]
               and d68["standaard"]["bericht"] == "Maak een profiel en leg contact", j68)
-        check("de stap in de geschiedenis is { view, id, app, soort: 'band' }",
-              d68["standaard"]["stap"] == {"view": "profiel", "id": "b7", "app": True, "soort": "band"}, j68)
+        check("de stap in de geschiedenis is { view, id, soort: 'band' } (geen vlag 'in de app' meer, blok 4)",
+              d68["standaard"]["stap"] == {"view": "profiel", "id": "b7", "soort": "band"}, j68)
         check("Delen via link is weg (TT-543 onderdeel 6, 7c): via een link opent de band altijd, met deelicoon; verversen houdt hem",
               d68["link"]["naam"] == "Nachtploeg" and not d68["link"]["leeg"] and d68["link"]["deel"] == 1
-              and d68["stapApp"] == {"view": "profiel", "id": "b7", "app": True, "soort": "band"}
+              and d68["stapApp"] == {"view": "profiel", "id": "b7", "soort": "band"}
               and d68["naVerversApp"]["naam"] == "Nachtploeg" and not d68["naVerversApp"]["leeg"], j68)
         check("beheerder, lid en bezoeker openen de band via een link, elk met deelicoon; de beheerder heeft geen ⋯-menu (1d)",
               all(d68[k]["naam"] == "Zoutwater" and not d68[k]["leeg"] and d68[k]["deel"] == 1 for k in ("beheerderLink", "lidLink", "bezoekerLink"))
@@ -7750,7 +7712,7 @@ window.TT_STUB.fnAntwoord = {};
               u.naTabWissel = actief();
               // 3. dieper in een tabblad: één druk naar de bovenkant, de tweede naar Mijn Profiel
               showView('search'); await w(100);
-              showView('profiel', undefined, { id: 'x', app: true }); await w(150);
+              showView('profiel', undefined, { id: 'x' }); await w(150);
               u.diepScherm = actief();
               await druk();
               u.diepEen = actief();
@@ -7758,7 +7720,7 @@ window.TT_STUB.fnAntwoord = {};
               u.diepTwee = actief();
               // 4. diep, dan tabbladen wisselen, dan terug: naar Mijn Profiel, nooit naar het oude scherm
               showView('search'); await w(60);
-              showView('profiel', undefined, { id: 'x', app: true }); await w(100);
+              showView('profiel', undefined, { id: 'x' }); await w(100);
               showView('messages'); await w(60); showView('search'); await w(60);
               await druk();
               u.diepWissel = actief();
@@ -7769,7 +7731,7 @@ window.TT_STUB.fnAntwoord = {};
               u.instellingen = actief();
               // 6. een open venster sluit eerst; het scherm eronder blijft
               showView('search'); await w(60);
-              showView('profiel', undefined, { id: 'x', app: true }); await w(100);
+              showView('profiel', undefined, { id: 'x' }); await w(100);
               document.getElementById('confirmModal').classList.add('visible'); await w(60);
               await druk();
               u.modal = { open: document.getElementById('confirmModal').classList.contains('visible'), view: actief() };
@@ -7844,7 +7806,7 @@ window.TT_STUB.fnAntwoord = {};
                   const lengte = history.length;
                   // Profiel bewerken bestaat alleen mét profiel, registreren alleen zonder.
                   myMusicianId = v === 'register' ? null : 'm1'; hasOwnProfile = v !== 'register';
-                  showView(v, undefined, v === 'profiel' ? { id: 'x', app: true } : undefined); await w(120);
+                  showView(v, undefined, v === 'profiel' ? { id: 'x' } : undefined); await w(120);
                   const gaatNaar = [];
                   for (let i = 0; i < 6; i++) { await druk(); gaatNaar.push(huidigeView); }
                   const naam = tab + ' > ' + v;
@@ -8243,7 +8205,7 @@ window.TT_STUB.fnAntwoord = {};
           myMusicianId = 'm1'; currentUser = currentUser || { id: 'u1', email: 'test@talenttent.org' };
           hasOwnProfile = true; myOwnCity = 'Den Haag'; filterInstruments.length = 0; filterSetlistInstruments.length = 0;
           const rij = (id, naam) => ({ id, weergavenaam: naam, username: naam.toLowerCase(), city: 'Den Haag', zip: '2491AA', bio: '', goal: null,
-            avatar_url: null, accepts_band_invites: true, musician_instruments: [{ instrument: 'Gitaar', niveau: 3 }], musician_genres: [{ genre: 'Rock' }],
+            avatar_url: null, stand: 'actief', musician_instruments: [{ instrument: 'Gitaar', niveau: 3 }], musician_genres: [{ genre: 'Rock' }],
             musician_songs: [{ song_title: 'One', song_artist: 'Metallica', mastery_level: 3 }] });
           S.data.musicians = [rij('m1', 'Ronald'), rij('m2', 'Dylan')];
           S.data.band_members = [];
@@ -9750,14 +9712,14 @@ window.TT_STUB.fnAntwoord = {};
         page_errors.clear()
 
         # ────────────────────────────────────────────────────────────
-        # Blok 85 — TT-457 (10-10-2026, besluit Ronald): beschikbaarheid. Een
-        # muzikant of band die niet beschikbaar is, toont één zin onder de
-        # badges (de gewone .melding). Standaard staat er niets. De tegel
-        # Band-uitnodigingen is de tegel Beschikbaarheid geworden; "We spelen
-        # even niet" is Niet beschikbaar geworden en haalt de band niet meer
-        # uit Zoeken.
+        # Blok 85 — TT-457 (10-10-2026, besluit Ronald): één zin op het profiel.
+        # Sinds TT-543 onderdeel 6 (besluiten Ronald 10-11-2026, 7b; 12-11-2026,
+        # B4-1) hebben muzikant en band dezelfde drie standen: Actief, Tijdelijk
+        # niet beschikbaar, Inactief. De zin is de naam van de stand, vet en in
+        # het midden; bij Actief niets. De muzikant kiest in Instellingen, tegel
+        # Status (was Beschikbaarheid); de band in Bandbeheer, tegel Bandstatus.
         # ────────────────────────────────────────────────────────────
-        print("\nBlok 85 — beschikbaarheid (TT-457)")
+        print("\nBlok 85 — de status van muzikant en band (TT-457; TT-543 onderdeel 6, 7b en B4-1)")
         page_errors.clear()
         page.evaluate("window.TT_STUB.reset()")
         page.set_viewport_size({"width": 375, "height": 812})
@@ -9767,12 +9729,12 @@ window.TT_STUB.fnAntwoord = {};
           currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
           const basis = { city: 'Den Haag', bio: 'Test', musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] };
           S.data.musicians = [
-            { ...basis, id: 'm1', user_id: 'u1', fname: 'Ik', username: 'ik', accepts_band_invites: false },
-            { ...basis, id: 'm2', user_id: 'u2', fname: 'Ander', username: 'ander', accepts_band_invites: true },
-            { ...basis, id: 'm3', user_id: 'u3', fname: 'Derde', username: 'derde', accepts_band_invites: false }];
+            { ...basis, id: 'm1', user_id: 'u1', fname: 'Ik', username: 'ik', stand: 'tijdelijk' },
+            { ...basis, id: 'm2', user_id: 'u2', fname: 'Ander', username: 'ander', stand: 'actief' },
+            { ...basis, id: 'm3', user_id: 'u3', fname: 'Derde', username: 'derde', stand: 'inactief' }];
           // Eerdere blokken kunnen rpcResults vervangen hebben: zet de vragen zelf neer.
-          S.rpcResults.tt_profiel_beschikbaar = (p) => { const r = (S.data.musicians || []).find(x => x.id === p.mid); return r ? r.accepts_band_invites !== false : null; };
-          S.rpcResults.tt_profiel_delen = (p) => { const r = (S.data.musicians || []).find(x => x.id === p.mid); return r ? r.delen_aan !== false : null; };
+          S.calls.length = 0;
+          S.rpcResults.tt_profiel_stand = (p) => { const r = (S.data.musicians || []).find(x => x.id === p.mid); return r ? r.stand : null; };
           S.rpcResults.tt_musician_band_ids = () => [];
           const melding = root => root.querySelector('.melding-beschikbaar');
           const maten = el => { if (!el) return null;
@@ -9783,24 +9745,29 @@ window.TT_STUB.fnAntwoord = {};
                      voor: el.previousElementSibling.className, na: el.nextElementSibling.className, breedte: Math.round(r.width),
                      kop: !!el.querySelector('.melding-kop'), knop: !!el.querySelector('button, a'), rand: getComputedStyle(el).borderLeftWidth,
                      uitlijning: cs.textAlign }; };
-          // 1. Mijn Profiel, niet beschikbaar: de zin, onder de badges en boven de bio.
+          // 1. Mijn Profiel, tijdelijk niet beschikbaar: de zin, onder de twee regels en boven de bio.
           showView('myprofile'); await w(900);
           u.eigen = maten(melding(document.getElementById('myProfileContent')));
-          // 2. Mijn Profiel, beschikbaar: geen zin.
-          S.data.musicians[0].accepts_band_invites = true;
+          // 2. Mijn Profiel, actief: geen zin.
+          S.data.musicians[0].stand = 'actief';
           showView('search'); await w(100); showView('myprofile'); await w(900);
-          u.eigenBeschikbaar = !melding(document.getElementById('myProfileContent'));
-          S.data.musicians[0].accepts_band_invites = false;
-          // 3. Het profiel van een ander, met en zonder de zin.
+          u.eigenActief = !melding(document.getElementById('myProfileContent'));
+          S.data.musicians[0].stand = 'tijdelijk';
+          // 3. Het profiel van een ander: inactief en actief.
           const vak = document.getElementById('profielSchermContent');
           await openProfielScherm('m3'); await w(700); u.ander = maten(melding(vak));
-          await openProfielScherm('m2'); await w(700); u.anderBeschikbaar = !melding(vak);
+          await openProfielScherm('m2'); await w(700); u.anderActief = !melding(vak);
+          u.standRpc = S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_profiel_stand').map(c => c.params.mid);
           // 4. Zonder eigen profiel (een bezoeker): de zin staat er ook.
           hasOwnProfile = false; S.rpcResults.tt_get_musicians_public = (p) => (p.ids || []).map(id => { const m = S.data.musicians.find(x => x.id === id);
             return { id, username: m.username, age: 30, city: m.city, bio: m.bio, avatar_url: null, instrument_levels: [], genres: [], songs: [], media: [] }; });
-          await openProfielScherm('m3'); await w(700); u.bezoeker = !!melding(vak);
+          await openProfielScherm('m3'); await w(700); u.bezoeker = (melding(vak) || {}).textContent || null;
+          // 5. Lukt de vraag naar de stand niet, dan geldt Actief: geen zin.
+          S.rpcResults.tt_profiel_stand = () => { throw new Error('proef'); };
+          await openProfielScherm('m3'); await w(700); u.foutGeenZin = !melding(vak);
+          S.rpcResults.tt_profiel_stand = (p) => { const r = (S.data.musicians || []).find(x => x.id === p.mid); return r ? r.stand : null; };
           hasOwnProfile = true;
-          // 5. Een band die niet beschikbaar is (publieke vraag): de zin van de band, de band blijft staan.
+          // 6. Een band (publieke vraag): de zin van de band, de band blijft staan.
           hasOwnProfile = false;
           // TT-543 onderdeel 6, blok 3: de band heeft drie standen (stand); zonder die kolom volgt hij uit pauze.
           const bandRij = (pauze, stand) => ({ id: 'b9', name: 'Nachtploeg', city: 'Den Haag', genres: ['Indie'], status: 'compleet', avatar_url: null, pauze, stand,
@@ -9814,55 +9781,74 @@ window.TT_STUB.fnAntwoord = {};
           S.rpcResults.tt_get_bands_public = (p) => (p.ids || []).map(() => bandRij(false, 'actief'));
           await openBandScherm('b9'); await w(700); u.bandBeschikbaar = !melding(vak);
           hasOwnProfile = true;
-          // 6. Instellingen: de tegel heet Beschikbaarheid en werkt meteen.
+          // 7. Instellingen: de tegel heet Status, toont de korte naam en kiest in het menu; een keuze werkt meteen.
           showView('instellingen'); await w(600);
-          u.tegel = { titel: (document.querySelector('#beschikbaarTegel .tile-title') || {}).textContent, sub: (document.querySelector('#beschikbaarTegel .wheel-field-label') || {}).textContent,
-                      oud: !!document.getElementById('uitnodigTegel'), opties: [...document.querySelectorAll('#beschikbaarKeuze option')].map(o => o.textContent) };
-          await zetBeschikbaarheid(true); await w(200);
-          u.naAan = [S.data.musicians[0].accepts_band_invites, document.getElementById('beschikbaarKeuze').value];
-          await zetBeschikbaarheid(false); await w(200);
-          u.naUit = [S.data.musicians[0].accepts_band_invites, document.getElementById('beschikbaarKeuze').value];
+          const tegel = () => ({ titel: (document.querySelector('#statusTegel .tile-title') || {}).textContent,
+                                 sub: (document.querySelector('#statusTegel .wheel-field-label') || {}).textContent });
+          u.tegel = { ...tegel(), oud: ['beschikbaarTegel', 'deelTegel', 'uitnodigTegel', 'beschikbaarKeuze', 'deelKeuze'].filter(id => document.getElementById(id)) };
+          document.getElementById('statusTegel').click(); await w(300);
+          const menu = document.getElementById('statusMenu');
+          u.menu = { open: menu.classList.contains('open') || getComputedStyle(menu).display !== 'none',
+                     regels: [...menu.querySelectorAll('.choice-option')].map(o => o.textContent.trim()),
+                     gekozen: [...menu.querySelectorAll('.choice-option')].findIndex(o => o.classList.contains('selected')),
+                     tekstLinks: [...menu.querySelectorAll('.choice-option')].every(o => getComputedStyle(o).justifyContent === 'flex-start') };
+          menu.querySelectorAll('.choice-option')[2].click(); await w(400);
+          u.naInactief = { rij: S.data.musicians[0].stand, tegel: tegel().sub, toast: document.getElementById('appToast').textContent };
+          await zetStatus('actief'); await w(200);
+          u.naActief = { rij: S.data.musicians[0].stand, tegel: tegel().sub };
           currentUser = keep.currentUser; myMusicianId = keep.myMusicianId; hasOwnProfile = keep.hasOwnProfile; S.data.musicians = keep.musicians; S.data.bands = keep.bands;
           S.rpcResults.tt_get_bands_public = keep.rpcBands;
           showView('about');
           return u;
         }""")
         j85 = lambda k: json.dumps(d85.get(k), ensure_ascii=False)
-        check("muzikant, Mijn Profiel: de zin staat onder de badges en boven de bio, als .melding zonder kop, knop of kruisje",
-              d85["eigen"] and d85["eigen"]["tekst"] == "Momenteel niet beschikbaar." and d85["eigen"]["vet"] == "niet beschikbaar"
+        check("muzikant, Mijn Profiel (blok 4, 7b): de zin is de naam van de stand, vet en in het midden, onder de twee regels en boven de bio, als .melding zonder kop of knop",
+              d85["eigen"] and d85["eigen"]["tekst"] == "Tijdelijk niet beschikbaar." and d85["eigen"]["vet"] == "Tijdelijk niet beschikbaar."
+              and d85["eigen"]["uitlijning"] == "center"
               and d85["eigen"]["voor"] == "profiel-wat" and d85["eigen"]["na"] == "profile-bio" and not d85["eigen"]["kop"] and not d85["eigen"]["knop"], j85("eigen"))
-        check("UI: de zin is 12px (TT-517), de lijn links 4px, en staat 20px onder de badges en 20px boven de bio",
+        check("UI: de zin is 12px (TT-517), de lijn links 4px, en staat 20px onder de twee regels en 20px boven de bio",
               d85["eigen"]["letter"] == "12px" and d85["eigen"]["rand"] == "4px" and d85["eigen"]["boven"] == 20 and d85["eigen"]["onder"] == 20, j85("eigen"))
-        check("beschikbaar (de standaard): er staat geen zin op Mijn Profiel", d85["eigenBeschikbaar"] is True, j85("eigenBeschikbaar"))
-        check("het profiel van een ander: de zin alleen als die muzikant niet beschikbaar is, via tt_profiel_beschikbaar",
-              d85["ander"] and d85["ander"]["tekst"] == "Momenteel niet beschikbaar." and d85["anderBeschikbaar"] is True, json.dumps([d85["ander"], d85["anderBeschikbaar"]], ensure_ascii=False))
-        check("een bezoeker zonder account ziet dezelfde zin", d85["bezoeker"] is True, j85("bezoeker"))
+        check("Actief (de standaard): er staat geen zin op Mijn Profiel", d85["eigenActief"] is True, j85("eigenActief"))
+        check("het profiel van een ander: 'Inactief.' via tt_profiel_stand (met het id); bij Actief geen zin",
+              d85["ander"] and d85["ander"]["tekst"] == "Inactief." and d85["ander"]["uitlijning"] == "center"
+              and d85["anderActief"] is True and d85["standRpc"] == ["m3", "m2"], json.dumps([d85["ander"], d85["anderActief"], d85["standRpc"]], ensure_ascii=False))
+        check("een bezoeker zonder account ziet dezelfde zin", d85["bezoeker"] == "Inactief.", j85("bezoeker"))
+        check("lukt de vraag naar de stand niet, dan geldt Actief: geen zin, het profiel laadt", d85["foutGeenZin"] is True, j85("foutGeenZin"))
         check("band (blok 3, 7b): de zin is de naam van de stand, vet en in het midden; onder de twee regels; Actief heeft geen zin; zonder de kolom stand volgt hij uit pauze",
               d85["band"] and d85["band"]["tekst"] == "Tijdelijk niet beschikbaar." and d85["band"]["vet"] == "Tijdelijk niet beschikbaar."
               and d85["band"]["uitlijning"] == "center" and d85["band"]["voor"] == "profiel-wat"
               and d85["bandInactief"] and d85["bandInactief"]["tekst"] == "Inactief." and d85["bandInactief"]["uitlijning"] == "center"
               and d85["bandZonderKolom"] and d85["bandZonderKolom"]["tekst"] == "Tijdelijk niet beschikbaar."
               and d85["bandBeschikbaar"] is True, json.dumps([d85["band"], d85["bandInactief"], d85["bandZonderKolom"], d85["bandBeschikbaar"]], ensure_ascii=False))
+        check("muzikant en band: dezelfde zin, dezelfde maten (letter, lijn, afstanden, uitlijning)",
+              all(d85["eigen"][k] == d85["band"][k] for k in ("tekst", "letter", "rand", "boven", "onder", "uitlijning", "voor")), json.dumps([d85["eigen"], d85["band"]], ensure_ascii=False))
         check("de zin past op één regel op 375px (breedte en aantal regels gemeten)",
               d85["eigen"]["regels"] == 1 and d85["band"]["regels"] == 1, json.dumps([d85["eigen"]["regels"], d85["band"]["regels"], d85["eigen"]["breedte"]]))
-        check("Instellingen: de tegel heet Beschikbaarheid, Band-uitnodigingen is weg, de keuze werkt meteen",
-              d85["tegel"]["titel"] == "Beschikbaarheid" and d85["tegel"]["oud"] is False
-              and d85["tegel"]["opties"] == ["Beschikbaar", "Niet beschikbaar: staat op je profiel"]
-              and d85["naAan"] == [True, "ja"] and d85["naUit"] == [False, "nee"], j85("tegel") + j85("naAan") + j85("naUit"))
-        js85 = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ["bands.js", "search.js", "wizard.js", "musicians.js", "utils.js"]}
+        check("Instellingen (blok 4, 7b): de tegel heet Status en toont de korte naam van de stand; Beschikbaarheid, Delen via link en Band-uitnodigingen zijn weg",
+              d85["tegel"]["titel"] == "Status" and d85["tegel"]["sub"] == "Tijdelijk niet beschikbaar" and d85["tegel"]["oud"] == [], j85("tegel"))
+        check("Status: het menu van Bandstatus, tekst links (huisstijl §7.1): Actief · Tijdelijk niet beschikbaar (blijft vindbaar) · Inactief (niet vindbaar)",
+              d85["menu"] == {"open": True, "regels": ["Actief", "Tijdelijk niet beschikbaar (blijft vindbaar)", "Inactief (niet vindbaar)"], "gekozen": 1, "tekstLinks": True}, j85("menu"))
+        check("een keuze werkt meteen: de kolom stand, de tegel en de melding 'Wijzigingen opgeslagen.' (zoals Bandstatus)",
+              d85["naInactief"] == {"rij": "inactief", "tegel": "Inactief", "toast": "Wijzigingen opgeslagen."}
+              and d85["naActief"] == {"rij": "actief", "tegel": "Actief"}, j85("naInactief") + j85("naActief"))
+        js85 = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ["bands.js", "search.js", "wizard.js", "musicians.js", "utils.js", "core.js"]}
         html85 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
-        check("TT-457: één functie voor de zin (utils.js), gebruikt door het muzikantprofiel en de bandpagina",
-              "function nietBeschikbaarMeldingHTML(" in js85["utils.js"] and "nietBeschikbaarMeldingHTML()" in js85["musicians.js"]
-              and "nietBeschikbaarMeldingHTML(" in js85["bands.js"], "")
+        alle85 = "".join(js85.values()) + html85
+        check("één lijst met standen (STANDEN, utils.js) en één functie voor de zin (standMeldingHTML), gebruikt door het muzikantprofiel en de bandpagina; de oude zin is weg",
+              alle85.count("const STANDEN = [") == 1 and "const STANDEN = [" in js85["utils.js"] and "BAND_STANDEN" not in alle85
+              and alle85.count("function standMeldingHTML(") == 1 and "standMeldingHTML(m.stand)" in js85["musicians.js"]
+              and "standMeldingHTML(b.stand)" in js85["bands.js"]
+              and "nietBeschikbaarMeldingHTML" not in alle85 and "Momenteel" not in alle85, "")
         check("TT-457: Zoeken laat een niet-beschikbare band staan, en bandStatusAfgeleid() kent geen pauze (bandStatusLabel() is weg, TT-543 onderdeel 6)",
               "b.pauze" not in js85["search.js"] and "'inactief'" not in js85["search.js"] and "function bandStatusAfgeleid(aantalOpenRollen)" in js85["bands.js"]
               and "bandStatusLabel(" not in js85["bands.js"], "")
-        check("TT-457: de oude namen zijn weg (zetBandUitnodigingen, zetBandPauze, uitnodigKeuze, We spelen even niet)",
-              not any(t in js85[f] for f in js85 for t in ["zetBandUitnodigingen", "zetBandPauze", "myAcceptsBandInvites"])
-              and "uitnodigKeuze" not in html85 and not any("We spelen even niet" in js85[f] for f in js85), "")
-        # TT-543 onderdeel 4 (B4): het venster is weg; wie geen banduitnodigingen wil (TT-56), krijgt op zijn profiel geen knop (blok 141).
-        check("TT-56/TT-457: uitnodigen vanuit Zoeken kijkt naar accepts_band_invites vóór de knop er komt",
-              "accepts_band_invites === false) return;" in js85["bands.js"] and "select('accepts_band_invites')" in js85["bands.js"], "")
+        check("de oude namen zijn weg (zetBeschikbaarheid, myBeschikbaar, tt_profiel_beschikbaar, zetBandUitnodigingen, zetBandPauze, uitnodigKeuze, We spelen even niet)",
+              not any(t in alle85 for t in ["zetBeschikbaarheid", "myBeschikbaar", "tt_profiel_beschikbaar", "profielBeschikbaar", "updateBeschikbaarToggleBtn",
+                                            "zetBandUitnodigingen", "zetBandPauze", "myAcceptsBandInvites", "uitnodigKeuze", "We spelen even niet"]), "")
+        # TT-543 onderdeel 4 (B4): het venster is weg; wie geen banduitnodigingen krijgt (TT-56), krijgt op zijn profiel geen knop (blok 141).
+        check("TT-56, B4-1: uitnodigen kijkt naar de stand: alleen Actief (de knop op het profiel en de controle vóór het schrijven); accepts_band_invites leest de app niet meer",
+              js85["bands.js"].count("select('stand')") == 2 and "wil.data.stand && wil.data.stand !== 'actief'" in js85["bands.js"]
+              and "target.stand && target.stand !== 'actief'" in js85["bands.js"] and "accepts_band_invites" not in alle85, "")
         check("geen paginafouten in blok 85", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
@@ -14337,7 +14323,7 @@ TT548_JS = r"""async ({knop, laag, doelTab, scherm}) => {
   // 2. via de onderbalk naar het doeltabblad
   document.getElementById(NAV[doelTab]).click(); await w(150);
   // 3. daar een scherm openen
-  if (scherm) { showView(scherm, undefined, scherm === 'profiel' ? { id: 'x', app: true } : undefined); await w(150); }
+  if (scherm) { showView(scherm, undefined, scherm === 'profiel' ? { id: 'x' } : undefined); await w(150); }
   const start = sig();
   // 4. terug, tot zes keer
   const drukken = [];
@@ -14475,7 +14461,7 @@ def blok_onderhoud_0611():
               && document.querySelector('#mediahoekScreen .panel-sub').textContent.trim() === 'Met goede media valt je profiel veel meer op.' };
           document.getElementById('bottomNavSearch').click(); await w(200);
           // TT-561 D7: een profiel dat niet bestaat is geen storing
-          showView('profiel', undefined, { id: 'bestaat-niet', app: true }); await w(800);
+          showView('profiel', undefined, { id: 'bestaat-niet' }); await w(800);
           u.weg = tekst('view-profiel');
           showView('myprofile'); await w(200);
           return u; }""")
@@ -15899,7 +15885,7 @@ def blok_tt543_onderdeel3():
           { media_type: 'video', url: 'https://x.test/b.mp4', platform: null, in_banner: false, created_at: '2026-10-02T10:00:00Z', uitsnede: null },
           { media_type: 'link', url: 'https://open.spotify.com/artist/x', platform: 'Spotify', in_banner: false, created_at: '2026-10-03T10:00:00Z', uitsnede: null }] });
       const bio = 'Ik speel sinds mijn twaalfde gitaar. Ik zoek een drummer om mee te jammen.';
-      Object.assign(M[0], { weergavenaam: 'Ronald Wever', bio, avatar_url: null, accepts_band_invites: true }, extra('m1'));
+      Object.assign(M[0], { weergavenaam: 'Ronald Wever', bio, avatar_url: null, stand: 'actief' }, extra('m1'));
       Object.assign(M[1], { weergavenaam: 'Dylan de Vries', bio, avatar_url: null, city: 'Delft' }, extra('m2'));
       S.rpcResults.tt_musicians_ages = (p) => (p.ids || []).map(id => ({ id, age: 19 }));
       S.rpcResults.tt_musician_band_ids = () => [{ band_id: 'b1' }];
@@ -16130,7 +16116,7 @@ def blok_tt543_onderdeel4():
         { musician_id: 'm1', song_title: 'Alive', song_artist: 'Pearl Jam', mastery_level: null },
         { musician_id: 'm1', song_title: 'Zombie', song_artist: 'The Cranberries', mastery_level: 'basis' }];
       const bio = 'Ik speel sinds mijn twaalfde gitaar.';
-      Object.assign(M[1], { weergavenaam: 'Colin Wever', bio, avatar_url: null, accepts_band_invites: true,
+      Object.assign(M[1], { weergavenaam: 'Colin Wever', bio, avatar_url: null, stand: 'actief',
         musician_instruments: [{ musician_id: 'm2', instrument: 'Basgitaar', niveau: 3 }], musician_genres: [{ musician_id: 'm2', genre: 'Rock' }],
         musician_songs: [{ song_title: 'Creep', song_artist: 'Radiohead', mastery_level: 'podium' }], musician_media: [] });
       Object.assign(M[2], { weergavenaam: 'Sanne Bakker', bio, avatar_url: null, musician_instruments: [{ musician_id: 'm3', instrument: 'Zang', niveau: 4 }],
@@ -16287,7 +16273,7 @@ def blok_tt543_onderdeel4():
                         bericht: (S.data.messages || []).filter(m => m.receiver_id === 'm2' || m.ontvanger_id === 'm2' || m.to_id === 'm2').map(m => m.content || m.text || m.body).filter(Boolean).pop() || JSON.stringify((S.data.messages || []).slice(-1)),
                         blok: !!c.querySelector('.uitnodig-blok'), knop: !!c.querySelector('.rol-uitnodig-knop'), bio: c.querySelector('.profile-bio').offsetParent !== null }; }""")
                     # TT-56: wie geen banduitnodigingen wil, krijgt geen knop.
-                    page.evaluate("""async () => { window.TT_STUB.data.musicians[2].accepts_band_invites = false; await openProfielScherm('m3'); }"""); page.wait_for_timeout(1200)
+                    page.evaluate("""async () => { window.TT_STUB.data.musicians[2].stand = 'tijdelijk'; await openProfielScherm('m3'); }"""); page.wait_for_timeout(1200)
                     u["nietBeschikbaar"] = page.evaluate("!!document.querySelector('#profielSchermActie .rol-uitnodig-knop')")
                 # 5. TT-560: één afronding.
                 u["km"] = page.evaluate("""() => [afstandTekst(0), afstandTekst(0.3), afstandTekst(0.99), afstandTekst(1.49), afstandTekst(2.5), afstandTekst(12.46), afstandTekst(null), afstandTekst('3.6'),
@@ -16996,10 +16982,10 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
               const mm = meet({ veld: 'filterSetlistInstrumentsField', menu: 'filterSetlistInstrumentsMenu', anker: 'filterSetlistInstrumentsField' });
               u.mm = [mm.breed, mm.ankerBreed, mm.midden];
               sluitAlleMenus(); await w();
-              // Thema, Delen via link en Beschikbaarheid: ook 3/4 (besluit Ronald 10-11-2026: "Ja, ook 3/4").
+              // Thema en Status (was ook Delen via link en Beschikbaarheid): ook 3/4 (besluit Ronald 10-11-2026: "Ja, ook 3/4").
               u.breed = {};
               showView('instellingen'); await w(300);
-              for (const id of ['thema', 'deel', 'beschikbaar']) {
+              for (const id of ['thema', 'status']) {
                 const c = CHOICE_FIELDS[id], v = $(c.fieldId);
                 if (!v || !v.getClientRects().length) { u.breed[id] = 'niet in beeld'; continue; }
                 v.scrollIntoView({ block: 'center' }); await w(100);
@@ -17043,8 +17029,8 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
                   and all(z[k][0] == z[k][1] for k in ("radius", "leeftijd", "niveau", "sorteren", "weergave")), j(z))
             check(f"{n}: Mix & Match: Instrument 3/4 in het midden (R2)",
                   abs(u["mm"][0] - drie) <= 1 and u["mm"][2], j(u["mm"]))
-            check(f"{n}: Thema, Delen via link en Beschikbaarheid: het menu 3/4 in het midden (besluit Ronald 10-11-2026: \"Ja, ook 3/4\")",
-                  all(isinstance(x, list) and abs(x[0] - drie) <= 1 and x[1] == breed - 32 and x[2] for x in u["breed"].values()) and len(u["breed"]) == 3, j(u["breed"]))
+            check(f"{n}: Thema en Status (blok 4; Delen via link is weg): het menu 3/4 in het midden (besluit Ronald 10-11-2026: \"Ja, ook 3/4\")",
+                  all(isinstance(x, list) and abs(x[0] - drie) <= 1 and x[1] == breed - 32 and x[2] for x in u["breed"].values()) and len(u["breed"]) == 2, j(u["breed"]))
             ctx.close()
         browser.close()
     httpd.shutdown()
@@ -17577,8 +17563,8 @@ def blok_tt543_onderdeel6_blok3():
     check("blok 3: de oude Bandbeheer-knoppen en Delen via link van de band zijn weg (geen dode code)",
           not any(w in t for t in bron.values() for w in ("zetBandBeschikbaar", "zetBandDelenBeheer", "vraagBandOpheffen", "askFounderTransfer",
                   "overdragKeuze", "bandBeschikbaarKeuze", "bandDelenKeuze", "Band opheffen'", ">Band opheffen<")), "")
-    check("blok 3: een menu onder een tegel heeft de tekst links (Thema, Delen via link, Beschikbaarheid, Bandstatus; huisstijl §7.1)",
-          all(f'class="choice-menu menu-breed menu-tegel" id="{m}"' in bron["index.html"] for m in ("themaMenu", "deelMenu", "beschikbaarMenu"))
+    check("blok 3 en 4: een menu onder een tegel heeft de tekst links (Thema, Status, Bandstatus; huisstijl §7.1)",
+          all(f'class="choice-menu menu-breed menu-tegel" id="{m}"' in bron["index.html"] for m in ("themaMenu", "statusMenu"))
           and 'menu-tegel" id="bandStandMenu"' in bron["bands.js"]
           and ".choice-menu.menu-tegel .choice-option { justify-content: flex-start; text-align: left; }" in bron["styles.css"], "")
     stub_js = open(STUB, encoding="utf-8").read()

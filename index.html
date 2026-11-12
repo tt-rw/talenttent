@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261112b">
+<link rel="stylesheet" href="styles.css?v=20261112c">
 </head>
 <body>
 
@@ -1855,39 +1855,25 @@
         <option value="donker">Donker</option>
       </select>
 
-      <!-- TT-437 (07-10-2026, besluit Ronald): "Delen via link" en
-           "Beschikbaarheid" (TT-457, was "Band-uitnodigingen") staan niet meer in het ⋯-menu van Mijn Profiel
-           maar hier: het zijn instellingen, geen handelingen. Zelfde vorm als
-           Thema (initChoiceField(), huisstijl §7.1); een keuze werkt meteen.
-           Alleen zichtbaar met een profiel (laadInstellingen() in wizard.js). -->
+      <!-- TT-437 (07-10-2026, besluit Ronald): de status staat hier, niet in het
+           ⋯-menu van Mijn Profiel: het is een instelling, geen handeling.
+           TT-543 onderdeel 6, blok 4 (besluiten Ronald 10-11-2026, 7b en 7c;
+           12-11-2026, B4-1): de tegel Status met drie standen, gelijk aan
+           Bandstatus (STANDEN in utils.js); vervangt Beschikbaarheid (TT-457).
+           Delen via link is weg. Het keuzemenu van Bandstatus (initChoiceField()
+           met eigen regels, huisstijl §7.1; zetStatus() in wizard.js); een
+           keuze werkt meteen. Alleen zichtbaar met een profiel
+           (laadInstellingen() in wizard.js). -->
       <div id="instellingenProfielBlok">
         <div class="menu-anchor">
-          <div class="tile" id="deelTegel" aria-label="Delen via link">
+          <div class="tile" id="statusTegel" aria-label="Status">
             <div style="flex:1;">
-              <div class="tile-title">Delen via link</div>
+              <div class="tile-title">Status</div>
               <div class="tile-sub"><span class="wheel-field-label"></span></div>
             </div>
           </div>
-          <div class="choice-menu menu-breed menu-tegel" id="deelMenu" role="listbox" aria-label="Delen via link"></div>
+          <div class="choice-menu menu-breed menu-tegel" id="statusMenu" role="listbox" aria-label="Status"></div>
         </div>
-        <select id="deelKeuze" style="display:none;" onchange="zetProfielDelen(this.value === 'aan')">
-          <option value="aan">Aan: je link werkt</option>
-          <option value="uit">Uit: je link werkt niet</option>
-        </select>
-
-        <div class="menu-anchor">
-          <div class="tile" id="beschikbaarTegel" aria-label="Beschikbaarheid">
-            <div style="flex:1;">
-              <div class="tile-title">Beschikbaarheid</div>
-              <div class="tile-sub"><span class="wheel-field-label"></span></div>
-            </div>
-          </div>
-          <div class="choice-menu menu-breed menu-tegel" id="beschikbaarMenu" role="listbox" aria-label="Beschikbaarheid"></div>
-        </div>
-        <select id="beschikbaarKeuze" style="display:none;" onchange="zetBeschikbaarheid(this.value === 'ja')">
-          <option value="ja">Beschikbaar</option>
-          <option value="nee">Niet beschikbaar: staat op je profiel</option>
-        </select>
       </div>
 
       <!-- TT-299 (20-09-2026, besluit Ronald): e-mailadres en wachtwoord
@@ -2325,16 +2311,16 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261112a"></script>
-<script src="utils.js?v=20261112a"></script>
+<script src="core.js?v=20261112c"></script>
+<script src="utils.js?v=20261112c"></script>
 <script src="veiligheid.js?v=20261108c"></script>
 <script src="auth.js?v=20261108c"></script>
 <script src="postcode.js?v=20261110a"></script>
-<script src="wizard.js?v=20261110a"></script>
+<script src="wizard.js?v=20261112c"></script>
 <script src="ouder.js?v=20261106a"></script>
-<script src="search.js?v=20261111a"></script>
-<script src="musicians.js?v=20261112a"></script>
-<script src="bands.js?v=20261112b"></script>
+<script src="search.js?v=20261112c"></script>
+<script src="musicians.js?v=20261112c"></script>
+<script src="bands.js?v=20261112c"></script>
 <script src="messages.js?v=20261112a"></script>
 <script src="push.js?v=20261027b"></script>
 <script src="modals-shared.js?v=20261111a"></script>

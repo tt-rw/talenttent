@@ -433,10 +433,12 @@ async function addBandMember(band, musicianId, note, rollen) {
     // voorkomt dat een verouderd scherm (bijv. een openstaand zoekresultaat
     // van vóór iemand net zijn instelling wijzigde) alsnog een uitnodiging
     // verstuurt.
+    // TT-543 onderdeel 6, blok 4 (B4-1): alleen een muzikant op Actief krijgt
+    // een banduitnodiging; Tijdelijk niet beschikbaar en Inactief niet.
     const { data: target, error: checkErr } = await db.from('musicians')
-      .select('accepts_band_invites').eq('id', musicianId).single();
+      .select('stand').eq('id', musicianId).single();
     if (checkErr) throw checkErr;
-    if (target && target.accepts_band_invites === false) {
+    if (target && target.stand && target.stand !== 'actief') {
       showToast('Deze muzikant is niet beschikbaar.');
       return false;
     }
@@ -1048,7 +1050,7 @@ function bandPaginaHTML(b, kijker) {
       // TT-517 fase 8: het visitekaartje; een band die iemand zoekt, toont dat in een pil.
       kaart: { id: b.id, naam: b.name, regel: b.city || '', wat: b.genres, onder: [], zoekt: b.wanted },
       regels: `<div class="profile-meta" style="margin-bottom:0;">${escHtml(b.city || '')}</div>`,
-      knoppen: profielKnoppenHTML('band', b.id, b.name, menuHTML, deelActie, true)
+      knoppen: profielKnoppenHTML('band', b.id, b.name, menuHTML, deelActie)
     })}
     ${watHTML}
     ${standMeldingHTML(b.stand)}`;
@@ -1166,12 +1168,12 @@ function bandDeelBladAanvullen() {
 // TT-410b fase 2 (06-10-2026, besluiten Ronald): de bandpagina is, net als het
 // muzikantprofiel, een eigen scherm met een eigen link: view-profiel, route
 // #band/<id>. Het oude bandvenster bestaat niet meer en er komt geen view bij.
-// De stap in de geschiedenis is { view: 'profiel', id, app, soort: 'band' }.
+// De stap in de geschiedenis is { view: 'profiel', id, soort: 'band' }.
 // Een band opent altijd, in de app en via een link: Delen via link is weg
 // (TT-543 onderdeel 6, besluit Ronald 10-11-2026, 7c).
 function openBandScherm(id, opties) {
   const o = opties || {};
-  showView('profiel', o.redirect ? 'redirect' : undefined, { id, app: !o.link, soort: 'band' });
+  showView('profiel', o.redirect ? 'redirect' : undefined, { id, soort: 'band' });
   return profielLaadBelofte;
 }
 
@@ -1199,7 +1201,7 @@ async function laadBandScherm(id) {
   if (volgnr !== profielSchermVolgnr) return; // intussen een ander scherm geopend
   // TT-464: geen fout en geen band: de band bestaat niet meer. Dat is een verwachte
   // uitkomst (zoals TT-423) en komt niet in het foutlog.
-  if (!b && !mislukt) { toonProfielNietBeschikbaar('band', true); return; }
+  if (!b && !mislukt) { toonProfielNietBeschikbaar('band'); return; }
   if (!b) { vak.innerHTML = foutStaatHTML(mislukt, 'de band laden', `laadBandScherm('${jsAttr(id)}')`); return; }
 
   const ik = hasOwnProfile ? myMusicianId : null;
@@ -1356,28 +1358,17 @@ function renderBandTegels() {
 // TT-543 onderdeel 6, blok 3 (besluiten Ronald 10-11-2026, 7 tot en met 7d,
 // en 12-11-2026, B3-2): Bandbeheer is een hoofdstuk met drie tegels, zoals
 // Instellingen. Bandstatus kiest één van drie standen in het keuzemenu onder
-// de tegel (tekst links, huisstijl §7.1); Beheer overdragen alleen als er een
-// ander lid is; Bandprofiel verwijderen in plaats van Band opheffen. Delen
+// de tegel (tekst links, huisstijl §7.1; de standen in STANDEN, utils.js,
+// gelijk aan de tegel Status van de muzikant); Beheer overdragen alleen als er
+// een ander lid is; Bandprofiel verwijderen in plaats van Band opheffen. Delen
 // via link is weg (7c). De regel onder Beheer overdragen is korter, zodat hij
 // op één regel past (besluit Ronald 12-11-2026, B3-9).
-const BAND_STANDEN = [
-  { waarde: 'actief', label: 'Actief', menu: 'Actief' },
-  { waarde: 'tijdelijk', label: 'Tijdelijk niet beschikbaar', menu: 'Tijdelijk niet beschikbaar (blijft vindbaar)' },
-  { waarde: 'inactief', label: 'Inactief', menu: 'Inactief (niet vindbaar)' }
-];
 
 // De stand uit de database. Zonder de kolom `stand` (het script van blok 3
 // nog niet gedraaid) volgt hij uit `pauze`, zoals voorheen.
 function bandStandVan(b) {
-  if (b && BAND_STANDEN.some(x => x.waarde === b.stand)) return b.stand;
+  if (b && STANDEN.some(x => x.waarde === b.stand)) return b.stand;
   return b && b.pauze ? 'tijdelijk' : 'actief';
-}
-
-// De zin op de bandpagina (besluit Ronald 10-11-2026, 7b: "ja. dit mag wel
-// gecentreerd."): de naam van de stand; bij Actief niets.
-function standMeldingHTML(stand) {
-  const st = BAND_STANDEN.find(x => x.waarde === stand && x.waarde !== 'actief');
-  return st ? nietBeschikbaarMeldingHTML(st.label) : '';
 }
 
 let bandBeheerStand = 'actief';
@@ -1400,7 +1391,7 @@ async function renderBandBeheer() {
     const mid = await getMyMusicianId();
     const anderen = (b.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid);
     const gevraagd = anderen.filter(m => m.founder_offer).map(m => m.musicians ? displayNameOf(m.musicians) : '').filter(Boolean);
-    const stand = BAND_STANDEN.find(x => x.waarde === bandBeheerStand);
+    const stand = STANDEN.find(x => x.waarde === bandBeheerStand);
     // Een vraag die loopt: de tegel noemt hem, een tik vraagt of je hem intrekt.
     const overdragen = !anderen.length ? '' : gevraagd.length
       ? `<div class="tile" onclick="vraagOverdragenIntrekken('${jsAttr(id)}','${jsAttr(opsommingNL(gevraagd))}')">
@@ -1425,8 +1416,8 @@ async function renderBandBeheer() {
       </div>`;
     initChoiceField({
       id: 'band-stand', fieldId: 'bandStandTegel', menuId: 'bandStandMenu',
-      rijen: () => BAND_STANDEN.map(x => ({ t: x.menu, gekozen: x.waarde === bandBeheerStand })),
-      kies: i => zetBandStand(BAND_STANDEN[i].waarde)
+      rijen: () => STANDEN.map(x => ({ t: x.menu, gekozen: x.waarde === bandBeheerStand })),
+      kies: i => zetBandStand(STANDEN[i].waarde)
     });
   } catch (e) {
     logCaught('renderBandBeheer', e);
@@ -2415,15 +2406,16 @@ async function rolUitnodigKnopPlaatsen(musicianId, naam) {
   const voet = document.getElementById('profielSchermActie');
   if (!band || !hasOwnProfile || !voet || !musicianId || musicianId === myMusicianId) return;
   if (typeof blokkeerIkZelf === 'function' && blokkeerIkZelf(musicianId)) return;
-  // TT-56: wie banduitnodigingen uit heeft, kreeg in het venster Lid uitnodigen
-  // geen knop; hier ook niet. De vraag loopt tegelijk met die naar de leden.
+  // TT-56: wie geen banduitnodigingen krijgt, kreeg in het venster Lid
+  // uitnodigen geen knop; hier ook niet. Sinds blok 4 (B4-1): alleen een
+  // muzikant op Actief. De vraag loopt tegelijk met die naar de leden.
   const [leden, wil] = await Promise.all([
     db.from('band_members').select('status').eq('band_id', band.id).eq('musician_id', musicianId),
-    db.from('musicians').select('accepts_band_invites').eq('id', musicianId).maybeSingle()
+    db.from('musicians').select('stand').eq('id', musicianId).maybeSingle()
   ]);
   if (leden.error) { logCaught('rolUitnodigKnopPlaatsen', leden.error); return; }
   if (wil.error) { logCaught('rolUitnodigKnopPlaatsen', wil.error); return; }
-  if (zoekRolBand !== band || (leden.data || []).length || wil.data?.accepts_band_invites === false) return;
+  if (zoekRolBand !== band || (leden.data || []).length || (wil.data && wil.data.stand && wil.data.stand !== 'actief')) return;
   if (voet.querySelector('.rol-uitnodig-knop')) return;
   voet.insertAdjacentHTML('afterbegin',
     `<button class="btn btn-ghost rol-uitnodig-knop" onclick="rolUitnodigBlokOpenen('${jsAttr(musicianId)}', '${jsAttr(naam || '')}')">Uitnodigen voor ${escHtml(band.naam)}</button>`);

@@ -87,11 +87,12 @@
       tt_weergavenamen(p) { return TT_STUB.weergavenamen(p); },
       // TT-454: de eigen voor- en achternaam, zoals de databasefunctie tt_mijn_naam().
       tt_mijn_naam() { return TT_STUB.mijnNaam(); },
-      // TT-410b: staat delen aan voor dit profiel? Leest musicians.delen_aan uit
-      // de testdata; een ontbrekende waarde telt als aan, een onbekend id geeft null.
-      tt_profiel_delen(p) {
+      // TT-543 onderdeel 6, blok 4: de stand van één muzikant (Actief, Tijdelijk
+      // niet beschikbaar, Inactief). Leest musicians.stand uit de testdata; een
+      // ontbrekende waarde telt als actief, een onbekend id geeft null.
+      tt_profiel_stand(p) {
         const r = (TT_STUB.data.musicians || []).find(x => x.id === p.mid);
-        return r ? r.delen_aan !== false : null;
+        return r ? (r.stand || 'actief') : null;
       },
       // Laatst actief (25-09-2026): standaard iedereen in groep 0, in de
       // volgorde van de vraag. Een blok dat groepen wil toetsen, zet hier

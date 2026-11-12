@@ -1169,12 +1169,6 @@ function musicianCardHTML(m) {
 
 // ─── Bands in het resultaat ──────────────────────────────────────────────────
 
-// TT-56 (12-08-2026), TT-457 (10-10-2026): of de muzikant zichzelf beschikbaar
-// heeft gezet (kolom `accepts_band_invites`). Bijgehouden als eigen variabele
-// (net als myMusicianId) zodat de tegel in Instellingen zijn stand kan tonen
-// zonder steeds opnieuw te hoeven laden.
-let myBeschikbaar = true;
-
 // "Drums" midden in een zin wordt "drums"; een afkorting als "DJ" blijft staan.
 function instrumentInZin(naam) {
   const w = String(naam || '');

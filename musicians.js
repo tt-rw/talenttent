@@ -82,10 +82,10 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
                wat: m.musician_instruments.map(x => x.instrument), onder: m.musician_genres.map(x => x.genre) },
       // TT-420 (09-10-2026, Ronald): geen tweede naam op het profiel. Er staat één naam: de gekozen.
       regels: `<div class="profile-meta">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${afstandTekst(m.distance_km)}` : ''}</div>`,
-      knoppen: profielKnoppenHTML('profiel', m.id, displayName, veiligheidPlekHTML, null, isOwn || m.delen_aan !== false)
+      knoppen: profielKnoppenHTML('profiel', m.id, displayName, veiligheidPlekHTML)
     })}
     ${watHTML}
-    ${m.beschikbaar === false ? nietBeschikbaarMeldingHTML() : ''}
+    ${standMeldingHTML(m.stand)}
     ${m.bio ? `<p class="profile-bio">${tekstMetMeerHTML(m.bio)}</p>` : ''}
     ${actieHTML}
     ${profielBandsHTML(m.bands)}
@@ -172,14 +172,6 @@ function profielMediaHTML(mediaLijst, fotoWazig) {
 // #band/<id>) die appInit() bij het openen direct naar de juiste detailmodal
 // stuurt, zie het hash-blok daar.
 async function shareProfile(kind, id, name) {
-  // TT-410b: staat delen uit op je eigen profiel, dan vraagt de app eerst of
-  // het aan mag. Eén tik op "Aanzetten en delen" doet beide.
-  if (kind === 'profiel' && id === myMusicianId && !myDeelAan) {
-    showConfirm('Delen staat uit. Zet het aan om je link te delen.', async () => {
-      if (await zetProfielDelen(true)) shareProfile(kind, id, name);
-    }, 'Aanzetten en delen', false);
-    return;
-  }
   const path = kind === 'band' ? 'band' : 'profiel';
   const url = `${location.origin}${location.pathname}#${path}/${id}`;
   const label = kind === 'band' ? 'bandprofiel' : 'profiel';
@@ -303,11 +295,10 @@ function deelKnopHTML(kind, id, name, actie) {
   </button>`;
 }
 
-// TT-410b: `toonDeel` is onwaar bij het profiel van een ander die delen
-// uitzette: dan staat er geen deelicoon, alleen het menu.
-function profielKnoppenHTML(kind, id, name, menuHTML, deelActie, toonDeel) {
-  const deel = toonDeel === false ? '' : deelKnopHTML(kind, id, name, deelActie);
-  return `<div class="profiel-knoppen">${deel}${menuHTML || ''}</div>`;
+// Het deelicoon staat er altijd: Delen via link is weg, bij muzikant en band
+// (TT-543 onderdeel 6, besluit Ronald 10-11-2026, 7c).
+function profielKnoppenHTML(kind, id, name, menuHTML, deelActie) {
+  return `<div class="profiel-knoppen">${deelKnopHTML(kind, id, name, deelActie)}${menuHTML || ''}</div>`;
 }
 
 function musicianContactFooterHTML(m, isOwn, displayName) {
@@ -333,48 +324,29 @@ function musicianContactFooterHTML(m, isOwn, displayName) {
 // TT-410b (06-10-2026, besluit Ronald): het profiel van een muzikant is een
 // eigen scherm (view-profiel) met een eigen adres, #profiel/<id>. Dat was het
 // venster #musicianModal. Eén ingang voor elke plek in de app: een tik op een
-// zoekresultaat, een gesprek, een gedeelde link.
-//   - In de app geopend (`link` onwaar): altijd te zien, ook als de muzikant
-//     delen uitzette. Delen gaat over de link, niet over vindbaarheid.
-//   - Via een link (`link` waar): staat delen uit, dan toont het scherm "niet
-//     beschikbaar", behalve op je eigen profiel.
-// De stap in de geschiedenis onthoudt het id en of het in de app geopend is
-// (`app`), zodat verversen op een profiel dat je in de app opende niet ineens
-// "niet beschikbaar" geeft.
+// zoekresultaat, een gesprek, een gedeelde link. Een profiel opent altijd, in
+// de app en via een link: Delen via link is weg (TT-543 onderdeel 6, besluit
+// Ronald 10-11-2026, 7c; muzikant en band gelijk).
 let profielLaadBelofte = null; // klaar zodra het profiel op het scherm staat
 
 function openProfielScherm(id, opties) {
   const o = opties || {};
-  showView('profiel', o.redirect ? 'redirect' : undefined, { id, app: !o.link });
+  showView('profiel', o.redirect ? 'redirect' : undefined, { id });
   return profielLaadBelofte;
 }
 
-// Hoort bij het tweede deel van de link-regel hierboven. Lukt de vraag niet
-// (bijvoorbeeld omdat het databasescript nog niet is gedraaid), dan geldt de
-// standaard: delen staat aan.
-async function profielDeelStand(id) {
+// TT-457, TT-543 onderdeel 6, blok 4: de stand van de muzikant (Actief,
+// Tijdelijk niet beschikbaar, Inactief), voor de zin op het profiel. Een aparte
+// kleine vraag, zodat ook een bezoeker zonder account het weet. Lukt de vraag
+// niet, dan geldt Actief: er staat dan geen zin.
+async function profielStand(id) {
   try {
-    const { data, error } = await db.rpc('tt_profiel_delen', { mid: id });
+    const { data, error } = await db.rpc('tt_profiel_stand', { mid: id });
     if (error) throw error;
-    return data !== false;
+    return STANDEN.some(x => x.waarde === data) ? data : 'actief';
   } catch (e) {
-    logCaught('profielDeelStand', e);
-    return true;
-  }
-}
-
-// TT-457 (10-10-2026): of de muzikant zichzelf beschikbaar heeft gezet. Aparte
-// kleine vraag, net als profielDeelStand(), zodat ook een bezoeker zonder
-// account het weet en het profiel laadt als het databasescript nog niet is
-// gedraaid. Lukt de vraag niet, dan geldt beschikbaar: er staat dan geen zin.
-async function profielBeschikbaar(id) {
-  try {
-    const { data, error } = await db.rpc('tt_profiel_beschikbaar', { mid: id });
-    if (error) throw error;
-    return data !== false;
-  } catch (e) {
-    logCaught('profielBeschikbaar', e);
-    return true;
+    logCaught('profielStand', e);
+    return 'actief';
   }
 }
 
@@ -382,7 +354,7 @@ let huidigProfielId = null; // de muzikant die het scherm nu toont (leeg bij een
 let huidigBandId = null;    // de band die het scherm nu toont (leeg bij een muzikant)
 let profielSchermVolgnr = 0; // een trage vraag mag een nieuwer profiel niet overschrijven
 
-async function laadProfielScherm(id, linkToegang) {
+async function laadProfielScherm(id) {
   const volgnr = ++profielSchermVolgnr;
   huidigProfielId = id || null;
   huidigBandId = null;
@@ -398,8 +370,7 @@ async function laadProfielScherm(id, linkToegang) {
   // (musicianContactFooterHTML()). hasOwnProfile staat voor een bezoeker op
   // false.
   let m = null, error = null;
-  const delenVraag = profielDeelStand(id);
-  const beschikbaarVraag = profielBeschikbaar(id);
+  const standVraag = profielStand(id);
   // TT-367: leeftijd en bands hangen alleen af van het id; tegelijk vragen.
   const bandsVraag = profielBandsOphalen(id);
   const leeftijdVraag = hasOwnProfile ? vraagNu(db.rpc('tt_musicians_ages', { ids: [id] })) : null;
@@ -447,25 +418,20 @@ async function laadProfielScherm(id, linkToegang) {
     }
   }
 
-  const delen = await delenVraag;
-  const beschikbaar = await beschikbaarVraag;
+  const stand = await standVraag;
   if (volgnr !== profielSchermVolgnr) return; // intussen een ander profiel geopend
 
   // TT-561 D7 (zoals TT-464 bij een band): geen rij is een profiel dat niet meer
   // bestaat; dan helpt opnieuw proberen niet. Alleen een echte fout is de foutstaat.
-  if (!m && (!error || error.code === 'PGRST116')) { toonProfielNietBeschikbaar('muzikant', true); return; }
+  if (!m && (!error || error.code === 'PGRST116')) { toonProfielNietBeschikbaar('muzikant'); return; }
   if (error || !m) {
     logCaught('laadProfielScherm', error);
-    content.innerHTML = foutStaatHTML(error, 'het profiel laden', `laadProfielScherm('${jsAttr(id)}', ${!!linkToegang})`);
+    content.innerHTML = foutStaatHTML(error, 'het profiel laden', `laadProfielScherm('${jsAttr(id)}')`);
     return;
   }
 
   const isOwn = !!(myMusicianId && myMusicianId === m.id);
-  // TT-410b: een link naar een profiel waarvan delen uit staat. Je eigen
-  // profiel blijft altijd te openen.
-  if (linkToegang && !delen && !isOwn) { toonProfielNietBeschikbaar('muzikant'); return; }
-  m.delen_aan = delen;
-  m.beschikbaar = beschikbaar;
+  m.stand = stand;
 
   // TT-385 punt 17: de bands van deze muzikant, voor het blok Bands.
   m.bands = await bandsVraag;
@@ -498,56 +464,18 @@ async function laadProfielScherm(id, linkToegang) {
   zetVeiligheidMenu('profielSchermActies', 'muzikant', isOwn ? null : m.id, displayName);
 }
 
-// TT-410b: de pagina voor een link die uit staat, of voor een profiel dat er
-// niet is. Eén zin en één knop, in de vaste vorm van een lege staat (§15).
-// TT-410b fase 2: één functie voor muzikant en band; alleen de tekst verschilt.
-function toonProfielNietBeschikbaar(soort, bestaatNiet) {
+// Een profiel of bandpagina die er niet (meer) is: één zin en één knop, in de
+// vaste vorm van een lege staat (§15). Eén functie voor muzikant en band; alleen
+// de tekst verschilt (TT-410b fase 2, TT-464, TT-561). Sinds Delen via link weg
+// is (TT-543 onderdeel 6, 7c), is "bestaat niet meer" de enige reden.
+function toonProfielNietBeschikbaar(soort) {
   const band = soort === 'band';
-  // TT-464: bestaatNiet is een band of profiel dat uit de database is verdwenen
-  // (sinds TT-561 ook een profiel, muzikant en band gelijk).
-  // TT-543 onderdeel 6, blok 3: een band deelt altijd (Delen via link is weg,
-  // 7c), dus bij een band is er alleen "bestaat niet meer".
-  const kop = band ? 'Deze bandpagina bestaat niet meer'
-                   : (bestaatNiet ? 'Dit profiel bestaat niet meer' : 'Dit profiel is niet beschikbaar');
-  const uitleg = band ? 'Het bandprofiel is verwijderd, of de link klopt niet.'
-                      : (bestaatNiet ? 'Het account is verwijderd, of de link klopt niet.' : 'De muzikant deelt dit profiel niet via een link.');
   document.getElementById('profielSchermContent').innerHTML = emptyStateHTML(
-    kop, uitleg,
+    band ? 'Deze bandpagina bestaat niet meer' : 'Dit profiel bestaat niet meer',
+    band ? 'Het bandprofiel is verwijderd, of de link klopt niet.' : 'Het account is verwijderd, of de link klopt niet.',
     'Naar Zoeken',
     "showView('search')"
   );
-}
-
-// TT-410b (06-10-2026, besluit Ronald): delen staat standaard aan. De stand
-// staat in musicians.delen_aan; de app onthoudt hem in myDeelAan.
-let myDeelAan = true;
-
-// TT-437: de keuze staat in Instellingen (tegel "Delen via link"); het
-// verborgen <select> is de bron van waarheid, zoals bij Thema.
-function updateDelenToggleBtn() {
-  const sel = document.getElementById('deelKeuze');
-  if (!sel) return;
-  sel.value = myDeelAan ? 'aan' : 'uit';
-  refreshChoiceField('deel');
-}
-
-async function zetProfielDelen(aan) {
-  if (!myMusicianId) return false;
-  try {
-    const { error } = rijenGeraakt(await db.from('musicians')
-      .update({ delen_aan: aan })
-      .eq('id', myMusicianId).select('id'));
-    if (error) throw error;
-    myDeelAan = aan;
-    updateDelenToggleBtn();
-    showToast(aan ? 'Delen staat aan. Je link werkt.' : 'Delen staat uit. Je link werkt niet meer.');
-    return true;
-  } catch (e) {
-    logCaught('zetProfielDelen', e);
-    showToast(friendlyErrorMessage(e, 'het delen van je profiel wijzigen'));
-    updateDelenToggleBtn(); // de tegel toont weer de stand van de database
-    return false;
-  }
 }
 
 

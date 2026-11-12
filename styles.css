@@ -5206,15 +5206,15 @@
      een veld of knop over de hele breedte staat het menu 3/4 breed in het
      midden ("3/4 komt in het midden. zeker niet steeds wisselend, afhankelijk
      van waar het plusje staat"; vraag 2b: "R2"; ook Thema, Delen via link en
-     Beschikbaarheid: "Ja, ook 3/4"). Een smaller veld (Straal,
+     Beschikbaarheid: "Ja, ook 3/4"; sinds blok 4 Thema en Status). Een smaller veld (Straal,
      Leeftijd, Niveau, Volgorde, Weergave) houdt een menu even breed als het
      veld. Bij "+ Instrument" en "+ Genre" staat het menu in het raster van de
      keuzes, direct onder de laatste regel (pickerMenuKoppelen() in
      modals-shared.js). */
   .choice-menu.menu-breed { left: 12.5%; right: auto; width: 75%; }
   /* TT-543 onderdeel 6, blok 3 (besluit Ronald 10-11-2026, 7b: "ja, akkoord"):
-     een menu onder een tegel heeft de tekst links (Thema, Delen via link,
-     Beschikbaarheid, Bandstatus); een menu onder een keuzeveld houdt de tekst
+     een menu onder een tegel heeft de tekst links (Thema, Status,
+     Bandstatus); een menu onder een keuzeveld houdt de tekst
      in het midden. Huisstijl §7.1. */
   .choice-menu.menu-tegel .choice-option { justify-content: flex-start; text-align: left; }
   .picker-badge-row.met-toevoegen { position: relative; }

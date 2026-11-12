@@ -326,9 +326,15 @@ if (window.matchMedia) {
 async function appInit() {
   // De tegel Thema in Instellingen: het keuzemenu van de app (huisstijl §7.1).
   initChoiceField({ id: 'thema', fieldId: 'themaTegel', menuId: 'themaMenu', selectId: 'themaKeuze' });
-  // TT-437: Delen via link en Beschikbaarheid (TT-457), zelfde vorm als Thema.
-  initChoiceField({ id: 'deel', fieldId: 'deelTegel', menuId: 'deelMenu', selectId: 'deelKeuze' });
-  initChoiceField({ id: 'beschikbaar', fieldId: 'beschikbaarTegel', menuId: 'beschikbaarMenu', selectId: 'beschikbaarKeuze' });
+  // TT-543 onderdeel 6, blok 4: Status (was Beschikbaarheid, TT-457), het menu
+  // van Bandstatus: dezelfde standen en regels (STANDEN in utils.js). Delen via
+  // link is weg (7c).
+  initChoiceField({
+    id: 'status', fieldId: 'statusTegel', menuId: 'statusMenu',
+    rijen: () => STANDEN.map(x => ({ t: x.menu, gekozen: x.waarde === myStand })),
+    kies: i => zetStatus(STANDEN[i].waarde),
+    ververs: toonStatus
+  });
   toonLichtDonkerKeuze();
   try {
     initModalStapeling(); // TT-229, zie hierboven
@@ -475,7 +481,7 @@ async function appInit() {
       // staat de stap er al (met het id); dan komt het scherm terug op zijn
       // plek, zonder nog een Zoeken eronder. Een gedeelde link of een link uit
       // een ander tabblad heeft geen stap: die opent Zoeken, met het profiel
-      // erboven, en gaat langs de deelregel (laadProfielScherm()).
+      // erboven.
       // TT-410b fase 2: een band is hetzelfde scherm met een eigen stap
       // (`soort: 'band'`), zodat er geen zeventiende view bijkomt.
       const st = history.state;
@@ -486,8 +492,8 @@ async function appInit() {
       if (!zelfdeStap) showView('search');
       if (currentUser) await configureSearchAccess();
       const open = doelSoort === 'band' ? openBandScherm : openProfielScherm;
-      if (zelfdeStap) open(doelId, { redirect: true, link: !st.app });
-      else open(doelId, { link: true });
+      if (zelfdeStap) open(doelId, { redirect: true });
+      else open(doelId);
     } else if (gesprekMatch) {
       // TT-279: een open gesprek blijft open na verversen.
       // Eerst de inbox als huidige stap, dan het gesprek als stap erbovenop:
@@ -1070,7 +1076,7 @@ function showView(view, mode, extra) {
   // in de stap zelf; bij een link in het #-deel van het adres.
   // TT-410b fase 2: hetzelfde scherm toont een muzikant of een band
   // (`profielSoort`); de stap onthoudt beide.
-  let profielId = null, profielVanApp = false, profielSoort = 'muzikant';
+  let profielId = null, profielSoort = 'muzikant';
   if (view === 'profiel') {
     const hashMatch = location.hash.match(/^#(profiel|band)\/(.+)$/) || [];
     profielSoort = extra ? (extra.soort === 'band' ? 'band' : 'muzikant')
@@ -1078,7 +1084,6 @@ function showView(view, mode, extra) {
       : hashMatch[1] === 'band' ? 'band' : 'muzikant';
     profielId = (extra && extra.id) || (mode === 'pop' && history.state && history.state.id)
       || (hashMatch[2] ? decodeURIComponent(hashMatch[2]) : null);
-    profielVanApp = extra ? !!extra.app : !!(history.state && history.state.app);
   }
   // TT-385 fase 3: het tegelscherm is van je eigen profiel of van een band
   // (bewerkBandId). Wie het verlaat, laat geen open tegel of band achter;
@@ -1224,7 +1229,7 @@ function showView(view, mode, extra) {
   if (view === 'profiel') {
     profielLaadBelofte = profielSoort === 'band'
       ? laadBandScherm(profielId)
-      : laadProfielScherm(profielId, !profielVanApp);
+      : laadProfielScherm(profielId);
   }
   if (view === 'profieltegels') {
     if (!myMusicianId) { showToast('Je hebt nog geen profiel om te bewerken.'); showView('myprofile', 'redirect'); return; }
@@ -1248,11 +1253,11 @@ function showView(view, mode, extra) {
       ? location.hash
       : '#' + view;
     // TT-385 fase 3: de stap van Bandprofiel bewerken onthoudt welke band.
-    // TT-410b: de stap van een profiel onthoudt het id en of het in de app is geopend.
+    // TT-410b: de stap van een profiel onthoudt het id (en bij een band de soort).
     const stap = (view === 'profieltegels' && bewerkBandId) ? { view, band: bewerkBandId }
       : (view === 'profiel') ? (profielSoort === 'band'
-          ? { view, id: profielId, app: profielVanApp, soort: 'band' }
-          : { view, id: profielId, app: profielVanApp })
+          ? { view, id: profielId, soort: 'band' }
+          : { view, id: profielId })
       : { view };
     const hashDeel = (view === 'profiel' && profielId)
       ? '#' + (profielSoort === 'band' ? 'band' : 'profiel') + '/' + profielId : null;

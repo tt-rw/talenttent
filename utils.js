@@ -1428,7 +1428,8 @@ function zekerTerugBijKlikErnaast(lijst, teken) {
 //
 // Eén motor voor drie soorten velden:
 // - een verborgen <select> als bron van waarheid (Volgorde, Weergave, Thema,
-//   Delen via link, Beschikbaarheid, Contactpersoon, beheersing): initChoiceField();
+//   Contactpersoon, beheersing), of eigen regels (Status, Bandstatus):
+//   initChoiceField();
 // - verborgen invoervelden met vaste stappen (Straal, Leeftijd, Niveau):
 //   initWheelField(); de naam is gebleven, het wiel niet;
 // - een lijst in het geheugen (Instrument, Genre in Zoeken): initPicker() met
@@ -3031,17 +3032,27 @@ async function kaartMaken(g, beeld) {
   return c;
 }
 
-// TT-457 (10-10-2026, besluit Ronald): de zin "niet beschikbaar" op een
-// muzikantprofiel en op een bandpagina. Eén functie voor beide kanten. De vorm
-// is de gewone .melding (huisstijl §13): één zin, geen kop, geen knop, geen
-// kruisje. Dezelfde zin voor muzikant en band, zodat hij op één regel past.
-// Is de muzikant of de band beschikbaar, dan staat er niets.
-// TT-543 onderdeel 6, blok 3 (besluit Ronald 10-11-2026, 7b): een band toont
-// de naam van zijn stand ("Tijdelijk niet beschikbaar." of "Inactief."), vet
-// en in het midden van het vak. De muzikant volgt in blok 4.
-function nietBeschikbaarMeldingHTML(stand) {
-  if (stand) return `<div class="melding melding-beschikbaar melding-stand"><p class="melding-tekst"><strong>${escHtml(stand)}.</strong></p></div>`;
-  return '<div class="melding melding-beschikbaar"><p class="melding-tekst">Momenteel <strong>niet beschikbaar</strong>.</p></div>';
+// TT-543 onderdeel 6 (besluiten Ronald 10-11-2026, 7b: "akkoord met jouw
+// variant"; 12-11-2026, B4-1): de status van een muzikant (Instellingen, tegel
+// Status) en van een band (Bandbeheer, tegel Bandstatus). Muzikant en band
+// gelijk: dezelfde drie standen, dezelfde regels in het menu.
+// Tijdelijk niet beschikbaar: de zin op de pagina, vindbaar in Zoeken, niet in
+// de mail met nieuwe matches, geen banduitnodigingen. Inactief: ook niet in
+// Zoeken. De database regelt Zoeken en de mail (systeem-naslag §10).
+const STANDEN = [
+  { waarde: 'actief', label: 'Actief', menu: 'Actief' },
+  { waarde: 'tijdelijk', label: 'Tijdelijk niet beschikbaar', menu: 'Tijdelijk niet beschikbaar (blijft vindbaar)' },
+  { waarde: 'inactief', label: 'Inactief', menu: 'Inactief (niet vindbaar)' }
+];
+
+// TT-457 (10-10-2026, besluit Ronald): één zin op het profiel en op de
+// bandpagina, in de gewone .melding (huisstijl §13): geen kop, geen knop, geen
+// kruisje. Sinds TT-543 onderdeel 6 de naam van de stand ("Tijdelijk niet
+// beschikbaar." of "Inactief."), vet en in het midden van het vak (7b: "ja.
+// dit mag wel gecentreerd."); bij Actief niets.
+function standMeldingHTML(stand) {
+  const st = STANDEN.find(x => x.waarde === stand && x.waarde !== 'actief');
+  return st ? `<div class="melding melding-beschikbaar melding-stand"><p class="melding-tekst"><strong>${escHtml(st.label)}.</strong></p></div>` : '';
 }
 
 // ─── Uitsnede kiezen bij een foto (TT-520 deel 2, 27-10-2026, Laag 3.4) ─────
