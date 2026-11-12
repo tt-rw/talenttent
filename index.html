@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261112f">
+<link rel="stylesheet" href="styles.css?v=20261112h">
 </head>
 <body>
 
@@ -1908,10 +1908,13 @@
         </div>
       </div>
 
-      <div class="tile" onclick="openDeleteAccountModal()">
+      <!-- TT-543 onderdeel 7 (besluiten Ronald 12-11-2026, punt 1 en 2): de regel
+           zoals Bandprofiel verwijderen; de tegel opent meteen de ene vraag
+           (vraagAccountVerwijderen() in musicians.js). -->
+      <div class="tile" onclick="vraagAccountVerwijderen()">
         <div style="flex:1;">
           <div class="tile-title">Account verwijderen</div>
-          <div class="tile-sub">kan niet ongedaan worden gemaakt</div>
+          <div class="tile-sub" id="accountVerwijderRegel">&nbsp;</div>
         </div>
       </div>
     </div>
@@ -2055,27 +2058,13 @@
     <!-- TT-543 onderdeel 6, blok 3: een kop alleen als showConfirm() er een meegeeft. -->
     <h2 class="confirm-kop" id="confirmKop" hidden></h2>
     <p id="confirmMessage" style="margin-bottom:24px;font-size:12px;"></p>
+    <!-- TT-543 onderdeel 7 (punt 3): Account verwijderen zet hier per band een
+         tegel met het keuzemenu. showConfirm() maakt het vak leeg. -->
+    <div id="confirmKeuzes"></div>
     <!-- TT-228 (09-09-2026): secundaire knop links, primaire rechts. -->
     <div class="btn-row">
       <button class="btn btn-ghost" id="confirmNoBtn" onclick="document.getElementById('confirmModal').classList.remove('visible')">Annuleren</button>
       <button class="btn btn-primary" id="confirmYesBtn" onclick="confirmModalYes()">Ja, verwijderen</button>
-    </div>
-  </div>
-</div>
-
-<!-- TT-22 (09-08-2026): account (incl. bandoprichterschap) verwijderen. Eigen
-     modal i.p.v. showConfirm() omdat er per band die deze muzikant heeft
-     opgericht een keuze nodig kan zijn (band verwijderen of overdragen),
-     wat meer is dan de generieke ja/nee-dialoog aankan. -->
-<div class="modal-overlay" id="deleteAccountModal" onclick="if(event.target===this)closeDeleteAccountModal()">
-  <div class="modal-box modal-box-lg">
-    <h3 style="margin-bottom:12px;">Account verwijderen</h3>
-    <p style="margin-bottom:16px;font-size:12px;">Dit account inclusief alle gegevens wordt permanent verwijderd.</p>
-    <div id="deleteAccountBandsArea"></div>
-    <!-- TT-228 (09-09-2026): secundaire knop links, primaire rechts. -->
-    <div class="btn-row" style="margin-top:20px;">
-      <button class="btn btn-ghost" onclick="closeDeleteAccountModal()">Annuleren</button>
-      <button class="btn btn-danger" id="deleteAccountConfirmBtn" onclick="requestFinalDeleteConfirmation()">Account verwijderen</button>
     </div>
   </div>
 </div>
@@ -2151,12 +2140,14 @@
 
     <div id="igMelding" class="auth-success"></div>
 
+    <!-- TT-543 onderdeel 7 (besluit Ronald 12-11-2026, punt 7): een vette kop
+         per blok, zoals E-mailvoorkeuren (huisstijl §7.5). -->
     <div class="modal-blok">
+      <div class="voorkeur-kop">E-mailadres</div>
       <div class="field-group single">
         <div class="field">
-          <label>E-mailadres</label>
           <p class="field-status" style="color:var(--muted);">Nu: <strong id="igHuidigEmail" style="color:var(--text);"></strong></p>
-          <input type="email" id="igNieuwEmail" placeholder="Nieuw e-mailadres" autocomplete="email" onkeydown="submitOnEnter(event, wijzigEmail)">
+          <input type="email" id="igNieuwEmail" placeholder="Nieuw e-mailadres" aria-label="Nieuw e-mailadres" autocomplete="email" onkeydown="submitOnEnter(event, wijzigEmail)">
         </div>
       </div>
       <div class="btn-row">
@@ -2165,6 +2156,7 @@
     </div>
 
     <div class="modal-blok">
+      <div class="voorkeur-kop">Wachtwoord</div>
       <div class="field-group single">
         <div class="field">
           <label>Huidig wachtwoord</label>
@@ -2311,16 +2303,16 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261112e"></script>
-<script src="utils.js?v=20261112e"></script>
-<script src="veiligheid.js?v=20261108c"></script>
-<script src="auth.js?v=20261108c"></script>
+<script src="core.js?v=20261112f"></script>
+<script src="utils.js?v=20261112f"></script>
+<script src="veiligheid.js?v=20261112a"></script>
+<script src="auth.js?v=20261112a"></script>
 <script src="postcode.js?v=20261110a"></script>
-<script src="wizard.js?v=20261112c"></script>
+<script src="wizard.js?v=20261112d"></script>
 <script src="ouder.js?v=20261106a"></script>
 <script src="search.js?v=20261112c"></script>
-<script src="musicians.js?v=20261112c"></script>
-<script src="bands.js?v=20261112f"></script>
+<script src="musicians.js?v=20261112d"></script>
+<script src="bands.js?v=20261112g"></script>
 <script src="messages.js?v=20261112a"></script>
 <script src="push.js?v=20261027b"></script>
 <script src="modals-shared.js?v=20261111a"></script>

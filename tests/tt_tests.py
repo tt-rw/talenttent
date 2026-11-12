@@ -2521,7 +2521,7 @@ def blok_browser():
           await openGeblokkeerdModal();
           await new Promise(r => setTimeout(r, 120));
           r.tekst = document.getElementById('geblokkeerdLijst').innerText;
-          r.rijen = document.querySelectorAll('#geblokkeerdLijst .geblokkeerd-rij').length;
+          r.rijen = document.querySelectorAll('#geblokkeerdLijst .bb-rij').length;
           await deblokkeerMuzikant('m2', 'Dylan');
           await new Promise(r => setTimeout(r, 120));
           r.naOpheffen = window.TT_STUB.data.musician_blocks.length;
@@ -3752,9 +3752,10 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("K5: de tweede knop heeft een rand van --line", rand(".btn-ghost") == "var(--line)", str(rand(".btn-ghost")))
         # "Foto verwijderen" was hier een tweede knop; sinds TT-381 is het een kruisje. Zie blok 51.
 
-        # K2 — Account verwijderen omlijnd in rood.
-        rood = page.evaluate("""() => { const b = document.getElementById('deleteAccountConfirmBtn'); const cs = getComputedStyle(b);
-            return [cs.backgroundColor, cs.color, cs.borderTopColor, cs.borderTopStyle]; }""")
+        # K2 — Account verwijderen omlijnd in rood (sinds TT-543 onderdeel 7 de knop in de vraag).
+        rood = page.evaluate("""async () => { showConfirm('x', () => {}, 'Account verwijderen', true); await new Promise(r => setTimeout(r, 500));
+            const b = document.getElementById('confirmYesBtn'); const cs = getComputedStyle(b);
+            const uit = [cs.backgroundColor, cs.color, cs.borderTopColor, cs.borderTopStyle]; document.getElementById('confirmModal').classList.remove('visible'); return uit; }""")
         check("K2: Account verwijderen is omlijnd in rood, geen vlak (§5)",
               rood == ["rgba(0, 0, 0, 0)", "rgb(229, 83, 61)", "rgb(229, 83, 61)", "solid"], json.dumps(rood))
 
@@ -5380,7 +5381,7 @@ window.TT_STUB.fnAntwoord = {};
         nm = p47.evaluate("""() => {
           const plek = document.createElement('div'); document.getElementById('appRoot').appendChild(plek);
           plek.innerHTML = '<div class="messages-conv-name">A</div><div class="result-row-name">B</div>'
-            + '<div class="geblokkeerd-naam">D</div><div class="zoek-kaart-naam">E</div>';
+            + '<div class="bb-naam">D</div><div class="zoek-kaart-naam">E</div>';
           const uit = [...plek.children].map(x => getComputedStyle(x).fontSize); plek.remove(); return uit; }""")
         check("naam in berichtenlijst, zoekresultaat (rij, kaart in Zoeken) en blokkadelijst: 15px (TT-517)",
               nm == ["15px"] * 4, json.dumps(nm))
@@ -6383,7 +6384,8 @@ window.TT_STUB.fnAntwoord = {};
           document.querySelector('#bbOpen button.bb-plus').click(); await w(300);
           u.zoek = [document.querySelector('.app-view.active').id, filterInstruments.slice(), document.getElementById('filterCity').value,
                     document.getElementById('zoekRolMelding').hidden, document.getElementById('zoekRolMelding').textContent.trim(), bewerkBandId, activeTegelScreen];
-          // TT-450: terug uit Zoeken komt weer in het tegeloverzicht van deze band, met pijl en met toestelknop.
+          // TT-450: terug uit Zoeken komt weer in Bandprofiel bewerken van deze band, met pijl en met toestelknop.
+          // TT-591 (besluit Ronald 12-11-2026, "ja", op beeld): in de tegel waar het plusje staat (Onze bezetting), niet in het overzicht.
           u.zoekStapel = navStack.map(x => x.state.view + (x.state.band ? ':' + x.state.band : ''));
           const histLen = history.length;
           appTerug(); await w(300);
@@ -6583,8 +6585,8 @@ window.TT_STUB.fnAntwoord = {};
               d58["plus"]["open"] == [["+", "Zoek een muzikant: Basgitaar"]] and d58["plus"]["inval"] == ["+"]
               and d58["plus"]["menuOpen"] == ["Open rol weghalen"] and d58["plus"]["menuInval"] == ["Invaller weghalen"]
               and d58["plus"]["tikvlak"][0] >= 44 and d58["plus"]["tikvlak"][1] >= 44, j58("plus"))
-        check("Zoeken vanuit Bandprofiel bewerken legt Zoeken boven het overzicht; terug (pijl en toestelknop) komt er weer en de geschiedenis groeit niet (TT-450)",
-              d58["zoekStapel"][-1] == "profieltegels:b9" and d58["terugEdit"][:2] == ["view-profieltegels", "b9"] and d58["terugEdit"][2] == "overview"
+        check("Zoeken vanuit Bandprofiel bewerken legt Zoeken boven Onze bezetting; terug (pijl en toestelknop) komt er weer en de geschiedenis groeit niet (TT-450, TT-591)",
+              d58["zoekStapel"][-1] == "profieltegels:b9" and d58["terugEdit"][:2] == ["view-profieltegels", "b9"] and d58["terugEdit"][2] == "bandBezetting"
               and d58["terugEditToestel"][:2] == ["view-profieltegels", "b9"] and d58["terugEditToestel"][2] <= 1,
               json.dumps([d58["zoekStapel"], d58["terugEdit"], d58["terugEditToestel"]]))
         check("bandpagina: de open rol heeft een vraagteken, nooit een plus, en is geen knop (TT-450)",
@@ -7232,7 +7234,7 @@ window.TT_STUB.fnAntwoord = {};
           const terugKnoppen = [...document.querySelectorAll('button')].filter(b => b.textContent.trim() === 'Terug');
           uit.terugOverig = terugKnoppen.filter(b => !/^prevStep/.test(b.getAttribute('onclick') || '')).map(b => b.getAttribute('onclick'));
           uit.wizardStappen = terugKnoppen.length - uit.terugOverig.length;
-          uit.keuzeknoppen = ['confirmModal', 'deleteAccountModal', 'meldModal']
+          uit.keuzeknoppen = ['confirmModal', 'meldModal']
             .map(id => [...$(id).querySelectorAll('.btn-ghost')].map(b => b.textContent.trim())[0]);
           return uit;
         }""")
@@ -7242,7 +7244,7 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-408 C: het verplichte gebruikersnaamscherm sluit niet met de terugknop", d64["verplicht"], json.dumps(d64))
         check("TT-408 A: geen grote Terug-knop meer buiten de wizardstappen", d64["terugOverig"] == [], json.dumps(d64))
         check("TT-408: de wizard houdt zijn vier Terug-knoppen, één per stap (TT-543: 4 stappen)", d64["wizardStappen"] == 4, json.dumps(d64))
-        check("TT-408: in een keuzevraag heet de knop Annuleren", d64["keuzeknoppen"] == ["Annuleren"] * 3, json.dumps(d64))
+        check("TT-408: in een keuzevraag heet de knop Annuleren", d64["keuzeknoppen"] == ["Annuleren"] * 2, json.dumps(d64))
         # TT-408 stap 3 (06-10-2026, besluit Ronald: "alle velden waar het kruisje
         # overbodig is kan je het kruisje weghalen"): het kruisje blijft alleen
         # staan waar het de enige uitgang is.
@@ -7267,7 +7269,7 @@ window.TT_STUB.fnAntwoord = {};
         }""")
         check("TT-408: elk venster zonder kruisje heeft een andere zichtbare uitgang (pijl of knop)",
               d64k["zonderUitgang"] == [], json.dumps(d64k["zonderUitgang"]))
-        for vid in ("deleteAccountModal", "meldModal"):
+        for vid in ("meldModal",):  # Account verwijderen is sinds TT-543 onderdeel 7 de gewone vraag (confirmModal)
             check(f"TT-408: {vid} heeft geen kruisje meer", vid in d64k["zonderKruis"], json.dumps(d64k))
         check("TT-408: de instrumentkeuze is geen venster meer (het keuzemenu, TT-543 draaiwielen deel 2)", not d64k["instrumentVenster"], json.dumps(d64k))
         # TT-543 blok 3: Link toevoegen kwam erbij (11); TT-543 onderdeel 4 (B4): Lid uitnodigen is weg (10);
@@ -13357,7 +13359,7 @@ def blok_tt517_fase11():
                   // Besluit Ronald 01-11-2026 ("2"): knoppen in een venster die niet naast elkaar passen,
                   // staan onder elkaar; de handeling boven, Annuleren eronder. Nooit tekst op twee regels.
                   u.vensters = [];
-                  for (const id of ['deleteAccountModal', 'uitsnedeModal', 'confirmModal', 'meldModal']) {
+                  for (const id of ['uitsnedeModal', 'confirmModal', 'meldModal']) {
                     const m = document.getElementById(id); m.classList.add('visible'); await w(150);
                     const kn = [...m.querySelector('.btn-row').children].filter(k => k.offsetParent).map(k => {
                       const r = k.getBoundingClientRect(); return { t: k.textContent.trim(), rand: k.classList.contains('btn-ghost'),
@@ -16694,7 +16696,8 @@ def blok_tt582_bundel():
     #   letter 17px in het menu en in het keuzeveld; typveld blijft 16px.
     print("\nBlok 144 — bundel TT-582: ruimte in formulieren, terug met een menu, toetsenbord, keuzemenu")
     # TT-543 onderdeel 6, blok 2 (besluit Ronald 11-11-2026, B2-8): in Onze bezetting vervalt de uitlegregel bij Invallers (was V>H 80, H>V 8).
-    VERWACHT = json.loads('''{"inloggen":[["L>V",4],["V>L",16],["L>V",4]],"nieuw-ww":[["L>V",4]],"wizard1":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8],["H>L",80],["L>V",4],["V>L",16],["L>V",4]],"wizard2":[["L>V",20],["V>V",80]],"wizard3":[["L>V",4]],"wizard4":[],"toestemming":[["L>V",4],["V>H",8]],"muzikanten":[["L>V",4],["V>L",50],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"mixmatch":[["L>V",4]],"inloggegevens":[["L>H",4],["H>V",4],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"wiebenje":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8],["H>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8]],"watspeelje":[["L>V",20],["V>V",80]],"jesetlist":[["L>V",4]],"bandaanmaken":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"bandwie":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>H",12],["H>L",16],["L>V",4],["V>H",8]],"bandbezetting":[["V>V",80],["V>V",80],["V>L",24],["L>V",4],["V>H",8]],"bandmuziek":[["V>H",80],["H>V",8],["V>H",64],["H>L",8],["L>V",4],["V>H",16]],"bandmedia":[["H>L",8],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]]}''')
+    # TT-543 onderdeel 7 (besluit Ronald 12-11-2026, punt 7): in Je inloggegevens is de veldnaam E-mailadres een vette kop (was L>H 4); kop tot inhoud 8px toetst blok 151.
+    VERWACHT = json.loads('''{"inloggen":[["L>V",4],["V>L",16],["L>V",4]],"nieuw-ww":[["L>V",4]],"wizard1":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8],["H>L",80],["L>V",4],["V>L",16],["L>V",4]],"wizard2":[["L>V",20],["V>V",80]],"wizard3":[["L>V",4]],"wizard4":[],"toestemming":[["L>V",4],["V>H",8]],"muzikanten":[["L>V",4],["V>L",50],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"mixmatch":[["L>V",4]],"inloggegevens":[["H>V",4],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"wiebenje":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8],["H>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8]],"watspeelje":[["L>V",20],["V>V",80]],"jesetlist":[["L>V",4]],"bandaanmaken":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"bandwie":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>H",12],["H>L",16],["L>V",4],["V>H",8]],"bandbezetting":[["V>V",80],["V>V",80],["V>L",24],["L>V",4],["V>H",8]],"bandmuziek":[["V>H",80],["H>V",8],["V>H",64],["H>L",8],["L>V",4],["V>H",16]],"bandmedia":[["H>L",8],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]]}''')
     idx = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
     check("TT-582: de hulptekst bij postcode en plaats van een band is weg (Band aanmaken, Wie zijn we)",
           "Zo vinden muzikanten in de buurt jullie" not in idx)
@@ -17719,6 +17722,204 @@ def blok_tt543_onderdeel6_blok3():
     check("blok 150: geen paginafouten", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_tt543_onderdeel7():
+    print("\nBlok 151 — TT-543 onderdeel 7 (Instellingen): Account verwijderen, Je inloggegevens, Geblokkeerd, TT-347 en TT-591")
+    bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("musicians.js", "wizard.js", "auth.js", "veiligheid.js", "core.js", "utils.js", "index.html", "styles.css")}
+    alles = "".join(bron.values())
+    check("onderdeel 7: het oude venster Account verwijderen en de tweede vraag zijn weg (geen dode code; punt 2)",
+          not any(w in alles for w in ("deleteAccountModal", "openDeleteAccountModal", "requestFinalDeleteConfirmation", "deleteAccountBandsArea",
+                                       "Weet je zeker dat je dit account", "delete-band-choice", "delete-account-band", "Band ook verwijderen", "Overdragen aan ")), "")
+    check("onderdeel 7: de oude regel onder Account verwijderen en de oude zin bij E-mailadres wijzigen staan nergens meer (punt 1, punt 6, TT-347)",
+          "kan niet ongedaan worden gemaakt" not in alles and "je oude adres werkt dan niet meer" not in alles, "")
+    check("onderdeel 7: de oude opmaak van een rij in Geblokkeerd is weg (punt 8: .bb-rij)",
+          not any(w in alles for w in ("geblokkeerd-rij", "geblokkeerd-naam", "geblokkeerd-meta")), "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten = []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark")
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**", "**/x.test/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(500)
+        page.evaluate(BLOK146_DATA)
+        d = page.evaluate(r"""async () => {
+          const S = window.TT_STUB, w = (n = 300) => new Promise(r => setTimeout(r, n)), $ = id => document.getElementById(id), u = {};
+          const toasts = []; const oudToast = window.showToast; window.showToast = (t) => { toasts.push(t); oudToast(t); };
+          currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
+          const r = e => e.getBoundingClientRect();
+          // TT-591: terug na "+ Lid uitnodigen", het plusje van een open rol en een tik op een lid komt in Onze bezetting.
+          u.terug = [];
+          for (const [naam, actie] of [['lid uitnodigen', () => bbLidUitnodigen()],
+                                       ['open rol', () => zoekMuzikantVoorRol('Basgitaar', bewerkBandStad, bewerkBandNaam, false, bewerkBandId)],
+                                       ['lid', () => openProfielScherm('m2')]]) {
+            showView('bands'); await w(200); openBandTegels('b9'); await w(400); openTegelScreen('bandBezetting'); await w(500);
+            actie(); await w(500);
+            const weg = huidigeView;
+            appTerug(); await w(500);
+            const eerst = [huidigeView, activeTegelScreen, bewerkBandId];
+            appTerug(); await w(400);
+            u.terug.push([naam, weg, eerst, activeTegelScreen]);
+          }
+          // Na een tegel, het overzicht en dan weg: terug komt in het overzicht (de oude tegel valt weg).
+          openBandTegels('b9'); await w(400); openTegelScreen('bandBezetting'); await w(400); appTerug(); await w(300);
+          openProfielScherm('m2'); await w(400); appTerug(); await w(400);
+          u.terugOverzicht = [huidigeView, activeTegelScreen];
+          // Account verwijderen. Kelderband (met Sanne) en Nachtploeg (met Dylan) hebben andere leden; Solo niet.
+          S.data.bands.push({ id: 'b6', name: 'Kelderband', city: 'Den Haag', founder_id: 'm1', contact_id: 'm1', status: 'zoekend', genres: [] },
+                            { id: 'b7', name: 'Solo', city: 'Den Haag', founder_id: 'm1', contact_id: 'm1', status: 'zoekend', genres: [] });
+          S.data.band_members.push({ band_id: 'b6', musician_id: 'm1', role: 'Oprichter', status: 'bevestigd', joined_at: '2026-01-01', founder_offer: null },
+                                   { band_id: 'b6', musician_id: 'm3', role: 'Lid', status: 'bevestigd', joined_at: '2026-01-02', founder_offer: null },
+                                   { band_id: 'b7', musician_id: 'm1', role: 'Oprichter', status: 'bevestigd', joined_at: '2026-01-01', founder_offer: null });
+          showView('instellingen'); await w(500);
+          const tegel = [...$('view-instellingen').querySelectorAll('.tile')].find(t => t.textContent.includes('Account verwijderen'));
+          u.regel = tegel.querySelector('.tile-sub').textContent;
+          const tegelRect = r(tegel);
+          tegel.click(); await w(600);
+          const ja = $('confirmYesBtn');
+          const tegels = [...$('confirmKeuzes').querySelectorAll('.tile')];
+          u.vraag = { open: $('confirmModal').classList.contains('visible'), kop: $('confirmKop').textContent, tekst: $('confirmMessage').textContent,
+                      knop: ja.textContent, rood: ja.classList.contains('btn-danger'), uit: ja.disabled, nee: $('confirmNoBtn').textContent,
+                      banden: tegels.map(t => [t.querySelector('.tile-title').textContent, t.querySelector('.wheel-field-label').textContent]) };
+          // Besluit punt 2: de rode knop in de vraag ligt niet onder de tegel (een dubbele tik raakt hem niet).
+          const jaRect = r(ja);
+          u.verspringt = jaRect.bottom < tegelRect.top || jaRect.top > tegelRect.bottom;
+          // Afstanden: zin, tegel en knoppen 24px; tussen twee tegels 16px (zoals Instellingen).
+          u.afstand = { zinTegel: Math.round(r(tegels[0]).top - r($('confirmMessage')).bottom), tegelTegel: Math.round(r(tegels[1]).top - r(tegels[0]).bottom),
+                        tegelKnop: Math.round(Math.min(r(ja).top, r($('confirmNoBtn')).top) - r(tegels[1]).bottom) };
+          // Het menu van Nachtploeg: de leden met "wordt beheerder" en Bandprofiel verwijderen; niets gekozen; tekst links.
+          tegels[1].click(); await w(300);
+          const menu = $('accountBandMenu1');
+          u.menu = { open: menu.classList.contains('open'), regels: [...menu.querySelectorAll('.choice-option')].map(o => [...o.querySelectorAll('span')].map(x => x.textContent)),
+                     gekozen: menu.querySelectorAll('.choice-option.selected').length, tekstLinks: menu.classList.contains('menu-tegel') };
+          menu.querySelectorAll('.choice-option')[0].click(); await w(300);
+          u.naEen = { regel: tegels[1].querySelector('.wheel-field-label').textContent, uit: ja.disabled };
+          tegels[0].click(); await w(300);
+          const m0 = [...$('accountBandMenu0').querySelectorAll('.choice-option')];
+          m0[m0.length - 1].click(); await w(300);
+          u.naTwee = { regels: tegels.map(t => t.querySelector('.wheel-field-label').textContent), uit: ja.disabled };
+          // 8D (blok 124): een bandnaam en een ledennaam van één lang woord blijven in hun tegel; de regel in Instellingen ook.
+          const lang = 'LANGWOORD' + 'abcdefghij'.repeat(6);
+          const bandK = S.data.bands.find(b => b.id === 'b6'), lidK = S.data.musicians.find(m => m.id === 'm3'), ikK = S.data.musicians.find(m => m.id === 'm1');
+          const oud = [bandK.name, lidK.weergavenaam, ikK.weergavenaam];
+          bandK.name = lang; lidK.weergavenaam = lang; ikK.weergavenaam = lang;
+          const binnen = (el, vak) => { const a = r(el), v = r(vak); return a.right <= v.right + 0.5 && a.left >= v.left - 0.5; };
+          await vraagAccountVerwijderen(); await w(300);
+          const alleT = [...$('confirmKeuzes').querySelectorAll('.tile')];
+          const lt = alleT.find(t => t.textContent.includes('LANGWOORD'));
+          CHOICE_FIELDS['account-band-' + alleT.indexOf(lt)].kies(0);  // het lid met de lange naam wordt beheerder
+          const doos = $('confirmModal').querySelector('.modal-box');
+          u.langVraag = { titel: binnen(lt.querySelector('.tile-title'), lt), keuze: binnen(lt.querySelector('.tile-sub'), lt), kop: binnen($('confirmKop'), doos) };
+          $('confirmModal').classList.remove('visible');
+          showView('instellingen'); await w(500);
+          const regelL = $('accountVerwijderRegel');
+          u.langRegel = { binnen: binnen(regelL, regelL.closest('.tile')), eenRegel: regelL.scrollHeight <= 20 };
+          [bandK.name, lidK.weergavenaam, ikK.weergavenaam] = oud;
+          await vraagAccountVerwijderen(); await w(300);
+          tegels.splice(0, tegels.length, ...$('confirmKeuzes').querySelectorAll('.tile'));
+          CHOICE_FIELDS['account-band-0'].kies(CHOICE_FIELDS['account-band-0'].rijen().length - 1);  // Kelderband: Bandprofiel verwijderen
+          CHOICE_FIELDS['account-band-1'].kies(0);                                              // Nachtploeg: Dylan
+          // Verwijderen: één databasefunctie met de keuzes en de berichten (punt 4), daarna uitloggen.
+          S.rpcResults.tt_delete_own_profile = () => null;
+          const oudFn = db.functions; db.functions = { invoke: async () => ({ error: null }) };
+          S.calls = [];
+          ja.click(); await w(900);
+          const rpc = S.calls.find(c => c.kind === 'rpc' && c.name === 'tt_delete_own_profile');
+          u.rpc = rpc ? rpc.params : null;
+          u.uitgelogd = S.calls.some(c => c.kind === 'auth' && c.name === 'signOut');
+          u.toast = toasts.slice(-1)[0];
+          db.functions = oudFn;
+          // Zonder band met andere leden: geen tegels, de knop werkt meteen; 24px van zin tot knoppen.
+          currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
+          S.data.bands = S.data.bands.filter(b => b.founder_id !== 'm1');
+          await vraagAccountVerwijderen(); await w(300);
+          u.zonder = { tegels: $('confirmKeuzes').children.length, uit: ja.disabled, zinKnop: Math.round(Math.min(r(ja).top, r($('confirmNoBtn')).top) - r($('confirmMessage')).bottom) };
+          $('confirmModal').classList.remove('visible');
+          // Een storing bij het laden van je bands: de foutstaat, de knop blijft dicht (TT-561).
+          S.errors['bands'] = { code: '500', message: 'storing' };
+          await vraagAccountVerwijderen(); await w(300);
+          u.storing = { fout: !!$('confirmKeuzes').querySelector('button'), uit: ja.disabled };
+          delete S.errors['bands'];
+          // Een gewone vraag daarna: geen keuzes, de knop aan.
+          showConfirm('Gewone vraag.', () => {}, 'Ja');
+          u.gewoon = { keuzes: $('confirmKeuzes').innerHTML, uit: ja.disabled };
+          $('confirmModal').classList.remove('visible');
+          // Punt 6 (TT-347): de vraag bij E-mailadres wijzigen.
+          openInloggegevens(); $('igNieuwEmail').value = 'jesse.nieuw@gmail.com'; await wijzigEmail(); await w(200);
+          u.email = $('confirmMessage').textContent;
+          $('confirmModal').classList.remove('visible');
+          // Punt 7: een vette kop per blok, de maten van E-mailvoorkeuren (kop tot inhoud 8px) en TT-582 (regel tot veld 4px).
+          const ig = $('inloggegevensModal'), bl = ig.querySelectorAll('.modal-blok');
+          const k1 = bl[0].querySelector('.voorkeur-kop'), nu = bl[0].querySelector('.field-status'), in1 = $('igNieuwEmail');
+          const k2 = bl[1].querySelector('.voorkeur-kop'), lab = bl[1].querySelector('label');
+          openSearchPrefsModal(); await w(300);
+          const ek = document.querySelector('#searchPrefsModal .voorkeur-kop') || [...document.querySelectorAll('.modal-overlay.visible .voorkeur-kop')].find(k => !ig.contains(k));
+          const stijl = e => { const c = getComputedStyle(e); return [c.fontSize, c.fontWeight, c.lineHeight, c.color]; };
+          u.inlog = { koppen: [k1.textContent, k2.textContent], labelMail: !bl[0].querySelector('label'), veldNaam: in1.getAttribute('aria-label'),
+                      kopNu: Math.round(r(nu).top - r(k1).bottom), nuVeld: Math.round(r(in1).top - r(nu).bottom), kopLabel: Math.round(r(lab).top - r(k2).bottom),
+                      kopLijn: Math.round(r(k1).left) === Math.round(r(in1).left) && Math.round(r(k2).left) === Math.round(r(in1).left),
+                      alsVoorkeuren: JSON.stringify(stijl(k1)) === JSON.stringify(stijl(ek)) && Math.round(r(ek.nextElementSibling).top - r(ek).bottom) === 8 };
+          document.querySelectorAll('.modal-overlay.visible').forEach(m => m.classList.remove('visible'));
+          // Punt 8: Geblokkeerde muzikanten als rij met foto, zoals Beheer overdragen.
+          blokkadeDoorMij = new Set(['m2']); const oudLaad = window.laadBlokkades; window.laadBlokkades = async () => {};
+          await openGeblokkeerdModal(); await w(300);
+          const rij = $('geblokkeerdLijst').querySelector('.bb-rij');
+          u.geblokkeerd = rij ? { foto: Math.round(r(rij.querySelector('.bb-foto')).width), naam: rij.querySelector('.bb-naam').textContent,
+                                  naamLetter: getComputedStyle(rij.querySelector('.bb-naam')).fontSize, plaats: rij.querySelector('.bb-sub').textContent,
+                                  knop: [rij.querySelector('button').textContent.trim(), Math.round(r(rij.querySelector('button')).height)] } : null;
+          window.laadBlokkades = oudLaad; closeGeblokkeerdModal();
+          window.showToast = oudToast;
+          return u;
+        }""")
+        ctx.close()
+        browser.close()
+    httpd.shutdown()
+    j = lambda k: json.dumps(d.get(k), ensure_ascii=False)
+    check("TT-591: terug na Lid uitnodigen, het plusje van een open rol en een tik op een lid komt in Onze bezetting; nog eens terug in het overzicht",
+          d["terug"] == [["lid uitnodigen", "search", ["profieltegels", "bandBezetting", "b9"], "overview"],
+                         ["open rol", "search", ["profieltegels", "bandBezetting", "b9"], "overview"],
+                         ["lid", "profiel", ["profieltegels", "bandBezetting", "b9"], "overview"]], j("terug"))
+    check("TT-591: vanuit het overzicht weg en terug komt in het overzicht (geen oude tegel)", d["terugOverzicht"] == ["profieltegels", "overview"], j("terugOverzicht"))
+    check("punt 1: de regel onder Account verwijderen is 'permanent verwijderen van <naam>'", d["regel"] == "permanent verwijderen van Jesse", j("regel"))
+    check("punt 2 en 3: één vraag met kop, het gevolg met het e-mailadres, Annuleren en rood omlijnd Account verwijderen; per band een tegel, nog niets gekozen, de knop uit",
+          d["vraag"] == {"open": True, "kop": "Account van Jesse verwijderen?",
+                         "tekst": "Je profiel, je setlist en je foto's en video's verdwijnen dan, en je logt niet meer in met test@talenttent.org. Dat is niet terug te draaien.",
+                         "knop": "Account verwijderen", "rood": True, "uit": True, "nee": "Annuleren",
+                         "banden": [["Kelderband", "kies wat er met de band gebeurt"], ["Nachtploeg", "kies wat er met de band gebeurt"]]}, j("vraag"))
+    check("punt 2: de rode knop in de vraag ligt niet op de plek van de tegel (het verspringen)", d["verspringt"] is True, "")
+    check("punt 3: zin tot tegel 24px, tussen twee tegels 16px (Instellingen), tegel tot knoppen 24px",
+          d["afstand"] == {"zinTegel": 24, "tegelTegel": 16, "tegelKnop": 24}, j("afstand"))
+    check("punt 3: het keuzemenu van de app onder de tegel: de leden 'wordt beheerder' en Bandprofiel verwijderen, geen standaard",
+          d["menu"] == {"open": True, "regels": [["Dylan", "wordt beheerder"], ["Bandprofiel verwijderen", "de band verdwijnt voor alle leden"]], "gekozen": 0, "tekstLinks": True}, j("menu"))
+    check("punt 3: na één keuze staat die op de tegel; de knop blijft uit tot elke band een keuze heeft",
+          d["naEen"] == {"regel": "Dylan wordt beheerder", "uit": True} and d["naTwee"] == {"regels": ["Bandprofiel verwijderen", "Dylan wordt beheerder"], "uit": False},
+          j("naEen") + j("naTwee"))
+    check("punt 4: één databasefunctie met per band de keuze en de berichten (teksten van onderdeel 6), de band zonder leden apart",
+          d["rpc"] == {"p_musician_id": "m1",
+                       "p_band_keuzes": [{"band_id": "b6", "keuze": "delete", "berichten": [{"aan": "m3", "tekst": "Het profiel van Kelderband is verwijderd. De band bestaat niet meer in deze app."}]},
+                                         {"band_id": "b9", "keuze": "m2", "berichten": [{"aan": "m2", "tekst": "Je bent nu beheerder van Nachtploeg."}]}],
+                       "p_solo_bands": ["b7"]}, j("rpc"))
+    check("8D (blok 124): een bandnaam en een ledennaam van één lang woord blijven in hun tegel en de kop in de vraag; de regel in Instellingen blijft één regel binnen de tegel",
+          d["langVraag"] == {"titel": True, "keuze": True, "kop": True} and d["langRegel"] == {"binnen": True, "eenRegel": True}, j("langVraag") + j("langRegel"))
+    check("na verwijderen: uitgelogd en de melding 'Je account is verwijderd.'", d["uitgelogd"] is True and d["toast"] == "Je account is verwijderd.", j("toast"))
+    check("zonder band met andere leden: geen tegel, de knop werkt meteen, zin tot knoppen 24px", d["zonder"] == {"tegels": 0, "uit": False, "zinKnop": 24}, j("zonder"))
+    check("een storing bij je bands: de foutstaat met opnieuw proberen, de knop blijft dicht (TT-561)", d["storing"] == {"fout": True, "uit": True}, j("storing"))
+    check("een gewone vraag daarna: geen keuzes, de knop aan", d["gewoon"] == {"keuzes": "", "uit": False}, j("gewoon"))
+    check("punt 6 (TT-347): de vraag bij E-mailadres wijzigen is de tekst van Ronald",
+          d["email"] == "We sturen ter bevestiging een e-mail naar jesse.nieuw@gmail.com. Na jouw bevestiging log je in met dit e-mailadres. Kun je bij die mailbox?", j("email"))
+    check("punt 7: Je inloggegevens heeft per blok een vette kop (E-mailadres, Wachtwoord) als in E-mailvoorkeuren: kop tot inhoud 8px, regel tot veld 4px, op de lijn van het veld",
+          d["inlog"] == {"koppen": ["E-mailadres", "Wachtwoord"], "labelMail": True, "veldNaam": "Nieuw e-mailadres", "kopNu": 8, "nuVeld": 4, "kopLabel": 8,
+                         "kopLijn": True, "alsVoorkeuren": True}, j("inlog"))
+    check("punt 8: Geblokkeerde muzikanten is een rij met foto (40px), naam 15px, plaats eronder en Opheffen (44px)",
+          d["geblokkeerd"] == {"foto": 40, "naam": "Dylan", "naamLetter": "15px", "plaats": "Den Haag", "knop": ["Opheffen", 44]}, j("geblokkeerd"))
+    check("blok 151: geen paginafouten", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -17767,6 +17968,7 @@ BLOKKEN = [
     blok_tt590,
     blok_tt543_b29,
     blok_tt543_onderdeel6_blok3,
+    blok_tt543_onderdeel7,
 ]
 
 

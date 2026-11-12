@@ -476,8 +476,10 @@ async function wijzigEmail() {
   // De controlevraag noemt het gevolg, niet de handeling (besluit Ronald,
   // 20-09-2026): "weet je het zeker?" wordt weggeklikt, een vraag over de
   // mailbox waar je straks in moet kunnen, wordt gelezen.
+  // TT-347 / TT-543 onderdeel 7 (besluit Ronald 12-11-2026, punt 6: "2"): tot
+  // de bevestiging werkt het oude adres; de vraag zegt dat nu ook.
   showConfirm(
-    `Je logt vanaf nu in met ${nieuw}, en je oude adres werkt dan niet meer. Kun je bij die mailbox?`,
+    `We sturen ter bevestiging een e-mail naar ${nieuw}. Na jouw bevestiging log je in met dit e-mailadres. Kun je bij die mailbox?`,
     () => wijzigEmailUitvoeren(nieuw),
     'Ja, dat klopt'
   );

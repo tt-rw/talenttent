@@ -384,18 +384,16 @@ async function renderGeblokkeerdLijst() {
   }
   try {
     const { data, error } = await db.from('musicians')
-      .select('id, weergavenaam, username, city').in('id', ids);
+      .select('id, weergavenaam, username, city, avatar_url').in('id', ids);
     if (error) throw error;
+    // TT-543 onderdeel 7 (besluit Ronald 12-11-2026, punt 8): een rij met foto,
+    // zoals de leden in Beheer overdragen (.bb-rij).
     const rijen = ids.map(id => {
       const m = (data || []).find(x => x.id === id);
       const naam = m ? displayNameOf(m) : 'Verwijderde gebruiker';
       const plaats = m && m.city ? m.city : '';
       return `
-        <div class="geblokkeerd-rij">
-          <div style="min-width:0;flex:1;">
-            <div class="geblokkeerd-naam">${escHtml(naam)}</div>
-            ${plaats ? `<div class="geblokkeerd-meta">${escHtml(plaats)}</div>` : ''}
-          </div>
+        <div class="bb-rij">${bbFotoHTML(m ? m.avatar_url : null)}<span class="bb-tekst"><span class="bb-naam">${escHtml(naam)}</span>${plaats ? `<span class="bb-sub">${escHtml(plaats)}</span>` : ''}</span>
           <button class="btn btn-ghost geblokkeerd-knop" onclick="deblokkeerMuzikant('${jsAttr(id)}','${jsAttr(naam)}')">Opheffen</button>
         </div>`;
     }).join('');

@@ -493,82 +493,89 @@ function closeMediaLightbox() {
 
 // ─── Mijn profiel laden ──────────────────────────────────────────────────────
 
-// TT-22 (09-08-2026): vervangt de oude deleteMyProfile(), die bewust alleen
-// het profiel verwijderde en het auth-account liet bestaan. Nu: ook Storage-
-// bestanden, en een keuze per band waarvan deze muzikant oprichter is (zie
-// hieronder). Het auth-account zelf blijft een bekend restpunt — zie
-// toelichting bij executeAccountDeletion().
-async function openDeleteAccountModal() {
-  const mid = await getMyMusicianId();
-  if (!mid) { geenProfielMelding('Je hebt geen profiel om te verwijderen.'); return; }
-
-  const area = document.getElementById('deleteAccountBandsArea');
-  area.innerHTML = '<div style="color:var(--muted);font-size:12px;">Bezig met controleren...</div>';
-  document.getElementById('deleteAccountConfirmBtn').disabled = false;
-  document.getElementById('deleteAccountConfirmBtn').textContent = 'Account verwijderen';
-  document.getElementById('deleteAccountModal').classList.add('visible');
-
-  try {
-    const { data: founded, error } = await db.from('bands')
-      .select('id, name, band_members(musician_id, status, musicians(id, weergavenaam, username))')
-      .eq('founder_id', mid);
-    if (error) throw error;
-
-    // Bands met nog andere bevestigde leden: daar moet de oprichter zelf
-    // kiezen (Ronald, 09-08-2026: "de vraag wordt aan de oprichter gesteld").
-    // Solo-bands (niemand anders bevestigd) verdwijnen stilzwijgend mee —
-    // daar is niemand anders om iets aan over te dragen.
-    const decisions = (founded || [])
-      .map(b => ({ id: b.id, name: b.name, others: (b.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid) }))
-      .filter(b => b.others.length > 0);
-    const soloBandIds = (founded || [])
-      .filter(b => !(b.band_members || []).some(m => m.status === 'bevestigd' && m.musician_id !== mid))
-      .map(b => b.id);
-
-    pendingSoloBandIds = soloBandIds;
-
-    area.innerHTML = !decisions.length ? '' : `
-      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Je bent beheerder van ${decisions.length === 1 ? 'een band' : `${decisions.length} bands`} met andere leden. Kies per band wat er gebeurt:</div>
-      ${decisions.map(b => `
-        <div class="delete-account-band-row" data-band-id="${jsAttr(b.id)}" style="margin:8px 0;padding:12px;border:1px solid var(--border);border-radius:8px;">
-          <div style="font-weight:700;margin-bottom:8px;">${escHtml(b.name)}</div>
-          <select class="delete-band-choice" style="width:100%;padding:8px;background-color:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:6px;">
-            <option value="delete">Band ook verwijderen</option>
-            ${b.others.map(o => `<option value="${jsAttr(o.musician_id)}">Overdragen aan ${escHtml(displayNameOf(o.musicians))}</option>`).join('')}
-          </select>
-        </div>`).join('')}`;
-  } catch (e) {
-    logCaught('openDeleteAccountModal', e);
-    // Zonder je bands kun je niet per band kiezen: eerst opnieuw laden (TT-561).
-    document.getElementById('deleteAccountConfirmBtn').disabled = true;
-    area.innerHTML = foutStaatHTML(e, 'je bands laden', 'openDeleteAccountModal()');
-  }
-}
-
-function closeDeleteAccountModal() {
-  document.getElementById('deleteAccountModal').classList.remove('visible');
-}
-
-// Tussenopslag tussen openDeleteAccountModal() en executeAccountDeletion() —
-// bewust geen onderdeel van de wizard-state, dit hoort daar niet bij.
+// ─── Account verwijderen ─────────────────────────────────────────────────────
+// TT-543 onderdeel 7 (besluiten Ronald 12-11-2026, punt 2, 3 en 4). Eén vraag,
+// in de vorm van Bandprofiel verwijderen (huisstijl §19): een kop met je naam,
+// het gevolg met je e-mailadres, en Account verwijderen rood omlijnd. Vervangt
+// het venster en de tweede vraag "Weet je zeker…" van TT-22 (Ronald: "akkoord.
+// het verspringen is belangrijk omdat de twee rode knoppen op elkaar lijken.").
+// Ben je beheerder van een band met andere bevestigde leden, dan staat per band
+// een tegel met het keuzemenu: een lid "wordt beheerder", of Bandprofiel
+// verwijderen. Geen standaard; de knop werkt pas als elke band een keuze heeft.
+// Een band zonder andere leden verdwijnt mee. Het inlogaccount zelf: zie
+// executeAccountDeletion().
+let accountBands = [];       // { id, naam, leden: [{ id, naam }], keuze: null | 'delete' | id van een lid }
 let pendingSoloBandIds = [];
 
-// TT-22 (aangescherpt 09-08-2026, Ronald): één waarschuwing bij het openen
-// van de modal is niet genoeg voor de meest onomkeerbare actie in de hele
-// app — zeker niet met 13-jarigen in de doelgroep. Daarom een verplichte
-// tweede, expliciete bevestiging vlak vóór de daadwerkelijke verwijdering,
-// los van de (mogelijke) bandkeuzes die de gebruiker al heeft gemaakt.
-// De onderliggende <select>-elementen blijven in de DOM bestaan zolang de
-// modal alleen verborgen wordt (classList, niet verwijderd) — executeAccount
-// Deletion() kan ze dus gewoon uitlezen, ook nadat deze modal al dicht is.
-function requestFinalDeleteConfirmation() {
-  closeDeleteAccountModal();
+async function vraagAccountVerwijderen() {
+  const mid = await getMyMusicianId();
+  if (!mid) { geenProfielMelding('Je hebt geen profiel om te verwijderen.'); return; }
+  accountBands = []; pendingSoloBandIds = [];
+  let naam = '', fout = null;
+  try {
+    const [ik, bands] = await Promise.all([
+      db.from('musicians').select('weergavenaam, username').eq('id', mid).single(),
+      db.from('bands').select('id, name, band_members(musician_id, status, musicians(id, weergavenaam, username))').eq('founder_id', mid)
+    ]);
+    if (ik.error) throw ik.error;
+    if (bands.error) throw bands.error;
+    naam = displayNameOf(ik.data);
+    (bands.data || []).forEach(b => {
+      const leden = (b.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid)
+        .map(m => ({ id: m.musician_id, naam: displayNameOf(m.musicians) }))
+        .sort((x, y) => x.naam.localeCompare(y.naam, 'nl'));
+      if (leden.length) accountBands.push({ id: b.id, naam: b.name || '', leden, keuze: null });
+      else pendingSoloBandIds.push(b.id);
+    });
+    accountBands.sort((x, y) => x.naam.localeCompare(y.naam, 'nl')); // vaste volgorde: op naam
+  } catch (e) {
+    logCaught('vraagAccountVerwijderen', e);
+    fout = e;
+  }
   showConfirm(
-    'Weet je zeker dat je dit account, inclusief alle gegevens, permanent wilt verwijderen? Dit kan niet ongedaan worden gemaakt.',
+    `Je profiel, je setlist en je foto's en video's verdwijnen dan, en je logt niet meer in met ${currentUser?.email || ''}. Dat is niet terug te draaien.`,
     executeAccountDeletion,
-    'Ja, definitief verwijderen',
-    true
+    'Account verwijderen', true, null,
+    naam ? `Account van ${naam} verwijderen?` : null
   );
+  // TT-561: zonder je bands kun je niet per band kiezen; de knop blijft dicht.
+  if (fout) {
+    document.getElementById('confirmKeuzes').innerHTML = foutStaatHTML(fout, 'je bands laden', 'vraagAccountVerwijderen()');
+    document.getElementById('confirmYesBtn').disabled = true;
+    return;
+  }
+  tekenAccountBands();
+}
+
+// Per band een tegel met het keuzemenu van de app (huisstijl §7.1), zoals Status.
+function tekenAccountBands() {
+  const vak = document.getElementById('confirmKeuzes');
+  vak.innerHTML = accountBands.map((b, i) => `
+    <div class="menu-anchor">
+      <div class="tile" id="accountBandTegel${i}" aria-label="${escHtml(b.naam)}">
+        <div style="flex:1;"><div class="tile-title">${escHtml(b.naam)}</div>
+        <div class="tile-sub"><span class="wheel-field-label"></span></div></div>
+      </div>
+      <div class="choice-menu menu-breed menu-tegel" id="accountBandMenu${i}" role="listbox" aria-label="${escHtml(b.naam)}"></div>
+    </div>`).join('');
+  accountBands.forEach((b, i) => initChoiceField({
+    id: 'account-band-' + i, fieldId: 'accountBandTegel' + i, menuId: 'accountBandMenu' + i,
+    rijen: () => b.leden.map(l => ({ t: l.naam, u: 'wordt beheerder', gekozen: b.keuze === l.id }))
+      .concat([{ t: 'Bandprofiel verwijderen', u: 'de band verdwijnt voor alle leden', gekozen: b.keuze === 'delete' }]),
+    kies: j => { b.keuze = j < b.leden.length ? b.leden[j].id : 'delete'; werkAccountKeuzesBij(); },
+    ververs: werkAccountKeuzesBij
+  }));
+  werkAccountKeuzesBij();
+}
+
+function werkAccountKeuzesBij() {
+  accountBands.forEach((b, i) => {
+    const regel = document.querySelector(`#accountBandTegel${i} .wheel-field-label`);
+    const lid = b.leden.find(l => l.id === b.keuze);
+    if (regel) regel.textContent = lid ? `${lid.naam} wordt beheerder`
+      : b.keuze === 'delete' ? 'Bandprofiel verwijderen' : 'kies wat er met de band gebeurt';
+  });
+  document.getElementById('confirmYesBtn').disabled = accountBands.some(b => !b.keuze);
 }
 
 // Haalt de werkelijke foutboodschap uit een db.functions.invoke()-fout. De
@@ -618,19 +625,25 @@ async function deleteOwnAuthAccountWithRetry(maxAttempts = 3) {
 
 async function executeAccountDeletion() {
   const mid = await getMyMusicianId();
-  if (!mid) return;
+  if (!mid || accountBands.some(b => !b.keuze)) return;
 
   try {
-    // 1-3. Bands (overdragen of opheffen), solo-bands en de eigen
+    // 1-3. Bands (overdragen of verwijderen), solo-bands en de eigen
     // profielgegevens — TT-281 (23-09-2026): in één databasefunctie, in één
     // transactie. Lukt één stap niet (bijvoorbeeld het overdragen van een
     // band), dan blijft alles staan. Vroeger ging de app door na een
     // mislukte overdracht, en bleef er een band zonder oprichter achter.
-    const bandKeuzes = Array.from(document.querySelectorAll('#deleteAccountBandsArea .delete-account-band-row'))
-      .map(row => ({
-        band_id: row.getAttribute('data-band-id'),
-        keuze:   row.querySelector('.delete-band-choice').value,
-      }));
+    // TT-543 onderdeel 7 (punt 4): de berichten aan de leden gaan mee. De
+    // database stuurt ze vóór het verwijderen (daarna bestaat de afzender niet
+    // meer), met de regels van een gewoon bericht; lukt er een niet, dan gaat
+    // het verwijderen door.
+    const bandKeuzes = accountBands.map(b => ({
+      band_id: b.id,
+      keuze: b.keuze,
+      berichten: b.keuze === 'delete'
+        ? b.leden.map(l => ({ aan: l.id, tekst: tekstBandVerwijderd(b.naam) }))
+        : [{ aan: b.keuze, tekst: tekstBeheerOvergedragen(b.naam) }],
+    }));
     const { error: mErr } = await db.rpc('tt_delete_own_profile', {
       p_musician_id: mid,
       p_band_keuzes: bandKeuzes,
@@ -661,8 +674,8 @@ async function executeAccountDeletion() {
     // maar wel de maximale betrouwbaarheid die vanaf de client haalbaar is.
     const authResult = await deleteOwnAuthAccountWithRetry();
 
+    accountBands = [];
     pendingSoloBandIds = [];
-    closeDeleteAccountModal();
     myMusicianId = null;
     myOwnCity = null;
     // Voorkomt dat een volgende login op ditzelfde (mogelijk nog bestaande,
@@ -689,8 +702,8 @@ async function executeAccountDeletion() {
     showView('landing');
   } catch (e) {
     logCaught('executeAccountDeletion', e);
-    // De modal is op dit punt al dicht (zie requestFinalDeleteConfirmation);
-    // een mislukking melden we dus via de toast, niet via een knopstatus.
+    // De vraag is op dit punt al dicht (confirmModalYes); een mislukking
+    // melden we dus via de toast, niet via een knopstatus.
     showToast(friendlyErrorMessage(e, 'je account verwijderen') + ' Je account is nog niet volledig verwijderd. Kies in Instellingen opnieuw Account verwijderen.');
   }
 }

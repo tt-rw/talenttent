@@ -1089,6 +1089,8 @@ function showView(view, mode, extra) {
   // (bewerkBandId). Wie het verlaat, laat geen open tegel of band achter;
   // anders sluit de terugknop elders nog een tegel die er niet meer is.
   // Terug in de geschiedenis of na verversen komt de band uit de stap zelf.
+  // TT-591: welke tegel stond open in het scherm dat je verlaat (de stap terug onthoudt hem).
+  const vorigeTegel = activeTegelScreen;
   if (view !== 'profieltegels') { bewerkBandId = null; activeTegelScreen = 'overview'; }
   else if (mode === 'pop' || mode === 'redirect') bewerkBandId = (history.state && history.state.band) || null;
   // TT-385 fase 4: een andere view, of de onderbalk naar Bands, sluit de
@@ -1234,6 +1236,9 @@ function showView(view, mode, extra) {
   if (view === 'profieltegels') {
     if (!myMusicianId) { showToast('Je hebt nog geen profiel om te bewerken.'); showView('myprofile', 'redirect'); return; }
     openTegelOverview();
+    // TT-591: terug naar de tegel die openstond.
+    const tegel = mode === 'pop' && history.state && history.state.tegel;
+    if (tegel && TEGEL_SCREENS[tegel]) openTegelScreen(tegel);
   }
 
   // TT-16: browsergeschiedenis bijwerken, zodat de terugknop (Android/browser)
@@ -1268,7 +1273,16 @@ function showView(view, mode, extra) {
       const doelIsTop = TAB_VIEWS.includes(view) || view === 'landing' || view === hoogsteScherm();
       if (doelIsTop && mode !== 'behoud') navStack.length = 0;
       else if (!(vorigeView === view && location.hash === naarHash)) {
-        navStack.push({ state: history.state && history.state.view ? history.state : { view: vorigeView }, hash: location.hash || ('#' + vorigeView) });
+        let terugStap = history.state && history.state.view ? history.state : { view: vorigeView };
+        // TT-591 (besluit Ronald 12-11-2026): vanuit een open tegel (Onze
+        // bezetting → Zoeken of een profiel) gaat terug naar die tegel, niet naar
+        // het overzicht. De stap onthoudt de tegel; een oude tegel valt weg.
+        if (vorigeView === 'profieltegels') {
+          terugStap = Object.assign({}, terugStap);
+          delete terugStap.tegel;
+          if (vorigeTegel !== 'overview') terugStap.tegel = vorigeTegel;
+        }
+        navStack.push({ state: terugStap, hash: location.hash || ('#' + vorigeView) });
       }
     }
     // De vaste stap van de app krijgt het nieuwe scherm; er komt geen stap bij.

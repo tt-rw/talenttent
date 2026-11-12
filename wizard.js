@@ -347,11 +347,17 @@ async function laadInstellingen() {
   if (!blok) return;
   const mid = await getMyMusicianId();
   blok.style.display = mid ? '' : 'none';
+  // De regel onder Account verwijderen houdt zijn hoogte tot de naam er is.
+  const regel = document.getElementById('accountVerwijderRegel');
+  if (regel) regel.innerHTML = '&nbsp;';
   if (!mid) return;
   try {
-    const { data, error } = await db.from('musicians').select('stand').eq('id', mid).single();
+    const { data, error } = await db.from('musicians').select('stand, weergavenaam, username').eq('id', mid).single();
     if (error) throw error;
     if (STANDEN.some(x => x.waarde === data.stand)) myStand = data.stand;
+    // TT-543 onderdeel 7 (besluit Ronald 12-11-2026, punt 1): de regel van
+    // Bandprofiel verwijderen, met je eigen naam.
+    if (regel) regel.textContent = `permanent verwijderen van ${displayNameOf(data)}`;
   } catch (e) {
     logCaught('laadInstellingen', e);
   }

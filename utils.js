@@ -25,6 +25,10 @@ function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel, kop)
   // een rood vlak — huisstijl §5.
   yesBtn.classList.toggle('btn-danger', !!danger);
   yesBtn.classList.toggle('btn-primary', !danger);
+  // TT-543 onderdeel 7 (punt 3): een vraag begint zonder keuzes en met de knop aan.
+  const keuzes = document.getElementById('confirmKeuzes');
+  if (keuzes) keuzes.innerHTML = '';
+  yesBtn.disabled = false;
   confirmCallback = onConfirm;
   document.getElementById('confirmModal').classList.add('visible');
 }

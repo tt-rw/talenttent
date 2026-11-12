@@ -234,6 +234,12 @@ async function withdrawFounderOffer(bandId) {
 // 10-11-2026, 7d): "Bandprofiel verwijderen" in plaats van "Band opheffen";
 // elk lid krijgt daarna een bericht. De bestanden van de band wist de
 // database zelf (TT-458, `opslag-opruimen`).
+// De berichten bij het einde van een band of het overdragen van het beheer; één
+// tekst voor Bandprofiel verwijderen en Account verwijderen (TT-543 onderdeel 7,
+// punt 4: "de teksten van onderdeel 6 gelden").
+const tekstBandVerwijderd = naam => `Het profiel van ${naam} is verwijderd. De band bestaat niet meer in deze app.`;
+const tekstBeheerOvergedragen = naam => `Je bent nu beheerder van ${naam}.`;
+
 async function dissolveBand(bandId) {
   const band = await bandNaamEnBeheerder(bandId);
   let leden = [];
@@ -248,7 +254,7 @@ async function dissolveBand(bandId) {
     const naam = band ? band.naam : '';
     let verstuurd = 0;
     if (naam) {
-      const uitslagen = await Promise.all(leden.map(id => stilBericht(id, `Het profiel van ${naam} is verwijderd. De band bestaat niet meer in deze app.`)));
+      const uitslagen = await Promise.all(leden.map(id => stilBericht(id, tekstBandVerwijderd(naam))));
       verstuurd = uitslagen.filter(Boolean).length;
     }
     showToast((naam ? `Het profiel van ${naam} is verwijderd.` : 'Het bandprofiel is verwijderd.')
