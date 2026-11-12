@@ -78,6 +78,10 @@ KEYWORDS = {
 results = []
 
 
+# TT-543 onderdeel 6 (besluit Ronald 12-11-2026, O-4: "a"): een keuze met uitleg in het menu van Status en Bandstatus.
+UITLEG_GOED = {"naamEenRegel": True, "letter": ["12px"], "kleurAlsTegel": True, "minstens44": True, "hoogteUitleg": [58, 58], "onderNaam": True}  # 58px: 6 + 22 + 8 + 16 + 6, zoals op het beeld van A
+
+
 def check(name, ok, detail=""):
     results.append((name, bool(ok), detail))
     mark = "GESLAAGD" if ok else "GEZAKT  "
@@ -9788,10 +9792,16 @@ window.TT_STUB.fnAntwoord = {};
           u.tegel = { ...tegel(), oud: ['beschikbaarTegel', 'deelTegel', 'uitnodigTegel', 'beschikbaarKeuze', 'deelKeuze'].filter(id => document.getElementById(id)) };
           document.getElementById('statusTegel').click(); await w(300);
           const menu = document.getElementById('statusMenu');
+          const uitlegMaten = m => { const rijen = [...m.querySelectorAll('.choice-option')], ul = [...m.querySelectorAll('.keuze-uitleg')], sub = document.querySelector('.tile-sub');
+            return { naamEenRegel: rijen.every(o => o.querySelector('span').getBoundingClientRect().height <= 24), letter: [...new Set(ul.map(s => getComputedStyle(s).fontSize))],
+                     kleurAlsTegel: ul.length === 2 && !!sub && ul.every(s => getComputedStyle(s).color === getComputedStyle(sub).color),
+                     minstens44: rijen.every(o => o.getBoundingClientRect().height >= 44), hoogteUitleg: rijen.filter(o => o.querySelector('.keuze-uitleg')).map(o => Math.round(o.getBoundingClientRect().height)),
+                     onderNaam: ul.every(s => s.getBoundingClientRect().top >= s.previousElementSibling.getBoundingClientRect().bottom - 0.5) }; };
           u.menu = { open: menu.classList.contains('open') || getComputedStyle(menu).display !== 'none',
-                     regels: [...menu.querySelectorAll('.choice-option')].map(o => o.textContent.trim()),
+                     regels: [...menu.querySelectorAll('.choice-option')].map(o => [...o.querySelectorAll('span')].map(s => s.textContent.trim())),
                      gekozen: [...menu.querySelectorAll('.choice-option')].findIndex(o => o.classList.contains('selected')),
-                     tekstLinks: [...menu.querySelectorAll('.choice-option')].every(o => getComputedStyle(o).justifyContent === 'flex-start') };
+                     tekstLinks: new Set([...menu.querySelectorAll('.choice-option span')].map(s => Math.round(s.getBoundingClientRect().left))).size === 1,
+                     uitleg: uitlegMaten(menu) };
           menu.querySelectorAll('.choice-option')[2].click(); await w(400);
           u.naInactief = { rij: S.data.musicians[0].stand, tegel: tegel().sub, toast: document.getElementById('appToast').textContent };
           await zetStatus('actief'); await w(200);
@@ -9826,8 +9836,10 @@ window.TT_STUB.fnAntwoord = {};
               d85["eigen"]["regels"] == 1 and d85["band"]["regels"] == 1, json.dumps([d85["eigen"]["regels"], d85["band"]["regels"], d85["eigen"]["breedte"]]))
         check("Instellingen (blok 4, 7b): de tegel heet Status en toont de korte naam van de stand; Beschikbaarheid, Delen via link en Band-uitnodigingen zijn weg",
               d85["tegel"]["titel"] == "Status" and d85["tegel"]["sub"] == "Tijdelijk niet beschikbaar" and d85["tegel"]["oud"] == [], j85("tegel"))
-        check("Status: het menu van Bandstatus, tekst links (huisstijl §7.1): Actief · Tijdelijk niet beschikbaar (blijft vindbaar) · Inactief (niet vindbaar)",
-              d85["menu"] == {"open": True, "regels": ["Actief", "Tijdelijk niet beschikbaar (blijft vindbaar)", "Inactief (niet vindbaar)"], "gekozen": 1, "tekstLinks": True}, j85("menu"))
+        check("Status: het menu van Bandstatus, tekst links (huisstijl §7.1): Actief · Tijdelijk niet beschikbaar / blijft vindbaar · Inactief / niet vindbaar (O-4)",
+              {k: v for k, v in d85["menu"].items() if k != "uitleg"} == {"open": True, "regels": [["Actief"], ["Tijdelijk niet beschikbaar", "blijft vindbaar"], ["Inactief", "niet vindbaar"]], "gekozen": 1, "tekstLinks": True}, j85("menu"))
+        check("Status (O-4, 390px): de naam op één regel, de uitleg 12px grijs eronder zoals onder een tegel, op de linkerlijn; een regel met uitleg 58px, de andere 44px",
+              d85["menu"]["uitleg"] == UITLEG_GOED, j85("menu"))
         check("een keuze werkt meteen: de kolom stand, de tegel en de melding 'Wijzigingen opgeslagen.' (zoals Bandstatus)",
               d85["naInactief"] == {"rij": "inactief", "tegel": "Inactief", "toast": "Wijzigingen opgeslagen."}
               and d85["naActief"] == {"rij": "actief", "tegel": "Actief"}, j85("naInactief") + j85("naActief"))
@@ -17593,8 +17605,14 @@ def blok_tt543_onderdeel6_blok3():
           // 2. Bandstatus: het keuzemenu onder de tegel, tekst links, drie standen.
           $('bandStandTegel').click(); await w(300);
           const menu = $('bandStandMenu'), opties = [...menu.querySelectorAll('.choice-option')];
-          u.menu = { open: menu.classList.contains('open'), regels: opties.map(o => o.textContent.trim()), gekozen: opties.findIndex(o => o.classList.contains('selected')),
-                     tekstLinks: opties.every(o => getComputedStyle(o).textAlign === 'left' && getComputedStyle(o).justifyContent === 'flex-start') };
+          const uitlegMaten = m => { const rijen = [...m.querySelectorAll('.choice-option')], ul = [...m.querySelectorAll('.keuze-uitleg')], sub = document.querySelector('.tile-sub');
+            return { naamEenRegel: rijen.every(o => o.querySelector('span').getBoundingClientRect().height <= 24), letter: [...new Set(ul.map(s => getComputedStyle(s).fontSize))],
+                     kleurAlsTegel: ul.length === 2 && !!sub && ul.every(s => getComputedStyle(s).color === getComputedStyle(sub).color),
+                     minstens44: rijen.every(o => o.getBoundingClientRect().height >= 44), hoogteUitleg: rijen.filter(o => o.querySelector('.keuze-uitleg')).map(o => Math.round(o.getBoundingClientRect().height)),
+                     onderNaam: ul.every(s => s.getBoundingClientRect().top >= s.previousElementSibling.getBoundingClientRect().bottom - 0.5) }; };
+                    u.menu = { open: menu.classList.contains('open'), regels: opties.map(o => [...o.querySelectorAll('span')].map(s => s.textContent.trim())), gekozen: opties.findIndex(o => o.classList.contains('selected')),
+                     tekstLinks: opties.every(o => getComputedStyle(o).textAlign === 'left') && new Set([...menu.querySelectorAll('.choice-option span')].map(s => Math.round(s.getBoundingClientRect().left))).size === 1,
+                     uitleg: uitlegMaten(menu) };
           opties[2].click(); await w(500);
           u.naInactief = { stand: S.data.bands.find(b => b.id === 'b9').stand, regel: $('bandStandTegel').querySelector('.tile-sub').textContent.trim(), toast: toasts.slice(-1)[0] };
           // 3. De bandpagina van een inactieve band: de zin in het midden.
@@ -17662,7 +17680,9 @@ def blok_tt543_onderdeel6_blok3():
           d["kop"] == "Bandbeheer" and d["tegels"] == [["Bandstatus", "Actief"], ["Beheer overdragen", "draag het beheer over aan een bandlid"],
                                                         ["Bandprofiel verwijderen", "permanent verwijderen van Nachtploeg"]], j("tegels"))
     check("Bandstatus: het keuzemenu onder de tegel, tekst links, drie standen met hun gevolg (7b, variant vindbaar); Actief gekozen",
-          d["menu"] == {"open": True, "regels": ["Actief", "Tijdelijk niet beschikbaar (blijft vindbaar)", "Inactief (niet vindbaar)"], "gekozen": 0, "tekstLinks": True}, j("menu"))
+          {k: v for k, v in d["menu"].items() if k != "uitleg"} == {"open": True, "regels": [["Actief"], ["Tijdelijk niet beschikbaar", "blijft vindbaar"], ["Inactief", "niet vindbaar"]], "gekozen": 0, "tekstLinks": True}, j("menu"))
+    check("Bandstatus (O-4, 390px): de naam op één regel, de uitleg 12px grijs eronder zoals onder een tegel, op de linkerlijn; een regel met uitleg 58px, de andere 44px",
+          d["menu"]["uitleg"] == UITLEG_GOED, j("menu"))
     check("Bandstatus: een keuze werkt meteen (bands.stand) en de tegel toont de nieuwe stand",
           d["naInactief"] == {"stand": "inactief", "regel": "Inactief", "toast": "Wijzigingen opgeslagen."}, j("naInactief"))
     check("de bandpagina van een inactieve band toont 'Inactief.' in het midden (7b)", d["zin"] == ["Inactief.", "center"], j("zin"))

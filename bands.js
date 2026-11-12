@@ -1414,7 +1414,7 @@ async function renderBandBeheer() {
       </div>`;
     initChoiceField({
       id: 'band-stand', fieldId: 'bandStandTegel', menuId: 'bandStandMenu',
-      rijen: () => STANDEN.map(x => ({ t: x.menu, gekozen: x.waarde === bandBeheerStand })),
+      rijen: () => STANDEN.map(x => ({ t: x.label, u: x.uitleg, gekozen: x.waarde === bandBeheerStand })),
       kies: i => zetBandStand(STANDEN[i].waarde)
     });
   } catch (e) {

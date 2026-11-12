@@ -5217,6 +5217,17 @@
      Bandstatus); een menu onder een keuzeveld houdt de tekst
      in het midden. Huisstijl §7.1. */
   .choice-menu.menu-tegel .choice-option { justify-content: flex-start; text-align: left; }
+  /* TT-543 onderdeel 6 (besluit Ronald 12-11-2026, O-4: "a"): een keuze met
+     uitleg heeft de naam op de eerste regel en de uitleg klein en grijs
+     eronder, zoals de regel onder een tegel (.tile-sub). Status en
+     Bandstatus. Huisstijl §7.1. */
+  .choice-menu .choice-option.met-uitleg {
+    flex-direction: column; justify-content: center; align-items: center;
+    padding-top: 6px; padding-bottom: 6px;
+  }
+  .choice-menu.menu-tegel .choice-option.met-uitleg { align-items: flex-start; }
+  .choice-option.met-uitleg > span:first-child { line-height: 22px; }
+  .keuze-uitleg { display: block; font-size: 12px; line-height: 16px; font-weight: 400; color: var(--muted); }
   .picker-badge-row.met-toevoegen { position: relative; }
 
 

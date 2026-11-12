@@ -1597,8 +1597,8 @@ function tekenKeuzeMenu(id) {
   const rijen = keuzeMenuRijen(cfg);
   const scroll = menu.scrollTop;
   menu.innerHTML = rijen.map((r, i) => `
-    <button type="button" class="choice-option${r.gekozen ? ' selected' : ''}"
-            role="option" aria-selected="${r.gekozen ? 'true' : 'false'}" data-i="${i}"${r.waarde != null ? ` data-waarde="${escHtml(r.waarde)}"` : ''}><span>${escHtml(r.t)}</span></button>`).join('');
+    <button type="button" class="choice-option${r.gekozen ? ' selected' : ''}${r.u ? ' met-uitleg' : ''}"
+            role="option" aria-selected="${r.gekozen ? 'true' : 'false'}" data-i="${i}"${r.waarde != null ? ` data-waarde="${escHtml(r.waarde)}"` : ''}><span>${escHtml(r.t)}</span>${r.u ? `<span class="keuze-uitleg">${escHtml(r.u)}</span>` : ''}</button>`).join('');
   keuzeMeerTeken(menu);
   menu.scrollTop = scroll;
   if (cfg.meer) menu.setAttribute('aria-multiselectable', 'true');
@@ -3039,10 +3039,12 @@ async function kaartMaken(g, beeld) {
 // Tijdelijk niet beschikbaar: de zin op de pagina, vindbaar in Zoeken, niet in
 // de mail met nieuwe matches, geen banduitnodigingen. Inactief: ook niet in
 // Zoeken. De database regelt Zoeken en de mail (systeem-naslag §10).
+// In het menu staat de uitleg klein op een tweede regel (besluit Ronald
+// 12-11-2026, O-4: "a"; .keuze-uitleg in styles.css).
 const STANDEN = [
-  { waarde: 'actief', label: 'Actief', menu: 'Actief' },
-  { waarde: 'tijdelijk', label: 'Tijdelijk niet beschikbaar', menu: 'Tijdelijk niet beschikbaar (blijft vindbaar)' },
-  { waarde: 'inactief', label: 'Inactief', menu: 'Inactief (niet vindbaar)' }
+  { waarde: 'actief', label: 'Actief', uitleg: '' },
+  { waarde: 'tijdelijk', label: 'Tijdelijk niet beschikbaar', uitleg: 'blijft vindbaar' },
+  { waarde: 'inactief', label: 'Inactief', uitleg: 'niet vindbaar' }
 ];
 
 // TT-457 (10-10-2026, besluit Ronald): één zin op het profiel en op de

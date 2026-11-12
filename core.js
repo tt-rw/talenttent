@@ -331,7 +331,7 @@ async function appInit() {
   // link is weg (7c).
   initChoiceField({
     id: 'status', fieldId: 'statusTegel', menuId: 'statusMenu',
-    rijen: () => STANDEN.map(x => ({ t: x.menu, gekozen: x.waarde === myStand })),
+    rijen: () => STANDEN.map(x => ({ t: x.label, u: x.uitleg, gekozen: x.waarde === myStand })),
     kies: i => zetStatus(STANDEN[i].waarde),
     ververs: toonStatus
   });
