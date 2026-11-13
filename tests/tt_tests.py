@@ -8994,8 +8994,8 @@ window.TT_STUB.fnAntwoord = {};
         j77 = json.dumps(d77, ensure_ascii=False)
         check("de voorwaardenlaag toont elk document met dezelfde opmaak als het losse scherm: koppen, alinea's, lijsten en datum",
               all(d77["laag"][t][k] for t in d77["laag"] for k in ("h2", "p", "li", "upd")), j77)
-        check("de voorwaardenlaag is leesbaar: koppen 15px, tekst 12px (TT-517) met regelafstand 1,7, geen zijwaartse scroll op 375px",
-              all(v["h2Maat"] == "15px" and v["pMaat"] == "12px" and v["regel"] == "20.4px" and v["breed"] for v in d77["laag"].values()), j77)
+        check("de voorwaardenlaag is leesbaar: koppen 15px, tekst 15/20px (TT-543 onderdeel 9, V1 D), geen zijwaartse scroll op 375px",
+              all(v["h2Maat"] == "15px" and v["pMaat"] == "15px" and v["regel"] == "20px" and v["breed"] for v in d77["laag"].values()), j77)
         check("Wie ben je: de bio is een zichtbaar tekstveld binnen het scherm van 375px, zonder voorzetknoppen",
               d77["tegel"]["zichtbaar"] and d77["tegel"]["binnen"] and d77["tegel"]["scrollBreed"] and d77["tegel"]["chips"] == 0, j77)
         check("Wie ben je: het veld toont de voorbeeldtekst van Kevin (3 alinea's) als cursieve placeholder en is zelf leeg",
@@ -9291,7 +9291,7 @@ window.TT_STUB.fnAntwoord = {};
           S.data.talent_tent_berichten = [{ id: 't3', musician_id: 'm1', created_at: new Date(nu).toISOString(), read_at: null,
             inhoud: { muzikanten: [{ id: 'm9', km: 1, instrumenten: [] }], bands: [], meer: 0 } }];
           await openTalentTentGesprek(); await w(400);
-          u.leeg = { bubbels: document.querySelectorAll('#messagesThreadList .tt-bericht').length, tekst: $('messagesThreadList').textContent.includes('Nog geen berichten van Talent Tent') };
+          u.leeg = { bubbels: document.querySelectorAll('#messagesThreadList .tt-bericht').length, tekst: $('messagesThreadList').textContent.includes('Nog geen berichten van TalentTent') };
           closeConversation(true);
           // 9. De dag-scheiding komt uit één functie.
           u.dag = [dagLabel(new Date()), dagLabel(new Date(Date.now() - 86400000))];
@@ -9302,7 +9302,7 @@ window.TT_STUB.fnAntwoord = {};
         }""")
         j81 = json.dumps(d81, ensure_ascii=False)
         check("TT-451: Talent Tent staat als gesprek in de inbox, met de kernzin als voorbeeld en het aantal ongelezen",
-              [r["naam"] for r in d81["inbox"]] == ["Talent Tent"] and d81["inbox"][0]["ongelezen"] and d81["inbox"][0]["badge"] == "1"
+              [r["naam"] for r in d81["inbox"]] == ["TalentTent"] and d81["inbox"][0]["ongelezen"] and d81["inbox"][0]["badge"] == "1"
               and d81["inbox"][0]["voorbeeld"] == "Er zijn 5 nieuwe matches bij jou in de buurt", j81)
         check("TT-451: een ongelezen bericht van Talent Tent geeft een getal op Berichten, in de bovenbalk en in de onderbalk",
               d81["getalOngelezen"]["onder"] != "none" and d81["getalOngelezen"]["tekst"] == "1" and d81["getalOngelezen"]["boven"] != "none", j81)
@@ -9320,7 +9320,7 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-451: wat de mail onder de vijf weglaat staat er als \"En nog N andere\", als knop naar Zoeken",
               d81["draad"]["meer"] == ["En nog 2 andere — bekijk ze in Zoeken"], j81)
         check("TT-451: het gesprek is alleen te lezen: geen invoerveld, geen menu, naam niet tikbaar, het adres noemt het gesprek",
-              d81["draad"]["voet"] == "none" and d81["draad"]["menu"] == "" and d81["draad"]["naam"] == "Talent Tent"
+              d81["draad"]["voet"] == "none" and d81["draad"]["menu"] == "" and d81["draad"]["naam"] == "TalentTent"
               and d81["draad"]["hash"] == "#messages/talent-tent" and d81["draad"]["systeem"] is True and d81["profielOpen"] == "messages", j81)
         check("TT-451: er valt niets te versturen naar Talent Tent",
               d81["verstuurd"] == 0, j81)
@@ -10117,11 +10117,11 @@ window.TT_STUB.fnAntwoord = {};
         page.evaluate("showView('about')")
         page.wait_for_timeout(60)
         tekst89 = page.evaluate("document.getElementById('view-about').innerText")
-        check("Over ons: kop 'Wat is The Talent Tent?'", "Wat is The Talent Tent?" in tekst89, "")
+        check("Over ons: kop 'Wat is TalentTent?' (TT-547)", "Wat is TalentTent?" in tekst89, "")
         check("Over ons: geen onware claim 'Inmiddels vinden ook'", "Inmiddels" not in tekst89, "")
         check("Over ons: geen losse slotalinea meer", "Zoek muzikanten of bands bij jou in de buurt om mee te spelen" not in tekst89, "")
         check("Over ons: contactzin met punt aan het eind", "Dan horen we het graag: contact@talenttent.org." in tekst89, "")
-        check("Over ons: e-mailadres is een mailto-link", page.evaluate("!!document.querySelector('#view-about a[href=\"mailto:contact@talenttent.org\"]')"), "")
+        check("Over ons: een tik op het e-mailadres kopieert het (TT-543 onderdeel 9, V4 A)", page.evaluate("document.querySelector('#view-about .email-kopieer')?.textContent === 'contact@talenttent.org'"), "")
         check("geen paginafouten in blok 89", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
@@ -12863,7 +12863,7 @@ def blok_tt517_fase8():
           t["kaart"] == {"id": "m2", "naam": "noorbas", "regel": "15 jaar · Den Haag", "wat": ["Basgitaar"], "onder": ["Funk", "Jazz", "Pop"]}, json.dumps(t["kaart"]))
     check("telefoon: één tik opent het deelmenu met de kaart en de link samen",
           t["aantal"] == 1 and t["url"] and t["url"].endswith("#profiel/m2") and t["bestand"] == {"naam": "talenttent-noorbas.jpg", "type": "image/jpeg"}
-          and t["tekst"] == "Bekijk het profiel van noorbas op The Talent Tent." and t["klembord"] == 0, json.dumps({k: t[k] for k in ("aantal", "url", "bestand", "tekst", "klembord")}))
+          and t["tekst"] == "Bekijk het profiel van noorbas op TalentTent." and t["klembord"] == 0, json.dumps({k: t[k] for k in ("aantal", "url", "bestand", "tekst", "klembord")}))
     check("de kaart is vierkant, 1080 x 1080", bool(t["meting"]) and t["meting"]["maat"] == [1080, 1080], json.dumps(t["meting"] and t["meting"]["maat"]))
     a = res["anon"]
     check("het beeld komt van de openbare functie, als bezoeker: alleen de sleutel van de app, geen inlogbewijs",
@@ -14586,8 +14586,8 @@ def blok_tt543():
           u["omzetting"] == [0, 1, 2, 2, 3, 0, 3, 0], json.dumps(u["omzetting"]))
     privacy = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
     privacy = privacy[privacy.index('id="view-privacy"'):privacy.index('id="view-terms"')]
-    check("de privacyverklaring noemt geen doel of ambitie meer en is bijgewerkt op 6 november 2026 (besluit Ronald 06-11-2026)",
-          not re.search(r"\bdoel\b|ambitie", privacy, re.I) and "Laatst bijgewerkt: 6 november 2026" in privacy, "")
+    check("de privacyverklaring noemt geen doel of ambitie meer (besluit Ronald 06-11-2026); bijgewerkt op 13 november 2026 (TT-543 onderdeel 9)",
+          not re.search(r"\bdoel\b|ambitie", privacy, re.I) and "Laatst bijgewerkt: 13 november 2026" in privacy, "")
     check("geen paginafouten in blok 131", not fouten, "; ".join(fouten)[:300])
 
 
@@ -18080,6 +18080,162 @@ def blok_tt543_onderdeel8():
     check("blok 152: geen paginafouten", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_tt543_onderdeel9():
+    print("\nBlok 153 — TT-543 onderdeel 9 (Over ons en de juridische pagina's): V1 D, V3, V4, F1 E, F1b, F2, F3 en TT-547")
+    bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in JS_FILES + ["index.html", "styles.css", "manifest.json", "sw.js"]}
+    html = bron["index.html"]
+    over = html[html.index('id="view-about"'):html.index('id="view-privacy"')]
+    priv = html[html.index('id="view-privacy"'):html.index('id="view-terms"')]
+    voorw = html[html.index('id="view-terms"'):html.index('id="view-gedragscode"')]
+    gedrag = html[html.index('id="view-gedragscode"'):html.index('id="view-instellingen"')]
+    check("F2: Over ons heeft geen opmaak in de regel en draagt de vorm van de leespagina's (.doc-view)",
+          'style=' not in over and 'search-filters doc-view' in over, "")
+    # TT-547 (besluit Ronald 13-11-2026, D): overal "TalentTent". Commentaar telt niet mee.
+    def zichtbaar(f, t):
+        if f.endswith(".js"):
+            t = re.sub(r"/\*.*?\*/", "", t, flags=re.S); t = re.sub(r"(?m)^\s*//.*$", "", t); t = re.sub(r"\s//[^\n'`]*$", "", t, flags=re.M)
+        else:
+            t = re.sub(r"<!--.*?-->", "", t, flags=re.S); t = re.sub(r"/\*.*?\*/", "", t, flags=re.S)
+        return t
+    oud = [f for f, t in bron.items() if re.search(r"Talent Tent", zichtbaar(f, t))]
+    check("TT-547: nergens zichtbaar 'The Talent Tent' of 'Talent Tent' (app, titel, manifest, seintje)", not oud, json.dumps(oud))
+    man = json.loads(bron["manifest.json"])
+    check("TT-547 (besluit Ronald 13-11-2026, 'ja, akkoord'): 'de Tent' blijft de bijnaam in Mix & Match",
+          "Niemand in de Tent heeft een match" in bron["search.js"] and "Niemand in de Tent (binnen" in bron["search.js"], "")
+    check("TT-547: titel en manifest heten TalentTent",
+          "<title>TalentTent — Talent zoekt talent</title>" in html and man["name"] == "TalentTent — Talent zoekt talent" and man["short_name"] == "TalentTent", "")
+    # V4 (besluit Ronald 13-11-2026): 8 e-mailadressen, elk een tik die kopieert; vragen naar contact@, privacy en melden naar privacy@.
+    adressen = lambda deel: re.findall(r'<button type="button" class="email-kopieer" onclick="kopieerEmailadres\(this\)">([^<]+)</button>', deel)
+    check("V4: Over ons 1, privacyverklaring 3, voorwaarden 2, gedragscode 2 e-mailadressen, alle als kopieerknop; geen vet e-mailadres of mailto meer",
+          [adressen(over), adressen(priv), adressen(voorw), adressen(gedrag)] == [["contact@talenttent.org"], ["privacy@talenttent.org"] * 3,
+                                                                                ["privacy@talenttent.org", "contact@talenttent.org"], ["privacy@talenttent.org", "contact@talenttent.org"]]
+          and "mailto:" not in html and "<strong>privacy@" not in html,
+          json.dumps([adressen(over), adressen(priv), adressen(voorw), adressen(gedrag)]))
+    check("V4: 'Vragen over deze voorwaarden' en 'Vragen over deze gedragscode' gaan naar contact@",
+          "Vragen over deze voorwaarden? Mail naar <button" in voorw and voorw.rstrip().count("contact@talenttent.org") == 1
+          and "Vragen over deze gedragscode? Mail naar <button" in gedrag, "")
+    # V3: voorwaarden hoofdstuk 3 weg, de rest doorgenummerd; F1b de gratis-zin na de eerste zin van hoofdstuk 1.
+    koppen = re.findall(r"<h2>(\d+)\. ", voorw)
+    check("V3: 'De sfeer die we willen' is weg en de voorwaarden lopen van 1 tot en met 11",
+          "De sfeer die we willen" not in voorw and "applaus" not in voorw and koppen == [str(i) for i in range(1, 12)], json.dumps(koppen))
+    check("F1b: hoofdstuk 1 van de voorwaarden belooft het gratis profiel tot en met 25 jaar, na de eerste zin",
+          "op te treden. Een profiel is gratis en blijft gratis voor muzikanten tot en met 25 jaar. TalentTent brengt" in voorw, "")
+    check("F1 E: privacyverklaring hoofdstuk 3 zegt alleen door te geven aan de partijen in hoofdstuk 7; cloud86 staat in hoofdstuk 7; geen zin over advertenties",
+          "<p>Wij geven je gegevens alleen door aan de partijen in hoofdstuk 7.</p>" in priv and "<li>cloud86: verstuurt de e-mails van de app.</li>" in priv
+          and "advertenties" not in priv, "")
+    check("de datum 'Laatst bijgewerkt' is 13 november 2026 op de drie pagina's die wijzigden",
+          all("Laatst bijgewerkt: 13 november 2026" in d for d in (priv, voorw, gedrag)), "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten, uitslag = [], {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breedte in (390, 360):
+            for thema in ("donker", "licht"):
+                ctx = browser.new_context(viewport={"width": breedte, "height": 844}, color_scheme="dark")
+                ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+                page = ctx.new_page()
+                page.on("pageerror", lambda e: fouten.append(str(e)))
+                page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+                for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**", "**/x.test/**"):
+                    page.route(pat, lambda r: r.abort())
+                page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+                page.wait_for_timeout(500)
+                if thema == "licht":
+                    page.evaluate("document.documentElement.setAttribute('data-theme','licht')")
+                uitslag[(breedte, thema)] = page.evaluate(r"""async () => {
+                  const w = (n = 300) => new Promise(r => setTimeout(r, n)), $ = id => document.getElementById(id), u = { paginas: {} };
+                  const r = e => e.getBoundingClientRect(), cs = e => getComputedStyle(e);
+                  const meet = (wortel) => {
+                    const els = [...wortel.querySelectorAll(':scope > h2, :scope > p, :scope > ul, :scope > .doc-updated')].filter(e => r(e).height > 0);
+                    const uit = { kop: [], tekst: [], boven: [], onder: [], datum: null, breed: true };
+                    els.forEach((e, i) => {
+                      const c = cs(e);
+                      if (r(e).right > innerWidth + 0.5) uit.breed = false;
+                      if (e.tagName === 'H2') {
+                        uit.kop.push([c.fontSize, c.lineHeight, c.fontWeight, c.color]);
+                        if (i > 0) uit.boven.push(Math.round(r(e).top - r(els[i - 1]).bottom));
+                        if (els[i + 1]) uit.onder.push(Math.round(r(els[i + 1]).top - r(e).bottom));
+                      } else if (e.classList.contains('doc-updated')) uit.datum = [c.fontSize, c.lineHeight];
+                      else (e.tagName === 'UL' ? [...e.children] : [e]).forEach(x => uit.tekst.push(cs(x).fontSize + '/' + cs(x).lineHeight));
+                    });
+                    uit.kop = [...new Set(uit.kop.map(JSON.stringify))].map(JSON.parse);
+                    uit.tekst = [...new Set(uit.tekst)]; uit.boven = [...new Set(uit.boven)]; uit.onder = [...new Set(uit.onder)];
+                    return uit;
+                  };
+                  u.accent = cs(document.documentElement).getPropertyValue('--accent').trim();
+                  for (const v of ['about', 'privacy', 'terms', 'gedragscode']) {
+                    showView(v); await w(200);
+                    const wortel = document.querySelector('#view-' + v + ' .doc-view');
+                    u.paginas[v] = meet(wortel);
+                    u.paginas[v].eersteKop = v === 'about' ? Math.round(r(wortel.querySelector('h2')).top - r(wortel).top) : null;
+                  }
+                  // F3: "E-mailvoorkeuren" op één regel.
+                  showView('privacy'); await w(150);
+                  const ev = document.querySelector('#view-privacy .niet-afbreken');
+                  u.f3 = { tekst: ev.textContent, regels: ev.getClientRects().length };
+                  // V4: een tik kopieert; de melding "E-mailadres gekopieerd". Bij een fout de melding met het e-mailadres.
+                  const geschreven = [];
+                  const echt = Object.getOwnPropertyDescriptor(Navigator.prototype, 'clipboard');
+                  const zet = (writeText) => Object.defineProperty(navigator, 'clipboard', { configurable: true, get: () => ({ writeText }) });
+                  zet(async t => { geschreven.push(t); });
+                  showView('about'); await w(150);
+                  const knop = document.querySelector('#view-about .email-kopieer');
+                  const kr = r(knop), zin = r(knop.parentElement);
+                  u.knop = { kleur: cs(knop).color, streep: cs(knop).textDecorationLine, maat: cs(knop).fontSize, regel: cs(knop).lineHeight,
+                             achtergrond: cs(knop).backgroundColor, rand: cs(knop).borderTopWidth, opDeRegel: kr.top >= zin.top - 0.5 && kr.bottom <= zin.bottom + 0.5 };
+                  knop.click(); await w(100);
+                  u.kopie = { klembord: geschreven.slice(), melding: $('appToast').textContent, zichtbaar: $('appToast').classList.contains('visible') };
+                  zet(async () => { throw new Error('geweigerd'); });
+                  showView('terms'); await w(150);
+                  [...document.querySelectorAll('#view-terms .email-kopieer')].pop().click(); await w(100);
+                  u.kopieFout = $('appToast').textContent;
+                  // Het venster in Profiel aanmaken (stap 4): dezelfde opmaak en dezelfde kopieerknop.
+                  zet(async t => { geschreven.push(t); });
+                  openLegalModal('gedragscode'); await w(200);
+                  u.venster = meet($('legalModalContent'));
+                  [...$('legalModalContent').querySelectorAll('.email-kopieer')].pop().click(); await w(100);
+                  u.vensterKopie = [geschreven.slice(-1)[0], $('appToast').textContent];
+                  closeLegalModal();
+                  if (echt) Object.defineProperty(navigator, 'clipboard', echt); else delete navigator.clipboard;
+                  // TT-547 in de app: delen, het gesprek, de foutmelding zonder verbinding.
+                  u.gesprek = TT_GESPREK_NAAM;
+                  u.verbinding = friendlyErrorMessage({ message: 'Failed to fetch' });
+                  u.titel = document.title;
+                  u.overloop = document.documentElement.scrollWidth <= innerWidth;
+                  return u;
+                }""")
+                ctx.close()
+        browser.close()
+    httpd.shutdown()
+    for (b, t), d in uitslag.items():
+        j = lambda k, dd=d: json.dumps(dd.get(k), ensure_ascii=False)
+        acc = d["accent"]
+        def kleur_ok(rgb):
+            h = acc.lstrip("#").lower()
+            return rgb == "rgb(%d, %d, %d)" % tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+        alle = list(d["paginas"].values()) + [d["venster"]]
+        check(f"V1 D ({b}px, {t}): tekst 15/20px en koppen 15/20px vet in --accent op Over ons, de drie pagina's en het venster",
+              all(x["tekst"] == ["15px/20px"] and len(x["kop"]) == 1 and x["kop"][0][:3] == ["15px", "20px", "700"] and kleur_ok(x["kop"][0][3]) for x in alle), j("paginas"))
+        check(f"V1 D ({b}px, {t}): elke kop 24px onder de tekst erboven en 8px boven zijn tekst; datum 12/18px",
+              all(x["boven"] in ([24], []) and x["onder"] == [8] for x in alle)
+              and all(x["datum"] == ["12px", "18px"] for k, x in d["paginas"].items() if k != "about"), j("paginas"))
+        check(f"V1 D ({b}px, {t}): Over ons begint met de kop bovenaan, zonder ruimte erboven; niets loopt breder dan het scherm",
+              d["paginas"]["about"]["eersteKop"] == 0 and all(x["breed"] for x in alle) and d["overloop"], j("paginas"))
+        check(f"F3 ({b}px, {t}): 'E-mailvoorkeuren' staat op één regel", d["f3"] == {"tekst": "E-mailvoorkeuren", "regels": 1}, j("f3"))
+        check(f"V4 A ({b}px, {t}): het e-mailadres is tekst in --accent, onderstreept, 15/20px, zonder vlak of rand, op de regel van de zin",
+              kleur_ok(d["knop"]["kleur"]) and d["knop"]["streep"] == "underline" and d["knop"]["maat"] == "15px" and d["knop"]["regel"] == "20px"
+              and d["knop"]["achtergrond"] in ("rgba(0, 0, 0, 0)", "transparent") and d["knop"]["rand"] == "0px" and d["knop"]["opDeRegel"], j("knop"))
+        check(f"V4 A ({b}px, {t}): een tik kopieert het e-mailadres met de melding 'E-mailadres gekopieerd'; in het venster ook",
+              d["kopie"] == {"klembord": ["contact@talenttent.org"], "melding": "E-mailadres gekopieerd", "zichtbaar": True}
+              and d["vensterKopie"] == ["contact@talenttent.org", "E-mailadres gekopieerd"], j("kopie") + j("vensterKopie"))
+        check(f"V4 A ({b}px, {t}): lukt kopiëren niet, dan staat het e-mailadres in de melding (zoals Delen)",
+              d["kopieFout"] == "Kopiëren lukt niet op dit apparaat. Kopieer het e-mailadres zelf: contact@talenttent.org", j("kopieFout"))
+        check(f"TT-547 ({b}px, {t}): het gesprek heet TalentTent, de titel en de melding zonder verbinding noemen TalentTent",
+              d["gesprek"] == "TalentTent" and d["titel"].startswith("TalentTent") and "TalentTent" in d["verbinding"], j("gesprek") + j("verbinding"))
+    check("blok 153: geen paginafouten", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -18130,6 +18286,7 @@ BLOKKEN = [
     blok_tt543_onderdeel6_blok3,
     blok_tt543_onderdeel7,
     blok_tt543_onderdeel8,
+    blok_tt543_onderdeel9,
 ]
 
 

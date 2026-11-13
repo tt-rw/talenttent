@@ -65,6 +65,22 @@ function showToast(msg, duration) {
   toastTimer = setTimeout(() => el.classList.remove('visible'), duration || 3500);
 }
 
+// TT-543 onderdeel 9 (besluit Ronald 13-11-2026, V4 A): een tik op een
+// e-mailadres kopieert het. Een mailapp openen gaat vaak mis; met het adres
+// op het klembord vindt de gebruiker zijn eigen mailapp. Lukt kopiëren niet,
+// dan staat het e-mailadres in de melding, zoals bij Delen (shareProfile).
+async function kopieerEmailadres(knop) {
+  const adres = knop.textContent.trim();
+  try {
+    await navigator.clipboard.writeText(adres);
+  } catch (e) {
+    logCaught('kopieerEmailadres', e);
+    showToast('Kopiëren lukt niet op dit apparaat. Kopieer het e-mailadres zelf: ' + adres);
+    return;
+  }
+  showToast('E-mailadres gekopieerd');
+}
+
 // Vertaalt technische fouten (Supabase/netwerk) naar begrijpelijke NL-tekst.
 // Plezier-principe: foutmeldingen moeten vriendelijk zijn, geen technisch jargon.
 // De volledige technische fout blijft altijd gelogd voor debugging.
@@ -186,7 +202,7 @@ function friendlyErrorMessage(err, actie) {
     return 'Te veel pogingen achter elkaar. Probeer het straks opnieuw.';
   }
   if (/failed to fetch|network|networkerror|load failed/i.test(msg)) {
-    return 'Geen verbinding met The Talent Tent. Controleer je internetverbinding en probeer het opnieuw.';
+    return 'Geen verbinding met TalentTent. Controleer je internetverbinding en probeer het opnieuw.';
   }
   if (status === 429) {
     return 'Te veel pogingen achter elkaar. Wacht een minuut en probeer het opnieuw.';
@@ -506,7 +522,7 @@ function hideSaving() {
 function showSaveSuccess() {
   document.getElementById('saveSpinner').style.display = 'none';
   document.getElementById('saveTitle').textContent = 'Profiel aangemaakt!';
-  document.getElementById('saveMsg').textContent = 'Welkom bij The Talent Tent! Je gaat naar je profiel...';
+  document.getElementById('saveMsg').textContent = 'Welkom bij TalentTent! Je gaat naar je profiel...';
   setTimeout(() => {
     document.getElementById('saveOverlay').classList.remove('visible');
     // TT-32 (07-08-2026): net als bij onUserLoggedIn() — een gloednieuw

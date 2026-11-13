@@ -176,8 +176,8 @@ async function shareProfile(kind, id, name) {
   const url = `${location.origin}${location.pathname}#${path}/${id}`;
   const label = kind === 'band' ? 'bandprofiel' : 'profiel';
   const shareData = {
-    title: `${name} op The Talent Tent`,
-    text: `Bekijk het ${label} van ${name} op The Talent Tent.`,
+    title: `${name} op TalentTent`,
+    text: `Bekijk het ${label} van ${name} op TalentTent.`,
     url
   };
   // TT-517 fase 8 (huisstijl §22): het visitekaartje gaat mee. Neemt het

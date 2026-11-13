@@ -1,6 +1,6 @@
 {
-  "name": "The Talent Tent — Talent zoekt talent",
-  "short_name": "Talent Tent",
+  "name": "TalentTent — Talent zoekt talent",
+  "short_name": "TalentTent",
   "description": "Vind muzikanten en bands bij jou in de buurt voor jam-sessies, repetities en optredens.",
   "start_url": "/",
   "display": "standalone",

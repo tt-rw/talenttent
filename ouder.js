@@ -441,11 +441,11 @@ function toestemmingVraagTonen(gegevens) {
   const naam = escHtml(gegevens.kind_voornaam);
   document.getElementById('toestemmingInhoud').innerHTML = `
     <h1 class="panel-title">${naam} vraagt je toestemming</h1>
-    <p class="toestemming-melding">${naam} heeft een profiel gemaakt op The Talent Tent
+    <p class="toestemming-melding">${naam} heeft een profiel gemaakt op TalentTent
        en kan pas verder als jij toestemming geeft.</p>
 
     <div class="toestemming-blok">
-      <h2>Wat The Talent Tent is</h2>
+      <h2>Wat TalentTent is</h2>
       <p>Een Nederlands platform waar muzikanten elkaar vinden om samen te spelen:
          jammen, repeteren, optreden.</p>
     </div>

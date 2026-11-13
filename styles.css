@@ -3009,20 +3009,33 @@
      draaiwielen deel 2, 8D 10-11-2026): omhoog stond de pagina boven de kop. */
   .menu-drager-plat { z-index: auto !important; }
 
-  /* TT-63 (09-08-2026): documentweergaven (privacy/voorwaarden/gedragscode) */
+  /* TT-63 (09-08-2026): documentweergaven (privacy/voorwaarden/gedragscode).
+     TT-543 onderdeel 9 (besluit Ronald 13-11-2026, V1 D): de leespagina's
+     (ook Over ons en het venster in Profiel aanmaken) hebben tekst 15/20px en
+     een kop van 15/20px vet in --accent, 24px erboven en 8px eronder. Een
+     lange tekst is om te lezen; de hoofdstukkop (22px) is voor schermen met
+     blokken. */
   .doc-view h2 {
     font-family: 'Inter', sans-serif;
     font-size: 15px;
+    line-height: 20px;
     font-weight: 700;
     color: var(--accent);
-    margin: 28px 0 10px;
+    margin: 24px 0 8px;
   }
-  .doc-view h2:first-of-type { margin-top: 4px; }
-  .doc-view p, .doc-view li { font-size: 12px; line-height: 1.7; color: var(--text); }
+  .doc-view .scherm-titel + h2 { margin-top: 0; }
+  .doc-view p, .doc-view li { font-size: 15px; line-height: 20px; color: var(--text); }
+  /* V4 A: een tik op een e-mailadres kopieert het (kopieerEmailadres in utils.js). */
+  .email-kopieer {
+    font: inherit; color: var(--accent); text-decoration: underline;
+    background: none; border: 0; padding: 0; margin: 0; cursor: pointer;
+  }
+  /* F3: de naam van een scherm breekt niet af ("E-mailvoorkeuren"). */
+  .niet-afbreken { white-space: nowrap; }
   .doc-view p { margin-bottom: 14px; }
   .doc-view ul { margin: 0 0 14px; padding-left: 20px; }
   .doc-view li { margin-bottom: 6px; }
-  .doc-view .doc-updated { font-size: 12px; color: var(--muted); margin-bottom: 24px; }
+  .doc-view .doc-updated { font-size: 12px; line-height: 18px; color: var(--muted); margin-bottom: 24px; }
 
   /* ── TT-01: Berichten (TT-34, 07-08-2026: cooler, WhatsApp-achtig
      gegroepeerd op gesprekspartner, met avatars en spraakbel-vormige

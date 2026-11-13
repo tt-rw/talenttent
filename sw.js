@@ -16,8 +16,8 @@ self.addEventListener('push', (event) => {
   let d = {};
   try { d = event.data ? event.data.json() : {}; } catch (e) { d = {}; }
   event.waitUntil((async () => {
-    await self.registration.showNotification(d.titel || 'Talent Tent', {
-      body: d.tekst || 'Je hebt een nieuw bericht van Talent Tent',
+    await self.registration.showNotification(d.titel || 'TalentTent', {
+      body: d.tekst || 'Je hebt een nieuw bericht van TalentTent',
       icon: 'icon-192.png',
       tag: SEINTJE_TAG,   // één seintje tegelijk: een nieuw vervangt het oude
       renotify: false,    // een tweede seintje maakt niet opnieuw gewijzigd lawaai

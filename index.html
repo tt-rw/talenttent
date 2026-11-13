@@ -38,20 +38,20 @@
     window.ttVroegeTik = knop;
   }, true);
 </script>
-<title>The Talent Tent — Talent zoekt talent</title>
+<title>TalentTent — Talent zoekt talent</title>
 
 <!-- TT-81 (10-08-2026, externe review 3.2): omschrijving + deelvoorbeeld.
      Zonder deze regels toont een gedeelde link naar talenttent.org in
      WhatsApp of op social media alleen de kale URL. Dit is één generieke
      preview voor de hele site. Een preview per profiel kan niet: dit is een
      single-page app zonder server, dus elke #hash levert dezelfde HTML. -->
-<meta name="description" content="The Talent Tent brengt muzikanten en bands bij elkaar voor jams, repetities en optredens. Maak een profiel, laat horen wat je speelt en vind muzikanten bij jou in de buurt.">
+<meta name="description" content="TalentTent brengt muzikanten en bands bij elkaar voor jams, repetities en optredens. Maak een profiel, laat horen wat je speelt en vind muzikanten bij jou in de buurt.">
 <link rel="canonical" href="https://talenttent.org/">
 
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="The Talent Tent">
+<meta property="og:site_name" content="TalentTent">
 <meta property="og:url" content="https://talenttent.org/">
-<meta property="og:title" content="The Talent Tent — Talent zoekt talent">
+<meta property="og:title" content="TalentTent — Talent zoekt talent">
 <meta property="og:description" content="Vind muzikanten en bands bij jou in de buurt voor jams, repetities en optredens.">
 <meta property="og:image" content="https://talenttent.org/icon-512.png?v=20261031a">
 <meta property="og:image:width" content="512">
@@ -59,11 +59,11 @@
 <meta property="og:locale" content="nl_NL">
 
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="The Talent Tent — Talent zoekt talent">
+<meta name="twitter:title" content="TalentTent — Talent zoekt talent">
 <meta name="twitter:description" content="Vind muzikanten en bands bij jou in de buurt voor jams, repetities en optredens.">
 <meta name="twitter:image" content="https://talenttent.org/icon-512.png?v=20261031a">
 
-<link rel="manifest" href="manifest.json?v=20261031a">
+<link rel="manifest" href="manifest.json?v=20261113a">
 <meta name="theme-color" content="#0d0d0d">
 <!-- TT-341 stap 3 (26-09-2026, besluit Ronald: "a"): licht of donker.
      Standaard volgt de app het toestel. Een eigen keuze uit Instellingen
@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261112i">
+<link rel="stylesheet" href="styles.css?v=20261113a">
 </head>
 <body>
 
@@ -616,7 +616,7 @@
 
     <div class="ouder-kaart">
       <p class="ouder-kaart-kop">Dit kun je ze laten lezen:</p>
-      <p>The Talent Tent is een Nederlands platform waar muzikanten elkaar vinden om samen te spelen: jammen, repeteren, optreden.</p>
+      <p>TalentTent is een Nederlands platform waar muzikanten elkaar vinden om samen te spelen: jammen, repeteren, optreden.</p>
       <p>Ik heb er een profiel gemaakt. Onder de 16 jaar mag dat alleen met toestemming van een ouder.</p>
       <p>Je krijgt één mail met één knop. Daarin staat precies wat er gebeurt.</p>
     </div>
@@ -1626,14 +1626,16 @@
 <!-- VIEW: Over ons -->
 <div class="app-view" id="view-about">
   <div class="search-wrap">
-    <div class="search-filters">
-      <div class="panel-title scherm-titel" style="margin-bottom:20px;">Over ons</div>
-      <div style="font-size:15px;line-height:1.7;color:var(--text);">
-        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat is The Talent Tent?</strong> The Talent Tent is een ontmoetingsplaats voor muzikanten. We zijn gestart voor jonge muzikanten die veel oefenen, maar moeilijk andere muzikanten vinden om mee samen te spelen. We merken dat er ook interesse is van ervaren, oudere muzikanten.</p>
-        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Wat doen we?</strong> Je krijgt een eigen pagina met je setlist en media, en een pagina voor elke band waar je deel van uitmaakt. Onze zoekfunctie vindt muzikanten en bands bij jou in de buurt. Bands zoeken hier een nieuw of tijdelijk lid. Wij helpen je op weg naar het podium.</p>
-        <p style="margin-bottom:20px;"><strong style="color:var(--accent);">Hoe werkt het?</strong> Je maakt een profiel aan, zoekt muzikanten en spreekt af om te jammen. Jij bepaalt welke informatie je met anderen deelt. Wie actief is, wordt sneller gevonden. Een volledig profiel levert meer applaus op.</p>
-        <p><strong style="color:var(--accent);">Contact</strong> Heb je een vraag, een idee of een storing? Dan horen we het graag: <a href="mailto:contact@talenttent.org" style="color:var(--accent);text-decoration:underline;">contact@talenttent.org</a>.</p>
-      </div>
+    <div class="search-filters doc-view">
+      <div class="panel-title scherm-titel">Over ons</div>
+      <h2>Wat is TalentTent?</h2>
+      <p>TalentTent is een ontmoetingsplaats voor muzikanten. We zijn gestart voor jonge muzikanten die veel oefenen, maar moeilijk andere muzikanten vinden om mee samen te spelen. We merken dat er ook interesse is van ervaren, oudere muzikanten.</p>
+      <h2>Wat doen we?</h2>
+      <p>Je krijgt een eigen pagina met je setlist en media, en een pagina voor elke band waar je deel van uitmaakt. Onze zoekfunctie vindt muzikanten en bands bij jou in de buurt. Bands zoeken hier een nieuw of tijdelijk lid. Wij helpen je op weg naar het podium.</p>
+      <h2>Hoe werkt het?</h2>
+      <p>Je maakt een profiel aan, zoekt muzikanten en spreekt af om te jammen. Jij bepaalt welke informatie je met anderen deelt. Wie actief is, wordt sneller gevonden. Een volledig profiel levert meer applaus op.</p>
+      <h2>Contact</h2>
+      <p>Heb je een vraag, een idee of een storing? Dan horen we het graag: <button type="button" class="email-kopieer" onclick="kopieerEmailadres(this)">contact@talenttent.org</button>.</p>
     </div>
   </div>
 </div>
@@ -1643,11 +1645,11 @@
   <div class="search-wrap">
     <div class="search-filters doc-view">
       <div class="panel-title scherm-titel">Privacyverklaring</div>
-      <div class="doc-updated">Laatst bijgewerkt: 6 november 2026</div>
+      <div class="doc-updated">Laatst bijgewerkt: 13 november 2026</div>
 
       <h2>1. Wie zijn wij</h2>
-      <p>The Talent Tent (talenttent.org) is een platform dat muzikanten met elkaar in contact brengt voor jams, repetities en optredens. The Talent Tent wordt beheerd door Ronald, als privépersoon.</p>
-      <p>Voor alles wat met privacy te maken heeft, is Ronald bereikbaar via <strong>privacy@talenttent.org</strong>.</p>
+      <p>TalentTent (talenttent.org) is een platform dat muzikanten met elkaar in contact brengt voor jams, repetities en optredens. TalentTent wordt beheerd door Ronald, als privépersoon.</p>
+      <p>Voor alles wat met privacy te maken heeft, is Ronald bereikbaar via <button type="button" class="email-kopieer" onclick="kopieerEmailadres(this)">privacy@talenttent.org</button>.</p>
 
       <h2>2. Welke gegevens verzamelen we</h2>
       <p>Als je een profiel aanmaakt, verzamelen we:</p>
@@ -1671,14 +1673,14 @@
 
       <h2>3. Waarom we deze gegevens gebruiken</h2>
       <p>We gebruiken je gegevens om je een profiel te geven dat andere muzikanten kunnen vinden, om muzikanten en bands die bij elkaar passen te kunnen tonen in de zoekfunctie, om berichten tussen gebruikers mogelijk te maken, en om je account veilig te houden en misbruik tegen te gaan.</p>
-      <p>We sturen je e-mails die bij je account horen: een bevestiging van je e-mailadres, een nieuw wachtwoord als je dat vraagt, en een overzicht van nieuwe berichten en passende muzikanten, volgens de voorkeur die je zelf instelt bij E-mailvoorkeuren.</p>
-      <p>We gebruiken je gegevens niet voor advertenties. The Talent Tent toont geen advertenties en verkoopt geen gegevens aan derden.</p>
+      <p>We sturen je e-mails die bij je account horen: een bevestiging van je e-mailadres, een nieuw wachtwoord als je dat vraagt, en een overzicht van nieuwe berichten en passende muzikanten, volgens de voorkeur die je zelf instelt bij <span class="niet-afbreken">E-mailvoorkeuren</span>.</p>
+      <p>Wij geven je gegevens alleen door aan de partijen in hoofdstuk 7.</p>
 
       <h2>4. Grondslag</h2>
       <p>We verwerken je gegevens op basis van de toestemming die je geeft bij het aanmaken van een account, en om de overeenkomst die ontstaat door het gebruik van de app (zie de Gebruiksvoorwaarden) te kunnen uitvoeren.</p>
 
       <h2>5. Minderjarigen</h2>
-      <p>The Talent Tent is bedoeld voor muzikanten vanaf 13 jaar.</p>
+      <p>TalentTent is bedoeld voor muzikanten vanaf 13 jaar.</p>
       <p>Ben je jonger dan 16 jaar? Dan mag je geen profiel zelfstandig aanmaken. Dat gebeurt samen met een ouder of verzorger, die toestemming geeft voor het gebruik van de app. In die leeftijd toont je profiel altijd je gebruikersnaam, nooit je echte naam. Je gebruikersnaam mag daarom niet je eigen (voor)naam zijn.</p>
       <p>De toestemming loopt via een e-mail aan het adres dat is opgegeven. We kunnen niet nagaan wie die mail leest. Daarom vragen we ouders: geef alleen toestemming als je de ouder of verzorger bent.</p>
       <p>Ben je jonger dan 13? Dan mag je geen profiel aanmaken, ook niet met hulp van een ouder.</p>
@@ -1690,15 +1692,16 @@
         <li>Je postcode wordt nooit aan andere gebruikers getoond. Je achternaam staat alleen op je profiel als je zelf kiest voor je echte naam.</li>
         <li>Berichten die je stuurt, zijn alleen zichtbaar voor jou en de ontvanger.</li>
         <li>Ben je jonger dan 16 jaar? Dan kan iemand van 18 of ouder je pas een bericht sturen nadat jij die persoon eerst een bericht stuurde. Met alle anderen kun je vrij berichten.</li>
-        <li>Een melding die je doet, gaat alleen naar ons (<strong>privacy@talenttent.org</strong>). Wie je meldt, ziet niet dat jij het was.</li>
+        <li>Een melding die je doet, gaat alleen naar ons (<button type="button" class="email-kopieer" onclick="kopieerEmailadres(this)">privacy@talenttent.org</button>). Wie je meldt, ziet niet dat jij het was.</li>
       </ul>
 
       <h2>7. Hosting, beveiliging en andere partijen</h2>
-      <p>De gegevens van The Talent Tent worden opgeslagen bij onze hostingpartij Supabase. Supabase slaat de gegevens op in Londen (Verenigd Koninkrijk). Volgens de Europese Commissie beschermt het VK persoonsgegevens op hetzelfde niveau als de EU (adequaatheidsbesluit). De verbinding tussen jouw browser en de app verloopt via een beveiligde verbinding (HTTPS). Wachtwoorden worden niet leesbaar opgeslagen.</p>
+      <p>De gegevens van TalentTent worden opgeslagen bij onze hostingpartij Supabase. Supabase slaat de gegevens op in Londen (Verenigd Koninkrijk). Volgens de Europese Commissie beschermt het VK persoonsgegevens op hetzelfde niveau als de EU (adequaatheidsbesluit). De verbinding tussen jouw browser en de app verloopt via een beveiligde verbinding (HTTPS). Wachtwoorden worden niet leesbaar opgeslagen.</p>
       <p>Daarnaast werken we met deze partijen:</p>
       <ul>
         <li>GitHub: draagt de website uit. Bezoekers sturen hun IP-adres naar GitHub.</li>
         <li>Backblaze (Amsterdam): bewaart versleutelde back-ups.</li>
+        <li>cloud86: verstuurt de e-mails van de app.</li>
       </ul>
 
       <h2>8. Hoe lang we je gegevens bewaren</h2>
@@ -1713,7 +1716,7 @@
       <p>We passen deze privacyverklaring aan zodra dat nodig is. De datum bovenaan dit document laat zien wanneer dat voor het laatst is gebeurd.</p>
 
       <h2>11. Contact</h2>
-      <p>Vragen over deze privacyverklaring? Mail naar <strong>privacy@talenttent.org</strong>.</p>
+      <p>Vragen over deze privacyverklaring? Mail naar <button type="button" class="email-kopieer" onclick="kopieerEmailadres(this)">privacy@talenttent.org</button>.</p>
     </div>
   </div>
 </div>
@@ -1723,55 +1726,44 @@
   <div class="search-wrap">
     <div class="search-filters doc-view">
       <div class="panel-title scherm-titel">Gebruiksvoorwaarden</div>
-      <div class="doc-updated">Laatst bijgewerkt: 25 september 2026</div>
+      <div class="doc-updated">Laatst bijgewerkt: 13 november 2026</div>
 
-      <p>Door een account aan te maken op The Talent Tent (talenttent.org) ga je akkoord met deze gebruiksvoorwaarden.</p>
+      <p>Door een account aan te maken op TalentTent (talenttent.org) ga je akkoord met deze gebruiksvoorwaarden.</p>
 
-      <h2>1. Wat is The Talent Tent</h2>
-      <p>The Talent Tent is een platform dat muzikanten met elkaar in contact brengt om samen te oefenen, een band te starten of op te treden. The Talent Tent brengt mensen bij elkaar, maar is zelf geen partij bij afspraken die je met andere gebruikers maakt.</p>
+      <h2>1. Wat is TalentTent</h2>
+      <p>TalentTent is een platform dat muzikanten met elkaar in contact brengt om samen te oefenen, een band te starten of op te treden. Een profiel is gratis en blijft gratis voor muzikanten tot en met 25 jaar. TalentTent brengt mensen bij elkaar, maar is zelf geen partij bij afspraken die je met andere gebruikers maakt.</p>
 
       <h2>2. Wie mag een account aanmaken</h2>
       <p>Je moet minimaal 13 jaar oud zijn om een profiel aan te maken. Ben je jonger dan 16 jaar, dan maak je een profiel samen met een ouder of verzorger. Door een account aan te maken, verklaar je dat de gegevens die je invult (waaronder je geboortedatum) kloppen.</p>
 
-      <h2>3. De sfeer die we willen</h2>
-      <p>The Talent Tent werkt het best als het een beetje aanvoelt als een community van muzikanten, niet als een zoekmachine. We hopen dat je:</p>
-      <ul>
-        <li>Andere muzikanten aanmoedigt — een compliment voor iemands repertoire, applaus voor een mooie stap (daar komt een aparte knop voor), of gewoon een berichtje dat je onder de indruk bent</li>
-        <li>Naar elkaar omkijkt — reageert op een uitnodiging, ook als het antwoord nee is</li>
-        <li>Mensen opzoekt die bij je passen en gewoon een keer voorstelt om samen te spelen</li>
-        <li>Nieuwe, onzekere muzikanten net zo warm ontvangt als ervaren spelers</li>
-        <li>Je voortgang bijhoudt in de app, zodat andere muzikanten je kunnen vinden als dat nodig is — bijvoorbeeld voor een optreden. Dat is meteen ook gewoon leuk: je persoonlijk profiel als muzikant bijhouden, zien hoe dat groeit</li>
-      </ul>
-      <p>Kortom: gebruik The Talent Tent zoals je ook in een muziekschool, oefenruimte of buurtband met elkaar zou omgaan.</p>
-
-      <h2>4. Je account</h2>
+      <h2>3. Je account</h2>
       <p>Je bent zelf verantwoordelijk voor je inloggegevens, en voor de juistheid van je profiel. Je maakt één profiel aan dat echt bij jou hoort. Merk je dat iemand anders toegang heeft tot je account, of zie je een profiel dat zich voordoet als iemand anders? Neem dan contact met ons op.</p>
 
-      <h2>5. Content die je plaatst</h2>
-      <p>Foto's, video's, songs en teksten die je op je profiel of bandprofiel zet, blijven van jou. Door ze te plaatsen, geef je The Talent Tent toestemming om ze te tonen aan andere gebruikers, zoals de functie van de app dat vereist. Zorg dat je het recht hebt om te delen wat je deelt.</p>
+      <h2>4. Content die je plaatst</h2>
+      <p>Foto's, video's, songs en teksten die je op je profiel of bandprofiel zet, blijven van jou. Door ze te plaatsen, geef je TalentTent toestemming om ze te tonen aan andere gebruikers, zoals de functie van de app dat vereist. Zorg dat je het recht hebt om te delen wat je deelt.</p>
 
-      <h2>6. Samen spelen, buiten de app</h2>
-      <p>The Talent Tent brengt muzikanten met elkaar in contact — de mooiste momenten gebeuren daarna, als je elkaar ontmoet en samen speelt. Wat je afspreekt en hoe die ontmoeting verloopt, is jouw eigen verantwoordelijkheid. Zie de Gedragscode voor een paar praktische tips voor een fijne, veilige eerste keer samenspelen.</p>
+      <h2>5. Samen spelen, buiten de app</h2>
+      <p>TalentTent brengt muzikanten met elkaar in contact — de mooiste momenten gebeuren daarna, als je elkaar ontmoet en samen speelt. Wat je afspreekt en hoe die ontmoeting verloopt, is jouw eigen verantwoordelijkheid. Zie de Gedragscode voor een paar praktische tips voor een fijne, veilige eerste keer samenspelen.</p>
 
-      <h2>7. Wat niet de bedoeling is</h2>
+      <h2>6. Wat niet de bedoeling is</h2>
       <p>Kort gezegd: behandel andere gebruikers zoals je zelf behandeld zou willen worden. Dat betekent onder meer geen ongepaste, kwetsende of ongewenste content of berichten, geen nepprofielen, geen spam, en de app niet gebruiken om mensen ergens toe te dwingen. De volledige lijst en de reden erachter staan in de Gedragscode.</p>
-      <p>Zie je gedrag dat hier niet bij past? Meld het met de knop ⋯ bij een profiel, een band of een gesprek, of mail naar <strong>privacy@talenttent.org</strong>. Afhankelijk van de situatie kunnen we content verwijderen, een waarschuwing geven, of een account blokkeren of verwijderen.</p>
+      <p>Zie je gedrag dat hier niet bij past? Meld het met de knop ⋯ bij een profiel, een band of een gesprek, of mail naar <button type="button" class="email-kopieer" onclick="kopieerEmailadres(this)">privacy@talenttent.org</button>. Afhankelijk van de situatie kunnen we content verwijderen, een waarschuwing geven, of een account blokkeren of verwijderen.</p>
 
-      <h2>8. Geen garanties</h2>
-      <p>We doen ons best om The Talent Tent goed te laten werken, maar kunnen niet garanderen dat de app altijd foutloos of ononderbroken beschikbaar is. We zijn niet aansprakelijk voor schade die ontstaat door het gebruik van de app, door contact met andere gebruikers, of door afspraken die je buiten de app om maakt — voor zover de wet dat toestaat.</p>
+      <h2>7. Geen garanties</h2>
+      <p>We doen ons best om TalentTent goed te laten werken, maar kunnen niet garanderen dat de app altijd foutloos of ononderbroken beschikbaar is. We zijn niet aansprakelijk voor schade die ontstaat door het gebruik van de app, door contact met andere gebruikers, of door afspraken die je buiten de app om maakt — voor zover de wet dat toestaat.</p>
 
-      <h2>9. Je account verwijderen</h2>
+      <h2>8. Je account verwijderen</h2>
       <p>Je kunt je account op elk moment zelf verwijderen via "Account verwijderen" in Instellingen. Al je gegevens — je profiel, repertoire, geüploade bestanden en alles wat daarbij hoort — worden dan <strong>permanent verwijderd</strong>. Zie de privacyverklaring voor de details.</p>
       <p>We kunnen je account ook zelf verwijderen of blokkeren als je deze voorwaarden of de gedragscode overtreedt.</p>
 
-      <h2>10. Wijzigingen</h2>
+      <h2>9. Wijzigingen</h2>
       <p>We passen deze voorwaarden aan zodra de app daar aanleiding toe geeft. Belangrijke wijzigingen laten we weten.</p>
 
-      <h2>11. Toepasselijk recht</h2>
+      <h2>10. Toepasselijk recht</h2>
       <p>Op deze voorwaarden is Nederlands recht van toepassing.</p>
 
-      <h2>12. Contact</h2>
-      <p>Vragen over deze voorwaarden? Mail naar <strong>privacy@talenttent.org</strong>.</p>
+      <h2>11. Contact</h2>
+      <p>Vragen over deze voorwaarden? Mail naar <button type="button" class="email-kopieer" onclick="kopieerEmailadres(this)">contact@talenttent.org</button>.</p>
     </div>
   </div>
 </div>
@@ -1781,13 +1773,13 @@
   <div class="search-wrap">
     <div class="search-filters doc-view">
       <div class="panel-title scherm-titel">Gedragscode</div>
-      <div class="doc-updated">Laatst bijgewerkt: 25 september 2026</div>
+      <div class="doc-updated">Laatst bijgewerkt: 13 november 2026</div>
 
-      <p>Muziek maken is het leukst als je het samen doet. Daarom bestaat The Talent Tent: om je te helpen andere muzikanten te vinden om mee te jammen, te repeteren of op te treden. Deze gedragscode gaat over hoe we dat met elkaar willen doen — met plezier, en met respect voor elkaar.</p>
+      <p>Muziek maken is het leukst als je het samen doet. Daarom bestaat TalentTent: om je te helpen andere muzikanten te vinden om mee te jammen, te repeteren of op te treden. Deze gedragscode gaat over hoe we dat met elkaar willen doen — met plezier, en met respect voor elkaar.</p>
 
       <h2>Waar we naar streven</h2>
       <ul>
-        <li><strong>Wees aanmoedigend.</strong> Iedereen begint ooit. Een compliment voor iemands repertoire, enthousiasme voor een nieuw instrument, of gewoon interesse tonen — dat maakt The Talent Tent leuker voor iedereen.</li>
+        <li><strong>Wees aanmoedigend.</strong> Iedereen begint ooit. Een compliment voor iemands repertoire, enthousiasme voor een nieuw instrument, of gewoon interesse tonen — dat maakt TalentTent leuker voor iedereen.</li>
         <li><strong>Wees eerlijk over wie je bent.</strong> Een kloppend profiel — met je echte niveau, je echte leeftijd, je echte ervaring — is de beste basis voor een goede match.</li>
         <li><strong>Reageer, ook als het antwoord nee is.</strong> Een korte, vriendelijke afwijzing is beter dan stilte.</li>
         <li><strong>Denk aan onze jongste muzikanten.</strong> Een deel van onze gebruikers is nog op de middelbare school. Behandel hen zoals je zou willen dat iemand jouw broer, zus, neefje of nichtje behandelt.</li>
@@ -1805,14 +1797,14 @@
       <p>Zoals overal waar verschillende mensen elkaar ontmoeten, spreken we ook af wat niet kan: pesten, intimideren of stalken, ongepaste of seksueel getinte berichten (zeker richting minderjarige gebruikers), discriminatie, nepprofielen, spam, en iemand onder druk zetten om iets te doen wat diegene niet wil. Bij twijfel: gebruik je gezonde verstand, en behandel anderen zoals je zelf behandeld zou willen worden.</p>
 
       <h2>Hoe je iets meldt</h2>
-      <p>Loopt iets niet zoals het hoort? Meld het met de knop ⋯ bij een profiel, een band of een gesprek, of mail naar <strong>privacy@talenttent.org</strong>. Wie je meldt, ziet niet dat jij het was. Je hoeft nooit te blijven zitten in een gesprek dat niet goed voelt — je mag het altijd stoppen, zonder uitleg. Via dezelfde knop ⋯ kun je iemand ook blokkeren.</p>
+      <p>Loopt iets niet zoals het hoort? Meld het met de knop ⋯ bij een profiel, een band of een gesprek, of mail naar <button type="button" class="email-kopieer" onclick="kopieerEmailadres(this)">privacy@talenttent.org</button>. Wie je meldt, ziet niet dat jij het was. Je hoeft nooit te blijven zitten in een gesprek dat niet goed voelt — je mag het altijd stoppen, zonder uitleg. Via dezelfde knop ⋯ kun je iemand ook blokkeren.</p>
       <p>Afhankelijk van de situatie kunnen we een waarschuwing geven, content verwijderen, of een account blokkeren of verwijderen. Bij twijfel kiezen we voor de veiligheid van onze gebruikers, zeker als het om minderjarigen gaat.</p>
 
       <h2>Wijzigingen</h2>
       <p>Deze gedragscode groeit mee met de app. De datum bovenaan laat zien wanneer dit voor het laatst is bijgewerkt.</p>
 
       <h2>Contact</h2>
-      <p>Vragen over deze gedragscode? Mail naar <strong>privacy@talenttent.org</strong>.</p>
+      <p>Vragen over deze gedragscode? Mail naar <button type="button" class="email-kopieer" onclick="kopieerEmailadres(this)">contact@talenttent.org</button>.</p>
     </div>
   </div>
 </div>
@@ -2199,7 +2191,7 @@
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeSearchPrefsModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">E-mailvoorkeuren</div>
-    <p class="voorkeur-intro">Deze keuze bepaalt ook of je een bericht van Talent Tent krijgt in je berichten, en een seintje op je toestel. Je zoekresultaten veranderen hier niet door.</p>
+    <p class="voorkeur-intro">Deze keuze bepaalt ook of je een bericht van TalentTent krijgt in je berichten, en een seintje op je toestel. Je zoekresultaten veranderen hier niet door.</p>
 
     <!-- TT-520 deel 2 (opdracht Ronald 27-10-2026: "een brij van knoppen en
          teksten"): elk blok begint met een vette kop; alles staat op één
@@ -2290,7 +2282,7 @@
 <div class="backend-error-overlay" id="backendErrorOverlay">
   <div class="backend-error-box">
     <div class="backend-error-title">De app kan nu niet starten</div>
-    <p>Een onderdeel van The Talent Tent is niet geladen. Daardoor werkt inloggen en zoeken op dit moment niet.</p>
+    <p>Een onderdeel van TalentTent is niet geladen. Daardoor werkt inloggen en zoeken op dit moment niet.</p>
     <p class="sub">Dit komt meestal door een tijdelijke storing of door je internetverbinding. Probeer het opnieuw. Blijft de melding staan? Mail dan naar contact@talenttent.org.</p>
     <button type="button" class="btn btn-primary" onclick="location.reload()">Opnieuw proberen</button>
   </div>
@@ -2304,16 +2296,16 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20261112f"></script>
-<script src="utils.js?v=20261112f"></script>
+<script src="utils.js?v=20261113a"></script>
 <script src="veiligheid.js?v=20261112a"></script>
 <script src="auth.js?v=20261112a"></script>
 <script src="postcode.js?v=20261110a"></script>
 <script src="wizard.js?v=20261112d"></script>
-<script src="ouder.js?v=20261112a"></script>
+<script src="ouder.js?v=20261113a"></script>
 <script src="search.js?v=20261112c"></script>
-<script src="musicians.js?v=20261112d"></script>
+<script src="musicians.js?v=20261113a"></script>
 <script src="bands.js?v=20261112g"></script>
-<script src="messages.js?v=20261112a"></script>
+<script src="messages.js?v=20261113a"></script>
 <script src="push.js?v=20261027b"></script>
 <script src="modals-shared.js?v=20261111a"></script>
 <script>

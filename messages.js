@@ -9,7 +9,7 @@ let activeConversationId = null; // musician-id van de open gespreksdraad
 // en matches als de mail; wie de mail uitzet, krijgt ook geen bericht. Het
 // gesprek is alleen te lezen: geen invoerveld, geen menu.
 const TT_GESPREK_ID = 'talent-tent';
-const TT_GESPREK_NAAM = 'Talent Tent';
+const TT_GESPREK_NAAM = 'TalentTent';
 // Het gesprek met The Talent Tent zelf heeft het logo als foto: een zwarte T
 // op geel. Geen lege foto, dus geen schijnwerper (TT-517 fase 6).
 const TT_AVATAR_HTML = '<span class="avatar-t avatar-logo">T</span>';
@@ -829,7 +829,7 @@ async function openTalentTentGesprek(stil) {
       return scheiding + inhoud;
     }).join('');
     threadEl.innerHTML = html || emptyStateHTML(
-      'Nog geen berichten van Talent Tent',
+      'Nog geen berichten van TalentTent',
       'Nieuwe matches bij jou in de buurt staan hier.',
       'Muzikanten zoeken',
       "openZoekMuzikanten()"
@@ -847,7 +847,7 @@ async function openTalentTentGesprek(stil) {
     scrollThreadToBottom();
   } catch (e) {
     logCaught('openTalentTentGesprek', e);
-    threadEl.innerHTML = foutStaatHTML(e, 'de berichten van Talent Tent laden', 'openTalentTentGesprek(true)');
+    threadEl.innerHTML = foutStaatHTML(e, 'de berichten van TalentTent laden', 'openTalentTentGesprek(true)');
   }
 }
 
