@@ -267,9 +267,7 @@ function friendlyErrorMessage(err, actie) {
 // keuze: anders had elk van de tientallen velden in index.html een eigen lege
 // <p> nodig, en zou een nieuw veld die stilzwijgend kunnen missen.
 const VELDFOUT_ICOON =
-  '<svg class="field-msg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
-  ' stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
-  '<circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16.5v.01"/></svg>';
+  '<svg class="field-msg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.57" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>';
 
 function veldElement(el) {
   return (typeof el === 'string') ? document.getElementById(el) : el;
@@ -1123,12 +1121,12 @@ function addSong(title, artist) {
 // zonder rand. Eén vorm voor de wizard en de tegel; een eigen variant is een fout.
 const NUMMERS_MIN = 3;
 const BEHEERSING_NAMEN = { basis: 'Basis', bijna: 'Bijna', podium: 'Podium' };
-const PIJL_OMLAAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+const PIJL_OMLAAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 // Het sluitteken van de app (zie .modal-close), met een viewBox precies om
 // de inkt: zo ligt de inkt exact waar de opmaak hem zet (TT-514, uitlijning).
 // Besluit Ronald 03-11-2026 (1A, "maak dit overal gelijk"): elk kruisje
 // achter een rij (setlist, links, covers, Mix & Match) is dit kruisje.
-const RIJ_KRUIS = '<svg viewBox="4 4 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>';
+const RIJ_KRUIS = '<svg viewBox="4.75 4.75 14.5 14.5" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
 // ─── Lange nummerlijst op een profiel: ingeklapt tot zeven ───────────────────
 // Besluit Ronald, 26-10-2026 (optie 1): meer dan zeven nummers maakt een
 // profiel onleesbaar. Het profiel opent met zeven nummers; de laatste rijen
@@ -1172,8 +1170,11 @@ function nummersInklapWissel(lijst) {
 // knop, als drie labels in de vorm van het niveaulabel (optie 1 op beeld);
 // een tik ernaast annuleert. Vervangt "overnemen zonder niveau". Het vinkje
 // haalt het nummer meteen weg, zonder menu.
-const OVERNEEM_PLUS = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1v8M1 5h8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
-const OVERNEEM_VINK = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 5.2l2.3 2.3L8.5 2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+// TT-543 onderdeel 10 (besluit Ronald 13-11-2026, 2-19): een teken onder 16px is
+// nooit dunner dan 1,5px op het scherm. Lijn in het raster van 24 = 1,5 × 24 / maat:
+// 10px 3,6; 14px 2,57 (ook PERSONEN_TEKEN en het teken bij een veldfout).
+const OVERNEEM_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
+const OVERNEEM_VINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
 let eigenNummerSleutels = null; // Set van "titel|||artiest", of null als (nog) onbekend
 const nummerSleutel = (titel, artiest) => `${String(titel || '').toLowerCase()}|||${String(artiest || '').toLowerCase()}`;
 
@@ -1276,7 +1277,7 @@ function nummerTekstHTML(artiest, titel) {
   return `<span class="song-tekst"><span class="song-artiest">${escHtml(artiest || '')}</span>` +
     (titel ? `<span class="song-titel">${escHtml(titel)}</span>` : '') + `</span>`;
 }
-const PERSONEN_TEKEN ='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>';
+const PERSONEN_TEKEN ='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.57" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>';
 
 // Geeft de veldfout terug als er te weinig nummers zijn, anders een lege
 // lijst. Gebruikt door nextStep(3) (wizard) en saveJeSetlist() (tegel):
@@ -1655,7 +1656,7 @@ function tekenKeuzeMenu(id) {
 // TT-588 (besluit Ronald 10-11-2026: "M2 met een gele pijl"): het teken dat er
 // meer regels zijn dan in beeld passen. Niet bij de labelvorm (§7.7). Onderaan
 // gescrold krijgt het menu de klasse .onderaan en verdwijnt het teken.
-const KEUZE_MEER_PIJL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+const KEUZE_MEER_PIJL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 function keuzeMeerTeken(menu) {
   if (menu.classList.contains('beheersing-menu')) return;
   if (menu.scrollHeight <= menu.clientHeight + 1) return;
@@ -2279,7 +2280,7 @@ function mediaLinkMiniatuurHTML(url) {
 // daarom de bestanden mee, zie linkBannerTik()).
 // Het plusteken van "+ Toevoegen" (Je mediahoek) en "+ Instrument" en "+ Genre"
 // (TT-543 blok 4): één tekening.
-const PLUS_TEKEN = '<svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const PLUS_TEKEN = '<svg class="media-toevoegen-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
 
 function mediaRasterHTML(bestanden, links, voorvoegsel) {
   const fn = n => mediaFnNaam(voorvoegsel, n);
@@ -2576,7 +2577,7 @@ function wazigWaasZetten(img) {
 // video is (de hoes en de videotegel op het profiel). Alleen een teken, geen
 // knop: de tik gaat naar het vlak eronder. Besluit Ronald, 08-10-2026: "niet
 // zichtbaar in de banner dat het een video is. voeg een play teken toe."
-const SPEELTEKEN_HTML = '<span class="pb-speel" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg></span>';
+const SPEELTEKEN_HTML = '<span class="pb-speel" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg></span>';
 
 // De bron-attributen voor een beeld in de hoes. Een foto of video uit de
 // eigen opslag laadt met crossorigin, zodat de app het beeld kan meten. Een
@@ -2586,7 +2587,7 @@ function hoesBronAttr(src) {
   return (fotoLinkSleutel(src) ? 'crossorigin="anonymous" ' : '') + fotoBronAttr(src);
 }
 
-const HOES_PIJL = r => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="${r ? '9 5 16 12 9 19' : '15 5 8 12 15 19'}"/></svg>`;
+const HOES_PIJL = r => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${r ? '<path d="m9 18 6-6-6-6"/>' : '<path d="m15 18-6-6 6-6"/>'}</svg>`;
 
 // o.foto: de profiel- of bandfoto (uit safeUrl) of null; o.wazig: het wazige
 // beeld van een afgeschermde foto (wazigBron(), TT-517 fase 7) of null; o.naam: de naam als
@@ -2668,8 +2669,7 @@ function profielHoesHTML(o) {
   const kaart = o.kaart ? ` data-kaart="${escHtml(JSON.stringify(o.kaart))}"` : '';
   return `<div class="hoes"${kaart}>
     <div class="hoes-beeld"><div class="hoes-spoor">${eerste}${vlakken}</div>${meer}${knop}</div>
-    <div class="hoes-tekst"><div class="profile-name"${o.naamMax ? ` data-max="${Number(o.naamMax)}"` : ''}>${naam}</div><div class="profiel-regels">${o.regels}</div></div>
-    ${o.knoppen}
+    <div class="hoes-tekst"><div class="profile-name"${o.naamMax ? ` data-max="${Number(o.naamMax)}"` : ''}>${naam}</div><div class="profiel-regels">${o.regels}</div>${o.knoppen}</div>
   </div>`;
 }
 
@@ -2824,7 +2824,9 @@ function hoesStarten(root) {
 // en rechtsboven, vallen samen op de naam (Ronald 01-11-2026: "lichtstralen
 // van linksboven en rechtsboven"). De app meet waar de naam werkelijk staat (de
 // letters, niet zijn vak) en tekent de bundels op de maat van de hoes: elke
-// bundel eindigt zo breed als de naam, de lichtvlek ligt op de naam.
+// bundel eindigt zo breed als de naam. TT-543 onderdeel 10 (besluit Ronald
+// 13-11-2026, 2-6 E): het geel 2,2 keer zo fel, zonder lichtvlek op de naam,
+// zodat de naam leesbaar blijft (wit op de slechtste plek 5,1:1).
 // Elke hoes eigen namen voor zijn filter en verlopen: een verborgen scherm met
 // dezelfde namen zou ze anders wegnemen.
 let hoesBundelTeller = 0;
@@ -2838,17 +2840,15 @@ function hoesBundelZetten(hoes) {
   const n = r.getBoundingClientRect(), b = beeld.getBoundingClientRect();
   const W = Math.round(b.width), H = Math.round(b.height);
   const x0 = Math.round(n.left - b.left) - 8, x1 = Math.round(n.right - b.left) + 8;
-  const x = (n.left + n.right) / 2 - b.left, y = Math.round((n.top + n.bottom) / 2 - b.top);
+  const y = Math.round((n.top + n.bottom) / 2 - b.top);
   const bron = Math.round(W * 0.07); // de halve breedte van een bundel bij de lamp
   const bundel = lx => `<polygon points="${lx - bron},-8 ${lx + bron},-8 ${x1},${y} ${x0},${y}"/>`;
   const geel = 'style="stop-color:var(--merk)"';
   const id = vak.dataset.id || (vak.dataset.id = 'hb' + (++hoesBundelTeller));
   vak.innerHTML = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><defs>` +
     `<filter id="${id}z" x="-.5" y="-.5" width="2" height="2"><feGaussianBlur stdDeviation="${Math.max(4, W / 60).toFixed(1)}"/></filter>` +
-    `<linearGradient id="${id}l" x2="0" y2="1"><stop offset="0" ${geel} stop-opacity=".36"/><stop offset="1" ${geel} stop-opacity=".12"/></linearGradient>` +
-    `<radialGradient id="${id}e"><stop offset="0" ${geel} stop-opacity=".5"/><stop offset="1" ${geel} stop-opacity="0"/></radialGradient></defs>` +
-    `<g filter="url(#${id}z)" fill="url(#${id}l)">${bundel(Math.round(W * 0.06))}${bundel(Math.round(W * 0.94))}</g>` +
-    `<ellipse cx="${Math.round(x)}" cy="${y}" rx="${Math.round((x1 - x0) * 0.62)}" ry="${Math.round(H * 0.11)}" fill="url(#${id}e)"/></svg>`;
+    `<linearGradient id="${id}l" x2="0" y2="1"><stop offset="0" ${geel} stop-opacity=".792"/><stop offset="1" ${geel} stop-opacity=".264"/></linearGradient></defs>` +
+    `<g filter="url(#${id}z)" fill="url(#${id}l)">${bundel(Math.round(W * 0.06))}${bundel(Math.round(W * 0.94))}</g></svg>`;
 }
 
 // ─── TT-517 fase 8: het visitekaartje (huisstijl §22, besluit Ronald 31-10-2026) ─
@@ -2983,23 +2983,18 @@ async function kaartMaken(g, beeld) {
     if (o && o.donker) kleur = K.antraciet;
   } else {
     // De schijnwerper van hoesBundelZetten(): twee bundels uit de bovenhoeken
-    // die samen op de naam vallen, en een lichtvlek op de naam.
+    // die samen op de naam vallen, zonder lichtvlek (2-6 E, 13-11-2026).
     const x0 = KAART_MARGE - 8 * S, x1 = KAART_MARGE + naamBreed + 8 * S;
-    const ym = naamBasis - 0.365 * n, xm = (x0 + x1) / 2;
+    const ym = naamBasis - 0.365 * n;
     const bron = W * 0.07;
     const [b, bx] = kaartDoek(W, H);
     for (const lx of [W * 0.06, W * 0.94]) {
       const v = bx.createLinearGradient(0, -8, 0, ym);
-      v.addColorStop(0, 'rgba(255,184,28,.36)'); v.addColorStop(1, 'rgba(255,184,28,.12)');
+      v.addColorStop(0, 'rgba(255,184,28,.792)'); v.addColorStop(1, 'rgba(255,184,28,.264)');
       bx.fillStyle = v;
       bx.beginPath(); bx.moveTo(lx - bron, -8); bx.lineTo(lx + bron, -8); bx.lineTo(x1, ym); bx.lineTo(x0, ym); bx.closePath(); bx.fill();
     }
     x.drawImage(kaartVaag(b, Math.max(4, W / 60)), 0, 0);
-    const rx = (x1 - x0) * 0.62, ry = H * 0.11;
-    x.save(); x.translate(xm, ym); x.scale(1, ry / rx);
-    const e = x.createRadialGradient(0, 0, 0, 0, 0, rx);
-    e.addColorStop(0, 'rgba(255,184,28,.5)'); e.addColorStop(1, 'rgba(255,184,28,0)');
-    x.fillStyle = e; x.beginPath(); x.arc(0, 0, rx, 0, 2 * Math.PI); x.fill(); x.restore();
   }
 
   x.fillStyle = kleur;

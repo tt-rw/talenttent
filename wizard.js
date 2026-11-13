@@ -508,7 +508,7 @@ async function renderEmailBevestigBanner() {
   bevestigPeilStarten();
   el.innerHTML = `
     <div class="melding melding-met-sluit">
-      <button type="button" class="modal-close" onclick="bevestigMeldingSluiten()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+      <button type="button" class="modal-close" onclick="bevestigMeldingSluiten()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
       <p class="melding-kop">Nog één stap: bevestig je e‑mailadres</p>
       <p class="melding-tekst">We hebben een mail gestuurd naar <strong id="bevestigEmailadres">${escHtml(currentUser.email || '')}</strong>. Tik op de knop in die mail. Daarna staat je profiel online en kun je berichten sturen.</p>
       <div id="bevestigKnoppen">

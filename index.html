@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261113a">
+<link rel="stylesheet" href="styles.css?v=20261113b">
 </head>
 <body>
 
@@ -130,10 +130,15 @@
      de pijl 26px, de hamburger 20px, in dezelfde 44px-knop. Beide op 24px
      gezet: dat is optisch in evenwicht, de knop en de tussenruimte blijven
      ongewijzigd. -->
+<!-- TT-543 onderdeel 10 (2-13): de tekens komen uit Lucide, lijn 2,5. De pijl,
+     de hamburger en het kruisje van een venster staan 29px van hun rand (TT-318,
+     besluit Ronald). In Lucide ligt hun inkt 0,75 eenheid verder naar binnen dan
+     in de oude tekening; de viewBox schuift hem 0,75px terug (pijl "0.75 0 24 24",
+     hamburger en kruisje "-0.75 0 24 24"). Gemeten in blok 25. -->
 <header>
   <div class="kop-vak kop-links">
     <button class="nav-menu-btn kop-terug" id="navTerugBtn" onclick="terugKnop()" aria-label="Terug" title="Terug">
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
+      <svg viewBox="0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
     </button>
   </div>
   <div class="logo"><span>TALENT</span>TENT</div>
@@ -152,7 +157,7 @@
          bepalen. Het uitklappaneel blijft wél in .app-nav-row staan: dat is
          het ankerpunt waaronder het openklapt, en dat verandert niet. -->
     <button class="nav-menu-btn" id="navMenuBtn" onclick="toggleNavMenu(event)" aria-label="Meer opties" title="Meer">
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      <svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg>
     </button>
   </div>
   <div class="tagline">Talent zoekt talent</div>
@@ -228,23 +233,23 @@
        plek waar een gebruiker "begin hier" leest. Was Zoeken · Berichten ·
        Bands · Profiel. Alle knop-id's blijven ongewijzigd. -->
   <button class="bottom-nav-btn" id="bottomNavProfile" onclick="requireLogin('myprofile')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     <span>Profiel</span>
   </button>
   <button class="bottom-nav-btn" id="bottomNavSearch" onclick="showView('search')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
     <span>Zoeken</span>
   </button>
   <button class="bottom-nav-btn" id="bottomNavMessages" onclick="requireLogin('messages')">
     <span class="bottom-nav-icon-wrap">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M22 6l-10 7L2 6"></path></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
       <span id="unreadBadgeBottom" class="unread-badge" style="display:none;"></span>
     </span>
     <span>Berichten</span>
   </button>
   <button class="bottom-nav-btn" id="bottomNavBands" onclick="requireLogin('bands')">
     <span class="bottom-nav-icon-wrap">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
       <!-- TT-432: stip zonder cijfer zolang een verzoek om het beheer over te nemen wacht -->
       <span id="bandsDotBottom" class="bands-dot" style="display:none;" aria-label="Een verzoek wacht"></span>
     </span>
@@ -1005,7 +1010,7 @@
       <div class="bb-rollen-veld" id="bbRollenVeld" aria-label="Rollen"></div>
       <div class="choice-menu menu-breed" id="bbRollenMenu" role="listbox" aria-label="Rollen"></div>
     </div>
-    <button type="button" class="picker-field picker-toevoegen toevoegen-breed" onclick="bbLidUitnodigen()"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="picker-field-label">Lid uitnodigen</span></button>
+    <button type="button" class="picker-field picker-toevoegen toevoegen-breed" onclick="bbLidUitnodigen()"><svg class="media-toevoegen-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span class="picker-field-label">Lid uitnodigen</span></button>
 
     <div class="band-tegel-blok" id="bbUitgenodigdBlok" hidden>
       <h2 class="hoofdstuk-kop">Uitgenodigd</h2>
@@ -1016,7 +1021,7 @@
       <h2 class="hoofdstuk-kop">Open rollen</h2>
       <div class="bb-lijst" id="bbOpen"></div>
       <div class="menu-anchor toevoegen-breed">
-        <button type="button" class="picker-field picker-toevoegen" id="bbRolKnop"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="picker-field-label" id="bbRolKnopLabel">Open rol toevoegen</span></button>
+        <button type="button" class="picker-field picker-toevoegen" id="bbRolKnop"><svg class="media-toevoegen-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span class="picker-field-label" id="bbRolKnopLabel">Open rol toevoegen</span></button>
         <div class="choice-menu menu-breed" id="bbRolMenu" role="listbox" aria-label="Open rol"></div>
       </div>
       <div id="bbRolBadges" hidden></div>
@@ -1028,7 +1033,7 @@
       <!-- TT-543 onderdeel 6, blok 2 (besluit Ronald 11-11-2026, B2-8): geen
            datum en geen formulier meer; het keuzemenu van Open rol. -->
       <div class="menu-anchor toevoegen-breed">
-        <button type="button" class="picker-field picker-toevoegen" id="bbInvalKnop"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="picker-field-label" id="bbInvalKnopLabel">Invaller toevoegen</span></button>
+        <button type="button" class="picker-field picker-toevoegen" id="bbInvalKnop"><svg class="media-toevoegen-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span class="picker-field-label" id="bbInvalKnopLabel">Invaller toevoegen</span></button>
         <div class="choice-menu menu-breed" id="bbInvalMenu" role="listbox" aria-label="Invaller"></div>
       </div>
       <div id="bbInvalBadges" hidden></div>
@@ -1080,7 +1085,7 @@
       <h2 class="hoofdstuk-kop">Eigen nummers</h2>
       <p class="field-hint bb-hint">Titel en link. Bezoekers spelen ze af in de app.</p>
       <div id="bmzNummers"></div>
-      <button type="button" class="picker-field picker-toevoegen toevoegen-breed" onclick="bmzNummerErbij()"><svg class="media-toevoegen-plus" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v14M3 10h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="picker-field-label">Nummer toevoegen</span></button>
+      <button type="button" class="picker-field picker-toevoegen toevoegen-breed" onclick="bmzNummerErbij()"><svg class="media-toevoegen-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span class="picker-field-label">Nummer toevoegen</span></button>
     </div>
 
     <div class="band-tegel-blok">
@@ -1200,11 +1205,11 @@
          pijl (Laag 2, besluit Ronald 25-10-2026; icoonvlak 26-10-2026). Het
          bestaande tegelpatroon (.tile), zoals in Instellingen. -->
     <button type="button" class="tile zoek-tegel" id="zoekTegelMuzikanten" onclick="openZoekScherm('muzikanten')">
-      <span class="zoek-tegel-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"></circle><path d="M2 21v-1a6 6 0 0 1 9.5-4.9"></path><circle cx="17" cy="16" r="3"></circle><line x1="22" y1="21" x2="19.2" y2="18.2"></line></svg></span>
+      <span class="zoek-tegel-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="4"/><path d="M10.3 15H7a4 4 0 0 0-4 4v2"/><circle cx="17" cy="17" r="3"/><path d="m21 21-1.9-1.9"/></svg></span>
       <span class="zoek-tegel-tekst"><span class="tile-title">Muzikanten</span><span class="tile-sub">Muzikanten en bands bij jou in de buurt</span></span>
     </button>
     <button type="button" class="tile zoek-tegel" id="zoekTegelMixMatch" onclick="openZoekScherm('mixmatch')">
-      <span class="zoek-tegel-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg></span>
+      <span class="zoek-tegel-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/></svg></span>
       <span class="zoek-tegel-tekst"><span class="tile-title">Mix &amp; Match</span><span class="tile-sub">Vergelijk setlists met andere muzikanten</span></span>
     </button>
   </div>
@@ -1259,7 +1264,7 @@
            in search.js), rechts Filters met het pijltje (3C). -->
       <div class="zoek-wis-rij zoek-filters-rij">
         <label class="zoek-onthoud"><input type="checkbox" id="zoekOnthoud" onchange="onthoudKlik(this)"><span>Onthoud mijn zoekopdracht</span></label>
-        <button type="button" class="zoek-filters-knop" id="zoekFiltersKnop" aria-expanded="false" aria-controls="zoekFilterVak" onclick="toggleZoekFilters()"><span id="zoekFiltersTekst">Filters</span><svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+        <button type="button" class="zoek-filters-knop" id="zoekFiltersKnop" aria-expanded="false" aria-controls="zoekFilterVak" onclick="toggleZoekFilters()"><span id="zoekFiltersTekst">Filters</span><svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
       </div>
 
       <!-- Filters (TT-543 draaiwielen, besluiten Ronald 09-11-2026): Naam,
@@ -1414,7 +1419,7 @@
       <div class="field">
         <div class="label-rij zoek-label-rij">
           <label for="setlistArtistSearch">Band of artiest</label>
-          <button type="button" class="zoek-filters-knop" id="mmFiltersKnop" aria-expanded="false" aria-controls="mmFilterVak" onclick="toggleMmFilters()"><span id="mmFiltersTekst">Filters</span><svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+          <button type="button" class="zoek-filters-knop" id="mmFiltersKnop" aria-expanded="false" aria-controls="mmFilterVak" onclick="toggleMmFilters()"><span id="mmFiltersTekst">Filters</span><svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         </div>
         <div class="song-search-wrap">
           <input type="text" id="setlistArtistSearch" placeholder="Bijv. Metallica of Adele" autocomplete="off"
@@ -1483,7 +1488,7 @@
            nummers eronder open, "Band · Nummer", op band en dan nummer; de lijst
            blijft open en een gekozen nummer heeft het vinkje. -->
       <div class="zoek-wis-rij">
-        <button type="button" class="zoek-filters-knop mm-setlijst-knop" id="mmSetlijstKnop" aria-expanded="false" aria-controls="mmSetlijst" onclick="toggleMmSetlijst()" hidden>Uit je setlist<svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+        <button type="button" class="zoek-filters-knop mm-setlijst-knop" id="mmSetlijstKnop" aria-expanded="false" aria-controls="mmSetlijst" onclick="toggleMmSetlijst()" hidden>Uit je setlist<svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         <button type="button" class="zoek-wissen-knop" onclick="resetSetlistSearch()">Wissen</button>
       </div>
       <div class="mm-setlijst" id="mmSetlijst" role="listbox" aria-label="Uit je setlist" aria-multiselectable="true" hidden></div>
@@ -1612,7 +1617,7 @@
                invoerveld. Anders klapt het toetsenbord weg, komt de onderbalk
                terug en springt het beeld heen en weer. -->
           <textarea id="messagesReplyInput" rows="1" placeholder="Typ een bericht..." maxlength="2000" oninput="berichtInvoerBijwerken()"></textarea>
-          <button class="messages-send-btn" onmousedown="event.preventDefault()" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+          <button class="messages-send-btn" onmousedown="event.preventDefault()" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
         </div>
         <div id="messagesReplyCounter" class="teken-teller" hidden></div>
         <!-- V-04 (13-08-2026): i.p.v. een actief invoerveld naar een niet meer
@@ -2003,7 +2008,7 @@
      dat in een app-schil de gebruiker uit de app zou sturen. -->
 <div class="modal-overlay" id="mediaLightbox" data-close="closeMediaLightbox" onclick="if(event.target===this)closeMediaLightbox()">
   <div class="modal-box" style="padding:12px;display:flex;align-items:center;justify-content:center;">
-    <button class="modal-close" onclick="closeMediaLightbox()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+    <button class="modal-close" onclick="closeMediaLightbox()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     <img id="mediaLightboxImg" src="" alt="Foto" style="max-width:100%;max-height:80vh;width:auto;height:auto;border-radius:8px;display:block;">
   </div>
 </div>
@@ -2017,7 +2022,7 @@
   <div class="modal-box media-speler-box">
     <div class="media-speler-kop">
       <span class="media-speler-titel" id="mediaSpelerTitel"></span>
-      <button class="modal-close" onclick="closeMediaSpeler()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+      <button class="modal-close" onclick="closeMediaSpeler()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     </div>
     <div class="media-speler-beeld" id="mediaSpelerBeeld"></div>
     <div class="media-speler-voet" id="mediaSpelerVoet"></div>
@@ -2031,7 +2036,7 @@
      is de enige uitgang (huisstijl §9). Functies in utils.js. -->
 <div class="modal-overlay" id="linkToevoegenModal" data-close="sluitLinkToevoegen" onclick="if(event.target===this)sluitLinkToevoegen()">
   <div class="modal-box modal-box-md">
-    <button class="modal-close" onclick="sluitLinkToevoegen()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+    <button class="modal-close" onclick="sluitLinkToevoegen()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     <div class="filter-title">Link toevoegen</div>
     <div class="field-group single">
       <div class="field">
@@ -2112,7 +2117,7 @@
 <!-- Geblokkeerde muzikanten (TT-06, 18-09-2026) -->
 <div class="modal-overlay" id="geblokkeerdModal" onclick="if(event.target===this)closeGeblokkeerdModal()">
   <div class="modal-box modal-box-md">
-    <button class="modal-close" onclick="closeGeblokkeerdModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+    <button class="modal-close" onclick="closeGeblokkeerdModal()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">Geblokkeerde muzikanten</div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:20px;">Je ziet ze niet in de zoekresultaten, en hun berichten komen niet bij je aan.</p>
     <div id="geblokkeerdLijst"></div>
@@ -2126,7 +2131,7 @@
      opruimfunctie draait als het kruisje (TT-294); het kruisje blijft staan. -->
 <div class="modal-overlay" id="inloggegevensModal" data-close="closeInloggegevens" onclick="if(event.target===this)closeInloggegevens()">
   <div class="modal-box modal-box-md">
-    <button class="modal-close" onclick="closeInloggegevens()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+    <button class="modal-close" onclick="closeInloggegevens()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     <!-- TT-543 blok 2 (besluit Ronald 07-11-2026): geen zin onder de titel; de titel zegt het al. -->
     <div class="filter-title">Je inloggegevens</div>
 
@@ -2189,7 +2194,7 @@
      eruit (Ronald, 09-09-2026): dat staat al in de zoekfilters. -->
 <div class="modal-overlay" id="searchPrefsModal" onclick="if(event.target===this)closeSearchPrefsModal()">
   <div class="modal-box modal-box-md">
-    <button class="modal-close" onclick="closeSearchPrefsModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+    <button class="modal-close" onclick="closeSearchPrefsModal()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">E-mailvoorkeuren</div>
     <p class="voorkeur-intro">Deze keuze bepaalt ook of je een bericht van TalentTent krijgt in je berichten, en een seintje op je toestel. Je zoekresultaten veranderen hier niet door.</p>
 
@@ -2236,7 +2241,7 @@
      de toelichtende tekst in niveaubepaling-naslagwerk.md. -->
 <div class="modal-overlay" id="niveauInfoModal" onclick="if(event.target===this)this.classList.remove('visible')">
   <div class="modal-box modal-box-xl">
-    <button class="modal-close" onclick="document.getElementById('niveauInfoModal').classList.remove('visible')" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+    <button class="modal-close" onclick="document.getElementById('niveauInfoModal').classList.remove('visible')" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
 
     <div id="niveauInfoModalContent"></div>
   </div>
@@ -2256,7 +2261,7 @@
      zodat view-register nooit wordt verlaten en er dus niets verloren gaat. -->
 <div class="modal-overlay" id="legalModal" onclick="if(event.target===this)closeLegalModal()">
   <div class="modal-box modal-box-xl">
-    <button class="modal-close" onclick="closeLegalModal()" aria-label="Sluiten"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button>
+    <button class="modal-close" onclick="closeLegalModal()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     <div id="legalModalContent" class="doc-view"></div>
   </div>
 </div>
@@ -2296,15 +2301,15 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20261112f"></script>
-<script src="utils.js?v=20261113a"></script>
-<script src="veiligheid.js?v=20261112a"></script>
+<script src="utils.js?v=20261113b"></script>
+<script src="veiligheid.js?v=20261113b"></script>
 <script src="auth.js?v=20261112a"></script>
 <script src="postcode.js?v=20261110a"></script>
-<script src="wizard.js?v=20261112d"></script>
+<script src="wizard.js?v=20261113b"></script>
 <script src="ouder.js?v=20261113a"></script>
 <script src="search.js?v=20261112c"></script>
-<script src="musicians.js?v=20261113a"></script>
-<script src="bands.js?v=20261112g"></script>
+<script src="musicians.js?v=20261113b"></script>
+<script src="bands.js?v=20261113b"></script>
 <script src="messages.js?v=20261113a"></script>
 <script src="push.js?v=20261027b"></script>
 <script src="modals-shared.js?v=20261111a"></script>

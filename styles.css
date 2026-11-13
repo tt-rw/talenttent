@@ -132,9 +132,9 @@
     --rand-neutraal: #3a3a3a;               /* badge, profielfoto, lege ster in een badge */
     --rand-knop: #888;                      /* rand van de tweede knop (.btn-ghost): 3:1 of meer op elk vlak, besluit Ronald 27-09-2026 */
     --ongelezen: #e5533d;                   /* rood rondje met het aantal ongelezen berichten */
-    --bericht-eigen: #E5A623;               /* je eigen bericht: warm goud (TT-440; TT-517 mee verwarmd, besluit Ronald 31-10-2026; was #E0B52A) */
-    --bericht-rand-eigen: #E5A623;
-    --bericht-eigen-tekst: #1E1E1E;         /* tekst in je eigen bericht: 8,6:1; vlak tegen de ondergrond 10:1 */
+    --bericht-eigen: var(--merk);           /* je eigen bericht: de merkkleur, één geel in een gesprek (TT-543 onderdeel 10, besluit Ronald 13-11-2026, 2-3 A; was #E5A623) */
+    --bericht-rand-eigen: var(--merk);
+    --bericht-eigen-tekst: #1E1E1E;         /* tekst in je eigen bericht: 9,6:1 op het merkgeel */
     --bericht-ander: #333333;               /* het bericht van de ander: 1,54:1 tegen de ondergrond, tekst 11,1:1 (TT-440; was --surface2, 1,17:1) */
     --bericht-rand: #333333;
     --knop-klein-vlak: var(--surface2);     /* vlak onder het berichticoon op een resultaat */
@@ -151,8 +151,10 @@
     --voorbeeldtekst-licht: #6E6A63;        /* TT-512: voorbeeldtekst in een veld, alleen in licht (huisstijl §7) */
     /* TT-517 fase 6: de schijnwerper, twee warme lichtbundels in warmgeel (--merk), van linksboven en rechtsboven
        (huisstijl §21). In licht en donker gelijk: hij staat op het podium, niet op het thema.
-       Klein in een rondje of vierkant (lijst, bezetting, gesprek); groot in de hoes, boven de naam. */
-    --bundel-klein: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><defs><filter id='z' x='-.5' y='-.5' width='2' height='2'><feGaussianBlur stdDeviation='2.5'/></filter><linearGradient id='l' x2='0' y2='1'><stop offset='0' stop-color='%23FFB81C' stop-opacity='.4'/><stop offset='1' stop-color='%23FFB81C' stop-opacity='.14'/></linearGradient><radialGradient id='e'><stop offset='0' stop-color='%23FFB81C' stop-opacity='.5'/><stop offset='1' stop-color='%23FFB81C' stop-opacity='0'/></radialGradient></defs><g filter='url(%23z)' fill='url(%23l)'><polygon points='4,0 18,0 70,80 34,80'/><polygon points='82,0 96,0 66,80 30,80'/></g><ellipse cx='50' cy='80' rx='34' ry='9' fill='url(%23e)'/></svg>");
+       Klein in een rondje of vierkant (lijst, bezetting, gesprek); groot in de hoes, boven de naam.
+       TT-543 onderdeel 10 (besluiten Ronald 13-11-2026, 2-6 E en 2-18): het geel 2,2 keer zo fel, zonder
+       lichtvlek; klein blijft het licht op het midden ("Overal licht op het midden"). */
+    --bundel-klein: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><defs><filter id='z' x='-.5' y='-.5' width='2' height='2'><feGaussianBlur stdDeviation='2.5'/></filter><linearGradient id='l' x2='0' y2='1'><stop offset='0' stop-color='%23FFB81C' stop-opacity='.88'/><stop offset='1' stop-color='%23FFB81C' stop-opacity='.308'/></linearGradient></defs><g filter='url(%23z)' fill='url(%23l)'><polygon points='4,0 18,0 70,80 34,80'/><polygon points='82,0 96,0 66,80 30,80'/></g></svg>");
     /* TT-517 fase 6: het silhouet in de voorbeeldfoto bij het uploaden, zwart met een smalle warme
        rand, zonder instrument (huisstijl §2): één persoon of drie (band). */
     --silhouet-muzikant: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%23050506' stroke='%238A6A22' stroke-width='1.4' stroke-linejoin='round'><g transform='translate(50 0) scale(1)' transform-origin='0 100'><circle cx='0' cy='38' r='9.5'/><path d='M-15 100 L-14 62 Q-13 51 -4 50 L4 50 Q13 51 14 62 L15 100 Z'/></g></svg>");
@@ -219,8 +221,8 @@
     --schaduw-melding: 0 4px 20px rgba(30,30,30,0.06);
     --rand-neutraal: #ADA698;      /* TT-402: rand van een tag, 2,2:1 op crème (was #CFC9BC) */
     --rand-knop: #8A8782;          /* tweede knop: 3:1 of meer op crème en wit (Ronald, 27-09-2026) */
-    --bericht-eigen: #FFC94D;       /* vol geel (TT-440; TT-517 mee verwarmd, besluit Ronald 31-10-2026; was #F2CE4A) */
-    --bericht-rand-eigen: #FFC94D;
+    --bericht-eigen: var(--merk);   /* de merkkleur, één geel (TT-543 onderdeel 10, 2-3 A; was #FFC94D) */
+    --bericht-rand-eigen: var(--merk);
     --bericht-eigen-tekst: #1E1E1E;
     --bericht-ander: var(--surface);
     --bericht-rand: #8A8782;        /* TT-440: rand van het bericht van de ander, 3,2:1 op crème (was #B8B4AA, 1,9:1) */
@@ -1938,10 +1940,18 @@
   .hoes .profile-name { margin: 0; color: inherit; font-weight: 900; line-height: 1.1; }
   .hoes .profile-meta { color: inherit; }
 
-  /* Delen en ⋯ rechtsonder, op de regel van de naam, zonder vlak eronder
-     (besluit Ronald 31-10-2026, positie 2). Het ⋯ staat recht onder de
-     hamburger. */
-  .hoes .profiel-knoppen { position: absolute; right: 1px; bottom: 10px; margin: 0; color: inherit; }
+  /* Delen en ⋯ rechtsonder, zonder vlak eronder (besluit Ronald 31-10-2026,
+     positie 2). Het ⋯ staat recht onder de hamburger. TT-543 onderdeel 10
+     (besluit Ronald 13-11-2026, 2-7 A): de tekens staan op het midden van naam
+     en regel samen. Ze staan daarom in .hoes-tekst, met hun midden op de helft
+     van zijn hoogte (een knop is 44px); rechts steken ze buiten het tekstvak,
+     tot 1px van de rand van de hoes. Een marge, geen transform: een transform
+     maakt een eigen laag, en dan dekt de donkere laag van een open ⋯-menu de
+     kop en de onderbalk niet meer af (§8.2). */
+  .hoes .profiel-knoppen {
+    position: absolute; top: 50%; right: calc(1px - var(--hoes-tekst-rechts, 78px));
+    margin: -22px 0 0; color: inherit; pointer-events: auto;
+  }
   .hoes .profiel-menu-plek { margin: 0; }
   .hoes .profiel-knoppen .nav-menu-btn { color: inherit; }
 
@@ -2751,7 +2761,13 @@
      30-09-2026: het woord blijft staan). */
   .landing-dia { position: absolute; inset: 0; opacity: 0; transition: opacity .9s ease; }
   .landing-dia.aan { opacity: 1; }
-  .landing-dia img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; display: block; }
+  /* TT-543 onderdeel 10 (besluit Ronald 13-11-2026, 2-15): één warme
+     kleurbewerking voor elke foto (filter), zodat de set één geheel is. Hier,
+     niet in de bestanden: een nieuwe foto krijgt hem vanzelf. */
+  .landing-dia img {
+    width: 100%; height: 100%; object-fit: cover; object-position: center 30%; display: block;
+    filter: sepia(.28) saturate(1.15) hue-rotate(-6deg) contrast(1.06) brightness(1.02);
+  }
   .landing-dia.aan img { animation: landingZoom 9s ease-out forwards; }
   @keyframes landingZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
   .landing-verloop { position: absolute; inset: 0; pointer-events: none; background: var(--foto-verloop); }
@@ -3118,8 +3134,12 @@
     margin-bottom: 16px;
   }
   .messages-thread-header .messages-conv-avatar { width: 40px; height: 40px; font-size: 17px; }
-  .filter-title.messages-thread-naam { font-size: 17px; line-height: 22px; margin: 0; } /* de kleur en dikte van een paneeltitel blijven */
+  /* TT-543 onderdeel 10 (besluit Ronald 13-11-2026, 2-5): de naam en ⋯ in de
+     kop van een gesprek in de tekstkleur, niet warmgeel; in licht verandert
+     niets (daar is --accent al de tekstkleur). De dikte van een paneeltitel blijft. */
+  .filter-title.messages-thread-naam { font-size: 17px; line-height: 22px; margin: 0; color: var(--text); }
   .messages-thread-acties { margin-left: auto; }
+  .messages-thread-acties .nav-menu-btn { color: var(--text); }
   /* F5: de menuknop heeft onder zich de marge van de kop; in deze rij niet,
      anders is de rij 8px hoger dan het tikvlak en staat ⋯ 4px te hoog. */
   .messages-thread-acties .nav-menu-btn { margin-bottom: 0; }
@@ -4310,7 +4330,9 @@
   .band-hoes .hoes-tekst { bottom: 14px; }
   .band-hoes .hoes .profile-name { line-height: 32px; }
   .band-hoes .hoes .profile-meta { margin: 0; line-height: 18px; }
-  .band-hoes .hoes .profiel-knoppen { right: 16px; bottom: 14px; }
+  /* De gele pil "Zoekt …" staat op de plek van delen en ⋯ (2-7 A); hij is
+     lager dan een knop en heeft geen menu, dus hier wel een transform. */
+  .band-hoes .hoes .profiel-knoppen { right: calc(16px - var(--hoes-tekst-rechts, 78px)); margin: 0; transform: translateY(-50%); }
   .mijn-band-melding { margin-top: 8px; }
   .mijn-band-wacht { margin: 8px 0 0; font-size: 12px; line-height: 18px; color: var(--muted); }
 

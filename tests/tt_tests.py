@@ -2910,8 +2910,8 @@ def blok_browser():
             const sw = parseFloat(el.closest('svg').getAttribute('stroke-width')) / 2;
             return kant === 'l' ? m.a * (b.x - sw) + m.e : m.a * (b.x + b.width + sw) + m.e; };
           return {
-            pijlLinks: +(x(document.querySelector('#navTerugBtn polyline'), 'l') - h.left).toFixed(1),
-            hamRechts: +(h.right - x(document.querySelector('#navMenuBtn line'), 'r')).toFixed(1)
+            pijlLinks: +(x(document.querySelector('#navTerugBtn path'), 'l') - h.left).toFixed(1),
+            hamRechts: +(h.right - x(document.querySelector('#navMenuBtn path'), 'r')).toFixed(1)
           };
         }""")
         check("pijl en hamburger staan even ver van hun eigen rand (TT-318)",
@@ -2931,7 +2931,7 @@ def blok_browser():
           return {
             dikte: t.getAttribute('stroke-width'), hamDikte: h.getAttribute('stroke-width'),
             vulling: t.getAttribute('fill'),
-            lijn: !!t.querySelector('polyline')
+            lijn: !!t.querySelector('path')
           };
         }""")
         maten = page.evaluate("""() => [...document.querySelectorAll('.kop-terug svg, #navMenuBtn svg')]
@@ -2947,8 +2947,8 @@ def blok_browser():
         })""")
         check("terugpijl en hamburger worden allebei op 24×24px getekend (TT-388)",
               getekend == ["24x24", "24x24"], json.dumps(getekend))
-        check("het terugteken is een lijn-teken met dezelfde dikte als de hamburger (huisstijl §12)",
-              teken["dikte"] == teken["hamDikte"] == "2" and teken["vulling"] == "none"
+        check("het terugteken is een lijn-teken met dezelfde dikte als de hamburger, lijn 2,5 (huisstijl §12; TT-543 onderdeel 10, 2-13)",
+              teken["dikte"] == teken["hamDikte"] == "2.5" and teken["vulling"] == "none"
               and teken["lijn"], json.dumps(teken))
 
         zicht = page.evaluate("""() => {
@@ -4006,9 +4006,9 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             const knop = plek && plek.querySelector('.nav-menu-btn');
             const kb = knop ? knop.getBoundingClientRect() : null;
             const naam = sc.querySelector('.profile-name');
-            const hl = document.querySelector('#navMenuBtn line');
-            const hb = hl.getBBox(), hm = hl.getScreenCTM();
-            const kL = hm.a * (hb.x - 1) + hm.e, kR = hm.a * (hb.x + hb.width + 1) + hm.e;
+            const hl = document.querySelector('#navMenuBtn path');
+            const hb = hl.getBBox(), hm = hl.getScreenCTM(), hs = parseFloat(hl.closest('svg').getAttribute('stroke-width')) / 2;
+            const kL = hm.a * (hb.x - hs) + hm.e, kR = hm.a * (hb.x + hb.width + hs) + hm.e;
             return {
               inKoprij: !!(plek && plek.closest('.modal-kop')),
               // TT-517 fase 4: delen en ⋯ staan rechtsonder in de hoes, bij de naam.
@@ -4055,7 +4055,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         print("\nBlok 34 — één kruisje in elk venster (TT-322)")
         html322 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
         knoppen = re.findall(r'<button class="modal-close"[^>]*>(.*?)</button>', html322, re.S)
-        teken = '<line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line>'
+        teken = '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'  # het sluitteken uit Lucide (TT-543 onderdeel 10, 2-13)
         check("elk kruisje in index.html is het sluitteken, nergens meer de letter ✕",
               len(knoppen) == 8 and all(teken in k and "✕" not in k for k in knoppen), str(len(knoppen)))  # 11 sinds TT-543 blok 3 (Link toevoegen); 10 sinds TT-543 onderdeel 4 (Lid uitnodigen weg); 8 sinds TT-543 draaiwielen deel 2 (de twee vensters met een lijst weg)
         check("elk kruisje heeft een aria-label",
@@ -4074,8 +4074,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             const box = ov.querySelector('.modal-box');
             const k = ov.querySelector('.modal-close');
             const kb = k.getBoundingClientRect(), bb = box.getBoundingClientRect();
-            const l = k.querySelector('line'); const b = l.getBBox(), m = l.getScreenCTM();
-            const inktR = m.a * (b.x + b.width + 1) + m.e;
+            const l = k.querySelector('svg path'); const b = l.getBBox(), m = l.getScreenCTM(), hs = parseFloat(l.closest('svg').getAttribute('stroke-width')) / 2;
+            const inktR = m.a * (b.x + b.width + hs) + m.e;
             const na = getComputedStyle(k, '::after').content;
             uit[id] = { rechts: +(bb.right - inktR).toFixed(1), midY: Math.round((kb.top + kb.bottom) / 2 - bb.top),
                         b: Math.round(kb.width), h: Math.round(kb.height), cirkel: getComputedStyle(k).borderRadius,
@@ -4625,7 +4625,8 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         # TT-517 fase 6: het profielvlak zonder foto is het podium van de schijnwerper (huisstijl §21), niet meer geel met de T.
         check("donker: profielvlak zonder foto is het podium #101114 (TT-517 fase 6)", d40["avatar"][0] == "rgb(16, 17, 20)", json.dumps(d40["avatar"]))
         # TT-371 (variant C) en TT-440 (Ronald, 08-10-2026, "1 - rustig"): niet grijs, warm goud, niet het merkgeel. Blok 47 toetst de kleur.
-        check("donker: je eigen bericht is warm goud #E5A623, niet het merkgeel", d40["eigen"] == "rgb(229, 166, 35)", d40["eigen"])
+        # TT-543 onderdeel 10 (besluit Ronald 13-11-2026, 2-3 "A."): één geel in een gesprek, het merkgeel.
+        check("donker: je eigen bericht is het merkgeel #FFB81C, één geel met de verstuurknop (2-3 A)", d40["eigen"] == "rgb(255, 184, 28)", d40["eigen"])
         # TT-520 (besluit Ronald 25-10-2026, richting A): de gekozen knop blijft
         # grijs, met een gele streep onder het woord. Was een geel vlak.
         check("donker en licht: actieve tab onderin blijft grijs, met een gele streep onder het woord (TT-520)",
@@ -4655,7 +4656,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("licht: gekozen tabblad is een geel vlak met zwarte tekst",
               l40["gekozen"] == ["rgb(255, 184, 28)", "rgb(30, 30, 30)"], json.dumps(l40["gekozen"]))
         check("licht: profielvlak zonder foto is het podium #101114, in elk thema gelijk (TT-517 fase 6)", l40["avatar"][0] == "rgb(16, 17, 20)", json.dumps(l40["avatar"]))
-        check("licht: je eigen bericht vol geel #FFC94D (TT-440)", l40["eigen"] == "rgb(255, 201, 77)", l40["eigen"])
+        check("licht: je eigen bericht is het merkgeel #FFB81C, één geel met de verstuurknop (2-3 A)", l40["eigen"] == "rgb(255, 184, 28)", l40["eigen"])
         check("licht: ongelezen blijft hetzelfde rood als donker", l40["ongelezen"] == d40["ongelezen"], l40["ongelezen"])
         check("licht: veldlabel donker, gewone letters",
               l40["label"] == ["none", "rgb(30, 30, 30)"], json.dumps(l40["label"]))
@@ -5452,10 +5453,10 @@ window.TT_STUB.fnAntwoord = {};
               dag: Math.round(r(dag).height + parseFloat(cs(dag).marginTop) + parseFloat(cs(dag).marginBottom)) };
             plek.remove(); return uit; };
           const d = meet(null), l = meet('licht'); delete document.documentElement.dataset.theme; return { d, l }; }""")
-        check("donker: je eigen bericht is warm goud (#E5A623) met zwarte tekst (TT-440)",
-              bb["d"]["eigen"] == ["rgb(229, 166, 35)", "rgb(30, 30, 30)"], json.dumps(bb["d"]))
-        check("licht: je eigen bericht is vol geel (#FFC94D) met zwarte tekst (TT-440)",
-              bb["l"]["eigen"] == ["rgb(255, 201, 77)", "rgb(30, 30, 30)"], json.dumps(bb["l"]))
+        check("donker: je eigen bericht is het merkgeel (#FFB81C) met zwarte tekst (TT-440; 2-3 A)",
+              bb["d"]["eigen"] == ["rgb(255, 184, 28)", "rgb(30, 30, 30)"], json.dumps(bb["d"]))
+        check("licht: je eigen bericht is het merkgeel (#FFB81C) met zwarte tekst (TT-440; 2-3 A)",
+              bb["l"]["eigen"] == ["rgb(255, 184, 28)", "rgb(30, 30, 30)"], json.dumps(bb["l"]))
         check("het bericht van de ander is zichtbaar tegen de ondergrond: donker #333333, licht rand #8A8782 (TT-440)",
               bb["d"]["ander"] == "rgb(51, 51, 51)" and bb["l"]["anderRand"] == "rgb(138, 135, 130)", json.dumps([bb["d"]["ander"], bb["l"]["anderRand"]]))
         check("de tijd in je eigen bericht heeft dekking 0,85 (TT-440)",
@@ -5662,7 +5663,7 @@ window.TT_STUB.fnAntwoord = {};
             const menu = knop && knop.parentElement.querySelector('.profile-actions-menu-wrap .nav-menu-btn, .profiel-menu-plek .nav-menu-btn');
             const regels = vak.querySelector('.profiel-regels');
             const k = rect(knop), m = rect(menu), r = rect(regels), n = rect(naam);
-            // TT-517 fase 4: de knoppen staan rechtsonder op de hoes, op de regel onder de naam.
+            // TT-517 fase 4: de knoppen staan rechtsonder op de hoes; sinds TT-543 onderdeel 10 (2-7 A) op het midden van naam en regel samen.
             const f = rect(vak.querySelector('.hoes-beeld'));
             // De inkt: de meest rechtse cirkel van het deelteken en de stippen van het menu.
             const inktR = knop ? Math.max(...[...knop.querySelectorAll('circle')].map(c => rect(c).right)) : null;
@@ -5679,7 +5680,7 @@ window.TT_STUB.fnAntwoord = {};
               menuMaat: m ? [Math.round(m.width), Math.round(m.height)] : null,
               overlap: (k && m) ? +(k.right - m.left).toFixed(1) : null,
               inktGat: (inktR != null && stipL != null) ? +(stipL - inktR).toFixed(1) : null,
-              hoogte: (k && r) ? +(((k.top + k.bottom) - (r.top + r.bottom)) / 2).toFixed(1) : null,
+              hoogte: (k && r && n) ? +(((k.top + k.bottom) - (n.top + r.bottom)) / 2).toFixed(1) : null,
               opFoto: (k && f) ? k.left >= f.left && k.right <= f.right && k.bottom <= f.bottom : null,
               naamVol: !!(naam && naam.clientWidth === naam.parentElement.clientWidth),
               naamRegels: (n && r) ? +(r.top - n.bottom).toFixed(1) : null,
@@ -5731,9 +5732,10 @@ window.TT_STUB.fnAntwoord = {};
                           ("je eigen profiel in het venster", d50["eigenInVenster"]), ("bandvenster", d50["band"])):
             check(f"{naam50}: precies één deelicoon, geen brede deelknop meer",
                   v["aantal"] == 1 and v["breed"] == 0, json.dumps(v))
-            # TT-517 fase 4 (besluit Ronald 31-10-2026, positie 2): rechtsonder op de hoes,
-            # op de regel onder de naam. Muzikant en band gelijk. Was naast de ronde foto (TT-384).
-            check(f"{naam50}: het deelicoon is 44×44 en staat rechtsonder op de hoes, op de regel onder de naam",
+            # TT-517 fase 4 (besluit Ronald 31-10-2026, positie 2): rechtsonder op de hoes. Sinds
+            # TT-543 onderdeel 10 (besluit Ronald 13-11-2026, 2-7 A) op het midden van naam en regel
+            # samen; was op de regel onder de naam. Muzikant en band gelijk.
+            check(f"{naam50}: het deelicoon is 44×44 en staat rechtsonder op de hoes, op het midden van naam en regel samen (2-7 A)",
                   v["maat"] == [44, 44] and v["opFoto"] and v["hoogte"] is not None and abs(v["hoogte"]) <= 1, json.dumps(v))
             check(f"{naam50}: de naam heeft de volle breedte, de regels staan er direct onder",
                   v["naamVol"] and v["naamRegels"] is not None and 0 <= v["naamRegels"] <= 8, json.dumps(v))
@@ -5918,7 +5920,7 @@ window.TT_STUB.fnAntwoord = {};
             const h = vak.querySelector('.hoes');
             return { eerste: vak.firstElementChild && vak.firstElementChild.className,
               naamInHoes: !!(h && h.querySelector('.hoes-tekst > .profile-name + .profiel-regels')),
-              knoppenInHoes: !!(h && h.querySelector(':scope > .profiel-knoppen .deel-knop')),
+              knoppenInHoes: !!(h && h.querySelector(':scope > .hoes-tekst > .profiel-knoppen .deel-knop')),  // TT-543 onderdeel 10 (2-7 A): in het tekstvak
               eenHoes: vak.querySelectorAll('.hoes').length, rondeFoto: vak.querySelectorAll('.profile-avatar-photo, .profile-avatar-initials, .bandfoto').length };
           };
           const uit = {};
@@ -11547,9 +11549,9 @@ def blok_tt517_fase1():
         "licht": [rol(licht, r) for r in ("merk", "merk-hover", "gekozen-vlak", "gekozen-rand", "bericht-eigen", "bericht-rand-eigen")],
     }
     check("warmgeel #FFB81C in elke gele rol, met de afgeleide tinten (donker)",
-          rollen["donker"] == ["#FFB81C", "#FFB81C", "#FFC444", "#FFB81C", "#1E1E1E", "#E5A623", "#E5A623"], json.dumps(rollen))  # gekozen-tekst donker sinds fase 11 (B)
+          rollen["donker"] == ["#FFB81C", "#FFB81C", "#FFC444", "#FFB81C", "#1E1E1E", "VAR(--MERK)", "VAR(--MERK)"], json.dumps(rollen))  # gekozen-tekst donker sinds fase 11 (B); eigen bericht = --merk sinds TT-543 onderdeel 10 (2-3 A)
     check("warmgeel #FFB81C in elke gele rol, met de afgeleide tinten (licht)",
-          rollen["licht"] == ["#FFB81C", "#FFC444", "#FFB81C", "#FFB81C", "#FFC94D", "#FFC94D"], json.dumps(rollen))
+          rollen["licht"] == ["#FFB81C", "#FFC444", "#FFB81C", "#FFB81C", "VAR(--MERK)", "VAR(--MERK)"], json.dumps(rollen))
     oud = [f for f in TT517_APP for kleur in ("f5c518", "ffd700", "ffd23f", "e0b52a", "f2ce4a", "c8a800")
            if kleur in re.sub(r'/\*.*?\*/', '', lees(f), flags=re.S).lower()]
     check("het oude geel staat nergens meer in de app", not oud, json.dumps(oud))
@@ -12003,7 +12005,7 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
         naamPx: getComputedStyle(n).fontSize, naamBreed: n.clientWidth, afgekapt: n.scrollWidth > n.clientWidth,
         naamRaaktKnop: kn.length ? nb.right > kn[0].left + 17 && nb.bottom > kn[0].top + 10 : false,
         menuOnderHamburger: kn.length ? Math.round((kn[kn.length - 1].left + kn[kn.length - 1].right) / 2 - (ham.left + ham.right) / 2) : null,
-        knopOpRegel: kn.length ? Math.round((kn[kn.length - 1].top + kn[kn.length - 1].bottom) / 2 - (mb.top + mb.bottom) / 2) : null,
+        knopOpMidden: kn.length ? (() => { const t = ho.querySelector('.hoes-tekst').getBoundingClientRect(); return Math.round((kn[kn.length - 1].top + kn[kn.length - 1].bottom) / 2 - (t.top + t.bottom) / 2); })() : null,
         donker: ho.classList.contains('tekst-donker'), vlakken: [...ho.querySelectorAll('.hoes-vlak')].map(x => (x.dataset.tekst || '-') + (x.querySelector('.hoes-waas') ? '+waas' : '') + (x.classList.contains('hoes-veilig') ? '+veilig' : '')),
         lagen: vlak.querySelectorAll('.hoes-waas img').length,
         podium: getComputedStyle(vlak).backgroundColor, eersteIsFoto: !!vlak.querySelector('img.hoes-img'),
@@ -12107,8 +12109,8 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
           and all(r[k]["marge"] == "16px" for k in hoes3), json.dumps(f) + str((r[(390, "mijn")]["breed"], r[(390, "mijn")]["hoog"])))
     f = {f"{b}:{n}": 1 for b, n in hoes3 if not (r[(b, n)]["naamOpFoto"] and r[(b, n)]["metaOpFoto"] and r[(b, n)]["knoppenOpFoto"])}
     check("naam, regel, delen en ⋯ staan op de foto, muzikant en band gelijk", not f, json.dumps(f))
-    f = {f"{b}:{n}": [r[(b, n)]["menuOnderHamburger"], r[(b, n)]["knopOpRegel"]] for b, n in hoes3 if abs(r[(b, n)]["menuOnderHamburger"]) > 1 or abs(r[(b, n)]["knopOpRegel"]) > 1}
-    check("delen en ⋯ rechtsonder op de regel onder de naam, het ⋯ recht onder de hamburger (positie 2)", not f, json.dumps(f))
+    f = {f"{b}:{n}": [r[(b, n)]["menuOnderHamburger"], r[(b, n)]["knopOpMidden"]] for b, n in hoes3 if abs(r[(b, n)]["menuOnderHamburger"]) > 1 or abs(r[(b, n)]["knopOpMidden"]) > 1}
+    check("delen en ⋯ rechtsonder op het midden van naam en regel samen (TT-543 onderdeel 10, 2-7 A), het ⋯ recht onder de hamburger (positie 2)", not f, json.dumps(f))
     # TT-543 onderdeel 3 (1E): Mijn Profiel heeft alleen het deelicoon; de naam krijgt de plek van het ⋯ erbij.
     check("de naam is op 390px 264px breed naast de twee knoppen (een ander profiel), 300px naast alleen het deelicoon (Mijn Profiel), nooit afgekapt",
           r[(390, "ander")]["naamBreed"] == 264 and r[(390, "mijn")]["naamBreed"] == 300 and not any(r[k]["afgekapt"] for k in r if isinstance(r[k], dict) and "afgekapt" in r[k]),
@@ -12321,8 +12323,10 @@ def blok_tt517_fase6():
     check("elk vak zonder foto heeft het podium als ondergrond, geen geel (zes vakken; de bandkaart is weg)", not f, str(f))
     rol = lambda n: (re.search(r"--" + n + r":\s*(url\(\"data:image/svg\+xml,[^\n]*\"\));", css) or [None, ""])[1]
     utl6 = lees("utils.js")
-    check("twee bundels in warmgeel: klein #FFB81C uit de twee bovenhoeken, groot in --merk; het silhouet zwart met een warme rand #8A6A22 (huisstijl §2, §21)",
+    check("twee bundels in warmgeel: klein #FFB81C uit de twee bovenhoeken, groot in --merk; klein op het midden, het geel van E, geen lichtvlek (2-6, 2-18); het silhouet zwart met een warme rand #8A6A22 (huisstijl §2, §21)",
           "%23FFB81C" in rol("bundel-klein") and rol("bundel-klein").count("<polygon") == 2 and "--bundel-groot" not in css
+          and "stop-opacity='.88'" in rol("bundel-klein") and "stop-opacity='.308'" in rol("bundel-klein") and "<ellipse" not in rol("bundel-klein")
+          and "<polygon points='4,0 18,0 70,80 34,80'/><polygon points='82,0 96,0 66,80 30,80'/>" in rol("bundel-klein")  # 2-18: klein licht op het midden, geel van E, geen lichtvlek
           and 'style="stop-color:var(--merk)"' in utl6
           and all("%23050506" in rol(n) and "%238A6A22" in rol(n) for n in ("silhouet-muzikant", "silhouet-band"))
           and rol("silhouet-band").count("<circle") == 3 and rol("silhouet-muzikant").count("<circle") == 1)
@@ -12365,11 +12369,12 @@ window.TT_STUB.data.bands[0].founder_id = 'm1';
         u.bundels = p.length;
         u.lampen = p.map(q => Math.round(((q[0][0] + q[1][0]) / 2) / W * 100));
         u.voet = Math.max(...p.map(q => Math.max(Math.abs(q[3][0] - (nx - 8)), Math.abs(q[2][0] - (nr + 8)), Math.abs(q[2][1] - ny), Math.abs(q[3][1] - ny))));
-        const el = bu.querySelector('ellipse');
-        u.vlek = Math.round(Math.max(Math.abs(+el.getAttribute('cx') - (nx + nr) / 2), Math.abs(+el.getAttribute('cy') - ny)));
+        // TT-543 onderdeel 10 (2-6 E): geen lichtvlek meer, het geel 2,2 keer zo fel.
+        u.vlek = bu.querySelectorAll('ellipse, radialGradient').length;
+        u.dekking = [...bu.querySelectorAll('linearGradient stop')].map(st => st.getAttribute('stop-opacity'));
         u.maat = bu.getAttribute('viewBox') === `0 0 ${Math.round(be.width)} ${Math.round(be.height)}`;
         const ids = [...bu.querySelectorAll('[id]')].map(e => e.id);
-        u.eigenIds = ids.length === 3 && [...bu.innerHTML.matchAll(/url\(#([^)]+)\)/g)].every(m => ids.includes(m[1]))
+        u.eigenIds = ids.length === 2 && [...bu.innerHTML.matchAll(/url\(#([^)]+)\)/g)].every(m => ids.includes(m[1]))
           && ids.every(i => document.querySelectorAll('#' + i).length === 1);
         // De bundels op een canvas, op de maat van de hoes, het podium eronder.
         const img = new Image();
@@ -12465,8 +12470,8 @@ window.TT_STUB.data.bands[0].founder_id = 'm1';
     hoes = [(b, n) for b in (390, 360) for n in ("mijn", "ander", "lang", "kort", "band", "bandander")]
     f = {f"{b}:{n}": r[(b, n)] for b, n in hoes if not (r[(b, n)]["bundel"] and r[(b, n)]["bundels"] == 2 and r[(b, n)]["lampen"] == [6, 94] and r[(b, n)]["maat"])}
     check("zonder foto: twee bundels, van linksboven en rechtsboven (lampen in de hoeken, optie A), op de maat van de hoes; muzikant en band, ook een lange en een korte naam", not f, json.dumps(f)[:400])
-    f = {f"{b}:{n}": [r[(b, n)]["voet"], r[(b, n)]["vlek"]] for b, n in hoes if r[(b, n)]["voet"] > 1 or r[(b, n)]["vlek"] > 1}
-    check("beide bundels eindigen op de naam, zo breed als de naam; de lichtvlek op het midden van de naam (1px)", not f, json.dumps(f))
+    f = {f"{b}:{n}": [r[(b, n)]["voet"], r[(b, n)]["vlek"], r[(b, n)]["dekking"]] for b, n in hoes if r[(b, n)]["voet"] > 1 or r[(b, n)]["vlek"] != 0 or r[(b, n)]["dekking"] != [".792", ".264"]}
+    check("beide bundels eindigen op de naam, zo breed als de naam (1px); het geel 2,2 keer zo fel (.792 en .264) en geen lichtvlek (TT-543 onderdeel 10, 2-6 E)", not f, json.dumps(f))
     f = {f"{b}:{n}": 1 for b, n in hoes if not r[(b, n)]["eigenIds"]}
     check("elke hoes heeft eigen namen voor filter en verloop (een verborgen scherm neemt ze niet weg)", not f, json.dumps(f))
     f = {f"{b}:{n}": [r[(b, n)]["naamKleur"], r[(b, n)]["contrast"]] for b, n in hoes if r[(b, n)]["naamKleur"] != "rgb(255, 255, 255)" or r[(b, n)]["contrast"] < 4.5}
@@ -18238,6 +18243,112 @@ def blok_tt543_onderdeel9():
     check("blok 153: geen paginafouten", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_tt543_onderdeel10():
+    print("\nBlok 154 — TT-543 onderdeel 10, laag 2 (basis): één geel, de schijnwerper, de tekens, de uitlijning, het koppelteken en de foto's")
+    bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in JS_FILES + ["index.html", "styles.css"]}
+    html, css = bron["index.html"], bron["styles.css"]
+    zonder_commentaar = lambda t: re.sub(r'/\*.*?\*/', '', t, flags=re.S)
+    # 2-13 en 2-11: elk lijnicoon uit Lucide, lijn 2,5; pijl omlaag en vinkje 3; een teken onder 16px
+    # nooit dunner dan 1,5px (2-19: 3,6 bij 10px, 2,57 bij 14px). Geen andere dikte in de app.
+    dikten = {}
+    for f, t in bron.items():
+        for m in re.finditer(r'<svg[^>]*stroke-width="([\d.]+)"', t):
+            dikten.setdefault(m.group(1), set()).add(f)
+    check("elk lijnicoon heeft lijn 2,5, of 3 (pijl omlaag en vinkje), of de lijn voor een klein teken (3,6 en 2,57) (2-13, 2-19)",
+          set(dikten) <= {"2.5", "3", "3.6", "2.57"}, json.dumps({k: sorted(v) for k, v in dikten.items()}))
+    oud = [f for f, t in bron.items() for v in ('<polyline points="15 5 8 12 15 19">', '<line x1="3" y1="6" x2="21" y2="6">',
+           '<path d="M22 6l-10 7L2 6">', 'viewBox="0 0 10 10"', 'viewBox="0 0 20 20"', 'viewBox="4 4 16 16"') if v in t]
+    check("de oude tekeningen zijn weg: geen envelop, geen tweede plus, kruisje of pijl omlaag (2-11)", not oud, str(oud))
+    balk = html[html.index('id="appBottomNav"'):]
+    balk = balk[:balk.index('</nav>')] if '</nav>' in balk else balk[:4000]
+    check("de onderbalk heeft bij Berichten het ballonnetje, niet de envelop (2-13 ad 4)",
+          '<path d="M21 11.5a8.38' in balk and '<rect x="2" y="4"' not in balk, "")
+    check("de verstuurpijl is de pijl van Lucide, lijn 2,5, 20px, en de knop heeft geen rand (2-4)",
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>' in html, "")
+    soc = re.findall(r"svg: '(<svg[^']*</svg>)'", bron["bands.js"])
+    check("de drie socials: elk het officiële teken, vlak, even groot, in de tekstkleur (2-12)",
+          len(soc) == 3 and all(s.startswith('<svg viewBox="-3 -3 30 30" fill="currentColor"') and 'stroke' not in s for s in soc), str(len(soc)))
+    # 2-3 en 2-5
+    check("je eigen bericht is de merkkleur, in donker en licht (2-3 A)",
+          zonder_commentaar(css).count("--bericht-eigen: var(--merk);") == 2 and zonder_commentaar(css).count("--bericht-rand-eigen: var(--merk);") == 2, "")
+    check("de naam en ⋯ in de kop van een gesprek staan in de tekstkleur (2-5)",
+          ".filter-title.messages-thread-naam { font-size: 17px; line-height: 22px; margin: 0; color: var(--text); }" in css
+          and ".messages-thread-acties .nav-menu-btn { color: var(--text); }" in css, "")
+    # 2-15: één warme kleurbewerking op elke landingsfoto, in de opmaak
+    check("elke landingsfoto krijgt dezelfde warme kleurbewerking (2-15)",
+          re.search(r"\.landing-dia img \{[^}]*filter: sepia\(\.28\) saturate\(1\.15\) hue-rotate\(-6deg\) contrast\(1\.06\) brightness\(1\.02\);", css) is not None, "")
+    # 2-9 / open punt 8b: het koppelteken dat niet afbreekt staat in onze Inter
+    try:
+        from fontTools.ttLib import TTFont
+        k = {f: TTFont(os.path.join(ROOT, f)).getBestCmap().get(0x2011) for f in ("inter-400.woff2", "inter-700.woff2", "inter-900.woff2", "inter-400italic.woff2")}
+        check("U+2011 (koppelteken dat niet afbreekt) staat in alle vier de Inter-bestanden, met de vorm van het koppelteken", all(v == "hyphen" for v in k.values()), json.dumps(k))
+    except ImportError:
+        check("U+2011 in Inter: fontTools ontbreekt in deze omgeving (pip install fonttools brotli)", False, "")
+
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten, uitslag = [], {}
+    LANG = "Abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopq"
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breedte in (390, 360):
+            ctx = browser.new_context(viewport={"width": breedte, "height": 844}, color_scheme="dark")
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(500)
+            uitslag[breedte] = page.evaluate(r"""async (LANG) => {
+              const w = (n = 300) => new Promise(r => setTimeout(r, n)), u = {};
+              const M = window.TT_STUB.data.musicians;
+              M.forEach(m => { m.musician_songs = [{ song_title: 'Seven Nation Army', artist: 'The White Stripes' }]; m.musician_instruments = [{ instrument: 'Gitaar', level: 3, skill: 3 }]; m.musician_genres = [{ genre: 'Rock' }]; m.musician_media = []; m.photo_url = null; m.birth_date = '2006-05-01'; });
+              window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+              if (window.TT_STUB.authCallback) window.TT_STUB.authCallback('SIGNED_IN', window.TT_STUB.session);
+              await w(800);
+              // Elk zichtbaar lijnicoon: de lijn op het scherm (lijn × maat / raster) is 1,5px of meer (2-19).
+              const dun = () => [...document.querySelectorAll('svg[stroke-width]')].filter(s => s.getBoundingClientRect().width > 0)
+                .map(s => { const vb = s.viewBox.baseVal; return [s.getAttribute('stroke-width') * s.getBoundingClientRect().width / (vb && vb.width || 24), s.outerHTML.slice(0, 60)]; })
+                .filter(x => x[0] < 1.49).map(x => x[0].toFixed(2) + ' ' + x[1]);
+              const midden = () => { const h = [...document.querySelectorAll('.app-view.active .hoes')].find(e => e.getBoundingClientRect().width > 0);
+                const t = h.querySelector('.hoes-tekst').getBoundingClientRect(), k = h.querySelector('.profiel-knoppen').getBoundingClientRect(), hb = h.getBoundingClientRect();
+                return { gat: Math.round(((k.top + k.bottom) - (t.top + t.bottom)) / 2 * 10) / 10, rechts: Math.round(hb.right - k.right), knopHoog: Math.round(k.height) }; };
+              openProfielScherm('m2'); await w(1300);
+              u.dun = dun(); u.hoes = midden();
+              const bu = document.querySelector('.app-view.active .hoes-bundel svg');
+              u.vlek = bu ? bu.querySelectorAll('ellipse, radialGradient').length : -1;
+              // Een naam van één lang woord: de knoppen blijven op het midden en binnen de hoes.
+              M.find(m => m.id === 'm2').username = LANG; M.find(m => m.id === 'm2').display_name = LANG;
+              openProfielScherm('m2'); await w(1300);
+              u.lang = midden();
+              u.overloop = document.documentElement.scrollWidth > innerWidth;
+              // Een gesprek: één geel, de naam en ⋯ in de tekstkleur.
+              const t = (m) => new Date(Date.now() - m * 60000).toISOString();
+              window.TT_STUB.data.messages = [{ id: 'a', sender_id: 'm2', recipient_id: 'm1', body: 'Hoi!', created_at: t(9), read_at: t(1) }, { id: 'b', sender_id: 'm1', recipient_id: 'm2', body: 'Ja leuk!', created_at: t(5), read_at: t(1) }];
+              window.getMyMusicianId = async () => 'm1';
+              showView('messages'); await w(300); openConversation('m2', 'Dylan de Vries', '', false, false); await w(900);
+              const eigen = [...document.querySelectorAll('#messagesThreadList .message-bubble.own')].pop();
+              const knop = document.querySelector('#messagesThreadPanel .messages-send-btn');
+              u.geel = [getComputedStyle(eigen).backgroundColor, getComputedStyle(knop).backgroundColor];
+              u.kop = [getComputedStyle(document.getElementById('messagesThreadName')).color, getComputedStyle(document.body).color];
+              u.dunGesprek = dun();
+              return u;
+            }""", LANG)
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    for b, u in uitslag.items():
+        check(f"{b}px: elk zichtbaar lijnicoon is op het scherm 1,5px of dikker (2-19)", not u["dun"] and not u["dunGesprek"], json.dumps(u["dun"] + u["dunGesprek"])[:300])
+        check(f"{b}px: delen en ⋯ staan op het midden van naam en regel samen, 1px van de rand van de hoes (2-7 A), ook bij een naam van één lang woord",
+              abs(u["hoes"]["gat"]) <= 0.5 and u["hoes"]["rechts"] == 1 and abs(u["lang"]["gat"]) <= 0.5 and u["lang"]["rechts"] == 1 and not u["overloop"], json.dumps([u["hoes"], u["lang"]]))
+        check(f"{b}px: de schijnwerper in de hoes heeft geen lichtvlek (2-6 E)", u["vlek"] == 0, str(u["vlek"]))
+        check(f"{b}px: je eigen bericht en de verstuurknop zijn hetzelfde geel #FFB81C (2-3 A)", u["geel"] == ["rgb(255, 184, 28)"] * 2, json.dumps(u["geel"]))
+        check(f"{b}px: de naam in de kop van een gesprek heeft de tekstkleur, in donker (2-5)", u["kop"][0] == u["kop"][1] == "rgb(240, 240, 240)", json.dumps(u["kop"]))
+    check("blok 154: geen paginafouten", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -18289,6 +18400,7 @@ BLOKKEN = [
     blok_tt543_onderdeel7,
     blok_tt543_onderdeel8,
     blok_tt543_onderdeel9,
+    blok_tt543_onderdeel10,
 ]
 
 

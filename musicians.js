@@ -291,7 +291,7 @@ function deelKnopHTML(kind, id, name, actie) {
   const label = kind === 'band' ? 'Deel dit bandprofiel' : 'Deel dit profiel';
   const klik = actie || `shareProfile('${kind === 'band' ? 'band' : 'profiel'}','${jsAttr(id)}','${jsAttr(name)}')`;
   return `<button type="button" class="nav-menu-btn deel-knop" onclick="${klik}" aria-label="${label}" title="Delen">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="18" cy="5" r="3" stroke="none"></circle><circle cx="6" cy="12" r="3" stroke="none"></circle><circle cx="18" cy="19" r="3" stroke="none"></circle><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"></line><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"></line></svg>
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="18" cy="5" r="3" stroke="none"></circle><circle cx="6" cy="12" r="3" stroke="none"></circle><circle cx="18" cy="19" r="3" stroke="none"></circle><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"></line><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"></line></svg>
   </button>`;
 }
 
