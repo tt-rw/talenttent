@@ -10038,8 +10038,9 @@ window.TT_STUB.fnAntwoord = {};
                       ok87 and d87["keuzeX"] == [4], json.dumps(d87))
                 check(f"{naam87}: artiest, nummer en voorproef beginnen op één x en staan elk op één regel",
                       ok87 and len(d87["linksX"]) == 1 and not d87["regels"], json.dumps(d87))
-                check(f"{naam87}: esthetiek: binnenmarges links, rechts (kruisje) en onder (keuze) alle 12px",
-                      ok87 and d87["marges"] == ["links 12", "onder 12", "rechts 12"], json.dumps(d87))
+                # TT-543 punt 9b (besluit Ronald 13-11-2026, "bij set is akkoord"): opzij 16px zoals elk vlak (3-3); onder blijft 12px.
+                check(f"{naam87}: esthetiek: binnenmarges links en rechts (kruisje) 16px, onder (keuze) 12px (TT-543 punt 9b)",
+                      ok87 and d87["marges"] == ["links 16", "onder 12", "rechts 16"], json.dumps(d87))
                 check(f"{naam87}: esthetiek: één rechterlijn voor kruisje, pijltje van de keuze en de i in de kop; kruisje op de bovenkant van de hoofdletter (TT-519)",
                       ok87 and max(d87["rechterlijn"]) - min(d87["rechterlijn"]) <= 0.5 and not d87["kruisScheef"], json.dumps(d87))
                 check(f"{naam87}: niets overlapt (artiest vrij van het kruisje, voorproef vrij van de keuze); \"Zeker?\" binnen de rij; geen scroll opzij",
@@ -17623,7 +17624,10 @@ def blok_tt543_onderdeel6_blok3():
           covKnop().click(); await w(200);
           const zr = document.createRange(); zr.selectNodeContents(covKnop());
           u.coverZeker = { tekst: covKnop().textContent, verschil: Math.round((zr.getBoundingClientRect().right - kruisRechts) * 10) / 10,
-                           stijlInRegel: covKnop().getAttribute('style'), klasse: covKnop().classList.contains('setlist-zeker'), hoogte: Math.round(covKnop().getBoundingClientRect().height) };
+                           stijlInRegel: covKnop().getAttribute('style'), klasse: covKnop().classList.contains('setlist-zeker'),
+                           // Het tikvlak, niet het vak: sinds TT-543 punt 9a is het kruisje van een cover 16px hoog met een tikvlak van 44px (::after).
+                           hoogte: (() => { const k = covKnop(); k.scrollIntoView({ block: 'center' }); const q = k.getBoundingClientRect(), mx = (q.left + q.right) / 2; let h = 0;
+                             for (let y = Math.floor(q.top) - 30; y <= q.bottom + 30; y++) { const e = document.elementFromPoint(mx, y); if (e && e.closest('.song-remove') === k) h++; } return h; })() };
           document.body.click(); await w(150);
           S.data.band_covers = []; openBandTegels('b9'); await w(500);
           // 2. Bandstatus: het keuzemenu onder de tegel, tekst links, drie standen.
@@ -18547,7 +18551,18 @@ def blok_tt543_laag3():
                   if (naam === 'berichten') { u.rijGap = gap('.messages-conv-row'); const rij = [...v.querySelectorAll('.messages-conv-row')].filter(e => r(e).height);
                     u.rijTussen = Math.round(r(rij[1]).top - r(rij[0]).bottom); u.rijBinnen = getComputedStyle(rij[0]).padding; }
                   if (naam === 'bandpagina') u.rijGapBand = gap('.bb-rij, .band-nummer');
-                  if (naam === 'band-muziek') { u.mediaGap = gap('.media-rij'); u.nummerTussen = getComputedStyle(v.querySelector('.media-rij')).marginBottom; }
+                  if (naam === 'band-muziek') { u.mediaGap = gap('.media-rij'); u.nummerTussen = getComputedStyle(v.querySelector('.media-rij')).marginBottom;
+                    // TT-543 punt 9a (besluit Ronald 13-11-2026): de tekst van de laatste cover 16px boven de balk; het tikvlak van het kruisje telt niet mee.
+                    // Elke cover even ver van de vorige, het kruisje in het midden van de tekst, het tikvlak 44 × 44, ook bij de laatste.
+                    const rij = [...$('bcCoversLijst').children].filter(e => r(e).height);
+                    const x = rij[rij.length - 1].querySelector('.song-remove'); x.scrollIntoView({ block: 'center' }); await w(100);
+                    const xb = r(x), mx = (xb.left + xb.right) / 2, my = (xb.top + xb.bottom) / 2; let hh = 0, bb = 0;
+                    for (let y = xb.top - 30; y <= xb.bottom + 30; y++) { const e = document.elementFromPoint(mx, y); if (e && e.closest('.song-remove') === x) hh++; }
+                    for (let xx = xb.left - 30; xx <= xb.right + 30; xx++) { const e = document.elementFromPoint(xx, my); if (e && e.closest('.song-remove') === x) bb++; }
+                    const tn = rij.map(e => r(e.firstElementChild));
+                    u.covers = { rijen: rij.length, tussen: [...new Set(tn.slice(1).map((q, i) => Math.round(q.top - tn[i].bottom)))],
+                      midden: [...new Set(rij.map((e, i) => Math.round((r(e.querySelector('.song-remove svg')).top + r(e.querySelector('.song-remove svg')).bottom) / 2 - (tn[i].top + tn[i].bottom) / 2)))],
+                      tikHoog: hh, tikBreed: bb, laatsteRandTekst: Math.round(r(rij[rij.length - 1]).bottom - tn[tn.length - 1].bottom) }; }
                   if (naam === 'privacy') { const d = v.querySelector('.doc-view'); u.alinea = getComputedStyle(d.querySelector('p')).marginBottom; u.lijst = getComputedStyle(d.querySelector('li')).marginBottom; }
                   if (naam === 'wizard1' || naam === 'wizard2') { const st = v.querySelector('.steps'); const p = v.querySelector('.panel.active');
                     const k = [...p.querySelectorAll('.hoofdstuk-kop-rij, .hoofdstuk-kop')].find(e => r(e).height); u.stappenKop = Math.round(r(k).top - r(st).bottom); }
@@ -18585,8 +18600,11 @@ def blok_tt543_laag3():
             check(f"{b}px {naam}: 16px van de kop tot de eerste inhoud (3-6b)", u["randLang"]["boven"] == 16, json.dumps(u["randLang"]))
             onder = u["rand"]["onder"]
             # Mijn Profiel en de bandpagina: de onderbalk meet een halve pixel meer dan de ruimte die de pagina vrijhoudt.
-            check(f"{b}px {naam}: 16px van de laatste inhoud tot de vaste balk of de onderbalk (3-6a)", onder is not None and 16 <= onder <= 17 if naam != 'band-muziek' else onder is not None, json.dumps(u["rand"]))
+            check(f"{b}px {naam}: 16px van de laatste inhoud tot de vaste balk of de onderbalk (3-6a)", onder is not None and 16 <= onder <= 17, json.dumps(u["rand"]))
     for b in (390, 360):
+        cv = uitslag[(b, "band-muziek")].get("covers") or {}
+        check(f"{b}px Onze muziek: covers 44px uit elkaar, het kruisje in het midden van de tekst, tikvlak 44 × 44, de laatste rij eindigt op de tekst (TT-543 punt 9a)",
+              cv.get("rijen", 0) >= 2 and cv.get("tussen") == [44] and cv.get("midden") == [0] and cv.get("tikHoog", 0) >= 44 and cv.get("tikBreed", 0) >= 44 and cv.get("laatsteRandTekst") == 0, json.dumps(cv))
         i = uitslag[(b, "instellingen")]
         check(f"{b}px: tussen twee tegels 12px (3-2), in een tegel 12px boven en onder en 16px opzij (3-3), van kop tot regel 0px (3-4)",
               set(i["tegelTussen"]) == {12} and set(i["tegelBinnen"]) == {"12px 16px"} and set(i["kopRegel"]) == {0}, json.dumps([i["tegelTussen"], i["tegelBinnen"], i["kopRegel"]]))

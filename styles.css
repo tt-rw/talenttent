@@ -1230,9 +1230,10 @@
     grid-template-columns: minmax(0, 1fr) 94px;
     column-gap: 6px;
     align-items: center;
-    /* 13px = 1px rand + 12px opvulling van de rij: zo staat "Beheersing"
-       recht boven de keuze. */
-    padding: 0 13px 8px 0;
+    /* 17px = 1px rand + 16px opvulling van de rij: zo staat "Beheersing"
+       recht boven de keuze en de i op de rechterlijn van het kruisje. Was 13px
+       (TT-543 punt 9b, besluit Ronald 13-11-2026). */
+    padding: 0 17px 8px 0;
   }
   /* 14px: "Voeg nog 2 nummers toe" past op één regel (besluit Ronald,
      25-10-2026, optie B). */
@@ -1257,7 +1258,9 @@
     /* Onder 3px + een keuze van 33px: de tekst van de keuze staat 12px boven
        de rand, net als links, boven en rechts (TT-517 fase 1: met Inter op
        12px was dat 12,7px bij 4px + 32px). */
-    padding: 12px 12px 3px 12px;
+    /* Opzij 16px, zoals elk vlak (TT-543 laag 3, 3-3; punt 9b, besluit Ronald
+       13-11-2026: "bij set is akkoord"). Was 12px. */
+    padding: 12px 16px 3px 16px;
     border-radius: 10px;
   }
   .setlist-tekst { grid-column: 1 / 3; min-width: 0; }
@@ -1312,16 +1315,16 @@
   /* Zolang het menu openstaat, ligt de keuze boven de laag, zoals het plusteken. */
   .setlist-keuze[aria-expanded="true"] { z-index: 242; }
   /* Het kruisje: tikvlak 44px met het teken van 14px in het midden (15px
-     rondom). Rechts -3px = 12px opvulling - 15px: de inkt eindigt 12px voor
-     de zijrand. */
+     rondom). Rechts 1px = 16px opvulling - 15px: de inkt eindigt 16px voor
+     de zijrand (TT-543 punt 9b; was -3px en 12px). */
   /* TT-519 (besluit Ronald 25-10-2026, gebouwd in TT-543): de bovenkant van de
      inkt staat op de bovenkant van de hoofdletter van de artiest, niet op de
      bovenkant van de regel. Inter 15px vet op een regel van 20px: de
      hoofdletter begint 4,5px onder de regel (gemeten), dus -3px + 4,5px. */
-  .setlist-rij .song-remove { position: absolute; right: -3px; top: 1.5px; z-index: 2; }
+  .setlist-rij .song-remove { position: absolute; right: 1px; top: 1.5px; z-index: 2; }
   .setlist-rij .song-remove svg { display: block; }
   /* "Zeker?" op de plek van het kruisje, met de rechterkant op dezelfde
-     rechterlijn (15px = 3px buiten de binnenrand + 12px). Ook bij een cover
+     rechterlijn (15px, zoals de inkt van het kruisje in zijn tikvlak). Ook bij een cover
      in Onze muziek van een band (8D TT-543, 12-11-2026: daar stond hij 7px
      rechts van het kruisje, met opmaak in de regel). */
   .song-remove.setlist-zeker { justify-content: flex-end; padding: 0 15px 0 0; font-size: 11px; line-height: var(--regel-11); font-weight: 700; color: var(--danger); }
@@ -1626,6 +1629,18 @@
 
   .profile-song-row:last-child { padding-bottom: 0; }
   .profile-song-row > :first-child { overflow-wrap: anywhere; } /* TT-553: lange titel breekt af */
+  /* TT-543 punt 9a (besluit Ronald 13-11-2026, op beeld: "ja"): in Onze muziek
+     staat de tekst van de laatste cover 16px boven de balk Opslaan (3-6a), niet
+     het tikvlak van het kruisje. Het tikvlak telt daarom niet mee in de hoogte
+     van een rij: het kruisje is 16px hoog (een regel), het onzichtbare vlak
+     loopt 14px boven en onder door ((44 - 16) / 2), en de rij houdt die
+     ruimte zelf vast (8 + 14 boven en onder). Een cover op één regel staat zo
+     op dezelfde plek als voorheen; de laatste rij heeft onder niets (16px komt
+     uit --ruimte-onderaan). Was 31px van de tekst tot de balk. */
+  #bcCoversLijst > .profile-song-row { padding: 22px 0; }
+  #bcCoversLijst > .profile-song-row:last-child { padding-bottom: 0; }
+  #bcCoversLijst > .profile-song-row > .song-remove { position: relative; height: var(--regel-12); }
+  #bcCoversLijst > .profile-song-row > .song-remove::after { content: ''; position: absolute; inset: -14px 0; }
 
   /* Een nummer op twee regels: artiest groot en bovenaan, het nummer eronder
      (besluit Ronald, 27-10-2026, sessie 21: "vanuit consistentie"; geldt voor
