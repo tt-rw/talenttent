@@ -56,6 +56,67 @@ function updateCharCounter(textareaId, counterId, max) {
   counter.hidden = len < max - TELLER_ZICHTBAAR_REST;
 }
 
+// TT-543 onderdeel 10, laag 3 (besluit Ronald 13-11-2026, 3-10; 8D het
+// bioveld): een tekstvak groeit mee met de tekst, zonder hoekje, zoals het
+// berichtveld. Leeg is het zo hoog als de hele voorbeeldtekst. Met een
+// maximale hoogte (het berichtveld) scrolt het daarna. Geeft terug hoeveel
+// het veld groeide, in px. Niet in beeld: de hoogte van de standaard.
+function veldGroeit(el) {
+  if (!el) return 0;
+  if (!el.offsetParent) { el.style.height = ''; el.style.overflowY = ''; return 0; }
+  const voor = el.offsetHeight;
+  el.style.height = '';
+  const rand = el.offsetHeight - el.clientHeight;
+  let nodig;
+  if (!el.value && el.placeholder) {
+    // De voorbeeldtekst meten: even als tekst in het veld, recht en cursief
+    // (de voorbeeldtekst van de bio is cursief); de hoogste telt.
+    el.value = el.placeholder;
+    nodig = el.scrollHeight;
+    el.style.fontStyle = 'italic';
+    nodig = Math.max(nodig, el.scrollHeight);
+    el.value = '';
+    el.style.fontStyle = '';
+  } else nodig = el.scrollHeight;
+  const max = parseFloat(getComputedStyle(el).maxHeight) || Infinity;
+  el.style.height = Math.min(nodig + rand, max) + 'px';
+  el.style.overflowY = nodig + rand > max ? 'auto' : '';
+  return el.offsetHeight - voor;
+}
+
+// De regel waarin je typt (aan het eind van de tekst) blijft boven de vaste
+// balk (Opslaan, Verder), met de ruimte onderaan ertussen (3-6a).
+function veldBovenBalk(el) {
+  if (el.selectionEnd !== el.value.length) return;
+  const balk = [...(el.closest('.app-view')?.querySelectorAll('.wizard-action-bar') || [])].find(b => b.getBoundingClientRect().height);
+  if (!balk) return;
+  const ruimte = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ruimte-onderaan')) || 16;
+  const teVer = el.getBoundingClientRect().bottom - (balk.getBoundingClientRect().top - ruimte);
+  if (teVer > 0) window.scrollBy(0, teVer);
+}
+
+// Elk tekstvak: meegroeien bij typen; opnieuw meten zodra het in beeld komt of
+// de breedte verandert (een gedraaide telefoon). Het berichtveld regelt dit
+// zelf (berichtInvoerBijwerken() in messages.js).
+const veldBreedteWacht = typeof ResizeObserver === 'function' ? new ResizeObserver(items => {
+  for (const it of items) {
+    const b = Math.round(it.contentRect.width);
+    if (it.target.dataset.groeiBreedte === String(b)) continue;
+    it.target.dataset.groeiBreedte = String(b);
+    veldGroeit(it.target);
+  }
+}) : null;
+function veldGroeiVolgen(el) { if (el && veldBreedteWacht) veldBreedteWacht.observe(el); veldGroeit(el); }
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.tagName !== 'TEXTAREA' || el.id === 'messagesReplyInput') return;
+  veldGroeit(el);
+  veldBovenBalk(el);
+});
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('textarea:not(#messagesReplyInput)').forEach(veldGroeiVolgen);
+});
+
 function showToast(msg, duration) {
   const el = document.getElementById('appToast');
   if (!el) { console.warn('Toast:', msg); return; }
@@ -1172,9 +1233,11 @@ function nummersInklapWissel(lijst) {
 // haalt het nummer meteen weg, zonder menu.
 // TT-543 onderdeel 10 (besluit Ronald 13-11-2026, 2-19): een teken onder 16px is
 // nooit dunner dan 1,5px op het scherm. Lijn in het raster van 24 = 1,5 × 24 / maat:
-// 10px 3,6; 14px 2,57 (ook PERSONEN_TEKEN en het teken bij een veldfout).
-const OVERNEEM_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
-const OVERNEEM_VINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+// 14px 2,57 (PERSONEN_TEKEN en het teken bij een veldfout).
+// TT-543 laag 3 (3-9): plus en vinkje hier 16px (was 10px met 3,6): lijn 2,5
+// en het vinkje 3, op het scherm 1,67 en 2px.
+const OVERNEEM_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
+const OVERNEEM_VINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
 let eigenNummerSleutels = null; // Set van "titel|||artiest", of null als (nog) onbekend
 const nummerSleutel = (titel, artiest) => `${String(titel || '').toLowerCase()}|||${String(artiest || '').toLowerCase()}`;
 

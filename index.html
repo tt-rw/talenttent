@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261113b">
+<link rel="stylesheet" href="styles.css?v=20261113c">
 </head>
 <body>
 
@@ -2054,7 +2054,7 @@
   <div class="modal-box modal-box-sm">
     <!-- TT-543 onderdeel 6, blok 3: een kop alleen als showConfirm() er een meegeeft. -->
     <h2 class="confirm-kop" id="confirmKop" hidden></h2>
-    <p id="confirmMessage" style="margin-bottom:24px;font-size:12px;"></p>
+    <p id="confirmMessage" style="margin-bottom:24px;font-size:12px;line-height:var(--regel-12);"></p>
     <!-- TT-543 onderdeel 7 (punt 3): Account verwijderen zet hier per band een
          tegel met het keuzemenu. showConfirm() maakt het vak leeg. -->
     <div id="confirmKeuzes"></div>
@@ -2094,7 +2094,7 @@
 <div class="modal-overlay" id="meldModal" data-close="closeMeldModal" onclick="if(event.target===this)closeMeldModal()">
   <div class="modal-box modal-box-md">
     <div class="filter-title" id="meldTitel" style="margin-bottom:4px;">Melden</div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:20px;">Over <strong id="meldDoelNaam" style="color:var(--text);"></strong>. Je melding komt bij ons binnen; de ander krijgt hier geen bericht van.</p>
+    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:20px;">Over <strong id="meldDoelNaam" style="color:var(--text);"></strong>. Je melding komt bij ons binnen; de ander krijgt hier geen bericht van.</p>
 
     <div class="field" style="margin-bottom:20px;">
       <label>Waar gaat het over?</label>
@@ -2103,7 +2103,7 @@
 
     <div class="field meld-toelichting-veld">
       <label>Toelichting (niet verplicht)</label>
-      <textarea id="meldToelichting" placeholder="Wat is er gebeurd?" maxlength="1000" style="width:100%;min-height:100px;" oninput="updateCharCounter('meldToelichting','meldToelichtingCounter',1000)"></textarea>
+      <textarea id="meldToelichting" placeholder="Wat is er gebeurd?" maxlength="1000" style="width:100%;" oninput="updateCharCounter('meldToelichting','meldToelichtingCounter',1000)"></textarea>
     </div>
     <div id="meldToelichtingCounter" class="teken-teller" hidden></div>
 
@@ -2119,7 +2119,7 @@
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeGeblokkeerdModal()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">Geblokkeerde muzikanten</div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:20px;">Je ziet ze niet in de zoekresultaten, en hun berichten komen niet bij je aan.</p>
+    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:20px;">Je ziet ze niet in de zoekresultaten, en hun berichten komen niet bij je aan.</p>
     <div id="geblokkeerdLijst"></div>
   </div>
 </div>
@@ -2301,16 +2301,16 @@
 </div><!-- /#appRoot -->
 
 <script src="core.js?v=20261112f"></script>
-<script src="utils.js?v=20261113b"></script>
-<script src="veiligheid.js?v=20261113b"></script>
+<script src="utils.js?v=20261113c"></script>
+<script src="veiligheid.js?v=20261113c"></script>
 <script src="auth.js?v=20261112a"></script>
 <script src="postcode.js?v=20261110a"></script>
-<script src="wizard.js?v=20261113b"></script>
+<script src="wizard.js?v=20261113c"></script>
 <script src="ouder.js?v=20261113a"></script>
 <script src="search.js?v=20261112c"></script>
-<script src="musicians.js?v=20261113b"></script>
-<script src="bands.js?v=20261113b"></script>
-<script src="messages.js?v=20261113a"></script>
+<script src="musicians.js?v=20261113c"></script>
+<script src="bands.js?v=20261113c"></script>
+<script src="messages.js?v=20261113c"></script>
 <script src="push.js?v=20261027b"></script>
 <script src="modals-shared.js?v=20261111a"></script>
 <script>

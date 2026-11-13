@@ -534,18 +534,18 @@ function openBandNiveauInfoModal() {
   const rowsHTML = NIVEAU_INFO_BAND_ROWS.map(r => `<tr>${r.map((c, i) => `<td>${escHtml(i === 0 ? stripParenthetical(c) : c)}</td>`).join('')}</tr>`).join('');
   document.getElementById('niveauInfoModalContent').innerHTML = `
     <div class="filter-title" style="margin-bottom:4px;">Ervaringsindeling voor bands</div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Kies de ervaring waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
+    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:16px;">Kies de ervaring waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
     <div class="niveau-info-wrap">
       <table class="niveau-info-table">
         <thead><tr>${NIVEAU_INFO_BAND_HEADERS.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead>
         <tbody>${rowsHTML}</tbody>
       </table>
     </div>
-    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Belangrijk: gebruik dit systeem als jouw kompas</div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Geen enkele muzikant of band past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Ervaring 4), maar nog nooit op een podium hebben gestaan (Ervaring 1). Of je band speelt superstrak samen (Ervaring 3), maar jullie hebben je zakelijke randzaken nog niet op orde (Ervaring 2).</p>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Zie deze ervaringsbeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
-    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Hoe kies je jullie ervaring?</div>
-    <p style="font-size:12px;color:var(--muted);">Loop de criteria per ervaringsniveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg de ervaring waar jij of je band het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
+    <div class="filter-title" style="font-size:15px;line-height:var(--regel-15);margin-bottom:8px;">Belangrijk: gebruik dit systeem als jouw kompas</div>
+    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:12px;">Geen enkele muzikant of band past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Ervaring 4), maar nog nooit op een podium hebben gestaan (Ervaring 1). Of je band speelt superstrak samen (Ervaring 3), maar jullie hebben je zakelijke randzaken nog niet op orde (Ervaring 2).</p>
+    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:16px;">Zie deze ervaringsbeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
+    <div class="filter-title" style="font-size:15px;line-height:var(--regel-15);margin-bottom:8px;">Hoe kies je jullie ervaring?</div>
+    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);">Loop de criteria per ervaringsniveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg de ervaring waar jij of je band het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
   `;
   document.getElementById('niveauInfoModal').classList.add('visible');
 }
@@ -1504,6 +1504,7 @@ async function openBandWie() {
   document.getElementById('bwZip').value = b.zip || '';
   stad.value = b.city || '';
   document.getElementById('bwBio').value = b.description || '';
+  veldGroeit(document.getElementById('bwBio')); // TT-543 laag 3, 3-10
   bwNiveau = b.niveau || null;
   bwRenderErvaring();
   bwSnapshot = bwFieldSnapshot();
@@ -2471,6 +2472,7 @@ function rolUitnodigBlokOpenen(musicianId, naam) {
     inVeld: lijst => lijst.join(', '), leegTekst: 'Kies een rol'
   });
   content.classList.add('uitnodig-open');
+  veldGroeiVolgen(document.getElementById('uitnodigBoodschap')); // TT-543 laag 3, 3-10
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 

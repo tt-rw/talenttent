@@ -277,6 +277,7 @@ async function openMeldModal(soort, id, naam) {
   document.getElementById('meldTitel').textContent = wat;
   document.getElementById('meldDoelNaam').textContent = meldDoel.naam || 'deze pagina';
   document.getElementById('meldToelichting').value = '';
+  veldGroeit(document.getElementById('meldToelichting')); // TT-543 laag 3, 3-10
   updateCharCounter('meldToelichting', 'meldToelichtingCounter', MELD_TOELICHTING_MAX);
   document.getElementById('meldRedenen').innerHTML = MELD_REDENEN.map(r =>
     `<div class="tag" onclick="kiesMeldReden(this,'${jsAttr(r)}')">${escHtml(r)}</div>`).join('');

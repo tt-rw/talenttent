@@ -1019,6 +1019,7 @@ async function openWieBenJe() {
   document.getElementById('wbjZip').value = data.zip || '';
   document.getElementById('wbjCity').value = data.city || '';
   document.getElementById('wbjBio').value = data.bio || '';
+  veldGroeit(document.getElementById('wbjBio')); // TT-543 laag 3, 3-10
   wbjNaamTonen = data.naam_tonen === 'gebruikersnaam' ? 'gebruikersnaam' : 'echt';
   if (!wbjNaamLuistert) {
     wbjNaamLuistert = true;
@@ -1674,18 +1675,18 @@ function openMusicianNiveauInfoModal() {
   const rowsHTML = NIVEAU_INFO_MUSICIAN_ROWS.map(r => `<tr>${r.map((c, i) => `<td>${escHtml(i === 0 ? stripParenthetical(c) : c)}</td>`).join('')}</tr>`).join('');
   document.getElementById('niveauInfoModalContent').innerHTML = `
     <div class="filter-title" style="margin-bottom:4px;">Niveau-indeling per instrument</div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Kies per instrument het niveau waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
+    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:16px;">Kies per instrument het niveau waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>
     <div class="niveau-info-wrap">
       <table class="niveau-info-table">
         <thead><tr>${NIVEAU_INFO_MUSICIAN_HEADERS.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead>
         <tbody>${rowsHTML}</tbody>
       </table>
     </div>
-    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Belangrijk: gebruik dit systeem als jouw kompas</div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Geen enkele muzikant past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Niveau 4), maar nog nooit op een podium hebben gestaan (Niveau 1).</p>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Zie deze niveaubeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
-    <div class="filter-title" style="font-size:15px;margin-bottom:8px;">Hoe kies je jouw niveau?</div>
-    <p style="font-size:12px;color:var(--muted);">Loop de criteria per niveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg het niveau waar jij het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
+    <div class="filter-title" style="font-size:15px;line-height:var(--regel-15);margin-bottom:8px;">Belangrijk: gebruik dit systeem als jouw kompas</div>
+    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:12px;">Geen enkele muzikant past perfect in één enkel hokje, en dat is volstrekt normaal. Je kunt bijvoorbeeld technisch heel ver zijn (Niveau 4), maar nog nooit op een podium hebben gestaan (Niveau 1).</p>
+    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:16px;">Zie deze niveaubeschrijvingen dan ook puur als een praktische richtlijn, niet als een set onwrikbare wetten.</p>
+    <div class="filter-title" style="font-size:15px;line-height:var(--regel-15);margin-bottom:8px;">Hoe kies je jouw niveau?</div>
+    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);">Loop de criteria per niveau rustig langs. Kijk niet naar waar je één losse vaardigheid hebt zitten, maar kijk naar het grotere plaatje. Kies simpelweg het niveau waar jij het dichtst bij in de buurt zit en waar je jezelf het meest in herkent. Het is geen examen, maar een hulpmiddel om te ontdekken waar je nu staat en waar je naartoe kunt groeien!</p>
   `;
   document.getElementById('niveauInfoModal').classList.add('visible');
 }

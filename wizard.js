@@ -72,6 +72,7 @@ function populateWizardFieldsFromState() {
   }
   document.getElementById('postcodeStatus').textContent = '';
   document.getElementById('bio').value = state.bio;
+  veldGroeit(document.getElementById('bio')); // TT-543 laag 3, 3-10
   naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen);
 
   renderInstrumentBadges('wizard');

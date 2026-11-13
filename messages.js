@@ -190,15 +190,8 @@ function berichtInvoerBijwerken() {
   // veld als het groeit (het veld staat vast onderaan).
   const doc = document.documentElement;
   const onderaan = window.innerHeight + window.scrollY >= doc.scrollHeight - 2;
-  const voor = el.offsetHeight;
-  el.style.height = '';
-  if (!el.value || !el.offsetParent) { el.style.overflowY = ''; return; } // leeg of niet in beeld: één regel
-  const rand = el.offsetHeight - el.clientHeight;
-  const max = parseFloat(getComputedStyle(el).maxHeight) || Infinity;
-  const nodig = el.scrollHeight + rand;
-  el.style.height = Math.min(nodig, max) + 'px';
-  el.style.overflowY = nodig > max ? 'auto' : '';
-  const groei = el.offsetHeight - voor;
+  // TT-543 laag 3 (3-10): het meegroeien is voor elk tekstvak gelijk, veldGroeit() in utils.js.
+  const groei = veldGroeit(el);
   if (onderaan && groei > 0) window.scrollBy(0, groei);
 }
 
