@@ -18088,6 +18088,8 @@ def blok_tt543_onderdeel9():
     priv = html[html.index('id="view-privacy"'):html.index('id="view-terms"')]
     voorw = html[html.index('id="view-terms"'):html.index('id="view-gedragscode"')]
     gedrag = html[html.index('id="view-gedragscode"'):html.index('id="view-instellingen"')]
+    check("Over ons belooft geen applaus meer; de zin is 'Met een volledig profiel word je vaker gevonden.' (besluit Ronald 13-11-2026)",
+          "applaus" not in over and "Wie actief is, wordt sneller gevonden. Met een volledig profiel word je vaker gevonden.</p>" in over, "")
     check("F2: Over ons heeft geen opmaak in de regel en draagt de vorm van de leespagina's (.doc-view)",
           'style=' not in over and 'search-filters doc-view' in over, "")
     # TT-547 (besluit Ronald 13-11-2026, D): overal "TalentTent". Commentaar telt niet mee.
