@@ -1634,44 +1634,45 @@ async function saveJeMediahoek() {
 }
 
 // ─── Niveautabel voor muzikanten (de i-knop) ─────────────────────────────────
-// Verplaatst uit bands.js (26-09-2026). Inhoud ongewijzigd.
+// Verplaatst uit bands.js (26-09-2026).
 
-// TT-51-uitbreiding (12-08-2026): Tabel 2 uit niveaubepaling-naslagwerk.md,
-// 1-op-1 overgenomen. Hardcoded (geen build-stap om een .md-bestand in te
-// lezen in deze losse-bestand-app) — bij een tekstwijziging in het naslagwerk
-// moet deze lijst hier ook worden bijgewerkt.
+// TT-51-uitbreiding (12-08-2026): Tabel 2 uit niveaubepaling-naslagwerk.md.
+// Hardcoded (geen build-stap om een .md-bestand in te lezen in deze
+// losse-bestand-app).
+// TT-572 (besluit Ronald 14-11-2026: "neem de tekst over van de muzikant of
+// zo. lost het op!"): de kolom "Technische beheersing" toont de vijf zinnen
+// onder de niveaukeuze (NIVEAU_ZINNEN in modals-shared.js, één bron); de oude
+// teksten met drums, akkoorden, fills en ademsteun zijn weg. De andere kolommen
+// noemen geen instrument meer (geen akkoorden, tabs, fills of chord charts).
 const NIVEAU_INFO_MUSICIAN_HEADERS = ['Niveau', 'Technische beheersing', 'Gehoor en muziektheorie', 'Voorbereiden en repeteren', 'Live spelen en flexibiliteit'];
 const NIVEAU_INFO_MUSICIAN_ROWS = [
   ['1. Beginner (Bedroom)',
-    'Je kent de basisakkoorden of een paar toffe drumbeats. Je speelt vooral losse intro\'s of riffjes van TikTok en YouTube. Je timing schommelt.',
-    'Je kunt akkoorden nog niet echt op gehoor naspelen. Je hebt internettabs, YouTube-tutorials of eenvoudige bladmuziek nodig.',
+    'Je kunt nummers nog niet echt op gehoor naspelen. Je hebt YouTube-tutorials of eenvoudige bladmuziek nodig.',
     'Je hebt echt een leraar of hulp nodig om een nieuw nummer te leren. Je oefent nog een beetje onregelmatig.',
     'Je speelt eigenlijk altijd op hetzelfde volume. Als de band stopt of iets anders doet dan de opname, ben je de draad kwijt.'],
   ['2. Gevorderde Beginner (Jammer)',
-    'Je speelt complete nummers vloeiend uit. Je basistechniek (barré-akkoorden, ademsteun, fills) is stabiel en kost steeds minder moeite.',
     'Je herkent eenvoudige basisschema\'s. Je kunt nummers thuis uitzoeken en naspelen door goed naar de originele track te luisteren.',
     'Je studeert thuis zelfstandig de nummers in die zijn afgesproken. Je kent je partijen uit je hoofd als je naar de repetitie komt.',
-    'Je luistert naar de rest en past je volume aan. Je kunt een simpele eigen fill of solo verzinnen die past bij de structuur van het nummer.'],
+    'Je luistert naar de rest en past je volume aan. Je kunt een simpele eigen variatie verzinnen die past bij de structuur van het nummer.'],
   ['3. Half-Gevorderd (Gig-Ready)',
-    'Fysieke techniek is een automatisme; constante strakke timing. Je hebt een goede, bewuste controle over je eigen klankkleur en sound.',
-    'Kan makkelijk improviseren en solo\'s construeren over bekende toonsoorten; sterke functionele basiskennis van muziektheorie.',
+    'Kan makkelijk improviseren binnen een bekend nummer; sterke functionele basiskennis van muziektheorie.',
     'Bedenkt en schrijft eigen partijen uit. Heeft minimale repetitietijd nodig om een volledige live-set van anderhalf uur te beheersen.',
     'Herstelt live-fouten onmiddellijk zonder dat het opvalt; speelt moeiteloos met een clicktrack of In-Ear monitor.'],
   ['4. Gevorderd (Set-Leider)',
-    'Zeer brede technische bagage; lost instrument-technische problemen direct live op; schakelt moeiteloos tussen uiteenlopende genres.',
-    'Kan live on-the-fly transponeren naar een andere toonsoort; pikt complexe harmonieën en akkoordenschema\'s direct op gehoor op.',
+    'Past een nummer live on-the-fly aan; pikt complexe nummers en arrangementen direct op gehoor op.',
     'Kan fungeren als muzikaal leider (MD); arrangeert efficiënt partijen voor andere bandleden en levert kant-en-klare prestaties aan.',
     'Volledige controle over dynamiek; levert studio-waardige prestaties onder live-fysieke spanning (zoals intense podiumactie of dans).'],
   ['5. Professioneel',
-    'Grenzeloze techniek; beschikt over een internationaal onderscheidende, direct herkenbare \'signature sound\' en artistieke identiteit.',
-    'Absoluut gehoor of uitzonderlijk ontwikkeld relatief gehoor; leest direct complexe chord charts of partituren vanaf papier (sight-reading).',
+    'Absoluut gehoor of uitzonderlijk ontwikkeld relatief gehoor; leest direct complexe partituren vanaf papier (sight-reading).',
     'Volledig autonoom en multi-inzetbaar; beheerst een complete setlist binnen 24 uur; de vaste eerste keuze voor high-end studio- en sessiewerk.',
     'Volledige controle over emotie en klank; anticipeert en adapteert onmiddellijk aan elke onverwachte live-situatie of tempowisseling.'],
 ];
 
 function openMusicianNiveauInfoModal() {
   // V-21 + 21-08-2026: zelfde haakjes-regel als bij de bandtabel hierboven.
-  const rowsHTML = NIVEAU_INFO_MUSICIAN_ROWS.map(r => `<tr>${r.map((c, i) => `<td>${escHtml(i === 0 ? stripParenthetical(c) : c)}</td>`).join('')}</tr>`).join('');
+  // TT-572: de tweede kolom komt uit NIVEAU_ZINNEN (de zin onder de niveaukeuze).
+  const rowsHTML = NIVEAU_INFO_MUSICIAN_ROWS.map((r, j) => [stripParenthetical(r[0]), NIVEAU_ZINNEN[j], ...r.slice(1)])
+    .map(r => `<tr>${r.map(c => `<td>${escHtml(c)}</td>`).join('')}</tr>`).join('');
   document.getElementById('niveauInfoModalContent').innerHTML = `
     <div class="filter-title" style="margin-bottom:4px;">Niveau-indeling per instrument</div>
     <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:16px;">Kies per instrument het niveau waar je het dichtst bij in de buurt zit. Zie het als een richtlijn, geen examen.</p>

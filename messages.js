@@ -16,10 +16,11 @@ const TT_AVATAR_HTML = '<span class="avatar-t avatar-logo">T</span>';
 let activeConversationSysteem = false; // waar zolang het gesprek met Talent Tent open staat
 let ttBerichtenBeschikbaar = true;     // onwaar na de eerste mislukte vraag: één logregel per bezoek
 
-// Dezelfde zinnen als de digestmail (send-digest, TEKSTEN_DIGEST).
+// Dezelfde zinnen als de digestmail (send-digest, TEKSTEN_DIGEST), met punt
+// (TT-364, besluit Ronald 14-11-2026: "Ja, overal een punt").
 const TT_TEKSTEN = {
-  kernzinEenMatch: 'Er is 1 nieuwe match bij jou in de buurt',
-  kernzinMatches: 'Er zijn {aantal} nieuwe matches bij jou in de buurt',
+  kernzinEenMatch: 'Er is 1 nieuwe match bij jou in de buurt.',
+  kernzinMatches: 'Er zijn {aantal} nieuwe matches bij jou in de buurt.',
   meer: 'En nog {aantal} andere — bekijk ze in Zoeken',
   bandZoekt: 'zoekt: {instrument}',
 };

@@ -264,10 +264,12 @@ function instrumentLevelLabels() {
 // TT-572 (besluit Ronald 14-11-2026, "akkoord"): de korte zin per niveau is
 // algemeen en klopt voor elk instrument, ook voor zang. Tot dan was het de
 // eerste zin van "Technische beheersing" (TT-116), met drums en akkoorden erin.
-// Teksten per instrument komen na de livegang.
+// Teksten per instrument komen na de livegang. Niveau 2 met "Je basistechniek is
+// stabiel." erbij (besluit Ronald 14-11-2026, sessie 138). Ook de tweede kolom
+// van de uitleg achter de i-knop (openMusicianNiveauInfoModal in musicians.js).
 const NIVEAU_ZINNEN = [
   'Je speelt je eerste nummers en oefent nog met tutorials.',
-  'Je speelt hele nummers uit en zoekt ze zelf uit.',
+  'Je speelt hele nummers uit en zoekt ze zelf uit. Je basistechniek is stabiel.',
   'Je speelt strak en bent klaar voor een optreden.',
   'Je speelt alles live, ook in andere stijlen, en kunt een band leiden.',
   'Je speelt op topniveau en hebt een eigen, herkenbare sound.'
