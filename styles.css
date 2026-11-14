@@ -134,7 +134,7 @@
     --vlak: #222;                           /* TT-517 fase 2 (huisstijl §24, optie B): een rij, kaart of tegel; donker een stap lichter dan de pagina */
     --schaduw-vlak: none;                   /* donker: een schaduw valt weg op zwart */
     --rand-hover: #555;
-    --rand-menu: #444;                      /* uitklapmenu, bandkaart bij aanwijzen */
+    --rand-menu: var(--accent);             /* elk menu: doorgetrokken lijn 1px (TT-609, besluit Ronald 14-11-2026: "ad 2. ja") */
     --leeg: #555;                           /* lege ster, niet-actieve stip */
     /* Lagen boven de pagina en hun schaduw. */
     --laag-venster: rgba(0,0,0,0.8);
@@ -226,7 +226,7 @@
     --vlak: var(--surface);
     --schaduw-vlak: 0 1px 2px rgba(30,30,30,0.06), 0 4px 14px rgba(30,30,30,0.07);
     --rand-hover: #B8B4AA;
-    --rand-menu: #DED9CF;
+    --rand-menu: var(--accent);
     --leeg: #CFCAC0;
     --laag-venster: rgba(30,30,30,0.45);
     --laag-opslaan: rgba(30,30,30,0.45);
@@ -1366,12 +1366,14 @@
      een grijze streep (--muted) over de hele breedte van het scherm: 16px
      voorbij de tekstlijn aan beide kanten, de rand van main. 32px onder de
      streep de kop, 12px onder de kop het akkoord. */
-  .laatste-stap { margin-top: 128px; }
+  /* TT-607 (besluit Ronald 14-11-2026: "F"): 80px van het raster tot de
+     lijn, een lijn van 4px die het mediascherm echt afsluit; 32px tot de kop. */
+  .laatste-stap { margin-top: 80px; }
   .laatste-stap::before {
     content: '';
     display: block;
     margin: 0 -16px 32px;
-    border-top: 1px solid var(--muted);
+    border-top: 4px solid var(--muted);
   }
   .laatste-stap .hoofdstuk-kop { margin-top: 0; }
   .akkoord-regel {
@@ -1728,8 +1730,10 @@
     background: var(--surface3); box-shadow: var(--schaduw-beheersing);
   }
   .menu-laag:has(+ .beheersing-menu) { background: var(--laag-beheersing); }
+  /* TT-599 (besluit Ronald 14-11-2026: "over de breedte"): de labels vullen
+     het menu; zonder kop is dat 72px, met de kop "Zet in je setlist" 116px. */
   .beheersing-menu .choice-option {
-    position: relative; justify-content: center; width: 72px; min-height: 36px; height: 36px; padding: 0;
+    position: relative; justify-content: center; width: 100%; min-width: 72px; min-height: 36px; height: 36px; padding: 0;
     background: var(--surface); border: 1px solid var(--rand-neutraal); border-radius: 8px;
     font-size: 12px; line-height: var(--regel-12); font-weight: 700;
   }
@@ -1860,7 +1864,9 @@
     border-radius: 3px;
   }
 
-  .completeness-fill { background: var(--accent); }
+  /* TT-611 (besluit Ronald 14-11-2026: "ja"): de balk is warmgeel, in licht
+     en donker; titel en percentage blijven --accent (huisstijl §2.1). */
+  .completeness-fill { background: var(--merk); }
   .completeness-rest { background: var(--border); }
 
   .completeness-pct {
@@ -2504,22 +2510,14 @@
   /* Zolang het menu openstaat, ligt de tegel licht boven de donkere laag,
      zoals het plusteken bij Beheersing (TT-531). */
   .media-toevoegen[aria-expanded="true"] { z-index: 242; border-color: var(--accent); color: var(--accent); background: var(--bg); }
-  /* Het menu opzij: de onderkant op die van Toevoegen, de zijkant op de rand
-     van de tegel ernaast (8px tussenruimte). Ook als er onder geen plaats is
-     (.naar-boven uit utils.js) blijft het zo staan. */
-  .choice-menu.media-toevoegen-menu,
-  .choice-menu.media-toevoegen-menu.naar-boven { top: auto; bottom: 0; }
-  .choice-menu.media-toevoegen-menu.naar-links { left: auto; right: calc(100% + 8px); transform-origin: right bottom; }
-  .choice-menu.media-toevoegen-menu.naar-rechts { right: auto; left: calc(100% + 8px); transform-origin: left bottom; }
-  /* TT-590 (besluit Ronald 11-11-2026: "B"): in het donkere thema krijgt het
-     menu de gele stippellijn van het vak "+ Toevoegen"; donkergrijs viel weg
-     tegen de donkere pagina (Samsung). Het menu Beheersing in Je setlist
-     blijft zoals het was (besluit Ronald: "ad 2. nu"). */
-  :root:not([data-theme="licht"]) .choice-menu.media-toevoegen-menu { border: 2px dashed var(--merk); }
-  /* TT-590 (besluit Ronald 11-11-2026: "het keuzemenu is nu lichter dan de knop
-     met +. geef het keuzemenu dezelfde kleur."): in het lichte thema het vlak
-     van het open vak "+ Toevoegen". */
-  :root[data-theme="licht"] .choice-menu.media-toevoegen-menu { background: var(--bg); }
+  /* TT-609 (besluiten Ronald 14-11-2026: "B", "akkoord"): het keuzemenu met
+     tekens, direct onder de tegel (6px, de gewone plek van een keuzemenu) en
+     even breed als de tegel, op elke breedte; opvulling 4, de regels 8 opzij,
+     tekst links. Vervangt het menu opzij met de labels (TT-543 blok 3) en de
+     stippellijn en het vlak van TT-590: elk menu heeft nu de lijn --rand-menu. */
+  .media-toevoegen-plek .choice-menu.media-toevoegen-menu { padding: 4px; }
+  .media-toevoegen-plek .choice-menu.media-toevoegen-menu .choice-option { padding: 0 8px; gap: 8px; }
+  .keuze-teken { width: 16px; height: 16px; flex: none; }
 
   /* ── Het mediascherm ──────────────────────────────────────────────────── */
   .media-speler-box {
@@ -4306,10 +4304,12 @@
      laag 3, 3-2 A: een kaart met beeld 16px; was 12px). Het
      verzoek om het beheer over te nemen staat 8px onder de hoes. */
   #myBandsList { display: flex; flex-direction: column; gap: 16px; }
-  .band-hoes .hoes { margin: 0; }
-  .band-hoes .hoes-beeld { aspect-ratio: auto; height: 200px; }
-  .band-hoes .hoes-tekst { bottom: 14px; }
-  .band-hoes .hoes .profile-meta { margin: 0; }
+  /* TT-508 (besluit Ronald 14-11-2026: "ja", op beeld): de hoes bovenaan stap 1
+     van de aanmelding is deze kleine hoes. */
+  .band-hoes .hoes, .wiz-hoes .hoes { margin: 0; }
+  .band-hoes .hoes-beeld, .wiz-hoes .hoes-beeld { aspect-ratio: auto; height: 200px; }
+  .band-hoes .hoes-tekst, .wiz-hoes .hoes-tekst { bottom: 14px; }
+  .band-hoes .hoes .profile-meta, .wiz-hoes .hoes .profile-meta { margin: 0; }
   /* De gele pil "Zoekt …" staat op de plek van delen en ⋯ (2-7 A); hij is
      lager dan een knop en heeft geen menu, dus hier wel een transform. */
   .band-hoes .hoes .profiel-knoppen { right: calc(16px - var(--hoes-tekst-rechts, 78px)); margin: 0; transform: translateY(-50%); }
@@ -5254,6 +5254,11 @@
   .choice-menu.menu-tegel .choice-option.met-uitleg { align-items: flex-start; }
   .choice-option.met-uitleg > span:first-child { line-height: var(--regel-17); }
   .keuze-uitleg { display: block; font-size: 12px; line-height: var(--regel-12); font-weight: 400; color: var(--muted); }
+  /* TT-605 en TT-599 (besluiten Ronald 14-11-2026: "15px"): een menu met een
+     kopzin. De kop staat bovenaan, 15px vet in de tekstkleur, op de lijn van
+     de tekst eronder; in de labelvorm in het midden, op één regel. */
+  .keuze-kop { padding: 4px 12px 8px; font-size: 15px; line-height: var(--regel-15); font-weight: 700; color: var(--text); text-align: left; }
+  .beheersing-menu .keuze-kop { padding: 4px 4px 8px; text-align: center; white-space: nowrap; }
   .picker-badge-row.met-toevoegen { position: relative; }
 
 

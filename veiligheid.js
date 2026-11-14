@@ -373,13 +373,12 @@ async function renderGeblokkeerdLijst() {
   if (!el) return;
   const ids = Array.from(blokkadeDoorMij);
   if (!ids.length) {
-    // Huisstijl §15: een lege staat is een scherm met één knop. Hier is die
-    // knop "Muzikanten zoeken" — de volgende stap voor wie niemand blokkeert.
+    // TT-606 (besluit Ronald 14-11-2026: "A"): een lijst die je niet wilt
+    // vullen, krijgt geen knop (huisstijl §3.11, tweede uitzondering). "de knop
+    // ⋯" zoals in de gedragscode: "⋯-menu" las als vier puntjes.
     el.innerHTML = emptyStateHTML(
       'Je blokkeert niemand',
-      'Blokkeren kan via het ⋯-menu op een profiel of in een gesprek.',
-      'Muzikanten zoeken',
-      "closeGeblokkeerdModal();openZoekMuzikanten()"
+      'Blokkeren kan via de knop ⋯ op een profiel of in een gesprek.'
     );
     return;
   }

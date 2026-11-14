@@ -331,7 +331,8 @@ async function appInit() {
   // link is weg (7c).
   initChoiceField({
     id: 'status', fieldId: 'statusTegel', menuId: 'statusMenu',
-    rijen: () => STANDEN.map(x => ({ t: x.label, u: x.uitleg, gekozen: x.waarde === myStand })),
+    kop: STAND_KOP.muzikant,
+    rijen: () => STANDEN.map(x => ({ t: x.label, u: x.uitleg.muzikant, gekozen: x.waarde === myStand })),
     kies: i => zetStatus(STANDEN[i].waarde),
     ververs: toonStatus
   });
@@ -1166,6 +1167,7 @@ function showView(view, mode, extra) {
     // het wachtwoordveld weer zichtbaar, en ouderLeeftijdsregel() hoort daar
     // overheen te gaan, niet andersom.
     if (typeof hervatRegistratie === 'function') hervatRegistratie();
+    wizHoesBijwerken(); // TT-508: de hoes bovenaan stap 1, nu het scherm een breedte heeft
   }
 
   // Bij een wissel tussen twee tabbladen blijft de vorige inhoud staan tot de nieuwe er is (geen "Laden..." in beeld).
@@ -1705,6 +1707,16 @@ function appTerug() {
     zetBandWizardZichtbaar(false);
     werkTerugKnopBij();
     return;
+  }
+  // TT-302 (besluit Ronald 14-11-2026: "ja"): in de aanmelding doen de pijl en
+  // de terugknop van het toestel precies wat de knop Terug doet: op stap 2 en
+  // verder een stap terug, op stap 1 de vraag "Stoppen met aanmelden?" (zonder
+  // invoer meteen de landingspagina). De schermen van de ouderroute zijn geen
+  // genummerde stap en volgen de gewone weg.
+  if (huidigeView === 'register') {
+    const stap = [...document.querySelectorAll('.panel')].findIndex(p => p.classList.contains('active'));
+    if (stap > 0) { prevStep(stap); werkTerugKnopBij(); return; }
+    if (stap === 0) { prevStepFromStart(); return; }
   }
   // TT-520: Muzikanten en Mix & Match liggen één stap onder het startscherm
   // van Zoeken. Terug gaat naar dat startscherm; kwam je van buiten Zoeken

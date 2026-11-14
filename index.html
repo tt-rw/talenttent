@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261114c">
+<link rel="stylesheet" href="styles.css?v=20261114d">
 </head>
 <body>
 
@@ -343,6 +343,9 @@
     <!-- TT-543 blok 2 (besluit Ronald 07-11-2026, B op beeld): stap 1 heeft
          twee onderwerpen, dus ook het eerste krijgt een kop (hoofdstukindeling A).
          De tegel Wie ben je heeft één onderwerp en dus geen kop. -->
+    <!-- TT-508 (besluit Ronald 14-11-2026: "ja"): je eigen hoes met de
+         schijnwerper, gevuld tijdens het typen (wizHoesBijwerken() in wizard.js). -->
+    <div class="wiz-hoes" id="wizHoes" aria-hidden="true"></div>
     <h2 class="hoofdstuk-kop">Over jou</h2>
 
     <div class="field-group">
@@ -574,8 +577,9 @@
     <input type="file" id="mediaInvoer" class="media-invoer" multiple autocomplete="off" onchange="handleFileSelect(this.files); this.value=''">
 
     <!-- TT-543 blok 3 (besluiten Ronald 07-11-2026, op beeld): "De laatste
-         stap" staat los van Je mediahoek: 128px onder de media een grijze
-         streep over de hele breedte, daaronder een kop en het akkoord met
+         stap" staat los van Je mediahoek: 80px onder de media een grijze
+         streep van 4px over de hele breedte (TT-607, besluit Ronald
+         14-11-2026: "F"), daaronder een kop en het akkoord met
          vinkje. Alleen in de wizard; de tegel Je mediahoek eindigt bij de media.
          TT-63: de drie namen openen een venster (openLegalModal()), nooit een
          link die de wizard verlaat. -->
@@ -2297,19 +2301,19 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261114c"></script>
-<script src="utils.js?v=20261114c"></script>
-<script src="veiligheid.js?v=20261113c"></script>
+<script src="core.js?v=20261114d"></script>
+<script src="utils.js?v=20261114d"></script>
+<script src="veiligheid.js?v=20261114d"></script>
 <script src="auth.js?v=20261112a"></script>
-<script src="postcode.js?v=20261110a"></script>
-<script src="wizard.js?v=20261114a"></script>
+<script src="postcode.js?v=20261114d"></script>
+<script src="wizard.js?v=20261114d"></script>
 <script src="ouder.js?v=20261114a"></script>
 <script src="search.js?v=20261114b"></script>
 <script src="musicians.js?v=20261114b"></script>
-<script src="bands.js?v=20261114b"></script>
+<script src="bands.js?v=20261114d"></script>
 <script src="messages.js?v=20261114a"></script>
 <script src="push.js?v=20261027b"></script>
-<script src="modals-shared.js?v=20261114a"></script>
+<script src="modals-shared.js?v=20261114d"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding

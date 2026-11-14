@@ -975,7 +975,7 @@ function init() {
     state.bio = document.getElementById('bio').value.trim();
   });
   // TT-543: het voorbeeld "Zo zien anderen je" volgt de velden, zoals in de tegel.
-  document.getElementById('step0').addEventListener('input', () => naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen));
+  document.getElementById('step0').addEventListener('input', () => { naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen); wizHoesBijwerken(); });
   naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen);
 
   // TT-122 (22-08-2026): inlogveld alvast vullen met het laatst gebruikte
@@ -999,7 +999,36 @@ const WIZ_NAAM = { blok: 'naamKeuze', control: 'naamTonenControl', voorbeeld: 'n
 function zetNaamTonen(waarde) {
   state.naamTonen = waarde === 'gebruikersnaam' ? 'gebruikersnaam' : 'echt';
   naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen);
+  wizHoesBijwerken();
   saveOnboardingProgress();
+}
+
+// TT-508 (besluit Ronald 14-11-2026: "ja"): bovenaan stap 1 staat je eigen hoes
+// met de schijnwerper, zoals anderen hem straks zien. Tijdens het typen komen
+// naam, leeftijd en plaats erin; leeg staat er "Jouw naam" en "Je leeftijd · je
+// plaats". De naam volgt Naam op je profiel, onder de 16 de gebruikersnaam
+// (naamZoalsAnderen()). De hoes wordt één keer getekend, daarna wijzigt alleen
+// de tekst; de bundels volgen de naam vanzelf (hoesStarten()). Een verborgen
+// stap heeft geen breedte: dan pas tekenen bij goTo(0).
+function wizHoesBijwerken() {
+  const vak = document.getElementById('wizHoes');
+  if (!vak) return;
+  const waarde = id => (document.getElementById(id)?.value || '').trim();
+  const datum = waarde('birth_date');
+  const jaar = datum.length === 10 ? calcAge(datum) : NaN;
+  const leeftijd = Number.isInteger(jaar) && jaar >= 0 && jaar < 120 ? jaar : null;
+  const naam = naamZoalsAnderen(waarde('fname'), waarde('lname'), waarde('username'),
+    state.naamTonen, leeftijd === null ? 16 : leeftijd) || 'Jouw naam';
+  const regel = `${leeftijd === null ? 'Je leeftijd' : leeftijd + ' jaar'} · ${waarde('city') || 'je plaats'}`;
+  if (!vak.querySelector('.hoes')) {
+    if (!vak.clientWidth) return;
+    vak.innerHTML = profielHoesHTML({ naam, media: [], regels: `<div class="profile-meta">${escHtml(regel)}</div>`, knoppen: '' });
+    hoesStarten(vak);
+  } else {
+    vak.querySelector('.profile-name').textContent = naam;
+    vak.querySelector('.profile-meta').textContent = regel;
+  }
+  fitProfileName(vak);
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
@@ -1213,6 +1242,7 @@ function goTo(step) {
   document.getElementById('stepLabel').textContent = `Stap ${step + 1} van ${dots.length}`;
 
   state.currentStep = step;
+  if (step === 0) wizHoesBijwerken(); // TT-508: pas zichtbaar heeft de hoes een breedte
   saveOnboardingProgress(); // no-op tenzij state.onboarding actief is
   window.scrollTo({top:0, behavior:'smooth'});
   // TT-142 (25-08-2026): geen automatische focus meer bij een stapwissel —

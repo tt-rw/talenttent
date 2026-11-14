@@ -78,7 +78,7 @@ results = []
 
 
 # TT-543 onderdeel 6 (besluit Ronald 12-11-2026, O-4: "a"): een keuze met uitleg in het menu van Status en Bandstatus.
-UITLEG_GOED = {"naamEenRegel": True, "letter": ["12px"], "kleurAlsTegel": True, "minstens44": True, "hoogteUitleg": [50, 50], "onderNaam": True}  # 50px: 6 + 22 + 0 + 16 + 6 (TT-543 laag 3, 3-12 A; was 58px met 8px)
+UITLEG_GOED = {"naamEenRegel": True, "letter": ["12px"], "kleurAlsTegel": True, "minstens44": True, "hoogteUitleg": [50, 50, 50], "onderNaam": True}  # TT-605: elke stand heeft een uitleg  # 50px: 6 + 22 + 0 + 16 + 6 (TT-543 laag 3, 3-12 A; was 58px met 8px)
 
 
 def check(name, ok, detail=""):
@@ -2533,8 +2533,8 @@ def blok_browser():
               lijst["rijen"] == 1 and "dylan" in lijst["tekst"].lower(), json.dumps(lijst))
         check("opheffen verwijdert de rij uit de database",
               lijst["naOpheffen"] == 0 and not lijst["nogGeblokkeerd"], json.dumps(lijst))
-        check("de lege lijst is een lege staat met precies één knop (§15)",
-              lijst["legeStaatKnoppen"] == 1, str(lijst["legeStaatKnoppen"]))
+        check("de lege lijst is een lege staat zonder knop: een lijst die je niet wilt vullen (huisstijl §3.11, TT-606, besluit Ronald 14-11-2026: \"A\")",
+              lijst["legeStaatKnoppen"] == 0, str(lijst["legeStaatKnoppen"]))
 
         check("geen paginafouten in blok 22", not page_errors, "; ".join(page_errors)[:300])
         page.evaluate("""() => {
@@ -7815,9 +7815,14 @@ window.TT_STUB.fnAntwoord = {};
                   const lengte = history.length;
                   // Profiel bewerken bestaat alleen mét profiel, registreren alleen zonder.
                   myMusicianId = v === 'register' ? null : 'm1'; hasOwnProfile = v !== 'register';
+                  // TT-302: in de aanmelding met invoer vraagt terug eerst "Stoppen met aanmelden?" (blok 158); hier een lege aanmelding.
+                  const ingevuld = window.aanmeldingIngevuld; if (v === 'register') window.aanmeldingIngevuld = () => false;
                   showView(v, undefined, v === 'profiel' ? { id: 'x' } : undefined); await w(120);
+                  // TT-302: in de aanmelding gaat terug stap voor stap; een nieuwe aanmelding begint op stap 1.
+                  if (v === 'register') { goTo(0); await w(60); }
                   const gaatNaar = [];
                   for (let i = 0; i < 6; i++) { await druk(); gaatNaar.push(huidigeView); }
+                  window.aanmeldingIngevuld = ingevuld;
                   const naam = tab + ' > ' + v;
                   // 1. de reeks eindigt op Mijn Profiel, het hoogste scherm, en blijft daar (TT-548)
                   if (gaatNaar[5] !== 'myprofile' || gaatNaar[4] !== 'myprofile') fouten.push(naam + ' eindigt op ' + gaatNaar[5]);
@@ -8425,9 +8430,9 @@ window.TT_STUB.fnAntwoord = {};
         check("tik op het plusteken: keuzemenu Basis, Bijna, Podium, zonder vinkje, nog niets opgeslagen",
               mn.get("opties") == ["Basis", "Bijna", "Podium"] and mn.get("vinkjes") == 0 and mn.get("opslaan") == 0
               and mn.get("toast") == "" and mn.get("laag") == 1 and mn.get("aria") == "true", j102)
-        check("optie 1b: drie labels van 72x36, 8px ertussen, tikvlak 44px, vlak 90px breed op de rechterlijn, 6px eronder",
-              mn.get("labels") == [[72, 36]] * 3 and mn.get("tussen") == 8 and mn.get("tik") == ["-4px", "-8px"]
-              and mn.get("breed") == 90 and mn.get("rechts") == 0 and mn.get("onder") == 6, j102)
+        check("optie 1b met de kop 'Zet in je setlist' (TT-599, besluiten Ronald 14-11-2026: \"over de breedte\", \"15px\"): drie labels over de breedte (116x36), 8px ertussen, tikvlak 44px, vlak 132px breed op de rechterlijn, 6px eronder",
+              mn.get("labels") == [[114, 36]] * 3 and mn.get("tussen") == 8 and mn.get("tik") == ["-4px", "-8px"]
+              and 131 <= mn.get("breed", 0) <= 133 and mn.get("rechts") == 0 and mn.get("onder") == 6, j102)
         check("optie 1: lichtere laag (35% in donker), plusteken licht op boven de laag",
               mn.get("laagKleur") == "rgba(0, 0, 0, 0.35)" and mn.get("plusRand") == mn.get("accent") and mn.get("plusZ") == "242", j102)
         check("tik ernaast annuleert: menu en laag weg, niets opgeslagen, plusteken blijft",
@@ -8858,12 +8863,10 @@ window.TT_STUB.fnAntwoord = {};
           u.paneelAantal = document.querySelectorAll('#wspInstrumentBadgeRowNiveau').length;
           u.menuAantal = document.querySelectorAll('#wspInstrumentFieldMenu').length;
           u.beginVerborgen = paneel().hidden;
-          // 1. Instrument kiezen in het menu: het menu blijft open; dicht opent het paneel, er is nog geen niveau
+          // 1. Instrument kiezen in het menu: één tik sluit het menu (TT-602) en opent het paneel, er is nog geen niveau
           $('wspInstrumentField').click(); await w(60);
           u.lijstOpen = menuOpen();
-          kies('Akoestische gitaar'); await w(60);
-          u.blijftOpen = menuOpen() && paneel().hidden;
-          $('wspInstrumentField').click(); await w(300); // na de sluitbeweging
+          kies('Akoestische gitaar'); await w(300); // na de sluitbeweging
           u.naKeuze = { lijstDicht: !menuOpen(), lijst: wspState.instruments.slice(),
             niveau: wspState.instrumentLevels['Akoestische gitaar'] || null, paneelOpen: !paneel().hidden,
             keuzes: paneel().querySelectorAll('.level-choice').length, badgeOpen: badges()[0].classList.contains('open'),
@@ -8909,7 +8912,7 @@ window.TT_STUB.fnAntwoord = {};
           // 8b. Een tik op een gekozen instrument in het menu haalt het weg, met zijn niveau (1B)
           $('wspInstrumentField').click(); await w(40);
           u.menuGekozen = [...document.querySelectorAll('#wspInstrumentFieldMenu .choice-option.selected')].map(x => x.textContent.trim());
-          kies('Akoestische gitaar'); await w(40);
+          kies('Akoestische gitaar'); await w(300); // na de sluitbeweging (TT-602)
           u.menuWeg = { lijst: wspState.instruments.slice(), niveau: wspState.instrumentLevels['Akoestische gitaar'] || null, open: menuOpen() };
           sluitAlleMenus(); await w(60);
           u.menuWeg.paneelDicht = paneel().hidden;
@@ -8926,8 +8929,8 @@ window.TT_STUB.fnAntwoord = {};
         j76 = json.dumps(d76, ensure_ascii=False)
         check("het veld heeft één paneel en één menu, ook na twee keer initialiseren, en het paneel begint verborgen",
               d76["paneelAantal"] == 1 and d76["menuAantal"] == 1 and d76["beginVerborgen"] is True, j76)
-        check("een instrument kiezen: het menu blijft open (1B); dicht staat het instrument erin zonder niveau en opent het paneel vanzelf met vijf keuzes (vraag 5: A)",
-              d76["lijstOpen"] and d76["blijftOpen"] and d76["naKeuze"]["lijstDicht"] and d76["naKeuze"]["lijst"] == ["Akoestische gitaar"] and d76["naKeuze"]["niveau"] is None
+        check("een instrument kiezen: één tik sluit het menu (TT-602, besluit Ronald 14-11-2026: \"A wordt het.\"); het instrument staat erin zonder niveau en het paneel opent meteen met vijf keuzes",
+              d76["lijstOpen"] and d76["naKeuze"]["lijstDicht"] and d76["naKeuze"]["lijst"] == ["Akoestische gitaar"] and d76["naKeuze"]["niveau"] is None
               and d76["naKeuze"]["paneelOpen"] and d76["naKeuze"]["keuzes"] == 5 and d76["naKeuze"]["badgeOpen"]
               and d76["naKeuze"]["badgeTekst"] == "Kies niveau" and d76["naKeuze"]["titel"] == "Niveau voor Akoestische gitaar", j76)
         check("de vijf keuzes zijn minstens 44px hoog en passen op 390px",
@@ -8946,8 +8949,8 @@ window.TT_STUB.fnAntwoord = {};
         check("een instrument zonder niveau mag blijven staan (TT-U09)", d76["zonderNiveauBlijft"] == ["Akoestische gitaar", "Basgitaar"], j76)
         check("het open instrument weghalen sluit het paneel en wist het niveau",
               d76["weg"] == {"lijst": ["Akoestische gitaar"], "dicht": True, "niveauBas": None}, j76)
-        check("in het menu staat een gekozen instrument als pil; een tik erop haalt het weg met zijn niveau, het menu blijft open, dicht opent geen paneel",
-              d76["menuGekozen"] == ["Akoestische gitaar"] and d76["menuWeg"] == {"lijst": [], "niveau": None, "open": True, "paneelDicht": True}, j76)
+        check("in het menu staat een gekozen instrument als pil; een tik erop haalt het weg met zijn niveau, het menu sluit (TT-602), er opent geen paneel",
+              d76["menuGekozen"] == ["Akoestische gitaar"] and d76["menuWeg"] == {"lijst": [], "niveau": None, "open": False, "paneelDicht": True}, j76)
         check("het niveau-venster, het venster met de instrumentenlijst en hun functies bestaan niet meer",
               d76["oud"] == [] and d76["oudeFuncties"] == [], j76)
         check("geen paginafouten in blok 76", not page_errors, "; ".join(page_errors)[:300])
@@ -9799,7 +9802,7 @@ window.TT_STUB.fnAntwoord = {};
           const menu = document.getElementById('statusMenu');
           const uitlegMaten = m => { const rijen = [...m.querySelectorAll('.choice-option')], ul = [...m.querySelectorAll('.keuze-uitleg')], sub = document.querySelector('.tile-sub');
             return { naamEenRegel: rijen.every(o => o.querySelector('span').getBoundingClientRect().height <= 24), letter: [...new Set(ul.map(s => getComputedStyle(s).fontSize))],
-                     kleurAlsTegel: ul.length === 2 && !!sub && ul.every(s => getComputedStyle(s).color === getComputedStyle(sub).color),
+                     kleurAlsTegel: ul.length === 3 && !!sub && ul.every(s => getComputedStyle(s).color === getComputedStyle(sub).color),
                      minstens44: rijen.every(o => o.getBoundingClientRect().height >= 44), hoogteUitleg: rijen.filter(o => o.querySelector('.keuze-uitleg')).map(o => Math.round(o.getBoundingClientRect().height)),
                      onderNaam: ul.every(s => s.getBoundingClientRect().top >= s.previousElementSibling.getBoundingClientRect().bottom - 0.5) }; };
           u.menu = { open: menu.classList.contains('open') || getComputedStyle(menu).display !== 'none',
@@ -9841,8 +9844,8 @@ window.TT_STUB.fnAntwoord = {};
               d85["eigen"]["regels"] == 1 and d85["band"]["regels"] == 1, json.dumps([d85["eigen"]["regels"], d85["band"]["regels"], d85["eigen"]["breedte"]]))
         check("Instellingen (blok 4, 7b): de tegel heet Status en toont de korte naam van de stand; Beschikbaarheid, Delen via link en Band-uitnodigingen zijn weg",
               d85["tegel"]["titel"] == "Status" and d85["tegel"]["sub"] == "Tijdelijk niet beschikbaar" and d85["tegel"]["oud"] == [], j85("tegel"))
-        check("Status: het menu van Bandstatus, tekst links (huisstijl §7.1): Actief · Tijdelijk niet beschikbaar / blijft vindbaar · Inactief / niet vindbaar (O-4)",
-              {k: v for k, v in d85["menu"].items() if k != "uitleg"} == {"open": True, "regels": [["Actief"], ["Tijdelijk niet beschikbaar", "blijft vindbaar"], ["Inactief", "niet vindbaar"]], "gekozen": 1, "tekstLinks": True}, j85("menu"))
+        check("Status: het menu van Bandstatus, tekst links (huisstijl §3.4), met de uitleg voor een muzikant (TT-605, besluit Ronald 14-11-2026: \"zinnen 3 is beter.\")",
+              {k: v for k, v in d85["menu"].items() if k != "uitleg"} == {"open": True, "regels": [["Actief", "zichtbaar en uit te nodigen"], ["Tijdelijk niet beschikbaar", "zichtbaar, even geen uitnodigingen"], ["Inactief", "onzichtbaar"]], "gekozen": 1, "tekstLinks": True}, j85("menu"))
         check("Status (O-4, 390px): de naam op één regel, de uitleg 12px grijs eronder zoals onder een tegel, op de linkerlijn; een regel met uitleg 50px (3-12 A), de andere 44px",
               d85["menu"]["uitleg"] == UITLEG_GOED, j85("menu"))
         check("een keuze werkt meteen: de kolom stand, de tegel en de melding 'Wijzigingen opgeslagen.' (zoals Bandstatus)",
@@ -10881,7 +10884,7 @@ window.TT_STUB.fnAntwoord = {};
               and all(oa[t]["veld"] != oa[t]["pagina"] for t in ("donker", "licht")), j95("optieA"))
         bron95 = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("messages.js", "veiligheid.js", "index.html")}
         check("Muzikanten zoeken in een lege staat opent Muzikanten direct",
-              bron95["messages.js"].count("openZoekMuzikanten()") == 3 and "openZoekMuzikanten()" in bron95["veiligheid.js"]
+              bron95["messages.js"].count("openZoekMuzikanten()") == 3 and "openZoekMuzikanten()" not in bron95["veiligheid.js"]  # TT-606: geblokkeerden zonder knop
               and "openZoekMuzikanten()" not in bron95["index.html"]
               and "class=\"btn btn-primary landing-knop\" onclick=\"showView('search', 'behoud')\"" in bron95["index.html"], "")
         check("blok 95: geen paginafouten", not f95, "; ".join(f95)[:300])
@@ -14816,9 +14819,9 @@ def blok_tt543_blok2():
     for breed in (390, 360):
         u = uit[breed]
         s1 = u["stap1"]
-        check(f"{breed}px stap 1: koppen \"Over jou\" (bovenaan) en \"Je inloggegevens\" (22px vet, 28px, één regel), 32px onder de bio, 12px tot het label (TT-543 laag 3, 3-5 A), geen streep en geen zin (voorstel 18; B, besluit Ronald 07-11-2026)",
-              s1["koppen"] == ["Over jou", "Je inloggegevens"] and s1["maat"] == MAAT and s1["erboven"] == [32] and [e[1] for e in s1["eronder"]] == [12, 12]
-              and s1["eersteBoven"] == 0 and s1["lijnen"] == 0 and s1["zinOnderKop"] == "regAuthFieldGroup" and s1["zinnen"] == 0, json.dumps(s1))
+        check(f"{breed}px stap 1: koppen \"Over jou\" (bovenaan, 32px onder de hoes van 200px, TT-508) en \"Je inloggegevens\" (22px vet, 28px, één regel), 32px onder de bio, 12px tot het label (TT-543 laag 3, 3-5 A), geen streep en geen zin (voorstel 18; B, besluit Ronald 07-11-2026)",
+              s1["koppen"] == ["Over jou", "Je inloggegevens"] and s1["maat"] == MAAT and s1["erboven"] == [32, 32] and [e[1] for e in s1["eronder"]] == [12, 12]
+              and s1["eersteBoven"] == 232 and s1["lijnen"] == 0 and s1["zinOnderKop"] == "regAuthFieldGroup" and s1["zinnen"] == 0, json.dumps(s1))
         for naam, d, kn in (("stap 2", u["stap2"], ["Instrumenten *", "Genres *"]), ("tegel Wat speel je", u["tegel2"], ["Instrumenten *", "Genres *"]),
                             # TT-543 blok 3 (besluiten Ronald 07-11-2026): stap 4 eindigt met "De laatste stap",
                             # los onder een streep (blok 135); het vinkje staat er 12px onder, zoals een veld (TT-543 laag 3, 3-5 A).
@@ -15069,19 +15072,18 @@ def blok_tt543_blok3():
                 plusteken: !!$('wizMediaToevoegen').querySelector('svg.media-toevoegen-plus'),
                 toevoegenRegel: getComputedStyle($('wizMediaToevoegen')).lineHeight,
                 teller: $('wizardBannerTeller').innerText.trim() };
-              // Het menu: Toevoegen in kolom 3 (6 tegels) → naar links; in kolom 1 (3 tegels) → naar rechts.
+              // Het menu (TT-609, besluiten Ronald 14-11-2026): direct onder de tegel, even breed, in elke kolom.
               $('wizMediaToevoegen').click(); await w(300);
               const menu = $('wizMediaToevoegenMenu'), m = R(menu), t = R($('wizMediaToevoegen'));
               u.menuLinks = { open: menu.classList.contains('open'), labels: [...menu.querySelectorAll('.choice-option')].map(o => o.textContent.trim()),
-                vorm: menu.classList.contains('beheersing-menu'), labelBreed: Math.round(R(menu.querySelector('.choice-option')).width),
-                zijkant: Math.round(m.right - kinderen[1].right), onderkant: Math.round(m.bottom - t.bottom),
+                tekens: menu.querySelectorAll('.choice-option svg.keuze-teken').length, vorm: !menu.classList.contains('beheersing-menu'),
+                breed: Math.round(m.width - t.width), links: Math.round(m.left - t.left), onder: Math.round(m.top - t.bottom),
                 laag: !!document.querySelector('.menu-laag'), tegelLicht: getComputedStyle($('wizMediaToevoegen')).zIndex };
               sluitAlleMenus(); await w(250);
               state.mediaLinks = []; state.mediaFiles = state.mediaFiles.slice(0, 2).concat([state.mediaFiles[2]]); renderMediaGrid(); await w(100);
-              const k2 = [...$('mediaGrid').children].map(R);
               $('wizMediaToevoegen').click(); await w(300);
               const m2 = R($('wizMediaToevoegenMenu')), t2 = R($('wizMediaToevoegen'));
-              u.menuRechts = { zijkant: Math.round(m2.left - k2[1].left), onderkant: Math.round(m2.bottom - t2.bottom), rechtsVanTegel: m2.left > t2.right };
+              u.menuRechts = { breed: Math.round(m2.width - t2.width), links: Math.round(m2.left - t2.left), onder: Math.round(m2.top - t2.bottom) };
               // Foto en Video openen de kiezer met het juiste soort bestand.
               const invoer = $('mediaInvoer'); let geklikt = [];
               invoer.click = () => geklikt.push(invoer.accept);
@@ -15174,13 +15176,13 @@ def blok_tt543_blok3():
               and u["raster"]["toevoegenRand"] == "dashed" and u["raster"]["toevoegenTekst"] == "Toevoegen" and u["raster"]["plusteken"] and u["raster"]["toevoegenRegel"] == "16px", j)
         check(f"{breed}px: de zin 'Kies je bannerinhoud' staat er, ook bij 0 (voorstel 14: nee)",
               "Kies je bannerinhoud:" in u["raster"]["teller"], j)
-        check(f"{breed}px: + Toevoegen opent het menu Foto · Video · Link in de vorm van Beheersing (72px), met de donkere laag; de tegel licht erboven",
-              u["menuLinks"]["open"] and u["menuLinks"]["labels"] == ["Foto", "Video", "Link"] and u["menuLinks"]["vorm"]
-              and u["menuLinks"]["labelBreed"] == 72 and u["menuLinks"]["laag"] and u["menuLinks"]["tegelLicht"] == "242", j)
-        check(f"{breed}px: Toevoegen rechts: het menu klapt naar links, zijkant op de tegel ernaast en onderkant op Toevoegen (0px)",
-              u["menuLinks"]["zijkant"] == 0 and u["menuLinks"]["onderkant"] == 0, j)
-        check(f"{breed}px: Toevoegen links: het menu klapt naar rechts, met dezelfde uitlijning (0px)",
-              u["menuRechts"]["zijkant"] == 0 and u["menuRechts"]["onderkant"] == 0 and u["menuRechts"]["rechtsVanTegel"], j)
+        check(f"{breed}px: + Toevoegen opent het keuzemenu Foto · Video · Link met een teken per keuze (TT-609, besluit Ronald 14-11-2026: \"B\"), met de donkere laag; de tegel licht erboven",
+              u["menuLinks"]["open"] and u["menuLinks"]["labels"] == ["Foto", "Video", "Link"] and u["menuLinks"]["tekens"] == 3 and u["menuLinks"]["vorm"]
+              and u["menuLinks"]["laag"] and u["menuLinks"]["tegelLicht"] == "242", j)
+        check(f"{breed}px: Toevoegen in kolom 3: het menu staat 6px onder de tegel, even breed, links en rechts gelijk (TT-609, \"akkoord\")",
+              {k: u["menuLinks"][k] for k in ("breed", "links", "onder")} == {"breed": 0, "links": 0, "onder": 6}, j)
+        check(f"{breed}px: Toevoegen in kolom 1: dezelfde plek en breedte",
+              u["menuRechts"] == {"breed": 0, "links": 0, "onder": 6}, j)
         check(f"{breed}px: Foto opent de kiezer voor beelden, Video die voor video's",
               u["kiezer"] == ["image/*", "video/*"], j)
         check(f"{breed}px: bij 8 bestanden zegt de app 'Maximum van 8 bestanden bereikt.' en opent de kiezer niet",
@@ -15200,8 +15202,8 @@ def blok_tt543_blok3():
         check(f"{breed}px: het bannerteken op een link-tegel wisselt zonder hertekenen; de teller telt mee; ✕ haalt de link weg",
               u["linkBanner"] == {"zelfde": True, "stand": "true", "teller": True} and u["naWeg"] == 0, j)
         l = u["laatste"]
-        check(f"{breed}px: 'De laatste stap' staat los onder de media: 128px tot een streep van 1px over de hele breedte, 32px tot de kop",
-              l["naMedia"] and l["mediaTotStreep"] == 128 and l["streepBreed"] and l["streep"].startswith("1px solid") and l["streepTotKop"] == 32
+        check(f"{breed}px: 'De laatste stap' staat los onder de media: 80px tot een streep van 4px over de hele breedte, 32px tot de kop (TT-607, besluit Ronald 14-11-2026: \"F\")",
+              l["naMedia"] and l["mediaTotStreep"] == 80 and l["streepBreed"] and l["streep"].startswith("4px solid") and l["streepTotKop"] == 32
               and l["kop"] == "De laatste stap", j)
         check(f"{breed}px: het akkoord met vinkje onder de kop (12px, TT-543 laag 3, besluit Ronald 13-11-2026, 3-5 A), vinkje op de lijn van de kop, 12/16px; Profiel aanmaken pas aan na het vinkje (besluit Ronald 07-11-2026: B)",
               l["kopTotRegel"] == 12 and l["vinkOpLijn"] == 0 and l["maat"] == "12px/16px" and l["knopUitAan"] == [True, True]
@@ -16945,11 +16947,13 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
               window.scrollTo(0, 0); await w(100);
               tik('instrumentPickerField'); await w();
               u.wInstr = meet({ veld: 'instrumentPickerField', menu: 'instrumentPickerFieldMenu' });
-              kies('instrumentPickerFieldMenu', 'Basgitaar'); kies('instrumentPickerFieldMenu', 'Cello'); await w(100);
-              u.wInstr.paneelTijdensMenu = $('instrumentBadgeRowNiveau').hidden;
-              sluitAlleMenus(); await w();
-              u.wInstr.niveau = [INSTRUMENT_PICKERS.wizard.openInstrument, !$('instrumentBadgeRowNiveau').hidden,
-                $('instrumentBadgeRowNiveau').previousElementSibling.querySelector('.picker-badge-label').textContent];
+              // TT-602 (besluit Ronald 14-11-2026: "A wordt het."): één tik kiest en sluit het menu; het niveau van dat instrument opent meteen.
+              const naKeuze = () => [$('instrumentPickerFieldMenu').classList.contains('open'), INSTRUMENT_PICKERS.wizard.openInstrument, !$('instrumentBadgeRowNiveau').hidden,
+                $('instrumentBadgeRowNiveau').previousElementSibling.querySelector('.picker-badge-label')?.textContent];
+              kies('instrumentPickerFieldMenu', 'Basgitaar'); await w(400);
+              u.wInstr.naEen = naKeuze();
+              tik('instrumentPickerField'); await w(); kies('instrumentPickerFieldMenu', 'Cello'); await w(400);
+              u.wInstr.niveau = naKeuze();
               setInstrumentLevel('wizard', 2); await w(50);
               tik('instrumentPickerField'); await w(); sluitAlleMenus(); await w();
               u.wInstr.zonderNieuw = INSTRUMENT_PICKERS.wizard.openInstrument;
@@ -17018,7 +17022,9 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
                 v.scrollIntoView({ block: 'center' }); await w(100);
                 openChoiceMenu(id); await w();
                 const m = meet({ veld: c.fieldId, menu: c.menuId, anker: c.fieldId });
-                u.breed[id] = [m.breed, m.ankerBreed, m.midden];
+                const kopZin = document.querySelector('#' + c.menuId + ' .keuze-kop');
+                const nodig = kopZin ? Math.ceil(kopZin.scrollWidth + 18) : 0;  // kop met opvulling, plus 8 + 8 + 2 van het menu
+                u.breed[id] = [m.breed, m.ankerBreed, m.midden, nodig];
                 sluitAlleMenus(); await w(200);
               }
               return u;
@@ -17037,8 +17043,8 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
                   u["kop"] == [True, True, True, 0, 0], j(u["kop"]))
             check(f"{n}: Profiel aanmaken \"+ Instrument\": het keuzemenu, 3/4 in het midden, 19 instrumenten",
                   menu_ok(u["wInstr"], 19) and u["wInstr"]["gekozen"] == ["Elektrische gitaar"], j(u["wInstr"]))
-            check(f"{n}: vraag 5: het niveau opent pas als het menu dicht is, onder het eerste nieuwe instrument; zonder nieuw instrument opent niets",
-                  u["wInstr"]["paneelTijdensMenu"] and u["wInstr"]["niveau"] == ["Basgitaar", True, "Basgitaar"] and u["wInstr"]["zonderNieuw"] is None, j(u["wInstr"]))
+            check(f"{n}: TT-602: bij \"+ Instrument\" sluit het menu na één tik en opent meteen het niveau van dat instrument, ook bij een tweede; zonder nieuw instrument opent niets",
+                  u["wInstr"]["naEen"] == [False, "Basgitaar", True, "Basgitaar"] and u["wInstr"]["niveau"] == [False, "Cello", True, "Cello"] and u["wInstr"]["zonderNieuw"] is None, j(u["wInstr"]))
             check(f"{n}: Band aanmaken: \"+ Genre\" (vraag 3: A); het menu 3/4 in het midden en boven de onderbalk, ook op deze korte pagina en als het raster groeit",
                   u["band"]["toevoegen"] and menu_ok(u["band"], 15) and u["band"]["naDrie"][0] == ["Pop", "Punk", "Jazz"] and u["band"]["naDrie"][1] >= 0, j(u["band"]))
             check(f"{n}: Onze muziek: \"+ Genre\", het menu 3/4 in het midden",
@@ -17056,8 +17062,8 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
                   and all(z[k][0] == z[k][1] for k in ("radius", "leeftijd", "niveau", "sorteren", "weergave")), j(z))
             check(f"{n}: Mix & Match: Instrument 3/4 in het midden (R2)",
                   abs(u["mm"][0] - drie) <= 1 and u["mm"][2], j(u["mm"]))
-            check(f"{n}: Thema en Status (blok 4; Delen via link is weg): het menu 3/4 in het midden (besluit Ronald 10-11-2026: \"Ja, ook 3/4\")",
-                  all(isinstance(x, list) and abs(x[0] - drie) <= 1 and x[1] == breed - 32 and x[2] for x in u["breed"].values()) and len(u["breed"]) == 2, j(u["breed"]))
+            check(f"{n}: Thema en Status (blok 4; Delen via link is weg): het menu 3/4 in het midden (besluit Ronald 10-11-2026: \"Ja, ook 3/4\"); past de kop van Status niet, dan net zo breed als nodig (3-11 B, TT-605)",
+                  all(isinstance(x, list) and abs(x[0] - max(drie, x[3])) <= 1 and x[1] == breed - 32 and x[2] for x in u["breed"].values()) and len(u["breed"]) == 2, j(u["breed"]))
             ctx.close()
         browser.close()
     httpd.shutdown()
@@ -17411,13 +17417,13 @@ def blok_tt543_onderdeel6_blok2():
     httpd.shutdown()
     for n, u in uit.items():
         j = lambda k: json.dumps(u[k], ensure_ascii=False)
-        check(f"{n} bandpagina (12, B2-12, TT-580): één rij per persoon, op naam, de rollen op alfabet achter elkaar; een lid zonder rol 'Lid'; een lid ziet de uitnodiging half doorzichtig; 'Gezocht' en 'Invaller' vet met het instrument eronder",
-              u["lid"] == [["Dylan", "Achtergrondzang · Elektrische gitaar", ""], ["Jesse", "Drums", ""], ["Sanne", "Lid", ""],
+        check(f"{n} bandpagina (12, B2-12, TT-580, TT-600): één rij per persoon, op naam, de rollen op alfabet achter elkaar, 'Beheerder' achter de rollen van de beheerder; een lid zonder rol 'Lid'; een lid ziet de uitnodiging half doorzichtig; 'Gezocht' en 'Invaller' vet met het instrument eronder",
+              u["lid"] == [["Dylan", "Achtergrondzang · Elektrische gitaar", ""], ["Jesse", "Drums · Beheerder", ""], ["Sanne", "Lid", ""],
                            ["Noor", "Basgitaar · uitgenodigd", "0.55"], ["Gezocht", "Basgitaar", ""], ["Invaller", "Toetsen", ""]], j("lid"))
         check(f"{n} bandpagina: een bezoeker ziet de uitnodiging niet (TT-580)",
               [r[0] for r in u["bezoeker"]] == ["Dylan", "Jesse", "Sanne", "Gezocht", "Invaller"], j("bezoeker"))
         check(f"{n} Onze bezetting (B2-6): een rij per lid, op naam, de rollen eronder; Rollen wijzigen bij elk lid, ook de beheerder; Uit de band niet bij de beheerder",
-              u["leden"] == [["Dylan", "Achtergrondzang · Elektrische gitaar", "Rollen wijzigen|Uit de band"], ["Jesse (jij)", "Drums · beheerder", "Rollen wijzigen"],
+              u["leden"] == [["Dylan", "Achtergrondzang · Elektrische gitaar", "Rollen wijzigen|Uit de band"], ["Jesse (jij)", "Drums · Beheerder", "Rollen wijzigen"],
                              ["Sanne", "Lid", "Rollen wijzigen|Uit de band"]] and u["opslaanVoor"], j("leden"))
         check(f"{n} Onze bezetting: de uitnodiging met de rol; 'Gezocht' en 'Invaller' vet met het instrument eronder",
               u["uitgenodigd"] == [["Noor", "Basgitaar · uitgenodigd"]] and u["open"] == ["Gezocht|Basgitaar", "Invaller|Toetsen"], json.dumps([u["uitgenodigd"], u["open"]], ensure_ascii=False))
@@ -17430,7 +17436,7 @@ def blok_tt543_onderdeel6_blok2():
         check(f"{n} Rollen wijzigen (B2-4): de laatste rol blijft staan, met 'Kies minstens één rol.'",
               u["laatste"] == ["Zang", "Kies minstens één rol."], j("laatste"))
         check(f"{n} Rollen wijzigen: dicht neemt het anker geen ruimte in", u["ankerTerug"][1] == 0, j("ankerTerug"))
-        check(f"{n} de beheerder wijzigt zijn eigen rollen", u["eigen"] == "Drums · Zang · beheerder", j("eigen"))
+        check(f"{n} de beheerder wijzigt zijn eigen rollen", u["eigen"] == "Drums · Zang · Beheerder", j("eigen"))
         o = u["opgeslagen"]
         check(f"{n} Opslaan bewaart de gewijzigde rollen en de invaller zonder datum, een lid zonder wijziging blijft zoals hij was; daarna terug naar het overzicht",
               o["dylan"] == ["Zang"] and o["jesse"] == ["Drums", "Zang"] and o["sanne"] == [] and o["invallers"] == [["Toetsen", False], ["Trompet", False]]
@@ -17533,7 +17539,7 @@ def blok_tt543_b29():
 
 
 def blok_tt590():
-    print("\nBlok 148 — TT-590: het menu van \"+ Toevoegen\" is in het donkere thema geel gestippeld")
+    print("\nBlok 148 — TT-609 (vervangt TT-590): het menu van \"+ Toevoegen\" onder de tegel, even breed; elk menu een lijn van 1px in --accent")
     stub_js = open(STUB, encoding="utf-8").read()
     httpd, port = serve()
     fouten = []
@@ -17557,29 +17563,32 @@ def blok_tt590():
               const meet = async (id) => {
                 const k = $(id + 'MediaToevoegen'); k.scrollIntoView({ block: 'center' }); await w(100); k.click(); await w(500);
                 const m = $(id + 'MediaToevoegenMenu'), mr = R(m), kr = R(k);
-                const r = { open: m.classList.contains('open'), rand: [cs(m).borderTopStyle, cs(m).borderTopWidth, cs(m).borderTopColor], vlak: cs(m).backgroundColor === cs(k).backgroundColor, onder: Math.round(mr.bottom - kr.bottom),
-                  zij: Math.round(m.classList.contains('naar-rechts') ? mr.left - kr.right : kr.left - mr.right) };
+                const vlak = document.createElement('div'); vlak.style.background = 'var(--surface2)'; document.body.appendChild(vlak); const surface2 = cs(vlak).backgroundColor; vlak.remove();
+                const r = { open: m.classList.contains('open'), rand: [cs(m).borderTopStyle, cs(m).borderTopWidth, cs(m).borderTopColor],
+                  vlak: cs(m).backgroundColor === surface2 || cs(m).backgroundColor,
+                  onder: Math.round(mr.top - kr.bottom), breed: Math.round(mr.width - kr.width), links: Math.round(mr.left - kr.left) };
                 sluitAlleMenus(); await w(400); return r; };
               const u = {};
               showView('profieltegels'); await w(300); openTegelScreen('mediahoek'); await w(800);
               u.mediahoek = await meet('mh');
               tegelScreenHistoryPushed = false; openBandTegels('b9'); await w(300); openTegelScreen('bandMedia'); await w(800);
               u.bandmedia = await meet('bm');
-              // Het menu Beheersing in Je setlist blijft zoals het was (besluit "ad 2. nu").
-              const beh = document.createElement('div'); beh.className = 'choice-menu beheersing-menu open'; document.body.appendChild(beh);
-              u.beheersing = [cs(beh).borderTopStyle, cs(beh).borderTopWidth]; beh.remove();
+              // Elk menu: de lijn van 1px in --accent (TT-609, "ad 2. ja"): keuzemenu, Beheersing, ⋯-menu en hamburgermenu.
+              u.elk = ['choice-menu', 'choice-menu beheersing-menu', 'inline-menu-dropdown', 'nav-menu-dropdown'].map(k => {
+                const e = document.createElement('div'); e.className = k; e.style.display = 'block'; document.body.appendChild(e);
+                const r = [cs(e).borderTopStyle, cs(e).borderTopWidth, cs(e).borderTopColor]; e.remove(); return r; });
               return u; }""", thema)
             ctx.close()
         browser.close()
     httpd.shutdown()
-    d, l = uit["dark"], uit["light"]
-    for n in ("mediahoek", "bandmedia"):
-        check(f"TT-590 donker, {n}: het menu van \"+ Toevoegen\" heeft de gele stippellijn (2px, #FFB81C); onderkant op die van Toevoegen, 8px opzij",
-              d[n]["open"] and d[n]["rand"] == ["dashed", "2px", "rgb(255, 184, 28)"] and d[n]["onder"] == 0 and d[n]["zij"] == 8, json.dumps(d[n]))
-        check(f"TT-590 licht, {n}: de rand zoals hij was (besluit \"ad 1. nu\"); het vlak van het menu heeft de kleur van het open vak \"+ Toevoegen\" (besluit Ronald 11-11-2026)",
-              l[n]["open"] and l[n]["rand"] == ["solid", "1px", "rgb(222, 217, 207)"] and l[n]["vlak"] and l[n]["onder"] == 0 and l[n]["zij"] == 8, json.dumps(l[n]))
-    check("TT-590: het menu Beheersing in Je setlist houdt zijn vorm, donker en licht (besluit \"ad 2. nu\")",
-          d["beheersing"][0] != "dashed" and l["beheersing"][0] != "dashed", json.dumps([d["beheersing"], l["beheersing"]]))
+    kleur = {"dark": "rgb(255, 184, 28)", "light": "rgb(30, 30, 30)"}
+    for thema, naam in (("dark", "donker"), ("light", "licht")):
+        t = uit[thema]
+        for n in ("mediahoek", "bandmedia"):
+            check(f"TT-609 {naam}, {n}: het menu van \"+ Toevoegen\" staat 6px onder de tegel, even breed, links gelijk; lijn 1px doorgetrokken in --accent; het vlak van elk menu (besluiten Ronald 14-11-2026)",
+                  t[n] == {"open": True, "rand": ["solid", "1px", kleur[thema]], "vlak": True, "onder": 6, "breed": 0, "links": 0}, json.dumps(t[n]))
+        check(f"TT-609 {naam}: elk menu (keuzemenu, Beheersing, ⋯-menu, hamburgermenu) heeft een doorgetrokken lijn van 1px in --accent (\"ad 2. ja\")",
+              all(r == ["solid", "1px", kleur[thema]] for r in t["elk"]), json.dumps(t["elk"]))
     check("blok 148: geen paginafouten", not fouten, "; ".join(fouten)[:300])
 
 
@@ -17653,8 +17662,8 @@ def blok_bundel_133():
               // De rand van het raster 1,5 pixel verschuiven: de oude meting in pixels koos dan links, buiten beeld.
               k.closest('.media-raster').style.paddingLeft = '1.5px';
               k.click(); await w(600);
-              const m = $('mhMediaToevoegenMenu'), mr = R(m), app = R($('appRoot') || document.body);
-              const u = { open: m.classList.contains('open'), rechts: m.classList.contains('naar-rechts'),
+              const m = $('mhMediaToevoegenMenu'), mr = R(m), kr = R(k), app = R($('appRoot') || document.body);
+              const u = { open: m.classList.contains('open'), onder: Math.round(mr.top - kr.bottom), breed: Math.round(mr.width - kr.width),
                 binnen: mr.left >= app.left - 0.5 && mr.right <= app.right + 0.5 && mr.top >= 0 && mr.bottom <= innerHeight };
               sluitAlleMenus(); await w(300);
               return u; }""")
@@ -17726,8 +17735,8 @@ def blok_bundel_133():
           a["accountStart"]["vinkje"] and not a["accountStart"]["aan"] and not a["accountAlleenVink"]["aan"]
           and a["accountBeide"]["aan"] and not a["accountVinkUit"]["aan"], json.dumps(a))
     for breed, u in uit["609"].items():
-        check(f"TT-609, {breed}px: het menu van \"+ Toevoegen\" in de eerste kolom opent naar rechts en staat helemaal in beeld, ook als de rand 1,5 pixel verschuift",
-              u == {"open": True, "rechts": True, "binnen": True}, json.dumps(u))
+        check(f"TT-609, {breed}px: het menu van \"+ Toevoegen\" staat 6px onder de tegel, even breed, helemaal in beeld, ook als de rand 1,5 pixel verschuift",
+              u == {"open": True, "onder": 6, "breed": 0, "binnen": True}, json.dumps(u))
     c = uit["573"]
     check("TT-573: Terug op stap 1 zonder invoer gaat meteen naar de landingspagina", c["leeg"] == {"vraag": False, "view": "landing"}, json.dumps(c["leeg"]))
     check("TT-573: met invoer de vraag 'Stoppen met aanmelden?', 'Wat je invulde, wordt van dit toestel gewist.', Annuleren en Stoppen, niet rood",
@@ -17745,6 +17754,177 @@ def blok_bundel_133():
           d["bezig"] == {"herladen": None, "scherm": "wieBenJe"} and d["gelijk"] is None and d["naHerladen"] == "core.js?v=" + open(os.path.join(ROOT, "index.html"), encoding="utf-8").read().split("core.js?v=")[1].split('"')[0],
           json.dumps(d))
     check("blok 157: geen paginafouten", not fouten, "; ".join(fouten)[:300])
+
+
+def blok_bundel_135():
+    print("\nBlok 158 — sessie 135, eerste indruk: hoes op stap 1 (TT-508), terug in de aanmelding (TT-302), geel in de balk (TT-611), kop in een menu (TT-599, TT-605), Beheerder in Bezetting (TT-600), geen knop bij geblokkeerden (TT-606)")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten = []
+    uit = {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        def nieuw(thema="dark", breed=390):
+            ctx = browser.new_context(viewport={"width": breed, "height": 844}, color_scheme=thema, is_mobile=True, has_touch=True)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**", "**/x.test/**"):
+                page.route(pat, lambda r: r.abort())
+            page.add_init_script(f"try{{localStorage.setItem('tt_licht_donker','{'licht' if thema == 'light' else 'donker'}')}}catch(e){{}}")
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(500)
+            return ctx, page
+        INGELOGD = "() => { currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true; window.getMyMusicianId = async () => 'm1'; window.emailWachtOpBevestiging = async () => null; }"
+
+        # TT-508: de hoes bovenaan stap 1.
+        for breed in (360, 390):
+            ctx, page = nieuw(breed=breed)
+            page.evaluate("showView('landing')"); page.wait_for_timeout(200)
+            page.evaluate("showView('register')"); page.wait_for_timeout(500)
+            meet = r"""() => { const R = e => e.getBoundingClientRect(), v = document.getElementById('wizHoes'), h = v.querySelector('.hoes');
+              if (!h) return null;
+              const st = document.querySelector('#view-register .steps'), kop = document.querySelector('#step0 .hoofdstuk-kop');
+              return { naam: h.querySelector('.profile-name').textContent, regel: h.querySelector('.profile-meta').textContent,
+                hoog: Math.round(R(h).height), links: Math.round(R(h).left), rechts: Math.round(innerWidth - R(h).right),
+                boven: Math.round(R(h).top - R(st).bottom), totKop: Math.round(R(kop).top - R(h).bottom), schijnwerper: !!h.querySelector('.hoes-bundel'),
+                eersteBoven: v.nextElementSibling === kop, verborgen: v.getAttribute('aria-hidden') }; }"""
+            u = {"leeg": page.evaluate(meet)}
+            page.type('#fname', 'Sam'); page.type('#lname', 'de Vries'); page.type('#birth_date', '01012000'); page.wait_for_timeout(200)
+            page.evaluate("() => { document.getElementById('zip').value = '2595'; applyResolvedCity('Den Haag', '2595', document.getElementById('postcodeStatus')); }")
+            page.wait_for_timeout(300)
+            u["vol"] = page.evaluate(meet)
+            u["leeftijd"] = page.evaluate("calcAge('01-01-2000')")
+            page.click("#naamTonenControl [data-mode='gebruikersnaam']"); page.type('#username', 'samdrums'); page.wait_for_timeout(200)
+            u["gebruikersnaam"] = page.evaluate(meet)["naam"]
+            page.click("#naamTonenControl [data-mode='echt']"); page.fill('#birth_date', ''); page.type('#birth_date', '01012012'); page.wait_for_timeout(200)
+            u["onder16"] = page.evaluate(meet)["naam"]
+            page.evaluate("goTo(1)"); page.wait_for_timeout(200); page.evaluate("goTo(0)"); page.wait_for_timeout(300)
+            u["terug"] = page.evaluate(meet)["naam"]
+            # De tegel Wie ben je krijgt geen hoes (besluit Ronald 14-11-2026: "Nee, alleen links").
+            page.evaluate(BLOK155_DATA); page.evaluate(INGELOGD)
+            page.evaluate("showView('profieltegels')"); page.wait_for_timeout(400); page.evaluate("openTegelScreen('wieBenJe')"); page.wait_for_timeout(800)
+            u["tegel"] = page.evaluate("() => document.querySelectorAll('#wieBenJeScreen .hoes, #wieBenJeScreen .wiz-hoes').length")
+            uit[("508", breed)] = u
+            ctx.close()
+
+        # TT-302: pijl en toestelknop doen wat Terug doet.
+        ctx, page = nieuw()
+        stap = "() => ({ view: huidigeView, stap: [...document.querySelectorAll('.panel')].findIndex(p => p.classList.contains('active')), vraag: document.getElementById('confirmModal').classList.contains('visible') ? document.getElementById('confirmKop').textContent : null })"
+        page.evaluate("showView('landing')"); page.wait_for_timeout(200); page.evaluate("showView('register')"); page.wait_for_timeout(300)
+        page.fill('#fname', 'Sam'); page.evaluate("goTo(2)"); page.wait_for_timeout(300)
+        u = {}
+        page.click('#navTerugBtn'); page.wait_for_timeout(300); u["pijl"] = page.evaluate(stap)
+        page.go_back(); page.wait_for_timeout(500); u["toestel"] = page.evaluate(stap)
+        page.click('#navTerugBtn'); page.wait_for_timeout(400); u["stap1"] = page.evaluate(stap)
+        page.go_back(); page.wait_for_timeout(500); u["vraagDicht"] = page.evaluate(stap)
+        ctx.close()
+        ctx, page = nieuw()
+        page.evaluate("showView('landing')"); page.wait_for_timeout(200); page.evaluate("showView('register')"); page.wait_for_timeout(300)
+        page.go_back(); page.wait_for_timeout(500); u["leeg"] = page.evaluate(stap)
+        uit["302"] = u
+        ctx.close()
+
+        for thema in ("dark", "light"):
+            ctx, page = nieuw(thema)
+            page.evaluate(BLOK155_DATA); page.evaluate(INGELOGD)
+            uit[("menus", thema)] = page.evaluate(r"""async () => {
+              const w = (n = 300) => new Promise(r => setTimeout(r, n)), $ = id => document.getElementById(id), R = e => e.getBoundingClientRect(), cs = e => getComputedStyle(e);
+              const kleur = v => { const e = document.createElement('div'); e.style.background = v; document.body.appendChild(e); const c = cs(e).backgroundColor; e.remove(); return c; };
+              const tekstLinks = e => { const r = document.createRange(); r.selectNodeContents(e.firstChild); return Math.round(r.getBoundingClientRect().left); };
+              const u = {};
+              // TT-611: de balk geel, titel en percentage blijven.
+              showView('myprofile'); await w(1200);
+              const f = document.querySelector('#completenessMeter .completeness-fill');
+              u.balk = { vlak: cs(f).backgroundColor === kleur('var(--merk)'), titel: cs(document.querySelector('#completenessMeter .completeness-label')).color === kleur('var(--accent)'),
+                pct: cs(document.querySelector('#completenessMeter .completeness-pct')).color === kleur('var(--accent)') };
+              // TT-605: Status met de kop, 15px vet, op de lijn van de keuzes.
+              const kopMeten = (menuId) => { const m = $(menuId), k = m.querySelector('.keuze-kop'), o = m.querySelectorAll('.choice-option');
+                return { kop: k ? k.textContent : null, maat: k ? [cs(k).fontSize, cs(k).lineHeight, cs(k).fontWeight] : null,
+                  kleur: k ? cs(k).color === kleur('var(--text)') : null, eerst: m.firstElementChild === k, lijn: k ? tekstLinks(k) - tekstLinks(o[0].querySelector('span')) : null,
+                  naam: m.getAttribute('aria-label'), uitleg: [...m.querySelectorAll('.keuze-uitleg')].map(e => e.textContent) }; };
+              showView('instellingen'); await w(800);
+              $('statusTegel').click(); await w(500);
+              u.status = kopMeten('statusMenu'); sluitAlleMenus(); await w(300);
+              openBandTegels('b9'); await w(1200);
+              $('bandStandTegel').scrollIntoView({ block: 'center' }); $('bandStandTegel').click(); await w(500);
+              u.band = kopMeten('bandStandMenu'); sluitAlleMenus(); await w(300);
+              // TT-611 bij de band: de balk op de privé bandpagina, dezelfde functie.
+              openBandScherm('b9'); await w(1200);
+              const bf = document.querySelector('.completeness-fill');
+              u.bandBalk = bf ? cs(bf).backgroundColor === kleur('var(--merk)') : 'geen balk';
+              // TT-606: geen knop in de lege lijst van geblokkeerden.
+              showView('instellingen'); await w(500); blokkadeDoorMij.clear && blokkadeDoorMij.clear();
+              openGeblokkeerdModal(); await w(600);
+              const leeg = document.querySelector('#geblokkeerdLijst .empty-state');
+              u.geblokkeerd = leeg ? { kop: leeg.querySelector('.empty-state-title').textContent, zin: leeg.querySelector('.empty-state-text').textContent, knoppen: leeg.querySelectorAll('button').length } : null;
+              return u; }""")
+            ctx.close()
+
+        # TT-599: de kop "Zet in je setlist" in het menu achter het plusje; de labels over de breedte.
+        ctx, page = nieuw()
+        page.evaluate(BLOK155_DATA); page.evaluate(INGELOGD)
+        page.evaluate("""() => { const S = window.TT_STUB; const m = S.data.musicians.find(x => x.id === 'm2');
+          m.musician_songs = [{ musician_id: 'm2', song_artist: 'Golden Earring', song_title: 'Radar Love', mastery_level: 'podium' }]; S.data.musician_songs = (S.data.musician_songs || []).concat(m.musician_songs); }""")
+        page.evaluate("openProfielScherm('m2')"); page.wait_for_timeout(1500)
+        uit["599"] = page.evaluate(r"""async () => {
+          const w = (n = 300) => new Promise(r => setTimeout(r, n)), R = e => e.getBoundingClientRect(), cs = e => getComputedStyle(e);
+          const k = document.querySelector('.nummer-overneem'); if (!k) return null; k.scrollIntoView({ block: 'center' }); k.click(); await w(500);
+          const m = document.querySelector('.overneem-menu.open'), kop = m.querySelector('.keuze-kop'), o = [...m.querySelectorAll('.choice-option')];
+          const binnen = R(m).width - 2 - 16;
+          const u = { kop: kop && kop.textContent, maat: kop && [cs(kop).fontSize, cs(kop).fontWeight, cs(kop).textAlign], eenRegel: kop && R(kop).height <= 32,
+            labels: o.map(x => x.textContent.trim()), overBreedte: o.every(x => Math.abs(R(x).width - binnen) < 0.6), breed: Math.round(R(m).width) };
+          sluitAlleMenus(); await w(300);
+          return u; }""")
+        ctx.close()
+
+        # TT-600: een bezoeker ziet "Beheerder" in Bezetting.
+        ctx, page = nieuw()
+        page.evaluate(BLOK155_DATA)
+        page.evaluate("() => { currentUser = null; myMusicianId = null; hasOwnProfile = false; window.getMyMusicianId = async () => null; }")
+        page.evaluate("openBandScherm('b9')"); page.wait_for_timeout(1500)
+        uit["600"] = page.evaluate("() => [...document.querySelectorAll('.bezetting-lid')].map(r => [r.querySelector('.bb-naam').textContent, r.querySelector('.bb-sub').textContent])")
+        ctx.close()
+        browser.close()
+    httpd.shutdown()
+
+    for breed in (360, 390):
+        u = uit[("508", breed)]
+        check(f"TT-508, {breed}px: bovenaan stap 1 de hoes met de schijnwerper, 200px hoog binnen de marge, 32px onder de stappenbalk en 32px boven 'Over jou'; leeg 'Jouw naam' en 'Je leeftijd · je plaats' (besluit Ronald 14-11-2026: \"ja\")",
+              u["leeg"] is not None and {k: u["leeg"][k] for k in ("naam", "regel", "hoog", "links", "rechts", "boven", "totKop", "schijnwerper", "eersteBoven", "verborgen")}
+              == {"naam": "Jouw naam", "regel": "Je leeftijd · je plaats", "hoog": 200, "links": 16, "rechts": 16, "boven": 32, "totKop": 32, "schijnwerper": True, "eersteBoven": True, "verborgen": "true"},
+              json.dumps(u["leeg"], ensure_ascii=False))
+        check(f"TT-508, {breed}px: tijdens het typen komen naam, leeftijd en plaats in de hoes; de naam volgt Naam op je profiel, onder de 16 de gebruikersnaam; terug naar stap 1 blijft het staan",
+              u["vol"]["naam"] == "Sam de Vries" and u["vol"]["regel"] == f"{u['leeftijd']} jaar · Den Haag" and u["gebruikersnaam"] == "samdrums"
+              and u["onder16"] == "samdrums" and u["terug"] == "samdrums", json.dumps(u, ensure_ascii=False))
+        check(f"TT-508, {breed}px: de tegel Wie ben je krijgt geen hoes (besluit Ronald 14-11-2026: \"Nee, alleen links\")", u["tegel"] == 0, json.dumps(u["tegel"]))
+    t = uit["302"]
+    check("TT-302: in de aanmelding gaat de pijl een stap terug, net als de knop Terug (besluit Ronald 14-11-2026: \"ja\")",
+          t["pijl"] == {"view": "register", "stap": 1, "vraag": None}, json.dumps(t["pijl"]))
+    check("TT-302: de terugknop van het toestel ook", t["toestel"] == {"view": "register", "stap": 0, "vraag": None}, json.dumps(t["toestel"]))
+    check("TT-302: op stap 1 met invoer vraagt de pijl 'Stoppen met aanmelden?'; de terugknop van het toestel sluit die vraag weer",
+          t["stap1"] == {"view": "register", "stap": 0, "vraag": "Stoppen met aanmelden?"} and t["vraagDicht"] == {"view": "register", "stap": 0, "vraag": None}, json.dumps(t))
+    check("TT-302: op stap 1 zonder invoer gaat de terugknop van het toestel meteen naar de landingspagina", t["leeg"]["view"] == "landing" and t["leeg"]["vraag"] is None, json.dumps(t["leeg"]))
+    for thema, naam in (("dark", "donker"), ("light", "licht")):
+        m = uit[("menus", thema)]
+        check(f"TT-611 {naam}: de balk van Profielvolledigheid is warmgeel; titel en percentage blijven (besluit Ronald 14-11-2026: \"ja\"); de balk van de band ook",
+              m["balk"] == {"vlak": True, "titel": True, "pct": True} and m["bandBalk"] is True, json.dumps([m["balk"], m["bandBalk"]]))
+        check(f"TT-605 {naam}: Status heeft de kop 'Ben je vindbaar voor anderen?', 15px vet in de tekstkleur, bovenaan, op de lijn van de keuzes; de uitleg 'zinnen 3'",
+              m["status"] == {"kop": "Ben je vindbaar voor anderen?", "maat": ["15px", "20px", "700"], "kleur": True, "eerst": True, "lijn": 0, "naam": "Ben je vindbaar voor anderen?",
+                              "uitleg": ["zichtbaar en uit te nodigen", "zichtbaar, even geen uitnodigingen", "onzichtbaar"]}, json.dumps(m["status"], ensure_ascii=False))
+        check(f"TT-605 {naam}: Bandstatus heeft de kop 'Is jullie band vindbaar?' met de uitleg voor een band (besluit Ronald 14-11-2026: \"ja\")",
+              m["band"] == {"kop": "Is jullie band vindbaar?", "maat": ["15px", "20px", "700"], "kleur": True, "eerst": True, "lijn": 0, "naam": "Is jullie band vindbaar?",
+                            "uitleg": ["zichtbaar", "zichtbaar, maar even niet actief", "onzichtbaar"]}, json.dumps(m["band"], ensure_ascii=False))
+        check(f"TT-606 {naam}: de lege lijst Geblokkeerde muzikanten heeft geen knop; de zin noemt 'de knop ⋯' (besluit Ronald 14-11-2026: \"A\")",
+              m["geblokkeerd"] == {"kop": "Je blokkeert niemand", "zin": "Blokkeren kan via de knop ⋯ op een profiel of in een gesprek.", "knoppen": 0}, json.dumps(m["geblokkeerd"], ensure_ascii=False))
+    s = uit["599"]
+    check("TT-599: het menu achter het plusje heeft de kop 'Zet in je setlist', 15px vet, in het midden, op één regel; de labels over de breedte (besluiten Ronald 14-11-2026)",
+          s is not None and s["kop"] == "Zet in je setlist" and s["maat"] == ["15px", "700", "center"] and s["eenRegel"] and s["labels"] == ["Basis", "Bijna", "Podium"]
+          and s["overBreedte"] and 130 <= s["breed"] <= 134, json.dumps(s, ensure_ascii=False))
+    check("TT-600: een bezoeker ziet in Bezetting 'Beheerder' achter de rollen van de beheerder (besluit Ronald 14-11-2026: \"ja\")",
+          ["Jesse Visser", "Drums · Beheerder"] in uit["600"], json.dumps(uit["600"], ensure_ascii=False))
+    check("blok 158: geen paginafouten", not fouten, "; ".join(fouten)[:300])
 
 
 def blok_tt543_onderdeel6_blok3():
@@ -17800,7 +17980,7 @@ def blok_tt543_onderdeel6_blok3():
           const menu = $('bandStandMenu'), opties = [...menu.querySelectorAll('.choice-option')];
           const uitlegMaten = m => { const rijen = [...m.querySelectorAll('.choice-option')], ul = [...m.querySelectorAll('.keuze-uitleg')], sub = document.querySelector('.tile-sub');
             return { naamEenRegel: rijen.every(o => o.querySelector('span').getBoundingClientRect().height <= 24), letter: [...new Set(ul.map(s => getComputedStyle(s).fontSize))],
-                     kleurAlsTegel: ul.length === 2 && !!sub && ul.every(s => getComputedStyle(s).color === getComputedStyle(sub).color),
+                     kleurAlsTegel: ul.length === 3 && !!sub && ul.every(s => getComputedStyle(s).color === getComputedStyle(sub).color),
                      minstens44: rijen.every(o => o.getBoundingClientRect().height >= 44), hoogteUitleg: rijen.filter(o => o.querySelector('.keuze-uitleg')).map(o => Math.round(o.getBoundingClientRect().height)),
                      onderNaam: ul.every(s => s.getBoundingClientRect().top >= s.previousElementSibling.getBoundingClientRect().bottom - 0.5) }; };
                     u.menu = { open: menu.classList.contains('open'), regels: opties.map(o => [...o.querySelectorAll('span')].map(s => s.textContent.trim())), gekozen: opties.findIndex(o => o.classList.contains('selected')),
@@ -17873,8 +18053,8 @@ def blok_tt543_onderdeel6_blok3():
     check("Bandbeheer: een hoofdstukkop en drie tegels met de regels van Ronald (7, 7d)",
           d["kop"] == "Bandbeheer" and d["tegels"] == [["Bandstatus", "Actief"], ["Beheer overdragen", "draag het beheer over aan een bandlid"],
                                                         ["Bandprofiel verwijderen", "permanent verwijderen van Nachtploeg"]], j("tegels"))
-    check("Bandstatus: het keuzemenu onder de tegel, tekst links, drie standen met hun gevolg (7b, variant vindbaar); Actief gekozen",
-          {k: v for k, v in d["menu"].items() if k != "uitleg"} == {"open": True, "regels": [["Actief"], ["Tijdelijk niet beschikbaar", "blijft vindbaar"], ["Inactief", "niet vindbaar"]], "gekozen": 0, "tekstLinks": True}, j("menu"))
+    check("Bandstatus: het keuzemenu onder de tegel, tekst links, drie standen met de uitleg voor een band (TT-605, besluit Ronald 14-11-2026: \"ja\"); Actief gekozen",
+          {k: v for k, v in d["menu"].items() if k != "uitleg"} == {"open": True, "regels": [["Actief", "zichtbaar"], ["Tijdelijk niet beschikbaar", "zichtbaar, maar even niet actief"], ["Inactief", "onzichtbaar"]], "gekozen": 0, "tekstLinks": True}, j("menu"))
     check("Bandstatus (O-4, 390px): de naam op één regel, de uitleg 12px grijs eronder zoals onder een tegel, op de linkerlijn; een regel met uitleg 50px (3-12 A), de andere 44px",
           d["menu"]["uitleg"] == UITLEG_GOED, j("menu"))
     check("8D (O-7): 'Zeker?' bij een cover in Onze muziek staat op de rechterlijn van het kruisje (0px), met de vaste opmaak (setlist-zeker, geen opmaak in de regel), tikvlak 44px",
@@ -18739,7 +18919,7 @@ def blok_tt543_laag3():
                       tikHoog: hh, tikBreed: bb, laatsteRandTekst: Math.round(r(rij[rij.length - 1]).bottom - tn[tn.length - 1].bottom) }; }
                   if (naam === 'privacy') { const d = v.querySelector('.doc-view'); u.alinea = getComputedStyle(d.querySelector('p')).marginBottom; u.lijst = getComputedStyle(d.querySelector('li')).marginBottom; }
                   if (naam === 'wizard1' || naam === 'wizard2') { const st = v.querySelector('.steps'); const p = v.querySelector('.panel.active');
-                    const k = [...p.querySelectorAll('.hoofdstuk-kop-rij, .hoofdstuk-kop')].find(e => r(e).height); u.stappenKop = Math.round(r(k).top - r(st).bottom); }
+                    const k = [...p.querySelectorAll('.wiz-hoes .hoes, .hoofdstuk-kop-rij, .hoofdstuk-kop')].find(e => r(e).height); u.stappenKop = Math.round(r(k).top - r(st).bottom); }  // TT-508: op stap 1 staat de hoes eerst
                   if (naam === 'mijn-profiel') { const h = v.querySelector('.hoes'); u.hoesBoven = Math.round(r(h).top - L3.kop()); }
                   if (naam === 'gesprek') { const b = [...document.querySelectorAll('#messagesThreadList .message-bubble')].pop(); u.berichtVeld = Math.round(r($('messagesReplyInput')).top - r(b).bottom); }
                   // 3-9: de maten van de tekens.
@@ -18794,7 +18974,7 @@ def blok_tt543_laag3():
               json.dumps([uitslag[(b, n)].get(k) for n, k in (("berichten", "rijGap"), ("zoeken-start", "zoekGap"), ("bandpagina", "rijGapBand"), ("band-muziek", "mediaGap"))]))
         check(f"{b}px: een leespagina heeft 16px tussen twee alinea's en 8px tussen twee regels van een lijst (3-8 B)",
               uitslag[(b, "privacy")]["alinea"] == "16px" and uitslag[(b, "privacy")]["lijst"] == "8px", "")
-        check(f"{b}px: de stappenbalk staat 32px boven de eerste kop; de profielfoto 16px onder de kop (3-6b)",
+        check(f"{b}px: de stappenbalk staat 32px boven de eerste kop (stap 1: boven de hoes, TT-508); de profielfoto 16px onder de kop (3-6b)",
               uitslag[(b, "wizard1")]["stappenKop"] == 32 and uitslag[(b, "wizard2")]["stappenKop"] == 32 and uitslag[(b, "mijn-profiel")]["hoesBoven"] == 16,
               json.dumps([uitslag[(b, "wizard1")]["stappenKop"], uitslag[(b, "wizard2")]["stappenKop"], uitslag[(b, "mijn-profiel")]["hoesBoven"]]))
         t = {}
@@ -18957,6 +19137,7 @@ BLOKKEN = [
     blok_tt543_laag3,
     blok_tt595_tt596,
     blok_bundel_133,
+    blok_bundel_135,
 ]
 
 

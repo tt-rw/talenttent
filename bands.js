@@ -868,10 +868,19 @@ async function bandUitPubliek(id) {
 // en functie kleiner eronder", en 11-11-2026, B2-12, "2A"): één rij per
 // persoon, op naam, met de rollen op alfabet achter elkaar ("Basgitaar · Drums"),
 // zoals het blok Bands en Onze bezetting. Een lid zonder rol staat er als "Lid".
-// (Was één rij per rol, B2-1.)
+// (Was één rij per rol, B2-1.) TT-600 (besluit Ronald 14-11-2026: "ja"):
+// "Beheerder" achter de rollen van de beheerder, voor elke kijker, zoals onder
+// Bands op het muzikantprofiel; zonder rol alleen "Beheerder".
 function bezettingRijen(leden) {
   return [...leden].sort((x, y) => x.naam.localeCompare(y.naam, 'nl'))
-    .map(l => [l, l.rollen.length ? [...l.rollen].sort((x, y) => x.localeCompare(y, 'nl')).join(' · ') : roleLabel('Lid')]);
+    .map(l => [l, rollenRegel([...l.rollen].sort((x, y) => x.localeCompare(y, 'nl')), l.rol === 'Oprichter')]);
+}
+
+// De regel onder een lid in Bezetting en Onze bezetting (TT-600): de rollen,
+// dan "Beheerder" bij de beheerder; zonder rol en zonder beheer "Lid".
+function rollenRegel(rollen, beheerder) {
+  const r = rollen.concat(beheerder ? [roleLabel('Oprichter')] : []);
+  return r.length ? r.join(' · ') : roleLabel('Lid');
 }
 
 // Eén rij in de bezetting: dezelfde rij als in Onze bezetting en op het
@@ -1419,7 +1428,8 @@ async function renderBandBeheer() {
       </div>`;
     initChoiceField({
       id: 'band-stand', fieldId: 'bandStandTegel', menuId: 'bandStandMenu',
-      rijen: () => STANDEN.map(x => ({ t: x.label, u: x.uitleg, gekozen: x.waarde === bandBeheerStand })),
+      kop: STAND_KOP.band,
+      rijen: () => STANDEN.map(x => ({ t: x.label, u: x.uitleg.band, gekozen: x.waarde === bandBeheerStand })),
       kies: i => zetBandStand(STANDEN[i].waarde)
     });
   } catch (e) {
@@ -1720,10 +1730,9 @@ function bbRollenVan(id) {
 }
 
 // De regel onder een lid: zijn rollen (een lid zonder rol: "Lid"), en
-// "beheerder" bij de beheerder.
+// "Beheerder" bij de beheerder; dezelfde regel als Bezetting (TT-600).
 function bbLidRegel(l) {
-  const rollen = bbRollenVan(l.id);
-  return [rollen.length ? rollen.join(' · ') : roleLabel('Lid'), l.id === bbBeheerderId ? 'beheerder' : ''].filter(Boolean).join(' · ');
+  return rollenRegel(bbRollenVan(l.id), l.id === bbBeheerderId);
 }
 
 function bbRenderLeden() {

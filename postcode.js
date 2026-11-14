@@ -176,6 +176,7 @@ function applyResolvedCity(cityName, normalizedZip, statusEl) {
   state.city = cityName;
   state.zip  = normalizedZip;
   postcodeResolved = true;
+  wizHoesBijwerken(); // TT-508: de plaats komt in de hoes van stap 1
   // TT-494: geen melding meer ("Gevonden: …", punt 6, 25-08-2026, verdween na
   // 2 seconden): het veld toont de plaats zelf.
   statusEl.textContent = '';
@@ -462,6 +463,7 @@ function selectCitySuggestion(name, listId) {
     state.city = name;
     state.citySource = 'manual';
     postcodeResolved = true;
+    wizHoesBijwerken(); // TT-508
     document.getElementById('postcodeStatus').textContent = '';
     zetUitslag('postcodeStatus', '');
     closeAC(listId);

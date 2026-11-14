@@ -1313,7 +1313,8 @@ async function nummerOvernemen(ev, knop) {
   if (knop.classList.contains('aan')) { repertoireBijwerken(knop, null); return; }
   // Eerst de beheersing kiezen: het gewone keuzemenu (huisstijl §7.1).
   const n = knop.dataset.nr, id = `ovn${n}`;
-  CHOICE_FIELDS[id] = { id, fieldId: knop.id, selectId: `ovnSel${n}`, menuId: `ovnMenu${n}` };
+  // TT-599 (besluit Ronald 14-11-2026): de kop zegt wat het plusje doet.
+  CHOICE_FIELDS[id] = { id, fieldId: knop.id, selectId: `ovnSel${n}`, menuId: `ovnMenu${n}`, kop: 'Zet in je setlist' };
   toggleChoiceMenu(id);
 }
 function nummerOvernemenMet(n, sel) {
@@ -1711,9 +1712,12 @@ function tekenKeuzeMenu(id) {
   if (!menu) return;
   const rijen = keuzeMenuRijen(cfg);
   const scroll = menu.scrollTop;
-  menu.innerHTML = rijen.map((r, i) => `
+  // TT-605 en TT-599 (besluiten Ronald 14-11-2026): een kopzin bovenaan het
+  // menu (cfg.kop); de schermlezer hoort hem als naam van de lijst.
+  if (cfg.kop) menu.setAttribute('aria-label', cfg.kop);
+  menu.innerHTML = (cfg.kop ? `<div class="keuze-kop" aria-hidden="true">${escHtml(cfg.kop)}</div>` : '') + rijen.map((r, i) => `
     <button type="button" class="choice-option${r.gekozen ? ' selected' : ''}${r.u ? ' met-uitleg' : ''}"
-            role="option" aria-selected="${r.gekozen ? 'true' : 'false'}" data-i="${i}"${r.waarde != null ? ` data-waarde="${escHtml(r.waarde)}"` : ''}><span>${escHtml(r.t)}</span>${r.u ? `<span class="keuze-uitleg">${escHtml(r.u)}</span>` : ''}</button>`).join('');
+            role="option" aria-selected="${r.gekozen ? 'true' : 'false'}" data-i="${i}"${r.waarde != null ? ` data-waarde="${escHtml(r.waarde)}"` : ''}>${cfg.tekens && cfg.tekens[r.waarde] ? `<svg class="keuze-teken" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${cfg.tekens[r.waarde]}</svg>` : ''}<span>${escHtml(r.t)}</span>${r.u ? `<span class="keuze-uitleg">${escHtml(r.u)}</span>` : ''}</button>`).join('');
   keuzeMeerTeken(menu);
   menu.scrollTop = scroll;
   if (cfg.meer) menu.setAttribute('aria-multiselectable', 'true');
@@ -1816,9 +1820,6 @@ function openChoiceMenu(id) {
 // schuiven en het menu over de onderbalk viel.
 const BALKEN_ONDER = '#appBottomNav, .wizard-action-bar';
 function menuInBeeld(menu, veld) {
-  // TT-609: het menu van "+ Toevoegen" klapt opzij open, niet eronder; dat
-  // menu zet mediaMenuInBeeld() in beeld.
-  if (menu.classList.contains('media-toevoegen-menu')) return;
   const balken = [...document.querySelectorAll(BALKEN_ONDER)]
     .filter(b => b.getClientRects().length && getComputedStyle(b).position === 'fixed') // vast element: geen offsetParent
     .map(b => b.getBoundingClientRect().top);
@@ -2388,7 +2389,7 @@ function mediaRasterHTML(bestanden, links, voorvoegsel) {
     ` onclick="mediaToevoegenMenu(event, '${id}')">${PLUS_TEKEN}Toevoegen</button>` +
     `<select id="${id}MediaToevoegenSel" hidden onchange="${fn('mediaToevoegenKeuze')}(this)">` +
     `<option value="foto">Foto</option><option value="video">Video</option><option value="link">Link</option></select>` +
-    `<div class="choice-menu beheersing-menu media-toevoegen-menu" id="${id}MediaToevoegenMenu" role="listbox"></div></div>`);
+    `<div class="choice-menu menu-tegel media-toevoegen-menu" id="${id}MediaToevoegenMenu" role="listbox"></div></div>`);
   return tegels.join('');
 }
 
@@ -2420,60 +2421,26 @@ function mediaLinkKaartHTML(l, i, fn) {
     </div>`;
 }
 
-// Het keuzemenu van "+ Toevoegen": het gewone keuzemenu (huisstijl §7.1) met
-// de labels van Beheersing. Het klapt opzij open, naar de kant met ruimte:
-// staat Toevoegen in de eerste kolom, dan naar rechts, anders naar links. De
-// zijkant valt op de rand van de tegel ernaast, de onderkant op die van
-// Toevoegen (besluit Ronald 06-11-2026, gemeten 0px).
+// Het keuzemenu van "+ Toevoegen" (TT-609, besluiten Ronald 14-11-2026: "B",
+// "akkoord"): het gewone keuzemenu (huisstijl §3.4) met een teken voor elke
+// keuze, direct onder de tegel en even breed. Opent het onder de rand, dan
+// schuift de pagina, zoals bij elk keuzemenu (menuInBeeld()).
+const MEDIA_TEKENS = {
+  foto: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  video: '<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'
+};
 function mediaToevoegenMenu(ev, id) {
   if (ev) ev.stopPropagation();
   const knop = document.getElementById(`${id}MediaToevoegen`);
   const menu = document.getElementById(`${id}MediaToevoegenMenu`);
-  const raster = knop && knop.closest('.media-raster');
-  if (!knop || !menu || !raster) return;
-  // TT-609 (besluit Ronald 14-11-2026, "ja": het menu opent altijd in beeld).
-  // De kolom komt uit de plek in het raster, niet uit een meting in pixels.
-  // Aanname (beeld Ronald 13-11-2026, niet nagebootst): op zijn telefoon viel
-  // die meting naast 0 en klapte het menu naar links, buiten beeld.
-  const plek = knop.closest('.media-raster > *');
-  const kolommen = getComputedStyle(raster).gridTemplateColumns.split(' ').length || 3;
-  const eersteKolom = !plek || [...raster.children].indexOf(plek) % kolommen === 0;
-  menu.classList.toggle('naar-rechts', eersteKolom);
-  menu.classList.toggle('naar-links', !eersteKolom);
+  if (!knop || !menu) return;
   // Zonder keuze openen: dan geeft elke keuze een wijziging, ook twee keer Foto.
   const sel = document.getElementById(`${id}MediaToevoegenSel`);
   if (sel) sel.value = '';
   const sleutel = `${id}MediaToevoegen`;
-  CHOICE_FIELDS[sleutel] = { id: sleutel, fieldId: knop.id, selectId: `${id}MediaToevoegenSel`, menuId: menu.id };
+  CHOICE_FIELDS[sleutel] = { id: sleutel, fieldId: knop.id, selectId: `${id}MediaToevoegenSel`, menuId: menu.id, tekens: MEDIA_TEKENS };
   toggleChoiceMenu(sleutel);
-  if (menu.classList.contains('open')) mediaMenuInBeeld(knop, menu);
-}
-
-// TT-609: valt het menu toch buiten de app, dan naar de andere kant; valt het
-// boven of onder buiten beeld, dan schuift de pagina. Gemeten vanaf de knop en
-// de maat van het menu, niet vanaf de rechthoek van het menu: die is tijdens het
-// uitklappen nog kleiner.
-function mediaMenuInBeeld(knop, menu) {
-  const app = (document.getElementById('appRoot') || document.body).getBoundingClientRect();
-  const k = knop.getBoundingClientRect();
-  const breed = menu.offsetWidth, hoog = menu.offsetHeight;
-  const rechts = menu.classList.contains('naar-rechts');
-  const links = rechts ? k.right + 8 : k.left - 8 - breed;
-  if (links < app.left || links + breed > app.right) {
-    menu.classList.toggle('naar-rechts', !rechts);
-    menu.classList.toggle('naar-links', rechts);
-  }
-  const kop = document.querySelector('header');
-  const boven = kop ? kop.getBoundingClientRect().bottom : 0;
-  const balken = [...document.querySelectorAll(BALKEN_ONDER)]
-    .filter(b => b.getClientRects().length && getComputedStyle(b).position === 'fixed')
-    .map(b => b.getBoundingClientRect().top);
-  const onder = Math.min(window.innerHeight, ...balken);
-  const top = k.bottom - hoog;
-  let schuif = 0;
-  if (top < boven + 12) schuif = top - boven - 12;
-  else if (k.bottom > onder - 12) schuif = k.bottom - onder + 12;
-  if (schuif) window.scrollBy({ top: Math.round(schuif), behavior: 'auto' });
 }
 
 // Na de keuze in het menu. Een grens meldt de app vóór de handeling (app-gedrag,
@@ -3186,11 +3153,14 @@ async function kaartMaken(g, beeld) {
 // Zoeken. De database regelt Zoeken en de mail (systeem-naslag §10).
 // In het menu staat de uitleg klein op een tweede regel (besluit Ronald
 // 12-11-2026, O-4: "a"; .keuze-uitleg in styles.css).
+// TT-605 (besluiten Ronald 14-11-2026: "zinnen 3 is beter." en "ja"): een kop
+// boven het menu en de uitleg per kant, muzikant en band.
 const STANDEN = [
-  { waarde: 'actief', label: 'Actief', uitleg: '' },
-  { waarde: 'tijdelijk', label: 'Tijdelijk niet beschikbaar', uitleg: 'blijft vindbaar' },
-  { waarde: 'inactief', label: 'Inactief', uitleg: 'niet vindbaar' }
+  { waarde: 'actief', label: 'Actief', uitleg: { muzikant: 'zichtbaar en uit te nodigen', band: 'zichtbaar' } },
+  { waarde: 'tijdelijk', label: 'Tijdelijk niet beschikbaar', uitleg: { muzikant: 'zichtbaar, even geen uitnodigingen', band: 'zichtbaar, maar even niet actief' } },
+  { waarde: 'inactief', label: 'Inactief', uitleg: { muzikant: 'onzichtbaar', band: 'onzichtbaar' } }
 ];
+const STAND_KOP = { muzikant: 'Ben je vindbaar voor anderen?', band: 'Is jullie band vindbaar?' };
 
 // TT-457 (10-10-2026, besluit Ronald): één zin op het profiel en op de
 // bandpagina, in de gewone .melding (huisstijl §13): geen kop, geen knop, geen

@@ -212,9 +212,9 @@ function removePickerValue(id, value) {
 // badges van het veld. Het instrument kies je sinds TT-543 draaiwielen deel 2
 // (besluiten Ronald 10-11-2026, sessie 109) in het keuzemenu onder
 // "+ Instrument", zoals in Zoeken: alle instrumenten, een gekozen instrument als
-// pil, het menu blijft open ("1B"). Een tik op een gekozen instrument haalt het
+// pil. Sinds TT-602 sluit het menu na één tik. Een tik op een gekozen instrument haalt het
 // weg, met zijn niveau. Gaat het menu dicht, dan opent het niveau vanzelf onder
-// het eerste nieuwe instrument zonder niveau; overslaan mag (vraag 5: "het
+// het nieuwe instrument zonder niveau; overslaan mag (vraag 5: "het
 // keuzeveld moet openen, maar de gebruiker kan besluiten om (nu) geen keuze te
 // maken"). Eén paneel per veld, voor één
 // instrument tegelijk: je tikt een badge om het paneel te openen of te
@@ -240,8 +240,12 @@ function initInstrumentPicker(cfg) {
     rij.insertAdjacentElement('afterend', paneel);
   }
   const c = () => INSTRUMENT_PICKERS[cfg.id];
+  // TT-602 (besluit Ronald 14-11-2026: "A wordt het."): bij "+ Instrument" sluit
+  // het menu na één tik en opent meteen het niveau van dat instrument; voor
+  // een volgend instrument opnieuw "+ Instrument". Wijzigt 1B alleen hier;
+  // Genre en Zoeken blijven open (een instrument heeft een vervolgvraag).
   pickerMenuKoppelen({
-    id: 'instrument-' + cfg.id, fieldId: cfg.fieldId, rij, meer: true, label: 'Instrument',
+    id: 'instrument-' + cfg.id, fieldId: cfg.fieldId, rij, meer: false, label: 'Instrument',
     rijen: () => INSTRUMENTS.map(i => ({ t: i, gekozen: c().getInstruments().includes(i) })),
     kies: (n) => instrumentMenuKies(cfg.id, INSTRUMENTS[n]),
     naSluiten: () => instrumentNiveauNaMenu(cfg.id),
