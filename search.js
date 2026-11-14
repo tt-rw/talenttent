@@ -1471,7 +1471,7 @@ function selectSetlistArtist(id, name) {
   document.getElementById('setlistArtistSearch').value = name;
   closeAC('acSetlistArtistList');
   const wrap = document.getElementById('setlistTrackSearchWrap');
-  // Leeg, niet 'block': het blok is sinds TT-239 een .filter-row (display:grid).
+  // Leeg, niet 'block': het blok houdt de weergave van zijn klasse (.field).
   wrap.style.display = '';
   // Laag 3.2.b.2 (akkoord Ronald 25-10-2026): de uitleg tussen haakjes vervalt.
   document.getElementById('setlistTrackSearchLabel').textContent = `Nummer van ${name}`;

@@ -18659,6 +18659,13 @@ def blok_tt595_tt596():
     # een stijl in de regel erop doet niets en is dode code (gevonden bij de meting in test, 14-11-2026).
     f = re.findall(r'class="[^"]*scherm-titel[^"]*"\s+style="[^"]*"', html)
     check("TT-595: geen stijl in de regel op een schermtitel (die doet niets)", not f, str(f))
+    # Besluit Ronald 14-11-2026 ("ja"): nog meer dode code weg, gevonden bij de meting in productie.
+    regel = lambda sel: (re.search(r"(?:^|\n)\s*" + re.escape(sel) + r"\s*\{([^}]*)\}", zonder) or [None, None])[1]
+    dood2 = [x for x in (".zoek-titel {", ".filter-row {", ".filter-row.single", ".field-group.single", "> .filter-row") if x in zonder]
+    dood2 += ["field-group single"] if "field-group single" in html else []
+    dood2 += [n for n in ("core.js", "ouder.js") if "toggle('single'" in js[n]]
+    check("TT-595: de marge op de onzichtbare zoektitel, .filter-row en het label 'single' zijn weg; een .field-group zet velden onder elkaar",
+          not dood2 and "grid-template-columns" not in (regel(".field-group") or "x"), str(dood2) + (regel(".field-group") or ""))
     regel = lambda sel: (re.search(r"(?:^|\n)\s*" + re.escape(sel) + r"\s*\{([^}]*)\}", zonder) or [None, None])[1]
     check("TT-595: .profile-songs en .profile-media hebben geen eigen regel meer (de regel op .profiel-pagina gold altijd)",
           regel(".profile-songs") is None and regel(".profile-media") is None, "")

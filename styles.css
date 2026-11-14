@@ -866,21 +866,21 @@
   }
 
   /* Form fields */
+  /* Velden onder elkaar. TT-595 (besluit Ronald 14-11-2026): de vorm met twee
+     velden naast elkaar en het label "single" waren dode code; een regel
+     verderop zette elke .field-group al op één kolom. */
   .field-group {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--ruimte-velden) 12px; /* TT-595: 12px tussen twee velden naast elkaar, zoals .field-pair-row (was 20px) */
+    gap: var(--ruimte-velden);
     margin-bottom: var(--ruimte-velden);
   }
-
-  .field-group.single { grid-template-columns: 1fr; }
 
   /* Postcode en plaats naast elkaar, in de hele app één vorm (bevinding
      Ronald, 30-09-2026): de wizard, de tegel "Je gegevens" en het
      bandformulier. Zelfde opbouw als de rij Plaats + Straal (huisstijl §7.2):
      het smalle veld 104px vast, Plaats krijgt de rest, 8px ertussen. Blijft
-     ook op mobiel naast elkaar — daarom geen .field-group, die valt onder
-     560px terug naar één kolom. Hulptekst, status en foutregel staan onder de
+     ook op mobiel naast elkaar — daarom geen .field-group, die zet velden
+     onder elkaar. Hulptekst, status en foutregel staan onder de
      rij, over de volle breedte; in 104px zou een zin over vijf regels lopen. */
   .postcode-plaats {
     display: flex;
@@ -1146,7 +1146,7 @@
      die eronder uitklapt. Weg: padding-left:44px op het veld (ruimte voor een
      zoek-icoon dat er niet meer is — de tekst begon 44px in, terwijl elk ander
      veld op --field-inset begint) en margin-bottom:12px (de afstand tussen
-     blokken komt uit .field/.filter-row, huisstijl §3). */
+     blokken komt uit .field, huisstijl §3). */
   .song-search-wrap {
     position: relative;
   }
@@ -2142,11 +2142,11 @@
 
   /* ── TT-520 (26-10-2026, besluiten Ronald): de drie schermen van Zoeken ──
      Startscherm (titel en twee tegels), Muzikanten en Mix & Match. De titel
-     staat op elk van de drie op dezelfde plek: 16px onder de kop
-     (--kop-ruimte, app-gedrag §9), 16px boven het eerste blok (§3). */
+     staat in de kop; de inhoud begint 16px onder de kop (--kop-ruimte,
+     app-gedrag §9). TT-595: de marge op .zoek-titel was dode code (de titel in
+     het scherm is alleen voor de schermlezer, .app-view .scherm-titel). */
   #view-search > div > .search-wrap,
   #zoekStart { padding-top: var(--kop-ruimte); }
-  .zoek-titel { margin: 0 0 16px; }
 
   /* TT-520 (besluit Ronald 26-10-2026, sessie 19, optie A: "het is
      rustiger"): één ondergrond. Sinds TT-517 fase 2 heeft .search-filters
@@ -3317,11 +3317,10 @@
   .mijn-bands-kop .filter-title { grid-column: 1; grid-row: 1; margin-bottom: 0; }
   .mijn-bands-kop .btn { grid-column: 2; grid-row: 1; white-space: nowrap; }
 
-  /* Standaard witruimte tussen twee blokken in het filterpaneel: 20px, zoals
+  /* Standaard witruimte tussen twee blokken in het filterpaneel: 16px, zoals
      §3 van de huisstijl voorschrijft. Stond hier als inline marge van 16px op
      elk blok apart — dat is precies wat §3 verbiedt. */
   .search-filters > .field,
-  .search-filters > .filter-row,
   .search-filters > .field-pair-row { margin-bottom: var(--ruimte-velden); }
 
   /* TT-517 fase 2 (huisstijl §7.4, §24; besluit Ronald 31-10-2026: "wat mij
@@ -3375,15 +3374,6 @@
     margin-bottom: 16px;
   }
 
-
-  .filter-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: var(--ruimte-velden);
-  }
-
-  .filter-row.single { grid-template-columns: 1fr; }
 
   .results-header {
     display: flex;
@@ -4558,14 +4548,12 @@
        afstand als op Mijn Profiel, waar dat al zo was (besluit Ronald,
        22-08-2026). De kop levert zijn eigen 12px al. */
     main { padding: 0 16px var(--ruimte-onderaan); }
-    .field-group { grid-template-columns: 1fr; }
     /* TT-142: de vaste onderbalk (.app-bottom-nav) wordt nu via JS verborgen
        zolang view-register actief is (zie showView()) — twee vaste balken
        tegelijk was juist het probleem dat deze wijziging oplost. De
        actiebalk mag dus gewoon op bottom:0 staan, ook op mobiel. Alleen de
        zijmarge is hier smaller dan op een breder scherm. */
     .wizard-action-bar { padding-left: 16px; padding-right: 16px; }
-    .filter-row { grid-template-columns: 1fr; }
     /* Punt 1 (22-08-2026, Ronald): TT-15 (06-08-2026) liet de kop bewust
        meescrollen om ruimte te sparen. Nu bewust teruggedraaid — de naam
        moet altijd zichtbaar blijven. De hele kop (woordmerk + hamburger +

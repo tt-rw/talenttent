@@ -1161,10 +1161,8 @@ function showView(view, mode, extra) {
     const ingelogd = !!currentUser;
     const regEmailField = document.getElementById('regEmail');
     const regPasswordField = document.getElementById('regPasswordField');
-    const regAuthFieldGroup = document.getElementById('regAuthFieldGroup');
     const regEmailReq = document.getElementById('regEmailReq');
     if (regPasswordField) regPasswordField.style.display = ingelogd ? 'none' : '';
-    if (regAuthFieldGroup) regAuthFieldGroup.classList.toggle('single', ingelogd);
     if (regEmailField) {
       regEmailField.readOnly = ingelogd;
       regEmailField.style.cursor = ingelogd ? 'not-allowed' : '';

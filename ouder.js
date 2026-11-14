@@ -60,10 +60,8 @@ function ouderLeeftijdsregel() {
   // goedkeuring — er bestaat tot dat moment geen account om het bij te
   // bewaren. Het veld verdwijnt dus uit stap 1.
   const wwVeld = document.getElementById('regPasswordField');
-  const groep  = document.getElementById('regAuthFieldGroup');
   if (wwVeld && !currentUser) {
     wwVeld.style.display = nodig ? 'none' : '';
-    if (groep) groep.classList.toggle('single', nodig);
   }
 }
 
