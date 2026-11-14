@@ -767,7 +767,7 @@ async function loadMyBands(opties) {
 // (10-11-2026). De bandpagina heeft dezelfde opbouw als het muzikantprofiel
 // (huisstijl §10.2, §21): de hoes met naam, delen en ⋯; twee gedempte regels;
 // Wie zijn we en de logo's van Volg ons zonder kop; de knop; dan Bezetting,
-// Onze nummers, Foto's, video's en links, en Covers. Alleen wat is ingevuld
+// Eigen nummers, Covers, en Foto's, video's en links. Alleen wat is ingevuld
 // staat erop. Geen bandchat: de knop stuurt een bericht aan de contactpersoon.
 // Twee wegen naar dezelfde gegevens: met een eigen profiel leest de app de
 // tabellen zelf; zonder eigen profiel komt alles uit tt_get_bands_public, die
@@ -983,7 +983,7 @@ function bandSocialsHTML(b) {
 // opbouw van het muzikantprofiel (onderdeel 3). De hoes; twee gedempte regels
 // in plaats van tags; Wie zijn we zonder kop, zoals de bio; de logo's van Volg
 // ons als één rij eronder, zonder kop; de knop, die meescrolt; dan de blokken
-// Bezetting, Onze nummers, Foto's, video's en links (één raster) en Covers.
+// Bezetting, Eigen nummers, Covers, en Foto's, video's en links (één raster).
 function bandPaginaHTML(b, kijker) {
   const beheer = kijker === 'beheerder';
   const foto = safeUrl(b.avatar_url);
@@ -1081,7 +1081,7 @@ function bandPaginaHTML(b, kijker) {
   }
   // Eigen nummers.
   const nummers = b.nummers.map(n => bandNummerHTML(n, b.avatar_url)).join('');
-  if (nummers) h += bandSectieHTML('Onze nummers', nummers);
+  if (nummers) h += bandSectieHTML('Eigen nummers', nummers); // TT-601 (besluit Ronald 14-11-2026, "ja"): was "Onze nummers"
   // Covers, op dezelfde volgorde als het repertoire van een muzikant, en op
   // dezelfde plek: na de nummers, voor de foto's (besluit Ronald 11-11-2026,
   // B2-11: wie → nummers → foto's, video's en links). 1f: de kop zonder

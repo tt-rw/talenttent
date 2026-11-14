@@ -2231,7 +2231,8 @@ function toggleGedeeldRij(sleutel) {
    27-10-2026, optie b: "dat maakt het eenvoudiger"; vervangt "twee aparte
    dingen" van 25-10-2026).
    Zonder account of zonder profiel staat de vink er wel; een tik geeft
-   "Maak een gratis profiel aan, dan onthouden we je zoekopdracht." (sessie 18).
+   "Maak een profiel aan, dan onthouden we je zoekopdracht." (sessie 18; "gratis"
+   weg: TT-603, besluit Ronald 14-11-2026, "ja").
 
    Gedrag: staat de vink aan, dan volgt de bewaarde zoekopdracht wat er op het
    scherm staat (bijgewerkt na elke zoekopdracht). Vink uit: de rij gaat weg,
@@ -2352,7 +2353,7 @@ let onthoudDoel = false; // de stand die nu wordt geschreven
 async function onthoudKlik(vink) {
   if (!hasOwnProfile) {
     vink.checked = false;
-    showToast('Maak een gratis profiel aan, dan onthouden we je zoekopdracht.');
+    showToast('Maak een profiel aan, dan onthouden we je zoekopdracht.');
     return;
   }
   // TT-252: een tweede tik tijdens het schrijven doet niets; de vink blijft

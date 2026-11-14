@@ -1277,7 +1277,7 @@ async function overneemKnoppenBijwerken(vak) {
 }
 async function nummerOvernemen(ev, knop) {
   if (ev) ev.stopPropagation(); // de lijst eromheen klapt anders open of dicht
-  if (!hasOwnProfile || !myMusicianId) { showToast('Maak een gratis profiel aan, dan bewaren we dit nummer.'); return; }
+  if (!hasOwnProfile || !myMusicianId) { showToast('Maak een profiel aan, dan bewaren we dit nummer.'); return; } // TT-603: zonder "gratis"
   if (knop.dataset.bezig) return;
   if (knop.classList.contains('aan')) { repertoireBijwerken(knop, null); return; }
   // Eerst de beheersing kiezen: het gewone keuzemenu (huisstijl §7.1).

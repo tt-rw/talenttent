@@ -4475,9 +4475,9 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("het blok 'Bewaar deze zoekopdracht' is weg", not vk["blok"], "")
         up39.click("label.zoek-onthoud")
         up39.wait_for_timeout(200)
-        check("uitgelogd: een tik zet de vink niet aan en zegt 'Maak een gratis profiel aan, dan onthouden we je zoekopdracht.'",
+        check("uitgelogd: een tik zet de vink niet aan en zegt 'Maak een profiel aan, dan onthouden we je zoekopdracht.' (TT-603)",
               not up39.evaluate("document.getElementById('zoekOnthoud').checked")
-              and toast(up39) == "Maak een gratis profiel aan, dan onthouden we je zoekopdracht."
+              and toast(up39) == "Maak een profiel aan, dan onthouden we je zoekopdracht."
               and upserts(up39) == 0, toast(up39))
         uc39.close()
 
@@ -6216,7 +6216,7 @@ window.TT_STUB.fnAntwoord = {};
         # TT-543 onderdeel 6 (besluiten Ronald 10-11-2026, 1b, 1e, 1f, 13): Wie zijn we en Volg
         # ons zonder kop, boven de bezetting; één blok voor foto's, video's en links; Covers zonder aantal.
         check("gast: de blokken staan in de volgorde van de besluiten (TT-543 onderdeel 6; B2-11: wie, nummers, dan foto's, zoals het muzikantprofiel)",
-              g57["titels"] == ["Bezetting", "Onze nummers", "Covers", "Foto's, video's en links"], json.dumps(g57))
+              g57["titels"] == ["Bezetting", "Eigen nummers", "Covers", "Foto's, video's en links"], json.dumps(g57))
         check("gast: twee regels, de genres en dan wat voor band met de ervaring (de band zoekt); geen Zoekend (1a)",
               g57["tags"][0] == "Indie" and g57["tags"][1].startswith("Eigen nummers en covers · Ervaring") and len(g57["tags"]) == 2, json.dumps(g57))
         check("gast, afgeschermd: geen banner, de media één wazig vlak, het nummer wazig zonder knop (TT-517 fase 7)",
@@ -8449,7 +8449,7 @@ window.TT_STUB.fnAntwoord = {};
         check("eigen profiel: geen knop, het label op de rechterlijn",
               d102["eigenProfiel"] == {"knoppen": 0, "rechts": 0}, j102)
         check("zonder profiel: knop staat er, een tik nodigt uit, niets opgeslagen",
-              d102["gast"]["knoppen"] == 4 and d102["gast"]["toast"] == "Maak een gratis profiel aan, dan bewaren we dit nummer."
+              d102["gast"]["knoppen"] == 4 and d102["gast"]["toast"] == "Maak een profiel aan, dan bewaren we dit nummer."
               and d102["gast"]["opslaan"] == 0 and not d102["gast"]["menu"], j102)
         check("Mix & Match: hetzelfde label, 72x24", d102["mixMatch"] == [72, 24], j102)
         bjs = open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
@@ -17265,8 +17265,8 @@ def blok_tt543_onderdeel6():
         check(f"{n} 1d: beheerder geen ⋯, wel het deelicoon; een omlijnde knop Bandprofiel bewerken die het overzicht opent",
               bh["menu"] == 0 and bh["deel"] == 1 and bh["knop"] == [["Bandprofiel bewerken", "omlijnd", "static"]]
               and u["naBewerken"] == ["view-profieltegels", "overview", "b9"], json.dumps([bh["knop"], u["naBewerken"]], ensure_ascii=False))
-        check(f"{n} 1e, 1f, B2-11: blokken Bezetting, Onze nummers, Covers zonder aantal, dan Foto's, video's en links (één raster)",
-              bz["titels"] == ["Bezetting", "Onze nummers", "Covers", "Foto's, video's en links"] and bz["raster"] == 2, json.dumps(bz["titels"], ensure_ascii=False))
+        check(f"{n} 1e, 1f, B2-11: blokken Bezetting, Eigen nummers (TT-601), Covers zonder aantal, dan Foto's, video's en links (één raster)",
+              bz["titels"] == ["Bezetting", "Eigen nummers", "Covers", "Foto's, video's en links"] and bz["raster"] == 2, json.dumps(bz["titels"], ensure_ascii=False))
         check(f"{n} F1: \"SoundCloud\" breekt bij de hoofdletter (Sound / Cloud), op twee regels",
               bz["platform"] == ["Sound<wbr>Cloud", 2], json.dumps(bz["platform"]))
         m = u["mijn"]
