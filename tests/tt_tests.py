@@ -62,11 +62,10 @@ VIEWS = [
 ]
 
 NAV_IDS = [
-    "navMyProfile", "navMyBands", "navSearch", "navMessages", "navLogin",
     "navMenuBtn", "navAbout", "navPrivacy", "navTerms", "navGedragscode",
     "navSettings", "navLogout", "navMenuLogin",
     "bottomNavSearch", "bottomNavMessages", "bottomNavBands", "bottomNavProfile",
-    "unreadBadge", "unreadBadgeBottom",
+    "unreadBadgeBottom",
 ]
 
 # Na deze woorden volgt een reguliere expressie, geen deling.
@@ -522,10 +521,10 @@ def blok_browser():
         print("\nBlok 4 — navigatie")
         weg = [i for i in NAV_IDS if page.locator(f"#{i}").count() == 0]
         check("alle navigatie-id's aanwezig", not weg, f"ontbreekt: {weg}")
-        check("navMenuBtn staat buiten de scrollbare balk",
-              page.evaluate("!document.querySelector('#appNav')?.contains("
-                            "document.getElementById('navMenuBtn'))"),
-              "navMenuBtn staat in .app-nav")
+        # TT-595 (besluit Ronald 14-11-2026): de verborgen bovenbalk met tabbladen is weg.
+        check("TT-595: de verborgen bovenbalk (.app-nav, .nav-btn) bestaat niet meer",
+              page.evaluate("!document.querySelector('#appNav, .app-nav, .nav-btn, .nav-spacer')"),
+              "de bovenbalk staat nog in de pagina")
 
         print("\nBlok 5 — knoppenrijen (TT-228)")
         rijen = page.evaluate("""() => {
@@ -2016,7 +2015,7 @@ def blok_browser():
               smal["hoog"] == 16 and max(smal["breed"]) <= smal["ruimte"], json.dumps(smal))
         check("de vraag in de signaalkleur, 12px (TT-517), op de lijn van de labels",
               vr["kleur"] == vr["accent"] and vr["maat"] == "12px" and vr["x"] == vr["labelX"], json.dumps(vr))
-        check("de vraag 12px onder de knoppen, 20px boven het label", vr["boven"] == 12 and vr["onder"] == 20, json.dumps(vr))
+        check("de vraag 12px onder de knoppen, 16px boven het label (TT-595, besluit Ronald 14-11-2026; was 20px)", vr["boven"] == 12 and vr["onder"] == 16, json.dumps(vr))
         check("het veld heet Naam muzikant", vr["label"] == "Naam muzikant", json.dumps(vr))
         weg = page.evaluate("""() => ({
           knoppen: document.querySelectorAll('#searchModeSetlist .btn').length,
@@ -2477,7 +2476,7 @@ def blok_browser():
           return {
             tekst: document.getElementById('messagesInboxList').innerText,
             rijen: document.querySelectorAll('#messagesInboxList .messages-conv-row').length,
-            badge: document.getElementById('unreadBadge').textContent
+            badge: document.getElementById('unreadBadgeBottom').textContent
           };
         }""")
         check("het gesprek met een geblokkeerde verdwijnt uit de inbox",
@@ -9238,7 +9237,7 @@ window.TT_STUB.fnAntwoord = {};
             naam: e.querySelector('.messages-conv-name').childNodes[0].textContent.trim(),
             voorbeeld: e.querySelector('.messages-conv-preview').textContent, ongelezen: e.classList.contains('unread'),
             badge: (e.querySelector('.unread-badge') || {}).textContent || null }));
-          const getal = () => ({ onder: $('unreadBadgeBottom').style.display, boven: $('unreadBadge').style.display, tekst: $('unreadBadgeBottom').textContent });
+          const getal = () => ({ onder: $('unreadBadgeBottom').style.display, tekst: $('unreadBadgeBottom').textContent });
           // 1. De inbox: Talent Tent als gesprek, met de kernzin als voorbeeld en het aantal ongelezen.
           showView('messages'); await w(300); await loadInbox(); await w(300);
           u.inbox = rij();
@@ -9306,8 +9305,8 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-451: Talent Tent staat als gesprek in de inbox, met de kernzin als voorbeeld en het aantal ongelezen",
               [r["naam"] for r in d81["inbox"]] == ["TalentTent"] and d81["inbox"][0]["ongelezen"] and d81["inbox"][0]["badge"] == "1"
               and d81["inbox"][0]["voorbeeld"] == "Er zijn 5 nieuwe matches bij jou in de buurt", j81)
-        check("TT-451: een ongelezen bericht van Talent Tent geeft een getal op Berichten, in de bovenbalk en in de onderbalk",
-              d81["getalOngelezen"]["onder"] != "none" and d81["getalOngelezen"]["tekst"] == "1" and d81["getalOngelezen"]["boven"] != "none", j81)
+        check("TT-451: een ongelezen bericht van Talent Tent geeft een getal op Berichten in de onderbalk (de bovenbalk is weg, TT-595)",
+              d81["getalOngelezen"]["onder"] != "none" and d81["getalOngelezen"]["tekst"] == "1", j81)
         check("TT-451: een bericht van een muzikant en een van Talent Tent tellen samen in één getal",
               d81["getalSamen"]["tekst"] == "2", j81)
         check("TT-451: het gesprek toont één bericht per digestrun, oud naar nieuw, met dag-scheiding",
@@ -9327,7 +9326,7 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-451: er valt niets te versturen naar Talent Tent",
               d81["verstuurd"] == 0, j81)
         check("TT-451: openen leest alles als gelezen; het getal verdwijnt",
-              d81["gelezen"] and d81["getalNaLezen"]["onder"] == "none" and d81["getalNaLezen"]["boven"] == "none", j81)
+              d81["gelezen"] and d81["getalNaLezen"]["onder"] == "none", j81)
         check("TT-451: na sluiten heeft een gewoon gesprek weer zijn invoerveld",
               d81["naSluiten"]["systeem"] is False and d81["naSluiten"]["paneel"] is False and d81["gewoon"]["voet"] != "none" and d81["gewoon"]["systeem"] is False, j81)
         check("TT-451: verversen op #messages/talent-tent opent het gesprek weer",
@@ -9820,8 +9819,8 @@ window.TT_STUB.fnAntwoord = {};
               d85["eigen"] and d85["eigen"]["tekst"] == "Tijdelijk niet beschikbaar." and d85["eigen"]["vet"] == "Tijdelijk niet beschikbaar."
               and d85["eigen"]["uitlijning"] == "center"
               and d85["eigen"]["voor"] == "profiel-wat" and d85["eigen"]["na"] == "profile-bio" and not d85["eigen"]["kop"] and not d85["eigen"]["knop"], j85("eigen"))
-        check("UI: de zin is 12px (TT-517), de lijn links 4px, en staat 20px onder de twee regels en 20px boven de bio",
-              d85["eigen"]["letter"] == "12px" and d85["eigen"]["rand"] == "4px" and d85["eigen"]["boven"] == 20 and d85["eigen"]["onder"] == 20, j85("eigen"))
+        check("UI: de zin is 12px (TT-517), de lijn links 4px, en staat 16px onder de twee regels en 16px boven de bio (TT-595, besluit Ronald 14-11-2026; was 20px)",
+              d85["eigen"]["letter"] == "12px" and d85["eigen"]["rand"] == "4px" and d85["eigen"]["boven"] == 16 and d85["eigen"]["onder"] == 16, j85("eigen"))
         check("Actief (de standaard): er staat geen zin op Mijn Profiel", d85["eigenActief"] is True, j85("eigenActief"))
         check("het profiel van een ander: 'Inactief.' via tt_profiel_stand (met het id); bij Actief geen zin",
               d85["ander"] and d85["ander"]["tekst"] == "Inactief." and d85["ander"]["uitlijning"] == "center"
@@ -14837,8 +14836,8 @@ def blok_tt543_blok2():
           not u["f2"] and u["wijzig"] == ["11px 700", "11px 700"], json.dumps([u["f2"], u["wijzig"]]))
     check("TT-570: ingelogd zonder profiel is het e-mailadres alleen-lezen, zonder zin erbij (besluit Ronald 07-11-2026)",
           u["ingelogd"]["zinnen"] == 0 and u["ingelogd"]["alleenLezen"], json.dumps(u["ingelogd"]))
-    check("Instellingen: tegel \"Je inloggegevens\" met \"e-mailadres en wachtwoord\"; het venster heet ook \"Je inloggegevens\", zonder zin eronder, 20px tot de inhoud (besluit Ronald 07-11-2026)",
-          u["tegel"] == ["Je inloggegevens", "e-mailadres en wachtwoord"] and u["venster"] == "Je inloggegevens" and not u["vensterZin"] and u["vensterOnder"] == "20px",
+    check("Instellingen: tegel \"Je inloggegevens\" met \"e-mailadres en wachtwoord\"; het venster heet ook \"Je inloggegevens\", zonder zin eronder, 16px tot de inhoud (besluit Ronald 07-11-2026; TT-595, 14-11-2026: was 20px)",
+          u["tegel"] == ["Je inloggegevens", "e-mailadres en wachtwoord"] and u["venster"] == "Je inloggegevens" and not u["vensterZin"] and u["vensterOnder"] == "16px",
           json.dumps([u["tegel"], u["venster"], u["vensterZin"], u["vensterOnder"]]))
     check("geen paginafouten in blok 134", not fouten, "; ".join(fouten)[:300])
 
@@ -15456,10 +15455,10 @@ def blok_tt543_blok4():
         check(f"{breed}px 20: na Opslaan terug naar Profiel bewerken, met \"Wijzigingen opgeslagen.\"",
               b["naOpslaan"] == {"tegel": "overview", "overzicht": True, "toast": "Wijzigingen opgeslagen."}, jb)
         t = b["tegel"]
-        check(f"{breed}px 21 C en 22 (tegel): het keuzeveld is de laatste knop, \"+ Instrument\" en \"+ Genre\", gestippeld, 44px; instrumenten als rijen (één kolom, 44px, tekst 20px binnen de rand van 1px, sterren voor het kruisje), genres in twee kolommen; 15px",
+        check(f"{breed}px 21 C en 22 (tegel): het keuzeveld is de laatste knop, \"+ Instrument\" en \"+ Genre\", gestippeld, 44px; instrumenten als rijen (één kolom, 44px, tekst 16px binnen de rand van 1px (TT-595, besluit Ronald 14-11-2026; was 20px), sterren voor het kruisje), genres in twee kolommen; 15px",
               t["instrLaatste"] == "wspInstrumentField" and t["instrTekst"] == "Instrument" and t["genreLaatste"] == "wspGenreField" and t["genreTekst"] == "Genre"
               and t["kolomInstr"] == 1 and t["kolomGenre"] == 2 and t["instrBreed"] and t["instrHoog"] == 44 and t["maat"] == "15px/20px" and t["genreMaat"] == "15px"
-              and t["links"] == 21 and t["sterRechts"] and t["genreCel"] and t["plus"] and t["stippel"] == "dashed" and t["toevoegHoog"] == 44, jb)
+              and t["links"] == 17 and t["sterRechts"] and t["genreCel"] and t["plus"] and t["stippel"] == "dashed" and t["toevoegHoog"] == 44, jb)
         check(f"{breed}px 1B (vervangt 28 A): het menu van \"+ Genre\" toont alle genres, de gekozen als pil; een tik voegt toe en het menu blijft open; \"+ Genre\" blijft de laatste knop",
               b["a"]["alles"] and b["a"]["gekozen"] and set(b["a"]["gekozen"]) == set(b["a"]["voor"]) and b["a"]["dicht"] and b["a"]["genres"][-1] == "Jazz" and b["a"]["laatsteKnop"] == "wspGenreField", jb)
         check(f"{breed}px 29: een niveau kiezen klapt het paneel dicht", b["a"]["paneelOpen"] and b["a"]["paneelNaNiveau"], jb)
@@ -16054,11 +16053,11 @@ def blok_tt543_onderdeel3():
             check(f"{n} (3): instrumenten en genres als twee regels tekst, 12px (16px, TT-543 laag 3, besluit Ronald 13-11-2026, 3-1), niet vet, gedempt, gescheiden door ' · '",
                   [x[0] for x in u["wat"]] == ["Elektrische gitaar ★★★★ · Zang ★★", "Rock · Indie · Blues"]
                   and all(x[1:] == ["12px", "16px", "400", True] for x in u["wat"]), json.dumps(u["wat"], ensure_ascii=False))
-            check(f"{n} (3): alleen gevulde sterren, 11px; 4px tussen de regels, 20px tot de bio",
-                  u["sterren"] == [["★★★★", "11px"], ["★★", "11px"]] and u["watAfstand"] == [4, 20], json.dumps([u["sterren"], u["watAfstand"]], ensure_ascii=False))
+            check(f"{n} (3): alleen gevulde sterren, 11px; 4px tussen de regels, 16px tot de bio (TT-595, besluit Ronald 14-11-2026; was 20px)",
+                  u["sterren"] == [["★★★★", "11px"], ["★★", "11px"]] and u["watAfstand"] == [4, 16], json.dumps([u["sterren"], u["watAfstand"]], ensure_ascii=False))
             knop = {"mijn": ["Profiel bewerken", "omlijnd"], "ander": ["Stuur een bericht", "geel"], "bezoeker": ["Maak een profiel en leg contact", "geel"]}[wie]
-            check(f"{n} (1E, F3 B): één knop '{knop[0]}' direct onder de bio, 20px, over de breedte van de bio, 44px, scrolt mee",
-                  u["actie"] and u["actie"]["volgt"] and u["actie"]["afstand"] == 20 and u["actie"]["pos"] == "static"
+            check(f"{n} (1E, F3 B): één knop '{knop[0]}' direct onder de bio, 16px (TT-595, besluit Ronald 14-11-2026; was 20px), over de breedte van de bio, 44px, scrolt mee",
+                  u["actie"] and u["actie"]["volgt"] and u["actie"]["afstand"] == 16 and u["actie"]["pos"] == "static"
                   and u["actie"]["knoppen"] == [knop + [True, 44]], json.dumps(u["actie"], ensure_ascii=False))
             check(f"{n} (F3 B, TT-577): geen vaste balk onderaan; de knop ligt boven de onderbalk en vangt zelf de tik",
                   (u["voet"] is None or u["voet"][0] == "") and u["bovenop"] == [True, True], json.dumps([u["voet"], u["bovenop"]]))
@@ -16317,8 +16316,8 @@ def blok_tt543_onderdeel4():
                   d["knopInRij"] and d["rijOnder"] == 16 and abs(d["midden"]) <= 1, json.dumps(d))
             # Het beeld van 3C (08-11-2026) gaf 311px; F1 zet de regel "… gevonden" op 18px (was 'normal', 15px): 314px.
             # TT-582 (10-11-2026): label tot veld 4px en Filters 16px onder Plaats en Straal: 8px hoger, 306px.
-            check(f"{n} (3C, F1, TT-582): de telling 20px onder die regel; de eerste muzikant op 296px (306px vóór TT-543 laag 3, besluit Ronald 13-11-2026, 3-1 en 3-6b)",
-                  d["totTelling"] == 20 and d["eersteRij"] == 296, json.dumps(d))
+            check(f"{n} (3C, F1, TT-582): de telling 16px onder die regel; de eerste muzikant op 288px (TT-595, besluit Ronald 14-11-2026: 20 wordt 16; 296px vóór TT-595, 306px vóór TT-543 laag 3)",
+                  d["totTelling"] == 16 and d["eersteRij"] == 288, json.dumps(d))
             check(f"{n} (TT-560): afstand in hele km in de rij; onder 1 km '1 km'",
                   d["meta"] == (["Basgitaar · Delft · 1 km", "Zang · Rijswijk · 4 km", "Hoorn · 12 km"] if wie == "lid" else ["Basgitaar · Delft · 1 km", "Zang · Rijswijk · 4 km", "Rock · Hoorn · 12 km"]) and all(" km" in m and "." not in m for m in d["meta"]), json.dumps(d["meta"], ensure_ascii=False))
             o = u["open"]
@@ -16370,7 +16369,7 @@ def blok_tt543_onderdeel4():
                       b and b["kop"] == "Colin Wever uitnodigen voor Van Delft" and b["kopMaat"] == ["22px", "28px", "700"]
                       and b["label"] == "Boodschap aan Colin Wever (niet verplicht)" and b["labelMaat"] == ["12px", "16px"], json.dumps(b, ensure_ascii=False))
                 check(f"{n} (B4): de kop op de plek van instrument en genres ({v['watTop']}px onder de hoes); kop tot label 12px (TT-543 laag 3, besluit Ronald 13-11-2026, 3-5 A), label tot berichtvak 4px (TT-582), berichtvak tot knop 20px, 8px tussen de knoppen",
-                      b and b["kopTop"] == v["watTop"] and b["kopTotLabel"] == 12 and b["labelTotVak"] == 4 and b["vakTotKnop"] == 20 and b["tussenKnoppen"] == 8, json.dumps(b))
+                      b and b["kopTop"] == v["watTop"] and b["kopTotLabel"] == 12 and b["labelTotVak"] == 4 and b["vakTotKnop"] == 16 and b["tussenKnoppen"] == 8, json.dumps(b))
                 check(f"{n} (blok 2, B2-7): boven de boodschap het veld 'Rol in Van Delft', leeg 'Kies een rol'; label tot veld 4px, veld tot het volgende label 16px (TT-582), 44px hoog",
                       b and b["rol"] == ["Rol in Van Delft", "Kies een rol", 12, 4, 16, 44], json.dumps(b and b["rol"], ensure_ascii=False))  # 12: kop tot label (3-5 A)
                 check(f"{n} (blok 2, B2-4): zonder rol geen uitnodiging; 'Kies minstens één rol' bij het veld",
@@ -16552,8 +16551,8 @@ def blok_tt543_onderdeel5():
               for (const n of [799, 800, 1000]) { v.value = 'x'.repeat(n); updateCharCounter('meldToelichting', 'meldToelichtingCounter', 1000);
                 u.push([t.offsetParent !== null, t.textContent, Math.round(t.getBoundingClientRect().top - v.getBoundingClientRect().bottom), afstand(), getComputedStyle(t).color]); }
               document.getElementById('meldModal').classList.remove('visible'); return u; }""")
-            check(f"{n} (vraag 1): Melden: geen teller tot 800 tekens, dan '800/1000', 4px onder het veld; 20px tot de knoppen, met en zonder teller; dezelfde grijze kleur",
-                  meld[0] == [False, 20] and meld[1][0] is False and meld[2][:3] == [True, "800/1000", 4] and meld[2][3] == 4 + 16 + 20
+            check(f"{n} (vraag 1): Melden: geen teller tot 800 tekens, dan '800/1000', 4px onder het veld; 16px tot de knoppen (TT-595, besluit Ronald 14-11-2026; was 20px), met en zonder teller; dezelfde grijze kleur",
+                  meld[0] == [False, 16] and meld[1][0] is False and meld[2][:3] == [True, "800/1000", 4] and meld[2][3] == 4 + 16 + 16
                   and meld[3][:2] == [True, "1000/1000"] and meld[3][4] == meld[2][4], json.dumps(meld))
             # Vraag 5 (besluit Ronald 09-11-2026): het jaartal alleen bij een bericht van een ander jaar.
             jaar = page.evaluate("""() => { const nu = new Date(), j = nu.getFullYear(), d = (y, m, dag) => new Date(y, m, dag, 12);
@@ -17259,8 +17258,8 @@ def blok_tt543_onderdeel6():
               bz["volgorde"][:5] == ["hoes", "profiel-wat", "profile-bio", "socials", "profiel-actie"] and bz["tags"] == 0, json.dumps(bz["volgorde"]))
         check(f"{n} 1a: \"Rock · Funk\" en \"Eigen nummers en covers · Ervaring\" met de gevulde sterren (de band zoekt)",
               bz["regels"][0] == "Rock · Funk" and bz["regels"][1].startswith("Eigen nummers en covers · Ervaring ★★★") and "☆" not in bz["regels"][1], json.dumps(bz["regels"], ensure_ascii=False))
-        check(f"{n} 13: de logo's 12px onder Wie zijn we, de knop 20px eronder",
-              bz["socOnder"] == 12 and bz["actOnder"] == 20, json.dumps([bz["socOnder"], bz["actOnder"]]))
+        check(f"{n} 13: de logo's 12px onder Wie zijn we, de knop 16px eronder (TT-595, besluit Ronald 14-11-2026; was 20px)",
+              bz["socOnder"] == 12 and bz["actOnder"] == 16, json.dumps([bz["socOnder"], bz["actOnder"]]))
         check(f"{n} 1c: bezoeker \"Stuur een bericht aan de band\" (geel) onder Wie zijn we, scrolt mee; lid geen knop",
               bz["knop"] == [["Stuur een bericht aan de band", "geel", "static"]] and lid["knop"] == [] and lid["menu"] == 1, json.dumps([bz["knop"], lid["knop"], lid["menu"]], ensure_ascii=False))
         check(f"{n} 1d: beheerder geen ⋯, wel het deelicoon; een omlijnde knop Bandprofiel bewerken die het overzicht opent",
@@ -18048,7 +18047,7 @@ def blok_tt543_onderdeel8():
               ouderApi = async () => { throw new Error('Onbekende link.'); };
               await toestemmingPaginaOpenen('kapot'); await w(200);
               u.v5.push([vak.querySelector('h1').textContent, [...vak.querySelectorAll('.toestemming-melding')].map(e => e.textContent)]);
-              // F2: de knop op de pagina van de bevestigingslink staat in een knoppenstapel, 20px onder de zin.
+              // F2: de knop op de pagina van de bevestigingslink staat in een knoppenstapel, 16px onder de zin (TT-595).
               toestemmingMeldingTonen('Je e-mailadres is bevestigd', ['Je profiel staat online.'], { tekst: 'Inloggen', actie: "void 0" }); await w(200);
               const knop = vak.querySelector('button');
               u.f2 = { inRegel: knop.getAttribute('style'), breed: Math.round(r(knop).width) === Math.round(r(vak).width), boven: Math.round(r(knop).top - r(vak.querySelector('.toestemming-melding')).bottom) };
@@ -18076,11 +18075,11 @@ def blok_tt543_onderdeel8():
     check("V3 (TT-363): kop 'Je gegevens wissen?', het gevolg met het e-mailadres van de ouder, Annuleren en Gegevens wissen rood omlijnd",
           d["v3"] == {"kop": "Je gegevens wissen?", "tekst": "Alles wat je invulde en de aanvraag aan mama.devries@voorbeeld.nl verdwijnen van dit toestel. Dat is niet terug te draaien.",
                       "ja": "Gegevens wissen", "rood": True, "nee": "Annuleren"}, j("v3"))
-    check("V4: titel in tekstkleur 22/28px zonder letterafstand, 4px tot de zin, 20px onder de balk",
-          d["v4"]["titel"][:3] == [True, "22px", "28px"] and d["v4"]["titel"][3] in ("0px", "normal") and d["v4"]["titelZin"] == 4 and d["v4"]["onderBalk"] == 20, j("v4"))
-    check("V4: kopjes 17/22px, 8px tot de tekst; tekst 16px (TT-543 laag 3, besluit Ronald 13-11-2026, 3-1); 20px tussen de blokken, boven het vinkje en boven de knoppen; vinkje op de eerste regel",
+    check("V4: titel in tekstkleur 22/28px zonder letterafstand, 4px tot de zin, 16px onder de balk (TT-595, besluit Ronald 14-11-2026; was 20px)",
+          d["v4"]["titel"][:3] == [True, "22px", "28px"] and d["v4"]["titel"][3] in ("0px", "normal") and d["v4"]["titelZin"] == 4 and d["v4"]["onderBalk"] == 16, j("v4"))
+    check("V4: kopjes 17/22px, 8px tot de tekst; tekst 16px (TT-543 laag 3, besluit Ronald 13-11-2026, 3-1); 16px tussen de blokken, boven het vinkje en boven de knoppen (TT-595, besluit Ronald 14-11-2026; was 20px); vinkje op de eerste regel",
           d["v4"]["kopje"] == ["17px", "22px"] and d["v4"]["kopjeTekst"] == 8 and d["v4"]["tekst"] == ["16px", "16px", "16px"]
-          and d["v4"]["tussen"] == [20, 20, 20, 20, 20] and d["v4"]["vinkje"] == 0, j("v4"))
+          and d["v4"]["tussen"] == [16, 16, 16, 16, 16] and d["v4"]["vinkje"] == 0, j("v4"))
     for b in (390, 360):
         check(f"8D-regel: een voornaam van één lang woord blijft binnen de ouderpagina ({b}px)",
               uitslag[b]["lang"] == {"titel": True, "blokken": True, "pagina": True}, json.dumps(uitslag[b]["lang"]))
@@ -18090,8 +18089,8 @@ def blok_tt543_onderdeel8():
                       ["Deze aanvraag is afgewezen", ["Er gebeurt verder niets."]],
                       ["Deze link werkt niet meer", ["Een aanvraag vervalt na veertien dagen. Je hoeft niets te doen."]],
                       ["Deze link werkt niet", ["Heb je meer mails van ons gekregen? Gebruik dan de knop in de nieuwste."]]], j("v5"))
-    check("F2: de knop op de pagina van de bevestigingslink zonder opmaak in de regel, volle breedte, 20px onder de zin",
-          d["f2"] == {"inRegel": None, "breed": True, "boven": 20}, j("f2"))
+    check("F2: de knop op de pagina van de bevestigingslink zonder opmaak in de regel, volle breedte, 16px onder de zin (TT-595, besluit Ronald 14-11-2026; was 20px)",
+          d["f2"] == {"inRegel": None, "breed": True, "boven": 16}, j("f2"))
     check("blok 152: geen paginafouten", not fouten, "; ".join(fouten)[:300])
 
 
@@ -18635,6 +18634,92 @@ def blok_tt543_laag3():
               w["bioLang"]["hoog"] == w["bioLang"]["nodig"] and w["bioLang"]["totBalk"] == 16 and w["bioLang"]["resize"] == "none", json.dumps(w["bioLang"]))
     check("blok 155: geen paginafouten", not [f for f in fouten if 'musician_songs is not iterable' not in f], "; ".join(fouten)[:300])
 
+
+def blok_tt595_tt596():
+    print("\nBlok 156 — TT-595 (afstanden van 20 naar de reeks) en TT-596 (de naamcontrole meet tegen de hoes)")
+    lees = lambda f: open(os.path.join(ROOT, f), encoding="utf-8").read()
+    css, html = lees("styles.css"), lees("index.html")
+    js = {f: lees(f) for f in JS_FILES}
+    # TT-595 (besluiten Ronald 14-11-2026: "ad 1. ja", "ja"): geen afstand van 20px meer,
+    # niet in styles.css en niet in een stijl in de regel (index.html of een JS-bestand).
+    zonder = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    afst = r"(?:margin|padding|gap|row-gap|column-gap)(?:-[a-z]+)?\s*:\s*[^;{}\"]*\b20px"
+    f = [m.group(0) for m in re.finditer(afst, zonder)]
+    f += [m.group(0) for m in re.finditer(r"style=\"[^\"]*" + afst, html)]
+    for n, t in js.items():
+        f += [n + ": " + m.group(0) for m in re.finditer(r"style=\\?[\"'][^\"']*" + afst, t)]
+    check("TT-595: geen marge, opvulling of tussenruimte van 20px meer (styles.css en elke stijl in de regel)", not f, str(f[:6]))
+    # Dode regels weg (besluit Ronald 14-11-2026: "ja, dode code hoort niet in de app").
+    dood = [x for x in ("header { padding: 16px 20px 12px; }", ".nav-btn", ".nav-spacer", ".app-nav {", ".app-nav::")
+            if x in zonder]
+    dood += [x for x in ('id="appNav"', 'class="nav-btn"', 'id="navLogin"', 'id="unreadBadge"') if x in html]
+    dood += [x for x in ("'navLogin'", "'.nav-btn'", "'unreadBadge'") if any(x in t for t in js.values())]
+    check("TT-595: de verborgen bovenbalk en de overschreven regels zijn weg", not dood, str(dood))
+    # De titel in een scherm staat er alleen voor de schermlezer (.app-view .scherm-titel, marge 0 !important):
+    # een stijl in de regel erop doet niets en is dode code (gevonden bij de meting in test, 14-11-2026).
+    f = re.findall(r'class="[^"]*scherm-titel[^"]*"\s+style="[^"]*"', html)
+    check("TT-595: geen stijl in de regel op een schermtitel (die doet niets)", not f, str(f))
+    regel = lambda sel: (re.search(r"(?:^|\n)\s*" + re.escape(sel) + r"\s*\{([^}]*)\}", zonder) or [None, None])[1]
+    check("TT-595: .profile-songs en .profile-media hebben geen eigen regel meer (de regel op .profiel-pagina gold altijd)",
+          regel(".profile-songs") is None and regel(".profile-media") is None, "")
+    check("TT-595: .modal-overlay zonder opvulling van 20px (de regel verderop zette hem altijd op 0)",
+          "padding" not in (regel(".modal-overlay") or ""), regel(".modal-overlay") or "")
+    # TT-596 (besluit Ronald 14-11-2026: "ja."): de grens is de ruimte op de hoes op 360px.
+    check("TT-596: PROFIELNAAM_REFERENTIE is 234", re.search(r"const PROFIELNAAM_REFERENTIE = 234;", js["utils.js"]) is not None, "")
+    check("TT-596: het meetelement meet in de dikte van de hoes (900)",
+          re.search(r"\.profile-name\.naam-meter\s*\{\s*font-weight:\s*900;", zonder) is not None, "")
+
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    basis = f"http://127.0.0.1:{port}"
+    ingelogd = stub_js + """
+window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instruments: m.musician_instruments || [],
+  musician_genres: m.musician_genres || [], musician_songs: m.musician_songs || [], musician_media: m.musician_media || [] }));
+"""
+    NAMEN = ["Kim", "Alexander Vandenbroek", "Maximiliaan van den Broek", "Sanne van der Heijden-B",
+             "WWWWWWWWWWWWWW", "iiiiiiiiiiiiiiiiiiiiiiiiiiiiii", "Mohammed El Amrani"]
+    MEET = r"""async (n) => {
+      await document.fonts.ready;
+      const el = document.querySelector('.app-view.active .hoes .profile-name');
+      if (!el) return null;
+      const px = el.style.fontSize, ruimte = el.clientWidth, afgekapt = el.scrollWidth > el.clientWidth;
+      el.style.fontSize = '16px'; const rg = document.createRange(); rg.selectNodeContents(el); const echt16 = Math.round(rg.getBoundingClientRect().width); el.style.fontSize = px;
+      return { naam: el.textContent, px, ruimte, afgekapt, echt16, meter16: meetNaamBreedte(n, 16), past: naamPastInProfielkop(n) };
+    }"""
+    res, fouten = {}, []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breed in (360, 390):
+            ctx = browser.new_context(viewport={"width": breed, "height": 844}, has_touch=True, is_mobile=True)
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=ingelogd))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"{basis}/index.html", wait_until="load"); page.wait_for_timeout(500)
+            for n in NAMEN:
+                page.evaluate("n => Object.assign(window.TT_STUB.data.musicians[1], {username: n, weergavenaam: n})", n)
+                page.evaluate("openProfielScherm('m2')"); page.wait_for_timeout(700)
+                res[(breed, n)] = page.evaluate(MEET, n)
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    j = lambda k: json.dumps(res.get(k), ensure_ascii=False)
+    check("TT-596: de ruimte voor de naam op de hoes van een ander profiel is 234px op 360 en 264px op 390",
+          all(res[(360, n)] and res[(360, n)]["ruimte"] == 234 for n in NAMEN) and all(res[(390, n)]["ruimte"] == 264 for n in NAMEN),
+          str(sorted({(b, res[(b, n)]["ruimte"]) for b in (360, 390) for n in NAMEN if res[(b, n)]})))
+    f = {f"{b}:{n}": [res[(b, n)]["meter16"], res[(b, n)]["echt16"]] for b in (360, 390) for n in NAMEN if abs(res[(b, n)]["meter16"] - res[(b, n)]["echt16"]) > 1}
+    check("TT-596: de meting is gelijk aan de echte naam op de hoes op 16px (hooguit 1px verschil)", not f, json.dumps(f, ensure_ascii=False))
+    f = {f"{b}:{n}": [res[(b, n)]["px"], res[(b, n)]["afgekapt"]] for b in (360, 390) for n in NAMEN
+         if res[(b, n)]["past"] and (int(res[(b, n)]["px"].rstrip("px") or 32) < 16 or res[(b, n)]["afgekapt"])}
+    check("TT-596: elke naam die de controle doorlaat, staat op 360 en 390 op 16px of groter, niet afgekapt", not f, json.dumps(f, ensure_ascii=False))
+    check("TT-596: 'Alexander Vandenbroek' mag (past op 16 bij 360), 'Maximiliaan van den Broek' niet (239px, zou 14 worden)",
+          res[(360, "Alexander Vandenbroek")]["past"] is True and res[(360, "Maximiliaan van den Broek")]["past"] is False,
+          j((360, "Alexander Vandenbroek")) + j((360, "Maximiliaan van den Broek")))
+    check("blok 156: geen paginafouten", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -18688,6 +18773,7 @@ BLOKKEN = [
     blok_tt543_onderdeel9,
     blok_tt543_onderdeel10,
     blok_tt543_laag3,
+    blok_tt595_tt596,
 ]
 
 

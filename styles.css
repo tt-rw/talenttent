@@ -753,12 +753,12 @@
   .melding-met-sluit .modal-close { top: 4px; right: 4px; }
 
   /* TT-42: de goedkeuringspagina van de ouder.
-     TT-543 onderdeel 8, V4 (besluit Ronald 12-11-2026: "B", op beeld): 20px
-     onder de balk, zoals elk scherm; titel 22/28px in tekstkleur, 4px tot de
-     zin; kopjes 17/22px, 8px tot de tekst; tekst 12/18px; 20px tussen de
+     TT-543 onderdeel 8, V4 (besluit Ronald 12-11-2026: "B", op beeld): 16px
+     onder de balk, zoals elk scherm (TT-595, was 20px); titel 22/28px in tekstkleur, 4px tot de
+     zin; kopjes 17/22px, 8px tot de tekst; tekst 12/18px; 16px tussen de
      blokken, ook boven het vinkje en boven de knoppen. Geldt ook voor de
      bevestigingslink, "Bedankt!" en "Genoteerd" (zelfde scherm). */
-  .toestemming-wrap { max-width: 560px; margin: 0 auto; padding-top: 20px; }
+  .toestemming-wrap { max-width: 560px; margin: 0 auto; padding-top: 16px; }
   .toestemming-wrap .panel-title {
     color: var(--text);
     font-size: 22px;
@@ -771,7 +771,7 @@
   .toestemming-melding a,
   .toestemming-akkoord a { color: var(--accent); }
 
-  .toestemming-blok { margin: 20px 0 0; }
+  .toestemming-blok { margin: 16px 0 0; }
 
   .toestemming-blok h2 {
     font-size: 17px;
@@ -812,7 +812,7 @@
     font-weight: 400;
     color: var(--text);
     padding-left: 0;
-    margin: 20px 0 0;
+    margin: 16px 0 0;
   }
 
   /* F3: het vinkje is even hoog als de regel (18px), dus zonder marge op de lijn. */
@@ -835,7 +835,7 @@
 
   .knoppen-stapel .btn { width: 100%; }
 
-  .toestemming-knoppen { margin-top: 20px; }
+  .toestemming-knoppen { margin-top: 16px; }
 
   @keyframes slideIn {
     from { opacity: 0; transform: translateY(16px); }
@@ -869,7 +869,7 @@
   .field-group {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--ruimte-velden) 20px;
+    gap: var(--ruimte-velden) 12px; /* TT-595: 12px tussen twee velden naast elkaar, zoals .field-pair-row (was 20px) */
     margin-bottom: var(--ruimte-velden);
   }
 
@@ -1564,31 +1564,21 @@
     visibility: hidden;
     pointer-events: none;
   }
+  /* TT-596: de naam wordt gemeten in de dikte van de hoes (.hoes .profile-name, 900). */
+  .profile-name.naam-meter { font-weight: 900; }
 
   .profile-meta {
     font-size: 12px; line-height: var(--regel-12);
     color: var(--muted);
     margin-top: 4px;
-    margin-bottom: 20px;
   }
 
 
-  /* Eén afstand tussen de blokken van een profiel (bio, Bands, Repertoire,
-     Foto's en video's, Links; muzikant en band gelijk): 20px boven de
-     scheidslijn, 20px eronder. De lijn staat boven een blok, nooit tussen twee
-     rijen binnen een blok, en niet onder het laatste. Besluit Ronald,
-     08-10-2026. De laatste rij van een blok heeft geen opvulling onder zich,
-     anders is de ruimte onder de laatste rij groter dan boven de lijn. */
-  .profile-songs {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-  }
   .profile-bio { font-size: 15px; line-height: var(--regel-15); color: var(--text); margin: 0; }
   /* TT-457 (10-10-2026): de zin "niet beschikbaar" staat onder de badges, boven
      de bio, op een muzikantprofiel en een bandpagina. De gewone .melding; alleen
-     de ruimte eronder is 20px, zoals tussen de andere blokken van een profiel. */
-  .melding-beschikbaar { margin-bottom: 20px; }
+     de ruimte eronder is 16px, zoals tussen de andere blokken van een profiel. */
+  .melding-beschikbaar { margin-bottom: 16px; }
   /* TT-543 onderdeel 6, blok 3 (besluit Ronald 10-11-2026, 7b: "dit mag wel
      gecentreerd"): de stand van een band staat in het midden van het vak. */
   .melding-stand .melding-tekst { margin: 0; text-align: center; }
@@ -1610,7 +1600,7 @@
   #confirmKeuzes .tile > div, #view-instellingen .tile > div:has(> #accountVerwijderRegel) { min-width: 0; }
   #accountVerwijderRegel { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #confirmKeuzes .tile-title, #confirmKeuzes .tile-sub { overflow-wrap: anywhere; }
-  .overdragen-lijst { margin-bottom: 20px; }
+  .overdragen-lijst { margin-bottom: 16px; }
   .profile-songs-title {
     font-size: 12px; line-height: var(--regel-12);
     letter-spacing: 2px;
@@ -1781,7 +1771,7 @@
     display: flex;
     align-items: center;
     gap: 24px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .avatar-preview-wrap {
@@ -2152,17 +2142,17 @@
 
   /* ── TT-520 (26-10-2026, besluiten Ronald): de drie schermen van Zoeken ──
      Startscherm (titel en twee tegels), Muzikanten en Mix & Match. De titel
-     staat op elk van de drie op dezelfde plek: 20px onder de kop
-     (--kop-ruimte, app-gedrag §9), 20px boven het eerste blok (§3). */
+     staat op elk van de drie op dezelfde plek: 16px onder de kop
+     (--kop-ruimte, app-gedrag §9), 16px boven het eerste blok (§3). */
   #view-search > div > .search-wrap,
   #zoekStart { padding-top: var(--kop-ruimte); }
-  .zoek-titel { margin: 0 0 20px; }
+  .zoek-titel { margin: 0 0 16px; }
 
   /* TT-520 (besluit Ronald 26-10-2026, sessie 19, optie A: "het is
      rustiger"): één ondergrond. Sinds TT-517 fase 2 heeft .search-filters
      nergens meer een kader (zie daar); in Zoeken staat het eerste resultaat
-     20px onder het laatste veld. */
-  #view-search .search-filters { margin-bottom: 20px; }
+     16px onder het laatste veld. */
+  #view-search .search-filters { margin-bottom: 16px; }
 
   /* De tegels: het tegelpatroon van Instellingen (.tile), met een icoon links.
      Donker een gouden, licht een zwart icoon (--accent). Geen pijl (Laag 2).
@@ -2196,7 +2186,7 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   .search-mode-tab {
     min-width: 0;
@@ -2249,16 +2239,16 @@
   .zoek-filters-pijl { transition: transform 0.15s; }
   .zoek-filters-knop.open .zoek-filters-pijl { transform: rotate(180deg); }
 
-  /* Het filtervak: drie rijen van twee velden, 20px ertussen (§3). */
+  /* Het filtervak: drie rijen van twee velden, 16px ertussen (§3). */
   .zoek-filter-vak > .field-pair-row { margin-bottom: var(--ruimte-velden); }
   /* TT-543 onderdeel 4 (3C): Filters staat rechts op de regel van Onthoud mijn
-     zoekopdracht; het vak klapt 20px daaronder open, met Naam als eerste veld
-     en Wissen onderaan (20px onder het laatste veld). */
+     zoekopdracht; het vak klapt 16px daaronder open, met Naam als eerste veld
+     en Wissen onderaan (16px onder het laatste veld). */
   .zoek-filters-rij + .zoek-filter-vak { margin-top: var(--ruimte-velden); }
 
   /* Wissen rechts, altijd zichtbaar, direct onder het laatste zichtbare veld
      (sessie 18, punten 3 en 6). De regel is 18px hoog, zoals een label; het
-     tikvlak (44px) steekt erbuiten. Het vorige blok houdt zijn 20px eronder. */
+     tikvlak (44px) steekt erbuiten. Het vorige blok houdt zijn 16px eronder. */
   .zoek-wis-rij {
     display: flex;
     justify-content: space-between;
@@ -2594,12 +2584,6 @@
 
   /* :hover verplaatst naar de touch-guard verderop (TT-182). */
 
-  /* Profile media section */
-  .profile-media {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-  }
 
   .profile-media-title {
     font-size: 12px; line-height: var(--regel-12);
@@ -2629,28 +2613,28 @@
   .profile-song-titel { color: var(--muted); }
   /* 3 (maat 12px en sterren 11px: besluiten Ronald sessie 98): instrumenten en
      genres als tekst, elk een regel, gedempt, niet vet; 4px tussen de regels,
-     20px tot de bio. */
+     16px tot de bio. */
   /* TT-543 onderdeel 4 (besluiten Ronald 09-11-2026, B4, en sessie 102): het
      blok "<naam> uitnodigen voor <band>" staat direct onder de hoes, op de plek
      van instrument, genres en bio; de rest van het profiel staat er dan niet.
-     Kop 22/28 (de hoofdstukkop), 20px tot het label, berichtvak, 20px tot de
+     Kop 22/28 (de hoofdstukkop), 16px tot het label, berichtvak, 16px tot de
      knoppen, 8px ertussen. rolUitnodigBlokOpenen() in bands.js. */
   .uitnodig-open > :not(.hoes):not(.uitnodig-blok) { display: none; }
-  .uitnodig-blok { margin-bottom: 20px; }
+  .uitnodig-blok { margin-bottom: 16px; }
   .uitnodig-blok .hoofdstuk-kop { margin-top: 0; overflow-wrap: anywhere; }
   /* Het berichtvak toont de hele voorbeeldtekst: veldGroeit() (TT-543 laag 3, 3-10). */
   /* Blok 2 (TT-543 onderdeel 6, B2-7): het veld Rol boven het berichtvak, de vaste ruimte tussen twee velden (TT-582). */
   .uitnodig-blok .field + .field { margin-top: var(--ruimte-velden); }
-  .uitnodig-knoppen { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
-  .profiel-wat { display: flow-root; margin-bottom: 20px; } /* flow-root: ook leeg houdt het blok zijn 20px, zoals de tags ervoor */
+  .uitnodig-knoppen { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .profiel-wat { display: flow-root; margin-bottom: 16px; } /* flow-root: ook leeg houdt het blok zijn 16px, zoals de tags ervoor */
   .profiel-wat-regel { font-size: 12px; line-height: var(--regel-12); color: var(--muted); overflow-wrap: anywhere; }
   .profiel-wat-regel + .profiel-wat-regel { margin-top: 4px; }
-  /* 1E en F3 B: de knop onder de bio scrolt mee, 20px eronder. Meer knoppen
+  /* 1E en F3 B: de knop onder de bio scrolt mee, 16px eronder. Meer knoppen
      (uitnodigen voor een open rol, een blokkade) onder elkaar, 8px ertussen. */
-  .profiel-actie { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+  .profiel-actie { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
   .profiel-actie:empty { display: none; }
   /* Mag je deze muzikant geen bericht sturen (TT-421, messages.js verbergt de
-     knop), en staat er verder niets, dan neemt de plek ook geen 20px in. */
+     knop), en staat er verder niets, dan neemt de plek ook geen 16px in. */
   .profiel-actie:not(:has(> :not([data-bericht-id][style*="display: none"]))) { display: none; }
   .profiel-actie .btn { margin: 0; }
   /* 5: foto's, video's en links in één raster van drie, 8px tussen de tegels,
@@ -2708,7 +2692,7 @@
     background: var(--surface);
     border: 1px solid var(--accent);
     color: var(--text);
-    padding: 14px 20px;
+    padding: 12px 16px; /* TT-595: was 14px 20px */
     border-radius: 10px;
     font-size: 12px; line-height: var(--regel-12);
     font-weight: 600;
@@ -2739,7 +2723,7 @@
     border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
-    margin: 0 auto 20px;
+    margin: 0 auto 16px;
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -2809,7 +2793,7 @@
   .landing-dia.aan img { animation: landingZoom 9s ease-out forwards; }
   @keyframes landingZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
   .landing-verloop { position: absolute; inset: 0; pointer-events: none; background: var(--foto-verloop); }
-  .landing-kop { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 16px 20px; }
+  .landing-kop { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 16px 16px; }
   .landing-title {
     font-family: 'Inter', sans-serif;
     font-weight: 900;
@@ -2837,7 +2821,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding: 20px 16px calc(40px + env(safe-area-inset-bottom, 0px)); /* 06-10-2026 (Ronald): hoger, "Inloggen" is anders haast niet te bereiken */
+    padding: 16px 16px calc(40px + env(safe-area-inset-bottom, 0px)); /* 06-10-2026 (Ronald): hoger, "Inloggen" is anders haast niet te bereiken */
     background: var(--bg);
   }
   /* TT-543 F1: vaste regelhoogtes (huisstijl §2): kop 17/22 zoals .hoofdstuk-kop, regel 12/18. */
@@ -2899,48 +2883,6 @@
     padding: 16px 40px 0;
     border-bottom: 1px solid var(--border);
   }
-
-  .app-nav {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    overflow-x: auto;
-  }
-  .app-nav::-webkit-scrollbar { display: none; }
-
-  .nav-btn {
-    /* TT-U23 (12-08-2026): was 35px hoog. */
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 10px 20px;
-    border-radius: 8px 8px 0 0;
-    font-family: 'Inter', sans-serif;
-    font-size: 12px; line-height: var(--regel-12);
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    cursor: pointer;
-    border: 1px solid transparent;
-    border-bottom: none;
-    background: transparent;
-    color: var(--muted);
-    transition: all 0.2s;
-    margin-bottom: -1px;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  @media (hover: hover) { .nav-btn:hover { color: var(--text); } } /* TT-517 fase 9: alleen met een muis */
-  .nav-btn.active {
-    background: var(--surface);
-    border-color: var(--border);
-    color: var(--accent);
-  }
-
-  .nav-spacer { flex: 1; }
 
   /* TT-63/nav-herziening (09-08-2026): hamburgermenu — knop + uitklappaneel */
   .nav-menu-btn {
@@ -3089,7 +3031,7 @@
   /* TT-543 laag 3 (besluit Ronald 13-11-2026, 3-8 B): tussen twee alinea's
      16px, tussen twee regels van een lijst 8px; was 14px en 6px. */
   .doc-view p { margin-bottom: 16px; }
-  .doc-view ul { margin: 0 0 16px; padding-left: 20px; }
+  .doc-view ul { margin: 0 0 16px; padding-left: 16px; }
   .doc-view li { margin-bottom: 8px; }
   .doc-view .doc-updated { font-size: 12px; line-height: var(--regel-12); color: var(--muted); margin-bottom: 24px; }
 
@@ -3302,15 +3244,15 @@
 
   /* TT-543 onderdeel 2 (08-11-2026): de afstanden van Inloggen en Nieuw
      wachtwoord, uit de regel gehaald (huisstijl §3). Maten ongewijzigd: veld
-     tot veld 16px, wachtwoord tot "Wachtwoord vergeten?" 8px, daarna 20px tot
-     de knop; op Nieuw wachtwoord veld tot knop 20px. "Nog geen profiel?
+     tot veld 16px, wachtwoord tot "Wachtwoord vergeten?" 8px, daarna 16px tot
+     de knop; op Nieuw wachtwoord veld tot knop 16px (TT-595, was 20px). "Nog geen profiel?
      Profiel aanmaken" is de inlogregel van de landingspagina (.landing-login),
      24px onder de knop: de tekst staat 30px onder de knop, zoals op het beeld
      van het besluit (voorstel 2, B; gemeten). */
   .auth-panel .field { margin-bottom: var(--ruimte-velden); }
   .auth-panel .field:has(+ .auth-vergeten-rij) { margin-bottom: 8px; }
-  .auth-panel .field:has(+ .btn) { margin-bottom: 20px; }
-  .auth-vergeten-rij { text-align: right; margin-bottom: 20px; }
+  .auth-panel .field:has(+ .btn) { margin-bottom: 16px; }
+  .auth-vergeten-rij { text-align: right; margin-bottom: 16px; }
   .auth-panel .btn { width: 100%; }
   .auth-panel .landing-login { margin-top: 24px; }
 
@@ -3430,7 +3372,7 @@
     font-size: 22px; line-height: var(--regel-22);
     color: var(--accent);
     letter-spacing: 0.5px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
 
@@ -3708,7 +3650,7 @@
 
   .no-results {
     text-align: center;
-    padding: 60px 20px 0; /* TT-543 laag 3, 3-6a A: onderaan alleen de 16px van het scherm */
+    padding: 60px 16px 0; /* TT-543 laag 3, 3-6a A: onderaan alleen de 16px van het scherm; TT-595: 16px opzij, was 20px */
     color: var(--muted);
   }
   /* TT-543 onderdeel 4 (F1, F2): de teksten van Zoeken hebben een klasse en een
@@ -3768,7 +3710,7 @@
   }
   .uitsnede-klein.rond { border-radius: 50%; }
   /* Op de linkerlijn van het vlak en de knoppen (één linkerlijn, Ronald 27-10-2026). */
-  .uitsnede-hint { margin: 8px 0 20px; font-size: var(--fs-sm); line-height: var(--regel-12); color: var(--muted); }
+  .uitsnede-hint { margin: 8px 0 16px; font-size: var(--fs-sm); line-height: var(--regel-12); color: var(--muted); }
 
   /* ── E-mailvoorkeuren (TT-520 deel 2, opdracht Ronald 27-10-2026) ─────────
      "Een brij van knoppen en teksten": (1) elk blok begint met een vette kop
@@ -3777,7 +3719,7 @@
      keuzeknop is even breed, een derde van de breedte, ook Uit · Aan. Elke
      keuze werkt meteen. 8px van kop naar knoppen, 8px van knoppen naar uitleg
      (§3). */
-  .voorkeur-intro { margin: 0 0 20px; font-size: 12px; line-height: var(--regel-12); color: var(--muted); }
+  .voorkeur-intro { margin: 0 0 16px; font-size: 12px; line-height: var(--regel-12); color: var(--muted); }
   .voorkeur-kop { margin: 0 0 8px; font-size: 17px; line-height: var(--regel-17); font-weight: 700; color: var(--text); }
   .voorkeur-uitleg { margin: 8px 0 0; font-size: 12px; line-height: var(--regel-12); color: var(--muted); }
   .voorkeur-knoppen {
@@ -3795,18 +3737,18 @@
      Alles · Muzikanten · Bands (.zoek-soort), in twee kolommen. Daaronder de
      vraag in één regel, in de signaalkleur (--accent: donker goud, licht
      zwart; Ronald: de minst bekende functie, kleur keuze UX), op de
-     inspringing van de labels. 12px onder de knoppen, 20px boven het veld. */
+     inspringing van de labels. 12px onder de knoppen, 16px boven het veld. */
   .mm-soort { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 12px; }
   .mm-vraag {
-    margin: 0 0 20px;
+    margin: 0 0 16px;
     padding: 0 var(--field-inset);
     font-size: 12px;
     line-height: var(--regel-12);
     color: var(--accent);
   }
   /* De gekozen muzikanten of nummers: rijen van het resultaat (8px ertussen),
-     20px boven de regel van Wissen. */
-  .search-filters > .mm-gekozen { margin-bottom: 20px; }
+     16px boven de regel van Wissen. */
+  .search-filters > .mm-gekozen { margin-bottom: 16px; }
   /* "Kies nog 1 muzikant." links op de regel van Wissen, zoals de vink bij
      Muzikanten: 14px, gedempt, op de inspringing van de labels. */
   .mm-nog { font-size: 12px; line-height: var(--regel-12); color: var(--muted); padding-left: var(--field-inset); }
@@ -3952,7 +3894,7 @@
      eigen inline variant per scherm. */
   .empty-state {
     text-align: center;
-    padding: 60px 20px;
+    padding: 60px 16px;
   }
   .empty-state-title {
     font-size: 15px; line-height: var(--regel-15);
@@ -3971,10 +3913,10 @@
      alleen zichtbaar bij de laatste 200 tekens, altijd grijs (nooit rood,
      huisstijl §1.2). Eén vorm voor elke teller: in een gesprek en bij Melden. */
   .teken-teller { text-align: right; font-size: 12px; line-height: var(--regel-12); color: var(--muted); margin-top: 4px; }
-  /* Melden: 20px tot de knoppen, met of zonder teller; de teller staat 4px onder het veld. */
-  .meld-toelichting-veld { margin-bottom: 20px; }
+  /* Melden: 16px tot de knoppen, met of zonder teller; de teller staat 4px onder het veld. */
+  .meld-toelichting-veld { margin-bottom: 16px; }
   .meld-toelichting-veld:has(+ .teken-teller:not([hidden])) { margin-bottom: 4px; }
-  .meld-toelichting-veld + .teken-teller { margin: 0 0 20px; }
+  .meld-toelichting-veld + .teken-teller { margin: 0 0 16px; }
 
   /* Muzikant detail modal */
   /* TT-190 (04-09-2026): Ronald wil elk scherm/modal openen onder 0,1s.
@@ -3988,7 +3930,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.08s;
@@ -4063,8 +4004,7 @@
      midden van de menuknop tegen de opvulling van 16px ligt op 38px.
      margin-right schuift de menuknop 1px naar buiten; margin-left neemt die
      1px weer terug, zodat de naam in het
-     venster dezelfde 187px houdt als op Mijn Profiel — de ruimte waarop
-     naamPastInProfielkop() elke naam controleert. */
+     venster dezelfde ruimte houdt als op Mijn Profiel. */
   .profiel-menu-plek {
     flex-shrink: 0;
     margin-left: 1px;
@@ -4162,7 +4102,7 @@
   .socials { display: flex; gap: 12px; margin-left: -8px; }
   /* TT-543 onderdeel 6 (besluit Ronald 10-11-2026, 13 A): de rij staat direct
      onder Wie zijn we, zonder kop, 12px onder de tekst. Zonder Wie zijn we
-     direct onder de regels (de 20px van .profiel-wat). Op beeld gemeten. */
+     direct onder de regels (de 16px van .profiel-wat). Op beeld gemeten. */
   .profile-bio + .socials { margin-top: 12px; }
   .social-knop {
     width: 44px; height: 44px; padding: 8px;
@@ -4176,7 +4116,7 @@
      bewerken ─────────────────────────────────────────────────────────────── */
 
   /* Het deelblad: één zin, dan de knoppen. */
-  .deelblad-tekst { font-size: 12px; line-height: var(--regel-12); color: var(--text); margin: 0 0 20px; }
+  .deelblad-tekst { font-size: 12px; line-height: var(--regel-12); color: var(--text); margin: 0 0 16px; }
 
   /* Bandprofiel bewerken: het blok Bandbeheer onder de vier tegels. */
   /* TT-543 onderdeel 6, blok 3: Bandbeheer is een hoofdstuk met tegels, zoals
@@ -4312,7 +4252,7 @@
      thema en zat, vóór de 24px-inspringing hierboven, bovenop .modal-close.
      Geldt voor .modal-box (de sticky-footer-variant is weg sinds TT-543
      draaiwielen deel 2, 10-11-2026: de vensters met een lijst bestaan niet meer).
-     Zelfde gedachte als .app-nav::-webkit-scrollbar, hier zichtbaar en
+     Zelfde gedachte als een verborgen schuifbalk, hier zichtbaar en
      getint i.p.v. verborgen — een lijst die kan scrollen, moet dat blijven
      tonen. Firefox gebruikt scrollbar-width/-color, andere browsers de
      ::-webkit-scrollbar-regels. */
@@ -4457,7 +4397,7 @@
      vaste maximumhoogte zodat er ook binnen de tabel verticaal gescrold kan
      worden — de tekst erboven/eronder in de modal blijft apart, gewoon
      scrollbaar via .modal-box. */
-  .niveau-info-wrap { overflow:auto; overscroll-behavior:contain; margin:12px 0 20px; max-height:55vh; -webkit-overflow-scrolling:touch; }
+  .niveau-info-wrap { overflow:auto; overscroll-behavior:contain; margin:12px 0 16px; max-height:55vh; -webkit-overflow-scrolling:touch; }
   .niveau-info-table { border-collapse:separate; border-spacing:0; width:100%; min-width:640px; font-size:12px; line-height: var(--regel-12); }
   .niveau-info-table th, .niveau-info-table td { border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:8px 10px; text-align:left; vertical-align:top; }
   .niveau-info-table thead th { border-top:1px solid var(--border); }
@@ -4541,7 +4481,7 @@
   .picker-badge-row.met-toevoegen .picker-badge { font-size: 15px; line-height: var(--regel-15); padding-right: 32px; }
   .picker-badge-row.instrument-rijen { grid-template-columns: 1fr; }
   .picker-badge-row.instrument-rijen .picker-badge.has-level {
-    flex-direction: row; justify-content: flex-start; gap: 12px; min-height: 44px; padding: 0 48px 0 20px; text-align: left;
+    flex-direction: row; justify-content: flex-start; gap: 12px; min-height: 44px; padding: 0 48px 0 16px; text-align: left;
   }
   .picker-badge-row.instrument-rijen .picker-badge-label { justify-content: flex-start; }
   .picker-badge-row.instrument-rijen .picker-badge-stars { min-height: 0; line-height: 16px; }
@@ -4614,11 +4554,6 @@
   /* TT-224 (hersteld 09-09-2026): media-grens (max-width:560px) losgekoppeld.
      Deze regels gelden nu op elke breedte — de webapp krijgt dezelfde schil
      als de telefoon-app, binnen het canvas van TT-224 onderaan dit bestand. */
-    /* TT-301 (20-09-2026): hier stonden ook `flex-direction: column` en
-       `align-items: flex-start`. De kop is sinds TT-301 een raster van drie
-       vakken (zie het header-blok bovenin dit bestand); flex-direction doet
-       daar niets meer, en de uitlijning staat in dat blok zelf op center. */
-    header { padding: 16px 20px 12px; }
     /* TT-269 (15-09-2026): geen lucht meer boven de eerste inhoud — dezelfde
        afstand als op Mijn Profiel, waar dat al zo was (besluit Ronald,
        22-08-2026). De kop levert zijn eigen 12px al. */
@@ -4661,9 +4596,6 @@
        vervallen, akkoord na een getoond voorbeeld. */
     .app-nav-row { position: sticky; top: 0; z-index: 50; background: var(--bg);
                padding: 12px 12px 0; gap: 4px; }
-    .app-nav { gap: 4px; -webkit-overflow-scrolling: touch; }
-    .nav-btn { padding: 10px 12px; font-size: 12px; line-height: var(--regel-12); white-space: nowrap; }
-    .nav-spacer { display: none; }
     /* TT-125 (22-08-2026): op mobiel stond onder de kop een sticky balk met
        daarin alleen het hamburgermenu (de rest, .app-nav, is al verborgen)
        — een leeg blok van zo'n 50-60px hoogte. Voorstel Ronald: het
@@ -4825,12 +4757,10 @@
     .bottom-nav-icon-wrap .unread-badge { top: -6px; right: -10px; }
     .bottom-nav-icon-wrap .bands-dot { top: -3px; right: -4px; }
 
-    /* De vijf tabbladen van de bovenbalk zijn op mobiel vervangen door de
-       onderbalk. De knoppen blijven in de HTML staan (andere code verwijst
-       ernaar), alleen de rij zelf is verborgen. Het menu rechtsboven blijft
-       wél zichtbaar: daar staan Over ons, de juridische pagina's en
+    /* De vijf tabbladen van de bovenbalk zijn vervangen door de onderbalk;
+       TT-595 (besluit Ronald 14-11-2026) haalde de verborgen balk weg. Het menu
+       rechtsboven blijft: daar staan Over ons, de juridische pagina's en
        inloggen/uitloggen. */
-    .app-nav { display: none !important; }
     /* TT-125 (22-08-2026): padding hier weg — het hamburgermenu staat nu
        niet meer in deze rij zelf, maar (zie eerder in dit blok) verschoven
        in de koprij naast het woordmerk. Deze rij hoeft dus geen eigen
@@ -4883,7 +4813,7 @@
   .backend-error-box p.sub {
     font-size: 12px; line-height: var(--regel-12);
     color: var(--muted);
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   /* TT-517 fase 11 (besluit Ronald B, elke knop rond): de knop is een gewone
      .btn .btn-primary (pil, 44px); hier alleen de volle breedte. Was een
@@ -5380,7 +5310,7 @@
 
 /* De bandnaam onder de titel van een bandscherm (07-10-2026, Ronald): zichtbaar,
    niet prominent. Zelfde maat en gewicht als .panel-sub. */
-.band-naam-regel { font-size: 12px; font-weight: 300; line-height: var(--regel-12); color: var(--muted); margin: 0 0 20px; }
+.band-naam-regel { font-size: 12px; font-weight: 300; line-height: var(--regel-12); color: var(--muted); margin: 0 0 16px; }
 .band-naam-regel:empty { display: none; }
 /* De i-knop direct achter het label, niet rechts (Ronald, 07-10-2026, Ervaring
    van de band). */

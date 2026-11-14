@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261113d">
+<link rel="stylesheet" href="styles.css?v=20261114a">
 </head>
 <body>
 
@@ -165,14 +165,6 @@
 
 <!-- Navigatie -->
 <div class="app-nav-row" id="appNavRow">
-  <nav class="app-nav" id="appNav" style="display:flex;">
-    <button class="nav-btn" id="navMyProfile" onclick="requireLogin('myprofile')">Mijn Profiel</button>
-    <button class="nav-btn" id="navMyBands" onclick="requireLogin('bands')">Mijn Bands</button>
-    <button class="nav-btn" id="navSearch" onclick="showView('search')">Zoeken</button>
-    <div class="nav-spacer"></div>
-    <button class="nav-btn" id="navMessages" onclick="requireLogin('messages')" style="position:relative;">Berichten<span id="unreadBadge" class="unread-badge" style="display:none;"></span></button>
-    <button class="nav-btn" id="navLogin" onclick="navLoginClick()">Inloggen</button>
-  </nav>
   <!-- TT-301 (20-09-2026): de knop #navMenuBtn stond hier; hij staat nu in de
        koprij zelf (zie <header> hierboven). Alleen het uitklappaneel blijft
        hier: .app-nav-row is zijn ankerpunt (position: relative) en klapt
@@ -948,7 +940,7 @@
 
   <!-- Bandtegel: Wie zijn we -->
   <div id="bandWieScreen" style="display:none;">
-    <div class="panel-title scherm-titel" style="margin-bottom:20px;">Wie zijn we</div>
+    <div class="panel-title scherm-titel">Wie zijn we</div>
 
     <div class="field-group single">
       <div class="field">
@@ -1353,7 +1345,7 @@
             </select>
           </div>
         </div>
-        <!-- Wissen onderaan het filtervak, rechts, 20px onder het laatste veld;
+        <!-- Wissen onderaan het filtervak, rechts, 16px onder het laatste veld;
              het wist alles behalve Plaats en Straal (besluiten Ronald 26-10-2026,
              sessie 18, punt 3; plek 3C, 08-11-2026). -->
         <div class="zoek-wis-rij">
@@ -1826,7 +1818,7 @@
 <div class="app-view" id="view-instellingen">
   <div class="search-wrap">
     <div class="search-filters">
-      <div class="panel-title scherm-titel" style="margin-bottom:20px;">Instellingen</div>
+      <div class="panel-title scherm-titel">Instellingen</div>
 
       <!-- TT-341 stap 3 (26-09-2026): licht of donker. "Thema" (besluit
            Ronald: "thema is goed"), niet "Weergave": dat woord betekent in
@@ -2094,9 +2086,9 @@
 <div class="modal-overlay" id="meldModal" data-close="closeMeldModal" onclick="if(event.target===this)closeMeldModal()">
   <div class="modal-box modal-box-md">
     <div class="filter-title" id="meldTitel" style="margin-bottom:4px;">Melden</div>
-    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:20px;">Over <strong id="meldDoelNaam" style="color:var(--text);"></strong>. Je melding komt bij ons binnen; de ander krijgt hier geen bericht van.</p>
+    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:16px;">Over <strong id="meldDoelNaam" style="color:var(--text);"></strong>. Je melding komt bij ons binnen; de ander krijgt hier geen bericht van.</p>
 
-    <div class="field" style="margin-bottom:20px;">
+    <div class="field" style="margin-bottom:16px;">
       <label>Waar gaat het over?</label>
       <div class="tag-grid" id="meldRedenen"></div>
     </div>
@@ -2119,7 +2111,7 @@
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeGeblokkeerdModal()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">Geblokkeerde muzikanten</div>
-    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:20px;">Je ziet ze niet in de zoekresultaten, en hun berichten komen niet bij je aan.</p>
+    <p style="font-size:12px;line-height:var(--regel-12);color:var(--muted);margin-bottom:16px;">Je ziet ze niet in de zoekresultaten, en hun berichten komen niet bij je aan.</p>
     <div id="geblokkeerdLijst"></div>
   </div>
 </div>
@@ -2300,17 +2292,17 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261112f"></script>
-<script src="utils.js?v=20261113c"></script>
+<script src="core.js?v=20261114a"></script>
+<script src="utils.js?v=20261114a"></script>
 <script src="veiligheid.js?v=20261113c"></script>
 <script src="auth.js?v=20261112a"></script>
 <script src="postcode.js?v=20261110a"></script>
 <script src="wizard.js?v=20261113c"></script>
 <script src="ouder.js?v=20261113a"></script>
 <script src="search.js?v=20261112c"></script>
-<script src="musicians.js?v=20261113c"></script>
+<script src="musicians.js?v=20261114a"></script>
 <script src="bands.js?v=20261113c"></script>
-<script src="messages.js?v=20261113c"></script>
+<script src="messages.js?v=20261114a"></script>
 <script src="push.js?v=20261027b"></script>
 <script src="modals-shared.js?v=20261111a"></script>
 <script>

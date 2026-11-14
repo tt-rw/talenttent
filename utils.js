@@ -1912,19 +1912,18 @@ const PROFIELNAAM_NOOD = [14, 12, 10];
 // Ondergrens waarop de invulcontrole toetst.
 const PROFIELNAAM_MIN = 16;
 
-// Referentiebreedte voor de invulcontrole: de ruimte voor de naam op Mijn
-// Profiel bij een venster van 375px — avatar 80 + 16 + naam + 16 + ⋯-menu 44.
-// Gemeten 11-09-2026. Dit is het smalste telefoonscherm waar de app op
-// getoetst wordt, en Mijn Profiel is krapper dan de profielmodal.
-// Gecorrigeerd 24-09-2026 (TT-318): hier stond "(215px)" voor de modal.
-// Opnieuw gemeten op talenttent.org bij 375px: 247px.
-const PROFIELNAAM_REFERENTIE = 187;
+// Referentiebreedte voor de invulcontrole: de ruimte voor de naam op de hoes
+// op het smalste scherm (360px, huisstijl §3.9). TT-596 (besluit Ronald
+// 14-11-2026: "ja."): gemeten 234px bij 360, 249 bij 375, 264 bij 390. Was
+// 187px, de ruimte naast de profielfoto van vóór de hoes.
+const PROFIELNAAM_REFERENTIE = 234;
 
 let naamMeterEl = null;
 
 // Meet hoe breed een naam wordt bij een bepaalde lettergrootte, met dezelfde
 // klasse en dus hetzelfde lettertype en dezelfde letterafstand als de echte
-// kop. Het meetelement staat buiten beeld en wordt hergebruikt.
+// kop, in de dikte van de hoes (900, .profile-name.naam-meter; TT-596). Het
+// meetelement staat buiten beeld en wordt hergebruikt.
 function meetNaamBreedte(naam, px) {
   if (!naamMeterEl) {
     naamMeterEl = document.createElement('div');

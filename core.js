@@ -555,10 +555,6 @@ async function onUserLoggedIn(user) {
   // Direct uitlezen, vóór de eerste await hieronder.
   const paginaHersteld = opstartHerstelt;
   opstartHerstelt = false;
-  // TT-166 (28-08-2026): Uitloggen hoort bij Mijn Profiel, niet meer hier.
-  // Ingelogd hoeft niemand nog "Inloggen" te zien — de knop verdwijnt, de
-  // ruimte in de tab-regel is dan vrij.
-  document.getElementById('navLogin').style.display = 'none';
   // TT-176 (01-09-2026): Uitloggen staat weer in het hamburgermenu ook,
   // naast Mijn Profiel — zie navMenuDropdown hierboven.
   document.getElementById('navLogout').style.display = '';
@@ -622,9 +618,6 @@ async function onUserLoggedIn(user) {
 }
 
 function onUserLoggedOut() {
-  const navLoginBtn = document.getElementById('navLogin');
-  navLoginBtn.textContent = 'Inloggen';
-  navLoginBtn.style.display = '';
   // TT-176 (01-09-2026): hamburgermenu-Uitloggen weer verbergen bij uitloggen.
   const navLogoutBtn = document.getElementById('navLogout');
   if (navLogoutBtn) navLogoutBtn.style.display = 'none';
@@ -650,7 +643,7 @@ function onUserLoggedOut() {
   // TT-352: state én elk veld van de wizard leeg, ook het vinkje, de
   // plaats en het wachtwoord.
   wizardLeegmaken();
-  ['unreadBadge', 'unreadBadgeBottom', 'bandsDotBottom'].forEach(id => {
+  ['unreadBadgeBottom', 'bandsDotBottom'].forEach(id => {
     const b = document.getElementById(id);
     if (b) b.style.display = 'none';
   });
@@ -1114,23 +1107,13 @@ function showView(view, mode, extra) {
   const oudVak = oudEl ? oudEl.getBoundingClientRect() : null;
   const oudKind = oudEl && oudEl.firstElementChild ? oudEl.firstElementChild.getBoundingClientRect().top : 0;
   document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.bottom-nav-btn').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-current'); });
 
   const el = document.getElementById(`view-${view}`);
   if (el) el.classList.add('active');
   zetKopTitel(); // TT-517 fase 3: meteen de goede kop, niet pas een beeld later
 
-  const navMap = {
-    landing: null, search: 'navSearch',
-    about: null, register: null, myprofile: 'navMyProfile', bands: 'navMyBands',
-    messages: 'navMessages', auth: 'navLogin', reset: null,
-    privacy: null, terms: null, gedragscode: null, profieltegels: null, instellingen: null,
-    profiel: null
-  };
-  if (navMap[view]) document.getElementById(navMap[view])?.classList.add('active');
-
-  // TT-U24: dezelfde markering in de onderbalk.
+  // TT-U24: de markering in de onderbalk.
   const bottomNavMap = {
     search: 'bottomNavSearch', messages: 'bottomNavMessages',
     bands: 'bottomNavBands', myprofile: 'bottomNavProfile'
@@ -1795,7 +1778,7 @@ function isTypveld(el) {
 // tik naar boven, tot onder de kop, zodat de suggesties boven het toetsenbord
 // in beeld staan. Alleen op een aanraakscherm. Geldt voor elk typveld met een
 // .autocomplete-list in zijn .field (15 velden op 10-11-2026). De veldnaam komt
-// --kop-ruimte (20px) onder de kop, de standaard tussen kop en inhoud. Past dat
+// --kop-ruimte (16px) onder de kop, de standaard tussen kop en inhoud. Past dat
 // niet omdat de pagina te kort is, dan wordt de pagina tijdelijk hoger (een
 // minimale hoogte op body; extra opvulling helpt niet: body heeft min-height
 // 100vh met border-box, dus opvulling valt binnen die hoogte zolang de pagina

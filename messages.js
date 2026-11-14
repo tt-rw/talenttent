@@ -316,9 +316,8 @@ function scrollThreadToBottom() {
 // Ongelezen-badge op de "Berichten"-navigatieknop, bijgewerkt na inloggen,
 // bij het openen van een gesprek (leest dat gesprek), en na versturen.
 async function refreshUnreadBadge() {
-  // TT-U24: de badge staat op twee plekken — de bovenste balk (brede
-  // schermen) en de onderbalk (telefoon). Beide worden hier bijgewerkt.
-  const badges = ['unreadBadge', 'unreadBadgeBottom']
+  // TT-U24: de badge staat in de onderbalk (de bovenbalk is weg, TT-595).
+  const badges = ['unreadBadgeBottom']
     .map(id => document.getElementById(id)).filter(Boolean);
   if (!badges.length) return;
   const toon = (tekst) => badges.forEach(b => {

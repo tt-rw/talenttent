@@ -62,7 +62,7 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     return escHtml(x.instrument) + (sterren ? ' ' + sterren : '');
   }).join(' · ');
   const genresRegel = m.musician_genres.map(x => escHtml(x.genre)).join(' · ');
-  // Het blok staat er altijd, ook leeg: dan houdt het de 20px onder de hoes.
+  // Het blok staat er altijd, ook leeg: dan houdt het de 16px onder de hoes.
   const watHTML = `
     <div class="profiel-wat">
       ${instrumentenRegel ? `<div class="profiel-wat-regel">${instrumentenRegel}</div>` : ''}
