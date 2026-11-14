@@ -34,7 +34,9 @@ function saveOnboardingProgress() {
       city: state.city, zip: state.zip, bio: state.bio, citySource: state.citySource,
       naamTonen: state.naamTonen,
       instruments: state.instruments, instrumentLevels: state.instrumentLevels, genres: state.genres, songs: state.songs,
-      mediaLinks: state.mediaLinks
+      mediaLinks: state.mediaLinks,
+      // TT-573: wanneer dit voor het laatst is bewaard; na 7 dagen gewist.
+      tijd: Date.now()
       // Bewust NIET bewaard: regPassword, avatarUrl (blob-url overleeft een
       // refresh toch niet — zie bekende beperking TT-02), mediaFiles.
     }));
@@ -92,9 +94,26 @@ function populateWizardFieldsFromState() {
 }
 
 // Kale lezer.
+// TT-573 (besluit Ronald 14-11-2026, "ok"): een aanmelding die 7 dagen niet
+// verder ging, wordt van het toestel gewist. Niet bij de route met een ouder
+// (13 tot en met 15): die wacht op de ouder en heeft zijn eigen "Gegevens
+// wissen". Een opname van vóór deze regel krijgt nu een tijd en telt vanaf nu.
+const AANMELDING_BEWAARDAGEN = 7;
 function leesOpgeslagenVoortgang() {
-  try { return JSON.parse(localStorage.getItem(ONBOARDING_STORAGE_KEY) || 'null'); }
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(ONBOARDING_STORAGE_KEY) || 'null'); }
   catch (e) { return null; }
+  if (!saved || saved.ouderRoute) return saved;
+  if (!saved.tijd) {
+    saved.tijd = Date.now();
+    try { localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(saved)); } catch (e) { /* zie boven */ }
+    return saved;
+  }
+  if (Date.now() - saved.tijd > AANMELDING_BEWAARDAGEN * 24 * 3600 * 1000) {
+    clearOnboardingProgress();
+    return null;
+  }
+  return saved;
 }
 
 // TT-570: de momentopname van een registratie die nog loopt. Een opname met
@@ -1150,8 +1169,27 @@ async function prevStep(from) {
 // voorheen ook terug naar Mijn Profiel als je een bestaand profiel via de
 // wizard bewerkte — dat pad bestaat niet meer, dus dit is nu altijd een
 // gloednieuwe registratie die hier terugkomt.
+// TT-573 (besluit Ronald 14-11-2026, "ok"): Terug op stap 1 vraagt eerst of je
+// stopt; wat je invulde, wordt dan van dit toestel gewist. Staat er nog niets,
+// dan gaat Terug meteen naar de landingspagina. De route met een ouder heeft
+// zijn eigen vraag (ouderStoppenEnWissen() in ouder.js).
+function aanmeldingIngevuld() {
+  const velden = ['fname', 'lname', 'birth_date', 'username', 'zip', 'bio', 'regEmail']
+    .some(id => (document.getElementById(id)?.value || '').trim());
+  return velden || !!leesOpgeslagenVoortgang()
+    || [state.instruments, state.genres, state.songs, state.mediaLinks, state.mediaFiles].some(l => l && l.length);
+}
+
 async function prevStepFromStart() {
-  showView('landing', 'redirect');
+  if (!aanmeldingIngevuld()) { showView('landing', 'redirect'); return; }
+  showConfirm('Wat je invulde, wordt van dit toestel gewist.', () => {
+    clearOnboardingProgress();
+    if (typeof ouderAanvraagWissen === 'function') ouderAanvraagWissen();
+    showView('landing', 'redirect');
+    // Zoals bij Gegevens wissen (TT-503 D7): ook wat in het geheugen en in de
+    // velden van de wizard staat, moet weg. Een herlaad zet alles op leeg.
+    window.location.reload();
+  }, 'Stoppen', false, 'Annuleren', 'Stoppen met aanmelden?');
 }
 
 function goTo(step) {

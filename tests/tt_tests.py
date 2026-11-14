@@ -3028,73 +3028,72 @@ def blok_browser():
         page_errors.clear()
 
         # ------------------------------------------------------------------
-        # Blok 26 — TT-302: terug zonder opslaan
+        # Blok 26 — TT-302 en TT-608: terug met wijzigingen
         # ------------------------------------------------------------------
-        print("\nBlok 26 — terug zonder opslaan (TT-302)")
+        print("\nBlok 26 — terug met wijzigingen: de vraag Opslaan of Niet opslaan (TT-302, TT-608)")
 
         terug = page.evaluate("""async () => {
-          const label = document.getElementById('terugLabel');
-          const pijl = document.getElementById('navTerugBtn');
-          const zichtbaar = () => getComputedStyle(label).display !== 'none';
+          const $ = id => document.getElementById(id);
+          const vraagOpen = () => $('confirmModal').classList.contains('visible');
           const stap = () => history.back();
-          const wacht = () => new Promise(res => setTimeout(res, 60));
+          const wacht = () => new Promise(res => setTimeout(res, 80));
           const uit = {};
+          const wijzig = () => { activeTegelScreen = 'wieBenJe'; wbjSnapshot = '__andere_momentopname__'; };
 
-          uit.tekst = label.textContent.trim();
-          uit.isTekstregel = !!label && label.tagName !== 'BUTTON'
-            && getComputedStyle(label).borderStyle === 'none';
-          uit.inKop = !!label.closest('.app-topbar');
-
-          // Tegelscherm met wijzigingen nabootsen.
-          activeTegelScreen = 'wieBenJe';
-          wbjSnapshot = '__andere_momentopname__';
-
+          // TT-608 (besluit Ronald 14-11-2026): een venster met twee knoppen.
+          wijzig();
           stap(); await wacht();
-          uit.eersteDruk = { label: zichtbaar(), scherm: activeTegelScreen,
-                             pijlGewapend: pijl.classList.contains('gewapend') };
+          uit.eersteDruk = { vraag: vraagOpen(), scherm: activeTegelScreen, kop: $('confirmKop').textContent,
+            zin: $('confirmMessage').textContent, links: $('confirmNoBtn').textContent, rechts: $('confirmYesBtn').textContent,
+            rood: $('confirmYesBtn').classList.contains('btn-danger'), vinkje: !$('confirmBegrip').hidden,
+            regelWeg: !$('terugLabel') };
 
+          // Terug terwijl de vraag openstaat: de vraag gaat dicht, je blijft.
           stap(); await wacht();
-          uit.tweedeDruk = { label: zichtbaar(), scherm: activeTegelScreen };
+          uit.tweedeDruk = { vraag: vraagOpen(), scherm: activeTegelScreen };
 
-          // Een tik ergens anders haalt de vraag weg.
-          activeTegelScreen = 'wieBenJe';
-          wbjSnapshot = '__andere_momentopname__';
+          // Niet opslaan: terug naar het overzicht, zonder op te slaan.
+          wijzig();
           stap(); await wacht();
-          const voorKlik = zichtbaar();
-          document.body.click(); await wacht();
-          uit.naKlikErnaast = { was: voorKlik, nu: zichtbaar(), scherm: activeTegelScreen };
+          $('confirmNoBtn').click(); await wacht();
+          uit.nietOpslaan = { vraag: vraagOpen(), scherm: activeTegelScreen };
+
+          // Opslaan: doet wat de knop Opslaan onderin het scherm doet.
+          wijzig();
+          stap(); await wacht();
+          const knop = document.querySelector('#wieBenJeScreen .wizard-action-bar .btn-primary');
+          let geklikt = 0; const was = knop.onclick; knop.onclick = () => { geklikt++; };
+          knop.disabled = false;
+          $('confirmYesBtn').click(); await wacht();
+          knop.onclick = was;
+          uit.opslaan = { vraag: vraagOpen(), geklikt };
 
           // Zonder wijzigingen geen vraag.
           activeTegelScreen = 'wieBenJe';
           wbjSnapshot = wbjFieldSnapshot();
           stap(); await wacht();
-          uit.zonderWijziging = { label: zichtbaar(), scherm: activeTegelScreen };
+          uit.zonderWijziging = { vraag: vraagOpen(), scherm: activeTegelScreen };
 
           // TT-408: de grote Terug-knop onderin een tegelscherm bestaat niet meer.
           uit.grotekopTerug = ['wbj','wsp','jst','mh','bw','bb','bmz','bm']
             .filter(p => document.getElementById(p + 'CancelBtn')).length;
 
-          ontwapenTerug();
+          $('confirmModal').classList.remove('visible');
           activeTegelScreen = 'overview';
           return uit;
         }""")
-        check("de regel staat in de kop en is een tekstregel, geen knop",
-              terug["inKop"] and terug["isTekstregel"]
-              and terug["tekst"] == "Terug zonder opslaan?", json.dumps(terug))
-        check("de eerste druk gaat niet terug, maar toont de vraag",
-              terug["eersteDruk"]["label"] and terug["eersteDruk"]["scherm"] == "wieBenJe",
-              json.dumps(terug))
-        check("de terugknop laat zien dat hij het antwoord is",
-              terug["eersteDruk"]["pijlGewapend"], json.dumps(terug))
-        check("de tweede druk gaat wel terug en haalt de vraag weg",
-              terug["tweedeDruk"]["scherm"] == "overview"
-              and not terug["tweedeDruk"]["label"], json.dumps(terug))
-        check("een tik ergens anders haalt de vraag weg en laat je staan",
-              terug["naKlikErnaast"]["was"] and not terug["naKlikErnaast"]["nu"]
-              and terug["naKlikErnaast"]["scherm"] == "wieBenJe", json.dumps(terug))
+        check("TT-608: de eerste druk gaat niet terug, maar vraagt 'Wijzigingen opslaan?' met Niet opslaan en Opslaan, niet rood, zonder vinkje; de oude regel is weg",
+              terug["eersteDruk"] == {"vraag": True, "scherm": "wieBenJe", "kop": "Wijzigingen opslaan?",
+                                      "zin": "Je wijzigingen zijn nog niet opgeslagen.", "links": "Niet opslaan", "rechts": "Opslaan",
+                                      "rood": False, "vinkje": False, "regelWeg": True}, json.dumps(terug))
+        check("terug terwijl de vraag openstaat: de vraag gaat dicht en je blijft",
+              terug["tweedeDruk"] == {"vraag": False, "scherm": "wieBenJe"}, json.dumps(terug))
+        check("Niet opslaan gaat terug naar het overzicht",
+              terug["nietOpslaan"] == {"vraag": False, "scherm": "overview"}, json.dumps(terug))
+        check("Opslaan doet wat de knop Opslaan onderin doet",
+              terug["opslaan"] == {"vraag": False, "geklikt": 1}, json.dumps(terug))
         check("zonder wijzigingen komt er geen vraag",
-              not terug["zonderWijziging"]["label"]
-              and terug["zonderWijziging"]["scherm"] == "overview", json.dumps(terug))
+              terug["zonderWijziging"] == {"vraag": False, "scherm": "overview"}, json.dumps(terug))
         check("TT-408: geen enkel tegelscherm heeft nog een grote Terug-knop onderin",
               terug["grotekopTerug"] == 0, json.dumps(terug))
 
@@ -6333,14 +6332,15 @@ window.TT_STUB.fnAntwoord = {};
           vak().querySelector('.profiel-actie button').click(); await w(400);
           u.uitnodigingOpent = [document.querySelector('.app-view.active').id, activeTegelScreen, bewerkBandId, history.state && history.state.band];
           openTegelScreen('bandWie'); await w(200);
-          // 3. Wie zijn we: fouten bij het veld, opslaan, "Terug zonder opslaan?".
+          // 3. Wie zijn we: fouten bij het veld, opslaan, de vraag bij terug (TT-608).
           document.getElementById('bwNaam').value = ''; await saveBandWie(); await w(50);
           u.wieFout = [...document.querySelectorAll('#bandWieScreen .field-msg')].map(e => e.textContent.trim());
           document.getElementById('bwNaam').value = 'Nachtploeg';
           document.getElementById('bwBio').value = 'Vier vrienden.'; bwNiveau = 3;
           u.wieGewijzigd = tegelHeeftWijzigingen();
           history.back(); await w(250);
-          u.wieGewapend = [terugGewapend, activeTegelScreen];
+          u.wieGewapend = [document.getElementById('confirmModal').classList.contains('visible'), activeTegelScreen]; // TT-608: de vraag
+          document.getElementById('confirmModal').classList.remove('visible');
           await saveBandWie(); await w(100);
           u.wieOpgeslagen = [S.data.bands[0].description, S.data.bands[0].niveau, tegelHeeftWijzigingen()];
           tegelScreenHistoryPushed = false; openTegelOverview(); await w(200);
@@ -6509,6 +6509,7 @@ window.TT_STUB.fnAntwoord = {};
           await vraagBandVerwijderen();
           u.opheffen = [document.getElementById('confirmMessage').textContent, document.getElementById('confirmYesBtn').textContent, document.getElementById('confirmYesBtn').classList.contains('btn-danger'),
                         document.getElementById('confirmKop').textContent, document.getElementById('confirmKop').hidden, document.getElementById('confirmNoBtn').textContent];
+          document.getElementById('confirmBegripVink').click(); // TT-604: eerst het vinkje
           confirmModalYes(); await w(300);
           u.naOpheffen = [document.querySelector('.app-view.active').id, bewerkBandId, S.data.bands.length];
           u.toasts = toasts;
@@ -6712,9 +6713,10 @@ window.TT_STUB.fnAntwoord = {};
           await showCreateBandForm(); await w(150);
           $('bandName').value = 'Proef'; $('bandName').dispatchEvent(new Event('input'));
           terugKnop(); await w(250);
-          u.kopTerug1 = { wizard: bandWizardOpen(), vraag: $('terugLabel').style.display !== 'none', gewapend: terugGewapend, staat: history.state && !!history.state.wizard };
-          terugKnop(); await w(250);
-          u.kopTerug2 = { wizard: bandWizardOpen(), vraag: $('terugLabel').style.display !== 'none', lijst: zichtbaar('myBandsList'), view: huidigeView,
+          const vraag = () => $('confirmModal').classList.contains('visible');
+          u.kopTerug1 = { wizard: bandWizardOpen(), vraag: vraag(), kop: $('confirmKop').textContent, knoppen: [$('confirmNoBtn').textContent, $('confirmYesBtn').textContent], staat: history.state && !!history.state.wizard };
+          $('confirmNoBtn').click(); await w(250); // TT-608: Niet aanmaken
+          u.kopTerug2 = { wizard: bandWizardOpen(), vraag: vraag(), lijst: zichtbaar('myBandsList'), view: huidigeView,
                           staat: history.state && !!history.state.wizard, leeg: $('bandName').value };
           // Zonder invoer gaat hij meteen dicht.
           await showCreateBandForm(); await w(150);
@@ -6783,9 +6785,9 @@ window.TT_STUB.fnAntwoord = {};
         check("daarna: de privé bandpagina op 15%, met de melding; de wizard is dicht en leeg, zijn stap is terug",
               d59["na"] == {"wizard": False, "lijst": False, "kop": False, "stap": False, "modal": True, "staat": False, "balk": "15%",
                             "toast": "Nachtploeg staat. Vul hem aan wanneer je wilt.", "velden": ["", "", 0]}, j59("na"))
-        check("terugknop in de kop met iets ingevuld: eerst 'Terug zonder opslaan?', de wizard blijft",
-              d59["kopTerug1"] == {"wizard": True, "vraag": True, "gewapend": True, "staat": False}, j59("kopTerug1"))
-        check("tweede druk: de wizard gaat dicht, leeg, terug op Mijn Bands",
+        check("terugknop in de kop met iets ingevuld: eerst de vraag 'Band aanmaken?' met Niet aanmaken en Band aanmaken (TT-608), de wizard blijft",
+              d59["kopTerug1"] == {"wizard": True, "vraag": True, "kop": "Band aanmaken?", "knoppen": ["Niet aanmaken", "Band aanmaken"], "staat": False}, j59("kopTerug1"))
+        check("Niet aanmaken: de wizard gaat dicht, leeg, terug op Mijn Bands",
               d59["kopTerug2"] == {"wizard": False, "vraag": False, "lijst": True, "view": "bands", "staat": False, "leeg": ""}, j59("kopTerug2"))
         check("terugknop zonder invoer: meteen dicht, één stap", d59["kopTerugLeeg"] == {"wizard": False, "view": "bands", "staat": False}, j59("kopTerugLeeg"))
         check("TT-408: Band aanmaken heeft geen grote Terug-knop meer", d59["grotekopTerug"] is False, j59("grotekopTerug"))
@@ -17581,6 +17583,170 @@ def blok_tt590():
     check("blok 148: geen paginafouten", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_bundel_133():
+    print("\nBlok 157 — sessie 133: vinkje bij een rode vraag (TT-604), menu Toevoegen in beeld (TT-609), stoppen met aanmelden (TT-573), nieuwe versie (TT-574)")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten = []
+    uit = {}
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        def nieuw(breed=390, hoog=844, dpr=1):
+            ctx = browser.new_context(viewport={"width": breed, "height": hoog}, color_scheme="dark", device_scale_factor=dpr, is_mobile=True, has_touch=True)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**", "**/x.test/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(500)
+            return ctx, page
+
+        # TT-604: elke rode vraag heeft het vinkje; de knop werkt pas daarna.
+        ctx, page = nieuw()
+        page.evaluate(BLOK155_DATA)
+        page.evaluate("() => { currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true; }")
+        uit["572"] = page.evaluate("instrumentLevelBlurbs()")
+        uit["604"] = page.evaluate(r"""async () => {
+          const w = (n = 300) => new Promise(r => setTimeout(r, n)), $ = id => document.getElementById(id), R = e => e.getBoundingClientRect();
+          const u = {};
+          const stand = () => ({ vinkje: !$('confirmBegrip').hidden, aan: !$('confirmYesBtn').disabled, tekst: $('confirmBegrip').textContent.trim() });
+          // Een rode vraag zonder keuzes: dicht tot het vinkje.
+          let gedaan = 0;
+          showConfirm('Proef.', () => { gedaan++; }, 'Weg', true, null, 'Proef weg?');
+          u.rood = stand();
+          $('confirmYesBtn').click(); await w(50); u.klikZonder = gedaan;
+          $('confirmBegripVink').click(); await w(50);
+          u.roodNaVink = stand();
+          const vk = R($('confirmBegrip')), jk = R($('confirmYesBtn').parentElement), zin = R($('confirmMessage'));
+          u.afstand = [Math.round(vk.top - zin.bottom), Math.round(jk.top - vk.bottom)];
+          $('confirmYesBtn').click(); await w(50); u.klikMet = gedaan;
+          // Niet rood: geen vinkje, de knop aan.
+          showConfirm('Gewoon.', () => {}, 'Ja');
+          u.gewoon = stand();
+          $('confirmModal').classList.remove('visible');
+          // Account verwijderen met een band: keuze én vinkje nodig.
+          await vraagAccountVerwijderen(); await w(500);
+          u.accountStart = stand();
+          $('confirmBegripVink').click(); await w(50);
+          u.accountAlleenVink = stand();
+          $('accountBandTegel0').click(); await w(400);
+          $('accountBandMenu0').querySelectorAll('.choice-option')[0].click(); await w(300);
+          u.accountBeide = stand();
+          $('confirmBegripVink').click(); await w(50);
+          u.accountVinkUit = stand();
+          $('confirmModal').classList.remove('visible');
+          return u; }""")
+        ctx.close()
+
+        # TT-609: het menu staat in beeld, ook als de meting van de kolom net naast 0 valt.
+        uit["609"] = {}
+        for breed, dpr in ((360, 2.625), (390, 3), (412, 2.625)):
+            ctx, page = nieuw(breed, 780, dpr)
+            page.evaluate(BLOK146_DATA)
+            uit["609"][f"{breed}"] = page.evaluate(r"""async () => {
+              const w = (n = 300) => new Promise(r => setTimeout(r, n)), $ = id => document.getElementById(id), R = e => e.getBoundingClientRect();
+              showView('profieltegels'); await w(300); openTegelScreen('mediahoek'); await w(800);
+              mhMediaFiles = []; mhMediaLinks = []; mhRenderMediaGrid(); await w(100);
+              const k = $('mhMediaToevoegen');
+              // De rand van het raster 1,5 pixel verschuiven: de oude meting in pixels koos dan links, buiten beeld.
+              k.closest('.media-raster').style.paddingLeft = '1.5px';
+              k.click(); await w(600);
+              const m = $('mhMediaToevoegenMenu'), mr = R(m), app = R($('appRoot') || document.body);
+              const u = { open: m.classList.contains('open'), rechts: m.classList.contains('naar-rechts'),
+                binnen: mr.left >= app.left - 0.5 && mr.right <= app.right + 0.5 && mr.top >= 0 && mr.bottom <= innerHeight };
+              sluitAlleMenus(); await w(300);
+              return u; }""")
+            ctx.close()
+
+        # TT-573: stoppen met aanmelden, en na 7 dagen gewist.
+        ctx, page = nieuw()
+        uit["573"] = page.evaluate(r"""async () => {
+          const w = (n = 300) => new Promise(r => setTimeout(r, n)), $ = id => document.getElementById(id);
+          const u = {};
+          showView('register'); await w(300);
+          // Niets ingevuld: Terug gaat meteen naar de landingspagina.
+          prevStepFromStart(); await w(300);
+          u.leeg = { vraag: $('confirmModal').classList.contains('visible'), view: huidigeView };
+          showView('register'); await w(300);
+          $('fname').value = 'Sam';
+          prevStepFromStart(); await w(300);
+          u.ingevuld = { vraag: $('confirmModal').classList.contains('visible'), kop: $('confirmKop').textContent, zin: $('confirmMessage').textContent,
+            knoppen: [$('confirmNoBtn').textContent, $('confirmYesBtn').textContent], rood: $('confirmYesBtn').classList.contains('btn-danger'), view: huidigeView };
+          $('confirmNoBtn').click(); await w(200);
+          u.annuleren = { vraag: $('confirmModal').classList.contains('visible'), view: huidigeView, naam: $('fname').value };
+          // 7 dagen: een oude opname telt niet meer en is weg; een jonge blijft.
+          const oud = { stap: 1, fname: 'Oud', tijd: Date.now() - 8 * 24 * 3600 * 1000 };
+          localStorage.setItem('tt_onboarding_v1', JSON.stringify(oud));
+          u.oud = [leesOpgeslagenVoortgang(), localStorage.getItem('tt_onboarding_v1')];
+          localStorage.setItem('tt_onboarding_v1', JSON.stringify({ stap: 1, fname: 'Jong', tijd: Date.now() - 2 * 24 * 3600 * 1000 }));
+          u.jong = leesOpgeslagenVoortgang()?.fname;
+          localStorage.setItem('tt_onboarding_v1', JSON.stringify({ stap: 1, fname: 'Zonder' }));
+          u.zonderTijd = [leesOpgeslagenVoortgang()?.fname, !!JSON.parse(localStorage.getItem('tt_onboarding_v1')).tijd];
+          localStorage.setItem('tt_onboarding_v1', JSON.stringify({ stap: 1, fname: 'Ouder', ouderRoute: true, tijd: Date.now() - 30 * 24 * 3600 * 1000 }));
+          u.ouderRoute = leesOpgeslagenVoortgang()?.fname;
+          localStorage.removeItem('tt_onboarding_v1');
+          return u; }""")
+        ctx.close()
+
+        # TT-574: een nieuwe versie herlaadt de app, behalve midden in een bewerking.
+        ctx, page = nieuw()
+        html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+        nieuwe = html.replace('core.js?v=', 'core.js?v=NIEUW', 1)
+        page.route("**/index.html?versie=*", lambda r: r.fulfill(status=200, content_type="text/html", body=nieuwe))
+        page.evaluate(BLOK146_DATA)
+        bezig = page.evaluate(r"""async () => {
+          const w = (n = 300) => new Promise(r => setTimeout(r, n));
+          showView('profieltegels'); await w(300); openTegelScreen('wieBenJe'); await w(500);
+          wbjSnapshot = '__ander__';
+          versieLaatsteKeer = 0; await controleerNieuweVersie(); await w(300);
+          return { herladen: sessionStorage.getItem('tt_versie_herladen'), scherm: activeTegelScreen }; }""")
+        gelijk = page.evaluate(r"""async () => {
+          const w = (n = 300) => new Promise(r => setTimeout(r, n));
+          wbjSnapshot = wbjFieldSnapshot(); openTegelOverview(); showView('myprofile'); await w(300);
+          const was = window.fetch; window.fetch = async () => new Response(document.documentElement.outerHTML, { status: 200 });
+          versieLaatsteKeer = 0; await controleerNieuweVersie(); window.fetch = was;
+          return sessionStorage.getItem('tt_versie_herladen'); }""")
+        with page.expect_navigation(timeout=5000):
+            page.evaluate("() => { versieLaatsteKeer = 0; controleerNieuweVersie(); }")
+        page.wait_for_timeout(500)
+        uit["574"] = {"bezig": bezig, "gelijk": gelijk, "naHerladen": page.evaluate("sessionStorage.getItem('tt_versie_herladen')")}
+        ctx.close()
+        browser.close()
+    httpd.shutdown()
+
+    a = uit["604"]
+    check("TT-604: een rode vraag heeft het vinkje 'Ik begrijp dat dit niet terug kan.'; de knop werkt pas daarna (besluit Ronald 14-11-2026)",
+          a["rood"] == {"vinkje": True, "aan": False, "tekst": "Ik begrijp dat dit niet terug kan."} and a["klikZonder"] == 0
+          and a["roodNaVink"]["aan"] and a["klikMet"] == 1, json.dumps(a))
+    check("TT-604: het vinkje staat 24 onder de zin en 24 boven de knoppen", a["afstand"] == [24, 24], json.dumps(a["afstand"]))
+    check("TT-604: een vraag die niet rood is, heeft geen vinkje en de knop aan", a["gewoon"]["vinkje"] is False and a["gewoon"]["aan"], json.dumps(a["gewoon"]))
+    check("TT-604: Account verwijderen met een band: de knop werkt pas met een keuze per band én het vinkje",
+          a["accountStart"]["vinkje"] and not a["accountStart"]["aan"] and not a["accountAlleenVink"]["aan"]
+          and a["accountBeide"]["aan"] and not a["accountVinkUit"]["aan"], json.dumps(a))
+    for breed, u in uit["609"].items():
+        check(f"TT-609, {breed}px: het menu van \"+ Toevoegen\" in de eerste kolom opent naar rechts en staat helemaal in beeld, ook als de rand 1,5 pixel verschuift",
+              u == {"open": True, "rechts": True, "binnen": True}, json.dumps(u))
+    c = uit["573"]
+    check("TT-573: Terug op stap 1 zonder invoer gaat meteen naar de landingspagina", c["leeg"] == {"vraag": False, "view": "landing"}, json.dumps(c["leeg"]))
+    check("TT-573: met invoer de vraag 'Stoppen met aanmelden?', 'Wat je invulde, wordt van dit toestel gewist.', Annuleren en Stoppen, niet rood",
+          c["ingevuld"] == {"vraag": True, "kop": "Stoppen met aanmelden?", "zin": "Wat je invulde, wordt van dit toestel gewist.",
+                            "knoppen": ["Annuleren", "Stoppen"], "rood": False, "view": "register"}, json.dumps(c["ingevuld"], ensure_ascii=False))
+    check("TT-573: Annuleren laat alles staan", c["annuleren"] == {"vraag": False, "view": "register", "naam": "Sam"}, json.dumps(c["annuleren"]))
+    check("TT-573: een aanmelding van 8 dagen oud is gewist; een van 2 dagen blijft; een zonder tijd krijgt er een; de route met een ouder wordt niet gewist",
+          c["oud"] == [None, None] and c["jong"] == "Jong" and c["zonderTijd"] == ["Zonder", True] and c["ouderRoute"] == "Ouder", json.dumps(c))
+    check("TT-572: de zin onder de niveaukeuze is algemeen, de vijf teksten van het besluit (14-11-2026, \"akkoord\")",
+          uit["572"] == ["Je speelt je eerste nummers en oefent nog met tutorials.", "Je speelt hele nummers uit en zoekt ze zelf uit.",
+                         "Je speelt strak en bent klaar voor een optreden.", "Je speelt alles live, ook in andere stijlen, en kunt een band leiden.",
+                         "Je speelt op topniveau en hebt een eigen, herkenbare sound."], json.dumps(uit["572"], ensure_ascii=False))
+    d = uit["574"]
+    check("TT-574: midden in een bewerking herlaadt de app niet; zonder nieuwe versie ook niet; met een nieuwe versie wel, één keer",
+          d["bezig"] == {"herladen": None, "scherm": "wieBenJe"} and d["gelijk"] is None and d["naHerladen"] == "core.js?v=" + open(os.path.join(ROOT, "index.html"), encoding="utf-8").read().split("core.js?v=")[1].split('"')[0],
+          json.dumps(d))
+    check("blok 157: geen paginafouten", not fouten, "; ".join(fouten)[:300])
+
+
 def blok_tt543_onderdeel6_blok3():
     print("\nBlok 150 — TT-543 onderdeel 6 (Bands), blok 3: Bandbeheer, Bandstatus en berichten")
     bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("bands.js", "musicians.js", "messages.js", "index.html", "styles.css")}
@@ -17685,6 +17851,7 @@ def blok_tt543_onderdeel6_blok3():
             S.data.band_members = S.data.band_members.filter(m => m.band_id !== pp.p_band_id); return null; };
           await vraagBandVerwijderen(); await w(100);
           u.vraag = [$('confirmKop').textContent, $('confirmKop').hidden, $('confirmMessage').textContent, $('confirmYesBtn').textContent, $('confirmNoBtn').textContent, $('confirmYesBtn').classList.contains('btn-danger')];
+          $('confirmBegripVink').click(); // TT-604: eerst het vinkje
           confirmModalYes(); await w(600);
           u.naVerwijderen = { berichten: berichten().slice(-1), toast: toasts.slice(-1)[0], view: document.querySelector('.app-view.active').id, band: S.data.bands.some(b => b.id === 'b9') };
           // 9. Een andere vraag daarna heeft geen kop (showConfirm zonder zesde parameter).
@@ -17804,8 +17971,10 @@ def blok_tt543_onderdeel7():
           const jaRect = r(ja);
           u.verspringt = jaRect.bottom < tegelRect.top || jaRect.top > tegelRect.bottom;
           // Afstanden: zin, tegel en knoppen 24px; tussen twee tegels 16px (zoals Instellingen).
+          // TT-604 (besluit Ronald 14-11-2026): tussen de laatste tegel en de knoppen staat het vinkje, 24 erboven en 24 eronder.
           u.afstand = { zinTegel: Math.round(r(tegels[0]).top - r($('confirmMessage')).bottom), tegelTegel: Math.round(r(tegels[1]).top - r(tegels[0]).bottom),
-                        tegelKnop: Math.round(Math.min(r(ja).top, r($('confirmNoBtn')).top) - r(tegels[1]).bottom) };
+                        tegelVink: Math.round(r($('confirmBegrip')).top - r(tegels[1]).bottom),
+                        vinkKnop: Math.round(Math.min(r(ja).top, r($('confirmNoBtn')).top) - r($('confirmBegrip')).bottom) };
           // Het menu van Nachtploeg: de leden met "wordt beheerder" en Bandprofiel verwijderen; niets gekozen; tekst links.
           tegels[1].click(); await w(300);
           const menu = $('accountBandMenu1');
@@ -17817,6 +17986,8 @@ def blok_tt543_onderdeel7():
           const m0 = [...$('accountBandMenu0').querySelectorAll('.choice-option')];
           m0[m0.length - 1].click(); await w(300);
           u.naTwee = { regels: tegels.map(t => t.querySelector('.wheel-field-label').textContent), uit: ja.disabled };
+          $('confirmBegripVink').click(); await w(50); // TT-604: pas met het vinkje gaat de knop aan
+          u.naVink = ja.disabled;
           // 8D (blok 124): een bandnaam en een ledennaam van één lang woord blijven in hun tegel; de regel in Instellingen ook.
           const lang = 'LANGWOORD' + 'abcdefghij'.repeat(6);
           const bandK = S.data.bands.find(b => b.id === 'b6'), lidK = S.data.musicians.find(m => m.id === 'm3'), ikK = S.data.musicians.find(m => m.id === 'm1');
@@ -17838,6 +18009,7 @@ def blok_tt543_onderdeel7():
           tegels.splice(0, tegels.length, ...$('confirmKeuzes').querySelectorAll('.tile'));
           CHOICE_FIELDS['account-band-0'].kies(CHOICE_FIELDS['account-band-0'].rijen().length - 1);  // Kelderband: Bandprofiel verwijderen
           CHOICE_FIELDS['account-band-1'].kies(0);                                              // Nachtploeg: Dylan
+          $('confirmBegripVink').click();                                                         // TT-604: het vinkje
           // Verwijderen: één databasefunctie met de keuzes en de berichten (punt 4), daarna uitloggen.
           S.rpcResults.tt_delete_own_profile = () => null;
           const oudFn = db.functions; db.functions = { invoke: async () => ({ error: null }) };
@@ -17852,7 +18024,9 @@ def blok_tt543_onderdeel7():
           currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
           S.data.bands = S.data.bands.filter(b => b.founder_id !== 'm1');
           await vraagAccountVerwijderen(); await w(300);
-          u.zonder = { tegels: $('confirmKeuzes').children.length, uit: ja.disabled, zinKnop: Math.round(Math.min(r(ja).top, r($('confirmNoBtn')).top) - r($('confirmMessage')).bottom) };
+          u.zonder = { tegels: $('confirmKeuzes').children.length, uit: ja.disabled, zinVink: Math.round(r($('confirmBegrip')).top - r($('confirmMessage')).bottom),
+                       vinkKnop: Math.round(Math.min(r(ja).top, r($('confirmNoBtn')).top) - r($('confirmBegrip')).bottom) };
+          $('confirmBegripVink').click(); await w(50); u.zonder.naVink = ja.disabled;
           $('confirmModal').classList.remove('visible');
           // Een storing bij het laden van je bands: de foutstaat, de knop blijft dicht (TT-561).
           S.errors['bands'] = { code: '500', message: 'storing' };
@@ -17906,13 +18080,13 @@ def blok_tt543_onderdeel7():
                          "knop": "Account verwijderen", "rood": True, "uit": True, "nee": "Annuleren",
                          "banden": [["Kelderband", "kies wat er met de band gebeurt"], ["Nachtploeg", "kies wat er met de band gebeurt"]]}, j("vraag"))
     check("punt 2: de rode knop in de vraag ligt niet op de plek van de tegel (het verspringen)", d["verspringt"] is True, "")
-    check("punt 3: zin tot tegel 24px, tussen twee tegels 12px (TT-543 laag 3, besluit Ronald 13-11-2026, 3-2 A), tegel tot knoppen 24px",
-          d["afstand"] == {"zinTegel": 24, "tegelTegel": 12, "tegelKnop": 24}, j("afstand"))
+    check("punt 3: zin tot tegel 24px, tussen twee tegels 12px (TT-543 laag 3, besluit Ronald 13-11-2026, 3-2 A), tegel tot het vinkje 24px, vinkje tot knoppen 24px (TT-604)",
+          d["afstand"] == {"zinTegel": 24, "tegelTegel": 12, "tegelVink": 24, "vinkKnop": 24}, j("afstand"))
     check("punt 3: het keuzemenu van de app onder de tegel: de leden 'wordt beheerder' en Bandprofiel verwijderen, geen standaard",
           d["menu"] == {"open": True, "regels": [["Dylan", "wordt beheerder"], ["Bandprofiel verwijderen", "de band verdwijnt voor alle leden"]], "gekozen": 0, "tekstLinks": True}, j("menu"))
-    check("punt 3: na één keuze staat die op de tegel; de knop blijft uit tot elke band een keuze heeft",
-          d["naEen"] == {"regel": "Dylan wordt beheerder", "uit": True} and d["naTwee"] == {"regels": ["Bandprofiel verwijderen", "Dylan wordt beheerder"], "uit": False},
-          j("naEen") + j("naTwee"))
+    check("punt 3: na één keuze staat die op de tegel; de knop blijft uit tot elke band een keuze heeft én het vinkje staat (TT-604)",
+          d["naEen"] == {"regel": "Dylan wordt beheerder", "uit": True} and d["naTwee"] == {"regels": ["Bandprofiel verwijderen", "Dylan wordt beheerder"], "uit": True}
+          and d["naVink"] is False, j("naEen") + j("naTwee") + j("naVink"))
     check("punt 4: één databasefunctie met per band de keuze en de berichten (teksten van onderdeel 6), de band zonder leden apart",
           d["rpc"] == {"p_musician_id": "m1",
                        "p_band_keuzes": [{"band_id": "b6", "keuze": "delete", "berichten": [{"aan": "m3", "tekst": "Het profiel van Kelderband is verwijderd. De band bestaat niet meer in deze app."}]},
@@ -17921,7 +18095,8 @@ def blok_tt543_onderdeel7():
     check("8D (blok 124): een bandnaam en een ledennaam van één lang woord blijven in hun tegel en de kop in de vraag; de regel in Instellingen blijft één regel binnen de tegel",
           d["langVraag"] == {"titel": True, "keuze": True, "kop": True} and d["langRegel"] == {"binnen": True, "eenRegel": True}, j("langVraag") + j("langRegel"))
     check("na verwijderen: uitgelogd en de melding 'Je account is verwijderd.'", d["uitgelogd"] is True and d["toast"] == "Je account is verwijderd.", j("toast"))
-    check("zonder band met andere leden: geen tegel, de knop werkt meteen, zin tot knoppen 24px", d["zonder"] == {"tegels": 0, "uit": False, "zinKnop": 24}, j("zonder"))
+    check("zonder band met andere leden: geen tegel; de knop werkt na het vinkje (TT-604); zin tot vinkje 24px, vinkje tot knoppen 24px",
+          d["zonder"] == {"tegels": 0, "uit": True, "zinVink": 24, "vinkKnop": 24, "naVink": False}, j("zonder"))
     check("een storing bij je bands: de foutstaat met opnieuw proberen, de knop blijft dicht (TT-561)", d["storing"] == {"fout": True, "uit": True}, j("storing"))
     check("een gewone vraag daarna: geen keuzes, de knop aan", d["gewoon"] == {"keuzes": "", "uit": False}, j("gewoon"))
     check("punt 6 (TT-347): de vraag bij E-mailadres wijzigen is de tekst van Ronald",
@@ -18781,6 +18956,7 @@ BLOKKEN = [
     blok_tt543_onderdeel10,
     blok_tt543_laag3,
     blok_tt595_tt596,
+    blok_bundel_133,
 ]
 
 

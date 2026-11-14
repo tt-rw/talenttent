@@ -112,7 +112,7 @@
      Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
   window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
 </script>
-<link rel="stylesheet" href="styles.css?v=20261114b">
+<link rel="stylesheet" href="styles.css?v=20261114c">
 </head>
 <body>
 
@@ -210,7 +210,6 @@
      randen. De regel staat binnen .app-topbar en blijft dus in beeld, ook
      als de Terug-knop onder in het scherm weggescrold is — dat was de reden
      voor de knop in de kop (Ronald, 20-09-2026). -->
-<div class="terug-label" id="terugLabel" role="status" style="display:none;">Terug zonder opslaan?</div>
 <!-- TT-U24 (12-08-2026): vaste onderbalk voor de telefoon.
      De bovenste navigatierij scrolde op mobiel horizontaal: 534px inhoud in
      een balk van 320px, dus 214px stond buiten beeld. Geen enkele app die
@@ -2050,9 +2049,15 @@
     <!-- TT-543 onderdeel 7 (punt 3): Account verwijderen zet hier per band een
          tegel met het keuzemenu. showConfirm() maakt het vak leeg. -->
     <div id="confirmKeuzes"></div>
+    <!-- TT-604 (besluit Ronald 14-11-2026, "ja"): bij een rode, onomkeerbare
+         vraag werkt de knop pas na dit vinkje (zetConfirmKnop() in utils.js). -->
+    <label class="akkoord-regel confirm-begrip" id="confirmBegrip" hidden>
+      <input type="checkbox" id="confirmBegripVink" onchange="zetConfirmKnop()">
+      <span>Ik begrijp dat dit niet terug kan.</span>
+    </label>
     <!-- TT-228 (09-09-2026): secundaire knop links, primaire rechts. -->
     <div class="btn-row">
-      <button class="btn btn-ghost" id="confirmNoBtn" onclick="document.getElementById('confirmModal').classList.remove('visible')">Annuleren</button>
+      <button class="btn btn-ghost" id="confirmNoBtn" onclick="confirmModalNo()">Annuleren</button>
       <button class="btn btn-primary" id="confirmYesBtn" onclick="confirmModalYes()">Ja, verwijderen</button>
     </div>
   </div>
@@ -2292,19 +2297,19 @@
 
 </div><!-- /#appRoot -->
 
-<script src="core.js?v=20261114b"></script>
-<script src="utils.js?v=20261114b"></script>
+<script src="core.js?v=20261114c"></script>
+<script src="utils.js?v=20261114c"></script>
 <script src="veiligheid.js?v=20261113c"></script>
 <script src="auth.js?v=20261112a"></script>
 <script src="postcode.js?v=20261110a"></script>
-<script src="wizard.js?v=20261113c"></script>
+<script src="wizard.js?v=20261114a"></script>
 <script src="ouder.js?v=20261114a"></script>
 <script src="search.js?v=20261114b"></script>
-<script src="musicians.js?v=20261114a"></script>
-<script src="bands.js?v=20261114a"></script>
+<script src="musicians.js?v=20261114b"></script>
+<script src="bands.js?v=20261114b"></script>
 <script src="messages.js?v=20261114a"></script>
 <script src="push.js?v=20261027b"></script>
-<script src="modals-shared.js?v=20261111a"></script>
+<script src="modals-shared.js?v=20261114a"></script>
 <script>
 // ─── Start ───────────────────────────────────────────────────────────────────
 // TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding

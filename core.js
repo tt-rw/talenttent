@@ -1027,33 +1027,14 @@ function terugKnop() {
   appTerug();
 }
 
-// ─── Terug zonder opslaan (TT-302, 20-09-2026, Ronald) ───────────────────
-// Staan er wijzigingen open, dan gebeurt er bij de eerste druk niets, en
-// verschijnt de regel "Terug zonder opslaan?" onder de kop. De tweede druk
-// gaat wél terug. Bevestigen doe je dus op de knop waar je net op drukte —
-// niet op de regel zelf.
-let terugGewapend = false;
-
-function wapenTerug() {
-  terugGewapend = true;
-  const label = document.getElementById('terugLabel');
-  if (label) label.style.display = '';
-  document.getElementById('navTerugBtn')?.classList.add('gewapend');
-  // Pas ná de huidige klik luisteren, anders vangt hij die meteen zelf af.
-  setTimeout(() => {
-    document.addEventListener('click', function buitenKlik(e) {
-      if (!terugGewapend) return;
-      if (e.target.closest && e.target.closest('#navTerugBtn')) return;
-      ontwapenTerug();
-    }, { once: true });
-  }, 0);
-}
-
-function ontwapenTerug() {
-  terugGewapend = false;
-  const label = document.getElementById('terugLabel');
-  if (label) label.style.display = 'none';
-  document.getElementById('navTerugBtn')?.classList.remove('gewapend');
+// ─── Terug met wijzigingen die nog niet opgeslagen zijn (TT-608) ──────────
+// Besluit Ronald 14-11-2026 ("ja"; vervangt de regel "Terug zonder opslaan?"
+// onder de kop van TT-302): staan er wijzigingen open, dan vraagt een venster
+// het met twee knoppen, Niet opslaan en Opslaan. Opslaan doet wat de knop
+// onderin het scherm doet (met de controles van dat scherm); Niet opslaan gaat
+// terug zonder op te slaan. Terug of een tik naast het venster: je blijft.
+function vraagOpslaanBijTerug(kop, opslaanLabel, nietLabel, opslaan, nietOpslaan) {
+  showConfirm('Je wijzigingen zijn nog niet opgeslagen.', opslaan, opslaanLabel, false, nietLabel, kop, nietOpslaan);
 }
 
 // `extra` is alleen voor het profielscherm (TT-410b): { id, app, soort }. `app`
@@ -1467,6 +1448,48 @@ function landingBijwerken() {
 }
 document.addEventListener('visibilitychange', landingBijwerken);
 
+// ─── Nieuwe versie bij terugkomen (TT-574) ──────────────────────────────────
+// Besluit Ronald 14-11-2026 ("ja"): komt iemand terug in de app en staat er
+// een nieuwe versie klaar, dan herlaadt de app vanzelf; nooit midden in een
+// bewerking. De app haalt dan index.html zonder cache op en vergelijkt de
+// ?v=-labels met die van de geladen scripts en stijlen. Is iemand bezig, dan
+// wacht de herlaad tot de volgende keer dat hij terugkomt.
+let versieLaatsteKeer = 0;
+function geladenVersies() {
+  return [...document.querySelectorAll('script[src*="?v="], link[rel="stylesheet"][href*="?v="]')]
+    .map(e => e.getAttribute('src') || e.getAttribute('href'));
+}
+function bezigMetBewerken() {
+  try {
+    if (huidigeView === 'register') return true;
+    if (typeof tegelHeeftWijzigingen === 'function' && tegelHeeftWijzigingen()) return true;
+    if (typeof bandWizardOpen === 'function' && bandWizardOpen() && hasUnsavedBandFormInput()) return true;
+    if (bovensteModal(false) || document.querySelector('.menu-laag')) return true;
+    return [...document.querySelectorAll('textarea')].some(v => v.offsetParent && v.value.trim());
+  } catch (e) { return true; } // twijfel: niet herladen
+}
+async function controleerNieuweVersie() {
+  if (document.hidden || Date.now() - versieLaatsteKeer < 60000) return;
+  versieLaatsteKeer = Date.now();
+  try {
+    const r = await fetch('index.html?versie=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const html = await r.text();
+    // Staat een geladen script of stijl met precies dit label niet meer als
+    // src= of href= in de nieuwe pagina, dan is er een nieuwe versie.
+    const oud = geladenVersies().filter(a => !html.includes('src="' + a + '"') && !html.includes('href="' + a + '"'));
+    if (!oud.length) return;
+    // Nooit twee keer herladen voor hetzelfde verschil (een trage server kan
+    // nog even de oude bestanden geven).
+    const sleutel = oud.join(' ');
+    try { if (sessionStorage.getItem('tt_versie_herladen') === sleutel) return; } catch (e) { /* zonder opslag: gewoon door */ }
+    if (bezigMetBewerken()) { versieLaatsteKeer = 0; return; }
+    try { sessionStorage.setItem('tt_versie_herladen', sleutel); } catch (e) { /* idem */ }
+    window.location.reload();
+  } catch (e) { /* geen netwerk: de volgende keer */ }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) controleerNieuweVersie(); });
+
 // TT-577 en TT-543 onderdeel 5, F2 (besluit Ronald 09-11-2026, vraag 2): de
 // hoogte van de onderbalk, gemeten, in --onderbalk-hoogte (styles.css). De ruimte
 // onder body, het invoerveld van een gesprek en de vaste balk van een profiel
@@ -1659,18 +1682,25 @@ function appTerug() {
   }
   // TT-168-overgang: een open tegelscherm sluit eerst, terug naar het overzicht.
   if (activeTegelScreen !== 'overview') {
-    // TT-302: staan er wijzigingen open, dan gebeurt er bij de eerste druk niets
-    // en verschijnt de regel onder de kop. Pijl en toestelknop lopen hierlangs.
-    if (tegelHeeftWijzigingen() && !terugGewapend) { wapenTerug(); return; }
-    ontwapenTerug();
+    // TT-608: staan er wijzigingen open, dan eerst de vraag. Pijl en
+    // toestelknop lopen hierlangs.
+    if (tegelHeeftWijzigingen()) {
+      vraagOpslaanBijTerug('Wijzigingen opslaan?', 'Opslaan', 'Niet opslaan',
+        () => document.querySelector('#' + TEGEL_SCREENS[activeTegelScreen] + ' .wizard-action-bar .btn-primary')?.click(),
+        () => { openTegelOverview(); werkTerugKnopBij(); });
+      return;
+    }
     openTegelOverview();
     werkTerugKnopBij(); // TT-301
     return;
   }
   // TT-385 fase 4: de korte bandwizard is een laag, zoals een tegelscherm.
   if (bandWizardOpen()) {
-    if (hasUnsavedBandFormInput() && !terugGewapend) { wapenTerug(); return; }
-    ontwapenTerug();
+    if (hasUnsavedBandFormInput()) {
+      vraagOpslaanBijTerug('Band aanmaken?', 'Band aanmaken', 'Niet aanmaken', () => saveBand(),
+        () => { resetBandForm(); zetBandWizardZichtbaar(false); werkTerugKnopBij(); });
+      return;
+    }
     resetBandForm();
     zetBandWizardZichtbaar(false);
     werkTerugKnopBij();

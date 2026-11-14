@@ -257,15 +257,19 @@ function instrumentLevelLabels() {
   return NIVEAU_INFO_MUSICIAN_ROWS.map(r => stripParenthetical(String(r[0]).replace(/^\d+\.\s*/, '')));
 }
 
-// TT-116: korte toelichting per niveau. Voorlopige tekst — Ronald schrijft de
-// definitieve versie (sessie 21-08-2026, "optie 1"). Tot dan: eerste zin van
-// de kolom "Technische beheersing" uit dezelfde tabel, zodat er geen tweede
-// bron ontstaat.
+// TT-572 (besluit Ronald 14-11-2026, "akkoord"): de korte zin per niveau is
+// algemeen en klopt voor elk instrument, ook voor zang. Tot dan was het de
+// eerste zin van "Technische beheersing" (TT-116), met drums en akkoorden erin.
+// Teksten per instrument komen na de livegang.
+const NIVEAU_ZINNEN = [
+  'Je speelt je eerste nummers en oefent nog met tutorials.',
+  'Je speelt hele nummers uit en zoekt ze zelf uit.',
+  'Je speelt strak en bent klaar voor een optreden.',
+  'Je speelt alles live, ook in andere stijlen, en kunt een band leiden.',
+  'Je speelt op topniveau en hebt een eigen, herkenbare sound.'
+];
 function instrumentLevelBlurbs() {
-  return NIVEAU_INFO_MUSICIAN_ROWS.map(r => {
-    const firstSentence = String(r[1]).split('. ')[0].replace(/\.+$/, '');
-    return firstSentence + '.';
-  });
+  return NIVEAU_ZINNEN.slice();
 }
 
 function renderInstrumentBadges(id) {

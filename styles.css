@@ -456,23 +456,8 @@
      44px stond de pijl daardoor 5px verder van de rand (gemeten: 33,8px
      tegen 29,0px). De hele knop schuift 5px naar buiten, niet alleen het
      teken: zo blijft de pijl midden in zijn eigen knopvlak staan, ook als
-     dat vlak zichtbaar wordt (.gewapend, :hover). Het tikdoel blijft 44px. */
+     dat vlak zichtbaar wordt (:hover). Het tikdoel blijft 44px. */
   .kop-terug { margin-left: -5px; }
-
-  /* TT-302: de regel onder de kop bij onopgeslagen wijzigingen. Bewust géén
-     rand, géén vlak en géén hoeken: dat zou een knop of een toast nabootsen,
-     en allebei zijn het niet. Het is een tekstregel die uitlegt waarom er
-     niets gebeurde; bevestigen doe je op de terugknop zelf. Links uitgelijnd
-     met de terugknop erboven, zodat je ziet waar hij bij hoort. */
-  .terug-label {
-    padding: 0 16px 10px;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--accent);
-    line-height: var(--regel-12);
-  }
-  /* Zolang de vraag openstaat, laat de terugknop zien dat hij het antwoord is. */
-  .kop-terug.gewapend { background: var(--surface); border-color: var(--accent); }
 
   .logo {
     /* 44px hoog, zoals de knoppen naast hem: de rij van de kop. Sinds TT-517
@@ -1593,6 +1578,8 @@
      zin; 24px tot de knoppen, zoals de zin. Tussen twee tegels de maat van
      Instellingen (.tile, 16px). */
   #confirmKeuzes:not(:empty) { margin-bottom: 24px; }
+  /* TT-604: het vinkje staat waar de knoppen anders beginnen, 24 erboven en eronder. */
+  .confirm-begrip { margin: 0 0 24px; }
   #confirmKeuzes > .menu-anchor:last-child .tile { margin-bottom: 0; }
   /* 8D onderdeel 7 (12-11-2026, blok 124): een naam van één lang woord blijft in
      zijn tegel. De regel onder Account verwijderen zoals in Bandbeheer (één

@@ -541,7 +541,7 @@ async function vraagAccountVerwijderen() {
   // TT-561: zonder je bands kun je niet per band kiezen; de knop blijft dicht.
   if (fout) {
     document.getElementById('confirmKeuzes').innerHTML = foutStaatHTML(fout, 'je bands laden', 'vraagAccountVerwijderen()');
-    document.getElementById('confirmYesBtn').disabled = true;
+    confirmExtraDicht = true; zetConfirmKnop();
     return;
   }
   tekenAccountBands();
@@ -575,7 +575,8 @@ function werkAccountKeuzesBij() {
     if (regel) regel.textContent = lid ? `${lid.naam} wordt beheerder`
       : b.keuze === 'delete' ? 'Bandprofiel verwijderen' : 'kies wat er met de band gebeurt';
   });
-  document.getElementById('confirmYesBtn').disabled = accountBands.some(b => !b.keuze);
+  confirmExtraDicht = accountBands.some(b => !b.keuze);
+  zetConfirmKnop(); // TT-604: ook het vinkje
 }
 
 // Haalt de werkelijke foutboodschap uit een db.functions.invoke()-fout. De
@@ -836,8 +837,8 @@ const TEGEL_SCREENS = { wieBenJe: 'wieBenJeScreen', watSpeelJe: 'watSpeelJeScree
   bandWie: 'bandWieScreen', bandBezetting: 'bandBezettingScreen', bandMuziek: 'bandMuziekScreen', bandMedia: 'bandMediaScreen' };
 let activeTegelScreen = 'overview';
 
-// TT-302 (20-09-2026, Ronald) en TT-408: de vraag 'terug zonder opslaan?'
-// hoort bij de pijl in de kop en de terugknop van het toestel. De grote
+// TT-302, TT-408 en TT-608: de vraag of je wilt opslaan (vraagOpslaanBijTerug()
+// in core.js) hoort bij de pijl in de kop en de terugknop van het toestel. De grote
 // Terug-knop onderin een tegelscherm bestaat niet meer. De vergelijking per
 // scherm staat één keer hier, zodat beide wegen terug dezelfde vraag stellen.
 const TEGEL_WIJZIGINGEN = {
@@ -905,7 +906,6 @@ function terugNaOpslaan(id) {
 function openTegelOverview() {
   activeTegelScreen = 'overview';
   zetVasteBalkRuimte('overview');
-  ontwapenTerug();    // TT-302: de vraag hoort bij het scherm dat je verlaat
   werkTerugKnopBij(); // TT-301
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
   document.getElementById('tegelOverviewScreen').style.display = bewerkBandId ? 'none' : '';
@@ -918,7 +918,6 @@ function openTegelScreen(id) {
   if (!TEGEL_SCREENS[id]) return;
   activeTegelScreen = id;
   zetVasteBalkRuimte(id);
-  ontwapenTerug();    // TT-302
   werkTerugKnopBij(); // TT-301: een open tegelscherm is een stap terug
   document.getElementById('tegelOverviewScreen').style.display = 'none';
   document.getElementById('bandTegelOverviewScreen').style.display = 'none';

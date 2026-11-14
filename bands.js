@@ -386,7 +386,6 @@ async function showCreateBandForm() {
 // Sluit de wizard (TT-431: de wizard is geen stap in de browsergeschiedenis
 // meer; hij is een laag van de app, net als een tegelscherm).
 function sluitBandWizard(daarna) {
-  ontwapenTerug();
   resetBandForm();
   zetBandWizardZichtbaar(false);
   werkTerugKnopBij();

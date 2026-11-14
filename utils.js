@@ -5,6 +5,7 @@
 let toastTimer = null;
 // Generieke bevestigingsdialoog voor destructieve acties (i.p.v. native confirm()).
 let confirmCallback = null;
+let confirmCancelCallback = null;
 // TT-188 (03-09-2026, Ronald): rood was hardcoded op deze knop, dus élke
 // aanroep van showConfirm() kreeg 'm — ook niet-destructieve acties zoals
 // "Vragen" (founder-overdracht). Rood hoort alleen bij het echt verwijderen
@@ -14,7 +15,9 @@ let confirmCallback = null;
 // "Annuleren" fout: er valt niets meer te annuleren. Standaard "Annuleren".
 // TT-543 onderdeel 6, blok 3: een vraag kan een kop krijgen (zesde
 // parameter), zoals bij Bandprofiel verwijderen (beeld akkoord Ronald 10-11-2026).
-function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel, kop) {
+// TT-608: zevende parameter onCancel: wat de linkerknop doet ("Niet opslaan").
+// Zonder onCancel sluit de linkerknop alleen het venster.
+function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel, kop, onCancel) {
   const kopEl = document.getElementById('confirmKop');
   if (kopEl) { kopEl.textContent = kop || ''; kopEl.hidden = !kop; }
   document.getElementById('confirmMessage').textContent = message;
@@ -28,14 +31,42 @@ function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel, kop)
   // TT-543 onderdeel 7 (punt 3): een vraag begint zonder keuzes en met de knop aan.
   const keuzes = document.getElementById('confirmKeuzes');
   if (keuzes) keuzes.innerHTML = '';
-  yesBtn.disabled = false;
+  // TT-604 (besluit Ronald 14-11-2026, "ja"): een rode vraag is onomkeerbaar;
+  // de knop werkt pas na het vinkje "Ik begrijp dat dit niet terug kan.".
+  // Geldt voor elke rode vraag: Account verwijderen, Bandprofiel verwijderen
+  // en Gegevens wissen (huisstijl §3.22).
+  const begrip = document.getElementById('confirmBegrip');
+  if (begrip) { begrip.hidden = !danger; document.getElementById('confirmBegripVink').checked = false; }
+  confirmExtraDicht = false;
+  zetConfirmKnop();
   confirmCallback = onConfirm;
+  confirmCancelCallback = onCancel || null;
   document.getElementById('confirmModal').classList.add('visible');
 }
+// De knop van de vraag: dicht zolang het vinkje (TT-604) of een keuze per band
+// (Account verwijderen, confirmExtraDicht) ontbreekt.
+let confirmExtraDicht = false;
+function zetConfirmKnop() {
+  const begrip = document.getElementById('confirmBegrip');
+  const vink = document.getElementById('confirmBegripVink');
+  const nodig = !!begrip && !begrip.hidden && !(vink && vink.checked);
+  document.getElementById('confirmYesBtn').disabled = confirmExtraDicht || nodig;
+}
 function confirmModalYes() {
+  if (document.getElementById('confirmYesBtn').disabled) return;
   document.getElementById('confirmModal').classList.remove('visible');
+  document.getElementById('confirmNoBtn').textContent = 'Annuleren'; // TT-608: terug naar de standaard
   const cb = confirmCallback;
   confirmCallback = null;
+  confirmCancelCallback = null;
+  if (cb) cb();
+}
+function confirmModalNo() {
+  document.getElementById('confirmModal').classList.remove('visible');
+  document.getElementById('confirmNoBtn').textContent = 'Annuleren'; // TT-608: terug naar de standaard
+  const cb = confirmCancelCallback;
+  confirmCallback = null;
+  confirmCancelCallback = null;
   if (cb) cb();
 }
 
@@ -1785,6 +1816,9 @@ function openChoiceMenu(id) {
 // schuiven en het menu over de onderbalk viel.
 const BALKEN_ONDER = '#appBottomNav, .wizard-action-bar';
 function menuInBeeld(menu, veld) {
+  // TT-609: het menu van "+ Toevoegen" klapt opzij open, niet eronder; dat
+  // menu zet mediaMenuInBeeld() in beeld.
+  if (menu.classList.contains('media-toevoegen-menu')) return;
   const balken = [...document.querySelectorAll(BALKEN_ONDER)]
     .filter(b => b.getClientRects().length && getComputedStyle(b).position === 'fixed') // vast element: geen offsetParent
     .map(b => b.getBoundingClientRect().top);
@@ -2397,7 +2431,13 @@ function mediaToevoegenMenu(ev, id) {
   const menu = document.getElementById(`${id}MediaToevoegenMenu`);
   const raster = knop && knop.closest('.media-raster');
   if (!knop || !menu || !raster) return;
-  const eersteKolom = Math.abs(knop.getBoundingClientRect().left - raster.getBoundingClientRect().left) < 1;
+  // TT-609 (besluit Ronald 14-11-2026, "ja": het menu opent altijd in beeld).
+  // De kolom komt uit de plek in het raster, niet uit een meting in pixels.
+  // Aanname (beeld Ronald 13-11-2026, niet nagebootst): op zijn telefoon viel
+  // die meting naast 0 en klapte het menu naar links, buiten beeld.
+  const plek = knop.closest('.media-raster > *');
+  const kolommen = getComputedStyle(raster).gridTemplateColumns.split(' ').length || 3;
+  const eersteKolom = !plek || [...raster.children].indexOf(plek) % kolommen === 0;
   menu.classList.toggle('naar-rechts', eersteKolom);
   menu.classList.toggle('naar-links', !eersteKolom);
   // Zonder keuze openen: dan geeft elke keuze een wijziging, ook twee keer Foto.
@@ -2406,6 +2446,34 @@ function mediaToevoegenMenu(ev, id) {
   const sleutel = `${id}MediaToevoegen`;
   CHOICE_FIELDS[sleutel] = { id: sleutel, fieldId: knop.id, selectId: `${id}MediaToevoegenSel`, menuId: menu.id };
   toggleChoiceMenu(sleutel);
+  if (menu.classList.contains('open')) mediaMenuInBeeld(knop, menu);
+}
+
+// TT-609: valt het menu toch buiten de app, dan naar de andere kant; valt het
+// boven of onder buiten beeld, dan schuift de pagina. Gemeten vanaf de knop en
+// de maat van het menu, niet vanaf de rechthoek van het menu: die is tijdens het
+// uitklappen nog kleiner.
+function mediaMenuInBeeld(knop, menu) {
+  const app = (document.getElementById('appRoot') || document.body).getBoundingClientRect();
+  const k = knop.getBoundingClientRect();
+  const breed = menu.offsetWidth, hoog = menu.offsetHeight;
+  const rechts = menu.classList.contains('naar-rechts');
+  const links = rechts ? k.right + 8 : k.left - 8 - breed;
+  if (links < app.left || links + breed > app.right) {
+    menu.classList.toggle('naar-rechts', !rechts);
+    menu.classList.toggle('naar-links', rechts);
+  }
+  const kop = document.querySelector('header');
+  const boven = kop ? kop.getBoundingClientRect().bottom : 0;
+  const balken = [...document.querySelectorAll(BALKEN_ONDER)]
+    .filter(b => b.getClientRects().length && getComputedStyle(b).position === 'fixed')
+    .map(b => b.getBoundingClientRect().top);
+  const onder = Math.min(window.innerHeight, ...balken);
+  const top = k.bottom - hoog;
+  let schuif = 0;
+  if (top < boven + 12) schuif = top - boven - 12;
+  else if (k.bottom > onder - 12) schuif = k.bottom - onder + 12;
+  if (schuif) window.scrollBy({ top: Math.round(schuif), behavior: 'auto' });
 }
 
 // Na de keuze in het menu. Een grens meldt de app vóór de handeling (app-gedrag,
