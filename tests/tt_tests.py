@@ -19082,6 +19082,176 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
     check("blok 156: geen paginafouten", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_tt613():
+    print("\nBlok 159 — TT-613: zolang een menu open is, staat de pagina stil (besluit Ronald 14-11-2026, \"A\"); een veeg verschuift niets, een tik ernaast sluit")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten = []
+    uit = {}
+    MEET = r"""(sel) => { const m = document.querySelector(sel), r = m.getBoundingClientRect();
+      const balk = [...document.querySelectorAll('#appBottomNav, .wizard-action-bar')].filter(b => b.getClientRects().length && getComputedStyle(b).position === 'fixed').map(b => b.getBoundingClientRect().top);
+      return { y: Math.round(scrollY), top: Math.round(r.top), onder: Math.round(r.bottom), open: m.classList.contains('open') || m.classList.contains('visible'),
+        laag: !!document.querySelector('.menu-laag'), balk: balk.length ? Math.round(Math.min(...balk)) : null, menuScroll: Math.round(m.scrollTop),
+        vast: document.body.style.overflow, vlakVast: document.querySelectorAll('.menu-scroll-vast').length, kan: document.documentElement.scrollHeight > innerHeight + 1 }; }"""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        def nieuw(breed=390, hoog=640):
+            ctx = browser.new_context(viewport={"width": breed, "height": hoog}, color_scheme="dark", is_mobile=True, has_touch=True)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**", "**/x.test/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(500)
+            page.evaluate(BLOK146_DATA)
+            page.evaluate("() => { currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true; }")
+            return ctx, page, ctx.new_cdp_session(page)
+        def veeg(cdp, page, x, y0, y1):
+            # Een echte vingerveeg: aanraken, in stappen bewegen, loslaten.
+            cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": x, "y": y0}]})
+            for i in range(1, 13):
+                cdp.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [{"x": x, "y": y0 + (y1 - y0) * i / 12}]})
+                page.wait_for_timeout(16)
+            cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+            page.wait_for_timeout(600)
+        def ronde(page, cdp, sel, open_js, x_laag=200):
+            """Open het menu met een tik, veeg op de laag en op het menu (omhoog en omlaag) en met het muiswiel; tik ernaast; veeg weer."""
+            u = {}
+            if open_js.startswith("#") or open_js.startswith("."):
+                page.click(open_js)
+            else:
+                page.evaluate(open_js)
+            page.wait_for_timeout(700)
+            u["open"] = page.evaluate(MEET, sel)
+            h = page.evaluate("innerHeight")
+            veeg(cdp, page, x_laag, 120, h - 120); u["laagOmlaag"] = page.evaluate(MEET, sel)
+            veeg(cdp, page, x_laag, h - 120, 120); u["laagOmhoog"] = page.evaluate(MEET, sel)
+            r = page.evaluate("(sel) => { const b = document.querySelector(sel).getBoundingClientRect(); return [b.left + b.width / 2, b.top + 22, b.bottom - 22]; }", sel)
+            veeg(cdp, page, r[0], r[1], r[1] + 160); u["menuOmlaag"] = page.evaluate(MEET, sel)
+            veeg(cdp, page, r[0], r[2], r[2] - 160); u["menuOmhoog"] = page.evaluate(MEET, sel)
+            page.mouse.move(x_laag, h / 2); page.mouse.wheel(0, 300); page.wait_for_timeout(500); u["wiel"] = page.evaluate(MEET, sel)
+            # Een tik ernaast sluit; daarna schuift de pagina weer.
+            page.evaluate("() => document.querySelector('.menu-laag')?.click()"); page.wait_for_timeout(500)
+            u["dicht"] = page.evaluate(MEET, sel)
+            page.evaluate("scrollTo(0, 0)"); page.wait_for_timeout(200)
+            veeg(cdp, page, x_laag, h - 150, 150); u["naSluiten"] = page.evaluate(MEET, sel)
+            return u
+
+        LANG = "() => { while (mhMediaLinks.length + mhMediaFiles.length < 8) mhMediaLinks.push({ url: 'https://x.test/' + mhMediaLinks.length, type: 'link' }); mhRenderMediaGrid(); }"
+        MEDIAHOEK = "async () => { const w = n => new Promise(r => setTimeout(r, n)); showView('profieltegels'); await w(300); openTegelScreen('mediahoek'); await w(800); }"
+        # 1. De melding van Ronald: "+ Toevoegen" in Je mediahoek, met 8 media.
+        for hoog in (844, 640):
+            ctx, page, cdp = nieuw(hoog=hoog)
+            page.evaluate(MEDIAHOEK); page.evaluate(LANG); page.wait_for_timeout(300)
+            uit[("toevoegen", hoog)] = ronde(page, cdp, "#mhMediaToevoegenMenu", "#mhMediaToevoegen")
+            ctx.close()
+        # 2. Het hamburgermenu, op dezelfde lange pagina.
+        ctx, page, cdp = nieuw()
+        page.evaluate(MEDIAHOEK); page.evaluate(LANG); page.evaluate("scrollTo(0, 120)"); page.wait_for_timeout(300)
+        uit["hamburger"] = ronde(page, cdp, "#navMenuDropdown", "#navMenuBtn")
+        ctx.close()
+        # 3. De beheersing in Je setlist, bij het achtste van twaalf nummers.
+        ctx, page, cdp = nieuw()
+        page.evaluate("async () => { const w = n => new Promise(r => setTimeout(r, n)); showView('profieltegels'); await w(300); openTegelScreen('jeSetlist'); await w(600);"
+                      " jstSongs = Array.from({ length: 12 }, (_, i) => ({ title: 'Nummer ' + (i + 1), artist: 'Band', level: null })); jstRenderSongs(); await w(300);"
+                      " document.getElementById('jstbehVeld7').scrollIntoView({ block: 'center' }); await w(300); }")
+        uit["beheersing"] = ronde(page, cdp, "#jstbehMenu7", "#jstbehVeld7", x_laag=60)
+        ctx.close()
+        # 4. Zoeken: Sorteren (keuzemenu) en Instrument (meer dan zeven regels, scrolt zelf).
+        ctx, page, cdp = nieuw()
+        page.evaluate("async () => { const w = n => new Promise(r => setTimeout(r, n)); showView('search'); openZoekScherm('muzikanten', { geenZoek: true });"
+                      " if (document.getElementById('zoekFilterVak').hidden) toggleZoekFilters(); await w(400); scrollTo(0, 0); }")
+        page.evaluate("() => { const v = document.querySelector('#view-search'); v.style.minHeight = (innerHeight * 3) + 'px'; }")  # pagina die kan schuiven
+        uit["sorteren"] = ronde(page, cdp, "#filterSortModeMenu", "#filterSortModeField")
+        page.evaluate("scrollTo(0, 0)"); page.wait_for_timeout(200)
+        page.click("#filterInstrumentsField"); page.wait_for_timeout(700)
+        i0 = page.evaluate(MEET, "#filterInstrumentsMenu")
+        r = page.evaluate("() => { const b = document.getElementById('filterInstrumentsMenu').getBoundingClientRect(); return [b.left + b.width / 2, b.bottom - 30]; }")
+        veeg(cdp, page, r[0], r[1], r[1] - 150)
+        uit["instrument"] = [i0, page.evaluate(MEET, "#filterInstrumentsMenu"),
+                             page.evaluate("() => { const m = document.getElementById('filterInstrumentsMenu'); return [m.scrollHeight > m.clientHeight, getComputedStyle(m).overscrollBehaviorY]; }")]
+        page.evaluate("sluitAlleMenus()")
+        ctx.close()
+        # 5. Het ⋯-menu op het profiel van een ander.
+        ctx, page, cdp = nieuw()
+        page.evaluate("async () => { const S = window.TT_STUB; S.data.musicians.find(m => m.id === 'm2').bio = 'Lange bio. '.repeat(400);"
+                      " openProfielScherm('m2'); await new Promise(r => setTimeout(r, 1200)); scrollTo(0, 0); }")
+        uit["puntjes"] = ronde(page, cdp, "#profielSchermActies .inline-menu-dropdown", "#profielSchermActies .nav-menu-btn")
+        ctx.close()
+        # 6. Een menu in een venster: het venster scrolt niet zolang het menu open is.
+        ctx, page, cdp = nieuw(breed=844, hoog=390)  # een telefoon dwars
+        page.evaluate("async () => { await vraagAccountVerwijderen(); await new Promise(r => setTimeout(r, 600)); }")
+        doos = "() => { const m = document.querySelector('#confirmModal .modal-box'); return [Math.round(m.scrollTop), m.scrollHeight > m.clientHeight, m.classList.contains('menu-scroll-vast')]; }"
+        v = {}
+        if page.evaluate("!!document.getElementById('accountBandTegel0')"):
+            # Een venster met meer tekst dan in beeld past: het venster scrolt dan zelf.
+            page.evaluate("() => { const z = document.getElementById('confirmMessage'); z.textContent = z.textContent + ' Lange uitleg.'.repeat(60); document.querySelector('#confirmModal .modal-box').scrollTop = 0; }")
+            page.click("#accountBandTegel0"); page.wait_for_timeout(700)
+            v["open"] = page.evaluate(doos)
+            r = page.evaluate("() => { const b = document.querySelector('#confirmModal .modal-box').getBoundingClientRect(); return [b.left + 30, b.top + 40]; }")
+            veeg(cdp, page, r[0], r[1] + 200, r[1])
+            v["naVeeg"] = page.evaluate(doos)
+            page.evaluate("sluitAlleMenus()"); page.wait_for_timeout(400)
+            v["dicht"] = [page.evaluate(doos), page.evaluate("document.body.style.overflow")]
+        uit["venster"] = v
+        ctx.close()
+        browser.close()
+        # 7. Op een computer met een schuifbalk die breedte inneemt: de app verspringt niet.
+        browser = p.chromium.launch(ignore_default_args=["--hide-scrollbars"])
+        ctx = browser.new_context(viewport={"width": 1280, "height": 700}, color_scheme="dark")
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: fouten.append(str(e)))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**", "**/x.test/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load"); page.wait_for_timeout(500)
+        page.evaluate(BLOK146_DATA); page.evaluate(MEDIAHOEK); page.evaluate(LANG); page.wait_for_timeout(300)
+        links = "() => [innerWidth - document.documentElement.clientWidth, Math.round(document.getElementById('appRoot').getBoundingClientRect().left * 10) / 10]"
+        d = {"dicht": page.evaluate(links)}
+        page.click("#navMenuBtn"); page.wait_for_timeout(400); d["hamburger"] = page.evaluate(links)
+        page.keyboard.press("Escape"); page.wait_for_timeout(300)
+        page.click("#mhMediaToevoegen"); page.wait_for_timeout(700); d["toevoegen"] = page.evaluate(links)
+        page.keyboard.press("Escape"); page.wait_for_timeout(400); d["weerDicht"] = page.evaluate(links)
+        page.evaluate("showConfirm('Proef.', () => {}, 'Ja')"); page.wait_for_timeout(400); d["venster"] = page.evaluate(links)
+        uit["computer"] = d
+        browser.close()
+    httpd.shutdown()
+
+    def stil(u, a, b):
+        return u[a]["y"] == u[b]["y"] and u[a]["top"] == u[b]["top"] and u[b]["open"] and u[b]["laag"]
+    for naam, sleutel in (("+ Toevoegen, 390×844", ("toevoegen", 844)), ("+ Toevoegen, 390×640", ("toevoegen", 640)), ("hamburgermenu", "hamburger"),
+                          ("Beheersing in Je setlist", "beheersing"), ("Sorteren in Zoeken", "sorteren"), ("⋯-menu op een profiel", "puntjes")):
+        u = uit[sleutel]
+        check(f"TT-613 {naam}: een vingerveeg op de donkere laag, omlaag en omhoog, verschuift de pagina en het menu niet; het menu blijft open",
+              u["open"]["open"] and u["open"]["vast"] == "hidden" and stil(u, "open", "laagOmlaag") and stil(u, "open", "laagOmhoog"), json.dumps([u["open"], u["laagOmlaag"], u["laagOmhoog"]]))
+        check(f"TT-613 {naam}: een veeg op het menu zelf en het muiswiel verschuiven niets",
+              stil(u, "open", "menuOmlaag") and stil(u, "open", "menuOmhoog") and stil(u, "open", "wiel"), json.dumps([u["menuOmlaag"], u["menuOmhoog"], u["wiel"]]))
+        check(f"TT-613 {naam}: een tik ernaast sluit; daarna schuift de pagina weer met een veeg",
+              not u["dicht"]["open"] and not u["dicht"]["laag"] and u["dicht"]["vast"] == "" and u["dicht"]["vlakVast"] == 0 and (u["naSluiten"]["y"] > 0 or not u["dicht"]["kan"]),
+              json.dumps([u["dicht"], u["naSluiten"]]))
+    check("TT-613 de proef zelf: na sluiten schoof de pagina weer bij minstens vier van de zes menu's (een korte pagina kan niet schuiven)",
+          sum(1 for k in (("toevoegen", 844), ("toevoegen", 640), "hamburger", "beheersing", "sorteren", "puntjes") if uit[k]["naSluiten"]["y"] > 0) >= 4,
+          json.dumps({str(k): uit[k]["naSluiten"]["y"] for k in (("toevoegen", 844), ("toevoegen", 640), "hamburger", "beheersing", "sorteren", "puntjes")}))
+    for hoog in (844, 640):
+        u = uit[("toevoegen", hoog)]
+        check(f"TT-613 + Toevoegen, 390×{hoog}: het menu blijft na elke veeg minstens 12px boven de balk Opslaan (melding Ronald: \"het valt over de opslaan knop heen\")",
+              all(u[k]["balk"] is not None and u[k]["onder"] <= u[k]["balk"] - 12 for k in ("open", "laagOmlaag", "laagOmhoog", "menuOmlaag", "menuOmhoog", "wiel")),
+              json.dumps({k: [u[k]["onder"], u[k]["balk"]] for k in ("open", "laagOmlaag", "wiel")}))
+    i0, i1, iv = uit["instrument"]
+    check("TT-613 Instrument in Zoeken (meer dan zeven regels): een veeg op het menu scrolt het menu zelf, de pagina staat stil",
+          iv[0] and iv[1] == "contain" and i1["menuScroll"] > i0["menuScroll"] and i1["y"] == i0["y"] and i1["top"] == i0["top"] and i1["open"], json.dumps([i0, i1, iv]))
+    v = uit["venster"]
+    check("TT-613 een menu in een venster (Account verwijderen, telefoon dwars 844×390): het venster scrolt niet zolang het menu open is; na sluiten weer vrij, de pagina blijft vast onder het venster",
+          bool(v) and v["open"][1] and v["open"][2] and v["naVeeg"][0] == v["open"][0] and v["dicht"][0][2] is False and v["dicht"][1] == "hidden", json.dumps(v))
+    d = uit["computer"]
+    check("TT-613 computer met schuifbalk: de app verspringt niet als een menu of venster opent of sluit",
+          d["dicht"][0] > 0 and len({d[k][1] for k in d}) == 1, json.dumps(d))
+    check("Blok 159: geen JS-fouten", not fouten, "; ".join(fouten)[:500])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -19138,6 +19308,7 @@ BLOKKEN = [
     blok_tt595_tt596,
     blok_bundel_133,
     blok_bundel_135,
+    blok_tt613,
 ]
 
 

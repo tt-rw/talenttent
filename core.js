@@ -681,14 +681,24 @@ function menuLaagOpen(dd) {
   // stond dan over de kop heen (gemeten in Wat speel je). <main> verliest zolang
   // het menu openstaat zijn z-index (.menu-drager-plat); de laag ligt dan, net als
   // in Zoeken, over de kop en de onderbalk.
+  // TT-613 (besluit Ronald 14-11-2026, "A"): zolang een menu open is, staat
+  // de pagina stil, ook een vlak dat zelf scrolt (een venster, een tegelscherm).
+  // Tot 14-11-2026 schoof de pagina onder een open menu gewoon door, en het menu
+  // schoof mee over de balk Opslaan en uit beeld. Een menu met meer dan zeven
+  // regels scrolt zelf (het menu is geen ouder, en houdt overscroll-behavior).
   for (let x = dd.parentElement; x && x !== document.body; x = x.parentElement) {
     if (x.classList.contains('modal-overlay')) break;
-    if (getComputedStyle(x).zIndex !== 'auto') x.classList.add(x.tagName === 'MAIN' ? 'menu-drager-plat' : 'menu-drager');
+    const st = getComputedStyle(x);
+    if (/auto|scroll/.test(st.overflowY) && x.scrollHeight > x.clientHeight) x.classList.add('menu-scroll-vast');
+    if (st.zIndex !== 'auto') x.classList.add(x.tagName === 'MAIN' ? 'menu-drager-plat' : 'menu-drager');
   }
+  syncModalScrollLock();
 }
 function menuLaagWeg() {
   document.querySelectorAll('.menu-laag').forEach(l => l.remove());
   document.querySelectorAll('.menu-drager, .menu-drager-plat').forEach(x => x.classList.remove('menu-drager', 'menu-drager-plat'));
+  document.querySelectorAll('.menu-scroll-vast').forEach(x => x.classList.remove('menu-scroll-vast'));
+  syncModalScrollLock();
 }
 function sluitAlleMenus() {
   closeNavMenu();
@@ -1516,10 +1526,16 @@ function onderbalkHoogteZetten() {
 // TT-U25 (12-08-2026): zolang een modal open is, mag de pagina eronder niet
 // meescrollen. Eén waarnemer op alle modals is betrouwbaarder dan bij elke
 // open- en sluitplek apart een regel toevoegen — de app opent modals op
-// veertien plekken.
+// veertien plekken. TT-613 (14-11-2026): ook zolang een menu open is; daar
+// roepen menuLaagOpen() en menuLaagWeg() deze functie aan.
 function syncModalScrollLock() {
-  const open = !!document.querySelector('.modal-overlay.visible');
-  document.body.style.overflow = open ? 'hidden' : '';
+  const vast = !!document.querySelector('.modal-overlay.visible, .menu-laag');
+  const html = document.documentElement;
+  // Een schuifbalk die breedte inneemt (een computer), laat zijn goot staan;
+  // anders verspringt de app opzij zodra een menu of venster opent.
+  if (!vast) html.style.scrollbarGutter = '';
+  else if (document.body.style.overflow !== 'hidden') html.style.scrollbarGutter = innerWidth > html.clientWidth ? 'stable' : '';
+  document.body.style.overflow = vast ? 'hidden' : '';
 }
 (function bewaakModals() {
   // TT-301: dezelfde waarnemer werkt ook de terugknop bij. Een modal openen

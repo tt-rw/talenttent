@@ -2989,6 +2989,11 @@
   /* <main> gaat niet omhoog maar verliest zijn eigen stapellaag (TT-543
      draaiwielen deel 2, 8D 10-11-2026): omhoog stond de pagina boven de kop. */
   .menu-drager-plat { z-index: auto !important; }
+  /* TT-613 (besluit Ronald 14-11-2026, "A"): een vlak dat zelf scrolt, staat
+     stil zolang er een menu in open is (core.js, menuLaagOpen()). De pagina
+     zelf zet syncModalScrollLock() vast. De goot blijft, zodat niets verspringt
+     waar een schuifbalk breedte inneemt. */
+  .menu-scroll-vast { overflow-y: hidden !important; scrollbar-gutter: stable; }
 
   /* TT-63 (09-08-2026): documentweergaven (privacy/voorwaarden/gedragscode).
      TT-543 onderdeel 9 (besluit Ronald 13-11-2026, V1 D): de leespagina's
