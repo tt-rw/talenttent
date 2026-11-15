@@ -1325,6 +1325,9 @@ async function fotoVerkleinen(file) {
   }
 }
 
+// Een te grote video: de melding staat 8 seconden in beeld (TT-571).
+const VIDEO_TE_GROOT_MS = 8000;
+
 // Geeft null als het bestand mag, anders de melding voor de gebruiker. Een foto
 // (behalve GIF) hoeft niet klein te zijn: die verkleint de app zelf.
 function bestandTeGrootMelding(file, maxBytes) {
@@ -1337,7 +1340,9 @@ function bestandTeGrootMelding(file, maxBytes) {
   }
   if (file.size <= maxBytes) return null;
   const maxMb = Math.round(maxBytes / 1024 / 1024);
-  if (type.startsWith('video/')) return `${naam}is een video van ${mb} MB. Maximaal ${maxMb} MB. Kort de video in of kies een kortere opname.`;
+  // TT-571 (besluit Ronald 14-11-2026): de tekst van Ronald; een vaste spatie
+  // (U+00A0) houdt "50 MB" op één regel. Hij staat 8 seconden in beeld.
+  if (type.startsWith('video/')) return `Deze video is helaas te groot. Kies er een tot ${maxMb}\u00a0MB, of voeg hem toe als link.`;
   return `${naam}is ${mb} MB. Maximaal ${maxMb} MB. Gebruik een JPG of PNG, die verkleint de app zelf.`;
 }
 
@@ -1600,7 +1605,7 @@ function handleFileSelect(files) {
     // vóór de preview en vóór de upload.
     const typeProblem = fileTypeProblem(file, MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
     if (typeProblem) { showToast(`"${file.name}": ${typeProblem}`); return; }
-    { const groot = bestandTeGrootMelding(file, 50 * 1024 * 1024); if (groot) { showToast(groot); return; } }
+    { const groot = bestandTeGrootMelding(file, 50 * 1024 * 1024); if (groot) { showToast(groot, isVideo ? VIDEO_TE_GROOT_MS : undefined); return; } }
 
     const blobUrl = URL.createObjectURL(file);
     const type = isVideo ? 'video' : 'foto';

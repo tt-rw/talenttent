@@ -9200,8 +9200,8 @@ window.TT_STUB.fnAntwoord = {};
               d80["miniZelfde"] and d80["gifZelfde"], j80)
         check("TT-446: een foto van 12 MB wordt niet meer geweigerd, een van 40 MB wel met een duidelijke tekst",
               d80["foto12"] is None and "30 MB" in (d80["foto40"] or ""), j80)
-        check("TT-446: een video boven 50 MB zegt wat je doet; een grote GIF wijst naar JPG of PNG",
-              "Kort de video in" in (d80["video"] or "") and "JPG of PNG" in (d80["gif"] or ""), j80)
+        check("TT-446: een video boven 50 MB zegt wat je doet (TT-571: de tekst van Ronald, 14-11-2026); een grote GIF wijst naar JPG of PNG",
+              d80["video"] == "Deze video is helaas te groot. Kies er een tot 50\u00a0MB, of voeg hem toe als link." and "JPG of PNG" in (d80["gif"] or ""), j80)
         bron80 = "".join(open(os.path.join(ROOT, x), encoding="utf-8").read() for x in ["wizard.js", "musicians.js", "bands.js"])
         check("TT-446: geen vaste grens van 5 MB meer op foto's in de schermen",
               "Afbeelding is te groot" not in bron80, "")
@@ -11002,8 +11002,6 @@ window.TT_STUB.fnAntwoord = {};
           const kort = [...document.querySelector('#searchResults .result-row-zoekt').children];
           u.zoektKort = { tekst: kort.map(x => x.textContent), rechts: kort.map(x => Math.round(r(x.parentElement).right - r(x).right)) };
           setMusicianViewMode('list');
-          // Uitleg in het uitsnedevenster.
-          u.uitlegTekst = document.querySelector('#uitsnedeModal .uitsnede-hint').textContent;
           // 3. De kaart: vierkante foto tot de rand, naam volledig, twee regels, knop op de foto.
           setMusicianViewMode('grid'); renderZoekResultaten([band, muz]); await w(100);
           const kaarten = [...document.querySelectorAll('#searchResults .zoek-kaart')];
@@ -11021,6 +11019,8 @@ window.TT_STUB.fnAntwoord = {};
           const blob = await new Promise(ok => cv.toBlob(ok, 'image/png'));
           const bestand = new File([blob], 'liggend.png', { type: 'image/png' });
           const belofte = kiesUitsnede(bestand, 'rond'); await w(400);
+          // Uitleg in het uitsnedevenster (TT-542): per vorm, gelezen in het open venster.
+          u.uitlegTekst = { rond: document.querySelector('#uitsnedeModal .uitsnede-hint').textContent };
           const vlak = $('uitsnedeVlak'), img = $('uitsnedeImg'), z = vlak.clientWidth;
           const dekt = () => { const a = r(img), b = r(vlak); return a.left <= b.left + 0.5 && a.top <= b.top + 0.5 && a.right >= b.right - 0.5 && a.bottom >= b.bottom - 0.5; };
           u.uit = { open: $('uitsnedeModal').classList.contains('visible'), titel: $('uitsnedeTitel').textContent,
@@ -11048,6 +11048,7 @@ window.TT_STUB.fnAntwoord = {};
           // Afbreken met het kruisje: null, venster dicht.
           const b2 = kiesUitsnede(bestand, 'vierkant'); await w(300);
           u.uit.band = !$('uitsnedeKlein').classList.contains('rond') && !$('uitsnedeKlein').hidden && $('uitsnedeTitel').textContent === 'Bandfoto';
+          u.uitlegTekst.vierkant = document.querySelector('#uitsnedeModal .uitsnede-hint').textContent;
           $('uitsnedeAnnuleren').click();
           u.uit.afgebroken = (await b2) === null && !$('uitsnedeModal').classList.contains('visible');
           // 5. Geen GIF als profielfoto of bandfoto; bij media wel.
@@ -11067,7 +11068,8 @@ window.TT_STUB.fnAntwoord = {};
               and d97["zoekt"]["onder"] == 16 and abs(d97["zoekt"]["midden"]) <= 1 and d97["zoekt"]["rechts"] == 0, j97("zoekt"))
         check("is het instrument korter dan 'Zoekt' (DJ), dan staan beide rechts (besluit Ronald 27-10-2026)",
               d97["zoektKort"] == {"tekst": ["Zoekt", "DJ"], "rechts": [0, 0]}, j97("zoektKort"))
-        check("uitsnede: de uitleg is 'Schuif en zoom tot de foto goed staat.'", d97["uitlegTekst"] == "Schuif en zoom tot de foto goed staat.", j97("uitlegTekst"))
+        check("uitsnede: de zin is bij een profielfoto 'Jij met je instrument valt het meest op.' en bij een bandfoto 'Jullie samen op een foto vallen het meest op.' (TT-542, besluit Ronald 14-11-2026, \"A\")",
+              d97["uitlegTekst"] == {"rond": "Jij met je instrument valt het meest op.", "vierkant": "Jullie samen op een foto vallen het meest op."}, j97("uitlegTekst"))
         kk = d97["kaarten"]["k"]
         check("kaart: vierkante foto tot de rand van de kaart (ook bij een band)",
               all(x["foto"][0] == x["foto"][1] and x["randLinks"] <= 1 for x in kk), j97("kaarten"))
@@ -18495,8 +18497,8 @@ def blok_tt543_onderdeel9():
     check("F1 E: privacyverklaring hoofdstuk 3 zegt alleen door te geven aan de partijen in hoofdstuk 7; cloud86 staat in hoofdstuk 7; geen zin over advertenties",
           "<p>Wij geven je gegevens alleen door aan de partijen in hoofdstuk 7.</p>" in priv and "<li>cloud86: verstuurt de e-mails van de app.</li>" in priv
           and "advertenties" not in priv, "")
-    check("de datum 'Laatst bijgewerkt' is 13 november 2026 op de drie pagina's die wijzigden",
-          all("Laatst bijgewerkt: 13 november 2026" in d for d in (priv, voorw, gedrag)), "")
+    check("de datum 'Laatst bijgewerkt' is 13 november 2026 op de voorwaarden en de gedragscode; de privacyverklaring 14 november 2026 (bundel 1, TT-72; zie ook blok 131)",
+          "Laatst bijgewerkt: 14 november 2026" in priv and all("Laatst bijgewerkt: 13 november 2026" in d for d in (voorw, gedrag)), "")
     stub_js = open(STUB, encoding="utf-8").read()
     httpd, port = serve()
     fouten, uitslag = [], {}
@@ -19297,6 +19299,83 @@ def blok_bundel1_mails():
     check("Blok 160: geen JS-fouten", not fouten, "; ".join(fouten)[:500])
 
 
+def blok_bundel1_media():
+    print("\nBlok 161 — bundel 1 (15-11-2026): de zin in het fotovenster per plek (TT-542) en de melding bij een te grote video op de drie plekken, 8 seconden (TT-571)")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten = []
+    PROFIEL = "Jij met je instrument valt het meest op."
+    BAND = "Jullie samen op een foto vallen het meest op."
+    BANNER = "Schuif en zoom tot de foto goed staat."
+    VIDEO = "Deze video is helaas te groot. Kies er een tot 50 MB, of voeg hem toe als link."
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        uit = {}
+        for breed in (390, 360):
+            ctx = browser.new_context(viewport={"width": breed, "height": 844}, color_scheme="dark", is_mobile=True, has_touch=True)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e)))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**", "**/x.test/**"):
+                page.route(pat, lambda r: r.abort())
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(500)
+            uit[breed] = page.evaluate("""async () => {
+              const w = ms => new Promise(r => setTimeout(r, ms));
+              const u = { zin: {}, toast: {}, regels: {} };
+              const cv = document.createElement('canvas'); cv.width = 900; cv.height = 600;
+              cv.getContext('2d').fillRect(0, 0, 900, 600);
+              const blob = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+              const foto = () => new File([blob], 'foto.png', { type: 'image/png' });
+              const hint = () => document.querySelector('#uitsnedeModal .uitsnede-hint');
+              const regels = e => Math.round(e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).lineHeight));
+              // De echte routes: wizard (profielfoto), Je mediahoek (profielfoto), Onze media (bandfoto), een bannerfoto.
+              const routes = [['wizard', () => handleAvatarUpload(foto())], ['mediahoek', () => mhHandleAvatarUpload(foto())],
+                              ['onzeMedia', () => bmFotoKiezen(foto())], ['banner', () => kiesUitsnede(foto(), 'banner')]];
+              for (const [naam, start] of routes) {
+                start(); await w(400);
+                u.zin[naam] = hint().textContent; u.regels[naam] = regels(hint());
+                document.getElementById('uitsnedeAnnuleren').click(); await w(200);
+              }
+              // De melding: de echte keuze van een bestand op de drie plekken, met de duur die showToast krijgt.
+              const echt = window.showToast, oproepen = [];
+              window.showToast = (t, d) => { oproepen.push([t, d === undefined ? null : d]); return echt(t, d); };
+              const video = new File([new Uint8Array(60 * 1024 * 1024)], 'optreden.mp4', { type: 'video/mp4' });
+              const grotefoto = new File([new Uint8Array(40 * 1024 * 1024)], 'groot.jpg', { type: 'image/jpeg' });
+              for (const [naam, fn] of [['wizard', handleFileSelect], ['mediahoek', mhHandleFileSelect], ['onzeMedia', bmHandleFileSelect]]) {
+                oproepen.length = 0; fn([video]); u.toast[naam] = oproepen.slice();
+                oproepen.length = 0; fn([grotefoto]); u.toast[naam + 'Foto'] = oproepen.slice();
+              }
+              window.showToast = echt;
+              // De echte duur: na 7,5 seconden staat hij er nog, na 8,5 niet meer.
+              const t = document.getElementById('appToast');
+              handleFileSelect([video]); await w(400);
+              u.regels.toast = Math.round((t.clientHeight - parseFloat(getComputedStyle(t).paddingTop) - parseFloat(getComputedStyle(t).paddingBottom)) / parseFloat(getComputedStyle(t).lineHeight));
+              const r50 = document.createRange(); const tn = t.firstChild; const i = tn.textContent.indexOf('50');
+              r50.setStart(tn, i); r50.setEnd(tn, i + 5); u.vijftigEenRegel = r50.getClientRects().length === 1;
+              await w(7100); u.na75 = t.classList.contains('visible');
+              await w(1000); u.na85 = t.classList.contains('visible');
+              return u;
+            }""")
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    for breed, u in uit.items():
+        j = json.dumps(u, ensure_ascii=False)
+        check(f"TT-542 ({breed}): de zin in het fotovenster is bij een profielfoto (wizard, Je mediahoek) '{PROFIEL}', bij een bandfoto '{BAND}', bij een bannerfoto de oude zin",
+              u["zin"] == {"wizard": PROFIEL, "mediahoek": PROFIEL, "onzeMedia": BAND, "banner": BANNER}, j)
+        check(f"TT-542 ({breed}): de zin staat op één regel", all(u["regels"][k] == 1 for k in ("wizard", "mediahoek", "onzeMedia", "banner")), json.dumps(u["regels"]))
+        check(f"TT-571 ({breed}): een video boven 50 MB geeft op alle drie de plekken de tekst van Ronald, 8 seconden (besluiten Ronald 14-11-2026)",
+              all(u["toast"][k] == [[VIDEO, 8000]] for k in ("wizard", "mediahoek", "onzeMedia")), j)
+        check(f"TT-571 ({breed}): een te grote foto houdt zijn eigen melding en de gewone duur",
+              all(len(u["toast"][k + "Foto"]) == 1 and "30 MB" in u["toast"][k + "Foto"][0][0] and u["toast"][k + "Foto"][0][1] is None
+                  for k in ("wizard", "mediahoek", "onzeMedia")), j)
+        check(f"TT-571 ({breed}): de melding staat na 7,5 seconden nog in beeld en is na 8,5 seconden weg", u["na75"] and not u["na85"], j)
+        check(f"TT-571 ({breed}): '50 MB' breekt niet over twee regels (vaste spatie)", u["vijftigEenRegel"], j)
+    check("geen paginafouten in blok 161", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -19355,6 +19434,7 @@ BLOKKEN = [
     blok_bundel_135,
     blok_tt613,
     blok_bundel1_mails,
+    blok_bundel1_media,
 ]
 
 

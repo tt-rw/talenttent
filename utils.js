@@ -3199,6 +3199,11 @@ const UITSNEDE_MAX_PX = 1080;
 const UITSNEDE_MAX_ZOOM = 4;
 let uitsnede = null; // { img, url, eigenUrl, vlak, vorm, schaal0, zoom, x, y, klaar, wijzers }
 
+const UITSNEDE_ZIN = {
+  rond: 'Jij met je instrument valt het meest op.',
+  vierkant: 'Jullie samen op een foto vallen het meest op.',
+  banner: 'Schuif en zoom tot de foto goed staat.',
+};
 function kiesUitsnede(bron, vorm, kader) {
   return new Promise((klaar) => {
     if (uitsnede) uitsnedeAfsluiten(null);
@@ -3211,6 +3216,9 @@ function kiesUitsnede(bron, vorm, kader) {
       schaal0: 1, zoom: 1, x: 0, y: 0, klaar, wijzers: new Map(), start: uitsnedeGeldig(kader) };
     document.getElementById('uitsnedeTitel').textContent =
       vorm === 'rond' ? 'Profielfoto' : vorm === 'banner' ? 'Bannerfoto' : 'Bandfoto';
+    // TT-542 (besluit Ronald 14-11-2026, "A"): de zin noemt wat opvalt; de
+    // bannerfoto houdt de oude zin.
+    modal.querySelector('.uitsnede-hint').textContent = UITSNEDE_ZIN[vorm];
     const klein = document.getElementById('uitsnedeKlein');
     klein.hidden = vorm === 'banner';
     klein.classList.toggle('rond', vorm === 'rond');

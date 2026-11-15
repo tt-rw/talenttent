@@ -1541,7 +1541,7 @@ function mhHandleFileSelect(files) {
     const isVideo = (file.type || '').toLowerCase().startsWith('video/');
     const typeProblem = fileTypeProblem(file, MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
     if (typeProblem) { showToast(`"${file.name}": ${typeProblem}`); return; }
-    { const groot = bestandTeGrootMelding(file, 50 * 1024 * 1024); if (groot) { showToast(groot); return; } }
+    { const groot = bestandTeGrootMelding(file, 50 * 1024 * 1024); if (groot) { showToast(groot, isVideo ? VIDEO_TE_GROOT_MS : undefined); return; } }
 
     const blobUrl = URL.createObjectURL(file);
     const type = isVideo ? 'video' : 'foto';
