@@ -3897,6 +3897,9 @@
   .meld-toelichting-veld { margin-bottom: 16px; }
   .meld-toelichting-veld:has(+ .teken-teller:not([hidden])) { margin-bottom: 4px; }
   .meld-toelichting-veld + .teken-teller { margin: 0 0 16px; }
+  /* TT-626 (besluit Ronald 15-11-2026, sessie 149): de bio en Wie zijn we hoogstens
+     1000 tekens; de teller staat als een uitlegregel 8px onder het veld, rechts. */
+  .field > .teken-teller { margin-top: calc(var(--ruimte-uitleg) - var(--ruimte-label)); }
 
   /* Muzikant detail modal */
   /* TT-190 (04-09-2026): Ronald wil elk scherm/modal openen onder 0,1s.

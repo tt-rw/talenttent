@@ -75,6 +75,7 @@ function populateWizardFieldsFromState() {
   document.getElementById('postcodeStatus').textContent = '';
   document.getElementById('bio').value = state.bio;
   veldGroeit(document.getElementById('bio')); // TT-543 laag 3, 3-10
+  updateCharCounter('bio', 'bioTeller', 1000); // TT-626: teller bij de laatste 200 tekens
   naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen);
 
   renderInstrumentBadges('wizard');
@@ -1068,21 +1069,10 @@ async function nextStep(from) {
       fouten.push(['fname', 'Deze naam is te lang om op je profiel te tonen. Maak hem korter']);
     }
 
-    const bdMatch = state.birth_date.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-    const bdDay   = bdMatch ? parseInt(bdMatch[1], 10) : 0;
-    const bdMonth = bdMatch ? parseInt(bdMatch[2], 10) : 0;
+    // TT-625: één controle, ook in de tegel Wie ben je (geboortedatumFout() in utils.js).
     const leeftijd = calcAge(state.birth_date);
-    if (!state.birth_date) {
-      fouten.push(['birth_date', 'Vul je geboortedatum in']);
-    } else if (!bdMatch) {
-      fouten.push(['birth_date', 'Voer je geboortedatum in als DD-MM-JJJJ, bijvoorbeeld 01-02-2001']);
-    } else if (bdDay < 1 || bdDay > 31 || bdMonth < 1 || bdMonth > 12) {
-      fouten.push(['birth_date', 'Deze datum bestaat niet. Controleer dag en maand']);
-    } else if (isNaN(leeftijd) || leeftijd < 13) {
-      fouten.push(['birth_date', 'Je moet minimaal 13 jaar zijn om een profiel aan te maken']);
-    } else if (leeftijd > 100) {
-      fouten.push(['birth_date', 'Controleer je geboortedatum']);
-    }
+    const datumFout = geboortedatumFout(state.birth_date);
+    if (datumFout) fouten.push(['birth_date', datumFout]);
 
     if (!state.zip || !postcodeResolved || !state.city) {
       fouten.push(['zip', 'Vul een geldige postcode in. Je woonplaats wordt dan automatisch ingevuld']);

@@ -273,6 +273,7 @@ async function openMeldModal(soort, id, naam) {
   if (id && await alGemeld(id)) { naMelding(soort, id, naam, true); return; }
   meldDoel = { soort, id, naam: naam || '' };
   meldReden = null;
+  clearFieldErrors('meldModal'); // TT-659
   const wat = soort === 'band' ? 'Band melden' : soort === 'gesprek' ? 'Gesprek melden' : 'Muzikant melden';
   document.getElementById('meldTitel').textContent = wat;
   document.getElementById('meldDoelNaam').textContent = meldDoel.naam || 'deze pagina';
@@ -292,13 +293,16 @@ function closeMeldModal() {
 
 function kiesMeldReden(el, reden) {
   meldReden = reden;
+  clearFieldError('meldRedenen'); // TT-659: de fout verdwijnt zodra je kiest
   document.querySelectorAll('#meldRedenen .tag').forEach(t => t.classList.remove('selected'));
   el.classList.add('selected');
 }
 
 async function verstuurMelding() {
   if (!meldDoel) return;
-  if (!meldReden) { showToast('Kies waar je melding over gaat.'); return; }
+  // TT-659 (besluit Ronald 15-11-2026, sessie 151: "ik denk ja."): de fout staat
+  // onder de keuzes, niet bovenin.
+  if (!meldReden) { showFieldErrors([['meldRedenen', 'Kies waar je melding over gaat']]); return; }
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Maak eerst een profiel aan om te kunnen melden.'); return; }
   const doel = meldDoel;

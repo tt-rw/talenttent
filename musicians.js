@@ -951,6 +951,7 @@ let wbjUsernameOk = true;
 let wbjPostcodeTimeout;
 let wbjPostcodeFailStreak = 0;
 let wbjPostcodeManualMode = false;
+let wbjGeboorteBijOpenen = '';    // TT-625: de leeftijdsgroep bij het openen telt
 
 function wbjFieldSnapshot() {
   return JSON.stringify({
@@ -1015,10 +1016,12 @@ async function openWieBenJe() {
   document.getElementById('wbjLname').value = eigenNaam.lname || '';
   document.getElementById('wbjUsername').value = data.username || '';
   document.getElementById('wbjBirthDate').value = fromISODate(myBirthDate);
+  wbjGeboorteBijOpenen = fromISODate(myBirthDate);
   document.getElementById('wbjZip').value = data.zip || '';
   document.getElementById('wbjCity').value = data.city || '';
   document.getElementById('wbjBio').value = data.bio || '';
   veldGroeit(document.getElementById('wbjBio')); // TT-543 laag 3, 3-10
+  updateCharCounter('wbjBio', 'wbjBioTeller', 1000); // TT-626: teller bij de laatste 200 tekens
   wbjNaamTonen = data.naam_tonen === 'gebruikersnaam' ? 'gebruikersnaam' : 'echt';
   if (!wbjNaamLuistert) {
     wbjNaamLuistert = true;
@@ -1096,19 +1099,36 @@ async function saveWieBenJe() {
   const zip = document.getElementById('wbjZip').value.trim();
   const city = document.getElementById('wbjCity').value.trim();
 
-  if (!fname) { showToast('Voornaam is verplicht.'); return; }
+  // TT-659 (besluit Ronald 15-11-2026, sessie 150: "ja"): elke fout onder
+  // zijn veld, alle tegelijk, met de zinnen van stap 1 (de tegel en stap 1
+  // zijn gelijk, besluit Ronald 06-11-2026). Was een korte melding bovenin.
+  clearFieldErrors('wieBenJeScreen');
+  const fouten = [];
   // TT-249: zelfde controle als in de wizard. De gebruikersnaam hiernaast
   // wordt al live getoetst via checkUsernameAvailability(). TT-420: gecontroleerd
   // wordt de naam zoals anderen hem zien, dus bij Echte naam voor- en achternaam.
   const leeftijd = wbjLeeftijd();
   const opProfiel = naamZoalsAnderen(fname, document.getElementById('wbjLname').value, username,
     wbjNaamTonen, leeftijd === null ? 16 : leeftijd);
-  if (!naamPastInProfielkop(opProfiel || fname)) {
-    showToast('Je naam is te lang om op je profiel te tonen. Maak hem korter.'); return;
+  if (!fname) {
+    fouten.push(['wbjFname', 'Vul je voornaam in']);
+  } else if (!naamPastInProfielkop(opProfiel || fname)) {
+    fouten.push(['wbjFname', 'Deze naam is te lang om op je profiel te tonen. Maak hem korter']);
   }
-  if (!username || !wbjUsernameOk) { showToast('Kies eerst een beschikbare gebruikersnaam.'); return; }
-  if (birthDateStr.length !== 10) { showToast('Vul een volledige geboortedatum in.'); return; }
-  if (!/^[1-9][0-9]{3}$/.test(zip) || !city) { showToast('Vul een geldige postcode en plaats in.'); return; }
+  // TT-625: dezelfde controle als stap 1, en geen andere leeftijdsgroep dan bij het openen.
+  const datumFout = geboortedatumFout(birthDateStr);
+  if (datumFout) {
+    fouten.push(['wbjBirthDate', datumFout]);
+  } else if (wbjGeboorteBijOpenen && !geboortedatumFout(wbjGeboorteBijOpenen) &&
+      leeftijdsgroep(calcAge(birthDateStr)) !== leeftijdsgroep(calcAge(wbjGeboorteBijOpenen))) {
+    fouten.push(['wbjBirthDate', TEKST_ANDERE_LEEFTIJDSGROEP]);
+  }
+  if (!username) fouten.push(['wbjUsername', 'Kies een gebruikersnaam']);
+  else if (!wbjUsernameOk) fouten.push(['wbjUsername', 'Kies een beschikbare gebruikersnaam']);
+  if (!/^[1-9][0-9]{3}$/.test(zip) || !city) {
+    fouten.push(['wbjZip', 'Vul een geldige postcode in. Je woonplaats wordt dan automatisch ingevuld']);
+  }
+  if (showFieldErrors(fouten)) return;
 
   if (wbjFieldSnapshot() === wbjSnapshot) return;
 
@@ -1124,9 +1144,12 @@ async function saveWieBenJe() {
   };
   const { error } = rijenGeraakt(await db.from('musicians').update(payload).eq('id', myMusicianId).select('id'));
   if (error) {
+    // TT-625: weigert de database de geboortedatum, dan staat de zin bij het veld.
+    if (error.hint === 'TT-625') { showFieldErrors([['wbjBirthDate', error.message]]); return; }
     showToast(friendlyErrorMessage(error, 'je gegevens opslaan'));
     return;
   }
+  wbjGeboorteBijOpenen = birthDateStr;
   wbjSnapshot = wbjFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
   terugNaOpslaan('wieBenJe');

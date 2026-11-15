@@ -1514,6 +1514,7 @@ async function openBandWie() {
   stad.value = b.city || '';
   document.getElementById('bwBio').value = b.description || '';
   veldGroeit(document.getElementById('bwBio')); // TT-543 laag 3, 3-10
+  updateCharCounter('bwBio', 'bwBioTeller', 1000); // TT-626: teller bij de laatste 200 tekens
   bwNiveau = b.niveau || null;
   bwRenderErvaring();
   bwSnapshot = bwFieldSnapshot();
@@ -2006,7 +2007,7 @@ function bmzNummerRijHTML(n, i) {
       <button type="button" class="media-mini" onclick="bmzSpeel(${i})" aria-label="Afspelen"${veilig ? '' : ' disabled'}>${mediaLinkMiniatuurHTML(n.url)}</button>
       <div class="media-rij-tekst">
         <input type="text" class="nummer-titel" id="bmzTitel${i}" value="${escHtml(n.titel)}" placeholder="Titel van het nummer" aria-label="Titel van het nummer" maxlength="80" autocomplete="off" oninput="bmzNummers[${i}].titel = this.value">
-        <input type="url" class="media-rij-url" id="bmzUrl${i}" value="${escHtml(n.url)}" placeholder="https://youtube.com/watch?v=..." aria-label="Link naar het nummer" oninput="bmzNummers[${i}].url = this.value" onchange="bmzRenderNummers()">
+        <input type="url" class="media-rij-url" id="bmzUrl${i}" value="${escHtml(n.url)}" placeholder="https://youtube.com/watch?v=..." aria-label="Link naar het nummer" maxlength="500" oninput="bmzNummers[${i}].url = this.value" onchange="bmzRenderNummers()">
       </div>
       <button type="button" class="song-remove" onclick="bmzNummerWeg(${i})" aria-label="Nummer weghalen">${RIJ_KRUIS}</button>
     </div>`;

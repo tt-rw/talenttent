@@ -14601,9 +14601,9 @@ def blok_tt543():
           u["omzetting"] == [0, 1, 2, 2, 3, 0, 3, 0], json.dumps(u["omzetting"]))
     privacy = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
     privacy = privacy[privacy.index('id="view-privacy"'):privacy.index('id="view-terms"')]
-    # De datum volgt de laatste wijziging (bundel 1, 14-11-2026: de mail na het verwijderen van een account, TT-72).
-    check("de privacyverklaring noemt geen doel of ambitie meer (besluit Ronald 06-11-2026); bijgewerkt op 14 november 2026 (bundel 1, TT-72; daarvoor 13 november, TT-543 onderdeel 9)",
-          not re.search(r"\bdoel\b|ambitie", privacy, re.I) and "Laatst bijgewerkt: 14 november 2026" in privacy, "")
+    # De datum volgt de laatste wijziging (bundel E, 15-11-2026: de geboortedatum corrigeren via privacy@, TT-625).
+    check("de privacyverklaring noemt geen doel of ambitie meer (besluit Ronald 06-11-2026); bijgewerkt op 15 november 2026 (bundel E, TT-625; daarvoor 14 november, TT-72)",
+          not re.search(r"\bdoel\b|ambitie", privacy, re.I) and "Laatst bijgewerkt: 15 november 2026" in privacy, "")
     check("geen paginafouten in blok 131", not fouten, "; ".join(fouten)[:300])
 
 
@@ -18497,8 +18497,8 @@ def blok_tt543_onderdeel9():
     check("F1 E: privacyverklaring hoofdstuk 3 zegt alleen door te geven aan de partijen in hoofdstuk 7; cloud86 staat in hoofdstuk 7; geen zin over advertenties",
           "<p>Wij geven je gegevens alleen door aan de partijen in hoofdstuk 7.</p>" in priv and "<li>cloud86: verstuurt de e-mails van de app.</li>" in priv
           and "advertenties" not in priv, "")
-    check("de datum 'Laatst bijgewerkt' is 13 november 2026 op de voorwaarden en de gedragscode; de privacyverklaring 14 november 2026 (bundel 1, TT-72; zie ook blok 131)",
-          "Laatst bijgewerkt: 14 november 2026" in priv and all("Laatst bijgewerkt: 13 november 2026" in d for d in (voorw, gedrag)), "")
+    check("de datum 'Laatst bijgewerkt' is 13 november 2026 op de voorwaarden en de gedragscode; de privacyverklaring 15 november 2026 (bundel E, TT-625; zie ook blok 131)",
+          "Laatst bijgewerkt: 15 november 2026" in priv and all("Laatst bijgewerkt: 13 november 2026" in d for d in (voorw, gedrag)), "")
     stub_js = open(STUB, encoding="utf-8").read()
     httpd, port = serve()
     fouten, uitslag = [], {}
@@ -19376,6 +19376,134 @@ def blok_bundel1_media():
     check("geen paginafouten in blok 161", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_bundel_e():
+    print("\nBlok 162 — bundel E (15-11-2026): de geboortedatum (TT-625), de lengte van tekst (TT-626) en de fout onder het veld in Wie ben je en Melden (TT-659)")
+    stub_js = open(STUB, encoding="utf-8").read()
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    bands_js = open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
+    GROEP = "Met deze datum kom je in een andere leeftijdsgroep. Is dit echt je geboortedatum?"
+    # TT-626: de grens staat op elk veld met vrije tekst van een profiel of band (besluit Ronald 15-11-2026: bio en Wie zijn we 1000).
+    grenzen = {"fname": 40, "lname": 40, "wbjFname": 40, "wbjLname": 40, "bio": 1000, "wbjBio": 1000, "bwBio": 1000, "linkToevoegenVeld": 500}
+    gevonden = {}
+    for vid in grenzen:
+        m = re.search(r'<(?:input|textarea)\b[^>]*\bid="%s"[^>]*>' % vid, html)
+        gevonden[vid] = int(re.search(r'maxlength="(\d+)"', m.group(0)).group(1)) if m and 'maxlength="' in m.group(0) else None
+    check("TT-626: maxlength op de acht velden: voor- en achternaam 40 (stap 1, Wie ben je), bio en Wie zijn we 1000, de link 500",
+          gevonden == grenzen, json.dumps(gevonden))
+    check("TT-626: de link van een eigen nummer van een band hoogstens 500, de titel 80 (zoals de database)",
+          re.search(r'id="bmzUrl\$\{i\}"[^>]*maxlength="500"', bands_js) and re.search(r'id="bmzTitel\$\{i\}"[^>]*maxlength="80"', bands_js), "")
+    for vid, tel in (("bio", "bioTeller"), ("wbjBio", "wbjBioTeller"), ("bwBio", "bwBioTeller")):
+        check(f"TT-626: onder {vid} staat een teller ({tel}) en het veld werkt hem bij",
+              f'<div id="{tel}" class="teken-teller" hidden></div>' in html
+              and re.search(r'id="%s"[^>]*oninput="updateCharCounter\(\'%s\',\'%s\',1000\)"' % (vid, vid, tel), html), "")
+    privacy = html[html.index('id="view-privacy"'):html.index('id="view-terms"')]
+    check("TT-625: de privacyverklaring zegt in hoofdstuk 9 dat je geboortedatum niet naar een andere leeftijdsgroep kan, zonder route via privacy@ (correctie Ronald 15-11-2026); datum 15 november 2026",
+          "<p>Je geboortedatum kun je niet zo wijzigen dat je in een andere leeftijdsgroep komt.</p>" in privacy
+          and privacy.index("andere leeftijdsgroep") > privacy.index("9. Jouw rechten") and "Laatst bijgewerkt: 15 november 2026" in privacy, "")
+    httpd, port = serve()
+    fouten = []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:400]))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, lambda r: r.abort())
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(800)
+        u = page.evaluate("""async () => {
+          const w = (ms = 400) => new Promise(r => setTimeout(r, ms));
+          const S = window.TT_STUB, u = {};
+          const jaren = n => { const d = new Date(); d.setFullYear(d.getFullYear() - n); d.setDate(d.getDate() - 1);
+            return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear(); };
+          // De gedeelde controle (geboortedatumFout() in utils.js).
+          u.controle = ['', '1-1-2000', '31-02-2005', '29-02-2005', '29-02-2004', jaren(12), jaren(13), jaren(101), jaren(40)].map(geboortedatumFout);
+          // Stap 1 van de aanmelding: 31-02 geeft nu een fout bij het veld.
+          showView('register'); await w();
+          document.getElementById('birth_date').value = '31-02-2005';
+          await nextStep(0); await w(500);
+          const fBd = document.getElementById('birth_date');
+          u.stap1 = fBd.classList.contains('field-error') ? fBd.parentNode.querySelector('.field-msg')?.textContent : null;
+          // De tegel Wie ben je, een lid van 40 (testaccount).
+          const toasts = [], echt = window.showToast; window.showToast = (t, d) => { toasts.push(t); return echt(t, d); };
+          S.data.musicians = [{ id: 'm1', user_id: 'u1', fname: 'Sander', lname: 'de Vries', username: 'RockDrummer92', zip: '2497', city: 'Den Haag', city_source: 'pdok', bio: 'a'.repeat(900), naam_tonen: 'echt', weergavenaam: 'Sander de Vries', profile_complete: true,
+ }];
+          for (const t of ['musician_songs', 'musician_instruments', 'musician_genres', 'musician_media']) S.data[t] = S.data[t] || [];
+          S.rpcResults.tt_get_my_birth_date = '1970-08-28'; S.rpcResults.tt_mijn_naam = () => S.mijnNaam();
+          S.session = { user: { id: 'u1', email: 'test@talenttent.org' } }; currentUser = S.session.user;
+          myMusicianId = 'm1'; hasOwnProfile = true;
+          showView('profieltegels'); await w(); openTegelScreen('wieBenJe'); await w(); await w();
+          const teller = document.getElementById('wbjBioTeller');
+          u.tellerBijOpenen = teller.hidden ? '' : teller.textContent;
+          const zet = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); };
+          const msg = id => { const e = document.getElementById(id); return e.classList.contains('field-error') ? (e.closest('.postcode-plaats-rij') || e).nextElementSibling?.textContent || '?' : null; };
+          zet('wbjBio', 'a'.repeat(799)); u.teller799 = teller.hidden;
+          zet('wbjBio', 'a'.repeat(800)); u.teller800 = teller.hidden ? '' : teller.textContent;
+          const veld = document.getElementById('wbjBio').getBoundingClientRect(), tr = teller.getBoundingClientRect();
+          u.tellerMaat = [Math.round(tr.top - veld.bottom), Math.round(veld.right - tr.right)];
+          zet('wbjBio', '');
+          // Alle fouten tegelijk onder hun veld, geen melding bovenin.
+          zet('wbjFname', ''); zet('wbjBirthDate', '31-02-2005'); zet('wbjZip', '');
+          const voor = S.calls.filter(c => c.table === 'musicians' && c.op === 'update').length;
+          await saveWieBenJe(); await w();
+          u.fouten = { fname: msg('wbjFname'), geb: msg('wbjBirthDate'), zip: msg('wbjZip') };
+          u.toasts1 = toasts.slice();
+          // Een fout verdwijnt zodra je het veld wijzigt.
+          zet('wbjFname', 'Sander'); u.fnameWeg = msg('wbjFname') === null;
+          zet('wbjZip', '2497'); document.getElementById('wbjCity').value = 'Den Haag';
+          // Een andere leeftijdsgroep (40 naar 14, en 40 naar 17): geweigerd bij het veld.
+          for (const [k, n] of [['naar14', 14], ['naar17', 17], ['naar12', 12]]) {
+            zet('wbjBirthDate', jaren(n)); await saveWieBenJe(); await w(); u[k] = msg('wbjBirthDate');
+          }
+          u.updatesNaWeigeren = S.calls.filter(c => c.table === 'musicians' && c.op === 'update').length - voor;
+          u.toasts2 = toasts.slice();
+          // Een tikfout binnen de groep (40 naar 41) wordt opgeslagen.
+          zet('wbjBirthDate', '28-08-1969'); await saveWieBenJe(); await w(600);
+          u.opgeslagen = S.data.musicians[0].birth_date;
+          // Weigert de database (hint TT-625), dan staat de zin van de database bij het veld.
+          showView('profieltegels'); await w(); openTegelScreen('wieBenJe'); await w(); await w();
+          S.errors.musicians = { code: 'P0001', message: GROEP_DB, hint: 'TT-625' };
+          zet('wbjBirthDate', '27-08-1969'); await saveWieBenJe(); await w();
+          u.database = msg('wbjBirthDate'); delete S.errors.musicians;
+          // Melden: zonder reden de fout onder de keuzes; een keuze haalt hem weg.
+          toasts.length = 0;
+          await openMeldModal('muzikant', 'm2', 'Rafaela'); await w();
+          await verstuurMelding(); await w();
+          const rd = document.getElementById('meldRedenen');
+          u.melden = rd.classList.contains('field-error') ? rd.nextElementSibling?.textContent : null;
+          u.meldToast = toasts.slice();
+          rd.querySelector('.tag').click(); u.meldenWeg = !rd.classList.contains('field-error') && !document.querySelector('#meldModal .field-msg');
+          closeMeldModal(); window.showToast = echt;
+          return u;
+        }""".replace("GROEP_DB", json.dumps(GROEP)))
+        ctx.close()
+        browser.close()
+    httpd.shutdown()
+    j = json.dumps(u, ensure_ascii=False)
+    check("TT-625: één controle voor stap 1 en Wie ben je: leeg, vorm, 31-02 en 29-02-2005 bestaan niet, 29-02-2004 wel, 12 jaar te jong, 13 goed, 101 te oud, 40 goed",
+          u["controle"] == ["Vul je geboortedatum in", "Voer je geboortedatum in als DD-MM-JJJJ, bijvoorbeeld 01-02-2001",
+                            "Deze datum bestaat niet. Controleer dag en maand", "Deze datum bestaat niet. Controleer dag en maand", "",
+                            "Je moet minimaal 13 jaar zijn om een profiel aan te maken", "", "Controleer je geboortedatum", ""], json.dumps(u["controle"], ensure_ascii=False))
+    check("TT-625: stap 1 van de aanmelding weigert 31-02-2005, bij het veld", u["stap1"] == "Deze datum bestaat niet. Controleer dag en maand", j)
+    check("TT-659: Wie ben je toont alle fouten tegelijk onder hun veld, met de zinnen van stap 1, en geen melding bovenin",
+          u["fouten"] == {"fname": "Vul je voornaam in", "geb": "Deze datum bestaat niet. Controleer dag en maand",
+                          "zip": "Vul een geldige postcode in. Je woonplaats wordt dan automatisch ingevuld"} and not u["toasts1"], j)
+    check("TT-659: een fout verdwijnt zodra je het veld wijzigt", u["fnameWeg"], j)
+    check(f"TT-625: Wie ben je weigert 40 naar 14 en 40 naar 17 met '{GROEP}', en 40 naar 12 met de zin van stap 1; niets opgeslagen, geen melding bovenin",
+          u["naar14"] == GROEP and u["naar17"] == GROEP and u["naar12"] == "Je moet minimaal 13 jaar zijn om een profiel aan te maken"
+          and u["updatesNaWeigeren"] == 0 and not u["toasts2"], j)
+    check("TT-625: een tikfout binnen dezelfde leeftijdsgroep (40 naar 41) wordt opgeslagen", u["opgeslagen"] == "1969-08-28", j)
+    check("TT-625: weigert de database (hint TT-625), dan staat haar zin onder het veld", u["database"] == GROEP, j)
+    check("TT-626: de teller staat bij het openen al bij een bio van 900 tekens; bij 799 verborgen, bij 800 '800/1000'",
+          u["tellerBijOpenen"] == "900/1000" and u["teller799"] is True and u["teller800"] == "800/1000", j)
+    check("TT-626: de teller staat 8px onder het veld, rechts gelijk met het veld", u["tellerMaat"] == [8, 0], j)
+    check("TT-659: Melden zonder reden: 'Kies waar je melding over gaat' onder de keuzes, geen melding bovenin; een keuze haalt de fout weg",
+          u["melden"] == "Kies waar je melding over gaat" and not u["meldToast"] and u["meldenWeg"], j)
+    check("geen paginafouten in blok 162", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -19435,6 +19563,7 @@ BLOKKEN = [
     blok_tt613,
     blok_bundel1_mails,
     blok_bundel1_media,
+    blok_bundel_e,
 ]
 
 

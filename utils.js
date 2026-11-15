@@ -261,6 +261,7 @@ function friendlyErrorMessage(err, actie) {
   if (/^Bevestig eerst je e-mailadres/i.test(msg)) return msg;
   if (/^Wacht op antwoord/i.test(msg)) return msg; // TT-481, trigger tt_berichtgrens
   if (err && err.hint === 'TT-556') return msg; // grens per persoon of band (tt_rijgrens, tt_bandgrens)
+  if (err && err.hint === 'TT-625') return msg; // geboortedatum (tt_geboortedatum_bewaken)
   if (isZelfdeWachtwoordFout(err)) return TEKST_ZELFDE_WACHTWOORD;
   if (isZwakWachtwoordFout(err)) return TEKST_ZWAK_WACHTWOORD + '.';
   const status = err && (err.status || err.statusCode);
@@ -667,6 +668,34 @@ function calcAge(ddmmyyyy) {
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
   return age;
 }
+
+// TT-625 (besluiten Ronald 15-11-2026, sessie 149): één controle van de
+// geboortedatum voor stap 1 en de tegel Wie ben je, met de zinnen van stap 1.
+// Een datum die niet bestaat (31-02) gaf tot nu toe geen fout. Leeg = goed.
+function geboortedatumFout(waarde) {
+  if (!waarde) return 'Vul je geboortedatum in';
+  const m = waarde.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (!m) return 'Voer je geboortedatum in als DD-MM-JJJJ, bijvoorbeeld 01-02-2001';
+  const dag = Number(m[1]), maand = Number(m[2]), jaar = Number(m[3]);
+  const datum = new Date(2000, 0, 1);
+  datum.setFullYear(jaar, maand - 1, dag);
+  if (datum.getFullYear() !== jaar || datum.getMonth() !== maand - 1 || datum.getDate() !== dag) {
+    return 'Deze datum bestaat niet. Controleer dag en maand';
+  }
+  const leeftijd = calcAge(waarde);
+  if (isNaN(leeftijd) || leeftijd < 13) return 'Je moet minimaal 13 jaar zijn om een profiel aan te maken';
+  if (leeftijd > 100) return 'Controleer je geboortedatum';
+  return '';
+}
+
+// TT-625 (besluit Ronald 15-11-2026, sessie 149: "a" en "ok. 1"): een
+// bestaand profiel wisselt niet zelf van leeftijdsgroep. De grenzen zijn 16
+// (berichten, afscherming, naam) en 18. De database weigert het ook
+// (trigger tt_geboortedatum_bewaken, hint TT-625), met dezelfde zin.
+function leeftijdsgroep(leeftijd) {
+  return leeftijd < 16 ? 'onder16' : leeftijd < 18 ? '16tot18' : '18plus';
+}
+const TEKST_ANDERE_LEEFTIJDSGROEP = 'Met deze datum kom je in een andere leeftijdsgroep. Is dit echt je geboortedatum?';
 
 // DD-MM-YYYY auto-format while typing
 function formatBirthDate(input) {
