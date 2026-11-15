@@ -286,22 +286,33 @@ function lettersVerschil(a, b) {
   return vorige[b.length];
 }
 
-// Eén vraag aan de eigen lijst: plaatsen met dezelfde eerste twee letters.
-// De plaats met het kleinste verschil, hoogstens 2 letters. Geen nieuwe
-// databasefunctie. Een tikfout in de eerste twee letters krijgt de gewone
-// melding.
+// Twee vragen aan de eigen lijst, tegelijk: plaatsen met dezelfde eerste
+// letter, en plaatsen met dezelfde laatste drie letters (vanaf 4 getypte
+// letters). Zo vindt de app ook een tikfout vooraan ("Aamsterdam", "Emsterdam";
+// besluit Ronald 15-11-2026, sessie 155: "ja"). Alleen een tikfout in de eerste
+// letter én in de laatste drie krijgt de gewone melding. Gemeten in de lijst
+// van productie (16-10-2026): hoogstens 365 rijen per eerste letter en 214 per
+// einde, ruim onder de grens van 1000. De plaats met het kleinste verschil,
+// hoogstens 2 letters. Geen nieuwe databasefunctie.
 async function plaatsDieErOpLijkt(tekst) {
   const t = (tekst || '').trim().toLowerCase();
-  const begin = likeSafe(t.slice(0, 2));
-  if (begin.length < 2) return null;
-  const { data, error } = await db.from('postcode_cache')
+  if (likeSafe(t).length < 2) return null;
+  const begin = likeSafe(t.slice(0, 1));
+  const eind = t.length >= 4 ? likeSafe(t.slice(-3)) : '';
+  const vraag = patroon => db.from('postcode_cache')
     .select('city, alternatieve_schrijfwijzen')
-    .ilike('city', begin + '%')
+    .ilike('city', patroon)
     .limit(1000);
-  if (error) throw error;
+  const antwoorden = await Promise.all([
+    begin ? vraag(begin + '%') : { data: [] },
+    eind.length === 3 ? vraag('%' + eind) : { data: [] }
+  ]);
+  const fout = antwoorden.find(a => a.error);
+  if (fout) throw fout.error;
+  const data = antwoorden.flatMap(a => a.data || []);
   let beste = null, besteVerschil = 3;
   const gezien = new Set();
-  (data || []).forEach(rij => {
+  data.forEach(rij => {
     const naam = pickDisplayCity(rij.city, rij.alternatieve_schrijfwijzen);
     if (!naam || gezien.has(naam)) return;
     gezien.add(naam);

@@ -233,7 +233,8 @@ function wisUsernameUitslag(statusId, inputId) {
 function zetUsernameNee(statusId, inputId) {
   zetUitslag(statusId, 'Niet beschikbaar');
   const inp = document.getElementById(inputId);
-  if (inp) { inp.classList.add('field-error'); inp.setAttribute('aria-invalid', 'true'); }
+  // 8D TT-628: de rode rand blijft als je het veld verlaat zonder de naam te wijzigen.
+  if (inp) { inp.classList.add('field-error'); inp.setAttribute('aria-invalid', 'true'); veldfoutWaardeOnthouden(inp); }
 }
 // Niet goed, met uitleg: de standaard veldfout onder het veld (rode rand,
 // tekst in de gewone kleur, verdwijnt zodra de gebruiker typt).

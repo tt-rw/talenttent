@@ -411,12 +411,34 @@ function setFieldError(el, msg) {
   // Herstel: de markering verdwijnt zodra de gebruiker dit veld wijzigt,
   // niet pas bij de volgende poging (huisstijl §13.1). Eén keer koppelen per
   // veld, anders stapelen de luisteraars op bij elke mislukte poging.
+  // 8D TT-628 (sessie 155): `change` komt ook als je het veld verlaat, zonder
+  // nieuwe waarde (een tik op "Bedoel je: Den Haag?" of op het volgende veld).
+  // Dan blijft de melding staan; alleen een andere waarde dan bij de melding
+  // haalt hem weg.
+  veldfoutWaardeOnthouden(el);
   if (!el.dataset.veldfoutGekoppeld) {
     el.dataset.veldfoutGekoppeld = '1';
-    const weg = () => clearFieldError(el);
+    const weg = (e) => {
+      const nu = veldWaarde(el);
+      if (e.type === 'change' && nu !== undefined && nu === el.dataset.veldfoutWaarde) return;
+      clearFieldError(el);
+    };
     el.addEventListener('input', weg);
     el.addEventListener('change', weg);
   }
+}
+
+// De waarde waarmee een veldfout vergelijkt (8D TT-628). Een vinkje telt aan
+// of uit; een vlak zonder eigen waarde (zoals de keuzes bij Melden) geeft
+// undefined, en daar wist `change` de fout zoals altijd.
+function veldWaarde(el) {
+  if (el.type === 'checkbox' || el.type === 'radio') return String(el.checked);
+  return typeof el.value === 'string' ? el.value : undefined;
+}
+function veldfoutWaardeOnthouden(el) {
+  const w = veldWaarde(el);
+  if (w === undefined) delete el.dataset.veldfoutWaarde;
+  else el.dataset.veldfoutWaarde = w;
 }
 
 function clearFieldError(el) {

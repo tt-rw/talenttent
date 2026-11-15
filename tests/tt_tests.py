@@ -19766,6 +19766,150 @@ def blok_bundel_d():
     check("geen paginafouten in blok 163", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_tik_in_veldmelding():
+    print("\nBlok 164 — 8D TT-628 (sessie 155, 15-11-2026): een tik in of naast een veldmelding na echt typen; de melding blijft tot de waarde wijzigt; een tikfout vooraan krijgt een voorstel")
+    stub_js = open(STUB, encoding="utf-8").read()
+    httpd, port = serve()
+    fouten = []
+    u = {}
+    voorbereiden = r"""() => {
+      const S = window.TT_STUB;
+      currentUser = null; hasOwnProfile = false; S.session = null;
+      S.data.postcode_cache = [
+        { postcode: '2497', city: 'Den Haag', alternatieve_schrijfwijzen: "'s-Gravenhage" },
+        { postcode: '2611', city: 'Delft', alternatieve_schrijfwijzen: null }];
+      S.rpcResults.tt_resolve_search_origin = p => (/^den haag$/i.test(p.query_text) || p.query_text === '2497') ? [{ lat: 52.07, lng: 4.3 }] : [];
+    }"""
+    stand = r"""(id) => { const S = window.TT_STUB, f = document.getElementById(id), m = f.nextElementSibling;
+      return { waarde: f.value, fout: f.classList.contains('field-error'),
+               regel: m && m.classList.contains('field-msg') ? m.textContent.replace(/\s+/g, ' ').trim() : null,
+               zocht: S.calls.filter(c => c.kind === 'rpc' && /^tt_search_/.test(c.name)).length }; }"""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for naam, opties, tik in (
+                ("telefoon", dict(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True), "tap"),
+                ("computer", dict(viewport={"width": 1280, "height": 900}), "click")):
+            ctx = browser.new_context(color_scheme="dark", **opties)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            page = ctx.new_page()
+            page.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:400]))
+            page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+            page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            page.wait_for_timeout(800)
+            page.evaluate(voorbereiden)
+            tikken = (lambda sel: page.tap(sel)) if tik == "tap" else (lambda sel: page.click(sel))
+            # Zoeken → Muzikanten: echt typen, wachten op de melding, dan tikken op de plaats.
+            page.evaluate("() => { showView('search'); openZoekScherm('muzikanten', { geenZoek: true }); }")
+            page.wait_for_timeout(500)
+            tikken("#filterCity")
+            page.keyboard.type("Den Haaag", delay=30)
+            page.wait_for_timeout(1500)
+            voor = page.evaluate(stand, "filterCity")
+            page.evaluate("() => { window.TT_STUB.calls.length = 0; }")
+            tikken(".frc-plaats .bedoel-link")
+            page.wait_for_timeout(1200)
+            u[naam + "_muzikanten"] = {"voor": voor, "na": page.evaluate(stand, "filterCity")}
+            if naam == "telefoon":
+                page.screenshot(path=os.path.join(tempfile.gettempdir(), "blok164-na-tik.png"))
+                # Besluit Ronald 15-11-2026 (sessie 155, "ja"): ook een tikfout vooraan krijgt een voorstel.
+                # De stub filtert niet op ilike; hier een lijst die dat wel doet, zoals de database.
+                u["vooraan"] = page.evaluate(r"""async () => {
+                  const rijen = ['Amsterdam', 'Aalsmeer', 'Aalten', 'Den Haag', 'Rotterdam', 'Edam', 'Delft'].map(c => ({ city: c, alternatieve_schrijfwijzen: null }));
+                  const patronen = [], echt = db.from.bind(db);
+                  let storing = false;
+                  db.from = t => t !== 'postcode_cache' ? echt(t) : (() => { let pat = '';
+                    const b = { select() { return b; }, ilike(_k, p) { pat = p; patronen.push(p); return b; },
+                      limit() { const re = new RegExp('^' + pat.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*') + '$');
+                        return Promise.resolve(storing ? { data: null, error: { message: 'stuk' } } : { data: rijen.filter(r => re.test(r.city.toLowerCase())), error: null }); } };
+                    return b; })();
+                  const v = {};
+                  for (const t of ['Aamsterdam', 'Emsterdam', 'Rotterdm', 'Den Haaag', 'Xyzstad', 'Emsterdom']) v[t] = await plaatsDieErOpLijkt(t);
+                  patronen.length = 0; await plaatsDieErOpLijkt('Aamsterdam'); v.patronen = patronen.slice();
+                  patronen.length = 0; await plaatsDieErOpLijkt('Ab'); v.kort = patronen.slice();
+                  storing = true; try { await plaatsDieErOpLijkt('Aamsterdam'); v.storing = 'geen fout'; } catch (e) { v.storing = 'fout'; }
+                  storing = false;
+                  // Op het scherm: echt typen, dan tikken.
+                  const $ = id => document.getElementById(id);
+                  $('filterCity').value = ''; clearFieldError('filterCity');
+                  window.__lijst = rijen; window.__echtFrom = echt;
+                  const S = window.TT_STUB;
+                  S.rpcResults.tt_resolve_search_origin = p => /^(den haag|amsterdam)$/i.test(p.query_text) ? [{ lat: 52.37, lng: 4.89 }] : [];
+                  return v; }""")
+                page.evaluate("() => document.getElementById('filterCity').focus()")
+                page.keyboard.type("Aamsterdam", delay=30)
+                page.wait_for_timeout(1500)
+                voorA = page.evaluate(stand, "filterCity")
+                page.evaluate("() => { window.TT_STUB.calls.length = 0; }")
+                if page.locator(".frc-plaats .bedoel-link").count():
+                    tikken(".frc-plaats .bedoel-link")
+                page.wait_for_timeout(1200)
+                u["vooraan"]["scherm"] = {"voor": voorA, "na": page.evaluate(stand, "filterCity")}
+                page.evaluate("""() => { db.from = window.__echtFrom;
+                  window.TT_STUB.rpcResults.tt_resolve_search_origin = p => (/^den haag$/i.test(p.query_text) || p.query_text === '2497') ? [{ lat: 52.07, lng: 4.3 }] : []; }""")
+            # Wie speelt dit?: dezelfde tik.
+            page.evaluate("""() => { showView('search'); openZoekScherm('mixmatch'); setSetlistSoort('muzikanten');
+              setlistWantedSongs.push({ title: 'Wonderwall', artist: 'Oasis' }); zetMmFilters(true); }""")
+            page.wait_for_timeout(500)
+            tikken("#filterSetlistCity")
+            page.keyboard.type("Den Haaag", delay=30)
+            page.wait_for_timeout(1500)
+            voor = page.evaluate(stand, "filterSetlistCity")
+            tikken(".frc-plaats .bedoel-link >> visible=true")
+            page.wait_for_timeout(1200)
+            u[naam + "_setlist"] = {"voor": voor, "na": page.evaluate(stand, "filterSetlistCity")}
+            page.evaluate("() => { setlistWantedSongs.length = 0; }")
+            # Profiel aanmaken stap 1: de uitleg bij de gebruikersnaam blijft staan bij een tik op Postcode.
+            page.evaluate("() => { showView('register'); }")
+            page.wait_for_timeout(500)
+            tikken("#username")
+            page.keyboard.type("Jan Groot", delay=30)
+            page.wait_for_timeout(900)
+            voor = page.evaluate(stand, "username")
+            tikken("#zip")
+            page.wait_for_timeout(400)
+            na = page.evaluate(stand, "username")
+            tikken("#username")
+            page.keyboard.press("End")
+            page.keyboard.press("Backspace")
+            page.wait_for_timeout(100)
+            getypt = page.evaluate(stand, "username")
+            # Een naam die niet mag (rode rand, "Niet beschikbaar"): de rand blijft bij een tik op Postcode.
+            page.keyboard.press("Control+A")
+            page.keyboard.type("root", delay=30)
+            page.wait_for_timeout(900)
+            rootVoor = page.evaluate("() => ({ fout: document.getElementById('username').classList.contains('field-error'), uitslag: document.getElementById('usernameUitslag').textContent })")
+            tikken("#zip")
+            page.wait_for_timeout(400)
+            rootNa = page.evaluate("() => ({ fout: document.getElementById('username').classList.contains('field-error'), uitslag: document.getElementById('usernameUitslag').textContent })")
+            u[naam + "_naam"] = {"voor": voor, "na": na, "getypt": getypt, "rootVoor": rootVoor, "rootNa": rootNa}
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    for naam, wijze in (("telefoon", "vinger, 390"), ("computer", "muis, 1280")):
+        m, s, n = u[naam + "_muzikanten"], u[naam + "_setlist"], u[naam + "_naam"]
+        check(f"TT-628 8D: Muzikanten, getypt 'Den Haaag', tik op Den Haag ({wijze}): de plaats staat in het veld, de melding is weg, de app zoekt",
+              m["voor"]["regel"] == "Bedoel je: Den Haag?" and m["na"]["waarde"] == "Den Haag" and m["na"]["fout"] is False
+              and m["na"]["regel"] is None and m["na"]["zocht"] >= 1, json.dumps(m, ensure_ascii=False))
+        check(f"TT-628 8D: Wie speelt dit?, getypt 'Den Haaag', tik op Den Haag ({wijze}): de plaats staat in het veld, de melding is weg, de app zoekt",
+              s["voor"]["regel"] == "Bedoel je: Den Haag?" and s["na"]["waarde"] == "Den Haag" and s["na"]["fout"] is False
+              and s["na"]["regel"] is None and s["na"]["zocht"] >= 1, json.dumps(s, ensure_ascii=False))
+        check(f"TT-628 8D: Profiel aanmaken, gebruikersnaam 'Jan Groot', tik op Postcode ({wijze}): de uitleg blijft; typen haalt hem weg",
+              n["voor"]["regel"] == "Alleen letters, cijfers en underscore, 3-20 tekens." and n["na"]["regel"] == n["voor"]["regel"]
+              and n["na"]["fout"] is True and n["getypt"]["regel"] is None and n["getypt"]["fout"] is False, json.dumps(n, ensure_ascii=False))
+        check(f"TT-628 8D: gebruikersnaam 'root' (Niet beschikbaar), tik op Postcode ({wijze}): de rode rand en de uitslag blijven",
+              n["rootVoor"] == {"fout": True, "uitslag": "Niet beschikbaar"} and n["rootNa"] == n["rootVoor"], json.dumps(n, ensure_ascii=False))
+    v = u["vooraan"]
+    check("TT-628 (besluit Ronald sessie 155): een tikfout vooraan krijgt een voorstel: Aamsterdam en Emsterdam geven Amsterdam; Rotterdm en Den Haaag zoals voorheen; Xyzstad en Emsterdom (vooraan én achteraan fout) niets",
+          v["Aamsterdam"] == "Amsterdam" and v["Emsterdam"] == "Amsterdam" and v["Rotterdm"] == "Rotterdam" and v["Den Haaag"] == "Den Haag"
+          and v["Xyzstad"] is None and v["Emsterdom"] is None, json.dumps(v, ensure_ascii=False))
+    check("TT-628: twee vragen aan de lijst: dezelfde eerste letter en dezelfde laatste drie letters; bij 2 letters alleen de eerste; een storing geeft een fout (dan de gewone melding)",
+          v["patronen"] == ["a%", "%dam"] and v["kort"] == ["a%"] and v["storing"] == "fout", json.dumps(v, ensure_ascii=False))
+    check("TT-628: op het scherm: 'Aamsterdam' typen geeft 'Bedoel je: Amsterdam?'; een tik zet Amsterdam in het veld en zoekt (vinger, 390)",
+          v["scherm"]["voor"]["regel"] == "Bedoel je: Amsterdam?" and v["scherm"]["na"]["waarde"] == "Amsterdam"
+          and v["scherm"]["na"]["fout"] is False and v["scherm"]["na"]["zocht"] >= 1, json.dumps(v["scherm"], ensure_ascii=False))
+    check("geen paginafouten in blok 164", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -19827,6 +19971,7 @@ BLOKKEN = [
     blok_bundel1_media,
     blok_bundel_e,
     blok_bundel_d,
+    blok_tik_in_veldmelding,
 ]
 
 
