@@ -1,4 +1,4 @@
-// ─── Postcode → woonplaats (PDOK Locatieserver, gratis overheidsdienst) ─────
+// ─── Postcode → woonplaats (de eigen lijst postcode_cache, TT-624) ──────────
 let postcodeSearchTimeout = null;
 let postcodeResolved = false;
 
@@ -35,58 +35,24 @@ function pickDisplayCity(officialCity, altField) {
   return normalizeCityName(officialCity || '');
 }
 
-function lookupPostcodeCity(normalized) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3000);
-  return (async () => {
-    try {
-      const url = `https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?fq=postcode:${normalized}*&fq=type:postcode&fl=woonplaatsnaam,postcode&rows=1`;
-      const res  = await fetch(url, { signal: controller.signal });
-      clearTimeout(timer);
-      if (!res.ok) throw new Error('PDOK niet bereikbaar');
-      const data = await res.json();
-      const doc  = data?.response?.docs?.[0];
-      if (doc?.woonplaatsnaam) {
-        const { data: alt } = await db.from('postcode_cache').select('alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
-        const displayCity = pickDisplayCity(doc.woonplaatsnaam, alt?.alternatieve_schrijfwijzen);
-        // TT-80 (10-08-2026, bevinding Ronald): hier stond eerder de rauwe
-        // PDOK-naam (bijv. "'s-Gravenhage") die in de cache belandde, terwijl
-        // displayCity hierboven al de gangbare naam ("Den Haag") berekende —
-        // maar alleen voor dit ene scherm. tt_resolve_search_origin() zoekt
-        // rechtstreeks op postcode_cache.city, dus elke nieuwe postcode-
-        // opzoeking zette de zoekfunctie zo steeds weer stuk. Nu wordt de
-        // gangbare naam zelf opgeslagen; de officiële naam blijft
-        // terugvindbaar via alternatieve_schrijfwijzen.
-        const officialName = doc.woonplaatsnaam;
-        const altList = (alt?.alternatieve_schrijfwijzen || '').split(';').map(s => s.trim()).filter(Boolean);
-        if (officialName.toLowerCase() !== displayCity.toLowerCase()
-            && !altList.some(a => a.toLowerCase() === officialName.toLowerCase())) {
-          altList.push(officialName);
-        }
-        // B-03 (12-08-2026): schrijft niet meer rechtstreeks in de tabel.
-        // De open INSERT/UPDATE-regels stonden toe dat iedereen — ook zonder
-        // account — coördinaten kon overschrijven, en daarmee elke afstand in
-        // de app. De functie tt_cache_postcode raakt latitude/longitude nooit
-        // aan en controleert het postcodeformaat.
-        db.rpc('tt_cache_postcode', {
-          p_postcode: normalized,
-          p_city: displayCity,
-          p_alt: altList.join(';') || null
-        }).then(() => {}, e => logCaught('lookupPostcodeCity/cache', e));
-        return { found: true, city: displayCity, source: 'pdok' };
-      }
-      const { data: cachedNF } = await db.from('postcode_cache').select('city, alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
-      if (cachedNF?.city) return { found: true, city: pickDisplayCity(cachedNF.city, cachedNF.alternatieve_schrijfwijzen), source: 'cache' };
-      return { found: false, reason: 'notfound' };
-    } catch (e) {
-      clearTimeout(timer);
-      try {
-        const { data: cached } = await db.from('postcode_cache').select('city, alternatieve_schrijfwijzen').eq('postcode', normalized).maybeSingle();
-        if (cached?.city) return { found: true, city: pickDisplayCity(cached.city, cached.alternatieve_schrijfwijzen), source: 'cache' };
-      } catch (e2) { }
-      return { found: false, reason: 'error' };
-    }
-  })();
+// TT-624 (besluit Ronald 15-11-2026, sessie 150: "ja", PDOK gaat helemaal uit
+// de app): de plaats bij een postcode komt alleen uit de eigen lijst
+// (postcode_cache, alle viercijferige postcodes met coördinaten). Er gaat geen
+// postcode meer naar buiten. Niet gevonden: het lid kiest de plaats zelf uit
+// de lijst (enableManualCity). Een storing: de bestaande melding.
+async function lookupPostcodeCity(normalized) {
+  try {
+    const { data, error } = await db.from('postcode_cache')
+      .select('city, alternatieve_schrijfwijzen')
+      .eq('postcode', normalized)
+      .maybeSingle();
+    if (error) throw error;
+    if (data?.city) return { found: true, city: pickDisplayCity(data.city, data.alternatieve_schrijfwijzen), source: 'cache' };
+    return { found: false, reason: 'notfound' };
+  } catch (e) {
+    logCaught('lookupPostcodeCity', e);
+    return { found: false, reason: 'error' };
+  }
 }
 
 function enableManualCity(kind) {
@@ -132,7 +98,7 @@ let postcodeManualMode = false;
 
 function onPostcodeInput(value) {
   postcodeResolved = false;
-  state.citySource = 'pdok';
+  state.citySource = 'cache';
   document.getElementById('city').value = '';
   state.city = '';
   const statusEl = document.getElementById('postcodeStatus');
@@ -189,7 +155,7 @@ let bandPostcodeResolved = false;
 let bandPostcodeSearchTimeout;
 let bandPostcodeFailStreak = 0;
 let bandPostcodeManualMode = false;
-let bandCitySource = 'pdok';
+let bandCitySource = 'cache';
 
 // TT-385 fase 3 (02-10-2026): de postcode van een band staat op twee
 // schermen — de korte wizard "Band aanmaken" (band) en de tegel "Wie zijn
@@ -214,7 +180,7 @@ function onBandPostcodeInput(value, doel) {
   bandPostcodeDoel = doel || 'band';
   const velden = BAND_POSTCODE_VELDEN[bandPostcodeDoel];
   bandPostcodeResolved = false;
-  bandCitySource = 'pdok';
+  bandCitySource = 'cache';
   document.getElementById(velden.city).value = '';
   const statusEl = document.getElementById(velden.status);
   clearTimeout(bandPostcodeSearchTimeout);
@@ -269,7 +235,8 @@ async function resolveSearchOrigin(rawText) {
     return { lat: row?.lat ?? null, lng: row?.lng ?? null };
   } catch (e) {
     logCaught('resolveSearchOrigin', e);
-    return { lat: null, lng: null };
+    // TT-628: een storing is iets anders dan een plaats die de lijst niet kent.
+    return { lat: null, lng: null, fout: true };
   }
 }
 
@@ -289,7 +256,90 @@ async function zoekVertrekpunt(tekst) {
     }
   }
   const o = await resolveSearchOrigin(getypt);
-  return { lat: o.lat, lng: o.lng, eigen: false, plaats: null };
+  return { lat: o.lat, lng: o.lng, eigen: false, plaats: null, fout: !!o.fout };
+}
+
+// ─── TT-628: een plaats die de lijst niet kent ──────────────────────────────
+// Besluit Ronald 15-11-2026 (sessie 150, op beeld): lijkt er een plaats op,
+// dan onder het veld "Bedoel je: Den Haag?" (een tik zet de plaats in het
+// veld en zoekt); lijkt er niets op, dan "Deze plaats herkennen we niet.".
+// Er wordt dan niet gezocht. Muzikanten (Alles, Muzikanten, Bands) en Wie
+// speelt dit?. Was: de lege staat "Geen muzikanten gevonden", met de verkeerde
+// reden.
+function plaatsIsOnbekend(tekst, vertrek) {
+  const t = (tekst || '').trim();
+  // Leeg, of een postcode die nog niet af is: niets melden.
+  if (!t || /^\d{1,3}$/.test(t)) return false;
+  return !vertrek.eigen && !vertrek.fout && vertrek.lat == null;
+}
+
+// Het aantal letters dat anders is (toevoegen, weghalen, vervangen).
+function lettersVerschil(a, b) {
+  let vorige = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const rij = [i];
+    for (let j = 1; j <= b.length; j++) {
+      rij[j] = Math.min(vorige[j] + 1, rij[j - 1] + 1, vorige[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    vorige = rij;
+  }
+  return vorige[b.length];
+}
+
+// Eén vraag aan de eigen lijst: plaatsen met dezelfde eerste twee letters.
+// De plaats met het kleinste verschil, hoogstens 2 letters. Geen nieuwe
+// databasefunctie. Een tikfout in de eerste twee letters krijgt de gewone
+// melding.
+async function plaatsDieErOpLijkt(tekst) {
+  const t = (tekst || '').trim().toLowerCase();
+  const begin = likeSafe(t.slice(0, 2));
+  if (begin.length < 2) return null;
+  const { data, error } = await db.from('postcode_cache')
+    .select('city, alternatieve_schrijfwijzen')
+    .ilike('city', begin + '%')
+    .limit(1000);
+  if (error) throw error;
+  let beste = null, besteVerschil = 3;
+  const gezien = new Set();
+  (data || []).forEach(rij => {
+    const naam = pickDisplayCity(rij.city, rij.alternatieve_schrijfwijzen);
+    if (!naam || gezien.has(naam)) return;
+    gezien.add(naam);
+    const verschil = lettersVerschil(t, naam.toLowerCase());
+    if (verschil < besteVerschil || (verschil === besteVerschil && beste && naam.localeCompare(beste, 'nl') < 0)) {
+      beste = naam; besteVerschil = verschil;
+    }
+  });
+  return beste;
+}
+
+// Zet de melding onder het veld. `zoekOpnieuw` start de zoekopdracht na een
+// tik op de voorgestelde plaats. Een storing bij het zoeken naar een plaats
+// die erop lijkt, geeft de gewone melding.
+async function plaatsOnbekendTonen(veldId, statusId, tekst, zoekOpnieuw) {
+  const veld = document.getElementById(veldId);
+  if (!veld) return;
+  let suggestie = null;
+  try { suggestie = await plaatsDieErOpLijkt(tekst); }
+  catch (e) { logCaught('plaatsDieErOpLijkt', e); }
+  if (veld.value.trim() !== (tekst || '').trim()) return; // intussen verder getypt
+  if (!suggestie) { setFieldError(veld, 'Deze plaats herkennen we niet.'); return; }
+  setFieldError(veld, 'Bedoel je: ' + suggestie + '?');
+  const regel = veldFoutAnker(veld).nextElementSibling;
+  const span = regel && regel.querySelector('span');
+  if (!span) return;
+  const knop = document.createElement('button');
+  knop.type = 'button';
+  knop.className = 'bedoel-link';
+  knop.textContent = suggestie;
+  knop.addEventListener('click', () => {
+    veld.value = suggestie;
+    clearFieldError(veld);
+    updateSearchCityStatus(veldId, statusId);
+    zoekOpnieuw();
+  });
+  span.textContent = 'Bedoel je: ';
+  span.append(knop, '?');
 }
 
 // TT-160 (27-08-2026, Ronalds voorstel): het Plaats-veld op de drie

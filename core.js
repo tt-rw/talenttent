@@ -579,6 +579,7 @@ async function onUserLoggedIn(user) {
   // submitProfile(), vandaar ná de onboardingInFlight-check hierboven) — configureSearchAccess()
   // blijft 'm daarna gewoon opnieuw zetten, dat is onschadelijk.
   hasOwnProfile = !!(await getMyMusicianId());
+  if (hasOwnProfile) ouderKoppelingHerhalen(user); // TT-656 punt 2: één poging per start, wacht nergens op
   // TT-06 (18-09-2026): de blokkadelijst moet er zijn vóórdat er iets gezocht
   // of geladen wordt — anders staat een geblokkeerde muzikant één keer in het
   // eerste zoekresultaat.

@@ -75,7 +75,7 @@
       tt_search_bands_anon: [], tt_get_musicians_public: [], tt_get_bands_public: [],
       tt_musician_distances: [], tt_musicians_ages: [], tt_get_my_birth_date: null,
       tt_resolve_search_origin: null, tt_check_username_available: true,
-      tt_cache_postcode: null, tt_accept_founder_offer: null,
+      tt_accept_founder_offer: null,
       tt_expire_old_founder_offers: null,
       // TT-555: meldde ik dit doel de laatste 30 dagen al? Standaard nee.
       tt_al_gemeld: false,

@@ -37,6 +37,7 @@ import re
 import socketserver
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 
@@ -19431,6 +19432,8 @@ def blok_bundel_e():
           S.data.musicians = [{ id: 'm1', user_id: 'u1', fname: 'Sander', lname: 'de Vries', username: 'RockDrummer92', zip: '2497', city: 'Den Haag', city_source: 'pdok', bio: 'a'.repeat(900), naam_tonen: 'echt', weergavenaam: 'Sander de Vries', profile_complete: true,
  }];
           for (const t of ['musician_songs', 'musician_instruments', 'musician_genres', 'musician_media']) S.data[t] = S.data[t] || [];
+          // TT-624: de plaats bij een postcode komt alleen uit de eigen lijst; 2497 staat erin, zoals in de echte database.
+          S.data.postcode_cache = [{ postcode: '2497', city: 'Den Haag', alternatieve_schrijfwijzen: null }];
           S.rpcResults.tt_get_my_birth_date = '1970-08-28'; S.rpcResults.tt_mijn_naam = () => S.mijnNaam();
           S.session = { user: { id: 'u1', email: 'test@talenttent.org' } }; currentUser = S.session.user;
           myMusicianId = 'm1'; hasOwnProfile = true;
@@ -19504,6 +19507,265 @@ def blok_bundel_e():
     check("geen paginafouten in blok 162", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_bundel_d():
+    print("\nBlok 163 — bundel D (15-11-2026): PDOK uit de app (TT-624), een plaats die de lijst niet kent (TT-628), Uitloggen (TT-654), de gebruikersnaam (TT-655), de toestemming van een ouder (TT-656) en de leeftijd tijdens het typen (TT-660)")
+    stub_js = open(STUB, encoding="utf-8").read()
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    app_js = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in JS_FILES)
+    check("TT-624: geen pdok.nl meer in de regel van index.html en in de code; tt_cache_postcode wordt niet meer aangeroepen",
+          "pdok.nl" not in html and "pdok.nl" not in app_js and "tt_cache_postcode" not in app_js
+          and "tt_cache_postcode" not in stub_js, "")
+    httpd, port = serve()
+    fouten = []
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:400]))
+        page.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        naar_buiten = []
+        def buiten(r):
+            naar_buiten.append(r.request.url)
+            r.abort()
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**"):
+            page.route(pat, buiten)
+        page.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        page.wait_for_timeout(800)
+        u = page.evaluate(r"""async () => {
+          const w = (ms = 400) => new Promise(r => setTimeout(r, ms));
+          const S = window.TT_STUB, u = {}, $ = id => document.getElementById(id);
+          const zet = (id, v) => { const e = $(id); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); };
+          // TT-655: korte woorden alleen los; lange woorden overal; system en systeem mogen.
+          u.namen = Object.fromEntries(['JandeGroot', 'Modderman', 'Teamspeler', 'DrumModus', 'Steam_Jazz', 'Grootveld', 'Staffhorst',
+            'SoundSystemJay', 'Systeemband', 'Timo_drums', 'root', 'Root', 'mod_jan', 'Team_Jan', 'Mod123', 'Jan_Staff', '7owner7',
+            'SuperAdmin92', 'TalentTent_Support', 'TT_Developer', 'Beheerder1'].map(n => [n, isReservedUsername(n)]));
+          // TT-660: geen leeftijd bij een datum die niet bestaat.
+          u.leeftijd = [leeftijdUitVeld('31-02-2005'), leeftijdUitVeld('29-02-2005'), leeftijdUitVeld(''), leeftijdUitVeld('01-01-20'), typeof leeftijdUitVeld('01-01-2000')];
+          showView('register'); await w();
+          zet('fname', 'Sanne'); zet('birth_date', '31-02-2005'); wizHoesBijwerken(); await w(200);
+          u.hoes31 = ($('wizHoes').textContent || '').replace(/\s+/g, ' ').trim();
+          zet('birth_date', '01-01-2000'); wizHoesBijwerken(); await w(200);
+          u.hoesGoed = ($('wizHoes').textContent || '').replace(/\s+/g, ' ').trim();
+          zet('birth_date', '31-02-2012'); u.ouder31 = ouderLeeftijdUitVeld();
+          zet('birth_date', ''); zet('fname', '');
+          // TT-624: de plaats komt alleen uit de eigen lijst.
+          S.data.postcode_cache = [
+            { postcode: '2497', city: 'Den Haag', alternatieve_schrijfwijzen: "'s-Gravenhage" },
+            { postcode: '2611', city: 'Delft', alternatieve_schrijfwijzen: null },
+            { postcode: '1011', city: 'Amsterdam', alternatieve_schrijfwijzen: null }];
+          S.calls.length = 0;
+          u.bekend = await lookupPostcodeCity('2497');
+          u.onbekend = await lookupPostcodeCity('9999');
+          S.errors.postcode_cache = { code: 'XX', message: 'stuk' };
+          u.storing = await lookupPostcodeCity('2497');
+          delete S.errors.postcode_cache;
+          u.cacheRpc = S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_cache_postcode').length;
+          onPostcodeInput('2497'); await w(900);
+          u.wizard = { plaats: $('city').value, bron: state.citySource };
+          // TT-628: een plaats die de lijst niet kent (bezoeker zonder profiel).
+          currentUser = null; hasOwnProfile = false; S.session = null;
+          S.rpcResults.tt_resolve_search_origin = p => (/^den haag$/i.test(p.query_text) || /^del/i.test(p.query_text) || p.query_text === '2497') ? [{ lat: 52.07, lng: 4.3 }] : [];
+          showView('search'); openZoekScherm('muzikanten', { geenZoek: true }); await w();
+          const regel = id => { const f = $(id), m = f.nextElementSibling;
+            return f.classList.contains('field-error') && m && m.classList.contains('field-msg') ? m.textContent.replace(/\s+/g, ' ').trim() : null; };
+          const zoekt = () => S.calls.filter(c => c.kind === 'rpc' && /^tt_search_/.test(c.name)).length;
+          S.calls.length = 0;
+          $('filterCity').value = 'Den Haaag'; await runSearch(); await w();
+          u.haaag = { regel: regel('filterCity'), zocht: zoekt(), lijst: $('searchResults').textContent.trim() };
+          // Maten op 390: Plaats en Straal op één lijn, de melding 8 onder het veld, het teken op de veldinzet.
+          const maat = () => { const f = $('filterCity').getBoundingClientRect(), s = $('filterRadiusField').getBoundingClientRect();
+            const m = $('filterCity').nextElementSibling.getBoundingClientRect(), i = $('filterCity').nextElementSibling.querySelector('svg').getBoundingClientRect();
+            const k = document.querySelector('.frc-plaats .bedoel-link');
+            return { lijn: Math.round(f.top - s.top), onder: Math.round(m.top - f.bottom), inzet: Math.round(i.left - f.left),
+                     straalHoog: Math.round(s.height), link: k ? getComputedStyle(k).textDecorationLine + ' ' + (getComputedStyle(k).color === getComputedStyle($('filterCity').nextElementSibling).color) : null }; };
+          u.maat390 = maat();
+          const knop = document.querySelector('.frc-plaats .bedoel-link');
+          u.knopTekst = knop ? knop.textContent : null;
+          S.calls.length = 0;
+          if (knop) knop.click();
+          await w(900);
+          u.naTik = { waarde: $('filterCity').value, fout: $('filterCity').classList.contains('field-error'), zocht: zoekt() };
+          $('filterCity').value = 'Xyzstad'; await runSearch(); await w();
+          u.xyz = regel('filterCity');
+          zet('filterCity', 'Delf'); await w(1200);
+          u.begin = regel('filterCity');
+          clearFieldError('filterCity');
+          $('filterCity').value = '252'; await runSearch(); await w();
+          u.halvePostcode = regel('filterCity');
+          S.rpcErrors.tt_resolve_search_origin = { code: 'XX', message: 'stuk' };
+          $('filterCity').value = 'Den Haaag'; await runSearch(); await w();
+          u.storingZoek = regel('filterCity');
+          delete S.rpcErrors.tt_resolve_search_origin;
+          // Wie speelt dit? (Mix & Match): dezelfde melding, geen zoekopdracht.
+          setlistWantedSongs.push({ title: 'Wonderwall', artist: 'Oasis' });
+          S.calls.length = 0;
+          $('filterSetlistCity').value = 'Den Haaag'; await runSetlistSearch(); await w();
+          u.setlist = { regel: regel('filterSetlistCity'), zocht: S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_search_musicians_anon').length };
+          setlistWantedSongs.length = 0; $('filterSetlistCity').value = ''; clearFieldError('filterSetlistCity');
+          $('filterCity').value = 'Den Haaag'; await runSearch(); await w();
+          return u;
+        }""")
+        maten = {}
+        for breed in (360, 1280):
+            page.set_viewport_size({"width": breed, "height": 844})
+            page.wait_for_timeout(300)
+            maten[breed] = page.evaluate("""() => { const $ = id => document.getElementById(id);
+              const f = $('filterCity').getBoundingClientRect(), s = $('filterRadiusField').getBoundingClientRect();
+              const m = $('filterCity').nextElementSibling.getBoundingClientRect(), i = $('filterCity').nextElementSibling.querySelector('svg').getBoundingClientRect();
+              return { lijn: Math.round(f.top - s.top), onder: Math.round(m.top - f.bottom), inzet: Math.round(i.left - f.left) }; }""")
+        page.set_viewport_size({"width": 390, "height": 844})
+        page.wait_for_timeout(300)
+        page.evaluate("window.scrollTo(0, 0)")
+        page.screenshot(path=os.path.join(tempfile.gettempdir(), "blok163-bedoel-je.png"))
+        v = page.evaluate(r"""async () => {
+          const w = (ms = 400) => new Promise(r => setTimeout(r, ms));
+          const S = window.TT_STUB, v = {}, $ = id => document.getElementById(id);
+          // TT-654: Uitloggen werkt direct, ook als de browser de service worker weigerde.
+          const keep = { ...ttPushApi };
+          S.session = { user: { id: 'u1', email: 'test@talenttent.org' } }; currentUser = S.session.user;
+          ttPushApi.beschikbaar = () => true; ttPushApi.toestemming = () => 'granted';
+          Object.defineProperty(navigator.serviceWorker, 'ready', { configurable: true, get: () => new Promise(() => {}) });
+          showView('about'); await w(100);
+          S.calls.length = 0;
+          const t0 = performance.now();
+          const klaar = signOut();
+          v.hangt = { scherm: huidigeView, ms: Math.round(performance.now() - t0) };
+          await klaar;
+          v.hangt.totaal = Math.round(performance.now() - t0);
+          v.hangt.uitgelogd = S.calls.some(c => c.kind === 'auth' && c.name === 'signOut');
+          delete navigator.serviceWorker.ready;
+          // Met een abonnement en een trage database: het scherm direct, het abonnement daarna weg, dan pas uitloggen bij Supabase.
+          let uitgeschreven = 0;
+          const sub = { endpoint: 'https://push.example/abc', unsubscribe: async () => { uitgeschreven++; return true; } };
+          ttPushApi.abonnement = async () => sub;
+          const echtRpc = db.rpc.bind(db), volgorde = [];
+          db.rpc = (n, p) => n === 'tt_push_uitzetten'
+            ? new Promise(r => setTimeout(() => { volgorde.push('uitzetten'); r({ data: null, error: null }); }, 1500))
+            : echtRpc(n, p);
+          const echtUit = db.auth.signOut.bind(db.auth);
+          db.auth.signOut = () => { volgorde.push('supabase'); return echtUit(); };
+          S.session = { user: { id: 'u1', email: 'test@talenttent.org' } }; currentUser = S.session.user;
+          showView('about'); await w(100);
+          const t1 = performance.now();
+          const klaar2 = signOut();
+          v.traag = { scherm: huidigeView, ms: Math.round(performance.now() - t1) };
+          await klaar2;
+          v.traag.uitgeschreven = uitgeschreven; v.traag.volgorde = volgorde.slice();
+          db.rpc = echtRpc; db.auth.signOut = echtUit; Object.assign(ttPushApi, keep);
+          // De andere wachtstappen op de service worker: hoogstens 2 seconden.
+          Object.defineProperty(navigator.serviceWorker, 'ready', { configurable: true, get: () => new Promise(() => {}) });
+          const t2 = performance.now();
+          v.registratie = { abonnement: await ttPushApi.abonnement() };
+          v.registratie.ms = Math.round(performance.now() - t2);
+          const t3 = performance.now();
+          v.registratie.meldingen = (await ttPushApi.meldingen()).length;
+          v.registratie.ms2 = Math.round(performance.now() - t3);
+          delete navigator.serviceWorker.ready;
+          // TT-656 punt 1: een storing is iets anders dan een link die niet werkt.
+          const echtFn = db.functions;
+          db.functions = { invoke: async () => ({ data: null, error: { message: 'Failed to send a request to the Edge Function' } }) };
+          await toestemmingPaginaOpenen('abc'); await w(200);
+          v.storing = { tekst: $('toestemmingInhoud').textContent.replace(/\s+/g, ' ').trim(), knop: !!$('toestemmingInhoud').querySelector('button') };
+          db.functions = { invoke: async () => ({ data: null, error: { message: 'Edge Function returned a non-2xx status code',
+            context: { clone() { return this; }, json: async () => ({ error: 'Onbekende link.' }) } } }) };
+          await toestemmingPaginaOpenen('abc'); await w(200);
+          v.onbekend = $('toestemmingInhoud').textContent.replace(/\s+/g, ' ').trim();
+          // TT-656 punt 2: koppelen mislukt; het nummer blijft bewaard, één poging per start, alleen voor dit account.
+          localStorage.removeItem('tt_ouder_koppelen_v1');
+          const echtSubmit = window.submitProfile;
+          window.submitProfile = async () => { state.savedId = 'm9'; };
+          currentUser = { id: 'u9', email: 'kind@talenttent.org' };
+          ouderAanvraagBewaren({ aanvraagId: 'a1', stand: 'goedgekeurd', ouderEmail: 'ouder@talenttent.org' });
+          showView('register'); await w(100); ouderWachtwoordTonen(); await w(100);
+          $('ouderWachtwoordVeld').value = 'geheim1234';
+          S.rpcErrors.tt_ouder_koppelen = { code: 'XX', message: 'stuk' };
+          await ouderProfielAanmaken();
+          v.koppelMis = { aanvraag: ouderAanvraagLezen(), bewaard: JSON.parse(localStorage.getItem('tt_ouder_koppelen_v1') || 'null') };
+          delete S.rpcErrors.tt_ouder_koppelen; S.rpcResults.tt_ouder_koppelen = null;
+          const koppels = () => S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_ouder_koppelen').length;
+          S.calls.length = 0;
+          await ouderKoppelingHerhalen({ id: 'u8' });
+          v.anderAccount = { vragen: koppels(), bewaard: !!localStorage.getItem('tt_ouder_koppelen_v1') };
+          await ouderKoppelingHerhalen({ id: 'u9' });
+          v.zelfdeAccount = { vragen: koppels(), bewaard: !!localStorage.getItem('tt_ouder_koppelen_v1') };
+          // Gelukt koppelen: niets bewaard.
+          ouderAanvraagBewaren({ aanvraagId: 'a3', stand: 'goedgekeurd', ouderEmail: 'ouder@talenttent.org' });
+          await ouderProfielAanmaken();
+          v.koppelGoed = { aanvraag: ouderAanvraagLezen(), bewaard: !!localStorage.getItem('tt_ouder_koppelen_v1') };
+          window.submitProfile = echtSubmit; currentUser = null; S.session = null;
+          // TT-656 punt 3: het wachtscherm vraagt alleen als het in beeld is.
+          const standen = [];
+          db.functions = { invoke: async (n, o) => { standen.push(o.body.actie); return { data: { stand: 'open' }, error: null }; } };
+          ouderAanvraagBewaren({ aanvraagId: 'a2', stand: 'open', ouderEmail: 'ouder@talenttent.org', verstuurd: 1, laatstVerstuurd: Date.now() });
+          ouderWachtTonen(); await w(200);
+          v.wacht = { inBeeld: standen.length };
+          Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+          standen.length = 0;
+          await ouderStandVerversen(); await ouderStandVerversen();
+          v.wacht.verborgen = standen.length;
+          Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+          document.dispatchEvent(new Event('visibilitychange')); await w(200);
+          v.wacht.weerZichtbaar = standen.length;
+          standen.length = 0;
+          showView('about'); await w(100);
+          await ouderStandVerversen();
+          v.wacht.anderScherm = standen.length;
+          delete document.visibilityState;
+          ouderPaneelSluiten(); ouderAanvraagWissen(); clearInterval(ouderStandTimer);
+          db.functions = echtFn;
+          return v;
+        }""")
+        ctx.close()
+        browser.close()
+    httpd.shutdown()
+    j = json.dumps(u, ensure_ascii=False)
+    nee = ['JandeGroot', 'Modderman', 'Teamspeler', 'DrumModus', 'Steam_Jazz', 'Grootveld', 'Staffhorst', 'SoundSystemJay', 'Systeemband', 'Timo_drums']
+    ja = ['root', 'Root', 'mod_jan', 'Team_Jan', 'Mod123', 'Jan_Staff', '7owner7', 'SuperAdmin92', 'TalentTent_Support', 'TT_Developer', 'Beheerder1']
+    check("TT-655: JandeGroot, Modderman, Teamspeler, DrumModus, SoundSystemJay en vijf andere mogen; root, Mod123, Team_Jan, SuperAdmin92, TalentTent_Support, TT_Developer en vijf andere niet",
+          all(u["namen"][n] is False for n in nee) and all(u["namen"][n] is True for n in ja), json.dumps(u["namen"]))
+    check("TT-660: geen leeftijd bij 31-02-2005, 29-02-2005, leeg of een halve datum; wel bij 01-01-2000",
+          u["leeftijd"][:4] == [None, None, None, None] and u["leeftijd"][4] == "number", j)
+    check("TT-660: de hoes van stap 1 toont bij 31-02-2005 'Je leeftijd', bij 01-01-2000 de leeftijd; de regel voor de ouder ziet bij 31-02 geen leeftijd",
+          "Je leeftijd" in u["hoes31"] and " jaar" not in u["hoes31"] and " jaar" in u["hoesGoed"] and isinstance(u["ouder31"], float) and u["ouder31"] != u["ouder31"], j)  # NaN: geen leeftijd
+    check("TT-624: de plaats bij een postcode komt alleen uit de eigen lijst: 2497 Den Haag (bron cache), 9999 niet gevonden, een storing een fout",
+          u["bekend"] == {"found": True, "city": "Den Haag", "source": "cache"} and u["onbekend"] == {"found": False, "reason": "notfound"}
+          and u["storing"] == {"found": False, "reason": "error"} and u["cacheRpc"] == 0, j)
+    check("TT-624: stap 1 vult Den Haag in bij 2497, bron cache; geen enkele vraag naar pdok.nl",
+          u["wizard"] == {"plaats": "Den Haag", "bron": "cache"} and not [x for x in naar_buiten if "pdok" in x], j + " " + " ".join(naar_buiten))
+    check("TT-628: 'Den Haaag' geeft onder Plaats 'Bedoel je: Den Haag?', geen zoekopdracht en geen lege staat",
+          u["haaag"]["regel"] == "Bedoel je: Den Haag?" and u["haaag"]["zocht"] == 0 and u["haaag"]["lijst"] == "" and u["knopTekst"] == "Den Haag", j)
+    check("TT-628: een tik op Den Haag zet de plaats in het veld, haalt de melding weg en zoekt",
+          u["naTik"]["waarde"] == "Den Haag" and u["naTik"]["fout"] is False and u["naTik"]["zocht"] >= 1, j)
+    check("TT-628: 'Xyzstad' geeft 'Deze plaats herkennen we niet.'; tijdens het typen ('Delf'), bij een halve postcode ('252') en bij een storing geen melding",
+          u["xyz"] == "Deze plaats herkennen we niet." and u["begin"] is None and u["halvePostcode"] is None and u["storingZoek"] is None, j)
+    check("TT-628: Wie speelt dit? geeft dezelfde melding, zonder zoekopdracht", u["setlist"] == {"regel": "Bedoel je: Den Haag?", "zocht": 0}, j)
+    goed = {"lijn": 0, "onder": 8, "inzet": 10}
+    check("TT-628: met de melding blijven Plaats en Straal op één lijn, de melding 8 onder het veld, het teken op 10 (360, 390 en 1280)",
+          all({k: m[k] for k in goed} == goed for m in (u["maat390"], maten[360], maten[1280])),
+          json.dumps({"390": u["maat390"], "360": maten[360], "1280": maten[1280]}))
+    check("TT-628: de plaats in 'Bedoel je' is onderstreept, in de tekstkleur van de melding", u["maat390"]["link"] == "underline true", j)
+    jv = json.dumps(v, ensure_ascii=False)
+    check("TT-654: zonder service worker staat de landingspagina er direct na Uitloggen (binnen 100 ms); na hoogstens 2 seconden logt Supabase uit",
+          v["hangt"]["scherm"] == "landing" and v["hangt"]["ms"] <= 100 and v["hangt"]["uitgelogd"] and v["hangt"]["totaal"] <= 2600, jv)
+    check("TT-654: met een abonnement en een trage database: de landingspagina direct, het abonnement daarna weg, dan pas Supabase",
+          v["traag"]["scherm"] == "landing" and v["traag"]["ms"] <= 100 and v["traag"]["uitgeschreven"] == 1
+          and v["traag"]["volgorde"] == ["uitzetten", "supabase"], jv)
+    check("TT-654: zonder service worker geven abonnement en seintjes na hoogstens 2 seconden 'geen'",
+          v["registratie"]["abonnement"] is None and v["registratie"]["meldingen"] == 0
+          and v["registratie"]["ms"] <= 2600 and v["registratie"]["ms2"] <= 2600, jv)
+    check("TT-656: een storing geeft 'De pagina laden lukte niet' / 'Tik over een paar minuten opnieuw op de knop in de mail.', zonder knop; een onbekende code 'Deze link werkt niet'",
+          v["storing"]["tekst"] == "De pagina laden lukte niet Tik over een paar minuten opnieuw op de knop in de mail." and not v["storing"]["knop"]
+          and v["onbekend"].startswith("Deze link werkt niet Heb je meer mails"), jv)
+    check("TT-656: mislukt het koppelen, dan blijft het nummer bewaard (met het account) en is de aanvraag weg; een ander account probeert niets, hetzelfde account één keer en wist het",
+          v["koppelMis"]["aanvraag"] is None and v["koppelMis"]["bewaard"] == {"aanvraagId": "a1", "userId": "u9"}
+          and v["anderAccount"] == {"vragen": 0, "bewaard": True} and v["zelfdeAccount"] == {"vragen": 1, "bewaard": False}
+          and v["koppelGoed"] == {"aanvraag": None, "bewaard": False}, jv)
+    check("TT-656: het wachtscherm vraagt alleen als het in beeld is: niet met een verborgen tabblad of op een ander scherm, wel meteen als het weer zichtbaar wordt",
+          v["wacht"] == {"inBeeld": 1, "verborgen": 0, "weerZichtbaar": 1, "anderScherm": 0}, jv)
+    check("geen paginafouten in blok 163", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -19564,6 +19826,7 @@ BLOKKEN = [
     blok_bundel1_mails,
     blok_bundel1_media,
     blok_bundel_e,
+    blok_bundel_d,
 ]
 
 

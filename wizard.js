@@ -192,7 +192,7 @@ function vulStateUitVoortgang(saved) {
   state.zip = saved.zip || '';
   state.bio = saved.bio || '';
   state.naamTonen = saved.naamTonen === 'gebruikersnaam' ? 'gebruikersnaam' : 'echt';
-  state.citySource = saved.citySource || 'pdok';
+  state.citySource = saved.citySource || 'cache';
   state.instruments = saved.instruments || [];
   state.instrumentLevels = saved.instrumentLevels || {};
   state.genres = saved.genres || [];
@@ -420,7 +420,7 @@ async function persistEditedProfile(mid) {
     avatar_url:       state.avatarUrl || null,
     ...wazigVeld(state.avatarUrl),
     ...fotoBronVelden(),
-    city_source:      state.citySource || 'pdok',
+    city_source:      state.citySource || 'cache',
     profile_complete: true, // de klik op "Profiel aanmaken". Bij 16+ wacht de database eerst op de bevestiging (TT-336)
   }).eq('id', mid).select('id'));
   if (uErr) throw new Error(uErr.message);
@@ -795,7 +795,7 @@ async function submitProfile() {
           avatar_url:       state.avatarUrl || null,
           ...wazigVeld(state.avatarUrl),
           ...fotoBronVelden(),
-          city_source:      state.citySource || 'pdok',
+          city_source:      state.citySource || 'cache',
           user_id:          userId,
           profile_complete: true,
         })
@@ -899,7 +899,7 @@ function legeWizardState() {
     currentStep: 0,
     fname: '', lname: '', birth_date: '', city: '', zip: '', bio: '',
     username: '',
-    citySource: 'pdok',
+    citySource: 'cache',
     regEmail: '', regPassword: '',
     instruments: [],
     instrumentLevels: {}, // TT-51 (12-08-2026): instrument (string) -> niveau 1-5
@@ -1016,8 +1016,7 @@ function wizHoesBijwerken() {
   if (!vak) return;
   const waarde = id => (document.getElementById(id)?.value || '').trim();
   const datum = waarde('birth_date');
-  const jaar = datum.length === 10 ? calcAge(datum) : NaN;
-  const leeftijd = Number.isInteger(jaar) && jaar >= 0 && jaar < 120 ? jaar : null;
+  const leeftijd = leeftijdUitVeld(datum); // TT-660: geen leeftijd bij een datum die niet bestaat
   const naam = naamZoalsAnderen(waarde('fname'), waarde('lname'), waarde('username'),
     state.naamTonen, leeftijd === null ? 16 : leeftijd) || 'Jouw naam';
   const regel = `${leeftijd === null ? 'Je leeftijd' : leeftijd + ' jaar'} · ${waarde('city') || 'je plaats'}`;
@@ -1061,7 +1060,7 @@ async function nextStep(from) {
     if (!state.fname) {
       fouten.push(['fname', 'Vul je voornaam in']);
     } else if (!naamPastInProfielkop(naamZoalsAnderen(state.fname, state.lname, state.username, state.naamTonen,
-        /^\d{2}-\d{2}-\d{4}$/.test(state.birth_date) ? calcAge(state.birth_date) : 16) || state.fname)) {
+        leeftijdUitVeld(state.birth_date) ?? 16) || state.fname)) { // TT-660
       // TT-249 (11-09-2026): de naam is de grote naam op je profiel. Die wordt
       // nooit afgekapt en nooit afgebroken, dus een naam die op de kleinste
       // letter niet past, komt er niet in. TT-420: vanaf 16 staat standaard de

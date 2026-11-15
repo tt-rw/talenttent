@@ -24,16 +24,30 @@ const ttPushApi = {
   },
   toestemming() { return Notification.permission; },
   vraagToestemming() { return Notification.requestPermission(); },
-  async registratie() { return navigator.serviceWorker.ready; },
-  async abonnement() { return (await this.registratie()).pushManager.getSubscription(); },
+  // TT-654: `ready` komt nooit terug als de browser de service worker
+  // weigerde. Na hoogstens 2 seconden geeft dit null: geen abonnement.
+  async registratie() {
+    return Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise(klaar => setTimeout(() => klaar(null), 2000)),
+    ]);
+  },
+  async abonnement() {
+    const reg = await this.registratie();
+    return reg ? reg.pushManager.getSubscription() : null;
+  },
   async abonneer() {
     const reg = await this.registratie();
+    if (!reg) throw new Error('Geen service worker');
     return reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: ttBase64UrlNaarBytes(TT_VAPID_PUBLIEK),
     });
   },
-  async meldingen() { return (await this.registratie()).getNotifications({ tag: TT_SEINTJE_TAG }); },
+  async meldingen() {
+    const reg = await this.registratie();
+    return reg ? reg.getNotifications({ tag: TT_SEINTJE_TAG }) : [];
+  },
 };
 
 function ttBase64UrlNaarBytes(s) {
@@ -103,7 +117,8 @@ async function ttSeintjeAanzetten() {
 
 // Zet het seintje uit voor dit toestel: abonnement bij ons weg en in de browser.
 async function ttSeintjeUitzetten() {
-  if (!ttPushApi.beschikbaar()) return true;
+  // TT-654: zonder toestemming is er geen seintje om uit te zetten.
+  if (!ttPushApi.beschikbaar() || ttPushApi.toestemming() !== 'granted') return true;
   try {
     const sub = await ttPushApi.abonnement();
     if (sub) {

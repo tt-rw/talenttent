@@ -559,7 +559,7 @@ function naamKeuzeBijwerken(v, keuze) {
   const blok = document.getElementById(v.blok);
   if (!blok) return;
   const datum = document.getElementById(v.geboorte).value.trim();
-  const leeftijd = datum.length === 10 ? calcAge(datum) : null;
+  const leeftijd = leeftijdUitVeld(datum); // TT-660
   blok.style.display = (leeftijd !== null && leeftijd < 16) ? 'none' : '';
   blok.querySelectorAll(`#${v.control} .segmented-btn`).forEach(btn => {
     btn.classList.toggle('selected', btn.getAttribute('data-mode') === keuze);
@@ -686,6 +686,15 @@ function geboortedatumFout(waarde) {
   if (isNaN(leeftijd) || leeftijd < 13) return 'Je moet minimaal 13 jaar zijn om een profiel aan te maken';
   if (leeftijd > 100) return 'Controleer je geboortedatum';
   return '';
+}
+
+// TT-660 (besluit Ronald 15-11-2026, sessie 153: "ja"): de leeftijd die een
+// scherm tijdens het typen toont (de hoes, het blok Naam op je profiel, de
+// regel voor de ouder). Null zolang geboortedatumFout() een fout geeft: een
+// datum die niet bestaat (31-02) gaf anders toch een leeftijd.
+function leeftijdUitVeld(waarde) {
+  const s = (waarde || '').trim();
+  return s && !geboortedatumFout(s) ? calcAge(s) : null;
 }
 
 // TT-625 (besluit Ronald 15-11-2026, sessie 149: "a" en "ok. 1"): een

@@ -62,13 +62,17 @@ async function signIn() {
 // lokale sessie sowieso al opgeruimd — er blijft dan geen halve/verwarrende
 // staat achter (hooguit staat de gebruiker serverside iets langer "ingelogd",
 // zonder dat dat in de app zichtbaar is of iets kan doen).
+// TT-654 (15-11-2026): eerst het scherm, dan pas het seintje uitzetten. Het
+// wachten op het seintje stond vóór het scherm en kon in een browser zonder
+// service worker eeuwig duren; Uitloggen deed dan niets.
 async function signOut() {
-  // TT-452: uitloggen stopt het seintje op dit toestel; het hoort bij het account.
-  // Eerst, want de sessie is nodig om het abonnement te verwijderen.
-  await ttSeintjeUitzetten();
   currentUser = null;
   fotoLinksWissen(); // TT-480: de tijdelijke links horen bij dit account
   onUserLoggedOut();
+  // TT-452: uitloggen stopt het seintje op dit toestel; het hoort bij het
+  // account. Vóór db.auth.signOut(), want de sessie is nodig om het
+  // abonnement te verwijderen. Een fout logt ttSeintjeUitzetten() zelf.
+  await ttSeintjeUitzetten();
   try {
     await db.auth.signOut();
   } catch (e) {
@@ -98,14 +102,23 @@ let lastUsernameCheckError = ''; // 22-08-2026 (P0-diagnose): de echte technisch
 // regel), ongeacht wat daartussen staat.
 //
 // Deze lijst is aan te vullen zonder verdere codewijzigingen elders.
+// TT-655 (besluiten Ronald 15-11-2026, sessie 150 en 153): alleen gangbare
+// woorden voor beheer, moderatie en support. "system" en "systeem" zijn eruit
+// ("sound system" is een gewoon muziekwoord).
 const RESERVED_USERNAME_WORDS = [
   'admin', 'administrator', 'beheer', 'beheerder',
-  'moderator', 'moderatie', 'mod',
+  'moderator', 'moderatie',
   'support', 'helpdesk', 'klantenservice',
-  'systeem', 'system', 'root', 'owner', 'eigenaar',
-  'official', 'officieel', 'staff', 'medewerker', 'team',
+  'eigenaar',
+  'official', 'officieel', 'medewerker',
   'webmaster', 'superuser', 'developer', 'ontwikkelaar',
 ];
+
+// TT-655: een kort woord telt alleen als los deel van de naam: de hele naam,
+// of een deel tussen underscores of cijfers (Root, Team_Jan, Mod123,
+// Jan_Staff). Een hoofdletter midden in de naam is geen grens: JandeGroot,
+// Teamspeler en Modderman mogen.
+const RESERVED_USERNAME_LOSSE_WOORDEN = ['mod', 'root', 'team', 'staff', 'owner'];
 
 // Bevinding Ronald: de geblokkeerde namen hierboven zijn wél bedoeld voor
 // hemzelf of andere TTT-medewerkers om te gebruiken. Bewust een aparte lijst
@@ -122,7 +135,8 @@ function isReservedUsername(value) {
   const v = value.toLowerCase();
   if (STAFF_USERNAME_EXCEPTIONS.some(x => x.toLowerCase() === v)) return false;
   if (v.includes('talent') && v.includes('tent')) return true;
-  return RESERVED_USERNAME_WORDS.some(w => v.includes(w));
+  if (RESERVED_USERNAME_WORDS.some(w => v.includes(w))) return true;
+  return v.split(/[_0-9]+/).some(deel => RESERVED_USERNAME_LOSSE_WOORDEN.includes(deel));
 }
 
 function scheduleUsernameCheck() {

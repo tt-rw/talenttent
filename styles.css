@@ -1007,6 +1007,13 @@
     color: var(--text);
   }
 
+  /* TT-628: de plaats in "Bedoel je: Den Haag?", een link in een zin
+     (huisstijl §3.10): onderstreept, in de tekstkleur. */
+  .field-msg .bedoel-link {
+    background: none; border: 0; padding: 0; margin: 0;
+    font: inherit; color: inherit; text-decoration: underline; cursor: pointer;
+  }
+
   .field-msg-icon {
     flex: none;
     width: 14px;
@@ -1033,7 +1040,8 @@
   .field > .field-msg,
   .postcode-plaats > .field-hint,
   .postcode-plaats > .field-status,
-  .postcode-plaats > .field-msg { margin-top: calc(var(--ruimte-uitleg) - var(--ruimte-label)); }
+  .postcode-plaats > .field-msg,
+  .frc-plaats > .field-msg { margin-top: calc(var(--ruimte-uitleg) - var(--ruimte-label)); } /* TT-628: Plaats in Zoeken */
   .field > :is(label, .label-rij, .label-with-info) + :is(.field-hint, .field-status, .field-msg),
   .field > :is(.field-hint, .field-status, .field-msg):first-child { margin-top: 0; } /* TT-543 onderdeel 7: een regel boven het veld (Nu: in Je inloggegevens) */
   .field > .field-hint:empty { display: none; }
@@ -5093,7 +5101,9 @@
      en groeit niet mee; Plaats krijgt de rest, want plaatsnamen verschillen
      sterk in lengte. */
 
-  .filter-row-city { display: flex; gap: 8px; align-items: flex-end; }
+  /* TT-628: bovenaan uitgelijnd, zodat Straal blijft staan als onder Plaats
+     een melding komt (de veldnamen zijn even hoog). */
+  .filter-row-city { display: flex; gap: 8px; align-items: flex-start; }
   /* Deze twee staan niet in een .field, dus de 8px tussen label en veld uit §3
      kwam hier niet vanzelf. */
   .filter-row-city .frc-plaats,

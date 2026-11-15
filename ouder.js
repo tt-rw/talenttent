@@ -41,9 +41,8 @@ function ouderToestemmingNodig(leeftijd) {
 function ouderLeeftijdUitVeld() {
   const veld = document.getElementById('birth_date');
   if (!veld) return NaN;
-  const waarde = (veld.value || '').trim();
-  if (!/^\d{2}-\d{2}-\d{4}$/.test(waarde)) return NaN;
-  return calcAge(waarde);
+  const leeftijd = leeftijdUitVeld(veld.value); // TT-660: ook geen leeftijd bij een datum die niet bestaat
+  return leeftijd === null ? NaN : leeftijd;
 }
 
 // ─── Onderdeel 1: de regel bij de geboortedatum ──────────────────────────────
@@ -95,6 +94,7 @@ function ouderPaneelTonen(id) {
 }
 
 function ouderPaneelSluiten() {
+  clearInterval(ouderStandTimer); // TT-656 punt 3: de klok hoort bij het wachtscherm
   document.querySelectorAll('.panel-ouder').forEach(p => p.classList.remove('active'));
   const balk = document.getElementById('stepsBar');
   if (balk) balk.style.display = '';
@@ -274,7 +274,22 @@ function ouderAdresWijzigen() {
   ouderStapTonen();
 }
 
+// TT-656 punt 3: alleen vragen als het wachtscherm echt in beeld is: het
+// tabblad zichtbaar, het paneel actief en het scherm van de wizard open. Een
+// tabblad dat een dag op de achtergrond openstond, vroeg anders 4.320 keer.
+function ouderWachtInBeeld() {
+  const paneel = document.getElementById('ouderWacht');
+  return document.visibilityState === 'visible'
+    && !!paneel && paneel.classList.contains('active') && paneel.offsetParent !== null;
+}
+
+// Zoals bevestigPeilen() (wizard.js): komt de app weer in beeld, dan meteen.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && ouderWachtInBeeld()) ouderStandVerversen();
+});
+
 async function ouderStandVerversen() {
+  if (!ouderWachtInBeeld()) return;
   const bewaard = ouderAanvraagLezen();
   if (!bewaard?.aanvraagId) return;
   try {
@@ -368,12 +383,44 @@ async function ouderProfielAanmaken() {
 
   // Gelukt? Dan het nummer van de aanvraag aan het nieuwe profiel koppelen —
   // dat is het bewijs dat bij dit account een goedkeuring hoort.
+  // TT-656 punt 2: mislukt het koppelen, dan blijft het nummer bewaard (los
+  // van de aanvraag, met het account erbij) en probeert de app het bij de
+  // volgende start opnieuw. De aanvraag zelf gaat wel weg, zodat de wizard op
+  // dit toestel nooit een oude goedkeuring voor een ander kind gebruikt.
   if (state.savedId && bewaard?.aanvraagId) {
-    try {
-      const { error } = await db.rpc('tt_ouder_koppelen', { p_aanvraag_id: bewaard.aanvraagId });
-      if (error) throw error;
-    } catch (e) { logCaught('ouderKoppelen', e); }
+    if (!(await ouderKoppelen(bewaard.aanvraagId))) {
+      ouderKoppelingBewaren({ aanvraagId: bewaard.aanvraagId, userId: currentUser?.id || null });
+    }
     ouderAanvraagWissen();
+  }
+}
+
+const OUDER_KOPPELEN_KEY = 'tt_ouder_koppelen_v1';
+
+async function ouderKoppelen(aanvraagId) {
+  try {
+    const { error } = await db.rpc('tt_ouder_koppelen', { p_aanvraag_id: aanvraagId });
+    if (error) throw error;
+    return true;
+  } catch (e) {
+    logCaught('ouderKoppelen', e);
+    return false;
+  }
+}
+
+function ouderKoppelingBewaren(gegevens) {
+  try { localStorage.setItem(OUDER_KOPPELEN_KEY, JSON.stringify(gegevens)); }
+  catch (e) { console.error('Kon de koppeling niet bewaren:', e); }
+}
+
+// TT-656 punt 2: één nieuwe poging per start, alleen voor het account dat de
+// koppeling achterliet. Aangeroepen vanuit onUserLoggedIn() (core.js).
+async function ouderKoppelingHerhalen(user) {
+  let open = null;
+  try { open = JSON.parse(localStorage.getItem(OUDER_KOPPELEN_KEY) || 'null'); } catch (e) { open = null; }
+  if (!open?.aanvraagId || !user || open.userId !== user.id) return;
+  if (await ouderKoppelen(open.aanvraagId)) {
+    try { localStorage.removeItem(OUDER_KOPPELEN_KEY); } catch (e) { /* zie boven */ }
   }
 }
 
@@ -393,13 +440,22 @@ async function toestemmingPaginaOpenen(code) {
     toestemmingVraagTonen(gegevens);
   } catch (e) {
     logCaught('toestemmingPaginaOpenen', e);
-    // TT-330 (26-09-2026): een onbekende code leidt niet meer stil naar de
-    // homepage. De ouder kwam daar zonder uitleg uit en wist niet wat hij
-    // moest doen. Sinds TT-330 blijft elke link uit een eerdere mail werken;
-    // deze melding blijft over voor een link die kapot of vervangen is.
-    // TT-543 onderdeel 8, V5: een titel die zegt wat er is.
-    toestemmingMeldingTonen('Deze link werkt niet',
-      ['Heb je meer mails van ons gekregen? Gebruik dan de knop in de nieuwste.']);
+    // TT-656 punt 1 (besluit Ronald 15-11-2026, sessie 150: "ja"): alleen als
+    // de server zegt dat hij de code niet kent ("Onbekende link."), werkt de
+    // link niet. Elke andere fout (geen verbinding, een storing) krijgt de
+    // vorm van "E-mailadres bevestigen lukte niet", zonder knop.
+    if ((e && e.message) === 'Onbekende link.') {
+      // TT-330 (26-09-2026): een onbekende code leidt niet meer stil naar de
+      // homepage. De ouder kwam daar zonder uitleg uit en wist niet wat hij
+      // moest doen. Sinds TT-330 blijft elke link uit een eerdere mail werken;
+      // deze melding blijft over voor een link die kapot of vervangen is.
+      // TT-543 onderdeel 8, V5: een titel die zegt wat er is.
+      toestemmingMeldingTonen('Deze link werkt niet',
+        ['Heb je meer mails van ons gekregen? Gebruik dan de knop in de nieuwste.']);
+    } else {
+      toestemmingMeldingTonen('De pagina laden lukte niet',
+        ['Tik over een paar minuten opnieuw op de knop in de mail.']);
+    }
   }
 }
 

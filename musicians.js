@@ -972,8 +972,7 @@ function wbjFieldSnapshot() {
 // leeftijd komt uit het geboortedatumveld; zolang dat niet vol is, blijft de
 // keuze staan zoals ze was.
 function wbjLeeftijd() {
-  const s = document.getElementById('wbjBirthDate').value.trim();
-  return s.length === 10 ? calcAge(s) : null;
+  return leeftijdUitVeld(document.getElementById('wbjBirthDate').value); // TT-660
 }
 
 const WBJ_NAAM = { blok: 'wbjNaamKeuze', control: 'wbjNaamTonenControl', voorbeeld: 'wbjNaamVoorbeeld',
@@ -1038,8 +1037,9 @@ function onWbjUsernameInput() {
   checkUsernameAvailability('wbjUsernameStatus', 'wbjUsername', myMusicianId).then(ok => { wbjUsernameOk = ok; });
 }
 
-// Postcode → plaats, zelfde volgorde als elders: PDOK, dan cache, dan bij
-// herhaalde storing een handmatige zoeklijst i.p.v. een vrij tekstveld.
+// Postcode → plaats, zoals elders: de eigen lijst (TT-624), dan bij een
+// onbekende postcode of herhaalde storing een handmatige zoeklijst i.p.v. een
+// vrij tekstveld.
 // Eigen, lokale variabelen (wbjPostcodeFailStreak/wbjPostcodeManualMode) —
 // niet de gedeelde wizard-variabelen, dit is een aparte context.
 function onWbjPostcodeInput(rawValue) {

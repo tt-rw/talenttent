@@ -404,7 +404,7 @@ function resetBandForm() {
   bandPostcodeResolved = false;
   bandPostcodeFailStreak = 0;
   bandPostcodeManualMode = false;
-  bandCitySource = 'pdok';
+  bandCitySource = 'cache';
   const nameEl = document.getElementById('bandName');
   const zipEl = document.getElementById('bandZip');
   const cityEl = document.getElementById('bandCity');
@@ -1504,7 +1504,7 @@ async function openBandWie() {
   bandPostcodeResolved = !!(b.zip && b.city);
   bandPostcodeFailStreak = 0;
   bandPostcodeManualMode = false;
-  bandCitySource = b.city_source || 'pdok';
+  bandCitySource = b.city_source || 'cache';
   const stad = document.getElementById('bwCity');
   stad.readOnly = true;
   stad.style.cursor = 'not-allowed';

@@ -828,11 +828,12 @@ async function runSearch(straalOverride) {
     // het vertrekpunt, tenzij je een andere plaats typt; dan wordt dát het
     // vertrekpunt. Zonder profiel het Plaats-veld (leeg of onbekend: geen
     // straal, alle profielen).
-    let origin, originResolved;
+    let origin, originResolved, vertrek;
     if (hasOwnProfile) {
       const mid = await getMyMusicianId();
       const typedCity = document.getElementById('filterCity').value.trim();
       const o = await zoekVertrekpunt(typedCity); // TT-527: dezelfde regel op elk zoekscherm
+      vertrek = o;
       const usesOwnCity = o.eigen;
       const myCity = o.plaats;
       origin = { mid, lat: o.lat, lng: o.lng };
@@ -852,9 +853,23 @@ async function runSearch(straalOverride) {
       } : null;
     } else {
       const o = await resolveSearchOrigin(document.getElementById('filterCity').value);
+      vertrek = o;
       origin = { mid: null, lat: o.lat, lng: o.lng };
       originResolved = o.lat != null;
     }
+
+    // TT-628 (besluit Ronald 15-11-2026, sessie 150): kent de lijst de getypte
+    // plaats niet, dan de melding onder het veld en geen zoekopdracht.
+    const getyptePlaats = document.getElementById('filterCity').value;
+    if (plaatsIsOnbekend(getyptePlaats, vertrek)) {
+      if (seq !== musicianSearchSeq) return;
+      lastZoekResultaten = [];
+      zoekVerruimd = null;
+      resultsEl.innerHTML = '';
+      await plaatsOnbekendTonen('filterCity', 'filterCityStatus', getyptePlaats, () => runSearch());
+      return;
+    }
+    clearFieldError('filterCity');
 
     const leeg = { lijst: [], matchInfo: {} };
     const [muz, bnd] = await Promise.all([
@@ -1558,8 +1573,25 @@ async function runSetlistSearch(straalOverride) {
 
     // Repertoire-match en straal-match zijn onafhankelijk van elkaar —
     // tegelijk opvragen i.p.v. na elkaar (performance, 04-08-2026).
+    // TT-628: het vertrekpunt eerst, zodat een plaats die de lijst niet kent
+    // de melding onder het veld krijgt en er niet gezocht wordt. De vraag naar
+    // de nummers loopt intussen al.
+    // Promise.resolve start de vraag nu (een vraag van Supabase start pas bij then).
+    const songVraag = Promise.resolve(db.rpc('tt_search_musicians_by_songlist_anon', { titles, artists }));
+    const getyptePlaats = document.getElementById('filterSetlistCity').value;
+    const vertrek = await zoekVertrekpunt(getyptePlaats);
+    if (seq !== setlistSearchSeq) return;
+    if (plaatsIsOnbekend(getyptePlaats, vertrek)) {
+      lastSetlistResults = [];
+      setlistVerruimd = null;
+      resultsEl.innerHTML = '';
+      await plaatsOnbekendTonen('filterSetlistCity', 'filterSetlistCityStatus', getyptePlaats, () => runSetlistSearch());
+      return;
+    }
+    clearFieldError('filterSetlistCity');
+
     const [songResult, radiusResult] = await Promise.all([
-      db.rpc('tt_search_musicians_by_songlist_anon', { titles, artists }),
+      songVraag,
       (async () => {
         // Bugfix 05-08-2026 (gevonden door Ronald): het Plaats-veld werd
         // genegeerd zodra je een eigen profiel had — de straal werd dan
@@ -1571,7 +1603,6 @@ async function runSetlistSearch(straalOverride) {
         // TT-527 (27-10-2026): staat je eigen woonplaats in het veld (zo vult
         // de app het in), dan meet het vanaf je eigen postcode, zoals
         // Muzikanten en Wat spelen we?. Een andere plaats blijft voorgaan.
-        const vertrek = await zoekVertrekpunt(document.getElementById('filterSetlistCity').value);
         if (!vertrek.eigen) {
           const origin = vertrek;
           if (origin.lat == null) return { data: null, error: null };
