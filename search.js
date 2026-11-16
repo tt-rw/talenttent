@@ -1,32 +1,32 @@
-// ─── Zoekfunctie ─────────────────────────────────────────────────────────────
 
-// TT-514 (besluit Ronald, 25-10-2026: "podium is goed"): overal "Podium", gelijk aan het keuzemenu in de setlist.
+
+
 const LEVEL_LABELS = { basis: 'Basis', bijna: 'Bijna', podium: 'Podium' };
 
-// TT-520 (26-10-2026): één filterset voor muzikanten én bands. Instrument
-// betekent bij een muzikant "speelt", bij een band "zoekt" (Laag 3.1, besluit
-// Ronald 25-10-2026: een band die het gekozen instrument zoekt, is een treffer).
+
+
+
 let filterInstruments = [];
 let filterGenres      = [];
 let searchSortMode    = 'score';
 
-// Vaste stappen voor de keuzemenu's (TT-543 draaiwielen, besluiten Ronald
-// 09-11-2026). Straal: "niemand zoekt een muzikant 100 km van zijn woonplaats";
-// vindt de app niets, dan verruimt hij zelf tot 500 km (STRAAL_LADDER, TT-62).
+
+
+
 const STRAAL_STAPPEN = [5, 10, 15, 25, 50, 100];
-const STRAAL_STANDAARD = 10;  // beginstand van elk straalveld (Ronald, 16-09-2026, TT-276; was 5)
+const STRAAL_STANDAARD = 10;
 const STRAAL_RIJEN = STRAAL_STAPPEN.map(km => ({ t: `${km} km`, waarden: [km] }));
-// Leeftijd in groepen (besluit Ronald 09-11-2026). De zoekfunctie houdt één
-// ondergrens en één bovengrens: kies je meer groepen, dan zoekt hij van de
-// laagste tot de hoogste, en wat ertussen ligt, licht mee op.
+
+
+
 const LEEFTIJD_GROEPEN = [[13, 15], [16, 18], [19, 24], [25, 34], [35, '']];
 const LEEFTIJD_RIJEN = LEEFTIJD_GROEPEN.map(([van, tot]) => ({ t: tot === '' ? `${van}+` : `${van}-${tot}`, waarden: [van, tot] }));
 const NIVEAU_RIJEN = [1, 2, 3, 4, 5].map(n => ({ t: String(n), waarden: [n, n] }));
 
-// Een bewaarde zoekopdracht van vóór de keuzemenu's kan een stap hebben die
-// niet meer bestaat (besluit Ronald 09-11-2026, "In de app omzetten"): een
-// straal boven 100 km en 75 km worden 100 km; een leeftijd wordt de groepen
-// eromheen ("20 t/m 30" wordt 19 t/m 34).
+
+
+
+
 function straalOpStap(km) {
   const n = Number(km);
   if (!n) return STRAAL_STANDAARD;
@@ -38,33 +38,33 @@ function leeftijdOpGroepen(min, max) {
   return [min === '' ? LEEFTIJD_GROEPEN[0][0] : groep(min)[0], max === '' ? '' : groep(max)[1]];
 }
 
-// TT-01 / TT-232: e-mailvoorkeuren, nu onder Instellingen. Beïnvloedt alleen
-// de e-mail op de achtergrond, nooit de live zoekresultaten.
+
+
 let digestFrequencyValue = 'daily';
-// TT-520: het resultaat van Muzikanten, muzikanten en bands door elkaar. Elk
-// item draagt `soort`: 'muzikant' of 'band'.
+
+
 let lastZoekResultaten = [];
-// TT-62: is de straal automatisch verruimd, dan staat hier {van, naar}.
-// {leeg:true} betekent: ook landelijk niets gevonden. null = niet verruimd.
+
+
 let zoekVerruimd = null;
-// TT-295: vertrekpunt van de laatste zoekopdracht met eigen profiel, of null.
+
 let laatsteZoekVertrek = null;
 let setlistVerruimd = null;
-// TT-30 (07-08-2026): lijst- of kaartweergave voor de zoekresultaten, apart
-// onthouden (localStorage) — Ronald: "bij veel matches neig ik naar regels,
-// maar bij veel profielfoto's is een kaart ook tof", dus geen vaste keuze maar
-// een keuze die de gebruiker zelf zet.
-// TT-520: één weergave voor Muzikanten (muzikanten en bands samen). De
-// beginstand is de lijst, ook op een telefoon: het resultaat is één regel per
-// treffer (Laag 3.1.b.1, akkoord Ronald 25-10-2026); de kaarten staan onder
-// Weergave. Een eigen keuze blijft leidend. Nieuwe sleutel, zodat de oude
-// beginstand Kaarten van TT-U13 niet als eigen keuze meetelt.
+
+
+
+
+
+
+
+
+
 let musicianViewMode = (() => {
   try { return localStorage.getItem('tt_zoekWeergave') || 'list'; }
   catch (e) { return 'list'; }
 })();
-// TT-U13: zet de markering in de keuzevelden gelijk aan de werkelijke stand.
-// De HTML markeert "Lijst" vast; op een telefoon klopt dat niet meer.
+
+
 function syncViewToggles() {
   const musicianSel = document.getElementById('musicianViewToggle');
   if (musicianSel) musicianSel.value = musicianViewMode;
@@ -79,29 +79,29 @@ function setMusicianViewMode(mode) {
   refreshChoiceField('weergave');
   if (lastZoekResultaten.length) renderCappedZoekResultaten();
 }
-// Afstand per muzikant-id, gevuld door zoekresultaten (gewoon zoeken en setlist-
-// zoeken). Gebruikt om de afstand ook te tonen als iemand het profiel opent
-// vanuit een resultatenlijst — zonder de postcode zelf ooit te tonen (TT-04).
+
+
+
 let musicianDistanceCache = {};
 
-// ─── De drie schermen van Zoeken (TT-520, 26-10-2026) ────────────────────────
-// 'start' is de bovenkant van het tabblad: titel Zoeken en twee tegels.
-// 'muzikanten' en 'mixmatch' liggen één stap dieper; terug brengt je naar het
-// startscherm (appTerug() in core.js). Geen nieuwe view: de views blijven
-// zestien (app-gedrag §9).
-//
-// zoekSchermDirect: het scherm is van buiten Zoeken geopend (een open rol van
-// je band, TT-385). Ligt er een scherm achter je, dan gaat terug daarheen, niet
-// langs het startscherm dat je nooit zag.
+
+
+
+
+
+
+
+
+
 let zoekScherm = 'start';
 let zoekSchermDirect = false;
-// Alles · Muzikanten · Bands (Laag 3.1). Alles is de beginstand.
+
 let zoekSoort = 'alles';
 const ZOEK_SOORTEN = ['alles', 'muzikanten', 'bands'];
 const ZOEK_SCHERMEN = ['start', 'muzikanten', 'mixmatch'];
 const ZOEK_SCHERM_IDS = { start: 'zoekStart', muzikanten: 'searchModeMusician', mixmatch: 'searchModeSetlist' };
 
-// Zet het scherm zonder te zoeken.
+
 function zetZoekScherm(scherm) {
   if (!ZOEK_SCHERMEN.includes(scherm)) scherm = 'start';
   zoekScherm = scherm;
@@ -110,11 +110,11 @@ function zetZoekScherm(scherm) {
     const el = document.getElementById(ZOEK_SCHERM_IDS[k]);
     if (el) el.style.display = k === scherm ? 'block' : 'none';
   });
-  bewaarZoekStand(); // TT-279: overleeft verversen
+  bewaarZoekStand();
   if (typeof werkTerugKnopBij === 'function') werkTerugKnopBij();
 }
 
-// Een tik op een tegel, of een knop elders die meteen naar Muzikanten gaat.
+
 function openZoekScherm(scherm, opties) {
   opties = opties || {};
   zetZoekScherm(scherm);
@@ -127,19 +127,19 @@ function openZoekScherm(scherm, opties) {
   }
 }
 
-// "Muzikanten zoeken →" in een lege staat: meteen het scherm Muzikanten
-// (TT-520). Zoeken is een tabblad; het startscherm ligt eronder. De knop op de
-// landingspagina opent het startscherm van Zoeken, zoals het tabblad (besluit
-// Ronald 27-10-2026: "Dat moet 1 scherm terug"), met 'behoud': de
-// landingspagina blijft op de stapel, dus terug gaat daarheen (besluit Ronald
-// 27-10-2026: "als je van de landing page komt, dan is dat de beste route").
+
+
+
+
+
+
 function openZoekMuzikanten() {
   showView('search');
-  // configureSearchAccess() (vanuit showView) zoekt zodra het profiel bekend is.
+
   openZoekScherm('muzikanten', { geenZoek: true });
 }
 
-// Terug vanaf Muzikanten of Mix & Match (appTerug() in core.js).
+
 function zoekSchermTerug() {
   const direct = zoekSchermDirect && navStack.length;
   zetZoekScherm('start');
@@ -147,11 +147,11 @@ function zoekSchermTerug() {
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
-// TT-279: het scherm en de soort overleven verversen. Alleen voor deze kijker,
-// in dit tabblad van de browser; lukt opslaan niet, dan begint Zoeken bij het
-// startscherm.
+
+
+
 function bewaarZoekStand() {
-  try { sessionStorage.setItem('tt-zoekstand', JSON.stringify({ scherm: zoekScherm, soort: zoekSoort })); } catch (e) { /* geen opslag: geen herstel */ }
+  try { sessionStorage.setItem('tt-zoekstand', JSON.stringify({ scherm: zoekScherm, soort: zoekSoort })); } catch (e) { }
 }
 function herstelZoekStand() {
   let stand = null;
@@ -179,14 +179,14 @@ function setZoekSoort(soort) {
   runSearch();
 }
 
-// Filters klapt open onder Plaats en Straal; het pijltje draait om (TT-520,
-// sessie 18, punt 1). Achter het woord tussen haakjes hoeveel filters aan
-// staan (besluit Ronald 27-10-2026, vervangt "geen getal" van 26-10-2026).
-// Elk ingesteld filter telt één keer: Instrument met twee instrumenten is 1.
-// Telt mee: Naam, Instrument, Niveau, Leeftijd, Genre. Volgorde en Weergave
-// zijn geen filters. Bij nul alleen "Filters". Naam telt sinds TT-543
-// onderdeel 4 (besluit Ronald 09-11-2026, sessie 102): hij staat achter
-// Filters (3C), en anders zoek je op een naam die je niet ziet.
+
+
+
+
+
+
+
+
 let zoekFiltersOpen = false;
 function aantalZoekFilters() {
   const waarde = id => { const el = document.getElementById(id); return el ? el.value : ''; };
@@ -214,27 +214,27 @@ function zetZoekFilters(open) {
 }
 function toggleZoekFilters() { zetZoekFilters(!zoekFiltersOpen); }
 
-// De i bij Niveau: onder Bands de tabel van de band, anders die van de muzikant.
-// De woorden van beide tabellen wijzigen in bouwsessie c (Algemeen b.2).
+
+
 function openZoekNiveauInfo() {
   if (zoekSoort === 'bands') openBandNiveauInfoModal();
   else openMusicianNiveauInfoModal();
 }
 
-// Debounce-timers voor tekstvelden die automatisch verversen: een klik op een
-// tag mag direct verversen, maar bij typen (naam/plaats/leeftijd) wachten we
-// een fractie van een seconde na de laatste toetsaanslag, anders zoekt de app
-// bij elke letter opnieuw — hakkelig en onnodig zwaar.
+
+
+
+
 let musicianAutoSearchTimeout = null;
 let setlistAutoSearchTimeout = null;
 
-// TT-84 (10-08-2026, externe review 2.3): volgnummers tegen verouderde
-// resultaten. De debounce hierboven wacht 400 ms na de laatste toetsaanslag,
-// maar stopt een zoekopdracht die al onderweg is niet. Op een traag mobiel
-// netwerk kan zoekopdracht A dus ná zoekopdracht B binnenkomen. Het scherm
-// toont dan het antwoord op filters die de gebruiker net heeft aangepast.
-// Elke zoekopdracht krijgt nu een nummer. Alleen het antwoord met het hoogste
-// nummer mag het scherm en de resultaatlijst nog aanraken.
+
+
+
+
+
+
+
 let musicianSearchSeq = 0;
 let setlistSearchSeq = 0;
 
@@ -244,23 +244,23 @@ function scheduleMusicianAutoSearch() {
 }
 function scheduleSetlistAutoSearch() {
   clearTimeout(setlistAutoSearchTimeout);
-  // Zonder minstens 1 opgegeven nummer heeft zoeken geen betekenis — dan
-  // stilzwijgend niets doen i.p.v. een foutmelding te tonen terwijl iemand
-  // nog gewoon de plaats/straal aan het intypen is.
+
+
+
   setlistAutoSearchTimeout = setTimeout(() => { if (setlistWantedSongs.length) runSetlistSearch(); }, 400);
 }
 
-// TT-232 (09-09-2026, besluit Ronald): de matchscore komt niet uit de
-// database en zegt niets over jouw eigen profiel. Hij telt uitsluitend wat je
-// zelf hebt ingevuld:
-//   3 punten per gekozen instrument dat deze muzikant speelt;
-//   2 punten per gekozen genre dat deze muzikant speelt.
-// Instrument weegt zwaarder dan genre: je zoekt een bassist, geen genre.
-// Straal telt niet mee als punten — die is al een harde grens.
-// TT-520 (besluit Ronald 26-10-2026, sessie 17 punt 7): bands volgen dezelfde
-// regel. Een band krijgt 3 punten per gekozen instrument dat hij zoekt, en 2
-// per gekozen genre dat hij speelt. De genrescore uit de database (Jaccard)
-// telt niet meer, ook niet met een eigen profiel.
+
+
+
+
+
+
+
+
+
+
+
 function musicianFilterScore(m) {
   let score = 0;
   if (filterInstruments.length) {
@@ -285,18 +285,18 @@ function bandFilterScore(b) {
   return score;
 }
 
-// Laatst actief (25-09-2026, besluit Ronald). Drie groepen:
-//   0 = actief in de laatste 30 dagen
-//   1 = actief in de laatste 6 maanden
-//   2 = langer geleden
-// De database geeft per profiel alleen de groep en een rangnummer terug
-// (1 = het laatst actief), nooit de datum zelf. Bij een band telt de
-// beheerder: de oprichter kan de band al verlaten hebben.
-// Mislukt de vraag, dan staat iedereen in groep 0: de gekozen sortering
-// werkt dan gewoon, zonder dat de gebruiker iets merkt.
-// TT-367: de vraag mag al eerder gestart zijn, met alle gevonden id's
-// (`vraag`), tegelijk met de gegevens. De rang is alleen een volgorde, dus een
-// ruimere lijst geeft dezelfde volgorde.
+
+
+
+
+
+
+
+
+
+
+
+
 function actiefStandVraag(soort, ids) {
   return vraagNu(db.rpc(soort === 'band' ? 'tt_band_actief_stand' : 'tt_actief_stand', { ids }));
 }
@@ -322,28 +322,28 @@ function vergelijkActiefGroep(a, b) {
   return (a.actiefGroep || 0) - (b.actiefGroep || 0);
 }
 
-// De naam waarop een treffer alfabetisch staat: een muzikant zijn gekozen
-// naam (TT-420), een band zijn bandnaam.
+
+
 function zoekNaamVan(x) {
   return (x.soort === 'band' ? (x.name || '') : displayNameOf(x)).toLowerCase();
 }
-// Een band die nog iemand zoekt: een open rol (band_wanted).
+
 function bandZoekt(b) {
   return (b.band_wanted || []).length > 0;
 }
 
-/* TT-520 — Beste match (besluit Ronald 26-10-2026, sessie 17 punt 7, keuze b),
-   voor Alles, Muzikanten en Bands:
-     1. de afstand in ringen van 5 km (0–5, 5–10, …). "De afstand is altijd
-        relevant." Zonder vertrekpunt staat iedereen in dezelfde ring;
-     2. binnen de ring een band die nog iemand zoekt boven een complete band
-        (sessie 18, akkoord Ronald);
-     3. binnen de ring laatst actief, in de drie groepen van TT-324;
-     4. de afstand op de kilometer;
-     5. de punten uit de filters (instrument 3, genre 2);
-     6. de naam.
-   Vervangt de volgorde van TT-232/TT-324, waar laatst actief vóór alles ging.
-   Dichtstbijzijnde en Laatst actief houden hun volgorde (groep eerst). */
+
+
+
+
+
+
+
+
+
+
+
+
 const ZOEK_RING_KM = 5;
 function zoekRing(x) {
   return x.distance_km != null ? Math.floor(x.distance_km / ZOEK_RING_KM) : 0;
@@ -378,12 +378,12 @@ function sortZoekLijst(list) {
   return list;
 }
 
-// Volgorde staat in de filters: her-sorteert direct de al opgehaalde
-// resultaten, geen nieuwe zoekopdracht nodig.
+
+
 function setSearchSortMode(mode) {
-  // "Dichtstbijzijnde" zonder afstandsgegevens (geen Plaats ingevuld als
-  // vertrekpunt) zou de keuze laten staan zonder dat er iets verandert —
-  // verwarrend. Geef dan een duidelijke melding i.p.v. stilzwijgend niets doen.
+
+
+
   if (mode === 'distance' && lastZoekResultaten.length && !lastZoekResultaten.some(x => x.distance_km != null)) {
     showToast('Vul een plaats in om op afstand te sorteren.');
     document.getElementById('filterSortMode').value = searchSortMode;
@@ -400,19 +400,19 @@ function setSearchSortMode(mode) {
   }
 }
 
-// Instrument en Genre tonen hun keuze in het veld zelf (TT-520): een grijs
-// streepje zolang er niets gekozen is, net als Leeftijd en Niveau ernaast.
+
+
 function pickerVeldTekst(lijst) {
   return lijst.length ? lijst.join(', ') : LEEG_VELD;
 }
 
 function initSearchFilters() {
-  if (PICKERS.filterInstruments) return; // al ingevuld
+  if (PICKERS.filterInstruments) return;
 
-  // TT-55/TT-183: maximaal 1 instrument, Zang, Achtergrondzang (TT-543) en
-  // Songwriting als losse uitzonderingen die niet meetellen voor die limiet — afgehandeld door
-  // de generieke picker (singleMax + exceptionValues), zie
-  // pickerWaardeWissel().
+
+
+
+
   initPicker({
     id: 'filterInstruments',
     fieldId: 'filterInstrumentsField', menuId: 'filterInstrumentsMenu',
@@ -430,9 +430,9 @@ function initSearchFilters() {
     onChange: runSearch
   });
 
-  // De keuzevelden met vaste stappen (TT-543 draaiwielen, besluiten Ronald
-  // 09-11-2026). Elk veld klapt een menu uit; het menu schrijft naar de
-  // verborgen invoervelden die runSearch() uitleest.
+
+
+
   initWheelField({
     id: 'radius',
     fieldId: 'filterRadiusField', menuId: 'filterRadiusMenu',
@@ -440,8 +440,8 @@ function initSearchFilters() {
     rijen: STRAAL_RIJEN,
     value: [STRAAL_STANDAARD],
     clearTo: [STRAAL_STANDAARD],
-    // Zoeken zonder straal bestaat niet, dus "aan" betekent hier: afgeweken
-    // van de standaard. Een veld dat altijd geel is, zegt niets.
+
+
     isActief: (v) => Number(v[0]) !== STRAAL_STANDAARD,
     format: (v) => `${v[0]} km`,
     onChange: runSearch
@@ -458,8 +458,8 @@ function initSearchFilters() {
     onChange: runSearch
   });
 
-  // TT-520: Niveau geldt voor muzikant en band (één woord, Laag 3.1). Bij een
-  // muzikant het niveau op een instrument, bij een band het niveau van de band.
+
+
   initWheelField({
     id: 'niveau',
     fieldId: 'filterNiveauField', menuId: 'filterNiveauMenu',
@@ -471,7 +471,7 @@ function initSearchFilters() {
     onChange: runSearch
   });
 
-  // Volgorde en Weergave: een keuzemenu uit een verborgen <select>.
+
   initChoiceField({ id: 'sorteren', fieldId: 'filterSortModeField',
                     menuId: 'filterSortModeMenu', selectId: 'filterSortMode' });
   initChoiceField({ id: 'weergave', fieldId: 'musicianViewToggleField',
@@ -479,11 +479,11 @@ function initSearchFilters() {
   syncViewToggles();
 }
 
-// Een gekozen bereik in het gesloten veld, met een streepje tussen de grenzen:
-// "22 - 40 jaar" (Ronald, 10-09-2026). Eén niveau is "3", niet "Alleen 3"
-// (besluit Ronald 09-11-2026).
+
+
+
 function leeftijdKort(min, max) {
-  if (min === '' && max === '') return LEEG_VELD; // filter uit, zie utils.js
+  if (min === '' && max === '') return LEEG_VELD;
   if (min !== '' && max === '') return `${min}+ jaar`;
   if (min === '' && max !== '') return `t/m ${max} jaar`;
   if (min === max) return `${min} jaar`;
@@ -491,14 +491,14 @@ function leeftijdKort(min, max) {
 }
 
 function niveauKort(min, max) {
-  if (min === '' && max === '') return LEEG_VELD; // filter uit, zie utils.js
+  if (min === '' && max === '') return LEEG_VELD;
   if (min !== '' && max === '') return `${min}+`;
   if (String(min) === String(max)) return String(min);
   return `${min} - ${max}`;
 }
 
-// Straal-invoer strikt uitlezen: 0 km moet ook echt 0 km betekenen (0 is
-// falsy in JS, dus "|| 25" zou 0 onterecht vervangen door de standaardwaarde).
+
+
 function parseRadiusInput(id) {
   const raw = document.getElementById(id).value;
   if (raw === '' || raw == null) return 25;
@@ -506,26 +506,26 @@ function parseRadiusInput(id) {
   return Number.isFinite(n) ? n : 25;
 }
 
-/* TT-62 (11-09-2026) — nooit nul zoekresultaten tonen, deel 1.
 
-   Levert een zoekopdracht niets op terwijl er een straal actief is, dan
-   verruimt de app de straal zelf tot er wél iets staat. De gebruiker krijgt
-   het dichtstbijzijnde resultaat te zien, met één regel die uitlegt wat er is
-   gebeurd. Zonder dit eindigt vrijwel elke echte zoekopdracht in een leeg
-   scherm met drie opdrachten erin — terwijl de app gewoon nog leeg is.
 
-   Deze ladder en de twee hulpfuncties gelden voor Muzikanten en Mix & Match.
-   Eén regel, één plek.
 
-   GEVERIFIEERD 11-09-2026, tegen de productiedatabase, ingelogd:
-   `tt_search_musicians` en `tt_search_bands_for_musician` met `radius_km: null`
-   geven **nul rijen** terug — null betekent daar dus niet "geen beperking".
-   Daarom eindigt de ladder op een getal, niet op null. 500 km overspant
-   Nederland ruim; dat is de laatste trede. */
+
+
+
+
+
+
+
+
+
+
+
+
+
 const STRAAL_LADDER = [10, 25, 50, 100, 250, 500];
 const STRAAL_LANDELIJK = 500;
 
-// Geeft de eerstvolgende ruimere straal, of undefined als er geen ruimere is.
+
 function volgendeStraal(huidig) {
   if (huidig == null) return undefined;
   for (const r of STRAAL_LADDER) {
@@ -534,8 +534,8 @@ function volgendeStraal(huidig) {
   return undefined;
 }
 
-// TT-563: de stand van het verruimen (TT-62), voor Muzikanten en Wie speelt dit?
-// gelijk. `vorige` is de stand van nu; de eerste straal blijft bewaard.
+
+
 function verruimStap(vorige, radius) {
   const naar = volgendeStraal(radius);
   return naar === undefined ? null : { van: vorige ? vorige.van : radius, naar };
@@ -548,11 +548,11 @@ function straalTekst(km) {
   return km == null ? 'je zoekgebied' : `${km} km`;
 }
 
-/* De regel boven het resultaat na automatisch verruimen.
 
-   Tekst vastgesteld door Ronald, 11-09-2026. Twee zinnen. De eerste zegt wat
-   er niet is, de tweede wat er wel staat. Beide getallen blijven erin: zonder
-   de straal weet de lezer niet waarom de lijst verder weg ligt. */
+
+
+
+
 function verruimdNotice(verruimd, meervoud) {
   if (!verruimd || verruimd.leeg) return '';
   const staart = verruimd.naar >= STRAAL_LANDELIJK
@@ -561,19 +561,19 @@ function verruimdNotice(verruimd, meervoud) {
   return `<p class="zoek-uitleg">Binnen ${straalTekst(verruimd.van)} vonden we nog geen match. ${staart}</p>`;
 }
 
-// Het woord voor wat er op het scherm staat, per soort (TT-520).
+
 function zoekMeervoud() {
   return zoekSoort === 'bands' ? 'bands' : zoekSoort === 'muzikanten' ? 'muzikanten' : 'muzikanten en bands';
 }
 
-// Wissen — wist alle velden, behalve Plaats en Straal (besluit Ronald
-// 26-10-2026, sessie 18 punt 3: "laat dan alleen de stad en straal staan").
-// Alles · Muzikanten · Bands en Weergave zijn geen filters en blijven staan.
-// Zoekt daarna meteen opnieuw (TT-10: nooit een leeg scherm na het wissen).
+
+
+
+
 function resetMusicianSearch() {
   document.getElementById('filterName').value = '';
-  // TT-233: de wielvelden terug naar hun beginstand. false = niet zelf opnieuw
-  // zoeken; deze functie doet dat hieronder één keer.
+
+
   setWheelFieldValues('leeftijd', ['', ''], false);
   setWheelFieldValues('niveau',   ['', ''], false);
   filterInstruments.length = 0;
@@ -585,26 +585,26 @@ function resetMusicianSearch() {
   runSearch();
 }
 
-// TT-385 fase 3 (punt 7): een tik op een open rol of invaller van je eigen
-// band opent Muzikanten met dat instrument en de plaats van de band. De andere
-// filters gaan terug naar hun beginstand, zodat het resultaat over deze ene
-// vraag gaat. Eén regel erboven zegt waarvoor (verdwijnt bij de volgende
-// keer dat Zoeken opent, configureSearchAccess()). Een invaller vraag je in
-// een bericht; een vast lid nodig je uit vanuit het venster van de muzikant
-// (rolUitnodigKnopPlaatsen() in bands.js, besluit Ronald 02-10-2026).
-// TT-520: je zoekt hier een muzikant, dus de soort is Muzikanten, en Filters
-// staat open, zodat je het gekozen instrument ziet.
-// TT-543 onderdeel 4 (besluiten Ronald 09-11-2026, B4 en sessie 102): ook
-// "+ Lid uitnodigen" komt hier, zonder instrument. Dan blijft Filters dicht
-// (er is niets te zien) en zegt de regel "Lid voor <band>.".
-// Blok 2 (besluiten Ronald 11-11-2026, B2-7 en B2-8): een invaller heeft geen
-// datum meer; de regel zegt "Invaller <instrument> voor <band>.". Bij een open
-// rol onthoudt zoekRolBand het instrument: bij uitnodigen staat die rol al
-// ingevuld (rolUitnodigBlokOpenen() in bands.js).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function zoekMuzikantVoorRol(instrument, plaats, bandNaam, invaller, bandId) {
   sluitAlleMenus();
-  // TT-450: 'behoud'. Zoeken is een tabblad en wist anders de stapel; terug
-  // moet naar de bandpagina of het tegeloverzicht waar je vandaan kwam.
+
+
   showView('search', 'behoud');
   initSearchFilters();
   document.getElementById('filterName').value = '';
@@ -618,15 +618,15 @@ function zoekMuzikantVoorRol(instrument, plaats, bandNaam, invaller, bandId) {
   renderPickerBadges(PICKERS.filterInstruments);
   renderPickerBadges(PICKERS.filterGenres);
   if (plaats) scheduleSearchCityStatus('filterCity', 'filterCityStatus');
-  // De open rol zet zelf de filters; de bewaarde filters gaan er niet overheen.
-  // De vink toont wel of er een bewaarde zoekopdracht is.
+
+
   if (!onthoudToegepast && hasOwnProfile) {
     onthoudToegepast = true;
     laadBewaardeZoek().then(z => zetOnthoudVink(!!z)).catch(e => logCaught('zoekMuzikantVoorRol', e));
   }
   zetZoekSoortKnoppen('muzikanten');
   zetZoekFilters(!!instrument);
-  // configureSearchAccess() (vanuit showView) zoekt meteen (TT-10).
+
   openZoekScherm('muzikanten', { direct: true, geenZoek: true });
   zoekRolBand = (!invaller && bandId) ? { id: bandId, naam: bandNaam || '', rol: instrument || '' } : null;
   const melding = document.getElementById('zoekRolMelding');
@@ -638,20 +638,20 @@ function zoekMuzikantVoorRol(instrument, plaats, bandNaam, invaller, bandId) {
   melding.hidden = false;
 }
 
-/* TT-442 (08-10-2026, besluit Ronald: optie A): je eigen profiel staat niet
-   in de resultaten van Zoeken. Een rij met jezelf had geen doel, en een bericht
-   aan jezelf verscheen dubbel. Geldt voor Muzikanten en voor Zoek muzikanten
-   in Mix & Match. "Maak setlist" is een ander scherm en zet je eigen naam
-   bewust wel in de lijst (TT-441). `myMusicianId` staat in core.js en is
-   gevuld zodra een zoekopdracht met profiel loopt. */
+
+
+
+
+
+
 function isEigenProfiel(id) {
   return !!myMusicianId && id === myMusicianId;
 }
 
-/* De muzikanten bij een vertrekpunt. Geeft { lijst, matchInfo } terug.
-   Met eigen profiel: tt_search_musicians, met het eigen vertrekpunt of het
-   getypte; zonder profiel de openbare functies. Ongewijzigd uit runSearch()
-   van vóór TT-520. */
+
+
+
+
 async function zoekMuzikantenOphalen(radius, origin) {
   const matchInfo = {};
   let musicians = [], actief = null;
@@ -664,10 +664,10 @@ async function zoekMuzikantenOphalen(radius, origin) {
     if (!matches.length) return { lijst: [], matchInfo };
     matches.forEach(m => { matchInfo[m.musician_id] = m; });
     const ids = matches.map(m => m.musician_id);
-    // TT-367: gegevens, leeftijd en laatst actief tegelijk, niet na elkaar.
+
     actief = actiefStandVraag('muzikant', ids);
-    // B-01 tweede stap (18-08-2026): birth_date staat niet in deze select. De
-    // leeftijd komt apart binnen via tt_musicians_ages().
+
+
     const [{ data, error }, { data: ages, error: ageErr }] = await Promise.all([
       inDelen(ids, deel => db.from('musicians').select(`
       id, weergavenaam, username, city, zip, bio,
@@ -675,7 +675,7 @@ async function zoekMuzikantenOphalen(radius, origin) {
       musician_instruments(instrument, niveau),
       musician_genres(genre),
       musician_songs(song_title, song_artist, mastery_level)
-    `).in('id', deel)), // TT-532
+    `).in('id', deel)),
       db.rpc('tt_musicians_ages', { ids })]);
     if (error) throw error;
     musicians = data || [];
@@ -684,8 +684,8 @@ async function zoekMuzikantenOphalen(radius, origin) {
       ages.forEach(a => { ageById[a.id] = a.age; });
       musicians.forEach(m => { m.age = ageById[m.id]; });
     }
-    // Gaat tt_musicians_ages mis: de lijst blijft gevuld, alleen zonder
-    // leeftijd — geen kapot scherm.
+
+
   } else {
     const { data: matches, error: rpcErr } = await db.rpc('tt_search_musicians_anon', {
       origin_lat: origin.lat, origin_lng: origin.lng,
@@ -695,13 +695,13 @@ async function zoekMuzikantenOphalen(radius, origin) {
     if (!matches.length) return { lijst: [], matchInfo };
     matches.forEach(m => { matchInfo[m.musician_id] = m; });
     const ids = matches.map(m => m.musician_id);
-    actief = actiefStandVraag('muzikant', ids); // TT-367: tegelijk
+    actief = actiefStandVraag('muzikant', ids);
     const namenVraag = vraagNu(db.rpc('tt_weergavenamen', { ids }));
     const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
     if (error) throw error;
-    // TT-420: de naam komt uit weergavenaam (weergavenamenToevoegen()), nooit
-    // uit fname of lname. B-02: de publieke functie geeft de leeftijd, geen
-    // geboortedatum.
+
+
+
     musicians = (data || []).map(m => ({
       id: m.id, username: m.username, age: m.age, birth_date: m.birth_date, city: m.city,
       bio: m.bio, avatar_url: m.avatar_url,
@@ -715,8 +715,8 @@ async function zoekMuzikantenOphalen(radius, origin) {
   return { lijst: musicians, matchInfo, actief };
 }
 
-/* De bands bij een vertrekpunt. Zelfde vorm als hierboven. Een band die niet
-   beschikbaar is, staat er gewoon in (TT-457). */
+
+
 async function zoekBandsOphalen(radius, origin) {
   const matchInfo = {};
   let bands = [], actief = null;
@@ -729,10 +729,10 @@ async function zoekBandsOphalen(radius, origin) {
     if (!matches.length) return { lijst: [], matchInfo };
     matches.forEach(m => { matchInfo[m.band_id] = m; });
     const ids = matches.map(m => m.band_id);
-    actief = actiefStandVraag('band', ids); // TT-367: tegelijk
-    // TT-385 fase 5: de bandfoto voor de bandkaart. De leden alleen om te
-    // tellen; geen namen.
-    const { data, error } = await inDelen(ids, deel => db.from('bands').select(`id, name, city, genres, status, niveau, avatar_url, band_members(status), band_wanted(instrument)`).in('id', deel)); // TT-532
+    actief = actiefStandVraag('band', ids);
+
+
+    const { data, error } = await inDelen(ids, deel => db.from('bands').select(`id, name, city, genres, status, niveau, avatar_url, band_members(status), band_wanted(instrument)`).in('id', deel));
     if (error) throw error;
     bands = data || [];
   } else {
@@ -744,11 +744,11 @@ async function zoekBandsOphalen(radius, origin) {
     if (!matches.length) return { lijst: [], matchInfo };
     matches.forEach(m => { matchInfo[m.band_id] = m; });
     const ids = matches.map(m => m.band_id);
-    actief = actiefStandVraag('band', ids); // TT-367: tegelijk
+    actief = actiefStandVraag('band', ids);
     const { data, error } = await db.rpc('tt_get_bands_public', { ids });
     if (error) throw error;
-    // TT-385 fase 5: zelfde vorm als hierboven. tt_get_bands_public geeft alleen
-    // bevestigde leden, en geen bandfoto als de band is afgeschermd (TT-385 punt 9).
+
+
     bands = (data || []).map(b => ({
       id: b.id, name: b.name, city: b.city, genres: b.genres || [], status: b.status,
       niveau: b.niveau,
@@ -761,21 +761,21 @@ async function zoekBandsOphalen(radius, origin) {
   return { lijst: bands, matchInfo, actief };
 }
 
-/* TT-520: één zoekopdracht voor Alles, Muzikanten en Bands.
-   TT-62: `straalOverride` is alleen voor de automatische verruiming hieronder.
-   Roept een knop of filter deze functie aan, dan blijft die parameter leeg en
-   geldt gewoon het straalveld van de gebruiker. */
+
+
+
+
 async function runSearch(straalOverride) {
-  const seq = ++musicianSearchSeq; // TT-84: zie toelichting bij musicianSearchSeq
+  const seq = ++musicianSearchSeq;
   const resultsEl = document.getElementById('searchResults');
-  // De eerste zoekopdracht met een profiel zet de bewaarde filters terug.
+
   if (!onthoudToegepast && hasOwnProfile) await onthoudHerstellen();
-  if (seq !== musicianSearchSeq) return; // intussen een nieuwere zoekopdracht
+  if (seq !== musicianSearchSeq) return;
   zetFiltersTeller();
-  if (straalOverride === undefined) zoekVerruimd = null; // nieuwe zoekopdracht
-  // TT-10: bij automatisch verversen blijft het bestaande resultaat staan tot
-  // het nieuwe binnen is — geen laadanimatie die het scherm laat "knipperen".
-  // Alleen bij de allereerste zoekopdracht (nog niets op het scherm) tonen we 'm.
+  if (straalOverride === undefined) zoekVerruimd = null;
+
+
+
   if (!resultsEl.innerHTML.trim()) {
     resultsEl.innerHTML = `<div class="zoek-laden">
       <div class="save-spinner"></div>Zoeken...
@@ -783,20 +783,20 @@ async function runSearch(straalOverride) {
   }
 
   try {
-    // TT-257 (12-09-2026): zoekstandaard — zonder aanhalingstekens matcht een
-    // deel van de naam, mét aanhalingstekens moet het exact zijn.
+
+
     const nameTerm = naamZoekTerm(document.getElementById('filterName').value);
     const cityQuery = document.getElementById('filterCity').value.trim().toLowerCase();
     const radius = straalOverride !== undefined ? straalOverride : parseRadiusInput('filterRadius');
     const ageMinVal = document.getElementById('filterAgeMin').value;
     const ageMaxVal = document.getElementById('filterAgeMax').value;
     const leeftijdGekozen = !!(ageMinVal || ageMaxVal);
-    // Besluit Ronald 26-10-2026 (sessie 17 punt 5): zodra een leeftijd is
-    // gekozen, verdwijnen de bands uit het resultaat, ook onder Alles.
+
+
     const metMuzikanten = zoekSoort !== 'bands';
     const metBands = zoekSoort !== 'muzikanten' && !leeftijdGekozen;
 
-    // Onder Bands met een leeftijd: er is niets te zoeken. Geen verruiming.
+
     if (!metMuzikanten && !metBands) {
       lastZoekResultaten = [];
       zoekVerruimd = null;
@@ -804,12 +804,12 @@ async function runSearch(straalOverride) {
       return;
     }
 
-    /* TT-62: geen treffers en er is een straal actief? Dan opnieuw zoeken met
-       de eerstvolgende ruimere straal. Geeft undefined terug als er niets
-       ruimers meer is; dan pas verschijnt de lege staat. */
+
+
+
     const ruimerZoeken = (straalActief) => {
-      // TT-257 (besluit Ronald, 12-09-2026): zoek je op naam, dan verruimt de
-      // app niet. Je zoekt één bepaalde persoon of band.
+
+
       if (nameTerm || !straalActief) return undefined;
       const stap = verruimStap(zoekVerruimd, radius);
       if (!stap) return undefined;
@@ -818,32 +818,32 @@ async function runSearch(straalOverride) {
     };
     const geenResultaat = () => {
       lastZoekResultaten = [];
-      // Is er al landelijk gezocht, dan ligt het aan de filters, niet aan de straal.
+
       zoekVerruimd = (straalOverride !== undefined && volgendeStraal(radius) === undefined)
         ? verruimLeeg(zoekVerruimd, radius) : null;
       renderZoekResultaten([], { verruimd: zoekVerruimd, naamGezocht: !!nameTerm, straal: radius });
     };
 
-    // Het vertrekpunt. TT-80 (10-08-2026): met eigen profiel is de eigen stad
-    // het vertrekpunt, tenzij je een andere plaats typt; dan wordt dát het
-    // vertrekpunt. Zonder profiel het Plaats-veld (leeg of onbekend: geen
-    // straal, alle profielen).
+
+
+
+
     let origin, originResolved, vertrek;
     if (hasOwnProfile) {
       const mid = await getMyMusicianId();
       const typedCity = document.getElementById('filterCity').value.trim();
-      const o = await zoekVertrekpunt(typedCity); // TT-527: dezelfde regel op elk zoekscherm
+      const o = await zoekVertrekpunt(typedCity);
       vertrek = o;
       const usesOwnCity = o.eigen;
       const myCity = o.plaats;
       origin = { mid, lat: o.lat, lng: o.lng };
-      // Een getypte plaats die nergens matcht valt terug op je eigen locatie,
-      // en blijft dan als tekstfilter gelden, zodat een tikfout niet
-      // stilzwijgend wordt genegeerd. TT-62: vóór het ophalen, want de
-      // verruiming moet weten of er een straal actief is.
+
+
+
+
       originResolved = usesOwnCity || o.lat != null;
-      // TT-295: het vertrekpunt van déze zoekopdracht, voor "Bewaar deze
-      // zoekopdracht". De ingestelde straal, niet een verruimde (TT-62).
+
+
       laatsteZoekVertrek = originResolved ? {
         plaats: usesOwnCity ? null : typedCity,
         plaatsTekst: usesOwnCity ? (myCity || 'je woonplaats') : typedCity,
@@ -858,8 +858,8 @@ async function runSearch(straalOverride) {
       originResolved = o.lat != null;
     }
 
-    // TT-628 (besluit Ronald 15-11-2026, sessie 150): kent de lijst de getypte
-    // plaats niet, dan de melding onder het veld en geen zoekopdracht.
+
+
     const getyptePlaats = document.getElementById('filterCity').value;
     if (plaatsIsOnbekend(getyptePlaats, vertrek)) {
       if (seq !== musicianSearchSeq) return;
@@ -876,42 +876,42 @@ async function runSearch(straalOverride) {
       metMuzikanten ? zoekMuzikantenOphalen(radius, origin) : leeg,
       metBands ? zoekBandsOphalen(radius, origin) : leeg
     ]);
-    if (seq !== musicianSearchSeq) return; // TT-84
+    if (seq !== musicianSearchSeq) return;
 
-    // Filters in de app (naam, plaats, leeftijd, instrument, niveau, genre).
+
     const ageMin = parseInt(ageMinVal) || 0;
     const ageMax = parseInt(ageMaxVal) || 150;
-    // TT-51: niveau-bereik, aaneengesloten (1-5). Leeg = geen ondergrens/bovengrens.
+
     const niveauMinVal = document.getElementById('filterNiveauMin').value;
     const niveauMaxVal = document.getElementById('filterNiveauMax').value;
     const niveauMin = niveauMinVal ? parseInt(niveauMinVal) : 1;
     const niveauMax = niveauMaxVal ? parseInt(niveauMaxVal) : 5;
     const niveauFilterActive = !!(niveauMinVal || niveauMaxVal);
-    // Als Plaats als vertrekpunt is herkend (straal actief) of een postcode is,
-    // dan niet óók nog als letterlijk tekstfilter toepassen — anders vallen
-    // buurplaatsen binnen de straal (bijv. Den Haag bij "Delft") er onterecht uit.
+
+
+
     const cityIsPostcode = /^[1-9][0-9]{3}$/.test(cityQuery.replace(/\s/g,''));
     const skipCityTextFilter = originResolved || cityIsPostcode;
     const plaatsPast = (stad) => !cityQuery || skipCityTextFilter || (stad || '').toLowerCase().includes(cityQuery);
 
     const muzikanten = muz.lijst.filter(m => {
-      // TT-06 (18-09-2026): een blokkade werkt beide kanten op. Hier, vóór de
-      // TT-62-controle, zodat de app ook dán eerst ruimer zoekt.
+
+
       if (isGeblokkeerd(m.id)) return false;
-      if (isEigenProfiel(m.id)) return false; // TT-442
+      if (isEigenProfiel(m.id)) return false;
       const age = ageOf(m);
       if (age < ageMin || age > ageMax) return false;
-      // TT-420 (besluit Ronald, 09-10-2026): het naamveld doorzoekt precies dát
-      // wat je in de lijst ziet: de gekozen naam, voor iedereen gelijk.
+
+
       if (!naamMatcht(nameTerm, displayNameOf(m))) return false;
       if (!plaatsPast(m.city)) return false;
       if (filterInstruments.length) {
         const mInstr = m.musician_instruments.map(x => x.instrument);
         if (!filterInstruments.some(i => mInstr.includes(i))) return false;
       }
-      // TT-51: het niveau van de gekozen instrumenten, of van alle instrumenten
-      // als er geen is gekozen. Ontbrekende niveaudata sluit niemand uit —
-      // liever te veel tonen dan iemand onterecht laten verdwijnen.
+
+
+
       if (niveauFilterActive) {
         const relevantInstr = filterInstruments.length
           ? m.musician_instruments.filter(x => filterInstruments.includes(x.instrument))
@@ -930,17 +930,17 @@ async function runSearch(straalOverride) {
       if (!naamMatcht(nameTerm, b.name)) return false;
       if (!plaatsPast(b.city)) return false;
       if (filterGenres.length && !filterGenres.some(g => (b.genres || []).includes(g))) return false;
-      // Een band die het gekozen instrument zoekt, is een treffer (TT-520).
+
       if (filterInstruments.length) {
         const gezocht = (b.band_wanted || []).map(w => w.instrument);
         if (!filterInstruments.some(i => gezocht.includes(i))) return false;
       }
-      // TT-51: het niveau van de band zelf. Geen niveau gekozen: niet uitsluiten.
+
       if (niveauFilterActive && b.niveau != null && (b.niveau < niveauMin || b.niveau > niveauMax)) return false;
       return true;
     });
 
-    // Afstand en punten (TT-232, TT-520).
+
     muzikanten.forEach(m => {
       const info = muz.matchInfo[m.id];
       m.distance_km = info ? info.distance_km : null;
@@ -953,33 +953,33 @@ async function runSearch(straalOverride) {
       b.matchScore  = bandFilterScore(b);
     });
 
-    // TT-62: de straal haalde wel iets op, maar de filters hielden alles
-    // tegen. Ook dan eerst ruimer zoeken voordat de lege staat verschijnt.
+
+
     if (!muzikanten.length && !bands.length) {
       const v = ruimerZoeken(originResolved);
       if (v !== undefined) return runSearch(v);
       geenResultaat(); return;
     }
     await Promise.all([zetActiefStand('muzikant', muzikanten, muz.actief), zetActiefStand('band', bands, bnd.actief)]);
-    if (seq !== musicianSearchSeq) return; // TT-84
+    if (seq !== musicianSearchSeq) return;
     lastZoekResultaten = sortZoekLijst(muzikanten.concat(bands));
     renderCappedZoekResultaten();
 
   } catch(e) {
     logCaught('runSearch', e);
-    if (seq !== musicianSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
+    if (seq !== musicianSearchSeq) return;
     resultsEl.innerHTML = foutStaatHTML(e, 'zoeken', 'runSearch()');
   }
 }
 
-// TT-10 (05-08-2026): nooit meer dan dit aantal tegelijk tonen, ook niet
-// zonder filters — bij duizenden/tienduizenden profielen zou de browser
-// anders vastlopen en het dataverkeer onnodig groot worden. Bij meer treffers
-// dan dit aantal: gewoon de eerste N (op de gekozen volgorde) tonen, met een
-// duidelijke melding erboven i.p.v. stilzwijgend afkappen.
+
+
+
+
+
 const SEARCH_RESULT_LIMIT = 50;
 
-// "3 muzikanten en 1 band gevonden" (TT-520).
+
 function zoekTelling(lijst, total) {
   const muz = lijst.filter(x => x.soort === 'muzikant').length;
   const bnd = lijst.length - muz;
@@ -995,15 +995,15 @@ function renderZoekResultaten(lijst, opts) {
   const total = opts.total != null ? opts.total : lijst.length;
 
   if (!total) {
-    // TT-62: is er al automatisch tot heel Nederland verruimd, dan is de
-    // straal niet meer het probleem. Dan die raad ook niet geven.
-    // TT-257 (12-09-2026): zocht je op naam, dan is de raad "pas je filters
-    // aan" verkeerd. Er is één filter dat ertoe doet — de naam zelf.
+
+
+
+
     const wat = zoekMeervoud();
     let kop, uitleg;
     if (opts.leeftijdBijBands) {
-      // TT-520: een band heeft geen leeftijd (besluit 26-10-2026, punt 5).
-      // TT-543 draaiwielen: het menu heeft geen regel "Alle" meer.
+
+
       kop = 'Geen bands bij deze leeftijd';
       uitleg = 'Een band heeft geen leeftijd. Haal de leeftijd weg om bands te zien.';
     } else if (opts.naamGezocht) {
@@ -1048,9 +1048,9 @@ function renderZoekResultaten(lijst, opts) {
   onthoudBijwerken();
 }
 
-// Gedeeld door runSearch() en de volgorde- en weergavekeuze — zorgt dat
-// afkappen tot SEARCH_RESULT_LIMIT en de bijbehorende meldingen altijd
-// hetzelfde werken, of het resultaat nu net is opgehaald of opnieuw gesorteerd.
+
+
+
 function renderCappedZoekResultaten() {
   const total = lastZoekResultaten.length;
   const shown = lastZoekResultaten.slice(0, SEARCH_RESULT_LIMIT);
@@ -1059,64 +1059,64 @@ function renderCappedZoekResultaten() {
   renderZoekResultaten(shown, { total, showLocationHint, verruimd: zoekVerruimd });
 }
 
-// TT-520 (besluit Ronald 26-10-2026, sessie 18 punt 5): de berichtknop is
-// rond, een rond tekstballonnetje op een rond grijs vlak, het icoon in de
-// tekstkleur. Gedeeld door de muzikant-rijen hier en in Mix & Match, en door
-// de muzikantkaart. Niet bij een band: een bericht aan een band gaat via de
-// bandpagina naar de contactpersoon.
+
+
+
+
+
 const MESSAGE_ICON_SVG = `<svg class="result-row-msg-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><title>Bericht sturen mogelijk</title><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"></path></svg>`;
 
-// TT-517 fase 6 (huisstijl §21, besluit Ronald 31-10-2026): zonder foto staat
-// overal de schijnwerper, klein: een leeg podium met twee warme lichtbundels
-// uit de bovenhoeken, samen op het midden (besluit Ronald 01-11-2026). In elke
-// lijst, de bezetting en berichten gelijk.
-// Vervangt de gele T van TT-33. Het vak eromheen geeft maat en vorm.
+
+
+
+
+
 const ZONDER_FOTO_HTML = '<span class="schijnwerper" aria-hidden="true"></span>';
 
-// TT-420 (09-10-2026, besluit Ronald): één plek die bepaalt welke naam een ander
-// te zien krijgt, voor ingelogd en uitgelogd gelijk. De gebruiker kiest zelf:
-// echte naam (voor- en achternaam) of gebruikersnaam. De database zet die keuze
-// om in de kolom weergavenaam (trigger tt_weergavenaam_bijwerken); onder de 16
-// is dat altijd de gebruikersnaam. De app leest dus alleen weergavenaam en
-// bepaalt zelf nooit uit fname of lname welke naam er staat. Een object zonder
-// dat veld (de naam is er nog niet bij gehaald) toont de gebruikersnaam.
+
+
+
+
+
+
+
 function displayNameOf(m) {
   if (!m) return 'Muzikant';
   if (m.weergavenaam !== undefined) return m.weergavenaam || 'Muzikant';
   return m.username || 'Muzikant';
 }
 
-// Bugfix/rename 19-08-2026 (Ronald): de zichtbare rol heet voortaan
-// "Beheerder" i.p.v. "Oprichter" — één beheerder per band, geen meervoud.
-// De opgeslagen waarde in band_members.role blijft letterlijk 'Oprichter';
-// alleen de weergave verandert. Elke plek die role aan de gebruiker toont, gaat
-// via deze functie — nooit meer m.role rechtstreeks in de HTML.
+
+
+
+
+
 function roleLabel(role) {
   return role === 'Oprichter' ? 'Beheerder' : (role || 'Lid');
 }
 
-// "Drums", of bij een gekozen instrument dat instrument: het eerste wat je
-// wilt weten (TT-520, Laag 3.1.b.1).
+
+
 function eersteGekozen(lijst) {
   const gekozen = lijst.find(v => filterInstruments.includes(v) || filterGenres.includes(v));
   return gekozen || lijst[0] || '';
 }
-// TT-560 (besluiten Ronald 06-11-2026 en 09-11-2026, beeld C): een afstand in
-// hele kilometers, overal gelijk: Zoeken, Mix & Match, het profiel en het
-// bericht van Talent Tent (de mail rekent zo in send-digest). Onder 1 km
-// staat "1 km" (naar boven afgerond). Eén functie; een eigen afronding per
-// plek is een fout.
+
+
+
+
+
 function afstandTekst(km) {
   if (km == null || km === '' || isNaN(Number(km))) return '';
   return `${Math.max(1, Math.round(Number(km)))} km`;
 }
 
-/* TT-520 (Laag 3.1.b.1, akkoord Ronald 25-10-2026; vlak per treffer sessie 18):
-   één regel per treffer, in een eigen vlak, zonder lijnen. Foto links (rond bij
-   een muzikant, vierkant bij een band). Onder de naam één regel: instrument of
-   genre · plaats · afstand. Rechts de berichtknop bij een muzikant, "Zoekt
-   <instrument>" bij een band die iemand zoekt. De losse labels (instrumenten,
-   genres, +1, Zoekend/Compleet) vervallen. */
+
+
+
+
+
+
 function zoekRijHTML(opts) {
   const meta = [opts.eerste, opts.plaats, opts.afstand].filter(Boolean).map(escHtml).join(' · ');
   return `
@@ -1133,8 +1133,8 @@ function zoekRijHTML(opts) {
 }
 
 function musicianRowHTML(m) {
-  // TT-38 / TT-43: de foto is voor iedereen zichtbaar (Ronald: die is te
-  // belangrijk voor de presentatie om achter een login te zetten).
+
+
   const displayName = displayNameOf(m);
   return zoekRijHTML({
     klik: `openProfielScherm('${jsAttr(m.id)}')`,
@@ -1147,14 +1147,14 @@ function musicianRowHTML(m) {
   });
 }
 
-/* TT-30 (07-08-2026): kaartweergave als alternatief voor de rij hierboven —
-   zelfde gegevens en dezelfde klik, alleen fotogericht. Kiesbaar via Weergave.
-   TT-520 deel 2 (akkoord Ronald 27-10-2026, Laag 3.3): de kaart heeft de inhoud
-   van de rij. Een vierkante foto tot de rand van de kaart (de uitsnede die de
-   gebruiker zelf koos, Laag 3.4); rechtsonder op de foto de berichtknop bij een
-   muzikant, of "Zoekt <instrument>" bij een band met een open rol. Daaronder de
-   naam (volledig, nooit afgekapt), één regel instrument of BAND · genre, en één
-   regel plaats · afstand. Geen tags meer. */
+
+
+
+
+
+
+
+
 function zoekKaartHTML(o) {
   const plaats = [o.plaats, o.afstand].filter(Boolean).map(escHtml).join(' · ');
   const eerste = (o.band ? '<span class="result-row-soort">BAND</span>' + (o.eerste ? ' · ' : '') : '') + escHtml(o.eerste || '');
@@ -1182,19 +1182,19 @@ function musicianCardHTML(m) {
   });
 }
 
-// ─── Bands in het resultaat ──────────────────────────────────────────────────
 
-// "Drums" midden in een zin wordt "drums"; een afkorting als "DJ" blijft staan.
+
+
 function instrumentInZin(naam) {
   const w = String(naam || '');
   return /^[A-Z]{2,}\b/.test(w) ? w : w.charAt(0).toLowerCase() + w.slice(1);
 }
 
-// TT-520: de rij van een band. Onder de naam het genre · plaats · afstand.
-// Rechts "Zoekt <instrument>" als de band een open rol heeft: het gekozen
-// instrument als de band dat zoekt, anders zijn eerste open rol. Zo ziet de
-// zoeker waarom de band in het resultaat staat (Laag 3.1, besluit Ronald
-// 25-10-2026). Geen berichtknop (zie MESSAGE_ICON_SVG).
+
+
+
+
+
 function bandRowHTML(b) {
   const gezocht = (b.band_wanted || []).map(w => w.instrument);
   const zoekt = gezocht.length ? eersteGekozen(gezocht) : '';
@@ -1210,9 +1210,9 @@ function bandRowHTML(b) {
   });
 }
 
-// TT-30: kaartweergave, kiesbaar via Weergave. Geen berichtknop: een bericht
-// aan een band gaat via de bandpagina naar de contactpersoon. Rechtsonder op de
-// foto "Zoekt <instrument>", hetzelfde instrument als in de rij (TT-520).
+
+
+
 function bandCardHTML(b) {
   const gezocht = (b.band_wanted || []).map(w => w.instrument);
   const zoekt = gezocht.length ? eersteGekozen(gezocht) : '';
@@ -1228,29 +1228,29 @@ function bandCardHTML(b) {
   });
 }
 
-// ─── Setlist-zoekfunctie ─────────────────────────────────────────────────────
-// Herzien ontwerp (04-08-2026, Ronald): zelfde Artiest→Nummer-zoekvelden als
-// bij de profiel-repertoirestap i.p.v. los vrij-tekstveld. De zoeker bouwt
-// zo een lijst nummers op (Mix & Match, Wie speelt dit?); exacte titel+artiest-match
-// tegen het repertoire van muzikanten. Hoe meer nummers matchen, hoe hoger de
-// muzikant in het resultaat. Geen ingelogd/uitgelogd-verschil in mogelijkheden
-// — alleen de databaseroute verschilt (publieke RPC vs. directe tabeltoegang).
 
-let setlistWantedSongs = [];       // { title, artist }, volgorde = volgnummer
-let selectedSetlistArtist = null;  // { id, name }
+
+
+
+
+
+
+
+let setlistWantedSongs = [];
+let selectedSetlistArtist = null;
 let setlistItunesSearchTimeout = null;
-let filterSetlistInstruments = []; // TT-139: harde instrumentfilter, zelfde patroon als TT-55
+let filterSetlistInstruments = [];
 
-// TT-520 bouwsessie b (27-10-2026): geen Sorteren en geen Weergave meer.
-// De volgorde staat vast op Beste match, alleen de lijst (besluiten Ronald
-// 25-10-2026, Laag 3.2.b.4, en 27-10-2026: "alleen de lijst").
+
+
+
 let lastSetlistResults = [];
 
-// "Beste match" is hier het aantal nummers uit de setlist dat de muzikant
-// speelt. Die telling maakt de app zelf, uit musician_songs — hij komt niet
-// uit de database en werkt dus ook uitgelogd. Verouderde profielen zakken
-// altijd naar onderen; zelfde regel als bij Muzikanten (laatst actief,
-// zetActiefStand()). Bij gelijke stand dichtstbij eerst, dan de naam.
+
+
+
+
+
 function sortSetlistList(list) {
   list.sort((a, b) => {
     const groep = vergelijkActiefGroep(a, b);
@@ -1271,11 +1271,11 @@ function renderCappedSetlistResults() {
   renderSetlistResults(lastSetlistResults.slice(0, SEARCH_RESULT_LIMIT), { total, verruimd: setlistVerruimd });
 }
 
-// Filters bij Wie speelt dit?, rechts op de labelregel van Band of artiest, met
-// Plaats, Straal en Instrument (Laag 3.2.b.4). Zelfde knop en pijltje als bij
-// Muzikanten. Het getal telt Instrument; Plaats en Straal tellen niet mee,
-// zoals bij Muzikanten (besluit Ronald 27-10-2026: elk ingesteld filter één
-// keer; Plaats en Straal zijn geen filter maar het vertrekpunt).
+
+
+
+
+
 let mmFiltersOpen = false;
 function zetMmFiltersTeller() {
   const el = document.getElementById('mmFiltersTekst');
@@ -1293,9 +1293,9 @@ function zetMmFilters(open) {
 }
 function toggleMmFilters() { zetMmFilters(!mmFiltersOpen); }
 
-// TT-139: instrumentkeuze, zelfde patroon als bij Muzikanten — hooguit één
-// instrument, Zang, Achtergrondzang en Songwriting als losse uitzonderingen. De keuze staat in
-// het veld zelf (pickerVeldTekst), zoals bij Muzikanten.
+
+
+
 function initSetlistSearchFilters() {
   if (!PICKERS.filterSetlistInstruments) {
     initPicker({
@@ -1308,8 +1308,8 @@ function initSetlistSearchFilters() {
     });
   }
 
-  // Hetzelfde straalmenu als bij Muzikanten. Het verborgen invoerveld houdt
-  // zijn id, dus runSetlistSearch() leest het ongewijzigd uit.
+
+
   if (!WHEEL_FIELDS['setlist-straal']) {
     initWheelField({
       id: 'setlist-straal',
@@ -1325,11 +1325,11 @@ function initSetlistSearchFilters() {
   }
 }
 
-// Een gekozen nummer of een nummer in het resultaat: één rij, de artiest groot
-// en bovenaan, het nummer eronder (nummerTekstHTML(), besluit Ronald
-// 27-10-2026). Een artiest zonder nummer zoekt op al zijn nummers (TT-430).
-// Het kruisje achter een rij (RIJ_KRUIS), zonder "Zeker?"-stap: dit is een
-// zoekfilter dat je zelf net hebt toegevoegd (huisstijl §8).
+
+
+
+
+
 function mmKruisHTML(actie, label) {
   return `<button type="button" class="song-remove" onclick="event.stopPropagation(); ${actie}" title="Verwijderen" aria-label="${escHtml(label)}">${RIJ_KRUIS}</button>`;
 }
@@ -1341,14 +1341,14 @@ function renderSetlistSongsList() {
       ${nummerTekstHTML(s.artist, s.title || 'Alle nummers')}
       ${mmKruisHTML(`removeSetlistSong(${i})`, `Verwijder ${s.title || s.artist}`)}
     </div>`).join('');
-  mmSetlijstTekenen(); // het vinkje in "Uit je setlist" volgt de gekozen nummers
+  mmSetlijstTekenen();
 }
 
-// Een nummer erbij in Wie speelt dit?; geeft false als het er al stond.
+
 function setlistNummerErbij(title, artist) {
   if (setlistWantedSongs.find(s => s.title === title && s.artist === artist)) return false;
-  // TT-430: een nummer maakt de selectie van zijn artiest af. De rij met alleen
-  // die artiest ("Alle nummers") maakt plaats voor de rij met het nummer.
+
+
   const alleenArtiest = setlistWantedSongs.findIndex(s => !s.title && s.artist === artist);
   if (alleenArtiest !== -1) setlistWantedSongs.splice(alleenArtiest, 1);
   setlistWantedSongs.push({ title, artist });
@@ -1365,30 +1365,30 @@ function addSetlistSong(title, artist) {
   selectedSetlistArtist = null;
   renderSetlistSongsList();
   setTimeout(() => document.getElementById('setlistArtistSearch').focus(), 0);
-  runSetlistSearch(); // TT-10: direct verversen, minstens 1 nummer is nu bekend
+  runSetlistSearch();
 }
 
 function removeSetlistSong(i) {
   setlistWantedSongs.splice(i, 1);
   renderSetlistSongsList();
-  // TT-10: bij het laatste nummer weghalen is er niets meer om op te matchen —
-  // resultaat netjes leegmaken i.p.v. het oude resultaat te laten staan.
+
+
   if (setlistWantedSongs.length) runSetlistSearch();
   else document.getElementById('setlistSearchResults').innerHTML = '';
 }
 
-// ─── Uit je setlist (TT-543 onderdeel 4, voorstel 5) ──────────────────────────
-// Besluiten Ronald 09-11-2026: links op de regel van Wissen "Uit je setlist", in
-// de vorm van Filters (warmgeel, 12px vet, pijltje), standaard dicht. Een tik
-// klapt je eigen nummers eronder open, in de vorm van de keuzelijst (rij 44px,
-// hoogstens 240px, daarna scrollen), elke rij "Band · Nummer", op band en dan
-// nummer (compareArtistTitle()). De lijst blijft open: je kiest er meer. Een
-// gekozen nummer heeft de gekozen stand van de keuzelijst (vlak, warmgele
-// streep links, vinkje 16px); een tik erop haalt het weer weg, zoals in de
-// keuzelijst van Instrument en Genre (besluit 25-08-2026). Alleen met een
-// profiel. De lijst komt bij elke keer tonen vers uit musician_songs: zo staat
-// een net toegevoegd nummer er meteen in.
-let mmSetlijstNummers = [];   // [{ artist, title }], gesorteerd
+
+
+
+
+
+
+
+
+
+
+
+let mmSetlijstNummers = [];
 let mmSetlijstOpen = false;
 let mmSetlijstFout = false;
 let mmSetlijstSeq = 0;
@@ -1402,7 +1402,7 @@ async function mmSetlijstTonen() {
   if (!mid) { knop.hidden = true; zetMmSetlijst(false); return; }
   const { data, error } = await db.from('musician_songs').select('song_title, song_artist').eq('musician_id', mid);
   if (seq !== mmSetlijstSeq) return;
-  // TT-561: een storing is nooit "geen nummers": de knop blijft en de lijst zegt het.
+
   mmSetlijstFout = !!error;
   if (error) logCaught('mmSetlijstTonen', error);
   mmSetlijstNummers = (data || []).map(s => ({ artist: s.song_artist || '', title: s.song_title || '' }))
@@ -1447,13 +1447,13 @@ function mmSetlijstKies(i) {
   if (al !== -1) { removeSetlistSong(al); return; }
   if (!setlistNummerErbij(s.title, s.artist)) return;
   renderSetlistSongsList();
-  runSetlistSearch(); // TT-10: direct verversen
+  runSetlistSearch();
 }
 
-// Stap A: artiest zoeken (zelfde iTunes-aanpak als profiel-repertoire, TT-139).
+
 async function onSetlistArtistSearch(q) {
   const ac = document.getElementById('acSetlistArtistList');
-  clearTimeout(setlistItunesSearchTimeout); // TT-526: een oudere vraag tekent niet meer na
+  clearTimeout(setlistItunesSearchTimeout);
   if (q.length < 2) { ac.classList.remove('open'); return; }
 
   ac.innerHTML = '<div class="ac-item"><span>Zoeken...</span></div>';
@@ -1486,14 +1486,14 @@ function selectSetlistArtist(id, name) {
   document.getElementById('setlistArtistSearch').value = name;
   closeAC('acSetlistArtistList');
   const wrap = document.getElementById('setlistTrackSearchWrap');
-  // Leeg, niet 'block': het blok houdt de weergave van zijn klasse (.field).
+
   wrap.style.display = '';
-  // Laag 3.2.b.2 (akkoord Ronald 25-10-2026): de uitleg tussen haakjes vervalt.
+
   document.getElementById('setlistTrackSearchLabel').textContent = `Nummer van ${name}`;
   document.getElementById('setlistTrackSearch').value = '';
   closeAC('acSetlistTrackList');
-  // TT-430: een artiest alleen is al een zoekopdracht. Is er al een rij voor
-  // deze artiest (met of zonder nummer), dan verandert er niets.
+
+
   if (!setlistWantedSongs.find(x => x.artist === name)) {
     setlistWantedSongs.push({ title: '', artist: name });
     renderSetlistSongsList();
@@ -1501,8 +1501,8 @@ function selectSetlistArtist(id, name) {
   }
 }
 
-// Stap B: nummer zoeken binnen geselecteerde artiest — lokaal filteren,
-// zelfde cache (fetchArtistSongs) als bij het profiel-repertoire.
+
+
 async function onSetlistTrackSearch(q) {
   const ac = document.getElementById('acSetlistTrackList');
   if (!selectedSetlistArtist) return;
@@ -1526,23 +1526,23 @@ function resetSetlistSearch() {
   document.getElementById('setlistArtistSearch').value = '';
   document.getElementById('setlistTrackSearch').value = '';
   document.getElementById('setlistTrackSearchWrap').style.display = 'none';
-  // Wissen wist alles behalve Plaats en Straal, zoals bij Muzikanten (TT-520,
-  // sessie 18, punt 6; Aanname Claude: dezelfde regel geldt hier).
+
+
   filterSetlistInstruments = [];
   if (PICKERS.filterSetlistInstruments) renderPickerBadges(PICKERS.filterSetlistInstruments);
   zetMmFiltersTeller();
   lastSetlistResults = [];
-  setlistVerruimd = null; // TT-62
+  setlistVerruimd = null;
   renderSetlistSongsList();
   document.getElementById('setlistSearchResults').innerHTML = '';
 }
 
-// TT-62: `straalOverride` werkt exact zoals bij runSearch(). Zie daar.
+
 async function runSetlistSearch(straalOverride) {
-  const seq = ++setlistSearchSeq; // TT-84: zie toelichting bij musicianSearchSeq
+  const seq = ++setlistSearchSeq;
   const resultsEl = document.getElementById('setlistSearchResults');
   if (!setlistWantedSongs.length) { showToast('Kies minimaal één band of artiest.'); return; }
-  if (straalOverride === undefined) setlistVerruimd = null; // nieuwe zoekopdracht
+  if (straalOverride === undefined) setlistVerruimd = null;
 
   if (!resultsEl.innerHTML.trim()) {
     resultsEl.innerHTML = `<div class="zoek-laden">
@@ -1555,8 +1555,8 @@ async function runSetlistSearch(straalOverride) {
     const artists = setlistWantedSongs.map(s => s.artist);
     const radius  = straalOverride !== undefined ? straalOverride : parseRadiusInput('filterSetlistRadius');
 
-    // TT-62: zelfde twee hulpjes als in runSearch(). `straalActief` is hier
-    // pas na de straal-aanroep bekend (radiusIds), dus die geven we mee.
+
+
     const ruimerZoeken = (straalActief) => {
       if (!straalActief) return undefined;
       const stap = verruimStap(setlistVerruimd, radius);
@@ -1571,12 +1571,12 @@ async function runSetlistSearch(straalOverride) {
       renderSetlistResults([], { verruimd: setlistVerruimd });
     };
 
-    // Repertoire-match en straal-match zijn onafhankelijk van elkaar —
-    // tegelijk opvragen i.p.v. na elkaar (performance, 04-08-2026).
-    // TT-628: het vertrekpunt eerst, zodat een plaats die de lijst niet kent
-    // de melding onder het veld krijgt en er niet gezocht wordt. De vraag naar
-    // de nummers loopt intussen al.
-    // Promise.resolve start de vraag nu (een vraag van Supabase start pas bij then).
+
+
+
+
+
+
     const songVraag = Promise.resolve(db.rpc('tt_search_musicians_by_songlist_anon', { titles, artists }));
     const getyptePlaats = document.getElementById('filterSetlistCity').value;
     const vertrek = await zoekVertrekpunt(getyptePlaats);
@@ -1593,16 +1593,16 @@ async function runSetlistSearch(straalOverride) {
     const [songResult, radiusResult] = await Promise.all([
       songVraag,
       (async () => {
-        // Bugfix 05-08-2026 (gevonden door Ronald): het Plaats-veld werd
-        // genegeerd zodra je een eigen profiel had — de straal werd dan
-        // altijd vanaf je eigen postcode berekend, ook als je hier expliciet
-        // een andere plaats had ingetypt (bijv. "Rotterdam" terwijl je eigen
-        // profiel in Delft staat). Dat gaf verwarrende/onjuiste afstanden.
-        // Nu: een andere plaats in het veld heeft voorrang; anders je eigen
-        // postcode.
-        // TT-527 (27-10-2026): staat je eigen woonplaats in het veld (zo vult
-        // de app het in), dan meet het vanaf je eigen postcode, zoals
-        // Muzikanten en Wat spelen we?. Een andere plaats blijft voorgaan.
+
+
+
+
+
+
+
+
+
+
         if (!vertrek.eigen) {
           const origin = vertrek;
           if (origin.lat == null) return { data: null, error: null };
@@ -1612,8 +1612,8 @@ async function runSetlistSearch(straalOverride) {
         }
         if (hasOwnProfile) {
           const mid = await getMyMusicianId();
-          // TT-159 (27-08-2026): origin_lat/origin_lng null = de eigen
-          // postcode van de zoeker, exact zoals runSearch() via `usesOwnCity`.
+
+
           return db.rpc('tt_search_musicians', {
             searcher_id: mid, radius_km: radius,
             origin_lat: null, origin_lng: null
@@ -1624,16 +1624,16 @@ async function runSetlistSearch(straalOverride) {
     ]);
 
     if (songResult.error) throw songResult.error;
-    if (seq !== setlistSearchSeq) return; // TT-84
+    if (seq !== setlistSearchSeq) return;
     const songMatches = songResult.data || [];
     if (!songMatches.length) { lastSetlistResults = []; renderSetlistResults([]); return; }
     const songMatchIds = new Set(songMatches.map(m => m.musician_id));
 
-    // Straal toepassen om het zoekgebied te beperken: ingevulde Plaats heeft
-    // voorrang (zie hierboven), anders eigen postcode (ingelogd) of geen
-    // straalbeperking (uitgelogd zonder Plaats ingevuld).
+
+
+
     let distanceMap = {};
-    let radiusIds = null; // null = geen straalbeperking (geen vertrekpunt bekend)
+    let radiusIds = null;
 
     if (radiusResult.error) throw radiusResult.error;
     if (radiusResult.data) {
@@ -1643,9 +1643,9 @@ async function runSetlistSearch(straalOverride) {
 
     let ids = Array.from(songMatchIds);
     if (radiusIds) ids = ids.filter(id => radiusIds.has(id));
-    // TT-62: er zijn wél muzikanten met deze nummers, alleen niet binnen de
-    // straal. Dan verruimen in plaats van een leeg scherm tonen. Is er geen
-    // vertrekpunt (radiusIds leeg), dan is de straal niet het probleem.
+
+
+
     if (!ids.length) {
       const v = ruimerZoeken(!!radiusIds);
       if (v !== undefined) return runSetlistSearch(v);
@@ -1653,13 +1653,13 @@ async function runSetlistSearch(straalOverride) {
     }
 
     let musicians;
-    const actief = actiefStandVraag('muzikant', ids); // TT-367: tegelijk met de gegevens
+    const actief = actiefStandVraag('muzikant', ids);
     if (hasOwnProfile) {
       const { data, error } = await inDelen(ids, deel => db.from('musicians').select(`
         id, weergavenaam, username, city, zip, avatar_url,
         musician_songs(song_title, song_artist, mastery_level),
         musician_instruments(instrument, niveau)
-      `).in('id', deel)); // TT-532
+      `).in('id', deel));
       if (error) throw error;
       musicians = data;
     } else {
@@ -1667,7 +1667,7 @@ async function runSetlistSearch(straalOverride) {
       const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
       if (error) throw error;
       musicians = (data || []).map(m => ({
-        id: m.id, username: m.username, city: m.city, // TT-04: geen postcode voor bezoekers
+        id: m.id, username: m.username, city: m.city,
         avatar_url: m.avatar_url,
         musician_songs: m.songs || [],
         musician_instruments: (m.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
@@ -1675,9 +1675,9 @@ async function runSetlistSearch(straalOverride) {
       await weergavenamenToevoegen(musicians, namenVraag);
     }
 
-    // TT-139: harde instrumentfilter, zelfde regel als bij Muzikanten/Bands
-    // (TT-55) — maximaal 1 instrument + optioneel Zang, vóór de repertoire-
-    // matching toepassen.
+
+
+
     if (filterSetlistInstruments.length) {
       musicians = musicians.filter(m => {
         const mInstr = (m.musician_instruments || []).map(x => x.instrument);
@@ -1685,8 +1685,8 @@ async function runSetlistSearch(straalOverride) {
       });
     }
 
-    // Per muzikant bepalen welke volgnummers uit de gezochte setlist matchen
-    // (exacte titel+artiest, case-insensitive) en hoeveel er in totaal matchen.
+
+
     musicians.forEach(m => {
       const own = (m.musician_songs || []).map(s => `${(s.song_title||'').toLowerCase()}|||${(s.song_artist||'').toLowerCase()}`);
       const eigenArtiesten = (m.musician_songs || []).map(x => (x.song_artist || '').toLowerCase());
@@ -1700,32 +1700,32 @@ async function runSetlistSearch(straalOverride) {
       musicianDistanceCache[m.id] = m.distance_km;
     });
 
-    // Hoe meer nummers matchen, hoe hoger in het resultaat; bij gelijke stand
-    // dichtstbijzijnde eerst (indien bekend).
-    // TT-239: de vaste sortering staat nu in sortSetlistList(), zodat de
-    // keuzelijst "Sorteren op" dezelfde lijst kan herschikken zonder opnieuw
-    // te zoeken. "Beste match" geeft exact de volgorde van hiervoor.
-    // TT-06: zelfde regel als bij Muzikanten, vóór de TT-62-controle.
-    // TT-442: je eigen profiel staat er niet bij. De eigen id moet dan bekend zijn,
-    // ook als de straal vanuit een getypte Plaats werd bepaald.
+
+
+
+
+
+
+
+
     if (hasOwnProfile) await getMyMusicianId();
     const filtered = musicians.filter(m => m.matchCount > 0 && !isGeblokkeerd(m.id) && !isEigenProfiel(m.id));
 
-    if (seq !== setlistSearchSeq) return; // TT-84: nieuwere zoekopdracht loopt al
-    // TT-62: zelfde regel als bij Muzikanten en Bands.
+    if (seq !== setlistSearchSeq) return;
+
     if (!filtered.length) {
       const v = ruimerZoeken(!!radiusIds);
       if (v !== undefined) return runSetlistSearch(v);
       geenResultaat(!!radiusIds); return;
     }
     await zetActiefStand('muzikant', filtered, actief);
-    if (seq !== setlistSearchSeq) return; // TT-84
+    if (seq !== setlistSearchSeq) return;
     lastSetlistResults = sortSetlistList(filtered);
     renderCappedSetlistResults();
 
   } catch(e) {
     logCaught('runSetlistSearch', e);
-    if (seq !== setlistSearchSeq) return; // TT-84: fout van een verouderde zoekopdracht niet tonen
+    if (seq !== setlistSearchSeq) return;
     resultsEl.innerHTML = foutStaatHTML(e, 'zoeken', 'runSetlistSearch()');
   }
 }
@@ -1736,8 +1736,8 @@ function renderSetlistResults(musicians, opts) {
   const total = opts.total != null ? opts.total : musicians.length;
 
   if (!total) {
-    // TT-62: is er al tot heel Nederland verruimd, dan is het zoekgebied niet
-    // meer de beperking — dan heeft simpelweg niemand deze nummers.
+
+
     const uitleg = opts.verruimd && opts.verruimd.leeg
       ? 'Niemand in de Tent heeft een match met deze setlist, ook niet buiten je zoekgebied.'
       : 'Niemand in de Tent (binnen je zoekgebied) heeft (nog) een match met deze setlist.';
@@ -1762,18 +1762,18 @@ function renderSetlistResults(musicians, opts) {
     </div>`;
 }
 
-// Hoeveel van de gekozen nummers, rechts in de rij (Laag 3.2.b.4, akkoord
-// Ronald 25-10-2026: "3 van 3"; vervangt "3/3 matches: #1, #2, #3"). Eén
-// klasse voor beide vragen van Mix & Match. Kleur --accent: donker goud,
-// licht zwart (geel is in licht nooit tekst).
+
+
+
+
 function mmTellingHTML(n, van) {
   return `<span class="mm-telling">${n} van ${van}</span>`;
 }
 
-// Eén regel per muzikant, de rij van Muzikanten (zoekRijHTML()): foto, naam,
-// instrument · plaats · afstand. Rechts de telling in plaats van de
-// berichtknop (Laag 3.2.b.4). Een tik opent het profiel. Het instrument: het
-// gekozen filter als hij dat speelt, anders zijn eerste.
+
+
+
+
 function musicianSetlistRowHTML(m) {
   const displayName = displayNameOf(m);
   const instr = (m.musician_instruments || []).map(x => x.instrument);
@@ -1789,43 +1789,43 @@ function musicianSetlistRowHTML(m) {
 }
 
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Mix & Match, Wat spelen we? (TT-289; tot 27-10-2026 "Maak setlist"): van
-// muzikanten naar de nummers die ze delen
-// ═══════════════════════════════════════════════════════════════════════════
-// Besluiten Ronald, 17-09-2026, bijgewerkt in TT-520 (25 en 27-10-2026):
-// - Mix & Match heeft twee vragen: "Wat spelen we?" (deze) en "Wie speelt
-//   dit?" (van nummers naar muzikanten, hierboven).
-// - Je kiest 2 tot 20 muzikanten, alleen muzikanten, geen bands. Wie zoekt,
-//   staat er sinds 08-10-2026 als eerste vanzelf in (bevinding Ronald: "meestal
-//   wil je jezelf ook in de lijst hebben"); met het ✕ haal je jezelf weg.
-// - Alleen het naamveld: iedereen in Nederland is te vinden, dichtstbij
-//   bovenaan (Laag 3.2.b.3; Plaats en Straal zijn weg). Geen verruiming.
-// - Een nummer telt als het in iemands repertoire staat, ongeacht niveau.
-//   Alleen nummers die minstens 2 gekozen muzikanten spelen.
-// - Alleen de lijst, vast op meeste spelers. Een tik klapt een regel open en
-//   toont per muzikant of hij het speelt, met het niveau rechts naast de naam.
-// - Geen knop: de lijst ververst vanzelf.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const GEDEELD_MIN = 2;
 const GEDEELD_MAX = 20;
 const GEDEELD_SUGGESTIES = 8;
 
-// 'nummers' = Wat spelen we? (beginstand), 'muzikanten' = Wie speelt dit?
-// (TT-520 bouwsessie b: Wat spelen we? staat links en is de beginstand; het
-// moment in de oefenruimte, bespreking 25-10-2026).
+
+
+
 let setlistSoort = 'nummers';
-let gedeeldGekozen = [];           // { id, naam, city, distance_km, foto, instrument }, volgorde van kiezen
-let gedeeldResultaat = [];         // { sleutel, titel, artiest, spelers: {id: niveau} }
-let gedeeldOpen = new Set();       // sleutels van opengeklapte regels
+let gedeeldGekozen = [];
+let gedeeldResultaat = [];
+let gedeeldOpen = new Set();
 let gedeeldSearchSeq = 0;
 let gedeeldNaamSeq = 0;
 let gedeeldNaamTimeout = null;
-let gedeeldKandidaten = null;      // { sleutel, lijst } — cache per kijker (met of zonder profiel)
-let gedeeldEigenId = null;         // wie er vanzelf is toegevoegd; haal je jezelf weg, dan komt hij niet terug
+let gedeeldKandidaten = null;
+let gedeeldEigenId = null;
 
-// De vraag onder de twee knoppen (besluit Ronald 27-10-2026, sessie 21:
-// "Kies … en zie …", beide regels even opgebouwd; past op 360px op één regel).
+
+
 const MM_VRAAG = {
   nummers: 'Kies muzikanten en zie wat jullie samen spelen.',
   muzikanten: 'Kies nummers en zie wie ze ook speelt.'
@@ -1847,14 +1847,14 @@ function setSetlistSoort(soort) {
   setlistZoekVerversen();
 }
 
-// Eén plek die bepaalt wat het Setlist-tabblad bij tonen opnieuw zoekt.
+
 function setlistZoekVerversen() {
   if (setlistSoort === 'nummers') {
     gedeeldEigenToevoegen().then(veranderd => {
       if (!veranderd && gedeeldGekozen.length >= GEDEELD_MIN) runGedeeldSearch();
     });
   } else {
-    mmSetlijstTonen(); // TT-543 onderdeel 4, voorstel 5
+    mmSetlijstTonen();
     if (setlistWantedSongs.length) runSetlistSearch();
   }
 }
@@ -1882,10 +1882,10 @@ async function gedeeldSuggesties(term) {
   }
   try {
     const lijst = await gedeeldKandidatenLaden();
-    if (seq !== gedeeldNaamSeq) return; // TT-84: er is intussen verder getypt
+    if (seq !== gedeeldNaamSeq) return;
     const gekozenIds = new Set(gedeeldGekozen.map(g => g.id));
     const treffers = lijst
-      // TT-06: een geblokkeerde muzikant is ook hier niet te vinden.
+
       .filter(m => !gekozenIds.has(m.id) && !isGeblokkeerd(m.id) && naamMatcht(term, displayNameOf(m)))
       .sort((a, b) => {
         if (a.distance_km != null && b.distance_km != null && a.distance_km !== b.distance_km) {
@@ -1914,20 +1914,20 @@ async function gedeeldSuggesties(term) {
   }
 }
 
-// "Delft · 8 km". Uitgelogd of zonder vertrekpunt: alleen de plaats.
+
 function gedeeldMeta(m) {
   const delen = [];
   if (m.city) delen.push(m.city);
-  if (m.distance_km != null) delen.push(afstandTekst(m.distance_km)); // TT-560
+  if (m.distance_km != null) delen.push(afstandTekst(m.distance_km));
   return delen.join(' · ');
 }
 
-// Alle muzikanten in Nederland, met naam, plaats, foto en instrument (Laag
-// 3.2.b.3, besluit Ronald 25-10-2026: plaats en straal vervallen, iedereen is
-// te vinden, dichtstbij bovenaan). De lijst komt uit de publieke functie
-// zonder vertrekpunt; met een profiel komt de afstand vanaf je eigen postcode
-// erbij, met de landelijke straal (STRAAL_LANDELIJK). Wie geen afstand heeft,
-// staat achteraan.
+
+
+
+
+
+
 async function gedeeldKandidatenLaden() {
   const sleutel = hasOwnProfile ? 'profiel' : 'bezoeker';
   if (gedeeldKandidaten && gedeeldKandidaten.sleutel === sleutel) return gedeeldKandidaten.lijst;
@@ -1944,7 +1944,7 @@ async function gedeeldKandidatenLaden() {
   const afstand = {};
   (d.data || []).forEach(r => { afstand[r.musician_id] = r.distance_km; });
   const ids = (a.data || []).map(r => r.musician_id);
-  // Wie zoekt, staat ook in de kandidaten: haalt hij zichzelf weg, dan kiest hij zichzelf hier terug.
+
   if (hasOwnProfile) {
     const mid = await getMyMusicianId();
     if (mid && !ids.includes(mid)) ids.push(mid);
@@ -1955,18 +1955,18 @@ async function gedeeldKandidatenLaden() {
   return lijst;
 }
 
-// Naam en plaats, en desgewenst het repertoire. Uitgelogd via de publieke
-// functie; de gekozen naam komt er apart bij (TT-420).
+
+
 async function gedeeldMuzikantenLaden(ids, metNummers) {
   if (hasOwnProfile) {
     const velden = metNummers
       ? 'id, weergavenaam, username, city, musician_songs(song_title, song_artist, mastery_level)'
       : 'id, weergavenaam, username, city, avatar_url, musician_instruments(instrument)';
-    const { data, error } = await inDelen(ids, deel => db.from('musicians').select(velden).in('id', deel)); // TT-532
+    const { data, error } = await inDelen(ids, deel => db.from('musicians').select(velden).in('id', deel));
     if (error) throw error;
     return (data || []).map(m => ({ ...m, musician_songs: m.musician_songs || [] }));
   }
-  const namenVraag = vraagNu(db.rpc('tt_weergavenamen', { ids })); // TT-367: tegelijk
+  const namenVraag = vraagNu(db.rpc('tt_weergavenamen', { ids }));
   const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
   if (error) throw error;
   const rijen = (data || []).map(m => ({
@@ -1978,8 +1978,8 @@ async function gedeeldMuzikantenLaden(ids, metNummers) {
   return rijen;
 }
 
-// Wat een gekozen muzikant onthoudt: naam, plaats, afstand, foto en zijn
-// eerste instrument, voor de rij (zoekRijHTML()).
+
+
 function gedeeldGekozenRecord(m) {
   return {
     id: m.id, naam: displayNameOf(m), city: m.city || '', distance_km: m.distance_km,
@@ -2006,10 +2006,10 @@ function addGedeeldMuzikant(id) {
   if (gedeeldGekozen.length >= GEDEELD_MIN) runGedeeldSearch();
 }
 
-// Wie een profiel heeft, staat als eerste in de lijst (08-10-2026). Eén keer per
-// account: haal je jezelf weg, dan blijft dat zo. Een ander account (of uitloggen)
-// haalt de vorige eigenaar weer weg. Geeft waar als de lijst veranderde en de
-// resultaten zijn bijgewerkt.
+
+
+
+
 async function gedeeldEigenToevoegen() {
   try {
     const mid = hasOwnProfile ? await getMyMusicianId() : null;
@@ -2044,11 +2044,11 @@ function removeGedeeldMuzikant(i) {
   else { gedeeldResultaat = []; gedeeldOpen.clear(); renderGedeeldResults(); }
 }
 
-// De gekozen muzikanten, elk een rij zoals in het resultaat van Muzikanten,
-// met hun profielfoto (Laag 3.2.b.4) en rechts het ✕. Een tik op de rij
-// opent het profiel. Zolang er minder dan twee zijn, zegt één regel hoeveel
-// er nog nodig zijn; daarboven geen teller (hooguit twintig, dat meldt de
-// suggestielijst).
+
+
+
+
+
 function renderGedeeldGekozen() {
   const list = document.getElementById('gedeeldGekozenList');
   const teller = document.getElementById('gedeeldTeller');
@@ -2078,7 +2078,7 @@ function resetGedeeldSearch() {
   closeAC('acGedeeldNaamList');
   renderGedeeldGekozen();
   renderGedeeldResults();
-  gedeeldEigenToevoegen(); // Wissen: terug naar alleen jezelf
+  gedeeldEigenToevoegen();
 }
 
 async function runGedeeldSearch() {
@@ -2095,15 +2095,15 @@ async function runGedeeldSearch() {
   }
   try {
     const muzikanten = await gedeeldMuzikantenLaden(gedeeldGekozen.map(g => g.id), true);
-    if (seq !== gedeeldSearchSeq) return; // TT-84
+    if (seq !== gedeeldSearchSeq) return;
     const nummers = new Map();
     muzikanten.forEach(m => {
       (m.musician_songs || []).forEach(s => {
         const titel = (s.song_title || '').trim();
         const artiest = (s.song_artist || '').trim();
         if (!titel) return;
-        // Zelfde vergelijking als runSetlistSearch(): titel en artiest exact,
-        // hoofdletters maken niet uit.
+
+
         const sleutel = `${titel.toLowerCase()}|||${artiest.toLowerCase()}`;
         if (!nummers.has(sleutel)) nummers.set(sleutel, { sleutel, titel, artiest, spelers: {} });
         nummers.get(sleutel).spelers[m.id] = LEVEL_LABELS[s.mastery_level] ? s.mastery_level : '';
@@ -2124,9 +2124,9 @@ async function runGedeeldSearch() {
 
 function gedeeldAantal(n) { return Object.keys(n.spelers).length; }
 
-// Vaste volgorde: meeste spelers bovenaan, dan artiest, dan titel (Laag
-// 3.2.b.4, Ronald 25-10-2026: geen sorteerkeuze, "de lijst staat vast op
-// meeste spelers bovenaan").
+
+
+
 function sortGedeeldList(lijst) {
   const vgl = (a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' });
   return lijst.sort((a, b) => (gedeeldAantal(b) - gedeeldAantal(a))
@@ -2150,9 +2150,9 @@ function renderGedeeldResults() {
   const cappedNotice = totaal > getoond.length
     ? `<p class="zoek-uitleg">Toont de eerste ${getoond.length} van ${totaal} nummers.</p>`
     : '';
-  // TT-585 (besluit Ronald 10-11-2026): de lijst telt elk nummer dat minstens
-  // GEDEELD_MIN van de gekozen muzikanten spelen; "jullie samen" zei dat
-  // iedereen het speelt.
+
+
+
   el.innerHTML = `
     <div class="results-header">
       <span class="results-count">${totaal} ${totaal === 1 ? 'nummer dat' : 'nummers die'} minstens ${GEDEELD_MIN} van jullie spelen</span>
@@ -2163,9 +2163,9 @@ function renderGedeeldResults() {
     </div>`;
 }
 
-// Volgorde in het paneel (besluit Ronald 27-10-2026, sessie 21): eerst wie het
-// speelt met een beheersing, Podium, Bijna, Basis; dan wie het speelt zonder
-// beheersing; dan wie het niet speelt. Binnen een groep de volgorde van kiezen.
+
+
+
 const NIVEAU_RANG = { podium: 0, bijna: 1, basis: 2 };
 function gedeeldSpelersVolgorde(n) {
   const rang = g => {
@@ -2177,9 +2177,9 @@ function gedeeldSpelersVolgorde(n) {
     .sort((a, b) => (a.r - b.r) || (a.k - b.k)).map(x => x.g);
 }
 
-// Een rij per nummer; een tik klapt hem open met per gekozen muzikant foto,
-// naam en rechts het niveau, of "Speelt dit niet". Een tik op een naam opent
-// het profiel.
+
+
+
 function gedeeldRijHTML(n, i) {
   const open = gedeeldOpen.has(n.sleutel);
   const paneelId = `gedeeldPaneel${i}`;
@@ -2206,10 +2206,10 @@ function gedeeldRijHTML(n, i) {
     </div>`;
 }
 
-// Openen en dichtklappen gaat vloeiend, in één beweging (besluit Ronald
-// 27-10-2026: "nu klapt ie open als een knipmes"): het paneel groeit van 0
-// naar zijn hoogte, de rij krijgt tegelijk rand en schaduw. Dicht: andersom,
-// daarna pas opnieuw tekenen. Met "beweging verminderen" gaat het meteen.
+
+
+
+
 const GEDEELD_KLAP_MS = 250;
 function gedeeldRijEl(sleutel) {
   return [...document.querySelectorAll('#gedeeldResults .gedeeld-rij')].find(r => r.dataset.sleutel === sleutel);
@@ -2227,7 +2227,7 @@ function toggleGedeeldRij(sleutel) {
     rij.classList.remove('open');
     rij.querySelector('.gedeeld-rij-kop').setAttribute('aria-expanded', 'false');
     paneel.style.height = paneel.offsetHeight + 'px';
-    void paneel.offsetHeight; // de beginhoogte vastleggen vóór de overgang
+    void paneel.offsetHeight;
     paneel.style.height = '0px';
     setTimeout(() => { if (!gedeeldOpen.has(sleutel)) renderGedeeldResults(); }, GEDEELD_KLAP_MS);
     return;
@@ -2247,31 +2247,31 @@ function toggleGedeeldRij(sleutel) {
   setTimeout(() => { paneel.style.height = ''; }, GEDEELD_KLAP_MS);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   De bewaarde zoekopdracht: de vink "Onthoud mijn zoekopdracht" (TT-520,
-   bouwsessie a deel 2, 27-10-2026). Vervangt het blok "Bewaar deze
-   zoekopdracht" onder het resultaat (TT-295).
 
-   Besluiten Ronald: de vink onthoudt de filters op elk toestel, dus in de
-   database (sessie 17, punt 6); één rij per muzikant (TT-295); de naam niet
-   (TT-295); wel soort, plaats, straal, instrument, genre, leeftijd, niveau en
-   volgorde. Weergave is een keuze van het toestel en blijft in localStorage.
-   De mail: staat de vink aan, dan komen nieuwe muzikanten bij deze
-   zoekopdracht in de mail van Instellingen → E-mailvoorkeuren (hoe vaak:
-   geen, dagelijks of wekelijks). Geen aparte schakelaar (besluit Ronald
-   27-10-2026, optie b: "dat maakt het eenvoudiger"; vervangt "twee aparte
-   dingen" van 25-10-2026).
-   Zonder account of zonder profiel staat de vink er wel; een tik geeft
-   "Maak een profiel aan, dan onthouden we je zoekopdracht." (sessie 18; "gratis"
-   weg: TT-603, besluit Ronald 14-11-2026, "ja").
 
-   Gedrag: staat de vink aan, dan volgt de bewaarde zoekopdracht wat er op het
-   scherm staat (bijgewerkt na elke zoekopdracht). Vink uit: de rij gaat weg,
-   en daarmee ook de mail. Bij de eerste zoekopdracht na het openen van de app
-   zet de app de bewaarde filters terug.
-   ───────────────────────────────────────────────────────────────────────── */
-let bewaardeZoek = undefined; // undefined = nog niet geladen, null = geen
-let onthoudToegepast = false;  // de bewaarde filters zijn deze sessie al teruggezet
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+let bewaardeZoek = undefined;
+let onthoudToegepast = false;
 let onthoudBijwerkTimer = null;
 
 async function laadBewaardeZoek() {
@@ -2283,7 +2283,7 @@ async function laadBewaardeZoek() {
   bewaardeZoek = data || null;
   return bewaardeZoek;
 }
-// Bij uitloggen: niets van de vorige gebruiker laten staan.
+
 function wisBewaardeZoek() {
   bewaardeZoek = undefined; laatsteZoekVertrek = null; onthoudToegepast = false;
   clearTimeout(onthoudBijwerkTimer);
@@ -2295,9 +2295,9 @@ function zetOnthoudVink(aan) {
   if (vink) vink.checked = !!aan;
 }
 
-// De zoekopdracht zoals hij nu op het scherm staat, in de vorm van de tabel.
-// Een postcode krijgt in de tekst de gevonden plaats ("binnen 10 km van Den
-// Haag", niet "van 2522"; gevonden bij de meting op de testsite, 27-10-2026).
+
+
+
 function huidigeZoek() {
   const v = laatsteZoekVertrek;
   const gevonden = (document.getElementById('filterCityStatus') || {}).textContent || '';
@@ -2316,7 +2316,7 @@ function huidigeZoek() {
   };
 }
 
-// "Muzikanten · Drums · Rock · 18 t/m 30 jaar · niveau 2 t/m 4 · binnen 10 km van Delft"
+
 function zoekTekst(z) {
   const soort = { alles: 'Muzikanten en bands', muzikanten: 'Muzikanten', bands: 'Bands' }[z.soort || 'alles'];
   const delen = [soort, z.instruments && z.instruments.length ? z.instruments.join(', ') : 'Alle instrumenten'];
@@ -2346,9 +2346,9 @@ function zelfdeZoek(a, b) {
     && (a.plaats || '').toLowerCase() === (b.plaats || '').toLowerCase();
 }
 
-// Eerste zoekopdracht na het openen: vink zetten en de bewaarde filters
-// terugzetten. Een zoekopdracht via een open rol zet zelf de filters
-// (zoekMuzikantVoorRol), die zet onthoudToegepast vooraf.
+
+
+
 async function onthoudHerstellen() {
   onthoudToegepast = true;
   if (!hasOwnProfile) { zetOnthoudVink(false); return; }
@@ -2356,7 +2356,7 @@ async function onthoudHerstellen() {
     if (bewaardeZoek === undefined) await laadBewaardeZoek();
   } catch (e) {
     logCaught('onthoudHerstellen', e);
-    return; // zonder bewaarde filters zoekt de app gewoon verder
+    return;
   }
   const z = bewaardeZoek;
   zetOnthoudVink(!!z);
@@ -2378,17 +2378,17 @@ async function onthoudHerstellen() {
   refreshChoiceField('sorteren');
 }
 
-// Tik op de vink.
+
 let onthoudBezig = false;
-let onthoudDoel = false; // de stand die nu wordt geschreven
+let onthoudDoel = false;
 async function onthoudKlik(vink) {
   if (!hasOwnProfile) {
     vink.checked = false;
     showToast('Maak een profiel aan, dan onthouden we je zoekopdracht.');
     return;
   }
-  // TT-252: een tweede tik tijdens het schrijven doet niets; de vink blijft
-  // staan op wat er wordt geschreven.
+
+
   if (onthoudBezig) { vink.checked = onthoudDoel; return; }
   const aan = vink.checked;
   onthoudBezig = true;
@@ -2420,8 +2420,8 @@ async function onthoudKlik(vink) {
   }
 }
 
-// Na elke zoekopdracht: staat de vink aan, dan volgt de bewaarde rij wat er
-// op het scherm staat. Even wachten, zodat typen niet elke letter schrijft.
+
+
 function onthoudBijwerken() {
   clearTimeout(onthoudBijwerkTimer);
   const vink = document.getElementById('zoekOnthoud');
@@ -2435,14 +2435,14 @@ function onthoudBijwerken() {
       if (error) throw error;
       bewaardeZoek = Object.assign({}, bewaardeZoek, nu);
     } catch (e) {
-      logCaught('onthoudBijwerken', e); // stil: de vink blijft aan, de volgende zoekopdracht probeert het opnieuw
+      logCaught('onthoudBijwerken', e);
     }
   }, 800);
 }
 
-// Instellingen → E-mailvoorkeuren: de bewaarde zoekopdracht in woorden. De
-// nieuwe muzikanten daarbij komen in de mail erboven (geen eigen schakelaar,
-// besluit Ronald 27-10-2026).
+
+
+
 async function vulBewaardeZoekInInstellingen() {
   const plek = document.getElementById('bewaardeZoekInstellingen');
   if (!plek) return;

@@ -17,34 +17,34 @@
      csp:...), de bewaking telt hem en Ronald krijgt direct een mail. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://fqtgilwfestzofunupnu.supabase.co https://wlcrjhsniuiewvznwrun.supabase.co https://img.youtube.com; media-src 'self' blob: https://fqtgilwfestzofunupnu.supabase.co https://wlcrjhsniuiewvznwrun.supabase.co; connect-src 'self' https://fqtgilwfestzofunupnu.supabase.co https://wlcrjhsniuiewvznwrun.supabase.co https://itunes.apple.com https://www.youtube.com https://open.spotify.com https://soundcloud.com https://www.tiktok.com; frame-src https://www.youtube-nocookie.com https://open.spotify.com https://w.soundcloud.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <script>
-  /* TT-483 deel b: een weigering van de regel hierboven onthouden vanaf het
-     eerste moment. core.js meldt ze aan het foutenlog zodra dat kan. */
+
+
   window.ttCspWeigeringen = [];
   document.addEventListener('securitypolicyviolation', function (e) { window.ttCspWeigeringen.push(e); });
 </script>
 <script>
-  /* TT-557 (04-11-2026): een tik vóór de app helemaal geladen is. De
-     landingspagina staat al in beeld terwijl de scripts op een trage
-     verbinding nog binnenkomen. Een knop zou dan code aanroepen die er nog
-     niet is (gemeten: "PICKERS is not defined", Zoeken bleef leeg). De tik
-     wordt onthouden en uitgevoerd zodra de app klaar is (startscript onderaan). */
+
+
+
+
+
   window.ttVroegeTik = null;
   document.addEventListener('click', function (e) {
-    if (window.ttAppKlaar) { if (e.isTrusted) window.ttVroegeTik = null; return; } /* een nieuwe tik gaat voor */
+    if (window.ttAppKlaar) { if (e.isTrusted) window.ttVroegeTik = null; return; }
     var knop = e.target && e.target.closest ? e.target.closest('[onclick]') : null;
     if (!knop) return;
     e.preventDefault();
-    e.stopPropagation(); /* in de vangfase: de onclick van de knop draait nu niet */
+    e.stopPropagation();
     window.ttVroegeTik = knop;
   }, true);
 </script>
 <title>TalentTent — Talent zoekt talent</title>
 
-<!-- TT-81 (10-08-2026, externe review 3.2): omschrijving + deelvoorbeeld.
-     Zonder deze regels toont een gedeelde link naar talenttent.org in
-     WhatsApp of op social media alleen de kale URL. Dit is één generieke
-     preview voor de hele site. Een preview per profiel kan niet: dit is een
-     single-page app zonder server, dus elke #hash levert dezelfde HTML. -->
+
+
+
+
+
 <meta name="description" content="TalentTent brengt muzikanten en bands bij elkaar voor jams, repetities en optredens. Maak een profiel, laat horen wat je speelt en vind muzikanten bij jou in de buurt.">
 <link rel="canonical" href="https://talenttent.org/">
 
@@ -65,18 +65,18 @@
 
 <link rel="manifest" href="manifest.json?v=20261113a">
 <meta name="theme-color" content="#0d0d0d">
-<!-- TT-341 stap 3 (26-09-2026, besluit Ronald: "a"): licht of donker.
-     Standaard volgt de app het toestel. Een eigen keuze uit Instellingen
-     staat op het toestel zelf (localStorage 'tt_licht_donker': 'toestel',
-     'licht' of 'donker'), niet in de database. Dit blok staat vóór
-     styles.css, zodat de eerste tekening al in de goede stand is; anders
-     flitst de app eerst donker. core.js roept pasLichtDonkerToe() opnieuw
-     aan bij een keuze in Instellingen en als het toestel zelf wisselt.
-     theme-color kleurt de balk van de browser of de telefoon mee. -->
+
+
+
+
+
+
+
+
 <script>
   function lichtDonkerKeuze() {
-    var s = window.ttLichtDonkerBezoek || null; /* keuze van dit bezoek gaat voor */
-    if (!s) { try { s = localStorage.getItem('tt_licht_donker'); } catch (e) { /* privénavigatie */ } }
+    var s = window.ttLichtDonkerBezoek || null;
+    if (!s) { try { s = localStorage.getItem('tt_licht_donker'); } catch (e) { } }
     return (s === 'licht' || s === 'donker') ? s : 'toestel';
   }
   function pasLichtDonkerToe() {
@@ -92,49 +92,36 @@
 </script>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=20261031a">
 <link rel="apple-touch-icon" href="icon-192.png?v=20261031a">
-<!-- TT-318 (24-09-2026): Alfa Slab One is weg uit deze regel; het woordmerk
-     heeft een eigen lettertype in de repo (styles.css, @font-face). Vooraf
-     laden, zodat het er is voordat de kop getekend wordt. crossorigin is
-     verplicht bij een lettertype, ook op het eigen domein. -->
+
+
+
+
 <link rel="preload" href="tt-woordmerk.woff2" as="font" type="font/woff2" crossorigin>
-<!-- TT-492 (20-10-2026): het lettertype staat in de repo (styles.css, @font-face), niet bij Google Fonts: geen extern verzoek, het adres van de bezoeker gaat niet naar Google. TT-517 fase 1: Inter in plaats van Roboto. -->
+
 <link rel="preload" href="inter-400.woff2" as="font" type="font/woff2" crossorigin>
-<!-- TT-483 (21-10-2026): supabase-js staat nu in de repo, vaste versie 2.118.0, niet meer bij een CDN (@2 liep mee met elke nieuwe release en had geen integriteitscontrole). Geen extern verzoek meer voor deze bibliotheek. Nieuwe versie nemen = bestand vervangen en ?v= ophogen. -->
-<script src="supabase.js?v=2.118.0"></script>
-<script>
-  /* TT-82 (10-08-2026, externe review 2.1): de hele app hangt aan deze ene
-     externe bibliotheek. Laadt hij niet (CDN onbereikbaar, blokkerende
-     browserextensie, streng schoolnetwerk), dan crashte het hoofdscript
-     vroeger op de eerste regel. De landingspagina bleef staan, maar geen
-     enkele knop deed nog iets — zonder melding voor de gebruiker.
-     Deze regel legt één keer vast of de bibliotheek er is. Het hoofdscript
-     leest de vlag en toont dan een nette melding in plaats van te crashen.
-     Een <script src> is synchroon, dus op dit punt is de uitslag definitief. */
-  window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
-</script>
-<link rel="stylesheet" href="styles.css?v=20261115c">
+<link rel="stylesheet" href="styles.css?v=20261116a">
 </head>
 <body>
 
 <div id="appRoot" class="landing-op-foto">
 
 <div class="app-topbar">
-<!-- TT-301 (20-09-2026, Ronald): de kop is één rij met drie vakken —
-     terugknop links, woordmerk in het midden, hamburger rechts. De twee
-     buitenvakken zijn even breed (1fr auto 1fr), dus het woordmerk staat
-     exact in het midden. "THE" is uit
-     het woordmerk gehaald: dat maakt 30px ruimte vrij, precies wat de
-     terugknop erbij vraagt (gemeten 20-09-2026).
-     TT-307 (23-09-2026, Ronald: "op het oog niet in balans"): wiskundig
-     stond het midden al goed, maar de twee tekens waren ongelijk groot —
-     de pijl 26px, de hamburger 20px, in dezelfde 44px-knop. Beide op 24px
-     gezet: dat is optisch in evenwicht, de knop en de tussenruimte blijven
-     ongewijzigd. -->
-<!-- TT-543 onderdeel 10 (2-13): de tekens komen uit Lucide, lijn 2,5. De pijl,
-     de hamburger en het kruisje van een venster staan 29px van hun rand (TT-318,
-     besluit Ronald). In Lucide ligt hun inkt 0,75 eenheid verder naar binnen dan
-     in de oude tekening; de viewBox schuift hem 0,75px terug (pijl "0.75 0 24 24",
-     hamburger en kruisje "-0.75 0 24 24"). Gemeten in blok 25. -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <header>
   <div class="kop-vak kop-links">
     <button class="nav-menu-btn kop-terug" id="navTerugBtn" onclick="terugKnop()" aria-label="Terug" title="Terug">
@@ -142,20 +129,20 @@
     </button>
   </div>
   <div class="logo"><span>TALENT</span>TENT</div>
-  <!-- TT-517 fase 3 (01-11-2026, besluit Ronald woordmerk E): de titel van het
-       scherm staat in de kop, het woordmerk alleen op de landingspagina. De tekst
-       komt van de .scherm-titel in het scherm (zetKopTitel() in core.js). Een tik
-       op titel of woordmerk doet niets (besluit Ronald, C1). -->
+
+
+
+
   <h1 class="kop-titel" id="kopTitel"></h1>
   <div class="kop-vak kop-rechts">
-    <!-- TT-63/nav-herziening (09-08-2026): hamburgermenu voor minder-frequente
-         links (Ronald: te veel tabbladen, op mobiel al horizontaal scrollen).
-         TT-301 (20-09-2026): de knop staat nu in de koprij zelf. Tot dan stond
-         hij in .app-nav-row eronder en werd hij met een negatieve verschuiving
-         van 56px omhooggetrokken; met een gecentreerd woordmerk moet hij een
-         echt vak in de rij zijn, anders is er niets om het midden tussen te
-         bepalen. Het uitklappaneel blijft wél in .app-nav-row staan: dat is
-         het ankerpunt waaronder het openklapt, en dat verandert niet. -->
+
+
+
+
+
+
+
+
     <button class="nav-menu-btn" id="navMenuBtn" onclick="toggleNavMenu(event)" aria-label="Meer opties" title="Meer">
       <svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg>
     </button>
@@ -163,26 +150,26 @@
   <div class="tagline">Talent zoekt talent</div>
 </header>
 
-<!-- Navigatie -->
+
 <div class="app-nav-row" id="appNavRow">
-  <!-- TT-301 (20-09-2026): de knop #navMenuBtn stond hier; hij staat nu in de
-       koprij zelf (zie <header> hierboven). Alleen het uitklappaneel blijft
-       hier: .app-nav-row is zijn ankerpunt (position: relative) en klapt
-       direct onder de kop open. -->
+
+
+
+
   <div class="nav-menu-dropdown" id="navMenuDropdown">
-    <!-- TT-427 (10-10-2026, besluit Ronald): volgorde Instellingen · Voorwaarden
-         (map) · Over ons · Uitloggen/Inloggen. De map Voorwaarden klapt open
-         onder zichzelf, in het menu: geen nieuw scherm, dus de zestien views
-         blijven zestien. Elke rij blijft een eigen knop met het oude id, zodat
-         niets anders hoeft te veranderen. Instellingen is al een scherm met
-         tegels en blijft een gewone rij (zie TT-186). Melden en Blokkeren
-         staan niet in het menu: dat zijn handelingen op een persoon, in het
-         ⋯-menu van profiel en gesprek. De binnenste laag draagt de scheidslijnen
-         (styles.css, .nav-menu-binnen), zodat ze ook kloppen als Instellingen
-         uitgelogd verborgen is. -->
+
+
+
+
+
+
+
+
+
+
     <div class="nav-menu-binnen">
-      <!-- TT-186 (03-09-2026): Instellingen, alleen zichtbaar ingelogd (zelfde
-           display-patroon als navLogout hieronder, via onUserLoggedIn/Out). -->
+
+
       <button class="nav-menu-item" id="navSettings" onclick="closeNavMenu();showView('instellingen')" style="display:none;">Instellingen</button>
       <button class="nav-menu-item nav-menu-map" id="navVoorwaarden" onclick="toggleNavMap(event)" aria-expanded="false" aria-controls="navVoorwaardenLijst">Voorwaarden<span class="nav-menu-chevron" aria-hidden="true">▾</span></button>
       <div class="nav-menu-map-lijst" id="navVoorwaardenLijst" hidden>
@@ -191,38 +178,38 @@
         <button class="nav-menu-item nav-menu-sub" id="navGedragscode" onclick="closeNavMenu();showView('gedragscode')">Gedragscode</button>
       </div>
       <button class="nav-menu-item" id="navAbout" onclick="closeNavMenu();showView('about')">Over ons</button>
-      <!-- TT-176 (01-09-2026): Uitloggen staat in het hamburgermenu, alleen
-           zichtbaar ingelogd (onUserLoggedIn()/onUserLoggedOut() zetten display). -->
+
+
       <button class="nav-menu-item" id="navLogout" onclick="closeNavMenu();navLoginClick()" style="display:none;">Uitloggen</button>
-      <!-- TT-278 (16-09-2026, Ronald): uitgelogd staat Inloggen op dezelfde
-           plek als Uitloggen. Precies één van de twee is zichtbaar
-           (onUserLoggedIn/onUserLoggedOut). -->
+
+
+
       <button class="nav-menu-item" id="navMenuLogin" onclick="closeNavMenu();showView('auth')">Inloggen</button>
     </div>
   </div>
 </div>
-<!-- TT-302 (20-09-2026, Ronald): de vraag bij onopgeslagen wijzigingen staat
-     hier, direct onder de kop. Het is een tekstregel, geen knop: bevestigen
-     doe je door nog een keer op de terugknop te drukken — dezelfde plek waar
-     je net drukte. Eén plek voor beide wegen terug (de pijl in de kop en de
-     terugknop van het toestel), want de terugknop van een telefoon staat bij
-     de één linksonder en bij de ander rechtsonder, en bij gebaren aan beide
-     randen. De regel staat binnen .app-topbar en blijft dus in beeld, ook
-     als de Terug-knop onder in het scherm weggescrold is — dat was de reden
-     voor de knop in de kop (Ronald, 20-09-2026). -->
-<!-- TT-U24 (12-08-2026): vaste onderbalk voor de telefoon.
-     De bovenste navigatierij scrolde op mobiel horizontaal: 534px inhoud in
-     een balk van 320px, dus 214px stond buiten beeld. Geen enkele app die
-     deze doelgroep dagelijks gebruikt doet dat. De bovenkant van een 6,7"-
-     scherm is bovendien met één hand onbereikbaar.
-     De bovenste rij blijft bestaan voor bredere schermen; op mobiel is hij
-     verborgen en neemt deze balk het over. Alle bestaande knop-id's blijven
-     staan, zodat de rest van de code ongewijzigd blijft werken. -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <nav class="app-bottom-nav" id="appBottomNav" aria-label="Hoofdnavigatie">
-  <!-- TT-303 (20-09-2026, Ronald): volgorde Profiel · Zoeken · Berichten ·
-       Bands. Mijn Profiel is het hoogste scherm en staat daarom links, op de
-       plek waar een gebruiker "begin hier" leest. Was Zoeken · Berichten ·
-       Bands · Profiel. Alle knop-id's blijven ongewijzigd. -->
+
+
+
+
   <button class="bottom-nav-btn" id="bottomNavProfile" onclick="requireLogin('myprofile')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     <span>Profiel</span>
@@ -241,7 +228,7 @@
   <button class="bottom-nav-btn" id="bottomNavBands" onclick="requireLogin('bands')">
     <span class="bottom-nav-icon-wrap">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
-      <!-- TT-432: stip zonder cijfer zolang een verzoek om het beheer over te nemen wacht -->
+
       <span id="bandsDotBottom" class="bands-dot" style="display:none;" aria-label="Een verzoek wacht"></span>
     </span>
     <span>Bands</span>
@@ -250,18 +237,44 @@
 
 </div>
 
-<!-- VIEW: Landingspagina -->
-<!-- TT-61 (30-09-2026, besluiten Ronald 29 en 30-09-2026): richting F uit de
-     landingsproef. Boven de foto met "Zoek een <woord>" en de regel waarvoor;
-     het woord, de regel en de foto wisselen vanzelf, elke 4 seconden. Onder de
-     foto een vlak in de kleur van de ondergrond met de subkop, de knop en de
-     inlogregel. Geen keuzeknoppen. De knop opent altijd Zoeken, welk woord ook
-     in beeld staat. Past op één scherm, zonder scrollen. De tien woorden en
-     hun regels staan in LANDING_WOORDEN in core.js; de foto's vult
-     landingOpbouwen(). -->
+
+
+
+
+
+
+
+
+
 <div class="app-view active" id="view-landing">
   <div class="landing-foto">
     <div class="landing-dias" id="landingDias" aria-hidden="true"></div>
+    <script>
+
+
+
+
+
+
+
+      function ttEersteLandingsfoto(webadres) {
+        var db = (webadres === 'talenttent.org' || webadres === 'www.talenttent.org') ? 'https://fqtgilwfestzofunupnu.supabase.co'
+          : (webadres === 'tt-rw.github.io' || webadres === 'localhost' || webadres === '127.0.0.1') ? 'https://wlcrjhsniuiewvznwrun.supabase.co'
+          : '';
+        if (!db) return '';
+        try { if (localStorage.getItem('sb-' + db.split('//')[1].split('.')[0] + '-auth-token')) return ''; } catch (e) { }
+        return db + '/storage/v1/object/public/landing/v2/zangeres.jpg';
+      }
+      (function () {
+        var adres = ttEersteLandingsfoto(location.hostname);
+        if (!adres) return;
+        var dias = document.getElementById('landingDias');
+        dias.innerHTML = '<div class="landing-dia aan"><img alt="" decoding="async"></div>';
+        var img = dias.firstChild.firstChild;
+        img.addEventListener('error', function () { img.remove(); }, { once: true });
+        img.src = adres;
+      })();
+    </script>
     <div class="landing-verloop" aria-hidden="true"></div>
     <div class="landing-kop">
       <h1 class="landing-title">Zoek een<br><span class="landing-woord" id="landingWoord">zangeres</span></h1>
@@ -275,16 +288,16 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- VIEW: Auth (inloggen / registreren)         -->
-<!-- ═══════════════════════════════════════════ -->
+
+
+
 <div class="app-view" id="view-auth">
   <div class="auth-wrap">
     <div class="auth-panel">
-      <!-- TT-543 onderdeel 2 (besluiten Ronald 08-11-2026): geen welkomzin (1),
-           geen onderbalk (3, showView() in core.js), de herstelmail in de vaste
-           meldingvorm (4), één regel "Nog geen profiel? Profiel aanmaken" (2, B),
-           geen pijl in een knop (6). Afstanden in styles.css (.auth-panel). -->
+
+
+
+
       <div class="scherm-titel">Inloggen</div>
 
       <div class="melding" id="authHerstelVerstuurd" hidden>
@@ -296,9 +309,9 @@
         <p class="melding-tekst">Een link werkt één keer, en alleen de nieuwste mail telt. Tik hieronder op Wachtwoord vergeten? en gebruik de link in de nieuwste mail.</p>
       </div>
 
-      <!-- TT-U08 (12-08-2026): een echt <form> met autocomplete-waarden.
-           Zonder deze twee slaat een wachtwoordmanager niets op en vult
-           iOS/Android niets in. -->
+
+
+
       <form onsubmit="event.preventDefault(); signIn();">
       <div class="field">
         <label>E-mailadres</label>
@@ -321,13 +334,13 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- VIEW: Aanmelden (profiel aanmaken)          -->
-<!-- ═══════════════════════════════════════════ -->
+
+
+
 <div class="app-view" id="view-register">
 <main>
 
-  <!-- Step indicator -->
+
   <div class="steps" id="stepsBar">
     <div class="step-dot active" id="dot0"></div>
     <div class="step-dot" id="dot1"></div>
@@ -336,15 +349,15 @@
     <span class="step-label" id="stepLabel">Stap 1 van 4</span>
   </div>
 
-  <!-- STEP 1: Persoonlijke info -->
+
   <div class="panel active" id="step0">
     <div class="panel-title scherm-titel">Wie ben je</div>
 
-    <!-- TT-543 blok 2 (besluit Ronald 07-11-2026, B op beeld): stap 1 heeft
-         twee onderwerpen, dus ook het eerste krijgt een kop (hoofdstukindeling A).
-         De tegel Wie ben je heeft één onderwerp en dus geen kop. -->
-    <!-- TT-508 (besluit Ronald 14-11-2026: "ja"): je eigen hoes met de
-         schijnwerper, gevuld tijdens het typen (wizHoesBijwerken() in wizard.js). -->
+
+
+
+
+
     <div class="wiz-hoes" id="wizHoes" aria-hidden="true"></div>
     <h2 class="hoofdstuk-kop">Over jou</h2>
 
@@ -363,7 +376,7 @@
       <div class="field">
         <label>Geboortedatum <span class="req">*</span></label>
         <input type="text" id="birth_date" placeholder="dd-mm-jjjj" maxlength="10" inputmode="numeric" oninput="formatBirthDate(this); ouderLeeftijdsregel()">
-        <!-- TT-42: verschijnt alleen bij 13, 14 of 15. Mededeling, geen fout. -->
+
         <p class="field-hint" id="ouderLeeftijdHint" style="display:none;">Onder de 16 jaar vragen we straks toestemming aan je ouder of verzorger. Voor hen is het één klik. Je kunt gewoon doorgaan.</p>
       </div>
     </div>
@@ -375,8 +388,8 @@
       </div>
     </div>
 
-    <!-- TT-543 (besluit Ronald 06-11-2026, voorstel 2): dezelfde keuze als in
-         de tegel Wie ben je. Onder de 16 verborgen (naamKeuzeBijwerken). -->
+
+
     <div class="field-group" id="naamKeuze">
     <div class="field">
       <label>Naam op je profiel</label>
@@ -388,9 +401,9 @@
     </div>
     </div>
 
-    <!-- Postcode en plaats naast elkaar, in de hele app één vorm
-         (.postcode-plaats, bevinding Ronald 30-09-2026). Hulptekst, status en
-         foutregel staan onder de rij, over de volle breedte. -->
+
+
+
     <div class="postcode-plaats">
       <div class="postcode-plaats-rij">
         <div class="field">
@@ -415,16 +428,16 @@
       </div>
     </div>
 
-    <!-- Wachtwoord opslaan op het juiste moment (11-10-2026): e-mailadres en
-         wachtwoord staan in een echt formulier. De knop Verder verstuurt het
-         (form="regAuthSection"), Enter in een veld doet hetzelfde. Zonder
-         formulier las Chrome het verbergen van het wachtwoordveld pas later
-         als aanmelding en bood hij het opslaan midden in de wizard aan, bij
-         het zoeken naar muzikanten of nummers. -->
-    <!-- TT-543 blok 2 (besluit Ronald 06-11-2026, voorstel 18, optie 1 met
-         kop): e-mailadres en wachtwoord blijven in stap 1, onder de kop "Je
-         inloggegevens" (hoofdstukindeling A). Geen streep en geen zin eronder,
-         ook niet als het e-mailadres alleen-lezen is (besluit Ronald 07-11-2026). -->
+
+
+
+
+
+
+
+
+
+
     <form id="regAuthSection" novalidate onsubmit="event.preventDefault(); nextStep(0);">
       <h2 class="hoofdstuk-kop">Je inloggegevens</h2>
 
@@ -435,9 +448,9 @@
         </div>
         <div class="field" id="regPasswordField">
           <label>Wachtwoord <span class="req">*</span></label>
-          <!-- TT-U04 (12-08-2026): "Wachtwoord herhalen" is vervangen door
-               een knop "Toon". Een herhaalveld verlaagt de conversie en voegt
-               niets toe zodra het wachtwoord zichtbaar te maken is. -->
+
+
+
           <div class="password-wrap">
             <input type="password" id="regPassword" placeholder="Minimaal 8 tekens" autocomplete="new-password" enterkeyhint="done">
             <button type="button" class="password-toggle" onclick="togglePassword('regPassword', this)" aria-label="Toon wachtwoord">Toon</button>
@@ -446,8 +459,8 @@
       </div>
     </form>
 
-    <!-- TT-144 (25-08-2026): Terug op stap 1 gaat naar de landingpagina —
-         er is geen vorige stap. -->
+
+
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner btn-row">
         <button class="btn btn-ghost" onclick="prevStepFromStart()">Terug</button>
@@ -456,12 +469,12 @@
     </div>
   </div>
 
-  <!-- STEP 2: Instrument & genre -->
+
   <div class="panel" id="step1">
     <div class="panel-title scherm-titel">Wat speel je</div>
 
-    <!-- TT-543 blok 2, hoofdstukindeling A (besluit Ronald 06-11-2026): twee
-         onderwerpen, elk met een kop. Zelfde opbouw in stap 2 en de tegel. -->
+
+
     <div class="label-rij label-info hoofdstuk-kop-rij"><h2 class="hoofdstuk-kop">Instrumenten <span class="req">*</span></h2><span class="label-uitleg">Niveau<button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></span></div>
     <div class="field-group">
       <div class="field">
@@ -490,16 +503,16 @@
     </div>
   </div>
 
-  <!-- STEP 3: Je setlist -->
+
   <div class="panel" id="step2">
     <div class="panel-title scherm-titel">Je setlist</div>
-    <!-- TT-514 (besluit Ronald, 25-10-2026): drie nummers verplicht. Eén
-         rustige regel, met wat het oplevert. -->
+
+
     <div class="panel-sub">Kies drie nummers en ontdek andere muzikanten.</div>
 
-    <!-- Zoekvelden: nummer toevoegen. TT-514 (bevinding Ronald, 25-10-2026:
-         "moeten dit 3 lagen zijn?"): geen eigen kader meer in het paneel;
-         zelfde opbouw als de tegel Je setlist en Covers. -->
+
+
+
     <div class="field-group">
       <div class="field">
         <label>Band of artiest <span class="req">*</span></label>
@@ -513,7 +526,7 @@
       </div>
     </div>
 
-    <!-- Nummer kiezen (verschijnt na artiestenselectie) -->
+
     <div class="field-group" id="trackSearchWrap" style="display:none;">
       <div class="field">
         <label id="trackSearchLabel">Nummer</label>
@@ -527,9 +540,9 @@
       </div>
     </div>
 
-    <!-- TT-514 (besluiten Ronald, 25-10-2026): teller en "Beheersing ⓘ" boven
-         de lijst; per nummer een kader (setlistLijstHTML() in utils.js). Zelfde
-         opbouw als de tegel Je setlist. -->
+
+
+
     <div class="setlist-kop" id="songsKop" hidden>
       <span class="setlist-teller" id="songsTeller"></span>
       <span class="setlist-kop-beh">Beheersing <button type="button" class="niveau-info-btn" onclick="openBeheersingInfo()" aria-label="Wat betekent beheersing?" title="Wat betekent beheersing?">i</button></span>
@@ -544,7 +557,7 @@
     </div>
   </div>
 
-  <!-- STEP 4: Media -->
+
   <div class="panel" id="step3">
     <div class="panel-title scherm-titel">Je mediahoek</div>
 
@@ -556,7 +569,7 @@
           <div class="avatar-edit-btn" onclick="document.getElementById('avatarInput').click()">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="avatarRemoveBtn" onclick="askRemoveAvatar()" aria-label="Profielfoto verwijderen">✕</button>
         </div>
-        <!-- TT-543 blok 4b (besluiten Ronald 08-11-2026): de tekst doet niets; met foto de uitlegregel. -->
+
         <div class="avatar-info">
           <strong><span class="kop-zonder-foto">Upload een foto van jezelf</span><span class="kop-met-foto">Je profielfoto</span></strong>
           <p class="kop-met-foto">Tik op je foto om hem te verschuiven.</p>
@@ -568,22 +581,22 @@
     <h2 class="hoofdstuk-kop">Foto's, video's en links</h2>
     <div class="panel-sub">Met goede media valt je profiel veel meer op.</div>
 
-    <!-- TT-263 (13-09-2026): de keuze voor de bannerbalk op het profiel; de
-         grens geldt over foto's, video's en links samen.
-         TT-543 blok 3 (besluiten Ronald 06 en 07-11-2026): één raster met de
-         tegel "+ Toevoegen" (mediaRasterHTML() in utils.js); geen tabbladen,
-         geen sleepvak, geen wisselende tip. -->
+
+
+
+
+
     <p class="banner-teller" id="wizardBannerTeller"></p>
     <div class="media-raster" id="mediaGrid"></div>
     <input type="file" id="mediaInvoer" class="media-invoer" multiple autocomplete="off" onchange="handleFileSelect(this.files); this.value=''">
 
-    <!-- TT-543 blok 3 (besluiten Ronald 07-11-2026, op beeld): "De laatste
-         stap" staat los van Je mediahoek: 80px onder de media een grijze
-         streep van 4px over de hele breedte (TT-607, besluit Ronald
-         14-11-2026: "F"), daaronder een kop en het akkoord met
-         vinkje. Alleen in de wizard; de tegel Je mediahoek eindigt bij de media.
-         TT-63: de drie namen openen een venster (openLegalModal()), nooit een
-         link die de wizard verlaat. -->
+
+
+
+
+
+
+
     <div class="laatste-stap">
       <h2 class="hoofdstuk-kop">De laatste stap</h2>
       <label class="akkoord-regel">
@@ -603,14 +616,14 @@
     </div>
   </div>
 
-  <!-- ─────────────────────────────────────────────────────────────────────
-       TT-42 — de drie schermen voor wie 13, 14 of 15 is.
-       Klasse `panel-ouder`, niet `panel`: goTo() koppelt `.panel` op
-       volgorde aan het stapnummer, en een zesde `.panel` zou die koppeling
-       stilzwijgend verschuiven.
-       ───────────────────────────────────────────────────────────────────── -->
 
-  <!-- Onderdeel 2: het tussenscherm -->
+
+
+
+
+
+
+
   <div class="panel-ouder" id="ouderStap">
     <div class="panel-title scherm-titel">Toestemming</div>
     <div class="panel-sub">Onder de 16 jaar mag je profiel pas online met toestemming van je ouder of verzorger.</div>
@@ -634,32 +647,32 @@
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner btn-row">
-        <!-- Korte opschriften: de knoppen in deze balk zijn 12px vet met
-             letterafstand en delen de breedte in tweeën. "Stuur het mailtje"
-             breekt daar over twee regels; elke andere knop in de wizard is
-             één woord. -->
+
+
+
+
         <button class="btn btn-ghost" onclick="ouderStapOverslaan()">Later</button>
         <button class="btn btn-primary" onclick="ouderVerzoekVersturen()">Versturen</button>
       </div>
     </div>
   </div>
 
-  <!-- Onderdeel 3: het wachtscherm -->
+
   <div class="panel-ouder" id="ouderWacht">
     <div class="panel-title scherm-titel" id="ouderWachtKop">Je aanvraag is verstuurd</div>
     <div class="panel-sub" id="ouderWachtBody">We hebben je ouder een mail gestuurd op <strong class="ouder-adres" id="ouderWachtAdres"></strong>.
       Geeft je ouder toestemming, dan laten we het je weten. Daarna kies je een wachtwoord en staat je profiel online.</div>
 
-    <!-- 27-09-2026 (bevindingen Ronald): de losse grijze regels zijn één
-         melding geworden, in de vaste vorm (.melding, huisstijl §13). -->
+
+
     <div class="melding" id="ouderWachtMelding">
       <p class="melding-kop">Je kunt de app nu sluiten</p>
       <p class="melding-tekst">Je profiel blijft op dit toestel bewaard. Je ouder heeft veertien dagen om toestemming te geven.</p>
     </div>
 
-    <!-- Geen van beide knoppen is hier "de volgende stap": dat is de klik
-         van de ouder. Daarom twee tweede knoppen, onder elkaar op volle
-         breedte. De wachttijd staat direct onder de knop waar hij over gaat. -->
+
+
+
     <p class="ouder-vraag" id="ouderWachtVraag">Geen mail ontvangen, of een fout in het e-mailadres?</p>
     <div class="knoppen-stapel" id="ouderWachtActies">
       <button class="btn btn-ghost" id="ouderOpnieuwKnop" onclick="ouderOpnieuwSturen()">Mail opnieuw sturen</button>
@@ -670,7 +683,7 @@
     <p class="stille-link-regel"><button type="button" class="stille-link" onclick="ouderStoppenEnWissen()">Stoppen en mijn gegevens wissen</button></p>
   </div>
 
-  <!-- Onderdeel 7: het wachtwoordscherm -->
+
   <div class="panel-ouder" id="ouderWachtwoord">
     <div class="panel-title scherm-titel">Kies je wachtwoord</div>
     <div class="panel-sub">Je ouder heeft toestemming gegeven. Hierna staat je profiel online.</div>
@@ -694,47 +707,47 @@
   </div>
 
 </main>
-</div><!-- /view-register -->
+</div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- VIEW: Goedkeuring door een ouder (TT-42)     -->
-<!-- Het vijftiende scherm. Alleen bereikbaar via #toestemming/<code> uit   -->
-<!-- de mail. Een onbekende code krijgt een melding (TT-330). Toont ook de  -->
-<!-- uitleg bij #toestemming-gegeven als het profiel elders wacht (TT-331). -->
-<!-- Geen hamburger, geen onderbalk, geen terugknop: de bezoeker is geen    -->
-<!-- gebruiker van de app en heeft aan die knoppen niets.                   -->
-<!-- ═══════════════════════════════════════════ -->
+
+
+
+
+
+
+
+
 <div class="app-view" id="view-toestemming">
 <main>
   <div class="toestemming-wrap" id="toestemmingInhoud"></div>
 </main>
-</div><!-- /view-toestemming -->
+</div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- VIEW: Profiel bewerken (tegeloverzicht)      -->
-<!-- TT-168-overgang (02-09-2026): 1-op-1 uit profiel-v2.html overgezet.   -->
-<!-- Elke tegel heeft een eigen, smalle opslaanfunctie die alleen de eigen -->
-<!-- kolommen raakt (zie saveWieBenJe()/saveWatSpeelJe()/                 -->
-<!-- saveJeSetlist()/saveJeMediahoek() in de JS hieronder) — nooit het      -->
-<!-- hele profiel in één keer, dat was precies het risico van de oude      -->
-<!-- bewerken-via-wizard-aanpak (persistEditedProfile() overschreef altijd -->
-<!-- alles). Instrument-/genrepicker en de niveau-modals worden gedeeld    -->
-<!-- met de wizard (cfg-registry, zie initInstrumentPicker()/initPicker()).-->
-<!-- ═══════════════════════════════════════════ -->
+
+
+
+
+
+
+
+
+
+
+
 <div class="app-view" id="view-profieltegels">
 <main>
 
-  <!-- Tegeloverzicht. TT-543 blok 4 (besluit Ronald 06-11-2026, voorstel 17):
-       elke tegel toont wat je invulde, of "Nog leeg" (renderTegels()).
-       Opslaan staat in elke tegel vast onderin, in dezelfde balk als Verder
-       in de stappen (voorstel 16); sinds onderdeel 6 ook in de vier
-       bandtegels (besluit Ronald 10-11-2026, 9). -->
+
+
+
+
+
   <div id="tegelOverviewScreen">
     <div class="panel-title scherm-titel">Profiel bewerken</div>
     <div id="tegelsWrap"></div>
   </div>
 
-  <!-- Subscherm: Wie ben je -->
+
   <div id="wieBenJeScreen" style="display:none;">
     <div class="panel-title scherm-titel">Wie ben je</div>
 
@@ -763,7 +776,7 @@
       </div>
     </div>
 
-    <!-- TT-420: welke naam anderen zien. Onder de 16 is dit blok verborgen (wbjNaamKeuzeBijwerken). -->
+
     <div class="field-group" id="wbjNaamKeuze">
     <div class="field">
       <label>Naam op je profiel</label>
@@ -775,8 +788,8 @@
     </div>
     </div>
 
-    <!-- Postcode en plaats naast elkaar: zelfde vorm als de wizard en het
-         bandformulier (.postcode-plaats, bevinding Ronald 30-09-2026). -->
+
+
     <div class="postcode-plaats">
       <div class="postcode-plaats-rij">
         <div class="field">
@@ -795,16 +808,16 @@
     <div class="field-group">
     <div class="field">
       <label>Korte bio</label>
-      <!-- TT-410a stap 3b: bio inline; voorbeeldtekst staat als placeholder in het veld (geen voorzetknoppen). -->
+
       <textarea id="wbjBio" class="bio-voorbeeld" placeholder="Hoi allemaal! Ik ben Kevin. Ik speel nu al meer dan drie jaar drums en ik wil graag een stapje verder gaan. Daarom ben ik op zoek naar anderen die het leuk vinden om samen een classic rockband te beginnen.&#10;Ik denk dat we in het begin vooral covers kunnen spelen, maar het lijkt me uiteindelijk echt vet om onze eigen muziek te maken. Mijn favoriete bands zijn onder andere Van Halen en Guns N’ Roses, maar ik luister naar nog veel meer.&#10;Lijkt het je leuk om samen een band te beginnen? Stuur me dan zeker een berichtje!" maxlength="1000" oninput="updateCharCounter('wbjBio','wbjBioTeller',1000)"></textarea>
       <div id="wbjBioTeller" class="teken-teller" hidden></div>
       <p class="field-hint">Dit is vaak het eerste wat andere muzikanten van je lezen.</p>
     </div>
     </div>
 
-    <!-- TT-543 (06-11-2026, besluit Ronald): het e-mailadres staat hier niet
-         meer. Het staat in Instellingen, met de knop om het te wijzigen;
-         hier was het dubbel. -->
+
+
+
 
     <div class="wizard-action-bar">
       <div class="wizard-action-bar-inner btn-row">
@@ -813,13 +826,13 @@
     </div>
   </div>
 
-  <!-- Subscherm: Wat speel je -->
+
   <div id="watSpeelJeScreen" style="display:none;">
     <div class="panel-title scherm-titel">Wat speel je</div>
 
-    <!-- TT-543 F2: dezelfde veldgroepen als stap 2; de afstanden stonden in de regel zelf.
-         TT-543 blok 2, hoofdstukindeling A (besluit Ronald 06-11-2026): twee
-         onderwerpen, elk met een kop. Zelfde opbouw in stap 2 en de tegel. -->
+
+
+
     <div class="label-rij label-info hoofdstuk-kop-rij"><h2 class="hoofdstuk-kop">Instrumenten <span class="req">*</span></h2><span class="label-uitleg">Niveau<button type="button" class="niveau-info-btn" onclick="openMusicianNiveauInfoModal()" title="Wat betekenen deze sterren?">i</button></span></div>
     <div class="field-group">
       <div class="field">
@@ -847,15 +860,15 @@
     </div>
   </div>
 
-  <!-- Subscherm: Je setlist -->
+
   <div id="jeSetlistScreen" style="display:none;">
     <div class="panel-title scherm-titel">Je setlist</div>
-    <!-- TT-543 blok 4 (besluit Ronald 07-11-2026, voorstel 23): de zin "Kies drie
-         nummers en ontdek andere muzikanten." staat alleen in de wizard; daar zijn
-         drie nummers verplicht. Hier is hij weg, ook met minder dan drie nummers. -->
 
-    <!-- TT-514 (Ronald, 25-10-2026: "dit wordt ook de setlist tegel"): zelfde
-         opbouw als wizardstap Nummers; de lijst komt uit setlistLijstHTML(). -->
+
+
+
+
+
     <div class="field-group">
       <div class="field">
         <label>Band of artiest <span class="req">*</span></label>
@@ -895,7 +908,7 @@
     </div>
   </div>
 
-  <!-- Subscherm: Je mediahoek -->
+
   <div id="mediahoekScreen" style="display:none;">
     <div class="panel-title scherm-titel">Je mediahoek</div>
 
@@ -907,7 +920,7 @@
           <div class="avatar-edit-btn" onclick="document.getElementById('mhAvatarInput').click()">Wijzig</div>
           <button type="button" class="avatar-remove-btn" id="mhAvatarRemoveBtn" onclick="mhAskRemoveAvatar()" aria-label="Profielfoto verwijderen">✕</button>
         </div>
-        <!-- TT-543 blok 4b (besluiten Ronald 08-11-2026): de tekst doet niets; met foto de uitlegregel. -->
+
         <div class="avatar-info">
           <strong><span class="kop-zonder-foto">Upload een foto van jezelf</span><span class="kop-met-foto">Je profielfoto</span></strong>
           <p class="kop-met-foto">Tik op je foto om hem te verschuiven.</p>
@@ -919,7 +932,7 @@
     <h2 class="hoofdstuk-kop">Foto's, video's en links</h2>
     <div class="panel-sub">Met goede media valt je profiel veel meer op.</div>
 
-    <!-- TT-543 blok 3: zelfde raster als wizardstap 4 (mediaRasterHTML()). -->
+
     <p class="banner-teller" id="mhBannerTeller"></p>
     <div class="media-raster" id="mhMediaGrid"></div>
     <input type="file" id="mhMediaInvoer" class="media-invoer" multiple autocomplete="off" onchange="mhHandleFileSelect(this.files); this.value=''">
@@ -931,11 +944,11 @@
     </div>
   </div>
 
-  <!-- ═══ TT-385 fase 3 (02-10-2026): Bandprofiel bewerken ═══════════════
-       Hetzelfde tegelscherm als Profiel bewerken, voor een band
-       (bewerkBandId in bands.js). Vier tegels zoals bij de muzikant, met
-       daaronder het hoofdstuk Bandbeheer met drie tegels (TT-543 onderdeel 6,
-       blok 3: Bandstatus, Beheer overdragen, Bandprofiel verwijderen). -->
+
+
+
+
+
   <div id="bandTegelOverviewScreen" style="display:none;">
     <div class="panel-title scherm-titel">Bandprofiel bewerken</div>
     <div class="band-naam-regel"></div>
@@ -943,7 +956,7 @@
     <div class="band-beheer" id="bandBeheerBlok"></div>
   </div>
 
-  <!-- Bandtegel: Wie zijn we -->
+
   <div id="bandWieScreen" style="display:none;">
     <div class="panel-title scherm-titel">Wie zijn we</div>
 
@@ -993,17 +1006,17 @@
     </div>
   </div>
 
-  <!-- Bandtegel: Onze bezetting. Uitnodigen, uitnodiging intrekken en uit de
-       band halen gaan meteen (er is een ander bij betrokken); open rollen,
-       invallers en de contactpersoon gaan mee met Opslaan. -->
+
+
+
   <div id="bandBezettingScreen" style="display:none;">
     <div class="panel-title scherm-titel">Onze bezetting</div>
     <div class="band-naam-regel"></div>
 
     <h2 class="hoofdstuk-kop">Leden</h2>
     <div class="bb-lijst" id="bbLeden"></div>
-    <!-- Rollen wijzigen (besluit Ronald 11-11-2026, B2-6): het menu klapt uit
-         onder de rij van het lid; bbRollenWijzigen() zet dit anker daar. -->
+
+
     <div class="menu-anchor bb-rollen-anker" id="bbRollenAnker">
       <div class="bb-rollen-veld" id="bbRollenVeld" aria-label="Rollen"></div>
       <div class="choice-menu menu-breed" id="bbRollenMenu" role="listbox" aria-label="Rollen"></div>
@@ -1028,8 +1041,8 @@
     <div class="band-tegel-blok">
       <h2 class="hoofdstuk-kop">Invallers</h2>
       <div class="bb-lijst" id="bbInvallers"></div>
-      <!-- TT-543 onderdeel 6, blok 2 (besluit Ronald 11-11-2026, B2-8): geen
-           datum en geen formulier meer; het keuzemenu van Open rol. -->
+
+
       <div class="menu-anchor toevoegen-breed">
         <button type="button" class="picker-field picker-toevoegen" id="bbInvalKnop"><svg class="media-toevoegen-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg><span class="picker-field-label" id="bbInvalKnopLabel">Invaller toevoegen</span></button>
         <div class="choice-menu menu-breed" id="bbInvalMenu" role="listbox" aria-label="Invaller"></div>
@@ -1056,8 +1069,8 @@
     </div>
   </div>
 
-  <!-- Bandtegel: Onze muziek. Covers met dezelfde zoekvelden als Je setlist
-       (voorvoegsel bc, zie de jst-functies in musicians.js). -->
+
+
   <div id="bandMuziekScreen" style="display:none;">
     <div class="panel-title scherm-titel">Onze muziek</div>
     <div class="band-naam-regel"></div>
@@ -1124,15 +1137,15 @@
     </div>
   </div>
 
-  <!-- Bandtegel: Onze media. Zelfde vorm als Je mediahoek (huisstijl §18),
-       met het bannerteken; voorvoegsel bm. Daaronder de drie socials. -->
+
+
   <div id="bandMediaScreen" style="display:none;">
     <div class="panel-title scherm-titel">Onze media</div>
     <div class="band-naam-regel"></div>
 
-    <!-- TT-543 onderdeel 6 (besluiten Ronald 10-11-2026, 10, F3 tot en met F5):
-         zoals Je mediahoek. Kop Bandfoto; één raster met "+ Toevoegen"; geen
-         tabbladen, geen sleepvak, geen bestandseisen vooraf. -->
+
+
+
     <h2 class="hoofdstuk-kop">Bandfoto</h2>
     <div class="field">
       <div class="avatar-upload-area">
@@ -1143,7 +1156,7 @@
         </div>
         <div class="avatar-info">
           <strong><span class="kop-zonder-foto">Upload een foto van de band</span><span class="kop-met-foto">Jullie bandfoto</span></strong>
-          <p class="kop-met-foto">Tik op de foto om hem te verschuiven.</p><!-- TT-543 blok 4b -->
+          <p class="kop-met-foto">Tik op de foto om hem te verschuiven.</p>
         </div>
       </div>
       <input type="file" accept="image/*" class="avatar-upload-input" id="bmFotoInput" autocomplete="off" onchange="bmFotoKiezen(this.files[0]); this.value=''">
@@ -1186,22 +1199,22 @@
   </div>
 
 </main>
-</div><!-- /view-profieltegels -->
+</div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- VIEW: Zoeken                                -->
-<!-- ═══════════════════════════════════════════ -->
+
+
+
 <div class="app-view" id="view-search">
-  <!-- TT-520 (26-10-2026, besluiten Ronald, bespreking zoekschermen): Zoeken
-       heeft drie schermen in deze ene view. Het startscherm is de bovenkant
-       van het tabblad; Muzikanten en Mix & Match liggen één stap dieper
-       (zoekScherm in search.js, terug via appTerug() in core.js). Vervangt de
-       vier standen Muzikant · Band · Setlist (twee) en het vegen ertussen. -->
+
+
+
+
+
   <div id="zoekStart" class="search-wrap">
     <h1 class="filter-title zoek-titel scherm-titel">Zoeken</h1>
-    <!-- Twee brede tegels onder elkaar; icoon links op een grijs vlak, geen
-         pijl (Laag 2, besluit Ronald 25-10-2026; icoonvlak 26-10-2026). Het
-         bestaande tegelpatroon (.tile), zoals in Instellingen. -->
+
+
+
     <button type="button" class="tile zoek-tegel" id="zoekTegelMuzikanten" onclick="openZoekScherm('muzikanten')">
       <span class="zoek-tegel-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="4"/><path d="M10.3 15H7a4 4 0 0 0-4 4v2"/><circle cx="17" cy="17" r="3"/><path d="m21 21-1.9-1.9"/></svg></span>
       <span class="zoek-tegel-tekst"><span class="tile-title">Muzikanten</span><span class="tile-sub">Muzikanten en bands bij jou in de buurt</span></span>
@@ -1215,25 +1228,25 @@
   <div id="searchModeMusician" style="display:none;">
   <div class="search-wrap">
     <h1 class="filter-title zoek-titel scherm-titel">Muzikanten</h1>
-    <!-- TT-520 Laag 3.1: muzikanten en bands op één scherm. Losse knoppen van
-         44px, de gekozen stand van elke keuzeknop (huisstijl §5.1). -->
+
+
     <div class="zoek-soort" role="tablist" aria-label="Wat zoek je?">
       <button type="button" role="tab" class="search-mode-tab active" id="zoekSoortAllesBtn" aria-selected="true" onclick="setZoekSoort('alles')">Alles</button>
       <button type="button" role="tab" class="search-mode-tab" id="zoekSoortMuzikantenBtn" aria-selected="false" onclick="setZoekSoort('muzikanten')">Muzikanten</button>
       <button type="button" role="tab" class="search-mode-tab" id="zoekSoortBandsBtn" aria-selected="false" onclick="setZoekSoort('bands')">Bands</button>
     </div>
-    <!-- TT-385 fase 3: een tik op een open rol of invaller van je eigen band
-         opent Muzikanten met dat instrument en de plaats van de band. Deze
-         regel zegt waarvoor (zoekMuzikantVoorRol() in search.js). -->
+
+
+
     <div class="melding" id="zoekRolMelding" hidden></div>
     <div class="search-filters">
-      <!-- TT-543 onderdeel 4 (besluit Ronald 08-11-2026, 3C): zichtbaar alleen
-           Plaats + Straal. Daaronder de regel met links Onthoud mijn
-           zoekopdracht en rechts Filters. Naam en de andere velden staan achter
-           Filters; Wissen staat onderaan het filtervak. Wijzigt besluit
-           26-10-2026 (Naam zichtbaar, Filters op de labelregel van Naam). -->
-      <!-- TT-160/TT-233: Plaats en Straal op één regel; Straal is een
-           keuzeveld van 104px. Huisstijl §7.2. -->
+
+
+
+
+
+
+
       <div class="field">
         <div class="filter-row-city">
           <div class="city-search-wrap frc-plaats">
@@ -1258,18 +1271,18 @@
         </div>
       </div>
 
-      <!-- Links de vink Onthoud mijn zoekopdracht (TT-520 deel 2, onthoudKlik()
-           in search.js), rechts Filters met het pijltje (3C). -->
+
+
       <div class="zoek-wis-rij zoek-filters-rij">
         <label class="zoek-onthoud"><input type="checkbox" id="zoekOnthoud" onchange="onthoudKlik(this)"><span>Onthoud mijn zoekopdracht</span></label>
         <button type="button" class="zoek-filters-knop" id="zoekFiltersKnop" aria-expanded="false" aria-controls="zoekFilterVak" onclick="toggleZoekFilters()"><span id="zoekFiltersTekst">Filters</span><svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
       </div>
 
-      <!-- Filters (TT-543 draaiwielen, besluiten Ronald 09-11-2026): Naam,
-           Instrument en Genre over de hele breedte, dan Niveau naast Leeftijd
-           en Volgorde naast Weergave. Elk keuzeveld klapt een menu uit
-           (huisstijl §7.1); de waarde staat in het midden (grijs "–" = filter
-           uit). -->
+
+
+
+
+
       <div class="zoek-filter-vak" id="zoekFilterVak" hidden>
         <div class="field">
           <label for="filterName">Naam</label>
@@ -1320,8 +1333,8 @@
             <input type="hidden" id="filterAgeMax">
           </div>
         </div>
-        <!-- Volgorde en Weergave: het verborgen <select> is de bron van
-             waarheid (huisstijl §7.1). -->
+
+
         <div class="field-pair-row">
           <div class="field">
             <label>Volgorde</label>
@@ -1351,9 +1364,9 @@
             </select>
           </div>
         </div>
-        <!-- Wissen onderaan het filtervak, rechts, 16px onder het laatste veld;
-             het wist alles behalve Plaats en Straal (besluiten Ronald 26-10-2026,
-             sessie 18, punt 3; plek 3C, 08-11-2026). -->
+
+
+
         <div class="zoek-wis-rij">
           <button type="button" class="zoek-wissen-knop" id="zoekWissenKnop" onclick="resetMusicianSearch()">Wissen</button>
         </div>
@@ -1366,24 +1379,24 @@
 
   <div id="searchModeSetlist" style="display:none;">
   <div class="search-wrap">
-    <!-- TT-520 bouwsessie b (besluiten Ronald 25 en 27-10-2026, op schets):
-         Mix & Match. Twee knoppen, de vraag als regel eronder; geen zoekknop,
-         geen sortering, geen weergave (alleen de lijst). Het resultaat
-         verschijnt vanzelf onder wat je koos. -->
+
+
+
+
     <h1 class="filter-title zoek-titel scherm-titel">Mix &amp; Match</h1>
     <div class="zoek-soort mm-soort" role="tablist" aria-label="Wat wil je weten?">
       <button type="button" role="tab" class="search-mode-tab active" id="setlistSoortNummersBtn" aria-selected="true" onclick="setSetlistSoort('nummers')">Wat spelen we?</button>
       <button type="button" role="tab" class="search-mode-tab" id="setlistSoortMuzikantenBtn" aria-selected="false" onclick="setSetlistSoort('muzikanten')">Wie speelt dit?</button>
     </div>
-    <!-- De vraag in één regel, in de signaalkleur: Mix & Match is de minst
-         bekende functie (Ronald, 27-10-2026; kleur keuze UX: --accent,
-         donker goud, licht zwart). setSetlistSoort() zet de tekst. -->
+
+
+
     <p class="mm-vraag" id="mmVraag">Kies muzikanten en zie wat jullie samen spelen.</p>
 
-    <!-- Wat spelen we? Van muzikanten naar de nummers die minstens twee van
-         hen spelen (TT-289). Alleen het naamveld: iedereen in Nederland is te
-         vinden, dichtstbij bovenaan (Laag 3.2.b.3). Je eigen naam staat er
-         vanzelf als eerste (TT-441). -->
+
+
+
+
     <div id="setlistDeelNummers">
     <div class="search-filters">
       <div class="field">
@@ -1396,11 +1409,11 @@
           <div class="autocomplete-list" id="acGedeeldNaamList"></div>
         </div>
       </div>
-      <!-- De gekozen muzikanten, met hun profielfoto (Laag 3.2.b.4). Verborgen
-           zolang er niemand gekozen is; renderGedeeldGekozen() schakelt. -->
+
+
       <div class="results-list mm-gekozen" id="gedeeldGekozenList" hidden></div>
-      <!-- Links op de regel van Wissen: "Kies nog 1 muzikant." zolang er
-           minder dan twee zijn (renderGedeeldGekozen()). -->
+
+
       <div class="zoek-wis-rij">
         <span class="mm-nog" id="gedeeldTeller"></span>
         <button type="button" class="zoek-wissen-knop" onclick="resetGedeeldSearch()">Wissen</button>
@@ -1409,9 +1422,9 @@
     <div id="gedeeldResults"></div>
     </div>
 
-    <!-- Wie speelt dit? Van nummers naar muzikanten. Eerst de artiest, dan het
-         nummer (Laag 3.2.b.2). Filters rechts op de regel van het eerste veld,
-         met Plaats, Straal en Instrument (Laag 3.2.b.4). -->
+
+
+
     <div id="setlistDeelMuzikanten" style="display:none;">
     <div class="search-filters">
       <div class="field">
@@ -1439,9 +1452,9 @@
         </div>
       </div>
 
-      <!-- Filters: Plaats + Straal, en Instrument (TT-139: hooguit één
-           instrument, Zang, Achtergrondzang en Songwriting erbij). Instrument toont de keuze in
-           het veld, zoals bij Muzikanten. -->
+
+
+
       <div class="zoek-filter-vak" id="mmFilterVak" hidden>
         <div class="field">
           <div class="filter-row-city">
@@ -1477,14 +1490,14 @@
         </div>
       </div>
 
-      <!-- De gekozen nummers; verborgen zolang er geen is
-           (renderSetlistSongsList()). -->
+
+
       <div class="results-list mm-gekozen" id="setlistSongsList" hidden></div>
-      <!-- TT-543 onderdeel 4, voorstel 5 (besluiten Ronald 09-11-2026): links op
-           de regel van Wissen "Uit je setlist", in de vorm van Filters; alleen
-           met een profiel (mmSetlijstTonen() in search.js). Een tik klapt je
-           nummers eronder open, "Band · Nummer", op band en dan nummer; de lijst
-           blijft open en een gekozen nummer heeft het vinkje. -->
+
+
+
+
+
       <div class="zoek-wis-rij">
         <button type="button" class="zoek-filters-knop mm-setlijst-knop" id="mmSetlijstKnop" aria-expanded="false" aria-controls="mmSetlijst" onclick="toggleMmSetlijst()" hidden>Uit je setlist<svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         <button type="button" class="zoek-wissen-knop" onclick="resetSetlistSearch()">Wissen</button>
@@ -1497,55 +1510,55 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- VIEW: Mijn profiel                          -->
-<!-- ═══════════════════════════════════════════ -->
+
+
+
 <div class="app-view" id="view-myprofile" data-kop="Mijn profiel">
   <div class="my-profile-wrap">
-    <!-- TT-336: "Nog één stap: bevestig je e-mailadres", alleen zolang het
-         profiel op de klik in de mail wacht. Zie renderEmailBevestigBanner(). -->
+
+
     <div id="emailBevestigBanner"></div>
-    <!-- TT-41: openstaande banduitnodigingen, alleen zichtbaar als er zijn -->
+
     <div id="bandInvitesBanner"></div>
     <div id="myProfileContent" class="profiel-pagina"></div>
   </div>
 </div>
 
-<!-- VIEW: Profiel van een muzikant of een band (TT-410b, 06-10-2026, besluit
-     Ronald: profiel en bandprofiel worden een eigen scherm met een deelbare
-     link). Was het venster #musicianModal en, sinds fase 2, ook het bandvenster. De kop
-     is die van de app: pijl, woordmerk, hamburger. Eén scherm, één reden:
-     iemand of een band bekijken. Het adres is #profiel/<id> of #band/<id>. De
-     knop staat onder de bio en scrolt mee, bij muzikant en band gelijk
-     (.profiel-actie; TT-543 onderdeel 3 en 6). -->
+
+
+
+
+
+
+
 <div class="app-view" id="view-profiel">
   <div class="my-profile-wrap">
     <div id="profielSchermContent" class="profiel-pagina"></div>
   </div>
 </div>
 
-<!-- VIEW: Mijn bands -->
+
 <div class="app-view" id="view-bands">
   <div class="search-wrap">
-    <!-- Kop van Mijn Bands: titel en knop op één rij. De ondertitel is weg
-         (TT-543 onderdeel 6, besluit Ronald 10-11-2026, 4). Opmaak in
-         .mijn-bands-kop. -->
+
+
+
     <div id="mijnBandsKop" class="mijn-bands-kop">
         <div class="filter-title scherm-titel">Mijn bands</div>
-      <!-- TT-254 (11-09-2026): deze knop heette "Band toevoegen", terwijl de
-           formuliertitel "Nieuwe band aanmaken" zegt en de opslaanknop "Band
-           aanmaken". Eén actie, drie namen. Gevonden bij TT-248: de lege staat
-           zette een tweede gouden knop op hetzelfde scherm, met weer een
-           andere tekst. Drie van de vier plekken zeggen "aanmaken", dus dat is
-           nu de naam. Huisstijl §6, regel 5: één betekenis per woord. -->
+
+
+
+
+
+
       <button class="btn btn-primary" onclick="showCreateBandForm()">Band aanmaken</button>
     </div>
-    <!-- TT-385 fase 4 (02-10-2026, besluiten Ronald): de korte wizard. Eén
-         scherm met drie vragen: naam, postcode en plaats, genres. Geen balk
-         (TT-543 onderdeel 6, besluit Ronald 10-11-2026, 5); daarna staat de
-         band en opent de privé bandpagina op 15%; de rest vult de beheerder
-         aan in de tegels. Zolang de wizard open is, staan de kop en de lijst van
-         Mijn Bands er niet. -->
+
+
+
+
+
+
     <div id="createBandForm" style="display:none;">
       <div class="panel-title scherm-titel">Band aanmaken</div>
       <div class="panel-sub">Drie vragen, dan staat je band. De rest vul je later aan.</div>
@@ -1587,7 +1600,7 @@
   </div>
 </div>
 
-<!-- VIEW: Berichten (TT-01) -->
+
 <div class="app-view" id="view-messages" data-kop="Berichten">
   <div class="search-wrap">
     <div id="messagesInboxPanel">
@@ -1596,37 +1609,37 @@
     </div>
     <div id="messagesThreadPanel" style="display:none;">
       <div class="messages-thread-header">
-        <!-- TT-271 (16-09-2026, Ronald): foto en naam openen het profiel van
-             de ander. Niet bij een verwijderd account (zie openThreadProfile). -->
+
+
         <div class="messages-conv-avatar messages-thread-link" id="messagesThreadAvatar" onclick="openThreadProfile()"></div>
         <div class="filter-title messages-thread-naam messages-thread-link" id="messagesThreadName" role="button" tabindex="0" onclick="openThreadProfile()"></div>
-        <!-- TT-06 (18-09-2026): melden en blokkeren vanuit het gesprek zelf.
-             Rechts in de rij, achter een ⋯-menu (huisstijl §8). -->
+
+
         <span id="messagesThreadActies" class="messages-thread-acties"></span>
       </div>
       <div id="messagesThreadList"></div>
-      <!-- TT-130 (23-08-2026): composer + teller + verwijderd-melding samen
-           in één voettekst-wrapper, zodat ze op mobiel samen sticky kunnen
-           worden gemaakt (zie CSS) zonder dat de teller/melding achterblijft
-           in de gewone paginastroom terwijl het invoerveld al vastzit. -->
+
+
+
+
       <div class="messages-thread-footer">
         <div class="messages-composer-row">
-          <!-- TT-277 (16-09-2026): de verzendknop pakt de focus niet van het
-               invoerveld. Anders klapt het toetsenbord weg, komt de onderbalk
-               terug en springt het beeld heen en weer. -->
+
+
+
           <textarea id="messagesReplyInput" rows="1" placeholder="Typ een bericht..." maxlength="2000" oninput="berichtInvoerBijwerken()"></textarea>
           <button class="messages-send-btn" onmousedown="event.preventDefault()" onclick="sendReplyInThread()" title="Versturen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
         </div>
         <div id="messagesReplyCounter" class="teken-teller" hidden></div>
-        <!-- V-04 (13-08-2026): i.p.v. een actief invoerveld naar een niet meer
-             bestaand account. -->
+
+
         <div id="messagesDeletedNotice" class="messages-verwijderd-melding" style="display:none;">Dit account bestaat niet meer. Je kunt dit gesprek niet voortzetten.</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- VIEW: Over ons -->
+
 <div class="app-view" id="view-about">
   <div class="search-wrap">
     <div class="search-filters doc-view">
@@ -1643,7 +1656,7 @@
   </div>
 </div>
 
-<!-- VIEW: Privacyverklaring (TT-63, 09-08-2026) -->
+
 <div class="app-view" id="view-privacy">
   <div class="search-wrap">
     <div class="search-filters doc-view">
@@ -1725,7 +1738,7 @@
   </div>
 </div>
 
-<!-- VIEW: Gebruiksvoorwaarden (TT-63, 09-08-2026) -->
+
 <div class="app-view" id="view-terms">
   <div class="search-wrap">
     <div class="search-filters doc-view">
@@ -1772,7 +1785,7 @@
   </div>
 </div>
 
-<!-- VIEW: Gedragscode (TT-63, 09-08-2026) -->
+
 <div class="app-view" id="view-gedragscode">
   <div class="search-wrap">
     <div class="search-filters doc-view">
@@ -1813,29 +1826,29 @@
   </div>
 </div>
 
-<!-- VIEW: Instellingen (TT-186, 03-09-2026; tegelstijl TT-191, 04-09-2026).
-     Bereikbaar via het hamburgermenu, alleen ingelogd. Bevat voorlopig
-     alleen Account verwijderen — kwam uit het profielmenu (TT-186: dat is
-     accountbeheer, geen profielinhoud). Zelfde .tile-patroon als het
-     tegeloverzicht van "Profiel bewerken" (TT-168), op Ronalds verzoek:
-     geen aparte, rode knop meer, maar een gewone tegel — bewuste
-     uitzondering op huisstijl §5 (destructieve actie krijgt normaal
-     --danger). Ruimte voor latere onderwerpen: elk nieuw onderwerp wordt
-     een eigen tegel hieronder. -->
+
+
+
+
+
+
+
+
+
 <div class="app-view" id="view-instellingen">
   <div class="search-wrap">
     <div class="search-filters">
       <div class="panel-title scherm-titel">Instellingen</div>
 
-      <!-- TT-341 stap 3 (26-09-2026): licht of donker. "Thema" (besluit
-           Ronald: "thema is goed"), niet "Weergave": dat woord betekent in
-           Zoeken al kaarten of lijst (projectinstructies §6).
-           Besluit Ronald, 26-09-2026: een gewone tegel, even groot als de
-           andere; een tik opent een klein menu waarin je kiest. Dat is het
-           keuzemenu van de app (initChoiceField(), huisstijl §7.1): het klapt
-           uit onder de tegel, de gekozen regel heeft een ✓, een keuze werkt
-           meteen en sluit het menu. De tegel toont de keuze van nu.
-           Het <select> is de bron van waarheid, net als bij Sorteren. -->
+
+
+
+
+
+
+
+
+
       <div class="menu-anchor">
         <div class="tile" id="themaTegel" aria-label="Thema">
           <div style="flex:1;">
@@ -1851,15 +1864,15 @@
         <option value="donker">Donker</option>
       </select>
 
-      <!-- TT-437 (07-10-2026, besluit Ronald): de status staat hier, niet in het
-           ⋯-menu van Mijn Profiel: het is een instelling, geen handeling.
-           TT-543 onderdeel 6, blok 4 (besluiten Ronald 10-11-2026, 7b en 7c;
-           12-11-2026, B4-1): de tegel Status met drie standen, gelijk aan
-           Bandstatus (STANDEN in utils.js); vervangt Beschikbaarheid (TT-457).
-           Delen via link is weg. Het keuzemenu van Bandstatus (initChoiceField()
-           met eigen regels, huisstijl §7.1; zetStatus() in wizard.js); een
-           keuze werkt meteen. Alleen zichtbaar met een profiel
-           (laadInstellingen() in wizard.js). -->
+
+
+
+
+
+
+
+
+
       <div id="instellingenProfielBlok">
         <div class="menu-anchor">
           <div class="tile" id="statusTegel" aria-label="Status">
@@ -1872,22 +1885,22 @@
         </div>
       </div>
 
-      <!-- TT-299 (20-09-2026, besluit Ronald): e-mailadres en wachtwoord
-           horen bij het inlogaccount, niet bij het profiel. Ze staan daarom
-           hier en niet bij "Wie ben je" — dat scherm schrijft alleen naar
-           `musicians`. Eén venster met beide, zodat er één plek is voor
-           "waarmee log ik in". -->
+
+
+
+
+
       <div class="tile" onclick="openInloggegevens()">
         <div style="flex:1;">
-          <!-- TT-543 blok 2 (besluit Ronald 06-11-2026): dezelfde naam als de kop in Profiel aanmaken. -->
+
           <div class="tile-title">Je inloggegevens</div>
           <div class="tile-sub">e-mailadres en wachtwoord</div>
         </div>
       </div>
 
-      <!-- TT-232 (09-09-2026): stond eerder achter het ⋯-menu op het
-           zoekscherm als "Zoekvoorkeuren". De inhoud gaat over e-mail, niet
-           over zoeken, dus hoort het hier. -->
+
+
+
       <div class="tile" onclick="openSearchPrefsModal()">
         <div style="flex:1;">
           <div class="tile-title">E-mailvoorkeuren</div>
@@ -1895,8 +1908,8 @@
         </div>
       </div>
 
-      <!-- TT-06 (18-09-2026): de enige plek waar een blokkade terug te draaien
-           is. Blokkeren zelf gebeurt op het profiel of in het gesprek. -->
+
+
       <div class="tile" onclick="openGeblokkeerdModal()">
         <div style="flex:1;">
           <div class="tile-title">Geblokkeerde muzikanten</div>
@@ -1904,9 +1917,9 @@
         </div>
       </div>
 
-      <!-- TT-543 onderdeel 7 (besluiten Ronald 12-11-2026, punt 1 en 2): de regel
-           zoals Bandprofiel verwijderen; de tegel opent meteen de ene vraag
-           (vraagAccountVerwijderen() in musicians.js). -->
+
+
+
       <div class="tile" onclick="vraagAccountVerwijderen()">
         <div style="flex:1;">
           <div class="tile-title">Account verwijderen</div>
@@ -1917,17 +1930,17 @@
   </div>
 </div>
 
-<!-- VIEW: Wachtwoord reset -->
+
 <div class="app-view" id="view-reset">
   <div class="auth-wrap">
     <div class="auth-panel">
-      <!-- TT-543 onderdeel 2 (besluiten Ronald 08-11-2026): geen zin onder de
-           titel (6), één wachtwoordveld met Toon zonder sterretje (5, zoals stap 1
-           van Profiel aanmaken), geen onderbalk (3), geen pijl in de knop (6),
-           "Wachtwoord opgeslagen" in de vaste meldingvorm. F4: een echt <form>
-           met het e-mailadres als verborgen gebruikersnaam, zodat een
-           wachtwoordbeheerder het nieuwe wachtwoord bij het juiste account
-           opslaat (resetGebruikersnaam, gevuld door showView() in core.js). -->
+
+
+
+
+
+
+
       <div class="scherm-titel">Nieuw wachtwoord</div>
       <div class="melding" id="resetOpgeslagen" hidden>
         <p class="melding-kop">Wachtwoord opgeslagen</p>
@@ -1949,9 +1962,9 @@
 
 <div class="app-toast" id="appToast"></div>
 
-<!-- TT-385 (besluit Ronald, g): delen van een bandpagina die nog niet af is.
-     Alleen voor de beheerder: één zin over wat er mist, dan het deelmenu van
-     de telefoon. Een bladwijzer van onderen (huisstijl §7.1). -->
+
+
+
 <div class="modal-overlay wheel-overlay" id="bandDeelModal" data-close="sluitBandDeelBlad" onclick="if(event.target===this)sluitBandDeelBlad()">
   <div class="wheel-sheet" role="dialog" aria-modal="true" aria-labelledby="bandDeelKop">
     <div class="wheel-sheet-grip" aria-hidden="true"></div>
@@ -1964,10 +1977,10 @@
   </div>
 </div>
 
-<!-- TT-543 onderdeel 6, blok 3 (besluiten Ronald 10-11-2026, 7d; beeld
-     stappen-voorstel en vervolg-overdragen): Beheer overdragen. Een kop, één
-     zin en de bevestigde leden als rij; een tik stuurt het verzoek. Geen
-     kruisje (TT-409): Annuleren en de terugknop van het toestel sluiten. -->
+
+
+
+
 <div class="modal-overlay" id="overdragenModal" data-close="sluitOverdragen" onclick="if(event.target===this)sluitOverdragen()">
   <div class="modal-box modal-box-md">
     <h2 class="hoofdstuk-kop overdragen-kop">Beheer overdragen</h2>
@@ -1979,13 +1992,13 @@
   </div>
 </div>
 
-<!-- TT-520 deel 2 (27-10-2026, Laag 3.4): de uitsnede kiezen na het kiezen van
-     een profielfoto of bandfoto (kiesUitsnede() in utils.js). TT-517 fase 5:
-     een kader van 4:3, ook voor een bannerfoto; gestippeld het rondje of
-     vierkant dat klein in lijsten staat (#uitsnedeKlein). Geen kruisje
-     (TT-409: een kruisje alleen waar het niet anders kan): Annuleren, Escape
-     en de terugknop van het toestel breken af. Tweede knop links, hoofdknop
-     rechts (TT-228), zoals de controlevraag. -->
+
+
+
+
+
+
+
 <div class="modal-overlay" id="uitsnedeModal" data-close="sluitUitsnede">
   <div class="modal-box modal-box-md uitsnede-box">
     <div class="filter-title" id="uitsnedeTitel">Profielfoto</div>
@@ -2003,8 +2016,8 @@
   </div>
 </div>
 
-<!-- V-08 (13-08-2026): foto in een eigen weergave i.p.v. een nieuw tabblad,
-     dat in een app-schil de gebruiker uit de app zou sturen. -->
+
+
 <div class="modal-overlay" id="mediaLightbox" data-close="closeMediaLightbox" onclick="if(event.target===this)closeMediaLightbox()">
   <div class="modal-box" style="padding:12px;display:flex;align-items:center;justify-content:center;">
     <button class="modal-close" onclick="closeMediaLightbox()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
@@ -2012,11 +2025,11 @@
   </div>
 </div>
 
-<!-- TT-263 (13-09-2026, Ronald): "kunnen video's binnen de app worden
-     geopend? in een eigen scherm." Eén scherm voor een eigen video en voor
-     een link. Het kader wordt pas bij het openen gebouwd (utils.js,
-     openMediaSpeler) — vóór die tik staat er niets van een ander bedrijf in
-     de pagina, en YouTube gaat via de cookieloze variant. -->
+
+
+
+
+
 <div class="modal-overlay" id="mediaSpelerModal" data-close="closeMediaSpeler" onclick="if(event.target===this)closeMediaSpeler()">
   <div class="modal-box media-speler-box">
     <div class="media-speler-kop">
@@ -2028,11 +2041,11 @@
   </div>
 </div>
 
-<!-- Generieke bevestigingsmodal (bijv. profiel verwijderen) -->
-<!-- TT-543 blok 3 (besluit Ronald 07-11-2026, op beeld): een link toevoegen.
-     Eén veld; de naam van het platform rechts op de regel van het label;
-     Toevoegen direct onder het veld, uit zolang het veld leeg is. Het kruisje
-     is de enige uitgang (huisstijl §9). Functies in utils.js. -->
+
+
+
+
+
 <div class="modal-overlay" id="linkToevoegenModal" data-close="sluitLinkToevoegen" onclick="if(event.target===this)sluitLinkToevoegen()">
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="sluitLinkToevoegen()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
@@ -2051,19 +2064,19 @@
 
 <div class="modal-overlay" id="confirmModal">
   <div class="modal-box modal-box-sm">
-    <!-- TT-543 onderdeel 6, blok 3: een kop alleen als showConfirm() er een meegeeft. -->
+
     <h2 class="confirm-kop" id="confirmKop" hidden></h2>
     <p id="confirmMessage" style="margin-bottom:24px;font-size:12px;line-height:var(--regel-12);"></p>
-    <!-- TT-543 onderdeel 7 (punt 3): Account verwijderen zet hier per band een
-         tegel met het keuzemenu. showConfirm() maakt het vak leeg. -->
+
+
     <div id="confirmKeuzes"></div>
-    <!-- TT-604 (besluit Ronald 14-11-2026, "ja"): bij een rode, onomkeerbare
-         vraag werkt de knop pas na dit vinkje (zetConfirmKnop() in utils.js). -->
+
+
     <label class="akkoord-regel confirm-begrip" id="confirmBegrip" hidden>
       <input type="checkbox" id="confirmBegripVink" onchange="zetConfirmKnop()">
       <span>Ik begrijp dat dit niet terug kan.</span>
     </label>
-    <!-- TT-228 (09-09-2026): secundaire knop links, primaire rechts. -->
+
     <div class="btn-row">
       <button class="btn btn-ghost" id="confirmNoBtn" onclick="confirmModalNo()">Annuleren</button>
       <button class="btn btn-primary" id="confirmYesBtn" onclick="confirmModalYes()">Ja, verwijderen</button>
@@ -2071,10 +2084,10 @@
   </div>
 </div>
 
-<!-- TT-38 (07-08-2026): verplicht gebruikersnaam kiezen voor bestaande profielen
-     die er nog geen hebben — bewust geen sluitkruisje/Annuleren, dit scherm
-     moet worden afgerond voordat de rest van de app weer bereikbaar is
-     (Ronald: "verplicht invullen bij eerstvolgend bezoek"). -->
+
+
+
+
 <div class="modal-overlay" id="usernameGateModal" data-verplicht="1">
   <div class="modal-box modal-box-md">
     <div class="label-rij" style="margin-bottom:4px;"><div class="filter-title">Kies een gebruikersnaam</div><span id="usernameGateUitslag" class="field-uitslag" aria-live="polite"></span></div>
@@ -2083,19 +2096,19 @@
       <p id="usernameGateAgeHint" class="field-hint"></p>
     </div>
     <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="saveUsernameGate()">Opslaan en verdergaan</button>
-    <!-- TT-138 (23-08-2026): dit scherm heeft bewust geen kruisje/Annuleren
-         (TT-38, "verplicht invullen bij eerstvolgend bezoek") — maar had
-         tot nu toe ook geen enkele andere uitweg. Faalt de beschikbaarheids-
-         check herhaaldelijk, of wil iemand nu even niet kiezen, dan zat hij
-         zonder route terug vast. Uitloggen verzwakt de verplichting niet:
-         wie terugkomt en inlogt, krijgt dit scherm gewoon weer. -->
+
+
+
+
+
+
     <button class="btn btn-ghost" style="width:100%;margin-top:8px;" onclick="document.getElementById('usernameGateModal').classList.remove('visible');signOut();">Uitloggen</button>
   </div>
 </div>
 
-<!-- Melden (TT-06, 18-09-2026). Eén scherm voor alle drie de doelen: een
-     muzikant, een band en een gesprek. De reden is verplicht, de toelichting
-     niet — anders stopt een gebruiker van vijftien halverwege. -->
+
+
+
 <div class="modal-overlay" id="meldModal" data-close="closeMeldModal" onclick="if(event.target===this)closeMeldModal()">
   <div class="modal-box modal-box-md">
     <div class="filter-title" id="meldTitel" style="margin-bottom:4px;">Melden</div>
@@ -2119,7 +2132,7 @@
   </div>
 </div>
 
-<!-- Geblokkeerde muzikanten (TT-06, 18-09-2026) -->
+
 <div class="modal-overlay" id="geblokkeerdModal" onclick="if(event.target===this)closeGeblokkeerdModal()">
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeGeblokkeerdModal()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
@@ -2129,21 +2142,21 @@
   </div>
 </div>
 
-<!-- Inloggegevens wijzigen (TT-299, 20-09-2026).
-     Eén venster met twee blokken (besluit Ronald): het e-mailadres en het
-     wachtwoord. Beide raken het inlogaccount bij Supabase, niet de tabel
-     `musicians`. `data-close` zodat de telefoon-terugknop dezelfde
-     opruimfunctie draait als het kruisje (TT-294); het kruisje blijft staan. -->
+
+
+
+
+
 <div class="modal-overlay" id="inloggegevensModal" data-close="closeInloggegevens" onclick="if(event.target===this)closeInloggegevens()">
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeInloggegevens()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-    <!-- TT-543 blok 2 (besluit Ronald 07-11-2026): geen zin onder de titel; de titel zegt het al. -->
+
     <div class="filter-title">Je inloggegevens</div>
 
     <div id="igMelding" class="auth-success"></div>
 
-    <!-- TT-543 onderdeel 7 (besluit Ronald 12-11-2026, punt 7): een vette kop
-         per blok, zoals E-mailvoorkeuren (huisstijl §7.5). -->
+
+
     <div class="modal-blok">
       <div class="voorkeur-kop">E-mailadres</div>
       <div class="field-group">
@@ -2193,23 +2206,23 @@
   </div>
 </div>
 
-<!-- E-mailvoorkeuren (TT-01, 28-08-2026; verplaatst en ingekort in TT-232,
-     09-09-2026). Raakt alleen de e-mail op de achtergrond, nooit de live
-     zoekresultaten. Het veld "instrumenten die je zoekt in een ander" is
-     eruit (Ronald, 09-09-2026): dat staat al in de zoekfilters. -->
+
+
+
+
 <div class="modal-overlay" id="searchPrefsModal" onclick="if(event.target===this)closeSearchPrefsModal()">
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeSearchPrefsModal()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">E-mailvoorkeuren</div>
     <p class="voorkeur-intro">Deze keuze bepaalt ook of je een bericht van TalentTent krijgt in je berichten, en een seintje op je toestel. Je zoekresultaten veranderen hier niet door.</p>
 
-    <!-- TT-520 deel 2 (opdracht Ronald 27-10-2026: "een brij van knoppen en
-         teksten"): elk blok begint met een vette kop; alles staat op één
-         linkerlijn; elke keuze werkt meteen (geen Opslaan meer); elke
-         keuzeknop in dit venster is even breed (een derde van de breedte). -->
-    <!-- Eén mail met alles wat nieuw is (besluit Ronald 27-10-2026, optie b):
-         ook de nieuwe muzikanten bij de bewaarde zoekopdracht; geen aparte
-         schakelaar meer. Kop kort en krachtig. -->
+
+
+
+
+
+
+
     <div class="modal-blok">
       <div class="voorkeur-kop">Mail bij nieuwe matches</div>
       <div class="segmented-control voorkeur-knoppen" id="digestFrequencyControl">
@@ -2220,9 +2233,9 @@
       <p class="voorkeur-uitleg">Berichten, bands die jou zoeken en muzikanten bij je bewaarde zoekopdracht.</p>
     </div>
 
-    <!-- TT-452 (09-10-2026): het seintje op dit toestel; geldt alleen voor dit
-         toestel. Verborgen als de browser het niet kan. Uit · Aan als
-         schakelaar (27-10-2026), met een korte uitleg eronder. -->
+
+
+
     <div class="modal-blok" id="pushBlok" style="display:none;">
       <div class="voorkeur-kop">Seintje op dit toestel</div>
       <div class="segmented-control voorkeur-knoppen" id="pushControl">
@@ -2232,8 +2245,8 @@
       <p class="voorkeur-uitleg" id="pushTekst"></p>
     </div>
 
-    <!-- TT-295 (26-09-2026): de bewaarde zoekopdracht, in woorden. De vink in
-         Zoeken bewaart hem; de nieuwe muzikanten komen in de mail hierboven. -->
+
+
     <div class="modal-blok">
       <div class="voorkeur-kop">Bewaarde zoekopdracht</div>
       <div id="bewaardeZoekInstellingen"></div>
@@ -2241,9 +2254,9 @@
   </div>
 </div>
 
-<!-- TT-51-uitbreiding (12-08-2026): toelichting bij het bandniveau, geopend
-     via de i-knop naast "Niveau van de band". Inhoud identiek aan Tabel 1 +
-     de toelichtende tekst in niveaubepaling-naslagwerk.md. -->
+
+
+
 <div class="modal-overlay" id="niveauInfoModal" onclick="if(event.target===this)this.classList.remove('visible')">
   <div class="modal-box modal-box-xl">
     <button class="modal-close" onclick="document.getElementById('niveauInfoModal').classList.remove('visible')" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
@@ -2252,18 +2265,18 @@
   </div>
 </div>
 
-<!-- TT-63-fix (23-08-2026): Gebruiksvoorwaarden/Privacyverklaring/Gedragscode
-     openden voorheen via <a href="#terms" target="_blank">. Op meerdere
-     mobiele browsers/webviews (bevestigd: een WhatsApp-ingebedde browser)
-     wordt target="_blank" bij een fragment-only href genegeerd — de link
-     navigeerde dan het huidige tabblad weg van de wizard, met een volledige
-     paginaherlaad tot gevolg. Alle wizard-voortgang (tot en met stap 5,
-     media/consent) ging daarbij verloren, en de daaropvolgende hash-routing
-     verloor bovendien een race tegen onUserLoggedIn() → showView('myprofile'),
-     dus zelfs de doelpagina zelf kwam niet in beeld.
-     Oplossing: geen navigatie meer, geen nieuw tabblad. De tekst komt in een
-     modal bovenop de wizard (zelfde .modal-box-patroon als niveauInfoModal),
-     zodat view-register nooit wordt verlaten en er dus niets verloren gaat. -->
+
+
+
+
+
+
+
+
+
+
+
+
 <div class="modal-overlay" id="legalModal" onclick="if(event.target===this)closeLegalModal()">
   <div class="modal-box modal-box-xl">
     <button class="modal-close" onclick="closeLegalModal()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
@@ -2271,13 +2284,13 @@
   </div>
 </div>
 
-<!-- Opslaan overlay.
-     TT-252 (11-09-2026): dit blok stond tot vandaag binnen view-register. Een
-     .app-view die niet actief is staat op display:none, dus de laag was alleen
-     bruikbaar in de wizard; het bandformulier op view-bands kon er niet bij en
-     had daardoor geen enkele aanduiding tijdens het opslaan. Verplaatst naar de
-     algemene modallaag, net als elke andere modal. De laag is position:fixed,
-     dus de opmaak verandert er niet door. -->
+
+
+
+
+
+
+
 <div class="save-overlay" id="saveOverlay">
   <div class="save-box" id="saveBox">
     <div class="save-spinner" id="saveSpinner"></div>
@@ -2286,9 +2299,9 @@
   </div>
 </div>
 
-<!-- TT-82: melding als de Supabase-bibliotheek niet is geladen. Dit blok staat
-     bewust vóór het hoofdscript en gebruikt alleen eigen opmaak. Zo blijft de
-     melding werken, ook als het hoofdscript daarna niets kan doen. -->
+
+
+
 <div class="backend-error-overlay" id="backendErrorOverlay">
   <div class="backend-error-box">
     <div class="backend-error-title">De app kan nu niet starten</div>
@@ -2297,48 +2310,66 @@
     <button type="button" class="btn btn-primary" onclick="location.reload()">Opnieuw proberen</button>
   </div>
 </div>
+
+</div>
+
+
+
+
+
+
+<script src="supabase.js?v=2.118.0"></script>
+<script>
+
+
+
+
+
+
+
+
+  window.ttBackendMissing = (typeof supabase === 'undefined' || typeof supabase.createClient !== 'function');
+</script>
 <script>
   if (window.ttBackendMissing) {
     document.getElementById('backendErrorOverlay').classList.add('visible');
   }
 </script>
-
-</div><!-- /#appRoot -->
-
-<script src="core.js?v=20261115c"></script>
-<script src="utils.js?v=20261115d"></script>
-<script src="veiligheid.js?v=20261115b"></script>
-<script src="auth.js?v=20261115d"></script>
-<script src="postcode.js?v=20261115d"></script>
-<script src="wizard.js?v=20261115c"></script>
-<script src="ouder.js?v=20261115c"></script>
-<script src="search.js?v=20261115c"></script>
-<script src="musicians.js?v=20261115c"></script>
-<script src="bands.js?v=20261115c"></script>
-<script src="messages.js?v=20261114b"></script>
-<script src="push.js?v=20261115c"></script>
-<script src="modals-shared.js?v=20261114e"></script>
+<script src="core.js?v=20261116a"></script>
+<script src="utils.js?v=20261116a"></script>
+<script src="veiligheid.js?v=20261116a"></script>
+<script src="auth.js?v=20261116a"></script>
+<script src="postcode.js?v=20261116a"></script>
+<script src="wizard.js?v=20261116a"></script>
+<script src="ouder.js?v=20261116a"></script>
+<script src="search.js?v=20261116a"></script>
+<script src="musicians.js?v=20261116a"></script>
+<script src="bands.js?v=20261116a"></script>
+<script src="messages.js?v=20261116a"></script>
+<script src="push.js?v=20261116a"></script>
+<script src="modals-shared.js?v=20261116a"></script>
 <script>
-// ─── Start ───────────────────────────────────────────────────────────────────
-// TT-82: zonder Supabase-bibliotheek starten we de app niet op. De melding
-// hierboven in de HTML is dan al zichtbaar. Zou appInit() toch draaien, dan
-// volgt een reeks onbegrijpelijke fouten in de console en een half gevulde
-// pagina achter de melding.
-// TT-557: vanaf hier zijn alle scripts er; een tik werkt weer direct. Een tik
-// van daarvoor (zie bovenaan) volgt pas als appInit() het scherm heeft gekozen,
-// en alleen als de knop dan nog in beeld staat.
+
+
+
+
+
+
+
+
 window.ttAppKlaar = true;
 if (!window.ttBackendMissing) {
   init();
   initSearchFilters();
   Promise.resolve(appInit()).then(() => {
+    landingNaOpstart();
     const knop = window.ttVroegeTik;
     window.ttVroegeTik = null;
     if (knop && knop.isConnected && knop.getClientRects().length) knop.click();
   });
 }
-// TT-61: de landingspagina staat al in beeld vóór appInit() iets toont. Ook
-// zonder Supabase-bibliotheek hoort hij te kloppen.
+
+
 landingBijwerken();
 </script>
 </body>

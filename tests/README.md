@@ -14,6 +14,14 @@ een testset of een andere browserproef draait (afsluitcode 2), en een blok dat
 afbreekt telt als gezakt; de run gaat door. De volledige run draait één keer per
 dag; daarna `--blok`, of `--hervat` voor de blokken die nog niet liepen (8D TT-543, 08-11-2026).
 
+## Omgezette bestanden (TT-615, 16-11-2026)
+
+In de repo staan de app-bestanden zonder uitleg voor ontwikkelaars; de bron met
+uitleg staat in de gedeelde map. Claude zet om met
+`python3 tests/tt_omzetten.py <bron> <leveringsmap> <bestanden>` en draait de
+testset en de monitor op de omgezette bestanden. Elk regelnummer blijft gelijk.
+Een controle die de bron leest, zoekt dus nooit een stuk uitleg op.
+
 ## Wat laag 1 dekt
 
 | Blok | Controle |

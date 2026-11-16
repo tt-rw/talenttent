@@ -1,30 +1,30 @@
-// ─── Muzikant detail modal ───────────────────────────────────────────────────
 
 
-// Bouwt de profiel-detail HTML op basis van een musicians-record. Gedeeld door
-// laadProfielScherm() (scherm voor andere profielen) én loadMyProfile() (Mijn
-// Profiel) — zodat Mijn Profiel nooit de modal hoeft te openen/sluiten (dat
-// veroorzaakte een korte flits van de modal-overlay bij elk bezoek).
+
+
+
+
+
 function buildMusicianDetailHTML(m, isOwn, inModal) {
   const age  = ageOf(m);
 
-  // TT-420 (09-10-2026): jijzelf en een ander zien dezelfde naam, de naam die
-  // de gebruiker koos (displayNameOf() leest weergavenaam).
+
+
   const displayName = displayNameOf(m);
   const avatarSrc = safeUrl(m.avatar_url);
-  // TT-217 (06-09-2026): klik op de profielfoto vergroot 'm (openMediaLightbox()).
-  // TT-517 fase 4: de foto staat groot in de hoes (profielHoesHTML() in utils.js).
+
+
 
   const songRows = [...m.musician_songs].sort((a, b) =>
     compareArtistTitle(a.song_artist, a.song_title, b.song_artist, b.song_title)
   ).map(s => {
-    // mastery_level komt in een class-attribuut terecht — alleen bekende
-    // waarden toelaten, anders kan iemand het attribuut openbreken.
-    // TT-514 (bevinding Ronald, 25-10-2026: "een nummer zonder
-    // beheersingsniveau komt in het muzikantenprofiel met een leeg kader"):
-    // zonder beheersing geen label, zoals in Maak setlist (search.js).
+
+
+
+
+
     const lvl = LEVEL_LABELS[s.mastery_level] ? s.mastery_level : '';
-    // TT-528: op het profiel van een ander een knop om het nummer over te nemen.
+
     const knop = isOwn ? '' : overneemKnopHTML(s.song_title, s.song_artist);
     return `
     <div class="profile-song-row">
@@ -33,54 +33,54 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     </div>`;
   });
 
-  // TT-318 (24-09-2026, besluit Ronald): in het profielscherm van iemand
-  // anders staat het ⋯-menu voor melden en blokkeren rechts van het
-  // deelicoon (profielKnoppenHTML()). Alleen de plek komt hier; de inhoud zet
-  // laadProfielScherm() erin met zetVeiligheidMenu(), zodra het profiel
-  // geladen is. Op je eigen profiel komt er geen plek: je meldt of blokkeert
-  // jezelf niet.
-  // TT-543 onderdeel 3 (besluit Ronald 08-11-2026, 1E): het ⋯-menu op Mijn
-  // Profiel (één regel, "Profiel bewerken") is weg; het deelicoon staat op de
-  // plek van het menu. "Profiel bewerken" is een knop onder de bio.
+
+
+
+
+
+
+
+
+
   const veiligheidPlekHTML = (inModal && !isOwn)
     ? '<span id="profielSchermActies" class="profiel-menu-plek"></span>' : '';
-  // TT-543 onderdeel 3 (besluiten Ronald 08-11-2026, 1E en F3 B): één knop
-  // onder de bio, die meescrolt. Mijn Profiel: "Profiel bewerken" (omlijnd).
-  // Het profiel van een ander: de plek voor "Stuur een bericht" (of "Maak een
-  // profiel en leg contact"); laadProfielScherm() vult hem. Je eigen profiel
-  // in het profielscherm krijgt geen knop, zoals voorheen.
+
+
+
+
+
   const actieHTML = (isOwn && !inModal)
     ? '<div class="profiel-actie"><button class="btn btn-ghost" onclick="editMyProfile()">Profiel bewerken</button></div>'
     : (inModal && !isOwn) ? '<div class="profiel-actie" id="profielSchermActie"></div>' : '';
 
-  // TT-543 onderdeel 3 (besluit Ronald 08-11-2026, 3; maat 12px en sterren
-  // 11px, besluit Ronald sessie 98): instrumenten en genres als tekst, elk op
-  // een eigen regel, gescheiden door " · ", niet vet, gedempt. Alleen de
-  // gevulde sterren. Vervangt de tags (.tag-solid) op het muzikantprofiel.
+
+
+
+
   const instrumentenRegel = m.musician_instruments.map(x => {
     const sterren = starDisplayHTML(x.niveau, true);
     return escHtml(x.instrument) + (sterren ? ' ' + sterren : '');
   }).join(' · ');
   const genresRegel = m.musician_genres.map(x => escHtml(x.genre)).join(' · ');
-  // Het blok staat er altijd, ook leeg: dan houdt het de 16px onder de hoes.
+
   const watHTML = `
     <div class="profiel-wat">
       ${instrumentenRegel ? `<div class="profiel-wat-regel">${instrumentenRegel}</div>` : ''}
       ${genresRegel ? `<div class="profiel-wat-regel">${genresRegel}</div>` : ''}
     </div>`;
 
-  // TT-517 fase 4 (01-11-2026): de kop is de hoes (huisstijl §21). Foto,
-  // banner, naam, de regel eronder, delen en ⋯ staan erin. Vervangt de ronde
-  // profielfoto naast de knoppen (TT-384) en de bannerbalk (TT-265).
+
+
+
   return `
     ${profielHoesHTML({
       foto: avatarSrc, wazig: wazigBron(m.avatar_url), naam: displayName, media: m.musician_media,
-      // TT-517 fase 6: zonder foto ziet alleen de eigenaar "Voeg een foto toe".
+
       fotoToevoegen: isOwn ? 'voegFotoToe()' : null,
-      // TT-517 fase 8: de tekst van het visitekaartje (kaartMaken() in utils.js).
+
       kaart: { id: m.id, naam: displayName, regel: `${age} jaar · ${m.city || ''}`,
                wat: m.musician_instruments.map(x => x.instrument), onder: m.musician_genres.map(x => x.genre) },
-      // TT-420 (09-10-2026, Ronald): geen tweede naam op het profiel. Er staat één naam: de gekozen.
+
       regels: `<div class="profile-meta">${age} jaar · ${escHtml(m.city)}${m.distance_km != null ? ` · ${afstandTekst(m.distance_km)}` : ''}</div>`,
       knoppen: profielKnoppenHTML('profiel', m.id, displayName, veiligheidPlekHTML)
     })}
@@ -97,36 +97,36 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
     ${profielMediaHTML(m.musician_media, m.avatar_url)}`;
 }
 
-// TT-517 fase 6 (huisstijl §21, besluit Ronald 31-10-2026): de knop "Voeg een
-// foto toe" in de hoes opent Je mediahoek; voor de beheerder van een band Onze
-// media. Daar kiest de eigenaar zijn foto. Muzikant en band gelijk.
+
+
+
 async function voegFotoToe(bandId) {
   if (bandId) openBandTegels(bandId);
   else { if (!(await getMyMusicianId())) return; showView('profieltegels'); }
   openTegelScreen(bandId ? 'bandMedia' : 'mediahoek');
 }
 
-// TT-385 (02-10-2026): het mediaraster en de links onder een profiel, voor
-// de muzikant én de band. Eén functie, zodat beide kanten gelijk blijven
-// (huisstijl §10). Tot deze dag stond dit binnen buildMusicianDetailHTML().
-// Alleen links met een geldige http(s)-URL tonen. Een `javascript:`-URL in
-// een href voert code uit zodra iemand erop klikt — die laten we hier vallen
-// in plaats van hem als lege link te tonen.
-// TT-45 (25-09-2026): een afgeschermd item heeft geen adres, maar hoort er
-// wél te staan. TT-517 fase 7: alle afgeschermde media samen in één wazig vlak
-// (mediaAfgeschermdHTML() in utils.js); `fotoWazig` is de profiel- of bandfoto.
-// TT-02: ook geüploade foto's en video's, niet alleen links.
-// TT-543 onderdeel 3 (besluit Ronald 08-11-2026, 5) en onderdeel 6 (besluit
-// Ronald 10-11-2026, 1e): foto's, video's en links in één blok "Foto's, video's
-// en links", één raster van drie, zoals Je mediahoek; muzikant en band gelijk.
-// Geen woord "Video" op een videotegel (het speelteken blijft). Niets te tonen:
-// geen blok (lege tekst).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function profielMediaHTML(mediaLijst, fotoWazig) {
   const lijst = (mediaLijst || [])
     .map(x => ({ ...x, safeHref: safeUrl(x.url) }))
     .filter(x => x.safeHref || x.afgeschermd);
   if (!lijst.length) return '';
-  // De database schermt een profiel in zijn geheel af: één afgeschermd item is genoeg.
+
   if (lijst.some(x => x.afgeschermd)) {
     return `
     <div class="profile-media">
@@ -145,9 +145,9 @@ function profielMediaHTML(mediaLijst, fotoWazig) {
     const inner = ytId
       ? `<img src="https://img.youtube.com/vi/${jsAttr(ytId)}/hqdefault.jpg" alt="${escHtml(label)}" class="media-tegel-beeld">` + SPEELTEKEN_HTML
       : `<span class="media-tegel-link"><span class="media-tegel-link-naam">${escHtml(label)}</span></span>`;
-    // TT-218: een link opent onder alle omstandigheden, ook uitgelogd.
-    // TT-263: in het mediascherm; kan een platform daar niet spelen, dan
-    // biedt dat scherm zelf de knop naar het platform aan.
+
+
+
     return `<button type="button" onclick="openMediaSpeler('${jsAttr(l.safeHref)}', 'link', null, '${jsAttr(label)}')" class="profile-media-tegel">${inner}</button>`;
   };
   return `
@@ -159,18 +159,18 @@ function profielMediaHTML(mediaLijst, fotoWazig) {
       </div>`;
 }
 
-// V-09 (13-08-2026): losgetrokken uit buildMusicianDetailHTML() zodat de
-// contactknop apart, buiten de scrollende inhoud, in een vaste voettekst kan
-// staan — anders moest je bij een gevuld profiel er lang naartoe scrollen.
-// loadMyProfile() (Mijn Profiel, isOwn altijd waar) roept dit bewust niet
-// aan: daar hoort nooit een contactknop.
-// V-12 (13-08-2026): een gedeelde link naar een specifiek profiel of
-// bandprofiel. navigator.share() geeft op een telefoon het systeem-deelmenu
-// (WhatsApp, sms, mail, ...); is dat er niet (meestal op desktop), dan
-// kopiëren we de link zelf naar het klembord met een duidelijke toast — nooit
-// een stille no-op. De link zelf is een hash-route (#profiel/<id> of
-// #band/<id>) die appInit() bij het openen direct naar de juiste detailmodal
-// stuurt, zie het hash-blok daar.
+
+
+
+
+
+
+
+
+
+
+
+
 async function shareProfile(kind, id, name) {
   const path = kind === 'band' ? 'band' : 'profiel';
   const url = `${location.origin}${location.pathname}#${path}/${id}`;
@@ -180,23 +180,23 @@ async function shareProfile(kind, id, name) {
     text: `Bekijk het ${label} van ${name} op TalentTent.`,
     url
   };
-  // TT-517 fase 8 (huisstijl §22): het visitekaartje gaat mee. Neemt het
-  // deelmenu een beeld aan (telefoon), dan de kaart en de link samen. Zo niet
-  // (meestal een computer), dan de link naar het klembord en de kaart bij de
-  // downloads. Lukt de kaart niet, dan gaat alleen de link, zoals eerder.
+
+
+
+
   const kanBeeld = !!(navigator.share && navigator.canShare &&
     navigator.canShare({ files: [new File([''], 'kaart.jpg', { type: 'image/jpeg' })] }));
   if (kanBeeld) {
     const kaart = await kaartVoorDelen(kind, id);
     if (kaart) {
       try { await navigator.share({ ...shareData, files: [kaart] }); return; } catch (e) {
-        if (e && e.name === 'AbortError') return; // eigen annulering, geen foutmelding nodig
+        if (e && e.name === 'AbortError') return;
         logCaught('shareProfile kaart', e);
       }
     }
   }
   if (navigator.share && (kanBeeld || !navigator.clipboard)) {
-    try { await navigator.share(shareData); } catch (e) { /* eigen annulering, geen foutmelding nodig */ }
+    try { await navigator.share(shareData); } catch (e) { }
     return;
   }
   try {
@@ -217,12 +217,12 @@ async function shareProfile(kind, id, name) {
   showToast(kaart ? 'Link gekopieerd. Je kaart staat bij je downloads.' : 'Link gekopieerd naar klembord');
 }
 
-// TT-517 fase 8: de kaart als bestand, of null. Het beeld is wat een bezoeker
-// zonder account ziet: de app vraagt het op zonder inlogbewijs, met de
-// openbare functie van de database (dezelfde regel als TT-45: de database
-// beslist wat afgeschermd is). De tekst komt van de hoes op het scherm
-// (data-kaart). Duurt het langer dan 3 seconden, dan geen kaart: het deelmenu
-// mag niet lang op zich laten wachten.
+
+
+
+
+
+
 async function kaartVoorDelen(kind, id) {
   const hoes = [...document.querySelectorAll('.hoes[data-kaart]')]
     .find(h => { try { return JSON.parse(h.dataset.kaart).id === id; } catch (e) { return false; } });
@@ -240,9 +240,9 @@ async function kaartVoorDelen(kind, id) {
   return Promise.race([maken, new Promise(ok => setTimeout(() => ok(null), 3000))]);
 }
 
-// De profielfoto of bandfoto zoals een bezoeker zonder account hem krijgt: de
-// foto, de wazige versie ('data:…' of 'afgeschermd'), of null (geen foto).
-// Alleen de sleutel van de app gaat mee, geen inlogbewijs.
+
+
+
 async function kaartBeeldOphalen(kind, id) {
   const fn = kind === 'band' ? 'tt_get_bands_public' : 'tt_get_musicians_public';
   const r = await ttFetchMetHerhaling(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
@@ -256,10 +256,10 @@ async function kaartBeeldOphalen(kind, id) {
   return rij.avatar_url || null;
 }
 
-// Het beeld laden zodat het canvas het mag lezen: { img, wazig } of null.
-// Met load en error, niet met decode(): decode() wacht op het tekenen van de
-// pagina en komt in een browser die niet tekent nooit terug (gemeten
-// 01-11-2026: in het browservenster van Claude 0 van 2 kaarten met foto).
+
+
+
+
 async function kaartBeeldLaden(src) {
   if (!src) return null;
   const img = new Image();
@@ -267,7 +267,7 @@ async function kaartBeeldLaden(src) {
   const w = wazigBron(src);
   if (w) img.src = w;
   else {
-    // Een webadres, geen HTML: daarom niet door safeUrl() (die zet & om).
+
     if (!/^https:\/\//i.test(String(src))) return null;
     img.crossOrigin = 'anonymous';
     await fotoBronZetten(img, String(src));
@@ -276,17 +276,17 @@ async function kaartBeeldLaden(src) {
   return { img, wazig: !!w };
 }
 
-// TT-380 (30-09-2026, besluiten Ronald): delen is een icoon bij de naam, op
-// elk profiel — Mijn Profiel, het venster van een muzikant (ook je eigen) en
-// het bandvenster (ook je eigen band). De brede knoppen "Deel dit profiel" en
-// "Deel dit bandprofiel" onderaan zijn weg. Het icoon is de drie verbonden
-// punten (keuze B); sinds TT-403 met gesloten stippen, de gangbare vorm
-// (Android, Material). Eén functie voor alle drie de plekken, geen eigen variant
-// per scherm. Rechts van het icoon staat het ⋯-menu, als dat er is; zonder
-// menu schuift het icoon naar de plek van het menu.
-// TT-385 (besluit Ronald, g): de beheerder van een band die nog niet af is,
-// krijgt eerst één zin over wat er mist. Dat is de enige plek met een eigen
-// actie; die komt binnen als `actie` (JavaScript voor onclick).
+
+
+
+
+
+
+
+
+
+
+
 function deelKnopHTML(kind, id, name, actie) {
   const label = kind === 'band' ? 'Deel dit bandprofiel' : 'Deel dit profiel';
   const klik = actie || `shareProfile('${kind === 'band' ? 'band' : 'profiel'}','${jsAttr(id)}','${jsAttr(name)}')`;
@@ -295,22 +295,22 @@ function deelKnopHTML(kind, id, name, actie) {
   </button>`;
 }
 
-// Het deelicoon staat er altijd: Delen via link is weg, bij muzikant en band
-// (TT-543 onderdeel 6, besluit Ronald 10-11-2026, 7c).
+
+
 function profielKnoppenHTML(kind, id, name, menuHTML, deelActie) {
   return `<div class="profiel-knoppen">${deelKnopHTML(kind, id, name, deelActie)}${menuHTML || ''}</div>`;
 }
 
 function musicianContactFooterHTML(m, isOwn, displayName) {
-  // TT-380: delen staat nu als icoon bij de naam; hier alleen nog contact.
+
   if (isOwn) return '';
-  // TT-06 (18-09-2026): heb je deze muzikant zelf geblokkeerd, dan is een
-  // berichtknop misleidend — het bericht zou nergens aankomen. In plaats
-  // daarvan de enige zinnige volgende stap: de blokkade opheffen. De
-  // omgekeerde richting (hij blokkeert jou) laat dit scherm bewust
-  // ongewijzigd: die blokkade is stil, zie veiligheid.js.
-  // TT-543 onderdeel 3 (F2): geen opmaak in de regel; .profiel-actie zet de
-  // knoppen onder elkaar, over de volle breedte, 8px ertussen.
+
+
+
+
+
+
+
   if (blokkeerIkZelf(m.id)) {
     return `<div class="blokkade-regel">Je hebt ${escHtml(displayName)} geblokkeerd.</div>
       <button class="btn btn-ghost" onclick="deblokkeerMuzikant('${jsAttr(m.id)}','${jsAttr(displayName)}')">Blokkade opheffen</button>`;
@@ -321,13 +321,13 @@ function musicianContactFooterHTML(m, isOwn, displayName) {
   return contactBtn;
 }
 
-// TT-410b (06-10-2026, besluit Ronald): het profiel van een muzikant is een
-// eigen scherm (view-profiel) met een eigen adres, #profiel/<id>. Dat was het
-// venster #musicianModal. Eén ingang voor elke plek in de app: een tik op een
-// zoekresultaat, een gesprek, een gedeelde link. Een profiel opent altijd, in
-// de app en via een link: Delen via link is weg (TT-543 onderdeel 6, besluit
-// Ronald 10-11-2026, 7c; muzikant en band gelijk).
-let profielLaadBelofte = null; // klaar zodra het profiel op het scherm staat
+
+
+
+
+
+
+let profielLaadBelofte = null;
 
 function openProfielScherm(id, opties) {
   const o = opties || {};
@@ -335,10 +335,10 @@ function openProfielScherm(id, opties) {
   return profielLaadBelofte;
 }
 
-// TT-457, TT-543 onderdeel 6, blok 4: de stand van de muzikant (Actief,
-// Tijdelijk niet beschikbaar, Inactief), voor de zin op het profiel. Een aparte
-// kleine vraag, zodat ook een bezoeker zonder account het weet. Lukt de vraag
-// niet, dan geldt Actief: er staat dan geen zin.
+
+
+
+
 async function profielStand(id) {
   try {
     const { data, error } = await db.rpc('tt_profiel_stand', { mid: id });
@@ -350,36 +350,36 @@ async function profielStand(id) {
   }
 }
 
-let huidigProfielId = null; // de muzikant die het scherm nu toont (leeg bij een band)
-let huidigBandId = null;    // de band die het scherm nu toont (leeg bij een muzikant)
-let profielSchermVolgnr = 0; // een trage vraag mag een nieuwer profiel niet overschrijven
+let huidigProfielId = null;
+let huidigBandId = null;
+let profielSchermVolgnr = 0;
 
 async function laadProfielScherm(id) {
   const volgnr = ++profielSchermVolgnr;
   huidigProfielId = id || null;
   huidigBandId = null;
   const content = document.getElementById('profielSchermContent');
-  content.classList.remove('uitnodig-open'); // TT-543 onderdeel 4: een nieuw profiel begint zonder het blok
+  content.classList.remove('uitnodig-open');
   content.innerHTML =
     '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
   if (!id) { toonProfielNietBeschikbaar('muzikant'); return; }
 
-  // TT-158 (27-08-2026): een uitgelogde bezoeker ziet het publieke profiel
-  // (geen fname, dus displayNameOf() toont de gebruikersnaam) en krijgt geen
-  // berichtknop, wel "Maak een profiel en leg contact"
-  // (musicianContactFooterHTML()). hasOwnProfile staat voor een bezoeker op
-  // false.
+
+
+
+
+
   let m = null, error = null;
   const standVraag = profielStand(id);
-  // TT-367: leeftijd en bands hangen alleen af van het id; tegelijk vragen.
+
   const bandsVraag = profielBandsOphalen(id);
   const leeftijdVraag = hasOwnProfile ? vraagNu(db.rpc('tt_musicians_ages', { ids: [id] })) : null;
 
   if (hasOwnProfile) {
-    // B-01 tweede stap (18-08-2026): geen birth_date meer in deze select —
-    // dit scherm opent ook wanneer je iemand anders' profiel bekijkt, dus
-    // een ingelogde gebruiker mag hier nooit de ruwe geboortedatum van een
-    // ander binnenkrijgen. Leeftijd komt apart via tt_musicians_ages().
+
+
+
+
     const res = await db.from('musicians').select(`
       id, weergavenaam, username, city, bio,
       avatar_url,
@@ -394,24 +394,24 @@ async function laadProfielScherm(id) {
       m.age = (ages && ages[0]) ? ages[0].age : undefined;
     }
   } else {
-    // Zonder eigen profiel: publieke RPC (tabel zelf blijft op slot voor anon).
+
     const res = await db.rpc('tt_get_musicians_public', { ids: [id] });
     error = res.error;
     const row = (res.data || [])[0];
     if (row) {
       m = {
-        // B-02: leeftijd i.p.v. geboortedatum; birth_date blijft als terugval
-        // zolang script C nog niet is gedraaid. TT-43: geen fname voor bezoekers.
+
+
         id: row.id, username: row.username, age: row.age, birth_date: row.birth_date, city: row.city,
         bio: row.bio, avatar_url: row.avatar_url,
-        // TT-51 (12-08-2026, RPC-restpunt gesloten): instrument_levels bevat
-        // instrument + niveau samen, zodat de sterren ook hier verschijnen voor
-        // een bezoeker zonder eigen profiel.
+
+
+
         musician_instruments: (row.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
         musician_genres: (row.genres || []).map(g => ({ genre: g })),
         musician_songs: row.songs || [],
-        // TT-210 (04-09-2026): de RPC geeft alle mediatypes in één kolom
-        // 'media', met exact dezelfde vorm als musician_media.
+
+
         musician_media: row.media || [],
       };
       await weergavenamenToevoegen([m]);
@@ -419,10 +419,10 @@ async function laadProfielScherm(id) {
   }
 
   const stand = await standVraag;
-  if (volgnr !== profielSchermVolgnr) return; // intussen een ander profiel geopend
+  if (volgnr !== profielSchermVolgnr) return;
 
-  // TT-561 D7 (zoals TT-464 bij een band): geen rij is een profiel dat niet meer
-  // bestaat; dan helpt opnieuw proberen niet. Alleen een echte fout is de foutstaat.
+
+
   if (!m && (!error || error.code === 'PGRST116')) { toonProfielNietBeschikbaar('muzikant'); return; }
   if (error || !m) {
     logCaught('laadProfielScherm', error);
@@ -433,41 +433,41 @@ async function laadProfielScherm(id) {
   const isOwn = !!(myMusicianId && myMusicianId === m.id);
   m.stand = stand;
 
-  // TT-385 punt 17: de bands van deze muzikant, voor het blok Bands.
+
   m.bands = await bandsVraag;
   if (volgnr !== profielSchermVolgnr) return;
 
-  // Afstand tonen (indien bekend uit een eerdere zoekopdracht) i.p.v. de postcode.
+
   m.distance_km = musicianDistanceCache[m.id] != null ? musicianDistanceCache[m.id] : null;
 
   content.innerHTML = buildMusicianDetailHTML(m, isOwn, true);
-  overneemKnoppenBijwerken(content); // TT-528: vinkje bij wat al in je repertoire staat
-  // TT-517 fase 4: de hoes pas starten als hij in de pagina staat — een
-  // verborgen element heeft geen breedte (zelfde valkuil als bij het wiel,
-  // huisstijl §7.1).
+  overneemKnoppenBijwerken(content);
+
+
+
   hoesStarten(content);
   mediaTitelsBijwerken(content);
-  // TT-249: de naam kan pas passend gemaakt worden als hij in de pagina staat
-  // — een element dat er nog niet is, heeft geen breedte om tegen te meten.
+
+
   fitProfileName(content);
-  // V-09: zelfde displayName-logica als binnen buildMusicianDetailHTML().
-  // TT-543 onderdeel 3 (F3 B): de knop staat onder de bio, niet meer in de
-  // vaste balk onderaan (die blijft voor de bandpagina, tot onderdeel 6).
+
+
+
   const displayName = displayNameOf(m);
   const actie = document.getElementById('profielSchermActie');
   if (actie) actie.innerHTML = musicianContactFooterHTML(m, isOwn, displayName);
-  // TT-385: uit een zoekopdracht voor een open rol of een lid nodig je uit
-  // (TT-543 onderdeel 4, B4: de knop opent eerst het blok met de boodschap).
+
+
   rolUitnodigKnopPlaatsen(isOwn ? null : m.id, displayName);
-  // TT-06: melden en blokkeren, onder de naam (TT-380). Op je eigen profiel
-  // niet — daar maakt buildMusicianDetailHTML() ook geen plek.
+
+
   zetVeiligheidMenu('profielSchermActies', 'muzikant', isOwn ? null : m.id, displayName);
 }
 
-// Een profiel of bandpagina die er niet (meer) is: één zin en één knop, in de
-// vaste vorm van een lege staat (§15). Eén functie voor muzikant en band; alleen
-// de tekst verschilt (TT-410b fase 2, TT-464, TT-561). Sinds Delen via link weg
-// is (TT-543 onderdeel 6, 7c), is "bestaat niet meer" de enige reden.
+
+
+
+
 function toonProfielNietBeschikbaar(soort) {
   const band = soort === 'band';
   document.getElementById('profielSchermContent').innerHTML = emptyStateHTML(
@@ -479,11 +479,11 @@ function toonProfielNietBeschikbaar(soort) {
 }
 
 
-// V-08 (13-08-2026): een foto opent nu in een eigen weergave in de app zelf,
-// niet meer in een nieuw browsertabblad (dat zou iemand in een app-schil
-// buiten de app zetten).
+
+
+
 function openMediaLightbox(url) {
-  fotoBronZetten(document.getElementById('mediaLightboxImg'), url); // TT-480: tijdelijke link
+  fotoBronZetten(document.getElementById('mediaLightboxImg'), url);
   document.getElementById('mediaLightbox').classList.add('visible');
 }
 function closeMediaLightbox() {
@@ -491,20 +491,20 @@ function closeMediaLightbox() {
   document.getElementById('mediaLightboxImg').src = '';
 }
 
-// ─── Mijn profiel laden ──────────────────────────────────────────────────────
 
-// ─── Account verwijderen ─────────────────────────────────────────────────────
-// TT-543 onderdeel 7 (besluiten Ronald 12-11-2026, punt 2, 3 en 4). Eén vraag,
-// in de vorm van Bandprofiel verwijderen (huisstijl §19): een kop met je naam,
-// het gevolg met je e-mailadres, en Account verwijderen rood omlijnd. Vervangt
-// het venster en de tweede vraag "Weet je zeker…" van TT-22 (Ronald: "akkoord.
-// het verspringen is belangrijk omdat de twee rode knoppen op elkaar lijken.").
-// Ben je beheerder van een band met andere bevestigde leden, dan staat per band
-// een tegel met het keuzemenu: een lid "wordt beheerder", of Bandprofiel
-// verwijderen. Geen standaard; de knop werkt pas als elke band een keuze heeft.
-// Een band zonder andere leden verdwijnt mee. Het inlogaccount zelf: zie
-// executeAccountDeletion().
-let accountBands = [];       // { id, naam, leden: [{ id, naam }], keuze: null | 'delete' | id van een lid }
+
+
+
+
+
+
+
+
+
+
+
+
+let accountBands = [];
 let pendingSoloBandIds = [];
 
 async function vraagAccountVerwijderen() {
@@ -527,7 +527,7 @@ async function vraagAccountVerwijderen() {
       if (leden.length) accountBands.push({ id: b.id, naam: b.name || '', leden, keuze: null });
       else pendingSoloBandIds.push(b.id);
     });
-    accountBands.sort((x, y) => x.naam.localeCompare(y.naam, 'nl')); // vaste volgorde: op naam
+    accountBands.sort((x, y) => x.naam.localeCompare(y.naam, 'nl'));
   } catch (e) {
     logCaught('vraagAccountVerwijderen', e);
     fout = e;
@@ -538,7 +538,7 @@ async function vraagAccountVerwijderen() {
     'Account verwijderen', true, null,
     naam ? `Account van ${naam} verwijderen?` : null
   );
-  // TT-561: zonder je bands kun je niet per band kiezen; de knop blijft dicht.
+
   if (fout) {
     document.getElementById('confirmKeuzes').innerHTML = foutStaatHTML(fout, 'je bands laden', 'vraagAccountVerwijderen()');
     confirmExtraDicht = true; zetConfirmKnop();
@@ -547,7 +547,7 @@ async function vraagAccountVerwijderen() {
   tekenAccountBands();
 }
 
-// Per band een tegel met het keuzemenu van de app (huisstijl §7.1), zoals Status.
+
 function tekenAccountBands() {
   const vak = document.getElementById('confirmKeuzes');
   vak.innerHTML = accountBands.map((b, i) => `
@@ -576,13 +576,13 @@ function werkAccountKeuzesBij() {
       : b.keuze === 'delete' ? 'Bandprofiel verwijderen' : 'kies wat er met de band gebeurt';
   });
   confirmExtraDicht = accountBands.some(b => !b.keuze);
-  zetConfirmKnop(); // TT-604: ook het vinkje
+  zetConfirmKnop();
 }
 
-// Haalt de werkelijke foutboodschap uit een db.functions.invoke()-fout. De
-// standaardfout van supabase-js ("Edge Function returned a non-2xx status
-// code") zegt niets over de échte oorzaak — die staat in de JSON die de
-// functie zelf teruggaf, bereikbaar via fnErr.context (het Response-object).
+
+
+
+
 async function extractFnErrorDetail(fnErr) {
   if (!fnErr) return '';
   try {
@@ -590,29 +590,29 @@ async function extractFnErrorDetail(fnErr) {
       const body = await fnErr.context.clone().json();
       if (body && body.error) return body.error;
     }
-  } catch (e) { /* niet te lezen, val terug op de generieke boodschap */ }
+  } catch (e) { }
   return fnErr.message || String(fnErr);
 }
 
-// TT-22-restpunt (06-09-2026): probeert het auth-account van de ingelogde
-// gebruiker te verwijderen via de Edge Function 'delete-own-account', met
-// twee herkansingen (drie pogingen totaal, 1s/2s pauze ertussen) bij een
-// mislukking. Geen enkele hoeveelheid pogingen kan een echte storing of het
-// ontbreken van internet oplossen — dit vangt alleen het meest voorkomende
-// geval op: een kortstondige hapering die bij een volgende poging al weg is.
-// Geeft naast ok/niet-ok ook de laatste technische foutdetail terug, zodat
-// een blijvende mislukking niet blind hoeft te worden opgelost (06-09-2026,
-// na meerdere niet-reproduceerbare mislukkingen zonder zichtbare oorzaak).
+
+
+
+
+
+
+
+
+
 async function deleteOwnAuthAccountWithRetry(maxAttempts = 3) {
   let lastDetail = '';
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      // Let op: deze naam moet exact overeenkomen met de werkelijke naam/URL
-      // van de functie bij Supabase (Settings-tab van de functie) — niet
-      // slechts de weergavenaam in de functieoverzichtslijst. Bij een eerdere
-      // versie van dit ticket bleek dat te verschillen ("hyper-handler" als
-      // echte naam, "delete-own-account" als lijstweergave); Ronald heeft de
-      // functie zelf hernoemd zodat beide nu gelijk zijn.
+
+
+
+
+
+
       const { error: fnErr } = await db.functions.invoke('delete-own-account');
       if (!fnErr) return { ok: true, detail: '' };
       lastDetail = await extractFnErrorDetail(fnErr);
@@ -629,15 +629,15 @@ async function executeAccountDeletion() {
   if (!mid || accountBands.some(b => !b.keuze)) return;
 
   try {
-    // 1-3. Bands (overdragen of verwijderen), solo-bands en de eigen
-    // profielgegevens — TT-281 (23-09-2026): in één databasefunctie, in één
-    // transactie. Lukt één stap niet (bijvoorbeeld het overdragen van een
-    // band), dan blijft alles staan. Vroeger ging de app door na een
-    // mislukte overdracht, en bleef er een band zonder oprichter achter.
-    // TT-543 onderdeel 7 (punt 4): de berichten aan de leden gaan mee. De
-    // database stuurt ze vóór het verwijderen (daarna bestaat de afzender niet
-    // meer), met de regels van een gewoon bericht; lukt er een niet, dan gaat
-    // het verwijderen door.
+
+
+
+
+
+
+
+
+
     const bandKeuzes = accountBands.map(b => ({
       band_id: b.id,
       keuze: b.keuze,
@@ -652,113 +652,113 @@ async function executeAccountDeletion() {
     });
     if (mErr) throw mErr;
 
-    // 4. Geüploade bestanden in Storage (avatar + media). Berichten blijven
-    // bewust staan — zie displayNameOf-gebruik in loadInbox(): een
-    // gesprekspartner ziet voortaan "Verwijderde gebruiker" i.p.v. een lege
-    // naam (Ronald, 09-08-2026: niet ook de geschiedenis van de ander wissen).
+
+
+
+
     const userId = currentUser ? currentUser.id : null;
     if (userId) await deleteAllStorageForUser(userId);
 
-    // 5. Auth-account (login/wachtwoord) zelf verwijderen — TT-22-restpunt,
-    // gesloten 06-09-2026. Dit kan niet vanaf de client (vereist de service-
-    // role-sleutel), dus roept de Edge Function 'delete-own-account' aan.
-    // Die functie controleert zelf, via de meegestuurde sessie, wélke
-    // gebruiker de aanroeper is — hier wordt geen id meegestuurd dat de
-    // functie zou moeten vertrouwen. Moet vóór signOut() gebeuren: de
-    // functie heeft de huidige, nog geldige sessie nodig.
-    //
-    // Ronald (06-09-2026): "zorg dat het in een keer lukt." Drie pogingen
-    // i.p.v. één, met een korte pauze ertussen — vangt een kortstondige
-    // netwerk-/serverhapering op, wat de meest voorkomende reden voor een
-    // eenmalige mislukking is. Dit is geen garantie (een echte storing bij
-    // Supabase of geen internetverbinding laat ook drie pogingen mislukken),
-    // maar wel de maximale betrouwbaarheid die vanaf de client haalbaar is.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     const authResult = await deleteOwnAuthAccountWithRetry();
 
     accountBands = [];
     pendingSoloBandIds = [];
     myMusicianId = null;
     myOwnCity = null;
-    // Voorkomt dat een volgende login op ditzelfde (mogelijk nog bestaande,
-    // zie stap 5 hierboven) auth-account een oude wizard-stand terugvindt
-    // (gevonden 06-09-2026, Ronald: "kom ik meteen op de laatste stap: media
-    // toevoegen").
+
+
+
+
     clearOnboardingProgress();
-    try { await signOut(); } catch (e) { /* sessie kan al ongeldig zijn ná stap 5 hierboven */ }
+    try { await signOut(); } catch (e) { }
 
     if (authResult.ok) {
       showToast('Je account is verwijderd.');
     } else {
-      // Profiel is al onomkeerbaar weg (stap 1-4 zijn al uitgevoerd) — dit
-      // niet verbergen achter de gewone succesmelding, maar ook niet de hele
-      // afronding blokkeren voor iets dat al niet meer terug te draaien is.
-      // Vriendelijke, jargon-vrije tekst (Plezier-principe) — de tijdelijke
-      // alert()-versie met technische detail (06-09-2026) heeft zijn werk
-      // gedaan: de echte oorzaak (functienaam-mismatch bij Supabase) is
-      // gevonden en opgelost. Dit is weer de bedoelde eindtekst. De detail
-      // blijft wel in de console staan, voor het geval dit ooit terugkomt.
+
+
+
+
+
+
+
+
       console.error('Auth-account niet verwijderd:', authResult.detail);
       showToast('Je profiel is verwijderd. Je inloggegevens konden niet automatisch verwijderd worden — mail privacy@talenttent.org als je dit ook wilt laten verwijderen.');
     }
     showView('landing');
   } catch (e) {
     logCaught('executeAccountDeletion', e);
-    // De vraag is op dit punt al dicht (confirmModalYes); een mislukking
-    // melden we dus via de toast, niet via een knopstatus.
+
+
     showToast(friendlyErrorMessage(e, 'je account verwijderen') + ' Je account is nog niet volledig verwijderd. Kies in Instellingen opnieuw Account verwijderen.');
   }
 }
 
-// TT-22: alle geüploade bestanden van een gebruiker verwijderen uit Storage
-// (avatars + media). Pad is altijd {userId}/... (zie uploadToStorage), dus de
-// hele map van deze gebruiker kan per bucket in één keer leeggehaald worden.
+
+
+
 async function deleteAllStorageForUser(userId) {
   for (const bucket of ['avatars', 'media']) {
     try {
       const { data: files, error: lijstFout } = await db.storage.from(bucket).list(userId);
-      if (lijstFout) throw lijstFout; // TT-561: anders blijven bestanden stil achter
+      if (lijstFout) throw lijstFout;
       if (files && files.length) {
         const paths = files.map(f => `${userId}/${f.name}`);
         await db.storage.from(bucket).remove(paths);
       }
     } catch (e) {
-      // Bestand kan al weg zijn. Niet blokkerend voor de rest, wel loggen.
+
       logCaught('deleteAllStorageForUser', e);
     }
   }
 }
 
-// TT-143 (25-08-2026): cancelEditProfile()/de Annuleren-knop is vervallen.
-// "Terug" en "Verder" dekken de navigatie nu zelf af (zie prevStep()/
-// nextStep()).
 
-// ═══════════════════════════════════════════════════════════════════════
-// TT-168-overgang (02-09-2026): tegeloverzicht + vijf bewerkschermen
-// ═══════════════════════════════════════════════════════════════════════
 
-// 1-op-1 uit profiel-v2.html overgezet, met twee aanpassingen om dubbele
-// code te voorkomen: de stads-suggestielijst hergebruikt de bestaande
-// onCitySearchInput()/closeAC()/.autocomplete-list-patroon (i.p.v. een
-// eigen .ac-items-systeem), en de instrument-/genrepicker + niveau-modals
-// zijn dezelfde cfg-registry als de wizard (zie initInstrumentPicker()/
-// initPicker() hierboven) — één modal, twee registraties.
 
-// TT-543 blok 4: geen vaste onderregel meer; renderTegels() vult hem met wat
-// je invulde (tegelRegelHTML()).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const TILES = [
   { id: 'wieBenJe',   title: 'Wie ben je' },
   { id: 'watSpeelJe', title: 'Wat speel je' },
-  // TT-227 (09-09-2026, Ronald): "Je setlist" hoort direct onder "Wat speel
-  // je" — dat zijn allebei vragen over wat je zelf speelt. Deze volgorde stuurt
-  // het tegeloverzicht volledig aan (renderTegels() leest deze lijst), dus dit
-  // is de enige plek. TT-543 (06-11-2026, besluit Ronald): de tegel "Wat zoek
-  // je" is weg; de app deed niets met de antwoorden.
+
+
+
+
+
   { id: 'jeSetlist',  title: 'Je setlist' },
   { id: 'mediahoek',  title: 'Je mediahoek' },
 ];
 
-// TT-385 fase 3: de tegels van een band hebben dezelfde vorm (BAND_TILES in
-// bands.js). Eén functie voor beide lijsten.
+
+
 function tegelsHTML(lijst) {
   return lijst.map(t => `
     <div class="tile" onclick="openTegelScreen('${jsAttr(t.id)}')">
@@ -770,10 +770,10 @@ function tegelsHTML(lijst) {
   `).join('');
 }
 
-// TT-543 blok 4 (besluit Ronald 06-11-2026, voorstel 17, op beeld): elke tegel
-// toont wat je invulde, en "Nog leeg" als er in die tegel nog niets staat. Eerst
-// de tegels met de vorige regels (geen sprong in de hoogte), dan de echte. De
-// vorige regels horen bij één profiel: na inloggen als een ander niet tonen.
+
+
+
+
 let tegelRegels = { mid: null, regels: {} };
 let tegelRegelsVraag = 0;
 
@@ -816,7 +816,7 @@ function renderTegels() {
     .select('weergavenaam, username, city, avatar_url, musician_instruments(instrument), musician_genres(genre), musician_songs(song_title), musician_media(media_type)')
     .eq('id', mid).single()
     .then(({ data, error }) => {
-      // Een oudere vraag of een fout laat de regels staan zoals ze waren.
+
       if (vraag !== tegelRegelsVraag || error || !data) return;
       tegelRegels = { mid, regels: {} };
       TILES.forEach(t => { tegelRegels.regels[t.id] = tegelRegelHTML(t.id, data); });
@@ -824,23 +824,23 @@ function renderTegels() {
     }, () => {});
 }
 
-// ─── Schermnavigatie binnen het tegeloverzicht ────────────────────────────
-// Zelfde soort interne stap-switcher als de wizard (goTo()), maar dan met
-// een terugknop-stap in de browsergeschiedenis per subscherm (V-03-patroon,
-// zie de popstate-handler hieronder) — bewerken van een tegel is net zo'n
-// "sluit dit eerst"-scherm als een open modal of een open gesprek.
-// TT-385 fase 3 (02-10-2026): Bandprofiel bewerken gebruikt hetzelfde
-// tegelscherm, met de vier tegels van de band. Welke band: bewerkBandId
-// (bands.js); leeg betekent je eigen profiel. Zo gelden de terugknop, "Terug
-// zonder opslaan?" en de stap in de geschiedenis voor beide gelijk.
+
+
+
+
+
+
+
+
+
 const TEGEL_SCREENS = { wieBenJe: 'wieBenJeScreen', watSpeelJe: 'watSpeelJeScreen', jeSetlist: 'jeSetlistScreen', mediahoek: 'mediahoekScreen',
   bandWie: 'bandWieScreen', bandBezetting: 'bandBezettingScreen', bandMuziek: 'bandMuziekScreen', bandMedia: 'bandMediaScreen' };
 let activeTegelScreen = 'overview';
 
-// TT-302, TT-408 en TT-608: de vraag of je wilt opslaan (vraagOpslaanBijTerug()
-// in core.js) hoort bij de pijl in de kop en de terugknop van het toestel. De grote
-// Terug-knop onderin een tegelscherm bestaat niet meer. De vergelijking per
-// scherm staat één keer hier, zodat beide wegen terug dezelfde vraag stellen.
+
+
+
+
 const TEGEL_WIJZIGINGEN = {
   wieBenJe:   () => wbjFieldSnapshot() !== wbjSnapshot,
   watSpeelJe: () => wspFieldSnapshot() !== wspSnapshot,
@@ -852,30 +852,30 @@ const TEGEL_WIJZIGINGEN = {
   bandMedia:     () => bmFieldSnapshot() !== bmSnapshot
 };
 
-// Staat er een tegelscherm open met wijzigingen die nog niet zijn opgeslagen?
-// Een scherm dat nog niet is geopend heeft geen momentopname; dat telt als
-// "geen wijzigingen", nooit als een fout die de terugknop blokkeert.
+
+
+
 function tegelHeeftWijzigingen() {
   const meet = TEGEL_WIJZIGINGEN[activeTegelScreen];
   if (!meet) return false;
   try { return !!meet(); } catch (e) { return false; }
 }
 
-// TT-543 blok 4 (voorstel 16): de vier tegels van je eigen profiel hebben de
-// vaste balk met Opslaan; main krijgt dan de ruimte eronder, zoals de stappen.
-// Onderdeel 6 (besluit Ronald 10-11-2026, 9): ook de vier tegels van een band.
+
+
+
 const TEGELS_MET_BALK = ['wieBenJe', 'watSpeelJe', 'jeSetlist', 'mediahoek',
   'bandWie', 'bandBezetting', 'bandMuziek', 'bandMedia'];
 function zetVasteBalkRuimte(id) {
   document.querySelector('#view-profieltegels > main').classList.toggle('met-vaste-balk', TEGELS_MET_BALK.includes(id));
 }
 
-// TT-543 blok 4 (besluit Ronald 07-11-2026, voorstel 19): in de tegels van je
-// profiel en van een band staat Opslaan uit (half doorzichtig) zolang er niets
-// gewijzigd is.
-// Wijzigingen komen uit velden, uit vensters (instrument, genre, link) en uit
-// geüploade bestanden; daarom kijkt de app na elke invoer, tik en wijziging in
-// het scherm opnieuw. Eén vergelijking: TEGEL_WIJZIGINGEN hierboven.
+
+
+
+
+
+
 function zetOpslaanAan(aan) {
   if (!TEGELS_MET_BALK.includes(activeTegelScreen)) return;
   const knop = document.querySelector('#' + TEGEL_SCREENS[activeTegelScreen] + ' .wizard-action-bar .btn-primary');
@@ -887,8 +887,8 @@ function werkOpslaanBij() { zetOpslaanAan(tegelHeeftWijzigingen()); }
   const plan = () => {
     if (gepland || !TEGELS_MET_BALK.includes(activeTegelScreen)) return;
     gepland = true;
-    // setTimeout, geen requestAnimationFrame: dat wacht op het volgende beeld,
-    // en in een venster dat niet getekend wordt komt dat niet (gemeten sessie 88).
+
+
     setTimeout(() => { gepland = false; werkOpslaanBij(); }, 0);
   };
   ['input', 'change', 'click'].forEach(t => document.addEventListener(t, plan, true));
@@ -896,9 +896,9 @@ function werkOpslaanBij() { zetOpslaanAan(tegelHeeftWijzigingen()); }
   if (view) new MutationObserver(plan).observe(view, { childList: true, subtree: true });
 })();
 
-// TT-543 blok 4 (besluit Ronald 07-11-2026, voorstel 20): na Opslaan terug naar
-// Profiel bewerken, waar de regel van de tegel meteen het nieuwe toont. Alleen
-// als die tegel nog openstaat; de melding "Wijzigingen opgeslagen." blijft.
+
+
+
 function terugNaOpslaan(id) {
   if (activeTegelScreen === id) appTerug();
 }
@@ -906,7 +906,7 @@ function terugNaOpslaan(id) {
 function openTegelOverview() {
   activeTegelScreen = 'overview';
   zetVasteBalkRuimte('overview');
-  werkTerugKnopBij(); // TT-301
+  werkTerugKnopBij();
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
   document.getElementById('tegelOverviewScreen').style.display = bewerkBandId ? 'none' : '';
   document.getElementById('bandTegelOverviewScreen').style.display = bewerkBandId ? '' : 'none';
@@ -918,13 +918,13 @@ function openTegelScreen(id) {
   if (!TEGEL_SCREENS[id]) return;
   activeTegelScreen = id;
   zetVasteBalkRuimte(id);
-  werkTerugKnopBij(); // TT-301: een open tegelscherm is een stap terug
+  werkTerugKnopBij();
   document.getElementById('tegelOverviewScreen').style.display = 'none';
   document.getElementById('bandTegelOverviewScreen').style.display = 'none';
   Object.values(TEGEL_SCREENS).forEach(elId => { document.getElementById(elId).style.display = 'none'; });
   document.getElementById(TEGEL_SCREENS[id]).style.display = '';
-  // TT-543 blok 4 (voorstel 19): Opslaan staat uit tot de tegel geladen is en
-  // er iets wijzigt.
+
+
   zetOpslaanAan(false);
   if (id === 'wieBenJe') openWieBenJe().then(werkOpslaanBij, werkOpslaanBij);
   else if (id === 'watSpeelJe') openWatSpeelJe().then(werkOpslaanBij, werkOpslaanBij);
@@ -936,22 +936,22 @@ function openTegelScreen(id) {
   else if (id === 'bandMedia') openBandMedia().then(werkOpslaanBij, werkOpslaanBij);
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// Tegel: Wie ben je
-// ═══════════════════════════════════════════════════════════════════════
-// Opslaan raakt uitsluitend fname/lname/username/birth_date/zip/city/bio —
-// een eigen, smalle opslaanfunctie, geen hergebruik van de wizard-brede
-// persistEditedProfile() (die zou de andere vier tegels leegmaken, want hun
-// data staat nooit in deze kleine, lokale snapshot).
+
+
+
+
+
+
+
 
 let wbjSnapshot = null;
-let wbjNaamTonen = 'echt';        // TT-420: de keuze, 'echt' of 'gebruikersnaam'
-let wbjNaamLuistert = false;      // TT-420: het voorbeeld volgt de velden, één luisteraar
+let wbjNaamTonen = 'echt';
+let wbjNaamLuistert = false;
 let wbjUsernameOk = true;
 let wbjPostcodeTimeout;
 let wbjPostcodeFailStreak = 0;
 let wbjPostcodeManualMode = false;
-let wbjGeboorteBijOpenen = '';    // TT-625: de leeftijdsgroep bij het openen telt
+let wbjGeboorteBijOpenen = '';
 
 function wbjFieldSnapshot() {
   return JSON.stringify({
@@ -966,13 +966,13 @@ function wbjFieldSnapshot() {
   });
 }
 
-// TT-420 (09-10-2026, besluiten Ronald): twee keuzes, Echte naam of
-// Gebruikersnaam. Vanaf 16 staat de echte naam standaard; onder de 16 staat er
-// altijd de gebruikersnaam en is er geen keuze (de database dwingt dat af). De
-// leeftijd komt uit het geboortedatumveld; zolang dat niet vol is, blijft de
-// keuze staan zoals ze was.
+
+
+
+
+
 function wbjLeeftijd() {
-  return leeftijdUitVeld(document.getElementById('wbjBirthDate').value); // TT-660
+  return leeftijdUitVeld(document.getElementById('wbjBirthDate').value);
 }
 
 const WBJ_NAAM = { blok: 'wbjNaamKeuze', control: 'wbjNaamTonenControl', voorbeeld: 'wbjNaamVoorbeeld',
@@ -992,13 +992,13 @@ async function openWieBenJe() {
   const wbjCityFieldReset = document.getElementById('wbjCity');
   wbjCityFieldReset.readOnly = true;
   wbjCityFieldReset.style.cursor = 'not-allowed';
-  // TT-180: birth_date hoort niet in deze select — authenticated heeft geen
-  // SELECT-recht op musicians.birth_date (geverifieerd via
-  // information_schema.column_privileges), een kale select met deze kolom
-  // erin faalt in zijn geheel. Apart ophalen via tt_get_my_birth_date().
-  // Parallel i.p.v. na elkaar — twee onafhankelijke aanvragen.
-  // TT-454: fname en lname zijn voor andere gebruikers afgesloten; de eigen
-  // naam komt via tt_mijn_naam().
+
+
+
+
+
+
+
   const [{ data, error }, { data: myBirthDate }, { data: naamData }] = await Promise.all([
     db.from('musicians')
       .select('username, zip, city, city_source, bio, naam_tonen')
@@ -1019,8 +1019,8 @@ async function openWieBenJe() {
   document.getElementById('wbjZip').value = data.zip || '';
   document.getElementById('wbjCity').value = data.city || '';
   document.getElementById('wbjBio').value = data.bio || '';
-  veldGroeit(document.getElementById('wbjBio')); // TT-543 laag 3, 3-10
-  updateCharCounter('wbjBio', 'wbjBioTeller', 1000); // TT-626: teller bij de laatste 200 tekens
+  veldGroeit(document.getElementById('wbjBio'));
+  updateCharCounter('wbjBio', 'wbjBioTeller', 1000);
   wbjNaamTonen = data.naam_tonen === 'gebruikersnaam' ? 'gebruikersnaam' : 'echt';
   if (!wbjNaamLuistert) {
     wbjNaamLuistert = true;
@@ -1031,17 +1031,17 @@ async function openWieBenJe() {
   wbjSnapshot = wbjFieldSnapshot();
 }
 
-// Gebruikersnaam: zelfde live-check als elders in de app.
+
 function onWbjUsernameInput() {
   wbjUsernameOk = false;
   checkUsernameAvailability('wbjUsernameStatus', 'wbjUsername', myMusicianId).then(ok => { wbjUsernameOk = ok; });
 }
 
-// Postcode → plaats, zoals elders: de eigen lijst (TT-624), dan bij een
-// onbekende postcode of herhaalde storing een handmatige zoeklijst i.p.v. een
-// vrij tekstveld.
-// Eigen, lokale variabelen (wbjPostcodeFailStreak/wbjPostcodeManualMode) —
-// niet de gedeelde wizard-variabelen, dit is een aparte context.
+
+
+
+
+
 function onWbjPostcodeInput(rawValue) {
   const statusEl = document.getElementById('wbjPostcodeStatus');
   document.getElementById('wbjCity').value = '';
@@ -1099,14 +1099,14 @@ async function saveWieBenJe() {
   const zip = document.getElementById('wbjZip').value.trim();
   const city = document.getElementById('wbjCity').value.trim();
 
-  // TT-659 (besluit Ronald 15-11-2026, sessie 150: "ja"): elke fout onder
-  // zijn veld, alle tegelijk, met de zinnen van stap 1 (de tegel en stap 1
-  // zijn gelijk, besluit Ronald 06-11-2026). Was een korte melding bovenin.
+
+
+
   clearFieldErrors('wieBenJeScreen');
   const fouten = [];
-  // TT-249: zelfde controle als in de wizard. De gebruikersnaam hiernaast
-  // wordt al live getoetst via checkUsernameAvailability(). TT-420: gecontroleerd
-  // wordt de naam zoals anderen hem zien, dus bij Echte naam voor- en achternaam.
+
+
+
   const leeftijd = wbjLeeftijd();
   const opProfiel = naamZoalsAnderen(fname, document.getElementById('wbjLname').value, username,
     wbjNaamTonen, leeftijd === null ? 16 : leeftijd);
@@ -1115,7 +1115,7 @@ async function saveWieBenJe() {
   } else if (!naamPastInProfielkop(opProfiel || fname)) {
     fouten.push(['wbjFname', 'Deze naam is te lang om op je profiel te tonen. Maak hem korter']);
   }
-  // TT-625: dezelfde controle als stap 1, en geen andere leeftijdsgroep dan bij het openen.
+
   const datumFout = geboortedatumFout(birthDateStr);
   if (datumFout) {
     fouten.push(['wbjBirthDate', datumFout]);
@@ -1144,7 +1144,7 @@ async function saveWieBenJe() {
   };
   const { error } = rijenGeraakt(await db.from('musicians').update(payload).eq('id', myMusicianId).select('id'));
   if (error) {
-    // TT-625: weigert de database de geboortedatum, dan staat de zin bij het veld.
+
     if (error.hint === 'TT-625') { showFieldErrors([['wbjBirthDate', error.message]]); return; }
     showToast(friendlyErrorMessage(error, 'je gegevens opslaan'));
     return;
@@ -1155,12 +1155,12 @@ async function saveWieBenJe() {
   terugNaOpslaan('wieBenJe');
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// Tegel: Wat speel je
-// ═══════════════════════════════════════════════════════════════════════
-// Raakt uitsluitend musician_instruments en musician_genres. TT-543 (besluit
-// Ronald 06-11-2026, voorstel 6): "Wat speel je vooral?" is weg; de kolom
-// repertoire_type staat nog in de database, de app leest en schrijft hem niet.
+
+
+
+
+
+
 
 let wspState = { instruments: [], instrumentLevels: {}, genres: [] };
 let wspSnapshot = null;
@@ -1189,19 +1189,19 @@ async function openWatSpeelJe() {
   initInstrumentPicker({
     id: 'wsp', fieldId: 'wspInstrumentField', badgeRowId: 'wspInstrumentBadgeRow',
     getInstruments: () => wspState.instruments, getLevels: () => wspState.instrumentLevels,
-    toevoegen: 'Instrument', // TT-543 blok 4, voorstel 22
+    toevoegen: 'Instrument',
   });
   initPicker({
     id: 'wspGenre', fieldId: 'wspGenreField', badgeRowId: 'wspGenreBadgeRow',
     options: GENRES, getList: () => wspState.genres,
     placeholder: 'Kies een genre',
-    toevoegen: 'Genre', // TT-543 blok 4, voorstel 22
+    toevoegen: 'Genre',
   });
   wspSnapshot = wspFieldSnapshot();
 }
 
 async function saveWatSpeelJe() {
-  // TT-444: zelfde vorm als wizardstap 2, bij het veld zelf.
+
   const fouten = [];
   if (!wspState.instruments.length) fouten.push(['wspInstrumentField', 'Kies minimaal één instrument']);
   if (!wspState.genres.length) fouten.push(['wspGenreField', 'Kies minimaal één genre']);
@@ -1209,7 +1209,7 @@ async function saveWatSpeelJe() {
 
   if (wspFieldSnapshot() === wspSnapshot) return;
 
-  // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
+
   const { error: kErr } = await db.rpc('tt_save_musician_koppelingen', {
     p_musician_id: myMusicianId,
     p_instruments: wspState.instruments.map(instrument => ({ instrument, niveau: wspState.instrumentLevels[instrument] || null })),
@@ -1222,25 +1222,25 @@ async function saveWatSpeelJe() {
   terugNaOpslaan('watSpeelJe');
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// Tegel: Je setlist
-// ═══════════════════════════════════════════════════════════════════════
-// Zelfde iTunes-zoekstroom als de wizard: eerst artiest zoeken, dan één
-// keer per artiest de volledige nummerlijst ophalen en lokaal filteren.
-// Raakt uitsluitend musician_songs. repertoire_type hoort hier niet meer
-// bij — dat veld verhuisde naar "Wat speel je".
+
+
+
+
+
+
+
 
 let jstSongs = [];
 let jstSnapshot = null;
 let jstSearchTimeout = null;
 
-// TT-385 fase 3 (02-10-2026): de covers van een band zoek je met dezelfde
-// velden als de setlist van een muzikant (besluit Ronald, punt 8). De
-// zoekfuncties hieronder heten jst..., maar dienen beide schermen. Het
-// voorvoegsel p kiest het scherm: 'jst' (Je setlist, de standaard) of 'bc'
-// (de covers in Onze muziek). De velden heten <p>ArtistSearch, <p>ArtistAc,
-// <p>TrackWrap, <p>TrackLabel, <p>TrackSearch en <p>TrackAc.
-const songArtiest = { jst: null, bc: null }; // { id, name } per scherm
+
+
+
+
+
+
+const songArtiest = { jst: null, bc: null };
 const SONG_DOEL = {
   jst: { lijst: () => jstSongs, kies: 'jstAddSong' },
   bc:  { lijst: () => bcCovers, kies: 'bcAddCover' }
@@ -1248,8 +1248,8 @@ const SONG_DOEL = {
 const jstArtistCache = new Map();
 const jstTrackCache = new Map();
 
-// _confirmDelete is bewust NIET meegenomen — tijdelijke UI-status voor de
-// verwijder-bevestiging (jstRemoveSong()), geen opgeslagen gegeven.
+
+
 function jstFieldSnapshot() {
   return JSON.stringify(jstSongs.map(s => ({ title: s.title, artist: s.artist, level: s.level })));
 }
@@ -1267,20 +1267,20 @@ async function openJeSetlist() {
   clearFieldErrors(document.getElementById('jeSetlistScreen'));
   jstRenderSongs();
   jstSnapshot = jstFieldSnapshot();
-  // TT-514: dezelfde voorproef als in de wizard, per nummer.
+
   jstSongs.forEach(s => voorproefOphalen(() => jstSongs, s.title, s.artist, jstRenderSongs));
 }
 
 function jstSelectFirstAc(id) {
   const list = document.getElementById(id);
-  if (!list || !list.classList.contains('open')) return; // TT-526, zoals selectFirstAC
+  if (!list || !list.classList.contains('open')) return;
   const first = list.querySelector('.ac-item[onmousedown]');
   if (first && first.onmousedown) first.onmousedown();
 }
 
 async function jstOnArtistSearch(q, p = 'jst') {
   const ac = document.getElementById(p + 'ArtistAc');
-  clearTimeout(jstSearchTimeout); // TT-526: een oudere vraag tekent niet meer na
+  clearTimeout(jstSearchTimeout);
   if (q.trim().length < 2) { ac.classList.remove('open'); return; }
   ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Zoeken...</span></div>';
   ac.classList.add('open');
@@ -1374,7 +1374,7 @@ function jstRenderTrackResults(ac, songs, q, p = 'jst') {
   ac.innerHTML = results.map(r => `
     <div class="ac-item" onmousedown="${SONG_DOEL[p].kies}('${jsAttr(r.trackName)}','${jsAttr(artiest.name)}')">${escHtml(r.trackName)}</div>`).join('');
 }
-// Na een keuze: beide zoekvelden leeg, het nummerveld weer weg.
+
 function songZoekLeeg(p) {
   document.getElementById(p + 'ArtistSearch').value = '';
   document.getElementById(p + 'TrackSearch').value = '';
@@ -1391,8 +1391,8 @@ function jstAddSong(title, artist) {
   jstRenderSongs();
   voorproefOphalen(() => jstSongs, title, artist, jstRenderSongs);
 }
-// TT-514 (Ronald, 25-10-2026: "dit wordt ook de setlist tegel"): dezelfde
-// lijst als de wizard, uit setlistLijstHTML() in utils.js.
+
+
 function jstRenderSongs() {
   const list = document.getElementById('jstSongsList');
   if (!list) return;
@@ -1408,14 +1408,14 @@ function jstSetLevel(i, level) {
   jstSongs[i].level = BEHEERSING_NAMEN[level] ? level : null;
   jstRenderSongs();
 }
-// TT-226 (09-09-2026, Ronald): een aangezette "Zeker?" is altijd te
-// annuleren met een klik ergens anders: zekerTerugBijKlikErnaast() in utils.js,
-// dezelfde regel als in de wizard (TT-514).
+
+
+
 function jstRemoveSong(i) {
   if (!jstSongs[i]) return;
   if (!jstSongs[i]._confirmDelete) {
-    // TT-226: maximaal één regel tegelijk op "Zeker?" — een eerder
-    // aangezette regel mag niet onopgemerkt open blijven staan.
+
+
     jstSongs.forEach(s => delete s._confirmDelete);
     jstSongs[i]._confirmDelete = true;
     jstRenderSongs();
@@ -1427,12 +1427,12 @@ function jstRemoveSong(i) {
 }
 
 async function saveJeSetlist() {
-  // TT-514 (besluit Ronald, 25-10-2026): ook hier minimaal drie nummers, ook
-  // voor een bestaand profiel met minder; daarom vóór de controle op wijzigingen.
+
+
   if (showFieldErrors(nummersTekortFouten(jstSongs, 'jstArtistSearch'))) return;
   if (jstFieldSnapshot() === jstSnapshot) return;
 
-  // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
+
   const { error } = await db.rpc('tt_save_musician_koppelingen', {
     p_musician_id: myMusicianId,
     p_songs: jstSongs.map(s => ({ song_title: s.title, song_artist: s.artist, mastery_level: s.level })),
@@ -1443,15 +1443,15 @@ async function saveJeSetlist() {
   terugNaOpslaan('jeSetlist');
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// Tegel: Je mediahoek
-// ═══════════════════════════════════════════════════════════════════════
-// Foto's/video's/profielfoto gaan meteen naar Storage zodra ze gekozen
-// worden. Opslaan raakt uitsluitend musicians.avatar_url en musician_media
-// (verwijderen + opnieuw invullen).
+
+
+
+
+
+
 
 let mhAvatarUrl = null;
-let mhAvatarBron = null, mhAvatarKader = null; // TT-543 blok 4b: de hele foto en de plek
+let mhAvatarBron = null, mhAvatarKader = null;
 let mhMediaFiles = [];
 let mhMediaLinks = [];
 let mhSnapshot = null;
@@ -1475,7 +1475,7 @@ async function openJeMediahoek() {
   mhAvatarUrl = data.avatar_url || null;
   mhAvatarBron = data.avatar_bron || null;
   mhAvatarKader = data.avatar_kader || null;
-  // TT-517 fase 4: op volgorde van toevoegen, zoals in de hoes en bij een band.
+
   data.musician_media = opVolgordeVanToevoegen(data.musician_media);
   mhMediaFiles = (data.musician_media || [])
     .filter(x => x.media_type === 'foto' || x.media_type === 'video')
@@ -1494,7 +1494,7 @@ function mhRenderAvatar() {
     preview.innerHTML = `<img ${kleinFotoAttr(safeUrl(mhAvatarUrl))} alt="profielfoto">`;
     document.getElementById('mhAvatarRemoveBtn').classList.add('visible');
   } else {
-    preview.innerHTML = ''; // TT-517 fase 6: de schijnwerper met silhouet (styles.css)
+    preview.innerHTML = '';
     document.getElementById('mhAvatarRemoveBtn').classList.remove('visible');
   }
 }
@@ -1504,18 +1504,18 @@ async function mhHandleAvatarUpload(file) {
   const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
   if (typeProblem) { showToast(typeProblem); return; }
   { const groot = bestandTeGrootMelding(file, 5 * 1024 * 1024); if (groot) { showToast(groot); return; } }
-  const uit = await kiesUitsnede(file, 'rond'); // TT-520 deel 2: eerst de uitsnede
+  const uit = await kiesUitsnede(file, 'rond');
   if (uit) mhAvatarZetten({ file: uit, kader: uit.kader, bron: file });
 }
 
-// TT-543 blok 4b: een tik op de foto verschuift hem; zonder foto kies je er een.
+
 async function mhAvatarTik() {
   if (!mhAvatarUrl) { document.getElementById('mhAvatarInput').click(); return; }
   const uit = await fotoVerschuiven({ url: mhAvatarUrl, bron: mhAvatarBron, kader: mhAvatarKader }, 'rond');
   if (uit) mhAvatarZetten(uit);
 }
 
-// Toont de nieuwe uitsnede meteen en uploadt hem, met de hele foto erbij.
+
 function mhAvatarZetten(uit) {
   const file = uit.file;
   const blobUrl = URL.createObjectURL(file);
@@ -1538,8 +1538,8 @@ function mhAvatarZetten(uit) {
   });
 }
 
-// TT-381: het kruisje vraagt in een venster, niet meer met een knop die van
-// tekst wisselt — een kruisje heeft geen ruimte voor "Zeker weten?".
+
+
 function mhAskRemoveAvatar() {
   showConfirm('Profielfoto verwijderen?', mhRemoveAvatar, 'Ja, verwijderen');
 }
@@ -1550,7 +1550,7 @@ function mhRemoveAvatar() {
   mhRenderAvatar();
 }
 
-// TT-543 blok 3: een keuze in het menu van "+ Toevoegen" (utils.js).
+
 function mhMediaToevoegenKeuze(sel) {
   mediaToevoegenStart(sel, mhMediaFiles, mhMediaLinks, 'mhMediaInvoer', url => {
     mhMediaLinks.push({ url, inBanner: false });
@@ -1593,14 +1593,14 @@ function mhRenderMediaGrid() {
   bannerTellerBijwerken('mhBannerTeller', mhMediaFiles, mhMediaLinks);
 }
 
-// TT-263: dezelfde keuze als in de wizard, met dezelfde grens over foto's,
-// video's en links samen.
+
+
 function mhToggleMediaBanner(i) {
   return bannerTekenTik(mhMediaFiles[i], mhMediaFiles, mhMediaLinks, 'mhMediaGrid', 'mhBannerTeller');
 }
 
 function mhSpeelMedia(i) {
-  mediaTegelTik(mhMediaFiles[i]); // TT-543 blok 4b: een bannerfoto opent het kader
+  mediaTegelTik(mhMediaFiles[i]);
 }
 
 function mhRemoveMedia(i) {
@@ -1637,7 +1637,7 @@ async function saveJeMediahoek() {
   if (uErr) { showToast(friendlyErrorMessage(uErr, 'je gegevens opslaan')); return; }
   opslagOpruimen('avatars', currentUser && currentUser.id, [mhAvatarUrl, mhAvatarBron]);
 
-  // TT-281: wissen en opnieuw vullen in één transactie — zie persistEditedProfile().
+
   const linkMedia = mhMediaLinks
     .filter(l => l.url.trim())
     .map(l => ({ media_type: 'link', url: l.url, platform: detectPlatform(l.url), in_banner: !!l.inBanner }));
@@ -1656,17 +1656,17 @@ async function saveJeMediahoek() {
   terugNaOpslaan('mediahoek');
 }
 
-// ─── Niveautabel voor muzikanten (de i-knop) ─────────────────────────────────
-// Verplaatst uit bands.js (26-09-2026).
 
-// TT-51-uitbreiding (12-08-2026): Tabel 2 uit niveaubepaling-naslagwerk.md.
-// Hardcoded (geen build-stap om een .md-bestand in te lezen in deze
-// losse-bestand-app).
-// TT-572 (besluit Ronald 14-11-2026: "neem de tekst over van de muzikant of
-// zo. lost het op!"): de kolom "Technische beheersing" toont de vijf zinnen
-// onder de niveaukeuze (NIVEAU_ZINNEN in modals-shared.js, één bron); de oude
-// teksten met drums, akkoorden, fills en ademsteun zijn weg. De andere kolommen
-// noemen geen instrument meer (geen akkoorden, tabs, fills of chord charts).
+
+
+
+
+
+
+
+
+
+
 const NIVEAU_INFO_MUSICIAN_HEADERS = ['Niveau', 'Technische beheersing', 'Gehoor en muziektheorie', 'Voorbereiden en repeteren', 'Live spelen en flexibiliteit'];
 const NIVEAU_INFO_MUSICIAN_ROWS = [
   ['1. Beginner (Bedroom)',
@@ -1692,8 +1692,8 @@ const NIVEAU_INFO_MUSICIAN_ROWS = [
 ];
 
 function openMusicianNiveauInfoModal() {
-  // V-21 + 21-08-2026: zelfde haakjes-regel als bij de bandtabel hierboven.
-  // TT-572: de tweede kolom komt uit NIVEAU_ZINNEN (de zin onder de niveaukeuze).
+
+
   const rowsHTML = NIVEAU_INFO_MUSICIAN_ROWS.map((r, j) => [stripParenthetical(r[0]), NIVEAU_ZINNEN[j], ...r.slice(1)])
     .map(r => `<tr>${r.map(c => `<td>${escHtml(c)}</td>`).join('')}</tr>`).join('');
   document.getElementById('niveauInfoModalContent').innerHTML = `

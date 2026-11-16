@@ -1,22 +1,22 @@
-// ─── Hulpfuncties ────────────────────────────────────────────────────────────
 
-// Niet-blokkerende melding i.p.v. alert() — Plezier: licht en leuk, geen
-// onderbrekende technische pop-up. Verdwijnt vanzelf na een paar seconden.
+
+
+
 let toastTimer = null;
-// Generieke bevestigingsdialoog voor destructieve acties (i.p.v. native confirm()).
+
 let confirmCallback = null;
 let confirmCancelCallback = null;
-// TT-188 (03-09-2026, Ronald): rood was hardcoded op deze knop, dus élke
-// aanroep van showConfirm() kreeg 'm — ook niet-destructieve acties zoals
-// "Vragen" (founder-overdracht). Rood hoort alleen bij het echt verwijderen
-// van een account. Vierde parameter 'danger' (standaard false/leeg) regelt
-// dat nu per aanroep i.p.v. altijd aan te staan.
-// TT-555 (03-11-2026): vijfde parameter cancelLabel. Na een gelukte melding is
-// "Annuleren" fout: er valt niets meer te annuleren. Standaard "Annuleren".
-// TT-543 onderdeel 6, blok 3: een vraag kan een kop krijgen (zesde
-// parameter), zoals bij Bandprofiel verwijderen (beeld akkoord Ronald 10-11-2026).
-// TT-608: zevende parameter onCancel: wat de linkerknop doet ("Niet opslaan").
-// Zonder onCancel sluit de linkerknop alleen het venster.
+
+
+
+
+
+
+
+
+
+
+
 function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel, kop, onCancel) {
   const kopEl = document.getElementById('confirmKop');
   if (kopEl) { kopEl.textContent = kop || ''; kopEl.hidden = !kop; }
@@ -24,17 +24,17 @@ function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel, kop,
   document.getElementById('confirmNoBtn').textContent = cancelLabel || 'Annuleren';
   const yesBtn = document.getElementById('confirmYesBtn');
   yesBtn.textContent = confirmLabel || 'Ja, verwijderen';
-  // TT-316 (24-09-2026): destructief is omlijnd in rood (.btn-danger), nooit
-  // een rood vlak — huisstijl §5.
+
+
   yesBtn.classList.toggle('btn-danger', !!danger);
   yesBtn.classList.toggle('btn-primary', !danger);
-  // TT-543 onderdeel 7 (punt 3): een vraag begint zonder keuzes en met de knop aan.
+
   const keuzes = document.getElementById('confirmKeuzes');
   if (keuzes) keuzes.innerHTML = '';
-  // TT-604 (besluit Ronald 14-11-2026, "ja"): een rode vraag is onomkeerbaar;
-  // de knop werkt pas na het vinkje "Ik begrijp dat dit niet terug kan.".
-  // Geldt voor elke rode vraag: Account verwijderen, Bandprofiel verwijderen
-  // en Gegevens wissen (huisstijl §3.22).
+
+
+
+
   const begrip = document.getElementById('confirmBegrip');
   if (begrip) { begrip.hidden = !danger; document.getElementById('confirmBegripVink').checked = false; }
   confirmExtraDicht = false;
@@ -43,8 +43,8 @@ function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel, kop,
   confirmCancelCallback = onCancel || null;
   document.getElementById('confirmModal').classList.add('visible');
 }
-// De knop van de vraag: dicht zolang het vinkje (TT-604) of een keuze per band
-// (Account verwijderen, confirmExtraDicht) ontbreekt.
+
+
 let confirmExtraDicht = false;
 function zetConfirmKnop() {
   const begrip = document.getElementById('confirmBegrip');
@@ -55,7 +55,7 @@ function zetConfirmKnop() {
 function confirmModalYes() {
   if (document.getElementById('confirmYesBtn').disabled) return;
   document.getElementById('confirmModal').classList.remove('visible');
-  document.getElementById('confirmNoBtn').textContent = 'Annuleren'; // TT-608: terug naar de standaard
+  document.getElementById('confirmNoBtn').textContent = 'Annuleren';
   const cb = confirmCallback;
   confirmCallback = null;
   confirmCancelCallback = null;
@@ -63,20 +63,20 @@ function confirmModalYes() {
 }
 function confirmModalNo() {
   document.getElementById('confirmModal').classList.remove('visible');
-  document.getElementById('confirmNoBtn').textContent = 'Annuleren'; // TT-608: terug naar de standaard
+  document.getElementById('confirmNoBtn').textContent = 'Annuleren';
   const cb = confirmCancelCallback;
   confirmCallback = null;
   confirmCancelCallback = null;
   if (cb) cb();
 }
 
-// Bevinding Ronald (10-08-2026): teller ontbrak bij het schrijven van een
-// bericht ("0/2000 hadden we afgesproken"). Generiek gehouden zodat hij ook
-// bij toekomstige velden met een maxlength hergebruikt kan worden.
-// TT-543 onderdeel 5 (besluiten Ronald 09-11-2026, voorstel 3 en vraag 1): de
-// teller staat er alleen bij de laatste 200 tekens, voor elke teller. "0/2000"
-// zegt niets bij een bericht van één zin. Altijd grijs (.teken-teller), ook
-// bij de grens: rood is nooit een tekstkleur (huisstijl §1.2, fout F3).
+
+
+
+
+
+
+
 const TELLER_ZICHTBAAR_REST = 200;
 function updateCharCounter(textareaId, counterId, max) {
   const el = document.getElementById(textareaId);
@@ -87,11 +87,11 @@ function updateCharCounter(textareaId, counterId, max) {
   counter.hidden = len < max - TELLER_ZICHTBAAR_REST;
 }
 
-// TT-543 onderdeel 10, laag 3 (besluit Ronald 13-11-2026, 3-10; 8D het
-// bioveld): een tekstvak groeit mee met de tekst, zonder hoekje, zoals het
-// berichtveld. Leeg is het zo hoog als de hele voorbeeldtekst. Met een
-// maximale hoogte (het berichtveld) scrolt het daarna. Geeft terug hoeveel
-// het veld groeide, in px. Niet in beeld: de hoogte van de standaard.
+
+
+
+
+
 function veldGroeit(el) {
   if (!el) return 0;
   if (!el.offsetParent) { el.style.height = ''; el.style.overflowY = ''; return 0; }
@@ -100,8 +100,8 @@ function veldGroeit(el) {
   const rand = el.offsetHeight - el.clientHeight;
   let nodig;
   if (!el.value && el.placeholder) {
-    // De voorbeeldtekst meten: even als tekst in het veld, recht en cursief
-    // (de voorbeeldtekst van de bio is cursief); de hoogste telt.
+
+
     el.value = el.placeholder;
     nodig = el.scrollHeight;
     el.style.fontStyle = 'italic';
@@ -115,8 +115,8 @@ function veldGroeit(el) {
   return el.offsetHeight - voor;
 }
 
-// De regel waarin je typt (aan het eind van de tekst) blijft boven de vaste
-// balk (Opslaan, Verder), met de ruimte onderaan ertussen (3-6a).
+
+
 function veldBovenBalk(el) {
   if (el.selectionEnd !== el.value.length) return;
   const balk = [...(el.closest('.app-view')?.querySelectorAll('.wizard-action-bar') || [])].find(b => b.getBoundingClientRect().height);
@@ -126,9 +126,9 @@ function veldBovenBalk(el) {
   if (teVer > 0) window.scrollBy(0, teVer);
 }
 
-// Elk tekstvak: meegroeien bij typen; opnieuw meten zodra het in beeld komt of
-// de breedte verandert (een gedraaide telefoon). Het berichtveld regelt dit
-// zelf (berichtInvoerBijwerken() in messages.js).
+
+
+
 const veldBreedteWacht = typeof ResizeObserver === 'function' ? new ResizeObserver(items => {
   for (const it of items) {
     const b = Math.round(it.contentRect.width);
@@ -157,10 +157,10 @@ function showToast(msg, duration) {
   toastTimer = setTimeout(() => el.classList.remove('visible'), duration || 3500);
 }
 
-// TT-543 onderdeel 9 (besluit Ronald 13-11-2026, V4 A): een tik op een
-// e-mailadres kopieert het. Een mailapp openen gaat vaak mis; met het adres
-// op het klembord vindt de gebruiker zijn eigen mailapp. Lukt kopiëren niet,
-// dan staat het e-mailadres in de melding, zoals bij Delen (shareProfile).
+
+
+
+
 async function kopieerEmailadres(knop) {
   const adres = knop.textContent.trim();
   try {
@@ -173,14 +173,14 @@ async function kopieerEmailadres(knop) {
   showToast('E-mailadres gekopieerd');
 }
 
-// Vertaalt technische fouten (Supabase/netwerk) naar begrijpelijke NL-tekst.
-// Plezier-principe: foutmeldingen moeten vriendelijk zijn, geen technisch jargon.
-// De volledige technische fout blijft altijd gelogd voor debugging.
-// TT-353 (27-09-2026, Ronald): een nieuw wachtwoord gelijk aan het huidige gaf
-// "Er ging iets mis". Supabase antwoordt 422, code `same_password`, "New
-// password should be different from the old password" (gemeten in de console
-// op talenttent.org). Eén tekst voor "Nieuw wachtwoord" en voor Instellingen;
-// beide zetten hem bij het veld "Nieuw wachtwoord" (huisstijl §13.1).
+
+
+
+
+
+
+
+
 const TEKST_ZELFDE_WACHTWOORD = 'Kies een ander wachtwoord dan je huidige.';
 
 function isZelfdeWachtwoordFout(err) {
@@ -188,10 +188,10 @@ function isZelfdeWachtwoordFout(err) {
     || /different from the old password/i.test(err.message || ''));
 }
 
-// TT-481 (03-11-2026, besluit Ronald): Supabase weigert in productie een
-// wachtwoord dat in lijsten van gelekte wachtwoorden staat (code
-// `weak_password`). Eén tekst, bij het wachtwoordveld, op elke plek waar een
-// wachtwoord wordt gekozen. In test staat de weigering niet aan (alleen Pro).
+
+
+
+
 const TEKST_ZWAK_WACHTWOORD = 'Dit wachtwoord is te makkelijk te raden. Kies een ander wachtwoord';
 
 function isZwakWachtwoordFout(err) {
@@ -200,68 +200,68 @@ function isZwakWachtwoordFout(err) {
     || /weak_password|known to be weak|easy to guess|pwned/i.test(msg));
 }
 
-// TT-481 (03-11-2026, besluit Ronald): één tekst voor "dit e-mailadres heeft al
-// een account", op elke plek. Bij aanmelden (wizard, ouderroute): de eerste.
-// Bij wijzigen, als je al bent ingelogd: de tweede. Zonder slotpunt: het zijn
-// meldingen bij een veld (huisstijl §13.1).
+
+
+
+
 const TEKST_ACCOUNT_BESTAAT = 'Je hebt al een account met dit e-mailadres. Log in en ga verder waar je was';
 const TEKST_EMAIL_BEZET = 'Dit e-mailadres hoort al bij een ander account. Kies een ander e-mailadres';
 
-// TT-445 (09-10-2026, Ronald): een eigen zin in de code (bijv. "Delen aanpassen
-// is niet gelukt.") werd door friendlyErrorMessage() overschreven door de
-// algemene tekst onderaan. Een fout die met eigenFout() is gemaakt, wordt
-// ongewijzigd getoond.
+
+
+
+
 function eigenFout(tekst) {
   const e = new Error(tekst);
   e.eigenTekst = true;
   return e;
 }
 
-// TT-517, 8D (31-10-2026): een wijziging die de database met zijn regels per
-// rij weigert, geeft geen fout maar 0 rijen (TT-230). Wie dan "opgeslagen"
-// meldt, meldt iets wat niet gebeurde. Elke opslag die de gebruiker doet,
-// vraagt de geraakte rijen terug (.select()) en gaat door deze functie: 0 rijen
-// wordt dezelfde fout als een geweigerde wijziging, met dezelfde tekst
-// (friendlyErrorMessage, "row-level security").
+
+
+
+
+
+
 function rijenGeraakt(res) {
   if (res.error || (res.data && res.data.length)) return res;
   return { data: res.data, error: { code: '42501', message: 'row-level security: 0 rijen geraakt' } };
 }
 
-// TT-556 (besluiten Ronald 04-11-2026): hoeveel één persoon of één band mag
-// hebben. Dezelfde getallen staan als slot in de database (tt_rijgrens,
-// tt_bandgrens); de app zegt het al vóór de handeling. Wijzig ze alleen samen.
+
+
+
 const GRENZEN = { bands: 10, nummers: 300, beeld: 8, links: 20, covers: 300, eigenNummers: 200, invallers: 20 };
 
-// Zit de lijst vol, dan de zin tonen en true teruggeven: de handeling stopt.
+
 function grensBereikt(aantal, grens, zin) {
   if (aantal < grens) return false;
   showToast(zin);
   return true;
 }
 
-// Bands: eigen bands en bands waar je lid van bent, samen hooguit 10.
+
 async function bandsVol(mid) {
   const { count, error } = await db.from('band_members')
     .select('band_id', { count: 'exact', head: true }).eq('musician_id', mid).eq('status', 'bevestigd');
-  if (error) return false; // de database houdt de grens toch; geen extra melding
+  if (error) return false;
   return grensBereikt(count || 0, GRENZEN.bands, `Je zit al in ${GRENZEN.bands} bands. Verlaat er eerst één.`);
 }
 
-// Tweede parameter `actie`: wat de gebruiker probeerde, als werkwoordsgroep
-// ("je profiel opslaan"). Zonder bekende oorzaak noemt de melding die actie, zodat
-// de gebruiker weet wat niet gelukt is. Met een bekende oorzaak staat de
-// oorzaak in de melding, en wat je dan doet.
+
+
+
+
 function friendlyErrorMessage(err, actie) {
   const msg = (err && err.message) ? err.message : String(err || '');
   console.error('Technische foutmelding:', msg);
 
   if (err && err.eigenTekst) return msg;
-  // Nederlandse tekst uit de database (trigger): ongewijzigd tonen.
+
   if (/^Bevestig eerst je e-mailadres/i.test(msg)) return msg;
-  if (/^Wacht op antwoord/i.test(msg)) return msg; // TT-481, trigger tt_berichtgrens
-  if (err && err.hint === 'TT-556') return msg; // grens per persoon of band (tt_rijgrens, tt_bandgrens)
-  if (err && err.hint === 'TT-625') return msg; // geboortedatum (tt_geboortedatum_bewaken)
+  if (/^Wacht op antwoord/i.test(msg)) return msg;
+  if (err && err.hint === 'TT-556') return msg;
+  if (err && err.hint === 'TT-625') return msg;
   if (isZelfdeWachtwoordFout(err)) return TEKST_ZELFDE_WACHTWOORD;
   if (isZwakWachtwoordFout(err)) return TEKST_ZWAK_WACHTWOORD + '.';
   const status = err && (err.status || err.statusCode);
@@ -271,26 +271,26 @@ function friendlyErrorMessage(err, actie) {
   if (/already registered|already exists/i.test(msg)) {
     return TEKST_ACCOUNT_BESTAAT + '.';
   }
-  // TT-255 (11-09-2026, Ronald): een verkeerd wachtwoord gaf tot nu toe de
-  // algemene tekst onderaan deze functie — "Er ging iets mis. Probeer het
-  // opnieuw." Die zegt niet wat er fout ging en niet wat je eraan doet.
-  // Supabase geeft bij een onbekend e-mailadres én bij een verkeerd
-  // wachtwoord dezelfde fout ("Invalid login credentials"), met opzet: zo kan
-  // niemand uitproberen welke e-mailadressen een account hebben. De tekst
-  // hieronder benoemt daarom het wachtwoord — verreweg het vaakste geval —
-  // zonder te beweren dat het e-mailadres bestaat. Eén zin, geen aanwijzing
-  // erbij (Ronald, 11-09-2026): de knop "Toon" staat in het wachtwoordveld
-  // en "Wachtwoord vergeten?" direct onder dit vak. Wie de melding leest,
-  // kijkt al naar allebei.
-  // Tekst aangepast 12-09-2026 (Ronald): "dit e-mailadres" → "het
-  // e-mailadres". De melding staat sinds TT-247 bij het wachtwoordveld, niet
-  // meer in een banner boven het formulier.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   if (/invalid login credentials|invalid_credentials|invalid grant/i.test(msg)) {
     return 'Dit wachtwoord hoort niet bij het e-mailadres.';
   }
-  // Supabase knijpt het inloggen af na een paar mislukte pogingen. Zonder
-  // deze regel kreeg de gebruiker precies op dat moment weer "Er ging iets
-  // mis" — terwijl hij juist moet weten dat wachten genoeg is.
+
+
+
   if (/rate limit|too many requests|only request this after/i.test(msg)) {
     return 'Te veel pogingen achter elkaar. Probeer het straks opnieuw.';
   }
@@ -312,28 +312,28 @@ function friendlyErrorMessage(err, actie) {
   if (/permission denied|row-level security|violates row/i.test(msg)) {
     return 'Dit mag niet met dit account, of je bent uitgelogd. Log opnieuw in en probeer het nog eens.';
   }
-  // Bugfix 23-08-2026 (P0, gemeld door Ronald: generieke foutmelding bij het
-  // afronden van een nieuw profiel, "killing bij een jongere"). Vermoedelijke
-  // oorzaak (Aanname — database niet zelf gezien): V-23 (12-08-2026) maakte
-  // een beheersingsniveau per nummer optioneel in de UI ("mag ook later"),
-  // maar de kolom musician_songs.mastery_level is destijds mogelijk niet
-  // meebewogen naar nullable. Een null-waarde die tegen een NOT NULL-kolom
-  // aanloopt gaf tot nu toe altijd de onherkenbare standaardmelding
-  // hieronder — precies zo'n moment is voor een jonge gebruiker, na het
-  // volledig doorlopen van de wizard, bijzonder ontmoedigend. Deze regel
-  // zorgt dat zo'n fout voortaan een begrijpelijke, specifieke tekst geeft
-  // in plaats van "Er ging iets mis. Probeer het opnieuw." — ongeacht welke
-  // kolom het exact betreft.
+
+
+
+
+
+
+
+
+
+
+
+
   if (/null value in column|violates not-null constraint/i.test(msg)) {
     return 'Eén van de velden is niet ingevuld. Controleer je invoer en probeer het opnieuw.';
   }
   if (/violates check constraint/i.test(msg)) {
     return 'Eén van de ingevulde waarden wordt niet geaccepteerd. Controleer je invoer en probeer het opnieuw.';
   }
-  // TT-87: weigeringen door Supabase Storage. De client controleert type en
-  // grootte nu zelf, dus dit hoort niet meer voor te komen. Wijkt de lijst in
-  // de bucket ooit af van AVATAR_MIME_TYPES/MEDIA_MIME_TYPES, dan leest de
-  // gebruiker hier alsnog wat er mis is in plaats van "Er ging iets mis".
+
+
+
+
   if (/mime type|not supported|invalid_mime/i.test(msg)) {
     return 'Dit bestandsformaat wordt niet geaccepteerd. Gebruik JPG, PNG, GIF, WEBP, MP4 of MOV.';
   }
@@ -347,18 +347,18 @@ function friendlyErrorMessage(err, actie) {
   return 'Dit is niet gelukt. Probeer het opnieuw.';
 }
 
-// ─── Veldfouten (TT-247, vorm vastgesteld 12-09-2026) ────────────────────────
-// Zie huisstijl-en-consistentie.md §13.1. Eén component voor de hele app:
-// wizard, bandformulier, inloggen, wachtwoord opnieuw instellen.
-//
-// De vorm: de rand van het veld wordt rood (--danger), de regel eronder is
-// wit (--text), 12px, met een lijn-SVG van 14px ervoor. **Nooit rode tekst**
-// — huisstijl §1.2, besluit Ronald 12-09-2026. De rand wijst het veld aan;
-// dat is het hele signaal. De regel legt rustig uit wat er moet gebeuren.
-//
-// De regel wordt hier in JavaScript aangemaakt en weer opgeruimd. Bewuste
-// keuze: anders had elk van de tientallen velden in index.html een eigen lege
-// <p> nodig, en zou een nieuw veld die stilzwijgend kunnen missen.
+
+
+
+
+
+
+
+
+
+
+
+
 const VELDFOUT_ICOON =
   '<svg class="field-msg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.57" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>';
 
@@ -366,25 +366,25 @@ function veldElement(el) {
   return (typeof el === 'string') ? document.getElementById(el) : el;
 }
 
-// Het element waarnaast de foutregel komt te staan. Bij een wachtwoordveld
-// zit de knop "Toon" in dezelfde .password-wrap; de regel hoort ónder die
-// wrap, niet ertussen.
+
+
+
 function veldFoutAnker(el) {
-  // Postcode en plaats: de foutregel staat onder de rij, over de volle
-  // breedte, niet in de smalle kolom van 104px (.postcode-plaats).
-  // Zoekveld voor nummers (TT-514): de regel staat onder de .song-search-wrap,
-  // in de .field, zodat de 8px van huisstijl §3 geldt (gemeten: binnen de wrap
-  // was het 0px) en de suggestielijst direct onder het veld blijft.
-  // TT-543 blok 4: "+ Instrument" en "+ Genre" staan in het raster van de keuzes;
-  // de foutregel staat onder dat raster.
-  // TT-543 draaiwielen deel 2: een keuzeveld met zijn menu (sinds blok 2: Rol bij uitnodigen); de
-  // regel staat onder het veld, het menu blijft direct onder het veld uitklappen.
+
+
+
+
+
+
+
+
+
   return (el.closest && (el.closest('.password-wrap') || el.closest('.postcode-plaats-rij') || el.closest('.song-search-wrap') || el.closest('.picker-badge-row') || el.closest('.menu-anchor'))) || el;
 }
 
-// TT-494: korte uitslag rechts op de labelregel (zie .field-uitslag in
-// styles.css). `statusId` is het id van de statusregel onder het veld; het id
-// van de uitslag volgt daaruit (…Status wordt …Uitslag). Leeg = weg.
+
+
+
 function zetUitslag(statusId, tekst, goed) {
   const el = document.getElementById(statusId.replace('Status', 'Uitslag'));
   if (!el) return;
@@ -408,13 +408,13 @@ function setFieldError(el, msg) {
   regel.innerHTML = VELDFOUT_ICOON + '<span></span>';
   regel.querySelector('span').textContent = msg;
 
-  // Herstel: de markering verdwijnt zodra de gebruiker dit veld wijzigt,
-  // niet pas bij de volgende poging (huisstijl §13.1). Eén keer koppelen per
-  // veld, anders stapelen de luisteraars op bij elke mislukte poging.
-  // 8D TT-628 (sessie 155): `change` komt ook als je het veld verlaat, zonder
-  // nieuwe waarde (een tik op "Bedoel je: Den Haag?" of op het volgende veld).
-  // Dan blijft de melding staan; alleen een andere waarde dan bij de melding
-  // haalt hem weg.
+
+
+
+
+
+
+
   veldfoutWaardeOnthouden(el);
   if (!el.dataset.veldfoutGekoppeld) {
     el.dataset.veldfoutGekoppeld = '1';
@@ -428,9 +428,9 @@ function setFieldError(el, msg) {
   }
 }
 
-// De waarde waarmee een veldfout vergelijkt (8D TT-628). Een vinkje telt aan
-// of uit; een vlak zonder eigen waarde (zoals de keuzes bij Melden) geeft
-// undefined, en daar wist `change` de fout zoals altijd.
+
+
+
 function veldWaarde(el) {
   if (el.type === 'checkbox' || el.type === 'radio') return String(el.checked);
   return typeof el.value === 'string' ? el.value : undefined;
@@ -451,16 +451,16 @@ function clearFieldError(el) {
   if (regel && regel.classList && regel.classList.contains('field-msg')) regel.remove();
 }
 
-// Ruimt alle veldfouten binnen een scherm of modal op. Aanroepen vóór een
-// nieuwe controleronde, zodat een opgeloste fout niet blijft staan.
+
+
 function clearFieldErrors(scope) {
   const root = veldElement(scope) || document;
   root.querySelectorAll('.field-error').forEach(clearFieldError);
 }
 
-// Toont alle fouten tegelijk en schuift naar het eerste foute veld.
-// `fouten` is een lijst van [veld, tekst]. Geeft true terug als er fouten
-// waren — dan stopt de aanroepende functie.
+
+
+
 function showFieldErrors(fouten) {
   fouten = (fouten || []).filter(f => f && veldElement(f[0]));
   if (!fouten.length) return false;
@@ -473,28 +473,28 @@ function showFieldErrors(fouten) {
   } catch (e) {
     eerste.scrollIntoView();
   }
-  // Pas focussen als het schuiven klaar is; anders springt de pagina terug.
+
   setTimeout(() => {
-    try { eerste.focus({ preventScroll: true }); } catch (e) { /* oud toestel */ }
+    try { eerste.focus({ preventScroll: true }); } catch (e) { }
   }, beweegtNiet ? 0 : 300);
   return true;
 }
 
-// TT-258: het formaat van een e-mailadres. De browser accepteert bij
-// type="email" ook "a@b" zonder punt; deze controle is strenger en overal in
-// de app dezelfde.
+
+
+
 function emailFormaatGeldig(v) {
   return /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test((v || '').trim());
 }
 
-// ─── Zoeken op naam (TT-257, besluit Ronald 12-09-2026) ──────────────────────
-// De algemene webstandaard: zonder aanhalingstekens matcht een deel van de
-// naam, mét aanhalingstekens moet het exact zijn.
-//
-// Waarom dit een eigen functie is: tot 12-09-2026 plakte search.js voornaam en
-// gebruikersnaam aan elkaar tot één tekst en zocht daar een deelreeks in. Een
-// zoekterm met een spatie kon daardoor over de grens tussen de twee velden
-// matchen. Hier wordt elk veld apart getoetst.
+
+
+
+
+
+
+
+
 function naamZoekTerm(ruw) {
   const v = (ruw || '').trim();
   if (!v) return null;
@@ -506,8 +506,8 @@ function naamZoekTerm(ruw) {
   return { tekst: v.toLowerCase(), exact: false };
 }
 
-// Toetst een zoekterm tegen één of meer velden. Elk veld apart, nooit aan
-// elkaar geplakt. Geen term = alles voldoet.
+
+
 function naamMatcht(term, ...velden) {
   if (!term || !term.tekst) return true;
   return velden.some(w => {
@@ -517,21 +517,21 @@ function naamMatcht(term, ...velden) {
   });
 }
 
-// TT-420 (09-10-2026): de gekozen naam van een lijst muzikanten ophalen. De
-// publieke functies (tt_get_musicians_public e.a.) geven hem niet mee, dus
-// komt hij er apart bij, in één vraag: tt_weergavenamen(ids). Dat geldt voor
-// bezoeker en ingelogde gelijk. De functie geeft alleen id en weergavenaam
-// terug, nooit fname of lname. Mislukt de vraag, dan blijft het object zonder
-// weergavenaam en toont displayNameOf() de gebruikersnaam.
-// TT-532: een lijst id's gaat in het webadres mee; vanaf ongeveer 650 id's
-// weigert de database de vraag (gemeten 27-10-2026). Daarom in delen van 200,
-// tegelijk. `vraag(deel)` geeft één databasevraag; het antwoord heeft de vorm
-// { data, error } van één vraag.
-// Een vraag van Supabase start pas bij `await` of `.then()` (Geverifieerd
-// 28-10-2026, TT-537). Moet een vraag nu al lopen terwijl het antwoord pas
-// later nodig is, zet hem dan in vraagNu(). Een netwerkfout komt dan terug als
-// { data: null, error }, net als een fout van de database: zo geeft een vraag
-// die door een eerdere fout nooit wordt afgewacht, geen losse fout.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function vraagNu(vraag) {
   return vraag.then(r => r, e => ({ data: null, error: e }));
 }
@@ -545,7 +545,7 @@ async function inDelen(ids, vraag) {
   return { data: uit.flatMap(r => r.data || []), error: null };
 }
 
-// TT-367: `vraag` is een al gestarte vraag naar dezelfde (of meer) id's.
+
 async function weergavenamenToevoegen(rijen, vraag) {
   const ids = (rijen || []).map(r => r && r.id).filter(Boolean);
   if (!ids.length) return rijen;
@@ -561,10 +561,10 @@ async function weergavenamenToevoegen(rijen, vraag) {
   return rijen;
 }
 
-// TT-420: de naam zoals anderen hem zien, voor het voorbeeld onder de keuze in
-// Wie ben je en voor de lengtecontrole. Dit spiegelt de databasefunctie
-// tt_weergavenaam(); de database is leidend, dit is alleen een voorbeeld.
-// Onder de 16 staat altijd de gebruikersnaam.
+
+
+
+
 function naamZoalsAnderen(fname, lname, username, keuze, leeftijd) {
   const voor = (fname || '').trim();
   if (keuze === 'echt' && leeftijd >= 16 && voor) {
@@ -573,15 +573,15 @@ function naamZoalsAnderen(fname, lname, username, keuze, leeftijd) {
   return (username || '').trim();
 }
 
-// TT-543 (besluit Ronald 06-11-2026, voorstel 2): het blok "Naam op je
-// profiel" staat in stap 1 en in de tegel Wie ben je. Eén functie voor beide;
-// `v` noemt de id's van dat scherm. Onder de 16 is het blok verborgen; zolang de
-// geboortedatum niet vol is, blijft het zichtbaar (TT-420).
+
+
+
+
 function naamKeuzeBijwerken(v, keuze) {
   const blok = document.getElementById(v.blok);
   if (!blok) return;
   const datum = document.getElementById(v.geboorte).value.trim();
-  const leeftijd = leeftijdUitVeld(datum); // TT-660
+  const leeftijd = leeftijdUitVeld(datum);
   blok.style.display = (leeftijd !== null && leeftijd < 16) ? 'none' : '';
   blok.querySelectorAll(`#${v.control} .segmented-btn`).forEach(btn => {
     btn.classList.toggle('selected', btn.getAttribute('data-mode') === keuze);
@@ -591,9 +591,9 @@ function naamKeuzeBijwerken(v, keuze) {
   document.getElementById(v.voorbeeld).textContent = naam ? `Zo zien anderen je: ${naam}` : '';
 }
 
-// B-02 (12-08-2026): één plek die de leeftijd bepaalt. Een ingelogde
-// gebruiker leest de geboortedatum rechtstreeks; een bezoeker zonder account
-// krijgt alleen `age` uit tt_get_musicians_public. Deze functie dekt beide.
+
+
+
 function ageOf(m) {
   if (m && m.age != null) return m.age;
   return calcAgeFromISO(m && m.birth_date);
@@ -611,7 +611,7 @@ function calcAgeFromISO(isoDate) {
 
 
 
-// ─── Save overlay helpers ─────────────────────────────────────────────────────
+
 
 function showSaving(title, msg) {
   const overlay = document.getElementById('saveOverlay');
@@ -622,25 +622,25 @@ function showSaving(title, msg) {
   overlay.classList.add('visible');
 }
 
-// TT-252 (11-09-2026): tegenhanger van showSaving() voor formulieren die na
-// het opslaan op hetzelfde scherm blijven (het bandformulier). De wizard
-// gebruikt showSaveSuccess()/showSaveError(), die sluiten de laag zelf.
+
+
+
 function hideSaving() {
   const overlay = document.getElementById('saveOverlay');
   if (overlay) overlay.classList.remove('visible');
 }
 
-// TT-570: alleen nog het einde van de wizard. Bewerken loopt via de tegels,
-// elk met een eigen melding.
+
+
 function showSaveSuccess() {
   document.getElementById('saveSpinner').style.display = 'none';
   document.getElementById('saveTitle').textContent = 'Profiel aangemaakt!';
   document.getElementById('saveMsg').textContent = 'Welkom bij TalentTent! Je gaat naar je profiel...';
   setTimeout(() => {
     document.getElementById('saveOverlay').classList.remove('visible');
-    // TT-32 (07-08-2026): net als bij onUserLoggedIn() — een gloednieuw
-    // account dat via het chat-icoon in de registratiewizard belandde, gaat
-    // na de laatste stap direct naar de composer i.p.v. naar Mijn Profiel.
+
+
+
     if (pendingMessageRecipient) {
       const recipient = pendingMessageRecipient;
       pendingMessageRecipient = null;
@@ -679,7 +679,7 @@ function goToLoginFromError() {
   if (emailField) emailField.value = state.regEmail || '';
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 
 function calcAge(ddmmyyyy) {
   const [dd, mm, yyyy] = ddmmyyyy.split('-').map(Number);
@@ -691,9 +691,9 @@ function calcAge(ddmmyyyy) {
   return age;
 }
 
-// TT-625 (besluiten Ronald 15-11-2026, sessie 149): één controle van de
-// geboortedatum voor stap 1 en de tegel Wie ben je, met de zinnen van stap 1.
-// Een datum die niet bestaat (31-02) gaf tot nu toe geen fout. Leeg = goed.
+
+
+
 function geboortedatumFout(waarde) {
   if (!waarde) return 'Vul je geboortedatum in';
   const m = waarde.match(/^(\d{2})-(\d{2})-(\d{4})$/);
@@ -710,25 +710,25 @@ function geboortedatumFout(waarde) {
   return '';
 }
 
-// TT-660 (besluit Ronald 15-11-2026, sessie 153: "ja"): de leeftijd die een
-// scherm tijdens het typen toont (de hoes, het blok Naam op je profiel, de
-// regel voor de ouder). Null zolang geboortedatumFout() een fout geeft: een
-// datum die niet bestaat (31-02) gaf anders toch een leeftijd.
+
+
+
+
 function leeftijdUitVeld(waarde) {
   const s = (waarde || '').trim();
   return s && !geboortedatumFout(s) ? calcAge(s) : null;
 }
 
-// TT-625 (besluit Ronald 15-11-2026, sessie 149: "a" en "ok. 1"): een
-// bestaand profiel wisselt niet zelf van leeftijdsgroep. De grenzen zijn 16
-// (berichten, afscherming, naam) en 18. De database weigert het ook
-// (trigger tt_geboortedatum_bewaken, hint TT-625), met dezelfde zin.
+
+
+
+
 function leeftijdsgroep(leeftijd) {
   return leeftijd < 16 ? 'onder16' : leeftijd < 18 ? '16tot18' : '18plus';
 }
 const TEKST_ANDERE_LEEFTIJDSGROEP = 'Met deze datum kom je in een andere leeftijdsgroep. Is dit echt je geboortedatum?';
 
-// DD-MM-YYYY auto-format while typing
+
 function formatBirthDate(input) {
   let v = input.value.replace(/\D/g, '').slice(0, 8);
   if (v.length >= 5) v = v.slice(0,2) + '-' + v.slice(2,4) + '-' + v.slice(4);
@@ -736,15 +736,15 @@ function formatBirthDate(input) {
   input.value = v;
 }
 
-// TT-80 (10-08-2026, bevinding Ronald: "Alphen aan den Rijn" werd fout
-// "Alphen Aan Den Rijn"). Geverifieerd (Taaladvies.net): Nederlandse
-// aardrijkskundige namen houden voorzetsels/lidwoorden ("aan", "den", "op",
-// "van", ...) met een kleine letter, behalve als zo'n woord het eerste woord
-// van de naam is. "'s"/"'t" (los, bijv. "'s Heerenberg", of met streepje,
-// bijv. "'s-Gravenhage") blijven altíjd met een kleine letter, ook als eerste
-// woord. "IJ" als digraph (IJssel, IJmuiden) krijgt beide letters een
-// hoofdletter — een bekende, algemene Nederlandse schrijfregel; niet apart
-// getest tegen elke afzonderlijke rij in postcode_cache.
+
+
+
+
+
+
+
+
+
 function normalizeCityName(city) {
   const ALTIJD_KLEIN = new Set(["'s", "'t", "’s", "’t"]);
   const KLEIN_TENZIJ_EERSTE_WOORD = new Set(['aan','de','den','der','het','in','onder','op','over','te','ten','ter','van','bij']);
@@ -765,27 +765,27 @@ function normalizeCityName(city) {
     .join(' ');
 }
 
-// ─── iTunes Search API — twee-velden zoekfunctie ─────────────────────────────
-// TT-139 (24-08-2026): vervangt MusicBrainz. Zie zoekfunctienaslagwerk.md §15
-// voor de volledige afweging. Artiest zoeken via /search?entity=musicArtist,
-// daarna per artiest ÉÉN keer de volledige nummerlijst ophalen via
-// /lookup?id=<artistId>&entity=song — wat er wordt getypt in het nummerveld
-// filtert daarna lokaal, zonder nieuw netwerkverkeer per toetsaanslag. Dit
-// past bij Apple's eigen aanbeveling om zoek-/lookupresultaten te bewaren
-// (cachen) en houdt het verzoekvolume ruim onder de snelheidslimiet
-// (~20 verzoeken/minuut).
+
+
+
+
+
+
+
+
+
 
 let itunesSearchTimeout = null;
-let selectedArtist  = null; // { id, name }
+let selectedArtist  = null;
 
 function closeAC(id) {
   const el = document.getElementById(id);
   if (el) el.classList.remove('open');
 }
 
-// Stap A: Artiest zoeken
-// TT-526: alleen uit een lijst die openstaat. Een dichte lijst kan nog oude
-// suggesties bevatten; Enter mag die nooit kiezen.
+
+
+
 function selectFirstAC(listId) {
   const list = document.getElementById(listId);
   if (!list || !list.classList.contains('open')) return;
@@ -793,15 +793,15 @@ function selectFirstAC(listId) {
   if (first && first.onmousedown) first.onmousedown();
 }
 
-const itunesArtistCache = new Map(); // query (lowercase) -> artists[]
-const itunesTrackCache = new Map();  // artistId -> songs[] (of een lopende Promise), volledige lijst van die artiest
+const itunesArtistCache = new Map();
+const itunesTrackCache = new Map();
 
 async function onArtistSearch(q) {
   const ac = document.getElementById('acArtistList');
-  clearTimeout(itunesSearchTimeout); // TT-526: een oudere vraag tekent niet meer na
+  clearTimeout(itunesSearchTimeout);
   if (q.length < 2) { ac.classList.remove('open'); return; }
 
-  // Direct visuele feedback tonen (i.p.v. pas na de 400ms-vertraging).
+
   ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted)">Zoeken...</span></div>';
   ac.classList.add('open');
 
@@ -840,13 +840,13 @@ function renderArtistResults(ac, artists, q, selectFnName) {
   }).join('');
 }
 
-// Artiest geselecteerd → nummerveld tonen
+
 async function selectArtist(id, name) {
   selectedArtist = { id, name };
   document.getElementById('artistSearch').value = name;
   closeAC('acArtistList');
 
-  // Toon het nummerveld
+
   const wrap = document.getElementById('trackSearchWrap');
   wrap.style.display = 'block';
   document.getElementById('trackSearchLabel').textContent = `Nummer van ${name}`;
@@ -855,26 +855,26 @@ async function selectArtist(id, name) {
   closeAC('acTrackList');
 }
 
-// Haalt éénmalig per artiest de volledige nummerlijst op (iTunes lookup).
-// De cache houdt ook een lopende Promise vast, zodat twee snelle toets-
-// aanslagen niet allebei een eigen verzoek starten.
+
+
+
 async function fetchArtistSongs(artistId) {
   if (itunesTrackCache.has(artistId)) return itunesTrackCache.get(artistId);
   const fetchPromise = (async () => {
     const url = `https://itunes.apple.com/lookup?id=${encodeURIComponent(artistId)}&entity=song&limit=200&country=NL`;
     const res = await fetch(url);
     const data = await res.json();
-    // Eerste record is de artiest zelf (wrapperType 'artist'); de rest zijn nummers.
+
     return (data.results || []).filter(r => r.wrapperType === 'track');
   })();
   itunesTrackCache.set(artistId, fetchPromise);
   const songs = await fetchPromise;
-  itunesTrackCache.set(artistId, songs); // Promise vervangen door het echte resultaat
+  itunesTrackCache.set(artistId, songs);
   return songs;
 }
 
-// Stap B: Nummer zoeken binnen geselecteerde artiest — lokaal filteren,
-// geen apart netwerkverzoek per toetsaanslag zodra de artiest-nummerlijst er is.
+
+
 async function onTrackSearch(q) {
   const ac = document.getElementById('acTrackList');
   if (!selectedArtist) return;
@@ -924,18 +924,18 @@ function renderTrackResults(ac, songs, q, artist, addFnName, existingList) {
   ).join('');
 }
 
-// ─── Data ───────────────────────────────────────────────────────────────────
 
-// 21-08-2026: "Anders" weggehaald. Zonder vrij tekstveld kan iemand toch
-// niet aangeven wélk instrument dat dan is — de optie voegde niets toe en
-// kostte wel eenduidigheid in de matching.
-// TT-124 (22-08-2026): alfabetisch, op Ronalds verzoek. Instrumenten worden
-// als tekst opgeslagen, niet als plek in deze lijst.
-// TT-543 blok 5 (08-11-2026, besluiten Ronald): Achtergrondzang, Akoestische
-// gitaar, Elektrische gitaar, Mondharmonica en Percussie overig erbij;
-// Gitaar, akoestisch · Gitaar, elektrisch · Harmonica (mondharmonica) eruit.
-// Bestaande profielen, open rollen, invallers en bewaarde zoekopdrachten zijn
-// in de database omgezet naar de nieuwe namen (script van 08-11-2026).
+
+
+
+
+
+
+
+
+
+
+
 const INSTRUMENTS = [
   'Achtergrondzang', 'Akoestische gitaar', 'Basgitaar', 'Cello',
   'Conga / Bongo', 'DJ / Electronica', 'Drums', 'Elektrische gitaar',
@@ -943,42 +943,42 @@ const INSTRUMENTS = [
   'Songwriting', 'Tamboerijn', 'Trompet', 'Ukulele', 'Viool', 'Zang'
 ];
 
-// "Anders" verwijderd (22-08-2026, Ronald) — zelfde reden als bij
-// INSTRUMENTS op 21-08-2026: zonder vrij tekstveld kan iemand toch niet
-// aangeven wélk genre dat dan is. Bestaande profielen met "Anders" blijven
-// gewoon werken, ze kunnen het alleen niet opnieuw kiezen.
+
+
+
+
 const GENRES = [
   'Blues', 'Country', 'Electronic', 'Folk / Akoestisch', 'Funk', 'Hip-hop',
   'Indie', 'Jazz', 'Klassiek', 'Metal', 'Pop', 'Punk', 'R&B / Soul',
   'Reggae', 'Rock'
 ];
 
-// ─── Sortering repertoire ───────────────────────────────────────────────────
-// Bevinding Ronald (10-08-2026): repertoire overal alfabetisch op band/artiest,
-// dan op titel — anders is het lastig zoeken in een lange lijst.
+
+
+
 function compareArtistTitle(artistA, titleA, artistB, titleB) {
   const byArtist = (artistA || '').localeCompare(artistB || '', 'nl', { sensitivity: 'base' });
   if (byArtist !== 0) return byArtist;
   return (titleA || '').localeCompare(titleB || '', 'nl', { sensitivity: 'base' });
 }
 
-// ─── Autocomplete helpers ─────────────────────────────────────────────────────
 
-// ─── Veiligheidshelpers (TT-05) ───────────────────────────────────────────────
-// Alles wat een gebruiker (of een externe bron zoals iTunes) invoert en dat
-// via innerHTML op het scherm komt, moet hier eerst doorheen. Anders wordt
-// ingetypte HTML als HTML uitgevoerd i.p.v. als tekst getoond.
-//
-//   escHtml()  → tekst tussen tags én elke waarde in een HTML-attribuut
-//                (aria-label, title, alt, value, data-...)
-//   jsAttr()   → een string ín een JS-aanroep ín een attribuut (onclick):
-//                eerst ontsmet voor JS, daarna voor HTML
-//   safeUrl()  → alleen http/https/blob toestaan in href en src; de uitkomst
-//                is al HTML-veilig en gaat zonder extra ontsmetting in src/href
-//   TT-483 (21-10-2026): escAttr bestaat niet meer. Het ontsmette alleen voor
-//   JS en stond op ruim twintig plekken in HTML-attributen, waar een
-//   aanhalingsteken in een naam het attribuut openbrak. Gebruik nooit een
-//   JS-ontsmetting voor een HTML-attribuut.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function escHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => (
@@ -993,10 +993,10 @@ function jsAttr(s) {
     .replace(/\r?\n/g, ' '));
 }
 
-// TT-553 (besluit Ronald 03-11-2026: a). Tekst voor de bio en "Wie zijn we":
-// een woord van LANG_WOORD_TEKENS tekens of meer (bijna altijd een geplakte
-// link) staat op één regel met "(meer)"; een tik toont het hele woord. De rest
-// gaat door escHtml, zoals altijd.
+
+
+
+
 const LANG_WOORD_TEKENS = 20;
 function tekstMetMeerHTML(tekst) {
   return String(tekst ?? '').split(/(\s+)/).map(w => w.length >= LANG_WOORD_TEKENS && !/\s/.test(w)
@@ -1004,9 +1004,9 @@ function tekstMetMeerHTML(tekst) {
     : escHtml(w)).join('');
 }
 function langWoordOpen(knop) { knop.parentElement.classList.add('open'); }
-// Past een lang woord toch op de regel, dan verdwijnt "(meer)" (.past). Gemeten
-// in het volgende beeld (les 8D 03-11-2026: nooit in de melding zelf de maat
-// wijzigen), ook bij draaien van het toestel en voor tekst die later komt.
+
+
+
 (function langWoordenVolgen() {
   if (!window.ResizeObserver || !window.MutationObserver || !document.body) return;
   const kijker = new ResizeObserver(lijst => requestAnimationFrame(() => lijst.forEach(e => {
@@ -1021,30 +1021,30 @@ function langWoordOpen(knop) { knop.parentElement.classList.add('open'); }
   new MutationObserver(m => m.forEach(x => x.addedNodes.forEach(volg))).observe(document.body, { childList: true, subtree: true });
 })();
 
-// javascript:-URL's zijn hier het echte risico: die voeren code uit zodra
-// iemand op de link klikt. blob: is toegestaan omdat de lokale foto-preview
-// die gebruikt (URL.createObjectURL).
+
+
+
 function safeUrl(u) {
   const s = String(u ?? '').trim();
   return /^(https?:\/\/|blob:)/i.test(s) ? escHtml(s) : '';
 }
 
-/* Fotootje (28-10-2026, TT-537, besluit Ronald: optie b). Naast elke foto in
-   `avatars` (profiel- en bandfoto) en `media` (de mediahoek) staat een
-   vierkante versie van FOTO_KLEIN_PX pixels, met dezelfde naam plus
-   `_klein.jpg` (uploadToStorage() in wizard.js). Lijsten en de mediategels
-   tonen het fotootje; de hoes van een profiel (TT-517 fase 4) en een tik op
-   de foto tonen de grote. De grootste plek is 80 pixels; 240 dekt een
-   scherm met drie beeldpunten per pixel. Een GIF heeft geen fotootje.
-   Ontbreekt het fotootje (een foto van vóór deze wijziging, een half gelukte
-   upload, een oude versie van de app), dan krijgt het de tijdelijke link van
-   de grote foto (fotoLinksOphalen, TT-480); de luisteraar hieronder is het
-   vangnet. */
+
+
+
+
+
+
+
+
+
+
+
 const FOTO_KLEIN_PX = 240;
 function fotoKleinPad(pad) {
   return String(pad).replace(/\.[^./]*$/, '') + '_klein.jpg';
 }
-// `src` komt uit safeUrl(). Geeft de bron-attributen voor een <img>.
+
 function kleinFotoAttr(src) {
   if (!fotoLinkSleutel(src) || src.endsWith('_klein.jpg') || /\.gif$/i.test(src)) return fotoBronAttr(src);
   return `${fotoBronAttr(fotoKleinPad(src))} data-groot="${src}"`;
@@ -1057,30 +1057,30 @@ document.addEventListener('error', e => {
   fotoBronZetten(img, groot);
 }, true);
 
-/* Afgeschermde foto's en video's (TT-480, akkoord Ronald 30-10-2026). De
-   mappen `avatars` en `media` zijn dicht: een bestand laadt alleen via een
-   tijdelijke link van 7 dagen. De database bewaart de openbare link; daaruit
-   leest de app map en pad. Wie een link mag maken, staat in de opslagregels
-   (systeem-naslag §10): ingelogd alles; een bezoeker zonder account niets van
-   13 t/m 15 jaar of een onbekende leeftijd.
-   - fotoBronAttr(src) geeft src="<tijdelijke link>" als de app de link al
-     heeft, anders data-tt-foto="<openbare link>". Een DOM-wachter vraagt dan
-     alle ontbrekende links van het scherm in één keer op (één vraag per map)
-     en zet src. Ontbreekt een fotootje, dan krijgt het de link van de grote
-     foto.
-   - fotoBronZetten(el, src) doet hetzelfde voor één element (de vergroting).
-   - De links staan 7 dagen in localStorage. Tot een dag voor het verlopen
-     gebruikt de app dezelfde link, zodat de browser de foto uit zijn eigen
-     opslag haalt: een tweede bezoek kost geen extra tijd.
-   - Uitloggen wist de onthouden links (signOut in auth.js).
-   Een andere bron (landing, YouTube, blob) blijft ongewijzigd. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const FOTO_LINK_SEC = 7 * 24 * 3600;
 const FOTO_LINK_MARGE_MS = 24 * 3600 * 1000;
 const FOTO_LINK_OPSLAG = 'tt_fotolinks';
 const FOTO_LINK_MAX = 600;
 const FOTO_AFGESCHERMD = /\/storage\/v1\/object\/public\/(avatars|media)\/([^?#]+)/;
-let fotoLinks = null;              // 'map/pad' -> [link, verloopt in ms]
-const fotoLinksOnderweg = new Map(); // 'map/pad' -> Promise
+let fotoLinks = null;
+const fotoLinksOnderweg = new Map();
 
 function fotoLinksGeheugen() {
   if (fotoLinks) return fotoLinks;
@@ -1090,32 +1090,32 @@ function fotoLinksGeheugen() {
     Object.entries(JSON.parse(localStorage.getItem(FOTO_LINK_OPSLAG) || '{}')).forEach(([k, v]) => {
       if (Array.isArray(v) && v[1] - FOTO_LINK_MARGE_MS > nu) fotoLinks.set(k, v);
     });
-  } catch (e) { /* geen opslag: alleen in het geheugen */ }
+  } catch (e) { }
   return fotoLinks;
 }
 function fotoLinksBewaren() {
   const g = fotoLinksGeheugen();
   while (g.size > FOTO_LINK_MAX) g.delete(g.keys().next().value);
-  try { localStorage.setItem(FOTO_LINK_OPSLAG, JSON.stringify(Object.fromEntries(g))); } catch (e) { /* zie boven */ }
+  try { localStorage.setItem(FOTO_LINK_OPSLAG, JSON.stringify(Object.fromEntries(g))); } catch (e) { }
 }
 function fotoLinksWissen() {
   fotoLinks = new Map();
-  try { localStorage.removeItem(FOTO_LINK_OPSLAG); } catch (e) { /* zie boven */ }
+  try { localStorage.removeItem(FOTO_LINK_OPSLAG); } catch (e) { }
 }
-// 'avatars/<pad>' bij een afgeschermde map, anders null.
+
 function fotoLinkSleutel(src) {
   const m = FOTO_AFGESCHERMD.exec(String(src || ''));
   return m ? m[1] + '/' + decodeURIComponent(m[2]) : null;
 }
-// De tijdelijke link; de bron zelf als hij niet afgeschermd is; null als de
-// app de link nog niet heeft.
+
+
 function fotoLinkUitGeheugen(src) {
   const k = fotoLinkSleutel(src);
   if (!k) return src;
   const v = fotoLinksGeheugen().get(k);
   return v && v[1] - FOTO_LINK_MARGE_MS > Date.now() ? v[0] : null;
 }
-// Haalt de links voor deze sleutels op: één vraag per map, tegelijk.
+
 async function fotoLinksOphalen(sleutels) {
   const wacht = [], perMap = {};
   sleutels.forEach(k => {
@@ -1133,7 +1133,7 @@ async function fotoLinksOphalen(sleutels) {
           if (r && r.signedUrl && !r.error) g.set(map + '/' + r.path, [r.signedUrl, tot]);
           else if (r && r.path) mis.push(r.path);
         });
-        // Een fotootje dat ontbreekt, krijgt de link van de grote foto.
+
         mis.forEach(p => {
           const groot = paden.find(x => x !== p && fotoKleinPad(x) === p);
           const v = groot && g.get(map + '/' + groot);
@@ -1153,7 +1153,7 @@ async function fotoLinksOphalen(sleutels) {
   });
   await Promise.all(wacht);
 }
-// `src` komt uit safeUrl() en mag een #-deel hebben (#t=0.1 bij een video).
+
 function fotoBronAttr(src) {
   const [basis, achter] = String(src).split(/(?=#)/);
   const link = fotoLinkUitGeheugen(basis);
@@ -1171,7 +1171,7 @@ async function fotoBronZetten(el, src) {
   }
   if (link) el.src = link + (achter || '');
 }
-// De DOM-wachter: zet elke data-tt-foto om in een src.
+
 let fotoAanvullenGepland = false;
 async function fotoLinksAanvullen() {
   fotoAanvullenGepland = false;
@@ -1199,8 +1199,8 @@ new MutationObserver(() => {
   queueMicrotask(fotoLinksAanvullen);
 }).observe(document.documentElement, { childList: true, subtree: true });
 
-// TT-U04 (12-08-2026): maakt een wachtwoord zichtbaar. Vervangt het
-// herhaalveld — je kunt zelf controleren wat je hebt getypt.
+
+
 function togglePassword(inputId, btn) {
   const el = document.getElementById(inputId);
   if (!el) return;
@@ -1210,12 +1210,12 @@ function togglePassword(inputId, btn) {
   btn.setAttribute('aria-label', toon ? 'Verberg wachtwoord' : 'Toon wachtwoord');
 }
 
-// TT-35 (07-08-2026): Enter-toets laten werken als "verder"/"zoeken" op
-// tekstvelden waar dat intuïtief is (inloggen, registreren, wachtwoord
-// vergeten/opnieuw instellen, zoekvelden) — Ronald: "maak de enter-knop
-// actief voor het verdergaan". Shift+Enter blijft gewoon een nieuwe regel
-// toestaan op velden waar dat relevant is (niet hier, alleen textareas
-// zoals de berichten-composer gebruiken die uitzondering al niet nodig).
+
+
+
+
+
+
 function submitOnEnter(event, fn) {
   if (event.key === 'Enter') {
     event.preventDefault();
@@ -1223,14 +1223,14 @@ function submitOnEnter(event, fn) {
   }
 }
 
-// ─── Zoektekst veilig maken voor een Supabase-query (TT-26) ─────────────────
-// Twee verschillende risico's, twee helpers:
-//  1. likeSafe(): %, _, * en \ zijn jokertekens in een ilike-patroon. Iemand
-//     die "a%b" typt zou anders onbedoeld veel te breed matchen. Gebruikers
-//     bedoelen deze tekens hier nooit letterlijk, dus we halen ze eruit.
-//  2. orValue(): binnen .or(...) scheidt PostgREST de voorwaarden met komma's.
-//     Een komma in de zoekterm breekt die syntax open. Door de waarde tussen
-//     dubbele quotes te zetten telt de komma als gewone tekst.
+
+
+
+
+
+
+
+
 function likeSafe(s) {
   return String(s ?? '').replace(/[%_*\\]/g, ' ').replace(/\s+/g, ' ').trim();
 }
@@ -1245,8 +1245,8 @@ function highlight(text, q) {
   const idx = query ? t.toLowerCase().indexOf(query.toLowerCase()) : -1;
   if (idx === -1) return escHtml(t);
   return escHtml(t.slice(0, idx))
-    // 24-09-2026: de treffer stond op een vlak van goud op 30% — olijfbruin,
-    // huisstijl §1.1. Nu zit het goud in de letters zelf.
+
+
     + `<mark style="background:none;color:var(--accent);">${escHtml(t.slice(idx, idx + query.length))}</mark>`
     + escHtml(t.slice(idx + query.length));
 }
@@ -1266,27 +1266,27 @@ function addSong(title, artist) {
   voorproefOphalen(() => state.songs, title, artist, renderSongs);
 }
 
-// ─── De setlist: wizardstap Nummers én de tegel Je setlist (TT-514) ──────────
-// Besluiten Ronald, 25-10-2026. Drie nummers zijn verplicht in de wizard. Per
-// nummer één kader: links artiest en nummer (elk hoogstens twee regels), rechts
-// de voorproef ("4 anderen spelen dit ook") en daaronder Beheersing als keuze
-// zonder rand. Eén vorm voor de wizard en de tegel; een eigen variant is een fout.
+
+
+
+
+
 const NUMMERS_MIN = 3;
 const BEHEERSING_NAMEN = { basis: 'Basis', bijna: 'Bijna', podium: 'Podium' };
 const PIJL_OMLAAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
-// Het sluitteken van de app (zie .modal-close), met een viewBox precies om
-// de inkt: zo ligt de inkt exact waar de opmaak hem zet (TT-514, uitlijning).
-// Besluit Ronald 03-11-2026 (1A, "maak dit overal gelijk"): elk kruisje
-// achter een rij (setlist, links, covers, Mix & Match) is dit kruisje.
+
+
+
+
 const RIJ_KRUIS = '<svg viewBox="4.75 4.75 14.5 14.5" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
-// ─── Lange nummerlijst op een profiel: ingeklapt tot zeven ───────────────────
-// Besluit Ronald, 26-10-2026 (optie 1): meer dan zeven nummers maakt een
-// profiel onleesbaar. Het profiel opent met zeven nummers; de laatste rijen
-// vervagen en eronder staat "Alle N nummers". Een tik ergens op de lijst klapt
-// hem open, nog een tik klapt hem weer in ("de lijst is verder niet
-// klikbaar"). Geldt voor het repertoire van een muzikant en de covers van een
-// band, ingelogd en uitgelogd. De regel onderaan is een knop, zodat de lijst
-// ook met het toetsenbord werkt; zijn klik loopt door naar de lijst.
+
+
+
+
+
+
+
+
 const NUMMERS_INGEKLAPT = 7;
 function nummerLijstHTML(rijen) {
   if (rijen.length <= NUMMERS_INGEKLAPT) return rijen.join('');
@@ -1301,38 +1301,38 @@ function nummersInklapWissel(lijst) {
   lijst.classList.toggle('open', open);
   const regel = lijst.querySelector('.nummers-inklap-regel');
   if (regel) regel.setAttribute('aria-expanded', open ? 'true' : 'false');
-  // Ingeklapt na scrollen: de bovenkant van de lijst lag dan boven het
-  // scherm. Breng de korte lijst terug in beeld, anders kijkt de gebruiker
-  // naar wat eronder staat.
+
+
+
   if (!open && lijst.getBoundingClientRect().top < 0) {
     const beweegtNiet = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     try { lijst.scrollIntoView({ behavior: beweegtNiet ? 'auto' : 'smooth', block: 'center' }); }
     catch (e) { lijst.scrollIntoView(); }
   }
 }
-// ─── Een nummer van een ander in één tik overnemen (TT-528) ─────────────────
-// Besluiten Ronald, 27-10-2026: een vierkantje met een klein plusteken rechts
-// naast het niveaulabel, op het profiel van een ander en bij de covers van een
-// band; staat het nummer in je repertoire, dan een vinkje in --steun (de rand
-// niet). Nog een tik haalt het weg. Overnemen zonder niveau. Zonder profiel
-// staat de knop er ook; een tik nodigt uit een profiel te maken. Vergelijken
-// zoals Mix & Match: titel en artiest exact, hoofdletters maken niet uit.
-// TT-531 (besluiten Ronald, 29-10-2026, op beeld): een tik op het plusteken
-// opent eerst het keuzemenu (Basis, Bijna, Podium) onder de
-// knop, als drie labels in de vorm van het niveaulabel (optie 1 op beeld);
-// een tik ernaast annuleert. Vervangt "overnemen zonder niveau". Het vinkje
-// haalt het nummer meteen weg, zonder menu.
-// TT-543 onderdeel 10 (besluit Ronald 13-11-2026, 2-19): een teken onder 16px is
-// nooit dunner dan 1,5px op het scherm. Lijn in het raster van 24 = 1,5 × 24 / maat:
-// 14px 2,57 (PERSONEN_TEKEN en het teken bij een veldfout).
-// TT-543 laag 3 (3-9): plus en vinkje hier 16px (was 10px met 3,6): lijn 2,5
-// en het vinkje 3, op het scherm 1,67 en 2px.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const OVERNEEM_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
 const OVERNEEM_VINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
-let eigenNummerSleutels = null; // Set van "titel|||artiest", of null als (nog) onbekend
+let eigenNummerSleutels = null;
 const nummerSleutel = (titel, artiest) => `${String(titel || '').toLowerCase()}|||${String(artiest || '').toLowerCase()}`;
 
-let overneemTeller = 0; // elke knop een eigen nummer, voor het keuzemenu eronder
+let overneemTeller = 0;
 function overneemKnopHTML(titel, artiest) {
   const n = ++overneemTeller;
   const opties = ['basis', 'bijna', 'podium'].map(k => `<option value="${k}">${BEHEERSING_NAMEN[k]}</option>`).join('');
@@ -1358,49 +1358,49 @@ async function eigenNummersOphalen() {
   eigenNummerSleutels = new Set((data || []).map(s => nummerSleutel(s.song_title, s.song_artist)));
   return data || [];
 }
-// Na het tonen van een profiel of bandpagina: de knoppen in de juiste stand.
+
 async function overneemKnoppenBijwerken(vak) {
   const knoppen = vak ? [...vak.querySelectorAll('.nummer-overneem')] : [];
   if (!knoppen.length || !hasOwnProfile || !myMusicianId) return;
   try { await eigenNummersOphalen(); }
-  catch (e) { logCaught('overneemKnoppenBijwerken', e); return; } // de knoppen blijven een plusteken
+  catch (e) { logCaught('overneemKnoppenBijwerken', e); return; }
   knoppen.forEach(overneemKnopZetten);
 }
 async function nummerOvernemen(ev, knop) {
-  if (ev) ev.stopPropagation(); // de lijst eromheen klapt anders open of dicht
-  if (!hasOwnProfile || !myMusicianId) { showToast('Maak een profiel aan, dan bewaren we dit nummer.'); return; } // TT-603: zonder "gratis"
+  if (ev) ev.stopPropagation();
+  if (!hasOwnProfile || !myMusicianId) { showToast('Maak een profiel aan, dan bewaren we dit nummer.'); return; }
   if (knop.dataset.bezig) return;
   if (knop.classList.contains('aan')) { repertoireBijwerken(knop, null); return; }
-  // Eerst de beheersing kiezen: het gewone keuzemenu (huisstijl §7.1).
+
   const n = knop.dataset.nr, id = `ovn${n}`;
-  // TT-599 (besluit Ronald 14-11-2026): de kop zegt wat het plusje doet.
+
   CHOICE_FIELDS[id] = { id, fieldId: knop.id, selectId: `ovnSel${n}`, menuId: `ovnMenu${n}`, kop: 'Zet in je setlist' };
   toggleChoiceMenu(id);
 }
 function nummerOvernemenMet(n, sel) {
   const level = sel.value;
-  sel.value = ''; // een volgende keer weer zonder vinkje in het menu
+  sel.value = '';
   const knop = document.getElementById(`ovnVeld${n}`);
   if (knop && BEHEERSING_NAMEN[level]) repertoireBijwerken(knop, level);
 }
-// level: een beheersing om het nummer mee over te nemen, of null om het weg te halen.
+
 async function repertoireBijwerken(knop, level) {
   if (knop.dataset.bezig) return;
   knop.dataset.bezig = '1';
   try {
-    // Altijd de lijst zoals hij nu in de database staat: Je setlist kan intussen gewijzigd zijn.
+
     const lijst = await eigenNummersOphalen();
     const titel = knop.dataset.titel, artiest = knop.dataset.artiest, sleutel = nummerSleutel(titel, artiest);
     const erin = eigenNummerSleutels.has(sleutel);
     const ditNummer = s => nummerSleutel(s.song_title, s.song_artist) === sleutel;
     let nieuw;
     if (level) {
-      // Stond het er intussen al in, dan krijgt het deze beheersing.
+
       if (!erin && grensBereikt(lijst.length, GRENZEN.nummers, `Maximum van ${GRENZEN.nummers} nummers bereikt.`)) return;
       nieuw = erin ? lijst.map(s => ditNummer(s) ? { ...s, mastery_level: level } : s)
                    : lijst.concat([{ song_title: titel, song_artist: artiest, mastery_level: level }]);
     } else {
-      // Weghalen mag ook onder de drie nummers (besluit Ronald, 27-10-2026: het minimum is voor nieuwe gebruikers).
+
       if (!erin) { document.querySelectorAll('.nummer-overneem').forEach(overneemKnopZetten); return; }
       nieuw = lijst.filter(s => !ditNummer(s));
     }
@@ -1410,7 +1410,7 @@ async function repertoireBijwerken(knop, level) {
     });
     if (error) { showToast(friendlyErrorMessage(error, 'je repertoire opslaan')); return; }
     eigenNummerSleutels = new Set(nieuw.map(s => nummerSleutel(s.song_title, s.song_artist)));
-    // Staat hetzelfde nummer vaker op het scherm (repertoire en covers), dan alle knoppen mee.
+
     document.querySelectorAll('.nummer-overneem').forEach(overneemKnopZetten);
     showToast(level ? 'Nummer opgeslagen.' : 'Nummer weggehaald.');
   } catch (e) {
@@ -1421,42 +1421,42 @@ async function repertoireBijwerken(knop, level) {
   }
 }
 
-// ─── Een nummer: artiest groot en bovenaan, het nummer eronder ───────────────
-// Besluit Ronald, 27-10-2026 (sessie 21, TT-520): "vanuit consistentie", zoals
-// Je setlist. Geldt voor elke rij waar artiest en nummer onder elkaar staan (nu
-// de nummers in Mix & Match); een lijst op één regel, zoals het repertoire op
-// een profiel, blijft zoals hij is. Een eigen opmaak per plek is een fout.
-// Zonder titel staat er alleen de artiest; de plek kan een eigen tekst
-// meegeven ("Alle nummers").
+
+
+
+
+
+
+
 function nummerTekstHTML(artiest, titel) {
   return `<span class="song-tekst"><span class="song-artiest">${escHtml(artiest || '')}</span>` +
     (titel ? `<span class="song-titel">${escHtml(titel)}</span>` : '') + `</span>`;
 }
 const PERSONEN_TEKEN ='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.57" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>';
 
-// Geeft de veldfout terug als er te weinig nummers zijn, anders een lege
-// lijst. Gebruikt door nextStep(3) (wizard) en saveJeSetlist() (tegel):
-// ook in de tegel minimaal drie (besluit Ronald, 25-10-2026).
-// De tekst is die van de teller boven de lijst (besluit Ronald, 25-10-2026).
+
+
+
+
 function nummersTekortFouten(lijst = state.songs, veld = 'artistSearch') {
   if (lijst.length >= NUMMERS_MIN) return [];
   return [[veld, setlistTellerTekst(lijst.length)]];
 }
 
-// Onder de drie: "Voeg nog 2 nummers toe" (Ronald, 25-10-2026: "2 van 3"
-// begrijpt niemand); vanaf drie "3 nummers", "4 nummers" enzovoort.
+
+
 function setlistTellerTekst(n) {
   const nog = NUMMERS_MIN - n;
   if (nog > 0) return nog === 1 ? 'Voeg nog 1 nummer toe' : `Voeg nog ${nog} nummers toe`;
   return `${n} nummers`;
 }
 
-// Hoeveel ándere muzikanten met een afgerond profiel dit nummer spelen.
-// Gebruikt de bestaande functie van Zoeken (besluit Ronald, 25-10-2026: geen
-// nieuwe databasefunctie); die geeft alleen id's. Het eigen profiel telt niet
-// mee. Per nummer één vraag per bezoek: de belofte staat in de cache, ook als
-// hij nog loopt. Lukt het niet, dan geeft hij 0 en mag een volgende keer
-// opnieuw vragen.
+
+
+
+
+
+
 const nummerSpelersCache = new Map();
 function nummerSpelersOphalen(title, artist) {
   const sleutel = `${title}\u0000${artist}`.toLowerCase();
@@ -1473,8 +1473,8 @@ function nummerSpelersOphalen(title, artist) {
     ids.filter(id => id && id !== (typeof myMusicianId !== 'undefined' ? myMusicianId : null)).length);
 }
 
-// Vraagt de voorproef voor één nummer en tekent de lijst opnieuw als er een
-// antwoord is. Niets wacht hierop. Weggehaald, nul of geen antwoord: niets.
+
+
 function voorproefOphalen(lijst, title, artist, teken) {
   nummerSpelersOphalen(title, artist).then(aantal => {
     const s = lijst().find(x => x.title === title && x.artist === artist);
@@ -1484,17 +1484,17 @@ function voorproefOphalen(lijst, title, artist, teken) {
   });
 }
 
-// De voorproef. Alleen een geheel getal boven nul telt; de waarde kan uit de
-// bewaarde voortgang komen, dus nooit ongezien in de HTML.
+
+
 function voorproefHTML(spelers) {
   const n = Number(spelers);
   if (!Number.isInteger(n) || n < 1) return '';
   return `${PERSONEN_TEKEN}<b>${n} ${n === 1 ? 'ander' : 'anderen'}</b> ${n === 1 ? 'speelt' : 'spelen'} dit ook`;
 }
 
-// De rijen van de setlist. p is het voorvoegsel van de id's ('' voor de
-// wizard, 'jst' voor de tegel); weg is de naam van de verwijderfunctie.
-// Volgorde: alfabetisch op artiest, dan titel; i blijft de echte plek in de lijst.
+
+
+
 function setlistLijstHTML(lijst, p, weg) {
   const volgorde = lijst.map((s, i) => i)
     .sort((a, b) => compareArtistTitle(lijst[a].artist, lijst[a].title, lijst[b].artist, lijst[b].title));
@@ -1503,10 +1503,10 @@ function setlistLijstHTML(lijst, p, weg) {
     const naam = BEHEERSING_NAMEN[s.level];
     const opties = ['basis', 'bijna', 'podium']
       .map(k => `<option value="${k}"${s.level === k ? ' selected' : ''}>${BEHEERSING_NAMEN[k]}</option>`).join('');
-    // Rij als raster (bevinding Ronald, 25-10-2026, "rode lijn"): tekst
-    // links over twee rijen; rechts de voorproef (loopt door tot boven het
-    // kruisje) met de keuze eronder; het kruisje smal, in het midden van de
-    // tegel ("het sluitkruisje blijft in het midden van de tegel").
+
+
+
+
     return `
     <div class="setlist-rij${s._confirmDelete ? ' zeker' : ''}">
       <div class="setlist-tekst">
@@ -1526,7 +1526,7 @@ function setlistLijstHTML(lijst, p, weg) {
   }).join('');
 }
 
-// Koppelt het keuzemenu van elke rij (huisstijl §7.1) aan de lijst.
+
 function setlistKeuzesKoppelen(lijst, p, zet) {
   lijst.forEach((s, i) => {
     initChoiceField({ id: `${p}beh${i}`, fieldId: `${p}behVeld${i}`, selectId: `${p}behSel${i}`, menuId: `${p}behMenu${i}` });
@@ -1535,8 +1535,8 @@ function setlistKeuzesKoppelen(lijst, p, zet) {
   });
 }
 
-// De toelichting achter de i bij "Beheersing" (besluit Ronald, 25-10-2026).
-// Zelfde venster als de niveau-uitleg; de teksten zijn die van de oude regel.
+
+
 function openBeheersingInfo() {
   document.getElementById('niveauInfoModalContent').innerHTML = `
     <div class="filter-title" style="margin-bottom:12px;">Beheersing per nummer</div>
@@ -1564,9 +1564,9 @@ function setLevel(i, level) {
   renderSongs();
 }
 
-// TT-179-patroon: eerste klik op ✕ zet "Zeker?", pas een tweede klik
-// verwijdert. TT-226-regel, nu ook in de wizard (TT-514, D7): hoogstens één
-// "Zeker?" tegelijk, en een klik ergens anders zet hem terug.
+
+
+
 function removeSong(i) {
   if (!state.songs[i]) return;
   if (!state.songs[i]._confirmDelete) {
@@ -1580,8 +1580,8 @@ function removeSong(i) {
   renderSongs();
 }
 
-// Zet "Zeker?" terug op ✕ bij een klik ergens anders (huisstijl §8, TT-226).
-// Pas ná de huidige klik registreren, en hij verdwijnt vanzelf.
+
+
 function zekerTerugBijKlikErnaast(lijst, teken) {
   setTimeout(() => {
     document.addEventListener('click', function (e) {
@@ -1594,26 +1594,26 @@ function zekerTerugBijKlikErnaast(lijst, teken) {
 }
 
 
-// ─── Keuzemenu: één menu voor elke keuze (TT-543, draaiwielen) ───────────────
-// Besluiten Ronald 09-11-2026 (sessie 105 en 106, besluitenlijst draaiwielen):
-// het draaiwiel verdwijnt uit de app. Elk keuzeveld klapt een menu uit onder
-// het veld (huisstijl §7.1). De gekozen regel is een zwevende pil met de letter
-// vet in de accentkleur (T2); bij aanwijzen met de muis een grijze pil. Een
-// menu met één keuze sluit na de tik; een menu met meer keuzes (Leeftijd,
-// Niveau, Genre) blijft open tot een tik op het veld of ernaast.
-//
-// Eén motor voor drie soorten velden:
-// - een verborgen <select> als bron van waarheid (Volgorde, Weergave, Thema,
-//   Contactpersoon, beheersing), of eigen regels (Status, Bandstatus):
-//   initChoiceField();
-// - verborgen invoervelden met vaste stappen (Straal, Leeftijd, Niveau):
-//   initWheelField(); de naam is gebleven, het wiel niet;
-// - een lijst in het geheugen (Instrument, Genre in Zoeken): initPicker() met
-//   `inVeld`, in modals-shared.js.
-// Bestaande code die .value leest of zet, blijft ongewijzigd werken.
 
-// De lege stand (filter uit) in een gesloten keuzeveld: een streepje, grijs
-// (besluit Ronald 26-10-2026; was "Alle").
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const LEEG_VELD = '–';
 function zetVeldTekst(el, tekst) {
   if (!el) return;
@@ -1621,18 +1621,18 @@ function zetVeldTekst(el, tekst) {
   el.classList.toggle('leeg', tekst === LEEG_VELD);
 }
 
-// ─── Velden met vaste stappen (Straal, Leeftijd, Niveau) ─────────────────────
-// cfg: {
-//   id, fieldId, menuId,
-//   inputs: [id van elk verborgen invoerveld],
-//   rijen: [{ t: tekst in het menu, waarden: [waarde per invoerveld] }],
-//   bereik?: true  -> meer regels aan te tikken; het veld krijgt de laagste
-//                     ondergrens en de hoogste bovengrens, en wat ertussen
-//                     ligt, licht mee op (besluit Ronald 09-11-2026: "ja, 1")
-//   value: [beginwaarde per invoerveld], clearTo?: [waarde bij "Wissen"],
-//   format(waarden) -> tekst in het gesloten veld,
-//   isActief?(waarden), onChange()
-// }
+
+
+
+
+
+
+
+
+
+
+
+
 const WHEEL_FIELDS = {};
 
 function initWheelField(cfg) {
@@ -1655,7 +1655,7 @@ function wheelFieldValues(id) {
   });
 }
 
-// Zet de waarden in de verborgen velden en werkt het veld bij.
+
 function setWheelFieldValues(id, waarden, notify) {
   const cfg = WHEEL_FIELDS[id];
   if (!cfg) return;
@@ -1667,7 +1667,7 @@ function setWheelFieldValues(id, waarden, notify) {
   if (notify && typeof cfg.onChange === 'function') cfg.onChange();
 }
 
-// De tekst in het veld, plus de gele rand als het filter aanstaat.
+
 function refreshWheelField(id) {
   const cfg = WHEEL_FIELDS[id];
   if (!cfg) return;
@@ -1680,7 +1680,7 @@ function refreshWheelField(id) {
   el.classList.toggle('is-set', !!aan);
 }
 
-// Welke regels gekozen zijn, gelezen uit de verborgen velden.
+
 function menuVeldRijen(cfg) {
   const w = wheelFieldValues(cfg.id);
   const getal = (v, leeg) => (v === '' || v == null) ? leeg : Number(v);
@@ -1709,20 +1709,20 @@ function menuVeldKies(cfg, i) {
   setWheelFieldValues(cfg.id, waarden, true);
 }
 
-// ─── Het menu zelf (TT-233, 10-09-2026; vorm TT-543, 09-11-2026) ─────────────
-// Het menu klapt uit onder het veld waar het bij hoort: daar heeft de
-// gebruiker net getikt en daar staan zijn ogen. Een browser-keuzelijst wordt
-// nooit zichtbaar gebruikt: die tekent het besturingssysteem, niet de pagina.
+
+
+
+
 
 const CHOICE_FIELDS = {};
 let actiefKeuzeMenu = null;
 
-// cfg: { id, fieldId, menuId, selectId }                — één keuze uit een <select>
-//   of { id, fieldId, menuId, rijen(), kies(i), meer?, ververs?() } — eigen rijen
-//   naSluiten?(): na elke manier van sluiten (TT-543 draaiwielen deel 2: het
-//   niveau van een nieuw instrument).
-// Opnieuw aanroepen voor hetzelfde veld (een tegel die opnieuw opent) vervangt
-// alleen de cfg; de luisteraars zitten er dan al.
+
+
+
+
+
+
 function initChoiceField(cfg) {
   CHOICE_FIELDS[cfg.id] = cfg;
   const el = document.getElementById(cfg.fieldId);
@@ -1742,8 +1742,8 @@ function initChoiceField(cfg) {
   refreshChoiceField(cfg.id);
 }
 
-// Zet de tekst van het zichtbare veld gelijk aan de keuze. Aanroepen na elke
-// keer dat andere code de waarde van het <select> zelf wijzigt.
+
+
 function refreshChoiceField(id) {
   const cfg = CHOICE_FIELDS[id];
   if (!cfg) return;
@@ -1756,12 +1756,12 @@ function refreshChoiceField(id) {
   if (labelEl) labelEl.textContent = optie ? optie.textContent : '';
 }
 
-// De regels van een menu: { t, gekozen }.
+
 function keuzeMenuRijen(cfg) {
   if (cfg.rijen) return cfg.rijen();
   const sel = document.getElementById(cfg.selectId);
-  // TT-236 (10-09-2026): opties die verborgen zijn gezet horen niet in het
-  // menu ("Beste match" bij Bands zonder eigen profiel, configureSearchAccess()).
+
+
   return [...sel.options].filter(o => o.style.display !== 'none')
     .map(o => ({ t: o.textContent, gekozen: o.value === sel.value, waarde: o.value }));
 }
@@ -1772,8 +1772,8 @@ function tekenKeuzeMenu(id) {
   if (!menu) return;
   const rijen = keuzeMenuRijen(cfg);
   const scroll = menu.scrollTop;
-  // TT-605 en TT-599 (besluiten Ronald 14-11-2026): een kopzin bovenaan het
-  // menu (cfg.kop); de schermlezer hoort hem als naam van de lijst.
+
+
   if (cfg.kop) menu.setAttribute('aria-label', cfg.kop);
   menu.innerHTML = (cfg.kop ? `<div class="keuze-kop" aria-hidden="true">${escHtml(cfg.kop)}</div>` : '') + rijen.map((r, i) => `
     <button type="button" class="choice-option${r.gekozen ? ' selected' : ''}${r.u ? ' met-uitleg' : ''}"
@@ -1787,10 +1787,10 @@ function tekenKeuzeMenu(id) {
       const i = parseInt(rij.dataset.i);
       if (cfg.kies) {
         cfg.kies(i);
-        // Meer keuzes: het menu blijft open en toont de nieuwe stand. Eén
-        // keuze: de tik kiest en sluit (besluit Ronald 09-11-2026). Groeit het
-        // raster boven het menu (een nieuw genre, een nieuwe rol), dan schuift
-        // het menu mee omlaag en blijft het boven de balk.
+
+
+
+
         if (cfg.meer && actiefKeuzeMenu === id) {
           tekenKeuzeMenu(id);
           const veld = document.getElementById(cfg.fieldId);
@@ -1811,9 +1811,9 @@ function tekenKeuzeMenu(id) {
   });
 }
 
-// TT-588 (besluit Ronald 10-11-2026: "M2 met een gele pijl"): het teken dat er
-// meer regels zijn dan in beeld passen. Niet bij de labelvorm (§7.7). Onderaan
-// gescrold krijgt het menu de klasse .onderaan en verdwijnt het teken.
+
+
+
 const KEUZE_MEER_PIJL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 function keuzeMeerTeken(menu) {
   if (menu.classList.contains('beheersing-menu')) return;
@@ -1836,14 +1836,14 @@ function toggleChoiceMenu(id) {
 function openChoiceMenu(id) {
   const cfg = CHOICE_FIELDS[id];
   if (!cfg) return;
-  sluitAlleMenus(); // één menu tegelijk, zie core.js
+  sluitAlleMenus();
 
   const menu = document.getElementById(cfg.menuId);
   const veld = document.getElementById(cfg.fieldId);
   if (!menu || !veld) return;
 
-  // Loopt de sluitbeweging van de vorige keer nog? Breek die dan eerst af.
-  // Anders ruimt zíj dit net geopende menu een tel later alsnog op (TT-234).
+
+
   if (menu.ttOpruimen) menu.ttOpruimen();
 
   menu.classList.remove('naar-boven');
@@ -1853,35 +1853,35 @@ function openChoiceMenu(id) {
   actiefKeuzeMenu = id;
   menuInBeeld(menu, veld);
 
-  // Staat er een gekozen regel buiten beeld (een lange lijst), dan scrolt het
-  // menu hem in beeld.
+
+
   const gekozen = menu.querySelector('.choice-option.selected');
   if (gekozen && menu.scrollHeight > menu.clientHeight) {
     menu.scrollTop = Math.max(0, gekozen.offsetTop - (menu.clientHeight - gekozen.offsetHeight) / 2);
   }
 
-  // Sluiten bij een tik ernaast: dat doet de donkere laag (core.js). Escape
-  // sluit via de gedeelde luisteraar daar.
+
+
   menuLaagOpen(menu);
 }
 
-// Het menu klapt onder het veld uit, ook als het daar niet past (proef
-// draaiwielen, TT-543, 09-11-2026): dan schuift de pagina omhoog tot de laatste
-// regel boven de onderbalk staat, en waar nodig komt er tijdelijk ruimte onder
-// de pagina. Alleen in een venster, dat zelf niet verder kan, klapt het menu
-// omhoog uit; de beweging begint dan aan de onderkant.
-// Gemeten vanaf het veld, niet vanaf het menu: de rechthoek van het menu krimpt
-// tijdens het uitklappen.
-// TT-543 draaiwielen deel 2 (gemeten 10-11-2026, sessie 109): ook de balk
-// Terug/Verder van Profiel aanmaken en de tegels is een balk onderaan; daar viel
-// het menu achter. En de ruimte onder de pagina is een minimale hoogte van de
-// pagina, geen opvulling: de pagina is minstens 100vh hoog, en op een korte
-// pagina (Band aanmaken) maakte opvulling haar niet langer, zodat ze niet kon
-// schuiven en het menu over de onderbalk viel.
+
+
+
+
+
+
+
+
+
+
+
+
+
 const BALKEN_ONDER = '#appBottomNav, .wizard-action-bar';
 function menuInBeeld(menu, veld) {
   const balken = [...document.querySelectorAll(BALKEN_ONDER)]
-    .filter(b => b.getClientRects().length && getComputedStyle(b).position === 'fixed') // vast element: geen offsetParent
+    .filter(b => b.getClientRects().length && getComputedStyle(b).position === 'fixed')
     .map(b => b.getBoundingClientRect().top);
   const onder = Math.min(window.innerHeight, ...balken);
   const veldRect = veld.getBoundingClientRect();
@@ -1893,10 +1893,10 @@ function menuInBeeld(menu, veld) {
   }
   const kanNog = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
   if (kanNog < tekort) {
-    if (menu.ttMinHoogte === undefined) menu.ttMinHoogte = document.body.style.minHeight; // terug bij sluiten
-    // 8D (TT-543 onderdeel 6, blok 2, 11-11-2026): de pagina kan langer zijn dan
-    // body (een marge die eronder uitsteekt). Gemeten vanaf de hoogte van de
-    // pagina, anders groeit ze niet en valt het menu over de balk (was 9px).
+    if (menu.ttMinHoogte === undefined) menu.ttMinHoogte = document.body.style.minHeight;
+
+
+
     document.body.style.minHeight = Math.ceil(Math.max(document.body.offsetHeight, document.documentElement.scrollHeight) + tekort - kanNog) + 'px';
   }
   const beweegtNiet = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1913,19 +1913,19 @@ function closeChoiceMenu() {
   if (veld) veld.setAttribute('aria-expanded', 'false');
   if (!menu) return;
 
-  // Dichtklappen met dezelfde beweging, andersom. Pas daarna weghalen.
-  //
-  // TT-234 (10-09-2026): hier zat een fout waardoor het menu na één keer
-  // gebruiken niet meer openging. De vangnet-timer stond op 160 ms, korter dan
-  // de sluitbeweging zelf duurt. De timer ruimde dus als eerste op, brak de
-  // beweging af, en 'animationend' kwam daardoor nooit. De luisteraar bleef
-  // liggen en ving de eerstvolgende beweging op dit element: de ópeningsbeweging
-  // van de volgende keer. Het menu klapte open en meteen weer dicht.
-  //
-  // Drie dingen houden dat nu tegen:
-  // 1. De luisteraar gaat er in elk pad weer af, ook als de timer opruimt.
-  // 2. De luisteraar reageert alleen op de sluitbeweging, op naam.
-  // 3. De timer staat ruim boven de duur van de beweging (140 ms).
+
+
+
+
+
+
+
+
+
+
+
+
+
   menu.classList.add('sluit');
   let t = null;
   const opruimen = () => {
@@ -1940,26 +1940,26 @@ function closeChoiceMenu() {
     if (e.animationName === 'choiceMenuDicht') opruimen();
   };
   menu.addEventListener('animationend', bijEindeBeweging);
-  // Staat "minder beweging" aan, dan is er geen sluitbeweging (styles.css) en
-  // komt er dus ook geen 'animationend'. Meteen opruimen, niet 260 ms wachten.
+
+
   const beweegtNiet = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   t = setTimeout(opruimen, beweegtNiet ? 0 : 260);
-  // openChoiceMenu() gebruikt dit om een nog lopende sluiting af te breken.
+
   menu.ttOpruimen = opruimen;
   if (cfg && cfg.naSluiten) cfg.naSluiten();
 }
 
-// ─── Lege staat (huisstijl §15, TT-248, 11-09-2026) ──────────────────────────
-//
-// Eén component voor elke lege staat in de app: een kop, hoogstens één regel
-// uitleg, en altijd precies één knop die de volgende stap dóét. Tot 11-09-2026
-// had elk scherm zijn eigen vorm; "Nog geen profiel" had een knop en "Nog geen
-// bands" tien regels verderop niet. Nooit een tweede knop toevoegen — kiezen
-// is precies wat in een lege staat niet lukt.
-// Eén uitzondering zonder knop (huisstijl §15, TT-543 onderdeel 5, besluit
-// Ronald 09-11-2026, voorstel 4): een nieuw gesprek. Het invoerveld eronder is
-// daar de volgende stap; een knop die alleen de cursor zet, is een tweede knop
-// voor dezelfde handeling. Zonder knopLabel dus geen knop.
+
+
+
+
+
+
+
+
+
+
+
 function emptyStateHTML(kop, uitleg, knopLabel, knopActie) {
   const uitlegHTML = uitleg ? `<p class="empty-state-text">${escHtml(uitleg)}</p>` : '';
   const knopHTML = knopLabel ? `<button class="btn btn-primary" onclick="${knopActie}">${escHtml(knopLabel)}</button>` : '';
@@ -1970,55 +1970,55 @@ function emptyStateHTML(kop, uitleg, knopLabel, knopActie) {
   </div>`;
 }
 
-// TT-561/TT-562 (besluit Ronald 06-11-2026): laden mislukt. Dezelfde vorm als
-// een lege staat, in de tekstkleur, nooit rood (huisstijl §1.2), met één knop
-// die het laden herhaalt. Een storing toont zo nooit "Nog geen …".
-// De uitleg alleen bij een bekende oorzaak (geen verbinding, server, sessie);
-// zonder oorzaak zegt de kop genoeg. Bij laden is er niets ingevuld.
+
+
+
+
+
 function foutStaatHTML(err, actie, knopActie) {
   const tekst = friendlyErrorMessage(err, actie).replace(/\s*Wat je invulde blijft staan\.$/, '');
   const zonderOorzaak = / is niet gelukt\. Probeer het opnieuw\.$/.test(tekst);
   return emptyStateHTML('Laden lukt nu niet', zonderOorzaak ? '' : tekst,
     'Probeer het opnieuw', knopActie);
 }
-// Eén regel in een keuzelijst als zoeken mislukt (TT-562). Geen keuze: geen tik.
+
 const AC_FOUT_HTML = '<div class="ac-item ac-fout">Zoeken lukt nu niet. Controleer je verbinding en typ opnieuw.</div>';
 
 
-// ─── Naam in een profielkop (TT-249, herzien 11-09-2026) ─────────────────────
-//
-// Een naam wordt nooit afgekapt en nooit afgebroken. Past hij niet, dan wordt
-// de letter kleiner, tot de ondergrens van 16px. Past hij daar nog steeds
-// niet, dan is de naam te lang om te tonen — dat wordt tegengehouden bij het
-// invullen, niet hier (zie naamPastInProfielkop()).
-//
-// Waarom meten en niet tekens tellen: "MMMMMMMMMM" is ruim twee keer zo breed
-// als "iiiiiiiiii". Tellen weet dat niet, meten wel.
-// TT-517 fase 1 (besluit Ronald 30-10-2026): de bovenste trede is de maat
-// Groot, 32px (was 36px met Roboto). De lagere treden krimpen tot de naam past.
+
+
+
+
+
+
+
+
+
+
+
 const PROFIELNAAM_LADDER = [32, 28, 24, 20, 18, 16];
 
-// Noodtreden onder de ondergrens. Alleen voor namen die al in de database
-// staan van vóór de invulcontrole, en voor het smalle bureaubladvenster
-// tussen 561px en circa 700px, waar de app-schil smaller is dan een telefoon
-// (zie §11 van de huisstijl: #appRoot is daar 50% van het venster).
+
+
+
+
 const PROFIELNAAM_NOOD = [14, 12, 10];
 
-// Ondergrens waarop de invulcontrole toetst.
+
 const PROFIELNAAM_MIN = 16;
 
-// Referentiebreedte voor de invulcontrole: de ruimte voor de naam op de hoes
-// op het smalste scherm (360px, huisstijl §3.9). TT-596 (besluit Ronald
-// 14-11-2026: "ja."): gemeten 234px bij 360, 249 bij 375, 264 bij 390. Was
-// 187px, de ruimte naast de profielfoto van vóór de hoes.
+
+
+
+
 const PROFIELNAAM_REFERENTIE = 234;
 
 let naamMeterEl = null;
 
-// Meet hoe breed een naam wordt bij een bepaalde lettergrootte, met dezelfde
-// klasse en dus hetzelfde lettertype en dezelfde letterafstand als de echte
-// kop, in de dikte van de hoes (900, .profile-name.naam-meter; TT-596). Het
-// meetelement staat buiten beeld en wordt hergebruikt.
+
+
+
+
 function meetNaamBreedte(naam, px) {
   if (!naamMeterEl) {
     naamMeterEl = document.createElement('div');
@@ -2030,23 +2030,23 @@ function meetNaamBreedte(naam, px) {
   return naamMeterEl.scrollWidth;
 }
 
-// Past deze naam op de smalste telefoon, op de ondergrens van 16px?
-// Gebruikt door de invulcontrole van voornaam en gebruikersnaam.
+
+
 function naamPastInProfielkop(naam) {
   return meetNaamBreedte(naam, PROFIELNAAM_MIN) <= PROFIELNAAM_REFERENTIE;
 }
 
-// Zet de lettergrootte van elke .profile-name binnen `root` op de grootste
-// trede die past. Aanroepen ná het plaatsen in de pagina: een element dat er
-// nog niet staat heeft geen breedte, en dan meet deze functie niets.
+
+
+
 function fitProfileName(root) {
   const scope = root || document;
   scope.querySelectorAll('.profile-name').forEach(el => {
     const ruimte = el.clientWidth;
-    if (!ruimte) return; // nog niet zichtbaar — niets te meten
+    if (!ruimte) return;
     el.style.fontSize = '';
-    // TT-543 onderdeel 6: een naam met data-max (de kleine hoes van Mijn Bands)
-    // begint op die maat.
+
+
     const max = Number(el.dataset.max) || Infinity;
     for (const px of PROFIELNAAM_LADDER.concat(PROFIELNAAM_NOOD).filter(x => x <= max)) {
       el.style.fontSize = px + 'px';
@@ -2055,34 +2055,34 @@ function fitProfileName(root) {
   });
 }
 
-// TT-293 (18-09-2026): het woordmerk liep buiten het canvas bij een
-// bureaubladvenster tussen circa 561 en 780px breed — daar is #appRoot 50% van
-// het venster (§11) en dus smaller dan een telefoon, zelfde oorzaak als de
-// noodtreden bij fitProfileName (huisstijl §2.1). Zelfde aanpak als
-// fitProfileName: krimpen tot het past, geen vaste maat per scherm.
-// TT-301 (20-09-2026): de gewone kop is net zo krap: op 280px (het smalste
-// canvas) is er na twee knoppen van 44px nog 144px over, en het woordmerk is
-// op 28px 188px breed — gemeten 20-09-2026. Eén regel, niet per scherm
-// omzeild (§2, regel 11). TT-410b (06-10-2026): muzikant en band zijn een
-// scherm met de kop van de app; er is geen venster met een eigen koprij meer.
+
+
+
+
+
+
+
+
+
+
 const KOPLOGO_LADDER = [28, 24, 22, 20, 18, 16];
-// Noodtreden, zelfde gedachte als PROFIELNAAM_NOOD hierboven. Ze zijn nodig
-// in één stand: een koprij in een venster met zowel de terugknop als het
-// ⋯-menu en het kruis, op het smalste canvas van 280px. Daar is na de drie
-// knoppen nog 91px over en het woordmerk is op 16px al 107px breed (gemeten
-// 20-09-2026). Liever een klein woordmerk dan een woordmerk over de knoppen.
-// TT-318 (24-09-2026): trede 10 erbij. Het eigen woordmerk met 3px
-// letterafstand is breder dan Alfa Slab One met 1px: op 12px 88px, en in die
-// krapste stand liep het 1px over het ⋯-menu (gemeten, testset blok 25).
+
+
+
+
+
+
+
+
 const KOPLOGO_NOOD = [14, 12, 10];
 
-// Het woordmerk wordt buiten beeld gemeten, niet op zijn eigen plek in de
-// kop. Reden (TT-301, gemeten 20-09-2026): het woordmerk staat gecentreerd
-// in zijn kolom, dus loopt het bij overschrijding aan beide kanten uit zijn
-// vak. scrollWidth telt alleen wat er rechts uitsteekt en meldde daardoor
-// "past" terwijl het woordmerk 18px over de knoppen heen lag. Buiten beeld
-// is er geen kolom die het indrukt, dus daar is de meting de echte breedte.
-// Zelfde aanpak als meetNaamBreedte() hierboven.
+
+
+
+
+
+
+
 let kopLogoMeterEl = null;
 
 function meetLogoBreedte(logo, px) {
@@ -2096,10 +2096,10 @@ function meetLogoBreedte(logo, px) {
   return kopLogoMeterEl.scrollWidth;
 }
 
-// De ruimte in het middenvak van de kop, voor het woordmerk of de titel. Gemeten
-// vanaf waar het element werkelijk staat (het midden van de rij plus een
-// eventuele optische verschuiving) tot de binnenkant van elk buitenvak; het
-// element groeit naar twee kanten even ver, dus de krapste kant telt, twee keer.
+
+
+
+
 function kopRuimte(rij, el) {
   const vakken = [...rij.querySelectorAll(':scope > .kop-vak')];
   if (vakken.length < 2) return null;
@@ -2118,16 +2118,16 @@ function fitKopLogo(root) {
   const scope = root || document;
   scope.querySelectorAll('header').forEach(rij => {
     const logo = rij.querySelector(':scope > .logo');
-    if (!logo || !rij.clientWidth) return; // nog niet zichtbaar — niets te meten
-    // De ruimte voor het woordmerk. TT-318 (24-09-2026): gerekend vanaf de
-    // plek waar het woordmerk werkelijk staat — het midden van de rij plus
-    // zijn optische verschuiving — tot de binnenkant van elk buitenvak. Het
-    // woordmerk groeit naar twee kanten even ver, dus de krapste kant telt,
-    // twee keer. Was: de rijbreedte min de twee vakken samen. Dat klopte
-    // alleen als beide vakken even breed waren; met het ⋯-menu en het kruis
-    // rechts (drie knoppen) liep het woordmerk daardoor over het ⋯-menu.
-    // De vakken zelf veranderen niet met de lettergrootte: ze staan tegen de
-    // buitenrand van hun kolom (justify-self start en end).
+    if (!logo || !rij.clientWidth) return;
+
+
+
+
+
+
+
+
+
     const ruimte = kopRuimte(rij, logo);
     if (ruimte === null) return;
     for (const px of KOPLOGO_LADDER.concat(KOPLOGO_NOOD)) {
@@ -2137,20 +2137,20 @@ function fitKopLogo(root) {
   });
 }
 
-// TT-517 fase 3 (01-11-2026, besluit Ronald N2: "een naam is heilig en moet
-// zichtbaar zijn"): de titel in de kop wordt nooit afgekapt. Past hij niet op
-// 17px (de rol Tegelkop, huisstijl §2), dan op 15px; past hij dan nog niet,
-// dan op twee regels van 15px (36px hoog, past in de rij van 44px). Alleen
-// maten uit de schaal van zes (TT-517 fase 1). Meestal gaat het om een lange
-// naam op een profiel (een bandnaam mag 40 tekens). Zelfde meting als het
-// woordmerk: buiten beeld, want een gecentreerd element loopt aan twee kanten
-// uit zijn vak.
+
+
+
+
+
+
+
+
 const KOPTITEL_LADDER = [17, 15];
 let kopTitelMeterEl = null;
 function fitKopTitel() {
   const titel = document.getElementById('kopTitel');
   const rij = titel?.parentElement;
-  if (!titel || !rij || !rij.clientWidth) return; // nog niet zichtbaar
+  if (!titel || !rij || !rij.clientWidth) return;
   const ruimte = kopRuimte(rij, titel);
   if (ruimte === null) return;
   if (!kopTitelMeterEl) {
@@ -2169,20 +2169,20 @@ function fitKopTitel() {
   titel.classList.add('twee-regels');
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// Media — gedeeld door de wizard (stap 4), Je mediahoek en het profiel
-// ═══════════════════════════════════════════════════════════════════════
-// TT-263 (13-09-2026, Ronald): "gebruiker kan niet zien welke link welke
-// video is." Een rij met alleen een adres zegt niets. Daarom: miniatuur,
-// naam van de video, een bannerteken om te kiezen wat straks in de
-// bannerbalk op het profiel komt, en afspelen binnen de app in plaats van
-// een sprong naar de browser.
-//
-// detectPlatform() en extractYouTubeId() stonden tot 13-09-2026 in
-// wizard.js. Ze worden nu door drie bestanden gebruikt; gedeelde
-// hulpfuncties horen hier. In wizard.js zijn ze verwijderd, niet gekopieerd.
 
-// Ronalds verwachting (13-09-2026): vijf à zes items in de banner.
+
+
+
+
+
+
+
+
+
+
+
+
+
 const MEDIA_BANNER_MAX = 6;
 
 function detectPlatform(url) {
@@ -2194,13 +2194,13 @@ function detectPlatform(url) {
   return 'Link';
 }
 
-// TT-184 (03-09-2026): een YouTube-miniatuur is zonder sleutel te bouwen —
-// elke YouTube-URL bevat een video-ID, en img.youtube.com/vi/<ID>/hqdefault.jpg
-// bestaat altijd voor een geldige video.
+
+
+
 function extractYouTubeId(url) {
   const id = extractYouTubeIdRuw(url);
-  // TT-483: alleen een echt video-id (letters, cijfers, - en _). Een waarde uit
-  // de link zelf (?v=...) kan na het decoderen aanhalingstekens bevatten.
+
+
   return id && /^[A-Za-z0-9_-]{6,20}$/.test(id) ? id : null;
 }
 
@@ -2221,11 +2221,11 @@ function extractYouTubeIdRuw(url) {
   return null;
 }
 
-// ─── De naam van een video ───────────────────────────────────────────────
-// Gemeten op 13-09-2026 vanaf talenttent.org, alle vier met status 200 en
-// zonder sleutel: YouTube, Spotify, SoundCloud en TikTok geven via oEmbed de
-// titel terug. Instagram niet — die weigert de aanvraag (geen token), dus
-// daar blijft de platformnaam staan.
+
+
+
+
+
 const MEDIA_OEMBED = {
   YouTube:    u => 'https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(u),
   Spotify:    u => 'https://open.spotify.com/oembed?url=' + encodeURIComponent(u),
@@ -2233,8 +2233,8 @@ const MEDIA_OEMBED = {
   TikTok:     u => 'https://www.tiktok.com/oembed?url=' + encodeURIComponent(u),
 };
 
-// Onthouden per adres, ook een mislukking: anders vraagt elke hertekening
-// van de lijst opnieuw, en een lijst hertekent bij elke toetsaanslag.
+
+
 const mediaTitelCache = new Map();
 
 async function mediaTitelOphalen(url) {
@@ -2251,16 +2251,16 @@ async function mediaTitelOphalen(url) {
       titel = (j && j.title) ? String(j.title) : null;
     }
   } catch (e) {
-    // Geen netwerk, of het platform weigert. Geen melding: de platformnaam
-    // staat er al, en een toast per link zou het scherm overspoelen.
+
+
     titel = null;
   }
   mediaTitelCache.set(veilig, titel);
   return titel;
 }
 
-// Vult de namen ná het tekenen van een lijst. Elk element dat een naam kan
-// krijgen draagt data-media-url; staat er al een naam, dan blijft die staan.
+
+
 function mediaTitelsBijwerken(root) {
   const scope = root || document;
   scope.querySelectorAll('[data-media-url]').forEach(async el => {
@@ -2268,19 +2268,19 @@ function mediaTitelsBijwerken(root) {
     if (!url || el.dataset.titelGezet === '1') return;
     const titel = await mediaTitelOphalen(url);
     if (!titel) return;
-    if (!el.isConnected) return; // lijst is intussen opnieuw getekend
+    if (!el.isConnected) return;
     el.textContent = titel;
     el.dataset.titelGezet = '1';
     if (el.classList.contains('media-rij-titel')) el.title = titel;
   });
 }
 
-// ─── Het bannerteken ─────────────────────────────────────────────────────
-// Besluit Ronald 13-09-2026: geen vinkje maar de vorm van de banner — een
-// cirkel met een liggende afgeronde rechthoek erin. Gekozen is goud gevuld
-// met de vorm in bijna-zwart; niet gekozen is een omtrek zonder vulling.
-// Goud staat hier als vlak onder een donkere vorm, nooit doorschijnend
-// (huisstijl §1.1). Alle kleuren staan in styles.css, niet hier.
+
+
+
+
+
+
 function bannerKnopHTML(aan, onclickJs, opBeeld) {
   return `<button type="button" class="banner-btn${opBeeld ? ' op-beeld' : ''}" aria-pressed="${aan ? 'true' : 'false'}"
     aria-label="${aan ? 'Uit je banner halen' : 'In je banner tonen'}" title="${aan ? 'Uit je banner halen' : 'In je banner tonen'}"
@@ -2289,20 +2289,20 @@ function bannerKnopHTML(aan, onclickJs, opBeeld) {
   </button>`;
 }
 
-// Eén tekst, twee schermen (wizard en Je mediahoek) — zie §2.11: een maat of
-// een regel wordt in de standaard doorgevoerd, niet per scherm.
-// Het teken staat vóór de tekst, in de gekozen (gouden) stand en op
-// teksthoogte — zo weet de gebruiker meteen welk teken hij zoekt
-// (besluit Ronald, 13-09-2026).
+
+
+
+
+
 function bannerTellerHTML(aantal) {
   return `<span class="banner-teken" aria-hidden="true"><svg viewBox="0 0 24 24"><circle class="bb-schijf" cx="12" cy="12" r="11"></circle><rect class="bb-vorm" x="5.5" y="8.5" width="13" height="7" rx="2"></rect></svg></span>` +
     `<b>Kies je bannerinhoud:</b> ${aantal} van ${MEDIA_BANNER_MAX} gekozen.`;
 }
 
-// Aan/uit zonder de lijst opnieuw te tekenen (Ronald, 13-09-2026: "alleen de
-// knop moet aan/uit gaan, verder niets"). Hertekenen liet alle rijen kort
-// verdwijnen — de rijen kregen hun openingsanimatie opnieuw en elke miniatuur
-// werd opnieuw opgehaald. Alleen deze ene knop wijzigt nu van stand.
+
+
+
+
 function bannerKnopStandZetten(houderId, i, aan) {
   const knop = document.querySelectorAll(`#${houderId} .banner-btn`)[i];
   if (!knop) return;
@@ -2312,9 +2312,9 @@ function bannerKnopStandZetten(houderId, i, aan) {
   knop.setAttribute('title', label);
 }
 
-// Waar of onwaar teruggeven zodat de aanroeper de vlag alleen omzet als het
-// mag. De bovengrens geldt over foto's, video's en links samen: de banner
-// toont één reeks, geen reeks per tabblad.
+
+
+
 function bannerKeuzeMag(huidigAantal, wordtAan) {
   if (!wordtAan) return true;
   if (huidigAantal < MEDIA_BANNER_MAX) return true;
@@ -2322,15 +2322,15 @@ function bannerKeuzeMag(huidigAantal, wordtAan) {
   return false;
 }
 
-// ─── Afspelen binnen de app ──────────────────────────────────────────────
-// TT-263: een link opende tot 13-09-2026 de browser van de gebruiker, en
-// daarmee verliet iemand de app. Gemeten op 13-09-2026 vanaf talenttent.org:
-// het kader van YouTube (youtube-nocookie), Spotify en SoundCloud laadt.
-// Instagram en TikTok laten afspelen binnen een andere pagina niet toe; die
-// krijgen een scherm dat dat zegt, met één knop naar het platform zelf.
-// De cookieloze variant van YouTube is met opzet gekozen, en het kader wordt
-// pas gebouwd ná de tik — vóór die tik staat er niets van een ander bedrijf
-// in de pagina.
+
+
+
+
+
+
+
+
+
 function mediaEmbedSrc(url) {
   const veilig = safeUrl(url);
   if (!veilig) return null;
@@ -2377,7 +2377,7 @@ function openMediaSpeler(url, soort, titel, platform) {
 
   document.getElementById('mediaSpelerModal').classList.add('visible');
   if (soort === 'link' && !titel) {
-    // De naam komt na het openen binnen; het scherm staat er dan al.
+
     mediaTitelOphalen(veilig).then(t => {
       if (t && document.getElementById('mediaSpelerModal').classList.contains('visible')) {
         document.getElementById('mediaSpelerTitel').textContent = t;
@@ -2388,26 +2388,26 @@ function openMediaSpeler(url, soort, titel, platform) {
 
 function closeMediaSpeler() {
   document.getElementById('mediaSpelerModal').classList.remove('visible');
-  // Leegmaken stopt het afspelen. Zonder dit speelt het geluid door achter
-  // een gesloten scherm.
+
+
   document.getElementById('mediaSpelerBeeld').innerHTML = '';
   document.getElementById('mediaSpelerVoet').innerHTML = '';
 }
 
-// ─── Eén vorm voor beide schermen ────────────────────────────────────────
-// De wizard (stap 4) en Je mediahoek tonen dezelfde lijst. Tot 13-09-2026
-// stond die HTML twee keer, bijna gelijk maar niet helemaal. Nu staat de vorm
-// hier één keer; de twee schermen verschillen alleen in de namen van hun
-// functies (zonder voorvoegsel = wizard, 'mh' = Je mediahoek).
+
+
+
+
+
 function mediaFnNaam(voorvoegsel, naam) {
   return voorvoegsel ? voorvoegsel + naam.charAt(0).toUpperCase() + naam.slice(1) : naam;
 }
 
-// Miniatuur van een link: bij YouTube het echte beeld, anders een vlak met de
-// platformnaam. Bewust zonder extra netwerkaanvraag per link (TT-184).
-// TT-543 onderdeel 6 (F1, besluit Ronald 10-11-2026: "C"): de naam van een
-// platform in een klein vakje breekt bij de hoofdletter ("Sound / Cloud"),
-// niet midden in een woord. De letter blijft 11px.
+
+
+
+
+
 function platformNaamHTML(naam) {
   return escHtml(naam).replace(/([a-z])([A-Z])/g, '$1<wbr>$2');
 }
@@ -2422,21 +2422,21 @@ function mediaLinkMiniatuurHTML(url) {
   return `<span class="media-mini-platform">${veilig ? platformNaamHTML(platform) : '—'}</span>`;
 }
 
-// ─── TT-543 blok 3: de mediahoek als één raster ──────────────────────────
-// Besluiten Ronald 06 en 07-11-2026 (voorstel 15 B, op beeld): foto's, video's
-// en links staan in één raster van drie, zonder tabbladen en zonder sleepvak.
-// De laatste tegel is "+ Toevoegen" in de gestippelde vorm. Een tik opent het
-// keuzemenu Foto · Video · Link in de vorm van Beheersing (huisstijl §7.7),
-// opzij van de tegel. Op elke tegel het bannerteken links en ✕ rechts; geen
-// typelabel en geen gele rand; een video en een YouTube-link krijgen het
-// speelteken. Een link wijzig je door hem te verwijderen en opnieuw toe te
-// voegen. Geldt voor de wizard (stap 4), Je mediahoek en, sinds onderdeel 6,
-// Onze media van een band (besluit Ronald 10-11-2026, 10).
-// De knoppen van een link dragen het nummer van de link in zijn eigen lijst;
-// in het raster staan de links na de bestanden (bannerKnopStandZetten telt
-// daarom de bestanden mee, zie linkBannerTik()).
-// Het plusteken van "+ Toevoegen" (Je mediahoek) en "+ Instrument" en "+ Genre"
-// (TT-543 blok 4): één tekening.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const PLUS_TEKEN = '<svg class="media-toevoegen-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
 
 function mediaRasterHTML(bestanden, links, voorvoegsel) {
@@ -2481,10 +2481,10 @@ function mediaLinkKaartHTML(l, i, fn) {
     </div>`;
 }
 
-// Het keuzemenu van "+ Toevoegen" (TT-609, besluiten Ronald 14-11-2026: "B",
-// "akkoord"): het gewone keuzemenu (huisstijl §3.4) met een teken voor elke
-// keuze, direct onder de tegel en even breed. Opent het onder de rand, dan
-// schuift de pagina, zoals bij elk keuzemenu (menuInBeeld()).
+
+
+
+
 const MEDIA_TEKENS = {
   foto: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
   video: '<path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
@@ -2495,7 +2495,7 @@ function mediaToevoegenMenu(ev, id) {
   const knop = document.getElementById(`${id}MediaToevoegen`);
   const menu = document.getElementById(`${id}MediaToevoegenMenu`);
   if (!knop || !menu) return;
-  // Zonder keuze openen: dan geeft elke keuze een wijziging, ook twee keer Foto.
+
   const sel = document.getElementById(`${id}MediaToevoegenSel`);
   if (sel) sel.value = '';
   const sleutel = `${id}MediaToevoegen`;
@@ -2503,17 +2503,17 @@ function mediaToevoegenMenu(ev, id) {
   toggleChoiceMenu(sleutel);
 }
 
-// Na de keuze in het menu. Een grens meldt de app vóór de handeling (app-gedrag,
-// Grenzen): dan opent de kiezer of het venster niet.
+
+
 function mediaToevoegenStart(sel, bestanden, links, invoerId, linkErbij) {
   const keuze = sel.value;
-  sel.value = ''; // een volgende keer weer zonder keuze
+  sel.value = '';
   if (keuze === 'foto' || keuze === 'video') {
     if (grensBereikt(bestanden.length, GRENZEN.beeld, `Maximum van ${GRENZEN.beeld} bestanden bereikt.`)) return;
     const invoer = document.getElementById(invoerId);
     if (!invoer) return;
-    // Schuine streep en ster los: de monitor leest die twee samen als begin
-    // van commentaar (tt_monitor.py, zonder_commentaar).
+
+
     invoer.accept = (keuze === 'foto' ? 'image' : 'video') + '/' + '*';
     invoer.click();
   } else if (keuze === 'link') {
@@ -2522,7 +2522,7 @@ function mediaToevoegenStart(sel, bestanden, links, invoerId, linkErbij) {
   }
 }
 
-// Een tik op het bannerteken van een link in het raster.
+
 function linkBannerTik(l, i, bestanden, links, rasterId, tellerId) {
   if (!l) return;
   if (!bannerKeuzeMag(bannerAantal(bestanden, links), !l.inBanner)) return;
@@ -2531,12 +2531,12 @@ function linkBannerTik(l, i, bestanden, links, rasterId, tellerId) {
   bannerTellerBijwerken(tellerId, bestanden, links);
 }
 
-// ─── Het venster "Link toevoegen" (besluit Ronald 07-11-2026, op beeld) ──
-// Eén veld "Link". De naam van het platform staat rechts op de regel van het
-// label, 12px grijs, gespiegeld aan het label; geen herkend platform: "Link".
-// Toevoegen staat direct onder het veld en is uit zolang het veld leeg is.
-// Zonder https:// ervoor zet de app het er zelf voor; een link die daarna
-// nog niet te openen is, komt er niet in.
+
+
+
+
+
+
 let linkToevoegenKlaar = null;
 function openLinkToevoegen(klaar) {
   linkToevoegenKlaar = klaar;
@@ -2571,11 +2571,11 @@ function linkToevoegenOk() {
   if (klaar) klaar(url);
 }
 
-// Een tik op het bannerteken van een foto of video (wizard, Je mediahoek,
-// Onze media; één functie, huisstijl §18.2). TT-517 fase 5 (huisstijl §21):
-// kiest de gebruiker een foto voor de banner, dan opent eerst het kader van
-// 4:3 (kiesUitsnede, 'banner'). Annuleren laat alles zoals het was. Uit de
-// banner halen vergeet het kader. Een video krijgt geen kader.
+
+
+
+
+
 async function bannerTekenTik(m, bestanden, links, gridId, tellerId) {
   if (!m) return;
   if (!bannerKeuzeMag(bannerAantal(bestanden, links), !m.inBanner)) return;
@@ -2592,9 +2592,9 @@ async function bannerTekenTik(m, bestanden, links, gridId, tellerId) {
   bannerTellerBijwerken(tellerId, bestanden, links);
 }
 
-// TT-543 blok 4b (besluit Ronald 07-11-2026, B): een tik op een foto die in de
-// banner staat, opent het kader op zijn plek; een andere foto opent groot, een
-// video speelt af. Wizard, Je mediahoek en Onze media.
+
+
+
 async function mediaTegelTik(m) {
   if (!m || !m.url) return;
   if (m.type === 'foto' && m.inBanner) {
@@ -2606,13 +2606,13 @@ async function mediaTegelTik(m) {
   openMediaSpeler(m.url, 'video', m.name || '', '');
 }
 
-// Wat de app van het kader bewaart: alleen bij een foto in de banner.
+
 function bannerKader(m) {
   return m && m.type === 'foto' && m.inBanner ? uitsnedeGeldig(m.uitsnede) : null;
 }
 
-// De bovengrens geldt over foto's, video's en links samen: de banner toont
-// één reeks, geen reeks per tabblad.
+
+
 function bannerAantal(bestanden, links) {
   return (bestanden || []).filter(m => m.inBanner).length + (links || []).filter(l => l.inBanner).length;
 }
@@ -2622,28 +2622,28 @@ function bannerTellerBijwerken(elId, bestanden, links) {
   if (el) el.innerHTML = bannerTellerHTML(bannerAantal(bestanden, links));
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// TT-517 fase 4 (01-11-2026): het profiel als hoes (huisstijl §21, besluiten
-// Ronald 30 en 31-10-2026, (d) 01-11-2026). Vervangt de bannerbalk van TT-265
-// en de kop met de ronde profielfoto van TT-384. Muzikant en band gelijk.
-// - De foto groot bovenaan, 4:3, binnen de marge, hoeken 16px, 8px onder de
-//   kop. De naam groot op de foto, de regel eronder in dezelfde kleur.
-// - De banner zit in de hoes: eerst de profielfoto (of bandfoto), daarna de
-//   media die de muzikant of band voor de banner koos (maximaal zes). Zonder
-//   profielfoto begint de hoes met die media (besluit Ronald 01-11-2026, A).
-// - Vegen om te bladeren. De stippen zijn alleen een aanwijzing, geen knop
-//   (TT-541). Met een muis twee pijltjes, niet op het eerste en het laatste
-//   beeld, nooit op een telefoon.
-// - De hoes staat stil: geen doorschuiven, geen video die vanzelf speelt.
-// - Delen en ⋯ rechtsonder op de foto, in de tekstkleur van de hoes.
-// - Tekstkleur en matglas komen uit het beeld zelf (hoesBeeldOordeel()): wit
-//   of antraciet, en matglas alleen als de foto erom vraagt.
-// Zonder foto en zonder gekozen media staat er een leeg, donker podium (de
-// schijnwerper komt in fase 6).
 
-// Op volgorde van toevoegen, de oudste eerst, voor muzikant en band gelijk
-// (besluit Ronald 01-11-2026, A). Zonder tijd (de publieke functie zet de
-// media zelf al op volgorde) blijft de volgorde staan: sort() is stabiel.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function opVolgordeVanToevoegen(lijst) {
   return (lijst || []).slice().sort((x, y) => String((x && x.created_at) || '').localeCompare(String((y && y.created_at) || '')));
 }
@@ -2656,21 +2656,21 @@ function profielBannerItems(mediaLijst) {
     .slice(0, MEDIA_BANNER_MAX);
 }
 
-// ─── TT-45 (25-09-2026, besluit Ronald 23-09-2026): afgeschermde media ──────
-// Een bezoeker zonder account ziet van een 13- tot 15-jarige geen enkel
-// beeld. De database beslist dat, niet de app (tt_get_musicians_public en
-// tt_get_bands_public): een afgeschermd medium komt zonder adres, met
-// `afgeschermd: true`.
-// TT-517 fase 7 (besluit Ronald 01-11-2026, B): op de plek van elk beeld staat
-// een wazig beeld, per foto een eigen, piepkleine versie (16 x 12 pixels) die
-// de app bij het uploaden maakt (wazigMaken() in wizard.js). Afgeschermd geeft
-// de database in avatar_url die versie ("data:image/jpeg;base64,…"), of het
-// woord 'afgeschermd' als er (nog) geen versie is; dan staat er één algemeen
-// wazig beeld. Leeg blijft leeg: de schijnwerper (geen foto). Een medium
-// krijgt `wazig`. Geen teken, geen knop (huisstijl §18.7).
+
+
+
+
+
+
+
+
+
+
+
+
 const WAZIG_ALGEMEEN = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCAAMABADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDmNO0qT7JM0Z2nsBWxBorJpgWRSWPtWNpurXUNoShXJbuKtXPiTUk+VZEwAP4a8WbqNtI9FcmjP//Z';
 const WAZIG_VORM = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/;
-// De bron van het wazige beeld, of null als src geen afgeschermde foto is.
+
 function wazigBron(src) {
   const s = String(src || '');
   if (s === 'afgeschermd') return WAZIG_ALGEMEEN;
@@ -2679,18 +2679,18 @@ function wazigBron(src) {
 function wazigHTML(bron, klasse) {
   return `<img class="foto-wazig${klasse ? ' ' + klasse : ''}" src="${bron}" alt="" aria-hidden="true">`;
 }
-// Het beeld van een profiel- of bandfoto in een lijst, een rij of een kaart:
-// het fotootje, het wazige beeld (afgeschermd), of '' (geen foto: de plek
-// zet dan zelf de schijnwerper). `alt` is gewone tekst.
+
+
+
 function fotoHTML(src, alt, klasse) {
   const w = wazigBron(src);
   if (w) return wazigHTML(w, klasse);
   const u = safeUrl(src);
   return u ? `<img${klasse ? ` class="${klasse}"` : ''} ${kleinFotoAttr(u)} alt="${escHtml(alt || '')}">` : '';
 }
-// De afgeschermde media van een profiel: één vlak in plaats van tegels, met
-// het aantal en één opmerking (huisstijl §18.7). Het beeld: de eerste foto
-// met een wazige versie, anders die van de profielfoto, anders het algemene.
+
+
+
 function mediaAfgeschermdHTML(lijst, fotoWazig) {
   const beeld = lijst.filter(x => x.media_type !== 'link').length;
   const links = lijst.length - beeld;
@@ -2703,9 +2703,9 @@ function mediaAfgeschermdHTML(lijst, fotoWazig) {
     `<span>Maak een profiel aan om de inhoud te bekijken.</span></span></div>`;
 }
 
-// De donkere waas over het vlak: minstens 45%, en zo veel meer als nodig is
-// voor wit 6,1:1 op het lichtste punt van het beeld (huisstijl §18.7). Een
-// eigen foto kan licht zijn; het algemene beeld is donker genoeg met 45%.
+
+
+
 function wazigWaasZetten(img) {
   try {
     const c = document.createElement('canvas');
@@ -2713,8 +2713,8 @@ function wazigWaasZetten(img) {
     const x = c.getContext('2d');
     x.drawImage(img, 0, 0, 16, 12);
     const d = x.getImageData(0, 0, 16, 12).data;
-    // Het vlak toont het beeld vervaagd: ongeveer één pixel van de kleine
-    // versie. Meet daarom het gemiddelde van elke pixel met zijn buren (1-2-1).
+
+
     const k = (px, py, n) => d[(Math.min(11, Math.max(0, py)) * 16 + Math.min(15, Math.max(0, px))) * 4 + n];
     let licht = 0;
     for (let py = 0; py < 12; py++) for (let px = 0; px < 16; px++) for (let n = 0; n < 3; n++) {
@@ -2724,46 +2724,46 @@ function wazigWaasZetten(img) {
     }
     const lum = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
     let waas = 0.45;
-    // De waas mengt in sRGB, zoals de browser: elk kanaal × (1 − waas), plus 13 × waas.
+
     while (waas < 0.9 && 1.05 / (lum(licht * (1 - waas) + 13 * waas) + 0.05) < 6.1) waas += 0.01;
     img.parentNode.style.setProperty('--waas-vlak', waas.toFixed(2));
   } catch (e) { img.parentNode.style.setProperty('--waas-vlak', '0.65'); }
 }
 
-// Het speelteken: een driehoek in een ronde schijf, midden op elk beeld dat een
-// video is (de hoes en de videotegel op het profiel). Alleen een teken, geen
-// knop: de tik gaat naar het vlak eronder. Besluit Ronald, 08-10-2026: "niet
-// zichtbaar in de banner dat het een video is. voeg een play teken toe."
+
+
+
+
 const SPEELTEKEN_HTML = '<span class="pb-speel" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/></svg></span>';
 
-// De bron-attributen voor een beeld in de hoes. Een foto of video uit de
-// eigen opslag laadt met crossorigin, zodat de app het beeld kan meten. Een
-// beeld van elders (YouTube) niet: dat zou zonder toestemming van die site
-// niet laden. Dan meet de app niets en kiest de veilige vorm.
+
+
+
+
 function hoesBronAttr(src) {
   return (fotoLinkSleutel(src) ? 'crossorigin="anonymous" ' : '') + fotoBronAttr(src);
 }
 
 const HOES_PIJL = r => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${r ? '<path d="m9 18 6-6-6-6"/>' : '<path d="m15 18-6-6 6-6"/>'}</svg>`;
 
-// o.foto: de profiel- of bandfoto (uit safeUrl) of null; o.wazig: het wazige
-// beeld van een afgeschermde foto (wazigBron(), TT-517 fase 7) of null; o.naam: de naam als
-// tekst; o.regels: HTML van de regel onder de naam; o.knoppen: HTML van
-// profielKnoppenHTML(); o.media: de media voor de banner; o.fotoToevoegen:
-// JavaScript voor de knop "Voeg een foto toe" op een leeg podium, alleen voor de
-// eigenaar (TT-517 fase 6, huisstijl §21); anders null.
-// TT-543 onderdeel 6 (besluit Ronald 10-11-2026, 4 C): de kleine hoes van Mijn
-// Bands. o.tik: JavaScript voor een tik op het eerste beeld (in plaats van
-// groot bekijken); o.naamMax: de grootste maat van de naam in px.
+
+
+
+
+
+
+
+
+
 function profielHoesHTML(o) {
   const items = profielBannerItems(o.media);
-  // TT-385 (02-10-2026, besluit Ronald): een afgeschermde banner staat er
-  // niet. De database schermt een profiel in zijn geheel af, dus één
-  // afgeschermd item is genoeg. Dan blijft alleen het eerste beeld.
+
+
+
   const banner = items.some(it => it.afgeschermd) ? [] : items;
-  // Besluit Ronald (01-11-2026, A): zonder profielfoto begint de hoes met de
-  // media die voor de banner gekozen zijn. Het lege podium staat er alleen
-  // als er geen enkel beeld is.
+
+
+
   const podium = !o.foto && !o.wazig && !banner.length;
   const voor = o.foto || o.wazig || podium ? 1 : 0;
   const n = banner.length + voor;
@@ -2775,14 +2775,14 @@ function profielHoesHTML(o) {
     : o.foto
     ? `<button type="button" class="hoes-vlak" onclick="openMediaLightbox('${jsAttr(o.foto)}')" aria-label="Foto van ${naam} groot bekijken">` +
       `<img class="hoes-img" ${hoesBronAttr(o.foto)} alt="${naam}"></button>`
-    // TT-517 fase 7: afgeschermd het wazige beeld, geen knop (huisstijl §18.7).
+
     : o.wazig ? `<div class="hoes-vlak hoes-wazig" role="img" aria-label="Alleen zichtbaar met een account">${wazigHTML(o.wazig, 'hoes-img')}</div>`
-    // TT-517 fase 6: zonder foto de schijnwerper, twee bundels die samen op
-    // de naam vallen (hoesBundelZetten()). Het podium zelf is geen knop.
+
+
     : `<div class="hoes-vlak hoes-leeg" role="img" aria-label="Nog geen foto"><span class="hoes-bundel"></span></div>`;
-  // Alleen de eigenaar ziet de knop "Voeg een foto toe" (besluit Ronald
-  // 31-10-2026, optie A), in het midden van de hoes (besluit 01-11-2026); een
-  // bezoeker ziet alleen de schijnwerper.
+
+
+
   const knop = podium && o.fotoToevoegen
     ? `<button type="button" class="btn btn-primary hoes-foto-knop" onclick="${o.fotoToevoegen}">Voeg een foto toe</button>` : '';
 
@@ -2792,17 +2792,17 @@ function profielHoesHTML(o) {
     const wat = `Beeld ${i + 1 + voor} van ${n}`;
     let binnen, tik;
     if (it.media_type === 'foto') {
-      // TT-517 fase 5: een bannerfoto met een gekozen kader toont precies dat
-      // kader; zonder kader het midden (object-fit: cover).
+
+
       const k = uitsnedeGeldig(it.uitsnede);
       binnen = k
         ? `<img class="hoes-img hoes-kader" ${hoesBronAttr(url)} style="${uitsnedeStijl(k)}" data-kader="${k.x},${k.y},${k.b},${k.h}" alt="${wat}" loading="lazy">`
         : `<img class="hoes-img" ${hoesBronAttr(url)} alt="${wat}" loading="lazy">`;
       tik = `openMediaLightbox('${jsAttr(url)}')`;
     } else if (it.media_type === 'video') {
-      // #t=0.1 dwingt het eerste beeld af; zonder dat laat Safari op de
-      // iPhone een zwart vlak zien tot er getikt wordt. muted + playsinline
-      // staan erbij omdat de browser het element anders niet mag uitlezen.
+
+
+
       binnen = `<video class="hoes-img" ${hoesBronAttr(url + '#t=0.1')} muted playsinline preload="metadata" tabindex="-1" aria-hidden="true"></video>` + SPEELTEKEN_HTML;
       tik = `openMediaSpeler('${jsAttr(url)}', 'video')`;
     } else {
@@ -2822,7 +2822,7 @@ function profielHoesHTML(o) {
       `<div class="hoes-stippen" aria-hidden="true">${Array.from({ length: n }, (_, i) => `<span class="hoes-stip${i ? '' : ' aan'}"></span>`).join('')}</div>`
     : '';
 
-  // TT-517 fase 8: de tekst voor het visitekaartje (kaartVoorDelen() in musicians.js).
+
   const kaart = o.kaart ? ` data-kaart="${escHtml(JSON.stringify(o.kaart))}"` : '';
   return `<div class="hoes"${kaart}>
     <div class="hoes-beeld"><div class="hoes-spoor">${eerste}${vlakken}</div>${meer}${knop}</div>
@@ -2834,20 +2834,20 @@ function hoesRustig() {
   return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-// De tekstkleur van de hoes: wit (--op-foto) of antraciet (--op-foto-donker).
-// Leesbaar is: op de 5% slechtste plekken 4,5:1 en op de slechtste plek 3:1
-// (huisstijl §21, drempel voorstel Claude).
+
+
+
 const HOES_ANTRACIET = [82, 87, 95];
 function hoesLum(r, g, b) {
   const a = [r, g, b].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
   return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
 }
 
-// Tekent het beeld zoals het in de hoes staat (4:3, midden uitgesneden, of
-// het gekozen kader van een bannerfoto) en beoordeelt het stuk waar de naam,
-// de regel en de tekens staan: de onderste 40%, over de volle breedte. Geeft
-// null als het beeld niet te lezen is (een beeld van een andere site zonder
-// toestemming): dan geldt de veilige vorm.
+
+
+
+
+
 function hoesBeeldOordeel(m) {
   const iw = m.naturalWidth || m.videoWidth, ih = m.naturalHeight || m.videoHeight;
   if (!iw || !ih) return null;
@@ -2860,7 +2860,7 @@ function hoesBeeldOordeel(m) {
   c.width = 96; c.height = 72;
   const x = c.getContext('2d', { willReadFrequently: true });
   x.drawImage(m, sx, sy, sw, sh, 0, 0, 96, 72);
-  const d = x.getImageData(0, 43, 96, 28).data; // gooit een fout als het beeld niet te lezen is
+  const d = x.getImageData(0, 43, 96, 28).data;
   const La = hoesLum(...HOES_ANTRACIET), wit = [], ant = [];
   let som = 0, mn = 1, mx = 0;
   for (let i = 0; i < d.length; i += 4) {
@@ -2874,26 +2874,26 @@ function hoesBeeldOordeel(m) {
   const best = w.p5 >= z.p5 ? w : z;
   const waas = best.p5 < 4.5 || best.min < 3;
   return {
-    // Met matglas: antraciet op een lichte plek, wit op een donkere.
+
     donker: waas ? som / (d.length / 4) > 0.42 : w.p5 < z.p5,
     waas,
-    // Hoe groter het verschil tussen licht en donker achter de naam, hoe dichter het matglas.
+
     sterk: 0.4 + 0.45 * Math.min(1, (mx - mn) / 0.8),
     canvas: c, beeld: m, sx, sy, sw, sh
   };
 }
 
-// Het matglas: dezelfde foto, steeds waziger, vanaf 54% van de hoogte en
-// volledig op 80%, in vijf lagen (vervaging 1,5 · 4 · 8 · 14 · 24px), met een
-// waas die even geleidelijk oploopt (huisstijl §21). De lagen gebruiken een
-// kleine kopie van het beeld zoals het in de hoes staat: vervaagd zie je het
-// verschil niet, en een video krijgt zo ook matglas.
+
+
+
+
+
 function hoesWaasMaken(vlak, o) {
   const c = document.createElement('canvas');
   c.width = 240; c.height = 180;
   c.getContext('2d').drawImage(o.beeld, o.sx, o.sy, o.sw, o.sh, 0, 0, 240, 180);
-  // Een kopie op het toestel zelf (canvas), geen link naar de opslag: het
-  // beeld is al geladen via fotoBronAttr().
+
+
   const waasBeeld = c.toDataURL('image/jpeg', 0.8);
   const lagen = [[1.5, 54, 64], [4, 58, 68], [8, 62, 72], [14, 66, 76], [24, 70, 80]].map(([px, van, tot]) =>
     `<img alt="" src="${waasBeeld}" style="filter:blur(${px}px);-webkit-mask-image:linear-gradient(transparent ${van}%,#000 ${tot}%);mask-image:linear-gradient(transparent ${van}%,#000 ${tot}%)">`).join('');
@@ -2905,10 +2905,10 @@ function hoesWaasMaken(vlak, o) {
   vlak.appendChild(waas);
 }
 
-// Meet één beeld zodra het geladen is en zet de uitkomst op het vlak.
+
 function hoesVlakMeten(vlak, klaar) {
   const m = vlak.querySelector('.hoes-img');
-  // Een leeg podium of een linkkaart is donker: witte tekst.
+
   if (!m) { vlak.dataset.tekst = 'licht'; return; }
   const meet = () => {
     let o = null;
@@ -2921,8 +2921,8 @@ function hoesVlakMeten(vlak, klaar) {
   };
   const isVideo = m.tagName === 'VIDEO';
   m.addEventListener(isVideo ? 'loadeddata' : 'load', meet);
-  // Weigert de opslag het meten (geen toestemming), dan laadt het beeld niet.
-  // Dan opnieuw zonder crossorigin: het beeld staat er, de veilige vorm geldt.
+
+
   m.addEventListener('error', () => {
     if (!m.hasAttribute('crossorigin')) return;
     m.removeAttribute('crossorigin');
@@ -2932,9 +2932,9 @@ function hoesVlakMeten(vlak, klaar) {
   if (isVideo ? m.readyState >= 2 : (m.complete && m.naturalWidth)) meet();
 }
 
-// Na het plaatsen in de pagina: vegen volgen, de stippen en de pijltjes
-// bijwerken, elk beeld meten. Een verborgen element heeft geen breedte, dus
-// pas aanroepen als de hoes in de pagina staat (zoals bij het wiel, §7.1).
+
+
+
 function hoesStarten(root) {
   (root || document).querySelectorAll('.hoes').forEach(hoes => {
     const spoor = hoes.querySelector('.hoes-spoor');
@@ -2942,10 +2942,10 @@ function hoesStarten(root) {
     const stippen = [...hoes.querySelectorAll('.hoes-stip')];
     const vorige = hoes.querySelector('.hoes-pijl.vorige');
     const volgende = hoes.querySelector('.hoes-pijl.volgende');
-    // De naam en de regel houden rechts ruimte vrij voor delen en ⋯, tot 7px
-    // van het eerste teken: met twee knoppen 78px, de naam is dan op 390px
-    // 264px breed (huisstijl §21). Geteld, niet gemeten: het meldmenu wordt
-    // pas na het starten gevuld.
+
+
+
+
     const knoppen = hoes.querySelector('.profiel-knoppen');
     const n = knoppen ? knoppen.children.length : 0;
     hoes.style.setProperty('--hoes-tekst-rechts', (n ? 36 * n + 6 : 16) + 'px');
@@ -2953,19 +2953,19 @@ function hoesStarten(root) {
       const i = spoor.clientWidth ? Math.round(spoor.scrollLeft / spoor.clientWidth) : 0;
       stippen.forEach((s, j) => s.classList.toggle('aan', j === i));
       if (vorige) { vorige.hidden = i <= 0; volgende.hidden = i >= vlakken.length - 1; }
-      // Alles op de foto volgt het beeld dat in beeld is (huisstijl §21).
+
       hoes.classList.toggle('tekst-donker', !!vlakken[i] && vlakken[i].dataset.tekst === 'donker');
     };
-    // Passief: een scroll-luisteraar die de browser niet mag ophouden (§16).
+
     spoor.addEventListener('scroll', zet, { passive: true });
     const naar = r => spoor.scrollBy({ left: r * spoor.clientWidth, behavior: hoesRustig() ? 'auto' : 'smooth' });
     if (vorige) { vorige.onclick = () => naar(-1); volgende.onclick = () => naar(1); }
     vlakken.forEach(v => hoesVlakMeten(v, zet));
     zet();
-    // TT-517 fase 6: zonder foto vallen de bundels op de naam. Opnieuw bij elke
-    // andere maat van de naam (fitProfileName(), een gedraaide telefoon) en
-    // als het lettertype binnen is. Een hoes die uit de pagina gaat, meldt
-    // nog één keer een maat; dan stopt de waarnemer.
+
+
+
+
     if (hoes.querySelector('.hoes-bundel')) {
       hoesBundelZetten(hoes);
       if (document.fonts) document.fonts.ready.then(() => hoesBundelZetten(hoes));
@@ -2977,15 +2977,15 @@ function hoesStarten(root) {
   });
 }
 
-// TT-517 fase 6 (huisstijl §21): de schijnwerper. Twee bundels, van linksboven
-// en rechtsboven, vallen samen op de naam (Ronald 01-11-2026: "lichtstralen
-// van linksboven en rechtsboven"). De app meet waar de naam werkelijk staat (de
-// letters, niet zijn vak) en tekent de bundels op de maat van de hoes: elke
-// bundel eindigt zo breed als de naam. TT-543 onderdeel 10 (besluit Ronald
-// 13-11-2026, 2-6 E): het geel 2,2 keer zo fel, zonder lichtvlek op de naam,
-// zodat de naam leesbaar blijft (wit op de slechtste plek 5,1:1).
-// Elke hoes eigen namen voor zijn filter en verlopen: een verborgen scherm met
-// dezelfde namen zou ze anders wegnemen.
+
+
+
+
+
+
+
+
+
 let hoesBundelTeller = 0;
 function hoesBundelZetten(hoes) {
   const naam = hoes.querySelector('.profile-name');
@@ -2998,7 +2998,7 @@ function hoesBundelZetten(hoes) {
   const W = Math.round(b.width), H = Math.round(b.height);
   const x0 = Math.round(n.left - b.left) - 8, x1 = Math.round(n.right - b.left) + 8;
   const y = Math.round((n.top + n.bottom) / 2 - b.top);
-  const bron = Math.round(W * 0.07); // de halve breedte van een bundel bij de lamp
+  const bron = Math.round(W * 0.07);
   const bundel = lx => `<polygon points="${lx - bron},-8 ${lx + bron},-8 ${x1},${y} ${x0},${y}"/>`;
   const geel = 'style="stop-color:var(--merk)"';
   const id = vak.dataset.id || (vak.dataset.id = 'hb' + (++hoesBundelTeller));
@@ -3008,22 +3008,22 @@ function hoesBundelZetten(hoes) {
     `<g filter="url(#${id}z)" fill="url(#${id}l)">${bundel(Math.round(W * 0.06))}${bundel(Math.round(W * 0.94))}</g></svg>`;
 }
 
-// ─── TT-517 fase 8: het visitekaartje (huisstijl §22, besluit Ronald 31-10-2026) ─
-// Wie deelt, stuurt een vierkant beeld mee: 1080 x 1080, gemaakt op het toestel
-// zelf, zonder server en zonder iets in de database. Bovenaan de hoes zoals op
-// het profiel (4:3, 1080 x 810): het eerste beeld met de naam en de regel, in
-// dezelfde tekstkleur en met hetzelfde matglas; zonder delen, ⋯ en stippen.
-// Daaronder, op het podium, links wat iemand speelt en rechts het woordmerk.
-// Het beeld is wat een bezoeker zonder account ziet (kaartBeeldOphalen()):
-// onder de 16 nooit de foto maar het wazige beeld (§18.7), zonder foto de
-// schijnwerper (§21). Een kaart kan overal terechtkomen.
+
+
+
+
+
+
+
+
+
 const KAART_PX = 1080, KAART_HOES = 810, KAART_MARGE = 48;
-// De schaal van de hoes op het profiel (358px breed op 390px) naar de kaart.
+
 const KAART_S = KAART_PX / 358;
-// Lettermaten in pixels van de kaart. In een chat staat de kaart circa 250px
-// breed: daar is elke maat 0,23 keer zo groot. Besluit Ronald (01-11-2026,
-// (h) "B"): de kleinste tekst in een chat 11px, de kleinste letter van de app.
-// In een chat: naam 22, regel 11, instrumenten 15, genres 11, woordmerk 15px.
+
+
+
+
 const KAART_MATEN = { naam: 95, regel: 48, wat: 65, onder: 48, merk: 65 };
 
 function kaartDoek(w, h) {
@@ -3034,8 +3034,8 @@ function kaartDoek(w, h) {
   return [c, x];
 }
 
-// Vervagen zonder het filter van het canvas (dat kent niet elke browser):
-// telkens halveren, dan in stappen terug naar de volle maat.
+
+
 function kaartVaag(bron, px) {
   const w = bron.width, h = bron.height;
   const n = Math.max(1, Math.round(Math.log2(px * 1.6)));
@@ -3045,8 +3045,8 @@ function kaartVaag(bron, px) {
   return c;
 }
 
-// Een lijst op één regel met " · ", zoveel als er past. Past het eerste niet,
-// dan wordt de letter kleiner.
+
+
 function kaartRegel(x, lijst, gewicht, maat, breed) {
   let tekst = '', f = maat;
   x.font = `${gewicht} ${f}px Inter`;
@@ -3063,18 +3063,18 @@ function kaartRegel(x, lijst, gewicht, maat, breed) {
   return { tekst, f };
 }
 
-// De basislijn van een regel tekst van maat f in een regel van f x lh hoog
-// (Inter: boven 0,97 em, onder 0,24 em), zoals de browser hem zet.
+
+
 const kaartBasis = (boven, f, lh) => boven + (lh * f - 1.21 * f) / 2 + 0.97 * f;
 
-// g: { naam, regel, wat: [], onder: [], zoekt: [] }; beeld: { img, wazig } of null.
+
 async function kaartMaken(g, beeld) {
   if (document.fonts) {
     await Promise.all(['900 40px Inter', '700 40px Inter', '400 40px Inter', '40px "TT Woordmerk"'].map(f => document.fonts.load(f)));
   }
   const M = KAART_MATEN, W = KAART_PX, H = KAART_HOES, S = KAART_S;
-  // TT-512: de kleuren uit de kleurrollen, nooit een losse kleur (huisstijl §1).
-  // Alle zes zijn in licht en donker gelijk: de kaart heeft één uiterlijk (§22).
+
+
   const rol = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const K = { podium: rol('--podium'), wit: rol('--op-foto'), antraciet: rol('--op-foto-donker'),
               geel: rol('--merk'), opGeel: rol('--kaart-op-geel'), grijs: rol('--kaart-grijs') };
@@ -3082,14 +3082,14 @@ async function kaartMaken(g, beeld) {
   x.fillStyle = K.podium;
   x.fillRect(0, 0, W, W);
 
-  // De naam op één regel; een lange naam wordt kleiner (zoals fitProfileName()).
+
   let n = M.naam;
   x.font = `900 ${n}px Inter`;
   const ruimte = W - 2 * KAART_MARGE;
   if (x.measureText(g.naam).width > ruimte) { n = Math.floor(n * ruimte / x.measureText(g.naam).width); x.font = `900 ${n}px Inter`; }
   const naamBreed = x.measureText(g.naam).width;
-  // Van onder naar boven, zoals .hoes-tekst: 24px van de onderkant, de regel
-  // (lijnhoogte 1,5) met 4px erboven, de naam (lijnhoogte 1,1).
+
+
   const r = M.regel;
   const regelBoven = H - 24 * S - 1.5 * r;
   const naamBoven = regelBoven - 4 * S * r / 36 - 1.1 * n;
@@ -3102,7 +3102,7 @@ async function kaartMaken(g, beeld) {
     try { o = hoesBeeldOordeel(img); } catch (e) { o = null; }
     const [h, hx] = kaartDoek(W, H);
     if (beeld.wazig) {
-      // Zoals .hoes-wazig: het hele beeld, 1,2 keer zo groot, 24px vervaagd.
+
       const sc = Math.max(W / img.naturalWidth, H / img.naturalHeight) * 1.2;
       const iw = img.naturalWidth * sc, ih = img.naturalHeight * sc;
       hx.drawImage(img, (W - iw) / 2, (H - ih) / 2, iw, ih);
@@ -3117,7 +3117,7 @@ async function kaartMaken(g, beeld) {
     }
     x.drawImage(h, 0, 0);
     if (o && o.waas) {
-      // Het matglas van hoesWaasMaken(): vijf lagen, steeds waziger.
+
       for (const [px, van, tot] of [[1.5, 54, 64], [4, 58, 68], [8, 62, 72], [14, 66, 76], [24, 70, 80]]) {
         const laag = kaartVaag(h, px * S), lx = laag.getContext('2d');
         const m = lx.createLinearGradient(0, H * van / 100, 0, H * tot / 100);
@@ -3127,7 +3127,7 @@ async function kaartMaken(g, beeld) {
         x.drawImage(laag, 0, 0);
       }
     }
-    // De waas van .hoes-waas-tint, of de veilige vorm als het beeld niet te meten is.
+
     const sterk = !o ? null : o.waas ? (o.donker ? o.sterk + 0.2 : o.sterk) : 0;
     const tint = !o ? [0, 0, 0] : o.donker ? [255, 255, 255] : [0, 0, 0];
     const stops = !o ? [[54, 0], [61, 0.1], [67, 0.3], [73, 0.6], [80, 0.85]]
@@ -3139,8 +3139,8 @@ async function kaartMaken(g, beeld) {
     }
     if (o && o.donker) kleur = K.antraciet;
   } else {
-    // De schijnwerper van hoesBundelZetten(): twee bundels uit de bovenhoeken
-    // die samen op de naam vallen, zonder lichtvlek (2-6 E, 13-11-2026).
+
+
     const x0 = KAART_MARGE - 8 * S, x1 = KAART_MARGE + naamBreed + 8 * S;
     const ym = naamBasis - 0.365 * n;
     const bron = W * 0.07;
@@ -3160,7 +3160,7 @@ async function kaartMaken(g, beeld) {
   x.font = `400 ${r}px Inter`;
   x.fillText(g.regel, KAART_MARGE, kaartBasis(regelBoven, r, 1.5));
 
-  // Onder de hoes: het woordmerk rechts, in het midden van het vlak.
+
   const vlakMidden = (H + W) / 2;
   x.font = `${M.merk}px "TT Woordmerk"`;
   const tussen = M.merk * 2 / 28;
@@ -3171,8 +3171,8 @@ async function kaartMaken(g, beeld) {
   x.fillStyle = K.wit; x.fillText('TALENT', merkX, merkBasis);
   x.fillStyle = K.geel; x.fillText('TENT', merkX + wT + tussen, merkBasis);
 
-  // Links wat iemand speelt (vet), daaronder de genres (grijs) of wat een
-  // band zoekt (een pil in warmgeel).
+
+
   const breed = merkX - 40 - KAART_MARGE;
   const wat = kaartRegel(x, g.wat || [], 700, M.wat, breed);
   const zoekt = (g.zoekt || []).length;
@@ -3204,17 +3204,17 @@ async function kaartMaken(g, beeld) {
   return c;
 }
 
-// TT-543 onderdeel 6 (besluiten Ronald 10-11-2026, 7b: "akkoord met jouw
-// variant"; 12-11-2026, B4-1): de status van een muzikant (Instellingen, tegel
-// Status) en van een band (Bandbeheer, tegel Bandstatus). Muzikant en band
-// gelijk: dezelfde drie standen, dezelfde regels in het menu.
-// Tijdelijk niet beschikbaar: de zin op de pagina, vindbaar in Zoeken, niet in
-// de mail met nieuwe matches, geen banduitnodigingen. Inactief: ook niet in
-// Zoeken. De database regelt Zoeken en de mail (systeem-naslag §10).
-// In het menu staat de uitleg klein op een tweede regel (besluit Ronald
-// 12-11-2026, O-4: "a"; .keuze-uitleg in styles.css).
-// TT-605 (besluiten Ronald 14-11-2026: "zinnen 3 is beter." en "ja"): een kop
-// boven het menu en de uitleg per kant, muzikant en band.
+
+
+
+
+
+
+
+
+
+
+
 const STANDEN = [
   { waarde: 'actief', label: 'Actief', uitleg: { muzikant: 'zichtbaar en uit te nodigen', band: 'zichtbaar' } },
   { waarde: 'tijdelijk', label: 'Tijdelijk niet beschikbaar', uitleg: { muzikant: 'zichtbaar, even geen uitnodigingen', band: 'zichtbaar, maar even niet actief' } },
@@ -3222,42 +3222,42 @@ const STANDEN = [
 ];
 const STAND_KOP = { muzikant: 'Ben je vindbaar voor anderen?', band: 'Is jullie band vindbaar?' };
 
-// TT-457 (10-10-2026, besluit Ronald): één zin op het profiel en op de
-// bandpagina, in de gewone .melding (huisstijl §13): geen kop, geen knop, geen
-// kruisje. Sinds TT-543 onderdeel 6 de naam van de stand ("Tijdelijk niet
-// beschikbaar." of "Inactief."), vet en in het midden van het vak (7b: "ja.
-// dit mag wel gecentreerd."); bij Actief niets.
+
+
+
+
+
 function standMeldingHTML(stand) {
   const st = STANDEN.find(x => x.waarde === stand && x.waarde !== 'actief');
   return st ? `<div class="melding melding-beschikbaar melding-stand"><p class="melding-tekst"><strong>${escHtml(st.label)}.</strong></p></div>` : '';
 }
 
-// ─── Uitsnede kiezen bij een foto (TT-520 deel 2, 27-10-2026, Laag 3.4) ─────
-// Besluiten Ronald: na het kiezen van een profielfoto of bandfoto opent meteen
-// dit venster. Schuiven met één vinger, zoomen met twee vingers of het
-// muiswiel, dan "Gebruik deze foto". De foto vult altijd het hele kader ("als
-// er maar geen zwarte randen ontstaan"): verder uitzoomen dan de rand van de
-// foto kan niet. Het kruisje, Escape of de terugknop van het toestel breken
-// af: dan verandert er niets.
-// TT-517 fase 5 (01-11-2026, huisstijl §21, besluit Ronald 31-10-2026 optie 1:
-// één regel voor elk beeld): het kader is 4:3, precies de hoes. Gestippeld
-// staat erin wat klein in lijsten en berichten komt: het rondje (muzikant) of
-// het vierkant (band), in het midden, zoals het fotootje en object-fit: cover
-// het tonen. Een staande foto begint bovenaan (daar staat meestal het gezicht).
-//   'rond' en 'vierkant' (profielfoto, bandfoto): de app bewaart de uitgesneden
-//     foto als JPG van 4:3, hoogstens UITSNEDE_MAX_PX pixels hoog.
-//   'banner' (een foto die de gebruiker voor de banner kiest): zonder
-//     gestippelde vorm. De foto zelf blijft heel (groot openen toont alles);
-//     de app bewaart alleen de plek van het kader, als delen van de foto:
-//     { x, y, b, h } (links, boven, breedte, hoogte; elk 0 tot 1).
-// kiesUitsnede(bron, 'rond' | 'vierkant' | 'banner', kader?) → Promise<File | object | null>.
-// `bron` is een bestand, of bij 'banner' ook het adres van een geüploade foto.
-// TT-543 blok 4b: met `kader` (een eerder bewaarde plek) opent het venster op
-// die plek. Bij 'rond' en 'vierkant' draagt het bestand de plek mee als
-// `bestand.kader`, zodat de app hem later opnieuw kan openen.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const UITSNEDE_MAX_PX = 1080;
 const UITSNEDE_MAX_ZOOM = 4;
-let uitsnede = null; // { img, url, eigenUrl, vlak, vorm, schaal0, zoom, x, y, klaar, wijzers }
+let uitsnede = null;
 
 const UITSNEDE_ZIN = {
   rond: 'Jij met je instrument valt het meest op.',
@@ -3276,8 +3276,8 @@ function kiesUitsnede(bron, vorm, kader) {
       schaal0: 1, zoom: 1, x: 0, y: 0, klaar, wijzers: new Map(), start: uitsnedeGeldig(kader) };
     document.getElementById('uitsnedeTitel').textContent =
       vorm === 'rond' ? 'Profielfoto' : vorm === 'banner' ? 'Bannerfoto' : 'Bandfoto';
-    // TT-542 (besluit Ronald 14-11-2026, "A"): de zin noemt wat opvalt; de
-    // bannerfoto houdt de oude zin.
+
+
     modal.querySelector('.uitsnede-hint').textContent = UITSNEDE_ZIN[vorm];
     const klein = document.getElementById('uitsnedeKlein');
     klein.hidden = vorm === 'banner';
@@ -3297,17 +3297,17 @@ function kiesUitsnede(bron, vorm, kader) {
   });
 }
 
-// De maat van het kader op het scherm. De hoogte volgt uit de breedte (4:3),
-// niet uit clientHeight: die rondt af op hele pixels (358 breed geeft 269 in
-// plaats van 268,5), en dan is de uitkomst geen 4:3 meer.
+
+
+
 function uitsnedeMaten() {
   const W = uitsnede.vlak.clientWidth;
   return { W, H: W * 3 / 4 };
 }
 
-// Begin: de foto vult het kader precies. Een staande foto (hoger dan het
-// kader) begint bovenaan, een andere in het midden. Met een bewaarde plek
-// (blok 4b) begint het venster daar.
+
+
+
 function uitsnedeBegin() {
   const u = uitsnede, m = uitsnedeMaten();
   const nw = u.img.naturalWidth, nh = u.img.naturalHeight;
@@ -3324,7 +3324,7 @@ function uitsnedeBegin() {
   uitsnedeTekenen();
 }
 
-// Houdt de foto altijd over het hele kader: geen lege rand.
+
 function uitsnedeBegrens() {
   const u = uitsnede, m = uitsnedeMaten();
   u.zoom = Math.min(UITSNEDE_MAX_ZOOM, Math.max(1, u.zoom));
@@ -3343,7 +3343,7 @@ function uitsnedeTekenen() {
   u.img.style.transform = `translate(${u.x}px, ${u.y}px)`;
 }
 
-// Zoomen rond een punt in het vlak: dat punt blijft onder je vingers staan.
+
 function uitsnedeZoom(nieuweZoom, px, py) {
   const u = uitsnede;
   const oud = u.schaal0 * u.zoom;
@@ -3375,13 +3375,13 @@ function uitsnedeWijzerBeweeg(e) {
   u.wijzers.set(e.pointerId, p);
   const na = [...u.wijzers.values()];
   if (na.length === 1) {
-    // Eén vinger of de muis: schuiven.
+
     const oud = voor[0];
     u.x += p.x - oud.x;
     u.y += p.y - oud.y;
     uitsnedeTekenen();
   } else if (na.length >= 2) {
-    // Twee vingers: zoomen rond het midden ertussen, en meeschuiven.
+
     const afstand = (a, b) => Math.hypot(a.x - b.x, a.y - b.y) || 1;
     const midden = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
     const m0 = midden(voor[0], voor[1]), m1 = midden(na[0], na[1]);
@@ -3396,9 +3396,9 @@ function uitsnedeWijzerOp(e) {
   uitsnede.wijzers.delete(e.pointerId);
 }
 
-// TT-565: bewust niet passief (inline onwheel): het muiswiel zoomt hier, dus de
-// pagina mag niet meescrollen. Alleen boven het venster Uitsnede, dus scrollen
-// elders hapert er niet door. Uitzondering op huisstijl §16 regel 1.
+
+
+
 function uitsnedeWiel(e) {
   if (!uitsnede) return;
   e.preventDefault();
@@ -3406,14 +3406,14 @@ function uitsnedeWiel(e) {
   uitsnedeZoom(uitsnede.zoom * Math.exp(-e.deltaY / 500), p.x, p.y);
 }
 
-// "Gebruik deze foto". Bij een bannerfoto: de plek van het kader, als delen
-// van de foto. Anders: het kader op ware grootte uitsnijden, als JPG van 4:3.
+
+
 function uitsnedeGebruiken() {
   const u = uitsnede;
   if (!u || !u.img.naturalWidth) return;
   const m = uitsnedeMaten();
   const s = u.schaal0 * u.zoom;
-  const bw = m.W / s, bh = m.H / s;               // het kader in pixels van de foto
+  const bw = m.W / s, bh = m.H / s;
   const nw = u.img.naturalWidth, nh = u.img.naturalHeight;
   const r = v => Math.max(0, Math.round(v * 10000) / 10000);
   const kader = { x: r(-u.x / s / nw), y: r(-u.y / s / nh), b: r(bw / nw), h: r(bh / nh) };
@@ -3439,7 +3439,7 @@ function uitsnedeGebruiken() {
   }, 'image/jpeg', 0.9);
 }
 
-// Sluit het venster en geeft de foto (of null bij afbreken) terug.
+
 function uitsnedeAfsluiten(uitkomst) {
   const u = uitsnede;
   uitsnede = null;
@@ -3452,7 +3452,7 @@ function uitsnedeAfsluiten(uitkomst) {
 }
 function sluitUitsnede() { uitsnedeAfsluiten(null); }
 
-// Draait de telefoon of verandert het venster, dan blijft de uitsnede staan.
+
 window.addEventListener('resize', () => {
   if (!uitsnede || !uitsnede.img.naturalWidth) return;
   const u = uitsnede, m = uitsnedeMaten();
@@ -3462,9 +3462,9 @@ window.addEventListener('resize', () => {
   uitsnedeTekenen();
 });
 
-// De bewaarde plek van het kader van een bannerfoto, gecontroleerd: vier
-// getallen tussen 0 en 1 die binnen de foto vallen. Anders null: dan toont de
-// hoes het midden, zoals bij een foto zonder kader.
+
+
+
 function uitsnedeGeldig(k) {
   if (!k || typeof k !== 'object') return null;
   const x = Number(k.x), y = Number(k.y), b = Number(k.b), h = Number(k.h);
@@ -3473,12 +3473,12 @@ function uitsnedeGeldig(k) {
   return { x, y, b, h };
 }
 
-// TT-543 blok 4b (besluiten Ronald 07 en 08-11-2026): een profiel- of bandfoto
-// later verschuiven. `foto` = { url, bron, kader }: url is de uitsnede, bron
-// de hele foto (een bestand dat nog niet is geüpload, of de opgeslagen link)
-// en kader de plek van de uitsnede daarin. Een foto van vóór blok 4b heeft
-// geen bron: dan opent de uitsnede zelf (besluit A: alleen inzoomen en
-// verschuiven). Geeft { file, kader, bron }, of null bij afbreken.
+
+
+
+
+
+
 async function fotoVerschuiven(foto, vorm) {
   const bron = foto.bron || foto.url;
   const bestand = typeof bron === 'string' ? await fotoBestandOphalen(bron) : bron;
@@ -3486,7 +3486,7 @@ async function fotoVerschuiven(foto, vorm) {
   const file = await kiesUitsnede(bestand, vorm, foto.bron ? foto.kader : null);
   return file ? { file, kader: file.kader, bron } : null;
 }
-// Een opgeslagen foto als bestand, via de eigen map (de opslagregels).
+
 async function fotoBestandOphalen(link) {
   try {
     const m = FOTO_AFGESCHERMD.exec(String(link || ''));
@@ -3500,17 +3500,17 @@ async function fotoBestandOphalen(link) {
     return null;
   }
 }
-// Uploadt een nieuwe uitsnede en, als die er nog niet staat, de hele foto.
-// `map` is het account-id of `bands/<band-id>`. Geeft { url, bron, kader }.
+
+
 async function fotoMetBronUploaden(uit, map) {
   const [a, b] = await Promise.all([uploadAvatarFile(uit.file, map),
     typeof uit.bron === 'string' ? { url: uit.bron } : uploadAvatarFile(uit.bron, map)]);
   return { url: a.url, bron: b.url, kader: uitsnedeGeldig(uit.kader) };
 }
 
-// Een bannerfoto met een kader in de hoes: de foto zo groot en zo verschoven
-// dat precies het kader de hoes vult. In procenten van de hoes, zodat de
-// maat van het scherm niet uitmaakt.
+
+
+
 function uitsnedeStijl(k) {
   const p = v => (Math.round(v * 1000) / 1000) + '%';
   return `width:${p(100 / k.b)};height:${p(100 / k.h)};left:${p(-k.x / k.b * 100)};top:${p(-k.y / k.h * 100)}`;

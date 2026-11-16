@@ -1,23 +1,23 @@
-// ─── Melden en blokkeren (TT-06) ─────────────────────────────────────────────
-//
-// Eén bestand voor beide. Reden: melden en blokkeren delen hetzelfde menu,
-// dezelfde doelen (muzikant, band, gesprek) en dezelfde twee tabellen. Verdeeld
-// over messages.js/musicians.js/search.js zou dezelfde regel op drie plekken
-// staan — precies wat huisstijl §18.2 en §15 verbieden.
-//
-// Besluiten van Ronald, 18-09-2026 (de drie punten die sinds 08-08-2026
-// openstonden, plus een vierde):
-//   1. Blokkeren = geen berichten meer én wederzijds onzichtbaar in de
-//      zoekresultaten. Het gesprek verdwijnt uit de inbox van wie blokkeert.
-//   2. Een melding komt in een tabel in de database. Geen e-mail; die weg
-//      leunt op TT-01 en die werkt nog niet aantoonbaar.
-//   3. Melden kan over een muzikant, een band en een gesprek.
-//   4. Stil: de ander krijgt geen melding. Zijn bericht lijkt te versturen.
-//
-// Hoe "stil" technisch werkt: het bericht wordt gewoon weggeschreven. De
-// ontvanger filtert het eruit. Zo ziet de verzender zijn eigen gesprek
-// ongewijzigd — precies wat een blokkade onzichtbaar houdt. Een weigering bij
-// het versturen zou hem juist verraden.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const MELD_REDENEN = [
   'Ongepast gedrag',
@@ -29,19 +29,19 @@ const MELD_REDENEN = [
 
 const MELD_TOELICHTING_MAX = 1000;
 
-// Twee richtingen, apart gehouden. blokkadeDoorMij bepaalt wat ik in mijn
-// inbox en in "Geblokkeerde muzikanten" zie; blokkadeOpMij bepaalt alleen dat
-// ik die persoon niet meer in zoekresultaten tegenkom. Samengevoegd tot één
-// verzameling zou deblokkeren ook andermans blokkade kunnen "opheffen".
+
+
+
+
 let blokkadeDoorMij = new Set();
 let blokkadeOpMij = new Set();
 let blokkadesGeladen = false;
 
-// Doel van de melding die nu openstaat: { soort, id, naam }.
+
 let meldDoel = null;
 let meldReden = null;
 
-// ─── Laden en opruimen ───────────────────────────────────────────────────────
+
 
 async function laadBlokkades() {
   blokkadeDoorMij = new Set();
@@ -50,8 +50,8 @@ async function laadBlokkades() {
   const mid = await getMyMusicianId();
   if (!mid) return;
   try {
-    // TT-71: twee geparametriseerde .eq()-vragen, geen zelfgebouwde
-    // filterstring met .or() — zelfde aanpak als loadInbox().
+
+
     const [mijne, opMij] = await Promise.all([
       db.from('musician_blocks').select('blocked_id').eq('blocker_id', mid),
       db.from('musician_blocks').select('blocker_id').eq('blocked_id', mid),
@@ -62,15 +62,15 @@ async function laadBlokkades() {
     (opMij.data || []).forEach(r => blokkadeOpMij.add(r.blocker_id));
   } catch (e) {
     logCaught('laadBlokkades', e);
-    // Stil falen mag hier niet: zonder blokkadelijst ziet iemand precies de
-    // persoon terug die hij heeft geblokkeerd. Daarom een melding.
+
+
     showToast('Je blokkades konden niet geladen worden. Ververs de pagina.');
   }
 }
 
-// Het zoekscherm is ook zonder inloggen bereikbaar, en kan geopend worden
-// vóórdat onUserLoggedIn() de lijst heeft geladen. Deze variant haalt hem dan
-// alsnog op, en doet daarna niets meer.
+
+
+
 async function laadBlokkadesIndienNodig() {
   if (blokkadesGeladen) return;
   await laadBlokkades();
@@ -82,19 +82,19 @@ function wisBlokkades() {
   blokkadesGeladen = false;
 }
 
-// ─── Toetsen ─────────────────────────────────────────────────────────────────
 
-// Waar of onwaar in beide richtingen: gebruikt door elk zoekresultaat.
+
+
 function isGeblokkeerd(id) {
   return blokkadeDoorMij.has(id) || blokkadeOpMij.has(id);
 }
 
-// Alleen mijn eigen blokkade: bepaalt het menu-label en de inbox.
+
 function blokkeerIkZelf(id) {
   return blokkadeDoorMij.has(id);
 }
 
-// ─── Blokkeren en deblokkeren ────────────────────────────────────────────────
+
 
 function blokkeerMuzikant(id, naam) {
   const wie = naam || 'deze muzikant';
@@ -143,11 +143,11 @@ async function deblokkeerMuzikant(id, naam) {
   }
 }
 
-// Eén plek die opruimt na een blokkade of deblokkade: het open profiel sluit,
-// het open gesprek sluit, en de lijsten die de geblokkeerde konden tonen
-// worden opnieuw opgebouwd.
+
+
+
 function naBlokkadeWijziging(id) {
-  // TT-410b: het profiel van deze muzikant is een scherm; een stap terug.
+
   if (huidigeView === 'profiel' && huidigProfielId === id) {
     popNavStap('search');
   }
@@ -160,14 +160,14 @@ function naBlokkadeWijziging(id) {
   veiligheidVerversZoeklijsten();
 }
 
-// De lijsten die al op het scherm staan, opnieuw opbouwen zonder de
-// geblokkeerde. Blijft er niets over, dan opnieuw zoeken — TT-62 zegt dat een
-// zoekopdracht nooit op nul eindigt zolang verruimen kan, en dat geldt ook als
-// de nul door een blokkade ontstaat.
+
+
+
+
 function veiligheidVerversZoeklijsten() {
   try {
-    // TT-520: het resultaat van Muzikanten heeft muzikanten en bands; een
-    // blokkade gaat over een muzikant, dus alleen die vallen eruit.
+
+
     if (typeof lastZoekResultaten !== 'undefined' && lastZoekResultaten.length) {
       const over = lastZoekResultaten.filter(x => x.soort === 'band' || !isGeblokkeerd(x.id));
       if (over.length !== lastZoekResultaten.length) {
@@ -187,23 +187,23 @@ function veiligheidVerversZoeklijsten() {
   }
 }
 
-// ─── Het ⋯-menu (huisstijl §8) ───────────────────────────────────────────────
-//
-// Melden en blokkeren zijn gevoelige, weinig gebruikte acties. Ze horen dus
-// achter een ⋯-knop, nooit als knop naast "Stuur een bericht". Het menu staat
-// in de koprij van de modal (§9) en in de kop van een gesprek: een vaste plek
-// die niet verschuift met de lengte van een naam (§2.1).
-//
-// Elk menu draagt zijn eigen doel in de onclick mee. Eén vast doel in een
-// variabele zou misgaan zodra het profielvenster over een open gesprek staat.
+
+
+
+
+
+
+
+
+
 
 const VEILIGHEID_MENU_ICOON =
   '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
   '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>';
 
 function veiligheidMenuHTML(soort, id, naam, verwijderId) {
-  // Zonder eigen profiel is er niemand om de melding aan te hangen en niets om
-  // vanaf te blokkeren. Dan hoort het menu er ook niet te staan.
+
+
   if (!hasOwnProfile) return '';
   if (!id && !verwijderId) return '';
   if (id && soort !== 'band' && typeof myMusicianId !== 'undefined' && myMusicianId === id) return '';
@@ -220,8 +220,8 @@ function veiligheidMenuHTML(soort, id, naam, verwijderId) {
         : `<button class="nav-menu-item" onclick="sluitVeiligheidMenus();blokkeerMuzikant('${veiligId}','${veiligNaam}')">Blokkeren</button>`);
     }
   }
-  // TT-435: een gesprek verwijderen staat in dit menu, ook bij een verwijderd
-  // account (dan is er niemand meer om te melden of te blokkeren).
+
+
   if (verwijderId) {
     items.push(`<button class="nav-menu-item" onclick="sluitVeiligheidMenus();gesprekVerwijderen('${jsAttr(verwijderId)}','${veiligNaam}')">Gesprek verwijderen</button>`);
   }
@@ -232,9 +232,9 @@ function veiligheidMenuHTML(soort, id, naam, verwijderId) {
     </div>`;
 }
 
-// Zelfde patroon als toggleBandMoreMenu(): geen vaste id, want er kunnen
-// meerdere van deze menu's tegelijk in de pagina staan. Eén menu tegelijk en
-// de donkere laag: zie sluitAlleMenus() in core.js.
+
+
+
 function toggleVeiligheidMenu(e) {
   e.stopPropagation();
   const btn = e.currentTarget;
@@ -256,29 +256,29 @@ function sluitVeiligheidMenus() {
   menuLaagWeg();
 }
 
-// Het menu in een vaste koprij zetten. Leeg als er niets te melden valt.
+
 function zetVeiligheidMenu(plekId, soort, id, naam, verwijderId) {
   const plek = document.getElementById(plekId);
   if (!plek) return;
   plek.innerHTML = veiligheidMenuHTML(soort, id, naam, verwijderId);
 }
 
-// ─── Melden ──────────────────────────────────────────────────────────────────
 
-// TT-555 (besluiten Ronald 03-11-2026): één melding per persoon of band per 30
-// dagen; de database bewaakt dat (tt_meldgrens). Wie al meldde, ziet dat vóór
-// het formulier, zodat hij niet voor niets typt. Na een melding biedt de app
-// aan de muzikant te blokkeren; een band kun je niet blokkeren.
+
+
+
+
+
 async function openMeldModal(soort, id, naam) {
   if (id && await alGemeld(id)) { naMelding(soort, id, naam, true); return; }
   meldDoel = { soort, id, naam: naam || '' };
   meldReden = null;
-  clearFieldErrors('meldModal'); // TT-659
+  clearFieldErrors('meldModal');
   const wat = soort === 'band' ? 'Band melden' : soort === 'gesprek' ? 'Gesprek melden' : 'Muzikant melden';
   document.getElementById('meldTitel').textContent = wat;
   document.getElementById('meldDoelNaam').textContent = meldDoel.naam || 'deze pagina';
   document.getElementById('meldToelichting').value = '';
-  veldGroeit(document.getElementById('meldToelichting')); // TT-543 laag 3, 3-10
+  veldGroeit(document.getElementById('meldToelichting'));
   updateCharCounter('meldToelichting', 'meldToelichtingCounter', MELD_TOELICHTING_MAX);
   document.getElementById('meldRedenen').innerHTML = MELD_REDENEN.map(r =>
     `<div class="tag" onclick="kiesMeldReden(this,'${jsAttr(r)}')">${escHtml(r)}</div>`).join('');
@@ -293,15 +293,15 @@ function closeMeldModal() {
 
 function kiesMeldReden(el, reden) {
   meldReden = reden;
-  clearFieldError('meldRedenen'); // TT-659: de fout verdwijnt zodra je kiest
+  clearFieldError('meldRedenen');
   document.querySelectorAll('#meldRedenen .tag').forEach(t => t.classList.remove('selected'));
   el.classList.add('selected');
 }
 
 async function verstuurMelding() {
   if (!meldDoel) return;
-  // TT-659 (besluit Ronald 15-11-2026, sessie 151: "ik denk ja."): de fout staat
-  // onder de keuzes, niet bovenin.
+
+
   if (!meldReden) { showFieldErrors([['meldRedenen', 'Kies waar je melding over gaat']]); return; }
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Maak eerst een profiel aan om te kunnen melden.'); return; }
@@ -316,8 +316,8 @@ async function verstuurMelding() {
     });
     if (error) throw error;
   } catch (e) {
-    // TT-555: een verwacht antwoord, geen storing (vangt een melding vanaf een
-    // tweede toestel; gewoonlijk zag de melder dit al vóór het formulier).
+
+
     if (/^Je hebt dit al gemeld/i.test((e && e.message) || '')) {
       closeMeldModal();
       naMelding(doel.soort, doel.id, doel.naam, true);
@@ -331,8 +331,8 @@ async function verstuurMelding() {
   naMelding(doel.soort, doel.id, doel.naam, false);
 }
 
-// Ja of nee: meldde ik dit doel de laatste 30 dagen al? Bij een fout opent het
-// formulier gewoon; de database weigert een tweede melding dan alsnog.
+
+
 async function alGemeld(id) {
   try {
     const { data, error } = await db.rpc('tt_al_gemeld', { p_doel: id });
@@ -344,9 +344,9 @@ async function alGemeld(id) {
   }
 }
 
-// Na een melding, of als het al gemeld is: bedanken, en bij een muzikant die ik
-// nog niet blokkeer het aanbod om te blokkeren (besluit Ronald: "doen ze dat
-// niet, dan is het hun eigen keuze").
+
+
+
 function naMelding(soort, id, naam, alEerder) {
   const wie = naam || (soort === 'band' ? 'deze band' : 'deze muzikant');
   const kop = alEerder ? `Je hebt ${wie} al gemeld. We kijken ernaar.` : 'Bedankt. We kijken ernaar.';
@@ -358,7 +358,7 @@ function naMelding(soort, id, naam, alEerder) {
   );
 }
 
-// ─── Geblokkeerde muzikanten (Instellingen) ──────────────────────────────────
+
 
 async function openGeblokkeerdModal() {
   document.getElementById('geblokkeerdModal').classList.add('visible');
@@ -377,9 +377,9 @@ async function renderGeblokkeerdLijst() {
   if (!el) return;
   const ids = Array.from(blokkadeDoorMij);
   if (!ids.length) {
-    // TT-606 (besluit Ronald 14-11-2026: "A"): een lijst die je niet wilt
-    // vullen, krijgt geen knop (huisstijl §3.11, tweede uitzondering). "de knop
-    // ⋯" zoals in de gedragscode: "⋯-menu" las als vier puntjes.
+
+
+
     el.innerHTML = emptyStateHTML(
       'Je blokkeert niemand',
       'Blokkeren kan via de knop ⋯ op een profiel of in een gesprek.'
@@ -390,8 +390,8 @@ async function renderGeblokkeerdLijst() {
     const { data, error } = await db.from('musicians')
       .select('id, weergavenaam, username, city, avatar_url').in('id', ids);
     if (error) throw error;
-    // TT-543 onderdeel 7 (besluit Ronald 12-11-2026, punt 8): een rij met foto,
-    // zoals de leden in Beheer overdragen (.bb-rij).
+
+
     const rijen = ids.map(id => {
       const m = (data || []).find(x => x.id === id);
       const naam = m ? displayNameOf(m) : 'Verwijderde gebruiker';

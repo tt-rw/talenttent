@@ -194,6 +194,49 @@ def mappen_open():
     return open_
 
 
+# TT-617 (besluit Ronald 16-11-2026, sessie 157: "ja"): elke landingsfoto is
+# hooguit 130 kB. Een zwaardere foto maakt de eerste kennismaking traag.
+LANDING_MAX_BYTES = 130 * 1024
+
+
+def koppen(url):
+    """Grootte van een bestand in bytes, met HEAD (de foto zelf komt niet mee).
+    None als het bestand er niet is (400 of 404)."""
+    req = urllib.request.Request(url, method="HEAD",
+                                 headers={"User-Agent": "TalentTent-bewaking/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return int(r.headers["Content-Length"])
+    except urllib.error.HTTPError as e:
+        if e.code in (400, 404):
+            return None
+        raise
+
+
+def landingsfotos():
+    """Te zware landingsfoto's, als lijst "woord: kB". Een woord zonder foto mag
+    (besluit Ronald 30-09-2026); geen enkele foto is een fout. Map en woorden uit
+    core.js (één bron)."""
+    basis, _ = database()
+    tekst = open(os.path.join(REPO, "core.js"), encoding="utf-8").read()
+    m = re.search(r"const LANDING_FOTO_MAP = SUPABASE_URL \+ '([^']+)'", tekst)
+    lijst = re.search(r"const LANDING_WOORDEN = \[(.*?)\];", tekst, re.S)
+    if not m or not lijst:
+        raise RuntimeError("LANDING_FOTO_MAP of LANDING_WOORDEN niet gevonden in core.js")
+    woorden = re.findall(r"woord: '([^']+)'", lijst.group(1))
+    te_zwaar, gevonden = [], 0
+    for w in woorden:
+        grootte = koppen(basis + m.group(1) + w.lower() + ".jpg")
+        if grootte is None:
+            continue
+        gevonden += 1
+        if grootte > LANDING_MAX_BYTES:
+            te_zwaar.append("%s: %d kB" % (w, round(grootte / 1024)))
+    if not gevonden:
+        raise RuntimeError("geen enkele landingsfoto gevonden")
+    return te_zwaar
+
+
 def main():
     regels = []   # (naam, uitkomst, goed)
 
@@ -216,6 +259,8 @@ def main():
          lambda d: (d >= DOMEIN_MIN_DAGEN, "%d dagen" % d))
     stap("foto- en videomappen dicht", mappen_open,
          lambda o: (not o, "dicht" if not o else "OPEN: %s" % ", ".join(o)))
+    stap("landingsfoto's licht", landingsfotos,
+         lambda z: (not z, "elk hooguit 130 kB" if not z else "TE ZWAAR: %s" % ", ".join(z)))
 
     t = stap("tellingen uit de database", tellingen,
              lambda x: (True, "opgehaald"))

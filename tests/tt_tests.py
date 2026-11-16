@@ -291,7 +291,7 @@ def blok1_statisch():
     # TT-393: een schermwissel en het sluiten van een gesprek scrollen meteen naar boven.
     core = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
     msgs = open(os.path.join(ROOT, "messages.js"), encoding="utf-8").read()
-    sv = core[core.index("function showView("):core.index("// ─── De landingspagina")]
+    sv = core[core.index("function showView("):core.index("const LANDING_WOORDEN")]
     cc = msgs[msgs.index("function closeConversation("):]
     cc = cc[:cc.index("\n}\n")]
     check("TT-393: showView scrolt niet vloeiend naar boven", "behavior: 'smooth'" not in sv, "smooth in showView()")
@@ -5077,7 +5077,7 @@ window.TT_STUB.fnAntwoord = {};
 
         # 5. Woordkeus (Ronald, 26-09-2026): "e-mailadres", nooit los "adres".
         bron = open(os.path.join(ROOT, "wizard.js"), encoding="utf-8").read()
-        stuk = bron[bron.index("// ─── TT-336"):bron.index("async function submitProfile()")]
+        stuk = bron[bron.index("function bevestigVerwachteUitkomst("):bron.index("async function submitProfile()")]
         teksten = re.findall(r"'[^'\n]*'|`[^`]*`", stuk)
         los = [t for t in teksten if re.search(r"(?<![-\w])adres", t, re.I)]
         check("TT-336: de teksten zeggen 'e-mailadres', nergens los 'adres'", not los, str(los)[:300])
@@ -11537,9 +11537,12 @@ def blok_tt517_fase1():
 
     # 3. Inter in plaats van Roboto
     faces = re.findall(r"@font-face\s*\{\s*font-family:\s*'Inter';\s*src:\s*url\('(inter-[\w]+\.woff2)'\)", css)
-    check("Inter: vier lettertypen (400, 700, 900, 400 cursief) in de repo, geladen met @font-face",
-          sorted(faces) == ["inter-400.woff2", "inter-400italic.woff2", "inter-700.woff2", "inter-900.woff2"]
-          and all(os.path.isfile(os.path.join(ROOT, f)) for f in faces), json.dumps(faces))
+    # TT-618 (besluit Ronald 15-11-2026: "A"): geen cursief bestand meer; de
+    # voorbeeldtekst in het bioveld zet de telefoon zelf schuin.
+    check("Inter: drie lettertypen (400, 700, 900) in de repo, geladen met @font-face; geen cursief bestand (TT-618)",
+          sorted(faces) == ["inter-400.woff2", "inter-700.woff2", "inter-900.woff2"]
+          and all(os.path.isfile(os.path.join(ROOT, f)) for f in faces)
+          and not os.path.exists(os.path.join(ROOT, "inter-400italic.woff2")), json.dumps(faces))
     check("Inter wordt vooraf geladen (preload inter-400.woff2)",
           '<link rel="preload" href="inter-400.woff2" as="font" type="font/woff2" crossorigin>' in lees("index.html"), "")
     rob = [f for f in TT517_APP if re.search(r"'Roboto'|roboto-\d", re.sub(r'/\*.*?\*/|<!--.*?-->', '', lees(f), flags=re.S))]
@@ -11596,13 +11599,13 @@ def blok_tt517_fase1():
             page.wait_for_timeout(300)
             m = page.evaluate("""async () => {
               await Promise.all(['400 15px Inter', '700 15px Inter', '900 32px Inter', 'italic 400 15px Inter'].map(f => document.fonts.load(f)));
-              // De vier letterbestanden (heel het bereik); de pijl (alleen U+2192, blok 119) telt apart.
+              // De drie letterbestanden (heel het bereik, TT-618); de pijl (alleen U+2192, blok 119) telt apart.
               const geladen = [...document.fonts].filter(f => f.family.replace(/["']/g, '') === 'Inter' && f.status === 'loaded' && f.unicodeRange === 'U+0-10FFFF').length;
               const r = getComputedStyle(document.documentElement);
               return { body: getComputedStyle(document.body).fontFamily, geladen,
                        merk: r.getPropertyValue('--merk').trim().toUpperCase(), accent: r.getPropertyValue('--accent').trim().toUpperCase() }; }""")
-            check(f"{thema}: de app toont Inter; alle vier de lettertypen laden",
-                  m["body"].startswith("Inter") and m["geladen"] == 4, json.dumps(m))
+            check(f"{thema}: de app toont Inter; alle drie de lettertypen laden (TT-618)",
+                  m["body"].startswith("Inter") and m["geladen"] == 3, json.dumps(m))
             check(f"{thema}: --merk is warmgeel; --accent warmgeel in donker, zwart in licht",
                   m["merk"] == "#FFB81C" and m["accent"] == ("#FFB81C" if thema == "dark" else "#1E1E1E"), json.dumps(m))
             # Elke tekst op elk scherm: de getoonde maat is één van de zes, een
@@ -11964,7 +11967,7 @@ def blok_tt517_fase4():
                        ".pb-stip", ".pb-spoor", ".pb-item", ".profiel-banner", "profiel-kop-rij", "op-banner", ".profile-avatar-photo",
                        ".profile-avatar-initials", ".bandfoto") if w in alles]
     check("de oude bannerbalk en de ronde profielfoto in de kop zijn weg, ook hun code (dode code)", not oud, str(oud))
-    check("de hoes staat stil: geen tijd die hem laat doorschuiven", "setInterval" not in utils[utils.index("// TT-517 fase 4 (01-11-2026): het profiel als hoes"):utils.index("function hoesStarten") + 2500])
+    check("de hoes staat stil: geen tijd die hem laat doorschuiven", "setInterval" not in utils[utils.index("function opVolgordeVanToevoegen("):utils.index("function hoesStarten") + 2500])
     # Besluit Ronald (01-11-2026, A): de bannerbeelden van een muzikant op volgorde van toevoegen, zoals bij een band.
     mus = open(os.path.join(ROOT, "musicians.js"), encoding="utf-8").read()
     wiz = open(os.path.join(ROOT, "wizard.js"), encoding="utf-8").read()
@@ -13452,9 +13455,9 @@ def blok_pijl():
     for f in ("tt-pijl-400.woff", "tt-pijl-700.woff"):
         check(f"het oude bestand {f} is weg (vervangen door tt-tekens)", not os.path.isfile(os.path.join(ROOT, f)), "staat er nog")
     faces = re.findall(r"@font-face\s*\{\s*font-family:\s*'Inter';\s*src:\s*url\('(tt-tekens-\d+\.woff)'\)[^}]*font-weight:\s*(\d+);\s*font-style:\s*(\w+);[^}]*unicode-range:\s*U\+2192, U\+2713, U\+2715, U\+2605-2606;", css)
-    check("de tekens horen bij Inter voor 400, 700, 900 en 400 cursief, alleen voor → ✓ ✕ ★ ☆",
+    check("de tekens horen bij Inter voor 400, 700 en 900, alleen voor → ✓ ✕ ★ ☆ (geen cursief meer, TT-618)",
           sorted(faces) == sorted([("tt-tekens-400.woff", "400", "normal"), ("tt-tekens-700.woff", "700", "normal"),
-                                    ("tt-tekens-700.woff", "900", "normal"), ("tt-tekens-400.woff", "400", "italic")]), json.dumps(faces))
+                                    ("tt-tekens-700.woff", "900", "normal")]), json.dumps(faces))
     check("geen verwijzing meer naar tt-pijl", "tt-pijl" not in css + open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())
     check("de tekenmaat staat op één plek: --tekenmaat 11px", re.search(r":root \{ --tekenmaat: 11px; \}", css) is not None)
     bron = "".join(open(os.path.join(ROOT, x), encoding="utf-8").read() for x in JS_FILES) + open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
@@ -16417,7 +16420,7 @@ def blok_tt543_onderdeel5():
     print("\nBlok 142 — TT-543 onderdeel 5: Berichten (invoerveld onderaan, meegroeien, teller, kop, onderbalk)")
     msgjs = open(os.path.join(ROOT, "messages.js"), encoding="utf-8").read()
     html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
-    deel = html[html.index('id="view-messages"'):html.index('<!-- VIEW: Over ons -->')]
+    deel = html[html.index('id="view-messages"'):html.index('id="view-about"')]
     check("F7: geen opmaak in de regel in view-messages (index.html) en in messages.js",
           'style="' not in msgjs and deel.count('style="') == 2 and deel.count('style="display:none;"') == 2, str(deel.count('style="')))
     check("F3: de teller kent geen rood meer (updateCharCounter)",
@@ -18298,7 +18301,7 @@ def blok_tt543_onderdeel8():
     bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("ouder.js", "index.html", "styles.css")}
     # Het stuk van index.html met de drie ouderschermen.
     html = bron["index.html"]
-    ouder_html = html[html.index('id="ouderStap"'):html.index('<!-- /view-register -->')]
+    ouder_html = html[html.index('id="ouderStap"'):html.index('</main>', html.index('id="ouderStap"'))]
     check("F2: geen opmaak in de regel op de ouderschermen en in toestemmingMeldingTonen()",
           'style="margin-bottom:19px' not in ouder_html and 'style="width:100%;margin-top:8px;"' not in bron["ouder.js"], "")
     check("F4: de voorbeeldtekst bij het e-mailadres van de ouder begint met 'Bijv.'",
@@ -18642,14 +18645,19 @@ def blok_tt543_onderdeel10():
     check("de naam en ⋯ in de kop van een gesprek staan in de tekstkleur (2-5)",
           ".filter-title.messages-thread-naam { font-size: 17px; line-height: var(--regel-17); margin: 0; color: var(--text); }" in css
           and ".messages-thread-acties .nav-menu-btn { color: var(--text); }" in css, "")
-    # 2-15: één warme kleurbewerking op elke landingsfoto, in de opmaak
-    check("elke landingsfoto krijgt dezelfde warme kleurbewerking (2-15)",
-          re.search(r"\.landing-dia img \{[^}]*filter: sepia\(\.28\) saturate\(1\.15\) hue-rotate\(-6deg\) contrast\(1\.06\) brightness\(1\.02\);", css) is not None, "")
+    # 2-15: één warme kleurbewerking op elke landingsfoto. Sinds TT-617 (besluit
+    # Ronald 15-11-2026: "ja") zit hij in de bestanden in landing/v2 zelf, niet
+    # meer als filter in de opmaak (anders kreeg de foto hem dubbel). Blok 165
+    # toetst de map; de kleur van elke foto is bij het maken gemeten.
+    lf = re.search(r"\.landing-dia img \{([^}]*)\}", css)
+    check("elke landingsfoto krijgt dezelfde warme kleurbewerking (2-15): in het bestand (landing/v2), niet nog eens als filter (TT-617)",
+          lf is not None and "filter" not in lf.group(1)
+          and "/storage/v1/object/public/landing/v2/'" in open(os.path.join(ROOT, "core.js"), encoding="utf-8").read(), lf.group(1) if lf else "")
     # 2-9 / open punt 8b: het koppelteken dat niet afbreekt staat in onze Inter
     try:
         from fontTools.ttLib import TTFont
-        k = {f: TTFont(os.path.join(ROOT, f)).getBestCmap().get(0x2011) for f in ("inter-400.woff2", "inter-700.woff2", "inter-900.woff2", "inter-400italic.woff2")}
-        check("U+2011 (koppelteken dat niet afbreekt) staat in alle vier de Inter-bestanden, met de vorm van het koppelteken", all(v == "hyphen" for v in k.values()), json.dumps(k))
+        k = {f: TTFont(os.path.join(ROOT, f)).getBestCmap().get(0x2011) for f in ("inter-400.woff2", "inter-700.woff2", "inter-900.woff2")}
+        check("U+2011 (koppelteken dat niet afbreekt) staat in alle drie de Inter-bestanden, met de vorm van het koppelteken", all(v == "hyphen" for v in k.values()), json.dumps(k))
     except ImportError:
         check("U+2011 in Inter: fontTools ontbreekt in deze omgeving (pip install fonttools brotli)", False, "")
 
@@ -19910,6 +19918,123 @@ def blok_tik_in_veldmelding():
     check("geen paginafouten in blok 164", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_bundel_a():
+    print("\nBlok 165 — bundel A (sessie 157, 16-11-2026): het eerste scherm sneller en lichter (TT-615, TT-616, TT-617, TT-618)")
+    stub_js = open(STUB, encoding="utf-8").read()
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    css = open(os.path.join(ROOT, "styles.css"), encoding="utf-8").read()
+    # TT-616: geen script met src in de kop; de bibliotheek direct vóór core.js.
+    kop = html[:html.index("</head>")]
+    check("TT-616: geen <script src> in de kop (de bibliotheek hield daar het eerste beeld tegen)",
+          not re.search(r"<script\s+src=", kop), "")
+    srcs = re.findall(r'<script\s+src="([^"?]+)', html)
+    check("TT-616: supabase.js is het script direct vóór core.js",
+          "supabase.js" in srcs and srcs.index("supabase.js") + 1 == srcs.index("core.js"), json.dumps(srcs))
+    tussen = html[html.index('<script src="supabase.js'):html.index('<script src="core.js')]
+    check("TT-616: tussen de bibliotheek en core.js staat alleen de controle van TT-82 en de melding",
+          "window.ttBackendMissing = (typeof supabase" in tussen and "backendErrorOverlay" in tussen, "")
+    # TT-618: geen cursief bestand.
+    check("TT-618: geen @font-face met font-style: italic",
+          not re.search(r"@font-face\s*\{[^}]*font-style:\s*italic", css), "")
+    check("TT-618: de voorbeeldtekst in het bioveld blijft schuin (de telefoon zet hem schuin)",
+          re.search(r"textarea\.bio-voorbeeld::placeholder \{[^}]*font-style: italic", css) is not None, "")
+    fouten, u = [], {}
+    VOLG = r"""
+      window.__eersteFoto = null;
+      new MutationObserver(() => {
+        const img = document.querySelector('#landingDias img[src]');
+        if (img && !window.__eersteFoto) window.__eersteFoto = { src: img.getAttribute('src'),
+          appKlaar: !!window.ttAppKlaar, core: typeof window.landingOpbouwen, aan: img.parentNode.classList.contains('aan') };
+      }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['src'] });
+    """
+    import base64
+    FOTO = base64.b64decode("R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==")
+    sleutel = "sb-wlcrjhsniuiewvznwrun-auth-token"
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        def pagina(body=stub_js, sessie=False, hash_="", foto_ok=True, zonder_bib=False):
+            ctx = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            pg = ctx.new_page()
+            pg.on("pageerror", lambda e: fouten.append(str(e)))
+            gevraagd, letters = [], []
+            def foto(r):
+                gevraagd.append(r.request.url.split("/object/public/")[1])
+                if foto_ok: r.fulfill(status=200, content_type="image/gif", body=FOTO)
+                else: r.fulfill(status=400, body="")
+            pg.route("**/storage/v1/object/public/landing/**", foto)
+            pg.on("request", lambda r: letters.append(r.url.rsplit("/", 1)[1]) if re.search(r"\.woff2?(\?|$)", r.url) else None)
+            if zonder_bib: pg.route("**/supabase.js*", lambda r: r.abort())
+            else: pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=body))
+            pg.add_init_script(VOLG)
+            if sessie: pg.add_init_script(f"try {{ localStorage.setItem('{sleutel}', '{{}}'); }} catch (e) {{}}")
+            pg.goto(f"http://127.0.0.1:{port}/index.html{hash_}", wait_until="load")
+            pg.wait_for_timeout(1200)
+            return ctx, pg, gevraagd, letters
+        # (1) een bezoeker: de eerste foto komt uit index.html, vóór de scripts.
+        ctx, pg, gevraagd, letters = pagina()
+        u["bezoeker"] = pg.evaluate("""() => ({ eerste: window.__eersteFoto, lagen: document.querySelectorAll('#landingDias .landing-dia').length,
+          aan: [...document.querySelectorAll('#landingDias .landing-dia')].map(d => d.classList.contains('aan')).indexOf(true),
+          klok: !!landingKlok, kaart: Object.keys(TT_DB_PER_ADRES).map(h => [h, ttEersteLandingsfoto(h),
+            TT_DB_PER_ADRES[h].url + '/storage/v1/object/public/landing/v2/' + LANDING_WOORDEN[0].woord.toLowerCase() + '.jpg']),
+          vreemd: ttEersteLandingsfoto('voorbeeld.nl'), eigen: landingFotoAdres(LANDING_WOORDEN[0].woord),
+          bio: getComputedStyle(document.querySelector('textarea.bio-voorbeeld'), '::placeholder').fontStyle })""")
+        u["bezoeker"]["gevraagd"] = gevraagd[:]
+        u["bezoeker"]["letters"] = sorted(set(letters))
+        b = u["bezoeker"]
+        check("TT-617: een bezoeker krijgt de eerste foto vóór de scripts er zijn (index.html, niet core.js)",
+              bool(b["eerste"]) and b["eerste"]["appKlaar"] is False and b["eerste"]["core"] == "undefined" and b["eerste"]["aan"], json.dumps(b["eerste"]))
+        check("TT-617: de foto's komen uit landing/v2; eerst zangeres, daarna alleen drummer",
+              b["gevraagd"] == ["landing/v2/zangeres.jpg", "landing/v2/drummer.jpg"], json.dumps(b["gevraagd"]))
+        check("TT-617: daarna staan alle tien de lagen er, de eerste in beeld, en het wisselen loopt",
+              b["lagen"] == 10 and b["aan"] == 0 and b["klok"], json.dumps(b)[:300])
+        check("TT-617: het webadres van de eerste foto in index.html is voor elk webadres gelijk aan dat in core.js",
+              all(x[1] == x[2] for x in b["kaart"]) and len(b["kaart"]) == 5 and b["vreemd"] == "" and b["eigen"] == b["eerste"]["src"], json.dumps(b["kaart"]))
+        check("TT-618: geen cursief lettertype geladen; de voorbeeldtekst in het bioveld staat schuin",
+              not any("italic" in x for x in b["letters"]) and b["bio"] == "italic", json.dumps(b["letters"]))
+        ctx.close()
+        # (2) een lid met een bewaarde sessie: geen landingsfoto.
+        ingelogd = stub_js + """
+window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instruments: m.musician_instruments || [],
+  musician_genres: m.musician_genres || [], musician_songs: m.musician_songs || [], musician_media: m.musician_media || [] }));
+"""
+        for hash_ in ("", "#instellingen"):
+            ctx, pg, gevraagd, _ = pagina(body=ingelogd, sessie=True, hash_=hash_)
+            pg.wait_for_timeout(800)
+            u["lid" + hash_] = {"gevraagd": gevraagd[:], "view": pg.evaluate("document.querySelector('.app-view.active').id"),
+                                "eerste": pg.evaluate("window.__eersteFoto")}
+            check(f"TT-617: een lid met een sessie (start {hash_ or 'zonder adres'}) vraagt geen enkele landingsfoto",
+                  not gevraagd and u["lid" + hash_]["eerste"] is None and u["lid" + hash_]["view"] != "view-landing", json.dumps(u["lid" + hash_]))
+            ctx.close()
+        # (3) een sessie die verlopen is: de landingspagina blijft, de foto's komen na het opstarten.
+        ctx, pg, gevraagd, _ = pagina(sessie=True)
+        u["verlopen"] = {"gevraagd": gevraagd[:], "view": pg.evaluate("document.querySelector('.app-view.active').id"),
+                         "klok": pg.evaluate("!!landingKlok"), "lagen": pg.evaluate("document.querySelectorAll('#landingDias .landing-dia').length")}
+        check("TT-617: een verlopen sessie: de landingspagina blijft en krijgt na het opstarten toch zijn foto's en het wisselen",
+              u["verlopen"]["view"] == "view-landing" and u["verlopen"]["gevraagd"] == ["landing/v2/zangeres.jpg", "landing/v2/drummer.jpg"]
+              and u["verlopen"]["klok"] and u["verlopen"]["lagen"] == 10, json.dumps(u["verlopen"]))
+        ctx.close()
+        # (4) de eerste foto laadt niet: het warme vlak, geen fout.
+        voor = len(fouten)
+        ctx, pg, gevraagd, _ = pagina(foto_ok=False)
+        u["kapot"] = pg.evaluate("() => [...document.querySelectorAll('#landingDias .landing-dia')].slice(0, 2).map(d => !!d.querySelector('img'))")
+        check("TT-617: laadt de eerste foto niet, dan blijft het warme vlak, zonder fout op de pagina",
+              u["kapot"] == [False, False] and len(fouten) == voor, json.dumps(u["kapot"]) + " " + "; ".join(fouten[voor:])[:200])
+        ctx.close()
+        # (5) TT-82 blijft: zonder bibliotheek de melding, en de landingspagina.
+        ctx, pg, gevraagd, _ = pagina(zonder_bib=True)
+        u["zonder"] = pg.evaluate("() => ({ melding: getComputedStyle(document.getElementById('backendErrorOverlay')).display, mis: window.ttBackendMissing })")
+        check("TT-616: zonder bibliotheek staat de melding van TT-82 er nog steeds",
+              u["zonder"]["mis"] is True and u["zonder"]["melding"] != "none", json.dumps(u["zonder"]))
+        ctx.close()
+        browser.close()
+    httpd.shutdown()
+    eigen = [f for f in fouten if "supabase" not in f.lower()]
+    check("bundel A: geen fouten op de pagina", not eigen, "; ".join(eigen)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -19972,6 +20097,7 @@ BLOKKEN = [
     blok_bundel_e,
     blok_bundel_d,
     blok_tik_in_veldmelding,
+    blok_bundel_a,
 ]
 
 

@@ -1,24 +1,24 @@
-// ─── TT-09: onboarding hervatten na een refresh ──────────────────────────────
-// Zolang het profiel nog niet is afgerond, bewaren we een kleine momentopname
-// in de browser — nooit het wachtwoord.
-//
-// Gewijzigd 22-09-2026 (TT-42, besluit Ronald): dit stond in sessionStorage en
-// staat nu in localStorage. Het oude besluit — "bij het sluiten van het
-// tabblad vervalt dit bewust" — kan niet blijven staan naast route A: een
-// 13-jarige wacht tot veertien dagen op de klik van zijn ouder, en al zijn
-// antwoorden staan zolang alleen in zijn eigen browser. Sluit hij het tabblad,
-// dan zou hij alles kwijt zijn. De omzetting geldt voor iedereen, niet alleen
-// voor 13-15-jarigen: een maat wordt in de standaard doorgevoerd, nooit per
-// scherm omzeild (projectinstructies §2 regel 11). Bijvangst: ook een
-// dertigjarige die halverwege stopt, vindt zijn werk terug.
-// TT-570 (06-11-2026, besluit Ronald): het account ontstaat niet meer na
-// stap 1, maar samen met het profiel bij de laatste knop, voor iedereen. Tot
-// dan staat alles alleen hier, net als bij route A.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const ONBOARDING_STORAGE_KEY = 'tt_onboarding_v1';
 
 function saveOnboardingProgress() {
-  // TT-42: bij route A bestaat er nog geen account, dus state.onboarding staat
-  // nog uit. Dan is state.ouderRoute de reden om wél te bewaren.
+
+
   if (!state.onboarding && !state.ouderRoute) return;
   try {
     localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({
@@ -26,8 +26,8 @@ function saveOnboardingProgress() {
       ouderRoute: !!state.ouderRoute,
       regEmail: state.regEmail || '',
       akkoord: !!document.getElementById('consentCheckbox')?.checked,
-      // TT-543 (06-11-2026): de wizard telt 4 stappen. "stap" vervangt "step",
-      // zodat een opname van vóór die dag herkenbaar is (zie opgeslagenStap()).
+
+
       stap: state.currentStep,
       fname: state.fname, lname: state.lname, birth_date: state.birth_date,
       username: state.username,
@@ -35,33 +35,33 @@ function saveOnboardingProgress() {
       naamTonen: state.naamTonen,
       instruments: state.instruments, instrumentLevels: state.instrumentLevels, genres: state.genres, songs: state.songs,
       mediaLinks: state.mediaLinks,
-      // TT-573: wanneer dit voor het laatst is bewaard; na 7 dagen gewist.
+
       tijd: Date.now()
-      // Bewust NIET bewaard: regPassword, avatarUrl (blob-url overleeft een
-      // refresh toch niet — zie bekende beperking TT-02), mediaFiles.
+
+
     }));
   } catch (e) {
-    // localStorage kan vol of uitgeschakeld zijn (bijv. privénavigatie in
-    // sommige browsers) — dan negeren we dit stil, de rest van de app blijft
-    // gewoon werken, alleen de refresh-bescherming valt dan weg.
+
+
+
     console.error('Kon onboarding-voortgang niet bewaren:', e);
   }
 }
 
 function clearOnboardingProgress() {
-  try { localStorage.removeItem(ONBOARDING_STORAGE_KEY); } catch (e) { /* zie boven */ }
+  try { localStorage.removeItem(ONBOARDING_STORAGE_KEY); } catch (e) { }
 }
 
-// Vult de wizard-velden op basis van de huidige `state`, bij het hervatten
-// van een registratie (hervatRegistratie()).
+
+
 function populateWizardFieldsFromState() {
   document.getElementById('fname').value = state.fname;
   document.getElementById('lname').value = state.lname;
   document.getElementById('birth_date').value = state.birth_date;
   document.getElementById('zip').value = state.zip;
   document.getElementById('username').value = state.username || '';
-  // Al een geldige, van jezelf bekende gebruikersnaam — geen "controleren..."
-  // nodig, dat zou hier alleen verwarren (lijkt bezet terwijl het van jezelf is).
+
+
   usernameCheckedValue = state.username || '';
   usernameAvailable = !!state.username;
   zetUitslag('usernameStatus', state.username ? 'Huidige naam' : '', true);
@@ -74,8 +74,8 @@ function populateWizardFieldsFromState() {
   }
   document.getElementById('postcodeStatus').textContent = '';
   document.getElementById('bio').value = state.bio;
-  veldGroeit(document.getElementById('bio')); // TT-543 laag 3, 3-10
-  updateCharCounter('bio', 'bioTeller', 1000); // TT-626: teller bij de laatste 200 tekens
+  veldGroeit(document.getElementById('bio'));
+  updateCharCounter('bio', 'bioTeller', 1000);
   naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen);
 
   renderInstrumentBadges('wizard');
@@ -89,16 +89,16 @@ function populateWizardFieldsFromState() {
     avatarPreview.innerHTML = `<img ${kleinFotoAttr(safeUrl(state.avatarUrl))} alt="profielfoto">`;
     document.getElementById('avatarRemoveBtn').classList.add('visible');
   } else {
-    avatarPreview.innerHTML = ''; // TT-517 fase 6: de schijnwerper met silhouet (styles.css)
+    avatarPreview.innerHTML = '';
     document.getElementById('avatarRemoveBtn').classList.remove('visible');
   }
 }
 
-// Kale lezer.
-// TT-573 (besluit Ronald 14-11-2026, "ok"): een aanmelding die 7 dagen niet
-// verder ging, wordt van het toestel gewist. Niet bij de route met een ouder
-// (13 tot en met 15): die wacht op de ouder en heeft zijn eigen "Gegevens
-// wissen". Een opname van vóór deze regel krijgt nu een tijd en telt vanaf nu.
+
+
+
+
+
 const AANMELDING_BEWAARDAGEN = 7;
 function leesOpgeslagenVoortgang() {
   let saved;
@@ -107,7 +107,7 @@ function leesOpgeslagenVoortgang() {
   if (!saved || saved.ouderRoute) return saved;
   if (!saved.tijd) {
     saved.tijd = Date.now();
-    try { localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(saved)); } catch (e) { /* zie boven */ }
+    try { localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(saved)); } catch (e) { }
     return saved;
   }
   if (Date.now() - saved.tijd > AANMELDING_BEWAARDAGEN * 24 * 3600 * 1000) {
@@ -117,10 +117,10 @@ function leesOpgeslagenVoortgang() {
   return saved;
 }
 
-// TT-570: de momentopname van een registratie die nog loopt. Een opname met
-// `mid` is van vóór TT-570 (account na stap 1) en telt niet meer. Bestaat er
-// sinds de laatste knop wél een account maar geen profiel (de rest liep stuk),
-// dan hoort de opname bij precies dat account: een ander account ziet hem nooit.
+
+
+
+
 function leesRegistratieVoortgang() {
   const saved = leesOpgeslagenVoortgang();
   if (!saved || saved.mid) return null;
@@ -128,20 +128,20 @@ function leesRegistratieVoortgang() {
   return saved;
 }
 
-// TT-42: route A — er is dan nog geen account en geen ingelogde gebruiker.
+
 function leesOuderVoortgang() {
   const saved = leesRegistratieVoortgang();
   return saved && saved.ouderRoute && !currentUser ? saved : null;
 }
 
-// Een registratie hervatten. Draait bij het openen van de wizard. TT-570:
-// voor iedereen, niet alleen route A: wie halverwege stopt, gaat in deze
-// browser verder waar hij was. Loopt de registratie in dit tabblad al
-// (state staat aan), dan blijft alles zoals het is: wat nog niet bewaard is,
-// mag niet worden overschreven door de opname.
-// TT-42: het kind van route A komt hier terug na de mail van zijn ouder, of
-// gewoon omdat hij de app weer opent terwijl hij nog wacht.
-// Geeft true als er iets is hervat.
+
+
+
+
+
+
+
+
 function hervatRegistratie() {
   if (state.onboarding || state.ouderRoute) return false;
   const saved = leesRegistratieVoortgang();
@@ -161,9 +161,9 @@ function hervatRegistratie() {
   const aanvraag = ouderAanvraagLezen();
   if (!aanvraag) { goTo(opgeslagenStap(saved)); ouderLeeftijdsregel(); return true; }
 
-  // Wacht hij nog, dan het wachtscherm; is de ouder akkoord, dan het
-  // wachtwoordscherm. ouderStandVerversen() binnen ouderWachtTonen() haalt de
-  // actuele stand op en schuift zo nodig zelf door.
+
+
+
   goTo(opgeslagenStap(saved));
   ouderLeeftijdsregel();
   if (aanvraag.stand === 'goedgekeurd') ouderWachtwoordTonen();
@@ -171,18 +171,18 @@ function hervatRegistratie() {
   return true;
 }
 
-// TT-543 (06-11-2026, besluit Ronald): stap 3 "Wat wil je nu?" is weg; de
-// wizard telt 4 stappen. Een opname van vóór die dag heeft "step" in de oude
-// telling (0 tot en met 4): de setlist was 3 en de media 4, nu 2 en 3. De oude
-// doelstap (2) wordt de setlist.
+
+
+
+
 function opgeslagenStap(saved) {
   if (Number.isInteger(saved.stap)) return saved.stap;
   const oud = saved.step || 0;
   return oud >= 3 ? oud - 1 : oud;
 }
 
-// Zet één opgeslagen momentopname terug in `state`. Gedeeld door beide
-// hervatroutes, zodat ze nooit uit elkaar kunnen lopen.
+
+
 function vulStateUitVoortgang(saved) {
   state.fname = saved.fname || '';
   state.lname = saved.lname || '';
@@ -197,29 +197,29 @@ function vulStateUitVoortgang(saved) {
   state.instrumentLevels = saved.instrumentLevels || {};
   state.genres = saved.genres || [];
   state.songs = saved.songs || [];
-  // TT-543 blok 3: een lege link (uit een opname van vóór het raster) telt niet.
+
   state.mediaLinks = (saved.mediaLinks || []).filter(l => l && String(l.url || '').trim());
   postcodeResolved = !!state.zip;
 }
 
-// TT-168-overgang (02-09-2026): bewerken loopt niet langer via de wizard.
-// "Profiel bewerken" opent nu het tegeloverzicht (openTegelOverview()) —
-// vijf losse subschermen, elk met een eigen smalle opslaanfunctie die
-// alleen de eigen kolommen raakt. De oude aanpak (het hele state-object
-// vullen en de wizard in "bewerkmodus" zetten) is vervallen; de wizard is
-// voortaan uitsluitend voor het aanmaken van een nieuw account.
+
+
+
+
+
+
 async function editMyProfile() {
   const mid = await getMyMusicianId();
   if (!mid) { geenProfielMelding('Je hebt nog geen profiel om te bewerken.'); return; }
   showView('profieltegels');
 }
-// Profielvolledigheid — alleen zichtbaar voor de eigenaar op "Mijn profiel"
-// (Presentatie: profielstatus direct zichtbaar). Gebaseerd op echte opgeslagen
-// data, niet op tijdelijke registratie-state.
+
+
+
 function renderCompletenessMeter(m) {
-  // TT-386 (30-09-2026, besluit Ronald): alleen de titel en een lage balk.
-  // Het percentage staat direct achter het gele stuk, als een finish.
-  // Geen vinkjes en geen tiptekst meer.
+
+
+
   const checks = [
     !!m.avatar_url,
     (m.bio || '').length > 20,
@@ -232,8 +232,8 @@ function renderCompletenessMeter(m) {
   return voortgangsBalkHTML(pct, 'completenessMeter');
 }
 
-// TT-385 (besluit Ronald, punt 3): de band krijgt dezelfde balk en dezelfde
-// functie. Alleen het getal verschilt: dat rekent elke kant zelf uit.
+
+
 function voortgangsBalkHTML(pct, id) {
   return `
     <div${id ? ` id="${id}"` : ''} class="completeness-wrap">
@@ -249,29 +249,29 @@ function voortgangsBalkHTML(pct, id) {
 
 async function loadMyProfile(opties) {
   if (!currentUser) return;
-  renderEmailBevestigBanner(); // TT-336
-  // TT-578 D7: een uitnodiging van een vorig account blijft nooit staan, ook
-  // niet als dit account (nog) geen profiel heeft.
+  renderEmailBevestigBanner();
+
+
   const uitnodigingen = document.getElementById('bandInvitesBanner');
   if (uitnodigingen && uitnodigingen.dataset.mid !== String(myMusicianId)) { uitnodigingen.innerHTML = ''; delete uitnodigingen.dataset.mid; }
   const el = document.getElementById('myProfileContent');
-  // Tabwissel: staat er al een geladen profiel van deze gebruiker, laat dat staan tot de nieuwe er is.
+
   if (!(opties && opties.behoud && el.dataset.klaar === currentUser.id)) {
     delete el.dataset.klaar;
     el.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Laden...</div>';
   }
 
-  // Bugfix 19-08-2026 (Ronald, live gemeld): dit was tot vandaag een
-  // sterretje-select. Sinds B-01 tweede stap (18-08-2026) mag authenticated
-  // birth_date niet meer lezen, ook niet van zichzelf. Postgres staat een
-  // sterretje-select alleen toe als je écht alle kolommen mag lezen — kan dat
-  // niet, dan faalt de hele vraag (geen gedeeltelijk resultaat). Precies dat
-  // gebeurde hier: elk ingelogd profiel zag zijn eigen profiel niet meer, met
-  // "Nog geen profiel" als gevolg. Zelfde oplossing als eerder al toegepast
-  // bij de zoekresultaten en de profielmodal: vaste kolomlijst, geen
-  // birth_date, leeftijd apart via tt_musicians_ages().
-  // TT-367: leeftijd en bands hangen alleen af van het id. Ze lopen tegelijk
-  // met het profiel, niet een voor een erna.
+
+
+
+
+
+
+
+
+
+
+
   const bijvragen = (id) => Promise.all([
     db.rpc('tt_musicians_ages', { ids: [id] }), profielBandsOphalen(id)]);
   const voorafId = myMusicianId;
@@ -285,16 +285,16 @@ async function loadMyProfile(opties) {
     .eq('user_id', currentUser.id)
     .single();
 
-  // TT-561: een storing is geen "geen profiel". PGRST116 = geen rij.
+
   if (error && error.code !== 'PGRST116') {
     logCaught('loadMyProfile', error);
     el.innerHTML = foutStaatHTML(error, 'je profiel laden', 'loadMyProfile()');
     return;
   }
   if (error || !m) {
-    // TT-248 (11-09-2026): inhoudelijk ongewijzigd, nu via de vaste vorm uit
-    // huisstijl §15. Dit was het voorbeeld waar de andere lege staten naar
-    // toe zijn gebracht.
+
+
+
     el.innerHTML = emptyStateHTML(
       'Nog geen profiel',
       'Maak je muzikantprofiel aan om gevonden te worden.',
@@ -306,43 +306,43 @@ async function loadMyProfile(opties) {
 
   const [{ data: myAges }, mijnBands] = await (voorafId === m.id ? vooraf : bijvragen(m.id));
   m.age = (myAges && myAges[0]) ? myAges[0].age : undefined;
-  m.bands = mijnBands; // TT-385 punt 17: het blok Bands
+  m.bands = mijnBands;
 
-  // TT-120 (22-08-2026): "Jouw pad op The Talent Tent" (TT-48) staat niet
-  // meer op Mijn Profiel. De functie renderProgressPanel() is op 16-09-2026
-  // verwijderd als dode code; terug te vinden in commit 05f8ddd.
+
+
+
   el.innerHTML = buildMusicianDetailHTML(m, true) + renderCompletenessMeter(m);
   el.dataset.klaar = currentUser.id;
-  // TT-517 fase 4: zie de toelichting in laadProfielScherm() — pas starten
-  // als de hoes in de pagina staat.
+
+
   hoesStarten(el);
   mediaTitelsBijwerken(el);
-  // TT-249: naam passend maken zodra hij in de pagina staat. Mijn Profiel is
-  // het krapste scherm. Sinds TT-380 staat het ⋯-menu onder de naam.
+
+
   fitProfileName(el);
   loadBandInvites(m.id);
 
-  // TT-543 onderdeel 6, blok 4: de tegel Status toont de stand van nu.
+
   myStand = m.stand || 'actief';
   toonStatus();
 }
 
-// TT-543 onderdeel 6, blok 4 (besluiten Ronald 10-11-2026, 7b: "akkoord met
-// jouw variant"; 12-11-2026, B4-1): de tegel Status in Instellingen, gelijk aan
-// Bandstatus (STANDEN in utils.js). Vervangt Beschikbaarheid (TT-457) en
-// Band-uitnodigingen (TT-56). De zin op het profiel is de naam van de stand
-// (standMeldingHTML()); alleen Actief krijgt banduitnodigingen; Inactief staat
-// niet in Zoeken. Een los bericht blijft mogelijk.
+
+
+
+
+
+
 let myStand = 'actief';
 
-// De tegel toont de stand van nu (de korte naam, zoals Bandstatus).
+
 function toonStatus() {
   const st = STANDEN.find(x => x.waarde === myStand) || STANDEN[0];
   const label = document.querySelector('#statusTegel .wheel-field-label');
   if (label) label.textContent = st.label;
 }
 
-// Een keuze werkt meteen, zonder Opslaan, zoals Thema en Bandstatus.
+
 async function zetStatus(stand) {
   if (!myMusicianId || stand === myStand) return;
   try {
@@ -356,19 +356,19 @@ async function zetStatus(stand) {
   } catch (e) {
     logCaught('zetStatus', e);
     showToast(friendlyErrorMessage(e, 'je status opslaan'));
-    toonStatus(); // de tegel toont weer de stand van de database
+    toonStatus();
   }
 }
 
-// TT-437: de status laadt zijn stand bij het openen van Instellingen. Zonder
-// profiel (alleen een account) is er niets om in te stellen: het blok blijft
-// dan weg.
+
+
+
 async function laadInstellingen() {
   const blok = document.getElementById('instellingenProfielBlok');
   if (!blok) return;
   const mid = await getMyMusicianId();
   blok.style.display = mid ? '' : 'none';
-  // De regel onder Account verwijderen houdt zijn hoogte tot de naam er is.
+
   const regel = document.getElementById('accountVerwijderRegel');
   if (regel) regel.innerHTML = '&nbsp;';
   if (!mid) return;
@@ -376,8 +376,8 @@ async function laadInstellingen() {
     const { data, error } = await db.from('musicians').select('stand, weergavenaam, username').eq('id', mid).single();
     if (error) throw error;
     if (STANDEN.some(x => x.waarde === data.stand)) myStand = data.stand;
-    // TT-543 onderdeel 7 (besluit Ronald 12-11-2026, punt 1): de regel van
-    // Bandprofiel verwijderen, met je eigen naam.
+
+
     if (regel) regel.textContent = `permanent verwijderen van ${displayNameOf(data)}`;
   } catch (e) {
     logCaught('laadInstellingen', e);
@@ -385,27 +385,27 @@ async function laadInstellingen() {
   toonStatus();
 }
 
-// ─── Submit → opslaan in Supabase ────────────────────────────────────────────
 
-// Bevinding Ronald (10-08-2026): akkoord met Voorwaarden/Privacyverklaring/
-// Gedragscode moet een expliciete handeling zijn, niet impliciet via de klik
-// op "Profiel aanmaken" zelf. Alleen relevant bij een nieuw account (zie
-// showView('register') hierboven, dat de checkbox bij bewerken verbergt).
+
+
+
+
+
 function updateSubmitProfileState() {
   const box = document.getElementById('consentCheckbox');
   const btn = document.getElementById('submitProfileBtn');
   if (!box || !btn) return;
   btn.disabled = !box.checked;
-  // TT-42: bij route A kan er een lange onderbreking tussen dit vinkje en het
-  // aanmaken van het account zitten. Het vinkje gaat daarom mee in de
-  // momentopname, anders staat het na terugkomst weer uit.
+
+
+
   saveOnboardingProgress();
 }
 
-// Schrijft het hele profiel weg: de rij en, in één databasefunctie, de
-// instrumenten, genres, nummers en media. TT-570: de laatste stap van de
-// wizard, voor elke registratie. Ook bij een tweede poging nadat de eerste
-// halverwege stukliep: dan bestaat de rij al en klopt het resultaat toch.
+
+
+
+
 async function persistEditedProfile(mid) {
   if (!mid) return;
   const { error: uErr } = rijenGeraakt(await db.from('musicians').update({
@@ -421,18 +421,18 @@ async function persistEditedProfile(mid) {
     ...wazigVeld(state.avatarUrl),
     ...fotoBronVelden(),
     city_source:      state.citySource || 'cache',
-    profile_complete: true, // de klik op "Profiel aanmaken". Bij 16+ wacht de database eerst op de bevestiging (TT-336)
+    profile_complete: true,
   }).eq('id', mid).select('id'));
   if (uErr) throw new Error(uErr.message);
   opslagOpruimen('avatars', currentUser && currentUser.id, [state.avatarUrl, fotoBronVelden().avatar_bron]);
 
-  // TT-281 (23-09-2026): wissen en opnieuw vullen gebeurt in één
-  // databasefunctie, in één transactie. Mislukt één stap, dan blijft alles
-  // zoals het was. Vroeger wiste de app eerst zonder controle en vulde daarna
-  // aan; mislukte het aanvullen, dan was de oude data weg.
-  // Al geüploade Storage-bestanden zelf blijven gewoon staan (alleen de
-  // koppeling in musician_media wordt hier ververst); verwijderde foto's/
-  // video's zijn al apart uit Storage opgeruimd door removeMedia().
+
+
+
+
+
+
+
   const linkMedia = state.mediaLinks
     .filter(l => l.url.trim())
     .map(l => ({ media_type: 'link', url: l.url, platform: detectPlatform(l.url), in_banner: !!l.inBanner }));
@@ -453,16 +453,16 @@ async function persistEditedProfile(mid) {
   state.savedId = mid;
 }
 
-// ─── TT-336: het e-mailadres bevestigen (16 jaar en ouder) ──────────────────
-// Besluiten Ronald, 26-09-2026: bevestigen gebeurt na "Profiel aanmaken". Tot
-// de klik in de mail mag iemand rondkijken en zoeken, maar is hij niet te
-// vinden, stuurt hij geen berichten en richt hij geen band op. Een verkeerd
-// getypt e-mailadres is aan te passen (2a). De database bewaakt dit; de Edge
-// Function `email-bevestigen` stuurt de mail en zet het profiel online.
-// Woordkeus: altijd "e-mailadres", nooit "adres" (Ronald, 26-09-2026).
 
-// Verwachte uitkomsten van de mailaanvraag: geen storing, dus geen regel in
-// app_error_log. De gebruiker krijgt de melding gewoon te zien.
+
+
+
+
+
+
+
+
+
 function bevestigVerwachteUitkomst(e) {
   return /al in gebruik|Nog even wachten/i.test((e && e.message) || '');
 }
@@ -476,8 +476,8 @@ async function bevestigApi(actie, gegevens) {
   return data || {};
 }
 
-// Leest of de database het profiel net heeft laten wachten. Bij een fout:
-// niet wachten — dan toont de app "Profiel aangemaakt!", zoals vóór TT-336.
+
+
 async function profielWachtOpBevestiging(mid) {
   const { data, error } = await db.from('musicians')
     .select('wacht_op_bevestiging').eq('id', mid).maybeSingle();
@@ -485,12 +485,12 @@ async function profielWachtOpBevestiging(mid) {
   return !!data?.wacht_op_bevestiging;
 }
 
-// Na "Profiel aanmaken": de mail aanvragen en naar Mijn Profiel, waar het
-// blok "Nog één stap" staat. Mislukt de mail, dan staat daar de knop
-// "Mail opnieuw sturen".
+
+
+
 async function bevestigingStarten() {
-  // Kwam iemand via het berichticoon in de wizard (TT-32)? Een bericht kan
-  // pas na de klik in de mail; niet later alsnog het berichtvenster openen.
+
+
   pendingMessageRecipient = null;
   try { await bevestigApi('start'); }
   catch (e) {
@@ -501,18 +501,18 @@ async function bevestigingStarten() {
   showView('myprofile');
 }
 
-// Het blok bovenaan Mijn Profiel. Alleen zichtbaar zolang het profiel wacht.
+
 async function renderEmailBevestigBanner() {
   const el = document.getElementById('emailBevestigBanner');
   if (!el || !currentUser) return;
-  // TT-444: staat de melding "E-mailadres bevestigd" er nog, laat die dan
-  // staan tot hij zelf verdwijnt.
+
+
   if (el.dataset.bevestigd === '1') return;
   const { data, error } = await db.from('musicians')
     .select('wacht_op_bevestiging').eq('user_id', currentUser.id).maybeSingle();
-  // TT-578 D7: een mislukte vraag laat de melding staan zoals ze stond; alleen
-  // de database zegt of het e-mailadres nog wacht op bevestiging.
-  // Van een ander account blijft niets staan (dataset.uid).
+
+
+
   if (error) {
     logCaught('renderEmailBevestigBanner', error);
     if (el.dataset.uid !== currentUser.id) { el.innerHTML = ''; bevestigPeilStoppen(); }
@@ -520,11 +520,11 @@ async function renderEmailBevestigBanner() {
   }
   el.dataset.uid = currentUser.id;
   if (!data?.wacht_op_bevestiging) { el.innerHTML = ''; bevestigPeilStoppen(); return; }
-  // Dicht tot de app opnieuw opent: het profiel blijft offline tot de klik,
-  // dus de melding komt de volgende keer terug (sessionStorage, geen opslag
-  // = altijd tonen).
+
+
+
   let dicht = false;
-  try { dicht = sessionStorage.getItem('tt-bevestig-melding-dicht') === '1'; } catch (e) { /* geen opslag: tonen */ }
+  try { dicht = sessionStorage.getItem('tt-bevestig-melding-dicht') === '1'; } catch (e) { }
   if (dicht) { el.innerHTML = ''; bevestigPeilStoppen(); return; }
   bevestigPeilStarten();
   el.innerHTML = `
@@ -551,13 +551,13 @@ async function renderEmailBevestigBanner() {
     </div>`;
 }
 
-// TT-444 (bevinding Ronald, 09-10-2026: "na bevestiging blijft deze melding
-// staan"). De klik in de mail gebeurt vaak in een andere browser of op een
-// ander toestel dan waar de app openstaat; dan weet deze pagina het niet. Zolang
-// het blok zichtbaar is, kijkt de app elke 5 seconden of het profiel online is,
-// en meteen als de app weer in beeld komt. Is het zover, dan staat er kort
-// "Je e-mailadres is bevestigd" en verdwijnt het blok vanzelf; het profiel
-// laadt opnieuw, zonder wachtbericht.
+
+
+
+
+
+
+
 let bevestigPeilTimer = null;
 
 function bevestigPeilStarten() {
@@ -593,7 +593,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 function bevestigMeldingSluiten() {
-  try { sessionStorage.setItem('tt-bevestig-melding-dicht', '1'); } catch (e) { /* geen opslag: sluit alleen nu */ }
+  try { sessionStorage.setItem('tt-bevestig-melding-dicht', '1'); } catch (e) { }
   const el = document.getElementById('emailBevestigBanner');
   if (el) el.innerHTML = '';
 }
@@ -609,8 +609,8 @@ function bevestigEmailadresTonen(aan) {
   if (veld) veld.value = '';
 }
 
-// De uitkomst van `start` of `e-mailadres`: al bevestigd (op een ander
-// toestel), of een nieuwe mail.
+
+
 function bevestigUitkomstTonen(uit) {
   if (uit.bevestigd) {
     showToast('Je e-mailadres is al bevestigd. Je profiel staat online.');
@@ -640,26 +640,26 @@ async function bevestigEmailadresOpslaan() {
   if (knop) knop.disabled = true;
   try {
     const uit = await bevestigApi('e-mailadres', { email });
-    // TT-405: de sessie in de browser kent het nieuwe e-mailadres pas na een
-    // verversing. Zonder die stap zet de volgende SIGNED_IN het oude terug.
+
+
     const { data: ververst } = await db.auth.refreshSession();
     if (ververst?.session?.user) { currentUser = ververst.session.user; verversEmailWeergave(currentUser.email || ''); }
     bevestigUitkomstTonen(uit);
     if (!uit.bevestigd) await renderEmailBevestigBanner();
   } catch (e) {
     if (!bevestigVerwachteUitkomst(e)) logCaught('bevestigEmailadresOpslaan', e);
-    // Een fout over het e-mailadres zelf hoort bij het veld; de rest is een toast.
+
     if (/al in gebruik/i.test(e.message || '')) setFieldError(veld, TEKST_EMAIL_BEZET);
     else if (/e-mailadres/i.test(e.message || '')) setFieldError(veld, e.message.replace(/\.$/, ''));
     else showToast(e.message || friendlyErrorMessage(e, 'je e-mailadres opslaan'));
   } finally { if (knop) knop.disabled = false; }
 }
 
-// De knop in de mail: #bevestig/<code>. Werkt op elk toestel en in elke
-// browser, ook zonder inlog. Dezelfde pagina als die van de ouder
-// (view-toestemming, toestemmingMeldingTonen() in ouder.js), zodat er geen
-// zestiende view bij komt. Is hier hetzelfde account ingelogd, dan gaat het
-// meteen door naar Mijn Profiel.
+
+
+
+
+
 async function bevestigPaginaOpenen(code) {
   showView('toestemming');
   toestemmingMeldingTonen('E-mailadres bevestigen', ['Even geduld...']);
@@ -696,23 +696,23 @@ async function bevestigPaginaOpenen(code) {
   }
 }
 
-// TT-570 (06-11-2026, besluit Ronald): account en profiel zijn één handeling,
-// bij deze knop, voor iedereen. Daarvoor bestaat er geen account, dus kan
-// niemand halverwege vastzitten.
+
+
+
 async function submitProfile() {
-  // Defensieve check naast de disabled-knop: een nieuw account mag nooit
-  // aangemaakt worden zonder aangevinkt akkoord.
+
+
   if (!document.getElementById('consentCheckbox')?.checked) {
     showToast('Vink eerst aan dat je akkoord gaat met de voorwaarden.');
     return;
   }
 
-  // TT-42 (route A): is de gebruiker 13, 14 of 15, dan ontstaat het account
-  // pas na de goedkeuring van zijn ouder én nadat hij zelf een wachtwoord
-  // heeft gekozen. Zolang state.regPassword leeg is, is dat nog niet gebeurd:
-  // deze knop brengt hem dan naar het wachtscherm of het wachtwoordscherm.
-  // ouderProfielAanmaken() zet het wachtwoord en roept deze functie daarna
-  // opnieuw aan — die tweede keer loopt hij gewoon door.
+
+
+
+
+
+
   if (state.ouderRoute && !state.regPassword) {
     const aanvraag = ouderAanvraagLezen();
     if (!aanvraag) { ouderStapTonen(); return; }
@@ -721,27 +721,27 @@ async function submitProfile() {
     return;
   }
 
-  // TT-570: het wachtwoord staat bewust niet in de browser. Na verversen is
-  // het dus weg: terug naar stap 1, de fout bij het veld, de rest blijft staan.
-  // De tekst zegt waarom je terug bent (besluit Ronald, 06-11-2026).
+
+
+
   if (!currentUser && !state.ouderRoute && !state.regPassword) {
     terugNaarVeld('regPassword', 'Vul je wachtwoord opnieuw in');
     return;
   }
 
   showSaving();
-  myOwnCity = null; // eigen plaats kan net gewijzigd zijn — cache opnieuw laten opbouwen
-  onboardingInFlight = true; // zie core.js: het inloggen hieronder stuurt niemand weg
+  myOwnCity = null;
+  onboardingInFlight = true;
 
   try {
     let userId = currentUser?.id || null;
     if (!userId) {
       userId = await accountAanmaken();
-      if (!userId) return; // de fout staat al bij het veld
+      if (!userId) return;
     }
 
-    // TT-02: pas nu bestaat er een user_id/sessie om naar Storage te mogen
-    // schrijven. Een mislukte upload houdt het profiel niet tegen.
+
+
     if (state.avatarFile) {
       try {
         const f = await fotoMetBronUploaden({ file: state.avatarFile, bron: state.avatarBron, kader: state.avatarKader }, userId);
@@ -756,10 +756,10 @@ async function submitProfile() {
       state.avatarFile = null;
     }
 
-    // TT-42, TT-570: media die tijdens de wizard is uitgekozen, kon toen
-    // nergens heen — er was nog geen account. Nu wel. Mislukt een upload, dan
-    // blokkeert dat het profiel niet; dat bestand valt eruit en de gebruiker
-    // kan het later alsnog toevoegen via Profiel bewerken.
+
+
+
+
     const wachtendeBestanden = state.mediaFiles.filter(m => m.bestand);
     for (const m of wachtendeBestanden) {
       try {
@@ -773,12 +773,12 @@ async function submitProfile() {
       }
     }
 
-    // De rij. Bestaat hij al, dan liep een eerdere poging na dit punt stuk:
-    // die rij gebruiken, één rij per account (musicians_user_id_idx).
-    // Bugfix 23-08-2026: alleen 'id' terugvragen; birth_date mag authenticated
-    // niet lezen, een kale .select() zou falen.
+
+
+
+
     const { data: bestaand, error: bestaatFout } = await db.from('musicians').select('id').eq('user_id', userId).single();
-    if (bestaatFout && bestaatFout.code !== 'PGRST116') throw bestaatFout; // TT-561: storing is geen "geen profiel"
+    if (bestaatFout && bestaatFout.code !== 'PGRST116') throw bestaatFout;
     let mid = bestaand?.id || null;
     if (!mid) {
       const { data: musician, error: mErr } = await db
@@ -806,13 +806,13 @@ async function submitProfile() {
     }
     myMusicianId = mid;
 
-    // Instrumenten, genres, nummers en media in één transactie (TT-281).
+
     await persistEditedProfile(mid);
-    // Nu het profiel er staat, hoort er niets meer van in de browser.
+
     clearOnboardingProgress();
     state.onboarding = false;
     state.ouderRoute = false;
-    // TT-336: bij 16+ houdt de database het profiel onzichtbaar tot de klik in de mail.
+
     if (await profielWachtOpBevestiging(mid)) { await bevestigingStarten(); return; }
     showSaveSuccess();
 
@@ -824,33 +824,33 @@ async function submitProfile() {
   }
 }
 
-// TT-570: maakt het account aan en logt in. Geeft het id, of null als de fout
-// bij een veld staat. Zo'n fout brengt de gebruiker terug naar dat veld; alles
-// wat hij invulde, blijft staan (eis Ronald, 06-11-2026).
+
+
+
 async function accountAanmaken() {
   const { data: authData, error: authErr } = await db.auth.signUp({
     email:    state.regEmail,
     password: state.regPassword,
     options:  { data: { fname: state.fname } }
   });
-  // TT-481: een te makkelijk wachtwoord hoort bij het veld. Geen storing,
-  // dus geen logregel.
+
+
   if (authErr && isZwakWachtwoordFout(authErr)) { terugNaarVeld('regPassword', TEKST_ZWAK_WACHTWOORD); return null; }
-  // 22-08-2026 (P0, live gemeld door Ronald): een eerdere poging met dit
-  // e-mailadres kan het account al hebben gemaakt, ook als de rest toen niet
-  // lukte. Bij precies die melding inloggen met de ingevulde gegevens.
+
+
+
   const alAccount = !!authErr && /already registered|already exists/i.test(authErr.message || '');
   if (authErr && !alAccount) throw new Error(authErr.message);
 
-  // Direct inloggen — e-mailbevestiging is uit, sessie is meteen actief. Dit
-  // activeert ook onAuthStateChange (SIGNED_IN); onboardingInFlight voorkomt
-  // dat die de gebruiker voortijdig naar Mijn Profiel stuurt.
+
+
+
   const { data: signInData, error: signInErr } = await db.auth.signInWithPassword({
     email: state.regEmail, password: state.regPassword
   });
   if (signInErr) {
-    // Een ander wachtwoord bij een bestaand account (TT-444): bij het
-    // e-mailadres zelf. Route A vroeg het e-mailadres al na bij de aanvraag.
+
+
     if (alAccount && !state.ouderRoute
         && /invalid login credentials|invalid_credentials|invalid grant/i.test(signInErr.message || '')) {
       terugNaarVeld('regEmail', TEKST_ACCOUNT_BESTAAT);
@@ -862,19 +862,19 @@ async function accountAanmaken() {
   if (!authUser?.id) throw eigenFout('Je account is aangemaakt, maar inloggen lukte niet. Ga naar Inloggen en log in met je e-mailadres en wachtwoord.');
   currentUser = authUser;
 
-  // 11-10-2026: het account bestaat, dus het wachtwoordveld hoeft niets meer
-  // te bevatten. Bleef het gevuld, dan bood Chrome later midden in de app
-  // aan het wachtwoord op te slaan.
+
+
+
   const regPwVeld = document.getElementById('regPassword');
   if (regPwVeld) regPwVeld.value = '';
-  // De opname hoort nu bij dit account: liep de rest stuk, dan vindt hij na
-  // inloggen zijn antwoorden terug (leesRegistratieVoortgang()).
+
+
   saveOnboardingProgress();
   return authUser.id;
 }
 
-// TT-570: terug naar het veld met de fout. Route A heeft het wachtwoord op
-// het laatste scherm, niet in stap 1.
+
+
 function terugNaarVeld(id, tekst) {
   document.getElementById('saveOverlay').classList.remove('visible');
   if (state.ouderRoute) { setFieldError(document.getElementById('ouderWachtwoordVeld'), tekst); return; }
@@ -882,18 +882,18 @@ function terugNaarVeld(id, tekst) {
   showFieldErrors([[id, tekst]]);
 }
 
-// ─── State ───────────────────────────────────────────────────────────────────
 
-// TT-23: er is geen kleurkiezer (meer) in de app — de accentkleur van een nieuw
-// profiel is dus altijd de merkkleur. Vroeger stond dit als state.profileColor
-// in de wizard, wat de indruk wekte dat de gebruiker er iets over te zeggen had.
-// Bestaande profielen met een afwijkende kleur in de database blijven ongemoeid:
-// bij het bewerken van een profiel wordt profile_color niet meer overschreven.
+
+
+
+
+
+
 const DEFAULT_PROFILE_COLOR = '#FFB81C';
 
-// TT-352 (27-09-2026): één bron voor een lege wizard, bij het laden én bij
-// uitloggen. Tot die dag stond een tweede kopie van dit object in
-// onUserLoggedOut() (core.js); die liep al achter (ouderRoute ontbrak).
+
+
+
 function legeWizardState() {
   return {
     currentStep: 0,
@@ -902,27 +902,27 @@ function legeWizardState() {
     citySource: 'cache',
     regEmail: '', regPassword: '',
     instruments: [],
-    instrumentLevels: {}, // TT-51 (12-08-2026): instrument (string) -> niveau 1-5
+    instrumentLevels: {},
     genres: [],
     songs: [],
-    naamTonen: 'echt', // TT-543: Echte naam of Gebruikersnaam, zoals in de tegel Wie ben je (TT-420)
+    naamTonen: 'echt',
     avatarUrl: null,
     avatarFile: null,
-    avatarBron: null,  // TT-543 blok 4b: de hele foto (bestand of link)
-    avatarKader: null, // en de plek van de uitsnede daarin
-    ouderRoute: false, // TT-42: true zolang 13-15 wacht op de klik van zijn ouder
+    avatarBron: null,
+    avatarKader: null,
+    ouderRoute: false,
     mediaFiles: [],
     mediaLinks: [],
-    onboarding: false // true zolang het account al bestaat maar het profiel nog niet is afgerond (TT-09)
+    onboarding: false
   };
 }
 let state = legeWizardState();
 
-// TT-352 (27-09-2026): na uitloggen stonden het e-mailadres en het wachtwoord
-// van de vorige registratie nog in de wizard. nextStep() leest de velden, niet
-// state. Zo kwam de volgende persoon op een gedeeld toestel met "Verder" in
-// het account van de vorige, zonder wachtwoord. Deze functie maakt state én
-// elk veld leeg, en zet de wizard terug op stap 1.
+
+
+
+
+
 function wizardLeegmaken() {
   state = legeWizardState();
   postcodeResolved = false;
@@ -938,20 +938,20 @@ function wizardLeegmaken() {
   goTo(0);
 }
 
-// ─── Init ────────────────────────────────────────────────────────────────────
+
 
 function init() {
-  // TT-116 (21-08-2026): instrument- en genrekeuze zijn nu een pulldown-veld
-  // met badges, geen altijd-zichtbaar knoppenraster meer. Zie de
-  // "Kies-en-badge component" verderop in dit blok.
-  // TT-168-overgang (02-09-2026): instrumentpicker cfg-based, wizard is één
-  // van de twee registraties (de andere: tegelscherm "Wat speel je").
+
+
+
+
+
   initInstrumentPicker({
     id: 'wizard',
     fieldId: 'instrumentPickerField', badgeRowId: 'instrumentBadgeRow',
     getInstruments: () => state.instruments, getLevels: () => state.instrumentLevels,
     onChange: saveOnboardingProgress,
-    toevoegen: 'Instrument', // TT-543 blok 4, voorstel 22
+    toevoegen: 'Instrument',
   });
   initPicker({
     id: 'genre',
@@ -959,42 +959,42 @@ function init() {
     options: GENRES, getList: () => state.genres,
     placeholder: 'Kies een genre',
     onChange: saveOnboardingProgress,
-    toevoegen: 'Genre', // TT-543 blok 4, voorstel 22
+    toevoegen: 'Genre',
   });
 
-  syncViewToggles(); // TT-U13: schakelaars gelijkzetten met de werkelijke stand
+  syncViewToggles();
 
-  // TT-543 blok 3 (8D, 07-11-2026): het raster van stap 4 bestaat alleen uit
-  // JavaScript; zonder deze regel ziet een nieuwe bezoeker geen "+ Toevoegen".
+
+
   renderMediaGrid();
 
-  // Update avatar initials placeholder reactively
+
   document.getElementById('fname').addEventListener('input', () => {
     state.fname = document.getElementById('fname').value.trim();
   });
   document.getElementById('bio').addEventListener('input', () => {
     state.bio = document.getElementById('bio').value.trim();
   });
-  // TT-543: het voorbeeld "Zo zien anderen je" volgt de velden, zoals in de tegel.
+
   document.getElementById('step0').addEventListener('input', () => { naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen); wizHoesBijwerken(); });
   naamKeuzeBijwerken(WIZ_NAAM, state.naamTonen);
 
-  // TT-122 (22-08-2026): inlogveld alvast vullen met het laatst gebruikte
-  // e-mailadres op dit toestel.
+
+
   try {
     const lastEmail = localStorage.getItem('tt_lastLoginEmail');
     const loginEmailField = document.getElementById('loginEmail');
     if (lastEmail && loginEmailField && !loginEmailField.value) loginEmailField.value = lastEmail;
-  } catch (e) { /* privénavigatie o.i.d., geen probleem */ }
+  } catch (e) { }
 }
 
-// ─── Goal ────────────────────────────────────────────────────────────────────
 
-// TT-46/TT-168 vervallen (08-10-2026, besluit Ronald): de bio-voorzetknoppen en
-// applyBioPromptTo/applyBioPrompt zijn weg; het voorbeeld staat als placeholder in het veld.
 
-// TT-543 (besluit Ronald 06-11-2026, voorstel 2): de keuze Naam op je profiel
-// staat ook in stap 1, met dezelfde functie als de tegel (naamKeuzeBijwerken()).
+
+
+
+
+
 const WIZ_NAAM = { blok: 'naamKeuze', control: 'naamTonenControl', voorbeeld: 'naamVoorbeeld',
   fname: 'fname', lname: 'lname', username: 'username', geboorte: 'birth_date' };
 function zetNaamTonen(waarde) {
@@ -1004,19 +1004,19 @@ function zetNaamTonen(waarde) {
   saveOnboardingProgress();
 }
 
-// TT-508 (besluit Ronald 14-11-2026: "ja"): bovenaan stap 1 staat je eigen hoes
-// met de schijnwerper, zoals anderen hem straks zien. Tijdens het typen komen
-// naam, leeftijd en plaats erin; leeg staat er "Jouw naam" en "Je leeftijd · je
-// plaats". De naam volgt Naam op je profiel, onder de 16 de gebruikersnaam
-// (naamZoalsAnderen()). De hoes wordt één keer getekend, daarna wijzigt alleen
-// de tekst; de bundels volgen de naam vanzelf (hoesStarten()). Een verborgen
-// stap heeft geen breedte: dan pas tekenen bij goTo(0).
+
+
+
+
+
+
+
 function wizHoesBijwerken() {
   const vak = document.getElementById('wizHoes');
   if (!vak) return;
   const waarde = id => (document.getElementById(id)?.value || '').trim();
   const datum = waarde('birth_date');
-  const leeftijd = leeftijdUitVeld(datum); // TT-660: geen leeftijd bij een datum die niet bestaat
+  const leeftijd = leeftijdUitVeld(datum);
   const naam = naamZoalsAnderen(waarde('fname'), waarde('lname'), waarde('username'),
     state.naamTonen, leeftijd === null ? 16 : leeftijd) || 'Jouw naam';
   const regel = `${leeftijd === null ? 'Je leeftijd' : leeftijd + ' jaar'} · ${waarde('city') || 'je plaats'}`;
@@ -1031,7 +1031,7 @@ function wizHoesBijwerken() {
   fitProfileName(vak);
 }
 
-// ─── Navigation ──────────────────────────────────────────────────────────────
+
 
 async function nextStep(from) {
   if (from === 0) {
@@ -1046,29 +1046,29 @@ async function nextStep(from) {
       state.regPassword = document.getElementById('regPassword').value;
     }
 
-    // TT-247 (12-09-2026): alle fouten van deze stap tegelijk, elk bij zijn
-    // eigen veld. Tot nu toe was het één toast per keer: negen velden, zeven
-    // verplicht, 1422px hoog — je drukte Verder, las een regel die alweer weg
-    // was, en raadde welk veld werd bedoeld. Zie huisstijl §13.1.
+
+
+
+
     clearFieldErrors('view-register');
     const fouten = [];
 
-    // TT-U04 (12-08-2026): achternaam is niet langer verplicht; een verplicht
-    // veld levert alleen drempel op. TT-420: vanaf 16 staat hij, als je hem
-    // invult, standaard op je profiel (te wijzigen in Profiel bewerken). De
-    // kolom lname wordt gevuld als iemand hem invult.
+
+
+
+
     if (!state.fname) {
       fouten.push(['fname', 'Vul je voornaam in']);
     } else if (!naamPastInProfielkop(naamZoalsAnderen(state.fname, state.lname, state.username, state.naamTonen,
-        leeftijdUitVeld(state.birth_date) ?? 16) || state.fname)) { // TT-660
-      // TT-249 (11-09-2026): de naam is de grote naam op je profiel. Die wordt
-      // nooit afgekapt en nooit afgebroken, dus een naam die op de kleinste
-      // letter niet past, komt er niet in. TT-420: vanaf 16 staat standaard de
-      // voor- en achternaam op je profiel, dus die samen moeten passen.
+        leeftijdUitVeld(state.birth_date) ?? 16) || state.fname)) {
+
+
+
+
       fouten.push(['fname', 'Deze naam is te lang om op je profiel te tonen. Maak hem korter']);
     }
 
-    // TT-625: één controle, ook in de tegel Wie ben je (geboortedatumFout() in utils.js).
+
     const leeftijd = calcAge(state.birth_date);
     const datumFout = geboortedatumFout(state.birth_date);
     if (datumFout) fouten.push(['birth_date', datumFout]);
@@ -1077,8 +1077,8 @@ async function nextStep(from) {
       fouten.push(['zip', 'Vul een geldige postcode in. Je woonplaats wordt dan automatisch ingevuld']);
     }
 
-    // TT-38: gebruikersnaam verplicht, geldig formaat, beschikbaar, en onder
-    // de 16 verplicht afwijkend van de echte voornaam (privacy).
+
+
     if (!state.username) {
       fouten.push(['username', 'Kies een gebruikersnaam']);
     } else if (!usernameFormatValid(state.username)) {
@@ -1088,19 +1088,19 @@ async function nextStep(from) {
     }
 
     if (!currentUser) {
-      // TT-258 (12-09-2026): het formaat werd hier helemaal niet gecontroleerd
-      // — alleen of het veld leeg was. "testeremail" ging naar Supabase, en
-      // diens antwoord raakte geen enkele regel in friendlyErrorMessage(). De
-      // gebruiker las "Er ging iets mis. Probeer het opnieuw." bovenin het
-      // scherm en wist niet dat het om zijn e-mailadres ging.
+
+
+
+
+
       if (!state.regEmail) {
         fouten.push(['regEmail', 'Vul je e-mailadres in']);
       } else if (!emailFormaatGeldig(state.regEmail)) {
         fouten.push(['regEmail', 'Vul een geldig e-mailadres in, bijvoorbeeld jouw@email.nl']);
       }
-      // TT-42: onder de 16 staat het wachtwoordveld hier niet. Er bestaat op
-      // dit moment nog geen account om het bij te bewaren; het wachtwoord
-      // wordt gevraagd op het laatste scherm, ná de goedkeuring van de ouder.
+
+
+
       if (!ouderToestemmingNodig(leeftijd)) {
         if (!state.regPassword) {
           fouten.push(['regPassword', 'Kies een wachtwoord']);
@@ -1112,19 +1112,19 @@ async function nextStep(from) {
 
     if (showFieldErrors(fouten)) return;
 
-    // Altijd een verse check vlak vóór het opslaan — de eerder getoonde status
-    // kan verouderd zijn (iemand anders kan de naam intussen hebben gepakt).
-    // Staat apart omdat hij het netwerk op moet; alles hierboven kan zonder.
+
+
+
     const available = (usernameCheckedValue === state.username && usernameAvailable)
       ? true
       : await checkUsernameAvailability();
     if (!available) {
-      // 22-08-2026: "niet beschikbaar" was hiervoor de tekst voor twee heel
-      // verschillende situaties — een echt bezette naam, én een technische
-      // fout bij de controle zelf. Nu apart, met een tekst die klopt met wat
-      // er echt aan de hand is.
+
+
+
+
       if (usernameCheckFailed) {
-        // Gaat niet over de naam die je koos, maar over de app — dus een toast.
+
         showToast('De gebruikersnaam kon niet gecontroleerd worden. Probeer het over een paar seconden opnieuw.');
       } else {
         showFieldErrors([['username', 'Deze gebruikersnaam is al bezet. Kies een andere']]);
@@ -1132,65 +1132,65 @@ async function nextStep(from) {
       return;
     }
 
-    // TT-42 (route A, besluit Ronald 22-09-2026): is de gebruiker 13, 14 of
-    // 15, dan ontstaat hier géén account en géén profielregel. Er gaat eerst
-    // een mailtje naar zijn ouder; alles wat hij invult blijft zolang in zijn
-    // eigen browser staan. Het account ontstaat pas op het laatste scherm,
-    // na de goedkeuring (zie ouder.js en submitProfile()).
+
+
+
+
+
     if (ouderToestemmingNodig(leeftijd)) {
       state.ouderRoute = true;
       state.onboarding = false;
       saveOnboardingProgress();
-      // Loopt er al een goedgekeurde aanvraag? Dan hoeft hij niets meer te
-      // vragen en gaat hij gewoon verder met zijn profiel.
+
+
       const lopend = ouderAanvraagLezen();
       if (lopend && lopend.stand !== 'geweigerd' && lopend.stand !== 'verlopen') { goTo(1); return; }
       ouderStapTonen();
       return;
     }
     state.ouderRoute = false;
-    // TT-570 (besluit Ronald, 06-11-2026): ook vanaf 16 ontstaat hier geen
-    // account meer. Alles blijft in de browser tot "Profiel aanmaken".
+
+
     state.onboarding = true;
   }
   if (from === 1) {
-    // TT-U09 (12-08-2026): niveau blokkeert stap 2 niet meer. "Welk niveau
-    // ben ik?" is voor een beginnende dertienjarige een lastige vraag —
-    // precies het type vraag dat mensen laat afhaken of laat liegen.
-    // Het niveau blijft bestaan en telt mee in de volledigheidsmeter; het is
-    // alleen geen slagboom meer. Wie het overslaat, ziet dat daar terug.
-    // TT-444: een ontbrekend instrument of genre staat bij het veld zelf, en de
-    // pagina schuift ernaartoe. Een toast bovenin zei niet welk veld, en bij een
-    // lang scherm stond het veld buiten beeld. Zelfde vorm als bij Band aanmaken.
+
+
+
+
+
+
+
+
     const fouten = [];
     if (!state.instruments.length) fouten.push(['instrumentPickerField', 'Kies minimaal één instrument']);
     if (!state.genres.length) fouten.push(['genrePickerField', 'Kies minimaal één genre']);
     if (showFieldErrors(fouten)) return;
   }
-  // TT-514 (besluit Ronald, 25-10-2026): drie nummers zijn verplicht. De fout
-  // staat bij het zoekveld, zoals bij stap 2. De beheersing per nummer blijft
-  // optioneel (V-23). TT-543 (06-11-2026): de setlist is stap 3 (index 2).
+
+
+
   if (from === 2 && showFieldErrors(nummersTekortFouten())) return;
   goTo(from + 1);
 }
 
-// TT-168-overgang (02-09-2026): "Terug" ging voorheen ook een "niet
-// opgeslagen"-melding tonen tijdens het bewerken van een bestaand profiel
-// via de wizard — dat pad bestaat niet meer (zie editMyProfile()). "Terug"
-// gaat nu altijd gewoon naar de vorige stap, zonder melding.
+
+
+
+
 async function prevStep(from) {
   goTo(from - 1);
 }
 
-// TT-144 (25-08-2026): "Terug" op stap 1 — er is geen vorige stap, dus dit
-// verlaat de wizard zelf, naar de landingpagina. TT-168-overgang: ging
-// voorheen ook terug naar Mijn Profiel als je een bestaand profiel via de
-// wizard bewerkte — dat pad bestaat niet meer, dus dit is nu altijd een
-// gloednieuwe registratie die hier terugkomt.
-// TT-573 (besluit Ronald 14-11-2026, "ok"): Terug op stap 1 vraagt eerst of je
-// stopt; wat je invulde, wordt dan van dit toestel gewist. Staat er nog niets,
-// dan gaat Terug meteen naar de landingspagina. De route met een ouder heeft
-// zijn eigen vraag (ouderStoppenEnWissen() in ouder.js).
+
+
+
+
+
+
+
+
+
 function aanmeldingIngevuld() {
   const velden = ['fname', 'lname', 'birth_date', 'username', 'zip', 'bio', 'regEmail']
     .some(id => (document.getElementById(id)?.value || '').trim());
@@ -1204,8 +1204,8 @@ async function prevStepFromStart() {
     clearOnboardingProgress();
     if (typeof ouderAanvraagWissen === 'function') ouderAanvraagWissen();
     showView('landing', 'redirect');
-    // Zoals bij Gegevens wissen (TT-503 D7): ook wat in het geheugen en in de
-    // velden van de wizard staat, moet weg. Een herlaad zet alles op leeg.
+
+
     window.location.reload();
   }, 'Stoppen', false, 'Annuleren', 'Stoppen met aanmelden?');
 }
@@ -1222,62 +1222,62 @@ function goTo(step) {
     else if (i < step) d.classList.add('done');
   });
 
-  // TT-250 (24-09-2026): één teller, "Stap 2 van 5". Tot dan stonden er drie
-  // tellers tegelijk: vijf bolletjes, "Fase 1 van 2" en "(1/4)". Na stap 1
-  // leek je halverwege, terwijl er nog vier schermen kwamen. De titel van elk
-  // scherm zegt al waar je bent. De aparte labels voor bewerkmodus zijn ook
-  // weg: bewerken loopt sinds TT-168 via het tegeloverzicht, en de wizard
-  // telt in beide gevallen dezelfde vijf stappen.
+
+
+
+
+
+
   document.getElementById('stepLabel').textContent = `Stap ${step + 1} van ${dots.length}`;
 
   state.currentStep = step;
-  if (step === 0) wizHoesBijwerken(); // TT-508: pas zichtbaar heeft de hoes een breedte
-  saveOnboardingProgress(); // no-op tenzij state.onboarding actief is
+  if (step === 0) wizHoesBijwerken();
+  saveOnboardingProgress();
   window.scrollTo({top:0, behavior:'smooth'});
-  // TT-142 (25-08-2026): geen automatische focus meer bij een stapwissel —
-  // zie de toelichting bij showView() hierboven.
+
+
 
 }
 
-// ─── Personalisatie ──────────────────────────────────────────────────────────
 
-// TT-02: bestand echt naar Supabase Storage uploaden i.p.v. alleen een
-// tijdelijke blob-URL. Pad bevat het user_id (nodig voor de insert-policy:
-// iedereen mag alleen naar zijn eigen map schrijven) plus een tijdstempel
-// zodat twee uploads nooit elkaars bestand overschrijven.
-// TT-87 (10-08-2026): één lijst met toegestane bestandstypen, gelijk aan de
-// instelling "Allowed MIME types" op de buckets in Supabase Storage
-// (geverifieerd door Ronald, 10-08-2026). Vroeger keek de app alleen of het
-// type met "image/" of "video/" begon. Een .heic-foto van een iPhone of een
-// .webm-video kwam daar dus doorheen. De upload startte, de server weigerde,
-// en de gebruiker kreeg de nietszeggende melding "Er ging iets mis".
-// Wijzigt de bucketinstelling in Supabase? Wijzig dan ook deze twee lijsten.
-// TT-520 deel 2 (besluit Ronald 27-10-2026): geen GIF als profielfoto of
-// bandfoto ("het leidt af van andere muzikanten"), en een foto krijgt een
-// uitsnede (kiesUitsnede in utils.js); een GIF zou dan stilstaan. Bij de media
-// van een profiel of band mag een GIF wel.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const AVATAR_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const AVATAR_TYPE_LABEL = 'JPG, PNG of WEBP';
 const MEDIA_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'];
 const MEDIA_TYPE_LABEL = 'JPG, PNG, GIF, WEBP, MP4 of MOV';
 
-// Geeft null terug als het bestand mag. Geeft anders een leesbare melding.
+
 function fileTypeProblem(file, allowedTypes, typeLabel) {
   const type = (file.type || '').toLowerCase();
   if (allowedTypes.includes(type)) return null;
-  // Een iPhone levert soms HEIC/HEIF aan. Dat is de meest voorkomende
-  // afwijzing, dus die krijgt een eigen aanwijzing i.p.v. de algemene tekst.
+
+
   if (type === 'image/heic' || type === 'image/heif') {
     return 'Dit fotoformaat (HEIC) werkt niet. Zet op je iPhone in Instellingen → Camera → Indelingen de optie "Meest compatibel" aan, of sla de foto op als JPG.';
   }
   return `Dit bestandsformaat werkt niet. Gebruik ${typeLabel}.`;
 }
 
-// TT-446 (09-10-2026, Ronald): een telefoonfoto is al snel 4 tot 12 MB en werd
-// geweigerd met "te groot". De app verkleint een foto nu zelf voor het
-// uploaden: lange zijde maximaal 1600 pixels, JPG. GIF blijft ongemoeid
-// (anders staat de animatie stil). Mislukt het verkleinen, dan gaat het
-// origineel door en geldt de gewone grens.
+
+
+
+
+
 const FOTO_MAX_PX = 1600;
 const FOTO_DREMPEL_BYTES = 1024 * 1024;
 const FOTO_MAX_ORIGINEEL = 30 * 1024 * 1024;
@@ -1314,11 +1314,11 @@ async function fotoVerkleinen(file) {
   }
 }
 
-// Een te grote video: de melding staat 8 seconden in beeld (TT-571).
+
 const VIDEO_TE_GROOT_MS = 8000;
 
-// Geeft null als het bestand mag, anders de melding voor de gebruiker. Een foto
-// (behalve GIF) hoeft niet klein te zijn: die verkleint de app zelf.
+
+
 function bestandTeGrootMelding(file, maxBytes) {
   const type = (file.type || '').toLowerCase();
   const naam = file.name ? `"${file.name}" ` : '';
@@ -1329,22 +1329,22 @@ function bestandTeGrootMelding(file, maxBytes) {
   }
   if (file.size <= maxBytes) return null;
   const maxMb = Math.round(maxBytes / 1024 / 1024);
-  // TT-571 (besluit Ronald 14-11-2026): de tekst van Ronald; een vaste spatie
-  // (U+00A0) houdt "50 MB" op één regel. Hij staat 8 seconden in beeld.
+
+
   if (type.startsWith('video/')) return `Deze video is helaas te groot. Kies er een tot ${maxMb}\u00a0MB, of voeg hem toe als link.`;
   return `${naam}is ${mb} MB. Maximaal ${maxMb} MB. Gebruik een JPG of PNG, die verkleint de app zelf.`;
 }
 
-// Het fotootje gaat mee met elke foto (JPG, PNG, WebP; geen GIF of video), in
-// `avatars` en in `media` (TT-537). Mislukt het, dan staat de foto er toch: de
-// app toont dan de grote foto (utils.js). fotoUploadsBezig telt de uploads die
-// nog lopen; opslagOpruimen() wist dan niets.
-// TT-517 fase 7: elke foto krijgt ook een wazige versie (wazigMaken()). Die
-// gaat niet naar de opslag maar naar de database, bij het opslaan
-// (wazigVeld(), wazigVoor()). Mislukt hij, dan ziet een bezoeker bij een
-// afgeschermde foto het algemene wazige beeld (WAZIG_ALGEMEEN in utils.js).
+
+
+
+
+
+
+
+
 let fotoUploadsBezig = 0;
-const wazigBijUpload = new Map(); // adres van de foto → wazige versie
+const wazigBijUpload = new Map();
 async function uploadToStorage(bucket, userId, file, maxBytes, maxLabel, allowedTypes, typeLabel) {
   fotoUploadsBezig++;
   try {
@@ -1386,8 +1386,8 @@ async function uploadToStorageZonderKlein(bucket, userId, file, maxBytes, maxLab
   return { url: data.publicUrl, path, file };
 }
 
-// Fotootje (zie fotoKleinPad() in utils.js): het midden van de foto,
-// vierkant, FOTO_KLEIN_PX pixels, JPG.
+
+
 async function fotootjeMaken(file) {
   const url = URL.createObjectURL(file);
   try {
@@ -1413,11 +1413,11 @@ async function fotootjeMaken(file) {
   }
 }
 
-// TT-517 fase 7 (huisstijl §18.7, besluit Ronald 01-11-2026, B): de wazige
-// versie van een foto. Het midden, 4:3 (de vorm van de hoes), 16 x 12 pixels,
-// JPG, als tekst ("data:image/jpeg;base64,…"). Hierop is niemand te
-// herkennen; de database stuurt hem een bezoeker zonder account in plaats van
-// de foto van een 13- tot 15-jarige. null als het niet lukt.
+
+
+
+
+
 async function wazigMaken(file) {
   const url = URL.createObjectURL(file);
   try {
@@ -1440,14 +1440,14 @@ async function wazigMaken(file) {
     URL.revokeObjectURL(url);
   }
 }
-// De wazige versie van een foto die in deze sessie is geüpload, of null.
+
 function wazigVoor(url) {
   return wazigBijUpload.get(url) || null;
 }
-// Het veld voor de profiel- of bandfoto bij het opslaan: alleen als de app
-// een nieuwe wazige versie heeft. Anders niets, zodat een bewaarde versie
-// blijft staan; een nieuwe foto zonder versie wist de oude in de database
-// (trigger tt_wazig_bij_profielfoto).
+
+
+
+
 function wazigVeld(url) {
   const w = url ? wazigVoor(url) : null;
   return w ? { avatar_wazig: w } : {};
@@ -1457,12 +1457,12 @@ function uploadAvatarFile(file, userId) {
   return uploadToStorage('avatars', userId, file, 5 * 1024 * 1024, '5 MB', AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
 }
 
-// Na het opslaan: elk bestand in de map dat niet meer op het profiel of de
-// bandpagina staat, gaat weg, met zijn fotootje (TT-537). Zo blijft een
-// vervangen of verwijderde foto of video niet via zijn link te openen.
-// `bucket` is 'avatars' of 'media'; `map` het account-id of `bands/<band-id>`;
-// `urls` de links die blijven. Loopt er nog een upload, dan niets: dat bestand
-// is nog niet opgeslagen. De volgende keer opslaan ruimt het op.
+
+
+
+
+
+
 async function opslagOpruimen(bucket, map, urls) {
   if (!map || fotoUploadsBezig) return;
   try {
@@ -1489,8 +1489,8 @@ function uploadMediaFile(file, userId) {
   return uploadToStorage('media', userId, file, 50 * 1024 * 1024, '50 MB', MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
 }
 
-// TT-543 blok 4b: wat de rij van de profielfoto meekrijgt. Alleen een
-// opgeslagen link; zonder foto niets.
+
+
 function fotoBronVelden() {
   const bron = state.avatarUrl && typeof state.avatarBron === 'string' ? state.avatarBron : null;
   return { avatar_bron: bron, avatar_kader: bron ? uitsnedeGeldig(state.avatarKader) : null };
@@ -1498,17 +1498,17 @@ function fotoBronVelden() {
 
 async function handleAvatarUpload(file) {
   if (!file) return;
-  // TT-87: meteen controleren, vóór de preview. Zo ziet niemand een foto
-  // verschijnen die de server daarna alsnog weigert.
+
+
   const typeProblem = fileTypeProblem(file, AVATAR_MIME_TYPES, AVATAR_TYPE_LABEL);
   if (typeProblem) { showToast(typeProblem); return; }
   { const groot = bestandTeGrootMelding(file, 5 * 1024 * 1024); if (groot) { showToast(groot); return; } }
-  // TT-520 deel 2: eerst de uitsnede. Afbreken laat alles zoals het was.
+
   const uit = await kiesUitsnede(file, 'rond');
   if (uit) avatarZetten({ file: uit, kader: uit.kader, bron: file });
 }
 
-// TT-543 blok 4b: een tik op de foto verschuift hem; zonder foto kies je er een.
+
 async function avatarTik() {
   if (!state.avatarUrl && !state.avatarFile) { document.getElementById('avatarInput').click(); return; }
   const uit = await fotoVerschuiven({ url: state.avatarUrl, bron: state.avatarBron, kader: state.avatarKader }, 'rond');
@@ -1517,8 +1517,8 @@ async function avatarTik() {
 
 function avatarZetten(uit) {
   const file = uit.file;
-  // Preview direct met de blob-URL, zodat het aanvoelt als een directe
-  // reactie — de echte upload (hieronder) loopt daar los van.
+
+
   const blobUrl = URL.createObjectURL(file);
   const preview = document.getElementById('avatarPreview');
   preview.style.position = 'relative';
@@ -1526,9 +1526,9 @@ function avatarZetten(uit) {
   document.getElementById('avatarRemoveBtn').classList.add('visible');
 
   if (!currentUser) {
-    // Tijdens de wizard bestaat er nog geen account (TT-570), dus nog geen
-    // sessie om naar Storage te mogen schrijven. Bewaar het bestand zelf —
-    // submitProfile() uploadt het echt zodra er een user_id is.
+
+
+
     state.avatarFile = file;
     state.avatarBron = uit.bron;
     state.avatarKader = uit.kader;
@@ -1536,7 +1536,7 @@ function avatarZetten(uit) {
     return;
   }
 
-  // Account bestaat al — meteen echt uploaden.
+
   preview.insertAdjacentHTML('beforeend',
     `<div class="avatar-uploading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.4);border-radius:50%;">
        <div class="save-spinner" style="width:24px;height:24px;border-width:3px;margin:0;"></div>
@@ -1555,9 +1555,9 @@ function avatarZetten(uit) {
   });
 }
 
-// TT-381 (30-09-2026, Ronald): het kruisje rechtsboven de foto vraagt eerst,
-// op alle drie de plekken gelijk (registratie, Je mediahoek, bandfoto).
-// removeAvatar() zelf blijft zonder vraag: een mislukte upload ruimt ermee op.
+
+
+
 function askRemoveAvatar() {
   showConfirm('Profielfoto verwijderen?', removeAvatar, 'Ja, verwijderen');
 }
@@ -1568,14 +1568,14 @@ function removeAvatar() {
   state.avatarBron = null;
   state.avatarKader = null;
   const preview = document.getElementById('avatarPreview');
-  preview.innerHTML = ''; // TT-517 fase 6: de schijnwerper met silhouet (styles.css)
+  preview.innerHTML = '';
   preview.style.borderColor = '';
   document.getElementById('avatarRemoveBtn').classList.remove('visible');
 }
 
-// ─── Media ───────────────────────────────────────────────────────────────────
 
-// TT-543 blok 3: een keuze in het menu van "+ Toevoegen" (utils.js).
+
+
 function mediaToevoegenKeuze(sel) {
   mediaToevoegenStart(sel, state.mediaFiles, state.mediaLinks, 'mediaInvoer', url => {
     state.mediaLinks.push({ url, inBanner: false });
@@ -1583,15 +1583,15 @@ function mediaToevoegenKeuze(sel) {
   });
 }
 
-// TT-02: de media-stap (step4) komt in de wizard altijd ná stap 1
-// ("Aanmelden"), dus het account bestaat op dit punt altijd al — anders dan
-// bij de avatar-upload in stap 1 hoeft hier niet uitgesteld te worden.
+
+
+
 function handleFileSelect(files) {
   Array.from(files).forEach(file => {
     if (state.mediaFiles.length >= GRENZEN.beeld) { showToast(`Maximum van ${GRENZEN.beeld} bestanden bereikt.`); return; }
     const isVideo = (file.type || '').toLowerCase().startsWith('video/');
-    // TT-87: controleren tegen dezelfde lijst als de bucket in Supabase,
-    // vóór de preview en vóór de upload.
+
+
     const typeProblem = fileTypeProblem(file, MEDIA_MIME_TYPES, MEDIA_TYPE_LABEL);
     if (typeProblem) { showToast(`"${file.name}": ${typeProblem}`); return; }
     { const groot = bestandTeGrootMelding(file, 50 * 1024 * 1024); if (groot) { showToast(groot, isVideo ? VIDEO_TE_GROOT_MS : undefined); return; } }
@@ -1603,12 +1603,12 @@ function handleFileSelect(files) {
     renderMediaGrid();
 
     if (!currentUser) {
-      // TT-42 (route A): bij 13-15 bestaat er tijdens de wizard nog geen
-      // account, dus ook geen map om naar te schrijven. Het bestand blijft
-      // hier in het geheugen hangen en gaat mee in submitProfile(), zodra het
-      // account er is — zelfde uitstel als de profielfoto bij TT-02.
-      // Bekende beperking, gelijk aan die van de profielfoto: sluit hij de
-      // browser, dan is het bestand weg. Zijn antwoorden en zijn links niet.
+
+
+
+
+
+
       entry.uploading = false;
       entry.bestand = file;
       renderMediaGrid();
@@ -1636,31 +1636,31 @@ function renderMediaGrid() {
   bannerTellerBijwerken('wizardBannerTeller', state.mediaFiles, state.mediaLinks);
 }
 
-// TT-263: welke media in de bannerbalk op het profiel komt, kiest de
-// gebruiker hier. De grens geldt over foto's, video's en links samen.
+
+
 function toggleMediaBanner(i) {
   return bannerTekenTik(state.mediaFiles[i], state.mediaFiles, state.mediaLinks, 'mediaGrid', 'wizardBannerTeller');
 }
 
 function speelMedia(i) {
-  mediaTegelTik(state.mediaFiles[i]); // TT-543 blok 4b: een bannerfoto opent het kader
+  mediaTegelTik(state.mediaFiles[i]);
 }
 
 function removeMedia(i) {
   const entry = state.mediaFiles[i];
   state.mediaFiles.splice(i,1);
   renderMediaGrid();
-  // Al geüpload bestand meteen weer opruimen uit Storage — voorkomt dat
-  // verwijderde media als wees achterblijft (best effort, geen blokkerende fout).
+
+
   if (entry?.path) {
     db.storage.from('media').remove([entry.path, fotoKleinPad(entry.path)]).then(() => {}, e => logCaught('removeMedia', e));
   }
 }
 
 
-// detectPlatform() en extractYouTubeId() stonden hier tot 13-09-2026. Ze
-// staan nu in utils.js (TT-263): drie bestanden gebruiken ze. Geen kopie
-// laten staan — zie werkwijze §2.10, dode code gaat meteen weg.
+
+
+
 
 function toggleLinkBanner(i) {
   linkBannerTik(state.mediaLinks[i], i, state.mediaFiles, state.mediaLinks, 'mediaGrid', 'wizardBannerTeller');

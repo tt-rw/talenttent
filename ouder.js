@@ -1,34 +1,34 @@
-// ouder.js — TT-42: registratie met toestemming van een ouder (route A)
-//
-// Twee kanten in één bestand, net als melden en blokkeren samen in
-// veiligheid.js staan (TT-06):
-//   1. de kant van het kind  — het tussenscherm, het wachtscherm en het
-//      wachtwoordscherm binnen de registratiewizard;
-//   2. de kant van de ouder  — de goedkeuringspagina (view-toestemming),
-//      die zonder inlog werkt en alleen via de link uit de mail bereikbaar is.
-//
-// Route A (besluit Ronald, 22-09-2026): voor wie 13, 14 of 15 is ontstaan het
-// account en de profielregel pas ná de goedkeuring. Tot die tijd staat alles
-// in de browser van het kind. Voor 16-plussers verandert er niets.
-//
-// De code uit de link komt nooit in de browser van het kind terecht. Alle
-// schrijfacties lopen via de Edge Function `ouder-toestemming`, die de
-// service-role-sleutel heeft; de tabel zelf is voor anon en authenticated
-// volledig dicht.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const OUDER_OPSLAG_KEY       = 'tt_ouder_v1';
-const OUDER_LEEFTIJD_ONDER   = 13;  // onder de 13 mag niemand, zie wizard.js
-const OUDER_LEEFTIJD_GRENS   = 16;  // vanaf 16 is geen toestemming nodig
+const OUDER_LEEFTIJD_ONDER   = 13;
+const OUDER_LEEFTIJD_GRENS   = 16;
 const OUDER_HERSTUUR_MS      = 15 * 60 * 1000;
 const OUDER_MAX_VERSTUURD    = 3;
 
 let ouderStandTimer = null;
-// ouderVerlopenTonen() past het wachtscherm aan (kop, tekst, knoppen).
-// Wordt daarna een nieuwe aanvraag verstuurd, dan hoort het wachtscherm weer
-// in zijn oorspronkelijke vorm te staan: de opmaak uit index.html.
+
+
+
 let ouderWachtOrigineel = null;
 
-// ─── Wie heeft een ouder nodig ───────────────────────────────────────────────
+
 
 function ouderToestemmingNodig(leeftijd) {
   return Number.isFinite(leeftijd)
@@ -36,37 +36,37 @@ function ouderToestemmingNodig(leeftijd) {
       && leeftijd <  OUDER_LEEFTIJD_GRENS;
 }
 
-// Leeftijd van wat er nú in het geboortedatumveld staat. Geeft NaN bij een
-// onvolledige of onzinnige datum — dan toont de regel zich niet.
+
+
 function ouderLeeftijdUitVeld() {
   const veld = document.getElementById('birth_date');
   if (!veld) return NaN;
-  const leeftijd = leeftijdUitVeld(veld.value); // TT-660: ook geen leeftijd bij een datum die niet bestaat
+  const leeftijd = leeftijdUitVeld(veld.value);
   return leeftijd === null ? NaN : leeftijd;
 }
 
-// ─── Onderdeel 1: de regel bij de geboortedatum ──────────────────────────────
-// Verschijnt zodra de datum op 13, 14 of 15 uitkomt, verdwijnt weer zodra dat
-// niet meer zo is. Geen rood, geen blokkade: een mededeling, geen fout
-// (huisstijl §13.1 — zeg wat er moet gebeuren, niet wat er fout is).
+
+
+
+
 function ouderLeeftijdsregel() {
   const regel = document.getElementById('ouderLeeftijdHint');
   if (!regel) return;
   const nodig = ouderToestemmingNodig(ouderLeeftijdUitVeld());
   regel.style.display = nodig ? '' : 'none';
 
-  // Het wachtwoord wordt bij deze leeftijd pas aan het eind gevraagd, ná de
-  // goedkeuring — er bestaat tot dat moment geen account om het bij te
-  // bewaren. Het veld verdwijnt dus uit stap 1.
+
+
+
   const wwVeld = document.getElementById('regPasswordField');
   if (wwVeld && !currentUser) {
     wwVeld.style.display = nodig ? 'none' : '';
   }
 }
 
-// ─── Opslag van de aanvraag ──────────────────────────────────────────────────
-// Alleen het nummer van de aanvraag, het adres van de ouder en de termijnen.
-// Nooit de code uit de link — die kent alleen de ouder.
+
+
+
 function ouderAanvraagLezen() {
   try { return JSON.parse(localStorage.getItem(OUDER_OPSLAG_KEY) || 'null'); }
   catch (e) { return null; }
@@ -78,13 +78,13 @@ function ouderAanvraagBewaren(gegevens) {
 }
 
 function ouderAanvraagWissen() {
-  try { localStorage.removeItem(OUDER_OPSLAG_KEY); } catch (e) { /* zie boven */ }
+  try { localStorage.removeItem(OUDER_OPSLAG_KEY); } catch (e) { }
 }
 
-// ─── Schermen binnen de wizard ───────────────────────────────────────────────
-// De drie nieuwe schermen dragen `panel-ouder`, niet `panel`. goTo() in
-// wizard.js koppelt `.panel` op volgorde aan het stapnummer; een zesde
-// `.panel` zou die koppeling stilzwijgend verschuiven.
+
+
+
+
 function ouderPaneelTonen(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.panel-ouder').forEach(p => p.classList.toggle('active', p.id === id));
@@ -94,13 +94,13 @@ function ouderPaneelTonen(id) {
 }
 
 function ouderPaneelSluiten() {
-  clearInterval(ouderStandTimer); // TT-656 punt 3: de klok hoort bij het wachtscherm
+  clearInterval(ouderStandTimer);
   document.querySelectorAll('.panel-ouder').forEach(p => p.classList.remove('active'));
   const balk = document.getElementById('stepsBar');
   if (balk) balk.style.display = '';
 }
 
-// ─── Onderdeel 2: het tussenscherm ───────────────────────────────────────────
+
 
 function ouderStapTonen() {
   const veld = document.getElementById('ouderEmail');
@@ -110,10 +110,10 @@ function ouderStapTonen() {
   ouderPaneelTonen('ouderStap');
 }
 
-// TT-503 D7: ook op het tussenscherm een weg terug. Alleen het wachtscherm had
-// "Stoppen en mijn gegevens wissen"; wie hier vastzat, kon zijn halve
-// registratie niet meer wissen. De regel wordt hier neergezet, zodat
-// index.html er niet voor hoeft te veranderen. Eén keer, nooit dubbel.
+
+
+
+
 function ouderStopLinkZetten() {
   const paneel = document.getElementById('ouderStap');
   if (!paneel || document.getElementById('ouderStapStopLink')) return;
@@ -123,8 +123,8 @@ function ouderStopLinkZetten() {
     '<p class="stille-link-regel" id="ouderStapStopLink"><button type="button" class="stille-link" onclick="ouderStoppenEnWissen()">Stoppen en mijn gegevens wissen</button></p>');
 }
 
-// "Later invullen": gewoon door naar stap 2. Het tussenscherm komt terug na de
-// laatste stap, want zonder adres ontstaat er geen account.
+
+
 function ouderStapOverslaan() {
   ouderPaneelSluiten();
   goTo(1);
@@ -153,9 +153,9 @@ async function ouderVerzoekVersturen() {
       ouder_email:   adres
     });
     hideSaving();
-    // TT-503 D7: de server geeft het nummer ook terug als de mail mislukte
-    // (mail_verstuurd false). Dan bewaren we het toch, met verstuurd 0, zodat
-    // het wachtscherm "Mail opnieuw sturen" laat zien en het kind niet vastloopt.
+
+
+
     const mailGelukt = gegevens.mail_verstuurd !== false;
     ouderAanvraagBewaren({
       aanvraagId:      gegevens.aanvraag_id,
@@ -173,8 +173,8 @@ async function ouderVerzoekVersturen() {
   } catch (e) {
     hideSaving();
     logCaught('ouderVerzoekVersturen', e);
-    // Het e-mailadres van het kind wordt aan deze kant al getoetst, zodat hij
-    // niet pas veertien dagen later hoort dat het al in gebruik is.
+
+
     if (/in gebruik/i.test(e.message || '')) {
       ouderPaneelSluiten();
       goTo(0);
@@ -185,7 +185,7 @@ async function ouderVerzoekVersturen() {
   }
 }
 
-// ─── Onderdeel 3: het wachtscherm ────────────────────────────────────────────
+
 
 function ouderWachtTonen() {
   const paneel = document.getElementById('ouderWacht');
@@ -196,8 +196,8 @@ function ouderWachtTonen() {
   const bewaard = ouderAanvraagLezen();
   const adresEl = document.getElementById('ouderWachtAdres');
   if (adresEl) adresEl.textContent = bewaard?.ouderEmail || '';
-  // TT-503 D7: de eerste mail is niet verstuurd. Dan klopt "We hebben je ouder
-  // een mail gestuurd" niet; het scherm zegt wat er is en wat het kind doet.
+
+
   if (bewaard && bewaard.verstuurd === 0) {
     const kop  = document.getElementById('ouderWachtKop');
     const body = document.getElementById('ouderWachtBody');
@@ -207,8 +207,8 @@ function ouderWachtTonen() {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
-    // TT-543 onderdeel 8, V2 (besluit Ronald 12-11-2026): opnieuw sturen is
-    // hier de enige volgende stap, dus de hoofdknop (zoals bij "verlopen").
+
+
     const knop = document.getElementById('ouderOpnieuwKnop');
     if (knop) { knop.classList.remove('btn-ghost'); knop.classList.add('btn-primary'); }
   }
@@ -252,11 +252,11 @@ async function ouderOpnieuwSturen() {
     await ouderApi('opnieuw', { aanvraag_id: bewaard.aanvraagId });
     hideSaving();
     const wasNietVerstuurd = bewaard.verstuurd === 0;
-    bewaard.verstuurd = (bewaard.verstuurd || 0) + 1; // TT-503: 0 telt als 0, niet als 1
+    bewaard.verstuurd = (bewaard.verstuurd || 0) + 1;
     bewaard.laatstVerstuurd = Date.now();
     ouderAanvraagBewaren(bewaard);
-    // Was de eerste mail mislukt, dan staat het wachtscherm nog in de
-    // foutvorm; ouderWachtTonen() zet hem terug in de normale vorm.
+
+
     if (wasNietVerstuurd) ouderWachtTonen();
     else ouderHerstuurKnopBijwerken();
     showToast('De mail is opnieuw verstuurd.');
@@ -267,23 +267,23 @@ async function ouderOpnieuwSturen() {
   }
 }
 
-// Het adres corrigeren zonder opnieuw te beginnen: terug naar het
-// tussenscherm. De oude aanvraag vervalt zodra de nieuwe er is.
+
+
 function ouderAdresWijzigen() {
   clearInterval(ouderStandTimer);
   ouderStapTonen();
 }
 
-// TT-656 punt 3: alleen vragen als het wachtscherm echt in beeld is: het
-// tabblad zichtbaar, het paneel actief en het scherm van de wizard open. Een
-// tabblad dat een dag op de achtergrond openstond, vroeg anders 4.320 keer.
+
+
+
 function ouderWachtInBeeld() {
   const paneel = document.getElementById('ouderWacht');
   return document.visibilityState === 'visible'
     && !!paneel && paneel.classList.contains('active') && paneel.offsetParent !== null;
 }
 
-// Zoals bevestigPeilen() (wizard.js): komt de app weer in beeld, dan meteen.
+
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && ouderWachtInBeeld()) ouderStandVerversen();
 });
@@ -304,35 +304,35 @@ async function ouderStandVerversen() {
       ouderVerlopenTonen();
     }
   } catch (e) {
-    // Geen netwerk of de functie ligt eruit: stil laten staan. Het wachtscherm
-    // klopt dan nog steeds, alleen ververst het even niet.
+
+
     console.error('Stand van de aanvraag niet op te halen:', e);
   }
 }
 
-// Bij "geweigerd" ziet het kind hetzelfde als bij "verlopen". Dat is bewust:
-// hij hoort het van zijn ouder, niet van een scherm (besluit Ronald).
+
+
 function ouderVerlopenTonen() {
   const kop  = document.getElementById('ouderWachtKop');
   const body = document.getElementById('ouderWachtBody');
   const acties = document.getElementById('ouderWachtActies');
   if (kop)  kop.textContent = 'Je aanvraag is verlopen';
   if (body) body.textContent = 'Na veertien dagen vervalt een aanvraag vanzelf. Je profiel staat nog klaar op dit toestel. Stuur de aanvraag opnieuw.';
-  // De melding ("veertien dagen geldig") en de vraag boven de knoppen gaan
-  // over een lopende aanvraag; bij een verlopen aanvraag kloppen ze niet.
+
+
   ['ouderWachtMelding', 'ouderWachtVraag'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
-  // Hier is opnieuw versturen wél de volgende stap: de hoofdknop.
+
   if (acties) {
     acties.innerHTML = '<button class="btn btn-primary" onclick="ouderAdresWijzigen()">Aanvraag opnieuw versturen</button>';
   }
 }
 
-// TT-543 onderdeel 8, V3 (besluit Ronald 12-11-2026, lost TT-363 op): de vraag
-// noemt het gevolg en het e-mailadres van de ouder (huisstijl §19), in de vorm
-// van Account verwijderen: kop, zin, Annuleren en "Gegevens wissen" rood omlijnd.
+
+
+
 function ouderStoppenEnWissen() {
   const bewaard = ouderAanvraagLezen();
   const tekst = bewaard?.ouderEmail
@@ -346,10 +346,10 @@ function ouderStoppenEnWissen() {
       clearOnboardingProgress();
       ouderPaneelSluiten();
       showView('landing');
-      // TT-503 D7: ook wat in het geheugen en in de velden van de wizard staat,
-      // moet weg. Alleen de opslag wissen liet de naam en de gegevens van de
-      // vorige registratie staan; "Profiel aanmaken" opende dan weer in het
-      // halve profiel. Een herlaad zet alles in één keer terug op leeg.
+
+
+
+
       window.location.reload();
     },
     'Gegevens wissen',
@@ -359,7 +359,7 @@ function ouderStoppenEnWissen() {
   );
 }
 
-// ─── Onderdeel 7: het wachtwoordscherm ───────────────────────────────────────
+
 
 function ouderWachtwoordTonen() {
   const adres = document.getElementById('ouderWwAdres');
@@ -377,16 +377,16 @@ async function ouderProfielAanmaken() {
   state.regPassword = waarde;
   const bewaard = ouderAanvraagLezen();
 
-  // submitProfile() maakt het account aan zodra currentUser leeg is, en zet
-  // daarna het hele profiel in één keer weg. Precies wat route A nodig heeft.
+
+
   await submitProfile();
 
-  // Gelukt? Dan het nummer van de aanvraag aan het nieuwe profiel koppelen —
-  // dat is het bewijs dat bij dit account een goedkeuring hoort.
-  // TT-656 punt 2: mislukt het koppelen, dan blijft het nummer bewaard (los
-  // van de aanvraag, met het account erbij) en probeert de app het bij de
-  // volgende start opnieuw. De aanvraag zelf gaat wel weg, zodat de wizard op
-  // dit toestel nooit een oude goedkeuring voor een ander kind gebruikt.
+
+
+
+
+
+
   if (state.savedId && bewaard?.aanvraagId) {
     if (!(await ouderKoppelen(bewaard.aanvraagId))) {
       ouderKoppelingBewaren({ aanvraagId: bewaard.aanvraagId, userId: currentUser?.id || null });
@@ -413,18 +413,18 @@ function ouderKoppelingBewaren(gegevens) {
   catch (e) { console.error('Kon de koppeling niet bewaren:', e); }
 }
 
-// TT-656 punt 2: één nieuwe poging per start, alleen voor het account dat de
-// koppeling achterliet. Aangeroepen vanuit onUserLoggedIn() (core.js).
+
+
 async function ouderKoppelingHerhalen(user) {
   let open = null;
   try { open = JSON.parse(localStorage.getItem(OUDER_KOPPELEN_KEY) || 'null'); } catch (e) { open = null; }
   if (!open?.aanvraagId || !user || open.userId !== user.id) return;
   if (await ouderKoppelen(open.aanvraagId)) {
-    try { localStorage.removeItem(OUDER_KOPPELEN_KEY); } catch (e) { /* zie boven */ }
+    try { localStorage.removeItem(OUDER_KOPPELEN_KEY); } catch (e) { }
   }
 }
 
-// ─── De kant van de ouder: de goedkeuringspagina ─────────────────────────────
+
 
 let toestemmingCode = null;
 
@@ -440,16 +440,16 @@ async function toestemmingPaginaOpenen(code) {
     toestemmingVraagTonen(gegevens);
   } catch (e) {
     logCaught('toestemmingPaginaOpenen', e);
-    // TT-656 punt 1 (besluit Ronald 15-11-2026, sessie 150: "ja"): alleen als
-    // de server zegt dat hij de code niet kent ("Onbekende link."), werkt de
-    // link niet. Elke andere fout (geen verbinding, een storing) krijgt de
-    // vorm van "E-mailadres bevestigen lukte niet", zonder knop.
+
+
+
+
     if ((e && e.message) === 'Onbekende link.') {
-      // TT-330 (26-09-2026): een onbekende code leidt niet meer stil naar de
-      // homepage. De ouder kwam daar zonder uitleg uit en wist niet wat hij
-      // moest doen. Sinds TT-330 blijft elke link uit een eerdere mail werken;
-      // deze melding blijft over voor een link die kapot of vervangen is.
-      // TT-543 onderdeel 8, V5: een titel die zegt wat er is.
+
+
+
+
+
       toestemmingMeldingTonen('Deze link werkt niet',
         ['Heb je meer mails van ons gekregen? Gebruik dan de knop in de nieuwste.']);
     } else {
@@ -459,10 +459,10 @@ async function toestemmingPaginaOpenen(code) {
   }
 }
 
-// Eén opbouw voor elk eindscherm op deze pagina: kop plus meldingen.
-// TT-336: ook de pagina van #bevestig/<code> (wizard.js). Die heeft soms één
-// knop eronder, `knop` = { tekst, actie }. Een ouder krijgt nooit een knop:
-// deze pagina is zijn hele bezoek (besluit Ronald, 23-09-2026).
+
+
+
+
 function toestemmingMeldingTonen(kop, regels, knop) {
   const vak = document.getElementById('toestemmingInhoud');
   if (!vak) return;
@@ -472,15 +472,15 @@ function toestemmingMeldingTonen(kop, regels, knop) {
     (knop ? `\n    <div class="knoppen-stapel toestemming-knoppen"><button class="btn btn-primary" onclick="${knop.actie}">${escHtml(knop.tekst)}</button></div>` : '');
 }
 
-// TT-332 (26-09-2026): de ouder weet na zijn antwoord niet dat hij klaar is.
-// Beide eindschermen (toestemming en weigering) sluiten met dezelfde regel.
+
+
 const TOESTEMMING_AFSLUITER = 'Je kunt dit venster nu sluiten.';
 
-// TT-331 (26-09-2026): de knop in de mail "Je hebt toestemming" gaat naar
-// #toestemming-gegeven. Het wachtende profiel staat alleen in de browser waar
-// het kind begon (route A). Staat het hier, dan gaat het kind gewoon verder.
-// Zo niet, dan zegt deze pagina waar het wel staat — in plaats van een lege
-// wizard waarin hij opnieuw begint en zijn ouder een tweede aanvraag krijgt.
+
+
+
+
+
 function toestemmingGegevenOpenen() {
   if (currentUser) { showView('myprofile', 'redirect'); return; }
   if (leesOuderVoortgang()) { showView('register', 'redirect'); return; }
@@ -540,8 +540,8 @@ function toestemmingKnopBijwerken() {
   knop.disabled = !vinkje.checked;
 }
 
-// TT-543 onderdeel 8, V5 (besluit Ronald 12-11-2026): de titel zegt wat er is,
-// de zin eronder herhaalt hem niet.
+
+
 function toestemmingAfgehandeldTonen(stand, beslotenOp) {
   const datum = beslotenOp ? nlDatum(beslotenOp) : '';
   const schermen = {
@@ -577,9 +577,9 @@ async function ouderBesluit(akkoord) {
         <p class="toestemming-melding">Je kind krijgt hier geen bericht over.</p>
         <p class="toestemming-melding">${TOESTEMMING_AFSLUITER}</p>`;
     }
-    // De knoppen staan onderaan een lange pagina. Zonder dit blijft de
-    // pagina op die hoogte staan en valt de kop van het antwoord achter de
-    // vaste kop weg (bevinding Ronald, 27-09-2026: "Bedankt" viel weg).
+
+
+
     window.scrollTo(0, 0);
   } catch (e) {
     hideSaving();
@@ -588,7 +588,7 @@ async function ouderBesluit(akkoord) {
   }
 }
 
-// ─── Gedeeld ─────────────────────────────────────────────────────────────────
+
 
 function nlDatum(iso) {
   try {
@@ -596,9 +596,9 @@ function nlDatum(iso) {
   } catch (e) { return ''; }
 }
 
-// Alle verkeer met de Edge Function loopt hier langs, zodat er één plek is die
-// de werkelijke foutboodschap eruit haalt (zelfde aanpak als bij
-// delete-own-account in musicians.js).
+
+
+
 async function ouderApi(actie, gegevens) {
   const { data, error } = await db.functions.invoke('ouder-toestemming', {
     body: Object.assign({ actie }, gegevens)

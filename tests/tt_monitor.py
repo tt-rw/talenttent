@@ -191,6 +191,36 @@ def blok_a():
           and "script-src 'self' 'unsafe-inline';" in regel and "*" not in regel,
           "A9", "de regel ontbreekt, staat te laat of laat code van buiten toe")
 
+    # A10 - TT-615 (besluit Ronald 15-11-2026: "ja en ja"): in de repo staat de
+    # code zonder uitleg voor ontwikkelaars; de bron met uitleg staat in de
+    # gedeelde map. Omzetten van een repo-bestand verandert dus niets meer.
+    import importlib.util
+    sys.dont_write_bytecode = True
+    spec = importlib.util.spec_from_file_location(
+        "tt_omzetten", os.path.join(REPO, "tests", "tt_omzetten.py"))
+    om = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(om)
+    nog = [b for b in sorted(os.listdir(REPO))
+           if b.endswith(om.OMZETTEN) and b not in om.NOOIT and om.zet_om(b, lees(b)) != lees(b)]
+    toets("A", "geen uitleg voor ontwikkelaars in de app-bestanden (TT-615)",
+          not nog, "A10", "nog uitleg in: %s (lever de omgezette versie, tests/tt_omzetten.py)" % kort(nog))
+
+    # A11 - TT-616: geen script met src in de kop (de bibliotheek hield daar het
+    # eerste beeld tegen); supabase.js staat direct vóór core.js.
+    srcs = re.findall(r'<script src="([a-z-]+\.js)\?v=', html)
+    toets("A", "geen <script src> in de kop; supabase.js direct vóór core.js (TT-616)",
+          not re.search(r"<script\s+src=", kop)
+          and "supabase.js" in srcs and "core.js" in srcs
+          and srcs.index("supabase.js") + 1 == srcs.index("core.js"),
+          "A11", "een script in de kop, of de bibliotheek niet direct vóór core.js")
+
+    # A12 - TT-618 (besluit Ronald 15-11-2026: "A"): geen cursief lettertype;
+    # de telefoon zet de enige schuine tekst zelf schuin (40 kB per bezoeker).
+    toets("A", "geen cursief lettertypebestand (TT-618)",
+          not re.search(r"@font-face\s*\{[^}]*font-style:\s*italic", lees("styles.css"))
+          and not any("italic" in b for b in os.listdir(REPO)),
+          "A12", "een @font-face met font-style: italic of een cursief bestand")
+
 
 # ============================================================ B - huisstijl
 
@@ -420,8 +450,9 @@ def blok_e():
     rdap = json.dumps({"events": [{"eventAction": "expiration",
                                    "eventDate": "2099-01-01T00:00:00Z"}]})
 
-    def draai(vraag, cert):
+    def draai(vraag, cert, koppen=None):
         b.vraag, b.cert_dagen = vraag, cert
+        b.koppen = koppen or (lambda url: 80 * 1024)
         oud = os.environ.get("TT_BEWAKING_CODE")
         os.environ["TT_BEWAKING_CODE"] = "proef"
         # 8D 03-11-2026 (sessie 64): een proefronde schreef "MIS ..." in de
@@ -467,7 +498,9 @@ def blok_e():
           "E1", "bewaking geeft rood terwijl alles in orde is")
 
     # E2 - elke controle die niet werkt, staat op MIS (nooit stil groen)
-    code, uit = draai(alles_kapot, cert_kapot)
+    def koppen_kapot(url):
+        raise OSError("proef: geen verbinding")
+    code, uit = draai(alles_kapot, cert_kapot, koppen_kapot)
     stil = [r.strip() for r in uit.splitlines() if r.startswith("  ok ")]
     toets("E", "bewaking: een controle die niet werkt, staat nooit op ok",
           code == 1 and not stil, "E2", "stil groen: %s" % kort(stil))
@@ -491,7 +524,7 @@ def blok_e():
         oud_s = os.environ.get("GITHUB_STEP_SUMMARY")
         os.environ["GITHUB_STEP_SUMMARY"] = tijdelijk.name
         try:
-            draai(alles_kapot, cert_kapot)
+            draai(alles_kapot, cert_kapot, koppen_kapot)
         finally:
             if oud_s is None:
                 os.environ.pop("GITHUB_STEP_SUMMARY", None)
@@ -547,6 +580,18 @@ def blok_e():
     toets("E", "bewaking: een instrument of genre zonder plek in de zoekvolgorde geeft rood",
           code == 1 and any(r.startswith("  MIS ") and "zonder_plek" in r for r in uit.splitlines()),
           "E8", "een instrument zonder plek blijft groen")
+
+    # E9 - TT-617 (besluit Ronald 16-11-2026): een landingsfoto boven 130 kB, of
+    # geen enkele landingsfoto, geeft rood; een woord zonder foto mag.
+    code_zwaar, uit_zwaar = draai(alles_goed, lambda: 365,
+                                  lambda url: 200 * 1024 if url.endswith("/saxofonist.jpg") else 80 * 1024)
+    code_geen, uit_geen = draai(alles_goed, lambda: 365, lambda url: None)
+    code_een, _ = draai(alles_goed, lambda: 365, lambda url: None if url.endswith("/dj.jpg") else 80 * 1024)
+    toets("E", "bewaking: een te zware of ontbrekende set landingsfoto's geeft rood, een woord zonder foto niet",
+          code_zwaar == 1 and any(r.startswith("  MIS ") and "saxofonist: 200 kB" in r for r in uit_zwaar.splitlines())
+          and code_geen == 1 and any(r.startswith("  MIS ") and "landingsfoto" in r for r in uit_geen.splitlines())
+          and code_een == 0,
+          "E9", "een te zware foto of een lege map blijft groen, of een woord zonder foto geeft rood")
 
 
 # ============================================================ afdruk

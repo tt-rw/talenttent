@@ -1,49 +1,49 @@
-// ─── Kies-en-badge component (TT-116, 21-08-2026) ───────────────────────────
-// Eén herbruikbaar patroon voor het kiezen van instrumenten en genres, dat
-// het altijd-zichtbare knoppenraster vervangt door een pulldown-veld: tik
-// erop, een volledig-scherm lijst opent, kies een item. Gekozen items
-// blijven staan als badge tot verwijderd. Gebruikt op 7 van de 8 plekken in
-// de app (genre × 4, instrument-filter × 2, "wij zoeken nog" bij een band).
-// De achtste plek — de eigen instrumentkeuze in de wizard, mét niveau — is
-// een aparte, iets uitgebreidere versie hieronder (init/renderInstrumentBadges
-// e.v.), omdat die een extra niveaustap nodig heeft.
-//
-// De onderliggende arrays (state.genres, filterInstruments, enz.) blijven
-// ongewijzigd de bron van waarheid — dit component tekent alleen de UI
-// eromheen en muteert die arrays in-place (push/splice), nooit een nieuwe
-// array toewijzen. Zo blijft alle bestaande zoek-/opslaglogica intact.
 
-// TT-124 (22-08-2026): gedwongen regelafbreking weggehaald op Ronalds
-// verzoek — de badge is nu breed genoeg voor de volledige naam op één
-// regel (zie .picker-badge hieronder, was 108px, nu 168px). Was eerder
-// ingevoerd om een lelijke afbreking te voorkomen in de kleine badge; die
-// reden vervalt nu de badge zelf breed genoeg is.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function pickerDisplayLabel(value) {
   return escHtml(value);
 }
 
-// Haalt een tekst tussen haakjes aan het eind weg. "1. Beginner (Bedroom)"
-// -> "1. Beginner". Ronalds instructie (21-08-2026): geen haakjes meer bij
-// niveaunamen, overal waar ze getoond worden.
+
+
+
 function stripParenthetical(s) {
   return String(s).replace(/\s*\([^)]*\)\s*$/, '').trim();
 }
 
-const PICKERS = {}; // registry: picker-id -> cfg, voor badges/verwijderen vanuit innerHTML
+const PICKERS = {};
 
 function initPicker(cfg) {
   PICKERS[cfg.id] = cfg;
   cfg.fieldEl = document.getElementById(cfg.fieldId);
   cfg.badgeRowEl = cfg.badgeRowId ? document.getElementById(cfg.badgeRowId) : null;
-  // TT-543 draaiwielen (besluiten Ronald 09-11-2026): elk veld klapt het
-  // keuzemenu uit, zoals Straal, Leeftijd en Niveau in Zoeken (utils.js).
-  // Deel 2 (besluiten Ronald 10-11-2026, sessie 109): ook buiten Zoeken, het
-  // venster met de lijst bestaat niet meer. "1B": het menu toont alle keuzes,
-  // een gekozen keuze als pil, en blijft open; een tik op een gekozen keuze
-  // haalt hem weg. Sinds blok 2 van TT-543 onderdeel 6 (11-11-2026) heeft geen
-  // veld meer één keuze: de invaller kiest nu zoals een open rol.
-  // De luisteraars zitten aan het veld; een tegel die opnieuw een cfg maakt,
-  // gebruikt daarom altijd de nieuwste (PICKERS[cfg.id]).
+
+
+
+
+
+
+
+
+
   const c = () => PICKERS[cfg.id];
   pickerMenuKoppelen({
     id: 'picker-' + cfg.id, fieldId: cfg.fieldId, menuId: cfg.menuId, rij: cfg.badgeRowEl,
@@ -60,12 +60,12 @@ function initPicker(cfg) {
   return cfg;
 }
 
-// TT-543 draaiwielen deel 2 (besluiten Ronald 10-11-2026, sessie 109). Het
-// menu onder een keuzeveld buiten Zoeken. Staat het menu niet in de HTML
-// (menuId), dan hoort het bij "+ Instrument" of "+ Genre": het staat dan in het
-// raster van de keuzes, direct onder de laatste regel, waar de knop staat, en
-// schuift mee als het raster groeit. "3/4 in het midden" (besluit Ronald, vraag
-// 2 en 2b, R2): .menu-breed in styles.css.
+
+
+
+
+
+
 function pickerMenuKoppelen(o) {
   let menuId = o.menuId;
   if (!menuId) {
@@ -83,10 +83,10 @@ function pickerMenuKoppelen(o) {
     ververs: o.ververs || undefined, naSluiten: o.naSluiten });
 }
 
-// Tekent de keuzes in een raster opnieuw, zonder het menu dat erin staat en de
-// donkere laag ervoor (menuLaagOpen() in core.js): die blijven staan terwijl je
-// kiest (een nieuw menu zou opnieuw uitklappen; zonder laag sluit een tik
-// ernaast niet meer).
+
+
+
+
 function pickerRijTekenen(rij, html) {
   [...rij.childNodes].forEach(n => { if (!(n.classList && (n.classList.contains('choice-menu') || n.classList.contains('menu-laag')))) n.remove(); });
   rij.insertAdjacentHTML('afterbegin', html);
@@ -94,15 +94,15 @@ function pickerRijTekenen(rij, html) {
 
 function renderPickerBadges(cfg) {
   const list = cfg.getList();
-  // TT-520 (26-10-2026): in de filters van Zoeken staat de keuze in het veld
-  // zelf ("–", "Drums, Zang"), zoals Leeftijd en Niveau ernaast. Geen
-  // badges eronder: de velden staan daar in twee kolommen. `inVeld` geeft de
-  // tekst; het veld krijgt de rand van een filter dat aanstaat (.is-set) en
-  // het streepje van de lege stand is grijs (.leeg, zie zetVeldTekst()).
-  // TT-543 draaiwielen deel 2 (besluit Ronald 10-11-2026, vraag 4: "B"): een
-  // formulierveld (sinds blok 2: Rol bij uitnodigen) toont leeg een grijze aanwijzing in het midden
-  // (`leegTekst`) en krijgt geen gele rand: die rand is de stand van een
-  // filter dat aanstaat (huisstijl §7.1).
+
+
+
+
+
+
+
+
+
   if (cfg.inVeld) {
     const label = document.getElementById(cfg.fieldId + 'Label');
     if (cfg.leegTekst && !list.length) {
@@ -115,12 +115,12 @@ function renderPickerBadges(cfg) {
     if (list.length) clearFieldError(cfg.fieldEl);
     return;
   }
-  // 21-08-2026 (Ronald): het veld toont altijd dezelfde vaste tekst, geen
-  // teller meer — de badges eronder laten al zien wat er gekozen is.
+
+
   document.getElementById(cfg.fieldId + 'Label').textContent = cfg.placeholder;
-  // Huisstijl §13.1: de foutmarkering verdwijnt zodra de gebruiker het veld
-  // wijzigt. Een keuzeveld is geen invoerveld en geeft geen 'input'; daarom
-  // hier, zodra er iets gekozen is (gevonden in TT-385 fase 4).
+
+
+
   if (list.length) clearFieldError(cfg.fieldEl);
   pickerRijTekenen(cfg.badgeRowEl, list.map(v => `
     <div class="picker-badge">
@@ -130,21 +130,21 @@ function renderPickerBadges(cfg) {
   pickerToevoegenPlaatsen(cfg, cfg.badgeRowEl, false);
 }
 
-// TT-543 blok 4 (besluit Ronald 07-11-2026, voorstel 22): in Profiel aanmaken en
-// Wat speel je staat geen keuzeveld boven de keuzes. Het veld zelf is de laatste
-// knop van het raster, "+ Instrument" of "+ Genre", in de stippelvorm van
-// "+ Toevoegen" in Je mediahoek; een tik opent het keuzemenu. Instrumenten
-// staan dan als rijen onder elkaar, met de sterren rechts (voorstel 21 C).
-// Alleen voor een keuze met `toevoegen` in zijn cfg: Profiel aanmaken, Wat speel
-// je, en sinds draaiwielen deel 2 ook de genres van een band (besluit Ronald
-// 10-11-2026, vraag 3: "A").
-// Het veld staat ín het raster; een nieuwe tekening van het raster haalt het even
-// uit de pagina. Daarom onthoudt de app het element per veld, de eerste keer dat
-// het er nog los staat (ook als een tegel opnieuw een cfg maakt).
+
+
+
+
+
+
+
+
+
+
+
 const TOEVOEG_VELDEN = {};
 function pickerToevoegenPlaatsen(cfg, rij, rijen) {
-  // Staat het veld al in het raster, dan blijft het daar, ook als een cfg zonder
-  // `toevoegen` het raster opnieuw tekent (anders raakt het veld weg).
+
+
   const bekend = TOEVOEG_VELDEN[cfg.fieldId];
   if (!cfg.toevoegen && !bekend) return;
   const veld = bekend || (TOEVOEG_VELDEN[cfg.fieldId] = document.getElementById(cfg.fieldId));
@@ -156,13 +156,13 @@ function pickerToevoegenPlaatsen(cfg, rij, rijen) {
   veld.querySelector('.picker-field-label').textContent = cfg.toevoegen || veld.dataset.toevoegen;
   rij.classList.add('met-toevoegen');
   rij.classList.toggle('instrument-rijen', rijen);
-  rij.insertBefore(veld, rij.querySelector(':scope > .menu-laag, :scope > .choice-menu')); // zonder menu: achteraan
+  rij.insertBefore(veld, rij.querySelector(':scope > .menu-laag, :scope > .choice-menu'));
 }
 
-// TT-63-fix (23-08-2026): zie toelichting bij het legalModal-element hierboven.
-// Geen aparte tekst — hergebruikt de inhoud van view-terms/view-privacy/
-// view-gedragscode (dezelfde .doc-view-HTML), zodat de tekst nergens dubbel
-// staat en nooit uit elkaar kan groeien tussen wizard en de losse pagina's.
+
+
+
+
 const LEGAL_VIEW_IDS = { terms: 'view-terms', privacy: 'view-privacy', gedragscode: 'view-gedragscode' };
 function openLegalModal(type) {
   const sourceView = document.getElementById(LEGAL_VIEW_IDS[type]);
@@ -175,8 +175,8 @@ function closeLegalModal() {
   document.getElementById('legalModal').classList.remove('visible');
 }
 
-// Zet een waarde aan of uit in de lijst van een keuzeveld; geeft terug of de
-// waarde nu gekozen is. Gebruikt door het keuzemenu van elk veld (initPicker()).
+
+
 function pickerWaardeWissel(cfg, value) {
   const list = cfg.getList();
   if (list.includes(value)) {
@@ -184,8 +184,8 @@ function pickerWaardeWissel(cfg, value) {
     return false;
   }
   if (cfg.singleMax) {
-    // TT-55/TT-183: maximaal 1 instrument, met losse uitzonderingen (Zang,
-    // Achtergrondzang, Songwriting) die niet meetellen voor die limiet.
+
+
     const exceptions = cfg.exceptionValues || [];
     if (!exceptions.includes(value)) {
       const kept = list.filter(v => exceptions.includes(v));
@@ -207,23 +207,23 @@ function removePickerValue(id, value) {
   if (cfg.onChange) cfg.onChange();
 }
 
-// ─── Eigen instrumenten — instrument kiezen in het keuzemenu, niveau inline ──
-// TT-410a (08-10-2026, besluit Ronald): het niveau kies je inline, onder de
-// badges van het veld. Het instrument kies je sinds TT-543 draaiwielen deel 2
-// (besluiten Ronald 10-11-2026, sessie 109) in het keuzemenu onder
-// "+ Instrument", zoals in Zoeken: alle instrumenten, een gekozen instrument als
-// pil. Sinds TT-602 sluit het menu na één tik. Een tik op een gekozen instrument haalt het
-// weg, met zijn niveau. Gaat het menu dicht, dan opent het niveau vanzelf onder
-// het nieuwe instrument zonder niveau; overslaan mag (vraag 5: "het
-// keuzeveld moet openen, maar de gebruiker kan besluiten om (nu) geen keuze te
-// maken"). Eén paneel per veld, voor één
-// instrument tegelijk: je tikt een badge om het paneel te openen of te
-// sluiten. De wizard EN het tegelscherm "Wat speel je" delen dit via een
-// cfg-registry (zelfde patroon als initPicker() hierboven). cfg: { id,
-// fieldId, badgeRowId, getInstruments, getLevels, onChange }. Per cfg houdt
-// de registry bij welk instrument openstaat (`openInstrument`) en of de
-// uitleg openstaat (`uitlegOpen`). Een instrument zonder niveau mag: het niveau
-// is geen slagboom (TT-U09, 12-08-2026); de badge zegt dan "Kies niveau".
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 const INSTRUMENT_PICKERS = {};
 
 function initInstrumentPicker(cfg) {
@@ -240,10 +240,10 @@ function initInstrumentPicker(cfg) {
     rij.insertAdjacentElement('afterend', paneel);
   }
   const c = () => INSTRUMENT_PICKERS[cfg.id];
-  // TT-602 (besluit Ronald 14-11-2026: "A wordt het."): bij "+ Instrument" sluit
-  // het menu na één tik en opent meteen het niveau van dat instrument; voor
-  // een volgend instrument opnieuw "+ Instrument". Wijzigt 1B alleen hier;
-  // Genre en Zoeken blijven open (een instrument heeft een vervolgvraag).
+
+
+
+
   pickerMenuKoppelen({
     id: 'instrument-' + cfg.id, fieldId: cfg.fieldId, rij, meer: false, label: 'Instrument',
     rijen: () => INSTRUMENTS.map(i => ({ t: i, gekozen: c().getInstruments().includes(i) })),
@@ -254,19 +254,19 @@ function initInstrumentPicker(cfg) {
   return cfg;
 }
 
-// Korte namen zonder cijfer én zonder haakjes, afgeleid van Tabel 2 in
-// niveaubepaling-naslagwerk.md (NIVEAU_INFO_MUSICIAN_ROWS verderop). Eén
-// bron, geen tweede lijst.
+
+
+
 function instrumentLevelLabels() {
   return NIVEAU_INFO_MUSICIAN_ROWS.map(r => stripParenthetical(String(r[0]).replace(/^\d+\.\s*/, '')));
 }
 
-// TT-572 (besluit Ronald 14-11-2026, "akkoord"): de korte zin per niveau is
-// algemeen en klopt voor elk instrument, ook voor zang. Tot dan was het de
-// eerste zin van "Technische beheersing" (TT-116), met drums en akkoorden erin.
-// Teksten per instrument komen na de livegang. Niveau 2 met "Je basistechniek is
-// stabiel." erbij (besluit Ronald 14-11-2026, sessie 138). Ook de tweede kolom
-// van de uitleg achter de i-knop (openMusicianNiveauInfoModal in musicians.js).
+
+
+
+
+
+
 const NIVEAU_ZINNEN = [
   'Je speelt je eerste nummers en oefent nog met tutorials.',
   'Je speelt hele nummers uit en zoekt ze zelf uit. Je basistechniek is stabiel.',
@@ -283,12 +283,12 @@ function renderInstrumentBadges(id) {
   const wrap = document.getElementById(cfg.badgeRowId);
   const list = cfg.getInstruments();
   const levels = cfg.getLevels();
-  // 21-08-2026 (Ronald): vaste tekst, geen teller — zelfde reden als bij
-  // renderPickerBadges() hierboven.
+
+
   document.getElementById(cfg.fieldId + 'Label').textContent = 'Kies een instrument';
-  if (list.length) clearFieldError(cfg.fieldId); // TT-444: zoals renderPickerBadges()
-  // Het niveaupaneel kan ín het raster staan (zie hieronder); een nieuwe tekening
-  // haalt het daar weg, dus eerst vasthouden.
+  if (list.length) clearFieldError(cfg.fieldId);
+
+
   const paneel = document.getElementById(cfg.badgeRowId + 'Niveau');
   pickerRijTekenen(wrap, list.map(i => {
     const n = levels[i] || 0;
@@ -303,9 +303,9 @@ function renderInstrumentBadges(id) {
     </div>`;
   }).join(''));
   pickerToevoegenPlaatsen(cfg, wrap, true);
-  // TT-543 blok 4 (besluit Ronald 07-11-2026, a): in de rijen opent het
-  // niveaupaneel direct onder het instrument waarop je tikte, boven "+ Instrument".
-  // Anders (geen rijen, of geen open instrument) staat het onder het raster.
+
+
+
   if (paneel) {
     const open = wrap.classList.contains('instrument-rijen') && wrap.querySelector('.picker-badge.open');
     if (open) open.after(paneel); else wrap.after(paneel);
@@ -313,8 +313,8 @@ function renderInstrumentBadges(id) {
   renderInstrumentPaneel(id);
 }
 
-// Het paneel onder de badges: vijf compacte keuzes (sterren en naam), één zin
-// over het gekozen niveau, en een klapper met de uitleg van alle niveaus.
+
+
 function renderInstrumentPaneel(id) {
   const cfg = INSTRUMENT_PICKERS[id];
   const paneel = document.getElementById(cfg.badgeRowId + 'Niveau');
@@ -351,7 +351,7 @@ function renderInstrumentPaneel(id) {
   paneel.hidden = false;
 }
 
-// Tik op een badge: het paneel van dat instrument opent, of sluit als het al open stond.
+
 function toggleInstrumentNiveau(id, instrument) {
   const cfg = INSTRUMENT_PICKERS[id];
   cfg.openInstrument = cfg.openInstrument === instrument ? null : instrument;
@@ -365,9 +365,9 @@ function toggleNiveauUitleg(id) {
   renderInstrumentPaneel(id);
 }
 
-// TT-543 blok 4 (besluit Ronald 07-11-2026): een tik op een niveau kiest het en
-// klapt het paneel meteen dicht ("als je niveau aanklikt, dan moet dat (grote)
-// niveauscherm direct inklappen"). Wijzigen: tik op de rij van het instrument.
+
+
+
 function setInstrumentLevel(id, value) {
   const cfg = INSTRUMENT_PICKERS[id];
   if (!cfg.openInstrument) return;
@@ -375,7 +375,7 @@ function setInstrumentLevel(id, value) {
   cfg.openInstrument = null;
   cfg.uitlegOpen = false;
   renderInstrumentBadges(id);
-  if (cfg.onChange) cfg.onChange(); // zie toelichting bij removePickerValue-patroon, 13-08-2026
+  if (cfg.onChange) cfg.onChange();
 }
 
 function quickRemoveInstrument(id, instrument) {
@@ -389,19 +389,19 @@ function quickRemoveInstrument(id, instrument) {
   if (cfg.onChange) cfg.onChange();
 }
 
-// Een tik in het menu: een nieuw instrument komt erbij (zonder niveau), een
-// gekozen instrument gaat weg, met zijn niveau.
+
+
 function instrumentMenuKies(id, instrument) {
   const cfg = INSTRUMENT_PICKERS[id];
   if (cfg.getInstruments().includes(instrument)) { quickRemoveInstrument(id, instrument); return; }
   cfg.getInstruments().push(instrument);
   (cfg.nieuwInMenu = cfg.nieuwInMenu || []).push(instrument);
   renderInstrumentBadges(id);
-  if (cfg.onChange) cfg.onChange(); // zie toelichting bij removePickerValue-patroon, 13-08-2026
+  if (cfg.onChange) cfg.onChange();
 }
 
-// Het menu is dicht: het niveau opent onder het eerste instrument dat er in dit
-// menu bij kwam en nog geen niveau heeft (besluit Ronald 10-11-2026, vraag 5: A).
+
+
 function instrumentNiveauNaMenu(id) {
   const cfg = INSTRUMENT_PICKERS[id];
   const nieuw = cfg.nieuwInMenu || [];
@@ -415,32 +415,32 @@ function instrumentNiveauNaMenu(id) {
   if (paneel && paneel.scrollIntoView) paneel.scrollIntoView({ block: 'nearest' });
 }
 
-// ─── Niveau: sterren 1-5 (TT-51, 12-08-2026) ─────────────────────────────────
-// Twee losse velden, geen verband ertussen (vastgelegd in
-// niveaubepaling-naslagwerk.md): niveau per instrument (musician_instruments)
-// en niveau van de band (bands). Zelfde widget voor beide.
 
-// Alleen-lezen weergave, bijv. op een profiel of in een zoekresultaat.
-// Geen ster als niveau ontbreekt (oude/onvolledige data) — dan liever niets
-// tonen dan een verzonnen niveau suggereren.
-// TT-543 onderdeel 3 (besluit Ronald 08-11-2026): op het muzikantprofiel
-// alleen de gevulde sterren (`alleenGevuld`); elders blijven de lege erbij.
+
+
+
+
+
+
+
+
+
 function starDisplayHTML(niveau, alleenGevuld) {
   const n = Number(niveau);
   if (!Number.isInteger(n) || n < 1 || n > 5) return '';
-  // TT-51-fix (12-08-2026): gevulde en lege sterren in aparte spans met een
-  // eigen kleur (goud/grijs), niet alleen op glyphvorm (★ vs ☆) vertrouwen —
-  // op sommige lettertypen/besturingssystemen zijn ★ en ☆ bij 12px nauwelijks
-  // te onderscheiden, waardoor alle 5 sterren als "gevuld" oogden (gemeld
-  // door Ronald: 3 sterren gekozen, na opslaan leken het er 5).
+
+
+
+
+
   const filled = `<span class="star-display-filled">${'★'.repeat(n)}</span>`;
   const empty = (n < 5 && !alleenGevuld) ? `<span class="star-display-empty">${'☆'.repeat(5 - n)}</span>` : '';
   return `<span class="star-display">${filled}${empty}</span>`;
 }
 
-// Klikbare sterrenkiezer. `getValue`/`setValue` laten deze functie werken voor
-// zowel een los instrument (wizard) als de band zelf (bandformulier) zonder
-// twee bijna-identieke functies te hoeven onderhouden.
+
+
+
 function renderStarPicker(container, currentValue, onSelect) {
   container.innerHTML = '';
   container.className = 'star-picker';

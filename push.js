@@ -1,22 +1,22 @@
-// ═══════════════════════════════════════════════════════════════════════
-// TT-452 (09-10-2026): het seintje op het toestel (web push).
-// Besluit Ronald: alleen een pulserende stip in de browser; de stip gaat uit
-// zodra de app opent; in de app zelf alleen het getal op Berichten (TT-451).
-//
-// Wat hier staat: de service worker aanmelden, toestemming vragen, een
-// abonnement bewaren of verwijderen, en een seintje dat al klaarstaat weghalen
-// zodra de app opent. Het versturen doet de Edge Function send-digest, met
-// dezelfde ontvangers en frequentie als de mail (mail uit = geen seintje).
-// Toestemming vragen we nooit bij het eerste bezoek, alleen nadat iemand zijn
-// eerste bericht van Talent Tent heeft geopend (zie ttSeintjeVraagTonen).
-// ═══════════════════════════════════════════════════════════════════════
 
-// Publieke sleutel (VAPID). De geheime helft staat alleen in Supabase.
+
+
+
+
+
+
+
+
+
+
+
+
+
 const TT_VAPID_PUBLIEK = 'BFApFRovtQOzmV3xHpAtBD4RHOfda01LNBBNIoPxAHuobdPVc7oK_3PqRdtLYh5yUMGtT_D-rBwKQDrI7MUId-A';
 const TT_SEINTJE_TAG = 'tt-seintje';
 const TT_SEINTJE_NIET_NU = 'tt_seintje_niet_nu';
 
-// Dun laagje om de browser-API, zodat de tests het kunnen vervangen.
+
 const ttPushApi = {
   beschikbaar() {
     return typeof navigator !== 'undefined' && 'serviceWorker' in navigator
@@ -24,8 +24,8 @@ const ttPushApi = {
   },
   toestemming() { return Notification.permission; },
   vraagToestemming() { return Notification.requestPermission(); },
-  // TT-654: `ready` komt nooit terug als de browser de service worker
-  // weigerde. Na hoogstens 2 seconden geeft dit null: geen abonnement.
+
+
   async registratie() {
     return Promise.race([
       navigator.serviceWorker.ready,
@@ -61,27 +61,27 @@ function ttBytesNaarBase64Url(buf) {
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Meld de service worker aan. Vraagt nergens om toestemming. Een fout hier
-// mag de app niet raken: zonder service worker is er alleen geen seintje.
+
+
 async function ttServiceWorkerAanmelden() {
   if (!ttPushApi.beschikbaar()) return false;
   try {
     await navigator.serviceWorker.register('sw.js');
     return true;
   } catch (e) {
-    // TT-465, TT-471: een browser of beveiligingsextensie die de aanmelding weigert is een
-    // verwachte uitkomst (zoals TT-423) en komt niet in het foutlog. Dat geldt voor
-    // SecurityError, "Rejected" en InvalidStateError ("The document is in an invalid
-    // state": de pagina is op dat moment niet actief). Elke andere fout wordt nog
-    // steeds gelogd.
+
+
+
+
+
     if (!(e && (e.name === 'SecurityError' || e.name === 'InvalidStateError' || e.message === 'Rejected'))) logCaught('ttServiceWorkerAanmelden', e);
     return false;
   }
 }
 
-// Staat het seintje voor dit toestel aan? Aan = toestemming gegeven én een
-// abonnement. Een geweigerde toestemming geeft 'geblokkeerd', zodat het scherm
-// kan zeggen dat dit in de browser moet worden aangepast.
+
+
+
 async function ttSeintjeStand() {
   if (!ttPushApi.beschikbaar()) return 'nietBeschikbaar';
   const t = ttPushApi.toestemming();
@@ -91,7 +91,7 @@ async function ttSeintjeStand() {
   catch (e) { logCaught('ttSeintjeStand', e); return 'uit'; }
 }
 
-// Zet het seintje aan voor dit toestel. Geeft 'aan', 'geblokkeerd' of 'fout'.
+
 async function ttSeintjeAanzetten() {
   if (!ttPushApi.beschikbaar()) return 'fout';
   try {
@@ -115,9 +115,9 @@ async function ttSeintjeAanzetten() {
   }
 }
 
-// Zet het seintje uit voor dit toestel: abonnement bij ons weg en in de browser.
+
 async function ttSeintjeUitzetten() {
-  // TT-654: zonder toestemming is er geen seintje om uit te zetten.
+
   if (!ttPushApi.beschikbaar() || ttPushApi.toestemming() !== 'granted') return true;
   try {
     const sub = await ttPushApi.abonnement();
@@ -133,22 +133,22 @@ async function ttSeintjeUitzetten() {
   }
 }
 
-// Haal een seintje weg dat al klaarstaat. De stip gaat dan uit (besluit
-// Ronald). Aangeroepen bij het opstarten en zodra de app weer zichtbaar wordt.
+
+
 async function ttSeintjeWeghalen() {
-  // De stip op het icoon, waar de browser dat kent, gaat altijd uit.
-  try { if (navigator.clearAppBadge) await navigator.clearAppBadge(); } catch (e) { /* geen stip om weg te halen */ }
+
+  try { if (navigator.clearAppBadge) await navigator.clearAppBadge(); } catch (e) { }
   if (!ttPushApi.beschikbaar() || ttPushApi.toestemming() !== 'granted') return;
   try {
     (await ttPushApi.meldingen()).forEach(m => m.close());
-  } catch (e) { /* zonder service worker is er niets weg te halen */ }
+  } catch (e) { }
 }
 
-// De vraag in het gesprek van Talent Tent: alleen als het kan, nog niet is
-// beantwoord en niet is weggeklikt. Nooit bij het eerste bezoek.
+
+
 async function ttSeintjeVraagTonen() {
   if ((await ttSeintjeStand()) !== 'uit') return false;
-  try { if (localStorage.getItem(TT_SEINTJE_NIET_NU)) return false; } catch (e) { /* geen opslag: dan wel vragen */ }
+  try { if (localStorage.getItem(TT_SEINTJE_NIET_NU)) return false; } catch (e) { }
   return true;
 }
 
@@ -171,15 +171,15 @@ async function ttSeintjeVraagAan() {
   else if (uitslag === 'fout') showToast(friendlyErrorMessage(null, 'het seintje aanzetten'));
 }
 function ttSeintjeVraagNietNu() {
-  try { localStorage.setItem(TT_SEINTJE_NIET_NU, '1'); } catch (e) { /* geen opslag: dan vraagt hij later weer */ }
+  try { localStorage.setItem(TT_SEINTJE_NIET_NU, '1'); } catch (e) { }
   const vraag = document.getElementById('ttSeintjeVraag');
   if (vraag) vraag.remove();
 }
 
-// Instellingen → het blok "Seintje op dit toestel": schakelaar Uit · Aan met
-// een korte uitleg eronder (TT-520 deel 2, opdracht Ronald 27-10-2026; was een
-// regel "Aan. …" met een knop "Zet uit"). Staan meldingen in de browser uit,
-// dan zegt de uitleg waar je ze aanzet.
+
+
+
+
 async function vulPushInInstellingen() {
   const blok = document.getElementById('pushBlok');
   const tekst = document.getElementById('pushTekst');
@@ -206,7 +206,7 @@ async function pushSchakelen(aan) {
   vulPushInInstellingen();
 }
 
-// Opstarten: service worker aanmelden en een klaarstaand seintje weghalen.
+
 ttServiceWorkerAanmelden();
 ttSeintjeWeghalen();
 document.addEventListener('visibilitychange', () => {
