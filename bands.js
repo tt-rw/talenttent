@@ -130,7 +130,7 @@ async function respondToFounderOffer(bandId, accept) {
       ? `Ik neem het beheer van ${band.naam} over.`
       : `Ik neem het beheer van ${band.naam} niet over. Bedankt voor de vraag!`);
     refreshBandsDot();
-    loadMyBands();
+    mijnBandsVerversen();
     if (accept) profielBandsVerversen();
   } catch (e) {
     logCaught('respondToFounderOffer', e);
@@ -195,7 +195,7 @@ async function sendFounderOffer(bandId, memberId, naam) {
     showToast(naam ? `Gevraagd aan ${naam}.` : 'Gevraagd.');
     const band = await bandNaamEnBeheerder(bandId);
     if (band) stilBericht(memberId, `Wil jij het beheer van ${band.naam} overnemen?`);
-    loadMyBands();
+    mijnBandsVerversen();
     if (bewerkBandId === bandId) renderBandBeheer();
   } catch (e) {
     logCaught('sendFounderOffer', e);
@@ -221,7 +221,7 @@ async function withdrawFounderOffer(bandId) {
     showToast('Vraag ingetrokken.');
     const band = await bandNaamEnBeheerder(bandId);
     if (band) (gevraagd || []).forEach(g => stilBericht(g.musician_id, `Ik trek mijn vraag over het beheer van ${band.naam} in.`));
-    loadMyBands();
+    mijnBandsVerversen();
     if (bewerkBandId === bandId) renderBandBeheer();
   } catch (e) {
     logCaught('withdrawFounderOffer', e);
@@ -262,7 +262,7 @@ async function dissolveBand(bandId) {
 
 
     if (bewerkBandId === bandId) { showView('bands'); return; }
-    loadMyBands();
+    mijnBandsVerversen();
   } catch (e) {
     logCaught('dissolveBand', e);
     showToast(friendlyErrorMessage(e, 'het bandprofiel verwijderen'));
@@ -302,11 +302,11 @@ async function executeLeaveBand(bandId) {
 
 
     if (huidigeView === 'profiel' && huidigBandId === bandId) laadBandScherm(bandId);
-    loadMyBands();
+    mijnBandsVerversen();
     profielBandsVerversen();
   } catch (e) {
     logCaught('executeLeaveBand', e);
-    if (e && e.eigenTekst) loadMyBands();
+    if (e && e.eigenTekst) mijnBandsVerversen();
     showToast(friendlyErrorMessage(e, 'de band verlaten'));
   }
 }
@@ -332,7 +332,7 @@ async function executeRemoveMember(bandId, musicianId, memberName, bandName) {
     showToast(`${memberName} is uit de band.`);
 
     if (bandName) stilBericht(musicianId, `Je staat niet meer in de bezetting van ${bandName}. Bedankt voor het meespelen.`);
-    loadMyBands();
+    mijnBandsVerversen();
 
     if (bewerkBandId === bandId) bbLaadLeden();
   } catch (e) {
@@ -467,7 +467,7 @@ async function addBandMember(band, musicianId, note, rollen) {
     showToast(berichtVerstuurd
       ? 'Uitnodiging verstuurd.'
       : 'De uitnodiging staat in de lijst, maar het bericht erbij kwam niet aan. De muzikant ziet de uitnodiging wel op zijn profiel.');
-    loadMyBands();
+    mijnBandsVerversen();
 
     if (bewerkBandId === band.id) bbLaadLeden();
     return true;
@@ -623,9 +623,16 @@ async function saveBandRun() {
     if (bErr) throw bErr;
     const bandId = band.id;
     const { error: mErr } = await db.from('band_members').insert({ band_id: bandId, musician_id: mid, role: 'Oprichter', status: 'bevestigd' });
-    if (mErr) throw mErr;
+    if (mErr) {
 
-    loadMyBands();
+
+
+      const { error: wegErr } = await db.rpc('tt_dissolve_band', { p_band_id: bandId });
+      if (wegErr) logCaught('saveBand-opruimen', wegErr);
+      throw mErr;
+    }
+
+    mijnBandsVerversen();
     hideSaving();
 
 
@@ -640,6 +647,16 @@ async function saveBandRun() {
     logCaught('saveBand', e);
     showToast(friendlyErrorMessage(e, 'de band opslaan'));
   }
+}
+
+
+
+
+
+
+function mijnBandsVerversen() {
+  if (huidigeView === 'bands') loadMyBands({ behoud: true });
+  else refreshBandsDot();
 }
 
 async function loadMyBands(opties) {
@@ -758,7 +775,11 @@ async function loadMyBands(opties) {
   });
   fitProfileName(el);
   if (currentUser) el.dataset.klaar = currentUser.id;
-  refreshBandsDot({ zonderVerval: true });
+
+
+  const dot = document.getElementById('bandsDotBottom');
+  if (dot && mid === myMusicianId) dot.style.display = (bands || []).some(b => (b.band_members || [])
+    .some(m => m.musician_id === mid && m.status === 'bevestigd' && m.founder_offer)) ? 'block' : 'none';
 }
 
 
@@ -1389,7 +1410,10 @@ async function renderBandBeheer() {
   const el = document.getElementById('bandBeheerBlok');
   const id = bewerkBandId;
   if (!el || !id) return;
-  el.innerHTML = '';
+
+
+
+  if (el.dataset.band !== String(id)) { el.innerHTML = ''; delete el.dataset.band; }
   try {
     const { data: b, error } = await db.from('bands')
       .select('*, band_members(musician_id, status, founder_offer, musicians(weergavenaam, username))')
@@ -1432,8 +1456,10 @@ async function renderBandBeheer() {
       rijen: () => STANDEN.map(x => ({ t: x.label, u: x.uitleg.band, gekozen: x.waarde === bandBeheerStand })),
       kies: i => zetBandStand(STANDEN[i].waarde)
     });
+    el.dataset.band = String(id);
   } catch (e) {
     logCaught('renderBandBeheer', e);
+    delete el.dataset.band;
 
     el.innerHTML = `<h2 class="hoofdstuk-kop">Bandbeheer</h2>
       <p class="field-hint">Bandbeheer laden lukt nu niet. Controleer je verbinding en open dit scherm opnieuw.</p>`;
@@ -1444,14 +1470,24 @@ async function renderBandBeheer() {
 async function zetBandStand(stand) {
   const id = bewerkBandId;
   if (!id || stand === bandBeheerStand) return;
+
+  const vorige = bandBeheerStand;
+  const zetLabel = waarde => {
+    bandBeheerStand = waarde;
+    const label = document.querySelector('#bandStandTegel .wheel-field-label');
+    const x = STANDEN.find(st => st.waarde === waarde);
+    if (label && x) label.textContent = x.label;
+  };
+  zetLabel(stand);
   try {
     const { error } = rijenGeraakt(await db.from('bands')
       .update({ stand }).eq('id', id).select('id'));
     if (error) throw error;
     showToast('Wijzigingen opgeslagen.');
     renderBandBeheer();
-    loadMyBands();
+    mijnBandsVerversen();
   } catch (e) {
+    zetLabel(vorige);
     logCaught('zetBandStand', e);
     showToast(friendlyErrorMessage(e, 'de bandstatus opslaan'));
   }
@@ -1556,7 +1592,7 @@ async function saveBandWie() {
   zetBandNaamRegel();
   bwSnapshot = bwFieldSnapshot();
   showToast('Wijzigingen opgeslagen.');
-  loadMyBands();
+  mijnBandsVerversen();
   terugNaOpslaan('bandWie');
 }
 
@@ -1875,7 +1911,7 @@ async function bbIntrekken(musicianId, naam) {
     if (error) throw error;
     showToast(`Uitnodiging aan ${naam} ingetrokken.`);
     bbLaadLeden();
-    loadMyBands();
+    mijnBandsVerversen();
   } catch (e) {
     logCaught('bbIntrekken', e);
     showToast(friendlyErrorMessage(e, 'de uitnodiging intrekken'));
@@ -1891,11 +1927,12 @@ async function saveBandBezetting() {
 
 
 
-    for (const [lid, rollen] of Object.entries(bbRollenBewerkt)) {
-      const { error } = rijenGeraakt(await db.from('band_members').update({ rollen })
-        .eq('band_id', id).eq('musician_id', lid).select('musician_id'));
-      if (error) throw error;
-    }
+
+    const rolUit = await Promise.all(Object.entries(bbRollenBewerkt).map(async ([lid, rollen]) =>
+      rijenGeraakt(await db.from('band_members').update({ rollen })
+        .eq('band_id', id).eq('musician_id', lid).select('musician_id'))));
+    const rolFout = rolUit.find(r => r.error);
+    if (rolFout) throw rolFout.error;
 
     const { error: wErr } = await db.rpc('tt_save_band_wanted', { p_band_id: id, p_instruments: bbWanted });
     if (wErr) throw wErr;
@@ -1910,9 +1947,12 @@ async function saveBandBezetting() {
     }
     const nieuw = bbInvallers.filter(v => !v.id);
     if (nieuw.length) {
-      const { error } = await db.from('band_invallers')
-        .insert(nieuw.map(v => ({ band_id: id, instrument: v.instrument })));
+
+
+      const { data: erbij, error } = await db.from('band_invallers')
+        .insert(nieuw.map(v => ({ band_id: id, instrument: v.instrument }))).select('id');
       if (error) throw error;
+      idsZetten(nieuw, erbij);
     }
 
 
@@ -1934,7 +1974,7 @@ async function saveBandBezetting() {
     }
     bbSnapshot = bbFieldSnapshot();
     showToast('Wijzigingen opgeslagen.');
-    loadMyBands();
+    mijnBandsVerversen();
     terugNaOpslaan('bandBezetting');
   } catch (e) {
     logCaught('saveBandBezetting', e);
@@ -2087,10 +2127,14 @@ async function saveBandMuziek() {
   if (!bmzGenres.length) fouten.push(['bmzGenreField', 'Kies minimaal één genre']);
   bmzNummers.forEach((n, i) => {
     const titel = n.titel.trim();
-    const url = n.url.trim();
-    if (!titel && !url) return;
+    if (!titel && !n.url.trim()) return;
+
+
+    n.url = metHttps(n.url);
     if (!titel) fouten.push([`bmzTitel${i}`, 'Vul de titel in']);
-    if (!/^https?:\/\//i.test(url)) fouten.push([`bmzUrl${i}`, 'Vul een link in die begint met https://']);
+
+    if (!n.url) fouten.push([`bmzUrl${i}`, 'Vul een link in die begint met https://']);
+    else if (!linkTeOpenen(n.url)) fouten.push([`bmzUrl${i}`, 'Deze link kan niet geopend worden.']);
   });
   if (showFieldErrors(fouten)) return;
   if (bmzFieldSnapshot() === bmzSnapshot) return;
@@ -2119,9 +2163,10 @@ async function saveBandMuziek() {
     }
     const nieuweNummers = nummers.filter(n => !n.id);
     if (nieuweNummers.length) {
-      const { error } = await db.from('band_nummers').insert(nieuweNummers.map(n =>
-        ({ band_id: id, titel: n.titel.trim(), url: n.url.trim(), platform: detectPlatform(n.url.trim()) })));
+      const { data: erbij, error } = await db.from('band_nummers').insert(nieuweNummers.map(n =>
+        ({ band_id: id, titel: n.titel.trim(), url: n.url.trim(), platform: detectPlatform(n.url.trim()) }))).select('id');
       if (error) throw error;
+      idsZetten(nieuweNummers, erbij);
     }
     const coverWeg = eerder.covers.map(c => c[0]).filter(x => x && !bcCovers.some(c => c.id === x));
     if (coverWeg.length) {
@@ -2130,9 +2175,10 @@ async function saveBandMuziek() {
     }
     const nieuweCovers = bcCovers.filter(c => !c.id);
     if (nieuweCovers.length) {
-      const { error } = await db.from('band_covers').insert(nieuweCovers.map(c =>
-        ({ band_id: id, song_title: c.title, song_artist: c.artist })));
+      const { data: erbij, error } = await db.from('band_covers').insert(nieuweCovers.map(c =>
+        ({ band_id: id, song_title: c.title, song_artist: c.artist }))).select('id');
       if (error) throw error;
+      idsZetten(nieuweCovers, erbij);
     }
 
 
@@ -2145,7 +2191,7 @@ async function saveBandMuziek() {
     bcRenderCovers();
     bmzSnapshot = bmzFieldSnapshot();
     showToast('Wijzigingen opgeslagen.');
-    loadMyBands();
+    mijnBandsVerversen();
     terugNaOpslaan('bandMuziek');
   } catch (e) {
     logCaught('saveBandMuziek', e);
@@ -2341,6 +2387,10 @@ async function saveBandMedia() {
 
   const fouten = [];
   BAND_SOCIALS.forEach(soc => {
+
+
+    const veld = document.getElementById(BAND_SOCIAL_VELDEN[soc.veld]);
+    if (veld && /^(www\.|[^/\s]+\.[^/\s]+\/)/i.test(veld.value.trim())) veld.value = metHttps(veld.value);
     const waarde = waardeVan(BAND_SOCIAL_VELDEN[soc.veld]);
     if (waarde && !bandSocialLink(soc, waarde)) {
       fouten.push([BAND_SOCIAL_VELDEN[soc.veld], 'Vul een gebruikersnaam in, of een link die begint met https://']);
@@ -2367,10 +2417,11 @@ async function saveBandMedia() {
 
 
 
+
     const nu = bmMediaFiles.filter(m => m.url && !m.url.startsWith('blob:'))
-      .map(m => ({ id: m.id, media_type: m.type, url: m.url, platform: null, in_banner: !!m.inBanner, uitsnede: bannerKader(m) }))
+      .map(m => ({ bron: m, id: m.id, media_type: m.type, url: m.url, platform: null, in_banner: !!m.inBanner, uitsnede: bannerKader(m) }))
       .concat(bmMediaLinks.filter(l => l.url.trim())
-        .map(l => ({ id: l.id, media_type: 'link', url: l.url.trim(), platform: detectPlatform(l.url.trim()), in_banner: !!l.inBanner, uitsnede: null })));
+        .map(l => ({ bron: l, id: l.id, media_type: 'link', url: l.url.trim(), platform: detectPlatform(l.url.trim()), in_banner: !!l.inBanner, uitsnede: null })));
     const weg = bmOrigineel.map(r => r[0]).filter(x => !nu.some(m => m.id === x));
     if (weg.length) {
       const { error } = await db.from('band_media').delete().in('id', weg);
@@ -2384,9 +2435,10 @@ async function saveBandMedia() {
     }
     const nieuw = nu.filter(m => !m.id);
     if (nieuw.length) {
-      const { error } = await db.from('band_media').insert(nieuw.map(m =>
-        ({ band_id: id, media_type: m.media_type, url: m.url, platform: m.platform, in_banner: m.in_banner, uitsnede: m.uitsnede, wazig: wazigVoor(m.url) })));
+      const { data: erbij, error } = await db.from('band_media').insert(nieuw.map(m =>
+        ({ band_id: id, media_type: m.media_type, url: m.url, platform: m.platform, in_banner: m.in_banner, uitsnede: m.uitsnede, wazig: wazigVoor(m.url) }))).select('id');
       if (error) throw error;
+      idsZetten(nieuw.map(m => m.bron), erbij);
     }
     opslagOpruimen('media', 'bands/' + id, nu.map(m => m.url));
 
@@ -2395,7 +2447,7 @@ async function saveBandMedia() {
     bmZet(b);
     bmSnapshot = bmFieldSnapshot();
     showToast('Wijzigingen opgeslagen.');
-    loadMyBands();
+    mijnBandsVerversen();
     terugNaOpslaan('bandMedia');
   } catch (e) {
     logCaught('saveBandMedia', e);
@@ -2507,3 +2559,23 @@ async function rolUitnodigen(musicianId, knop) {
   rolUitnodigBlokSluiten();
   document.querySelector('#profielSchermActie .rol-uitnodig-knop')?.remove();
 }
+
+
+
+
+saveBandWie = slotOm(saveBandWie);
+saveBandBezetting = slotOm(saveBandBezetting);
+saveBandMuziek = slotOm(saveBandMuziek);
+saveBandMedia = slotOm(saveBandMedia);
+respondToBandInvite = slotOm(respondToBandInvite);
+respondToFounderOffer = slotOm(respondToFounderOffer);
+sendFounderOffer = slotOm(sendFounderOffer);
+withdrawFounderOffer = slotOm(withdrawFounderOffer);
+executeLeaveBand = slotOm(executeLeaveBand);
+executeRemoveMember = slotOm(executeRemoveMember);
+bbIntrekken = slotOm(bbIntrekken);
+zetBandStand = slotOm(zetBandStand);
+showCreateBandForm = slotOm(showCreateBandForm);
+openOverdragen = slotOm(openOverdragen);
+vraagBandVerwijderen = slotOm(vraagBandVerwijderen);
+dissolveBand = slotOm(dissolveBand);

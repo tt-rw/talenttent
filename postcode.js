@@ -425,7 +425,21 @@ function plaatsAchterPlaatsen(inputEl, statusEl) {
 
 
 
+
+
+
+
+const plaatsNaamVragen = new Map();
 async function resolveCityDisplayName(raw) {
+  const sleutel = String(raw || '').trim().toLowerCase();
+  if (plaatsNaamVragen.has(sleutel)) return plaatsNaamVragen.get(sleutel);
+  const vraag = resolveCityDisplayNameNu(raw);
+  plaatsNaamVragen.set(sleutel, vraag);
+  const naam = await vraag;
+  if (naam === null && plaatsNaamVragen.get(sleutel) === vraag) plaatsNaamVragen.delete(sleutel);
+  return naam;
+}
+async function resolveCityDisplayNameNu(raw) {
   try {
     if (/^\d{4}$/.test(raw)) {
       const { data, error } = await db.from('postcode_cache')

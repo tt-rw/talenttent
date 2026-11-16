@@ -14,7 +14,7 @@ const TT_GESPREK_NAAM = 'TalentTent';
 
 const TT_AVATAR_HTML = '<span class="avatar-t avatar-logo">T</span>';
 let activeConversationSysteem = false;
-let ttBerichtenBeschikbaar = true;
+let ttBerichtenFoutGelogd = false;
 
 
 
@@ -41,6 +41,7 @@ let pendingMessageRecipient = null;
 
 
 let gesprekVanuit = null;
+let inboxOverslaan = false;
 let gesprekVia = '';
 
 function openMessageComposer(recipientId, recipientName, bandNaam) {
@@ -50,7 +51,8 @@ function openMessageComposer(recipientId, recipientName, bandNaam) {
   gesprekVia = bandNaam || '';
   if (huidigeView !== 'messages') {
     gesprekVanuit = huidigeView;
-    showView('messages', 'behoud');
+    inboxOverslaan = true;
+    try { showView('messages', 'behoud'); } finally { inboxOverslaan = false; }
   } else {
     gesprekVanuit = null;
   }
@@ -390,7 +392,7 @@ async function loadInbox(opties) {
     const [sentRes, receivedRes, verborgen, ttBerichten] = await Promise.all([
       db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('sender_id', mid),
       db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('recipient_id', mid),
-      laadVerborgenGesprekken(),
+      laadVerborgenGesprekken(true),
       laadTalentTentBerichten(),
     ]);
     if (sentRes.error) throw sentRes.error;
@@ -428,9 +430,12 @@ async function loadInbox(opties) {
     });
 
     const otherIds = Array.from(conversations.keys());
-    const { data: musiciansData } = otherIds.length
-      ? await db.from('musicians').select('id, weergavenaam, username, avatar_url').in('id', otherIds)
-      : { data: [] };
+
+
+    const { data: musiciansData, error: namenFout } = otherIds.length
+      ? await inDelen(otherIds, deel => db.from('musicians').select('id, weergavenaam, username, avatar_url').in('id', deel))
+      : { data: [], error: null };
+    if (namenFout) throw namenFout;
     const infoById = {};
     (musiciansData || []).forEach(m => { infoById[m.id] = m; });
 
@@ -600,15 +605,20 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
     ));
 
 
+    if (activeConversationId !== otherId) return;
+
+
     if (!stil || threadEl.innerHTML !== nieuweInhoud) threadEl.innerHTML = nieuweInhoud;
+    scrollThreadToBottom();
+
 
 
     const unreadIds = (data || []).filter(m => m.recipient_id === mid && !m.read_at).map(m => m.id);
     if (unreadIds.length) {
-      await db.from('messages').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
-      refreshUnreadBadge();
+      db.from('messages').update({ read_at: new Date().toISOString() }).in('id', unreadIds)
+        .then(({ error }) => { if (error) logCaught('openConversation-gelezen', error); refreshUnreadBadge(); },
+              e => logCaught('openConversation-gelezen', e));
     }
-    scrollThreadToBottom();
 
   } catch (e) {
     logCaught('openConversation', e);
@@ -623,17 +633,28 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
 
 
 
-async function laadVerborgenGesprekken() {
-  try {
-    const { data, error } = await db.from('gesprek_verborgen').select('ander_id, verborgen_op');
-    if (error) throw error;
-    const kaart = {};
-    (data || []).forEach(r => { kaart[r.ander_id] = r.verborgen_op; });
-    return kaart;
-  } catch (e) {
-    logCaught('laadVerborgenGesprekken', e);
-    return {};
+
+
+let verborgenVraag = null;
+function laadVerborgenGesprekken(vers) {
+  if (vers || !verborgenVraag || (currentUser && verborgenVraag.user !== currentUser.id)) {
+    const vraag = { user: currentUser && currentUser.id };
+    vraag.p = (async () => {
+      try {
+        const { data, error } = await db.from('gesprek_verborgen').select('ander_id, verborgen_op');
+        if (error) throw error;
+        const kaart = {};
+        (data || []).forEach(r => { kaart[r.ander_id] = r.verborgen_op; });
+        return kaart;
+      } catch (e) {
+        logCaught('laadVerborgenGesprekken', e);
+        if (verborgenVraag === vraag) verborgenVraag = null;
+        return {};
+      }
+    })();
+    verborgenVraag = vraag;
   }
+  return verborgenVraag.p;
 }
 
 function gesprekVerborgenTot(verborgen, otherId, createdAt) {
@@ -661,6 +682,7 @@ async function gesprekVerwijderenUitvoeren(otherId) {
     showToast(friendlyErrorMessage(e, 'het gesprek verwijderen'));
     return;
   }
+  verborgenVraag = null;
   if (activeConversationId === otherId) closeConversation(); else loadInbox();
   refreshUnreadBadge();
   showToast('Gesprek verwijderd.');
@@ -676,7 +698,6 @@ async function gesprekVerwijderenUitvoeren(otherId) {
 
 
 async function laadTalentTentBerichten() {
-  if (!ttBerichtenBeschikbaar) return [];
   try {
     const { data, error } = await db.from('talent_tent_berichten')
       .select('id, inhoud, created_at, read_at')
@@ -685,21 +706,19 @@ async function laadTalentTentBerichten() {
     if (error) throw error;
     return (data || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   } catch (e) {
-    ttBerichtenBeschikbaar = false;
-    logCaught('laadTalentTentBerichten', e);
+
+    if (!ttBerichtenFoutGelogd) { ttBerichtenFoutGelogd = true; logCaught('laadTalentTentBerichten', e); }
     return [];
   }
 }
 
 async function ttOngelezenTellen() {
-  if (!ttBerichtenBeschikbaar) return 0;
   try {
     const { data, error } = await db.from('talent_tent_berichten').select('id').is('read_at', null);
     if (error) throw error;
     return (data || []).length;
   } catch (e) {
-    ttBerichtenBeschikbaar = false;
-    logCaught('ttOngelezenTellen', e);
+    if (!ttBerichtenFoutGelogd) { ttBerichtenFoutGelogd = true; logCaught('ttOngelezenTellen', e); }
     return 0;
   }
 }

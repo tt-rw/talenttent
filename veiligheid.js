@@ -407,3 +407,8 @@ async function renderGeblokkeerdLijst() {
     el.innerHTML = foutStaatHTML(e, 'je lijst laden', 'renderGeblokkeerdLijst()');
   }
 }
+
+
+
+
+verstuurMelding = slotOm(verstuurMelding);

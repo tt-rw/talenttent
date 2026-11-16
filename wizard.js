@@ -423,7 +423,7 @@ async function persistEditedProfile(mid) {
     city_source:      state.citySource || 'cache',
     profile_complete: true,
   }).eq('id', mid).select('id'));
-  if (uErr) throw new Error(uErr.message);
+  if (uErr) throw uErr;
   opslagOpruimen('avatars', currentUser && currentUser.id, [state.avatarUrl, fotoBronVelden().avatar_bron]);
 
 
@@ -447,7 +447,7 @@ async function persistEditedProfile(mid) {
     p_songs:       state.songs.map(s => ({ song_title: s.title, song_artist: s.artist, mastery_level: s.level })),
     p_media:       linkMedia.concat(fileMedia),
   });
-  if (kErr) throw new Error(kErr.message);
+  if (kErr) throw kErr;
   opslagOpruimen('media', currentUser && currentUser.id, fileMedia.map(m => m.url));
 
   state.savedId = mid;
@@ -708,6 +708,10 @@ async function submitProfile() {
   }
 
 
+  if (document.querySelector('#avatarPreview .avatar-uploading')) { showToast('Je foto wordt nog geüpload. Even geduld.'); return; }
+  if (state.mediaFiles.some(m => m.uploading)) { showToast('Er wordt nog een bestand geüpload. Even geduld.'); return; }
+
+
 
 
 
@@ -742,36 +746,48 @@ async function submitProfile() {
 
 
 
-    if (state.avatarFile) {
+
+
+
+    const uploadFotoVraag = (async () => {
+      if (!state.avatarFile) return true;
       try {
         const f = await fotoMetBronUploaden({ file: state.avatarFile, bron: state.avatarBron, kader: state.avatarKader }, userId);
         state.avatarUrl = f.url;
         state.avatarBron = f.bron;
         state.avatarKader = f.kader;
+        return true;
       } catch (e) {
         logCaught('submitProfile', e);
-        showToast('Profiel opgeslagen, maar de profielfoto kon niet worden geüpload. Voeg de foto later toe via Profiel bewerken.');
         state.avatarUrl = null;
+        return false;
+      } finally {
+        state.avatarFile = null;
       }
-      state.avatarFile = null;
-    }
+    })();
 
 
 
 
 
-    const wachtendeBestanden = state.mediaFiles.filter(m => m.bestand);
-    for (const m of wachtendeBestanden) {
+    const uploadMediaVraag = Promise.all(state.mediaFiles.filter(m => m.bestand).map(async m => {
       try {
         const { url, path } = await uploadMediaFile(m.bestand, userId);
         m.url = url;
         m.path = path;
         m.bestand = null;
+        return true;
       } catch (e) {
         logCaught('submitProfile-media', e);
         m.url = '';
+        return false;
       }
-    }
+    }));
+    const [fotoGelukt, mediaGelukt] = await Promise.all([uploadFotoVraag, uploadMediaVraag]);
+
+    const uploadMelding = mediaGelukt.includes(false)
+      ? 'Profiel opgeslagen, maar niet elke foto of video kon worden geüpload. Voeg wat ontbreekt later toe via profiel bewerken.'
+      : !fotoGelukt ? 'Profiel opgeslagen, maar de profielfoto kon niet worden geüpload. Voeg de foto later toe via profiel bewerken.' : '';
 
 
 
@@ -801,7 +817,7 @@ async function submitProfile() {
         })
         .select('id')
         .single();
-      if (mErr) throw new Error(mErr.message);
+      if (mErr) throw mErr;
       mid = musician.id;
     }
     myMusicianId = mid;
@@ -812,13 +828,14 @@ async function submitProfile() {
     clearOnboardingProgress();
     state.onboarding = false;
     state.ouderRoute = false;
+    if (uploadMelding) showToast(uploadMelding);
 
     if (await profielWachtOpBevestiging(mid)) { await bevestigingStarten(); return; }
     showSaveSuccess();
 
   } catch (err) {
     logCaught('submitProfile', err);
-    showSaveError(err.message, 'je profiel aanmaken');
+    showSaveError(err, 'je profiel aanmaken');
   } finally {
     onboardingInFlight = false;
   }
@@ -840,7 +857,7 @@ async function accountAanmaken() {
 
 
   const alAccount = !!authErr && /already registered|already exists/i.test(authErr.message || '');
-  if (authErr && !alAccount) throw new Error(authErr.message);
+  if (authErr && !alAccount) throw authErr;
 
 
 
@@ -856,7 +873,7 @@ async function accountAanmaken() {
       terugNaarVeld('regEmail', TEKST_ACCOUNT_BESTAAT);
       return null;
     }
-    throw new Error(signInErr.message);
+    throw signInErr;
   }
   const authUser = signInData.user || authData?.user || null;
   if (!authUser?.id) throw eigenFout('Je account is aangemaakt, maar inloggen lukte niet. Ga naar Inloggen en log in met je e-mailadres en wachtwoord.');
@@ -1677,3 +1694,7 @@ function removeLink(i) {
   renderMediaGrid();
 }
 
+
+
+
+submitProfile = slotOm(submitProfile, 'submitProfileBtn');

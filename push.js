@@ -212,3 +212,8 @@ ttSeintjeWeghalen();
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') ttSeintjeWeghalen();
 });
+
+
+
+
+pushSchakelen = slotOm(pushSchakelen);

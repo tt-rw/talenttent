@@ -193,19 +193,35 @@ let myMusicianId = null;
 
 let myMusicianIdFout = null;
 
+
+
+
+let myMusicianIdVraag = null;
+
 async function getMyMusicianId() {
   if (myMusicianId) return myMusicianId;
+  if (!currentUser) { myMusicianIdFout = null; return null; }
+  if (myMusicianIdVraag && myMusicianIdVraag.user === currentUser.id) return myMusicianIdVraag.p;
   myMusicianIdFout = null;
-  if (!currentUser) return null;
-  const { data, error } = await db.from('musicians').select('id').eq('user_id', currentUser.id).single();
+  const vraag = { user: currentUser.id };
+  vraag.p = (async () => {
+    try {
+      const { data, error } = await db.from('musicians').select('id').eq('user_id', vraag.user).single();
+      if (!currentUser || currentUser.id !== vraag.user) return null;
 
-  if (error && error.code !== 'PGRST116') {
-    myMusicianIdFout = error;
-    logCaught('getMyMusicianId', error);
-    return null;
-  }
-  myMusicianId = data?.id || null;
-  return myMusicianId;
+      if (error && error.code !== 'PGRST116') {
+        myMusicianIdFout = error;
+        logCaught('getMyMusicianId', error);
+        return null;
+      }
+      myMusicianId = data?.id || null;
+      return myMusicianId;
+    } finally {
+      if (myMusicianIdVraag === vraag) myMusicianIdVraag = null;
+    }
+  })();
+  myMusicianIdVraag = vraag;
+  return vraag.p;
 }
 
 
@@ -220,13 +236,21 @@ function geenProfielMelding(tekst) {
 
 
 
+
+
+let emailBevestigdVoor = null;
 async function emailWachtOpBevestiging() {
   if (!currentUser) return null;
+  if (emailBevestigdVoor === currentUser.id) return null;
+  const user = currentUser.id;
   const { data, error } = await db.from('musicians')
     .select('profile_complete, email_bevestigd_op, wacht_op_bevestiging')
-    .eq('user_id', currentUser.id).maybeSingle();
+    .eq('user_id', user).maybeSingle();
   if (error) { logCaught('emailWachtOpBevestiging', error); return null; }
-  if (!data || data.profile_complete || data.email_bevestigd_op) return null;
+  if (!data || data.profile_complete || data.email_bevestigd_op) {
+    if (data && currentUser && currentUser.id === user) emailBevestigdVoor = user;
+    return null;
+  }
   return data.wacht_op_bevestiging ? 'wacht' : 'onaf';
 }
 
@@ -501,7 +525,8 @@ async function appInit() {
 
       if (!currentUser) showView('auth', 'redirect');
       else {
-        showView('messages', 'redirect');
+        inboxOverslaan = true;
+        try { showView('messages', 'redirect'); } finally { inboxOverslaan = false; }
         heropenGesprek(decodeURIComponent(gesprekMatch[1]));
       }
     } else if (knownHashViews.includes(hashView)) {
@@ -629,6 +654,8 @@ function onUserLoggedOut() {
   const navMenuLoginBtn = document.getElementById('navMenuLogin');
   if (navMenuLoginBtn) navMenuLoginBtn.style.display = '';
   myMusicianId = null;
+  myMusicianIdVraag = null;
+  emailBevestigdVoor = null;
   myOwnCity = null;
 
 
@@ -870,6 +897,9 @@ async function configureSearchAccess() {
   const rolMelding = document.getElementById('zoekRolMelding');
   if (rolMelding) rolMelding.hidden = true;
   zoekRolBand = null;
+
+
+  const zoekNr = musicianSearchSeq;
   const mid = await getMyMusicianId();
   hasOwnProfile = !!mid;
   await laadBlokkadesIndienNodig();
@@ -910,7 +940,7 @@ async function configureSearchAccess() {
 
 
 
-  if (zoekScherm === 'muzikanten') runSearch();
+  if (zoekScherm === 'muzikanten') { if (musicianSearchSeq === zoekNr) runSearch(); }
   else if (zoekScherm === 'mixmatch') setlistZoekVerversen();
 }
 
@@ -1201,10 +1231,17 @@ function showView(view, mode, extra) {
 
   if (view === 'messages') {
     const draadOpen = document.getElementById('messagesThreadPanel')?.style.display !== 'none' && activeConversationId;
-    if (!(mode === 'pop' && draadOpen)) loadInbox({ behoud: TAB_VIEWS.includes(vorigeView) });
+
+
+    if (!(mode === 'pop' && draadOpen) && !inboxOverslaan) loadInbox({ behoud: TAB_VIEWS.includes(vorigeView) });
   }
   if (view === 'profiel') {
-    profielLaadBelofte = profielSoort === 'band'
+
+
+    const geladen = document.getElementById('profielSchermContent')?.dataset.klaar;
+    const alDaar = mode === 'pop' && vorigeView === 'messages' && profielSoort !== 'band'
+      && geladen === 'muzikant:' + profielId;
+    if (!alDaar) profielLaadBelofte = profielSoort === 'band'
       ? laadBandScherm(profielId)
       : laadProfielScherm(profielId);
   }
@@ -1387,6 +1424,12 @@ let landingKlok = null;
 
 
 
+
+let landingBeginTijd = typeof window.ttLandingBegin === 'number' ? window.ttLandingBegin : null;
+
+
+
+
 let landingWacht = (() => {
   try { return !!localStorage.getItem('sb-' + new URL(SUPABASE_URL).hostname.split('.')[0] + '-auth-token'); }
   catch (e) { return false; }
@@ -1471,11 +1514,35 @@ function landingBijwerken() {
   }
   const lopen = actief && !landingWacht && !document.hidden && magBewegen();
   if (lopen && !landingKlok) {
-    landingKlok = setInterval(() => landingNaar(landingStand + 1), LANDING_TEMPO);
+    landingKlokStarten();
   } else if (!lopen && landingKlok) {
-    clearInterval(landingKlok);
+    clearTimeout(landingKlok.id);
+    clearInterval(landingKlok.id);
     landingKlok = null;
   }
+}
+
+
+
+function landingKlokStarten() {
+  const begin = landingBeginTijd;
+  landingBeginTijd = null;
+  const klok = { id: 0 };
+  landingKlok = klok;
+  const verder = () => {
+    if (landingKlok !== klok) return;
+    landingNaar(landingStand + 1);
+    klok.id = setInterval(() => landingNaar(landingStand + 1), LANDING_TEMPO);
+  };
+  const wacht = begin === null ? LANDING_TEMPO : Math.max(0, LANDING_TEMPO - (performance.now() - begin));
+  klok.id = setTimeout(() => {
+    if (landingKlok !== klok) return;
+    const img = document.getElementById('landingDias')?.children[(landingStand + 1) % LANDING_WOORDEN.length]?.querySelector('img');
+    if (begin !== null && img && img.getAttribute('src') && !img.complete) {
+      img.addEventListener('load', verder, { once: true });
+      img.addEventListener('error', verder, { once: true });
+    } else verder();
+  }, wacht);
 }
 document.addEventListener('visibilitychange', landingBijwerken);
 

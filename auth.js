@@ -586,3 +586,11 @@ async function wijzigWachtwoord() {
   igMelding('✓ Je wachtwoord is gewijzigd. Je blijft gewoon ingelogd.');
 }
 
+
+
+
+signIn = slotOm(signIn, 'inlogKnop');
+saveNewPassword = slotOm(saveNewPassword, 'resetOpslaanKnop');
+saveUsernameGate = slotOm(saveUsernameGate, 'usernameGateKnop');
+wijzigEmailUitvoeren = slotOm(wijzigEmailUitvoeren, 'wijzigEmailKnop');
+wijzigWachtwoord = slotOm(wijzigWachtwoord, 'wijzigWachtwoordKnop');

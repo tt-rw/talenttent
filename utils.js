@@ -223,6 +223,51 @@ function eigenFout(tekst) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+function knopBezig(knop, aan) {
+  if (!knop) return;
+  knop.classList.toggle('btn-bezig', aan);
+  if (aan) knop.setAttribute('aria-busy', 'true');
+  else knop.removeAttribute('aria-busy');
+}
+function slotOm(fn, knopId) {
+  let bezig = false;
+  const omhuld = async function (...args) {
+    if (bezig) return;
+    bezig = true;
+    const ev = window.event;
+    const getikt = !ev ? null : ev.type === 'submit' ? ev.submitter
+      : (ev.type === 'click' && ev.target && ev.target.closest) ? ev.target.closest('button') : null;
+    const knop = (knopId && document.getElementById(knopId)) || getikt;
+    knopBezig(knop, true);
+    try {
+      return await fn.apply(this, args);
+    } finally {
+      bezig = false;
+      knopBezig(knop, false);
+    }
+  };
+  omhuld.zonderSlot = fn;
+  return omhuld;
+}
+
+
+
+
+function idsZetten(lijst, rijen) {
+  (rijen || []).forEach((r, i) => { if (lijst[i] && r && r.id != null) lijst[i].id = r.id; });
+}
+
 function rijenGeraakt(res) {
   if (res.error || (res.data && res.data.length)) return res;
   return { data: res.data, error: { code: '42501', message: 'row-level security: 0 rijen geraakt' } };
@@ -652,7 +697,10 @@ function showSaveSuccess() {
   }, 2000);
 }
 
-function showSaveError(msg, actie) {
+
+
+function showSaveError(fout, actie) {
+  const msg = (fout && fout.message) ? fout.message : String(fout || '');
   document.getElementById('saveSpinner').style.display = 'none';
   document.getElementById('saveTitle').textContent = 'Oeps...';
   document.getElementById('saveTitle').style.color = 'var(--accent)';
@@ -668,7 +716,7 @@ function showSaveError(msg, actie) {
   }
 
   document.getElementById('saveMsg').innerHTML =
-    `<span style="color:var(--accent);font-size:12px;">${escHtml(friendlyErrorMessage(msg, actie))}</span><br><br>
+    `<span style="color:var(--accent);font-size:12px;">${escHtml(friendlyErrorMessage(fout, actie))}</span><br><br>
      <button class="btn btn-ghost" style="margin-top:8px;" onclick="document.getElementById('saveOverlay').classList.remove('visible')">Sluiten</button>`;
 }
 
@@ -796,9 +844,28 @@ function selectFirstAC(listId) {
 const itunesArtistCache = new Map();
 const itunesTrackCache = new Map();
 
+
+
+
+async function itunesArtiestenOphalen(q) {
+  const res = await fetch(
+    `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=7&country=NL`
+  );
+  if (!res.ok) throw new Error('iTunes ' + res.status);
+  const data = await res.json();
+  return (data.results || []).slice(0, 6);
+}
+
+
+
+const artiestVraagNr = {};
+function artiestVraagStart(ac) { return (artiestVraagNr[ac.id] = (artiestVraagNr[ac.id] || 0) + 1); }
+function artiestVraagNogActueel(ac, nr) { return artiestVraagNr[ac.id] === nr; }
+
 async function onArtistSearch(q) {
   const ac = document.getElementById('acArtistList');
   clearTimeout(itunesSearchTimeout);
+  const nr = artiestVraagStart(ac);
   if (q.length < 2) { ac.classList.remove('open'); return; }
 
 
@@ -813,16 +880,13 @@ async function onArtistSearch(q) {
 
   itunesSearchTimeout = setTimeout(async () => {
     try {
-      const res = await fetch(
-        `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=7&country=NL`
-      );
-      const data = await res.json();
-      const artists = (data.results || []).slice(0, 6);
+      const artists = await itunesArtiestenOphalen(q);
       itunesArtistCache.set(cacheKey, artists);
+      if (!artiestVraagNogActueel(ac, nr)) return;
       renderArtistResults(ac, artists, q, 'selectArtist');
     } catch(e) {
       logCaught('onArtistSearch', e);
-      ac.innerHTML = AC_FOUT_HTML;
+      if (artiestVraagNogActueel(ac, nr)) ac.innerHTML = AC_FOUT_HTML;
     }
   }, 400);
 }
@@ -858,20 +922,30 @@ async function selectArtist(id, name) {
 
 
 
-async function fetchArtistSongs(artistId) {
-  if (itunesTrackCache.has(artistId)) return itunesTrackCache.get(artistId);
+
+
+
+async function itunesNummersOphalen(cache, artistId) {
+  if (cache.has(artistId)) return cache.get(artistId);
   const fetchPromise = (async () => {
     const url = `https://itunes.apple.com/lookup?id=${encodeURIComponent(artistId)}&entity=song&limit=200&country=NL`;
     const res = await fetch(url);
+    if (!res.ok) throw new Error('iTunes ' + res.status);
     const data = await res.json();
 
     return (data.results || []).filter(r => r.wrapperType === 'track');
   })();
-  itunesTrackCache.set(artistId, fetchPromise);
-  const songs = await fetchPromise;
-  itunesTrackCache.set(artistId, songs);
-  return songs;
+  cache.set(artistId, fetchPromise);
+  try {
+    const songs = await fetchPromise;
+    cache.set(artistId, songs);
+    return songs;
+  } catch (e) {
+    if (cache.get(artistId) === fetchPromise) cache.delete(artistId);
+    throw e;
+  }
 }
+function fetchArtistSongs(artistId) { return itunesNummersOphalen(itunesTrackCache, artistId); }
 
 
 
@@ -1384,9 +1458,17 @@ function nummerOvernemenMet(n, sel) {
   if (knop && BEHEERSING_NAMEN[level]) repertoireBijwerken(knop, level);
 }
 
-async function repertoireBijwerken(knop, level) {
-  if (knop.dataset.bezig) return;
+
+
+
+let repertoireRij = Promise.resolve();
+function repertoireBijwerken(knop, level) {
+  if (knop.dataset.bezig) return repertoireRij;
   knop.dataset.bezig = '1';
+  repertoireRij = repertoireRij.then(() => repertoireBijwerkenNu(knop, level));
+  return repertoireRij;
+}
+async function repertoireBijwerkenNu(knop, level) {
   try {
 
     const lijst = await eigenNummersOphalen();
@@ -2550,9 +2632,18 @@ function sluitLinkToevoegen() {
   linkToevoegenKlaar = null;
   document.getElementById('linkToevoegenModal').classList.remove('visible');
 }
-function linkToevoegenWaarde() {
-  const s = document.getElementById('linkToevoegenVeld').value.trim();
+
+
+
+function metHttps(waarde) {
+  const s = String(waarde || '').trim();
   return !s || /^https?:\/\//i.test(s) ? s : 'https://' + s;
+}
+function linkTeOpenen(url) {
+  return !!safeUrl(url) && !/\s/.test(url) && /^https?:\/\/[^/]+\.[^/]+/i.test(url);
+}
+function linkToevoegenWaarde() {
+  return metHttps(document.getElementById('linkToevoegenVeld').value);
 }
 function linkToevoegenInvoer() {
   const url = linkToevoegenWaarde();
@@ -2562,7 +2653,7 @@ function linkToevoegenInvoer() {
 function linkToevoegenOk() {
   const url = linkToevoegenWaarde();
   if (!url) return;
-  if (!safeUrl(url) || /\s/.test(url) || !/^https?:\/\/[^/]+\.[^/]+/i.test(url)) {
+  if (!linkTeOpenen(url)) {
     showToast('Deze link kan niet geopend worden.');
     return;
   }

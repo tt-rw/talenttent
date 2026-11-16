@@ -359,6 +359,7 @@ async function laadProfielScherm(id) {
   huidigProfielId = id || null;
   huidigBandId = null;
   const content = document.getElementById('profielSchermContent');
+  delete content.dataset.klaar;
   content.classList.remove('uitnodig-open');
   content.innerHTML =
     '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
@@ -462,6 +463,9 @@ async function laadProfielScherm(id) {
 
 
   zetVeiligheidMenu('profielSchermActies', 'muzikant', isOwn ? null : m.id, displayName);
+
+
+  content.dataset.klaar = 'muzikant:' + id;
 }
 
 
@@ -1281,6 +1285,7 @@ function jstSelectFirstAc(id) {
 async function jstOnArtistSearch(q, p = 'jst') {
   const ac = document.getElementById(p + 'ArtistAc');
   clearTimeout(jstSearchTimeout);
+  const nr = artiestVraagStart(ac);
   if (q.trim().length < 2) { ac.classList.remove('open'); return; }
   ac.innerHTML = '<div class="ac-item"><span style="color:var(--muted);">Zoeken...</span></div>';
   ac.classList.add('open');
@@ -1291,14 +1296,13 @@ async function jstOnArtistSearch(q, p = 'jst') {
   }
   jstSearchTimeout = setTimeout(async () => {
     try {
-      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=7&country=NL`);
-      const data = await res.json();
-      const artists = (data.results || []).slice(0, 6);
+      const artists = await itunesArtiestenOphalen(q);
       jstArtistCache.set(cacheKey, artists);
+      if (!artiestVraagNogActueel(ac, nr)) return;
       jstRenderArtistResults(ac, artists, p);
     } catch (e) {
       logCaught('jstOnArtistSearch', e);
-      ac.innerHTML = AC_FOUT_HTML;
+      if (artiestVraagNogActueel(ac, nr)) ac.innerHTML = AC_FOUT_HTML;
     }
   }, 400);
 }
@@ -1323,19 +1327,7 @@ function jstSelectArtist(id, name, p = 'jst') {
   document.getElementById(p + 'TrackSearch').focus();
   closeAC(p + 'TrackAc');
 }
-async function jstFetchArtistSongs(artistId) {
-  if (jstTrackCache.has(artistId)) return jstTrackCache.get(artistId);
-  const fetchPromise = (async () => {
-    const url = `https://itunes.apple.com/lookup?id=${encodeURIComponent(artistId)}&entity=song&limit=200&country=NL`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return (data.results || []).filter(r => r.wrapperType === 'track');
-  })();
-  jstTrackCache.set(artistId, fetchPromise);
-  const songs = await fetchPromise;
-  jstTrackCache.set(artistId, songs);
-  return songs;
-}
+function jstFetchArtistSongs(artistId) { return itunesNummersOphalen(jstTrackCache, artistId); }
 async function jstOnTrackSearch(q, p = 'jst') {
   const ac = document.getElementById(p + 'TrackAc');
   if (!songArtiest[p]) return;
@@ -1451,6 +1443,7 @@ async function saveJeSetlist() {
 
 
 let mhAvatarUrl = null;
+let mhFotoBezig = false;
 let mhAvatarBron = null, mhAvatarKader = null;
 let mhMediaFiles = [];
 let mhMediaLinks = [];
@@ -1473,6 +1466,7 @@ async function openJeMediahoek() {
     return;
   }
   mhAvatarUrl = data.avatar_url || null;
+  mhFotoBezig = false;
   mhAvatarBron = data.avatar_bron || null;
   mhAvatarKader = data.avatar_kader || null;
 
@@ -1526,12 +1520,15 @@ function mhAvatarZetten(uit) {
     </div>`;
   preview.style.position = 'relative';
 
+  mhFotoBezig = true;
   fotoMetBronUploaden(uit, currentUser.id).then(({ url, bron, kader }) => {
+    mhFotoBezig = false;
     mhAvatarUrl = url;
     mhAvatarBron = bron;
     mhAvatarKader = kader;
     mhRenderAvatar();
   }).catch(e => {
+    mhFotoBezig = false;
     logCaught('mhUploadAvatar', e);
     showToast(friendlyErrorMessage(e, 'je foto uploaden'));
     mhRenderAvatar();
@@ -1628,6 +1625,11 @@ function mhRemoveLink(i) {
 }
 
 async function saveJeMediahoek() {
+
+
+
+  if (mhFotoBezig) { showToast('Je foto wordt nog geüpload. Even geduld.'); return; }
+  if (mhMediaFiles.some(m => m.uploading)) { showToast('Er wordt nog een bestand geüpload. Even geduld.'); return; }
   if (mhFieldSnapshot() === mhSnapshot) return;
 
   const { error: uErr } = rijenGeraakt(await db.from('musicians')
@@ -1713,3 +1715,11 @@ function openMusicianNiveauInfoModal() {
   `;
   document.getElementById('niveauInfoModal').classList.add('visible');
 }
+
+
+
+
+saveWieBenJe = slotOm(saveWieBenJe);
+saveWatSpeelJe = slotOm(saveWatSpeelJe);
+saveJeSetlist = slotOm(saveJeSetlist);
+saveJeMediahoek = slotOm(saveJeMediahoek);

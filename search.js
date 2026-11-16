@@ -544,6 +544,21 @@ function verruimLeeg(vorige, radius) {
   return { van: vorige ? vorige.van : null, naar: radius, leeg: true };
 }
 
+
+
+
+
+
+function sprongTrede(van, rijen) {
+  const afstanden = rijen.map(r => r.distance_km).filter(d => d != null);
+  const dichtst = afstanden.length ? Math.min(...afstanden) : Infinity;
+  const ondergrens = volgendeStraal(van) ?? STRAAL_LANDELIJK;
+  return STRAAL_LADDER.find(r => r >= ondergrens && r >= dichtst) ?? STRAAL_LANDELIJK;
+}
+function binnenTrede(rijen, trede) {
+  return rijen.filter(r => r.distance_km == null || r.distance_km <= trede);
+}
+
 function straalTekst(km) {
   return km == null ? 'je zoekgebied' : `${km} km`;
 }
@@ -669,12 +684,13 @@ async function zoekMuzikantenOphalen(radius, origin) {
 
 
     const [{ data, error }, { data: ages, error: ageErr }] = await Promise.all([
+
+
       inDelen(ids, deel => db.from('musicians').select(`
-      id, weergavenaam, username, city, zip, bio,
+      id, weergavenaam, username, city,
       avatar_url,
       musician_instruments(instrument, niveau),
-      musician_genres(genre),
-      musician_songs(song_title, song_artist, mastery_level)
+      musician_genres(genre)
     `).in('id', deel)),
       db.rpc('tt_musicians_ages', { ids })]);
     if (error) throw error;
@@ -704,10 +720,9 @@ async function zoekMuzikantenOphalen(radius, origin) {
 
     musicians = (data || []).map(m => ({
       id: m.id, username: m.username, age: m.age, birth_date: m.birth_date, city: m.city,
-      bio: m.bio, avatar_url: m.avatar_url,
+      avatar_url: m.avatar_url,
       musician_instruments: (m.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
       musician_genres: (m.genres || []).map(g => ({ genre: g })),
-      musician_songs: m.songs || [],
     }));
     await weergavenamenToevoegen(musicians, namenVraag);
   }
@@ -765,7 +780,7 @@ async function zoekBandsOphalen(radius, origin) {
 
 
 
-async function runSearch(straalOverride) {
+async function runSearch(straalOverride, sprongVan) {
   const seq = ++musicianSearchSeq;
   const resultsEl = document.getElementById('searchResults');
 
@@ -955,14 +970,22 @@ async function runSearch(straalOverride) {
 
 
 
+
     if (!muzikanten.length && !bands.length) {
       const v = ruimerZoeken(originResolved);
-      if (v !== undefined) return runSearch(v);
+      if (v !== undefined) return runSearch(STRAAL_LANDELIJK, radius);
       geenResultaat(); return;
     }
-    await Promise.all([zetActiefStand('muzikant', muzikanten, muz.actief), zetActiefStand('band', bands, bnd.actief)]);
+    let zoekMuz = muzikanten, zoekBnd = bands;
+    if (sprongVan !== undefined) {
+      const trede = sprongTrede(sprongVan, muzikanten.concat(bands));
+      zoekMuz = binnenTrede(muzikanten, trede);
+      zoekBnd = binnenTrede(bands, trede);
+      zoekVerruimd = { van: zoekVerruimd ? zoekVerruimd.van : sprongVan, naar: trede };
+    }
+    await Promise.all([zetActiefStand('muzikant', zoekMuz, muz.actief), zetActiefStand('band', zoekBnd, bnd.actief)]);
     if (seq !== musicianSearchSeq) return;
-    lastZoekResultaten = sortZoekLijst(muzikanten.concat(bands));
+    lastZoekResultaten = sortZoekLijst(zoekMuz.concat(zoekBnd));
     renderCappedZoekResultaten();
 
   } catch(e) {
@@ -1454,6 +1477,7 @@ function mmSetlijstKies(i) {
 async function onSetlistArtistSearch(q) {
   const ac = document.getElementById('acSetlistArtistList');
   clearTimeout(setlistItunesSearchTimeout);
+  const nr = artiestVraagStart(ac);
   if (q.length < 2) { ac.classList.remove('open'); return; }
 
   ac.innerHTML = '<div class="ac-item"><span>Zoeken...</span></div>';
@@ -1467,16 +1491,13 @@ async function onSetlistArtistSearch(q) {
 
   setlistItunesSearchTimeout = setTimeout(async () => {
     try {
-      const res = await fetch(
-        `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=musicArtist&limit=7&country=NL`
-      );
-      const data = await res.json();
-      const artists = (data.results || []).slice(0, 6);
+      const artists = await itunesArtiestenOphalen(q);
       itunesArtistCache.set(cacheKey, artists);
+      if (!artiestVraagNogActueel(ac, nr)) return;
       renderArtistResults(ac, artists, q, 'selectSetlistArtist');
     } catch(e) {
       logCaught('onSetlistArtistSearch', e);
-      ac.innerHTML = AC_FOUT_HTML;
+      if (artiestVraagNogActueel(ac, nr)) ac.innerHTML = AC_FOUT_HTML;
     }
   }, 400);
 }
@@ -1538,7 +1559,7 @@ function resetSetlistSearch() {
 }
 
 
-async function runSetlistSearch(straalOverride) {
+async function runSetlistSearch(straalOverride, sprongVan, songVooraf) {
   const seq = ++setlistSearchSeq;
   const resultsEl = document.getElementById('setlistSearchResults');
   if (!setlistWantedSongs.length) { showToast('Kies minimaal één band of artiest.'); return; }
@@ -1577,7 +1598,10 @@ async function runSetlistSearch(straalOverride) {
 
 
 
-    const songVraag = Promise.resolve(db.rpc('tt_search_musicians_by_songlist_anon', { titles, artists }));
+
+
+    const songVraag = songVooraf ? Promise.resolve(songVooraf)
+      : Promise.resolve(db.rpc('tt_search_musicians_by_songlist_anon', { titles, artists }));
     const getyptePlaats = document.getElementById('filterSetlistCity').value;
     const vertrek = await zoekVertrekpunt(getyptePlaats);
     if (seq !== setlistSearchSeq) return;
@@ -1648,15 +1672,16 @@ async function runSetlistSearch(straalOverride) {
 
     if (!ids.length) {
       const v = ruimerZoeken(!!radiusIds);
-      if (v !== undefined) return runSetlistSearch(v);
+      if (v !== undefined) return runSetlistSearch(STRAAL_LANDELIJK, radius, songResult);
       geenResultaat(!!radiusIds); return;
     }
 
     let musicians;
     const actief = actiefStandVraag('muzikant', ids);
     if (hasOwnProfile) {
+
       const { data, error } = await inDelen(ids, deel => db.from('musicians').select(`
-        id, weergavenaam, username, city, zip, avatar_url,
+        id, weergavenaam, username, city, avatar_url,
         musician_songs(song_title, song_artist, mastery_level),
         musician_instruments(instrument, niveau)
       `).in('id', deel));
@@ -1715,12 +1740,18 @@ async function runSetlistSearch(straalOverride) {
 
     if (!filtered.length) {
       const v = ruimerZoeken(!!radiusIds);
-      if (v !== undefined) return runSetlistSearch(v);
+      if (v !== undefined) return runSetlistSearch(STRAAL_LANDELIJK, radius, songResult);
       geenResultaat(!!radiusIds); return;
     }
-    await zetActiefStand('muzikant', filtered, actief);
+    let getoond = filtered;
+    if (sprongVan !== undefined) {
+      const trede = sprongTrede(sprongVan, filtered);
+      getoond = binnenTrede(filtered, trede);
+      setlistVerruimd = { van: setlistVerruimd ? setlistVerruimd.van : sprongVan, naar: trede };
+    }
+    await zetActiefStand('muzikant', getoond, actief);
     if (seq !== setlistSearchSeq) return;
-    lastSetlistResults = sortSetlistList(filtered);
+    lastSetlistResults = sortSetlistList(getoond);
     renderCappedSetlistResults();
 
   } catch(e) {

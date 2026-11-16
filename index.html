@@ -99,11 +99,16 @@
 <link rel="preload" href="tt-woordmerk.woff2" as="font" type="font/woff2" crossorigin>
 
 <link rel="preload" href="inter-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=20261116a">
+<link rel="stylesheet" href="styles.css?v=20261116b">
 </head>
-<body>
+<body class="landing-op-foto">
 
-<div id="appRoot" class="landing-op-foto">
+
+
+
+
+
+<div id="appRoot" class="landing-op-foto kop-woordmerk">
 
 <div class="app-topbar">
 
@@ -124,7 +129,7 @@
 
 <header>
   <div class="kop-vak kop-links">
-    <button class="nav-menu-btn kop-terug" id="navTerugBtn" onclick="terugKnop()" aria-label="Terug" title="Terug">
+    <button class="nav-menu-btn kop-terug" id="navTerugBtn" onclick="terugKnop()" aria-label="Terug" title="Terug" style="visibility:hidden">
       <svg viewBox="0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
     </button>
   </div>
@@ -205,7 +210,7 @@
 
 
 
-<nav class="app-bottom-nav" id="appBottomNav" aria-label="Hoofdnavigatie">
+<nav class="app-bottom-nav" id="appBottomNav" aria-label="Hoofdnavigatie" style="display:none">
 
 
 
@@ -268,6 +273,7 @@
       (function () {
         var adres = ttEersteLandingsfoto(location.hostname);
         if (!adres) return;
+        window.ttLandingBegin = performance.now();
         var dias = document.getElementById('landingDias');
         dias.innerHTML = '<div class="landing-dia aan"><img alt="" decoding="async"></div>';
         var img = dias.firstChild.firstChild;
@@ -328,7 +334,7 @@
       <div class="auth-vergeten-rij">
         <button id="forgotPasswordBtn" class="link-vergeten" onclick="forgotPassword()">Wachtwoord vergeten?</button>
       </div>
-      <button class="btn btn-primary" onclick="signIn()">Inloggen</button>
+      <button class="btn btn-primary" id="inlogKnop" onclick="signIn()">Inloggen</button>
       <p class="landing-login">Nog geen profiel? <button type="button" class="landing-inloggen" onclick="showView('register')">Profiel aanmaken</button></p>
     </div>
   </div>
@@ -1954,7 +1960,7 @@
           <button type="button" class="password-toggle" onclick="togglePassword('resetPassword1', this)" aria-label="Toon wachtwoord">Toon</button>
         </div>
       </div>
-      <button class="btn btn-primary">Wachtwoord opslaan</button>
+      <button class="btn btn-primary" id="resetOpslaanKnop">Wachtwoord opslaan</button>
       </form>
     </div>
   </div>
@@ -2095,7 +2101,7 @@
       <input type="text" id="usernameGateInput" placeholder="Bijv. RockDrummer92" maxlength="20" autocomplete="off" oninput="scheduleUsernameCheck2()" onkeydown="submitOnEnter(event, saveUsernameGate)">
       <p id="usernameGateAgeHint" class="field-hint"></p>
     </div>
-    <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="saveUsernameGate()">Opslaan en verdergaan</button>
+    <button class="btn btn-primary" style="width:100%;margin-top:16px;" id="usernameGateKnop" onclick="saveUsernameGate()">Opslaan en verdergaan</button>
 
 
 
@@ -2166,7 +2172,7 @@
         </div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="wijzigEmail()">E-mailadres wijzigen</button>
+        <button class="btn btn-primary" id="wijzigEmailKnop" onclick="wijzigEmail()">E-mailadres wijzigen</button>
       </div>
     </div>
 
@@ -2200,7 +2206,7 @@
         </div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="wijzigWachtwoord()">Wachtwoord wijzigen</button>
+        <button class="btn btn-primary" id="wijzigWachtwoordKnop" onclick="wijzigWachtwoord()">Wachtwoord wijzigen</button>
       </div>
     </div>
   </div>
@@ -2318,6 +2324,28 @@
 
 
 
+
+
+
+
+
+
+
+
+<link rel="preload" href="supabase.js?v=2.118.0" as="script">
+<link rel="preload" href="core.js?v=20261116b" as="script">
+<link rel="preload" href="utils.js?v=20261116b" as="script">
+<link rel="preload" href="veiligheid.js?v=20261116b" as="script">
+<link rel="preload" href="auth.js?v=20261116b" as="script">
+<link rel="preload" href="postcode.js?v=20261116b" as="script">
+<link rel="preload" href="wizard.js?v=20261116b" as="script">
+<link rel="preload" href="ouder.js?v=20261116a" as="script">
+<link rel="preload" href="search.js?v=20261116b" as="script">
+<link rel="preload" href="musicians.js?v=20261116b" as="script">
+<link rel="preload" href="bands.js?v=20261116b" as="script">
+<link rel="preload" href="messages.js?v=20261116b" as="script">
+<link rel="preload" href="push.js?v=20261116b" as="script">
+<link rel="preload" href="modals-shared.js?v=20261116a" as="script">
 <script src="supabase.js?v=2.118.0"></script>
 <script>
 
@@ -2335,18 +2363,18 @@
     document.getElementById('backendErrorOverlay').classList.add('visible');
   }
 </script>
-<script src="core.js?v=20261116a"></script>
-<script src="utils.js?v=20261116a"></script>
-<script src="veiligheid.js?v=20261116a"></script>
-<script src="auth.js?v=20261116a"></script>
-<script src="postcode.js?v=20261116a"></script>
-<script src="wizard.js?v=20261116a"></script>
+<script src="core.js?v=20261116b"></script>
+<script src="utils.js?v=20261116b"></script>
+<script src="veiligheid.js?v=20261116b"></script>
+<script src="auth.js?v=20261116b"></script>
+<script src="postcode.js?v=20261116b"></script>
+<script src="wizard.js?v=20261116b"></script>
 <script src="ouder.js?v=20261116a"></script>
-<script src="search.js?v=20261116a"></script>
-<script src="musicians.js?v=20261116a"></script>
-<script src="bands.js?v=20261116a"></script>
-<script src="messages.js?v=20261116a"></script>
-<script src="push.js?v=20261116a"></script>
+<script src="search.js?v=20261116b"></script>
+<script src="musicians.js?v=20261116b"></script>
+<script src="bands.js?v=20261116b"></script>
+<script src="messages.js?v=20261116b"></script>
+<script src="push.js?v=20261116b"></script>
 <script src="modals-shared.js?v=20261116a"></script>
 <script>
 
