@@ -1215,8 +1215,11 @@ function aanmeldingIngevuld() {
     || [state.instruments, state.genres, state.songs, state.mediaLinks, state.mediaFiles].some(l => l && l.length);
 }
 
+
+
+
 async function prevStepFromStart() {
-  if (!aanmeldingIngevuld()) { showView('landing', 'redirect'); return; }
+  if (!aanmeldingIngevuld()) { popNavStap('landing'); return; }
   showConfirm('Wat je invulde, wordt van dit toestel gewist.', () => {
     clearOnboardingProgress();
     if (typeof ouderAanvraagWissen === 'function') ouderAanvraagWissen();

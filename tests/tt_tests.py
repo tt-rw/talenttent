@@ -5576,8 +5576,8 @@ window.TT_STUB.fnAntwoord = {};
           pos: getComputedStyle(document.querySelector('.app-topbar')).position,
           talent: getComputedStyle(document.querySelector('header .logo span')).color,
           modus: zoekScherm })""")
-        check("de knop opent het startscherm van Zoeken, ook bij \"band\" (besluit Ronald 27-10-2026)",
-              weg49["view"] == "view-search" and weg49["modus"] == "start", json.dumps(weg49))
+        check("de knop opent Zoeken op Muzikanten, ook bij \"band\" (besluit Ronald 27-10-2026; Muzikanten direct: TT-630, 15-11-2026)",
+              weg49["view"] == "view-search" and weg49["modus"] == "muzikanten", json.dumps(weg49))
         check("buiten de landingspagina: wisselen gestopt, de kop weer gewoon en in de tekstkleur",
               not weg49["klok"] and not weg49["klasse"] and weg49["pos"] == "sticky"
               and weg49["talent"] == "rgb(240, 240, 240)", json.dumps(weg49))
@@ -10783,14 +10783,16 @@ window.TT_STUB.fnAntwoord = {};
           u.mix = { scherm: zoekScherm, zicht: zicht($('searchModeSetlist')), titel: document.querySelector('#searchModeSetlist .zoek-titel').textContent };
           $('navTerugBtn').click(); await w();
 
-          // 11. De landingsknop opent het startscherm van Zoeken, zoals het
-          // tabblad (besluit Ronald 27-10-2026: "Dat moet 1 scherm terug").
+          // 11. De landingsknop opent Muzikanten direct (TT-630, besluit Ronald
+          // 15-11-2026: "ja"; vervangt "Dat moet 1 scherm terug" van 27-10-2026).
           showView('landing'); await w();
           document.querySelector('.landing-knop').click(); await w(400);
-          u.landing = { view: huidigeView, scherm: zoekScherm, zicht: zicht($('zoekStart')) };
-          // Terug vanaf dat startscherm gaat naar de landingspagina (besluit
-          // Ronald 27-10-2026); via Zoeken onderin ook: uitgelogd is dat het
+          u.landing = { view: huidigeView, scherm: zoekScherm, zicht: zicht($('searchModeMusician')), start: zicht($('zoekStart')) };
+          // Terug: eerst de twee tegels, dan de landingspagina (TT-630); via
+          // Zoeken onderin ook naar de landingspagina: uitgelogd is dat het
           // hoogste scherm (TT-548, besluit Ronald 05-11-2026).
+          $('navTerugBtn').click(); await w(400);
+          u.landingTegels = { view: huidigeView, scherm: zoekScherm, zicht: zicht($('zoekStart')) };
           $('navTerugBtn').click(); await w(400);
           u.landingTerug = huidigeView;
           document.querySelector('.landing-knop').click(); await w(400);
@@ -10870,10 +10872,12 @@ window.TT_STUB.fnAntwoord = {};
               d95["muzikanten"] == ["muzikant"] and d95["bands"] == {"soorten": ["band"], "seintje": False}, json.dumps([d95["muzikanten"], d95["bands"]]))
         check("Mix & Match opent het Setlist-scherm, met de titel Mix & Match",
               d95["mix"] == {"scherm": "mixmatch", "zicht": True, "titel": "Mix & Match"}, j95("mix"))
-        check("de landingsknop opent het startscherm van Zoeken (besluit Ronald 27-10-2026)",
-              d95["landing"] == {"view": "search", "scherm": "start", "zicht": True}, j95("landing"))
-        check("terug vanaf dat startscherm gaat naar de landingspagina; na een tik op Zoeken onderin ook (TT-548: het hoogste scherm)",
-              d95["landingTerug"] == "landing" and d95["tabTerug"] == "landing", json.dumps([d95["landingTerug"], d95["tabTerug"]]))
+        check("TT-630: de landingsknop opent Muzikanten direct, zonder de twee tegels (besluit Ronald 15-11-2026)",
+              d95["landing"] == {"view": "search", "scherm": "muzikanten", "zicht": True, "start": False}, j95("landing"))
+        check("TT-630: terug toont de twee tegels, nog eens terug de landingspagina; na een tik op Zoeken onderin ook (TT-548: het hoogste scherm)",
+              d95["landingTegels"] == {"view": "search", "scherm": "start", "zicht": True}
+              and d95["landingTerug"] == "landing" and d95["tabTerug"] == "landing",
+              json.dumps([d95["landingTegels"], d95["landingTerug"], d95["tabTerug"]]))
         oa = d95["optieA"]
         # TT-517 fase 2 (besluit Ronald 31-10-2026): ook elders geen paneel meer (Over ons als voorbeeld; blok 90 toetst alle schermen).
         check("één ondergrond: geen kader om de velden in Zoeken, en ook elders niet (optie A, 26-10-2026; overal sinds 31-10-2026)",
@@ -10887,7 +10891,7 @@ window.TT_STUB.fnAntwoord = {};
         check("Muzikanten zoeken in een lege staat opent Muzikanten direct",
               bron95["messages.js"].count("openZoekMuzikanten()") == 3 and "openZoekMuzikanten()" not in bron95["veiligheid.js"]  # TT-606: geblokkeerden zonder knop
               and "openZoekMuzikanten()" not in bron95["index.html"]
-              and "class=\"btn btn-primary landing-knop\" onclick=\"showView('search', 'behoud')\"" in bron95["index.html"], "")
+              and "class=\"btn btn-primary landing-knop\" onclick=\"openZoekMuzikanten('behoud')\"" in bron95["index.html"], "")
         check("blok 95: geen paginafouten", not f95, "; ".join(f95)[:300])
         c95.close()
 
@@ -16190,9 +16194,11 @@ def blok_tt543_onderdeel4():
                 page.evaluate(LAAD, bezoeker)
                 u = {}
                 # 1. Muzikanten (3C), via de echte route: Zoeken onderin, de tegel Muzikanten.
-                # Een bezoeker begint op de landingspagina (zonder onderbalk): de knop daar opent Zoeken.
+                # Een bezoeker begint op de landingspagina (zonder onderbalk): de knop daar opent Muzikanten direct (TT-630).
                 page.locator(".landing-knop" if bezoeker else "#bottomNavSearch").click(); page.wait_for_timeout(300)
-                page.locator("#zoekTegelMuzikanten").click(); page.wait_for_timeout(400)
+                if not bezoeker:
+                    page.locator("#zoekTegelMuzikanten").click()
+                page.wait_for_timeout(400)
                 page.fill("#filterCity", "Den Haag"); page.wait_for_timeout(1200)
                 if not bezoeker:
                     page.evaluate("hasOwnProfile = true; myMusicianId = 'm1'")
@@ -17746,7 +17752,7 @@ def blok_bundel_133():
         check(f"TT-609, {breed}px: het menu van \"+ Toevoegen\" staat 6px onder de tegel, even breed, helemaal in beeld, ook als de rand 1,5 pixel verschuift",
               u == {"open": True, "onder": 6, "breed": 0, "binnen": True}, json.dumps(u))
     c = uit["573"]
-    check("TT-573: Terug op stap 1 zonder invoer gaat meteen naar de landingspagina", c["leeg"] == {"vraag": False, "view": "landing"}, json.dumps(c["leeg"]))
+    check("TT-573: Terug op stap 1 zonder invoer gaat meteen terug, hier naar de landingspagina waar je vandaan kwam (TT-630)", c["leeg"] == {"vraag": False, "view": "landing"}, json.dumps(c["leeg"]))
     check("TT-573: met invoer de vraag 'Stoppen met aanmelden?', 'Wat je invulde, wordt van dit toestel gewist.', Annuleren en Stoppen, niet rood",
           c["ingevuld"] == {"vraag": True, "kop": "Stoppen met aanmelden?", "zin": "Wat je invulde, wordt van dit toestel gewist.",
                             "knoppen": ["Annuleren", "Stoppen"], "rood": False, "view": "register"}, json.dumps(c["ingevuld"], ensure_ascii=False))
@@ -17913,7 +17919,7 @@ def blok_bundel_135():
     check("TT-302: de terugknop van het toestel ook", t["toestel"] == {"view": "register", "stap": 0, "vraag": None}, json.dumps(t["toestel"]))
     check("TT-302: op stap 1 met invoer vraagt de pijl 'Stoppen met aanmelden?'; de terugknop van het toestel sluit die vraag weer",
           t["stap1"] == {"view": "register", "stap": 0, "vraag": "Stoppen met aanmelden?"} and t["vraagDicht"] == {"view": "register", "stap": 0, "vraag": None}, json.dumps(t))
-    check("TT-302: op stap 1 zonder invoer gaat de terugknop van het toestel meteen naar de landingspagina", t["leeg"]["view"] == "landing" and t["leeg"]["vraag"] is None, json.dumps(t["leeg"]))
+    check("TT-302: op stap 1 zonder invoer gaat de terugknop van het toestel meteen terug, hier naar de landingspagina waar je vandaan kwam (TT-630)", t["leeg"]["view"] == "landing" and t["leeg"]["vraag"] is None, json.dumps(t["leeg"]))
     for thema, naam in (("dark", "donker"), ("light", "licht")):
         m = uit[("menus", thema)]
         check(f"TT-611 {naam}: de balk van Profielvolledigheid is warmgeel; titel en percentage blijven (besluit Ronald 14-11-2026: \"ja\"); de balk van de band ook",
@@ -20422,6 +20428,104 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.fi
     eigen = [f for f in fouten if "supabase" not in f.lower() and "teruglezen mislukt" not in f]
     check("bundel B: geen fouten op de pagina", not eigen, "; ".join(eigen)[:400])
 
+def blok_bundel_f():
+    print("\nBlok 168 — bundel F (sessie 169, 17-11-2026): terug uit de aanmelding naar waar je vandaan kwam, en Zoek muzikanten opent Muzikanten (TT-630)")
+    stub_js = open(STUB, encoding="utf-8").read()
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: fouten.append(str(e)))
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**"):
+            pg.route(pat, lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(800)
+        pg.evaluate("""() => { const S = window.TT_STUB;
+          S.rpcResults.tt_get_musicians_public = () => [{ id: 'm2', username: 'dylan', age: 30, city: 'Den Haag',
+            bio: '', goal: null, profile_color: '#FFB81C', avatar_url: null, updated_at: new Date().toISOString(),
+            instrument_levels: [{ instrument: 'Drums', niveau: 3 }], genres: ['Rock'], songs: [], media: [] }];
+          S.rpcResults.tt_get_bands_public = () => [{ id: 'b2', name: 'Testband', city: 'Den Haag', description: '',
+            status: 'zoekend', profile_color: '#3ecfff', updated_at: new Date().toISOString(), avatar_url: null,
+            genres: ['Rock'], niveau: 3, members: [{ username: 'dylan', profile_color: '#FFB81C' }], wanted: [] }]; }""")
+        stand = """() => ({ view: huidigeView, scherm: huidigeView === 'search' ? zoekScherm : null,
+          stap: huidigeView === 'register' ? [...document.querySelectorAll('.panel')].findIndex(p => p.classList.contains('active')) : null,
+          profiel: huidigeView === 'profiel' ? (history.state && (history.state.soort === 'band' ? 'band:' : 'muzikant:') + history.state.id) : null,
+          vraag: document.getElementById('confirmModal').classList.contains('visible') ? document.getElementById('confirmKop').textContent : null,
+          pijl: getComputedStyle(document.getElementById('navTerugBtn')).visibility })"""
+        maak = "#view-profiel button:has-text('Maak een profiel en leg contact')"
+        def tik(sel, ms=500):
+            pg.locator(sel).first.click(); pg.wait_for_timeout(ms)
+        # 1. Landingspagina → Zoek muzikanten: meteen Muzikanten.
+        tik(".landing-knop")
+        u["zoek"] = pg.evaluate(stand)
+        # 2. Een profiel → "Maak een profiel en leg contact" → stap 1 → pijl: hetzelfde profiel.
+        pg.evaluate("openProfielScherm('m2')"); pg.wait_for_timeout(600)
+        tik(maak)
+        u["stap1"] = pg.evaluate(stand)
+        tik("#navTerugBtn", 700)
+        u["pijl"] = pg.evaluate(stand)
+        # 3. Nog een keer, nu met de terugknop van het toestel.
+        tik(maak)
+        pg.go_back(); pg.wait_for_timeout(700)
+        u["toestel"] = pg.evaluate(stand)
+        # 4. Verder terug: Muzikanten, de twee tegels, de landingspagina; elke druk een zichtbare stap.
+        reeks = []
+        for _ in range(3):
+            tik("#navTerugBtn", 600); reeks.append(pg.evaluate(stand))
+        u["reeks"] = reeks
+        # 5. De bandpagina.
+        tik(".landing-knop")
+        pg.evaluate("openBandScherm('b2')"); pg.wait_for_timeout(600)
+        tik(maak)
+        tik("#navTerugBtn", 700)
+        u["band"] = pg.evaluate(stand)
+        # 6. Inloggen → Profiel aanmaken → pijl: terug op Inloggen.
+        pg.evaluate("showView('landing')"); pg.wait_for_timeout(300)
+        tik("#view-landing .landing-inloggen")
+        tik("#view-auth .landing-inloggen")
+        u["authStap1"] = pg.evaluate(stand)
+        tik("#navTerugBtn", 600)
+        u["auth"] = pg.evaluate(stand)
+        # 7. Geen vorig scherm (de aanmelding geopend als omleiding): de landingspagina.
+        pg.evaluate("navStack.length = 0; showView('register', 'redirect')"); pg.wait_for_timeout(400)
+        tik("#navTerugBtn", 600)
+        u["geenVorig"] = pg.evaluate(stand)
+        # 8. Met invoer blijft de vraag "Stoppen met aanmelden?" (TT-302, niet aangeraakt).
+        tik(".landing-knop")
+        pg.evaluate("openProfielScherm('m2')"); pg.wait_for_timeout(600)
+        tik(maak)
+        pg.fill("#fname", "Sam"); pg.wait_for_timeout(200)
+        tik("#navTerugBtn", 500)
+        u["invoer"] = pg.evaluate(stand)
+        tik("#confirmNoBtn", 300)
+        pg.evaluate("clearOnboardingProgress()")
+        browser.close()
+    httpd.shutdown()
+    j = lambda k: json.dumps(u.get(k), ensure_ascii=False)
+    check("TT-630: Zoek muzikanten op de landingspagina opent Muzikanten direct, met de pijl (besluit Ronald 15-11-2026)",
+          u.get("zoek", {}).get("view") == "search" and u["zoek"]["scherm"] == "muzikanten" and u["zoek"]["pijl"] == "visible", j("zoek"))
+    check("TT-630: \"Maak een profiel en leg contact\" opent stap 1 van de aanmelding",
+          u.get("stap1", {}).get("view") == "register" and u["stap1"]["stap"] == 0, j("stap1"))
+    check("TT-630: stap 1 zonder invoer, de pijl: terug op hetzelfde profiel (besluit Ronald 15-11-2026: \"ja\")",
+          u.get("pijl", {}).get("view") == "profiel" and u["pijl"]["profiel"] == "muzikant:m2" and u["pijl"]["vraag"] is None, j("pijl"))
+    check("TT-630: de terugknop van het toestel ook", u.get("toestel", {}).get("view") == "profiel" and u["toestel"]["profiel"] == "muzikant:m2", j("toestel"))
+    r = u.get("reeks", [{}] * 3)
+    check("TT-630: daarna terug: Muzikanten, de twee tegels, de landingspagina; geen dode druk",
+          [(x.get("view"), x.get("scherm")) for x in r] == [("search", "muzikanten"), ("search", "start"), ("landing", None)], j("reeks"))
+    check("TT-630: vanaf de bandpagina terug op dezelfde bandpagina",
+          u.get("band", {}).get("view") == "profiel" and u["band"]["profiel"] == "band:b2", j("band"))
+    check("TT-630: vanaf Inloggen (Profiel aanmaken) terug op Inloggen",
+          u.get("authStap1", {}).get("view") == "register" and u.get("auth", {}).get("view") == "auth", json.dumps([u.get("authStap1"), u.get("auth")]))
+    check("TT-630: zonder vorig scherm gaat terug naar de landingspagina", u.get("geenVorig", {}).get("view") == "landing", j("geenVorig"))
+    check("TT-630 (TT-302 niet aangeraakt): met invoer vraagt terug eerst 'Stoppen met aanmelden?'",
+          u.get("invoer", {}).get("view") == "register" and u["invoer"]["vraag"] == "Stoppen met aanmelden?", j("invoer"))
+    eigen = [f for f in fouten if "supabase" not in f.lower()]
+    check("bundel F: geen fouten op de pagina", not eigen, "; ".join(eigen)[:400])
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -20487,6 +20591,7 @@ BLOKKEN = [
     blok_bundel_a,
     blok_bundel_b_start,
     blok_bundel_b,
+    blok_bundel_f,
 ]
 
 

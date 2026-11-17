@@ -133,8 +133,9 @@ function openZoekScherm(scherm, opties) {
 
 
 
-function openZoekMuzikanten() {
-  showView('search');
+
+function openZoekMuzikanten(mode) {
+  showView('search', mode);
 
   openZoekScherm('muzikanten', { geenZoek: true });
 }
