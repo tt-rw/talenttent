@@ -589,7 +589,6 @@ async function onUserLoggedIn(user) {
 
   document.getElementById('navMenuLogin').style.display = 'none';
   refreshUnreadBadge();
-  refreshBandsDot();
   markeerActief();
 
   if (onboardingInFlight) return;
@@ -672,10 +671,8 @@ function onUserLoggedOut() {
 
 
   wizardLeegmaken();
-  ['unreadBadgeBottom', 'bandsDotBottom'].forEach(id => {
-    const b = document.getElementById(id);
-    if (b) b.style.display = 'none';
-  });
+  const ongelezen = document.getElementById('unreadBadgeBottom');
+  if (ongelezen) ongelezen.style.display = 'none';
   showView('landing');
 }
 
@@ -811,7 +808,11 @@ function closeAllBandMoreMenus() {
 
 async function openSearchPrefsModal() {
   const mid = await getMyMusicianId();
-  if (!mid) { geenProfielMelding('Maak eerst een profiel aan om e-mailvoorkeuren in te stellen.'); return; }
+
+
+
+
+  if (!mid) { if (myMusicianIdFout) showToast(friendlyErrorMessage(myMusicianIdFout, 'je profiel laden')); return; }
   try {
 
 
@@ -825,7 +826,7 @@ async function openSearchPrefsModal() {
     vulPushInInstellingen();
   } catch (e) {
     logCaught('openSearchPrefsModal', e);
-    showToast(friendlyErrorMessage(e, 'je zoekvoorkeuren laden'));
+    showToast(friendlyErrorMessage(e, 'je meldingen laden'));
   }
 }
 function closeSearchPrefsModal() {

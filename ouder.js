@@ -355,7 +355,8 @@ function ouderStoppenEnWissen() {
     'Gegevens wissen',
     true,
     'Annuleren',
-    'Je gegevens wissen?'
+    'Je gegevens wissen?', null,
+    'Ik begrijp dat mijn gegevens definitief worden gewist.'
   );
 }
 

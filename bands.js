@@ -10,6 +10,10 @@
 
 
 
+
+
+
+
 let bandInvitesVolgnr = 0;
 async function loadBandInvites(musicianId) {
   const el = document.getElementById('bandInvitesBanner');
@@ -17,17 +21,29 @@ async function loadBandInvites(musicianId) {
   if (el.dataset.mid !== String(musicianId)) { el.innerHTML = ''; el.dataset.mid = String(musicianId); }
   const volgnr = ++bandInvitesVolgnr;
   try {
-    const { data, error } = await db.from('band_members')
+
+
+
+
+    const verval = (async () => {
+      try {
+        const { error } = await db.rpc('tt_expire_old_founder_offers');
+        if (error) logCaught('loadBandInvites/expire', error);
+      } catch (e) { logCaught('loadBandInvites/expire', e); }
+    })();
+    const [{ data, error }] = await Promise.all([db.from('band_members')
       .select('band_id, bands(name, city)')
-      .eq('musician_id', musicianId).eq('status', 'aangevraagd');
+      .eq('musician_id', musicianId).eq('status', 'aangevraagd'), verval]);
 
 
 
     if (error) { logCaught('loadBandInvites', error); return; }
+    const verzoeken = await founderOffersVoorMij(musicianId);
+    if (!verzoeken) return;
     if (volgnr !== bandInvitesVolgnr || el.dataset.mid !== String(musicianId)) return;
-    if (!data || !data.length) { el.innerHTML = ''; return; }
+    if (!(data && data.length) && !verzoeken.length) { el.innerHTML = ''; return; }
 
-    el.innerHTML = data.map(inv => {
+    el.innerHTML = (data || []).map(inv => {
       const naam = inv.bands?.name || 'Een band';
       const plaats = inv.bands?.city || '';
       return `
@@ -39,7 +55,15 @@ async function loadBandInvites(musicianId) {
           <button class="btn btn-primary" onclick="respondToBandInvite('${jsAttr(inv.band_id)}', true)">Bevestigen</button>
         </div>
       </div>`;
-    }).join('');
+    }).join('') + verzoeken.map(v => `
+      <div class="melding">
+        <p class="melding-kop">${escHtml(v.beheerder)} vraagt of jij ${escHtml(v.naam)} overneemt</p>
+        <p class="melding-tekst">Je wordt dan beheerder. ${escHtml(v.beheerder)} blijft lid van de band.</p>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="respondToFounderOffer('${jsAttr(v.id)}', false)">Nee, liever niet</button>
+          <button class="btn btn-primary" onclick="respondToFounderOffer('${jsAttr(v.id)}', true)">Ik neem het over</button>
+        </div>
+      </div>`).join('');
   } catch (e) {
     logCaught('loadBandInvites', e);
 
@@ -74,30 +98,23 @@ async function respondToBandInvite(bandId, accept) {
 
 
 
-
-async function refreshBandsDot(opties) {
-  const dot = document.getElementById('bandsDotBottom');
-  if (!dot) return;
-  const mid = await getMyMusicianId();
-  if (!mid) { dot.style.display = 'none'; return; }
-
-
-  if (!(opties && opties.zonderVerval)) {
-    try {
-      const { error } = await db.rpc('tt_expire_old_founder_offers');
-      if (error) logCaught('refreshBandsDot/expire', error);
-    } catch (e) { logCaught('refreshBandsDot/expire', e); }
-  }
+async function founderOffersVoorMij(mid) {
   try {
-    const { data, error } = await db.from('band_members').select('band_id')
+    const { data: rijen, error } = await db.from('band_members').select('band_id')
       .eq('musician_id', mid).eq('status', 'bevestigd').eq('founder_offer', true);
     if (error) throw error;
-
-    if (mid !== myMusicianId) return;
-    dot.style.display = data && data.length ? 'block' : 'none';
+    if (!rijen || !rijen.length) return [];
+    const { data: bands, error: bandFout } = await db.from('bands')
+      .select('id, name, founder_id, band_members(musician_id, musicians(weergavenaam, username))')
+      .in('id', rijen.map(r => r.band_id));
+    if (bandFout) throw bandFout;
+    return (bands || []).map(b => {
+      const beheerder = (b.band_members || []).find(m => m.musician_id === b.founder_id);
+      return { id: b.id, naam: b.name || '', beheerder: (beheerder && beheerder.musicians ? displayNameOf(beheerder.musicians) : '') || 'De beheerder' };
+    });
   } catch (e) {
-    logCaught('refreshBandsDot', e);
-    dot.style.display = 'none';
+    logCaught('founderOffersVoorMij', e);
+    return null;
   }
 }
 
@@ -129,7 +146,7 @@ async function respondToFounderOffer(bandId, accept) {
     if (band) stilBericht(band.beheerder, accept
       ? `Ik neem het beheer van ${band.naam} over.`
       : `Ik neem het beheer van ${band.naam} niet over. Bedankt voor de vraag!`);
-    refreshBandsDot();
+    loadBandInvites(mid);
     mijnBandsVerversen();
     if (accept) profielBandsVerversen();
   } catch (e) {
@@ -656,7 +673,6 @@ async function saveBandRun() {
 
 function mijnBandsVerversen() {
   if (huidigeView === 'bands') loadMyBands({ behoud: true });
-  else refreshBandsDot();
 }
 
 async function loadMyBands(opties) {
@@ -740,11 +756,7 @@ async function loadMyBands(opties) {
     const open = (b.band_wanted || []).map(w => w.instrument);
 
 
-    const verzoekVoorMij = !isFounder && confirmed.some(m => m.musician_id === mid && m.founder_offer);
-
-
     const naamVan = m => (m && m.musicians ? displayNameOf(m.musicians) : '');
-    const beheerderNaam = naamVan(confirmed.find(m => m.musician_id === b.founder_id)) || 'De beheerder';
     const gevraagdAan = confirmed.filter(m => m.founder_offer).map(naamVan).filter(Boolean);
     const zoekt = open.length
       ? `<div class="profiel-knoppen"><span class="zoek-kaart-zoekt">Zoekt ${escHtml(instrumentInZin(open[0]))}</span></div>` : '';
@@ -754,15 +766,6 @@ async function loadMyBands(opties) {
         tik: `openBandScherm('${jsAttr(b.id)}')`,
         regels: `<div class="profile-meta">${escHtml(b.city || '')}</div>`, knoppen: zoekt
       })}</div>
-      ${verzoekVoorMij ? `
-      <div class="melding mijn-band-melding">
-        <p class="melding-kop">${escHtml(beheerderNaam)} vraagt of jij ${escHtml(b.name)} overneemt</p>
-        <p class="melding-tekst">Je wordt dan beheerder. ${escHtml(beheerderNaam)} blijft lid van de band.</p>
-        <div class="btn-row">
-          <button class="btn btn-ghost" onclick="respondToFounderOffer('${jsAttr(b.id)}', false)">Nee, liever niet</button>
-          <button class="btn btn-primary" onclick="respondToFounderOffer('${jsAttr(b.id)}', true)">Ik neem het over</button>
-        </div>
-      </div>` : ''}
       ${offerPending ? `<p class="mijn-band-wacht">${gevraagdAan.length ? `Gevraagd aan ${escHtml(opsommingNL(gevraagdAan))}` : 'Gevraagd'} · wacht op antwoord</p>` : ''}
     </div>`;
   }).join('');
@@ -775,11 +778,6 @@ async function loadMyBands(opties) {
   });
   fitProfileName(el);
   if (currentUser) el.dataset.klaar = currentUser.id;
-
-
-  const dot = document.getElementById('bandsDotBottom');
-  if (dot && mid === myMusicianId) dot.style.display = (bands || []).some(b => (b.band_members || [])
-    .some(m => m.musician_id === mid && m.status === 'bevestigd' && m.founder_offer)) ? 'block' : 'none';
 }
 
 
@@ -828,13 +826,13 @@ function bandSocialLink(soc, waarde) {
 
 async function bandUitTabellen(id) {
   const { data: b, error } = await db.from('bands')
-    .select(`*, band_members(role, rollen, status, joined_at, musicians(id, weergavenaam, username, avatar_url)), band_wanted(instrument), band_media(media_type, url, platform, in_banner, created_at, uitsnede), band_nummers(titel, url, platform, created_at), band_covers(song_title, song_artist), band_invallers(instrument, created_at)`)
+    .select(`*, band_members(role, rollen, status, joined_at, founder_offer, musicians(id, weergavenaam, username, avatar_url)), band_wanted(instrument), band_media(media_type, url, platform, in_banner, created_at, uitsnede), band_nummers(titel, url, platform, created_at), band_covers(song_title, song_artist), band_invallers(instrument, created_at)`)
     .eq('id', id).maybeSingle();
   if (error) throw error;
   if (!b) return null;
   const naarLid = m => ({
     id: m.musicians.id, naam: displayNameOf(m.musicians), avatar_url: m.musicians.avatar_url || null,
-    rollen: m.rollen || [], rol: m.role
+    rollen: m.rollen || [], rol: m.role, founderOffer: !!m.founder_offer
   });
   const leden = (b.band_members || [])
     .filter(m => m.status === 'bevestigd' && m.musicians)
@@ -1003,7 +1001,10 @@ function bandSocialsHTML(b) {
     if (!link) return '';
     return `<a class="social-knop" href="${link}" target="_blank" rel="noopener noreferrer" aria-label="${soc.naam} van ${escHtml(b.name)}">${soc.svg}</a>`;
   }).join('');
-  return knoppen ? `<div class="socials">${knoppen}</div>` : '';
+
+
+
+  return knoppen ? `<div class="socials"><span class="socials-tekst">Volg ons ook hier:</span>${knoppen}</div>` : '';
 }
 
 
@@ -1035,7 +1036,9 @@ function bandPaginaHTML(b, kijker) {
           <button class="nav-menu-item" onclick="sluitAlleMenus();leaveBand('${jsAttr(b.id)}','${jsAttr(b.name)}')">Band verlaten</button>
         </div>
       </div></span>`;
-  } else if (!beheer) {
+  } else if (kijker === 'bezoeker') {
+
+
     menuHTML = '<span id="profielSchermActies" class="profiel-menu-plek"></span>';
   }
 
@@ -1246,6 +1249,14 @@ async function laadBandScherm(id) {
 
 
   bandDeelGegevens = kijker === 'beheerder' ? b : null;
+
+
+  if (kijker === 'beheerder') bandTegelsZetten(b.id, {
+    name: b.name, city: b.city, niveau: b.niveau, genres: b.genres, avatar_url: b.avatar_url, stand: b.stand,
+    band_members: b.leden.map(l => ({ musician_id: l.id, status: 'bevestigd', founder_offer: l.founderOffer, musicians: { weergavenaam: l.naam } })),
+    band_wanted: b.wanted.map(instrument => ({ instrument })), band_invallers: b.invallers,
+    band_nummers: b.nummers, band_covers: b.covers, band_media: b.media
+  });
   vak.innerHTML = bandPaginaHTML(b, kijker);
   overneemKnoppenBijwerken(vak);
 
@@ -1254,7 +1265,7 @@ async function laadBandScherm(id) {
   mediaTitelsBijwerken(vak);
   fitProfileName(vak);
 
-  if (kijker === 'bezoeker' || kijker === 'gast') zetVeiligheidMenu('profielSchermActies', 'band', b.id, b.name);
+  if (kijker === 'bezoeker') zetVeiligheidMenu('profielSchermActies', 'band', b.id, b.name);
 }
 
 
@@ -1338,6 +1349,15 @@ async function bandBewerkGegevens(kolommen) {
 let bandTegelRegels = { id: null, regels: {} };
 let bandTegelRegelsVraag = 0;
 
+let bandTegelData = { id: null, data: null };
+const BAND_TEGEL_KOLOMMEN = 'name, city, niveau, genres, avatar_url, stand, band_members(musician_id, status, founder_offer, musicians(weergavenaam, username)), band_wanted(instrument), band_invallers(id), band_nummers(titel), band_covers(song_title), band_media(media_type)';
+
+function bandTegelsZetten(id, data) {
+  bandTegelRegels = { id, regels: {} };
+  BAND_TILES.forEach(t => { bandTegelRegels.regels[t.id] = bandTegelRegelHTML(t.id, data); });
+  bandTegelData = { id, data };
+}
+
 function bandTegelRegelHTML(id, b) {
   const lijst = (x) => Array.isArray(x) ? x : [];
   const leeg = (wat) => `<span class="tegel-leeg">Nog leeg</span> · ${escHtml(wat)}`;
@@ -1367,26 +1387,39 @@ function bandTegelRegelHTML(id, b) {
   return '';
 }
 
+
+
+
+
 function renderBandTegels() {
   const wrap = document.getElementById('bandTegelsWrap'), id = bewerkBandId;
+  const beheer = document.getElementById('bandBeheerBlok');
   const tegels = () => {
     const regels = bandTegelRegels.id === id ? bandTegelRegels.regels : {};
+
+    const sleutel = id + '|' + JSON.stringify(regels);
+    if (wrap.firstChild && wrap.dataset.sleutel === sleutel) return;
+    wrap.dataset.sleutel = sleutel;
     wrap.innerHTML = tegelsHTML(BAND_TILES);
     wrap.querySelectorAll('.tile-sub').forEach((el, i) => { el.innerHTML = regels[BAND_TILES[i].id] || '&nbsp;'; });
   };
-  tegels();
-  renderBandBeheer();
+  if (bandTegelData.id === id) { tegels(); bandBeheerTekenen(id, bandTegelData.data, myMusicianId); }
+  else { wrap.innerHTML = ''; if (beheer) { beheer.innerHTML = ''; delete beheer.dataset.band; } }
   const vraag = ++bandTegelRegelsVraag;
-  db.from('bands')
-    .select('city, niveau, genres, avatar_url, band_members(status), band_wanted(instrument), band_invallers(id), band_nummers(titel), band_covers(song_title), band_media(media_type)')
-    .eq('id', id).single()
-    .then(({ data, error }) => {
+  const fout = (e) => {
 
-      if (vraag !== bandTegelRegelsVraag || id !== bewerkBandId || error || !data) return;
-      bandTegelRegels = { id, regels: {} };
-      BAND_TILES.forEach(t => { bandTegelRegels.regels[t.id] = bandTegelRegelHTML(t.id, data); });
+
+    logCaught('renderBandTegels', e);
+    if (vraag === bandTegelRegelsVraag && id === bewerkBandId && !wrap.firstChild) { tegels(); bandBeheerFout(); }
+  };
+  db.from('bands').select(BAND_TEGEL_KOLOMMEN).eq('id', id).single()
+    .then(({ data, error }) => {
+      if (vraag !== bandTegelRegelsVraag || id !== bewerkBandId) return;
+      if (error || !data) { fout(error || new Error('Band niet gevonden.')); return; }
+      bandTegelsZetten(id, data);
       tegels();
-    }, () => {});
+      bandBeheerTekenen(id, data, myMusicianId);
+    }, fout);
 }
 
 
@@ -1415,55 +1448,74 @@ async function renderBandBeheer() {
 
   if (el.dataset.band !== String(id)) { el.innerHTML = ''; delete el.dataset.band; }
   try {
-    const { data: b, error } = await db.from('bands')
-      .select('*, band_members(musician_id, status, founder_offer, musicians(weergavenaam, username))')
-      .eq('id', id).single();
+    const { data: b, error } = await db.from('bands').select(BAND_TEGEL_KOLOMMEN).eq('id', id).single();
     if (error || !b) throw error || new Error('Band niet gevonden.');
     if (id !== bewerkBandId) return;
-    bewerkBandNaam = b.name || '';
-    bewerkBandStad = b.city || '';
-    zetBandNaamRegel();
-    bandBeheerStand = bandStandVan(b);
     const mid = await getMyMusicianId();
-    const anderen = (b.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid);
-    const gevraagd = anderen.filter(m => m.founder_offer).map(m => m.musicians ? displayNameOf(m.musicians) : '').filter(Boolean);
-    const stand = STANDEN.find(x => x.waarde === bandBeheerStand);
-
-    const overdragen = !anderen.length ? '' : gevraagd.length
-      ? `<div class="tile" onclick="vraagOverdragenIntrekken('${jsAttr(id)}','${jsAttr(opsommingNL(gevraagd))}')">
-          <div style="flex:1;"><div class="tile-title">Beheer overdragen</div>
-          <div class="tile-sub">gevraagd aan ${escHtml(opsommingNL(gevraagd))} · wacht op antwoord</div></div></div>`
-      : `<div class="tile" onclick="openOverdragen()">
-          <div style="flex:1;"><div class="tile-title">Beheer overdragen</div>
-          <div class="tile-sub">draag het beheer over aan een bandlid</div></div></div>`;
-    el.innerHTML = `
-      <h2 class="hoofdstuk-kop">Bandbeheer</h2>
-      <div class="menu-anchor">
-        <div class="tile" id="bandStandTegel" aria-label="Bandstatus">
-          <div style="flex:1;"><div class="tile-title">Bandstatus</div>
-          <div class="tile-sub"><span class="wheel-field-label">${escHtml(stand.label)}</span></div></div>
-        </div>
-        <div class="choice-menu menu-breed menu-tegel" id="bandStandMenu" role="listbox" aria-label="Bandstatus"></div>
-      </div>
-      ${overdragen}
-      <div class="tile" onclick="vraagBandVerwijderen()">
-        <div style="flex:1;"><div class="tile-title">Bandprofiel verwijderen</div>
-        <div class="tile-sub">permanent verwijderen van ${escHtml(b.name || '')}</div></div>
-      </div>`;
-    initChoiceField({
-      id: 'band-stand', fieldId: 'bandStandTegel', menuId: 'bandStandMenu',
-      kop: STAND_KOP.band,
-      rijen: () => STANDEN.map(x => ({ t: x.label, u: x.uitleg.band, gekozen: x.waarde === bandBeheerStand })),
-      kies: i => zetBandStand(STANDEN[i].waarde)
-    });
-    el.dataset.band = String(id);
+    if (id !== bewerkBandId) return;
+    bandTegelsZetten(id, b);
+    bandBeheerTekenen(id, b, mid);
   } catch (e) {
     logCaught('renderBandBeheer', e);
-    delete el.dataset.band;
-
-    el.innerHTML = `<h2 class="hoofdstuk-kop">Bandbeheer</h2>
-      <p class="field-hint">Bandbeheer laden lukt nu niet. Controleer je verbinding en open dit scherm opnieuw.</p>`;
+    bandBeheerFout();
   }
+}
+
+
+
+function bandBeheerTekenen(id, b, mid) {
+  const el = document.getElementById('bandBeheerBlok');
+  if (!el) return;
+  bewerkBandNaam = b.name || '';
+  bewerkBandStad = b.city || '';
+  zetBandNaamRegel();
+  bandBeheerStand = bandStandVan(b);
+  const anderen = (b.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid);
+  const gevraagd = anderen.filter(m => m.founder_offer).map(m => m.musicians ? displayNameOf(m.musicians) : '').filter(Boolean);
+  const stand = STANDEN.find(x => x.waarde === bandBeheerStand);
+
+
+  const sleutel = [id, b.name, bandBeheerStand, anderen.length, gevraagd.join(',')].join('|');
+  if (el.dataset.band === String(id) && el.dataset.sleutel === sleutel) return;
+  el.dataset.sleutel = sleutel;
+
+  const overdragen = !anderen.length ? '' : gevraagd.length
+    ? `<div class="tile" onclick="vraagOverdragenIntrekken('${jsAttr(id)}','${jsAttr(opsommingNL(gevraagd))}')">
+        <div style="flex:1;"><div class="tile-title">Beheer overdragen</div>
+        <div class="tile-sub">gevraagd aan ${escHtml(opsommingNL(gevraagd))} · wacht op antwoord</div></div></div>`
+    : `<div class="tile" onclick="openOverdragen()">
+        <div style="flex:1;"><div class="tile-title">Beheer overdragen</div>
+        <div class="tile-sub">draag het beheer over aan een bandlid</div></div></div>`;
+  el.innerHTML = `
+    <h2 class="hoofdstuk-kop">Bandbeheer</h2>
+    <div class="menu-anchor">
+      <div class="tile" id="bandStandTegel" aria-label="Bandstatus">
+        <div style="flex:1;"><div class="tile-title">Bandstatus</div>
+        <div class="tile-sub"><span class="wheel-field-label">${escHtml(stand.label)}</span></div></div>
+      </div>
+      <div class="choice-menu menu-breed menu-tegel" id="bandStandMenu" role="listbox" aria-label="Bandstatus"></div>
+    </div>
+    ${overdragen}
+    <div class="tile" onclick="vraagBandVerwijderen()">
+      <div style="flex:1;"><div class="tile-title">Bandprofiel verwijderen</div>
+      <div class="tile-sub">permanent verwijderen van ${escHtml(b.name || '')}</div></div>
+    </div>`;
+  initChoiceField({
+    id: 'band-stand', fieldId: 'bandStandTegel', menuId: 'bandStandMenu',
+    kop: STAND_KOP.band,
+    rijen: () => STANDEN.map(x => ({ t: x.label, u: x.uitleg.band, gekozen: x.waarde === bandBeheerStand })),
+    kies: i => zetBandStand(STANDEN[i].waarde)
+  });
+  el.dataset.band = String(id);
+}
+
+
+function bandBeheerFout() {
+  const el = document.getElementById('bandBeheerBlok');
+  if (!el) return;
+  delete el.dataset.band; delete el.dataset.sleutel;
+  el.innerHTML = `<h2 class="hoofdstuk-kop">Bandbeheer</h2>
+    <p class="field-hint">Bandbeheer laden lukt nu niet. Controleer je verbinding en open dit scherm opnieuw.</p>`;
 }
 
 
@@ -1513,7 +1565,8 @@ async function vraagBandVerwijderen() {
     `Het profiel verdwijnt dan${namen.length ? ` voor ${opsommingNL(namen)}` : ''}, met de foto's, nummers en covers. Dat is niet terug te draaien.`,
     () => dissolveBand(id),
     'Bandprofiel verwijderen', true, null,
-    `Bandprofiel van ${naam} verwijderen?`
+    `Bandprofiel van ${naam} verwijderen?`, null,
+    'Ik begrijp dat het bandprofiel definitief wordt verwijderd.'
   );
 }
 

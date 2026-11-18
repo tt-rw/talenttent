@@ -17,7 +17,10 @@ let confirmCancelCallback = null;
 
 
 
-function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel, kop, onCancel) {
+
+
+
+function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel, kop, onCancel, begripZin) {
   const kopEl = document.getElementById('confirmKop');
   if (kopEl) { kopEl.textContent = kop || ''; kopEl.hidden = !kop; }
   document.getElementById('confirmMessage').textContent = message;
@@ -36,7 +39,11 @@ function showConfirm(message, onConfirm, confirmLabel, danger, cancelLabel, kop,
 
 
   const begrip = document.getElementById('confirmBegrip');
-  if (begrip) { begrip.hidden = !danger; document.getElementById('confirmBegripVink').checked = false; }
+  if (begrip) {
+    begrip.hidden = !danger;
+    document.getElementById('confirmBegripVink').checked = false;
+    document.getElementById('confirmBegripTekst').textContent = danger ? (begripZin || '') : '';
+  }
   confirmExtraDicht = false;
   zetConfirmKnop();
   confirmCallback = onConfirm;
@@ -276,7 +283,8 @@ function rijenGeraakt(res) {
 
 
 
-const GRENZEN = { bands: 10, nummers: 300, beeld: 8, links: 20, covers: 300, eigenNummers: 200, invallers: 20 };
+
+const GRENZEN = { bands: 10, nummers: 300, beeld: 10, links: 20, covers: 300, eigenNummers: 200, invallers: 20 };
 
 
 function grensBereikt(aantal, grens, zin) {
@@ -2265,7 +2273,9 @@ function fitKopTitel() {
 
 
 
-const MEDIA_BANNER_MAX = 6;
+
+
+const MEDIA_BANNER_MAX = 10;
 
 function detectPlatform(url) {
   if (url.includes('youtube') || url.includes('youtu.be')) return 'YouTube';

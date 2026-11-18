@@ -304,6 +304,8 @@ async function loadMyProfile(opties) {
     return;
   }
 
+
+  tegelRegelsZetten(m.id, m);
   const [{ data: myAges }, mijnBands] = await (voorafId === m.id ? vooraf : bijvragen(m.id));
   m.age = (myAges && myAges[0]) ? myAges[0].age : undefined;
   m.bands = mijnBands;

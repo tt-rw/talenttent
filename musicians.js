@@ -42,7 +42,11 @@ function buildMusicianDetailHTML(m, isOwn, inModal) {
 
 
 
-  const veiligheidPlekHTML = (inModal && !isOwn)
+
+
+
+
+  const veiligheidPlekHTML = (inModal && !isOwn && hasOwnProfile)
     ? '<span id="profielSchermActies" class="profiel-menu-plek"></span>' : '';
 
 
@@ -540,7 +544,8 @@ async function vraagAccountVerwijderen() {
     `Je profiel, je setlist en je foto's en video's verdwijnen dan, en je logt niet meer in met ${currentUser?.email || ''}. Dat is niet terug te draaien.`,
     executeAccountDeletion,
     'Account verwijderen', true, null,
-    naam ? `Account van ${naam} verwijderen?` : null
+    naam ? `Account van ${naam} verwijderen?` : null, null,
+    'Ik begrijp dat mijn gegevens definitief worden verwijderd.'
   );
 
   if (fout) {
@@ -807,25 +812,44 @@ function tegelRegelHTML(id, m) {
   return '';
 }
 
+
+
+
+
+
+function tegelRegelsZetten(mid, data) {
+  tegelRegels = { mid, regels: {} };
+  TILES.forEach(t => { tegelRegels.regels[t.id] = tegelRegelHTML(t.id, data); });
+}
+
 function renderTegels() {
   const wrap = document.getElementById('tegelsWrap'), mid = myMusicianId;
   const tegels = () => {
     const regels = tegelRegels.mid === mid ? tegelRegels.regels : {};
+
+    const sleutel = mid + '|' + JSON.stringify(regels);
+    if (wrap.firstChild && wrap.dataset.sleutel === sleutel) return;
+    wrap.dataset.sleutel = sleutel;
     wrap.innerHTML = tegelsHTML(TILES);
     wrap.querySelectorAll('.tile-sub').forEach((el, i) => { el.innerHTML = regels[TILES[i].id] || '&nbsp;'; });
   };
-  tegels();
+
+
+  const klaar = tegelRegels.mid === mid;
+  if (klaar) tegels(); else wrap.innerHTML = '';
   const vraag = ++tegelRegelsVraag;
   db.from('musicians')
     .select('weergavenaam, username, city, avatar_url, musician_instruments(instrument), musician_genres(genre), musician_songs(song_title), musician_media(media_type)')
     .eq('id', mid).single()
     .then(({ data, error }) => {
 
-      if (vraag !== tegelRegelsVraag || error || !data) return;
-      tegelRegels = { mid, regels: {} };
-      TILES.forEach(t => { tegelRegels.regels[t.id] = tegelRegelHTML(t.id, data); });
+
+
+      if (vraag !== tegelRegelsVraag) return;
+      if (error || !data) { if (!wrap.firstChild) tegels(); return; }
+      tegelRegelsZetten(mid, data);
       tegels();
-    }, () => {});
+    }, () => { if (vraag === tegelRegelsVraag && !wrap.firstChild) tegels(); });
 }
 
 

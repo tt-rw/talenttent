@@ -3076,8 +3076,6 @@
     text-transform: none;
   }
 
-  .bands-dot { position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--ongelezen); }
-
   #messagesThreadPanel.thread-systeem .messages-thread-footer { display: none; }
   .thread-systeem .messages-thread-link { cursor: default; }
 
@@ -4114,7 +4112,12 @@
 
 
 
-  .socials { display: flex; gap: 12px; margin-left: -8px; }
+
+
+
+
+  .socials { display: flex; align-items: center; }
+  .socials-tekst { font-size: 15px; line-height: var(--regel-15); color: var(--muted); margin-right: 4px; white-space: nowrap; }
 
 
 
@@ -4353,7 +4356,6 @@
 
 
   .band-hoes .hoes .profiel-knoppen { right: calc(16px - var(--hoes-tekst-rechts, 78px)); margin: 0; transform: translateY(-50%); }
-  .mijn-band-melding { margin-top: 8px; }
   .mijn-band-wacht { margin: 8px 0 0; font-size: 12px; line-height: var(--regel-12); color: var(--muted); }
 
 
@@ -4770,7 +4772,6 @@
     }
     .bottom-nav-icon-wrap { position: relative; display: inline-flex; }
     .bottom-nav-icon-wrap .unread-badge { top: -6px; right: -10px; }
-    .bottom-nav-icon-wrap .bands-dot { top: -3px; right: -4px; }
 
 
 

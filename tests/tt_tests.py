@@ -1041,8 +1041,8 @@ def blok_browser():
         check("niet gekozen staat op aria-pressed=false", media["knopUit"] == "false", media["knopUit"])
         check("het bannerteken heeft een tikvlak van 44px",
               media["tikvlakBoven"] == "-10px", media["tikvlakBoven"])
-        check("de teller noemt de grens van 6",
-              "van 6" in media["tellerTekst"], media["tellerTekst"])
+        check("de teller noemt de grens van 10 (TT-669, besluit Ronald 18-11-2026)",
+              "van 10" in media["tellerTekst"], media["tellerTekst"])
         check("op een tegel staat het teken linksboven",
               media["tegelKnopLinks"] <= 6 and media["tegelKnopBoven"] <= 6, json.dumps(media)[:200])
         check("op een tegel staat het kruis rechtsboven",
@@ -1074,8 +1074,8 @@ def blok_browser():
             ? getComputedStyle(document.querySelector('#mhBannerTeller .bb-schijf')).fill
             : '';
           uit.teller = document.getElementById('mhBannerTeller').innerText;
-          // Grens: twee staan aan, vul aan tot zes en probeer de zevende.
-          mhMediaFiles = [1,2,3,4,5].map((n,i) => ({ name: 'f'+n, url: 'https://x/'+n+'.jpg', path: 'p'+n, type: 'foto', uploading: false, inBanner: true }));
+          // Grens: twee staan aan, vul aan tot tien en probeer de elfde (TT-669).
+          mhMediaFiles = [1,2,3,4,5,6,7,8,9].map((n,i) => ({ name: 'f'+n, url: 'https://x/'+n+'.jpg', path: 'p'+n, type: 'foto', uploading: false, inBanner: true }));
           mhRenderMediaGrid();
           uit.voorGrens = bannerAantal(mhMediaFiles, mhMediaLinks);
           mhToggleLinkBanner(1);
@@ -1093,10 +1093,10 @@ def blok_browser():
               keuze["tekenGoud"] == "rgb(255, 184, 28)", keuze["tekenGoud"])
         # Eén foto stond al in de banner, dus na deze tik zijn het er twee.
         check("de teller telt mee", "2 van" in keuze["teller"], keuze["teller"])
-        check("zes is de grens", keuze["voorGrens"] == 6 and keuze["naGrens"] == 6,
+        check("tien is de grens (TT-669)", keuze["voorGrens"] == 10 and keuze["naGrens"] == 10,
               f"voor {keuze['voorGrens']}, na {keuze['naGrens']}")
-        check("de zevende keuze wordt geweigerd", keuze["tweedeLink"] is False, "")
-        check("en dat wordt gemeld: 'Maximum van 6 items bereikt.' (besluit Ronald 05-11-2026)", keuze["toast"] == "Maximum van 6 items bereikt.", keuze["toast"])
+        check("de elfde keuze wordt geweigerd", keuze["tweedeLink"] is False, "")
+        check("en dat wordt gemeld: 'Maximum van 10 items bereikt.' (besluit Ronald 05-11-2026; 10 sinds TT-669)", keuze["toast"] == "Maximum van 10 items bereikt.", keuze["toast"])
 
         opslaan = page.evaluate("""async () => {
           window.TT_STUB.calls = [];
@@ -1113,8 +1113,8 @@ def blok_browser():
           };
         }""")
         check("opslaan schrijft de bannerkeuze mee", opslaan["heeftVlag"], json.dumps(opslaan))
-        check("en bewaart precies de gekozen items",
-              opslaan["gekozen"] == 6, json.dumps(opslaan))
+        check("en bewaart precies de gekozen items (tien, TT-669)",
+              opslaan["gekozen"] == 10, json.dumps(opslaan))
 
         speler = page.evaluate("""async () => {
           const uit = {};
@@ -1283,9 +1283,9 @@ def blok_browser():
           await new Promise(r => setTimeout(r, 5500));
           uit.staatStil = spoor.scrollLeft === 0;
 
-          // 5. Boven de zes gekozen items telt alleen de eerste zes, na de profielfoto.
+          // 5. Boven de tien gekozen items telt alleen de eerste tien, na de profielfoto (TT-669).
           const zeven = [];
-          for (let i = 0; i < 7; i++) zeven.push({ media_type: 'foto', url: 'https://x/' + i + '.jpg', platform: null, in_banner: true });
+          for (let i = 0; i < 11; i++) zeven.push({ media_type: 'foto', url: 'https://x/' + i + '.jpg', platform: null, in_banner: true });
           vak.innerHTML = buildMusicianDetailHTML(basis(zeven), true);
           uit.grensZes = vak.querySelectorAll('.hoes-vlak').length;
 
@@ -1341,8 +1341,8 @@ def blok_browser():
               banner["kaartVoorSpotify"] and banner["kaartPlatform"] == "Spotify", banner["kaartPlatform"])
         check("de stippen volgen het vegen", banner["stipVolgtSwipe"], "")
         check("de hoes schuift niet uit zichzelf door (besluit Ronald 30-10-2026)", banner["staatStil"], "")
-        check("boven zes gekozen items telt alleen de eerste zes",
-              banner["grensZes"] == 6, str(banner["grensZes"]))
+        check("boven tien gekozen items telt alleen de eerste tien (TT-669)",
+              banner["grensZes"] == 10, str(banner["grensZes"]))
         check("foto's, video's en links staan in één blok \"Foto's, video's en links\" (TT-543 onderdeel 3, besluit 5)",
               banner["mediaTitels"] == ["Foto's, video's en links"], json.dumps(banner["mediaTitels"]))
         check("met een tegel per foto, per video en per link", banner["fotoEnVideoSamen"] == 3, str(banner["fotoEnVideoSamen"]))
@@ -3993,12 +3993,17 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             genres: ['Rock'], niveau: 3, members: [{ username: 'dylan', profile_color: '#FFB81C' }], wanted: [] }];
           // TT-410b: muzikant én (fase 2) band zijn een scherm met de kop van de
           // app. Het menu staat bij de naam, recht onder de hamburger.
+          // TT-668: met een eigen profiel zoals in de app; alleen dan komt er een plek voor ⋯.
+          const bewaard668 = { mu: S.data.musicians, ba: S.data.bands };
+          S.data.musicians = [{ id: 'm2', username: 'dylan', weergavenaam: 'dylan', city: 'Den Haag', bio: '', avatar_url: null,
+            musician_instruments: [{ instrument: 'Drums', niveau: 3 }], musician_genres: [{ genre: 'Rock' }], musician_songs: [], musician_media: [] }];
+          S.data.bands = [{ id: 'b2', name: 'Testband', city: 'Den Haag', description: '', genres: ['Rock'], niveau: 3, founder_id: 'm9',
+            avatar_url: null, band_members: [], band_wanted: [], band_media: [], band_nummers: [], band_covers: [], band_invallers: [] }];
           const meet = async (soort) => {
+            hasOwnProfile = true;
             if (soort === 'muzikant') await openProfielScherm('m2'); else await openBandScherm('b2');
             // TT-517 fase 9: het profiel schuift 0,32 s van rechts in; meet waar het eindigt.
             await new Promise(ok => setTimeout(ok, 400));
-            hasOwnProfile = true;
-            zetVeiligheidMenu('profielSchermActies', soort, soort === 'band' ? 'b2' : 'm2', 'Test');
             hasOwnProfile = false;
             const sc = document.getElementById('view-profiel');
             const plek = document.getElementById('profielSchermActies');
@@ -4024,6 +4029,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
           myMusicianId = 'm2';
           await openProfielScherm('m2');
           uit.eigenPlek = !!document.getElementById('profielSchermActies');
+          S.data.musicians = bewaard668.mu; S.data.bands = bewaard668.ba;
           hasOwnProfile = was.hasOwnProfile; myMusicianId = was.myMusicianId;
           delete S.rpcResults.tt_get_musicians_public; delete S.rpcResults.tt_get_bands_public;
           return uit;
@@ -4541,7 +4547,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
                      breed: [...new Set([...m.querySelectorAll('.segmented-btn')].filter(e => e.offsetParent).map(e => Math.round(e.getBoundingClientRect().width)))],
                      koppen: koppen.map(k => k.textContent + ':' + getComputedStyle(k).fontWeight + ':' + getComputedStyle(k).fontSize),
                      opslaan: [...m.querySelectorAll('button')].some(b => b.textContent.trim() === 'Opslaan') }; }""")
-        check("E-mailvoorkeuren: alles op één linkerlijn, elke keuzeknop even breed, vette koppen van 17px, geen knop Opslaan",
+        check("Meldingen (TT-672, was E-mailvoorkeuren): alles op één linkerlijn, elke keuzeknop even breed, vette koppen van 17px, geen knop Opslaan",
               len(vk["links"]) == 1 and len(vk["breed"]) == 1 and not vk["opslaan"]
               and vk["koppen"] == ["Mail bij nieuwe matches:700:17px", "Seintje op dit toestel:700:17px", "Bewaarde zoekopdracht:700:17px"], json.dumps(vk))
         # Een keuze bij Mail bij nieuwe matches slaat meteen op.
@@ -5684,6 +5690,11 @@ window.TT_STUB.fnAntwoord = {};
               naamVol: !!(naam && naam.clientWidth === naam.parentElement.clientWidth),
               naamRegels: (n && r) ? +(r.top - n.bottom).toFixed(1) : null,
               alleenOnderKruis: (k && !m && x) ? +(((k.left + k.right) - (x.left + x.right)) / 2).toFixed(1) : null,
+              // TT-668 (8D, D7): de inkt meten, niet het vak. Het vak stond goed terwijl het teken
+              // bij een bezoeker 8px naar rechts schoof, 3px van de rand van de hoes.
+              inktOnderKruis: (k && !m && x) ? (() => { const c = [...knop.querySelectorAll('circle')].map(rect), h = [...sluit.querySelectorAll('path')].map(rect);
+                return +(((Math.min(...c.map(q => q.left)) + Math.max(...c.map(q => q.right))) - (Math.min(...h.map(q => q.left)) + Math.max(...h.map(q => q.right)))) / 2).toFixed(1); })() : null,
+              randAfstand: (k && f) ? +(f.right - Math.max(...[...knop.querySelectorAll('circle')].map(c => rect(c).right))).toFixed(1) : null,
               url: url ? url.replace(/^.*#/, '#') : null,
               label: knop ? knop.getAttribute('aria-label') : null };
           };
@@ -5702,9 +5713,13 @@ window.TT_STUB.fnAntwoord = {};
           eigen.innerHTML = '';
           showView('about');
           // 2. Het venster van een ander, met een eigen profiel: deelicoon en ⋯.
-          hasOwnProfile = false; myMusicianId = 'm1';
+          // TT-668: met een eigen profiel zoals in de app (de plek voor ⋯ komt er alleen dan).
+          const bewaard668 = { mu: S.data.musicians, ba: S.data.bands };
+          S.data.musicians = [{ id: 'm2', username: 'dylan', weergavenaam: 'dylan', city: 'Den Haag', bio: '', avatar_url: null,
+            musician_instruments: [{ instrument: 'Drums', niveau: 3 }], musician_genres: [{ genre: 'Rock' }], musician_songs: [], musician_media: [] }];
+          hasOwnProfile = true; myMusicianId = 'm1';
           await openProfielScherm('m2');
-          hasOwnProfile = true; zetVeiligheidMenu('profielSchermActies', 'muzikant', 'm2', 'Dylan'); hasOwnProfile = false;
+          hasOwnProfile = false;
           const mv = document.getElementById('profielSchermContent');
           uit.ander = await meet(mv, document.getElementById('navMenuBtn'));
           // 3. Hetzelfde scherm, bezoeker zonder profiel: alleen het deelicoon.
@@ -5716,10 +5731,17 @@ window.TT_STUB.fnAntwoord = {};
           uit.eigenInVenster = await meet(mv, document.getElementById('navMenuBtn'));
           uit.eigenVoet = document.getElementById('profielSchermVoet') ? 'voet bestaat nog' : '';
           myMusicianId = 'm1';
-          // 5. Het bandvenster, met menu.
+          // 5. Het bandvenster, met menu (een bezoeker met een eigen profiel).
+          S.data.bands = [{ id: 'b2', name: 'Testband', city: 'Den Haag', description: '', genres: ['Rock'], niveau: 3, founder_id: 'm9',
+            avatar_url: null, band_members: [], band_wanted: [], band_media: [], band_nummers: [], band_covers: [], band_invallers: [] }];
+          hasOwnProfile = true;
           await openBandScherm('b2');
-          hasOwnProfile = true; zetVeiligheidMenu('profielSchermActies', 'band', 'b2', 'Testband'); hasOwnProfile = false;
+          hasOwnProfile = false;
           uit.band = await meet(document.getElementById('profielSchermContent'), document.getElementById('navMenuBtn'));
+          // 6. TT-668: dezelfde bandpagina voor een bezoeker zonder profiel: alleen het deelicoon.
+          await openBandScherm('b2');
+          uit.bandZonderProfiel = await meet(document.getElementById('profielSchermContent'), document.getElementById('navMenuBtn'));
+          S.data.musicians = bewaard668.mu; S.data.bands = bewaard668.ba;
                     hasOwnProfile = was.hasOwnProfile; myMusicianId = was.myMusicianId;
           delete S.rpcResults.tt_get_musicians_public; delete S.rpcResults.tt_get_bands_public;
           Object.defineProperty(navigator, 'share', { configurable: true, value: was.share });
@@ -5746,9 +5768,13 @@ window.TT_STUB.fnAntwoord = {};
                   v["inktGat"] is not None and 26 <= v["inktGat"] <= 30, json.dumps(v))
         check("Mijn Profiel: geen ⋯-menu meer (TT-543 onderdeel 3, besluit 1E)",
               d50["mijnProfiel"]["menuMaat"] is None, json.dumps(d50["mijnProfiel"]))
-        for naam50, v in (("Mijn Profiel", d50["mijnProfiel"]), ("zonder eigen profiel", d50["anderZonderProfiel"]), ("eigen profiel in het venster", d50["eigenInVenster"])):
+        for naam50, v in (("Mijn Profiel", d50["mijnProfiel"]), ("zonder eigen profiel", d50["anderZonderProfiel"]), ("eigen profiel in het venster", d50["eigenInVenster"]),
+                          ("bandpagina zonder eigen profiel", d50["bandZonderProfiel"])):
             check(f"{naam50}: het deelicoon alleen staat op de plek van het menu, onder de hamburger (waar het kruisje stond)",
                   v["alleenOnderKruis"] is not None and abs(v["alleenOnderKruis"]) <= 1.5, json.dumps(v))
+            # TT-668 (bevinding Ronald 17-11-2026): het teken zelf, niet alleen zijn vak, recht onder de hamburger.
+            check(f"{naam50}: het deelteken zelf staat recht onder de hamburger (TT-668; hooguit 1,5px) en niet tegen de rand van de hoes",
+                  v["inktOnderKruis"] is not None and abs(v["inktOnderKruis"]) <= 1.5 and v["randAfstand"] >= 8, json.dumps(v))
         check("geen voetbalk meer op het profielscherm (TT-543 onderdeel 3 en 6: de knop staat onder de bio)", d50["eigenVoet"] == "", d50["eigenVoet"][:120])
         check("een tik deelt de juiste link: #profiel/m1, #profiel/m2, #band/b2",
               d50["mijnProfiel"]["url"] == "#profiel/m1" and d50["ander"]["url"] == "#profiel/m2"
@@ -7888,8 +7914,10 @@ window.TT_STUB.fnAntwoord = {};
             showView('bands'); await w(200); await loadMyBands(); await w(150); };
           // TT-543 onderdeel 6 (4 C): per band een kleine hoes; het verzoek staat eronder (.mijn-band).
           const kaart = () => document.querySelector('#myBandsList .mijn-band');
-          const stip = () => { const d = $('bandsDotBottom'); return d ? [getComputedStyle(d).display !== 'none', d.textContent, Math.round(d.getBoundingClientRect().width), !!d.closest('#bottomNavBands')] : null; };
-          const knoppen = () => [...kaart().querySelectorAll('.melding .btn')].map(b => b.textContent);
+          // TT-674 (besluit Ronald 18-11-2026): de vraag staat bovenaan Mijn Profiel, bij de uitnodigingen; geen stip.
+          const stip = () => !!$('bandsDotBottom');
+          const mp = () => $('bandInvitesBanner');
+          const knoppen = () => [...mp().querySelectorAll('.melding .btn')].map(b => b.textContent);
           // TT-433: beheerder en lid zien dezelfde kaart, zonder menu en zonder knop (de hoes zelf is de tik naar de bandpagina).
           await ik('m1'); u.beheerderKaart = kaart().querySelectorAll('button:not(.hoes-vlak), .nav-menu-btn, .inline-menu-dropdown').length;
           await ik('m2'); u.lidKaart = kaart().querySelectorAll('button:not(.hoes-vlak), .nav-menu-btn, .inline-menu-dropdown').length;
@@ -7918,16 +7946,19 @@ window.TT_STUB.fnAntwoord = {};
           // Opnieuw vragen, zodat het lid kan antwoorden.
           await openOverdragen(); await w(150);
           document.querySelectorAll('#overdragenLijst .bb-rij-knop')[0].click(); await w(300);
-          // Het gekozen lid ziet het verzoek op zijn kaart en een stip; een ander lid niet.
-          await ik('m2'); await refreshBandsDot(); await w(100);
-          u.gekozen = { melding: !!kaart().querySelector('.melding'), kop: (kaart().querySelector('.melding-kop') || {}).textContent,
-                        tekst: (kaart().querySelector('.melding-tekst') || {}).textContent, knoppen: knoppen(), stip: stip(),
-                        tikOpKnop: (() => { let open = false; const f = window.openBandScherm; window.openBandScherm = () => { open = true; }; const kn = kaart().querySelector('.melding-tekst'); if (kn) kn.dispatchEvent(new MouseEvent('click', { bubbles: true })); window.openBandScherm = f; return open; })() };
-          await ik('m3'); await refreshBandsDot(); await w(100);
-          u.ander = { melding: !!kaart().querySelector('.melding'), stip: stip() };
-          // Nee zeggen haalt het verzoek en de stip weg; de beheerder blijft.
-          await ik('m2'); await respondToFounderOffer('b9', false); await w(300);
-          u.naNee = { melding: !!kaart().querySelector('.melding'), stip: stip(), aanbod: S.data.band_members.some(m => m.founder_offer), beheerder: S.data.bands[0].founder_id };
+          // Het gekozen lid ziet het verzoek bovenaan Mijn Profiel (TT-674), niet op zijn kaart; een ander lid niet.
+          S.rpcResults.tt_expire_old_founder_offers = null;
+          await ik('m2'); S.calls = []; await loadBandInvites('m2'); await w(100);
+          u.gekozen = { melding: mp().querySelectorAll('.melding').length, kop: (mp().querySelector('.melding-kop') || {}).textContent,
+                        tekst: (mp().querySelector('.melding-tekst') || {}).textContent, knoppen: knoppen(), stip: stip(),
+                        opKaart: !!kaart().querySelector('.melding'),
+                        verval: S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_expire_old_founder_offers').length };
+          await ik('m3'); await loadBandInvites('m3'); await w(100);
+          u.ander = { melding: mp().querySelectorAll('.melding').length, opKaart: !!kaart().querySelector('.melding') };
+          // Nee zeggen haalt het verzoek weg; de beheerder blijft.
+          await ik('m2'); await loadBandInvites('m2'); await w(100);
+          await respondToFounderOffer('b9', false); await w(300);
+          u.naNee = { melding: mp().querySelectorAll('.melding').length, aanbod: S.data.band_members.some(m => m.founder_offer), beheerder: S.data.bands[0].founder_id };
           // Ja zeggen gaat via de databasefunctie.
           S.data.band_members.find(m => m.musician_id === 'm3').founder_offer = true;
           await ik('m3'); await respondToFounderOffer('b9', true); await w(300);
@@ -7955,24 +7986,24 @@ window.TT_STUB.fnAntwoord = {};
               d72["intrekVraag"] == ["Je vraag aan Dylan over het beheer van Van Delft vervalt dan.", "Vraag intrekken", "Annuleren"]
               and d72["naIntrekken"] == {"aanbod": False, "bericht": "m1>m2: Ik trek mijn vraag over het beheer van Van Delft in.",
                                          "tegel": "draag het beheer over aan een bandlid"}, j72)
-        check("TT-432: het gekozen lid ziet het verzoek op zijn kaart, met twee knoppen; een tik in de melding opent de bandpagina niet",
-              d72["gekozen"]["melding"] and d72["gekozen"]["kop"] == "beheerder vraagt of jij Van Delft overneemt"
+        check("TT-674 (besluit Ronald 18-11-2026): het gekozen lid ziet het verzoek bovenaan Mijn Profiel, in de vorm van de uitnodiging, met twee knoppen; niet meer op zijn kaart in Mijn bands",
+              d72["gekozen"]["melding"] == 1 and d72["gekozen"]["kop"] == "beheerder vraagt of jij Van Delft overneemt"
               and d72["gekozen"]["tekst"] == "Je wordt dan beheerder. beheerder blijft lid van de band." 
-              and d72["gekozen"]["knoppen"] == ["Nee, liever niet", "Ik neem het over"] and d72["gekozen"]["tikOpKnop"] is False, j72)
-        check("TT-432: de Bands-knop krijgt een stip zonder cijfer (10px) bij het gekozen lid; niet bij een ander lid, niet zonder verzoek",
-              d72["gekozen"]["stip"] == [True, "", 10, True] and d72["ander"] == {"melding": False, "stip": [False, "", 0, True]}
-              and d72["stipVoor"][0] is False, j72)
-        check("TT-432: nee zeggen haalt kaartmelding en stip weg en laat de beheerder staan",
-              d72["naNee"] == {"melding": False, "stip": [False, "", 0, True], "aanbod": False, "beheerder": "m1"}, j72)
+              and d72["gekozen"]["knoppen"] == ["Nee, liever niet", "Ik neem het over"] and d72["gekozen"]["opKaart"] is False, j72)
+        check("TT-674: een oude vraag verloopt eerst (tt_expire_old_founder_offers bij Mijn Profiel); geen stip op Bands; een ander lid ziet niets",
+              d72["gekozen"]["verval"] == 1 and d72["gekozen"]["stip"] is False and d72["stipVoor"] is False
+              and d72["ander"] == {"melding": 0, "opKaart": False}, j72)
+        check("TT-432 en TT-674: nee zeggen haalt de vraag van Mijn Profiel en laat de beheerder staan",
+              d72["naNee"] == {"melding": 0, "aanbod": False, "beheerder": "m1"}, j72)
         check("TT-432: ja zeggen loopt via tt_accept_founder_offer", d72["naJa"] == ["b9"], j72)
         check("blok 3 (11): de beheerder krijgt het antwoord als bericht, nee en ja",
               d72["berichtAntwoord"] == ["m2>m1: Ik neem het beheer van Van Delft niet over. Bedankt voor de vraag!",
                                          "m3>m1: Ik neem het beheer van Van Delft over."], j72)
-        check("TT-432: de melding op Mijn Profiel is weg (geen dubbele plek)",
+        check("TT-432: de oude aparte melding op Mijn Profiel (founderOfferBanner) blijft weg; TT-674 gebruikt de plek van de uitnodigingen",
               d72["weg"] == {"banner": False, "functie": "undefined"}, j72)
-        core72 = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
-        check("TT-432: uitloggen haalt de stip weg en inloggen ververst hem",
-              "'bandsDotBottom'" in core72 and "refreshBandsDot();" in core72, "")
+        alles72 = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("core.js", "bands.js", "index.html", "styles.css"))
+        check("TT-674: de stip op Bands is weg, met zijn functie en opmaak (dode code)",
+              "bandsDotBottom" not in alles72 and "refreshBandsDot" not in alles72 and "bands-dot" not in alles72, "")
         check("geen paginafouten in blok 72", not page_errors, "; ".join(page_errors)[:300])
 
         # Blok 73 — TT-435 (07-10-2026, besluit Ronald): een gesprek verwijderen,
@@ -14244,15 +14275,15 @@ def blok_tt556():
           schoon(); bbInvalGewijzigd(); u.invaller20 = { aantal: bbInvallers.length, toast: toast() };
           bbInvallers = []; bbInvalLijst = [];
 
-          // Foto's en video's: het 9e bestand komt er niet bij, op alle drie de plekken (besluit Ronald 05-11-2026)
+          // Foto's en video's: het 11e bestand komt er niet bij, op alle drie de plekken (besluit Ronald 05-11-2026; 10 sinds TT-669)
           const bestand = new File(['x'], 'a.jpg', { type: 'image/jpeg' });
-          const acht = () => Array.from({ length: 8 }, (_, i) => ({ id: 'f' + i }));
+          const acht = () => Array.from({ length: 10 }, (_, i) => ({ id: 'f' + i }));
           const bewaard = { w: state.mediaFiles, m: mhMediaFiles, b: bmMediaFiles };
           state.mediaFiles = acht(); schoon(); handleFileSelect([bestand]); u.bestandWizard = { aantal: state.mediaFiles.length, toast: toast() };
           mhMediaFiles = acht(); schoon(); mhHandleFileSelect([bestand]); u.bestandProfiel = { aantal: mhMediaFiles.length, toast: toast() };
           bmMediaFiles = acht(); schoon(); bmHandleFileSelect([bestand]); u.bestandBand = { aantal: bmMediaFiles.length, toast: toast() };
           state.mediaFiles = bewaard.w; mhMediaFiles = bewaard.m; bmMediaFiles = bewaard.b;
-          // De banner: het 7e item mag niet aan
+          // De banner: het 11e item mag niet aan (TT-669)
           schoon(); u.banner7 = { mag: bannerKeuzeMag(MEDIA_BANNER_MAX, true), toast: toast() };
           schoon(); u.banner6 = bannerKeuzeMag(MEDIA_BANNER_MAX - 1, true);
 
@@ -14287,8 +14318,8 @@ def blok_tt556():
         browser.close()
     httpd.shutdown()
     j = json.dumps(r, ensure_ascii=False)[:900]
-    check("TT-556: de grenzen in de app zijn de besluiten van Ronald (bands 10, nummers 300, beeld 8, links 20, covers 300, eigen nummers 200, invallers 20)",
-          r["grenzen"] == {"bands": 10, "nummers": 300, "beeld": 8, "links": 20, "covers": 300, "eigenNummers": 200, "invallers": 20}, j)
+    check("TT-556: de grenzen in de app zijn de besluiten van Ronald (bands 10, nummers 300, beeld 10 (TT-669), links 20, covers 300, eigen nummers 200, invallers 20)",
+          r["grenzen"] == {"bands": 10, "nummers": 300, "beeld": 10, "links": 20, "covers": 300, "eigenNummers": 200, "invallers": 20}, j)
     check("TT-556: een weigering van de database (hint TT-556) verschijnt als de zin zelf; een andere fout niet",
           r["vangnet"] == "Maximum van 20 links bereikt." and r["anderFout"] != "iets anders", j)
     check("TT-556: het 301e nummer komt er niet bij, met 'Maximum van 300 nummers bereikt.'; het 300e wel",
@@ -14306,10 +14337,10 @@ def blok_tt556():
     check("TT-556: de 21e invaller komt er niet bij, met 'Maximum van 20 invallers bereikt.'; de 20e wel",
           r["invallers"] == {"aantal": 20, "toast": "Maximum van 20 invallers bereikt."} and r["invaller20"]["aantal"] == 20, j)
     for naam, sleutel in (("de wizard", "bestandWizard"), ("profiel bewerken", "bestandProfiel"), ("bandprofiel bewerken", "bestandBand")):
-        check(f"grensmelding (besluit Ronald 05-11-2026): het 9e bestand in {naam} komt er niet bij, met 'Maximum van 8 bestanden bereikt.'",
-              r[sleutel] == {"aantal": 8, "toast": "Maximum van 8 bestanden bereikt."}, j)
-    check("grensmelding (besluit Ronald 05-11-2026): het 7e item in de banner mag niet aan, met 'Maximum van 6 items bereikt.'; het 6e wel",
-          r["banner7"] == {"mag": False, "toast": "Maximum van 6 items bereikt."} and r["banner6"] is True, j)
+        check(f"grensmelding (besluit Ronald 05-11-2026; 10 sinds TT-669): het 11e bestand in {naam} komt er niet bij, met 'Maximum van 10 bestanden bereikt.'",
+              r[sleutel] == {"aantal": 10, "toast": "Maximum van 10 bestanden bereikt."}, j)
+    check("grensmelding (besluit Ronald 05-11-2026; 10 sinds TT-669): het 11e item in de banner mag niet aan, met 'Maximum van 10 items bereikt.'; het 10e wel",
+          r["banner7"] == {"mag": False, "toast": "Maximum van 10 items bereikt."} and r["banner6"] is True, j)
     check("grensmelding (besluit Ronald 05-11-2026): geen enkele oude vorm meer in de app ('Maximaal … .', 'Maximum 8 bestanden', 'repertoire is vol', 'banner toont')",
           not OUDE_GRENSZINNEN(), "; ".join(OUDE_GRENSZINNEN()))
     check("TT-556: bij 10 bands opent de wizard niet, met 'Je zit al in 10 bands. Verlaat er eerst één.'; bij 8 wel",
@@ -14610,8 +14641,8 @@ def blok_tt543():
     privacy = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
     privacy = privacy[privacy.index('id="view-privacy"'):privacy.index('id="view-terms"')]
     # De datum volgt de laatste wijziging (bundel E, 15-11-2026: de geboortedatum corrigeren via privacy@, TT-625).
-    check("de privacyverklaring noemt geen doel of ambitie meer (besluit Ronald 06-11-2026); bijgewerkt op 15 november 2026 (bundel E, TT-625; daarvoor 14 november, TT-72)",
-          not re.search(r"\bdoel\b|ambitie", privacy, re.I) and "Laatst bijgewerkt: 15 november 2026" in privacy, "")
+    check("de privacyverklaring noemt geen doel of ambitie meer (besluit Ronald 06-11-2026); bijgewerkt op 18 november 2026 (TT-672; daarvoor 15 november, bundel E, TT-625; daarvoor 14 november, TT-72)",
+          not re.search(r"\bdoel\b|ambitie", privacy, re.I) and "Laatst bijgewerkt: 18 november 2026" in privacy, "")
     check("geen paginafouten in blok 131", not fouten, "; ".join(fouten)[:300])
 
 
@@ -15101,8 +15132,8 @@ def blok_tt543_blok3():
               $('wizMediaToevoegenMenu').querySelectorAll('.choice-option')[0].click(); await w(250);
               $('wizMediaToevoegen').click(); await w(300); $('wizMediaToevoegenMenu').querySelectorAll('.choice-option')[1].click(); await w(250);
               u.kiezer = geklikt;
-              // Bij 8 bestanden: eerst de melding, de kiezer opent niet.
-              state.mediaFiles = Array.from({ length: 8 }, (_, i) => ({ type: 'foto', url: 'https://x/' + i + '.jpg', name: '' })); renderMediaGrid();
+              // Bij 10 bestanden (TT-669): eerst de melding, de kiezer opent niet.
+              state.mediaFiles = Array.from({ length: 10 }, (_, i) => ({ type: 'foto', url: 'https://x/' + i + '.jpg', name: '' })); renderMediaGrid();
               geklikt = []; schoon(); mediaToevoegenKeuze({ value: 'foto' });
               u.grensBeeld = { kiezer: geklikt.length, toast: toast() };
               state.mediaFiles = []; renderMediaGrid();
@@ -15133,7 +15164,7 @@ def blok_tt543_blok3():
               renderMediaGrid(); const voor = document.querySelector('#mediaGrid .media-thumb-link');
               toggleLinkBanner(0);
               u.linkBanner = { zelfde: voor === document.querySelector('#mediaGrid .media-thumb-link'), stand: voor.querySelector('.banner-btn').getAttribute('aria-pressed'),
-                teller: $('wizardBannerTeller').innerText.includes('1 van 6') };
+                teller: $('wizardBannerTeller').innerText.includes('1 van 10') };
               removeLink(0); u.naWeg = state.mediaLinks.length;
               // De laatste stap (besluiten Ronald 07-11-2026, op beeld): los van de media.
               { const blok = document.querySelector('#step3 .laatste-stap'), b = R(blok), st = getComputedStyle(blok, '::before');
@@ -15196,8 +15227,8 @@ def blok_tt543_blok3():
               u["menuRechts"] == {"breed": 0, "links": 0, "onder": 6}, j)
         check(f"{breed}px: Foto opent de kiezer voor beelden, Video die voor video's",
               u["kiezer"] == ["image/*", "video/*"], j)
-        check(f"{breed}px: bij 8 bestanden zegt de app 'Maximum van 8 bestanden bereikt.' en opent de kiezer niet",
-              u["grensBeeld"] == {"kiezer": 0, "toast": "Maximum van 8 bestanden bereikt."}, j)
+        check(f"{breed}px: bij 10 bestanden (TT-669) zegt de app 'Maximum van 10 bestanden bereikt.' en opent de kiezer niet",
+              u["grensBeeld"] == {"kiezer": 0, "toast": "Maximum van 10 bestanden bereikt."}, j)
         check(f"{breed}px: Link opent het venster 'Link toevoegen', schermvullend, veld leeg met de cursor erin, 'Link' rechts, Toevoegen uit",
               u["venster"]["open"] and u["venster"]["titel"] == "Link toevoegen" and u["venster"]["leeg"] == ["", "Link", True]
               and u["venster"]["focus"] and u["venster"]["schermvullend"] and u["venster"]["knopTekst"] == "Toevoegen", j)
@@ -17335,8 +17366,8 @@ def blok_tt543_onderdeel6_blok2():
     check("dode code weg: geen datum bij een invaller (invallerDatum, vandaagISO, het formulier), geen zin 'Voor één optreden'",
           not any(w in t for t in bron.values() for w in ("invallerDatum", "vandaagISO", "bbInvalFormulier", "bbInvalToevoegen", "bbInvalDatum",
                   "bbInvalInstrument", "Voor één optreden", "band_invallers(datum)", "band_invallers(instrument, datum)")), "")
-    check("de app leest de rollen in de band, niet de instrumenten van het profiel (bandUitTabellen, bbLaadLeden)",
-          "band_members(role, rollen, status, joined_at, musicians(id, weergavenaam, username, avatar_url))" in bron["bands.js"]
+    check("de app leest de rollen in de band, niet de instrumenten van het profiel (bandUitTabellen, bbLaadLeden; founder_offer erbij voor TT-670)",
+          "band_members(role, rollen, status, joined_at, founder_offer, musicians(id, weergavenaam, username, avatar_url))" in bron["bands.js"]
           and "'musician_id, role, rollen, status, musicians(id, weergavenaam, username, avatar_url)'" in bron["bands.js"], "")
     stub_js = open(STUB, encoding="utf-8").read()
     httpd, port = serve()
@@ -17636,7 +17667,7 @@ def blok_bundel_133():
           const stand = () => ({ vinkje: !$('confirmBegrip').hidden, aan: !$('confirmYesBtn').disabled, tekst: $('confirmBegrip').textContent.trim() });
           // Een rode vraag zonder keuzes: dicht tot het vinkje.
           let gedaan = 0;
-          showConfirm('Proef.', () => { gedaan++; }, 'Weg', true, null, 'Proef weg?');
+          showConfirm('Proef.', () => { gedaan++; }, 'Weg', true, null, 'Proef weg?', null, 'Ik begrijp dat de proef definitief verdwijnt.');
           u.rood = stand();
           $('confirmYesBtn').click(); await w(50); u.klikZonder = gedaan;
           $('confirmBegripVink').click(); await w(50);
@@ -17740,13 +17771,13 @@ def blok_bundel_133():
     httpd.shutdown()
 
     a = uit["604"]
-    check("TT-604: een rode vraag heeft het vinkje 'Ik begrijp dat dit niet terug kan.'; de knop werkt pas daarna (besluit Ronald 14-11-2026)",
-          a["rood"] == {"vinkje": True, "aan": False, "tekst": "Ik begrijp dat dit niet terug kan."} and a["klikZonder"] == 0
+    check("TT-604 en TT-673: een rode vraag heeft het vinkje met de zin die het venster meegeeft; de knop werkt pas daarna (besluit Ronald 14-11-2026)",
+          a["rood"] == {"vinkje": True, "aan": False, "tekst": "Ik begrijp dat de proef definitief verdwijnt."} and a["klikZonder"] == 0
           and a["roodNaVink"]["aan"] and a["klikMet"] == 1, json.dumps(a))
     check("TT-604: het vinkje staat 24 onder de zin en 24 boven de knoppen", a["afstand"] == [24, 24], json.dumps(a["afstand"]))
     check("TT-604: een vraag die niet rood is, heeft geen vinkje en de knop aan", a["gewoon"]["vinkje"] is False and a["gewoon"]["aan"], json.dumps(a["gewoon"]))
     check("TT-604: Account verwijderen met een band: de knop werkt pas met een keuze per band én het vinkje",
-          a["accountStart"]["vinkje"] and not a["accountStart"]["aan"] and not a["accountAlleenVink"]["aan"]
+          a["accountStart"]["vinkje"] and not a["accountStart"]["aan"] and a["accountStart"]["tekst"] == "Ik begrijp dat mijn gegevens definitief worden verwijderd." and not a["accountAlleenVink"]["aan"]
           and a["accountBeide"]["aan"] and not a["accountVinkUit"]["aan"], json.dumps(a))
     for breed, u in uit["609"].items():
         check(f"TT-609, {breed}px: het menu van \"+ Toevoegen\" staat 6px onder de tegel, even breed, helemaal in beeld, ook als de rand 1,5 pixel verschuift",
@@ -18508,8 +18539,8 @@ def blok_tt543_onderdeel9():
     check("F1 E: privacyverklaring hoofdstuk 3 zegt alleen door te geven aan de partijen in hoofdstuk 7; cloud86 staat in hoofdstuk 7; geen zin over advertenties",
           "<p>Wij geven je gegevens alleen door aan de partijen in hoofdstuk 7.</p>" in priv and "<li>cloud86: verstuurt de e-mails van de app.</li>" in priv
           and "advertenties" not in priv, "")
-    check("de datum 'Laatst bijgewerkt' is 13 november 2026 op de voorwaarden en de gedragscode; de privacyverklaring 15 november 2026 (bundel E, TT-625; zie ook blok 131)",
-          "Laatst bijgewerkt: 15 november 2026" in priv and all("Laatst bijgewerkt: 13 november 2026" in d for d in (voorw, gedrag)), "")
+    check("de datum 'Laatst bijgewerkt' is 13 november 2026 op de voorwaarden en de gedragscode; de privacyverklaring 18 november 2026 (TT-672; daarvoor bundel E, TT-625; zie ook blok 131)",
+          "Laatst bijgewerkt: 18 november 2026" in priv and all("Laatst bijgewerkt: 13 november 2026" in d for d in (voorw, gedrag)), "")
     stub_js = open(STUB, encoding="utf-8").read()
     httpd, port = serve()
     fouten, uitslag = [], {}
@@ -18555,7 +18586,7 @@ def blok_tt543_onderdeel9():
                     u.paginas[v] = meet(wortel);
                     u.paginas[v].eersteKop = v === 'about' ? Math.round(r(wortel.querySelector('h2')).top - r(wortel).top) : null;
                   }
-                  // F3: "E-mailvoorkeuren" op één regel.
+                  // F3: "Meldingen" (tot TT-672 "E-mailvoorkeuren") op één regel.
                   showView('privacy'); await w(150);
                   const ev = document.querySelector('#view-privacy .niet-afbreken');
                   u.f3 = { tekst: ev.textContent, regels: ev.getClientRects().length };
@@ -18607,7 +18638,7 @@ def blok_tt543_onderdeel9():
               and all(x["datum"] == ["12px", "16px"] for k, x in d["paginas"].items() if k != "about"), j("paginas"))
         check(f"V1 D ({b}px, {t}): Over ons begint met de kop bovenaan, zonder ruimte erboven; niets loopt breder dan het scherm",
               d["paginas"]["about"]["eersteKop"] == 0 and all(x["breed"] for x in alle) and d["overloop"], j("paginas"))
-        check(f"F3 ({b}px, {t}): 'E-mailvoorkeuren' staat op één regel", d["f3"] == {"tekst": "E-mailvoorkeuren", "regels": 1}, j("f3"))
+        check(f"F3 ({b}px, {t}): 'Meldingen' (TT-672) staat op één regel", d["f3"] == {"tekst": "Meldingen", "regels": 1}, j("f3"))
         check(f"V4 A ({b}px, {t}): het e-mailadres is tekst in --accent, onderstreept, 15/20px, zonder vlak of rand, op de regel van de zin",
               kleur_ok(d["knop"]["kleur"]) and d["knop"]["streep"] == "underline" and d["knop"]["maat"] == "15px" and d["knop"]["regel"] == "20px"
               and d["knop"]["achtergrond"] in ("rgba(0, 0, 0, 0)", "transparent") and d["knop"]["rand"] == "0px" and d["knop"]["opDeRegel"], j("knop"))
@@ -19413,9 +19444,9 @@ def blok_bundel_e():
               f'<div id="{tel}" class="teken-teller" hidden></div>' in html
               and re.search(r'id="%s"[^>]*oninput="updateCharCounter\(\'%s\',\'%s\',1000\)"' % (vid, vid, tel), html), "")
     privacy = html[html.index('id="view-privacy"'):html.index('id="view-terms"')]
-    check("TT-625: de privacyverklaring zegt in hoofdstuk 9 dat je geboortedatum niet naar een andere leeftijdsgroep kan, zonder route via privacy@ (correctie Ronald 15-11-2026); datum 15 november 2026",
+    check("TT-625: de privacyverklaring zegt in hoofdstuk 9 dat je geboortedatum niet naar een andere leeftijdsgroep kan, zonder route via privacy@ (correctie Ronald 15-11-2026); datum 18 november 2026 (TT-672)",
           "<p>Je geboortedatum kun je niet zo wijzigen dat je in een andere leeftijdsgroep komt.</p>" in privacy
-          and privacy.index("andere leeftijdsgroep") > privacy.index("9. Jouw rechten") and "Laatst bijgewerkt: 15 november 2026" in privacy, "")
+          and privacy.index("andere leeftijdsgroep") > privacy.index("9. Jouw rechten") and "Laatst bijgewerkt: 18 november 2026" in privacy, "")
     httpd, port = serve()
     fouten = []
     with sync_playwright() as p:
@@ -20526,6 +20557,134 @@ def blok_bundel_f():
     eigen = [f for f in fouten if "supabase" not in f.lower()]
     check("bundel F: geen fouten op de pagina", not eigen, "; ".join(eigen)[:400])
 
+def blok_bevindingen_1711():
+    print("\nBlok 169 — bevindingen Ronald 17-11-2026 (sessie 173): deelteken, banner 10, tegels meteen, Volg ons ook hier:, Meldingen, het vinkje, beheer overnemen (TT-668 tot en met TT-674)")
+    stub_js = open(STUB, encoding="utf-8").read()
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 360, "height": 800}, color_scheme="dark")
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: fouten.append(str(e)))
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**"):
+            pg.route(pat, lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(800)
+        u = pg.evaluate(r"""async () => {
+          const S = window.TT_STUB, $ = id => document.getElementById(id), R = e => e.getBoundingClientRect();
+          const w = (n = 200) => new Promise(r => setTimeout(r, n)), u = {};
+          const tekst = sel => [...document.querySelectorAll(sel)].map(e => e.textContent.trim());
+          currentUser = { id: 'u1', email: 'test@talenttent.org' }; myMusicianId = 'm1'; hasOwnProfile = true;
+          window.getMyMusicianId = async () => myMusicianId;
+          S.data.musicians = [{ id: 'm1', user_id: 'u1', weergavenaam: 'Ronald', username: 'ronald', city: 'Den Haag', bio: '', avatar_url: null, stand: 'actief',
+            musician_instruments: [{ instrument: 'Drums', niveau: 3 }], musician_genres: [{ genre: 'Rock' }],
+            musician_songs: [{ song_title: 'a', song_artist: 'b' }], musician_media: [] }];
+          S.rpcResults.tt_musicians_ages = [{ id: 'm1', age: 30 }];
+          S.rpcResults.tt_expire_old_founder_offers = null;
+
+          // TT-670: Mijn Profiel zet de regels klaar; Profiel bewerken toont namen en regels meteen, samen.
+          tegelRegels = { mid: null, regels: {} };
+          await loadMyProfile(); await w(100);
+          let vragen = 0; const echt = db.from.bind(db);
+          db.from = t => { if (t === 'musicians') vragen++; return echt(t); };
+          showView('profieltegels');
+          u.tegelsMeteen = tekst('#tegelsWrap .tile-sub');
+          await w(200);
+          u.tegelsNa = tekst('#tegelsWrap .tile-sub');
+          db.from = echt;
+          // Zonder klaargezette regels: eerst niets, daarna alles tegelijk (nooit alleen de namen).
+          tegelRegels = { mid: null, regels: {} };
+          showView('about'); await w(50); showView('profieltegels');
+          u.zonderKlaarMeteen = $('tegelsWrap').querySelectorAll('.tile').length;
+          await w(200);
+          u.zonderKlaarNa = tekst('#tegelsWrap .tile-sub');
+
+          // TT-670 band: de bandpagina van de beheerder zet tegels en Bandbeheer klaar.
+          S.data.bands = [{ id: 'b9', name: 'Van Delft', city: 'Delft', description: 'Wij zijn een band.', genres: ['Rock'], niveau: 3, founder_id: 'm1', stand: 'actief',
+            avatar_url: null, instagram: 'vandelft', tiktok: 'vandelft', youtube: 'https://youtube.com/@vandelft',
+            band_members: [{ role: 'Oprichter', rollen: ['Drums'], status: 'bevestigd', joined_at: '2026-01-01', founder_offer: false, musician_id: 'm1', musicians: { id: 'm1', weergavenaam: 'Ronald', username: 'ronald', avatar_url: null } },
+                           { role: 'Lid', rollen: ['Zang'], status: 'bevestigd', joined_at: '2026-01-02', founder_offer: true, musician_id: 'm2', musicians: { id: 'm2', weergavenaam: 'Rafaela', username: 'rafaela', avatar_url: null } }],
+            band_wanted: [], band_media: [], band_nummers: [], band_covers: [], band_invallers: [] }];
+          await openBandScherm('b9'); await w(300);
+          openBandTegels('b9');
+          u.bandMeteen = { tegels: tekst('#bandTegelsWrap .tile-sub'), beheer: tekst('#bandBeheerBlok .tile-sub') };
+          await w(300);
+          u.bandNa = { tegels: tekst('#bandTegelsWrap .tile-sub'), beheer: tekst('#bandBeheerBlok .tile-sub') };
+
+          // TT-671: "Volg ons ook hier:" links op de regel van de logo's (bandpagina, bezoeker met profiel).
+          myMusicianId = 'm7';
+          await openBandScherm('b9'); await w(300);
+          const soc = document.querySelector('#profielSchermContent .socials'), zin = soc && soc.querySelector('.socials-tekst');
+          const inkt = [...soc.querySelectorAll('.social-knop svg')].map(R);
+          const cs = getComputedStyle(zin), bio = getComputedStyle(document.querySelector('#profielSchermContent .profile-bio'));
+          const zr = R(zin), sr = R(soc), br = R(document.querySelector('#profielSchermContent .profile-bio'));
+          u.socials = { tekst: zin.textContent, maat: [cs.fontSize, cs.lineHeight], bio: [bio.fontSize, bio.lineHeight], grijs: cs.color === getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || cs.color,
+            totLogo: Math.round(inkt[0].left - zr.right), tussen: [Math.round(inkt[1].left - inkt[0].right), Math.round(inkt[2].left - inkt[1].right)],
+            midden: Math.abs((zr.top + zr.bottom) / 2 - (inkt[0].top + inkt[0].bottom) / 2) <= 1, links: Math.round(zr.left - br.left),
+            onderBio: Math.round(sr.top - br.bottom), eenRegel: zin.getClientRects().length, binnen: sr.right <= R(document.querySelector('#profielSchermContent')).right };
+          myMusicianId = 'm1';
+
+          // TT-672: Meldingen.
+          showView('instellingen'); await w(150);
+          u.meldingenTegel = tekst('#view-instellingen .tile-title').filter(x => /meldingen|voorkeuren/i.test(x));
+          await openSearchPrefsModal(); await w(150);
+          u.meldingenKop = document.querySelector('#searchPrefsModal .filter-title').textContent.trim();
+          closeSearchPrefsModal();
+
+          // TT-673: elk rood venster een eigen zin bij het vinkje.
+          gesprekVerwijderen('m2', 'Rafaela'); await w(100);
+          u.vinkGesprek = $('confirmBegripTekst').textContent; confirmModalNo();
+          ouderStoppenEnWissen(); await w(100);
+          u.vinkOuder = [$('confirmKop').textContent, $('confirmBegripTekst').textContent]; confirmModalNo();
+          showConfirm('Gewoon.', () => {}, 'Ja'); u.vinkGewoon = [$('confirmBegrip').hidden, $('confirmBegripTekst').textContent]; confirmModalNo();
+
+          // TT-669: 10 bannerbeelden en de profielfoto: elf stippen passen op 360 in de hoes.
+          const vak = $('myProfileContent');
+          const media = Array.from({ length: 12 }, (_, i) => ({ media_type: 'foto', url: 'https://x.test/' + i + '.jpg', platform: null, in_banner: true, created_at: '2026-11-0' + (i % 9 + 1) }));
+          showView('myprofile'); await w(100);
+          vak.innerHTML = buildMusicianDetailHTML(Object.assign({}, S.data.musicians[0], { avatar_url: 'https://x.test/p.jpg', age: 30, musician_media: media, bands: [] }), true);
+          hoesStarten(vak);
+          const st = [...vak.querySelectorAll('.hoes-stip')], hoes = R(vak.querySelector('.hoes-beeld'));
+          u.stippen = { aantal: st.length, binnen: st.length > 0 && R(st[0]).left >= hoes.left + 8 && R(st[st.length - 1]).right <= hoes.right - 8 };
+          return u;
+        }""")
+        browser.close()
+    httpd.shutdown()
+    j = lambda k: json.dumps(u.get(k), ensure_ascii=False)[:500]
+    check("TT-670 (bevinding Ronald 17-11-2026): Profiel bewerken toont namen en regels meteen en samen, uit Mijn Profiel; de vraag daarna verandert niets",
+          u["tegelsMeteen"] == ["Ronald · Den Haag", "Drums · Rock", "1 nummer", "Nog leeg · voeg een foto toe"] and u["tegelsNa"] == u["tegelsMeteen"], j("tegelsMeteen"))
+    check("TT-670: zonder klaargezette regels eerst geen tegel, daarna alle tegels met hun regels tegelijk",
+          u["zonderKlaarMeteen"] == 0 and u["zonderKlaarNa"] == ["Ronald · Den Haag", "Drums · Rock", "1 nummer", "Nog leeg · voeg een foto toe"], j("zonderKlaarNa"))
+    check("TT-670: Bandprofiel bewerken en Bandbeheer staan meteen, met de regels uit de bandpagina; daarna gelijk",
+          len(u["bandMeteen"]["tegels"]) == 4 and all(x.strip() for x in u["bandMeteen"]["tegels"])
+          and u["bandMeteen"]["beheer"][1] == "gevraagd aan Rafaela · wacht op antwoord" and u["bandNa"] == u["bandMeteen"], j("bandMeteen") + j("bandNa"))
+    s = u["socials"]
+    check("TT-671 (besluiten Ronald 18-11-2026): 'Volg ons ook hier:' links op de regel van de logo's, 15/20px zoals Wie zijn we, grijs, op één regel",
+          s["tekst"] == "Volg ons ook hier:" and s["maat"] == s["bio"] == ["15px", "20px"] and s["links"] == 0 and s["eenRegel"] == 1 and s["binnen"], j("socials"))
+    check("TT-671: 12px van de tekst tot het eerste logo, de logo's 16px uit elkaar, tekst en logo's op hetzelfde midden, 12px onder Wie zijn we",
+          s["totLogo"] == 12 and s["tussen"] == [16, 16] and s["midden"] and s["onderBio"] in (4, 12), j("socials"))
+    check("TT-672 (besluit Ronald 18-11-2026): de tegel en de kop van het venster heten 'Meldingen'",
+          u["meldingenTegel"] == ["Meldingen"] and u["meldingenKop"] == "Meldingen", j("meldingenTegel") + j("meldingenKop"))
+    alles = "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ("index.html", "core.js", "search.js", "musicians.js", "wizard.js"))
+    check("TT-672: nergens in de app nog 'E-mailvoorkeuren' of 'e-mailvoorkeuren'; de zin 'Maak eerst een profiel aan om …' is weg (dode code)",
+          "mailvoorkeuren" not in alles and "om e-mailvoorkeuren in te stellen" not in alles, "")
+    check("TT-673 (besluit Ronald 18-11-2026): Gesprek verwijderen: 'Ik begrijp dat het gesprek bij mij definitief verdwijnt.'",
+          u["vinkGesprek"] == "Ik begrijp dat het gesprek bij mij definitief verdwijnt.", j("vinkGesprek"))
+    check("TT-673: 'Je gegevens wissen?' (aanmelding met een ouder): 'Ik begrijp dat mijn gegevens definitief worden gewist.'",
+          u["vinkOuder"] == ["Je gegevens wissen?", "Ik begrijp dat mijn gegevens definitief worden gewist."], j("vinkOuder"))
+    check("TT-673: een vraag die niet rood is, heeft geen vinkje en geen zin", u["vinkGewoon"] == [True, ""], j("vinkGewoon"))
+    bands = open(os.path.join(ROOT, "bands.js"), encoding="utf-8").read()
+    check("TT-673: Bandprofiel verwijderen: 'Ik begrijp dat het bandprofiel definitief wordt verwijderd.'; de oude algemene zin staat nergens meer",
+          "'Ik begrijp dat het bandprofiel definitief wordt verwijderd.'" in bands
+          and "niet terug kan." not in alles + bands + open(os.path.join(ROOT, "utils.js"), encoding="utf-8").read(), "")
+    check("TT-669 (besluit Ronald 18-11-2026): bij 10 bannerbeelden en een profielfoto staan elf stippen, binnen de hoes op 360px",
+          u["stippen"] == {"aantal": 11, "binnen": True}, j("stippen"))
+    check("geen paginafouten in blok 169", not fouten, "; ".join(fouten)[:300])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -20592,6 +20751,7 @@ BLOKKEN = [
     blok_bundel_b_start,
     blok_bundel_b,
     blok_bundel_f,
+    blok_bevindingen_1711,
 ]
 
 

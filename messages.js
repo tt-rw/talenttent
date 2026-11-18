@@ -669,7 +669,8 @@ function gesprekVerwijderen(otherId, naam) {
     `Gesprek met ${wie} verwijderen? Het verdwijnt alleen bij jou.${houdt}`,
     () => gesprekVerwijderenUitvoeren(otherId),
     'Verwijderen',
-    true
+    true, null, null, null,
+    'Ik begrijp dat het gesprek bij mij definitief verdwijnt.'
   );
 }
 

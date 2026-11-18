@@ -99,7 +99,7 @@
 <link rel="preload" href="tt-woordmerk.woff2" as="font" type="font/woff2" crossorigin>
 
 <link rel="preload" href="inter-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=20261116b">
+<link rel="stylesheet" href="styles.css?v=20261118a">
 </head>
 <body class="landing-op-foto">
 
@@ -230,12 +230,10 @@
     </span>
     <span>Berichten</span>
   </button>
-  <button class="bottom-nav-btn" id="bottomNavBands" onclick="requireLogin('bands')">
-    <span class="bottom-nav-icon-wrap">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
 
-      <span id="bandsDotBottom" class="bands-dot" style="display:none;" aria-label="Een verzoek wacht"></span>
-    </span>
+
+  <button class="bottom-nav-btn" id="bottomNavBands" onclick="requireLogin('bands')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></svg>
     <span>Bands</span>
   </button>
 </nav>
@@ -1667,7 +1665,7 @@
   <div class="search-wrap">
     <div class="search-filters doc-view">
       <div class="panel-title scherm-titel">Privacyverklaring</div>
-      <div class="doc-updated">Laatst bijgewerkt: 15 november 2026</div>
+      <div class="doc-updated">Laatst bijgewerkt: 18 november 2026</div>
 
       <h2>1. Wie zijn wij</h2>
       <p>TalentTent (talenttent.org) is een platform dat muzikanten met elkaar in contact brengt voor jams, repetities en optredens. TalentTent wordt beheerd door Ronald, als privépersoon.</p>
@@ -1695,7 +1693,7 @@
 
       <h2>3. Waarom we deze gegevens gebruiken</h2>
       <p>We gebruiken je gegevens om je een profiel te geven dat andere muzikanten kunnen vinden, om muzikanten en bands die bij elkaar passen te kunnen tonen in de zoekfunctie, om berichten tussen gebruikers mogelijk te maken, en om je account veilig te houden en misbruik tegen te gaan.</p>
-      <p>We sturen je e-mails die bij je account horen: een bevestiging van je e-mailadres, een nieuw wachtwoord als je dat vraagt, een bevestiging als je je account verwijdert, en een overzicht van nieuwe berichten en passende muzikanten, volgens de voorkeur die je zelf instelt bij <span class="niet-afbreken">E-mailvoorkeuren</span>.</p>
+      <p>We sturen je e-mails die bij je account horen: een bevestiging van je e-mailadres, een nieuw wachtwoord als je dat vraagt, een bevestiging als je je account verwijdert, en een overzicht van nieuwe berichten en passende muzikanten, volgens de voorkeur die je zelf instelt bij <span class="niet-afbreken">Meldingen</span>.</p>
       <p>Wij geven je gegevens alleen door aan de partijen in hoofdstuk 7.</p>
 
       <h2>4. Grondslag</h2>
@@ -1909,7 +1907,7 @@
 
       <div class="tile" onclick="openSearchPrefsModal()">
         <div style="flex:1;">
-          <div class="tile-title">E-mailvoorkeuren</div>
+          <div class="tile-title">Meldingen</div>
           <div class="tile-sub">hoe vaak je bericht krijgt over nieuwe matches</div>
         </div>
       </div>
@@ -2078,9 +2076,10 @@
     <div id="confirmKeuzes"></div>
 
 
+
     <label class="akkoord-regel confirm-begrip" id="confirmBegrip" hidden>
       <input type="checkbox" id="confirmBegripVink" onchange="zetConfirmKnop()">
-      <span>Ik begrijp dat dit niet terug kan.</span>
+      <span id="confirmBegripTekst"></span>
     </label>
 
     <div class="btn-row">
@@ -2216,10 +2215,11 @@
 
 
 
+
 <div class="modal-overlay" id="searchPrefsModal" onclick="if(event.target===this)closeSearchPrefsModal()">
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeSearchPrefsModal()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-    <div class="filter-title" style="margin-bottom:4px;">E-mailvoorkeuren</div>
+    <div class="filter-title" style="margin-bottom:4px;">Meldingen</div>
     <p class="voorkeur-intro">Deze keuze bepaalt ook of je een bericht van TalentTent krijgt in je berichten, en een seintje op je toestel. Je zoekresultaten veranderen hier niet door.</p>
 
 
@@ -2333,17 +2333,17 @@
 
 
 <link rel="preload" href="supabase.js?v=2.118.0" as="script">
-<link rel="preload" href="core.js?v=20261116b" as="script">
-<link rel="preload" href="utils.js?v=20261116b" as="script">
+<link rel="preload" href="core.js?v=20261118a" as="script">
+<link rel="preload" href="utils.js?v=20261118a" as="script">
 <link rel="preload" href="veiligheid.js?v=20261116b" as="script">
 <link rel="preload" href="auth.js?v=20261116b" as="script">
 <link rel="preload" href="postcode.js?v=20261116b" as="script">
-<link rel="preload" href="wizard.js?v=20261117a" as="script">
-<link rel="preload" href="ouder.js?v=20261116a" as="script">
+<link rel="preload" href="wizard.js?v=20261118a" as="script">
+<link rel="preload" href="ouder.js?v=20261118a" as="script">
 <link rel="preload" href="search.js?v=20261117a" as="script">
-<link rel="preload" href="musicians.js?v=20261116b" as="script">
-<link rel="preload" href="bands.js?v=20261116b" as="script">
-<link rel="preload" href="messages.js?v=20261116b" as="script">
+<link rel="preload" href="musicians.js?v=20261118a" as="script">
+<link rel="preload" href="bands.js?v=20261118a" as="script">
+<link rel="preload" href="messages.js?v=20261118a" as="script">
 <link rel="preload" href="push.js?v=20261116b" as="script">
 <link rel="preload" href="modals-shared.js?v=20261116a" as="script">
 <script src="supabase.js?v=2.118.0"></script>
@@ -2363,17 +2363,17 @@
     document.getElementById('backendErrorOverlay').classList.add('visible');
   }
 </script>
-<script src="core.js?v=20261116b"></script>
-<script src="utils.js?v=20261116b"></script>
+<script src="core.js?v=20261118a"></script>
+<script src="utils.js?v=20261118a"></script>
 <script src="veiligheid.js?v=20261116b"></script>
 <script src="auth.js?v=20261116b"></script>
 <script src="postcode.js?v=20261116b"></script>
-<script src="wizard.js?v=20261117a"></script>
-<script src="ouder.js?v=20261116a"></script>
+<script src="wizard.js?v=20261118a"></script>
+<script src="ouder.js?v=20261118a"></script>
 <script src="search.js?v=20261117a"></script>
-<script src="musicians.js?v=20261116b"></script>
-<script src="bands.js?v=20261116b"></script>
-<script src="messages.js?v=20261116b"></script>
+<script src="musicians.js?v=20261118a"></script>
+<script src="bands.js?v=20261118a"></script>
+<script src="messages.js?v=20261118a"></script>
 <script src="push.js?v=20261116b"></script>
 <script src="modals-shared.js?v=20261116a"></script>
 <script>
