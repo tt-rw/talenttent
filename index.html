@@ -266,7 +266,7 @@
           : '';
         if (!db) return '';
         try { if (localStorage.getItem('sb-' + db.split('//')[1].split('.')[0] + '-auth-token')) return ''; } catch (e) { }
-        return db + '/storage/v1/object/public/landing/v2/zangeres.jpg';
+        return db + '/storage/v1/object/public/landing/v2/gitarist.jpg';
       }
       (function () {
         var adres = ttEersteLandingsfoto(location.hostname);
@@ -281,8 +281,8 @@
     </script>
     <div class="landing-verloop" aria-hidden="true"></div>
     <div class="landing-kop">
-      <h1 class="landing-title">Zoek een<br><span class="landing-woord" id="landingWoord">zangeres</span></h1>
-      <p class="landing-waarvoor" id="landingWaarvoor">Voor je eerste optreden.</p>
+      <h1 class="landing-title">Zoek een<br><span class="landing-woord" id="landingWoord">gitarist</span></h1>
+      <p class="landing-waarvoor" id="landingWaarvoor">Voor een jam op zondag.</p>
     </div>
   </div>
   <div class="landing-onder">
@@ -1686,6 +1686,7 @@
         <li>Blokkeringen en meldingen die je zelf doet</li>
         <li>Technische foutmeldingen, zodat we fouten in de app kunnen herstellen</li>
         <li>Als je meldingen op je toestel aanzet: de gegevens die nodig zijn om die melding naar je toestel te sturen</li>
+        <li>Je soort toestel, of je de app vanaf je beginscherm opent en of je meldingen toestaat. Zo zien we of meldingen aankomen.</li>
       </ul>
       <p>Ben je jonger dan 16 jaar? Dan bewaren we ook je voornaam en het e-mailadres van je ouder of verzorger, om hem of haar om toestemming te vragen. Die mail bevat een persoonlijke link. De link is 14 dagen geldig en werkt één keer.</p>
       <p>Als je een band aanmaakt, verzamelen we vergelijkbare gegevens over die band.</p>
@@ -2333,7 +2334,7 @@
 
 
 <link rel="preload" href="supabase.js?v=2.118.0" as="script">
-<link rel="preload" href="core.js?v=20261118a" as="script">
+<link rel="preload" href="core.js?v=20261118b" as="script">
 <link rel="preload" href="utils.js?v=20261118a" as="script">
 <link rel="preload" href="veiligheid.js?v=20261116b" as="script">
 <link rel="preload" href="auth.js?v=20261116b" as="script">
@@ -2344,7 +2345,7 @@
 <link rel="preload" href="musicians.js?v=20261118a" as="script">
 <link rel="preload" href="bands.js?v=20261118a" as="script">
 <link rel="preload" href="messages.js?v=20261118a" as="script">
-<link rel="preload" href="push.js?v=20261116b" as="script">
+<link rel="preload" href="push.js?v=20261118a" as="script">
 <link rel="preload" href="modals-shared.js?v=20261116a" as="script">
 <script src="supabase.js?v=2.118.0"></script>
 <script>
@@ -2363,7 +2364,7 @@
     document.getElementById('backendErrorOverlay').classList.add('visible');
   }
 </script>
-<script src="core.js?v=20261118a"></script>
+<script src="core.js?v=20261118b"></script>
 <script src="utils.js?v=20261118a"></script>
 <script src="veiligheid.js?v=20261116b"></script>
 <script src="auth.js?v=20261116b"></script>
@@ -2374,7 +2375,7 @@
 <script src="musicians.js?v=20261118a"></script>
 <script src="bands.js?v=20261118a"></script>
 <script src="messages.js?v=20261118a"></script>
-<script src="push.js?v=20261116b"></script>
+<script src="push.js?v=20261118a"></script>
 <script src="modals-shared.js?v=20261116a"></script>
 <script>
 

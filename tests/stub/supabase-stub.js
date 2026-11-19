@@ -98,6 +98,8 @@
       // volgorde van de vraag. Een blok dat groepen wil toetsen, zet hier
       // zelf een functie neer en herstelt hem daarna.
       tt_markeer_actief: null,
+      // TT-677: de app meldt soort toestel en stand van het seintje; geen antwoord.
+      tt_toestel_melden: null,
       // TT-435: een gesprek verbergen. Zet het moment vast en leest de
       // ongelezen berichten van de ander als gelezen, zoals de database.
       tt_gesprek_verbergen(p) {

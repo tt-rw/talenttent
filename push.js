@@ -169,6 +169,7 @@ async function ttSeintjeVraagAan() {
   if (uitslag === 'aan') showToast('Je krijgt een seintje bij nieuwe matches');
   else if (uitslag === 'geblokkeerd') showToast('Meldingen staan in je browser uit. Zet ze daar aan en probeer het opnieuw.');
   else if (uitslag === 'fout') showToast(friendlyErrorMessage(null, 'het seintje aanzetten'));
+  ttToestelMelden();
 }
 function ttSeintjeVraagNietNu() {
   try { localStorage.setItem(TT_SEINTJE_NIET_NU, '1'); } catch (e) { }
@@ -204,6 +205,54 @@ async function pushSchakelen(aan) {
     else if (uitslag === 'fout') showToast(friendlyErrorMessage(null, 'het seintje aanzetten'));
   }
   vulPushInInstellingen();
+  ttToestelMelden();
+}
+
+
+
+
+
+
+
+
+
+function ttToestelPlatform() {
+  const ua = navigator.userAgent || '';
+  if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'iphone';
+  if (/Android/.test(ua)) return 'android';
+  return 'computer';
+}
+function ttVanafBeginscherm() {
+  try {
+    return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  } catch (e) { return false; }
+}
+
+
+
+
+async function ttToestelMelden() {
+  try {
+    let toestemming = 'kan_niet';
+    let endpoint = null;
+    if (ttPushApi.beschikbaar()) {
+      const t = ttPushApi.toestemming();
+      toestemming = t === 'granted' ? 'gegeven' : t === 'denied' ? 'geweigerd' : 'nog_niet';
+      if (t === 'granted') {
+        const sub = await ttPushApi.abonnement();
+        endpoint = sub ? sub.endpoint : null;
+      }
+    }
+    const { error } = await db.rpc('tt_toestel_melden', {
+      p_platform: ttToestelPlatform(),
+      p_beginscherm: ttVanafBeginscherm(),
+      p_toestemming: toestemming,
+      p_endpoint: endpoint,
+    });
+    if (error) logCaught('ttToestelMelden', error);
+  } catch (e) {
+    logCaught('ttToestelMelden', e);
+  }
 }
 
 

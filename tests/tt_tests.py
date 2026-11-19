@@ -5495,7 +5495,7 @@ window.TT_STUB.fnAntwoord = {};
         # keuzeknoppen, de knop opent altijd Zoeken, past op één scherm.
         import base64
         FOTO49 = base64.b64decode("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAQAAkDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwCnRRRXsnkn/9k=")
-        WOORDEN49 = ["zangeres", "drummer", "bassist", "gitarist", "zanger", "band",
+        WOORDEN49 = ["gitarist", "zangeres", "drummer", "bassist", "zanger", "band",
                      "toetsenist", "violist", "saxofonist", "DJ"]
         def ctx49(w, h, **kw):
             c = browser.new_context(viewport={"width": w, "height": h}, **kw)
@@ -5506,7 +5506,7 @@ window.TT_STUB.fnAntwoord = {};
             gevraagd = []
             def foto(r):
                 naam = r.request.url.rsplit("/", 1)[1]; gevraagd.append(naam)
-                if naam == "zangeres.jpg": r.fulfill(status=200, content_type="image/jpeg", body=FOTO49)
+                if naam == "gitarist.jpg": r.fulfill(status=200, content_type="image/jpeg", body=FOTO49)
                 else: r.fulfill(status=400, body="")
             pg.route("**/storage/v1/object/public/landing/**", foto)
             pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load"); pg.wait_for_timeout(600)
@@ -5523,8 +5523,8 @@ window.TT_STUB.fnAntwoord = {};
           sub: document.querySelector('.landing-sub').textContent,
           login: document.querySelector('.landing-login').textContent,
           klok: !!landingKlok })""")
-        check("de kop leest \"Zoek een zangeres\", zonder punt, met \"Voor je eerste optreden.\" eronder",
-              st49["kop"] == "Zoek eenzangeres" and st49["regel"] == "Voor je eerste optreden.", json.dumps(st49)[:300])
+        check("de kop leest \"Zoek een gitarist\", zonder punt, met \"Voor een jam op zondag.\" eronder",
+              st49["kop"] == "Zoek eengitarist" and st49["regel"] == "Voor een jam op zondag.", json.dumps(st49)[:300])
         check("tien woorden in de volgorde van Ronald, elk een eigen laag, 4 seconden per woord",
               st49["woorden"] == WOORDEN49 and st49["dias"] == 10 and st49["tempo"] == 4000, json.dumps(st49)[:300])
         check("geen keuzeknoppen: alleen \"Zoek muzikanten\", \"Inloggen\" en \"Profiel aanmaken\" (geen pijl, TT-543 onderdeel 2)",
@@ -5540,7 +5540,7 @@ window.TT_STUB.fnAntwoord = {};
           return { img0: !!d[0].querySelector('img') && d[0].querySelector('img').naturalWidth > 0,
                    img1: !!d[1].querySelector('img'), gevraagd: d.filter(x => x.querySelector('img[src]')).length }; }""")
         check("bij het openen worden alleen de eerste twee foto's gevraagd",
-              sorted(g49) == ["drummer.jpg", "zangeres.jpg"], json.dumps(g49))
+              sorted(g49) == ["gitarist.jpg", "zangeres.jpg"], json.dumps(g49))
         check("een foto die laadt staat in beeld; een woord zonder foto houdt het warme vlak",
               fo49["img0"] and not fo49["img1"], json.dumps(fo49))
         # Besluit Ronald, 30-09-2026: de foto's zijn via de landingspagina niet te openen.
@@ -5569,9 +5569,9 @@ window.TT_STUB.fnAntwoord = {};
         na49 = p49.evaluate("""() => ({ woord: document.getElementById('landingWoord').textContent,
           regel: document.getElementById('landingWaarvoor').textContent,
           aan: [...document.querySelectorAll('#landingDias .landing-dia')].findIndex(d => d.classList.contains('aan')) })""")
-        check("na 4 seconden: \"drummer\" met \"Voor een band die wél repeteert.\", tweede foto in beeld",
-              na49 == {"woord": "drummer", "regel": "Voor een band die wél repeteert.", "aan": 1}, json.dumps(na49))
-        check("de derde foto wordt gevraagd zodra de tweede in beeld komt", "bassist.jpg" in g49, json.dumps(g49))
+        check("na 4 seconden: \"zangeres\" met \"Voor je eerste optreden.\", tweede foto in beeld",
+              na49 == {"woord": "zangeres", "regel": "Voor je eerste optreden.", "aan": 1}, json.dumps(na49))
+        check("de derde foto wordt gevraagd zodra de tweede in beeld komt", "drummer.jpg" in g49, json.dumps(g49))
         # De knop opent altijd Zoeken, ook als "band" in beeld staat.
         p49.evaluate("landingNaar(5)"); p49.wait_for_timeout(400)
         check("een sprong naar een woord vraagt ook de foto van dat woord zelf op, niet alleen de volgende",
@@ -5627,7 +5627,7 @@ window.TT_STUB.fnAntwoord = {};
         c, pg, fo, _ = ctx49(390, 844, reduced_motion="reduce")
         pg.wait_for_timeout(4300)
         rm49 = pg.evaluate("({ klok: !!landingKlok, woord: document.getElementById('landingWoord').textContent })")
-        check("bij \"minder beweging\" blijft het eerste woord staan", rm49 == {"klok": False, "woord": "zangeres"}, json.dumps(rm49))
+        check("bij \"minder beweging\" blijft het eerste woord staan", rm49 == {"klok": False, "woord": "gitarist"}, json.dumps(rm49))
         c.close()
         # Een verborgen tabblad: het wisselen staat stil.
         c, pg, fo, _ = ctx49(390, 844)
@@ -20023,8 +20023,8 @@ def blok_bundel_a():
         b = u["bezoeker"]
         check("TT-617: een bezoeker krijgt de eerste foto vóór de scripts er zijn (index.html, niet core.js)",
               bool(b["eerste"]) and b["eerste"]["appKlaar"] is False and b["eerste"]["core"] == "undefined" and b["eerste"]["aan"], json.dumps(b["eerste"]))
-        check("TT-617: de foto's komen uit landing/v2; eerst zangeres, daarna alleen drummer",
-              b["gevraagd"] == ["landing/v2/zangeres.jpg", "landing/v2/drummer.jpg"], json.dumps(b["gevraagd"]))
+        check("TT-617: de foto's komen uit landing/v2; eerst gitarist, daarna alleen zangeres",
+              b["gevraagd"] == ["landing/v2/gitarist.jpg", "landing/v2/zangeres.jpg"], json.dumps(b["gevraagd"]))
         check("TT-617: daarna staan alle tien de lagen er, de eerste in beeld, en het wisselen loopt",
               b["lagen"] == 10 and b["aan"] == 0 and b["klok"], json.dumps(b)[:300])
         check("TT-617: het webadres van de eerste foto in index.html is voor elk webadres gelijk aan dat in core.js",
@@ -20051,7 +20051,7 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instrumen
         u["verlopen"] = {"gevraagd": gevraagd[:], "view": pg.evaluate("document.querySelector('.app-view.active').id"),
                          "klok": pg.evaluate("!!landingKlok"), "lagen": pg.evaluate("document.querySelectorAll('#landingDias .landing-dia').length")}
         check("TT-617: een verlopen sessie: de landingspagina blijft en krijgt na het opstarten toch zijn foto's en het wisselen",
-              u["verlopen"]["view"] == "view-landing" and u["verlopen"]["gevraagd"] == ["landing/v2/zangeres.jpg", "landing/v2/drummer.jpg"]
+              u["verlopen"]["view"] == "view-landing" and u["verlopen"]["gevraagd"] == ["landing/v2/gitarist.jpg", "landing/v2/zangeres.jpg"]
               and u["verlopen"]["klok"] and u["verlopen"]["lagen"] == 10, json.dumps(u["verlopen"]))
         ctx.close()
         # (4) de eerste foto laadt niet: het warme vlak, geen fout.
@@ -20158,10 +20158,10 @@ def blok_bundel_b_start():
                   return uit; }""")
                 u["wissel"] = w
                 check("TT-662: de eerste wissel komt 4 s na het eerste beeld, daarna elke 4 s",
-                      w["begin"] and w["na250"] == "zangeres" and w["na1150"] == "drummer" and w["na4050"] == "drummer" and w["na5350"] == "bassist",
+                      w["begin"] and w["na250"] == "gitarist" and w["na1150"] == "zangeres" and w["na4050"] == "zangeres" and w["na5350"] == "drummer",
                       json.dumps(w))
-                check("TT-662: is de app later klaar dan 4 s, dan wisselt hij zodra de foto van de drummer binnen is",
-                      w["wachtOpFoto"] == "zangeres" and w["naFoto"] == "drummer", json.dumps(w))
+                check("TT-662: is de app later klaar dan 4 s, dan wisselt hij zodra de foto van de zangeres binnen is",
+                      w["wachtOpFoto"] == "gitarist" and w["naFoto"] == "zangeres", json.dumps(w))
             ctx.close()
         browser.close()
     httpd.shutdown()
@@ -20685,6 +20685,123 @@ def blok_bevindingen_1711():
     check("geen paginafouten in blok 169", not fouten, "; ".join(fouten)[:300])
 
 
+def blok_soort_toestel():
+    print("\nBlok 170 — TT-677: de app meldt soort toestel, beginscherm en de stand van het seintje")
+    stub_js = open(STUB, encoding="utf-8").read()
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844})
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: fouten.append(str(e)))
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        for pat in ("**/fonts.googleapis.com/**", "**/fonts.gstatic.com/**", "**/api.pdok.nl/**", "**/itunes.apple.com/**", "**/img.youtube.com/**"):
+            pg.route(pat, lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(800)
+        u = pg.evaluate(r"""async () => {
+          const S = window.TT_STUB, u = {};
+          const w = (n = 100) => new Promise(r => setTimeout(r, n));
+          const rpcs = () => S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_toestel_melden');
+          const laatste = () => { const r = rpcs(); return r.length ? r[r.length - 1].params : null; };
+          const m = { beschikbaar: true, toestemming: 'default', sub: null };
+          ttPushApi.beschikbaar = () => m.beschikbaar;
+          ttPushApi.toestemming = () => m.toestemming;
+          ttPushApi.abonnement = async () => m.sub;
+          const zetUA = (ua, aanraak) => {
+            Object.defineProperty(navigator, 'userAgent', { configurable: true, get: () => ua });
+            Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, get: () => aanraak });
+          };
+          // 1. De stand van het seintje, vier keer.
+          S.calls.length = 0;
+          m.beschikbaar = false; await ttToestelMelden(); u.kanNiet = laatste();
+          m.beschikbaar = true; m.toestemming = 'denied'; await ttToestelMelden(); u.geweigerd = laatste();
+          m.toestemming = 'default'; await ttToestelMelden(); u.nogNiet = laatste();
+          m.toestemming = 'granted'; m.sub = { endpoint: 'https://push.example/abc' }; await ttToestelMelden(); u.gegeven = laatste();
+          m.sub = null; await ttToestelMelden(); u.gegevenZonderSub = laatste();
+          // 2. De soort toestel.
+          zetUA('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', 5); u.iphone = ttToestelPlatform();
+          zetUA('Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)', 5); u.ipadOud = ttToestelPlatform();
+          zetUA('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15', 5); u.ipadNieuw = ttToestelPlatform();
+          zetUA('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15', 0); u.mac = ttToestelPlatform();
+          zetUA('Mozilla/5.0 (Linux; Android 14; SM-S911B) Chrome/130.0 Mobile', 5); u.android = ttToestelPlatform();
+          zetUA('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0', 0); u.windows = ttToestelPlatform();
+          // 3. Vanaf het beginscherm.
+          u.beginNee = ttVanafBeginscherm();
+          const echtMM = window.matchMedia;
+          window.matchMedia = q => ({ matches: q === '(display-mode: standalone)' });
+          u.beginJa = ttVanafBeginscherm();
+          window.matchMedia = () => ({ matches: false });
+          Object.defineProperty(navigator, 'standalone', { configurable: true, get: () => true });
+          u.beginIos = ttVanafBeginscherm();
+          delete navigator.standalone;
+          window.matchMedia = () => { throw new Error('stuk'); };
+          u.beginFout = ttVanafBeginscherm();
+          window.matchMedia = echtMM;
+          // 4. Een storing: alleen in het foutenlog, geen melding, geen fout naar boven.
+          const echtLog = window.logCaught; const log = [];
+          window.logCaught = (bron, e) => log.push(bron);
+          S.rpcErrors['tt_toestel_melden'] = { code: 'XX', message: 'stuk' };
+          let gooide = false;
+          try { await ttToestelMelden(); } catch (e) { gooide = true; }
+          delete S.rpcErrors['tt_toestel_melden'];
+          ttPushApi.toestemming = () => { throw new Error('browser stuk'); };
+          try { await ttToestelMelden(); } catch (e) { gooide = true; }
+          ttPushApi.toestemming = () => m.toestemming;
+          window.logCaught = echtLog;
+          u.storing = { log, gooide, toast: !!document.querySelector('.toast.show, #toast.show') };
+          // 5. Na het aan- of uitzetten van het seintje meldt de app opnieuw.
+          const echtMeld = window.ttToestelMelden; let n = 0;
+          window.ttToestelMelden = async () => { n++; };
+          window.ttSeintjeAanzetten = async () => 'aan';
+          window.ttSeintjeUitzetten = async () => true;
+          window.ttSeintjeStand = async () => 'uit';
+          await pushSchakelen(true); await w();
+          u.naSchakelen = n;
+          document.body.insertAdjacentHTML('beforeend', '<div id="ttSeintjeVraag"></div>');
+          await ttSeintjeVraagAan(); await w();
+          u.naVraag = n;
+          window.ttToestelMelden = echtMeld;
+          // 6. Niets op het toestel bewaard.
+          const voor = JSON.stringify(Object.keys(localStorage).sort());
+          await ttToestelMelden();
+          u.opslag = voor === JSON.stringify(Object.keys(localStorage).sort());
+          return u;
+        }""")
+        browser.close()
+    httpd.shutdown()
+    core = open(os.path.join(ROOT, "core.js"), encoding="utf-8").read()
+    push = open(os.path.join(ROOT, "push.js"), encoding="utf-8").read()
+    verwacht = lambda st, ep: {"p_platform": "computer", "p_beginscherm": False, "p_toestemming": st, "p_endpoint": ep}
+    check("TT-677: geen JavaScript-fout", not fouten, "; ".join(fouten)[:300])
+    check("TT-677: geen seintje mogelijk → kan_niet, zonder link", u.get("kanNiet") == verwacht("kan_niet", None), str(u.get("kanNiet")))
+    check("TT-677: meldingen geweigerd → geweigerd", u.get("geweigerd") == verwacht("geweigerd", None), str(u.get("geweigerd")))
+    check("TT-677: nog niet gevraagd → nog_niet", u.get("nogNiet") == verwacht("nog_niet", None), str(u.get("nogNiet")))
+    check("TT-677: toestemming met abonnement → gegeven, met de link", u.get("gegeven") == verwacht("gegeven", "https://push.example/abc"), str(u.get("gegeven")))
+    check("TT-677: toestemming zonder abonnement → gegeven, zonder link", u.get("gegevenZonderSub") == verwacht("gegeven", None), str(u.get("gegevenZonderSub")))
+    check("TT-677: iPhone en iPad (ook als Mac met aanraakscherm) → iphone",
+          [u.get("iphone"), u.get("ipadOud"), u.get("ipadNieuw")] == ["iphone"] * 3, str([u.get("iphone"), u.get("ipadOud"), u.get("ipadNieuw")]))
+    check("TT-677: Mac zonder aanraakscherm en Windows → computer; Android → android",
+          [u.get("mac"), u.get("windows"), u.get("android")] == ["computer", "computer", "android"], str([u.get("mac"), u.get("windows"), u.get("android")]))
+    check("TT-677: beginscherm: nee in de browser, ja als app (Android en iPhone), nee bij een fout",
+          [u.get("beginNee"), u.get("beginJa"), u.get("beginIos"), u.get("beginFout")] == [False, True, True, False],
+          str([u.get("beginNee"), u.get("beginJa"), u.get("beginIos"), u.get("beginFout")]))
+    st = u.get("storing") or {}
+    check("TT-677: een storing komt alleen in het foutenlog, zonder melding en zonder fout naar boven",
+          st.get("log") == ["ttToestelMelden", "ttToestelMelden"] and not st.get("gooide") and not st.get("toast"), str(st))
+    check("TT-677: na Seintje aan of uit (Instellingen) en na Zet aan (gesprek) meldt de app opnieuw",
+          u.get("naSchakelen") == 1 and u.get("naVraag") == 2, f"{u.get('naSchakelen')}, {u.get('naVraag')}")
+    check("TT-677: niets op het toestel bewaard (besluit Ronald: geen kenmerk)", u.get("opslag") is True, str(u.get("opslag")))
+    check("TT-677: de start meldt alleen met een eigen profiel, zonder te wachten",
+          "if (hasOwnProfile) ttToestelMelden();" in core and "await ttToestelMelden" not in core, "core.js")
+    html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    check("TT-677: de privacyverklaring noemt het (besluit Ronald 18-11-2026: \"ok\")",
+          "<li>Je soort toestel, of je de app vanaf je beginscherm opent en of je meldingen toestaat. Zo zien we of meldingen aankomen.</li>" in html, "index.html")
+    check("TT-677: de app raakt de tabel nooit rechtstreeks", "from('toestel_soort')" not in push and "from('toestel_soort')" not in core, "push.js/core.js")
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -20752,6 +20869,7 @@ BLOKKEN = [
     blok_bundel_b,
     blok_bundel_f,
     blok_bevindingen_1711,
+    blok_soort_toestel,
 ]
 
 

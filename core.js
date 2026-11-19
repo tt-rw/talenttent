@@ -604,6 +604,7 @@ async function onUserLoggedIn(user) {
 
   hasOwnProfile = !!(await getMyMusicianId());
   if (hasOwnProfile) ouderKoppelingHerhalen(user);
+  if (hasOwnProfile) ttToestelMelden();
 
 
 
@@ -1394,10 +1395,10 @@ function schuifProfiel(vorigeView, view, mode, oudEl, oudVak, oudKind) {
 
 
 const LANDING_WOORDEN = [
+  { woord: 'gitarist',   waarvoor: 'Voor een jam op zondag.' },
   { woord: 'zangeres',   waarvoor: 'Voor je eerste optreden.' },
   { woord: 'drummer',    waarvoor: 'Voor een band die wél repeteert.' },
   { woord: 'bassist',    waarvoor: 'Om samen te oefenen.' },
-  { woord: 'gitarist',   waarvoor: 'Voor een jam op zondag.' },
   { woord: 'zanger',     waarvoor: 'Voor eigen nummers.' },
   { woord: 'band',       waarvoor: 'Voor wie nog geen band heeft.' },
   { woord: 'toetsenist', waarvoor: 'Voor jazz, soul of iets heel anders.' },
