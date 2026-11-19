@@ -214,7 +214,6 @@ async function checkUsernameAvailability(statusElId, inputElId, excludeId) {
 
     usernameCheckFailed = true;
     lastUsernameCheckError = (e && e.message) ? e.message : String(e);
-    console.error('Technische fout bij gebruikersnaam-controle:', e);
     zetUitslag(statusId, '');
     zetUsernameLang(inputId, friendlyErrorMessage(e, 'de gebruikersnaam controleren'));
     return false;

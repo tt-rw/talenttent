@@ -567,7 +567,6 @@ function selectCitySuggestion(name, listId) {
   }
   const fieldMap = {
     acFilterCityList: { field: 'filterCity', status: 'filterCityStatus' },
-    acFilterBandCityList: { field: 'filterBandCity', status: 'filterBandCityStatus' },
     acFilterSetlistCityList: { field: 'filterSetlistCity', status: 'filterSetlistCityStatus' }
   };
   const target = fieldMap[listId];

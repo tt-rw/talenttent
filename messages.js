@@ -349,7 +349,6 @@ async function refreshUnreadBadge() {
   } catch (e) {
     logCaught('refreshUnreadBadge', e);
 
-    console.error('refreshUnreadBadge', e);
   }
 }
 
