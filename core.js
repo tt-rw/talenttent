@@ -396,11 +396,17 @@ async function appInit() {
 
 
 
+
+
     if (session?.user) {
-      try {
-        const { data: vers } = await db.auth.getUser();
-        if (vers?.user && vers.user.id === session.user.id) session.user = vers.user;
-      } catch (e) { logCaught('appInit.getUser', e); }
+      const opgeslagen = session.user;
+      db.auth.getUser().then(({ data: vers }) => {
+        if (vers?.user && vers.user.id === opgeslagen.id && currentUser && currentUser.id === opgeslagen.id) {
+          const anders = (vers.user.email || '') !== (currentUser.email || '');
+          currentUser = vers.user;
+          if (anders) verversEmailWeergave(currentUser.email || '');
+        }
+      }).catch(e => logCaught('appInit.getUser', e));
     }
     if (session?.user) {
       currentUser = session.user;
@@ -608,7 +614,10 @@ async function onUserLoggedIn(user) {
 
 
 
-  await laadBlokkades();
+
+
+
+  const blokkadesKlaar = laadBlokkades();
 
 
 
@@ -616,6 +625,7 @@ async function onUserLoggedIn(user) {
 
 
   if (pendingMessageRecipient) {
+    await blokkadesKlaar;
     const mid = await getMyMusicianId();
     if (mid) {
       const recipient = pendingMessageRecipient;

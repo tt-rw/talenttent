@@ -20802,6 +20802,119 @@ def blok_soort_toestel():
     check("TT-677: de app raakt de tabel nooit rechtstreeks", "from('toestel_soort')" not in push and "from('toestel_soort')" not in core, "push.js/core.js")
 
 
+def blok_wachttijd():
+    print("\nBlok 171 — wachttijd (sessie 180, 20-11-2026): de start wacht niet op de blokkades en niet op het e-mailadres, de verbinding met de database gaat vooraf open (TT-619); Je setlist tekent één keer en laat een open keuzemenu staan (TT-636)")
+    stub_js = open(STUB, encoding="utf-8").read()
+    ingelogd = stub_js + """
+window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.first_name, musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
+window.TT_STUB.data.musician_blocks = [{ blocker_id: 'm1', blocked_id: 'm3' }];
+"""
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=ingelogd))
+        pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(1200)
+        u = pg.evaluate(r"""async () => {
+          const w = (ms = 300) => new Promise(r => setTimeout(r, ms));
+          const S = window.TT_STUB, u = {}, $ = id => document.getElementById(id);
+          const Q = Object.getPrototypeOf(db.from('x'));
+          const thenEcht = Q.then;
+          Q.then = function (ok, err) { const d = window.__traag || 0, self = this;
+            return new Promise(r => setTimeout(r, d)).then(() => thenEcht.call(self, ok, err)); };
+          const rpcEcht = db.rpc;
+          db.rpc = function (n, a) { const q = rpcEcht.call(this, n, a), t = q.then;
+            q.then = (ok, err) => new Promise(r => setTimeout(r, window.__traag || 0)).then(() => t.call(q, ok, err)); return q; };
+          // ── TT-619: de verbinding met de database gaat vooraf open, naar de database van dit webadres ──
+          const pc = [...document.querySelectorAll('link[rel="preconnect"]')];
+          u.preconnect = pc.map(l => [l.href.replace(/\/$/, ''), l.crossOrigin]);
+          const dbA = typeof ttDatabaseAdres === 'function' ? ttDatabaseAdres : () => 'ontbreekt';
+          u.dbVanAdres = Object.keys(TT_DB_PER_ADRES).filter(h => dbA(h) !== TT_DB_PER_ADRES[h].url);
+          u.dbVreemd = dbA('voorbeeld.nl');
+          u.dbHier = TT_DB_PER_ADRES['127.0.0.1'].url;
+          // ── TT-619: na inloggen staat Mijn Profiel er zonder op de blokkades te wachten ──
+          const blokEcht = window.laadBlokkades;
+          window.laadBlokkades = () => new Promise(r => setTimeout(r, 2000));
+          showView('about'); delete $('myProfileContent').dataset.klaar;
+          onUserLoggedIn(currentUser); await w(600);
+          u.profielZonderBlokkades = { view: huidigeView, klaar: $('myProfileContent').dataset.klaar === currentUser.id };
+          window.laadBlokkades = blokEcht;
+          await w(1600);
+          // ── TT-619: Zoeken wacht op de lopende vraag naar de blokkades ──
+          wisBlokkades(); window.__traag = 400;
+          laadBlokkades();
+          const t0 = performance.now(); await laadBlokkadesIndienNodig();
+          u.zoekWacht = { ms: Math.round(performance.now() - t0), geblokkeerd: blokkadeDoorMij.has('m3') };
+          // Een laat antwoord van het vorige account vult niets meer.
+          laadBlokkades(); await w(50); wisBlokkades(); await w(900);
+          u.oudAntwoord = blokkadeDoorMij.size + blokkadeOpMij.size;
+          window.__traag = 0; await laadBlokkades();
+          // ── TT-619: de start wacht niet op het e-mailadres van de server ──
+          const guEcht = db.auth.getUser.bind(db.auth);
+          S.userNu = { id: 'u1', email: 'nieuw@talenttent.org' };
+          db.auth.getUser = () => new Promise(r => setTimeout(() => r(guEcht()), 1500));
+          const ig = document.createElement('span'); ig.id = 'igHuidigEmail'; if (!$('igHuidigEmail')) document.body.appendChild(ig);
+          currentUser = null; S.calls.length = 0;
+          appInit(); await w(500);
+          u.startZonderEmail = { gebruiker: !!currentUser, email: currentUser && currentUser.email,
+            idGevraagd: S.calls.some(c => c.table === 'musicians' && JSON.stringify(c.filters || '').includes('user_id')) };
+          await w(1500);
+          u.emailNa = { email: currentUser && currentUser.email, weergave: $('igHuidigEmail').textContent };
+          db.auth.getUser = guEcht; S.userNu = null;
+          // ── TT-636: Je setlist met 30 nummers tekent de lijst één keer extra, niet 30 keer ──
+          S.data.musicians.find(m => m.id === 'm1').musician_songs = Array.from({ length: 30 }, (_, i) => ({ song_title: 'Nummer ' + i, song_artist: 'Artiest ' + i, mastery_level: 'podium' }));
+          S.rpcResults.tt_search_musicians_by_songlist_anon = () => [{ musician_id: 'm2' }, { musician_id: 'm3' }];
+          nummerSpelersCache.clear(); myMusicianId = 'm1';
+          const tekenEcht = window.jstRenderSongs; let n = 0;
+          window.jstRenderSongs = function () { n++; return tekenEcht.apply(this, arguments); };
+          showView('profieltegels'); await w(200);
+          openTegelScreen('jeSetlist'); await w(900);
+          u.setlist = { tekeningen: n, metVoorproef: jstSongs.filter(s => s.spelers === 2).length,
+            tekst: [...document.querySelectorAll('#jstSongsList .setlist-spelers')].filter(e => /2 anderen/.test(e.textContent)).length };
+          // Een open keuzemenu valt niet dicht als de antwoorden binnenkomen; daarna wel bijgewerkt.
+          showView('about'); await w(100);
+          nummerSpelersCache.clear(); n = 0; window.__traag = 400;
+          showView('profieltegels'); await w(200);
+          openTegelScreen('jeSetlist');
+          for (let i = 0; i < 80 && n < 1; i++) await w(25); // de verse lijst, niet die van de vorige keer
+          const n0 = n; const knop = $('jstbehVeld0'); if (knop) knop.click(); await w(800);
+          u.menuOpen = { laag: !!document.querySelector('.menu-laag'), tekeningenTijdensMenu: n - n0, voorproefBinnen: jstSongs.filter(s => s.spelers === 2).length };
+          sluitAlleMenus(); await w(500);
+          u.naMenu = { tekeningen: n, metVoorproef: jstSongs.filter(s => s.spelers === 2).length };
+          window.__traag = 0; window.jstRenderSongs = tekenEcht;
+          showView('about');
+          return u; }""")
+        browser.close()
+    httpd.shutdown()
+    check("TT-619: de verbinding met de database gaat vooraf open, één keer, naar de database van dit webadres (crossorigin)",
+          u["preconnect"] == [[u["dbHier"], "anonymous"]] or u["preconnect"] == [[u["dbHier"], ""]], json.dumps(u["preconnect"]))
+    check("TT-619: ttDatabaseAdres() in index.html is gelijk aan TT_DB_PER_ADRES voor elk webadres, en leeg voor een ander",
+          not u["dbVanAdres"] and u["dbVreemd"] == "", json.dumps([u["dbVanAdres"], u["dbVreemd"]]))
+    check("TT-619: na inloggen staat Mijn Profiel er terwijl de blokkades nog laden",
+          u["profielZonderBlokkades"] == {"view": "myprofile", "klaar": True}, json.dumps(u["profielZonderBlokkades"]))
+    check("TT-619: Zoeken wacht op de lopende vraag naar de blokkades en kent daarna de blokkade",
+          u["zoekWacht"]["ms"] >= 300 and u["zoekWacht"]["geblokkeerd"], json.dumps(u["zoekWacht"]))
+    check("TT-619: een laat antwoord van een vorig account vult de blokkades niet", u["oudAntwoord"] == 0, str(u["oudAntwoord"]))
+    check("TT-619: de start wacht niet op het e-mailadres van de server; het profiel wordt al gevraagd",
+          u["startZonderEmail"]["gebruiker"] and u["startZonderEmail"]["email"] == "test@talenttent.org" and u["startZonderEmail"]["idGevraagd"],
+          json.dumps(u["startZonderEmail"]))
+    check("TT-619 (TT-405): daarna staat het e-mailadres van de server in de app en in Instellingen",
+          u["emailNa"] == {"email": "nieuw@talenttent.org", "weergave": "nieuw@talenttent.org"}, json.dumps(u["emailNa"]))
+    check("TT-636: Je setlist met 30 nummers: alle 30 met voorproef, de lijst hoogstens 3 keer getekend (was tot 31)",
+          u["setlist"]["metVoorproef"] == 30 and u["setlist"]["tekst"] == 30 and u["setlist"]["tekeningen"] <= 3, json.dumps(u["setlist"]))
+    check("TT-636: een open keuzemenu blijft open terwijl de antwoorden binnenkomen; na sluiten één keer bijgewerkt",
+          u["menuOpen"]["laag"] and u["menuOpen"]["tekeningenTijdensMenu"] == 0 and u["menuOpen"]["voorproefBinnen"] == 30 and u["naMenu"]["metVoorproef"] == 30 and u["naMenu"]["tekeningen"] <= 2,
+          json.dumps([u["menuOpen"], u["naMenu"]]))
+    check("blok 171: geen JS-fout", not fouten, "; ".join(fouten)[:600])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -20868,6 +20981,7 @@ BLOKKEN = [
     blok_bundel_b_start,
     blok_bundel_b,
     blok_bundel_f,
+    blok_wachttijd,
     blok_bevindingen_1711,
     blok_soort_toestel,
 ]

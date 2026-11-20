@@ -455,6 +455,10 @@ function igMeldingWeg() {
 function verversEmailWeergave(email) {
   const igEl = document.getElementById('igHuidigEmail');
   if (igEl) igEl.textContent = email;
+
+
+  const bevEl = document.getElementById('bevestigEmailadres');
+  if (bevEl) bevEl.textContent = email;
 }
 
 function openInloggegevens() {

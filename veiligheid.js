@@ -38,6 +38,9 @@ let blokkadeOpMij = new Set();
 let blokkadesGeladen = false;
 
 
+let blokkadesVraag = null;
+
+
 let meldDoel = null;
 let meldReden = null;
 
@@ -47,31 +50,37 @@ async function laadBlokkades() {
   blokkadeDoorMij = new Set();
   blokkadeOpMij = new Set();
   blokkadesGeladen = true;
-  const mid = await getMyMusicianId();
-  if (!mid) return;
-  try {
+  const vraag = (async () => {
+    const mid = await getMyMusicianId();
+    if (!mid) return;
+    try {
 
 
-    const [mijne, opMij] = await Promise.all([
-      db.from('musician_blocks').select('blocked_id').eq('blocker_id', mid),
-      db.from('musician_blocks').select('blocker_id').eq('blocked_id', mid),
-    ]);
-    if (mijne.error) throw mijne.error;
-    if (opMij.error) throw opMij.error;
-    (mijne.data || []).forEach(r => blokkadeDoorMij.add(r.blocked_id));
-    (opMij.data || []).forEach(r => blokkadeOpMij.add(r.blocker_id));
-  } catch (e) {
-    logCaught('laadBlokkades', e);
+      const [mijne, opMij] = await Promise.all([
+        db.from('musician_blocks').select('blocked_id').eq('blocker_id', mid),
+        db.from('musician_blocks').select('blocker_id').eq('blocked_id', mid),
+      ]);
+      if (mijne.error) throw mijne.error;
+      if (opMij.error) throw opMij.error;
+      if (blokkadesVraag !== vraag) return;
+      (mijne.data || []).forEach(r => blokkadeDoorMij.add(r.blocked_id));
+      (opMij.data || []).forEach(r => blokkadeOpMij.add(r.blocker_id));
+    } catch (e) {
+      logCaught('laadBlokkades', e);
 
 
-    showToast('Je blokkades konden niet geladen worden. Ververs de pagina.');
-  }
+      showToast('Je blokkades konden niet geladen worden. Ververs de pagina.');
+    }
+  })();
+  blokkadesVraag = vraag;
+  try { await vraag; } finally { if (blokkadesVraag === vraag) blokkadesVraag = null; }
 }
 
 
 
 
 async function laadBlokkadesIndienNodig() {
+  if (blokkadesVraag) { await blokkadesVraag; return; }
   if (blokkadesGeladen) return;
   await laadBlokkades();
 }
@@ -80,6 +89,7 @@ function wisBlokkades() {
   blokkadeDoorMij = new Set();
   blokkadeOpMij = new Set();
   blokkadesGeladen = false;
+  blokkadesVraag = null;
 }
 
 

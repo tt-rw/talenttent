@@ -1570,8 +1570,24 @@ function voorproefOphalen(lijst, title, artist, teken) {
     const s = lijst().find(x => x.title === title && x.artist === artist);
     if (!s || !aantal) return;
     s.spelers = aantal;
-    teken();
+    voorproefTekenen(teken);
   });
+}
+
+
+
+
+
+
+const voorproefTekenWacht = new Map();
+function voorproefTekenen(teken) {
+  if (voorproefTekenWacht.has(teken)) return;
+  const stap = () => {
+    if (document.querySelector('.menu-laag')) { voorproefTekenWacht.set(teken, setTimeout(stap, 200)); return; }
+    voorproefTekenWacht.delete(teken);
+    teken();
+  };
+  voorproefTekenWacht.set(teken, setTimeout(stap, 50));
 }
 
 
