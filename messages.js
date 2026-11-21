@@ -359,7 +359,7 @@ async function loadInbox(opties) {
 
   if (!(opties && opties.behoud && currentUser && listEl.dataset.klaar === currentUser.id)) {
     delete listEl.dataset.klaar;
-    listEl.innerHTML = '<div class="berichten-laden">Laden...</div>';
+    ladenTonen(listEl);
   }
 
   const mid = await getMyMusicianId();
@@ -533,7 +533,7 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
   const threadEl = document.getElementById('messagesThreadList');
 
 
-  if (!stil) threadEl.innerHTML = '<div class="berichten-laden">Laden...</div>';
+  if (!stil) ladenTonen(threadEl);
 
   const mid = await getMyMusicianId();
   if (!mid) {
@@ -903,7 +903,7 @@ async function openTalentTentGesprek(stil) {
   paneel.style.display = 'flex';
   safeHistoryReplace(history.state, '#messages/' + TT_GESPREK_ID);
   const threadEl = document.getElementById('messagesThreadList');
-  if (!stil) threadEl.innerHTML = '<div class="berichten-laden">Laden...</div>';
+  if (!stil) ladenTonen(threadEl);
   try {
     const berichten = (await laadTalentTentBerichten()).slice().reverse();
     const info = await talentTentInfoOphalen(berichten);

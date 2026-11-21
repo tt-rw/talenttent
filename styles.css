@@ -2732,9 +2732,11 @@
     width: 90%;
   }
 
+
+
   .save-spinner {
-    width: 48px; height: 48px;
-    border: 4px solid var(--border);
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
     border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
@@ -3245,8 +3247,8 @@
     margin-bottom: 16px;
   }
 
-
-  .zoek-laden, .berichten-laden { text-align: center; padding: 40px; color: var(--muted); font-size: 15px; line-height: var(--regel-15); }
+  .zoek-laden { padding: 40px; opacity: 0; animation: laden-zicht 0s linear 0.4s forwards; }
+  @keyframes laden-zicht { to { opacity: 1; } }
   .messages-verwijderd-melding {
     text-align: center; font-size: 12px; line-height: var(--regel-12); color: var(--muted);
     padding: 12px; background: var(--surface2); border-radius: 8px;
@@ -3673,7 +3675,7 @@
   .no-results-kop { font-size: 15px; line-height: var(--regel-15); font-weight: 600; margin-bottom: 8px; }
   .no-results-tekst { font-size: 12px; line-height: var(--regel-12); }
   .zoek-uitleg { font-size: 12px; line-height: var(--regel-12); color: var(--muted); margin: 0 0 12px; }
-  .zoek-laden .save-spinner { margin: 0 auto 16px; }
+  .zoek-laden .save-spinner { margin: 0 auto; }
 
 
   .berichten-eerder { display: flex; justify-content: center; padding: 16px 0; }

@@ -372,8 +372,7 @@ function naMelding(soort, id, naam, alEerder) {
 
 async function openGeblokkeerdModal() {
   document.getElementById('geblokkeerdModal').classList.add('visible');
-  document.getElementById('geblokkeerdLijst').innerHTML =
-    '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  ladenTonen(document.getElementById('geblokkeerdLijst'));
   await laadBlokkades();
   renderGeblokkeerdLijst();
 }

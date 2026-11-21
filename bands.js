@@ -681,7 +681,7 @@ async function loadMyBands(opties) {
 
   if (!(opties && opties.behoud && currentUser && el.dataset.klaar === currentUser.id)) {
     delete el.dataset.klaar;
-    el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:32px;">Laden...</div>';
+    ladenTonen(el);
   }
 
 
@@ -1217,7 +1217,7 @@ async function laadBandScherm(id) {
   bandDeelGegevens = null;
   const vak = document.getElementById('profielSchermContent');
   vak.classList.remove('uitnodig-open');
-  vak.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  ladenTonen(vak);
   if (!id) { toonProfielNietBeschikbaar('band'); return; }
 
   let b = null;

@@ -2066,6 +2066,17 @@ function closeChoiceMenu() {
 
 
 
+
+
+
+
+
+
+const LADEN_HTML = '<div class="zoek-laden" role="status" aria-label="Laden"><div class="save-spinner"></div></div>';
+function ladenTonen(el) {
+  if (el) el.innerHTML = LADEN_HTML;
+}
+
 function emptyStateHTML(kop, uitleg, knopLabel, knopActie) {
   const uitlegHTML = uitleg ? `<p class="empty-state-text">${escHtml(uitleg)}</p>` : '';
   const knopHTML = knopLabel ? `<button class="btn btn-primary" onclick="${knopActie}">${escHtml(knopLabel)}</button>` : '';

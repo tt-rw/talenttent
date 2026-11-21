@@ -258,7 +258,7 @@ async function loadMyProfile(opties) {
 
   if (!(opties && opties.behoud && el.dataset.klaar === currentUser.id)) {
     delete el.dataset.klaar;
-    el.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Laden...</div>';
+    ladenTonen(el);
   }
 
 

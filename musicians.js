@@ -365,8 +365,7 @@ async function laadProfielScherm(id) {
   const content = document.getElementById('profielSchermContent');
   delete content.dataset.klaar;
   content.classList.remove('uitnodig-open');
-  content.innerHTML =
-    '<div style="text-align:center;padding:40px;color:var(--muted);">Laden...</div>';
+  ladenTonen(content);
   if (!id) { toonProfielNietBeschikbaar('muzikant'); return; }
 
 
@@ -1066,7 +1065,7 @@ function tegelLadenStart(id) {
   el.classList.add('tegel-laden');
   const vak = document.createElement('div');
   vak.className = 'tegel-laden-vak';
-  vak.innerHTML = '<div class="zoek-laden" role="status" aria-label="Laden"><div class="save-spinner"></div></div>';
+  ladenTonen(vak);
   const na = el.querySelector(':scope > .band-naam-regel') || el.querySelector(':scope > .scherm-titel');
   if (na) na.after(vak); else el.prepend(vak);
 }

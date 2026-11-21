@@ -798,11 +798,7 @@ async function runSearch(straalOverride, sprongVan) {
 
 
 
-  if (!resultsEl.innerHTML.trim()) {
-    resultsEl.innerHTML = `<div class="zoek-laden">
-      <div class="save-spinner"></div>Zoeken...
-    </div>`;
-  }
+  if (!resultsEl.innerHTML.trim()) ladenTonen(resultsEl);
 
   try {
 
@@ -1608,11 +1604,7 @@ async function runSetlistSearch(straalOverride, sprongVan, songVooraf) {
   if (!setlistWantedSongs.length) { showToast('Kies minimaal één band of artiest.'); return; }
   if (straalOverride === undefined) setlistVerruimd = null;
 
-  if (!resultsEl.innerHTML.trim()) {
-    resultsEl.innerHTML = `<div class="zoek-laden">
-      <div class="save-spinner"></div>Zoeken...
-    </div>`;
-  }
+  if (!resultsEl.innerHTML.trim()) ladenTonen(resultsEl);
 
   try {
     const titles  = setlistWantedSongs.map(s => s.title);
@@ -2134,11 +2126,7 @@ async function runGedeeldSearch() {
     showToast(`Kies minstens ${GEDEELD_MIN} muzikanten.`);
     return;
   }
-  if (!el.innerHTML.trim()) {
-    el.innerHTML = `<div class="zoek-laden">
-      <div class="save-spinner"></div>Zoeken...
-    </div>`;
-  }
+  if (!el.innerHTML.trim()) ladenTonen(el);
   try {
     const muzikanten = await gedeeldMuzikantenLaden(gedeeldGekozen.map(g => g.id));
     if (seq !== gedeeldSearchSeq) return;

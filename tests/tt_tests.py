@@ -21476,6 +21476,118 @@ def blok_ronde2_zoeken():
     check("blok 174: geen JS-fout", not fouten, "; ".join(fouten)[:600])
 
 
+def blok_laden_rondje():
+    print("\nBlok 175 — TT-639 deel 2 (sessie 187, 21-11-2026): een scherm dat laadt, toont pas na 0,4 s het draaiende rondje (36, rand 3), zonder woord; sneller staat de inhoud er in één keer")
+    # Statisch: geen woord meer op de plekken die laden, en Zoeken via dezelfde functie.
+    bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in
+            ["wizard.js", "musicians.js", "bands.js", "messages.js", "veiligheid.js", "search.js", "utils.js", "index.html"]}
+    met_woord = [f for f, t in bron.items() if "Laden..." in t]
+    check("TT-639: nergens meer het woord 'Laden...' op een scherm dat laadt", not met_woord, ", ".join(met_woord))
+    check("TT-639: Zoeken toont geen 'Zoeken...' meer onder het rondje (de regel in een keuzelijst blijft)",
+          'save-spinner"></div>Zoeken' not in bron["search.js"] and bron["search.js"].count("ladenTonen(") == 3,
+          str(bron["search.js"].count("ladenTonen(")))
+    check("TT-639: elke plek gebruikt ladenTonen() (8 schermen, 3 x Zoeken, de tegel)",
+          sum(t.count("ladenTonen(") for f, t in bron.items() if f != "utils.js") == 12,
+          json.dumps({f: t.count("ladenTonen(") for f, t in bron.items()}))
+    stub_js = open(STUB, encoding="utf-8").read()
+    ingelogd = stub_js + """
+window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.first_name, musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
+"""
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=ingelogd))
+        pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(1200)
+        pg.evaluate(BLOK146_DATA)
+        u = pg.evaluate(r"""async () => {
+          const w = (ms = 300) => new Promise(r => setTimeout(r, ms));
+          const u = {}, $ = id => document.getElementById(id);
+          const Q = Object.getPrototypeOf(db.from('x'));
+          const thenEcht = Q.then;
+          Q.then = function (ok, err) { const d = window.__traag || 0, self = this;
+            return new Promise(r => setTimeout(r, d)).then(() => thenEcht.call(self, ok, err)); };
+          const rpcEcht = db.rpc;
+          db.rpc = function (n, a) { const q = rpcEcht.call(this, n, a), t = q.then;
+            q.then = (ok, err) => new Promise(r => setTimeout(r, window.__traag || 0)).then(() => t.call(q, ok, err)); return q; };
+          myMusicianId = 'm1'; hasOwnProfile = true;
+          window.TT_STUB.data.musicians.find(m => m.id === 'm1').musician_songs = [{ song_title: 'Een', song_artist: 'A', mastery_level: 'podium' }];
+          const stand = (el) => { const l = el && el.querySelector(':scope > .zoek-laden'); const sp = l && l.querySelector('.save-spinner');
+            const cs = sp && getComputedStyle(sp);
+            return { rondje: !!l, zicht: l ? getComputedStyle(l).opacity : null, woord: l ? l.textContent.trim() : null,
+                     maat: cs ? [cs.width, cs.height, cs.borderTopWidth] : null }; };
+          // Eerst het scherm in beeld (zonder vertraging), dan opnieuw laden met een trage database:
+          // een stijlbeweging loopt pas als het vak in beeld is, net als bij een gebruiker.
+          const schermen = [
+            ['Mijn profiel', () => showView('myprofile'), () => loadMyProfile(), () => $('myProfileContent')],
+            ['Profiel van een ander', () => showView('profiel', undefined, { id: 'm2' }), () => laadProfielScherm('m2'), () => $('profielSchermContent')],
+            ['Bandpagina', () => showView('profiel', undefined, { id: 'b9', soort: 'band' }), () => laadBandScherm('b9'), () => $('profielSchermContent')],
+            ['Mijn bands', () => showView('bands'), () => loadMyBands(), () => $('myBandsList')],
+            ['Berichten', () => showView('messages'), () => loadInbox(), () => $('messagesInboxList')],
+            ['Een gesprek', () => showView('messages'), () => openConversation('m2', 'Dylan', null, false, false), () => $('messagesThreadList')],
+            ['Gesprek met TalentTent', () => showView('messages'), () => openTalentTentGesprek(false), () => $('messagesThreadList')],
+            ['Geblokkeerde muzikanten', () => showView('myprofile'), () => openGeblokkeerdModal(), () => $('geblokkeerdLijst')],
+          ];
+          u.traag = {}; u.snel = {};
+          for (const [naam, inBeeld, start, vak] of schermen) {
+            window.__traag = 0; inBeeld(); await w(600);
+            window.__traag = 900;
+            const klaar = start(); await w(150);
+            const vroeg = stand(vak());
+            await w(500);
+            const laat = stand(vak());
+            await klaar; await w(50);
+            const na = stand(vak());
+            u.traag[naam] = { vroeg, laat, naRondje: na.rondje, inhoud: (vak().textContent || '').trim().length > 0 || vak().children.length > 0 };
+            window.__traag = 0;
+            await start(); await w(50);
+            u.snel[naam] = { rondje: stand(vak()).rondje };
+          }
+          closeGeblokkeerdModal();
+          // Het vak dat leeg gemaakt wordt (zoals bij een onbekende plaats), houdt geen rondje over.
+          const proef = document.createElement('div'); document.body.appendChild(proef);
+          ladenTonen(proef); proef.innerHTML = ''; await w(600);
+          u.leegGemaakt = proef.innerHTML; proef.remove();
+          // De tegel: eerst niets, na 0,4 s het rondje.
+          showView('profieltegels'); await w(400);
+          tegelVoorraadWissen(); window.__traag = 900;
+          openTegelScreen('wieBenJe'); await w(150);
+          const tvak = () => document.querySelector('#wieBenJeScreen .tegel-laden-vak');
+          u.tegelVroeg = stand(tvak()); await w(500); u.tegelLaat = stand(tvak());
+          window.__traag = 0; await w(600);
+          u.tegelNa = !!tvak();
+          // Het scherm "Opslaan..." heeft dezelfde maat; de rondjes op een foto en boven eerdere berichten blijven klein.
+          const ov = getComputedStyle($('saveSpinner'));
+          u.opslaanMaat = [ov.width, ov.height, ov.borderTopWidth];
+          const tmp = document.createElement('div'); tmp.innerHTML = '<div class="berichten-eerder"><div class="save-spinner"></div></div>';
+          document.body.appendChild(tmp); const ce = getComputedStyle(tmp.querySelector('.save-spinner'));
+          u.eerderMaat = [ce.width, ce.borderTopWidth]; tmp.remove();
+          return u; }""")
+        browser.close()
+    httpd.shutdown()
+    leeg = {"rondje": True, "zicht": "0", "woord": "", "maat": ["36px", "36px", "3px"]}
+    zicht = {"rondje": True, "zicht": "1", "woord": "", "maat": ["36px", "36px", "3px"]}
+    for naam, t in u["traag"].items():
+        check(f"TT-639: {naam}: de eerste 0,4 s een leeg vak (rondje onzichtbaar, geen woord)", t["vroeg"] == leeg, json.dumps(t["vroeg"]))
+        check(f"TT-639: {naam}: daarna het rondje, 36 met een rand van 3", t["laat"] == zicht, json.dumps(t["laat"]))
+        check(f"TT-639: {naam}: na het laden is het rondje weg en staat de inhoud er", t["naRondje"] is False and t["inhoud"], json.dumps(t))
+    for naam, t in u["snel"].items():
+        check(f"TT-639: {naam}: snel geladen, geen rondje", t["rondje"] is False, json.dumps(t))
+    check("TT-639: een vak dat leeg gemaakt wordt (onbekende plaats), houdt geen rondje over", u["leegGemaakt"] == "", u["leegGemaakt"][:120])
+    check("TT-639: een tegel die laadt: eerst geen rondje te zien, na 0,4 s wel; daarna weg",
+          u["tegelVroeg"] == leeg and u["tegelLaat"] == zicht and u["tegelNa"] is False, json.dumps([u["tegelVroeg"], u["tegelLaat"], u["tegelNa"]]))
+    check("TT-639: het scherm 'Opslaan...' heeft hetzelfde rondje (36, rand 3)", u["opslaanMaat"] == ["36px", "36px", "3px"], json.dumps(u["opslaanMaat"]))
+    check("TT-639: het rondje boven eerdere berichten blijft 20 met een rand van 3", u["eerderMaat"] == ["20px", "3px"], json.dumps(u["eerderMaat"]))
+    check("TT-639: geen JS-fouten in blok 175", not fouten, "; ".join(fouten)[:600])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -21548,6 +21660,7 @@ BLOKKEN = [
     blok_wachttijd_ronde1,
     blok_ronde2_berichten,
     blok_ronde2_zoeken,
+    blok_laden_rondje,
 ]
 
 
