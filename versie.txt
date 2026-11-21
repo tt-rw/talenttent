@@ -1,6 +1,6 @@
-styles.css?v=20261121c
+styles.css?v=20261121d
 supabase.js?v=2.118.0
-core.js?v=20261121a
+core.js?v=20261121d
 utils.js?v=20261121c
 veiligheid.js?v=20261121c
 auth.js?v=20261120a

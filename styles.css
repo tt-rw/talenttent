@@ -2845,12 +2845,14 @@
     background: var(--bg);
   }
 
-  .landing-sub { font-size: 17px; line-height: var(--regel-17); font-weight: 700; color: var(--text); }
+  .landing-sub { font-size: 17px; line-height: var(--regel-17); font-weight: 700; color: var(--text); text-align: center; white-space: nowrap; }
+  @media (max-width: 359px) { .landing-sub { font-size: 15px; line-height: var(--regel-15); } }
   .landing-knop { width: 100%; }
   .landing-login { margin: 0; text-align: center; font-size: 12px; line-height: var(--regel-12); color: var(--muted); }
 
   .landing-acties { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 8px; }
   .landing-acties .landing-inloggen { margin: -12px 0; }
+  .landing-uitleg { margin: 12px 0 0; text-align: center; font-size: 12px; line-height: var(--regel-12); }
 
 
 

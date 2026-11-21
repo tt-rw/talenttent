@@ -1432,14 +1432,14 @@ function schuifProfiel(vorigeView, view, mode, oudEl, oudVak, oudKind) {
 const LANDING_WOORDEN = [
   { woord: 'gitarist',   waarvoor: 'Voor een jam op zondag.' },
   { woord: 'zangeres',   waarvoor: 'Voor je eerste optreden.' },
-  { woord: 'drummer',    waarvoor: 'Voor een band die wél repeteert.' },
+  { woord: 'drummer',    waarvoor: 'Voor een stabiele basis van je band.' },
   { woord: 'bassist',    waarvoor: 'Om samen te oefenen.' },
   { woord: 'zanger',     waarvoor: 'Voor eigen nummers.' },
   { woord: 'band',       waarvoor: 'Voor wie nog geen band heeft.' },
   { woord: 'toetsenist', waarvoor: 'Voor jazz, soul of iets heel anders.' },
   { woord: 'violist',    waarvoor: 'Voor folk, pop of een strijker erbij.' },
   { woord: 'saxofonist', waarvoor: 'Voor een funkband met blazers.' },
-  { woord: 'DJ',         waarvoor: 'Voor een set met echte muzikanten.' }
+  { woord: 'DJ',         waarvoor: 'Voor een set met live muzikanten.' }
 ];
 const LANDING_TEMPO = 4000;
 

@@ -5533,10 +5533,31 @@ window.TT_STUB.fnAntwoord = {};
               st49["kop"] == "Zoek eengitarist" and st49["regel"] == "Voor een jam op zondag.", json.dumps(st49)[:300])
         check("tien woorden in de volgorde van Ronald, elk een eigen laag, 4 seconden per woord",
               st49["woorden"] == WOORDEN49 and st49["dias"] == 10 and st49["tempo"] == 4000, json.dumps(st49)[:300])
-        check("geen keuzeknoppen: alleen \"Zoek muzikanten\", \"Inloggen\" en \"Profiel aanmaken\" (geen pijl, TT-543 onderdeel 2)",
-              st49["knoppen"] == ["Zoek muzikanten", "Inloggen", "Profiel aanmaken"] and st49["chips"] == 0, json.dumps(st49["knoppen"]))
-        check("subkop en inlogregel zoals besloten",
-              st49["sub"] == "Muzikanten bij jou in de buurt." and st49["login"].startswith("Zoeken kan zonder profiel."), json.dumps(st49)[:300])
+        check("geen keuzeknoppen: alleen \"Zoek muzikanten\", \"Inloggen\", \"Profiel aanmaken\" en de link \"Hoe werkt het?\" (geen pijl, TT-543 onderdeel 2; TT-685)",
+              st49["knoppen"] == ["Zoek muzikanten", "Inloggen", "Profiel aanmaken", "Hoe werkt het?"] and st49["chips"] == 0, json.dumps(st49["knoppen"]))
+        check("subkop en inlogregel zoals besloten (TT-685: \"Talent zoekt Talent — bij jou in de buurt\", lange streep, zonder punt)",
+              st49["sub"] == "Talent zoekt Talent \u2014 bij jou in de buurt" and st49["login"].startswith("Zoeken kan zonder profiel."), json.dumps(st49)[:300])
+        # TT-685 (besluiten Ronald 21-11-2026): de zin gecentreerd en altijd op één regel,
+        # onder 360 breed letter 15 (anders 17); de link "Hoe werkt het?" onder de regel
+        # "Inloggen of Profiel aanmaken", tikvlak 44, opent Over ons; drummer en DJ hun nieuwe regel.
+        # De tikvlakken van Inloggen en "Hoe werkt het?" raken elkaar, zonder overlap: 44 van midden tot midden
+        # (huisstijl §2.5, zoals de covers in Onze muziek; blok 63 zakte bij 8).
+        for b685 in (320, 340, 359, 360, 375, 390, 430):
+            p49.set_viewport_size({"width": b685, "height": 844}); p49.wait_for_timeout(80)
+            m685 = p49.evaluate("""() => { const e = document.querySelector('.landing-sub'), r = e.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(e); const t = g.getBoundingClientRect(), cs = getComputedStyle(e);
+              const ac = document.querySelector('.landing-acties').getBoundingClientRect(), ui = document.querySelector('.landing-uitleg'), uk = ui.querySelector('button').getBoundingClientRect();
+              return { hoog: Math.round(r.height), regel: parseFloat(cs.lineHeight), font: cs.fontSize, links: Math.round((t.left - r.left) * 10) / 10, rechts: Math.round((r.right - t.right) * 10) / 10,
+                       binnen: t.left >= r.left - 0.5 && t.right <= r.right + 0.5, tussen: Math.round(ui.getBoundingClientRect().top - ac.bottom), midden: Math.round((uk.top + uk.height / 2) - (ac.top + ac.height / 2)), tikH: Math.round(uk.height), tikB: Math.round(uk.width),
+                       uitlegMidden: Math.round(uk.left + uk.width / 2), schermMidden: Math.round(innerWidth / 2) }; }""")
+            check(f"TT-685, {b685} breed: de zin onder de foto op één regel, gecentreerd, letter {'15' if b685 < 360 else '17'}; \"Hoe werkt het?\" 44 onder Inloggen (midden tot midden), tikvlak 44",
+                  m685["hoog"] == m685["regel"] and m685["binnen"] and abs(m685["links"] - m685["rechts"]) <= 1
+                  and m685["font"] == ("15px" if b685 < 360 else "17px") and m685["tussen"] == 24 and m685["midden"] == 44 and m685["tikH"] == 44 and m685["tikB"] >= 44
+                  and abs(m685["uitlegMidden"] - m685["schermMidden"]) <= 1, json.dumps(m685))
+        p49.set_viewport_size({"width": 390, "height": 844}); p49.wait_for_timeout(80)
+        check("TT-685: drummer \"Voor een stabiele basis van je band.\" en DJ \"Voor een set met live muzikanten.\"",
+              p49.evaluate("() => [LANDING_WOORDEN[2].waarvoor, LANDING_WOORDEN[9].waarvoor]") == ["Voor een stabiele basis van je band.", "Voor een set met live muzikanten."], "")
+        check("TT-685: \"Hoe werkt het?\" opent de pagina Over ons",
+              p49.evaluate("() => { const b = [...document.querySelectorAll('#view-landing button')].find(x => x.textContent.trim() === 'Hoe werkt het?'); b.click(); const id = document.querySelector('.app-view.active').id; showView('landing'); return id; }") == "view-about", "")
         check("\"Profiel aanmaken\" op de landingspagina opent de wizard (blokkerend voor livegang, 08-10-2026)",
               p49.evaluate("() => { const b = [...document.querySelectorAll('#view-landing button')].find(x => x.textContent.trim() === 'Profiel aanmaken'); b.click(); const id = document.querySelector('.app-view.active').id; showView('landing'); return id; }") == "view-register", "")
         check("het wisselen loopt zolang de landingspagina in beeld is", st49["klok"], "")
@@ -5619,11 +5640,11 @@ window.TT_STUB.fnAntwoord = {};
                 m = pg.evaluate("""() => { const r = s => document.querySelector(s).getBoundingClientRect();
                   const nav = document.getElementById('appBottomNav');
                   return { scroll: document.documentElement.scrollHeight - innerHeight,
-                    knop: Math.round(r('.landing-knop').bottom), login: Math.round(r('.landing-inloggen').bottom - 12),
+                    knop: Math.round(r('.landing-knop').bottom), login: Math.round(r('.landing-inloggen').bottom - 12), uitleg: Math.round(r('.landing-uitleg').bottom),
                     navZichtbaar: getComputedStyle(nav).display !== 'none', onderkant: innerHeight,
                     var: getComputedStyle(document.documentElement).getPropertyValue('--onderbalk-hoogte').trim(),
                     foto: Math.round(r('.landing-foto').height) }; }""")
-                ok = (m["scroll"] <= 0 and m["knop"] < m["onderkant"] and m["login"] <= m["onderkant"]
+                ok = (m["scroll"] <= 0 and m["knop"] < m["onderkant"] and m["login"] <= m["onderkant"] and m["uitleg"] <= m["onderkant"]
                       and not m["navZichtbaar"] and m["var"] == "0px" and m["foto"] > 300 and not fo)
                 if not ok: past49.append({"w": w, "h": h, "thema": thema, **m, "fouten": fo})
                 c.close()
@@ -18546,7 +18567,7 @@ def blok_tt543_onderdeel9():
     check("TT-547 (besluit Ronald 13-11-2026, 'ja, akkoord'): 'de Tent' blijft de bijnaam in Mix & Match",
           "Niemand in de Tent heeft een match" in bron["search.js"] and "Niemand in de Tent (binnen" in bron["search.js"], "")
     check("TT-547: titel en manifest heten TalentTent",
-          "<title>TalentTent — Talent zoekt talent</title>" in html and man["name"] == "TalentTent — Talent zoekt talent" and man["short_name"] == "TalentTent", "")
+          "<title>TalentTent — Talent zoekt Talent</title>" in html and man["name"] == "TalentTent — Talent zoekt Talent" and man["short_name"] == "TalentTent", "")
     # V4 (besluit Ronald 13-11-2026): 8 e-mailadressen, elk een tik die kopieert; vragen naar contact@, privacy en melden naar privacy@.
     adressen = lambda deel: re.findall(r'<button type="button" class="email-kopieer" onclick="kopieerEmailadres\(this\)">([^<]+)</button>', deel)
     check("V4: Over ons 1, privacyverklaring 3, voorwaarden 2, gedragscode 2 e-mailadressen, alle als kopieerknop; geen vet e-mailadres of mailto meer",
