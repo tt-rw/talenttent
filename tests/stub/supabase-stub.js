@@ -110,6 +110,32 @@
         (TT_STUB.data.messages || []).forEach(m => { if (m.recipient_id === ik && m.sender_id === p.ander && !m.read_at) m.read_at = nu; });
         return null;
       },
+      // TT-621: de lijst met gesprekken, één rij per gesprekspartner, zoals de
+      // database: zonder wie ik blokkeer, bij een verwijderd gesprek alleen de
+      // berichten van daarna, het laatste bericht op 51 tekens.
+      tt_inbox() {
+        const ik = (typeof myMusicianId !== 'undefined' && myMusicianId) || 'm1';
+        const blok = new Set((TT_STUB.data.musician_blocks || []).filter(b => b.blocker_id === ik).map(b => b.blocked_id));
+        const verb = {};
+        (TT_STUB.data.gesprek_verborgen || []).filter(r => r.musician_id === ik).forEach(r => { verb[r.ander_id] = r.verborgen_op; });
+        const rijen = new Map();
+        (TT_STUB.data.messages || []).filter(m => m.sender_id === ik || m.recipient_id === ik)
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).forEach(m => {
+            const ander = m.sender_id === ik ? m.recipient_id : m.sender_id;
+            if (blok.has(ander) || (verb[ander] && new Date(m.created_at) <= new Date(verb[ander]))) return;
+            if (!rijen.has(ander)) rijen.set(ander, { ander_id: ander, laatste_tekst: String(m.body || '').slice(0, 51),
+              laatste_van_mij: m.sender_id === ik, laatste_op: m.created_at, ongelezen: 0 });
+            if (m.recipient_id === ik && !m.read_at) rijen.get(ander).ongelezen++;
+          });
+        return Array.from(rijen.values());
+      },
+      // TT-645 en TT-619 (ronde 2): de drie nieuwe databasefuncties lezen, net als
+      // in de database, de oude functies. Zo blijven blokken kloppen die het
+      // antwoord van tt_search_musicians_anon, tt_get_musicians_public,
+      // tt_musician_band_ids of tt_get_bands_public zelf zetten (ook een fout).
+      tt_zoek_op_naam(p) { return TT_STUB.zoekOpNaam(p); },
+      tt_get_musicians_lijst(p) { return TT_STUB.muzikantenLijst(p); },
+      tt_profiel_bands(p) { return TT_STUB.profielBands(p); },
       tt_actief_stand(p) { return (p.ids || []).map((id, i) => ({ id, groep: 0, rang: i + 1 })); },
       tt_band_actief_stand(p) { return (p.ids || []).map((id, i) => ({ id, groep: 0, rang: i + 1 })); },
       // TT-281: de drie opslagfuncties bootsen de transactie na. Een fout via
@@ -159,6 +185,66 @@
         const r = (TT_STUB.data.musicians || []).find(x => x.id === id);
         return r && r.weergavenaam !== undefined ? { id, weergavenaam: r.weergavenaam } : null;
       }).filter(Boolean);
+    },
+    // Het antwoord van een andere nepfunctie, binnen een nepfunctie; een fout
+    // die een blok voor die functie zette, geldt ook hier (zoals in de database).
+    waarde(naam, p) {
+      const fout = TT_STUB.rpcErrors[naam];
+      if (fout) throw clone(fout);
+      const r = TT_STUB.rpcResults[naam];
+      return clone(typeof r === 'function' ? r(p || {}) : r);
+    },
+    // TT-645: tt_zoek_op_naam zoals de database: naamregel van naamMatcht(), wie
+    // al gekozen is eruit, dichtstbij eerst (alleen met een profiel), dan de naam,
+    // hoogstens 8, pas vanaf 2 tekens.
+    zoekOpNaam(p) {
+      const t = String(p.term || '').trim().toLowerCase();
+      if (t.length < 2) return [];
+      const ingelogd = typeof hasOwnProfile !== 'undefined' && hasOwnProfile;
+      const eigen = ingelogd && typeof myMusicianId !== 'undefined' ? myMusicianId : null;
+      const ids = (this.waarde('tt_search_musicians_anon', { origin_lat: null, origin_lng: null, radius_km: null }) || []).map(r => r.musician_id);
+      if (eigen && !ids.includes(eigen)) ids.push(eigen);
+      const afstand = {};
+      if (ingelogd) (this.waarde('tt_search_musicians', { searcher_id: eigen, radius_km: 500, origin_lat: null, origin_lng: null }) || [])
+        .forEach(r => { afstand[r.musician_id] = r.distance_km; });
+      const pub = {};
+      if (!ingelogd) (this.waarde('tt_get_musicians_public', { ids }) || []).forEach(r => { pub[r.id] = r; });
+      const zonder = new Set(p.zonder || []);
+      const rijen = [];
+      ids.forEach(id => {
+        if (zonder.has(id)) return;
+        const d = (this.data.musicians || []).find(m => m.id === id);
+        const q = pub[id];
+        if (ingelogd ? !d : !q) return;
+        const naam = (d && d.weergavenaam !== undefined ? d.weergavenaam : (ingelogd ? d.username : q.username)) || 'Muzikant';
+        const s = naam.trim().toLowerCase();
+        if (p.exact ? s !== t : !s.includes(t)) return;
+        const instr = ingelogd ? ((this.data.musician_instruments || []).find(x => x.musician_id === id) || {}).instrument
+                               : ((q.instrument_levels || [])[0] || {}).instrument;
+        rijen.push({ id, weergavenaam: naam, city: (ingelogd ? d.city : q.city) || null,
+          avatar_url: (ingelogd ? d.avatar_url : q.avatar_url) || null, instrument: instr || null,
+          distance_km: ingelogd && id !== eigen && afstand[id] != null ? afstand[id] : null });
+      });
+      return rijen.sort((a, b) => {
+        if ((a.distance_km == null) !== (b.distance_km == null)) return a.distance_km == null ? 1 : -1;
+        if (a.distance_km != null && a.distance_km !== b.distance_km) return a.distance_km - b.distance_km;
+        return a.weergavenaam.localeCompare(b.weergavenaam, 'nl');
+      }).slice(0, 8);
+    },
+    // TT-645: tt_get_musicians_lijst = tt_get_musicians_public zonder bio, nummers en media.
+    muzikantenLijst(p) {
+      return (this.waarde('tt_get_musicians_public', p) || []).map(m => ({ id: m.id, username: m.username, age: m.age,
+        city: m.city, avatar_url: m.avatar_url, instrument_levels: m.instrument_levels || [], genres: m.genres || [] }));
+    },
+    // TT-619: tt_profiel_bands = tt_musician_band_ids en tt_get_bands_public in één vraag.
+    profielBands(p) {
+      const ids = (this.waarde('tt_musician_band_ids', { mid: p.mid }) || []).map(r => r.band_id).filter(Boolean);
+      if (!ids.length) return [];
+      const bands = this.waarde('tt_get_bands_public', { ids }) || [];
+      return ids.map(id => bands.find(b => b.id === id)).filter(Boolean).map(b => {
+        const ik = (b.members || []).find(x => x.id === p.mid) || {};
+        return { band_id: b.id, naam: b.name, foto: b.avatar_url || null, rollen: ik.instruments || [], rol: ik.role || 'Lid' };
+      });
     },
     // TT-454: het antwoord van tt_mijn_naam(); tests die rpcResults vervangen
     // zetten het terug met S.rpcResults.tt_mijn_naam = () => S.mijnNaam().
@@ -221,7 +307,8 @@
     contains() { return this; }
     ilike() { return this; }
     not() { return this; }
-    order() { return this; }
+    // TT-621: sorteren zoals de database (nodig voor order + limit).
+    order(c, opts) { this.orderBy = { c, op: !(opts && opts.ascending === false) }; return this; }
     range() { return this; }
     limit(n) { this.limitN = n; return this; }
     single() { this.singleMode = 'single'; return this; }
@@ -235,13 +322,17 @@
           if (f.t === 'eq') return val === f.v;
           if (f.t === 'neq') return val !== f.v;
           if (f.t === 'in') return (f.v || []).indexOf(val) >= 0;
-          if (f.t === 'is') return val === f.v;
+          if (f.t === 'is') return (val === undefined ? null : val) === f.v; // een ontbrekend veld is leeg, zoals in de database
           if (f.t === 'gt') return val > f.v;
           if (f.t === 'gte') return val >= f.v;
           if (f.t === 'lt') return val < f.v;
           if (f.t === 'lte') return val <= f.v;
           return true;
         });
+      }
+      if (this.orderBy) {
+        const { c, op } = this.orderBy;
+        rows.sort((a, b) => (a[c] === b[c] ? 0 : (a[c] > b[c] ? 1 : -1)) * (op ? 1 : -1));
       }
       if (this.limitN !== null) rows = rows.slice(0, this.limitN);
       return rows;
@@ -321,8 +412,14 @@
           const has = Object.prototype.hasOwnProperty.call(TT_STUB.rpcResults, name);
           if (has && typeof TT_STUB.rpcResults[name] === 'function') {
             // Een functie mag op de parameters reageren — nodig om bijvoorbeeld
-            // een straal-afhankelijk antwoord na te bootsen (TT-62).
-            return { data: clone(TT_STUB.rpcResults[name](params || {})), error: null };
+            // een straal-afhankelijk antwoord na te bootsen (TT-62). Een fout van
+            // een functie die zij leest (TT_STUB.waarde) komt terug als fout.
+            try {
+              return { data: clone(TT_STUB.rpcResults[name](params || {})), error: null };
+            } catch (fout) {
+              if (fout && fout.code) return { data: null, error: fout };
+              throw fout;
+            }
           }
           if (!has) {
             return { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.' + name, details: null, hint: null } };

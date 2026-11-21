@@ -2046,10 +2046,10 @@ def blok_browser():
         check("suggestie toont de plaats", sug and sug[0]["meta"] == "Delft", json.dumps(sug))
         check("uitgelogd geen voornaam in de suggestie", all(x["naam"] != "GEHEIM" for x in sug), json.dumps(sug))
         check("suggestieregel minstens 44px hoog", sug and min(x["hoog"] for x in sug) >= 44, json.dumps(sug))
-        arg = page.evaluate("""() => window.TT_STUB.calls
-          .filter(c => c.kind === 'rpc' && c.name === 'tt_search_musicians_anon').map(c => c.params).pop()""")
-        check("iedereen in Nederland: geen vertrekpunt en geen straal",
-              arg and arg.get("radius_km") is None and arg.get("origin_lat") is None, json.dumps(arg))
+        arg = page.evaluate("""() => ({ naam: window.TT_STUB.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_zoek_op_naam').map(c => c.params).pop(),
+          alle: window.TT_STUB.calls.filter(c => c.kind === 'rpc' && ['tt_search_musicians_anon', 'tt_get_musicians_public'].includes(c.name)).length })""")
+        check("TT-645: de database zoekt de naam in heel Nederland; de app haalt niet meer iedereen op",
+              arg["naam"] == {"term": "an", "exact": False, "zonder": []} and arg["alle"] == 0, json.dumps(arg))
 
         page.keyboard.press("Enter")
         page.wait_for_timeout(200)
@@ -2098,6 +2098,9 @@ def blok_browser():
               all(r["tel"] == "2 van 2" and r["telKleur"] == res["accent"] and r["hoog"] >= 44 for r in res["rijen"]), json.dumps(res))
         check("bij twee muzikanten geen regel meer links van Wissen", res["teller"] == "", res["teller"])
 
+        # TT-645: kiezen gaat uit de getoonde suggesties (de database zoekt de naam).
+        page.fill("#gedeeldNaam", "ron")
+        page.wait_for_timeout(700)
         page.evaluate("addGedeeldMuzikant('m1')")
         page.wait_for_function("document.querySelectorAll('#gedeeldResults .gedeeld-rij').length === 2", timeout=3000)
         drie = page.evaluate("""() => [...document.querySelectorAll('#gedeeldResults .gedeeld-rij')].map(r =>
@@ -2177,7 +2180,7 @@ def blok_browser():
             { sleutel: '4', titel: 'Kilo', artiest: 'Muse', spelers: { a: '', b: '' } },
           ]);
           return { volg: l.map(n => n.artiest + '/' + n.titel).join(','),
-                   oud: ['setGedeeldSortMode', 'initGedeeldSearchFilters', 'gedeeldKandidatenVergeten', 'zoekLijstHTML',
+                   oud: ['setGedeeldSortMode', 'initGedeeldSearchFilters', 'gedeeldKandidatenVergeten', 'gedeeldKandidatenLaden', 'zoekLijstHTML',
                          'setSetlistViewMode', 'setSetlistSearchSortMode', 'musicianSetlistCardHTML', 'setlistMatchBadge',
                          'bewaardeWeergave', 'standaardWeergave'].filter(f => typeof window[f] === 'function') };
         }""")
@@ -2204,15 +2207,14 @@ def blok_browser():
 
         grens = page.evaluate("""() => {
           gedeeldGekozen = Array.from({ length: 20 }, (_, i) => ({ id: 'x' + i, naam: 'x' + i, city: '', distance_km: null, foto: '', instrument: '' }));
-          gedeeldKandidaten = { sleutel: 'bezoeker',
-            lijst: [{ id: 'm9', username: 'extra', city: '', distance_km: null }] };
+          gedeeldSuggestieRijen = [{ id: 'm9', username: 'extra', city: '', distance_km: null }];
           addGedeeldMuzikant('m9');
           return { n: gedeeldGekozen.length, toast: document.getElementById('appToast')?.textContent || '' };
         }""")
         check("de 21e muzikant wordt geweigerd", grens["n"] == 20, json.dumps(grens))
         check("met een melding over de grens van 20", "maximaal 20" in grens["toast"], json.dumps(grens))
 
-        page.evaluate("gedeeldKandidaten = null; resetGedeeldSearch()")
+        page.evaluate("resetGedeeldSearch()")
         page.wait_for_timeout(50)
         rst = page.evaluate("""() => ({ n: gedeeldGekozen.length,
           lijst: document.getElementById('gedeeldGekozenList').hidden,
@@ -2228,6 +2230,8 @@ def blok_browser():
         exact2 = page.evaluate("[...document.querySelectorAll('#acGedeeldNaamList .ac-item strong')].map(x => x.textContent)")
         check("tussen aanhalingstekens alleen de exacte naam", exact2 == ["dylan"], json.dumps(exact2))
         page.evaluate("addGedeeldMuzikant('m2'); closeAC('acGedeeldNaamList')")
+        page.fill("#gedeeldNaam", "san")
+        page.wait_for_timeout(700)
         page.evaluate("addGedeeldMuzikant('m3')")
         page.wait_for_timeout(200)
         page.evaluate("openZoekScherm('muzikanten')")
@@ -2320,13 +2324,13 @@ def blok_browser():
           teller: document.getElementById('gedeeldTeller').textContent, kruis: document.querySelectorAll('#gedeeldGekozenList .song-remove').length })""")
         check("je eigen naam staat vanzelf als eerste, met ✕; Kies nog 1 muzikant.",
               eigen["namen"] == ["ronnie"] and "ronnie" in eigen["lijst"] and eigen["kruis"] == 1 and eigen["teller"] == "Kies nog 1 muzikant.", json.dumps(eigen))
-        page.evaluate("gedeeldKandidaten = null")
         page.fill("#gedeeldNaam", "dyl")
         page.wait_for_timeout(700)
         afst = page.evaluate("""() => ({ meta: [...document.querySelectorAll('#acGedeeldNaamList .ac-item span')].map(x => x.textContent),
-          straal: window.TT_STUB.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_search_musicians').map(c => c.params.radius_km).pop() })""")
-        check("met een profiel: afstand vanaf je eigen postcode, landelijke straal",
-              afst["meta"] == ["Delft · 8 km"] and afst["straal"] == 500, json.dumps(afst))
+          vraag: window.TT_STUB.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_zoek_op_naam').map(c => c.params).pop(),
+          los: window.TT_STUB.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_search_musicians').length })""")
+        check("met een profiel: afstand vanaf je eigen postcode (de database rekent hem, TT-645); wie gekozen is, gaat mee als zonder",
+              afst["meta"] == ["Delft · 8 km"] and afst["vraag"]["term"] == "dyl" and afst["vraag"]["zonder"] == ["m1"] and afst["los"] == 0, json.dumps(afst))
         page.evaluate("addGedeeldMuzikant('m2'); closeAC('acGedeeldNaamList')")
         page.evaluate("removeGedeeldMuzikant(0)")
         page.evaluate("setSetlistSoort('muzikanten'); setSetlistSoort('nummers')")
@@ -2342,7 +2346,7 @@ def blok_browser():
         page.wait_for_timeout(200)
         uit = page.evaluate("gedeeldGekozen.length")
         check("uitgelogd of zonder profiel: jezelf staat er niet in", uit == 0, str(uit))
-        page.evaluate("hasOwnProfile = false; myMusicianId = null; gedeeldEigenId = null; gedeeldKandidaten = null; resetGedeeldSearch()")
+        page.evaluate("hasOwnProfile = false; myMusicianId = null; gedeeldEigenId = null; resetGedeeldSearch()")
         check("geen paginafouten in blok 21", not page_errors, "; ".join(page_errors)[:300])
         page.evaluate("window.TT_STUB.reset()")
 
@@ -6204,7 +6208,8 @@ window.TT_STUB.fnAntwoord = {};
             band_nummers: [{ titel: 'Golf', url: 'https://www.youtube.com/watch?v=abcdefghijk', platform: 'YouTube', created_at: '2026-01-01' }],
             band_covers: [],
             band_invallers: [{ instrument: 'Bas', created_at: '2026-11-02T10:00:00Z' }, { instrument: 'Drums', created_at: '2026-11-01T10:00:00Z' }] };
-          db.from = () => ({ select() { return this; }, eq() { return this; }, single: async () => ({ data: JSON.parse(JSON.stringify(rij)), error: null }), maybeSingle: async () => ({ data: JSON.parse(JSON.stringify(rij)), error: null }) });
+          // 8D sessie 185: een gesprek leest messages met order en limit (TT-621); die gaat naar de gewone stub.
+          db.from = (t) => t === 'messages' ? was.from.call(db, t) : ({ select() { return this; }, eq() { return this; }, single: async () => ({ data: JSON.parse(JSON.stringify(rij)), error: null }), maybeSingle: async () => ({ data: JSON.parse(JSON.stringify(rij)), error: null }) });
           const kijk = async (ik) => {
             hasOwnProfile = true; myMusicianId = ik;
             await openBandScherm('b8');
@@ -6989,7 +6994,7 @@ window.TT_STUB.fnAntwoord = {};
           S.rpcResults.tt_get_musicians_public = [{ id: 'm1', username: 'ronald', age: 25, city: 'Den Haag', bio: 'Gitarist en zanger.', instrument_levels: [], genres: [], songs: [], media: [] }];
           await openProfielScherm('m1'); await w(100);
           u.venster = [...$('profielSchermContent').querySelectorAll('.bb-rij-knop .bb-naam')].map(x => x.textContent);
-          u.vensterVraag = S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_musician_band_ids').slice(-1).map(c => c.params)[0];
+          u.vensterVraag = S.calls.filter(c => c.kind === 'rpc' && c.name === 'tt_profiel_bands').slice(-1).map(c => c.params)[0]; // TT-619 ronde 2: één vraag
           showView('about');
           return u;
         }""")
@@ -8850,8 +8855,8 @@ window.TT_STUB.fnAntwoord = {};
         j104 = json.dumps(d104, ensure_ascii=False)
         m104 = d104["muz"]
         check("tegelijk: laatst actief en de namen starten vóór de gegevens van de muzikanten",
-              "tt_get_musicians_public" in m104 and m104.index("tt_actief_stand") < m104.index("tt_get_musicians_public")
-              and m104.index("tt_weergavenamen") < m104.index("tt_get_musicians_public"), j104)
+              "tt_get_musicians_lijst" in m104 and m104.index("tt_actief_stand") < m104.index("tt_get_musicians_lijst")
+              and m104.index("tt_weergavenamen") < m104.index("tt_get_musicians_lijst"), j104)
         check("tegelijk: elke vraag loopt één keer, en het resultaat is gelijk (naam en groep)",
               m104.count("tt_actief_stand") == 1 and m104.count("tt_weergavenamen") == 1
               and d104["muzNaam"] == "Sanne" and d104["muzGroep"] == 0, j104)
@@ -9744,8 +9749,9 @@ window.TT_STUB.fnAntwoord = {};
               json.dumps({f: len(v) for f, v in lezen84.items()}))
         # TT-543 onderdeel 4 (B4): Lid uitnodigen is weg; een lid zoek je in Muzikanten (dezelfde naamregel).
         check("TT-420: het naamveld van Zoeken en Maak setlist toetst de weergavenaam; bands.js zoekt nergens op fname",
-              "naamMatcht(nameTerm, displayNameOf(m))" in js84["search.js"] and "naamMatcht(term, displayNameOf(m))" in js84["search.js"]
-              and "fname.ilike" not in js84["bands.js"], "")
+              "naamMatcht(nameTerm, displayNameOf(m))" in js84["search.js"] and "tt_zoek_op_naam" in js84["search.js"]
+              and "fname" not in js84["search.js"].split("async function gedeeldNaamZoeken")[1].split("\n}")[0]
+              and "fname.ilike" not in js84["bands.js"], "")  # TT-645: Wat spelen we? zoekt de naam in de database (tt_zoek_op_naam, op weergavenaam; blok 21 en 174)
         html84 = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
         check("TT-420: de keuze heeft twee knoppen in de vaste vorm van een keuzeknop (.segmented-btn), gelabeld Echte naam en Gebruikersnaam",
               html84.count("zetWbjNaamTonen(") == 2 and 'id="wbjNaamTonenControl"' in html84, "")
@@ -21118,6 +21124,358 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.fi
     check("blok 172: geen JS-fout", not fouten, "; ".join(fouten)[:600])
 
 
+def blok_ronde2_berichten():
+    print("\nBlok 173 — ronde 2 (sessie 184, 21-11-2026): Berichten bij veel berichten (TT-621): de lijst één rij per gesprek; een gesprek de laatste 50, eerdere vanzelf vanaf 20 van boven")
+    stub_js = open(STUB, encoding="utf-8").read()
+    ingelogd = stub_js + """
+window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.first_name, musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
+"""
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=ingelogd))
+        pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(1200)
+        u = pg.evaluate(r"""async () => {
+          const w = (ms = 300) => new Promise(r => setTimeout(r, ms));
+          const S = window.TT_STUB, u = {}, $ = id => document.getElementById(id);
+          const toasts = []; const toastEcht = window.showToast; window.showToast = (t, d) => { toasts.push(t); return toastEcht(t, d); };
+          const tel = (f) => S.calls.filter(f).length;
+          myMusicianId = 'm1'; hasOwnProfile = true;
+          // 500 berichten met m2 (de oudste 100 ongelezen aan m1, de nieuwste 3 ook), 1 met m3, 1 van m4 (geblokkeerd).
+          const nu = Date.now();
+          S.data.messages = [];
+          for (let i = 0; i < 500; i++) S.data.messages.push({ id: 'b' + i, sender_id: i % 2 ? 'm1' : 'm2', recipient_id: i % 2 ? 'm2' : 'm1',
+            body: 'Bericht ' + i + ' ' + 'x'.repeat(60), created_at: new Date(nu - (500 - i) * 600000).toISOString(),
+            read_at: (i % 2 === 0 && (i < 100 || i > 494)) ? null : new Date(nu).toISOString() });
+          S.data.messages.push({ id: 'c1', sender_id: 'm3', recipient_id: 'm1', body: 'Van Sanne', created_at: new Date(nu - 1000).toISOString(), read_at: null });
+          S.data.messages.push({ id: 'd1', sender_id: 'm4', recipient_id: 'm1', body: 'Geblokkeerd', created_at: new Date(nu - 500).toISOString(), read_at: null });
+          blokkadeDoorMij.add('m4'); S.data.musician_blocks = [{ blocker_id: 'm1', blocked_id: 'm4' }];
+
+          // ── 1. De lijst: één vraag aan de database, één rij per gesprek, klein antwoord ──
+          showView('messages'); await w(400);
+          S.calls.length = 0;
+          await loadInbox(); await w(200);
+          const antwoord = S.rpcResults.tt_inbox();
+          u.lijst = { rpc: tel(c => c.kind === 'rpc' && c.name === 'tt_inbox'), berichten: tel(c => c.table === 'messages'),
+            rijen: document.querySelectorAll('#messagesInboxList .messages-conv-row').length,
+            kB: Math.round(JSON.stringify(antwoord).length / 102.4) / 10,
+            geblokkeerd: $('messagesInboxList').textContent.includes('Geblokkeerd'),
+            rij: Array.from(document.querySelectorAll('#messagesInboxList .messages-conv-row')).map(r => ({
+              voorbeeld: (r.querySelector('.messages-conv-preview') || {}).textContent || '',
+              getal: (r.querySelector('.unread-badge') || {}).textContent || '' })) };
+          S.calls.length = 0;
+          await refreshUnreadBadge();
+          u.badge = { tekst: ($('unreadBadgeBottom') || {}).textContent, vragen: tel(c => c.table === 'messages'), rpc: tel(c => c.kind === 'rpc' && c.name === 'tt_inbox') };
+
+          // ── 2. Een gesprek: de laatste 50, het teken bovenaan, onderaan open ──
+          await openConversation('m2', 'Dylan', null, false, false); await w(400);
+          const bubbels = () => Array.from(document.querySelectorAll('#messagesThreadList .message-bubble'));
+          const teken = () => document.querySelector('#messagesThreadList .berichten-eerder');
+          const t = teken();
+          const sp = t && t.querySelector('.save-spinner');
+          const cs = sp && getComputedStyle(sp);
+          u.gesprek = { aantal: bubbels().length, eerste: bubbels()[0].textContent.slice(0, 11), laatste: bubbels().at(-1).textContent.slice(0, 11),
+            teken: !!t, tekenMaat: cs ? [cs.width, cs.height, cs.borderTopWidth] : null,
+            tekenMidden: t && sp ? Math.round((sp.getBoundingClientRect().left + sp.getBoundingClientRect().right) / 2 - (t.getBoundingClientRect().left + t.getBoundingClientRect().right) / 2) : null,
+            tekenRuimte: t ? [getComputedStyle(t).paddingTop, getComputedStyle(t).paddingBottom] : null,
+            onderaan: Math.abs(window.scrollY + innerHeight - document.documentElement.scrollHeight) <= 2 };
+          await w(300);
+          u.gelezen = S.data.messages.filter(m => m.sender_id === 'm2' && m.recipient_id === 'm1' && !m.read_at).length;
+
+          // ── 3. Omhoog scrollen: 50 eerdere erbij, je blijft bij hetzelfde bericht ──
+          const refTekst = bubbels()[25].textContent;
+          window.scrollTo(0, 0);
+          const refVoor = bubbels()[25].getBoundingClientRect().top;
+          await w(500);
+          const zelfde = bubbels().find(b => b.textContent === refTekst);
+          u.eerder = { aantal: bubbels().length, teken: !!teken(), verschuiving: Math.round(zelfde.getBoundingClientRect().top - refVoor) };
+          // Door tot het begin: 500, geen dubbele, geen teken meer.
+          for (let i = 0; i < 20 && teken(); i++) { window.scrollTo(0, 0); await w(250); }
+          const teksten = bubbels().map(b => b.textContent.slice(0, 12));
+          u.alles = { aantal: teksten.length, uniek: new Set(teksten).size, teken: !!teken(), eerste: teksten[0].slice(0, 9) };
+
+          // ── 4. Een stille verversing na versturen houdt de eerdere berichten ──
+          S.data.messages = S.data.messages.filter(m => !(m.sender_id === 'm1' && m.recipient_id === 'm2' && new Date(m.created_at) > new Date(nu - 600000 * 20)));
+          $('messagesReplyInput').value = 'Nieuw bericht'; berichtInvoerBijwerken();
+          await sendReplyInThread(); await w(600);
+          u.verversing = { aantal: bubbels().length, laatste: bubbels().at(-1).textContent.slice(0, 13) };
+          closeConversation(); await w(300);
+
+          // ── 5. Een ander scherm scrolt: het gesprek laadt niets ──
+          await openConversation('m2', 'Dylan', null, false, false); await w(400);
+          showView('search'); await w(300);
+          S.calls.length = 0;
+          window.scrollTo(0, 0); await w(300);
+          u.anderScherm = tel(c => c.table === 'messages');
+          showView('messages'); await w(300); closeConversation(); await w(300);
+
+          // ── 6. Eerdere berichten lukken niet: melding, het teken weg, geen herhaling bij elke scroll ──
+          await openConversation('m2', 'Dylan', null, false, false); await w(400);
+          S.errors['messages.id, sender_id, recipient_id, body, created_at, read_at'] = { code: 'XX', message: 'stuk' };
+          S.calls.length = 0;
+          window.scrollTo(0, 0); await w(400); window.scrollTo(0, 50); await w(100); window.scrollTo(0, 0); await w(400);
+          delete S.errors['messages.id, sender_id, recipient_id, body, created_at, read_at'];
+          u.fout = { teken: !!teken(), pogingen: tel(c => c.table === 'messages'), meldingen: toasts.filter(t => /eerdere berichten/i.test(t)).length,
+            melding: toasts.at(-1) || '' };
+          // Na 5 seconden opnieuw omhoog: het lukt nu.
+          await w(5000); window.scrollTo(0, 50); await w(100); window.scrollTo(0, 0); await w(500);
+          u.fout.daarna = bubbels().length;
+          closeConversation(); await w(300);
+
+          // ── 7. Berichtgrens (TT-481) blijft juist: 10 verstuurd zonder antwoord ──
+          S.data.messages = [];
+          for (let i = 0; i < 60; i++) S.data.messages.push({ id: 'e' + i, sender_id: 'm2', recipient_id: 'm1', body: 'Oud ' + i, created_at: new Date(nu - 86400000 * 3 - i * 1000).toISOString(), read_at: new Date(nu).toISOString() });
+          for (let i = 0; i < 10; i++) S.data.messages.push({ id: 'f' + i, sender_id: 'm1', recipient_id: 'm2', body: 'Vraag ' + i, created_at: new Date(nu - 3600000 + i * 1000).toISOString(), read_at: null });
+          await openConversation('m2', 'Dylan', null, false, false); await w(400);
+          u.grens = { dicht: $('messagesReplyInput').disabled, tekst: $('messagesReplyInput').getAttribute('placeholder'), aantal: bubbels().length, teken: !!teken() };
+          closeConversation(); await w(300);
+          return u; }""")
+        ctx.close()
+        browser.close()
+    httpd.shutdown()
+    j = json.dumps(u, ensure_ascii=False)[:1500]
+    l = u.get("lijst", {})
+    check("TT-621: de lijst vraagt de database één keer (tt_inbox) en geen losse berichten; één rij per gesprek; wie ik blokkeer staat er niet",
+          l.get("rpc") == 1 and l.get("berichten") == 0 and l.get("rijen") == 2 and l.get("geblokkeerd") is False, j)
+    check("TT-621: het antwoord van de lijst is kleiner dan 10 kB bij 500 berichten", isinstance(l.get("kB"), (int, float)) and l["kB"] < 10, j)
+    rij = l.get("rij") or [{}, {}]
+    check("TT-621: de lijst op volgorde: Sanne (1 ongelezen), dan Dylan: het laatste bericht als 50 tekens met …, 52 ongelezen (ook de oude)",
+          len(rij) == 2 and rij[0].get("voorbeeld") == "Van Sanne" and rij[0].get("getal") == "1"
+          and rij[1].get("voorbeeld") == "Jij: " + ("Bericht 499 " + "x" * 60)[:50] + "…" and rij[1].get("getal") == "52", j)
+    b = u.get("badge", {})
+    check("TT-621: het getal op Berichten telt uit de database (53: Dylan 52, Sanne 1; de geblokkeerde niet), zonder rij per bericht",
+          b.get("vragen") == 0 and b.get("rpc") == 1 and b.get("tekst") == "53", j)
+    g = u.get("gesprek", {})
+    check("TT-621: een gesprek toont de laatste 50, het nieuwste onderaan in beeld", g.get("aantal") == 50 and g.get("laatste", "").startswith("Bericht 499") and g.get("onderaan"), j)
+    midden = g.get("tekenMidden")
+    check("TT-621: bovenaan het draaiende teken (20 rond, rand 3, midden, 16 boven en onder), zoals de schets",
+          g.get("teken") and g.get("tekenMaat") == ["20px", "20px", "3px"] and midden is not None and abs(midden) <= 1 and g.get("tekenRuimte") == ["16px", "16px"], j)
+    check("TT-621: openen leest ook de ongelezen berichten van vóór de laatste 50 als gelezen", u.get("gelezen") == 0, j)
+    e = u.get("eerder", {})
+    check("TT-621: omhoog scrollen laadt 50 eerdere, het teken blijft zolang er meer zijn", e.get("aantal") == 100 and e.get("teken"), j)
+    check("TT-621: na het laden staat hetzelfde bericht op dezelfde plek (hoogstens 2px)", abs(e.get("verschuiving", 99)) <= 2, j)
+    a = u.get("alles", {})
+    check("TT-621: door tot het begin: 500 berichten, geen dubbele, het teken weg", a.get("aantal") == 500 and a.get("uniek") == 500 and not a.get("teken") and a.get("eerste") == "Bericht 0", j)
+    v = u.get("verversing", {})
+    check("TT-621: versturen houdt de eerder geladen berichten staan", (v.get("aantal") or 0) >= 400 and v.get("laatste") == "Nieuw bericht", j)
+    check("TT-621: scrollen op een ander scherm laadt geen berichten", u.get("anderScherm") == 0, j)
+    f = u.get("fout", {})
+    check("TT-621: lukt eerdere berichten laden niet: één melding zonder \"Wat je invulde\", één poging (twee vragen: heen en terug), het teken blijft; na 5 seconden lukt omhoog scrollen weer",
+          f.get("teken") and f.get("pogingen") == 2 and f.get("meldingen") == 1
+          and f.get("melding") == "Eerdere berichten laden is niet gelukt. Probeer het opnieuw." and (f.get("daarna") or 0) >= 100, j)
+    gr = u.get("grens", {})
+    check("TT-481/TT-621: de berichtgrens blijft juist met 50 per kant (10 zonder antwoord: dicht)", gr.get("dicht") and gr.get("tekst") == "Wacht op antwoord", j)
+    check("blok 173: geen JS-fout", not fouten, "; ".join(fouten)[:600])
+
+
+def blok_ronde2_zoeken():
+    print("\nBlok 174 — ronde 2 (sessie 185, 21-11-2026): Zoeken en Mix & Match bij veel leden (TT-645) en het blok Bands in één vraag (TT-619)")
+    stub_js = open(STUB, encoding="utf-8").read()
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js))
+        pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(1200)
+        u = pg.evaluate(r"""async () => {
+          const w = (ms = 250) => new Promise(r => setTimeout(r, ms));
+          const S = window.TT_STUB, u = {}, $ = id => document.getElementById(id);
+          const tel = (naam) => S.calls.filter(c => c.kind === 'rpc' && c.name === naam).length;
+          const kB = (x) => Math.round(new Blob([JSON.stringify(x)]).size / 102.4) / 10;
+          // 500 leden, elk met bio, 30 nummers en 3 foto's: zoals een echt profiel.
+          const ids = Array.from({ length: 500 }, (_, i) => 'z' + i);
+          const pub = ids.map((id, i) => ({ id, username: 'speler' + String(i).padStart(3, '0'), age: 20 + i % 10, city: 'Den Haag',
+            bio: 'Ik speel al jaren in bandjes en zoek mensen om mee te jammen. '.repeat(4), goal: null, profile_color: '#FFB81C',
+            avatar_url: 'https://example.org/avatars/' + id + '.webp', updated_at: '2026-11-01T10:00:00Z', instruments: ['Gitaar'], genres: ['Rock'],
+            songs: Array.from({ length: 30 }, (_, k) => ({ song_title: 'Nummer ' + k, song_artist: 'Artiest ' + k, mastery_level: 'podium' })),
+            media: Array.from({ length: 3 }, (_, k) => ({ media_type: 'foto', url: 'https://example.org/media/' + id + '-' + k + '.webp', platform: null, in_banner: k === 0 })),
+            instrument_levels: [{ instrument: 'Gitaar', niveau: 3 }] }));
+          const bewaar = Object.assign({}, S.rpcResults);
+          S.rpcResults.tt_search_musicians_anon = () => ids.map((id, i) => ({ musician_id: id, distance_km: null, is_stale: false }));
+          S.rpcResults.tt_get_musicians_public = (q) => pub.filter(m => (q.ids || []).includes(m.id));
+          S.rpcResults.tt_weergavenamen = (q) => (q.ids || []).map(id => ({ id, weergavenaam: pub.find(m => m.id === id).username }));
+          hasOwnProfile = false; myMusicianId = null;
+          try {
+            // ── 1. Muzikanten als bezoeker: alleen wat de lijst toont ──
+            showView('search'); openZoekScherm('muzikanten'); setZoekSoort('muzikanten'); await w(300);
+            $('filterCity').value = '';
+            S.calls.length = 0;
+            const t0 = performance.now();
+            await runSearch(); await w(100);
+            u.ms = Math.round(performance.now() - t0);
+            u.vraag = { lijst: tel('tt_get_musicians_lijst'), publiek: tel('tt_get_musicians_public') };
+            u.kB = { nu: kB(S.rpcResults.tt_get_musicians_lijst({ ids })), was: kB(pub) };
+            const rijen = () => document.querySelectorAll('#searchResults .results-list > .result-row');
+            const eerste = rijen()[0];
+            u.start = { rijen: rijen().length, telling: (document.querySelector('#searchResults .results-count') || {}).textContent,
+              melding: $('searchResults').textContent.includes('Toont de eerste'), teken: !!document.querySelector('#searchResults .results-list .save-spinner'),
+              plaatsRegel: (document.querySelector('#searchResults .zoek-uitleg') || {}).textContent };
+            // ── 2. Scrollen tot rij 29 in beeld is: nog niets; rij 30: de volgende 50 ──
+            const naarRij = (n) => { const r = rijen()[n - 1].getBoundingClientRect(); window.scrollTo(0, window.scrollY + r.top - innerHeight + 10); };
+            naarRij(29); await w(150);
+            u.rij29 = rijen().length;
+            naarRij(30); await w(150);
+            const r = rijen();
+            const stap = (a, b) => Math.round(r[b].getBoundingClientRect().top - r[a].getBoundingClientRect().bottom);
+            u.rij30 = { rijen: r.length, zelfde: r[0] === eerste, tussen: [stap(0, 1), stap(49, 50)],
+              namen: new Set([...r].map(x => x.querySelector('.result-row-naam').textContent)).size };
+            naarRij(80); await w(150);
+            u.rij80 = rijen().length;
+            for (let i = 0; i < 12; i++) { window.scrollTo(0, document.documentElement.scrollHeight); await w(120); }
+            u.alles = { rijen: rijen().length, uniek: new Set([...rijen()].map(x => x.querySelector('.result-row-naam').textContent)).size };
+            // ── 3. Kaarten: dezelfde regel ──
+            setMusicianViewMode('grid'); await w(150);
+            const kaarten = () => document.querySelectorAll('#searchResults .zoek-kaarten > *');
+            u.kaartenNaWissel = kaarten().length; // de weergave houdt wat er al stond
+            window.scrollTo(0, 0); await w(50);
+            runSearch(); await w(400);
+            const k1 = kaarten().length;
+            const kr = kaarten()[29].getBoundingClientRect(); window.scrollTo(0, window.scrollY + kr.top - innerHeight + 10); await w(150);
+            u.kaarten = [k1, kaarten().length];
+            window.scrollTo(0, 0); await w(50);
+            setMusicianViewMode('list'); await w(100);
+            // ── 4. Een nieuwe volgorde begint weer bij 50 ──
+            setSearchSortMode('actief'); await w(150);
+            u.volgorde = rijen().length;
+            window.scrollTo(0, 0);
+            // ── 5. Op een ander scherm laadt scrollen niets ──
+            showView('about'); await w(100);
+            const voor = lastZoekResultaten.length; window.scrollTo(0, 99999); await w(150);
+            showView('search'); await w(150);
+            u.anderScherm = rijen().length;
+            window.scrollTo(0, 0);
+
+            // ── 6. Wat spelen we?: de database zoekt de naam; de vorige suggesties blijven tot de nieuwe er zijn ──
+            openZoekScherm('mixmatch'); setSetlistSoort('nummers'); await w(200);
+            S.calls.length = 0;
+            const veld = $('gedeeldNaam');
+            veld.value = 'speler01'; onGedeeldNaamInput(veld.value); await w(500);
+            const sug = () => [...document.querySelectorAll('#acGedeeldNaamList .ac-item strong')].map(x => x.textContent);
+            u.sug1 = { namen: sug(), vragen: tel('tt_zoek_op_naam'), alle: tel('tt_search_musicians_anon') + tel('tt_get_musicians_public'),
+              kB: kB(S.rpcResults.tt_zoek_op_naam({ term: 'speler01' })) };
+            // Een trage database: na de volgende letter blijven de oude suggesties staan.
+            const echt = S.rpcResults.tt_zoek_op_naam;
+            let los; S.rpcResults.tt_zoek_op_naam = (q) => { return echt(q); };
+            const dbRpc = db.rpc; db.rpc = (n, q) => n === 'tt_zoek_op_naam' ? new Promise(res => { los = () => res(dbRpc.call(db, n, q)); }) : dbRpc.call(db, n, q);
+            veld.value = 'speler012'; onGedeeldNaamInput(veld.value); await w(450);
+            u.sugTijdens = { namen: sug(), zoeken: $('acGedeeldNaamList').textContent.includes('Zoeken...') };
+            los(); await w(100);
+            db.rpc = dbRpc; S.rpcResults.tt_zoek_op_naam = echt;
+            u.sug2 = sug();
+            addGedeeldMuzikant('z12'); await w(100);
+            u.gekozen = gedeeldGekozen.map(g => [g.naam, g.instrument, g.city]);
+            // ── 7. Een lange naam loopt niet uit de suggestielijst ──
+            S.data.musicians.push({ id: 'zlang', user_id: 'ul', username: 'x', weergavenaam: 'Supercalifragilisticexpialidocious' + 'x'.repeat(30), city: 'Den Haag' });
+            pub.push({ id: 'zlang', username: 'x', city: 'Den Haag', instrument_levels: [] }); ids.push('zlang');
+            S.rpcResults.tt_weergavenamen = (q) => (q.ids || []).map(id => ({ id, weergavenaam: id === 'zlang' ? S.data.musicians.at(-1).weergavenaam : pub.find(m => m.id === id).username }));
+            veld.value = 'supercali'; onGedeeldNaamInput(veld.value); await w(500);
+            const ac = $('acGedeeldNaamList'), item = ac.querySelector('.ac-item strong');
+            u.lang = item ? { binnen: item.getBoundingClientRect().right <= ac.getBoundingClientRect().right + 0.5, pagina: document.documentElement.scrollWidth <= innerWidth } : null;
+            closeAC('acGedeeldNaamList'); S.data.musicians.pop(); pub.pop(); ids.pop();
+
+            // ── 8. Wat spelen we?: 60 gedeelde nummers, eerst 50, dan 60; openklappen houdt ze ──
+            resetGedeeldSearch(); await w(150);
+            gedeeldGekozen = [{ id: 'z1', naam: 'a', city: '', distance_km: null, foto: '', instrument: '' }, { id: 'z2', naam: 'b', city: '', distance_km: null, foto: '', instrument: '' }];
+            pub[1].songs = pub[2].songs = Array.from({ length: 60 }, (_, k) => ({ song_title: 'Lied ' + String(k).padStart(2, '0'), song_artist: 'Band', mastery_level: 'podium' }));
+            await runGedeeldSearch(); await w(150);
+            const gr = () => document.querySelectorAll('#gedeeldResults .results-list > .gedeeld-rij');
+            u.gedeeld = { start: gr().length, melding: $('gedeeldResults').textContent.includes('Toont de eerste'),
+              kop: (document.querySelector('#gedeeldResults .results-count') || {}).textContent };
+            const g30 = gr()[29].getBoundingClientRect(); window.scrollTo(0, window.scrollY + g30.top - innerHeight + 10); await w(150);
+            u.gedeeld.na = gr().length;
+            toggleGedeeldRij(gedeeldResultaat[55].sleutel); await w(400);
+            u.gedeeld.open = { rijen: gr().length, open: document.querySelectorAll('#gedeeldResults .gedeeld-rij.open').length };
+            window.scrollTo(0, 0);
+
+            // ── 9. Wie speelt dit?: 70 muzikanten, eerst 50, dan 70 ──
+            setSetlistSoort('muzikanten'); await w(150);
+            setlistWantedSongs = [{ title: 'Nummer 1', artist: 'Artiest 1' }];
+            S.rpcResults.tt_search_musicians_by_songlist_anon = () => ids.slice(3, 73).map(id => ({ musician_id: id }));
+            $('filterSetlistCity').value = '';
+            await runSetlistSearch(); await w(150);
+            const sr = () => document.querySelectorAll('#setlistSearchResults .results-list > .result-row');
+            u.setlist = { start: sr().length, melding: $('setlistSearchResults').textContent.includes('Toont de eerste'),
+              kop: (document.querySelector('#setlistSearchResults .results-count') || {}).textContent };
+            const s30 = sr()[29].getBoundingClientRect(); window.scrollTo(0, window.scrollY + s30.top - innerHeight + 10); await w(150);
+            u.setlist.na = sr().length;
+            window.scrollTo(0, 0);
+          } finally {
+            S.rpcResults = bewaar;
+          }
+
+          // ── 10. Het blok Bands op een profiel: één vraag, zelfde uitkomst ──
+          S.rpcResults.tt_musician_band_ids = (q) => q.mid === 'm1' ? [{ band_id: 'b2' }, { band_id: 'b1' }] : [];
+          S.rpcResults.tt_get_bands_public = (q) => [
+            { id: 'b1', name: 'Van Delft', avatar_url: 'https://example.org/b1.webp', members: [{ id: 'm1', role: 'Oprichter', instruments: ['Drums', 'Zang'] }] },
+            { id: 'b2', name: 'Silver Earring', avatar_url: null, members: [{ id: 'm1', role: 'Lid', instruments: [] }] }].filter(b => (q.ids || []).includes(b.id));
+          S.calls.length = 0;
+          const bands = await profielBandsOphalen('m1');
+          u.bands = { lijst: bands, vragen: S.calls.filter(c => c.kind === 'rpc').map(c => c.name) };
+          S.rpcErrors.tt_get_bands_public = { code: '42883', message: 'function does not exist' };
+          const logVoor = (S.data.app_error_log || []).length; appErrorLogCount = 0;
+          u.bandsFout = { lijst: await profielBandsOphalen('m1'), log: (S.data.app_error_log || []).length - logVoor };
+          delete S.rpcErrors.tt_get_bands_public;
+          S.rpcResults = bewaar;
+          return u;
+        }""")
+        browser.close()
+    httpd.shutdown()
+    j = json.dumps(u, ensure_ascii=False)
+    check("TT-645: Zoeken als bezoeker vraagt tt_get_musicians_lijst, niet tt_get_musicians_public", u.get("vraag") == {"lijst": 1, "publiek": 0}, j)
+    kb = u.get("kB", {})
+    check("TT-645: 500 leden als bezoeker: minder dan een kwart van wat het was (zonder bio, nummers en media)", kb.get("nu", 99) * 4 < kb.get("was", 0), j)
+    st = u.get("start", {})
+    check("TT-645: eerst 50 rijen, geen regel \"Toont de eerste\", geen draaiend teken; de telling over alle 500",
+          st.get("rijen") == 50 and not st.get("melding") and not st.get("teken") and st.get("telling") == "500 muzikanten gevonden", j)
+    check("TT-645: de regel zonder plaats noemt het aantal van de hele lijst (500), niet de eerste 50",
+          (st.get("plaatsRegel") or "").startswith("Dit zijn 500 willekeurige muzikanten uit heel Nederland"), j)
+    r30 = u.get("rij30", {})
+    check("TT-645: rij 29 in beeld laadt nog niets; rij 30 laadt de volgende 50", u.get("rij29") == 50 and r30.get("rijen") == 100, j)
+    check("TT-645: de rijen die er al stonden blijven staan (geen knipperen), geen dubbele, dezelfde afstand bij de naad",
+          r30.get("zelfde") and r30.get("namen") == 100 and len(set(r30.get("tussen", [0, 1]))) == 1, j)
+    check("TT-645: rij 80 laadt tot 150; door tot het eind: 500, elk één keer", u.get("rij80") == 150 and u.get("alles") == {"rijen": 500, "uniek": 500}, j)
+    check("TT-645: kaarten: een andere weergave houdt wat er stond; nieuw zoeken begint bij 50, rij 30 laadt 50 verder",
+          u.get("kaartenNaWissel") == 500 and u.get("kaarten") == [50, 100], j)
+    check("TT-645: een andere volgorde begint weer bij 50; scrollen op een ander scherm laadt niets", u.get("volgorde") == 50 and u.get("anderScherm") == 50, j)
+    s1 = u.get("sug1", {})
+    check("TT-645: Wat spelen we?: één vraag aan de database per zoekwoord, niet meer iedereen ophalen; het antwoord is klein",
+          s1.get("vragen") == 1 and s1.get("alle") == 0 and s1.get("namen", [None])[0] == "speler010" and len(s1.get("namen", [])) == 8 and s1.get("kB", 99) < 2, j)
+    sd = u.get("sugTijdens", {})
+    check("TT-645: tijdens het zoeken blijven de vorige suggesties staan (geen \"Zoeken...\", geen knipperen)",
+          sd.get("namen") == s1.get("namen") and not sd.get("zoeken") and u.get("sug2") == ["speler012"], j)
+    check("TT-645: een suggestie kiezen zet naam, instrument en plaats in de rij", u.get("gekozen") == [["speler012", "Gitaar", "Den Haag"]], j)
+    check("TT-645: een heel lange naam blijft binnen de suggestielijst en de pagina", u.get("lang") == {"binnen": True, "pagina": True}, j)
+    g = u.get("gedeeld", {})
+    check("TT-645: Wat spelen we?: eerst 50 nummers zonder \"Toont de eerste\", rij 30 laadt tot 60; de kop telt alle 60",
+          g.get("start") == 50 and not g.get("melding") and g.get("na") == 60 and g.get("kop") == "60 nummers die minstens 2 van jullie spelen", j)
+    check("TT-645: een nummer na rij 50 openklappen houdt alle 60 rijen", g.get("open") == {"rijen": 60, "open": 1}, j)
+    sl = u.get("setlist", {})
+    check("TT-645: Wie speelt dit?: eerst 50 zonder \"Toont de eerste\", rij 30 laadt tot 70; de kop telt alle 70",
+          sl.get("start") == 50 and not sl.get("melding") and sl.get("na") == 70 and sl.get("kop") == "70 muzikanten gevonden", j)
+    b = u.get("bands", {})
+    check("TT-619: het blok Bands vraagt één keer (tt_profiel_bands), in de volgorde van toetreden, met foto, rollen en rol",
+          b.get("vragen") == ["tt_profiel_bands"] and b.get("lijst") == [
+              {"id": "b2", "naam": "Silver Earring", "foto": None, "rollen": [], "rol": "Lid"},
+              {"id": "b1", "naam": "Van Delft", "foto": "https://example.org/b1.webp", "rollen": ["Drums", "Zang"], "rol": "Oprichter"}], j)
+    check("TT-619: lukt het niet, dan geen blok en één regel in het foutenlog", u.get("bandsFout") == {"lijst": [], "log": 1}, j)
+    print(f"    (gemeten: 500 leden als bezoeker {kb.get('was')} kB → {kb.get('nu')} kB; zoeken en tekenen {u.get('ms')} ms; Wat spelen we? {s1.get('kB')} kB per zoekwoord)")
+    check("blok 174: geen JS-fout", not fouten, "; ".join(fouten)[:600])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -21188,6 +21546,8 @@ BLOKKEN = [
     blok_bevindingen_1711,
     blok_soort_toestel,
     blok_wachttijd_ronde1,
+    blok_ronde2_berichten,
+    blok_ronde2_zoeken,
 ]
 
 

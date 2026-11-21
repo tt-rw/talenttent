@@ -939,19 +939,14 @@ function bandSectieHTML(titel, inhoud) {
 
 
 
+
+
 async function profielBandsOphalen(musicianId) {
   if (!musicianId) return [];
   try {
-    const { data: rijen, error } = await db.rpc('tt_musician_band_ids', { mid: musicianId });
+    const { data, error } = await db.rpc('tt_profiel_bands', { mid: musicianId });
     if (error) throw error;
-    const ids = (rijen || []).map(r => r.band_id).filter(Boolean);
-    if (!ids.length) return [];
-    const { data, error: fout } = await db.rpc('tt_get_bands_public', { ids });
-    if (fout) throw fout;
-    return ids.map(id => (data || []).find(b => b.id === id)).filter(Boolean).map(b => {
-      const ik = (b.members || []).find(x => x.id === musicianId) || {};
-      return { id: b.id, naam: b.name, foto: b.avatar_url || null, rollen: ik.instruments || [], rol: ik.role || 'Lid' };
-    });
+    return (data || []).map(b => ({ id: b.band_id, naam: b.naam, foto: b.foto || null, rollen: b.rollen || [], rol: b.rol || 'Lid' }));
   } catch (e) {
     logCaught('profielBandsOphalen', e);
     return [];

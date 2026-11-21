@@ -606,6 +606,16 @@ def blok_e():
           and code_een == 0,
           "E9", "een te zware foto of een lege map blijft groen, of een woord zonder foto geeft rood")
 
+    # E10 - TT-631 (21-11-2026): een verwijzing zonder index geeft rood
+    def zonder_index(url, headers=None, data=None):
+        if "tt_bewaking" in url:
+            return 200, json.dumps(dict(goed, verwijzing_zonder_index=1))
+        return alles_goed(url, headers, data)
+    code, uit = draai(zonder_index, lambda: 365)
+    toets("E", "bewaking: een verwijzing zonder index geeft rood",
+          code == 1 and any(r.startswith("  MIS ") and "verwijzing_zonder_index" in r for r in uit.splitlines()),
+          "E10", "een verwijzing zonder index blijft groen")
+
 
 # ============================================================ afdruk
 

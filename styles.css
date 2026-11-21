@@ -3676,6 +3676,10 @@
   .zoek-laden .save-spinner { margin: 0 auto 16px; }
 
 
+  .berichten-eerder { display: flex; justify-content: center; padding: 16px 0; }
+  .berichten-eerder .save-spinner { width: 20px; height: 20px; border-width: 3px; margin: 0; }
+
+
 
 
 

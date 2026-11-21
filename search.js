@@ -400,7 +400,7 @@ function setSearchSortMode(mode) {
   refreshChoiceField('sorteren');
   if (lastZoekResultaten.length) {
     sortZoekLijst(lastZoekResultaten);
-    renderCappedZoekResultaten();
+    renderCappedZoekResultaten(true);
   }
 }
 
@@ -718,13 +718,15 @@ async function zoekMuzikantenOphalen(radius, origin) {
     const ids = matches.map(m => m.musician_id);
     actief = actiefStandVraag('muzikant', ids);
     const namenVraag = vraagNu(db.rpc('tt_weergavenamen', { ids }));
-    const { data, error } = await db.rpc('tt_get_musicians_public', { ids });
+
+
+    const { data, error } = await db.rpc('tt_get_musicians_lijst', { ids });
     if (error) throw error;
 
 
 
     musicians = (data || []).map(m => ({
-      id: m.id, username: m.username, age: m.age, birth_date: m.birth_date, city: m.city,
+      id: m.id, username: m.username, age: m.age, city: m.city,
       avatar_url: m.avatar_url,
       musician_instruments: (m.instrument_levels || []).map(x => ({ instrument: x.instrument, niveau: x.niveau })),
       musician_genres: (m.genres || []).map(g => ({ genre: g })),
@@ -991,7 +993,7 @@ async function runSearch(straalOverride, sprongVan) {
     await Promise.all([zetActiefStand('muzikant', zoekMuz, muz.actief), zetActiefStand('band', zoekBnd, bnd.actief)]);
     if (seq !== musicianSearchSeq) return;
     lastZoekResultaten = sortZoekLijst(zoekMuz.concat(zoekBnd));
-    renderCappedZoekResultaten();
+    renderCappedZoekResultaten(true);
 
   } catch(e) {
     logCaught('runSearch', e);
@@ -1005,7 +1007,43 @@ async function runSearch(straalOverride, sprongVan) {
 
 
 
-const SEARCH_RESULT_LIMIT = 50;
+const ZOEK_PAGINA = 50;
+const ZOEK_VOORUIT = 20;
+let zoekGetoond = ZOEK_PAGINA, setlistGetoond = ZOEK_PAGINA, gedeeldGetoond = ZOEK_PAGINA;
+
+
+function zoekItemHTML(x, kaarten) {
+  if (x.soort === 'band') return kaarten ? bandCardHTML(x) : bandRowHTML(x);
+  return kaarten ? musicianCardHTML(x) : musicianRowHTML(x);
+}
+
+
+
+
+function lijstVerderControleren() {
+  const lijsten = [
+    { el: 'searchResults', data: lastZoekResultaten, n: zoekGetoond, zet: v => { zoekGetoond = v; },
+      html: (x) => zoekItemHTML(x, musicianViewMode === 'grid') },
+    { el: 'setlistSearchResults', data: lastSetlistResults, n: setlistGetoond, zet: v => { setlistGetoond = v; },
+      html: (x) => musicianSetlistRowHTML(x) },
+    { el: 'gedeeldResults', data: gedeeldResultaat, n: gedeeldGetoond, zet: v => { gedeeldGetoond = v; },
+      html: (x, i) => gedeeldRijHTML(x, i) },
+  ];
+  lijsten.forEach(l => {
+    if (!l.data || l.data.length <= l.n) return;
+    const el = document.getElementById(l.el);
+    const lijst = el && el.querySelector('.results-list, .zoek-kaarten');
+    if (!lijst || !lijst.offsetParent) return;
+    const rijen = lijst.children;
+    if (rijen.length !== l.n) return;
+    const rij = rijen[Math.max(0, l.n - ZOEK_VOORUIT - 1)];
+    if (rij.getBoundingClientRect().top >= window.innerHeight) return;
+    const tot = Math.min(l.data.length, l.n + ZOEK_PAGINA);
+    lijst.insertAdjacentHTML('beforeend', l.data.slice(l.n, tot).map((x, j) => l.html(x, l.n + j)).join(''));
+    l.zet(tot);
+  });
+}
+window.addEventListener('scroll', lijstVerderControleren, { passive: true });
 
 
 function zoekTelling(lijst, total) {
@@ -1057,34 +1095,32 @@ function renderZoekResultaten(lijst, opts) {
 
   const verruimd = verruimdNotice(opts.verruimd, zoekMeervoud());
   const locationHint = opts.showLocationHint
-    ? `<p class="zoek-uitleg">Dit zijn ${lijst.length} willekeurige ${zoekMeervoud()} uit heel Nederland — vul een plaats in voor resultaten bij jou in de buurt.</p>`
-    : '';
-  const cappedNotice = total > lijst.length
-    ? `<p class="zoek-uitleg">Toont de eerste ${lijst.length} van ${total} resultaten — voeg een filter toe of verklein je zoekstraal voor een preciezer overzicht.</p>`
+    ? `<p class="zoek-uitleg">Dit zijn ${total} willekeurige ${zoekMeervoud()} uit heel Nederland — vul een plaats in voor resultaten bij jou in de buurt.</p>`
     : '';
   const kaarten = musicianViewMode === 'grid';
   el.innerHTML = `
     <div class="results-header">
-      <span class="results-count">${zoekTelling(lijst, total)}</span>
+      <span class="results-count">${zoekTelling(opts.alle || lijst, total)}</span>
     </div>
-    ${verruimd}${locationHint}${cappedNotice}
+    ${verruimd}${locationHint}
     <div class="${kaarten ? 'zoek-kaarten' : 'results-list'}">
-      ${lijst.map(x => x.soort === 'band'
-        ? (kaarten ? bandCardHTML(x) : bandRowHTML(x))
-        : (kaarten ? musicianCardHTML(x) : musicianRowHTML(x))).join('')}
+      ${lijst.map(x => zoekItemHTML(x, kaarten)).join('')}
     </div>`;
   onthoudBijwerken();
+  setTimeout(lijstVerderControleren, 0);
 }
 
 
 
 
-function renderCappedZoekResultaten() {
+
+function renderCappedZoekResultaten(vanBoven) {
+  if (vanBoven) zoekGetoond = ZOEK_PAGINA;
   const total = lastZoekResultaten.length;
-  const shown = lastZoekResultaten.slice(0, SEARCH_RESULT_LIMIT);
+  const shown = lastZoekResultaten.slice(0, zoekGetoond);
   const cityFilled = !!document.getElementById('filterCity').value.trim();
   const showLocationHint = !hasOwnProfile && !cityFilled && total > 0;
-  renderZoekResultaten(shown, { total, showLocationHint, verruimd: zoekVerruimd });
+  renderZoekResultaten(shown, { total, alle: lastZoekResultaten, showLocationHint, verruimd: zoekVerruimd });
 }
 
 
@@ -1294,9 +1330,11 @@ function sortSetlistList(list) {
   return list;
 }
 
-function renderCappedSetlistResults() {
+
+function renderCappedSetlistResults(vanBoven) {
+  if (vanBoven) setlistGetoond = ZOEK_PAGINA;
   const total = lastSetlistResults.length;
-  renderSetlistResults(lastSetlistResults.slice(0, SEARCH_RESULT_LIMIT), { total, verruimd: setlistVerruimd });
+  renderSetlistResults(lastSetlistResults.slice(0, setlistGetoond), { total, verruimd: setlistVerruimd });
 }
 
 
@@ -1757,7 +1795,7 @@ async function runSetlistSearch(straalOverride, sprongVan, songVooraf) {
     await zetActiefStand('muzikant', getoond, actief);
     if (seq !== setlistSearchSeq) return;
     lastSetlistResults = sortSetlistList(getoond);
-    renderCappedSetlistResults();
+    renderCappedSetlistResults(true);
 
   } catch(e) {
     logCaught('runSetlistSearch', e);
@@ -1785,17 +1823,15 @@ function renderSetlistResults(musicians, opts) {
     return;
   }
   const verruimd = verruimdNotice(opts.verruimd, 'muzikanten');
-  const cappedNotice = total > musicians.length
-    ? `<p class="zoek-uitleg">Toont de eerste ${musicians.length} van ${total} resultaten — voeg meer nummers toe of verklein je zoekstraal voor een preciezer overzicht.</p>`
-    : '';
   el.innerHTML = `
     <div class="results-header">
       <span class="results-count">${total} muzikant${total !== 1 ? 'en' : ''} gevonden</span>
     </div>
-    ${verruimd}${cappedNotice}
+    ${verruimd}
     <div class="results-list">
       ${musicians.map(musicianSetlistRowHTML).join('')}
     </div>`;
+  setTimeout(lijstVerderControleren, 0);
 }
 
 
@@ -1845,7 +1881,6 @@ function musicianSetlistRowHTML(m) {
 
 const GEDEELD_MIN = 2;
 const GEDEELD_MAX = 20;
-const GEDEELD_SUGGESTIES = 8;
 
 
 
@@ -1857,7 +1892,7 @@ let gedeeldOpen = new Set();
 let gedeeldSearchSeq = 0;
 let gedeeldNaamSeq = 0;
 let gedeeldNaamTimeout = null;
-let gedeeldKandidaten = null;
+let gedeeldSuggestieRijen = [];
 let gedeeldEigenId = null;
 
 
@@ -1912,25 +1947,15 @@ async function gedeeldSuggesties(term) {
     ac.classList.add('open');
     return;
   }
-  if (!gedeeldKandidaten) {
+
+  if (!ac.classList.contains('open')) {
     ac.innerHTML = '<div class="ac-item"><span>Zoeken...</span></div>';
     ac.classList.add('open');
   }
   try {
-    const lijst = await gedeeldKandidatenLaden();
+    const treffers = await gedeeldNaamZoeken(term);
     if (seq !== gedeeldNaamSeq) return;
-    const gekozenIds = new Set(gedeeldGekozen.map(g => g.id));
-    const treffers = lijst
-
-      .filter(m => !gekozenIds.has(m.id) && !isGeblokkeerd(m.id) && naamMatcht(term, displayNameOf(m)))
-      .sort((a, b) => {
-        if (a.distance_km != null && b.distance_km != null && a.distance_km !== b.distance_km) {
-          return a.distance_km - b.distance_km;
-        }
-        if ((a.distance_km == null) !== (b.distance_km == null)) return a.distance_km == null ? 1 : -1;
-        return displayNameOf(a).localeCompare(displayNameOf(b), 'nl');
-      })
-      .slice(0, GEDEELD_SUGGESTIES);
+    gedeeldSuggestieRijen = treffers;
     if (!treffers.length) {
       ac.innerHTML = '<div class="ac-item"><span>Niemand met deze naam.</span></div>';
       ac.classList.add('open');
@@ -1951,6 +1976,26 @@ async function gedeeldSuggesties(term) {
 }
 
 
+
+
+
+
+
+
+
+
+async function gedeeldNaamZoeken(term) {
+  const { data, error } = await db.rpc('tt_zoek_op_naam', {
+    term: term.tekst, exact: term.exact, zonder: gedeeldGekozen.map(g => g.id) });
+  if (error) throw error;
+  return (data || []).filter(m => !isGeblokkeerd(m.id)).map(m => ({
+    id: m.id, weergavenaam: m.weergavenaam, city: m.city, avatar_url: m.avatar_url,
+    musician_instruments: m.instrument ? [{ instrument: m.instrument }] : [],
+    distance_km: m.distance_km
+  }));
+}
+
+
 function gedeeldMeta(m) {
   const delen = [];
   if (m.city) delen.push(m.city);
@@ -1960,44 +2005,9 @@ function gedeeldMeta(m) {
 
 
 
-
-
-
-
-async function gedeeldKandidatenLaden() {
-  const sleutel = hasOwnProfile ? 'profiel' : 'bezoeker';
-  if (gedeeldKandidaten && gedeeldKandidaten.sleutel === sleutel) return gedeeldKandidaten.lijst;
-
-  const alle = vraagNu(db.rpc('tt_search_musicians_anon', { origin_lat: null, origin_lng: null, radius_km: null }));
-  const dichtbij = hasOwnProfile
-    ? getMyMusicianId().then(mid => db.rpc('tt_search_musicians', {
-        searcher_id: mid, radius_km: STRAAL_LANDELIJK, origin_lat: null, origin_lng: null }))
-    : Promise.resolve({ data: [], error: null });
-  const [a, d] = await Promise.all([alle, dichtbij]);
-  if (a.error) throw a.error;
-  if (d.error) throw d.error;
-
-  const afstand = {};
-  (d.data || []).forEach(r => { afstand[r.musician_id] = r.distance_km; });
-  const ids = (a.data || []).map(r => r.musician_id);
-
+async function gedeeldMuzikantenLaden(ids) {
   if (hasOwnProfile) {
-    const mid = await getMyMusicianId();
-    if (mid && !ids.includes(mid)) ids.push(mid);
-  }
-  const lijst = ids.length ? await gedeeldMuzikantenLaden(ids, false) : [];
-  lijst.forEach(m => { m.distance_km = afstand[m.id] != null ? afstand[m.id] : null; });
-  gedeeldKandidaten = { sleutel, lijst };
-  return lijst;
-}
-
-
-
-async function gedeeldMuzikantenLaden(ids, metNummers) {
-  if (hasOwnProfile) {
-    const velden = metNummers
-      ? 'id, weergavenaam, username, city, musician_songs(song_title, song_artist, mastery_level)'
-      : 'id, weergavenaam, username, city, avatar_url, musician_instruments(instrument)';
+    const velden = 'id, weergavenaam, username, city, musician_songs(song_title, song_artist, mastery_level)';
     const { data, error } = await inDelen(ids, deel => db.from('musicians').select(velden).in('id', deel));
     if (error) throw error;
     return (data || []).map(m => ({ ...m, musician_songs: m.musician_songs || [] }));
@@ -2031,7 +2041,7 @@ function addGedeeldMuzikant(id) {
     showToast(`Je kunt maximaal ${GEDEELD_MAX} muzikanten kiezen.`);
     return;
   }
-  const m = (gedeeldKandidaten ? gedeeldKandidaten.lijst : []).find(x => x.id === id);
+  const m = gedeeldSuggestieRijen.find(x => x.id === id);
   if (!m) return;
   gedeeldGekozen.push(gedeeldGekozenRecord(m));
   const veld = document.getElementById('gedeeldNaam');
@@ -2109,7 +2119,7 @@ function resetGedeeldSearch() {
   gedeeldEigenId = null;
   gedeeldResultaat = [];
   gedeeldOpen.clear();
-  gedeeldKandidaten = null;
+  gedeeldSuggestieRijen = [];
   document.getElementById('gedeeldNaam').value = '';
   closeAC('acGedeeldNaamList');
   renderGedeeldGekozen();
@@ -2130,7 +2140,7 @@ async function runGedeeldSearch() {
     </div>`;
   }
   try {
-    const muzikanten = await gedeeldMuzikantenLaden(gedeeldGekozen.map(g => g.id), true);
+    const muzikanten = await gedeeldMuzikantenLaden(gedeeldGekozen.map(g => g.id));
     if (seq !== gedeeldSearchSeq) return;
     const nummers = new Map();
     muzikanten.forEach(m => {
@@ -2150,6 +2160,7 @@ async function runGedeeldSearch() {
     );
     const nog = new Set(gedeeldResultaat.map(n => n.sleutel));
     gedeeldOpen = new Set([...gedeeldOpen].filter(k => nog.has(k)));
+    gedeeldGetoond = ZOEK_PAGINA;
     renderGedeeldResults();
   } catch (e) {
     logCaught('runGedeeldSearch', e);
@@ -2182,10 +2193,7 @@ function renderGedeeldResults() {
       </div>`;
     return;
   }
-  const getoond = gedeeldResultaat.slice(0, SEARCH_RESULT_LIMIT);
-  const cappedNotice = totaal > getoond.length
-    ? `<p class="zoek-uitleg">Toont de eerste ${getoond.length} van ${totaal} nummers.</p>`
-    : '';
+  const getoond = gedeeldResultaat.slice(0, gedeeldGetoond);
 
 
 
@@ -2193,10 +2201,10 @@ function renderGedeeldResults() {
     <div class="results-header">
       <span class="results-count">${totaal} ${totaal === 1 ? 'nummer dat' : 'nummers die'} minstens ${GEDEELD_MIN} van jullie spelen</span>
     </div>
-    ${cappedNotice}
     <div class="results-list">
       ${getoond.map((n, i) => gedeeldRijHTML(n, i)).join('')}
     </div>`;
+  setTimeout(lijstVerderControleren, 0);
 }
 
 

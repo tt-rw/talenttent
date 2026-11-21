@@ -334,16 +334,15 @@ async function refreshUnreadBadge() {
 
 
 
+
     const [{ data, error }, ttOngelezen] = await Promise.all([
-      db.from('messages')
-        .select('sender_id')
-        .eq('recipient_id', mid)
-        .is('read_at', null),
+      db.rpc('tt_inbox'),
       ttOngelezenTellen(),
     ]);
     if (error) throw error;
 
-    const count = (data || []).filter(r => !blokkeerIkZelf(r.sender_id)).length + ttOngelezen;
+    const count = (data || []).filter(r => !blokkeerIkZelf(r.ander_id))
+      .reduce((som, r) => som + (r.ongelezen || 0), 0) + ttOngelezen;
     if (count > 0) { toon(count > 99 ? '99+' : String(count)); }
     else { toon(null); }
   } catch (e) {
@@ -388,23 +387,18 @@ async function loadInbox(opties) {
 
 
 
-    const [sentRes, receivedRes, verborgen, ttBerichten] = await Promise.all([
-      db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('sender_id', mid),
-      db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('recipient_id', mid),
+    const [inboxRes, , ttBerichten] = await Promise.all([
+      db.rpc('tt_inbox'),
       laadVerborgenGesprekken(true),
       laadTalentTentBerichten(),
     ]);
-    if (sentRes.error) throw sentRes.error;
-    if (receivedRes.error) throw receivedRes.error;
+    if (inboxRes.error) throw inboxRes.error;
 
 
 
-    const data = [...(sentRes.data || []), ...(receivedRes.data || [])]
-      .filter(msg => !blokkeerIkZelf(msg.sender_id === mid ? msg.recipient_id : msg.sender_id))
-      .filter(msg => !gesprekVerborgenTot(verborgen, msg.sender_id === mid ? msg.recipient_id : msg.sender_id, msg.created_at))
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const data = (inboxRes.data || []).filter(r => !blokkeerIkZelf(r.ander_id));
 
-    if ((!data || !data.length) && !ttBerichten.length) {
+    if (!data.length && !ttBerichten.length) {
 
 
       listEl.innerHTML = emptyStateHTML(
@@ -418,14 +412,9 @@ async function loadInbox(opties) {
 
 
     const conversations = new Map();
-    data.forEach(msg => {
-      const otherId = msg.sender_id === mid ? msg.recipient_id : msg.sender_id;
-      if (!conversations.has(otherId)) {
-        conversations.set(otherId, { otherId, lastMessage: msg, unreadCount: 0 });
-      }
-      if (msg.recipient_id === mid && !msg.read_at) {
-        conversations.get(otherId).unreadCount++;
-      }
+    data.forEach(r => {
+      conversations.set(r.ander_id, { otherId: r.ander_id, unreadCount: r.ongelezen || 0,
+        lastMessage: { sender_id: r.laatste_van_mij ? mid : r.ander_id, body: r.laatste_tekst || '', created_at: r.laatste_op } });
     });
 
     const otherIds = Array.from(conversations.keys());
@@ -560,61 +549,31 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
 
 
 
-    const [sentRes, receivedRes, verborgen] = await Promise.all([
-      db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('sender_id', mid).eq('recipient_id', otherId),
-      db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at').eq('sender_id', otherId).eq('recipient_id', mid),
-      laadVerborgenGesprekken(),
-    ]);
-    if (sentRes.error) throw sentRes.error;
-    if (receivedRes.error) throw receivedRes.error;
-
-    if (activeConversationId === otherId) zetWachtOpAntwoord(wachtOpAntwoord(sentRes.data, receivedRes.data));
-    const data = [...(sentRes.data || []), ...(receivedRes.data || [])]
-      .filter(msg => !gesprekVerborgenTot(verborgen, otherId, msg.created_at))
-      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const aantal = stil && gesprek.id === otherId ? Math.max(GESPREK_PAGINA, gesprek.berichten.length) : GESPREK_PAGINA;
+    const [deel, verborgen] = await Promise.all([gesprekDeelOphalen(mid, otherId, null, aantal), laadVerborgenGesprekken()]);
 
 
-
-
-    let lastDay = null;
-    const nieuweInhoud = (data && data.length ? data.map(msg => {
-      const own = msg.sender_id === mid;
-      const msgDate = new Date(msg.created_at);
-      const dayStr = msgDate.toDateString();
-      let divider = '';
-      if (dayStr !== lastDay) {
-        lastDay = dayStr;
-        divider = `<div class="messages-day-divider">${escHtml(dagLabel(msgDate))}</div>`;
-      }
-      const time = msgDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-
-
-
-
-
-
-      const readCheck = (own && msg.read_at) ? `<span class="message-bubble-read" title="Gelezen">✓</span>` : '';
-      return `${divider}<div class="message-bubble ${own ? 'own' : 'other'}">${escHtml(msg.body).replace(/\n/g, '<br>')}<div class="message-bubble-time">${escHtml(time)}${readCheck}</div></div>`;
-    }).join('') : emptyStateHTML(
-
-
-
-      `Stuur ${otherName} een eerste bericht`,
-      gesprekVia ? `${otherName} is de contactpersoon van ${gesprekVia}.` : ''
-    ));
-
-
+    if (activeConversationId === otherId) zetWachtOpAntwoord(wachtOpAntwoord(deel.verstuurd, deel.ontvangen));
+    const stuk = gesprekStuk(deel, verborgen, otherId, aantal);
     if (activeConversationId !== otherId) return;
+    gesprek = { id: otherId, mid, berichten: stuk.berichten, meer: stuk.meer, bezig: false };
+    const data = gesprek.berichten;
+    const nieuweInhoud = gesprekHTML(data, mid, otherName);
+
+
 
 
     if (!stil || threadEl.innerHTML !== nieuweInhoud) threadEl.innerHTML = nieuweInhoud;
     scrollThreadToBottom();
+    gesprekEerderControleren();
 
 
 
-    const unreadIds = (data || []).filter(m => m.recipient_id === mid && !m.read_at).map(m => m.id);
-    if (unreadIds.length) {
-      db.from('messages').update({ read_at: new Date().toISOString() }).in('id', unreadIds)
+
+
+    if (data.some(m => m.recipient_id === mid && !m.read_at)) {
+      db.from('messages').update({ read_at: new Date().toISOString() })
+        .eq('sender_id', otherId).eq('recipient_id', mid).is('read_at', null)
         .then(({ error }) => { if (error) logCaught('openConversation-gelezen', error); refreshUnreadBadge(); },
               e => logCaught('openConversation-gelezen', e));
     }
@@ -625,6 +584,125 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
       `openConversation('${jsAttr(otherId)}', '${jsAttr(otherName)}', '${jsAttr(otherAvatarSrc || '')}' || null, true, ${!!deleted})`);
   }
 }
+
+
+
+const GESPREK_PAGINA = 50;
+let gesprek = { id: null, mid: null, berichten: [], meer: false, bezig: false };
+
+
+
+
+async function gesprekDeelOphalen(mid, otherId, tot, aantal) {
+  const kant = (van, aan) => {
+    let q = db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at')
+      .eq('sender_id', van).eq('recipient_id', aan);
+    if (tot) q = q.lte('created_at', tot);
+    return q.order('created_at', { ascending: false }).limit(aantal);
+  };
+  const [verstuurd, ontvangen] = await Promise.all([kant(mid, otherId), kant(otherId, mid)]);
+  if (verstuurd.error) throw verstuurd.error;
+  if (ontvangen.error) throw ontvangen.error;
+  return { verstuurd: verstuurd.data || [], ontvangen: ontvangen.data || [] };
+}
+
+
+
+
+function gesprekStuk(deel, verborgen, otherId, aantal, alWeg) {
+  const weg = alWeg || new Set();
+  const alles = [...deel.verstuurd, ...deel.ontvangen].filter(m => !weg.has(m.id))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const zichtbaar = alles.filter(m => !gesprekVerborgenTot(verborgen, otherId, m.created_at));
+  const meer = zichtbaar.length === alles.length
+    && (alles.length > aantal || deel.verstuurd.length === aantal || deel.ontvangen.length === aantal);
+  return { berichten: zichtbaar.slice(0, aantal).reverse(), meer };
+}
+
+
+
+
+function gesprekHTML(data, mid, otherName) {
+  let lastDay = null;
+  const boven = gesprek.meer ? '<div class="berichten-eerder" role="status" aria-label="Eerdere berichten laden"><div class="save-spinner"></div></div>' : '';
+  return boven + (data && data.length ? data.map(msg => {
+    const own = msg.sender_id === mid;
+    const msgDate = new Date(msg.created_at);
+    const dayStr = msgDate.toDateString();
+    let divider = '';
+    if (dayStr !== lastDay) {
+      lastDay = dayStr;
+      divider = `<div class="messages-day-divider">${escHtml(dagLabel(msgDate))}</div>`;
+    }
+    const time = msgDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+
+
+
+
+
+
+    const readCheck = (own && msg.read_at) ? `<span class="message-bubble-read" title="Gelezen">✓</span>` : '';
+    return `${divider}<div class="message-bubble ${own ? 'own' : 'other'}">${escHtml(msg.body).replace(/\n/g, '<br>')}<div class="message-bubble-time">${escHtml(time)}${readCheck}</div></div>`;
+  }).join('') : emptyStateHTML(
+
+
+
+    `Stuur ${otherName} een eerste bericht`,
+    gesprekVia ? `${otherName} is de contactpersoon van ${gesprekVia}.` : ''
+  ));
+}
+
+
+
+
+function gesprekEerderControleren() {
+  if (!gesprek.meer || gesprek.bezig || !activeConversationId || activeConversationId !== gesprek.id || activeConversationSysteem) return;
+  if (!gesprekInBeeld()) return;
+  if (Date.now() < (gesprek.pauzeTot || 0)) return;
+  const bubbels = document.querySelectorAll('#messagesThreadList .message-bubble');
+  if (!bubbels.length) return;
+  const twintigste = bubbels[Math.min(19, bubbels.length - 1)];
+  if (twintigste.getBoundingClientRect().bottom > 0) gesprekEerderLaden();
+}
+
+
+
+async function gesprekEerderLaden() {
+  const g = gesprek;
+  if (!g.meer || g.bezig || !g.berichten.length) return;
+  g.bezig = true;
+  const otherId = g.id;
+  try {
+    const oudste = g.berichten[0].created_at;
+    const [deel, verborgen] = await Promise.all([
+      gesprekDeelOphalen(g.mid, otherId, oudste, GESPREK_PAGINA), laadVerborgenGesprekken()]);
+    if (gesprek !== g || activeConversationId !== otherId || !gesprekInBeeld()) return;
+    const stuk = gesprekStuk(deel, verborgen, otherId, GESPREK_PAGINA, new Set(g.berichten.map(m => m.id)));
+    g.berichten = stuk.berichten.concat(g.berichten);
+    g.meer = stuk.meer;
+    const doc = document.documentElement;
+    const vanOnder = doc.scrollHeight - window.scrollY;
+    document.getElementById('messagesThreadList').innerHTML = gesprekHTML(g.berichten, g.mid,
+      document.getElementById('messagesThreadName').textContent);
+    window.scrollTo(0, doc.scrollHeight - vanOnder);
+  } catch (e) {
+
+
+    g.pauzeTot = Date.now() + 5000;
+    if (!g.foutGemeld) {
+      g.foutGemeld = true;
+      logCaught('gesprekEerderLaden', e);
+      showToast(friendlyErrorMessage(e, 'eerdere berichten laden').replace(/\s*Wat je invulde blijft staan\.$/, ''));
+    }
+  } finally {
+    g.bezig = false;
+  }
+}
+function gesprekInBeeld() {
+  const paneel = document.getElementById('messagesThreadPanel');
+  return huidigeView === 'messages' && !!paneel && paneel.style.display === 'flex';
+}
+window.addEventListener('scroll', gesprekEerderControleren, { passive: true });
 
 
 
