@@ -1414,6 +1414,11 @@
 
   #view-profieltegels main.met-vaste-balk { padding-bottom: calc(var(--vaste-balk) + var(--ruimte-onderaan)); }
 
+
+
+
+  #view-profieltegels .tegel-laden > :not(.scherm-titel):not(.band-naam-regel):not(.tegel-laden-vak):not(.wizard-action-bar) { display: none; }
+
   .btn {
 
     display: inline-flex;

@@ -206,7 +206,8 @@ async function getMyMusicianId() {
   const vraag = { user: currentUser.id };
   vraag.p = (async () => {
     try {
-      const { data, error } = await db.from('musicians').select('id').eq('user_id', vraag.user).single();
+
+      const { data, error } = await db.from('musicians').select('id, city').eq('user_id', vraag.user).single();
       if (!currentUser || currentUser.id !== vraag.user) return null;
 
       if (error && error.code !== 'PGRST116') {
@@ -215,6 +216,7 @@ async function getMyMusicianId() {
         return null;
       }
       myMusicianId = data?.id || null;
+      if (myMusicianId && myOwnCity === null) myOwnCity = data.city || null;
       return myMusicianId;
     } finally {
       if (myMusicianIdVraag === vraag) myMusicianIdVraag = null;
@@ -667,6 +669,9 @@ function onUserLoggedOut() {
   myMusicianIdVraag = null;
   emailBevestigdVoor = null;
   myOwnCity = null;
+  instellingenDigest = { mid: null, waarde: null };
+  instellingenNaam = { mid: null, naam: '' };
+  tegelVoorraadWissen();
 
 
 
@@ -817,13 +822,30 @@ function closeAllBandMoreMenus() {
 
 
 
+
+
+
+
+let meldingenVolg = 0;
+let meldingenGetikt = false;
 async function openSearchPrefsModal() {
+  const volg = ++meldingenVolg;
+  meldingenGetikt = false;
+  const bekend = instellingenDigest.mid && instellingenDigest.mid === myMusicianId ? instellingenDigest.waarde : null;
+  selectDigestFrequency(bekend);
+  document.getElementById('searchPrefsModal').classList.add('visible');
+  vulBewaardeZoekInInstellingen();
+  vulPushInInstellingen();
   const mid = await getMyMusicianId();
 
 
 
 
-  if (!mid) { if (myMusicianIdFout) showToast(friendlyErrorMessage(myMusicianIdFout, 'je profiel laden')); return; }
+  if (!mid) {
+    closeSearchPrefsModal();
+    if (myMusicianIdFout) showToast(friendlyErrorMessage(myMusicianIdFout, 'je profiel laden'));
+    return;
+  }
   try {
 
 
@@ -831,13 +853,12 @@ async function openSearchPrefsModal() {
     const musicianRes = await db.from('musicians')
       .select('email_digest_frequency').eq('id', mid).single();
     if (musicianRes.error) throw musicianRes.error;
-    selectDigestFrequency(musicianRes.data?.email_digest_frequency || 'daily');
-    document.getElementById('searchPrefsModal').classList.add('visible');
-    vulBewaardeZoekInInstellingen();
-    vulPushInInstellingen();
+    const waarde = musicianRes.data?.email_digest_frequency || 'daily';
+    instellingenDigest = { mid, waarde };
+    if (volg === meldingenVolg && !meldingenGetikt) selectDigestFrequency(waarde);
   } catch (e) {
     logCaught('openSearchPrefsModal', e);
-    showToast(friendlyErrorMessage(e, 'je meldingen laden'));
+    if (volg === meldingenVolg && !meldingenGetikt) showToast(friendlyErrorMessage(e, 'je meldingen laden'));
   }
 }
 function closeSearchPrefsModal() {
@@ -858,12 +879,14 @@ function selectDigestFrequency(value) {
 async function setDigestFrequency(el, mode) {
   const oud = digestFrequencyValue;
   if (mode === oud) return;
+  meldingenGetikt = true;
   selectDigestFrequency(mode);
   try {
     const mid = await getMyMusicianId();
     if (!mid) throw new Error('geen profiel');
     const { error } = rijenGeraakt(await db.from('musicians').update({ email_digest_frequency: mode }).eq('id', mid).select('id'));
     if (error) throw error;
+    instellingenDigest = { mid, waarde: mode };
   } catch (e) {
     logCaught('setDigestFrequency', e);
     selectDigestFrequency(oud);
@@ -1120,6 +1143,8 @@ function showView(view, mode, extra) {
 
   const vorigeTegel = activeTegelScreen;
   if (view !== 'profieltegels') { bewerkBandId = null; activeTegelScreen = 'overview'; }
+
+  if (view !== 'profieltegels' || huidigeView !== 'profieltegels') tegelVoorraadWissen();
   else if (mode === 'pop' || mode === 'redirect') bewerkBandId = (history.state && history.state.band) || null;
 
 
@@ -1574,6 +1599,12 @@ function landingNaOpstart() {
 
 
 
+
+
+
+
+
+const VERSIE_REGEL = /^[\w.-]+\?v=[\w.-]+$/;
 let versieLaatsteKeer = 0;
 function geladenVersies() {
   return [...document.querySelectorAll('script[src*="?v="], link[rel="stylesheet"][href*="?v="]')]
@@ -1592,12 +1623,13 @@ async function controleerNieuweVersie() {
   if (document.hidden || Date.now() - versieLaatsteKeer < 60000) return;
   versieLaatsteKeer = Date.now();
   try {
-    const r = await fetch('index.html?versie=' + Date.now(), { cache: 'no-store' });
+    const r = await fetch('versie.txt?t=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) return;
-    const html = await r.text();
+    const regels = (await r.text()).split('\n').map(x => x.trim()).filter(Boolean);
+    if (regels.length < 5 || !regels.every(x => VERSIE_REGEL.test(x))) return;
 
 
-    const oud = geladenVersies().filter(a => !html.includes('src="' + a + '"') && !html.includes('href="' + a + '"'));
+    const oud = geladenVersies().filter(a => !regels.includes(a));
     if (!oud.length) return;
 
 

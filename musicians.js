@@ -395,8 +395,9 @@ async function laadProfielScherm(id) {
     `).eq('id', id).single();
     m = res.data; error = res.error;
     if (m) {
-      const { data: ages } = await leeftijdVraag;
+      const { data: ages, error: ageErr } = await leeftijdVraag;
       m.age = (ages && ages[0]) ? ages[0].age : undefined;
+      if (!ageErr && ages) berichtRechtLeeftijden([id], ages);
     }
   } else {
 
@@ -515,31 +516,29 @@ function closeMediaLightbox() {
 let accountBands = [];
 let pendingSoloBandIds = [];
 
+
+
+
+
+
+
+
+let accountVolg = 0;
 async function vraagAccountVerwijderen() {
+  const volg = ++accountVolg;
   const mid = await getMyMusicianId();
   if (!mid) { geenProfielMelding('Je hebt geen profiel om te verwijderen.'); return; }
   accountBands = []; pendingSoloBandIds = [];
-  let naam = '', fout = null;
-  try {
-    const [ik, bands] = await Promise.all([
-      db.from('musicians').select('weergavenaam, username').eq('id', mid).single(),
-      db.from('bands').select('id, name, band_members(musician_id, status, musicians(id, weergavenaam, username))').eq('founder_id', mid)
-    ]);
-    if (ik.error) throw ik.error;
-    if (bands.error) throw bands.error;
-    naam = displayNameOf(ik.data);
-    (bands.data || []).forEach(b => {
-      const leden = (b.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid)
-        .map(m => ({ id: m.musician_id, naam: displayNameOf(m.musicians) }))
-        .sort((x, y) => x.naam.localeCompare(y.naam, 'nl'));
-      if (leden.length) accountBands.push({ id: b.id, naam: b.name || '', leden, keuze: null });
-      else pendingSoloBandIds.push(b.id);
-    });
-    accountBands.sort((x, y) => x.naam.localeCompare(y.naam, 'nl'));
-  } catch (e) {
-    logCaught('vraagAccountVerwijderen', e);
-    fout = e;
+  const bandsVraag = vraagNu(db.from('bands')
+    .select('id, name, band_members(musician_id, status, musicians(id, weergavenaam, username))').eq('founder_id', mid));
+  let naam = instellingenNaam.mid === mid ? instellingenNaam.naam : '', fout = null;
+  if (!naam) {
+
+    const ik = await vraagNu(db.from('musicians').select('weergavenaam, username').eq('id', mid).single());
+    if (ik.error) { logCaught('vraagAccountVerwijderen', ik.error); fout = ik.error; }
+    else naam = displayNameOf(ik.data);
   }
+  if (volg !== accountVolg) return;
   showConfirm(
     `Je profiel, je setlist en je foto's en video's verdwijnen dan, en je logt niet meer in met ${currentUser?.email || ''}. Dat is niet terug te draaien.`,
     executeAccountDeletion,
@@ -547,10 +546,28 @@ async function vraagAccountVerwijderen() {
     naam ? `Account van ${naam} verwijderen?` : null, null,
     'Ik begrijp dat mijn gegevens definitief worden verwijderd.'
   );
+  const keuzes = document.getElementById('confirmKeuzes');
+  confirmExtraDicht = true; zetConfirmKnop();
+  if (!fout) {
+    keuzes.innerHTML = '';
+    const bands = await bandsVraag;
+
+    if (volg !== accountVolg || confirmCallback !== executeAccountDeletion) return;
+    if (bands.error) { logCaught('vraagAccountVerwijderen', bands.error); fout = bands.error; }
+    else {
+      (bands.data || []).forEach(b => {
+        const leden = (b.band_members || []).filter(m => m.status === 'bevestigd' && m.musician_id !== mid)
+          .map(m => ({ id: m.musician_id, naam: displayNameOf(m.musicians) }))
+          .sort((x, y) => x.naam.localeCompare(y.naam, 'nl'));
+        if (leden.length) accountBands.push({ id: b.id, naam: b.name || '', leden, keuze: null });
+        else pendingSoloBandIds.push(b.id);
+      });
+      accountBands.sort((x, y) => x.naam.localeCompare(y.naam, 'nl'));
+    }
+  }
 
   if (fout) {
-    document.getElementById('confirmKeuzes').innerHTML = foutStaatHTML(fout, 'je bands laden', 'vraagAccountVerwijderen()');
-    confirmExtraDicht = true; zetConfirmKnop();
+    keuzes.innerHTML = foutStaatHTML(fout, 'je bands laden', 'vraagAccountVerwijderen()');
     return;
   }
   tekenAccountBands();
@@ -837,6 +854,8 @@ function renderTegels() {
 
   const klaar = tegelRegels.mid === mid;
   if (klaar) tegels(); else wrap.innerHTML = '';
+
+  if (mid) tegelsVoorladen(TILES.map(t => t.id));
   const vraag = ++tegelRegelsVraag;
   db.from('musicians')
     .select('weergavenaam, username, city, avatar_url, musician_instruments(instrument), musician_genres(genre), musician_songs(song_title), musician_media(media_type)')
@@ -886,6 +905,8 @@ const TEGEL_WIJZIGINGEN = {
 function tegelHeeftWijzigingen() {
   const meet = TEGEL_WIJZIGINGEN[activeTegelScreen];
   if (!meet) return false;
+
+  if (tegelLaadt(activeTegelScreen)) return false;
   try { return !!meet(); } catch (e) { return false; }
 }
 
@@ -928,6 +949,8 @@ function werkOpslaanBij() { zetOpslaanAan(tegelHeeftWijzigingen()); }
 
 
 function terugNaOpslaan(id) {
+
+  tegelVoorraadWissen();
   if (activeTegelScreen === id) appTerug();
 }
 
@@ -954,14 +977,110 @@ function openTegelScreen(id) {
 
 
   zetOpslaanAan(false);
-  if (id === 'wieBenJe') openWieBenJe().then(werkOpslaanBij, werkOpslaanBij);
-  else if (id === 'watSpeelJe') openWatSpeelJe().then(werkOpslaanBij, werkOpslaanBij);
-  else if (id === 'jeSetlist') openJeSetlist().then(werkOpslaanBij, werkOpslaanBij);
-  else if (id === 'mediahoek') openJeMediahoek().then(werkOpslaanBij, werkOpslaanBij);
-  else if (id === 'bandWie') openBandWie().then(werkOpslaanBij, werkOpslaanBij);
-  else if (id === 'bandBezetting') openBandBezetting().then(werkOpslaanBij, werkOpslaanBij);
-  else if (id === 'bandMuziek') openBandMuziek().then(werkOpslaanBij, werkOpslaanBij);
-  else if (id === 'bandMedia') openBandMedia().then(werkOpslaanBij, werkOpslaanBij);
+  tegelOpenVolg++;
+  tegelLadenStart(id);
+  TEGEL_OPEN[id]().then(werkOpslaanBij, werkOpslaanBij);
+}
+
+
+
+
+
+
+
+
+
+
+const TEGEL_OPEN = {
+  wieBenJe: () => openWieBenJe(), watSpeelJe: () => openWatSpeelJe(),
+  jeSetlist: () => openJeSetlist(), mediahoek: () => openJeMediahoek(),
+  bandWie: () => openBandWie(), bandBezetting: () => openBandBezetting(),
+  bandMuziek: () => openBandMuziek(), bandMedia: () => openBandMedia()
+};
+
+
+const TEGEL_HAAL = {
+
+
+  wieBenJe: () => Promise.all([
+    db.from('musicians').select('username, zip, city, city_source, bio, naam_tonen').eq('id', myMusicianId).single(),
+    db.rpc('tt_get_my_birth_date'),
+    db.rpc('tt_mijn_naam'),
+  ]).then(([rij, geboorte, naam]) => ({ data: { rij: rij.data, geboorte: geboorte.data, naam: naam.data }, error: rij.error })),
+  watSpeelJe: () => vraagNu(db.from('musicians')
+    .select('musician_instruments(instrument, niveau), musician_genres(genre)').eq('id', myMusicianId).single()),
+  jeSetlist: () => vraagNu(db.from('musicians')
+    .select('musician_songs(song_title, song_artist, mastery_level)').eq('id', myMusicianId).single()),
+  mediahoek: () => vraagNu(db.from('musicians')
+    .select('avatar_url, avatar_bron, avatar_kader, musician_media(media_type, url, platform, in_banner, created_at, uitsnede)')
+    .eq('id', myMusicianId).single())
+};
+const TEGEL_VOORRAAD_MS = 30000;
+let tegelVoorraad = {};
+let tegelOpenVolg = 0;
+
+
+function tegelSleutel(id) {
+  return id.startsWith('band') ? 'b:' + bewerkBandId : 'm:' + myMusicianId;
+}
+
+function tegelVraag(id) {
+  try { return Promise.resolve(TEGEL_HAAL[id]()).then(r => r, e => ({ data: null, error: e })); }
+  catch (e) { return Promise.resolve({ data: null, error: e }); }
+}
+
+
+function tegelsVoorladen(ids) {
+  const nu = Date.now();
+  ids.forEach(id => {
+    const v = tegelVoorraad[id], sleutel = tegelSleutel(id);
+    if (v && v.sleutel === sleutel && nu - v.tijd < TEGEL_VOORRAAD_MS) return;
+    tegelVoorraad[id] = { sleutel, tijd: nu, vraag: tegelVraag(id) };
+  });
+}
+function tegelVoorraadWissen() { tegelVoorraad = {}; }
+
+
+
+
+
+async function tegelGegevens(id) {
+  const volg = tegelOpenVolg, scherm = activeTegelScreen;
+  const v = tegelVoorraad[id];
+  delete tegelVoorraad[id];
+  const vers = v && v.sleutel === tegelSleutel(id) && Date.now() - v.tijd < TEGEL_VOORRAAD_MS;
+  const r = await (vers ? v.vraag : tegelVraag(id));
+
+  if (volg !== tegelOpenVolg || (activeTegelScreen !== scherm && activeTegelScreen !== id)) return null;
+  return r;
+}
+
+function tegelScherm(id) { return document.getElementById(TEGEL_SCREENS[id]); }
+function tegelLaadt(id) {
+  const el = TEGEL_SCREENS[id] && tegelScherm(id);
+  return !!(el && el.classList.contains('tegel-laden'));
+}
+function tegelLadenStart(id) {
+  const el = tegelScherm(id);
+  el.querySelector(':scope > .tegel-laden-vak')?.remove();
+  el.classList.add('tegel-laden');
+  const vak = document.createElement('div');
+  vak.className = 'tegel-laden-vak';
+  vak.innerHTML = '<div class="zoek-laden" role="status" aria-label="Laden"><div class="save-spinner"></div></div>';
+  const na = el.querySelector(':scope > .band-naam-regel') || el.querySelector(':scope > .scherm-titel');
+  if (na) na.after(vak); else el.prepend(vak);
+}
+
+
+function tegelLadenKlaar(id) {
+  const el = tegelScherm(id);
+  el.classList.remove('tegel-laden');
+  el.querySelector(':scope > .tegel-laden-vak')?.remove();
+}
+function tegelLadenFout(id, fout, actie) {
+  logCaught('tegel ' + id, fout);
+  const vak = tegelScherm(id).querySelector(':scope > .tegel-laden-vak');
+  if (vak) vak.innerHTML = foutStaatHTML(fout, actie, `openTegelScreen('${id}')`);
 }
 
 
@@ -1027,17 +1146,12 @@ async function openWieBenJe() {
 
 
 
-  const [{ data, error }, { data: myBirthDate }, { data: naamData }] = await Promise.all([
-    db.from('musicians')
-      .select('username, zip, city, city_source, bio, naam_tonen')
-      .eq('id', myMusicianId).single(),
-    db.rpc('tt_get_my_birth_date'),
-    db.rpc('tt_mijn_naam'),
-  ]);
-  if (error) {
-    showToast(friendlyErrorMessage(error, 'je gegevens laden'));
-    return;
-  }
+
+  const r = await tegelGegevens('wieBenJe');
+  if (!r) return;
+  if (r.error) { tegelLadenFout('wieBenJe', r.error, 'je gegevens laden'); return; }
+  tegelLadenKlaar('wieBenJe');
+  const data = r.data.rij, myBirthDate = r.data.geboorte, naamData = r.data.naam;
   const eigenNaam = (Array.isArray(naamData) ? naamData[0] : naamData) || {};
   document.getElementById('wbjFname').value = eigenNaam.fname || '';
   document.getElementById('wbjLname').value = eigenNaam.lname || '';
@@ -1202,13 +1316,11 @@ function wspFieldSnapshot() {
 }
 
 async function openWatSpeelJe() {
-  const { data, error } = await db.from('musicians')
-    .select('musician_instruments(instrument, niveau), musician_genres(genre)')
-    .eq('id', myMusicianId).single();
-  if (error) {
-    showToast(friendlyErrorMessage(error, 'je gegevens laden'));
-    return;
-  }
+  const r = await tegelGegevens('watSpeelJe');
+  if (!r) return;
+  if (r.error) { tegelLadenFout('watSpeelJe', r.error, 'je gegevens laden'); return; }
+  tegelLadenKlaar('watSpeelJe');
+  const data = r.data;
   wspState.instruments = (data.musician_instruments || []).map(x => x.instrument);
   wspState.instrumentLevels = {};
   (data.musician_instruments || []).forEach(x => { if (x.niveau) wspState.instrumentLevels[x.instrument] = x.niveau; });
@@ -1283,13 +1395,11 @@ function jstFieldSnapshot() {
 }
 
 async function openJeSetlist() {
-  const { data, error } = await db.from('musicians')
-    .select('musician_songs(song_title, song_artist, mastery_level)')
-    .eq('id', myMusicianId).single();
-  if (error) {
-    showToast(friendlyErrorMessage(error, 'je gegevens laden'));
-    return;
-  }
+  const r = await tegelGegevens('jeSetlist');
+  if (!r) return;
+  if (r.error) { tegelLadenFout('jeSetlist', r.error, 'je gegevens laden'); return; }
+  tegelLadenKlaar('jeSetlist');
+  const data = r.data;
   jstSongs = (data.musician_songs || []).map(s => ({ title: s.song_title, artist: s.song_artist, level: s.mastery_level }));
   songZoekLeeg('jst');
   clearFieldErrors(document.getElementById('jeSetlistScreen'));
@@ -1482,13 +1592,11 @@ function mhFieldSnapshot() {
 }
 
 async function openJeMediahoek() {
-  const { data, error } = await db.from('musicians')
-    .select('avatar_url, avatar_bron, avatar_kader, musician_media(media_type, url, platform, in_banner, created_at, uitsnede)')
-    .eq('id', myMusicianId).single();
-  if (error) {
-    showToast(friendlyErrorMessage(error, 'je gegevens laden'));
-    return;
-  }
+  const r = await tegelGegevens('mediahoek');
+  if (!r) return;
+  if (r.error) { tegelLadenFout('mediahoek', r.error, 'je gegevens laden'); return; }
+  tegelLadenKlaar('mediahoek');
+  const data = r.data;
   mhAvatarUrl = data.avatar_url || null;
   mhFotoBezig = false;
   mhAvatarBron = data.avatar_bron || null;

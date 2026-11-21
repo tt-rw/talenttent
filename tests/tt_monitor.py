@@ -221,6 +221,19 @@ def blok_a():
           and not any("italic" in b for b in os.listdir(REPO)),
           "A12", "een @font-face met font-style: italic of een cursief bestand")
 
+    # A13 - TT-622 (besluit Ronald 20-11-2026, sessie 179: "ja"): de app
+    # vraagt bij terugkomen alleen versie.txt. Daarin staat precies elk label
+    # uit index.html: de src= van elk script en de href= van de stijl met ?v=,
+    # één per regel, in dezelfde volgorde. Anders ziet niemand een nieuwe versie.
+    ruw = lees("index.html")
+    labels = [m.group(2) for m in re.finditer(
+        r'(<script src|<link rel="stylesheet" href)="([^"]+\?v=[^"]+)"', ruw)]
+    versie = lees("versie.txt").split("\n") if os.path.exists(os.path.join(REPO, "versie.txt")) else []
+    versie = [x.strip() for x in versie if x.strip()]
+    toets("A", "versie.txt noemt precies de ?v=-labels uit index.html (TT-622)",
+          len(labels) >= 5 and versie == labels,
+          "A13", "versie.txt ontbreekt of wijkt af van index.html: maak hem opnieuw uit de labels")
+
 
 # ============================================================ B - huisstijl
 

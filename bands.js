@@ -1405,6 +1405,8 @@ function renderBandTegels() {
   };
   if (bandTegelData.id === id) { tegels(); bandBeheerTekenen(id, bandTegelData.data, myMusicianId); }
   else { wrap.innerHTML = ''; if (beheer) { beheer.innerHTML = ''; delete beheer.dataset.band; } }
+
+  if (id) tegelsVoorladen(BAND_TILES.map(t => t.id));
   const vraag = ++bandTegelRegelsVraag;
   const fout = (e) => {
 
@@ -1577,6 +1579,41 @@ async function vraagBandVerwijderen() {
 let bwSnapshot = null;
 let bwNiveau = null;
 
+
+
+function bandTegelVraag(kolommen) {
+  return vraagNu(db.from('bands').select(kolommen).eq('id', bewerkBandId).single());
+}
+function bbLedenVraag(bandId) {
+  return vraagNu(db.from('band_members')
+    .select('musician_id, role, rollen, status, musicians(id, weergavenaam, username, avatar_url)')
+    .eq('band_id', bandId));
+}
+Object.assign(TEGEL_HAAL, {
+  bandWie: () => bandTegelVraag('name, zip, city, city_source, description, niveau'),
+
+  bandBezetting: () => {
+    const leden = bbLedenVraag(bewerkBandId);
+    return bandTegelVraag('name, city, founder_id, contact_id, band_wanted(instrument), band_invallers(id, instrument, created_at)')
+      .then(r => ({ data: r.data ? { band: r.data, leden } : null, error: r.error }));
+  },
+  bandMuziek: () => bandTegelVraag('name, city, soort, genres, band_nummers(id, titel, url, created_at), band_covers(id, song_title, song_artist)'),
+  bandMedia: () => bandTegelVraag('name, city, avatar_url, avatar_bron, avatar_kader, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at, uitsnede)')
+});
+
+
+function bandTegelBand(tegel, r, b) {
+  if (r.error || !b) {
+    tegelLadenFout(tegel, r.error || new Error('Deze band bestaat niet meer.'), 'de band laden');
+    return null;
+  }
+  tegelLadenKlaar(tegel);
+  if (b.name) bewerkBandNaam = b.name;
+  if (b.city) bewerkBandStad = b.city;
+  zetBandNaamRegel();
+  return b;
+}
+
 function bwFieldSnapshot() {
   return JSON.stringify({
     naam: waardeVan('bwNaam'), zip: waardeVan('bwZip'), city: waardeVan('bwCity'),
@@ -1586,7 +1623,9 @@ function bwFieldSnapshot() {
 
 async function openBandWie() {
   clearFieldErrors('bandWieScreen');
-  const b = await bandBewerkGegevens('name, zip, city, city_source, description, niveau');
+  const r = await tegelGegevens('bandWie');
+  if (!r) return;
+  const b = bandTegelBand('bandWie', r, r.data);
   if (!b) return;
 
   bandPostcodeDoel = 'bw';
@@ -1676,7 +1715,9 @@ function bbFieldSnapshot() {
 }
 
 async function openBandBezetting() {
-  const b = await bandBewerkGegevens('name, city, founder_id, contact_id, band_wanted(instrument), band_invallers(id, instrument, created_at)');
+  const r = await tegelGegevens('bandBezetting');
+  if (!r) return;
+  const b = bandTegelBand('bandBezetting', r, r.data && r.data.band);
   if (!b) return;
   bbBeheerderId = b.founder_id;
   bbRollenBewerkt = {};
@@ -1716,7 +1757,7 @@ async function openBandBezetting() {
       kies: i => bbRolWissel(INSTRUMENTS[i])
     });
   }
-  await bbLaadLeden(b.contact_id);
+  await bbLaadLeden(b.contact_id, r.data.leden);
   bbRenderOpen();
   bbRenderInvallers();
   bbSnapshot = bbFieldSnapshot();
@@ -1751,12 +1792,11 @@ function bbInvalGewijzigd() {
 
 
 
-async function bbLaadLeden(contactStart) {
+
+async function bbLaadLeden(contactStart, vooraf) {
   const id = bewerkBandId;
   if (!id) return;
-  const { data, error } = await db.from('band_members')
-    .select('musician_id, role, rollen, status, musicians(id, weergavenaam, username, avatar_url)')
-    .eq('band_id', id);
+  const { data, error } = await (vooraf || bbLedenVraag(id));
   if (error) {
     logCaught('bbLaadLeden', error);
     showToast(friendlyErrorMessage(error, 'de leden laden'));
@@ -2058,7 +2098,9 @@ function bmzFieldSnapshot() {
 async function openBandMuziek() {
   clearFieldErrors('bandMuziekScreen');
   songZoekLeeg('bc');
-  const b = await bandBewerkGegevens('name, city, soort, genres, band_nummers(id, titel, url, created_at), band_covers(id, song_title, song_artist)');
+  const r = await tegelGegevens('bandMuziek');
+  if (!r) return;
+  const b = bandTegelBand('bandMuziek', r, r.data);
   if (!b) return;
   bmzZet(b);
   initPicker({
@@ -2276,7 +2318,9 @@ function bmFieldSnapshot() {
 
 async function openBandMedia() {
   clearFieldErrors('bandMediaScreen');
-  const b = await bandBewerkGegevens('name, city, avatar_url, avatar_bron, avatar_kader, instagram, tiktok, youtube, band_media(id, media_type, url, platform, in_banner, created_at, uitsnede)');
+  const r = await tegelGegevens('bandMedia');
+  if (!r) return;
+  const b = bandTegelBand('bandMedia', r, r.data);
   if (!b) return;
   bmZet(b);
   bmSnapshot = bmFieldSnapshot();

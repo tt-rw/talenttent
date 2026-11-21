@@ -917,13 +917,26 @@ function openThreadProfile() {
 
 const berichtRecht = { gebruiker: null, mijnLeeftijd: undefined, leeftijden: {}, timer: null, bezig: false };
 
+
+function berichtRechtVanNu() {
+  if (berichtRecht.gebruiker === currentUser.id) return;
+  berichtRecht.gebruiker = currentUser.id;
+  berichtRecht.mijnLeeftijd = undefined;
+  berichtRecht.leeftijden = {};
+}
+
+
+
+function berichtRechtLeeftijden(ids, rijen) {
+  if (!currentUser) return;
+  berichtRechtVanNu();
+  ids.forEach(id => { if (!(id in berichtRecht.leeftijden)) berichtRecht.leeftijden[id] = null; });
+  (rijen || []).forEach(r => { berichtRecht.leeftijden[r.id] = r.age; });
+}
+
 async function berichtRechtMijnLeeftijd() {
   if (!currentUser) return null;
-  if (berichtRecht.gebruiker !== currentUser.id) {
-    berichtRecht.gebruiker = currentUser.id;
-    berichtRecht.mijnLeeftijd = undefined;
-    berichtRecht.leeftijden = {};
-  }
+  berichtRechtVanNu();
   if (berichtRecht.mijnLeeftijd !== undefined) return berichtRecht.mijnLeeftijd;
   const { data, error } = await db.rpc('tt_get_my_birth_date');
   if (error) throw error;

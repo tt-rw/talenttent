@@ -375,12 +375,15 @@ async function laadInstellingen() {
   if (regel) regel.innerHTML = '&nbsp;';
   if (!mid) return;
   try {
-    const { data, error } = await db.from('musicians').select('stand, weergavenaam, username').eq('id', mid).single();
+
+    const { data, error } = await db.from('musicians').select('stand, weergavenaam, username, email_digest_frequency').eq('id', mid).single();
     if (error) throw error;
     if (STANDEN.some(x => x.waarde === data.stand)) myStand = data.stand;
+    instellingenDigest = { mid, waarde: data.email_digest_frequency || 'daily' };
 
 
     if (regel) regel.textContent = `permanent verwijderen van ${displayNameOf(data)}`;
+    instellingenNaam = { mid, naam: displayNameOf(data) };
   } catch (e) {
     logCaught('laadInstellingen', e);
   }

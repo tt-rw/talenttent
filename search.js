@@ -42,6 +42,9 @@ function leeftijdOpGroepen(min, max) {
 
 let digestFrequencyValue = 'daily';
 
+let instellingenDigest = { mid: null, waarde: null };
+let instellingenNaam = { mid: null, naam: '' };
+
 
 let lastZoekResultaten = [];
 
@@ -697,6 +700,7 @@ async function zoekMuzikantenOphalen(radius, origin) {
     if (error) throw error;
     musicians = data || [];
     if (!ageErr && ages) {
+      berichtRechtLeeftijden(ids, ages);
       const ageById = {};
       ages.forEach(a => { ageById[a.id] = a.age; });
       musicians.forEach(m => { m.age = ageById[m.id]; });

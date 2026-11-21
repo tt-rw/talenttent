@@ -986,8 +986,10 @@ def blok_browser():
         page_errors.clear()
         media = page.evaluate("""async () => {
           showView('profieltegels');
-          openTegelScreen('mediahoek');
+          // TT-620: de tegel laadt eerst zijn eigen gegevens; daarna zet de proef de zijne.
           myMusicianId = 'm1';
+          openTegelScreen('mediahoek');
+          for (let i = 0; i < 40 && tegelLaadt('mediahoek'); i++) await new Promise(r => setTimeout(r, 50));
           mhMediaFiles = [
             { name: 'foto.jpg', url: 'https://x/foto.jpg', path: 'p1', type: 'foto', uploading: false, inBanner: true },
             { name: 'clip.mp4', url: 'https://x/clip.mp4', path: 'p2', type: 'video', uploading: false, inBanner: false }
@@ -6380,6 +6382,7 @@ window.TT_STUB.fnAntwoord = {};
           S.data.band_members.push(
             { band_id: 'b9', musician_id: 'm2', role: 'Lid', status: 'bevestigd', joined_at: '2026-02-01', founder_offer: null },
             { band_id: 'b9', musician_id: 'm3', role: 'Lid', status: 'aangevraagd', joined_at: '2026-03-01', founder_offer: null });
+          tegelVoorraadWissen(); // TT-620: de proef wijzigt de database buiten de app om, na het voorladen van het overzicht
           openTegelScreen('bandBezetting'); await w(400);
           u.leden = [...document.querySelectorAll('#bbLeden .bb-rij')].map(r => [r.querySelector('.bb-naam').textContent, [...r.querySelectorAll('.nav-menu-item')].map(b => b.textContent).join('|')]);
           u.uitgenodigd = [...document.querySelectorAll('#bbUitgenodigd .bb-rij')].map(r => [r.querySelector('.bb-naam').textContent, r.querySelector('.nav-menu-item').textContent]);
@@ -16755,7 +16758,11 @@ def blok_tt582_bundel():
     # TT-543 onderdeel 6, blok 2 (besluit Ronald 11-11-2026, B2-8): in Onze bezetting vervalt de uitlegregel bij Invallers (was V>H 80, H>V 8).
     # TT-543 onderdeel 7 (besluit Ronald 12-11-2026, punt 7): in Je inloggegevens is de veldnaam E-mailadres een vette kop (was L>H 4); kop tot inhoud 8px toetst blok 151.
     # TT-543 laag 3 (besluit Ronald 13-11-2026): 3-5 A (kop tot inhoud 12px, was 20px) en 3-1 (de regel van Wissen 16px, was 18px).
-    VERWACHT = json.loads('''{"inloggen":[["L>V",4],["V>L",16],["L>V",4]],"nieuw-ww":[["L>V",4]],"wizard1":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8],["H>L",72],["L>V",4],["V>L",16],["L>V",4]],"wizard2":[["L>V",12],["V>V",72]],"wizard3":[["L>V",4]],"wizard4":[],"toestemming":[["L>V",4],["V>H",8]],"muzikanten":[["L>V",4],["V>L",48],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"mixmatch":[["L>V",4]],"inloggegevens":[["H>V",4],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"wiebenje":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8],["H>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8]],"watspeelje":[["L>V",12],["V>V",72]],"jesetlist":[["L>V",4]],"bandaanmaken":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"bandwie":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>H",12],["H>L",16],["L>V",4],["V>H",8]],"bandbezetting":[["V>V",72],["V>V",72],["V>L",24],["L>V",4],["V>H",8]],"bandmuziek":[["V>H",80],["H>V",8],["V>H",64],["H>L",8],["L>V",4],["V>H",16]],"bandmedia":[["H>L",8],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]]}''')
+    # TT-620 (sessie 182, 21-11-2026): de bandtegels laden nu echt een band (b9 bestond niet; de tegels bleven leeg). Gemeten met
+    # de band erin: Wie zijn we heeft nu de sterren tussen "Ervaring van de band" en de uitleg (4px erboven, 8px eronder:
+    # L>H 34 = 4 + 22 + 8, was 12 zonder sterren); Onze muziek heeft het gekozen genre als rij (V>V 72, dan V>H 64).
+    # Veldnaam tot veld 4px, tussen velden 16px en een regel onder een veld 8px blijven gelijk.
+    VERWACHT = json.loads('''{"inloggen":[["L>V",4],["V>L",16],["L>V",4]],"nieuw-ww":[["L>V",4]],"wizard1":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8],["H>L",72],["L>V",4],["V>L",16],["L>V",4]],"wizard2":[["L>V",12],["V>V",72]],"wizard3":[["L>V",4]],"wizard4":[],"toestemming":[["L>V",4],["V>H",8]],"muzikanten":[["L>V",4],["V>L",48],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"mixmatch":[["L>V",4]],"inloggegevens":[["H>V",4],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"wiebenje":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8],["H>L",16],["L>V",4],["V>L",16],["L>V",4],["V>H",8]],"watspeelje":[["L>V",12],["V>V",72]],"jesetlist":[["L>V",4]],"bandaanmaken":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]],"bandwie":[["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>H",34],["H>L",16],["L>V",4],["V>H",8]],"bandbezetting":[["V>V",72],["V>V",72],["V>L",24],["L>V",4],["V>H",8]],"bandmuziek":[["V>V",72],["V>H",64],["H>V",8],["V>H",64],["H>L",8],["L>V",4],["V>H",16]],"bandmedia":[["H>L",8],["L>V",4],["V>L",16],["L>V",4],["V>L",16],["L>V",4]]}''')
     idx = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
     check("TT-582: de hulptekst bij postcode en plaats van een band is weg (Band aanmaken, Wie zijn we)",
           "Zo vinden muzikanten in de buurt jullie" not in idx)
@@ -16767,6 +16774,8 @@ def blok_tt582_bundel():
 window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
 window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instruments: m.musician_instruments || [],
   musician_genres: m.musician_genres || [], musician_songs: m.musician_songs || [], musician_media: m.musician_media || [] }));
+// TT-620: een bandtegel toont bij een onbekende band de foutstaat; de proef meet een lege band b9 (zoals tot nu de lege velden).
+window.TT_STUB.data.bands.push({ id: 'b9', name: '', city: '', zip: '', city_source: null, description: '', niveau: 3, founder_id: 'm1', contact_id: 'm1', genres: ['Rock'], soort: 'beide', instagram: null, tiktok: null, youtube: null, avatar_url: null });
 """
     SC = [
      ("inloggen", 0, ["showView('auth')"]),
@@ -17745,10 +17754,12 @@ def blok_bundel_133():
 
         # TT-574: een nieuwe versie herlaadt de app, behalve midden in een bewerking.
         ctx, page = nieuw()
-        html = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
-        # Een nieuwe versie wijzigt het script én zijn preload-regel (TT-662): beide.
-        nieuwe = html.replace('core.js?v=', 'core.js?v=NIEUW')
-        page.route("**/index.html?versie=*", lambda r: r.fulfill(status=200, content_type="text/html", body=nieuwe))
+        # TT-622: de app vraagt versie.txt (één label per regel), niet index.html.
+        versie = open(os.path.join(ROOT, "versie.txt"), encoding="utf-8").read()
+        nieuwe = versie.replace('core.js?v=', 'core.js?v=NIEUW')
+        gevraagd = []
+        page.on("request", lambda r: gevraagd.append(r.url) if ("versie" in r.url or "index.html?" in r.url) else None)
+        page.route("**/versie.txt?t=*", lambda r: r.fulfill(status=200, content_type="text/plain", body=nieuwe))
         page.evaluate(BLOK146_DATA)
         bezig = page.evaluate(r"""async () => {
           const w = (n = 300) => new Promise(r => setTimeout(r, n));
@@ -17759,13 +17770,21 @@ def blok_bundel_133():
         gelijk = page.evaluate(r"""async () => {
           const w = (n = 300) => new Promise(r => setTimeout(r, n));
           wbjSnapshot = wbjFieldSnapshot(); openTegelOverview(); showView('myprofile'); await w(300);
-          const was = window.fetch; window.fetch = async () => new Response(document.documentElement.outerHTML, { status: 200 });
-          versieLaatsteKeer = 0; await controleerNieuweVersie(); window.fetch = was;
+          const was = window.fetch;
+          window.fetch = async () => new Response(geladenVersies().join('\n') + '\n', { status: 200 });
+          versieLaatsteKeer = 0; await controleerNieuweVersie();
+          // Een antwoord dat geen lijst van labels is (een foutpagina, te kort), telt niet.
+          window.fetch = async () => new Response('<!DOCTYPE html><html><body>Niet gevonden</body></html>', { status: 200 });
+          versieLaatsteKeer = 0; await controleerNieuweVersie();
+          window.fetch = async () => new Response('core.js?v=ANDERS\n', { status: 200 });
+          versieLaatsteKeer = 0; await controleerNieuweVersie();
+          window.fetch = was;
           return sessionStorage.getItem('tt_versie_herladen'); }""")
         with page.expect_navigation(timeout=5000):
             page.evaluate("() => { versieLaatsteKeer = 0; controleerNieuweVersie(); }")
         page.wait_for_timeout(500)
-        uit["574"] = {"bezig": bezig, "gelijk": gelijk, "naHerladen": page.evaluate("sessionStorage.getItem('tt_versie_herladen')")}
+        uit["574"] = {"bezig": bezig, "gelijk": gelijk, "naHerladen": page.evaluate("sessionStorage.getItem('tt_versie_herladen')"),
+                      "gevraagd": gevraagd, "bytes": len(versie.encode("utf-8"))}
         ctx.close()
         browser.close()
     httpd.shutdown()
@@ -17798,6 +17817,8 @@ def blok_bundel_133():
     check("TT-574: midden in een bewerking herlaadt de app niet; zonder nieuwe versie ook niet; met een nieuwe versie wel, één keer",
           d["bezig"] == {"herladen": None, "scherm": "wieBenJe"} and d["gelijk"] is None and d["naHerladen"] == "core.js?v=" + open(os.path.join(ROOT, "index.html"), encoding="utf-8").read().split("core.js?v=")[1].split('"')[0],
           json.dumps(d))
+    check("TT-622: de controle vraagt alleen versie.txt (nooit index.html), en dat bestand is kleiner dan 1 kB",
+          d["gevraagd"] and all("/versie.txt?t=" in u for u in d["gevraagd"]) and d["bytes"] < 1024, json.dumps([d["gevraagd"][:3], d["bytes"]]))
     check("blok 157: geen paginafouten", not fouten, "; ".join(fouten)[:300])
 
 
@@ -20208,7 +20229,7 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.fi
             return insertEcht.call(this, Array.isArray(rows) ? lijst : lijst[0]); };
           const tel = f => S.calls.filter(f).length;
           // ── TT-619: de start en Zoeken openen ──
-          u.startId = tel(c => c.table === 'musicians' && c.columns === 'id' && JSON.stringify(c.filters).includes('user_id'));
+          u.startId = tel(c => c.table === 'musicians' && ['id', 'id, city'].includes(c.columns) && JSON.stringify(c.filters).includes('user_id')); // TT-619 sessie 182: de plaats komt mee
           S.rpcResults.tt_search_musicians = [{ musician_id: 'm2', distance_km: 3 }]; S.rpcResults.tt_search_bands_for_musician = [];
           S.calls.length = 0; showView('search'); openZoekScherm('muzikanten'); await w(1500);
           u.zoekOpen = { zoek: tel(c => c.kind === 'rpc' && c.name === 'tt_search_musicians'), plaats: tel(c => c.table === 'postcode_cache') };
@@ -20397,7 +20418,7 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.fi
           myMusicianId = null; S.calls.length = 0; window.__traag = 150;
           const ids = await Promise.all([getMyMusicianId(), getMyMusicianId(), getMyMusicianId()]);
           window.__traag = 0;
-          u.idVraag = { ids, vragen: tel(c => c.table === 'musicians' && c.columns === 'id' && JSON.stringify(c.filters).includes('user_id')) };
+          u.idVraag = { ids, vragen: tel(c => c.table === 'musicians' && ['id', 'id, city'].includes(c.columns) && JSON.stringify(c.filters).includes('user_id')) };
           // Een gesprek openen vanaf een profiel: niet de hele inbox.
           showView('search'); await w(300); S.calls.length = 0;
           openMessageComposer('m2', 'Dylan'); await w(800);
@@ -20915,6 +20936,188 @@ window.TT_STUB.data.musician_blocks = [{ blocker_id: 'm1', blocked_id: 'm3' }];
     check("blok 171: geen JS-fout", not fouten, "; ".join(fouten)[:600])
 
 
+def blok_wachttijd_ronde1():
+    print("\nBlok 172 — wachttijd ronde 1 (sessie 182, 21-11-2026): de vier soorten vensters openen meteen met het draaiende teken (TT-620), één vraag minder voor je plaats en de leeftijden (TT-619)")
+    stub_js = open(STUB, encoding="utf-8").read()
+    ingelogd = stub_js + """
+window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.first_name, musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
+"""
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="dark", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=ingelogd))
+        pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(1200)
+        pg.evaluate("() => { window.__echtId = getMyMusicianId; }")
+        pg.evaluate(BLOK146_DATA)
+        u = pg.evaluate(r"""async () => {
+          const w = (ms = 300) => new Promise(r => setTimeout(r, ms));
+          const S = window.TT_STUB, u = {}, $ = id => document.getElementById(id);
+          const zichtbaar = el => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+          const Q = Object.getPrototypeOf(db.from('x'));
+          const thenEcht = Q.then;
+          Q.then = function (ok, err) { const d = window.__traag || 0, self = this;
+            return new Promise(r => setTimeout(r, d)).then(() => thenEcht.call(self, ok, err)); };
+          const rpcEcht = db.rpc;
+          db.rpc = function (n, a) { const q = rpcEcht.call(this, n, a), t = q.then;
+            q.then = (ok, err) => new Promise(r => setTimeout(r, window.__traag || 0)).then(() => t.call(q, ok, err)); return q; };
+          const toasts = []; const toastEcht = window.showToast; window.showToast = (t, d) => { toasts.push(t); return toastEcht(t, d); };
+          const tel = (f) => S.calls.filter(f).length;
+          myMusicianId = 'm1'; hasOwnProfile = true;
+          S.data.musicians.find(m => m.id === 'm1').musician_songs = [{ song_title: 'Een', song_artist: 'A', mastery_level: 'podium' }];
+
+          // ── 1. Een tegel die laadt: alleen het teken en Opslaan (uit); terug vraagt niets ──
+          showView('profieltegels'); await w(400);
+          tegelVoorraadWissen(); window.__traag = 700;
+          $('wbjFname').value = 'Oud';
+          openTegelScreen('wieBenJe'); await w(150);
+          const scherm = $('wieBenJeScreen');
+          u.laden = { klasse: scherm.classList.contains('tegel-laden'), teken: zichtbaar(scherm.querySelector('.tegel-laden-vak .save-spinner')),
+            titel: zichtbaar(scherm.querySelector('.scherm-titel')), veld: zichtbaar($('wbjFname')),
+            opslaanUit: !!document.querySelector('#view-profieltegels .wizard-action-bar .btn-primary:disabled'),
+            wijzigingen: tegelHeeftWijzigingen() };
+          appTerug(); await w(150);
+          u.terugTijdensLaden = { vraag: $('confirmModal').classList.contains('visible'), tegel: activeTegelScreen || null };
+          await w(800);
+          // Het late antwoord vult niets: de tegel is dicht.
+          u.laatAntwoord = $('wbjFname').value;
+          window.__traag = 0;
+          // Opnieuw openen: gevuld, het teken weg.
+          openTegelScreen('wieBenJe'); await w(500);
+          u.gevuld = { klasse: scherm.classList.contains('tegel-laden'), vak: !!scherm.querySelector('.tegel-laden-vak'), naam: $('wbjFname').value, veld: zichtbaar($('wbjFname')) };
+          appTerug(); await w(300);
+
+          // ── 2. Het overzicht vraagt de vier tegels alvast; een tik gebruikt dat, één keer ──
+          showView('myprofile'); await w(200);
+          showView('profieltegels'); await w(500);
+          S.calls.length = 0;
+          openTegelScreen('watSpeelJe'); await w(150);
+          u.voorraad = { vragen: tel(c => c.kind === 'table' && c.table === 'musicians' && String(c.columns).includes('musician_instruments(instrument, niveau)')), laden: tegelLaadt('watSpeelJe') };
+          await w(200); S.calls.length = 0;
+          appTerug(); await w(300);
+          // Terug naar het overzicht: alleen de tegel die open was, opnieuw; de andere drie staan nog klaar.
+          const kol = (k) => tel(c => c.kind === 'table' && c.table === 'musicians' && String(c.columns).includes(k));
+          u.terugOverzicht = { watSpeelJe: kol('musician_instruments(instrument, niveau)'), jeSetlist: kol('musician_songs(song_title, song_artist, mastery_level)'), mediahoek: kol('avatar_bron') };
+          S.calls.length = 0;
+          openTegelScreen('watSpeelJe'); await w(300);
+          u.tweedeKeer = kol('musician_instruments(instrument, niveau)');
+          appTerug(); await w(200);
+          // Een voorraad van meer dan 30 seconden oud telt niet.
+          Object.values(tegelVoorraad).forEach(v => { v.tijd -= 31000; });
+          S.calls.length = 0;
+          openTegelScreen('jeSetlist'); await w(300);
+          u.oudeVoorraad = tel(c => c.kind === 'table' && c.table === 'musicians' && String(c.columns).includes('musician_songs'));
+          appTerug(); await w(200);
+
+          // ── 3. Laden lukt niet: de foutstaat in de tegel, geen toast; Probeer het opnieuw laadt ──
+          tegelVoorraadWissen(); toasts.length = 0;
+          S.errors['musicians.musician_songs'] = { message: 'Failed to fetch', code: '' };
+          openTegelScreen('jeSetlist'); await w(400);
+          const vak = document.querySelector('#jeSetlistScreen .tegel-laden-vak');
+          const knop = vak && [...vak.querySelectorAll('button')].find(b => b.textContent.trim() === 'Probeer het opnieuw');
+          u.fout = { tekst: vak ? vak.textContent.includes('Laden lukt nu niet') : false, knop: !!knop, toasts: toasts.length,
+            opslaanUit: !!document.querySelector('#view-profieltegels .wizard-action-bar .btn-primary:disabled') };
+          delete S.errors['musicians.musician_songs'];
+          if (knop) knop.click(); await w(400);
+          u.naFout = { laden: tegelLaadt('jeSetlist'), nummers: jstSongs.length };
+          appTerug(); await w(300);
+
+          // ── 4. Onze bezetting: de band en de leden tegelijk ──
+          openBandTegels('b9'); await w(600);
+          tegelVoorraadWissen(); window.__traag = 400;
+          const t0 = performance.now();
+          openTegelScreen('bandBezetting');
+          while (tegelLaadt('bandBezetting') && performance.now() - t0 < 3000) await w(20);
+          await w(30);
+          u.bezetting = { ms: Math.round(performance.now() - t0), leden: document.querySelectorAll('#bandBezettingScreen .bb-rij').length };
+          window.__traag = 0;
+          appTerug(); await w(300);
+          showView('myprofile'); await w(300);
+
+          // ── 5. Meldingen opent meteen met de stand uit Instellingen; een eigen tik wint ──
+          S.data.musicians.find(m => m.id === 'm1').email_digest_frequency = 'weekly';
+          showView('settings'); await laadInstellingen(); await w(200);
+          window.__traag = 600;
+          openSearchPrefsModal(); await w(60);
+          const gekozen = () => [...document.querySelectorAll('#digestFrequencyControl .segmented-btn.selected')].map(b => b.dataset.mode);
+          u.meldingen = { open: $('searchPrefsModal').classList.contains('visible'), stand: gekozen() };
+          window.__traag = 0;
+          const dag = document.querySelector('#digestFrequencyControl .segmented-btn[data-mode="daily"]');
+          setDigestFrequency(dag, 'daily'); await w(900);
+          u.meldingenNa = { stand: gekozen(), opgeslagen: S.data.musicians.find(m => m.id === 'm1').email_digest_frequency };
+          closeSearchPrefsModal(); await w(200);
+
+          // ── 6. Account verwijderen opent meteen met de naam; de knop dicht tot de bands er zijn ──
+          window.__traag = 600;
+          vraagAccountVerwijderen(); await w(80);
+          const ja = $('confirmYesBtn');
+          u.account = { open: $('confirmModal').classList.contains('visible'), kop: $('confirmKop').textContent,
+            leeg: $('confirmKeuzes').innerHTML === '', knopDicht: ja.disabled || ja.getAttribute('aria-disabled') === 'true' };
+          $('confirmBegripVink').click(); await w(50);
+          u.accountVinkTijdensLaden = ja.disabled || ja.getAttribute('aria-disabled') === 'true';
+          window.__traag = 0;
+          await w(900);
+          u.accountNa = { teken: !!document.querySelector('#confirmKeuzes .save-spinner'), tegels: document.querySelectorAll('#confirmKeuzes .tile').length,
+            knopDicht: ja.disabled || ja.getAttribute('aria-disabled') === 'true' };
+          $('confirmNoBtn').click(); await w(300);
+
+          // ── 7. TT-619: de eigen plaats komt mee met de vraag naar je profielnummer ──
+          myMusicianId = null; myOwnCity = null; S.calls.length = 0;
+          window.getMyMusicianId = window.__echtId; await getMyMusicianId(); await getMyCity();
+          u.plaats = { stad: myOwnCity, losseVraag: tel(c => c.kind === 'table' && c.table === 'musicians' && String(c.columns).trim() === 'city') };
+
+          // ── 8. TT-619: de leeftijden van Zoeken en van een profiel gelden ook voor de berichtknop ──
+          S.rpcResults.tt_get_my_birth_date = '1990-01-01';
+          S.rpcResults.tt_search_musicians = [{ musician_id: 'm2', distance_km: 1 }, { musician_id: 'm3', distance_km: 2 }];
+          S.rpcResults.tt_musicians_ages = [{ id: 'm2', age: 20 }, { id: 'm3', age: 15 }];
+          berichtRecht.gebruiker = null; S.calls.length = 0;
+          await zoekMuzikantenOphalen(25, { mid: 'm1', lat: 52.07, lng: 4.3 });
+          document.body.insertAdjacentHTML('beforeend', '<div id="proef172"><span data-bericht-id="m2"></span><span data-bericht-id="m3"></span></div>');
+          await berichtRechtVerwerk(); await w(100);
+          u.leeftijden = { vragen: tel(c => c.kind === 'rpc' && c.name === 'tt_musicians_ages'), m3: berichtRecht.leeftijden.m3, m2: berichtRecht.leeftijden.m2 };
+          $('proef172').remove();
+          return u; }""")
+        browser.close()
+    httpd.shutdown()
+    a = u["laden"]
+    check("TT-620: een tegel die laadt toont alleen de titel, het draaiende teken en Opslaan (uit); de velden van de vorige keer zijn weg",
+          a == {"klasse": True, "teken": True, "titel": True, "veld": False, "opslaanUit": True, "wijzigingen": False}, json.dumps(a))
+    check("TT-620: terug tijdens het laden vraagt niets en sluit de tegel", u["terugTijdensLaden"] == {"vraag": False, "tegel": "overview"}, json.dumps(u["terugTijdensLaden"]))
+    check("TT-620: een laat antwoord vult een gesloten tegel niet", u["laatAntwoord"] == "Oud", json.dumps(u["laatAntwoord"]))
+    check("TT-620: na het laden is het teken weg en staan de velden er, gevuld",
+          u["gevuld"] == {"klasse": False, "vak": False, "naam": "Jesse", "veld": True}, json.dumps(u["gevuld"]))
+    check("TT-620: een tik na het openen van het overzicht gebruikt het antwoord dat al gevraagd was (geen nieuwe vraag)",
+          u["voorraad"]["vragen"] == 0, json.dumps(u["voorraad"]))
+    check("TT-620: terug naar het overzicht vraagt alleen de tegel die open was opnieuw; die tik gebruikt dat nieuwe antwoord",
+          u["terugOverzicht"] == {"watSpeelJe": 1, "jeSetlist": 0, "mediahoek": 0} and u["tweedeKeer"] == 0, json.dumps([u["terugOverzicht"], u["tweedeKeer"]]))
+    check("TT-620: een antwoord van meer dan 30 seconden oud telt niet", u["oudeVoorraad"] == 1, str(u["oudeVoorraad"]))
+    check("TT-620: lukt laden niet, dan 'Laden lukt nu niet' met Probeer het opnieuw in de tegel, geen toast, Opslaan uit",
+          u["fout"] == {"tekst": True, "knop": True, "toasts": 0, "opslaanUit": True}, json.dumps(u["fout"]))
+    check("TT-620: Probeer het opnieuw laadt de tegel", u["naFout"] == {"laden": False, "nummers": 1}, json.dumps(u["naFout"]))
+    check("TT-620: Onze bezetting vraagt de band en de leden tegelijk (klaar binnen 700 ms bij 400 ms per vraag; na elkaar was 800)",
+          u["bezetting"]["ms"] < 700 and u["bezetting"]["leden"] >= 2, json.dumps(u["bezetting"]))
+    check("TT-620: Meldingen staat meteen open met de stand uit Instellingen", u["meldingen"] == {"open": True, "stand": ["weekly"]}, json.dumps(u["meldingen"]))
+    check("TT-620: een tik tijdens het laden wint van het antwoord en wordt opgeslagen",
+          u["meldingenNa"] == {"stand": ["daily"], "opgeslagen": "daily"}, json.dumps(u["meldingenNa"]))
+    check("TT-620: Account verwijderen staat meteen open met de naam in de kop, zonder draaiend teken (besluit Ronald 21-11-2026: \"ja\") en met de knop dicht",
+          u["account"] == {"open": True, "kop": "Account van Jesse verwijderen?", "leeg": True, "knopDicht": True}, json.dumps(u["account"], ensure_ascii=False))
+    check("TT-620: met het vinkje aan blijft de knop dicht zolang de bands nog niet bekend zijn", u["accountVinkTijdensLaden"] is True, str(u["accountVinkTijdensLaden"]))
+    check("TT-620: daarna de tegel per band, het teken weg, de knop nog dicht tot er gekozen is",
+          u["accountNa"] == {"teken": False, "tegels": 1, "knopDicht": True}, json.dumps(u["accountNa"]))
+    check("TT-619: de eigen plaats komt mee met de vraag naar het profielnummer; geen losse vraag",
+          u["plaats"] == {"stad": "Den Haag", "losseVraag": 0}, json.dumps(u["plaats"]))
+    check("TT-619: de leeftijden uit Zoeken gelden voor de berichtknoppen; tt_musicians_ages één keer",
+          u["leeftijden"] == {"vragen": 1, "m3": 15, "m2": 20}, json.dumps(u["leeftijden"]))
+    check("blok 172: geen JS-fout", not fouten, "; ".join(fouten)[:600])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -20984,6 +21187,7 @@ BLOKKEN = [
     blok_wachttijd,
     blok_bevindingen_1711,
     blok_soort_toestel,
+    blok_wachttijd_ronde1,
 ]
 
 
