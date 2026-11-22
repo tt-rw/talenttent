@@ -5361,3 +5361,62 @@ textarea.bio-voorbeeld::placeholder { font-style: italic; opacity: 0.6; }
 
 
 [data-bericht-id]:not([data-bericht-ok]) { visibility: hidden; }
+
+  .zoek-tegel { position: relative; }
+  .pb-getal {
+    margin-left: auto;
+    align-self: center;
+    background: var(--ongelezen);
+    color: var(--ongelezen-tekst);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: var(--regel-11);
+    padding: 1px 6px;
+    border-radius: 999px;
+  }
+
+  .pb-kopregel { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+  .pb-plaatsen-knop { width: auto; padding-left: 24px; padding-right: 24px; }
+  .pb-rij .result-row-main { gap: 2px; }
+  .pb-rij-gedeeld { font-size: 12px; line-height: var(--regel-12); font-weight: 700; color: var(--accent); }
+  .pb-oproep { padding-top: 0; }
+  .pb-oproep-kop { display: flex; gap: 12px; align-items: center; cursor: pointer; }
+  .pb-oproep-wie { min-width: 0; }
+  .pb-oproep-titel { font-size: 17px; font-weight: 700; line-height: var(--regel-17); color: var(--text); }
+  .pb-oproep-tekst { font-size: 15px; line-height: var(--regel-15); color: var(--text); margin: 16px 0; white-space: pre-line; overflow-wrap: anywhere; }
+  .pb-feiten { display: grid; grid-template-columns: max-content 1fr; gap: 8px 12px; margin: 0 0 16px; font-size: 12px; line-height: var(--regel-12); }
+  .pb-feiten dt { color: var(--muted); }
+  .pb-feiten dd { margin: 0; color: var(--text); }
+  .pb-oproep-gedeeld, .pb-oproep-media, .pb-oproep-datum, .pb-voorbeeld-uitleg, .pb-reageren-uitleg, .pb-leeg-regel {
+    font-size: 12px; line-height: var(--regel-12); color: var(--muted); margin: 0 0 8px;
+  }
+  .pb-oproep-gedeeld { color: var(--accent); font-weight: 700; }
+  .pb-knop { width: 100%; margin-top: 16px; }
+  .pb-instrumenten { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pb-keuzes { display: flex; }
+  .pb-form .segmented-btn[disabled] { opacity: .4; pointer-events: none; }
+  .pb-uit { opacity: .4; }
+  .pb-mijn { margin-bottom: 28px; }
+  .pb-mijn-kop { margin-bottom: 12px; }
+  .pb-mijn-knoppen { margin-top: 12px; }
+  .pb-reactie .result-row-main { gap: 2px; }
+  .pb-status { align-self: center; font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+  .pb-klein { width: auto; align-self: center; padding-left: 14px; padding-right: 14px; }
+  .pb-nieuw { margin-left: 8px; font-size: 11px; font-weight: 700; color: var(--accent); }
+  .pb-boodschap { font-size: 12px; line-height: var(--regel-12); color: var(--text); margin-top: 4px; overflow-wrap: anywhere; }
+  .pb-intrekken { margin-top: 8px; }
+  .pb-media-melding { margin-top: 12px; }
+  .pb-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .pb-form > .field { margin-bottom: var(--ruimte-velden); }
+  .pb-form .pb-knop { margin-top: 8px; }
+  .pb-reactie .result-row-meta { white-space: normal; }
+  .gesprek-oproep { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin: 0 0 12px; cursor: pointer; }
+  .gesprek-oproep:empty { display: none; }
+  .gesprek-oproep-titel { font-size: 15px; font-weight: 700; line-height: var(--regel-15); color: var(--text); }
+  .pb-tips-intro { font-size: 15px; line-height: var(--regel-15); color: var(--text); margin: 0 0 12px; }
+  .pb-tips { margin: 0 0 12px; padding-left: 24px; font-size: 15px; line-height: var(--regel-15); color: var(--text); }
+  .pb-tips li { margin-bottom: 8px; }
+  .search-mode-tab { position: relative; }
+  .search-mode-tab .pb-getal { position: absolute; top: -6px; right: -4px; margin: 0; }
+  .pb-rij-gedeeld { margin-top: 2px; }
+  .pb-mijn-knoppen-rij { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }

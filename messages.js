@@ -23,6 +23,7 @@ const TT_TEKSTEN = {
   kernzinMatches: 'Er zijn {aantal} nieuwe matches bij jou in de buurt.',
   meer: 'En nog {aantal} andere — bekijk ze in Zoeken',
   bandZoekt: 'zoekt: {instrument}',
+  oproepUitnodiging: '{naam} nodigt je uit om kennis te maken voor {titel}.',
 };
 
 
@@ -595,7 +596,7 @@ let gesprek = { id: null, mid: null, berichten: [], meer: false, bezig: false };
 
 async function gesprekDeelOphalen(mid, otherId, tot, aantal) {
   const kant = (van, aan) => {
-    let q = db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at')
+    let q = db.from('messages').select('id, sender_id, recipient_id, body, created_at, read_at, oproep_id')
       .eq('sender_id', van).eq('recipient_id', aan);
     if (tot) q = q.lte('created_at', tot);
     return q.order('created_at', { ascending: false }).limit(aantal);
@@ -625,7 +626,10 @@ function gesprekStuk(deel, verborgen, otherId, aantal, alWeg) {
 function gesprekHTML(data, mid, otherName) {
   let lastDay = null;
   const boven = gesprek.meer ? '<div class="berichten-eerder" role="status" aria-label="Eerdere berichten laden"><div class="save-spinner"></div></div>' : '';
-  return boven + (data && data.length ? data.map(msg => {
+  const oproep = (data || []).map(m => m.oproep_id).filter(Boolean).pop();
+  const kaart = oproep ? `<div class="gesprek-oproep" data-oproep="${escHtml(oproep)}"></div>` : '';
+  if (oproep) setTimeout(() => pbKaartjeVullen(oproep), 0);
+  return boven + kaart + (data && data.length ? data.map(msg => {
     const own = msg.sender_id === mid;
     const msgDate = new Date(msg.created_at);
     const dayStr = msgDate.toDateString();
@@ -810,6 +814,7 @@ function zetSysteemGesprek(aan) {
 }
 
 function talentTentKernzin(inhoud) {
+  if (inhoud && inhoud.soort) return pbTtKernzin(inhoud, null);
   const aantal = ((inhoud && inhoud.muzikanten) || []).length + ((inhoud && inhoud.bands) || []).length + (Number(inhoud && inhoud.meer) || 0);
   return aantal === 1 ? TT_TEKSTEN.kernzinEenMatch : TT_TEKSTEN.kernzinMatches.replace('{aantal}', aantal);
 }
@@ -835,6 +840,10 @@ async function talentTentInfoOphalen(berichten) {
   berichten.forEach(b => {
     ((b.inhoud && b.inhoud.muzikanten) || []).forEach(m => mIds.add(m.id));
     ((b.inhoud && b.inhoud.bands) || []).forEach(x => bIds.add(x.id));
+    const o = b.inhoud || {};
+    [o.plaatser, o.wie].filter(Boolean).forEach(id => mIds.add(id));
+    if (o.band) bIds.add(o.band);
+    (o.oproepen || []).forEach(x => { if (x.plaatser) mIds.add(x.plaatser); if (x.band) bIds.add(x.band); });
   });
   const info = { muzikanten: {}, bands: {} };
   try {
@@ -859,6 +868,7 @@ async function talentTentInfoOphalen(berichten) {
 
 function talentTentBerichtHTML(bericht, info) {
   const inh = bericht.inhoud || {};
+  if (inh.soort) return pbTtBerichtHTML(bericht, info);
   const muz = (inh.muzikanten || []).filter(m => info.muzikanten[m.id] && !isGeblokkeerd(m.id));
   const bnd = (inh.bands || []).filter(b => info.bands[b.id]);
   if (!muz.length && !bnd.length) return '';

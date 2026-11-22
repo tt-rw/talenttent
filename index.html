@@ -99,7 +99,7 @@
 <link rel="preload" href="tt-woordmerk.woff2" as="font" type="font/woff2" crossorigin>
 
 <link rel="preload" href="inter-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=20261121d">
+<link rel="stylesheet" href="styles.css?v=20261122a">
 </head>
 <body class="landing-op-foto">
 
@@ -1236,6 +1236,11 @@
 
 
 
+    <button type="button" class="tile zoek-tegel" id="zoekTegelPrikbord" onclick="openPrikbord()">
+      <span class="zoek-tegel-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span>
+      <span class="zoek-tegel-tekst"><span class="tile-title">Prikbord</span><span class="tile-sub">Oproepen: wie zoekt wie, en wie is beschikbaar</span></span>
+      <span class="pb-getal" id="pbTegelGetal" hidden></span>
+    </button>
     <button type="button" class="tile zoek-tegel" id="zoekTegelMuzikanten" onclick="openZoekScherm('muzikanten')">
       <span class="zoek-tegel-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="4"/><path d="M10.3 15H7a4 4 0 0 0-4 4v2"/><circle cx="17" cy="17" r="3"/><path d="m21 21-1.9-1.9"/></svg></span>
       <span class="zoek-tegel-tekst"><span class="tile-title">Muzikanten</span><span class="tile-sub">Muzikanten en bands bij jou in de buurt</span></span>
@@ -1529,6 +1534,74 @@
     </div>
   </div>
   </div>
+
+  <div id="zoekPrikbord" style="display:none;">
+  <div class="search-wrap">
+    <div id="pbLijstScherm">
+      <h1 class="filter-title zoek-titel scherm-titel">Prikbord</h1>
+      <div class="pb-kopregel"><button type="button" class="btn btn-primary pb-plaatsen-knop" onclick="pbPlaatsenStart()">Oproep plaatsen</button></div>
+      <div class="pb-mijn-knoppen-rij">
+        <button type="button" class="search-mode-tab" id="pbTab-mijn" aria-pressed="false" onclick="pbWissel('mijn')">Mijn oproepen<span class="pb-getal" id="pbMijnGetal" hidden></span></button>
+        <button type="button" class="search-mode-tab" id="pbTab-reacties" aria-pressed="false" onclick="pbWissel('reacties')">Mijn reacties</button>
+      </div>
+      <div id="pbAlleVak">
+        <div class="search-filters">
+          <div class="field">
+            <div class="filter-row-city">
+              <div class="city-search-wrap frc-plaats">
+                <label for="pbPlaats">Plaats</label>
+                <input type="text" id="pbPlaats" placeholder="Bijv. Den Haag of 2511" autocomplete="off" oninput="pbPlaatsInvoer()">
+              </div>
+              <div class="frc-straal">
+                <label>Straal</label>
+                <div class="menu-anchor">
+                  <div class="wheel-field" id="pbStraalField" aria-label="Straal"><span class="wheel-field-label"></span></div>
+                  <div class="choice-menu" id="pbStraalMenu" role="listbox" aria-label="Straal"></div>
+                </div>
+                <input type="hidden" id="pbStraal" value="25">
+              </div>
+            </div>
+          </div>
+          <div class="zoek-wis-rij zoek-filters-rij">
+            <label class="zoek-onthoud"><input type="checkbox" id="pbOnthoud" onchange="pbOnthoudKlik(this)"><span>Onthoud mijn zoekopdracht</span></label>
+            <button type="button" class="zoek-filters-knop" id="pbFiltersKnop" aria-expanded="false" aria-controls="pbFilterVak" onclick="togglePbFilters()"><span id="pbFiltersTekst">Filters</span><svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          </div>
+          <div class="zoek-filter-vak" id="pbFilterVak" hidden>
+            <div class="field-pair-row">
+              <div class="field"><label>Gezocht of beschikbaar</label><div class="menu-anchor"><div class="wheel-field" id="pbSoortField"><span class="wheel-field-label"></span></div><div class="choice-menu" id="pbSoortMenu" role="listbox"></div></div></div>
+              <div class="field"><label>Waarvoor</label><div class="menu-anchor"><div class="wheel-field" id="pbDoelField"><span class="wheel-field-label"></span></div><div class="choice-menu" id="pbDoelMenu" role="listbox"></div></div></div>
+            </div>
+            <div class="field"><label>Instrument</label><div class="menu-anchor"><div class="wheel-field" id="pbInstrumentField"><span class="wheel-field-label"></span></div><div class="choice-menu menu-breed" id="pbInstrumentMenu" role="listbox"></div></div></div>
+            <div class="field"><label>Volgorde</label><div class="menu-anchor"><div class="wheel-field" id="pbVolgordeField"><span class="wheel-field-label"></span></div><div class="choice-menu menu-breed" id="pbVolgordeMenu" role="listbox"></div></div></div>
+            <div class="zoek-wis-rij"><button type="button" class="zoek-wissen-knop" onclick="pbWissen()">Wissen</button></div>
+          </div>
+        </div>
+        <div id="pbResultaat" class="search-results"></div>
+      </div>
+      <div id="pbMijnVak" style="display:none;"><div id="pbMijnLijst"></div></div>
+      <div id="pbReactiesVak" style="display:none;"><div id="pbReactiesLijst"></div></div>
+    </div>
+    <div id="pbOproepScherm" style="display:none;">
+      <h1 class="filter-title zoek-titel scherm-titel">Oproep</h1>
+      <div id="pbOproepInhoud"></div>
+    </div>
+    <div id="pbPlaatsenScherm" style="display:none;">
+      <div id="pbFormVak">
+        <h1 class="filter-title zoek-titel scherm-titel">Oproep plaatsen</h1>
+        <div class="pb-form" id="pbFormInhoud"></div>
+      </div>
+      <div id="pbVoorbeeldVak" style="display:none;">
+        <h1 class="filter-title zoek-titel scherm-titel">Voorbeeld</h1>
+        <p class="pb-voorbeeld-uitleg">Zo zien anderen je oproep.</p>
+        <div id="pbVoorbeeldInhoud"></div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-ghost" onclick="pbTerug()">Aanpassen</button>
+          <button type="button" class="btn btn-primary" id="pbPlaatsenKnop" onclick="pbPlaatsen()">Plaatsen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
 </div>
 
 
@@ -1682,7 +1755,7 @@
   <div class="search-wrap">
     <div class="search-filters doc-view">
       <div class="panel-title scherm-titel">Privacyverklaring</div>
-      <div class="doc-updated">Laatst bijgewerkt: 18 november 2026</div>
+      <div class="doc-updated">Laatst bijgewerkt: 22 november 2026</div>
 
       <h2>1. Wie zijn wij</h2>
       <p>TalentTent (talenttent.org) is een platform dat muzikanten met elkaar in contact brengt voor jams, repetities en optredens. TalentTent wordt beheerd door Ronald, als privépersoon.</p>
@@ -1699,6 +1772,7 @@
         <li>Eventueel: een korte bio, een profielfoto, en foto's/video's/links die je zelf toevoegt</li>
         <li>De instrumenten die je speelt, je genres en je repertoire (nummers)</li>
         <li>Berichten die je verstuurt aan andere muzikanten via de app</li>
+        <li>Je oproepen op het prikbord en je reacties op oproepen</li>
         <li>Wanneer je voor het laatst actief was in de app</li>
         <li>Blokkeringen en meldingen die je zelf doet</li>
         <li>Technische foutmeldingen, zodat we fouten in de app kunnen herstellen</li>
@@ -1711,7 +1785,7 @@
 
       <h2>3. Waarom we deze gegevens gebruiken</h2>
       <p>We gebruiken je gegevens om je een profiel te geven dat andere muzikanten kunnen vinden, om muzikanten en bands die bij elkaar passen te kunnen tonen in de zoekfunctie, om berichten tussen gebruikers mogelijk te maken, en om je account veilig te houden en misbruik tegen te gaan.</p>
-      <p>We sturen je e-mails die bij je account horen: een bevestiging van je e-mailadres, een nieuw wachtwoord als je dat vraagt, een bevestiging als je je account verwijdert, en een overzicht van nieuwe berichten en passende muzikanten, volgens de voorkeur die je zelf instelt bij <span class="niet-afbreken">Meldingen</span>.</p>
+      <p>We sturen je e-mails die bij je account horen: een bevestiging van je e-mailadres, een nieuw wachtwoord als je dat vraagt, een bevestiging als je je account verwijdert, en een overzicht van nieuwe berichten, passende muzikanten en oproepen, volgens de voorkeur die je zelf instelt bij <span class="niet-afbreken">Meldingen</span>.</p>
       <p>Wij geven je gegevens alleen door aan de partijen in hoofdstuk 7.</p>
 
       <h2>4. Grondslag</h2>
@@ -1729,6 +1803,7 @@
         <li>Ben je jonger dan 16 jaar? Dan zien bezoekers zonder account je profielfoto, foto's, video's en links niet. Op die plek staat een wazig beeld: een piepkleine versie van de foto, zo klein dat niemand erop te herkennen is. Wie een account heeft, ziet alles.</li>
         <li>Je postcode wordt nooit aan andere gebruikers getoond. Je achternaam staat alleen op je profiel als je zelf kiest voor je echte naam.</li>
         <li>Berichten die je stuurt, zijn alleen zichtbaar voor jou en de ontvanger.</li>
+        <li>Je oproep zien gebruikers in de leeftijden die je kiest. Ben je jonger dan 16, dan zien alleen gebruikers onder de 18 hem. Bezoekers zonder account zien alleen oproepen voor 16 jaar en ouder, en nooit een oproep van iemand onder de 16 of van een band met een lid onder de 16. Je reactie op een oproep ziet alleen wie de oproep plaatste.</li>
         <li>Ben je jonger dan 16 jaar? Dan kan iemand van 18 of ouder je pas een bericht sturen nadat jij die persoon eerst een bericht stuurde. Met alle anderen kun je vrij berichten.</li>
         <li>Een melding die je doet, gaat alleen naar ons (<button type="button" class="email-kopieer" onclick="kopieerEmailadres(this)">privacy@talenttent.org</button>). Wie je meldt, ziet niet dat jij het was.</li>
       </ul>
@@ -1744,6 +1819,7 @@
 
       <h2>8. Hoe lang we je gegevens bewaren</h2>
       <p>We bewaren je gegevens zolang je account bestaat. Verwijder je je account via "Account verwijderen"? Dan worden je profiel, repertoire, geüploade bestanden en alle andere gegevens die bij je account horen <strong>permanent verwijderd</strong>, ook je meldingen, blokkeringen, de aanvraag aan je ouder en de foutmeldingen die bij je account horen. Berichten die je naar anderen hebt gestuurd, blijven zichtbaar bij de ontvanger — net als bij andere berichten-apps verwijderen we niet de kant van het gesprek van iemand anders. Is ook de ander verwijderd, dan verdwijnt het gesprek.</p>
+      <p>Een gesloten oproep verwijderen we na 30 dagen, met de reacties erop.</p>
       <p>Back-ups: een kopie van de gegevens blijft nog tot 7 dagen bij Supabase en tot 30 dagen bij Backblaze staan. Daarna is die kopie weg.</p>
 
       <h2>9. Jouw rechten</h2>
@@ -2003,6 +2079,28 @@
 
 
 
+<div class="modal-overlay" id="pbReagerenModal" data-close="pbReagerenSluiten" onclick="if(event.target===this)pbReagerenSluiten()">
+  <div class="modal-box modal-box-md">
+    <h2 class="hoofdstuk-kop" id="pbReagerenKop">Reageren</h2>
+    <div id="pbReagerenInhoud"></div>
+    <div class="field">
+      <label for="pbBoodschap">Boodschap (niet verplicht)</label>
+      <textarea id="pbBoodschap" class="bio-voorbeeld" maxlength="1000" rows="2" oninput="veldGroeit(this)" placeholder="Bijv. Hoi! Ik drum vooral funk en rock en kan op donderdag."></textarea>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-ghost" onclick="pbReagerenSluiten()">Annuleren</button>
+      <button type="button" class="btn btn-primary" id="pbVersturenKnop" onclick="pbReagerenVersturen()">Versturen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="pbTipsModal" data-close="pbTipsSluiten" onclick="if(event.target===this)pbTipsSluiten()">
+  <div class="modal-box modal-box-md">
+    <button class="modal-close" onclick="pbTipsSluiten()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    <div id="pbTipsInhoud"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="overdragenModal" data-close="sluitOverdragen" onclick="if(event.target===this)sluitOverdragen()">
   <div class="modal-box modal-box-md">
     <h2 class="hoofdstuk-kop overdragen-kop">Beheer overdragen</h2>
@@ -2238,7 +2336,7 @@
   <div class="modal-box modal-box-md">
     <button class="modal-close" onclick="closeSearchPrefsModal()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
     <div class="filter-title" style="margin-bottom:4px;">Meldingen</div>
-    <p class="voorkeur-intro">Deze keuze bepaalt ook of je een bericht van TalentTent krijgt in je berichten, en een seintje op je toestel. Je zoekresultaten veranderen hier niet door.</p>
+    <p class="voorkeur-intro">Elke keuze geldt voor de mail, het bericht van TalentTent in je berichten en het seintje op je toestel. Je zoekresultaten veranderen hier niet door.</p>
 
 
 
@@ -2255,6 +2353,15 @@
         <div class="segmented-btn" data-mode="weekly" onclick="setDigestFrequency(this,'weekly')">Wekelijks</div>
       </div>
       <p class="voorkeur-uitleg">Berichten, bands die jou zoeken en muzikanten bij je bewaarde zoekopdracht.</p>
+    </div>
+
+    <div class="modal-blok">
+      <div class="voorkeur-kop">Oproepen</div>
+      <div class="segmented-control voorkeur-knoppen" id="oproepenControl">
+        <div class="segmented-btn" data-mode="uit" onclick="pbOproepenZetten(false)">Uit</div>
+        <div class="segmented-btn" data-mode="aan" onclick="pbOproepenZetten(true)">Aan</div>
+      </div>
+      <p class="voorkeur-uitleg">Nieuwe oproepen op het prikbord die bij jou passen, mee in je mail bij nieuwe matches.</p>
     </div>
 
 
@@ -2351,19 +2458,20 @@
 
 
 <link rel="preload" href="supabase.js?v=2.118.0" as="script">
-<link rel="preload" href="core.js?v=20261121d" as="script">
+<link rel="preload" href="core.js?v=20261122a" as="script">
 <link rel="preload" href="utils.js?v=20261121c" as="script">
 <link rel="preload" href="veiligheid.js?v=20261121c" as="script">
 <link rel="preload" href="auth.js?v=20261120a" as="script">
 <link rel="preload" href="postcode.js?v=20261119a" as="script">
 <link rel="preload" href="wizard.js?v=20261121c" as="script">
 <link rel="preload" href="ouder.js?v=20261118a" as="script">
-<link rel="preload" href="search.js?v=20261121c" as="script">
+<link rel="preload" href="search.js?v=20261122b" as="script">
 <link rel="preload" href="musicians.js?v=20261121c" as="script">
-<link rel="preload" href="bands.js?v=20261121c" as="script">
-<link rel="preload" href="messages.js?v=20261121c" as="script">
+<link rel="preload" href="bands.js?v=20261122a" as="script">
+<link rel="preload" href="messages.js?v=20261122a" as="script">
 <link rel="preload" href="push.js?v=20261118a" as="script">
 <link rel="preload" href="modals-shared.js?v=20261116a" as="script">
+<link rel="preload" href="prikbord.js?v=20261122b" as="script">
 <script src="supabase.js?v=2.118.0"></script>
 <script>
 
@@ -2381,19 +2489,20 @@
     document.getElementById('backendErrorOverlay').classList.add('visible');
   }
 </script>
-<script src="core.js?v=20261121d"></script>
+<script src="core.js?v=20261122a"></script>
 <script src="utils.js?v=20261121c"></script>
 <script src="veiligheid.js?v=20261121c"></script>
 <script src="auth.js?v=20261120a"></script>
 <script src="postcode.js?v=20261119a"></script>
 <script src="wizard.js?v=20261121c"></script>
 <script src="ouder.js?v=20261118a"></script>
-<script src="search.js?v=20261121c"></script>
+<script src="search.js?v=20261122b"></script>
 <script src="musicians.js?v=20261121c"></script>
-<script src="bands.js?v=20261121c"></script>
-<script src="messages.js?v=20261121c"></script>
+<script src="bands.js?v=20261122a"></script>
+<script src="messages.js?v=20261122a"></script>
 <script src="push.js?v=20261118a"></script>
 <script src="modals-shared.js?v=20261116a"></script>
+<script src="prikbord.js?v=20261122b"></script>
 <script>
 
 

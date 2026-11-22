@@ -315,6 +315,7 @@ const AFGESCHERMDE_VIEWS = ['myprofile', 'bands', 'profieltegels', 'messages', '
 function viewUitHash() {
   const v = location.hash.replace('#', '');
   if (/^(profiel|band)\/./.test(v)) return 'profiel';
+  if (/^prikbord(\/.+)?$/.test(v)) return 'search';
   if (!HERSTELBARE_VIEWS.includes(v)) return hoogsteScherm();
   if (AFGESCHERMDE_VIEWS.includes(v) && !currentUser) return 'auth';
   if (currentUser && ['auth', 'register'].includes(v)) return hoogsteScherm();
@@ -392,7 +393,7 @@ async function appInit() {
 
 
     opstartHerstelt = !!session?.user && (herstelLinkBijStart || !!gesprekMatch ||
-      /^(profiel|band|toestemming|bevestig)\//.test(hashView) ||
+      /^(profiel|band|toestemming|bevestig)\//.test(hashView) || /^prikbord(\/.+)?$/.test(hashView) ||
       (HERSTELBARE_VIEWS.includes(hashView) && !['auth', 'register'].includes(hashView)));
 
 
@@ -493,6 +494,7 @@ async function appInit() {
 
 
     const bevestigMatch = hashView.match(/^bevestig\/(.+)$/);
+    const prikbordMatch = hashView.match(/^prikbord(?:\/(.+))?$/);
     if (herstelLinkVerlopen) {
 
       try { history.replaceState(history.state, '', location.pathname + location.search); } catch (e) { }
@@ -527,6 +529,10 @@ async function appInit() {
       const open = doelSoort === 'band' ? openBandScherm : openProfielScherm;
       if (zelfdeStap) open(doelId, { redirect: true });
       else open(doelId);
+    } else if (prikbordMatch) {
+      showView('search', 'redirect');
+      if (currentUser) await configureSearchAccess();
+      await pbOpenVanLink(prikbordMatch[1] ? decodeURIComponent(prikbordMatch[1]) : null);
     } else if (gesprekMatch) {
 
 
@@ -851,8 +857,9 @@ async function openSearchPrefsModal() {
 
 
     const musicianRes = await db.from('musicians')
-      .select('email_digest_frequency').eq('id', mid).single();
+      .select('email_digest_frequency, oproepen_melden').eq('id', mid).single();
     if (musicianRes.error) throw musicianRes.error;
+    if (volg === meldingenVolg) pbOproepenTonen(musicianRes.data?.oproepen_melden !== false);
     const waarde = musicianRes.data?.email_digest_frequency || 'daily';
     instellingenDigest = { mid, waarde };
     if (volg === meldingenVolg && !meldingenGetikt) selectDigestFrequency(waarde);

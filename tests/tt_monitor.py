@@ -33,7 +33,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BINDENDE_SCRIPTVOLGORDE = [
     "core.js", "utils.js", "veiligheid.js", "auth.js", "postcode.js",
     "wizard.js", "ouder.js", "search.js", "musicians.js", "bands.js",
-    "messages.js", "push.js", "modals-shared.js",
+    "messages.js", "push.js", "modals-shared.js", "prikbord.js",
 ]
 
 VERWACHTE_VIEWS = [

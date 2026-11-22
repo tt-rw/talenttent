@@ -49,7 +49,7 @@ STUB = os.path.join(ROOT, "tests", "stub", "supabase-stub.js")
 JS_FILES = [
     "core.js", "utils.js", "veiligheid.js", "auth.js", "postcode.js", "wizard.js",
     "ouder.js", "search.js", "musicians.js", "bands.js", "messages.js",
-    "push.js", "modals-shared.js",
+    "push.js", "modals-shared.js", "prikbord.js",
 ]
 
 # Scriptvolgorde uit de projectinstructies. Bindend.
@@ -368,6 +368,7 @@ def blok1_statisch():
         ("messages.js", "openTalentTentGesprek", "talent_tent_berichten"): "gelezen markeren, zonder melding",
         ("search.js", "onthoudKlik", "musician_saved_search"): "uitzetten zonder bewaarde zoekopdracht is 0 rijen; een upsert geeft zelf een fout",
         ("search.js", "onthoudBijwerken", "musician_saved_search"): "op de achtergrond, zonder melding",
+        ("prikbord.js", "pbOnthoudKlik", "prikbord_zoek"): "zoals onthoudKlik in Zoeken: uitzetten zonder bewaarde zoekopdracht is 0 rijen; een upsert geeft zelf een fout",
         ("veiligheid.js", "deblokkeerMuzikant", "musician_blocks"): "0 rijen: was al niet geblokkeerd, de melding klopt",
     }
     zonder = []
@@ -4068,7 +4069,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         knoppen = re.findall(r'<button class="modal-close"[^>]*>(.*?)</button>', html322, re.S)
         teken = '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'  # het sluitteken uit Lucide (TT-543 onderdeel 10, 2-13)
         check("elk kruisje in index.html is het sluitteken, nergens meer de letter ✕",
-              len(knoppen) == 8 and all(teken in k and "✕" not in k for k in knoppen), str(len(knoppen)))  # 11 sinds TT-543 blok 3 (Link toevoegen); 10 sinds TT-543 onderdeel 4 (Lid uitnodigen weg); 8 sinds TT-543 draaiwielen deel 2 (de twee vensters met een lijst weg)
+              len(knoppen) == 9 and all(teken in k and "✕" not in k for k in knoppen), str(len(knoppen)))  # 9 sinds TT-396 (Tips voor een goede oproep); 11 sinds TT-543 blok 3 (Link toevoegen); 10 sinds TT-543 onderdeel 4 (Lid uitnodigen weg); 8 sinds TT-543 draaiwielen deel 2 (de twee vensters met een lijst weg)
         check("elk kruisje heeft een aria-label",
               all("aria-label" in t for t in re.findall(r'<button class="modal-close"[^>]*>', html322)), "")
         terug322 = re.findall(r'<button class="modal-back"[^>]*>(.*?)</button>', html322, re.S)
@@ -4537,7 +4538,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
                      knoppen: knoppen.map(k => k.textContent + (k.classList.contains('selected') ? '*' : '')),
                      blokken: document.querySelectorAll('#searchPrefsModal .modal-blok').length }; }""")
         check("Instellingen toont de bewaarde zoekopdracht in woorden, in een eigen blok",
-              inst["blokken"] == 3 and inst["tekst"] == "Muzikanten · Gitaar · Rock · binnen 50 km van Den Haag", json.dumps(inst))
+              inst["blokken"] == 4 and inst["tekst"] == "Muzikanten · Gitaar · Rock · binnen 50 km van Den Haag", json.dumps(inst))
         check("geen eigen mailschakelaar bij de bewaarde zoekopdracht (besluit Ronald 27-10-2026, optie b)",
               inst["knoppen"] == [], json.dumps(inst))
         mailblok = ip39.evaluate("""() => { const b = document.getElementById('digestFrequencyControl').closest('.modal-blok');
@@ -4555,7 +4556,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
                      opslaan: [...m.querySelectorAll('button')].some(b => b.textContent.trim() === 'Opslaan') }; }""")
         check("Meldingen (TT-672, was E-mailvoorkeuren): alles op één linkerlijn, elke keuzeknop even breed, vette koppen van 17px, geen knop Opslaan",
               len(vk["links"]) == 1 and len(vk["breed"]) == 1 and not vk["opslaan"]
-              and vk["koppen"] == ["Mail bij nieuwe matches:700:17px", "Seintje op dit toestel:700:17px", "Bewaarde zoekopdracht:700:17px"], json.dumps(vk))
+              and vk["koppen"] == ["Mail bij nieuwe matches:700:17px", "Oproepen:700:17px", "Seintje op dit toestel:700:17px", "Bewaarde zoekopdracht:700:17px"], json.dumps(vk))  # sinds TT-396 met de keuze Oproepen
         # Een keuze bij Mail bij nieuwe matches slaat meteen op.
         ip39.click("#digestFrequencyControl .segmented-btn[data-mode='weekly']")
         ip39.wait_for_timeout(400)
@@ -6431,6 +6432,9 @@ window.TT_STUB.fnAntwoord = {};
           u.bezettingOpgeslagen = [S.data.band_wanted.map(x => x.instrument), S.data.band_invallers.map(x => x.instrument), S.data.bands[0].status, tegelHeeftWijzigingen()];
           // TT-543 onderdeel 6 (besluit Ronald 10-11-2026, 9): na Opslaan terug naar Bandprofiel bewerken.
           u.naOpslaanTerug = activeTegelScreen;
+          // TT-396 (besluit Ronald sessie 199 ad 3): een nieuwe open rol vraagt "Ook een oproep op het prikbord?"; hier Nee.
+          u.vraagOproep = (document.getElementById('confirmKop') || {}).textContent || '';
+          if (u.vraagOproep) { document.getElementById('confirmNoBtn').click(); await w(300); }
           openTegelScreen('bandBezetting'); await w(400);
           // Zoeken vanuit een open rol, met de plaats van de band.
           u.plus = { open: [...document.querySelectorAll('#bbOpen button.bb-plus')].map(b => [b.textContent, b.getAttribute('aria-label')]),
@@ -7333,7 +7337,8 @@ window.TT_STUB.fnAntwoord = {};
         check("TT-408: de instrumentkeuze is geen venster meer (het keuzemenu, TT-543 draaiwielen deel 2)", not d64k["instrumentVenster"], json.dumps(d64k))
         # TT-543 blok 3: Link toevoegen kwam erbij (11); TT-543 onderdeel 4 (B4): Lid uitnodigen is weg (10);
         # TT-543 draaiwielen deel 2: de twee vensters met een lijst zijn weg (8).
-        check("TT-408: er zijn acht kruisjes, elk als enige uitgang", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 8, "")
+        # TT-396: Tips voor een goede oproep kwam erbij (9).
+        check("TT-408: er zijn negen kruisjes, elk als enige uitgang", len(re.findall(r'<button class="modal-close"', open(os.path.join(ROOT, "index.html"), encoding="utf-8").read())) == 9, "")
         check("geen paginafouten in blok 64", not page_errors, "; ".join(page_errors)[:300])
         page_errors.clear()
 
@@ -10875,13 +10880,13 @@ window.TT_STUB.fnAntwoord = {};
           return u;
         }""")
         j95 = lambda k: json.dumps(d95.get(k), ensure_ascii=False)
-        check("startscherm: titel Zoeken en twee tegels met hun regel (Laag 2)",
+        check("startscherm: titel Zoeken en drie tegels met hun regel (Laag 2; sinds TT-396 Prikbord bovenaan)",
               d95["start"]["scherm"] == "start" and d95["start"]["titel"] == "Zoeken"
-              and d95["start"]["tegels"] == ["Muzikanten|Muzikanten en bands bij jou in de buurt", "Mix & Match|Vergelijk setlists met andere muzikanten"]
+              and d95["start"]["tegels"] == ["Prikbord|Oproepen: wie zoekt wie, en wie is beschikbaar", "Muzikanten|Muzikanten en bands bij jou in de buurt", "Mix & Match|Vergelijk setlists met andere muzikanten"]
               and not d95["start"]["muzZicht"], j95("start"))
         # TT-517 fase 11 (besluit Ronald 01-11-2026, C): geen vlak achter het icoon (was --surface2).
         check("tegels: echte knoppen, één icoon en geen pijl; geen vlak achter het icoon, goud in donker",
-              d95["start"]["knoppen"] == ["BUTTON", "BUTTON"] and d95["start"]["svgs"] == [1, 1]
+              d95["start"]["knoppen"] == ["BUTTON", "BUTTON", "BUTTON"] and d95["start"]["svgs"] == [1, 1, 1]
               and d95["start"]["vlak"] == "rgba(0, 0, 0, 0)" and d95["start"]["icoonKleur"] == "rgb(255, 184, 28)", j95("start"))
         check("de titel Zoeken staat 16px onder de kop (TT-543 laag 3, besluit Ronald 13-11-2026, 3-6b A)", d95["start"]["titelBoven"] == 16, j95("start"))
         check("onderbalk: gekozen knop grijs, gele streep van 3px zo breed als het woord",
@@ -13499,7 +13504,7 @@ def blok_tt517_fase11():
                 check(f"{thema} {breed}px: de knop voor een bezoeker zonder profiel (muzikant en band) is \"Maak een profiel en leg contact\", op één regel (44px)",
                       u["gast"] == [["Maak een profiel en leg contact", 44], ["Maak een profiel en leg contact", 44]], json.dumps(u["gast"], ensure_ascii=False))
                 check(f"{thema} {breed}px: geen vlak achter het icoon op de zoektegels",
-                      len(u["icoon"]) == 2 and all(k == "rgba(0, 0, 0, 0)" for k in u["icoon"]), json.dumps(u["icoon"]))
+                      len(u["icoon"]) == 3 and all(k == "rgba(0, 0, 0, 0)" for k in u["icoon"]), json.dumps(u["icoon"]))
                 check(f"{thema} {breed}px: \"Stap 1 van 4\" op één regel en binnen de marge",
                       u["stapHoog"] < 2 * 15 and u["stapPast"], json.dumps([u["stapHoog"], u["stapPast"]]))
         check("geen JS-fout in blok 118", not fouten, "; ".join(fouten)[:300])
@@ -14671,8 +14676,8 @@ def blok_tt543():
     privacy = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
     privacy = privacy[privacy.index('id="view-privacy"'):privacy.index('id="view-terms"')]
     # De datum volgt de laatste wijziging (bundel E, 15-11-2026: de geboortedatum corrigeren via privacy@, TT-625).
-    check("de privacyverklaring noemt geen doel of ambitie meer (besluit Ronald 06-11-2026); bijgewerkt op 18 november 2026 (TT-672; daarvoor 15 november, bundel E, TT-625; daarvoor 14 november, TT-72)",
-          not re.search(r"\bdoel\b|ambitie", privacy, re.I) and "Laatst bijgewerkt: 18 november 2026" in privacy, "")
+    check("de privacyverklaring noemt geen doel of ambitie meer (besluit Ronald 06-11-2026); bijgewerkt op 22 november 2026 (TT-396; daarvoor 18 november, TT-672; daarvoor 15 november, bundel E, TT-625; daarvoor 14 november, TT-72)",
+          not re.search(r"\bdoel\b|ambitie", privacy, re.I) and "Laatst bijgewerkt: 22 november 2026" in privacy, "")
     check("geen paginafouten in blok 131", not fouten, "; ".join(fouten)[:300])
 
 
@@ -18587,8 +18592,8 @@ def blok_tt543_onderdeel9():
     check("F1 E: privacyverklaring hoofdstuk 3 zegt alleen door te geven aan de partijen in hoofdstuk 7; cloud86 staat in hoofdstuk 7; geen zin over advertenties",
           "<p>Wij geven je gegevens alleen door aan de partijen in hoofdstuk 7.</p>" in priv and "<li>cloud86: verstuurt de e-mails van de app.</li>" in priv
           and "advertenties" not in priv, "")
-    check("de datum 'Laatst bijgewerkt' is 13 november 2026 op de voorwaarden en de gedragscode; de privacyverklaring 18 november 2026 (TT-672; daarvoor bundel E, TT-625; zie ook blok 131)",
-          "Laatst bijgewerkt: 18 november 2026" in priv and all("Laatst bijgewerkt: 13 november 2026" in d for d in (voorw, gedrag)), "")
+    check("de datum 'Laatst bijgewerkt' is 13 november 2026 op de voorwaarden en de gedragscode; de privacyverklaring 22 november 2026 (TT-396; daarvoor 18 november, TT-672; daarvoor bundel E, TT-625; zie ook blok 131)",
+          "Laatst bijgewerkt: 22 november 2026" in priv and all("Laatst bijgewerkt: 13 november 2026" in d for d in (voorw, gedrag)), "")
     stub_js = open(STUB, encoding="utf-8").read()
     httpd, port = serve()
     fouten, uitslag = [], {}
@@ -19492,9 +19497,9 @@ def blok_bundel_e():
               f'<div id="{tel}" class="teken-teller" hidden></div>' in html
               and re.search(r'id="%s"[^>]*oninput="updateCharCounter\(\'%s\',\'%s\',1000\)"' % (vid, vid, tel), html), "")
     privacy = html[html.index('id="view-privacy"'):html.index('id="view-terms"')]
-    check("TT-625: de privacyverklaring zegt in hoofdstuk 9 dat je geboortedatum niet naar een andere leeftijdsgroep kan, zonder route via privacy@ (correctie Ronald 15-11-2026); datum 18 november 2026 (TT-672)",
+    check("TT-625: de privacyverklaring zegt in hoofdstuk 9 dat je geboortedatum niet naar een andere leeftijdsgroep kan, zonder route via privacy@ (correctie Ronald 15-11-2026); datum 22 november 2026 (TT-396; daarvoor 18 november, TT-672)",
           "<p>Je geboortedatum kun je niet zo wijzigen dat je in een andere leeftijdsgroep komt.</p>" in privacy
-          and privacy.index("andere leeftijdsgroep") > privacy.index("9. Jouw rechten") and "Laatst bijgewerkt: 18 november 2026" in privacy, "")
+          and privacy.index("andere leeftijdsgroep") > privacy.index("9. Jouw rechten") and "Laatst bijgewerkt: 22 november 2026" in privacy, "")
     httpd, port = serve()
     fouten = []
     with sync_playwright() as p:
@@ -20129,11 +20134,11 @@ def blok_bundel_b_start():
     # direct vóór het eerste script; geen foto vooraf.
     srcs = re.findall(r'<script src="([^"]+)"></script>', html)
     pre = re.findall(r'<link rel="preload" href="([^"]+)" as="script">', html)
-    check("TT-662: een preload-regel per script, exact dezelfde webadressen met ?v=, dezelfde volgorde (14)",
-          pre == srcs and len(pre) == 14, json.dumps([pre, srcs])[:400])
+    check("TT-662: een preload-regel per script, exact dezelfde webadressen met ?v=, dezelfde volgorde (15, sinds TT-396 met prikbord.js)",
+          pre == srcs and len(pre) == 15, json.dumps([pre, srcs])[:400])
     blok = html[html.index('<link rel="preload" href="' + srcs[0]):html.index('<script src="' + srcs[0])]
     check("TT-662: de preload-regels staan direct vóór het eerste script onderaan, niet in de kop",
-          blok.count('<link rel="preload"') == 14 and '<script' not in blok and html.index(blok) > html.index("</head>"), "")
+          blok.count('<link rel="preload"') == 15 and '<script' not in blok and html.index(blok) > html.index("</head>"), "")
     check("TT-662: geen foto vooraf (\"niet alle foto's tegelijk laden\")",
           not re.search(r'<link rel="preload"[^>]*as="image"', html), "")
     # TT-663: de beginstand in de HTML is de stand na het opstarten.
@@ -21609,6 +21614,144 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.fi
     check("TT-639: geen JS-fouten in blok 175", not fouten, "; ".join(fouten)[:600])
 
 
+
+PB_OPROEPEN = r"""[
+ {id:'o1', soort:'gezocht', doel:'band', toevoeging:'stevige rock met eigen nummers', instrumenten:['Drums'], elk_instrument:false, podium:false,
+  leeftijden:['16-18','19-24'], tekst:'Wij zijn Nachtploeg, een rockband uit Den Haag.\\n\\nWat we spelen\\nStevige rock, eigen nummers en een paar covers.\\n\\nWie we zoeken\\nEen drummer die van stevig werk houdt. Je hoeft geen twintig jaar ervaring te hebben; zin om te repeteren en op te treden is belangrijker.',
+  media_gewenst:true, geplaatst_op:new Date(Date.now()-2*864e5).toISOString(), verlengd_op:null, loopt_tot:new Date(Date.now()+58*864e5).toISOString(),
+  plaatser_id:'m2', band_id:'b1', naam:'Nachtploeg', leeftijd:null, leden_min:17, leden_max:19, plaats:'Den Haag', km:3.4, foto:null,
+  genres:['Rock','Punk'], band_soort:'beide', gedeeld:6, eigen:false, gereageerd:false},
+ {id:'o2', soort:'beschikbaar', doel:'invallen', ambitie:'lol', instrumenten:['Basgitaar'], elk_instrument:false, podium:true,
+  leeftijden:['16-18','19-24','25-34','35+'], tekst:'Ik speel al vijf jaar bas en val graag in bij een optreden.', media_gewenst:false,
+  geplaatst_op:new Date(Date.now()-5*864e5).toISOString(), verlengd_op:null, loopt_tot:new Date(Date.now()+55*864e5).toISOString(),
+  plaatser_id:'m3', band_id:null, naam:'Mila', leeftijd:22, plaats:'Rijswijk', km:6.1, foto:null, genres:['Funk'], band_soort:null, gedeeld:2, eigen:false, gereageerd:false},
+ {id:'o3', soort:'gezocht', doel:'jammen', ambitie:'lol', instrumenten:[], elk_instrument:true, podium:false,
+  leeftijden:['13-15','16-18'], tekst:'Elke zaterdag jammen in de schuur. Iedereen welkom!', media_gewenst:false,
+  geplaatst_op:new Date(Date.now()-1*864e5).toISOString(), verlengd_op:null, loopt_tot:new Date(Date.now()+59*864e5).toISOString(),
+  plaatser_id:'m4', band_id:null, naam:'jesse_drums', leeftijd:15, plaats:'Delft', km:11.8, foto:null, genres:['Blues'], band_soort:null, gedeeld:0, eigen:false, gereageerd:false}
+]"""
+PB_MIJN = r"""[{oproep:{id:'o9', soort:'gezocht', doel:'jammen', ambitie:'lol', instrumenten:['Basgitaar','Keyboard'], elk_instrument:false, podium:false,
+  leeftijden:['16-18','19-24'], tekst:'Jammen op vrijdag.', media_gewenst:true, geplaatst_op:new Date(Date.now()-48*864e5).toISOString(),
+  verlengd_op:null, loopt_tot:new Date(Date.now()+12*864e5).toISOString(), status:'open', band_id:null, straal_km:25},
+  reacties:[
+   {id:'r1', musician_id:'m3', naam:'Mila', leeftijd:22, plaats:'Rijswijk', km:6.1, foto:null, niveau:3, media:{type:'video'}, gedeeld:4, boodschap:'Hoi! Ik kan op vrijdag.', status:'verstuurd', nieuw:true},
+   {id:'r2', musician_id:'m5', naam:'Tom', leeftijd:17, plaats:'Den Haag', km:2.0, foto:null, niveau:2, media:null, gedeeld:1, boodschap:null, status:'uitgenodigd', nieuw:false}
+  ]}]"""
+
+
+def blok_prikbord():
+    print("\nBlok 176 — TT-396 prikbord (sessie 199, 22-11-2026): tegel, aan/uit-knoppen, link uit de mail, onthouden zoekopdracht, berichten van TalentTent, tips")
+    bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ["prikbord.js", "messages.js", "search.js", "index.html"]}
+    check("TT-396: overal dezelfde vorm 'Gezamenlijke nummers' (geen 'nummers die jij ook speelt', 'van hun covers', 'nummers samen', 'gedeelde nummers')",
+          not any(z in t for t in bron.values() for z in ("nummers die jij ook speelt", "van hun covers", "nummers samen", "Geen gedeelde nummers")), "")
+    check("TT-396: index.html laadt prikbord.js als laatste script, met ?v=", '<script src="prikbord.js?v=' in bron["index.html"], "")
+    stub_js = open(STUB, encoding="utf-8").read()
+    init = """
+window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
+window.TT_STUB.rpcResults.tt_prikbord = (a) => { const l = %s; return a.p_id ? l.filter(x => x.id === a.p_id) : l; };
+window.TT_STUB.rpcResults.tt_mijn_oproepen = () => %s;
+window.TT_STUB.rpcResults.tt_mijn_reacties = () => [];
+window.TT_STUB.rpcResults.tt_nieuwe_reacties = 1;
+window.TT_STUB.rpcResults.tt_get_my_birth_date = '2007-05-01';
+window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.weergavenaam || m.first_name, musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
+window.TT_STUB.data.prikbord_zoek = [{ musician_id: 'm1', soort: 'gezocht', doel: 'band', instrument: null, volgorde: 'afstand', plaats: null, origin_lat: null, origin_lng: null, straal_km: 50 }];
+""" % (PB_OPROEPEN, PB_MIJN)
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 390, "height": 844}, color_scheme="light", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+
+        def pagina(hash_=""):
+            pg = ctx.new_page()
+            pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+            pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js + init))
+            pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+            pg.goto(f"http://127.0.0.1:{port}/index.html{hash_}", wait_until="load")
+            pg.wait_for_timeout(1500)
+            return pg
+
+        pg = pagina()
+        u = pg.evaluate(r"""async () => {
+          const w = (ms = 300) => new Promise(r => setTimeout(r, ms));
+          const u = {}, $ = id => document.getElementById(id);
+          myMusicianId = 'm1'; hasOwnProfile = true;
+          showView('search'); openPrikbord(); await w(900);
+          // De onthouden zoekopdracht staat erin.
+          u.hersteld = { vink: $('pbOnthoud').checked, straal: $('pbStraal').value, f: Object.assign({}, pbFilters) };
+          pbFilters = { soort: '', doel: '', instrument: '', volgorde: 'nieuwste' }; pbFiltersBijwerken(); await w(900);
+          const rijen = [...document.querySelectorAll('#pbResultaat .pb-rij')];
+          u.rijen = rijen.map(r => ({ titel: r.querySelector('.result-row-naam').textContent, meta: [...r.querySelectorAll('.result-row-meta')].map(m => m.textContent),
+            tekst: !!r.querySelector('.pb-rij-tekst'), gedeeld: (r.querySelector('.pb-rij-gedeeld') || {}).textContent || null,
+            metaEenRegel: getComputedStyle(r.querySelector('.result-row-meta')).whiteSpace }));
+          // Vink uit: de onthouden zoekopdracht gaat weg.
+          $('pbOnthoud').checked = false; await pbOnthoudKlik($('pbOnthoud'));
+          u.naUit = window.TT_STUB.data.prikbord_zoek.length;
+          // Aan/uit-knoppen: hoogstens één aan; nog eens tikken = alle oproepen.
+          pbWissel('mijn'); await w(200); u.k1 = [pbTab, $('pbTab-mijn').classList.contains('active'), $('pbTab-reacties').classList.contains('active')];
+          pbWissel('reacties'); await w(200); u.k2 = [pbTab, $('pbTab-mijn').classList.contains('active'), $('pbTab-reacties').classList.contains('active')];
+          pbWissel('reacties'); await w(200); u.k3 = [pbTab, $('pbTab-mijn').classList.contains('active'), $('pbTab-reacties').classList.contains('active')];
+          // Een oproep geopend: de gezamenlijke nummers in dezelfde vorm.
+          pbOpenOproep('o1'); await w(300);
+          u.oproepGedeeld = (document.querySelector('#pbOproepScherm .pb-oproep-gedeeld') || {}).textContent || null;
+          // Tips: de eerste afspraak alleen tot en met 21 jaar.
+          PB_MIJ.leeftijd = 19; pbTipsOpen(); u.tip19 = $('pbTipsInhoud').textContent.includes('De eerste afspraak'); pbTipsSluiten();
+          PB_MIJ.leeftijd = 22; pbTipsOpen(); u.tip22 = $('pbTipsInhoud').textContent.includes('De eerste afspraak'); pbTipsSluiten();
+          // Berichten van TalentTent.
+          const info = { muzikanten: { m2: { id: 'm2', weergavenaam: 'Kees' } }, bands: { b1: { id: 'b1', name: 'Nachtploeg', city: 'Den Haag' } } };
+          const r1 = { oproep: 'o9', aantal: 3, instrumenten: ['Basgitaar', 'Keyboard'], elk: false, oproep_soort: 'gezocht', toevoeging: null };
+          const r2 = { oproep: 'o8', aantal: 1, instrumenten: ['Drums'], elk: false, oproep_soort: 'gezocht', toevoeging: null };
+          u.tt1 = pbTtKernzin({ soort: 'nieuwe_reacties', oproepen: [r1] }, info);
+          u.tt2 = pbTtKernzin({ soort: 'nieuwe_reacties', oproepen: [r1, r2] }, info);
+          u.tt3 = pbTtKernzin({ soort: 'oproep_bedankt', plaatser: 'm2', band: 'b1', instrumenten: ['Zang'], elk: false, oproep_soort: 'gezocht' }, info);
+          const html = pbTtBerichtHTML({ created_at: new Date().toISOString(), inhoud: { soort: 'oproepen', meer: 0, oproepen: [
+            { id: 'o1', km: 3.4, soort: 'gezocht', doel: 'band', instrumenten: ['Drums'], elk: false, toevoeging: null, plaatser: 'm2', band: 'b1' }] } }, info);
+          const d = document.createElement('div'); d.innerHTML = html;
+          u.ttRijen = [...d.querySelectorAll('.bb-rij')].map(x => x.textContent.replace(/\s+/g, ' ').trim());
+          // Je eigen oproep: geen gezamenlijke nummers (met jezelf).
+          const eigen = Object.assign({}, pbLijst.find(x => x.id === 'o1'), { eigen: true, gedeeld: 9 });
+          u.eigenRij = pbRijHTML(eigen).includes('pb-rij-gedeeld'); u.eigenOproep = pbOproepHTML(eigen).includes('pb-oproep-gedeeld');
+          // Herladen met het prikbord als laatste scherm: de lijst laadt (geen leeg scherm zonder straal).
+          sessionStorage.setItem('tt-zoekstand', JSON.stringify({ scherm: 'prikbord', soort: 'alles' }));
+          return u; }""")
+        pg.goto(f"http://127.0.0.1:{port}/index.html?herladen=1#search", wait_until="load"); pg.wait_for_timeout(1800)
+        u["hersteld2"] = pg.evaluate("() => ({ scherm: zoekScherm, straal: document.getElementById('pbStraal').value, rijen: document.querySelectorAll('#pbResultaat .pb-rij').length })")
+        links = {}
+        for h in ("#prikbord", "#prikbord/o2", "#prikbord/onbekend", "#prikbord/mijn"):
+            pl = pagina(h)
+            links[h] = pl.evaluate("""() => ({ tab: pbTab, laag: pbLaag, view: huidigeView,
+              titel: (document.querySelector('#pbOproepScherm .pb-oproep-titel') || {}).textContent || null,
+              toast: document.getElementById('appToast').classList.contains('visible') ? document.getElementById('appToast').textContent : '' })""")
+            pl.close()
+        browser.close()
+    httpd.shutdown()
+    check("TT-396: de onthouden zoekopdracht staat erin bij het openen (vink aan, straal, filters)",
+          u["hersteld"]["vink"] is True and u["hersteld"]["straal"] == "50" and u["hersteld"]["f"]["doel"] == "band" and u["hersteld"]["f"]["volgorde"] == "afstand", json.dumps(u["hersteld"]))
+    check("TT-396: vink uit haalt de onthouden zoekopdracht weg", u["naUit"] == 0, str(u["naUit"]))
+    check("TT-396: drie tegels", len(u["rijen"]) == 3, json.dumps(u["rijen"])[:400])
+    check("TT-396: een tegel heeft geen tekst van de oproep (besluit sessie 199)", all(not r["tekst"] for r in u["rijen"]), "")
+    check("TT-396: een tegel heeft één grijze regel: waarvoor · genre · naam · afstand, op één regel",
+          all(len(r["meta"]) == 1 and r["metaEenRegel"] == "nowrap" for r in u["rijen"]) and "Band · Rock · Nachtploeg · 3 km" in [r["meta"][0] for r in u["rijen"]],
+          json.dumps([r["meta"] for r in u["rijen"]]))
+    check("TT-396: 'Gezamenlijke nummers: 6' op de tegel en in de oproep",
+          "Gezamenlijke nummers: 6" in [r["gedeeld"] for r in u["rijen"]] and u["oproepGedeeld"] == "Gezamenlijke nummers: 6", json.dumps([u["oproepGedeeld"]]))
+    check("TT-396: Mijn oproepen en Mijn reacties: hoogstens één aan, nog eens tikken = alle oproepen",
+          u["k1"] == ["mijn", True, False] and u["k2"] == ["reacties", False, True] and u["k3"] == ["alle", False, False], json.dumps([u["k1"], u["k2"], u["k3"]]))
+    check("TT-396: tip over de eerste afspraak alleen tot en met 21 jaar", u["tip19"] is True and u["tip22"] is False, json.dumps([u["tip19"], u["tip22"]]))
+    check("TT-396: bericht over nieuwe reacties op één oproep", u["tt1"] == "3 nieuwe reacties op Bassist of toetsenist gezocht.", u["tt1"])
+    check("TT-396: één bericht over nieuwe reacties op twee oproepen", u["tt2"] == "Nieuwe reacties: 3 op Bassist of toetsenist gezocht en 1 op Drummer gezocht.", u["tt2"])
+    check("TT-396: bedankje na afsluiten (zin van Ronald)", u["tt3"] == "Nachtploeg heeft de oproep Zanger gezocht afgesloten. Bedankt voor je reactie en succes met zoeken.", u["tt3"])
+    check("TT-396: bericht over nieuwe oproepen heeft een rij per oproep", len(u["ttRijen"]) == 1 and "Drummer gezocht" in u["ttRijen"][0] and "Nachtploeg" in u["ttRijen"][0], json.dumps(u["ttRijen"]))
+    check("TT-396: link /#prikbord opent het prikbord", links["#prikbord"]["view"] == "search" and links["#prikbord"]["tab"] == "alle", json.dumps(links["#prikbord"]))
+    check("TT-396: link /#prikbord/<id> opent die oproep", links["#prikbord/o2"]["laag"] == "oproep" and links["#prikbord/o2"]["titel"] == "Bassist beschikbaar", json.dumps(links["#prikbord/o2"]))
+    check("TT-396: link naar een oproep die er niet meer is: melding", "Deze oproep staat niet meer op het prikbord." in links["#prikbord/onbekend"]["toast"], json.dumps(links["#prikbord/onbekend"]))
+    check("TT-396: link /#prikbord/mijn opent Mijn oproepen", links["#prikbord/mijn"]["tab"] == "mijn", json.dumps(links["#prikbord/mijn"]))
+    check("TT-396: je eigen oproep toont geen gezamenlijke nummers (gemeten op de testsite, sessie 199)", u["eigenRij"] is False and u["eigenOproep"] is False, json.dumps([u["eigenRij"], u["eigenOproep"]]))
+    check("TT-396: herladen met het prikbord als laatste scherm laadt de lijst, met straal (gemeten op de testsite, sessie 199)",
+          u["hersteld2"]["scherm"] == "prikbord" and u["hersteld2"]["straal"] == "25" and u["hersteld2"]["rijen"] == 3, json.dumps(u["hersteld2"]))
+    check("TT-396: geen JS-fouten in blok 176", not fouten, "; ".join(fouten)[:600])
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -21682,6 +21825,7 @@ BLOKKEN = [
     blok_ronde2_berichten,
     blok_ronde2_zoeken,
     blok_laden_rondje,
+    blok_prikbord,
 ]
 
 

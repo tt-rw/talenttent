@@ -2024,6 +2024,7 @@ async function saveBandBezetting() {
 
     const { error: wErr } = await db.rpc('tt_save_band_wanted', { p_band_id: id, p_instruments: bbWanted });
     if (wErr) throw wErr;
+    const nieuweRollen = bbWanted.filter(i => !JSON.parse(bbSnapshot).wanted.includes(i));
 
 
     const eerder = JSON.parse(bbSnapshot).invallers.map(v => v[0]).filter(Boolean);
@@ -2064,6 +2065,7 @@ async function saveBandBezetting() {
     showToast('Wijzigingen opgeslagen.');
     mijnBandsVerversen();
     terugNaOpslaan('bandBezetting');
+    if (nieuweRollen.length) pbVraagOproepVoorRol(id, nieuweRollen);
   } catch (e) {
     logCaught('saveBandBezetting', e);
     showToast(friendlyErrorMessage(e, 'de bezetting opslaan'));
