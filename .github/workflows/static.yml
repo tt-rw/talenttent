@@ -22,11 +22,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  # TT-678 (22-11-2026): pakket maken en publiceren in twee aparte jobs, zoals de
+  # startversie van GitHub. In één job zocht deploy-pages het pakket al een fractie
+  # van een seconde na het uploaden, en dan staat het nog niet in de lijst van GitHub.
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,10 +33,17 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           # Upload entire repository
           path: '.'
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
