@@ -315,6 +315,7 @@ function friendlyErrorMessage(err, actie) {
   if (/^Wacht op antwoord/i.test(msg)) return msg;
   if (err && err.hint === 'TT-556') return msg;
   if (err && err.hint === 'TT-625') return msg;
+  if (err && err.hint === 'TT-396') return msg;
   if (isZelfdeWachtwoordFout(err)) return TEKST_ZELFDE_WACHTWOORD;
   if (isZwakWachtwoordFout(err)) return TEKST_ZWAK_WACHTWOORD + '.';
   const status = err && (err.status || err.statusCode);
@@ -779,8 +780,9 @@ function leeftijdUitVeld(waarde) {
 
 
 
+
 function leeftijdsgroep(leeftijd) {
-  return leeftijd < 16 ? 'onder16' : leeftijd < 18 ? '16tot18' : '18plus';
+  return leeftijd < 16 ? 'onder16' : leeftijd < 19 ? '16tm18' : '19plus';
 }
 const TEKST_ANDERE_LEEFTIJDSGROEP = 'Met deze datum kom je in een andere leeftijdsgroep. Is dit echt je geboortedatum?';
 

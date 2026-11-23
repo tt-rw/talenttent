@@ -5405,7 +5405,7 @@ textarea.bio-voorbeeld::placeholder { font-style: italic; opacity: 0.6; }
   .pb-nieuw { margin-left: 8px; font-size: 11px; font-weight: 700; color: var(--accent); }
   .pb-boodschap { font-size: 12px; line-height: var(--regel-12); color: var(--text); margin-top: 4px; overflow-wrap: anywhere; }
   .pb-intrekken { margin-top: 8px; }
-  .pb-media-melding { margin-top: 12px; }
+  .pb-media-melding, .pb-afspraak-melding { margin-top: 12px; }
   .pb-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
   .pb-form > .field { margin-bottom: var(--ruimte-velden); }
   .pb-form .pb-knop { margin-top: 8px; }

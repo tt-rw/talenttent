@@ -14676,8 +14676,8 @@ def blok_tt543():
     privacy = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
     privacy = privacy[privacy.index('id="view-privacy"'):privacy.index('id="view-terms"')]
     # De datum volgt de laatste wijziging (bundel E, 15-11-2026: de geboortedatum corrigeren via privacy@, TT-625).
-    check("de privacyverklaring noemt geen doel of ambitie meer (besluit Ronald 06-11-2026); bijgewerkt op 22 november 2026 (TT-396; daarvoor 18 november, TT-672; daarvoor 15 november, bundel E, TT-625; daarvoor 14 november, TT-72)",
-          not re.search(r"\bdoel\b|ambitie", privacy, re.I) and "Laatst bijgewerkt: 22 november 2026" in privacy, "")
+    check("de privacyverklaring noemt geen doel of ambitie meer (besluit Ronald 06-11-2026); bijgewerkt op 23 november 2026 (TT-695; daarvoor 22 november, TT-396; 18 november, TT-672; 15 november, bundel E, TT-625; 14 november, TT-72)",
+          not re.search(r"\bdoel\b|ambitie", privacy, re.I) and "Laatst bijgewerkt: 23 november 2026" in privacy, "")
     check("geen paginafouten in blok 131", not fouten, "; ".join(fouten)[:300])
 
 
@@ -18587,13 +18587,13 @@ def blok_tt543_onderdeel9():
     koppen = re.findall(r"<h2>(\d+)\. ", voorw)
     check("V3: 'De sfeer die we willen' is weg en de voorwaarden lopen van 1 tot en met 11",
           "De sfeer die we willen" not in voorw and "applaus" not in voorw and koppen == [str(i) for i in range(1, 12)], json.dumps(koppen))
-    check("F1b: hoofdstuk 1 van de voorwaarden belooft het gratis profiel tot en met 25 jaar, na de eerste zin",
-          "op te treden. Een profiel is gratis en blijft gratis voor muzikanten tot en met 25 jaar. TalentTent brengt" in voorw, "")
+    check("F1b vervallen: de voorwaarden noemen geen gratis profiel meer (besluit Ronald 23-11-2026, sessie 203: \"geen gratis vemelden\")",
+          "gratis" not in voorw.lower() and "op te treden. TalentTent brengt" in voorw, "")
     check("F1 E: privacyverklaring hoofdstuk 3 zegt alleen door te geven aan de partijen in hoofdstuk 7; cloud86 staat in hoofdstuk 7; geen zin over advertenties",
           "<p>Wij geven je gegevens alleen door aan de partijen in hoofdstuk 7.</p>" in priv and "<li>cloud86: verstuurt de e-mails van de app.</li>" in priv
           and "advertenties" not in priv, "")
-    check("de datum 'Laatst bijgewerkt' is 13 november 2026 op de voorwaarden en de gedragscode; de privacyverklaring 22 november 2026 (TT-396; daarvoor 18 november, TT-672; daarvoor bundel E, TT-625; zie ook blok 131)",
-          "Laatst bijgewerkt: 22 november 2026" in priv and all("Laatst bijgewerkt: 13 november 2026" in d for d in (voorw, gedrag)), "")
+    check("de datum 'Laatst bijgewerkt': voorwaarden en privacyverklaring 23 november 2026 (TT-695: gratis weg, grens 19, oproepen; daarvoor 13 en 22 november), gedragscode 13 november 2026 (zie ook blok 131)",
+          "Laatst bijgewerkt: 23 november 2026" in priv and "Laatst bijgewerkt: 23 november 2026" in voorw and "Laatst bijgewerkt: 13 november 2026" in gedrag, "")
     stub_js = open(STUB, encoding="utf-8").read()
     httpd, port = serve()
     fouten, uitslag = [], {}
@@ -19499,7 +19499,7 @@ def blok_bundel_e():
     privacy = html[html.index('id="view-privacy"'):html.index('id="view-terms"')]
     check("TT-625: de privacyverklaring zegt in hoofdstuk 9 dat je geboortedatum niet naar een andere leeftijdsgroep kan, zonder route via privacy@ (correctie Ronald 15-11-2026); datum 22 november 2026 (TT-396; daarvoor 18 november, TT-672)",
           "<p>Je geboortedatum kun je niet zo wijzigen dat je in een andere leeftijdsgroep komt.</p>" in privacy
-          and privacy.index("andere leeftijdsgroep") > privacy.index("9. Jouw rechten") and "Laatst bijgewerkt: 22 november 2026" in privacy, "")
+          and privacy.index("andere leeftijdsgroep") > privacy.index("9. Jouw rechten") and "Laatst bijgewerkt: 23 november 2026" in privacy, "")
     httpd, port = serve()
     fouten = []
     with sync_playwright() as p:
@@ -21731,8 +21731,8 @@ window.TT_STUB.data.prikbord_zoek = [{ musician_id: 'm1', soort: 'gezocht', doel
     check("TT-396: vink uit haalt de onthouden zoekopdracht weg", u["naUit"] == 0, str(u["naUit"]))
     check("TT-396: drie tegels", len(u["rijen"]) == 3, json.dumps(u["rijen"])[:400])
     check("TT-396: een tegel heeft geen tekst van de oproep (besluit sessie 199)", all(not r["tekst"] for r in u["rijen"]), "")
-    check("TT-396: een tegel heeft één grijze regel: waarvoor · genre · naam · afstand, op één regel",
-          all(len(r["meta"]) == 1 and r["metaEenRegel"] == "nowrap" for r in u["rijen"]) and "Band · Rock · Nachtploeg · 3 km" in [r["meta"][0] for r in u["rijen"]],
+    check("TT-396: een tegel heeft één grijze regel: waarvoor · genre · naam · leeftijd · afstand, op één regel (leeftijd: besluit Ronald 23-11-2026, sessie 202, ad 1)",
+          all(len(r["meta"]) == 1 and r["metaEenRegel"] == "nowrap" for r in u["rijen"]) and "Band · Rock · Nachtploeg · leden 17–19 jaar · 3 km" in [r["meta"][0] for r in u["rijen"]],
           json.dumps([r["meta"] for r in u["rijen"]]))
     check("TT-396: 'Gezamenlijke nummers: 6' op de tegel en in de oproep",
           "Gezamenlijke nummers: 6" in [r["gedeeld"] for r in u["rijen"]] and u["oproepGedeeld"] == "Gezamenlijke nummers: 6", json.dumps([u["oproepGedeeld"]]))
@@ -21751,6 +21751,186 @@ window.TT_STUB.data.prikbord_zoek = [{ musician_id: 'm1', soort: 'gezocht', doel
     check("TT-396: herladen met het prikbord als laatste scherm laadt de lijst, met straal (gemeten op de testsite, sessie 199)",
           u["hersteld2"]["scherm"] == "prikbord" and u["hersteld2"]["straal"] == "25" and u["hersteld2"]["rijen"] == 3, json.dumps(u["hersteld2"]))
     check("TT-396: geen JS-fouten in blok 176", not fouten, "; ".join(fouten)[:600])
+
+def blok_prikbord_cluster1():
+    print("\nBlok 177 — TT-396 cluster 1, TT-693, TT-694 en TT-695 grens 19 (sessie 203, 23-11-2026)")
+    stub_js = open(STUB, encoding="utf-8").read()
+    lang = "Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    init = """
+const S = window.TT_STUB;
+S.session = { user: { id: 'u1', email: 'a@talenttent.org' } };
+const L = %s;
+L.push(Object.assign({}, L[1], { id: 'o4', naam: '%s', plaatser_id: 'm6' }));
+S.rpcResults.tt_prikbord = (a) => a.p_id ? L.filter(x => x.id === a.p_id) : L;
+S.rpcResults.tt_mijn_oproepen = () => (S.session && S.session.user.id === 'u1') ? %s : [];
+S.rpcResults.tt_mijn_reacties = () => [];
+S.rpcResults.tt_nieuwe_reacties = () => (S.session && S.session.user.id === 'u1') ? 1 : 0;
+S.rpcResults.tt_reactie_uitnodigen = 'm3';
+S.rpcResults.tt_get_my_birth_date = '2007-05-01';
+S.data.messages = [{ id: 'x1', sender_id: 'm3', recipient_id: 'm1', body: 'GEHEIM-VAN-A', created_at: '2026-11-20T10:00:00Z', read_at: null }];
+S.data.band_members = S.data.band_members.filter(b => b.musician_id !== 'm2');
+S.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.weergavenaam || m.first_name, musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
+S.data.prikbord_zoek = [];
+""" % (PB_OPROEPEN, lang, PB_MIJN)
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 360, "height": 800}, color_scheme="light", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js + init))
+        pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html#myprofile", wait_until="load")
+        pg.wait_for_timeout(1800)
+        u = pg.evaluate(r"""async () => {
+          const w = (ms = 400) => new Promise(r => setTimeout(r, ms));
+          const u = {}, $ = id => document.getElementById(id), S = window.TT_STUB;
+          const tekst = id => ($(id) || {}).innerText || '';
+          // --- Ad 1: de leeftijd in elke rij ---
+          showView('search'); openPrikbord(); await w(900);
+          const rijen = [...document.querySelectorAll('#pbResultaat .pb-rij')];
+          u.meta = rijen.map(r => r.querySelector('.result-row-meta').textContent);
+          const lijst = document.querySelector('#pbResultaat .results-list');
+          u.langPast = rijen.every(r => r.scrollWidth <= r.clientWidth + 1) && document.documentElement.scrollWidth <= innerWidth;
+          // --- Ad 3: de tip bij Ik doe mee, tot en met 21 jaar ---
+          pbOpenOproep('o1'); await w(200);
+          await pbReagerenOpen(); await w(200);
+          const tip = document.querySelector('#pbReagerenInhoud .pb-afspraak-melding');
+          u.tip19 = tip ? [tip.querySelector('.melding-kop').textContent, tip.querySelector('.melding-tekst').textContent] : null;
+          const uitleg = document.querySelector('#pbReagerenInhoud .pb-reageren-uitleg');
+          const media = document.querySelector('#pbReagerenInhoud .pb-media-melding');
+          u.afstanden = tip && media ? [Math.round(tip.getBoundingClientRect().top - uitleg.getBoundingClientRect().bottom),
+                                        Math.round(media.getBoundingClientRect().top - tip.getBoundingClientRect().bottom)] : null;
+          pbReagerenSluiten();
+          PB_MIJ.leeftijd = 22; await pbReagerenOpen(); await w(200);
+          u.tip22 = !!document.querySelector('#pbReagerenInhoud .pb-afspraak-melding');
+          pbReagerenSluiten();
+          PB_MIJ.leeftijd = 21; pbTipsOpen(); u.tipsModal21 = tekst('pbTipsInhoud').includes(PB_TIPS.eersteAfspraak); pbTipsSluiten();
+          u.tipTekst = PB_TIPS.eersteAfspraak;
+          // --- Grens 19 in het formulier ---
+          const groepen = async (leeftijd) => {
+            PB_MIJ.leeftijd = leeftijd; await pbPlaatsenStart(); await w(100);
+            const rij = CHOICE_FIELDS.pbFLeeftijden.rijen().map(r => r.t);
+            pbForm.doel = 'jammen'; pbForm.instrumenten = ['Drums']; pbForm.tekst = 'Eigen tekst.';
+            return rij;
+          };
+          u.g15 = await groepen(15);
+          u.g18 = await groepen(18);
+          pbForm.leeftijden = []; u.fout18 = (pbFormFouten().find(f => f[0] === 'pbFLeeftijdenField') || [])[1] || null;
+          u.g19 = await groepen(19);
+          pbForm.leeftijden = ['16-18']; u.fout19a = (pbFormFouten().find(f => f[0] === 'pbFLeeftijdenField') || [])[1] || null;
+          pbForm.leeftijden = []; u.fout19b = (pbFormFouten().find(f => f[0] === 'pbFLeeftijdenField') || [])[1] || null;
+          pbForm.leeftijden = ['16-18', '19-24']; u.fout19c = (pbFormFouten().find(f => f[0] === 'pbFLeeftijdenField') || [])[1] || null;
+          pbForm.leeftijden = ['16-18']; u.opslaan19 = pbLeeftijdenVoorOpslaan(pbForm); u.voorbeeld19 = pbVoorbeeldOproep().leeftijden;
+          PB_MIJ.leeftijd = 18; u.opslaan18 = pbLeeftijdenVoorOpslaan(pbForm); PB_MIJ.leeftijd = 19;
+          pbForm = null; pbLaag = null;
+          // Aanpassen van een oude oproep met 13-15 door iemand van 19: 13-15 valt weg.
+          pbZetTab('mijn'); await w(400);
+          pbMijn[0].oproep.leeftijden = ['13-15', '16-18', '19-24']; PB_MIJ.leeftijd = 19;
+          await pbAanpassen('o9'); await w(100);
+          u.aanpassen19 = pbForm.leeftijden.slice();
+          await pbPlaatsen(); await w(200);
+          const opsl = S.calls.filter(c => c.name === 'tt_oproep_opslaan').pop();
+          u.aanpassenId = opsl && opsl.params && opsl.params.p ? opsl.params.p.id : null;
+          pbForm = null; pbLaag = null; pbToonLaag();
+          // De zin van de database bij het prikbord komt in beeld (hint TT-396).
+          u.dbZin = friendlyErrorMessage({ message: 'Je hebt hier al een oproep voor.', hint: 'TT-396' }, 'je oproep plaatsen');
+          u.groep = [leeftijdsgroep(16) === leeftijdsgroep(18), leeftijdsgroep(18) !== leeftijdsgroep(19), leeftijdsgroep(15) !== leeftijdsgroep(16)];
+          // --- TT-694: uitnodigen opent het gesprek, met de naam in het bericht ---
+          pbZetTab('mijn'); await w(400);
+          PB_MIJ.voor = null; PB_MIJ.naam = '';               // zoals na herladen: niets geladen
+          await pbUitnodigen('r1', 'm3', 'Mila', 'o9'); await w(500);
+          const b = S.data.messages[S.data.messages.length - 1];
+          u.uitnodiging = { view: huidigeView, gesprek: activeConversationId, draad: $('messagesThreadPanel').style.display,
+            body: b.body, oproep: b.oproep_id, naar: b.recipient_id, status: pbMijn[0].reacties.find(r => r.id === 'r1').status };
+          document.querySelector('#view-messages button[aria-label="Terug"]') && document.querySelector('#view-messages button[aria-label="Terug"]').click();
+          await w(600);
+          u.terug = { view: huidigeView, tab: pbTab, scherm: zoekScherm, knop: [...document.querySelectorAll('#pbMijnLijst .pb-reactie')].map(r => (r.querySelector('.pb-status') || r.querySelector('button') || {}).textContent) };
+          // Zonder eigen naam: geen bericht, geen uitnodiging.
+          const voor = S.data.messages.length, rpcVoor = S.calls.filter(c => c.name === 'tt_reactie_uitnodigen').length;
+          PB_MIJ.voor = S.session.user.id; PB_MIJ.naam = '';
+          await pbUitnodigen('r1', 'm3', 'Mila', 'o9'); await w(200);
+          u.zonderNaam = { berichten: S.data.messages.length - voor, rpc: S.calls.filter(c => c.name === 'tt_reactie_uitnodigen').length - rpcVoor,
+            toast: $('appToast').textContent };
+          // --- TT-693: uitloggen en inloggen als een ander, zonder herladen ---
+          showView('search'); openPrikbord('mijn'); await w(500);
+          u.A_mijn = tekst('pbMijnLijst').includes('Mila');
+          $('pbPlaats').value = 'Delft'; pbFilters.doel = 'band';
+          S.session = null; S.authCallback('SIGNED_OUT', null); await w(400);
+          u.naUit = { pbMijn: pbMijn.length, pbLijst: pbLijst.length, voor: PB_MIJ.voor, naam: PB_MIJ.naam, plaats: $('pbPlaats').value,
+            doel: pbFilters.doel, mijnLijst: tekst('pbMijnLijst'), resultaat: tekst('pbResultaat'), getal: $('pbTegelGetal') ? $('pbTegelGetal').hidden : true };
+          S.session = { user: { id: 'u2', email: 'b@talenttent.org' } };
+          S.authCallback('SIGNED_IN', S.session); await w(1500);
+          const views = { myprofile: 'view-myprofile', bands: 'view-bands', messages: 'view-messages' };
+          u.B = {};
+          for (const v of ['myprofile', 'bands', 'messages']) {
+            showView(v); u.B[v + '_direct'] = ($('#' + views[v]) || document.getElementById(views[v])).innerText;
+            await w(700); u.B[v] = document.getElementById(views[v]).innerText;
+          }
+          showView('search'); openPrikbord('mijn');
+          u.B.mijn_direct = tekst('pbMijnLijst'); await w(700); u.B.mijn = tekst('pbMijnLijst');
+          return u; }""")
+        # --- Grens 19 bij een berichtknop (TT-421 met TT-695) ---
+        knop = {}
+        for naam, geboorte in (("18", "2008-01-01"), ("19", "2007-06-01")):
+            pk = ctx.new_page()
+            pk.on("pageerror", lambda e: fouten.append(str(e)))
+            lichaam = (stub_js + "\nwindow.TT_STUB.session = { user: { id: 'u1', email: 'a@talenttent.org' } };\nwindow.TT_STUB.rpcResults.tt_get_my_birth_date = '"
+                       + geboorte + "';\nwindow.TT_STUB.rpcResults.tt_musicians_ages = (p) => (p.ids || []).map(id => ({ id, age: 15 }));\n"
+                       + "window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));\n")
+            pk.route("**/supabase.js*", lambda r, _req=None, body=lichaam: r.fulfill(status=200, content_type="application/javascript", body=body))
+            pk.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load"); pk.wait_for_timeout(1500)
+            knop[naam] = pk.evaluate("""async () => { const b = document.createElement('button'); b.setAttribute('data-bericht-id', 'kind'); document.body.appendChild(b);
+              await new Promise(r => setTimeout(r, 600)); return getComputedStyle(b).display; }""")
+            pk.close()
+        browser.close()
+    httpd.shutdown()
+    j = lambda x: json.dumps(x, ensure_ascii=False)[:600]
+    check("TT-396 cluster 1 ad 1: de leeftijd staat in elke rij, zoals in de oproep (besluit Ronald 23-11-2026, sessie 202: \"ad 1. ja\")",
+          "Band · Rock · Nachtploeg · leden 17–19 jaar · 3 km" in u["meta"] and any("Mila · 22 jaar" in m for m in u["meta"]) and any("jesse_drums · 15 jaar" in m for m in u["meta"]), j(u["meta"]))
+    check("TT-396 cluster 1 ad 1: een rij met een heel lange naam loopt niet uit zijn vak (360 breed)", u["langPast"] is True, j(u["meta"]))
+    check("TT-396 cluster 1 ad 3: de tekst van Ronald, woordelijk",
+          u["tipTekst"] == "Ken je elkaar nog niet? Spreek dan af op een plek waar ook anderen zijn, zoals een oefenruimte of muziekschool.", u["tipTekst"])
+    check("TT-396 cluster 1 ad 3: bij Ik doe mee staat de tip voor wie 21 of jonger is, met de kop De eerste afspraak",
+          u["tip19"] == ["De eerste afspraak", u["tipTekst"]] and u["tip22"] is False and u["tipsModal21"] is True, j([u["tip19"], u["tip22"], u["tipsModal21"]]))
+    check("TT-396 cluster 1 ad 3: de tip staat 12 onder de uitleg en 16 boven de melding over media, zoals twee meldingen elders",
+          u["afstanden"] == [12, 16], j(u["afstanden"]))
+    check("TT-695: onder de 16 kies je 13-15 en 16-18 (niet meer 16-17)", u["g15"] == ["13-15 jaar", "16-18 jaar"], j(u["g15"]))
+    check("TT-695: met 18 kies je alle vijf groepen, ook 13-15", u["g18"] == ["13-15 jaar", "16-18 jaar", "19-24 jaar", "25-34 jaar", "35+ jaar"], j(u["g18"]))
+    check("TT-695: met 19 staat 13-15 er niet bij", u["g19"] == ["16-18 jaar", "19-24 jaar", "25-34 jaar", "35+ jaar"], j(u["g19"]))
+    check("TT-695: geen extra melding voor 19+ (besluit Ronald 23-11-2026, sessie 203: \"nee … waarom de keuzestress toevoegen?\"); niets gekozen: de gewone melding",
+          u["fout19a"] is None and u["fout19b"] == "Kies minstens één leeftijd" and u["fout19c"] is None and u["fout18"] == "Kies minstens één leeftijd",
+          j([u["fout19a"], u["fout19b"], u["fout19c"], u["fout18"]]))
+    check("TT-695: kiest iemand van 19 alleen 16-18, dan komen de groepen vanaf 19 erbij, ook in het voorbeeld; met 18 niet (besluiten Ronald sessie 202 ad 2 en 203)",
+          u["opslaan19"] == ["16-18", "19-24", "25-34", "35+"] and u["voorbeeld19"] == u["opslaan19"] and u["opslaan18"] == ["16-18"],
+          j([u["opslaan19"], u["voorbeeld19"], u["opslaan18"]]))
+    check("TT-396 (8D sessie 203): Aanpassen geeft het id van de oproep mee, zodat de database de bestaande oproep wijzigt", u["aanpassenId"] == "o9", j(u["aanpassenId"]))
+    check("TT-695: een oude oproep met 13-15 aanpassen met 19: 13-15 valt weg", u["aanpassen19"] == ["16-18", "19-24"], j(u["aanpassen19"]))
+    check("TT-695: een berichtknop bij een 15-jarige: zichtbaar met 18, weg met 19", knop.get("18") != "none" and knop.get("19") == "none", j(knop))
+    check("TT-695: de leeftijdsgroep voor de geboortedatum: 16 tot en met 18, en 19 en ouder", u["groep"] == [True, True, True], j(u["groep"]))
+    check("TT-396: een zin van de database bij het prikbord komt in beeld (was 'Je oproep plaatsen is niet gelukt')", u["dbZin"] == "Je hebt hier al een oproep voor.", u["dbZin"])
+    ui = u["uitnodiging"]
+    check("TT-694: Uitnodigen opent Berichten met het gesprek", ui["view"] == "messages" and ui["gesprek"] == "m3" and ui["draad"] != "none", j(ui))
+    check("TT-694: het bericht begint met je naam, ook als je gegevens nog niet geladen waren", ui["body"].startswith("Ronald nodigt je uit") and ui["oproep"] == "o9" and ui["naar"] == "m3", j(ui))
+    check("TT-694: de reactie staat meteen op Uitgenodigd, ook na terug", ui["status"] == "uitgenodigd" and u["terug"]["tab"] == "mijn" and "Uitgenodigd" in (u["terug"]["knop"][0] or ""), j(u["terug"]))
+    check("TT-694: zonder eigen naam geen bericht en geen uitnodiging", u["zonderNaam"]["berichten"] == 0 and u["zonderNaam"]["rpc"] == 0, j(u["zonderNaam"]))
+    nu = u["naUit"]
+    check("TT-693: na uitloggen is alles van het prikbord weg (oproepen, reacties, naam, plaats, filters, getal)",
+          u["A_mijn"] is True and nu["pbMijn"] == 0 and nu["pbLijst"] == 0 and nu["voor"] is None and nu["naam"] == "" and nu["plaats"] == ""
+          and nu["doel"] == "" and nu["mijnLijst"] == "" and nu["resultaat"] == "" and nu["getal"] is True, j(nu))
+    B = u["B"]
+    check("TT-693: een ander account ziet bij Mijn oproepen niets van de vorige, ook niet tijdens het laden",
+          "Mila" not in B["mijn_direct"] and "Mila" not in B["mijn"], j([B["mijn_direct"][:120], B["mijn"][:120]]))
+    check("TT-693 D7: Mijn profiel, Mijn bands en Berichten tonen niets van de vorige, ook niet tijdens het laden",
+          all("Ronald" not in B[k] and "Van Delft" not in B[k] and "GEHEIM-VAN-A" not in B[k] for k in B if not k.startswith("mijn")), j({k: v[:80] for k, v in B.items()}))
+    priv = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read()
+    priv = priv[priv.index('id="view-privacy"'):priv.index('id="view-terms"')]
+    check("TT-695: privacyverklaring hoofdstuk 6, de korte zin over oproepen (besluit Ronald 23-11-2026, sessie 203: \"ad 1. ja\") en 19 bij berichten",
+          "<li>Je oproep zien de leeftijden die je kiest en bezoekers zonder account. Jongeren onder de 16 en volwassenen vanaf 19 zien elkaars oproepen niet. Je reactie ziet alleen wie de oproep plaatste.</li>" in priv
+          and "iemand van 19 of ouder je pas een bericht" in priv and "onder de 18" not in priv and "18 of ouder" not in priv, "")
+    check("TT-396: geen JS-fouten in blok 177", not fouten, "; ".join(fouten)[:600])
 
 BLOKKEN = [
     blok1_statisch,
@@ -21826,6 +22006,7 @@ BLOKKEN = [
     blok_ronde2_zoeken,
     blok_laden_rondje,
     blok_prikbord,
+    blok_prikbord_cluster1,
 ]
 
 

@@ -1003,6 +1003,8 @@ function openThreadProfile() {
 
 
 
+
+
 const berichtRecht = { gebruiker: null, mijnLeeftijd: undefined, leeftijden: {}, timer: null, bezig: false };
 
 
@@ -1040,7 +1042,7 @@ async function berichtRechtVerwerk() {
   const vrij = () => knoppen.forEach(el => el.setAttribute('data-bericht-ok', '1'));
   try {
     const mijn = await berichtRechtMijnLeeftijd();
-    if (mijn === null || mijn < 18) { vrij(); return; }
+    if (mijn === null || mijn < 19) { vrij(); return; }
     const ids = Array.from(new Set(knoppen.map(el => el.getAttribute('data-bericht-id'))));
     const onbekend = ids.filter(id => !(id in berichtRecht.leeftijden));
     if (onbekend.length) {

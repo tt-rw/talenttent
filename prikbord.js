@@ -262,7 +262,9 @@ function pbGefilterd() {
 function pbRijHTML(o) {
 
 
-  const metaRegel = [pbDoelNaam(o.doel), (o.genres || [])[0], o.naam, afstandTekst(o.km)].filter(Boolean).map(escHtml).join(' · ');
+
+
+  const metaRegel = [pbDoelNaam(o.doel), (o.genres || [])[0], o.naam, pbLeeftijdTekst(o), afstandTekst(o.km)].filter(Boolean).map(escHtml).join(' · ');
   const gedeeld = o.gedeeld && !o.eigen ? `<div class="pb-rij-gedeeld">${escHtml(pbGedeeldTekst(o))}</div>` : '';
   return `
     <div class="result-row pb-rij" onclick="pbOpenOproep('${jsAttr(o.id)}')">
@@ -382,11 +384,17 @@ async function pbReagerenOpen() {
   syncModalScrollLock();
   try {
     const mid = await getMyMusicianId();
+    await pbMijLaden();
     const { data: media } = await db.from('musician_media').select('media_type').eq('musician_id', mid).in('media_type', ['video', 'link']).limit(1);
     const heeftMedia = !!(media && media.length);
     const naam = o.band_id ? o.naam : (o.naam || '');
     vak.innerHTML = `
       <p class="pb-reageren-uitleg">${escHtml(naam)} ziet je profiel: je niveau, je video's en links${o.gedeeld ? ' en jullie gezamenlijke nummers' : ''}.</p>
+      ${pbEersteAfspraakTonen() ? `
+        <div class="melding pb-afspraak-melding">
+          <div class="melding-kop">De eerste afspraak</div>
+          <div class="melding-tekst">${escHtml(PB_TIPS.eersteAfspraak)}</div>
+        </div>` : ''}
       ${o.media_gewenst && !heeftMedia ? `
         <div class="melding pb-media-melding">
           <div class="melding-kop">${escHtml(naam)} ziet graag een video of link</div>
@@ -436,9 +444,12 @@ const PB_TIPS = {
     ],
     reageren: 'Zet een demo of opname in Je mediahoek. Hou het contact eerst via de app; later kun je alsnog je e-mailadres of telefoonnummer doorgeven.'
   },
-  eersteAfspraak: 'Spreek de eerste keer af op een plek waar ook anderen zijn, zoals een oefenruimte of muziekschool. Zo leer je elkaar ontspannen kennen.',
+
+  eersteAfspraak: 'Ken je elkaar nog niet? Spreek dan af op een plek waar ook anderen zijn, zoals een oefenruimte of muziekschool.',
   slot: 'Wees duidelijk en concreet. Hoe beter iemand weet waar die bij aansluit, hoe groter de kans op een goede match!'
 };
+
+function pbEersteAfspraakTonen() { return PB_MIJ.leeftijd != null && PB_MIJ.leeftijd <= 21; }
 function pbTipsOpen() {
   const t = PB_TIPS[(pbForm && pbForm.soort) || 'gezocht'];
   document.getElementById('pbTipsInhoud').innerHTML = `
@@ -446,7 +457,7 @@ function pbTipsOpen() {
     <p class="pb-tips-intro">${escHtml(t.intro)}</p>
     <ol class="pb-tips">${t.punten.map(([k, u]) => `<li><strong>${escHtml(k)}</strong> ${escHtml(u)}</li>`).join('')}</ol>
     <p class="pb-tips-intro"><strong>Maak reageren makkelijk!</strong> ${escHtml(t.reageren)}</p>
-    ${PB_MIJ.leeftijd != null && PB_MIJ.leeftijd <= 21 ? `<p class="pb-tips-intro"><strong>De eerste afspraak.</strong> ${escHtml(PB_TIPS.eersteAfspraak)}</p>` : ''}
+    ${pbEersteAfspraakTonen() ? `<p class="pb-tips-intro"><strong>De eerste afspraak.</strong> ${escHtml(PB_TIPS.eersteAfspraak)}</p>` : ''}
     <p class="pb-tips-intro">${escHtml(PB_TIPS.slot)}</p>`;
   document.getElementById('pbTipsModal').classList.add('visible');
   syncModalScrollLock();
@@ -499,6 +510,25 @@ function pbIsLeidraad(t) {
   return ['gezocht', 'beschikbaar'].some(k => schoon(t) === schoon(pbLeidraadTekst(k)));
 }
 
+
+
+
+
+
+
+const PB_VANAF_19 = ['19-24', '25-34', '35+'];
+function pbMijnLeeftijd() { return PB_MIJ.leeftijd == null ? 99 : PB_MIJ.leeftijd; }
+function pbLeeftijdenVoorOpslaan(f) {
+  const g = f.leeftijden.slice();
+  if (g.length && pbMijnLeeftijd() >= 19 && !g.some(x => PB_VANAF_19.includes(x))) g.push(...PB_VANAF_19);
+  return PB_LEEFTIJDEN.filter(x => g.includes(x));
+}
+function pbGroepen() {
+  const l = pbMijnLeeftijd();
+  if (l < 16) return ['13-15', '16-18'];
+  return l >= 19 ? PB_LEEFTIJDEN.filter(g => g !== '13-15') : PB_LEEFTIJDEN.slice();
+}
+
 function pbKeuzeveldHTML(id, label, veldId) {
   return `<div class="field" id="${veldId}"><label>${label}</label><div class="menu-anchor">
     <div class="wheel-field" id="${id}Field" aria-label="${label}"><span class="wheel-field-label"></span></div>
@@ -532,7 +562,6 @@ function pbTekenForm() {
 
 function pbFormVelden() {
   const f = pbForm;
-  const jong = (PB_MIJ.leeftijd || 99) < 16;
   const instrKeuzes = () => (f.soort === 'beschikbaar' ? PB_MIJ.instrumenten : ['Elk instrument'].concat(INSTRUMENTS));
   const veld = (id, tekst) => {
     const el = document.getElementById(id + 'Field');
@@ -553,12 +582,14 @@ function pbFormVelden() {
     kies: (i) => { pbKiesInstrument(instrKeuzes()[i]); },
     ververs: () => pbVeldTekst('pbFInstrument', f.elk ? 'Elk instrument' : f.instrumenten.join(', '), 'Kies een instrument')
   });
-  const groepen = PB_LEEFTIJDEN.filter(g => !jong || ['13-15', '16-18'].includes(g));
+
+  const groepen = pbGroepen();
+  f.leeftijden = f.leeftijden.filter(g => groepen.includes(g));
   initChoiceField({
     id: 'pbFLeeftijden', fieldId: 'pbFLeeftijdenField', menuId: 'pbFLeeftijdenMenu', meer: true,
-    rijen: () => groepen.map(g => ({ t: (jong && g === '16-18' ? '16-17' : g) + ' jaar', gekozen: f.leeftijden.includes(g) })),
+    rijen: () => groepen.map(g => ({ t: g + ' jaar', gekozen: f.leeftijden.includes(g) })),
     kies: (i) => { pbKiesLeeftijd(groepen[i]); },
-    ververs: () => pbVeldTekst('pbFLeeftijden', PB_LEEFTIJDEN.filter(g => f.leeftijden.includes(g)).map(g => jong && g === '16-18' ? '16-17' : g).join(', ') + (f.leeftijden.length ? ' jaar' : ''), 'Kies leeftijden')
+    ververs: () => pbVeldTekst('pbFLeeftijden', PB_LEEFTIJDEN.filter(g => f.leeftijden.includes(g)).join(', ') + (f.leeftijden.length ? ' jaar' : ''), 'Kies leeftijden')
   });
 }
 
@@ -608,7 +639,7 @@ function pbVoorbeeldOproep() {
   const band = f.wie !== 'ik' ? pbBeheerdeBands().find(b => b.id === f.wie) : null;
   return {
     soort: f.soort, doel: f.doel, instrumenten: f.instrumenten, elk_instrument: f.elk,
-    leeftijden: f.leeftijden, tekst: f.tekst.trim(), toevoeging: (f.toevoeging || '').trim(), media_gewenst: f.media, geplaatst_op: new Date().toISOString(),
+    leeftijden: pbLeeftijdenVoorOpslaan(f), tekst: f.tekst.trim(), toevoeging: (f.toevoeging || '').trim(), media_gewenst: f.media, geplaatst_op: new Date().toISOString(),
     band_id: band ? band.id : null, naam: band ? band.name : (PB_MIJ.naam || ''), foto: band ? band.avatar_url : PB_MIJ.foto,
     leeftijd: band ? null : PB_MIJ.leeftijd, leden_min: band ? band.leden_min : null, leden_max: band ? band.leden_max : null,
     plaats: band ? band.city : PB_MIJ.plaats, genres: band ? band.genres : (PB_MIJ.genres || []), band_soort: band ? band.soort : null
@@ -631,9 +662,12 @@ async function pbPlaatsen() {
   const f = pbForm;
   const p = {
     soort: f.soort, doel: f.doel, instrumenten: f.instrumenten, elk_instrument: f.elk,
-    leeftijden: f.leeftijden, tekst: f.tekst.trim(), toevoeging: (f.toevoeging || '').trim(), media_gewenst: f.media, straal_km: f.straal
+    leeftijden: pbLeeftijdenVoorOpslaan(f), tekst: f.tekst.trim(), toevoeging: (f.toevoeging || '').trim(), media_gewenst: f.media, straal_km: f.straal
   };
   if (f.wie !== 'ik') p.band_id = f.wie;
+
+
+  if (f.id) p.id = f.id;
   const { error } = await db.rpc('tt_oproep_opslaan', { p });
   if (error) { showToast(friendlyErrorMessage(error, 'je oproep plaatsen')); return; }
   pbForm = null; pbVanBand = null;
@@ -712,16 +746,25 @@ function pbReactieHTML(o, r) {
 
 function pbOpenMijn(id) { pbZetTab('mijn'); }
 
+
+
+
 async function pbUitnodigen(reactieId, musicianId, naam, oproepId) {
   const m = pbMijn.find(x => x.oproep.id === oproepId);
   if (!m) return;
+  await pbMijLaden();
+  if (!PB_MIJ.naam) { showToast(friendlyErrorMessage(null, 'uitnodigen')); return; }
   const { error } = await db.rpc('tt_reactie_uitnodigen', { p_reactie: reactieId });
   if (error) { showToast(friendlyErrorMessage(error, 'uitnodigen')); return; }
+  const r = (m.reacties || []).find(x => x.id === reactieId);
+  if (r) r.status = 'uitgenodigd';
+  const vak = document.getElementById('pbMijnLijst');
+  if (vak && pbTab === 'mijn') vak.innerHTML = pbMijn.map(pbMijnHTML).join('');
   const mid = await getMyMusicianId();
-  const titel = pbTitel(m.oproep);
-  const tekst = TT_TEKSTEN.oproepUitnodiging.replace('{naam}', PB_MIJ.naam || '').replace('{titel}', titel);
-  await db.from('messages').insert({ sender_id: mid, recipient_id: musicianId, body: tekst, oproep_id: oproepId });
-  openConversation(musicianId, naam);
+  const tekst = TT_TEKSTEN.oproepUitnodiging.replace('{naam}', PB_MIJ.naam).replace('{titel}', pbTitel(m.oproep));
+  const { error: e2 } = await db.from('messages').insert({ sender_id: mid, recipient_id: musicianId, body: tekst, oproep_id: oproepId });
+  if (e2) { logCaught('pbUitnodigen', e2); showToast(friendlyErrorMessage(e2, 'je uitnodiging versturen')); return; }
+  openMessageComposer(musicianId, naam);
 }
 
 async function pbGevonden(id) {
@@ -741,7 +784,8 @@ async function pbVerlengen(id) {
   pbMijnLaden();
 }
 
-function pbAanpassen(id) {
+async function pbAanpassen(id) {
+  await pbMijLaden();
   const m = pbMijn.find(x => x.oproep.id === id);
   if (!m) return;
   const o = m.oproep;
@@ -1014,6 +1058,32 @@ async function pbOproepenZetten(aan) {
     pbOproepenTonen(oud);
     showToast(friendlyErrorMessage(e, 'je keuze opslaan'));
   }
+}
+
+
+
+
+
+function pbAllesWissen() {
+  pbVolgnr++;
+  clearTimeout(pbPlaatsTimer); clearTimeout(pbOnthoudTimer);
+  pbTab = 'alle'; pbLaag = null; pbLijst = []; pbOpen = null; pbMijn = [];
+  pbFilters = { soort: '', doel: '', instrument: '', volgorde: 'nieuwste' };
+  pbForm = null; pbVanBand = null; pbVanBuiten = false;
+  Object.assign(PB_MIJ, { instrumenten: [], genres: [], bands: [], leeftijd: null, naam: '', foto: '', plaats: '', voor: null });
+  pbBewaard = undefined; pbBewaardVoor = null; pbVertrek = null; pbOproepenAan = null;
+  ['pbResultaat', 'pbMijnLijst', 'pbReactiesLijst', 'pbOproepInhoud', 'pbFormInhoud', 'pbVoorbeeldInhoud', 'pbReagerenInhoud', 'pbTipsInhoud']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+  ['pbReagerenModal', 'pbTipsModal'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('visible'); });
+  ['pbTegelGetal', 'pbMijnGetal'].forEach(id => { const el = document.getElementById(id); if (el) el.hidden = true; });
+  const plaats = document.getElementById('pbPlaats');
+  if (plaats) plaats.value = '';
+  if (CHOICE_FIELDS.pbStraal) setWheelFieldValues('pbStraal', [PB_STRAAL_STANDAARD], false);
+  ['pbSoort', 'pbDoel', 'pbInstrument', 'pbVolgorde'].forEach(id => { if (CHOICE_FIELDS[id]) refreshChoiceField(id); });
+  const ft = document.getElementById('pbFiltersTekst');
+  if (ft) ft.textContent = 'Filters';
+  pbOnthoudVink(false);
+  syncModalScrollLock();
 }
 
 

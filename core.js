@@ -685,6 +685,8 @@ function onUserLoggedOut() {
   hasOwnProfile = false;
   wisBlokkades();
   wisBewaardeZoek();
+
+  if (typeof pbAllesWissen === 'function') pbAllesWissen();
   clearOnboardingProgress();
   pendingMessageRecipient = null;
   usernameGateMid = null;
