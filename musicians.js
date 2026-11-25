@@ -1269,6 +1269,8 @@ async function saveWieBenJe() {
   if (!/^[1-9][0-9]{3}$/.test(zip) || !city) {
     fouten.push(['wbjZip', 'Vul een geldige postcode in. Je woonplaats wordt dan automatisch ingevuld']);
   }
+  const bioFout = bioVoorbeeldFout('wbjBio', 'muzikant');
+  if (bioFout) fouten.push(bioFout);
   if (showFieldErrors(fouten)) return;
 
   if (wbjFieldSnapshot() === wbjSnapshot) return;

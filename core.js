@@ -621,6 +621,9 @@ async function onUserLoggedIn(user) {
   if (hasOwnProfile) ttToestelMelden();
 
 
+  if (hasOwnProfile && typeof pbTegelGetal === 'function') pbTegelGetal();
+
+
 
 
 
@@ -2126,19 +2129,21 @@ function tikDoel(doel) {
 
 
 
+
+
 (function initKnoppenRij() {
   if (!window.ResizeObserver || !window.MutationObserver) return;
   const doek = document.createElement('canvas').getContext('2d');
   const rijen = new Set();
   const meet = rij => {
-    const kn = [...rij.children].filter(k => k.classList.contains('btn') && k.offsetParent);
+    const kn = [...rij.children].filter(k => (k.classList.contains('btn') || k.classList.contains('segmented-btn')) && k.offsetParent);
     let past = true;
     if (kn.length > 1) {
       const gat = parseFloat(getComputedStyle(rij).columnGap) || 0;
       const deel = (rij.clientWidth - gat * (kn.length - 1)) / kn.length;
       past = kn.every(k => {
         const cs = getComputedStyle(k);
-        doek.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        doek.font = `${k.classList.contains('segmented-btn') ? 700 : cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
         const rand = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
         return doek.measureText(k.textContent.trim()).width + rand <= deel;
       });
@@ -2153,7 +2158,7 @@ function tikDoel(doel) {
   const kijker = new ResizeObserver(lijst => requestAnimationFrame(() => lijst.forEach(e => meet(e.target))));
   const volg = el => {
     if (el.nodeType !== 1) return;
-    const nieuw = el.classList.contains('btn-row') ? [el] : [...el.getElementsByClassName('btn-row')];
+    const nieuw = el.matches('.btn-row, .segmented-vol') ? [el] : [...el.querySelectorAll('.btn-row, .segmented-vol')];
     nieuw.forEach(r => { if (!rijen.has(r)) { rijen.add(r); kijker.observe(r); } });
   };
   volg(document.body);

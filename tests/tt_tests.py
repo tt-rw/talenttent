@@ -3773,10 +3773,9 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         check("K6: geen bio-voorzet en geen gestippelde uitnodiging meer, ook niet in de stijl (dode code weg, B2-10)",
               stip == ["undefined", 0, False], json.dumps(stip))
 
-        wb = page.evaluate("""() => { const v = document.getElementById('bio'); return [v.classList.contains('bio-voorbeeld'), v.placeholder.startsWith('Hoi allemaal! Ik ben Kevin.'),
-            getComputedStyle(v, '::placeholder').fontStyle, v.closest('.field').querySelectorAll('button').length]; }""")
-        check("de bio in de wizard heeft dezelfde cursieve voorbeeldtekst als de tegels en geen voorzetknoppen (consistentie)",
-              wb == [True, True, "italic", 0], json.dumps(wb))
+        wb = page.evaluate("""() => { const v = document.getElementById('bio'); return [v.placeholder, [...v.closest('.field').querySelectorAll('button')].map(b => b.textContent)]; }""")
+        check("TT-696: de bio in de wizard heeft geen grijze voorbeeldtekst maar de knop Voorbeelden, zoals de tegels (besluit Ronald 24-11-2026, sessie 205: \"ja, de grijze tekst vervalt. dit wil ik ook bij de bio doen.\")",
+              wb == ["", ["Voorbeelden"]], json.dumps(wb))
 
         # K7/K8/K12 — vier keuzesoorten, één stand voor gekozen en niet-gekozen
         # (TT-518, 06-11-2026: .level-btn weg, sinds TT-514 nergens gebruikt;
@@ -6484,7 +6483,12 @@ window.TT_STUB.fnAntwoord = {};
           u.meterCovers = bandVoortgang(kaal); u.meterEigen = bandVoortgang({ ...kaal, soort: 'eigen' });
           // 5. Onze muziek.
           openBandTegels('b9'); openTegelScreen('bandMuziek'); await w(400);
-          bmzKiesSoort('beide');
+          u.soortVeld = { knoppen: document.querySelectorAll('#bandMuziekScreen .segmented-btn').length,
+            leeg: document.querySelector('#bmzSoortField .wheel-field-label').textContent };
+          document.getElementById('bmzSoortField').click(); await w(80);
+          u.soortVeld.menu = [...document.querySelectorAll('#bmzSoortMenu [role="option"]')].map(e => e.textContent.trim());
+          CHOICE_FIELDS.bmzSoort.kies(2); await w(50);
+          u.soortVeld.gekozen = document.querySelector('#bmzSoortField .wheel-field-label').textContent;
           bmzNummerErbij(); bmzNummers[0].titel = 'Golf'; bmzNummers[0].url = 'https://www.youtube.com/watch?v=abcdefghijk';
           bmzNummerErbij(); bmzNummers[1].titel = 'Zonder link';
           await saveBandMuziek(); await w(100);
@@ -6560,7 +6564,7 @@ window.TT_STUB.fnAntwoord = {};
           const bioInline = (id) => {
             const vak = document.getElementById(id), veld = vak.closest('.field');
             return [vak.tagName, vak.style.display !== 'none', veld.querySelectorAll('.bio-prompt-chip').length,
-                    vak.placeholder.slice(0, 4), getComputedStyle(vak, '::placeholder').fontStyle, !!veld.querySelector('.field-hint')];
+                    vak.placeholder.slice(0, 4), !!veld.querySelector('[onclick*="bioVoorbeeldenOpen"]'), !!veld.querySelector('.field-hint')];
           };
           u.bioMuzikant = bioInline('wbjBio'); u.bioBand = bioInline('bwBio');
           u.bioGeenVenster = [!document.getElementById('bioModal'), typeof openBioModal];
@@ -6632,6 +6636,8 @@ window.TT_STUB.fnAntwoord = {};
               d58["muziekFout"] == ["Vul een link in die begint met https://"], j58("muziekFout"))
         check("Onze muziek: soort, eigen nummer met platform en een cover (één keer) worden bewaard",
               d58["muziekOpgeslagen"] == ["beide", ["Golf/YouTube"], ["Last Nite"], False], j58("muziekOpgeslagen"))
+        check("Onze muziek: Wat voor band? is een veld met een keuzemenu zoals Waarvoor, leeg \"Eigen nummers · Coverband · Beide\" (TT-396, besluit Ronald 24-11-2026, sessie 208)",
+              d58["soortVeld"] == {"knoppen": 0, "leeg": "Eigen nummers · Coverband · Beide", "menu": ["Eigen nummers", "Coverband", "Beide"], "gekozen": "Beide"}, j58("soortVeld"))
         check("covers en setlist delen de zoekfunctie, elk met hun eigen keuze",
               d58["coverZoek"] == "bcAddCover('Groter dan ik','Froukje')" and d58["setlistZoek"] == "jstAddSong('Groter dan ik','Froukje')",
               json.dumps([d58["coverZoek"], d58["setlistZoek"]]))
@@ -6663,9 +6669,9 @@ window.TT_STUB.fnAntwoord = {};
               d58["verlaten"] == ["Je staat dan niet meer in de bezetting van Nachtploeg.", "Band verlaten"], j58("verlaten"))
         check("een andere view laat geen band of open tegel achter; Profiel bewerken toont je eigen tegels",
               d58["weg"] == [None, "overview"] and d58["eigen"] == ["", "none"], json.dumps([d58["weg"], d58["eigen"]]))
-        check("de bio staat inline (TT-410a): een zichtbaar tekstveld met cursief voorbeeld en een regel uitleg, zonder voorzetknoppen, voor muzikant én band",
-              d58["bioMuzikant"] == ["TEXTAREA", True, 0, "Hoi ", "italic", True]
-              and d58["bioBand"] == ["TEXTAREA", True, 0, "Hoi!", "italic", True], json.dumps([d58["bioMuzikant"], d58["bioBand"]]))
+        check("de bio staat inline (TT-410a): een zichtbaar tekstveld zonder grijze voorbeeldtekst, met de knop Voorbeelden (TT-696) en een regel uitleg, zonder voorzetknoppen, voor muzikant én band",
+              d58["bioMuzikant"] == ["TEXTAREA", True, 0, "", True, True]
+              and d58["bioBand"] == ["TEXTAREA", True, 0, "", True, True], json.dumps([d58["bioMuzikant"], d58["bioBand"]]))
         check("het bio-venster bestaat niet meer: geen element, geen functie",
               d58["bioGeenVenster"] == [True, "undefined"], json.dumps(d58["bioGeenVenster"]))
         check("Bandprofiel verwijderen (blok 3, 7d): een kop met de vraag, het gevolg met de namen van de leden, Terug en rood omlijnd Bandprofiel verwijderen; daarna Mijn Bands",
@@ -9053,8 +9059,8 @@ window.TT_STUB.fnAntwoord = {};
           const vak = $('wbjBio'), r = vak.getBoundingClientRect(), veld = vak.closest('.field');
           u.tegel = { zichtbaar: r.width > 0 && r.height > 0, binnen: r.left >= 0 && r.right <= window.innerWidth, hoogte: Math.round(r.height),
             scrollBreed: document.documentElement.scrollWidth <= window.innerWidth, chips: veld.querySelectorAll('.bio-prompt-chip').length,
-            voorbeeld: vak.placeholder.startsWith('Hoi allemaal! Ik ben Kevin.') && vak.placeholder.split('\n').length === 3,
-            stijl: [getComputedStyle(vak, '::placeholder').fontStyle], leeg: vak.value === '' };
+            voorbeeld: vak.placeholder === '' && [...veld.querySelectorAll('button')].map(b => b.textContent).join() === 'Voorbeelden',
+            leeg: vak.value === '' };
           const voor = tegelHeeftWijzigingen();
           vak.value = 'Hoi'; vak.dispatchEvent(new Event('input', { bubbles: true })); await w(30);
           u.tegel.wijziging = [voor, tegelHeeftWijzigingen()];
@@ -9070,8 +9076,8 @@ window.TT_STUB.fnAntwoord = {};
               all(v["h2Maat"] == "15px" and v["pMaat"] == "15px" and v["regel"] == "20px" and v["breed"] for v in d77["laag"].values()), j77)
         check("Wie ben je: de bio is een zichtbaar tekstveld binnen het scherm van 375px, zonder voorzetknoppen",
               d77["tegel"]["zichtbaar"] and d77["tegel"]["binnen"] and d77["tegel"]["scrollBreed"] and d77["tegel"]["chips"] == 0, j77)
-        check("Wie ben je: het veld toont de voorbeeldtekst van Kevin (3 alinea's) als cursieve placeholder en is zelf leeg",
-              d77["tegel"]["voorbeeld"] and d77["tegel"]["stijl"] == ["italic"] and d77["tegel"]["leeg"], j77)
+        check("TT-696: Wie ben je: het veld is leeg, zonder grijze voorbeeldtekst, met de knop Voorbeelden (besluit Ronald 24-11-2026, sessie 205)",
+              d77["tegel"]["voorbeeld"] and d77["tegel"]["leeg"], j77)
         check("Wie ben je: typen in de bio telt mee voor \"Terug zonder opslaan?\"",
               d77["tegel"]["wijziging"] == [False, True], j77)
         check("geen paginafouten in blok 77", not page_errors, "; ".join(page_errors)[:300])
@@ -10882,7 +10888,7 @@ window.TT_STUB.fnAntwoord = {};
         j95 = lambda k: json.dumps(d95.get(k), ensure_ascii=False)
         check("startscherm: titel Zoeken en drie tegels met hun regel (Laag 2; sinds TT-396 Prikbord bovenaan)",
               d95["start"]["scherm"] == "start" and d95["start"]["titel"] == "Zoeken"
-              and d95["start"]["tegels"] == ["Prikbord|Oproepen: wie zoekt wie, en wie is beschikbaar", "Muzikanten|Muzikanten en bands bij jou in de buurt", "Mix & Match|Vergelijk setlists met andere muzikanten"]
+              and d95["start"]["tegels"] == ["Prikbord|Vinden en gevonden worden", "Muzikanten|Muzikanten en bands bij jou in de buurt", "Mix & Match|Vergelijk setlists met andere muzikanten"]
               and not d95["start"]["muzZicht"], j95("start"))
         # TT-517 fase 11 (besluit Ronald 01-11-2026, C): geen vlak achter het icoon (was --surface2).
         check("tegels: echte knoppen, één icoon en geen pijl; geen vlak achter het icoon, goud in donker",
@@ -11324,6 +11330,23 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
   S.rpcResults.tt_search_musicians = () => [{ musician_id: 'm2', distance_km: 3, is_stale: false }, { musician_id: 'm3', distance_km: 5, is_stale: false }];
   S.rpcResults.tt_search_bands_for_musician = () => [{ band_id: 'b1', distance_km: 2, score: 1 }, { band_id: 'b2', distance_km: 4, score: 1 }];
   S.rpcResults.tt_search_musicians_by_songlist_anon = () => [{ musician_id: 'm2', distance_km: 3, matches: 1 }];
+  // TT-396 cluster 2 (sessie 208): het prikbord. Elk vak, genre, de namen en het instrument van de plaatser en het
+  // bericht van een kandidaat zijn gebruikerstekst; ook de lijst Waarvoor en zanger/zangeres komen uit de database.
+  const oproep = (id, soort, band) => ({ id, soort, doelen: ['band', v('oproepen.doelen')], instrumenten: [v('oproepen.instrumenten'), 'Zang'], elk_instrument: false,
+    zang_vorm: v('oproepen.zang_vorm'), leeftijden: ['16-18', '19-24'],
+    vakken: { wie: v('oproepen.vakken.wie'), wil: v('oproepen.vakken.wil'), zoek: v('oproepen.vakken.zoek'), waar: v('oproepen.vakken.waar'),
+              kennis: v('oproepen.vakken.kennis'), verder: v('oproepen.vakken.verder') },
+    genres: [v('oproepen.genres')], media_gewenst: true, geplaatst_op: new Date().toISOString(), verlengd_op: null, loopt_tot: new Date(Date.now() + 9 * 864e5).toISOString(),
+    plaatser_id: 'm2', band_id: band ? 'b1' : null, naam: v('oproepen.naam'), plaatser_naam: v('oproepen.plaatser_naam'), plaatser_instrument: v('oproepen.plaatser_instrument'),
+    leeftijd: 30, leden_min: 17, leden_max: 19, plaats: v('oproepen.plaats'), km: 3, straal_km: null, foto: null, band_soort: 'beide', gedeeld: 2, eigen: false, gereageerd: false, status: 'open' });
+  const pbL = [oproep('o1', 'gezocht', true), oproep('o2', 'beschikbaar', false)];
+  S.rpcResults.tt_prikbord = (a) => a.p_id ? pbL.filter(x => x.id === a.p_id) : pbL;
+  S.rpcResults.tt_mijn_oproepen = () => [{ oproep: oproep('o9', 'gezocht', false), reacties: [{ id: 'r1', musician_id: 'm2', naam: v('oproep_reacties.naam'),
+    leeftijd: 17, km: 3, foto: null, media: { type: 'video' }, gedeeld: 3, boodschap: v('oproep_reacties.boodschap'), status: 'verstuurd', nieuw: true, created_at: new Date().toISOString() }] }];
+  S.rpcResults.tt_mijn_reacties = () => [{ id: 'x1', status: 'uitgenodigd', created_at: new Date().toISOString(), boodschap: v('oproep_reacties.boodschap_eigen'),
+    oproep: Object.assign(oproep('o5', 'gezocht', true), { naam: v('oproepen.naam_reactie') }) }];
+  S.rpcResults.tt_oproep_kaarten = () => [Object.assign(oproep('o5', 'gezocht', true), { naam: v('oproepen.naam_kaartje'), plaatser_naam: v('oproepen.plaatser_naam_kaartje') })];
+  S.rpcResults.tt_reactie_gezien = null;
 })();
 """
 
@@ -11379,6 +11402,14 @@ XSS_STAPPEN = [
     ("nummerlijst (iTunes)", "const ac = document.createElement('div'); document.body.appendChild(ac); const t = window.__P('titel'); renderTrackResults(ac, [{ trackName: t }], t.slice(0, 6), { name: window.__P('artiest2') }, 'addSong', []);"),
     ("wizard: media en links", "state.mediaFiles = [{ type: 'foto', url: 'https://example.org/a.jpg', name: window.__P('bestandsnaam') }, { type: 'video', url: 'https://example.org/a.mp4', name: window.__P('bestandsnaam2') }]; state.mediaLinks = [{ url: 'https://www.youtube.com/watch?v=' + encodeURIComponent(window.__Q('yt2')), inBanner: false }, { url: window.__P('linkadres'), inBanner: false }]; renderMediaGrid();"),
     ("lightbox", "openMediaLightbox('https://example.org/a.jpg?x=' + encodeURIComponent(window.__P('lightbox')));"),
+    # TT-396 cluster 2 (sessie 208): het prikbord, een oproep, Mijn Oproepen met een kandidaat open, Mijn Reacties, Verwijderen.
+    ("prikbord", "showView('search'); openPrikbord(); await new Promise(r => setTimeout(r, 600));"),
+    ("een oproep", "pbOpenOproep('o1'); await new Promise(r => setTimeout(r, 200));"),
+    ("mijn oproepen", "pbOpenMijn('o9'); await new Promise(r => setTimeout(r, 500)); pbKandidaatKlap('r1', 'o9');"),
+    ("wie is het geworden", "pbVerwijderen('o9'); pbWegKies(document.querySelector('#pbWegKeuzes .pb-weg-keuze')); pbWegSluiten();"),
+    ("mijn reacties", "pbZetTab('reacties'); await new Promise(r => setTimeout(r, 500)); pbReactieKlap('x1');"),
+    ("oproep aanpassen", "pbZetTab('mijn'); await new Promise(r => setTimeout(r, 500)); await pbAanpassen('o9');"),
+    ("kaartje in een gesprek", "window.TT_STUB.data.messages[0].oproep_id = 'o5'; await openConversation('m2', 'Kees', null); await new Promise(r => setTimeout(r, 400));"),
 ]
 
 # Velden die bewust nooit op een scherm komen, met de reden.
@@ -11405,6 +11436,9 @@ XSS_UITZONDERINGEN = {
     "band_wanted.note": "de app leest de kolom niet",
     "musician_wanted.instrument": "de app leest de tabel niet meer (TT-232)",
     "musician_media.uitsnede": "uitsnedeGeldig() maakt er getallen van; tekst wordt geweigerd en het kader vervalt",
+    # TT-396 cluster 2 (sessie 208), elk gecontroleerd in de code:
+    "oproepen.zang_vorm": "pbSpeler() vergelijkt alleen met zangeres en beide; de waarde zelf komt nooit in beeld",
+    "oproepen.doelen": "pbDoelenTekst() toont alleen de vier bekende keuzes (PB_DOELEN); een andere waarde valt weg",
 }
 
 
@@ -11892,7 +11926,7 @@ def blok_tt517_fase3():
     check("de te lange titel heet nu \"Toestemming\" (besluit a)",
           ">Toestemming</div>" in html and "Je hebt toestemming van thuis nodig" not in html, "")
     check("Mijn profiel en Berichten geven hun titel via data-kop",
-          'id="view-myprofile" data-kop="Mijn profiel"' in html and 'id="view-messages" data-kop="Berichten"' in html, "")
+          'id="view-myprofile" data-kop="Mijn Profiel"' in html and 'id="view-messages" data-kop="Berichten"' in html, "")
 
     SC = [
       ("landing", 0, [], ""), ("auth", 0, ["showView('auth')"], "Inloggen"), ("reset", 0, ["showView('reset')"], "Nieuw wachtwoord"),
@@ -11902,9 +11936,9 @@ def blok_tt517_fase3():
       ("zoeken", 0, ["showView('search')"], "Zoeken"), ("muzikanten", 0, ["showView('search')", "openZoekScherm('muzikanten')"], "Muzikanten"),
       ("mixmatch", 0, ["showView('search')", "openZoekScherm('mixmatch')"], "Mix & Match"), ("ouderpagina", 0, ["showView('toestemming')"], ""),
       ("profiel", 0, ["window.TT_STUB.rpcResults.tt_get_musicians_public=()=>[{id:'m2',username:'dylan',age:30,city:'Delft',bio:'',goal:null,avatar_url:null,instrument_levels:[],genres:[],songs:[],media:[]}]", "openProfielScherm('m2')"], "dylan"),
-      ("mijnprofiel", 1, ["showView('myprofile')"], "Mijn profiel"), ("berichten", 1, ["showView('messages')"], "Berichten"),
+      ("mijnprofiel", 1, ["showView('myprofile')"], "Mijn Profiel"), ("berichten", 1, ["showView('messages')"], "Berichten"),
       ("gesprek", 1, ["showView('messages')", "openConversation('m2','Dylan de Vries','',false,false)"], "Berichten"),
-      ("bands", 1, ["showView('bands')"], "Mijn bands"), ("bandaanmaken", 1, ["showView('bands')", "showCreateBandForm()"], "Band aanmaken"),
+      ("bands", 1, ["showView('bands')"], "Mijn Bands"), ("bandaanmaken", 1, ["showView('bands')", "showCreateBandForm()"], "Band aanmaken"),
       ("instellingen", 1, ["showView('instellingen')"], "Instellingen"), ("tegels", 1, ["showView('profieltegels')"], "Profiel bewerken"),
       ("tegel", 1, ["showView('profieltegels')", "openTegelScreen('wieBenJe')"], "Wie ben je"),
       ("band", 1, ["openBandScherm('b1')"], "Van Delft"),
@@ -20027,8 +20061,8 @@ def blok_bundel_a():
     # TT-618: geen cursief bestand.
     check("TT-618: geen @font-face met font-style: italic",
           not re.search(r"@font-face\s*\{[^}]*font-style:\s*italic", css), "")
-    check("TT-618: de voorbeeldtekst in het bioveld blijft schuin (de telefoon zet hem schuin)",
-          re.search(r"textarea\.bio-voorbeeld::placeholder \{[^}]*font-style: italic", css) is not None, "")
+    check("TT-696: geen grijze voorbeeldtekst meer in een bioveld, dus ook geen schuine regel ervoor (besluit Ronald 24-11-2026, sessie 205)",
+          "bio-voorbeeld" not in css, "")
     fouten, u = [], {}
     VOLG = r"""
       window.__eersteFoto = null;
@@ -20069,8 +20103,7 @@ def blok_bundel_a():
           aan: [...document.querySelectorAll('#landingDias .landing-dia')].map(d => d.classList.contains('aan')).indexOf(true),
           klok: !!landingKlok, kaart: Object.keys(TT_DB_PER_ADRES).map(h => [h, ttEersteLandingsfoto(h),
             TT_DB_PER_ADRES[h].url + '/storage/v1/object/public/landing/v2/' + LANDING_WOORDEN[0].woord.toLowerCase() + '.jpg']),
-          vreemd: ttEersteLandingsfoto('voorbeeld.nl'), eigen: landingFotoAdres(LANDING_WOORDEN[0].woord),
-          bio: getComputedStyle(document.querySelector('textarea.bio-voorbeeld'), '::placeholder').fontStyle })""")
+          vreemd: ttEersteLandingsfoto('voorbeeld.nl'), eigen: landingFotoAdres(LANDING_WOORDEN[0].woord) })""")
         u["bezoeker"]["gevraagd"] = gevraagd[:]
         u["bezoeker"]["letters"] = sorted(set(letters))
         b = u["bezoeker"]
@@ -20082,8 +20115,8 @@ def blok_bundel_a():
               b["lagen"] == 10 and b["aan"] == 0 and b["klok"], json.dumps(b)[:300])
         check("TT-617: het webadres van de eerste foto in index.html is voor elk webadres gelijk aan dat in core.js",
               all(x[1] == x[2] for x in b["kaart"]) and len(b["kaart"]) == 5 and b["vreemd"] == "" and b["eigen"] == b["eerste"]["src"], json.dumps(b["kaart"]))
-        check("TT-618: geen cursief lettertype geladen; de voorbeeldtekst in het bioveld staat schuin",
-              not any("italic" in x for x in b["letters"]) and b["bio"] == "italic", json.dumps(b["letters"]))
+        check("TT-618: geen cursief lettertype geladen (de schuine voorbeeldtekst in het bioveld is weg, TT-696)",
+              not any("italic" in x for x in b["letters"]), json.dumps(b["letters"]))
         ctx.close()
         # (2) een lid met een bewaarde sessie: geen landingsfoto.
         ingelogd = stub_js + """
@@ -21616,32 +21649,35 @@ window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.fi
 
 
 PB_OPROEPEN = r"""[
- {id:'o1', soort:'gezocht', doel:'band', toevoeging:'stevige rock met eigen nummers', instrumenten:['Drums'], elk_instrument:false, podium:false,
-  leeftijden:['16-18','19-24'], tekst:'Wij zijn Nachtploeg, een rockband uit Den Haag.\\n\\nWat we spelen\\nStevige rock, eigen nummers en een paar covers.\\n\\nWie we zoeken\\nEen drummer die van stevig werk houdt. Je hoeft geen twintig jaar ervaring te hebben; zin om te repeteren en op te treden is belangrijker.',
+ {id:'o1', soort:'gezocht', doelen:['band'], instrumenten:['Drums'], elk_instrument:false, zang_vorm:null,
+  leeftijden:['16-18','19-24'], vakken:{wie:'Wij zijn Nachtploeg, een rockband uit Den Haag.', zoek:'Een drummer die van stevig werk houdt.'},
   media_gewenst:true, geplaatst_op:new Date(Date.now()-2*864e5).toISOString(), verlengd_op:null, loopt_tot:new Date(Date.now()+58*864e5).toISOString(),
-  plaatser_id:'m2', band_id:'b1', naam:'Nachtploeg', leeftijd:null, leden_min:17, leden_max:19, plaats:'Den Haag', km:3.4, foto:null,
+  plaatser_id:'m2', band_id:'b1', naam:'Nachtploeg', plaatser_naam:'Daan', plaatser_instrument:'Basgitaar', leeftijd:null, leden_min:17, leden_max:19, plaats:'Den Haag', km:3.4, straal_km:null, foto:null,
   genres:['Rock','Punk'], band_soort:'beide', gedeeld:6, eigen:false, gereageerd:false},
- {id:'o2', soort:'beschikbaar', doel:'invallen', ambitie:'lol', instrumenten:['Basgitaar'], elk_instrument:false, podium:true,
-  leeftijden:['16-18','19-24','25-34','35+'], tekst:'Ik speel al vijf jaar bas en val graag in bij een optreden.', media_gewenst:false,
+ {id:'o2', soort:'beschikbaar', doelen:['invallen'], instrumenten:['Basgitaar'], elk_instrument:false, zang_vorm:null,
+  leeftijden:['16-18','19-24','25-34','35+'], vakken:{wie:'Ik speel al vijf jaar bas en val graag in bij een optreden.'}, media_gewenst:false,
   geplaatst_op:new Date(Date.now()-5*864e5).toISOString(), verlengd_op:null, loopt_tot:new Date(Date.now()+55*864e5).toISOString(),
-  plaatser_id:'m3', band_id:null, naam:'Mila', leeftijd:22, plaats:'Rijswijk', km:6.1, foto:null, genres:['Funk'], band_soort:null, gedeeld:2, eigen:false, gereageerd:false},
- {id:'o3', soort:'gezocht', doel:'jammen', ambitie:'lol', instrumenten:[], elk_instrument:true, podium:false,
-  leeftijden:['13-15','16-18'], tekst:'Elke zaterdag jammen in de schuur. Iedereen welkom!', media_gewenst:false,
+  plaatser_id:'m3', band_id:null, naam:'Mila', plaatser_naam:'Mila', plaatser_instrument:'Basgitaar', leeftijd:22, plaats:'Rijswijk', km:6.1, straal_km:25, foto:null, genres:['Funk'], band_soort:null, gedeeld:2, eigen:false, gereageerd:false},
+ {id:'o3', soort:'gezocht', doelen:['jammen'], instrumenten:[], elk_instrument:true, zang_vorm:null,
+  leeftijden:['13-15','16-18'], vakken:{verder:'Elke zaterdag jammen in de schuur. Iedereen welkom!'}, media_gewenst:false,
   geplaatst_op:new Date(Date.now()-1*864e5).toISOString(), verlengd_op:null, loopt_tot:new Date(Date.now()+59*864e5).toISOString(),
-  plaatser_id:'m4', band_id:null, naam:'jesse_drums', leeftijd:15, plaats:'Delft', km:11.8, foto:null, genres:['Blues'], band_soort:null, gedeeld:0, eigen:false, gereageerd:false}
+  plaatser_id:'m4', band_id:null, naam:'jesse_drums', plaatser_naam:'jesse_drums', plaatser_instrument:'Drums', leeftijd:15, plaats:'Delft', km:11.8, straal_km:null, foto:null, genres:['Blues'], band_soort:null, gedeeld:0, eigen:false, gereageerd:false}
 ]"""
-PB_MIJN = r"""[{oproep:{id:'o9', soort:'gezocht', doel:'jammen', ambitie:'lol', instrumenten:['Basgitaar','Keyboard'], elk_instrument:false, podium:false,
-  leeftijden:['16-18','19-24'], tekst:'Jammen op vrijdag.', media_gewenst:true, geplaatst_op:new Date(Date.now()-48*864e5).toISOString(),
-  verlengd_op:null, loopt_tot:new Date(Date.now()+12*864e5).toISOString(), status:'open', band_id:null, straal_km:25},
+PB_MIJN = r"""[{oproep:{id:'o9', soort:'gezocht', doelen:['jammen'], instrumenten:['Basgitaar','Keyboard'], elk_instrument:false, zang_vorm:null, genres:['Funk'],
+  leeftijden:['16-18','19-24'], vakken:{wie:'Jammen op vrijdag.'}, media_gewenst:true, geplaatst_op:new Date(Date.now()-48*864e5).toISOString(),
+  verlengd_op:null, loopt_tot:new Date(Date.now()+12*864e5).toISOString(), status:'open', band_id:null, straal_km:null,
+  naam:'Ronald', plaatser_naam:'Ronald', plaatser_instrument:'Elektrische gitaar', foto:null, plaats:'Den Haag'},
   reacties:[
-   {id:'r1', musician_id:'m3', naam:'Mila', leeftijd:22, plaats:'Rijswijk', km:6.1, foto:null, niveau:3, media:{type:'video'}, gedeeld:4, boodschap:'Hoi! Ik kan op vrijdag.', status:'verstuurd', nieuw:true},
-   {id:'r2', musician_id:'m5', naam:'Tom', leeftijd:17, plaats:'Den Haag', km:2.0, foto:null, niveau:2, media:null, gedeeld:1, boodschap:null, status:'uitgenodigd', nieuw:false}
+   {id:'r1', musician_id:'m3', naam:'Mila', leeftijd:22, plaats:'Rijswijk', km:6.1, foto:null, media:{type:'video'}, gedeeld:4, boodschap:'Hoi! Ik kan op vrijdag.', status:'verstuurd', nieuw:true, created_at:new Date().toISOString()},
+   {id:'r2', musician_id:'m5', naam:'Tom', leeftijd:17, plaats:'Den Haag', km:2.0, foto:null, media:null, gedeeld:1, boodschap:null, status:'uitgenodigd', nieuw:false, created_at:new Date(Date.now()-864e5).toISOString()}
   ]}]"""
 
 
 def blok_prikbord():
     print("\nBlok 176 — TT-396 prikbord (sessie 199, 22-11-2026): tegel, aan/uit-knoppen, link uit de mail, onthouden zoekopdracht, berichten van TalentTent, tips")
     bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ["prikbord.js", "messages.js", "search.js", "index.html"]}
+    # De voorbeeldteksten van een oproep (cluster 2) zijn geen label: "twee nummers samen te spelen" mag daar.
+    bron["prikbord.js"] = re.sub(r"const PB_VOORBEELDEN = \{.*?\n\};", "", bron["prikbord.js"], flags=re.S)
     check("TT-396: overal dezelfde vorm 'Gezamenlijke nummers' (geen 'nummers die jij ook speelt', 'van hun covers', 'nummers samen', 'gedeelde nummers')",
           not any(z in t for t in bron.values() for z in ("nummers die jij ook speelt", "van hun covers", "nummers samen", "Geen gedeelde nummers")), "")
     check("TT-396: index.html laadt prikbord.js als laatste script, met ?v=", '<script src="prikbord.js?v=' in bron["index.html"], "")
@@ -21682,7 +21718,7 @@ window.TT_STUB.data.prikbord_zoek = [{ musician_id: 'm1', soort: 'gezocht', doel
           u.hersteld = { vink: $('pbOnthoud').checked, straal: $('pbStraal').value, f: Object.assign({}, pbFilters) };
           pbFilters = { soort: '', doel: '', instrument: '', volgorde: 'nieuwste' }; pbFiltersBijwerken(); await w(900);
           const rijen = [...document.querySelectorAll('#pbResultaat .pb-rij')];
-          u.rijen = rijen.map(r => ({ titel: r.querySelector('.result-row-naam').textContent, meta: [...r.querySelectorAll('.result-row-meta')].map(m => m.textContent),
+          u.rijen = rijen.map(r => ({ titel: r.querySelector('.result-row-naam').textContent, meta: [...r.querySelectorAll('.result-row-meta')].map(m => m.textContent.replace(/\u00a0/g, ' ')),
             tekst: !!r.querySelector('.pb-rij-tekst'), gedeeld: (r.querySelector('.pb-rij-gedeeld') || {}).textContent || null,
             metaEenRegel: getComputedStyle(r.querySelector('.result-row-meta')).whiteSpace }));
           // Vink uit: de onthouden zoekopdracht gaat weg.
@@ -21695,18 +21731,20 @@ window.TT_STUB.data.prikbord_zoek = [{ musician_id: 'm1', soort: 'gezocht', doel
           // Een oproep geopend: de gezamenlijke nummers in dezelfde vorm.
           pbOpenOproep('o1'); await w(300);
           u.oproepGedeeld = (document.querySelector('#pbOproepScherm .pb-oproep-gedeeld') || {}).textContent || null;
-          // Tips: de eerste afspraak alleen tot en met 21 jaar.
-          PB_MIJ.leeftijd = 19; pbTipsOpen(); u.tip19 = $('pbTipsInhoud').textContent.includes('De eerste afspraak'); pbTipsSluiten();
-          PB_MIJ.leeftijd = 22; pbTipsOpen(); u.tip22 = $('pbTipsInhoud').textContent.includes('De eerste afspraak'); pbTipsSluiten();
+          // Tips: de eerste afspraak alleen tot en met 21 jaar, bij Kennismaken (cluster 2: de tips staan per vak).
+          pbForm = pbLegeForm();
+          PB_MIJ.leeftijd = 19; u.tip19 = pbVakInhoud('kennis').tips.includes(PB_TIPS.eersteAfspraak);
+          PB_MIJ.leeftijd = 22; u.tip22 = pbVakInhoud('kennis').tips.includes(PB_TIPS.eersteAfspraak);
+          pbForm = null;
           // Berichten van TalentTent.
           const info = { muzikanten: { m2: { id: 'm2', weergavenaam: 'Kees' } }, bands: { b1: { id: 'b1', name: 'Nachtploeg', city: 'Den Haag' } } };
-          const r1 = { oproep: 'o9', aantal: 3, instrumenten: ['Basgitaar', 'Keyboard'], elk: false, oproep_soort: 'gezocht', toevoeging: null };
-          const r2 = { oproep: 'o8', aantal: 1, instrumenten: ['Drums'], elk: false, oproep_soort: 'gezocht', toevoeging: null };
+          const r1 = { oproep: 'o9', aantal: 3, instrumenten: ['Basgitaar', 'Keyboard'], elk: false, oproep_soort: 'gezocht', plaatser: 'm2', band: 'b1' };
+          const r2 = { oproep: 'o8', aantal: 1, instrumenten: ['Drums'], elk: false, oproep_soort: 'gezocht', plaatser: 'm2', band: null };
           u.tt1 = pbTtKernzin({ soort: 'nieuwe_reacties', oproepen: [r1] }, info);
           u.tt2 = pbTtKernzin({ soort: 'nieuwe_reacties', oproepen: [r1, r2] }, info);
           u.tt3 = pbTtKernzin({ soort: 'oproep_bedankt', plaatser: 'm2', band: 'b1', instrumenten: ['Zang'], elk: false, oproep_soort: 'gezocht' }, info);
           const html = pbTtBerichtHTML({ created_at: new Date().toISOString(), inhoud: { soort: 'oproepen', meer: 0, oproepen: [
-            { id: 'o1', km: 3.4, soort: 'gezocht', doel: 'band', instrumenten: ['Drums'], elk: false, toevoeging: null, plaatser: 'm2', band: 'b1' }] } }, info);
+            { id: 'o1', km: 3.4, soort: 'gezocht', instrumenten: ['Drums'], elk: false, zang_vorm: null, genres: ['Rock'], plaatser_instrument: 'Basgitaar', leeftijd: null, plaatser: 'm2', band: 'b1' }] } }, info);
           const d = document.createElement('div'); d.innerHTML = html;
           u.ttRijen = [...d.querySelectorAll('.bb-rij')].map(x => x.textContent.replace(/\s+/g, ' ').trim());
           // Je eigen oproep: geen gezamenlijke nummers (met jezelf).
@@ -21731,22 +21769,30 @@ window.TT_STUB.data.prikbord_zoek = [{ musician_id: 'm1', soort: 'gezocht', doel
     check("TT-396: vink uit haalt de onthouden zoekopdracht weg", u["naUit"] == 0, str(u["naUit"]))
     check("TT-396: drie tegels", len(u["rijen"]) == 3, json.dumps(u["rijen"])[:400])
     check("TT-396: een tegel heeft geen tekst van de oproep (besluit sessie 199)", all(not r["tekst"] for r in u["rijen"]), "")
-    check("TT-396: een tegel heeft één grijze regel: waarvoor · genre · naam · leeftijd · afstand, op één regel (leeftijd: besluit Ronald 23-11-2026, sessie 202, ad 1)",
-          all(len(r["meta"]) == 1 and r["metaEenRegel"] == "nowrap" for r in u["rijen"]) and "Band · Rock · Nachtploeg · leden 17–19 jaar · 3 km" in [r["meta"][0] for r in u["rijen"]],
-          json.dumps([r["meta"] for r in u["rijen"]]))
+    check("TT-396 cluster 2: een tegel heeft één grijze regel: naam · instrument · genre · leeftijd · afstand, op één regel; een band zonder leeftijd; zonder Waarvoor (besluiten Ronald 24-11-2026, sessie 205: \"Daan - basgitaar - Rock - 4 km\"; \"bij een band doen we dan zonder leeftijd\"; \"ik denk dat het er helemaal uit moet\")",
+          all(len(r["meta"]) == 1 and r["metaEenRegel"] == "nowrap" for r in u["rijen"]) and "Daan · basgitaar · Rock · 3 km" in [r["meta"][0] for r in u["rijen"]]
+          and "Mila · Funk · 22 jaar · 6 km" in [r["meta"][0] for r in u["rijen"]],
+          json.dumps([r["meta"] for r in u["rijen"]], ensure_ascii=False))
+    check("TT-396 cluster 2: de titel is een zin met de naam (besluit Ronald 24-11-2026, sessie 205: \"Colin zoekt een drummer\")",
+          "Nachtploeg zoekt een drummer" in [r["titel"] for r in u["rijen"]] and "Mila is beschikbaar als bassist" in [r["titel"] for r in u["rijen"]]
+          and "jesse_drums zoekt muzikanten" in [r["titel"] for r in u["rijen"]], json.dumps([r["titel"] for r in u["rijen"]]))
     check("TT-396: 'Gezamenlijke nummers: 6' op de tegel en in de oproep",
           "Gezamenlijke nummers: 6" in [r["gedeeld"] for r in u["rijen"]] and u["oproepGedeeld"] == "Gezamenlijke nummers: 6", json.dumps([u["oproepGedeeld"]]))
-    check("TT-396: Mijn oproepen en Mijn reacties: hoogstens één aan, nog eens tikken = alle oproepen",
+    check("TT-396: Mijn Oproepen en Mijn Reacties: hoogstens één aan, nog eens tikken = alle oproepen",
           u["k1"] == ["mijn", True, False] and u["k2"] == ["reacties", False, True] and u["k3"] == ["alle", False, False], json.dumps([u["k1"], u["k2"], u["k3"]]))
     check("TT-396: tip over de eerste afspraak alleen tot en met 21 jaar", u["tip19"] is True and u["tip22"] is False, json.dumps([u["tip19"], u["tip22"]]))
-    check("TT-396: bericht over nieuwe reacties op één oproep", u["tt1"] == "3 nieuwe reacties op Bassist of toetsenist gezocht.", u["tt1"])
-    check("TT-396: één bericht over nieuwe reacties op twee oproepen", u["tt2"] == "Nieuwe reacties: 3 op Bassist of toetsenist gezocht en 1 op Drummer gezocht.", u["tt2"])
-    check("TT-396: bedankje na afsluiten (zin van Ronald)", u["tt3"] == "Nachtploeg heeft de oproep Zanger gezocht afgesloten. Bedankt voor je reactie en succes met zoeken.", u["tt3"])
-    check("TT-396: bericht over nieuwe oproepen heeft een rij per oproep", len(u["ttRijen"]) == 1 and "Drummer gezocht" in u["ttRijen"][0] and "Nachtploeg" in u["ttRijen"][0], json.dumps(u["ttRijen"]))
+    check("TT-396 cluster 2: bericht over nieuwe kandidaten op één oproep, de titel tussen aanhalingstekens (besluit Ronald 24-11-2026, sessie 206: \"meer nieuwe reacties: voorstel akkoord\")",
+          u["tt1"] == '3 nieuwe kandidaten voor "Nachtploeg zoekt een bassist of toetsenist".', u["tt1"])
+    check("TT-396 cluster 2: één bericht over nieuwe kandidaten op twee oproepen (sessie 206: \"Reacties op twee oproepen: voorstel akkoord\")",
+          u["tt2"] == 'Nieuwe kandidaten: 3 voor "Nachtploeg zoekt een bassist of toetsenist" en 1 voor "Kees zoekt een drummer".', u["tt2"])
+    check("TT-396 cluster 2: bedankje na afsluiten (sessie 206: \"alleen vervang 'reactie' voor 'interesse'\")",
+          u["tt3"] == 'De oproep "Nachtploeg zoekt een zanger" is afgesloten. Bedankt voor je interesse en succes met zoeken.', u["tt3"])
+    check("TT-396 cluster 2: bericht over nieuwe oproepen heeft een rij per oproep, met de titel en de regel van het prikbord",
+          len(u["ttRijen"]) == 1 and "Nachtploeg zoekt een drummer" in u["ttRijen"][0] and "Kees · basgitaar · Rock · 3 km" in u["ttRijen"][0].replace('\u00a0', ' '), json.dumps(u["ttRijen"], ensure_ascii=False))
     check("TT-396: link /#prikbord opent het prikbord", links["#prikbord"]["view"] == "search" and links["#prikbord"]["tab"] == "alle", json.dumps(links["#prikbord"]))
-    check("TT-396: link /#prikbord/<id> opent die oproep", links["#prikbord/o2"]["laag"] == "oproep" and links["#prikbord/o2"]["titel"] == "Bassist beschikbaar", json.dumps(links["#prikbord/o2"]))
+    check("TT-396: link /#prikbord/<id> opent die oproep", links["#prikbord/o2"]["laag"] == "oproep" and links["#prikbord/o2"]["titel"] == "Mila is beschikbaar als bassist", json.dumps(links["#prikbord/o2"]))
     check("TT-396: link naar een oproep die er niet meer is: melding", "Deze oproep staat niet meer op het prikbord." in links["#prikbord/onbekend"]["toast"], json.dumps(links["#prikbord/onbekend"]))
-    check("TT-396: link /#prikbord/mijn opent Mijn oproepen", links["#prikbord/mijn"]["tab"] == "mijn", json.dumps(links["#prikbord/mijn"]))
+    check("TT-396: link /#prikbord/mijn opent Mijn Oproepen", links["#prikbord/mijn"]["tab"] == "mijn", json.dumps(links["#prikbord/mijn"]))
     check("TT-396: je eigen oproep toont geen gezamenlijke nummers (gemeten op de testsite, sessie 199)", u["eigenRij"] is False and u["eigenOproep"] is False, json.dumps([u["eigenRij"], u["eigenOproep"]]))
     check("TT-396: herladen met het prikbord als laatste scherm laadt de lijst, met straal (gemeten op de testsite, sessie 199)",
           u["hersteld2"]["scherm"] == "prikbord" and u["hersteld2"]["straal"] == "25" and u["hersteld2"]["rijen"] == 3, json.dumps(u["hersteld2"]))
@@ -21791,7 +21837,7 @@ S.data.prikbord_zoek = [];
           // --- Ad 1: de leeftijd in elke rij ---
           showView('search'); openPrikbord(); await w(900);
           const rijen = [...document.querySelectorAll('#pbResultaat .pb-rij')];
-          u.meta = rijen.map(r => r.querySelector('.result-row-meta').textContent);
+          u.meta = rijen.map(r => r.querySelector('.result-row-meta').textContent.replace(/\u00a0/g, ' '));
           const lijst = document.querySelector('#pbResultaat .results-list');
           u.langPast = rijen.every(r => r.scrollWidth <= r.clientWidth + 1) && document.documentElement.scrollWidth <= innerWidth;
           // --- Ad 3: de tip bij Ik doe mee, tot en met 21 jaar ---
@@ -21807,13 +21853,13 @@ S.data.prikbord_zoek = [];
           PB_MIJ.leeftijd = 22; await pbReagerenOpen(); await w(200);
           u.tip22 = !!document.querySelector('#pbReagerenInhoud .pb-afspraak-melding');
           pbReagerenSluiten();
-          PB_MIJ.leeftijd = 21; pbTipsOpen(); u.tipsModal21 = tekst('pbTipsInhoud').includes(PB_TIPS.eersteAfspraak); pbTipsSluiten();
+          PB_MIJ.leeftijd = 21; pbForm = pbLegeForm(); u.tipsModal21 = pbVakInhoud('kennis').tips.includes(PB_TIPS.eersteAfspraak); pbForm = null;
           u.tipTekst = PB_TIPS.eersteAfspraak;
           // --- Grens 19 in het formulier ---
           const groepen = async (leeftijd) => {
             PB_MIJ.leeftijd = leeftijd; await pbPlaatsenStart(); await w(100);
             const rij = CHOICE_FIELDS.pbFLeeftijden.rijen().map(r => r.t);
-            pbForm.doel = 'jammen'; pbForm.instrumenten = ['Drums']; pbForm.tekst = 'Eigen tekst.';
+            pbForm.doelen = ['jammen']; pbForm.instrumenten = ['Drums']; pbForm.vakken = { wie: 'Eigen tekst.' };
             return rij;
           };
           u.g15 = await groepen(15);
@@ -21847,7 +21893,8 @@ S.data.prikbord_zoek = [];
             body: b.body, oproep: b.oproep_id, naar: b.recipient_id, status: pbMijn[0].reacties.find(r => r.id === 'r1').status };
           document.querySelector('#view-messages button[aria-label="Terug"]') && document.querySelector('#view-messages button[aria-label="Terug"]').click();
           await w(600);
-          u.terug = { view: huidigeView, tab: pbTab, scherm: zoekScherm, knop: [...document.querySelectorAll('#pbMijnLijst .pb-reactie')].map(r => (r.querySelector('.pb-status') || r.querySelector('button') || {}).textContent) };
+          pbMijnOpen = 'o9'; pbMijnTekenen();
+          u.terug = { view: huidigeView, tab: pbTab, scherm: zoekScherm, knop: [...document.querySelectorAll('#pbMijnLijst .pb-kandidaat')].map(r => (r.querySelector('.pb-rechts') || r.querySelector('button') || {}).textContent) };
           // Zonder eigen naam: geen bericht, geen uitnodiging.
           const voor = S.data.messages.length, rpcVoor = S.calls.filter(c => c.name === 'tt_reactie_uitnodigen').length;
           PB_MIJ.voor = S.session.user.id; PB_MIJ.naam = '';
@@ -21855,7 +21902,7 @@ S.data.prikbord_zoek = [];
           u.zonderNaam = { berichten: S.data.messages.length - voor, rpc: S.calls.filter(c => c.name === 'tt_reactie_uitnodigen').length - rpcVoor,
             toast: $('appToast').textContent };
           // --- TT-693: uitloggen en inloggen als een ander, zonder herladen ---
-          showView('search'); openPrikbord('mijn'); await w(500);
+          showView('search'); pbOpenMijn('o9'); await w(500);
           u.A_mijn = tekst('pbMijnLijst').includes('Mila');
           $('pbPlaats').value = 'Delft'; pbFilters.doel = 'band';
           S.session = null; S.authCallback('SIGNED_OUT', null); await w(400);
@@ -21888,8 +21935,8 @@ S.data.prikbord_zoek = [];
         browser.close()
     httpd.shutdown()
     j = lambda x: json.dumps(x, ensure_ascii=False)[:600]
-    check("TT-396 cluster 1 ad 1: de leeftijd staat in elke rij, zoals in de oproep (besluit Ronald 23-11-2026, sessie 202: \"ad 1. ja\")",
-          "Band · Rock · Nachtploeg · leden 17–19 jaar · 3 km" in u["meta"] and any("Mila · 22 jaar" in m for m in u["meta"]) and any("jesse_drums · 15 jaar" in m for m in u["meta"]), j(u["meta"]))
+    check("TT-396 cluster 1 ad 1 en cluster 2: de leeftijd staat in elke rij van een muzikant, een band zonder leeftijd (besluiten Ronald 23-11-2026, sessie 202: \"ad 1. ja\"; 24-11-2026, sessie 205: \"bij een band doen we dan zonder leeftijd\")",
+          "Daan · basgitaar · Rock · 3 km" in u["meta"] and "Mila · Funk · 22 jaar · 6 km" in u["meta"] and "jesse_drums · drums · Blues · 15 jaar · 12 km" in u["meta"], j(u["meta"]))
     check("TT-396 cluster 1 ad 1: een rij met een heel lange naam loopt niet uit zijn vak (360 breed)", u["langPast"] is True, j(u["meta"]))
     check("TT-396 cluster 1 ad 3: de tekst van Ronald, woordelijk",
           u["tipTekst"] == "Ken je elkaar nog niet? Spreek dan af op een plek waar ook anderen zijn, zoals een oefenruimte of muziekschool.", u["tipTekst"])
@@ -21913,7 +21960,8 @@ S.data.prikbord_zoek = [];
     check("TT-396: een zin van de database bij het prikbord komt in beeld (was 'Je oproep plaatsen is niet gelukt')", u["dbZin"] == "Je hebt hier al een oproep voor.", u["dbZin"])
     ui = u["uitnodiging"]
     check("TT-694: Uitnodigen opent Berichten met het gesprek", ui["view"] == "messages" and ui["gesprek"] == "m3" and ui["draad"] != "none", j(ui))
-    check("TT-694: het bericht begint met je naam, ook als je gegevens nog niet geladen waren", ui["body"].startswith("Ronald nodigt je uit") and ui["oproep"] == "o9" and ui["naar"] == "m3", j(ui))
+    check("TT-694 en cluster 2: het bericht begint met je naam, ook als je gegevens nog niet geladen waren; de zin \"Ronald nodigt je uit om kennis te maken.\" (besluit Ronald 24-11-2026, sessie 206: \"ad 3. ja\")",
+          ui["body"] == "Ronald nodigt je uit om kennis te maken." and ui["oproep"] == "o9" and ui["naar"] == "m3", j(ui))
     check("TT-694: de reactie staat meteen op Uitgenodigd, ook na terug", ui["status"] == "uitgenodigd" and u["terug"]["tab"] == "mijn" and "Uitgenodigd" in (u["terug"]["knop"][0] or ""), j(u["terug"]))
     check("TT-694: zonder eigen naam geen bericht en geen uitnodiging", u["zonderNaam"]["berichten"] == 0 and u["zonderNaam"]["rpc"] == 0, j(u["zonderNaam"]))
     nu = u["naUit"]
@@ -21921,7 +21969,7 @@ S.data.prikbord_zoek = [];
           u["A_mijn"] is True and nu["pbMijn"] == 0 and nu["pbLijst"] == 0 and nu["voor"] is None and nu["naam"] == "" and nu["plaats"] == ""
           and nu["doel"] == "" and nu["mijnLijst"] == "" and nu["resultaat"] == "" and nu["getal"] is True, j(nu))
     B = u["B"]
-    check("TT-693: een ander account ziet bij Mijn oproepen niets van de vorige, ook niet tijdens het laden",
+    check("TT-693: een ander account ziet bij Mijn Oproepen niets van de vorige, ook niet tijdens het laden",
           "Mila" not in B["mijn_direct"] and "Mila" not in B["mijn"], j([B["mijn_direct"][:120], B["mijn"][:120]]))
     check("TT-693 D7: Mijn profiel, Mijn bands en Berichten tonen niets van de vorige, ook niet tijdens het laden",
           all("Ronald" not in B[k] and "Van Delft" not in B[k] and "GEHEIM-VAN-A" not in B[k] for k in B if not k.startswith("mijn")), j({k: v[:80] for k, v in B.items()}))
@@ -21931,6 +21979,454 @@ S.data.prikbord_zoek = [];
           "<li>Je oproep zien de leeftijden die je kiest en bezoekers zonder account. Jongeren onder de 16 en volwassenen vanaf 19 zien elkaars oproepen niet. Je reactie ziet alleen wie de oproep plaatste.</li>" in priv
           and "iemand van 19 of ouder je pas een bericht" in priv and "onder de 18" not in priv and "18 of ouder" not in priv, "")
     check("TT-396: geen JS-fouten in blok 177", not fouten, "; ".join(fouten)[:600])
+
+def blok_prikbord_cluster2():
+    print("\nBlok 178 — TT-396 cluster 2 (sessie 208, 24-11-2026): titel en regel, invulscherm, Mijn Oproepen, Verwijderen, Mijn Reacties, kaartje, berichten")
+    stub_js = open(STUB, encoding="utf-8").read()
+    init = """
+const S = window.TT_STUB;
+S.session = { user: { id: 'u1', email: 'a@talenttent.org' } };
+const L = %s;
+// Een heel lange naam en een lang instrument: de titel wordt de korte vorm, de regel kort af (360 breed).
+L.push(Object.assign({}, L[2], { id: 'o5', naam: 'RockDrummerDenHaag92', plaatser_naam: 'RockDrummerDenHaag92', plaatser_instrument: 'Akoestische gitaar',
+  instrumenten: ['Achtergrondzang'], elk_instrument: false, zang_vorm: 'beide', genres: ['Folk / Akoestisch'], leeftijd: 15, km: 25 }));
+S.rpcResults.tt_prikbord = (a) => a.p_id ? L.filter(x => x.id === a.p_id) : L;
+const M = %s;
+M[0].reacties.push({ id: 'r3', musician_id: 'm6', naam: 'Maximiliaan', leeftijd: 18, km: 9, foto: null, media: null, gedeeld: 5, boodschap: null, status: 'verstuurd', nieuw: true, created_at: new Date(Date.now() - 3 * 864e5).toISOString() });
+M.push({ oproep: Object.assign({}, M[0].oproep, { id: 'o8', loopt_tot: new Date(Date.now() + 40 * 864e5).toISOString(), doelen: ['band'], instrumenten: ['Drums'] }), reacties: [] });
+S.rpcResults.tt_mijn_oproepen = () => JSON.parse(JSON.stringify(M));
+S.rpcResults.tt_mijn_reacties = () => [
+  { id: 'x1', status: 'verstuurd', created_at: new Date(Date.now() - 864e5).toISOString(), boodschap: 'Hoi! Ik speel drie jaar bas.',
+    oproep: { id: 'o1', soort: 'gezocht', doelen: ['band'], instrumenten: ['Basgitaar'], elk_instrument: false, zang_vorm: null, status: 'open', loopt_tot: new Date(Date.now() + 24 * 864e5).toISOString(), band_id: 'b1', plaatser_id: 'm2', naam: 'Nachtploeg', foto: null } },
+  { id: 'x2', status: 'uitgenodigd', created_at: new Date(Date.now() - 3 * 864e5).toISOString(), boodschap: 'Ik zing al twee jaar.',
+    oproep: { id: 'o6', soort: 'gezocht', doelen: ['band'], instrumenten: ['Zang'], elk_instrument: false, zang_vorm: 'zangeres', status: 'open', loopt_tot: new Date(Date.now() + 12 * 864e5).toISOString(), band_id: 'b2', plaatser_id: 'm4', naam: 'Kelderkabaal', foto: null } },
+  { id: 'x3', status: 'verstuurd', created_at: new Date(Date.now() - 20 * 864e5).toISOString(), boodschap: 'Ik doe graag mee.',
+    oproep: { id: 'o7', soort: 'gezocht', doelen: ['jammen'], instrumenten: [], elk_instrument: true, zang_vorm: null, status: 'gevonden', loopt_tot: new Date(Date.now() + 10 * 864e5).toISOString(), band_id: null, plaatser_id: 'm6', naam: 'Sven', foto: null } }];
+S.rpcResults.tt_oproep_kaarten = (a) => [{ id: 'o1', soort: 'gezocht', doelen: ['band'], instrumenten: ['Drums'], elk_instrument: false, zang_vorm: null, genres: ['Rock'],
+  status: window.__kaartGesloten ? 'gevonden' : 'open', naam: 'Nachtploeg', plaatser_naam: 'Daan', plaatser_instrument: 'Basgitaar', leeftijd: null, km: 3.4, foto: null, band_id: 'b1', plaatser_id: 'm2' }];
+S.rpcResults.tt_nieuwe_reacties = 2;
+S.rpcResults.tt_reactie_gezien = null;
+S.rpcResults.tt_oproep_sluiten = null;
+S.rpcResults.tt_oproep_opslaan = 'o10';
+S.rpcResults.tt_resolve_search_origin = (a) => /delft/i.test(a.query_text) ? [{ lat: 52.01, lng: 4.36 }] : [];
+S.rpcResults.tt_get_my_birth_date = '2007-05-01';
+S.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.weergavenaam || m.first_name, musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
+S.data.prikbord_zoek = [];
+""" % (PB_OPROEPEN, PB_MIJN)
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 360, "height": 800}, color_scheme="light", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js + init))
+        pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(1500)
+        u = pg.evaluate(r"""async () => {
+          const w = (ms = 400) => new Promise(r => setTimeout(r, ms));
+          const u = {}, $ = id => document.getElementById(id), S = window.TT_STUB;
+          myMusicianId = 'm1'; hasOwnProfile = true;
+          const tekst = el => (el ? el.textContent : '').replace(/ /g, ' ').trim();
+          // --- Het getal op de tegel en de zin boven elke plek ---
+          showView('search'); await w(600);
+          u.getalTegel = { zichtbaar: !$('pbTegelGetal').hidden, tekst: $('pbTegelGetal').textContent };
+          openPrikbord(); await w(900);
+          u.duiding = { alle: $('pbDuiding').textContent };
+          // --- Titel en regel op één regel (360 breed) ---
+          u.rijen = [...document.querySelectorAll('#pbResultaat .pb-rij')].map(r => {
+            const t = r.querySelector('.pb-titel'), m = r.querySelector('.result-row-meta'), vast = r.querySelector('.pb-regel-vast');
+            return { titel: tekst(t), regel: tekst(m), titelEen: t.getBoundingClientRect().height <= 24, titelPast: t.scrollWidth <= t.clientWidth + 1 || getComputedStyle(t).textOverflow === 'ellipsis',
+              vastHeel: !vast || (vast.getBoundingClientRect().right <= m.getBoundingClientRect().right + 1), regelEen: m.getBoundingClientRect().height <= 18 };
+          });
+          // --- De oproep: de vakken met kop, een leeg vak staat er niet ---
+          pbOpenOproep('o1'); await w(300);
+          u.oproep = { koppen: [...document.querySelectorAll('#pbOproepInhoud .pb-vak-kop')].map(tekst), regel: tekst(document.querySelectorAll('#pbOproepInhoud .result-row-meta')[0]) };
+          pbTerug(); await w(200);
+          // --- Het invulscherm ---
+          PB_MIJ.leeftijd = 19;
+          await pbPlaatsenStart(); await w(300);
+          const f = $('pbFormInhoud');
+          u.form = {
+            toevoeging: !!$('pbToevoeging'), tekstvak: !!$('pbTekst'),
+            lees: !!document.querySelector('#pbFormVak .pb-lees-knop'),
+            koppen: [...f.querySelectorAll('.label-rij label')].map(tekst),
+            voorbeelden: f.querySelectorAll('.pb-voorbeelden-knop').length,
+            leeg: [...f.querySelectorAll('textarea.pb-vak')].every(t => !t.value && !t.placeholder),
+            max: [...f.querySelectorAll('textarea.pb-vak')].map(t => t.maxLength),
+            waarvoor: [tekst(document.querySelector('#pbVeldDoel label')), tekst(document.querySelector('#pbFDoelField .wheel-field-label'))],
+            soort: [...f.querySelectorAll('.pb-keuzes[data-naam="soort"] .segmented-btn')].map(b => [tekst(b), getComputedStyle(b).fontSize, Math.round(b.getBoundingClientRect().width)]),
+            soortBreed: (() => { const r = f.querySelector('.pb-keuzes[data-naam="soort"]'); return Math.round(r.getBoundingClientRect().width) === Math.round(r.parentElement.getBoundingClientRect().width); })(),
+            zangVoor: !!$('pbVeldZang'), afstand: tekst(document.querySelector('#pbFAfstandField .wheel-field-label'))
+          };
+          // Meer keuzes bij Waarvoor; zanger of zangeres alleen bij zang; genre hoogstens 3.
+          CHOICE_FIELDS.pbFDoel.kies(0); CHOICE_FIELDS.pbFDoel.kies(1);
+          u.form.waarvoorGekozen = tekst(document.querySelector('#pbFDoelField .wheel-field-label'));
+          pbKiesInstrument('Zang'); await w(50);
+          u.form.zangLeeg = tekst(document.querySelector('#pbFZangField .wheel-field-label'));
+          $('pbFZangField').click(); await w(80);
+          u.form.zang = [...document.querySelectorAll('#pbFZangMenu [role="option"]')].map(tekst).filter(Boolean);
+          u.form.zangKnoppen = document.querySelectorAll('#pbVeldZang .segmented-btn').length;
+          document.body.click(); await w(50);
+          u.form.zangLabel = tekst(document.querySelector('#pbVeldZang label'));
+          ['Pop', 'Rock', 'Funk', 'Jazz'].forEach(g => CHOICE_FIELDS.pbFGenre.kies(GENRES.indexOf(g)));
+          u.form.genres = pbForm.genres.slice();
+          CHOICE_FIELDS.pbFLeeftijden.kies(1);
+          // Zonder zanger of zangeres: een fout; daarna kiezen.
+          u.form.zangFout = (pbFormFouten().find(x => x[0] === 'pbFZangField') || [])[1] || null;
+          CHOICE_FIELDS.pbFZang.kies(1); await w(50);
+          u.form.zangGekozen = [pbForm.zangVorm, tekst(document.querySelector('#pbFZangField .wheel-field-label'))];
+          // Wie plaatst?: het standaard keuzemenu (sessie 208), ook bij één band.
+          const bandsWas = PB_MIJ.bands, naamWas = PB_MIJ.naam, wieWas = pbForm.wie;
+          PB_MIJ.naam = 'Colin'; PB_MIJ.bands = [{ id: 'bx1', name: 'Nachtploeg' }]; pbTekenForm(); await w(80);
+          u.form.wie1 = { veld: !!$('pbFWieField'), knoppen: document.querySelectorAll('.pb-keuzes[data-naam="wie"]').length, tekst: tekst(document.querySelector('#pbFWieField .wheel-field-label')) };
+          $('pbFWieField').click(); await w(80);
+          u.form.wie1.menu = [...document.querySelectorAll('#pbFWieMenu [role="option"]')].map(tekst);
+          CHOICE_FIELDS.pbFWie.kies(1); await w(80);
+          u.form.wie1.gekozen = [pbForm.wie, tekst(document.querySelector('#pbFWieField .wheel-field-label'))];
+          PB_MIJ.bands = bandsWas; PB_MIJ.naam = naamWas; pbKies('wie', wieWas || 'ik'); await w(80);
+          // De teller vanaf 480 van 600.
+          const t0 = $('pbVak-wie');
+          t0.value = 'a'.repeat(479); pbVakInvoer(t0, 'wie'); u.teller479 = $('pbVakTeller-wie').hidden;
+          t0.value = 'a'.repeat(480); pbVakInvoer(t0, 'wie'); u.teller480 = [$('pbVakTeller-wie').hidden, $('pbVakTeller-wie').textContent];
+          // Voorbeelden: het blad met kruisje, tips en drie voorbeelden; Gebruik deze tekst zet hem in het vak.
+          pbVoorbeeldenOpen(0); await w(200);
+          u.blad = { open: $('voorbeeldBlad').classList.contains('visible'), kop: tekst($('voorbeeldBladKop')), kruisje: !!document.querySelector('#voorbeeldBlad .modal-close'),
+            kaarten: document.querySelectorAll('#voorbeeldBladInhoud .vb-kaart').length, tips: document.querySelectorAll('#voorbeeldBladInhoud .pb-tips li').length,
+            strook: Math.round(document.querySelector('#voorbeeldBlad .wheel-sheet').getBoundingClientRect().top) };
+          t0.value = ''; pbForm.vakken.wie = '';
+          pbVoorbeeldGebruiken(0, 1); await w(200);
+          u.gebruikt = [t0.value, $('voorbeeldBlad').classList.contains('visible')];
+          u.ongewijzigd = (pbFormFouten().find(x => x[0] === 'pbVak-wie') || [])[1] || null;
+          t0.value = 'Dylan, 15, uit Rijswijk. Ik drum sinds kort.'; pbVakInvoer(t0, 'wie');
+          pbLeesDitEerst(); await w(100);
+          u.lees = [...document.querySelectorAll('#voorbeeldBladInhoud li')].map(tekst);
+          voorbeeldBladSluiten();
+          // Een plaats die de lijst niet kent.
+          $('pbFPlaats').value = 'Xyzdorp'; pbForm.plaats = 'Xyzdorp';
+          await pbNaarVoorbeeld(); await w(200);
+          u.plaatsFout = tekst(document.querySelector('#pbVeldPlaats .field-msg, #pbVeldPlaats .veld-fout, #pbVeldPlaats [role="alert"]')) || (document.querySelector('#pbFPlaats').closest('.field') || {}).textContent || '';
+          $('pbFPlaats').value = 'Delft'; pbForm.plaats = 'Delft'; clearFieldError($('pbFPlaats'));
+          CHOICE_FIELDS.pbFAfstand.kies(1);
+          // Het kader: de eerste tik met lege vakken, daarna "Toch plaatsen".
+          await pbNaarVoorbeeld(); await w(200);
+          u.kader = { er: !!$('pbKader'), tekst: tekst($('pbKader')), knop: tekst($('pbNaarVoorbeeldKnop')), laag: pbLaag,
+            rand: getComputedStyle($('pbKader')).borderTopColor === getComputedStyle(document.documentElement).getPropertyValue('--danger').trim() || getComputedStyle($('pbKader')).borderTopColor };
+          await pbNaarVoorbeeld(); await w(300);
+          u.voorbeeld = { laag: pbLaag, titel: tekst(document.querySelector('#pbVoorbeeldInhoud .pb-titel')) };
+          await pbPlaatsen(); await w(300);
+          const opsl = S.calls.filter(c => c.name === 'tt_oproep_opslaan').pop();
+          u.opslaan = opsl && opsl.params ? opsl.params.p : null;
+          // --- Mijn Oproepen ---
+          pbMijnOpen = null; pbZetTab('mijn'); await w(500);
+          u.duiding.mijn = $('pbDuiding').textContent;
+          const kaarten = [...document.querySelectorAll('#pbMijnLijst .pb-kaart-oproep')];
+          u.mijn = { dicht: kaarten.every(k => !k.querySelector('.pb-kandidaat')),
+            regels: kaarten.map(k => [tekst(k.querySelector('.pb-regel-kort')), tekst(k.querySelector('.pb-rechts'))]) };
+          pbMijnKlap('o9'); await w(100);
+          const kand = () => [...document.querySelectorAll('#pbMijnLijst .pb-kandidaat')];
+          u.mijn.kandidaten = kand().map(k => [tekst(k.querySelector('.result-row-naam')), !!k.querySelector('.pb-nieuw'), tekst(k.querySelector('.pb-rechts, .pb-uitnodigen'))]);
+          u.mijn.knoppen = [...document.querySelectorAll('#pbMijn-o9 .pb-mijn-knoppen .btn')].map(b => [tekst(b), b.disabled]);
+          u.mijn.sterren = !!document.querySelector('#pbMijnLijst').textContent.includes('★');
+          u.mijn.ingesprongen = Math.round(kand()[0].getBoundingClientRect().left - document.querySelector('#pbMijn-o9').getBoundingClientRect().left);
+          const gezienVoor = S.calls.filter(c => c.name === 'tt_reactie_gezien').length;
+          pbKandidaatKlap('r1', 'o9'); await w(200);
+          const open = kand()[0];
+          u.mijn.open = { extra: tekst(open.querySelector('.pb-extra')), bericht: tekst(open.querySelector('.message-bubble')), profiel: tekst(open.querySelector('.pb-profiel')),
+            nieuwWeg: !open.querySelector('.pb-nieuw'), gezien: S.calls.filter(c => c.name === 'tt_reactie_gezien').length - gezienVoor,
+            vakLinks: Math.round(open.querySelector('.pb-kandidaat-vak').getBoundingClientRect().left - open.getBoundingClientRect().left) };
+          pbMijnKlap('o8'); await w(100);
+          u.mijn.eenOpen = document.querySelectorAll('#pbMijnLijst .pb-kaart-oproep.open').length;
+          u.mijn.verlengenO8 = [...document.querySelectorAll('#pbMijn-o8 .pb-mijn-knoppen .btn')].map(b => [tekst(b), b.disabled]);
+          // --- Verwijderen: Wie is het geworden? ---
+          pbVerwijderen('o9'); await w(100);
+          u.weg = { kop: tekst($('pbWegKop')), keuzes: [...document.querySelectorAll('#pbWegKeuzes .pb-weg-keuze')].map(tekst), knopUit: $('pbWegKnop').disabled, zin: tekst($('pbWegZin')) };
+          pbWegKies(document.querySelector('#pbWegKeuzes .pb-weg-keuze[data-w="m3"]')); await w(50);
+          u.weg.zinMila = tekst($('pbWegZin')); u.weg.knopAan = !$('pbWegKnop').disabled;
+          pbWegKies(document.querySelector('#pbWegKeuzes .pb-weg-keuze[data-w=""]')); await w(50);
+          u.weg.zinNiemand = tekst($('pbWegZin'));
+          pbWegKies(document.querySelector('#pbWegKeuzes .pb-weg-keuze[data-w="m3"]'));
+          await pbWegBevestigen(); await w(700);
+          const sl = S.calls.filter(c => c.name === 'tt_oproep_sluiten').pop();
+          u.weg.rpc = sl ? sl.params : null;
+          u.weg.gesprek = { view: huidigeView, met: activeConversationId, typvak: $('messagesReplyInput').value };
+          showView('search'); openPrikbord('mijn'); await w(500);
+          pbVerwijderen('o8'); await w(100);
+          u.weg.zonder = { kop: tekst($('pbWegKop')), zin: tekst($('pbWegZin')), knopAan: !$('pbWegKnop').disabled, keuzes: document.querySelectorAll('#pbWegKeuzes .pb-weg-keuze').length };
+          pbWegSluiten();
+          // --- Mijn Reacties ---
+          pbZetTab('reacties'); await w(500);
+          u.duiding.reacties = $('pbDuiding').textContent;
+          u.reacties = [...document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep')].map(k => [tekst(k.querySelector('.pb-titel')), tekst(k.querySelector('.pb-regel-kort')), tekst(k.querySelector('.pb-rechts'))]);
+          pbReactieKlap('x2'); await w(100);
+          u.reactieOpen = { bericht: tekst(document.querySelector('#pbReactiesLijst .pb-kaart-oproep.open .message-bubble.own')),
+            knoppen: [...document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep.open .btn')].map(tekst) };
+          pbReactieKlap('x3'); await w(100);
+          u.reactieGesloten = document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep.open .btn').length;
+          // --- Het kaartje bovenaan een gesprek ---
+          const kaartje = async (dicht) => {
+            window.__kaartGesloten = dicht;
+            const el = document.createElement('div'); el.className = 'gesprek-oproep'; el.dataset.oproep = 'o1';
+            $('messagesThreadList').prepend(el); showView('messages'); $('messagesThreadPanel').style.display = 'flex';
+            await pbKaartjeVullen('o1'); await w(100);
+            const uit = { titel: tekst(el.querySelector('.pb-titel')), regel: tekst(el.querySelector('.result-row-meta')), gesloten: tekst(el.querySelector('.pb-rechts')), knop: el.getAttribute('role') };
+            el.remove(); return uit;
+          };
+          u.kaartjeOpen = await kaartje(false); u.kaartjeDicht = await kaartje(true);
+          // --- Berichten van TalentTent ---
+          const info = { muzikanten: { m2: { id: 'm2', weergavenaam: 'Kees' }, m9: { id: 'm9', weergavenaam: 'Jesse' } }, bands: { b1: { id: 'b1', name: 'Nachtploeg' } } };
+          u.tt = {
+            loopt: pbTtKernzin({ soort: 'oproep_loopt_af', instrumenten: ['Basgitaar'], elk: false, oproep_soort: 'gezocht', plaatser: 'm2', band: 'b1' }, info),
+            weg: pbTtKernzin({ soort: 'reactie_ingetrokken', wie: 'm9', instrumenten: ['Zang'], zang_vorm: 'zangeres', elk: false, oproep_soort: 'gezocht', plaatser: 'm2', band: 'b1' }, info),
+            een: pbTtKernzin({ soort: 'nieuwe_reacties', oproepen: [{ aantal: 1, instrumenten: ['Drums'], elk: false, oproep_soort: 'gezocht', plaatser: 'm2', band: null }] }, info),
+            knop: PB_TT.knopMijn
+          };
+          return u; }""")
+        bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ["prikbord.js", "messages.js", "index.html", "wizard.js", "styles.css"]}
+        browser.close()
+    httpd.shutdown()
+    j = lambda x: json.dumps(x, ensure_ascii=False)[:700]
+    r = {x["titel"]: x for x in u["rijen"]}
+    check("TT-396 cluster 2: het getal met nieuwe kandidaten staat op de tegel Prikbord (8D sessie 208: pbTegelGetal werd nooit aangeroepen)",
+          u["getalTegel"] == {"zichtbaar": True, "tekst": "2"}, j(u["getalTegel"]))
+    check("TT-396 cluster 2: de zin boven elke plek (besluit Ronald 24-11-2026, sessie 205: \"ja, de zin boven iedere plek voor de duiding\")",
+          u["duiding"] == {"alle": "Oproepen van anderen.", "mijn": "Jouw oproepen. Tik op een oproep voor de kandidaten.", "reacties": "Oproepen waarop je reageerde. Tik op een oproep voor je bericht."}, j(u["duiding"]))
+    check("TT-396 cluster 2: elke titel en elke regel op één regel, 360 breed (besluit Ronald 24-11-2026, sessie 205: \"nergens gaat een regel door op een tweede regel\")",
+          all(x["titelEen"] and x["regelEen"] and x["vastHeel"] for x in u["rijen"]), j(u["rijen"]))
+    check("TT-396 cluster 2: past de zin niet, dan de korte vorm; past ook die niet, dan één keer … (sessie 205: \"ja\"; \"niet 2 keer afkorten\")",
+          "Achtergrondzanger of achtergrondzangeres gezocht" in r and "Nachtploeg zoekt een drummer" in r, j(list(r)))
+    check("TT-396 cluster 2: in de regel korten naam en instrument af; genre, leeftijd en afstand staan heel",
+          r.get("Achtergrondzanger of achtergrondzangeres gezocht", {}).get("regel", "").endswith("Folk / Akoestisch · 15 jaar · 25 km"), j(r.get("Achtergrondzanger of achtergrondzangeres gezocht")))
+    check("TT-396 cluster 2: de oproep toont elk gevuld vak met zijn kop, een leeg vak niet; Waarvoor staat bij de genres",
+          u["oproep"]["koppen"] == ["Wie zijn we", "Wie zoeken we"] and u["oproep"]["regel"].startswith("Band · Rock · Punk"), j(u["oproep"]))
+    fm = u["form"]
+    check("TT-396 cluster 2: geen toevoeging aan de kop en geen oud tekstvak (besluit Ronald 23-11-2026, sessie 202: \"ik wil de toevoeging aan de koptekst weg hebben\")",
+          fm["toevoeging"] is False and fm["tekstvak"] is False, j(fm))
+    check("TT-396 cluster 2: zes vakken in de ik-vorm, elk met Voorbeelden, leeg, hoogstens 600 tekens; Lees dit eerst bovenin (sessie 205 en 206; sessie 207: \"maar er 600 tekens van\")",
+          fm["koppen"] == ["Wie ben ik", "Wat wil ik", "Wie zoek ik", "Wanneer en waar", "Kennismaken", "Verder nog"] and fm["voorbeelden"] == 6
+          and fm["leeg"] and fm["max"] == [600] * 6 and fm["lees"], j(fm))
+    check("TT-396 cluster 2: Waarvoor zoek je een muzikant?, leeg \"Band · Jammen · Invallen…\", meer dan één keuze (sessie 205)",
+          fm["waarvoor"] == ["Waarvoor zoek je een muzikant?", "Band · Jammen · Invallen…"] and fm["waarvoorGekozen"] == "Band · Jammen", j(fm))
+    check("TT-396 cluster 2: Gezocht · Beschikbaar over de hele breedte, even breed, letter 15 (sessie 206: \"ja. alleen de lettergrootte aanpassen\")",
+          [x[0] for x in fm["soort"]] == ["Gezocht", "Beschikbaar"] and all(x[1] == "15px" for x in fm["soort"]) and fm["soort"][0][2] == fm["soort"][1][2] and fm["soortBreed"], j(fm["soort"]))
+    check("TT-396 cluster 2: zanger of zangeres alleen bij zang: Zanger · Zangeres · Zanger of zangeres, en nodig (sessie 205)",
+          fm["zangVoor"] is False and fm["zang"] == ["Zanger", "Zangeres", "Zanger of zangeres"] and fm["zangLabel"] == "Je zoekt een" and fm["zangFout"] == "Kies zanger, zangeres of allebei", j(fm))
+    check("TT-396 cluster 2: zanger of zangeres is een veld met een keuzemenu zoals Waarvoor, leeg \"Zanger · Zangeres…\" (sessie 208: \"maak er een knop van zoals bij Waarvoor\")",
+          fm["zangKnoppen"] == 0 and fm["zangLeeg"] == "Zanger · Zangeres…" and fm["zangGekozen"] == ["zangeres", "Zangeres"], j(fm))
+    check("TT-396 cluster 2: Wie plaatst? is het standaard keuzemenu, ook bij één band (sessie 208: \"gebruik dezelde pulldown menu als in de app\")",
+          fm["wie1"] == {"veld": True, "knoppen": 0, "tekst": "Colin", "menu": ["Colin", "Nachtploeg"], "gekozen": ["bx1", "Nachtploeg"]}, j(fm.get("wie1")))
+    check("TT-396 cluster 2: genre hoogstens 3 (besluit Ronald 23-11-2026, sessie 202: \"ik wil dat naar 3 zetten\"); Afstand leeg", fm["genres"] == ["Pop", "Rock", "Funk"] and fm["afstand"] == "–", j(fm))
+    check("TT-396 cluster 2: de teller vanaf 480 van 600 (sessie 207)", u["teller479"] is True and u["teller480"] == [False, "480/600"], j([u["teller479"], u["teller480"]]))
+    check("TT-396 cluster 2: Voorbeelden in een blad met kruisje, tips en drie voorbeelden; bovenaan blijft het invulscherm zichtbaar (sessie 205: \"ik mis het sluitkruisje\")",
+          u["blad"]["open"] and u["blad"]["kop"] == "Wie ben ik" and u["blad"]["kruisje"] and u["blad"]["kaarten"] == 3 and u["blad"]["tips"] >= 3 and u["blad"]["strook"] >= 72, j(u["blad"]))
+    check("TT-396 cluster 2: Gebruik deze tekst zet het voorbeeld in het vak en sluit het blad; Dylan in een voorbeeld (sessie 206: \"Dylan in plaats van Noor\")",
+          u["gebruikt"][0].startswith("Dylan, 15, uit Rijswijk") and u["gebruikt"][1] is False, j(u["gebruikt"]))
+    check("TT-396 cluster 2: een ongewijzigd voorbeeld gaat niet door (sessie 205), in de ik-vorm", u["ongewijzigd"] == "Pas het voorbeeld aan, zodat het over jou gaat", j(u["ongewijzigd"]))
+    check("TT-396 cluster 2: Lees dit eerst met zes punten, gecorrigeerd met de band erin (besluit Ronald 24-11-2026, sessie 208: \"ad 2. ja, gecorrigeerd met band\")",
+          len(u["lees"]) == 6 and "Vraag een niveau dat bij jou of je band past, en zeg eerlijk wat jij of jullie willen bereiken." in u["lees"][0]
+          and "Die is misschien ook wat zenuwachtig." in u["lees"][4], j(u["lees"]))
+    check("TT-396 cluster 2: een plaats die de lijst niet kent, gaat niet door", "Deze plaats herkennen we niet." in u["plaatsFout"], j(u["plaatsFout"]))
+    check("TT-396 cluster 2: bij lege vakken eerst het rode kader met de zin van Ronald, de knop wordt Toch plaatsen; de tweede tik plaatst (sessie 205: \"Een volledige oproep zorgt voor betere reacties.\")",
+          u["kader"]["er"] and "Een volledige oproep zorgt voor betere reacties." in u["kader"]["tekst"] and u["kader"]["knop"] == "Toch plaatsen" and u["kader"]["laag"] == "plaatsen"
+          and u["voorbeeld"]["laag"] == "voorbeeld", j([u["kader"], u["voorbeeld"]]))
+    op = u["opslaan"] or {}
+    check("TT-396 cluster 2: opslaan stuurt de lijst Waarvoor, de vakken, zangeres, de genres, de plaats met ligging en de afstand",
+          op.get("doelen") == ["band", "jammen"] and op.get("zang_vorm") == "zangeres" and op.get("genres") == ["Pop", "Rock", "Funk"]
+          and op.get("vakken", {}).get("wie", "").startswith("Dylan") and op.get("plaats") == "Delft" and op.get("lat") == 52.01 and op.get("straal_km") == 10
+          and "tekst" not in op and "toevoeging" not in op and "doel" not in op, j(op))
+    mj = u["mijn"]
+    check("TT-396 cluster 2: Mijn Oproepen dicht; \"3 kandidaten\" / \"Geen reacties\" met rechts \"Nog x dagen\" (sessie 205)",
+          mj["dicht"] and mj["regels"][0] == ["3 kandidaten", "Nog 12 dagen"] and mj["regels"][1] == ["Geen reacties", "Nog 40 dagen"], j(mj))
+    check("TT-396 cluster 2: open: de kandidaten ingesprongen, Nieuw tot je hem opent, rechts Uitnodigen of Uitgenodigd, geen sterren",
+          [k[0] for k in mj["kandidaten"]] == ["Mila", "Tom", "Maximiliaan"] and mj["kandidaten"][0][1] and not mj["kandidaten"][1][1]
+          and mj["kandidaten"][0][2] == "Uitnodigen" and mj["kandidaten"][1][2] == "Uitgenodigd" and not mj["sterren"] and mj["ingesprongen"] >= 20, j(mj))
+    check("TT-396 cluster 2: een kandidaat openen: grijs video en gezamenlijke nummers, zijn bericht met dag en tijd, Profiel bekijken, aan de linkerrand; Nieuw weg, ook in de database",
+          mj["open"]["extra"] == "Video · 4 gezamenlijke nummers" and mj["open"]["bericht"].startswith("Hoi! Ik kan op vrijdag.") and "Vandaag" in mj["open"]["bericht"]
+          and mj["open"]["profiel"] == "Profiel bekijken" and mj["open"]["nieuwWeg"] and mj["open"]["gezien"] == 1 and mj["open"]["vakLinks"] <= 12, j(mj["open"]))
+    check("TT-396 cluster 2: onderaan Aanpassen · Verlengen · Verwijderen; Verlengen kan in de laatste 10 dagen; één oproep tegelijk open",
+          [k[0] for k in mj["knoppen"]] == ["Aanpassen", "Verlengen", "Verwijderen"] and mj["knoppen"][1][1] is True and mj["eenOpen"] == 1, j(mj))
+    wg = u["weg"]
+    check("TT-396 cluster 2: Verwijderen vraagt Wie is het geworden? met de kandidaten en Niemand; pas na een keuze (sessie 205 en 207)",
+          wg["kop"] == "Wie is het geworden?" and wg["keuzes"] == ["Mila", "Tom", "Maximiliaan", "Niemand"] and wg["knopUit"] is True and wg["knopAan"] is True, j(wg))
+    check("TT-396 cluster 2: de zin zegt wat er gebeurt (voorstel sessie 208)",
+          wg["zinMila"] == "Het gesprek met Mila opent met een bericht dat klaarstaat; pas het aan en verstuur het. Tom en Maximiliaan krijgen een vriendelijk bericht van TalentTent. Je oproep sluit meteen."
+          and wg["zinNiemand"] == "Mila, Tom en Maximiliaan krijgen een vriendelijk bericht van TalentTent. Je oproep sluit meteen.", j(wg))
+    check("TT-396 cluster 2: met Mila gekozen sluit de oproep met de gekozene; het gesprek opent met de tekst van Ronald in het typvak (sessie 205 en 207)",
+          (wg["rpc"] or {}).get("p_gekozen") == "m3" and wg["gesprek"]["view"] == "messages" and wg["gesprek"]["met"] == "m3"
+          and wg["gesprek"]["typvak"] == "Hoi Mila, bedankt voor je reactie en ik wil graag met je verder. De oproep wordt hiermee afgesloten.", j(wg))
+    check("TT-396 cluster 2: zonder kandidaten: Oproep verwijderen? en de knop kan meteen", wg["zonder"] == {"kop": "Oproep verwijderen?", "zin": "Er zijn geen reacties. Je oproep verdwijnt.", "knopAan": True, "keuzes": 0}, j(wg["zonder"]))
+    check("TT-396 cluster 2: Mijn Reacties: tweede regel Nog x dagen, rechts Reactie verstuurd · Je bent uitgenodigd · Gesloten (sessie 205 en 206: \"ad 1. B\"; \"ad 1. rechts\")",
+          [x[1:] for x in u["reacties"]] == [["Nog 24 dagen", "Reactie verstuurd"], ["Nog 12 dagen", "Je bent uitgenodigd"], ["", "Gesloten"]], j(u["reacties"]))
+    check("TT-396 cluster 2: Mijn Reacties open: je eigen bericht en de knoppen; een gesloten oproep zonder knoppen",
+          u["reactieOpen"]["bericht"].startswith("Ik zing al twee jaar.") and u["reactieOpen"]["knoppen"] == ["Oproep bekijken", "Naar het gesprek", "Intrekken"] and u["reactieGesloten"] == 0, j(u["reactieOpen"]))
+    check("TT-396 cluster 2: het kaartje in een gesprek is een tegel zoals op het prikbord; gesloten: rechts Gesloten (sessie 206: \"ad 2. ja\")",
+          u["kaartjeOpen"]["titel"] in ("Nachtploeg zoekt een drummer", "Drummer gezocht") and u["kaartjeOpen"]["regel"] == "Daan · basgitaar · Rock · 3 km" and u["kaartjeOpen"]["knop"] == "button"
+          and u["kaartjeDicht"]["gesloten"] == "Gesloten" and u["kaartjeDicht"]["knop"] is None, j([u["kaartjeOpen"], u["kaartjeDicht"]]))
+    check("TT-396 cluster 2: de herinnering noemt Verwijderen (besluit Ronald 24-11-2026, sessie 208: \"maak ervan: Het je iemand gevonden? …\")",
+          u["tt"]["loopt"] == 'Je oproep "Nachtploeg zoekt een bassist" loopt over 10 dagen af. Ben je nog op zoek? Verleng de oproep bij Mijn Oproepen. Heb je iemand gevonden? Verwijder dan de oproep, dan krijgen de andere kandidaten bericht.', u["tt"]["loopt"])
+    check("TT-396 cluster 2: de andere zinnen van TalentTent (sessie 206)",
+          u["tt"]["weg"] == 'Jesse doet niet meer mee met je oproep "Nachtploeg zoekt een zangeres".' and u["tt"]["een"] == '1 nieuwe kandidaat voor "Kees zoekt een drummer".' and u["tt"]["knop"] == "Naar Mijn Oproepen", j(u["tt"]))
+    zicht = re.sub(r"<!--.*?-->", "", bron["index.html"], flags=re.S) + "\n".join(re.sub(r"//[^\n]*", "", bron[f]) for f in ["prikbord.js", "messages.js", "wizard.js"])
+    check("TT-396 cluster 2: overal een hoofdletter na Mijn (besluit Ronald 24-11-2026, sessie 206: \"ad 2. A\")",
+          not re.search(r"Mijn (oproepen|reacties|profiel|bands)\b", zicht) and "naar mijn profiel" not in zicht.lower().replace("naar mijn profiel'", ""), "")
+    check("TT-396 cluster 2: een keuzeknop staat op 15 in de standaard; geen eigen display voor .pb-keuzes (sessie 206: \"gebruik zoveel mogelijk letters uit de standaard\")",
+          re.search(r"\.segmented-btn \{[^}]*font-size: 15px", bron["styles.css"]) is not None and ".pb-keuzes { display: flex; }" not in bron["styles.css"], "")
+    # 8D sessie 208, D7: pbTegelGetal() en tt_reacties_gezien stonden er, maar niets riep ze aan. Elke functie in de app
+    # wordt ergens aangeroepen; uitzondering: de mediafuncties die mediaFnNaam() in utils.js samenstelt (mh…, bm…).
+    js = [f for f in JS_FILES if f not in ("supabase.js", "sw.js")]
+    alle = open(os.path.join(ROOT, "index.html"), encoding="utf-8").read() + "".join(open(os.path.join(ROOT, f), encoding="utf-8").read() for f in js)
+    alle = re.sub(r"//[^\n]*", "", alle)
+    nooit = []
+    for f in js:
+        for m in re.finditer(r"^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(", open(os.path.join(ROOT, f), encoding="utf-8").read(), re.M):
+            naam = m.group(1)
+            if re.match(r"^(mh|bm)[A-Z]", naam) or naam == "wazigVeld":
+                continue
+            if len(re.findall(r"(?<![\w$.])" + re.escape(naam) + r"(?![\w$])", alle)) <= 1:
+                nooit.append(f"{f}: {naam}")
+    check("TT-396 (8D sessie 208): geen functie die nooit wordt aangeroepen (dode code of een vergeten aanroep)", not nooit, "; ".join(nooit)[:600])
+    check("TT-396: geen JS-fouten in blok 178", not fouten, "; ".join(fouten)[:600])
+
+
+def blok_prikbord_herstel209():
+    print("\nBlok 179 — TT-396 herstel na de test van sessie 209 (25-11-2026): getal na het opstarten, lijst na Wie is het geworden?, naam in het overzicht van Berichten, ruimte bij Ik doe mee, ongewijzigd voorbeeld, tegel Prikbord")
+    stub_js = open(STUB, encoding="utf-8").read()
+    init = """
+const S = window.TT_STUB;
+S.session = { user: { id: 'u1', email: 'a@talenttent.org' } };
+S.data.musicians = [
+  { id: 'm1', user_id: 'u1', fname: 'Ronald', username: 'ronnie', weergavenaam: 'Ronald', zip: '2497', city: 'Den Haag', birth_date: '1970-08-28', bio: '' },
+  { id: 'm3', fname: 'Mila', username: 'mila', weergavenaam: 'Mila', city: 'Rijswijk' },
+  { id: 'm5', fname: 'Tom', username: 'tom', weergavenaam: 'Tom', city: 'Den Haag' }];
+S.data.musicians.forEach(m => Object.assign(m, { musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
+const L = %s;
+S.rpcResults.tt_prikbord = (a) => a.p_id ? L.filter(x => x.id === a.p_id) : L;
+const M = %s;
+M.push({ oproep: Object.assign({}, M[0].oproep, { id: 'o10', doelen: ['band'] }), reacties: [] });
+window.__gesloten = new Set();
+S.rpcResults.tt_mijn_oproepen = () => JSON.parse(JSON.stringify(M)).filter(x => !window.__gesloten.has(x.oproep.id));
+S.rpcResults.tt_oproep_sluiten = (a) => { window.__gesloten.add(a.p_id); return null; };
+S.rpcResults.tt_mijn_reacties = () => [];
+S.rpcResults.tt_nieuwe_reacties = 2;
+S.rpcResults.tt_reactie_gezien = null;
+S.rpcResults.tt_oproep_reageren = null;
+S.rpcResults.tt_get_my_birth_date = '1970-08-28';
+S.data.prikbord_zoek = [];
+S.data.messages = [];
+S.data.talent_tent_berichten = [
+  { id: 't1', musician_id: 'm1', created_at: new Date(Date.now() - 60000).toISOString(), read_at: null,
+    inhoud: { soort: 'oproep_loopt_af', oproep: 'o9', instrumenten: ['Basgitaar', 'Keyboard'], elk: false, oproep_soort: 'gezocht', zang_vorm: null, plaatser: 'm1', band: null } }];
+""" % (PB_OPROEPEN, PB_MIJN)
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 360, "height": 780}, color_scheme="light", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js + init))
+        pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(2500)
+        u = pg.evaluate(r"""async () => {
+          const w = (ms = 400) => new Promise(r => setTimeout(r, ms));
+          const u = {}, $ = id => document.getElementById(id), S = window.TT_STUB;
+          const tekst = el => (el ? el.textContent : '').replace(/ /g, ' ').trim();
+          // 1. Het getal na het opstarten: niets met de hand gezet (8D sessie 209; tot dan bleef het verborgen).
+          u.opstart = { profiel: hasOwnProfile, tegel: [!$('pbTegelGetal').hidden, $('pbTegelGetal').textContent], mijn: [!$('pbMijnGetal').hidden, $('pbMijnGetal').textContent] };
+          // 2. De tegel Prikbord: de nieuwe regel, op één regel (besluit Ronald 25-11-2026, sessie 209).
+          showView('search'); await w(500);
+          const sub = document.querySelector('#zoekStart .tile-sub') || [...document.querySelectorAll('.tile-sub')].find(e => e.offsetParent);
+          u.tegel = { tekst: tekst(sub), hoogte: sub.getBoundingClientRect().height, regel: parseFloat(getComputedStyle(sub).lineHeight), getal: !$('pbTegelGetal').hidden };
+          // 3. De tik op Mijn Oproepen vraagt het getal opnieuw.
+          openPrikbord(); await w(800);
+          $('pbTegelGetal').hidden = true; $('pbMijnGetal').hidden = true;
+          const voor = S.calls.filter(c => c.name === 'tt_nieuwe_reacties').length;
+          $('pbTab-mijn').click(); await w(600);
+          u.mijnTik = { vragen: S.calls.filter(c => c.name === 'tt_nieuwe_reacties').length - voor, zichtbaar: !$('pbMijnGetal').hidden };
+          // 4. Wie is het geworden? met een keuze: daarna staat de oproep niet meer in Mijn Oproepen.
+          pbVerwijderen('o9'); await w(100);
+          pbWegKies(document.querySelector('#pbWegKeuzes .pb-weg-keuze[data-w="m3"]'));
+          await pbWegBevestigen(); await w(800);
+          u.weg = { view: huidigeView, typvak: $('messagesReplyInput').value.slice(0, 9) };
+          // Terug uit het gesprek met de terugknop: de titel van de andere oproep in de korte vorm, niet afgekort met "…".
+          history.back(); await w(800);
+          const tt = document.querySelector('#pbMijnLijst .pb-titel');
+          u.weg.terug = { view: huidigeView, tab: pbTab, titel: tt ? [tekst(tt), tt.scrollWidth <= tt.clientWidth + 1] : null, lijst: pbMijn.map(m => m.oproep.id) };
+          showView('search'); openPrikbord('mijn'); await w(300);
+          pbZetTab('mijn'); await w(600);
+          u.weg.kaarten = document.querySelectorAll('#pbMijnLijst .pb-kaart-oproep').length;
+          u.weg.lijst = pbMijn.map(m => m.oproep.id);
+          // 5. Het overzicht van Berichten: de naam van de plaatser, niet "De plaatser".
+          showView('messages'); await w(300); await loadInbox(); await w(500);
+          const rij = [...document.querySelectorAll('#messagesInboxList .messages-conv-row')].find(e => e.textContent.includes('TalentTent'));
+          u.inbox = rij ? tekst(rij.querySelector('.messages-conv-preview')) : null;
+          // 6. Ik doe mee: ruimte tussen het tekstvak en de knoppen; een ongewijzigd voorbeeld gaat niet door.
+          showView('search'); openPrikbord(); await w(800);
+          pbOpenOproep('o1'); await w(200);
+          await pbReagerenOpen(); await w(500);
+          const vak = $('pbBoodschap'), rijK = document.querySelector('#pbReagerenModal .btn-row');
+          u.ruimte = Math.round(rijK.getBoundingClientRect().top - vak.getBoundingClientRect().bottom);
+          u.ruimteStandaard = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ruimte-velden'));
+          bioVoorbeeldenOpen('pbBoodschap', 'reactie'); await w(200);
+          u.reactieVb = [...document.querySelectorAll('#voorbeeldBladInhoud .vb-tekst')].map(tekst);
+          bioVoorbeeldGebruiken('pbBoodschap', 'reactie', 0); await w(200);
+          const rVoor = S.calls.filter(c => c.name === 'tt_oproep_reageren').length;
+          await pbReagerenVersturen(); await w(300);
+          u.reactie = { verstuurd: S.calls.filter(c => c.name === 'tt_oproep_reageren').length - rVoor,
+            melding: tekst(document.querySelector('#pbReagerenModal .field-msg')), open: $('pbReagerenModal').classList.contains('visible') };
+          vak.value = vak.value.replace('Ik ben 16', 'Ik ben 17'); vak.dispatchEvent(new Event('input', { bubbles: true })); vak.dispatchEvent(new Event('change', { bubbles: true }));
+          await pbReagerenVersturen(); await w(300);
+          u.reactie.naAanpassen = S.calls.filter(c => c.name === 'tt_oproep_reageren').length - rVoor;
+          // 7. Dezelfde regel bij Korte bio en Wie zijn we (sessie 209 ad 4).
+          u.fout = { bio: (() => { const el = $('wbjBio'); el.value = BIO_VOORBEELDEN.muzikant.vb[1]; return bioVoorbeeldFout('wbjBio', 'muzikant'); })(),
+            band: (() => { const el = $('bwBio'); el.value = BIO_VOORBEELDEN.band.vb[0]; return bioVoorbeeldFout('bwBio', 'band'); })(),
+            eigen: (() => { const el = $('bio'); el.value = 'Ik speel drie jaar gitaar.'; return bioVoorbeeldFout('bio', 'muzikant'); })() };
+          $('wbjBio').value = ''; $('bwBio').value = ''; $('bio').value = '';
+          // 8. De knop onder een bericht van TalentTent: tekst en plek.
+          const knopVan = soort => { const d = document.createElement('div'); d.innerHTML = pbTtBerichtHTML({ created_at: new Date().toISOString(),
+            inhoud: soort === 'oproepen' ? { soort, oproepen: [] , meer: 2 } : { soort, oproep: 'o9', instrumenten: ['Drums'], elk: false, oproep_soort: 'gezocht', plaatser: 'm1', band: null,
+              oproepen: [{ aantal: 1, instrumenten: ['Drums'], elk: false, oproep_soort: 'gezocht', plaatser: 'm1', band: null }] } }, { muzikanten: {}, bands: {} });
+            const b = d.querySelector('.tt-meer'); return [tekst(b), (b.getAttribute('onclick').match(/'(\w+)'/) || [])[1]]; };
+          u.knoppen = [knopVan('nieuwe_reacties'), knopVan('oproep_bedankt'), knopVan('oproepen')];
+          return u; }""")
+        bron = {f: open(os.path.join(ROOT, f), encoding="utf-8").read() for f in ["wizard.js", "musicians.js", "bands.js", "prikbord.js"]}
+        browser.close()
+    httpd.shutdown()
+    j = lambda x: json.dumps(x, ensure_ascii=False)[:700]
+    check("TT-396 (8D sessie 209): het getal nieuwe kandidaten staat er direct na het opstarten, op de tegel en op Mijn Oproepen",
+          u["opstart"]["profiel"] and u["opstart"]["tegel"] == [True, "2"] and u["opstart"]["mijn"] == [True, "2"], j(u["opstart"]))
+    check("TT-396 (8D sessie 209): de tik op Mijn Oproepen vraagt het getal opnieuw",
+          u["mijnTik"]["vragen"] >= 1 and u["mijnTik"]["zichtbaar"], j(u["mijnTik"]))
+    check("Tegel Prikbord: \"Vinden en gevonden worden\", op één regel op 360, ook met het getal nieuwe kandidaten (besluiten Ronald 25-11-2026, sessie 209: \"zodat de zin op 1 regel past\" en \"ad 2. Vinden en gevonden worden\")",
+          u["tegel"]["tekst"] == "Vinden en gevonden worden" and u["tegel"]["getal"] and u["tegel"]["hoogte"] <= u["tegel"]["regel"] + 1, j(u["tegel"]))
+    check("Bericht van TalentTent: de knop zegt \"Naar Mijn Oproepen\" over je oproep en \"Naar Mijn Reacties\" over je reactie, en opent die plek (besluit Ronald 25-11-2026, sessie 209: \"ad 1. ja\")",
+          u["knoppen"] == [["Naar Mijn Oproepen", "mijn"], ["Naar Mijn Reacties", "reacties"], ["Naar het prikbord", "alle"]], j(u["knoppen"]))
+    check("TT-396 (8D sessie 209): na Wie is het geworden? met een keuze staat de gesloten oproep niet meer in Mijn Oproepen",
+          u["weg"]["view"] == "messages" and u["weg"]["typvak"] == "Hoi Mila," and "o9" not in u["weg"]["lijst"] and u["weg"]["kaarten"] == 1, j(u["weg"]))
+    check("TT-396 (8D sessie 209): terug uit het gesprek staat Mijn Oproepen er meteen goed: zonder de gesloten oproep, en past de titel niet, dan de korte vorm",
+          u["weg"]["terug"]["view"] == "search" and u["weg"]["terug"]["lijst"] == ["o10"] and u["weg"]["terug"]["titel"][0] == "Bassist of toetsenist gezocht", j(u["weg"]["terug"]))
+    check("TT-396 (8D sessie 209): het overzicht van Berichten noemt de naam van de plaatser, niet \"De plaatser\"",
+          u["inbox"] is not None and "De plaatser" not in u["inbox"] and u["inbox"].startswith('Je oproep "Ronald zoekt een bassist of toetsenist"'), j(u["inbox"]))
+    check("TT-396 (8D sessie 209): bij Ik doe mee staat de vaste ruimte (16) tussen het tekstvak en de knoppen",
+          u["ruimte"] == u["ruimteStandaard"] == 16, j([u["ruimte"], u["ruimteStandaard"]]))
+    check("Ik doe mee: geen \"jullie\" in de voorbeelden (besluit Ronald 25-11-2026, sessie 209: \"ad 4b. ja\")",
+          not any("jullie" in x.lower() for x in u["reactieVb"]) and "Deze oproep past bij wat ik zoek." in u["reactieVb"][0]
+          and "Een deel van de nummers ken ik al." in u["reactieVb"][1], j(u["reactieVb"]))
+    check("Ik doe mee: een ongewijzigd voorbeeld gaat niet door; aangepast wel (besluit Ronald 25-11-2026, sessie 209: \"ad 4. ja\")",
+          u["reactie"]["verstuurd"] == 0 and u["reactie"]["melding"] == "Pas het voorbeeld aan, zodat het over jou gaat"
+          and u["reactie"]["open"] and u["reactie"]["naAanpassen"] == 1, j(u["reactie"]))
+    check("Korte bio en Wie zijn we: dezelfde melding bij een ongewijzigd voorbeeld (jou / jullie); eigen tekst gaat door",
+          u["fout"]["bio"] == ["wbjBio", "Pas het voorbeeld aan, zodat het over jou gaat"]
+          and u["fout"]["band"] == ["bwBio", "Pas het voorbeeld aan, zodat het over jullie gaat"] and u["fout"]["eigen"] is None, j(u["fout"]))
+    check("Ongewijzigd voorbeeld: de controle staat bij het opslaan van alle vier de plekken (aanmelding, Wie ben je, Wie zijn we, Ik doe mee)",
+          "bioVoorbeeldFout('bio', 'muzikant')" in bron["wizard.js"] and "bioVoorbeeldFout('wbjBio', 'muzikant')" in bron["musicians.js"]
+          and "bioVoorbeeldFout('bwBio', 'band')" in bron["bands.js"] and "bioVoorbeeldFout('pbBoodschap', 'reactie')" in bron["prikbord.js"], "")
+    check("TT-396: geen JS-fouten in blok 179", not fouten, "; ".join(fouten)[:600])
+
 
 BLOKKEN = [
     blok1_statisch,
@@ -22007,6 +22503,8 @@ BLOKKEN = [
     blok_laden_rondje,
     blok_prikbord,
     blok_prikbord_cluster1,
+    blok_prikbord_cluster2,
+    blok_prikbord_herstel209,
 ]
 
 

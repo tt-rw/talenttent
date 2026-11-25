@@ -2,7 +2,8 @@
 
 
 
-const PB_DOELEN = [['jammen', 'Jammen'], ['band', 'Band'], ['invallen', 'Invallen'], ['projecten', 'Projecten']];
+
+const PB_DOELEN = [['band', 'Band'], ['jammen', 'Jammen'], ['invallen', 'Invallen'], ['projecten', 'Projecten']];
 const PB_LEEFTIJDEN = ['13-15', '16-18', '19-24', '25-34', '35+'];
 const PB_SPELER = {
   'Achtergrondzang': 'achtergrondzanger', 'Akoestische gitaar': 'gitarist', 'Basgitaar': 'bassist', 'Cello': 'cellist',
@@ -30,15 +31,58 @@ let pbVanBuiten = false;
 function pbHoofd(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
 
-function pbSpelers(instrumenten, elk) {
-  if (elk || !instrumenten || !instrumenten.length) return 'Muzikanten';
-  const namen = [...new Set(instrumenten.map(i => PB_SPELER[i] || i.toLowerCase()))];
-  if (namen.length === 1) return pbHoofd(namen[0]);
-  return pbHoofd(namen.slice(0, -1).join(', ') + ' of ' + namen[namen.length - 1]);
+
+const PB_ZANG = ['Zang', 'Achtergrondzang'];
+const PB_ZANG_VORMEN = { gezocht: [['zanger', 'Zanger'], ['zangeres', 'Zangeres'], ['beide', 'Zanger of zangeres']],
+                         beschikbaar: [['zanger', 'Zanger'], ['zangeres', 'Zangeres']] };
+function pbHeeftZang(instrumenten) { return (instrumenten || []).some(i => PB_ZANG.includes(i)); }
+function pbSpeler(instrument, zangVorm) {
+  const naam = PB_SPELER[instrument] || instrument.toLowerCase();
+  if (!PB_ZANG.includes(instrument)) return naam;
+  if (zangVorm === 'zangeres') return naam + 'es';
+  if (zangVorm === 'beide') return `${naam} of ${naam}es`;
+  return naam;
 }
+
+
+function pbSpelers(instrumenten, elk, zangVorm) {
+  if (elk || !instrumenten || !instrumenten.length) return 'muzikanten';
+  const namen = [...new Set(instrumenten.map(i => pbSpeler(i, zangVorm)))];
+  if (namen.length === 1) return namen[0];
+  return namen.slice(0, -1).join(', ') + ' of ' + namen[namen.length - 1];
+}
+
+
 function pbTitel(o) {
-  const t = pbSpelers(o.instrumenten, o.elk_instrument) + ' ' + (o.soort === 'beschikbaar' ? 'beschikbaar' : 'gezocht');
-  return o.toevoeging ? `${t}: ${o.toevoeging}` : t;
+  const wie = pbSpelers(o.instrumenten, o.elk_instrument, o.zang_vorm);
+  const naam = o.naam || '';
+  if (o.soort === 'beschikbaar') return `${naam} is beschikbaar als ${wie}`;
+  return wie === 'muzikanten' ? `${naam} zoekt muzikanten` : `${naam} zoekt een ${wie}`;
+}
+
+
+function pbTitelKort(o) {
+  return pbHoofd(pbSpelers(o.instrumenten, o.elk_instrument, o.zang_vorm)) + (o.soort === 'beschikbaar' ? ' beschikbaar' : ' gezocht');
+}
+function pbTitelHTML(o, klasse) {
+  return `<span class="${klasse || 'result-row-naam'} pb-titel" data-kort="${escHtml(pbTitelKort(o))}">${escHtml(pbTitel(o))}</span>`;
+}
+
+function pbTitelsPassen(root) {
+  (root || document).querySelectorAll('.pb-titel[data-kort]').forEach(t => {
+    if (t.scrollWidth > t.clientWidth + 1 && t.textContent !== t.dataset.kort) t.textContent = t.dataset.kort;
+  });
+}
+
+function pbInstrumentKlein(i) { return !i ? '' : /^[A-Z]{2}/.test(i) ? i : i.charAt(0).toLowerCase() + i.slice(1); }
+
+
+
+
+function pbRegelHTML(o, metAfstand) {
+  const voor = [o.plaatser_naam, o.soort === 'beschikbaar' ? '' : pbInstrumentKlein(o.plaatser_instrument)].filter(Boolean);
+  const na = [(o.genres || [])[0], o.band_id ? '' : (o.leeftijd != null ? `${o.leeftijd} jaar` : ''), metAfstand === false ? '' : afstandTekst(o.km)].filter(Boolean);
+  return `<span class="pb-regel-kort">${escHtml(voor.join(' · '))}</span>${na.length ? `<span class="pb-regel-vast">${voor.length ? '&nbsp;·&nbsp;' : ''}${escHtml(na.join(' · '))}</span>` : ''}`;
 }
 
 const PB_GEZAMENLIJK = 'Gezamenlijke nummers:';
@@ -46,7 +90,8 @@ function pbGedeeldTekst(o) {
   const n = o.gedeeld;
   return `${PB_GEZAMENLIJK} ${n}`;
 }
-function pbDoelNaam(d) { const r = PB_DOELEN.find(x => x[0] === d); return r ? r[1] : ''; }
+
+function pbDoelenTekst(doelen) { return PB_DOELEN.filter(([w]) => (doelen || []).includes(w)).map(x => x[1]).join(' · '); }
 
 function pbDatum(iso) {
   const d = new Date(iso);
@@ -69,26 +114,25 @@ function pbVoorWie(o) {
 }
 
 
-const PB_MIJ = { instrumenten: [], genres: [], bands: [], leeftijd: null, naam: '', foto: '', plaats: '', voor: null };
+const PB_MIJ = { instrumenten: [], instrumentenNiveau: [], bands: [], leeftijd: null, naam: '', foto: '', plaats: '', voor: null };
 
 async function pbMijLaden() {
   if (!currentUser || !hasOwnProfile) return;
   if (PB_MIJ.voor === currentUser.id) return;
   try {
     const mid = await getMyMusicianId();
-    const [ik, instr, gen, geb, bands] = await Promise.all([
+    const [ik, instr, geb, bands] = await Promise.all([
       db.from('musicians').select('weergavenaam, username, avatar_url, city').eq('id', mid).maybeSingle(),
-      db.from('musician_instruments').select('instrument').eq('musician_id', mid),
-      db.from('musician_genres').select('genre').eq('musician_id', mid),
+      db.from('musician_instruments').select('instrument, niveau').eq('musician_id', mid),
       db.rpc('tt_get_my_birth_date'),
-      db.from('bands').select('id, name, city, genres, soort, avatar_url, band_members(musician_id, status)').eq('founder_id', mid)
+      db.from('bands').select('id, name, city, soort, avatar_url, band_members(musician_id, status, rollen)').eq('founder_id', mid)
     ]);
     const leeftijd = d => { if (!d) return null; const g = new Date(d), n = new Date(); let a = n.getFullYear() - g.getFullYear(); if (n < new Date(n.getFullYear(), g.getMonth(), g.getDate())) a--; return a; };
     PB_MIJ.naam = ik.data ? (ik.data.weergavenaam || ik.data.username || '') : '';
     PB_MIJ.foto = ik.data ? ik.data.avatar_url : '';
     PB_MIJ.plaats = ik.data ? ik.data.city : '';
     PB_MIJ.instrumenten = (instr.data || []).map(x => x.instrument);
-    PB_MIJ.genres = (gen.data || []).map(x => x.genre);
+    PB_MIJ.instrumentenNiveau = instr.data || [];
     PB_MIJ.leeftijd = leeftijd(geb.data);
     PB_MIJ.bands = bands.data || [];
     const leden = [...new Set(PB_MIJ.bands.flatMap(b => (b.band_members || []).filter(x => x.status === 'bevestigd').map(x => x.musician_id)))];
@@ -111,6 +155,11 @@ function openPrikbord(tab) {
   pbZetTab(tab || 'alle');
 }
 
+const PB_DUIDING = {
+  alle: 'Oproepen van anderen.',
+  mijn: 'Jouw oproepen. Tik op een oproep voor de kandidaten.',
+  reacties: 'Oproepen waarop je reageerde. Tik op een oproep voor je bericht.'
+};
 function pbZetTab(tab) {
   pbTab = tab;
   pbLaag = null;
@@ -119,9 +168,12 @@ function pbZetTab(tab) {
     const b = document.getElementById('pbTab-' + t);
     if (b) { b.classList.toggle('active', t === tab); b.setAttribute('aria-pressed', t === tab ? 'true' : 'false'); }
   });
+
+  const duiding = document.getElementById('pbDuiding');
+  if (duiding) duiding.textContent = PB_DUIDING[tab] || '';
   pbToonLaag();
   if (tab === 'alle') { pbInitFilters(); pbOnthoudHerstellen().finally(pbLaden); }
-  if (tab === 'mijn') pbMijnLaden();
+  if (tab === 'mijn') { pbMijnLaden(); pbTegelGetal(); }
   if (tab === 'reacties') pbReactiesLaden();
 }
 
@@ -138,6 +190,7 @@ function pbToonLaag() {
   });
   if (typeof werkTerugKnopBij === 'function') werkTerugKnopBij();
   window.scrollTo({ top: 0, behavior: 'instant' });
+  pbTitelsPassen();
 }
 
 
@@ -248,7 +301,7 @@ function pbPastBijMij(o) {
 function pbGefilterd() {
   const f = pbFilters;
   let rijen = pbLijst.filter(o =>
-    (!f.soort || o.soort === f.soort) && (!f.doel || o.doel === f.doel)
+    (!f.soort || o.soort === f.soort) && (!f.doel || (o.doelen || []).includes(f.doel))
     && (!f.instrument || o.elk_instrument || (o.instrumenten || []).includes(f.instrument)));
   const nieuw = o => new Date(o.verlengd_op || o.geplaatst_op).getTime();
   const km = o => o.km == null ? Infinity : Number(o.km);
@@ -264,15 +317,14 @@ function pbRijHTML(o) {
 
 
 
-  const metaRegel = [pbDoelNaam(o.doel), (o.genres || [])[0], o.naam, pbLeeftijdTekst(o), afstandTekst(o.km)].filter(Boolean).map(escHtml).join(' · ');
   const gedeeld = o.gedeeld && !o.eigen ? `<div class="pb-rij-gedeeld">${escHtml(pbGedeeldTekst(o))}</div>` : '';
   return `
     <div class="result-row pb-rij" onclick="pbOpenOproep('${jsAttr(o.id)}')">
       <div class="result-row-top">
         <div class="result-row-avatar${o.band_id ? ' result-vierkant' : ''}">${fotoHTML(o.foto, o.naam) || ZONDER_FOTO_HTML}</div>
         <div class="result-row-main">
-          <div class="result-row-name"><span class="result-row-naam">${escHtml(pbTitel(o))}</span></div>
-          <div class="result-row-meta">${metaRegel}</div>
+          <div class="result-row-name pb-eenregel">${pbTitelHTML(o)}</div>
+          <div class="result-row-meta pb-eenregel">${pbRegelHTML(o)}</div>
           ${gedeeld}
         </div>
       </div>
@@ -292,6 +344,7 @@ function pbTekenLijst() {
   }
   vak.innerHTML = `<div class="results-header"><span class="results-count">${rijen.length === 1 ? '1 oproep' : rijen.length + ' oproepen'}</span></div>`
     + `<div class="results-list">${rijen.map(pbRijHTML).join('')}</div>`;
+  pbTitelsPassen(vak);
 }
 
 
@@ -305,16 +358,23 @@ function pbOpenOproep(id) {
 }
 
 function pbOproepHTML(o, voorbeeld) {
-  const wie = [o.naam, pbLeeftijdTekst(o), o.plaats, voorbeeld ? '' : afstandTekst(o.km)].filter(Boolean).map(escHtml).join(' · ');
-  const doelRegel = [pbDoelNaam(o.doel), ...(o.genres || []).slice(0, 2)].filter(Boolean).map(escHtml).join(' · ');
+
+  const wieKort = [o.plaatser_naam, o.soort === 'beschikbaar' ? '' : pbInstrumentKlein(o.plaatser_instrument)].filter(Boolean).join(' · ');
+  const wieVast = [pbLeeftijdTekst(o), o.plaats, voorbeeld ? '' : afstandTekst(o.km)].filter(Boolean).join(' · ');
+  const wie = `<span class="pb-regel-kort">${escHtml(wieKort)}</span>${wieVast ? `<span class="pb-regel-vast">${wieKort ? '&nbsp;·&nbsp;' : ''}${escHtml(wieVast)}</span>` : ''}`;
+  const doelRegel = [pbDoelenTekst(o.doelen), ...(o.genres || [])].filter(Boolean).map(escHtml).join(' · ');
   const datum = o.verlengd_op ? `Verlengd tot ${pbDatum(o.loopt_tot)}` : `Geplaatst op ${pbDatum(o.geplaatst_op || new Date().toISOString())}`;
   const feiten = [
     ['Leeftijd', escHtml(pbVoorWie(o))]
   ];
   if (o.band_id && o.band_soort) feiten.push(['Muziek', escHtml({ eigen: 'Eigen nummers', covers: 'Coverband', beide: 'Eigen nummers en covers' }[o.band_soort] || '')]);
+
+
+  const koppen = pbVakKoppen(!!o.band_id, o.soort);
+  const vakken = PB_VAK_SLEUTELS.map((k, i) => (o.vakken || {})[k] ? `<div class="pb-vak-kop">${escHtml(koppen[i])}</div><p class="pb-oproep-tekst">${escHtml(o.vakken[k])}</p>` : '').join('');
   let knop = '';
   if (!voorbeeld) {
-    if (o.eigen) knop = `<button type="button" class="btn btn-ghost pb-knop" onclick="pbOpenMijn('${jsAttr(o.id)}')">Bekijk de reacties</button>`;
+    if (o.eigen) knop = `<button type="button" class="btn btn-ghost pb-knop" onclick="pbOpenMijn('${jsAttr(o.id)}')">Bekijk de kandidaten</button>`;
     else if (!currentUser || !hasOwnProfile) knop = `<button type="button" class="btn btn-primary pb-knop" onclick="pbZonderProfiel()">Maak een profiel en reageer</button>`;
     else if (o.soort === 'beschikbaar') knop = `<button type="button" class="btn btn-primary pb-knop" data-bericht-id="${escHtml(o.plaatser_id)}" onclick="openMessageComposer('${jsAttr(o.plaatser_id)}','${jsAttr(o.naam)}')">Stuur een bericht</button>`;
     else if (o.gereageerd) knop = `<button type="button" class="btn btn-primary pb-knop" disabled>Je hebt gereageerd</button>`;
@@ -325,12 +385,12 @@ function pbOproepHTML(o, voorbeeld) {
       <div class="pb-oproep-kop" ${voorbeeld ? '' : `onclick="${o.band_id ? `openBandScherm('${jsAttr(o.band_id)}')` : `openProfielScherm('${jsAttr(o.plaatser_id)}')`}"`}>
         <div class="result-row-avatar pb-oproep-foto${o.band_id ? ' result-vierkant' : ''}">${fotoHTML(o.foto, o.naam) || ZONDER_FOTO_HTML}</div>
         <div class="pb-oproep-wie">
-          <div class="pb-oproep-titel">${escHtml(pbTitel(o))}</div>
+          <div class="pb-oproep-titel pb-eenregel">${pbTitelHTML(o, 'pb-oproep-titel-tekst')}</div>
           <div class="result-row-meta">${doelRegel}</div>
-          <div class="result-row-meta">${wie}</div>
+          <div class="result-row-meta pb-eenregel">${wie}</div>
         </div>
       </div>
-      <p class="pb-oproep-tekst">${escHtml(o.tekst || '')}</p>
+      <div class="pb-vakken">${vakken}</div>
       <dl class="pb-feiten">${feiten.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>
       ${o.gedeeld && !o.eigen ? `<p class="pb-oproep-gedeeld">${escHtml(pbGedeeldTekst(o))}</p>` : ''}
       ${o.media_gewenst && o.soort === 'gezocht' ? '<p class="pb-oproep-media">Graag met een video of link.</p>' : ''}
@@ -376,7 +436,7 @@ async function pbReagerenOpen() {
   const o = pbOpen;
   if (!o) return;
   const vak = document.getElementById('pbReagerenInhoud');
-  document.getElementById('pbReagerenKop').textContent = 'Reageren op ' + pbTitel(o);
+  document.getElementById('pbReagerenKop').textContent = `Reageren op "${pbTitel(o)}"`;
   document.getElementById('pbBoodschap').value = '';
   vak.innerHTML = '';
   ladenTonen(vak);
@@ -412,6 +472,7 @@ function pbMediaToevoegen() { pbReagerenSluiten(); if (typeof openTegelScreenVan
 async function pbReagerenVersturen() {
   const o = pbOpen;
   const tekst = document.getElementById('pbBoodschap').value;
+  if (showFieldErrors([bioVoorbeeldFout('pbBoodschap', 'reactie')])) return;
   const { error } = await db.rpc('tt_oproep_reageren', { p_oproep: o.id, p_boodschap: tekst });
   if (error) { showToast(friendlyErrorMessage(error, 'je reactie versturen')); return; }
   pbReagerenSluiten();
@@ -422,52 +483,143 @@ async function pbReagerenVersturen() {
 
 
 const PB_TIPS = {
-  gezocht: {
-    intro: 'Zorg dat meteen duidelijk is wie jullie zijn en wie jullie zoeken.',
-    punten: [
-      ['Wie zijn jullie?', 'Welke muziek maken jullie? Wie zitten er in de band? Noem ook een paar bands die jullie inspireren.'],
-      ['Wie zoeken jullie?', 'Welk instrument zoek je? Welk niveau of welke ervaring is nodig?'],
-      ['Wat zijn jullie plannen?', 'Willen jullie eigen muziek maken, optreden of vooral samen spelen? Vertel ook hoe serieus jullie het aanpakken.'],
-      ['Hoe vaak repeteren jullie?', 'Waar en wanneer repeteren jullie? Zijn er kosten of andere praktische afspraken?'],
-      ['Laat zien wie jullie zijn!', 'Is jullie band relaxed, gezellig of juist ambitieus? Schrijf zoals jullie zijn en maak de oproep persoonlijk.']
-    ],
-    reageren: 'Zet een demo of opname in Je mediahoek of bij Onze media. Hou het contact eerst via de app; later kun je alsnog je e-mailadres of telefoonnummer doorgeven.'
-  },
-  beschikbaar: {
-    intro: 'Zorg dat meteen duidelijk is wie je bent en wat je zoekt.',
-    punten: [
-      ['Wie ben je?', 'Wat speel je, en hoe lang al? Welke muziek maak je graag? Noem ook een paar bands die je inspireren.'],
-      ['Wat zoek je?', 'Een band, samen jammen, invallen of een project? Eigen nummers of covers?'],
-      ['Wat zijn je plannen?', 'Wil je optreden, eigen muziek maken of vooral samen spelen? Vertel ook hoe serieus je het aanpakt.'],
-      ['Wanneer kun je?', 'Hoe vaak en op welke dagen kun je repeteren? Hoe ver wil je reizen?'],
-      ['Laat zien wie je bent!', 'Schrijf zoals je bent en maak de oproep persoonlijk.']
-    ],
-    reageren: 'Zet een demo of opname in Je mediahoek. Hou het contact eerst via de app; later kun je alsnog je e-mailadres of telefoonnummer doorgeven.'
-  },
 
-  eersteAfspraak: 'Ken je elkaar nog niet? Spreek dan af op een plek waar ook anderen zijn, zoals een oefenruimte of muziekschool.',
-  slot: 'Wees duidelijk en concreet. Hoe beter iemand weet waar die bij aansluit, hoe groter de kans op een goede match!'
+  eersteAfspraak: 'Ken je elkaar nog niet? Spreek dan af op een plek waar ook anderen zijn, zoals een oefenruimte of muziekschool.'
 };
 
 function pbEersteAfspraakTonen() { return PB_MIJ.leeftijd != null && PB_MIJ.leeftijd <= 21; }
-function pbTipsOpen() {
-  const t = PB_TIPS[(pbForm && pbForm.soort) || 'gezocht'];
-  document.getElementById('pbTipsInhoud').innerHTML = `
-    <h2 class="hoofdstuk-kop">Zo schrijf je een goede oproep</h2>
-    <p class="pb-tips-intro">${escHtml(t.intro)}</p>
-    <ol class="pb-tips">${t.punten.map(([k, u]) => `<li><strong>${escHtml(k)}</strong> ${escHtml(u)}</li>`).join('')}</ol>
-    <p class="pb-tips-intro"><strong>Maak reageren makkelijk!</strong> ${escHtml(t.reageren)}</p>
-    ${pbEersteAfspraakTonen() ? `<p class="pb-tips-intro"><strong>De eerste afspraak.</strong> ${escHtml(PB_TIPS.eersteAfspraak)}</p>` : ''}
-    <p class="pb-tips-intro">${escHtml(PB_TIPS.slot)}</p>`;
-  document.getElementById('pbTipsModal').classList.add('visible');
-  syncModalScrollLock();
+
+
+
+const PB_LEES_DIT_EERST = [
+  ['Weet wat je zoekt', 'Welk instrument, welk niveau, en waarvoor: jammen, een vaste band, invallen of een project. Vraag een niveau dat bij jou of je band past, en zeg eerlijk wat jij of jullie willen bereiken.'],
+  ['Laat je energie zien', 'Rustig, gezellig of fanatiek: vertel het. Dan reageren de mensen die bij je passen. Schrijf gewoon en duidelijk; een neutrale toon werkt altijd.'],
+  ['Zet je media klaar', 'Een filmpje, een demo of een link bij Onze media zegt meer dan veel woorden.'],
+  ['Wees concreet', 'Noem dagen, plaatsen en kosten. Wie twijfelt, reageert niet.'],
+  ['Denk aan wie reageert', 'Die is misschien ook wat zenuwachtig. Maak de eerste stap klein en duidelijk. Een goede klik is net zo belangrijk als goed samen spelen.'],
+  ['Hou het kort', 'Een paar zinnen per vak is meestal genoeg.']
+];
+
+
+
+
+const PB_VAK_SLEUTELS = ['wie', 'wil', 'zoek', 'waar', 'kennis', 'verder'];
+const PB_VAK_MAX = 600;
+const PB_VAK_TELLER = 480;
+function pbVakKoppen(band, soort) {
+  if (band) return ['Wie zijn we', 'Wat willen we', 'Wie zoeken we', 'Wanneer en waar', 'Kennismaken', 'Verder nog'];
+  return ['Wie ben ik', 'Wat wil ik', soort === 'beschikbaar' ? 'Wat zoek ik' : 'Wie zoek ik', 'Wanneer en waar', 'Kennismaken', 'Verder nog'];
 }
-function pbTipsSluiten() { document.getElementById('pbTipsModal').classList.remove('visible'); syncModalScrollLock(); }
+const PB_VOORBEELDEN = {
+
+
+
+
+  band: {
+    wie: ['Coverband', 'Band met eigen nummers', 'Beginnende band'],
+    vakken: {
+      wie: { tips: ['Welke muziek spelen jullie? Noem een paar artiesten als referentie.', 'Wie zitten er in de band, en hoe oud zijn jullie ongeveer?', 'Schrijf kort en duidelijk, in een neutrale toon.', 'Zet een demo of opname bij Onze media. Dan hoort iemand meteen hoe jullie klinken.'],
+        vb: ['Een coverband van vier scholieren tussen 16 en 18 uit Den Haag: zang, gitaar, drums en keyboard. We spelen pop- en rocknummers die iedereen kent, van Coldplay tot Doe Maar.',
+          'Een rockband van drie muzikanten van 17 tot 19 uit Delft. We schrijven eigen nummers, met Arctic Monkeys en Royal Blood als referentie.',
+          'Een punkband met gitaar, bas en zang, alle drie 15 jaar. We schrijven onze eerste eigen nummers.'] },
+      wil: { tips: ['Wat willen jullie: optreden, eigen nummers maken of vooral samen spelen?', 'Wat ligt er al: nummers, een set, een oefenruimte?', 'Zeg het eerlijk. Willen jullie allemaal hetzelfde, dan houdt een band het langer vol.'],
+        vb: ['We willen een vaste set van tien nummers en daarmee spelen op schoolfeesten en open podia. Eerst maken we de bezetting compleet.',
+          'Er liggen zes eigen nummers die bijna speelklaar zijn. Dit jaar willen we een demo opnemen en optreden in jongerencentra.',
+          'We willen beter worden en dit jaar ons eerste optreden doen, bijvoorbeeld op het schoolfeest.'] },
+      zoek: { tips: ['Welk instrument zoek je, en welk niveau is nodig?', 'Vertel ook hoe jullie samenwerken. Dat telt net zo zwaar als iemands niveau.', 'Wat vraag je van iemand: elke week komen, thuis oefenen, meedenken over nummers?'],
+        vb: ['Een bassist die zijn instrument goed beheerst en elke week kan repeteren. Meezingen is mooi meegenomen.',
+          'Een drummer die strak speelt, goed luistert en mee wil schrijven aan eigen nummers.',
+          'Een drummer die net als wij nog leert. Afspraken nakomen vinden we net zo belangrijk als techniek.'] },
+      waar: { tips: ['Noem een dag en een plek, zoals zaterdagmiddag in Den Haag-Zuid.', 'Hoe vaak repeteren jullie, en hoe lang?', 'Zijn er kosten, zoals de huur van de oefenruimte? Zeg het meteen.'],
+        vb: ['Elke zaterdagmiddag van 13.00 tot 16.00 uur in een oefenruimte in Den Haag-Zuid. De huur delen we.',
+          'Elke vrijdagavond in de oefenruimte van het jongerencentrum in Delft. Daar staat een drumstel.',
+          'Elke woensdag na school, van 16.00 tot 18.00 uur, in het jongerencentrum in Rijswijk.'] },
+      kennis: { tips: ['Een keer samen spelen zegt meer dan veel berichten.', 'Stel een kleine eerste stap voor, zoals één nummer samen spelen.', 'Wil je horen hoe iemand speelt? Vraag om een filmpje of een opname.', 'Hou het contact eerst via de app. Later kun je je e-mailadres of telefoonnummer nog geven.'],
+        vb: ['Stuur ons een bericht via de app. Daarna spreken we af om twee nummers samen te spelen.',
+          'Stuur een bericht, het liefst met een filmpje of opname. Daarna spelen we een keer samen en kijken we of het muzikaal en persoonlijk klikt.',
+          'Stuur ons een filmpje van jezelf, al is het met je telefoon. Daarna spreken we af in de oefenruimte.'] },
+      verder: { tips: ['Alles wat nog niet in een ander vak past, zoals iets wat al vaststaat of wat iemand moet meenemen.', 'Laat je dit vak leeg, dan staat het niet in je oproep.'],
+        vb: ['Ken je iemand die past? Deel de oproep dan.',
+          'Ideeën voor nieuwe nummers zijn welkom.',
+          'Je hoeft alleen je stokken mee te nemen.'] }
+    }
+  },
+
+  ik: {
+    wie: ['Colin, gitarist', 'Dylan, beginnende drummer', 'Lisa, zangeres'],
+    vakken: {
+      wie: { tips: ['Noem je instrument, hoe lang je speelt en welke muziek je maakt.', 'Hoe oud ben je ongeveer, en waar woon je?', 'Noem een paar artiesten of bands als referentie.', 'Zet een filmpje of opname in Je mediahoek. Dan hoort iemand meteen hoe je speelt.'],
+        vb: ['Colin, 17, uit Den Haag. Ik speel vier jaar gitaar, vooral rock en indie, met Arctic Monkeys en Royal Blood als referentie.',
+          'Dylan, 15, uit Rijswijk. Ik drum sinds een jaar en heb les op de muziekschool. Ik luister veel naar pop en punk.',
+          'Lisa, 19, uit Leiden. Ik zing soul en pop en speel een beetje piano. Ik heb drie jaar in een koor gezongen.'] },
+      wil: { tips: ['Wat wil je: optreden, eigen nummers maken of vooral samen spelen?', 'Hoe serieus pak je het aan? Hoeveel tijd heb je per week?', 'Zeg het eerlijk. Dan vind je mensen die hetzelfde willen.'],
+        vb: ['Ik wil in een band die eigen nummers maakt en optreedt. Ik oefen elke dag en heb tijd voor één repetitie per week.',
+          'Ik wil beter worden door samen te spelen. Optreden mag later, als ik er klaar voor ben.',
+          'Ik wil een paar keer per maand zingen, en val ook in bij een band.'] },
+      zoek: { tips: ['Welk instrument zoek je, en welk niveau?', 'Vertel ook hoe je met anderen omgaat. Dat telt net zo zwaar als iemands niveau.', 'Wat vraag je van iemand: elke week komen, thuis oefenen, meedenken over nummers?'],
+        vb: ['Een bassist en een drummer om samen een band te beginnen. Je speelt minstens een jaar en komt afspraken na.',
+          'Andere beginners die samen willen oefenen. Je hoeft nog niet goed te zijn: we leren van elkaar.',
+          'Een gitarist of pianist om samen covers te spelen. Je luistert goed en zegt eerlijk wat je vindt.'] },
+      zoekBeschikbaar: { tips: ['Wat voor band zoek je: welke muziek, welke leeftijd, welk niveau?', 'Wat heb je te bieden? Denk ook aan een eigen versterker of een plek om te oefenen.', 'Bij wat voor groep pas je: rustig, gezellig of fanatiek?'],
+        vb: ['Een rockband met eigen nummers, met muzikanten tussen 16 en 20. Ik heb een eigen versterker en denk graag mee over nummers.',
+          'Een band van beginners die geduld heeft. Ik kom elke week en oefen thuis.',
+          'Een coverband of een groep die soms een zangeres nodig heeft. Ik leer snel nieuwe nummers.'] },
+      waar: { tips: ['Noem de dagen waarop je kunt, en hoe ver je wilt reizen.', 'Heb je een plek om te oefenen, of zoek je die nog?', 'Zijn er kosten die je wilt delen, zoals de huur van een oefenruimte? Zeg het meteen.'],
+        vb: ['Ik kan op zaterdag en zondag. Met de fiets of de tram kom ik overal in Den Haag.',
+          'Ik kan op woensdagmiddag en in het weekend, in Rijswijk of Delft. Een oefenruimte heb ik nog niet.',
+          'Ik kan op doordeweekse avonden, in Leiden en omgeving. De huur van een oefenruimte deel ik graag.'] },
+      kennis: { tips: ['Een keer samen spelen zegt meer dan veel berichten.', 'Stel een kleine eerste stap voor, zoals één nummer samen spelen.', 'Wijs op je filmpje of opname. Dan weet de ander wat hij kan verwachten.', 'Hou het contact eerst via de app. Later kun je je e-mailadres of telefoonnummer nog geven.'],
+        vb: ['Eerst een bericht hier in de app. Daarna een keer samen spelen, zonder verplichtingen, om te kijken of het klikt.',
+          'Op mijn profiel staat een filmpje. Daarna spreken we af om één nummer samen te spelen.',
+          'Ik kom graag een keer langs bij een repetitie. Na afloop kijken we samen of het klikt.'] },
+      verder: { tips: ['Alles wat nog niet in een ander vak past, zoals wat je zelf meeneemt of wat al vaststaat.', 'Laat je dit vak leeg, dan staat het niet in je oproep.'],
+        vb: ['Ik heb een eigen gitaar en versterker.', 'In de zomervakantie ben ik drie weken weg.', 'Ik kan ook de tweede stem zingen.'] }
+    }
+  }
+};
+
+function pbVakInhoud(sleutel) {
+  const f = pbForm || {};
+  const soort = f.wie && f.wie !== 'ik' ? 'band' : 'ik';
+  const set = PB_VOORBEELDEN[soort];
+  const vak = set.vakken[soort === 'ik' && sleutel === 'zoek' && f.soort === 'beschikbaar' ? 'zoekBeschikbaar' : sleutel];
+  const tips = vak.tips.concat(sleutel === 'kennis' && pbEersteAfspraakTonen() ? [PB_TIPS.eersteAfspraak] : []);
+  return { tips, vb: vak.vb, wie: set.wie };
+}
+
+function pbLeesDitEerst() {
+  voorbeeldBladOpen('Lees dit eerst', `<ol class="pb-tips">${PB_LEES_DIT_EERST.map(([k, t]) => `<li><strong>${escHtml(k)}.</strong> ${escHtml(t)}</li>`).join('')}</ol>`);
+}
+function pbVoorbeeldenOpen(i) {
+  const sleutel = PB_VAK_SLEUTELS[i];
+  const v = pbVakInhoud(sleutel);
+  const koppen = pbVakKoppen(pbForm.wie !== 'ik', pbForm.soort);
+  voorbeeldBladOpen(koppen[i], voorbeeldenHTML(v.tips, v.wie, v.vb, n => `pbVoorbeeldGebruiken(${i},${n})`));
+}
+function pbVoorbeeldGebruiken(i, n) {
+  const sleutel = PB_VAK_SLEUTELS[i];
+  const tekst = pbVakInhoud(sleutel).vb[n];
+  const t = document.getElementById('pbVak-' + sleutel);
+  const zet = () => {
+    t.value = tekst; pbForm.vakken[sleutel] = tekst;
+    voorbeeldBladSluiten(); veldGroeit(t); clearFieldError(t); pbVakTeller(sleutel);
+    t.focus(); t.setSelectionRange(t.value.length, t.value.length);
+  };
+  if (t.value.trim() && t.value.trim() !== tekst) showConfirm('Je tekst in dit vak wordt vervangen door het voorbeeld.', zet, 'Vervangen', false, 'Annuleren', 'Tekst vervangen?');
+  else zet();
+}
+function pbVakTeller(sleutel) {
+  updateCharCounter('pbVak-' + sleutel, 'pbVakTeller-' + sleutel, PB_VAK_MAX, PB_VAK_TELLER);
+}
+function pbVakInvoer(el, sleutel) {
+  pbForm.vakken[sleutel] = el.value; veldGroeit(el); clearFieldError(el); pbVakTeller(sleutel);
+}
+
 
 
 function pbLegeForm() {
-  return { wie: 'ik', soort: 'gezocht', doel: '', instrumenten: [], elk: false,
-           leeftijden: [], plaats: '', straal: PB_STRAAL_STANDAARD, tekst: '', media: false };
+  return { wie: 'ik', soort: 'gezocht', doelen: [], instrumenten: [], elk: false, zangVorm: '', genres: [],
+           leeftijden: [], plaats: '', straal: null, vakken: {}, media: false, kaderGezien: false };
 }
 
 async function pbPlaatsenStart(vanBand) {
@@ -475,40 +627,28 @@ async function pbPlaatsenStart(vanBand) {
   await pbMijLaden();
   pbForm = pbLegeForm();
   pbVanBand = vanBand || null;
-  if (pbVanBand) { pbForm.wie = pbVanBand.band_id; pbForm.doel = 'band'; pbForm.instrumenten = pbVanBand.instrumenten.slice(); }
+  if (pbVanBand) { pbForm.wie = pbVanBand.band_id; pbForm.doelen = ['band']; pbForm.instrumenten = pbVanBand.instrumenten.slice(); }
   pbLaag = 'plaatsen';
   pbTekenForm();
   pbToonLaag();
-  veldGroeit(document.getElementById('pbTekst'));
+  pbVakkenGroeien();
 }
 
 function pbFormHeeftInvoer() {
   if (!pbForm) return false;
-  return !!(pbForm.leeftijden.length || (pbForm.tekst.trim() && !pbIsLeidraad(pbForm.tekst)) || (!pbVanBand && (pbForm.doel || pbForm.instrumenten.length)));
+  const f = pbForm;
+  return !!(f.leeftijden.length || f.genres.length || f.plaats.trim() || f.straal || PB_VAK_SLEUTELS.some(k => (f.vakken[k] || '').trim())
+    || (!pbVanBand && (f.doelen.length || f.instrumenten.length)));
 }
 
+
+
 function pbKnoppen(naam, keuzes, huidig, uit) {
-  return `<div class="segmented-control pb-keuzes" data-naam="${naam}">` + keuzes.map(([w, t]) =>
-    `<button type="button" class="segmented-btn${huidig === w ? ' selected' : ''}" ${uit && uit(w) ? 'disabled aria-disabled="true"' : ''} onclick="pbKies('${naam}','${jsAttr(w)}')">${escHtml(t)}</button>`).join('') + '</div>';
+  return `<div class="segmented-control segmented-vol pb-keuzes" data-naam="${naam}">` + keuzes.map(([w, t]) =>
+    `<button type="button" class="segmented-btn${huidig === w ? ' selected' : ''}" aria-pressed="${huidig === w ? 'true' : 'false'}" ${uit && uit(w) ? 'disabled aria-disabled="true"' : ''} onclick="pbKies('${naam}','${jsAttr(w)}')">${escHtml(t)}</button>`).join('') + '</div>';
 }
 
 function pbBeheerdeBands() { return (PB_MIJ.bands || []); }
-
-
-
-const PB_LEIDRAAD = {
-  gezocht: ['Wie zijn jullie? (muziek, bandleden, inspiratie)', 'Wie zoeken jullie? (instrument, niveau, ervaring)',
-    'Wat zijn jullie plannen? (eigen muziek, optreden, samen spelen)', 'Hoe vaak en waar repeteren jullie?',
-    'Hoe zijn jullie? (relaxed, gezellig of ambitieus)'],
-  beschikbaar: ['Wie ben je? (wat je speelt, hoe lang al, inspiratie)', 'Wat zoek je? (band, jammen, invallen, project)',
-    'Wat zijn je plannen? (eigen muziek, optreden, samen spelen)', 'Wanneer kun je repeteren, en hoe ver wil je reizen?',
-    'Hoe ben je? (relaxed, gezellig of ambitieus)']
-};
-function pbLeidraadTekst(soort) { return PB_LEIDRAAD[soort].join('\n\n\n') + '\n'; }
-function pbIsLeidraad(t) {
-  const schoon = x => x.replace(/\s+/g, ' ').trim();
-  return ['gezocht', 'beschikbaar'].some(k => schoon(t) === schoon(pbLeidraadTekst(k)));
-}
 
 
 
@@ -535,52 +675,106 @@ function pbKeuzeveldHTML(id, label, veldId) {
     <div class="choice-menu menu-breed" id="${id}Menu" role="listbox" aria-label="${label}"></div></div></div>`;
 }
 
+
+
+
+function pbZangVeldHTML(f) {
+  return pbKeuzeveldHTML('pbFZang', f.soort === 'beschikbaar' ? 'Je bent beschikbaar als' : 'Je zoekt een', 'pbVeldZang');
+}
+function pbZangVeld() {
+  const f = pbForm;
+  const keuzes = () => PB_ZANG_VORMEN[f.soort];
+  const el = document.getElementById('pbFZangField');
+  if (el) el.ttKeuzeVeld = null;
+  initChoiceField({
+    id: 'pbFZang', fieldId: 'pbFZangField', menuId: 'pbFZangMenu',
+    rijen: () => keuzes().map(([w, t]) => ({ t, gekozen: f.zangVorm === w })),
+    kies: (i) => { const w = keuzes()[i][0]; f.zangVorm = f.zangVorm === w ? '' : w; refreshChoiceField('pbFZang');
+      clearFieldError(document.getElementById('pbFZangField')); },
+    ververs: () => { const k = keuzes().find(([w]) => w === f.zangVorm);
+      pbVeldTekst('pbFZang', k ? k[1] : '', keuzes().map(x => x[1]).slice(0, 2).join(' · ') + (keuzes().length > 2 ? '…' : '')); }
+  });
+}
+
 function pbTekenForm() {
   const f = pbForm;
-  if (!f.tekst.trim() || pbIsLeidraad(f.tekst)) f.tekst = pbLeidraadTekst(f.soort);
   const bands = pbBeheerdeBands();
   const band = f.wie !== 'ik';
+  const koppen = pbVakKoppen(band, f.soort);
   const html = `
-    ${bands.length ? `<div class="field"><label>Wie plaatst?</label>${pbKnoppen('wie', [['ik', 'Ik'], ...bands.map(b => [b.id, b.name])], f.wie)}</div>` : ''}
-    <div class="field">${pbKnoppen('soort', [['gezocht', 'Muzikant gezocht'], ['beschikbaar', 'Muzikant beschikbaar']], f.soort, w => band && w === 'beschikbaar')}</div>
-    ${pbKeuzeveldHTML('pbFDoel', 'Waarvoor?', 'pbVeldDoel')}
+    ${bands.length ? pbKeuzeveldHTML('pbFWie', 'Wie plaatst?', 'pbVeldWie') : ''}
+    <div class="field">${pbKnoppen('soort', [['gezocht', 'Gezocht'], ['beschikbaar', 'Beschikbaar']], f.soort, w => band && w === 'beschikbaar')}</div>
+    ${pbKeuzeveldHTML('pbFDoel', f.soort === 'beschikbaar' ? 'Waarvoor ben je beschikbaar?' : 'Waarvoor zoek je een muzikant?', 'pbVeldDoel')}
     ${pbKeuzeveldHTML('pbFInstrument', 'Instrument', 'pbVeldInstrument')}
+    ${pbHeeftZang(f.instrumenten) ? pbZangVeldHTML(f) : ''}
+    ${pbKeuzeveldHTML('pbFGenre', 'Genre', 'pbVeldGenre')}
     ${pbKeuzeveldHTML('pbFLeeftijden', 'Leeftijden die je oproep zien', 'pbVeldLeeftijden')}
-    <div class="field"><label for="pbToevoeging">Toevoeging aan de kop (niet verplicht)</label>
-      <input type="text" id="pbToevoeging" maxlength="40" value="${escHtml(f.toevoeging || '')}" placeholder="Bijv. thrash en prog metal" oninput="pbForm.toevoeging=this.value"></div>
-    <div class="field" id="pbVeldTekst"><label for="pbTekst" class="label-with-info label-info-naast">Tekst <button type="button" class="niveau-info-btn" onclick="pbTipsOpen()" title="Zo schrijf je een goede oproep" aria-label="Zo schrijf je een goede oproep">i</button></label>
-      <textarea id="pbTekst" class="bio-voorbeeld" maxlength="2000" rows="3" oninput="pbForm.tekst=this.value; veldGroeit(this); clearFieldError(this); updateCharCounter('pbTekst','pbTekstTeller',2000)"
-        placeholder="${f.soort === 'beschikbaar' ? 'Bijv. Ik drum sinds twee jaar en zoek een band die op zaterdag repeteert.' : 'Bijv. We jammen op donderdagavond in Den Haag en zoeken een drummer die van funk houdt.'}">${escHtml(f.tekst)}</textarea>
-      <div class="teken-teller" id="pbTekstTeller"></div></div>
+    <div class="field" id="pbVeldPlaats"><div class="filter-row-city">
+      <div class="city-search-wrap frc-plaats"><label for="pbFPlaats">Plaats</label>
+        <input type="text" id="pbFPlaats" placeholder="Bijv. Den Haag" autocomplete="off" value="${escHtml(f.plaats)}" oninput="pbForm.plaats=this.value; clearFieldError(this)"></div>
+      <div class="frc-straal"><label>Afstand</label><div class="menu-anchor">
+        <div class="wheel-field" id="pbFAfstandField" aria-label="Afstand"><span class="wheel-field-label"></span></div>
+        <div class="choice-menu" id="pbFAfstandMenu" role="listbox" aria-label="Afstand"></div></div></div>
+    </div></div>
+    ${PB_VAK_SLEUTELS.map((k, i) => `<div class="field">
+      <div class="label-rij zoek-label-rij"><label for="pbVak-${k}">${escHtml(koppen[i])}</label>
+        <button type="button" class="zoek-filters-knop pb-voorbeelden-knop" onclick="pbVoorbeeldenOpen(${i})" aria-label="Voorbeelden bij ${escHtml(koppen[i])}">Voorbeelden</button></div>
+      <textarea id="pbVak-${k}" class="pb-vak" maxlength="${PB_VAK_MAX}" rows="3" oninput="pbVakInvoer(this,'${k}')">${escHtml(f.vakken[k] || '')}</textarea>
+      <div class="teken-teller" id="pbVakTeller-${k}" hidden></div></div>`).join('')}
     <div class="field"><label class="zoek-onthoud${f.soort === 'beschikbaar' ? ' pb-uit' : ''}"><input type="checkbox" id="pbMedia" ${f.media ? 'checked' : ''} ${f.soort === 'beschikbaar' ? 'disabled' : ''} onchange="pbForm.media=this.checked"><span>Graag met een video of link</span></label></div>
-    <button type="button" class="btn btn-primary pb-knop" onclick="pbNaarVoorbeeld()">Oproep plaatsen</button>`;
+    ${f.kaderGezien ? PB_KADER_HTML : ''}
+    <button type="button" class="btn btn-primary pb-knop" id="pbNaarVoorbeeldKnop" onclick="pbNaarVoorbeeld()">${f.kaderGezien ? 'Toch plaatsen' : 'Oproep plaatsen'}</button>`;
   document.getElementById('pbFormInhoud').innerHTML = html;
   pbFormVelden();
-  const ta = document.getElementById('pbTekst');
-  if (ta) veldGroeit(ta);
+  PB_VAK_SLEUTELS.forEach(pbVakTeller);
 }
+
+
+const PB_KADER_HTML = `<div class="melding pb-kader" id="pbKader" role="alert"><div class="melding-kop">Je oproep is nog niet compleet</div>
+  <div class="melding-tekst">Een volledige oproep zorgt voor betere reacties.</div></div>`;
+function pbVakkenGroeien() { PB_VAK_SLEUTELS.forEach(k => veldGroeit(document.getElementById('pbVak-' + k))); }
 
 function pbFormVelden() {
   const f = pbForm;
   const instrKeuzes = () => (f.soort === 'beschikbaar' ? PB_MIJ.instrumenten : ['Elk instrument'].concat(INSTRUMENTS));
-  const veld = (id, tekst) => {
+  ['pbFWie', 'pbFDoel', 'pbFInstrument', 'pbFGenre', 'pbFLeeftijden', 'pbFAfstand', 'pbFZang'].forEach(id => {
     const el = document.getElementById(id + 'Field');
-    if (!el) return;
-    el.ttKeuzeVeld = null;
-    return el;
-  };
-  ['pbFDoel', 'pbFInstrument', 'pbFLeeftijden'].forEach(veld);
+    if (el) el.ttKeuzeVeld = null;
+  });
+
+
+  const wieKeuzes = () => [['ik', PB_MIJ.naam || 'Ik'], ...pbBeheerdeBands().map(b => [b.id, b.name])];
   initChoiceField({
-    id: 'pbFDoel', fieldId: 'pbFDoelField', menuId: 'pbFDoelMenu',
-    rijen: () => PB_DOELEN.map(([w, t]) => ({ t, gekozen: f.doel === w })),
-    kies: (i) => { f.doel = PB_DOELEN[i][0]; refreshChoiceField('pbFDoel'); clearFieldError(document.getElementById('pbFDoelField')); },
-    ververs: () => pbVeldTekst('pbFDoel', f.doel ? pbDoelNaam(f.doel) : '', 'Kies waarvoor')
+    id: 'pbFWie', fieldId: 'pbFWieField', menuId: 'pbFWieMenu',
+    rijen: () => wieKeuzes().map(([w, t]) => ({ t, gekozen: f.wie === w })),
+    kies: (i) => { const w = wieKeuzes()[i][0]; if (w !== f.wie) pbKies('wie', w); },
+    ververs: () => { const k = wieKeuzes().find(([w]) => w === f.wie); pbVeldTekst('pbFWie', k ? k[1] : '', 'Kies wie plaatst'); }
+  });
+
+
+  initChoiceField({
+    id: 'pbFDoel', fieldId: 'pbFDoelField', menuId: 'pbFDoelMenu', meer: true,
+    rijen: () => PB_DOELEN.map(([w, t]) => ({ t, gekozen: f.doelen.includes(w) })),
+    kies: (i) => { const w = PB_DOELEN[i][0]; f.doelen = f.doelen.includes(w) ? f.doelen.filter(x => x !== w) : f.doelen.concat(w);
+      refreshChoiceField('pbFDoel'); clearFieldError(document.getElementById('pbFDoelField')); },
+    ververs: () => pbVeldTekst('pbFDoel', pbDoelenTekst(f.doelen), 'Band · Jammen · Invallen…')
   });
   initChoiceField({
     id: 'pbFInstrument', fieldId: 'pbFInstrumentField', menuId: 'pbFInstrumentMenu', meer: true,
     rijen: () => instrKeuzes().map(t => ({ t, gekozen: t === 'Elk instrument' ? f.elk : f.instrumenten.includes(t) })),
     kies: (i) => { pbKiesInstrument(instrKeuzes()[i]); },
     ververs: () => pbVeldTekst('pbFInstrument', f.elk ? 'Elk instrument' : f.instrumenten.join(', '), 'Kies een instrument')
+  });
+
+
+  initChoiceField({
+    id: 'pbFGenre', fieldId: 'pbFGenreField', menuId: 'pbFGenreMenu', meer: true, kop: 'Kies hoogstens 3',
+    rijen: () => GENRES.map(t => ({ t, gekozen: f.genres.includes(t) })),
+    kies: (i) => { const g = GENRES[i];
+      if (f.genres.includes(g)) f.genres = f.genres.filter(x => x !== g);
+      else if (f.genres.length < 3) f.genres = f.genres.concat(g);
+      refreshChoiceField('pbFGenre'); },
+    ververs: () => pbVeldTekst('pbFGenre', f.genres.join(', '), 'Kies hoogstens 3')
   });
 
   const groepen = pbGroepen();
@@ -591,6 +785,14 @@ function pbFormVelden() {
     kies: (i) => { pbKiesLeeftijd(groepen[i]); },
     ververs: () => pbVeldTekst('pbFLeeftijden', PB_LEEFTIJDEN.filter(g => f.leeftijden.includes(g)).join(', ') + (f.leeftijden.length ? ' jaar' : ''), 'Kies leeftijden')
   });
+
+
+  initChoiceField({
+    id: 'pbFAfstand', fieldId: 'pbFAfstandField', menuId: 'pbFAfstandMenu',
+    rijen: () => STRAAL_STAPPEN.map(km => ({ t: `${km} km`, gekozen: f.straal === km })),
+    kies: (i) => { const km = STRAAL_STAPPEN[i]; f.straal = f.straal === km ? null : km; refreshChoiceField('pbFAfstand'); },
+    ververs: () => { const el = document.getElementById('pbFAfstandField'); if (el) zetVeldTekst(el.querySelector('.wheel-field-label'), f.straal ? `${f.straal} km` : LEEG_VELD); }
+  });  if (pbHeeftZang(f.instrumenten)) pbZangVeld();
 }
 
 function pbVeldTekst(id, tekst, leeg) {
@@ -604,18 +806,26 @@ function pbVeldTekst(id, tekst, leeg) {
 function pbKies(naam, w) {
   const f = pbForm;
   if (naam === 'wie') { f.wie = w; if (w !== 'ik') { f.soort = 'gezocht'; } }
-  if (naam === 'soort') { f.soort = w; f.instrumenten = []; f.elk = false; if (w === 'beschikbaar') f.media = false; }
-  if (naam === 'doel') f.doel = w;
+  if (naam === 'soort') { f.soort = w; f.instrumenten = []; f.elk = false; f.zangVorm = ''; if (w === 'beschikbaar') f.media = false; }
   const y = window.scrollY;
   pbTekenForm();
+  pbVakkenGroeien();
   window.scrollTo({ top: y, behavior: 'instant' });
 }
 function pbKiesInstrument(w) {
   const f = pbForm;
+  const zangVoor = pbHeeftZang(f.instrumenten);
   if (w === 'Elk instrument') { f.elk = !f.elk; if (f.elk) f.instrumenten = []; }
   else { f.elk = false; f.instrumenten = f.instrumenten.includes(w) ? f.instrumenten.filter(x => x !== w) : f.instrumenten.concat(w); }
   refreshChoiceField('pbFInstrument');
   clearFieldError(document.getElementById('pbFInstrumentField'));
+
+  if (zangVoor !== pbHeeftZang(f.instrumenten)) {
+    if (!pbHeeftZang(f.instrumenten)) f.zangVorm = '';
+    const oud = document.getElementById('pbVeldZang');
+    if (oud) oud.remove();
+    if (pbHeeftZang(f.instrumenten)) { document.getElementById('pbVeldInstrument').insertAdjacentHTML('afterend', pbZangVeldHTML(f)); pbZangVeld(); }
+  }
 }
 function pbKiesLeeftijd(g) {
   const f = pbForm;
@@ -624,33 +834,69 @@ function pbKiesLeeftijd(g) {
   clearFieldError(document.getElementById('pbFLeeftijdenField'));
 }
 
+
+
+
 function pbFormFouten() {
   const f = pbForm;
   const fouten = [];
-  if (!f.doel) fouten.push(['pbFDoelField', 'Kies waarvoor']);
+  if (!f.doelen.length) fouten.push(['pbFDoelField', 'Kies waarvoor']);
   if (!f.elk && !f.instrumenten.length) fouten.push(['pbFInstrumentField', 'Kies een instrument']);
+  if (pbHeeftZang(f.instrumenten) && !f.zangVorm) fouten.push(['pbFZangField', f.soort === 'beschikbaar' ? 'Kies zanger of zangeres' : 'Kies zanger, zangeres of allebei']);
   if (!f.leeftijden.length) fouten.push(['pbFLeeftijdenField', 'Kies minstens één leeftijd']);
-  if (!f.tekst.trim() || pbIsLeidraad(f.tekst)) fouten.push(['pbTekst', 'Schrijf je eigen tekst bij de punten']);
+  PB_VAK_SLEUTELS.forEach(k => {
+    const t = (f.vakken[k] || '').trim();
+    if (t && pbVakInhoud(k).vb.includes(t)) fouten.push(['pbVak-' + k, f.wie !== 'ik' ? 'Pas het voorbeeld aan, zodat het over jullie gaat' : 'Pas het voorbeeld aan, zodat het over jou gaat']);
+  });
   return fouten;
 }
 
 function pbVoorbeeldOproep() {
   const f = pbForm;
   const band = f.wie !== 'ik' ? pbBeheerdeBands().find(b => b.id === f.wie) : null;
+  const vakken = {};
+  PB_VAK_SLEUTELS.forEach(k => { const t = (f.vakken[k] || '').trim(); if (t) vakken[k] = t; });
   return {
-    soort: f.soort, doel: f.doel, instrumenten: f.instrumenten, elk_instrument: f.elk,
-    leeftijden: pbLeeftijdenVoorOpslaan(f), tekst: f.tekst.trim(), toevoeging: (f.toevoeging || '').trim(), media_gewenst: f.media, geplaatst_op: new Date().toISOString(),
-    band_id: band ? band.id : null, naam: band ? band.name : (PB_MIJ.naam || ''), foto: band ? band.avatar_url : PB_MIJ.foto,
+    soort: f.soort, doelen: PB_DOELEN.map(x => x[0]).filter(w => f.doelen.includes(w)), instrumenten: f.instrumenten, elk_instrument: f.elk,
+    zang_vorm: pbHeeftZang(f.instrumenten) ? f.zangVorm || null : null, genres: f.genres.slice(),
+    leeftijden: pbLeeftijdenVoorOpslaan(f), vakken, media_gewenst: f.media, geplaatst_op: new Date().toISOString(),
+    band_id: band ? band.id : null, naam: band ? band.name : (PB_MIJ.naam || ''), plaatser_naam: PB_MIJ.naam || '',
+    plaatser_instrument: pbMijnInstrument(band), foto: band ? band.avatar_url : PB_MIJ.foto,
     leeftijd: band ? null : PB_MIJ.leeftijd, leden_min: band ? band.leden_min : null, leden_max: band ? band.leden_max : null,
-    plaats: band ? band.city : PB_MIJ.plaats, genres: band ? band.genres : (PB_MIJ.genres || []), band_soort: band ? band.soort : null
+    plaats: f.plaats.trim() || (band ? band.city : PB_MIJ.plaats), band_soort: band ? band.soort : null
   };
 }
 
-function pbNaarVoorbeeld() {
+
+function pbMijnInstrument(band) {
+  const rollen = band && ((band.band_members || []).find(x => x.musician_id === myMusicianId) || {}).rollen;
+  if (rollen && rollen.length) return rollen[0];
+  return (PB_MIJ.instrumentenNiveau || []).slice().sort((a, b) => (b.niveau || 0) - (a.niveau || 0) || a.instrument.localeCompare(b.instrument))
+    .map(x => x.instrument)[0] || '';
+}
+
+async function pbNaarVoorbeeld() {
+  const f = pbForm;
   const fouten = pbFormFouten();
+
+  f.lat = null; f.lng = null;
+  if (f.plaats.trim()) {
+    const o = await resolveSearchOrigin(f.plaats);
+    if (o.fout) { showToast(friendlyErrorMessage(null, 'je plaats opzoeken')); return; }
+    if (o.lat == null) fouten.push(['pbFPlaats', 'Deze plaats herkennen we niet.']);
+    else { f.lat = o.lat; f.lng = o.lng; }
+  }
   if (fouten.length) {
     fouten.forEach(([id, t]) => setFieldError(document.getElementById(id), t));
     document.getElementById(fouten[0][0]).scrollIntoView({ block: 'center' });
+    return;
+  }
+  if (!f.kaderGezien && PB_VAK_SLEUTELS.slice(0, 5).some(k => !(f.vakken[k] || '').trim())) {
+    f.kaderGezien = true;
+    const knop = document.getElementById('pbNaarVoorbeeldKnop');
+    knop.insertAdjacentHTML('beforebegin', PB_KADER_HTML);
+    knop.textContent = 'Toch plaatsen';
+    document.getElementById('pbKader').scrollIntoView({ block: 'center' });
     return;
   }
   document.getElementById('pbVoorbeeldInhoud').innerHTML = pbOproepHTML(pbVoorbeeldOproep(), true);
@@ -660,9 +906,11 @@ function pbNaarVoorbeeld() {
 
 async function pbPlaatsen() {
   const f = pbForm;
+  const o = pbVoorbeeldOproep();
   const p = {
-    soort: f.soort, doel: f.doel, instrumenten: f.instrumenten, elk_instrument: f.elk,
-    leeftijden: pbLeeftijdenVoorOpslaan(f), tekst: f.tekst.trim(), toevoeging: (f.toevoeging || '').trim(), media_gewenst: f.media, straal_km: f.straal
+    soort: f.soort, doelen: o.doelen, instrumenten: f.instrumenten, elk_instrument: f.elk, zang_vorm: o.zang_vorm, genres: o.genres,
+    leeftijden: o.leeftijden, vakken: o.vakken, media_gewenst: f.media,
+    plaats: f.plaats.trim(), lat: f.lat, lng: f.lng, straal_km: f.straal
   };
   if (f.wie !== 'ik') p.band_id = f.wie;
 
@@ -671,7 +919,7 @@ async function pbPlaatsen() {
   const { error } = await db.rpc('tt_oproep_opslaan', { p });
   if (error) { showToast(friendlyErrorMessage(error, 'je oproep plaatsen')); return; }
   pbForm = null; pbVanBand = null;
-  showToast('Je oproep staat op het prikbord.');
+  showToast(f.id ? 'Je oproep is aangepast.' : 'Je oproep staat op het prikbord.');
   pbZetTab('mijn');
 }
 
@@ -688,6 +936,12 @@ function pbVraagOproepVoorRol(bandId, instrumenten) {
 }
 
 
+
+
+const PB_PIJL_OMLAAG = '<svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+const PB_PIJL_RECHTS = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+let pbMijnOpen = null;
+let pbKandidaatOpen = null;
 async function pbMijnLaden() {
   const vak = document.getElementById('pbMijnLijst');
   if (!currentUser || !hasOwnProfile) { vak.innerHTML = emptyStateHTML('Nog geen profiel', 'Met een profiel plaats je een oproep.', 'Profiel aanmaken', "showView('register')"); return; }
@@ -695,56 +949,94 @@ async function pbMijnLaden() {
   const { data, error } = await db.rpc('tt_mijn_oproepen');
   if (error) { logCaught('pbMijnLaden', error); vak.innerHTML = foutStaatHTML(error, 'je oproepen laden', 'pbMijnLaden()'); return; }
   pbMijn = data || [];
+  pbMijnTekenen();
+}
+function pbMijnTekenen() {
+  const vak = document.getElementById('pbMijnLijst');
+  if (!vak) return;
   if (!pbMijn.length) { vak.innerHTML = emptyStateHTML('Nog geen oproepen', 'Zoek je iemand, of ben je beschikbaar?', 'Oproep plaatsen', 'pbPlaatsenStart()'); return; }
   vak.innerHTML = pbMijn.map(pbMijnHTML).join('');
+  pbTitelsPassen(vak);
 }
-
+function pbDagenTekst(o) { const d = pbDagenOver(o); return d === 1 ? 'Nog 1 dag' : `Nog ${d} dagen`; }
 function pbMijnHTML(m) {
   const o = m.oproep;
   const reacties = m.reacties || [];
-  const nieuw = reacties.filter(r => r.nieuw).length;
-  const dagen = pbDagenOver(o);
-  const regel = `${reacties.length === 1 ? '1 reactie' : reacties.length + ' reacties'}${nieuw ? ` (${nieuw} nieuw)` : ''} · nog ${dagen === 1 ? '1 dag' : dagen + ' dagen'}`;
-  const verlengen = dagen <= 10;
+  const open = pbMijnOpen === o.id;
+  const telling = !reacties.length ? 'Geen reacties' : reacties.length === 1 ? '1 kandidaat' : `${reacties.length} kandidaten`;
+  const verlengen = pbDagenOver(o) <= 10;
   return `
-    <div class="pb-mijn" id="pbMijn-${escHtml(o.id)}">
-      <div class="pb-mijn-kop">
-        <div class="pb-oproep-titel">${escHtml(pbTitel(o))}</div>
-        <div class="result-row-meta">${escHtml(pbDoelNaam(o.doel))}${o.band_id ? '' : ''}</div>
-        <div class="result-row-meta">${escHtml(regel)}</div>
+    <div class="result-row pb-kaart-oproep${open ? ' open' : ''}" id="pbMijn-${escHtml(o.id)}">
+      <div class="pb-klap" role="button" tabindex="0" aria-expanded="${open}" onclick="pbMijnKlap('${jsAttr(o.id)}')">
+        <div class="result-row-top">
+          <div class="result-row-avatar${o.band_id ? ' result-vierkant' : ''}">${fotoHTML(o.foto, o.naam) || ZONDER_FOTO_HTML}</div>
+          <div class="result-row-main">
+            <div class="result-row-name pb-eenregel">${pbTitelHTML(o)}<span class="pb-pijl">${PB_PIJL_OMLAAG}</span></div>
+            <div class="result-row-meta pb-eenregel"><span class="pb-regel-kort">${escHtml(telling)}</span><span class="pb-rechts">${escHtml(pbDagenTekst(o))}</span></div>
+          </div>
+        </div>
       </div>
-      <div class="pb-reacties">${reacties.length ? reacties.map(r => pbReactieHTML(o, r)).join('') : '<p class="pb-leeg-regel">Nog geen reacties.</p>'}</div>
-      <div class="btn-row pb-mijn-knoppen">
-        <button type="button" class="btn btn-ghost" onclick="pbAanpassen('${jsAttr(o.id)}')">Aanpassen</button>
-        <button type="button" class="btn btn-ghost" onclick="pbGevonden('${jsAttr(o.id)}')">Gevonden</button>
-        <button type="button" class="btn btn-ghost" ${verlengen ? '' : 'disabled'} onclick="pbVerlengen('${jsAttr(o.id)}')">Verlengen</button>
-      </div>
+      ${open ? `<div class="pb-open">
+        ${reacties.length ? `<div class="pb-kandidaten">${reacties.map(r => pbReactieHTML(o, r)).join('')}</div>` : ''}
+        <div class="btn-row pb-mijn-knoppen">
+          <button type="button" class="btn btn-ghost" onclick="pbAanpassen('${jsAttr(o.id)}')">Aanpassen</button>
+          <button type="button" class="btn btn-ghost" ${verlengen ? '' : 'disabled'} onclick="pbVerlengen('${jsAttr(o.id)}')">Verlengen</button>
+          <button type="button" class="btn btn-ghost" onclick="pbVerwijderen('${jsAttr(o.id)}')">Verwijderen</button>
+        </div></div>` : ''}
     </div>`;
 }
 
+function pbMijnKlap(id) {
+  pbMijnOpen = pbMijnOpen === id ? null : id;
+  pbKandidaatOpen = null;
+  pbMijnTekenen();
+}
+
+
+
+
 function pbReactieHTML(o, r) {
-  const wie = [r.leeftijd != null ? r.leeftijd + ' jaar' : '', r.plaats, afstandTekst(r.km)].filter(Boolean).map(escHtml).join(' · ');
-  const extra = [r.niveau ? '★'.repeat(r.niveau) : '', r.media ? (r.media.type === 'video' ? 'video' : 'link') : '',
-    r.gedeeld ? `${PB_GEZAMENLIJK} ${r.gedeeld}` : ''].filter(Boolean).map(escHtml).join(' · ');
-  const knop = r.status === 'uitgenodigd'
-    ? `<span class="pb-status">Uitgenodigd</span>`
-    : `<button type="button" class="btn btn-primary pb-klein" onclick="event.stopPropagation(); pbUitnodigen('${jsAttr(r.id)}','${jsAttr(r.musician_id)}','${jsAttr(r.naam)}','${jsAttr(o.id)}')">Uitnodigen</button>`;
+  const wie = [r.leeftijd != null ? r.leeftijd + ' jaar' : '', afstandTekst(r.km)].filter(Boolean).map(escHtml).join(' · ');
+  const rechts = r.status === 'uitgenodigd'
+    ? '<span class="pb-rechts">Uitgenodigd</span>'
+    : `<button type="button" class="zoek-filters-knop pb-uitnodigen" onclick="event.stopPropagation(); pbUitnodigen('${jsAttr(r.id)}','${jsAttr(r.musician_id)}','${jsAttr(r.naam)}','${jsAttr(o.id)}')">Uitnodigen</button>`;
+  const open = pbKandidaatOpen === r.id;
+  const extra = [r.media ? (r.media.type === 'video' ? 'Video' : 'Link') : '',
+    r.gedeeld ? (r.gedeeld === 1 ? '1 gezamenlijk nummer' : `${r.gedeeld} gezamenlijke nummers`) : ''].filter(Boolean).join(' · ');
+  const d = new Date(r.created_at);
+  const wanneer = `${dagLabel(d)} ${d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}`;
   return `
-    <div class="result-row pb-reactie" onclick="openProfielScherm('${jsAttr(r.musician_id)}')">
+    <div class="pb-kandidaat${open ? ' open' : ''}" role="button" tabindex="0" onclick="pbKandidaatKlap('${jsAttr(r.id)}','${jsAttr(o.id)}')">
       <div class="result-row-top">
         <div class="result-row-avatar">${fotoHTML(r.foto, r.naam) || ZONDER_FOTO_HTML}</div>
         <div class="result-row-main">
-          <div class="result-row-name"><span class="result-row-naam">${escHtml(r.naam)}</span>${r.nieuw ? '<span class="pb-nieuw">Nieuw</span>' : ''}</div>
-          <div class="result-row-meta">${wie}</div>
-          ${extra ? `<div class="result-row-meta">${extra}</div>` : ''}
-          ${r.boodschap ? `<div class="pb-boodschap">${escHtml(r.boodschap)}</div>` : ''}
+          <div class="result-row-name pb-eenregel"><span class="result-row-naam">${escHtml(r.naam)}</span>${r.nieuw ? '<span class="pb-nieuw">Nieuw</span>' : ''}</div>
+          <div class="result-row-meta pb-eenregel"><span class="pb-regel-kort">${wie}</span>${rechts}</div>
         </div>
-        ${knop}
       </div>
+      ${open ? `<div class="pb-kandidaat-vak">
+        ${extra ? `<p class="pb-extra">${escHtml(extra)}</p>` : ''}
+        ${r.boodschap ? `<div class="pb-ballon"><div class="message-bubble other">${escHtml(r.boodschap)}<span class="message-bubble-time">${escHtml(wanneer)}</span></div></div>` : ''}
+        <button type="button" class="stille-link pb-profiel" onclick="event.stopPropagation(); openProfielScherm('${jsAttr(r.musician_id)}')">Profiel bekijken</button>
+      </div>` : ''}
     </div>`;
 }
 
-function pbOpenMijn(id) { pbZetTab('mijn'); }
+function pbKandidaatKlap(reactieId, oproepId) {
+  pbKandidaatOpen = pbKandidaatOpen === reactieId ? null : reactieId;
+  const m = pbMijn.find(x => x.oproep.id === oproepId);
+  const r = m && (m.reacties || []).find(x => x.id === reactieId);
+  if (r && r.nieuw) {
+    r.nieuw = false;
+    db.rpc('tt_reactie_gezien', { p_reactie: reactieId }).then(({ error }) => {
+      if (error) logCaught('pbKandidaatKlap', error); else pbTegelGetal();
+    });
+  }
+  pbMijnTekenen();
+}
+
+function pbOpenMijn(id) { pbMijnOpen = id || null; pbZetTab('mijn'); }
+
 
 
 
@@ -758,23 +1050,12 @@ async function pbUitnodigen(reactieId, musicianId, naam, oproepId) {
   if (error) { showToast(friendlyErrorMessage(error, 'uitnodigen')); return; }
   const r = (m.reacties || []).find(x => x.id === reactieId);
   if (r) r.status = 'uitgenodigd';
-  const vak = document.getElementById('pbMijnLijst');
-  if (vak && pbTab === 'mijn') vak.innerHTML = pbMijn.map(pbMijnHTML).join('');
+  if (pbTab === 'mijn') pbMijnTekenen();
   const mid = await getMyMusicianId();
-  const tekst = TT_TEKSTEN.oproepUitnodiging.replace('{naam}', PB_MIJ.naam).replace('{titel}', pbTitel(m.oproep));
+  const tekst = TT_TEKSTEN.oproepUitnodiging.replace('{naam}', PB_MIJ.naam);
   const { error: e2 } = await db.from('messages').insert({ sender_id: mid, recipient_id: musicianId, body: tekst, oproep_id: oproepId });
   if (e2) { logCaught('pbUitnodigen', e2); showToast(friendlyErrorMessage(e2, 'je uitnodiging versturen')); return; }
   openMessageComposer(musicianId, naam);
-}
-
-async function pbGevonden(id) {
-  showConfirm('Heb je gevonden wie je zocht? De oproep gaat van het prikbord. Wie reageerde en niet gekozen is, krijgt een vriendelijk bericht.',
-    async () => {
-      const { error } = await db.rpc('tt_oproep_sluiten', { p_id: id, p_reden: 'gevonden' });
-      if (error) { showToast(friendlyErrorMessage(error, 'de oproep sluiten')); return; }
-      showToast('Gefeliciteerd! De oproep is gesloten.');
-      pbMijnLaden();
-    }, 'Gevonden', false, 'Annuleren', 'Gevonden?');
 }
 
 async function pbVerlengen(id) {
@@ -789,51 +1070,135 @@ async function pbAanpassen(id) {
   const m = pbMijn.find(x => x.oproep.id === id);
   if (!m) return;
   const o = m.oproep;
-  pbForm = { id: o.id, wie: o.band_id || 'ik', soort: o.soort, doel: o.doel, instrumenten: o.instrumenten || [],
-             elk: o.elk_instrument, leeftijden: o.leeftijden || [], plaats: o.plaats || '', straal: o.straal_km, tekst: o.tekst || '', toevoeging: o.toevoeging || '', media: o.media_gewenst };
+  pbForm = Object.assign(pbLegeForm(), { id: o.id, wie: o.band_id || 'ik', soort: o.soort, doelen: (o.doelen || []).slice(),
+    instrumenten: (o.instrumenten || []).slice(), elk: o.elk_instrument, zangVorm: o.zang_vorm || '', genres: (o.genres || []).slice(),
+    leeftijden: (o.leeftijden || []).slice(), plaats: o.plaats || '', straal: o.straal_km || null,
+    vakken: Object.assign({}, o.vakken || {}), media: o.media_gewenst });
   pbLaag = 'plaatsen';
   pbTekenForm();
-  document.getElementById('pbFormInhoud').insertAdjacentHTML('beforeend',
-    `<button type="button" class="btn btn-danger pb-knop" onclick="pbVerwijderen('${jsAttr(o.id)}')">Oproep verwijderen</button>`);
   pbToonLaag();
-  veldGroeit(document.getElementById('pbTekst'));
+  pbVakkenGroeien();
 }
 
+
+
+
+
+
+let pbWegKeuze = null;
+function pbLijstje(namen) { return namen.length > 1 ? namen.slice(0, -1).join(', ') + ' en ' + namen[namen.length - 1] : namen[0]; }
+function pbWegZin() {
+  const m = pbMijn.find(x => x.oproep.id === pbWegKeuze.oproep);
+  const kandidaten = (m && m.reacties) || [];
+  if (!kandidaten.length) return 'Er zijn geen reacties. Je oproep verdwijnt.';
+  if (pbWegKeuze.gekozen == null) return 'Kies wie het is geworden.';
+  const gekozen = kandidaten.find(r => r.musician_id === pbWegKeuze.gekozen);
+  const rest = kandidaten.filter(r => r !== gekozen).map(r => r.naam);
+  const zin = rest.length ? `${pbLijstje(rest)} ${rest.length > 1 ? 'krijgen' : 'krijgt'} een vriendelijk bericht van TalentTent.` : '';
+
+  return [gekozen ? `Het gesprek met ${gekozen.naam} opent met een bericht dat klaarstaat; pas het aan en verstuur het.` : '', zin, 'Je oproep sluit meteen.'].filter(Boolean).join(' ');
+}
 function pbVerwijderen(id) {
-  showConfirm('Wie reageerde, krijgt een vriendelijk bericht.', async () => {
-    const { error } = await db.rpc('tt_oproep_sluiten', { p_id: id, p_reden: 'verwijderd' });
-    if (error) { showToast(friendlyErrorMessage(error, 'de oproep verwijderen')); return; }
-    pbForm = null;
-    showToast('Oproep verwijderd.');
-    pbZetTab('mijn');
-  }, 'Verwijderen', false, 'Annuleren', 'Oproep verwijderen?');
+  const m = pbMijn.find(x => x.oproep.id === id);
+  if (!m) return;
+  const kandidaten = m.reacties || [];
+  pbWegKeuze = { oproep: id, gekozen: null };
+  document.getElementById('pbWegKop').textContent = kandidaten.length ? 'Wie is het geworden?' : 'Oproep verwijderen?';
+  document.getElementById('pbWegKeuzes').innerHTML = kandidaten.length ? [...kandidaten.map(r => [r.musician_id, r.naam]), ['', 'Niemand']].map(([w, t]) =>
+    `<button type="button" class="segmented-btn pb-weg-keuze" aria-pressed="false" data-w="${escHtml(w)}" onclick="pbWegKies(this)">${escHtml(t)}</button>`).join('') : '';
+  pbWegBijwerken();
+  document.getElementById('pbWegBlad').classList.add('visible');
+  syncModalScrollLock();
+}
+function pbWegKies(knop) { pbWegKeuze.gekozen = knop.dataset.w; pbWegBijwerken(); }
+function pbWegBijwerken() {
+  document.querySelectorAll('#pbWegKeuzes .pb-weg-keuze').forEach(b => {
+    const aan = b.dataset.w === pbWegKeuze.gekozen;
+    b.classList.toggle('selected', aan); b.setAttribute('aria-pressed', aan ? 'true' : 'false');
+  });
+  document.getElementById('pbWegZin').textContent = pbWegZin();
+  const m = pbMijn.find(x => x.oproep.id === pbWegKeuze.oproep);
+  document.getElementById('pbWegKnop').disabled = !!(m && (m.reacties || []).length) && pbWegKeuze.gekozen == null;
+}
+function pbWegSluiten() { document.getElementById('pbWegBlad').classList.remove('visible'); syncModalScrollLock(); }
+async function pbWegBevestigen() {
+  const k = pbWegKeuze;
+  if (!k) return;
+  const m = pbMijn.find(x => x.oproep.id === k.oproep);
+  const gekozen = k.gekozen ? (m.reacties || []).find(r => r.musician_id === k.gekozen) : null;
+  const { error } = await db.rpc('tt_oproep_sluiten', { p_id: k.oproep, p_reden: gekozen ? 'gevonden' : 'verwijderd', p_gekozen: gekozen ? gekozen.musician_id : null });
+  if (error) { showToast(friendlyErrorMessage(error, 'de oproep verwijderen')); return; }
+  pbWegSluiten();
+  pbWegKeuze = null; pbMijnOpen = null;
+  if (!gekozen) { showToast('Je oproep is verwijderd.'); pbMijnLaden(); pbTegelGetal(); return; }
+
+
+  const tekst = (m.oproep.band_id ? PB_TT.gekozenBand : PB_TT.gekozen).replace('{naam}', gekozen.naam);
+
+
+  pbMijn = pbMijn.filter(x => x.oproep.id !== k.oproep);
+  pbMijnTekenen();
+  pbTegelGetal();
+  openMessageComposer(gekozen.musician_id, gekozen.naam);
+  const veld = document.getElementById('messagesReplyInput');
+  if (veld) { veld.value = tekst; if (typeof berichtInvoerBijwerken === 'function') berichtInvoerBijwerken(); }
 }
 
 
+
+
+
+let pbReacties = [];
+let pbReactieOpen = null;
 async function pbReactiesLaden() {
   const vak = document.getElementById('pbReactiesLijst');
   if (!currentUser || !hasOwnProfile) { vak.innerHTML = emptyStateHTML('Nog geen profiel', 'Met een profiel reageer je op een oproep.', 'Profiel aanmaken', "showView('register')"); return; }
-  ladenTonen(vak);
+  if (!pbReacties.length) ladenTonen(vak);
   const { data, error } = await db.rpc('tt_mijn_reacties');
   if (error) { logCaught('pbReactiesLaden', error); vak.innerHTML = foutStaatHTML(error, 'je reacties laden', 'pbReactiesLaden()'); return; }
-  const rijen = data || [];
-  if (!rijen.length) { vak.innerHTML = emptyStateHTML('Nog geen reacties', 'Tik op een oproep en kies Ik doe mee.', 'Alle oproepen', "pbZetTab('alle')"); return; }
-  vak.innerHTML = rijen.map(r => {
+  pbReacties = data || [];
+  pbReactiesTekenen();
+}
+function pbReactiesTekenen() {
+  const vak = document.getElementById('pbReactiesLijst');
+  if (!vak) return;
+  if (!pbReacties.length) { vak.innerHTML = emptyStateHTML('Nog geen reacties', 'Tik op een oproep en kies Ik doe mee.', 'Alle oproepen', "pbZetTab('alle')"); return; }
+  vak.innerHTML = pbReacties.map(r => {
     const o = r.oproep;
-    const stand = o.status === 'open' ? (r.status === 'uitgenodigd' ? 'Uitgenodigd' : 'Verstuurd') : 'Gesloten';
+    const isOpen = o.status === 'open';
+    const stand = !isOpen ? 'Gesloten' : r.status === 'uitgenodigd' ? 'Je bent uitgenodigd' : 'Reactie verstuurd';
+    const open = pbReactieOpen === r.id;
+    const d = new Date(r.created_at);
+    const wanneer = `${dagLabel(d)} ${d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}`;
+    const knoppen = isOpen ? [`<button type="button" class="btn btn-ghost" onclick="pbReactieOproep('${jsAttr(o.id)}')">Oproep bekijken</button>`,
+      r.status === 'uitgenodigd' ? `<button type="button" class="btn btn-ghost" onclick="openMessageComposer('${jsAttr(o.plaatser_id)}','${jsAttr(o.naam)}')">Naar het gesprek</button>` : '',
+      `<button type="button" class="btn btn-ghost" onclick="pbIntrekken('${jsAttr(r.id)}')">Intrekken</button>`].filter(Boolean) : [];
     return `
-      <div class="result-row pb-reactie">
-        <div class="result-row-top">
-          <div class="result-row-avatar${o.band_id ? ' result-vierkant' : ''}">${fotoHTML(o.foto, o.naam) || ZONDER_FOTO_HTML}</div>
-          <div class="result-row-main">
-            <div class="result-row-name"><span class="result-row-naam">${escHtml(pbTitel(o))}</span></div>
-            <div class="result-row-meta">${[o.naam, o.plaats].filter(Boolean).map(escHtml).join(' · ')}</div>
+      <div class="result-row pb-kaart-oproep${open ? ' open' : ''}">
+        <div class="pb-klap" role="button" tabindex="0" aria-expanded="${open}" onclick="pbReactieKlap('${jsAttr(r.id)}')">
+          <div class="result-row-top">
+            <div class="result-row-avatar${o.band_id ? ' result-vierkant' : ''}">${fotoHTML(o.foto, o.naam) || ZONDER_FOTO_HTML}</div>
+            <div class="result-row-main">
+              <div class="result-row-name pb-eenregel">${pbTitelHTML(o)}<span class="pb-pijl">${PB_PIJL_OMLAAG}</span></div>
+              <div class="result-row-meta pb-eenregel"><span class="pb-regel-kort">${isOpen ? escHtml(pbDagenTekst(o)) : ''}</span><span class="pb-rechts">${escHtml(stand)}</span></div>
+            </div>
           </div>
-          <span class="pb-status">${stand}</span>
         </div>
-        ${o.status === 'open' ? `<button type="button" class="stille-link pb-intrekken" onclick="pbIntrekken('${jsAttr(r.id)}')">Reactie intrekken</button>` : ''}
+        ${open ? `<div class="pb-open">
+          ${r.boodschap ? `<div class="pb-ballon"><div class="message-bubble own">${escHtml(r.boodschap)}<span class="message-bubble-time">${escHtml(wanneer)}</span></div></div>` : ''}
+          ${knoppen.length ? `<div class="btn-row pb-mijn-knoppen">${knoppen.join('')}</div>` : ''}
+        </div>` : ''}
       </div>`;
   }).join('');
+  pbTitelsPassen(vak);
+}
+function pbReactieKlap(id) { pbReactieOpen = pbReactieOpen === id ? null : id; pbReactiesTekenen(); }
+async function pbReactieOproep(id) {
+  const { data, error } = await db.rpc('tt_prikbord', { p_lat: null, p_lng: null, p_straal_km: 100, p_id: id });
+  if (error) { logCaught('pbReactieOproep', error); showToast(friendlyErrorMessage(error, 'de oproep openen')); return; }
+  if (!data || !data.length) { showToast(PB_LINK_WEG); return; }
+  pbLijst = pbLijst.filter(x => x.id !== data[0].id).concat(data[0]);
+  pbOpenOproep(data[0].id);
 }
 
 function pbIntrekken(id) {
@@ -841,9 +1206,12 @@ function pbIntrekken(id) {
     const { error } = await db.rpc('tt_reactie_intrekken', { p_reactie: id });
     if (error) { showToast(friendlyErrorMessage(error, 'je reactie intrekken')); return; }
     showToast('Je reactie is ingetrokken.');
+    pbReactieOpen = null;
     pbReactiesLaden();
   }, 'Intrekken', false, 'Annuleren', 'Reactie intrekken?');
 }
+
+
 
 
 async function pbKaartjeVullen(id) {
@@ -853,8 +1221,14 @@ async function pbKaartjeVullen(id) {
   if (error || !data || !data.length) { el.remove(); return; }
   const o = data[0];
   const open = o.status === 'open';
-  el.innerHTML = `<div class="gesprek-oproep-titel">${escHtml(pbTitel(o))}</div>
-    <div class="result-row-meta">${[pbDoelNaam(o.doel), o.naam, open ? '' : 'gesloten'].filter(Boolean).map(escHtml).join(' · ')}</div>`;
+  el.innerHTML = `<div class="result-row-top">
+      <div class="result-row-avatar${o.band_id ? ' result-vierkant' : ''}">${fotoHTML(o.foto, o.naam) || ZONDER_FOTO_HTML}</div>
+      <div class="result-row-main">
+        <div class="result-row-name pb-eenregel">${pbTitelHTML(o)}${open ? `<span class="pb-pijl">${PB_PIJL_RECHTS}</span>` : ''}</div>
+        <div class="result-row-meta pb-eenregel">${pbRegelHTML(o)}${open ? '' : '<span class="pb-rechts">Gesloten</span>'}</div>
+      </div></div>`;
+  el.classList.add('result-row');
+  pbTitelsPassen(el);
   if (open) { el.setAttribute('role', 'button'); el.onclick = () => pbOpenKaartje(o.id); }
 }
 async function pbOpenKaartje(id) {
@@ -865,35 +1239,46 @@ async function pbOpenKaartje(id) {
 }
 
 
+
+
+
+
 const PB_TT = {
-  oproep_bedankt: '{naam} heeft de oproep {titel} afgesloten. Bedankt voor je reactie en succes met zoeken.',
-  reactie_ingetrokken: '{naam} doet niet meer mee met je oproep {titel}.',
-  oproep_loopt_af: 'Je oproep {titel} loopt over 10 dagen af. Zoek je nog? Verleng hem bij Mijn oproepen.',
-  nieuwe_reacties: '{aantal} nieuwe reacties op {titel}.',
-  nieuwe_reactie: '1 nieuwe reactie op {titel}.',
-  nieuwe_reacties_meer: 'Nieuwe reacties: {lijst}.',
-  reacties_op: '{aantal} op {titel}',
+  oproep_bedankt: 'De oproep "{titel}" is afgesloten. Bedankt voor je interesse en succes met zoeken.',
+  reactie_ingetrokken: '{naam} doet niet meer mee met je oproep "{titel}".',
+  oproep_loopt_af: 'Je oproep "{titel}" loopt over 10 dagen af. Ben je nog op zoek? Verleng de oproep bij Mijn Oproepen. Heb je iemand gevonden? Verwijder dan de oproep, dan krijgen de andere kandidaten bericht.',
+  nieuwe_reacties: '{aantal} nieuwe kandidaten voor "{titel}".',
+  nieuwe_reactie: '1 nieuwe kandidaat voor "{titel}".',
+  nieuwe_reacties_meer: 'Nieuwe kandidaten: {lijst}.',
+  reacties_op: '{aantal} voor "{titel}"',
   oproepen: 'Er zijn {aantal} nieuwe oproepen bij jou in de buurt.',
   oproep: 'Er is 1 nieuwe oproep bij jou in de buurt.',
   knopPrikbord: 'Naar het prikbord',
-  knopMijn: 'Mijn oproepen'
+
+  knopMijn: 'Naar Mijn Oproepen',
+  knopReacties: 'Naar Mijn Reacties',
+
+  gekozen: 'Hoi {naam}, bedankt voor je reactie en ik wil graag met je verder. De oproep wordt hiermee afgesloten.',
+  gekozenBand: 'Hoi {naam}, bedankt voor je reactie en we willen graag met je verder. De oproep wordt hiermee afgesloten.'
 };
 function pbTtNaam(id, band, info) {
   if (band && info && info.bands[band]) return info.bands[band].name;
   const m = info && info.muzikanten[id];
   return m ? displayNameOf(m) : 'De plaatser';
 }
+
+function pbTtTitel(x, info) {
+  return pbTitel({ instrumenten: x.instrumenten, elk_instrument: x.elk, soort: x.oproep_soort || x.soort, zang_vorm: x.zang_vorm,
+    naam: pbTtNaam(x.plaatser, x.band, info) });
+}
 function pbTtKernzin(inh, info) {
-  const titel = pbTitel({ instrumenten: inh.instrumenten, elk_instrument: inh.elk, soort: inh.oproep_soort, toevoeging: inh.toevoeging });
-  const naam = pbTtNaam(inh.soort === 'reactie_ingetrokken' ? inh.wie : inh.plaatser, inh.soort === 'reactie_ingetrokken' ? null : inh.band, info);
   if (inh.soort === 'oproepen') {
     const n = (inh.oproepen || []).length + (Number(inh.meer) || 0);
     return n === 1 ? PB_TT.oproep : PB_TT.oproepen.replace('{aantal}', n);
   }
 
   if (inh.soort === 'nieuwe_reacties') {
-    const lijst = (inh.oproepen || []).map(x => ({ aantal: x.aantal,
-      titel: pbTitel({ instrumenten: x.instrumenten, elk_instrument: x.elk, soort: x.oproep_soort, toevoeging: x.toevoeging }) }));
+    const lijst = (inh.oproepen || []).map(x => ({ aantal: x.aantal, titel: pbTtTitel(x, info) }));
     if (!lijst.length) return '';
     if (lijst.length === 1) {
       const x = lijst[0];
@@ -902,24 +1287,27 @@ function pbTtKernzin(inh, info) {
     const delen = lijst.map(x => PB_TT.reacties_op.replace('{aantal}', x.aantal).replace('{titel}', x.titel));
     return PB_TT.nieuwe_reacties_meer.replace('{lijst}', delen.slice(0, -1).join(', ') + ' en ' + delen[delen.length - 1]);
   }
-  return (PB_TT[inh.soort] || '').replace('{naam}', naam).replace('{titel}', titel);
+  const naam = inh.soort === 'reactie_ingetrokken' ? pbTtNaam(inh.wie, null, info) : '';
+  return (PB_TT[inh.soort] || '').replace('{naam}', naam).replace('{titel}', pbTtTitel(inh, info));
 }
 function pbTtBerichtHTML(bericht, info) {
   const inh = bericht.inhoud || {};
   const kop = pbTtKernzin(inh, info);
   if (!kop) return '';
   const mijn = ['reactie_ingetrokken', 'oproep_loopt_af', 'nieuwe_reacties'].includes(inh.soort);
-  const knop = `<button type="button" class="tt-meer" onclick="openPrikbordVanuitBericht('${mijn ? 'mijn' : 'alle'}')">${escHtml(mijn ? PB_TT.knopMijn : PB_TT.knopPrikbord)}</button>`;
+  const tab = mijn ? 'mijn' : inh.soort === 'oproep_bedankt' ? 'reacties' : 'alle';
+  const knop = `<button type="button" class="tt-meer" onclick="openPrikbordVanuitBericht('${tab}')">${escHtml({ mijn: PB_TT.knopMijn, reacties: PB_TT.knopReacties, alle: PB_TT.knopPrikbord }[tab])}</button>`;
   const tijd = new Date(bericht.created_at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+
 
   const rijen = inh.soort === 'oproepen' ? (inh.oproepen || []).filter(x => x.soort && !isGeblokkeerd(x.plaatser)).map(x => {
     const bi = x.band && info.bands[x.band], mi = info.muzikanten[x.plaatser];
-    const naam = bi ? bi.name : mi ? displayNameOf(mi) : '';
-    const regel1 = [pbDoelNaam(x.doel), naam].filter(Boolean).join(' · ');
-    const regel2 = [bi ? bi.city : mi && mi.city, afstandTekst(x.km)].filter(Boolean).join(' · ');
-    const titel = pbTitel({ instrumenten: x.instrumenten, elk_instrument: x.elk, soort: x.soort, toevoeging: x.toevoeging });
-    return `<button type="button" class="bb-rij bb-rij-knop" onclick="pbOpenKaartje('${jsAttr(x.id)}')">${bbFotoHTML(bi ? bi.avatar_url : mi && mi.avatar_url, false, !!bi)}<span class="bb-tekst"><span class="bb-naam">${escHtml(titel)}</span>${regel1 ? `<span class="bb-sub">${escHtml(regel1)}</span>` : ''}${regel2 ? `<span class="bb-sub">${escHtml(regel2)}</span>` : ''}</span></button>`;
+    const o = { instrumenten: x.instrumenten, elk_instrument: x.elk, soort: x.soort, zang_vorm: x.zang_vorm, band_id: x.band || null,
+      naam: bi ? bi.name : mi ? displayNameOf(mi) : '', plaatser_naam: mi ? displayNameOf(mi) : '', plaatser_instrument: x.plaatser_instrument,
+      genres: x.genres || [], leeftijd: x.leeftijd, km: x.km };
+    return `<button type="button" class="bb-rij bb-rij-knop" onclick="pbOpenKaartje('${jsAttr(x.id)}')">${bbFotoHTML(bi ? bi.avatar_url : mi && mi.avatar_url, false, !!bi)}<span class="bb-tekst"><span class="bb-naam pb-eenregel">${pbTitelHTML(o, 'pb-bb-titel')}</span><span class="bb-sub pb-eenregel">${pbRegelHTML(o)}</span></span></button>`;
   }).join('') : '';
+  if (rijen) setTimeout(() => pbTitelsPassen(document.getElementById('messagesThreadList')), 0);
   return `<div class="message-bubble other tt-bericht"><div class="tt-bericht-kop">${escHtml(kop)}</div>${rijen}${knop}<div class="message-bubble-time">${escHtml(tijd)}</div></div>`;
 }
 function openPrikbordVanuitBericht(tab) {
@@ -1070,11 +1458,12 @@ function pbAllesWissen() {
   pbTab = 'alle'; pbLaag = null; pbLijst = []; pbOpen = null; pbMijn = [];
   pbFilters = { soort: '', doel: '', instrument: '', volgorde: 'nieuwste' };
   pbForm = null; pbVanBand = null; pbVanBuiten = false;
-  Object.assign(PB_MIJ, { instrumenten: [], genres: [], bands: [], leeftijd: null, naam: '', foto: '', plaats: '', voor: null });
+  pbReacties = []; pbMijnOpen = null; pbKandidaatOpen = null; pbReactieOpen = null; pbWegKeuze = null;
+  Object.assign(PB_MIJ, { instrumenten: [], instrumentenNiveau: [], bands: [], leeftijd: null, naam: '', foto: '', plaats: '', voor: null });
   pbBewaard = undefined; pbBewaardVoor = null; pbVertrek = null; pbOproepenAan = null;
-  ['pbResultaat', 'pbMijnLijst', 'pbReactiesLijst', 'pbOproepInhoud', 'pbFormInhoud', 'pbVoorbeeldInhoud', 'pbReagerenInhoud', 'pbTipsInhoud']
+  ['pbResultaat', 'pbMijnLijst', 'pbReactiesLijst', 'pbOproepInhoud', 'pbFormInhoud', 'pbVoorbeeldInhoud', 'pbReagerenInhoud', 'voorbeeldBladInhoud', 'pbWegKeuzes']
     .forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
-  ['pbReagerenModal', 'pbTipsModal'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('visible'); });
+  ['pbReagerenModal', 'voorbeeldBlad', 'pbWegBlad'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('visible'); });
   ['pbTegelGetal', 'pbMijnGetal'].forEach(id => { const el = document.getElementById(id); if (el) el.hidden = true; });
   const plaats = document.getElementById('pbPlaats');
   if (plaats) plaats.value = '';
@@ -1092,7 +1481,7 @@ async function pbTegelGetal() {
   const el2 = document.getElementById('pbMijnGetal');
   if (!currentUser || !hasOwnProfile) { [el, el2].forEach(e => e && (e.hidden = true)); return; }
   const { data, error } = await db.rpc('tt_nieuwe_reacties');
-  if (error) return;
+  if (error) { logCaught('pbTegelGetal', error); return; }
   [el, el2].forEach(e => { if (e) { e.textContent = data || ''; e.hidden = !data; } });
 }
 
@@ -1100,3 +1489,5 @@ pbReagerenVersturen = slotOm(pbReagerenVersturen, 'pbVersturenKnop');
 pbPlaatsen = slotOm(pbPlaatsen, 'pbPlaatsenKnop');
 pbVerlengen = slotOm(pbVerlengen);
 pbUitnodigen = slotOm(pbUitnodigen);
+pbNaarVoorbeeld = slotOm(pbNaarVoorbeeld, 'pbNaarVoorbeeldKnop');
+pbWegBevestigen = slotOm(pbWegBevestigen, 'pbWegKnop');

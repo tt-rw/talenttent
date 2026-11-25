@@ -685,7 +685,7 @@ async function bevestigPaginaOpenen(code) {
     return;
   }
   const knop = currentUser
-    ? { tekst: 'Naar mijn profiel', actie: 'naarHoogsteScherm()' }
+    ? { tekst: 'Naar Mijn Profiel', actie: 'naarHoogsteScherm()' }
     : { tekst: 'Inloggen', actie: "showView('auth')" };
   if (uit.stand === 'bevestigd') {
     toestemmingMeldingTonen('Je e-mailadres is bevestigd',
@@ -1131,6 +1131,8 @@ async function nextStep(from) {
         }
       }
     }
+    const bioFout = bioVoorbeeldFout('bio', 'muzikant');
+    if (bioFout) fouten.push(bioFout);
 
     if (showFieldErrors(fouten)) return;
 

@@ -1,6 +1,9 @@
   :root {
     --bg: #0d0d0d;
     --surface: #161616;
+
+
+    --kandidaat-vlak: var(--surface);
     --surface2: #1e1e1e;
     --border: #2a2a2a;
 
@@ -200,6 +203,7 @@
     --bg: #F6F3EC;
     --surface: #FFFEFA;
     --surface2: #EFEBE2;
+    --kandidaat-vlak: var(--bg);
     --border: #D2CCBF;
     --accent: #1E1E1E;
     --steun: #2F7A50;
@@ -3467,8 +3471,10 @@
     min-height: 44px;
     box-sizing: border-box;
     padding: 8px 16px;
-    font-size: 12px;
-    line-height: var(--regel-12);
+
+
+    font-size: 15px;
+    line-height: var(--regel-15);
     cursor: pointer;
     user-select: none;
     transition: all 0.15s;
@@ -4155,7 +4161,10 @@
 
 
   .segmented-vol { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; width: 100%; }
-  .segmented-vol .segmented-btn { min-width: 0; white-space: normal; text-align: center; }
+
+
+  .segmented-vol .segmented-btn { min-width: 0; white-space: nowrap; text-align: center; }
+  .segmented-vol.btn-rij-stapel { grid-auto-flow: row; }
 
   .band-tegel-blok { margin-top: 24px; }
 
@@ -5355,7 +5364,6 @@
 
 
 
-textarea.bio-voorbeeld::placeholder { font-style: italic; opacity: 0.6; }
 
 
 
@@ -5383,39 +5391,90 @@ textarea.bio-voorbeeld::placeholder { font-style: italic; opacity: 0.6; }
   .pb-oproep-kop { display: flex; gap: 12px; align-items: center; cursor: pointer; }
   .pb-oproep-wie { min-width: 0; }
   .pb-oproep-titel { font-size: 17px; font-weight: 700; line-height: var(--regel-17); color: var(--text); }
-  .pb-oproep-tekst { font-size: 15px; line-height: var(--regel-15); color: var(--text); margin: 16px 0; white-space: pre-line; overflow-wrap: anywhere; }
+  .pb-oproep-tekst { font-size: 15px; line-height: var(--regel-15); color: var(--text); margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+
+  .pb-vakken { margin: 0 0 16px; }
+  .pb-vak-kop { font-size: var(--fs-sm); line-height: var(--regel-12); font-weight: 700; color: var(--muted); margin: 16px 0 4px; }
   .pb-feiten { display: grid; grid-template-columns: max-content 1fr; gap: 8px 12px; margin: 0 0 16px; font-size: 12px; line-height: var(--regel-12); }
   .pb-feiten dt { color: var(--muted); }
   .pb-feiten dd { margin: 0; color: var(--text); }
-  .pb-oproep-gedeeld, .pb-oproep-media, .pb-oproep-datum, .pb-voorbeeld-uitleg, .pb-reageren-uitleg, .pb-leeg-regel {
+  .pb-oproep-gedeeld, .pb-oproep-media, .pb-oproep-datum, .pb-voorbeeld-uitleg, .pb-reageren-uitleg {
     font-size: 12px; line-height: var(--regel-12); color: var(--muted); margin: 0 0 8px;
   }
   .pb-oproep-gedeeld { color: var(--accent); font-weight: 700; }
   .pb-knop { width: 100%; margin-top: 16px; }
-  .pb-instrumenten { display: flex; flex-wrap: wrap; gap: 8px; }
-  .pb-keuzes { display: flex; }
   .pb-form .segmented-btn[disabled] { opacity: .4; pointer-events: none; }
   .pb-uit { opacity: .4; }
-  .pb-mijn { margin-bottom: 28px; }
-  .pb-mijn-kop { margin-bottom: 12px; }
   .pb-mijn-knoppen { margin-top: 12px; }
-  .pb-reactie .result-row-main { gap: 2px; }
-  .pb-status { align-self: center; font-size: 12px; font-weight: 700; color: var(--muted); white-space: nowrap; }
-  .pb-klein { width: auto; align-self: center; padding-left: 14px; padding-right: 14px; }
-  .pb-nieuw { margin-left: 8px; font-size: 11px; font-weight: 700; color: var(--accent); }
-  .pb-boodschap { font-size: 12px; line-height: var(--regel-12); color: var(--text); margin-top: 4px; overflow-wrap: anywhere; }
-  .pb-intrekken { margin-top: 8px; }
+
+  .pb-mijn-knoppen.btn-rij-stapel > .btn { grid-row: auto; }
+  .pb-nieuw { margin-left: 8px; font-size: 11px; line-height: var(--regel-11); font-weight: 700; color: var(--accent); flex: none; }
   .pb-media-melding, .pb-afspraak-melding { margin-top: 12px; }
   .pb-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
   .pb-form > .field { margin-bottom: var(--ruimte-velden); }
   .pb-form .pb-knop { margin-top: 8px; }
-  .pb-reactie .result-row-meta { white-space: normal; }
-  .gesprek-oproep { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin: 0 0 12px; cursor: pointer; }
-  .gesprek-oproep:empty { display: none; }
-  .gesprek-oproep-titel { font-size: 15px; font-weight: 700; line-height: var(--regel-15); color: var(--text); }
-  .pb-tips-intro { font-size: 15px; line-height: var(--regel-15); color: var(--text); margin: 0 0 12px; }
   .pb-tips { margin: 0 0 12px; padding-left: 24px; font-size: 15px; line-height: var(--regel-15); color: var(--text); }
   .pb-tips li { margin-bottom: 8px; }
+
+
+
+
+  .pb-eenregel { display: flex; align-items: baseline; white-space: nowrap; min-width: 0; overflow: hidden; }
+  .pb-titel, .pb-regel-kort { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .pb-titel { flex: 0 1 auto; overflow-wrap: normal; }
+  .pb-regel-kort { flex: 0 1 auto; }
+
+
+  .pb-regel-vast { flex: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+  .pb-eenregel > .result-row-naam:not(.pb-titel) { flex: 0 1 auto; min-width: 0; white-space: normal; }
+  .pb-rechts { flex: none; margin-left: auto; padding-left: 8px; font-size: 12px; line-height: var(--regel-12); font-weight: 700; color: var(--muted); }
+  .pb-pijl { flex: none; margin-left: auto; padding-left: 8px; color: var(--muted); display: inline-flex; align-self: center; }
+  .pb-pijl .zoek-filters-pijl { transition: transform 0.15s; }
+  .pb-kaart-oproep.open > .pb-klap .zoek-filters-pijl { transform: rotate(180deg); }
+  .pb-oproep-titel.pb-eenregel { display: flex; }
+  .pb-oproep-titel-tekst { font: inherit; }
+  .pb-bb-titel { font: inherit; }
+  .bb-rij .bb-naam.pb-eenregel, .bb-rij .bb-sub.pb-eenregel { display: flex; }
+
+  .pb-duiding { font-size: var(--fs-sm); line-height: var(--regel-12); color: var(--muted); margin: 0 0 16px; }
+
+
+  .result-row.pb-kaart-oproep { display: block; cursor: default; }
+  .pb-kaart-oproep .pb-klap { cursor: pointer; }
+  .pb-kaart-oproep .pb-open { margin-top: 12px; }
+  .pb-kaart-oproep .result-row-main { display: flex; flex-direction: column; gap: 2px; }
+
+  .pb-kandidaten { padding: 0 0 0 16px; }
+  .pb-kandidaat { background: var(--kandidaat-vlak); border-radius: var(--radius-field); padding: 12px; margin-bottom: 8px; cursor: pointer; }
+  .pb-kandidaat .result-row-main { display: flex; flex-direction: column; gap: 2px; }
+  .pb-kandidaat-vak { margin-top: 12px; }
+  .pb-extra { font-size: var(--fs-sm); line-height: var(--regel-12); color: var(--muted); margin: 0 0 16px; }
+  .pb-ballon { display: flow-root; }
+  .pb-ballon .message-bubble { max-width: 100%; margin-bottom: 0; }
+  .pb-profiel { margin-top: 12px; }
+  .pb-uitnodigen { flex: none; margin-left: auto; padding-left: 8px; }
+
+
+  .pb-lees-knop { width: 100%; margin: 0 0 24px; }
+  .pb-form textarea.pb-vak { min-height: 86px; }
+  .voorbeeld-blad { position: relative; max-height: calc(100dvh - 72px); overflow-y: auto; overscroll-behavior: contain; }
+  .voorbeeld-blad .modal-close { top: 4px; right: 4px; }
+  .vb-tussenkop { margin-top: 16px; }
+  .vb-kaart { background: var(--vlak); box-shadow: var(--schaduw-vlak); border: 1px solid transparent; border-radius: var(--radius-field); padding: 16px; margin: 0 0 12px; }
+  .vb-wie { font-size: var(--fs-sm); line-height: var(--regel-12); color: var(--muted); margin: 0 0 4px; }
+  .vb-tekst { font-size: 15px; line-height: var(--regel-15); color: var(--text); margin: 0 0 12px; }
+  .vb-knop { width: 100%; }
+  .melding.pb-kader { border-color: var(--danger); margin: 0 0 16px; }
+
+  .pb-weg-keuzes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+  .pb-weg-keuzes:empty { display: none; }
+  .pb-weg-keuze { white-space: normal; overflow-wrap: anywhere; max-width: 100%; text-align: center; }
+
+
+  .gesprek-oproep { display: block; margin: 0 0 12px; }
+  .gesprek-oproep:empty { display: none; }
+  .gesprek-oproep .result-row-main { display: flex; flex-direction: column; gap: 2px; }
   .search-mode-tab { position: relative; }
   .search-mode-tab .pb-getal { position: absolute; top: -6px; right: -4px; margin: 0; }
   .pb-rij-gedeeld { margin-top: 2px; }

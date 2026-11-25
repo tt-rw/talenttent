@@ -23,7 +23,8 @@ const TT_TEKSTEN = {
   kernzinMatches: 'Er zijn {aantal} nieuwe matches bij jou in de buurt.',
   meer: 'En nog {aantal} andere — bekijk ze in Zoeken',
   bandZoekt: 'zoekt: {instrument}',
-  oproepUitnodiging: '{naam} nodigt je uit om kennis te maken voor {titel}.',
+
+  oproepUitnodiging: '{naam} nodigt je uit om kennis te maken.',
 };
 
 
@@ -451,7 +452,12 @@ async function loadInbox(opties) {
         </div>` };
     });
 
-    if (ttBerichten.length) rijen.push({ t: new Date(ttBerichten[0].created_at).getTime(), html: talentTentRijHTML(ttBerichten) });
+    if (ttBerichten.length) {
+
+      const ttLaatste = ttBerichten[0];
+      const ttInfo = ttLaatste.inhoud && ttLaatste.inhoud.soort ? await talentTentInfoOphalen([ttLaatste]) : null;
+      rijen.push({ t: new Date(ttLaatste.created_at).getTime(), html: talentTentRijHTML(ttBerichten, ttInfo) });
+    }
     listEl.innerHTML = rijen.sort((a, b) => b.t - a.t).map(r => r.html).join('');
     if (currentUser) listEl.dataset.klaar = currentUser.id;
   } catch (e) {
@@ -813,13 +819,13 @@ function zetSysteemGesprek(aan) {
   if (paneel) paneel.classList.toggle('thread-systeem', !!aan);
 }
 
-function talentTentKernzin(inhoud) {
-  if (inhoud && inhoud.soort) return pbTtKernzin(inhoud, null);
+function talentTentKernzin(inhoud, info) {
+  if (inhoud && inhoud.soort) return pbTtKernzin(inhoud, info || null);
   const aantal = ((inhoud && inhoud.muzikanten) || []).length + ((inhoud && inhoud.bands) || []).length + (Number(inhoud && inhoud.meer) || 0);
   return aantal === 1 ? TT_TEKSTEN.kernzinEenMatch : TT_TEKSTEN.kernzinMatches.replace('{aantal}', aantal);
 }
 
-function talentTentRijHTML(berichten) {
+function talentTentRijHTML(berichten, info) {
   const laatste = berichten[0];
   const ongelezen = berichten.filter(b => !b.read_at).length;
   return `
@@ -827,7 +833,7 @@ function talentTentRijHTML(berichten) {
       <div class="messages-conv-avatar">${TT_AVATAR_HTML}</div>
       <div class="messages-conv-main">
         <div class="messages-conv-name">${escHtml(TT_GESPREK_NAAM)}${ongelezen ? ` <span class="unread-badge">${ongelezen}</span>` : ''}</div>
-        <div class="messages-conv-preview">${escHtml(talentTentKernzin(laatste.inhoud))}</div>
+        <div class="messages-conv-preview">${escHtml(talentTentKernzin(laatste.inhoud, info))}</div>
       </div>
       <div class="messages-conv-time">${escHtml(relativeMessageTime(laatste.created_at))}</div>
     </div>`;

@@ -1661,6 +1661,8 @@ async function saveBandWie() {
   if (!zip || !bandPostcodeResolved || !city) {
     fouten.push(['bwZip', 'Vul een geldige postcode in. De plaats wordt dan automatisch ingevuld']);
   }
+  const bioFout = bioVoorbeeldFout('bwBio', 'band');
+  if (bioFout) fouten.push(bioFout);
   if (showFieldErrors(fouten)) return;
   if (bwFieldSnapshot() === bwSnapshot) return;
 
@@ -2121,15 +2123,29 @@ function bmzZet(b) {
   bcCovers = (b.band_covers || []).map(c => ({ id: c.id, title: c.song_title, artist: c.song_artist }));
 }
 
+
+
+
 function bmzRenderSoort() {
-  document.getElementById('bmzSoort').innerHTML = BAND_SOORT_KEUZES.map(([waarde, label]) =>
-    `<button type="button" class="segmented-btn${bmzSoort === waarde ? ' selected' : ''}" onclick="bmzKiesSoort('${waarde}')">${escHtml(label)}</button>`).join('');
+  initChoiceField({
+    id: 'bmzSoort', fieldId: 'bmzSoortField', menuId: 'bmzSoortMenu',
+    rijen: () => BAND_SOORT_KEUZES.map(([w, t]) => ({ t, gekozen: bmzSoort === w })),
+    kies: (i) => { bmzKiesSoort(BAND_SOORT_KEUZES[i][0]); },
+    ververs: () => {
+      const el = document.getElementById('bmzSoortField');
+      if (!el) return;
+      const k = BAND_SOORT_KEUZES.find(([w]) => w === bmzSoort);
+      const l = el.querySelector('.wheel-field-label');
+      l.textContent = k ? k[1] : BAND_SOORT_KEUZES.map(x => x[1]).join(' · ');
+      l.classList.toggle('leeg', !k);
+    }
+  });
 }
 
 
 function bmzKiesSoort(waarde) {
   bmzSoort = bmzSoort === waarde ? null : waarde;
-  bmzRenderSoort();
+  refreshChoiceField('bmzSoort');
 }
 
 function bmzNummerRijHTML(n, i) {

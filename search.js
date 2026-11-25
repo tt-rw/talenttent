@@ -115,6 +115,9 @@ function zetZoekScherm(scherm) {
   });
   bewaarZoekStand();
   if (typeof werkTerugKnopBij === 'function') werkTerugKnopBij();
+
+
+  if ((scherm === 'start' || scherm === 'prikbord') && typeof pbTegelGetal === 'function') pbTegelGetal();
 }
 
 

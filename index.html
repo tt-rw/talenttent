@@ -99,7 +99,7 @@
 <link rel="preload" href="tt-woordmerk.woff2" as="font" type="font/woff2" crossorigin>
 
 <link rel="preload" href="inter-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=20261123a">
+<link rel="stylesheet" href="styles.css?v=20261124a">
 </head>
 <body class="landing-op-foto">
 
@@ -442,8 +442,9 @@
 
     <div class="field-group">
       <div class="field">
-        <label>Korte bio</label>
-        <textarea id="bio" class="bio-voorbeeld" placeholder="Hoi allemaal! Ik ben Kevin. Ik speel nu al meer dan drie jaar drums en ik wil graag een stapje verder gaan. Daarom ben ik op zoek naar anderen die het leuk vinden om samen een classic rockband te beginnen.&#10;Ik denk dat we in het begin vooral covers kunnen spelen, maar het lijkt me uiteindelijk echt vet om onze eigen muziek te maken. Mijn favoriete bands zijn onder andere Van Halen en Guns N’ Roses, maar ik luister naar nog veel meer.&#10;Lijkt het je leuk om samen een band te beginnen? Stuur me dan zeker een berichtje!" maxlength="1000" oninput="updateCharCounter('bio','bioTeller',1000)"></textarea>
+
+        <div class="label-rij zoek-label-rij"><label for="bio">Korte bio</label><button type="button" class="zoek-filters-knop pb-voorbeelden-knop" onclick="bioVoorbeeldenOpen('bio','muzikant')" aria-label="Voorbeelden bij Korte bio">Voorbeelden</button></div>
+        <textarea id="bio" class="bio-vak" rows="3" maxlength="1000" oninput="updateCharCounter('bio','bioTeller',1000)"></textarea>
         <div id="bioTeller" class="teken-teller" hidden></div>
         <p class="field-hint">Dit is vaak het eerste wat andere muzikanten van je lezen.</p>
       </div>
@@ -828,9 +829,9 @@
 
     <div class="field-group">
     <div class="field">
-      <label>Korte bio</label>
 
-      <textarea id="wbjBio" class="bio-voorbeeld" placeholder="Hoi allemaal! Ik ben Kevin. Ik speel nu al meer dan drie jaar drums en ik wil graag een stapje verder gaan. Daarom ben ik op zoek naar anderen die het leuk vinden om samen een classic rockband te beginnen.&#10;Ik denk dat we in het begin vooral covers kunnen spelen, maar het lijkt me uiteindelijk echt vet om onze eigen muziek te maken. Mijn favoriete bands zijn onder andere Van Halen en Guns N’ Roses, maar ik luister naar nog veel meer.&#10;Lijkt het je leuk om samen een band te beginnen? Stuur me dan zeker een berichtje!" maxlength="1000" oninput="updateCharCounter('wbjBio','wbjBioTeller',1000)"></textarea>
+      <div class="label-rij zoek-label-rij"><label for="wbjBio">Korte bio</label><button type="button" class="zoek-filters-knop pb-voorbeelden-knop" onclick="bioVoorbeeldenOpen('wbjBio','muzikant')" aria-label="Voorbeelden bij Korte bio">Voorbeelden</button></div>
+      <textarea id="wbjBio" class="bio-vak" rows="3" maxlength="1000" oninput="updateCharCounter('wbjBio','wbjBioTeller',1000)"></textarea>
       <div id="wbjBioTeller" class="teken-teller" hidden></div>
       <p class="field-hint">Dit is vaak het eerste wat andere muzikanten van je lezen.</p>
     </div>
@@ -1013,8 +1014,9 @@
 
     <div class="field-group">
       <div class="field">
-        <label>Wie zijn we</label>
-<textarea id="bwBio" class="bio-voorbeeld" placeholder="Hoi! Wij zijn Zwart Vinyl, vier vrienden uit Den Haag. We staan nu twee jaar samen in de oefenruimte en spelen vooral gitaarliedjes met een rauw randje.&#10;Op dit moment werken we aan onze eerste eigen nummers. Ons doel is om dit jaar de eerste optredens te spelen in kleine zalen en op festivals in de buurt.&#10;We zoeken nog een bassist die zin heeft om met ons mee te groeien. Klinkt dat goed? Stuur ons een berichtje!" maxlength="1000" oninput="updateCharCounter('bwBio','bwBioTeller',1000)"></textarea>
+
+        <div class="label-rij zoek-label-rij"><label for="bwBio">Wie zijn we</label><button type="button" class="zoek-filters-knop pb-voorbeelden-knop" onclick="bioVoorbeeldenOpen('bwBio','band')" aria-label="Voorbeelden bij Wie zijn we">Voorbeelden</button></div>
+<textarea id="bwBio" class="bio-vak" rows="3" maxlength="1000" oninput="updateCharCounter('bwBio','bwBioTeller',1000)"></textarea>
         <div id="bwBioTeller" class="teken-teller" hidden></div>
         <p class="field-hint">Dit is vaak het eerste wat muzikanten van jullie lezen.</p>
       </div>
@@ -1099,7 +1101,10 @@
     <h2 class="hoofdstuk-kop">Wat voor band?</h2>
     <div class="field-group">
       <div class="field">
-        <div class="segmented-control segmented-vol" id="bmzSoort"></div>
+        <div class="menu-anchor">
+          <div class="wheel-field" id="bmzSoortField" aria-label="Wat voor band?"><span class="wheel-field-label"></span></div>
+          <div class="choice-menu menu-breed" id="bmzSoortMenu" role="listbox" aria-label="Wat voor band?"></div>
+        </div>
       </div>
     </div>
 
@@ -1238,7 +1243,7 @@
 
     <button type="button" class="tile zoek-tegel" id="zoekTegelPrikbord" onclick="openPrikbord()">
       <span class="zoek-tegel-icoon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span>
-      <span class="zoek-tegel-tekst"><span class="tile-title">Prikbord</span><span class="tile-sub">Oproepen: wie zoekt wie, en wie is beschikbaar</span></span>
+      <span class="zoek-tegel-tekst"><span class="tile-title">Prikbord</span><span class="tile-sub">Vinden en gevonden worden</span></span>
       <span class="pb-getal" id="pbTegelGetal" hidden></span>
     </button>
     <button type="button" class="tile zoek-tegel" id="zoekTegelMuzikanten" onclick="openZoekScherm('muzikanten')">
@@ -1541,9 +1546,11 @@
       <h1 class="filter-title zoek-titel scherm-titel">Prikbord</h1>
       <div class="pb-kopregel"><button type="button" class="btn btn-primary pb-plaatsen-knop" onclick="pbPlaatsenStart()">Oproep plaatsen</button></div>
       <div class="pb-mijn-knoppen-rij">
-        <button type="button" class="search-mode-tab" id="pbTab-mijn" aria-pressed="false" onclick="pbWissel('mijn')">Mijn oproepen<span class="pb-getal" id="pbMijnGetal" hidden></span></button>
-        <button type="button" class="search-mode-tab" id="pbTab-reacties" aria-pressed="false" onclick="pbWissel('reacties')">Mijn reacties</button>
+        <button type="button" class="search-mode-tab" id="pbTab-mijn" aria-pressed="false" onclick="pbWissel('mijn')">Mijn Oproepen<span class="pb-getal" id="pbMijnGetal" hidden></span></button>
+        <button type="button" class="search-mode-tab" id="pbTab-reacties" aria-pressed="false" onclick="pbWissel('reacties')">Mijn Reacties</button>
       </div>
+
+      <p class="pb-duiding" id="pbDuiding">Oproepen van anderen.</p>
       <div id="pbAlleVak">
         <div class="search-filters">
           <div class="field">
@@ -1588,6 +1595,8 @@
     <div id="pbPlaatsenScherm" style="display:none;">
       <div id="pbFormVak">
         <h1 class="filter-title zoek-titel scherm-titel">Oproep plaatsen</h1>
+
+        <button type="button" class="btn btn-ghost pb-lees-knop" onclick="pbLeesDitEerst()">Lees dit eerst</button>
         <div class="pb-form" id="pbFormInhoud"></div>
       </div>
       <div id="pbVoorbeeldVak" style="display:none;">
@@ -1607,7 +1616,7 @@
 
 
 
-<div class="app-view" id="view-myprofile" data-kop="Mijn profiel">
+<div class="app-view" id="view-myprofile" data-kop="Mijn Profiel">
   <div class="my-profile-wrap">
 
 
@@ -1638,7 +1647,7 @@
 
 
     <div id="mijnBandsKop" class="mijn-bands-kop">
-        <div class="filter-title scherm-titel">Mijn bands</div>
+        <div class="filter-title scherm-titel">Mijn Bands</div>
 
 
 
@@ -2083,9 +2092,12 @@
   <div class="modal-box modal-box-md">
     <h2 class="hoofdstuk-kop" id="pbReagerenKop">Reageren</h2>
     <div id="pbReagerenInhoud"></div>
-    <div class="field">
-      <label for="pbBoodschap">Boodschap (niet verplicht)</label>
-      <textarea id="pbBoodschap" class="bio-voorbeeld" maxlength="1000" rows="2" oninput="veldGroeit(this)" placeholder="Bijv. Hoi! Ik drum vooral funk en rock en kan op donderdag."></textarea>
+    <div class="field-group">
+      <div class="field">
+
+        <div class="label-rij zoek-label-rij"><label for="pbBoodschap">Boodschap (niet verplicht)</label><button type="button" class="zoek-filters-knop pb-voorbeelden-knop" onclick="bioVoorbeeldenOpen('pbBoodschap','reactie')" aria-label="Voorbeelden bij Boodschap (niet verplicht)">Voorbeelden</button></div>
+        <textarea id="pbBoodschap" class="bio-vak" maxlength="1000" rows="3" oninput="veldGroeit(this)"></textarea>
+      </div>
     </div>
     <div class="btn-row">
       <button type="button" class="btn btn-ghost" onclick="pbReagerenSluiten()">Annuleren</button>
@@ -2094,10 +2106,26 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="pbTipsModal" data-close="pbTipsSluiten" onclick="if(event.target===this)pbTipsSluiten()">
-  <div class="modal-box modal-box-md">
-    <button class="modal-close" onclick="pbTipsSluiten()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-    <div id="pbTipsInhoud"></div>
+
+
+<div class="modal-overlay wheel-overlay" id="voorbeeldBlad" data-close="voorbeeldBladSluiten" onclick="if(event.target===this)voorbeeldBladSluiten()">
+  <div class="wheel-sheet voorbeeld-blad" role="dialog" aria-modal="true" aria-labelledby="voorbeeldBladKop">
+    <button class="modal-close" onclick="voorbeeldBladSluiten()" aria-label="Sluiten"><svg viewBox="-0.75 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    <div class="wheel-sheet-grip" aria-hidden="true"></div>
+    <div class="wheel-sheet-head" id="voorbeeldBladKop"></div>
+    <div id="voorbeeldBladInhoud"></div>
+  </div>
+</div>
+
+
+<div class="modal-overlay wheel-overlay" id="pbWegBlad" data-close="pbWegSluiten" onclick="if(event.target===this)pbWegSluiten()">
+  <div class="wheel-sheet" role="dialog" aria-modal="true" aria-labelledby="pbWegKop">
+    <div class="wheel-sheet-grip" aria-hidden="true"></div>
+    <div class="wheel-sheet-head" id="pbWegKop">Wie is het geworden?</div>
+    <div class="pb-weg-keuzes" id="pbWegKeuzes"></div>
+    <p class="deelblad-tekst" id="pbWegZin"></p>
+    <div class="knoppen-stapel"><button type="button" class="btn btn-danger" id="pbWegKnop" onclick="pbWegBevestigen()">Oproep verwijderen</button></div>
+    <div class="stille-link-regel"><button type="button" class="stille-link" onclick="pbWegSluiten()">Annuleren</button></div>
   </div>
 </div>
 
@@ -2458,20 +2486,20 @@
 
 
 <link rel="preload" href="supabase.js?v=2.118.0" as="script">
-<link rel="preload" href="core.js?v=20261123a" as="script">
-<link rel="preload" href="utils.js?v=20261123a" as="script">
+<link rel="preload" href="core.js?v=20261125a" as="script">
+<link rel="preload" href="utils.js?v=20261125a" as="script">
 <link rel="preload" href="veiligheid.js?v=20261121c" as="script">
 <link rel="preload" href="auth.js?v=20261120a" as="script">
 <link rel="preload" href="postcode.js?v=20261119a" as="script">
-<link rel="preload" href="wizard.js?v=20261121c" as="script">
+<link rel="preload" href="wizard.js?v=20261125a" as="script">
 <link rel="preload" href="ouder.js?v=20261118a" as="script">
-<link rel="preload" href="search.js?v=20261122b" as="script">
-<link rel="preload" href="musicians.js?v=20261121c" as="script">
-<link rel="preload" href="bands.js?v=20261122a" as="script">
-<link rel="preload" href="messages.js?v=20261123a" as="script">
+<link rel="preload" href="search.js?v=20261124a" as="script">
+<link rel="preload" href="musicians.js?v=20261125a" as="script">
+<link rel="preload" href="bands.js?v=20261125a" as="script">
+<link rel="preload" href="messages.js?v=20261125a" as="script">
 <link rel="preload" href="push.js?v=20261118a" as="script">
 <link rel="preload" href="modals-shared.js?v=20261116a" as="script">
-<link rel="preload" href="prikbord.js?v=20261123a" as="script">
+<link rel="preload" href="prikbord.js?v=20261125b" as="script">
 <script src="supabase.js?v=2.118.0"></script>
 <script>
 
@@ -2489,20 +2517,20 @@
     document.getElementById('backendErrorOverlay').classList.add('visible');
   }
 </script>
-<script src="core.js?v=20261123a"></script>
-<script src="utils.js?v=20261123a"></script>
+<script src="core.js?v=20261125a"></script>
+<script src="utils.js?v=20261125a"></script>
 <script src="veiligheid.js?v=20261121c"></script>
 <script src="auth.js?v=20261120a"></script>
 <script src="postcode.js?v=20261119a"></script>
-<script src="wizard.js?v=20261121c"></script>
+<script src="wizard.js?v=20261125a"></script>
 <script src="ouder.js?v=20261118a"></script>
-<script src="search.js?v=20261122b"></script>
-<script src="musicians.js?v=20261121c"></script>
-<script src="bands.js?v=20261122a"></script>
-<script src="messages.js?v=20261123a"></script>
+<script src="search.js?v=20261124a"></script>
+<script src="musicians.js?v=20261125a"></script>
+<script src="bands.js?v=20261125a"></script>
+<script src="messages.js?v=20261125a"></script>
 <script src="push.js?v=20261118a"></script>
 <script src="modals-shared.js?v=20261116a"></script>
-<script src="prikbord.js?v=20261123a"></script>
+<script src="prikbord.js?v=20261125b"></script>
 <script>
 
 

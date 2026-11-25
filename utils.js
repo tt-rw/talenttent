@@ -85,13 +85,14 @@ function confirmModalNo() {
 
 
 const TELLER_ZICHTBAAR_REST = 200;
-function updateCharCounter(textareaId, counterId, max) {
+
+function updateCharCounter(textareaId, counterId, max, vanaf) {
   const el = document.getElementById(textareaId);
   const counter = document.getElementById(counterId);
   if (!el || !counter) return;
   const len = el.value.length;
   counter.textContent = `${len}/${max}`;
-  counter.hidden = len < max - TELLER_ZICHTBAAR_REST;
+  counter.hidden = len < (vanaf != null ? vanaf : max - TELLER_ZICHTBAAR_REST);
 }
 
 
@@ -3644,4 +3645,87 @@ async function fotoMetBronUploaden(uit, map) {
 function uitsnedeStijl(k) {
   const p = v => (Math.round(v * 1000) / 1000) + '%';
   return `width:${p(100 / k.b)};height:${p(100 / k.h)};left:${p(-k.x / k.b * 100)};top:${p(-k.y / k.h * 100)}`;
+}
+
+
+
+
+
+
+function voorbeeldBladOpen(kop, html) {
+  document.getElementById('voorbeeldBladKop').textContent = kop;
+  document.getElementById('voorbeeldBladInhoud').innerHTML = html;
+  const o = document.getElementById('voorbeeldBlad');
+  o.classList.add('visible');
+  o.querySelector('.wheel-sheet').scrollTop = 0;
+  syncModalScrollLock();
+}
+function voorbeeldBladSluiten() { document.getElementById('voorbeeldBlad').classList.remove('visible'); syncModalScrollLock(); }
+
+function voorbeeldenHTML(tips, wie, voorbeelden, actie) {
+  return `<ol class="pb-tips">${tips.map(t => `<li>${escHtml(t)}</li>`).join('')}</ol>
+    <div class="wheel-sheet-head vb-tussenkop">Voorbeelden</div>
+    ${voorbeelden.map((t, n) => `<div class="vb-kaart"><p class="vb-wie">${escHtml(wie[n])}</p>
+      <p class="vb-tekst">${escHtml(t)}</p>
+      <button type="button" class="btn btn-ghost vb-knop" onclick="${actie(n)}">Gebruik deze tekst</button></div>`).join('')}`;
+}
+
+
+
+const BIO_VOORBEELDEN = {
+
+
+
+
+  muzikant: {
+    kop: 'Korte bio',
+    tips: ['Wat speel je, hoe lang al, en in welke richting?', 'Noem een paar artiesten of bands als referentie.',
+      'Wat zoek je: een band, samen jammen of invallen?', 'Schrijf kort en duidelijk, in een neutrale toon.'],
+    wie: ['Gitarist en zanger', 'Bassist', 'Beginnende drummer'],
+    vb: ['Ik ben 17, speel vier jaar gitaar en zing ook. Ik speel vooral rock en indie, met Arctic Monkeys en Royal Blood als referentie. Ik zoek een band die eigen nummers maakt en wil optreden.',
+      'Ik ben 16 en speel twee jaar basgitaar, vooral pop- en rockcovers. Ik zoek een coverband die elke week repeteert en wil optreden op schoolfeesten.',
+      'Ik drum sinds een jaar en heb les op de muziekschool. Ik zoek muzikanten die ook nog leren, om samen te spelen en beter te worden.']
+  },
+  band: {
+    kop: 'Wie zijn we',
+    tips: ['Welke muziek spelen jullie? Noem een paar artiesten als referentie.', 'Wie zitten er in de band, en wat ligt er al: een oefenruimte, nummers, een set?',
+      'Wat willen jullie: optreden, eigen nummers maken of vooral samen spelen?', 'Schrijf kort en duidelijk, in een neutrale toon.'],
+    wie: ['Coverband', 'Band met eigen nummers', 'Beginnende band'],
+    vb: ['Wij zijn een coverband van vier scholieren tussen 16 en 18 uit Den Haag. We spelen pop- en rocknummers die iedereen kent, van Coldplay tot Doe Maar, en zoeken nog een bassist.',
+      'Wij zijn een rockband van drie muzikanten van 17 tot 19 uit Delft. We schrijven eigen nummers, met Arctic Monkeys en Royal Blood als referentie, en willen dit jaar een demo opnemen.',
+      'Wij zijn een punkband met gitaar, bas en zang, alle drie 15 jaar. We schrijven onze eerste eigen nummers en repeteren op woensdag in Rijswijk.']
+  },
+  reactie: {
+    kop: 'Boodschap',
+    tips: ['Zeg kort wat je speelt en hoe lang al.', 'Waarom past deze oproep bij jou?', 'Noem wanneer je kunt.', 'Wijs op je filmpje of opname, als je die hebt.'],
+    wie: ['Bassist', 'Toetsenist', 'Beginnende drummer'],
+    vb: ['Ik ben 16 en speel twee jaar basgitaar, vooral pop en rock. Deze oproep past bij wat ik zoek. Op mijn profiel staat een filmpje.',
+      'Ik speel vijf jaar piano en sinds kort keyboard. Een deel van de nummers ken ik al. Ik kan op zaterdag en speel graag een keer mee.',
+      'Ik drum sinds een jaar en zoek een band om samen te leren. Woensdagmiddag kan ik altijd.']
+  }
+};
+function bioVoorbeeldenOpen(veldId, soort) {
+  const v = BIO_VOORBEELDEN[soort];
+  voorbeeldBladOpen(v.kop, voorbeeldenHTML(v.tips, v.wie, v.vb, n => `bioVoorbeeldGebruiken('${veldId}','${soort}',${n})`));
+}
+
+
+
+function bioVoorbeeldFout(veldId, soort) {
+  const el = document.getElementById(veldId);
+  const t = el ? el.value.trim() : '';
+  if (!t || !BIO_VOORBEELDEN[soort].vb.includes(t)) return null;
+  return [veldId, soort === 'band' ? 'Pas het voorbeeld aan, zodat het over jullie gaat' : 'Pas het voorbeeld aan, zodat het over jou gaat'];
+}
+
+function bioVoorbeeldGebruiken(veldId, soort, n) {
+  const t = document.getElementById(veldId);
+  const tekst = BIO_VOORBEELDEN[soort].vb[n];
+  const zet = () => {
+    t.value = tekst; t.dispatchEvent(new Event('input', { bubbles: true }));
+    voorbeeldBladSluiten(); veldGroeit(t);
+    t.focus(); t.setSelectionRange(t.value.length, t.value.length);
+  };
+  if (t.value.trim() && t.value.trim() !== tekst) showConfirm('Je tekst wordt vervangen door het voorbeeld.', zet, 'Vervangen', false, 'Annuleren', 'Tekst vervangen?');
+  else zet();
 }
