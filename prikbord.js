@@ -207,7 +207,8 @@ function pbTerug() {
       pbToonLaag();
     };
     if (pbFormHeeftInvoer()) {
-      vraagOpslaanBijTerug('Oproep plaatsen?', 'Plaatsen', 'Niet plaatsen', () => pbNaarVoorbeeld(), dicht);
+      if (pbForm.id) vraagOpslaanBijTerug('Wijzigingen opslaan?', 'Opslaan', 'Niet opslaan', () => pbNaarVoorbeeld(), dicht);
+      else vraagOpslaanBijTerug('Oproep plaatsen?', 'Plaatsen', 'Niet plaatsen', () => pbNaarVoorbeeld(), dicht);
       return true;
     }
     if (pbVanBuiten) { pbVanBuiten = false; pbLaag = null; pbVanBand = null; return false; }
@@ -272,7 +273,7 @@ async function pbLaden() {
   if (!pbLijst.length) ladenTonen(vak);
   try {
     const plaats = document.getElementById('pbPlaats').value;
-    const vertrek = await zoekVertrekpunt(plaats);
+    const [vertrek] = await Promise.all([zoekVertrekpunt(plaats), currentUser && hasOwnProfile && !myMusicianId ? getMyMusicianId() : null]);
     const straal = Number(document.getElementById('pbStraal').value) || PB_STRAAL_STANDAARD;
     const { data, error } = await db.rpc('tt_prikbord', { p_lat: vertrek.lat, p_lng: vertrek.lng, p_straal_km: straal });
     if (nr !== pbVolgnr) return;
@@ -298,9 +299,13 @@ function pbPastBijMij(o) {
   return false;
 }
 
+
+
+
+function pbVanMij(o) { return !!myMusicianId && o.plaatser_id === myMusicianId; }
 function pbGefilterd() {
   const f = pbFilters;
-  let rijen = pbLijst.filter(o =>
+  let rijen = pbLijst.filter(o => !pbVanMij(o) &&
     (!f.soort || o.soort === f.soort) && (!f.doel || (o.doelen || []).includes(f.doel))
     && (!f.instrument || o.elk_instrument || (o.instrumenten || []).includes(f.instrument)));
   const nieuw = o => new Date(o.verlengd_op || o.geplaatst_op).getTime();
@@ -374,7 +379,8 @@ function pbOproepHTML(o, voorbeeld) {
   const vakken = PB_VAK_SLEUTELS.map((k, i) => (o.vakken || {})[k] ? `<div class="pb-vak-kop">${escHtml(koppen[i])}</div><p class="pb-oproep-tekst">${escHtml(o.vakken[k])}</p>` : '').join('');
   let knop = '';
   if (!voorbeeld) {
-    if (o.eigen) knop = `<button type="button" class="btn btn-ghost pb-knop" onclick="pbOpenMijn('${jsAttr(o.id)}')">Bekijk de kandidaten</button>`;
+    if (pbVanMij(o)) knop = `<button type="button" class="btn btn-ghost pb-knop" onclick="pbOpenMijn('${jsAttr(o.id)}')">Bekijk de kandidaten</button>`;
+    else if (o.eigen) knop = '';
     else if (!currentUser || !hasOwnProfile) knop = `<button type="button" class="btn btn-primary pb-knop" onclick="pbZonderProfiel()">Maak een profiel en reageer</button>`;
     else if (o.soort === 'beschikbaar') knop = `<button type="button" class="btn btn-primary pb-knop" data-bericht-id="${escHtml(o.plaatser_id)}" onclick="openMessageComposer('${jsAttr(o.plaatser_id)}','${jsAttr(o.naam)}')">Stuur een bericht</button>`;
     else if (o.gereageerd) knop = `<button type="button" class="btn btn-primary pb-knop" disabled>Je hebt gereageerd</button>`;
@@ -494,7 +500,7 @@ function pbEersteAfspraakTonen() { return PB_MIJ.leeftijd != null && PB_MIJ.leef
 const PB_LEES_DIT_EERST = [
   ['Weet wat je zoekt', 'Welk instrument, welk niveau, en waarvoor: jammen, een vaste band, invallen of een project. Vraag een niveau dat bij jou of je band past, en zeg eerlijk wat jij of jullie willen bereiken.'],
   ['Laat je energie zien', 'Rustig, gezellig of fanatiek: vertel het. Dan reageren de mensen die bij je passen. Schrijf gewoon en duidelijk; een neutrale toon werkt altijd.'],
-  ['Zet je media klaar', 'Een filmpje, een demo of een link bij Onze media zegt meer dan veel woorden.'],
+  ['Zet je media klaar', 'Een filmpje, een demo of een link op je profiel zegt meer dan veel woorden.'],
   ['Wees concreet', 'Noem dagen, plaatsen en kosten. Wie twijfelt, reageert niet.'],
   ['Denk aan wie reageert', 'Die is misschien ook wat zenuwachtig. Maak de eerste stap klein en duidelijk. Een goede klik is net zo belangrijk als goed samen spelen.'],
   ['Hou het kort', 'Een paar zinnen per vak is meestal genoeg.']
@@ -634,9 +640,23 @@ async function pbPlaatsenStart(vanBand) {
   pbVakkenGroeien();
 }
 
+
+
+
+function pbFormSleutel(f) {
+  return JSON.stringify([f.wie, f.soort, f.doelen.slice().sort(), f.instrumenten, !!f.elk, f.zangVorm || '', f.genres,
+    f.leeftijden.slice().sort(), f.plaats.trim(), f.straal || null, PB_VAK_SLEUTELS.map(k => (f.vakken[k] || '').trim()), !!f.media]);
+}
+
+
+function pbFormKnopTekst(f) {
+  if (f.id) return 'Opslaan';
+  return f.kaderGezien ? 'Toch plaatsen' : 'Oproep plaatsen';
+}
 function pbFormHeeftInvoer() {
   if (!pbForm) return false;
   const f = pbForm;
+  if (f.id) return pbFormSleutel(f) !== f.begin;
   return !!(f.leeftijden.length || f.genres.length || f.plaats.trim() || f.straal || PB_VAK_SLEUTELS.some(k => (f.vakken[k] || '').trim())
     || (!pbVanBand && (f.doelen.length || f.instrumenten.length)));
 }
@@ -723,7 +743,8 @@ function pbTekenForm() {
       <div class="teken-teller" id="pbVakTeller-${k}" hidden></div></div>`).join('')}
     <div class="field"><label class="zoek-onthoud${f.soort === 'beschikbaar' ? ' pb-uit' : ''}"><input type="checkbox" id="pbMedia" ${f.media ? 'checked' : ''} ${f.soort === 'beschikbaar' ? 'disabled' : ''} onchange="pbForm.media=this.checked"><span>Graag met een video of link</span></label></div>
     ${f.kaderGezien ? PB_KADER_HTML : ''}
-    <button type="button" class="btn btn-primary pb-knop" id="pbNaarVoorbeeldKnop" onclick="pbNaarVoorbeeld()">${f.kaderGezien ? 'Toch plaatsen' : 'Oproep plaatsen'}</button>`;
+    <button type="button" class="btn btn-primary pb-knop" id="pbNaarVoorbeeldKnop" onclick="pbNaarVoorbeeld()">${pbFormKnopTekst(f)}</button>`;
+  document.querySelector('#pbFormVak .scherm-titel').textContent = f.id ? 'Oproep aanpassen' : 'Oproep plaatsen';
   document.getElementById('pbFormInhoud').innerHTML = html;
   pbFormVelden();
   PB_VAK_SLEUTELS.forEach(pbVakTeller);
@@ -756,7 +777,7 @@ function pbFormVelden() {
     id: 'pbFDoel', fieldId: 'pbFDoelField', menuId: 'pbFDoelMenu', meer: true,
     rijen: () => PB_DOELEN.map(([w, t]) => ({ t, gekozen: f.doelen.includes(w) })),
     kies: (i) => { const w = PB_DOELEN[i][0]; f.doelen = f.doelen.includes(w) ? f.doelen.filter(x => x !== w) : f.doelen.concat(w);
-      refreshChoiceField('pbFDoel'); clearFieldError(document.getElementById('pbFDoelField')); },
+      refreshChoiceField('pbFDoel'); clearFieldError(document.getElementById('pbFDoelField')); pbDubbelWeg(); },
     ververs: () => pbVeldTekst('pbFDoel', pbDoelenTekst(f.doelen), 'Band · Jammen · Invallen…')
   });
   initChoiceField({
@@ -819,6 +840,7 @@ function pbKiesInstrument(w) {
   else { f.elk = false; f.instrumenten = f.instrumenten.includes(w) ? f.instrumenten.filter(x => x !== w) : f.instrumenten.concat(w); }
   refreshChoiceField('pbFInstrument');
   clearFieldError(document.getElementById('pbFInstrumentField'));
+  f.dubbel = false;
 
   if (zangVoor !== pbHeeftZang(f.instrumenten)) {
     if (!pbHeeftZang(f.instrumenten)) f.zangVorm = '';
@@ -875,8 +897,27 @@ function pbMijnInstrument(band) {
     .map(x => x.instrument)[0] || '';
 }
 
+
+
+
+
+function pbDubbeleOproep(f) {
+  const band = f.wie !== 'ik' ? f.wie : null;
+  const m = pbMijn.find(({ oproep: o }) => o.id !== f.id && (o.status || 'open') === 'open' && new Date(o.loopt_tot) > Date.now()
+    && o.soort === f.soort && (o.doelen || []).some(d => f.doelen.includes(d)) && (band ? o.band_id === band : !o.band_id)
+    && ((f.elk && o.elk_instrument) || (o.instrumenten || []).some(i => f.instrumenten.includes(i))));
+  return m ? m.oproep : null;
+}
+function pbDubbelTekst(o) { return `Je hebt al de oproep "${pbTitel(o)}". Pas die aan bij Mijn Oproepen.`; }
+function pbDubbelWeg() {
+  if (!pbForm || !pbForm.dubbel) return;
+  pbForm.dubbel = false;
+  clearFieldError(document.getElementById('pbFInstrumentField'));
+}
+
 async function pbNaarVoorbeeld() {
   const f = pbForm;
+  const mijnVraag = vraagNu(db.rpc('tt_mijn_oproepen'));
   const fouten = pbFormFouten();
 
   f.lat = null; f.lng = null;
@@ -886,6 +927,12 @@ async function pbNaarVoorbeeld() {
     if (o.lat == null) fouten.push(['pbFPlaats', 'Deze plaats herkennen we niet.']);
     else { f.lat = o.lat; f.lng = o.lng; }
   }
+  const { data: mijn, error: mijnFout } = await mijnVraag;
+  if (mijnFout) logCaught('pbNaarVoorbeeld', mijnFout);
+  else pbMijn = mijn || [];
+  const dubbel = !fouten.some(([id]) => id === 'pbFInstrumentField') && pbDubbeleOproep(f);
+
+  if (dubbel) { fouten.splice(fouten.length && fouten[0][0] === 'pbFDoelField' ? 1 : 0, 0, ['pbFInstrumentField', pbDubbelTekst(dubbel)]); f.dubbel = true; }
   if (fouten.length) {
     fouten.forEach(([id, t]) => setFieldError(document.getElementById(id), t));
     document.getElementById(fouten[0][0]).scrollIntoView({ block: 'center' });
@@ -895,11 +942,12 @@ async function pbNaarVoorbeeld() {
     f.kaderGezien = true;
     const knop = document.getElementById('pbNaarVoorbeeldKnop');
     knop.insertAdjacentHTML('beforebegin', PB_KADER_HTML);
-    knop.textContent = 'Toch plaatsen';
+    knop.textContent = pbFormKnopTekst(f);
     document.getElementById('pbKader').scrollIntoView({ block: 'center' });
     return;
   }
   document.getElementById('pbVoorbeeldInhoud').innerHTML = pbOproepHTML(pbVoorbeeldOproep(), true);
+  document.getElementById('pbPlaatsenKnop').textContent = f.id ? 'Opslaan' : 'Plaatsen';
   pbLaag = 'voorbeeld';
   pbToonLaag();
 }
@@ -917,6 +965,18 @@ async function pbPlaatsen() {
 
   if (f.id) p.id = f.id;
   const { error } = await db.rpc('tt_oproep_opslaan', { p });
+  if (error && /al een oproep/.test(error.message || '')) {
+
+    const { data: mijn } = await vraagNu(db.rpc('tt_mijn_oproepen'));
+    if (mijn) pbMijn = mijn;
+    const dubbel = pbDubbeleOproep(f);
+    pbLaag = 'plaatsen'; pbToonLaag();
+    const veld = document.getElementById('pbFInstrumentField');
+    setFieldError(veld, dubbel ? pbDubbelTekst(dubbel) : error.message);
+    f.dubbel = true;
+    veld.scrollIntoView({ block: 'center' });
+    return;
+  }
   if (error) { showToast(friendlyErrorMessage(error, 'je oproep plaatsen')); return; }
   pbForm = null; pbVanBand = null;
   showToast(f.id ? 'Je oproep is aangepast.' : 'Je oproep staat op het prikbord.');
@@ -1076,6 +1136,7 @@ async function pbAanpassen(id) {
     vakken: Object.assign({}, o.vakken || {}), media: o.media_gewenst });
   pbLaag = 'plaatsen';
   pbTekenForm();
+  pbForm.begin = pbFormSleutel(pbForm);
   pbToonLaag();
   pbVakkenGroeien();
 }
@@ -1172,7 +1233,9 @@ function pbReactiesTekenen() {
     const wanneer = `${dagLabel(d)} ${d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}`;
     const knoppen = isOpen ? [`<button type="button" class="btn btn-ghost" onclick="pbReactieOproep('${jsAttr(o.id)}')">Oproep bekijken</button>`,
       r.status === 'uitgenodigd' ? `<button type="button" class="btn btn-ghost" onclick="openMessageComposer('${jsAttr(o.plaatser_id)}','${jsAttr(o.naam)}')">Naar het gesprek</button>` : '',
-      `<button type="button" class="btn btn-ghost" onclick="pbIntrekken('${jsAttr(r.id)}')">Intrekken</button>`].filter(Boolean) : [];
+      `<button type="button" class="btn btn-ghost" onclick="pbIntrekken('${jsAttr(r.id)}')">Intrekken</button>`].filter(Boolean)
+
+      : r.status === 'uitgenodigd' ? [`<button type="button" class="btn btn-ghost" onclick="openMessageComposer('${jsAttr(o.plaatser_id)}','${jsAttr(o.naam)}')">Naar het gesprek</button>`] : [];
     return `
       <div class="result-row pb-kaart-oproep${open ? ' open' : ''}">
         <div class="pb-klap" role="button" tabindex="0" aria-expanded="${open}" onclick="pbReactieKlap('${jsAttr(r.id)}')">

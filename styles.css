@@ -711,10 +711,11 @@
 
 
 
+
+
   .melding {
     background: var(--surface2);
     border: 1px solid var(--accent);
-    border-left-width: 4px;
     border-radius: 10px;
     padding: 16px;
     margin-bottom: 16px;
@@ -1011,6 +1012,9 @@
     line-height: var(--regel-12);
     color: var(--text);
   }
+
+
+  .field-msg > span { min-width: 0; overflow-wrap: anywhere; }
 
 
 
@@ -1520,7 +1524,7 @@
   }
 
 
-  .btn-ghost, .btn-danger {
+  .btn-ghost, .btn-danger, .btn-uitgelicht {
     padding-top: calc(12px - var(--line));
     padding-bottom: calc(12px - var(--line));
   }
@@ -1557,6 +1561,16 @@
     color: var(--danger);
     border: var(--line) solid var(--danger);
   }
+
+
+
+
+  .btn-uitgelicht {
+    background: transparent;
+    color: var(--accent);
+    border: var(--line) solid var(--accent);
+  }
+  @media (hover: hover) { .btn-uitgelicht:hover { border-color: var(--merk-hover); } }
 
   .profile-name {
     font-family: 'Inter', sans-serif;
@@ -5456,7 +5470,7 @@
   .pb-uitnodigen { flex: none; margin-left: auto; padding-left: 8px; }
 
 
-  .pb-lees-knop { width: 100%; margin: 0 0 24px; }
+  .pb-lees-knop { width: calc(100% - 50px); margin: 0 25px 24px; }
   .pb-form textarea.pb-vak { min-height: 86px; }
   .voorbeeld-blad { position: relative; max-height: calc(100dvh - 72px); overflow-y: auto; overscroll-behavior: contain; }
   .voorbeeld-blad .modal-close { top: 4px; right: 4px; }

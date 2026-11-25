@@ -300,7 +300,8 @@ def blok_b():
 
 
     # B6 - één vorm per knopsoort (TT-316, besluit Ronald 24-09-2026). Een knop
-    # is .btn plus .btn-primary, .btn-ghost of .btn-danger. De oude eigen
+    # is .btn plus .btn-primary, .btn-ghost, .btn-danger of (sinds TT-396, sessie 212)
+    # .btn-uitgelicht. De oude eigen
     # klassen komen niet terug, en een knop krijgt geen eigen letter, opvulling,
     # vlak, rand of kleur via een style-attribuut.
     oude = ["search-btn", "landing-btn", "wizard-btn", "btn-sm",

@@ -5246,9 +5246,9 @@ window.TT_STUB.fnAntwoord = {};
             src = open(os.path.join(ROOT, f), encoding="utf-8").read()
             for m in re.finditer(r'class=\\?["\']([^"\']*)\\?["\']', src):
                 cl = m.group(1).split()
-                if "btn" in cl and not any(k in cl for k in ("btn-primary", "btn-ghost", "btn-danger")):
+                if "btn" in cl and not any(k in cl for k in ("btn-primary", "btn-ghost", "btn-danger", "btn-uitgelicht")):
                     zonder_soort.append(f"{f}:{src.count(chr(10), 0, m.start()) + 1}")
-        check("elke .btn heeft een soort (hoofdknop, tweede knop of destructief)",
+        check("elke .btn heeft een soort (hoofdknop, tweede knop, destructief of uitgelicht; uitgelicht sinds TT-396 sessie 212)",
               not zonder_soort, ", ".join(zonder_soort))
         inline_uit = []
         for f in ("ouder.js", "wizard.js", "core.js", "index.html"):
@@ -5285,8 +5285,8 @@ window.TT_STUB.fnAntwoord = {};
               kl["d"]["ghost"] == "rgb(136, 136, 136)" and kl["l"]["ghost"] == "rgb(138, 135, 130)", json.dumps(kl))
         check("een uitgeschakelde knop is half zichtbaar zonder handje",
               kl["d"]["uitgeschakeld"] == ["0.5", "not-allowed"], json.dumps(kl["d"]["uitgeschakeld"]))
-        check("melding: rand in --accent, links 4px, vlak --surface2, kop 15px en tekst 12px in de tekstkleur (TT-517)",
-              kl["d"]["melding"] == ["rgb(255, 184, 28)", "4px", "rgb(30, 30, 30)"]
+        check("melding: rand in --accent, rondom 1px (ook links; besluit Ronald 25-11-2026, sessie 213: \"ja, alle kaders dezelfde vorm\"; was 4px), vlak --surface2, kop 15px en tekst 12px in de tekstkleur (TT-517)",
+              kl["d"]["melding"] == ["rgb(255, 184, 28)", "1px", "rgb(30, 30, 30)"]
               and kl["d"]["meldingTekst"] == ["15px", "12px", "rgb(240, 240, 240)"], json.dumps(kl["d"]))
         c.close()
 
@@ -9897,8 +9897,8 @@ window.TT_STUB.fnAntwoord = {};
               d85["eigen"] and d85["eigen"]["tekst"] == "Tijdelijk niet beschikbaar." and d85["eigen"]["vet"] == "Tijdelijk niet beschikbaar."
               and d85["eigen"]["uitlijning"] == "center"
               and d85["eigen"]["voor"] == "profiel-wat" and d85["eigen"]["na"] == "profile-bio" and not d85["eigen"]["kop"] and not d85["eigen"]["knop"], j85("eigen"))
-        check("UI: de zin is 12px (TT-517), de lijn links 4px, en staat 16px onder de twee regels en 16px boven de bio (TT-595, besluit Ronald 14-11-2026; was 20px)",
-              d85["eigen"]["letter"] == "12px" and d85["eigen"]["rand"] == "4px" and d85["eigen"]["boven"] == 16 and d85["eigen"]["onder"] == 16, j85("eigen"))
+        check("UI: de zin is 12px (TT-517), de rand rondom 1px, ook links (sessie 213: \"ja, alle kaders dezelfde vorm\"; was links 4px), en staat 16px onder de twee regels en 16px boven de bio (TT-595, besluit Ronald 14-11-2026; was 20px)",
+              d85["eigen"]["letter"] == "12px" and d85["eigen"]["rand"] == "1px" and d85["eigen"]["boven"] == 16 and d85["eigen"]["onder"] == 16, j85("eigen"))
         check("Actief (de standaard): er staat geen zin op Mijn Profiel", d85["eigenActief"] is True, j85("eigenActief"))
         check("het profiel van een ander: 'Inactief.' via tt_profiel_stand (met het id); bij Actief geen zin",
               d85["ander"] and d85["ander"]["tekst"] == "Inactief." and d85["ander"]["uitlijning"] == "center"
@@ -22428,6 +22428,191 @@ S.data.talent_tent_berichten = [
     check("TT-396: geen JS-fouten in blok 179", not fouten, "; ".join(fouten)[:600])
 
 
+def blok_prikbord_sessie212():
+    print("\nBlok 180 — TT-396 de zes kleine punten (besloten sessie 212, gebouwd sessie 213, 25-11-2026): eigen oproep uit de lijst, dubbele oproep onder Instrument, Oproep aanpassen, Lees dit eerst, Naar het gesprek")
+    stub_js = open(STUB, encoding="utf-8").read()
+    init = """
+const S = window.TT_STUB;
+S.session = { user: { id: 'u1', email: 'a@talenttent.org' } };
+S.data.musicians = [
+  { id: 'm1', user_id: 'u1', fname: 'Ronald', username: 'ronnie', weergavenaam: 'Ronald', zip: '2497', city: 'Den Haag', birth_date: '1970-08-28', bio: '' },
+  { id: 'm2', fname: 'Daan', username: 'daan', weergavenaam: 'Daan', city: 'Den Haag' }];
+S.data.musicians.forEach(m => Object.assign(m, { musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
+const L = %s;
+// o20: je eigen oproep (jij plaatste hem); o21: een oproep van je band, geplaatst door een ander bandlid.
+L.push(Object.assign({}, L[1], { id: 'o20', plaatser_id: 'm1', naam: 'Ronald', plaatser_naam: 'Ronald', km: 0, eigen: true, gedeeld: 0 }));
+L.push(Object.assign({}, L[0], { id: 'o21', plaatser_id: 'm2', band_id: 'b9', naam: 'Kelderkabaal', eigen: true, gedeeld: 0 }));
+S.rpcResults.tt_prikbord = (a) => a.p_id ? L.filter(x => x.id === a.p_id) : L;
+const M = %s;
+window.__mijn = M;
+S.rpcResults.tt_mijn_oproepen = () => JSON.parse(JSON.stringify(window.__mijn));
+S.rpcResults.tt_mijn_reacties = () => [
+  { id: 'x1', status: 'uitgenodigd', created_at: new Date(Date.now() - 864e5).toISOString(), boodschap: 'Ik zing al twee jaar.',
+    oproep: { id: 'o6', soort: 'gezocht', doelen: ['band'], instrumenten: ['Zang'], elk_instrument: false, zang_vorm: 'zangeres', status: 'gevonden', loopt_tot: new Date(Date.now() + 12 * 864e5).toISOString(), band_id: 'b2', plaatser_id: 'm4', naam: 'Kelderkabaal', foto: null } },
+  { id: 'x2', status: 'verstuurd', created_at: new Date(Date.now() - 2 * 864e5).toISOString(), boodschap: 'Ik doe graag mee.',
+    oproep: { id: 'o7', soort: 'gezocht', doelen: ['jammen'], instrumenten: [], elk_instrument: true, zang_vorm: null, status: 'gevonden', loopt_tot: new Date(Date.now() + 10 * 864e5).toISOString(), band_id: null, plaatser_id: 'm6', naam: 'Sven', foto: null } }];
+S.rpcResults.tt_nieuwe_reacties = 0;
+S.rpcResults.tt_oproep_opslaan = 'o10';
+S.rpcResults.tt_get_my_birth_date = '1970-08-28';
+S.rpcResults.tt_resolve_search_origin = () => [{ lat: 52.08, lng: 4.31 }];
+S.data.prikbord_zoek = [];
+""" % (PB_OPROEPEN, PB_MIJN)
+    fouten, u = [], {}
+    httpd, port = serve()
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for thema in ("dark", "light"):
+            ctx = browser.new_context(viewport={"width": 360, "height": 800}, color_scheme=thema, is_mobile=True, has_touch=True)
+            ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+            pg = ctx.new_page()
+            pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+            pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js + init))
+            pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+            pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+            pg.wait_for_timeout(1500)
+            if thema == "light":
+                u["licht"] = pg.evaluate(r"""async () => {
+                  const w = (ms = 400) => new Promise(r => setTimeout(r, ms));
+                  myMusicianId = 'm1'; hasOwnProfile = true; showView('search'); openPrikbord(); await w(800); await pbPlaatsenStart(); await w(500);
+                  const k = document.querySelector('.pb-lees-knop'), cs = getComputedStyle(k);
+                  return { kleur: cs.color, rand: cs.borderTopColor, vlak: cs.backgroundColor }; }""")
+                ctx.close()
+                continue
+            u = pg.evaluate(r"""async () => {
+              const w = (ms = 400) => new Promise(r => setTimeout(r, ms));
+              const u = {}, $ = id => document.getElementById(id), S = window.TT_STUB;
+              const tekst = el => (el ? el.textContent : '').replace(/ /g, ' ').trim();
+              const toastZichtbaar = () => { const t = document.querySelector('.app-toast'); return !!t && t.classList.contains('visible'); };
+              myMusicianId = 'm1'; hasOwnProfile = true;
+              showView('search'); openPrikbord(); await w(900);
+              // --- 1. Je eigen oproep staat niet in de lijst; een oproep van je band van een ander bandlid wel ---
+              const ids = [...document.querySelectorAll('#pbResultaat .pb-rij')].map(r => (r.getAttribute('onclick').match(/'([^']+)'/) || [])[1]);
+              u.lijst = { ids, aantal: tekst(document.querySelector('#pbResultaat .results-count')), duiding: $('pbDuiding').textContent };
+              pbOpenOproep('o21'); await w(200);
+              u.bandAnder = { knoppen: document.querySelectorAll('#pbOproepInhoud .pb-knop').length };
+              pbTerug(); await w(150);
+              pbOpenVanBuiten(pbLijst.find(x => x.id === 'o20')); await w(300);
+              u.eigenVanBuiten = [...document.querySelectorAll('#pbOproepInhoud .pb-knop')].map(tekst);
+              pbTerug(); showView('search'); openPrikbord(); await w(800);
+              // --- 4. Lees dit eerst, punt 3 ---
+              u.lees3 = PB_LEES_DIT_EERST[2][1];
+              // --- 5. De knop Lees dit eerst: vierde knopsoort, één regel, even breed als Gezocht en Beschikbaar samen ---
+              await pbPlaatsenStart(); await w(500);
+              const k = document.querySelector('.pb-lees-knop'), rij = document.querySelector('.pb-keuzes[data-naam="soort"]');
+              const kb = k.getBoundingClientRect(), rb = rij.getBoundingClientRect(), cs = getComputedStyle(k);
+              u.knop = { soort: k.className, hoogte: Math.round(kb.height), links: [Math.round(kb.left), Math.round(rb.left)], breed: [Math.round(kb.width), Math.round(rb.width)],
+                kleur: cs.color, rand: cs.borderTopColor, vlak: cs.backgroundColor, titel: tekst(document.querySelector('#pbFormVak .scherm-titel')),
+                knopOnder: tekst($('pbNaarVoorbeeldKnop')) };
+              // --- 2. Dubbele oproep: de fout onder Instrument, geen melding bovenin ---
+              CHOICE_FIELDS.pbFDoel.kies(PB_DOELEN.findIndex(x => x[0] === 'jammen'));
+              pbKiesInstrument('Basgitaar');
+              CHOICE_FIELDS.pbFLeeftijden.kies(1);
+              PB_VAK_SLEUTELS.forEach(k => { pbForm.vakken[k] = 'Eigen tekst over mij en wat ik zoek.'; });
+              await pbNaarVoorbeeld(); await w(300);
+              const veld = $('pbFInstrumentField'), msg = veld.closest('.field').querySelector('.field-msg');
+              u.dubbel = { laag: pbLaag, fout: veld.classList.contains('field-error'), tekst: tekst(msg), toast: toastZichtbaar(),
+                titel: pbTitel(window.__mijn[0].oproep) };
+              CHOICE_FIELDS.pbFDoel.kies(PB_DOELEN.findIndex(x => x[0] === 'band')); await w(50);
+              u.dubbel.naWaarvoor = veld.classList.contains('field-error');
+              // Nu Band en Jammen: Jammen overlapt nog, dus de volgende tik geeft de fout weer.
+              await pbNaarVoorbeeld(); await w(300);
+              u.dubbel.weer = veld.classList.contains('field-error');
+              pbKiesInstrument('Basgitaar'); pbKiesInstrument('Drums'); await w(50);
+              u.dubbel.naInstrument = veld.classList.contains('field-error');
+              await pbNaarVoorbeeld(); await w(300);
+              u.dubbel.andersDoor = pbLaag;
+              // De database weigert alsnog (de app kende de oproep niet): terug naar het formulier, fout onder Instrument.
+              S.rpcErrors.tt_oproep_opslaan = { code: 'P0001', message: 'Je hebt hier al een oproep voor.', hint: 'TT-396' };
+              const voor = window.__mijn; window.__mijn = [];
+              await pbPlaatsen(); await w(300);
+              u.dubbel.database = { laag: pbLaag, tekst: tekst($('pbFInstrumentField').closest('.field').querySelector('.field-msg')), toast: toastZichtbaar() };
+              delete S.rpcErrors.tt_oproep_opslaan; window.__mijn = voor;
+              // Een heel lange titel loopt niet uit zijn vak.
+              window.__mijn = JSON.parse(JSON.stringify(voor)); window.__mijn[0].oproep.naam = 'Ronaldddddddddddddddddddddddddddddddddddddddd';
+              pbKiesInstrument('Drums'); pbKiesInstrument('Basgitaar');
+              await pbNaarVoorbeeld(); await w(300);
+              const m2 = $('pbFInstrumentField').closest('.field').querySelector('.field-msg');
+              u.dubbel.lang = { past: m2.scrollWidth <= m2.clientWidth + 1 && m2.getBoundingClientRect().right <= $('pbFormInhoud').getBoundingClientRect().right + 1 };
+              window.__mijn = voor;
+              pbForm = null; pbLaag = null; pbZetTab('mijn'); await w(500);
+              // --- 3. Oproep aanpassen ---
+              await pbAanpassen('o9'); await w(500);
+              u.aanpassen = { titel: tekst(document.querySelector('#pbFormVak .scherm-titel')), kop: tekst($('kopTitel')), knop: tekst($('pbNaarVoorbeeldKnop')) };
+              S.calls.length = 0;
+              const terugZonder = pbTerug(); await w(200);
+              u.aanpassen.terugZonder = { vraag: document.getElementById('confirmModal').classList.contains('visible'), laag: pbLaag, tab: pbTab, terug: terugZonder };
+              await pbAanpassen('o9'); await w(400);
+              pbForm.vakken.wie = 'Jammen op vrijdag in Den Haag.';
+              pbTerug(); await w(200);
+              u.aanpassen.terugMet = { vraag: document.getElementById('confirmModal').classList.contains('visible'), kop: tekst($('confirmKop')),
+                knoppen: [tekst($('confirmNoBtn')), tekst($('confirmYesBtn'))] };
+              $('confirmNoBtn').click(); await w(300);
+              u.aanpassen.naNiet = { laag: pbLaag, tab: pbTab };
+              await pbAanpassen('o9'); await w(400);
+              await pbNaarVoorbeeld(); await w(300);
+              u.aanpassen.kader = { kader: !!$('pbKader'), knop: tekst($('pbNaarVoorbeeldKnop')) };
+              await pbNaarVoorbeeld(); await w(300);
+              u.aanpassen.voorbeeld = { laag: pbLaag, knop: tekst($('pbPlaatsenKnop')) };
+              pbTerug(); pbForm = null; pbLaag = null; pbZetTab('alle'); await w(500);
+              // Daarna weer een nieuwe oproep: titel en knoppen van plaatsen.
+              await pbPlaatsenStart(); await w(400);
+              u.nieuw = { titel: tekst(document.querySelector('#pbFormVak .scherm-titel')), knop: tekst($('pbNaarVoorbeeldKnop')) };
+              CHOICE_FIELDS.pbFDoel.kies(0); pbKiesInstrument('Drums'); CHOICE_FIELDS.pbFLeeftijden.kies(1);
+              await pbNaarVoorbeeld(); await w(200); await pbNaarVoorbeeld(); await w(300);
+              u.nieuw.kader = 'n.v.t.'; u.nieuw.voorbeeld = tekst($('pbPlaatsenKnop'));
+              pbTerug(); pbForm = null; pbLaag = null; await w(200);
+              // --- 6. Mijn Reacties: gesloten en uitgenodigd: Naar het gesprek; gesloten zonder uitnodiging: geen knop ---
+              pbZetTab('reacties'); await w(500);
+              pbReactieKlap('x1'); await w(150);
+              u.reactie1 = [...document.querySelectorAll('#pbReactiesLijst .pb-mijn-knoppen .btn')].map(tekst);
+              document.querySelector('#pbReactiesLijst .pb-mijn-knoppen .btn').click(); await w(500);
+              u.reactie1View = huidigeView;
+              showView('search'); openPrikbord('reacties'); await w(500);
+              pbReactieKlap('x2'); await w(150);
+              u.reactie2 = [...document.querySelectorAll('#pbReactiesLijst .pb-mijn-knoppen .btn')].map(tekst);
+              return u; }""")
+            ctx.close()
+        browser.close()
+    httpd.shutdown()
+    j = lambda x: json.dumps(x, ensure_ascii=False)[:600]
+    check("TT-396 sessie 212: je eigen oproep staat niet in de lijst op het prikbord; een oproep van je band van een ander bandlid wel (besluiten Ronald 25-11-2026: \"waarom staat mijn oproep tussen oproepen van anderen?\" en \"ad 1. ja\")",
+          "o20" not in u["lijst"]["ids"] and "o21" in u["lijst"]["ids"] and u["lijst"]["aantal"] == "%d oproepen" % len(u["lijst"]["ids"])
+          and u["lijst"]["duiding"] == "Oproepen van anderen.", j(u["lijst"]))
+    check("TT-396 sessie 212: onder een oproep van je band die een ander bandlid plaatste, staat geen knop; je eigen oproep (van buiten geopend) houdt Bekijk de kandidaten",
+          u["bandAnder"]["knoppen"] == 0 and u["eigenVanBuiten"] == ["Bekijk de kandidaten"], j([u["bandAnder"], u["eigenVanBuiten"]]))
+    check("TT-396 sessie 212 ad 3: een dubbele oproep geeft bij de knop onder het formulier een fout onder Instrument met de titel van je oproep; geen melding bovenin (\"eens. maar niet een kleine popup bovenin\")",
+          u["dubbel"]["laag"] == "plaatsen" and u["dubbel"]["fout"] and not u["dubbel"]["toast"]
+          and u["dubbel"]["tekst"] == 'Je hebt al de oproep "%s". Pas die aan bij Mijn Oproepen.' % u["dubbel"]["titel"], j(u["dubbel"]))
+    check("TT-396 sessie 212 ad 3: de fout gaat weg als je Waarvoor of Instrument wijzigt; een ander instrument gaat door",
+          u["dubbel"]["naWaarvoor"] is False and u["dubbel"]["weer"] and u["dubbel"]["naInstrument"] is False and u["dubbel"]["andersDoor"] == "voorbeeld", j(u["dubbel"]))
+    check("TT-396 sessie 212 ad 3: weigert de database alsnog, dan terug naar het formulier met de fout onder Instrument, geen melding bovenin",
+          u["dubbel"]["database"]["laag"] == "plaatsen" and u["dubbel"]["database"]["tekst"] == "Je hebt hier al een oproep voor." and not u["dubbel"]["database"]["toast"], j(u["dubbel"]["database"]))
+    check("TT-396 sessie 212 ad 3: een heel lange titel in de fout loopt niet uit zijn vak (360 breed)", u["dubbel"]["lang"]["past"], j(u["dubbel"]["lang"]))
+    check("TT-396 sessie 212 ad 4: Oproep aanpassen heet zo, ook in de kop; de knop heet Opslaan (\"Mee eens\")",
+          u["aanpassen"]["titel"] == "Oproep aanpassen" and u["aanpassen"]["kop"] == "Oproep aanpassen" and u["aanpassen"]["knop"] == "Opslaan", j(u["aanpassen"]))
+    check("TT-396 sessie 212 ad 4: terug zonder wijziging vraagt niets en gaat naar Mijn Oproepen",
+          u["aanpassen"]["terugZonder"]["vraag"] is False and u["aanpassen"]["terugZonder"]["laag"] is None and u["aanpassen"]["terugZonder"]["tab"] == "mijn", j(u["aanpassen"]["terugZonder"]))
+    check("TT-396 sessie 212 ad 4: terug na een wijziging vraagt Wijzigingen opslaan? met Niet opslaan en Opslaan; Niet opslaan gaat naar Mijn Oproepen",
+          u["aanpassen"]["terugMet"]["vraag"] and u["aanpassen"]["terugMet"]["kop"] == "Wijzigingen opslaan?"
+          and u["aanpassen"]["terugMet"]["knoppen"] == ["Niet opslaan", "Opslaan"] and u["aanpassen"]["naNiet"] == {"laag": None, "tab": "mijn"}, j(u["aanpassen"]))
+    check("TT-396 sessie 212 ad 4: bij aanpassen met lege vakken komt het kader en blijft de knop Opslaan (besluit Ronald 25-11-2026, sessie 213: \"ad 2. maak ervan: Opslaan\"); het voorbeeld heeft Opslaan",
+          u["aanpassen"]["kader"] == {"kader": True, "knop": "Opslaan"} and u["aanpassen"]["voorbeeld"] == {"laag": "voorbeeld", "knop": "Opslaan"}, j(u["aanpassen"]))
+    check("TT-396 sessie 212: een nieuwe oproep na aanpassen heet weer Oproep plaatsen, met de knoppen Oproep plaatsen en Plaatsen",
+          u["nieuw"]["titel"] == "Oproep plaatsen" and u["nieuw"]["knop"] == "Oproep plaatsen" and u["nieuw"]["voorbeeld"] == "Plaatsen", j(u["nieuw"]))
+    check("TT-396 sessie 212 ad 5: Lees dit eerst punt 3 noemt je profiel (\"eens\")",
+          u["lees3"] == "Een filmpje, een demo of een link op je profiel zegt meer dan veel woorden.", j(u["lees3"]))
+    check("TT-396 sessie 212 (\"ad 1. B\"): Lees dit eerst is de vierde knopsoort, één regel, even breed als Gezocht en Beschikbaar samen",
+          "btn-uitgelicht" in u["knop"]["soort"] and "btn-ghost" not in u["knop"]["soort"] and u["knop"]["hoogte"] == 44
+          and u["knop"]["links"][0] == u["knop"]["links"][1] and u["knop"]["breed"][0] == u["knop"]["breed"][1], j(u["knop"]))
+    check("TT-396 sessie 212 (\"ad 1. B\"): in donker gele rand en gele tekst (#FFB81C), geen vlak",
+          u["knop"]["kleur"] == "rgb(255, 184, 28)" and u["knop"]["rand"] == "rgb(255, 184, 28)" and u["knop"]["vlak"] == "rgba(0, 0, 0, 0)", j(u["knop"]))
+    check("TT-396 sessie 212: in licht rand en tekst zoals de kopjes van licht (#1E1E1E), geen vlak",
+          u["licht"]["kleur"] == "rgb(30, 30, 30)" and u["licht"]["rand"] == "rgb(30, 30, 30)" and u["licht"]["vlak"] == "rgba(0, 0, 0, 0)", j(u["licht"]))
+    check("TT-396 sessie 212 ad 7: Mijn Reacties, gesloten oproep waarvoor je bent uitgenodigd: de knop Naar het gesprek, die Berichten opent; zonder uitnodiging geen knop",
+          u["reactie1"] == ["Naar het gesprek"] and u["reactie1View"] == "messages" and u["reactie2"] == [], j([u["reactie1"], u["reactie1View"], u["reactie2"]]))
+    check("TT-396: geen JS-fouten in blok 180", not fouten, "; ".join(fouten)[:600])
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -22505,6 +22690,7 @@ BLOKKEN = [
     blok_prikbord_cluster1,
     blok_prikbord_cluster2,
     blok_prikbord_herstel209,
+    blok_prikbord_sessie212,
 ]
 
 
