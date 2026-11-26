@@ -1069,7 +1069,7 @@ function bandPaginaHTML(b, kijker) {
 
   let actie = '';
   if (kijker === 'gast') {
-    actie = `<button class="btn btn-primary" onclick="showView('register')">Maak een profiel en leg contact</button>`;
+    actie = `<button class="btn btn-primary" onclick="profielKeuzeOpen({ soort: 'band', id: '${jsAttr(b.id)}' })">Stuur een bericht aan de band</button>`;
   } else if (kijker === 'bezoeker' && b.contact) {
     actie = `<button class="btn btn-primary" data-bericht-id="${escHtml(b.contact.id)}" onclick="openMessageComposer('${jsAttr(b.contact.id)}','${jsAttr(b.contact.naam)}','${jsAttr(b.name)}')">Stuur een bericht aan de band</button>`;
   } else if (beheer) {

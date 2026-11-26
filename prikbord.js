@@ -107,10 +107,21 @@ function pbLeeftijdTekst(o) {
   }
   return o.leeftijd != null ? `${o.leeftijd} jaar` : '';
 }
+
+
 function pbVoorWie(o) {
-  const g = o.leeftijden || [];
-  if (g.length === PB_LEEFTIJDEN.length) return 'Voor elke leeftijd';
-  return 'Voor ' + g.map(x => x === '35+' ? '35+' : x).join(', ') + ' jaar';
+  const alle = PB_LEEFTIJDEN, g = alle.filter(x => (o.leeftijden || []).includes(x));
+  if (g.length === alle.length) return 'Elke leeftijd';
+  const van = x => parseInt(x, 10), tot = x => x === '35+' ? null : parseInt(x.split('-')[1], 10);
+  const stukken = [];
+  for (let i = 0; i < g.length;) {
+    let j = i;
+    while (j + 1 < g.length && alle.indexOf(g[j + 1]) === alle.indexOf(g[j]) + 1) j++;
+    stukken.push([van(g[i]), tot(g[j])]);
+    i = j + 1;
+  }
+  if (stukken.length === 1 && stukken[0][1] === null) return `Vanaf ${stukken[0][0]} jaar`;
+  return stukken.map(([a, b]) => b === null ? `${a}+` : `${a}–${b}`).join(' en ') + ' jaar';
 }
 
 
@@ -381,10 +392,12 @@ function pbOproepHTML(o, voorbeeld) {
   if (!voorbeeld) {
     if (pbVanMij(o)) knop = `<button type="button" class="btn btn-ghost pb-knop" onclick="pbOpenMijn('${jsAttr(o.id)}')">Bekijk de kandidaten</button>`;
     else if (o.eigen) knop = '';
-    else if (!currentUser || !hasOwnProfile) knop = `<button type="button" class="btn btn-primary pb-knop" onclick="pbZonderProfiel()">Maak een profiel en reageer</button>`;
-    else if (o.soort === 'beschikbaar') knop = `<button type="button" class="btn btn-primary pb-knop" data-bericht-id="${escHtml(o.plaatser_id)}" onclick="openMessageComposer('${jsAttr(o.plaatser_id)}','${jsAttr(o.naam)}')">Stuur een bericht</button>`;
+
+
+    else if (!currentUser || !hasOwnProfile) knop = `<button type="button" class="btn btn-primary pb-knop" onclick="profielKeuzeOpen({ soort: 'oproep', id: '${jsAttr(o.id)}' })">${o.soort === 'beschikbaar' ? 'Stuur een bericht' : 'Reageren'}</button>`;
+    else if (o.soort === 'beschikbaar') knop = `<button type="button" class="btn btn-primary pb-knop" data-bericht-id="${escHtml(o.plaatser_id)}" onclick="pbBerichtOproep('${jsAttr(o.id)}')">Stuur een bericht</button>`;
     else if (o.gereageerd) knop = `<button type="button" class="btn btn-primary pb-knop" disabled>Je hebt gereageerd</button>`;
-    else knop = `<button type="button" class="btn btn-primary pb-knop" id="pbIkDoeMeeKnop" onclick="pbReagerenOpen()">Ik doe mee</button>`;
+    else knop = `<button type="button" class="btn btn-primary pb-knop" id="pbReagerenKnop" onclick="pbReagerenOpen()">Reageren</button>`;
   }
   return `
     <div class="pb-oproep">
@@ -432,9 +445,12 @@ function pbOpenVanBuiten(o) {
   pbVanBuiten = true;
 }
 
-function pbZonderProfiel() {
-  if (!currentUser) { showView('register'); return; }
-  showView('register');
+
+
+function pbBerichtOproep(id) {
+  const o = pbLijst.find(x => x.id === id) || pbOpen;
+  if (!o) return;
+  gesprekTekstKlaar(o.plaatser_id, o.naam, PB_TT.bericht.replace('{naam}', o.naam), o.id);
 }
 
 
@@ -442,7 +458,11 @@ async function pbReagerenOpen() {
   const o = pbOpen;
   if (!o) return;
   const vak = document.getElementById('pbReagerenInhoud');
-  document.getElementById('pbReagerenKop').textContent = `Reageren op "${pbTitel(o)}"`;
+  document.getElementById('pbReagerenKop').textContent = 'Reageren';
+
+
+  const naamPlaatser = o.naam || '';
+  document.getElementById('pbReagerenSub').innerHTML = `<p class="pb-eenregel">Oproep: ${escHtml(pbTitel(o))}</p><p>${escHtml(naamPlaatser)} ziet je profiel${o.gedeeld ? ' en jullie gezamenlijke nummers' : ''}.</p>`;
   document.getElementById('pbBoodschap').value = '';
   vak.innerHTML = '';
   ladenTonen(vak);
@@ -455,7 +475,6 @@ async function pbReagerenOpen() {
     const heeftMedia = !!(media && media.length);
     const naam = o.band_id ? o.naam : (o.naam || '');
     vak.innerHTML = `
-      <p class="pb-reageren-uitleg">${escHtml(naam)} ziet je profiel: je niveau, je video's en links${o.gedeeld ? ' en jullie gezamenlijke nummers' : ''}.</p>
       ${pbEersteAfspraakTonen() ? `
         <div class="melding pb-afspraak-melding">
           <div class="melding-kop">De eerste afspraak</div>
@@ -484,7 +503,7 @@ async function pbReagerenVersturen() {
   pbReagerenSluiten();
   o.gereageerd = true;
   document.getElementById('pbOproepInhoud').innerHTML = pbOproepHTML(o, false);
-  showToast('Je reactie is verstuurd.');
+  showToast('Reactie verstuurd. Het antwoord vind je in Berichten.');
 }
 
 
@@ -629,7 +648,7 @@ function pbLegeForm() {
 }
 
 async function pbPlaatsenStart(vanBand) {
-  if (!currentUser || !hasOwnProfile) { pbZonderProfiel(); return; }
+  if (!currentUser || !hasOwnProfile) { profielKeuzeOpen({ soort: 'plaatsen' }); return; }
   await pbMijLaden();
   pbForm = pbLegeForm();
   pbVanBand = vanBand || null;
@@ -999,7 +1018,6 @@ function pbVraagOproepVoorRol(bandId, instrumenten) {
 
 
 const PB_PIJL_OMLAAG = '<svg class="zoek-filters-pijl" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
-const PB_PIJL_RECHTS = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
 let pbMijnOpen = null;
 let pbKandidaatOpen = null;
 async function pbMijnLaden() {
@@ -1101,21 +1119,18 @@ function pbOpenMijn(id) { pbMijnOpen = id || null; pbZetTab('mijn'); }
 
 
 
-async function pbUitnodigen(reactieId, musicianId, naam, oproepId) {
+function pbUitnodigen(reactieId, musicianId, naam, oproepId) {
   const m = pbMijn.find(x => x.oproep.id === oproepId);
   if (!m) return;
-  await pbMijLaden();
-  if (!PB_MIJ.naam) { showToast(friendlyErrorMessage(null, 'uitnodigen')); return; }
+  const tekst = (m.oproep.band_id ? PB_TT.uitnodigenBand : PB_TT.uitnodigen).replace('{naam}', naam);
+  gesprekTekstKlaar(musicianId, naam, tekst, oproepId, reactieId);
+}
+
+async function pbNaUitnodigen(reactieId) {
   const { error } = await db.rpc('tt_reactie_uitnodigen', { p_reactie: reactieId });
-  if (error) { showToast(friendlyErrorMessage(error, 'uitnodigen')); return; }
-  const r = (m.reacties || []).find(x => x.id === reactieId);
-  if (r) r.status = 'uitgenodigd';
+  if (error) { logCaught('pbNaUitnodigen', error); return; }
+  pbMijn.forEach(m => (m.reacties || []).forEach(r => { if (r.id === reactieId) r.status = 'uitgenodigd'; }));
   if (pbTab === 'mijn') pbMijnTekenen();
-  const mid = await getMyMusicianId();
-  const tekst = TT_TEKSTEN.oproepUitnodiging.replace('{naam}', PB_MIJ.naam);
-  const { error: e2 } = await db.from('messages').insert({ sender_id: mid, recipient_id: musicianId, body: tekst, oproep_id: oproepId });
-  if (e2) { logCaught('pbUitnodigen', e2); showToast(friendlyErrorMessage(e2, 'je uitnodiging versturen')); return; }
-  openMessageComposer(musicianId, naam);
 }
 
 async function pbVerlengen(id) {
@@ -1193,16 +1208,13 @@ async function pbWegBevestigen() {
   pbWegKeuze = null; pbMijnOpen = null;
   if (!gekozen) { showToast('Je oproep is verwijderd.'); pbMijnLaden(); pbTegelGetal(); return; }
 
-
   const tekst = (m.oproep.band_id ? PB_TT.gekozenBand : PB_TT.gekozen).replace('{naam}', gekozen.naam);
 
 
   pbMijn = pbMijn.filter(x => x.oproep.id !== k.oproep);
   pbMijnTekenen();
   pbTegelGetal();
-  openMessageComposer(gekozen.musician_id, gekozen.naam);
-  const veld = document.getElementById('messagesReplyInput');
-  if (veld) { veld.value = tekst; if (typeof berichtInvoerBijwerken === 'function') berichtInvoerBijwerken(); }
+  gesprekTekstKlaar(gekozen.musician_id, gekozen.naam, tekst);
 }
 
 
@@ -1223,7 +1235,7 @@ async function pbReactiesLaden() {
 function pbReactiesTekenen() {
   const vak = document.getElementById('pbReactiesLijst');
   if (!vak) return;
-  if (!pbReacties.length) { vak.innerHTML = emptyStateHTML('Nog geen reacties', 'Tik op een oproep en kies Ik doe mee.', 'Alle oproepen', "pbZetTab('alle')"); return; }
+  if (!pbReacties.length) { vak.innerHTML = emptyStateHTML('Nog geen reacties', 'Tik op een oproep en kies Reageren.', 'Alle oproepen', "pbZetTab('alle')"); return; }
   vak.innerHTML = pbReacties.map(r => {
     const o = r.oproep;
     const isOpen = o.status === 'open';
@@ -1277,23 +1289,6 @@ function pbIntrekken(id) {
 
 
 
-async function pbKaartjeVullen(id) {
-  const el = document.querySelector(`.gesprek-oproep[data-oproep="${CSS.escape(id)}"]`);
-  if (!el) return;
-  const { data, error } = await db.rpc('tt_oproep_kaarten', { p_ids: [id] });
-  if (error || !data || !data.length) { el.remove(); return; }
-  const o = data[0];
-  const open = o.status === 'open';
-  el.innerHTML = `<div class="result-row-top">
-      <div class="result-row-avatar${o.band_id ? ' result-vierkant' : ''}">${fotoHTML(o.foto, o.naam) || ZONDER_FOTO_HTML}</div>
-      <div class="result-row-main">
-        <div class="result-row-name pb-eenregel">${pbTitelHTML(o)}${open ? `<span class="pb-pijl">${PB_PIJL_RECHTS}</span>` : ''}</div>
-        <div class="result-row-meta pb-eenregel">${pbRegelHTML(o)}${open ? '' : '<span class="pb-rechts">Gesloten</span>'}</div>
-      </div></div>`;
-  el.classList.add('result-row');
-  pbTitelsPassen(el);
-  if (open) { el.setAttribute('role', 'button'); el.onclick = () => pbOpenKaartje(o.id); }
-}
 async function pbOpenKaartje(id) {
   const { data, error } = await db.rpc('tt_prikbord', { p_lat: null, p_lng: null, p_straal_km: 100, p_id: id });
   if (error) { logCaught('pbOpenKaartje', error); return; }
@@ -1321,8 +1316,12 @@ const PB_TT = {
   knopMijn: 'Naar Mijn Oproepen',
   knopReacties: 'Naar Mijn Reacties',
 
-  gekozen: 'Hoi {naam}, bedankt voor je reactie en ik wil graag met je verder. De oproep wordt hiermee afgesloten.',
-  gekozenBand: 'Hoi {naam}, bedankt voor je reactie en we willen graag met je verder. De oproep wordt hiermee afgesloten.'
+
+  uitnodigen: 'Hoi {naam}, leuk dat je reageerde op mijn oproep. Zullen we binnenkort afspreken? Wat denk je van …?',
+  uitnodigenBand: 'Hoi {naam}, leuk dat je reageerde op onze oproep. Zullen we binnenkort afspreken? Wat denk je van …?',
+  bericht: 'Hoi {naam}, ik zag je oproep. Zullen we binnenkort afspreken? Wat denk je van …?',
+  gekozen: 'Hoi {naam}, ik wil graag met je verder. Zullen we snel afspreken? Wat denk je van …?',
+  gekozenBand: 'Hoi {naam}, we willen graag met je verder. Zullen we snel afspreken? Wat denk je van …?'
 };
 function pbTtNaam(id, band, info) {
   if (band && info && info.bands[band]) return info.bands[band].name;

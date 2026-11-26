@@ -647,7 +647,11 @@ async function onUserLoggedIn(user) {
     }
   }
 
-  if (!paginaHersteld) showView('myprofile');
+
+  const waar = naInloggen;
+  naInloggen = null;
+  if (waar && hasOwnProfile) naInloggenOpenen(waar);
+  else if (!paginaHersteld) showView('myprofile');
 
 
 
@@ -692,6 +696,7 @@ function onUserLoggedOut() {
   if (typeof pbAllesWissen === 'function') pbAllesWissen();
   clearOnboardingProgress();
   pendingMessageRecipient = null;
+  naInloggen = null;
   usernameGateMid = null;
   postcodeFailStreak = 0;
   postcodeManualMode = false;
@@ -1129,7 +1134,11 @@ function vraagOpslaanBijTerug(kop, opslaanLabel, nietLabel, opslaan, nietOpslaan
 
 
 
+
+
+let naInloggen = null;
 function showView(view, mode, extra) {
+  if (naInloggen && !currentUser && view !== 'auth') naInloggen = null;
   stopSchuif();
 
   if (huidigeView && huidigeView !== view) viewScrollStand[huidigeView] = window.scrollY;

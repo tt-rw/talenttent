@@ -3114,10 +3114,13 @@
   .tt-seintje-tekst { margin: 0 0 12px; font-size: 12px; line-height: var(--regel-12); color: var(--muted); }
   .tt-seintje-knoppen { display: flex; gap: 8px; flex-wrap: wrap; }
   .tt-seintje-knoppen .btn { flex: 1 1 auto; min-height: 44px; }
+
+
   .tt-meer {
     display: block; width: 100%; min-height: 44px; padding: 0; background: none; border: 0;
-    font: inherit; font-size: 12px; line-height: var(--regel-12); color: var(--accent); text-align: left; cursor: pointer;
+    font: inherit; font-size: 12px; line-height: var(--regel-12); font-weight: 700; color: var(--accent); text-align: left; cursor: pointer;
   }
+  .message-bubble.own .tt-meer { color: inherit; text-decoration: underline; }
   .messages-conv-row {
     display: flex;
     align-items: center;
@@ -5412,7 +5415,7 @@
   .pb-feiten { display: grid; grid-template-columns: max-content 1fr; gap: 8px 12px; margin: 0 0 16px; font-size: 12px; line-height: var(--regel-12); }
   .pb-feiten dt { color: var(--muted); }
   .pb-feiten dd { margin: 0; color: var(--text); }
-  .pb-oproep-gedeeld, .pb-oproep-media, .pb-oproep-datum, .pb-voorbeeld-uitleg, .pb-reageren-uitleg {
+  .pb-oproep-gedeeld, .pb-oproep-media, .pb-oproep-datum, .pb-voorbeeld-uitleg {
     font-size: 12px; line-height: var(--regel-12); color: var(--muted); margin: 0 0 8px;
   }
   .pb-oproep-gedeeld { color: var(--accent); font-weight: 700; }
@@ -5424,6 +5427,9 @@
   .pb-mijn-knoppen.btn-rij-stapel > .btn { grid-row: auto; }
   .pb-nieuw { margin-left: 8px; font-size: 11px; line-height: var(--regel-11); font-weight: 700; color: var(--accent); flex: none; }
   .pb-media-melding, .pb-afspraak-melding { margin-top: 12px; }
+
+  .pb-reageren-uitleg p { margin: 0; }
+  .pb-reageren-uitleg p + p { margin-top: 16px; }
   .pb-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
   .pb-form > .field { margin-bottom: var(--ruimte-velden); }
   .pb-form .pb-knop { margin-top: 8px; }
@@ -5485,10 +5491,6 @@
   .pb-weg-keuzes:empty { display: none; }
   .pb-weg-keuze { white-space: normal; overflow-wrap: anywhere; max-width: 100%; text-align: center; }
 
-
-  .gesprek-oproep { display: block; margin: 0 0 12px; }
-  .gesprek-oproep:empty { display: none; }
-  .gesprek-oproep .result-row-main { display: flex; flex-direction: column; gap: 2px; }
   .search-mode-tab { position: relative; }
   .search-mode-tab .pb-getal { position: absolute; top: -6px; right: -4px; margin: 0; }
   .pb-rij-gedeeld { margin-top: 2px; }

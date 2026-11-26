@@ -23,8 +23,6 @@ const TT_TEKSTEN = {
   kernzinMatches: 'Er zijn {aantal} nieuwe matches bij jou in de buurt.',
   meer: 'En nog {aantal} andere — bekijk ze in Zoeken',
   bandZoekt: 'zoekt: {instrument}',
-
-  oproepUitnodiging: '{naam} nodigt je uit om kennis te maken.',
 };
 
 
@@ -95,7 +93,42 @@ function openRowMessageIcon(event, id, displayName) {
 }
 
 
-async function insertMessage(recipientId, body) {
+
+
+
+
+
+let gesprekKlaar = null;
+function gesprekTekstKlaar(ontvangerId, naam, tekst, oproepId, reactieId) {
+  openMessageComposer(ontvangerId, naam);
+  const veld = document.getElementById('messagesReplyInput');
+  gesprekKlaar = { id: ontvangerId, tekst, oproep: oproepId || null, reactie: reactieId || null, kies: true };
+  if (veld && !veld.disabled) { veld.value = tekst; berichtInvoerBijwerken(); }
+}
+
+function gesprekKlaarNaLaden(otherId, data) {
+  const k = gesprekKlaar;
+  if (!k || k.id !== otherId || !k.oproep || !(data || []).some(m => m.oproep_id === k.oproep)) return;
+  const veld = document.getElementById('messagesReplyInput');
+  if (veld && veld.value === k.tekst) { veld.value = ''; berichtInvoerBijwerken(); }
+  k.oproep = null; k.kies = false;
+}
+
+function gesprekKlaarKies() {
+  const k = gesprekKlaar, veld = document.getElementById('messagesReplyInput');
+  if (!k || !k.kies || !veld || k.id !== activeConversationId || veld.value !== k.tekst) return;
+  const i = veld.value.lastIndexOf('…');
+  if (i >= 0) veld.setSelectionRange(i, i + 1);
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const veld = document.getElementById('messagesReplyInput');
+  if (!veld) return;
+  veld.addEventListener('focus', () => setTimeout(gesprekKlaarKies, 0));
+  veld.addEventListener('click', () => { gesprekKlaarKies(); if (gesprekKlaar) gesprekKlaar.kies = false; });
+});
+
+
+async function insertMessage(recipientId, body, oproepId) {
   const mid = await getMyMusicianId();
   if (!mid) { showToast('Maak eerst een profiel aan om berichten te sturen.'); return false; }
 
@@ -105,9 +138,10 @@ async function insertMessage(recipientId, body) {
   const text = (body || '').trim();
   if (!text) { showToast('Vul een bericht in.'); return false; }
   try {
-    const { error } = await db.from('messages').insert({
-      sender_id: mid, recipient_id: recipientId, body: text
-    });
+
+    const rij = { sender_id: mid, recipient_id: recipientId, body: text };
+    if (oproepId) rij.oproep_id = oproepId;
+    const { error } = await db.from('messages').insert(rij);
     if (error) throw error;
     return true;
   } catch (e) {
@@ -242,8 +276,13 @@ async function sendReplyInThread() {
   scrollThreadToBottom();
   vliegBericht(voorlopig, vanaf);
 
-  const ok = await insertMessage(activeConversationId, tekst);
+  const klaar = gesprekKlaar && gesprekKlaar.id === activeConversationId ? gesprekKlaar : null;
+  const ok = await insertMessage(activeConversationId, tekst, klaar && klaar.oproep);
   if (ok) {
+    if (klaar) {
+      gesprekKlaar = null;
+      if (klaar.reactie && typeof pbNaUitnodigen === 'function') await pbNaUitnodigen(klaar.reactie);
+    }
 
 
     if (gesprekVanuit) { showToast('Bericht verstuurd'); appTerug(); return; }
@@ -502,6 +541,7 @@ let activeConversationDeleted = false;
 async function openConversation(otherId, otherName, otherAvatarSrc, stil, deleted) {
   if (!otherId) return;
   activeConversationId = otherId;
+  if (!stil && gesprekKlaar && gesprekKlaar.id !== otherId) gesprekKlaar = null;
   if (!stil) zetWachtOpAntwoord(false);
   zetSysteemGesprek(false);
   werkTerugKnopBij();
@@ -565,6 +605,7 @@ async function openConversation(otherId, otherName, otherAvatarSrc, stil, delete
     if (activeConversationId !== otherId) return;
     gesprek = { id: otherId, mid, berichten: stuk.berichten, meer: stuk.meer, bezig: false };
     const data = gesprek.berichten;
+    if (!stil) gesprekKlaarNaLaden(otherId, data);
     const nieuweInhoud = gesprekHTML(data, mid, otherName);
 
 
@@ -632,10 +673,7 @@ function gesprekStuk(deel, verborgen, otherId, aantal, alWeg) {
 function gesprekHTML(data, mid, otherName) {
   let lastDay = null;
   const boven = gesprek.meer ? '<div class="berichten-eerder" role="status" aria-label="Eerdere berichten laden"><div class="save-spinner"></div></div>' : '';
-  const oproep = (data || []).map(m => m.oproep_id).filter(Boolean).pop();
-  const kaart = oproep ? `<div class="gesprek-oproep" data-oproep="${escHtml(oproep)}"></div>` : '';
-  if (oproep) setTimeout(() => pbKaartjeVullen(oproep), 0);
-  return boven + kaart + (data && data.length ? data.map(msg => {
+  return boven + (data && data.length ? data.map(msg => {
     const own = msg.sender_id === mid;
     const msgDate = new Date(msg.created_at);
     const dayStr = msgDate.toDateString();
@@ -652,7 +690,10 @@ function gesprekHTML(data, mid, otherName) {
 
 
     const readCheck = (own && msg.read_at) ? `<span class="message-bubble-read" title="Gelezen">✓</span>` : '';
-    return `${divider}<div class="message-bubble ${own ? 'own' : 'other'}">${escHtml(msg.body).replace(/\n/g, '<br>')}<div class="message-bubble-time">${escHtml(time)}${readCheck}</div></div>`;
+
+
+    const naarOproep = msg.oproep_id ? `<button type="button" class="tt-meer" onclick="pbOpenKaartje('${jsAttr(msg.oproep_id)}')">Naar de oproep</button>` : '';
+    return `${divider}<div class="message-bubble ${own ? 'own' : 'other'}">${escHtml(msg.body).replace(/\n/g, '<br>')}${naarOproep}<div class="message-bubble-time">${escHtml(time)}${readCheck}</div></div>`;
   }).join('') : emptyStateHTML(
 
 
@@ -960,6 +1001,7 @@ async function openTalentTentGesprek(stil) {
 function closeConversation(stil) {
   zetVeiligheidMenu('messagesThreadActies', 'gesprek', null, '');
   activeConversationId = null;
+  gesprekKlaar = null;
   zetSysteemGesprek(false);
   gesprekVia = '';
   activeConversationDeleted = false;

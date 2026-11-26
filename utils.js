@@ -3662,6 +3662,30 @@ function voorbeeldBladOpen(kop, html) {
 }
 function voorbeeldBladSluiten() { document.getElementById('voorbeeldBlad').classList.remove('visible'); syncModalScrollLock(); }
 
+
+
+
+
+function profielKeuzeOpen(waar) {
+  if (currentUser) { showView('register'); return; }
+  naInloggen = waar || null;
+  voorbeeldBladOpen('Heb je al een profiel?', `<div class="btn-row">
+      <button type="button" class="btn btn-ghost" onclick="profielKeuze(true)">Inloggen</button>
+      <button type="button" class="btn btn-primary" onclick="profielKeuze(false)">Profiel aanmaken</button></div>`);
+}
+function profielKeuze(inloggen) {
+  voorbeeldBladSluiten();
+  if (!inloggen) naInloggen = null;
+  showView(inloggen ? 'auth' : 'register');
+}
+
+function naInloggenOpenen(waar) {
+  if (waar.soort === 'oproep') pbOpenKaartje(waar.id);
+  else if (waar.soort === 'profiel') openProfielScherm(waar.id);
+  else if (waar.soort === 'band') openBandScherm(waar.id);
+  else if (waar.soort === 'plaatsen') { openPrikbordVanuitBericht('alle'); pbPlaatsenStart(); }
+}
+
 function voorbeeldenHTML(tips, wie, voorbeelden, actie) {
   return `<ol class="pb-tips">${tips.map(t => `<li>${escHtml(t)}</li>`).join('')}</ol>
     <div class="wheel-sheet-head vb-tussenkop">Voorbeelden</div>

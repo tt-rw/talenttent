@@ -321,7 +321,7 @@ function musicianContactFooterHTML(m, isOwn, displayName) {
   }
   const contactBtn = hasOwnProfile
     ? `<button class="btn btn-primary" data-bericht-id="${escHtml(m.id)}" onclick="openMessageComposer('${jsAttr(m.id)}','${jsAttr(displayName)}')">Stuur een bericht</button>`
-    : `<button class="btn btn-primary" onclick="showView('register')">Maak een profiel en leg contact</button>`;
+    : `<button class="btn btn-primary" onclick="profielKeuzeOpen({ soort: 'profiel', id: '${jsAttr(m.id)}' })">Stuur een bericht</button>`;
   return contactBtn;
 }
 
