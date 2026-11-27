@@ -4474,30 +4474,17 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
             return pg.evaluate("""(op) => window.TT_STUB.calls.filter(c => c.kind === 'table'
                 && c.table === 'musician_saved_search' && c.op === op).length""", op)
 
-        # Uitgelogd: de vink staat er, een tik geeft de melding en blijft uit.
+        # Uitgelogd: geen vink (TT-396 deel 5, besluit Ronald 27-11-2026, sessie 223: "ad 5. ja"; vervangt de melding van TT-603).
         uc39, up39, uf39 = telefoon(False)
         zoekopzet(up39)
         uf39.clear()
         up39.evaluate("""() => { window.TT_STUB.rpcResults.tt_search_musicians_anon =
             [{ musician_id: 'm2', distance_km: 9, score: 0, is_stale: false }]; }""")
         zoek(up39)
-        vk = up39.evaluate("""() => { const v = document.getElementById('zoekOnthoud');
-            const rij = document.querySelector('.zoek-filters-rij'), l = v.closest('label'), w = document.getElementById('zoekFiltersKnop'); // TT-543 onderdeel 4, 3C
-            return { er: !!v, tekst: l.textContent.trim(), links: Math.round(v.getBoundingClientRect().left - rij.getBoundingClientRect().left),
-                     zelfdeRij: Math.abs(l.getBoundingClientRect().top + l.getBoundingClientRect().height / 2
-                       - (w.getBoundingClientRect().top + w.getBoundingClientRect().height / 2)) <= 1,
-                     tik: Math.round(parseFloat(getComputedStyle(l, '::after').top) * -2 + l.getBoundingClientRect().height),
-                     blok: !!document.querySelector('.seintje-blok, #seintjePlek') }; }""")
-        check("de vink staat links op de regel van Filters (3C, besluit Ronald 08-11-2026), op de inspringing van de labels (10px), met de tekst 'Onthoud mijn zoekopdracht'",
-              vk["er"] and vk["tekst"] == "Onthoud mijn zoekopdracht" and vk["links"] == 10 and vk["zelfdeRij"], json.dumps(vk))
-        check("het tikvlak van de vink is minstens 44px hoog (huisstijl §6)", vk["tik"] >= 44, json.dumps(vk))
-        check("het blok 'Bewaar deze zoekopdracht' is weg", not vk["blok"], "")
-        up39.click("label.zoek-onthoud")
-        up39.wait_for_timeout(200)
-        check("uitgelogd: een tik zet de vink niet aan en zegt 'Maak een profiel aan, dan onthouden we je zoekopdracht.' (TT-603)",
-              not up39.evaluate("document.getElementById('zoekOnthoud').checked")
-              and toast(up39) == "Maak een profiel aan, dan onthouden we je zoekopdracht."
-              and upserts(up39) == 0, toast(up39))
+        uit39 = up39.evaluate("""() => ({ vink: document.getElementById('zoekOnthoud').closest('label').offsetParent !== null,
+            filters: document.getElementById('zoekFiltersKnop').offsetParent !== null, blok: !!document.querySelector('.seintje-blok, #seintjePlek') })""")
+        check("uitgelogd: geen vink Onthoud mijn zoekopdracht; Filters staat er wel (TT-396 deel 5)", uit39["vink"] is False and uit39["filters"] is True, json.dumps(uit39))
+        check("het blok 'Bewaar deze zoekopdracht' is weg", not uit39["blok"], "")
         uc39.close()
 
         ic39, ip39, if39 = telefoon(True)
@@ -4511,6 +4498,15 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
               ip39.evaluate("document.getElementById('zoekFiltersTekst').textContent") == "Filters (2)",
               ip39.evaluate("document.getElementById('zoekFiltersTekst').textContent"))
         check("zonder bewaarde zoekopdracht staat de vink uit", not ip39.evaluate("document.getElementById('zoekOnthoud').checked"), "")
+        vk = ip39.evaluate("""() => { const v = document.getElementById('zoekOnthoud');
+            const rij = document.querySelector('.zoek-filters-rij'), l = v.closest('label'), w = document.getElementById('zoekFiltersKnop'); // TT-543 onderdeel 4, 3C
+            return { er: !!v, tekst: l.textContent.trim(), links: Math.round(v.getBoundingClientRect().left - rij.getBoundingClientRect().left),
+                     zelfdeRij: Math.abs(l.getBoundingClientRect().top + l.getBoundingClientRect().height / 2
+                       - (w.getBoundingClientRect().top + w.getBoundingClientRect().height / 2)) <= 1,
+                     tik: Math.round(parseFloat(getComputedStyle(l, '::after').top) * -2 + l.getBoundingClientRect().height) }; }""")
+        check("de vink staat links op de regel van Filters (3C, besluit Ronald 08-11-2026), op de inspringing van de labels (10px), met de tekst 'Onthoud mijn zoekopdracht'",
+              vk["er"] and vk["tekst"] == "Onthoud mijn zoekopdracht" and vk["links"] == 10 and vk["zelfdeRij"], json.dumps(vk))
+        check("het tikvlak van de vink is minstens 44px hoog (huisstijl §6)", vk["tik"] >= 44, json.dumps(vk))
         # Twee tikken snel achter elkaar schrijven één keer (TT-252).
         ip39.evaluate("""() => { const v = document.getElementById('zoekOnthoud'); v.checked = true; onthoudKlik(v); onthoudKlik(v); }""")
         ip39.wait_for_timeout(500)
@@ -4535,18 +4531,15 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
               len(rijen) == 1 and rijen[0].get("radius_km") == 50 and rijen[0].get("soort") == "muzikanten",
               json.dumps(rijen))
 
-        # Instellingen → E-mailvoorkeuren: de zoekopdracht in woorden, geen eigen mailschakelaar.
+        # Meldingen zonder blok Bewaarde zoekopdracht (TT-396 deel 5, besluit Ronald 27-11-2026, sessie 223:
+        # "bewaarde zoekopdrachten kunnen weg.").
         ip39.evaluate("openSearchPrefsModal()")
         ip39.wait_for_timeout(400)
-        inst = ip39.evaluate("""() => { const p = document.getElementById('bewaardeZoekInstellingen');
-            const knoppen = [...p.querySelectorAll('.segmented-btn')];
-            return { tekst: p.querySelector('.bewaard-zoek-tekst') ? p.querySelector('.bewaard-zoek-tekst').textContent : null,
-                     knoppen: knoppen.map(k => k.textContent + (k.classList.contains('selected') ? '*' : '')),
-                     blokken: document.querySelectorAll('#searchPrefsModal .modal-blok').length }; }""")
-        check("Instellingen toont de bewaarde zoekopdracht in woorden, in een eigen blok",
-              inst["blokken"] == 4 and inst["tekst"] == "Muzikanten · Gitaar · Rock · binnen 50 km van Den Haag", json.dumps(inst))
-        check("geen eigen mailschakelaar bij de bewaarde zoekopdracht (besluit Ronald 27-10-2026, optie b)",
-              inst["knoppen"] == [], json.dumps(inst))
+        inst = ip39.evaluate("""() => ({ blokken: document.querySelectorAll('#searchPrefsModal .modal-blok').length,
+                     plek: !!document.getElementById('bewaardeZoekInstellingen'),
+                     tekst: document.getElementById('searchPrefsModal').textContent.includes('Bewaarde zoekopdracht') })""")
+        check("Meldingen heeft geen blok Bewaarde zoekopdracht meer (besluit Ronald 27-11-2026)",
+              inst["blokken"] == 3 and not inst["plek"] and not inst["tekst"], json.dumps(inst))
         mailblok = ip39.evaluate("""() => { const b = document.getElementById('digestFrequencyControl').closest('.modal-blok');
             return [b.querySelector('.voorkeur-kop').textContent, (b.querySelector('.voorkeur-uitleg') || {}).textContent]; }""")
         check("de mail heet 'Mail bij nieuwe matches' en zegt dat de muzikanten bij je zoekopdracht erin staan",
@@ -4562,7 +4555,7 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
                      opslaan: [...m.querySelectorAll('button')].some(b => b.textContent.trim() === 'Opslaan') }; }""")
         check("Meldingen (TT-672, was E-mailvoorkeuren): alles op één linkerlijn, elke keuzeknop even breed, vette koppen van 17px, geen knop Opslaan",
               len(vk["links"]) == 1 and len(vk["breed"]) == 1 and not vk["opslaan"]
-              and vk["koppen"] == ["Mail bij nieuwe matches:700:17px", "Oproepen:700:17px", "Seintje op dit toestel:700:17px", "Bewaarde zoekopdracht:700:17px"], json.dumps(vk))  # sinds TT-396 met de keuze Oproepen
+              and vk["koppen"] == ["Mail bij nieuwe matches:700:17px", "Oproepen:700:17px", "Seintje op dit toestel:700:17px"], json.dumps(vk))  # sinds TT-396 met de keuze Oproepen
         # Een keuze bij Mail bij nieuwe matches slaat meteen op.
         ip39.click("#digestFrequencyControl .segmented-btn[data-mode='weekly']")
         ip39.wait_for_timeout(400)
@@ -4575,11 +4568,6 @@ window.TT_STUB.session = { user: { id: 'u1', email: 'test@talenttent.org' } };
         ip39.wait_for_timeout(400)
         check("de vink uit haalt de rij weg",
               ip39.evaluate("window.TT_STUB.data.musician_saved_search.length") == 0, "")
-        ip39.evaluate("openSearchPrefsModal()")
-        ip39.wait_for_timeout(400)
-        check("daarna staat er in Instellingen 'Nog geen', met waar je hem aanzet",
-              ip39.evaluate("document.getElementById('bewaardeZoekInstellingen').textContent.trim()")
-              == "Nog geen. Zet in Zoeken het vinkje Onthoud mijn zoekopdracht aan.", "")
         ic39.close()
 
         # Een nieuw toestel met een bewaarde zoekopdracht: de filters komen terug.
@@ -5616,8 +5604,8 @@ window.TT_STUB.fnAntwoord = {};
           pos: getComputedStyle(document.querySelector('.app-topbar')).position,
           talent: getComputedStyle(document.querySelector('header .logo span')).color,
           modus: zoekScherm })""")
-        check("de knop opent Zoeken op Muzikanten, ook bij \"band\" (besluit Ronald 27-10-2026; Muzikanten direct: TT-630, 15-11-2026)",
-              weg49["view"] == "view-search" and weg49["modus"] == "muzikanten", json.dumps(weg49))
+        check("de knop opent Zoeken met de drie tegels, ook bij \"band\" (TT-396 deel 5, besluit Ronald 27-11-2026: \"voer het toch maar door\")",
+              weg49["view"] == "view-search" and weg49["modus"] == "start", json.dumps(weg49))
         check("buiten de landingspagina: wisselen gestopt, de kop weer gewoon en in de tekstkleur",
               not weg49["klok"] and not weg49["klasse"] and weg49["pos"] == "sticky"
               and weg49["talent"] == "rgb(240, 240, 240)", json.dumps(weg49))
@@ -10792,7 +10780,8 @@ window.TT_STUB.fnAntwoord = {};
 
           // 5. TT-543 onderdeel 4 (3C, besluit Ronald 08-11-2026): zichtbaar alleen Plaats + Straal;
           // daaronder links de vink, rechts Filters; Naam, de andere velden en Wissen achter Filters.
-          const veld = $('filterName'), knop = $('zoekFiltersKnop'), wis = $('zoekWissenKnop'), label = document.querySelector('label.zoek-onthoud');
+          // TT-396 deel 5: een bezoeker ziet de vink niet; de maten gaan naar de regel van Filters (zo hoog als de vink).
+          const veld = $('filterName'), knop = $('zoekFiltersKnop'), wis = $('zoekWissenKnop'), label = document.querySelector('#searchModeMusician .zoek-filters-rij');
           const pijl = knop.querySelector('.zoek-filters-pijl');
           const straal = $('filterRadiusField');
           u.dicht = { vak: zicht($('zoekFilterVak')), naam: zicht(veld), instrument: zicht($('filterInstrumentsField')), aria: knop.getAttribute('aria-expanded'),
@@ -10862,16 +10851,13 @@ window.TT_STUB.fnAntwoord = {};
           u.mix = { scherm: zoekScherm, zicht: zicht($('searchModeSetlist')), titel: document.querySelector('#searchModeSetlist .zoek-titel').textContent };
           $('navTerugBtn').click(); await w();
 
-          // 11. De landingsknop opent Muzikanten direct (TT-630, besluit Ronald
-          // 15-11-2026: "ja"; vervangt "Dat moet 1 scherm terug" van 27-10-2026).
+          // 11. De landingsknop opent Zoeken met de drie tegels (TT-396 deel 5,
+          // besluit Ronald 27-11-2026; vervangt TT-630 van 15-11-2026).
           showView('landing'); await w();
           document.querySelector('.landing-knop').click(); await w(400);
           u.landing = { view: huidigeView, scherm: zoekScherm, zicht: zicht($('searchModeMusician')), start: zicht($('zoekStart')) };
-          // Terug: eerst de twee tegels, dan de landingspagina (TT-630); via
-          // Zoeken onderin ook naar de landingspagina: uitgelogd is dat het
-          // hoogste scherm (TT-548, besluit Ronald 05-11-2026).
-          $('navTerugBtn').click(); await w(400);
-          u.landingTegels = { view: huidigeView, scherm: zoekScherm, zicht: zicht($('zoekStart')) };
+          // Terug: de landingspagina; via Zoeken onderin ook: uitgelogd is dat
+          // het hoogste scherm (TT-548, besluit Ronald 05-11-2026).
           $('navTerugBtn').click(); await w(400);
           u.landingTerug = huidigeView;
           document.querySelector('.landing-knop').click(); await w(400);
@@ -10951,12 +10937,11 @@ window.TT_STUB.fnAntwoord = {};
               d95["muzikanten"] == ["muzikant"] and d95["bands"] == {"soorten": ["band"], "seintje": False}, json.dumps([d95["muzikanten"], d95["bands"]]))
         check("Mix & Match opent het Setlist-scherm, met de titel Mix & Match",
               d95["mix"] == {"scherm": "mixmatch", "zicht": True, "titel": "Mix & Match"}, j95("mix"))
-        check("TT-630: de landingsknop opent Muzikanten direct, zonder de twee tegels (besluit Ronald 15-11-2026)",
-              d95["landing"] == {"view": "search", "scherm": "muzikanten", "zicht": True, "start": False}, j95("landing"))
-        check("TT-630: terug toont de twee tegels, nog eens terug de landingspagina; na een tik op Zoeken onderin ook (TT-548: het hoogste scherm)",
-              d95["landingTegels"] == {"view": "search", "scherm": "start", "zicht": True}
-              and d95["landingTerug"] == "landing" and d95["tabTerug"] == "landing",
-              json.dumps([d95["landingTegels"], d95["landingTerug"], d95["tabTerug"]]))
+        check("TT-396 deel 5: de landingsknop opent Zoeken met de drie tegels (besluit Ronald 27-11-2026)",
+              d95["landing"] == {"view": "search", "scherm": "start", "zicht": False, "start": True}, j95("landing"))
+        check("TT-396 deel 5: terug gaat naar de landingspagina; na een tik op Zoeken onderin ook (TT-548: het hoogste scherm)",
+              d95["landingTerug"] == "landing" and d95["tabTerug"] == "landing",
+              json.dumps([d95["landingTerug"], d95["tabTerug"]]))
         oa = d95["optieA"]
         # TT-517 fase 2 (besluit Ronald 31-10-2026): ook elders geen paneel meer (Over ons als voorbeeld; blok 90 toetst alle schermen).
         check("één ondergrond: geen kader om de velden in Zoeken, en ook elders niet (optie A, 26-10-2026; overal sinds 31-10-2026)",
@@ -10970,7 +10955,7 @@ window.TT_STUB.fnAntwoord = {};
         check("Muzikanten zoeken in een lege staat opent Muzikanten direct",
               bron95["messages.js"].count("openZoekMuzikanten()") == 3 and "openZoekMuzikanten()" not in bron95["veiligheid.js"]  # TT-606: geblokkeerden zonder knop
               and "openZoekMuzikanten()" not in bron95["index.html"]
-              and "class=\"btn btn-primary landing-knop\" onclick=\"openZoekMuzikanten('behoud')\"" in bron95["index.html"], "")
+              and "class=\"btn btn-primary landing-knop\" onclick=\"showView('search', 'behoud')\"" in bron95["index.html"], "")
         check("blok 95: geen paginafouten", not f95, "; ".join(f95)[:300])
         c95.close()
 
@@ -11218,7 +11203,7 @@ window.TT_STUB.fnAntwoord = {};
           // De bewaarde zoekopdracht noemt de plaats, niet de postcode.
           $('filterCityStatus').textContent = 'Den Haag';
           laatsteZoekVertrek = { plaats: '2522', plaatsTekst: '2522', lat: 52.06, lng: 4.33, straal: 10 };
-          u.tekst = zoekTekst(Object.assign({ soort: 'alles' }, huidigeZoek()));
+          u.tekst = huidigeZoek().plaats_tekst;
           return u;
         }""")
         j98 = lambda k: json.dumps(d98.get(k), ensure_ascii=False)
@@ -11226,8 +11211,8 @@ window.TT_STUB.fnAntwoord = {};
               d98["na"] == {"waarde": "2522", "open": False, "items": 0}, j98("na"))
         check("een plaatsnaam typen geeft nog wel suggesties", d98["naam"]["open"] and d98["naam"]["items"] > 0, j98("naam"))
         check("Enter kiest nooit uit een dichte lijst", d98["dicht"] == "2522", j98("dicht"))
-        check("een bewaarde zoekopdracht met een postcode noemt de plaats: 'binnen 10 km van Den Haag'",
-              d98["tekst"] == "Muzikanten en bands · Alle instrumenten · binnen 10 km van Den Haag", j98("tekst"))
+        check("een bewaarde zoekopdracht met een postcode bewaart de plaats: 'Den Haag'",
+              d98["tekst"] == "Den Haag", j98("tekst"))
         check("blok 98: geen paginafouten", not f98, "; ".join(f98)[:300])
         c98.close()
 
@@ -11445,6 +11430,8 @@ XSS_UITZONDERINGEN = {
     # TT-396 cluster 2 (sessie 208), elk gecontroleerd in de code:
     "oproepen.zang_vorm": "pbSpeler() vergelijkt alleen met zangeres en beide; de waarde zelf komt nooit in beeld",
     "oproepen.doelen": "pbDoelenTekst() toont alleen de vier bekende keuzes (PB_DOELEN); een andere waarde valt weg",
+    # TT-396 deel 5 (besluit Ronald 27-11-2026, sessie 223): Meldingen toont de bewaarde zoekopdracht niet meer.
+    "musician_saved_search.plaats_tekst": "de app bewaart de gevonden plaatsnaam nog (huidigeZoek()), maar toont hem nergens meer; de mail leest hem niet",
 }
 
 
@@ -16315,10 +16302,9 @@ def blok_tt543_onderdeel4():
                 page.evaluate(LAAD, bezoeker)
                 u = {}
                 # 1. Muzikanten (3C), via de echte route: Zoeken onderin, de tegel Muzikanten.
-                # Een bezoeker begint op de landingspagina (zonder onderbalk): de knop daar opent Muzikanten direct (TT-630).
+                # Een bezoeker begint op de landingspagina (zonder onderbalk): de knop daar opent Zoeken met de tegels (TT-396 deel 5).
                 page.locator(".landing-knop" if bezoeker else "#bottomNavSearch").click(); page.wait_for_timeout(300)
-                if not bezoeker:
-                    page.locator("#zoekTegelMuzikanten").click()
+                page.locator("#zoekTegelMuzikanten").click()
                 page.wait_for_timeout(400)
                 page.fill("#filterCity", "Den Haag"); page.wait_for_timeout(1200)
                 if not bezoeker:
@@ -16326,7 +16312,8 @@ def blok_tt543_onderdeel4():
                 u["dicht"] = page.evaluate("""() => { const $ = id => document.getElementById(id), r = e => e.getBoundingClientRect(), zicht = e => !!e && e.offsetParent !== null;
                   const rij = document.querySelector('.zoek-filters-rij'), straal = $('filterRadiusField'), knop = $('zoekFiltersKnop'), vink = document.querySelector('label.zoek-onthoud');
                   const eerste = document.querySelector('#searchResults .results-count');
-                  return { naam: zicht($('filterName')), vak: zicht($('zoekFilterVak')), wissen: zicht($('zoekWissenKnop')),
+                  return { naam: zicht($('filterName')), vak: zicht($('zoekFilterVak')), wissen: zicht($('zoekWissenKnop')), vinkZicht: zicht(vink),
+                    knopRechts: Math.round(r(rij).right - r(knop).right),
                     rijOnder: Math.round(r(rij).top - r(straal).bottom), knopInRij: rij.contains(knop) && rij.contains(vink),
                     midden: Math.round((r(knop).top + r(knop).bottom) / 2 - (r(vink).top + r(vink).bottom) / 2),
                     totTelling: eerste ? Math.round(r(eerste).top - r(rij).bottom) : null,
@@ -16450,8 +16437,12 @@ def blok_tt543_onderdeel4():
             d = u["dicht"]
             check(f"{n} (3C): dicht zie je alleen Plaats en Straal; Naam, het filtervak en Wissen staan achter Filters",
                   not d["naam"] and not d["vak"] and not d["wissen"], json.dumps(d))
-            check(f"{n} (3C): Filters staat rechts op de regel van Onthoud mijn zoekopdracht, 16px onder Plaats en Straal (TT-582), op de middellijn van de vink",
-                  d["knopInRij"] and d["rijOnder"] == 16 and abs(d["midden"]) <= 1, json.dumps(d))
+            if wie == "lid":
+                check(f"{n} (3C): Filters staat rechts op de regel van Onthoud mijn zoekopdracht, 16px onder Plaats en Straal (TT-582), op de middellijn van de vink",
+                      d["knopInRij"] and d["rijOnder"] == 16 and abs(d["midden"]) <= 1, json.dumps(d))
+            else:
+                check(f"{n} (TT-396 deel 5): geen vink voor een bezoeker; Filters staat rechts op de regel, 16px onder Plaats en Straal, op dezelfde plek als voor een lid",
+                      not d["vinkZicht"] and d["knopInRij"] and d["rijOnder"] == 16 and d["knopRechts"] == uit[(breedte, "lid")]["dicht"]["knopRechts"], json.dumps(d))
             # Het beeld van 3C (08-11-2026) gaf 311px; F1 zet de regel "… gevonden" op 18px (was 'normal', 15px): 314px.
             # TT-582 (10-11-2026): label tot veld 4px en Filters 16px onder Plaats en Straal: 8px hoger, 306px.
             check(f"{n} (3C, F1, TT-582): de telling 16px onder die regel; de eerste muzikant op 288px (TT-595, besluit Ronald 14-11-2026: 20 wordt 16; 296px vóór TT-595, 306px vóór TT-543 laag 3)",
@@ -20600,7 +20591,7 @@ def blok_bundel_f():
         def tik_maak():
             pg.locator("#view-profiel .profiel-actie .btn-primary").first.click(); pg.wait_for_timeout(400)
             pg.locator("#voorbeeldBlad button:has-text('Profiel aanmaken')").first.click(); pg.wait_for_timeout(500)
-        # 1. Landingspagina → Zoek muzikanten: meteen Muzikanten.
+        # 1. Landingspagina → Zoek muzikanten: Zoeken met de drie tegels (TT-396 deel 5).
         tik(".landing-knop")
         u["zoek"] = pg.evaluate(stand)
         # 2. Een profiel → "Stuur een bericht" → Profiel aanmaken → stap 1 → pijl: hetzelfde profiel.
@@ -20613,9 +20604,9 @@ def blok_bundel_f():
         tik_maak()
         pg.go_back(); pg.wait_for_timeout(700)
         u["toestel"] = pg.evaluate(stand)
-        # 4. Verder terug: Muzikanten, de twee tegels, de landingspagina; elke druk een zichtbare stap.
+        # 4. Verder terug: de tegels, de landingspagina; elke druk een zichtbare stap.
         reeks = []
-        for _ in range(3):
+        for _ in range(2):
             tik("#navTerugBtn", 600); reeks.append(pg.evaluate(stand))
         u["reeks"] = reeks
         # 5. De bandpagina.
@@ -20647,16 +20638,16 @@ def blok_bundel_f():
         browser.close()
     httpd.shutdown()
     j = lambda k: json.dumps(u.get(k), ensure_ascii=False)
-    check("TT-630: Zoek muzikanten op de landingspagina opent Muzikanten direct, met de pijl (besluit Ronald 15-11-2026)",
-          u.get("zoek", {}).get("view") == "search" and u["zoek"]["scherm"] == "muzikanten" and u["zoek"]["pijl"] == "visible", j("zoek"))
+    check("TT-396 deel 5: Zoek muzikanten op de landingspagina opent Zoeken met de drie tegels, met de pijl (besluit Ronald 27-11-2026)",
+          u.get("zoek", {}).get("view") == "search" and u["zoek"]["scherm"] == "start" and u["zoek"]["pijl"] == "visible", j("zoek"))
     check("TT-630 en TT-396 cluster 3: \"Stuur een bericht\" en dan Profiel aanmaken opent stap 1 van de aanmelding",
           u.get("stap1", {}).get("view") == "register" and u["stap1"]["stap"] == 0, j("stap1"))
     check("TT-630: stap 1 zonder invoer, de pijl: terug op hetzelfde profiel (besluit Ronald 15-11-2026: \"ja\")",
           u.get("pijl", {}).get("view") == "profiel" and u["pijl"]["profiel"] == "muzikant:m2" and u["pijl"]["vraag"] is None, j("pijl"))
     check("TT-630: de terugknop van het toestel ook", u.get("toestel", {}).get("view") == "profiel" and u["toestel"]["profiel"] == "muzikant:m2", j("toestel"))
-    r = u.get("reeks", [{}] * 3)
-    check("TT-630: daarna terug: Muzikanten, de twee tegels, de landingspagina; geen dode druk",
-          [(x.get("view"), x.get("scherm")) for x in r] == [("search", "muzikanten"), ("search", "start"), ("landing", None)], j("reeks"))
+    r = u.get("reeks", [{}] * 2)
+    check("TT-630: daarna terug: de tegels, de landingspagina; geen dode druk",
+          [(x.get("view"), x.get("scherm")) for x in r] == [("search", "start"), ("landing", None)], j("reeks"))
     check("TT-630: vanaf de bandpagina terug op dezelfde bandpagina",
           u.get("band", {}).get("view") == "profiel" and u["band"]["profiel"] == "band:b2", j("band"))
     check("TT-630: vanaf Inloggen (Profiel aanmaken) terug op Inloggen",
@@ -21714,7 +21705,7 @@ window.TT_STUB.rpcResults.tt_mijn_reacties = () => [];
 window.TT_STUB.rpcResults.tt_nieuwe_reacties = 1;
 window.TT_STUB.rpcResults.tt_get_my_birth_date = '2007-05-01';
 window.TT_STUB.data.musicians.forEach(m => Object.assign(m, { weergavenaam: m.weergavenaam || m.first_name, musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
-window.TT_STUB.data.prikbord_zoek = [{ musician_id: 'm1', soort: 'gezocht', doel: 'band', instrument: null, volgorde: 'afstand', plaats: null, origin_lat: null, origin_lng: null, straal_km: 50 }];
+window.TT_STUB.data.prikbord_zoek = [{ musician_id: 'm1', soort: 'gezocht', doel: 'band', instrument: null, volgorde: 'nieuwste', plaats: null, origin_lat: null, origin_lng: null, straal_km: 50 }];
 """ % (PB_OPROEPEN, PB_MIJN)
     fouten, u = [], {}
     httpd, port = serve()
@@ -21740,7 +21731,7 @@ window.TT_STUB.data.prikbord_zoek = [{ musician_id: 'm1', soort: 'gezocht', doel
           showView('search'); openPrikbord(); await w(900);
           // De onthouden zoekopdracht staat erin.
           u.hersteld = { vink: $('pbOnthoud').checked, straal: $('pbStraal').value, f: Object.assign({}, pbFilters) };
-          pbFilters = { soort: '', doel: '', instrument: '', volgorde: 'nieuwste' }; pbFiltersBijwerken(); await w(900);
+          pbFilters = { soort: '', doel: '', instrument: '' }; pbFiltersBijwerken(); await w(900);
           const rijen = [...document.querySelectorAll('#pbResultaat .pb-rij')];
           u.rijen = rijen.map(r => ({ titel: r.querySelector('.result-row-naam').textContent, meta: [...r.querySelectorAll('.result-row-meta')].map(m => m.textContent.replace(/\u00a0/g, ' ')),
             tekst: !!r.querySelector('.pb-rij-tekst'), gedeeld: (r.querySelector('.pb-rij-gedeeld') || {}).textContent || null,
@@ -21755,10 +21746,10 @@ window.TT_STUB.data.prikbord_zoek = [{ musician_id: 'm1', soort: 'gezocht', doel
           // Een oproep geopend: de gezamenlijke nummers in dezelfde vorm.
           pbOpenOproep('o1'); await w(300);
           u.oproepGedeeld = (document.querySelector('#pbOproepScherm .pb-oproep-gedeeld') || {}).textContent || null;
-          // Tips: de eerste afspraak alleen tot en met 21 jaar, bij Kennismaken (cluster 2: de tips staan per vak).
+          // Tips: de eerste afspraak alleen tot en met 21 jaar, bij Verder nog (deel 5; was Kennismaken).
           pbForm = pbLegeForm();
-          PB_MIJ.leeftijd = 19; u.tip19 = pbVakInhoud('kennis').tips.includes(PB_TIPS.eersteAfspraak);
-          PB_MIJ.leeftijd = 22; u.tip22 = pbVakInhoud('kennis').tips.includes(PB_TIPS.eersteAfspraak);
+          PB_MIJ.leeftijd = 19; u.tip19 = pbVakInhoud('verder').tips.includes(PB_TIPS.eersteAfspraak);
+          PB_MIJ.leeftijd = 22; u.tip22 = pbVakInhoud('verder').tips.includes(PB_TIPS.eersteAfspraak);
           pbForm = null;
           // Berichten van TalentTent.
           const info = { muzikanten: { m2: { id: 'm2', weergavenaam: 'Kees' } }, bands: { b1: { id: 'b1', name: 'Nachtploeg', city: 'Den Haag' } } };
@@ -21789,7 +21780,7 @@ window.TT_STUB.data.prikbord_zoek = [{ musician_id: 'm1', soort: 'gezocht', doel
         browser.close()
     httpd.shutdown()
     check("TT-396: de onthouden zoekopdracht staat erin bij het openen (vink aan, straal, filters)",
-          u["hersteld"]["vink"] is True and u["hersteld"]["straal"] == "50" and u["hersteld"]["f"]["doel"] == "band" and u["hersteld"]["f"]["volgorde"] == "afstand", json.dumps(u["hersteld"]))
+          u["hersteld"]["vink"] is True and u["hersteld"]["straal"] == "50" and u["hersteld"]["f"]["doel"] == "band" and "volgorde" not in u["hersteld"]["f"], json.dumps(u["hersteld"]))  # Volgorde weg sinds deel 5
     check("TT-396: vink uit haalt de onthouden zoekopdracht weg", u["naUit"] == 0, str(u["naUit"]))
     check("TT-396: drie tegels", len(u["rijen"]) == 3, json.dumps(u["rijen"])[:400])
     check("TT-396: een tegel heeft geen tekst van de oproep (besluit sessie 199)", all(not r["tekst"] for r in u["rijen"]), "")
@@ -21877,7 +21868,7 @@ S.data.prikbord_zoek = [];
           PB_MIJ.leeftijd = 22; await pbReagerenOpen(); await w(200);
           u.tip22 = !!document.querySelector('#pbReagerenInhoud .pb-afspraak-melding');
           pbReagerenSluiten();
-          PB_MIJ.leeftijd = 21; pbForm = pbLegeForm(); u.tipsModal21 = pbVakInhoud('kennis').tips.includes(PB_TIPS.eersteAfspraak); pbForm = null;
+          PB_MIJ.leeftijd = 21; pbForm = pbLegeForm(); u.tipsModal21 = pbVakInhoud('verder').tips.includes(PB_TIPS.eersteAfspraak); pbForm = null;
           u.tipTekst = PB_TIPS.eersteAfspraak;
           // --- Grens 19 in het formulier ---
           const groepen = async (leeftijd) => {
@@ -22293,9 +22284,9 @@ S.data.prikbord_zoek = [];
     fm = u["form"]
     check("TT-396 cluster 2: geen toevoeging aan de kop en geen oud tekstvak (besluit Ronald 23-11-2026, sessie 202: \"ik wil de toevoeging aan de koptekst weg hebben\")",
           fm["toevoeging"] is False and fm["tekstvak"] is False, j(fm))
-    check("TT-396 cluster 2: zes vakken in de ik-vorm, elk met Voorbeelden, leeg, hoogstens 600 tekens; Lees dit eerst bovenin (sessie 205 en 206; sessie 207: \"maar er 600 tekens van\")",
-          fm["koppen"] == ["Wie ben ik", "Wat wil ik", "Wie zoek ik", "Wanneer en waar", "Kennismaken", "Verder nog"] and fm["voorbeelden"] == 6
-          and fm["leeg"] and fm["max"] == [600] * 6 and fm["lees"], j(fm))
+    check("TT-396 cluster 2 en deel 5: vijf vakken in de ik-vorm (Kennismaken weg, besluit Ronald 27-11-2026), elk met Voorbeelden, leeg, hoogstens 600 tekens; Lees dit eerst bovenin",
+          fm["koppen"] == ["Wie ben ik", "Wat wil ik", "Wie zoek ik", "Wanneer en waar", "Verder nog"] and fm["voorbeelden"] == 5
+          and fm["leeg"] and fm["max"] == [600] * 5 and fm["lees"], j(fm))
     check("TT-396 cluster 2: Waarvoor zoek je een muzikant?, leeg \"Band · Jammen · Invallen…\", meer dan één keuze (sessie 205)",
           fm["waarvoor"] == ["Waarvoor zoek je een muzikant?", "Band · Jammen · Invallen…"] and fm["waarvoorGekozen"] == "Band · Jammen", j(fm))
     check("TT-396 cluster 2: Gezocht · Beschikbaar over de hele breedte, even breed, letter 15 (sessie 206: \"ja. alleen de lettergrootte aanpassen\")",
@@ -22343,8 +22334,8 @@ S.data.prikbord_zoek = [];
           and not any(k[1] or k[2] for k in mj["verlengenO8"]) and mj["rijenO8"] == 2, j(mj))
     check("TT-396 deel 4: de melding na Verlengen noemt geen datum (besluit Ronald 26-11-2026, sessie 221: \"ja,\")",
           mj["melding"] == "Verlengd. Je oproep staat weer bovenaan.", j(mj["melding"]))
-    check("TT-396 deel 4: Oproep bekijken opent je oproep zoals hij online staat (met Bekijk de kandidaten); terug naar Mijn Oproepen, de kaart nog open",
-          mj["bekijk"]["laag"] == "oproep" and mj["bekijk"]["knop"] == "Bekijk de kandidaten" and mj["terug"] == [None, "mijn", True]
+    check("TT-396 deel 4 en 5: Oproep bekijken opent je oproep zoals hij online staat, zonder Bekijk de kandidaten (deel 5: \"ja, want die staan dan al in je lijst\"); terug naar Mijn Oproepen, de kaart nog open",
+          mj["bekijk"]["laag"] == "oproep" and mj["bekijk"]["knop"] == "" and mj["terug"] == [None, "mijn", True]
           and (mj.get("bekijkVraag") or {}).get("p_id") == "o9", j([mj["bekijk"], mj["terug"], mj.get("bekijkVraag")]))
     check("TT-396 deel 4: op de oproep na verlengen \"Geplaatst op\" met de dag van verlengen, nooit de afloopdatum",
           mj["datumVerlengd"][0] == mj["datumVerlengd"][1] and "Verlengd" not in mj["datumVerlengd"][0] and "Verlengd" not in (mj["bekijk"]["datum"] or "x"), j(mj["datumVerlengd"]))
@@ -22913,6 +22904,140 @@ S.data.prikbord_zoek = [];
         check(f"{n}: wie het inlogscherm verlaat zonder in te loggen, laat niets achter", b.get("profielOnthouden") == "profiel" and b.get("verlaten") is None, j(b))
 
 
+def blok_prikbord_deel5():
+    print("\nBlok 182 — TT-396 deel 5 (besloten en gebouwd sessie 223, 27-11-2026): Zoek muzikanten opent de tegels, het prikbord voor een bezoeker, je eigen plaats ingevuld")
+    stub_js = open(STUB, encoding="utf-8").read()
+    init = """
+const S = window.TT_STUB;
+window.__ingelogd = { user: { id: 'u1', email: 'a@talenttent.org' } };
+S.session = window.__TT_UIT ? null : window.__ingelogd;
+S.data.musicians = [
+  { id: 'm1', user_id: 'u1', fname: 'Ronald', username: 'ronnie', weergavenaam: 'Ronald', zip: '2497', city: 'Den Haag', birth_date: '1970-08-28', bio: '', profile_complete: true },
+  { id: 'm2', fname: 'Daan', username: 'daan', weergavenaam: 'Daan', city: 'Den Haag' }];
+S.data.musicians.forEach(m => Object.assign(m, { musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
+const L = %s;
+S.rpcResults.tt_prikbord = (a) => a.p_id ? L.filter(x => x.id === a.p_id) : L;
+S.rpcResults.tt_mijn_oproepen = () => [];
+S.rpcResults.tt_mijn_reacties = () => [];
+S.rpcResults.tt_nieuwe_reacties = 0;
+S.rpcResults.tt_get_my_birth_date = '1970-08-28';
+S.rpcResults.tt_resolve_search_origin = () => [{ lat: 52.08, lng: 4.31 }];
+S.data.prikbord_zoek = window.__PB_BEWAARD ? [{ musician_id: 'm1', plaats: 'Delft', straal_km: 10, soort: null, doel: null, instrument: null, volgorde: 'nieuwste' }] : [];
+""" % PB_OPROEPEN
+    fouten, uit = [], {}
+    httpd, port = serve()
+    MEET = r"""async () => {
+      const w = (ms = 400) => new Promise(r => setTimeout(r, ms));
+      const $ = id => document.getElementById(id), r = el => el.getBoundingClientRect();
+      const zicht = el => !!el && el.offsetParent !== null;
+      const rij = document.querySelector('.pb-mijn-knoppen-rij'), kop = document.querySelector('.pb-kopregel');
+      const volgende = zicht(rij) ? rij : document.querySelector('#pbAlleVak .search-filters');
+      const fk = $('pbFiltersKnop'); $('pbFiltersKnop').click(); await w(300);
+      const filters = [...document.querySelectorAll('#pbFilterVak label')].filter(zicht).map(l => l.textContent.trim());
+      $('pbFiltersKnop').click(); await w(200);
+      return { view: huidigeView, scherm: zoekScherm, rij: zicht(rij), duiding: zicht($('pbDuiding')), plaatsen: zicht(document.querySelector('.pb-plaatsen-knop')),
+               onderKop: Math.round(r(volgende).top - r(kop).bottom), plaats: $('pbPlaats').value,
+               vink: zicht($('pbOnthoud').closest('label')), filtersRechts: Math.round(r(fk).right), filters, volgorde: !!$('pbVolgordeField') }; }"""
+    MUZ = r"""async () => {
+      const w = (ms = 400) => new Promise(r => setTimeout(r, ms));
+      const $ = id => document.getElementById(id), zicht = el => !!el && el.offsetParent !== null;
+      appTerug(); await w(400);
+      document.querySelector("#zoekStart .zoek-tegel-tekst .tile-title") && [...document.querySelectorAll('#zoekStart .tile-title')].find(t => t.textContent === 'Muzikanten').click(); await w(900);
+      return { scherm: zoekScherm, vink: zicht($('zoekOnthoud').closest('label')), filtersRechts: Math.round($('zoekFiltersKnop').getBoundingClientRect().right) }; }"""
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        for breed in (360, 390):
+            for wie in ("uit", "in", "bewaard"):
+                ctx = browser.new_context(viewport={"width": breed, "height": 800}, color_scheme="dark", is_mobile=True, has_touch=True)
+                ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+                if wie == "uit":
+                    ctx.add_init_script("window.__TT_UIT = true;")
+                if wie == "bewaard":
+                    ctx.add_init_script("window.__PB_BEWAARD = true;")
+                pg = ctx.new_page()
+                pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+                pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js + init))
+                pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+                pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+                pg.wait_for_timeout(1500)
+                u = {}
+                if wie == "uit":
+                    # De echte route van een bezoeker: de landingspagina, Zoek muzikanten, de tegel Prikbord.
+                    pg.locator(".landing-knop").click(); pg.wait_for_timeout(500)
+                    u["tegels"] = pg.evaluate("() => ({ view: huidigeView, scherm: zoekScherm, tegels: [...document.querySelectorAll('#zoekStart .tile-title')].filter(e => e.offsetParent).map(e => e.textContent) })")
+                else:
+                    pg.locator("#bottomNavSearch").click(); pg.wait_for_timeout(500)
+                pg.locator("#zoekStart .tile-title:has-text('Prikbord')").click(); pg.wait_for_timeout(1200)
+                u["prikbord"] = pg.evaluate(MEET)
+                if wie in ("uit", "in"):
+                    u["muzikanten"] = pg.evaluate(MUZ)
+                    pg.locator("#zoekStart .tile-title:has-text('Prikbord')").first.click() if pg.evaluate("zoekScherm") == "start" else None
+                if wie == "in":
+                    # Verder nog (deel 5 ad 4): de tips van Kennismaken, de tip over de eerste afspraak tot en met 21,
+                    # Aanpassen zet de tekst van Kennismaken in Verder nog; het kader telt vier vakken.
+                    u["verder"] = pg.evaluate(r"""async () => {
+                      const w = (ms = 300) => new Promise(r => setTimeout(r, ms));
+                      const u = {};
+                      pbForm = pbLegeForm();
+                      PB_MIJ.leeftijd = 56; u.tips56 = pbVakInhoud('verder').tips.slice(); u.vb = pbVakInhoud('verder').vb.slice();
+                      PB_MIJ.leeftijd = 21; u.tip21 = pbVakInhoud('verder').tips.includes(PB_TIPS.eersteAfspraak);
+                      pbForm.wie = 'b1'; u.bandVb = pbVakInhoud('verder').vb.slice(); pbForm = null;
+                      u.sleutels = PB_VAK_SLEUTELS.slice();
+                      // Een oude oproep met tekst bij Kennismaken: de oproep toont hem, Aanpassen zet hem in Verder nog.
+                      const oud = { id: 'oud1', plaatser_id: 'm1', soort: 'gezocht', doelen: ['jammen'], instrumenten: ['Drums'], leeftijden: ['16-18', '19-24'],
+                        vakken: { wie: 'Ik ben Ronald.', kennis: 'Eerst een bericht.', verder: 'Ik heb een versterker.' }, geplaatst_op: new Date().toISOString() };
+                      const vak = document.createElement('div'); vak.innerHTML = pbOproepHTML(oud, true);
+                      u.koppenOud = [...vak.querySelectorAll('.pb-vak-kop')].map(k => k.textContent);
+                      pbMijn = [{ oproep: oud, reacties: [] }];
+                      await pbAanpassen('oud1'); await w(300);
+                      u.aanpassen = { verder: document.getElementById('pbVak-verder').value, kennisVeld: !!document.getElementById('pbVak-kennis'), kennis: 'kennis' in pbForm.vakken };
+                      pbZetTab('alle'); await w(200);
+                      return u; }""")
+                if wie == "uit":
+                    # Inloggen terwijl het prikbord open is: de tabbladen en de regel komen terug; uitloggen haalt ze weer weg.
+                    pg.evaluate("async () => { const S = window.TT_STUB; S.session = window.__ingelogd; S.authCallback('SIGNED_IN', S.session); await new Promise(r => setTimeout(r, 1500)); }")
+                    u["naInloggen"] = pg.evaluate("() => ({ rij: document.querySelector('.pb-mijn-knoppen-rij').offsetParent !== null || huidigeView !== 'search', verborgen: document.querySelector('.pb-mijn-knoppen-rij').hidden, duiding: document.getElementById('pbDuiding').hidden })")
+                    pg.evaluate("async () => { const S = window.TT_STUB; S.session = null; S.authCallback('SIGNED_OUT', null); await new Promise(r => setTimeout(r, 800)); }")
+                    u["naUitloggen"] = pg.evaluate("() => ({ verborgen: document.querySelector('.pb-mijn-knoppen-rij').hidden, duiding: document.getElementById('pbDuiding').hidden })")
+                uit[(breed, wie)] = u
+                ctx.close()
+        browser.close()
+    httpd.shutdown()
+    j = lambda x: json.dumps(x, ensure_ascii=False)
+    check("TT-396 deel 5: geen JS-fout", not fouten, " | ".join(fouten)[:800])
+    for breed in (360, 390):
+        n = f"{breed}px"
+        a, b, c = uit.get((breed, "uit"), {}), uit.get((breed, "in"), {}), uit.get((breed, "bewaard"), {})
+        check(f"{n}: Zoek muzikanten op de landingspagina opent Zoeken met de drie tegels (besluit Ronald 27-11-2026: \"voer het toch maar door\")",
+              a.get("tegels") == {"view": "search", "scherm": "start", "tegels": ["Prikbord", "Muzikanten", "Mix & Match"]}, j(a.get("tegels")))
+        pa = a.get("prikbord", {})
+        check(f"{n}: een bezoeker ziet op het prikbord geen Mijn Oproepen, Mijn Reacties en \"Oproepen van anderen.\"; Oproep plaatsen blijft (besluit Ronald 27-11-2026: \"ad 2. ja.\")",
+              pa.get("scherm") == "prikbord" and pa.get("rij") is False and pa.get("duiding") is False and pa.get("plaatsen") is True, j(pa))
+        check(f"{n}: bezoeker: 16 tussen Oproep plaatsen en Plaats, gelijk aan de ruimte onder Oproep plaatsen als je ingelogd bent",
+              pa.get("onderKop") == 16 and b.get("prikbord", {}).get("onderKop") == 16, j([pa.get("onderKop"), b.get("prikbord", {}).get("onderKop")]))
+        check(f"{n}: na inloggen staan de tabbladen en de regel er weer; na uitloggen weer niet",
+              a.get("naInloggen", {}).get("verborgen") is False and a.get("naInloggen", {}).get("duiding") is False
+              and a.get("naUitloggen") == {"verborgen": True, "duiding": True}, j([a.get("naInloggen"), a.get("naUitloggen")]))
+        pb = b.get("prikbord", {})
+        check(f"{n}: ingelogd staan de tabbladen en de regel er, en je eigen plaats staat in het veld Plaats (besluit Ronald 27-11-2026: \"ad 1. ja\")",
+              pb.get("rij") is True and pb.get("duiding") is True and pb.get("plaats") == "Den Haag", j(pb))
+        check(f"{n}: een bezoeker heeft geen eigen plaats: het veld Plaats blijft leeg", pa.get("plaats") == "", j(pa))
+        check(f"{n}: een bewaarde zoekopdracht met een plaats gaat voor je eigen plaats", c.get("prikbord", {}).get("plaats") == "Delft", j(c.get("prikbord")))
+        check(f"{n}: Volgorde is weg op het prikbord; Filters heeft Gezocht of beschikbaar, Waarvoor en Instrument (besluit Ronald 27-11-2026: \"ad 2. ja\")",
+              pb.get("volgorde") is False and pb.get("filters") == ["Gezocht of beschikbaar", "Waarvoor", "Instrument"], j(pb))
+        ma, mb = a.get("muzikanten", {}), b.get("muzikanten", {})
+        check(f"{n}: een bezoeker ziet het vinkje Onthoud mijn zoekopdracht niet, bij Muzikanten en op het prikbord; ingelogd wel (\"ad 5. ja\")",
+              pa.get("vink") is False and ma.get("vink") is False and pb.get("vink") is True and mb.get("vink") is True, j([pa.get("vink"), ma, pb.get("vink"), mb]))
+        check(f"{n}: zonder vinkje staat Filters rechts op de regel, op dezelfde plek als ingelogd",
+              pa.get("filtersRechts") == pb.get("filtersRechts") and ma.get("filtersRechts") == mb.get("filtersRechts") and pa.get("filtersRechts"), j([pa.get("filtersRechts"), pb.get("filtersRechts"), ma.get("filtersRechts"), mb.get("filtersRechts")]))
+        vd = b.get("verder", {})
+        check(f"{n}: vijf vakken, Kennismaken weg; Verder nog heeft de tips over kennismaken (besluit Ronald 27-11-2026: \"ja akkoord\")",
+              vd.get("sleutels") == ["wie", "wil", "zoek", "waar", "verder"] and vd.get("tips56") == ["Een keer samen spelen zegt meer dan veel berichten.", "Stel een kleine eerste stap voor, zoals één nummer samen spelen.", "Hou het contact eerst via de app. Later kun je je e-mailadres of telefoonnummer nog geven.", "Zet hier ook wat al vaststaat of wat je zelf meeneemt."]
+              and vd.get("tip21") is True and len(vd.get("vb", [])) == 3 and vd["vb"][0].startswith("Eerst een bericht hier in de app.") and vd.get("bandVb", [""])[0].startswith("Stuur ons een bericht via de app."), j(vd))
+        check(f"{n}: een oproep van vóór deel 5 toont zijn tekst bij Kennismaken; Aanpassen zet die tekst in Verder nog",
+              vd.get("koppenOud") == ["Wie ben ik", "Kennismaken", "Verder nog"]
+              and vd.get("aanpassen") == {"verder": "Eerst een bericht.\n\nIk heb een versterker.", "kennisVeld": False, "kennis": False}, j(vd))
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -22992,6 +23117,7 @@ BLOKKEN = [
     blok_prikbord_herstel209,
     blok_prikbord_sessie212,
     blok_prikbord_cluster3,
+    blok_prikbord_deel5,
 ]
 
 

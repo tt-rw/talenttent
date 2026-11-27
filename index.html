@@ -99,7 +99,7 @@
 <link rel="preload" href="tt-woordmerk.woff2" as="font" type="font/woff2" crossorigin>
 
 <link rel="preload" href="inter-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=20261126b">
+<link rel="stylesheet" href="styles.css?v=20261127c">
 </head>
 <body class="landing-op-foto">
 
@@ -303,7 +303,8 @@
   </div>
   <div class="landing-onder">
     <h2 class="landing-sub">Talent zoekt Talent — bij jou in de buurt</h2>
-    <button class="btn btn-primary landing-knop" onclick="openZoekMuzikanten('behoud')">Zoek muzikanten</button>
+
+    <button class="btn btn-primary landing-knop" onclick="showView('search', 'behoud')">Zoek muzikanten</button>
     <p class="landing-login">Zoeken kan zonder profiel. <span class="landing-acties"><button type="button" class="landing-inloggen" onclick="showView('auth')">Inloggen</button> of <button type="button" class="landing-inloggen" onclick="showView('register')">Profiel aanmaken</button></span></p>
     <p class="landing-uitleg"><button type="button" class="landing-inloggen" onclick="showView('about')">Hoe werkt het?</button></p>
   </div>
@@ -1579,7 +1580,6 @@
               <div class="field"><label>Waarvoor</label><div class="menu-anchor"><div class="wheel-field" id="pbDoelField"><span class="wheel-field-label"></span></div><div class="choice-menu" id="pbDoelMenu" role="listbox"></div></div></div>
             </div>
             <div class="field"><label>Instrument</label><div class="menu-anchor"><div class="wheel-field" id="pbInstrumentField"><span class="wheel-field-label"></span></div><div class="choice-menu menu-breed" id="pbInstrumentMenu" role="listbox"></div></div></div>
-            <div class="field"><label>Volgorde</label><div class="menu-anchor"><div class="wheel-field" id="pbVolgordeField"><span class="wheel-field-label"></span></div><div class="choice-menu menu-breed" id="pbVolgordeMenu" role="listbox"></div></div></div>
             <div class="zoek-wis-rij"><button type="button" class="zoek-wissen-knop" onclick="pbWissen()">Wissen</button></div>
           </div>
         </div>
@@ -2405,12 +2405,6 @@
       <p class="voorkeur-uitleg" id="pushTekst"></p>
     </div>
 
-
-
-    <div class="modal-blok">
-      <div class="voorkeur-kop">Bewaarde zoekopdracht</div>
-      <div id="bewaardeZoekInstellingen"></div>
-    </div>
   </div>
 </div>
 
@@ -2487,20 +2481,20 @@
 
 
 <link rel="preload" href="supabase.js?v=2.118.0" as="script">
-<link rel="preload" href="core.js?v=20261127a" as="script">
+<link rel="preload" href="core.js?v=20261127c" as="script">
 <link rel="preload" href="utils.js?v=20261126b" as="script">
 <link rel="preload" href="veiligheid.js?v=20261121c" as="script">
 <link rel="preload" href="auth.js?v=20261120a" as="script">
 <link rel="preload" href="postcode.js?v=20261119a" as="script">
 <link rel="preload" href="wizard.js?v=20261125a" as="script">
 <link rel="preload" href="ouder.js?v=20261118a" as="script">
-<link rel="preload" href="search.js?v=20261124a" as="script">
+<link rel="preload" href="search.js?v=20261127b" as="script">
 <link rel="preload" href="musicians.js?v=20261126a" as="script">
 <link rel="preload" href="bands.js?v=20261126a" as="script">
 <link rel="preload" href="messages.js?v=20261126a" as="script">
 <link rel="preload" href="push.js?v=20261118a" as="script">
 <link rel="preload" href="modals-shared.js?v=20261116a" as="script">
-<link rel="preload" href="prikbord.js?v=20261126b" as="script">
+<link rel="preload" href="prikbord.js?v=20261127c" as="script">
 <script src="supabase.js?v=2.118.0"></script>
 <script>
 
@@ -2518,20 +2512,20 @@
     document.getElementById('backendErrorOverlay').classList.add('visible');
   }
 </script>
-<script src="core.js?v=20261127a"></script>
+<script src="core.js?v=20261127c"></script>
 <script src="utils.js?v=20261126b"></script>
 <script src="veiligheid.js?v=20261121c"></script>
 <script src="auth.js?v=20261120a"></script>
 <script src="postcode.js?v=20261119a"></script>
 <script src="wizard.js?v=20261125a"></script>
 <script src="ouder.js?v=20261118a"></script>
-<script src="search.js?v=20261124a"></script>
+<script src="search.js?v=20261127b"></script>
 <script src="musicians.js?v=20261126a"></script>
 <script src="bands.js?v=20261126a"></script>
 <script src="messages.js?v=20261126a"></script>
 <script src="push.js?v=20261118a"></script>
 <script src="modals-shared.js?v=20261116a"></script>
-<script src="prikbord.js?v=20261126b"></script>
+<script src="prikbord.js?v=20261127c"></script>
 <script>
 
 

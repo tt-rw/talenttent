@@ -136,10 +136,6 @@ function openZoekScherm(scherm, opties) {
 
 
 
-
-
-
-
 function openZoekMuzikanten(mode) {
   showView('search', mode);
 
@@ -2355,25 +2351,6 @@ function huidigeZoek() {
 }
 
 
-function zoekTekst(z) {
-  const soort = { alles: 'Muzikanten en bands', muzikanten: 'Muzikanten', bands: 'Bands' }[z.soort || 'alles'];
-  const delen = [soort, z.instruments && z.instruments.length ? z.instruments.join(', ') : 'Alle instrumenten'];
-  if (z.genres && z.genres.length) delen.push(z.genres.join(', '));
-  if (z.age_min != null || z.age_max != null) {
-    delen.push(z.age_max == null ? `vanaf ${z.age_min} jaar`
-      : z.age_min == null ? `tot en met ${z.age_max} jaar`
-      : `${z.age_min} t/m ${z.age_max} jaar`);
-  }
-  if (z.niveau_min != null || z.niveau_max != null) {
-    delen.push(z.niveau_max == null ? `niveau ${z.niveau_min} en hoger`
-      : z.niveau_min == null ? `niveau tot en met ${z.niveau_max}`
-      : z.niveau_min === z.niveau_max ? `niveau ${z.niveau_min}`
-      : `niveau ${z.niveau_min} t/m ${z.niveau_max}`);
-  }
-  delen.push(`binnen ${Number(z.radius_km)} km van ${z.plaats_tekst || 'je woonplaats'}`);
-  return delen.join(' · ');
-}
-
 function zelfdeZoek(a, b) {
   const lijst = (x) => (x || []).slice().sort().join('|');
   return (a.soort || 'alles') === (b.soort || 'alles') && (a.volgorde || 'score') === (b.volgorde || 'score')
@@ -2478,20 +2455,3 @@ function onthoudBijwerken() {
   }, 800);
 }
 
-
-
-
-async function vulBewaardeZoekInInstellingen() {
-  const plek = document.getElementById('bewaardeZoekInstellingen');
-  if (!plek) return;
-  try {
-    await laadBewaardeZoek();
-  } catch (e) {
-    logCaught('vulBewaardeZoekInInstellingen', e);
-    plek.innerHTML = '';
-    return;
-  }
-  plek.innerHTML = bewaardeZoek
-    ? `<p class="voorkeur-uitleg bewaard-zoek-tekst">${escHtml(zoekTekst(bewaardeZoek))}</p>`
-    : `<p class="voorkeur-uitleg">Nog geen. Zet in Zoeken het vinkje Onthoud mijn zoekopdracht aan.</p>`;
-}

@@ -613,6 +613,7 @@ async function onUserLoggedIn(user) {
   document.getElementById('navMenuLogin').style.display = 'none';
   refreshUnreadBadge();
   markeerActief();
+  bezoekerZetten(false);
 
   if (onboardingInFlight) return;
 
@@ -703,6 +704,7 @@ function onUserLoggedOut() {
   wisBewaardeZoek();
 
   if (typeof pbAllesWissen === 'function') pbAllesWissen();
+  bezoekerZetten(true);
   clearOnboardingProgress();
   pendingMessageRecipient = null;
   naInloggen = null;
@@ -859,7 +861,6 @@ async function openSearchPrefsModal() {
   const bekend = instellingenDigest.mid && instellingenDigest.mid === myMusicianId ? instellingenDigest.waarde : null;
   selectDigestFrequency(bekend);
   document.getElementById('searchPrefsModal').classList.add('visible');
-  vulBewaardeZoekInInstellingen();
   vulPushInInstellingen();
   const mid = await getMyMusicianId();
 
@@ -952,7 +953,17 @@ async function getMyCity() {
   return myOwnCity;
 }
 
+
+
+
+function bezoekerZetten(bezoeker = !currentUser) {
+  const delen = [document.querySelector('.pb-mijn-knoppen-rij'), document.getElementById('pbDuiding'),
+    ...['zoekOnthoud', 'pbOnthoud'].map(id => { const v = document.getElementById(id); return v && v.closest('label'); })];
+  delen.forEach(el => { if (el) el.hidden = bezoeker; });
+}
+
 async function configureSearchAccess() {
+  bezoekerZetten();
 
 
   const rolMelding = document.getElementById('zoekRolMelding');
@@ -994,6 +1005,10 @@ async function configureSearchAccess() {
         setlistCityField.value = city;
         updateSearchCityStatus('filterSetlistCity', 'filterSetlistCityStatus');
       }
+
+
+      const prikbordCityField = document.getElementById('pbPlaats');
+      if (prikbordCityField && !prikbordCityField.value.trim()) prikbordCityField.value = city;
     }
   }
 

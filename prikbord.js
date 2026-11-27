@@ -12,7 +12,6 @@ const PB_SPELER = {
   'Saxofoon': 'saxofonist', 'Songwriting': 'songwriter', 'Tamboerijn': 'percussionist', 'Trompet': 'trompettist',
   'Ukulele': 'ukulelespeler', 'Viool': 'violist', 'Zang': 'zanger'
 };
-const PB_VOLGORDE = [['nieuwste', 'Nieuwste'], ['score', 'Beste match'], ['afstand', 'Dichtstbijzijnde']];
 const PB_STRAAL_STANDAARD = 25;
 const PB_DAG = 24 * 3600 * 1000;
 
@@ -21,7 +20,7 @@ let pbLaag = null;
 let pbLijst = [];
 let pbOpen = null;
 let pbMijn = [];
-let pbFilters = { soort: '', doel: '', instrument: '', volgorde: 'nieuwste' };
+let pbFilters = { soort: '', doel: '', instrument: '' };
 let pbFiltersOpen = false;
 let pbVolgnr = 0;
 let pbForm = null;
@@ -182,6 +181,7 @@ function pbZetTab(tab) {
 
   const duiding = document.getElementById('pbDuiding');
   if (duiding) duiding.textContent = PB_DUIDING[tab] || '';
+  bezoekerZetten();
   pbToonLaag();
   if (tab === 'alle') { pbInitFilters(); pbOnthoudHerstellen().finally(pbLaden); }
   if (tab === 'mijn') { pbMijnLaden(); pbTegelGetal(); }
@@ -243,22 +243,21 @@ function pbInitFilters() {
   const keuze = (id, rijen, sleutel) => initChoiceField({
     id, fieldId: id + 'Field', menuId: id + 'Menu',
     rijen: () => rijen.map(([w, t]) => ({ t, gekozen: pbFilters[sleutel] === w })),
-    kies: (i) => { const w = rijen[i][0]; pbFilters[sleutel] = pbFilters[sleutel] === w && sleutel !== 'volgorde' ? '' : w; pbFiltersBijwerken(); },
+    kies: (i) => { const w = rijen[i][0]; pbFilters[sleutel] = pbFilters[sleutel] === w ? '' : w; pbFiltersBijwerken(); },
     ververs: () => {
       const r = rijen.find(x => x[0] === pbFilters[sleutel]);
       const el = document.getElementById(id + 'Field');
       zetVeldTekst(el.querySelector('.wheel-field-label'), r ? r[1] : LEEG_VELD);
-      el.classList.toggle('is-set', !!pbFilters[sleutel] && sleutel !== 'volgorde');
+      el.classList.toggle('is-set', !!pbFilters[sleutel]);
     }
   });
   keuze('pbSoort', [['gezocht', 'Gezocht'], ['beschikbaar', 'Beschikbaar']], 'soort');
   keuze('pbDoel', PB_DOELEN, 'doel');
   keuze('pbInstrument', INSTRUMENTS.map(i => [i, i]), 'instrument');
-  keuze('pbVolgorde', PB_VOLGORDE, 'volgorde');
 }
 
 function pbFiltersBijwerken() {
-  ['pbSoort', 'pbDoel', 'pbInstrument', 'pbVolgorde'].forEach(refreshChoiceField);
+  ['pbSoort', 'pbDoel', 'pbInstrument'].forEach(refreshChoiceField);
   const n = ['soort', 'doel', 'instrument'].filter(k => pbFilters[k]).length;
   document.getElementById('pbFiltersTekst').textContent = n ? `Filters (${n})` : 'Filters';
   pbTekenLijst();
@@ -274,7 +273,7 @@ function togglePbFilters() {
 }
 
 function pbWissen() {
-  pbFilters = { soort: '', doel: '', instrument: '', volgorde: pbFilters.volgorde };
+  pbFilters = { soort: '', doel: '', instrument: '' };
   pbFiltersBijwerken();
 }
 
@@ -304,13 +303,6 @@ let pbPlaatsTimer = null;
 function pbPlaatsInvoer() { clearTimeout(pbPlaatsTimer); pbPlaatsTimer = setTimeout(pbLaden, 500); }
 
 
-function pbPastBijMij(o) {
-  const mijn = (PB_MIJ.instrumenten || []);
-  if (o.soort === 'gezocht') return o.elk_instrument || (o.instrumenten || []).some(i => mijn.includes(i));
-  return false;
-}
-
-
 
 
 function pbVanMij(o) { return !!myMusicianId && o.plaatser_id === myMusicianId; }
@@ -319,12 +311,9 @@ function pbGefilterd() {
   let rijen = pbLijst.filter(o => !pbVanMij(o) &&
     (!f.soort || o.soort === f.soort) && (!f.doel || (o.doelen || []).includes(f.doel))
     && (!f.instrument || o.elk_instrument || (o.instrumenten || []).includes(f.instrument)));
+
   const nieuw = o => new Date(o.verlengd_op || o.geplaatst_op).getTime();
-  const km = o => o.km == null ? Infinity : Number(o.km);
-  if (f.volgorde === 'afstand') rijen.sort((a, b) => km(a) - km(b) || nieuw(b) - nieuw(a));
-  else if (f.volgorde === 'score') rijen.sort((a, b) =>
-    Math.floor(km(a) / 5) - Math.floor(km(b) / 5) || (pbPastBijMij(b) - pbPastBijMij(a)) || nieuw(b) - nieuw(a));
-  else rijen.sort((a, b) => nieuw(b) - nieuw(a));
+  rijen.sort((a, b) => nieuw(b) - nieuw(a));
   return rijen;
 }
 
@@ -388,10 +377,12 @@ function pbOproepHTML(o, voorbeeld) {
 
 
   const koppen = pbVakKoppen(!!o.band_id, o.soort);
-  const vakken = PB_VAK_SLEUTELS.map((k, i) => (o.vakken || {})[k] ? `<div class="pb-vak-kop">${escHtml(koppen[i])}</div><p class="pb-oproep-tekst">${escHtml(o.vakken[k])}</p>` : '').join('');
+  const vakken = PB_VAK_TOON.map(k => (o.vakken || {})[k] ? `<div class="pb-vak-kop">${escHtml(koppen[k])}</div><p class="pb-oproep-tekst">${escHtml(o.vakken[k])}</p>` : '').join('');
   let knop = '';
   if (!voorbeeld) {
-    if (pbVanMij(o)) knop = `<button type="button" class="btn btn-ghost pb-knop" onclick="pbOpenMijn('${jsAttr(o.id)}')">Bekijk de kandidaten</button>`;
+
+
+    if (pbVanMij(o)) knop = pbTab === 'mijn' ? '' : `<button type="button" class="btn btn-ghost pb-knop" onclick="pbOpenMijn('${jsAttr(o.id)}')">Bekijk de kandidaten</button>`;
     else if (o.eigen) knop = '';
 
 
@@ -529,12 +520,17 @@ const PB_LEES_DIT_EERST = [
 
 
 
-const PB_VAK_SLEUTELS = ['wie', 'wil', 'zoek', 'waar', 'kennis', 'verder'];
+
+
+
+const PB_VAK_SLEUTELS = ['wie', 'wil', 'zoek', 'waar', 'verder'];
+const PB_VAK_TOON = ['wie', 'wil', 'zoek', 'waar', 'kennis', 'verder'];
 const PB_VAK_MAX = 600;
 const PB_VAK_TELLER = 480;
 function pbVakKoppen(band, soort) {
-  if (band) return ['Wie zijn we', 'Wat willen we', 'Wie zoeken we', 'Wanneer en waar', 'Kennismaken', 'Verder nog'];
-  return ['Wie ben ik', 'Wat wil ik', soort === 'beschikbaar' ? 'Wat zoek ik' : 'Wie zoek ik', 'Wanneer en waar', 'Kennismaken', 'Verder nog'];
+  const k = band ? ['Wie zijn we', 'Wat willen we', 'Wie zoeken we', 'Wanneer en waar', 'Kennismaken', 'Verder nog']
+    : ['Wie ben ik', 'Wat wil ik', soort === 'beschikbaar' ? 'Wat zoek ik' : 'Wie zoek ik', 'Wanneer en waar', 'Kennismaken', 'Verder nog'];
+  return Object.fromEntries(PB_VAK_TOON.map((s, i) => [s, k[i]]));
 }
 const PB_VOORBEELDEN = {
 
@@ -560,14 +556,10 @@ const PB_VOORBEELDEN = {
         vb: ['Elke zaterdagmiddag van 13.00 tot 16.00 uur in een oefenruimte in Den Haag-Zuid. De huur delen we.',
           'Elke vrijdagavond in de oefenruimte van het jongerencentrum in Delft. Daar staat een drumstel.',
           'Elke woensdag na school, van 16.00 tot 18.00 uur, in het jongerencentrum in Rijswijk.'] },
-      kennis: { tips: ['Een keer samen spelen zegt meer dan veel berichten.', 'Stel een kleine eerste stap voor, zoals één nummer samen spelen.', 'Wil je horen hoe iemand speelt? Vraag om een filmpje of een opname.', 'Hou het contact eerst via de app. Later kun je je e-mailadres of telefoonnummer nog geven.'],
-        vb: ['Stuur ons een bericht via de app. Daarna spreken we af om twee nummers samen te spelen.',
-          'Stuur een bericht, het liefst met een filmpje of opname. Daarna spelen we een keer samen en kijken we of het muzikaal en persoonlijk klikt.',
-          'Stuur ons een filmpje van jezelf, al is het met je telefoon. Daarna spreken we af in de oefenruimte.'] },
-      verder: { tips: ['Alles wat nog niet in een ander vak past, zoals iets wat al vaststaat of wat iemand moet meenemen.', 'Laat je dit vak leeg, dan staat het niet in je oproep.'],
-        vb: ['Ken je iemand die past? Deel de oproep dan.',
-          'Ideeën voor nieuwe nummers zijn welkom.',
-          'Je hoeft alleen je stokken mee te nemen.'] }
+      verder: { tips: ['Een keer samen spelen zegt meer dan veel berichten.', 'Stel een kleine eerste stap voor, zoals één nummer samen spelen.', 'Hou het contact eerst via de app. Later kun je je e-mailadres of telefoonnummer nog geven.', 'Zet hier ook wat al vaststaat of wat iemand moet meenemen.'],
+        vb: ['Stuur ons een bericht via de app. Daarna spreken we af om twee nummers samen te spelen. Ken je iemand die past? Deel de oproep dan.',
+          'Stuur een bericht, het liefst met een filmpje of opname. Daarna spelen we een keer samen en kijken we of het klikt. Ideeën voor nieuwe nummers zijn welkom.',
+          'Stuur ons een filmpje van jezelf, al is het met je telefoon. Daarna spreken we af in de oefenruimte. Je hoeft alleen je stokken mee te nemen.'] }
     }
   },
 
@@ -594,12 +586,10 @@ const PB_VOORBEELDEN = {
         vb: ['Ik kan op zaterdag en zondag. Met de fiets of de tram kom ik overal in Den Haag.',
           'Ik kan op woensdagmiddag en in het weekend, in Rijswijk of Delft. Een oefenruimte heb ik nog niet.',
           'Ik kan op doordeweekse avonden, in Leiden en omgeving. De huur van een oefenruimte deel ik graag.'] },
-      kennis: { tips: ['Een keer samen spelen zegt meer dan veel berichten.', 'Stel een kleine eerste stap voor, zoals één nummer samen spelen.', 'Wijs op je filmpje of opname. Dan weet de ander wat hij kan verwachten.', 'Hou het contact eerst via de app. Later kun je je e-mailadres of telefoonnummer nog geven.'],
-        vb: ['Eerst een bericht hier in de app. Daarna een keer samen spelen, zonder verplichtingen, om te kijken of het klikt.',
-          'Op mijn profiel staat een filmpje. Daarna spreken we af om één nummer samen te spelen.',
-          'Ik kom graag een keer langs bij een repetitie. Na afloop kijken we samen of het klikt.'] },
-      verder: { tips: ['Alles wat nog niet in een ander vak past, zoals wat je zelf meeneemt of wat al vaststaat.', 'Laat je dit vak leeg, dan staat het niet in je oproep.'],
-        vb: ['Ik heb een eigen gitaar en versterker.', 'In de zomervakantie ben ik drie weken weg.', 'Ik kan ook de tweede stem zingen.'] }
+      verder: { tips: ['Een keer samen spelen zegt meer dan veel berichten.', 'Stel een kleine eerste stap voor, zoals één nummer samen spelen.', 'Hou het contact eerst via de app. Later kun je je e-mailadres of telefoonnummer nog geven.', 'Zet hier ook wat al vaststaat of wat je zelf meeneemt.'],
+        vb: ['Eerst een bericht hier in de app. Daarna een keer samen spelen, zonder verplichtingen. Ik heb een eigen gitaar en versterker.',
+          'Op mijn profiel staat een filmpje. Daarna spreken we af om één nummer samen te spelen. In de zomervakantie ben ik drie weken weg.',
+          'Ik kom graag een keer langs bij een repetitie. Na afloop kijken we samen of het klikt. Ik kan ook de tweede stem zingen.'] }
     }
   }
 };
@@ -609,7 +599,7 @@ function pbVakInhoud(sleutel) {
   const soort = f.wie && f.wie !== 'ik' ? 'band' : 'ik';
   const set = PB_VOORBEELDEN[soort];
   const vak = set.vakken[soort === 'ik' && sleutel === 'zoek' && f.soort === 'beschikbaar' ? 'zoekBeschikbaar' : sleutel];
-  const tips = vak.tips.concat(sleutel === 'kennis' && pbEersteAfspraakTonen() ? [PB_TIPS.eersteAfspraak] : []);
+  const tips = vak.tips.concat(sleutel === 'verder' && pbEersteAfspraakTonen() ? [PB_TIPS.eersteAfspraak] : []);
   return { tips, vb: vak.vb, wie: set.wie };
 }
 
@@ -620,7 +610,7 @@ function pbVoorbeeldenOpen(i) {
   const sleutel = PB_VAK_SLEUTELS[i];
   const v = pbVakInhoud(sleutel);
   const koppen = pbVakKoppen(pbForm.wie !== 'ik', pbForm.soort);
-  voorbeeldBladOpen(koppen[i], voorbeeldenHTML(v.tips, v.wie, v.vb, n => `pbVoorbeeldGebruiken(${i},${n})`));
+  voorbeeldBladOpen(koppen[sleutel], voorbeeldenHTML(v.tips, v.wie, v.vb, n => `pbVoorbeeldGebruiken(${i},${n})`));
 }
 function pbVoorbeeldGebruiken(i, n) {
   const sleutel = PB_VAK_SLEUTELS[i];
@@ -757,8 +747,8 @@ function pbTekenForm() {
         <div class="choice-menu" id="pbFAfstandMenu" role="listbox" aria-label="Afstand"></div></div></div>
     </div></div>
     ${PB_VAK_SLEUTELS.map((k, i) => `<div class="field">
-      <div class="label-rij zoek-label-rij"><label for="pbVak-${k}">${escHtml(koppen[i])}</label>
-        <button type="button" class="zoek-filters-knop pb-voorbeelden-knop" onclick="pbVoorbeeldenOpen(${i})" aria-label="Voorbeelden bij ${escHtml(koppen[i])}">Voorbeelden</button></div>
+      <div class="label-rij zoek-label-rij"><label for="pbVak-${k}">${escHtml(koppen[k])}</label>
+        <button type="button" class="zoek-filters-knop pb-voorbeelden-knop" onclick="pbVoorbeeldenOpen(${i})" aria-label="Voorbeelden bij ${escHtml(koppen[k])}">Voorbeelden</button></div>
       <textarea id="pbVak-${k}" class="pb-vak" maxlength="${PB_VAK_MAX}" rows="3" oninput="pbVakInvoer(this,'${k}')">${escHtml(f.vakken[k] || '')}</textarea>
       <div class="teken-teller" id="pbVakTeller-${k}" hidden></div></div>`).join('')}
     <div class="field"><label class="zoek-onthoud${f.soort === 'beschikbaar' ? ' pb-uit' : ''}"><input type="checkbox" id="pbMedia" ${f.media ? 'checked' : ''} ${f.soort === 'beschikbaar' ? 'disabled' : ''} onchange="pbForm.media=this.checked"><span>Graag met een video of link</span></label></div>
@@ -888,7 +878,8 @@ function pbFormFouten() {
   if (!f.leeftijden.length) fouten.push(['pbFLeeftijdenField', 'Kies minstens één leeftijd']);
   PB_VAK_SLEUTELS.forEach(k => {
     const t = (f.vakken[k] || '').trim();
-    if (t && pbVakInhoud(k).vb.includes(t)) fouten.push(['pbVak-' + k, f.wie !== 'ik' ? 'Pas het voorbeeld aan, zodat het over jullie gaat' : 'Pas het voorbeeld aan, zodat het over jou gaat']);
+    if (t.length > PB_VAK_MAX) fouten.push(['pbVak-' + k, `Maak deze tekst korter: hoogstens ${PB_VAK_MAX} tekens`]);
+    else if (t && pbVakInhoud(k).vb.includes(t)) fouten.push(['pbVak-' + k, f.wie !== 'ik' ? 'Pas het voorbeeld aan, zodat het over jullie gaat' : 'Pas het voorbeeld aan, zodat het over jou gaat']);
   });
   return fouten;
 }
@@ -958,7 +949,7 @@ async function pbNaarVoorbeeld() {
     document.getElementById(fouten[0][0]).scrollIntoView({ block: 'center' });
     return;
   }
-  if (!f.kaderGezien && PB_VAK_SLEUTELS.slice(0, 5).some(k => !(f.vakken[k] || '').trim())) {
+  if (!f.kaderGezien && PB_VAK_SLEUTELS.slice(0, 4).some(k => !(f.vakken[k] || '').trim())) {
     f.kaderGezien = true;
     const knop = document.getElementById('pbNaarVoorbeeldKnop');
     knop.insertAdjacentHTML('beforebegin', PB_KADER_HTML);
@@ -1165,6 +1156,8 @@ async function pbAanpassen(id) {
     instrumenten: (o.instrumenten || []).slice(), elk: o.elk_instrument, zangVorm: o.zang_vorm || '', genres: (o.genres || []).slice(),
     leeftijden: (o.leeftijden || []).slice(), plaats: o.plaats || '', straal: o.straal_km || null,
     vakken: Object.assign({}, o.vakken || {}), media: o.media_gewenst });
+  const v = pbForm.vakken;
+  if (v.kennis) { v.verder = [v.kennis, v.verder].filter(Boolean).join('\n\n'); delete v.kennis; }
   pbLaag = 'plaatsen';
   pbTekenForm();
   pbForm.begin = pbFormSleutel(pbForm);
@@ -1436,8 +1429,9 @@ async function pbOnthoudHerstellen() {
   pbOnthoudVink(!!pbBewaard);
   const z = pbBewaard;
   if (!z) return;
-  pbFilters = { soort: z.soort || '', doel: z.doel || '', instrument: z.instrument || '', volgorde: z.volgorde || 'nieuwste' };
-  document.getElementById('pbPlaats').value = z.plaats || '';
+  pbFilters = { soort: z.soort || '', doel: z.doel || '', instrument: z.instrument || '' };
+
+  if (z.plaats) document.getElementById('pbPlaats').value = z.plaats;
   setWheelFieldValues('pbStraal', [z.straal_km || PB_STRAAL_STANDAARD], false);
   pbFiltersBijwerken();
 }
@@ -1445,7 +1439,7 @@ function pbHuidigeZoek() {
   const v = pbVertrek || {};
   return {
     soort: pbFilters.soort || null, doel: pbFilters.doel || null, instrument: pbFilters.instrument || null,
-    volgorde: pbFilters.volgorde || 'nieuwste',
+    volgorde: 'nieuwste',
     plaats: (v.tekst || '').trim().slice(0, 80) || null,
     origin_lat: v.eigen ? null : v.lat, origin_lng: v.eigen ? null : v.lng,
     straal_km: Number(document.getElementById('pbStraal').value) || PB_STRAAL_STANDAARD
@@ -1536,7 +1530,7 @@ function pbAllesWissen() {
   pbVolgnr++;
   clearTimeout(pbPlaatsTimer); clearTimeout(pbOnthoudTimer);
   pbTab = 'alle'; pbLaag = null; pbLijst = []; pbOpen = null; pbMijn = [];
-  pbFilters = { soort: '', doel: '', instrument: '', volgorde: 'nieuwste' };
+  pbFilters = { soort: '', doel: '', instrument: '' };
   pbForm = null; pbVanBand = null; pbVanBuiten = false;
   pbReacties = []; pbMijnOpen = null; pbKandidaatOpen = null; pbReactieOpen = null; pbWegKeuze = null;
   Object.assign(PB_MIJ, { instrumenten: [], instrumentenNiveau: [], bands: [], leeftijd: null, naam: '', foto: '', plaats: '', voor: null });
@@ -1548,7 +1542,7 @@ function pbAllesWissen() {
   const plaats = document.getElementById('pbPlaats');
   if (plaats) plaats.value = '';
   if (CHOICE_FIELDS.pbStraal) setWheelFieldValues('pbStraal', [PB_STRAAL_STANDAARD], false);
-  ['pbSoort', 'pbDoel', 'pbInstrument', 'pbVolgorde'].forEach(id => { if (CHOICE_FIELDS[id]) refreshChoiceField(id); });
+  ['pbSoort', 'pbDoel', 'pbInstrument'].forEach(id => { if (CHOICE_FIELDS[id]) refreshChoiceField(id); });
   const ft = document.getElementById('pbFiltersTekst');
   if (ft) ft.textContent = 'Filters';
   pbOnthoudVink(false);

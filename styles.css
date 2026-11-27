@@ -2287,6 +2287,8 @@
 
   .zoek-filters-rij + .zoek-filter-vak { margin-top: var(--ruimte-velden); }
 
+  .zoek-filters-rij .zoek-filters-knop { margin-left: auto; }
+
 
 
 
@@ -3775,8 +3777,6 @@
     width: 100%;
   }
   .voorkeur-knoppen .segmented-btn { width: 100%; }
-
-  .voorkeur-uitleg.bewaard-zoek-tekst { margin: 0; color: var(--text); }
 
 
 
