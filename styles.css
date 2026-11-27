@@ -5424,7 +5424,11 @@
   .pb-uit { opacity: .4; }
   .pb-mijn-knoppen { margin-top: 12px; }
 
-  .pb-mijn-knoppen.btn-rij-stapel > .btn { grid-row: auto; }
+
+
+  .pb-knoppen-raster { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pb-knoppen-raster .btn { min-width: 0; padding-left: 12px; padding-right: 12px; }
+  .pb-knoppen-raster > .btn:first-child:nth-last-child(odd) { grid-column: 1 / -1; }
   .pb-nieuw { margin-left: 8px; font-size: 11px; line-height: var(--regel-11); font-weight: 700; color: var(--accent); flex: none; }
   .pb-media-melding, .pb-afspraak-melding { margin-top: 12px; }
 

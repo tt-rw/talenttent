@@ -2080,9 +2080,12 @@ function ladenTonen(el) {
   if (el) el.innerHTML = LADEN_HTML;
 }
 
-function emptyStateHTML(kop, uitleg, knopLabel, knopActie) {
+
+
+function emptyStateHTML(kop, uitleg, knopLabel, knopActie, omlijnd) {
   const uitlegHTML = uitleg ? `<p class="empty-state-text">${escHtml(uitleg)}</p>` : '';
-  const knopHTML = knopLabel ? `<button class="btn btn-primary" onclick="${knopActie}">${escHtml(knopLabel)}</button>` : '';
+  const knopHTML = !knopLabel ? '' : omlijnd ? `<button class="btn btn-ghost" onclick="${knopActie}">${escHtml(knopLabel)}</button>`
+    : `<button class="btn btn-primary" onclick="${knopActie}">${escHtml(knopLabel)}</button>`;
   return `<div class="empty-state">
     <p class="empty-state-title">${escHtml(kop)}</p>
     ${uitlegHTML}

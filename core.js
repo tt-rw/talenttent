@@ -155,6 +155,14 @@ window.addEventListener('unhandledrejection', (e) => {
 
 
 
+
+
+
+
+const TT_CSP_NIET_MELDEN = new Set([
+  'https://translate.google.com', 'https://translate.googleapis.com',
+  'https://www.gstatic.com', 'https://fonts.gstatic.com',
+]);
 const ttCspGemeld = new Set();
 function ttCspMelden(e) {
   try {
@@ -165,6 +173,7 @@ function ttCspMelden(e) {
     let wat = geweigerd || '(leeg)';
     if (/^(data|blob):/i.test(geweigerd)) wat = geweigerd.split(':')[0] + ':';
     else { try { wat = new URL(geweigerd).origin; } catch (x) { } }
+    if (TT_CSP_NIET_MELDEN.has(wat)) return;
     const sleutel = soort + ' ' + wat;
     if (ttCspGemeld.has(sleutel) || ttCspGemeld.size >= 10) return;
     ttCspGemeld.add(sleutel);

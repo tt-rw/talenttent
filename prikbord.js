@@ -355,7 +355,7 @@ function pbTekenLijst() {
     const metFilters = ['soort', 'doel', 'instrument'].some(k => pbFilters[k]);
     vak.innerHTML = metFilters
       ? emptyStateHTML('Geen oproepen met deze filters', 'Zet een filter uit of vergroot je straal.')
-      : emptyStateHTML('Nog geen oproepen bij jou in de buurt', 'Plaats de eerste: wie zoek je, of waarvoor ben je beschikbaar?', 'Oproep plaatsen', 'pbPlaatsenStart()');
+      : emptyStateHTML('Nog geen oproepen bij jou in de buurt', 'Plaats de eerste: wie zoek je, of waarvoor ben je beschikbaar?');
     return;
   }
   vak.innerHTML = `<div class="results-header"><span class="results-count">${rijen.length === 1 ? '1 oproep' : rijen.length + ' oproepen'}</span></div>`
@@ -379,7 +379,8 @@ function pbOproepHTML(o, voorbeeld) {
   const wieVast = [pbLeeftijdTekst(o), o.plaats, voorbeeld ? '' : afstandTekst(o.km)].filter(Boolean).join(' · ');
   const wie = `<span class="pb-regel-kort">${escHtml(wieKort)}</span>${wieVast ? `<span class="pb-regel-vast">${wieKort ? '&nbsp;·&nbsp;' : ''}${escHtml(wieVast)}</span>` : ''}`;
   const doelRegel = [pbDoelenTekst(o.doelen), ...(o.genres || [])].filter(Boolean).map(escHtml).join(' · ');
-  const datum = o.verlengd_op ? `Verlengd tot ${pbDatum(o.loopt_tot)}` : `Geplaatst op ${pbDatum(o.geplaatst_op || new Date().toISOString())}`;
+
+  const datum = `Geplaatst op ${pbDatum(o.verlengd_op || o.geplaatst_op || new Date().toISOString())}`;
   const feiten = [
     ['Leeftijd', escHtml(pbVoorWie(o))]
   ];
@@ -1022,7 +1023,7 @@ let pbMijnOpen = null;
 let pbKandidaatOpen = null;
 async function pbMijnLaden() {
   const vak = document.getElementById('pbMijnLijst');
-  if (!currentUser || !hasOwnProfile) { vak.innerHTML = emptyStateHTML('Nog geen profiel', 'Met een profiel plaats je een oproep.', 'Profiel aanmaken', "showView('register')"); return; }
+  if (!currentUser || !hasOwnProfile) { vak.innerHTML = emptyStateHTML('Nog geen profiel', 'Met een profiel plaats je een oproep.', 'Profiel aanmaken', "showView('register')", true); return; }
   if (!pbMijn.length) ladenTonen(vak);
   const { data, error } = await db.rpc('tt_mijn_oproepen');
   if (error) { logCaught('pbMijnLaden', error); vak.innerHTML = foutStaatHTML(error, 'je oproepen laden', 'pbMijnLaden()'); return; }
@@ -1032,11 +1033,26 @@ async function pbMijnLaden() {
 function pbMijnTekenen() {
   const vak = document.getElementById('pbMijnLijst');
   if (!vak) return;
-  if (!pbMijn.length) { vak.innerHTML = emptyStateHTML('Nog geen oproepen', 'Zoek je iemand, of ben je beschikbaar?', 'Oproep plaatsen', 'pbPlaatsenStart()'); return; }
+
+  if (!pbMijn.length) { vak.innerHTML = emptyStateHTML('Nog geen oproepen', 'Zoek je iemand, of ben je beschikbaar?'); return; }
   vak.innerHTML = pbMijn.map(pbMijnHTML).join('');
   pbTitelsPassen(vak);
 }
-function pbDagenTekst(o) { const d = pbDagenOver(o); return d === 1 ? 'Nog 1 dag' : `Nog ${d} dagen`; }
+
+
+
+
+const PB_MAAND_KORT = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+function pbVerlengTekst(o) {
+  if (pbDagenOver(o) <= 10) return 'Verlengen kan nu';
+  const d = new Date(new Date(o.loopt_tot).getTime() - 10 * PB_DAG);
+  return `Verlengen vanaf ${d.getDate()} ${PB_MAAND_KORT[d.getMonth()]}`;
+}
+
+
+function pbKnoppenRaster(knoppen) {
+  return `<div class="pb-mijn-knoppen pb-knoppen-raster">${knoppen.join('')}</div>`;
+}
 function pbMijnHTML(m) {
   const o = m.oproep;
   const reacties = m.reacties || [];
@@ -1050,17 +1066,17 @@ function pbMijnHTML(m) {
           <div class="result-row-avatar${o.band_id ? ' result-vierkant' : ''}">${fotoHTML(o.foto, o.naam) || ZONDER_FOTO_HTML}</div>
           <div class="result-row-main">
             <div class="result-row-name pb-eenregel">${pbTitelHTML(o)}<span class="pb-pijl">${PB_PIJL_OMLAAG}</span></div>
-            <div class="result-row-meta pb-eenregel"><span class="pb-regel-kort">${escHtml(telling)}</span><span class="pb-rechts">${escHtml(pbDagenTekst(o))}</span></div>
+            <div class="result-row-meta pb-eenregel"><span class="pb-regel-kort">${escHtml(telling)}</span><span class="pb-rechts">${escHtml(pbVerlengTekst(o))}</span></div>
           </div>
         </div>
       </div>
       ${open ? `<div class="pb-open">
         ${reacties.length ? `<div class="pb-kandidaten">${reacties.map(r => pbReactieHTML(o, r)).join('')}</div>` : ''}
-        <div class="btn-row pb-mijn-knoppen">
-          <button type="button" class="btn btn-ghost" onclick="pbAanpassen('${jsAttr(o.id)}')">Aanpassen</button>
-          <button type="button" class="btn btn-ghost" ${verlengen ? '' : 'disabled'} onclick="pbVerlengen('${jsAttr(o.id)}')">Verlengen</button>
-          <button type="button" class="btn btn-ghost" onclick="pbVerwijderen('${jsAttr(o.id)}')">Verwijderen</button>
-        </div></div>` : ''}
+        ${pbKnoppenRaster([
+          `<button type="button" class="btn btn-ghost" onclick="pbOproepBekijken('${jsAttr(o.id)}')">Oproep bekijken</button>`,
+          verlengen ? `<button type="button" class="btn btn-ghost" onclick="pbVerlengen('${jsAttr(o.id)}')">Verlengen</button>` : '',
+          `<button type="button" class="btn btn-ghost" onclick="pbAanpassen('${jsAttr(o.id)}')">Aanpassen</button>`,
+          `<button type="button" class="btn btn-ghost" onclick="pbVerwijderen('${jsAttr(o.id)}')">Verwijderen</button>`].filter(Boolean))}</div>` : ''}
     </div>`;
 }
 
@@ -1134,9 +1150,9 @@ async function pbNaUitnodigen(reactieId) {
 }
 
 async function pbVerlengen(id) {
-  const { data, error } = await db.rpc('tt_oproep_verlengen', { p_id: id });
+  const { error } = await db.rpc('tt_oproep_verlengen', { p_id: id });
   if (error) { showToast(friendlyErrorMessage(error, 'de oproep verlengen')); return; }
-  showToast(`Verlengd tot ${pbDatum(data)}.`);
+  showToast('Verlengd. Je oproep staat weer bovenaan.');
   pbMijnLaden();
 }
 
@@ -1225,7 +1241,7 @@ let pbReacties = [];
 let pbReactieOpen = null;
 async function pbReactiesLaden() {
   const vak = document.getElementById('pbReactiesLijst');
-  if (!currentUser || !hasOwnProfile) { vak.innerHTML = emptyStateHTML('Nog geen profiel', 'Met een profiel reageer je op een oproep.', 'Profiel aanmaken', "showView('register')"); return; }
+  if (!currentUser || !hasOwnProfile) { vak.innerHTML = emptyStateHTML('Nog geen profiel', 'Met een profiel reageer je op een oproep.', 'Profiel aanmaken', "showView('register')", true); return; }
   if (!pbReacties.length) ladenTonen(vak);
   const { data, error } = await db.rpc('tt_mijn_reacties');
   if (error) { logCaught('pbReactiesLaden', error); vak.innerHTML = foutStaatHTML(error, 'je reacties laden', 'pbReactiesLaden()'); return; }
@@ -1235,7 +1251,7 @@ async function pbReactiesLaden() {
 function pbReactiesTekenen() {
   const vak = document.getElementById('pbReactiesLijst');
   if (!vak) return;
-  if (!pbReacties.length) { vak.innerHTML = emptyStateHTML('Nog geen reacties', 'Tik op een oproep en kies Reageren.', 'Alle oproepen', "pbZetTab('alle')"); return; }
+  if (!pbReacties.length) { vak.innerHTML = emptyStateHTML('Nog geen reacties', 'Tik op een oproep en kies Reageren.', 'Alle oproepen', "pbZetTab('alle')", true); return; }
   vak.innerHTML = pbReacties.map(r => {
     const o = r.oproep;
     const isOpen = o.status === 'open';
@@ -1243,7 +1259,7 @@ function pbReactiesTekenen() {
     const open = pbReactieOpen === r.id;
     const d = new Date(r.created_at);
     const wanneer = `${dagLabel(d)} ${d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}`;
-    const knoppen = isOpen ? [`<button type="button" class="btn btn-ghost" onclick="pbReactieOproep('${jsAttr(o.id)}')">Oproep bekijken</button>`,
+    const knoppen = isOpen ? [`<button type="button" class="btn btn-ghost" onclick="pbOproepBekijken('${jsAttr(o.id)}')">Oproep bekijken</button>`,
       r.status === 'uitgenodigd' ? `<button type="button" class="btn btn-ghost" onclick="openMessageComposer('${jsAttr(o.plaatser_id)}','${jsAttr(o.naam)}')">Naar het gesprek</button>` : '',
       `<button type="button" class="btn btn-ghost" onclick="pbIntrekken('${jsAttr(r.id)}')">Intrekken</button>`].filter(Boolean)
 
@@ -1255,22 +1271,24 @@ function pbReactiesTekenen() {
             <div class="result-row-avatar${o.band_id ? ' result-vierkant' : ''}">${fotoHTML(o.foto, o.naam) || ZONDER_FOTO_HTML}</div>
             <div class="result-row-main">
               <div class="result-row-name pb-eenregel">${pbTitelHTML(o)}<span class="pb-pijl">${PB_PIJL_OMLAAG}</span></div>
-              <div class="result-row-meta pb-eenregel"><span class="pb-regel-kort">${isOpen ? escHtml(pbDagenTekst(o)) : ''}</span><span class="pb-rechts">${escHtml(stand)}</span></div>
+              <div class="result-row-meta pb-eenregel"><span class="pb-regel-kort"></span><span class="pb-rechts">${escHtml(stand)}</span></div>
             </div>
           </div>
         </div>
         ${open ? `<div class="pb-open">
           ${r.boodschap ? `<div class="pb-ballon"><div class="message-bubble own">${escHtml(r.boodschap)}<span class="message-bubble-time">${escHtml(wanneer)}</span></div></div>` : ''}
-          ${knoppen.length ? `<div class="btn-row pb-mijn-knoppen">${knoppen.join('')}</div>` : ''}
+          ${knoppen.length ? pbKnoppenRaster(knoppen) : ''}
         </div>` : ''}
       </div>`;
   }).join('');
   pbTitelsPassen(vak);
 }
 function pbReactieKlap(id) { pbReactieOpen = pbReactieOpen === id ? null : id; pbReactiesTekenen(); }
-async function pbReactieOproep(id) {
+
+
+async function pbOproepBekijken(id) {
   const { data, error } = await db.rpc('tt_prikbord', { p_lat: null, p_lng: null, p_straal_km: 100, p_id: id });
-  if (error) { logCaught('pbReactieOproep', error); showToast(friendlyErrorMessage(error, 'de oproep openen')); return; }
+  if (error) { logCaught('pbOproepBekijken', error); showToast(friendlyErrorMessage(error, 'de oproep openen')); return; }
   if (!data || !data.length) { showToast(PB_LINK_WEG); return; }
   pbLijst = pbLijst.filter(x => x.id !== data[0].id).concat(data[0]);
   pbOpenOproep(data[0].id);

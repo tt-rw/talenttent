@@ -422,13 +422,20 @@ def blok1_statisch():
         "http://www.w3.org",               # naamruimte van SVG
         "http://localhost",                # testadres in TT_DB_PER_ADRES
     }
+    # TT-699 (27-11-2026, besluit Ronald "ad 1. ja"): Google Vertalen. De melder in
+    # core.js slaat deze weigeringen over; de regel laat ze nooit toe.
+    niet_melden = {"https://translate.google.com", "https://translate.googleapis.com",
+                   "https://www.gstatic.com", "https://fonts.gstatic.com"}
+    check("TT-699: de regel laat Google Vertalen niet toe", not (niet_melden & toegestaan),
+          ", ".join(sorted(niet_melden & toegestaan)))
     in_code = {}
     for f in JS_FILES + ["index.html", "sw.js"]:
         tekst = open(os.path.join(ROOT, f), encoding="utf-8").read()
         for adres in re.findall(r"https?://[a-zA-Z0-9.-]+", tekst):
             in_code.setdefault(adres, f)
     onbekend = sorted(f"{a} ({f})" for a, f in in_code.items()
-                      if a not in toegestaan and a not in alleen_link)
+                      if a not in toegestaan and a not in alleen_link
+                      and not (a in niet_melden and f == "core.js"))
     check("TT-483b: elk webadres in de code staat in de regel of in de lijst 'alleen een link'",
           not onbekend, "zet het in de regel in index.html of in alleen_link: " + "; ".join(onbekend)[:500])
     zonder_host = []
@@ -13651,14 +13658,24 @@ def blok_csp_melder():
         page.wait_for_timeout(400)
         r = page.evaluate("""async () => {
           const csp = () => (window.TT_STUB.data.app_error_log || []).filter(x => String(x.source || '').startsWith('csp:'));
-          const voor = csp().length;
           for (let n = 0; n < 25; n++) logAppError('ruis ' + n, 'proef-teller');
           const zet = u => { const i = document.createElement('img'); i.src = u; document.body.appendChild(i); };
+          // TT-699: Google Vertalen zet eigen opmaak, beelden en code in de pagina (gemeten 26-11-2026).
+          window.ttCspProef = [];
+          document.addEventListener('securitypolicyviolation', e => { if (/google|gstatic/.test(String(e.blockedURI))) window.ttCspProef.push(e.blockedURI); });
+          const g0 = csp().length;
+          const stijl = document.createElement('link'); stijl.rel = 'stylesheet'; stijl.href = 'https://www.gstatic.com/_/translate_http/_/ss/k=translate.css?tt-proef-vertalen'; document.head.appendChild(stijl);
+          const code = document.createElement('script'); code.src = 'https://translate.googleapis.com/_/translate_http/_/js/k=translate.js?tt-proef-vertalen'; document.head.appendChild(code);
+          zet('https://translate.google.com/images/branding/product/1x/translate_24dp.png?tt-proef-vertalen'); zet('https://fonts.gstatic.com/s/i/productlogos/translate/v14/24px.svg?tt-proef-vertalen');
+          await new Promise(k => setTimeout(k, 800));
+          const google = csp().slice(g0);
+          const v0 = csp().length;
           zet('https://verboden.test/a.png?token=geheim123'); zet('https://verboden.test/b.png'); zet('https://verboden.test/c.png');
           await new Promise(k => setTimeout(k, 800));
-          const na = csp().slice(voor);
+          const na = csp().slice(v0);
           return { aantal: na.length, rij: na[0] || null, doorgezet: !!window.ttCspWeigeringen && typeof ttCspMelden === 'function' && window.ttCspWeigeringen.push === ttCspMelden,
-                   ruis: (window.TT_STUB.data.app_error_log || []).filter(x => x.source === 'proef-teller').length };
+                   ruis: (window.TT_STUB.data.app_error_log || []).filter(x => x.source === 'proef-teller').length,
+                   google: google.map(x => x.message), weigeringen: (window.ttCspProef || []).length };
         }""")
         browser.close()
     httpd.shutdown()
@@ -13669,6 +13686,10 @@ def blok_csp_melder():
     check("de rest van de link (een sleutel) komt nooit in het foutenlog", "geheim123" not in json.dumps(rij), json.dumps(rij)[:300])
     check("ook met de gewone teller van twintig vol komt de weigering erin", r["ruis"] == 20 and r["aantal"] == 1, json.dumps(r)[:200])
     check("na het laden van core.js gaat elke weigering direct naar de melder", r["doorgezet"], "")
+    # TT-699 (27-11-2026, besluit Ronald "ad 1. ja"): Google Vertalen geeft geen vals alarm; de regel zelf blijft gelijk.
+    check("Google Vertalen (opmaak, code en beelden van vier webadressen) komt niet in het foutenlog", r["google"] == [], json.dumps(r["google"])[:300])
+    check("de regel zelf laat Google Vertalen niet toe (alleen de melder slaat het over)",
+          r["weigeringen"] >= 4, str(r["weigeringen"]))
     check("geen paginafouten in blok 121", not fouten, "; ".join(fouten)[:300])
 
 
@@ -14077,7 +14098,8 @@ def blok_tt555():
 # testgegevens (example.org) laadt de echte app nooit; die tellen niet.
 CSP_WEIGERINGEN = []
 # Testgegevens die nooit echt laden: example.org/.com, .test (gereserveerd voor proeven) en de nephost "x".
-CSP_TESTADRESSEN = ("https://example.org", "https://example.com", ".test/", "https://x/")
+# TT-699: blok 121 laat Google Vertalen bewust weigeren; die proeflinks dragen "tt-proef-vertalen".
+CSP_TESTADRESSEN = ("https://example.org", "https://example.com", ".test/", "https://x/", "tt-proef-vertalen")
 CSP_LUISTER = """document.addEventListener('securitypolicyviolation', e => {
   try { window.__ttCspMelding((e.effectiveDirective || e.violatedDirective) + ' ' + e.blockedURI + ' (pagina ' + location.pathname + ')'); } catch (x) {}
 });"""
@@ -22139,7 +22161,20 @@ S.data.prikbord_zoek = [];
           pbMijnKlap('o9'); await w(100);
           const kand = () => [...document.querySelectorAll('#pbMijnLijst .pb-kandidaat')];
           u.mijn.kandidaten = kand().map(k => [tekst(k.querySelector('.result-row-naam')), !!k.querySelector('.pb-nieuw'), tekst(k.querySelector('.pb-rechts, .pb-uitnodigen'))]);
-          u.mijn.knoppen = [...document.querySelectorAll('#pbMijn-o9 .pb-mijn-knoppen .btn')].map(b => [tekst(b), b.disabled]);
+          u.mijn.knoppen = [...document.querySelectorAll('#pbMijn-o9 .pb-mijn-knoppen .btn')].map(b => [tekst(b), b.disabled, (b.getBoundingClientRect().width > b.parentElement.getBoundingClientRect().width * 0.75)]);
+          u.mijn.kolommen = getComputedStyle(document.querySelector('#pbMijn-o9 .pb-mijn-knoppen')).gridTemplateColumns.split(' ').length;
+          // Deel 4 (sessie 221): de verlengdatum, los van de app berekend.
+          const pbKortTest = t => { const d = new Date(new Date(t).getTime() - 10 * 864e5); return 'Verlengen vanaf ' + d.getDate() + ' ' + ['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'][d.getMonth()]; };
+          u.mijn.verwacht = pbMijn.map(m => pbKortTest(m.oproep.loopt_tot));
+          // Deel 4: "Oproep bekijken" opent je oproep zoals hij online staat; terug brengt je naar Mijn Oproepen.
+          { const oud = S.rpcResults.tt_prikbord, mid = await getMyMusicianId();
+            S.rpcResults.tt_prikbord = a => a.p_id === 'o9' ? [Object.assign({}, pbMijn[0].oproep, { plaatser_id: mid, km: 0 })] : oud(a);
+            document.querySelector('#pbMijn-o9 .pb-mijn-knoppen .btn').click(); await w(300);
+            u.mijn.bekijkVraag = (S.calls.filter(c => c.name === 'tt_prikbord').pop() || {}).params;
+            S.rpcResults.tt_prikbord = oud; }
+          u.mijn.bekijk = { laag: pbLaag, knop: tekst(document.querySelector('#pbOproepInhoud .pb-knop')), datum: tekst(document.querySelector('#pbOproepInhoud .pb-oproep-datum')) };
+          pbTerug(); await w(100);
+          u.mijn.terug = [pbLaag, pbTab, !!document.querySelector('#pbMijn-o9.open')];
           u.mijn.sterren = !!document.querySelector('#pbMijnLijst').textContent.includes('★');
           u.mijn.ingesprongen = Math.round(kand()[0].getBoundingClientRect().left - document.querySelector('#pbMijn-o9').getBoundingClientRect().left);
           const gezienVoor = S.calls.filter(c => c.name === 'tt_reactie_gezien').length;
@@ -22150,7 +22185,18 @@ S.data.prikbord_zoek = [];
             vakLinks: Math.round(open.querySelector('.pb-kandidaat-vak').getBoundingClientRect().left - open.getBoundingClientRect().left) };
           pbMijnKlap('o8'); await w(100);
           u.mijn.eenOpen = document.querySelectorAll('#pbMijnLijst .pb-kaart-oproep.open').length;
-          u.mijn.verlengenO8 = [...document.querySelectorAll('#pbMijn-o8 .pb-mijn-knoppen .btn')].map(b => [tekst(b), b.disabled]);
+          u.mijn.verlengenVroeg = [...document.querySelectorAll('#pbMijn-o8 .pb-mijn-knoppen .btn')].map(tekst);
+          // Deel 4: in de laatste 10 dagen "Verlengen kan nu" en vier knoppen 2x2 (Oproep bekijken, Verlengen / Aanpassen, Verwijderen).
+          pbMijn.find(m => m.oproep.id === 'o8').oproep.loopt_tot = new Date(Date.now() + 5 * 864e5).toISOString(); pbMijnTekenen(); await w(100);
+          u.mijn.verlengenO8 = [...document.querySelectorAll('#pbMijn-o8 .pb-mijn-knoppen .btn')].map(b => [tekst(b), b.disabled, (b.getBoundingClientRect().width > b.parentElement.getBoundingClientRect().width * 0.75)]);
+          u.mijn.rijenO8 = [...new Set([...document.querySelectorAll('#pbMijn-o8 .pb-mijn-knoppen .btn')].map(b => Math.round(b.getBoundingClientRect().top)))].length;
+          u.mijn.rechtsO8 = tekst(document.querySelector('#pbMijn-o8 .pb-rechts'));
+          S.rpcResults.tt_oproep_verlengen = () => new Date(Date.now() + 60 * 864e5).toISOString();
+          await pbVerlengen('o8'); await w(300);
+          u.mijn.melding = tekst($('appToast'));
+          // Deel 4: op de oproep de dag van plaatsen, na verlengen de dag van verlengen; nooit de afloopdatum.
+          { const d = document.createElement('div'); d.innerHTML = pbOproepHTML(Object.assign({}, pbMijn[0].oproep, { geplaatst_op: '2026-11-01T10:00:00Z', verlengd_op: '2026-11-25T10:00:00Z' }), true);
+            u.mijn.datumVerlengd = [tekst(d.querySelector('.pb-oproep-datum')), 'Geplaatst op ' + pbDatum('2026-11-25T10:00:00Z')]; }
           // --- Verwijderen: Wie is het geworden? ---
           pbVerwijderen('o9'); await w(100);
           u.weg = { kop: tekst($('pbWegKop')), keuzes: [...document.querySelectorAll('#pbWegKeuzes .pb-weg-keuze')].map(tekst), knopUit: $('pbWegKnop').disabled, zin: tekst($('pbWegZin')) };
@@ -22173,9 +22219,21 @@ S.data.prikbord_zoek = [];
           u.reacties = [...document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep')].map(k => [tekst(k.querySelector('.pb-titel')), tekst(k.querySelector('.pb-regel-kort')), tekst(k.querySelector('.pb-rechts'))]);
           pbReactieKlap('x2'); await w(100);
           u.reactieOpen = { bericht: tekst(document.querySelector('#pbReactiesLijst .pb-kaart-oproep.open .message-bubble.own')),
-            knoppen: [...document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep.open .btn')].map(tekst) };
+            knoppen: [...document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep.open .btn')].map(tekst),
+            breed: [...document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep.open .btn')].map(b => (b.getBoundingClientRect().width > b.parentElement.getBoundingClientRect().width * 0.75)) };
           pbReactieKlap('x3'); await w(100);
           u.reactieGesloten = document.querySelectorAll('#pbReactiesLijst .pb-kaart-oproep.open .btn').length;
+          // Deel 4 (ad 5): "Oproep plaatsen" is de enige gele knop; een lege lijst zonder tweede gele knop.
+          { const geel = () => [...document.querySelectorAll('#pbLijstScherm .btn-primary')].filter(b => b.offsetParent).map(tekst);
+            const bewaar = [pbMijn, pbReacties, pbLijst];
+            pbZetTab('mijn'); await w(300); pbMijn = []; pbMijnTekenen();
+            u.leeg = { mijn: [...document.querySelectorAll('#pbMijnLijst .empty-state .btn')].length, mijnGeel: geel() };
+            pbZetTab('reacties'); await w(300); pbReacties = []; pbReactiesTekenen();
+            u.leeg.reacties = [...document.querySelectorAll('#pbReactiesLijst .empty-state .btn')].map(b => [tekst(b), b.className]); u.leeg.reactiesGeel = geel();
+            pbLijst = []; pbTab = 'alle'; pbToonLaag(); pbTekenLijst();
+            u.leeg.alle = [...document.querySelectorAll('#pbResultaat .empty-state .btn')].length; u.leeg.alleGeel = geel();
+            const t = document.createElement('div'); t.innerHTML = emptyStateHTML('a', 'b', 'Profiel aanmaken', 'void 0', true); u.leeg.profiel = t.querySelector('.btn').className;
+            [pbMijn, pbReacties, pbLijst] = bewaar; pbZetTab('reacties'); await w(300); }
           // --- Cluster 3: geen kaartje; "Naar de oproep" onder het bericht over een oproep, vet ---
           {
             const mid = await getMyMusicianId();
@@ -22268,16 +22326,28 @@ S.data.prikbord_zoek = [];
           and op.get("vakken", {}).get("wie", "").startswith("Dylan") and op.get("plaats") == "Delft" and op.get("lat") == 52.01 and op.get("straal_km") == 10
           and "tekst" not in op and "toevoeging" not in op and "doel" not in op, j(op))
     mj = u["mijn"]
-    check("TT-396 cluster 2: Mijn Oproepen dicht; \"3 kandidaten\" / \"Geen reacties\" met rechts \"Nog x dagen\" (sessie 205)",
-          mj["dicht"] and mj["regels"][0] == ["3 kandidaten", "Nog 12 dagen"] and mj["regels"][1] == ["Geen reacties", "Nog 40 dagen"], j(mj))
+    check("TT-396 cluster 2 en deel 4: Mijn Oproepen dicht; \"3 kandidaten\" / \"Geen reacties\" met rechts alleen de verlengdatum (besluit Ronald 26-11-2026, sessie 221: \"gebruik dat als enige datum\")",
+          mj["dicht"] and mj["regels"][0] == ["3 kandidaten", mj["verwacht"][0]] and mj["regels"][1] == ["Geen reacties", mj["verwacht"][1]]
+          and all(r[1].startswith("Verlengen vanaf ") for r in mj["regels"]), j(mj))
     check("TT-396 cluster 2: open: de kandidaten ingesprongen, Nieuw tot je hem opent, rechts Uitnodigen of Uitgenodigd, geen sterren",
           [k[0] for k in mj["kandidaten"]] == ["Mila", "Tom", "Maximiliaan"] and mj["kandidaten"][0][1] and not mj["kandidaten"][1][1]
           and mj["kandidaten"][0][2] == "Uitnodigen" and mj["kandidaten"][1][2] == "Uitgenodigd" and not mj["sterren"] and mj["ingesprongen"] >= 20, j(mj))
     check("TT-396 cluster 2: een kandidaat openen: grijs video en gezamenlijke nummers, zijn bericht met dag en tijd, Profiel bekijken, aan de linkerrand; Nieuw weg, ook in de database",
           mj["open"]["extra"] == "Video · 4 gezamenlijke nummers" and mj["open"]["bericht"].startswith("Hoi! Ik kan op vrijdag.") and "Vandaag" in mj["open"]["bericht"]
           and mj["open"]["profiel"] == "Profiel bekijken" and mj["open"]["nieuwWeg"] and mj["open"]["gezien"] == 1 and mj["open"]["vakLinks"] <= 12, j(mj["open"]))
-    check("TT-396 cluster 2: onderaan Aanpassen · Verlengen · Verwijderen; Verlengen kan in de laatste 10 dagen; één oproep tegelijk open",
-          [k[0] for k in mj["knoppen"]] == ["Aanpassen", "Verlengen", "Verwijderen"] and mj["knoppen"][1][1] is True and mj["eenOpen"] == 1, j(mj))
+    check("TT-396 deel 4: tot de laatste 10 dagen geen knop Verlengen; Oproep bekijken breed, Aanpassen en Verwijderen naast elkaar (besluiten Ronald 26-11-2026, sessie 221: \"dit moet 2x2 knoppen worden\", B); één oproep tegelijk open",
+          [k[0] for k in mj["knoppen"]] == ["Oproep bekijken", "Aanpassen", "Verwijderen"] and [k[2] for k in mj["knoppen"]] == [True, False, False]
+          and not any(k[1] for k in mj["knoppen"]) and mj["kolommen"] == 2 and mj["eenOpen"] == 1 and "Verlengen" not in mj["verlengenVroeg"], j(mj))
+    check("TT-396 deel 4: in de laatste 10 dagen \"Verlengen kan nu\" en vier knoppen 2x2: Oproep bekijken, Verlengen / Aanpassen, Verwijderen",
+          mj["rechtsO8"] == "Verlengen kan nu" and [k[0] for k in mj["verlengenO8"]] == ["Oproep bekijken", "Verlengen", "Aanpassen", "Verwijderen"]
+          and not any(k[1] or k[2] for k in mj["verlengenO8"]) and mj["rijenO8"] == 2, j(mj))
+    check("TT-396 deel 4: de melding na Verlengen noemt geen datum (besluit Ronald 26-11-2026, sessie 221: \"ja,\")",
+          mj["melding"] == "Verlengd. Je oproep staat weer bovenaan.", j(mj["melding"]))
+    check("TT-396 deel 4: Oproep bekijken opent je oproep zoals hij online staat (met Bekijk de kandidaten); terug naar Mijn Oproepen, de kaart nog open",
+          mj["bekijk"]["laag"] == "oproep" and mj["bekijk"]["knop"] == "Bekijk de kandidaten" and mj["terug"] == [None, "mijn", True]
+          and (mj.get("bekijkVraag") or {}).get("p_id") == "o9", j([mj["bekijk"], mj["terug"], mj.get("bekijkVraag")]))
+    check("TT-396 deel 4: op de oproep na verlengen \"Geplaatst op\" met de dag van verlengen, nooit de afloopdatum",
+          mj["datumVerlengd"][0] == mj["datumVerlengd"][1] and "Verlengd" not in mj["datumVerlengd"][0] and "Verlengd" not in (mj["bekijk"]["datum"] or "x"), j(mj["datumVerlengd"]))
     wg = u["weg"]
     check("TT-396 cluster 2: Verwijderen vraagt Wie is het geworden? met de kandidaten en Niemand; pas na een keuze (sessie 205 en 207)",
           wg["kop"] == "Wie is het geworden?" and wg["keuzes"] == ["Mila", "Tom", "Maximiliaan", "Niemand"] and wg["knopUit"] is True and wg["knopAan"] is True, j(wg))
@@ -22288,10 +22358,15 @@ S.data.prikbord_zoek = [];
           (wg["rpc"] or {}).get("p_gekozen") == "m3" and wg["gesprek"]["view"] == "messages" and wg["gesprek"]["met"] == "m3"
           and wg["gesprek"]["typvak"] == "Hoi Mila, ik wil graag met je verder. Zullen we snel afspreken? Wat denk je van …?", j(wg))
     check("TT-396 cluster 2: zonder kandidaten: Oproep verwijderen? en de knop kan meteen", wg["zonder"] == {"kop": "Oproep verwijderen?", "zin": "Er zijn geen reacties. Je oproep verdwijnt.", "knopAan": True, "keuzes": 0}, j(wg["zonder"]))
-    check("TT-396 cluster 2: Mijn Reacties: tweede regel Nog x dagen, rechts Reactie verstuurd · Je bent uitgenodigd · Gesloten (sessie 205 en 206: \"ad 1. B\"; \"ad 1. rechts\")",
-          [x[1:] for x in u["reacties"]] == [["Nog 24 dagen", "Reactie verstuurd"], ["Nog 12 dagen", "Je bent uitgenodigd"], ["", "Gesloten"]], j(u["reacties"]))
-    check("TT-396 cluster 2: Mijn Reacties open: je eigen bericht en de knoppen; een gesloten oproep zonder knoppen",
-          u["reactieOpen"]["bericht"].startswith("Ik zing al twee jaar.") and u["reactieOpen"]["knoppen"] == ["Oproep bekijken", "Naar het gesprek", "Intrekken"] and u["reactieGesloten"] == 0, j(u["reactieOpen"]))
+    check("TT-396 cluster 2 en deel 4: Mijn Reacties zonder datum, rechts Reactie verstuurd · Je bent uitgenodigd · Gesloten (sessie 206: \"ad 1. rechts\"; sessie 221: de afloopdatum nergens)",
+          [x[1:] for x in u["reacties"]] == [["", "Reactie verstuurd"], ["", "Je bent uitgenodigd"], ["", "Gesloten"]], j(u["reacties"]))
+    check("TT-396 cluster 2 en deel 4: Mijn Reacties open: je eigen bericht en de knoppen, Oproep bekijken breed (zelfde raster als Mijn Oproepen); een gesloten oproep zonder knoppen",
+          u["reactieOpen"]["bericht"].startswith("Ik zing al twee jaar.") and u["reactieOpen"]["knoppen"] == ["Oproep bekijken", "Naar het gesprek", "Intrekken"]
+          and u["reactieOpen"]["breed"] == [True, False, False] and u["reactieGesloten"] == 0, j(u["reactieOpen"]))
+    lg = u["leeg"]
+    check("TT-396 deel 4 (ad 5): een lege lijst geeft geen tweede gele knop; Alle oproepen en Profiel aanmaken met rand; alleen Oproep plaatsen geel (besluit Ronald 26-11-2026, sessie 221)",
+          lg["mijn"] == 0 and lg["alle"] == 0 and lg["reacties"] == [["Alle oproepen", "btn btn-ghost"]] and lg["profiel"] == "btn btn-ghost"
+          and lg["mijnGeel"] == ["Oproep plaatsen"] and lg["reactiesGeel"] == ["Oproep plaatsen"] and lg["alleGeel"] == ["Oproep plaatsen"], j(lg))
     no = u["naarOproep"]
     check("TT-396 cluster 3: geen kaartje boven een gesprek; \"Naar de oproep\" alleen onder een bericht over een oproep, vet, tikvlak 44 (besluiten Ronald 26-11-2026, sessie 216: \"ad 1. ja. maak de linktekst dikgedrukt.\")",
           no["kaartje"] == 0 and no["links"] == ["Naar de oproep", "", "Naar de oproep"] and no["vet"] == ["700", "700"] and no["hoog"] == [44, 44], j(no))
