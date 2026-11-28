@@ -5497,5 +5497,7 @@
 
   .search-mode-tab { position: relative; }
   .search-mode-tab .pb-getal { position: absolute; top: -6px; right: -4px; margin: 0; }
+  .pb-kandidaat .pb-getal { margin-left: 8px; flex: none; align-self: baseline; }
+  .pb-klap .pb-getal { margin-left: 8px; flex: none; }
   .pb-rij-gedeeld { margin-top: 2px; }
   .pb-mijn-knoppen-rij { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }

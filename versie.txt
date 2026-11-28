@@ -1,4 +1,4 @@
-styles.css?v=20261127c
+styles.css?v=20261128b
 supabase.js?v=2.118.0
 core.js?v=20261127c
 utils.js?v=20261126b
@@ -13,4 +13,4 @@ bands.js?v=20261126a
 messages.js?v=20261126a
 push.js?v=20261118a
 modals-shared.js?v=20261116a
-prikbord.js?v=20261128a
+prikbord.js?v=20261128c

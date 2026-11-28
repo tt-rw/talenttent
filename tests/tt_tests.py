@@ -23124,6 +23124,166 @@ S.data.prikbord_zoek = [];
           and c.get("bericht") == {"toast": "", "gesprek": True} and c.get("uitnodigen") == {"toast": "", "gesprek": True}, j(c))
 
 
+def blok_prikbord_tt704():
+    print("\nBlok 184 — TT-704 (besluiten Ronald 28-11-2026, sessie 228 en 229): het getal opent de oproep met de nieuwste kandidaat (die zelf dicht); de gekozene bij een oproep \"beschikbaar\" krijgt de tekst van Ronald")
+    stub_js = open(STUB, encoding="utf-8").read()
+    init = """
+const S = window.TT_STUB;
+S.session = { user: { id: 'u1', email: 'a@talenttent.org' } };
+S.data.musicians = [
+  { id: 'm1', user_id: 'u1', fname: 'Rafaela', username: 'rafaela', weergavenaam: 'Rafaela', zip: '2497', city: 'Den Haag', birth_date: '2008-03-01', bio: '',
+    profile_complete: true, email_bevestigd_op: new Date().toISOString() },
+  { id: 'm2', fname: 'Colin', username: 'colin', weergavenaam: 'Colin', city: 'Den Haag' },
+  { id: 'm3', fname: 'Mila', username: 'mila', weergavenaam: 'Mila', city: 'Rijswijk' }];
+S.data.musicians.forEach(m => Object.assign(m, { musician_instruments: [], musician_genres: [], musician_songs: [], musician_media: [] }));
+const L = %s;
+S.rpcResults.tt_prikbord = (a) => a.p_id ? L.filter(x => x.id === a.p_id) : L;
+const M = %s;
+M[0].reacties[0].created_at = new Date(Date.now() - 2 * 3600e3).toISOString();
+M.push({ oproep: Object.assign({}, M[0].oproep, { id: 'o8', soort: 'beschikbaar', doelen: ['jammen'], instrumenten: ['Zang'], zang_vorm: 'zangeres',
+  geplaatst_op: new Date(Date.now() - 60 * 864e5).toISOString(), naam: 'Rafaela', plaatser_naam: 'Rafaela' }),
+  reacties: [{ id: 'r4', musician_id: 'm2', naam: 'Colin', leeftijd: 25, plaats: 'Den Haag', km: 3, foto: null, media: null, gedeeld: 0,
+    boodschap: 'Hoi Rafaela, ik zag je oproep.', status: 'verstuurd', nieuw: true, created_at: new Date().toISOString() }] });
+S.rpcResults.tt_mijn_oproepen = () => JSON.parse(JSON.stringify(M));
+S.rpcResults.tt_mijn_reacties = () => [];
+S.rpcResults.tt_nieuwe_reacties = () => window.__GETAL;
+S.rpcResults.tt_reactie_gezien = null;
+S.rpcResults.tt_oproep_sluiten = null;
+S.rpcResults.tt_get_my_birth_date = '2008-03-01';
+S.rpcResults.tt_resolve_search_origin = () => [{ lat: 52.08, lng: 4.31 }];
+S.data.prikbord_zoek = [];
+""" % (PB_OPROEPEN, PB_MIJN)
+    fouten, uit = [], {}
+    httpd, port = serve()
+    MEET = r"""async () => {
+      const w = (ms = 500) => new Promise(r => setTimeout(r, ms));
+      const $ = id => document.getElementById(id);
+      const stand = () => ({ tab: pbTab, open: pbMijnOpen, kandidaatOpen: pbKandidaatOpen,
+        mijnZichtbaar: $('pbMijnVak').style.display !== 'none',
+        kaartOpen: [...document.querySelectorAll('#pbMijnLijst .pb-kaart-oproep.open')].map(k => k.id),
+        nieuw: [...document.querySelectorAll('#pbMijnLijst .pb-nieuw')].length,
+        getalKandidaat: [...document.querySelectorAll('#pbMijnLijst .pb-kandidaat .pb-getal')].map(e => e.textContent),
+        kaartGetal: Object.fromEntries([...document.querySelectorAll('#pbMijnLijst .pb-kaart-oproep')].map(k => [k.id, (k.querySelector('.pb-klap .pb-getal') || {}).textContent || ''])),
+        titelPast: [...document.querySelectorAll('#pbMijnLijst .pb-klap .pb-titel')].every(t => t.scrollWidth <= t.clientWidth + 1 || t.textContent === t.dataset.kort),
+        titels: [...document.querySelectorAll('#pbMijnLijst .pb-klap .pb-titel')].map(t => t.textContent),
+        lijn: (() => { const g = document.querySelector('#pbMijnLijst .pb-kandidaat .pb-getal'), n = document.querySelector('#pbMijnLijst .pb-kandidaat .pb-nieuw');
+          if (!g || !n) return null; const a = g.getBoundingClientRect(), b = n.getBoundingClientRect();
+          const m = document.querySelector('#pbMijnLijst .pb-kandidaat .result-row-naam').getBoundingClientRect();
+          return { midden: Math.abs((a.top + a.height / 2) - (b.top + b.height / 2)), tussen: Math.round(a.left - b.right), naamNieuw: Math.round(b.left - m.right) }; })(),
+        ballon: !!document.querySelector('#pbMijnLijst .pb-kandidaat-vak'),
+        tegelGetal: $('pbTegelGetal').hidden ? '' : $('pbTegelGetal').textContent,
+        mijnGetal: $('pbMijnGetal').hidden ? '' : $('pbMijnGetal').textContent });
+      return stand(); }"""
+    def pagina(browser, getal):
+        ctx = browser.new_context(viewport={"width": 360, "height": 800}, color_scheme="dark", is_mobile=True, has_touch=True)
+        ctx.route("https://*.supabase.co/**", lambda r: r.abort())
+        ctx.add_init_script("window.__GETAL = %d;" % getal)
+        pg = ctx.new_page()
+        pg.on("pageerror", lambda e: fouten.append(str(e) + " @ " + (e.stack or "")[:300]))
+        pg.route("**/supabase.js*", lambda r: r.fulfill(status=200, content_type="application/javascript", body=stub_js + init))
+        pg.route("**/itunes.apple.com/**", lambda r: r.abort())
+        pg.goto(f"http://127.0.0.1:{port}/index.html", wait_until="load")
+        pg.wait_for_timeout(1500)
+        pg.locator("#bottomNavSearch").click(); pg.wait_for_timeout(800)
+        return ctx, pg
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        # 1. De tegel Prikbord met een getal: Mijn Oproepen, de oproep van de nieuwste kandidaat open, de kandidaat dicht.
+        ctx, pg = pagina(browser, 2)
+        uit["getalVoor"] = pg.evaluate("() => document.getElementById('pbTegelGetal').hidden ? '' : document.getElementById('pbTegelGetal').textContent")
+        pg.locator("#zoekTegelPrikbord").click(); pg.wait_for_timeout(1200)
+        uit["tegel"] = pg.evaluate(MEET)
+        # Stap 4: een tik op de kandidaat toont zijn bericht.
+        pg.locator("#pbMijn-o8 .pb-kandidaat").first.click(); pg.wait_for_timeout(600)
+        uit["kandidaat"] = pg.evaluate(MEET)
+        # Mijn Oproepen nog een keer: terug naar alle oproepen (aan/uit-knop, ongewijzigd).
+        pg.locator("#pbTab-mijn").click(); pg.wait_for_timeout(800)
+        uit["uit"] = pg.evaluate(MEET)
+        # 2. Vanuit alle oproepen een tik op Mijn Oproepen met het getal: dezelfde oproep open.
+        pg.evaluate("() => { window.__GETAL = 1; pbMijnOpen = null; return pbTegelGetal(); }"); pg.wait_for_timeout(400)
+        pg.locator("#pbTab-mijn").click(); pg.wait_for_timeout(1000)
+        uit["knop"] = pg.evaluate(MEET)
+        # 2b. De knop "Naar Mijn Oproepen" onder een bericht van TalentTent opent de oproep uit dat bericht
+        #     (besluit Ronald sessie 229: "ad 3. niveau 2. de oproep open met alle kandidaten."), ook onder "loopt af".
+        uit["vanBericht"] = pg.evaluate(r"""async () => {
+          const w = (ms = 500) => new Promise(r => setTimeout(r, ms));
+          const info = { bands: {}, muzikanten: {} };
+          const klik = async (inhoud) => {
+            const d = document.createElement('div');
+            d.innerHTML = pbTtBerichtHTML({ inhoud, created_at: new Date().toISOString() }, info);
+            document.body.appendChild(d);
+            showView('messages'); await w(300);
+            const b = d.querySelector('button.tt-meer'); const tekst = b.textContent; b.click(); await w(1100); d.remove();
+            return { tekst, tab: pbTab, open: pbMijnOpen, kandidaatOpen: pbKandidaatOpen,
+                     kaartOpen: [...document.querySelectorAll('#pbMijnLijst .pb-kaart-oproep.open')].map(k => k.id) };
+          };
+          const x = { instrumenten: ['Basgitaar'], elk: false, oproep_soort: 'gezocht', plaatser: 'm1' };
+          return {
+            nieuw: await klik({ soort: 'nieuwe_reacties', oproepen: [Object.assign({ oproep: 'o9', aantal: 1 }, x)] }),
+            afloop: await klik(Object.assign({ soort: 'oproep_loopt_af', oproep: 'o8' }, x)),
+            ingetrokken: await klik(Object.assign({ soort: 'reactie_ingetrokken', oproep: 'o9', wie: 'm3' }, x)) }; }""")
+        # 3. Verwijderen van de oproep "beschikbaar": de gekozene krijgt de tekst van Ronald in het typvak; de oproep
+        #    "gezocht" houdt zijn tekst.
+        uit["wegBeschikbaar"] = pg.evaluate(r"""async () => {
+          const w = (ms = 500) => new Promise(r => setTimeout(r, ms));
+          pbVerwijderen('o8'); await w(200);
+          pbWegKies(document.querySelector('#pbWegKeuzes .pb-weg-keuze[data-w="m2"]')); await w(50);
+          const zin = document.getElementById('pbWegZin').textContent;
+          await pbWegBevestigen(); await w(900);
+          const r = { zin, view: huidigeView, typvak: document.getElementById('messagesReplyInput').value, sluiten: window.TT_STUB.calls.filter(c => c.name === 'tt_oproep_sluiten').map(c => c.args) };
+          appTerug(); await w(600); return r; }""")
+        uit["wegGezocht"] = pg.evaluate(r"""async () => {
+          const w = (ms = 500) => new Promise(r => setTimeout(r, ms));
+          openPrikbordVanuitBericht('mijn'); await w(900);
+          pbVerwijderen('o9'); await w(200);
+          pbWegKies(document.querySelector('#pbWegKeuzes .pb-weg-keuze[data-w="m3"]')); await w(50);
+          await pbWegBevestigen(); await w(900);
+          return { typvak: document.getElementById('messagesReplyInput').value }; }""")
+        ctx.close()
+        # 4. Zonder getal: de tegel opent alle oproepen, zoals voorheen.
+        ctx, pg = pagina(browser, 0)
+        pg.locator("#zoekTegelPrikbord").click(); pg.wait_for_timeout(1200)
+        uit["zonder"] = pg.evaluate(MEET)
+        ctx.close()
+        browser.close()
+    httpd.shutdown()
+    j = lambda x: json.dumps(x, ensure_ascii=False)
+    check("TT-704: geen JS-fout", not fouten, " | ".join(fouten)[:800])
+    t, k, u2, kn, z = uit.get("tegel", {}), uit.get("kandidaat", {}), uit.get("uit", {}), uit.get("knop", {}), uit.get("zonder", {})
+    check("TT-704: de tegel Prikbord toont het getal", uit.get("getalVoor") == "2", j(uit.get("getalVoor")))
+    check("TT-704: de tegel met een getal opent Mijn Oproepen met de oproep van de nieuwste kandidaat open (stap 1 en 2)",
+          t.get("tab") == "mijn" and t.get("mijnZichtbaar") and t.get("open") == "o8" and t.get("kaartOpen") == ["pbMijn-o8"], j(t))
+    check("TT-704: de kandidaat zelf staat dicht, met \"Nieuw\"; het getal blijft (stap 3; besluit Ronald sessie 229: \"ik wil de stappen 1 tm 4 houden\")",
+          t.get("kandidaatOpen") is None and not t.get("ballon") and t.get("nieuw") == 1 and t.get("mijnGetal") == "2", j(t))
+    check("TT-704: het rode getal volgt het spoor: de nieuwe kandidaat heeft \"Nieuw\" en een rood 1 (besluit Ronald sessie 229, op het beeld: \"ad 1. ja\")",
+          t.get("getalKandidaat") == ["1"], j(t))
+    check("TT-704: het rode 1 staat op dezelfde lijn als \"Nieuw\" (midden gelijk), met dezelfde ruimte als tussen naam en \"Nieuw\"",
+          (t.get("lijn") or {}).get("midden") == 0 and (t.get("lijn") or {}).get("tussen") == (t.get("lijn") or {}).get("naamNieuw") == 14, j(t.get("lijn")))
+    check("TT-704: het rode getal staat ook op de kaart van elke oproep met een nieuwe kandidaat, ook dicht (besluit Ronald sessie 229: \"ad 2. ja\"); past een titel niet, dan de korte vorm (sessie 205)",
+          t.get("kaartGetal") == {"pbMijn-o9": "1", "pbMijn-o8": "1"} and t.get("titelPast"), j(t))
+    check("TT-704: een tik op de kandidaat toont zijn bericht en vraagt \"gezien\" (stap 4)",
+          k.get("ballon") and k.get("nieuw") == 0 and k.get("getalKandidaat") == [], j(k))
+    check("TT-704: na de tik op de kandidaat verdwijnt het getal van zijn kaart; de andere kaart houdt het zijne",
+          k.get("kaartGetal") == {"pbMijn-o9": "1", "pbMijn-o8": ""}, j(k))
+    vb = uit.get("vanBericht", {})
+    check("TT-704: \"Naar Mijn Oproepen\" onder \"1 nieuwe kandidaat\" opent die oproep met de kandidaten, de kandidaat dicht",
+          vb.get("nieuw", {}).get("tekst") == "Naar Mijn Oproepen" and vb.get("nieuw", {}).get("tab") == "mijn"
+          and vb.get("nieuw", {}).get("open") == "o9" and vb.get("nieuw", {}).get("kaartOpen") == ["pbMijn-o9"]
+          and vb.get("nieuw", {}).get("kandidaatOpen") is None, j(vb.get("nieuw")))
+    check("TT-704: dezelfde knop onder \"loopt over 10 dagen af\" en \"doet niet meer mee\" opent de oproep uit dat bericht",
+          vb.get("afloop", {}).get("open") == "o8" and vb.get("ingetrokken", {}).get("open") == "o9", j(vb))
+    check("TT-704: Mijn Oproepen nog een keer: terug naar alle oproepen", u2.get("tab") == "alle" and not u2.get("mijnZichtbaar"), j(u2))
+    check("TT-704: Mijn Oproepen met een getal opent ook de oproep van de nieuwste kandidaat",
+          kn.get("tab") == "mijn" and kn.get("open") == "o8" and kn.get("kandidaatOpen") is None, j(kn))
+    check("TT-704: zonder getal opent de tegel alle oproepen, alles dicht",
+          z.get("tab") == "alle" and not z.get("mijnZichtbaar") and z.get("open") is None, j(z))
+    wb, wg = uit.get("wegBeschikbaar", {}), uit.get("wegGezocht", {})
+    check("TT-704: oproep \"beschikbaar\": de gekozene krijgt in het typvak \"Bedankt voor je bericht. We spreken binnenkort af!\"",
+          wb.get("view") == "messages" and wb.get("typvak") == "Bedankt voor je bericht. We spreken binnenkort af!", j(wb))
+    check("TT-704: oproep \"gezocht\" houdt zijn tekst voor de gekozene",
+          wg.get("typvak") == "Hoi Mila, ik wil graag met je verder. Zullen we snel afspreken? Wat denk je van …?", j(wg))
+
+
 BLOKKEN = [
     blok1_statisch,
     blok_tt517_fase1,
@@ -23205,6 +23365,7 @@ BLOKKEN = [
     blok_prikbord_cluster3,
     blok_prikbord_deel5,
     blok_prikbord_tt702,
+    blok_prikbord_tt704,
 ]
 
 

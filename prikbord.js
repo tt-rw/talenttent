@@ -206,7 +206,40 @@ function pbToonLaag() {
 
 
 
-function pbWissel(tab) { pbZetTab(pbTab === tab ? 'alle' : tab); }
+function pbWissel(tab) {
+  if (tab === 'mijn' && pbTab !== 'mijn' && pbNieuwGetal > 0) pbNieuwsteOpenen = true;
+  pbZetTab(pbTab === tab ? 'alle' : tab);
+}
+
+
+
+let pbNieuwGetal = 0;
+let pbNieuwsteOpenen = false;
+let pbOpenNaLaden = null;
+function pbTegelTik() {
+  if (pbNieuwGetal > 0 && currentUser && hasOwnProfile) { pbNieuwsteOpenen = true; openPrikbord('mijn'); return; }
+  openPrikbord();
+}
+
+function pbNieuwsteKandidaat(ids) {
+  let beste = null;
+  pbMijn.filter(m => !ids || ids.includes(m.oproep.id)).forEach(m => (m.reacties || []).forEach(r => {
+    if (r.nieuw && (!beste || new Date(r.created_at) > new Date(beste.r.created_at))) beste = { o: m.oproep, r };
+  }));
+  return beste;
+}
+function pbNieuwsteTonen() {
+  const ids = pbOpenNaLaden;
+  pbNieuwsteOpenen = false; pbOpenNaLaden = null;
+
+  const n = pbNieuwsteKandidaat(ids) || (ids && pbMijn.filter(m => ids.includes(m.oproep.id)).map(m => ({ o: m.oproep }))[0]);
+  if (!n) return;
+  pbMijnOpen = n.o.id;
+  pbKandidaatOpen = null;
+  pbMijnTekenen();
+  const kaart = document.getElementById('pbMijn-' + n.o.id);
+  if (kaart) kaart.scrollIntoView({ block: 'nearest' });
+}
 
 
 function pbTerug() {
@@ -1029,8 +1062,9 @@ async function pbMijnLaden() {
   if (!currentUser || !hasOwnProfile) { vak.innerHTML = emptyStateHTML('Nog geen profiel', 'Met een profiel plaats je een oproep.', 'Profiel aanmaken', "showView('register')", true); return; }
   if (!pbMijn.length) ladenTonen(vak);
   const { data, error } = await db.rpc('tt_mijn_oproepen');
-  if (error) { logCaught('pbMijnLaden', error); vak.innerHTML = foutStaatHTML(error, 'je oproepen laden', 'pbMijnLaden()'); return; }
+  if (error) { pbNieuwsteOpenen = false; pbOpenNaLaden = null; logCaught('pbMijnLaden', error); vak.innerHTML = foutStaatHTML(error, 'je oproepen laden', 'pbMijnLaden()'); return; }
   pbMijn = data || [];
+  if (pbNieuwsteOpenen || pbOpenNaLaden) { pbNieuwsteTonen(); if (pbMijnOpen) return; }
   pbMijnTekenen();
 }
 function pbMijnTekenen() {
@@ -1061,6 +1095,9 @@ function pbMijnHTML(m) {
   const reacties = m.reacties || [];
   const open = pbMijnOpen === o.id;
   const telling = !reacties.length ? 'Geen reacties' : reacties.length === 1 ? '1 kandidaat' : `${reacties.length} kandidaten`;
+
+
+  const nieuw = reacties.filter(r => r.nieuw).length;
   const verlengen = pbDagenOver(o) <= 10;
   return `
     <div class="result-row pb-kaart-oproep${open ? ' open' : ''}" id="pbMijn-${escHtml(o.id)}">
@@ -1068,7 +1105,7 @@ function pbMijnHTML(m) {
         <div class="result-row-top">
           <div class="result-row-avatar${o.band_id ? ' result-vierkant' : ''}">${fotoHTML(o.foto, o.naam) || ZONDER_FOTO_HTML}</div>
           <div class="result-row-main">
-            <div class="result-row-name pb-eenregel">${pbTitelHTML(o)}<span class="pb-pijl">${PB_PIJL_OMLAAG}</span></div>
+            <div class="result-row-name pb-eenregel">${pbTitelHTML(o)}${nieuw ? `<span class="pb-getal">${nieuw}</span>` : ''}<span class="pb-pijl">${PB_PIJL_OMLAAG}</span></div>
             <div class="result-row-meta pb-eenregel"><span class="pb-regel-kort">${escHtml(telling)}</span><span class="pb-rechts">${escHtml(pbVerlengTekst(o))}</span></div>
           </div>
         </div>
@@ -1092,6 +1129,9 @@ function pbMijnKlap(id) {
 
 
 
+
+
+
 function pbReactieHTML(o, r) {
   const wie = [r.leeftijd != null ? r.leeftijd + ' jaar' : '', afstandTekst(r.km)].filter(Boolean).map(escHtml).join(' · ');
   const rechts = r.status === 'uitgenodigd'
@@ -1107,7 +1147,7 @@ function pbReactieHTML(o, r) {
       <div class="result-row-top">
         <div class="result-row-avatar">${fotoHTML(r.foto, r.naam) || ZONDER_FOTO_HTML}</div>
         <div class="result-row-main">
-          <div class="result-row-name pb-eenregel"><span class="result-row-naam">${escHtml(r.naam)}</span>${r.nieuw ? '<span class="pb-nieuw">Nieuw</span>' : ''}</div>
+          <div class="result-row-name pb-eenregel"><span class="result-row-naam">${escHtml(r.naam)}</span>${r.nieuw ? '<span class="pb-nieuw">Nieuw</span><span class="pb-getal">1</span>' : ''}</div>
           <div class="result-row-meta pb-eenregel"><span class="pb-regel-kort">${wie}</span>${rechts}</div>
         </div>
       </div>
@@ -1230,7 +1270,9 @@ async function pbWegBevestigen() {
   pbWegKeuze = null; pbMijnOpen = null;
   if (!gekozen) { showToast('Je oproep is verwijderd.'); pbMijnLaden(); pbTegelGetal(); return; }
 
-  const tekst = (m.oproep.band_id ? PB_TT.gekozenBand : PB_TT.gekozen).replace('{naam}', gekozen.naam);
+
+  const tekst = m.oproep.soort === 'beschikbaar' ? PB_TT.gekozenBeschikbaar
+    : (m.oproep.band_id ? PB_TT.gekozenBand : PB_TT.gekozen).replace('{naam}', gekozen.naam);
 
 
   pbMijn = pbMijn.filter(x => x.oproep.id !== k.oproep);
@@ -1345,7 +1387,10 @@ const PB_TT = {
   uitnodigenBand: 'Hoi {naam}, leuk dat je reageerde op onze oproep. Zullen we binnenkort afspreken? Wat denk je van …?',
   bericht: 'Hoi {naam}, ik zag je oproep. Zullen we binnenkort afspreken? Wat denk je van …?',
   gekozen: 'Hoi {naam}, ik wil graag met je verder. Zullen we snel afspreken? Wat denk je van …?',
-  gekozenBand: 'Hoi {naam}, we willen graag met je verder. Zullen we snel afspreken? Wat denk je van …?'
+  gekozenBand: 'Hoi {naam}, we willen graag met je verder. Zullen we snel afspreken? Wat denk je van …?',
+
+
+  gekozenBeschikbaar: 'Bedankt voor je bericht. We spreken binnenkort af!'
 };
 function pbTtNaam(id, band, info) {
   if (band && info && info.bands[band]) return info.bands[band].name;
@@ -1382,7 +1427,10 @@ function pbTtBerichtHTML(bericht, info) {
   if (!kop) return '';
   const mijn = ['reactie_ingetrokken', 'oproep_loopt_af', 'nieuwe_reacties'].includes(inh.soort);
   const tab = mijn ? 'mijn' : inh.soort === 'oproep_bedankt' ? 'reacties' : 'alle';
-  const knop = `<button type="button" class="tt-meer" onclick="openPrikbordVanuitBericht('${tab}')">${escHtml({ mijn: PB_TT.knopMijn, reacties: PB_TT.knopReacties, alle: PB_TT.knopPrikbord }[tab])}</button>`;
+
+
+  const ids = mijn ? (inh.soort === 'nieuwe_reacties' ? (inh.oproepen || []).map(x => x.oproep) : [inh.oproep]).filter(Boolean).join(',') : '';
+  const knop = `<button type="button" class="tt-meer" onclick="openPrikbordVanuitBericht('${tab}'${ids ? `, '${jsAttr(ids)}'` : ''})">${escHtml({ mijn: PB_TT.knopMijn, reacties: PB_TT.knopReacties, alle: PB_TT.knopPrikbord }[tab])}</button>`;
   const tijd = new Date(bericht.created_at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
 
@@ -1396,7 +1444,8 @@ function pbTtBerichtHTML(bericht, info) {
   if (rijen) setTimeout(() => pbTitelsPassen(document.getElementById('messagesThreadList')), 0);
   return `<div class="message-bubble other tt-bericht"><div class="tt-bericht-kop">${escHtml(kop)}</div>${rijen}${knop}<div class="message-bubble-time">${escHtml(tijd)}</div></div>`;
 }
-function openPrikbordVanuitBericht(tab) {
+function openPrikbordVanuitBericht(tab, oproepIds) {
+  if (tab === 'mijn' && oproepIds) pbOpenNaLaden = String(oproepIds).split(',');
   showView('search', 'behoud');
   openZoekScherm('prikbord', { geenZoek: true, direct: true });
   pbMijLaden();
@@ -1546,6 +1595,7 @@ function pbAllesWissen() {
   pbFilters = { soort: '', doel: '', instrument: '' };
   pbForm = null; pbVanBand = null; pbVanBuiten = false;
   pbReacties = []; pbMijnOpen = null; pbKandidaatOpen = null; pbReactieOpen = null; pbWegKeuze = null;
+  pbNieuwGetal = 0; pbNieuwsteOpenen = false; pbOpenNaLaden = null;
   Object.assign(PB_MIJ, { instrumenten: [], instrumentenNiveau: [], bands: [], leeftijd: null, naam: '', foto: '', plaats: '', voor: null });
   pbBewaard = undefined; pbBewaardVoor = null; pbVertrek = null; pbOproepenAan = null;
   ['pbResultaat', 'pbMijnLijst', 'pbReactiesLijst', 'pbOproepInhoud', 'pbFormInhoud', 'pbVoorbeeldInhoud', 'pbReagerenInhoud', 'voorbeeldBladInhoud', 'pbWegKeuzes']
@@ -1566,9 +1616,10 @@ function pbAllesWissen() {
 async function pbTegelGetal() {
   const el = document.getElementById('pbTegelGetal');
   const el2 = document.getElementById('pbMijnGetal');
-  if (!currentUser || !hasOwnProfile) { [el, el2].forEach(e => e && (e.hidden = true)); return; }
+  if (!currentUser || !hasOwnProfile) { pbNieuwGetal = 0; [el, el2].forEach(e => e && (e.hidden = true)); return; }
   const { data, error } = await db.rpc('tt_nieuwe_reacties');
   if (error) { logCaught('pbTegelGetal', error); return; }
+  pbNieuwGetal = data || 0;
   [el, el2].forEach(e => { if (e) { e.textContent = data || ''; e.hidden = !data; } });
 }
 
